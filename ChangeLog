@@ -1,3 +1,9 @@
+Fri Nov 22 17:20:50 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* transcode.c (str_transcode0): don't scrub invalid chars if
+	  str.encode doesn't have explicit invalid: :replace.
+	  workaround fix for see #8995
+
 Fri Nov 22 17:11:26 2013  Narihiro Nakamura  <authornari@gmail.com>
 
 	* include/ruby/intern.h, internal.h: Expose rb_gc_count().

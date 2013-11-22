@@ -2672,6 +2672,7 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
     rb_encoding *senc, *denc;
     const char *sname, *dname;
     int dencidx;
+    int explicitly_invalid_replace = TRUE;
 
     rb_check_arity(argc, 0, 2);
 
@@ -2680,6 +2681,9 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
 	if (NIL_P(arg1)) {
 	    if (!ecflags) return -1;
 	    arg1 = rb_obj_encoding(str);
+	}
+	if (!(ecflags & ECONV_INVALID_MASK)) {
+	    explicitly_invalid_replace = FALSE;
 	}
 	ecflags |= ECONV_INVALID_REPLACE | ECONV_UNDEF_REPLACE;
     }
@@ -2694,7 +2698,7 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
                     ECONV_XML_ATTR_CONTENT_DECORATOR|
                     ECONV_XML_ATTR_QUOTE_DECORATOR)) == 0) {
         if (senc && senc == denc) {
-	    if (ecflags & ECONV_INVALID_MASK) {
+	    if ((ecflags & ECONV_INVALID_MASK) && explicitly_invalid_replace) {
 		VALUE rep = Qnil;
 		if (!NIL_P(ecopts)) {
 		    rep = rb_hash_aref(ecopts, sym_replace);

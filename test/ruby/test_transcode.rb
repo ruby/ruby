@@ -2071,4 +2071,13 @@ class TestTranscode < Test::Unit::TestCase
       assert_equal(4, 'aaa'.encode(enc).length, "should count in #{enc} with BOM")
     end
   end
+
+  def test_encode_with_invalid_chars
+    bug8995 = '[ruby-dev:47747]'
+    EnvUtil.with_default_internal(Encoding::UTF_8) do
+      str = "\xff".force_encoding('utf-8')
+      assert_equal str, str.encode, bug8995
+      assert_equal "\ufffd", str.encode(invalid: :replace), bug8995
+    end
+  end
 end
