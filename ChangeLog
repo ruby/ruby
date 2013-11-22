@@ -1,3 +1,8 @@
+Fri Nov 22 12:43:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.c (ruby_strtod): ignore too long fraction part, which does not
+	  affect the result.
+
 Fri Nov 22 12:17:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/lib/openssl/buffering.rb (OpenSSL::Buffering#initialize):
