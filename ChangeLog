@@ -1,3 +1,12 @@
+Fri Nov 22 10:35:57 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (ruby_vm_destruct): do not use ruby_xfree() after freeing
+	  objspace.
+
+	* gc.c (ruby_mimfree): added. It is similar to ruby_mimmalloc().
+
+	* internal.h: ditto.
+
 Fri Nov 22 09:42:35 2013  Zachary Scott  <e@zzak.io>
 
 	* test/digest/test_digest.rb: Reverse order of assert_equal

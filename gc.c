@@ -5715,6 +5715,16 @@ ruby_mimmalloc(size_t size)
     return mem;
 }
 
+void
+ruby_mimfree(void *ptr)
+{
+    size_t *mem = (size_t *)ptr;
+#if CALC_EXACT_MALLOC_SIZE
+    mem = mem - 1;
+#endif
+    free(mem);
+}
+
 #if CALC_EXACT_MALLOC_SIZE
 /*
  *  call-seq:
