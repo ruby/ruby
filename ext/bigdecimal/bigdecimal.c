@@ -2746,6 +2746,9 @@ BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
 	SIGNED_VALUE const ey = VpExponent10(DATA_PTR(y));
 	SIGNED_VALUE const ed = VpExponent10(DATA_PTR(d));
 	ssize_t m = n - vabs(ey - ed);
+
+	rb_thread_check_ints();
+
 	if (m <= 0) {
 	    break;
 	}
