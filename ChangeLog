@@ -1,3 +1,10 @@
+Fri Nov 22 16:49:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_power): Round the result value.
+	  [Bug #8818] [ruby-core:56802]
+
+	* test/bigdecimal/test_bigdecimal.rb: Add a test for the above fix.
+
 Fri Nov 22 16:25:43 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (heap_set_increment): accept minumum additional page number.
