@@ -1,3 +1,8 @@
+Fri Nov 22 12:46:08 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.c (ruby_strtod): ignore too long fraction part, which does not
+	  affect the result.
+
 Wed Nov 20 15:20:00 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* test/ruby/test_thread.rb (test_mutex_unlock_on_trap): extend waiting
