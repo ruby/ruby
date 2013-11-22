@@ -835,7 +835,6 @@ int rb_st_insert_id_and_value(VALUE obj, st_table *tbl, ID key, VALUE value);
 st_table *rb_st_copy(VALUE obj, struct st_table *orig_tbl);
 
 /* gc.c */
-size_t rb_gc_count(void);
 size_t rb_obj_memsize_of(VALUE);
 
 RUBY_SYMBOL_EXPORT_END
