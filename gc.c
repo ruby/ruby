@@ -5292,7 +5292,7 @@ ruby_gc_set_params(void)
     get_envparam_double("RUBY_GC_HEAP_OLDSPACE_GROWTH_FACTOR", &gc_params.oldspace_limit_growth_factor, 1.0);
 }
 
-RUBY_ALIAS_FUNCTION_VOID(rb_gc_set_params(void), ruby_gc_set_params, (void))
+RUBY_ALIAS_FUNCTION_VOID(rb_gc_set_params(void), ruby_gc_set_params, ())
 
 void
 rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *data)
