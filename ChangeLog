@@ -1,3 +1,8 @@
+Fri Nov 22 14:35:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigMath_s_exp): Fix the inserting points
+	  of RB_GC_GUARDs.
+
 Fri Nov 22 14:31:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c: Fix indentation.

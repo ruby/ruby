@@ -2711,22 +2711,22 @@ BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
 	else {
 	    Real* vy;
 	    vy = VpCreateRbObject(prec, "#0");
-	    RB_GC_GUARD(vy->obj);
 	    VpSetInf(vy, VP_SIGN_POSITIVE_INFINITE);
+	    RB_GC_GUARD(vy->obj);
 	    return ToValue(vy);
 	}
     }
     else if (nan) {
 	Real* vy;
 	vy = VpCreateRbObject(prec, "#0");
-	RB_GC_GUARD(vy->obj);
 	VpSetNaN(vy);
+	RB_GC_GUARD(vy->obj);
 	return ToValue(vy);
     }
     else if (vx == NULL) {
 	cannot_be_coerced_into_BigDecimal(rb_eArgError, x);
     }
-    x = RB_GC_GUARD(vx->obj);
+    x = vx->obj;
 
     n = prec + rmpd_double_figures();
     negative = VpGetSign(vx) < 0;
@@ -2734,12 +2734,12 @@ BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
 	VpSetSign(vx, 1);
     }
 
-    RB_GC_GUARD(one) = ToValue(VpCreateRbObject(1, "1"));
-    RB_GC_GUARD(x1)  = one;
-    RB_GC_GUARD(y)   = one;
-    RB_GC_GUARD(d)   = y;
-    RB_GC_GUARD(z)   = one;
-    i  = 0;
+    one = ToValue(VpCreateRbObject(1, "1"));
+    x1  = one;
+    y   = one;
+    d   = y;
+    z   = one;
+    i   = 0;
 
     while (!VpIsZero((Real*)DATA_PTR(d))) {
 	VALUE argv[2];
@@ -2772,6 +2772,13 @@ BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
 	vprec = SSIZET2NUM(prec - VpExponent10(DATA_PTR(y)));
 	return BigDecimal_round(1, &vprec, y);
     }
+
+    RB_GC_GUARD(one);
+    RB_GC_GUARD(x);
+    RB_GC_GUARD(x1);
+    RB_GC_GUARD(y);
+    RB_GC_GUARD(d);
+    RB_GC_GUARD(z);
 }
 
 /* call-seq:
