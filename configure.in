@@ -1091,6 +1091,8 @@ AC_CHECK_HEADERS( \
   process.h \
   sys/prctl.h \
   atomic.h \
+  malloc.h \
+  malloc_np.h \
   setjmpex.h
 )
 

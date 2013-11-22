@@ -1,3 +1,10 @@
+Fri Nov 22 09:03:16 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* gc.c: fix build failure on FreeBSD introduced by r43763.
+	  malloc_usable_size() is defined by malloc_np.h on FreeBSD.
+
+	* configure.in: check malloc.h and malloc_np.h.
+
 Fri Nov 22 08:27:13 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems master 50a8210.  Important changes

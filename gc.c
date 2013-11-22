@@ -40,7 +40,11 @@
 #   define malloc_usable_size(a) _msize(a)
 # endif
 #else
-# include <malloc.h>
+# ifdef HAVE_MALLOC_H
+#  include <malloc.h>
+# elif defined(HAVE_MALLOC_NP_H)
+#  include <malloc_np.h>
+# endif
 #endif
 
 #if /* is ASAN enabled? */ \
