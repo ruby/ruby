@@ -1,3 +1,7 @@
+Fri Nov 22 12:02:58 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_settracefunc.rb: Ignore events from other threads.
+
 Fri Nov 22 10:35:57 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (ruby_vm_destruct): do not use ruby_xfree() after freeing

@@ -8,11 +8,17 @@ class TestSetTraceFunc < Test::Unit::TestCase
       :trace_instruction => true,
       :specialized_instruction => false
     }
+    @target_thread = Thread.current
   end
 
   def teardown
     set_trace_func(nil)
     RubyVM::InstructionSequence.compile_option = @original_compile_option
+    @target_thread = nil
+  end
+
+  def target_thread?
+    Thread.current == @target_thread
   end
 
   def test_c_call
@@ -437,7 +443,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     trace = nil
     begin
     eval <<-EOF.gsub(/^.*?: /, ""), nil, 'xyzzy'
-    1: trace = TracePoint.trace(*trace_events){|tp|
+    1: trace = TracePoint.trace(*trace_events){|tp| next if !target_thread?
     2:   events << [tp.event, tp.lineno, tp.path, _defined_class.(tp), tp.method_id, tp.self, tp.binding.eval("_local_var"), _get_data.(tp)] if tp.path == 'xyzzy'
     3: }
     4: 1.times{|;_local_var| _local_var = :inner
@@ -593,6 +599,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
   def test_tracepoint_object_id
     tps = []
     trace = TracePoint.trace(){|tp|
+      next if !target_thread?
       tps << tp
     }
     tap{}
@@ -609,6 +616,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
   def test_tracepoint_access_from_outside
     tp_store = nil
     trace = TracePoint.trace(){|tp|
+      next if !target_thread?
       tp_store = tp
     }
     tap{}
@@ -631,6 +639,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
   def test_tracepoint_enable
     ary = []
     trace = TracePoint.new(:call){|tp|
+      next if !target_thread?
       ary << tp.method_id
     }
     foo
@@ -654,6 +663,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
   def test_tracepoint_disable
     ary = []
     trace = TracePoint.trace(:call){|tp|
+      next if !target_thread?
       ary << tp.method_id
     }
     foo
@@ -694,6 +704,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_tracepoint_return_value
     trace = TracePoint.new(:call, :return){|tp|
+      next if !target_thread?
       next if tp.path != __FILE__
       case tp.event
       when :call
@@ -714,6 +725,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_tracepoint_raised_exception
     trace = TracePoint.new(:call, :return){|tp|
+      next if !target_thread?
       case tp.event
       when :call, :return
         assert_raise(RuntimeError) { tp.raised_exception }
@@ -739,6 +751,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
   def test_tracepoint_block
     events = []
     TracePoint.new(:call, :return, :c_call, :b_call, :c_return, :b_return){|tp|
+      next if !target_thread?
       events << [
         tp.event, tp.method_id, tp.defined_class, tp.self.class,
         /return/ =~ tp.event ? tp.return_value : nil
@@ -773,6 +786,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     thread_self = nil
     created_thread = nil
     TracePoint.new(:thread_begin, :thread_end){|tp|
+      next if Thread.current != created_thread
       events << [Thread.current,
                  tp.event,
                  tp.lineno,  #=> 0
@@ -793,7 +807,10 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_tracepoint_inspect
     events = []
-    trace = TracePoint.new{|tp| events << [tp.event, tp.inspect]}
+    trace = TracePoint.new{|tp|
+      next if !target_thread?
+      events << [tp.event, tp.inspect]
+    }
     assert_equal("#<TracePoint:disabled>", trace.inspect)
     trace.enable{
       assert_equal("#<TracePoint:enabled>", trace.inspect)
@@ -818,7 +835,10 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_tracepoint_exception_at_line
     assert_raise(RuntimeError) do
-      TracePoint.new(:line) {raise}.enable {
+      TracePoint.new(:line) {
+        next if !target_thread?
+        raise
+      }.enable {
         1
       }
     end
@@ -861,6 +881,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
   def test_trace_point_at_return_when_exception
     bug_7624 = '[ruby-core:51128] [ruby-trunk - Bug #7624]'
     TracePoint.new{|tp|
+      next if !target_thread?
       if tp.event == :return &&
         tp.method_id == :m2_test_trace_point_at_return_when_exception
         raise FOO_ERROR
@@ -874,6 +895,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     bug_7668 = '[Bug #7668]'
     ary = []
     trace = TracePoint.new{|tp|
+      next if !target_thread?
       ary << tp.event
       raise
     }
@@ -929,6 +951,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     # TracePoint
     tp_b = nil
     TracePoint.new(:raise) do |tp|
+      next if !target_thread?
       tp_b = tp.binding
     end.enable do
       m1_for_test_trace_point_binding_in_ifunc(0)
@@ -957,6 +980,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
   def test_tracepoint_b_return_with_next
     n = 0
     TracePoint.new(:b_return){
+      next if !target_thread?
       n += 1
     }.enable{
       3.times{
@@ -970,6 +994,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
   def test_tracepoint_b_return_with_lambda
     n = 0
     TracePoint.new(:b_return){
+      next if !target_thread?
       n+=1
     }.enable{
       lambda{
