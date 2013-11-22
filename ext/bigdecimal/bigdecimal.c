@@ -146,7 +146,9 @@ BigDecimal_memsize(const void *ptr)
 static const rb_data_type_t BigDecimal_data_type = {
     "BigDecimal",
     { 0, BigDecimal_delete, BigDecimal_memsize, },
+#ifdef RUBY_TYPED_FREE_IMMEDIATELY
     NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+#endif
 };
 
 static inline int

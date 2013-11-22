@@ -1,3 +1,8 @@
+Fri Nov 22 17:04:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_data_type):
+	  Use RUBY_TYPED_FREE_IMMEDIATELY only if it is available.
+
 Fri Nov 22 16:49:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_power): Round the result value.
