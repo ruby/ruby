@@ -1,3 +1,8 @@
+Fri Nov 22 12:17:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/buffering.rb (OpenSSL::Buffering#initialize):
+	  initialize of a module should pass arguments to super.
+
 Fri Nov 22 12:02:58 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_settracefunc.rb: Ignore events from other threads.
