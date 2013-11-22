@@ -2674,18 +2674,18 @@ BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
      *       BigDecimalCmp function. */
     switch (TYPE(x)) {
       case T_DATA:
-	  if (!is_kind_of_BigDecimal(x)) break;
-	  vx = DATA_PTR(x);
-	  negative = VpGetSign(vx) < 0;
-	  infinite = VpIsPosInf(vx) || VpIsNegInf(vx);
-	  nan = VpIsNaN(vx);
-	  break;
+	if (!is_kind_of_BigDecimal(x)) break;
+	vx = DATA_PTR(x);
+	negative = VpGetSign(vx) < 0;
+	infinite = VpIsPosInf(vx) || VpIsNegInf(vx);
+	nan = VpIsNaN(vx);
+	break;
 
       case T_FIXNUM:
-	  /* fall through */
+	/* fall through */
       case T_BIGNUM:
-	  vx = GetVpValue(x, 0);
-	  break;
+	vx = GetVpValue(x, 0);
+	break;
 
       case T_FLOAT:
 	flo = RFLOAT_VALUE(x);
