@@ -187,18 +187,18 @@ class TestString < Test::Unit::TestCase
   end
 
   def test_EQUAL # '=='
-    assert_equal(false, S("foo") == :foo)
-    assert(S("abcdef") == S("abcdef"))
+    assert_not_equal(:foo, S("foo"))
+    assert_equal(S("abcdef"), S("abcdef"))
 
     pre_1_7_1 do
       $= = true
-      assert(S("CAT") == S('cat'))
-      assert(S("CaT") == S('cAt'))
+      assert_equal(S("CAT"), S('cat'))
+      assert_equal(S("CaT"), S('cAt'))
       $= = false
     end
 
-    assert(S("CAT") != S('cat'))
-    assert(S("CaT") != S('cAt'))
+    assert_not_equal(S("CAT"), S('cat'))
+    assert_not_equal(S("CaT"), S('cAt'))
 
     o = Object.new
     def o.to_str; end
@@ -280,11 +280,12 @@ class TestString < Test::Unit::TestCase
   end
 
   def casetest(a, b, rev=false)
+    msg = proc {"#{a} should#{' not' if rev} match #{b}"}
     case a
       when b
-        assert(!rev)
+        assert(!rev, msg)
       else
-        assert(rev)
+        assert(rev, msg)
     end
   end
 
@@ -458,7 +459,7 @@ class TestString < Test::Unit::TestCase
         b = a.clone
 
         assert_equal(a, b)
-        assert(a.__id__ != b.__id__)
+        assert_not_same(a, b)
         assert_equal(a.frozen?, b.frozen?)
         assert_equal(a.tainted?, b.tainted?)
       end
@@ -502,7 +503,7 @@ class TestString < Test::Unit::TestCase
 
   def test_crypt
     assert_equal(S('aaGUC/JkO9/Sc'), S("mypassword").crypt(S("aa")))
-    assert(S('aaGUC/JkO9/Sc') != S("mypassword").crypt(S("ab")))
+    assert_not_equal(S('aaGUC/JkO9/Sc'), S("mypassword").crypt(S("ab")))
   end
 
   def test_delete
@@ -591,8 +592,8 @@ class TestString < Test::Unit::TestCase
         b = a.dup
 
         assert_equal(a, b)
-        assert(a.__id__ != b.__id__)
-        assert(!b.frozen?)
+        assert_not_same(a, b)
+        assert_not_predicate(b, :frozen?)
         assert_equal(a.tainted?, b.tainted?)
       end
     end
@@ -780,8 +781,8 @@ class TestString < Test::Unit::TestCase
   end
 
   def test_empty?
-    assert(S("").empty?)
-    assert(!S("not").empty?)
+    assert_empty(S(""))
+    assert_not_empty(S("not"))
   end
 
   def test_end_with?
@@ -795,8 +796,8 @@ class TestString < Test::Unit::TestCase
 
   def test_eql?
     a = S("hello")
-    assert(a.eql?(S("hello")))
-    assert(a.eql?(a))
+    assert_operator(a, :eql?, S("hello"))
+    assert_operator(a, :eql?, a)
   end
 
   def test_gsub
@@ -809,7 +810,7 @@ class TestString < Test::Unit::TestCase
 
     a = S("hello")
     a.taint
-    assert(a.gsub(/./, S('X')).tainted?)
+    assert_predicate(a.gsub(/./, S('X')), :tainted?)
 
     assert_equal("z", "abc".gsub(/./, "a" => "z"), "moved from btest/knownbug")
 
@@ -853,7 +854,7 @@ class TestString < Test::Unit::TestCase
     r = S('X')
     r.taint
     a.gsub!(/./, r)
-    assert(a.tainted?)
+    assert_predicate(a, :tainted?)
 
     a = S("hello")
     assert_nil(a.sub!(S('X'), S('Y')))
@@ -881,7 +882,7 @@ class TestString < Test::Unit::TestCase
 
   def test_hash
     assert_equal(S("hello").hash, S("hello").hash)
-    assert(S("hello").hash != S("helLO").hash)
+    assert_not_equal(S("hello").hash, S("helLO").hash)
     bug4104 = '[ruby-core:33500]'
     assert_not_equal(S("a").hash, S("a\0").hash, bug4104)
   end
@@ -909,10 +910,10 @@ class TestString < Test::Unit::TestCase
   end
 
   def test_include?
-    assert( S("foobar").include?(?f))
-    assert( S("foobar").include?(S("foo")))
-    assert(!S("foobar").include?(S("baz")))
-    assert(!S("foobar").include?(?z))
+    assert_include(S("foobar"), ?f)
+    assert_include(S("foobar"), S("foo"))
+    assert_not_include(S("foobar"), S("baz"))
+    assert_not_include(S("foobar"), ?z)
   end
 
   def test_index
@@ -957,7 +958,7 @@ class TestString < Test::Unit::TestCase
 
   def test_intern
     assert_equal(:koala, S("koala").intern)
-    assert(:koala !=     S("Koala").intern)
+    assert_not_equal(:koala, S("Koala").intern)
   end
 
   def test_length
@@ -1044,7 +1045,7 @@ class TestString < Test::Unit::TestCase
     a.taint
     b = a.replace(S("xyz"))
     assert_equal(S("xyz"), b)
-    assert(b.tainted?)
+    assert_predicate(b, :tainted?)
 
     s = "foo" * 100
     s2 = ("bar" * 100).dup
@@ -1140,7 +1141,7 @@ class TestString < Test::Unit::TestCase
     a.taint
     res = []
     a.scan(/./) { |w| res << w }
-    assert(res[0].tainted?, '[ruby-core:33338] #4087')
+    assert_predicate(res[0], :tainted?, '[ruby-core:33338] #4087')
   end
 
   def test_size
@@ -1435,7 +1436,7 @@ class TestString < Test::Unit::TestCase
     a = S("hello")
     a.taint
     x = a.sub(/./, S('X'))
-    assert(x.tainted?)
+    assert_predicate(x, :tainted?)
 
     o = Object.new
     def o.to_str; "bar"; end
@@ -1477,7 +1478,7 @@ class TestString < Test::Unit::TestCase
     r = S('X')
     r.taint
     a.sub!(/./, r)
-    assert(a.tainted?)
+    assert_predicate(a, :tainted?)
   end
 
   def test_succ
@@ -1551,7 +1552,7 @@ class TestString < Test::Unit::TestCase
     n += S("\001")
     assert_equal(16, n.sum(17))
     n[0] = 2.chr
-    assert(15 != n.sum)
+    assert_not_equal(15, n.sum)
   end
 
   def check_sum(str, bits=16)
