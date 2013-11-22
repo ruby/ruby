@@ -1,3 +1,7 @@
+Fri Nov 22 17:07:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.gemspec: version 1.2.2.
+
 Fri Nov 22 17:04:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_data_type):
