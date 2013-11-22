@@ -1,7 +1,7 @@
 require 'rubygems'
 
 begin
-  gem 'minitest', '~> 4.0'
+  gem 'minitest', '~> 4.0' unless defined?(Test::Unit)
 rescue NoMethodError
   # for ruby tests
 end
