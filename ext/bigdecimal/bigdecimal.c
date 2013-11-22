@@ -2383,7 +2383,7 @@ retry:
 	GUARD_OBJ(y, VpCreateRbObject(1, "0"));
     }
     VpPower(y, x, int_exp);
-    if (VpIsDef(y)) {
+    if (!NIL_P(prec) && VpIsDef(y)) {
 	VpMidRound(y, VpGetRoundMode(), n);
     }
     return ToValue(y);

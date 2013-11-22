@@ -1,3 +1,8 @@
+Fri Nov 22 22:30:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_power):
+	  Round the result value only if the precision is given.
+
 Fri Nov 22 17:20:50 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* transcode.c (str_transcode0): don't scrub invalid chars if
