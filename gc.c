@@ -5260,7 +5260,7 @@ get_envparam_double(const char *name, double *default_value, double lower_bound)
 }
 
 void
-rb_gc_set_params(void)
+ruby_gc_set_params(void)
 {
     if (rb_safe_level() > 0) return;
 
@@ -5286,6 +5286,8 @@ rb_gc_set_params(void)
     get_envparam_int("RUBY_GC_HEAP_OLDSPACE_MAX", &gc_params.oldspace_limit_max, 0);
     get_envparam_double("RUBY_GC_HEAP_OLDSPACE_GROWTH_FACTOR", &gc_params.oldspace_limit_growth_factor, 1.0);
 }
+
+RUBY_ALIAS_FUNCTION_VOID(rb_gc_set_params(void), ruby_gc_set_params, (void))
 
 void
 rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *data)

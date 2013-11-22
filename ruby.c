@@ -1568,7 +1568,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     rb_define_readonly_boolean("$-a", opt->do_split);
 
     rb_set_safe_level(opt->safe_level);
-    rb_gc_set_params();
+    ruby_gc_set_params();
 
     return iseq;
 }

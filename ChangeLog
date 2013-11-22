@@ -1,3 +1,15 @@
+Fri Nov 22 16:19:52 2013  Narihiro Nakamura  <authornari@gmail.com>
+
+	* include/ruby/intern.h (rb_gc_set_params): Deprecate
+	  rb_gc_set_params because it's only used in ruby internal.
+
+	* internal.h (ruby_gc_set_params): Declare rb_gc_set_params's
+	  alias function.
+
+	* gc.c: ditto.
+
+	* ruby.c: use ruby_gc_set_params.
+
 Fri Nov 22 14:55:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigMath_s_exp): Insert rb_thread_check_ints.

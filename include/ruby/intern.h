@@ -482,7 +482,7 @@ void rb_gc_call_finalizer_at_exit(void);
 VALUE rb_gc_enable(void);
 VALUE rb_gc_disable(void);
 VALUE rb_gc_start(void);
-void rb_gc_set_params(void);
+DEPRECATED(void rb_gc_set_params(void));
 VALUE rb_define_finalizer(VALUE, VALUE);
 VALUE rb_undefine_finalizer(VALUE);
 /* hash.c */
