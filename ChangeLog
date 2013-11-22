@@ -20,7 +20,7 @@ Fri Nov 22 16:49:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 Fri Nov 22 16:25:43 2013  Koichi Sasada  <ko1@atdot.net>
 
-	* gc.c (heap_set_increment): accept minumum additional page number.
+	* gc.c (heap_set_increment): accept minimum additional page number.
 
 	* gc.c (gc_after_sweep): allocate pages to allocate at least
 	   RUBY_HEAP_MIN_SLOTS.
