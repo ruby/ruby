@@ -173,10 +173,18 @@ with all sufficient information, see the ChangeLog file.
 * Net::SMTP
   * Added Net::SMTP#rset to implement the RSET command
 
-* Pathname
-  * New methods:
-    * Pathname#write
-    * Pathname#binwrite
+* objspace
+  * new method:
+    * ObjectSpace.trace_object_allocations
+    * ObjectSpace.trace_object_allocations_start
+    * ObjectSpace.trace_object_allocations_stop
+    * ObjectSpace.trace_object_allocations_clear
+    * ObjectSpace.allocation_sourcefile
+    * ObjectSpace.allocation_sourceline
+    * ObjectSpace.allocation_class_path
+    * ObjectSpace.allocation_method_id
+    * ObjectSpace.allocation_generation
+    * ObjectSpace.reachable_objects_from_root
 
 * OpenSSL::BN
   * extended methods:
@@ -184,6 +192,11 @@ with all sufficient information, see the ChangeLog file.
 
 * open-uri
   * Support multiple fields with same field name (like Set-Cookie).
+
+* Pathname
+  * New methods:
+    * Pathname#write
+    * Pathname#binwrite
 
 * rake
   * Updated to 10.1.0.  Major changes include removal of the class namespace,
@@ -197,7 +210,7 @@ with all sufficient information, see the ChangeLog file.
     http://rake.rubyforge.org/doc/release_notes/rake-10_0_3_rdoc.html
 
 * RDoc
-  * Updated to 4.1.0.preview.1.  Major enhancements include a modified default
+  * Updated to 4.1.0.preview.2.  Major enhancements include a modified default
     template and accessibility enhancements.
 
     For a list of minor enhancements and bug fixes see:
@@ -227,7 +240,7 @@ with all sufficient information, see the ChangeLog file.
     Rinda::RingFinger for details.
 
 * RubyGems
-  * Updated to 2.2.0.preview.1  For a list of enhancements and bug fixes see:
+  * Updated to 2.2.0.preview.2  For a list of enhancements and bug fixes see:
     https://github.com/rubygems/rubygems/blob/v2.2.0.preview.1/History.txt
 
 * Set
@@ -276,19 +289,6 @@ with all sufficient information, see the ChangeLog file.
       HTTP client options instead of XMLRPC::Client#http.
 
 === Stdlib compatibility issues (excluding feature bug fixes)
-
-* objspace
-  * new method:
-    * ObjectSpace.trace_object_allocations
-    * ObjectSpace.trace_object_allocations_start
-    * ObjectSpace.trace_object_allocations_stop
-    * ObjectSpace.trace_object_allocations_clear
-    * ObjectSpace.allocation_sourcefile
-    * ObjectSpace.allocation_sourceline
-    * ObjectSpace.allocation_class_path
-    * ObjectSpace.allocation_method_id
-    * ObjectSpace.allocation_generation
-    * ObjectSpace.reachable_objects_from_root
 
 * Set
   * incompatible changes:
