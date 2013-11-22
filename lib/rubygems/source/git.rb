@@ -121,6 +121,12 @@ class Gem::Source::Git < Gem::Source
   end
 
   ##
+  # Nothing to download for git gems
+
+  def download full_spec, path # :nodoc:
+  end
+
+  ##
   # The directory where the git gem will be installed.
 
   def install_dir # :nodoc:

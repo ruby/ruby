@@ -1,3 +1,15 @@
+Sat Nov 23 03:44:03 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master dcce4ff.  Important changes
+	  in this commit:
+
+	  Remove automatic detection of gem dependencies files.  This prevents a
+	  security hole as described in [ruby-core:58490]
+
+	  Fixed bugs for installing git gems.
+
+	* test/rubygems:  ditto.
+
 Fri Nov 22 22:30:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_power):

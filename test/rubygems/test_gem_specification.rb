@@ -1738,6 +1738,10 @@ dependencies: []
     RbConfig::CONFIG['ENABLE_SHARED'] = enable_shared
   end
 
+  def test_source
+    assert_kind_of Gem::Source::Installed, @a1.source
+  end
+
   def test_full_require_paths
     ext_spec
 

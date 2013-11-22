@@ -23,9 +23,9 @@ class Gem::Resolver::ComposedSet < Gem::Resolver::Set
   # Finds all specs matching +req+ in all sets.
 
   def find_all req
-    res = []
-    @sets.each { |s| res += s.find_all(req) }
-    res
+    @sets.map do |s|
+      s.find_all req
+    end.flatten
   end
 
   ##

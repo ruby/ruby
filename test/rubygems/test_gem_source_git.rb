@@ -51,6 +51,10 @@ class TestGemSourceGit < Gem::TestCase
     assert_equal @head[0..11], @source.dir_shortref
   end
 
+  def test_download
+    refute @source.download nil, nil
+  end
+
   def test_equals2
     assert_equal @source, @source
 

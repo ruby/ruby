@@ -8,7 +8,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = '2.2.0.preview.2'
+  VERSION = '2.2.0'
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -995,12 +995,16 @@ module Gem
   # Looks for gem dependency files (gem.deps.rb, Gemfile, Isolate) from the
   # current directory up and activates the gems in the first file found.
   #
-  # This is run automatically when rubygems starts.  To disable, set
-  # the <code>RUBYGEMS_GEMDEPS=</code> environment variable to an empty
-  # string.
+  # You can run this automatically when rubygems starts.  To enable, set
+  # the <code>RUBYGEMS_GEMDEPS</code> environment variable to either the path
+  # of your Gemfile or "-" to auto-discover in parent directories.
+  #
+  # NOTE: Enabling automatic discovery on multiuser systems can lead to
+  # execution of arbitrary code when used from directories outside your
+  # control.
 
   def self.use_gemdeps
-    return unless path = ENV['RUBYGEMS_GEMDEPS'] || '-'
+    return unless path = ENV['RUBYGEMS_GEMDEPS']
     path = path.dup.untaint
 
     if path == "-"

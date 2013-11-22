@@ -2177,7 +2177,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Used by Gem::Resolver to order Gem::Specification objects
 
   def source # :nodoc:
-    self
+    Gem::Source::Installed.new
   end
 
   ##
