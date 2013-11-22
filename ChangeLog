@@ -1,3 +1,7 @@
+Fri Nov 22 13:18:28 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.c (ruby_strtod): BigMath requires more precision.
+
 Fri Nov 22 12:46:08 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (ruby_strtod): ignore too long fraction part, which does not
