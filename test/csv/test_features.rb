@@ -307,4 +307,11 @@ class TestCSV::Features < TestCSV
     c = CSV.new sample_data, :skip_lines => /\A\s*#/
     assert_equal c.each.to_a, [["line", "1", "a"], ["#not", "a", "line"], ["line", "2", "b"]]
   end
+
+  def test_string_works_like_a_regexp
+    sample_data = "line,1,a\n#(not,a,line\nline,2,b\n   also,#no,line"
+    c = CSV.new sample_data, :skip_lines => "#"
+    assert_equal c.each.to_a, [["line", "1", "a"], ["line", "2", "b"]]
+  end
+
 end
