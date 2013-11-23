@@ -2675,7 +2675,7 @@ BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
 {
     ssize_t prec, n, i;
     Real* vx = NULL;
-    VALUE one, d, x1, y, z;
+    VALUE one, d, y;
     int negative = 0;
     int infinite = 0;
     int nan = 0;
@@ -2751,11 +2751,9 @@ BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
     }
 
     one = ToValue(VpCreateRbObject(1, "1"));
-    x1  = one;
     y   = one;
     d   = y;
-    z   = one;
-    i   = 0;
+    i   = 1;
 
     while (!VpIsZero((Real*)DATA_PTR(d))) {
 	SIGNED_VALUE const ey = VpExponent10(DATA_PTR(y));
@@ -2771,11 +2769,10 @@ BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
 	    m = rmpd_double_figures();
 	}
 
-	x1 = BigDecimal_mult2(x1, x, SSIZET2NUM(n));
-	++i;
-	z = BigDecimal_mult(z, SSIZET2NUM(i));
-	d = BigDecimal_div2(x1, z, SSIZET2NUM(m));
-	y = BigDecimal_add(y, d);
+	d = BigDecimal_mult(d, x);                             /* d <- d * x */
+	d = BigDecimal_div2(d, SSIZET2NUM(i), SSIZET2NUM(m));  /* d <- d / i */
+	y = BigDecimal_add(y, d);                              /* y <- y + d  */
+	++i;                                                   /* i  <- i + 1 */
     }
 
     if (negative) {
@@ -2788,10 +2785,8 @@ BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
 
     RB_GC_GUARD(one);
     RB_GC_GUARD(x);
-    RB_GC_GUARD(x1);
     RB_GC_GUARD(y);
     RB_GC_GUARD(d);
-    RB_GC_GUARD(z);
 }
 
 /* call-seq:
