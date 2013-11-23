@@ -1470,11 +1470,12 @@ class CSV
   # <b><tt>:skip_lines</tt></b>::         When set to an object responding to
   #                                       <tt>match</tt>, every line matching
   #                                       it is considered a comment and ignored
-  #                                       during parsing. When set to +nil+
-  #                                       no line is considered a comment.
-  #                                       If the passed object does not respond
-  #                                       to <tt>match</tt>, <tt>ArgumentError</tt>
-  #                                       is thrown.
+  #                                       during parsing. When set to a String,
+  #                                       it is first converted to a Regexp.
+  #                                       When set to +nil+ no line is considered
+  #                                       a comment. If the passed object does
+  #                                       not respond to <tt>match</tt>,
+  #                                       <tt>ArgumentError</tt> is thrown.
   #
   # See CSV::DEFAULT_OPTIONS for the default settings.
   #
@@ -2120,10 +2121,12 @@ class CSV
   # Stores the pattern of comments to skip from the provided options.
   #
   # The pattern must respond to +.match+, else ArgumentError is raised.
+  # Strings are converted to a Regexp.
   #
   # See also CSV.new
   def init_comments(options)
     @skip_lines = options.delete(:skip_lines)
+    @skip_lines = Regexp.new(@skip_lines) if @skip_lines.is_a? String
     if @skip_lines and not @skip_lines.respond_to?(:match)
       raise ArgumentError, ":skip_lines has to respond to matches"
     end
