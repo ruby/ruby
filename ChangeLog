@@ -1,3 +1,8 @@
+Sun Nov 24 01:03:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_power): Use FIX2LONG instead
+	  of FIX2INT to avoid conversion error.
+
 Sun Nov 24 00:44:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (RBIGNUM_EMBED_LEN_MAX): define by macros

@@ -2194,7 +2194,7 @@ BigDecimal_power(int argc, VALUE*argv, VALUE self)
 	return ToValue(y);
     }
 
-retry:
+  retry:
     switch (TYPE(vexp)) {
       case T_FIXNUM:
 	break;
@@ -2381,7 +2381,7 @@ retry:
 	}
     }
 
-    int_exp = FIX2INT(vexp);
+    int_exp = FIX2LONG(vexp);
     ma = int_exp;
     if (ma <  0) ma = -ma;
     if (ma == 0) ma = 1;
