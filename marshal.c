@@ -797,8 +797,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    if (NIL_P(RHASH_IFNONE(obj))) {
 		w_byte(TYPE_HASH, arg);
 	    }
-	    else if (FL_TEST(obj, FL_USER2)) {
-		/* FL_USER2 means HASH_PROC_DEFAULT (see hash.c) */
+	    else if (FL_TEST(obj, HASH_PROC_DEFAULT)) {
 		rb_raise(rb_eTypeError, "can't dump hash with default proc");
 	    }
 	    else {

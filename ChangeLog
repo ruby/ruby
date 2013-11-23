@@ -1,3 +1,7 @@
+Sat Nov 23 09:45:49 2013  Aman Gupta <ruby@tmm1.net>
+
+	* marshal.c (w_object): Use HASH_PROC_DEFAULT directly from internal.h
+
 Sat Nov 23 08:43:23 2013  Aman Gupta <ruby@tmm1.net>
 
 	* gc.c: Rename heap_pages_swept_num to heap_pages_swept_slots to
