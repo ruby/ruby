@@ -1,3 +1,8 @@
+Sat Nov 23 19:52:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/lib/bigdecimal/math.rb (BigMath.E): Use BigMath.exp.
+	  [Feature #6857] [ruby-core:47130]
+
 Sat Nov 23 19:46:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigMath_s_exp): Optimize the
