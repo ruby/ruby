@@ -1,3 +1,8 @@
+Sat Nov 23 22:22:26 2013  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/ruby.h (RBIGNUM_EMBED_LEN_MAX): Limit the value to
+	  less than 8.
+
 Sat Nov 23 19:52:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/lib/bigdecimal/math.rb (BigMath.E): Use BigMath.exp.
