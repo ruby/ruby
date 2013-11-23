@@ -316,7 +316,7 @@ Thu Nov 21 13:43:07 2013  Koichi Sasada  <ko1@atdot.net>
 	  "struct reflist".
 
 	* gc.c (init_mark_stack): do not use push_mark_stack_chunk() at init.
-	  This pre-allocation causes failure on is_mark_stask_empty()
+	  This pre-allocation causes failure on is_mark_stack_empty()
 	  without any pushing.
 
 Thu Nov 21 13:40:20 2013  Zachary Scott  <e@zzak.io>

@@ -3030,7 +3030,7 @@ stack_chunk_alloc(void)
 }
 
 static inline int
-is_mark_stask_empty(mark_stack_t *stack)
+is_mark_stack_empty(mark_stack_t *stack)
 {
     return stack->chunk == NULL;
 }
@@ -3117,7 +3117,7 @@ push_mark_stack(mark_stack_t *stack, VALUE data)
 static int
 pop_mark_stack(mark_stack_t *stack, VALUE *data)
 {
-    if (is_mark_stask_empty(stack)) {
+    if (is_mark_stack_empty(stack)) {
         return FALSE;
     }
     if (stack->index == 1) {
