@@ -109,26 +109,32 @@ class TestGc < Test::Unit::TestCase
   def test_gc_parameter
     env = {
       "RUBY_GC_MALLOC_LIMIT" => "60000000",
-      "RUBY_HEAP_MIN_SLOTS" => "100000"
+      "RUBY_GC_HEAP_INIT_SLOTS" => "100000"
     }
     assert_normal_exit("exit", "[ruby-core:39777]", :child_env => env)
 
     env = {
       "RUBYOPT" => "",
-      "RUBY_HEAP_MIN_SLOTS" => "100000"
+      "RUBY_GC_HEAP_INIT_SLOTS" => "100000"
     }
     assert_in_out_err([env, "-e", "exit"], "", [], [], "[ruby-core:39795]")
     assert_in_out_err([env, "-W0", "-e", "exit"], "", [], [], "[ruby-core:39795]")
     assert_in_out_err([env, "-W1", "-e", "exit"], "", [], [], "[ruby-core:39795]")
-    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /HEAP_MIN_SLOTS=100000/, "[ruby-core:39795]")
+    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_HEAP_INIT_SLOTS=100000/, "[ruby-core:39795]")
 
     env = {
-      "RUBY_HEAP_SLOTS_GROWTH_FACTOR" => "2.0",
-      "RUBY_HEAP_SLOTS_GROWTH_MAX" => "10000"
+      "RUBY_GC_HEAP_GROWTH_FACTOR" => "2.0",
+      "RUBY_GC_HEAP_GROWTH_MAX_SLOTS" => "10000"
     }
     assert_normal_exit("exit", "", :child_env => env)
-    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /HEAP_SLOTS_GROWTH_FACTOR=2.0/, "")
-    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /HEAP_SLOTS_GROWTH_MAX=10000/, "[ruby-core:57928]")
+    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_HEAP_GROWTH_FACTOR=2.0/, "")
+    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_HEAP_GROWTH_MAX_SLOTS=10000/, "[ruby-core:57928]")
+
+    # check obsolete
+    assert_in_out_err([{'RUBY_FREE_MIN' => '100'}, '-w', '-eexit'], '', [],
+      /RUBY_FREE_MIN is obsolete. Use RUBY_GC_HEAP_FREE_SLOTS instead/)
+    assert_in_out_err([{'RUBY_HEAP_MIN_SLOTS' => '100'}, '-w', '-eexit'], '', [],
+      /RUBY_HEAP_MIN_SLOTS is obsolete. Use RUBY_GC_HEAP_INIT_SLOTS instead/)
 
     env = {
       "RUBY_GC_MALLOC_LIMIT"               => "60000000",
@@ -139,6 +145,16 @@ class TestGc < Test::Unit::TestCase
     assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_MALLOC_LIMIT=6000000/, "")
     assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_MALLOC_LIMIT_MAX=16000000/, "")
     assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR=2.0/, "")
+
+    env = {
+      "RUBY_GC_OLDSPACE_LIMIT"               => "60000000",
+      "RUBY_GC_OLDSPACE_LIMIT_MAX"           => "160000000",
+      "RUBY_GC_OLDSPACE_LIMIT_GROWTH_FACTOR" => "2.0"
+    }
+    assert_normal_exit("exit", "", :child_env => env)
+    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_OLDSPACE_LIMIT=6000000/, "")
+    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_OLDSPACE_LIMIT_MAX=16000000/, "")
+    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_OLDSPACE_LIMIT_GROWTH_FACTOR=2.0/, "")
   end
 
   def test_profiler_enabled

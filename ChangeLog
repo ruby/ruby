@@ -1,3 +1,27 @@
+Sat Nov 23 12:31:00 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: fix gloval variable name.
+	  Now we have following environments (and related variable names).
+
+	  * RUBY_GC_HEAP_INIT_SLOTS
+	  * RUBY_GC_HEAP_FREE_SLOTS
+	  * RUBY_GC_HEAP_GROWTH_FACTOR (new from 2.1)
+	  * RUBY_GC_HEAP_GROWTH_MAX_SLOTS (new from 2.1)
+
+	  * obsolete
+	    * RUBY_FREE_MIN       -> RUBY_GC_HEAP_FREE_SLOTS (from 2.1)
+	    * RUBY_HEAP_MIN_SLOTS -> RUBY_GC_HEAP_INIT_SLOTS (from 2.1)
+
+	  * RUBY_GC_MALLOC_LIMIT
+	  * RUBY_GC_MALLOC_LIMIT_MAX (new from 2.1)
+	  * RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR (new from 2.1)
+
+	  * RUBY_GC_OLDSPACE_LIMIT (new from 2.1)
+	  * RUBY_GC_OLDSPACE_LIMIT_MAX (new from 2.1)
+	  * RUBY_GC_OLDSPACE_LIMIT_GROWTH_FACTOR (new from 2.1)
+
+	* test/ruby/test_gc.rb: catch up this change.
+
 Sat Nov 23 09:45:49 2013  Aman Gupta <ruby@tmm1.net>
 
 	* marshal.c (w_object): Use HASH_PROC_DEFAULT directly from internal.h
