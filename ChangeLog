@@ -1,6 +1,6 @@
 Sat Nov 23 12:31:00 2013  Koichi Sasada  <ko1@atdot.net>
 
-	* gc.c: fix gloval variable name.
+	* gc.c: fix global variable name.
 	  Now we have following environments (and related variable names).
 
 	  * RUBY_GC_HEAP_INIT_SLOTS
