@@ -310,3 +310,7 @@ with all sufficient information, see the ChangeLog file.
     is raised.
 
 === C API updates
+
+* rb_gc_set_params() is deprecated. This is only used in Ruby internal.
+
+* rb_gc_count() added. This returns the number of times GC occurred.
