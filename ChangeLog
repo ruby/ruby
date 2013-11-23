@@ -1,3 +1,9 @@
+Sat Nov 23 13:38:00 2013  Kyle Stevens  <kstevens715@gmail.com>
+
+	* lib/csv.rb: If skip_lines is set to a String, convert it to a Regexp
+	  to prevent the alternative, which is that each line in the CSV gets
+	  converted to a Regexp when calling skip_lines#match.
+
 Sun Nov 24 01:03:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_power): Use FIX2LONG instead
