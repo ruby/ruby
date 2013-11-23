@@ -1069,9 +1069,11 @@ struct RStruct {
 
 #define RBIGNUM_EMBED_LEN_NUMBITS 3
 #ifndef RBIGNUM_EMBED_LEN_MAX
-# define RBIGNUM_EMBED_LEN_MAX \
-    (((int)((sizeof(VALUE)*3)/sizeof(BDIGIT))) < (1 << RBIGNUM_EMBED_LEN_NUMBITS)-1 ? \
-     ((int)((sizeof(VALUE)*3)/sizeof(BDIGIT))) : (1 << RBIGNUM_EMBED_LEN_NUMBITS)-1)
+# if (SIZEOF_VALUE*3/SIZEOF_BDIGITS) < (1 << RBIGNUM_EMBED_LEN_NUMBITS)-1
+#   define RBIGNUM_EMBED_LEN_MAX (SIZEOF_VALUE*3/SIZEOF_BDIGITS)
+# else
+#   define RBIGNUM_EMBED_LEN_MAX ((1 << RBIGNUM_EMBED_LEN_NUMBITS)-1)
+# endif
 #endif
 struct RBignum {
     struct RBasic basic;

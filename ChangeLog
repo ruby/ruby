@@ -1,3 +1,8 @@
+Sun Nov 24 00:44:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (RBIGNUM_EMBED_LEN_MAX): define by macros
+	  defined in defines.h, instead of complex and repeated expression.
+
 Sat Nov 23 22:22:26 2013  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/ruby.h (RBIGNUM_EMBED_LEN_MAX): Limit the value to
