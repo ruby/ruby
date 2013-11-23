@@ -1,3 +1,11 @@
+Sat Nov 23 19:20:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_div2): The signature was
+	  changed to allow us to pass arguments directly.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_div3): Added for the role of
+	  the old BigDecimal_div2.
+
 Sat Nov 23 12:31:00 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: fix global variable name.

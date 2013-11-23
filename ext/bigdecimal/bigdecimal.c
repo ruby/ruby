@@ -190,13 +190,13 @@ cannot_be_coerced_into_BigDecimal(VALUE exc_class, VALUE v)
     rb_exc_raise(rb_exc_new3(exc_class, str));
 }
 
-static VALUE BigDecimal_div2(int, VALUE*, VALUE);
+static inline VALUE BigDecimal_div2(VALUE, VALUE, VALUE);
 
 static Real*
 GetVpValueWithPrec(VALUE v, long prec, int must)
 {
     Real *pv;
-    VALUE num, bg, args[2];
+    VALUE num, bg;
     char szD[128];
     VALUE orig = Qundef;
 
@@ -215,9 +215,7 @@ again:
 	    pv = GetVpValueWithPrec(num, -1, must);
 	    if (pv == NULL) goto SomeOneMayDoIt;
 
-	    args[0] = RRATIONAL(v)->den;
-	    args[1] = LONG2NUM(prec);
-	    v = BigDecimal_div2(2, args, ToValue(pv));
+	    v = BigDecimal_div2(ToValue(pv), RRATIONAL(v)->den, LONG2NUM(prec));
 	    goto again;
 	}
 
@@ -1456,40 +1454,53 @@ BigDecimal_divmod(VALUE self, VALUE r)
 /*
  * See BigDecimal#quo
  */
-static VALUE
-BigDecimal_div2(int argc, VALUE *argv, VALUE self)
+static inline VALUE
+BigDecimal_div2(VALUE self, VALUE b, VALUE n)
 {
     ENTER(5);
-    VALUE b,n;
-    int na = rb_scan_args(argc, argv, "11", &b, &n);
-    if (na == 1) { /* div in Float sense */
-	Real *div = NULL;
-	Real *mod;
-	if (BigDecimal_DoDivmod(self, b, &div, &mod)) {
-	    return BigDecimal_to_i(ToValue(div));
-	}
-	return DoSomeOne(self, b, rb_intern("div"));
-    } else {    /* div in BigDecimal sense */
-	SIGNED_VALUE ix = GetPositiveInt(n);
-	if (ix == 0) return BigDecimal_div(self, b);
-	else {
-	    Real *res = NULL;
-	    Real *av = NULL, *bv = NULL, *cv = NULL;
-	    size_t mx = ix + VpBaseFig()*2;
-	    size_t pl = VpSetPrecLimit(0);
+    SIGNED_VALUE ix;
 
-	    GUARD_OBJ(cv, VpCreateRbObject(mx, "0"));
-	    GUARD_OBJ(av, GetVpValue(self, 1));
-	    GUARD_OBJ(bv, GetVpValue(b, 1));
-	    mx = av->Prec + bv->Prec + 2;
-	    if (mx <= cv->MaxPrec) mx = cv->MaxPrec + 1;
-	    GUARD_OBJ(res, VpCreateRbObject((mx * 2  + 2)*VpBaseFig(), "#0"));
-	    VpDivd(cv, res, av, bv);
-	    VpSetPrecLimit(pl);
-	    VpLeftRound(cv, VpGetRoundMode(), ix);
-	    return ToValue(cv);
-	}
+    if (NIL_P(n)) { /* div in Float sense */
+        Real *div = NULL;
+        Real *mod;
+        if (BigDecimal_DoDivmod(self, b, &div, &mod)) {
+            return BigDecimal_to_i(ToValue(div));
+        }
+        return DoSomeOne(self, b, rb_intern("div"));
     }
+
+    /* div in BigDecimal sense */
+    ix = GetPositiveInt(n);
+    if (ix == 0) {
+        return BigDecimal_div(self, b);
+    }
+    else {
+        Real *res = NULL;
+        Real *av = NULL, *bv = NULL, *cv = NULL;
+        size_t mx = ix + VpBaseFig()*2;
+        size_t pl = VpSetPrecLimit(0);
+
+        GUARD_OBJ(cv, VpCreateRbObject(mx, "0"));
+        GUARD_OBJ(av, GetVpValue(self, 1));
+        GUARD_OBJ(bv, GetVpValue(b, 1));
+        mx = av->Prec + bv->Prec + 2;
+        if (mx <= cv->MaxPrec) mx = cv->MaxPrec + 1;
+        GUARD_OBJ(res, VpCreateRbObject((mx * 2  + 2)*VpBaseFig(), "#0"));
+        VpDivd(cv, res, av, bv);
+        VpSetPrecLimit(pl);
+        VpLeftRound(cv, VpGetRoundMode(), ix);
+        return ToValue(cv);
+    }
+}
+
+static VALUE
+BigDecimal_div3(int argc, VALUE *argv, VALUE self)
+{
+    VALUE b,n;
+
+    rb_scan_args(argc, argv, "11", &b, &n);
+
+    return BigDecimal_div2(self, b, n);
 }
 
 static VALUE
@@ -2747,7 +2758,6 @@ BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
     i   = 0;
 
     while (!VpIsZero((Real*)DATA_PTR(d))) {
-	VALUE argv[2];
 	SIGNED_VALUE const ey = VpExponent10(DATA_PTR(y));
 	SIGNED_VALUE const ed = VpExponent10(DATA_PTR(d));
 	ssize_t m = n - vabs(ey - ed);
@@ -2764,17 +2774,12 @@ BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
 	x1 = BigDecimal_mult2(x1, x, SSIZET2NUM(n));
 	++i;
 	z = BigDecimal_mult(z, SSIZET2NUM(i));
-	argv[0] = z;
-	argv[1] = SSIZET2NUM(m);
-	d = BigDecimal_div2(2, argv, x1);
+	d = BigDecimal_div2(x1, z, SSIZET2NUM(m));
 	y = BigDecimal_add(y, d);
     }
 
     if (negative) {
-	VALUE argv[2];
-	argv[0] = y;
-	argv[1] = vprec;
-	return BigDecimal_div2(2, argv, one);
+	return BigDecimal_div2(one, y, vprec);
     }
     else {
 	vprec = SSIZET2NUM(prec - VpExponent10(DATA_PTR(y)));
@@ -2807,7 +2812,7 @@ BigMath_s_log(VALUE klass, VALUE x, VALUE vprec)
     ssize_t prec, n, i;
     SIGNED_VALUE expo;
     Real* vx = NULL;
-    VALUE argv[2], vn, one, two, w, x2, y, d;
+    VALUE vn, one, two, w, x2, y, d;
     int zero = 0;
     int negative = 0;
     int infinite = 0;
@@ -2913,9 +2918,7 @@ get_vp_value:
 	expo = 0;
     }
     w = BigDecimal_sub(x, one);
-    argv[0] = BigDecimal_add(x, one);
-    argv[1] = vn;
-    x = BigDecimal_div2(2, argv, w);
+    x = BigDecimal_div2(w, BigDecimal_add(x, one), vn);
     RB_GC_GUARD(x2) = BigDecimal_mult2(x, x, vn);
     RB_GC_GUARD(y)  = x;
     RB_GC_GUARD(d)  = y;
@@ -2933,9 +2936,7 @@ get_vp_value:
 
 	x = BigDecimal_mult2(x2, x, vn);
 	i += 2;
-	argv[0] = SSIZET2NUM(i);
-	argv[1] = SSIZET2NUM(m);
-	d = BigDecimal_div2(2, argv, x);
+	d = BigDecimal_div2(x, SSIZET2NUM(i), SSIZET2NUM(m));
 	y = BigDecimal_add(y, d);
     }
 
@@ -3214,7 +3215,7 @@ Init_bigdecimal(void)
     rb_define_method(rb_cBigDecimal, "add", BigDecimal_add2, 2);
     rb_define_method(rb_cBigDecimal, "sub", BigDecimal_sub2, 2);
     rb_define_method(rb_cBigDecimal, "mult", BigDecimal_mult2, 2);
-    rb_define_method(rb_cBigDecimal, "div", BigDecimal_div2, -1);
+    rb_define_method(rb_cBigDecimal, "div", BigDecimal_div3, -1);
     rb_define_method(rb_cBigDecimal, "hash", BigDecimal_hash, 0);
     rb_define_method(rb_cBigDecimal, "to_s", BigDecimal_to_s, -1);
     rb_define_method(rb_cBigDecimal, "to_i", BigDecimal_to_i, 0);
