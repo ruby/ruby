@@ -328,6 +328,7 @@ typedef struct RVALUE {
 	    VALUE flags;		/* always 0 for freed obj */
 	    struct RVALUE *next;
 	} free;
+	struct RValueStorage storage;
 	struct RBasic  basic;
 	struct RObject object;
 	struct RClass  klass;
