@@ -147,14 +147,14 @@ class TestGc < Test::Unit::TestCase
     assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR=2.0/, "")
 
     env = {
-      "RUBY_GC_OLDSPACE_LIMIT"               => "60000000",
-      "RUBY_GC_OLDSPACE_LIMIT_MAX"           => "160000000",
-      "RUBY_GC_OLDSPACE_LIMIT_GROWTH_FACTOR" => "2.0"
+      "RUBY_GC_OLDMALLOC_LIMIT"               => "60000000",
+      "RUBY_GC_OLDMALLOC_LIMIT_MAX"           => "160000000",
+      "RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR" => "2.0"
     }
     assert_normal_exit("exit", "", :child_env => env)
-    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_OLDSPACE_LIMIT=6000000/, "")
-    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_OLDSPACE_LIMIT_MAX=16000000/, "")
-    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_OLDSPACE_LIMIT_GROWTH_FACTOR=2.0/, "")
+    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_OLDMALLOC_LIMIT=6000000/, "")
+    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_OLDMALLOC_LIMIT_MAX=16000000/, "")
+    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR=2.0/, "")
   end
 
   def test_profiler_enabled
