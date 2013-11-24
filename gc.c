@@ -5024,15 +5024,26 @@ gc_count(VALUE self)
  *  The hash includes information about internal statistics about GC such as:
  *
  *	{
- *	    :count=>0,
- *	    :heap_used=>12,
- *     	    :heap_length=>12,
- *     	    :heap_increment=>0,
- *     	    :heap_live_num=>7539,
- *     	    :heap_free_num=>88,
- *     	    :heap_final_num=>0,
- *     	    :total_allocated_object=>7630,
- *     	    :total_freed_object=>88
+ *          :count=>2,
+ *          :heap_used=>9,
+ *          :heap_length=>11,
+ *          :heap_increment=>2,
+ *          :heap_live_slot=>6836,
+ *          :heap_free_slot=>519,
+ *          :heap_final_slot=>0,
+ *          :heap_swept_slot=>818,
+ *          :total_allocated_object=>7674,
+ *          :total_freed_object=>838,
+ *          :malloc_increase=>181034,
+ *          :malloc_limit=>16777216,
+ *          :minor_gc_count=>2,
+ *          :major_gc_count=>0,
+ *          :remembered_shady_object=>55,
+ *          :remembered_shady_object_limit=>0,
+ *          :old_object=>2422,
+ *          :old_object_limit=>0,
+ *          :oldmalloc_increase=>277386,
+ *          :oldmalloc_limit=>16777216
  *	}
  *
  *  The contents of the hash are implementation specific and may be changed in
@@ -5049,10 +5060,16 @@ gc_stat(int argc, VALUE *argv, VALUE self)
     VALUE hash;
     static VALUE sym_count;
     static VALUE sym_heap_used, sym_heap_length, sym_heap_increment;
-    static VALUE sym_heap_live_num, sym_heap_free_num, sym_heap_final_num;
+    static VALUE sym_heap_live_slot, sym_heap_free_slot, sym_heap_final_slot, sym_heap_swept_slot;
     static VALUE sym_total_allocated_object, sym_total_freed_object;
+    static VALUE sym_malloc_increase, sym_malloc_limit;
 #if USE_RGENGC
     static VALUE sym_minor_gc_count, sym_major_gc_count;
+    static VALUE sym_remembered_shady_object, sym_remembered_shady_object_limit;
+    static VALUE sym_old_object, sym_old_object_limit;
+#if RGENGC_ESTIMATE_OLDSPACE
+    static VALUE sym_oldmalloc_increase, sym_oldmalloc_limit;
+#endif
 #if RGENGC_PROFILE
     static VALUE sym_generated_normal_object_count, sym_generated_shady_object_count;
     static VALUE sym_shade_operation_count, sym_promote_infant_count, sym_promote_young_count;
@@ -5066,14 +5083,25 @@ gc_stat(int argc, VALUE *argv, VALUE self)
 	S(heap_used);
 	S(heap_length);
 	S(heap_increment);
-	S(heap_live_num);
-	S(heap_free_num);
-	S(heap_final_num);
+	S(heap_live_slot);
+	S(heap_free_slot);
+	S(heap_final_slot);
+	S(heap_swept_slot);
 	S(total_allocated_object);
 	S(total_freed_object);
+	S(malloc_increase);
+	S(malloc_limit);
 #if USE_RGENGC
 	S(minor_gc_count);
 	S(major_gc_count);
+	S(remembered_shady_object);
+	S(remembered_shady_object_limit);
+	S(old_object);
+	S(old_object_limit);
+#if RGENGC_ESTIMATE_OLDSPACE
+	S(oldmalloc_increase);
+	S(oldmalloc_limit);
+#endif
 #if RGENGC_PROFILE
 	S(generated_normal_object_count);
 	S(generated_shady_object_count);
@@ -5097,32 +5125,43 @@ gc_stat(int argc, VALUE *argv, VALUE self)
         hash = rb_hash_new();
     }
 
-    rb_hash_aset(hash, sym_count, SIZET2NUM(objspace->profile.count));
+#define SET(name, attr) rb_hash_aset(hash, sym_##name, SIZET2NUM(attr))
+    SET(count, objspace->profile.count);
+
     /* implementation dependent counters */
-    rb_hash_aset(hash, sym_heap_used, SIZET2NUM(heap_pages_used));
-    rb_hash_aset(hash, sym_heap_final_num, SIZET2NUM(heap_pages_final_num));
-
-    rb_hash_aset(hash, sym_heap_length, SIZET2NUM(heap_pages_length));
-    rb_hash_aset(hash, sym_heap_increment, SIZET2NUM(heap_pages_increment));
-
-    rb_hash_aset(hash, sym_heap_live_num, SIZET2NUM(objspace_live_num(objspace)));
-    rb_hash_aset(hash, sym_heap_free_num, SIZET2NUM(objspace_free_num(objspace)));
-
-    rb_hash_aset(hash, sym_total_allocated_object, SIZET2NUM(objspace->profile.total_allocated_object_num));
-    rb_hash_aset(hash, sym_total_freed_object, SIZET2NUM(objspace->profile.total_freed_object_num));
+    SET(heap_used, heap_pages_used);
+    SET(heap_length, heap_pages_length);
+    SET(heap_increment, heap_pages_increment);
+    SET(heap_live_slot, objspace_live_num(objspace));
+    SET(heap_free_slot, objspace_free_num(objspace));
+    SET(heap_final_slot, heap_pages_final_num);
+    SET(heap_swept_slot, heap_pages_swept_slots);
+    SET(total_allocated_object, objspace->profile.total_allocated_object_num);
+    SET(total_freed_object, objspace->profile.total_freed_object_num);
+    SET(malloc_increase, malloc_increase);
+    SET(malloc_limit, malloc_limit);
 #if USE_RGENGC
-    rb_hash_aset(hash, sym_minor_gc_count, SIZET2NUM(objspace->profile.minor_gc_count));
-    rb_hash_aset(hash, sym_major_gc_count, SIZET2NUM(objspace->profile.major_gc_count));
-#if RGENGC_PROFILE
-    rb_hash_aset(hash, sym_generated_normal_object_count, SIZET2NUM(objspace->profile.generated_normal_object_count));
-    rb_hash_aset(hash, sym_generated_shady_object_count, SIZET2NUM(objspace->profile.generated_shady_object_count));
-    rb_hash_aset(hash, sym_shade_operation_count, SIZET2NUM(objspace->profile.shade_operation_count));
-    rb_hash_aset(hash, sym_promote_infant_count, SIZET2NUM(objspace->profile.promote_infant_count));
-#if RGENGC_THREEGEN
-    rb_hash_aset(hash, sym_promote_young_count, SIZET2NUM(objspace->profile.promote_young_count));
+    SET(minor_gc_count, objspace->profile.minor_gc_count);
+    SET(major_gc_count, objspace->profile.major_gc_count);
+    SET(remembered_shady_object, objspace->rgengc.remembered_shady_object_count);
+    SET(remembered_shady_object_limit, objspace->rgengc.remembered_shady_object_limit);
+    SET(old_object, objspace->rgengc.old_object_count);
+    SET(old_object_limit, objspace->rgengc.old_object_limit);
+#if RGENGC_ESTIMATE_OLDSPACE
+    SET(oldmalloc_increase, objspace->rgengc.oldspace_increase);
+    SET(oldmalloc_limit, objspace->rgengc.oldspace_increase_limit);
 #endif
-    rb_hash_aset(hash, sym_remembered_normal_object_count, SIZET2NUM(objspace->profile.remembered_normal_object_count));
-    rb_hash_aset(hash, sym_remembered_shady_object_count, SIZET2NUM(objspace->profile.remembered_shady_object_count));
+
+#if RGENGC_PROFILE
+    SET(generated_normal_object_count, objspace->profile.generated_normal_object_count);
+    SET(generated_shady_object_count, objspace->profile.generated_shady_object_count);
+    SET(shade_operation_count, objspace->profile.shade_operation_count);
+    SET(promote_infant_count, objspace->profile.promote_infant_count);
+#if RGENGC_THREEGEN
+    SET(promote_young_count, objspace->profile.promote_young_count);
+#endif
+    SET(remembered_normal_object_count, objspace->profile.remembered_normal_object_count);
+    SET(remembered_shady_object_count, objspace->profile.remembered_shady_object_count);
 #if RGENGC_PROFILE >= 2
     {
 	gc_count_add_each_types(hash, "generated_normal_object_count_types", objspace->profile.generated_normal_object_count_types);
@@ -5138,7 +5177,7 @@ gc_stat(int argc, VALUE *argv, VALUE self)
 #endif
 #endif /* RGENGC_PROFILE */
 #endif /* USE_RGENGC */
-
+#undef SET
     return hash;
 }
 

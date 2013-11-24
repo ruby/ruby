@@ -1,3 +1,27 @@
+Mon Nov 25 04:03:12 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_stat): add internal information.
+	  * heap_swept_slot
+	  * malloc_increase
+	  * malloc_limit
+	  * remembered_shady_object
+	  * remembered_shady_object_limit
+	  * old_object
+	  * old_object_limit
+	  * oldmalloc_increase
+	  * oldmalloc_limit
+
+	* gc.c (gc_stat): rename names.
+	  * heap_live_num -> heap_live_slot
+	  * heap_free_num -> heap_free_slot
+	  * heap_final_slot -> heap_final_slot
+
+	  Quote from RDoc of GC.stat():
+	    "The contents of the hash are implementation specific and may
+	    be changed in the future."
+
+	* test/ruby/test_gc.rb: catch up this change.
+
 Mon Nov 25 03:59:45 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_gc.rb: catch up last commit.
