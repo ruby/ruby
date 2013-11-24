@@ -168,11 +168,15 @@ void xfree(void*);
 # else
 #  define BDIGIT unsigned short
 #  define SIZEOF_BDIGITS (SIZEOF_LONG/2)
+#  define SIZEOF_ACTUAL_BDIGIT SIZEOF_LONG
 #  define BDIGIT_DBL unsigned long
 #  define BDIGIT_DBL_SIGNED long
 #  define PRI_BDIGIT_PREFIX "h"
 #  define PRI_BDIGIT_DBL_PREFIX "l"
 # endif
+#endif
+#ifndef SIZEOF_ACTUAL_BDIGIT
+# define SIZEOF_ACTUAL_BDIGIT SIZEOF_BDIGITS
 #endif
 
 #ifdef PRI_BDIGIT_PREFIX
