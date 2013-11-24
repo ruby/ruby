@@ -185,6 +185,8 @@ with all sufficient information, see the ChangeLog file.
     * ObjectSpace.allocation_method_id
     * ObjectSpace.allocation_generation
     * ObjectSpace.reachable_objects_from_root
+    * ObjectSpace.dump
+    * ObjectSpace.dump_all
 
 * OpenSSL::BN
   * extended methods:
@@ -314,3 +316,16 @@ with all sufficient information, see the ChangeLog file.
 * rb_gc_set_params() is deprecated. This is only used in Ruby internal.
 
 * rb_gc_count() added. This returns the number of times GC occurred.
+
+* rb_postponed_job_register() added. Takes a function callback which is invoked
+  when the VM is in a consistent state, i.e. to perform work from a C signal
+  handler.
+
+* rb_profile_frames() added. Provides low-cost access to the current ruby stack
+  for callstack profiling.
+
+* rb_tracepoint_new() supports new internal events accessible only from C:
+  * RUBY_INTERNAL_EVENT_NEWOBJ
+  * RUBY_INTERNAL_EVENT_FREEOBJ
+  * RUBY_INTERNAL_EVENT_GC_START
+  * RUBY_INTERNAL_EVENT_GC_END
