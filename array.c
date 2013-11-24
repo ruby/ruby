@@ -28,6 +28,8 @@ VALUE rb_cArray;
 
 static ID id_cmp, id_div, id_power;
 
+STATIC_ASSERT(rbarray_embed_len_max, RARRAY_EMBED_LEN_MAX <= (RARRAY_EMBED_LEN_MASK >>_ RSTRUCT_EMBED_LEN_SHIFT));
+
 #define ARY_DEFAULT_SIZE 16
 #define ARY_MAX_SIZE (LONG_MAX / (int)sizeof(VALUE))
 
