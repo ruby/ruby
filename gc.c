@@ -201,14 +201,14 @@ static ruby_gc_params_t gc_params = {
 #define RGENGC_THREEGEN    0
 #endif
 
-/* RGENGC_ESTIMATE_OLDSPACE
- * Enable/disable to estimate increase size of oldspace.
+/* RGENGC_ESTIMATE_OLDMALLOC
+ * Enable/disable to estimate increase size of malloc'ed size by old objects.
  * If estimation exceeds threashold, then will invoke full GC.
  * 0: disable estimation.
  * 1: enable estimation.
  */
-#ifndef RGENGC_ESTIMATE_OLDSPACE
-#define RGENGC_ESTIMATE_OLDSPACE 1
+#ifndef RGENGC_ESTIMATE_OLDMALLOC
+#define RGENGC_ESTIMATE_OLDMALLOC 1
 #endif
 
 #else /* USE_RGENGC */
@@ -217,7 +217,7 @@ static ruby_gc_params_t gc_params = {
 #define RGENGC_CHECK_MODE  0
 #define RGENGC_PROFILE     0
 #define RGENGC_THREEGEN    0
-#define RGENGC_ESTIMATE_OLDSPACE 0
+#define RGENGC_ESTIMATE_OLDMALLOC 0
 
 #endif /* USE_RGENGC */
 
@@ -238,26 +238,28 @@ static ruby_gc_params_t gc_params = {
 #endif
 
 typedef enum {
-    GPR_FLAG_NONE            = 0x000,
+    GPR_FLAG_NONE               = 0x000,
     /* major reason */
-    GPR_FLAG_MAJOR_BY_NOFREE = 0x001,
-    GPR_FLAG_MAJOR_BY_OLDGEN = 0x002,
-    GPR_FLAG_MAJOR_BY_SHADY  = 0x004,
-    GPR_FLAG_MAJOR_BY_RESCAN = 0x008,
-    GPR_FLAG_MAJOR_BY_STRESS = 0x010,
-    GPR_FLAG_MAJOR_MASK      = 0x01f,
+    GPR_FLAG_MAJOR_BY_NOFREE    = 0x001,
+    GPR_FLAG_MAJOR_BY_OLDGEN    = 0x002,
+    GPR_FLAG_MAJOR_BY_SHADY     = 0x004,
+    GPR_FLAG_MAJOR_BY_RESCAN    = 0x008,
+    GPR_FLAG_MAJOR_BY_STRESS    = 0x010,
+#if RGENGC_ESTIMATE_OLDMALLOC
+    GPR_FLAG_MAJOR_BY_OLDMALLOC = 0x020,
+#endif
+    GPR_FLAG_MAJOR_MASK         = 0x0ff,
 
     /* gc reason */
-    GPR_FLAG_NEWOBJ          = 0x020,
-    GPR_FLAG_MALLOC          = 0x040,
-    GPR_FLAG_METHOD          = 0x080,
-    GPR_FLAG_CAPI            = 0x100,
-    GPR_FLAG_STRESS          = 0x200,
+    GPR_FLAG_NEWOBJ             = 0x100,
+    GPR_FLAG_MALLOC             = 0x200,
+    GPR_FLAG_METHOD             = 0x400,
+    GPR_FLAG_CAPI               = 0x800,
+    GPR_FLAG_STRESS            = 0x1000,
 
     /* others */
-    GPR_FLAG_IMMEDIATE_SWEEP = 0x400,
-    GPR_FLAG_HAVE_FINALIZE   = 0x800
-
+    GPR_FLAG_IMMEDIATE_SWEEP   = 0x2000,
+    GPR_FLAG_HAVE_FINALIZE     = 0x4000
 } gc_profile_record_flag;
 
 typedef struct gc_profile_record {
@@ -504,9 +506,9 @@ typedef struct rb_objspace {
 	size_t young_object_count;
 #endif
 
-#if RGENGC_ESTIMATE_OLDSPACE
-	size_t oldspace_increase;
-	size_t oldspace_increase_limit;
+#if RGENGC_ESTIMATE_OLDMALLOC
+	size_t oldmalloc_increase;
+	size_t oldmalloc_increase_limit;
 #endif
 
 #if RGENGC_CHECK_MODE >= 2
@@ -850,8 +852,8 @@ rb_objspace_alloc(void)
     ruby_gc_stress = ruby_initial_gc_stress;
 
     malloc_limit = gc_params.malloc_limit_min;
-#if RGENGC_ESTIMATE_OLDSPACE
-    objspace->rgengc.oldspace_increase_limit = gc_params.oldmalloc_limit_min;
+#if RGENGC_ESTIMATE_OLDMALLOC
+    objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
 #endif
 
     return objspace;
@@ -2848,33 +2850,33 @@ gc_before_sweep(rb_objspace_t *objspace)
 	}
     }
 
-    /* reset oldspace info */
-#if RGENGC_ESTIMATE_OLDSPACE
+    /* reset oldmalloc info */
+#if RGENGC_ESTIMATE_OLDMALLOC
     if (objspace->rgengc.during_minor_gc) {
-	if (objspace->rgengc.oldspace_increase > objspace->rgengc.oldspace_increase_limit) {
-	    objspace->rgengc.need_major_gc = TRUE;
-	    objspace->rgengc.oldspace_increase_limit =
-	      (size_t)(objspace->rgengc.oldspace_increase_limit * gc_params.oldmalloc_limit_growth_factor);
-	    if (objspace->rgengc.oldspace_increase_limit > gc_params.oldmalloc_limit_max) {
-		objspace->rgengc.oldspace_increase_limit = gc_params.oldmalloc_limit_max;
+	if (objspace->rgengc.oldmalloc_increase > objspace->rgengc.oldmalloc_increase_limit) {
+	    objspace->rgengc.need_major_gc = GPR_FLAG_MAJOR_BY_OLDMALLOC;;
+	    objspace->rgengc.oldmalloc_increase_limit =
+	      (size_t)(objspace->rgengc.oldmalloc_increase_limit * gc_params.oldmalloc_limit_growth_factor);
+	    if (objspace->rgengc.oldmalloc_increase_limit > gc_params.oldmalloc_limit_max) {
+		objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_max;
 	    }
 	}
 	else {
-	    objspace->rgengc.oldspace_increase_limit =
-	      (size_t)(objspace->rgengc.oldspace_increase_limit / ((gc_params.oldmalloc_limit_growth_factor - 1)/10 + 1));
-	    if (objspace->rgengc.oldspace_increase_limit < gc_params.oldmalloc_limit_min) {
-		objspace->rgengc.oldspace_increase_limit = gc_params.oldmalloc_limit_min;
+	    objspace->rgengc.oldmalloc_increase_limit =
+	      (size_t)(objspace->rgengc.oldmalloc_increase_limit / ((gc_params.oldmalloc_limit_growth_factor - 1)/10 + 1));
+	    if (objspace->rgengc.oldmalloc_increase_limit < gc_params.oldmalloc_limit_min) {
+		objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
 	    }
 	}
 
 	if (0) fprintf(stderr, "%d\t%d\t%u\t%u\t%d\n", (int)rb_gc_count(), objspace->rgengc.need_major_gc,
-		       (unsigned int)objspace->rgengc.oldspace_increase,
-		       (unsigned int)objspace->rgengc.oldspace_increase_limit,
+		       (unsigned int)objspace->rgengc.oldmalloc_increase,
+		       (unsigned int)objspace->rgengc.oldmalloc_increase_limit,
 		       (unsigned int)gc_params.oldmalloc_limit_max);
     }
     else {
 	/* major GC */
-	objspace->rgengc.oldspace_increase = 0;
+	objspace->rgengc.oldmalloc_increase = 0;
     }
 
 #endif
@@ -2896,7 +2898,7 @@ gc_after_sweep(rb_objspace_t *objspace)
 #if USE_RGENGC
 	if (objspace->rgengc.remembered_shady_object_count + objspace->rgengc.old_object_count > (heap_pages_length * HEAP_OBJ_LIMIT) / 2) {
 	    /* if [old]+[remembered shady] > [all object count]/2, then do major GC */
-	    objspace->rgengc.need_major_gc = TRUE;
+	    objspace->rgengc.need_major_gc = GPR_FLAG_MAJOR_BY_RESCAN;
 	}
 #endif
     }
@@ -3579,8 +3581,8 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 		objspace->rgengc.old_object_count++;
 		objspace->rgengc.parent_object_is_old = TRUE;
 
-#if RGENGC_ESTIMATE_OLDSPACE
-		objspace->rgengc.oldspace_increase += obj_memsize_of((VALUE)obj, FALSE);
+#if RGENGC_ESTIMATE_OLDMALLOC
+		objspace->rgengc.oldmalloc_increase += obj_memsize_of((VALUE)obj, FALSE);
 #endif
 
 #endif
@@ -3594,8 +3596,8 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 		    /* young -> old */
 		    RVALUE_PROMOTE_YOUNG((VALUE)obj);
 		    objspace->rgengc.old_object_count++;
-#if RGENGC_ESTIMATE_OLDSPACE
-		    objspace->rgengc.oldspace_increase += obj_memsize_of((VALUE)obj, FALSE);
+#if RGENGC_ESTIMATE_OLDMALLOC
+		    objspace->rgengc.oldmalloc_increase += obj_memsize_of((VALUE)obj, FALSE);
 #endif
 		    rgengc_report(3, objspace, "gc_mark_children: promote young -> old %p (%s).\n", (void *)obj, obj_type_name((VALUE)obj));
 		}
@@ -4807,8 +4809,8 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
 	    reason |= GPR_FLAG_MAJOR_BY_NOFREE;
 	}
 	if (objspace->rgengc.need_major_gc) {
-	    objspace->rgengc.need_major_gc = FALSE;
-	    reason |= GPR_FLAG_MAJOR_BY_RESCAN;
+	    objspace->rgengc.need_major_gc = GPR_FLAG_NONE;
+	    reason |= objspace->rgengc.need_major_gc;
 	}
 	if (objspace->rgengc.remembered_shady_object_count > objspace->rgengc.remembered_shady_object_limit) {
 	    reason |= GPR_FLAG_MAJOR_BY_SHADY;
@@ -5067,7 +5069,7 @@ gc_stat(int argc, VALUE *argv, VALUE self)
     static VALUE sym_minor_gc_count, sym_major_gc_count;
     static VALUE sym_remembered_shady_object, sym_remembered_shady_object_limit;
     static VALUE sym_old_object, sym_old_object_limit;
-#if RGENGC_ESTIMATE_OLDSPACE
+#if RGENGC_ESTIMATE_OLDMALLOC
     static VALUE sym_oldmalloc_increase, sym_oldmalloc_limit;
 #endif
 #if RGENGC_PROFILE
@@ -5098,7 +5100,7 @@ gc_stat(int argc, VALUE *argv, VALUE self)
 	S(remembered_shady_object_limit);
 	S(old_object);
 	S(old_object_limit);
-#if RGENGC_ESTIMATE_OLDSPACE
+#if RGENGC_ESTIMATE_OLDMALLOC
 	S(oldmalloc_increase);
 	S(oldmalloc_limit);
 #endif
@@ -5147,9 +5149,9 @@ gc_stat(int argc, VALUE *argv, VALUE self)
     SET(remembered_shady_object_limit, objspace->rgengc.remembered_shady_object_limit);
     SET(old_object, objspace->rgengc.old_object_count);
     SET(old_object_limit, objspace->rgengc.old_object_limit);
-#if RGENGC_ESTIMATE_OLDSPACE
-    SET(oldmalloc_increase, objspace->rgengc.oldspace_increase);
-    SET(oldmalloc_limit, objspace->rgengc.oldspace_increase_limit);
+#if RGENGC_ESTIMATE_OLDMALLOC
+    SET(oldmalloc_increase, objspace->rgengc.oldmalloc_increase);
+    SET(oldmalloc_limit, objspace->rgengc.oldmalloc_increase_limit);
 #endif
 
 #if RGENGC_PROFILE
@@ -5369,7 +5371,7 @@ ruby_gc_set_params(void)
     get_envparam_int("RUBY_GC_MALLOC_LIMIT_MAX", &gc_params.malloc_limit_max, 0);
     get_envparam_double("RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR", &gc_params.malloc_limit_growth_factor, 1.0);
 
-#ifdef RGENGC_ESTIMATE_OLDSPACE
+#ifdef RGENGC_ESTIMATE_OLDMALLOC
     get_envparam_int("RUBY_GC_OLDMALLOC_LIMIT", &gc_params.oldmalloc_limit_min, 0);
     get_envparam_int("RUBY_GC_OLDMALLOC_LIMIT_MAX", &gc_params.oldmalloc_limit_max, 0);
     get_envparam_double("RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR", &gc_params.oldmalloc_limit_growth_factor, 1.0);
@@ -6568,6 +6570,28 @@ gc_profile_record_get(void)
     return gc_profile;
 }
 
+#if GC_PROFILE_MORE_DETAIL
+static const char *
+gc_profile_dump_major_reason(int reason)
+{
+    switch (reason & GPR_FLAG_MAJOR_MASK) {
+#define C(x, s) case GPR_FLAG_MAJOR_BY_##x: return s
+      case GPR_FLAG_NONE: return "-";
+	C(NOFREE, "+");
+	C(OLDGEN, "O");
+	C(SHADY,  "S");
+	C(RESCAN, "R");
+	C(STRESS, "!");
+#if RGENGC_ESTIMATE_OLDMALLOC
+	C(OLDMALLOC, "M");
+#endif
+      default:
+	rb_bug("gc_profile_dump_major_reason: no such reason");
+#undef C
+    }
+}
+#endif
+
 static void
 gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 {
@@ -6607,7 +6631,7 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 
 	for (i = 0; i < count; i++) {
 	    record = &objspace->profile.records[i];
-	    append(out, rb_sprintf("%5"PRIdSIZE" %c/%c/%6s%c %13"PRIuSIZE" %15"PRIuSIZE
+	    append(out, rb_sprintf("%5"PRIdSIZE" %s/%c/%6s%c %13"PRIuSIZE" %15"PRIuSIZE
 #if CALC_EXACT_MALLOC_SIZE
 				   " %15"PRIuSIZE
 #endif
@@ -6621,7 +6645,7 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 
 				   "\n",
 				   i+1,
-				   "-+O3S567R9abcdef!"[record->flags & GPR_FLAG_MAJOR_MASK], /* Stress,Rescan,Shady,Oldgen,NoFree */
+				   gc_profile_dump_major_reason(record->flags),
 				   (record->flags & GPR_FLAG_HAVE_FINALIZE) ? 'F' : '.',
 				   (record->flags & GPR_FLAG_NEWOBJ) ? "NEWOBJ" :
 				   (record->flags & GPR_FLAG_MALLOC) ? "MALLOC" :
@@ -7018,7 +7042,7 @@ Init_GC(void)
 	OPT(RGENGC_CHECK_MODE);
 	OPT(RGENGC_PROFILE);
 	OPT(RGENGC_THREEGEN);
-	OPT(RGENGC_ESTIMATE_OLDSPACE);
+	OPT(RGENGC_ESTIMATE_OLDMALLOC);
 	OPT(GC_PROFILE_MORE_DETAIL);
 	OPT(GC_ENABLE_LAZY_SWEEP);
 	OPT(CALC_EXACT_MALLOC_SIZE);

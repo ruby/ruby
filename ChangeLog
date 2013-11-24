@@ -1,3 +1,10 @@
+Mon Nov 25 04:45:59 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: continue to change OLDSPACE -> OLDMALLOC.
+	  RGENGC_ESTIMATE_OLDSPACE -> RGENGC_ESTIMATE_OLDMALLOC.
+
+	* gc.c: add a new major GC reason GPR_FLAG_MAJOR_BY_OLDMALLOC.
+
 Mon Nov 25 04:16:09 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: change terminlogy "..._num" to "..._slots" about slot opetaion.
