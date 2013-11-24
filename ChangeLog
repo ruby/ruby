@@ -1,3 +1,9 @@
+Mon Nov 25 00:50:03 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* internal.h: use __builtin_bswap16() if possible.
+
+	* configure.in: check existence of __builtin_bswap16().
+
 Sun Nov 24 22:24:19 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigxor_int): Apply BIGLO for long in a BDIGIT expression.

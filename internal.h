@@ -70,6 +70,12 @@ extern "C" {
 #define MUL_OVERFLOW_INT_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, INT_MIN, INT_MAX)
 
 #ifndef swap16
+# ifdef HAVE_BUILTIN___BUILTIN_BSWAP16
+#  define swap16(x) __builtin_bswap16(x)
+# endif
+#endif
+
+#ifndef swap16
 # define swap16(x)      ((uint16_t)((((x)&0xFF)<<8) | (((x)>>8)&0xFF)))
 #endif
 
