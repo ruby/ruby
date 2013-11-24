@@ -235,6 +235,7 @@ class CSV
     #
     def initialize(headers, fields, header_row = false)
       @header_row = header_row
+      headers.each { |h| h.freeze if h.is_a? String }
 
       # handle extra headers or fields
       @row = if headers.size > fields.size
@@ -2208,6 +2209,7 @@ class CSV
       # prepare converted and unconverted copies
       row      = @headers                       if row.nil?
       @headers = convert_fields(@headers, true)
+      @headers.each { |h| h.freeze if h.is_a? String }
 
       if @return_headers                                     # return headers
         return self.class::Row.new(@headers, row, true)
