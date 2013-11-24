@@ -1,3 +1,11 @@
+Mon Nov 25 04:16:09 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: change terminlogy "..._num" to "..._slots" about slot opetaion.
+	  * final_num -> final_slots
+	  * objspace_live_num() -> objspace_live_slots()
+	  * objspace_limit_num() -> objspace_limit_slots()
+	  * objspace_free_num() -> objspace_free_slots()
+
 Mon Nov 25 04:03:12 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_stat): add internal information.
