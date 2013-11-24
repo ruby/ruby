@@ -1,3 +1,12 @@
+Mon Nov 25 03:10:46 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: change terminology OLDSPACE -> OLDMALLOC.
+	  (oldspace -> oldmalloc for variable names)
+
+	  OLDSPACE is confusing because it is not includes slots.
+	  To more clearly, rename such as (oldspace_limit -> oldmalloc_limit).
+	  It is clear that it measures (estimates) malloc()'ed size.
+
 Mon Nov 25 00:50:03 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* internal.h: use __builtin_bswap16() if possible.

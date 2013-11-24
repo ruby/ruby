@@ -112,14 +112,14 @@ rb_gc_guarded_ptr(volatile VALUE *ptr)
 #define GC_MALLOC_LIMIT_GROWTH_FACTOR 1.4
 #endif
 
-#ifndef GC_OLDSPACE_LIMIT_MIN
-#define GC_OLDSPACE_LIMIT_MIN (16 * 1024 * 1024 /* 16MB */)
+#ifndef GC_OLDMALLOC_LIMIT_MIN
+#define GC_OLDMALLOC_LIMIT_MIN (16 * 1024 * 1024 /* 16MB */)
 #endif
-#ifndef GC_OLDSPACE_LIMIT_GROWTH_FACTOR
-#define GC_OLDSPACE_LIMIT_GROWTH_FACTOR 1.2
+#ifndef GC_OLDMALLOC_LIMIT_GROWTH_FACTOR
+#define GC_OLDMALLOC_LIMIT_GROWTH_FACTOR 1.2
 #endif
-#ifndef GC_OLDSPACE_LIMIT_MAX
-#define GC_OLDSPACE_LIMIT_MAX (128 * 1024 * 1024 /* 128MB */)
+#ifndef GC_OLDMALLOC_LIMIT_MAX
+#define GC_OLDMALLOC_LIMIT_MAX (128 * 1024 * 1024 /* 128MB */)
 #endif
 
 typedef struct {
@@ -130,9 +130,9 @@ typedef struct {
     unsigned int malloc_limit_min;
     unsigned int malloc_limit_max;
     double malloc_limit_growth_factor;
-    unsigned int oldspace_limit_min;
-    unsigned int oldspace_limit_max;
-    double oldspace_limit_growth_factor;
+    unsigned int oldmalloc_limit_min;
+    unsigned int oldmalloc_limit_max;
+    double oldmalloc_limit_growth_factor;
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     VALUE gc_stress;
 #endif
@@ -146,9 +146,9 @@ static ruby_gc_params_t gc_params = {
     GC_MALLOC_LIMIT_MIN,
     GC_MALLOC_LIMIT_MAX,
     GC_MALLOC_LIMIT_GROWTH_FACTOR,
-    GC_OLDSPACE_LIMIT_MIN,
-    GC_OLDSPACE_LIMIT_MAX,
-    GC_OLDSPACE_LIMIT_GROWTH_FACTOR,
+    GC_OLDMALLOC_LIMIT_MIN,
+    GC_OLDMALLOC_LIMIT_MAX,
+    GC_OLDMALLOC_LIMIT_GROWTH_FACTOR,
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     FALSE,
 #endif
@@ -851,7 +851,7 @@ rb_objspace_alloc(void)
 
     malloc_limit = gc_params.malloc_limit_min;
 #if RGENGC_ESTIMATE_OLDSPACE
-    objspace->rgengc.oldspace_increase_limit = gc_params.oldspace_limit_min;
+    objspace->rgengc.oldspace_increase_limit = gc_params.oldmalloc_limit_min;
 #endif
 
     return objspace;
@@ -2854,23 +2854,23 @@ gc_before_sweep(rb_objspace_t *objspace)
 	if (objspace->rgengc.oldspace_increase > objspace->rgengc.oldspace_increase_limit) {
 	    objspace->rgengc.need_major_gc = TRUE;
 	    objspace->rgengc.oldspace_increase_limit =
-	      (size_t)(objspace->rgengc.oldspace_increase_limit * gc_params.oldspace_limit_growth_factor);
-	    if (objspace->rgengc.oldspace_increase_limit > gc_params.oldspace_limit_max) {
-		objspace->rgengc.oldspace_increase_limit = gc_params.oldspace_limit_max;
+	      (size_t)(objspace->rgengc.oldspace_increase_limit * gc_params.oldmalloc_limit_growth_factor);
+	    if (objspace->rgengc.oldspace_increase_limit > gc_params.oldmalloc_limit_max) {
+		objspace->rgengc.oldspace_increase_limit = gc_params.oldmalloc_limit_max;
 	    }
 	}
 	else {
 	    objspace->rgengc.oldspace_increase_limit =
-	      (size_t)(objspace->rgengc.oldspace_increase_limit / ((gc_params.oldspace_limit_growth_factor - 1)/10 + 1));
-	    if (objspace->rgengc.oldspace_increase_limit < gc_params.oldspace_limit_min) {
-		objspace->rgengc.oldspace_increase_limit = gc_params.oldspace_limit_min;
+	      (size_t)(objspace->rgengc.oldspace_increase_limit / ((gc_params.oldmalloc_limit_growth_factor - 1)/10 + 1));
+	    if (objspace->rgengc.oldspace_increase_limit < gc_params.oldmalloc_limit_min) {
+		objspace->rgengc.oldspace_increase_limit = gc_params.oldmalloc_limit_min;
 	    }
 	}
 
 	if (0) fprintf(stderr, "%d\t%d\t%u\t%u\t%d\n", (int)rb_gc_count(), objspace->rgengc.need_major_gc,
 		       (unsigned int)objspace->rgengc.oldspace_increase,
 		       (unsigned int)objspace->rgengc.oldspace_increase_limit,
-		       (unsigned int)gc_params.oldspace_limit_max);
+		       (unsigned int)gc_params.oldmalloc_limit_max);
     }
     else {
 	/* major GC */
@@ -5298,9 +5298,9 @@ gc_set_initial_pages(void)
  * * RUBY_GC_MALLOC_LIMIT_MAX (new from 2.1)
  * * RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR (new from 2.1)
  *
- * * RUBY_GC_OLDSPACE_LIMIT (new from 2.1)
- * * RUBY_GC_OLDSPACE_LIMIT_MAX (new from 2.1)
- * * RUBY_GC_OLDSPACE_LIMIT_GROWTH_FACTOR (new from 2.1)
+ * * RUBY_GC_OLDMALLOC_LIMIT (new from 2.1)
+ * * RUBY_GC_OLDMALLOC_LIMIT_MAX (new from 2.1)
+ * * RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR (new from 2.1)
  */
 
 void
@@ -5330,9 +5330,11 @@ ruby_gc_set_params(void)
     get_envparam_int("RUBY_GC_MALLOC_LIMIT_MAX", &gc_params.malloc_limit_max, 0);
     get_envparam_double("RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR", &gc_params.malloc_limit_growth_factor, 1.0);
 
-    get_envparam_int("RUBY_GC_OLDSPACE_LIMIT", &gc_params.oldspace_limit_min, 0);
-    get_envparam_int("RUBY_GC_OLDSPACE_LIMIT_MAX", &gc_params.oldspace_limit_max, 0);
-    get_envparam_double("RUBY_GC_OLDSPACE_LIMIT_GROWTH_FACTOR", &gc_params.oldspace_limit_growth_factor, 1.0);
+#ifdef RGENGC_ESTIMATE_OLDSPACE
+    get_envparam_int("RUBY_GC_OLDMALLOC_LIMIT", &gc_params.oldmalloc_limit_min, 0);
+    get_envparam_int("RUBY_GC_OLDMALLOC_LIMIT_MAX", &gc_params.oldmalloc_limit_max, 0);
+    get_envparam_double("RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR", &gc_params.oldmalloc_limit_growth_factor, 1.0);
+#endif
 }
 
 RUBY_ALIAS_FUNCTION_VOID(rb_gc_set_params(void), ruby_gc_set_params, ())
