@@ -36,9 +36,7 @@ VALUE rb_cBignum;
 const char ruby_digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 
 #ifndef SIZEOF_BDIGIT_DBL
-# if defined(HAVE_INT64_T) && defined(HAVE_INT128_T)
-#  define SIZEOF_BDIGIT_DBL SIZEOF_INT128_T
-# elif SIZEOF_INT*2 <= SIZEOF_LONG_LONG
+# if SIZEOF_INT*2 <= SIZEOF_LONG_LONG
 #  define SIZEOF_BDIGIT_DBL SIZEOF_LONG_LONG
 # else
 #  define SIZEOF_BDIGIT_DBL SIZEOF_LONG

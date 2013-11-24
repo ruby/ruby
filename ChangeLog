@@ -1,3 +1,10 @@
+Sun Nov 24 13:49:08 2013  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/defines.h: Don't use int128_t for Bignum.
+	  It's not always faster.
+
+	* bignum.c: Ditto.
+
 Sun Nov 24 10:18:15 2013  Aman Gupta <ruby@tmm1.net>
 
 	* NEWS: Add details about new debugging features and APIs.
