@@ -22,7 +22,7 @@ Sun Nov 24 09:18:06 2013  Aman Gupta <ruby@tmm1.net>
 	  test string to avoid failure due to GC. Reduce size of failure message
 	  using grep(/TEST STRING/).
 
-Sat Nov 23 13:38:00 2013  Kyle Stevens  <kstevens715@gmail.com>
+Sun Nov 24 08:38:00 2013  Kyle Stevens  <kstevens715@gmail.com>
 
 	* lib/csv.rb: If skip_lines is set to a String, convert it to a Regexp
 	  to prevent the alternative, which is that each line in the CSV gets
@@ -52,7 +52,7 @@ Sat Nov 23 19:46:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigMath_s_exp): Optimize the
 	  calculation algorithm to reduce the number of divisions.
-	  This optimization was proposed by Rafał Michalski.
+	  This optimization was proposed by Rafal Michalski.
 	  [Feature #6857] [ruby-core:47130]
 
 Sat Nov 23 19:20:00 2013  Kenta Murata  <mrkn@mrkn.jp>
