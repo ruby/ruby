@@ -1,3 +1,9 @@
+Sun Nov 24 22:24:19 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigxor_int): Apply BIGLO for long in a BDIGIT expression.
+	  (bigor_int): Ditto.
+	  (bigand_int): Ditto.
+
 Sun Nov 24 18:13:23 2013  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/defines.h (SIZEOF_ACTUAL_BDIGIT): Defined.

@@ -6445,7 +6445,7 @@ bigand_int(VALUE x, long xn, BDIGIT hibitsx, long y)
 
 #if SIZEOF_BDIGITS >= SIZEOF_LONG
     i = 1;
-    zds[0] = xds[0] & y;
+    zds[0] = xds[0] & BIGLO(y);
 #else
     for (i=0; i < xn; i++) {
         if (y == 0 || y == -1) break;
@@ -6551,7 +6551,7 @@ bigor_int(VALUE x, long xn, BDIGIT hibitsx, long y)
 
 #if SIZEOF_BDIGITS >= SIZEOF_LONG
     i = 1;
-    zds[0] = xds[0] | y;
+    zds[0] = xds[0] | BIGLO(y);
     if (i < zn)
         goto y_is_fixed_point;
     goto finish;
@@ -6674,7 +6674,7 @@ bigxor_int(VALUE x, long xn, BDIGIT hibitsx, long y)
 
 #if SIZEOF_BDIGITS >= SIZEOF_LONG
     i = 1;
-    zds[0] = xds[0] ^ y;
+    zds[0] = xds[0] ^ BIGLO(y);
 #else
     for (i = 0; i < xn; i++) {
         zds[i] = xds[i] ^ BIGLO(y);
