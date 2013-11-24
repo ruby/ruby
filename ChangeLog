@@ -1,3 +1,8 @@
+Mon Nov 25 05:05:04 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* test/-ext-/tracepoint/test_tracepoint.rb: catch up GC.stat changes
+	  at r43835.
+
 Mon Nov 25 04:45:59 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: continue to change OLDSPACE -> OLDMALLOC.
