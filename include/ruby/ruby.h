@@ -945,6 +945,24 @@ struct RHash {
     int iter_lev;
     const VALUE ifnone;
 };
+
+#define RHASH_EMBED_LEN_MAX (RValueStorage_EMBED_LEN_MAX(SIZEOF_VALUE) / 2)
+struct REmbedHash {
+    struct RBasic basic;
+    union {
+	struct {
+	    struct st_table *ntbl;
+	    int iter_lev;
+	    VALUE ifnone;
+	} heap;
+	VALUE ary[RHASH_EMBED_LEN_MAX][2];
+    } as;
+};
+
+/* #define HASH_DELETED  FL_USER1 */
+/* #define HASH_PROC_DEFAULT FL_USER2 */
+#define RHASH_EMBED_FLAG FL_USER3
+
 /* RHASH_TBL allocates st_table if not available. */
 #define RHASH_TBL(h) rb_hash_tbl(h)
 #define RHASH_ITER_LEV(h) (RHASH(h)->iter_lev)
