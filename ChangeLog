@@ -1,3 +1,11 @@
+Sun Nov 24 09:18:06 2013  Aman Gupta <ruby@tmm1.net>
+
+	* ext/objspace/objspace_dump.c (dump_object): Use PRIuSIZE to print
+	  size_t for better win32 compatibility.
+	* test/objspace/test_objspace.rb (test_dump_all): Hold reference to
+	  test string to avoid failure due to GC. Reduce size of failure message
+	  using grep(/TEST STRING/).
+
 Sat Nov 23 13:38:00 2013  Kyle Stevens  <kstevens715@gmail.com>
 
 	* lib/csv.rb: If skip_lines is set to a String, convert it to a Regexp

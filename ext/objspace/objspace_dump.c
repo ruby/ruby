@@ -240,11 +240,11 @@ dump_object(VALUE obj, struct dump_config *dc)
 	dump_append(dc, ", \"file\":\"%s\", \"line\":%lu", ainfo->path, ainfo->line);
 	if (RTEST(ainfo->mid))
 	    dump_append(dc, ", \"method\":\"%s\"", rb_id2name(SYM2ID(ainfo->mid)));
-	dump_append(dc, ", \"generation\":%zu", ainfo->generation);
+	dump_append(dc, ", \"generation\":%"PRIuSIZE, ainfo->generation);
     }
 
     if ((memsize = rb_obj_memsize_of(obj)) > 0)
-	dump_append(dc, ", \"memsize\":%zu", memsize);
+	dump_append(dc, ", \"memsize\":%"PRIuSIZE, memsize);
 
     dump_append(dc, "}\n");
 }

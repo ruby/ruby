@@ -239,30 +239,33 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_dump_all
-    entry = /"value":"TEST STRING", "encoding":"UTF-8", "file":"-", "line":4, "method":"dump_my_heap_please"/
-    assert_in_out_err(%w[-robjspace], <<-'end;', entry)
+    entry = /"bytesize":11, "value":"TEST STRING", "encoding":"UTF-8", "file":"-", "line":4, "method":"dump_my_heap_please", "generation":/
+
+    assert_in_out_err(%w[-robjspace], <<-'end;') do |output, error|
       def dump_my_heap_please
         ObjectSpace.trace_object_allocations_start
         GC.start
-        "TEST STRING".force_encoding("UTF-8")
+        str = "TEST STRING".force_encoding("UTF-8")
         ObjectSpace.dump_all(output: :stdout)
       end
 
       dump_my_heap_please
     end;
+      assert_match(entry, output.grep(/TEST STRING/).join("\n"))
+    end
 
     assert_in_out_err(%w[-robjspace], <<-'end;') do |(output), (error)|
       def dump_my_heap_please
         ObjectSpace.trace_object_allocations_start
         GC.start
-        "TEST STRING".force_encoding("UTF-8")
+        str = "TEST STRING".force_encoding("UTF-8")
         ObjectSpace.dump_all().path
       end
 
       puts dump_my_heap_please
     end;
       skip if /is not supported/ =~ error
-      assert_match(entry, File.read(output))
+      assert_match(entry, File.readlines(output).grep(/TEST STRING/).join("\n"))
       File.unlink(output)
     end
   end
