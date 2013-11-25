@@ -34,6 +34,10 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
       @dependencies == other.dependencies
   end
 
+  def installable_platform? # :nodoc:
+    Gem::Platform.match @platform
+  end
+
   def pretty_print q # :nodoc:
     q.group 2, '[APISpecification', ']' do
       q.breakable

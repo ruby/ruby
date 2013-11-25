@@ -1,21 +1,33 @@
 ##
-# Specifies a Specification object that should be activated.
-# Also contains a dependency that was used to introduce this
-# activation.
+# Specifies a Specification object that should be activated.  Also contains a
+# dependency that was used to introduce this activation.
 
 class Gem::Resolver::ActivationRequest
 
+  ##
+  # The parent request for this activation request.
+
   attr_reader :request
+
+  ##
+  # The specification to be activated.
 
   attr_reader :spec
 
-  def initialize spec, req, others_possible = true
+  ##
+  # Creates a new ActivationRequest that will activate +spec+.  The parent
+  # +request+ is used to provide diagnostics in case of conflicts.
+  #
+  # +others_possible+ indicates that other specifications may also match this
+  # activation request.
+
+  def initialize spec, request, others_possible = true
     @spec = spec
-    @request = req
+    @request = request
     @others_possible = others_possible
   end
 
-  def == other
+  def == other # :nodoc:
     case other
     when Gem::Specification
       @spec == other
@@ -25,6 +37,9 @@ class Gem::Resolver::ActivationRequest
       false
     end
   end
+
+  ##
+  # Downloads a gem at +path+ and returns the file path.
 
   def download path
     if @spec.respond_to? :source
@@ -38,9 +53,15 @@ class Gem::Resolver::ActivationRequest
     source.download full_spec, path
   end
 
+  ##
+  # The full name of the specification to be activated.
+
   def full_name
     @spec.full_name
   end
+
+  ##
+  # The Gem::Specification for this activation request.
 
   def full_spec
     Gem::Specification === @spec ? @spec : @spec.spec
@@ -66,7 +87,7 @@ class Gem::Resolver::ActivationRequest
   end
 
   ##
-  # Indicates if the requested gem has already been installed.
+  # True if the requested gem has already been installed.
 
   def installed?
     case @spec
@@ -80,6 +101,9 @@ class Gem::Resolver::ActivationRequest
       end
     end
   end
+
+  ##
+  # The name of this activation request's specification
 
   def name
     @spec.name
@@ -129,6 +153,9 @@ class Gem::Resolver::ActivationRequest
       end
     end
   end
+
+  ##
+  # The version of this activation request's specification
 
   def version
     @spec.version

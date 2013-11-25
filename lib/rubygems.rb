@@ -1005,30 +1005,18 @@ module Gem
 
   def self.use_gemdeps
     return unless path = ENV['RUBYGEMS_GEMDEPS']
-    path = path.dup.untaint
+    path = path.dup
 
-    if path == "-"
-      here = Dir.pwd.untaint
-      start = here
+    if path == "-" then
+      require 'rubygems/util'
 
-      begin
-        while true
-          path = GEM_DEP_FILES.find { |f| File.file?(f) }
+      Gem::Util.traverse_parents Dir.pwd do |directory|
+        dep_file = GEM_DEP_FILES.find { |f| File.file?(f) }
 
-          if path
-            path = File.join here, path
-            break
-          end
+        next unless dep_file
 
-          Dir.chdir ".."
-
-          # If we're at a toplevel, stop.
-          return if Dir.pwd == here
-
-          here = Dir.pwd
-        end
-      ensure
-        Dir.chdir start
+        path = File.join directory, dep_file
+        break
       end
     end
 
@@ -1047,6 +1035,9 @@ module Gem
   end
 
   class << self
+    ##
+    # TODO remove with RubyGems 3.0
+
     alias detect_gemdeps use_gemdeps # :nodoc:
   end
 
@@ -1218,4 +1209,5 @@ Gem::Specification.load_defaults
 require 'rubygems/core_ext/kernel_gem'
 require 'rubygems/core_ext/kernel_require'
 
-Gem.detect_gemdeps
+Gem.use_gemdeps
+

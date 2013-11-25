@@ -666,6 +666,11 @@ end
 # STDOUT, and STDERR.
 
 class Gem::ConsoleUI < Gem::StreamUI
+
+  ##
+  # The Console UI has no arguments as it defaults to reading input from
+  # stdin, output to stdout and warnings or errors to stderr.
+
   def initialize
     super STDIN, STDOUT, STDERR, true
   end
@@ -675,6 +680,10 @@ end
 # SilentUI is a UI choice that is absolutely silent.
 
 class Gem::SilentUI < Gem::StreamUI
+
+  ##
+  # The SilentUI has no arguments as it does not use any stream.
+
   def initialize
     reader, writer = nil, nil
 
@@ -689,11 +698,11 @@ class Gem::SilentUI < Gem::StreamUI
     super reader, writer, writer, false
   end
 
-  def download_reporter(*args)
+  def download_reporter(*args) # :nodoc:
     SilentDownloadReporter.new(@outs, *args)
   end
 
-  def progress_reporter(*args)
+  def progress_reporter(*args) # :nodoc:
     SilentProgressReporter.new(@outs, *args)
   end
 end

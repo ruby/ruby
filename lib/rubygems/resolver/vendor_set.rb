@@ -32,6 +32,8 @@ class Gem::Resolver::VendorSet < Gem::Resolver::Set
     raise Gem::GemNotFoundException,
           "unable to find #{gemspec} for gem #{name}" unless spec
 
+    spec.full_gem_path = File.expand_path directory
+
     key = "#{spec.name}-#{spec.version}-#{spec.platform}"
 
     @specs[key]        = spec

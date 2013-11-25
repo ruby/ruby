@@ -95,7 +95,6 @@ class Gem::Resolver::Conflict
     path = []
 
     while current do
-      spec_name   = current.spec.full_name
       requirement = current.request.dependency.requirement
       path << "#{current.spec.full_name} (#{requirement})"
 

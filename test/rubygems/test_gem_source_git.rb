@@ -25,7 +25,8 @@ class TestGemSourceGit < Gem::TestCase
     git_gem 'b'
 
     Dir.chdir 'git/a' do
-      system @git, 'submodule', '--quiet', 'add', File.expand_path('../b'), 'b', out: IO::NULL
+      Gem::Util.silent_system @git, 'submodule', '--quiet',
+                              'add', File.expand_path('../b'), 'b'
       system @git, 'commit', '--quiet', '-m', 'add submodule b'
     end
 
@@ -161,6 +162,14 @@ class TestGemSourceGit < Gem::TestCase
     end
 
     assert_equal %w[a-1 b-1], specs.map { |spec| spec.full_name }
+
+    a_spec = specs.shift
+
+    assert_equal source.install_dir, a_spec.full_gem_path
+
+    b_spec = specs.shift
+
+    assert_equal File.join(source.install_dir, 'b'), b_spec.full_gem_path
   end
 
   def test_uri_hash

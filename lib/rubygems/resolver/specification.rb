@@ -56,5 +56,34 @@ class Gem::Resolver::Specification
     "#{@name}-#{@version}"
   end
 
+  ##
+  # Installs this specification using the Gem::Installer +options+.  The
+  # install method yields a Gem::Installer instance, which indicates the
+  # gem will be installed, or +nil+, which indicates the gem is already
+  # installed.
+
+  def install options
+    require 'rubygems/installer'
+
+    destination = options[:install_dir] || Gem.dir
+
+    Gem.ensure_gem_subdirectories destination
+
+    gem = source.download spec, destination
+
+    installer = Gem::Installer.new gem, options
+
+    yield installer if block_given?
+
+    installer.install
+  end
+
+  ##
+  # Returns true if this specification is installable on this platform.
+
+  def installable_platform?
+    Gem::Platform.match spec.platform
+  end
+
 end
 

@@ -1,3 +1,14 @@
+Tue Nov 26 04:12:10 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master 612f85a.  Notable changes:
+
+	  Fixed installation and activation of git: and path: gems via
+	  Gem.use_gemdeps
+
+	  Improved documentation coverage
+
+	* test/rubygems:  ditto.
+
 Mon Nov 25 22:23:03 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/xmlrpc.rb: [DOC] Fix link to xmlrpc4r site [Bug #9148]

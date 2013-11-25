@@ -15,11 +15,24 @@ require 'net/http'
 class Gem::Resolver
 
   ##
+  # If the DEBUG_RESOLVER environment variable is set then debugging mode is
+  # enabled for the resolver.  This will display information about the state
+  # of the resolver while a set of dependencies is being resolved.
+
+  DEBUG_RESOLVER = !ENV['DEBUG_RESOLVER'].nil?
+
+  ##
   # Contains all the conflicts encountered while doing resolution
 
   attr_reader :conflicts
 
+  ##
+  # Set to true if development dependencies should be considered.
+
   attr_accessor :development
+
+  ##
+  # List of dependencies that could not be found in the configured sources.
 
   attr_reader :missing
 
@@ -57,8 +70,8 @@ class Gem::Resolver
   end
 
   ##
-  # Provide a Resolver that queries only against the already
-  # installed gems.
+  # Creates a Resolver that queries only against the already installed gems
+  # for the +needed+ dependencies.
 
   def self.for_current_gems needed
     new needed, Gem::Resolver::CurrentSet.new
@@ -82,16 +95,14 @@ class Gem::Resolver
     @soft_missing = false
   end
 
-  DEBUG_RESOLVER = !ENV['DEBUG_RESOLVER'].nil?
-
-  def explain(stage, *data)
+  def explain stage, *data # :nodoc:
     if DEBUG_RESOLVER
       d = data.map { |x| x.inspect }.join(", ")
       STDOUT.printf "%20s %s\n", stage.to_s.upcase, d
     end
   end
 
-  def explain_list(stage, data)
+  def explain_list stage, data # :nodoc:
     if DEBUG_RESOLVER
       STDOUT.printf "%20s (%d entries)\n", stage.to_s.upcase, data.size
       data.each do |d|
@@ -117,7 +128,7 @@ class Gem::Resolver
     return spec, activation_request
   end
 
-  def requests s, act, reqs=nil
+  def requests s, act, reqs=nil # :nodoc:
     s.dependencies.reverse_each do |d|
       next if d.type == :development and not @development
       reqs.add Gem::Resolver::DependencyRequest.new(d, act)
@@ -182,7 +193,7 @@ class Gem::Resolver
     return matching_platform, all
   end
 
-  def handle_conflict(dep, existing)
+  def handle_conflict(dep, existing) # :nodoc:
     # There is a conflict! We return the conflict object which will be seen by
     # the caller and be handled at the right level.
 
@@ -252,7 +263,7 @@ class Gem::Resolver
   # +specs+ being a list to ActivationRequest, calculate a new list of
   # ActivationRequest objects.
 
-  def resolve_for needed, specs
+  def resolve_for needed, specs # :nodoc:
     # The State objects that are used to attempt the activation tree.
     states = []
 
@@ -411,5 +422,6 @@ require 'rubygems/resolver/api_specification'
 require 'rubygems/resolver/git_specification'
 require 'rubygems/resolver/index_specification'
 require 'rubygems/resolver/installed_specification'
+require 'rubygems/resolver/local_specification'
 require 'rubygems/resolver/vendor_specification'
 

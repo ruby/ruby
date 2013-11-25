@@ -166,29 +166,22 @@ class Gem::RequestSet
 
     installed = []
 
-    sorted_requests.each do |req|
-      if existing.find { |s| s.full_name == req.spec.full_name }
-        yield req, nil if block_given?
+    options[:install_dir] = dir
+    options[:only_install_dir] = true
+
+    sorted_requests.each do |request|
+      spec = request.spec
+
+      if existing.find { |s| s.full_name == spec.full_name } then
+        yield request, nil if block_given?
         next
       end
 
-      path = req.download(dir)
-
-      unless path then # already installed
-        yield req, nil if block_given?
-        next
+      spec.install options do |installer|
+        yield request, installer if block_given?
       end
 
-      options[:install_dir] = dir
-      options[:only_install_dir] = true
-
-      inst = Gem::Installer.new path, options
-
-      yield req, inst if block_given?
-
-      inst.install
-
-      installed << req
+      installed << request
     end
 
     installed

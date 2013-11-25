@@ -28,6 +28,42 @@ class TestGemResolverAPISpecification < Gem::TestCase
     assert_equal expected, spec.dependencies
   end
 
+  def test_installable_platform_eh
+    set = Gem::Resolver::APISet.new
+    data = {
+      :name     => 'a',
+      :number   => '1',
+      :platform => 'ruby',
+      :dependencies => [],
+    }
+
+    a_spec = Gem::Resolver::APISpecification.new set, data
+
+    assert a_spec.installable_platform?
+
+    data = {
+      :name     => 'b',
+      :number   => '1',
+      :platform => 'cpu-other_platform-1',
+      :dependencies => [],
+    }
+
+    b_spec = Gem::Resolver::APISpecification.new set, data
+
+    refute b_spec.installable_platform?
+
+    data = {
+      :name     => 'c',
+      :number   => '1',
+      :platform => Gem::Platform.local.to_s,
+      :dependencies => [],
+    }
+
+    c_spec = Gem::Resolver::APISpecification.new set, data
+
+    assert c_spec.installable_platform?
+  end
+
   def test_source
     set = Gem::Resolver::APISet.new
     data = {

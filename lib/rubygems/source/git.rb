@@ -91,8 +91,8 @@ class Gem::Source::Git < Gem::Source
       success = system @git, 'reset', '--quiet', '--hard', @reference
 
       success &&=
-        system @git, 'submodule', 'update',
-               '--quiet', '--init', '--recursive', out: IO::NULL if @need_submodules
+        Gem::Util.silent_system @git, 'submodule', 'update',
+               '--quiet', '--init', '--recursive' if @need_submodules
 
       success
     end
@@ -161,7 +161,9 @@ class Gem::Source::Git < Gem::Source
         file      = File.basename spec_file
 
         Dir.chdir directory do
-          Gem::Specification.load file
+          spec = Gem::Specification.load file
+          spec.full_gem_path = File.expand_path '.' if spec
+          spec
         end
       end.compact
     end

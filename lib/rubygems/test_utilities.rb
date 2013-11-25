@@ -205,6 +205,10 @@ class Gem::TestCase::SpecFetcherSetup
     @operations << [:clear]
   end
 
+  ##
+  # Returns a Hash of created Specification full names and the corresponding
+  # Specification.
+
   def created_specs
     created = {}
 
@@ -271,7 +275,7 @@ class Gem::TestCase::SpecFetcherSetup
     end
   end
 
-  def setup_fetcher # :nodoc;
+  def setup_fetcher # :nodoc:
     require 'zlib'
     require 'socket'
     require 'rubygems/remote_fetcher'

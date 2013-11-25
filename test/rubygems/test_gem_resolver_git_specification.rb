@@ -32,5 +32,19 @@ class TestGemResolverGitSpecification < Gem::TestCase
     refute_equal g_spec_a, i_spec
   end
 
+  def test_install
+    git_gem 'a', 1
+
+    git_spec = Gem::Resolver::GitSpecification.new @set, @spec
+
+    called = false
+
+    git_spec.install({}) do |installer|
+      called = installer
+    end
+
+    assert called
+  end
+
 end
 

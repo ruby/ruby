@@ -12,5 +12,13 @@ class Gem::Resolver::VendorSpecification < Gem::Resolver::SpecSpecification
       @source == other.source
   end
 
+  ##
+  # This is a null install as this gem was unpacked into a directory.
+  # +options+ are ignored.
+
+  def install options
+    yield nil
+  end
+
 end
 

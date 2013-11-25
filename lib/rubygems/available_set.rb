@@ -127,7 +127,7 @@ class Gem::AvailableSet
     end
 
     match.map do |t|
-      Gem::Resolver::InstalledSpecification.new(self, t.spec, t.source)
+      Gem::Resolver::LocalSpecification.new(self, t.spec, t.source)
     end
   end
 

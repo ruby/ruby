@@ -9,6 +9,11 @@ class Gem::BasicSpecification
 
   attr_reader :loaded_from
 
+  ##
+  # Allows correct activation of git: and path: gems.
+
+  attr_writer :full_gem_path # :nodoc:
+
   def self.default_specifications_dir
     File.join(Gem.default_dir, "specifications", "default")
   end

@@ -11,16 +11,22 @@ class Gem::Resolver::InstalledSpecification < Gem::Resolver::SpecSpecification
   end
 
   ##
+  # This is a null install as this specification is already installed.
+  # +options+ are ignored.
+
+  def install options
+    yield nil
+  end
+
+  ##
   # Returns +true+ if this gem is installable for the current platform.
 
   def installable_platform?
     # BACKCOMPAT If the file is coming out of a specified file, then we
     # ignore the platform. This code can be removed in RG 3.0.
-    if @source.kind_of? Gem::Source::SpecificFile
-      return true
-    else
-      Gem::Platform.match @spec.platform
-    end
+    return true if @source.kind_of? Gem::Source::SpecificFile
+
+    super
   end
 
   ##

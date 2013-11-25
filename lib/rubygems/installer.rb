@@ -57,6 +57,11 @@ class Gem::Installer
 
   attr_reader :options
 
+  ##
+  # Sets the specification for .gem-less installs.
+
+  attr_writer :spec
+
   @path_warning = false
 
   class << self

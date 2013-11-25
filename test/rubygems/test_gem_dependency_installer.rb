@@ -719,6 +719,9 @@ class TestGemDependencyInstaller < Gem::TestCase
       inst.install 'a'
     end
 
+    assert_equal %w[a-1], inst.installed_gems.map { |s| s.full_name },
+                 'sanity check'
+
     ENV['GEM_HOME'] = @gemhome
     ENV['GEM_PATH'] = [@gemhome, gemhome2].join File::PATH_SEPARATOR
     Gem.clear_paths

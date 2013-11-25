@@ -20,6 +20,9 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
 
   attr_accessor :ignore_installed # :nodoc:
 
+  ##
+  # Creates a new InstallerSet that will look for gems in +domain+.
+
   def initialize domain
     @domain = domain
 

@@ -4,16 +4,26 @@
 
 class Gem::Resolver::DependencyRequest
 
+  ##
+  # The wrapped Gem::Dependency
+
   attr_reader :dependency
+
+  ##
+  # The request for this dependency.
 
   attr_reader :requester
 
-  def initialize(dep, act)
-    @dependency = dep
-    @requester = act
+  ##
+  # Creates a new DependencyRequest for +dependency+ from +requester+.
+  # +requester may be nil if the request came from a user.
+
+  def initialize dependency, requester
+    @dependency = dependency
+    @requester  = requester
   end
 
-  def ==(other)
+  def == other # :nodoc:
     case other
     when Gem::Dependency
       @dependency == other
@@ -24,26 +34,39 @@ class Gem::Resolver::DependencyRequest
     end
   end
 
+  ##
+  # Does this dependency request match +spec+
+
   def matches_spec?(spec)
     @dependency.matches_spec? spec
   end
+
+  ##
+  # The name of the gem this dependency request is requesting.
 
   def name
     @dependency.name
   end
 
+  ##
   # Indicate that the request is for a gem explicitly requested by the user
+
   def explicit?
     @requester.nil?
   end
 
-  # Indicate that the requset is for a gem requested as a dependency of another gem
+  ##
+  # Indicate that the request is for a gem requested as a dependency of
+  # another gem
+
   def implicit?
     !explicit?
   end
 
+  ##
   # Return a String indicating who caused this request to be added (only
   # valid for implicit requests)
+
   def request_context
     @requester ? @requester.request : "(unknown)"
   end
@@ -58,6 +81,9 @@ class Gem::Resolver::DependencyRequest
       q.pp @requester
     end
   end
+
+  ##
+  # The version requirement for this dependency request
 
   def requirement
     @dependency.requirement

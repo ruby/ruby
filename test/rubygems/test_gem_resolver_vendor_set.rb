@@ -16,6 +16,8 @@ class TestGemResolverVendorSet < Gem::TestCase
     spec = @set.load_spec name, version, Gem::Platform::RUBY, nil
 
     assert_equal "#{name}-#{version}", spec.full_name
+
+    assert_equal File.expand_path(directory), spec.full_gem_path
   end
 
   def test_add_vendor_gem_missing

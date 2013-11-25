@@ -29,6 +29,28 @@ class TestGemResolverIndexSpecification < Gem::TestCase
     assert_equal Gem::Platform.local.to_s, spec.platform
   end
 
+  def test_install
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+    end
+
+    set    = Gem::Resolver::IndexSet.new
+    source = Gem::Source.new @gem_repo
+
+    spec = Gem::Resolver::IndexSpecification.new(
+      set, 'a', v(2), source, Gem::Platform::RUBY)
+
+    called = false
+
+    spec.install({}) do |installer|
+      called = installer
+    end
+
+    assert_path_exists File.join @gemhome, 'specifications', 'a-2.gemspec'
+
+    assert_kind_of Gem::Installer, called
+  end
+
   def test_spec
     specs = spec_fetcher do |fetcher|
       fetcher.spec 'a', 2
