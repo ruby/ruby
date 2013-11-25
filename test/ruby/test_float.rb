@@ -171,4 +171,10 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(ArgumentError) { 1.0 < nil }
     assert_raise(ArgumentError) { 1.0 <= nil }
   end
+
+  def test_long_string
+    assert_separately([], <<-'end;')
+    assert_in_epsilon(10.0, ("1."+"1"*300000).to_f*9)
+    end;
+  end
 end
