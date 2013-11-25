@@ -74,7 +74,7 @@ module URI
     # The constructor accepts a hash as options for parser.
     # Keys of options are pattern names of URI components
     # and values of options are pattern strings.
-    # The constructor generetes set of regexps for parsing URIs.
+    # The constructor generates set of regexps for parsing URIs.
     #
     # You can use the following keys:
     #
