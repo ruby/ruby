@@ -552,7 +552,7 @@ module URI
     protected :set_password
 
     # returns the userinfo +ui+ as user, password
-    # if properly formated as 'user:password'
+    # if properly formatted as 'user:password'
     def split_userinfo(ui)
       return nil, nil unless ui
       user, password = ui.split(/:/, 2)
@@ -672,7 +672,7 @@ module URI
     # u.hostname = "::1"
     # p u.to_s                  #=> "http://[::1]/bar"
     #
-    # If the arugument seems IPv6 address,
+    # If the arguement seems IPv6 address,
     # it is wrapped by brackets.
     #
     def hostname=(v)

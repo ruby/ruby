@@ -1,3 +1,9 @@
+Mon Nov 25 19:48:10 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/uri/common.rb: [DOC] typo fixes by @vipulnsward [Fixes GH-456]
+	  https://github.com/ruby/ruby/pull/456
+	* lib/uri/generic.rb: [DOC] ditto.
+
 Mon Nov 25 14:34:42 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/bigdecimal/bigdecimal.gemspec: bump BigDecimal to 1.2.3 for
