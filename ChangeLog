@@ -1,3 +1,20 @@
+Mon Nov 25 06:53:30 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* internal.h: do not use ruby_sized_xrealloc() and ruby_sized_xfree()
+	  if HAVE_MALLOC_USABLE_SIZE (or _WIN32) is defined.
+
+	  We don't need these function if malloc_usable_size() is available.
+
+	* gc.c: catch up this change.
+
+	* gc.c: define HAVE_MALLOC_USABLE_SIZE on _WIN32.
+
+	* array.c (ary_resize_capa): do not use ruby_sized_xfree() with
+	  local variable to avoid "unused local variable" warning.
+	  This change only has few impact.
+
+	* string.c (rb_str_resize): ditto.
+
 Mon Nov 25 05:05:04 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* test/-ext-/tracepoint/test_tracepoint.rb: catch up GC.stat changes

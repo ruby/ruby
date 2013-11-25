@@ -1973,13 +1973,12 @@ rb_str_resize(VALUE str, long len)
 	}
 	else if (len + termlen <= RSTRING_EMBED_LEN_MAX + 1) {
 	    char *ptr = STR_HEAP_PTR(str);
-	    size_t size = STR_HEAP_SIZE(str);
 	    STR_SET_EMBED(str);
 	    if (slen > len) slen = len;
 	    if (slen > 0) MEMCPY(RSTRING(str)->as.ary, ptr, char, slen);
 	    TERM_FILL(RSTRING(str)->as.ary + len, termlen);
 	    STR_SET_EMBED_LEN(str, len);
-	    if (independent) ruby_sized_xfree(ptr, size);
+	    if (independent) ruby_xfree(ptr);
 	    return str;
 	}
 	else if (!independent) {

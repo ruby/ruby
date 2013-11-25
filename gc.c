@@ -37,6 +37,7 @@
 
 #ifndef HAVE_MALLOC_USABLE_SIZE
 # ifdef _WIN32
+#   define HAVE_MALLOC_USABLE_SIZE
 #   define malloc_usable_size(a) _msize(a)
 # endif
 #else
@@ -5753,6 +5754,9 @@ ruby_xcalloc(size_t n, size_t size)
     return vm_xcalloc(&rb_objspace, n, size);
 }
 
+#ifdef ruby_sized_xrealloc
+#undef ruby_sized_xrealloc
+#endif
 void *
 ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size)
 {
@@ -5775,6 +5779,9 @@ ruby_xrealloc2(void *ptr, size_t n, size_t size)
     return ruby_xrealloc(ptr, len);
 }
 
+#ifdef ruby_sized_xfree
+#undef ruby_sized_xfree
+#endif
 void
 ruby_sized_xfree(void *x, size_t size)
 {
