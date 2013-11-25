@@ -1,3 +1,9 @@
+Mon Nov 25 14:25:08 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/bigdecimal/bigdecimal.gemspec: Remove Gem::Specification#date
+	  We should rely on rubygems to create the date the gem was released
+	  for each version.
+
 Mon Nov 25 06:53:30 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* internal.h: do not use ruby_sized_xrealloc() and ruby_sized_xfree()
