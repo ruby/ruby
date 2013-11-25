@@ -1,3 +1,8 @@
+Mon Nov 25 22:23:03 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/xmlrpc.rb: [DOC] Fix link to xmlrpc4r site [Bug #9148]
+	  Patch by Giorgos Tsiftsis
+
 Mon Nov 25 19:48:10 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/uri/common.rb: [DOC] typo fixes by @vipulnsward [Fixes GH-456]
