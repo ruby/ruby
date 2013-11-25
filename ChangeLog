@@ -1,3 +1,8 @@
+Mon Nov 25 14:34:42 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/bigdecimal/bigdecimal.gemspec: bump BigDecimal to 1.2.3 for
+	  proper release date in RubyGems
+
 Mon Nov 25 14:25:08 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/bigdecimal/bigdecimal.gemspec: Remove Gem::Specification#date
