@@ -330,8 +330,8 @@ dump_result(struct dump_config *dc, VALUE output)
 /*
  *  call-seq:
  *    ObjectSpace.dump(obj[, output: :string]) # => "{ ... }"
- *    ObjectSpace.dump(obj, output: :file) # => "/tmp/rubyobj000000"
- *    ObjectSpace.dump(obj, output: :stdout) # => nil
+ *    ObjectSpace.dump(obj, output: :file)     # => #<File:/tmp/rubyobj20131125-88733-1xkfmpv.json>
+ *    ObjectSpace.dump(obj, output: :stdout)   # => nil
  *
  *  Dump the contents of a ruby object as JSON.
  *
@@ -359,7 +359,7 @@ objspace_dump(int argc, VALUE *argv, VALUE os)
 
 /*
  *  call-seq:
- *    ObjectSpace.dump_all([output: :file]) # => "/tmp/rubyheap000000"
+ *    ObjectSpace.dump_all([output: :file]) # => #<File:/tmp/rubyheap20131125-88469-laoj3v.json>
  *    ObjectSpace.dump_all(output: :stdout) # => nil
  *    ObjectSpace.dump_all(output: :string) # => "{...}\n{...}\n..."
  *

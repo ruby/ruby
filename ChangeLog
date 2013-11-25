@@ -1,3 +1,8 @@
+Tue Nov 26 06:42:50 2013  Aman Gupta <ruby@tmm1.net>
+
+	* NEWS: Add ObjectSpace.after_gc_{start,end}_hook=
+	* ext/objspace/objspace_dump.c: [DOC] catch up dump/dump_all to r43679
+
 Tue Nov 26 04:12:10 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems master 612f85a.  Notable changes:

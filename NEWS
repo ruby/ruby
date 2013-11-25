@@ -185,6 +185,8 @@ with all sufficient information, see the ChangeLog file.
     * ObjectSpace.allocation_method_id
     * ObjectSpace.allocation_generation
     * ObjectSpace.reachable_objects_from_root
+    * ObjectSpace.after_gc_start_hook=
+    * ObjectSpace.after_gc_end_hook=
     * ObjectSpace.dump
     * ObjectSpace.dump_all
 
