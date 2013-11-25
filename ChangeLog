@@ -29,7 +29,7 @@ Mon Nov 25 04:45:59 2013  Koichi Sasada  <ko1@atdot.net>
 
 Mon Nov 25 04:16:09 2013  Koichi Sasada  <ko1@atdot.net>
 
-	* gc.c: change terminlogy "..._num" to "..._slots" about slot opetaion.
+	* gc.c: change terminology "..._num" to "..._slots" about slot operation.
 	  * final_num -> final_slots
 	  * objspace_live_num() -> objspace_live_slots()
 	  * objspace_limit_num() -> objspace_limit_slots()
