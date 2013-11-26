@@ -69,9 +69,18 @@ tracepoint_track_objspace_events(VALUE self)
     return result;
 }
 
+static VALUE
+tracepoint_specify_normal_and_internal_events(VALUE self)
+{
+    VALUE tpval = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_NEWOBJ | RUBY_EVENT_CALL, 0, 0);
+    rb_tracepoint_enable(tpval);
+    return Qnil; /* should not be reached */
+}
+
 void
 Init_tracepoint(void)
 {
     VALUE mBug = rb_define_module("Bug");
     rb_define_module_function(mBug, "tracepoint_track_objspace_events", tracepoint_track_objspace_events, 0);
+    rb_define_module_function(mBug, "tracepoint_specify_normal_and_internal_events", tracepoint_specify_normal_and_internal_events, 0);
 }

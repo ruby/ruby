@@ -1,3 +1,13 @@
+Tue Nov 26 17:38:16 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c: prohibit to specify normal events and internal events
+	  simultaneously.
+	  I will introduce special care for internal events later.
+
+	* ext/-test-/tracepoint/tracepoint.c: test this behavior.
+
+	* test/-ext-/tracepoint/test_tracepoint.rb: ditto.
+
 Tue Nov 26 16:30:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_readlink): fix buffer overflow on a long symlink. since

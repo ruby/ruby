@@ -50,4 +50,8 @@ class TestTracepointObj < Test::Unit::TestCase
     assert_operator gc_start_count, :>=, gc_end_count
     assert_operator stat2[:count] - stat1[:count] - 1, :<=, gc_end_count
   end
+
+  def test_tracepoint_specify_normal_and_internal_events
+    assert_raise(TypeError){ Bug.tracepoint_specify_normal_and_internal_events }
+  end
 end

@@ -105,7 +105,13 @@ thval2thread_t(VALUE thval)
 static rb_event_hook_t *
 alloc_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data, rb_event_hook_flag_t hook_flags)
 {
-    rb_event_hook_t *hook = ALLOC(rb_event_hook_t);
+    rb_event_hook_t *hook;
+
+    if ((events & RUBY_INTERNAL_EVENT_MASK) && (events & ~RUBY_INTERNAL_EVENT_MASK)) {
+	rb_raise(rb_eTypeError, "Can not specify normal event and internal event simultaneously.");
+    }
+
+    hook = ALLOC(rb_event_hook_t);
     hook->hook_flags = hook_flags;
     hook->events = events;
     hook->func = func;

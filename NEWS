@@ -331,3 +331,5 @@ with all sufficient information, see the ChangeLog file.
   * RUBY_INTERNAL_EVENT_FREEOBJ
   * RUBY_INTERNAL_EVENT_GC_START
   * RUBY_INTERNAL_EVENT_GC_END
+  * Note that you *can not* specify "internal events" with normal events
+    (such as RUBY_EVENT_CALL, RUBY_EVENT_RETURN) simultaneously.
