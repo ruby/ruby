@@ -1,3 +1,12 @@
+Tue Nov 26 11:43:19 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* ruby_atomic.h: use __atomic builtin functions supported by GCC.
+	  __sync family are legacy functions now and it is recommended
+	  that new code use the __atomic functions.
+	  http://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html
+
+	* configure.in: check existence of __atomic functions.
+
 Tue Nov 26 10:57:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.gemspec: revert Gem::Specification#date
