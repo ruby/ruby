@@ -1060,6 +1060,20 @@ class TestHash < Test::Unit::TestCase
     end
   end
 
+  def test_recursive_hash_value
+    bug9151 = '[ruby-core:58567] [Bug #9151]'
+
+    s = Struct.new(:x) {def hash; [x,""].hash; end}
+    a = s.new
+    b = s.new
+    a.x = b
+    b.x = a
+    ah = assert_nothing_raised(SystemStackError, bug9151) {a.hash}
+    bh = assert_nothing_raised(SystemStackError, bug9151) {b.hash}
+    assert_equal(ah, bh, bug9151)
+    assert_not_equal([a,"hello"].hash, [b,"world"].hash, bug9151)
+  end
+
   class TestSubHash < TestHash
     class SubHash < Hash
     end

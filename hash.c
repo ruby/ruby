@@ -76,10 +76,17 @@ rb_any_cmp(VALUE a, VALUE b)
     return !rb_eql(a, b);
 }
 
+static VALUE
+hash_recursive(VALUE obj, VALUE arg, int recurse)
+{
+    if (recurse) return INT2FIX(0);
+    return rb_funcallv(obj, id_hash, 0, 0);
+}
+
 VALUE
 rb_hash(VALUE obj)
 {
-    VALUE hval = rb_funcall(obj, id_hash, 0);
+    VALUE hval = rb_exec_recursive(hash_recursive, obj, 0);
   retry:
     switch (TYPE(hval)) {
       case T_FIXNUM:
