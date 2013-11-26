@@ -1,3 +1,12 @@
+Tue Nov 26 19:17:47 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/object_tracing.c (newobj_i): skip class_path if class
+	  is frozen.
+
+	  rb_class_path() can modify frozen classes (and causes errors).
+	  This patch is temporary. We need no-modification/no-allocation
+	  class path function.
+
 Tue Nov 26 18:12:13 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_trace.c: skip "exception check" and "reentrant check (only normal
