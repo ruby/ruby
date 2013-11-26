@@ -1,3 +1,8 @@
+Wed Nov 27 07:13:54 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: psych version 2.0.2
+	* ext/psych/psych.gemspec: ditto
+
 Wed Nov 27 06:40:18 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/scalar_scanner.rb: fix support for negative
