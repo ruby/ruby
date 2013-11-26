@@ -749,6 +749,9 @@ str_new4(VALUE klass, VALUE str)
 	STR_SET_SHARED(str2, shared); /* TODO: WB is not needed because str2 is *new* object */
     }
     else {
+	if (!STR_ASSOC_P(str)) {
+	    RSTRING(str2)->as.heap.aux.capa = RSTRING(str)->as.heap.aux.capa;
+	}
 	STR_SET_SHARED(str, str2);
     }
     rb_enc_cr_str_exact_copy(str2, str);
@@ -879,7 +882,7 @@ rb_str_free(VALUE str)
 RUBY_FUNC_EXPORTED size_t
 rb_str_memsize(VALUE str)
 {
-    if (!STR_EMBED_P(str) && !STR_SHARED_P(str)) {
+    if (FL_TEST(str, STR_NOEMBED|ELTS_SHARED) == STR_NOEMBED) {
 	return STR_HEAP_SIZE(str);
     }
     else {

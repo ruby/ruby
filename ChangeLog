@@ -1,3 +1,8 @@
+Wed Nov 27 02:26:58 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_new4): copy the original capacity so that memsize of
+	  frozen shared string returns correct size.
+
 Wed Nov 27 02:20:13 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_hash): should not ignore the rest of recursive

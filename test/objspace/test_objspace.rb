@@ -24,6 +24,14 @@ class TestObjSpace < Test::Unit::TestCase
                     ObjectSpace.memsize_of(//.match("")))
   end
 
+  def test_memsize_of_root_shared_string
+    a = "hello" * 5
+    b = a.dup
+    c = nil
+    ObjectSpace.each_object(String) {|x| break c = x if x == a and x.frozen?}
+    assert_equal([0, 0, 26], [a, b, c].map {|x| ObjectSpace.memsize_of(x)})
+  end
+
   def test_argf_memsize
     size = ObjectSpace.memsize_of(ARGF)
     assert_kind_of(Integer, size)
