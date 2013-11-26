@@ -1,3 +1,10 @@
+Tue Nov 26 18:12:13 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c: skip "exception check" and "reentrant check (only normal
+	  events)  for internal events.
+
+	  Reentrant check for internal events are remaining.
+
 Tue Nov 26 17:38:16 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_trace.c: prohibit to specify normal events and internal events
