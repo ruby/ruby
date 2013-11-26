@@ -1,3 +1,11 @@
+Wed Nov 27 06:40:18 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/scalar_scanner.rb: fix support for negative
+	  years.
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: ditto
+	* test/psych/test_date_time.rb: test for change.
+	  Fixes: https://github.com/tenderlove/psych/issues/168
+
 Wed Nov 27 04:46:55 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/scalar_scanner.rb: fix regexp for matching TIME

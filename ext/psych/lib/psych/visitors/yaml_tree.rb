@@ -209,7 +209,11 @@ module Psych
       end
 
       def visit_DateTime o
-        formatted = format_time o.to_time
+        formatted = if o.offset.zero?
+                      o.strftime("%Y-%m-%d %H:%M:%S.%9N Z".freeze)
+                    else
+                      o.strftime("%Y-%m-%d %H:%M:%S.%9N %:z".freeze)
+                    end
         tag = '!ruby/object:DateTime'
         register o, @emitter.scalar(formatted, nil, tag, false, false, Nodes::Scalar::ANY)
       end

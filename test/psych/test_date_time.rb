@@ -3,6 +3,15 @@ require 'date'
 
 module Psych
   class TestDateTime < TestCase
+    def test_negative_year
+      time = Time.utc -1, 12, 16
+      assert_cycle time
+    end
+
+    def test_new_datetime
+      assert_cycle DateTime.new
+    end
+
     def test_invalid_date
       assert_cycle "2013-10-31T10:40:07-000000000000033"
     end
