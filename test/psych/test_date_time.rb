@@ -3,6 +3,10 @@ require 'date'
 
 module Psych
   class TestDateTime < TestCase
+    def test_invalid_date
+      assert_cycle "2013-10-31T10:40:07-000000000000033"
+    end
+
     def test_string_tag
       dt = DateTime.now
       yaml = Psych.dump dt

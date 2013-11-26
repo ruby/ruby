@@ -1,3 +1,10 @@
+Wed Nov 27 04:46:55 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/scalar_scanner.rb: fix regexp for matching TIME
+	  strings.
+	* test/psych/test_date_time.rb: test for change.
+	  Fixes: https://github.com/tenderlove/psych/issues/171
+
 Wed Nov 27 02:26:58 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_new4): copy the original capacity so that memsize of
