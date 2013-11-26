@@ -136,6 +136,11 @@ VALUE
 rb_fstring(VALUE str)
 {
     st_data_t fstr;
+    Check_Type(str, T_STRING);
+
+    if (FL_TEST(str, RSTRING_FSTR))
+	return str;
+
     if (st_lookup(frozen_strings, (st_data_t)str, &fstr)) {
 	str = (VALUE)fstr;
 	/* because of lazy sweep, str may be unmaked already and swept

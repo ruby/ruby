@@ -2460,8 +2460,7 @@ rb_reg_initialize(VALUE obj, const char *s, long len, rb_encoding *enc,
 			  options & ARG_REG_OPTION_MASK, err,
 			  sourcefile, sourceline);
     if (!re->ptr) return -1;
-    OBJ_WRITE(obj, &re->src, rb_enc_str_new(s, len, enc));
-    OBJ_FREEZE(re->src);
+    OBJ_WRITE(obj, &re->src, rb_fstring(rb_enc_str_new(s, len, enc)));
     RB_GC_GUARD(unescaped);
     return 0;
 }

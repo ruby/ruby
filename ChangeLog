@@ -1,3 +1,14 @@
+Wed Nov 27 08:24:49 2013  Aman Gupta <ruby@tmm1.net>
+
+	* compile.c: Use rb_fstring() to de-duplicate string literals in code.
+	  [ruby-core:58599] [Bug #9159] [ruby-core:54405]
+	* iseq.c (prepare_iseq_build): De-duplicate iseq labels and source
+	  locations.
+	* re.c (rb_reg_initialize): Use rb_fstring() for regex string.
+	* string.c (rb_fstring): Handle non-string and already-fstr arguments.
+	* vm_eval.c (eval_string_with_cref): De-duplicate eval source
+	  filename.
+
 Wed Nov 27 07:13:54 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: psych version 2.0.2

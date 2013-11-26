@@ -171,10 +171,10 @@ r_value(VALUE value)
   (((rb_iseq_t*)DATA_PTR(iseq))->location.absolute_path)
 
 #define NEW_ISEQVAL(node, name, type, line_no)       \
-  new_child_iseq(iseq, (node), (name), 0, (type), (line_no))
+  new_child_iseq(iseq, (node), rb_fstring(name), 0, (type), (line_no))
 
 #define NEW_CHILD_ISEQVAL(node, name, type, line_no)       \
-  new_child_iseq(iseq, (node), (name), iseq->self, (type), (line_no))
+  new_child_iseq(iseq, (node), rb_fstring(name), iseq->self, (type), (line_no))
 
 /* add instructions */
 #define ADD_SEQ(seq1, seq2) \
@@ -2254,15 +2254,16 @@ compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node, int *cntp)
 
     debugp_param("nd_lit", lit);
     if (!NIL_P(lit)) {
-	hide_obj(lit);
 	cnt++;
+	if (RB_TYPE_P(lit, T_STRING))
+	    lit = node->nd_lit = rb_fstring(node->nd_lit);
 	ADD_INSN1(ret, nd_line(node), putobject, lit);
     }
 
     while (list) {
 	node = list->nd_head;
 	if (nd_type(node) == NODE_STR) {
-	    hide_obj(node->nd_lit);
+	    node->nd_lit = rb_fstring(node->nd_lit);
 	    ADD_INSN1(ret, nd_line(node), putobject, node->nd_lit);
 	}
 	else {
@@ -2515,7 +2516,7 @@ case_when_optimizable_literal(NODE * node)
 	break;
       }
       case NODE_STR:
-	return node->nd_lit;
+	return node->nd_lit = rb_fstring(node->nd_lit);
     }
     return Qundef;
 }
@@ -2542,8 +2543,8 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *cond_seq, NODE *vals, LABEL *l1, int onl
 	ADD_INSN(cond_seq, nd_line(val), dup); /* dup target */
 
 	if (nd_type(val) == NODE_STR) {
+	    val->nd_lit = rb_fstring(val->nd_lit);
 	    debugp_param("nd_lit", val->nd_lit);
-	    OBJ_FREEZE(val->nd_lit);
 	    ADD_INSN1(cond_seq, nd_line(val), putobject, val->nd_lit);
 	}
 	else {
@@ -4798,9 +4799,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_STR:{
+	node->nd_lit = rb_fstring(node->nd_lit);
 	debugp_param("nd_lit", node->nd_lit);
 	if (!poped) {
-	    OBJ_FREEZE(node->nd_lit);
 	    ADD_INSN1(ret, line, putstring, node->nd_lit);
 	}
 	break;
@@ -4814,7 +4815,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_XSTR:{
-	OBJ_FREEZE(node->nd_lit);
+	node->nd_lit = rb_fstring(node->nd_lit);
 	ADD_CALL_RECEIVER(ret, line);
 	ADD_INSN1(ret, line, putobject, node->nd_lit);
 	ADD_CALL(ret, line, ID2SYM(idBackquote), INT2FIX(1));
@@ -4908,7 +4909,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
       case NODE_DEFN:{
 	VALUE iseqval = NEW_ISEQVAL(node->nd_defn,
-				    rb_str_dup(rb_id2str(node->nd_mid)),
+				    rb_id2str(node->nd_mid),
 				    ISEQ_TYPE_METHOD, line);
 
 	debugp_param("defn/iseq", iseqval);
@@ -4928,7 +4929,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
       case NODE_DEFS:{
 	VALUE iseqval = NEW_ISEQVAL(node->nd_defn,
-				    rb_str_dup(rb_id2str(node->nd_mid)),
+				    rb_id2str(node->nd_mid),
 				    ISEQ_TYPE_METHOD, line);
 
 	debugp_param("defs/iseq", iseqval);
@@ -5530,7 +5531,7 @@ rb_insns_name_array(void)
     VALUE ary = rb_ary_new();
     int i;
     for (i = 0; i < numberof(insn_name_info); i++) {
-	rb_ary_push(ary, rb_obj_freeze(rb_str_new2(insn_name_info[i])));
+	rb_ary_push(ary, rb_fstring(rb_str_new2(insn_name_info[i])));
     }
     return rb_obj_freeze(ary);
 }

@@ -1239,6 +1239,11 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *const cref_arg, 
 	    fname = rb_usascii_str_new_cstr("(eval)");
 	}
 
+	if (RTEST(fname))
+	    fname = rb_fstring(fname);
+	if (RTEST(absolute_path))
+	    absolute_path = rb_fstring(absolute_path);
+
 	/* make eval iseq */
 	th->parse_in_eval++;
 	th->mild_compile_error++;
