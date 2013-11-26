@@ -1,3 +1,10 @@
+Tue Nov 26 14:23:17 2013  Aman Gupta <ruby@tmm1.net>
+
+	* ext/objspace/objspace_dump.c (dump_append_string_value): Escape
+	  control characters for strict json parsers.
+	* ext/objspace/objspace_dump.c (objspace_dump): Document File/IO
+	  output option.
+
 Tue Nov 26 11:43:19 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* ruby_atomic.h: use __atomic builtin functions supported by GCC.

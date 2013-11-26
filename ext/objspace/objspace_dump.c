@@ -82,7 +82,10 @@ dump_append_string_value(struct dump_config *dc, VALUE obj)
 	    dump_append(dc, "\\r");
 	    break;
 	  default:
-	    dump_append(dc, "%c", c);
+	    if (c <= 0x1f)
+		dump_append(dc, "\\u%04d", c);
+	    else
+		dump_append(dc, "%c", c);
 	}
     }
     dump_append(dc, "\"");
@@ -362,6 +365,8 @@ objspace_dump(int argc, VALUE *argv, VALUE os)
  *    ObjectSpace.dump_all([output: :file]) # => #<File:/tmp/rubyheap20131125-88469-laoj3v.json>
  *    ObjectSpace.dump_all(output: :stdout) # => nil
  *    ObjectSpace.dump_all(output: :string) # => "{...}\n{...}\n..."
+ *    ObjectSpace.dump_all(output:
+ *      File.open('heap.json','w'))         # => #<File:heap.json>
  *
  *  Dump the contents of the ruby heap as JSON.
  *
