@@ -1,3 +1,8 @@
+Tue Nov 26 20:02:39 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_settracefunc.rb: add tests for a_call/a_return
+	  by Brandur <brandur@mutelight.org> [Feature #9120]
+
 Tue Nov 26 19:29:52 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk: add useful config "set breakpoint pending on"
