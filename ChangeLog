@@ -1,3 +1,10 @@
+Tue Nov 26 16:30:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_readlink): fix buffer overflow on a long symlink. since
+	  rb_str_modify_expand() expands from its length but not its capacity,
+	  need to set the length properly for each expansion.
+	  [ruby-core:58592] [Bug #9157]
+
 Tue Nov 26 14:23:17 2013  Aman Gupta <ruby@tmm1.net>
 
 	* ext/objspace/objspace_dump.c (dump_append_string_value): Escape

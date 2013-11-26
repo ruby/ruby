@@ -2618,6 +2618,7 @@ rb_readlink(VALUE path)
 	) {
 	rb_str_modify_expand(v, size);
 	size *= 2;
+	rb_str_set_len(v, size);
     }
     if (rv < 0) {
 	rb_str_resize(v, 0);

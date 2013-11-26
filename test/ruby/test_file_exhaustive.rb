@@ -391,6 +391,24 @@ class TestFileExhaustive < Test::Unit::TestCase
   rescue NotImplementedError
   end
 
+  def test_readlink_long_path
+    return unless @symlinkfile
+    bug9157 = '[ruby-core:58592] [Bug #9157]'
+    assert_separately(["-", @symlinkfile, bug9157], <<-"end;")
+      symlinkfile, bug9157 = *ARGV
+      100.step(1000, 100) do |n|
+        File.unlink(symlinkfile)
+        link = "foo"*n
+        begin
+          File.symlink(link, symlinkfile)
+        rescue Errno::ENAMETOOLONG
+          break
+        end
+        assert_equal(link, File.readlink(symlinkfile), bug9157)
+      end
+    end;
+  end
+
   def test_unlink
     assert_equal(1, File.unlink(@file))
     make_file("foo", @file)
