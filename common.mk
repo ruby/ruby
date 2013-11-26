@@ -1015,7 +1015,8 @@ tbench: $(PROGRAM) PHONY
 	            --pattern='bmx_' --directory=$(srcdir)/benchmark $(OPTS)
 
 run.gdb:
-	echo b ruby_debug_breakpoint           > run.gdb
+	echo set breakpoint pending on         > run.gdb
+	echo b ruby_debug_breakpoint          >> run.gdb
 	echo '# handle SIGINT nostop'         >> run.gdb
 	echo '# handle SIGPIPE nostop'        >> run.gdb
 	echo '# b rb_longjmp'                 >> run.gdb

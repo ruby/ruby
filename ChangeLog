@@ -1,3 +1,8 @@
+Tue Nov 26 19:29:52 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* common.mk: add useful config "set breakpoint pending on"
+	  for run.gdb.
+
 Tue Nov 26 19:17:47 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/object_tracing.c (newobj_i): skip class_path if class
