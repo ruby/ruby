@@ -3807,7 +3807,7 @@ recursive_hash(VALUE ary, VALUE dummy, int recur)
 static VALUE
 rb_ary_hash(VALUE ary)
 {
-    return rb_exec_recursive_outer(recursive_hash, ary, 0);
+    return rb_exec_recursive_paired(recursive_hash, ary, ary, 0);
 }
 
 /*

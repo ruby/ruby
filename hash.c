@@ -1944,7 +1944,7 @@ recursive_hash(VALUE hash, VALUE dummy, int recur)
 static VALUE
 rb_hash_hash(VALUE hash)
 {
-    return rb_exec_recursive_outer(recursive_hash, hash, 0);
+    return rb_exec_recursive_paired(recursive_hash, hash, hash, 0);
 }
 
 static int

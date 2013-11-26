@@ -2012,9 +2012,9 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_hash2
+    assert_not_equal([[1]].hash, [[2]].hash)
     a = []
     a << a
-    assert_equal([[a]].hash, a.hash)
     assert_not_equal([a, a].hash, a.hash) # Implementation dependent
   end
 

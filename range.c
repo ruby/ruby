@@ -274,7 +274,7 @@ recursive_hash(VALUE range, VALUE dummy, int recur)
 static VALUE
 range_hash(VALUE range)
 {
-    return rb_exec_recursive_outer(recursive_hash, range, 0);
+    return rb_exec_recursive_paired(recursive_hash, range, range, 0);
 }
 
 static void

@@ -1,3 +1,17 @@
+Wed Nov 27 02:20:13 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_hash): should not ignore the rest of recursive
+	  constructs.
+
+	* hash.c (rb_hash_hash): ditto.
+
+	* range.c (range_hash): ditto.
+
+	* struct.c (rb_struct_hash): ditto.
+
+	* test/-ext-/test_recursion.rb (TestRecursion): separate from
+	  test/ruby/test_thread.rb.
+
 Tue Nov 26 22:43:36 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_hash): cut off if recursion detected to get rid of stack

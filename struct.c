@@ -980,7 +980,7 @@ recursive_hash(VALUE s, VALUE dummy, int recur)
 static VALUE
 rb_struct_hash(VALUE s)
 {
-    return rb_exec_recursive_outer(recursive_hash, s, 0);
+    return rb_exec_recursive_paired(recursive_hash, s, s, 0);
 }
 
 static VALUE
