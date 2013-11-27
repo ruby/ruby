@@ -16,9 +16,6 @@ typedef unsigned int rb_atomic_t;
 
 # define ATOMIC_SIZE_ADD(var, val) __atomic_fetch_add(&(var), (val), __ATOMIC_SEQ_CST)
 # define ATOMIC_SIZE_SUB(var, val) __atomic_fetch_sub(&(var), (val), __ATOMIC_SEQ_CST)
-# define ATOMIC_SIZE_INC(var) __atomic_fetch_add(&(var), 1, __ATOMIC_SEQ_CST)
-# define ATOMIC_SIZE_DEC(var) __atomic_fetch_sub(&(var), 1, __ATOMIC_SEQ_CST)
-# define ATOMIC_SIZE_EXCHANGE(var, val) __atomic_exchange_n(&(var), (val), __ATOMIC_SEQ_CST)
 # define ATOMIC_SIZE_CAS(var, oldval, newval) \
 ({ size_t oldvaldup = (oldval); \
    __atomic_compare_exchange_n(&(var), &oldvaldup, (newval), 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST); \
@@ -39,9 +36,6 @@ typedef unsigned int rb_atomic_t; /* Anything OK */
 
 # define ATOMIC_SIZE_ADD(var, val) __sync_fetch_and_add(&(var), (val))
 # define ATOMIC_SIZE_SUB(var, val) __sync_fetch_and_sub(&(var), (val))
-# define ATOMIC_SIZE_INC(var) __sync_fetch_and_add(&(var), 1)
-# define ATOMIC_SIZE_DEC(var) __sync_fetch_and_sub(&(var), 1)
-# define ATOMIC_SIZE_EXCHANGE(var, val) __sync_lock_test_and_set(&(var), (val))
 
 #elif defined _WIN32
 #if defined _MSC_VER && _MSC_VER > 1200
@@ -139,8 +133,6 @@ extern rb_atomic_t ruby_atomic_compare_and_swap(rb_atomic_t *ptr,
 
 # define ATOMIC_SIZE_ADD(var, val) (void)((var) += (val))
 # define ATOMIC_SIZE_SUB(var, val) (void)((var) -= (val))
-# define ATOMIC_SIZE_INC(var) ((var)++)
-# define ATOMIC_SIZE_DEC(var) ((var)--)
 # define ATOMIC_SIZE_EXCHANGE(var, val) atomic_size_exchange(&(var), (val))
 static inline size_t
 atomic_size_exchange(size_t *ptr, size_t val)
@@ -151,6 +143,15 @@ atomic_size_exchange(size_t *ptr, size_t val)
 }
 #endif
 
+#ifndef ATOMIC_SIZE_INC
+# define ATOMIC_SIZE_INC(var) ATOMIC_INC(var)
+#endif
+#ifndef ATOMIC_SIZE_DEC
+# define ATOMIC_SIZE_DEC(var) ATOMIC_DEC(var)
+#endif
+#ifndef ATOMIC_SIZE_EXCHANGE
+# define ATOMIC_SIZE_EXCHANGE(var, val) ATOMIC_EXCHANGE(var, val)
+#endif
 #ifndef ATOMIC_SIZE_CAS
 # define ATOMIC_SIZE_CAS(var, oldval, val) ATOMIC_CAS(var, oldval, val)
 #endif

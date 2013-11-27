@@ -1,3 +1,8 @@
+Thu Nov 28 00:07:28 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* ruby_atomic.h: remove duplicate definisions between ATOMIC_XXX
+	  and ATOMIC_SIZE_XXX.
+
 Wed Nov 27 23:55:50 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* ruby_atomic.h: define ATOMIC_SIZE_CAS() with
