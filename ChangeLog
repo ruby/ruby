@@ -1,3 +1,9 @@
+Wed Nov 27 10:39:39 2013  Aman Gupta <ruby@tmm1.net>
+
+	* gc.c: Rename rb_heap_t members:
+	    used -> page_length
+	    limit -> total_slots
+
 Wed Nov 27 08:24:49 2013  Aman Gupta <ruby@tmm1.net>
 
 	* compile.c: Use rb_fstring() to de-duplicate string literals in code.

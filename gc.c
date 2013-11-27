@@ -391,8 +391,8 @@ typedef struct rb_heap_struct {
     struct heap_page *using_page;
     struct heap_page *sweep_pages;
     RVALUE *freelist;
-    size_t used;      /* total page count in a heap */
-    size_t limit;
+    size_t page_length;      /* total page count in a heap */
+    size_t total_slots;      /* total slot count (page_length * HEAP_OBJ_LIMIT) */
 } rb_heap_t;
 
 typedef struct rb_objspace {
@@ -893,8 +893,8 @@ rb_objspace_free(rb_objspace_t *objspace)
 	heap_pages_lomem = 0;
 	heap_pages_himem = 0;
 
-	objspace->eden_heap.used = 0;
-	objspace->eden_heap.limit = 0;
+	objspace->eden_heap.page_length = 0;
+	objspace->eden_heap.total_slots = 0;
 	objspace->eden_heap.pages = NULL;
     }
     free_stack_chunks(&objspace->mark_stack);
@@ -906,8 +906,8 @@ static void
 heap_pages_expand_sorted(rb_objspace_t *objspace)
 {
     size_t next_length = heap_pages_increment;
-    next_length += heap_eden->used;
-    next_length += heap_tomb->used;
+    next_length += heap_eden->page_length;
+    next_length += heap_tomb->page_length;
 
     if (next_length > heap_pages_length) {
 	struct heap_page **sorted;
@@ -960,8 +960,8 @@ heap_unlink_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *pag
     page->prev = NULL;
     page->next = NULL;
     page->heap = NULL;
-    heap->used--;
-    heap->limit -= page->limit;
+    heap->page_length--;
+    heap->total_slots -= page->limit;
 }
 
 static void
@@ -1100,8 +1100,8 @@ heap_page_create(rb_objspace_t *objspace)
 	page = heap_page_allocate(objspace);
 	method = "allocate";
     }
-    if (0) fprintf(stderr, "heap_page_create: %s - %p, heap_pages_used: %d, heap_pages_used: %d, tomb->used: %d\n",
-		   method, page, (int)heap_pages_length, (int)heap_pages_used, (int)heap_tomb->used);
+    if (0) fprintf(stderr, "heap_page_create: %s - %p, heap_pages_used: %d, heap_pages_used: %d, tomb->page_length: %d\n",
+		   method, page, (int)heap_pages_length, (int)heap_pages_used, (int)heap_tomb->page_length);
     return page;
 }
 
@@ -1112,8 +1112,8 @@ heap_add_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
     page->next = heap->pages;
     if (heap->pages) heap->pages->prev = page;
     heap->pages = page;
-    heap->used++;
-    heap->limit += page->limit;
+    heap->page_length++;
+    heap->total_slots += page->limit;
 }
 
 static void
@@ -1140,7 +1140,7 @@ heap_add_pages(rb_objspace_t *objspace, rb_heap_t *heap, size_t add)
 static void
 heap_set_increment(rb_objspace_t *objspace, size_t minimum_limit)
 {
-    size_t used = heap_pages_used - heap_tomb->used;
+    size_t used = heap_pages_used - heap_tomb->page_length;
     size_t next_used_limit = (size_t)(used * gc_params.growth_factor);
     if (gc_params.growth_max_slots > 0) {
 	size_t max_used_limit = (size_t)(used + gc_params.growth_max_slots/HEAP_OBJ_LIMIT);
@@ -1162,8 +1162,8 @@ heap_set_increment(rb_objspace_t *objspace, size_t minimum_limit)
 static int
 heap_increment(rb_objspace_t *objspace, rb_heap_t *heap)
 {
-    rgengc_report(5, objspace, "heap_increment: heap_pages_length: %d, heap_pages_inc: %d, heap->used: %d\n",
-		  (int)heap_pages_length, (int)heap_pages_increment, (int)heap->used);
+    rgengc_report(5, objspace, "heap_increment: heap_pages_length: %d, heap_pages_inc: %d, heap->page_length: %d\n",
+		  (int)heap_pages_length, (int)heap_pages_increment, (int)heap->page_length);
 
     if (heap_pages_increment > 0) {
 	heap_pages_increment--;
@@ -2634,15 +2634,15 @@ objspace_live_slot(rb_objspace_t *objspace)
 }
 
 static size_t
-objspace_limit_slot(rb_objspace_t *objspace)
+objspace_total_slot(rb_objspace_t *objspace)
 {
-    return heap_eden->limit + heap_tomb->limit;
+    return heap_eden->total_slots + heap_tomb->total_slots;
 }
 
 static size_t
 objspace_free_slot(rb_objspace_t *objspace)
 {
-    return objspace_limit_slot(objspace) - (objspace_live_slot(objspace) - heap_pages_final_slots);
+    return objspace_total_slot(objspace) - (objspace_live_slot(objspace) - heap_pages_final_slots);
 }
 
 static void
@@ -2800,7 +2800,7 @@ gc_before_sweep(rb_objspace_t *objspace)
     }
 
     heap_pages_swept_slots = 0;
-    total_limit_slot = objspace_limit_slot(objspace);
+    total_limit_slot = objspace_total_slot(objspace);
 
     heap_pages_min_free_slots = (size_t)(total_limit_slot * 0.30);
     if (heap_pages_min_free_slots < gc_params.heap_free_slots) {
@@ -2889,8 +2889,8 @@ gc_after_sweep(rb_objspace_t *objspace)
 {
     rb_heap_t *heap = heap_eden;
 
-    rgengc_report(1, objspace, "after_gc_sweep: heap->limit: %d, heap->swept_slots: %d, min_free_slots: %d\n",
-		  (int)heap->limit, (int)heap_pages_swept_slots, (int)heap_pages_min_free_slots);
+    rgengc_report(1, objspace, "after_gc_sweep: heap->total_slots: %d, heap->swept_slots: %d, min_free_slots: %d\n",
+		  (int)heap->total_slots, (int)heap_pages_swept_slots, (int)heap_pages_min_free_slots);
 
     if (heap_pages_swept_slots < heap_pages_min_free_slots) {
 	heap_set_increment(objspace, (heap_pages_min_free_slots - heap_pages_swept_slots) / HEAP_OBJ_LIMIT);
@@ -2909,8 +2909,8 @@ gc_after_sweep(rb_objspace_t *objspace)
     heap_pages_free_unused_pages(objspace);
 
     /* if heap_pages has unused pages, then assign them to increment */
-    if (heap_pages_increment < heap_tomb->used) {
-	heap_pages_increment = heap_tomb->used;
+    if (heap_pages_increment < heap_tomb->page_length) {
+	heap_pages_increment = heap_tomb->page_length;
 	heap_pages_expand_sorted(objspace);
     }
 
@@ -5313,8 +5313,8 @@ gc_set_initial_pages(void)
     rb_objspace_t *objspace = &rb_objspace;
 
     min_pages = gc_params.heap_init_slots / HEAP_OBJ_LIMIT;
-    if (min_pages > heap_eden->used) {
-	heap_add_pages(objspace, heap_eden, min_pages - heap_eden->used);
+    if (min_pages > heap_eden->page_length) {
+	heap_add_pages(objspace, heap_eden, min_pages - heap_eden->page_length);
     }
 }
 
