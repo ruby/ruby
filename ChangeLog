@@ -1,3 +1,9 @@
+Wed Nov 27 14:24:55 2013  Aman Gupta <ruby@tmm1.net>
+
+	* hash.c (hash_aset_str): Use rb_fstring() to de-duplicate hash string
+	  keys. Patch by Eric Wong. [Bug #8998] [ruby-core:57727]
+	* test/ruby/test_hash.rb (class TestHash): test for above.
+
 Wed Nov 27 10:39:39 2013  Aman Gupta <ruby@tmm1.net>
 
 	* gc.c: Rename rb_heap_t members:

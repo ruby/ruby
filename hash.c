@@ -1262,7 +1262,9 @@ static int
 hash_aset_str(st_data_t *key, st_data_t *val, struct update_arg *arg, int existing)
 {
     if (!existing) {
-	*key = rb_str_new_frozen((VALUE)*key);
+	VALUE str = (VALUE)*key;
+	if (!OBJ_FROZEN(str))
+	    *key = rb_fstring((VALUE)*key);
     }
     return hash_aset(key, val, arg, existing);
 }

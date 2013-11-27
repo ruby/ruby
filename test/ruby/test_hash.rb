@@ -209,6 +209,12 @@ class TestHash < Test::Unit::TestCase
     assert_equal(256,     h[z])
   end
 
+  def test_ASET_string
+    a = {"ABC" => :t}
+    b = {"ABC" => :t}
+    assert_equal a.keys[0].object_id, b.keys[0].object_id
+  end
+
   def test_EQUAL # '=='
     h1 = @cls[ "a" => 1, "c" => 2 ]
     h2 = @cls[ "a" => 1, "c" => 2, 7 => 35 ]
