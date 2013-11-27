@@ -1,3 +1,8 @@
+Wed Nov 27 16:07:19 2013  Aman Gupta <ruby@tmm1.net>
+
+	* test/ruby/test_gc.rb (class TestGc): Fix warning in
+	  test_expand_heap.
+
 Wed Nov 27 15:55:52 2013  Aman Gupta <ruby@tmm1.net>
 
 	* gc.c (Init_GC): Add new GC::INTERNAL_CONSTANTS for information about

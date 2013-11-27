@@ -202,7 +202,7 @@ class TestGc < Test::Unit::TestCase
     assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom'
     GC.start
     base_length = GC.stat[:heap_eden_page_length]
-    (base_length * 500).times{ 'a'; nil }
+    (base_length * 500).times{ 'a' }
     GC.start
     assert_equal base_length, GC.stat[:heap_eden_page_length], "invalid heap expanding"
 
