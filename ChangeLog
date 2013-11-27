@@ -1,3 +1,9 @@
+Wed Nov 27 15:21:17 2013  Aman Gupta <ruby@tmm1.net>
+
+	* gc.c (gc_page_sweep): Fix compile warning from last commit.
+	* hash.c (hash_aset_str): Re-use existing variable to avoid
+	  unnecessary pointer dereferencing.
+
 Wed Nov 27 15:12:55 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_page_sweep): disable debug print.

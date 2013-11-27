@@ -2745,7 +2745,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
     if (0) fprintf(stderr, "gc_page_sweep(%d): freed?: %d, limt: %d, freed_slots: %d, empty_slots: %d, final_slots: %d\n",
 		   (int)rb_gc_count(),
 		   final_slots + freed_slots + empty_slots == sweep_page->limit,
-		   (int)sweep_page->limit, (int)freed_slots, (int)empty_slots, final_slots);
+		   (int)sweep_page->limit, (int)freed_slots, (int)empty_slots, (int)final_slots);
 
     if (heap_pages_deferred_final && !finalizing) {
         rb_thread_t *th = GET_THREAD();
