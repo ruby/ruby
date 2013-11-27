@@ -1,3 +1,9 @@
+Wed Nov 27 15:55:52 2013  Aman Gupta <ruby@tmm1.net>
+
+	* gc.c (Init_GC): Add new GC::INTERNAL_CONSTANTS for information about
+	  GC heap/page/slot sizing.
+	* test/ruby/test_gc.rb (class TestGc): test for above.
+
 Wed Nov 27 15:21:17 2013  Aman Gupta <ruby@tmm1.net>
 
 	* gc.c (gc_page_sweep): Fix compile warning from last commit.

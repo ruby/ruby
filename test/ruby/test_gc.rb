@@ -212,4 +212,9 @@ class TestGc < Test::Unit::TestCase
     assert base_length < GC.stat[:heap_eden_page_length]
     eom
   end
+
+  def test_gc_internals
+    assert_not_nil GC::INTERNAL_CONSTANTS[:HEAP_OBJ_LIMIT]
+    assert_not_nil GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]
+  end
 end
