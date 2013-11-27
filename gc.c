@@ -2742,6 +2742,11 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
     heap_pages_final_slots += final_slots;
     sweep_page->final_slots = final_slots;
 
+    if (1) fprintf(stderr, "gc_page_sweep(%d): freed?: %d, limt: %d, freed_slots: %d, empty_slots: %d, final_slots: %d\n",
+		   (int)rb_gc_count(),
+		   final_slots + freed_slots + empty_slots == sweep_page->limit,
+		   (int)sweep_page->limit, (int)freed_slots, (int)empty_slots, final_slots);
+
     if (heap_pages_deferred_final && !finalizing) {
         rb_thread_t *th = GET_THREAD();
         if (th) {
@@ -5064,6 +5069,7 @@ gc_stat(int argc, VALUE *argv, VALUE self)
     static VALUE sym_count;
     static VALUE sym_heap_used, sym_heap_length, sym_heap_increment;
     static VALUE sym_heap_live_slot, sym_heap_free_slot, sym_heap_final_slot, sym_heap_swept_slot;
+    static VALUE sym_heap_eden_page_length, sym_heap_tomb_page_length;
     static VALUE sym_total_allocated_object, sym_total_freed_object;
     static VALUE sym_malloc_increase, sym_malloc_limit;
 #if USE_RGENGC
@@ -5090,6 +5096,8 @@ gc_stat(int argc, VALUE *argv, VALUE self)
 	S(heap_free_slot);
 	S(heap_final_slot);
 	S(heap_swept_slot);
+	S(heap_eden_page_length);
+	S(heap_tomb_page_length);
 	S(total_allocated_object);
 	S(total_freed_object);
 	S(malloc_increase);
@@ -5139,6 +5147,8 @@ gc_stat(int argc, VALUE *argv, VALUE self)
     SET(heap_free_slot, objspace_free_slot(objspace));
     SET(heap_final_slot, heap_pages_final_slots);
     SET(heap_swept_slot, heap_pages_swept_slots);
+    SET(heap_eden_page_length, heap_eden->page_length);
+    SET(heap_tomb_page_length, heap_tomb->page_length);
     SET(total_allocated_object, objspace->profile.total_allocated_object_num);
     SET(total_freed_object, objspace->profile.total_freed_object_num);
     SET(malloc_increase, malloc_increase);
