@@ -1,3 +1,9 @@
+Wed Nov 27 14:50:02 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rinda/ring.rb:  Announce RingServer for the same process.
+	  [ruby-trunk - Bug #9163]
+	* test/rinda/test_rinda.rb:  Tests for the above.
+
 Wed Nov 27 14:37:33 2013  Aman Gupta <ruby@tmm1.net>
 
 	* test/ruby/test_eval.rb (class TestEval): Add test for shared eval

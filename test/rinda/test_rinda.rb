@@ -558,6 +558,40 @@ class TestRingServer < Test::Unit::TestCase
     @rs.shutdown
   end
 
+  def test_do_reply
+    called = nil
+
+    callback = proc { |ts|
+      called = ts
+    }
+
+    callback = DRb::DRbObject.new callback
+
+    @ts.write [:lookup_ring, callback]
+
+    @rs.do_reply
+
+    Thread.pass until called
+
+    assert_same @ts, called
+  end
+
+  def test_do_reply_local
+    called = nil
+
+    callback = proc { |ts|
+      called = ts
+    }
+
+    @ts.write [:lookup_ring, callback]
+
+    @rs.do_reply
+
+    Thread.pass until called
+
+    assert_same @ts, called
+  end
+
   def test_make_socket_unicast
     v4 = @rs.make_socket('127.0.0.1')
 
