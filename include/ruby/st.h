@@ -59,6 +59,13 @@ struct st_hash_type {
 
 #define ST_INDEX_BITS (sizeof(st_index_t) * CHAR_BIT)
 
+#if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR) && defined(HAVE_BUILTIN___BUILTIN_TYPES_COMPATIBLE_P)
+# define ST_DATA_COMPATIBLE_P(type) \
+   __builtin_choose_expr(__builtin_types_compatible_p(type, st_data_t), 1, 0)
+#else
+# define ST_DATA_COMPATIBLE_P(type) 0
+#endif
+
 struct st_table {
     const struct st_hash_type *type;
     st_index_t num_bins;
@@ -112,6 +119,7 @@ int st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_
 int st_foreach(st_table *, int (*)(ANYARGS), st_data_t);
 int st_foreach_check(st_table *, int (*)(ANYARGS), st_data_t, st_data_t);
 int st_reverse_foreach(st_table *, int (*)(ANYARGS), st_data_t);
+st_index_t st_keys(st_table *table, st_data_t *keys, st_index_t size);
 void st_add_direct(st_table *, st_data_t, st_data_t);
 void st_free_table(st_table *);
 void st_cleanup_safe(st_table *, st_data_t);

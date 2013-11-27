@@ -1091,6 +1091,35 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
     return 0;
 }
 
+st_index_t
+st_keys(st_table *table, st_data_t *keys, st_index_t size)
+{
+    st_data_t key, never = (st_data_t)Qundef;
+    st_data_t *keys_start = keys;
+
+    if (table->entries_packed) {
+	st_index_t i;
+
+	if (size > table->real_entries) size = table->real_entries;
+	for (i = 0; i < size; i++) {
+	    key = PKEY(table, i);
+	    if (key == never) continue;
+	    *keys++ = key;
+	}
+    }
+    else {
+	st_table_entry *ptr = table->head;
+	st_data_t *keys_end = keys + size;
+	while (ptr && keys < keys_end) {
+	    key = ptr->key;
+	    if (key != never) *keys++ = key;
+	    ptr = ptr->fore;
+	}
+    }
+
+    return keys - keys_start;
+}
+
 #if 0  /* unused right now */
 int
 st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
