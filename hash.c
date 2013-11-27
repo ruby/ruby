@@ -1703,7 +1703,7 @@ VALUE
 rb_hash_keys(VALUE hash)
 {
     VALUE keys;
-    int size = RHASH_SIZE(hash);
+    st_index_t size = RHASH_SIZE(hash);
 
     keys = rb_ary_new_capa(size);
     if (size == 0) return keys;

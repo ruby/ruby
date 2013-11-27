@@ -1,3 +1,7 @@
+Thu Nov 28 01:35:08 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* st.c (st_keys): fix to use st_index_t for size of hash.
+
 Thu Nov 28 00:36:52 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* st.c (st_keys): define st_keys(). it writes each key to buffer.
