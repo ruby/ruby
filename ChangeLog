@@ -1,3 +1,7 @@
+Wed Nov 27 15:12:55 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_page_sweep): disable debug print.
+
 Wed Nov 27 15:05:59 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_stat): add new information heap_eden_page_length and
