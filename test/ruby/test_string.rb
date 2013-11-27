@@ -478,6 +478,7 @@ class TestString < Test::Unit::TestCase
     result << 0x0300
     expected = S("\u0300".encode(Encoding::UTF_16LE))
     assert_equal(expected, result, bug7090)
+    assert_raise(TypeError) { 'foo' << :foo }
   end
 
   def test_count
