@@ -1,3 +1,10 @@
+Wed Nov 27 14:37:33 2013  Aman Gupta <ruby@tmm1.net>
+
+	* test/ruby/test_eval.rb (class TestEval): Add test for shared eval
+	  filenames via rb_fstring().
+	* test/ruby/test_iseq.rb (class TestISeq): Add test for shared
+	  iseq labels via rb_fstring(). [Bug #9159]
+
 Wed Nov 27 14:24:55 2013  Aman Gupta <ruby@tmm1.net>
 
 	* hash.c (hash_aset_str): Use rb_fstring() to de-duplicate hash string

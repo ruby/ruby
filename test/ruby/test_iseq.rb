@@ -116,4 +116,14 @@ class TestISeq < Test::Unit::TestCase
     assert_equal("block in test_location", iseq.label)
     assert_equal(line+1, iseq.first_lineno)
   end
+
+  def test_label_fstring
+    c = Class.new{ def foobar() end }
+
+    a, b = eval("# encoding: us-ascii\n'foobar'.freeze"),
+      ISeq.of(c.instance_method(:foobar)).label
+
+    assert_equal a.object_id, b.object_id,
+      "#{a.inspect}.object_id != #{b.inspect}.object_id"
+  end
 end
