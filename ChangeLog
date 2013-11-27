@@ -1,3 +1,8 @@
+Tue Nov 27 21:43:00 2013  Akira Matsuda  <ronnie@dio.jp>
+
+	* lib/irb/notifier.rb:  [Doc] Fix typo
+	* ext/json/lib/json/common.rb:  Ditto.
+
 Tue Nov 27 18:04:57 2013  Akira Matsuda  <ronnie@dio.jp>
 
 	* lib/irb/notifier.rb:  Fix typo

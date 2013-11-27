@@ -448,7 +448,7 @@ module ::Kernel
     nil
   end
 
-  # Ouputs _objs_ to STDOUT as JSON strings in a pretty format, with
+  # Outputs _objs_ to STDOUT as JSON strings in a pretty format, with
   # indentation and over many lines.
   def jj(*objs)
     objs.each do |obj|
