@@ -1,3 +1,7 @@
+Wed Nov 27 17:54:57 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_mark_stacked_objects): check only when check_mode > 0.
+
 Wed Nov 27 16:07:19 2013  Aman Gupta <ruby@tmm1.net>
 
 	* test/ruby/test_gc.rb (class TestGc): Fix warning in
