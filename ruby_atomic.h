@@ -10,17 +10,19 @@ typedef unsigned int rb_atomic_t;
 # define ATOMIC_OR(var, val) __atomic_or_fetch(&(var), (val), __ATOMIC_SEQ_CST)
 # define ATOMIC_EXCHANGE(var, val) __atomic_exchange_n(&(var), (val), __ATOMIC_SEQ_CST)
 # define ATOMIC_CAS(var, oldval, newval) \
-({ __typeof__(__typeof__(var) *) ptr = &(var); /* expression var may have side effects */ \
-   __typeof__(oldval) oldvaldup = (oldval); /* oldval should not be modified */ \
-   __typeof__(var) tmp = *ptr; \
-   __atomic_compare_exchange_n(ptr, &oldvaldup, (newval), 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST); \
-   tmp; })
+({ __typeof__(oldval) oldvaldup = (oldval); /* oldval should not be modified */ \
+   __atomic_compare_exchange_n(&(var), &oldvaldup, (newval), 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST); \
+   oldvaldup; })
 
 # define ATOMIC_SIZE_ADD(var, val) __atomic_fetch_add(&(var), (val), __ATOMIC_SEQ_CST)
 # define ATOMIC_SIZE_SUB(var, val) __atomic_fetch_sub(&(var), (val), __ATOMIC_SEQ_CST)
 # define ATOMIC_SIZE_INC(var) __atomic_fetch_add(&(var), 1, __ATOMIC_SEQ_CST)
 # define ATOMIC_SIZE_DEC(var) __atomic_fetch_sub(&(var), 1, __ATOMIC_SEQ_CST)
 # define ATOMIC_SIZE_EXCHANGE(var, val) __atomic_exchange_n(&(var), (val), __ATOMIC_SEQ_CST)
+# define ATOMIC_SIZE_CAS(var, oldval, newval) \
+({ size_t oldvaldup = (oldval); \
+   __atomic_compare_exchange_n(&(var), &oldvaldup, (newval), 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST); \
+   oldvaldup; })
 
 #elif defined HAVE_GCC_SYNC_BUILTINS
 /* @shyouhei hack to support atomic operations in case of gcc. Gcc

@@ -1,3 +1,8 @@
+Wed Nov 27 23:55:50 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* ruby_atomic.h: define ATOMIC_SIZE_CAS() with
+	  __atomic_compare_exchange_n() and refactoring.
+
 Tue Nov 27 21:43:00 2013  Akira Matsuda  <ronnie@dio.jp>
 
 	* lib/irb/notifier.rb:  [Doc] Fix typo
