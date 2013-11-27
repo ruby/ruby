@@ -1,3 +1,7 @@
+Tue Nov 27 18:04:57 2013  Akira Matsuda  <ronnie@dio.jp>
+
+	* lib/irb/notifier.rb:  Fix typo
+
 Wed Nov 27 17:54:57 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_mark_stacked_objects): check only when check_mode > 0.

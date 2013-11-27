@@ -161,7 +161,7 @@ module IRB
 	  @level_notifier = value
 	when Integer
 	  l = @notifiers[value]
-	  Notifier.Raise ErrUndefinedNotifer, value unless l
+	  Notifier.Raise ErrUndefinedNotifier, value unless l
 	  @level_notifier = l
 	else
 	  Notifier.Raise ErrUnrecognizedLevel, value unless l
