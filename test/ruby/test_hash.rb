@@ -212,7 +212,7 @@ class TestHash < Test::Unit::TestCase
   def test_ASET_string
     a = {"ABC" => :t}
     b = {"ABC" => :t}
-    assert_equal a.keys[0].object_id, b.keys[0].object_id
+    assert_same a.keys[0], b.keys[0]
   end
 
   def test_EQUAL # '=='

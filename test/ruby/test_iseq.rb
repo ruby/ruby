@@ -121,9 +121,7 @@ class TestISeq < Test::Unit::TestCase
     c = Class.new{ def foobar() end }
 
     a, b = eval("# encoding: us-ascii\n'foobar'.freeze"),
-      ISeq.of(c.instance_method(:foobar)).label
-
-    assert_equal a.object_id, b.object_id,
-      "#{a.inspect}.object_id != #{b.inspect}.object_id"
+           ISeq.of(c.instance_method(:foobar)).label
+    assert_same a, b
   end
 end

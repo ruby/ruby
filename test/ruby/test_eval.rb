@@ -482,7 +482,6 @@ class TestEval < Test::Unit::TestCase
     a, b = o.method(:foo).source_location[0],
            o.method(:bar).source_location[0]
 
-    assert_equal a.object_id, b.object_id,
-      "#{a.inspect}.object_id != #{b.inspect}.object_id"
+    assert_same a, b
   end
 end

@@ -1,3 +1,10 @@
+Wed Nov 27 15:02:53 2013  Aman Gupta <ruby@tmm1.net>
+
+	* test/ruby/test_eval.rb (class TestEval): Use assert_same instead of
+	  assert_equal.
+	* test/ruby/test_hash.rb (class TestHash): ditto.
+	* test/ruby/test_iseq.rb (class TestISeq): ditto.
+
 Wed Nov 27 14:50:02 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rinda/ring.rb:  Announce RingServer for the same process.
