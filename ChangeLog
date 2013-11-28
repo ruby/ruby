@@ -1,3 +1,7 @@
+Thu Nov 28 21:43:48 2013  Zachary Scott  <e@zzak.io>
+
+	* doc/dtrace_probes.rdoc: [DOC] Import dtrace probes doc from wiki
+
 Thu Nov 28 21:17:32 2013  Zachary Scott  <e@zzak.io>
 
 	* doc/contributing.rdoc: [DOC] Add heading above ChangeLog tips to
