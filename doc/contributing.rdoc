@@ -304,6 +304,8 @@ your local computer and won't be part of the official Ruby repository. It will
 be used to create patches based on the differences between your branch and
 trunk, or edge Ruby.
 
+=== Coding style
+
 Here are some general rules to follow when writing Ruby and C code for CRuby:
 
 * Indent 4 spaces for C with tabs for eight-space indentation (emacs default)
