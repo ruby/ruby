@@ -483,6 +483,7 @@ typedef struct rb_objspace {
 	size_t count;
 	size_t total_allocated_object_num;
 	size_t total_freed_object_num;
+	int last_collection_flags;
     } profile;
     struct gc_list *global_list;
     rb_event_flag_t hook_events; /* this place may be affinity with memory cache */
@@ -4837,6 +4838,7 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
     if (GC_NOTIFY) fprintf(stderr, "start garbage_collect(%d, %d, %d)\n", full_mark, immediate_sweep, reason);
 
     objspace->profile.count++;
+    objspace->profile.last_collection_flags = reason;
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_START, 0 /* TODO: pass minor/immediate flag? */);
 
     objspace->profile.total_allocated_object_num_at_gc_start = objspace->profile.total_allocated_object_num;
@@ -5072,6 +5074,7 @@ gc_stat(int argc, VALUE *argv, VALUE self)
     static VALUE sym_heap_eden_page_length, sym_heap_tomb_page_length;
     static VALUE sym_total_allocated_object, sym_total_freed_object;
     static VALUE sym_malloc_increase, sym_malloc_limit;
+    static VALUE sym_last_collection_flags;
 #if USE_RGENGC
     static VALUE sym_minor_gc_count, sym_major_gc_count;
     static VALUE sym_remembered_shady_object, sym_remembered_shady_object_limit;
@@ -5102,6 +5105,7 @@ gc_stat(int argc, VALUE *argv, VALUE self)
 	S(total_freed_object);
 	S(malloc_increase);
 	S(malloc_limit);
+	S(last_collection_flags);
 #if USE_RGENGC
 	S(minor_gc_count);
 	S(major_gc_count);
@@ -5153,6 +5157,7 @@ gc_stat(int argc, VALUE *argv, VALUE self)
     SET(total_freed_object, objspace->profile.total_freed_object_num);
     SET(malloc_increase, malloc_increase);
     SET(malloc_limit, malloc_limit);
+    SET(last_collection_flags, objspace->profile.last_collection_flags);
 #if USE_RGENGC
     SET(minor_gc_count, objspace->profile.minor_gc_count);
     SET(major_gc_count, objspace->profile.major_gc_count);
@@ -6409,6 +6414,7 @@ gc_prof_sweep_timer_stop(rb_objspace_t *objspace)
 	record->gc_sweep_time += sweep_time;
 	if (heap_pages_deferred_final) record->flags |= GPR_FLAG_HAVE_FINALIZE;
 #endif
+	if (heap_pages_deferred_final) objspace->profile.last_collection_flags |= GPR_FLAG_HAVE_FINALIZE;
     }
 }
 
@@ -6478,14 +6484,60 @@ gc_profile_clear(void)
 static VALUE
 gc_profile_flags(int flags)
 {
-    VALUE result = rb_ary_new();
-    rb_ary_push(result, ID2SYM(rb_intern(flags & GPR_FLAG_MAJOR_MASK ? "major_gc" : "minor_gc")));
-    if (flags & GPR_FLAG_HAVE_FINALIZE) rb_ary_push(result, ID2SYM(rb_intern("HAVE_FINALIZE")));
-    if (flags & GPR_FLAG_NEWOBJ)        rb_ary_push(result, ID2SYM(rb_intern("CAUSED_BY_NEWOBJ")));
-    if (flags & GPR_FLAG_MALLOC)        rb_ary_push(result, ID2SYM(rb_intern("CAUSED_BY_MALLOC")));
-    if (flags & GPR_FLAG_METHOD)        rb_ary_push(result, ID2SYM(rb_intern("CAUSED_BY_METHOD")));
-    if (flags & GPR_FLAG_STRESS)        rb_ary_push(result, ID2SYM(rb_intern("CAUSED_BY_STRESS")));
+    VALUE result = rb_hash_new();
+    static VALUE sym_major_by = Qnil, sym_gc_by, sym_immediate_sweep, sym_have_finalizer;
+    static VALUE sym_nofree, sym_oldgen, sym_shady, sym_rescan, sym_stress, sym_oldmalloc;
+    static VALUE sym_newobj, sym_malloc, sym_method, sym_capi;
+
+    if (sym_major_by == Qnil) {
+	sym_major_by = ID2SYM(rb_intern("major_by"));
+	sym_gc_by = ID2SYM(rb_intern("gc_by"));
+	sym_immediate_sweep = ID2SYM(rb_intern("immediate_sweep"));
+	sym_have_finalizer = ID2SYM(rb_intern("have_finalizer"));
+	sym_nofree = ID2SYM(rb_intern("nofree"));
+	sym_oldgen = ID2SYM(rb_intern("oldgen"));
+	sym_shady = ID2SYM(rb_intern("shady"));
+	sym_rescan = ID2SYM(rb_intern("rescan"));
+	sym_stress = ID2SYM(rb_intern("stress"));
+	sym_oldmalloc = ID2SYM(rb_intern("oldmalloc"));
+	sym_newobj = ID2SYM(rb_intern("newobj"));
+	sym_malloc = ID2SYM(rb_intern("malloc"));
+	sym_method = ID2SYM(rb_intern("method"));
+	sym_capi = ID2SYM(rb_intern("capi"));
+    }
+
+    if (flags & GPR_FLAG_MAJOR_BY_NOFREE) rb_hash_aset(result, sym_major_by, sym_nofree);
+    if (flags & GPR_FLAG_MAJOR_BY_OLDGEN) rb_hash_aset(result, sym_major_by, sym_oldgen);
+    if (flags & GPR_FLAG_MAJOR_BY_SHADY)  rb_hash_aset(result, sym_major_by, sym_shady);
+    if (flags & GPR_FLAG_MAJOR_BY_RESCAN) rb_hash_aset(result, sym_major_by, sym_rescan);
+    if (flags & GPR_FLAG_MAJOR_BY_STRESS) rb_hash_aset(result, sym_major_by, sym_stress);
+#if RGENGC_ESTIMATE_OLDMALLOC
+    if (flags & GPR_FLAG_MAJOR_BY_OLDMALLOC) rb_hash_aset(result, sym_major_by, sym_oldmalloc);
+#endif
+
+    if (flags & GPR_FLAG_NEWOBJ) rb_hash_aset(result, sym_gc_by, sym_newobj);
+    if (flags & GPR_FLAG_MALLOC) rb_hash_aset(result, sym_gc_by, sym_malloc);
+    if (flags & GPR_FLAG_METHOD) rb_hash_aset(result, sym_gc_by, sym_method);
+    if (flags & GPR_FLAG_CAPI)   rb_hash_aset(result, sym_gc_by, sym_capi);
+    if (flags & GPR_FLAG_STRESS) rb_hash_aset(result, sym_gc_by, sym_stress);
+
+    if (flags & GPR_FLAG_HAVE_FINALIZE)   rb_hash_aset(result, sym_have_finalizer, Qtrue);
+    if (flags & GPR_FLAG_IMMEDIATE_SWEEP) rb_hash_aset(result, sym_immediate_sweep, Qtrue);
+
     return result;
+}
+
+/*
+ *  call-seq:
+ *     GC::Profiler.decode_flags(flags) -> {:gc_by => :newobj}
+ *     GC::Profiler.decode_flags(flags) -> {:major_by=>:nofree, :gc_by=>:method}
+ *
+ *  Converts GC.stat[:last_collection_flags] to a Hash
+ */
+static VALUE
+gc_profile_decode_flags(VALUE self, VALUE flags)
+{
+    return gc_profile_flags(FIX2INT(flags));
 }
 
 /*
@@ -7013,6 +7065,7 @@ Init_GC(void)
     rb_define_singleton_method(rb_mProfiler, "result", gc_profile_result, 0);
     rb_define_singleton_method(rb_mProfiler, "report", gc_profile_report, -1);
     rb_define_singleton_method(rb_mProfiler, "total_time", gc_profile_total_time, 0);
+    rb_define_singleton_method(rb_mProfiler, "decode_flags", gc_profile_decode_flags, 1);
 
     rb_mObjSpace = rb_define_module("ObjectSpace");
     rb_define_module_function(rb_mObjSpace, "each_object", os_each_obj, -1);

@@ -79,6 +79,26 @@ class TestGc < Test::Unit::TestCase
     assert_equal(count[:FREE], stat[:heap_free_slot])
   end
 
+  def test_gc_reason
+    100_000.times{ "a" + "b" }
+    assert_equal({:gc_by => :newobj},
+      GC::Profiler.decode_flags(GC.stat[:last_collection_flags]))
+  end
+
+  def test_gc_reason_method
+    GC.start
+    assert_equal({:major_by=>:nofree, :gc_by=>:method, :immediate_sweep=>true},
+      GC::Profiler.decode_flags(GC.stat[:last_collection_flags]))
+  end
+
+  def test_gc_reason_stress
+    GC.stress = true
+    assert_equal({:major_by=>:stress, :gc_by=>:malloc, :immediate_sweep=>true},
+      GC::Profiler.decode_flags(GC.stat[:last_collection_flags]))
+  ensure
+    GC.stress = false
+  end
+
   def test_singleton_method
     assert_in_out_err(%w[--disable-gems], <<-EOS, [], [], "[ruby-dev:42832]")
       GC.stress = true

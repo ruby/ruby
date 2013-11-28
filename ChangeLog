@@ -1,3 +1,14 @@
+Thu Nov 28 16:34:43 2013  Aman Gupta <ruby@tmm1.net>
+
+	* gc.c: Expose details about last garbage collection via GC.stat.
+	* gc.c (gc_stat): Add :last_collection_flags for reason/trigger/type of
+	  last GC run.
+	* gc.c (gc_prof_sweep_timer_stop): Record HAVE_FINALIZE GPR even
+	  without GC_PROFILE_MORE_DETAIL.
+	* gc.c (gc_profile_flags): Add GC::Profiler.decode_flags to make sense
+	  of GC.stat[:last_collection_flags]
+	* test/ruby/test_gc.rb (class TestGc): Test for above.
+
 Thu Nov 28 16:15:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_dup2): extract from rb_cloexec_dup2() and
