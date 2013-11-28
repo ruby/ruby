@@ -319,6 +319,11 @@ Here are some general rules to follow when writing Ruby and C code for CRuby:
 * ABBRs should be all upper case.
 * Do as others do
 
+=== ChangeLog
+
+Although not required, if you wish to add a ChangeLog entry for your change
+please note:
+
 You can use the following template for the ChangeLog entry on your commit:
 
   Thu Jan  1 00:00:00 2004  Your Name  <yourmail@example.com>
