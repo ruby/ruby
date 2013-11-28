@@ -1132,6 +1132,47 @@ st_keys_check(st_table *table, st_data_t *keys, st_index_t size, st_data_t never
     return get_keys(table, keys, size, 1, never);
 }
 
+static st_index_t
+get_values(st_table *table, st_data_t *values, st_index_t size, int check, st_data_t never)
+{
+    st_data_t key;
+    st_data_t *values_start = values;
+
+    if (table->entries_packed) {
+	st_index_t i;
+
+	if (size > table->real_entries) size = table->real_entries;
+	for (i = 0; i < size; i++) {
+	    key = PKEY(table, i);
+	    if (check && key == never) continue;
+	    *values++ = PVAL(table, i);
+	}
+    }
+    else {
+	st_table_entry *ptr = table->head;
+	st_data_t *values_end = values + size;
+	for (; ptr && values < values_end; ptr = ptr->fore) {
+	    key = ptr->key;
+	    if (check && key == never) continue;
+	    *values++ = ptr->record;
+	}
+    }
+
+    return values - values_start;
+}
+
+st_index_t
+st_values(st_table *table, st_data_t *values, st_index_t size)
+{
+    return get_values(table, values, size, 0, 0);
+}
+
+st_index_t
+st_values_check(st_table *table, st_data_t *values, st_index_t size, st_data_t never)
+{
+    return get_values(table, values, size, 1, never);
+}
+
 #if 0  /* unused right now */
 int
 st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
