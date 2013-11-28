@@ -1,3 +1,14 @@
+Thu Nov 28 19:43:45 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* benchmark/bm_hash_flatten.rb: added. r43896 is about 4 times faster
+	  than 2.0.0p353.
+
+	* benchmark/bm_hash_keys.rb: added. r43896 is about 5 times faster
+	  than 2.0.0p353.
+
+	* benchmark/bm_hash_values.rb: added. r43896 is about 5 times faster
+	  than 2.0.0p353.
+
 Thu Nov 28 19:29:04 2013  Zachary Scott  <e@zzak.io>
 
 	* doc/contributing.rdoc: [DOC] Add notes about slideshow proposals
