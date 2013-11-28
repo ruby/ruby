@@ -346,6 +346,7 @@ extern int rb_w32_access(const char *, int);
 extern int rb_w32_uaccess(const char *, int);
 extern char rb_w32_fd_is_text(int);
 extern int rb_w32_fstati64(int, struct stati64 *);
+extern int rb_w32_dup2(int, int);
 
 #ifdef __BORLANDC__
 extern off_t _lseeki64(int, off_t, int);
@@ -734,6 +735,9 @@ extern char *rb_w32_strerror(int);
 
 #undef times
 #define times(t)		rb_w32_times(t)
+
+#undef dup2
+#define dup2(o, n)		rb_w32_dup2(o, n)
 #endif
 
 struct tms {

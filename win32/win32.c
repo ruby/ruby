@@ -79,6 +79,7 @@ static char *w32_getenv(const char *name, UINT cp);
 #undef fclose
 #undef close
 #undef setsockopt
+#undef dup2
 
 #if defined __BORLANDC__
 #  define _filbuf _fgetc
@@ -5463,6 +5464,28 @@ rb_w32_getppid(void)
     }
 
     return ppid;
+}
+
+STATIC_ASSERT(std_handle, (STD_OUTPUT_HANDLE-STD_INPUT_HANDLE)==(STD_ERROR_HANDLE-STD_OUTPUT_HANDLE));
+
+/* License: Ruby's */
+#define set_new_std_handle(newfd, handle) do { \
+	if ((unsigned)(newfd) > 2) break; \
+	SetStdHandle(STD_INPUT_HANDLE+(STD_OUTPUT_HANDLE-STD_INPUT_HANDLE)*(newfd), \
+		     (handle)); \
+    } while (0)
+#define set_new_std_fd(newfd) set_new_std_handle(newfd, (HANDLE)rb_w32_get_osfhandle(newfd))
+
+/* License: Ruby's */
+int
+rb_w32_dup2(int oldfd, int newfd)
+{
+    int ret;
+
+    if (oldfd == newfd) return newfd;
+    ret = dup2(oldfd, newfd);
+    set_new_std_fd(newfd);
+    return ret;
 }
 
 /* License: Ruby's */
