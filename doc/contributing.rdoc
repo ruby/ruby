@@ -272,6 +272,24 @@ Manual}[https://bugs.ruby-lang.org/projects/rurema] in Japanese.
 
 == Contributing A Patch
 
+=== Deciding what to patch
+
+Before you submit a patch, there are a few things you should know:
+
+* Pay attention to the maintenance policy for stable and maintained versions of Ruby.
+* Released versions in security mode will not merge feature changes.
+* Search for previous discussions on ruby-core to verify the maintenance policy
+* Patches must be distributed under Ruby's license.
+* This license may change in the future, you must join the discussion if you don't agree to the change
+
+To improve the chance your patch will be accepted please follow these simple rules:
+
+* Bug fixes should be committed on trunk first
+* Format of the patch file must be a unified diff (ie: diff -pu, svn diff, or git diff)
+* Don't introduce cosmetic changes
+* Follow the original coding style of the code
+* Don't mix different changes in one commit
+
 First thing you should do is check out the code if you haven't already:
 
   git clone git://github.com/ruby/ruby.git ruby-trunk
