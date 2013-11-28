@@ -92,7 +92,7 @@ class GServer
 
   # Stop the server running on the given port, bound to the given host
   #
-  # +port+:: port, as a FixNum, of the server to stop
+  # +port+:: port, as a Fixnum, of the server to stop
   # +host+:: host on which to find the server to stop
   def GServer.stop(port, host = DEFAULT_HOST)
     @@servicesMutex.synchronize {
@@ -102,7 +102,7 @@ class GServer
 
   # Check if a server is running on the given port and host
   #
-  # +port+:: port, as a FixNum, of the server to check
+  # +port+:: port, as a Fixnum, of the server to check
   # +host+:: host on which to find the server to check
   #
   # Returns true if a server is running on that port and host.
@@ -140,11 +140,11 @@ class GServer
     @tcpServerThread.join if @tcpServerThread
   end
 
-  # Port on which to listen, as a FixNum
+  # Port on which to listen, as a Fixnum
   attr_reader :port
   # Host on which to bind, as a String
   attr_reader :host
-  # Maximum number of connections to accept at at ime, as a FixNum
+  # Maximum number of connections to accept at at ime, as a Fixnum
   attr_reader :maxConnections
   # IO Device on which log messages should be written
   attr_accessor :stdlog
@@ -212,7 +212,7 @@ class GServer
 
   # Create a new server
   #
-  # +port+:: the port, as a FixNum, on which to listen.
+  # +port+:: the port, as a Fixnum, on which to listen.
   # +host+:: the host to bind to
   # +maxConnections+:: The maximum number of simultaneous connections to
   #                    accept
