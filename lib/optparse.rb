@@ -447,7 +447,7 @@ class OptionParser
 
       (sopts+lopts).each do |opt|
         # "(-x -c -r)-l[left justify]" \
-        if opt =~ /^--\[no-\](.+)$/
+        if /^--\[no-\](.+)$/ =~ opt
           o = $1
           yield("--#{o}", desc.join(""))
           yield("--no-#{o}", desc.join(""))
