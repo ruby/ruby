@@ -1,3 +1,7 @@
+Tue Nov 28 14:40:00 2013  Akira Matsuda  <ronnie@dio.jp>
+
+	* lib/drb/ssl.rb:  [Doc] Fix typo
+
 Thu Nov 28 13:56:05 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (Doxyfile): tool/file2lastrev.rb needs running with

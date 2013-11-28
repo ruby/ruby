@@ -42,7 +42,7 @@ module DRb
       # Create a new DRb::DRbSSLSocket::SSLConfig instance
       #
       # The DRb::DRbSSLSocket will take either a +config+ Hash or an instance
-      # of SSLConfg, and will setup the certificate for its session for the
+      # of SSLConfig, and will setup the certificate for its session for the
       # configuration. If want it to generate a generic certificate, the bare
       # minimum is to provide the :SSLCertName
       #
