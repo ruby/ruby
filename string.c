@@ -148,7 +148,14 @@ rb_fstring(VALUE str)
 	rb_gc_resurrect(str);
     }
     else {
-	str = rb_str_new_frozen(str);
+	if (STR_SHARED_P(str)) {
+	    /* str should not be shared */
+	    str = rb_enc_str_new(RSTRING_PTR(str), RSTRING_LEN(str), STR_ENC_GET(str));
+	    OBJ_FREEZE(str);
+	}
+	else {
+	    str = rb_str_new_frozen(str);
+	}
 	RBASIC(str)->flags |= RSTRING_FSTR;
 	st_insert(frozen_strings, str, str);
     }

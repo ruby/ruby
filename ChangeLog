@@ -1,3 +1,11 @@
+Thu Nov 28 09:18:39 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* string.c (rb_fstring): fstrings should be ELTS_SHARED.
+	  If we resurrect dying objects (non-marked, but not swept yet),
+	  pointing shared string can be collected.
+	  To avoid such issue, fstrings (recorded to fstring_table)
+	  should not be ELTS_SHARED (should not have a shared string).
+
 Thu Nov 28 01:35:08 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* st.c (st_keys): fix to use st_index_t for size of hash.
