@@ -59,8 +59,8 @@ Thu Nov 28 00:36:52 2013  Masaki Matsushita  <glass.saga@gmail.com>
 	* hash.c (rb_hash_keys): use st_keys() for performance improvement
 	  if st_data_t and VALUE are compatible.
 
-	* st.h: define macro ST_DATA_COMPATIBLE_P() to predicate whether
-	  st_data_t and passed type are compatible.
+	* include/ruby/st.h: define macro ST_DATA_COMPATIBLE_P() to predicate
+	  whether st_data_t and passed type are compatible.
 
 	* configure.in: check existence of builtin function to use in
 	  ST_DATA_COMPATIBLE_P().
