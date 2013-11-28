@@ -204,7 +204,7 @@ $(CAPIOUT)/.timestamp: Doxyfile $(PREP)
 Doxyfile: $(srcdir)/template/Doxyfile.tmpl $(PREP) $(srcdir)/tool/generic_erb.rb $(RBCONFIG)
 	$(ECHO) generating $@
 	$(Q) $(MINIRUBY) $(srcdir)/tool/generic_erb.rb -o $@ $(srcdir)/template/Doxyfile.tmpl \
-	--srcdir="$(srcdir)" --miniruby="$(MINIRUBY)"
+	--srcdir="$(srcdir)" --miniruby="$(BASERUBY)"
 
 program: showflags $(PROGRAM)
 wprogram: showflags $(WPROGRAM)

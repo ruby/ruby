@@ -1,3 +1,8 @@
+Thu Nov 28 13:56:05 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (Doxyfile): tool/file2lastrev.rb needs running with
+	  BASERUBY since r43617.  [ruby-dev:47823] [Bug #9169]
+
 Thu Nov 28 09:18:39 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* string.c (rb_fstring): fstrings should be ELTS_SHARED.
