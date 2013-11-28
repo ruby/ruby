@@ -13,6 +13,10 @@
 #include "version.h"
 #include <stdio.h>
 
+#ifndef EXIT_SUCCESS
+#define EXIT_SUCCESS 0
+#endif
+
 #define PRINT(type) puts(ruby_##type)
 #define MKSTR(type) rb_obj_freeze(rb_usascii_str_new(ruby_##type, sizeof(ruby_##type)-1))
 
@@ -84,5 +88,5 @@ void
 ruby_show_copyright(void)
 {
     PRINT(copyright);
-    exit(0);
+    exit(EXIT_SUCCESS);
 }
