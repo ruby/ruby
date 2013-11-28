@@ -1,3 +1,8 @@
+Fri Nov 29 00:31:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (Doxyfile): tool/file2lastrev.rb needs running with
+	  BASERUBY since r43617.  [ruby-dev:47823] [Bug #9169]
+
 Fri Nov 22 13:18:28 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (ruby_strtod): BigMath requires more precision.
