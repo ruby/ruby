@@ -120,6 +120,7 @@ int st_foreach(st_table *, int (*)(ANYARGS), st_data_t);
 int st_foreach_check(st_table *, int (*)(ANYARGS), st_data_t, st_data_t);
 int st_reverse_foreach(st_table *, int (*)(ANYARGS), st_data_t);
 st_index_t st_keys(st_table *table, st_data_t *keys, st_index_t size);
+st_index_t st_keys_check(st_table *table, st_data_t *keys, st_index_t size, st_data_t never);
 void st_add_direct(st_table *, st_data_t, st_data_t);
 void st_free_table(st_table *);
 void st_cleanup_safe(st_table *, st_data_t);

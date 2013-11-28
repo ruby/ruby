@@ -1713,7 +1713,7 @@ rb_hash_keys(VALUE hash)
 
 	if (OBJ_PROMOTED(keys)) rb_gc_writebarrier_remember_promoted(keys);
 	RARRAY_PTR_USE(keys, ptr, {
-	    size = st_keys(table, ptr, size);
+	    size = st_keys_check(table, ptr, size, Qundef);
 	});
 	rb_ary_set_len(keys, size);
     }

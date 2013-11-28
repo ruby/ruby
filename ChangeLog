@@ -1,3 +1,11 @@
+Thu Nov 28 17:14:14 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* st.c (st_keys): fix not to use Qundef in st.c.
+
+	* include/ruby/st.h: define modified prototype.
+
+	* hash.c (rb_hash_keys): use modified st_keys().
+
 Thu Nov 28 16:34:43 2013  Aman Gupta <ruby@tmm1.net>
 
 	* gc.c: Expose details about last garbage collection via GC.stat.
