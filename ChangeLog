@@ -1,3 +1,8 @@
+Thu Nov 28 19:29:04 2013  Zachary Scott  <e@zzak.io>
+
+	* doc/contributing.rdoc: [DOC] Add notes about slideshow proposals
+	  from wiki page: HowToRequestFeatures
+
 Thu Nov 28 17:34:42 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* st.c: add st_values() and st_values_check().
