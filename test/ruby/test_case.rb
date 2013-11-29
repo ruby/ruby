@@ -75,6 +75,18 @@ class TestCase < Test::Unit::TestCase
     end
   end
 
+  def test_basic_object
+    klass_without_tree_equals = Class.new do
+                                  undef_method :===
+                                end
+
+    assert_raise(NameError) do
+      case ''
+      when klass_without_tree_equals.new
+      end
+    end
+  end
+
   def test_deoptimization
     assert_in_out_err(['-e', <<-EOS], '', %w[42], [])
       class Symbol; undef ===; def ===(o); p 42; true; end; end; case :foo; when :foo; end
