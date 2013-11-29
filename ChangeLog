@@ -1,3 +1,7 @@
+Fri Nov 29 18:06:45 2013  Shota Fukumori  <her@sorah.jp>
+
+	* test/ruby/test_case.rb (test_method_missing): Test for r43913.
+
 Fri Nov 29 17:53:22 2013  Shota Fukumori  <her@sorah.jp>
 
 	* vm_insnhelper.c (check_match): Fix SEGV with VM_CHECKMATCH_TYPE_CASE
