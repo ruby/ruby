@@ -1,6 +1,14 @@
+Fri Nov 29 20:59:39 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* vm_dump.c (rb_vmdebug_debug_print_pre): Bugfix. Get PC directly.
+	  PC is cached into local stack and cfp->pc is incorrent at next of
+	  branch or jump.
+	* vm_exec.h (DEBUG_ENTER_INSN): catch up this change.
+	* vm_core.h: update signature of rb_vmdebug_debug_print_pre.
+
 Fri Nov 29 20:43:57 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
-	* compile.c : Bugsfix for dump_disasm_list.
+	* compile.c: Bugsfix for dump_disasm_list.
 	  rb_inspect denies a hidden object. So, insert rapper that creates
 	  the unhidden one.
 	  adjust->label is null sometimes.

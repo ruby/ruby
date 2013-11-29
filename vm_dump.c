@@ -349,19 +349,21 @@ rb_vmdebug_thread_dump_regs(VALUE thval)
 }
 
 void
-rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp)
+rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp,VALUE *_pc)
 {
     rb_iseq_t *iseq = cfp->iseq;
 
     if (iseq != 0) {
 	VALUE *seq = iseq->iseq;
-	ptrdiff_t pc = cfp->pc - iseq->iseq_encoded;
+	ptrdiff_t pc = _pc - iseq->iseq_encoded;
 	int i;
 
 	for (i=0; i<(int)VM_CFP_CNT(th, cfp); i++) {
 	    printf(" ");
 	}
 	printf("| ");
+	if(0)printf("[%03ld] ",cfp->sp - th->stack);
+
 	/* printf("%3"PRIdPTRDIFF" ", VM_CFP_CNT(th, cfp)); */
 	if (pc >= 0) {
 	    rb_iseq_disasm_insn(0, seq, (size_t)pc, iseq, 0);

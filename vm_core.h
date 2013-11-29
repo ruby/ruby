@@ -840,7 +840,7 @@ VALUE rb_proc_alloc(VALUE klass);
 
 /* for debug */
 extern void rb_vmdebug_stack_dump_raw(rb_thread_t *, rb_control_frame_t *);
-extern void rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp);
+extern void rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp, VALUE *_pc);
 extern void rb_vmdebug_debug_print_post(rb_thread_t *th, rb_control_frame_t *cfp);
 
 #define SDR() rb_vmdebug_stack_dump_raw(GET_THREAD(), GET_THREAD()->cfp)
