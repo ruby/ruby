@@ -1,7 +1,7 @@
 Fri Nov 29 20:59:39 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* vm_dump.c (rb_vmdebug_debug_print_pre): Bugfix. Get PC directly.
-	  PC is cached into local stack and cfp->pc is incorrent at next of
+	  PC is cached into local stack and cfp->pc is incorrect at next of
 	  branch or jump.
 	* vm_exec.h (DEBUG_ENTER_INSN): catch up this change.
 	* vm_core.h: update signature of rb_vmdebug_debug_print_pre.
@@ -9,7 +9,7 @@ Fri Nov 29 20:59:39 2013  Masaya Tarui  <tarui@ruby-lang.org>
 Fri Nov 29 20:43:57 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* compile.c: Bugsfix for dump_disasm_list.
-	  rb_inspect denies a hidden object. So, insert rapper that creates
+	  rb_inspect denies a hidden object. So, insert wrapper that creates
 	  the unhidden one.
 	  adjust->label is null sometimes.
 	  insn_data_line_no makes no sense at all.
@@ -149,7 +149,7 @@ Thu Nov 28 00:36:52 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 Thu Nov 28 00:07:28 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
-	* ruby_atomic.h: remove duplicate definisions between ATOMIC_XXX
+	* ruby_atomic.h: remove duplicate definitions between ATOMIC_XXX
 	  and ATOMIC_SIZE_XXX.
 
 Wed Nov 27 23:55:50 2013  Masaki Matsushita  <glass.saga@gmail.com>
