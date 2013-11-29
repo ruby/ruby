@@ -168,4 +168,16 @@ class TestDelegateClass < Test::Unit::TestCase
       d.__getobj__
     }
   end
+
+  class X < DelegateClass(Integer)
+    def initialize(value)
+      value = Integer(value)
+      super(value)
+    end
+  end
+
+  def test_use_delegated_method_in_constuctor
+    x = X.new(1)
+    assert_equal(1, x.to_i)
+  end
 end
