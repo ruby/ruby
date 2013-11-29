@@ -22,7 +22,7 @@ Fri Nov 29 17:53:22 2013  Shota Fukumori  <her@sorah.jp>
 
 	* vm_insnhelper.c (check_match): Fix SEGV with VM_CHECKMATCH_TYPE_CASE
 	  and class of `pattern` has `method_missing`
-	  [Bug #8882] [ruby-core:58606]
+	  [Bug #8872] [ruby-core:58606]
 
 Fri Nov 29 17:06:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
