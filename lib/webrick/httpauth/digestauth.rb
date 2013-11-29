@@ -204,7 +204,7 @@ module WEBrick
 
         password = @userdb.get_passwd(@realm, auth_req['username'], @reload_db)
         unless password
-          error('%s: the user is not allowd.', auth_req['username'])
+          error('%s: the user is not allowed.', auth_req['username'])
           return false
         end
 

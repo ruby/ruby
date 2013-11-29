@@ -361,7 +361,7 @@ class TestParse < Test::Unit::TestCase
     assert_equal("foo 1 bar", "foo #$1 bar")
   end
 
-  def test_dstr_disallowd_variable
+  def test_dstr_disallowed_variable
     bug8375 = '[ruby-core:54885] [Bug #8375]'
     %w[@ @1 @@. @@ @@1 @@. $ $%].each do |src|
       src = '#'+src+' '
