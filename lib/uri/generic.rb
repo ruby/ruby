@@ -672,7 +672,7 @@ module URI
     # u.hostname = "::1"
     # p u.to_s                  #=> "http://[::1]/bar"
     #
-    # If the arguement seems IPv6 address,
+    # If the argument seems IPv6 address,
     # it is wrapped by brackets.
     #
     def hostname=(v)
