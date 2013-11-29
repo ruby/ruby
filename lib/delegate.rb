@@ -68,15 +68,16 @@ class Delegator < BasicObject
   #
   def initialize(obj)
     __setobj__(obj)
+    @delegate_sd_obj_initialized = true
   end
 
   #
   # Handles the magic of delegation through \_\_getobj\_\_.
   #
   def method_missing(m, *args, &block)
-    target = self.__getobj__
     begin
-      if target.respond_to?(m)
+      target = self.__getobj__ if @delegate_sd_obj_initialized
+      if @delegate_sd_obj_initialized && target.respond_to?(m)
         target.__send__(m, *args, &block)
       elsif ::Kernel.respond_to?(m, true)
         ::Kernel.instance_method(m).bind(self).(*args, &block)

@@ -1,3 +1,10 @@
+Thu Nov 29 12:57:00 2013  Simon Mathieu <simon.math@gmail.com>
+
+	* lib/delegate.rb: allow method call in class delegate constuctor.
+	[bug:#9155] 
+
+	* test/test_delegatei.rb (test_use_delegated_method_in_constuctor): Test for above.
+
 Thu Nov 28 21:43:48 2013  Zachary Scott  <e@zzak.io>
 
 	* doc/dtrace_probes.rdoc: [DOC] Import dtrace probes doc from wiki
