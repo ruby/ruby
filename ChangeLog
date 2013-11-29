@@ -87,7 +87,7 @@ Thu Nov 28 17:34:42 2013  Masaki Matsushita  <glass.saga@gmail.com>
 	* include/ruby/st.h: add prototypes for above.
 
 	* hash.c (rb_hash_values): use st_values_check() for performance
-	 improvement if VALUE and st_data_t are compatible.
+	  improvement if VALUE and st_data_t are compatible.
 
 Thu Nov 28 17:14:14 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
