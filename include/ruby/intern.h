@@ -225,7 +225,7 @@ VALUE rb_fiber_yield(int argc, VALUE *args);
 VALUE rb_fiber_current(void);
 VALUE rb_fiber_alive_p(VALUE);
 /* enum.c */
-VALUE rb_enum_values_pack(int, VALUE*);
+VALUE rb_enum_values_pack(int, const VALUE*);
 /* enumerator.c */
 VALUE rb_enumeratorize(VALUE, VALUE, int, VALUE *);
 typedef VALUE rb_enumerator_size_func(VALUE, VALUE, VALUE);

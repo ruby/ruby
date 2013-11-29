@@ -1,4 +1,10 @@
-Fri Nov 29 16:59:07 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Nov 29 17:02:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (RB_BLOCK_CALL_FUNC_ARGLIST): constify argv.
+
+	* enum.c (rb_enum_values_pack): ditto.
+
+	* vm_eval.c (rb_block_call, rb_check_block_call): ditto.
 
 	* include/ruby/ruby.h (RB_BLOCK_CALL_FUNC_ARGLIST): for declaration
 	  argument list of rb_block_call_func.

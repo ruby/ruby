@@ -1122,7 +1122,7 @@ struct iter_method_arg {
     VALUE obj;
     ID mid;
     int argc;
-    VALUE *argv;
+    const VALUE *argv;
 };
 
 static VALUE
@@ -1135,7 +1135,7 @@ iterate_method(VALUE obj)
 }
 
 VALUE
-rb_block_call(VALUE obj, ID mid, int argc, VALUE * argv,
+rb_block_call(VALUE obj, ID mid, int argc, const VALUE * argv,
 	      VALUE (*bl_proc) (ANYARGS), VALUE data2)
 {
     struct iter_method_arg arg;
@@ -1157,7 +1157,7 @@ iterate_check_method(VALUE obj)
 }
 
 VALUE
-rb_check_block_call(VALUE obj, ID mid, int argc, VALUE * argv,
+rb_check_block_call(VALUE obj, ID mid, int argc, const VALUE *argv,
 		    VALUE (*bl_proc) (ANYARGS), VALUE data2)
 {
     struct iter_method_arg arg;

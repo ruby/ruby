@@ -30,7 +30,7 @@ static ID id_size;
 #define id_lshift idLTLT
 
 VALUE
-rb_enum_values_pack(int argc, VALUE *argv)
+rb_enum_values_pack(int argc, const VALUE *argv)
 {
     if (argc == 0) return Qnil;
     if (argc == 1) return argv[0];
