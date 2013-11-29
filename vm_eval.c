@@ -14,6 +14,7 @@
 static inline VALUE method_missing(VALUE obj, ID id, int argc, const VALUE *argv, int call_status);
 static inline VALUE vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const NODE *cref);
 static inline VALUE vm_yield(rb_thread_t *th, int argc, const VALUE *argv);
+static inline VALUE vm_yield_with_block(rb_thread_t *th, int argc, const VALUE *argv, const rb_block_t *blockargptr);
 static NODE *vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr);
 static VALUE vm_exec(rb_thread_t *th);
 static void vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref, rb_block_t *base_block);
@@ -986,6 +987,16 @@ rb_yield_splat(VALUE values)
     }
     v = rb_yield_0(RARRAY_LENINT(tmp), RARRAY_CONST_PTR(tmp));
     return v;
+}
+
+VALUE
+rb_yield_block(VALUE val, VALUE arg, int argc, const VALUE *argv, VALUE blockarg)
+{
+    const rb_block_t *blockptr = 0;
+    if (!NIL_P(blockarg)) {
+	rb_notimplement();
+    }
+    return vm_yield_with_block(GET_THREAD(), argc, argv, blockptr);
 }
 
 static VALUE

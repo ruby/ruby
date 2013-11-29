@@ -796,7 +796,7 @@ range_each(VALUE range)
 
 	    args[0] = end;
 	    args[1] = EXCL(range) ? Qtrue : Qfalse;
-	    rb_block_call(tmp, rb_intern("upto"), 2, args, rb_yield, 0);
+	    rb_block_call(tmp, rb_intern("upto"), 2, args, rb_yield_block, 0);
 	}
 	else {
 	    if (!discrete_object_p(beg)) {

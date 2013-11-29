@@ -699,6 +699,14 @@ vm_yield(rb_thread_t *th, int argc, const VALUE *argv)
 			       blockptr->klass);
 }
 
+static inline VALUE
+vm_yield_with_block(rb_thread_t *th, int argc, const VALUE *argv, const rb_block_t *blockargptr)
+{
+    const rb_block_t *blockptr = check_block(th);
+    return invoke_block_from_c(th, blockptr, blockptr->self, argc, argv, blockargptr, 0,
+			       blockptr->klass);
+}
+
 static VALUE
 vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self, VALUE defined_class,
 	       int argc, const VALUE *argv, const rb_block_t *blockptr)

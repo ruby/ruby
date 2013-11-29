@@ -1,4 +1,9 @@
-Fri Nov 29 17:02:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Nov 29 17:06:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_yield_block): yield block with rb_block_call_func
+	  arguments.
+
+	* range.c (range_each): use rb_yield_block.
 
 	* include/ruby/ruby.h (RB_BLOCK_CALL_FUNC_ARGLIST): constify argv.
 
