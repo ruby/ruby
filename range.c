@@ -844,8 +844,9 @@ range_end(VALUE range)
 
 
 static VALUE
-first_i(VALUE i, VALUE *ary)
+first_i(VALUE i, VALUE cbarg, int argc, VALUE *argv, VALUE blockarg)
 {
+    VALUE *ary = (VALUE *)cbarg;
     long n = NUM2LONG(ary[0]);
 
     if (n <= 0) {

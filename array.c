@@ -3169,8 +3169,9 @@ rb_ary_delete_if(VALUE ary)
 }
 
 static VALUE
-take_i(VALUE val, VALUE *args, int argc, VALUE *argv, VALUE blockarg)
+take_i(VALUE val, VALUE cbarg, int argc, const VALUE *argv, VALUE blockarg)
 {
+    VALUE *args = (VALUE *)cbarg;
     if (args[1]-- == 0) rb_iter_break();
     if (argc > 1) val = rb_ary_new4(argc, argv);
     rb_ary_push(args[0], val);

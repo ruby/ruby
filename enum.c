@@ -400,7 +400,7 @@ collect_i(VALUE i, VALUE ary, int argc, VALUE *argv, VALUE blockarg)
 }
 
 static VALUE
-collect_all(VALUE i, VALUE ary, int argc, VALUE *argv)
+collect_all(VALUE i, VALUE ary, int argc, VALUE *argv, VALUE blockarg)
 {
     rb_thread_check_ints();
     rb_ary_push(ary, rb_enum_values_pack(argc, argv));
@@ -1003,13 +1003,13 @@ enum_sort_by(VALUE obj)
 static VALUE enum_##name##_func(VALUE result, NODE *memo); \
 \
 static VALUE \
-name##_i(VALUE i, VALUE memo, int argc, VALUE *argv) \
+name##_i(VALUE i, VALUE memo, int argc, VALUE *argv, VALUE blockarg) \
 { \
     return enum_##name##_func(rb_enum_values_pack(argc, argv), RNODE(memo)); \
 } \
 \
 static VALUE \
-name##_iter_i(VALUE i, VALUE memo, int argc, VALUE *argv) \
+name##_iter_i(VALUE i, VALUE memo, int argc, VALUE *argv, VALUE blockarg) \
 { \
     return enum_##name##_func(enum_yield(argc, argv), RNODE(memo));	\
 } \
@@ -1182,7 +1182,7 @@ min_i(VALUE i, VALUE args, int argc, VALUE *argv, VALUE blockarg)
 }
 
 static VALUE
-min_ii(VALUE i, VALUE args, int argc, VALUE *argv)
+min_ii(VALUE i, VALUE args, int argc, VALUE *argv, VALUE blockarg)
 {
     VALUE cmp;
     NODE *memo = RNODE(args);
@@ -1254,7 +1254,7 @@ max_i(VALUE i, VALUE args, int argc, VALUE *argv, VALUE blockarg)
 }
 
 static VALUE
-max_ii(VALUE i, VALUE args, int argc, VALUE *argv)
+max_ii(VALUE i, VALUE args, int argc, VALUE *argv, VALUE blockarg)
 {
     NODE *memo = RNODE(args);
     VALUE cmp;
@@ -1386,7 +1386,7 @@ minmax_ii_update(VALUE i, VALUE j, struct minmax_t *memo)
 }
 
 static VALUE
-minmax_ii(VALUE i, VALUE _memo, int argc, VALUE *argv)
+minmax_ii(VALUE i, VALUE _memo, int argc, VALUE *argv, VALUE blockarg)
 {
     struct minmax_t *memo = (struct minmax_t *)&RNODE(_memo)->u1.value;
     int n;
@@ -2365,7 +2365,7 @@ struct chunk_arg {
 };
 
 static VALUE
-chunk_ii(VALUE i, VALUE _argp, int argc, VALUE *argv)
+chunk_ii(VALUE i, VALUE _argp, int argc, VALUE *argv, VALUE blockarg)
 {
     struct chunk_arg *argp = MEMO_FOR(struct chunk_arg, _argp);
     VALUE v;
@@ -2560,7 +2560,7 @@ struct slicebefore_arg {
 };
 
 static VALUE
-slicebefore_ii(VALUE i, VALUE _argp, int argc, VALUE *argv)
+slicebefore_ii(VALUE i, VALUE _argp, int argc, VALUE *argv, VALUE blockarg)
 {
     struct slicebefore_arg *argp = MEMO_FOR(struct slicebefore_arg, _argp);
     VALUE header_p;
