@@ -632,7 +632,7 @@ fsdbm_store(VALUE obj, VALUE keystr, VALUE valstr)
 }
 
 static VALUE
-update_i(VALUE pair, VALUE dbm)
+update_i(RB_BLOCK_CALL_FUNC_ARGLIST(pair, dbm))
 {
     Check_Type(pair, T_ARRAY);
     if (RARRAY_LEN(pair) < 2) {

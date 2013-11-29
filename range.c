@@ -302,7 +302,7 @@ range_each_func(VALUE range, rb_block_call_func *func, VALUE arg)
 }
 
 static VALUE
-sym_step_i(VALUE i, VALUE arg, int argc, VALUE *argv, VALUE blockarg)
+sym_step_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, arg))
 {
     VALUE *iter = (VALUE *)arg;
 
@@ -320,7 +320,7 @@ sym_step_i(VALUE i, VALUE arg, int argc, VALUE *argv, VALUE blockarg)
 }
 
 static VALUE
-step_i(VALUE i, VALUE arg, int argc, VALUE *argv, VALUE blockarg)
+step_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, arg))
 {
     VALUE *iter = (VALUE *)arg;
 
@@ -702,14 +702,14 @@ range_bsearch(VALUE range)
 }
 
 static VALUE
-each_i(VALUE v, VALUE arg, int argc, VALUE *argv, VALUE blockarg)
+each_i(RB_BLOCK_CALL_FUNC_ARGLIST(v, arg))
 {
     rb_yield(v);
     return Qnil;
 }
 
 static VALUE
-sym_each_i(VALUE v, VALUE arg, int argc, VALUE *argv, VALUE blockarg)
+sym_each_i(RB_BLOCK_CALL_FUNC_ARGLIST(v, arg))
 {
     rb_yield(rb_str_intern(v));
     return Qnil;
@@ -844,7 +844,7 @@ range_end(VALUE range)
 
 
 static VALUE
-first_i(VALUE i, VALUE cbarg, int argc, VALUE *argv, VALUE blockarg)
+first_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, cbarg))
 {
     VALUE *ary = (VALUE *)cbarg;
     long n = NUM2LONG(ary[0]);

@@ -2616,7 +2616,7 @@ rb_ary_bsearch(VALUE ary)
 
 
 static VALUE
-sort_by_i(VALUE i, VALUE dummy, int argc, VALUE *argv, VALUE blockarg)
+sort_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, dummy))
 {
     return rb_yield(i);
 }
@@ -3169,7 +3169,7 @@ rb_ary_delete_if(VALUE ary)
 }
 
 static VALUE
-take_i(VALUE val, VALUE cbarg, int argc, const VALUE *argv, VALUE blockarg)
+take_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, cbarg))
 {
     VALUE *args = (VALUE *)cbarg;
     if (args[1]-- == 0) rb_iter_break();

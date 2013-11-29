@@ -92,7 +92,7 @@ static VALUE ossl_x509name_add_entry(int, VALUE*, VALUE);
 #define rb_aref(obj, key) rb_funcall((obj), id_aref, 1, (key))
 
 static VALUE
-ossl_x509name_init_i(VALUE i, VALUE args)
+ossl_x509name_init_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 {
     VALUE self = rb_ary_entry(args, 0);
     VALUE template = rb_ary_entry(args, 1);

@@ -11127,7 +11127,7 @@ argf_readbyte(VALUE argf)
 #define FOREACH_ARGF() while (next_argv())
 
 static VALUE
-argf_block_call_i(VALUE i, VALUE argf, int argc, VALUE *argv, VALUE blockarg)
+argf_block_call_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, argf))
 {
     const VALUE current = ARGF.current_file;
     rb_yield_values2(argc, argv);

@@ -733,7 +733,7 @@ ossl_asn1data_initialize(VALUE self, VALUE value, VALUE tag, VALUE tag_class)
 }
 
 static VALUE
-join_der_i(VALUE i, VALUE str)
+join_der_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, str))
 {
     i = ossl_to_der_if_possible(i);
     StringValue(i);

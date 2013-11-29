@@ -192,7 +192,7 @@ static VALUE racc_yyparse _((VALUE parser, VALUE lexer, VALUE lexmid,
                              VALUE arg, VALUE sysdebug));
 
 static void call_lexer _((struct cparse_params *v));
-static VALUE lexer_i _((VALUE block_args, VALUE data, VALUE self));
+static VALUE lexer_i _((RB_BLOCK_CALL_FUNC_ARGLIST(block_args, data)));
 
 static VALUE assert_array _((VALUE a));
 static long assert_integer _((VALUE n));
@@ -282,7 +282,7 @@ call_lexer(struct cparse_params *v)
 #endif
 
 static VALUE
-lexer_i(VALUE block_args, VALUE data, VALUE self)
+lexer_i(RB_BLOCK_CALL_FUNC_ARGLIST(block_args, data))
 {
     struct cparse_params *v;
     VALUE tok, val;

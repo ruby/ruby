@@ -968,7 +968,7 @@ path_zero_p(VALUE self)
 }
 
 static VALUE
-glob_i(VALUE elt, VALUE klass, int argc, VALUE *argv)
+glob_i(RB_BLOCK_CALL_FUNC_ARGLIST(elt, klass))
 {
     return rb_yield(rb_class_new_instance(1, &elt, klass));
 }
@@ -1106,7 +1106,7 @@ path_opendir(VALUE self)
 }
 
 static VALUE
-each_entry_i(VALUE elt, VALUE klass, int argc, VALUE *argv)
+each_entry_i(RB_BLOCK_CALL_FUNC_ARGLIST(elt, klass))
 {
     return rb_yield(rb_class_new_instance(1, &elt, klass));
 }

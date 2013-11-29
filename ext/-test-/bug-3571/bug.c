@@ -1,7 +1,7 @@
 #include <ruby.h>
 
 static VALUE
-bug_i(VALUE i, VALUE arg)
+bug_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, arg))
 {
     rb_notimplement();
     return ID2SYM(rb_frame_this_func());

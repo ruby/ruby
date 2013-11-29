@@ -477,7 +477,7 @@ ossl_sslctx_session_remove_cb(SSL_CTX *ctx, SSL_SESSION *sess)
 }
 
 static VALUE
-ossl_sslctx_add_extra_chain_cert_i(VALUE i, VALUE arg)
+ossl_sslctx_add_extra_chain_cert_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, arg))
 {
     X509 *x509;
     SSL_CTX *ctx;

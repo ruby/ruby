@@ -4867,7 +4867,7 @@ struct exec_recursive_params {
 };
 
 static VALUE
-exec_recursive_i(VALUE tag, VALUE data, int argc, VALUE *argv, VALUE blockarg)
+exec_recursive_i(RB_BLOCK_CALL_FUNC_ARGLIST(tag, data))
 {
     struct exec_recursive_params *p = (void *)data;
     VALUE result = Qundef;

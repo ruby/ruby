@@ -3302,8 +3302,9 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-hash2named_arg(VALUE pair, struct oleparam* pOp)
+hash2named_arg(RB_BLOCK_CALL_FUNC_ARGLIST(pair, op))
 {
+    struct oleparam* pOp = (struct oleparam *)op;
     unsigned int index, i;
     VALUE key, value;
     index = pOp->dp.cNamedArgs;
