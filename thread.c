@@ -4867,8 +4867,9 @@ struct exec_recursive_params {
 };
 
 static VALUE
-exec_recursive_i(VALUE tag, struct exec_recursive_params *p)
+exec_recursive_i(VALUE tag, VALUE data, int argc, VALUE *argv, VALUE blockarg)
 {
+    struct exec_recursive_params *p = (void *)data;
     VALUE result = Qundef;
     int state;
 
@@ -4926,7 +4927,7 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 	    }
 	}
 	else {
-	    result = exec_recursive_i(0, &p);
+	    result = exec_recursive_i(0, (VALUE)&p, 0, 0, Qnil);
 	}
     }
     *(volatile struct exec_recursive_params *)&p;

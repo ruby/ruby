@@ -493,7 +493,7 @@ enumerator_each(int argc, VALUE *argv, VALUE obj)
 }
 
 static VALUE
-enumerator_with_index_i(VALUE val, VALUE m, int argc, VALUE *argv)
+enumerator_with_index_i(VALUE val, VALUE m, int argc, VALUE *argv, VALUE blockarg)
 {
     VALUE *memo = (VALUE *)m;
     VALUE idx = *memo;
@@ -557,7 +557,7 @@ enumerator_each_with_index(VALUE obj)
 }
 
 static VALUE
-enumerator_with_object_i(VALUE val, VALUE memo, int argc, VALUE *argv)
+enumerator_with_object_i(VALUE val, VALUE memo, int argc, VALUE *argv, VALUE blockarg)
 {
     if (argc <= 1)
 	return rb_yield_values(2, val, memo);
@@ -604,7 +604,7 @@ enumerator_with_object(VALUE obj, VALUE memo)
 }
 
 static VALUE
-next_ii(VALUE i, VALUE obj, int argc, VALUE *argv)
+next_ii(VALUE i, VALUE obj, int argc, VALUE *argv, VALUE blockarg)
 {
     struct enumerator *e = enumerator_ptr(obj);
     VALUE feedvalue = Qnil;
@@ -1147,7 +1147,7 @@ static VALUE yielder_yield_push(VALUE obj, VALUE args)
 }
 
 static VALUE
-yielder_yield_i(VALUE obj, VALUE memo, int argc, VALUE *argv)
+yielder_yield_i(VALUE obj, VALUE memo, int argc, VALUE *argv, VALUE blockarg)
 {
     return rb_yield_values2(argc, argv);
 }
@@ -1318,7 +1318,7 @@ lazy_receiver_size(VALUE generator, VALUE args, VALUE lazy)
 }
 
 static VALUE
-lazy_init_iterator(VALUE val, VALUE m, int argc, VALUE *argv)
+lazy_init_iterator(VALUE val, VALUE m, int argc, VALUE *argv, VALUE blockarg)
 {
     VALUE result;
     if (argc == 1) {
@@ -1344,7 +1344,7 @@ lazy_init_iterator(VALUE val, VALUE m, int argc, VALUE *argv)
 }
 
 static VALUE
-lazy_init_block_i(VALUE val, VALUE m, int argc, VALUE *argv)
+lazy_init_block_i(VALUE val, VALUE m, int argc, VALUE *argv, VALUE blockarg)
 {
     rb_block_call(m, id_each, argc-1, argv+1, lazy_init_iterator, val);
     return Qnil;
@@ -1504,7 +1504,7 @@ lazy_to_enum(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-lazy_map_func(VALUE val, VALUE m, int argc, VALUE *argv)
+lazy_map_func(VALUE val, VALUE m, int argc, VALUE *argv, VALUE blockarg)
 {
     VALUE result = rb_yield_values2(argc - 1, &argv[1]);
 
@@ -1525,7 +1525,7 @@ lazy_map(VALUE obj)
 }
 
 static VALUE
-lazy_flat_map_i(VALUE i, VALUE yielder, int argc, VALUE *argv)
+lazy_flat_map_i(VALUE i, VALUE yielder, int argc, VALUE *argv, VALUE blockarg)
 {
     return rb_funcall2(yielder, id_yield, argc, argv);
 }
@@ -1554,7 +1554,7 @@ lazy_flat_map_to_ary(VALUE obj, VALUE yielder)
 }
 
 static VALUE
-lazy_flat_map_func(VALUE val, VALUE m, int argc, VALUE *argv)
+lazy_flat_map_func(VALUE val, VALUE m, int argc, VALUE *argv, VALUE blockarg)
 {
     VALUE result = rb_yield_values2(argc - 1, &argv[1]);
     if (RB_TYPE_P(result, T_ARRAY)) {
@@ -1610,7 +1610,7 @@ lazy_flat_map(VALUE obj)
 }
 
 static VALUE
-lazy_select_func(VALUE val, VALUE m, int argc, VALUE *argv)
+lazy_select_func(VALUE val, VALUE m, int argc, VALUE *argv, VALUE blockarg)
 {
     VALUE element = rb_enum_values_pack(argc - 1, argv + 1);
 
@@ -1633,7 +1633,7 @@ lazy_select(VALUE obj)
 }
 
 static VALUE
-lazy_reject_func(VALUE val, VALUE m, int argc, VALUE *argv)
+lazy_reject_func(VALUE val, VALUE m, int argc, VALUE *argv, VALUE blockarg)
 {
     VALUE element = rb_enum_values_pack(argc - 1, argv + 1);
 
@@ -1656,7 +1656,7 @@ lazy_reject(VALUE obj)
 }
 
 static VALUE
-lazy_grep_func(VALUE val, VALUE m, int argc, VALUE *argv)
+lazy_grep_func(VALUE val, VALUE m, int argc, VALUE *argv, VALUE blockarg)
 {
     VALUE i = rb_enum_values_pack(argc - 1, argv + 1);
     VALUE result = rb_funcall(m, id_eqq, 1, i);
@@ -1668,7 +1668,7 @@ lazy_grep_func(VALUE val, VALUE m, int argc, VALUE *argv)
 }
 
 static VALUE
-lazy_grep_iter(VALUE val, VALUE m, int argc, VALUE *argv)
+lazy_grep_iter(VALUE val, VALUE m, int argc, VALUE *argv, VALUE blockarg)
 {
     VALUE i = rb_enum_values_pack(argc - 1, argv + 1);
     VALUE result = rb_funcall(m, id_eqq, 1, i);
@@ -1702,7 +1702,7 @@ next_stopped(VALUE obj)
 }
 
 static VALUE
-lazy_zip_arrays_func(VALUE val, VALUE arrays, int argc, VALUE *argv)
+lazy_zip_arrays_func(VALUE val, VALUE arrays, int argc, VALUE *argv, VALUE blockarg)
 {
     VALUE yielder, ary, memo;
     long i, count;
@@ -1722,7 +1722,7 @@ lazy_zip_arrays_func(VALUE val, VALUE arrays, int argc, VALUE *argv)
 }
 
 static VALUE
-lazy_zip_func(VALUE val, VALUE zip_args, int argc, VALUE *argv)
+lazy_zip_func(VALUE val, VALUE zip_args, int argc, VALUE *argv, VALUE blockarg)
 {
     VALUE yielder, ary, arg, v;
     long i;
@@ -1787,7 +1787,7 @@ lazy_zip(int argc, VALUE *argv, VALUE obj)
 }
 
 static VALUE
-lazy_take_func(VALUE val, VALUE args, int argc, VALUE *argv)
+lazy_take_func(VALUE val, VALUE args, int argc, VALUE *argv, VALUE blockarg)
 {
     long remain;
     VALUE memo = rb_attr_get(argv[0], id_memo);
@@ -1836,7 +1836,7 @@ lazy_take(VALUE obj, VALUE n)
 }
 
 static VALUE
-lazy_take_while_func(VALUE val, VALUE args, int argc, VALUE *argv)
+lazy_take_while_func(VALUE val, VALUE args, int argc, VALUE *argv, VALUE blockarg)
 {
     VALUE result = rb_yield_values2(argc - 1, &argv[1]);
     if (!RTEST(result)) return Qundef;
@@ -1870,7 +1870,7 @@ lazy_drop_size(VALUE generator, VALUE args, VALUE lazy)
 }
 
 static VALUE
-lazy_drop_func(VALUE val, VALUE args, int argc, VALUE *argv)
+lazy_drop_func(VALUE val, VALUE args, int argc, VALUE *argv, VALUE blockarg)
 {
     long remain;
     VALUE memo = rb_attr_get(argv[0], id_memo);
@@ -1900,7 +1900,7 @@ lazy_drop(VALUE obj, VALUE n)
 }
 
 static VALUE
-lazy_drop_while_func(VALUE val, VALUE args, int argc, VALUE *argv)
+lazy_drop_while_func(VALUE val, VALUE args, int argc, VALUE *argv, VALUE blockarg)
 {
     VALUE memo = rb_attr_get(argv[0], id_memo);
     if (NIL_P(memo) && !RTEST(rb_yield_values2(argc - 1, &argv[1]))) {

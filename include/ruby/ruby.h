@@ -1493,7 +1493,8 @@ PRINTF_ARGS(void rb_compile_warn(const char *, int, const char*, ...), 3, 4);
 #define RB_IO_WAIT_READABLE 0
 #define RB_IO_WAIT_WRITABLE 1
 
-typedef VALUE rb_block_call_func(VALUE, VALUE, int, VALUE*);
+typedef VALUE rb_block_call_func(VALUE, VALUE, int, VALUE*, VALUE);
+#define RUBY_BLOCK_CALL_FUNC_TAKES_BLOCKARG 1
 
 VALUE rb_each(VALUE);
 VALUE rb_yield(VALUE);

@@ -2888,7 +2888,7 @@ run_exec_rlimit(VALUE ary, struct rb_execarg *sargp, char *errmsg, size_t errmsg
 
 #if !defined(HAVE_FORK)
 static VALUE
-save_env_i(VALUE i, VALUE ary, int argc, VALUE *argv)
+save_env_i(VALUE i, VALUE ary, int argc, VALUE *argv, VALUE blockarg)
 {
     rb_ary_push(ary, hide_obj(rb_ary_dup(argv[0])));
     return Qnil;

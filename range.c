@@ -278,7 +278,7 @@ range_hash(VALUE range)
 }
 
 static void
-range_each_func(VALUE range, VALUE (*func) (VALUE, void *), void *arg)
+range_each_func(VALUE range, rb_block_call_func *func, VALUE arg)
 {
     int c;
     VALUE b = RANGE_BEG(range);
@@ -287,13 +287,13 @@ range_each_func(VALUE range, VALUE (*func) (VALUE, void *), void *arg)
 
     if (EXCL(range)) {
 	while (r_lt(v, e)) {
-	    (*func) (v, arg);
+	    (*func) (v, arg, 0, 0, 0);
 	    v = rb_funcall(v, id_succ, 0, 0);
 	}
     }
     else {
 	while ((c = r_le(v, e)) != Qfalse) {
-	    (*func) (v, arg);
+	    (*func) (v, arg, 0, 0, 0);
 	    if (c == (int)INT2FIX(0))
 		break;
 	    v = rb_funcall(v, id_succ, 0, 0);
@@ -302,9 +302,9 @@ range_each_func(VALUE range, VALUE (*func) (VALUE, void *), void *arg)
 }
 
 static VALUE
-sym_step_i(VALUE i, void *arg)
+sym_step_i(VALUE i, VALUE arg, int argc, VALUE *argv, VALUE blockarg)
 {
-    VALUE *iter = arg;
+    VALUE *iter = (VALUE *)arg;
 
     if (FIXNUM_P(iter[0])) {
 	iter[0] -= INT2FIX(1) & ~FIXNUM_FLAG;
@@ -320,9 +320,9 @@ sym_step_i(VALUE i, void *arg)
 }
 
 static VALUE
-step_i(VALUE i, void *arg)
+step_i(VALUE i, VALUE arg, int argc, VALUE *argv, VALUE blockarg)
 {
-    VALUE *iter = arg;
+    VALUE *iter = (VALUE *)arg;
 
     if (FIXNUM_P(iter[0])) {
 	iter[0] -= INT2FIX(1) & ~FIXNUM_FLAG;
@@ -488,7 +488,7 @@ range_step(int argc, VALUE *argv, VALUE range)
 	    }
 	    args[0] = INT2FIX(1);
 	    args[1] = step;
-	    range_each_func(range, step_i, args);
+	    range_each_func(range, step_i, (VALUE)args);
 	}
     }
     return range;
@@ -702,14 +702,14 @@ range_bsearch(VALUE range)
 }
 
 static VALUE
-each_i(VALUE v, void *arg)
+each_i(VALUE v, VALUE arg, int argc, VALUE *argv, VALUE blockarg)
 {
     rb_yield(v);
     return Qnil;
 }
 
 static VALUE
-sym_each_i(VALUE v, void *arg)
+sym_each_i(VALUE v, VALUE arg, int argc, VALUE *argv, VALUE blockarg)
 {
     rb_yield(rb_str_intern(v));
     return Qnil;
@@ -803,7 +803,7 @@ range_each(VALUE range)
 		rb_raise(rb_eTypeError, "can't iterate from %s",
 			 rb_obj_classname(beg));
 	    }
-	    range_each_func(range, each_i, NULL);
+	    range_each_func(range, each_i, 0);
 	}
     }
     return range;

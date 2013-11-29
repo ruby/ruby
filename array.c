@@ -2616,7 +2616,7 @@ rb_ary_bsearch(VALUE ary)
 
 
 static VALUE
-sort_by_i(VALUE i)
+sort_by_i(VALUE i, VALUE dummy, int argc, VALUE *argv, VALUE blockarg)
 {
     return rb_yield(i);
 }
@@ -3169,7 +3169,7 @@ rb_ary_delete_if(VALUE ary)
 }
 
 static VALUE
-take_i(VALUE val, VALUE *args, int argc, VALUE *argv)
+take_i(VALUE val, VALUE *args, int argc, VALUE *argv, VALUE blockarg)
 {
     if (args[1]-- == 0) rb_iter_break();
     if (argc > 1) val = rb_ary_new4(argc, argv);
