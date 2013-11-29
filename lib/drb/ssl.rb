@@ -299,7 +299,7 @@ module DRb
     # +uri+ is the URI we are connected to.
     # +soc+ is the tcp socket we are bound to.
     # +config+ is our configuration. Either a Hash or SSLConfig
-    # +is_established+ is a boolean of whether +soc+ is currenly established
+    # +is_established+ is a boolean of whether +soc+ is currently established
     #
     # This is called automatically based on the DRb protocol.
     def initialize(uri, soc, config, is_established)
