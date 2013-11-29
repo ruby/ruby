@@ -1,3 +1,11 @@
+Fri Nov 29 20:43:57 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* compile.c : Bugsfix for dump_disasm_list.
+	  rb_inspect denies a hidden object. So, insert rapper that creates
+	  the unhidden one.
+	  adjust->label is null sometimes.
+	  insn_data_line_no makes no sense at all.
+
 Fri Nov 29 18:06:45 2013  Shota Fukumori  <her@sorah.jp>
 
 	* test/ruby/test_case.rb (test_method_missing): Test for r43913.

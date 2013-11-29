@@ -324,7 +324,6 @@ static void debug_list(ISEQ_ARG_DECLARE LINK_ANCHOR *anchor);
 static void dump_disasm_list(LINK_ELEMENT *elem);
 
 static int insn_data_length(INSN *iobj);
-static int insn_data_line_no(INSN *iobj);
 static int calc_sp_depth(int depth, INSN *iobj);
 
 static INSN *new_insn_body(rb_iseq_t *iseq, int line_no, int insn_id, int argc, ...);
@@ -5394,16 +5393,29 @@ calc_sp_depth(int depth, INSN *insn)
     return insn_stack_increase(depth, insn->insn_id, insn->operands);
 }
 
-static int
-insn_data_line_no(INSN *iobj)
+static VALUE
+opobj_inspect(VALUE obj)
 {
-    return insn_len(iobj->line_no);
+    struct RBasic *r = (struct RBasic *) obj;
+    if (!SPECIAL_CONST_P(r)  && r->klass == 0) {
+	switch (BUILTIN_TYPE(r)) {
+	  case T_STRING:
+	    obj = rb_str_new_cstr(RSTRING_PTR(obj));
+	    break;
+	  case T_ARRAY:
+	    obj = rb_ary_dup(obj);
+	    break;
+	}
+    }
+    return rb_inspect(obj);
 }
+
+
 
 static VALUE
 insn_data_to_s_detail(INSN *iobj)
 {
-    VALUE str = rb_sprintf("%-16s", insn_name(iobj->insn_id));
+    VALUE str = rb_sprintf("%-20s ", insn_name(iobj->insn_id));
 
     if (iobj->operands) {
 	const char *types = insn_op_types(iobj->insn_id);
@@ -5411,7 +5423,6 @@ insn_data_to_s_detail(INSN *iobj)
 
 	for (j = 0; types[j]; j++) {
 	    char type = types[j];
-	    printf("str: %"PRIxVALUE", type: %c\n", str, type);
 
 	    switch (type) {
 	      case TS_OFFSET:	/* label(destination position) */
@@ -5428,7 +5439,7 @@ insn_data_to_s_detail(INSN *iobj)
 		    if (0 && iseq) { /* TODO: invalidate now */
 			val = iseq->self;
 		    }
-		    rb_str_concat(str, rb_inspect(val));
+		    rb_str_concat(str, opobj_inspect(val));
 		}
 		break;
 	      case TS_LINDEX:
@@ -5436,11 +5447,11 @@ insn_data_to_s_detail(INSN *iobj)
 	      case TS_VALUE:	/* VALUE */
 		{
 		    VALUE v = OPERAND_AT(iobj, j);
-		    rb_str_concat(str, rb_inspect(v));
+		    rb_str_concat(str, opobj_inspect(v));
 		    break;
 		}
 	      case TS_ID:	/* ID */
-		rb_str_concat(str, rb_inspect(OPERAND_AT(iobj, j)));
+		rb_str_concat(str, opobj_inspect(OPERAND_AT(iobj, j)));
 		break;
 	      case TS_GENTRY:
 		{
@@ -5489,7 +5500,7 @@ dump_disasm_list(struct iseq_link_element *link)
 	    {
 		iobj = (INSN *)link;
 		str = insn_data_to_s_detail(iobj);
-		printf("%04d %-65s(%4d)\n", pos, StringValueCStr(str), insn_data_line_no(iobj));
+		printf("%04d %-65s(%4d)\n", pos, StringValueCStr(str), iobj->line_no);
 		pos += insn_data_length(iobj);
 		break;
 	    }
@@ -5507,7 +5518,7 @@ dump_disasm_list(struct iseq_link_element *link)
 	  case ISEQ_ELEMENT_ADJUST:
 	    {
 		ADJUST *adjust = (ADJUST *)link;
-		printf("adjust: [label: %d]\n", adjust->label->label_no);
+		printf("adjust: [label: %d]\n", adjust->label ? adjust->label->label_no : -1);
 		break;
 	    }
 	  default:
