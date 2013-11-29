@@ -947,7 +947,13 @@ check_match(VALUE pattern, VALUE target, enum vm_check_match_type type)
       case VM_CHECKMATCH_TYPE_CASE: {
 	VALUE defined_class;
 	rb_method_entry_t *me = rb_method_entry_with_refinements(CLASS_OF(pattern), idEqq, &defined_class);
-	return vm_call0(GET_THREAD(), pattern, idEqq, 1, &target, me, defined_class);
+	if (me) {
+	  return vm_call0(GET_THREAD(), pattern, idEqq, 1, &target, me, defined_class);
+	}
+	else {
+	  /* fallback to funcall (e.g. method_missing) */
+	  return rb_funcall2(pattern, idEqq, 1, &target);
+	}
       }
       default:
 	rb_bug("check_match: unreachable");
