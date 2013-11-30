@@ -1649,7 +1649,7 @@ module FileUtils
   #
   #   p FileUtils.have_option?(:cp, :noop)     #=> true
   #   p FileUtils.have_option?(:rm, :force)    #=> true
-  #   p FileUtils.have_option?(:rm, :perserve) #=> false
+  #   p FileUtils.have_option?(:rm, :preserve) #=> false
   #
   def FileUtils.have_option?(mid, opt)
     li = OPT_TABLE[mid.to_s] or raise ArgumentError, "no such method: #{mid}"
