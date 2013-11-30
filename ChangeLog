@@ -1,3 +1,8 @@
+Sat Nov 30 13:28:13 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* siphash.c (sip_hash24): fix for aligned word access little endian
+	  platforms.  [ruby-core:58658] [Bug #9172]
+
 Sat Nov 30 13:21:15 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (rb_yield_block): implement non-nil block argument.
