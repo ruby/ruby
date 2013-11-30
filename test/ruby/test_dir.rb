@@ -200,6 +200,13 @@ class TestDir < Test::Unit::TestCase
     end
   end
 
+  def test_unknown_keywords
+    bug8060 = '[ruby-dev:47152] [Bug #8060]'
+    assert_raise_with_message(ArgumentError, /unknown keyword/, bug8060) do
+      Dir.open(@root, xawqij: "a") {}
+    end
+  end
+
   def test_symlink
     begin
       ["dummy", *?a..?z].each do |f|

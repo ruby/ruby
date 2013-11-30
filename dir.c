@@ -424,17 +424,20 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
     struct dir_data *dp;
     rb_encoding  *fsenc;
     VALUE dirname, opt, orig;
-    static VALUE sym_enc;
+    static ID keyword_ids[1];
 
-    if (!sym_enc) {
-	sym_enc = ID2SYM(rb_intern("encoding"));
+    if (!keyword_ids[0]) {
+	keyword_ids[0] = rb_intern("encoding");
     }
+
     fsenc = rb_filesystem_encoding();
 
     rb_scan_args(argc, argv, "1:", &dirname, &opt);
 
     if (!NIL_P(opt)) {
-	VALUE enc = rb_hash_aref(opt, sym_enc);
+	VALUE enc;
+	rb_check_keyword_opthash(opt, keyword_ids, 0, 1);
+	enc = rb_hash_aref(opt, ID2SYM(keyword_ids[0]));
 	if (!NIL_P(enc)) {
 	    fsenc = rb_to_encoding(enc);
 	}
