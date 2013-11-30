@@ -86,6 +86,7 @@ class Gem::Validator
 
     Gem::Specification.each do |spec|
       next unless gems.include? spec.name unless gems.empty?
+      next if spec.default_gem?
 
       gem_name      = spec.file_name
       gem_path      = spec.cache_file

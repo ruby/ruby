@@ -13,6 +13,14 @@ class TestGemSourceGit < Gem::TestCase
     @source = Gem::Source::Git.new @name, @repository, 'master', false
   end
 
+  def test_base_dir
+    assert_equal File.join(Gem.dir, 'bundler'), @source.base_dir
+
+    @source.root_dir = "#{@gemhome}2"
+
+    assert_equal File.join("#{@gemhome}2", 'bundler'), @source.base_dir
+  end
+
   def test_checkout
     @source.checkout
 
@@ -96,6 +104,13 @@ class TestGemSourceGit < Gem::TestCase
       File.join Gem.dir, 'cache', 'bundler', 'git', "a-#{@hash}"
 
     assert_equal expected, @source.repo_cache_dir
+
+    @source.root_dir = "#{@gemhome}2"
+
+    expected =
+      File.join "#{@gemhome}2", 'cache', 'bundler', 'git', "a-#{@hash}"
+
+    assert_equal expected, @source.repo_cache_dir
   end
 
   def test_rev_parse
@@ -116,6 +131,14 @@ class TestGemSourceGit < Gem::TestCase
     source.cache
 
     refute_equal master_head, source.rev_parse
+  end
+
+  def test_root_dir
+    assert_equal Gem.dir, @source.root_dir
+
+    @source.root_dir = "#{@gemhome}2"
+
+    assert_equal "#{@gemhome}2", @source.root_dir
   end
 
   def test_spaceship
@@ -165,11 +188,27 @@ class TestGemSourceGit < Gem::TestCase
 
     a_spec = specs.shift
 
+    base_dir = File.dirname File.dirname source.install_dir
+
     assert_equal source.install_dir, a_spec.full_gem_path
+    assert_equal File.join(source.install_dir, 'a.gemspec'), a_spec.loaded_from
+    assert_equal base_dir, a_spec.base_dir
+
+    extension_install_dir =
+      File.join Gem.dir, 'bundler', 'extensions',
+        Gem::Platform.local.to_s, Gem.extension_api_version,
+        "a-#{source.dir_shortref}"
+
+    assert_equal extension_install_dir, a_spec.extension_install_dir
 
     b_spec = specs.shift
 
     assert_equal File.join(source.install_dir, 'b'), b_spec.full_gem_path
+    assert_equal File.join(source.install_dir, 'b', 'b.gemspec'),
+                 b_spec.loaded_from
+    assert_equal base_dir, b_spec.base_dir
+
+    assert_equal extension_install_dir, b_spec.extension_install_dir
   end
 
   def test_uri_hash

@@ -5,6 +5,16 @@
 class Gem::BasicSpecification
 
   ##
+  # Allows installation of extensions for git: gems.
+
+  attr_writer :base_dir # :nodoc:
+
+  ##
+  # Sets the directory where extensions for this gem will be installed.
+
+  attr_writer :extension_install_dir # :nodoc:
+
+  ##
   # The path this gemspec was loaded from.  This attribute is not persisted.
 
   attr_reader :loaded_from
@@ -68,8 +78,9 @@ class Gem::BasicSpecification
   #   end
 
   def extension_install_dir
-    File.join base_dir, 'extensions', Gem::Platform.local.to_s,
-              Gem.extension_api_version, full_name
+    @extension_install_dir ||=
+      File.join base_dir, 'extensions', Gem::Platform.local.to_s,
+                Gem.extension_api_version, full_name
   end
 
   def find_full_gem_path # :nodoc:
@@ -141,9 +152,10 @@ class Gem::BasicSpecification
   def loaded_from= path
     @loaded_from   = path && path.to_s
 
-    @full_gem_path = nil
-    @gems_dir      = nil
-    @base_dir      = nil
+    @extension_install_dir = nil
+    @full_gem_path         = nil
+    @gems_dir              = nil
+    @base_dir              = nil
   end
 
   ##

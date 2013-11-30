@@ -716,6 +716,20 @@ dependencies: []
     assert_equal @a2, spec
   end
 
+  def test_self_load_relative
+    open 'a-2.gemspec', 'w' do |io|
+      io.write @a2.to_ruby_for_cache
+    end
+
+    spec = Gem::Specification.load 'a-2.gemspec'
+
+    @a2.files.clear
+
+    assert_equal @a2, spec
+
+    assert_equal File.join(@tempdir, 'a-2.gemspec'), spec.loaded_from
+  end
+
   def test_self_load_tainted
     full_path = @a2.spec_file
     write_file full_path do |io|

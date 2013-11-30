@@ -101,6 +101,24 @@ class Gem::FakeFetcher
     response
   end
 
+  def pretty_print q # :nodoc:
+    q.group 2, '[FakeFetcher', ']' do
+      q.breakable
+      q.text 'URIs:'
+
+      q.breakable
+      q.pp @data.keys
+
+      unless @api_endpoints.empty? then
+        q.breakable
+        q.text 'API endpoints:'
+
+        q.breakable
+        q.pp @api_endpoints.keys
+      end
+    end
+  end
+
   def fetch_size(path)
     path = path.to_s
     @paths << path

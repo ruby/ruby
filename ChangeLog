@@ -1,3 +1,13 @@
+Sun Dec  1 08:27:28 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master 66e5c39.  Notable changes:
+
+	  Implement gem.deps.rb (Gemfile) .lock support
+
+	  Fixed `gem uninstall` for a relative directory in GEM_HOME.
+
+	* test/rubygems:  ditto.
+
 Sun Dec  1 06:00:49 2013  Aman Gupta <ruby@tmm1.net>
 
 	* test/ruby/test_gc.rb (test_gc_reason): Force minor GC by consuming

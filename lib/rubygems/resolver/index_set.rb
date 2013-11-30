@@ -46,5 +46,29 @@ class Gem::Resolver::IndexSet < Gem::Resolver::Set
     res
   end
 
+  def pretty_print q # :nodoc:
+    q.group 2, '[IndexSet', ']' do
+      q.breakable
+      q.text 'sources:'
+      q.breakable
+      q.pp @f.sources
+
+      q.breakable
+      q.text 'specs:'
+
+      q.breakable
+
+      names = @all.values.map do |tuples|
+        tuples.map do |_, tuple|
+          tuple.full_name
+        end
+      end.flatten
+
+      q.seplist names do |name|
+        q.text name
+      end
+    end
+  end
+
 end
 

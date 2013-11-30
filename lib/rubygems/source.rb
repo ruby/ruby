@@ -49,6 +49,7 @@ class Gem::Source
     case other
     when Gem::Source::Installed,
          Gem::Source::Local,
+         Gem::Source::Lock,
          Gem::Source::SpecificFile,
          Gem::Source::Git,
          Gem::Source::Vendor then
@@ -213,5 +214,6 @@ require 'rubygems/source/git'
 require 'rubygems/source/installed'
 require 'rubygems/source/specific_file'
 require 'rubygems/source/local'
+require 'rubygems/source/lock'
 require 'rubygems/source/vendor'
 

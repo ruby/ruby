@@ -52,6 +52,14 @@ class TestGemResolverGitSet < Gem::TestCase
     assert_equal [@set.specs['a']], found
   end
 
+  def test_root_dir
+    assert_equal Gem.dir, @set.root_dir
+
+    @set.root_dir = "#{@gemhome}2"
+
+    assert_equal "#{@gemhome}2", @set.root_dir
+  end
+
   def test_prefetch
     name, _, repository, = git_gem
 
@@ -96,6 +104,26 @@ class TestGemResolverGitSet < Gem::TestCase
     @set.prefetch @reqs
 
     refute_empty @set.specs, 'the git source does not filter'
+  end
+
+  def test_prefetch_root_dir
+    name, _, repository, = git_gem
+
+    @set.add_git_gem name, repository, 'master', false
+
+    dependency = dep name
+    req = Gem::Resolver::ActivationRequest.new dependency, nil
+    @reqs.add req
+
+    @set.root_dir = "#{@gemhome}2"
+
+    @set.prefetch @reqs
+
+    refute_empty @set.specs
+
+    spec = @set.specs.values.first
+
+    assert_equal "#{@gemhome}2", spec.source.root_dir
   end
 
 end

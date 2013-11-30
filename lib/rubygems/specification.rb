@@ -1031,7 +1031,7 @@ class Gem::Specification < Gem::BasicSpecification
       spec = eval code, binding, file
 
       if Gem::Specification === spec
-        spec.loaded_from = file.to_s
+        spec.loaded_from = File.expand_path file.to_s
         LOAD_CACHE[file] = spec
         return spec
       end

@@ -31,6 +31,11 @@ class Gem::Source::Git < Gem::Source
   attr_reader :repository
 
   ##
+  # The directory for cache and git gem installation
+
+  attr_accessor :root_dir
+
+  ##
   # Does this repository need submodules checked out too?
 
   attr_reader :need_submodules
@@ -50,14 +55,16 @@ class Gem::Source::Git < Gem::Source
     @reference       = reference
     @need_submodules = submodules
 
-    @git = ENV['git'] || 'git'
+    @root_dir = Gem.dir
+    @git      = ENV['git'] || 'git'
   end
 
   def <=> other
     case other
     when Gem::Source::Git then
       0
-    when Gem::Source::Installed then
+    when Gem::Source::Installed,
+         Gem::Source::Lock then
       -1
     when Gem::Source then
       1
@@ -114,6 +121,13 @@ class Gem::Source::Git < Gem::Source
   end
 
   ##
+  # Directory where git gems get unpacked and so-forth.
+
+  def base_dir # :nodoc:
+    File.join @root_dir, 'bundler'
+  end
+
+  ##
   # A short reference for use in git gem directories
 
   def dir_shortref # :nodoc:
@@ -130,14 +144,14 @@ class Gem::Source::Git < Gem::Source
   # The directory where the git gem will be installed.
 
   def install_dir # :nodoc:
-    File.join Gem.dir, 'bundler', 'gems', "#{@name}-#{dir_shortref}"
+    File.join base_dir, 'gems', "#{@name}-#{dir_shortref}"
   end
 
   ##
   # The directory where the git gem's repository will be cached.
 
   def repo_cache_dir # :nodoc:
-    File.join Gem.dir, 'cache', 'bundler', 'git', "#{@name}-#{uri_hash}"
+    File.join @root_dir, 'cache', 'bundler', 'git', "#{@name}-#{uri_hash}"
   end
 
   ##
@@ -162,7 +176,17 @@ class Gem::Source::Git < Gem::Source
 
         Dir.chdir directory do
           spec = Gem::Specification.load file
-          spec.full_gem_path = File.expand_path '.' if spec
+          if spec then
+            loaded_from = File.expand_path file
+            spec.loaded_from = loaded_from
+            spec.base_dir = base_dir
+
+            spec.extension_install_dir =
+              File.join base_dir, 'extensions', Gem::Platform.local.to_s,
+                Gem.extension_api_version, "#{name}-#{dir_shortref}"
+
+            spec.full_gem_path = File.dirname loaded_from if spec
+          end
           spec
         end
       end.compact

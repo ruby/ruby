@@ -11,6 +11,12 @@
 class Gem::Resolver::GitSet < Gem::Resolver::Set
 
   ##
+  # The root directory for git gems in this set.  This is usually Gem.dir, the
+  # installation directory for regular gems.
+
+  attr_accessor :root_dir
+
+  ##
   # Contains repositories needing submodules
 
   attr_reader :need_submodules # :nodoc:
@@ -30,6 +36,7 @@ class Gem::Resolver::GitSet < Gem::Resolver::Set
     @git             = ENV['git'] || 'git'
     @need_submodules = {}
     @repositories    = {}
+    @root_dir        = Gem.dir
     @specs           = {}
   end
 
@@ -57,11 +64,27 @@ class Gem::Resolver::GitSet < Gem::Resolver::Set
 
     @repositories.each do |name, (repository, reference)|
       source = Gem::Source::Git.new name, repository, reference
+      source.root_dir = @root_dir
 
       source.specs.each do |spec|
         git_spec = Gem::Resolver::GitSpecification.new self, spec, source
 
         @specs[spec.name] = git_spec
+      end
+    end
+  end
+
+  def pretty_print q # :nodoc:
+    q.group 2, '[GitSet', ']' do
+      next if @repositories.empty?
+      q.breakable
+
+      repos = @repositories.map do |name, (repository, reference)|
+        "#{name}: #{repository}@#{reference}"
+      end
+
+      q.seplist repos do |repo|
+        q.text repo
       end
     end
   end

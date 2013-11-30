@@ -98,7 +98,7 @@ class Gem::Ext::Builder
   def initialize spec, build_args = spec.build_args
     @spec       = spec
     @build_args = build_args
-    @gem_dir    = spec.gem_dir
+    @gem_dir    = spec.full_gem_path
 
     @ran_rake   = nil
   end

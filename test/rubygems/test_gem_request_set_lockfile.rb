@@ -104,6 +104,16 @@ DEPENDENCIES
     assert_equal %w[a-2], lockfile_set.specs.map { |tuple| tuple.full_name }
   end
 
+  def test_parse_missing
+    @lockfile.parse
+
+    lockfile_set = @set.sets.find do |set|
+      Gem::Resolver::LockSet === set
+    end
+
+    refute lockfile_set
+  end
+
   def test_peek
     @lockfile.instance_variable_set :@tokens, [:token]
 
@@ -209,6 +219,12 @@ DEPENDENCIES
 
     assert_equal "your #{@lock_file} contains merge conflict markers (at 0:0)",
                  e.message
+  end
+
+  def test_tokenize_missing
+    tokens = @lockfile.tokenize
+
+    assert_empty tokens
   end
 
   def test_to_s_gem
@@ -398,6 +414,16 @@ DEPENDENCIES
     @lockfile.unget
 
     assert_equal :token, @lockfile.get
+  end
+
+  def test_write
+    @lockfile.write
+
+    gem_deps_lock_file = "#{@gem_deps_file}.lock"
+
+    assert_path_exists gem_deps_lock_file
+
+    refute_empty File.read gem_deps_lock_file
   end
 
 end

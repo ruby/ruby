@@ -5,7 +5,8 @@ class TestGemResolverLockSet < Gem::TestCase
   def setup
     super
 
-    @source = Gem::Source.new @gem_repo
+    @source      = Gem::Source.new @gem_repo
+    @lock_source = Gem::Source::Lock.new @source
 
     @set = Gem::Resolver::LockSet.new @source
   end
@@ -21,7 +22,7 @@ class TestGemResolverLockSet < Gem::TestCase
     assert_equal 'a',                 spec.name
     assert_equal v(2),                spec.version
     assert_equal Gem::Platform::RUBY, spec.platform
-    assert_equal @source,             spec.source
+    assert_equal @lock_source,        spec.source
   end
 
   def test_find_all
@@ -41,7 +42,7 @@ class TestGemResolverLockSet < Gem::TestCase
     version = v(2)
     @set.add 'a', version, Gem::Platform::RUBY
 
-    loaded = @set.load_spec 'a', version, Gem::Platform::RUBY, @source
+    loaded = @set.load_spec 'a', version, Gem::Platform::RUBY, nil
 
     assert_kind_of Gem::Specification, loaded
 

@@ -17,5 +17,15 @@ class Gem::Resolver::BestSet < Gem::Resolver::ComposedSet
     end
   end
 
+  def pretty_print q # :nodoc:
+    q.group 2, '[BestSet', ']' do
+      q.breakable
+      q.text 'sets:'
+
+      q.breakable
+      q.pp @sets
+    end
+  end
+
 end
 

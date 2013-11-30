@@ -9,7 +9,7 @@ class Gem::Resolver::LockSet < Gem::Resolver::Set
   # Creates a new LockSet from the given +source+
 
   def initialize source
-    @source = source
+    @source = Gem::Source::Lock.new source
     @specs  = []
   end
 
@@ -54,6 +54,22 @@ class Gem::Resolver::LockSet < Gem::Resolver::Set
     tuple = Gem::NameTuple.new found.name, found.version, found.platform
 
     found.source.fetch_spec tuple
+  end
+
+  def pretty_print q # :nodoc:
+    q.group 2, '[LockSet', ']' do
+      q.breakable
+      q.text 'source:'
+
+      q.breakable
+      q.pp @source
+
+      q.breakable
+      q.text 'specs:'
+
+      q.breakable
+      q.pp @specs.map { |spec| spec.full_name }
+    end
   end
 
 end
