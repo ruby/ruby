@@ -80,7 +80,8 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_reason
-    100_000.times{ "a" + "b" }
+    GC.start
+    GC.stat[:heap_free_slot].times{ "a" + "b" }
     assert_equal({:gc_by => :newobj},
       GC::Profiler.decode_flags(GC.stat[:last_collection_flags]))
   end
