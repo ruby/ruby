@@ -745,6 +745,7 @@ def search_tclConfig(*paths) # libdir list or [tcl-libdir|file, tk-libdir|file]
   end
 
   conf = nil
+  progress_flag = false
 
   config_dir.uniq!
   config_dir.map{|dir|
@@ -755,7 +756,7 @@ def search_tclConfig(*paths) # libdir list or [tcl-libdir|file, tk-libdir|file]
       dir.strip.chomp('/')
     end
   }.each{|dir|
-    print(".") # progress
+    print("."); progress_flag = true # progress
     # print("check #{dir} ==>");
     if dir.kind_of? Array
       tcldir, tkdir = dir
@@ -795,18 +796,34 @@ def search_tclConfig(*paths) # libdir list or [tcl-libdir|file, tk-libdir|file]
       # parse tclConfig.sh/tkConfig.sh
       tclconf = (tclpath)? parse_tclConfig(tclpath): nil
       if tclconf
-        next if tclver && ((tclver_major && tclver_major != tclconf['TCL_MAJOR_VERSION']) || (tclver_minor && tclver_minor != tclconf['TCL_MINOR_VERSION']))
-        next if TkLib_Config['unsupported_versions'].find{|ver|
-          ver == "#{tclconf['TCL_MAJOR_VERSION']}.#{tclconf['TCL_MINOR_VERSION']}"
-        }
+        if tclver && ((tclver_major && tclver_major != tclconf['TCL_MAJOR_VERSION']) || (tclver_minor && tclver_minor != tclconf['TCL_MINOR_VERSION']))
+          print("\n") if progress_flag
+          puts "Ignore \"#{tclpath}\" (unmatch with configured version)."
+          progress_flag = false
+          next
+        end
+        if TkLib_Config['unsupported_versions'].find{|ver| ver == "#{tclconf['TCL_MAJOR_VERSION']}.#{tclconf['TCL_MINOR_VERSION']}"}
+          print("\n") if progress_flag
+          puts "Ignore \"#{tclpath}\" (unsupported version of Tcl/Tk)."
+          progress_flag = false
+          next
+        end
       end
 
       tkconf = (tkpath)? parse_tclConfig(tkpath): nil
       if tkconf
-        next if tkver && ((tkver_major && tkver_major != tkconf['TK_MAJOR_VERSION']) || (tkver_minor && tkver_minor != tkconf['TK_MINOR_VERSION']))
-        next if TkLib_Config['unsupported_versions'].find{|ver|
-          ver == "#{tkconf['TK_MAJOR_VERSION']}.#{tkconf['TK_MINOR_VERSION']}"
-        }
+        if tkver && ((tkver_major && tkver_major != tkconf['TK_MAJOR_VERSION']) || (tkver_minor && tkver_minor != tkconf['TK_MINOR_VERSION']))
+          print("\n") if progress_flag
+          puts "Ignore \"#{tkpath}\" (unmatch with configured version)."
+          progress_flag = false
+          next
+        end
+        if TkLib_Config['unsupported_versions'].find{|ver| ver == "#{tkconf['TK_MAJOR_VERSION']}.#{tkconf['TK_MINOR_VERSION']}"}
+          print("\n") if progress_flag
+          puts "Ignore \"#{tkpath}\" (unsupported version of Tcl/Tk)."
+          progress_flag = false
+          next
+        end
       end
 
       # nativethread check
