@@ -558,4 +558,12 @@ class TestRange < Test::Unit::TestCase
       assert_equal(42, answer, msg)
     }
   end
+
+  def test_each_no_blockarg
+    a = "a"
+    def a.upto(x, e, &b)
+      super {|y| b.call(y) {|z| assert(false)}}
+    end
+    (a.."c").each {|x, &b| assert_nil(b)}
+  end
 end
