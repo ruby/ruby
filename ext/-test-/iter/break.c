@@ -17,9 +17,9 @@ iter_break_value(VALUE self, VALUE val)
 }
 
 void
-Init_break(void)
+Init_break(VALUE klass)
 {
-    VALUE breakable = rb_define_module_under(rb_define_module("Bug"), "Breakable");
+    VALUE breakable = rb_define_module_under(klass, "Breakable");
     rb_define_module_function(breakable, "iter_break", iter_break, 0);
     rb_define_module_function(breakable, "iter_break_value", iter_break_value, 1);
 }

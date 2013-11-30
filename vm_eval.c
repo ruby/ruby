@@ -994,7 +994,9 @@ rb_yield_block(VALUE val, VALUE arg, int argc, const VALUE *argv, VALUE blockarg
 {
     const rb_block_t *blockptr = 0;
     if (!NIL_P(blockarg)) {
-	rb_notimplement();
+	rb_proc_t *blockproc;
+	GetProcPtr(blockarg, blockproc);
+	blockptr = &blockproc->block;
     }
     return vm_yield_with_block(GET_THREAD(), argc, argv, blockptr);
 }
