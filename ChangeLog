@@ -1,3 +1,9 @@
+Sat Nov 30 17:46:35 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (ruby_cleanup): determine exit status and signal to terminate
+	  before finalization, to get rid of access destroyed T_DATA execption
+	  object.  [ruby-core:58643] [Bug #9167]
+
 Sat Nov 30 16:25:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c (enumerator_with_index): should not store local variable

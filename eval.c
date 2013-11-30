@@ -192,12 +192,6 @@ ruby_cleanup(volatile int ex)
     }
     th->errinfo = errs[1];
     ex = error_handle(ex);
-    ruby_finalize_1();
-
-    /* unlock again if finalizer took mutexes. */
-    rb_threadptr_unlock_all_locking_mutexes(GET_THREAD());
-    POP_TAG();
-    rb_thread_stop_timer_thread(1);
 
 #if EXIT_SUCCESS != 0 || EXIT_FAILURE != 1
     switch (ex) {
@@ -232,6 +226,13 @@ ruby_cleanup(volatile int ex)
 	    ex = EXIT_FAILURE;
 	}
     }
+
+    ruby_finalize_1();
+
+    /* unlock again if finalizer took mutexes. */
+    rb_threadptr_unlock_all_locking_mutexes(GET_THREAD());
+    POP_TAG();
+    rb_thread_stop_timer_thread(1);
     ruby_vm_destruct(GET_VM());
     if (state) ruby_default_signal(state);
 
