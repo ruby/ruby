@@ -383,7 +383,7 @@ static VALUE fole_s_create_guid(VALUE self);
 static VALUE fole_s_ole_initialize(VALUE self);
 static VALUE fole_s_ole_uninitialize(VALUE self);
 static VALUE fole_initialize(int argc, VALUE *argv, VALUE self);
-static VALUE hash2named_arg(VALUE pair, struct oleparam* pOp);
+static VALUE hash2named_arg(RB_BLOCK_CALL_FUNC_ARGLIST(pair, op));
 static VALUE set_argv(VARIANTARG* realargs, unsigned int beg, unsigned int end);
 static VALUE ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket);
 static VALUE fole_invoke(int argc, VALUE *argv, VALUE self);
