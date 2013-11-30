@@ -758,6 +758,8 @@ VALUE rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv
 
 /* vm_insnhelper.c */
 VALUE rb_equal_opt(VALUE obj1, VALUE obj2);
+void rb_check_keyword_opthash(VALUE keyword_hash, const ID *table, int required, int optional);
+VALUE rb_extract_keywords(VALUE *orighash);
 
 /* vm_method.c */
 void Init_eval_method(void);

@@ -1786,8 +1786,11 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
 	}
 	else {
 	    hash = rb_check_hash_type(last);
-	    if (!NIL_P(hash))
-		argc--;
+	    if (!NIL_P(hash)) {
+		VALUE opts = rb_extract_keywords(&hash);
+		if (!hash) argc--;
+		hash = opts;
+	    }
 	}
     }
     /* capture leading mandatory arguments */
