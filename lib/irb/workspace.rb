@@ -49,7 +49,7 @@ EOF
 	  end
 	  @binding = BINDING_QUEUE.pop
 
-	when 3	# binging in function on TOPLEVEL_BINDING(default)
+	when 3	# binding in function on TOPLEVEL_BINDING(default)
 	  @binding = eval("def irb_binding; private; binding; end; irb_binding",
 		      TOPLEVEL_BINDING,
 		      __FILE__,
