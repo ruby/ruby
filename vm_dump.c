@@ -362,7 +362,7 @@ rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp,VALUE *_pc)
 	    printf(" ");
 	}
 	printf("| ");
-	if(0)printf("[%03ld] ",cfp->sp - th->stack);
+	if(0)printf("[%03ld] ", (long)(cfp->sp - th->stack));
 
 	/* printf("%3"PRIdPTRDIFF" ", VM_CFP_CNT(th, cfp)); */
 	if (pc >= 0) {
