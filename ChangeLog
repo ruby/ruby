@@ -1,3 +1,9 @@
+Sat Nov 30 16:25:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enumerator.c (enumerator_with_index): should not store local variable
+	  address to memoise the arguments.  it is invalidated after the return.
+	  [ruby-core:58692] [Bug #9178]
+
 Sat Nov 30 13:28:13 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* siphash.c (sip_hash24): fix for aligned word access little endian
