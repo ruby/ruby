@@ -117,6 +117,8 @@ install:
     ext_lib_dir = File.join ext_dir, 'lib'
     FileUtils.mkdir ext_lib_dir
     FileUtils.touch File.join ext_lib_dir, 'a.rb'
+    FileUtils.mkdir File.join ext_lib_dir, 'a'
+    FileUtils.touch File.join ext_lib_dir, 'a', 'b.rb'
 
     use_ui @ui do
       @builder.build_extensions
@@ -127,6 +129,7 @@ install:
     assert_path_exists File.join @spec.extension_install_dir, 'gem_make.out'
     assert_path_exists File.join @spec.extension_install_dir, 'a.rb'
     assert_path_exists File.join @spec.gem_dir, 'lib', 'a.rb'
+    assert_path_exists File.join @spec.gem_dir, 'lib', 'a', 'b.rb'
   end
 
   def test_build_extensions_none

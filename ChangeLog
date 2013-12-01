@@ -1,3 +1,12 @@
+Mon Dec  2 05:52:33 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master baa965b.  Notable changes:
+
+	  Copy directories to lib/ when installing extensions.  This completes
+	  the fix for [ruby-trunk - Bug #9106]
+
+	* test/rubygems:  ditto.
+
 Mon Dec  2 02:03:47 2013  Shota Fukumori  <her@sorah.jp>
 
 	* test/ruby/test_case.rb (test_nomethoderror):

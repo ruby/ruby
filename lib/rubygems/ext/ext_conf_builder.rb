@@ -43,13 +43,15 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
         make dest_path, results
 
         if tmp_dest
-          FileEntry.new(tmp_dest).traverse do |ent|
-            # TODO remove in RubyGems 3
-            if lib_dir then
-              libent = ent.class.new lib_dir, ent.rel
-              libent.exist? or ent.copy libent.path
-            end
+          # TODO remove in RubyGems 3
+          if lib_dir then
+            FileUtils.mkdir_p lib_dir
+            entries = Dir.entries(tmp_dest) - %w[. ..]
+            entries = entries.map { |entry| File.join tmp_dest, entry }
+            FileUtils.cp_r entries, lib_dir
+          end
 
+          FileEntry.new(tmp_dest).traverse do |ent|
             destent = ent.class.new(dest_path, ent.rel)
             destent.exist? or File.rename(ent.path, destent.path)
           end
