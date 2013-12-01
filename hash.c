@@ -1606,7 +1606,7 @@ rb_hash_to_a(VALUE hash)
 {
     VALUE ary;
 
-    ary = rb_ary_new();
+    ary = rb_ary_new_capa(RHASH_SIZE(hash));
     rb_hash_foreach(hash, to_a_i, ary);
     OBJ_INFECT(ary, hash);
 
