@@ -576,6 +576,11 @@ rb_hash_s_try_convert(VALUE dummy, VALUE hash)
     return rb_check_hash_type(hash);
 }
 
+struct rehash_arg {
+    VALUE hash;
+    st_table *tbl;
+};
+
 static int
 rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
 {
@@ -583,6 +588,14 @@ rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
 
     st_insert(tbl, (st_data_t)key, (st_data_t)value);
     return ST_CONTINUE;
+}
+
+static VALUE
+rehash_func(VALUE arg)
+{
+    struct rehash_arg *p = (struct rehash_arg *)arg;
+    rb_hash_foreach(p->hash, rb_hash_rehash_i, (VALUE)p->tbl);
+    return Qnil;
 }
 
 /*
@@ -608,18 +621,30 @@ rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
 static VALUE
 rb_hash_rehash(VALUE hash)
 {
-    st_table *tbl;
+    int state;
+    struct rehash_arg arg;
+    st_table *new_tbl, *old_tbl = RHASH(hash)->ntbl;
 
     if (RHASH_ITER_LEV(hash) > 0) {
 	rb_raise(rb_eRuntimeError, "rehash during iteration");
     }
     rb_hash_modify_check(hash);
-    if (!RHASH(hash)->ntbl)
-        return hash;
-    tbl = st_init_table_with_size(RHASH(hash)->ntbl->type, RHASH(hash)->ntbl->num_entries);
-    rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tbl);
-    st_free_table(RHASH(hash)->ntbl);
-    RHASH(hash)->ntbl = tbl;
+    if (!old_tbl) return hash;
+
+    new_tbl = st_init_table_with_size(old_tbl->type, old_tbl->num_entries);
+    arg.hash = hash;
+    arg.tbl = new_tbl;
+
+    rb_protect(rehash_func, (VALUE)&arg, &state);
+
+    if (state) {
+	st_free_table(new_tbl);
+	rb_jump_tag(state);
+    }
+    else {
+	st_free_table(RHASH(hash)->ntbl);
+	RHASH(hash)->ntbl = new_tbl;
+    }
 
     return hash;
 }

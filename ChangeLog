@@ -1,3 +1,8 @@
+Sun Dec  1 14:15:36 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* hash.c (rb_hash_rehash): fix to free new st_table when exception
+	  is raised in do_hash(). [Bug #9187]
+
 Sun Dec  1 11:57:59 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/openssl/lib/openssl/buffering.rb: Fix warning in copyright
