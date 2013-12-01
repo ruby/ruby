@@ -97,7 +97,6 @@ rb_next_class_serial(void)
 VALUE rb_cRubyVM;
 VALUE rb_cThread;
 VALUE rb_cEnv;
-VALUE rb_cInstructionHelper;
 VALUE rb_mRubyVMFrozenCore;
 
 VALUE ruby_vm_const_missing_count = 0;
@@ -2243,24 +2242,24 @@ m_core_hash_merge_kwd(int argc, VALUE *argv, VALUE recv)
 
 /*
  *  call-seq:
- *      InstructionHelper.method_serial -> fixnum
+ *      RubyVM.method_serial -> fixnum
  *
  *  Calls instruction helper GET_METHOD_SERIAL(): returns integer value.
  */
 VALUE
-insnhelper_s_method_serial(void)
+rubyvm_s_method_serial(void)
 {
     return INT2NUM(GET_METHOD_SERIAL());
 }
 
 /*
  *  call-seq:
- *      InstructionHelper.constant_serial -> fixnum
+ *      RubyVM.constant_serial -> fixnum
  *
  *  Calls instruction helper GET_CONSTANT_SERIAL(): returns integer value.
  */
 VALUE
-insnhelper_s_constant_serial(void)
+rubyvm_s_constant_serial(void)
 {
     return INT2NUM(GET_CONSTANT_SERIAL());
 }
@@ -2323,6 +2322,8 @@ Init_VM(void)
     rb_cRubyVM = rb_define_class("RubyVM", rb_cObject);
     rb_undef_alloc_func(rb_cRubyVM);
     rb_undef_method(CLASS_OF(rb_cRubyVM), "new");
+    rb_define_singleton_method(rb_cRubyVM, "method_serial", rubyvm_s_method_serial, 0);
+    rb_define_singleton_method(rb_cRubyVM, "constant_serial", rubyvm_s_constant_serial, 0);
 
     /* FrozenCore (hidden) */
     fcore = rb_class_new(rb_cBasicObject);
@@ -2351,23 +2352,6 @@ Init_VM(void)
     rb_cEnv = rb_define_class_under(rb_cRubyVM, "Env", rb_cObject);
     rb_undef_alloc_func(rb_cEnv);
     rb_undef_method(CLASS_OF(rb_cEnv), "new");
-
-    /*
-     *  Document-class: RubyVM::InstructionHelper
-     *
-     *  The InstructionHelper class exposes helper macros used to implement
-     *  instructions for the Ruby Virtual Machine.
-     *
-     *  With it, you can get the method and constant serials.
-     *
-     *  You can find the source for the helper macros in +vm_insnhelper.h+
-     *  in the Ruby source.
-     */
-    rb_cInstructionHelper = rb_define_class_under(rb_cRubyVM, "InstructionHelper", rb_cObject);
-    rb_undef_alloc_func(rb_cInstructionHelper);
-    rb_undef_method(CLASS_OF(rb_cInstructionHelper), "new");
-    rb_define_singleton_method(rb_cInstructionHelper, "method_serial", insnhelper_s_method_serial, 0);
-    rb_define_singleton_method(rb_cInstructionHelper, "constant_serial", insnhelper_s_constant_serial, 0);
 
     /*
      * Document-class: Thread
