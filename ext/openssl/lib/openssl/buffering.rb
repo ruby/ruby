@@ -1,18 +1,19 @@
-<<EOL
-= $RCSfile$ -- Buffering mix-in module.
-
-= Info
-  'OpenSSL for Ruby 2' project
-  Copyright (C) 2001 GOTOU YUUZOU <gotoyuzo@notwork.org>
-  All rights reserved.
-
-= Licence
-  This program is licenced under the same licence as Ruby.
-  (See the file 'LICENCE'.)
-
-= Version
-  $Id$
-EOL
+#
+#--
+#= $RCSfile$ -- Buffering mix-in module.
+#
+#= Info
+#  'OpenSSL for Ruby 2' project
+#  Copyright (C) 2001 GOTOU YUUZOU <gotoyuzo@notwork.org>
+#  All rights reserved.
+#
+#= Licence
+#  This program is licenced under the same licence as Ruby.
+#  (See the file 'LICENCE'.)
+#
+#= Version
+#  $Id$
+#++
 
 ##
 # OpenSSL IO buffering mix-in module.
