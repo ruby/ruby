@@ -114,4 +114,12 @@ class TestCase < Test::Unit::TestCase
 
     assert(flag)
   end
+
+  def test_nomethoderror
+    assert_raise(NoMethodError) {
+      case 1
+      when Class.new(BasicObject) { }.new
+      end
+    }
+  end
 end
