@@ -1,3 +1,13 @@
+Sun Dec  1 22:14:27 2013  Zachary Scott  <e@zzak.io>
+
+	* doc/contributors.rdoc: [DOC] Import contributors from redmine wiki
+	  Many wiki pages have become outdated and spam-ridden, we will import
+	  these to trunk and begin maintaining them in ruby-trunk. This will
+	  also allow new contributors to easily contribute patches to update
+	  these pages, where previously a redmine account with wiki access was
+	  required. Another bonus is having a contributors file to show thanks
+	  to all of the people who have submitted a patch to Ruby.
+
 Sun Dec  1 18:03:26 2013  Zachary Scott  <e@zzak.io>
 
 	* doc/maintainers.rdoc: [DOC] Current maintainers of Ruby
