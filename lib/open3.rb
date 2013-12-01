@@ -235,7 +235,7 @@ module Open3
   #   p e #=> "bar\nbaz\nfoo\n"
   #   p s #=> #<Process::Status: pid 32682 exit 0>
   #
-  #   # generate a thumnail image using the convert command of ImageMagick.
+  #   # generate a thumbnail image using the convert command of ImageMagick.
   #   # However, if the image is really stored in a file,
   #   # system("convert", "-thumbnail", "80", "png:#{filename}", "png:-") is better
   #   # because of reduced memory consumption.
@@ -243,9 +243,9 @@ module Open3
   #   # Open3.capture3 should be considered.
   #   #
   #   image = File.read("/usr/share/openclipart/png/animals/mammals/sheep-md-v0.1.png", :binmode=>true)
-  #   thumnail, err, s = Open3.capture3("convert -thumbnail 80 png:- png:-", :stdin_data=>image, :binmode=>true)
+  #   thumbnail, err, s = Open3.capture3("convert -thumbnail 80 png:- png:-", :stdin_data=>image, :binmode=>true)
   #   if s.success?
-  #     STDOUT.binmode; print thumnail
+  #     STDOUT.binmode; print thumbnail
   #   end
   #
   def capture3(*cmd, stdin_data: '', binmode: false, **opts)
