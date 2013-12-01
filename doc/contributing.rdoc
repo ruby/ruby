@@ -49,6 +49,16 @@ on your ticket.
 * Please reply to feedback requests. If a bug report doesn't get any feedback,
   it'll eventually get rejected.
 
+=== Reporting to downstream distributions
+
+You can reports downstream issues for the following distributions via their bugtacker:
+
+* {debian}[http://bugs.debian.org/cgi-bin/pkgreport.cgi?src=ruby-defaults]
+* {freebsd}[http://www.freebsd.org/cgi/query-pr-summary.cgi?text=ruby]
+* {redhat}[https://bugzilla.redhat.com/buglist.cgi?bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&bug_status=MODIFIED]
+* {macports}[http://trac.macports.org/query?status=assigned&status=new&status=reopened&port=~ruby]
+* etc (add your distribution bug tracker here)
+
 == Reporting Security Issues
 
 Security vulnerabilities receive special treatment since they may negatively

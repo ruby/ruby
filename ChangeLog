@@ -1,3 +1,7 @@
+Sun Dec  1 17:14:55 2013  Zachary Scott  <e@zzak.io>
+
+	* doc/contributing.rdoc: [DOC] Reporting downstream distro issues
+
 Sun Dec  1 14:37:20 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* hash.c (rb_hash_to_a): specify array capa.
