@@ -59,6 +59,34 @@ You can reports downstream issues for the following distributions via their bugt
 * {macports}[http://trac.macports.org/query?status=assigned&status=new&status=reopened&port=~ruby]
 * etc (add your distribution bug tracker here)
 
+=== Platform Maintainers
+
+For platform specific bugs in Ruby, you can assign your ticket the current
+maintainer for a specific platform.
+
+The current active platform maintainers are as follows:
+
+[mswin32, mswin64 (Microsoft Windows)]
+  NAKAMURA Usaku (usa)
+[mingw32 (Minimalist GNU for Windows)]
+  Nobuyoshi Nakada (nobu)
+[IA-64 (Debian GNU/Linux)]
+  TAKANO Mitsuhiro (takano32)
+[Symbian OS]
+  Alexander Zavorine (azov)
+[AIX]
+  Yutaka Kanemoto (kanemoto)
+[FreeBSD]
+  Akinori MUSHA (knu)
+[Solaris]
+  Naohisa Goto (ngoto)
+[RHEL, CentOS]
+  KOSAKI Motohiro kosaki
+[Mac OS X]
+  Kenta Murata (mrkn)
+[cygwin, bcc32, djgpp, wince, ...]
+  none. (Maintainer WANTED)
+
 == Reporting Security Issues
 
 Security vulnerabilities receive special treatment since they may negatively
