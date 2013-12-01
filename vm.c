@@ -2249,7 +2249,7 @@ m_core_hash_merge_kwd(int argc, VALUE *argv, VALUE recv)
 VALUE
 rubyvm_s_method_serial(void)
 {
-    return INT2NUM(GET_METHOD_SERIAL());
+    return SIZET2NUM(GET_METHOD_SERIAL());
 }
 
 /*
@@ -2261,7 +2261,7 @@ rubyvm_s_method_serial(void)
 VALUE
 rubyvm_s_constant_serial(void)
 {
-    return INT2NUM(GET_CONSTANT_SERIAL());
+    return SIZET2NUM(GET_CONSTANT_SERIAL());
 }
 
 extern VALUE *rb_gc_stack_start;
