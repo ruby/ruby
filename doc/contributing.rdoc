@@ -96,6 +96,19 @@ mailto:security@ruby-lang.org list and the problem will be published after
 fixes have been released. You can also encrypt the issue using {the PGP public
 key}[http://www.ruby-lang.org/security.asc] for the list.
 
+== Reporting Other Issues
+
+If you're having an issue with the website, or maybe the mailing list, you can
+contact the webmaster to help resolve the problem.
+
+The current webmaster is:
+
+* Hiroshi SHIBATA (hsbt)
+
+You can also report issues with the ruby-lang.org website on the issue tracker:
+
+* {issue tracker}[https://github.com/ruby/www.ruby-lang.org/issues]
+
 == Resolve Existing Issues
 
 As a next step beyond reporting issues you can help the core team resolve
