@@ -1,3 +1,10 @@
+Mon Dec  2 22:53:05 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_readlink): fix buffer overflow on a long symlink. since
+	  rb_str_modify_expand() expands from its length but not its capacity,
+	  need to set the length properly for each expansion.
+	  [ruby-core:58592] [Bug #9157]
+
 Fri Nov 29 00:31:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (Doxyfile): tool/file2lastrev.rb needs running with
