@@ -1,3 +1,9 @@
+Mon Dec  2 23:31:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enumerator.c (enumerator_with_index): should not store local variable
+	  address to memoise the arguments.  it is invalidated after the return.
+	  [ruby-core:58692] [Bug #9178]
+
 Mon Dec  2 23:16:50 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* enumerator.c (enumerator_with_index):  Restore handling of a nil memo

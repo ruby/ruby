@@ -112,6 +112,16 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal([[1,s],[2,s+1],[3,s+2]], @obj.to_enum(:foo, 1, 2, 3).with_index(s).to_a, bug8010)
   end
 
+  def test_with_index_dangling_memo
+    bug9178 = '[ruby-core:58692] [Bug #9178]'
+    assert_separately([], <<-"end;")
+    bug = "#{bug9178}"
+    e = [1].to_enum(:chunk).with_index {|c,i| i == 5}
+    assert_kind_of(Enumerator, e)
+    assert_equal([false, [1]], e.to_a[0], bug)
+    end;
+  end
+
   def test_with_object
     obj = [0, 1]
     ret = (1..10).each.with_object(obj) {|i, memo|
