@@ -1,3 +1,8 @@
+Mon Dec  2 22:30:10 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* hash.c (getenv): fixed test failures introduced by r43950.
+	  [ruby-core:58774] [Bug #9195] reported by phasis68 (Heesob Park).
+
 Mon Dec  2 21:49:19 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* hash.c (rb_hash_rehash): make temporary st_table under the control

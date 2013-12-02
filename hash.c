@@ -2409,7 +2409,7 @@ static char **my_environ;
 #define environ my_environ
 #undef getenv
 inline char *
-getenv(const char *name)
+w32_getenv(const char *name)
 {
     static int binary = -1;
     static int locale = -1;
@@ -2419,6 +2419,7 @@ getenv(const char *name)
     }
     return locale == binary ? rb_w32_getenv(name) : rb_w32_ugetenv(name);
 }
+#define getenv(n) w32_getenv(n)
 #elif defined(__APPLE__)
 #undef environ
 #define environ (*_NSGetEnviron())
