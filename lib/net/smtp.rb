@@ -942,7 +942,7 @@ module Net
     end
 
     def critical
-      return '200 dummy reply code' if @error_occurred
+      return Response.parse('200 dummy reply code') if @error_occurred
       begin
         return yield()
       rescue Exception
