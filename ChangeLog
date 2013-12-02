@@ -1,3 +1,9 @@
+Mon Dec  2 17:23:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* variable.c (rb_mod_constants): when calling Module#constants with
+	  inherit=false, there is no need to use a hashtable to deduplicate
+	  constant names. [Feature #9196] [ruby-core:58786]
+
 Mon Dec  2 14:16:52 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/smtp.rb (Net::SMTP#critical):  Always return a
