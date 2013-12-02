@@ -1080,6 +1080,34 @@ class TestHash < Test::Unit::TestCase
     assert_not_equal([a,"hello"].hash, [b,"world"].hash, bug9151)
   end
 
+  def test_exception_in_rehash
+    bug9187 = '[ruby-core:58728] [Bug #9187]'
+
+    prepare = <<-EOS
+    class Foo
+      def initialize
+        @raise = false
+      end
+
+      def hash
+        raise if @raise
+        @raise = true
+        return 0
+      end
+    end
+    EOS
+
+    code = <<-EOS
+    h = {Foo.new => true}
+    10_0000.times do
+      h.rehash rescue nil
+    end
+    GC.start
+    EOS
+
+    assert_no_memory_leak([], prepare, code, bug9187)
+  end
+
   class TestSubHash < TestHash
     class SubHash < Hash
     end
