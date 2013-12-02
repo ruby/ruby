@@ -2383,8 +2383,8 @@ fix_succ(VALUE num)
  *     (-1).next   #=> 0
  */
 
-static VALUE
-int_succ(VALUE num)
+VALUE
+rb_int_succ(VALUE num)
 {
     if (FIXNUM_P(num)) {
 	long i = FIX2LONG(num) + 1;
@@ -2392,6 +2392,8 @@ int_succ(VALUE num)
     }
     return rb_funcall(num, '+', 1, INT2FIX(1));
 }
+
+#define int_succ rb_int_succ
 
 /*
  *  call-seq:
@@ -2403,8 +2405,8 @@ int_succ(VALUE num)
  *     (-1).pred   #=> -2
  */
 
-static VALUE
-int_pred(VALUE num)
+VALUE
+rb_int_pred(VALUE num)
 {
     if (FIXNUM_P(num)) {
 	long i = FIX2LONG(num) - 1;
@@ -2412,6 +2414,8 @@ int_pred(VALUE num)
     }
     return rb_funcall(num, '-', 1, INT2FIX(1));
 }
+
+#define int_pred rb_int_pred
 
 VALUE
 rb_enc_uint_chr(unsigned int code, rb_encoding *enc)

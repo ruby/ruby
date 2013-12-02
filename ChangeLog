@@ -1,3 +1,8 @@
+Mon Dec  2 23:16:50 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* enumerator.c (enumerator_with_index):  Restore handling of a nil memo
+	  from r39594.
+
 Mon Dec  2 22:53:05 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_readlink): fix buffer overflow on a long symlink. since
