@@ -278,7 +278,7 @@ class CSV
     # This method will return the field value by +header+ or +index+.  If a field
     # is not found, +nil+ is returned.
     #
-    # When provided, +offset+ ensures that a header match occurrs on or later
+    # When provided, +offset+ ensures that a header match occurs on or later
     # than the +offset+ index.  You can use this to find duplicate headers,
     # without resorting to hard-coding exact indices.
     #
@@ -812,7 +812,7 @@ class CSV
     #
     # Removes any column or row for which the block returns +true+.  In the
     # default mixed mode or row mode, iteration is the standard row major
-    # walking of rows.  In column mode, interation will +yield+ two element
+    # walking of rows.  In column mode, iteration will +yield+ two element
     # tuples containing the column name and an Array of values for that column.
     #
     # This method returns the table for chaining.
@@ -835,7 +835,7 @@ class CSV
 
     #
     # In the default mixed mode or row mode, iteration is the standard row major
-    # walking of rows.  In column mode, interation will +yield+ two element
+    # walking of rows.  In column mode, iteration will +yield+ two element
     # tuples containing the column name and an Array of values for that column.
     #
     # This method returns the table for chaining.
@@ -983,7 +983,7 @@ class CSV
   # attempting a conversion.  If your data cannot be transcoded to UTF-8 the
   # conversion will fail and the header will remain unchanged.
   #
-  # This Hash is intetionally left unfrozen and users should feel free to add
+  # This Hash is intentionally left unfrozen and users should feel free to add
   # values to it that can be accessed by all CSV objects.
   #
   # To add a combo field, the value should be an Array of names.  Combo fields
@@ -1133,7 +1133,7 @@ class CSV
   # append CSV rows to the String and when the block exits, the final String
   # will be returned.
   #
-  # Note that a passed String *is* modfied by this method.  Call dup() before
+  # Note that a passed String *is* modified by this method.  Call dup() before
   # passing if you need a new String.
   #
   # The +options+ parameter can be anything CSV::new() understands.  This method
@@ -1969,7 +1969,7 @@ class CSV
       else
         begin
           #
-          # remember where we were (pos() will raise an axception if @io is pipe
+          # remember where we were (pos() will raise an exception if @io is pipe
           # or not opened for reading)
           #
           saved_pos = @io.pos
@@ -2175,7 +2175,7 @@ class CSV
           header = @use_headers && !headers ? @headers[index] : nil
           converter[field, FieldInfo.new(index, lineno, header)]
         end
-        break unless field.is_a? String  # short-curcuit pipeline for speed
+        break unless field.is_a? String  # short-circuit pipeline for speed
       end
       field  # final state of each field, converted or original
     end
