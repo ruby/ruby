@@ -1,4 +1,9 @@
-Tue Dec  3 22:18:27 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Dec  3 22:32:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_recursive): make similar (recursive) constructs
+	  return same hash value.  execute recursively, and rewind to the
+	  topmost frame with an object which .eql? to the recursive
+	  object, if recursion is detected.
 
 	* hash.c (rb_hash): detect recursion for all `hash' methods.  each
 	  `hash' methods no longer need to use rb_exec_recursive().
