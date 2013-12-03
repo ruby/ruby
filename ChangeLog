@@ -1,3 +1,8 @@
+Tue Dec  3 20:16:38 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_hash_rehash): use hash_alloc() instead of rb_hash_new().
+	  [Bug #9187]
+
 Tue Dec  3 17:11:47 2013  Aman Gupta <ruby@tmm1.net>
 
 	* load.c (features_index_add_single): Move loaded_features_index array values off

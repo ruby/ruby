@@ -622,7 +622,7 @@ rb_hash_rehash(VALUE hash)
     rb_hash_modify_check(hash);
     if (!RHASH(hash)->ntbl)
         return hash;
-    tmp = rb_hash_new();
+    tmp = hash_alloc(0);
     tbl = st_init_table_with_size(RHASH(hash)->ntbl->type, RHASH(hash)->ntbl->num_entries);
     RHASH(tmp)->ntbl = tbl;
 
