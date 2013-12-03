@@ -1612,9 +1612,6 @@ rb_vm_mark(void *ptr)
 	if (vm->loading_table) {
 	    rb_mark_tbl(vm->loading_table);
 	}
-	if (vm->loaded_features_index) {
-	    rb_mark_tbl(vm->loaded_features_index);
-	}
 
 	rb_vm_trace_mark_event_hooks(&vm->event_hooks);
 

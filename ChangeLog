@@ -1,3 +1,11 @@
+Tue Dec  3 17:11:47 2013  Aman Gupta <ruby@tmm1.net>
+
+	* load.c (features_index_add_single): Move loaded_features_index array values off
+	  the ruby heap. [Bug #9201] [ruby-core:58805]
+	* load.c (loaded_features_index_clear_i): Clean up off-heap array structure.
+	* vm.c (rb_vm_mark): Remove unnecessary mark_tbl for loaded_features_index.
+	  This improves minor GC time by 15% in a large application.
+
 Tue Dec  3 17:01:45 2013  Aman Gupta <ruby@tmm1.net>
 
 	* include/ruby/ruby.h (struct RClass): Add wrapper struct around

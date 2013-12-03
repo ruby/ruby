@@ -203,7 +203,8 @@ features_index_add_single(VALUE short_feature, VALUE offset)
 	VALUE feature_indexes[2];
 	feature_indexes[0] = this_feature_index;
 	feature_indexes[1] = offset;
-	this_feature_index = rb_ary_tmp_new(numberof(feature_indexes));
+	this_feature_index = (VALUE)xcalloc(1, sizeof(struct RArray));
+	RBASIC(this_feature_index)->flags = T_ARRAY; /* fake VALUE, do not mark/sweep */
 	rb_ary_cat(this_feature_index, feature_indexes, numberof(feature_indexes));
 	st_insert(features_index, (st_data_t)short_feature_cstr, (st_data_t)this_feature_index);
     }
@@ -263,6 +264,11 @@ features_index_add(VALUE feature, VALUE offset)
 static int
 loaded_features_index_clear_i(st_data_t key, st_data_t val, st_data_t arg)
 {
+    VALUE obj = (VALUE)val;
+    if (!SPECIAL_CONST_P(obj)) {
+	rb_ary_free(obj);
+	xfree((void *)obj);
+    }
     xfree((char *)key);
     return ST_DELETE;
 }
