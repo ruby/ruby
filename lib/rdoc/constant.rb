@@ -63,7 +63,15 @@ class RDoc::Constant < RDoc::CodeObject
   # for a documented class or module.
 
   def documented?
-    super or is_alias_for && is_alias_for.documented?
+    return true if super
+    return false unless @is_alias_for
+    case @is_alias_for
+    when String then
+      found = @store.find_class_or_module @is_alias_for
+      return false unless found
+      @is_alias_for = found
+    end
+    @is_alias_for.documented?
   end
 
   ##

@@ -1,3 +1,8 @@
+Tue Dec  3 12:17:59 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/constant.rb (RDoc::Constant#documented?): workaround for
+	  NoMethodError when the original of alias is not found.
+
 Tue Dec  3 10:43:58 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/openssl/lib/openssl/buffering.rb:  Return ASCII-8BIT strings from
