@@ -1,3 +1,9 @@
+Tue Dec  3 12:20:21 2013  Aman Gupta <ruby@tmm1.net>
+
+	* string.c (rb_fstring): Use st_update instead of st_lookup +
+	  st_insert.
+	* string.c (fstr_update_callback): New callback for st_update.
+
 Tue Dec  3 12:17:59 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/constant.rb (RDoc::Constant#documented?): workaround for

@@ -132,22 +132,16 @@ static const struct st_hash_type fstring_hash_type = {
     rb_str_hash,
 };
 
-VALUE
-rb_fstring(VALUE str)
+static int
+fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 {
-    st_data_t fstr;
-    Check_Type(str, T_STRING);
-
-    if (FL_TEST(str, RSTRING_FSTR))
-	return str;
-
-    if (st_lookup(frozen_strings, (st_data_t)str, &fstr)) {
-	str = (VALUE)fstr;
+    VALUE *fstr = (VALUE *)arg;
+    if (existing) {
 	/* because of lazy sweep, str may be unmaked already and swept
 	 * at next time */
-	rb_gc_resurrect(str);
-    }
-    else {
+	rb_gc_resurrect(*fstr = *key);
+    } else {
+	VALUE str = *key;
 	if (STR_SHARED_P(str)) {
 	    /* str should not be shared */
 	    str = rb_enc_str_new(RSTRING_PTR(str), RSTRING_LEN(str), STR_ENC_GET(str));
@@ -157,9 +151,23 @@ rb_fstring(VALUE str)
 	    str = rb_str_new_frozen(str);
 	}
 	RBASIC(str)->flags |= RSTRING_FSTR;
-	st_insert(frozen_strings, str, str);
+	*fstr = *key = str;
     }
-    return str;
+
+    return ST_CONTINUE;
+}
+
+VALUE
+rb_fstring(VALUE str)
+{
+    VALUE fstr = Qnil;
+    Check_Type(str, T_STRING);
+
+    if (FL_TEST(str, RSTRING_FSTR))
+	return str;
+
+    st_update(frozen_strings, (st_data_t)str, fstr_update_callback, (st_data_t)&fstr);
+    return fstr;
 }
 
 static int
