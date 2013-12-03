@@ -1,4 +1,4 @@
-#
+# coding: binary
 #--
 #= $RCSfile$ -- Buffering mix-in module.
 #

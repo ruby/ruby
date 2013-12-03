@@ -30,6 +30,20 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
+  def test_ssl_gets
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true) { |server, port|
+      server_connect(port) { |ssl|
+        ssl.write "abc\n"
+        IO.select [ssl]
+
+        line = ssl.gets
+
+        assert_equal "abc\n", line
+        assert_equal Encoding::BINARY, line.encoding
+      }
+    }
+  end
+
   def test_ssl_read_nonblock
     start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true) { |server, port|
       server_connect(port) { |ssl|

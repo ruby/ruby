@@ -1,3 +1,9 @@
+Tue Dec  3 10:43:58 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/openssl/lib/openssl/buffering.rb:  Return ASCII-8BIT strings from
+	  SSLSocket methods.  [ruby-trunk - Bug #9028]
+	* test/openssl/test_ssl.rb:  Test for the above.
+
 Tue Dec  3 09:42:27 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc:  Update to RDoc master 900de99.  Changes include:
