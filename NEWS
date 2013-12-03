@@ -107,6 +107,8 @@ with all sufficient information, see the ChangeLog file.
 * String
   * New methods:
     * String#scrub and String#scrub! verify and fix invalid byte sequence.
+      If you want to use this function with older Ruby,
+      consider to use string-scrub.gem.
   * extended methods:
     * If invalid: :replace is specified for String#encode, replace
       invalid byte sequence even if the destination encoding equals to
