@@ -1,3 +1,26 @@
+Tue Dec  3 17:01:45 2013  Aman Gupta <ruby@tmm1.net>
+
+	* include/ruby/ruby.h (struct RClass): Add wrapper struct around
+	  RClass->m_tbl with serial. This prevents double marking method
+	  tables, since many classes/modules can share the same method table.
+	  This improves minor mark time in a large application by 30%.
+	* internal.h (struct method_table_wrapper): Define new
+	  wrapper struct with additional serial.
+	* internal.h (RCLASS_M_TBL_INIT): New macro for initializing method
+	  table wrapper and st_table.
+	* method.h (void rb_sweep_method_entry): Rename rb_free_m_table to
+	  rb_free_m_tbl for consistentcy
+	* .gdbinit (define rb_method_entry): Update rb_method_entry gdb helper
+	  for new method table structure.
+	* class.c: Use RCLASS_M_TBL_WRAPPER and
+	  RCLASS_M_TBL_INIT macros.
+	* class.c (rb_include_class_new): Share WRAPPER between module and
+	  iclass, so serial can prevent double marking.
+	* eval.c (rb_prepend_module): ditto.
+	* eval.c (rb_using_refinement): ditto.
+	* gc.c: Mark and free new wrapper struct.
+	* gc.c (obj_memsize_of): Count size of additional wrapper struct.
+
 Tue Dec  3 14:05:49 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* array.c (rb_ary_uniq_bang): remove duplicate code.

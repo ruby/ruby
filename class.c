@@ -158,7 +158,7 @@ class_alloc(VALUE flags, VALUE klass)
     obj->ptr = ALLOC(rb_classext_t);
     RCLASS_IV_TBL(obj) = 0;
     RCLASS_CONST_TBL(obj) = 0;
-    RCLASS_M_TBL(obj) = 0;
+    RCLASS_M_TBL_WRAPPER(obj) = 0;
     RCLASS_SET_SUPER((VALUE)obj, 0);
     RCLASS_ORIGIN(obj) = (VALUE)obj;
     RCLASS_IV_INDEX_TBL(obj) = 0;
@@ -189,7 +189,7 @@ rb_class_boot(VALUE super)
     VALUE klass = class_alloc(T_CLASS, rb_cClass);
 
     RCLASS_SET_SUPER(klass, super);
-    RCLASS_M_TBL(klass) = st_init_numtable();
+    RCLASS_M_TBL_INIT(klass);
 
     OBJ_INFECT(klass, super);
     return (VALUE)klass;
@@ -353,10 +353,10 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
 	st_foreach(RCLASS_CONST_TBL(orig), clone_const_i, (st_data_t)&arg);
     }
     if (RCLASS_M_TBL(orig)) {
-	if (RCLASS_M_TBL(clone)) {
-	    rb_free_m_table(RCLASS_M_TBL(clone));
+	if (RCLASS_M_TBL_WRAPPER(clone)) {
+	    rb_free_m_tbl_wrapper(RCLASS_M_TBL_WRAPPER(clone));
 	}
-	RCLASS_M_TBL(clone) = st_init_numtable();
+	RCLASS_M_TBL_INIT(clone);
 	st_foreach(RCLASS_M_TBL(orig), clone_method_i, (st_data_t)clone);
     }
 
@@ -402,7 +402,7 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
 	if (attach != Qundef) {
 	    rb_singleton_class_attached(clone, attach);
 	}
-	RCLASS_M_TBL(clone) = st_init_numtable();
+	RCLASS_M_TBL_INIT(clone);
 	st_foreach(RCLASS_M_TBL(klass), clone_method_i, (st_data_t)clone);
 	rb_singleton_class_attached(RBASIC(clone)->klass, clone);
 	FL_SET(clone, FL_SINGLETON);
@@ -723,9 +723,7 @@ VALUE
 rb_module_new(void)
 {
     VALUE mdl = class_alloc(T_MODULE, rb_cModule);
-
-    RCLASS_M_TBL(mdl) = st_init_numtable();
-
+    RCLASS_M_TBL_INIT(mdl);
     return (VALUE)mdl;
 }
 
@@ -803,7 +801,8 @@ rb_include_class_new(VALUE module, VALUE super)
     RCLASS_IV_TBL(klass) = RCLASS_IV_TBL(module);
     RCLASS_CONST_TBL(klass) = RCLASS_CONST_TBL(module);
 
-    RCLASS_M_TBL(OBJ_WB_UNPROTECT(klass)) = RCLASS_M_TBL(OBJ_WB_UNPROTECT(RCLASS_ORIGIN(module)));
+    RCLASS_M_TBL_WRAPPER(OBJ_WB_UNPROTECT(klass)) =
+	RCLASS_M_TBL_WRAPPER(OBJ_WB_UNPROTECT(RCLASS_ORIGIN(module)));
 
     RCLASS_SET_SUPER(klass, super);
     if (RB_TYPE_P(module, T_ICLASS)) {
@@ -953,8 +952,8 @@ rb_prepend_module(VALUE klass, VALUE module)
 	RCLASS_SET_SUPER(origin, RCLASS_SUPER(klass));
 	RCLASS_SET_SUPER(klass, origin);
 	RCLASS_ORIGIN(klass) = origin;
-	RCLASS_M_TBL(origin) = RCLASS_M_TBL(klass);
-	RCLASS_M_TBL(klass) = st_init_numtable();
+	RCLASS_M_TBL_WRAPPER(origin) = RCLASS_M_TBL_WRAPPER(klass);
+	RCLASS_M_TBL_INIT(klass);
 	st_foreach(RCLASS_M_TBL(origin), move_refined_method,
 		   (st_data_t) RCLASS_M_TBL(klass));
     }

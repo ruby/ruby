@@ -136,6 +136,7 @@ VALUE rb_obj_method_location(VALUE obj, ID id);
 void rb_mark_method_entry(const rb_method_entry_t *me);
 void rb_free_method_entry(rb_method_entry_t *me);
 void rb_sweep_method_entry(void *vm);
-void rb_free_m_table(st_table *tbl);
+void rb_free_m_tbl(st_table *tbl);
+void rb_free_m_tbl_wrapper(struct method_table_wrapper *wrapper);
 
 #endif /* METHOD_H */

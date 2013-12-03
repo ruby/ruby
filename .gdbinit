@@ -757,7 +757,7 @@ define rb_method_entry
   set $rb_method_entry_id = (ID)$arg1
   set $rb_method_entry_me = (rb_method_entry_t *)0
   while !$rb_method_entry_me && $rb_method_entry_klass
-    rb_numtable_entry $rb_method_entry_klass->m_tbl $rb_method_entry_id
+    rb_numtable_entry $rb_method_entry_klass->m_tbl_wrapper->tbl $rb_method_entry_id
     set $rb_method_entry_me = (rb_method_entry_t *)$rb_numtable_rec
     if !$rb_method_entry_me
       set $rb_method_entry_klass = (struct RClass *)$rb_method_entry_klass->ptr->super
