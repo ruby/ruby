@@ -1,3 +1,13 @@
+Tue Dec  3 09:42:27 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc:  Update to RDoc master 900de99.  Changes include:
+
+	  Fixed documentation display of constants
+
+	  Fixed handling of unknown parsers
+
+	* test/rdoc:  ditto.
+
 Mon Dec  2 22:30:10 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* hash.c (getenv): fixed test failures introduced by r43950.

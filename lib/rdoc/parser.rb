@@ -268,9 +268,11 @@ class RDoc::Parser
 
     markup = Regexp.escape markup
 
-    RDoc::Parser.parsers.find do |_, parser|
+    _, selected = RDoc::Parser.parsers.find do |_, parser|
       /^#{markup}$/i =~ parser.name.sub(/.*:/, '')
-    end.last
+    end
+
+    selected
   end
 
   ##

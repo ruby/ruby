@@ -292,6 +292,16 @@ class TestRDocParser < RDoc::TestCase
     assert_nil parser
   end
 
+  def test_class_use_markup_unknown
+    content = <<-CONTENT
+# :markup: RDoc
+    CONTENT
+
+    parser = @RP.use_markup content
+
+    assert_nil parser
+  end
+
   def test_initialize
     @RP.new @top_level, @fn, '', @options, nil
 
