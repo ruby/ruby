@@ -3774,27 +3774,6 @@ rb_ary_eql(VALUE ary1, VALUE ary2)
     return rb_exec_recursive_paired(recursive_eql, ary1, ary2, ary2);
 }
 
-static VALUE
-recursive_hash(VALUE ary, VALUE dummy, int recur)
-{
-    long i;
-    st_index_t h;
-    VALUE n;
-
-    h = rb_hash_start(RARRAY_LEN(ary));
-    if (recur) {
-	h = rb_hash_uint(h, NUM2LONG(rb_hash(rb_cArray)));
-    }
-    else {
-	for (i=0; i<RARRAY_LEN(ary); i++) {
-	    n = rb_hash(RARRAY_AREF(ary, i));
-	    h = rb_hash_uint(h, NUM2LONG(n));
-	}
-    }
-    h = rb_hash_end(h);
-    return LONG2FIX(h);
-}
-
 /*
  *  call-seq:
  *     ary.hash   -> fixnum
@@ -3808,7 +3787,17 @@ recursive_hash(VALUE ary, VALUE dummy, int recur)
 static VALUE
 rb_ary_hash(VALUE ary)
 {
-    return rb_exec_recursive_paired(recursive_hash, ary, ary, 0);
+    long i;
+    st_index_t h;
+    VALUE n;
+
+    h = rb_hash_start(RARRAY_LEN(ary));
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+	n = rb_hash(RARRAY_AREF(ary, i));
+	h = rb_hash_uint(h, NUM2LONG(n));
+    }
+    h = rb_hash_end(h);
+    return LONG2FIX(h);
 }
 
 /*

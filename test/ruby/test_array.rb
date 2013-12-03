@@ -2053,6 +2053,7 @@ class TestArray < Test::Unit::TestCase
     assert_not_equal([[1]].hash, [[2]].hash)
     a = []
     a << a
+    assert_not_equal([a, 1].hash, [a, 2].hash)
     assert_not_equal([a, a].hash, a.hash) # Implementation dependent
   end
 

@@ -949,27 +949,6 @@ rb_struct_equal(VALUE s, VALUE s2)
     return rb_exec_recursive_paired(recursive_equal, s, s2, s2);
 }
 
-static VALUE
-recursive_hash(VALUE s, VALUE dummy, int recur)
-{
-    long i, len;
-    st_index_t h;
-    VALUE n;
-    const VALUE *ptr;
-
-    h = rb_hash_start(rb_hash(rb_obj_class(s)));
-    if (!recur) {
-	ptr = RSTRUCT_CONST_PTR(s);
-	len = RSTRUCT_LEN(s);
-	for (i = 0; i < len; i++) {
-	    n = rb_hash(ptr[i]);
-	    h = rb_hash_uint(h, NUM2LONG(n));
-	}
-    }
-    h = rb_hash_end(h);
-    return INT2FIX(h);
-}
-
 /*
  * call-seq:
  *   struct.hash   -> fixnum
@@ -980,7 +959,20 @@ recursive_hash(VALUE s, VALUE dummy, int recur)
 static VALUE
 rb_struct_hash(VALUE s)
 {
-    return rb_exec_recursive_paired(recursive_hash, s, s, 0);
+    long i, len;
+    st_index_t h;
+    VALUE n;
+    const VALUE *ptr;
+
+    h = rb_hash_start(rb_hash(rb_obj_class(s)));
+    ptr = RSTRUCT_CONST_PTR(s);
+    len = RSTRUCT_LEN(s);
+    for (i = 0; i < len; i++) {
+	n = rb_hash(ptr[i]);
+	h = rb_hash_uint(h, NUM2LONG(n));
+    }
+    h = rb_hash_end(h);
+    return INT2FIX(h);
 }
 
 static VALUE

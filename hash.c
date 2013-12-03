@@ -79,14 +79,17 @@ rb_any_cmp(VALUE a, VALUE b)
 static VALUE
 hash_recursive(VALUE obj, VALUE arg, int recurse)
 {
-    if (recurse) return INT2FIX(0);
+    if (recurse) {
+	/* TODO: break to call with the object which eql? to obj */
+	return INT2FIX(0);
+    }
     return rb_funcallv(obj, id_hash, 0, 0);
 }
 
 VALUE
 rb_hash(VALUE obj)
 {
-    VALUE hval = rb_exec_recursive(hash_recursive, obj, 0);
+    VALUE hval = rb_exec_recursive_paired(hash_recursive, obj, obj, 0);
   retry:
     switch (TYPE(hval)) {
       case T_FIXNUM:
@@ -1959,20 +1962,6 @@ hash_i(VALUE key, VALUE val, VALUE arg)
     return ST_CONTINUE;
 }
 
-static VALUE
-recursive_hash(VALUE hash, VALUE dummy, int recur)
-{
-    st_index_t hval = RHASH_SIZE(hash);
-
-    if (!hval) return INT2FIX(0);
-    if (recur)
-	hval = rb_hash_uint(rb_hash_start(rb_hash(rb_cHash)), hval);
-    else
-	rb_hash_foreach(hash, hash_i, (VALUE)&hval);
-    hval = rb_hash_end(hval);
-    return INT2FIX(hval);
-}
-
 /*
  *  call-seq:
  *     hsh.hash   -> fixnum
@@ -1984,7 +1973,12 @@ recursive_hash(VALUE hash, VALUE dummy, int recur)
 static VALUE
 rb_hash_hash(VALUE hash)
 {
-    return rb_exec_recursive_paired(recursive_hash, hash, hash, 0);
+    st_index_t hval = RHASH_SIZE(hash);
+
+    if (!hval) return INT2FIX(0);
+    rb_hash_foreach(hash, hash_i, (VALUE)&hval);
+    hval = rb_hash_end(hval);
+    return INT2FIX(hval);
 }
 
 static int
