@@ -1,3 +1,18 @@
+Tue Dec  3 13:40:42 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (ary_add_hash): set and return values because string keys
+	  will be frozen. [ruby-core:58809] [Bug #9202]
+
+	* array.c (rb_ary_uniq_bang): ditto.
+
+	* array.c (rb_ary_or): ditto.
+
+	* array.c (rb_ary_uniq): ditto.
+
+	* test/ruby/test_array.rb: tests for above.
+
+	The patch is from normalperson (Eric Wong).
+
 Tue Dec  3 12:20:21 2013  Aman Gupta <ruby@tmm1.net>
 
 	* string.c (rb_fstring): Use st_update instead of st_lookup +

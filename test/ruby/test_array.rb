@@ -1507,6 +1507,13 @@ class TestArray < Test::Unit::TestCase
     assert_equal(d, c)
 
     assert_equal(@cls[1, 2, 3], @cls[1, 2, 3].uniq)
+
+    a = %w(a a)
+    b = a.uniq
+    assert_equal(%w(a a), a)
+    assert(a.none?(&:frozen?))
+    assert_equal(%w(a), b)
+    assert(b.none?(&:frozen?))
   end
 
   def test_uniq_with_block
@@ -1527,6 +1534,13 @@ class TestArray < Test::Unit::TestCase
     assert_equal([1,3], a)
     assert_equal([1], b)
     assert_not_same(a, b)
+
+    a = %w(a a)
+    b = a.uniq {|v| v }
+    assert_equal(%w(a a), a)
+    assert(a.none?(&:frozen?))
+    assert_equal(%w(a), b)
+    assert(b.none?(&:frozen?))
   end
 
   def test_uniq!
@@ -1573,6 +1587,13 @@ class TestArray < Test::Unit::TestCase
       a.sort_by!{|e| e[:c]}
       a.uniq!   {|e| e[:c]}
     end
+
+    a = %w(a a)
+    b = a.uniq
+    assert_equal(%w(a a), a)
+    assert(a.none?(&:frozen?))
+    assert_equal(%w(a), b)
+    assert(b.none?(&:frozen?))
   end
 
   def test_uniq_bang_with_block
@@ -1594,6 +1615,12 @@ class TestArray < Test::Unit::TestCase
     b = a.uniq! {|v| v.even? }
     assert_equal([1,2], a)
     assert_equal(nil, b)
+
+    a = %w(a a)
+    b = a.uniq! {|v| v }
+    assert_equal(%w(a), b)
+    assert_same(a, b)
+    assert b.none?(&:frozen?)
   end
 
   def test_uniq_bang_with_freeze
@@ -1622,6 +1649,17 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[1,2], @cls[1] | @cls[2])
     assert_equal(@cls[1,2], @cls[1, 1] | @cls[2, 2])
     assert_equal(@cls[1,2], @cls[1, 2] | @cls[1, 2])
+
+    a = %w(a b c)
+    b = %w(a b c d e)
+    c = a | b
+    assert_equal(c, b)
+    assert_not_same(c, b)
+    assert_equal(%w(a b c), a)
+    assert_equal(%w(a b c d e), b)
+    assert(a.none?(&:frozen?))
+    assert(b.none?(&:frozen?))
+    assert(c.none?(&:frozen?))
   end
 
   def test_combination

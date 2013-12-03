@@ -3905,7 +3905,8 @@ ary_add_hash(VALUE hash, VALUE ary)
     long i;
 
     for (i=0; i<RARRAY_LEN(ary); i++) {
-	rb_hash_aset(hash, RARRAY_AREF(ary, i), Qtrue);
+	VALUE elt = RARRAY_AREF(ary, i);
+	rb_hash_aset(hash, elt, elt);
     }
     return hash;
 }
@@ -4056,15 +4057,15 @@ rb_ary_or(VALUE ary1, VALUE ary2)
 
     ary2 = to_ary(ary2);
     hash = ary_add_hash(ary_make_hash(ary1), ary2);
-    ary3 = rb_hash_keys(hash);
+    ary3 = rb_hash_values(hash);
     ary_recycle_hash(hash);
     return ary3;
 }
 
 static int
-push_key(st_data_t key, st_data_t val, st_data_t ary)
+push_val(st_data_t key, st_data_t val, st_data_t ary)
 {
-    rb_ary_push((VALUE)ary, (VALUE)key);
+    rb_ary_push((VALUE)ary, (VALUE)val);
     return ST_CONTINUE;
 }
 
@@ -4137,7 +4138,7 @@ rb_ary_uniq_bang(VALUE ary)
 	    FL_SET_EMBED(ary);
 	}
 	ary_resize_capa(ary, hash_size);
-	st_foreach(rb_hash_tbl_raw(hash), push_key, ary);
+	st_foreach(rb_hash_tbl_raw(hash), push_val, ary);
     }
     ary_recycle_hash(hash);
 
@@ -4176,7 +4177,7 @@ rb_ary_uniq(VALUE ary)
     }
     else {
 	hash = ary_make_hash(ary);
-	uniq = rb_hash_keys(hash);
+	uniq = rb_hash_values(hash);
     }
     RBASIC_SET_CLASS(uniq, rb_obj_class(ary));
     ary_recycle_hash(hash);
