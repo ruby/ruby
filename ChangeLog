@@ -1,3 +1,9 @@
+Tue Dec  3 21:53:15 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_catch_protect): new function similar to
+	  rb_catch_obj(), but protect from all global jumps like as
+	  rb_load_protect(), rb_protect(), etc.
+
 Tue Dec  3 20:18:46 2013  Narihiro Nakamura  <authornari@gmail.com>
 
 	* object.c (rb_obj_clone): Protect FL_PROMOTED and FL_WB_PROTECTED

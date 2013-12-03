@@ -1834,6 +1834,16 @@ VALUE
 rb_catch_obj(VALUE t, VALUE (*func)(), VALUE data)
 {
     int state;
+    VALUE val = rb_catch_protect(t, func, data, &state);
+    if (state)
+	JUMP_TAG(state);
+    return val;
+}
+
+VALUE
+rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, int *stateptr)
+{
+    int state;
     volatile VALUE val = Qnil;		/* OK */
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *saved_cfp = th->cfp;
@@ -1845,7 +1855,7 @@ rb_catch_obj(VALUE t, VALUE (*func)(), VALUE data)
 
     if ((state = TH_EXEC_TAG()) == 0) {
 	/* call with argc=1, argv = [tag], block = Qnil to insure compatibility */
-	val = (*func)(tag, data, 1, &tag, Qnil);
+	val = (*func)(tag, data, 1, (const VALUE *)&tag, Qnil);
     }
     else if (state == TAG_THROW && RNODE(th->errinfo)->u1.value == tag) {
 	th->cfp = saved_cfp;
@@ -1854,8 +1864,8 @@ rb_catch_obj(VALUE t, VALUE (*func)(), VALUE data)
 	state = 0;
     }
     TH_POP_TAG();
-    if (state)
-	JUMP_TAG(state);
+    if (stateptr)
+	*stateptr = state;
 
     return val;
 }
