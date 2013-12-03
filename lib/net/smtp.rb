@@ -1041,7 +1041,7 @@ module Net
         h
       end
 
-      # Determines whether there was an error and raies the appropriate error
+      # Determines whether there was an error and raises the appropriate error
       # based on the reply code of the response
       def exception_class
         case @status
