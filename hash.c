@@ -2408,7 +2408,7 @@ static char **my_environ;
 #undef environ
 #define environ my_environ
 #undef getenv
-inline char *
+static inline char *
 w32_getenv(const char *name)
 {
     static int binary = -1;
