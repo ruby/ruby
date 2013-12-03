@@ -336,7 +336,7 @@ rb_obj_clone(VALUE obj)
     }
     clone = rb_obj_alloc(rb_obj_class(obj));
     RBASIC(clone)->flags &= (FL_TAINT|FL_PROMOTED|FL_WB_PROTECTED);
-    RBASIC(clone)->flags |= RBASIC(obj)->flags & ~(FL_PROMOTED|FL_FREEZE|FL_FINALIZE);
+    RBASIC(clone)->flags |= RBASIC(obj)->flags & ~(FL_PROMOTED|FL_FREEZE|FL_FINALIZE|FL_WB_PROTECTED);
 
     singleton = rb_singleton_class_clone_and_attach(obj, clone);
     RBASIC_SET_CLASS(clone, singleton);

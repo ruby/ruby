@@ -1,3 +1,8 @@
+Tue Dec  3 23:06:20 2013  Narihiro Nakamura  <authornari@gmail.com>
+
+	* object.c (rb_obj_clone): don't copy FL_WB_PROTECTED of a
+	  original object.
+
 Tue Dec  3 22:32:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_hash_recursive): make similar (recursive) constructs
