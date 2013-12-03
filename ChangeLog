@@ -1,3 +1,9 @@
+Tue Dec  3 23:48:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: check malloc_size() available on BSD.
+
+	* gc.c: use malloc_size() with malloc/malloc.h on BSD.
+
 Tue Dec  3 23:06:20 2013  Narihiro Nakamura  <authornari@gmail.com>
 
 	* object.c (rb_obj_clone): don't copy FL_WB_PROTECTED of a

@@ -39,12 +39,18 @@
 # ifdef _WIN32
 #   define HAVE_MALLOC_USABLE_SIZE
 #   define malloc_usable_size(a) _msize(a)
+# elif defined HAVE_MALLOC_SIZE
+#   define HAVE_MALLOC_USABLE_SIZE
+#   define malloc_usable_size(a) malloc_size(a)
 # endif
-#else
+#endif
+#ifdef HAVE_MALLOC_USABLE_SIZE
 # ifdef HAVE_MALLOC_H
 #  include <malloc.h>
 # elif defined(HAVE_MALLOC_NP_H)
 #  include <malloc_np.h>
+# elif defined(HAVE_MALLOC_MALLOC_H)
+#  include <malloc/malloc.h>
 # endif
 #endif
 

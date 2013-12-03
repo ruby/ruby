@@ -455,7 +455,7 @@ void rb_objspace_set_event_hook(const rb_event_flag_t event);
 void rb_gc_writebarrier_remember_promoted(VALUE obj);
 void ruby_gc_set_params(void);
 
-#if HAVE_MALLOC_USABLE_SIZE || defined(_WIN32)
+#if defined(HAVE_MALLOC_USABLE_SIZE) || defined(HAVE_MALLOC_SIZE) || defined(_WIN32)
 #define ruby_sized_xrealloc(ptr, new_size, old_size) ruby_xrealloc(ptr, new_size)
 #define ruby_sized_xfree(ptr, size) ruby_xfree(ptr)
 #define SIZED_REALLOC_N(var,type,n,old_n) REALLOC_N(var, type, n)

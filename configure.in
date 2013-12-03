@@ -1093,6 +1093,7 @@ AC_CHECK_HEADERS( \
   atomic.h \
   malloc.h \
   malloc_np.h \
+  malloc/malloc.h \
   setjmpex.h
 )
 
@@ -1870,6 +1871,7 @@ AC_CHECK_FUNCS(lockf)
 AC_CHECK_FUNCS(log2)
 AC_CHECK_FUNCS(lstat)
 AC_CHECK_FUNCS(malloc_usable_size)
+AC_CHECK_FUNCS(malloc_size)
 AC_CHECK_FUNCS(mblen)
 AC_CHECK_FUNCS(memalign)
 AC_CHECK_FUNCS(memrchr)
