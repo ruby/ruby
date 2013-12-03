@@ -1,3 +1,8 @@
+Tue Dec  3 20:18:46 2013  Narihiro Nakamura  <authornari@gmail.com>
+
+	* object.c (rb_obj_clone): Protect FL_PROMOTED and FL_WB_PROTECTED
+	  flags of a destination object.
+
 Tue Dec  3 20:16:38 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* array.c (rb_hash_rehash): use hash_alloc() instead of rb_hash_new().
