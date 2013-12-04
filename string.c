@@ -136,6 +136,8 @@ static int
 fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 {
     VALUE *fstr = (VALUE *)arg;
+    VALUE str = (VALUE)*key;
+
     if (existing) {
 	/* because of lazy sweep, str may be unmarked already and swept
 	 * at next time */
@@ -143,7 +145,6 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existi
 	return ST_STOP;
     }
 
-    VALUE str = *key;
     if (STR_SHARED_P(str)) {
 	/* str should not be shared */
 	str = rb_enc_str_new(RSTRING_PTR(str), RSTRING_LEN(str), STR_ENC_GET(str));
