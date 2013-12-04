@@ -369,7 +369,8 @@ module WEBrick
 
     # This method provides the metavariables defined by the revision 3
     # of "The WWW Common Gateway Interface Version 1.1"
-    # http://Web.Golux.Com/coar/cgi/
+    # To browse the current document of CGI Version 1.1, see below:
+    # http://tools.ietf.org/html/rfc3875
 
     def meta_vars
       meta = Hash.new
