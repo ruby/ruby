@@ -314,7 +314,7 @@ module WEBrick
       http.start do
         if @config[:ProxyTimeout]
           ##################################   these issues are
-          http.open_timeout = 30   # secs  #   necessary (maybe bacause
+          http.open_timeout = 30   # secs  #   necessary (maybe because
           http.read_timeout = 60   # secs  #   Ruby's bug, but why?)
           ##################################
         end
