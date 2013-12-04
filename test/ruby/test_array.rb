@@ -2049,7 +2049,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal(A, B)
   end
 
-  def test_hash2
+  def test_recursive_hash_value
     assert_not_equal([[1]].hash, [[2]].hash)
     a = []
     a << a
