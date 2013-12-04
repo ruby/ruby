@@ -392,6 +392,7 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
     int state;
     const int tracing = th->trace_arg ? 1 : 0;
     rb_trace_arg_t dummy_trace_arg;
+    dummy_trace_arg.event = 0;
 
     if (!tracing) th->vm->trace_running++;
     if (!th->trace_arg) th->trace_arg = &dummy_trace_arg;
