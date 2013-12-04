@@ -137,23 +137,24 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existi
 {
     VALUE *fstr = (VALUE *)arg;
     if (existing) {
-	/* because of lazy sweep, str may be unmaked already and swept
+	/* because of lazy sweep, str may be unmarked already and swept
 	 * at next time */
 	rb_gc_resurrect(*fstr = *key);
-    } else {
-	VALUE str = *key;
-	if (STR_SHARED_P(str)) {
-	    /* str should not be shared */
-	    str = rb_enc_str_new(RSTRING_PTR(str), RSTRING_LEN(str), STR_ENC_GET(str));
-	    OBJ_FREEZE(str);
-	}
-	else {
-	    str = rb_str_new_frozen(str);
-	}
-	RBASIC(str)->flags |= RSTRING_FSTR;
-	*fstr = *key = str;
+	return ST_STOP;
     }
 
+    VALUE str = *key;
+    if (STR_SHARED_P(str)) {
+	/* str should not be shared */
+	str = rb_enc_str_new(RSTRING_PTR(str), RSTRING_LEN(str), STR_ENC_GET(str));
+	OBJ_FREEZE(str);
+    }
+    else {
+	str = rb_str_new_frozen(str);
+    }
+    RBASIC(str)->flags |= RSTRING_FSTR;
+
+    *key = *value = *fstr = str;
     return ST_CONTINUE;
 }
 

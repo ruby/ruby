@@ -1,3 +1,10 @@
+Wed Dec  4 12:57:24 2013  Aman Gupta <ruby@tmm1.net>
+
+	* string.c (fstr_update_callback): Improve implementation in r43968
+	  based on feedback from @nagachika. In the existing case, we can
+	  return ST_STOP to prevent any hash modification. In the !existing
+	  case, set both key and value to the fstr.
+
 Wed Dec  4 12:47:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/delegate.rb (Delegator#method_missing): ignore the target if not
