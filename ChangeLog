@@ -1,3 +1,15 @@
+Wed Dec  4 12:47:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator#method_missing): ignore the target if not
+	  set, and delegate to global methods.  [ruby-core:58572] [Bug #9155]
+
+	* lib/delegate.rb (Delegator#respond_to_missing): ditto.
+
+	* lib/delegate.rb (SimpleDelegator#__getobj__): yield and return if
+	  not delegated but a block is given, like as Hash#fetch.
+
+	* lib/delegate.rb (DelegateClass#__getobj__): ditto.
+
 Tue Dec  3 23:48:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: check malloc_size() available on BSD.

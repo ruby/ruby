@@ -74,9 +74,10 @@ class Delegator < BasicObject
   # Handles the magic of delegation through \_\_getobj\_\_.
   #
   def method_missing(m, *args, &block)
-    target = self.__getobj__
+    r = true
+    target = self.__getobj__ {r = false}
     begin
-      if target.respond_to?(m)
+      if r && target.respond_to?(m)
         target.__send__(m, *args, &block)
       elsif ::Kernel.respond_to?(m, true)
         ::Kernel.instance_method(m).bind(self).(*args, &block)
@@ -93,8 +94,10 @@ class Delegator < BasicObject
   # call through \_\_getobj\_\_.
   #
   def respond_to_missing?(m, include_private)
-    r = self.__getobj__.respond_to?(m, include_private)
-    if r && include_private && !self.__getobj__.respond_to?(m, false)
+    r = true
+    target = self.__getobj__ {r = false}
+    r &&= target.respond_to?(m, include_private)
+    if r && include_private && !target.respond_to?(m, false)
       warn "#{caller(3)[0]}: delegator does not forward private method \##{m}"
       return false
     end
@@ -306,7 +309,10 @@ end
 class SimpleDelegator<Delegator
   # Returns the current object method calls are being delegated to.
   def __getobj__
-    __raise__ ::ArgumentError, "not delegated" unless defined?(@delegate_sd_obj)
+    unless defined?(@delegate_sd_obj)
+      return yield if block_given?
+      __raise__ ::ArgumentError, "not delegated"
+    end
     @delegate_sd_obj
   end
 
@@ -381,7 +387,10 @@ def DelegateClass(superclass)
   methods -= [:to_s,:inspect,:=~,:!~,:===]
   klass.module_eval do
     def __getobj__  # :nodoc:
-      __raise__ ::ArgumentError, "not delegated" unless defined?(@delegate_dc_obj)
+      unless defined?(@delegate_dc_obj)
+        return yield if block_given?
+        __raise__ ::ArgumentError, "not delegated"
+      end
       @delegate_dc_obj
     end
     def __setobj__(obj)  # :nodoc:

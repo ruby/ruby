@@ -168,4 +168,16 @@ class TestDelegateClass < Test::Unit::TestCase
       d.__getobj__
     }
   end
+
+  class Bug9155 < DelegateClass(Integer)
+    def initialize(value)
+      super(Integer(value))
+    end
+  end
+
+  def test_global_method_if_no_target
+    bug9155 = '[ruby-core:58572] [Bug #9155]'
+    x = assert_nothing_raised(ArgumentError, bug9155) {break Bug9155.new(1)}
+    assert_equal(1, x.to_i, bug9155)
+  end
 end
