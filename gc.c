@@ -496,7 +496,7 @@ typedef struct rb_objspace {
 	size_t count;
 	size_t total_allocated_object_num;
 	size_t total_freed_object_num;
-	int last_collection_flags;
+	int latest_gc_info;
     } profile;
     struct gc_list *global_list;
     rb_event_flag_t hook_events; /* this place may be affinity with memory cache */
@@ -4869,7 +4869,7 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
     if (GC_NOTIFY) fprintf(stderr, "start garbage_collect(%d, %d, %d)\n", full_mark, immediate_sweep, reason);
 
     objspace->profile.count++;
-    objspace->profile.last_collection_flags = reason;
+    objspace->profile.latest_gc_info = reason;
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_START, 0 /* TODO: pass minor/immediate flag? */);
 
     objspace->profile.total_allocated_object_num_at_gc_start = objspace->profile.total_allocated_object_num;
@@ -5057,6 +5057,111 @@ gc_count(VALUE self)
 }
 
 static VALUE
+gc_info_decode(int flags, VALUE hash_or_key)
+{
+    static VALUE sym_major_by = Qnil, sym_gc_by, sym_immediate_sweep, sym_have_finalizer;
+    static VALUE sym_nofree, sym_oldgen, sym_shady, sym_rescan, sym_stress, sym_oldmalloc;
+    static VALUE sym_newobj, sym_malloc, sym_method, sym_capi;
+    VALUE hash = Qnil, key = Qnil;
+
+    if (SYMBOL_P(hash_or_key))
+	key = hash_or_key;
+    else if (RB_TYPE_P(hash_or_key, T_HASH))
+	hash = hash_or_key;
+    else
+	rb_raise(rb_eTypeError, "non-hash or symbol given");
+
+    if (sym_major_by == Qnil) {
+#define S(s) sym_##s = ID2SYM(rb_intern_const(#s))
+	S(major_by);
+	S(gc_by);
+	S(immediate_sweep);
+	S(have_finalizer);
+	S(nofree);
+	S(oldgen);
+	S(shady);
+	S(rescan);
+	S(stress);
+	S(oldmalloc);
+	S(newobj);
+	S(malloc);
+	S(method);
+	S(capi);
+#undef S
+    }
+
+#define SET(name, attr) \
+    if (key == sym_##name) \
+	return (attr); \
+    else if (hash != Qnil) \
+	rb_hash_aset(hash, sym_##name, (attr));
+
+    SET(major_by,
+	(flags & GPR_FLAG_MAJOR_BY_NOFREE) ? sym_nofree :
+	(flags & GPR_FLAG_MAJOR_BY_OLDGEN) ? sym_oldgen :
+	(flags & GPR_FLAG_MAJOR_BY_SHADY)  ? sym_shady :
+	(flags & GPR_FLAG_MAJOR_BY_RESCAN) ? sym_rescan :
+	(flags & GPR_FLAG_MAJOR_BY_STRESS) ? sym_stress :
+#if RGENGC_ESTIMATE_OLDMALLOC
+	(flags & GPR_FLAG_MAJOR_BY_OLDMALLOC) ? sym_oldmalloc :
+#endif
+	Qnil
+    );
+
+    SET(gc_by,
+	(flags & GPR_FLAG_NEWOBJ) ? sym_newobj :
+	(flags & GPR_FLAG_MALLOC) ? sym_malloc :
+	(flags & GPR_FLAG_METHOD) ? sym_method :
+	(flags & GPR_FLAG_CAPI)   ? sym_capi :
+	(flags & GPR_FLAG_STRESS) ? sym_stress :
+	Qnil
+    );
+
+    SET(have_finalizer, (flags & GPR_FLAG_HAVE_FINALIZE) ? Qtrue : Qfalse);
+    SET(immediate_sweep, (flags & GPR_FLAG_IMMEDIATE_SWEEP) ? Qtrue : Qfalse);
+#undef SET
+
+    if (key != Qnil) /* matched key should return above */
+	rb_raise(rb_eArgError, "unknown key: %s", RSTRING_PTR(rb_id2str(SYM2ID(key))));
+
+    return hash;
+}
+
+VALUE
+rb_gc_latest_gc_info(VALUE key)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    return gc_info_decode(objspace->profile.latest_gc_info, key);
+}
+
+/*
+ *  call-seq:
+ *     GC.latest_gc_info -> {:gc_by=>:newobj}
+ *     GC.latest_gc_info(hash) -> hash
+ *     GC.latest_gc_info(:major_by) -> :malloc
+ *
+ *  Returns information about the most recent garbage collection.
+ */
+
+static VALUE
+gc_latest_gc_info(int argc, VALUE *argv, VALUE self)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    VALUE arg = Qnil;
+
+    if (rb_scan_args(argc, argv, "01", &arg) == 1) {
+	if (!SYMBOL_P(arg) && !RB_TYPE_P(arg, T_HASH)) {
+	    rb_raise(rb_eTypeError, "non-hash or symbol given");
+	}
+    }
+
+    if (arg == Qnil)
+        arg = rb_hash_new();
+
+    return gc_info_decode(objspace->profile.latest_gc_info, arg);
+}
+
+static VALUE
 gc_stat_internal(VALUE hash_or_sym, size_t *out)
 {
     static VALUE sym_count;
@@ -5065,7 +5170,6 @@ gc_stat_internal(VALUE hash_or_sym, size_t *out)
     static VALUE sym_heap_eden_page_length, sym_heap_tomb_page_length;
     static VALUE sym_total_allocated_object, sym_total_freed_object;
     static VALUE sym_malloc_increase, sym_malloc_limit;
-    static VALUE sym_last_collection_flags;
 #if USE_RGENGC
     static VALUE sym_minor_gc_count, sym_major_gc_count;
     static VALUE sym_remembered_shady_object, sym_remembered_shady_object_limit;
@@ -5088,7 +5192,7 @@ gc_stat_internal(VALUE hash_or_sym, size_t *out)
     else if (SYMBOL_P(hash_or_sym) && out)
 	key = hash_or_sym;
     else
-	rb_raise(rb_eArgError, "non-hash or symbol argument");
+	rb_raise(rb_eTypeError, "non-hash or symbol argument");
 
     if (sym_count == 0) {
 #define S(s) sym_##s = ID2SYM(rb_intern_const(#s))
@@ -5106,7 +5210,6 @@ gc_stat_internal(VALUE hash_or_sym, size_t *out)
 	S(total_freed_object);
 	S(malloc_increase);
 	S(malloc_limit);
-	S(last_collection_flags);
 #if USE_RGENGC
 	S(minor_gc_count);
 	S(major_gc_count);
@@ -5153,7 +5256,6 @@ gc_stat_internal(VALUE hash_or_sym, size_t *out)
     SET(total_freed_object, objspace->profile.total_freed_object_num);
     SET(malloc_increase, malloc_increase);
     SET(malloc_limit, malloc_limit);
-    SET(last_collection_flags, objspace->profile.last_collection_flags);
 #if USE_RGENGC
     SET(minor_gc_count, objspace->profile.minor_gc_count);
     SET(major_gc_count, objspace->profile.major_gc_count);
@@ -5251,7 +5353,7 @@ gc_stat(int argc, VALUE *argv, VALUE self)
 	    gc_stat_internal(arg, &value);
 	    return SIZET2NUM(value);
 	} else if (!RB_TYPE_P(arg, T_HASH)) {
-	    rb_raise(rb_eTypeError, "non-hash given");
+	    rb_raise(rb_eTypeError, "non-hash or symbol given");
 	}
     }
 
@@ -6537,7 +6639,7 @@ gc_prof_sweep_timer_stop(rb_objspace_t *objspace)
 	record->gc_sweep_time += sweep_time;
 	if (heap_pages_deferred_final) record->flags |= GPR_FLAG_HAVE_FINALIZE;
 #endif
-	if (heap_pages_deferred_final) objspace->profile.last_collection_flags |= GPR_FLAG_HAVE_FINALIZE;
+	if (heap_pages_deferred_final) objspace->profile.latest_gc_info |= GPR_FLAG_HAVE_FINALIZE;
     }
 }
 
@@ -6602,65 +6704,6 @@ gc_profile_clear(void)
     objspace->profile.next_index = 0;
     objspace->profile.current_record = 0;
     return Qnil;
-}
-
-static VALUE
-gc_profile_flags(int flags)
-{
-    VALUE result = rb_hash_new();
-    static VALUE sym_major_by = Qnil, sym_gc_by, sym_immediate_sweep, sym_have_finalizer;
-    static VALUE sym_nofree, sym_oldgen, sym_shady, sym_rescan, sym_stress, sym_oldmalloc;
-    static VALUE sym_newobj, sym_malloc, sym_method, sym_capi;
-
-    if (sym_major_by == Qnil) {
-	sym_major_by = ID2SYM(rb_intern("major_by"));
-	sym_gc_by = ID2SYM(rb_intern("gc_by"));
-	sym_immediate_sweep = ID2SYM(rb_intern("immediate_sweep"));
-	sym_have_finalizer = ID2SYM(rb_intern("have_finalizer"));
-	sym_nofree = ID2SYM(rb_intern("nofree"));
-	sym_oldgen = ID2SYM(rb_intern("oldgen"));
-	sym_shady = ID2SYM(rb_intern("shady"));
-	sym_rescan = ID2SYM(rb_intern("rescan"));
-	sym_stress = ID2SYM(rb_intern("stress"));
-	sym_oldmalloc = ID2SYM(rb_intern("oldmalloc"));
-	sym_newobj = ID2SYM(rb_intern("newobj"));
-	sym_malloc = ID2SYM(rb_intern("malloc"));
-	sym_method = ID2SYM(rb_intern("method"));
-	sym_capi = ID2SYM(rb_intern("capi"));
-    }
-
-    if (flags & GPR_FLAG_MAJOR_BY_NOFREE) rb_hash_aset(result, sym_major_by, sym_nofree);
-    if (flags & GPR_FLAG_MAJOR_BY_OLDGEN) rb_hash_aset(result, sym_major_by, sym_oldgen);
-    if (flags & GPR_FLAG_MAJOR_BY_SHADY)  rb_hash_aset(result, sym_major_by, sym_shady);
-    if (flags & GPR_FLAG_MAJOR_BY_RESCAN) rb_hash_aset(result, sym_major_by, sym_rescan);
-    if (flags & GPR_FLAG_MAJOR_BY_STRESS) rb_hash_aset(result, sym_major_by, sym_stress);
-#if RGENGC_ESTIMATE_OLDMALLOC
-    if (flags & GPR_FLAG_MAJOR_BY_OLDMALLOC) rb_hash_aset(result, sym_major_by, sym_oldmalloc);
-#endif
-
-    if (flags & GPR_FLAG_NEWOBJ) rb_hash_aset(result, sym_gc_by, sym_newobj);
-    if (flags & GPR_FLAG_MALLOC) rb_hash_aset(result, sym_gc_by, sym_malloc);
-    if (flags & GPR_FLAG_METHOD) rb_hash_aset(result, sym_gc_by, sym_method);
-    if (flags & GPR_FLAG_CAPI)   rb_hash_aset(result, sym_gc_by, sym_capi);
-    if (flags & GPR_FLAG_STRESS) rb_hash_aset(result, sym_gc_by, sym_stress);
-
-    if (flags & GPR_FLAG_HAVE_FINALIZE)   rb_hash_aset(result, sym_have_finalizer, Qtrue);
-    if (flags & GPR_FLAG_IMMEDIATE_SWEEP) rb_hash_aset(result, sym_immediate_sweep, Qtrue);
-
-    return result;
-}
-
-/*
- *  call-seq:
- *     GC::Profiler.decode_flags(flags) -> {:gc_by => :newobj}
- *     GC::Profiler.decode_flags(flags) -> {:major_by=>:nofree, :gc_by=>:method}
- *
- *  Converts GC.stat[:last_collection_flags] to a Hash
- */
-static VALUE
-gc_profile_decode_flags(VALUE self, VALUE flags)
-{
-    return gc_profile_flags(FIX2INT(flags));
 }
 
 /*
@@ -6729,7 +6772,7 @@ gc_profile_record_get(void)
 	gc_profile_record *record = &objspace->profile.records[i];
 
 	prof = rb_hash_new();
-	rb_hash_aset(prof, ID2SYM(rb_intern("GC_FLAGS")), gc_profile_flags(record->flags));
+	rb_hash_aset(prof, ID2SYM(rb_intern("GC_FLAGS")), gc_info_decode(record->flags, rb_hash_new()));
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_TIME")), DBL2NUM(record->gc_time));
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_INVOKE_TIME")), DBL2NUM(record->gc_invoke_time));
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_USE_SIZE")), SIZET2NUM(record->heap_use_size));
@@ -7169,6 +7212,7 @@ Init_GC(void)
     rb_define_singleton_method(rb_mGC, "stress=", gc_stress_set, 1);
     rb_define_singleton_method(rb_mGC, "count", gc_count, 0);
     rb_define_singleton_method(rb_mGC, "stat", gc_stat, -1);
+    rb_define_singleton_method(rb_mGC, "latest_gc_info", gc_latest_gc_info, -1);
     rb_define_method(rb_mGC, "garbage_collect", rb_gc_start, 0);
 
     gc_constants = rb_hash_new();
@@ -7188,7 +7232,6 @@ Init_GC(void)
     rb_define_singleton_method(rb_mProfiler, "result", gc_profile_result, 0);
     rb_define_singleton_method(rb_mProfiler, "report", gc_profile_report, -1);
     rb_define_singleton_method(rb_mProfiler, "total_time", gc_profile_total_time, 0);
-    rb_define_singleton_method(rb_mProfiler, "decode_flags", gc_profile_decode_flags, 1);
 
     rb_mObjSpace = rb_define_module("ObjectSpace");
     rb_define_module_function(rb_mObjSpace, "each_object", os_each_obj, -1);

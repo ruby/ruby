@@ -1,3 +1,19 @@
+Thu Dec  5 19:21:10 2013  Aman Gupta <ruby@tmm1.net>
+
+	* gc.c (struct rb_objspace): rename internal last_collection_flags to
+	  latest_gc_info
+	* gc.c (gc_latest_collection_info): add GC.latest_gc_info() with similar
+	  behavior to GC.stat()
+	* gc.c (rb_gc_latest_gc_info): new c-api for above
+	* gc.c (gc_stat_internal): remove :last_collection_flags from GC.stat
+	* gc.c (gc_profile_decode_flags): remove GC::Profiler.decode_flags
+	* include/ruby/intern.h (rb_gc_latest_gc_info): export new c-api
+	* test/ruby/test_gc.rb (class TestGc): test for new behavior
+	* NEWS: note about new api
+
+	* gc.c (gc_stat_internal): raise TypeError on wrong type
+	* gc.c (gc_stat): fix error message
+
 Thu Dec  5 18:18:08 2013  Aman Gupta <ruby@tmm1.net>
 
 	* ext/objspace/gc_hook.c: remove this file

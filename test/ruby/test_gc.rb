@@ -85,25 +85,29 @@ class TestGc < Test::Unit::TestCase
     assert_raise(ArgumentError){ GC.stat(:invalid) }
   end
 
-  def test_gc_reason
+  def test_latest_gc_info
     GC.start
     GC.stat[:heap_free_slot].times{ "a" + "b" }
-    assert_equal({:gc_by => :newobj},
-      GC::Profiler.decode_flags(GC.stat[:last_collection_flags]))
-  end
+    assert_equal :newobj, GC.latest_gc_info[:gc_by]
 
-  def test_gc_reason_method
     GC.start
-    assert_equal({:major_by=>:nofree, :gc_by=>:method, :immediate_sweep=>true},
-      GC::Profiler.decode_flags(GC.stat[:last_collection_flags]))
-  end
+    assert_equal :nofree, GC.latest_gc_info[:major_by]
+    assert_equal :method, GC.latest_gc_info[:gc_by]
+    assert_equal true, GC.latest_gc_info[:immediate_sweep]
 
-  def test_gc_reason_stress
     GC.stress = true
-    assert_equal({:major_by=>:stress, :gc_by=>:malloc, :immediate_sweep=>true},
-      GC::Profiler.decode_flags(GC.stat[:last_collection_flags]))
+    assert_equal :stress, GC.latest_gc_info[:major_by]
   ensure
     GC.stress = false
+  end
+
+  def test_latest_gc_info_argument
+    info = {}
+    GC.latest_gc_info(info)
+
+    assert_not_empty info
+    assert_equal info[:gc_by], GC.latest_gc_info(:gc_by)
+    assert_raises(ArgumentError){ GC.latest_gc_info(:invalid) }
   end
 
   def test_singleton_method
