@@ -1,3 +1,8 @@
+Thu Dec  5 10:47:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby_atomic.h (ATOMIC_PTR_EXCHANGE): atomic exchange function for
+	  a generic pointer.
+
 Thu Dec  5 10:47:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (finalize_deferred): flush all deferred finalizers while other
