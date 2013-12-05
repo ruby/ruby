@@ -1,3 +1,8 @@
+Thu Dec  5 17:44:53 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: change function names vm_ prefix to objspace_ prefix.
+	  They are objspace_ functionality.
+
 Thu Dec  5 16:11:04 2013  Aman Gupta <ruby@tmm1.net>
 
 	* include/ruby/intern.h: add rb_gc_stat() for access to GC.stat

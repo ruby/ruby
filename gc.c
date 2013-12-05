@@ -5528,7 +5528,7 @@ rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE,
   ------------------------ Extended allocator ------------------------
 */
 
-static void vm_xfree(rb_objspace_t *objspace, void *ptr, size_t size);
+static void objspace_xfree(rb_objspace_t *objspace, void *ptr, size_t size);
 
 static void *
 negative_size_allocation_error_with_gvl(void *ptr)
@@ -5648,7 +5648,7 @@ aligned_free(void *ptr)
 }
 
 static inline size_t
-vm_malloc_size(rb_objspace_t *objspace, void *ptr, size_t hint)
+objspace_malloc_size(rb_objspace_t *objspace, void *ptr, size_t hint)
 {
 #ifdef HAVE_MALLOC_USABLE_SIZE
     return malloc_usable_size(ptr);
@@ -5664,7 +5664,7 @@ enum memop_type {
 };
 
 static void
-vm_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, size_t old_size, enum memop_type type)
+objspace_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, size_t old_size, enum memop_type type)
 {
     if (new_size > old_size) {
 	ATOMIC_SIZE_ADD(malloc_increase, new_size - old_size);
@@ -5712,7 +5712,7 @@ vm_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, size_t o
 	    }
 	    else {
 #if MALLOC_ALLOCATED_SIZE_CHECK
-		rb_bug("vm_malloc_increase: underflow malloc_params.allocated_size.");
+		rb_bug("objspace_malloc_increase: underflow malloc_params.allocated_size.");
 #endif
 		next_allocated_size = 0;
 	    }
@@ -5751,7 +5751,7 @@ vm_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, size_t o
 }
 
 static inline size_t
-vm_malloc_prepare(rb_objspace_t *objspace, size_t size)
+objspace_malloc_prepare(rb_objspace_t *objspace, size_t size)
 {
     if ((ssize_t)size < 0) {
 	negative_size_allocation_error("negative allocation size (or too big)");
@@ -5766,7 +5766,7 @@ vm_malloc_prepare(rb_objspace_t *objspace, size_t size)
 }
 
 static inline void *
-vm_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
+objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
 {
 #if CALC_EXACT_MALLOC_SIZE
     ((size_t *)mem)[0] = size;
@@ -5785,19 +5785,19 @@ vm_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
     } while (0)
 
 static void *
-vm_xmalloc(rb_objspace_t *objspace, size_t size)
+objspace_xmalloc(rb_objspace_t *objspace, size_t size)
 {
     void *mem;
 
-    size = vm_malloc_prepare(objspace, size);
+    size = objspace_malloc_prepare(objspace, size);
     TRY_WITH_GC(mem = malloc(size));
-    size = vm_malloc_size(objspace, mem, size);
-    vm_malloc_increase(objspace, mem, size, 0, MEMOP_TYPE_MALLOC);
-    return vm_malloc_fixup(objspace, mem, size);
+    size = objspace_malloc_size(objspace, mem, size);
+    objspace_malloc_increase(objspace, mem, size, 0, MEMOP_TYPE_MALLOC);
+    return objspace_malloc_fixup(objspace, mem, size);
 }
 
 static void *
-vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t old_size)
+objspace_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t old_size)
 {
     void *mem;
 
@@ -5805,7 +5805,7 @@ vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t old_size
 	negative_size_allocation_error("negative re-allocation size");
     }
 
-    if (!ptr) return vm_xmalloc(objspace, new_size);
+    if (!ptr) return objspace_xmalloc(objspace, new_size);
 
     /*
      * The behavior of realloc(ptr, 0) is implementation defined.
@@ -5813,7 +5813,7 @@ vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t old_size
      * see http://www.open-std.org/jtc1/sc22/wg14/www/docs/dr_400.htm
      */
     if (new_size == 0) {
-	vm_xfree(objspace, ptr, old_size);
+	objspace_xfree(objspace, ptr, old_size);
 	return 0;
     }
 
@@ -5823,38 +5823,38 @@ vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t old_size
     oldsize = ((size_t *)ptr)[0];
 #endif
 
-    old_size = vm_malloc_size(objspace, ptr, old_size);
+    old_size = objspace_malloc_size(objspace, ptr, old_size);
     TRY_WITH_GC(mem = realloc(ptr, new_size));
-    new_size = vm_malloc_size(objspace, mem, new_size);
+    new_size = objspace_malloc_size(objspace, mem, new_size);
 
 #if CALC_EXACT_MALLOC_SIZE
     ((size_t *)mem)[0] = new_size;
     mem = (size_t *)mem + 1;
 #endif
 
-    vm_malloc_increase(objspace, mem, new_size, old_size, MEMOP_TYPE_REALLOC);
+    objspace_malloc_increase(objspace, mem, new_size, old_size, MEMOP_TYPE_REALLOC);
 
     return mem;
 }
 
 static void
-vm_xfree(rb_objspace_t *objspace, void *ptr, size_t old_size)
+objspace_xfree(rb_objspace_t *objspace, void *ptr, size_t old_size)
 {
 #if CALC_EXACT_MALLOC_SIZE
     ptr = ((size_t *)ptr) - 1;
     oldsize = ((size_t*)ptr)[0];
 #endif
-    old_size = vm_malloc_size(objspace, ptr, old_size);
+    old_size = objspace_malloc_size(objspace, ptr, old_size);
 
     free(ptr);
 
-    vm_malloc_increase(objspace, ptr, 0, old_size, MEMOP_TYPE_FREE);
+    objspace_malloc_increase(objspace, ptr, 0, old_size, MEMOP_TYPE_FREE);
 }
 
 void *
 ruby_xmalloc(size_t size)
 {
-    return vm_xmalloc(&rb_objspace, size);
+    return objspace_xmalloc(&rb_objspace, size);
 }
 
 static inline size_t
@@ -5870,26 +5870,26 @@ xmalloc2_size(size_t n, size_t size)
 void *
 ruby_xmalloc2(size_t n, size_t size)
 {
-    return vm_xmalloc(&rb_objspace, xmalloc2_size(n, size));
+    return objspace_xmalloc(&rb_objspace, xmalloc2_size(n, size));
 }
 
 static void *
-vm_xcalloc(rb_objspace_t *objspace, size_t count, size_t elsize)
+objspace_xcalloc(rb_objspace_t *objspace, size_t count, size_t elsize)
 {
     void *mem;
     size_t size;
 
     size = xmalloc2_size(count, elsize);
-    size = vm_malloc_prepare(objspace, size);
+    size = objspace_malloc_prepare(objspace, size);
 
     TRY_WITH_GC(mem = calloc(1, size));
-    return vm_malloc_fixup(objspace, mem, size);
+    return objspace_malloc_fixup(objspace, mem, size);
 }
 
 void *
 ruby_xcalloc(size_t n, size_t size)
 {
-    return vm_xcalloc(&rb_objspace, n, size);
+    return objspace_xcalloc(&rb_objspace, n, size);
 }
 
 #ifdef ruby_sized_xrealloc
@@ -5898,7 +5898,7 @@ ruby_xcalloc(size_t n, size_t size)
 void *
 ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size)
 {
-    return vm_xrealloc(&rb_objspace, ptr, new_size, old_size);
+    return objspace_xrealloc(&rb_objspace, ptr, new_size, old_size);
 }
 
 void *
@@ -5924,7 +5924,7 @@ void
 ruby_sized_xfree(void *x, size_t size)
 {
     if (x) {
-	vm_xfree(&rb_objspace, x, size);
+	objspace_xfree(&rb_objspace, x, size);
     }
 }
 
