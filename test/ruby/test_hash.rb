@@ -1111,6 +1111,32 @@ class TestHash < Test::Unit::TestCase
     assert_same(obj, h[[[a]]])
   end
 
+  def test_recursive_hash_value_array_hash
+    h = @cls[]
+    rec = [h]
+    h[:x] = rec
+
+    obj = Object.new
+    h2 = {rec => obj}
+    [h, {x: rec}].each do |k|
+      k = [k]
+      assert_same(obj, h2[k], ->{k.inspect})
+    end
+  end
+
+  def test_recursive_hash_value_hash_array
+    h = @cls[]
+    rec = [h]
+    h[:x] = rec
+
+    obj = Object.new
+    h2 = {h => obj}
+    [rec, [h]].each do |k|
+      k = {x: k}
+      assert_same(obj, h2[k], ->{k.inspect})
+    end
+  end
+
   def test_exception_in_rehash
     bug9187 = '[ruby-core:58728] [Bug #9187]'
 
