@@ -81,9 +81,9 @@ Wed Dec  4 12:47:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Dec  3 23:48:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* configure.in: check malloc_size() available on BSD.
+	* configure.in: check malloc_size() availability.
 
-	* gc.c: use malloc_size() with malloc/malloc.h on BSD.
+	* gc.c: use malloc_size() with malloc/malloc.h if available.
 
 Tue Dec  3 23:06:20 2013  Narihiro Nakamura  <authornari@gmail.com>
 
