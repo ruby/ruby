@@ -1849,6 +1849,7 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
     prefix = mkintpath(CONFIG["prefix"])
     if destdir = prefix[$dest_prefix_pattern, 1]
       mk << "\nDESTDIR = #{destdir}\n"
+      prefix = prefix[destdir.size..-1]
     end
     mk << "prefix = #{with_destdir(prefix).unspace}\n"
     CONFIG.each do |key, var|

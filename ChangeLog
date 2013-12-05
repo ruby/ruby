@@ -1,3 +1,9 @@
+Thu Dec  5 22:18:01 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (configuration): strip destdir part from prefix to get
+	  rid of duplication.  a patch by arton at [ruby-core:58859].
+	  [ruby-core:58856] [Bug #9213]
+
 Thu Dec  5 21:53:29 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_or): lhs elements are prefered, so should not
