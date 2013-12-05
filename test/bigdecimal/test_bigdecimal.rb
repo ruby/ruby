@@ -86,6 +86,9 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_raise(ArgumentError) { BigDecimal(0.1) }
     assert_raise(ArgumentError) { BigDecimal(0.1, Float::DIG + 2) }
     assert_nothing_raised { BigDecimal(0.1, Float::DIG + 1) }
+
+    bug9214 = '[ruby-core:58858]'
+    assert_equal(BigDecimal(-0.0, Float::DIG).sign, -1, bug9214)
   end
 
   def test_global_new_with_big_decimal

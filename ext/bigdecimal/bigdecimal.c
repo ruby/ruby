@@ -199,14 +199,23 @@ GetVpValueWithPrec(VALUE v, long prec, int must)
     VALUE num, bg;
     char szD[128];
     VALUE orig = Qundef;
+    double d;
 
 again:
     switch(TYPE(v)) {
       case T_FLOAT:
 	if (prec < 0) goto unable_to_coerce_without_prec;
 	if (prec > DBL_DIG+1) goto SomeOneMayDoIt;
-	v = rb_funcall(v, id_to_r, 0);
-	goto again;
+	d = RFLOAT_VALUE(v);
+	if (d != 0.0) {
+	    v = rb_funcall(v, id_to_r, 0);
+	    goto again;
+	}
+	if (1/d < 0.0) {
+	    return VpCreateRbObject(prec, "-0");
+	}
+	return VpCreateRbObject(prec, "0");
+
       case T_RATIONAL:
 	if (prec < 0) goto unable_to_coerce_without_prec;
 

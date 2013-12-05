@@ -1,3 +1,14 @@
+Thu Dec  6 01:27:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (GetVpValueWithPrec):
+	  treat 0.0 and -0.0 of floating-point numbers specially for an optimization
+	  and to correctly propagate its signbit to the result.
+	  [Bug #9214] [ruby-core:58858]
+
+	* test/bigdecimal/test_bigdecimal.rb: add tests case for the above change.
+
+	* test/bigdecimal/test_bigdecimal_util.rb: ditto.
+
 Thu Dec  5 22:18:01 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (configuration): strip destdir part from prefix to get
