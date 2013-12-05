@@ -240,8 +240,15 @@ static ruby_gc_params_t gc_params = {
 #ifndef CALC_EXACT_MALLOC_SIZE
 #define CALC_EXACT_MALLOC_SIZE 0
 #endif
-#ifndef CALC_EXACT_MALLOC_SIZE_CHECK_OLD_SIZE
-#define CALC_EXACT_MALLOC_SIZE_CHECK_OLD_SIZE 0
+#if defined(HAVE_MALLOC_USABLE_SIZE) || CALC_EXACT_MALLOC_SIZE > 0
+#ifndef MALLOC_ALLOCATED_SIZE
+#define MALLOC_ALLOCATED_SIZE 0
+#endif
+#else
+#define MALLOC_ALLOCATED_SIZE 0
+#endif
+#ifndef MALLOC_ALLOCATED_SIZE_CHECK
+#define MALLOC_ALLOCATED_SIZE_CHECK 0
 #endif
 
 typedef enum {
@@ -299,7 +306,7 @@ typedef struct gc_profile_record {
     long majflt;
 #endif
 #endif
-#if CALC_EXACT_MALLOC_SIZE
+#if MALLOC_ALLOCATED_SIZE
     size_t allocated_size;
 #endif
 
@@ -405,7 +412,7 @@ typedef struct rb_objspace {
     struct {
 	size_t limit;
 	size_t increase;
-#if CALC_EXACT_MALLOC_SIZE
+#if MALLOC_ALLOCATED_SIZE
 	size_t allocated_size;
 	size_t allocations;
 #endif
@@ -5595,8 +5602,24 @@ aligned_free(void *ptr)
 #endif
 }
 
+static inline size_t
+vm_malloc_size(rb_objspace_t *objspace, void *ptr, size_t hint)
+{
+#ifdef HAVE_MALLOC_USABLE_SIZE
+    return malloc_usable_size(ptr);
+#else
+    return hint;
+#endif
+}
+
+enum memop_type {
+    MEMOP_TYPE_MALLOC  = 1,
+    MEMOP_TYPE_FREE    = 2,
+    MEMOP_TYPE_REALLOC = 3
+};
+
 static void
-vm_malloc_increase(rb_objspace_t *objspace, size_t new_size, size_t old_size, int do_gc)
+vm_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, size_t old_size, enum memop_type type)
 {
     if (new_size > old_size) {
 	ATOMIC_SIZE_ADD(malloc_increase, new_size - old_size);
@@ -5613,7 +5636,7 @@ vm_malloc_increase(rb_objspace_t *objspace, size_t new_size, size_t old_size, in
 	}
     }
 
-    if (do_gc) {
+    if (type == MEMOP_TYPE_MALLOC) {
 	if (ruby_gc_stress && !ruby_disable_gc_stress) {
 	    garbage_collect_with_gvl(objspace, FALSE, TRUE, GPR_FLAG_MALLOC);
 	}
@@ -5628,6 +5651,58 @@ vm_malloc_increase(rb_objspace_t *objspace, size_t new_size, size_t old_size, in
 	    }
 	}
     }
+
+#if MALLOC_ALLOCATED_SIZE
+    if (new_size >= old_size) {
+	ATOMIC_SIZE_ADD(objspace->malloc_params.allocated_size, new_size - old_size);
+    }
+    else {
+	size_t dec_size = old_size - new_size;
+	while (1) {
+	    size_t allocated_size = objspace->malloc_params.allocated_size;
+	    size_t next_allocated_size;
+
+	    if (allocated_size > dec_size) {
+		next_allocated_size = allocated_size - dec_size;
+	    }
+	    else {
+#if MALLOC_ALLOCATED_SIZE_CHECK
+		rb_bug("vm_malloc_increase: underflow malloc_params.allocated_size.");
+#endif
+		next_allocated_size = 0;
+	    }
+	    if (ATOMIC_SIZE_CAS(objspace->malloc_params.allocated_size, allocated_size, next_allocated_size) == allocated_size) break;
+	}
+    }
+
+    if (0) fprintf(stderr, "incraese - ptr: %p, type: %s, new_size: %d, old_size: %d\n",
+		   mem,
+		   type == MEMOP_TYPE_MALLOC  ? "malloc" :
+		   type == MEMOP_TYPE_FREE    ? "free  " :
+		   type == MEMOP_TYPE_REALLOC ? "realloc": "error",
+		   (int)new_size, (int)old_size);
+
+    switch (type) {
+      case MEMOP_TYPE_MALLOC:
+	ATOMIC_SIZE_INC(objspace->malloc_params.allocations);
+	break;
+      case MEMOP_TYPE_FREE:
+	while (1) {
+	    size_t allocations = objspace->malloc_params.allocations;
+	    if (allocations > 0) {
+		if (ATOMIC_SIZE_CAS(objspace->malloc_params.allocations, allocations, allocations - 1) == allocations) break;
+	    }
+	    else {
+#if MALLOC_ALLOCATED_SIZE_CHECK
+		assert(objspace->malloc_params.allocations > 0);
+#endif
+		break;
+	    }
+	}
+	break;
+      case MEMOP_TYPE_REALLOC: /* ignore */ break;
+    }
+#endif
 }
 
 static inline size_t
@@ -5642,8 +5717,6 @@ vm_malloc_prepare(rb_objspace_t *objspace, size_t size)
     size += sizeof(size_t);
 #endif
 
-    vm_malloc_increase(objspace, size, 0, TRUE);
-
     return size;
 }
 
@@ -5651,8 +5724,6 @@ static inline void *
 vm_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
 {
 #if CALC_EXACT_MALLOC_SIZE
-    ATOMIC_SIZE_ADD(objspace->malloc_params.allocated_size, size);
-    ATOMIC_SIZE_INC(objspace->malloc_params.allocations);
     ((size_t *)mem)[0] = size;
     mem = (size_t *)mem + 1;
 #endif
@@ -5675,6 +5746,8 @@ vm_xmalloc(rb_objspace_t *objspace, size_t size)
 
     size = vm_malloc_prepare(objspace, size);
     TRY_WITH_GC(mem = malloc(size));
+    size = vm_malloc_size(objspace, mem, size);
+    vm_malloc_increase(objspace, mem, size, 0, MEMOP_TYPE_MALLOC);
     return vm_malloc_fixup(objspace, mem, size);
 }
 
@@ -5682,9 +5755,6 @@ static void *
 vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t old_size)
 {
     void *mem;
-#if CALC_EXACT_MALLOC_SIZE
-    size_t cem_oldsize;
-#endif
 
     if ((ssize_t)new_size < 0) {
 	negative_size_allocation_error("negative re-allocation size");
@@ -5702,29 +5772,22 @@ vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t old_size
 	return 0;
     }
 
-#ifdef HAVE_MALLOC_USABLE_SIZE
-    old_size = malloc_usable_size(ptr);
-#endif
-
-    vm_malloc_increase(objspace, new_size, old_size, FALSE);
-
 #if CALC_EXACT_MALLOC_SIZE
     new_size += sizeof(size_t);
     ptr = (size_t *)ptr - 1;
-    cem_oldsize = ((size_t *)ptr)[0];
-
-    if (CALC_EXACT_MALLOC_SIZE_CHECK_OLD_SIZE && old_size > 0 && cem_oldsize - sizeof(size_t) != old_size) {
-	fprintf(stderr, "vm_xrealloc: old_size mismatch: expected %d, but %d\n", (int)(cem_oldsize-sizeof(size_t)), (int)old_size);
-    }
+    oldsize = ((size_t *)ptr)[0];
 #endif
 
+    old_size = vm_malloc_size(objspace, ptr, old_size);
     TRY_WITH_GC(mem = realloc(ptr, new_size));
+    new_size = vm_malloc_size(objspace, mem, new_size);
 
 #if CALC_EXACT_MALLOC_SIZE
-    ATOMIC_SIZE_ADD(objspace->malloc_params.allocated_size, new_size - cem_oldsize);
     ((size_t *)mem)[0] = new_size;
     mem = (size_t *)mem + 1;
 #endif
+
+    vm_malloc_increase(objspace, mem, new_size, old_size, MEMOP_TYPE_REALLOC);
 
     return mem;
 }
@@ -5733,27 +5796,14 @@ static void
 vm_xfree(rb_objspace_t *objspace, void *ptr, size_t old_size)
 {
 #if CALC_EXACT_MALLOC_SIZE
-    size_t cem_oldsize;
     ptr = ((size_t *)ptr) - 1;
-    cem_oldsize = ((size_t*)ptr)[0];
-    if (cem_oldsize) {
-	ATOMIC_SIZE_SUB(objspace->malloc_params.allocated_size, cem_oldsize);
-	ATOMIC_SIZE_DEC(objspace->malloc_params.allocations);
-    }
+    oldsize = ((size_t*)ptr)[0];
 #endif
-
-#ifdef HAVE_MALLOC_USABLE_SIZE
-    old_size = malloc_usable_size(ptr);
-#endif
-
-#if CALC_EXACT_MALLOC_SIZE
-    if (CALC_EXACT_MALLOC_SIZE_CHECK_OLD_SIZE && old_size > 0 && cem_oldsize - sizeof(size_t) != old_size) {
-	fprintf(stderr, "vm_xfree: old_size mismatch: expected %d, but %d\n", (int)(cem_oldsize-sizeof(size_t)), (int)old_size);
-    }
-#endif
-    vm_malloc_increase(objspace, 0, old_size, FALSE);
+    old_size = vm_malloc_size(objspace, ptr, old_size);
 
     free(ptr);
+
+    vm_malloc_increase(objspace, ptr, 0, old_size, MEMOP_TYPE_FREE);
 }
 
 void *
@@ -5868,7 +5918,7 @@ ruby_mimfree(void *ptr)
     free(mem);
 }
 
-#if CALC_EXACT_MALLOC_SIZE
+#if MALLOC_ALLOCATED_SIZE
 /*
  *  call-seq:
  *     GC.malloc_allocated_size -> Integer
@@ -6323,7 +6373,7 @@ gc_prof_setup_new_record(rb_objspace_t *objspace, int reason)
 
 	/* setup before-GC parameter */
 	record->flags = reason | ((ruby_gc_stress && !ruby_disable_gc_stress) ? GPR_FLAG_STRESS : 0);
-#if CALC_EXACT_MALLOC_SIZE
+#if MALLOC_ALLOCATED_SIZE
 	record->allocated_size = malloc_allocated_size;
 #endif
 #if GC_PROFILE_DETAIL_MEMORY
@@ -7133,7 +7183,7 @@ Init_GC(void)
 	rb_include_module(rb_cWeakMap, rb_mEnumerable);
     }
 
-#if CALC_EXACT_MALLOC_SIZE
+#if MALLOC_ALLOCATED_SIZE
     rb_define_singleton_method(rb_mGC, "malloc_allocated_size", gc_malloc_allocated_size, 0);
     rb_define_singleton_method(rb_mGC, "malloc_allocations", gc_malloc_allocations, 0);
 #endif
@@ -7153,7 +7203,8 @@ Init_GC(void)
 	OPT(GC_PROFILE_MORE_DETAIL);
 	OPT(GC_ENABLE_LAZY_SWEEP);
 	OPT(CALC_EXACT_MALLOC_SIZE);
-	OPT(CALC_EXACT_MALLOC_SIZE_CHECK_OLD_SIZE);
+	OPT(MALLOC_ALLOCATED_SIZE);
+	OPT(MALLOC_ALLOCATED_SIZE_CHECK);
 	OPT(GC_PROFILE_DETAIL_MEMORY);
 #undef OPT
     }

@@ -1,3 +1,19 @@
+Thu Dec  5 13:47:15 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (vm_malloc_size): added.
+	  return malloc_usable_size() if possible.
+
+	* gc.c (MALLOC_ALLOCATED_SIZE): add new setting macro to enable
+	  GC.allocated_size.
+	  If platform supports `malloc_usable_size()' (or similar one),
+	  GC.allocated_size can be implemented with this function.
+	  Default is 0.
+
+	* gc.c (vm_xmalloc, vm_xrealloc, vm_xfree): use vm_malloc_size()
+	  to detect collect allocated size.
+
+	* gc.c (vm_malloc_increase): refactoring.
+
 Thu Dec  5 13:19:03 2013  Aman Gupta <ruby@tmm1.net>
 
 	* include/ruby/ruby.h: remove INTERNAL_EVENT_GC_END and replace with
