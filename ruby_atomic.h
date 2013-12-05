@@ -16,10 +16,6 @@ typedef unsigned int rb_atomic_t;
 
 # define ATOMIC_SIZE_ADD(var, val) __atomic_fetch_add(&(var), (val), __ATOMIC_SEQ_CST)
 # define ATOMIC_SIZE_SUB(var, val) __atomic_fetch_sub(&(var), (val), __ATOMIC_SEQ_CST)
-# define ATOMIC_SIZE_CAS(var, oldval, newval) \
-({ size_t oldvaldup = (oldval); \
-   __atomic_compare_exchange_n(&(var), &oldvaldup, (newval), 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST); \
-   oldvaldup; })
 
 #elif defined HAVE_GCC_SYNC_BUILTINS
 /* @shyouhei hack to support atomic operations in case of gcc. Gcc
