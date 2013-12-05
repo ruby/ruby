@@ -171,7 +171,7 @@ module WEBrick
     end
 
     ##
-    # Iterates over each header in the resopnse
+    # Iterates over each header in the response
 
     def each
       @header.each{|field, value|  yield(field, value) }
