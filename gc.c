@@ -5386,9 +5386,9 @@ gc_set_initial_pages(void)
  */
 
 void
-ruby_gc_set_params(void)
+ruby_gc_set_params(int safe_level)
 {
-    if (rb_safe_level() > 0) return;
+    if (safe_level > 0) return;
 
     /* RUBY_GC_HEAP_FREE_SLOTS */
     if (get_envparam_int   ("RUBY_FREE_MIN", &gc_params.heap_free_slots, 0)) {
@@ -5419,7 +5419,7 @@ ruby_gc_set_params(void)
 #endif
 }
 
-RUBY_ALIAS_FUNCTION_VOID(rb_gc_set_params(void), ruby_gc_set_params, ())
+RUBY_ALIAS_FUNCTION_VOID(rb_gc_set_params(void), ruby_gc_set_params, (rb_safe_level()))
 
 void
 rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *data)

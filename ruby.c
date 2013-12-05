@@ -1405,6 +1405,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     translit_char(RSTRING_PTR(opt->script_name), '\\', '/');
 #endif
 
+    ruby_gc_set_params(opt->safe_level);
     ruby_init_loadpath_safe(opt->safe_level);
     Init_enc();
     rb_enc_find_index("encdb");
@@ -1568,7 +1569,6 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     rb_define_readonly_boolean("$-a", opt->do_split);
 
     rb_set_safe_level(opt->safe_level);
-    ruby_gc_set_params();
 
     return iseq;
 }

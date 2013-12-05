@@ -1,3 +1,12 @@
+Thu Dec  5 09:07:59 2013  Aman Gupta <ruby@tmm1.net>
+
+	* gc.c (ruby_gc_set_params): Accept safe_level argument so GC tuning
+	  settings can be applied before rb_safe_level() is available.
+	* internal.h (rb_gc_set_params): ditto.
+	* ruby.c (process_options): Apply GC tuning early during boot process
+	  so boot-time allocations can benefit. This also benefits any code
+	  loaded in via `ruby -r`.
+
 Wed Dec  4 13:02:13 2013  Aman Gupta <ruby@tmm1.net>
 
 	* vm_trace.c (rb_suppress_tracing): Fix initialization of stack

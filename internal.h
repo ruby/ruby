@@ -453,7 +453,7 @@ void *ruby_mimmalloc(size_t size);
 void ruby_mimfree(void *ptr);
 void rb_objspace_set_event_hook(const rb_event_flag_t event);
 void rb_gc_writebarrier_remember_promoted(VALUE obj);
-void ruby_gc_set_params(void);
+void ruby_gc_set_params(int safe_level);
 
 #if defined(HAVE_MALLOC_USABLE_SIZE) || defined(HAVE_MALLOC_SIZE) || defined(_WIN32)
 #define ruby_sized_xrealloc(ptr, new_size, old_size) ruby_xrealloc(ptr, new_size)
