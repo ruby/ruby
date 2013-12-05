@@ -85,10 +85,13 @@ tracepoint_specify_normal_and_internal_events(VALUE self)
     return Qnil; /* should not be reached */
 }
 
+void Init_gc_hook(VALUE);
+
 void
 Init_tracepoint(void)
 {
     VALUE mBug = rb_define_module("Bug");
+    Init_gc_hook(mBug);
     rb_define_module_function(mBug, "tracepoint_track_objspace_events", tracepoint_track_objspace_events, 0);
     rb_define_module_function(mBug, "tracepoint_specify_normal_and_internal_events", tracepoint_specify_normal_and_internal_events, 0);
 }

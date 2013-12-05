@@ -716,7 +716,6 @@ reachable_objects_from_root(VALUE self)
 }
 
 void Init_object_tracing(VALUE rb_mObjSpace);
-void Init_gc_hook(VALUE rb_mObjSpace);
 void Init_objspace_dump(VALUE rb_mObjSpace);
 
 /*
@@ -768,6 +767,5 @@ Init_objspace(void)
     rb_define_method(rb_mInternalObjectWrapper, "internal_object_id", iow_internal_object_id, 0);
 
     Init_object_tracing(rb_mObjSpace);
-    Init_gc_hook(rb_mObjSpace);
     Init_objspace_dump(rb_mObjSpace);
 }

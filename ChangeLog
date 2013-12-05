@@ -1,3 +1,12 @@
+Thu Dec  5 18:18:08 2013  Aman Gupta <ruby@tmm1.net>
+
+	* ext/objspace/gc_hook.c: remove this file
+	* ext/-test-/tracepoint/gc_hook.c: new filename for above
+	* ext/objspace/objspace.c: remove ObjectSpace.after_gc_start_hook=
+	* test/objspace/test_objspace.rb: remove test
+	* test/-ext-/tracepoint/test_tracepoint.rb: add above test for
+	  tracepoint re-entry
+
 Thu Dec  5 17:44:53 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: change function names vm_ prefix to objspace_ prefix.

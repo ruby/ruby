@@ -1,5 +1,6 @@
 require 'test/unit'
 require '-test-/tracepoint'
+require_relative '../../ruby/envutil'
 
 class TestTracepointObj < Test::Unit::TestCase
   def test_not_available_from_ruby
@@ -56,4 +57,24 @@ class TestTracepointObj < Test::Unit::TestCase
   def test_tracepoint_specify_normal_and_internal_events
     assert_raise(TypeError){ Bug.tracepoint_specify_normal_and_internal_events }
   end
+
+  def test_after_gc_start_hook_with_GC_stress
+    bug8492 = '[ruby-dev:47400] [Bug #8492]: infinite after_gc_start_hook reentrance'
+    assert_nothing_raised(Timeout::Error, bug8492) do
+      assert_in_out_err(%w[-r-test-/tracepoint], <<-'end;', /\A[1-9]/, timeout: 2)
+        stress, GC.stress = GC.stress, false
+        count = 0
+        Bug.after_gc_start_hook = proc {count += 1}
+        begin
+          GC.stress = true
+          3.times {Object.new}
+        ensure
+          GC.stress = stress
+          Bug.after_gc_start_hook = nil
+        end
+        puts count
+      end;
+    end
+  end
+
 end
