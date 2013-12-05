@@ -1834,7 +1834,7 @@ VALUE
 rb_catch_obj(VALUE t, VALUE (*func)(), VALUE data)
 {
     int state;
-    VALUE val = rb_catch_protect(t, func, data, &state);
+    VALUE val = rb_catch_protect(t, (rb_block_call_func *)func, data, &state);
     if (state)
 	JUMP_TAG(state);
     return val;
