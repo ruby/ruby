@@ -4990,7 +4990,7 @@ Init_stack(volatile VALUE *addr)
 /*
  *  call-seq:
  *     GC.start                     -> nil
- *     gc.garbage_collect           -> nil
+ *     GC.garbage_collect           -> nil
  *     ObjectSpace.garbage_collect  -> nil
  *
  *  Initiates garbage collection, unless manually disabled.
