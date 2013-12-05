@@ -5097,7 +5097,7 @@ gc_info_decode(int flags, VALUE hash_or_key)
     else if (hash != Qnil) \
 	rb_hash_aset(hash, sym_##name, (attr));
 
-    major_by = 
+    major_by =
       (flags & GPR_FLAG_MAJOR_BY_NOFREE) ? sym_nofree :
       (flags & GPR_FLAG_MAJOR_BY_OLDGEN) ? sym_oldgen :
       (flags & GPR_FLAG_MAJOR_BY_SHADY)  ? sym_shady :
