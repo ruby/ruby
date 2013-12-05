@@ -1,3 +1,7 @@
+Thu Dec  5 19:35:35 2013  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* st.c: tweaked comment
+
 Thu Dec  5 19:21:10 2013  Aman Gupta <ruby@tmm1.net>
 
 	* gc.c (struct rb_objspace): rename internal last_collection_flags to

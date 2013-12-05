@@ -196,7 +196,7 @@ new_size(st_index_t size)
     for (i = 0, newsize = MINSIZE; i < numberof(primes); i++, newsize <<= 1) {
 	if (newsize > size) return primes[i];
     }
-    /* Ran out of polynomials */
+    /* Ran out of primes */
 #ifndef NOT_RUBY
     rb_raise(rb_eRuntimeError, "st_table too big");
 #endif
