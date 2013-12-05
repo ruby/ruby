@@ -1,3 +1,8 @@
+Thu Dec  5 14:40:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash): revert r43981 and bail out to the outermost frame
+	  when recursion is detected.
+
 Thu Dec  5 13:47:15 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (vm_malloc_size): added.

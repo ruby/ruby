@@ -48,7 +48,7 @@ rb_hash_freeze(VALUE hash)
 VALUE rb_cHash;
 
 static VALUE envtbl;
-static ID id_hash, id_yield, id_default, id_recursive_hash;
+static ID id_hash, id_yield, id_default;
 
 VALUE
 rb_hash_set_ifnone(VALUE hash, VALUE ifnone)
@@ -76,85 +76,17 @@ rb_any_cmp(VALUE a, VALUE b)
     return !rb_eql(a, b);
 }
 
-struct hash_recursive_args {
-    VALUE (*func)(VALUE, VALUE, int);
-    VALUE obj;
-    VALUE arg;
-};
-
-static VALUE
-call_hash(RB_BLOCK_CALL_FUNC_ARGLIST(tag, data))
-{
-    struct hash_recursive_args *p = (struct hash_recursive_args *)tag;
-    return p->func(p->obj, p->arg, 0);
-}
-
-static VALUE
-rb_hash_recursive(VALUE (*func)(VALUE, VALUE, int), VALUE obj, VALUE arg)
-{
-    VALUE hval;
-    VALUE thread = rb_thread_current();
-    VALUE recursion_list = rb_thread_local_aref(thread, id_recursive_hash);
-    struct hash_recursive_args args;
-    long len = 0;
-    int state;
-
-    if (!NIL_P(recursion_list) && (len = RARRAY_LEN(recursion_list)) > 0) {
-	VALUE outer;
-	struct hash_recursive_args *outerp;
-	const VALUE *ptr = RARRAY_CONST_PTR(recursion_list);
-	long i = 0;
-	do {
-	    outerp = (struct hash_recursive_args *)(ptr[i] & ~FIXNUM_FLAG);
-	    if (outerp->obj == obj) {
-		len = i;
-		for (i = 0; i < len; ++i) {
-		    outer = RARRAY_AREF(recursion_list, i) & ~FIXNUM_FLAG;
-		    outerp = (struct hash_recursive_args *)outer;
-		    if (rb_eql(obj, outerp->obj)) {
-			rb_throw_obj(outer, outer);
-		    }
-		}
-		outer = RARRAY_AREF(recursion_list, len) & ~FIXNUM_FLAG;
-		outerp = (struct hash_recursive_args *)outer;
-		rb_throw_obj(outer, outer);
-	    }
-	} while (++i < len);
-    }
-    else {
-	recursion_list = rb_ary_new();
-	rb_thread_local_aset(thread, id_recursive_hash, recursion_list);
-    }
-    args.func = func;
-    args.obj = obj;
-    args.arg = arg;
-    rb_ary_push(recursion_list, (VALUE)&args | FIXNUM_FLAG);
-    hval = rb_catch_protect((VALUE)&args, call_hash, (VALUE)&args, &state);
-    if (RARRAY_LEN(recursion_list) >= len) {
-	rb_ary_set_len(recursion_list, len);
-	if (len == 0) rb_thread_local_aset(thread, id_recursive_hash, Qnil);
-    }
-    if (state) rb_jump_tag(state);
-    if (hval == (VALUE)&args) {
-	hval = (*func)(obj, arg, 1);
-    }
-    return hval;
-}
-
 static VALUE
 hash_recursive(VALUE obj, VALUE arg, int recurse)
 {
-    if (recurse) {
-	/* TODO: break to call with the object which eql? to obj */
-	return INT2FIX(0);
-    }
+    if (recurse) return INT2FIX(0);
     return rb_funcallv(obj, id_hash, 0, 0);
 }
 
 VALUE
 rb_hash(VALUE obj)
 {
-    VALUE hval = rb_hash_recursive(hash_recursive, obj, 0);
+    VALUE hval = rb_exec_recursive_outer(hash_recursive, obj, 0);
   retry:
     switch (TYPE(hval)) {
       case T_FIXNUM:
