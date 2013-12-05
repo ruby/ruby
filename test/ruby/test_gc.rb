@@ -79,6 +79,12 @@ class TestGc < Test::Unit::TestCase
     assert_equal(count[:FREE], stat[:heap_free_slot])
   end
 
+  def test_stat_single
+    stat = GC.stat
+    assert_equal stat[:count], GC.stat(:count)
+    assert_raise(ArgumentError){ GC.stat(:invalid) }
+  end
+
   def test_gc_reason
     GC.start
     GC.stat[:heap_free_slot].times{ "a" + "b" }

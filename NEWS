@@ -319,6 +319,9 @@ with all sufficient information, see the ChangeLog file.
 
 * rb_gc_count() added. This returns the number of times GC occurred.
 
+* rb_gc_stat() added. This allows access to specific GC.stat() values from C
+  without any allocation overhead.
+
 * rb_postponed_job_register() added. Takes a function callback which is invoked
   when the VM is in a consistent state, i.e. to perform work from a C signal
   handler.
@@ -330,6 +333,7 @@ with all sufficient information, see the ChangeLog file.
   * RUBY_INTERNAL_EVENT_NEWOBJ
   * RUBY_INTERNAL_EVENT_FREEOBJ
   * RUBY_INTERNAL_EVENT_GC_START
-  * RUBY_INTERNAL_EVENT_GC_END
+  * RUBY_INTERNAL_EVENT_GC_END_MARK
+  * RUBY_INTERNAL_EVENT_GC_END_SWEEP
   * Note that you *can not* specify "internal events" with normal events
     (such as RUBY_EVENT_CALL, RUBY_EVENT_RETURN) simultaneously.

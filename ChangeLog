@@ -1,3 +1,16 @@
+Thu Dec  5 16:11:04 2013  Aman Gupta <ruby@tmm1.net>
+
+	* include/ruby/intern.h: add rb_gc_stat() for access to GC.stat
+	  variables from c-api
+	* gc.c (rb_gc_stat): new c-api method. accepts either VALUE hash like
+	  GC.stat, or VALUE symbol key and returns size_t directly. the second
+	  form is useful to avoid allocations, i.e. for usage inside
+	  INTERNAL_EVENT_GC tracepoints.
+	* gc.c (gc_stat): add GC.stat(:key) to return single value instead of hash
+	* gc.c (gc_stat_internal): helper method to retrieve single or all stat values
+	* test/ruby/test_gc.rb (class TestGc): test for new behavior
+	* NEWS: note about this new api
+
 Thu Dec  5 14:40:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_hash): revert r43981 and bail out to the outermost frame

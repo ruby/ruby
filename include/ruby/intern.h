@@ -486,6 +486,7 @@ DEPRECATED(void rb_gc_set_params(void));
 VALUE rb_define_finalizer(VALUE, VALUE);
 VALUE rb_undefine_finalizer(VALUE);
 size_t rb_gc_count(void);
+size_t rb_gc_stat(VALUE);
 /* hash.c */
 void st_foreach_safe(struct st_table *, int (*)(ANYARGS), st_data_t);
 VALUE rb_check_hash_type(VALUE);
