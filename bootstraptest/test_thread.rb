@@ -22,7 +22,7 @@ begin
   }
   v == 20100 ? :ok : v
 rescue ThreadError => e
-  :ok if e.message =~ "can't create Thread"
+  :ok if /can't create Thread/ =~ e.message
 end
 }
 assert_equal %q{5000}, %q{
