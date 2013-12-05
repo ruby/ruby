@@ -238,4 +238,18 @@ class TestGc < Test::Unit::TestCase
     assert_not_nil GC::INTERNAL_CONSTANTS[:HEAP_OBJ_LIMIT]
     assert_not_nil GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]
   end
+
+  def test_sweep_in_finalizer
+    bug9205 = '[ruby-core:58833] [Bug #9205]'
+    100.times do
+      assert_ruby_status([], <<-'end;', bug9205)
+        raise_proc = proc do |id|
+          GC.start
+        end
+        1000.times do
+          ObjectSpace.define_finalizer(Object.new, raise_proc)
+        end
+      end;
+    end
+  end
 end

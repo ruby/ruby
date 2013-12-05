@@ -2055,10 +2055,9 @@ finalize_list(rb_objspace_t *objspace, RVALUE *p)
 static void
 finalize_deferred(rb_objspace_t *objspace)
 {
-    RVALUE *p = heap_pages_deferred_final;
-    heap_pages_deferred_final = 0;
+    RVALUE *p;
 
-    if (p) {
+    while ((p = ATOMIC_PTR_EXCHANGE(heap_pages_deferred_final, 0)) != 0) {
 	finalize_list(objspace, p);
     }
 }

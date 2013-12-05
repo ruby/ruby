@@ -1,3 +1,9 @@
+Thu Dec  5 10:47:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (finalize_deferred): flush all deferred finalizers while other
+	  finalizers can get ready to run newly by lazy sweep.
+	  [ruby-core:58833] [Bug #9205]
+
 Thu Dec  5 09:07:59 2013  Aman Gupta <ruby@tmm1.net>
 
 	* gc.c (ruby_gc_set_params): Accept safe_level argument so GC tuning
