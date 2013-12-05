@@ -7983,6 +7983,7 @@ str_compat_and_valid(VALUE str, rb_encoding *enc)
 }
 
 /**
+ * @param str the string to be scrubbed
  * @param repl the replacement character
  * @return If given string is invalid, returns a new string. Otherwise, returns Qnil.
  */
