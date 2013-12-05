@@ -4025,6 +4025,14 @@ rb_ary_and(VALUE ary1, VALUE ary2)
     return ary3;
 }
 
+static int
+ary_hash_orset(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
+{
+    if (existing) return ST_STOP;
+    *key = *value = (VALUE)arg;
+    return ST_CONTINUE;
+}
+
 /*
  *  call-seq:
  *     ary | other_ary     -> new_ary
@@ -4043,9 +4051,17 @@ static VALUE
 rb_ary_or(VALUE ary1, VALUE ary2)
 {
     VALUE hash, ary3;
+    long i;
 
     ary2 = to_ary(ary2);
-    hash = ary_add_hash(ary_make_hash(ary1), ary2);
+    hash = ary_make_hash(ary1);
+
+    for (i=0; i<RARRAY_LEN(ary2); i++) {
+	VALUE elt = RARRAY_AREF(ary2, i);
+	if (!st_update(RHASH_TBL(hash), (st_data_t)elt, ary_hash_orset, (st_data_t)elt)) {
+	    OBJ_WRITTEN(hash, Qundef, elt);
+	}
+    }
     ary3 = rb_hash_values(hash);
     ary_recycle_hash(hash);
     return ary3;

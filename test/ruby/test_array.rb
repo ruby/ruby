@@ -1662,6 +1662,18 @@ class TestArray < Test::Unit::TestCase
     assert(c.none?(&:frozen?))
   end
 
+  def test_OR_in_order
+    obj1, obj2 = Class.new do
+      attr_reader :name
+      def initialize(name) @name = name; end
+      def inspect; "test_OR_in_order(#{@name})"; end
+      def hash; 0; end
+      def eql?(a) true; end
+      break [new("1"), new("2")]
+    end
+    assert_equal([obj1], [obj1]|[obj2])
+  end
+
   def test_combination
     assert_equal(@cls[[]], @cls[1,2,3,4].combination(0).to_a)
     assert_equal(@cls[[1],[2],[3],[4]], @cls[1,2,3,4].combination(1).to_a)

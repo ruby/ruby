@@ -1,3 +1,11 @@
+Thu Dec  5 21:53:29 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_or): lhs elements are prefered, so should not
+	  replace with rhs elements.
+
+	* test/ruby/test_array.rb (test_OR_in_order): import the test failed
+	  by r43969 from rubyspec/core/array/union_spec.rb.
+
 Thu Dec  5 21:05:42 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_info_decode): fix to avoid syntax error on VS2012.
