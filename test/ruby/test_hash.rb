@@ -1066,7 +1066,7 @@ class TestHash < Test::Unit::TestCase
     end
   end
 
-  def test_recursive_hash_value
+  def test_recursive_hash_value_struct
     bug9151 = '[ruby-core:58567] [Bug #9151]'
 
     s = Struct.new(:x) {def hash; [x,""].hash; end}
@@ -1074,10 +1074,41 @@ class TestHash < Test::Unit::TestCase
     b = s.new
     a.x = b
     b.x = a
-    ah = assert_nothing_raised(SystemStackError, bug9151) {a.hash}
-    bh = assert_nothing_raised(SystemStackError, bug9151) {b.hash}
-    assert_equal(ah, bh, bug9151)
-    assert_not_equal([a,"hello"].hash, [b,"world"].hash, bug9151)
+    assert_nothing_raised(SystemStackError, bug9151) {a.hash}
+    assert_nothing_raised(SystemStackError, bug9151) {b.hash}
+
+    h = @cls[]
+    h[[a,"hello"]] = 1
+    assert_equal(1, h.size)
+    h[[b,"world"]] = 2
+    assert_equal(2, h.size)
+
+    obj = Object.new
+    h = @cls[a => obj]
+    assert_same(obj, h[b])
+  end
+
+  def test_recursive_hash_value_array
+    h = @cls[]
+    h[[[1]]] = 1
+    assert_equal(1, h.size)
+    h[[[2]]] = 1
+    assert_equal(2, h.size)
+
+    a = []
+    a << a
+
+    h = @cls[]
+    h[[a, 1]] = 1
+    assert_equal(1, h.size)
+    h[[a, 2]] = 2
+    assert_equal(2, h.size)
+    h[[a, a]] = 3
+    assert_equal(3, h.size)
+
+    obj = Object.new
+    h = @cls[a => obj]
+    assert_same(obj, h[[[a]]])
   end
 
   def test_exception_in_rehash

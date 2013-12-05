@@ -2049,15 +2049,6 @@ class TestArray < Test::Unit::TestCase
     assert_equal(A, B)
   end
 
-  def test_recursive_hash_value
-    assert_not_equal([[1]].hash, [[2]].hash)
-    a = []
-    a << a
-    assert_equal([[a]].hash, a.hash)
-    assert_not_equal([a, 1].hash, [a, 2].hash)
-    assert_not_equal([a, a].hash, a.hash) # Implementation dependent
-  end
-
   def test_flatten_error
     a = []
     a << a
