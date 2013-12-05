@@ -1,3 +1,7 @@
+Thu Dec  5 21:05:42 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_info_decode): fix to avoid syntax error on VS2012.
+
 Thu Dec  5 19:35:35 2013  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* st.c: tweaked comment

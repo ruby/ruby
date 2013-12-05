@@ -5063,6 +5063,7 @@ gc_info_decode(int flags, VALUE hash_or_key)
     static VALUE sym_nofree, sym_oldgen, sym_shady, sym_rescan, sym_stress, sym_oldmalloc;
     static VALUE sym_newobj, sym_malloc, sym_method, sym_capi;
     VALUE hash = Qnil, key = Qnil;
+    VALUE major_by;
 
     if (SYMBOL_P(hash_or_key))
 	key = hash_or_key;
@@ -5096,17 +5097,17 @@ gc_info_decode(int flags, VALUE hash_or_key)
     else if (hash != Qnil) \
 	rb_hash_aset(hash, sym_##name, (attr));
 
-    SET(major_by,
-	(flags & GPR_FLAG_MAJOR_BY_NOFREE) ? sym_nofree :
-	(flags & GPR_FLAG_MAJOR_BY_OLDGEN) ? sym_oldgen :
-	(flags & GPR_FLAG_MAJOR_BY_SHADY)  ? sym_shady :
-	(flags & GPR_FLAG_MAJOR_BY_RESCAN) ? sym_rescan :
-	(flags & GPR_FLAG_MAJOR_BY_STRESS) ? sym_stress :
+    major_by = 
+      (flags & GPR_FLAG_MAJOR_BY_NOFREE) ? sym_nofree :
+      (flags & GPR_FLAG_MAJOR_BY_OLDGEN) ? sym_oldgen :
+      (flags & GPR_FLAG_MAJOR_BY_SHADY)  ? sym_shady :
+      (flags & GPR_FLAG_MAJOR_BY_RESCAN) ? sym_rescan :
+      (flags & GPR_FLAG_MAJOR_BY_STRESS) ? sym_stress :
 #if RGENGC_ESTIMATE_OLDMALLOC
-	(flags & GPR_FLAG_MAJOR_BY_OLDMALLOC) ? sym_oldmalloc :
+      (flags & GPR_FLAG_MAJOR_BY_OLDMALLOC) ? sym_oldmalloc :
 #endif
-	Qnil
-    );
+      Qnil;
+    SET(major_by, major_by);
 
     SET(gc_by,
 	(flags & GPR_FLAG_NEWOBJ) ? sym_newobj :
