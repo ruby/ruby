@@ -1,3 +1,17 @@
+Thu Dec  5 13:19:03 2013  Aman Gupta <ruby@tmm1.net>
+
+	* include/ruby/ruby.h: remove INTERNAL_EVENT_GC_END and replace with
+	  two new events: GC_END_MARK and GC_END_SWEEP
+	* gc.c (gc_after_sweep): emit GC_END_SWEEP after lazy sweep is done
+	* gc.c (gc_marks_body): emit GC_END_MARK at end of minor/major mark
+	* ext/-test-/tracepoint/tracepoint.c (struct tracepoint_track): tests
+	  for new events.
+	* test/-ext-/tracepoint/test_tracepoint.rb (class TestTracepointObj):
+	  ditto.
+	* NEWS: remove ObjectSpace.after_gc_*_hook. These are only a sample,
+	  and will be removed before ruby 2.1.
+	* ext/objspace/gc_hook.c: remove ObjectSpace.after_gc_end_hook=
+
 Thu Dec  5 10:47:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby_atomic.h (ATOMIC_PTR_EXCHANGE): atomic exchange function for

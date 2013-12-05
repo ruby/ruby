@@ -1712,15 +1712,16 @@ int ruby_native_thread_p(void);
 #define RUBY_EVENT_COVERAGE               0x020000
 
 /* internal events */
-#define RUBY_INTERNAL_EVENT_SWITCH        0x040000
-#define RUBY_EVENT_SWITCH                 0x040000 /* obsolete name. this macro is for compatibility */
-                                       /* 0x080000 */
-#define RUBY_INTERNAL_EVENT_NEWOBJ        0x100000
-#define RUBY_INTERNAL_EVENT_FREEOBJ       0x200000
-#define RUBY_INTERNAL_EVENT_GC_START      0x400000
-#define RUBY_INTERNAL_EVENT_GC_END        0x800000
-#define RUBY_INTERNAL_EVENT_OBJSPACE_MASK 0xf00000
-#define RUBY_INTERNAL_EVENT_MASK        0xfffe0000
+#define RUBY_INTERNAL_EVENT_SWITCH          0x040000
+#define RUBY_EVENT_SWITCH                   0x040000 /* obsolete name. this macro is for compatibility */
+                                         /* 0x080000 */
+#define RUBY_INTERNAL_EVENT_NEWOBJ          0x100000
+#define RUBY_INTERNAL_EVENT_FREEOBJ         0x200000
+#define RUBY_INTERNAL_EVENT_GC_START        0x400000
+#define RUBY_INTERNAL_EVENT_GC_END_MARK     0x800000
+#define RUBY_INTERNAL_EVENT_GC_END_SWEEP   0x1000000
+#define RUBY_INTERNAL_EVENT_OBJSPACE_MASK  0x1f00000
+#define RUBY_INTERNAL_EVENT_MASK          0xfffe0000
 
 typedef unsigned long rb_event_flag_t;
 typedef void (*rb_event_hook_func_t)(rb_event_flag_t evflag, VALUE data, VALUE self, ID mid, VALUE klass);

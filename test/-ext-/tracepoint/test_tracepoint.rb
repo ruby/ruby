@@ -17,13 +17,14 @@ class TestTracepointObj < Test::Unit::TestCase
       nil
     }
 
-    newobj_count, free_count, gc_start_count, gc_end_count, *newobjs = *result
+    newobj_count, free_count, gc_start_count, gc_end_mark_count, gc_end_sweep_count, *newobjs = *result
     assert_equal 2, newobj_count
     assert_equal 2, newobjs.size
     assert_equal 'foobar', newobjs[0]
     assert_equal Object, newobjs[1].class
     assert_operator free_count, :>=, 0
-    assert_operator gc_start_count, :>=, gc_end_count
+    assert_operator gc_start_count, :==, gc_end_mark_count
+    assert_operator gc_start_count, :>=, gc_end_sweep_count
   end
 
   def test_tracks_objspace_count
@@ -39,7 +40,7 @@ class TestTracepointObj < Test::Unit::TestCase
     GC.stat(stat2)
     GC.enable
 
-    newobj_count, free_count, gc_start_count, gc_end_count, *_newobjs = *result
+    newobj_count, free_count, gc_start_count, gc_end_mark_count, gc_end_sweep_count, *newobjs = *result
 
     assert_operator stat2[:total_allocated_object] - stat1[:total_allocated_object], :>=, newobj_count
     assert_operator 1_000_000, :<=, newobj_count
@@ -47,8 +48,9 @@ class TestTracepointObj < Test::Unit::TestCase
     assert_operator stat2[:total_freed_object] + stat2[:heap_final_slot] - stat1[:total_freed_object], :>=, free_count
     assert_operator stat2[:count] - stat1[:count], :==, gc_start_count
 
-    assert_operator gc_start_count, :>=, gc_end_count
-    assert_operator stat2[:count] - stat1[:count] - 1, :<=, gc_end_count
+    assert_operator gc_start_count, :==, gc_end_mark_count
+    assert_operator gc_start_count, :>=, gc_end_sweep_count
+    assert_operator stat2[:count] - stat1[:count] - 1, :<=, gc_end_sweep_count
   end
 
   def test_tracepoint_specify_normal_and_internal_events

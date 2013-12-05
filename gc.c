@@ -2954,7 +2954,7 @@ gc_after_sweep(rb_objspace_t *objspace)
     }
 #endif
 
-    gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_END, 0 /* TODO: pass minor/immediate flag? */);
+    gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_END_SWEEP, 0);
 }
 
 static int
@@ -4122,7 +4122,7 @@ gc_marks_body(rb_objspace_t *objspace, int full_mark)
     gc_mark_roots(objspace, full_mark, 0);
     gc_mark_stacked_objects(objspace);
 
-    /* cleanup */
+    gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_END_MARK, 0);
     rgengc_report(1, objspace, "gc_marks_body: end (%s)\n", full_mark ? "full" : "minor");
 }
 
