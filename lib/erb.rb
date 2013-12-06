@@ -252,7 +252,8 @@ require "cgi/util"
 # * Amrita (smart at producing HTML/XML);
 # * cs/Template (written in C for speed);
 # * RDoc, distributed with Ruby, uses its own template engine, which can be reused elsewhere;
-# * and others; search the RAA.
+# * and others; search {RubyGems.org}[https://rubygems.org/] or
+#   {The Ruby Toolbox}[https://www.ruby-toolbox.com/].
 #
 # Rails, the web application framework, uses ERB to create views.
 #
