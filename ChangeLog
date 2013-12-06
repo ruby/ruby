@@ -1,3 +1,7 @@
+Fri Dec  6 19:08:48 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (atomic_sub_nounderflow): not 0 but val itself.
+
 Fri Dec  6 18:37:11 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_objspace_alloc, Init_heap): initialize

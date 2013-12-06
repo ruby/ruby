@@ -5816,7 +5816,7 @@ atomic_sub_nounderflow(size_t *var, size_t sub)
 
     while (1) {
 	size_t val = *var;
-	if (val < sub) sub = 0;
+	if (val < sub) sub = val;
 	if (ATOMIC_SIZE_CAS(*var, val, val-sub) == val) break;
     }
 }
