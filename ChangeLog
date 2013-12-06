@@ -1,6 +1,6 @@
 Fri Dec  6 15:24:30 2013  Koichi Sasada  <ko1@atdot.net>
 
-	* gc.c (gc_start_internal, rb_gc): do not need 
+	* gc.c (gc_start_internal, rb_gc): do not need
 	  heap_pages_free_unused_pages() here.
 	  It was done in after_sweep().
 
