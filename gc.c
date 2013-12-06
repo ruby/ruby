@@ -5808,6 +5808,18 @@ enum memop_type {
     MEMOP_TYPE_REALLOC = 3
 };
 
+static inline void
+atomic_sub_nounderflow(size_t *var, size_t sub)
+{
+    if (sub == 0) return;
+
+    while (1) {
+	size_t val = *var;
+	if (val < sub) sub = 0;
+	if (ATOMIC_SIZE_CAS(*var, val, val-sub) == val) break;
+    }
+}
+
 static void
 objspace_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, size_t old_size, enum memop_type type)
 {
@@ -5815,15 +5827,7 @@ objspace_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, si
 	ATOMIC_SIZE_ADD(malloc_increase, new_size - old_size);
     }
     else {
-	size_t sub = old_size - new_size;
-	if (sub != 0) {
-	  retry_sub:;
-	    {
-		size_t old_increase = malloc_increase;
-		size_t new_increase = old_increase > sub ? old_increase - sub : 0;
-		if (ATOMIC_SIZE_CAS(malloc_increase, old_increase, new_increase) != old_increase) goto retry_sub;
-	    }
-	}
+	atomic_sub_nounderflow(&malloc_increase, old_size - new_size);
     }
 
     if (type == MEMOP_TYPE_MALLOC) {
@@ -5848,21 +5852,14 @@ objspace_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, si
     }
     else {
 	size_t dec_size = old_size - new_size;
-	while (1) {
-	    size_t allocated_size = objspace->malloc_params.allocated_size;
-	    size_t next_allocated_size;
+	size_t allocated_size = objspace->malloc_params.allocated_size;
 
-	    if (allocated_size > dec_size) {
-		next_allocated_size = allocated_size - dec_size;
-	    }
-	    else {
 #if MALLOC_ALLOCATED_SIZE_CHECK
-		rb_bug("objspace_malloc_increase: underflow malloc_params.allocated_size.");
-#endif
-		next_allocated_size = 0;
-	    }
-	    if (ATOMIC_SIZE_CAS(objspace->malloc_params.allocated_size, allocated_size, next_allocated_size) == allocated_size) break;
+	if (allocated_size < dec_size) {
+	    rb_bug("objspace_malloc_increase: underflow malloc_params.allocated_size.");
 	}
+#endif
+	atomic_sub_nounderflow(objspace->malloc_params.allocated_size, dec_size);
     }
 
     if (0) fprintf(stderr, "incraese - ptr: %p, type: %s, new_size: %d, old_size: %d\n",
@@ -5877,17 +5874,16 @@ objspace_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, si
 	ATOMIC_SIZE_INC(objspace->malloc_params.allocations);
 	break;
       case MEMOP_TYPE_FREE:
-	while (1) {
+	{
 	    size_t allocations = objspace->malloc_params.allocations;
 	    if (allocations > 0) {
-		if (ATOMIC_SIZE_CAS(objspace->malloc_params.allocations, allocations, allocations - 1) == allocations) break;
+		atomic_sub_nounderflow(objspace->malloc_params.allocations, 1);
 	    }
-	    else {
 #if MALLOC_ALLOCATED_SIZE_CHECK
+	    else {
 		assert(objspace->malloc_params.allocations > 0);
-#endif
-		break;
 	    }
+#endif
 	}
 	break;
       case MEMOP_TYPE_REALLOC: /* ignore */ break;
