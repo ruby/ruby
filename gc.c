@@ -4992,10 +4992,53 @@ Init_stack(volatile VALUE *addr)
  *     GC.start                     -> nil
  *     GC.garbage_collect           -> nil
  *     ObjectSpace.garbage_collect  -> nil
+ *     GC.start(full_mark: false)   -> nil
  *
  *  Initiates garbage collection, unless manually disabled.
  *
+ *  This method is defined with keyword arguments that default to true:
+ *
+ *     def GC.start(full_mark: true, immediate_sweep: true) end
+ *
+ *  Use full_mark: false to perform a minor GC.
+ *  Use immediate_sweep: false to defer sweeping (use lazy sweep).
  */
+
+static VALUE
+gc_start_internal(int argc, VALUE *argv, VALUE self)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    int full_mark = TRUE, immediate_sweep = TRUE;
+    VALUE opt = Qnil;
+    VALUE kwval;
+    static ID keyword_ids[2];
+    static VALUE keyword_syms[2];
+
+    rb_scan_args(argc, argv, "0:", &opt);
+    if (NIL_P(opt)) {
+	return rb_gc_start();
+    }
+
+    if (!keyword_ids[0]) {
+	keyword_ids[0] = rb_intern("full_mark");
+	keyword_ids[1] = rb_intern("immediate_sweep");
+	keyword_syms[0] = ID2SYM(keyword_ids[0]);
+	keyword_syms[1] = ID2SYM(keyword_ids[1]);
+    }
+
+    rb_check_keyword_opthash(opt, keyword_ids, 0, 2);
+
+    if ((kwval = rb_hash_lookup2(opt, keyword_syms[0], Qundef)) != Qundef)
+	full_mark = RTEST(kwval);
+    if ((kwval = rb_hash_lookup2(opt, keyword_syms[1], Qundef)) != Qundef)
+	immediate_sweep = RTEST(kwval);
+
+    garbage_collect(objspace, full_mark, immediate_sweep, GPR_FLAG_METHOD);
+    if (!finalizing) finalize_deferred(objspace);
+    heap_pages_free_unused_pages(objspace);
+
+    return Qnil;
+}
 
 VALUE
 rb_gc_start(void)
@@ -7206,7 +7249,7 @@ Init_GC(void)
     VALUE gc_constants;
 
     rb_mGC = rb_define_module("GC");
-    rb_define_singleton_method(rb_mGC, "start", rb_gc_start, 0);
+    rb_define_singleton_method(rb_mGC, "start", gc_start_internal, -1);
     rb_define_singleton_method(rb_mGC, "enable", rb_gc_enable, 0);
     rb_define_singleton_method(rb_mGC, "disable", rb_gc_disable, 0);
     rb_define_singleton_method(rb_mGC, "stress", gc_stress_get, 0);
@@ -7214,7 +7257,7 @@ Init_GC(void)
     rb_define_singleton_method(rb_mGC, "count", gc_count, 0);
     rb_define_singleton_method(rb_mGC, "stat", gc_stat, -1);
     rb_define_singleton_method(rb_mGC, "latest_gc_info", gc_latest_gc_info, -1);
-    rb_define_method(rb_mGC, "garbage_collect", rb_gc_start, 0);
+    rb_define_method(rb_mGC, "garbage_collect", gc_start_internal, -1);
 
     gc_constants = rb_hash_new();
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_SIZE")), SIZET2NUM(sizeof(RVALUE)));
@@ -7236,7 +7279,7 @@ Init_GC(void)
 
     rb_mObjSpace = rb_define_module("ObjectSpace");
     rb_define_module_function(rb_mObjSpace, "each_object", os_each_obj, -1);
-    rb_define_module_function(rb_mObjSpace, "garbage_collect", rb_gc_start, 0);
+    rb_define_module_function(rb_mObjSpace, "garbage_collect", gc_start_internal, -1);
 
     rb_define_module_function(rb_mObjSpace, "define_finalizer", define_final, -1);
     rb_define_module_function(rb_mObjSpace, "undefine_finalizer", undefine_final, 1);

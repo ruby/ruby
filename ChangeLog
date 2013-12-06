@@ -1,3 +1,12 @@
+Fri Dec  6 14:05:19 2013  Aman Gupta <ruby@tmm1.net>
+
+	* gc.c (gc_start_internal): GC.start() now accepts two optional
+	  keyword arguments. These can be used to disable full_mark (minor
+	  mark only) or disable immediate_sweep (use lazy sweep). These new
+	  options are useful for benchmarking GC behavior, or performing minor
+	  GC out-of-band.
+	* test/ruby/test_gc.rb (class TestGc): tests for new options.
+
 Fri Dec  6 11:51:28 2013  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/erb.rb: [DOC] fix broken link, Use rubygems.org and www.ruby-toolbox.com instead of RAA.

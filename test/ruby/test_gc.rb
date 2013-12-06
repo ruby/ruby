@@ -48,6 +48,22 @@ class TestGc < Test::Unit::TestCase
     GC.enable
   end
 
+  def test_start_full_mark
+    GC.start(full_mark: false)
+    assert_nil GC.latest_gc_info(:major_by)
+
+    GC.start(full_mark: true)
+    assert_not_nil GC.latest_gc_info(:major_by)
+  end
+
+  def test_start_immediate_sweep
+    GC.start(immediate_sweep: false)
+    assert_equal false, GC.latest_gc_info(:immediate_sweep)
+
+    GC.start(immediate_sweep: true)
+    assert_equal true, GC.latest_gc_info(:immediate_sweep)
+  end
+
   def test_count
     c = GC.count
     GC.start
