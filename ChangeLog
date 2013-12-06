@@ -1,4 +1,4 @@
-Sat Dec  7 08:25:00 2013  Richo Healy  <richo@psych0tik.net>
+Sat Dec  7 08:25:00 2013  Richo Healey  <richo@psych0tik.net>
 
 	* test/ruby/test_struct.rb: Add regression test for question marks and
 	  bangs in struct members. [Closes GH-468]
