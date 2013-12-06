@@ -2889,15 +2889,9 @@ gc_before_sweep(rb_objspace_t *objspace)
 	    objspace->rgengc.need_major_gc = GPR_FLAG_MAJOR_BY_OLDMALLOC;;
 	    objspace->rgengc.oldmalloc_increase_limit =
 	      (size_t)(objspace->rgengc.oldmalloc_increase_limit * gc_params.oldmalloc_limit_growth_factor);
+
 	    if (objspace->rgengc.oldmalloc_increase_limit > gc_params.oldmalloc_limit_max) {
 		objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_max;
-	    }
-	}
-	else {
-	    objspace->rgengc.oldmalloc_increase_limit =
-	      (size_t)(objspace->rgengc.oldmalloc_increase_limit / ((gc_params.oldmalloc_limit_growth_factor - 1)/10 + 1));
-	    if (objspace->rgengc.oldmalloc_increase_limit < gc_params.oldmalloc_limit_min) {
-		objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
 	    }
 	}
 
@@ -2909,6 +2903,14 @@ gc_before_sweep(rb_objspace_t *objspace)
     else {
 	/* major GC */
 	objspace->rgengc.oldmalloc_increase = 0;
+
+	if ((objspace->profile.latest_gc_info & GPR_FLAG_MAJOR_BY_OLDMALLOC) == 0) {
+	    objspace->rgengc.oldmalloc_increase_limit =
+	      (size_t)(objspace->rgengc.oldmalloc_increase_limit / ((gc_params.oldmalloc_limit_growth_factor - 1)/10 + 1));
+	    if (objspace->rgengc.oldmalloc_increase_limit < gc_params.oldmalloc_limit_min) {
+		objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
+	    }
+	}
     }
 
 #endif
@@ -3619,11 +3621,6 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 		/* infant -> old */
 		objspace->rgengc.old_object_count++;
 		objspace->rgengc.parent_object_is_old = TRUE;
-
-#if RGENGC_ESTIMATE_OLDMALLOC
-		objspace->rgengc.oldmalloc_increase += obj_memsize_of((VALUE)obj, FALSE);
-#endif
-
 #endif
 		rgengc_report(3, objspace, "gc_mark_children: promote infant -> young %p (%s).\n", (void *)obj, obj_type_name((VALUE)obj));
 	    }
@@ -3635,9 +3632,6 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 		    /* young -> old */
 		    RVALUE_PROMOTE_YOUNG((VALUE)obj);
 		    objspace->rgengc.old_object_count++;
-#if RGENGC_ESTIMATE_OLDMALLOC
-		    objspace->rgengc.oldmalloc_increase += obj_memsize_of((VALUE)obj, FALSE);
-#endif
 		    rgengc_report(3, objspace, "gc_mark_children: promote young -> old %p (%s).\n", (void *)obj, obj_type_name((VALUE)obj));
 		}
 		else {
@@ -4867,7 +4861,7 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
     if (immediate_sweep) reason |= GPR_FLAG_IMMEDIATE_SWEEP;
     full_mark = (reason & GPR_FLAG_MAJOR_MASK) ? TRUE : FALSE;
 
-    if (GC_NOTIFY) fprintf(stderr, "start garbage_collect(%d, %d, %d)\n", full_mark, immediate_sweep, reason);
+    if (GC_NOTIFY)  fprintf(stderr, "start garbage_collect(%d, %d, %d)\n", full_mark, immediate_sweep, reason);
 
     objspace->profile.count++;
     objspace->profile.latest_gc_info = reason;
@@ -5826,9 +5820,11 @@ objspace_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, si
 {
     if (new_size > old_size) {
 	ATOMIC_SIZE_ADD(malloc_increase, new_size - old_size);
+	ATOMIC_SIZE_ADD(objspace->rgengc.oldmalloc_increase, new_size - old_size);
     }
     else {
 	atomic_sub_nounderflow(&malloc_increase, old_size - new_size);
+	atomic_sub_nounderflow(&objspace->rgengc.oldmalloc_increase, old_size - new_size);
     }
 
     if (type == MEMOP_TYPE_MALLOC) {

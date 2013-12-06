@@ -1,3 +1,11 @@
+Fri Dec  6 19:18:02 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: change oldmalloc meaning.
+	  Increase oldmalloc_increase with malloc_increase
+	  instead of using obj_memsize_of().
+
+	  This change will avoid the danger of memory full without major GC.
+
 Fri Dec  6 19:08:48 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (atomic_sub_nounderflow): not 0 but val itself.
