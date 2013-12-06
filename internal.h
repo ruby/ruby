@@ -775,7 +775,7 @@ VALUE rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, int *state
 
 /* vm_insnhelper.c */
 VALUE rb_equal_opt(VALUE obj1, VALUE obj2);
-void rb_check_keyword_opthash(VALUE keyword_hash, const ID *table, int required, int optional);
+int rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, VALUE *);
 VALUE rb_extract_keywords(VALUE *orighash);
 
 /* vm_method.c */

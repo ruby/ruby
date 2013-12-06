@@ -1,3 +1,12 @@
+Fri Dec  6 17:10:44 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (rb_get_kwargs): get keyword argument values from an
+	  option hash, not only checking keys.
+
+	* dir.c (dir_initialize): use rb_get_kwargs.
+
+	* gc.c (gc_start_internal): ditto.
+
 Fri Dec  6 16:47:45 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-brace-to-do-end): split single line block.

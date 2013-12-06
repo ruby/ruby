@@ -1113,17 +1113,27 @@ rb_extract_keywords(VALUE *orighash)
     return parthash[0];
 }
 
-void
-rb_check_keyword_opthash(VALUE keyword_hash, const ID *table, int required, int optional)
+int
+rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, VALUE *values)
 {
     int i = 0, j;
     VALUE missing = Qnil;
 
+    if (values) {
+	for (j = 0; j < required + optional; j++) {
+	    values[j] = Qundef;
+	}
+    }
     if (required) {
 	for (; i < required; i++) {
 	    VALUE keyword = ID2SYM(table[i]);
-	    if (keyword_hash && st_lookup(rb_hash_tbl_raw(keyword_hash), (st_data_t)keyword, 0))
-		continue;
+	    if (keyword_hash) {
+		st_data_t val;
+		if (st_lookup(rb_hash_tbl_raw(keyword_hash), (st_data_t)keyword, &val)) {
+		    if (values) values[i] = (VALUE)val;
+		    continue;
+		}
+	    }
 	    if (NIL_P(missing)) missing = rb_ary_tmp_new(1);
 	    rb_ary_push(missing, keyword);
 	}
@@ -1133,12 +1143,17 @@ rb_check_keyword_opthash(VALUE keyword_hash, const ID *table, int required, int 
     }
     if (optional && keyword_hash) {
 	for (j = i, i = 0; i < optional; i++) {
-	    if (st_lookup(rb_hash_tbl_raw(keyword_hash), ID2SYM(table[required+i]), 0)) j++;
+	    st_data_t val;
+	    if (st_lookup(rb_hash_tbl_raw(keyword_hash), ID2SYM(table[required+i]), &val)) {
+		if (values) values[required+i] = (VALUE)val;
+		j++;
+	    }
 	}
 	if (RHASH_SIZE(keyword_hash) > (unsigned int)j) {
 	    unknown_keyword_error(keyword_hash, table, required+optional);
 	}
     }
+    return j;
 }
 
 static inline int
@@ -1155,11 +1170,12 @@ vm_callee_setup_keyword_arg(const rb_iseq_t *iseq, int argc, int m, VALUE *orig_
 	else {
 	    orig_argv[argc-1] = orig_hash;
 	}
-	rb_check_keyword_opthash(keyword_hash, iseq->arg_keyword_table, iseq->arg_keyword_required,
-				 iseq->arg_keyword_check ? iseq->arg_keywords - iseq->arg_keyword_required : 0);
+	rb_get_kwargs(keyword_hash, iseq->arg_keyword_table, iseq->arg_keyword_required,
+		      iseq->arg_keyword_check ? iseq->arg_keywords - iseq->arg_keyword_required : 0,
+		      NULL);
     }
     else if (iseq->arg_keyword_required) {
-	rb_check_keyword_opthash(0, iseq->arg_keyword_table, iseq->arg_keyword_required, 0);
+	rb_get_kwargs(0, iseq->arg_keyword_table, iseq->arg_keyword_required, 0, NULL);
     }
     else {
 	keyword_hash = rb_hash_new();

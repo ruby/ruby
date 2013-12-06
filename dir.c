@@ -436,9 +436,8 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
 
     if (!NIL_P(opt)) {
 	VALUE enc;
-	rb_check_keyword_opthash(opt, keyword_ids, 0, 1);
-	enc = rb_hash_aref(opt, ID2SYM(keyword_ids[0]));
-	if (!NIL_P(enc)) {
+	rb_get_kwargs(opt, keyword_ids, 0, 1, &enc);
+	if (enc != Qundef && !NIL_P(enc)) {
 	    fsenc = rb_to_encoding(enc);
 	}
     }
