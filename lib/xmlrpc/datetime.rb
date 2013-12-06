@@ -9,7 +9,7 @@ require "date"
 module XMLRPC # :nodoc:
 
 # This class is important to handle XMLRPC +dateTime.iso8601+ values,
-# correcly, because normal UNIX-dates, ie: Date, only handle dates
+# correctly, because normal UNIX-dates, ie: Date, only handle dates
 # from year 1970 on, and ruby's native Time class handles dates without the
 # time component.
 #
