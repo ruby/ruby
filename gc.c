@@ -5039,7 +5039,6 @@ gc_start_internal(int argc, VALUE *argv, VALUE self)
 
     garbage_collect(objspace, full_mark, immediate_sweep, GPR_FLAG_METHOD);
     if (!finalizing) finalize_deferred(objspace);
-    heap_pages_free_unused_pages(objspace);
 
     return Qnil;
 }
@@ -5055,9 +5054,8 @@ void
 rb_gc(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    garbage_collect(objspace, TRUE, TRUE, GPR_FLAG_METHOD);
+    garbage_collect(objspace, TRUE, TRUE, GPR_FLAG_CAPI);
     if (!finalizing) finalize_deferred(objspace);
-    heap_pages_free_unused_pages(objspace);
 }
 
 int

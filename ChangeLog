@@ -1,3 +1,11 @@
+Fri Dec  6 15:24:30 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_start_internal, rb_gc): do not need 
+	  heap_pages_free_unused_pages() here.
+	  It was done in after_sweep().
+
+	* gc.c (rb_gc): The reason is now GPR_FLAG_CAPI.
+
 Fri Dec  6 14:05:19 2013  Aman Gupta <ruby@tmm1.net>
 
 	* gc.c (gc_start_internal): GC.start() now accepts two optional
