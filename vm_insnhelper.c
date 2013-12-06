@@ -143,29 +143,6 @@ argument_error(const rb_iseq_t *iseq, int miss_argc, int min_argc, int max_argc)
     rb_exc_raise(exc);
 }
 
-NORETURN(static void keyword_error(const char *error, VALUE keys));
-static void
-keyword_error(const char *error, VALUE keys)
-{
-    const char *msg = RARRAY_LEN(keys) == 1 ? "" : "s";
-    keys = rb_ary_join(keys, rb_usascii_str_new2(", "));
-    rb_raise(rb_eArgError, "%s keyword%s: %"PRIsVALUE, error, msg, keys);
-}
-
-NORETURN(static void unknown_keyword_error(VALUE hash, const ID *table, int keywords));
-static void
-unknown_keyword_error(VALUE hash, const ID *table, int keywords)
-{
-    VALUE keys;
-    int i;
-    for (i = 0; i < keywords; i++) {
-	rb_hash_delete(hash, ID2SYM(table[i]));
-    }
-    keys = rb_funcall(hash, rb_intern("keys"), 0, 0);
-    if (!RB_TYPE_P(keys, T_ARRAY)) rb_raise(rb_eArgError, "unknown keyword");
-    keyword_error("unknown", keys);
-}
-
 void
 rb_error_arity(int argc, int min, int max)
 {
@@ -1085,75 +1062,6 @@ vm_caller_setup_args(const rb_thread_t *th, rb_control_frame_t *cfp, rb_call_inf
 	    ci->argc += i-1;
 	}
     }
-}
-
-static int
-separate_symbol(st_data_t key, st_data_t value, st_data_t arg)
-{
-    VALUE *kwdhash = (VALUE *)arg;
-
-    if (!SYMBOL_P(key)) kwdhash++;
-    if (!*kwdhash) *kwdhash = rb_hash_new();
-    rb_hash_aset(*kwdhash, (VALUE)key, (VALUE)value);
-    return ST_CONTINUE;
-}
-
-VALUE
-rb_extract_keywords(VALUE *orighash)
-{
-    VALUE parthash[2] = {0, 0};
-    VALUE hash = *orighash;
-
-    if (RHASH_EMPTY_P(hash)) {
-	*orighash = 0;
-	return hash;
-    }
-    st_foreach(rb_hash_tbl_raw(hash), separate_symbol, (st_data_t)&parthash);
-    *orighash = parthash[1];
-    return parthash[0];
-}
-
-int
-rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, VALUE *values)
-{
-    int i = 0, j;
-    VALUE missing = Qnil;
-
-    if (values) {
-	for (j = 0; j < required + optional; j++) {
-	    values[j] = Qundef;
-	}
-    }
-    if (required) {
-	for (; i < required; i++) {
-	    VALUE keyword = ID2SYM(table[i]);
-	    if (keyword_hash) {
-		st_data_t val;
-		if (st_lookup(rb_hash_tbl_raw(keyword_hash), (st_data_t)keyword, &val)) {
-		    if (values) values[i] = (VALUE)val;
-		    continue;
-		}
-	    }
-	    if (NIL_P(missing)) missing = rb_ary_tmp_new(1);
-	    rb_ary_push(missing, keyword);
-	}
-	if (!NIL_P(missing)) {
-	    keyword_error("missing", missing);
-	}
-    }
-    if (optional && keyword_hash) {
-	for (j = i, i = 0; i < optional; i++) {
-	    st_data_t val;
-	    if (st_lookup(rb_hash_tbl_raw(keyword_hash), ID2SYM(table[required+i]), &val)) {
-		if (values) values[required+i] = (VALUE)val;
-		j++;
-	    }
-	}
-	if (RHASH_SIZE(keyword_hash) > (unsigned int)j) {
-	    unknown_keyword_error(keyword_hash, table, required+optional);
-	}
-    }
-    return j;
 }
 
 static inline int
