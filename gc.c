@@ -5031,9 +5031,9 @@ gc_start_internal(int argc, VALUE *argv, VALUE self)
 	rb_check_keyword_opthash(opt, keyword_ids, 0, 2);
 
 	if ((kwval = rb_hash_lookup2(opt, keyword_syms[0], Qundef)) != Qundef)
-	  full_mark = RTEST(kwval);
+	    full_mark = RTEST(kwval);
 	if ((kwval = rb_hash_lookup2(opt, keyword_syms[1], Qundef)) != Qundef)
-	  immediate_sweep = RTEST(kwval);
+	    immediate_sweep = RTEST(kwval);
     }
 
     garbage_collect(objspace, full_mark, immediate_sweep, GPR_FLAG_METHOD);
