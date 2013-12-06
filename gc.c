@@ -5019,23 +5019,22 @@ gc_start_internal(int argc, VALUE *argv, VALUE self)
     static VALUE keyword_syms[2];
 
     rb_scan_args(argc, argv, "0:", &opt);
-    if (NIL_P(opt)) {
-	return rb_gc_start();
+
+    if (!NIL_P(opt)) {
+	if (!keyword_ids[0]) {
+	    keyword_ids[0] = rb_intern("full_mark");
+	    keyword_ids[1] = rb_intern("immediate_sweep");
+	    keyword_syms[0] = ID2SYM(keyword_ids[0]);
+	    keyword_syms[1] = ID2SYM(keyword_ids[1]);
+	}
+
+	rb_check_keyword_opthash(opt, keyword_ids, 0, 2);
+
+	if ((kwval = rb_hash_lookup2(opt, keyword_syms[0], Qundef)) != Qundef)
+	  full_mark = RTEST(kwval);
+	if ((kwval = rb_hash_lookup2(opt, keyword_syms[1], Qundef)) != Qundef)
+	  immediate_sweep = RTEST(kwval);
     }
-
-    if (!keyword_ids[0]) {
-	keyword_ids[0] = rb_intern("full_mark");
-	keyword_ids[1] = rb_intern("immediate_sweep");
-	keyword_syms[0] = ID2SYM(keyword_ids[0]);
-	keyword_syms[1] = ID2SYM(keyword_ids[1]);
-    }
-
-    rb_check_keyword_opthash(opt, keyword_ids, 0, 2);
-
-    if ((kwval = rb_hash_lookup2(opt, keyword_syms[0], Qundef)) != Qundef)
-	full_mark = RTEST(kwval);
-    if ((kwval = rb_hash_lookup2(opt, keyword_syms[1], Qundef)) != Qundef)
-	immediate_sweep = RTEST(kwval);
 
     garbage_collect(objspace, full_mark, immediate_sweep, GPR_FLAG_METHOD);
     if (!finalizing) finalize_deferred(objspace);

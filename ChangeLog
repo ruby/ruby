@@ -1,3 +1,7 @@
+Fri Dec  6 16:16:30 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_start_internal): do not use rb_gc_start() and rb_gc().
+
 Fri Dec  6 15:24:30 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_start_internal, rb_gc): do not need
