@@ -290,6 +290,12 @@ module TestStruct
     assert_true(o.b?)
   end
 
+  def test_bang_mark_in_member
+    klass = @Struct.new(:a, :b!)
+    o = klass.new("test", true)
+    assert_true(o.b!)
+  end
+
   class TopStruct < Test::Unit::TestCase
     include TestStruct
 
