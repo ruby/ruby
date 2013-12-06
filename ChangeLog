@@ -1,3 +1,7 @@
+Fri Dec  6 10:50:54 2013  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/webrick/httprequest.rb: [DOC] Fix broken link of CGI specification by @udzura [fix GH-466]
+
 Thu Dec  6 01:27:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (GetVpValueWithPrec):
