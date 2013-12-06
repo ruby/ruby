@@ -1,3 +1,10 @@
+Fri Dec  6 18:37:11 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_objspace_alloc, Init_heap): initialize
+	  oldmalloc_increase_limit at Init_heap.
+
+	  rb_objspace_alloc() is not called on some platforms.
+
 Fri Dec  6 18:33:39 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (garbage_collect_body): bug fix.

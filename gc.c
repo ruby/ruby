@@ -867,9 +867,6 @@ rb_objspace_alloc(void)
     ruby_gc_stress = ruby_initial_gc_stress;
 
     malloc_limit = gc_params.malloc_limit_min;
-#if RGENGC_ESTIMATE_OLDMALLOC
-    objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
-#endif
 
     return objspace;
 }
@@ -1648,6 +1645,10 @@ void
 Init_heap(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
+
+#if RGENGC_ESTIMATE_OLDMALLOC
+    objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
+#endif
 
     heap_add_pages(objspace, heap_eden, gc_params.heap_init_slots / HEAP_OBJ_LIMIT);
 
