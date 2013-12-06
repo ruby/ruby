@@ -4738,6 +4738,16 @@ rb_thread_shield_destroy(VALUE self)
 /* variables for recursive traversals */
 static ID recursive_key;
 
+extern const struct st_hash_type st_hashtype_num;
+
+static VALUE
+ident_hash_new(void)
+{
+    VALUE hash = rb_hash_new();
+    rb_hash_tbl_raw(hash)->type = &st_hashtype_num;
+    return hash;
+}
+
 /*
  * Returns the current "recursive list" used to detect recursion.
  * This list is a hash table, unique for the current thread and for
@@ -4751,7 +4761,7 @@ recursive_list_access(void)
     VALUE sym = ID2SYM(rb_frame_this_func());
     VALUE list;
     if (NIL_P(hash) || !RB_TYPE_P(hash, T_HASH)) {
-	hash = rb_hash_new();
+	hash = ident_hash_new();
 	rb_thread_local_aset(rb_thread_current(), recursive_key, hash);
 	list = Qnil;
     }
@@ -4759,7 +4769,7 @@ recursive_list_access(void)
 	list = rb_hash_aref(hash, sym);
     }
     if (NIL_P(list) || !RB_TYPE_P(list, T_HASH)) {
-	list = rb_hash_new();
+	list = ident_hash_new();
 	rb_hash_aset(hash, sym, list);
     }
     return list;
