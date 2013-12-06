@@ -4847,8 +4847,8 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
 	    reason |= GPR_FLAG_MAJOR_BY_NOFREE;
 	}
 	if (objspace->rgengc.need_major_gc) {
-	    objspace->rgengc.need_major_gc = GPR_FLAG_NONE;
 	    reason |= objspace->rgengc.need_major_gc;
+	    objspace->rgengc.need_major_gc = GPR_FLAG_NONE;
 	}
 	if (objspace->rgengc.remembered_shady_object_count > objspace->rgengc.remembered_shady_object_limit) {
 	    reason |= GPR_FLAG_MAJOR_BY_SHADY;
