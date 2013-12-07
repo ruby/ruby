@@ -77,7 +77,7 @@ class Tk::Canvas<TkWindow
     if tag.kind_of?(TkcItem) || tag.kind_of?(TkcTag)
       tag.id
     else
-      tag  # maybe an Array of configure paramters
+      tag  # maybe an Array of configure parameters
     end
   end
   private :tagid

@@ -50,7 +50,7 @@ class BasicServer
   # method should be called from a subclass indirectly by a +super+ call
   # in the initialize method.
   #
-  # The paramter +class_delim+ is used by add_handler, see
+  # The parameter +class_delim+ is used by add_handler, see
   # XMLRPC::BasicServer#add_handler, when an object is added as a handler, to
   # delimit the object-prefix and the method-name.
   def initialize(class_delim=".")

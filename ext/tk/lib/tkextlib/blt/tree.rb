@@ -670,7 +670,7 @@ module Tk::BLT
           tag.kind_of?(Tk::BLT::Tree::Trace)
         tag.id
       else
-        tag  # maybe an Array of configure paramters
+        tag  # maybe an Array of configure parameters
       end
     end
 
