@@ -3796,8 +3796,8 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 
 	  case NODE_CREF:
 	    gc_mark(objspace, obj->as.node.nd_refinements);
-	    gc_mark(objspace, (VALUE)obj->as.node.u1.node);
-	    ptr = (VALUE)obj->as.node.u3.node;
+	    gc_mark(objspace, (VALUE)obj->as.node.nd_clss);
+	    ptr = (VALUE)obj->as.node.nd_next;
 	    goto again;
 
 	  default:		/* unlisted NODE */
