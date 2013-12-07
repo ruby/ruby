@@ -1092,6 +1092,15 @@ rb_hash_reject_bang(VALUE hash)
     return hash;
 }
 
+static int
+reject_i(VALUE key, VALUE value, VALUE hash)
+{
+    if (!RTEST(rb_yield_values(2, key, value))) {
+	rb_hash_aset(hash, key, value);
+    }
+    return ST_CONTINUE;
+}
+
 /*
  *  call-seq:
  *     hsh.reject {| key, value | block }  -> a_hash
@@ -1106,7 +1115,14 @@ rb_hash_reject_bang(VALUE hash)
 static VALUE
 rb_hash_reject(VALUE hash)
 {
-    return rb_hash_delete_if(rb_obj_dup(hash));
+    VALUE ret;
+
+    RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
+    ret = hash_alloc(rb_obj_class(hash));
+    if (!RHASH_EMPTY_P(hash)) {
+	rb_hash_foreach(hash, reject_i, ret);
+    }
+    return ret;
 }
 
 /*

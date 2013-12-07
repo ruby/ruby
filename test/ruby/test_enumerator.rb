@@ -501,9 +501,13 @@ class TestEnumerator < Test::Unit::TestCase
 
   def test_size_for_enum_created_from_hash
     h = {a: 1, b: 2, c: 3}
-    %i[delete_if reject! select select! keep_if each each_key each_pair].each do |method|
-      assert_equal 3, h.send(method).size
-    end
+    methods = %i[delete_if reject reject! select select! keep_if each each_key each_pair]
+    enums = methods.map {|method| h.send(method)}
+    s = enums.group_by(&:size)
+    assert_equal([3], s.keys, ->{s.reject!{|k| k==3}.inspect})
+    h[:d] = 4
+    s = enums.group_by(&:size)
+    assert_equal([4], s.keys, ->{s.reject!{|k| k==4}.inspect})
   end
 
   def test_size_for_enum_created_from_env

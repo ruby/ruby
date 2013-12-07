@@ -1,3 +1,9 @@
+Sat Dec  7 11:15:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_reject): copy unrejected elements only to new hash,
+	  so that the change on the original receiver can affect.
+	  [ruby-core:58914] [Bug #9223]
+
 Sat Dec  7 08:25:00 2013  Richo Healey  <richo@psych0tik.net>
 
 	* test/ruby/test_struct.rb: Add regression test for question marks and
