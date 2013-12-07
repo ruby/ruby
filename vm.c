@@ -2237,6 +2237,30 @@ m_core_hash_merge_kwd(int argc, VALUE *argv, VALUE recv)
     return hash;
 }
 
+/*
+ *  call-seq:
+ *      RubyVM.method_serial -> fixnum
+ *
+ *  Calls instruction helper GET_METHOD_SERIAL(): returns integer value.
+ */
+VALUE
+rubyvm_s_method_serial(void)
+{
+    return SIZET2NUM(GET_METHOD_SERIAL());
+}
+
+/*
+ *  call-seq:
+ *      RubyVM.constant_serial -> fixnum
+ *
+ *  Calls instruction helper GET_CONSTANT_SERIAL(): returns integer value.
+ */
+VALUE
+rubyvm_s_constant_serial(void)
+{
+    return SIZET2NUM(GET_CONSTANT_SERIAL());
+}
+
 extern VALUE *rb_gc_stack_start;
 extern size_t rb_gc_stack_maxsize;
 #ifdef __ia64
@@ -2295,6 +2319,8 @@ Init_VM(void)
     rb_cRubyVM = rb_define_class("RubyVM", rb_cObject);
     rb_undef_alloc_func(rb_cRubyVM);
     rb_undef_method(CLASS_OF(rb_cRubyVM), "new");
+    rb_define_singleton_method(rb_cRubyVM, "method_serial", rubyvm_s_method_serial, 0);
+    rb_define_singleton_method(rb_cRubyVM, "constant_serial", rubyvm_s_constant_serial, 0);
 
     /* FrozenCore (hidden) */
     fcore = rb_class_new(rb_cBasicObject);
