@@ -286,14 +286,16 @@ module TestStruct
 
   def test_question_mark_in_member
     klass = @Struct.new(:a, :b?)
-    o = klass.new("test", true)
-    assert_predicate(o, :b?)
+    x = Object.new
+    o = klass.new("test", x)
+    assert_same(x, o.b?)
   end
 
   def test_bang_mark_in_member
     klass = @Struct.new(:a, :b!)
-    o = klass.new("test", true)
-    assert_predicate(o, :b!)
+    x = Object.new
+    o = klass.new("test", x)
+    assert_same(x, o.b!)
   end
 
   class TopStruct < Test::Unit::TestCase
