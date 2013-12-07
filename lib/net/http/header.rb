@@ -145,11 +145,11 @@ module Net::HTTPHeader
     @header.key?(key.downcase)
   end
 
-  # Returns a Hash consisting of header names and values.
+  # Returns a Hash consisting of header names and array of values.
   # e.g.
-  # {"cache-control" => "private",
-  #  "content-type" => "text/html",
-  #  "date" => "Wed, 22 Jun 2005 22:11:50 GMT"}
+  # {"cache-control" => ["private"],
+  #  "content-type" => ["text/html"],
+  #  "date" => ["Wed, 22 Jun 2005 22:11:50 GMT"]}
   def to_hash
     @header.dup
   end
