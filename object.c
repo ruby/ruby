@@ -2459,6 +2459,19 @@ rb_mod_cvar_defined(VALUE obj, VALUE iv)
     return rb_cvar_defined(obj, id);
 }
 
+/*
+ *  call-seq:
+ *     mod.singleton_class?    -> true or false
+ *
+ *  Returns <code>true</code> if <i>mod</i> is a singleton class or
+ *  <code>false</code> if it is an ordinary class or module.
+ *
+ *     class C
+ *     end
+ *     C.singleton_class?                  #=> false
+ *     C.singleton_class.singleton_class?  #=> true
+ */
+
 static VALUE
 rb_mod_singleton_p(VALUE klass)
 {
