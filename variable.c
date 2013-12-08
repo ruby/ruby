@@ -49,7 +49,7 @@ fc_path(struct fc_result *fc, ID name)
 {
     VALUE path, tmp;
 
-    path = rb_str_dup(rb_id2str(name));
+    path = rb_id2str(name);
     while (fc) {
 	st_data_t n;
 	if (fc->track == rb_cObject) break;
@@ -176,8 +176,7 @@ classname(VALUE klass, int *permanent)
 		    return Qnil;
 		}
 		if (!st_lookup(RCLASS_IV_TBL(klass), (st_data_t)tmp_classpath, &n)) {
-		    path = rb_str_dup(rb_id2str(cid));
-		    OBJ_FREEZE(path);
+		    path = rb_id2str(cid);
 		    return path;
 		}
 		*permanent = 0;
