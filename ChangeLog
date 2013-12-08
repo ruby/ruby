@@ -1,3 +1,7 @@
+Mon Dec  9 04:52:25 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* NEWS:  Update RubyGems entry with notable features.
+
 Mon Dec  9 04:43:54 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/.document:  Add syslog/lib and thread/thread.c to documentable
