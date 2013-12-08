@@ -438,6 +438,20 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(0, BigDecimal("1E-1") <=> 10**(-1), '#4825')
   end
 
+  def test_cmp_issue9192
+    bug9192 = '[ruby-core:58756] [#9192]'
+    operators = { :== => :==, :< => :>, :> => :<, :<= => :>=, :>= => :<= }
+    5.upto(8) do |i|
+      s = "706.0#{i}"
+      d = BigDecimal(s)
+      f = s.to_f
+      operators.each do |op, inv|
+        assert_equal(d.send(op, f), f.send(inv, d),
+                     "(BigDecimal(#{s.inspect}) #{op} #{s}) and (#{s} #{inv} BigDecimal(#{s.inspect})) is different #{bug9192}")
+      end
+    end
+  end
+
   def test_cmp_nan
     n1 = BigDecimal.new("1")
     BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
@@ -608,8 +622,8 @@ class TestBigDecimal < Test::Unit::TestCase
 
   def test_coerce
     a, b = BigDecimal.new("1").coerce(1.0)
-    assert_instance_of(Float, a)
-    assert_instance_of(Float, b)
+    assert_instance_of(BigDecimal, a)
+    assert_instance_of(BigDecimal, b)
     assert_equal(2, 1 + BigDecimal.new("1"), '[ruby-core:25697]')
 
     a, b = BigDecimal("1").coerce(1.quo(10))
@@ -1462,7 +1476,7 @@ class TestBigDecimal < Test::Unit::TestCase
 
   def test_BigMath_log_with_101
     # this is mainly a performance test (should be very fast, not the 0.3 s)
-    assert_in_delta(Math.log(101), BigMath.log(101, 20), 1E-20)
+    assert_in_delta(Math.log(101), BigMath.log(101, 20), 1E-15)
   end
 
   def test_BigMath_log_with_reciprocal_of_42

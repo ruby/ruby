@@ -1,3 +1,11 @@
+Sun Dec  8 20:21:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* bigdecimal.c (BigDecimal_coerce): convert a Float to a BigDecimal instead
+	  of converting the receiver to a Float.
+	  [ruby-core:58756] [Bug #9192]
+
+	* test/bigdecimal/test_bigdecimal.rb: add tests for the above change.
+
 Sun Dec  8 18:28:20 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* NEWS: [DOC] update NEWS about GC.
