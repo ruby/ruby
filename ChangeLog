@@ -1,3 +1,8 @@
+Mon Dec  9 04:43:54 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/.document:  Add syslog/lib and thread/thread.c to documentable
+	  items.  [ruby-trunk - Bug #9228]
+
 Mon Dec  9 04:28:50 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems master 096db36.  Changes include
