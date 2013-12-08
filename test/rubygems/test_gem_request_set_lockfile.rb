@@ -176,6 +176,38 @@ DEPENDENCIES
     assert_equal [dep('b', '>= 3')], git_set.specs.values.first.dependencies
   end
 
+  def test_parse_PATH
+    _, _, directory = vendor_gem
+
+    write_lockfile <<-LOCKFILE
+PATH
+  remote: #{directory}
+  specs:
+    a (1)
+
+DEPENDENCIES
+  a!
+    LOCKFILE
+
+    @lockfile.parse
+
+    assert_equal [dep('a', '= 1')], @set.dependencies
+
+    lockfile_set = @set.sets.find do |set|
+      Gem::Resolver::LockSet === set
+    end
+
+    refute lockfile_set, 'found a LockSet'
+
+    vendor_set = @set.sets.find do |set|
+      Gem::Resolver::VendorSet === set
+    end
+
+    assert vendor_set, 'could not find a VendorSet'
+
+    assert_equal %w[a-1], vendor_set.specs.values.map { |s| s.full_name }
+  end
+
   def test_parse_gem_specs_dependency
     write_lockfile <<-LOCKFILE
 GEM

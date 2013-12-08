@@ -1103,7 +1103,7 @@ module Gem
     end
 
     ##
-    # Clear default gem related varibles. It is for test
+    # Clear default gem related variables. It is for test
 
     def clear_default_specs
       @path_to_default_spec_map.clear

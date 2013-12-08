@@ -222,6 +222,8 @@ class Gem::RequestSet::Lockfile
           parse_GIT
         when 'GEM' then
           parse_GEM
+        when 'PATH' then
+          parse_PATH
         when 'PLATFORMS' then
           parse_PLATFORMS
         else
@@ -243,13 +245,14 @@ class Gem::RequestSet::Lockfile
       when :bang then
         get :bang
 
-        git_spec = @set.sets.select { |set|
-          Gem::Resolver::GitSet === set
+        spec = @set.sets.select { |set|
+          Gem::Resolver::GitSet    === set or
+          Gem::Resolver::VendorSet === set
         }.map { |set|
           set.specs[name]
         }.first
 
-        requirements << git_spec.version
+        requirements << spec.version
       when :l_paren then
         get :l_paren
 
@@ -349,6 +352,49 @@ class Gem::RequestSet::Lockfile
 
         if type == :text and column == 4 then
           last_spec = set.add_git_spec name, data, repository, revision, true
+        else
+          dependency = parse_dependency name, data
+
+          last_spec.spec.dependencies << dependency
+        end
+
+        get :r_paren
+      else
+        raise "BUG: unknown token #{peek}"
+      end
+
+      skip :newline
+    end
+
+    @set.sets << set
+  end
+
+  def parse_PATH # :nodoc:
+    get :entry, 'remote'
+    _, directory, = get :text
+
+    skip :newline
+
+    get :entry, 'specs'
+
+    skip :newline
+
+    set = Gem::Resolver::VendorSet.new
+    last_spec = nil
+
+    while not @tokens.empty? and :text == peek.first do
+      _, name, column, = get :text
+
+      case peek[0]
+      when :newline then
+        last_spec.add_dependency Gem::Dependency.new name if column == 6
+      when :l_paren then
+        get :l_paren
+
+        type, data, = get [:text, :requirement]
+
+        if type == :text and column == 4 then
+          last_spec = set.add_vendor_gem name, directory
         else
           dependency = parse_dependency name, data
 

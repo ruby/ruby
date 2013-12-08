@@ -59,7 +59,7 @@ class TestGemResolverVendorSet < Gem::TestCase
     error = Object.const_defined?(:KeyError) ? KeyError : IndexError
 
     assert_raises error do
-      @set.load_spec 'a', v(1), Gem::Platform::RUBY, nil
+      @set.load_spec 'b', v(1), Gem::Platform::RUBY, nil
     end
   end
 
