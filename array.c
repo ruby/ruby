@@ -4412,7 +4412,7 @@ rb_ary_flatten(int argc, VALUE *argv, VALUE ary)
 
 #define OPTHASH_GIVEN_P(opts) \
     (argc > 0 && !NIL_P((opts) = rb_check_hash_type(argv[argc-1])) && (--argc, 1))
-static VALUE sym_random;
+static ID id_random;
 
 #define RAND_UPTO(max) (long)rb_random_ulong_limited((randgen), (max)-1)
 
@@ -4431,14 +4431,12 @@ rb_ary_shuffle_bang(int argc, VALUE *argv, VALUE ary)
 {
     VALUE opts, randgen = rb_cRandom;
     long i, len;
-    static ID keyword_ids[1];
-
-    if (!keyword_ids[0]) {
-	keyword_ids[0] = rb_intern("random");
-    }
 
     if (OPTHASH_GIVEN_P(opts)) {
 	VALUE rnd;
+	ID keyword_ids[1];
+
+	keyword_ids[0] = id_random;
 	rb_get_kwargs(opts, keyword_ids, 0, 1, &rnd);
 	if (rnd != Qundef) {
 	    randgen = rnd;
@@ -4518,14 +4516,12 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
     VALUE opts, randgen = rb_cRandom;
     long n, len, i, j, k, idx[10];
     long rnds[numberof(idx)];
-    static ID keyword_ids[1];
-
-    if (!keyword_ids[0]) {
-	keyword_ids[0] = rb_intern("random");
-    }
 
     if (OPTHASH_GIVEN_P(opts)) {
 	VALUE rnd;
+	ID keyword_ids[1];
+
+	keyword_ids[0] = id_random;
 	rb_get_kwargs(opts, keyword_ids, 0, 1, &rnd);
 	if (rnd != Qundef) {
 	    randgen = rnd;
@@ -5702,7 +5698,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "bsearch", rb_ary_bsearch, 0);
 
     id_cmp = rb_intern("<=>");
-    sym_random = ID2SYM(rb_intern("random"));
+    id_random = rb_intern("random");
     id_div = rb_intern("div");
     id_power = rb_intern("**");
 }
