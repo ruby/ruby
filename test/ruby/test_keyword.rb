@@ -306,6 +306,7 @@ class TestKeywordArguments < Test::Unit::TestCase
       eval("def o.bar(a:,**b) [a, b]; end")
     end
     assert_raise_with_message(ArgumentError, /missing keyword/, feature7701) {o.foo}
+    assert_raise_with_message(ArgumentError, /unknown keyword/, feature7701) {o.foo(a:0, b:1)}
     assert_equal(42, o.foo(a: 42), feature7701)
     assert_equal([[:keyreq, :a]], o.method(:foo).parameters, feature7701)
 
@@ -323,6 +324,7 @@ class TestKeywordArguments < Test::Unit::TestCase
       break eval("proc {|a:| a}")
     end
     assert_raise_with_message(ArgumentError, /missing keyword/, feature7701) {b.call}
+    assert_raise_with_message(ArgumentError, /unknown keyword/, feature7701) {b.call(a:0, b:1)}
     assert_equal(42, b.call(a: 42), feature7701)
     assert_equal([[:keyreq, :a]], b.parameters, feature7701)
 

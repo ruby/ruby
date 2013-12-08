@@ -1912,8 +1912,13 @@ int
 rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, VALUE *values)
 {
     int i = 0, j;
+    int rest = 0;
     VALUE missing = Qnil;
 
+    if (optional < 0) {
+	rest = 1;
+	optional = -1-optional;
+    }
     if (values) {
 	for (j = 0; j < required + optional; j++) {
 	    values[j] = Qundef;
@@ -1945,6 +1950,8 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
 		j++;
 	    }
 	}
+    }
+    if (!rest && keyword_hash) {
 	if (RHASH_SIZE(keyword_hash) > (unsigned int)j) {
 	    unknown_keyword_error(keyword_hash, table, required+optional);
 	}

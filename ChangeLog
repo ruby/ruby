@@ -1,3 +1,11 @@
+Sun Dec  8 16:19:28 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_get_kwargs): if optional is negative, unknown
+	  keywords are allowed.
+
+	* vm_insnhelper.c (vm_callee_setup_keyword_arg): check unknown
+	  keywords.
+
 Sun Dec  8 14:55:12 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* array.c (rb_ary_shuffle_bang, rb_ary_sample): rename local variables.

@@ -1067,7 +1067,8 @@ vm_caller_setup_args(const rb_thread_t *th, rb_control_frame_t *cfp, rb_call_inf
 static inline int
 vm_callee_setup_keyword_arg(const rb_iseq_t *iseq, int argc, int m, VALUE *orig_argv, VALUE *kwd)
 {
-    VALUE keyword_hash, orig_hash;
+    VALUE keyword_hash = 0, orig_hash;
+    int optional = iseq->arg_keywords - iseq->arg_keyword_required;
 
     if (argc > m &&
 	!NIL_P(orig_hash = rb_check_hash_type(orig_argv[argc-1])) &&
@@ -1078,14 +1079,11 @@ vm_callee_setup_keyword_arg(const rb_iseq_t *iseq, int argc, int m, VALUE *orig_
 	else {
 	    orig_argv[argc-1] = orig_hash;
 	}
-	rb_get_kwargs(keyword_hash, iseq->arg_keyword_table, iseq->arg_keyword_required,
-		      iseq->arg_keyword_check ? iseq->arg_keywords - iseq->arg_keyword_required : 0,
-		      NULL);
     }
-    else if (iseq->arg_keyword_required) {
-	rb_get_kwargs(0, iseq->arg_keyword_table, iseq->arg_keyword_required, 0, NULL);
-    }
-    else {
+    rb_get_kwargs(keyword_hash, iseq->arg_keyword_table, iseq->arg_keyword_required,
+		  (iseq->arg_keyword_check ? optional : -1-optional),
+		  NULL);
+    if (!keyword_hash) {
 	keyword_hash = rb_hash_new();
     }
 
