@@ -476,7 +476,7 @@ module XMLRPC # :nodoc:
         }
       else
         # reuse the HTTP object for each call => connection alive is possible
-        # we must start connection explicitely first time so that http.request
+        # we must start connection explicitly first time so that http.request
         # does not assume that we don't want keepalive
         @http.start if not @http.started?
 
