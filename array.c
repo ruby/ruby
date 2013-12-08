@@ -4431,9 +4431,18 @@ rb_ary_shuffle_bang(int argc, VALUE *argv, VALUE ary)
 {
     VALUE opts, randgen = rb_cRandom;
     long i, len;
+    static ID keyword_ids[1];
+
+    if (!keyword_ids[0]) {
+	keyword_ids[0] = rb_intern("random");
+    }
 
     if (OPTHASH_GIVEN_P(opts)) {
-	randgen = rb_hash_lookup2(opts, sym_random, randgen);
+	VALUE random;
+	rb_get_kwargs(opts, keyword_ids, 0, 1, &random);
+	if (random != Qundef) {
+	    randgen = random;
+	}
     }
     rb_check_arity(argc, 0, 0);
     rb_ary_modify(ary);
@@ -4509,9 +4518,18 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
     VALUE opts, randgen = rb_cRandom;
     long n, len, i, j, k, idx[10];
     long rnds[numberof(idx)];
+    static ID keyword_ids[1];
+
+    if (!keyword_ids[0]) {
+	keyword_ids[0] = rb_intern("random");
+    }
 
     if (OPTHASH_GIVEN_P(opts)) {
-	randgen = rb_hash_lookup2(opts, sym_random, randgen);
+	VALUE random;
+	rb_get_kwargs(opts, keyword_ids, 0, 1, &random);
+	if (random != Qundef) {
+	    randgen = random;
+	}
     }
     len = RARRAY_LEN(ary);
     if (argc == 0) {

@@ -2085,6 +2085,13 @@ class TestArray < Test::Unit::TestCase
     100.times do
       assert_equal([0, 1, 2].shuffle, [0, 1, 2].shuffle(random: gen))
     end
+
+    assert_raise_with_message(ArgumentError, /unknown keyword/) do
+      [0, 1, 2].shuffle(xawqij: "a")
+    end
+    assert_raise_with_message(ArgumentError, /unknown keyword/) do
+      [0, 1, 2].shuffle!(xawqij: "a")
+    end
   end
 
   def test_shuffle_random
@@ -2157,6 +2164,10 @@ class TestArray < Test::Unit::TestCase
       100.times do |i|
         assert_equal(a.sample(n), a.sample(n, random: gen), "#{i}/#{n}")
       end
+    end
+
+    assert_raise_with_message(ArgumentError, /unknown keyword/) do
+      [0, 1, 2].sample(xawqij: "a")
     end
   end
 
