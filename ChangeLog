@@ -1,3 +1,8 @@
+Sun Dec  8 20:47:35 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_get_kwargs): when values is non-null, remove
+	  extracted keywords from the rest keyword argument.
+
 Sun Dec  8 20:26:54 2013  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
 
 	* common.mk (ruby.imp): avoid circular dependency on AIX
