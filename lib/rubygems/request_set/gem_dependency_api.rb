@@ -221,13 +221,7 @@ class Gem::RequestSet::GemDependencyAPI
 
     return unless (groups & @without_groups).empty?
 
-    unless source_set then
-      raise ArgumentError,
-        "duplicate source (default) for gem #{name}" if
-          @gem_sources.include? name
-
-      @gem_sources[name] = :default
-    end
+    pin_gem_source name, :default unless source_set
 
     gem_requires name, options
 
@@ -246,9 +240,7 @@ class Gem::RequestSet::GemDependencyAPI
 
     return unless repository = options.delete(:git)
 
-    raise ArgumentError,
-      "duplicate source git: #{repository} for gem #{name}" if
-        @gem_sources.include? name
+    pin_gem_source name, :git, repository
 
     reference = nil
     reference ||= options.delete :ref
@@ -259,8 +251,6 @@ class Gem::RequestSet::GemDependencyAPI
     submodules = options.delete :submodules
 
     @git_set.add_git_gem name, repository, reference, submodules
-
-    @gem_sources[name] = repository
 
     true
   end
@@ -310,13 +300,9 @@ class Gem::RequestSet::GemDependencyAPI
   def gem_path name, options # :nodoc:
     return unless directory = options.delete(:path)
 
-    raise ArgumentError,
-      "duplicate source path: #{directory} for gem #{name}" if
-        @gem_sources.include? name
+    pin_gem_source name, :path, directory
 
     @vendor_set.add_vendor_gem name, directory
-
-    @gem_sources[name] = directory
 
     true
   end
@@ -428,6 +414,28 @@ class Gem::RequestSet::GemDependencyAPI
   ensure
     @current_groups = nil
   end
+
+  ##
+  # Pins the gem +name+ to the given +source+.  Adding a gem with the same
+  # name from a different +source+ will raise an exception.
+
+  def pin_gem_source name, type = :default, source = nil
+    source_description =
+      case type
+      when :default then '(default)'
+      when :path    then "path: #{source}"
+      when :git     then "git: #{source}"
+      else               '(unknown)'
+      end
+
+    raise ArgumentError,
+      "duplicate source #{source_description} for gem #{name}" if
+        @gem_sources.fetch(name, source) != source
+
+    @gem_sources[name] = source
+  end
+
+  private :pin_gem_source
 
   ##
   # :category: Gem Dependencies DSL

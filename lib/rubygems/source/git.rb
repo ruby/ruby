@@ -147,6 +147,16 @@ class Gem::Source::Git < Gem::Source
     File.join base_dir, 'gems', "#{@name}-#{dir_shortref}"
   end
 
+  def pretty_print q # :nodoc:
+    q.group 2, '[Git: ', ']' do
+      q.breakable
+      q.text @repository
+
+      q.breakable
+      q.text @reference
+    end
+  end
+
   ##
   # The directory where the git gem's repository will be cached.
 

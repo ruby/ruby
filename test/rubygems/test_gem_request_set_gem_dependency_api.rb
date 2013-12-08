@@ -514,6 +514,27 @@ end
     assert_same @GDA, Gem::RequestSet::GemDepedencyAPI
   end
 
+  def test_pin_gem_source
+    gda = @GDA.new @set, nil
+
+    gda.send :pin_gem_source, 'a'
+    gda.send :pin_gem_source, 'a'
+
+    e = assert_raises ArgumentError do
+      gda.send :pin_gem_source, 'a', :path, 'vendor/a'
+    end
+
+    assert_equal "duplicate source path: vendor/a for gem a",
+                 e.message
+
+    e = assert_raises ArgumentError do
+      gda.send :pin_gem_source, 'a', :git, 'git://example/repo.git'
+    end
+
+    assert_equal "duplicate source git: git://example/repo.git for gem a",
+                 e.message
+  end
+
   def test_platform_mswin
     win_platform, Gem.win_platform = Gem.win_platform?, false
 

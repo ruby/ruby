@@ -85,6 +85,10 @@ class Gem::TestCase < MiniTest::Unit::TestCase
 
   attr_accessor :fetcher # :nodoc:
 
+  attr_accessor :gem_repo # :nodoc:
+
+  attr_accessor :uri # :nodoc:
+
   def assert_activate expected, *specs
     specs.each do |spec|
       case spec
@@ -1196,8 +1200,8 @@ Also, a list:
   #     end
   #   end
 
-  def spec_fetcher
-    Gem::TestCase::SpecFetcherSetup.declare self do |spec_fetcher_setup|
+  def spec_fetcher repository = @gem_repo
+    Gem::TestCase::SpecFetcherSetup.declare self, repository do |spec_fetcher_setup|
       yield spec_fetcher_setup if block_given?
     end
   end

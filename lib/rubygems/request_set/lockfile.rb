@@ -1,3 +1,5 @@
+require 'strscan'
+
 ##
 # Parses a gem.deps.rb.lock file and constructs a LockSet containing the
 # dependencies found inside.  If the lock file is missing no LockSet is
@@ -29,11 +31,11 @@ class Gem::RequestSet::Lockfile
     # Raises a ParseError with the given +message+ which was encountered at a
     # +line+ and +column+ while parsing.
 
-    def initialize message, line, column, path
+    def initialize message, column, line, path
       @line   = line
       @column = column
       @path   = path
-      super "#{message} (at #{line}:#{column})"
+      super "#{message} (at line #{line} column #{column})"
     end
 
   end
@@ -62,30 +64,31 @@ class Gem::RequestSet::Lockfile
   def add_DEPENDENCIES out # :nodoc:
     out << "DEPENDENCIES"
 
-    @set.dependencies.sort.map do |dependency|
-      source = @requests.find do |req|
-        req.name == dependency.name and
-          req.spec.class == Gem::Resolver::VendorSpecification
+    @requests.sort_by { |r| r.name }.each do |request|
+      spec = request.spec
+
+      if [Gem::Resolver::VendorSpecification,
+          Gem::Resolver::GitSpecification].include? spec.class then
+        out << "  #{request.name}!"
+      else
+        requirement = request.request.dependency.requirement
+
+        out << "  #{request.name}#{requirement.for_lockfile}"
       end
-
-      source_dep = '!' if source
-
-      requirement = dependency.requirement
-
-      out << "  #{dependency.name}#{source_dep}#{requirement.for_lockfile}"
     end
 
     out << nil
   end
 
   def add_GEM out # :nodoc:
-    out << "GEM"
+    return if @spec_groups.empty?
 
     source_groups = @spec_groups.values.flatten.group_by do |request|
       request.spec.source.uri
     end
 
-    source_groups.map do |group, requests|
+    source_groups.sort_by { |group,| group.to_s }.map do |group, requests|
+      out << "GEM"
       out << "  remote: #{group}"
       out << "  specs:"
 
@@ -98,6 +101,33 @@ class Gem::RequestSet::Lockfile
         request.full_spec.dependencies.sort.each do |dependency|
           requirement = dependency.requirement
           out << "      #{dependency.name}#{requirement.for_lockfile}"
+        end
+      end
+      out << nil
+    end
+  end
+
+  def add_GIT out
+    return unless git_requests =
+      @spec_groups.delete(Gem::Resolver::GitSpecification)
+
+    by_repository_revision = git_requests.group_by do |request|
+      source = request.spec.source
+      [source.repository, source.rev_parse]
+    end
+
+    out << "GIT"
+    by_repository_revision.each do |(repository, revision), requests|
+      out << "  remote: #{repository}"
+      out << "  revision: #{revision}"
+      out << "  specs:"
+
+      requests.sort_by { |request| request.name }.each do |request|
+        out << "    #{request.name} (#{request.version})"
+
+        dependencies = request.spec.dependencies.sort_by { |dep| dep.name }
+        dependencies.each do |dep|
+          out << "      #{dep.name}#{dep.requirement.for_lockfile}"
         end
       end
     end
@@ -148,27 +178,28 @@ class Gem::RequestSet::Lockfile
   ##
   # Gets the next token for a Lockfile
 
-  def get expected_type = nil, expected_value = nil # :nodoc:
+  def get expected_types = nil, expected_value = nil # :nodoc:
     @current_token = @tokens.shift
 
-    type, value, line, column = @current_token
+    type, value, column, line = @current_token
 
-    if expected_type and expected_type != type then
+    if expected_types and not Array(expected_types).include? type then
       unget
 
       message = "unexpected token [#{type.inspect}, #{value.inspect}], " +
-                "expected #{expected_type.inspect}"
+                "expected #{expected_types.inspect}"
 
-      raise ParseError.new message, line, column, "#{@gem_deps_file}.lock"
+      raise ParseError.new message, column, line, "#{@gem_deps_file}.lock"
     end
 
     if expected_value and expected_value != value then
       unget
 
       message = "unexpected token [#{type.inspect}, #{value.inspect}], " +
-                "expected [#{expected_type.inspect}, #{expected_value.inspect}]"
+                "expected [#{expected_types.inspect}, " +
+                "#{expected_value.inspect}]"
 
-      raise ParseError.new message, line, column, "#{@gem_deps_file}.lock"
+      raise ParseError.new message, column, line, "#{@gem_deps_file}.lock"
     end
 
     @current_token
@@ -187,6 +218,8 @@ class Gem::RequestSet::Lockfile
         case data
         when 'DEPENDENCIES' then
           parse_DEPENDENCIES
+        when 'GIT' then
+          parse_GIT
         when 'GEM' then
           parse_GEM
         when 'PLATFORMS' then
@@ -195,7 +228,7 @@ class Gem::RequestSet::Lockfile
           type, = get until @tokens.empty? or peek.first == :section
         end
       else
-        raise "BUG: unhandled token #{type} (#{data.inspect}) at #{line}:#{column}"
+        raise "BUG: unhandled token #{type} (#{data.inspect}) at line #{line} column #{column}"
       end
     end
   end
@@ -204,7 +237,37 @@ class Gem::RequestSet::Lockfile
     while not @tokens.empty? and :text == peek.first do
       _, name, = get :text
 
-      @set.gem name
+      requirements = []
+
+      case peek[0]
+      when :bang then
+        get :bang
+
+        git_spec = @set.sets.select { |set|
+          Gem::Resolver::GitSet === set
+        }.map { |set|
+          set.specs[name]
+        }.first
+
+        requirements << git_spec.version
+      when :l_paren then
+        get :l_paren
+
+        loop do
+          _, op,      = get :requirement
+          _, version, = get :text
+
+          requirements << "#{op} #{version}"
+
+          break unless peek[0] == :comma
+
+          get :comma
+        end
+
+        get :r_paren
+      end
+
+      @set.gem name, *requirements
 
       skip :newline
     end
@@ -223,20 +286,76 @@ class Gem::RequestSet::Lockfile
     skip :newline
 
     set = Gem::Resolver::LockSet.new source
+    last_spec = nil
 
     while not @tokens.empty? and :text == peek.first do
-      _, name, = get :text
+      _, name, column, = get :text
 
       case peek[0]
-      when :newline then # ignore
+      when :newline then
+        last_spec.add_dependency Gem::Dependency.new name if column == 6
       when :l_paren then
         get :l_paren
 
-        _, version, = get :text
+        type, data, = get [:text, :requirement]
+
+        if type == :text and column == 4 then
+          last_spec = set.add name, data, Gem::Platform::RUBY
+        else
+          dependency = parse_dependency name, data
+
+          last_spec.add_dependency dependency
+        end
 
         get :r_paren
+      else
+        raise "BUG: unknown token #{peek}"
+      end
 
-        set.add name, version, Gem::Platform::RUBY
+      skip :newline
+    end
+
+    @set.sets << set
+  end
+
+  def parse_GIT # :nodoc:
+    get :entry, 'remote'
+    _, repository, = get :text
+
+    skip :newline
+
+    get :entry, 'revision'
+    _, revision, = get :text
+
+    skip :newline
+
+    get :entry, 'specs'
+
+    skip :newline
+
+    set = Gem::Resolver::GitSet.new
+    last_spec = nil
+
+    while not @tokens.empty? and :text == peek.first do
+      _, name, column, = get :text
+
+      case peek[0]
+      when :newline then
+        last_spec.add_dependency Gem::Dependency.new name if column == 6
+      when :l_paren then
+        get :l_paren
+
+        type, data, = get [:text, :requirement]
+
+        if type == :text and column == 4 then
+          last_spec = set.add_git_spec name, data, repository, revision, true
+        else
+          dependency = parse_dependency name, data
+
+          last_spec.spec.dependencies << dependency
+        end
+
+        get :r_paren
       else
         raise "BUG: unknown token #{peek}"
       end
@@ -258,10 +377,32 @@ class Gem::RequestSet::Lockfile
   end
 
   ##
+  # Parses the requirements following the dependency +name+ and the +op+ for
+  # the first token of the requirements and returns a Gem::Dependency object.
+
+  def parse_dependency name, op # :nodoc:
+    return Gem::Dependency.new name unless peek[0] == :text
+
+    _, version, = get :text
+
+    requirements = ["#{op} #{version}"]
+
+    while peek[0] == :comma do
+      get :comma
+      _, op,      = get :requirement
+      _, version, = get :text
+
+      requirements << "#{op} #{version}"
+    end
+
+    Gem::Dependency.new name, requirements
+  end
+
+  ##
   # Peeks at the next token for Lockfile
 
   def peek # :nodoc:
-    @tokens.first
+    @tokens.first || :EOF
   end
 
   def skip type # :nodoc:
@@ -283,6 +424,8 @@ class Gem::RequestSet::Lockfile
     end
 
     add_PATH out
+
+    add_GIT out
 
     add_GEM out
 
@@ -321,14 +464,13 @@ class Gem::RequestSet::Lockfile
     until s.eos? do
       pos = s.pos
 
-      # leading whitespace is for the user's convenience
-      next if s.scan(/ +/)
+      pos = s.pos if leading_whitespace = s.scan(/ +/)
 
       if s.scan(/[<|=>]{7}/) then
         message = "your #{lock_file} contains merge conflict markers"
-        line, column = token_pos pos
+        column, line = token_pos pos
 
-        raise ParseError.new message, line, column, lock_file
+        raise ParseError.new message, column, line, lock_file
       end
 
       @tokens <<
@@ -339,7 +481,13 @@ class Gem::RequestSet::Lockfile
           @line += 1
           token
         when s.scan(/[A-Z]+/) then
-          [:section, s.matched, *token_pos(pos)]
+          if leading_whitespace then
+            text = s.matched
+            text += s.scan(/[^\s)]*/).to_s # in case of no match
+            [:text, text, *token_pos(pos)]
+          else
+            [:section, s.matched, *token_pos(pos)]
+          end
         when s.scan(/([a-z]+):\s/) then
           s.pos -= 1 # rewind for possible newline
           [:entry, s[1], *token_pos(pos)]
@@ -347,7 +495,13 @@ class Gem::RequestSet::Lockfile
           [:l_paren, nil, *token_pos(pos)]
         when s.scan(/\)/) then
           [:r_paren, nil, *token_pos(pos)]
-        when s.scan(/[^\s)]*/) then
+        when s.scan(/<=|>=|=|~>|<|>|!=/) then
+          [:requirement, s.matched, *token_pos(pos)]
+        when s.scan(/,/) then
+          [:comma, nil, *token_pos(pos)]
+        when s.scan(/!/) then
+          [:bang, nil, *token_pos(pos)]
+        when s.scan(/[^\s),!]*/) then
           [:text, s.matched, *token_pos(pos)]
         else
           raise "BUG: can't create token for: #{s.string[s.pos..-1].inspect}"

@@ -46,6 +46,32 @@ class Gem::Resolver::GitSet < Gem::Resolver::Set
   end
 
   ##
+  # Adds and returns a GitSpecification with the given +name+ and +version+
+  # which came from a +repository+ at the given +reference+.  If +submodules+
+  # is true they are checked out along with the repository.
+  #
+  # This fills in the prefetch information as enough information about the gem
+  # is present in the arguments.
+
+  def add_git_spec name, version, repository, reference, submodules # :nodoc:
+    add_git_gem name, repository, reference, submodules
+
+    source = Gem::Source::Git.new name, repository, reference
+    source.root_dir = @root_dir
+
+    spec = Gem::Specification.new do |s|
+      s.name    = name
+      s.version = version
+    end
+
+    git_spec = Gem::Resolver::GitSpecification.new self, spec, source
+
+    @specs[spec.name] = git_spec
+
+    git_spec
+  end
+
+  ##
   # Finds all git gems matching +req+
 
   def find_all req

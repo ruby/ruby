@@ -24,10 +24,12 @@ class Gem::Resolver::LockSet < Gem::Resolver::Set
     version = Gem::Version.new version
 
     spec =
-      Gem::Resolver::IndexSpecification.new self, name, version, @source,
-                                            platform
+      Gem::Resolver::LockSpecification.new self, name, version, @source,
+                                           platform
 
     @specs << spec
+
+    spec
   end
 
   ##

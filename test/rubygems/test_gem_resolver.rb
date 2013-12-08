@@ -228,14 +228,27 @@ class TestGemResolver < Gem::TestCase
     res = Gem::Resolver.new([ad, bd], s)
 
     assert_resolves_to [a1, b1, c1, d4], res
+  end
 
-    cons = res.conflicts
+  def test_backoff_higher_version_to_satisfy_dep
+    t3 = util_spec "railties", "3.2"
+    t4 = util_spec "railties", "4.0"
 
-    assert_equal 1, cons.size
-    con = cons.first
+    r3 = util_spec "rails", "3.2", "railties" => "= 3.2"
+    r4 = util_spec "rails", "4.0", "railties" => "= 4.0"
 
-    assert_equal "c (= 1)", con.dependency.to_s
-    assert_equal "c-2", con.activated.full_name
+    rd = make_dep "rails", "3.2"
+
+    c3 = util_spec "coffee", "3.0", "railties" => "~> 3.0"
+    c4 = util_spec "coffee", "4.0", "railties" => "~> 4.0"
+
+    cd = make_dep "coffee"
+
+    s = set(t3, t4, r3, r4, c3, c4)
+
+    res = Gem::Resolver.new([rd, cd], s)
+
+    assert_resolves_to [r3, t3, c3], res
   end
 
   def test_raises_dependency_error

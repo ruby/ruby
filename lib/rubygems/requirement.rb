@@ -133,7 +133,15 @@ class Gem::Requirement
   # Formats this requirement for use in a Gem::RequestSet::Lockfile.
 
   def for_lockfile # :nodoc:
-    " (#{to_s})" unless [DefaultRequirement] == @requirements
+    return if [DefaultRequirement] == @requirements
+
+    list = requirements.sort_by { |_, version|
+      version
+    }.map { |op, version|
+      "#{op} #{version}"
+    }.uniq
+
+    " (#{list.join ', '})"
   end
 
   ##
@@ -145,6 +153,14 @@ class Gem::Requirement
     else
       false
     end
+  end
+
+  ##
+  # true if the requirement is for only an exact version
+
+  def exact?
+    return false unless @requirements.size == 1
+    @requirements[0][0] == "="
   end
 
   def as_list # :nodoc:

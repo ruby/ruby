@@ -40,5 +40,9 @@ class Gem::Source::Lock < Gem::Source
     @wrapped.fetch_spec name_tuple
   end
 
+  def uri # :nodoc:
+    @wrapped.uri
+  end
+
 end
 

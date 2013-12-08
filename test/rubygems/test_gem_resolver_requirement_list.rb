@@ -9,10 +9,11 @@ class TestGemResolverRequirementList < Gem::TestCase
   end
 
   def test_each
-    @list.add 1
-    @list.add 2
+    dep = Gem::Dependency.new "a", "= 1"
+    req = Gem::Resolver::DependencyRequest.new(dep, nil)
+    @list.add req
 
-    assert_equal [1, 2], @list.each.to_a
+    assert_equal [req], @list.each.to_a
   end
 
 end

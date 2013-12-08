@@ -202,7 +202,10 @@ class Gem::Source
     q.group 2, '[Remote:', ']' do
       q.breakable
       q.text @uri.to_s
+
       if api = api_uri
+        q.breakable
+        q.text 'API URI: '
         q.text api.to_s
       end
     end

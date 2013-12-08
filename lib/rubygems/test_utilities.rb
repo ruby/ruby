@@ -199,16 +199,17 @@ class Gem::TestCase::SpecFetcherSetup
   # Executes a SpecFetcher setup block.  Yields an instance then creates the
   # gems and specifications defined in the instance.
 
-  def self.declare test
-    setup = new test
+  def self.declare test, repository
+    setup = new test, repository
 
     yield setup
 
     setup.execute
   end
 
-  def initialize test # :nodoc:
-    @test  = test
+  def initialize test, repository # :nodoc:
+    @test       = test
+    @repository = repository
 
     @gems       = {}
     @installed  = []
@@ -298,12 +299,22 @@ class Gem::TestCase::SpecFetcherSetup
     require 'socket'
     require 'rubygems/remote_fetcher'
 
-    @test.fetcher = Gem::FakeFetcher.new
-    Gem::RemoteFetcher.fetcher = @test.fetcher
+    unless @test.fetcher then
+      @test.fetcher = Gem::FakeFetcher.new
+      Gem::RemoteFetcher.fetcher = @test.fetcher
+    end
 
     Gem::Specification.reset
 
-    @test.util_setup_spec_fetcher(*@gems.keys)
+    begin
+      gem_repo, @test.gem_repo = @test.gem_repo, @repository
+      @test.uri = URI @repository
+
+      @test.util_setup_spec_fetcher(*@gems.keys)
+    ensure
+      @test.gem_repo = gem_repo
+      @test.uri = URI gem_repo
+    end
 
     # This works around util_setup_spec_fetcher adding all created gems to the
     # installed set.
@@ -313,7 +324,7 @@ class Gem::TestCase::SpecFetcherSetup
     @gems.each do |spec, gem|
       next unless gem
 
-      @test.fetcher.data["http://gems.example.com/gems/#{spec.file_name}"] =
+      @test.fetcher.data["#{@repository}gems/#{spec.file_name}"] =
         Gem.read_binary(gem)
 
       FileUtils.cp gem, spec.cache_file

@@ -158,6 +158,10 @@ class Gem::RequestSet
       specs.map { |s| s.full_name }.sort.each do |s|
         puts "  #{s}"
       end
+
+      if Gem.configuration.really_verbose
+        @resolver.stats.display
+      end
     else
       installed = install options, &block
 
@@ -169,6 +173,8 @@ class Gem::RequestSet
   end
 
   def install_into dir, force = true, options = {}
+    gem_home, ENV['GEM_HOME'] = ENV['GEM_HOME'], dir
+
     existing = force ? [] : specs_in(dir)
     existing.delete_if { |s| @always_install.include? s }
 
@@ -195,6 +201,8 @@ class Gem::RequestSet
     end
 
     installed
+  ensure
+    ENV['GEM_HOME'] = gem_home
   end
 
   ##
@@ -228,6 +236,8 @@ class Gem::RequestSet
     resolver = Gem::Resolver.new @dependencies, set
     resolver.development  = @development
     resolver.soft_missing = @soft_missing
+
+    @resolver = resolver
 
     @requests = resolver.resolve
   end

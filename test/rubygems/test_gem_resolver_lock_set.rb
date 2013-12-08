@@ -12,11 +12,11 @@ class TestGemResolverLockSet < Gem::TestCase
   end
 
   def test_add
-    @set.add 'a', '2', Gem::Platform::RUBY
+    spec = @set.add 'a', '2', Gem::Platform::RUBY
 
     assert_equal %w[a-2], @set.specs.map { |t| t.full_name }
 
-    spec = @set.specs.first
+    assert_kind_of Gem::Resolver::LockSpecification, spec
 
     assert_equal @set,                spec.set
     assert_equal 'a',                 spec.name

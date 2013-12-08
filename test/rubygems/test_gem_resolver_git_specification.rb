@@ -80,5 +80,21 @@ class TestGemResolverGitSpecification < Gem::TestCase
     assert_path_exists File.join git_spec.spec.extension_install_dir, 'b.rb'
   end
 
+  def test_install_installed
+    git_gem 'a', 1
+
+    git_spec = Gem::Resolver::GitSpecification.new @set, @spec
+
+    git_spec.install({})
+
+    called = false
+
+    git_spec.install({}) do |installer|
+      called = installer
+    end
+
+    assert called
+  end
+
 end
 
