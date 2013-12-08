@@ -1412,22 +1412,9 @@ rb_hash_replace(VALUE hash, VALUE hash2)
 
     table2 = RHASH(hash2)->ntbl;
 
-    if (RHASH_EMPTY_P(hash2)) {
-	rb_hash_clear(hash);
-	if (table2) hash_tbl(hash)->type = table2->type;
-	return hash;
-    }
-
-    if (RHASH_ITER_LEV(hash) > 0) {
-	rb_hash_clear(hash);
-	hash_tbl(hash)->type = table2->type;
-	rb_hash_foreach(hash2, replace_i, hash);
-    }
-    else {
-	st_table *old_table = RHASH(hash)->ntbl;
-	if (old_table) st_free_table(old_table);
-	RHASH(hash)->ntbl = st_copy(table2);
-    }
+    rb_hash_clear(hash);
+    hash_tbl(hash)->type = table2->type;
+    rb_hash_foreach(hash2, replace_i, hash);
 
     return hash;
 }
