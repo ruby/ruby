@@ -209,10 +209,11 @@ class TestHash < Test::Unit::TestCase
     assert_equal(256,     h[z])
   end
 
-  def test_ASET_string
+  def test_NEWHASH_fstring_key
     a = {"ABC" => :t}
     b = {"ABC" => :t}
     assert_same a.keys[0], b.keys[0]
+    assert_same "ABC".freeze, a.keys[0]
   end
 
   def test_EQUAL # '=='

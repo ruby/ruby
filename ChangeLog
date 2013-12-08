@@ -1,3 +1,10 @@
+Sun Dec  8 10:45:05 2013  Aman Gupta <ruby@tmm1.net>
+
+	* hash.c (hash_aset_str): revert r43870 due to performance issue
+	  [Bug #9188] [ruby-core:58730]
+	* parse.y (assoc): convert literal string hash keys to fstrings
+	* test/ruby/test_hash.rb (class TestHash): expand test
+
 Sun Dec  8 10:22:38 2013  Aman Gupta <ruby@tmm1.net>
 
 	* parse.y (register_symid_str): use fstrings in symbol table
