@@ -4058,7 +4058,7 @@ rb_ary_or(VALUE ary1, VALUE ary2)
 
     for (i=0; i<RARRAY_LEN(ary2); i++) {
 	VALUE elt = RARRAY_AREF(ary2, i);
-	if (!st_update(RHASH_TBL(hash), (st_data_t)elt, ary_hash_orset, (st_data_t)elt)) {
+	if (!st_update(RHASH_TBL_RAW(hash), (st_data_t)elt, ary_hash_orset, (st_data_t)elt)) {
 	    OBJ_WRITTEN(hash, Qundef, elt);
 	}
     }

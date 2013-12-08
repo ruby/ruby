@@ -1,3 +1,15 @@
+Sun Dec  8 09:40:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* array.c (rb_ary_or): use RHASH_TBL_RAW instead of RHASH_TBL
+
+	* process.c (rb_execarg_fixup): use RHASH_TBL_RAW and insert write
+	  barriers where appropriate
+
+	* vm.c (kwmerge_i): use RHASH_TBL_RAW
+
+	* vm.c (HASH_ASET): use rb_hash_aset instead of calling directly into
+	  st_insert
+
 Sat Dec  7 11:15:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_hash_reject): copy unrejected elements only to new hash,

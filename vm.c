@@ -2212,7 +2212,7 @@ static int
 kwmerge_i(VALUE key, VALUE value, VALUE hash)
 {
     if (!SYMBOL_P(key)) Check_Type(key, T_SYMBOL);
-    if (st_update(RHASH_TBL(hash), key, kwmerge_ii, (st_data_t)value) == 0) { /* !existing */
+    if (st_update(RHASH_TBL_RAW(hash), key, kwmerge_ii, (st_data_t)value) == 0) { /* !existing */
 	OBJ_WRITTEN(hash, Qundef, value);
     }
     return ST_CONTINUE;
@@ -2675,7 +2675,7 @@ VALUE rb_insn_operand_intern(rb_iseq_t *iseq,
 
 #if VM_COLLECT_USAGE_DETAILS
 
-#define HASH_ASET(h, k, v) st_insert(RHASH_TBL(h), (st_data_t)(k), (st_data_t)(v))
+#define HASH_ASET(h, k, v) rb_hash_aset((h), (st_data_t)(k), (st_data_t)(v))
 
 /* uh = {
  *   insn(Fixnum) => ihash(Hash)

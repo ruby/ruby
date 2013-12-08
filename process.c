@@ -2316,24 +2316,26 @@ rb_execarg_fixup(VALUE execarg_obj)
         }
         hide_obj(envtbl);
         if (envopts != Qfalse) {
-            st_table *stenv = RHASH_TBL(envtbl);
+	    st_table *stenv = RHASH_TBL_RAW(envtbl);
             long i;
             for (i = 0; i < RARRAY_LEN(envopts); i++) {
                 VALUE pair = RARRAY_AREF(envopts, i);
                 VALUE key = RARRAY_AREF(pair, 0);
                 VALUE val = RARRAY_AREF(pair, 1);
                 if (NIL_P(val)) {
-                    st_data_t stkey = (st_data_t)key;
-                    st_delete(stenv, &stkey, NULL);
+		    st_data_t stkey = (st_data_t)key;
+		    st_delete(stenv, &stkey, NULL);
                 }
                 else {
-                    st_insert(stenv, (st_data_t)key, (st_data_t)val);
+		    st_insert(stenv, (st_data_t)key, (st_data_t)val);
+		    OBJ_WRITTEN(envtbl, Qundef, key);
+		    OBJ_WRITTEN(envtbl, Qundef, val);
                 }
             }
         }
         envp_buf = rb_str_buf_new(0);
         hide_obj(envp_buf);
-        st_foreach(RHASH_TBL(envtbl), fill_envp_buf_i, (st_data_t)envp_buf);
+        st_foreach(RHASH_TBL_RAW(envtbl), fill_envp_buf_i, (st_data_t)envp_buf);
         envp_str = rb_str_buf_new(sizeof(char*) * (RHASH_SIZE(envtbl) + 1));
         hide_obj(envp_str);
         p = RSTRING_PTR(envp_buf);
