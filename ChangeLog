@@ -1,3 +1,7 @@
+Sun Dec  8 14:55:12 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* array.c (rb_ary_shuffle_bang, rb_ary_sample): rename local variables.
+
 Sun Dec  8 13:59:38 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* array.c (rb_ary_shuffle_bang, rb_ary_sample): check

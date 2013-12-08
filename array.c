@@ -4438,10 +4438,10 @@ rb_ary_shuffle_bang(int argc, VALUE *argv, VALUE ary)
     }
 
     if (OPTHASH_GIVEN_P(opts)) {
-	VALUE random;
-	rb_get_kwargs(opts, keyword_ids, 0, 1, &random);
-	if (random != Qundef) {
-	    randgen = random;
+	VALUE rnd;
+	rb_get_kwargs(opts, keyword_ids, 0, 1, &rnd);
+	if (rnd != Qundef) {
+	    randgen = rnd;
 	}
     }
     rb_check_arity(argc, 0, 0);
@@ -4525,10 +4525,10 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
     }
 
     if (OPTHASH_GIVEN_P(opts)) {
-	VALUE random;
-	rb_get_kwargs(opts, keyword_ids, 0, 1, &random);
-	if (random != Qundef) {
-	    randgen = random;
+	VALUE rnd;
+	rb_get_kwargs(opts, keyword_ids, 0, 1, &rnd);
+	if (rnd != Qundef) {
+	    randgen = rnd;
 	}
     }
     len = RARRAY_LEN(ary);
