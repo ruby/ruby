@@ -35,9 +35,16 @@ bug_sym_attrset(VALUE self, VALUE name)
     return ID2SYM(id);
 }
 
+static VALUE
+bug_id2str(VALUE self, VALUE sym)
+{
+    return rb_id2str(SYM2ID(sym));
+}
+
 void
 Init_type(VALUE klass)
 {
     FOREACH_ID_TYPES(declare_symbol_type_p);
     rb_define_singleton_method(klass, "attrset", bug_sym_attrset, 1);
+    rb_define_singleton_method(klass, "id2str", bug_id2str, 1);
 }

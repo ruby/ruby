@@ -3,6 +3,16 @@ require "-test-/symbol"
 
 module Test_Symbol
   class TestType < Test::Unit::TestCase
+    def test_id2str_fstring_bug9171
+      fstr = eval("# encoding: us-ascii
+        'foobar'.freeze")
+      assert_same fstr, Bug::Symbol.id2str(:foobar)
+
+      fstr = eval("# encoding: us-ascii
+        '>'.freeze")
+      assert_same fstr, Bug::Symbol.id2str(:>)
+    end
+
     def assert_symtype(sym, pred, msg = nil)
       assert_send([Bug::Symbol, pred, sym], msg)
     end

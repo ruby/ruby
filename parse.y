@@ -10334,6 +10334,7 @@ static ID
 register_symid_str(ID id, VALUE str)
 {
     OBJ_FREEZE(str);
+    str = rb_fstring(str);
 
     if (RUBY_DTRACE_SYMBOL_CREATE_ENABLED()) {
 	RUBY_DTRACE_SYMBOL_CREATE(RSTRING_PTR(str), rb_sourcefile(), rb_sourceline());
@@ -10544,6 +10545,7 @@ rb_id2str(ID id)
 		name[1] = 0;
 		str = rb_usascii_str_new(name, 1);
 		OBJ_FREEZE(str);
+		str = rb_fstring(str);
 		global_symbols.op_sym[i] = str;
 		global_symbols.minor_marked = 0;
 	    }
@@ -10555,6 +10557,7 @@ rb_id2str(ID id)
 		if (!str) {
 		    str = rb_usascii_str_new2(op_tbl[i].name);
 		    OBJ_FREEZE(str);
+		    str = rb_fstring(str);
 		    global_symbols.op_sym[i] = str;
 		    global_symbols.minor_marked = 0;
 		}

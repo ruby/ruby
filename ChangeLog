@@ -1,3 +1,18 @@
+Sun Dec  8 10:22:38 2013  Aman Gupta <ruby@tmm1.net>
+
+	* parse.y (register_symid_str): use fstrings in symbol table
+	  [Bug #9171] [ruby-core:58656]
+	* parse.y (rb_id2str): ditto
+	* string.c (rb_fstring): create frozen_strings on first usage. this
+	  allows rb_fstring() calls from the parser (before cString is created)
+	* string.c (fstring_set_class_i): set klass on fstrings generated
+	  before cString was defined
+	* string.c (Init_String): convert frozen_strings table to String
+	  objects after boot
+	* ext/-test-/symbol/type.c (bug_sym_id2str): expose rb_id2str()
+	* test/-ext-/symbol/test_type.rb (module Test_Symbol): verify symbol
+	  table entries are fstrings
+
 Sun Dec  8 10:24:20 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems.rb:  Update version for upcoming ruby 2.1.0 RC.

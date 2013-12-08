@@ -165,11 +165,21 @@ rb_fstring(VALUE str)
     VALUE fstr = Qnil;
     Check_Type(str, T_STRING);
 
+    if (!frozen_strings)
+	frozen_strings = st_init_table(&fstring_hash_type);
+
     if (FL_TEST(str, RSTRING_FSTR))
 	return str;
 
     st_update(frozen_strings, (st_data_t)str, fstr_update_callback, (st_data_t)&fstr);
     return fstr;
+}
+
+static int
+fstring_set_class_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    RBASIC_SET_CLASS((VALUE)key, (VALUE)arg);
+    return ST_CONTINUE;
 }
 
 static int
@@ -8718,8 +8728,6 @@ Init_String(void)
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
 
-    frozen_strings = st_init_table(&fstring_hash_type);
-
     rb_cString  = rb_define_class("String", rb_cObject);
     rb_include_module(rb_cString, rb_mComparable);
     rb_define_alloc_func(rb_cString, empty_str_alloc);
@@ -8891,4 +8899,7 @@ Init_String(void)
     rb_define_method(rb_cSymbol, "swapcase", sym_swapcase, 0);
 
     rb_define_method(rb_cSymbol, "encoding", sym_encoding, 0);
+
+    if (frozen_strings)
+	st_foreach(frozen_strings, fstring_set_class_i, rb_cString);
 }
