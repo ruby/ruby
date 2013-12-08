@@ -1,3 +1,7 @@
+Sun Dec  8 20:26:54 2013  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
+
+	* common.mk (ruby.imp): avoid circular dependency on AIX
+
 Sun Dec  8 20:21:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* bigdecimal.c (BigDecimal_coerce): convert a Float to a BigDecimal instead

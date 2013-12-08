@@ -223,8 +223,8 @@ $(STATIC_RUBY)$(EXEEXT): $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A)
 	$(Q)$(RM) $@
 	$(PURIFY) $(CC) $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)$@ $(LDFLAGS) $(XLDFLAGS)
 
-ruby.imp: $(EXPORTOBJS)
-	$(Q)$(NM) -Pgp $(EXPORTOBJS) | \
+ruby.imp: $(COMMONOBJS)
+	$(Q)$(NM) -Pgp $(COMMONOBJS) | \
 	awk 'BEGIN{print "#!"}; $$2~/^[BDT]$$/&&$$1!~/^(Init_|.*_threadptr_|\.)/{print $$1}' | \
 	sort -u -o $@
 
