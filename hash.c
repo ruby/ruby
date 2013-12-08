@@ -1119,6 +1119,7 @@ rb_hash_reject(VALUE hash)
 
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     ret = hash_alloc(rb_obj_class(hash));
+    OBJ_INFECT(ret, hash);
     if (!RHASH_EMPTY_P(hash)) {
 	rb_hash_foreach(hash, reject_i, ret);
     }

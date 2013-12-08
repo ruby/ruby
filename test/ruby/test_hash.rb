@@ -555,6 +555,8 @@ class TestHash < Test::Unit::TestCase
 
     assert_equal(h3, h.reject {|k,v| v })
     assert_equal(base, h)
+
+    assert_predicate(h.taint.reject {true}, :tainted?)
   end
 
   def test_reject!
