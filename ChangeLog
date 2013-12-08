@@ -1,3 +1,7 @@
+Sun Dec  8 18:28:20 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* NEWS: [DOC] update NEWS about GC.
+
 Sun Dec  8 17:52:24 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* object.c: [DOC] document Module#singleton_class?.

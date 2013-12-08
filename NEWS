@@ -49,8 +49,21 @@ with all sufficient information, see the ChangeLog file.
       at where raising the new exception.
 
 * GC
-  * added environment variable:
-    * RUBY_HEAP_SLOTS_GROWTH_FACTOR: growth rate of the heap.
+  * improvements:
+    * introduced the generational GC a.k.a RGenGC.
+  * added environment variables:
+    * RUBY_GC_HEAP_INIT_SLOTS
+    * RUBY_GC_HEAP_FREE_SLOTS
+    * RUBY_GC_HEAP_GROWTH_FACTOR
+    * RUBY_GC_HEAP_GROWTH_MAX_SLOTS
+    * RUBY_GC_MALLOC_LIMIT_MAX
+    * RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR
+    * RUBY_GC_OLDMALLOC_LIMIT
+    * RUBY_GC_OLDMALLOC_LIMIT_MAX
+    * RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR
+  * obsoleted environment variables:
+    * RUBY_FREE_MIN (Use RUBY_GC_HEAP_FREE_SLOTS instead)
+    * RUBY_HEAP_MIN_SLOTS (Use RUBY_GC_HEAP_INIT_SLOTS instead)
 
 * Integer
   * New methods
