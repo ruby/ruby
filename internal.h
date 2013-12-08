@@ -252,10 +252,13 @@ struct rb_subclass_entry {
 
 #if defined(HAVE_LONG_LONG)
 typedef unsigned LONG_LONG rb_serial_t;
+#define SERIALT2NUM ULL2NUM
 #elif defined(HAVE_UINT64_T)
 typedef uint64_t rb_serial_t;
+#define SERIALT2NUM SIZET2NUM
 #else
 typedef unsigned long rb_serial_t;
+#define SERIALT2NUM ULONG2NUM
 #endif
 
 struct rb_classext_struct {

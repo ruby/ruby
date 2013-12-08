@@ -163,9 +163,9 @@ ruby_vm_stat(int argc, VALUE *argv, VALUE self)
 
 #define SET(name, attr) \
     if (key == sym_##name) \
-	return SIZET2NUM(attr); \
+	return SERIALT2NUM(attr); \
     else if (hash != Qnil) \
-	rb_hash_aset(hash, sym_##name, SIZET2NUM(attr));
+	rb_hash_aset(hash, sym_##name, SERIALT2NUM(attr));
 
     SET(method_serial, ruby_vm_method_serial);
     SET(constant_serial, ruby_vm_constant_serial);
