@@ -1857,8 +1857,14 @@ NORETURN(static void keyword_error(const char *error, VALUE keys));
 static void
 keyword_error(const char *error, VALUE keys)
 {
-    const char *msg = RARRAY_LEN(keys) == 1 ? "" : "s";
-    keys = rb_ary_join(keys, rb_usascii_str_new2(", "));
+    const char *msg = "";
+    if (RARRAY_LEN(keys) == 1) {
+	keys = RARRAY_AREF(keys, 0);
+    }
+    else {
+	keys = rb_ary_join(keys, rb_usascii_str_new2(", "));
+	msg = "s";
+    }
     rb_raise(rb_eArgError, "%s keyword%s: %"PRIsVALUE, error, msg, keys);
 }
 
