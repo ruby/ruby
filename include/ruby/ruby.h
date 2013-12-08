@@ -740,6 +740,9 @@ VALUE rb_obj_setup(VALUE obj, VALUE klass, VALUE type);
 #ifndef RGENGC_WB_PROTECTED_BIGNUM
 #define RGENGC_WB_PROTECTED_BIGNUM 1
 #endif
+#ifndef RGENGC_WB_PROTECTED_NODE_CREF
+#define RGENGC_WB_PROTECTED_NODE_CREF 1
+#endif
 
 struct RBasic {
     VALUE flags;

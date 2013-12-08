@@ -1344,7 +1344,8 @@ rb_newobj_of(VALUE klass, VALUE flags)
 NODE*
 rb_node_newnode(enum node_type type, VALUE a0, VALUE a1, VALUE a2)
 {
-    NODE *n = (NODE *)newobj_of(0, T_NODE, a0, a1, a2);
+    VALUE flags = (RGENGC_WB_PROTECTED_NODE_CREF && type == NODE_CREF ? FL_WB_PROTECTED : 0);
+    NODE *n = (NODE *)newobj_of(0, T_NODE | flags, a0, a1, a2);
     nd_set_type(n, type);
     return n;
 }

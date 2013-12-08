@@ -1,3 +1,16 @@
+Sun Dec  8 11:21:00 2013  Aman Gupta <ruby@tmm1.net>
+
+	* include/ruby/ruby.h: add RGENGC_WB_PROTECTED_NODE_CREF setting
+	  In a large app, this reduces the size of
+	  remembered_shady_object_count by 80%. [Bug #9225] [ruby-core:58947]
+	* gc.c (rb_node_newnode): add FL_WB_PROTECTED flag to NODE_CREF
+	* class.c (rewrite_cref_stack): insert OBJ_WRITE for NODE_CREF
+	* iseq.c (set_relation): ditto
+	* iseq.c (rb_iseq_clone): ditto
+	* vm_eval.c (rb_yield_refine_block): ditto
+	* vm_insnhelper.c (vm_cref_push): ditto
+	* vm_insnhelper.h (COPY_CREF): ditto
+
 Sun Dec  8 10:45:05 2013  Aman Gupta <ruby@tmm1.net>
 
 	* hash.c (hash_aset_str): revert r43870 due to performance issue

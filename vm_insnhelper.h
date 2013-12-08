@@ -174,7 +174,7 @@ enum vm_regan_acttype {
 /**********************************************************/
 
 #define COPY_CREF_OMOD(c1, c2) do {  \
-  (c1)->nd_refinements = (c2)->nd_refinements; \
+  OBJ_WRITE((c1), &(c1)->nd_refinements, (c2)->nd_refinements); \
   if (!NIL_P((c2)->nd_refinements)) { \
       (c1)->flags |= NODE_FL_CREF_OMOD_SHARED; \
       (c2)->flags |= NODE_FL_CREF_OMOD_SHARED; \
@@ -184,9 +184,9 @@ enum vm_regan_acttype {
 #define COPY_CREF(c1, c2) do {  \
   NODE *__tmp_c2 = (c2); \
   COPY_CREF_OMOD(c1, __tmp_c2); \
-  (c1)->nd_clss = __tmp_c2->nd_clss; \
+  OBJ_WRITE((c1), &(c1)->nd_clss, __tmp_c2->nd_clss); \
   (c1)->nd_visi = __tmp_c2->nd_visi;\
-  (c1)->nd_next = __tmp_c2->nd_next; \
+  OBJ_WRITE((c1), &(c1)->nd_next, __tmp_c2->nd_next); \
   if (__tmp_c2->flags & NODE_FL_CREF_PUSHED_BY_EVAL) { \
       (c1)->flags |= NODE_FL_CREF_PUSHED_BY_EVAL; \
   } \

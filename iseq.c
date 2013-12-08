@@ -215,7 +215,7 @@ set_relation(rb_iseq_t *iseq, const VALUE parent)
 	    NODE *cref = NEW_CREF(th->top_wrapper);
 	    cref->nd_refinements = Qnil;
 	    cref->nd_visi = NOEX_PRIVATE;
-	    cref->nd_next = iseq->cref_stack;
+	    OBJ_WRITE(cref, &cref->nd_next, iseq->cref_stack);
 	    ISEQ_SET_CREF(iseq, cref);
 	}
 	iseq->local_iseq = iseq;
@@ -1930,10 +1930,10 @@ rb_iseq_clone(VALUE iseqval, VALUE newcbase)
     }
     if (newcbase) {
 	ISEQ_SET_CREF(iseq1, NEW_CREF(newcbase));
-	iseq1->cref_stack->nd_refinements = iseq0->cref_stack->nd_refinements;
+	OBJ_WRITE(iseq1->cref_stack, &iseq1->cref_stack->nd_refinements, iseq0->cref_stack->nd_refinements);
 	iseq1->cref_stack->nd_visi = iseq0->cref_stack->nd_visi;
 	if (iseq0->cref_stack->nd_next) {
-	    iseq1->cref_stack->nd_next = iseq0->cref_stack->nd_next;
+	    OBJ_WRITE(iseq1->cref_stack, &iseq1->cref_stack->nd_next, iseq0->cref_stack->nd_next);
 	}
 	OBJ_WRITE(iseq1, &iseq1->klass, newcbase);
     }

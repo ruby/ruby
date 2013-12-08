@@ -239,7 +239,7 @@ rewrite_cref_stack(NODE *node, VALUE old_klass, VALUE new_klass, NODE **new_cref
     while (node) {
 	if (node->nd_clss == old_klass) {
 	    new_node = NEW_CREF(new_klass);
-	    new_node->nd_next = node->nd_next;
+	    OBJ_WRITE(new_node, &new_node->nd_next, node->nd_next);
 	    *new_cref_ptr = new_node;
 	    return;
 	}

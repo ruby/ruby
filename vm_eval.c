@@ -1546,7 +1546,7 @@ rb_yield_refine_block(VALUE refinement, VALUE refinements)
     }
     cref = vm_cref_push(th, refinement, NOEX_PUBLIC, blockptr);
     cref->flags |= NODE_FL_CREF_PUSHED_BY_EVAL;
-    cref->nd_refinements = refinements;
+    OBJ_WRITE(cref, &cref->nd_refinements, refinements);
 
     return vm_yield_with_cref(th, 0, NULL, cref);
 }
