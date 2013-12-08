@@ -113,19 +113,11 @@ with all sufficient information, see the ChangeLog file.
     * Process.clock_gettime
     * Process.clock_getres
 
-* RbConfig
-  * New constants:
-    * RbConfig::SIZEOF is added to provide the size of C types.
-
 * String
   * New methods:
     * String#scrub and String#scrub! verify and fix invalid byte sequence.
       If you want to use this function with older Ruby,
       consider to use string-scrub.gem.
-  * extended methods:
-    * If invalid: :replace is specified for String#encode, replace
-      invalid byte sequence even if the destination encoding equals to
-      the source encoding.
 
 * Symbol
   * All symbols are now frozen.
@@ -172,6 +164,11 @@ with all sufficient information, see the ChangeLog file.
   * Returning from lambda proc now always exits from the Proc, not from the
     method where the lambda is created.  Returning from non-lambda proc exits
     from the method, same as the former behavior.
+
+String
+  * If invalid: :replace is specified for String#encode, replace
+    invalid byte sequence even if the destination encoding equals to
+    the source encoding.
 
 === Stdlib updates (outstanding ones only)
 
@@ -225,6 +222,10 @@ with all sufficient information, see the ChangeLog file.
     http://rake.rubyforge.org/doc/release_notes/rake-10_1_0_rdoc.html
 
     http://rake.rubyforge.org/doc/release_notes/rake-10_0_3_rdoc.html
+
+* RbConfig
+  * New constants:
+    * RbConfig::SIZEOF is added to provide the size of C types.
 
 * RDoc
   * Updated to 4.1.0.preview.2.  Major enhancements include a modified default
