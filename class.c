@@ -1930,8 +1930,9 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
 	    keyword_error("missing", missing);
 	}
     }
+    j = i;
     if (optional && keyword_hash) {
-	for (j = i, i = 0; i < optional; i++) {
+	for (i = 0; i < optional; i++) {
 	    st_data_t val;
 	    if (st_lookup(rb_hash_tbl_raw(keyword_hash), ID2SYM(table[required+i]), &val)) {
 		if (values) values[required+i] = (VALUE)val;
