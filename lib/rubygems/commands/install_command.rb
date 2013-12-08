@@ -40,6 +40,13 @@ class Gem::Commands::InstallCommand < Gem::Command
         File.exist? file
       end unless v
 
+      unless v then
+        message = v ? v : "(tried #{Gem::GEM_DEP_FILES.join ', '})"
+
+        raise OptionParser::InvalidArgument,
+                "cannot find gem dependencies file #{message}"
+      end
+
       o[:gemdeps] = v
     end
 

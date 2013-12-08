@@ -809,13 +809,21 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_handle_options_file
+    FileUtils.touch 'Gemfile'
+
     @cmd.handle_options %w[-g Gemfile]
 
     assert_equal 'Gemfile', @cmd.options[:gemdeps]
 
+    FileUtils.rm 'Gemfile'
+
+    FileUtils.touch 'gem.deps.rb'
+
     @cmd.handle_options %w[--file gem.deps.rb]
 
     assert_equal 'gem.deps.rb', @cmd.options[:gemdeps]
+
+    FileUtils.rm 'gem.deps.rb'
 
     FileUtils.touch 'Isolate'
 
