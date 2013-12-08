@@ -1,3 +1,10 @@
+Sun Dec  8 13:01:11 2013  Aman Gupta <ruby@tmm1.net>
+
+	* vm.c (ruby_vm_stat): add RubyVM.stat() for access to internal cache
+	  counters. this methods behaves like GC.stat, accepting an optional
+	  hash or symbol argument. [Bug #9190] [ruby-core:58750]
+	* test/ruby/test_rubyvm.rb: test for new method
+
 Sun Dec  8 11:59:40 2013  Aman Gupta <ruby@tmm1.net>
 
 	* hash.c (rb_hash_replace): add a write barrier to fix GC mark miss on

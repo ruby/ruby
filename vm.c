@@ -113,6 +113,71 @@ rb_vm_inc_const_missing_count(void)
     ruby_vm_const_missing_count +=1;
 }
 
+/*
+ *  call-seq:
+ *    RubyVM.stat -> Hash
+ *    RubyVM.stat(hsh) -> hsh
+ *    RubyVM.stat(Symbol) -> Numeric
+ *
+ *  Returns a Hash containing implementation-dependent counters inside the VM.
+ *
+ *  This hash includes information about method/constant cache serials:
+ *
+ *    {
+ *      :method_serial=>251,
+ *      :constant_serial=>481,
+ *      :class_serial=>9029
+ *    }
+ *
+ *  The contents of the hash are implementation specific and may be changed in
+ *  the future.
+ *
+ *  This method is only expected to work on C Ruby.
+ */
+
+static VALUE
+ruby_vm_stat(int argc, VALUE *argv, VALUE self)
+{
+    static VALUE sym_method_serial, sym_constant_serial, sym_class_serial;
+    VALUE arg = Qnil;
+    VALUE hash = Qnil, key = Qnil;
+
+    if (rb_scan_args(argc, argv, "01", &arg) == 1) {
+	if (SYMBOL_P(arg))
+	    key = arg;
+	else if (RB_TYPE_P(arg, T_HASH))
+	    hash = arg;
+	else
+	    rb_raise(rb_eTypeError, "non-hash or symbol given");
+    } else if (arg == Qnil) {
+	hash = rb_hash_new();
+    }
+
+    if (sym_method_serial == 0) {
+#define S(s) sym_##s = ID2SYM(rb_intern_const(#s))
+	S(method_serial);
+	S(constant_serial);
+	S(class_serial);
+#undef S
+    }
+
+#define SET(name, attr) \
+    if (key == sym_##name) \
+	return SIZET2NUM(attr); \
+    else if (hash != Qnil) \
+	rb_hash_aset(hash, sym_##name, SIZET2NUM(attr));
+
+    SET(method_serial, ruby_vm_method_serial);
+    SET(constant_serial, ruby_vm_constant_serial);
+    SET(class_serial, ruby_vm_class_serial);
+#undef SET
+
+    if (key != Qnil) /* matched key should return above */
+	rb_raise(rb_eArgError, "unknown key: %s", RSTRING_PTR(rb_id2str(SYM2ID(key))));
+
+    return hash;
+}
+
 /* control stack frame */
 
 static void
@@ -2295,6 +2360,7 @@ Init_VM(void)
     rb_cRubyVM = rb_define_class("RubyVM", rb_cObject);
     rb_undef_alloc_func(rb_cRubyVM);
     rb_undef_method(CLASS_OF(rb_cRubyVM), "new");
+    rb_define_singleton_method(rb_cRubyVM, "stat", ruby_vm_stat, -1);
 
     /* FrozenCore (hidden) */
     fcore = rb_class_new(rb_cBasicObject);
