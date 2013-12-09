@@ -1,4 +1,8 @@
-Mon Dec  9 12:25:32 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Dec  9 12:26:05 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/objspace/object_tracing.c (newobj_i): use cached class path
+	  only to get rid object allocation during NEWOBJ hook.
+	  [ruby-core:58853] [Bug #9212]
 
 	* variable.c (rb_class_path_cached): returns cached class path
 	  only, without searching and allocating new class path string.
