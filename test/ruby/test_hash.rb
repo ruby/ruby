@@ -592,6 +592,16 @@ class TestHash < Test::Unit::TestCase
     assert_nil(h[2])
   end
 
+  def test_replace_bug9230
+    h = @cls[]
+    h.replace(@cls[])
+    assert_empty h
+
+    h = @cls[]
+    h.replace(@cls[].compare_by_identity)
+    assert_predicate(h, :compare_by_identity?)
+  end
+
   def test_shift
     h = @h.dup
 

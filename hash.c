@@ -1414,7 +1414,7 @@ rb_hash_replace(VALUE hash, VALUE hash2)
     table2 = RHASH(hash2)->ntbl;
 
     rb_hash_clear(hash);
-    hash_tbl(hash)->type = table2->type;
+    if (table2) hash_tbl(hash)->type = table2->type;
     rb_hash_foreach(hash2, replace_i, hash);
 
     return hash;
