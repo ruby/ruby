@@ -93,4 +93,18 @@ class TestWeakMap < Test::Unit::TestCase
     end
     assert_equal(2, n)
   end
+
+  def test_size
+    m = __callee__[/test_(.*)/, 1]
+    assert_equal(0, @wm.__send__(m))
+    x1 = "foo"
+    k1 = Object.new
+    @wm[k1] = x1
+    assert_equal(1, @wm.__send__(m))
+    x2 = "bar"
+    k2 = Object.new
+    @wm[k2] = x2
+    assert_equal(2, @wm.__send__(m))
+  end
+  alias test_length test_size
 end

@@ -1,3 +1,7 @@
+Mon Dec  9 16:13:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (wmap_size): add ObjectSpace::WeakMap#size and #length.
+
 Mon Dec  9 15:26:17 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/test_curses.rb: removed.

@@ -6470,6 +6470,20 @@ wmap_has_key(VALUE self, VALUE key)
     return NIL_P(wmap_aref(self, key)) ? Qfalse : Qtrue;
 }
 
+static VALUE
+wmap_size(VALUE self)
+{
+    struct weakmap *w;
+    st_index_t n;
+
+    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
+    n = w->wmap2obj->num_entries;
+#if SIZEOF_ST_INDEX_T <= SIZEOF_LONG
+    return ULONG2NUM(n);
+#else
+    return ULL2NUM(n);
+#endif
+}
 
 /*
   ------------------------------ GC profiler ------------------------------
@@ -7304,6 +7318,8 @@ Init_GC(void)
 	rb_define_method(rb_cWeakMap, "each_value", wmap_each_value, 0);
 	rb_define_method(rb_cWeakMap, "keys", wmap_keys, 0);
 	rb_define_method(rb_cWeakMap, "values", wmap_values, 0);
+	rb_define_method(rb_cWeakMap, "size", wmap_size, 0);
+	rb_define_method(rb_cWeakMap, "length", wmap_size, 0);
 	rb_define_private_method(rb_cWeakMap, "finalize", wmap_finalize, 1);
 	rb_include_module(rb_cWeakMap, rb_mEnumerable);
     }
