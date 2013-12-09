@@ -1,3 +1,7 @@
+Mon Dec  9 15:26:17 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/test_curses.rb: removed.
+
 Mon Dec  9 13:36:55 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/curses, sample/curses: removed curses.
