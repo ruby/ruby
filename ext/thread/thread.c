@@ -216,7 +216,10 @@ queue_do_push(VALUE self, VALUE obj)
 
 /*
  * Document-method: Queue#push
- * call-seq: push(object)
+ * call-seq:
+ *   push(object)
+ *   enq(object)
+ *   <<(object)
  *
  * Pushes the given +object+ to the queue.
  */
@@ -294,7 +297,10 @@ queue_pop_should_block(int argc, VALUE *argv)
 
 /*
  * Document-method: Queue#pop
- * call-seq: pop(non_block=false)
+ * call-seq:
+ *   pop(non_block=false)
+ *   deq(non_block=false)
+ *   shift(non_block=false)
  *
  * Retrieves data from the queue.
  *
@@ -338,6 +344,9 @@ rb_queue_clear(VALUE self)
 
 /*
  * Document-method: Queue#length
+ * call-seq:
+ *   length
+ *   size
  *
  * Returns the length of the queue.
  */
@@ -436,7 +445,10 @@ rb_szqueue_max_set(VALUE self, VALUE vmax)
 
 /*
  * Document-method: SizedQueue#push
- * call-seq: push(object)
+ * call-seq:
+ *   push(object)
+ *   enq(object)
+ *   <<(object)
  *
  * Pushes +object+ to the queue.
  *
@@ -471,7 +483,10 @@ szqueue_do_pop(VALUE self, VALUE should_block)
 
 /*
  * Document-method: SizedQueue#pop
- *  call-seq: pop(non_block=false)
+ * call-seq:
+ *   pop(non_block=false)
+ *   deq(non_block=false)
+ *   shift(non_block=false)
  *
  * Retrieves data from the queue.
  *
@@ -555,11 +570,16 @@ Init_thread(void)
     rb_define_method(rb_cQueue, "length", rb_queue_length, 0);
     rb_define_method(rb_cQueue, "num_waiting", rb_queue_num_waiting, 0);
 
-    rb_alias(rb_cQueue, rb_intern("enq"), rb_intern("push"));
-    rb_alias(rb_cQueue, rb_intern("<<"), rb_intern("push"));
-    rb_alias(rb_cQueue, rb_intern("deq"), rb_intern("pop"));
-    rb_alias(rb_cQueue, rb_intern("shift"), rb_intern("pop"));
-    rb_alias(rb_cQueue, rb_intern("size"), rb_intern("length"));
+    /* Alias for #push. */
+    rb_define_alias(rb_cQueue, "enq", "push");
+    /* Alias for #push. */
+    rb_define_alias(rb_cQueue, "<<", "push");
+    /* Alias for #pop. */
+    rb_define_alias(rb_cQueue, "deq", "pop");
+    /* Alias for #pop. */
+    rb_define_alias(rb_cQueue, "shift", "pop");
+    /* Alias for #length. */
+    rb_define_alias(rb_cQueue, "size", "length");
 
     rb_define_method(rb_cSizedQueue, "initialize", rb_szqueue_initialize, 1);
     rb_define_method(rb_cSizedQueue, "max", rb_szqueue_max_get, 0);
@@ -567,10 +587,15 @@ Init_thread(void)
     rb_define_method(rb_cSizedQueue, "push", rb_szqueue_push, 1);
     rb_define_method(rb_cSizedQueue, "pop", rb_szqueue_pop, -1);
     rb_define_method(rb_cSizedQueue, "num_waiting", rb_szqueue_num_waiting, 0);
-    rb_alias(rb_cSizedQueue, rb_intern("enq"), rb_intern("push"));
-    rb_alias(rb_cSizedQueue, rb_intern("<<"), rb_intern("push"));
-    rb_alias(rb_cSizedQueue, rb_intern("deq"), rb_intern("pop"));
-    rb_alias(rb_cSizedQueue, rb_intern("shift"), rb_intern("pop"));
+
+    /* Alias for #push. */
+    rb_define_alias(rb_cSizedQueue, "enq", "push");
+    /* Alias for #push. */
+    rb_define_alias(rb_cSizedQueue, "<<", "push");
+    /* Alias for #pop. */
+    rb_define_alias(rb_cSizedQueue, "deq", "pop");
+    /* Alias for #pop. */
+    rb_define_alias(rb_cSizedQueue, "shift", "pop");
 
     rb_provide("thread.rb");
     ALIAS_GLOBAL_CONST(ConditionVariable);
