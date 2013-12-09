@@ -888,6 +888,7 @@ struct timespec rb_time_timespec(VALUE time);
 /* variable.c */
 VALUE rb_mod_name(VALUE);
 VALUE rb_class_path(VALUE);
+VALUE rb_class_path_cached(VALUE);
 void rb_set_class_path(VALUE, VALUE, const char*);
 void rb_set_class_path_string(VALUE, VALUE, VALUE);
 VALUE rb_path_to_class(VALUE);

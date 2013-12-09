@@ -1,3 +1,8 @@
+Mon Dec  9 12:25:32 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_class_path_cached): returns cached class path
+	  only, without searching and allocating new class path string.
+
 Mon Dec  9 11:14:26 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/date/date_parse.c (parse_time): unset case-insensitive flag
