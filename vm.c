@@ -136,7 +136,7 @@ rb_vm_inc_const_missing_count(void)
  */
 
 static VALUE
-ruby_vm_stat(int argc, VALUE *argv, VALUE self)
+vm_stat(int argc, VALUE *argv, VALUE self)
 {
     static VALUE sym_method_serial, sym_constant_serial, sym_class_serial;
     VALUE arg = Qnil;
@@ -2360,7 +2360,7 @@ Init_VM(void)
     rb_cRubyVM = rb_define_class("RubyVM", rb_cObject);
     rb_undef_alloc_func(rb_cRubyVM);
     rb_undef_method(CLASS_OF(rb_cRubyVM), "new");
-    rb_define_singleton_method(rb_cRubyVM, "stat", ruby_vm_stat, -1);
+    rb_define_singleton_method(rb_cRubyVM, "stat", vm_stat, -1);
 
     /* FrozenCore (hidden) */
     fcore = rb_class_new(rb_cBasicObject);
