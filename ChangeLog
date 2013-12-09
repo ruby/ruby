@@ -1,3 +1,8 @@
+Tue Dec 10 04:55:36 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/openssl/lib/openssl/digest.rb: Deprecate OpenSSL::Digest::Digest
+	  [Fixes GH-446] https://github.com/ruby/ruby/pull/446
+
 Tue Dec 10 00:41:42 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* ext/thread/thread.c: [DOC] add call-seq alias for Queue#enq, #<<, etc.
