@@ -1,3 +1,9 @@
+Mon Dec  9 11:14:26 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/date/date_parse.c (parse_time): unset case-insensitive flag
+	  for [:alpha:], which already implies both cases, to get rid of
+	  backtrack explosion.  [ruby-core:58876] [Bug #9221]
+
 Mon Dec  9 08:40:40 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems master bf37240.  Fixes useless
