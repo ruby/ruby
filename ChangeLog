@@ -1,3 +1,10 @@
+Mon Dec  9 19:50:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* compile.c, insns.def, test/ruby/test_rubyvm.rb, vm.c, vm_core.h,
+	  vm_insnhelper.c, vm_insnhelper.h, vm_method.c: Rename method_serial
+	  to global_method_state and constant_serial to global_constant_state
+	  after discussion with ko1.
+
 Mon Dec  9 18:50:43 2013  Aman Gupta <ruby@tmm1.net>
 
 	* hash.c (rb_hash_replace): fix segv on `{}.replace({})` introduced

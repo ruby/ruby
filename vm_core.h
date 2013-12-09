@@ -160,7 +160,7 @@ typedef struct rb_call_info_struct {
     rb_iseq_t *blockiseq;
 
     /* inline cache: keys */
-    rb_serial_t method_serial;
+    rb_serial_t method_state;
     rb_serial_t class_serial;
     VALUE klass;
 

@@ -25,7 +25,7 @@ static void rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VAL
 #define attached            id__attached__
 
 struct cache_entry {
-    rb_serial_t method_serial;
+    rb_serial_t method_state;
     rb_serial_t class_serial;
     ID mid;
     rb_method_entry_t* me;
@@ -47,14 +47,14 @@ void
 rb_clear_cache(void)
 {
     rb_warning("rb_clear_cache() is deprecated.");
-    INC_METHOD_SERIAL();
-    INC_CONSTANT_SERIAL();
+    INC_GLOBAL_METHOD_STATE();
+    INC_GLOBAL_CONSTANT_STATE();
 }
 
 void
 rb_clear_constant_cache(void)
 {
-    INC_CONSTANT_SERIAL();
+    INC_GLOBAL_CONSTANT_STATE();
 }
 
 void
@@ -62,7 +62,7 @@ rb_clear_method_cache_by_class(VALUE klass)
 {
     if (klass && klass != Qundef) {
 	if (klass == rb_cBasicObject || klass == rb_cObject || klass == rb_mKernel) {
-	    INC_METHOD_SERIAL();
+	    INC_GLOBAL_METHOD_STATE();
 	}
 	else {
 	    rb_class_clear_method_cache(klass);
@@ -550,7 +550,7 @@ rb_method_entry_get_without_cache(VALUE klass, ID id,
 	struct cache_entry *ent;
 	ent = GLOBAL_METHOD_CACHE(klass, id);
 	ent->class_serial = RCLASS_EXT(klass)->class_serial;
-	ent->method_serial = GET_METHOD_SERIAL();
+	ent->method_state = GET_GLOBAL_METHOD_STATE();
 	ent->defined_class = defined_class;
 	ent->mid = id;
 
@@ -588,7 +588,7 @@ rb_method_entry(VALUE klass, ID id, VALUE *defined_class_ptr)
 #if OPT_GLOBAL_METHOD_CACHE
     struct cache_entry *ent;
     ent = GLOBAL_METHOD_CACHE(klass, id);
-    if (ent->method_serial == GET_METHOD_SERIAL() &&
+    if (ent->method_state == GET_GLOBAL_METHOD_STATE() &&
 	ent->class_serial == RCLASS_EXT(klass)->class_serial &&
 	ent->mid == id) {
 	if (defined_class_ptr)
