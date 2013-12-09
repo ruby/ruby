@@ -910,11 +910,11 @@ io_needed(void)
  *
  * Marshal can't dump following objects:
  * * anonymous Class/Module.
- * * objects which related to its system (ex: Dir, File::Stat, IO, File, Socket
+ * * objects which are related to system (ex: Dir, File::Stat, IO, File, Socket
  *   and so on)
  * * an instance of MatchData, Data, Method, UnboundMethod, Proc, Thread,
  *   ThreadGroup, Continuation
- * * objects which defines singleton methods
+ * * objects which define singleton methods
  */
 static VALUE
 marshal_dump(int argc, VALUE *argv)
@@ -1917,8 +1917,8 @@ clear_load_arg(struct load_arg *arg)
  * Returns the result of converting the serialized data in source into a
  * Ruby object (possibly with associated subordinate objects). source
  * may be either an instance of IO or an object that responds to
- * to_str. If proc is specified, it will be passed each object as it
- * is deserialized.
+ * to_str. If proc is specified, each object will be passed to the proc, as the object
+ * is being deserialized.
  *
  * Never pass untrusted data (including user supplied input) to this method.
  * Please see the overview for further details.
