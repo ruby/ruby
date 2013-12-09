@@ -1,3 +1,12 @@
+Tue Dec 10 07:48:29 2013  Aman Gupta <ruby@tmm1.net>
+
+	* vm_method.c (rb_clear_method_cache_by_class): fire
+	  ruby::method-cache-clear probe on global or klass-level method cache
+	  clear [Bug #9190]
+	* probes.d (provider ruby): new dtrace probe
+	* doc/dtrace_probes.rdoc: docs for new probe
+	* test/dtrace/test_method_cache.rb: test for new probe
+
 Tue Dec 10 06:14:11 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/.document:  Remove curses from documentable directories.

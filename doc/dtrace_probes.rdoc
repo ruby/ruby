@@ -169,4 +169,10 @@ with when they are fired and the arguments they take:
 [ruby:::gc-sweep-end();]
   Fired at the end of a sweep phase.
 
+[ruby:::method-cache-clear(class, sourcefile, lineno);]
+  Fired when the method cache is cleared.
+
+    class is the classname being cleared, or "global" (string)
+    sourcefile the file being parsed (string)
+    lineno the line number where the source ended (int)
 
