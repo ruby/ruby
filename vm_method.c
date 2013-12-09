@@ -39,7 +39,7 @@ static struct cache_entry global_method_cache[GLOBAL_METHOD_CACHE_SIZE];
 static void
 rb_class_clear_method_cache(VALUE klass)
 {
-    RCLASS_EXT(klass)->class_serial = rb_next_class_serial();
+    RCLASS_SERIAL(klass) = rb_next_class_serial();
     rb_class_foreach_subclass(klass, rb_class_clear_method_cache);
 }
 

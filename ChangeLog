@@ -1,3 +1,10 @@
+Mon Dec  9 20:00:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* internal.h (RCLASS_SERIAL): Add RCLASS_SERIAL as a convenience
+	  accessor for RCLASS_EXT(klass)->class_serial.
+
+	* class.c, vm_insnhelper.c, vm_method.c: Use RCLASS_SERIAL
+
 Mon Dec  9 19:50:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* compile.c, insns.def, test/ruby/test_rubyvm.rb, vm.c, vm_core.h,

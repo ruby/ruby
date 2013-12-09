@@ -296,6 +296,7 @@ void rb_class_remove_from_super_subclasses(VALUE);
 #define RCLASS_IV_INDEX_TBL(c) (RCLASS(c)->iv_index_tbl)
 #define RCLASS_ORIGIN(c) (RCLASS_EXT(c)->origin)
 #define RCLASS_REFINED_CLASS(c) (RCLASS_EXT(c)->refined_class)
+#define RCLASS_SERIAL(c) (RCLASS_EXT(c)->class_serial)
 
 static inline void
 RCLASS_M_TBL_INIT(VALUE c)
