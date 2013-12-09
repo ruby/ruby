@@ -1,3 +1,9 @@
+Mon Dec  9 13:36:55 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/curses, sample/curses: removed curses.
+
+	* NEWS: added an entry for the above change.
+
 Mon Dec  9 12:26:05 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/objspace/object_tracing.c (newobj_i): use cached class path

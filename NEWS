@@ -327,6 +327,11 @@ String
       It gets encoding argument to convert before percent encode.
       UTF-16 strings aren't converted to UTF-8 before percent encode by default.
 
+* curses
+  * Removed.
+    curses is now available as a gem.
+    See https://rubygems.org/gems/curses for details.
+
 === Built-in global variables compatibility issues
 
 * $SAFE
