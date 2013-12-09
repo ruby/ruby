@@ -1,3 +1,7 @@
+Tue Dec 10 06:14:11 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/.document:  Remove curses from documentable directories.
+
 Tue Dec 10 04:55:36 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/openssl/lib/openssl/digest.rb: Deprecate OpenSSL::Digest::Digest

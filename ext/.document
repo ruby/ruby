@@ -4,7 +4,6 @@ bigdecimal/bigdecimal.c
 bigdecimal/lib
 continuation/continuation.c
 coverage/coverage.c
-curses/curses.c
 date/date_core.c
 dbm/dbm.c
 digest/bubblebabble/bubblebabble.c
