@@ -42,14 +42,8 @@ module OpenSSL
     end
 
     alg.each{|name|
-      klass = Class.new(Digest){
-        define_method(:initialize){|*data|
-          if data.length > 1
-            raise ArgumentError,
-              "wrong number of arguments (#{data.length} for 1)"
-          end
-          super(name, data.first)
-        }
+      klass = Class.new(self) {
+        define_method(:initialize, ->(data = nil) {super(name, data)})
       }
       singleton = (class << klass; self; end)
       singleton.class_eval{
