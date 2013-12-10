@@ -28,6 +28,14 @@ class TestWeakMap < Test::Unit::TestCase
   alias test_member? test_include?
   alias test_key? test_include?
 
+  def test_inspect
+    x = Object.new
+    k = BasicObject.new
+    @wm[k] = x
+    assert_match(/\A\#<#{@wm.class.name}:[^:]+:\s\#<BasicObject:[^:]*>\s=>\s\#<Object:[^:]*>>\z/,
+                 @wm.inspect)
+  end
+
   def test_each
     m = __callee__[/test_(.*)/, 1]
     x1 = Object.new

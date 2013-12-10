@@ -6346,8 +6346,8 @@ wmap_inspect(VALUE self)
 
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
     str = rb_sprintf("-<%"PRIsVALUE":%p", c, (void *)self);
-    if (w->obj2wmap) {
-	st_foreach(w->obj2wmap, wmap_inspect_i, str);
+    if (w->wmap2obj) {
+	st_foreach(w->wmap2obj, wmap_inspect_i, str);
     }
     RSTRING_PTR(str)[0] = '#';
     rb_str_cat2(str, ">");
