@@ -6122,14 +6122,23 @@ ruby_xrealloc(void *ptr, size_t new_size)
     return ruby_sized_xrealloc(ptr, new_size, 0);
 }
 
+#ifdef ruby_sized_xrealloc2
+#undef ruby_sized_xrealloc2
+#endif
 void *
-ruby_xrealloc2(void *ptr, size_t n, size_t size)
+ruby_sized_xrealloc2(void *ptr, size_t n, size_t size, size_t old_n)
 {
     size_t len = size * n;
     if (n != 0 && size != len / n) {
 	rb_raise(rb_eArgError, "realloc: possible integer overflow");
     }
-    return ruby_xrealloc(ptr, len);
+    return objspace_xrealloc(&rb_objspace, ptr, len, old_n * size);
+}
+
+void *
+ruby_xrealloc2(void *ptr, size_t n, size_t size)
+{
+    return ruby_sized_xrealloc2(ptr, n, size, 0);
 }
 
 #ifdef ruby_sized_xfree
