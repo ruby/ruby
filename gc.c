@@ -4164,14 +4164,21 @@ reflist_destruct(struct reflist *refs)
     xfree(refs);
 }
 
-static void
+static int
 reflist_add(struct reflist *refs, VALUE obj)
 {
+    int i = 0;
     if (refs->pos == refs->size) {
 	refs->size *= 2;
 	SIZED_REALLOC_N(refs->list, VALUE, refs->size, refs->size/2);
     }
+
+    for (i=0; i<refs->pos; i++)
+	if (refs->list[i] == obj)
+	    return 0; /* already exists */
+
     refs->list[refs->pos++] = obj;
+    return 1; /* added */
 }
 
 static void
@@ -4215,17 +4222,18 @@ struct allrefs {
     VALUE root_obj;
 };
 
-static void
+static int
 allrefs_add(struct allrefs *data, VALUE obj)
 {
     struct reflist *refs;
 
     if (st_lookup(data->references, obj, (st_data_t *)&refs)) {
-	reflist_add(refs, data->root_obj);
+	return reflist_add(refs, data->root_obj);
     }
     else {
 	refs = reflist_create(data->root_obj);
 	st_insert(data->references, obj, (st_data_t)refs);
+	return 1;
     }
 }
 
@@ -4233,7 +4241,8 @@ static void
 allrefs_i(VALUE obj, void *ptr)
 {
     struct allrefs *data = (struct allrefs *)ptr;
-    allrefs_add(data, obj);
+    if (allrefs_add(data, obj)) /* follow new reference */
+	push_mark_stack(&data->objspace->mark_stack, obj);
 }
 
 static void

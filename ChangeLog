@@ -1,3 +1,11 @@
+Tue Dec 10 14:41:53 2013  Aman Gupta <ruby@tmm1.net>
+
+	* gc.c (reflist_add): return 0 if reference already exists
+	* gc.c (allrefs_add): return 1 on newly added references
+	* gc.c (allrefs_i): follow references to construct complete object
+	  graph. before this patch, RGENGC_CHECK could fail to verify some WB
+	  miss issues. [Bug #9226] [ruby-core:58959]
+
 Tue Dec 10 11:20:56 2013  Aman Gupta <ruby@tmm1.net>
 
 	* ext/objspace/objspace_dump.c (dump_object): include fstring flag on
