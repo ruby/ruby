@@ -4262,8 +4262,6 @@ objspace_allrefs(rb_objspace_t *objspace)
     struct mark_func_data_struct mfd;
     VALUE obj;
 
-    rb_gc_disable();
-
     data.objspace = objspace;
     data.references = st_init_numtable();
 
@@ -4281,7 +4279,6 @@ objspace_allrefs(rb_objspace_t *objspace)
     }
     shrink_stack_chunk_cache(&objspace->mark_stack);
 
-    rb_gc_enable();
     return data.references;
 }
 
@@ -4379,8 +4376,14 @@ gc_check_after_marks_i(st_data_t k, st_data_t v, void *ptr)
 static void
 gc_marks_check(rb_objspace_t *objspace, int (*checker_func)(ANYARGS), const char *checker_name)
 {
-    objspace->rgengc.allrefs_table = objspace_allrefs(objspace);
+    
+    size_t saved_malloc_increase = objspace->malloc_params.increase;
+#if RGENGC_ESTIMATE_OLDMALLOC
+    size_t saved_oldmalloc_increase = objspace->rgengc.oldmalloc_increase;
+#endif
+    VALUE already_disabled = rb_gc_disable();
 
+    objspace->rgengc.allrefs_table = objspace_allrefs(objspace);
     st_foreach(objspace->rgengc.allrefs_table, checker_func, (st_data_t)objspace);
 
     if (objspace->rgengc.error_count > 0) {
@@ -4392,6 +4395,12 @@ gc_marks_check(rb_objspace_t *objspace, int (*checker_func)(ANYARGS), const char
 
     objspace_allrefs_destruct(objspace->rgengc.allrefs_table);
     objspace->rgengc.allrefs_table = 0;
+
+    if (already_disabled == Qfalse) rb_gc_enable();
+    objspace->malloc_params.increase = saved_malloc_increase;
+#if RGENGC_ESTIMATE_OLDMALLOC
+    objspace->rgengc.oldmalloc_increase = saved_oldmalloc_increase;
+#endif
 }
 
 #endif /* RGENGC_CHECK_MODE >= 2 */

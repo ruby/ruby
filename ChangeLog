@@ -1,3 +1,8 @@
+Tue Dec 10 15:15:37 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_marks_check): disable GC during checking and
+	  restore malloc_increase info.
+
 Tue Dec 10 14:41:53 2013  Aman Gupta <ruby@tmm1.net>
 
 	* gc.c (reflist_add): return 0 if reference already exists
