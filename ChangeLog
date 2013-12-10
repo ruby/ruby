@@ -1,3 +1,10 @@
+Tue Dec 10 15:28:10 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (RGENGC_CHECK_MODE): separate checkers to different modes.
+	  * 2: enable generational bits check (for debugging)
+	  * 3: enable livness check
+	  * 4: show all references
+
 Tue Dec 10 15:15:37 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_marks_check): disable GC during checking and

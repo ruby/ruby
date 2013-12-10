@@ -183,8 +183,9 @@ static ruby_gc_params_t gc_params = {
 /* RGENGC_CHECK_MODE
  * 0: disable all assertions
  * 1: enable assertions (to debug RGenGC)
- * 2: enable bits check (for debugging)
- * 3: show all references
+ * 2: enable generational bits check (for debugging)
+ * 3: enable livness check
+ * 4: show all references
  */
 #ifndef RGENGC_CHECK_MODE
 #define RGENGC_CHECK_MODE  0
@@ -4197,6 +4198,7 @@ reflist_dump(struct reflist *refs)
     }
 }
 
+#if RGENGC_CHECK_MODE >= 3
 static int
 reflist_refered_from_machine_context(struct reflist *refs)
 {
@@ -4207,6 +4209,7 @@ reflist_refered_from_machine_context(struct reflist *refs)
     }
     return 0;
 }
+#endif
 
 struct allrefs {
     rb_objspace_t *objspace;
@@ -4297,7 +4300,7 @@ objspace_allrefs_destruct(struct st_table *refs)
     st_free_table(refs);
 }
 
-#if RGENGC_CHECK_MODE >= 3
+#if RGENGC_CHECK_MODE >= 4
 static int
 allrefs_dump_i(st_data_t k, st_data_t v, st_data_t ptr)
 {
@@ -4337,9 +4340,11 @@ gc_check_before_marks_i(st_data_t k, st_data_t v, void *ptr)
 		/* parent is old */
 		if (!MARKED_IN_BITMAP(GET_HEAP_PAGE(parent)->rememberset_bits, parent) &&
 		    !MARKED_IN_BITMAP(GET_HEAP_PAGE(obj)->rememberset_bits, obj)) {
-		    fprintf(stderr, "gc_marks_check_i: WB miss %p (%s) -> %p (%s)\n",
+		    fprintf(stderr, "gc_marks_check_i: WB miss %p (%s) -> %p (%s) ",
 			    (void *)parent, obj_type_name(parent),
 			    (void *)obj, obj_type_name(obj));
+		    reflist_dump(refs);
+		    fprintf(stderr, "\n");
 		    objspace->rgengc.error_count++;
 		}
 	    }
@@ -4348,6 +4353,7 @@ gc_check_before_marks_i(st_data_t k, st_data_t v, void *ptr)
     return ST_CONTINUE;
 }
 
+#if RGENGC_CHECK_MODE >= 3
 static int
 gc_check_after_marks_i(st_data_t k, st_data_t v, void *ptr)
 {
@@ -4372,6 +4378,7 @@ gc_check_after_marks_i(st_data_t k, st_data_t v, void *ptr)
     }
     return ST_CONTINUE;
 }
+#endif
 
 static void
 gc_marks_check(rb_objspace_t *objspace, int (*checker_func)(ANYARGS), const char *checker_name)
@@ -4387,7 +4394,7 @@ gc_marks_check(rb_objspace_t *objspace, int (*checker_func)(ANYARGS), const char
     st_foreach(objspace->rgengc.allrefs_table, checker_func, (st_data_t)objspace);
 
     if (objspace->rgengc.error_count > 0) {
-#if RGENGC_CHECK_MODE >= 3
+#if RGENGC_CHECK_MODE >= 4
 	allrefs_dump(objspace);
 #endif
 	rb_bug("%s: GC has problem.", checker_name);
@@ -4445,7 +4452,7 @@ gc_marks(rb_objspace_t *objspace, int full_mark)
 	}
 #endif
 
-#if RGENGC_CHECK_MODE >= 2
+#if RGENGC_CHECK_MODE >= 3
 	gc_marks_check(objspace, gc_check_after_marks_i, "after_marks");
 #endif
 
