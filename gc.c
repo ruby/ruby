@@ -4376,7 +4376,7 @@ gc_check_after_marks_i(st_data_t k, st_data_t v, void *ptr)
 static void
 gc_marks_check(rb_objspace_t *objspace, int (*checker_func)(ANYARGS), const char *checker_name)
 {
-    
+
     size_t saved_malloc_increase = objspace->malloc_params.increase;
 #if RGENGC_ESTIMATE_OLDMALLOC
     size_t saved_oldmalloc_increase = objspace->rgengc.oldmalloc_increase;
