@@ -324,11 +324,11 @@ module Test
         line -= 2
         src = <<eom
 # -*- coding: #{src.encoding}; -*-
-  require #{__dir__.dump}'/envutil';include Test::Unit::Assertions;begin
-#{src}
-  ensure
+  require #{__dir__.dump}'/envutil';include Test::Unit::Assertions
+  END {
     puts [Marshal.dump($!)].pack('m'), "assertions=\#{self._assertions}"
-  end
+  }
+#{src}
   class Test::Unit::Runner
     @@stop_auto_run = true
   end
