@@ -1,3 +1,10 @@
+Tue Dec 10 23:58:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/date/date_strptime.c (date__strptime_internal): unset
+	  case-insensitive flag for [:alpha:], which already implies both
+	  cases, to get rid of backtrack explosion.  [ruby-core:58984]
+	  [Bug #9221]
+
 Tue Dec 10 23:44:42 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_hash): add salt to differentiate false and empty
