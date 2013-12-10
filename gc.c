@@ -4280,7 +4280,7 @@ objspaec_allrefs_destruct_i(st_data_t key, st_data_t value, void *ptr)
 }
 
 static void
-objspaec_allrefs_destruct(struct st_table *refs)
+objspace_allrefs_destruct(struct st_table *refs)
 {
     st_foreach(refs, objspaec_allrefs_destruct_i, 0);
     st_free_table(refs);
@@ -4376,7 +4376,7 @@ gc_marks_check(rb_objspace_t *objspace, int (*checker_func)(ANYARGS), const char
 	rb_bug("%s: GC has problem.", checker_name);
     }
 
-    objspaec_allrefs_destruct(objspace->rgengc.allrefs_table);
+    objspace_allrefs_destruct(objspace->rgengc.allrefs_table);
     objspace->rgengc.allrefs_table = 0;
 }
 
