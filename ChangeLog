@@ -1,3 +1,8 @@
+Tue Dec 10 17:21:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (wmap_finalize, wmap_aset_update): use simple malloced array
+	  instead of T_ARRAY, to reduce GC pressure.
+
 Tue Dec 10 15:56:48 2013  Aman Gupta <ruby@tmm1.net>
 
 	* gc.c (reflist_add): revert changes from r44109. it is unnecessary

@@ -6235,7 +6235,6 @@ wmap_mark_map(st_data_t key, st_data_t val, st_data_t arg)
     rb_objspace_t *objspace = (rb_objspace_t *)arg;
     VALUE obj = (VALUE)val;
     if (!is_live_object(objspace, obj)) return ST_DELETE;
-    gc_mark_ptr(objspace, obj);
     return ST_CONTINUE;
 }
 
@@ -6250,7 +6249,8 @@ wmap_mark(void *ptr)
 static int
 wmap_free_map(st_data_t key, st_data_t val, st_data_t arg)
 {
-    rb_ary_resize((VALUE)val, 0);
+    VALUE *ptr = (VALUE *)val;
+    ruby_sized_xfree(ptr, (ptr[0] + 1) * sizeof(VALUE));
     return ST_CONTINUE;
 }
 
@@ -6263,11 +6263,11 @@ wmap_free(void *ptr)
     st_free_table(w->wmap2obj);
 }
 
-size_t rb_ary_memsize(VALUE ary);
 static int
 wmap_memsize_map(st_data_t key, st_data_t val, st_data_t arg)
 {
-    *(size_t *)arg += rb_ary_memsize((VALUE)val);
+    VALUE *ptr = (VALUE *)val;
+    *(size_t *)arg += (ptr[0] + 1) * sizeof(VALUE);
     return ST_CONTINUE;
 }
 
@@ -6308,11 +6308,22 @@ wmap_allocate(VALUE klass)
 static int
 wmap_final_func(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 {
-    VALUE wmap, ary;
+    VALUE wmap, *ptr, size, i, j;
     if (!existing) return ST_STOP;
-    wmap = (VALUE)arg, ary = (VALUE)*value;
-    rb_ary_delete_same(ary, wmap);
-    if (!RARRAY_LEN(ary)) return ST_DELETE;
+    wmap = (VALUE)arg, ptr = (VALUE *)*value;
+    for (i = j = 1, size = ptr[0]; i <= size; ++i) {
+	if (ptr[i] != wmap) {
+	    ptr[j++] = ptr[i];
+	}
+    }
+    if (j == 1) {
+	ruby_sized_xfree(ptr, i * sizeof(VALUE));
+	return ST_DELETE;
+    }
+    if (j < i) {
+	ptr = ruby_sized_xrealloc2(ptr, j, sizeof(VALUE), i);
+	ptr[0] = j;
+    }
     return ST_CONTINUE;
 }
 
@@ -6320,8 +6331,7 @@ static VALUE
 wmap_finalize(VALUE self, VALUE objid)
 {
     st_data_t orig, wmap, data;
-    VALUE obj, rids;
-    long i;
+    VALUE obj, *rids, i, size;
     struct weakmap *w;
 
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
@@ -6331,11 +6341,13 @@ wmap_finalize(VALUE self, VALUE objid)
     /* obj is original referenced object and/or weak reference. */
     orig = (st_data_t)obj;
     if (st_delete(w->obj2wmap, &orig, &data)) {
-	rids = (VALUE)data;
-	for (i = 0; i < RARRAY_LEN(rids); ++i) {
-	    wmap = (st_data_t)RARRAY_AREF(rids, i);
+	rids = (VALUE *)data;
+	size = *rids++;
+	for (i = 0; i < size; ++i) {
+	    wmap = (st_data_t)rids[i];
 	    st_delete(w->wmap2obj, &wmap, NULL);
 	}
+	ruby_sized_xfree((VALUE *)data, (size + 1) * sizeof(VALUE));
     }
 
     wmap = (st_data_t)obj;
@@ -6511,15 +6523,21 @@ wmap_values(VALUE self)
 static int
 wmap_aset_update(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
 {
+    VALUE size, *ptr, *optr;
     if (existing) {
-	rb_ary_push((VALUE)*val, (VALUE)arg);
-	return ST_STOP;
+	size = (ptr = optr = (VALUE *)*val)[0];
+	++size;
+	ptr = ruby_sized_xrealloc2(ptr, size + 1, sizeof(VALUE), size);
     }
     else {
-	VALUE ary = rb_ary_tmp_new(1);
-	*val = (st_data_t)ary;
-	rb_ary_push(ary, (VALUE)arg);
+	optr = 0;
+	size = 1;
+	ptr = ruby_xmalloc2(2, sizeof(VALUE));
     }
+    ptr[0] = size;
+    ptr[size] = (VALUE)arg;
+    if (ptr == optr) return ST_STOP;
+    *val = (st_data_t)ptr;
     return ST_CONTINUE;
 }
 
