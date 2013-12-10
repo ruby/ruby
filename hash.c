@@ -118,7 +118,9 @@ rb_any_hash(VALUE a)
 
     if (SPECIAL_CONST_P(a)) {
 	if (a == Qundef) return 0;
-	hnum = rb_hash_end(rb_hash_start((st_index_t)a));
+	hnum = rb_hash_start((st_index_t)a);
+	hnum = rb_hash_uint(hnum, (st_index_t)rb_any_hash);
+	hnum = rb_hash_end(hnum);
     }
     else if (BUILTIN_TYPE(a) == T_STRING) {
 	hnum = rb_str_hash(a);
@@ -1972,10 +1974,12 @@ hash_i(VALUE key, VALUE val, VALUE arg)
 static VALUE
 rb_hash_hash(VALUE hash)
 {
-    st_index_t hval = RHASH_SIZE(hash);
-
-    if (!hval) return INT2FIX(0);
-    rb_hash_foreach(hash, hash_i, (VALUE)&hval);
+    st_index_t size = RHASH_SIZE(hash);
+    st_index_t hval = rb_hash_start(size);
+    hval = rb_hash_uint(hval, (st_index_t)rb_hash_hash);
+    if (size) {
+	rb_hash_foreach(hash, hash_i, (VALUE)&hval);
+    }
     hval = rb_hash_end(hval);
     return INT2FIX(hval);
 }

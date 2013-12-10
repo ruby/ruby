@@ -3792,6 +3792,7 @@ rb_ary_hash(VALUE ary)
     VALUE n;
 
     h = rb_hash_start(RARRAY_LEN(ary));
+    h = rb_hash_uint(h, (st_index_t)rb_ary_hash);
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	n = rb_hash(RARRAY_AREF(ary, i));
 	h = rb_hash_uint(h, NUM2LONG(n));

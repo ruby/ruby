@@ -883,6 +883,8 @@ class TestHash < Test::Unit::TestCase
     h = @cls[1=>2]
     h.shift
     assert_equal({}.hash, h.hash, '[ruby-core:38650]')
+    bug9231 = '[ruby-core:58993] [Bug #9231]'
+    assert_not_equal(0, @cls[].hash, bug9231)
   end
 
   def test_update2

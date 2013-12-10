@@ -1,3 +1,10 @@
+Tue Dec 10 23:44:42 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_hash): add salt to differentiate false and empty
+	  array.  [ruby-core:58993] [Bug #9231]
+
+	* hash.c (rb_any_hash, rb_hash_hash): ditto.
+
 Tue Dec 10 18:16:09 2013  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* man/ruby.1: [DOC] Use www.ruby-toolbox.com instead of RAA.
