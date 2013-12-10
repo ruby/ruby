@@ -12,7 +12,7 @@ class Gem::BasicSpecification
   ##
   # Sets the directory where extensions for this gem will be installed.
 
-  attr_writer :extension_install_dir # :nodoc:
+  attr_writer :extension_dir # :nodoc:
 
   ##
   # The path this gemspec was loaded from.  This attribute is not persisted.
@@ -69,16 +69,10 @@ class Gem::BasicSpecification
   end
 
   ##
-  # The directory the named +extension+ was installed into after being built.
-  #
-  # Usage:
-  #
-  #   spec.extensions.each do |ext|
-  #     puts spec.extension_install_dir ext
-  #   end
+  # Returns full path to the directory where gem's extensions are installed.
 
-  def extension_install_dir
-    @extension_install_dir ||=
+  def extension_dir
+    @extension_dir ||=
       File.join base_dir, 'extensions', Gem::Platform.local.to_s,
                 Gem.extension_api_version, full_name
   end
@@ -123,7 +117,7 @@ class Gem::BasicSpecification
       File.join full_gem_path, path
     end
 
-    full_paths.unshift extension_install_dir unless @extensions.empty?
+    full_paths.unshift extension_dir unless @extensions.empty?
 
     full_paths
   end
@@ -152,7 +146,7 @@ class Gem::BasicSpecification
   def loaded_from= path
     @loaded_from   = path && path.to_s
 
-    @extension_install_dir = nil
+    @extension_dir = nil
     @full_gem_path         = nil
     @gems_dir              = nil
     @base_dir              = nil
@@ -196,11 +190,11 @@ class Gem::BasicSpecification
   def require_paths
     return @require_paths if @extensions.empty?
 
-    relative_extension_install_dir =
+    relative_extension_dir =
       File.join '..', '..', 'extensions', Gem::Platform.local.to_s,
                 Gem.extension_api_version, full_name
 
-    [relative_extension_install_dir].concat @require_paths
+    [relative_extension_dir].concat @require_paths
   end
 
   ##

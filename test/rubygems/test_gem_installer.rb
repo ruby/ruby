@@ -937,7 +937,7 @@ gem 'other', version
     assert_match %r|I am a shiny gem!|, @ui.output
   end
 
-  def test_install_extension_install_dir
+  def test_install_extension_dir
     gemhome2 = "#{@gemhome}2"
 
     @spec.extensions << "extconf.rb"

@@ -247,7 +247,7 @@ class Gem::Uninstaller
       File.writable?(spec.base_dir)
 
     FileUtils.rm_rf spec.full_gem_path
-    FileUtils.rm_rf spec.extension_install_dir
+    FileUtils.rm_rf spec.extension_dir
 
     old_platform_name = spec.original_name
     gemspec           = spec.spec_file

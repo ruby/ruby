@@ -186,7 +186,7 @@ EOF
       say "This could take a while..."
     end
 
-    dest_path = @spec.extension_install_dir
+    dest_path = @spec.extension_dir
 
     FileUtils.rm_f @spec.gem_build_complete_path
 
@@ -205,9 +205,9 @@ EOF
   # Writes +output+ to gem_make.out in the extension install directory.
 
   def write_gem_make_out output # :nodoc:
-    destination = File.join @spec.extension_install_dir, 'gem_make.out'
+    destination = File.join @spec.extension_dir, 'gem_make.out'
 
-    FileUtils.mkdir_p @spec.extension_install_dir
+    FileUtils.mkdir_p @spec.extension_dir
 
     open destination, 'wb' do |io| io.puts output end
 

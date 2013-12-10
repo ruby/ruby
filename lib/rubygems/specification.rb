@@ -1744,7 +1744,7 @@ class Gem::Specification < Gem::BasicSpecification
   # directory.
 
   def gem_build_complete_path # :nodoc:
-    File.join extension_install_dir, 'gem.build_complete'
+    File.join extension_dir, 'gem.build_complete'
   end
 
   ##

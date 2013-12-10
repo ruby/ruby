@@ -72,18 +72,17 @@ class TestGemRequestSet < Gem::TestCase
     rs = Gem::RequestSet.new
     installed = []
 
-    Tempfile.open 'gem.deps.rb' do |io|
+    open 'gem.deps.rb', 'w' do |io|
       io.puts 'gem "a"'
-      io.flush
+    end
 
-      options = {
-        :gemdeps     => io.path,
-        :install_dir => "#{@gemhome}2",
-      }
+    options = {
+      :gemdeps     => 'gem.deps.rb',
+      :install_dir => "#{@gemhome}2",
+    }
 
-      rs.install_from_gemdeps options do |req, installer|
-        installed << req.full_name
-      end
+    rs.install_from_gemdeps options do |req, installer|
+      installed << req.full_name
     end
 
     assert_includes installed, 'a-2'

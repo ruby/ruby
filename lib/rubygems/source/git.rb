@@ -191,7 +191,7 @@ class Gem::Source::Git < Gem::Source
             spec.loaded_from = loaded_from
             spec.base_dir = base_dir
 
-            spec.extension_install_dir =
+            spec.extension_dir =
               File.join base_dir, 'extensions', Gem::Platform.local.to_s,
                 Gem.extension_api_version, "#{name}-#{dir_shortref}"
 

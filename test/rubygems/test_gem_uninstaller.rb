@@ -223,12 +223,12 @@ create_makefile '#{@spec.name}'
       installer.install
     end
 
-    assert_path_exists @spec.extension_install_dir, 'sanity check'
+    assert_path_exists @spec.extension_dir, 'sanity check'
 
     uninstaller = Gem::Uninstaller.new @spec.name, :executables => true
     uninstaller.uninstall
 
-    refute_path_exists @spec.extension_install_dir
+    refute_path_exists @spec.extension_dir
   end
 
   def test_uninstall_nonexistent

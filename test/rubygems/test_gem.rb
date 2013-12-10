@@ -338,7 +338,7 @@ class TestGem < Gem::TestCase
     end
   end
 
-  def test_self_extension_install_dir_shared
+  def test_self_extension_dir_shared
     enable_shared, RbConfig::CONFIG['ENABLE_SHARED'] =
       RbConfig::CONFIG['ENABLE_SHARED'], 'yes'
 
@@ -347,7 +347,7 @@ class TestGem < Gem::TestCase
     RbConfig::CONFIG['ENABLE_SHARED'] = enable_shared
   end
 
-  def test_self_extension_install_dir_static
+  def test_self_extension_dir_static
     enable_shared, RbConfig::CONFIG['ENABLE_SHARED'] =
       RbConfig::CONFIG['ENABLE_SHARED'], 'no'
 

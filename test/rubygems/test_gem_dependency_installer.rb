@@ -407,7 +407,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     _, f1_gem = util_gem 'f', '1', 'e' => nil
 
     Gem::Installer.new(e1_gem).install
-    FileUtils.rm_r e1.extension_install_dir
+    FileUtils.rm_r e1.extension_dir
 
     FileUtils.mv e1_gem, @tempdir
     FileUtils.mv f1_gem, @tempdir
@@ -420,7 +420,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     assert_equal %w[f-1], inst.installed_gems.map { |s| s.full_name }
 
-    assert_path_exists e1.extension_install_dir
+    assert_path_exists e1.extension_dir
   end
 
   def test_install_dependency_old
