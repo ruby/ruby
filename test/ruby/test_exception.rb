@@ -485,6 +485,7 @@ end.join
       h[:a].call
     }
     SRC
+  rescue SystemStackError
   end
 
   def test_cause
