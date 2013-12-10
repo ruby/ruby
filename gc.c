@@ -4165,21 +4165,15 @@ reflist_destruct(struct reflist *refs)
     xfree(refs);
 }
 
-static int
+static void
 reflist_add(struct reflist *refs, VALUE obj)
 {
-    int i = 0;
     if (refs->pos == refs->size) {
 	refs->size *= 2;
 	SIZED_REALLOC_N(refs->list, VALUE, refs->size, refs->size/2);
     }
 
-    for (i=0; i<refs->pos; i++)
-	if (refs->list[i] == obj)
-	    return 0; /* already exists */
-
     refs->list[refs->pos++] = obj;
-    return 1; /* added */
 }
 
 static void
@@ -4248,7 +4242,7 @@ allrefs_i(VALUE obj, void *ptr)
 
     if (allrefs_add(data, obj)) {
 	push_mark_stack(&data->objspace->mark_stack, obj);
-}
+    }
 }
 
 static void
@@ -4259,8 +4253,8 @@ allrefs_roots_i(VALUE obj, void *ptr)
     data->root_obj = MAKE_ROOTSIG(data->category);
 
     if (allrefs_add(data, obj)) {
-    push_mark_stack(&data->objspace->mark_stack, obj);
-}
+	push_mark_stack(&data->objspace->mark_stack, obj);
+    }
 }
 
 static st_table *

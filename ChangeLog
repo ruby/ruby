@@ -1,3 +1,10 @@
+Tue Dec 10 15:56:48 2013  Aman Gupta <ruby@tmm1.net>
+
+	* gc.c (reflist_add): revert changes from r44109. it is unnecessary
+	  after r44113
+	* gc.c (allrefs_i): fix whitespace
+	* gc.c (allrefs_roots_i): fix whitespace
+
 Tue Dec 10 15:46:03 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (allrefs_add): push obj only if allrefs table doesn't have
