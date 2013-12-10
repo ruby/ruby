@@ -6508,12 +6508,25 @@ wmap_values(VALUE self)
     return args.value;
 }
 
+static int
+wmap_aset_update(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
+{
+    if (existing) {
+	rb_ary_push((VALUE)*val, (VALUE)arg);
+	return ST_STOP;
+    }
+    else {
+	VALUE ary = rb_ary_tmp_new(1);
+	*val = (st_data_t)ary;
+	rb_ary_push(ary, (VALUE)arg);
+    }
+    return ST_CONTINUE;
+}
+
 /* Creates a weak reference from the given key to the given value */
 static VALUE
 wmap_aset(VALUE self, VALUE wmap, VALUE orig)
 {
-    st_data_t data;
-    VALUE rids;
     struct weakmap *w;
 
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
@@ -6521,14 +6534,7 @@ wmap_aset(VALUE self, VALUE wmap, VALUE orig)
     should_be_finalizable(wmap);
     define_final0(orig, w->final);
     define_final0(wmap, w->final);
-    if (st_lookup(w->obj2wmap, (st_data_t)orig, &data)) {
-	rids = (VALUE)data;
-    }
-    else {
-	rids = rb_ary_tmp_new(1);
-	st_insert(w->obj2wmap, (st_data_t)orig, (st_data_t)rids);
-    }
-    rb_ary_push(rids, wmap);
+    st_update(w->obj2wmap, (st_data_t)orig, wmap_aset_update, wmap);
     st_insert(w->wmap2obj, (st_data_t)wmap, (st_data_t)orig);
     return nonspecial_obj_id(orig);
 }
