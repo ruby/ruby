@@ -4231,7 +4231,8 @@ allrefs_add(struct allrefs *data, VALUE obj)
     struct reflist *refs;
 
     if (st_lookup(data->references, obj, (st_data_t *)&refs)) {
-	return reflist_add(refs, data->root_obj);
+	reflist_add(refs, data->root_obj);
+	return 0;
     }
     else {
 	refs = reflist_create(data->root_obj);
@@ -4244,8 +4245,10 @@ static void
 allrefs_i(VALUE obj, void *ptr)
 {
     struct allrefs *data = (struct allrefs *)ptr;
-    if (allrefs_add(data, obj)) /* follow new reference */
+
+    if (allrefs_add(data, obj)) {
 	push_mark_stack(&data->objspace->mark_stack, obj);
+}
 }
 
 static void
@@ -4254,8 +4257,10 @@ allrefs_roots_i(VALUE obj, void *ptr)
     struct allrefs *data = (struct allrefs *)ptr;
     if (strlen(data->category) == 0) rb_bug("!!!");
     data->root_obj = MAKE_ROOTSIG(data->category);
-    allrefs_add(data, obj);
+
+    if (allrefs_add(data, obj)) {
     push_mark_stack(&data->objspace->mark_stack, obj);
+}
 }
 
 static st_table *

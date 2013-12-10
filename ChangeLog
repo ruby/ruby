@@ -1,3 +1,10 @@
+Tue Dec 10 15:46:03 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (allrefs_add): push obj only if allrefs table doesn't have
+	  obj.
+
+	* gc.c (allrefs_roots_i): ditto.
+
 Tue Dec 10 15:28:10 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (RGENGC_CHECK_MODE): separate checkers to different modes.
