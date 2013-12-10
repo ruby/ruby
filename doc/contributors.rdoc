@@ -323,7 +323,6 @@ Shugo Maeda (shugo)
   * monitor.rb
   * net/ftp
   * net/imap
-  * curses
 
 Stephan Maka (mathew)
 * documentation

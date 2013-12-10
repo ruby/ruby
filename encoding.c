@@ -1458,7 +1458,6 @@ rb_enc_default_internal(void)
  * * File names from Dir
  * * Integer#chr
  * * String#inspect and Regexp#inspect
- * * Strings returned from Curses
  * * Strings returned from Readline
  * * Strings returned from SDBM
  * * Time#zone

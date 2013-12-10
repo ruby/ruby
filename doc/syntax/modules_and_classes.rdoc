@@ -4,8 +4,8 @@ Modules serve two purposes in Ruby, namespacing and mix-in functionality.
 
 A namespace can be used to organize code by package or functionality that
 separates common names from interference by other packages.  For example, the
-Curses namespace provides functionality for curses that prevents a collision
-for the common name "Window".
+IRB namespace provides functionality for irb that prevents a collision
+for the common name "Context".
 
 Mix-in functionality allows sharing common methods across multiple classes or
 modules.  Ruby comes with the Enumerable mix-in module which provides many

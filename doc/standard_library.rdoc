@@ -92,7 +92,6 @@ YAML:: Ruby client library for the Psych YAML implementation
 
 BigDecimal:: Provides arbitrary-precision floating point decimal arithmetic
 Coverage:: Provides coverage measurement for Ruby
-Curses:: Implements the CRT screen handling and optimization library
 Date:: A subclass of Object includes Comparable module for handling dates
 DateTime:: Subclass of Date to handling dates, hours, minutes, seconds, offsets
 DBM:: Provides a wrapper for the UNIX-style Database Manager Library

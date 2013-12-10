@@ -291,7 +291,6 @@ libraries, but these are not required:
 * Tcl/Tk
 * NDBM/QDBM
 * GDBM
-* Ncurses (or something)
 * OpenSSL
 * readline/editline(libedit)
 * zlib

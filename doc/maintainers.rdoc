@@ -245,8 +245,6 @@ Zachary Scott (zzak)
   * 1.9: Koichi Sasada (ko1)
 [ext/coverage]
   Yusuke Endoh (mame)
-[ext/curses]
-  Shugo Maeda (shugo)
 [ext/dbm]
   _unmaintained_
 [ext/digest, ext/digest/*]
