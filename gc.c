@@ -1904,6 +1904,15 @@ should_be_callable(VALUE block)
 		 rb_obj_classname(block));
     }
 }
+static void
+should_be_finalizable(VALUE obj)
+{
+    rb_check_frozen(obj);
+    if (!FL_ABLE(obj)) {
+	rb_raise(rb_eArgError, "cannot define finalizer for %s",
+		 rb_obj_classname(obj));
+    }
+}
 
 /*
  *  call-seq:
@@ -1920,7 +1929,7 @@ define_final(int argc, VALUE *argv, VALUE os)
     VALUE obj, block;
 
     rb_scan_args(argc, argv, "11", &obj, &block);
-    rb_check_frozen(obj);
+    should_be_finalizable(obj);
     if (argc == 1) {
 	block = rb_block_proc();
     }
@@ -1938,10 +1947,6 @@ define_final0(VALUE obj, VALUE block)
     VALUE table;
     st_data_t data;
 
-    if (!FL_ABLE(obj)) {
-	rb_raise(rb_eArgError, "cannot define finalizer for %s",
-		 rb_obj_classname(obj));
-    }
     RBASIC(obj)->flags |= FL_FINALIZE;
 
     block = rb_ary_new3(2, INT2FIX(rb_safe_level()), block);
@@ -1962,7 +1967,7 @@ define_final0(VALUE obj, VALUE block)
 VALUE
 rb_define_finalizer(VALUE obj, VALUE block)
 {
-    rb_check_frozen(obj);
+    should_be_finalizable(obj);
     should_be_callable(block);
     return define_final0(obj, block);
 }
@@ -6479,8 +6484,10 @@ wmap_aset(VALUE self, VALUE wmap, VALUE orig)
     struct weakmap *w;
 
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
-    rb_define_finalizer(orig, w->final);
-    rb_define_finalizer(wmap, w->final);
+    should_be_finalizable(orig);
+    should_be_finalizable(wmap);
+    define_final0(orig, w->final);
+    define_final0(wmap, w->final);
     if (st_lookup(w->obj2wmap, (st_data_t)orig, &data)) {
 	rids = (VALUE)data;
     }

@@ -14,6 +14,20 @@ class TestWeakMap < Test::Unit::TestCase
     assert_not_same(x, @wm["FOO".downcase])
   end
 
+  def test_aset_const
+    x = Object.new
+    assert_raise(ArgumentError) {@wm[true] = x}
+    assert_raise(ArgumentError) {@wm[false] = x}
+    assert_raise(ArgumentError) {@wm[nil] = x}
+    assert_raise(RuntimeError) {@wm[42] = x}
+    assert_raise(RuntimeError) {@wm[:foo] = x}
+    assert_raise(ArgumentError) {@wm[x] = true}
+    assert_raise(ArgumentError) {@wm[x] = false}
+    assert_raise(ArgumentError) {@wm[x] = nil}
+    assert_raise(RuntimeError) {@wm[x] = 42}
+    assert_raise(RuntimeError) {@wm[x] = :foo}
+  end
+
   def test_include?
     m = __callee__[/test_(.*)/, 1]
     x = Object.new
