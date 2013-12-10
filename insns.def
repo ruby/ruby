@@ -1511,7 +1511,7 @@ opt_div
 	val = LONG2NUM(div);
     }
     else if (FLONUM_2_P(recv, obj) &&
-	     BASIC_OP_UNREDEFINED_P(BOP_MULT, FLOAT_REDEFINED_OP_FLAG)) {
+	     BASIC_OP_UNREDEFINED_P(BOP_DIV, FLOAT_REDEFINED_OP_FLAG)) {
 	val = DBL2NUM(RFLOAT_VALUE(recv) / RFLOAT_VALUE(obj));
     }
     else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
