@@ -1,3 +1,15 @@
+Tue Dec 10 11:20:56 2013  Aman Gupta <ruby@tmm1.net>
+
+	* ext/objspace/objspace_dump.c (dump_object): include fstring flag on
+	  strings. include gc flags (old, remembered, wb_protected) on all objects.
+	* ext/objspace/objspace_dump.c (Init_objspace_dump): initialize lazy
+	  IDs before first use.
+	* gc.c (rb_obj_gc_flags): new function to retrieve object flags
+	* internal.h (RB_OBJ_GC_FLAGS_MAX): maximum flags allowed for one obj
+	* test/objspace/test_objspace.rb (test_dump_flags): test for above
+	* test/objspace/test_objspace.rb (test_trace_object_allocations):
+	  resolve name before dump (for rb_class_path_cached)
+
 Tue Dec 10 07:48:29 2013  Aman Gupta <ruby@tmm1.net>
 
 	* vm_method.c (rb_clear_method_cache_by_class): fire

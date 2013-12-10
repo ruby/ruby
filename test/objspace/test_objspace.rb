@@ -130,6 +130,7 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_trace_object_allocations
+    Class.name
     o0 = Object.new
     ObjectSpace.trace_object_allocations{
       o1 = Object.new; line1 = __LINE__; c1 = GC.count
@@ -191,6 +192,12 @@ class TestObjSpace < Test::Unit::TestCase
     assert_equal(nil, ObjectSpace.allocation_sourcefile(obj1))
     assert_equal(nil, ObjectSpace.allocation_sourcefile(obj2))
     assert_equal(nil, ObjectSpace.allocation_sourcefile(obj3))
+  end
+
+  def test_dump_flags
+    info = ObjectSpace.dump("foo".freeze)
+    assert_match /"wb_protected":true, "old":true, "marked":true/, info
+    assert_match /"fstring":true/, info
   end
 
   def test_dump_to_default

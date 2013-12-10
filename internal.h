@@ -871,6 +871,8 @@ st_table *rb_st_copy(VALUE obj, struct st_table *orig_tbl);
 
 /* gc.c */
 size_t rb_obj_memsize_of(VALUE);
+#define RB_OBJ_GC_FLAGS_MAX 5
+size_t rb_obj_gc_flags(VALUE, ID[], size_t);
 
 RUBY_SYMBOL_EXPORT_END
 

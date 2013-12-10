@@ -20,6 +20,7 @@
 #include "node.h"
 #include "vm_core.h"
 #include "objspace.h"
+#include "internal.h"
 
 static VALUE sym_output, sym_stdout, sym_string, sym_file;
 
@@ -148,6 +149,8 @@ dump_object(VALUE obj, struct dump_config *dc)
     size_t memsize;
     struct allocation_info *ainfo;
     rb_io_t *fptr;
+    ID flags[RB_OBJ_GC_FLAGS_MAX];
+    size_t n, i;
 
     dc->cur_obj = obj;
     dc->cur_obj_references = 0;
@@ -175,6 +178,8 @@ dump_object(VALUE obj, struct dump_config *dc)
 	    dump_append(dc, ", \"associated\":true");
 	if (is_broken_string(obj))
 	    dump_append(dc, ", \"broken\":true");
+	if (FL_TEST(obj, RSTRING_FSTR))
+	    dump_append(dc, ", \"fstring\":true");
 	if (STR_SHARED_P(obj))
 	    dump_append(dc, ", \"shared\":true");
 	else {
@@ -248,6 +253,15 @@ dump_object(VALUE obj, struct dump_config *dc)
 
     if ((memsize = rb_obj_memsize_of(obj)) > 0)
 	dump_append(dc, ", \"memsize\":%"PRIuSIZE, memsize);
+
+    if ((n = rb_obj_gc_flags(obj, flags, sizeof(flags))) > 0) {
+	dump_append(dc, ", \"flags\":{");
+	for (i=0; i<n; i++) {
+	    dump_append(dc, "\"%s\":true", rb_id2name(flags[i]));
+	    if (i != n-1) dump_append(dc, ", ");
+	}
+	dump_append(dc, "}");
+    }
 
     dump_append(dc, "}\n");
 }
@@ -411,4 +425,7 @@ Init_objspace_dump(VALUE rb_mObjSpace)
     sym_stdout = ID2SYM(rb_intern("stdout"));
     sym_string = ID2SYM(rb_intern("string"));
     sym_file   = ID2SYM(rb_intern("file"));
+
+    /* force create static IDs */
+    rb_obj_gc_flags(rb_mObjSpace, 0, 0);
 }

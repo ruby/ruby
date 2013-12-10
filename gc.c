@@ -4749,6 +4749,53 @@ rb_obj_rgengc_promoted_p(VALUE obj)
     return OBJ_PROMOTED(obj) ? Qtrue : Qfalse;
 }
 
+size_t
+rb_obj_gc_flags(VALUE obj, ID* flags, size_t max)
+{
+    size_t n = 0;
+    static ID ID_marked;
+#if USE_RGENGC
+    static ID ID_wb_protected, ID_old, ID_remembered;
+#if RGENGC_THREEGEN
+    static ID ID_young, ID_infant;
+#endif
+#endif
+
+    if (!ID_marked) {
+#define I(s) ID_##s = rb_intern(#s);
+	I(marked);
+#if USE_RGENGC
+	I(wb_protected);
+	I(old);
+	I(remembered);
+#if RGENGC_THREEGEN
+	I(young);
+	I(infant);
+#endif
+#endif
+#undef I
+    }
+
+#if USE_RGENGC
+    if (OBJ_WB_PROTECTED(obj) && n<max)
+	flags[n++] = ID_wb_protected;
+    if (RVALUE_OLD_P(obj) && n<max)
+	flags[n++] = ID_old;
+#if RGENGC_THREEGEN
+    if (RVALUE_YOUNG_P(obj) && n<max)
+	flags[n++] = ID_young;
+    if (RVALUE_INFANT_P(obj) && n<max)
+	flags[n++] = ID_infant;
+#endif
+    if (MARKED_IN_BITMAP(GET_HEAP_REMEMBERSET_BITS(obj), obj) && n<max)
+	flags[n++] = ID_remembered;
+#endif
+    if (MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj) && n<max)
+	flags[n++] = ID_marked;
+
+    return n;
+}
+
 /* GC */
 
 void
