@@ -4,7 +4,7 @@ if defined?(OpenSSL)
 
 class OpenSSL::TestDigest < Test::Unit::TestCase
   def setup
-    @d1 = OpenSSL::Digest::Digest::new("MD5")
+    @d1 = OpenSSL::Digest.new("MD5")
     @d2 = OpenSSL::Digest::MD5.new
     @md = Digest::MD5.new
     @data = "DATA"

@@ -38,7 +38,7 @@ module OpenSSL
     #   OpenSSL::Digest::SHA256.digest("abc")
 
     def self.digest(name, data)
-        super(data, name)
+      super(data, name)
     end
 
     alg.each{|name|
@@ -53,8 +53,8 @@ module OpenSSL
       }
       singleton = (class << klass; self; end)
       singleton.class_eval{
-        define_method(:digest){|data| Digest.digest(name, data) }
-        define_method(:hexdigest){|data| Digest.hexdigest(name, data) }
+        define_method(:digest){|data| new.digest(data) }
+        define_method(:hexdigest){|data| new.hexdigest(data) }
       }
       const_set(name, klass)
     }
