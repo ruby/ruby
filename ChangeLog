@@ -1,3 +1,7 @@
+Tue Dec 10 18:16:09 2013  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* man/ruby.1: [DOC] Use www.ruby-toolbox.com instead of RAA.
+
 Tue Dec 10 17:21:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (wmap_finalize, wmap_aset_update): use simple malloced array
