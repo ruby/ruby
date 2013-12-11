@@ -345,8 +345,10 @@ eom
           ignore_stderr = nil
         end
         if res
-          res.backtrace.each do |l|
-            l.sub!(/\A-:(\d+)/){"#{file}:#{line + $1.to_i}"}
+          if bt = res.backtrace
+            bt.each do |l|
+              l.sub!(/\A-:(\d+)/){"#{file}:#{line + $1.to_i}"}
+            end
           end
           raise res
         end
