@@ -1810,7 +1810,7 @@ Init_ossl_asn1()
      * == OpenSSL::ASN1::ObjectId
      *
      * While OpenSSL::ASN1::ObjectId.new will allocate a new ObjectId, it is
-     * not typically allocated this way, but rather that are recieved from
+     * not typically allocated this way, but rather that are received from
      * parsed ASN1 encodings.
      *
      * === Additional attributes
