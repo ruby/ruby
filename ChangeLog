@@ -1,3 +1,14 @@
+Wed Dec 11 12:38:17 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c (rb_raise_jump): pop frame after setup exception.
+	  Patches by deivid (David Rodriguez). [Bug #8886]
+
+	* test/minitest/test_minitest_unit.rb: catch up this change.
+
+	* test/ruby/test_backtrace.rb: ditto.
+
+	* test/ruby/test_settracefunc.rb: ditto.
+
 Wed Dec 11 04:54:03 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems master ec8ed22.  Notable changes

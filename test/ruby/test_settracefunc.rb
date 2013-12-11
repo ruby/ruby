@@ -257,7 +257,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)
     assert_equal(["c-return", 5, :backtrace, Exception],
                  events.shift)
-    assert_equal(["raise", 5, :test_raise, TestSetTraceFunc],
+    assert_equal(["raise", 5, :raise, Kernel],
                  events.shift)
     assert_equal(["c-return", 5, :raise, Kernel],
                  events.shift)
@@ -517,7 +517,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
      [:c_return,20, "xyzzy", Exception,   :exception,       RuntimeError, :outer, raised_exc],
      [:c_call,  20, "xyzzy", Exception,   :backtrace,       raised_exc,  :outer, :nothing],
      [:c_return,20, "xyzzy", Exception,   :backtrace,       raised_exc,  :outer, nil],
-     [:raise,   20, "xyzzy", TestSetTraceFunc, :trace_by_tracepoint, self, :outer, raised_exc],
+     [:raise,   20, "xyzzy", Kernel,      :raise,           self,        :outer, raised_exc],
      [:c_return,20, "xyzzy", Kernel,      :raise,           self,        :outer, nil],
      [:c_call,  20, "xyzzy", Module,      :===,             RuntimeError,:outer, :nothing],
      [:c_return,20, "xyzzy", Module,      :===,             RuntimeError,:outer, true],
