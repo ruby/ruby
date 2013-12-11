@@ -1095,37 +1095,39 @@ rb_hash_reject_bang(VALUE hash)
 }
 
 static int
-reject_i(VALUE key, VALUE value, VALUE hash)
+reject_i(VALUE key, VALUE value, VALUE result)
 {
     if (!RTEST(rb_yield_values(2, key, value))) {
-	rb_hash_aset(hash, key, value);
+	rb_hash_aset(result, key, value);
     }
     return ST_CONTINUE;
 }
 
 /*
  *  call-seq:
- *     hsh.reject {| key, value | block }  -> a_hash
- *     hsh.reject                          -> an_enumerator
+ *     hsh.reject {|key, value| block}   -> a_hash
+ *     hsh.reject                        -> an_enumerator
  *
- *  Same as <code>Hash#delete_if</code>, but works on (and returns) a
- *  copy of the <i>hsh</i>. Equivalent to
- *  <code><i>hsh</i>.dup.delete_if</code>.
+ *  Returns a new hash consisting of entries for which the block returns false.
  *
+ *  If no block is given, an enumerator is returned instead.
+ *
+ *     h = { "a" => 100, "b" => 200, "c" => 300 }
+ *     h.reject {|k,v| k < "b"}  #=> {"b" => 200, "c" => 300}
+ *     h.reject {|k,v| v > 100}  #=> {"a" => 100}
  */
 
-static VALUE
+VALUE
 rb_hash_reject(VALUE hash)
 {
-    VALUE ret;
+    VALUE result;
 
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
-    ret = hash_alloc(rb_obj_class(hash));
-    OBJ_INFECT(ret, hash);
+    result = rb_hash_new();
     if (!RHASH_EMPTY_P(hash)) {
-	rb_hash_foreach(hash, reject_i, ret);
+	rb_hash_foreach(hash, reject_i, result);
     }
-    return ret;
+    return result;
 }
 
 /*
@@ -1154,8 +1156,9 @@ rb_hash_values_at(int argc, VALUE *argv, VALUE hash)
 static int
 select_i(VALUE key, VALUE value, VALUE result)
 {
-    if (RTEST(rb_yield_values(2, key, value)))
+    if (RTEST(rb_yield_values(2, key, value))) {
 	rb_hash_aset(result, key, value);
+    }
     return ST_CONTINUE;
 }
 
@@ -1180,7 +1183,9 @@ rb_hash_select(VALUE hash)
 
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     result = rb_hash_new();
-    rb_hash_foreach(hash, select_i, result);
+    if (!RHASH_EMPTY_P(hash)) {
+	rb_hash_foreach(hash, select_i, result);
+    }
     return result;
 }
 

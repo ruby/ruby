@@ -1,3 +1,10 @@
+Wed Dec 11 16:01:26 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_reject): return a plain hash, without copying
+	  the class, default value, instance variables, and taintedness.
+	  they had been copied just by accident.
+	  [ruby-core:59045] [Bug #9223]
+
 Wed Dec 11 15:36:15 2013  Aman Gupta <ruby@tmm1.net>
 
 	* compile.c (iseq_specialized_instruction): emit opt_aset instruction

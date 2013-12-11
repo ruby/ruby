@@ -539,6 +539,8 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_reject
+    assert_equal({3=>4,5=>6}, @cls[1=>2,3=>4,5=>6].reject {|k, v| k + v < 7 })
+
     base = @cls[ 1 => 'one', 2 => false, true => 'true', 'cat' => 99 ]
     h1   = @cls[ 1 => 'one', 2 => false, true => 'true' ]
     h2   = @cls[ 2 => false, 'cat' => 99 ]
@@ -556,7 +558,14 @@ class TestHash < Test::Unit::TestCase
     assert_equal(h3, h.reject {|k,v| v })
     assert_equal(base, h)
 
-    assert_predicate(h.taint.reject {true}, :tainted?)
+    h.instance_variable_set(:@foo, :foo)
+    h.default = 42
+    h.taint
+    h = h.reject {false}
+    assert_instance_of(Hash, h)
+    assert_not_predicate(h, :tainted?)
+    assert_nil(h.default)
+    assert_not_send([h, :instance_variable_defined?, :@foo])
   end
 
   def test_reject!
@@ -816,6 +825,32 @@ class TestHash < Test::Unit::TestCase
 
   def test_select
     assert_equal({3=>4,5=>6}, @cls[1=>2,3=>4,5=>6].select {|k, v| k + v >= 7 })
+
+    base = @cls[ 1 => 'one', '2' => false, true => 'true', 'cat' => 99 ]
+    h1   = @cls[ '2' => false, 'cat' => 99 ]
+    h2   = @cls[ 1 => 'one', true => 'true' ]
+    h3   = @cls[ 1 => 'one', true => 'true', 'cat' => 99 ]
+
+    h = base.dup
+    assert_equal(h, h.select { true })
+    assert_equal(@cls[], h.select { false })
+
+    h = base.dup
+    assert_equal(h1, h.select {|k,v| k.instance_of?(String) })
+
+    assert_equal(h2, h.select {|k,v| v.instance_of?(String) })
+
+    assert_equal(h3, h.select {|k,v| v })
+    assert_equal(base, h)
+
+    h.instance_variable_set(:@foo, :foo)
+    h.default = 42
+    h.taint
+    h = h.select {true}
+    assert_instance_of(Hash, h)
+    assert_not_predicate(h, :tainted?)
+    assert_nil(h.default)
+    assert_not_send([h, :instance_variable_defined?, :@foo])
   end
 
   def test_select!
