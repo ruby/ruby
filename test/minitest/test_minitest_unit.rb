@@ -296,7 +296,6 @@ class TestMiniTestRunner < MetaMetaMetaTestCase
         1) Error:
       #<Class:0xXXX>#test_error:
       RuntimeError: unhandled exception
-          FILE:LINE:in \`raise\'
           FILE:LINE:in \`test_error\'
 
       2 tests, 1 assertions, 0 failures, 1 errors, 0 skips
@@ -324,7 +323,6 @@ class TestMiniTestRunner < MetaMetaMetaTestCase
         1) Error:
       #<Class:0xXXX>#test_something:
       RuntimeError: unhandled exception
-          FILE:LINE:in \`raise\'
           FILE:LINE:in \`teardown\'
 
       1 tests, 1 assertions, 0 failures, 1 errors, 0 skips
@@ -1212,7 +1210,6 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
       Class: <SyntaxError>
       Message: <\"icky\">
       ---Backtrace---
-      FILE:LINE:in \`raise\'
       FILE:LINE:in \`test_assert_raises_triggered_different\'
       ---------------
     EOM
@@ -1236,7 +1233,6 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
       Class: <SyntaxError>
       Message: <\"icky\">
       ---Backtrace---
-      FILE:LINE:in \`raise\'
       FILE:LINE:in \`test_assert_raises_triggered_different_msg\'
       ---------------
     EOM
@@ -1283,7 +1279,6 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
       Class: <AnError>
       Message: <\"AnError\">
       ---Backtrace---
-      FILE:LINE:in \`raise\'
       FILE:LINE:in \`test_assert_raises_triggered_subclass\'
       ---------------
     EOM

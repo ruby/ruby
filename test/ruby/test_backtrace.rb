@@ -10,7 +10,7 @@ class TestBacktrace < Test::Unit::TestCase
         e.backtrace
       end
     }.resume
-    assert_equal(2, bt.size)
+    assert_equal(1, bt.size)
     assert_match(/.+:\d+:.+/, bt[0])
   end
 
