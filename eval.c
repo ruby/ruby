@@ -689,10 +689,10 @@ rb_raise_jump(VALUE mesg)
     ID mid = cfp->me->called_id;
 
     th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, self, mid, klass, Qnil);
 
     setup_exception(th, TAG_RAISE, mesg);
 
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, self, mid, klass, Qnil);
     rb_thread_raised_clear(th);
     JUMP_TAG(TAG_RAISE);
 }
