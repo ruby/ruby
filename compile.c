@@ -1955,6 +1955,11 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 		  case idAREF:	 SP_INSN(aref);	  return COMPILE_OK;
 		}
 		break;
+	      case 2:
+		switch (ci->mid) {
+		  case idASET:	 SP_INSN(aset);	  return COMPILE_OK;
+		}
+		break;
 	    }
 	}
 	if (ci->flag & VM_CALL_ARGS_SKIP_SETUP) {

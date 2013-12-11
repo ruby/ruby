@@ -1,3 +1,9 @@
+Wed Dec 11 15:36:15 2013  Aman Gupta <ruby@tmm1.net>
+
+	* compile.c (iseq_specialized_instruction): emit opt_aset instruction
+	  to optimize Hash#[]= and Array#[]= when called with Fixnum argument.
+	  [Bug #9227] [ruby-core:58956]
+
 Wed Dec 11 12:38:17 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c (rb_raise_jump): pop frame after setup exception.
