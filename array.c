@@ -2662,8 +2662,9 @@ rb_ary_sort_by_bang(VALUE ary)
  *  If no block is given, an Enumerator is returned instead.
  *
  *     a = [ "a", "b", "c", "d" ]
- *     a.map { |x| x + "!" }   #=> ["a!", "b!", "c!", "d!"]
- *     a                       #=> ["a", "b", "c", "d"]
+ *     a.collect { |x| x + "!" }        #=> ["a!", "b!", "c!", "d!"]
+ *     a.map.with_index{ |x, i| x * i } #=> ["", "b", "cc", "ddd"]
+ *     a                                #=> ["a", "b", "c", "d"]
  */
 
 static VALUE
@@ -2698,6 +2699,8 @@ rb_ary_collect(VALUE ary)
  *     a = [ "a", "b", "c", "d" ]
  *     a.map! {|x| x + "!" }
  *     a #=>  [ "a!", "b!", "c!", "d!" ]
+ *     a.collect!.with_index {|x, i| x[0...i] }
+ *     a #=>  ["", "b", "c!", "d!"]
  */
 
 static VALUE

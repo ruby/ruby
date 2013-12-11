@@ -420,7 +420,7 @@ collect_all(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
  *
  *  If no block is given, an enumerator is returned instead.
  *
- *     (1..4).collect { |i| i*i }  #=> [1, 4, 9, 16]
+ *     (1..4).map { |i| i*i }      #=> [1, 4, 9, 16]
  *     (1..4).collect { "cat"  }   #=> ["cat", "cat", "cat", "cat"]
  *
  */
