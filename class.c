@@ -862,7 +862,7 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module)
 	for (p = RCLASS_SUPER(klass); p; p = RCLASS_SUPER(p)) {
 	    switch (BUILTIN_TYPE(p)) {
 	      case T_ICLASS:
-		if (RCLASS_M_TBL(p) == RCLASS_M_TBL(module)) {
+		if (RCLASS_M_TBL_WRAPPER(p) == RCLASS_M_TBL_WRAPPER(module)) {
 		    if (!superclass_seen) {
 			c = p;  /* move insertion point */
 		    }

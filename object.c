@@ -646,7 +646,7 @@ rb_obj_is_kind_of(VALUE obj, VALUE c)
     c = class_or_module_required(c);
     c = RCLASS_ORIGIN(c);
     while (cl) {
-	if (cl == c || RCLASS_M_TBL(cl) == RCLASS_M_TBL(c))
+	if (cl == c || RCLASS_M_TBL_WRAPPER(cl) == RCLASS_M_TBL_WRAPPER(c))
 	    return Qtrue;
 	cl = RCLASS_SUPER(cl);
     }
@@ -1549,13 +1549,13 @@ rb_class_inherited_p(VALUE mod, VALUE arg)
     }
     arg = RCLASS_ORIGIN(arg);
     while (mod) {
-	if (RCLASS_M_TBL(mod) == RCLASS_M_TBL(arg))
+	if (RCLASS_M_TBL_WRAPPER(mod) == RCLASS_M_TBL_WRAPPER(arg))
 	    return Qtrue;
 	mod = RCLASS_SUPER(mod);
     }
     /* not mod < arg; check if mod > arg */
     while (arg) {
-	if (RCLASS_M_TBL(arg) == RCLASS_M_TBL(start))
+	if (RCLASS_M_TBL_WRAPPER(arg) == RCLASS_M_TBL_WRAPPER(start))
 	    return Qfalse;
 	arg = RCLASS_SUPER(arg);
     }
