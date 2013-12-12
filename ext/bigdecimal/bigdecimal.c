@@ -4189,6 +4189,7 @@ VpAddAbs(Real *a, Real *b, Real *c)
     a_pos = ap;
     b_pos = bp;
     c_pos = cp;
+
     if (word_shift == (size_t)-1L) return 0; /* Overflow */
     if (b_pos == (size_t)-1L) goto Assign_a;
 
@@ -4380,12 +4381,19 @@ static size_t
 VpSetPTR(Real *a, Real *b, Real *c, size_t *a_pos, size_t *b_pos, size_t *c_pos, BDIGIT *av, BDIGIT *bv)
 {
     size_t left_word, right_word, word_shift;
+
+    size_t const round_limit = (VpGetPrecLimit() + BASE_FIG - 1) / BASE_FIG;
+
+    assert(a->exponent >= b->expoennt);
+
     c->frac[0] = 0;
     *av = *bv = 0;
+
     word_shift = (a->exponent - b->exponent);
     left_word = b->Prec + word_shift;
     right_word = Max(a->Prec, left_word);
     left_word = c->MaxPrec - 1;    /* -1 ... prepare for round up */
+
     /*
      * check if 'round' is needed.
      */
@@ -4408,7 +4416,9 @@ VpSetPTR(Real *a, Real *b, Real *c, size_t *a_pos, size_t *b_pos, size_t *c_pos,
 	     *   a_pos =    |
 	     */
 	    *a_pos = left_word;
-	    *av = a->frac[*a_pos];    /* av is 'A' shown in above. */
+	    if (*a_pos <= round_limit) {
+		*av = a->frac[*a_pos];    /* av is 'A' shown in above. */
+	    }
 	}
 	else {
 	    /*
@@ -4427,7 +4437,9 @@ VpSetPTR(Real *a, Real *b, Real *c, size_t *a_pos, size_t *b_pos, size_t *c_pos,
 	     */
 	    if (c->MaxPrec >= word_shift + 1) {
 		*b_pos = c->MaxPrec - word_shift - 1;
-		*bv = b->frac[*b_pos];
+		if (*b_pos + word_shift <= round_limit) {
+		    *bv = b->frac[*b_pos];
+		}
 	    }
 	    else {
 		*b_pos = -1L;

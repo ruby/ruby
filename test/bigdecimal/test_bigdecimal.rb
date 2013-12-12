@@ -1151,6 +1151,25 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(90, x ** 4) # OK? must it be 80?
     # 3 * 3 * 3 * 3 = 10 * 3 * 3 = 30 * 3 = 90 ???
     assert_raise(ArgumentError) { BigDecimal.limit(-1) }
+
+    bug7458 = '[ruby-core:50269] [#7458]'
+    one = BigDecimal('1')
+    epsilon = BigDecimal('0.7E-18')
+    BigDecimal.save_limit do
+      BigDecimal.limit(0)
+      assert_equal(BigDecimal("1.0000000000000000007"), one + epsilon, "limit(0) #{bug7458}")
+
+      1.upto(18) do |lim|
+        BigDecimal.limit(lim)
+        assert_equal(BigDecimal("1.0"), one + epsilon, "limit(#{lim}) #{bug7458}")
+      end
+
+      BigDecimal.limit(19)
+      assert_equal(BigDecimal("1.000000000000000001"), one + epsilon, "limit(19) #{bug7458}")
+
+      BigDecimal.limit(20)
+      assert_equal(BigDecimal("1.0000000000000000007"), one + epsilon, "limit(20) #{bug7458}")
+    end
   end
 
   def test_sign
