@@ -48,7 +48,7 @@
 #
 # * Client
 #   * synchronous/asynchronous calls
-#   * Basic HTTP-401 Authentification
+#   * Basic HTTP-401 Authentication
 #   * HTTPS protocol (SSL)
 #
 # * Parsers
