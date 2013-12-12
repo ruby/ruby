@@ -4196,14 +4196,14 @@ VpAddAbs(Real *a, Real *b, Real *c)
 
     /* Just assign the last few digits of b to c because a has no  */
     /* corresponding digits to be added. */
-    while (b_pos + word_shift > a_pos) {
-	--c_pos;
-	if (b_pos > 0) {
-	    c->frac[c_pos] = b->frac[--b_pos];
+    if (b_pos > 0) {
+	while (b_pos > 0 && b_pos + word_shift > a_pos) {
+	    c->frac[--c_pos] = b->frac[--b_pos];
 	}
-	else {
-	    --word_shift;
-	    c->frac[c_pos] = 0;
+    }
+    if (b_pos == 0 && word_shift > a_pos) {
+	while (word_shift-- > a_pos) {
+	    c->frac[--c_pos] = 0;
 	}
     }
 
@@ -4299,16 +4299,16 @@ VpSubAbs(Real *a, Real *b, Real *c)
     /* each of the last few digits of the b because the a has no */
     /* corresponding digits to be subtracted. */
     if (b_pos + word_shift > a_pos) {
-	while (b_pos + word_shift > a_pos) {
-	    --c_pos;
-	    if (b_pos > 0) {
-		c->frac[c_pos] = BASE - b->frac[--b_pos] - borrow;
-	    }
-	    else {
-		--word_shift;
-		c->frac[c_pos] = BASE - borrow;
-	    }
+	while (b_pos > 0 && b_pos + word_shift > a_pos) {
+	    c->frac[--c_pos] = BASE - b->frac[--b_pos] - borrow;
 	    borrow = 1;
+	}
+	if (b_pos == 0) {
+	    while (word_shift > a_pos) {
+		--word_shift;
+		c->frac[--c_pos] = BASE - borrow;
+		borrow = 1;
+	    }
 	}
     }
     /* Just assign the last few digits of a to c because b has no */

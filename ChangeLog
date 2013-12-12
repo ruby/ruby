@@ -1,3 +1,10 @@
+Wed Dec 13 01:56:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (VpAddAbs): put out a conditional branch from
+	  the inside of while-loop.
+
+	* ext/bigdecimal/bigdecimal.c (VpSubAbs): ditto.
+
 Wed Dec 13 01:53:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (VPrint): be a static function, support another
