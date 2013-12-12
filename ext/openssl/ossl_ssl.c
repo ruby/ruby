@@ -2004,7 +2004,7 @@ Init_ossl_ssl()
 
     /*
      * Sets the context in which a session can be reused.  This allows
-     * sessions for multiple applications to be distinguished, for exapmle, by
+     * sessions for multiple applications to be distinguished, for example, by
      * name.
      */
     rb_attr(cSSLContext, rb_intern("session_id_context"), 1, 1, Qfalse);
