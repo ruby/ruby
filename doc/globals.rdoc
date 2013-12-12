@@ -42,7 +42,7 @@ $VERBOSE::   The verbose flag, which is set by the -w or -v switch.  Setting
              including from Kernel#warn.
 $-0::  The alias to $/.
 $-a::  True if option -a is set. Read-only variable.
-$-d::  The alias of $DEBUG.  See $DEBUG above for further discusison.
+$-d::  The alias of $DEBUG.  See $DEBUG above for further discussion.
 $-F::  The alias to $;.
 $-i::  In in-place-edit mode, this variable holds the extension, otherwise nil.
 $-I::  The alias to $:.
