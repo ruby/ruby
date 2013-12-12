@@ -699,7 +699,7 @@ static void rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap);
 #define RVALUE_RAW_SHADY(obj)     (!FL_TEST2((obj), FL_WB_PROTECTED))
 #define RVALUE_SHADY(obj)         RVALUE_RAW_SHADY(check_gen_consistency((VALUE)obj))
 
-#define RVALUE_OLDEGN_BITMAP(obj) MARKED_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj), (obj))
+#define RVALUE_OLDGEN_BITMAP(obj) MARKED_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj), (obj))
 
 static inline int is_pointer_to_heap(rb_objspace_t *objspace, void *ptr);
 static inline int gc_marked(rb_objspace_t *objspace, VALUE ptr);
@@ -708,7 +708,7 @@ static inline VALUE
 check_gen_consistency(VALUE obj)
 {
     if (RGENGC_CHECK_MODE > 0) {
-	int old_flag = RVALUE_OLDEGN_BITMAP(obj) != 0;
+	int old_flag = RVALUE_OLDGEN_BITMAP(obj) != 0;
 	int promoted_flag = FL_TEST2(obj, FL_PROMOTED);
 	rb_objspace_t *objspace = &rb_objspace;
 
@@ -754,7 +754,7 @@ static inline VALUE
 RVALUE_OLD_BITMAP_P(VALUE obj)
 {
     check_gen_consistency(obj);
-    return (RVALUE_OLDEGN_BITMAP(obj) != 0);
+    return (RVALUE_OLDGEN_BITMAP(obj) != 0);
 }
 
 static inline VALUE
@@ -807,7 +807,7 @@ static inline VALUE
 RVALUE_YOUNG_P(VALUE obj)
 {
     check_gen_consistency(obj);
-    return FL_TEST2(obj, FL_PROMOTED) && (RVALUE_OLDEGN_BITMAP(obj) == 0);
+    return FL_TEST2(obj, FL_PROMOTED) && (RVALUE_OLDGEN_BITMAP(obj) == 0);
 }
 
 static inline void
