@@ -6229,6 +6229,9 @@ struct weakmap {
     VALUE final;
 };
 
+#define WMAP_DELETE_DEAD_OBJECT_IN_MARK 0
+
+#if WMAP_DELETE_DEAD_OBJECT_IN_MARK
 static int
 wmap_mark_map(st_data_t key, st_data_t val, st_data_t arg)
 {
@@ -6237,12 +6240,15 @@ wmap_mark_map(st_data_t key, st_data_t val, st_data_t arg)
     if (!is_live_object(objspace, obj)) return ST_DELETE;
     return ST_CONTINUE;
 }
+#endif
 
 static void
 wmap_mark(void *ptr)
 {
     struct weakmap *w = ptr;
+#if WMAP_DELETE_DEAD_OBJECT_IN_MARK
     if (w->obj2wmap) st_foreach(w->obj2wmap, wmap_mark_map, (st_data_t)&rb_objspace);
+#endif
     rb_gc_mark(w->final);
 }
 
