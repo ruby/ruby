@@ -126,6 +126,10 @@ static void  VpInternalRound(Real *c, size_t ixDigit, BDIGIT vPrev, BDIGIT v);
 static int   VpLimitRound(Real *c, size_t ixDigit);
 static Real *VpCopy(Real *pv, Real const* const x);
 
+#ifdef BIGDECIMAL_ENABLE_VPRINT
+static int VPrint(FILE *fp,const char *cntl_chr,Real *a);
+#endif
+
 /*
  *  **** BigDecimal part ****
  */
@@ -4940,7 +4944,6 @@ Exit:
     return (int)val;
 }
 
-#ifdef BIGDECIMAL_ENABLE_VPRINT
 /*
  *    cntl_chr ... ASCIIZ Character, print control characters
  *     Available control codes:
@@ -4951,10 +4954,11 @@ Exit:
  *     Note: % must must not appear more than once
  *    a  ... VP variable to be printed
  */
-    VP_EXPORT int
+#ifdef BIGDECIMAL_ENABLE_VPRINT
+static int
 VPrint(FILE *fp, const char *cntl_chr, Real *a)
 {
-    size_t i, j, nc, nd, ZeroSup;
+    size_t i, j, nc, nd, ZeroSup, sep = 10;
     BDIGIT m, e, nn;
 
     /* Check if NaN & Inf. */
@@ -4989,6 +4993,16 @@ VPrint(FILE *fp, const char *cntl_chr, Real *a)
 		    ++nc;
 		}
 		nc += fprintf(fp, "0.");
+		switch (*(cntl_chr + j + 1)) {
+		default:
+		    break;
+
+		case '0': case 'z':
+		    ZeroSup = 0;
+		    ++j;
+		    sep = cntl_chr[j] == 'z' ? RMPD_COMPONENT_FIGURES : 10;
+		    break;
+		}
 		for (i = 0; i < a->Prec; ++i) {
 		    m = BASE1;
 		    e = a->frac[i];
@@ -5001,7 +5015,7 @@ VPrint(FILE *fp, const char *cntl_chr, Real *a)
 			    ++nd;
 			    ZeroSup = 0;    /* Set to print succeeding zeros */
 			}
-			if (nd >= 10) {    /* print ' ' after every 10 digits */
+			if (nd >= sep) {    /* print ' ' after every 10 digits */
 			    nd = 0;
 			    nc += fprintf(fp, " ");
 			}
@@ -5010,6 +5024,7 @@ VPrint(FILE *fp, const char *cntl_chr, Real *a)
 		    }
 		}
 		nc += fprintf(fp, "E%"PRIdSIZE, VpExponent10(a));
+		nc += fprintf(fp, " (%"PRIdVALUE", %lu, %lu)", a->exponent, a->Prec, a->MaxPrec);
 	    }
 	    else {
 		nc += fprintf(fp, "0.0");
@@ -5043,9 +5058,10 @@ VPrint(FILE *fp, const char *cntl_chr, Real *a)
 	}
 	j++;
     }
+
     return (int)nc;
 }
-#endif /* BIGDECIMAL_ENABLE_VPRINT */
+#endif
 
 static void
 VpFormatSt(char *psz, size_t fFmt)

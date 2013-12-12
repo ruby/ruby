@@ -1,3 +1,10 @@
+Wed Dec 13 01:53:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (VPrint): be a static function, support another
+	  dump formats, and add more information of the given bigdecimal.
+
+	* ext/bigdecimal/bigdecimal.h: ditto.
+
 Wed Dec 11 16:45:58 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c (rb_raise_jump): call c_return hook immediately after
