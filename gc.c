@@ -6476,7 +6476,13 @@ wmap_each_value(VALUE self)
 static int
 wmap_keys_i(st_data_t key, st_data_t val, st_data_t arg)
 {
-    rb_ary_push((VALUE)arg, (VALUE)key);
+    struct wmap_iter_arg *argp = (struct wmap_iter_arg *)arg;
+    rb_objspace_t *objspace = argp->objspace;
+    VALUE ary = argp->value;
+    VALUE obj = (VALUE)val;
+    if (is_id_value(objspace, obj) && is_live_object(objspace, obj)) {
+	rb_ary_push(ary, (VALUE)key);
+    }
     return ST_CONTINUE;
 }
 
@@ -6485,12 +6491,13 @@ static VALUE
 wmap_keys(VALUE self)
 {
     struct weakmap *w;
-    VALUE ary;
+    struct wmap_iter_arg args;
 
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
-    ary = rb_ary_new();
-    st_foreach(w->wmap2obj, wmap_keys_i, (st_data_t)ary);
-    return ary;
+    args.objspace = &rb_objspace;
+    args.value = rb_ary_new();
+    st_foreach(w->wmap2obj, wmap_keys_i, (st_data_t)&args);
+    return args.value;
 }
 
 static int
