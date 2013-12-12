@@ -213,7 +213,7 @@ Slides should be:
 Please note:
 
 * Even if the proposal is generally acceptable, it won't be accepted without writing corner cases in the ticket
-* Slide's exapmle: DevelopersMeeting20130727Japan
+* Slide's example: DevelopersMeeting20130727Japan
 
 == Backport Requests
 
