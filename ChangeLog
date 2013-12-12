@@ -1,3 +1,8 @@
+Fri Dec 13 00:23:01 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enumerator.c (enumerator_with_index): try to convert given offset to
+	  integer. fix bug introduced in r39594.
+
 Mon Dec  2 23:31:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c (enumerator_with_index): should not store local variable

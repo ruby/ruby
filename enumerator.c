@@ -493,7 +493,9 @@ enumerator_with_index(int argc, VALUE *argv, VALUE obj)
     rb_scan_args(argc, argv, "01", &memo);
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, enumerator_size);
     if (NIL_P(memo))
-	memo = INT2NUM(0);
+	memo = INT2FIX(0);
+    else
+	memo = rb_to_int(memo);
     return enumerator_block_call(obj, enumerator_with_index_i, (VALUE)NEW_MEMO(memo, 0, 0));
 }
 
