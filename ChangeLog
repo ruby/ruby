@@ -2,6 +2,7 @@ Wed Dec 13 02:00:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (VpSetPTR): fix for limitation of the resulting
 	  precision.
+	  [ruby-core:50269] [Bug #7458]
 
 	* test/bigdecimal/test_bigdecimal.rb (test_limit): add tests for the above
 	  change.
