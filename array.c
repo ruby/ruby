@@ -90,7 +90,7 @@ ary_memcpy(VALUE ary, long beg, long argc, const VALUE *argv)
 	});
     }
 #else
-    /* use shady (traditional way) */
+    /* giveup write barrier (traditional way) */
     MEMCPY(RARRAY_PTR(ary)+beg, argv, VALUE, argc);
 #endif
 }
@@ -576,7 +576,7 @@ ary_make_shared(VALUE ary)
     }
     else {
 	long capa = ARY_CAPA(ary), len = RARRAY_LEN(ary);
-	NEWOBJ_OF(shared, struct RArray, 0, T_ARRAY); /* keep shared ary as shady */
+	NEWOBJ_OF(shared, struct RArray, 0, T_ARRAY); /* keep shared ary as non-WB-protected */
         FL_UNSET_EMBED(shared);
 
 	ARY_SET_LEN((VALUE)shared, capa);

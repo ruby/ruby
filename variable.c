@@ -2185,7 +2185,7 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 		if (load && (ele = check_autoload_data(load)) && (ele->thread == rb_thread_current())) {
 		    rb_clear_constant_cache();
 
-		    ele->value = val; /* autoload_i is shady */
+		    ele->value = val; /* autoload_i is non-WB-protected */
 		    return;
 		}
 		/* otherwise, allow to override */

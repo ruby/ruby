@@ -1,3 +1,9 @@
+Fri Dec 13 11:52:41 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c: fix comment to remove the word "shady".
+
+	* variable.c: ditto.
+
 Fri Dec 13 11:33:55 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: rename *shady* func/macros.
