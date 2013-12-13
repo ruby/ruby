@@ -876,7 +876,7 @@ module URI
   # If +enc+ is given, convert +str+ to the encoding before percent encoding.
   #
   # This is an implementation of
-  # http://www.w3.org/TR/html5/association-of-controls-and-forms.html#url-encoded-form-data
+  # http://www.w3.org/TR/html5/forms.html#url-encoded-form-data
   #
   # See URI.decode_www_form_component, URI.encode_www_form
   def self.encode_www_form_component(str, enc=nil)
