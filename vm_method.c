@@ -478,7 +478,6 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
     if (type != VM_METHOD_TYPE_UNDEF && type != VM_METHOD_TYPE_REFINED) {
 	method_added(klass, mid);
     }
-    rb_clear_method_cache_by_class(klass);
     return me;
 }
 
@@ -799,6 +798,7 @@ rb_export_method(VALUE klass, ID name, rb_method_flag_t noex)
 	    if (me->def->type == VM_METHOD_TYPE_REFINED) {
 		me->def->body.orig_me->flag = noex;
 	    }
+	    rb_clear_method_cache_by_class(klass);
 	}
 	else {
 	    rb_add_method(klass, name, VM_METHOD_TYPE_ZSUPER, 0, noex);
@@ -1246,7 +1246,6 @@ rb_alias(VALUE klass, ID name, ID def)
 
     if (flag == NOEX_UNDEF) flag = orig_me->flag;
     rb_method_entry_set(target_klass, name, orig_me, flag);
-    rb_clear_method_cache_by_class(target_klass);
 }
 
 /*
@@ -1301,7 +1300,6 @@ set_method_visibility(VALUE self, int argc, VALUE *argv, rb_method_flag_t ex)
 	}
 	rb_export_method(self, id, ex);
     }
-    rb_clear_method_cache_by_class(self);
 }
 
 static VALUE
