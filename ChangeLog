@@ -1,3 +1,14 @@
+Fri Dec 13 22:29:21 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (method_owner): return the class where alias is defined, not
+	  the class original method is defined.
+
+	* vm_method.c (rb_method_entry_make, rb_alias): store the originally
+	  defined class in me.  [Bug #7993] [Bug #7842] [Bug #9236]
+
+	* vm_method.c (rb_method_entry_get_without_cache): cache included
+	  module but not iclass.
+
 Fri Dec 13 16:27:17 2013  Aman Gupta <ruby@tmm1.net>
 
 	* gc.c (gc_info_decode): Use :major_by=>:nofree as fallback reason

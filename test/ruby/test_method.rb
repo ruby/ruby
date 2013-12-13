@@ -365,7 +365,7 @@ class TestMethod < Test::Unit::TestCase
     c3 = Class.new(c)
     c3.class_eval { alias bar foo }
     m3 = c3.new.method(:bar)
-    assert_equal("#<Method: #{ c3.inspect }#bar(foo)>", m3.inspect, bug7806)
+    assert_equal("#<Method: #{c3.inspect}(#{c.inspect})#bar(foo)>", m3.inspect, bug7806)
   end
 
   def test_callee_top_level
@@ -571,17 +571,23 @@ class TestMethod < Test::Unit::TestCase
 
   def test_alias_owner
     bug7613 = '[ruby-core:51105]'
+    bug7993 = '[Bug #7993]'
     c = Class.new {
       def foo
       end
+      prepend Module.new
+      attr_reader :zot
     }
     x = c.new
     class << x
       alias bar foo
     end
+    assert_equal(c, c.instance_method(:foo).owner)
     assert_equal(c, x.method(:foo).owner)
     assert_equal(x.singleton_class, x.method(:bar).owner)
     assert_not_equal(x.method(:foo), x.method(:bar), bug7613)
+    assert_equal(c, x.method(:zot).owner, bug7993)
+    assert_equal(c, c.instance_method(:zot).owner, bug7993)
   end
 
   def test_included
