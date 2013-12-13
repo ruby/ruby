@@ -5213,7 +5213,6 @@ gc_info_decode(int flags, VALUE hash_or_key)
 	rb_hash_aset(hash, sym_##name, (attr));
 
     major_by =
-      (flags & GPR_FLAG_MAJOR_BY_NOFREE) ? sym_nofree :
       (flags & GPR_FLAG_MAJOR_BY_OLDGEN) ? sym_oldgen :
       (flags & GPR_FLAG_MAJOR_BY_SHADY)  ? sym_shady :
       (flags & GPR_FLAG_MAJOR_BY_RESCAN) ? sym_rescan :
@@ -5221,6 +5220,7 @@ gc_info_decode(int flags, VALUE hash_or_key)
 #if RGENGC_ESTIMATE_OLDMALLOC
       (flags & GPR_FLAG_MAJOR_BY_OLDMALLOC) ? sym_oldmalloc :
 #endif
+      (flags & GPR_FLAG_MAJOR_BY_NOFREE) ? sym_nofree :
       Qnil;
     SET(major_by, major_by);
 
