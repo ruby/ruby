@@ -1152,15 +1152,15 @@ using_module_recursive(NODE *cref, VALUE klass)
 	using_module_recursive(cref, super);
     }
     switch (BUILTIN_TYPE(klass)) {
-    case T_MODULE:
+      case T_MODULE:
 	module = klass;
 	break;
 
-    case T_ICLASS:
+      case T_ICLASS:
 	module = RBASIC(klass)->klass;
 	break;
 
-    default:
+      default:
 	rb_raise(rb_eTypeError, "wrong argument type %s (expected Module)",
 		 rb_obj_classname(klass));
 	break;
