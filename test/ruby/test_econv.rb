@@ -86,8 +86,8 @@ class TestEncodingConverter < Test::Unit::TestCase
     }
 
     encoding_list = Encoding.list.map {|e| e.name }
-    assert(!encoding_list.include?(name1))
-    assert(!encoding_list.include?(name2))
+    assert_not_include(encoding_list, name1)
+    assert_not_include(encoding_list, name2)
   end
 
   def test_newline_converter_with_ascii_incompatible

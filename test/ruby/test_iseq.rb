@@ -103,7 +103,7 @@ class TestISeq < Test::Unit::TestCase
     iseq = ISeq.of(method(:test_location))
 
     assert_equal(__FILE__, iseq.path)
-    assert(/#{__FILE__}/ =~ iseq.absolute_path)
+    assert_match(/#{__FILE__}/, iseq.absolute_path)
     assert_equal("test_location", iseq.label)
     assert_equal("test_location", iseq.base_label)
     assert_equal(LINE_OF_HERE+1, iseq.first_lineno)
@@ -111,7 +111,7 @@ class TestISeq < Test::Unit::TestCase
     line = __LINE__
     iseq = ISeq.of(Proc.new{})
     assert_equal(__FILE__, iseq.path)
-    assert(/#{__FILE__}/ =~ iseq.absolute_path)
+    assert_match(/#{__FILE__}/, iseq.absolute_path)
     assert_equal("test_location", iseq.base_label)
     assert_equal("block in test_location", iseq.label)
     assert_equal(line+1, iseq.first_lineno)

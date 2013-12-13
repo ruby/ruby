@@ -64,14 +64,14 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_thread_variable?
-    refute Thread.new { Thread.current.thread_variable?("foo") }.join.value
+    Thread.new { assert_not_send([Thread.current, :thread_variable?, "foo"]) }.value
     t = Thread.new {
       Thread.current.thread_variable_set("foo", "bar")
     }.join
 
-    assert t.thread_variable?("foo")
-    assert t.thread_variable?(:foo)
-    refute t.thread_variable?(:bar)
+    assert_send([t, :thread_variable?, "foo"])
+    assert_send([t, :thread_variable?, :foo])
+    assert_not_send([t, :thread_variable?, :bar])
   end
 
   def test_thread_variable_strings_and_symbols_are_the_same_key
@@ -140,7 +140,7 @@ class TestThread < Test::Unit::TestCase
     end
     t1.kill
     t2.kill
-    assert_operator(c1, :>, c2, "[ruby-dev:33124]") # not guaranteed
+    assert_send([c1, :>, c2], "[ruby-dev:33124]") # not guaranteed
   end
 
   def test_new

@@ -25,7 +25,7 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def assert_regexp_generic_encoding(r)
-    assert(!r.fixed_encoding?)
+    assert_not_predicate(r, :fixed_encoding?)
     %w[ASCII-8BIT EUC-JP Windows-31J UTF-8].each {|ename|
       # "\xc2\xa1" is a valid sequence for ASCII-8BIT, EUC-JP, Windows-31J and UTF-8.
       assert_nothing_raised { r =~ "\xc2\xa1".force_encoding(ename) }
@@ -33,7 +33,7 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def assert_regexp_fixed_encoding(r)
-    assert(r.fixed_encoding?)
+    assert_predicate(r, :fixed_encoding?)
     %w[ASCII-8BIT EUC-JP Windows-31J UTF-8].each {|ename|
       enc = Encoding.find(ename)
       if enc == r.encoding
@@ -107,7 +107,7 @@ class TestM17N < Test::Unit::TestCase
     elsif !s2.ascii_only?
       assert_equal(s2.encoding, t.encoding)
     else
-      assert([s1.encoding, s2.encoding].include?(t.encoding))
+      assert_include([s1.encoding, s2.encoding], t.encoding)
     end
   end
 
@@ -360,15 +360,15 @@ class TestM17N < Test::Unit::TestCase
         ].each {|pat2|
           s = [pat2.gsub(/ /, "")].pack("B*").force_encoding("utf-8")
           if pat2 <= bits_0x10ffff
-            assert(s.valid_encoding?, "#{pat2}")
+            assert_predicate(s, :valid_encoding?, "#{pat2}")
           else
-            assert(!s.valid_encoding?, "#{pat2}")
+            assert_not_predicate(s, :valid_encoding?, "#{pat2}")
           end
         }
         if / / =~ pat0
           pat3 = pat1.gsub(/X/, "0")
           s = [pat3.gsub(/ /, "")].pack("B*").force_encoding("utf-8")
-          assert(!s.valid_encoding?, "#{pat3}")
+          assert_not_predicate(s, :valid_encoding?, "#{pat3}")
         end
       }
     }
@@ -388,12 +388,12 @@ class TestM17N < Test::Unit::TestCase
         pat0.gsub(/x/, '1'),
       ].each {|pat1|
         s = [pat1.gsub(/ /, "")].pack("B*").force_encoding("utf-8")
-        assert(!s.valid_encoding?, "#{pat1}")
+        assert_not_predicate(s, :valid_encoding?, "#{pat1}")
       }
     }
     pats.values_at(0,3).each {|pat|
       s = [pat.gsub(/ /, "")].pack("B*").force_encoding("utf-8")
-      assert(s.valid_encoding?, "#{pat}")
+      assert_predicate(s, :valid_encoding?, "#{pat}")
     }
   end
 
@@ -592,38 +592,38 @@ class TestM17N < Test::Unit::TestCase
     assert_nothing_raised {
       r = Regexp.new(s)
     }
-    assert(r.fixed_encoding?)
+    assert_predicate(r, :fixed_encoding?)
     assert_match(r, "\xa4\xa2".force_encoding("euc-jp"))
 
     r = eval('/\p{Hiragana}/'.force_encoding("euc-jp"))
-    assert(r.fixed_encoding?)
+    assert_predicate(r, :fixed_encoding?)
     assert_match(r, "\xa4\xa2".force_encoding("euc-jp"))
 
     r = /\p{Hiragana}/e
-    assert(r.fixed_encoding?)
+    assert_predicate(r, :fixed_encoding?)
     assert_match(r, "\xa4\xa2".force_encoding("euc-jp"))
 
     r = /\p{AsciI}/e
-    assert(r.fixed_encoding?)
+    assert_predicate(r, :fixed_encoding?)
     assert_match(r, "a".force_encoding("euc-jp"))
 
     r = /\p{hiraganA}/e
-    assert(r.fixed_encoding?)
+    assert_predicate(r, :fixed_encoding?)
     assert_match(r, "\xa4\xa2".force_encoding("euc-jp"))
 
     r = eval('/\u{3042}\p{Hiragana}/'.force_encoding("euc-jp"))
-    assert(r.fixed_encoding?)
+    assert_predicate(r, :fixed_encoding?)
     assert_equal(Encoding::UTF_8, r.encoding)
 
     r = eval('/\p{Hiragana}\u{3042}/'.force_encoding("euc-jp"))
-    assert(r.fixed_encoding?)
+    assert_predicate(r, :fixed_encoding?)
     assert_equal(Encoding::UTF_8, r.encoding)
   end
 
   def test_regexp_embed_preprocess
     r1 = /\xa4\xa2/e
     r2 = /#{r1}/
-    assert(r2.source.include?(r1.source))
+    assert_include(r2.source, r1.source)
   end
 
   def test_begin_end_offset
@@ -668,10 +668,10 @@ class TestM17N < Test::Unit::TestCase
   def test_union_0
     r = Regexp.union
     assert_regexp_generic_ascii(r)
-    assert(r !~ a(""))
-    assert(r !~ e(""))
-    assert(r !~ s(""))
-    assert(r !~ u(""))
+    assert_not_match(r, a(""))
+    assert_not_match(r, e(""))
+    assert_not_match(r, s(""))
+    assert_not_match(r, u(""))
   end
 
   def test_union_1_asciionly_string
@@ -894,9 +894,9 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_str_lt
-    assert(a("a") < a("\xa1"))
-    assert(a("a") < s("\xa1"))
-    assert(s("a") < a("\xa1"))
+    assert_operator(a("a"), :<, a("\xa1"))
+    assert_operator(a("a"), :<, s("\xa1"))
+    assert_operator(s("a"), :<, a("\xa1"))
   end
 
   def test_str_multiply
@@ -1069,15 +1069,15 @@ class TestM17N < Test::Unit::TestCase
     s = "\x80".force_encoding("ASCII-8BIT")
     r = Regexp.new("\x80".force_encoding("ASCII-8BIT"))
     s2 = s.sub(r, "")
-    assert(s2.empty?)
-    assert(s2.ascii_only?)
+    assert_empty(s2)
+    assert_predicate(s2, :ascii_only?)
   end
 
   def test_sub3
     repl = "\x81".force_encoding("sjis")
     assert_equal(false, repl.valid_encoding?)
     s = "a@".sub(/a/, repl)
-    assert(s.valid_encoding?)
+    assert_predicate(s, :valid_encoding?)
   end
 
   def test_insert
@@ -1459,8 +1459,8 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_force_encoding
-    assert(("".center(1, "\x80".force_encoding("utf-8")); true),
-           "moved from btest/knownbug, [ruby-dev:33807]")
+    assert_equal(u("\x80"), "".center(1, u("\x80")),
+                 "moved from btest/knownbug, [ruby-dev:33807]")
     a = "".force_encoding("ascii-8bit") << 0xC3 << 0xB6
     assert_equal(1, a.force_encoding("utf-8").size, '[ruby-core:22437]')
     b = "".force_encoding("ascii-8bit") << 0xC3.chr << 0xB6.chr

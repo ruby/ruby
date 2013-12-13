@@ -63,11 +63,16 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def assert_integer(n)
-    assert(n.is_a?(Integer), n.inspect + " is not Fixnum.")
+    assert_kind_of(Integer, n)
   end
 
   def assert_integer_or_nil(n)
-    assert(n.is_a?(Integer) || n.equal?(nil), n.inspect + " is neither Fixnum nor nil.")
+    msg = ->{"#{n.inspect} is neither Fixnum nor nil."}
+    if n
+      assert_kind_of(Integer, n, msg)
+    else
+      assert_nil(n, msg)
+    end
   end
 
   def test_stat
@@ -131,42 +136,42 @@ class TestFileExhaustive < Test::Unit::TestCase
   end if /mswin|mingw|cygwin/ =~ RUBY_PLATFORM
 
   def test_directory_p
-    assert(File.directory?(@dir))
-    assert(!(File.directory?(@dir+"/...")))
-    assert(!(File.directory?(@file)))
-    assert(!(File.directory?(@nofile)))
+    assert_file.directory?(@dir)
+    assert_file.not_directory?(@dir+"/...")
+    assert_file.not_directory?(@file)
+    assert_file.not_directory?(@nofile)
   end
 
   def test_pipe_p ## xxx
-    assert(!(File.pipe?(@dir)))
-    assert(!(File.pipe?(@file)))
-    assert(!(File.pipe?(@nofile)))
+    assert_file.not_pipe?(@dir)
+    assert_file.not_pipe?(@file)
+    assert_file.not_pipe?(@nofile)
   end
 
   def test_symlink_p
-    assert(!(File.symlink?(@dir)))
-    assert(!(File.symlink?(@file)))
-    assert(File.symlink?(@symlinkfile)) if @symlinkfile
-    assert(!(File.symlink?(@hardlinkfile))) if @hardlinkfile
-    assert(!(File.symlink?(@nofile)))
+    assert_file.not_symlink?(@dir)
+    assert_file.not_symlink?(@file)
+    assert_file.symlink?(@symlinkfile) if @symlinkfile
+    assert_file.not_symlink?(@hardlinkfile) if @hardlinkfile
+    assert_file.not_symlink?(@nofile)
   end
 
   def test_socket_p ## xxx
-    assert(!(File.socket?(@dir)))
-    assert(!(File.socket?(@file)))
-    assert(!(File.socket?(@nofile)))
+    assert_file.not_socket?(@dir)
+    assert_file.not_socket?(@file)
+    assert_file.not_socket?(@nofile)
   end
 
   def test_blockdev_p ## xxx
-    assert(!(File.blockdev?(@dir)))
-    assert(!(File.blockdev?(@file)))
-    assert(!(File.blockdev?(@nofile)))
+    assert_file.not_blockdev?(@dir)
+    assert_file.not_blockdev?(@file)
+    assert_file.not_blockdev?(@nofile)
   end
 
   def test_chardev_p ## xxx
-    assert(!(File.chardev?(@dir)))
-    assert(!(File.chardev?(@file)))
-    assert(!(File.chardev?(@nofile)))
+    assert_file.not_chardev?(@dir)
+    assert_file.not_chardev?(@file)
+    assert_file.not_chardev?(@nofile)
   end
 
   def test_exist_p
@@ -179,119 +184,119 @@ class TestFileExhaustive < Test::Unit::TestCase
     return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
     return if Process.euid == 0
     File.chmod(0200, @file)
-    assert(!(File.readable?(@file)))
+    assert_file.not_readable?(@file)
     File.chmod(0600, @file)
-    assert(File.readable?(@file))
-    assert(!(File.readable?(@nofile)))
+    assert_file.readable?(@file)
+    assert_file.not_readable?(@nofile)
   end
 
   def test_readable_real_p
     return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
     return if Process.euid == 0
     File.chmod(0200, @file)
-    assert(!(File.readable_real?(@file)))
+    assert_file.not_readable_real?(@file)
     File.chmod(0600, @file)
-    assert(File.readable_real?(@file))
-    assert(!(File.readable_real?(@nofile)))
+    assert_file.readable_real?(@file)
+    assert_file.not_readable_real?(@nofile)
   end
 
   def test_world_readable_p
     return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
     File.chmod(0006, @file)
-    assert(File.world_readable?(@file))
+    assert_file.world_readable?(@file)
     File.chmod(0060, @file)
-    assert(!(File.world_readable?(@file)))
+    assert_file.not_world_readable?(@file)
     File.chmod(0600, @file)
-    assert(!(File.world_readable?(@file)))
-    assert(!(File.world_readable?(@nofile)))
+    assert_file.not_world_readable?(@file)
+    assert_file.not_world_readable?(@nofile)
   end
 
   def test_writable_p
     return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
     return if Process.euid == 0
     File.chmod(0400, @file)
-    assert(!(File.writable?(@file)))
+    assert_file.not_writable?(@file)
     File.chmod(0600, @file)
-    assert(File.writable?(@file))
-    assert(!(File.writable?(@nofile)))
+    assert_file.writable?(@file)
+    assert_file.not_writable?(@nofile)
   end
 
   def test_writable_real_p
     return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
     return if Process.euid == 0
     File.chmod(0400, @file)
-    assert(!(File.writable_real?(@file)))
+    assert_file.not_writable_real?(@file)
     File.chmod(0600, @file)
-    assert(File.writable_real?(@file))
-    assert(!(File.writable_real?(@nofile)))
+    assert_file.writable_real?(@file)
+    assert_file.not_writable_real?(@nofile)
   end
 
   def test_world_writable_p
     return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
     File.chmod(0006, @file)
-    assert(File.world_writable?(@file))
+    assert_file.world_writable?(@file)
     File.chmod(0060, @file)
-    assert(!(File.world_writable?(@file)))
+    assert_file.not_world_writable?(@file)
     File.chmod(0600, @file)
-    assert(!(File.world_writable?(@file)))
-    assert(!(File.world_writable?(@nofile)))
+    assert_file.not_world_writable?(@file)
+    assert_file.not_world_writable?(@nofile)
   end
 
   def test_executable_p
     return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
     File.chmod(0100, @file)
-    assert(File.executable?(@file))
+    assert_file.executable?(@file)
     File.chmod(0600, @file)
-    assert(!(File.executable?(@file)))
-    assert(!(File.executable?(@nofile)))
+    assert_file.not_executable?(@file)
+    assert_file.not_executable?(@nofile)
   end
 
   def test_executable_real_p
     return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
     File.chmod(0100, @file)
-    assert(File.executable_real?(@file))
+    assert_file.executable_real?(@file)
     File.chmod(0600, @file)
-    assert(!(File.executable_real?(@file)))
-    assert(!(File.executable_real?(@nofile)))
+    assert_file.not_executable_real?(@file)
+    assert_file.not_executable_real?(@nofile)
   end
 
   def test_file_p
-    assert(!(File.file?(@dir)))
-    assert(File.file?(@file))
-    assert(!(File.file?(@nofile)))
+    assert_file.not_file?(@dir)
+    assert_file.file?(@file)
+    assert_file.not_file?(@nofile)
   end
 
   def test_zero_p
     assert_nothing_raised { File.zero?(@dir) }
-    assert(!(File.zero?(@file)))
-    assert(File.zero?(@zerofile))
-    assert(!(File.zero?(@nofile)))
+    assert_file.not_zero?(@file)
+    assert_file.zero?(@zerofile)
+    assert_file.not_zero?(@nofile)
   end
 
   def test_size_p
     assert_nothing_raised { File.size?(@dir) }
     assert_equal(3, File.size?(@file))
-    assert(!(File.size?(@zerofile)))
-    assert(!(File.size?(@nofile)))
+    assert_file.not_size?(@zerofile)
+    assert_file.not_size?(@nofile)
   end
 
   def test_owned_p ## xxx
     return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
-    assert(File.owned?(@file))
-    assert(File.grpowned?(@file))
+    assert_file.owned?(@file)
+    assert_file.grpowned?(@file)
   end
 
   def test_suid_sgid_sticky ## xxx
-    assert(!(File.setuid?(@file)))
-    assert(!(File.setgid?(@file)))
-    assert(!(File.sticky?(@file)))
+    assert_file.not_setuid?(@file)
+    assert_file.not_setgid?(@file)
+    assert_file.not_sticky?(@file)
   end
 
   def test_identical_p
-    assert(File.identical?(@file, @file))
-    assert(!(File.identical?(@file, @zerofile)))
-    assert(!(File.identical?(@file, @nofile)))
-    assert(!(File.identical?(@nofile, @file)))
+    assert_file.identical?(@file, @file)
+    assert_file.not_identical?(@file, @zerofile)
+    assert_file.not_identical?(@file, @nofile)
+    assert_file.not_identical?(@nofile, @file)
   end
 
   def test_s_size

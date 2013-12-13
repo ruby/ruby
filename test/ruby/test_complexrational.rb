@@ -74,8 +74,8 @@ class ComplexRational_Test < Test::Unit::TestCase
 
     assert_equal(0, Rational(2,3) <=> SimpleRat(2,3))
     assert_equal(0, SimpleRat(2,3) <=> Rational(2,3))
-    assert(Rational(2,3) == SimpleRat(2,3))
-    assert(SimpleRat(2,3) == Rational(2,3))
+    assert_equal(Rational(2,3), SimpleRat(2,3))
+    assert_equal(SimpleRat(2,3), Rational(2,3))
 
     assert_equal(SimpleRat, (c + 0).class)
     assert_equal(SimpleRat, (c - 0).class)
@@ -168,10 +168,10 @@ class ComplexRational_Test < Test::Unit::TestCase
     assert_equal([Float,Float],
 		 (cc ** c).instance_eval{[real.class, imag.class]})
 
-    assert(Complex(SimpleRat(2,3),SimpleRat(3,2)) ==
-	   Complex(Rational(2,3),Rational(3,2)))
-    assert(Complex(Rational(2,3),Rational(3,2)) ==
-	   Complex(SimpleRat(2,3),SimpleRat(3,2)))
+    assert_equal(Complex(SimpleRat(2,3),SimpleRat(3,2)),
+                 Complex(Rational(2,3),Rational(3,2)))
+    assert_equal(Complex(Rational(2,3),Rational(3,2)),
+                 Complex(SimpleRat(2,3),SimpleRat(3,2)))
 
     assert_equal([SimpleRat,SimpleRat],
 		 (c + 0).instance_eval{[real.class, imag.class]})

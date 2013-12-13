@@ -152,7 +152,7 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_assign_named_capture_to_reserved_word
     /(?<nil>.)/ =~ "a"
-    assert(!local_variables.include?(:nil), "[ruby-dev:32675]")
+    assert_not_include(local_variables, :nil, "[ruby-dev:32675]")
   end
 
   def test_match_regexp
@@ -554,11 +554,11 @@ class TestRegexp < Test::Unit::TestCase
       $SAFE = 3
       /foo/.match("foo")
     end.value
-    assert(m.tainted?)
+    assert_predicate(m, :tainted?)
     assert_nothing_raised('[ruby-core:26137]') {
       m = proc {$SAFE = 3; %r"#{ }"o}.call
     }
-    assert(m.tainted?)
+    assert_predicate(m, :tainted?)
   end
 
   def check(re, ss, fs = [], msg = nil)
@@ -1052,6 +1052,6 @@ class TestRegexp < Test::Unit::TestCase
       "Expected #{re.inspect} to\n" +
       errs.map {|str, match| "\t#{'not ' unless match}match #{str.inspect}"}.join(",\n")
     }
-    assert(errs.empty?, msg)
+    assert_empty(errs, msg)
   end
 end

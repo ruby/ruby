@@ -291,10 +291,10 @@ class TestFiber < Test::Unit::TestCase
     h_0 = eval(invoke_rec('p RubyVM::DEFAULT_PARAMS', 0, 0, false))
     h_large = eval(invoke_rec('p RubyVM::DEFAULT_PARAMS', 1024 * 1024 * 10, 1024 * 1024 * 10, false))
 
-    assert(h_default[:fiber_vm_stack_size] > h_0[:fiber_vm_stack_size])
-    assert(h_default[:fiber_vm_stack_size] < h_large[:fiber_vm_stack_size])
-    assert(h_default[:fiber_machine_stack_size] >= h_0[:fiber_machine_stack_size])
-    assert(h_default[:fiber_machine_stack_size] <= h_large[:fiber_machine_stack_size])
+    assert_operator(h_default[:fiber_vm_stack_size], :>, h_0[:fiber_vm_stack_size])
+    assert_operator(h_default[:fiber_vm_stack_size], :<, h_large[:fiber_vm_stack_size])
+    assert_operator(h_default[:fiber_machine_stack_size], :>=, h_0[:fiber_machine_stack_size])
+    assert_operator(h_default[:fiber_machine_stack_size], :<=, h_large[:fiber_machine_stack_size])
 
     # check VM machine stack size
     script = '$stdout.sync=true; def rec; print "."; rec; end; Fiber.new{rec}.resume'

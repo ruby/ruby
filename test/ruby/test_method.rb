@@ -391,14 +391,16 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_default_accessibility
-    assert T.public_instance_methods.include?(:normal_method), 'normal methods are public by default'
-    assert !T.public_instance_methods.include?(:initialize), '#initialize is private'
-    assert !T.public_instance_methods.include?(:initialize_copy), '#initialize_copy is private'
-    assert !T.public_instance_methods.include?(:initialize_clone), '#initialize_clone is private'
-    assert !T.public_instance_methods.include?(:initialize_dup), '#initialize_dup is private'
-    assert !T.public_instance_methods.include?(:respond_to_missing?), '#respond_to_missing? is private'
-    assert !M.public_instance_methods.include?(:func), 'module methods are private by default'
-    assert M.public_instance_methods.include?(:meth), 'normal methods are public by default'
+    tmethods = T.public_instance_methods
+    assert_include tmethods, :normal_method, 'normal methods are public by default'
+    assert_not_include tmethods, :initialize, '#initialize is private'
+    assert_not_include tmethods, :initialize_copy, '#initialize_copy is private'
+    assert_not_include tmethods, :initialize_clone, '#initialize_clone is private'
+    assert_not_include tmethods, :initialize_dup, '#initialize_dup is private'
+    assert_not_include tmethods, :respond_to_missing?, '#respond_to_missing? is private'
+    mmethods = M.public_instance_methods
+    assert_not_include mmethods, :func, 'module methods are private by default'
+    assert_include mmethods, :meth, 'normal methods are public by default'
   end
 
   define_method(:pm0) {||}
@@ -579,7 +581,7 @@ class TestMethod < Test::Unit::TestCase
     end
     assert_equal(c, x.method(:foo).owner)
     assert_equal(x.singleton_class, x.method(:bar).owner)
-    assert(x.method(:foo) != x.method(:bar), bug7613)
+    assert_not_equal(x.method(:foo), x.method(:bar), bug7613)
   end
 
   def test_included

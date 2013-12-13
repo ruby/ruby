@@ -2099,7 +2099,7 @@ EOT
       open("ff", "w") {|f| }
       open("ff", "rt") {|f|
         f.ungetc "a"
-        assert(!f.eof?, "[ruby-dev:40506] (3)")
+        assert_not_predicate(f, :eof?, "[ruby-dev:40506] (3)")
       }
     }
   end

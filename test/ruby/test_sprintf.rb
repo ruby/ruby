@@ -320,7 +320,7 @@ class TestSprintf < Test::Unit::TestCase
     s2 = sprintf("%0x", -0x40000001)
     b1 = (/\.\./ =~ s1) != nil
     b2 = (/\.\./ =~ s2) != nil
-    assert(b1 == b2, "[ruby-dev:33224]")
+    assert_equal(b1, b2, "[ruby-dev:33224]")
   end
 
   def test_named_untyped

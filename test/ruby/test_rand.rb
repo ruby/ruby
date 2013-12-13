@@ -405,14 +405,14 @@ END
 
   def test_random_equal
     r = Random.new(0)
-    assert(r == r)
-    assert(r == r.dup)
+    assert_equal(r, r)
+    assert_equal(r, r.dup)
     r1 = r.dup
     r2 = r.dup
     r1.rand(0x100)
-    assert(r1 != r2)
+    assert_not_equal(r1, r2)
     r2.rand(0x100)
-    assert(r1 == r2)
+    assert_equal(r1, r2)
   end
 
   def test_fork_shuffle
@@ -421,7 +421,7 @@ END
       raise 'default seed is not set' if srand == 0
     end
     p2, st = Process.waitpid2(pid)
-    assert(st.success?, "#{st.inspect}")
+    assert_predicate(st, :success?, "#{st.inspect}")
   rescue NotImplementedError, ArgumentError
   end
 

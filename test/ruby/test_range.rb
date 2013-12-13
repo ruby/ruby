@@ -97,36 +97,36 @@ class TestRange < Test::Unit::TestCase
   end
 
   def test_exclude_end
-    assert(!((0..1).exclude_end?))
-    assert((0...1).exclude_end?)
+    assert_not_predicate(0..1, :exclude_end?)
+    assert_predicate(0...1, :exclude_end?)
   end
 
   def test_eq
     r = (0..1)
-    assert(r == r)
-    assert(r == (0..1))
-    assert(r != 0)
-    assert(r != (1..2))
-    assert(r != (0..2))
-    assert(r != (0...1))
+    assert_equal(r, r)
+    assert_equal(r, (0..1))
+    assert_not_equal(r, 0)
+    assert_not_equal(r, (1..2))
+    assert_not_equal(r, (0..2))
+    assert_not_equal(r, (0...1))
     subclass = Class.new(Range)
-    assert(r == subclass.new(0,1))
+    assert_equal(r, subclass.new(0,1))
   end
 
   def test_eql
     r = (0..1)
-    assert(r.eql?(r))
-    assert(r.eql?(0..1))
-    assert(!r.eql?(0))
-    assert(!r.eql?(1..2))
-    assert(!r.eql?(0..2))
-    assert(!r.eql?(0...1))
+    assert_operator(r, :eql?, r)
+    assert_operator(r, :eql?, 0..1)
+    assert_not_operator(r, :eql?, 0)
+    assert_not_operator(r, :eql?, 1..2)
+    assert_not_operator(r, :eql?, 0..2)
+    assert_not_operator(r, :eql?, 0...1)
     subclass = Class.new(Range)
-    assert(r.eql?(subclass.new(0,1)))
+    assert_operator(r, :eql?, subclass.new(0,1))
   end
 
   def test_hash
-    assert((0..1).hash.is_a?(Fixnum))
+    assert_kind_of(Fixnum, (0..1).hash)
   end
 
   def test_step
@@ -274,25 +274,25 @@ class TestRange < Test::Unit::TestCase
   end
 
   def test_eqq
-    assert((0..10) === 5)
-    assert(!((0..10) === 11))
+    assert_operator(0..10, :===, 5)
+    assert_not_operator(0..10, :===, 11)
   end
 
   def test_include
-    assert(("a".."z").include?("c"))
-    assert(!(("a".."z").include?("5")))
-    assert(("a"..."z").include?("y"))
-    assert(!(("a"..."z").include?("z")))
-    assert(!(("a".."z").include?("cc")))
-    assert((0...10).include?(5))
+    assert_include("a".."z", "c")
+    assert_not_include("a".."z", "5")
+    assert_include("a"..."z", "y")
+    assert_not_include("a"..."z", "z")
+    assert_not_include("a".."z", "cc")
+    assert_include(0...10, 5)
   end
 
   def test_cover
-    assert(("a".."z").cover?("c"))
-    assert(!(("a".."z").cover?("5")))
-    assert(("a"..."z").cover?("y"))
-    assert(!(("a"..."z").cover?("z")))
-    assert(("a".."z").cover?("cc"))
+    assert_operator("a".."z", :cover?, "c")
+    assert_not_operator("a".."z", :cover?, "5")
+    assert_operator("a"..."z", :cover?, "y")
+    assert_not_operator("a"..."z", :cover?, "z")
+    assert_operator("a".."z", :cover?, "cc")
   end
 
   def test_beg_len
@@ -332,14 +332,14 @@ class TestRange < Test::Unit::TestCase
     x = CyclicRange.allocate; x.send(:initialize, x, 1)
     y = CyclicRange.allocate; y.send(:initialize, y, 1)
     Timeout.timeout(1) {
-      assert x == y
-      assert x.eql? y
+      assert_equal x, y
+      assert_operator x, :eql?, y
     }
 
     z = CyclicRange.allocate; z.send(:initialize, z, :another)
     Timeout.timeout(1) {
-      assert x != z
-      assert !x.eql?(z)
+      assert_not_equal x, z
+      assert_not_operator x, :eql?, z
     }
 
     x = CyclicRange.allocate
@@ -347,8 +347,8 @@ class TestRange < Test::Unit::TestCase
     x.send(:initialize, y, 1)
     y.send(:initialize, x, 1)
     Timeout.timeout(1) {
-      assert x == y
-      assert x.eql?(y)
+      assert_equal x, y
+      assert_operator x, :eql?, y
     }
 
     x = CyclicRange.allocate
@@ -356,8 +356,8 @@ class TestRange < Test::Unit::TestCase
     x.send(:initialize, z, 1)
     z.send(:initialize, x, :other)
     Timeout.timeout(1) {
-      assert x != z
-      assert !x.eql?(z)
+      assert_not_equal x, z
+      assert_not_operator x, :eql?, z
     }
   end
 
@@ -484,7 +484,7 @@ class TestRange < Test::Unit::TestCase
           when Float then 65
           when Integer then Math.log(to-from+(range.exclude_end? ? 0 : 1), 2).to_i + 1
           end
-    assert yielded.size <= max
+    assert_operator yielded.size, :<=, max
 
     # (2) coverage test
     expect =  if search < from
@@ -502,22 +502,23 @@ class TestRange < Test::Unit::TestCase
     # (4) end of range test
     case
     when range.exclude_end?
-      assert !yielded.include?(to)
-      assert r != to
+      assert_not_include yielded, to
+      assert_not_equal r, to
     when search >= to
-      assert yielded.include?(to)
+      assert_include yielded, to
       assert_equal search == to ? to : nil, r
     end
 
     # start of range test
     if search <= from
-      assert yielded.include?(from)
+      assert_include yielded, from
       assert_equal from, r
     end
 
     # (5) out of range test
     yielded.each do |val|
-      assert from <= val && val.send(cmp, to)
+      assert_operator from, :<=, val
+      assert_send [val, cmp, to]
     end
   end
 

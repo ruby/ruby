@@ -206,8 +206,14 @@ class TestIntegerComb < Test::Unit::TestCase
           check_class(q)
           check_class(r)
           assert_equal(a, b*q+r)
-          assert(r.abs < b.abs)
-          assert(0 < b ? (0 <= r && r < b) : (b < r && r <= 0))
+          assert_operator(r.abs, :<, b.abs)
+          if 0 < b
+            assert_operator(r, :>=, 0)
+            assert_operator(r, :<, b)
+          else
+            assert_operator(r, :>, b)
+            assert_operator(r, :<=, 0)
+          end
           assert_equal(q, a/b)
           assert_equal(q, a.div(b))
           assert_equal(r, a%b)

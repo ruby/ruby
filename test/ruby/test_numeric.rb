@@ -32,7 +32,7 @@ class TestNumeric < Test::Unit::TestCase
     end
     assert_equal(2, 1 + a)
     assert_equal(0, 1 <=> a)
-    assert(1 <= a)
+    assert_operator(1, :<=, a)
 
     DummyNumeric.class_eval do
       remove_method :coerce
@@ -93,11 +93,11 @@ class TestNumeric < Test::Unit::TestCase
   end
 
   def test_real_p
-    assert(Numeric.new.real?)
+    assert_predicate(Numeric.new, :real?)
   end
 
   def test_integer_p
-    assert(!Numeric.new.integer?)
+    assert_not_predicate(Numeric.new, :integer?)
   end
 
   def test_abs
@@ -127,7 +127,7 @@ class TestNumeric < Test::Unit::TestCase
       def ==(x); true; end
     end
 
-    assert(DummyNumeric.new.zero?)
+    assert_predicate(DummyNumeric.new, :zero?)
 
   ensure
     DummyNumeric.class_eval do
@@ -274,8 +274,8 @@ class TestNumeric < Test::Unit::TestCase
   end
 
   def test_eql
-    assert(1 == 1.0)
-    assert(!(1.eql?(1.0)))
-    assert(!(1.eql?(2)))
+    assert_equal(1, 1.0)
+    assert_not_operator(1, :eql?, 1.0)
+    assert_not_operator(1, :eql?, 2)
   end
 end

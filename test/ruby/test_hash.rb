@@ -492,7 +492,7 @@ class TestHash < Test::Unit::TestCase
 
     h = @cls[ 'a' => 1, 'b' => 2, 'c' => 1].invert
     assert_equal(2, h.length)
-    assert(h[1] == 'a' || h[1] == 'c')
+    assert_include(%w[a c], h[1])
     assert_equal('b', h[2])
   end
 
@@ -787,7 +787,7 @@ class TestHash < Test::Unit::TestCase
     assert_nil(h.default_proc = nil)
     assert_nil(h.default_proc)
     h.default_proc = ->(h, k){ true }
-    assert(h[:nope])
+    assert_equal(true, h[:nope])
     h = @cls[]
     assert_nil(h.default_proc)
   end

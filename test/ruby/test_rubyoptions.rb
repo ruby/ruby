@@ -186,7 +186,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
     d = Dir.tmpdir
     assert_in_out_err(["-C", d, "-e", "puts Dir.pwd"]) do |r, e|
-      assert(File.identical?(r.join, d))
+      assert_file.identical?(r.join, d)
       assert_equal([], e)
     end
   end

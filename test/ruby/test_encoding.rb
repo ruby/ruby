@@ -22,7 +22,7 @@ class TestEncoding < Test::Unit::TestCase
     aliases.each do |a, en|
       e = Encoding.find(a)
       assert_equal(e.name, en)
-      assert(e.names.include?(a))
+      assert_include(e.names, a)
     end
   end
 
@@ -85,8 +85,8 @@ class TestEncoding < Test::Unit::TestCase
   def test_aliases
     assert_instance_of(Hash, Encoding.aliases)
     Encoding.aliases.each do |k, v|
-      assert(Encoding.name_list.include?(k))
-      assert(Encoding.name_list.include?(v))
+      assert_include(Encoding.name_list, k)
+      assert_include(Encoding.name_list, v)
       assert_instance_of(String, k)
       assert_instance_of(String, v)
     end

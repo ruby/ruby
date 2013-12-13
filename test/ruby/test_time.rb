@@ -56,14 +56,14 @@ class TestTime < Test::Unit::TestCase
                  Time.utc(2000, 3, 21, 0, 30))
     assert_equal(0, (Time.at(1.1) + 0.9).usec)
 
-    assert((Time.utc(2000, 4, 1) + 24).utc?)
-    assert(!(Time.local(2000, 4, 1) + 24).utc?)
+    assert_predicate((Time.utc(2000, 4, 1) + 24), :utc?)
+    assert_not_predicate((Time.local(2000, 4, 1) + 24), :utc?)
 
     t = Time.new(2000, 4, 1, 0, 0, 0, "+01:00") + 24
-    assert(!t.utc?)
+    assert_not_predicate(t, :utc?)
     assert_equal(3600, t.utc_offset)
     t = Time.new(2000, 4, 1, 0, 0, 0, "+02:00") + 24
-    assert(!t.utc?)
+    assert_not_predicate(t, :utc?)
     assert_equal(7200, t.utc_offset)
   end
 
@@ -418,14 +418,14 @@ class TestTime < Test::Unit::TestCase
 
   def test_eql
     t2000 = get_t2000
-    assert(t2000.eql?(t2000))
-    assert(!t2000.eql?(Time.gm(2001)))
+    assert_operator(t2000, :eql?, t2000)
+    assert_not_operator(t2000, :eql?, Time.gm(2001))
   end
 
   def test_utc_p
-    assert(Time.gm(2000).gmt?)
-    assert(!Time.local(2000).gmt?)
-    assert(!Time.at(0).gmt?)
+    assert_predicate(Time.gm(2000), :gmt?)
+    assert_not_predicate(Time.local(2000), :gmt?)
+    assert_not_predicate(Time.at(0), :gmt?)
   end
 
   def test_hash
@@ -453,15 +453,15 @@ class TestTime < Test::Unit::TestCase
   def test_localtime_gmtime
     assert_nothing_raised do
       t = Time.gm(2000)
-      assert(t.gmt?)
+      assert_predicate(t, :gmt?)
       t.localtime
-      assert(!t.gmt?)
+      assert_not_predicate(t, :gmt?)
       t.localtime
-      assert(!t.gmt?)
+      assert_not_predicate(t, :gmt?)
       t.gmtime
-      assert(t.gmt?)
+      assert_predicate(t, :gmt?)
       t.gmtime
-      assert(t.gmt?)
+      assert_predicate(t, :gmt?)
     end
 
     t1 = Time.gm(2000)
@@ -554,13 +554,13 @@ class TestTime < Test::Unit::TestCase
     assert_equal("UTC", t2000.zone)
     assert_equal(Encoding.find("locale"), t2000.zone.encoding)
     assert_equal(0, t2000.gmt_offset)
-    assert(!t2000.sunday?)
-    assert(!t2000.monday?)
-    assert(!t2000.tuesday?)
-    assert(!t2000.wednesday?)
-    assert(!t2000.thursday?)
-    assert(!t2000.friday?)
-    assert(t2000.saturday?)
+    assert_not_predicate(t2000, :sunday?)
+    assert_not_predicate(t2000, :monday?)
+    assert_not_predicate(t2000, :tuesday?)
+    assert_not_predicate(t2000, :wednesday?)
+    assert_not_predicate(t2000, :thursday?)
+    assert_not_predicate(t2000, :friday?)
+    assert_predicate(t2000, :saturday?)
     assert_equal([0, 0, 0, 1, 1, 2000, 6, 1, false, "UTC"], t2000.to_a)
 
     t = Time.at(946684800).getlocal

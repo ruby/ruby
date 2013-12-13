@@ -326,9 +326,9 @@ class TestFile < Test::Unit::TestCase
       File.open(tmp, :mode     => IO::RDWR | IO::CREAT | IO::BINARY,
                      :encoding => Encoding::ASCII_8BIT) do |x|
 
-        assert x.autoclose?
+        assert_predicate(x, :autoclose?)
         assert_equal Encoding::ASCII_8BIT, x.external_encoding
-        assert x.write 'hello'
+        x.write 'hello'
 
         x.seek 0, IO::SEEK_SET
 

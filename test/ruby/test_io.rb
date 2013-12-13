@@ -122,13 +122,13 @@ class TestIO < Test::Unit::TestCase
           assert_equal("abc", r.read)
         end
       ].each{|thr| thr.join}
-      assert(!r.closed?)
-      assert(w.closed?)
+      assert_not_predicate(r, :closed?)
+      assert_predicate(w, :closed?)
       :foooo
     }
     assert_equal(:foooo, ret)
-    assert(x[0].closed?)
-    assert(x[1].closed?)
+    assert_predicate(x[0], :closed?)
+    assert_predicate(x[1], :closed?)
   end
 
   def test_pipe_block_close
@@ -139,8 +139,8 @@ class TestIO < Test::Unit::TestCase
         r.close if (i&1) == 0
         w.close if (i&2) == 0
       }
-      assert(x[0].closed?)
-      assert(x[1].closed?)
+      assert_predicate(x[0], :closed?)
+      assert_predicate(x[1], :closed?)
     }
   end
 
@@ -775,7 +775,7 @@ class TestIO < Test::Unit::TestCase
             s1.close
             _, status = Process.waitpid2(pid) if pid
           end
-          assert status.success?, status.inspect
+          assert_predicate(status, :success?)
         end
       }
     }
@@ -1297,7 +1297,7 @@ class TestIO < Test::Unit::TestCase
       buf = "buf"
       value = r.read_nonblock(4096, buf, exception: false)
       assert_equal value, "HI!\n"
-      assert buf.equal?(value)
+      assert_same(buf, value)
       w.close
       assert_equal nil, r.read_nonblock(4096, "", exception: false)
     }
@@ -2276,8 +2276,8 @@ End
 
   def test_tainted
     make_tempfile {|t|
-      assert(File.read(t.path, 4).tainted?, '[ruby-dev:38826]')
-      assert(File.open(t.path) {|f| f.read(4)}.tainted?, '[ruby-dev:38826]')
+      assert_predicate(File.read(t.path, 4), :tainted?, '[ruby-dev:38826]')
+      assert_predicate(File.open(t.path) {|f| f.read(4)}, :tainted?, '[ruby-dev:38826]')
     }
   end
 
@@ -2631,25 +2631,25 @@ End
   def test_cloexec
     return unless defined? Fcntl::FD_CLOEXEC
     open(__FILE__) {|f|
-      assert(f.close_on_exec?)
+      assert_predicate(f, :close_on_exec?)
       g = f.dup
       begin
-        assert(g.close_on_exec?)
+        assert_predicate(g, :close_on_exec?)
         f.reopen(g)
-        assert(f.close_on_exec?)
+        assert_predicate(f, :close_on_exec?)
       ensure
         g.close
       end
       g = IO.new(f.fcntl(Fcntl::F_DUPFD))
       begin
-        assert(g.close_on_exec?)
+        assert_predicate(g, :close_on_exec?)
       ensure
         g.close
       end
     }
     IO.pipe {|r,w|
-      assert(r.close_on_exec?)
-      assert(w.close_on_exec?)
+      assert_predicate(r, :close_on_exec?)
+      assert_predicate(w, :close_on_exec?)
     }
   end
 

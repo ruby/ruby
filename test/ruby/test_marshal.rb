@@ -484,10 +484,10 @@ class TestMarshal < Test::Unit::TestCase
   def test_marshal_load_should_not_taint_classes
     bug7325 = '[ruby-core:49198]'
     for c in [TestClass, TestModule]
-      assert(!c.tainted?)
+      assert_not_predicate(c, :tainted?)
       c2 = Marshal.load(Marshal.dump(c).taint)
       assert_same(c, c2)
-      assert(!c.tainted?, bug7325)
+      assert_not_predicate(c, :tainted?, bug7325)
     end
   end
 

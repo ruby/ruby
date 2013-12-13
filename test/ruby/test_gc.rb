@@ -256,7 +256,7 @@ class TestGc < Test::Unit::TestCase
     a = []
     (base_length * 500).times{ a << 'a'; nil }
     GC.start
-    assert base_length < GC.stat[:heap_eden_page_length]
+    assert_operator base_length, :<, GC.stat[:heap_eden_page_length]
     eom
   end
 

@@ -13,18 +13,18 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(-2, (-2.6).truncate)
     assert_equal(3, 2.6.round)
     assert_equal(-2, (-2.4).truncate)
-    assert((13.4 % 1 - 0.4).abs < 0.0001)
+    assert_in_delta(13.4 % 1, 0.4, 0.0001)
     assert_equal(36893488147419111424,
                  36893488147419107329.0.to_i)
   end
 
   def nan_test(x,y)
     extend Test::Unit::Assertions
-    assert(x != y)
-    assert_equal(false, (x < y))
-    assert_equal(false, (x > y))
-    assert_equal(false, (x <= y))
-    assert_equal(false, (x >= y))
+    assert_operator(x, :!=, y)
+    assert_not_operator(x, :<, y)
+    assert_not_operator(x, :>, y)
+    assert_not_operator(x, :<=, y)
+    assert_not_operator(x, :>=, y)
   end
   def test_nan
     nan = Float::NAN
@@ -108,25 +108,25 @@ class TestFloat < Test::Unit::TestCase
 
   def test_strtod
     a = Float("0")
-    assert(a.abs < Float::EPSILON)
+    assert_in_delta(a, 0, Float::EPSILON)
     a = Float("0.0")
-    assert(a.abs < Float::EPSILON)
+    assert_in_delta(a, 0, Float::EPSILON)
     a = Float("+0.0")
-    assert(a.abs < Float::EPSILON)
+    assert_in_delta(a, 0, Float::EPSILON)
     a = Float("-0.0")
-    assert(a.abs < Float::EPSILON)
+    assert_in_delta(a, 0, Float::EPSILON)
     a = Float("0.0000000000000000001")
-    assert(a != 0.0)
+    assert_not_equal(0.0, a)
     a = Float("+0.0000000000000000001")
-    assert(a != 0.0)
+    assert_not_equal(0.0, a)
     a = Float("-0.0000000000000000001")
-    assert(a != 0.0)
+    assert_not_equal(0.0, a)
     a = Float(".0")
-    assert(a.abs < Float::EPSILON)
+    assert_in_delta(a, 0, Float::EPSILON)
     a = Float("+.0")
-    assert(a.abs < Float::EPSILON)
+    assert_in_delta(a, 0, Float::EPSILON)
     a = Float("-.0")
-    assert(a.abs < Float::EPSILON)
+    assert_in_delta(a, 0, Float::EPSILON)
     assert_raise(ArgumentError){Float("0.")}
     assert_raise(ArgumentError){Float("+0.")}
     assert_raise(ArgumentError){Float("-0.")}
@@ -281,15 +281,15 @@ class TestFloat < Test::Unit::TestCase
   def test_eql
     inf = Float::INFINITY
     nan = Float::NAN
-    assert(1.0.eql?(1.0))
-    assert(inf.eql?(inf))
-    assert(!(nan.eql?(nan)))
-    assert(!(1.0.eql?(nil)))
+    assert_operator(1.0, :eql?, 1.0)
+    assert_operator(inf, :eql?, inf)
+    assert_not_operator(nan, :eql?, nan)
+    assert_not_operator(1.0, :eql?, nil)
 
-    assert(1.0 == 1)
-    assert(1.0 != 2**32)
-    assert(1.0 != nan)
-    assert(1.0 != nil)
+    assert_equal(1.0, 1)
+    assert_not_equal(1.0, 2**32)
+    assert_not_equal(1.0, nan)
+    assert_not_equal(1.0, nil)
   end
 
   def test_cmp
@@ -334,8 +334,8 @@ class TestFloat < Test::Unit::TestCase
   end
 
   def test_zero_p
-    assert(0.0.zero?)
-    assert(!(1.0.zero?))
+    assert_predicate(0.0, :zero?)
+    assert_not_predicate(1.0, :zero?)
   end
 
   def test_infinite_p
@@ -347,9 +347,9 @@ class TestFloat < Test::Unit::TestCase
 
   def test_finite_p
     inf = Float::INFINITY
-    assert(!(inf.finite?))
-    assert(!((-inf).finite?))
-    assert(1.0.finite?)
+    assert_not_predicate(inf, :finite?)
+    assert_not_predicate(-inf, :finite?)
+    assert_predicate(1.0, :finite?)
   end
 
   def test_floor_ceil_round_truncate
@@ -532,7 +532,7 @@ class TestFloat < Test::Unit::TestCase
     assert_in_delta(0.125, Float("0.1_2_5"), 0.00001)
     assert_in_delta(0.125, "0.1_2_5__".to_f, 0.00001)
     assert_equal(1, suppress_warning {Float(([1] * 10000).join)}.infinite?)
-    assert(!Float(([1] * 10000).join("_")).infinite?) # is it really OK?
+    assert_not_predicate(Float(([1] * 10000).join("_")), :infinite?) # is it really OK?
     assert_raise(ArgumentError) { Float("1.0\x001") }
     assert_equal(15.9375, Float('0xf.fp0'))
     assert_raise(ArgumentError) { Float('0x') }
@@ -549,7 +549,7 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(TypeError) { Float(nil) }
     o = Object.new
     def o.to_f; inf = Float::INFINITY; inf/inf; end
-    assert(Float(o).nan?)
+    assert_predicate(Float(o), :nan?)
   end
 
   def test_invalid_str

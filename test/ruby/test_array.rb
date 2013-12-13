@@ -41,13 +41,14 @@ class TestArray < Test::Unit::TestCase
     assert_equal([1, 2, 3], x[1,3])
 
     x[0, 2] = 10
-    assert(x[0] == 10 && x[1] == 2)
+    assert_equal([10, 2, 3, 4, 5], x)
 
     x[0, 0] = -1
-    assert(x[0] == -1 && x[1] == 10)
+    assert_equal([-1, 10, 2, 3, 4, 5], x)
 
     x[-1, 1] = 20
-    assert(x[-1] == 20 && x.pop == 20)
+    assert_equal(20, x[-1])
+    assert_equal(20, x.pop)
   end
 
   def test_array_andor_0
@@ -97,7 +98,7 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_misc_0
-    assert(defined? "a".chomp)
+    assert(defined? "a".chomp, '"a".chomp is not defined')
     assert_equal(["a", "b", "c"], "abc".scan(/./))
     assert_equal([["1a"], ["2b"], ["3c"]], "1a2b3c".scan(/(\d.)/))
     # non-greedy match
@@ -1209,6 +1210,7 @@ class TestArray < Test::Unit::TestCase
     a = @cls[]
     i = 0
     a.reverse_each { |e|
+      i += 1
       assert(false, "Never get here")
     }
     assert_equal(0, i)
@@ -1710,7 +1712,7 @@ class TestArray < Test::Unit::TestCase
 
     a = []
     [1, 2].product([0, 1, 2, 3, 4][1, 4]) {|x| a << x }
-    assert(a.all?{|x| !x.include?(0) })
+    a.all? {|x| assert_not_include(x, 0)}
   end
 
   def test_permutation
@@ -1759,7 +1761,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[1, 2, 3, 4].repeated_permutation(4).to_a, b)
 
     a = @cls[0, 1, 2, 3, 4][1, 4].repeated_permutation(2)
-    assert(a.all?{|x| !x.include?(0) })
+    assert_empty(a.reject {|x| !x.include?(0)})
   end
 
   def test_repeated_combination
@@ -1788,7 +1790,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[1, 2, 3, 4].repeated_combination(4).to_a, b)
 
     a = @cls[0, 1, 2, 3, 4][1, 4].repeated_combination(2)
-    assert(a.all?{|x| !x.include?(0) })
+    assert_empty(a.reject {|x| !x.include?(0)})
   end
 
   def test_take

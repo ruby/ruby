@@ -189,14 +189,14 @@ module TestStruct
     o1 = klass1.new(1)
     o2 = klass1.new(1)
     o3 = klass2.new(1)
-    assert(o1.==(o2))
-    assert(o1 != o3)
+    assert_equal(o1, o2)
+    assert_not_equal(o1, o3)
   end
 
   def test_hash
     klass = @Struct.new(:a)
     o = klass.new(1)
-    assert(o.hash.is_a?(Fixnum))
+    assert_kind_of(Fixnum, o.hash)
   end
 
   def test_eql
@@ -205,8 +205,8 @@ module TestStruct
     o1 = klass1.new(1)
     o2 = klass1.new(1)
     o3 = klass2.new(1)
-    assert(o1.eql?(o2))
-    assert(!(o1.eql?(o3)))
+    assert_operator(o1, :eql?, o2)
+    assert_not_operator(o1, :eql?, o3)
   end
 
   def test_size
@@ -255,26 +255,26 @@ module TestStruct
     x = klass1.new(1, 2, nil); x.c = x
     y = klass1.new(1, 2, nil); y.c = y
     Timeout.timeout(1) {
-      assert x == y
-      assert x.eql? y
+      assert_equal x, y
+      assert_operator x, :eql?, y
     }
 
     z = klass1.new(:something, :other, nil); z.c = z
     Timeout.timeout(1) {
-      assert x != z
-      assert !x.eql?(z)
+      assert_not_equal x, z
+      assert_not_operator x, :eql?, z
     }
 
     x.c = y; y.c = x
     Timeout.timeout(1) {
-      assert x == y
-      assert x.eql?(y)
+      assert_equal x, y
+      assert_operator x, :eql?, y
     }
 
     x.c = z; z.c = x
     Timeout.timeout(1) {
-      assert x != z
-      assert !x.eql?(z)
+      assert_not_equal x, z
+      assert_not_operator x, :eql?, z
     }
   end
 

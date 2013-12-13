@@ -3,12 +3,12 @@ require 'test/unit'
 class TestMath < Test::Unit::TestCase
   def assert_infinity(a, *rest)
     rest = ["not infinity: #{a.inspect}"] if rest.empty?
-    assert(!a.finite?, *rest)
+    assert_not_predicate(a, :finite?, *rest)
   end
 
   def assert_nan(a, *rest)
     rest = ["not nan: #{a.inspect}"] if rest.empty?
-    assert(a.nan?, *rest)
+    assert_predicate(a, :nan?, *rest)
   end
 
   def check(a, b)
@@ -49,9 +49,9 @@ class TestMath < Test::Unit::TestCase
   def test_tan
     check(0.0, Math.tan(0 * Math::PI / 4))
     check(1.0, Math.tan(1 * Math::PI / 4))
-    assert(Math.tan(2 * Math::PI / 4).abs > 1024)
+    assert_operator(Math.tan(2 * Math::PI / 4).abs, :>, 1024)
     check(0.0, Math.tan(4 * Math::PI / 4))
-    assert(Math.tan(6 * Math::PI / 4).abs > 1024)
+    assert_operator(Math.tan(6 * Math::PI / 4).abs, :>, 1024)
   end
 
   def test_acos

@@ -826,7 +826,7 @@ x = __ENCODING__
   def test_all_symbols
     x = Symbol.all_symbols
     assert_kind_of(Array, x)
-    assert(x.all? {|s| s.is_a?(Symbol) })
+    assert_empty(x.reject {|s| s.is_a?(Symbol) })
   end
 
   def test_is_class_id
