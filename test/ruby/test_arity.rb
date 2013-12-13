@@ -3,7 +3,7 @@ require 'test/unit'
 class TestArity < Test::Unit::TestCase
   def err_mess(method_proc = nil, argc = 0)
     args = (1..argc).to_a
-    err = assert_raise(ArgumentError) do
+    assert_raise_with_message(ArgumentError, /wrong number of arguments \((.*)\)/) do
       case method_proc
       when nil
         yield
@@ -13,8 +13,6 @@ class TestArity < Test::Unit::TestCase
         method_proc.call(*args)
       end
     end
-    s = err.to_s
-    assert s =~ /wrong number of arguments \((.*)\)/, "Unexpected ArgumentError's message: #{s}"
     $1
   end
 
