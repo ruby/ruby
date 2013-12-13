@@ -1,3 +1,8 @@
+Sat Dec 14 00:34:31 2013  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* internal.h (ruby_sized_xrealloc2): fix typo introduced in r44117,
+	  which cause compile error on Solaris.
+
 Sat Dec 14 00:22:16 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c: (exec_recursive): use rb_catch_protect() instead of
