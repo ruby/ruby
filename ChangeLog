@@ -1,3 +1,11 @@
+Fri Dec 13 11:33:55 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: rename *shady* func/macros.
+	  * RVALUE_RAW_SHADY()   -> RVALUE_WB_PROTECTED_RAW()
+	  * RVALUE_SHADY()       -> RVALUE_RAW_SHADY()
+	  * rgengc_check_shady() -> rgengc_check_relation().
+	  And fix some messages using "shady" to "non-WB-protected".
+
 Fri Dec 13 10:04:23 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/request_set/lockfile.rb:  Import RubyGems master a8d0669
