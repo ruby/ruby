@@ -1,3 +1,19 @@
+Fri Dec 13 13:25:30 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* error.c: add Exception#backtrace_locations.
+	  Now, there are no setter and independent from Exception#backtrace.
+	  [Feature #8960]
+
+	* eval.c (setup_exception): set backtrace locations for `bt_location'
+	  special attribute.
+
+	* vm_backtrace.c (rb_backtrace_to_location_ary): added.
+
+	* internal.h: ditto.
+
+	* test/ruby/test_backtrace.rb: add a test for
+	  Exception#backtrace_locations.
+
 Fri Dec 13 12:01:07 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (garbage_collect_body): use rb_bug() and explicit error message

@@ -493,10 +493,12 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg)
 		if (OBJ_FROZEN(mesg)) {
 		    mesg = rb_obj_dup(mesg);
 		}
+		rb_iv_set(mesg, "bt_locations", at);
 		set_backtrace(mesg, at);
 	    }
 	}
     }
+
     if (!NIL_P(mesg)) {
 	th->errinfo = mesg;
     }

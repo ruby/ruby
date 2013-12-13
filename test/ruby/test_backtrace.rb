@@ -14,6 +14,36 @@ class TestBacktrace < Test::Unit::TestCase
     assert_match(/.+:\d+:.+/, bt[0])
   end
 
+  def helper_test_exception_backtrace_locations
+    raise
+  end
+
+  def test_exception_backtrace_locations
+    bt = Fiber.new{
+      begin
+        raise
+      rescue => e
+        e.backtrace_locations
+      end
+    }.resume
+    assert_equal(1, bt.size)
+    assert_match(/.+:\d+:.+/, bt[0].to_s)
+
+    bt = Fiber.new{
+      begin
+        begin
+          helper_test_exception_backtrace_locations
+        rescue
+          raise
+        end
+      rescue => e
+        e.backtrace_locations
+      end
+    }.resume
+    assert_equal(2, bt.size)
+    assert_match(/helper_test_exception_backtrace_locations/, bt[0].to_s)
+  end
+
   def test_caller_lev
     cs = []
     Fiber.new{

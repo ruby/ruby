@@ -372,6 +372,7 @@ typedef struct rb_backtrace_struct {
     rb_backtrace_location_t *backtrace_base;
     int backtrace_size;
     VALUE strary;
+    VALUE locary;
 } rb_backtrace_t;
 
 static void
@@ -383,8 +384,9 @@ backtrace_mark(void *ptr)
 
 	for (i=0; i<s; i++) {
 	    location_mark_entry(&bt->backtrace[i]);
-	    rb_gc_mark(bt->strary);
 	}
+	rb_gc_mark(bt->strary);
+	rb_gc_mark(bt->locary);
     }
 }
 
@@ -629,6 +631,18 @@ backtrace_to_location_ary(VALUE self, long lev, long n)
     r = backtrace_collect(bt, lev, n, location_create, (void *)self);
     RB_GC_GUARD(self);
     return r;
+}
+
+VALUE
+rb_backtrace_to_location_ary(VALUE self)
+{
+    rb_backtrace_t *bt;
+    GetCoreDataFromValue(self, rb_backtrace_t, bt);
+
+    if (!bt->locary) {
+	bt->locary = backtrace_to_location_ary(self, 0, 0);
+    }
+    return bt->locary;
 }
 
 static VALUE

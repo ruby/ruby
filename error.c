@@ -736,6 +736,30 @@ exc_backtrace(VALUE exc)
     return obj;
 }
 
+/*
+ *  call-seq:
+ *     exception.backtrace_locations    -> array
+ *
+ *  Returns any backtrace associated with the exception. This method is
+ *  similar to Exception#backtrace, but the backtrace is an array of
+ *   Thread::Backtrace::Location.
+ *
+ *  Now, this method is not affected by Exception#set_backtrace().
+ */
+static VALUE
+exc_backtrace_locations(VALUE exc)
+{
+    ID bt_locations;
+    VALUE obj;
+
+    CONST_ID(bt_locations, "bt_locations");
+    obj = rb_attr_get(exc, bt_locations);
+    if (!NIL_P(obj)) {
+	obj = rb_backtrace_to_location_ary(obj);
+    }
+    return obj;
+}
+
 VALUE
 rb_check_backtrace(VALUE bt)
 {
@@ -1749,6 +1773,7 @@ Init_Exception(void)
     rb_define_method(rb_eException, "message", exc_message, 0);
     rb_define_method(rb_eException, "inspect", exc_inspect, 0);
     rb_define_method(rb_eException, "backtrace", exc_backtrace, 0);
+    rb_define_method(rb_eException, "backtrace_locations", exc_backtrace_locations, 0);
     rb_define_method(rb_eException, "set_backtrace", exc_set_backtrace, 1);
     rb_define_method(rb_eException, "cause", exc_cause, 0);
 
