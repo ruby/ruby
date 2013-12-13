@@ -269,7 +269,7 @@ DEPENDENCIES
 
     assert_equal :token, @lockfile.get
 
-    assert_equal :EOF, @lockfile.peek
+    assert_equal [:EOF], @lockfile.peek
   end
 
   def test_skip

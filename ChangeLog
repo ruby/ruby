@@ -1,3 +1,9 @@
+Fri Dec 13 10:04:23 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/request_set/lockfile.rb:  Import RubyGems master a8d0669
+	  with a 1.8.7 compatibility fix.
+	* test/rubygems/test_gem_request_set_lockfile.rb:  ditto.
+
 Fri Dec 13 09:50:49 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems master ddac51f.  Changes:
