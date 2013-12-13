@@ -2212,6 +2212,7 @@ method_inspect(VALUE method)
     VALUE str;
     const char *s;
     const char *sharp = "#";
+    VALUE mklass;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     str = rb_str_buf_new2("#<");
@@ -2219,11 +2220,12 @@ method_inspect(VALUE method)
     rb_str_buf_cat2(str, s);
     rb_str_buf_cat2(str, ": ");
 
-    if (FL_TEST(data->me->klass, FL_SINGLETON)) {
-	VALUE v = rb_ivar_get(data->me->klass, attached);
+    mklass = data->me->klass;
+    if (FL_TEST(mklass, FL_SINGLETON)) {
+	VALUE v = rb_ivar_get(mklass, attached);
 
 	if (data->recv == Qundef) {
-	    rb_str_buf_append(str, rb_inspect(data->me->klass));
+	    rb_str_buf_append(str, rb_inspect(mklass));
 	}
 	else if (data->recv == v) {
 	    rb_str_buf_append(str, rb_inspect(v));
@@ -2239,9 +2241,9 @@ method_inspect(VALUE method)
     }
     else {
 	rb_str_buf_append(str, rb_class_name(data->rclass));
-	if (data->rclass != data->me->klass) {
+	if (data->rclass != mklass) {
 	    rb_str_buf_cat2(str, "(");
-	    rb_str_buf_append(str, rb_class_name(data->me->klass));
+	    rb_str_buf_append(str, rb_class_name(mklass));
 	    rb_str_buf_cat2(str, ")");
 	}
     }
