@@ -574,14 +574,15 @@ class CGI
       raise EOFError, "bad boundary end of body part" unless boundary_end =~ /--/
       params.default = []
       params
-    ensure
-      if $! && tempfiles
+    rescue Exception
+      if tempfiles
         tempfiles.each {|t|
           if t.path
             t.unlink
           end
         }
       end
+      raise
     end # read_multipart
     private :read_multipart
     def create_body(is_large)  #:nodoc:

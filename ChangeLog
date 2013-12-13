@@ -1,3 +1,13 @@
+Sat Dec 14 01:05:46 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/lib/socket.rb: Don't test $! in "ensure" clause because
+	  it may be set before the body.
+	  Reported by ko1 and mrkn.  [ruby-core:59088] [Bug #9247]
+
+	* lib/cgi/core.rb: Ditto.
+
+	* lib/drb/ssl.rb: Ditto.
+
 Sat Dec 14 00:34:31 2013  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* internal.h (ruby_sized_xrealloc2): fix typo introduced in r44117,
