@@ -31,7 +31,8 @@ class TestWeakMap < Test::Unit::TestCase
   def test_include?
     m = __callee__[/test_(.*)/, 1]
     k = "foo"
-    Object.new.tap do |x|
+    1.times do
+      x = Object.new
       @wm[k] = x
       assert_send([@wm, m, k])
       assert_not_send([@wm, m, "FOO".downcase])
