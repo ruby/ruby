@@ -14,14 +14,14 @@ define ruby_gdb_init
   if !$color_end
     set $color_end = "\033[m"
   end
+  if ruby_dummy_gdb_enums.special_consts
+  end
 end
 
 # set prompt \033[36m(gdb)\033[m\040
 
 define rp
   ruby_gdb_init
-  if ruby_dummy_gdb_enums.special_consts
-  end
   if (VALUE)($arg0) & RUBY_FIXNUM_FLAG
     printf "FIXNUM: %ld\n", (long)($arg0) >> 1
   else
@@ -745,6 +745,7 @@ define rb_numtable_entry
 end
 
 define rb_id2name
+  ruby_gdb_init
   printf "%sID%s: ", $color_type, $color_end
   rp_id $arg0
 end
