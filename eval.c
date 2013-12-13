@@ -1176,6 +1176,7 @@ rb_using_module(NODE *cref, VALUE module)
 {
     Check_Type(module, T_MODULE);
     using_module_recursive(cref, module);
+    rb_clear_method_cache_by_class(rb_cObject);
 }
 
 VALUE
@@ -1295,9 +1296,7 @@ mod_using(VALUE self, VALUE module)
     if (prev_cfp && prev_cfp->self != self) {
 	rb_raise(rb_eRuntimeError, "Module#using is not called on self");
     }
-    Check_Type(module, T_MODULE);
     rb_using_module(cref, module);
-    rb_clear_method_cache_by_class(rb_cObject);
     return self;
 }
 
@@ -1431,9 +1430,7 @@ top_using(VALUE self, VALUE module)
 	rb_raise(rb_eRuntimeError,
 		 "main.using is permitted only at toplevel");
     }
-    Check_Type(module, T_MODULE);
     rb_using_module(cref, module);
-    rb_clear_method_cache_by_class(rb_cObject);
     return self;
 }
 
