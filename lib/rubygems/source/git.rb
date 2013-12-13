@@ -9,9 +9,7 @@ require 'rubygems/util'
 #   source =
 #     Gem::Source::Git.new 'rake', 'git@example:rake.git', 'rake-10.1.0', false
 #
-#   spec = source.load_spec 'rake'
-#
-#   source.checkout
+#   source.specs
 
 class Gem::Source::Git < Gem::Source
 
@@ -187,15 +185,13 @@ class Gem::Source::Git < Gem::Source
         Dir.chdir directory do
           spec = Gem::Specification.load file
           if spec then
-            loaded_from = File.expand_path file
-            spec.loaded_from = loaded_from
             spec.base_dir = base_dir
 
             spec.extension_dir =
               File.join base_dir, 'extensions', Gem::Platform.local.to_s,
                 Gem.extension_api_version, "#{name}-#{dir_shortref}"
 
-            spec.full_gem_path = File.dirname loaded_from if spec
+            spec.full_gem_path = File.dirname spec.loaded_from if spec
           end
           spec
         end

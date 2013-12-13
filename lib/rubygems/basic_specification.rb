@@ -72,9 +72,16 @@ class Gem::BasicSpecification
   # Returns full path to the directory where gem's extensions are installed.
 
   def extension_dir
-    @extension_dir ||=
-      File.join base_dir, 'extensions', Gem::Platform.local.to_s,
-                Gem.extension_api_version, full_name
+    @extension_dir ||= File.expand_path File.join(extensions_dir, full_name)
+  end
+
+  ##
+  # Returns path to the extensions directory.
+
+  def extensions_dir
+    @extensions_dir ||= Gem.default_ext_dir_for(base_dir) ||
+      File.join(base_dir, 'extensions', Gem::Platform.local.to_s,
+                Gem.extension_api_version)
   end
 
   def find_full_gem_path # :nodoc:
@@ -147,7 +154,9 @@ class Gem::BasicSpecification
     @loaded_from   = path && path.to_s
 
     @extension_dir = nil
+    @extensions_dir = nil
     @full_gem_path         = nil
+    @gem_dir               = nil
     @gems_dir              = nil
     @base_dir              = nil
   end

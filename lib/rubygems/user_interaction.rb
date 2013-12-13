@@ -4,6 +4,11 @@
 # See LICENSE.txt for permissions.
 #++
 
+begin
+  require 'io/console'
+rescue LoadError
+end
+
 ##
 # Module that defines the default UserInteraction.  Any class including this
 # module will have access to the +ui+ method that returns the default UI.
@@ -283,41 +288,27 @@ class Gem::StreamUI
     result
   end
 
-  if RUBY_VERSION > '1.9.2' then
-    ##
-    # Ask for a password. Does not echo response to terminal.
+  ##
+  # Ask for a password. Does not echo response to terminal.
 
-    def ask_for_password(question)
-      return nil if not tty?
+  def ask_for_password(question)
+    return nil if not tty?
 
-      require 'io/console'
+    @outs.print(question, "  ")
+    @outs.flush
 
-      @outs.print(question + "  ")
-      @outs.flush
+    password = _gets_noecho
+    @outs.puts
+    password.chomp! if password
+    password
+  end
 
-      password = @ins.noecho {@ins.gets}
-      password.chomp! if password
-      password
+  if IO.method_defined?(:noecho) then
+    def _gets_noecho
+      @ins.noecho {@ins.gets}
     end
-  else
-    ##
-    # Ask for a password. Does not echo response to terminal.
-
-    def ask_for_password(question)
-      return nil if not tty?
-
-      @outs.print(question + "  ")
-      @outs.flush
-
-      Gem.win_platform? ? ask_for_password_on_windows : ask_for_password_on_unix
-    end
-
-    ##
-    # Asks for a password that works on windows. Ripped from the Heroku gem.
-
-    def ask_for_password_on_windows
-      return nil if not tty?
-
+  elsif Gem.win_platform?
+    def _gets_noecho
       require "Win32API"
       char = nil
       password = ''
@@ -330,22 +321,16 @@ class Gem::StreamUI
           password << char.chr
         end
       end
-
-      puts
       password
     end
-
-    ##
-    # Asks for a password that works on unix
-
-    def ask_for_password_on_unix
-      return nil if not tty?
-
+  else
+    def _gets_noecho
       system "stty -echo"
-      password = @ins.gets
-      password.chomp! if password
-      system "stty echo"
-      password
+      begin
+        @ins.gets
+      ensure
+        system "stty echo"
+      end
     end
   end
 

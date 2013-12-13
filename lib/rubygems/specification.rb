@@ -1916,7 +1916,6 @@ class Gem::Specification < Gem::BasicSpecification
     @cache_dir     = nil
     @cache_file    = nil
     @doc_dir       = nil
-    @gem_dir       = nil
     @ri_dir        = nil
     @spec_dir      = nil
     @spec_file     = nil

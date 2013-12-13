@@ -292,6 +292,7 @@ class Gem::RemoteFetcher
 
       if update and path then
         open(path, 'wb') do |io|
+          io.flock(File::LOCK_EX)
           io.write data
         end
       end

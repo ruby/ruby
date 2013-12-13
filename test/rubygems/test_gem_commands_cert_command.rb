@@ -108,7 +108,7 @@ Added '/CN=alternate/DC=example'
       @cmd.execute
     end
 
-    output = @build_ui.output.split "\n"
+    output = @build_ui.output.squeeze("\n").split "\n"
 
     assert_equal "Passphrase for your Private Key:  ",
                  output.shift
@@ -142,7 +142,7 @@ Added '/CN=alternate/DC=example'
         @cmd.execute
       end
 
-      output = @build_ui.output.split "\n"
+      output = @build_ui.output.squeeze("\n").split "\n"
 
       assert_equal "Passphrase for your Private Key:  ",
                    output.shift

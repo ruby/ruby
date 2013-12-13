@@ -1461,6 +1461,35 @@ dependencies: []
     RbConfig::CONFIG['ENABLE_SHARED'] = enable_shared
   end
 
+  def test_extension_dir_override
+    enable_shared, RbConfig::CONFIG['ENABLE_SHARED'] =
+      RbConfig::CONFIG['ENABLE_SHARED'], 'no'
+
+    class << Gem
+      alias orig_default_ext_dir_for default_ext_dir_for
+
+      def Gem.default_ext_dir_for(base_dir)
+        'elsewhere'
+      end
+    end
+
+    ext_spec
+
+    refute_empty @ext.extensions
+
+    expected = File.join @tempdir, 'elsewhere', @ext.full_name
+
+    assert_equal expected, @ext.extension_dir
+  ensure
+    RbConfig::CONFIG['ENABLE_SHARED'] = enable_shared
+
+    class << Gem
+      remove_method :default_ext_dir_for
+
+      alias default_ext_dir_for orig_default_ext_dir_for
+    end
+  end
+
   def test_files
     @a1.files = %w(files bin/common)
     @a1.test_files = %w(test_files bin/common)

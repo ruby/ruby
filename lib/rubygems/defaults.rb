@@ -52,6 +52,17 @@ module Gem
   end
 
   ##
+  # Returns binary extensions dir for specified RubyGems base dir or nil
+  # if such directory cannot be determined.
+  #
+  # By default, the binary extensions are located side by side with their
+  # Ruby counterparts, therefore nil is returned
+
+  def self.default_ext_dir_for base_dir
+    nil
+  end
+
+  ##
   # Paths where RubyGems' .rb files and bin files are installed
 
   def self.default_rubygems_dirs

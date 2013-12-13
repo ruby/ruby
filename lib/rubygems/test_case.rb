@@ -24,16 +24,19 @@ unless Gem::Dependency.new('rdoc', '>= 3.10').matching_specs.empty?
   gem 'json'
 end
 
-require 'rubygems/deprecate'
 require 'minitest/autorun'
+
+require 'rubygems/deprecate'
+
 require 'fileutils'
+require 'pathname'
+require 'pp'
+require 'rubygems/package'
+require 'shellwords'
 require 'tmpdir'
 require 'uri'
-require 'rubygems/package'
-require 'pp'
 require 'zlib'
-require 'pathname'
-require 'shellwords'
+
 Gem.load_yaml
 
 require 'rubygems/mock_gem_ui'

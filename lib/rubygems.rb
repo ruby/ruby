@@ -764,7 +764,10 @@ module Gem
   # Safely read a file in binary mode on all platforms.
 
   def self.read_binary(path)
-    File.open path, binary_mode do |f| f.read end
+    File.open path, binary_mode do |f| 
+      f.flock(File::LOCK_EX)
+      f.read 
+    end
   end
 
   ##
@@ -1163,17 +1166,18 @@ module Gem
   autoload :ConfigFile,         'rubygems/config_file'
   autoload :Dependency,         'rubygems/dependency'
   autoload :DependencyList,     'rubygems/dependency_list'
-  autoload :Resolver,           'rubygems/resolver'
   autoload :DependencyResolver, 'rubygems/resolver'
+  autoload :Installer,          'rubygems/installer'
   autoload :PathSupport,        'rubygems/path_support'
   autoload :Platform,           'rubygems/platform'
   autoload :RequestSet,         'rubygems/request_set'
   autoload :Requirement,        'rubygems/requirement'
+  autoload :Resolver,           'rubygems/resolver'
+  autoload :Source,             'rubygems/source'
   autoload :SourceList,         'rubygems/source_list'
   autoload :SpecFetcher,        'rubygems/spec_fetcher'
   autoload :Specification,      'rubygems/specification'
   autoload :Version,            'rubygems/version'
-  autoload :Source,             'rubygems/source'
 
   require "rubygems/specification"
 end

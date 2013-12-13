@@ -1,8 +1,4 @@
 require 'rubygems'
-require 'rubygems/dependency'
-require 'rubygems/dependency_list'
-require 'rubygems/installer'
-require 'rubygems/resolver'
 require 'tsort'
 
 ##
