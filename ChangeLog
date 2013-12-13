@@ -1,3 +1,9 @@
+Sat Dec 14 00:22:16 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c: (exec_recursive): use rb_catch_protect() instead of
+	  rb_catch_obj() and PUSH_TAG(), and reduce pushing tags and
+	  machine stack usage.
+
 Sat Dec 14 00:18:08 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (mnew_from_me): achieve the original defined_class from
