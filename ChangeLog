@@ -1,3 +1,9 @@
+Fri Dec 13 12:01:07 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (garbage_collect_body): use rb_bug() and explicit error message
+	  instead of using assert().
+	  [Bug #9222]
+
 Fri Dec 13 11:52:41 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c: fix comment to remove the word "shady".

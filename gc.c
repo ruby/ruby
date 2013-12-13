@@ -4940,6 +4940,7 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
 
     objspace->profile.count++;
     objspace->profile.latest_gc_info = reason;
+
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_START, 0 /* TODO: pass minor/immediate flag? */);
 
     objspace->profile.total_allocated_object_num_at_gc_start = objspace->profile.total_allocated_object_num;
@@ -4948,7 +4949,9 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
     gc_prof_setup_new_record(objspace, reason);
     gc_prof_timer_start(objspace);
     {
-	assert(during_gc > 0);
+	if (during_gc == 0) {
+	    rb_bug("during_gc should not be 0. RUBY_INTERNAL_EVENT_GC_START user should not cause GC in events.");
+	}
 	gc_marks(objspace, full_mark);
 	gc_sweep(objspace, immediate_sweep);
 	during_gc = 0;
