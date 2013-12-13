@@ -1,3 +1,11 @@
+Sat Dec 14 00:18:08 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (mnew_from_me): achieve the original defined_class from
+	  prepended iclass, to fix inherited owner.
+
+	* proc.c (method_owner): return the defined class, but not the
+	  class which the method object is created from.
+
 Fri Dec 13 22:29:21 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (method_owner): return the class where alias is defined, not

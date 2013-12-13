@@ -180,6 +180,15 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(Array.instance_method(:map).hash, Array.instance_method(:collect).hash)
   end
 
+  def test_owner
+    c = Class.new do
+      def foo; end
+    end
+    assert_equal(c, c.instance_method(:foo).owner)
+    c2 = Class.new(c)
+    assert_equal(c, c2.instance_method(:foo).owner)
+  end
+
   def test_receiver_name_owner
     o = Object.new
     def o.foo; end
