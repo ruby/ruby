@@ -6330,6 +6330,7 @@ wmap_final_func(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
     if (j < i) {
 	ptr = ruby_sized_xrealloc2(ptr, j, sizeof(VALUE), i);
 	ptr[0] = j;
+	*value = (st_data_t)ptr;
     }
     return ST_CONTINUE;
 }

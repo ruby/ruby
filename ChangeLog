@@ -1,3 +1,7 @@
+Sat Dec 14 01:15:51 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (wmap_final_func): Bugfix. Should update *value to new pointer.
+
 Sat Dec 14 01:05:46 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/lib/socket.rb: Don't test $! in "ensure" clause because
