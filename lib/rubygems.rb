@@ -764,9 +764,9 @@ module Gem
   # Safely read a file in binary mode on all platforms.
 
   def self.read_binary(path)
-    File.open path, binary_mode do |f| 
+    File.open path, binary_mode do |f|
       f.flock(File::LOCK_EX)
-      f.read 
+      f.read
     end
   end
 
