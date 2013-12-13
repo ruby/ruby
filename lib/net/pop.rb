@@ -707,7 +707,7 @@ module Net
       @mails.each {|m| m.uid = uidl[m.number] }
     end
 
-    # deguging output for +msg+
+    # debugging output for +msg+
     def logging(msg)
       @debug_output << msg + "\n" if @debug_output
     end
