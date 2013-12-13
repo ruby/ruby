@@ -741,7 +741,7 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
     int state;
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
-    volatile VALUE result;
+    volatile VALUE result = Qfalse;
     volatile VALUE e_info = th->errinfo;
     va_list args;
 
@@ -749,6 +749,15 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
     if ((state = TH_EXEC_TAG()) == 0) {
       retry_entry:
 	result = (*b_proc) (data1);
+    }
+    else if (result) {
+	/* escape from r_proc */
+	if (state == TAG_RETRY) {
+	    state = 0;
+	    th->errinfo = Qnil;
+	    result = Qfalse;
+	    goto retry_entry;
+	}
     }
     else {
 	th->cfp = cfp; /* restore */
@@ -767,25 +776,12 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 	    va_end(args);
 
 	    if (handle) {
+		result = Qnil;
+		state = 0;
 		if (r_proc) {
-		    PUSH_TAG();
-		    if ((state = EXEC_TAG()) == 0) {
-			result = (*r_proc) (data2, th->errinfo);
-		    }
-		    POP_TAG();
-		    if (state == TAG_RETRY) {
-			state = 0;
-			th->errinfo = Qnil;
-			goto retry_entry;
-		    }
+		    result = (*r_proc) (data2, th->errinfo);
 		}
-		else {
-		    result = Qnil;
-		    state = 0;
-		}
-		if (state == 0) {
-		    th->errinfo = e_info;
-		}
+		th->errinfo = e_info;
 	    }
 	}
     }

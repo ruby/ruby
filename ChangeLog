@@ -1,3 +1,8 @@
+Sat Dec 14 01:31:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_rescue2): reuse tags pushed for body proc to protect
+	  rescue proc too.
+
 Sat Dec 14 01:15:51 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* gc.c (wmap_final_func): Bugfix. Should update *value to new pointer.
