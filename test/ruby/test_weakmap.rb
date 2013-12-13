@@ -30,12 +30,13 @@ class TestWeakMap < Test::Unit::TestCase
 
   def test_include?
     m = __callee__[/test_(.*)/, 1]
-    x = Object.new
     k = "foo"
-    @wm[k] = x
-    assert_send([@wm, m, k])
-    assert_not_send([@wm, m, "FOO".downcase])
-    x = nil
+    Object.new do |x|
+      @wm[k] = x
+      assert_send([@wm, m, k])
+      assert_not_send([@wm, m, "FOO".downcase])
+      x = nil
+    end
     GC.start
     assert_not_send([@wm, m, k])
   end
