@@ -1,3 +1,8 @@
+Sat Dec 14 13:01:45 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (mnew_from_me): method by respond_to_missing? should be
+	  owned by the original class.
+
 Sat Dec 14 11:55:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/scanf.rb (IO#scanf): fix mistaken use of rescue modifier.

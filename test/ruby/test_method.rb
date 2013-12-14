@@ -189,6 +189,17 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(c, c2.instance_method(:foo).owner)
   end
 
+  def test_owner_missing
+    c = Class.new do
+      def respond_to_missing?(name, bool)
+        name == :foo
+      end
+    end
+    c2 = Class.new(c)
+    assert_equal(c, c.new.method(:foo).owner)
+    assert_equal(c2, c2.new.method(:foo).owner)
+  end
+
   def test_receiver_name_owner
     o = Object.new
     def o.foo; end

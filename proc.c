@@ -1139,6 +1139,7 @@ mnew_from_me(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
 	if (obj != Qundef && !rb_method_basic_definition_p(klass, rmiss)) {
 	    if (RTEST(rb_funcall(obj, rmiss, 2, sym, scope ? Qfalse : Qtrue))) {
 		me = 0;
+		defined_class = klass;
 
 		goto gen_method;
 	    }
