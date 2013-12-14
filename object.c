@@ -2083,11 +2083,13 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 	rb_scan_args(argc, argv, "11", &name, &recur);
     }
 
-    id = rb_check_id(&name);
-    if (id) {
+    if (SYMBOL_P(name)) {
+	id = ID2SYM(name);
 	if (!rb_is_const_id(id)) goto wrong_id;
 	return RTEST(recur) ? rb_const_get(mod, id) : rb_const_get_at(mod, id);
     }
+
+    name = StringValue(name);
 
     enc = rb_enc_get(name);
     path = RSTRING_PTR(name);
