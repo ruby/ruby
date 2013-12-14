@@ -303,6 +303,26 @@ class TestModule < Test::Unit::TestCase
     end
   end
 
+  def test_nested_defined
+    assert_send([Object, :const_defined?, [self.class.name, 'Other'].join('::')])
+    assert_send([self.class, :const_defined?, 'User::USER'])
+    assert_not_send([self.class, :const_defined?, 'User::Foo'])
+  end
+
+  def test_nested_defined_symbol
+    const = [self.class, Other].join('::').to_sym
+    assert_raise(NameError) {Object.const_defined?(const)}
+
+    const = [User, 'USER'].join('::').to_sym
+    assert_raise(NameError) {self.class.const_defined?(const)}
+  end
+
+  def test_nested_defined_bad_class
+    assert_raise(TypeError) do
+      self.class.const_defined?('User::USER::Foo')
+    end
+  end
+
   def test_const_set
     assert_not_operator(Other, :const_defined?, :KOALA)
     Other.const_set(:KOALA, 99)

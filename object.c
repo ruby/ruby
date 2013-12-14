@@ -2213,6 +2213,8 @@ static VALUE
 rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
 {
     VALUE name, recur;
+    rb_encoding *enc;
+    const char *pbeg, *p, *path, *pend;
     ID id;
 
     if (argc == 1) {
@@ -2222,20 +2224,86 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
     else {
 	rb_scan_args(argc, argv, "11", &name, &recur);
     }
-    if (!(id = rb_check_id(&name))) {
-	if (rb_is_const_name(name)) {
-	    return Qfalse;
+
+    if (SYMBOL_P(name)) {
+	id = SYM2ID(name);
+	if (!rb_is_const_id(id)) goto wrong_id;
+	return RTEST(recur) ? rb_const_defined(mod, id) : rb_const_defined_at(mod, id);
+    }
+
+    path = StringValuePtr(name);
+    enc = rb_enc_get(name);
+
+    if (!rb_enc_asciicompat(enc)) {
+	rb_raise(rb_eArgError, "invalid class path encoding (non ASCII)");
+    }
+
+    pbeg = p = path;
+    pend = path + RSTRING_LEN(name);
+
+    if (p >= pend || !*p) {
+      wrong_name:
+	rb_raise(rb_eNameError, "wrong constant name %"PRIsVALUE,
+		 QUOTE(name));
+    }
+
+    if (p + 2 < pend && p[0] == ':' && p[1] == ':') {
+	mod = rb_cObject;
+	p += 2;
+	pbeg = p;
+    }
+
+    while (p < pend) {
+	VALUE part;
+	long len, beglen;
+
+	while (p < pend && *p != ':') p++;
+
+	if (pbeg == p) goto wrong_name;
+
+	id = rb_check_id_cstr(pbeg, len = p-pbeg, enc);
+	beglen = pbeg-path;
+
+	if (p < pend && p[0] == ':') {
+	    if (p + 2 >= pend || p[1] != ':') goto wrong_name;
+	    p += 2;
+	    pbeg = p;
+	}
+
+	if (!id) {
+	    if (!ISUPPER(*pbeg) || !rb_enc_symname2_p(pbeg, len, enc)) {
+		part = rb_str_subseq(name, beglen, len);
+		rb_name_error_str(part, "wrong constant name %"PRIsVALUE,
+				  QUOTE(part));
+	    }
+	    else {
+		return Qfalse;
+	    }
+	}
+	if (!rb_is_const_id(id)) {
+	  wrong_id:
+	    rb_name_error(id, "wrong constant name %"PRIsVALUE,
+			  QUOTE_ID(id));
+	}
+	if (RTEST(recur)) {
+	    if (!rb_const_defined(mod, id))
+		return Qfalse;
+	    mod = rb_const_get(mod, id);
 	}
 	else {
-	    rb_name_error_str(name, "wrong constant name %"PRIsVALUE,
-			      QUOTE(name));
+	    if (!rb_const_defined_at(mod, id))
+		return Qfalse;
+	    mod = rb_const_get_at(mod, id);
+	}
+	recur = Qfalse;
+
+	if (p < pend && !RB_TYPE_P(mod, T_MODULE) && !RB_TYPE_P(mod, T_CLASS)) {
+	    rb_raise(rb_eTypeError, "%"PRIsVALUE" does not refer to class/module",
+		     QUOTE(name));
 	}
     }
-    if (!rb_is_const_id(id)) {
-	rb_name_error(id, "wrong constant name %"PRIsVALUE,
-		      QUOTE_ID(id));
-    }
-    return RTEST(recur) ? rb_const_defined(mod, id) : rb_const_defined_at(mod, id);
+
+    return Qtrue;
 }
 
 /*
