@@ -1,3 +1,8 @@
+Sun Dec 15 05:28:35 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/basic_specification.rb:  Update to RubyGems master
+	  9c718fe.  Removes code duplication.
+
 Sat Dec 14 17:39:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_callee_setup_arg_complex): count post
