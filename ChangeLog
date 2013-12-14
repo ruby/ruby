@@ -1,3 +1,8 @@
+Sat Dec 14 11:55:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/scanf.rb (IO#scanf): fix mistaken use of rescue modifier.
+	  a patch by Mon_Ouie at [ruby-core:52813].  [Bug #7940]
+
 Sat Dec 14 11:44:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (ruby_qsort): fix potential stack overflow on a large
