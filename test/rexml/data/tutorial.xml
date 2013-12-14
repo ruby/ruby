@@ -628,7 +628,7 @@ parser.parse</example>
         attributes, text) root_node.find_first_recursive {|node| node.name ==
         tag and attributes.all? {|attr, val| node.attributes[attr] == val} and
         text === node.text } end # # Extract specific columns (specified by
-        the position of it's corrensponding # header column) from a table. # #
+        the position of it's corresponding # header column) from a table. # #
         Given the following table: # # &lt;table&gt; # &lt;tr&gt; #
         &lt;td&gt;A&lt;/td&gt; # &lt;td&gt;B&lt;/td&gt; #
         &lt;td&gt;C&lt;/td&gt; # &lt;/tr&gt; # &lt;tr&gt; #
