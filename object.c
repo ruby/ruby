@@ -2089,10 +2089,8 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 	return RTEST(recur) ? rb_const_get(mod, id) : rb_const_get_at(mod, id);
     }
 
-    name = StringValue(name);
-
+    path = StringValuePtr(name);
     enc = rb_enc_get(name);
-    path = RSTRING_PTR(name);
 
     if (!rb_enc_asciicompat(enc)) {
 	rb_raise(rb_eArgError, "invalid class path encoding (non ASCII)");
