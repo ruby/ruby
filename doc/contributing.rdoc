@@ -51,7 +51,7 @@ on your ticket.
 
 === Reporting to downstream distributions
 
-You can reports downstream issues for the following distributions via their bugtacker:
+You can reports downstream issues for the following distributions via their bugtracker:
 
 * {debian}[http://bugs.debian.org/cgi-bin/pkgreport.cgi?src=ruby-defaults]
 * {freebsd}[http://www.freebsd.org/cgi/query-pr-summary.cgi?text=ruby]
