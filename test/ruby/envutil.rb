@@ -166,8 +166,8 @@ module EnvUtil
       timeformat = DIAGNOSTIC_REPORTS_TIMEFORMAT
       pat = "#{path}/#{cmd}_#{now.strftime(timeformat)}[-_]*.crash"
       first = true
-      3.times do
-        first ? (first = false) : sleep(1)
+      30.times do
+        first ? (first = false) : sleep(0.1)
         Dir.glob(pat) do |name|
           log = File.read(name) rescue next
           if /\AProcess:\s+#{cmd} \[#{pid}\]$/ =~ log
