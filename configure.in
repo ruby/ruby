@@ -2940,6 +2940,15 @@ else
 fi
 AC_SUBST(setup)
 
+rubylibprefix='${libdir}/${RUBY_BASE_NAME}'
+AC_ARG_WITH(rubylibprefix,
+	    AS_HELP_STRING([--with-rubylibprefix=DIR], [prefix for ruby libraries [[LIBDIR/RUBY_BASE_NAME]]]),
+	    [if test "x$withval" = xno; then
+		AC_MSG_ERROR([No ruby, No libprefix])
+	    fi
+	    rubylibprefix="$withval"])
+AC_SUBST(rubylibprefix)
+
 if test x"${exec_prefix}" != xNONE; then
     RUBY_EXEC_PREFIX="$exec_prefix"
 elif test x"$prefix" != xNONE; then
@@ -2948,7 +2957,7 @@ else
     RUBY_EXEC_PREFIX=$ac_default_prefix
 fi
 pat=`echo "${RUBY_EXEC_PREFIX}" | tr -c '\012' .`'\(.*\)'
-for var in bindir libdir; do
+for var in bindir libdir rubylibprefix; do
     eval val='"$'$var'"'
     AS_CASE(["$val"], ["${RUBY_EXEC_PREFIX}"*], [val='${exec_prefix}'"`expr \"$val\" : \"$pat\"`"])
     eval $var='"$val"'
@@ -3600,14 +3609,6 @@ AS_CASE(["$target_os"],
     rubyw_install_name='$(RUBYW_INSTALL_NAME)'
     ])
 
-rubylibprefix='${libdir}/${RUBY_BASE_NAME}'
-AC_ARG_WITH(rubylibprefix,
-	    AS_HELP_STRING([--with-rubylibprefix=DIR], [prefix for ruby libraries [[LIBDIR/RUBY_BASE_NAME]]]),
-	    [if test "x$withval" = xno; then
-		AC_MSG_ERROR([No ruby, No libprefix])
-	    fi
-	    rubylibprefix="$withval"])
-AC_SUBST(rubylibprefix)
 rubylibdir='${rubylibprefix}/${ruby_version}'
 rubyarchdir=${multiarch+'${rubyarchprefix}/${ruby_version}'}${multiarch-'${rubylibdir}/${arch}'}
 

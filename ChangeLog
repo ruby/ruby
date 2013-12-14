@@ -1,3 +1,9 @@
+Sat Dec 14 16:26:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rubylibprefix): replace exec_prefix as well as
+	  bindir and libdir.  a patch by kimuraw (Wataru Kimura) at
+	  [ruby-dev:47852].  [Bug #9160]
+
 Sat Dec 14 14:42:53 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/logger.rb (lock_shift_log): no need to rotate the log file
