@@ -1609,7 +1609,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   ##
   # Returns the full path to this spec's documentation directory.  If +type+
-  # is given it will be appended to the end.  For examlpe:
+  # is given it will be appended to the end.  For example:
   #
   #   spec.doc_dir      # => "/path/to/gem_repo/doc/a-1"
   #

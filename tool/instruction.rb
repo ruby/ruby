@@ -64,7 +64,7 @@ class RubyVM
     def sp_increase_c_expr
       if(pops.any?{|t, v| v == '...'} ||
          rets.any?{|t, v| v == '...'})
-        # user definision
+        # user definition
         raise "no sp increase definition" if @sp_inc.nil?
         ret = "int inc = 0;\n"
 
