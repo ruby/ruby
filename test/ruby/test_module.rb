@@ -297,7 +297,7 @@ class TestModule < Test::Unit::TestCase
     assert_equal [:Foo, :Bar, :Baz], classes
   end
 
-  def test_nested_bad_class
+  def test_nested_get_bad_class
     assert_raise(TypeError) do
       self.class.const_get([User, 'USER', 'Foo'].join('::'))
     end

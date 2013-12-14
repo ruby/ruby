@@ -2084,7 +2084,7 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
     }
 
     if (SYMBOL_P(name)) {
-	id = ID2SYM(name);
+	id = SYM2ID(name);
 	if (!rb_is_const_id(id)) goto wrong_id;
 	return RTEST(recur) ? rb_const_get(mod, id) : rb_const_get_at(mod, id);
     }
