@@ -916,7 +916,7 @@ EOHELP
 
     # Returns the list of break points where execution will be stopped.
     #
-    # See DEBUGGER__ for more useage
+    # See DEBUGGER__ for more usage
     def break_points
       @break_points
     end
