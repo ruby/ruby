@@ -35,7 +35,7 @@ lb = LocalBarrier.new(n)
 
 (n - 1).times do |i|
   Thread.start do
-    sleep((rand(n) + 1) / 10.0)
+    sleep((rand(n) + 1) / 100.0)
     print "#{i}: done\n"
     lb.sync
     print "#{i}: cont\n"
