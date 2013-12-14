@@ -310,7 +310,9 @@ ruby_qsort(void* base, const size_t nel, const size_t size, cmpfunc_t *cmp, void
   char *L = base;                    	/* left end of current region */
   char *R = (char*)base + size*(nel-1); /* right end of current region */
   size_t chklim = 63;                   /* threshold of ordering element check */
-  stack_node stack[32], *top = stack;   /* 32 is enough for 32bit CPU */
+  enum {size_bits = sizeof(size) * CHAR_BIT};
+  stack_node stack[size_bits];          /* enough for size_t size */
+  stack_node *top = stack;
   int mmkind;
   size_t high, low, n;
 

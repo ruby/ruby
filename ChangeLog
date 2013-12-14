@@ -1,3 +1,9 @@
+Sat Dec 14 11:44:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.c (ruby_qsort): fix potential stack overflow on a large
+	  machine.  based on the patch by Conrad Irwin <conrad.irwin AT
+	  gmail.com> at [ruby-core:51816].  [Bug #7772]
+
 Sat Dec 14 11:25:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_mod_const_defined): support nested class path as
