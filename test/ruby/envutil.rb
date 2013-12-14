@@ -415,8 +415,8 @@ eom
           result = File.__send__(predicate, *args)
           result = !result if neg
           mesg = "Expected file " << args.shift.inspect
-          mesg << mu_pp(args) unless args.empty?
           mesg << "#{neg} to be #{predicate}"
+          mesg << mu_pp(args).sub(/\A\[(.*)\]\z/m, '(\1)') unless args.empty?
           mesg << " #{failure_message}" if failure_message
           assert(result, mesg)
         end
