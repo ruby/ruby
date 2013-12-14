@@ -355,7 +355,7 @@ eom
 
         # really is it succeed?
         unless ignore_stderr
-          # the body of assert_separately must not output anything to detect errror
+          # the body of assert_separately must not output anything to detect error
           assert_equal("", stderr, "assert_separately failed with error message")
         end
         assert_equal(0, status, "assert_separately failed: '#{stderr}'")

@@ -1275,7 +1275,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   ##
   # Activate all unambiguously resolved runtime dependencies of this
-  # spec. Add any ambigous dependencies to the unresolved list to be
+  # spec. Add any ambiguous dependencies to the unresolved list to be
   # resolved later, as needed.
 
   def activate_dependencies

@@ -3,7 +3,7 @@ module RSS
   ##
   # RSS::Utils is a module that holds various utility functions that are used
   # across many parts of the rest of the RSS library. Like most modules named
-  # some variant of 'util', its methods are probably not particuarly useful
+  # some variant of 'util', its methods are probably not particularly useful
   # to those who aren't developing the library itself.
   module Utils
     module_function
