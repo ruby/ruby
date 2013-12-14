@@ -240,7 +240,7 @@ class TestModule < Test::Unit::TestCase
     assert_not_operator(Math, :const_defined?, "IP")
   end
 
-  def test_bad_constants
+  def each_bad_constants(m, &b)
     [
       "#<Class:0x7b8b718b>",
       ":Object",
@@ -248,13 +248,26 @@ class TestModule < Test::Unit::TestCase
       ":",
       ["String::", "[Bug #7573]"],
       "\u3042",
+      "Name?",
     ].each do |name, msg|
       expected = "wrong constant name %s" % quote(name)
       msg = "#{msg}#{': ' if msg}wrong constant name #{name.dump}"
-      assert_raise_with_message(NameError, expected, msg) {
-        Object.const_get name
-      }
+      assert_raise_with_message(NameError, expected, "#{msg} to #{m}") do
+        yield name
+      end
     end
+  end
+
+  def test_bad_constants_get
+    each_bad_constants("get") {|name|
+      Object.const_get name
+    }
+  end
+
+  def test_bad_constants_defined
+    each_bad_constants("defined?") {|name|
+      Object.const_defined? name
+    }
   end
 
   def test_leading_colons

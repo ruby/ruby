@@ -2134,16 +2134,16 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 	}
 
 	if (!id) {
-	    if (!ISUPPER(*pbeg) || !rb_enc_symname2_p(pbeg, len, enc)) {
-		part = rb_str_subseq(name, beglen, len);
+	    part = rb_str_subseq(name, beglen, len);
+	    OBJ_FREEZE(part);
+	    if (!ISUPPER(*pbeg) || !rb_is_const_name(part)) {
 		rb_name_error_str(part, "wrong constant name %"PRIsVALUE,
 				  QUOTE(part));
 	    }
 	    else if (!rb_method_basic_definition_p(CLASS_OF(mod), id_const_missing)) {
-		id = rb_intern3(pbeg, len, enc);
+		id = rb_intern_str(part);
 	    }
 	    else {
-		part = rb_str_subseq(name, beglen, len);
 		rb_name_error_str(part, "uninitialized constant %"PRIsVALUE"%"PRIsVALUE,
 				  rb_str_subseq(name, 0, beglen),
 				  QUOTE(part));
@@ -2271,8 +2271,9 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
 	}
 
 	if (!id) {
-	    if (!ISUPPER(*pbeg) || !rb_enc_symname2_p(pbeg, len, enc)) {
-		part = rb_str_subseq(name, beglen, len);
+	    part = rb_str_subseq(name, beglen, len);
+	    OBJ_FREEZE(part);
+	    if (!ISUPPER(*pbeg) || !rb_is_const_name(part)) {
 		rb_name_error_str(part, "wrong constant name %"PRIsVALUE,
 				  QUOTE(part));
 	    }
