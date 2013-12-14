@@ -2074,7 +2074,6 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
     rb_encoding *enc;
     const char *pbeg, *p, *path, *pend;
     ID id;
-    int nestable = 1;
 
     if (argc == 1) {
 	name = argv[0];
@@ -2084,13 +2083,11 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 	rb_scan_args(argc, argv, "11", &name, &recur);
     }
 
-    if (SYMBOL_P(name)) {
-	name = rb_sym_to_s(name);
-	nestable = 0;
+    id = rb_check_id(&name);
+    if (id) {
+	if (!rb_is_const_id(id)) goto wrong_id;
+	return RTEST(recur) ? rb_const_get(mod, id) : rb_const_get_at(mod, id);
     }
-
-    name = rb_check_string_type(name);
-    Check_Type(name, T_STRING);
 
     enc = rb_enc_get(name);
     path = RSTRING_PTR(name);
@@ -2109,7 +2106,6 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
     }
 
     if (p + 2 < pend && p[0] == ':' && p[1] == ':') {
-	if (!nestable) goto wrong_name;
 	mod = rb_cObject;
 	p += 2;
 	pbeg = p;
@@ -2127,7 +2123,6 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 	beglen = pbeg-path;
 
 	if (p < pend && p[0] == ':') {
-	    if (!nestable) goto wrong_name;
 	    if (p + 2 >= pend || p[1] != ':') goto wrong_name;
 	    p += 2;
 	    pbeg = p;
@@ -2155,6 +2150,7 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 	    }
 	}
 	if (!rb_is_const_id(id)) {
+	  wrong_id:
 	    rb_name_error(id, "wrong constant name %"PRIsVALUE,
 			  QUOTE_ID(id));
 	}
