@@ -1,7 +1,4 @@
-Sat Dec 14 11:11:34 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* object.c (rb_mod_const_get): already interned junk name may be
-	  valid nested class path.
+Sat Dec 14 01:31:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_rescue2): reuse tags pushed for body proc to protect
 	  rescue proc too.
