@@ -401,6 +401,16 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([{}, {:bar=>"x"}], a.new.foo({}, bar: "x"))
   end
 
+  def test_precedence_of_keyword_arguments_with_post_argument
+    bug8993 = '[ruby-core:57706] [Bug #8993]'
+    a = Class.new do
+      def foo(a, b, c=1, *d, e, f:2, **g)
+        [a, b, c, d, e, f, g]
+      end
+    end
+    assert_equal([1, 2, 1, [], {:f=>5}, 2, {}], a.new.foo(1, 2, f:5), bug8993)
+  end
+
   def test_gced_object_in_stack
     bug8964 = '[ruby-dev:47729] [Bug #8964]'
     assert_normal_exit %q{

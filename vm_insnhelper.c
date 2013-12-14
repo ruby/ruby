@@ -1109,7 +1109,7 @@ vm_callee_setup_arg_complex(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t
 
     /* keyword argument */
     if (iseq->arg_keyword != -1) {
-	argc = vm_callee_setup_keyword_arg(iseq, argc, m, orig_argv, &keyword_hash);
+	argc = vm_callee_setup_keyword_arg(iseq, argc, min, orig_argv, &keyword_hash);
     }
 
     /* mandatory */
@@ -2164,6 +2164,7 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
     int i;
     int argc = orig_argc;
     const int m = iseq->argc;
+    const int min = m + iseq->arg_post_len;
     VALUE ary, arg0;
     VALUE keyword_hash = Qnil;
     int opt_pc = 0;
@@ -2177,7 +2178,7 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
      */
     arg0 = argv[0];
     if (!(iseq->arg_simple & 0x02) &&                           /* exclude {|a|} */
-	((m + iseq->arg_post_len) > 0 ||			/* positional arguments exist */
+	(min > 0 ||	                                        /* positional arguments exist */
 	 iseq->arg_opts > 2 ||					/* multiple optional arguments exist */
 	 iseq->arg_keyword != -1 ||				/* any keyword arguments */
 	 0) &&
@@ -2200,7 +2201,7 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
 
     /* keyword argument */
     if (iseq->arg_keyword != -1) {
-	argc = vm_callee_setup_keyword_arg(iseq, argc, m, argv, &keyword_hash);
+	argc = vm_callee_setup_keyword_arg(iseq, argc, min, argv, &keyword_hash);
     }
 
     for (i=argc; i<m; i++) {
