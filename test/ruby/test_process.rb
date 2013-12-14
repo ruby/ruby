@@ -1186,10 +1186,14 @@ class TestProcess < Test::Unit::TestCase
     return unless Signal.list.include?("QUIT")
 
     with_tmpchdir do
-      write_file("foo", "sleep 30")
-      pid = spawn(RUBY, "foo")
-      Thread.new { sleep 1; Process.kill(:SIGQUIT, pid) }
-      Process.wait(pid)
+      write_file("foo", "puts;STDOUT.flush;sleep 30")
+      pid = nil
+      IO.pipe do |r, w|
+        pid = spawn(RUBY, "foo", out: w)
+        w.close
+        Thread.new { r.read(1); Process.kill(:SIGQUIT, pid) }
+        Process.wait(pid)
+      end
       t = Time.now
       s = $?
       assert_equal([false, true, false],
@@ -1336,10 +1340,17 @@ class TestProcess < Test::Unit::TestCase
     end
     signal_received = []
     Signal.trap(:CHLD)  { signal_received << true }
-    pid = fork { sleep 0.1; exit }
-    Thread.start { raise }
+    pid = nil
+    IO.pipe do |r, w|
+      pid = fork { r.read(1); exit }
+      Thread.start { raise }
+      w.puts
+    end
     Process.wait pid
-    sleep 0.1
+    10.times do
+      break unless signal_received.empty?
+      sleep 0.01
+    end
     assert_equal [true], signal_received, " [ruby-core:19744]"
   rescue NotImplementedError, ArgumentError
   ensure
