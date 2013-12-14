@@ -1,6 +1,7 @@
 require 'test/unit'
 require 'fiber'
 require 'continuation'
+require 'tmpdir'
 require_relative './envutil'
 
 class TestFiber < Test::Unit::TestCase
@@ -282,7 +283,9 @@ class TestFiber < Test::Unit::TestCase
     env = {}
     env['RUBY_FIBER_VM_STACK_SIZE'] = vm_stack_size.to_s if vm_stack_size
     env['RUBY_FIBER_MACHINE_STACK_SIZE'] = machine_stack_size.to_s if machine_stack_size
-    out, err = EnvUtil.invoke_ruby([env, '-e', script], '', true, true)
+    out, err = Dir.mktmpdir("test_fiber") {|tmpdir|
+      EnvUtil.invoke_ruby([env, '-e', script], '', true, true, chdir: tmpdir)
+    }
     use_length ? out.length : out
   end
 
