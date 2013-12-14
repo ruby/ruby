@@ -140,7 +140,7 @@ class TestThread < Test::Unit::TestCase
     end
     t1.kill
     t2.kill
-    assert_send([c1, :>, c2], "[ruby-dev:33124]") # not guaranteed
+    assert_operator(c1, :>, c2, "[ruby-dev:33124]") # not guaranteed
   end
 
   def test_new
