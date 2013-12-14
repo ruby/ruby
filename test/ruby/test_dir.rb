@@ -249,4 +249,16 @@ class TestDir < Test::Unit::TestCase
     ENV["LOGDIR"] = env_logdir
   end
 
+  def test_symlinks_not_resolved
+    Dir.mktmpdir do |dirname|
+      Dir.chdir(dirname) do
+        Dir.mkdir('some-dir')
+        File.write('some-dir/foo', 'some content')
+        File.symlink('some-dir', 'dir-symlink')
+
+        assert_equal [ 'dir-symlink', 'some-dir' ], Dir['*'].sort
+        assert_equal [ 'dir-symlink', 'some-dir', 'some-dir/foo' ], Dir['**/*'].sort
+      end
+    end
+  end
 end
