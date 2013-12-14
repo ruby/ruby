@@ -644,8 +644,7 @@ private
         begin
           File.open(@filename, File::WRONLY | File::APPEND) do |lock|
             lock.flock(File::LOCK_EX) # inter-process locking. will be unlocked at closing file
-            ino = lock.stat.ino
-            if ino == File.stat(@filename).ino
+            if File.identical?(@filename, lock) and File.identical?(lock, @dev)
               yield # log shifting
             else
               # log shifted by another process (i-node before locking and i-node after locking are different)

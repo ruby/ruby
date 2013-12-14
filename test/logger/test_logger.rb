@@ -2,6 +2,7 @@
 require 'test/unit'
 require 'logger'
 require 'tempfile'
+require 'tmpdir'
 require_relative '../ruby/envutil'
 
 
@@ -539,6 +540,44 @@ class TestLogDevice < Test::Unit::TestCase
       end
     ensure
       File.unlink(logfile) if File.exist?(logfile)
+    end
+  end
+
+  def test_shifting_size_not_rotate_too_much
+    d(@filename).__send__(:add_log_header, @tempfile)
+    header_size = @tempfile.size
+    message = "*" * 99 + "\n"
+    shift_size = header_size + message.size * 3 - 1
+    opt = {shift_age: 1, shift_size: shift_size}
+
+    Dir.mktmpdir do |tmpdir|
+      begin
+        log = File.join(tmpdir, "log")
+        logdev1 = d(log, opt)
+        logdev2 = d(log, opt)
+
+        assert_file.identical?(log, logdev1.dev)
+        assert_file.identical?(log, logdev2.dev)
+
+        3.times{logdev1.write(message)}
+        assert_file.identical?(log, logdev1.dev)
+        assert_file.identical?(log, logdev2.dev)
+
+        logdev1.write(message)
+        assert_file.identical?(log, logdev1.dev)
+        assert_file.identical?(log + ".0", logdev2.dev)
+
+        logdev2.write(message)
+        assert_file.identical?(log, logdev1.dev)
+        assert_file.identical?(log, logdev2.dev)
+
+        logdev1.write(message)
+        assert_file.identical?(log, logdev1.dev)
+        assert_file.identical?(log, logdev2.dev)
+      ensure
+        logdev1.close if logdev1
+        logdev2.close if logdev2
+      end
     end
   end
 
