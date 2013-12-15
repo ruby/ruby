@@ -579,7 +579,7 @@ class TestLogDevice < Test::Unit::TestCase
         logdev2.close if logdev2
       end
     end
-  end
+  end unless /mswin|mingw/ =~ RUBY_PLATFORM
 
   private
 
