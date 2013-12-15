@@ -679,7 +679,9 @@ reachable_object_from_root_i(const char *category, VALUE obj, void *ptr)
 	rb_hash_aset(data->categories, category_str, category_objects);
     }
 
-    if (rb_objspace_markable_object_p(obj)) {
+    if (rb_objspace_markable_object_p(obj) &&
+	obj != data->categories &&
+	obj != data->last_category_objects) {
 	if (rb_objspace_internal_object_p(obj)) {
 	    obj = iow_newobj(obj);
 	}

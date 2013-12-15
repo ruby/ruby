@@ -1,3 +1,14 @@
+Sun Dec 15 13:38:29 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/objspace.c (reachable_object_from_root_i):
+	  reachable objects should not include categories and
+	  category_objects because it is noisy information.
+
+	  In fact, objects created after calling
+	  ObjectSpace.reachable_objects_from_root should not be included
+	  as a returning hash objects. Currently, mswin64 platform has a
+	  problem because of this behaviour. Should we trace new objects?
+
 Sun Dec 15 07:09:28 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc:  Update to RDoc master 263a9e5.  This improves the
