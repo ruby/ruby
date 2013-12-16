@@ -2981,6 +2981,9 @@ End
     File.unlink(path)
     IO.write(path, "foo", encoding: Encoding::UTF_32BE)
     assert_equal("\0\0\0f\0\0\0o\0\0\0o", File.binread(path))
+    assert_raise(TypeError) {
+      IO.write(path, "foo", Object.new => Object.new)
+    }
   ensure
     t.close!
   end

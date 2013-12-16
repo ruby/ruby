@@ -1788,7 +1788,7 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
 	    if (!NIL_P(hash)) {
 		VALUE opts = rb_extract_keywords(&hash);
 		if (!hash) argc--;
-		hash = opts;
+		hash = opts ? opts : Qnil;
 	    }
 	}
     }
