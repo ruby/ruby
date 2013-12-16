@@ -1129,7 +1129,7 @@ rb_hash_reject(VALUE hash)
     VALUE result;
 
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
-#if HASH_REJECT_COPY_TRIVIAL_ATTRIBUTES
+#if HASH_REJECT_COPY_MISC_ATTRIBUTES
 # if 0
     if (HAS_MISC_ATTRIBUTES(has)) {
 	rb_warn("copying unguaranteed attributes")
