@@ -1,3 +1,11 @@
+Mon Dec 16 16:40:35 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_method.c (rb_method_entry_make): fix WB miss.
+	  Note that rb_method_entry_t::klass is not constified.
+	  We may  constify this field.
+
+	* test/ruby/test_alias.rb: add a test.
+
 Mon Dec 16 14:14:22 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: use gc_verify_internal_consistency() instead of

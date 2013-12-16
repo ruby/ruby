@@ -322,7 +322,7 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
     me->flag = NOEX_WITH_SAFE(noex);
     me->mark = 0;
     me->called_id = mid;
-    me->klass = defined_class;
+    OBJ_WRITE(klass, &me->klass, defined_class);
     me->def = def;
 
     if (def) {

@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutils'
 
 class TestAlias < Test::Unit::TestCase
   class Alias0
@@ -118,5 +119,17 @@ class TestAlias < Test::Unit::TestCase
   # [ruby-dev:46028]
   def test_super_in_aliased_module_method # fails in 1.8
     assert_equal([:Base, :M], SuperInAliasedModuleMethod::Derived.new.bar)
+  end
+
+  def test_alias
+    assert_normal_exit %q{
+      require 'stringio'
+      GC.verify_internal_consistency
+      GC.start
+      class StringIO
+        alias_method :read_nonblock, :sysread
+      end
+      GC.verify_internal_consistency
+    }
   end
 end
