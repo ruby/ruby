@@ -1,3 +1,10 @@
+Tue Dec 17 05:18:17 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master 1c5f4b3.  Allows rubygems
+	  repackagers to disable backward-compatible shared gem directory
+	  behavior.
+	* test/rubygems:  ditto.
+
 Tue Dec 17 05:14:35 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* NEWS (RDoc):  Update version number so I don't have to change it

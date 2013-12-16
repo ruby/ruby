@@ -132,6 +132,55 @@ install:
     assert_path_exists File.join @spec.gem_dir, 'lib', 'a', 'b.rb'
   end
 
+  def test_build_extensions_install_ext_only
+    class << Gem
+      alias orig_install_extension_in_lib install_extension_in_lib
+
+      def Gem.install_extension_in_lib
+        false
+      end
+    end
+
+    @spec.extensions << 'ext/extconf.rb'
+
+    ext_dir = File.join @spec.gem_dir, 'ext'
+
+    FileUtils.mkdir_p ext_dir
+
+    extconf_rb = File.join ext_dir, 'extconf.rb'
+
+    open extconf_rb, 'w' do |f|
+      f.write <<-'RUBY'
+        require 'mkmf'
+
+        create_makefile 'a'
+      RUBY
+    end
+
+    ext_lib_dir = File.join ext_dir, 'lib'
+    FileUtils.mkdir ext_lib_dir
+    FileUtils.touch File.join ext_lib_dir, 'a.rb'
+    FileUtils.mkdir File.join ext_lib_dir, 'a'
+    FileUtils.touch File.join ext_lib_dir, 'a', 'b.rb'
+
+    use_ui @ui do
+      @builder.build_extensions
+    end
+
+    assert_path_exists @spec.extension_dir
+    assert_path_exists @spec.gem_build_complete_path
+    assert_path_exists File.join @spec.extension_dir, 'gem_make.out'
+    assert_path_exists File.join @spec.extension_dir, 'a.rb'
+    refute_path_exists File.join @spec.gem_dir, 'lib', 'a.rb'
+    refute_path_exists File.join @spec.gem_dir, 'lib', 'a', 'b.rb'
+  ensure
+    class << Gem
+      remove_method :install_extension_in_lib
+
+      alias install_extension_in_lib orig_install_extension_in_lib
+    end
+  end
+
   def test_build_extensions_none
     use_ui @ui do
       @builder.build_extensions

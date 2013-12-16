@@ -44,7 +44,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
 
         if tmp_dest
           # TODO remove in RubyGems 3
-          if lib_dir then
+          if Gem.install_extension_in_lib and lib_dir then
             FileUtils.mkdir_p lib_dir
             entries = Dir.entries(tmp_dest) - %w[. ..]
             entries = entries.map { |entry| File.join tmp_dest, entry }

@@ -152,4 +152,12 @@ module Gem
   def self.default_gems_use_full_paths?
     ruby_engine != 'ruby'
   end
+
+  ##
+  # Install extensions into lib as well as into the extension directory.
+
+  def self.install_extension_in_lib # :nodoc:
+    true
+  end
+
 end
