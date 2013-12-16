@@ -6825,6 +6825,9 @@ make_clock_result(struct timetick *ttp,
         numerators[num_numerators++] = 1000;
         return timetick2integer(ttp, numerators, num_numerators, denominators, num_denominators);
     }
+    else if (unit == ID2SYM(rb_intern("second"))) {
+        return timetick2integer(ttp, numerators, num_numerators, denominators, num_denominators);
+    }
     else if (unit == ID2SYM(rb_intern("float_microsecond"))) {
         numerators[num_numerators++] = 1000000;
         return timetick2dblnum(ttp, numerators, num_numerators, denominators, num_denominators);
@@ -6958,6 +6961,7 @@ get_mach_timebase_info(void)
  *  [:float_second] number of seconds as a float (default)
  *  [:float_millisecond] number of milliseconds as a float
  *  [:float_microsecond] number of microseconds as a float
+ *  [:second] number of seconds as an integer
  *  [:millisecond] number of milliseconds as an integer
  *  [:microsecond] number of microseconds as an integer
  *  [:nanosecond] number of nanoseconds as an integer

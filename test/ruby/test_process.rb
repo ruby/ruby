@@ -1682,6 +1682,29 @@ EOS
     assert_raise(Errno::EINVAL) { Process.clock_gettime(:foo) }
   end
 
+  def test_clock_gettime_unit
+    t0 = Time.now.to_f
+    [
+      [:nanosecond,  1_000_000_000],
+      [:microsecond, 1_000_000],
+      [:millisecond, 1_000],
+      [:second, 1],
+      [:float_microsecond, 1_000_000.0],
+      [:float_millisecond, 1_000.0],
+      [:float_second, 1.0],
+      [nil, 1.0],
+      [:foo],
+    ].each do |unit, num|
+      unless num
+        assert_raise(ArgumentError){ Process.clock_gettime(Process::CLOCK_REALTIME, unit) }
+        next
+      end
+      t1 = Process.clock_gettime(Process::CLOCK_REALTIME, unit)
+      assert_kind_of num.class, t1, [unit, num].inspect
+      assert_in_delta t0, t1/num, 1, [unit, num].inspect
+    end
+  end
+
   def test_clock_gettime_constants
     Process.constants.grep(/\ACLOCK_/).each {|n|
       c = Process.const_get(n)

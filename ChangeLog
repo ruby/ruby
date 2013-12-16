@@ -1,3 +1,8 @@
+Mon Dec 16 14:01:48 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* process.c (make_clock_result): add :second as a unit for
+	  Process.clock_gettime.
+
 Mon Dec 16 13:10:54 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: introduce GC.verify_internal_consistency method to verify GC
