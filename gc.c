@@ -4206,7 +4206,7 @@ gc_verify_internal_consistency(VALUE self)
     return Qnil;
 }
 
-#if RGENGC_CHECK_MODE >= 2
+#if RGENGC_CHECK_MODE >= 3
 
 #define MAKE_ROOTSIG(obj) (((VALUE)(obj) << 1) | 0x01)
 #define IS_ROOTSIG(obj)   ((VALUE)(obj) & 0x01)
@@ -4394,35 +4394,6 @@ allrefs_dump(rb_objspace_t *objspace)
 }
 #endif
 
-static int
-gc_check_before_marks_i(st_data_t k, st_data_t v, void *ptr)
-{
-    VALUE obj = k;
-    struct reflist *refs = (struct reflist *)v;
-    rb_objspace_t *objspace = (rb_objspace_t *)ptr;
-
-    /* check WB sanity */
-    if (!RVALUE_OLD_P(obj)) {
-	int i;
-	for (i=0; i<refs->pos; i++) {
-	    VALUE parent = refs->list[i];
-	    if (!IS_ROOTSIG(parent) && RVALUE_OLD_P(parent)) {
-		/* parent is old */
-		if (!MARKED_IN_BITMAP(GET_HEAP_PAGE(parent)->rememberset_bits, parent) &&
-		    !MARKED_IN_BITMAP(GET_HEAP_PAGE(obj)->rememberset_bits, obj)) {
-		    fprintf(stderr, "gc_marks_check_i: WB miss %p (%s) -> %p (%s) ",
-			    (void *)parent, obj_type_name(parent),
-			    (void *)obj, obj_type_name(obj));
-		    reflist_dump(refs);
-		    fprintf(stderr, "\n");
-		    objspace->rgengc.error_count++;
-		}
-	    }
-	}
-    }
-    return ST_CONTINUE;
-}
-
 #if RGENGC_CHECK_MODE >= 3
 static int
 gc_check_after_marks_i(st_data_t k, st_data_t v, void *ptr)
@@ -4496,7 +4467,7 @@ gc_marks(rb_objspace_t *objspace, int full_mark)
 #if USE_RGENGC
 
 #if RGENGC_CHECK_MODE >= 2
-	gc_marks_check(objspace, gc_check_before_marks_i, "before_marks");
+	gc_verify_internal_consistency(Qnil);
 #endif
 	if (full_mark == TRUE) { /* major/full GC */
 	    objspace->rgengc.remembered_shady_object_count = 0;
