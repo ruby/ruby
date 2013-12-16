@@ -278,4 +278,8 @@ class TestGc < Test::Unit::TestCase
       end;
     end
   end
+
+  def test_verify_internal_consistency
+    assert_nil(GC.verify_internal_consistency)
+  end
 end

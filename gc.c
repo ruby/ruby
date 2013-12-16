@@ -4135,6 +4135,77 @@ gc_marks_body(rb_objspace_t *objspace, int full_mark)
     rgengc_report(1, objspace, "gc_marks_body: end (%s)\n", full_mark ? "full" : "minor");
 }
 
+struct verify_internal_consistency_struct {
+    rb_objspace_t *objspace;
+    int err_count;
+    VALUE parent;
+};
+
+#if USE_RGENGC
+static void
+verify_internal_consistency_reachable_i(VALUE child, void *ptr)
+{
+    struct verify_internal_consistency_struct *data = (struct verify_internal_consistency_struct *)ptr;
+
+    assert(RVALUE_OLD_P(data->parent));
+
+    if (!RVALUE_OLD_P(child)) {
+	if (!MARKED_IN_BITMAP(GET_HEAP_PAGE(data->parent)->rememberset_bits, data->parent) &&
+	    !MARKED_IN_BITMAP(GET_HEAP_PAGE(child)->rememberset_bits, child)) {
+	    fprintf(stderr, "verify_internal_consistency_reachable_i: WB miss %p (%s) -> %p (%s)\n",
+		    (void *)data->parent, obj_type_name(data->parent),
+		    (void *)child, obj_type_name(child));
+	    data->err_count++;
+	}
+    }
+}
+
+static int
+verify_internal_consistency_i(void *page_start, void *page_end, size_t stride, void *ptr)
+{
+    struct verify_internal_consistency_struct *data = (struct verify_internal_consistency_struct *)ptr;
+    VALUE v;
+
+    for (v = (VALUE)page_start; v != (VALUE)page_end; v += stride) {
+	if (is_live_object(data->objspace, v)) {
+	    if (RVALUE_OLD_P(v)) {
+		data->parent = v;
+		/* reachable objects from an oldgen object should be old or (young with remember) */
+		rb_objspace_reachable_objects_from(v, verify_internal_consistency_reachable_i, (void *)data);
+	    }
+	}
+    }
+
+    return 0;
+}
+#endif /* USE_RGENGC */
+
+/*
+ *  call-seq:
+ *     GC.verify_internal_consistency                  -> nil
+ *
+ *  Verify internal consistency.
+ *
+ *  This method is implementation specific.
+ *  Now this method checks generatioanl consistency
+ *  if RGenGC is supported.
+ */
+static VALUE
+gc_verify_internal_consistency(VALUE self)
+{
+    struct verify_internal_consistency_struct data;
+    data.objspace = &rb_objspace;
+    data.err_count = 0;
+
+#if USE_RGENGC
+    rb_objspace_each_objects(verify_internal_consistency_i, &data);
+#endif
+    if (data.err_count != 0) {
+	rb_bug("gc_verify_internal_consistency: found internal consistency.\n");
+    }
+    return Qnil;
+}
+
 #if RGENGC_CHECK_MODE >= 2
 
 #define MAKE_ROOTSIG(obj) (((VALUE)(obj) << 1) | 0x01)
@@ -7459,6 +7530,8 @@ Init_GC(void)
 	rb_include_module(rb_cWeakMap, rb_mEnumerable);
     }
 
+    /* internal methods */
+    rb_define_singleton_method(rb_mGC, "verify_internal_consistency", gc_verify_internal_consistency, 0);
 #if MALLOC_ALLOCATED_SIZE
     rb_define_singleton_method(rb_mGC, "malloc_allocated_size", gc_malloc_allocated_size, 0);
     rb_define_singleton_method(rb_mGC, "malloc_allocations", gc_malloc_allocations, 0);
