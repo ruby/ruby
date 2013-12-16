@@ -87,13 +87,9 @@ VALUE
 rb_hash(VALUE obj)
 {
     VALUE hval = rb_exec_recursive_outer(hash_recursive, obj, 0);
-  retry:
-    switch (TYPE(hval)) {
-      case T_FIXNUM:
-	return hval;
 
-      case T_BIGNUM:
-        {
+    while (!FIXNUM_P(hval)) {
+        if (RB_TYPE_P(hval, T_BIGNUM)) {
             int sign;
             unsigned long ul;
             sign = rb_integer_pack(hval, &ul, 1, sizeof(ul), 0,
@@ -103,11 +99,9 @@ rb_hash(VALUE obj)
                 return LONG2FIX(-(long)ul);
             return LONG2FIX((long)ul);
         }
-
-      default:
 	hval = rb_to_int(hval);
-	goto retry;
     }
+    return hval;
 }
 
 static st_index_t
