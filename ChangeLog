@@ -14,7 +14,7 @@ Mon Dec 16 13:10:54 2013  Koichi Sasada  <ko1@atdot.net>
 	* gc.c: introduce GC.verify_internal_consistency method to verify GC
 	  internal data structure.
 
-	  Now this method only checks geneartion (old/young) consistency.
+	  Now this method only checks generation (old/young) consistency.
 
 Mon Dec 16 11:49:26 2013  Aman Gupta <ruby@tmm1.net>
 
