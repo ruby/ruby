@@ -1748,13 +1748,20 @@ rb_objspace_each_objects(each_obj_callback *callback, void *data)
 {
     struct each_obj_args args;
     rb_objspace_t *objspace = &rb_objspace;
+    int prev_dont_lazy_sweep = objspace->flags.dont_lazy_sweep;
 
     gc_rest_sweep(objspace);
     objspace->flags.dont_lazy_sweep = TRUE;
 
     args.callback = callback;
     args.data = data;
-    rb_ensure(objspace_each_objects, (VALUE)&args, lazy_sweep_enable, Qnil);
+
+    if (prev_dont_lazy_sweep) {
+	objspace_each_objects((VALUE)&args);
+    }
+    else {
+	rb_ensure(objspace_each_objects, (VALUE)&args, lazy_sweep_enable, Qnil);
+    }
 }
 
 struct os_each_struct {

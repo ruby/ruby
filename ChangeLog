@@ -1,3 +1,8 @@
+Mon Dec 16 18:00:51 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_objspace_each_objects): should not clear dont_lazy_sweep
+	  flag in nested case.
+
 Mon Dec 16 16:40:35 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_method.c (rb_method_entry_make): fix WB miss.
