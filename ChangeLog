@@ -1,7 +1,7 @@
 Mon Dec 16 14:14:22 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: use gc_verify_internal_consistency() instead of
-	  gc_check_before_marks_i() for check consistency 
+	  gc_check_before_marks_i() for check consistency
 	  on RGENGC_CHECK_MODE >= 2.
 
 Mon Dec 16 14:01:48 2013  NARUSE, Yui  <naruse@ruby-lang.org>
