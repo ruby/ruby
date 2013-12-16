@@ -1,3 +1,7 @@
+Mon Dec 16 18:07:30 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_objspace_markable_object_p): fix last commit (build error).
+
 Mon Dec 16 18:04:28 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_objspace_markable_object_p): it should be live objects.
