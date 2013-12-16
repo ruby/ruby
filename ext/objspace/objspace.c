@@ -673,6 +673,7 @@ reachable_object_from_root_i(const char *category, VALUE obj, void *ptr)
 	data->last_category = category;
 	category_str = data->last_category_str = rb_str_new2(category);
 	category_objects = data->last_category_objects = rb_hash_new();
+	rb_funcall(category_objects, rb_intern("compare_by_identity"), 0);
 	if (!NIL_P(rb_hash_lookup(data->categories, category_str))) {
 	    rb_bug("reachable_object_from_root_i: category should insert at once");
 	}
@@ -711,6 +712,7 @@ reachable_objects_from_root(VALUE self)
     VALUE hash = data.categories = rb_hash_new();
     data.last_category = 0;
 
+    rb_funcall(hash, rb_intern("compare_by_identity"), 0);
     rb_objspace_reachable_objects_from_root(reachable_object_from_root_i, &data);
     rb_hash_foreach(hash, collect_values_of_values, hash);
 

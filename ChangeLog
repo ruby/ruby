@@ -1,3 +1,12 @@
+Mon Dec 16 19:12:54 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/objspace.c (reachable_object_from_root_i): use
+	  compare_by_identity hash to avoid hash modify problem
+	  during iteration.
+	  [Bug #9252]
+
+	* ext/objspace/objspace.c (reachable_objects_from_root): ditto.
+
 Mon Dec 16 18:16:28 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_verify_internal_consistency): should not use
