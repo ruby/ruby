@@ -2968,4 +2968,20 @@ End
   ensure
     t.kill
   end
+
+  def test_s_write
+    t = Tempfile.new("test_io")
+    t.close
+    path = t.path
+    File.unlink(path)
+    IO.write(path, "foo")
+    assert_equal("foo", IO.read(path))
+    IO.write(path, "bar", 2)
+    assert_equal("fobar", IO.read(path))
+    File.unlink(path)
+    IO.write(path, "foo", encoding: Encoding::UTF_32BE)
+    assert_equal("\0\0\0f\0\0\0o\0\0\0o", File.binread(path))
+  ensure
+    t.close!
+  end
 end
