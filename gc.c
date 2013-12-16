@@ -2266,7 +2266,7 @@ is_markable_object(rb_objspace_t *objspace, VALUE obj)
 int
 rb_objspace_markable_object_p(VALUE obj)
 {
-    return is_markable_object(&rb_objspace, obj);
+    return is_live_object(obj) && is_markable_object(&rb_objspace, obj);
 }
 
 /*
