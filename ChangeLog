@@ -1,3 +1,8 @@
+Mon Dec 16 19:19:19 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_objspace_markable_object_p): should check special_const_p
+	  first (by is_markable_object()).
+
 Mon Dec 16 19:12:54 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/objspace.c (reachable_object_from_root_i): use
