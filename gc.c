@@ -5175,7 +5175,10 @@ static VALUE
 gc_info_decode(int flags, VALUE hash_or_key)
 {
     static VALUE sym_major_by = Qnil, sym_gc_by, sym_immediate_sweep, sym_have_finalizer;
-    static VALUE sym_nofree, sym_oldgen, sym_shady, sym_rescan, sym_stress, sym_oldmalloc;
+    static VALUE sym_nofree, sym_oldgen, sym_shady, sym_rescan, sym_stress;
+#if RGENGC_ESTIMATE_OLDMALLOC
+    static VALUE sym_oldmalloc;
+#endif
     static VALUE sym_newobj, sym_malloc, sym_method, sym_capi;
     VALUE hash = Qnil, key = Qnil;
     VALUE major_by;
@@ -5198,7 +5201,9 @@ gc_info_decode(int flags, VALUE hash_or_key)
 	S(shady);
 	S(rescan);
 	S(stress);
+#if RGENGC_ESTIMATE_OLDMALLOC
 	S(oldmalloc);
+#endif
 	S(newobj);
 	S(malloc);
 	S(method);
@@ -5898,11 +5903,15 @@ objspace_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, si
 {
     if (new_size > old_size) {
 	ATOMIC_SIZE_ADD(malloc_increase, new_size - old_size);
+#if RGENGC_ESTIMATE_OLDMALLOC
 	ATOMIC_SIZE_ADD(objspace->rgengc.oldmalloc_increase, new_size - old_size);
+#endif
     }
     else {
 	atomic_sub_nounderflow(&malloc_increase, old_size - new_size);
+#if RGENGC_ESTIMATE_OLDMALLOC
 	atomic_sub_nounderflow(&objspace->rgengc.oldmalloc_increase, old_size - new_size);
+#endif
     }
 
     if (type == MEMOP_TYPE_MALLOC) {

@@ -1,3 +1,9 @@
+Mon Dec 16 11:49:26 2013  Aman Gupta <ruby@tmm1.net>
+
+	* gc.c (gc_info_decode): Fix build errors wheb compiled with
+	  RGENGC_ESTIMATE_OLDMALLOC=0
+	* gc.c (objspace_malloc_increase): ditto
+
 Sun Dec 15 13:38:29 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/objspace.c (reachable_object_from_root_i):
