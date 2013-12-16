@@ -133,6 +133,12 @@ with all sufficient information, see the ChangeLog file.
 
 === Core classes compatibility issues (excluding feature bug fixes)
 
+* Hash
+  * incompatible changes:
+    * Hash#reject now returns plain Hash object, that is the original object's
+      subclass, instance variables, default value, and taintedness are no longer
+      copied.
+
 * IO
   * incompatible changes:
     * open ignore internal encoding if external encoding is ASCII-8BIT.
