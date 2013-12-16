@@ -360,7 +360,13 @@ class TestThread < Test::Unit::TestCase
 
   def test_safe_level
     ok = false
-    t = Thread.new { $SAFE = 3; ok = true; sleep }
+    t = Thread.new do
+      EnvUtil.suppress_warning do
+        $SAFE = 3
+      end
+      ok = true
+      sleep
+    end
     Thread.pass until ok
     assert_equal(0, Thread.current.safe_level)
     assert_equal(3, t.safe_level)
