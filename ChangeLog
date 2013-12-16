@@ -71,7 +71,7 @@ Sun Dec 15 13:38:29 2013  Koichi Sasada  <ko1@atdot.net>
 	  In fact, objects created after calling
 	  ObjectSpace.reachable_objects_from_root should not be included
 	  as a returning hash objects. Currently, mswin64 platform has a
-	  problem because of this behaviour. Should we trace new objects?
+	  problem because of this behavior. Should we trace new objects?
 
 Sun Dec 15 07:09:28 2013  Eric Hodel  <drbrain@segment7.net>
 
@@ -705,7 +705,7 @@ Thu Dec  5 22:18:01 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Thu Dec  5 21:53:29 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* array.c (rb_ary_or): lhs elements are prefered, so should not
+	* array.c (rb_ary_or): lhs elements are preferred, so should not
 	  replace with rhs elements.
 
 	* test/ruby/test_array.rb (test_OR_in_order): import the test failed
@@ -878,7 +878,7 @@ Tue Dec  3 20:18:46 2013  Narihiro Nakamura  <authornari@gmail.com>
 Tue Dec  3 20:16:38 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* array.c (rb_hash_rehash): use hash_alloc() instead of rb_hash_new(),
-	  to hide temprary object from ObjectSpace.  [Bug #9187]
+	  to hide temporary object from ObjectSpace.  [Bug #9187]
 
 Tue Dec  3 17:11:47 2013  Aman Gupta <ruby@tmm1.net>
 
@@ -899,7 +899,7 @@ Tue Dec  3 17:01:45 2013  Aman Gupta <ruby@tmm1.net>
 	* internal.h (RCLASS_M_TBL_INIT): New macro for initializing method
 	  table wrapper and st_table.
 	* method.h (void rb_sweep_method_entry): Rename rb_free_m_table to
-	  rb_free_m_tbl for consistentcy
+	  rb_free_m_tbl for consistency
 	* .gdbinit (define rb_method_entry): Update rb_method_entry gdb helper
 	  for new method table structure.
 	* class.c: Use RCLASS_M_TBL_WRAPPER and
@@ -1074,13 +1074,13 @@ Sat Nov 30 18:05:38 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sat Nov 30 17:46:35 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (ruby_cleanup): determine exit status and signal to terminate
-	  before finalization, to get rid of access destroyed T_DATA execption
+	  before finalization, to get rid of access destroyed T_DATA exception
 	  object.  [ruby-core:58643] [Bug #9167]
 
 Sat Nov 30 16:25:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c (enumerator_with_index): should not store local variable
-	  address to memoise the arguments.  it is invalidated after the return.
+	  address to memoize the arguments.  it is invalidated after the return.
 	  [ruby-core:58692] [Bug #9178]
 
 Sat Nov 30 13:28:13 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
