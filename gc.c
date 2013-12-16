@@ -4206,7 +4206,12 @@ gc_verify_internal_consistency(VALUE self)
     data.err_count = 0;
 
 #if USE_RGENGC
-    rb_objspace_each_objects(verify_internal_consistency_i, &data);
+    {
+	struct each_obj_args eo_args;
+	eo_args.callback = verify_internal_consistency_i;
+	eo_args.data = (void *)&data;
+	objspace_each_objects((VALUE)&eo_args);
+    }
 #endif
     if (data.err_count != 0) {
 	rb_bug("gc_verify_internal_consistency: found internal consistency.\n");
