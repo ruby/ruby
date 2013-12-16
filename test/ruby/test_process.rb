@@ -1700,7 +1700,7 @@ EOS
         next
       end
       t1 = Process.clock_gettime(Process::CLOCK_REALTIME, unit)
-      assert_kind_of num.class, t1, [unit, num].inspect
+      assert_kind_of num.integer? ? Integer : num.class, t1, [unit, num].inspect
       assert_in_delta t0, t1/num, 1, [unit, num].inspect
     end
   end
