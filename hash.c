@@ -27,6 +27,11 @@
 # endif
 #endif
 
+#define HAS_MISC_ATTRIBUTES(hash) \
+    (FL_TEST((hash), FL_EXIVAR|FL_TAINT|HASH_PROC_DEFAULT) || \
+     !NIL_P(RHASH_IFNONE(hash)))
+#define HASH_REJECT_COPY_MISC_ATTRIBUTES 0
+
 static VALUE rb_hash_s_try_convert(VALUE, VALUE);
 
 /*
@@ -272,8 +277,8 @@ rb_hash_new(void)
     return hash_alloc(rb_cHash);
 }
 
-VALUE
-rb_hash_dup(VALUE hash)
+static VALUE
+rb_hash_dup_empty(VALUE hash)
 {
     NEWOBJ_OF(ret, struct RHash,
                 rb_obj_class(hash),
@@ -281,13 +286,20 @@ rb_hash_dup(VALUE hash)
     if (FL_TEST((hash), FL_EXIVAR))
         rb_copy_generic_ivar((VALUE)(ret),(VALUE)(hash));
 
-    if (!RHASH_EMPTY_P(hash))
-        ret->ntbl = st_copy(RHASH(hash)->ntbl);
     if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
         FL_SET(ret, HASH_PROC_DEFAULT);
     }
     RHASH_SET_IFNONE(ret, RHASH_IFNONE(hash));
     return (VALUE)ret;
+}
+
+VALUE
+rb_hash_dup(VALUE hash)
+{
+    VALUE ret = rb_hash_dup_empty(hash);
+    if (!RHASH_EMPTY_P(hash))
+	RHASH(ret)->ntbl = st_copy(RHASH(hash)->ntbl);
+    return ret;
 }
 
 static void
@@ -1117,7 +1129,21 @@ rb_hash_reject(VALUE hash)
     VALUE result;
 
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
+#if HASH_REJECT_COPY_TRIVIAL_ATTRIBUTES
+# if 0
+    if (HAS_MISC_ATTRIBUTES(has)) {
+	rb_warn("copying unguaranteed attributes")
+    }
+# endif
+    result = rb_hash_dup_empty(hash);
+#else
+# if 0
+    if (HAS_MISC_ATTRIBUTES(has)) {
+	rb_warn("unguaranteed attributes are not copied")
+    }
+# endif
     result = rb_hash_new();
+#endif
     if (!RHASH_EMPTY_P(hash)) {
 	rb_hash_foreach(hash, reject_i, result);
     }
