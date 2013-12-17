@@ -27,9 +27,11 @@
 # endif
 #endif
 
-#define HAS_MISC_ATTRIBUTES(hash) \
-    (FL_TEST((hash), FL_EXIVAR|FL_TAINT|HASH_PROC_DEFAULT) || \
-     !NIL_P(RHASH_IFNONE(hash)))
+#define HAS_MISC_ATTRIBUTES(hash, klass) ( \
+    (klass = rb_obj_class(hash)) != rb_cHash || \
+    (klass = 0, \
+     FL_TEST((hash), FL_EXIVAR|FL_TAINT|HASH_PROC_DEFAULT) ||	\
+     !NIL_P(RHASH_IFNONE(hash))))
 #define HASH_REJECT_COPY_MISC_ATTRIBUTES 0
 
 static VALUE rb_hash_s_try_convert(VALUE, VALUE);
@@ -1129,19 +1131,36 @@ rb_hash_reject(VALUE hash)
     VALUE result;
 
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
+    if (RTEST(ruby_verbose)) {
+	VALUE klass;
+	if (HAS_MISC_ATTRIBUTES(hash, klass)) {
 #if HASH_REJECT_COPY_MISC_ATTRIBUTES
-# if 0
-    if (HAS_MISC_ATTRIBUTES(has)) {
-	rb_warn("copying unguaranteed attributes")
+	    rb_warn("copying unguaranteed attributes: %+"PRIsVALUE, hash);
+	    rb_warn("following atributes will not be copied in the future version:");
+	    if (klass != rb_cHash) {
+		rb_warn("  subclass: %+"PRIsVALUE, klass);
+	    }
+	    if (FL_TEST(hash, FL_EXIVAR)) {
+		rb_warn("  instance variables: %+"PRIsVALUE,
+			rb_obj_instance_variables(hash));
+	    }
+	    if (FL_TEST(hash, FL_TAINT)) {
+		rb_warn("  taintedness");
+	    }
+	    if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
+		rb_warn("  default proc: %+"PRIsVALUE, RHASH_IFNONE(hash));
+	    }
+	    else if (!NIL_P(RHASH_IFNONE(hash)))
+		rb_warn("  default value: %+"PRIsVALUE, RHASH_IFNONE(hash));
+#else
+	    rb_warn("unguaranteed attributes are not copied: %+"PRIsVALUE, hash);
+	    rb_warn("following atributes are ignored now:");
+#endif
+	}
     }
-# endif
+#if HASH_REJECT_COPY_MISC_ATTRIBUTES
     result = rb_hash_dup_empty(hash);
 #else
-# if 0
-    if (HAS_MISC_ATTRIBUTES(has)) {
-	rb_warn("unguaranteed attributes are not copied")
-    }
-# endif
     result = rb_hash_new();
 #endif
     if (!RHASH_EMPTY_P(hash)) {
