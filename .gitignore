@@ -23,6 +23,7 @@
 .ppack
 .svn
 Makefile
+Makefile.old
 extconf.h
 y.output
 y.tab.c
@@ -36,6 +37,7 @@ y.tab.c
 /ChangeLog.pre1_1
 /Doxyfile
 /GNUmakefile
+/GNUmakefile.old
 /README.atheos
 /README.fat-patch
 /README.v6
