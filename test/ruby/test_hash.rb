@@ -558,6 +558,8 @@ class TestHash < Test::Unit::TestCase
     assert_equal(h3, h.reject {|k,v| v })
     assert_equal(base, h)
 
+    return unless RUBY_VERSION > "2.1.0"
+
     h.instance_variable_set(:@foo, :foo)
     h.default = 42
     h.taint

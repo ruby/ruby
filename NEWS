@@ -135,9 +135,10 @@ with all sufficient information, see the ChangeLog file.
 
 * Hash
   * incompatible changes:
-    * Hash#reject now returns plain Hash object, that is the original object's
-      subclass, instance variables, default value, and taintedness are no longer
-      copied.
+    * Hash#reject will return plain Hash object in the future versions, that
+      is the original object's subclass, instance variables, default value,
+      and taintedness will be no longer copied, so now warnings are emitted
+      when called with such Hash.
 
 * IO
   * incompatible changes:

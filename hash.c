@@ -32,7 +32,7 @@
     (klass = 0, \
      FL_TEST((hash), FL_EXIVAR|FL_TAINT|HASH_PROC_DEFAULT) ||	\
      !NIL_P(RHASH_IFNONE(hash))))
-#define HASH_REJECT_COPY_MISC_ATTRIBUTES 0
+#define HASH_REJECT_COPY_MISC_ATTRIBUTES 1
 
 static VALUE rb_hash_s_try_convert(VALUE, VALUE);
 
