@@ -170,7 +170,7 @@ module Exception2MessageMapper
 
   E2MM.def_exception(E2MM,
                      :ErrNotRegisteredException,
-                     "not registerd exception(%s)")
+                     "not registered exception(%s)")
 end
 
 
