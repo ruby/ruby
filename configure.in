@@ -589,7 +589,7 @@ AC_DEFUN([RUBY_DTRACE_POSTPROCESS],
       probe fire();
     };
 _PROBES
-    dtrace -h -o conftest_provider.h -s conftest_provider.d >/dev/null 2>/dev/null &&
+    $DTRACE -h -o conftest_provider.h -s conftest_provider.d >/dev/null 2>/dev/null &&
     cat >conftest.c <<_CONF &&
     @%:@include "conftest_provider.h"
     int main(void){ CONFTEST_FIRE(); return 0; }
