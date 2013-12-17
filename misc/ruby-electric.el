@@ -10,7 +10,7 @@
 ;; URL: https://github.com/knu/ruby-electric.el
 ;; Keywords: languages ruby
 ;; License: The same license terms as Ruby
-;; Version: 2.1
+;; Version: 2.1.1
 
 ;;; Commentary:
 ;;
@@ -366,7 +366,9 @@ enabled."
         (t
          (insert "#")
          (forward-char 1)
-         (insert "}"))))))))
+         (insert "}")))))
+    (t
+     (setq this-command 'self-insert-command)))))
 
 (defun ruby-electric-hash(arg)
   (interactive "*P")
@@ -447,7 +449,7 @@ enabled."
           (setq this-command 'self-insert-command)))))
 
 (defun ruby-electric-delete-backward-char(arg)
-  (interactive "*P")
+  (interactive "*p")
   (cond ((memq last-command '(ruby-electric-matching-char
                               ruby-electric-bar))
          (delete-char 1))
@@ -466,7 +468,7 @@ enabled."
         ((eq last-command 'ruby-electric-hash)
          (and (char-equal (preceding-char) ?{)
               (delete-char 1))))
-  (delete-char -1))
+  (delete-char (- arg)))
 
 (provide 'ruby-electric)
 

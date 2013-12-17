@@ -1,3 +1,14 @@
+Tue Dec 17 17:30:56 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* misc/ruby-electric.el: Import version 2.1.1 from
+	  https://github.com/knu/ruby-electric.el.
+
+	  * ruby-electric-delete-backward-char: Enable support for number
+	    prefix.
+
+	  * ruby-electric-curlies: Fix electric operation after an open
+	    curly.
+
 Tue Dec 17 16:19:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_trace.c (rb_postponed_job_flush): isolate exceptions in
