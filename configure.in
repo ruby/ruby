@@ -594,7 +594,7 @@ _PROBES
     @%:@include "conftest_provider.h"
     int main(void){ CONFTEST_FIRE(); return 0; }
 _CONF
-    $CC $CFLAGS -c -o conftest.o conftest.c &&
+    $CC $CFLAGS $CPPFLAGS -c -o conftest.o conftest.c &&
     $DTRACE -G -s conftest_provider.d conftest.o 2>/dev/null
   }; then
     rb_cv_prog_dtrace_g=yes
