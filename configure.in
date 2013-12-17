@@ -856,6 +856,25 @@ if test "$GCC" = yes; then
     done
 fi
 
+AC_ARG_WITH(opt-dir,
+	AS_HELP_STRING([--with-opt-dir=DIR-LIST],
+		       [add optional headers and libraries directories separated by $PATH_SEPARATOR]),
+	[
+		withval="$1"
+		val=`echo "$PATH_SEPARATOR$withval" | sed "s|$PATH_SEPARATOR\([[^$PATH_SEPARATOR]*]\)| -I\1/include|g;s/^ //"`
+		CPPFLAGS="$CPPFLAGS $val"
+		val=`IFS="$PATH_SEPARATOR"
+		    for dir in $withval; do
+			echo x ${LIBPATHFLAG} ${RPATHFLAG} |
+			sed "s/^x *//;s${IFS}"'%1\\$-s'"${IFS}${dir}/lib${IFS}g;s${IFS}%s${IFS}${dir}/lib${IFS}g"
+		    done | tr '\012' ' '`
+		LDFLAGS_OPTDIR="$val"
+		test x"${LDFLAGS}" = x || LDFLAGS="$LDFLAGS "
+		LDFLAGS="$LDFLAGS$val"
+		test x"${DLDFLAGS}" = x || DLDFLAGS="$DLDFLAGS "
+		DLDFLAGS="$DLDFLAGS$val"
+	])
+
 test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $ARCH_FLAG\""
 test -z "${ac_env_CXXFLAGS_set}" -a -n "${cxxflags+set}" && eval CXXFLAGS="\"$cxxflags $ARCH_FLAG\""
 
@@ -2735,24 +2754,6 @@ AC_SUBST(LIBPATHFLAG)
 AC_SUBST(RPATHFLAG)
 AC_SUBST(LIBPATHENV, "${LIBPATHENV-LD_LIBRARY_PATH}")
 AC_SUBST(TRY_LINK)
-
-AC_ARG_WITH(opt-dir,
-	AS_HELP_STRING([--with-opt-dir=DIR-LIST],
-		       [add optional headers and libraries directories separated by $PATH_SEPARATOR]),
-	[
-		val=`echo "$PATH_SEPARATOR$withval" | sed "s|$PATH_SEPARATOR\([[^$PATH_SEPARATOR]*]\)| -I\1/include|g;s/^ //"`
-		CPPFLAGS="$CPPFLAGS $val"
-		val=`IFS="$PATH_SEPARATOR"
-		    for dir in $withval; do
-			echo x ${LIBPATHFLAG} ${RPATHFLAG} |
-			sed "s/^x *//;s${IFS}"'%1\\$-s'"${IFS}${dir}/lib${IFS}g;s${IFS}%s${IFS}${dir}/lib${IFS}g"
-		    done | tr '\012' ' '`
-		LDFLAGS_OPTDIR="$val"
-		test x"${LDFLAGS}" = x || LDFLAGS="$LDFLAGS "
-		LDFLAGS="$LDFLAGS$val"
-		test x"${DLDFLAGS}" = x || DLDFLAGS="$DLDFLAGS "
-		DLDFLAGS="$DLDFLAGS$val"
-	])
 
 AS_CASE(["$target_cpu-$target_os"],
 [*-darwin*], [
