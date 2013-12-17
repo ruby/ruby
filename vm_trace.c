@@ -1511,7 +1511,9 @@ rb_postponed_job_flush(rb_vm_t *vm)
 {
     rb_thread_t *th = GET_THREAD();
     unsigned long saved_postponed_job_interrupt_mask = th->interrupt_mask & POSTPONED_JOB_INTERRUPT_MASK;
+    VALUE saved_errno = th->errinfo;
 
+    th->errinfo = Qnil;
     /* mask POSTPONED_JOB dispatch */
     th->interrupt_mask |= POSTPONED_JOB_INTERRUPT_MASK;
     {
@@ -1530,4 +1532,5 @@ rb_postponed_job_flush(rb_vm_t *vm)
     }
     /* restore POSTPONED_JOB mask */
     th->interrupt_mask &= ~(saved_postponed_job_interrupt_mask ^ POSTPONED_JOB_INTERRUPT_MASK);
+    th->errinfo = saved_errno;
 }

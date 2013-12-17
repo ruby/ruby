@@ -1,3 +1,9 @@
+Tue Dec 17 16:19:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_trace.c (rb_postponed_job_flush): isolate exceptions in
+	  postponed jobs and restore outer ones.  based on a patch by
+	  tarui.  [ruby-core:58652] [Bug #9168]
+
 Tue Dec 17 10:48:04 2013  Aman Gupta <ruby@tmm1.net>
 
 	* configure.in (RUBY_DTRACE_POSTPROCESS): Fix compatibility with
