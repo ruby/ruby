@@ -274,7 +274,7 @@ trace_object_allocations(VALUE self)
 }
 
 int rb_bug_reporter_add(void (*func)(FILE *, void *), void *data);
-static int object_allocations_reporter_registerd = 0;
+static int object_allocations_reporter_registered = 0;
 
 static int
 object_allocations_reporter_i(st_data_t key, st_data_t val, st_data_t ptr)
@@ -307,8 +307,8 @@ static VALUE
 trace_object_allocations_debug_start(VALUE self)
 {
     tmp_keep_remains = 1;
-    if (object_allocations_reporter_registerd == 0) {
-	object_allocations_reporter_registerd = 1;
+    if (object_allocations_reporter_registered == 0) {
+	object_allocations_reporter_registered = 1;
 	rb_bug_reporter_add(object_allocations_reporter, 0);
     }
 
