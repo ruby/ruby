@@ -1,3 +1,7 @@
+Tue Dec 17 23:44:15 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* test/ruby/test_io.rb: fix duplicated test name.
+
 Tue Dec 17 20:15:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_hash_reject): revert to deprecated behavior, with

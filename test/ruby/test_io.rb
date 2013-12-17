@@ -2969,7 +2969,7 @@ End
     t.kill
   end
 
-  def test_s_write
+  def test_io_s_write
     t = Tempfile.new("test_io")
     t.close
     path = t.path
