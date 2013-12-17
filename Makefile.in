@@ -62,6 +62,7 @@ cflags = @cflags@
 optflags = @optflags@
 debugflags = @debugflags@
 warnflags = @warnflags@ @strict_warnflags@
+cppflags = @cppflags@
 INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir)
 XCFLAGS = @XCFLAGS@
 CPPFLAGS = @CPPFLAGS@ $(INCFLAGS)
