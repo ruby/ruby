@@ -584,7 +584,11 @@ AC_DEFUN([RUBY_DTRACE_POSTPROCESS],
 [AC_CACHE_CHECK(whether $DTRACE needs post processing, rb_cv_prog_dtrace_g,
 [
   if {
-    echo "provider conftest{ probe fire(); };" > conftest_provider.d &&
+    cat >conftest_provider.d <<_PROBES &&
+    provider conftest {
+      probe fire();
+    };
+_PROBES
     dtrace -h -o conftest_provider.h -s conftest_provider.d >/dev/null 2>/dev/null &&
     cat >conftest.c <<_CONF &&
     @%:@include "conftest_provider.h"

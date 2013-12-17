@@ -1,3 +1,10 @@
+Tue Dec 17 10:48:04 2013  Aman Gupta <ruby@tmm1.net>
+
+	* configure.in (RUBY_DTRACE_POSTPROCESS): Fix compatibility with
+	  systemtap on linux. stap requires `dtrace -G` post-processing, but
+	  the dtrace compatibility wrapper is very strict about probes.d
+	  syntax.
+
 Tue Dec 17 05:18:17 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems master 1c5f4b3.  Allows rubygems
