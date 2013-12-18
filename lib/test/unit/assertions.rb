@@ -54,7 +54,7 @@ module Test
       #   assert_raise( *args, &block )
       #
       #Tests if the given block raises an exception. Acceptable exception
-      #types maye be given as optional arguments. If the last argument is a
+      #types may be given as optional arguments. If the last argument is a
       #String, it will be used as the error message.
       #
       #    assert_raise do #Fails, no Exceptions are raised
