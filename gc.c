@@ -1240,7 +1240,7 @@ heap_get_freeobj(rb_objspace_t *objspace, rb_heap_t *heap)
     while (UNLIKELY(p == NULL)) {
 	struct heap_page *page = heap_get_freepage(objspace, heap);
 	heap->using_page = page;
-	p = heap->freelist = page->freelist;
+	p = page->freelist;
 	page->freelist = NULL;
     }
     heap->freelist = p->as.free.next;

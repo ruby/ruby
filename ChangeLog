@@ -1,3 +1,8 @@
+Thu Dec 19 03:10:30 2013  Aman Gupta <ruby@tmm1.net>
+
+	* gc.c (heap_get_freeobj): remove redundant assignment. heap->freelist
+	  is set after the while() loop already.
+
 Thu Dec 19 01:54:30 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* test/runner.rb: fix commit miss on r44278.
