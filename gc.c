@@ -7000,7 +7000,7 @@ gc_profile_record_get(void)
     size_t i;
     rb_objspace_t *objspace = (&rb_objspace);
 
-    if (!gc_prof_enabled(objspace)) {
+    if (!objspace->profile.run) {
 	return Qnil;
     }
 
