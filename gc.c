@@ -680,6 +680,7 @@ static inline void gc_prof_set_malloc_info(rb_objspace_t *);
 static inline void gc_prof_set_heap_info(rb_objspace_t *);
 
 #define gc_prof_record(objspace) (objspace)->profile.current_record
+#define gc_prof_enabled(objspace) ((objspace)->profile.run && (objspace)->profile.current_record)
 
 #define rgengc_report if (RGENGC_DEBUG) rgengc_report_body
 static void rgengc_report_body(int level, rb_objspace_t *objspace, const char *fmt, ...);
@@ -2758,7 +2759,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
     gc_setup_mark_bits(sweep_page);
 
 #if GC_PROFILE_MORE_DETAIL
-    if (objspace->profile.run) {
+    if (gc_prof_enabled(objspace)) {
 	gc_profile_record *record = gc_prof_record(objspace);
 	record->removing_objects += final_slots + freed_slots;
 	record->empty_objects += empty_slots;
@@ -6782,7 +6783,7 @@ gc_prof_setup_new_record(rb_objspace_t *objspace, int reason)
 static inline void
 gc_prof_timer_start(rb_objspace_t *objspace)
 {
-    if (objspace->profile.run) {
+    if (gc_prof_enabled(objspace)) {
 	gc_profile_record *record = gc_prof_record(objspace);
 #if GC_PROFILE_MORE_DETAIL
 	record->prepare_time = objspace->profile.prepare_time;
@@ -6807,7 +6808,7 @@ elapsed_time_from(double time)
 static inline void
 gc_prof_timer_stop(rb_objspace_t *objspace)
 {
-    if (objspace->profile.run) {
+    if (gc_prof_enabled(objspace)) {
 	gc_profile_record *record = gc_prof_record(objspace);
 	record->gc_time = elapsed_time_from(record->gc_invoke_time);
 	record->gc_invoke_time -= objspace->profile.invoke_time;
@@ -6821,7 +6822,7 @@ gc_prof_mark_timer_start(rb_objspace_t *objspace)
 	RUBY_DTRACE_GC_MARK_BEGIN();
     }
 #if GC_PROFILE_MORE_DETAIL
-    if (objspace->profile.run) {
+    if (gc_prof_enabled(objspace)) {
 	gc_prof_record(objspace)->gc_mark_time = getrusage_time();
     }
 #endif
@@ -6834,7 +6835,7 @@ gc_prof_mark_timer_stop(rb_objspace_t *objspace)
 	RUBY_DTRACE_GC_MARK_END();
     }
 #if GC_PROFILE_MORE_DETAIL
-    if (objspace->profile.run) {
+    if (gc_prof_enabled(objspace)) {
         gc_profile_record *record = gc_prof_record(objspace);
 	record->gc_mark_time = elapsed_time_from(record->gc_mark_time);
     }
@@ -6847,7 +6848,7 @@ gc_prof_sweep_timer_start(rb_objspace_t *objspace)
     if (RUBY_DTRACE_GC_SWEEP_BEGIN_ENABLED()) {
 	RUBY_DTRACE_GC_SWEEP_BEGIN();
     }
-    if (objspace->profile.run) {
+    if (gc_prof_enabled(objspace)) {
 	gc_profile_record *record = gc_prof_record(objspace);
 
 	if (record->gc_time > 0 || GC_PROFILE_MORE_DETAIL) {
@@ -6863,7 +6864,7 @@ gc_prof_sweep_timer_stop(rb_objspace_t *objspace)
 	RUBY_DTRACE_GC_SWEEP_END();
     }
 
-    if (objspace->profile.run) {
+    if (gc_prof_enabled(objspace)) {
 	double sweep_time;
 	gc_profile_record *record = gc_prof_record(objspace);
 
@@ -6888,7 +6889,7 @@ static inline void
 gc_prof_set_malloc_info(rb_objspace_t *objspace)
 {
 #if GC_PROFILE_MORE_DETAIL
-    if (objspace->profile.run) {
+    if (gc_prof_enabled(objspace)) {
         gc_profile_record *record = gc_prof_record(objspace);
 	record->allocate_increase = malloc_increase;
 	record->allocate_limit = malloc_limit;
@@ -6899,7 +6900,7 @@ gc_prof_set_malloc_info(rb_objspace_t *objspace)
 static inline void
 gc_prof_set_heap_info(rb_objspace_t *objspace)
 {
-    if (objspace->profile.run) {
+    if (gc_prof_enabled(objspace)) {
 	gc_profile_record *record = gc_prof_record(objspace);
 	size_t live = objspace->profile.total_allocated_object_num_at_gc_start - objspace->profile.total_freed_object_num;
 	size_t total = objspace->profile.heap_used_at_gc_start * HEAP_OBJ_LIMIT;
@@ -6928,12 +6929,6 @@ static VALUE
 gc_profile_clear(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
-
-    /* This method doesn't change profile.run status.
-     * While lazy sweeping, it is possible to touch zero-cleared profile.current_record.
-     */
-    gc_rest_sweep(objspace);
-
     if (GC_PROFILE_RECORD_DEFAULT_SIZE * 2 < objspace->profile.size) {
         objspace->profile.size = GC_PROFILE_RECORD_DEFAULT_SIZE * 2;
         objspace->profile.records = realloc(objspace->profile.records, sizeof(gc_profile_record) * objspace->profile.size);
@@ -7005,7 +7000,7 @@ gc_profile_record_get(void)
     size_t i;
     rb_objspace_t *objspace = (&rb_objspace);
 
-    if (!objspace->profile.run) {
+    if (!gc_prof_enabled(objspace)) {
 	return Qnil;
     }
 
@@ -7254,8 +7249,8 @@ static VALUE
 gc_profile_enable(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    gc_rest_sweep(objspace);
     objspace->profile.run = TRUE;
+    objspace->profile.current_record = 0;
     return Qnil;
 }
 
