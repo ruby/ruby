@@ -1202,6 +1202,36 @@ class TestGemDependencyInstaller < Gem::TestCase
     assert_resolve %w[d-1 e-1], e1, @d1, @d2
   end
 
+  def test_resolve_dependencies
+    util_setup_gems
+
+    FileUtils.mv @a1_gem, @tempdir
+    FileUtils.mv @b1_gem, @tempdir
+
+    inst = Gem::DependencyInstaller.new
+    request_set = inst.resolve_dependencies 'b', req('>= 0')
+
+    requests = request_set.sorted_requests.map { |req| req.full_name }
+
+    assert_equal %w[a-1 b-1], requests
+  end
+
+  def test_resolve_dependencies_ignore_dependencies
+    util_setup_gems
+
+    FileUtils.mv @a1_gem, @tempdir
+    FileUtils.mv @b1_gem, @tempdir
+
+    inst = Gem::DependencyInstaller.new :ignore_dependencies => true
+    request_set = inst.resolve_dependencies 'b', req('>= 0')
+
+    requests = request_set.sorted_requests.map { |req| req.full_name }
+
+    assert request_set.ignore_dependencies
+
+    assert_equal %w[b-1], requests
+  end
+
   def util_write_a1_bin
     write_file File.join('gems', 'a-1', 'bin', 'a_bin') do |fp|
       fp.puts "#!/usr/bin/ruby"

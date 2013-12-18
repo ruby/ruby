@@ -426,7 +426,8 @@ class Gem::DependencyInstaller
 
     if @ignore_dependencies then
       installer_set.ignore_dependencies = true
-      request_set.soft_missing = true
+      request_set.ignore_dependencies   = true
+      request_set.soft_missing          = true
     end
 
     composed_set = Gem::Resolver.compose_sets as, installer_set

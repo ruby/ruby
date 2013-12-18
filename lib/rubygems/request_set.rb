@@ -33,6 +33,12 @@ class Gem::RequestSet
   attr_reader :git_set # :nodoc:
 
   ##
+  # When true, dependency resolution is not performed, only the requested gems
+  # are installed.
+
+  attr_accessor :ignore_dependencies
+
+  ##
   # Sets used for resolution
 
   attr_reader :sets # :nodoc:
@@ -59,17 +65,18 @@ class Gem::RequestSet
   def initialize *deps
     @dependencies = deps
 
-    @always_install   = []
-    @dependency_names = {}
-    @development      = false
-    @git_set          = nil
-    @install_dir      = Gem.dir
-    @requests         = []
-    @sets             = []
-    @soft_missing     = false
-    @sorted           = nil
-    @specs            = nil
-    @vendor_set       = nil
+    @always_install      = []
+    @dependency_names    = {}
+    @development         = false
+    @git_set             = nil
+    @ignore_dependencies = false
+    @install_dir         = Gem.dir
+    @requests            = []
+    @sets                = []
+    @soft_missing        = false
+    @sorted              = nil
+    @specs               = nil
+    @vendor_set          = nil
 
     yield self if block_given?
   end
@@ -230,8 +237,9 @@ class Gem::RequestSet
     set = Gem::Resolver.compose_sets(*@sets)
 
     resolver = Gem::Resolver.new @dependencies, set
-    resolver.development  = @development
-    resolver.soft_missing = @soft_missing
+    resolver.development         = @development
+    resolver.ignore_dependencies = @ignore_dependencies
+    resolver.soft_missing        = @soft_missing
 
     @resolver = resolver
 

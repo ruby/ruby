@@ -202,6 +202,22 @@ DEPENDENCIES
                  rs.sets.map { |set| set.class }
   end
 
+  def test_resolve_ignore_dependencies
+    a = util_spec "a", "2", "b" => ">= 2"
+    b = util_spec "b", "2"
+
+    rs = Gem::RequestSet.new
+    rs.gem "a"
+    rs.ignore_dependencies = true
+
+    res = rs.resolve StaticSet.new([a, b])
+    assert_equal 1, res.size
+
+    names = res.map { |s| s.full_name }.sort
+
+    assert_equal %w[a-2], names
+  end
+
   def test_resolve_incompatible
     a1 = util_spec 'a', 1
     a2 = util_spec 'a', 2

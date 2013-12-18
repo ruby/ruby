@@ -32,6 +32,11 @@ class Gem::Resolver
   attr_accessor :development
 
   ##
+  # When true, no dependencies are looked up for requested gems.
+
+  attr_accessor :ignore_dependencies
+
+  ##
   # List of dependencies that could not be found in the configured sources.
 
   attr_reader :missing
@@ -91,11 +96,12 @@ class Gem::Resolver
     @set = set || Gem::Resolver::IndexSet.new
     @needed = needed
 
-    @conflicts    = []
-    @development  = false
-    @missing      = []
-    @soft_missing = false
-    @stats        = Gem::Resolver::Stats.new
+    @conflicts           = []
+    @development         = false
+    @ignore_dependencies = false
+    @missing             = []
+    @soft_missing        = false
+    @stats               = Gem::Resolver::Stats.new
   end
 
   def explain stage, *data # :nodoc:
@@ -132,6 +138,8 @@ class Gem::Resolver
   end
 
   def requests s, act, reqs=nil # :nodoc:
+    return reqs if @ignore_dependencies
+
     s.dependencies.reverse_each do |d|
       next if d.type == :development and not @development
       reqs.add Gem::Resolver::DependencyRequest.new(d, act)
@@ -151,7 +159,7 @@ class Gem::Resolver
   def resolve
     @conflicts = []
 
-    needed = RequirementList.new
+    needed = Gem::Resolver::RequirementList.new
 
     @needed.reverse_each do |n|
       request = Gem::Resolver::DependencyRequest.new n, nil

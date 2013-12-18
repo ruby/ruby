@@ -99,6 +99,39 @@ class TestGemResolver < Gem::TestCase
     assert_equal 2, res.conflicts.length
   end
 
+  def test_requests
+    a1 = util_spec 'a', 1, 'b' => 2
+
+    r1 = Gem::Resolver::DependencyRequest.new dep('a', '= 1'), nil
+
+    act = Gem::Resolver::ActivationRequest.new a1, r1, false
+
+    res = Gem::Resolver.new [a1]
+
+    reqs = Gem::Resolver::RequirementList.new
+
+    res.requests a1, act, reqs
+
+    assert_equal ['b (= 2)'], reqs.to_a.map { |req| req.to_s }
+  end
+
+  def test_requests_ignore_dependencies
+    a1 = util_spec 'a', 1, 'b' => 2
+
+    r1 = Gem::Resolver::DependencyRequest.new dep('a', '= 1'), nil
+
+    act = Gem::Resolver::ActivationRequest.new a1, r1, false
+
+    res = Gem::Resolver.new [a1]
+    res.ignore_dependencies = true
+
+    reqs = Gem::Resolver::RequirementList.new
+
+    res.requests a1, act, reqs
+
+    assert_empty reqs
+  end
+
   def test_no_overlap_specificly
     a = util_spec "a", '1'
     b = util_spec "b", "1"

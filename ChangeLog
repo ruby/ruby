@@ -1,3 +1,10 @@
+Wed Dec 18 10:00:22 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master d8f12e2.  This increases the
+	  speed of `gem install --ignore-dependencies` which helps bundler
+	  tests.
+	* test/rubygems:  ditto.
+
 Wed Dec 18 09:00:17 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_gc.rb (test_expand_heap): allow +/-1 diff.
