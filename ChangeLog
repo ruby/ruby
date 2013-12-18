@@ -1,3 +1,7 @@
+Thu Dec 19 01:54:30 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* test/runner.rb: fix commit miss on r44278.
+
 Thu Dec 19 00:26:11 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (garbage_collect_body): lazy_sweep setting should work
