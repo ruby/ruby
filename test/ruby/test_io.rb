@@ -2566,6 +2566,9 @@ End
       assert_equal("\00f", File.read(path))
       assert_equal(1, File.write(path, "f", 0, encoding: "UTF-8"))
       assert_equal("ff", File.read(path))
+      assert_raise(TypeError) {
+        File.write(path, "foo", Object.new => Object.new)
+      }
     end
   end
 
@@ -2967,24 +2970,5 @@ End
     assert_nothing_raised(RuntimeError, bug8669) { str.clear }
   ensure
     t.kill
-  end
-
-  def test_io_s_write
-    t = Tempfile.new("test_io")
-    t.close
-    path = t.path
-    File.unlink(path)
-    IO.write(path, "foo")
-    assert_equal("foo", IO.read(path))
-    IO.write(path, "bar", 2)
-    assert_equal("fobar", IO.read(path))
-    File.unlink(path)
-    IO.write(path, "foo", encoding: Encoding::UTF_32BE)
-    assert_equal("\0\0\0f\0\0\0o\0\0\0o", File.binread(path))
-    assert_raise(TypeError) {
-      IO.write(path, "foo", Object.new => Object.new)
-    }
-  ensure
-    t.close!
   end
 end
