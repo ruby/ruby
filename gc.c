@@ -7042,24 +7042,36 @@ gc_profile_record_get(void)
 }
 
 #if GC_PROFILE_MORE_DETAIL
-static const char *
-gc_profile_dump_major_reason(int reason)
+#define MAJOR_REASON_MAX 0x10
+
+static char *
+gc_profile_dump_major_reason(int flags, char *buff)
 {
-    switch (reason & GPR_FLAG_MAJOR_MASK) {
-#define C(x, s) case GPR_FLAG_MAJOR_BY_##x: return s
-      case GPR_FLAG_NONE: return "-";
-	C(NOFREE, "+");
-	C(OLDGEN, "O");
-	C(SHADY,  "S");
-	C(RESCAN, "R");
-	C(STRESS, "!");
+    int reason = flags & GPR_FLAG_MAJOR_MASK;
+    int i = 0;
+
+    if (reason == GPR_FLAG_NONE) {
+	buff[0] = '-';
+	buff[1] = 0;
+    }
+    else {
+#define C(x, s) \
+  if (reason & GPR_FLAG_MAJOR_BY_##x) { \
+      buff[i++] = #x[0]; \
+      if (i >= MAJOR_REASON_MAX) rb_bug("gc_profile_dump_major_reason: overflow"); \
+      buff[i] = 0; \
+  }
+	C(NOFREE, N);
+	C(OLDGEN, O);
+	C(SHADY,  S);
+	C(RESCAN, R);
+	C(STRESS, T);
 #if RGENGC_ESTIMATE_OLDMALLOC
-	C(OLDMALLOC, "M");
+	C(OLDMALLOC, M);
 #endif
-      default:
-	rb_bug("gc_profile_dump_major_reason: no such reason");
 #undef C
     }
+    return buff;
 }
 #endif
 
@@ -7068,6 +7080,9 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 {
     rb_objspace_t *objspace = &rb_objspace;
     size_t count = objspace->profile.next_index;
+#ifdef MAJOR_REASON_MAX
+    char reason_str[MAJOR_REASON_MAX];
+#endif
 
     if (objspace->profile.run && count /* > 1 */) {
 	size_t i;
@@ -7087,7 +7102,7 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 	append(out, rb_str_new_cstr("\n\n" \
 				    "More detail.\n" \
 				    "Prepare Time = Previously GC's rest sweep time\n"
-				    "Index Flags       Allocate Inc.  Allocate Limit"
+				    "Index Flags          Allocate Inc.  Allocate Limit"
 #if CALC_EXACT_MALLOC_SIZE
 				    "  Allocated Size"
 #endif
@@ -7102,7 +7117,7 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 
 	for (i = 0; i < count; i++) {
 	    record = &objspace->profile.records[i];
-	    append(out, rb_sprintf("%5"PRIdSIZE" %s/%c/%6s%c %13"PRIuSIZE" %15"PRIuSIZE
+	    append(out, rb_sprintf("%5"PRIdSIZE" %4s/%c/%6s%c %13"PRIuSIZE" %15"PRIuSIZE
 #if CALC_EXACT_MALLOC_SIZE
 				   " %15"PRIuSIZE
 #endif
@@ -7116,7 +7131,7 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 
 				   "\n",
 				   i+1,
-				   gc_profile_dump_major_reason(record->flags),
+				   gc_profile_dump_major_reason(record->flags, reason_str),
 				   (record->flags & GPR_FLAG_HAVE_FINALIZE) ? 'F' : '.',
 				   (record->flags & GPR_FLAG_NEWOBJ) ? "NEWOBJ" :
 				   (record->flags & GPR_FLAG_MALLOC) ? "MALLOC" :

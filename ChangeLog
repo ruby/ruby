@@ -1,3 +1,10 @@
+Wed Dec 18 23:31:04 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_profile_dump_major_reason): fix this function because major_reason
+	  can be OR of multiple reasons.
+
+	* gc.c (gc_profile_dump_on): ditto.
+
 Wed Dec 18 17:03:00 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_profile_record_get): should return an empty array

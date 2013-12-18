@@ -19,6 +19,7 @@ module Test::Unit
     def after_teardown
       super
       assert_empty(Process.waitall)
+      GC.verify_internal_consistency
     end
   end
   class TestCase
