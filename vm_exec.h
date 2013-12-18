@@ -169,7 +169,14 @@ default:                        \
 #endif
 
 #define SCREG(r) (reg_##r)
+
+#define VM_DEBUG_STACKOVERFLOW 0
+
+#if VM_DEBUG_STACKOVERFLOW
 #define CHECK_VM_STACK_OVERFLOW_FOR_INSN(cfp, margin) \
     WHEN_VM_STACK_OVERFLOWED(cfp, (cfp)->sp, margin) vm_stack_overflow_for_insn()
+#else
+#define CHECK_VM_STACK_OVERFLOW_FOR_INSN(cfp, margin)
+#endif
 
 #endif /* RUBY_VM_EXEC_H */
