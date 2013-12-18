@@ -4966,9 +4966,11 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
 	    reason |= GPR_FLAG_MAJOR_BY_STRESS;
 	immediate_sweep = !(flag & 0x02);
     }
-
-#if USE_RGENGC
     else {
+	if (!GC_ENABLE_LAZY_SWEEP || objspace->flags.dont_lazy_sweep) {
+	    immediate_sweep = TRUE;
+	}
+#if USE_RGENGC
 	if (full_mark) {
 	    reason |= GPR_FLAG_MAJOR_BY_NOFREE;
 	}
@@ -4982,12 +4984,8 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
 	if (objspace->rgengc.old_object_count > objspace->rgengc.old_object_limit) {
 	    reason |= GPR_FLAG_MAJOR_BY_OLDGEN;
 	}
-
-	if (!GC_ENABLE_LAZY_SWEEP || objspace->flags.dont_lazy_sweep) {
-	    immediate_sweep = TRUE;
-	}
-    }
 #endif
+    }
 
     if (immediate_sweep) reason |= GPR_FLAG_IMMEDIATE_SWEEP;
     full_mark = (reason & GPR_FLAG_MAJOR_MASK) ? TRUE : FALSE;
