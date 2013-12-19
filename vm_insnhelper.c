@@ -1228,13 +1228,13 @@ vm_call_iseq_setup_2(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *c
 static inline VALUE
 vm_call_iseq_setup_normal(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 {
-    int i;
+    int i, local_size;
     VALUE *argv = cfp->sp - ci->argc;
     rb_iseq_t *iseq = ci->me->def->body.iseq;
     VALUE *sp = argv + iseq->arg_size;
 
-    /* clear local variables */
-    for (i = 0; i < iseq->local_size - iseq->arg_size; i++) {
+    /* clear local variables (arg_size...local_size) */
+    for (i = iseq->arg_size, local_size = iseq->local_size; i < local_size; i++) {
 	*sp++ = Qnil;
     }
 
