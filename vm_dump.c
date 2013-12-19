@@ -725,7 +725,7 @@ rb_vm_bugreport(void)
 	  "     * /Library/Logs/CrashReporter\n"
 	  "     * ~/Library/Logs/DiagnosticReports\n"
 	  "     * /Library/Logs/DiagnosticReports\n"
-	  "   the more detail of.\n"
+	  "   for more details.\n"
 	  "\n",
 	  stderr);
 #endif
