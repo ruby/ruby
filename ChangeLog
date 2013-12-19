@@ -1,3 +1,13 @@
+Fri Dec 20 07:07:35 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master 03d6ae7.  Changes include:
+
+	  * Fixed typos.
+
+	  * Relaxed Gem.ruby test for ruby packagers that do not use `ruby`.
+
+	* test/rubygems:  ditto.
+
 Thu Dec 19 14:03:04 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (heap_get_freeobj): improve hot path performance.

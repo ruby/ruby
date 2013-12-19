@@ -12,7 +12,7 @@
 
 module YAML # :nodoc:
   # In newer 1.9.2, there is a Syck toplevel constant instead of it
-  # being underneith YAML. If so, reference it back under YAML as
+  # being underneath YAML. If so, reference it back under YAML as
   # well.
   if defined? ::Syck
     # for tests that change YAML::ENGINE

@@ -228,10 +228,16 @@ install:
 
     assert_match %r%#{Regexp.escape Gem.ruby} extconf\.rb%,
                  File.read(gem_make_out)
-    assert_match %r%#{Regexp.escape Gem.ruby}: No such file%,
+    assert_match /: No such file/,
                  File.read(gem_make_out)
 
     refute_path_exists @spec.gem_build_complete_path
+
+    skip "Gem.ruby is not the name of the binary being run in the end" \
+      unless File.read(gem_make_out).include? "#{Regexp.escape Gem.ruby}:"
+
+    assert_match %r%#{Regexp.escape Gem.ruby}: No such file%,
+                 File.read(gem_make_out)
   end
 
   def test_build_extensions_unsupported
