@@ -200,25 +200,31 @@ to write the specification by hand.  For example:
 
     req = Gem::Requirement.create(version)
 
-    inst = Gem::DependencyInstaller.new options
+    if options[:ignore_dependencies]
+      inst = Gem::Installer.new name, options
+      inst.install
+      @installed_specs.push(inst.spec)
+    else
+      inst = Gem::DependencyInstaller.new options
 
-    if options[:explain]
-      request_set = inst.resolve_dependencies name, req
+      if options[:explain]
+        request_set = inst.resolve_dependencies name, req
 
-      puts "Gems to install:"
+        puts "Gems to install:"
 
-      request_set.specs.map { |s| s.full_name }.sort.each do |s|
-        puts "  #{s}"
+        request_set.specs.map { |s| s.full_name }.sort.each do |s|
+          puts "  #{s}"
+        end
+
+        return
+      else
+        inst.install name, req
       end
 
-      return
-    else
-      inst.install name, req
+      @installed_specs.push(*inst.installed_gems)
+
+      show_install_errors inst.errors
     end
-
-    @installed_specs.push(*inst.installed_gems)
-
-    show_install_errors inst.errors
   end
 
   def install_gems # :nodoc:

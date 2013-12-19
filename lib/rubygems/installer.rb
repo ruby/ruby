@@ -212,6 +212,8 @@ class Gem::Installer
   def install
     pre_install_checks
 
+    FileUtils.rm_f File.join gem_home, 'specifications', @spec.spec_name
+
     run_pre_install_hooks
 
     # Completely remove any previous gem files

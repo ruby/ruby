@@ -1,3 +1,13 @@
+Thu Dec 19 12:05:17 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master af60443.  Changes include:
+
+	  * Improved speed of `gem install --ignore-dependencies`.
+
+	  * Open read-write for exclusive flock.  [ruby-trunk - Bug #9257]
+
+	  * Remove specification before install to prevent infinite loop.
+
 Thu Dec 19 11:23:49 2013  Aman Gupta <ruby@tmm1.net>
 
 	* vm_insnhelper.c (vm_call_iseq_setup_normal): simple for loop
