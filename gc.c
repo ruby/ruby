@@ -1218,18 +1218,23 @@ heap_prepare_freepage(rb_objspace_t *objspace, rb_heap_t *heap)
     return heap->free_pages;
 }
 
-static inline struct heap_page *
-heap_get_freepage(rb_objspace_t *objspace, rb_heap_t *heap)
+static RVALUE *
+heap_get_freeobj_from_next_freepage(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     struct heap_page *page;
+    RVALUE *p;
 
     page = heap->free_pages;
     while (page == NULL) {
 	page = heap_prepare_freepage(objspace, heap);
     }
     heap->free_pages = page->free_next;
+    heap->using_page = page;
 
-    return page;
+    p = page->freelist;
+    page->freelist = NULL;
+
+    return p;
 }
 
 static inline VALUE
@@ -1237,15 +1242,15 @@ heap_get_freeobj(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     RVALUE *p = heap->freelist;
 
-    while (UNLIKELY(p == NULL)) {
-	struct heap_page *page = heap_get_freepage(objspace, heap);
-	heap->using_page = page;
-	p = page->freelist;
-	page->freelist = NULL;
+    while (1) {
+	if (p) {
+	    heap->freelist = p->as.free.next;
+	    return (VALUE)p;
+	}
+	else {
+	    p = heap_get_freeobj_from_next_freepage(objspace, heap);
+	}
     }
-    heap->freelist = p->as.free.next;
-
-    return (VALUE)p;
 }
 
 void

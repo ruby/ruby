@@ -1,3 +1,11 @@
+Thu Dec 19 14:03:04 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (heap_get_freeobj): improve hot path performance.
+
+	* gc.c (heap_get_freeobj_from_next_freepage): replace with
+	  heap_get_freepage(). It returns freeobj instead of freepage.
+	  This is not on hot path.
+
 Thu Dec 19 12:05:17 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems master af60443.  Changes include:
