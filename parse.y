@@ -267,6 +267,7 @@ struct parser_params {
     int parser_ruby_sourceline;	/* current line no. */
     VALUE parser_ruby_sourcefile_string;
     rb_encoding *enc;
+    int immutable_strings;
 
     int parser_yydebug;
 
@@ -3839,6 +3840,11 @@ string1		: tSTRING_BEG string_contents tSTRING_END
 		    {
 		    /*%%%*/
 			$$ = $2;
+			if (parser->immutable_strings) {
+			    $$ = NEW_CALL($2, idFreeze, 0);
+ 			} else {
+			    $$ = $2;
+ 			}
 		    /*%
 			$$ = dispatch1(string_literal, $2);
 		    %*/
@@ -3865,7 +3871,12 @@ xstring		: tXSTRING_BEG xstring_contents tSTRING_END
 				break;
 			    }
 			}
-			$$ = node;
+    
+			if (parser->immutable_strings) {
+			    $$ = NEW_CALL(node, idFreeze, 0);
+ 			} else {
+			    $$ = node;
+ 			}
 		    /*%
 			$$ = dispatch1(xstring_literal, $2);
 		    %*/
@@ -6653,6 +6664,12 @@ parser_set_encode(struct parser_params *parser, const char *name)
 #endif
 }
 
+static void
+parser_set_immutable(struct parser_params *parser, const char *name, const char *val)
+{
+     if (strcmp(val, "string") == 0) { parser->immutable_strings = 1; }
+}
+
 static int
 comment_at_top(struct parser_params *parser)
 {
@@ -6710,6 +6727,7 @@ static const struct magic_comment magic_comments[] = {
     {"coding", magic_comment_encoding, parser_encode_length},
     {"encoding", magic_comment_encoding, parser_encode_length},
     {"warn_indent", parser_set_token_info},
+    {"immutable", parser_set_immutable}
 };
 #endif
 
@@ -10862,6 +10880,7 @@ parser_initialize(struct parser_params *parser)
     parser->heap = NULL;
 #endif
     parser->enc = rb_utf8_encoding();
+    parser->immutable_strings = 0;
 }
 
 #ifdef RIPPER
