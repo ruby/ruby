@@ -1,3 +1,8 @@
+Thu Dec 19 10:50:13 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (newobj_of): don't need to RBASIC_SET_CLASS() which includes WB
+	  here because created obj is always YOUNG/INFANT.
+
 Thu Dec 19 10:48:37 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/gc/gcbench.rb: check GC::OPTS availability
