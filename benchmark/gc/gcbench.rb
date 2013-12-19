@@ -34,7 +34,7 @@ end
 
 pp GC.stat
 
-puts "#{RUBY_DESCRIPTION} #{GC::OPTS.inspect}"
+puts "#{RUBY_DESCRIPTION} #{GC::OPTS.inspect}" if defined?(GC::OPTS)
 
 desc = "#{RUBY_VERSION}#{RUBY_PATCHLEVEL >= 0 ? "p#{RUBY_PATCHLEVEL}" : "dev"}"
 name = File.basename(script, '.rb')
