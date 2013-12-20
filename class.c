@@ -239,7 +239,7 @@ rewrite_cref_stack(NODE *node, VALUE old_klass, VALUE new_klass, NODE **new_cref
     while (node) {
 	if (node->nd_clss == old_klass) {
 	    new_node = NEW_CREF(new_klass);
-	    OBJ_WRITE(new_node, &new_node->nd_next, node->nd_next);
+	    RB_OBJ_WRITE(new_node, &new_node->nd_next, node->nd_next);
 	    *new_cref_ptr = new_node;
 	    return;
 	}
@@ -261,7 +261,7 @@ clone_method(VALUE klass, ID mid, const rb_method_entry_t *me)
 	newiseqval = rb_iseq_clone(me->def->body.iseq->self, klass);
 	GetISeqPtr(newiseqval, iseq);
 	rewrite_cref_stack(me->def->body.iseq->cref_stack, me->klass, klass, &new_cref);
-	OBJ_WRITE(iseq->self, &iseq->cref_stack, new_cref);
+	RB_OBJ_WRITE(iseq->self, &iseq->cref_stack, new_cref);
 	rb_add_method(klass, mid, VM_METHOD_TYPE_ISEQ, iseq, me->flag);
 	RB_GC_GUARD(newiseqval);
     }
@@ -287,8 +287,8 @@ clone_const(ID key, const rb_const_entry_t *ce, struct clone_const_arg *arg)
 {
     rb_const_entry_t *nce = ALLOC(rb_const_entry_t);
     MEMCPY(nce, ce, rb_const_entry_t, 1);
-    OBJ_WRITTEN(arg->klass, Qundef, ce->value);
-    OBJ_WRITTEN(arg->klass, Qundef, ce->file);
+    RB_OBJ_WRITTEN(arg->klass, Qundef, ce->value);
+    RB_OBJ_WRITTEN(arg->klass, Qundef, ce->file);
 
     st_insert(arg->tbl, key, (st_data_t)nce);
     return ST_CONTINUE;

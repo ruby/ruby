@@ -322,7 +322,7 @@ RCLASS_SET_SUPER(VALUE klass, VALUE super)
 	rb_class_remove_from_super_subclasses(klass);
 	rb_class_subclass_add(super, klass);
     }
-    OBJ_WRITE(klass, &RCLASS(klass)->super, super);
+    RB_OBJ_WRITE(klass, &RCLASS(klass)->super, super);
     return super;
 }
 
@@ -606,7 +606,7 @@ struct RBasicRaw {
 #define RBASIC_SET_CLASS_RAW(obj, cls) (((struct RBasicRaw *)((VALUE)(obj)))->klass = (cls))
 #define RBASIC_SET_CLASS(obj, cls)     do { \
     VALUE _obj_ = (obj); \
-    OBJ_WRITE(_obj_, &((struct RBasicRaw *)(_obj_))->klass, cls); \
+    RB_OBJ_WRITE(_obj_, &((struct RBasicRaw *)(_obj_))->klass, cls); \
 } while (0)
 
 /* parse.y */

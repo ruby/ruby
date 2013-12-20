@@ -60,7 +60,7 @@ ary_memfill(VALUE ary, long beg, long size, VALUE val)
 {
     RARRAY_PTR_USE(ary, ptr, {
 	memfill(ptr + beg, size, val);
-	OBJ_WRITTEN(ary, Qundef, val);
+	RB_OBJ_WRITTEN(ary, Qundef, val);
     });
 }
 
@@ -79,7 +79,7 @@ ary_memcpy(VALUE ary, long beg, long argc, const VALUE *argv)
 	    int i;
 	    RARRAY_PTR_USE(ary, ptr, {
 		for (i=0; i<argc; i++) {
-		    OBJ_WRITE(ary, &ptr[i+beg], argv[i]);
+		    RB_OBJ_WRITE(ary, &ptr[i+beg], argv[i]);
 		}
 	    });
 	}
@@ -179,7 +179,7 @@ ary_memcpy(VALUE ary, long beg, long argc, const VALUE *argv)
     assert(!ARY_EMBED_P(_ary_)); \
     assert(ARY_SHARED_P(_ary_)); \
     assert(ARY_SHARED_ROOT_P(_value_)); \
-    OBJ_WRITE(_ary_, &RARRAY(_ary_)->as.heap.aux.shared, _value_); \
+    RB_OBJ_WRITE(_ary_, &RARRAY(_ary_)->as.heap.aux.shared, _value_); \
 } while (0)
 #define RARRAY_SHARED_ROOT_FLAG FL_USER5
 #define ARY_SHARED_ROOT_P(ary) (FL_TEST((ary), RARRAY_SHARED_ROOT_FLAG))
@@ -4063,7 +4063,7 @@ rb_ary_or(VALUE ary1, VALUE ary2)
     for (i=0; i<RARRAY_LEN(ary2); i++) {
 	VALUE elt = RARRAY_AREF(ary2, i);
 	if (!st_update(RHASH_TBL_RAW(hash), (st_data_t)elt, ary_hash_orset, (st_data_t)elt)) {
-	    OBJ_WRITTEN(hash, Qundef, elt);
+	    RB_OBJ_WRITTEN(hash, Qundef, elt);
 	}
     }
     ary3 = rb_hash_values(hash);

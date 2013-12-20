@@ -901,7 +901,7 @@ struct RArray {
 #define RARRAY_AREF(a, i)    (RARRAY_CONST_PTR(a)[i])
 #define RARRAY_ASET(a, i, v) do { \
     const VALUE _ary_ = (a); \
-    OBJ_WRITE(_ary_, &RARRAY_CONST_PTR(_ary_)[i], (v)); \
+    RB_OBJ_WRITE(_ary_, &RARRAY_CONST_PTR(_ary_)[i], (v)); \
 } while (0)
 
 #define RARRAY_PTR(a) ((VALUE *)RARRAY_CONST_PTR(RGENGC_WB_PROTECTED_ARRAY ? OBJ_WB_UNPROTECT((VALUE)a) : ((VALUE)a)))
@@ -942,8 +942,8 @@ struct RRational {
     const VALUE den;
 };
 
-#define RRATIONAL_SET_NUM(rat, n) OBJ_WRITE((rat), &((struct RRational *)(rat))->num,(n))
-#define RRATIONAL_SET_DEN(rat, d) OBJ_WRITE((rat), &((struct RRational *)(rat))->den,(d))
+#define RRATIONAL_SET_NUM(rat, n) RB_OBJ_WRITE((rat), &((struct RRational *)(rat))->num,(n))
+#define RRATIONAL_SET_DEN(rat, d) RB_OBJ_WRITE((rat), &((struct RRational *)(rat))->den,(d))
 
 struct RComplex {
     struct RBasic basic;
@@ -951,8 +951,8 @@ struct RComplex {
     const VALUE imag;
 };
 
-#define RCOMPLEX_SET_REAL(cmp, r) OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->real,(r))
-#define RCOMPLEX_SET_IMAG(cmp, i) OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->imag,(i))
+#define RCOMPLEX_SET_REAL(cmp, r) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->real,(r))
+#define RCOMPLEX_SET_IMAG(cmp, i) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->imag,(i))
 
 struct RData {
     struct RBasic basic;
@@ -1067,7 +1067,7 @@ struct RStruct {
    RSTRUCT(st)->as.heap.ptr)
 #define RSTRUCT_PTR(st) ((VALUE *)RSTRUCT_CONST_PTR(RGENGC_WB_PROTECTED_STRUCT ? OBJ_WB_UNPROTECT((VALUE)st) : (VALUE)st))
 
-#define RSTRUCT_SET(st, idx, v) OBJ_WRITE(st, &RSTRUCT_CONST_PTR(st)[idx], (v))
+#define RSTRUCT_SET(st, idx, v) RB_OBJ_WRITE(st, &RSTRUCT_CONST_PTR(st)[idx], (v))
 #define RSTRUCT_GET(st, idx)    (RSTRUCT_CONST_PTR(st)[idx])
 
 #define RBIGNUM_EMBED_LEN_NUMBITS 3
@@ -1200,9 +1200,9 @@ void rb_gc_writebarrier_unprotect_promoted(VALUE obj);
 #endif
 
 /* Write barrier (WB) interfaces:
- * - OBJ_WRITE(a, slot, b): WB for new reference from `a' to `b'.
+ * - RB_OBJ_WRITE(a, slot, b): WB for new reference from `a' to `b'.
  *     Write `b' into `*slot'. `slot' is a pointer in `a'.
- * - OBJ_WRITTEN(a, oldv, b): WB for new reference from `a' to `b'.
+ * - RB_OBJ_WRITTEN(a, oldv, b): WB for new reference from `a' to `b'.
  *     This doesn't write any values, but only a WB declaration.
  *     `oldv' is replaced value with `b' (not used in current Ruby).
  * 
@@ -1210,8 +1210,8 @@ void rb_gc_writebarrier_unprotect_promoted(VALUE obj);
  *       Please catch up if you want to insert WB into C-extensions
  *       correctly.
  */
-#define OBJ_WRITE(a, slot, b)       rb_obj_write((VALUE)(a), (VALUE *)(slot), (VALUE)(b), __FILE__, __LINE__)
-#define OBJ_WRITTEN(a, oldv, b)     rb_obj_written((VALUE)(a), (VALUE)(oldv), (VALUE)(b), __FILE__, __LINE__)
+#define RB_OBJ_WRITE(a, slot, b)       rb_obj_write((VALUE)(a), (VALUE *)(slot), (VALUE)(b), __FILE__, __LINE__)
+#define RB_OBJ_WRITTEN(a, oldv, b)     rb_obj_written((VALUE)(a), (VALUE)(oldv), (VALUE)(b), __FILE__, __LINE__)
 
 #ifndef USE_RGENGC_LOGGING_WB_UNPROTECT
 #define USE_RGENGC_LOGGING_WB_UNPROTECT 0

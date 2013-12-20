@@ -60,7 +60,7 @@ static ID id_hash, id_yield, id_default;
 VALUE
 rb_hash_set_ifnone(VALUE hash, VALUE ifnone)
 {
-    OBJ_WRITE(hash, (&RHASH(hash)->ifnone), ifnone);
+    RB_OBJ_WRITE(hash, (&RHASH(hash)->ifnone), ifnone);
     return hash;
 }
 
@@ -390,8 +390,8 @@ tbl_update(VALUE hash, VALUE key, int (*func)(st_data_t *key, st_data_t *val, st
     result = st_update(RHASH(hash)->ntbl, (st_data_t)key, func, (st_data_t)&arg);
 
     /* write barrier */
-    if (arg.new_key)   OBJ_WRITTEN(hash, arg.old_key, arg.new_key);
-    if (arg.new_value) OBJ_WRITTEN(hash, arg.old_value, arg.new_value);
+    if (arg.new_key)   RB_OBJ_WRITTEN(hash, arg.old_key, arg.new_key);
+    if (arg.new_value) RB_OBJ_WRITTEN(hash, arg.old_value, arg.new_value);
 
     return result;
 }

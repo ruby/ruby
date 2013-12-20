@@ -2328,8 +2328,8 @@ rb_execarg_fixup(VALUE execarg_obj)
                 }
                 else {
 		    st_insert(stenv, (st_data_t)key, (st_data_t)val);
-		    OBJ_WRITTEN(envtbl, Qundef, key);
-		    OBJ_WRITTEN(envtbl, Qundef, val);
+		    RB_OBJ_WRITTEN(envtbl, Qundef, key);
+		    RB_OBJ_WRITTEN(envtbl, Qundef, val);
                 }
             }
         }

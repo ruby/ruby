@@ -947,11 +947,11 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
 	tbl = st_init_numtable();
 	st_add_direct(generic_iv_tbl, (st_data_t)obj, (st_data_t)tbl);
 	st_add_direct(tbl, (st_data_t)id, (st_data_t)val);
-	if (FL_ABLE(obj)) OBJ_WRITTEN(obj, Qundef, val);
+	if (FL_ABLE(obj)) RB_OBJ_WRITTEN(obj, Qundef, val);
 	return;
     }
     st_insert((st_table *)data, (st_data_t)id, (st_data_t)val);
-    if (FL_ABLE(obj)) OBJ_WRITTEN(obj, data, val);
+    if (FL_ABLE(obj)) RB_OBJ_WRITTEN(obj, data, val);
 }
 
 static VALUE
@@ -1188,7 +1188,7 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
                 ROBJECT(obj)->as.heap.iv_index_tbl = iv_index_tbl;
             }
         }
-        OBJ_WRITE(obj, &ROBJECT_IVPTR(obj)[index], val);
+        RB_OBJ_WRITE(obj, &ROBJECT_IVPTR(obj)[index], val);
 	break;
       case T_CLASS:
       case T_MODULE:
@@ -1631,7 +1631,7 @@ rb_autoload(VALUE mod, ID id, const char *file)
 	if (!tbl) tbl = RCLASS_IV_TBL(mod) = st_init_numtable();
 	av = (st_data_t)TypedData_Wrap_Struct(0, &autoload_data_type, 0);
 	st_add_direct(tbl, (st_data_t)autoload, av);
-	OBJ_WRITTEN(mod, Qnil, av);
+	RB_OBJ_WRITTEN(mod, Qnil, av);
 	DATA_PTR(av) = tbl = st_init_numtable();
     }
     fn = rb_str_new2(file);
@@ -2215,8 +2215,8 @@ rb_const_set(VALUE klass, ID id, VALUE val)
     ce->flag = visibility;
     ce->line = rb_sourceline();
     st_insert(RCLASS_CONST_TBL(klass), (st_data_t)id, (st_data_t)ce);
-    OBJ_WRITE(klass, &ce->value, val);
-    OBJ_WRITE(klass, &ce->file, rb_sourcefilename());
+    RB_OBJ_WRITE(klass, &ce->value, val);
+    RB_OBJ_WRITE(klass, &ce->file, rb_sourcefilename());
 }
 
 void
@@ -2615,14 +2615,14 @@ int
 rb_st_insert_id_and_value(VALUE obj, st_table *tbl, ID key, VALUE value)
 {
     int result = st_insert(tbl, (st_data_t)key, (st_data_t)value);
-    OBJ_WRITTEN(obj, Qundef, value);
+    RB_OBJ_WRITTEN(obj, Qundef, value);
     return result;
 }
 
 static int
 tbl_copy_i(st_data_t key, st_data_t value, st_data_t data)
 {
-    OBJ_WRITTEN((VALUE)data, Qundef, (VALUE)value);
+    RB_OBJ_WRITTEN((VALUE)data, Qundef, (VALUE)value);
     return ST_CONTINUE;
 }
 

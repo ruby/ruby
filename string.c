@@ -114,7 +114,7 @@ VALUE rb_cSymbol;
 } while (0)
 
 #define STR_SET_SHARED(str, shared_str) do { \
-    OBJ_WRITE((str), &RSTRING(str)->as.heap.aux.shared, (shared_str)); \
+    RB_OBJ_WRITE((str), &RSTRING(str)->as.heap.aux.shared, (shared_str)); \
     FL_SET((str), ELTS_SHARED); \
 } while (0)
 
@@ -822,7 +822,7 @@ rb_str_new_frozen(VALUE orig)
 	FL_UNSET(orig, STR_ASSOC);
 	str = str_new4(klass, orig);
 	FL_SET(str, STR_ASSOC);
-	OBJ_WRITE(str, &RSTRING(str)->as.heap.aux.shared, assoc);
+	RB_OBJ_WRITE(str, &RSTRING(str)->as.heap.aux.shared, assoc);
 	/* TODO: WB is not needed because str is new object */
     }
     else {
@@ -955,7 +955,7 @@ rb_str_shared_replace(VALUE str, VALUE str2)
     if (STR_NOCAPA_P(str2)) {
 	VALUE shared = RSTRING(str2)->as.heap.aux.shared;
 	FL_SET(str, RBASIC(str2)->flags & STR_NOCAPA);
-	OBJ_WRITE(str, &RSTRING(str)->as.heap.aux.shared, shared);
+	RB_OBJ_WRITE(str, &RSTRING(str)->as.heap.aux.shared, shared);
     }
     else {
 	RSTRING(str)->as.heap.aux.capa = RSTRING(str2)->as.heap.aux.capa;
@@ -1523,7 +1523,7 @@ rb_str_associate(VALUE str, VALUE add)
 	}
 	FL_SET(str, STR_ASSOC);
 	RBASIC_CLEAR_CLASS(add);
-	OBJ_WRITE(str, &RSTRING(str)->as.heap.aux.shared, add);
+	RB_OBJ_WRITE(str, &RSTRING(str)->as.heap.aux.shared, add);
     }
 }
 
