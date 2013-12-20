@@ -1,3 +1,17 @@
+Fri Dec 20 14:00:01 2013  Aman Gupta <ruby@tmm1.net>
+
+	* include/ruby/ruby.h (struct RClass): add super, remove iv_index_tbl.
+	  since RCLASS_SUPER() is commonly used inside while loops, we move it
+	  back inside struct RClass to improve cache hits. this provides a
+	  small improvement (1%) in hotspots like rb_obj_is_kind_of()
+	* internal.h (struct rb_classext_struct): remove super, add
+	  iv_index_table
+	* internal.h (RCLASS_SUPER): update for new location
+	* internal.h (RCLASS_SET_SUPER): ditto
+	* internal.h (RCLASS_IV_INDEX_TBL): ditto
+	* object.c (rb_class_get_superclass): ditto
+	* include/ruby/backward/classext.h (RCLASS_SUPER): ditto
+
 Fri Dec 20 07:07:35 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems master 03d6ae7.  Changes include:

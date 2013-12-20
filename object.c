@@ -1884,7 +1884,7 @@ rb_class_superclass(VALUE klass)
 VALUE
 rb_class_get_superclass(VALUE klass)
 {
-    return RCLASS_EXT(klass)->super;
+    return RCLASS(klass)->super;
 }
 
 #define id_for_setter(name, type, message) \

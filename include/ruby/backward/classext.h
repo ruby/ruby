@@ -13,6 +13,6 @@ typedef struct rb_deprecated_classext_struct {
 
 #undef RCLASS_SUPER(c)
 #define RCLASS_EXT(c) ((rb_deprecated_classext_t *)RCLASS(c)->ptr)
-#define RCLASS_SUPER(c) (RCLASS_EXT(c)->super)
+#define RCLASS_SUPER(c) (RCLASS(c)->super)
 
 #endif	/* RUBY_BACKWARD_CLASSEXT_H */

@@ -262,7 +262,7 @@ typedef unsigned long rb_serial_t;
 #endif
 
 struct rb_classext_struct {
-    VALUE super;
+    struct st_table *iv_index_tbl;
     struct st_table *iv_tbl;
     struct st_table *const_tbl;
     rb_subclass_entry_t *subclasses;
@@ -293,7 +293,7 @@ void rb_class_remove_from_super_subclasses(VALUE);
 #define RCLASS_CONST_TBL(c) (RCLASS_EXT(c)->const_tbl)
 #define RCLASS_M_TBL_WRAPPER(c) (RCLASS(c)->m_tbl_wrapper)
 #define RCLASS_M_TBL(c) (RCLASS_M_TBL_WRAPPER(c) ? RCLASS_M_TBL_WRAPPER(c)->tbl : 0)
-#define RCLASS_IV_INDEX_TBL(c) (RCLASS(c)->iv_index_tbl)
+#define RCLASS_IV_INDEX_TBL(c) (RCLASS_EXT(c)->iv_index_tbl)
 #define RCLASS_ORIGIN(c) (RCLASS_EXT(c)->origin)
 #define RCLASS_REFINED_CLASS(c) (RCLASS_EXT(c)->refined_class)
 #define RCLASS_SERIAL(c) (RCLASS_EXT(c)->class_serial)
@@ -312,7 +312,7 @@ RCLASS_M_TBL_INIT(VALUE c)
 static inline VALUE
 RCLASS_SUPER(VALUE klass)
 {
-    return RCLASS_EXT(klass)->super;
+    return RCLASS(klass)->super;
 }
 
 static inline VALUE
@@ -322,7 +322,7 @@ RCLASS_SET_SUPER(VALUE klass, VALUE super)
 	rb_class_remove_from_super_subclasses(klass);
 	rb_class_subclass_add(super, klass);
     }
-    OBJ_WRITE(klass, &RCLASS_EXT(klass)->super, super);
+    OBJ_WRITE(klass, &RCLASS(klass)->super, super);
     return super;
 }
 

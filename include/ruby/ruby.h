@@ -789,9 +789,9 @@ typedef struct rb_classext_struct rb_classext_t;
 
 struct RClass {
     struct RBasic basic;
+    VALUE super;
     rb_classext_t *ptr;
     struct method_table_wrapper *m_tbl_wrapper;
-    struct st_table *iv_index_tbl;
 };
 #define RCLASS_SUPER(c) rb_class_get_superclass(c)
 #define RMODULE_IV_TBL(m) RCLASS_IV_TBL(m)
