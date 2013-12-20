@@ -567,8 +567,8 @@ date__strptime_internal(const char *str, size_t slen,
 		    static const char pat_source[] =
 			"\\A("
 			"(?:gmt|utc?)?[-+]\\d+(?:[,.:]\\d+(?::\\d+)?)?"
-			"|[[:alpha:].\\s]+(?:standard|daylight)\\s+time\\b"
-			"|[[:alpha:]]+(?:\\s+dst)?\\b"
+			"|(?-i:[[:alpha:].\\s]+)(?:standard|daylight)\\s+time\\b"
+			"|(?-i:[[:alpha:]]+)(?:\\s+dst)?\\b"
 			")";
 		    static VALUE pat = Qnil;
 		    VALUE m, b;

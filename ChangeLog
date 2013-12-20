@@ -1,3 +1,16 @@
+Sat Dec 21 03:46:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/date/date_strptime.c (date__strptime_internal): unset
+	  case-insensitive flag for [:alpha:], which already implies both
+	  cases, to get rid of backtrack explosion.  [ruby-core:58984]
+	  [Bug #9221]
+
+Sat Dec 21 03:46:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/date/date_parse.c (parse_time): unset case-insensitive flag
+	  for [:alpha:], which already implies both cases, to get rid of
+	  backtrack explosion.  [ruby-core:58876] [Bug #9221]
+
 Fri Dec 13 00:23:01 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enumerator.c (enumerator_with_index): try to convert given offset to
