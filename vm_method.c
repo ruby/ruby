@@ -6,8 +6,8 @@
 #define GLOBAL_METHOD_CACHE_SIZE 0x800
 #endif
 #define LSB_ONLY(x) ((x) & ~((x) - 1))
-#define POWOR_OF_2_P(x) ((x) == LSB_ONLY(x))
-#if !POWOR_OF_2_P(GLOBAL_METHOD_CACHE_SIZE)
+#define POWER_OF_2_P(x) ((x) == LSB_ONLY(x))
+#if !POWER_OF_2_P(GLOBAL_METHOD_CACHE_SIZE)
 # error GLOBAL_METHOD_CACHE_SIZE must be power of 2
 #endif
 #ifndef GLOBAL_METHOD_CACHE_MASK
