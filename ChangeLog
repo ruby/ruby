@@ -1,3 +1,8 @@
+Fri Dec 20 17:52:50 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_method.c: check definition of
+	  GLOBAL_METHOD_CACHE_SIZE and GLOBAL_METHOD_CACHE_MASK.
+
 Fri Dec 20 17:03:10 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h: rename OBJ_WRITE and OBJ_WRITTEN into

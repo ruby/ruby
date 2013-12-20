@@ -2,8 +2,13 @@
  * This file is included by vm.c
  */
 
+#ifndef GLOBAL_METHOD_CACHE_SIZE
 #define GLOBAL_METHOD_CACHE_SIZE 0x800
+#endif
+#ifndef GLOBAL_METHOD_CACHE_MASK
 #define GLOBAL_METHOD_CACHE_MASK 0x7ff
+#endif
+
 #define GLOBAL_METHOD_CACHE_KEY(c,m) ((((c)>>3)^(m))&GLOBAL_METHOD_CACHE_MASK)
 #define GLOBAL_METHOD_CACHE(c,m) (global_method_cache + GLOBAL_METHOD_CACHE_KEY(c,m))
 #include "method.h"
