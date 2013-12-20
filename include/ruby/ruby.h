@@ -1199,6 +1199,17 @@ void rb_gc_writebarrier_unprotect_promoted(VALUE obj);
 #define OBJ_WB_UNPROTECT(x)         rb_obj_wb_unprotect(x, __FILE__, __LINE__)
 #endif
 
+/* Write barrier (WB) interfaces:
+ * - OBJ_WRITE(a, slot, b): WB for new reference from `a' to `b'.
+ *     Write `b' into `*slot'. `slot' is a pointer in `a'.
+ * - OBJ_WRITTEN(a, oldv, b): WB for new reference from `a' to `b'.
+ *     This doesn't write any values, but only a WB declaration.
+ *     `oldv' is replaced value with `b' (not used in current Ruby).
+ * 
+ * NOTE: The following core interfaces can be changed in the future.
+ *       Please catch up if you want to insert WB into C-extensions
+ *       correctly.
+ */
 #define OBJ_WRITE(a, slot, b)       rb_obj_write((VALUE)(a), (VALUE *)(slot), (VALUE)(b), __FILE__, __LINE__)
 #define OBJ_WRITTEN(a, oldv, b)     rb_obj_written((VALUE)(a), (VALUE)(oldv), (VALUE)(b), __FILE__, __LINE__)
 
