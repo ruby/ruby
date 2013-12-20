@@ -293,6 +293,7 @@ rb_method_cache_clear(VALUE klass)
     struct rb_classext_struct *ext = RCLASS(klass)->ptr;
     if (ext->cache.entries) {
 	xfree(ext->cache.entries);
+	ext->cache.entries = NULL;
     }
 }
 
