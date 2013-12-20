@@ -28,6 +28,7 @@ struct cache_entry {
 
 #define METHOD_ENTRY(entry) ((rb_method_entry_t*)((entry)->me & ~1))
 #define COLLISION(entry) ((entry).me & 1)
+#define HASH(id) (id ^ (id >> 3))
 
 static void rb_mcache_resize(struct rb_meth_cache *cache);
 static void
@@ -39,7 +40,7 @@ rb_mcache_insert(struct rb_meth_cache *cache, ID id, uintptr_t me, VALUE defined
 	rb_mcache_resize(cache);
     }
     mask = cache->capa - 1;
-    pos = (id >> 3) & mask;
+    pos = HASH(id) & mask;
 
     ent = cache->entries;
     if (ent[pos].mid == 0) {
@@ -100,7 +101,7 @@ rb_mcache_find(struct rb_meth_cache *cache, ID id)
 {
     struct cache_entry *ent = cache->entries;
     int mask = cache->capa - 1;
-    int pos = (id >> 3) & mask;
+    int pos = HASH(id) & mask;
     int dlt;
     if (ent[pos].mid == id) return ent + pos;
     if (!COLLISION(ent[pos])) return NULL;
