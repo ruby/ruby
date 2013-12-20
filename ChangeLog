@@ -1,3 +1,9 @@
+Fri Dec 20 14:19:12 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (AC_ARG_WITH): use withval directly.
+	  fix failure on FreeBSD.
+	  http://fb32.rubyci.org/~chkbuild/ruby-trunk/log/20131217T070301Z.diff.html.gz
+
 Fri Dec 20 14:00:01 2013  Aman Gupta <ruby@tmm1.net>
 
 	* include/ruby/ruby.h (struct RClass): add super, remove iv_index_tbl.
