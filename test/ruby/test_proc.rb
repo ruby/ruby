@@ -1198,12 +1198,12 @@ class TestProc < Test::Unit::TestCase
     }
   end
 
-  def test_overriden_lambda
+  def test_overridden_lambda
     bug8345 = '[ruby-core:54687] [Bug #8345]'
     assert_normal_exit('def lambda; end; method(:puts).to_proc', bug8345)
   end
 
-  def test_overriden_proc
+  def test_overridden_proc
     bug8345 = '[ruby-core:54688] [Bug #8345]'
     assert_normal_exit('def proc; end; ->{}.curry', bug8345)
   end

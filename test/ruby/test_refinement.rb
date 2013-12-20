@@ -246,13 +246,13 @@ class TestRefinement < Test::Unit::TestCase
   module FixnumPlusExt
     refine Fixnum do
       def self.method_added(*args); end
-      def +(other) "overriden" end
+      def +(other) "overridden" end
     end
   end
 
   def test_override_builtin_method_with_method_added
     assert_equal(3, 1 + 2)
-    assert_equal("overriden", eval_using(FixnumPlusExt, "1 + 2"))
+    assert_equal("overridden", eval_using(FixnumPlusExt, "1 + 2"))
     assert_equal(3, 1 + 2)
   end
 
