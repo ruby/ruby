@@ -1205,7 +1205,7 @@ void rb_gc_writebarrier_unprotect_promoted(VALUE obj);
  * - RB_OBJ_WRITTEN(a, oldv, b): WB for new reference from `a' to `b'.
  *     This doesn't write any values, but only a WB declaration.
  *     `oldv' is replaced value with `b' (not used in current Ruby).
- * 
+ *
  * NOTE: The following core interfaces can be changed in the future.
  *       Please catch up if you want to insert WB into C-extensions
  *       correctly.
