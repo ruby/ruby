@@ -250,7 +250,7 @@ String
 * REXML::Parsers::SAX2Parser
   * Fixes wrong number of arguments of entitydecl event. Document of the event
     says "an array of the entity declaration" but implementation passes two
-    or more arguments. It is an implementation bug but it breaks backword
+    or more arguments. It is an implementation bug but it breaks backward
     compatibility.
 
 * REXML::Parsers::StreamParser
