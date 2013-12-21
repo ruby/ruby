@@ -1,3 +1,24 @@
+Sat Dec 21 15:37:11 2013  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* ruby_atomic.h (ATOMIC_SIZE_CAS): fix compile error on Solaris
+	  since r43460.
+
+Sat Dec 21 15:37:11 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby_atomic.h (ATOMIC_SIZE_CAS): new macro, compare and swap size_t.
+
+Sat Dec 21 15:37:11 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby_atomic.h (rb_w32_atomic_cas): call InterlockedCompareExchange
+	  directly.
+
+	* ruby_atomic.h (ATOMIC_CAS): fix missing function call.
+
+Sat Dec 21 15:37:11 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby_atomic.h (ATOMIC_CAS): suppress C4022 and C4047 warnings in
+	  VC6.  only InterlockedCompareExchange is declared using PVOID.
+
 Sat Dec 21 14:54:37 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* ext/bigdecimal/lib/bigdecimal/util.rb: [DOC] remove example of

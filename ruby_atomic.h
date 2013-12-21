@@ -50,15 +50,25 @@ rb_w32_atomic_or(volatile rb_atomic_t *var, rb_atomic_t val)
 #endif
 # define ATOMIC_EXCHANGE(var, val) InterlockedExchange(&(var), (val))
 # define ATOMIC_CAS(var, oldval, newval) InterlockedCompareExchange(&(var), (newval), (oldval))
+# if defined _MSC_VER && _MSC_VER <= 1200
+static inline rb_atomic_t
+rb_w32_atomic_cas(volatile rb_atomic_t *var, rb_atomic_t oldval, rb_atomic_t newval)
+{
+    return (rb_atomic_t)InterlockedCompareExchange((PVOID *)var, (PVOID)newval, (PVOID)oldval);
+}
+#   undef ATOMIC_CAS
+#   define ATOMIC_CAS(var, oldval, newval) rb_w32_atomic_cas(&(var), (oldval), (newval))
+# endif
 # ifdef _M_AMD64
-#  define ATOMIC_SIZE_ADD(var, val) InterlockedExchangeAdd64(&(var), (val))
-#  define ATOMIC_SIZE_SUB(var, val) InterlockedExchangeAdd64(&(var), -(val))
+#  define ATOMIC_SIZE_ADD(var, val) InterlockedExchangeAdd64((LONG_LONG *)&(var), (val))
+#  define ATOMIC_SIZE_SUB(var, val) InterlockedExchangeAdd64((LONG_LONG *)&(var), -(LONG)(val))
 #  define ATOMIC_SIZE_INC(var) InterlockedIncrement64(&(var))
 #  define ATOMIC_SIZE_DEC(var) InterlockedDecrement64(&(var))
 #  define ATOMIC_SIZE_EXCHANGE(var, val) InterlockedExchange64(&(var), (val))
+#  define ATOMIC_SIZE_CAS(var, oldval, val) InterlockedCompareExchange64(&(var), (oldval), (val))
 # else
 #  define ATOMIC_SIZE_ADD(var, val) InterlockedExchangeAdd((LONG *)&(var), (val))
-#  define ATOMIC_SIZE_SUB(var, val) InterlockedExchangeAdd((LONG *)&(var), -(val))
+#  define ATOMIC_SIZE_SUB(var, val) InterlockedExchangeAdd((LONG *)&(var), -(LONG)(val))
 #  define ATOMIC_SIZE_INC(var) InterlockedIncrement((LONG *)&(var))
 #  define ATOMIC_SIZE_DEC(var) InterlockedDecrement((LONG *)&(var))
 #  define ATOMIC_SIZE_EXCHANGE(var, val) InterlockedExchange((LONG *)&(var), (val))
@@ -81,6 +91,7 @@ typedef unsigned int rb_atomic_t;
 #  define ATOMIC_SIZE_INC(var) atomic_inc_ulong(&(var))
 #  define ATOMIC_SIZE_DEC(var) atomic_dec_ulong(&(var))
 #  define ATOMIC_SIZE_EXCHANGE(var, val) atomic_swap_ulong(&(var), (val))
+#  define ATOMIC_SIZE_CAS(var, oldval, val) atomic_cas_ulong(&(var), (oldval), (val))
 # else
 #  define ATOMIC_SIZE_ADD(var, val) atomic_add_int(&(var), (val))
 #  define ATOMIC_SIZE_SUB(var, val) atomic_add_int(&(var), -(val))
@@ -116,6 +127,10 @@ atomic_size_exchange(size_t *ptr, size_t val)
     *ptr = val;
     return old;
 }
+#endif
+
+#ifndef ATOMIC_SIZE_CAS
+# define ATOMIC_SIZE_CAS(var, oldval, val) ATOMIC_CAS(var, oldval, val)
 #endif
 
 #endif /* RUBY_ATOMIC_H */
