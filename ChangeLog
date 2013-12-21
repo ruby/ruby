@@ -1,3 +1,22 @@
+Sat Dec 21 15:50:13 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* ruby_atomic.h: remove duplicate definisions between ATOMIC_XXX
+	  and ATOMIC_SIZE_XXX.
+
+Sat Dec 21 15:50:13 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* ruby_atomic.h: define ATOMIC_SIZE_CAS() with
+	  __atomic_compare_exchange_n() and refactoring.
+
+Sat Dec 21 15:50:13 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* ruby_atomic.h: use __atomic builtin functions supported by GCC.
+	  __sync family are legacy functions now and it is recommended
+	  that new code use the __atomic functions.
+	  http://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html
+
+	* configure.in: check existence of __atomic functions.
+
 Sat Dec 21 15:37:11 2013  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* ruby_atomic.h (ATOMIC_SIZE_CAS): fix compile error on Solaris
