@@ -2510,6 +2510,9 @@ sys_fail2(VALUE s1, VALUE s2)
     const int max_pathlen = MAXPATHLEN;
 #endif
 
+    if (errno == EEXIST) {
+	rb_sys_fail_path(rb_str_ellipsize(s2, max_pathlen));
+    }
     str = rb_str_new_cstr("(");
     rb_str_append(str, rb_str_ellipsize(s1, max_pathlen));
     rb_str_cat2(str, ", ");
