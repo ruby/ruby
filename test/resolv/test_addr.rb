@@ -1,6 +1,7 @@
 require 'test/unit'
 require 'resolv'
 require 'socket'
+require 'tempfile'
 
 class TestResolvAddr < Test::Unit::TestCase
   def test_invalid_ipv4_address
