@@ -1,3 +1,17 @@
+Sat Dec 21 14:54:37 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* ext/bigdecimal/lib/bigdecimal/util.rb: [DOC] remove example of
+	  Rational#to_d without argument. [Bug #8958]
+
+Sat Dec 21 14:54:37 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/bigdecimal/lib/bigdecimal/util.rb: [DOC] +precision+ is required
+
+Sat Dec 21 14:54:37 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/bigdecimal/lib/bigdecimal/util.rb: [DOC] Document the required
+	  +precision+ argument for Rational#to_d [Bug #8958]
+
 Sat Dec 21 03:46:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/date/date_strptime.c (date__strptime_internal): unset

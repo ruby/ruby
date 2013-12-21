@@ -83,16 +83,17 @@ end
 
 class Rational < Numeric
   # call-seq:
-  #   r.to_d        -> bigdecimal
-  #   r.to_d(sig)   -> bigdecimal
+  #   r.to_d(precision)   -> bigdecimal
   #
-  # Converts a Rational to a BigDecimal. Takes an optional parameter +sig+ to
-  # limit the amount of significant digits.
+  # Converts a Rational to a BigDecimal.
+  #
+  # The required +precision+ parameter is used to determine the amount of
+  # significant digits for the result. See BigDecimal#div for more information,
+  # as it is used along with the #denominator and the +precision+ for
+  # parameters.
   #
   #   r = (22/7.0).to_r
   #   # => (7077085128725065/2251799813685248)
-  #   r.to_d
-  #   # => #<BigDecimal:1a52bd8,'0.3142857142 8571427937 0154144999 105E1',45(63)>
   #   r.to_d(3)
   #   # => #<BigDecimal:1a44d08,'0.314E1',18(36)>
   def to_d(precision)
