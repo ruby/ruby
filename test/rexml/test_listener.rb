@@ -63,7 +63,7 @@ class BaseTester < Test::Unit::TestCase
       @listener.parse( t7 ).unpack("C*").inspect, "CR" )
   end
 
-  # The accent bug, and the code that exibits the bug, was contributed by
+  # The accent bug, and the code that exhibits the bug, was contributed by
   # Guilhem Vellut
   class AccentListener
     def tag_start(name,attributes)
