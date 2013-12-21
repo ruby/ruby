@@ -1,3 +1,9 @@
+Sat Dec 21 16:16:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (finalize_deferred): flush all deferred finalizers while other
+	  finalizers can get ready to run newly by lazy sweep.
+	  [ruby-core:58833] [Bug #9205]
+
 Sat Dec 21 16:07:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby_atomic.h (ATOMIC_PTR_EXCHANGE): atomic exchange function for

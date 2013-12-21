@@ -160,4 +160,18 @@ class TestGc < Test::Unit::TestCase
     assert base_length < GC.stat[:heap_length]
     eom
   end
+
+  def test_sweep_in_finalizer
+    bug9205 = '[ruby-core:58833] [Bug #9205]'
+    100.times do
+      assert_ruby_status([], <<-'end;', bug9205)
+        raise_proc = proc do |id|
+          GC.start
+        end
+        1000.times do
+          ObjectSpace.define_finalizer(Object.new, raise_proc)
+        end
+      end;
+    end
+  end
 end
