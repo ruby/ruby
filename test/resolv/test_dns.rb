@@ -156,10 +156,8 @@ class TestResolvDNS < Test::Unit::TestCase
     Tempfile.open('resolv_test_dns_') do |tmpfile|
       tmpfile.print("\xff\x00\x40")
       tmpfile.close
-      Resolv::DNS.open(tmpfile.path) do |dns|
-        assert_nothing_raised(ArgumentError, bug9273) do
-          dns.getresources("foo.example.org", Resolv::DNS::Resource::IN::A)
-        end
+      assert_nothing_raised(ArgumentError, bug9273) do
+        Resolv::DNS::Config.parse_resolv_conf(tmpfile.path)
       end
     end
   end
