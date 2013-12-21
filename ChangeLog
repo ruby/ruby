@@ -1,3 +1,10 @@
+Sat Dec 21 12:37:19 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/resolv.rb (Resolv::Hosts#lazy_initialize): should not
+	  consider encodings in hosts file.  [ruby-core:59239] [Bug #9273]
+
+	* lib/resolv.rb (Resolv::Config.parse_resolv_conf): ditto.
+
 Sat Dec 21 05:43:27 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* tool/make-snapshot: replace RUBY_PATCHLEVEL_STR in version.h to
