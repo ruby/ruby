@@ -262,10 +262,10 @@ typedef unsigned long rb_serial_t;
 #endif
 
 struct rb_meth_cache {
-	rb_serial_t method_state;
-	rb_serial_t class_serial;
-	struct cache_entry *entries;
-	int size, capa;
+    rb_serial_t method_state;
+    rb_serial_t class_serial;
+    struct cache_entry *entries;
+    int size, capa;
 };
 
 struct rb_classext_struct {
