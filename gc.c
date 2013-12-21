@@ -5724,17 +5724,19 @@ ruby_gc_set_params(int safe_level)
     if (safe_level > 0) return;
 
     /* RUBY_GC_HEAP_FREE_SLOTS */
-    if (get_envparam_int   ("RUBY_FREE_MIN", &gc_params.heap_free_slots, 0)) {
+    if (get_envparam_int("RUBY_GC_HEAP_FREE_SLOTS", &gc_params.heap_free_slots, 0)) {
+	/* ok */
+    }
+    else if (get_envparam_int("RUBY_FREE_MIN", &gc_params.heap_free_slots, 0)) {
 	rb_warn("RUBY_FREE_MIN is obsolete. Use RUBY_GC_HEAP_FREE_SLOTS instead.");
     }
-    get_envparam_int   ("RUBY_GC_HEAP_FREE_SLOTS", &gc_params.heap_free_slots, 0);
 
     /* RUBY_GC_HEAP_INIT_SLOTS */
-    if (get_envparam_int("RUBY_HEAP_MIN_SLOTS", &gc_params.heap_init_slots, 0)) {
-	rb_warn("RUBY_HEAP_MIN_SLOTS is obsolete. Use RUBY_GC_HEAP_INIT_SLOTS instead.");
+    if (get_envparam_int("RUBY_GC_HEAP_INIT_SLOTS", &gc_params.heap_init_slots, 0)) {
 	gc_set_initial_pages();
     }
-    if (get_envparam_int("RUBY_GC_HEAP_INIT_SLOTS", &gc_params.heap_init_slots, 0)) {
+    else if (get_envparam_int("RUBY_HEAP_MIN_SLOTS", &gc_params.heap_init_slots, 0)) {
+	rb_warn("RUBY_HEAP_MIN_SLOTS is obsolete. Use RUBY_GC_HEAP_INIT_SLOTS instead.");
 	gc_set_initial_pages();
     }
 

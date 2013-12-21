@@ -1,3 +1,10 @@
+Sun Dec 22 04:07:55 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (ruby_gc_set_params): don't show obsolete warnings for
+	  RUBY_FREE_MIN/RUBY_HEAP_MIN_SLOTS if
+	  RUBY_GC_HEAP_FREE_SLOTS/RUBY_GC_HEAP_INIT_SLOTS are given.
+	  [Bug #9276]
+
 Sat Dec 21 13:00:20 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c: remove unnecessary the source path from EEXIST error
