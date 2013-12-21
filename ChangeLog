@@ -1,3 +1,8 @@
+Sat Dec 21 16:07:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby_atomic.h (ATOMIC_PTR_EXCHANGE): atomic exchange function for
+	  a generic pointer.
+
 Sat Dec 21 15:50:13 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* ruby_atomic.h: remove duplicate definisions between ATOMIC_XXX
