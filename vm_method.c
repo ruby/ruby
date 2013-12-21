@@ -113,6 +113,23 @@ rb_mcache_find(struct rb_meth_cache *cache, ID id)
     }
 }
 
+void
+rb_method_cache_copy(VALUE from, VALUE to)
+{
+    struct rb_meth_cache *from_cache = &RCLASS_EXT(from)->cache, *to_cache = &RCLASS_EXT(to)->cache;
+    if (!from_cache->size) return;
+
+    if (to_cache->entries)
+	xfree(to_cache->entries);
+    to_cache->capa = from_cache->capa;
+    to_cache->entries = xcalloc(to_cache->capa, sizeof(struct cache_entry));
+    if (from_cache->entries)
+	MEMCPY(to_cache->entries, from_cache->entries, struct cache_entry, from_cache->capa);
+    to_cache->size = from_cache->size;
+    to_cache->method_state = from_cache->method_state;
+    to_cache->class_serial = RCLASS_SERIAL(to);
+}
+
 #define ruby_running (GET_VM()->running)
 /* int ruby_running = 0; */
 

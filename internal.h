@@ -805,6 +805,7 @@ VALUE rb_extract_keywords(VALUE *orighash);
 /* vm_method.c */
 void Init_eval_method(void);
 int rb_method_defined_by(VALUE obj, ID mid, VALUE (*cfunc)(ANYARGS));
+void rb_method_cache_copy(VALUE from, VALUE to);
 
 /* miniprelude.c, prelude.c */
 void Init_prelude(void);

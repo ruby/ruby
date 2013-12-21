@@ -507,6 +507,7 @@ make_singleton_class(VALUE obj)
 {
     VALUE orig_class = RBASIC(obj)->klass;
     VALUE klass = rb_class_boot(orig_class);
+    rb_method_cache_copy(orig_class, klass);
 
     FL_SET(klass, FL_SINGLETON);
     RBASIC_SET_CLASS(obj, klass);
