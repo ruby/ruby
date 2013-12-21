@@ -651,7 +651,7 @@ module URI
     # extract the host part of the URI and unwrap brackets for IPv6 addresses.
     #
     # This method is same as URI::Generic#host except
-    # brackets for IPv6 (andn future IP) addresses are removed.
+    # brackets for IPv6 (and future IP) addresses are removed.
     #
     # u = URI("http://[::1]/bar")
     # p u.hostname      #=> "::1"
