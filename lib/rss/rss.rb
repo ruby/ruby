@@ -105,7 +105,7 @@ module RSS
   end
 
   # Some tags must only exist a specific number of times in a given RSS feed.
-  # If a feed has too many occurances of one of these tags, a TooMuchTagError
+  # If a feed has too many occurrences of one of these tags, a TooMuchTagError
   # will be raised.
   class TooMuchTagError < InvalidRSSError
     attr_reader :tag, :parent
