@@ -1,3 +1,11 @@
+Mon Dec 23 03:18:09 2013  Zachary Scott  <e@zzak.io>
+
+	* doc/ChangeLog-1.9.3: [DOC] Fix typos by @dvsuresh
+	  [Fixes GH-485] https://github.com/ruby/ruby/pull/485
+	* ext/openssl/ossl_config.c: ditto
+	* lib/rss/utils.rb, lib/time.rb: ditto
+	* test/ruby/envutil.rb: ditto
+
 Sun Dec 22 23:56:56 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/{rake,rdoc,rss}/*, test/rexml/test_listener.rb: [DOC] Fix typos
