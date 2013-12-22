@@ -1,3 +1,9 @@
+Sun Dec 22 13:35:58 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/rubygems.rb: 1.8.23.2.
+	  [ruby-core:58757] [Backport#9193] reported by Jeremy Evans and patched
+	  by Eric Hodel.
+
 Fri Nov 22 12:44:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (ruby_strtod): ignore too long fraction part, which does not
