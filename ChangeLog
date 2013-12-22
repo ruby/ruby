@@ -1,3 +1,7 @@
+Sun Dec 22 10:19:07 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems.rb:  Set RubyGems to release version.
+
 Sun Dec 22 10:16:08 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems.rb (module Gem):  Fix comment for
