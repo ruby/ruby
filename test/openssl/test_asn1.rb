@@ -263,6 +263,14 @@ rEzBQ0F9dUyqQ9gyRg8KHhDfv9HzT1d/rnUZMkoombwYBRIUChGCYV0GnJcan2Zm
     end
   end
 
+  def test_decode_utctime
+    expected = Time.at 1374535380
+    assert_equal expected, OpenSSL::ASN1.decode("\x17\v1307222323Z").value
+
+    expected += 17
+    assert_equal expected, OpenSSL::ASN1.decode("\x17\r130722232317Z").value
+  end
+
   def test_create_inf_length_primitive
     expected = %w{ 24 80 04 01 61 00 00 }
     raw = [expected.join('')].pack('H*')

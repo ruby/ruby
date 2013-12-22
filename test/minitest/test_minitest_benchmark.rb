@@ -51,6 +51,22 @@ class TestMiniTestBenchmark < MiniTest::Unit::TestCase
     assert_fit :exponential, x, y, 0.95, 13.81148, -0.1820
   end
 
+  def test_fit_logarithmic_clean
+    x = [1.0, 2.0, 3.0, 4.0, 5.0]
+    y = x.map { |n| 1.1 + 2.1 * Math.log(n) }
+
+    assert_fit :logarithmic, x, y, 1.0, 1.1, 2.1
+  end
+
+  def test_fit_logarithmic_noisy
+    x = [1.0, 2.0, 3.0, 4.0, 5.0]
+    # Generated with
+    # y = x.map { |n| jitter = 0.999 + 0.002 * rand; (Math.log(n) ) * jitter }
+    y = [0.0, 0.6935, 1.0995, 1.3873, 1.6097]
+
+    assert_fit :logarithmic, x, y, 0.95, 0, 1
+  end
+
   def test_fit_constant_clean
     x = (1..5).to_a
     y = [5.0, 5.0, 5.0, 5.0, 5.0]

@@ -1,11 +1,12 @@
 require File.expand_path('../helper', __FILE__)
 
 class TestRakeInvocationChain < Rake::TestCase
+  include Rake
 
   def setup
     super
 
-    @empty = Rake::InvocationChain::EMPTY
+    @empty = InvocationChain.empty
 
     @first_member = "A"
     @second_member = "B"
@@ -13,7 +14,19 @@ class TestRakeInvocationChain < Rake::TestCase
     @two = @one.append(@second_member)
   end
 
-  def test_append
+  def test_conj_on_invocation_chains
+    list = InvocationChain.empty.conj("B").conj("A")
+    assert_equal InvocationChain.make("A", "B"), list
+    assert_equal InvocationChain, list.class
+  end
+
+  def test_make_on_invocation_chains
+    assert_equal @empty, InvocationChain.make()
+    assert_equal @one, InvocationChain.make(@first_member)
+    assert_equal @two, InvocationChain.make(@second_member, @first_member)
+  end
+
+  def test_append_with_one_argument
     chain = @empty.append("A")
 
     assert_equal 'TOP => A', chain.to_s # HACK
@@ -49,4 +62,3 @@ class TestRakeInvocationChain < Rake::TestCase
   end
 
 end
-

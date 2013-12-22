@@ -93,15 +93,18 @@ module Rake
 
     # Create the tasks defined by this task lib.
     def define
-      desc "Run tests" + (@name==:test ? "" : " for #{@name}")
+      desc "Run tests" + (@name == :test ? "" : " for #{@name}")
       task @name do
         FileUtilsExt.verbose(@verbose) do
-          args = "#{ruby_opts_string} #{run_code} #{file_list_string} #{option_list}"
+          args =
+            "#{ruby_opts_string} #{run_code} " +
+            "#{file_list_string} #{option_list}"
           ruby args do |ok, status|
             if !ok && status.respond_to?(:signaled?) && status.signaled?
               raise SignalException.new(status.termsig)
             elsif !ok
-              fail "Command failed with status (#{status.exitstatus}): [ruby #{args}]"
+              fail "Command failed with status (#{status.exitstatus}): " +
+                "[ruby #{args}]"
             end
           end
         end
@@ -120,8 +123,8 @@ module Rake
 
     def ruby_opts_string
       opts = @ruby_opts.dup
-      opts.unshift( "-I\"#{lib_path}\"" ) unless @libs.empty?
-      opts.unshift( "-w" ) if @warning
+      opts.unshift("-I\"#{lib_path}\"") unless @libs.empty?
+      opts.unshift("-w") if @warning
       opts.join(" ")
     end
 
@@ -130,12 +133,12 @@ module Rake
     end
 
     def file_list_string
-      file_list.collect { |fn| "\"#{fn}\"" }.join(' ')
+      file_list.map { |fn| "\"#{fn}\"" }.join(' ')
     end
 
     def file_list # :nodoc:
       if ENV['TEST']
-        FileList[ ENV['TEST'] ]
+        FileList[ENV['TEST']]
       else
         result = []
         result += @test_files.to_a if @test_files

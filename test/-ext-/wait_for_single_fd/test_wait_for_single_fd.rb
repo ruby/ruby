@@ -27,7 +27,7 @@ class TestWaitForSingleFD < Test::Unit::TestCase
     with_pipe do |r,w|
       wfd = w.fileno
       w.close
-      assert_raises(Errno::EBADF) do
+      assert_raise(Errno::EBADF) do
         IO.wait_for_single_fd(wfd, RB_WAITFD_OUT, nil)
       end
     end

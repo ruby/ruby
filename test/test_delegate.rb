@@ -133,4 +133,51 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_raise(NoMethodError, '[ruby-dev:40314]#4') {d.delegate_test_private}
     assert_raise(NoMethodError, '[ruby-dev:40314]#5') {d.send(:delegate_test_private)}
   end
+
+  def test_global_function
+    klass = Class.new do
+      def open
+      end
+    end
+    obj = klass.new
+    d = SimpleDelegator.new(obj)
+    assert_nothing_raised(ArgumentError) {obj.open}
+    assert_nothing_raised(ArgumentError) {d.open}
+    assert_nothing_raised(ArgumentError) {d.send(:open)}
+  end
+
+  def test_send_method_in_delegator
+    d = Class.new(SimpleDelegator) do
+      def foo
+        "foo"
+      end
+    end.new(Object.new)
+    assert_equal("foo", d.send(:foo))
+  end
+
+  def test_unset_simple_delegator
+    d = SimpleDelegator.allocate
+    assert_raise_with_message(ArgumentError, /not delegated/) {
+      d.__getobj__
+    }
+  end
+
+  def test_unset_delegate_class
+    d = IV.allocate
+    assert_raise_with_message(ArgumentError, /not delegated/) {
+      d.__getobj__
+    }
+  end
+
+  class Bug9155 < DelegateClass(Integer)
+    def initialize(value)
+      super(Integer(value))
+    end
+  end
+
+  def test_global_method_if_no_target
+    bug9155 = '[ruby-core:58572] [Bug #9155]'
+    x = assert_nothing_raised(ArgumentError, bug9155) {break Bug9155.new(1)}
+    assert_equal(1, x.to_i, bug9155)
+  end
 end

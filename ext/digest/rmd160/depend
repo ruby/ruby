@@ -1,6 +1,3 @@
-rmd160.o: rmd160.c rmd160.h $(srcdir)/../defs.h $(hdrdir)/ruby.h \
-  $(topdir)/config.h $(hdrdir)/defines.h $(hdrdir)/intern.h
-rmd160init.o: rmd160init.c $(srcdir)/../digest.h $(hdrdir)/ruby.h \
-  $(topdir)/config.h $(hdrdir)/defines.h $(hdrdir)/intern.h \
-  rmd160.h $(srcdir)/../defs.h
+rmd160.o: rmd160.c rmd160.h $(srcdir)/../defs.h $(HDRS) $(ruby_headers)
+rmd160init.o: rmd160init.c rmd160.h $(srcdir)/../digest.h $(srcdir)/../defs.h $(HDRS) $(ruby_headers)
 rmd160ossl.o: rmd160ossl.h $(srcdir)/../defs.h

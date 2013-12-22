@@ -22,26 +22,17 @@ extern "C" {
 #include <stdarg.h>
 #include "ruby/oniguruma.h"
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+RUBY_SYMBOL_EXPORT_BEGIN
 
-#define ENCODING_INLINE_MAX 1023
+#define ENCODING_INLINE_MAX 127
 #define ENCODING_SHIFT (FL_USHIFT+10)
-#define ENCODING_MASK (((VALUE)ENCODING_INLINE_MAX)<<ENCODING_SHIFT)
+#define ENCODING_MASK (((VALUE)ENCODING_INLINE_MAX)<<ENCODING_SHIFT) /* FL_USER10|FL_USER11|FL_USER12|FL_USER13|FL_USER14|FL_USER15|FL_USER16 */
 
 #define ENCODING_SET_INLINED(obj,i) do {\
     RBASIC(obj)->flags &= ~ENCODING_MASK;\
     RBASIC(obj)->flags |= (VALUE)(i) << ENCODING_SHIFT;\
 } while (0)
-#define ENCODING_SET(obj,i) do {\
-    VALUE rb_encoding_set_obj = (obj); \
-    int encoding_set_enc_index = (i); \
-    if (encoding_set_enc_index < ENCODING_INLINE_MAX) \
-        ENCODING_SET_INLINED(rb_encoding_set_obj, encoding_set_enc_index); \
-    else \
-        rb_enc_set_index(rb_encoding_set_obj, encoding_set_enc_index); \
-} while (0)
+#define ENCODING_SET(obj,i) rb_enc_set_index((obj), (i))
 
 #define ENCODING_GET_INLINED(obj) (int)((RBASIC(obj)->flags & ENCODING_MASK)>>ENCODING_SHIFT)
 #define ENCODING_GET(obj) \
@@ -98,6 +89,7 @@ VALUE rb_enc_associate(VALUE, rb_encoding*);
 void rb_enc_copy(VALUE dst, VALUE src);
 
 VALUE rb_enc_str_new(const char*, long, rb_encoding*);
+VALUE rb_enc_str_new_cstr(const char*, rb_encoding*);
 VALUE rb_enc_reg_new(const char*, long, rb_encoding*, int);
 PRINTF_ARGS(VALUE rb_enc_sprintf(rb_encoding *, const char*, ...), 2, 3);
 VALUE rb_enc_vsprintf(rb_encoding *, const char*, va_list);
@@ -111,6 +103,15 @@ VALUE rb_external_str_new_with_enc(const char *ptr, long len, rb_encoding *);
 VALUE rb_str_export_to_enc(VALUE, rb_encoding *);
 VALUE rb_str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to);
 VALUE rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags, VALUE ecopts);
+
+#if defined(__GNUC__) && !defined(__PCC__)
+#define rb_enc_str_new_cstr(str, enc) __extension__ (	\
+{					       \
+    (__builtin_constant_p(str)) ?	       \
+	rb_enc_str_new((str), (long)strlen(str), (enc)) : \
+	rb_enc_str_new_cstr((str), (enc)); \
+})
+#endif
 
 PRINTF_ARGS(NORETURN(void rb_enc_raise(rb_encoding *, VALUE, const char*, ...)), 3, 4);
 
@@ -156,6 +157,9 @@ unsigned int rb_enc_codepoint(const char *p, const char *e, rb_encoding *enc);
 
 /* -> codelen>0 or raise exception */
 int rb_enc_codelen(int code, rb_encoding *enc);
+/* -> 0 for invalid codepoint */
+int rb_enc_code_to_mbclen(int code, rb_encoding *enc);
+#define rb_enc_code_to_mbclen(c, enc) ONIGENC_CODE_TO_MBCLEN((enc), (c));
 
 /* code,ptr,encoding -> write buf */
 #define rb_enc_mbcput(c,buf,enc) ONIGENC_CODE_TO_MBC((enc),(c),(UChar*)(buf))
@@ -203,9 +207,15 @@ rb_encoding *rb_locale_encoding(void);
 rb_encoding *rb_filesystem_encoding(void);
 rb_encoding *rb_default_external_encoding(void);
 rb_encoding *rb_default_internal_encoding(void);
+#ifndef rb_ascii8bit_encindex
 int rb_ascii8bit_encindex(void);
+#endif
+#ifndef rb_utf8_encindex
 int rb_utf8_encindex(void);
+#endif
+#ifndef rb_usascii_encindex
 int rb_usascii_encindex(void);
+#endif
 int rb_locale_encindex(void);
 int rb_filesystem_encindex(void);
 VALUE rb_enc_default_external(void);
@@ -299,6 +309,7 @@ VALUE rb_econv_str_convert(rb_econv_t *ec, VALUE src, int flags);
 VALUE rb_econv_substr_convert(rb_econv_t *ec, VALUE src, long byteoff, long bytesize, int flags);
 VALUE rb_econv_str_append(rb_econv_t *ec, VALUE src, VALUE dst, int flags);
 VALUE rb_econv_substr_append(rb_econv_t *ec, VALUE src, long byteoff, long bytesize, VALUE dst, int flags);
+VALUE rb_econv_append(rb_econv_t *ec, const char *bytesrc, long bytesize, VALUE dst, int flags);
 
 void rb_econv_binmode(rb_econv_t *ec);
 
@@ -340,9 +351,7 @@ void rb_econv_binmode(rb_econv_t *ec);
 #define ECONV_AFTER_OUTPUT                      0x00020000
 /* end of flags for rb_econv_convert */
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+RUBY_SYMBOL_EXPORT_END
 
 #if defined(__cplusplus)
 #if 0

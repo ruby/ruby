@@ -18,49 +18,89 @@ ARGV.options do
   opts.on_tail("common options:")
 
   # no argument, shows at tail
-  opts.on_tail("--help", "show this message") {puts opts; exit}
+  opts.on_tail("--help", "show this message") do
+    puts opts
+    exit
+  end
 
   # mandatory argument
   opts.on("-r", "--require=LIBRARY", String,
-	  "require the LIBRARY, before",
-	  "executing your script") {|lib|@library=lib}
+          "require the LIBRARY, before",
+          "executing your script") do
+    |lib|
+    @library = lib
+  end
 
   # optional argument
   opts.on("-i", "--inplace=[EXTENSION]",
-	  "edit ARGV files in place", # multiline description
-	  "(make backup if EXTENSION supplied)") {|inplace| @inplace = inplace || ''}
+          "edit ARGV files in place", # multiline description
+          "(make backup if EXTENSION supplied)") do
+    |inplace|
+    @inplace = inplace || ''
+  end
 
-  opts.on("-N=[NUM]", Integer) {|num|@number=num}
+  opts.on("-N=[NUM]", Integer) do
+    |num|
+    @number = num
+  end
 
   # additional class
-  opts.on("-t", "--[no-]time[=TIME]", Time, "it's the time") {|time|@time=time}
+  opts.on("-t", "--[no-]time[=TIME]", Time, "it's the time") do
+    |time|
+    @time = time
+  end
 
   # limit argument syntax
   opts.on("-[0-7]", "-F", "--irs=[OCTAL]", OptionParser::OctalInteger,
-	  "specify record separator", "(\\0, if no argument)") {|irs|@irs=irs}
+          "specify record separator", "(\\0, if no argument)") do
+    |irs|
+    @irs = irs
+  end
 
   # boolean switch(default true)
   @exec = true
-  opts.on("-n", "--no-exec[=FLAG]", TrueClass, "not really execute") {|exec|@exec=exec}
+  opts.on("-n", "--no-exec[=FLAG]", TrueClass, "not really execute") do
+    |exec|
+    @exec = exec
+  end
 
   # array
-  opts.on("-a", "--list[=LIST,LIST]", Array, "list") {|list|@list=list}
+  opts.on("-a", "--list[=LIST,LIST]", Array, "list") do
+    |list|
+    @list = list
+  end
 
   # fixed size array
-  opts.on("--pair[=car,cdr]", Array, "pair") {|x,y|@x=x; @y=y}
+  opts.on("--pair[=car,cdr]", Array, "pair") do
+    |x, y|
+    @x = x
+    @y = y
+  end
 
   # keyword completion
   opts.on("--code=CODE", CODES, CODE_ALIASES, "select coding system",
-	  "("+CODES.join(",")+",", " "+CODE_ALIASES.keys.join(",")+")") {|c|@code=c}
+          "("+CODES.join(",")+",", " "+CODE_ALIASES.keys.join(",")+")") do
+    |c|
+    @code = c
+  end
 
   # optional argument with keyword completion
-  opts.on("--type[=TYPE]", [:text, :binary], "select type(text, binary)") {|t|@type=t}
+  opts.on("--type[=TYPE]", [:text, :binary], "select type(text, binary)") do
+    |t|
+    @type = t
+  end
 
   # boolean switch with optional argument(default false)
-  opts.on("-v", "--[no-]verbose=[FLAG]", "run verbosely") {|v|@verbose=v}
+  opts.on("-v", "--[no-]verbose=[FLAG]", "run verbosely") do
+    |v|
+    @verbose = v
+  end
 
   # easy way, set local variable
-  opts.on("-q", "--quit", "quit when ARGV is empty") {|q|@quit=q}
+  opts.on("-q", "--quit", "quit when ARGV is empty") do
+    |q|
+    @quit = q
+  end
 
   # adding on the fly
   opts.on("--add=SWITCH=[ARG]", "add option on the fly", /\A(\w+)(?:=.+)?\Z/) do

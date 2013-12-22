@@ -1,10 +1,15 @@
 module Psych
   module Streaming
-    ###
-    # Create a new streaming emitter.  Emitter will print to +io+.  See
-    # Psych::Stream for an example.
-    def initialize io
-      super({}, self.class.const_get(:Emitter).new(io))
+    module ClassMethods
+      ###
+      # Create a new streaming emitter.  Emitter will print to +io+.  See
+      # Psych::Stream for an example.
+      def new io
+        emitter      = const_get(:Emitter).new(io)
+        class_loader = ClassLoader.new
+        ss           = ScalarScanner.new class_loader
+        super(emitter, ss, {})
+      end
     end
 
     ###

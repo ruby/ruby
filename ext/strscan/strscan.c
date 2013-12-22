@@ -38,6 +38,9 @@ struct strscanner
 
     /* the regexp register; legal only when MATCHED_P(s) */
     struct re_registers regs;
+
+    /* regexp used for last scan */
+    VALUE regex;
 };
 
 #define MATCHED_P(s)          ((s)->flags & FLAG_MATCHED)
@@ -187,7 +190,8 @@ strscan_memsize(const void *ptr)
 
 static const rb_data_type_t strscanner_type = {
     "StringScanner",
-    {strscan_mark, strscan_free, strscan_memsize}
+    {strscan_mark, strscan_free, strscan_memsize},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static VALUE
@@ -456,6 +460,8 @@ strscan_do_scan(VALUE self, VALUE regex, int succptr, int getstr, int headonly)
     if (S_RESTLEN(p) < 0) {
         return Qnil;
     }
+
+    p->regex = regex;
     re = rb_reg_prepare_re(regex, p->str);
     tmpreg = re != RREGEXP(regex)->ptr;
     if (!tmpreg) RREGEXP(regex)->usecnt++;
@@ -970,6 +976,25 @@ strscan_matched_size(VALUE self)
     return INT2NUM(p->regs.end[0] - p->regs.beg[0]);
 }
 
+static int
+name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name, const char* name_end)
+{
+    int num;
+
+    num = onig_name_to_backref_number(RREGEXP(regexp)->ptr,
+	(const unsigned char* )name, (const unsigned char* )name_end, regs);
+    if (num >= 1) {
+	return num;
+    }
+    else {
+	VALUE s = rb_str_new(name, (long )(name_end - name));
+	rb_raise(rb_eIndexError, "undefined group name reference: %s",
+				 StringValuePtr(s));
+    }
+
+    UNREACHABLE;
+}
+
 /*
  * call-seq: [](n)
  *
@@ -983,17 +1008,43 @@ strscan_matched_size(VALUE self)
  *   s[3]                               # -> "12"
  *   s.post_match                       # -> "1975 14:39"
  *   s.pre_match                        # -> ""
+ *
+ *   s.reset
+ *   s.scan(/(?<wday>\w+) (?<month>\w+) (?<day>\d+) /)       # -> "Fri Dec 12 "
+ *   s[0]                               # -> "Fri Dec 12 "
+ *   s[1]                               # -> "Fri"
+ *   s[2]                               # -> "Dec"
+ *   s[3]                               # -> "12"
+ *   s[:wday]                           # -> "Fri"
+ *   s[:month]                          # -> "Dec"
+ *   s[:day]                            # -> "12"
+ *   s.post_match                       # -> "1975 14:39"
+ *   s.pre_match                        # -> ""
  */
 static VALUE
 strscan_aref(VALUE self, VALUE idx)
 {
+    const char *name;
     struct strscanner *p;
     long i;
 
     GET_SCANNER(self, p);
     if (! MATCHED_P(p))        return Qnil;
 
-    i = NUM2LONG(idx);
+    switch (TYPE(idx)) {
+        case T_SYMBOL:
+            name = rb_id2name(SYM2ID(idx));
+            goto name_to_backref;
+            break;
+        case T_STRING:
+            name = StringValuePtr(idx);
+        name_to_backref:
+	    i = name_to_backref_number(&(p->regs), p->regex, name, name + strlen(name));
+            break;
+        default:
+            i = NUM2LONG(idx);
+    }
+
     if (i < 0)
         i += p->regs.num_regs;
     if (i < 0)                 return Qnil;

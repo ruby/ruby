@@ -1,4 +1,4 @@
-require 'psych/helper'
+require_relative 'helper'
 require 'bigdecimal'
 
 module Psych
@@ -14,6 +14,10 @@ module Psych
 
     def teardown
       $DEBUG = @old_debug
+    end
+
+    def test_load_float_with_dot
+      assert_equal 1.0, Psych.load('--- 1.')
     end
 
     def test_non_float_with_0

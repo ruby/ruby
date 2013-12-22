@@ -206,6 +206,50 @@ module Rinda
   # TupleSpaceProxy allows a remote Tuplespace to appear as local.
 
   class TupleSpaceProxy
+    ##
+    # A Port ensures that a moved tuple arrives properly at its destination
+    # and does not get lost.
+    #
+    # See https://bugs.ruby-lang.org/issues/8125
+
+    class Port # :nodoc:
+      attr_reader :value
+
+      def self.deliver
+        port = new
+
+        begin
+          yield(port)
+        ensure
+          port.close
+        end
+
+        port.value
+      end
+
+      def initialize
+        @open = true
+        @value = nil
+      end
+
+      ##
+      # Don't let the DRb thread push to it when remote sends tuple
+
+      def close
+        @open = false
+      end
+
+      ##
+      # Stores +value+ and ensure it does not get marshaled multiple times.
+
+      def push value
+        raise 'port closed' unless @open
+
+        @value = value
+
+        nil # avoid Marshal
+      end
+    end
 
     ##
     # Creates a new TupleSpaceProxy to wrap +ts+.
@@ -225,9 +269,9 @@ module Rinda
     # Takes +tuple+ from the proxied TupleSpace.  See TupleSpace#take.
 
     def take(tuple, sec=nil, &block)
-      port = []
-      @ts.move(DRbObject.new(port), tuple, sec, &block)
-      port[0]
+      Port.deliver do |port|
+        @ts.move(DRbObject.new(port), tuple, sec, &block)
+      end
     end
 
     ##

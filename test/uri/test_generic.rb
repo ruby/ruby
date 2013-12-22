@@ -152,15 +152,31 @@ class URI::TestGeneric < Test::Unit::TestCase
     u3 = URI.parse('http://foo/bar')
     u4 = URI.parse('http://foo/bar/')
 
-    assert_equal(URI.parse('http://foo/baz'), u1 + 'baz')
-    assert_equal(URI.parse('http://foo/baz'), u2 + 'baz')
-    assert_equal(URI.parse('http://foo/baz'), u3 + 'baz')
-    assert_equal(URI.parse('http://foo/bar/baz'), u4 + 'baz')
-
-    assert_equal(URI.parse('http://foo/baz'), u1 + '/baz')
-    assert_equal(URI.parse('http://foo/baz'), u2 + '/baz')
-    assert_equal(URI.parse('http://foo/baz'), u3 + '/baz')
-    assert_equal(URI.parse('http://foo/baz'), u4 + '/baz')
+    {
+      u1 => {
+        'baz'  => 'http://foo/baz',
+        '/baz' => 'http://foo/baz',
+      },
+      u2 => {
+        'baz'  => 'http://foo/baz',
+        '/baz' => 'http://foo/baz',
+      },
+      u3 => {
+        'baz'  => 'http://foo/baz',
+        '/baz' => 'http://foo/baz',
+      },
+      u4 => {
+        'baz'  => 'http://foo/bar/baz',
+        '/baz' => 'http://foo/baz',
+      },
+    }.each { |base, map|
+      map.each { |url, result|
+        expected = URI.parse(result)
+        uri = URI.parse(url)
+        assert_equal expected, base + url, "<#{base}> + #{url.inspect} to become <#{expected}>"
+        assert_equal expected, base + uri, "<#{base}> + <#{uri}> to become <#{expected}>"
+      }
+    }
 
     url = URI.parse('http://hoge/a.html') + 'b.html'
     assert_equal('http://hoge/b.html', url.to_s, "[ruby-dev:11508]")
@@ -736,6 +752,7 @@ class URI::TestGeneric < Test::Unit::TestCase
   # 192.0.2.0/24 is TEST-NET.  [RFC3330]
 
   def test_find_proxy
+    assert_raise(URI::BadURIError){ URI("foo").find_proxy }
     with_env({}) {
       assert_nil(URI("http://192.0.2.1/").find_proxy)
       assert_nil(URI("ftp://192.0.2.1/").find_proxy)
@@ -759,12 +776,12 @@ class URI::TestGeneric < Test::Unit::TestCase
       assert_nil(URI("http://192.0.2.2/").find_proxy)
     }
     with_env('http_proxy'=>'') {
-      assert_equal(URI(''), URI("http://192.0.2.1/").find_proxy)
+      assert_nil(URI("http://192.0.2.1/").find_proxy)
       assert_nil(URI("ftp://192.0.2.1/").find_proxy)
     }
     with_env('ftp_proxy'=>'') {
       assert_nil(URI("http://192.0.2.1/").find_proxy)
-      assert_equal(URI(''), URI("ftp://192.0.2.1/").find_proxy)
+      assert_nil(URI("ftp://192.0.2.1/").find_proxy)
     }
   end
 

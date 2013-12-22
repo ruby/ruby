@@ -106,6 +106,7 @@ ossl_bn_alloc(VALUE klass)
  * call-seq:
  *    BN.new => aBN
  *    BN.new(bn) => aBN
+ *    BN.new(integer) => aBN
  *    BN.new(string) => aBN
  *    BN.new(string, 0 | 2 | 10 | 16) => aBN
  */
@@ -119,11 +120,52 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
     if (rb_scan_args(argc, argv, "11", &str, &bs) == 2) {
 	base = NUM2INT(bs);
     }
-    StringValue(str);
-    GetBN(self, bn);
+
+    if (RB_TYPE_P(str, T_FIXNUM)) {
+	long i;
+	unsigned char bin[sizeof(long)];
+	long n = FIX2LONG(str);
+	unsigned long un = labs(n);
+
+	for (i = sizeof(long) - 1; 0 <= i; i--) {
+	    bin[i] = un&0xff;
+	    un >>= 8;
+	}
+
+	GetBN(self, bn);
+	if (!BN_bin2bn(bin, sizeof(bin), bn)) {
+	    ossl_raise(eBNError, NULL);
+	}
+	if (n < 0) BN_set_negative(bn, 1);
+	return self;
+    }
+    else if (RB_TYPE_P(str, T_BIGNUM)) {
+	int i, j, len = RBIGNUM_LENINT(str);
+	BDIGIT *ds = RBIGNUM_DIGITS(str);
+	VALUE buf;
+	unsigned char *bin = (unsigned char*)ALLOCV_N(BDIGIT, buf, len);
+
+	for (i = 0; len > i; i++) {
+	    BDIGIT v = ds[i];
+	    for (j = SIZEOF_BDIGITS - 1; 0 <= j; j--) {
+		bin[(len-1-i)*SIZEOF_BDIGITS+j] = v&0xff;
+		v >>= 8;
+	    }
+	}
+
+	GetBN(self, bn);
+	if (!BN_bin2bn(bin, (int)SIZEOF_BDIGITS*len, bn)) {
+	    ALLOCV_END(buf);
+	    ossl_raise(eBNError, NULL);
+	}
+	ALLOCV_END(buf);
+	if (!RBIGNUM_SIGN(str)) BN_set_negative(bn, 1);
+	return self;
+    }
     if (RTEST(rb_obj_is_kind_of(str, cBN))) {
 	BIGNUM *other;
 
+	GetBN(self, bn);
 	GetBN(str, other); /* Safe - we checked kind_of? above */
 	if (!BN_copy(bn, other)) {
 	    ossl_raise(eBNError, NULL);
@@ -131,6 +173,8 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 	return self;
     }
 
+    StringValue(str);
+    GetBN(self, bn);
     switch (base) {
     case 0:
 	if (!BN_mpi2bn((unsigned char *)RSTRING_PTR(str), RSTRING_LENINT(str), bn)) {
@@ -224,10 +268,10 @@ ossl_bn_to_i(VALUE self)
 
     GetBN(self, bn);
 
-    if (!(txt = BN_bn2dec(bn))) {
+    if (!(txt = BN_bn2hex(bn))) {
 	ossl_raise(eBNError, NULL);
     }
-    num = rb_cstr_to_inum(txt, 10, Qtrue);
+    num = rb_cstr_to_inum(txt, 16, Qtrue);
     OPENSSL_free(txt);
 
     return num;

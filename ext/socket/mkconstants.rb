@@ -56,17 +56,12 @@ DEFS = h.to_a
 
 def each_const
   DEFS.each {|name, default_value|
-    if name =~ /\AINADDR_/
-      make_value = "UINT2NUM"
-    else
-      make_value = "INT2NUM"
-    end
     guard = nil
     if /\A(AF_INET6|PF_INET6|IPV6_.*)\z/ =~ name
-      # IPv6 is not supported although AF_INET6 is defined on bcc32/mingw
+      # IPv6 is not supported although AF_INET6 is defined on mingw
       guard = "defined(INET6)"
     end
-    yield guard, make_value, name, default_value
+    yield guard, name, default_value
   }
 end
 
@@ -78,7 +73,7 @@ def each_name(pat)
 end
 
 ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_const_decls")
-% each_const {|guard, make_value, name, default_value|
+% each_const {|guard, name, default_value|
 #if !defined(<%=name%>)
 # if defined(HAVE_CONST_<%=name.upcase%>)
 #  define <%=name%> <%=name%>
@@ -91,23 +86,23 @@ ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_const_decls")
 % }
 EOS
 
-ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_const_defs_in_guard(make_value, name, default_value)")
+ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_const_defs_in_guard(name, default_value)")
 #if defined(<%=name%>)
     /* <%= COMMENTS[name] %> */
-    rb_define_const(rb_cSocket, <%=c_str name%>, <%=make_value%>(<%=name%>));
+    rb_define_const(rb_cSocket, <%=c_str name%>, INTEGER2NUM(<%=name%>));
     /* <%= COMMENTS[name] %> */
-    rb_define_const(rb_mSockConst, <%=c_str name%>, <%=make_value%>(<%=name%>));
+    rb_define_const(rb_mSockConst, <%=c_str name%>, INTEGER2NUM(<%=name%>));
 #endif
 EOS
 
 ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_const_defs")
-% each_const {|guard, make_value, name, default_value|
+% each_const {|guard, name, default_value|
 %   if guard
 #if <%=guard%>
-<%= gen_const_defs_in_guard(make_value, name, default_value).chomp %>
+<%= gen_const_defs_in_guard(name, default_value).chomp %>
 #endif
 %   else
-<%= gen_const_defs_in_guard(make_value, name, default_value).chomp %>
+<%= gen_const_defs_in_guard(name, default_value).chomp %>
 %   end
 % }
 EOS
@@ -284,6 +279,18 @@ result = ERB.new(<<'EOS', nil, '%').result(binding)
 
 <%= INTERN_DEFS.map {|vardef, gen_hash, decl, func| vardef }.join("\n") %>
 
+#ifdef HAVE_LONG_LONG
+#define INTEGER2NUM(n) \
+    (FIXNUM_MAX < (n) ? ULL2NUM(n) : \
+     FIXNUM_MIN > (LONG_LONG)(n) ? LL2NUM(n) : \
+     LONG2FIX(n))
+#else
+#define INTEGER2NUM(n) \
+    (FIXNUM_MAX < (n) ? ULONG2NUM(n) : \
+     FIXNUM_MIN > (long)(n) ? LONG2NUM(n) : \
+     LONG2FIX(n))
+#endif
+
 static void
 init_constants(void)
 {
@@ -446,6 +453,7 @@ MSG_RST
 MSG_ERRQUEUE	nil	Fetch message from error queue
 MSG_NOSIGNAL	nil	Do not generate SIGPIPE
 MSG_MORE	nil	Sender will send more
+MSG_FASTOPEN nil Reduce step of the handshake process
 
 SOL_SOCKET	nil	Socket-level options
 SOL_IP	nil	IP socket options
@@ -615,6 +623,7 @@ TCP_NOPUSH	nil	Don't push the last block of write
 TCP_QUICKACK	nil	Enable quickack mode
 TCP_SYNCNT	nil	Number of SYN retransmits before a connection is dropped
 TCP_WINDOW_CLAMP	nil	Clamp the size of the advertised window
+TCP_FASTOPEN nil Reduce step of the handshake process
 
 UDP_CORK	nil	Don't send partial frames
 
@@ -703,3 +712,62 @@ SCM_UCRED	nil	User credentials
 LOCAL_PEERCRED	nil	Retrieve peer credentials
 LOCAL_CREDS	nil	Pass credentials to receiver
 LOCAL_CONNWAIT	nil	Connect blocks until accepted
+
+IFF_802_1Q_VLAN      nil 802.1Q VLAN device
+IFF_ALLMULTI         nil receive all multicast packets
+IFF_ALTPHYS          nil use alternate physical connection
+IFF_AUTOMEDIA        nil auto media select active
+IFF_BONDING          nil bonding master or slave
+IFF_BRIDGE_PORT      nil device used as bridge port
+IFF_BROADCAST        nil broadcast address valid
+IFF_CANTCONFIG       nil unconfigurable using ioctl(2)
+IFF_DEBUG            nil turn on debugging
+IFF_DISABLE_NETPOLL  nil disable netpoll at run-time
+IFF_DONT_BRIDGE      nil disallow bridging this ether dev
+IFF_DORMANT          nil driver signals dormant
+IFF_DRV_OACTIVE      nil tx hardware queue is full
+IFF_DRV_RUNNING      nil resources allocated
+IFF_DYING            nil interface is winding down
+IFF_DYNAMIC          nil dialup device with changing addresses
+IFF_EBRIDGE          nil ethernet bridging device
+IFF_ECHO             nil echo sent packets
+IFF_ISATAP           nil ISATAP interface (RFC4214)
+IFF_LINK0            nil per link layer defined bit 0
+IFF_LINK1            nil per link layer defined bit 1
+IFF_LINK2            nil per link layer defined bit 2
+IFF_LIVE_ADDR_CHANGE nil hardware address change when it's running
+IFF_LOOPBACK         nil loopback net
+IFF_LOWER_UP         nil driver signals L1 up
+IFF_MACVLAN_PORT     nil device used as macvlan port
+IFF_MASTER           nil master of a load balancer
+IFF_MASTER_8023AD    nil bonding master, 802.3ad.
+IFF_MASTER_ALB       nil bonding master, balance-alb.
+IFF_MASTER_ARPMON    nil bonding master, ARP mon in use
+IFF_MONITOR          nil user-requested monitor mode
+IFF_MULTICAST        nil supports multicast
+IFF_NOARP            nil no address resolution protocol
+IFF_NOTRAILERS       nil avoid use of trailers
+IFF_OACTIVE          nil transmission in progress
+IFF_OVS_DATAPATH     nil device used as Open vSwitch datapath port
+IFF_POINTOPOINT      nil point-to-point link
+IFF_PORTSEL          nil can set media type
+IFF_PPROMISC         nil user-requested promisc mode
+IFF_PROMISC          nil receive all packets
+IFF_RENAMING         nil interface is being renamed
+IFF_ROUTE            nil routing entry installed
+IFF_RUNNING          nil resources allocated
+IFF_SIMPLEX          nil can't hear own transmissions
+IFF_SLAVE            nil slave of a load balancer
+IFF_SLAVE_INACTIVE   nil bonding slave not the curr. active
+IFF_SLAVE_NEEDARP    nil need ARPs for validation
+IFF_SMART            nil interface manages own routes
+IFF_STATICARP        nil static ARP
+IFF_SUPP_NOFCS       nil sending custom FCS
+IFF_TEAM_PORT        nil used as team port
+IFF_TX_SKB_SHARING   nil sharing skbs on transmit
+IFF_UNICAST_FLT      nil unicast filtering
+IFF_UP               nil interface is up
+IFF_WAN_HDLC         nil WAN HDLC device
+IFF_XMIT_DST_RELEASE nil dev_hard_start_xmit() is allowed to release skb->dst
+IFF_VOLATILE         nil volatile flags
+IFF_CANTCHANGE       nil flags not changeable

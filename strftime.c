@@ -363,7 +363,8 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, rb_encodi
 			continue;
 
 		case 'j':	/* day of the year, 001 - 366 */
-			FMT('0', 3, "d", vtm->yday);
+			i = range(1, vtm->yday, 366);
+			FMT('0', 3, "d", (int)i);
 			continue;
 
 		case 'm':	/* month, 01 - 12 */

@@ -32,9 +32,9 @@ tcp_init(int argc, VALUE *argv, VALUE sock)
 }
 
 static VALUE
-tcp_sockaddr(struct sockaddr *addr, size_t len)
+tcp_sockaddr(struct sockaddr *addr, socklen_t len)
 {
-    return rsock_make_ipaddr(addr);
+    return rsock_make_ipaddr(addr, len);
 }
 
 /*

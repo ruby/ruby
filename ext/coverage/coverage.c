@@ -25,7 +25,7 @@ rb_coverage_start(VALUE klass)
     if (!RTEST(rb_get_coverages())) {
 	if (rb_coverages == Qundef) {
 	    rb_coverages = rb_hash_new();
-	    RBASIC(rb_coverages)->klass = 0;
+	    rb_obj_hide(rb_coverages);
 	}
 	rb_set_coverages(rb_coverages);
     }

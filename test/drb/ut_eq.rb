@@ -24,7 +24,7 @@ if __FILE__ == $0
     it
   end
 
-  DRb.start_service('druby://:0', Bar.new)
+  DRb.start_service('druby://localhost:0', Bar.new)
   es = DRb::ExtServ.new(ARGV.shift, ARGV.shift)
   DRb.thread.join
 end

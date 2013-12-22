@@ -60,6 +60,7 @@ The original copyright notice follows.
 */
 
 #include "ruby/ruby.h"
+#include "internal.h"
 
 #include <limits.h>
 #ifdef HAVE_UNISTD_H
@@ -73,6 +74,9 @@ The original copyright notice follows.
 #endif
 #include <math.h>
 #include <errno.h>
+#if defined(HAVE_SYS_TIME_H)
+#include <sys/time.h>
+#endif
 
 #ifdef _WIN32
 # if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0400
@@ -201,12 +205,12 @@ genrand_real(struct MT *mt)
 }
 
 /* generates a random number on [0,1] with 53-bit resolution*/
-static double int_pair_to_real_inclusive(unsigned int a, unsigned int b);
+static double int_pair_to_real_inclusive(uint32_t a, uint32_t b);
 static double
 genrand_real2(struct MT *mt)
 {
     /* mt must be initialized */
-    unsigned int a = genrand_int32(mt), b = genrand_int32(mt);
+    uint32_t a = genrand_int32(mt), b = genrand_int32(mt);
     return int_pair_to_real_inclusive(a, b);
 }
 
@@ -257,42 +261,30 @@ rb_genrand_real(void)
     return genrand_real(mt);
 }
 
-#define BDIGITS(x) (RBIGNUM_DIGITS(x))
-#define BITSPERDIG (SIZEOF_BDIGITS*CHAR_BIT)
-#define BIGRAD ((BDIGIT_DBL)1 << BITSPERDIG)
-#define DIGSPERINT (SIZEOF_INT/SIZEOF_BDIGITS)
-#define BIGUP(x) ((BDIGIT_DBL)(x) << BITSPERDIG)
-#define BIGDN(x) RSHIFT((x),BITSPERDIG)
-#define BIGLO(x) ((BDIGIT)((x) & (BIGRAD-1)))
-#define BDIGMAX ((BDIGIT)-1)
-
-#define roomof(n, m) (int)(((n)+(m)-1) / (m))
-#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 #define SIZEOF_INT32 (31/CHAR_BIT + 1)
 
 static double
-int_pair_to_real_inclusive(unsigned int a, unsigned int b)
+int_pair_to_real_inclusive(uint32_t a, uint32_t b)
 {
-    VALUE x = rb_big_new(roomof(64, BITSPERDIG), 1);
-    VALUE m = rb_big_new(roomof(53, BITSPERDIG), 1);
-    BDIGIT *xd = BDIGITS(x);
-    int i = 0;
+    VALUE x;
+    VALUE m;
+    uint32_t xary[2], mary[2];
     double r;
 
-    xd[i++] = (BDIGIT)b;
-#if BITSPERDIG < 32
-    xd[i++] = (BDIGIT)(b >> BITSPERDIG);
-#endif
-    xd[i++] = (BDIGIT)a;
-#if BITSPERDIG < 32
-    xd[i++] = (BDIGIT)(a >> BITSPERDIG);
-#endif
-    xd = BDIGITS(m);
-#if BITSPERDIG < 53
-    MEMZERO(xd, BDIGIT, roomof(53, BITSPERDIG) - 1);
-#endif
-    xd[53 / BITSPERDIG] = 1 << 53 % BITSPERDIG;
-    xd[0] |= 1;
+    /* (a << 32) | b */
+    xary[0] = a;
+    xary[1] = b;
+    x = rb_integer_unpack(xary, 2, sizeof(uint32_t), 0,
+        INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER|
+        INTEGER_PACK_FORCE_BIGNUM);
+
+    /* (1 << 53) | 1 */
+    mary[0] = 0x00200000;
+    mary[1] = 0x00000001;
+    m = rb_integer_unpack(mary, 2, sizeof(uint32_t), 0,
+        INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER|
+        INTEGER_PACK_FORCE_BIGNUM);
+
     x = rb_big_mul(x, m);
     if (FIXNUM_P(x)) {
 #if CHAR_BIT * SIZEOF_LONG > 64
@@ -302,21 +294,11 @@ int_pair_to_real_inclusive(unsigned int a, unsigned int b)
 #endif
     }
     else {
-#if 64 % BITSPERDIG == 0
-	long len = RBIGNUM_LEN(x);
-	xd = BDIGITS(x);
-	MEMMOVE(xd, xd + 64 / BITSPERDIG, BDIGIT, len - 64 / BITSPERDIG);
-	MEMZERO(xd + len - 64 / BITSPERDIG, BDIGIT, 64 / BITSPERDIG);
-	r = rb_big2dbl(x);
-#else
-	x = rb_big_rshift(x, INT2FIX(64));
-	if (FIXNUM_P(x)) {
-	    r = (double)FIX2ULONG(x);
-	}
-	else {
-	    r = rb_big2dbl(x);
-	}
-#endif
+        uint32_t uary[4];
+        rb_integer_pack(x, uary, numberof(uary), sizeof(uint32_t), 0,
+                INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+        /* r = x >> 64 */
+        r = (double)uary[0] * (0x10000 * (double)0x10000) + (double)uary[1];
     }
     return ldexp(r, -53);
 }
@@ -353,6 +335,7 @@ static const rb_data_type_t random_data_type = {
 	random_free,
 	random_memsize,
     },
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static rb_random_t *
@@ -387,60 +370,30 @@ static VALUE
 rand_init(struct MT *mt, VALUE vseed)
 {
     volatile VALUE seed;
-    long blen = 0;
-    long fixnum_seed;
-    int i, j, len;
-    unsigned int buf0[SIZEOF_LONG / SIZEOF_INT32 * 4], *buf = buf0;
+    uint32_t buf0[SIZEOF_LONG / SIZEOF_INT32 * 4], *buf = buf0;
+    size_t len;
+    int sign;
 
     seed = rb_to_int(vseed);
-    switch (TYPE(seed)) {
-      case T_FIXNUM:
-	len = 1;
-	fixnum_seed = FIX2LONG(seed);
-        if (fixnum_seed < 0)
-            fixnum_seed = -fixnum_seed;
-	buf[0] = (unsigned int)(fixnum_seed & 0xffffffff);
-#if SIZEOF_LONG > SIZEOF_INT32
-	if ((long)(int32_t)fixnum_seed != fixnum_seed) {
-	    if ((buf[1] = (unsigned int)(fixnum_seed >> 32)) != 0) ++len;
-	}
-#endif
-	break;
-      case T_BIGNUM:
-	blen = RBIGNUM_LEN(seed);
-	if (blen == 0) {
-	    len = 1;
-	}
-	else {
-	    if (blen > MT_MAX_STATE * SIZEOF_INT32 / SIZEOF_BDIGITS)
-		blen = MT_MAX_STATE * SIZEOF_INT32 / SIZEOF_BDIGITS;
-	    len = roomof((int)blen * SIZEOF_BDIGITS, SIZEOF_INT32);
-	}
-	/* allocate ints for init_by_array */
-	if (len > numberof(buf0)) buf = ALLOC_N(unsigned int, len);
-	memset(buf, 0, len * sizeof(*buf));
-	len = 0;
-	for (i = (int)(blen-1); 0 <= i; i--) {
-	    j = i * SIZEOF_BDIGITS / SIZEOF_INT32;
-#if SIZEOF_BDIGITS < SIZEOF_INT32
-	    buf[j] <<= BITSPERDIG;
-#endif
-	    buf[j] |= RBIGNUM_DIGITS(seed)[i];
-	    if (!len && buf[j]) len = j;
-	}
-	++len;
-	break;
-      default:
-	rb_raise(rb_eTypeError, "failed to convert %s into Integer",
-		 rb_obj_classname(vseed));
+
+    len = rb_absint_numwords(seed, 32, NULL);
+    if (len > numberof(buf0))
+        buf = ALLOC_N(unsigned int, len);
+    sign = rb_integer_pack(seed, buf, len, sizeof(uint32_t), 0,
+        INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+    if (sign < 0)
+        sign = -sign;
+    if (len == 0) {
+        buf[0] = 0;
+        len = 1;
     }
     if (len <= 1) {
         init_genrand(mt, buf[0]);
     }
     else {
-        if (buf[len-1] == 1) /* remove leading-zero-guard */
+        if (sign != 2 && buf[len-1] == 1) /* remove leading-zero-guard */
             len--;
-        init_by_array(mt, buf, len);
+        init_by_array(mt, buf, (int)len);
     }
     if (buf != buf0) xfree(buf);
     return seed;
@@ -473,7 +426,7 @@ random_init(int argc, VALUE *argv, VALUE obj)
     return obj;
 }
 
-#define DEFAULT_SEED_LEN (DEFAULT_SEED_CNT * (int)sizeof(int))
+#define DEFAULT_SEED_LEN (DEFAULT_SEED_CNT * (int)sizeof(int32_t))
 
 #if defined(S_ISCHR) && !defined(DOSISH)
 # define USE_DEV_URANDOM 1
@@ -482,7 +435,7 @@ random_init(int argc, VALUE *argv, VALUE obj)
 #endif
 
 static void
-fill_random_seed(unsigned int seed[DEFAULT_SEED_CNT])
+fill_random_seed(uint32_t seed[DEFAULT_SEED_CNT])
 {
     static int n = 0;
     struct timeval tv;
@@ -533,28 +486,27 @@ fill_random_seed(unsigned int seed[DEFAULT_SEED_CNT])
 }
 
 static VALUE
-make_seed_value(const void *ptr)
+make_seed_value(const uint32_t *ptr)
 {
-    const long len = DEFAULT_SEED_LEN/SIZEOF_BDIGITS;
-    BDIGIT *digits;
-    NEWOBJ_OF(big, struct RBignum, rb_cBignum, T_BIGNUM);
+    VALUE seed;
+    size_t len;
+    uint32_t buf[DEFAULT_SEED_CNT+1];
 
-    RBIGNUM_SET_SIGN(big, 1);
-    rb_big_resize((VALUE)big, len + 1);
-    digits = RBIGNUM_DIGITS(big);
+    if (ptr[DEFAULT_SEED_CNT-1] <= 1) {
+        /* set leading-zero-guard */
+        MEMCPY(buf, ptr, uint32_t, DEFAULT_SEED_CNT);
+        buf[DEFAULT_SEED_CNT] = 1;
+        ptr = buf;
+        len = DEFAULT_SEED_CNT+1;
+    }
+    else {
+        len = DEFAULT_SEED_CNT;
+    }
 
-    MEMCPY(digits, ptr, char, DEFAULT_SEED_LEN);
+    seed = rb_integer_unpack(ptr, len, sizeof(uint32_t), 0,
+        INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
 
-    /* set leading-zero-guard if need. */
-    digits[len] =
-#if SIZEOF_INT32 / SIZEOF_BDIGITS > 1
-	digits[len-2] <= 1 && digits[len-1] == 0
-#else
-	digits[len-1] <= 1
-#endif
-	? 1 : 0;
-
-    return rb_big_norm((VALUE)big);
+    return seed;
 }
 
 /*
@@ -568,7 +520,7 @@ make_seed_value(const void *ptr)
 static VALUE
 random_seed(void)
 {
-    unsigned int buf[DEFAULT_SEED_CNT];
+    uint32_t buf[DEFAULT_SEED_CNT];
     fill_random_seed(buf);
     return make_seed_value(buf);
 }
@@ -614,23 +566,9 @@ random_copy(VALUE obj, VALUE orig)
 static VALUE
 mt_state(const struct MT *mt)
 {
-    VALUE bigo = rb_big_new(sizeof(mt->state) / sizeof(BDIGIT), 1);
-    BDIGIT *d = RBIGNUM_DIGITS(bigo);
-    int i;
-
-    for (i = 0; i < numberof(mt->state); ++i) {
-	unsigned int x = mt->state[i];
-#if SIZEOF_BDIGITS < SIZEOF_INT32
-	int j;
-	for (j = 0; j < SIZEOF_INT32 / SIZEOF_BDIGITS; ++j) {
-	    *d++ = BIGLO(x);
-	    x = BIGDN(x);
-	}
-#else
-	*d++ = (BDIGIT)x;
-#endif
-    }
-    return rb_big_norm(bigo);
+    return rb_integer_unpack(mt->state, numberof(mt->state),
+        sizeof(*mt->state), 0,
+        INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
 }
 
 /* :nodoc: */
@@ -684,12 +622,12 @@ random_load(VALUE obj, VALUE dump)
     rb_random_t *rnd = get_rnd(obj);
     struct MT *mt = &rnd->mt;
     VALUE state, left = INT2FIX(1), seed = INT2FIX(0);
-    VALUE *ary;
+    const VALUE *ary;
     unsigned long x;
 
     rb_check_copyable(obj, dump);
     Check_Type(dump, T_ARRAY);
-    ary = RARRAY_PTR(dump);
+    ary = RARRAY_CONST_PTR(dump);
     switch (RARRAY_LEN(dump)) {
       case 3:
 	seed = ary[2];
@@ -701,60 +639,9 @@ random_load(VALUE obj, VALUE dump)
       default:
 	rb_raise(rb_eArgError, "wrong dump data");
     }
-    memset(mt->state, 0, sizeof(mt->state));
-    if (FIXNUM_P(state)) {
-	x = FIX2ULONG(state);
-	mt->state[0] = (unsigned int)x;
-#if SIZEOF_LONG / SIZEOF_INT >= 2
-	mt->state[1] = (unsigned int)(x >> BITSPERDIG);
-#endif
-#if SIZEOF_LONG / SIZEOF_INT >= 3
-	mt->state[2] = (unsigned int)(x >> 2 * BITSPERDIG);
-#endif
-#if SIZEOF_LONG / SIZEOF_INT >= 4
-	mt->state[3] = (unsigned int)(x >> 3 * BITSPERDIG);
-#endif
-    }
-    else {
-	BDIGIT *d;
-	long len;
-	Check_Type(state, T_BIGNUM);
-	len = RBIGNUM_LEN(state);
-	if (len > roomof(sizeof(mt->state), SIZEOF_BDIGITS)) {
-	    len = roomof(sizeof(mt->state), SIZEOF_BDIGITS);
-	}
-#if SIZEOF_BDIGITS < SIZEOF_INT
-	else if (len % DIGSPERINT) {
-	    d = RBIGNUM_DIGITS(state) + len;
-# if DIGSPERINT == 2
-	    --len;
-	    x = *--d;
-# else
-	    x = 0;
-	    do {
-		x = (x << BITSPERDIG) | *--d;
-	    } while (--len % DIGSPERINT);
-# endif
-	    mt->state[len / DIGSPERINT] = (unsigned int)x;
-	}
-#endif
-	if (len > 0) {
-	    d = BDIGITS(state) + len;
-	    do {
-		--len;
-		x = *--d;
-# if DIGSPERINT == 2
-		--len;
-		x = (x << BITSPERDIG) | *--d;
-# elif SIZEOF_BDIGITS < SIZEOF_INT
-		do {
-		    x = (x << BITSPERDIG) | *--d;
-		} while (--len % DIGSPERINT);
-# endif
-		mt->state[len / DIGSPERINT] = (unsigned int)x;
-	    } while (len > 0);
-	}
-    }
+    rb_integer_pack(state, mt->state, numberof(mt->state),
+        sizeof(*mt->state), 0,
+        INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
     x = NUM2ULONG(left);
     if (x > numberof(mt->state)) {
 	rb_raise(rb_eArgError, "wrong value");
@@ -795,7 +682,6 @@ rb_f_srand(int argc, VALUE *argv, VALUE obj)
     VALUE seed, old;
     rb_random_t *r = &default_rand;
 
-    rb_secure(4);
     if (argc == 0) {
 	seed = random_seed();
     }
@@ -845,39 +731,33 @@ limited_rand(struct MT *mt, unsigned long limit)
 }
 
 static VALUE
-limited_big_rand(struct MT *mt, struct RBignum *limit)
+limited_big_rand(struct MT *mt, VALUE limit)
 {
     /* mt must be initialized */
-    unsigned long mask, lim, rnd;
-    struct RBignum *val;
-    long i, len;
+
+    uint32_t mask;
+    long i;
     int boundary;
 
-    len = (RBIGNUM_LEN(limit) * SIZEOF_BDIGITS + 3) / 4;
-    val = (struct RBignum *)rb_big_clone((VALUE)limit);
-    RBIGNUM_SET_SIGN(val, 1);
-#if SIZEOF_BDIGITS == 2
-# define BIG_GET32(big,i) \
-    (RBIGNUM_DIGITS(big)[(i)*2] | \
-     ((i)*2+1 < RBIGNUM_LEN(big) ? \
-      (RBIGNUM_DIGITS(big)[(i)*2+1] << 16) : \
-      0))
-# define BIG_SET32(big,i,d) \
-    ((RBIGNUM_DIGITS(big)[(i)*2] = (d) & 0xffff), \
-     ((i)*2+1 < RBIGNUM_LEN(big) ? \
-      (RBIGNUM_DIGITS(big)[(i)*2+1] = (d) >> 16) : \
-      0))
-#else
-    /* SIZEOF_BDIGITS == 4 */
-# define BIG_GET32(big,i) (RBIGNUM_DIGITS(big)[(i)])
-# define BIG_SET32(big,i,d) (RBIGNUM_DIGITS(big)[(i)] = (d))
-#endif
+    size_t len;
+    uint32_t *tmp, *lim_array, *rnd_array;
+    VALUE vtmp;
+    VALUE val;
+
+    len = rb_absint_numwords(limit, 32, NULL);
+    tmp = ALLOCV_N(uint32_t, vtmp, len*2);
+    lim_array = tmp;
+    rnd_array = tmp + len;
+    rb_integer_pack(limit, lim_array, len, sizeof(uint32_t), 0,
+        INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+
   retry:
     mask = 0;
     boundary = 1;
     for (i = len-1; 0 <= i; i--) {
-        lim = BIG_GET32(limit, i);
-        mask = mask ? 0xffffffff : make_mask(lim);
+	uint32_t rnd;
+        uint32_t lim = lim_array[i];
+        mask = mask ? 0xffffffff : (uint32_t)make_mask(lim);
         if (mask) {
             rnd = genrand_int32(mt) & mask;
             if (boundary) {
@@ -890,9 +770,13 @@ limited_big_rand(struct MT *mt, struct RBignum *limit)
         else {
             rnd = 0;
         }
-        BIG_SET32(val, i, (BDIGIT)rnd);
+        rnd_array[i] = rnd;
     }
-    return rb_big_norm((VALUE)val);
+    val = rb_integer_unpack(rnd_array, len, sizeof(uint32_t), 0,
+        INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+    ALLOCV_END(vtmp);
+
+    return val;
 }
 
 /*
@@ -942,14 +826,31 @@ rb_random_real(VALUE obj)
     return genrand_real(&rnd->mt);
 }
 
+static inline VALUE
+ulong_to_num_plus_1(unsigned long n)
+{
+#if HAVE_LONG_LONG
+    return ULL2NUM((LONG_LONG)n+1);
+#else
+    if (n >= ULONG_MAX) {
+	return rb_big_plus(ULONG2NUM(n), INT2FIX(1));
+    }
+    return ULONG2NUM(n+1);
+#endif
+}
+
 unsigned long
 rb_random_ulong_limited(VALUE obj, unsigned long limit)
 {
     rb_random_t *rnd = try_get_rnd(obj);
     if (!rnd) {
-	VALUE lim = ULONG2NUM(limit);
-	VALUE v = rb_funcall2(obj, id_rand, 1, &lim);
+	extern int rb_num_negative_p(VALUE);
+	VALUE lim = ulong_to_num_plus_1(limit);
+	VALUE v = rb_to_int(rb_funcall2(obj, id_rand, 1, &lim));
 	unsigned long r = NUM2ULONG(v);
+	if (rb_num_negative_p(v)) {
+	    rb_raise(rb_eRangeError, "random number too small %ld", r);
+	}
 	if (r > limit) {
 	    rb_raise(rb_eRangeError, "random number too big %ld", r);
 	}
@@ -1039,8 +940,7 @@ rand_int(struct MT *mt, VALUE vmax, int restrictive)
 	if (rb_bigzero_p(vmax)) return Qnil;
 	if (!RBIGNUM_SIGN(vmax)) {
 	    if (restrictive) return Qnil;
-	    vmax = rb_big_clone(vmax);
-	    RBIGNUM_SET_SIGN(vmax, 1);
+            vmax = rb_big_uminus(vmax);
 	}
 	vmax = rb_big_minus(vmax, INT2FIX(1));
 	if (FIXNUM_P(vmax)) {
@@ -1049,7 +949,7 @@ rand_int(struct MT *mt, VALUE vmax, int restrictive)
 	    r = limited_rand(mt, max);
 	    return LONG2NUM(r);
 	}
-	ret = limited_big_rand(mt, RBIGNUM(vmax));
+	ret = limited_big_rand(mt, vmax);
 	RB_GC_GUARD(vmax);
 	return ret;
     }
@@ -1091,7 +991,7 @@ rand_range(struct MT* mt, VALUE range)
 		excl = 0;
 		goto fixnum;
 	    }
-	    v = limited_big_rand(mt, RBIGNUM(vmax));
+	    v = limited_big_rand(mt, vmax);
 	}
     }
     else if (v = rb_check_to_float(vmax), !NIL_P(v)) {
@@ -1273,11 +1173,13 @@ random_equal(VALUE self, VALUE other)
  *
  *   rand        #=> 0.2725926052826416
  *
- * When <tt>max.abs</tt> is greater than or equal to 1, +rand+ returns a
- * pseudo-random integer greater than or equal to 0 and less than
- * <tt>max.to_i.abs</tt>.
+ * When +max.abs+ is greater than or equal to 1, +rand+ returns a pseudo-random
+ * integer greater than or equal to 0 and less than +max.to_i.abs+.
  *
  *   rand(100)   #=> 12
+ *
+ * When +max+ is a Range, +rand+ returns a random number where
+ * range.member?(number) == true.
  *
  * Negative or floating point values for +max+ are allowed, but may give
  * surprising results.
@@ -1350,7 +1252,7 @@ static union {
 } sipseed;
 
 static VALUE
-init_randomseed(struct MT *mt, unsigned int initial[DEFAULT_SEED_CNT])
+init_randomseed(struct MT *mt, uint32_t initial[DEFAULT_SEED_CNT])
 {
     VALUE seed;
     fill_random_seed(initial);
@@ -1364,7 +1266,7 @@ void
 Init_RandomSeed(void)
 {
     rb_random_t *r = &default_rand;
-    unsigned int initial[DEFAULT_SEED_CNT];
+    uint32_t initial[DEFAULT_SEED_CNT];
     struct MT *mt = &r->mt;
     VALUE seed = init_randomseed(mt, initial);
     int i;
@@ -1413,7 +1315,7 @@ Init_RandomSeed2(void)
     VALUE seed = default_rand.seed;
 
     if (RB_TYPE_P(seed, T_BIGNUM)) {
-	RBASIC(seed)->klass = rb_cBignum;
+	rb_obj_reveal(seed, rb_cBignum);
     }
 }
 
@@ -1472,6 +1374,7 @@ Init_Random(void)
     {
 	VALUE rand_default = TypedData_Wrap_Struct(rb_cRandom, &random_data_type, &default_rand);
 	rb_gc_register_mark_object(rand_default);
+	/* Direct access to Ruby's Pseudorandom number generator (PRNG). */
 	rb_define_const(rb_cRandom, "DEFAULT", rand_default);
     }
 

@@ -9,16 +9,8 @@ class TestGemCommandsSearchCommand < Gem::TestCase
     @cmd = Gem::Commands::SearchCommand.new
   end
 
-  def test_execute
-    @cmd.handle_options %w[a]
-
-    use_ui @ui do
-      @cmd.execute
-    end
-
-    assert_match %r%REMOTE GEMS%, @ui.output
-
-    assert_empty @ui.error
+  def test_initialize
+    assert_equal :remote, @cmd.defaults[:domain]
   end
 
 end

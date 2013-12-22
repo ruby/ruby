@@ -1,0 +1,3 @@
+init.o: $(HDRS) $(ruby_headers)
+inspector.o: $(HDRS) $(ruby_headers) $(hdrdir)/ruby/debug.h
+profile_frames.o: $(HDRS) $(ruby_headers) $(hdrdir)/ruby/debug.h

@@ -31,7 +31,7 @@
 
 /* API version */
 #define RUBY_API_VERSION_MAJOR 2
-#define RUBY_API_VERSION_MINOR 0
+#define RUBY_API_VERSION_MINOR 1
 #define RUBY_API_VERSION_TEENY 0
 #define RUBY_API_VERSION_CODE (RUBY_API_VERSION_MAJOR*10000+RUBY_API_VERSION_MINOR*100+RUBY_API_VERSION_TEENY)
 
@@ -43,9 +43,7 @@ extern "C" {
 #endif
 #endif
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+RUBY_SYMBOL_EXPORT_BEGIN
 
 /*
  * Interfaces from extension libraries.
@@ -63,9 +61,7 @@ RUBY_EXTERN const char ruby_description[];
 RUBY_EXTERN const char ruby_copyright[];
 RUBY_EXTERN const char ruby_engine[];
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+RUBY_SYMBOL_EXPORT_END
 
 #if defined(__cplusplus)
 #if 0

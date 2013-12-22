@@ -61,8 +61,8 @@
 #
 # == Implementation:
 #
-# An OpenStruct utilizes Ruby's method lookup structure to and find and define
-# the necessary methods for properties. This is accomplished through the method
+# An OpenStruct utilizes Ruby's method lookup structure to find and define the
+# necessary methods for properties. This is accomplished through the method
 # method_missing and define_method.
 #
 # This should be a consideration if there is a concern about the performance of
@@ -125,7 +125,7 @@ class OpenStruct
   #   data.each_pair.to_a  # => [[:country, "Australia"], [:population, 20000000]]
   #
   def each_pair
-    return to_enum __method__ unless block_given?
+    return to_enum(__method__) { @table.size } unless block_given?
     @table.each_pair{|p| yield p}
   end
 
@@ -152,7 +152,7 @@ class OpenStruct
     begin
       @modifiable = true
     rescue
-      raise TypeError, "can't modify frozen #{self.class}", caller(3)
+      raise RuntimeError, "can't modify frozen #{self.class}", caller(3)
     end
     @table
   end
@@ -184,7 +184,9 @@ class OpenStruct
     elsif len == 0
       @table[mid]
     else
-      raise NoMethodError, "undefined method `#{mid}' for #{self}", caller(1)
+      err = NoMethodError.new "undefined method `#{mid}' for #{self}", mid, args
+      err.set_backtrace caller(1)
+      raise err
     end
   end
 
@@ -220,7 +222,7 @@ class OpenStruct
   #
   def delete_field(name)
     sym = name.to_sym
-    singleton_class.__send__(:remove_method, sym, "#{name}=")
+    singleton_class.__send__(:remove_method, sym, "#{sym}=")
     @table.delete sym
   end
 

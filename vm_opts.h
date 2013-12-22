@@ -29,7 +29,7 @@
  * You can't change these options at runtime.
  */
 
-/* C compiler depend */
+/* C compiler dependent */
 #define OPT_DIRECT_THREADED_CODE     1
 #define OPT_TOKEN_THREADED_CODE      0
 #define OPT_CALL_THREADED_CODE       0

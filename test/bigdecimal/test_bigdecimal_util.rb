@@ -14,9 +14,13 @@ class TestBigDecimalUtil < Test::Unit::TestCase
   end
 
   def test_Float_to_d_without_precision
-    delta = 1.0/10**(Float::DIG + 1)
-    assert_in_delta(BigDecimal(0.5, Float::DIG+1), 0.5.to_d, delta)
-    assert_in_delta(BigDecimal(355.0/113.0, Float::DIG+1), (355.0/113.0).to_d, delta)
+    delta = 1.0/10**(Float::DIG)
+    assert_in_delta(BigDecimal(0.5, Float::DIG), 0.5.to_d, delta)
+    assert_in_delta(BigDecimal(355.0/113.0, Float::DIG), (355.0/113.0).to_d, delta)
+    assert_equal(9.05.to_d.to_s('F'), "9.05")
+
+    bug9214 = '[ruby-core:58858]'
+    assert_equal((-0.0).to_d.sign, -1, bug9214)
   end
 
   def test_Float_to_d_with_precision
@@ -24,6 +28,9 @@ class TestBigDecimalUtil < Test::Unit::TestCase
     delta = 1.0/10**(digits)
     assert_in_delta(BigDecimal(0.5, 5), 0.5.to_d(digits), delta)
     assert_in_delta(BigDecimal(355.0/113.0, 5), (355.0/113.0).to_d(digits), delta)
+
+    bug9214 = '[ruby-core:58858]'
+    assert_equal((-0.0).to_d(digits).sign, -1, bug9214)
   end
 
   def test_Rational_to_d

@@ -55,28 +55,29 @@ ruby_scan_hex(const char *start, size_t len, size_t *retlen)
     return retval;
 }
 
+const signed char ruby_digit36_to_number_table[] = {
+    /*     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
+    /*0*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    /*1*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    /*2*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    /*3*/  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,-1,-1,-1,-1,-1,-1,
+    /*4*/ -1,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,
+    /*5*/ 25,26,27,28,29,30,31,32,33,34,35,-1,-1,-1,-1,-1,
+    /*6*/ -1,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,
+    /*7*/ 25,26,27,28,29,30,31,32,33,34,35,-1,-1,-1,-1,-1,
+    /*8*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    /*9*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    /*a*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    /*b*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    /*c*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    /*d*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    /*e*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    /*f*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+};
+
 static unsigned long
 scan_digits(const char *str, int base, size_t *retlen, int *overflow)
 {
-    static signed char table[] = {
-        /*     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
-        /*0*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-        /*1*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-        /*2*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-        /*3*/  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,-1,-1,-1,-1,-1,-1,
-        /*4*/ -1,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,
-        /*5*/ 25,26,27,28,29,30,31,32,33,34,35,-1,-1,-1,-1,-1,
-        /*6*/ -1,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,
-        /*7*/ 25,26,27,28,29,30,31,32,33,34,35,-1,-1,-1,-1,-1,
-        /*8*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-        /*9*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-        /*a*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-        /*b*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-        /*c*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-        /*d*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-        /*e*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-        /*f*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-    };
 
     const char *start = str;
     unsigned long ret = 0, x;
@@ -85,7 +86,7 @@ scan_digits(const char *str, int base, size_t *retlen, int *overflow)
     *overflow = 0;
 
     while ((c = (unsigned char)*str++) != '\0') {
-        int d = table[c];
+        int d = ruby_digit36_to_number_table[c];
         if (d == -1 || base <= d) {
             *retlen = (str-1) - start;
             return ret;
@@ -309,7 +310,9 @@ ruby_qsort(void* base, const size_t nel, const size_t size, cmpfunc_t *cmp, void
   char *L = base;                    	/* left end of current region */
   char *R = (char*)base + size*(nel-1); /* right end of current region */
   size_t chklim = 63;                   /* threshold of ordering element check */
-  stack_node stack[32], *top = stack;   /* 32 is enough for 32bit CPU */
+  enum {size_bits = sizeof(size) * CHAR_BIT};
+  stack_node stack[size_bits];          /* enough for size_t size */
+  stack_node *top = stack;
   int mmkind;
   size_t high, low, n;
 
@@ -715,6 +718,11 @@ extern void *MALLOC(size_t);
 #else
 #define MALLOC malloc
 #endif
+#ifdef FREE
+extern void FREE(void*);
+#else
+#define FREE free
+#endif
 
 #ifndef Omit_Private_Memory
 #ifndef PRIVATE_MEM
@@ -1005,7 +1013,7 @@ Balloc(int k)
 #endif
 
     ACQUIRE_DTOA_LOCK(0);
-    if ((rv = freelist[k]) != 0) {
+    if (k <= Kmax && (rv = freelist[k]) != 0) {
         freelist[k] = rv->next;
     }
     else {
@@ -1015,7 +1023,7 @@ Balloc(int k)
 #else
         len = (sizeof(Bigint) + (x-1)*sizeof(ULong) + sizeof(double) - 1)
                 /sizeof(double);
-        if (pmem_next - private_mem + len <= PRIVATE_mem) {
+        if (k <= Kmax && pmem_next - private_mem + len <= PRIVATE_mem) {
             rv = (Bigint*)pmem_next;
             pmem_next += len;
         }
@@ -1034,6 +1042,10 @@ static void
 Bfree(Bigint *v)
 {
     if (v) {
+        if (v->k > Kmax) {
+            FREE(v);
+            return;
+        }
         ACQUIRE_DTOA_LOCK(0);
         v->next = freelist[v->k];
         freelist[v->k] = v;
@@ -2097,6 +2109,7 @@ break2:
         for (; c >= '0' && c <= '9'; c = *++s) {
 have_dig:
             nz++;
+            if (nf > DBL_DIG * 4) continue;
             if (c -= '0') {
                 nf += nz;
                 for (i = 1; i < nz; i++)
@@ -3878,13 +3891,10 @@ ruby_hdtoa(double d, const char *xdigs, int ndigits, int *decpt, int *sign,
 	/* Round to the desired number of digits. */
 	if (SIGFIGS > ndigits && ndigits > 0) {
 		float redux = 1.0f;
-		volatile double d;
 		int offset = 4 * ndigits + DBL_MAX_EXP - 4 - DBL_MANT_DIG;
 		dexp_set(u, offset);
-		d = u.d;
-		d += redux;
-		d -= redux;
-		u.d = d;
+		u.d += redux;
+		u.d -= redux;
 		*decpt += dexp_get(u) - offset;
 	}
 

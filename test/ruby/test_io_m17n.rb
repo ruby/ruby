@@ -105,6 +105,42 @@ EOT
     }
   end
 
+  def test_open_r_ascii8bit
+    with_tmpdir {
+      generate_file('tmp', "")
+      EnvUtil.with_default_external(Encoding::ASCII_8BIT) do
+        EnvUtil.with_default_internal(Encoding::UTF_8) do
+          open("tmp", "r") {|f|
+            assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+            assert_equal(nil, f.internal_encoding)
+          }
+          open("tmp", "r:ascii-8bit") {|f|
+            assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+            assert_equal(nil, f.internal_encoding)
+          }
+          open("tmp", "r:ascii-8bit:utf-16") {|f|
+            assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+            assert_equal(nil, f.internal_encoding)
+          }
+        end
+        EnvUtil.with_default_internal(nil) do
+          open("tmp", "r") {|f|
+            assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+            assert_equal(nil, f.internal_encoding)
+          }
+          open("tmp", "r:ascii-8bit") {|f|
+            assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+            assert_equal(nil, f.internal_encoding)
+          }
+          open("tmp", "r:ascii-8bit:utf-16") {|f|
+            assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+            assert_equal(nil, f.internal_encoding)
+          }
+        end
+      end
+    }
+  end
+
   def test_open_r_enc_in_opt
     with_tmpdir {
       generate_file('tmp', "")
@@ -479,14 +515,13 @@ EOT
     with_tmpdir {
       src = "\u3042"
       generate_file('tmp', src)
-      defext = Encoding.default_external
-      Encoding.default_external = Encoding::UTF_8
-      open("tmp", "rt") {|f|
-        s = f.getc
-        assert_equal(true, s.valid_encoding?)
-        assert_equal("\u3042", s)
-      }
-      Encoding.default_external = defext
+      EnvUtil.with_default_external(Encoding::UTF_8) do
+        open("tmp", "rt") {|f|
+          s = f.getc
+          assert_equal(true, s.valid_encoding?)
+          assert_equal("\u3042", s)
+        }
+      end
     }
   end
 
@@ -494,17 +529,16 @@ EOT
     with_tmpdir {
       src = "\xE3\x81"
       generate_file('tmp', src)
-      defext = Encoding.default_external
-      Encoding.default_external = Encoding::UTF_8
-      open("tmp", "rt") {|f|
-        s = f.getc
-        assert_equal(false, s.valid_encoding?)
-        assert_equal("\xE3".force_encoding("UTF-8"), s)
-        s = f.getc
-        assert_equal(false, s.valid_encoding?)
-        assert_equal("\x81".force_encoding("UTF-8"), s)
-      }
-      Encoding.default_external = defext
+      EnvUtil.with_default_external(Encoding::UTF_8) do
+        open("tmp", "rt") {|f|
+          s = f.getc
+          assert_equal(false, s.valid_encoding?)
+          assert_equal("\xE3".force_encoding("UTF-8"), s)
+          s = f.getc
+          assert_equal(false, s.valid_encoding?)
+          assert_equal("\x81".force_encoding("UTF-8"), s)
+        }
+      end
     }
   end
 
@@ -729,10 +763,12 @@ EOT
            assert_equal(eucjp, r.read)
          end)
 
-    e = assert_raise(ArgumentError) {with_pipe("UTF-8", "UTF-8".encode("UTF-32BE")) {}}
-    assert_match(/invalid name encoding/, e.message)
-    e = assert_raise(ArgumentError) {with_pipe("UTF-8".encode("UTF-32BE")) {}}
-    assert_match(/invalid name encoding/, e.message)
+    assert_raise_with_message(ArgumentError, /invalid name encoding/) do
+      with_pipe("UTF-8", "UTF-8".encode("UTF-32BE")) {}
+    end
+    assert_raise_with_message(ArgumentError, /invalid name encoding/) do
+      with_pipe("UTF-8".encode("UTF-32BE")) {}
+    end
 
     ENCS.each {|enc|
       pipe(enc,
@@ -1406,9 +1442,12 @@ EOT
   end
 
   def test_both_textmode_binmode
-    assert_raise(ArgumentError) { open("not-exist", "r", :textmode=>true, :binmode=>true) }
-    assert_raise(ArgumentError) { open("not-exist", "rt", :binmode=>true) }
-    assert_raise(ArgumentError) { open("not-exist", "rb", :textmode=>true) }
+    bug5918 = '[ruby-core:42199]'
+    assert_raise(ArgumentError, bug5918) { open("not-exist", "r", :textmode=>true, :binmode=>true) }
+    assert_raise(ArgumentError, bug5918) { open("not-exist", "rt", :binmode=>true) }
+    assert_raise(ArgumentError, bug5918) { open("not-exist", "rt", :binmode=>false) }
+    assert_raise(ArgumentError, bug5918) { open("not-exist", "rb", :textmode=>true) }
+    assert_raise(ArgumentError, bug5918) { open("not-exist", "rb", :textmode=>false) }
   end
 
   def test_textmode_decode_universal_newline_read
@@ -1678,7 +1717,7 @@ EOT
     u16 = "\x85\x35\0\r\x00\xa2\0\r\0\n\0\n".force_encoding("utf-16be")
     i = "\e$B\x42\x22\e(B\r\e$B\x21\x71\e(B\r\n\n".force_encoding("iso-2022-jp")
     n = system_newline
-    un = n.encode("utf-16be").force_encoding("ascii-8bit")
+    n.encode("utf-16be").force_encoding("ascii-8bit")
 
     assert_write("a\rb\r#{n}c#{n}", "wt", a)
     assert_write("\xc2\xa2", "wt", e)
@@ -1996,6 +2035,7 @@ EOT
   def test_strip_bom
     with_tmpdir {
       text = "\uFEFFa"
+      stripped = "a"
       %w/UTF-8 UTF-16BE UTF-16LE UTF-32BE UTF-32LE/.each do |name|
         path = '%s-bom.txt' % name
         content = text.encode(name)
@@ -2003,11 +2043,32 @@ EOT
         result = File.read(path, mode: 'rb:BOM|UTF-8')
         assert_equal(content[1].force_encoding("ascii-8bit"),
                      result.force_encoding("ascii-8bit"))
+        result = File.read(path, mode: 'rb:BOM|UTF-8:UTF-8')
+        assert_equal(Encoding::UTF_8, result.encoding)
+        assert_equal(stripped, result)
       end
 
       bug3407 = '[ruby-core:30641]'
-      result = File.read('UTF-8-bom.txt', encoding: 'BOM|UTF-8')
+      path = 'UTF-8-bom.txt'
+      result = File.read(path, encoding: 'BOM|UTF-8')
       assert_equal("a", result.force_encoding("ascii-8bit"), bug3407)
+
+      bug8323 = '[ruby-core:54563] [Bug #8323]'
+      expected = "a\xff".force_encoding("utf-8")
+      open(path, 'ab') {|f| f.write("\xff")}
+      result = File.read(path, encoding: 'BOM|UTF-8')
+      assert_not_predicate(result, :valid_encoding?, bug8323)
+      assert_equal(expected, result, bug8323)
+      result = File.read(path, encoding: 'BOM|UTF-8:UTF-8')
+      assert_not_predicate(result, :valid_encoding?, bug8323)
+      assert_equal(expected, result, bug8323)
+
+      path = 'ascii.txt'
+      generate_file(path, stripped)
+      result = File.read(path, encoding: 'BOM|UTF-8')
+      assert_equal(stripped, result, bug8323)
+      result = File.read(path, encoding: 'BOM|UTF-8:UTF-8')
+      assert_equal(stripped, result, bug8323)
     }
   end
 
@@ -2038,7 +2099,7 @@ EOT
       open("ff", "w") {|f| }
       open("ff", "rt") {|f|
         f.ungetc "a"
-        assert(!f.eof?, "[ruby-dev:40506] (3)")
+        assert_not_predicate(f, :eof?, "[ruby-dev:40506] (3)")
       }
     }
   end
@@ -2137,7 +2198,17 @@ EOT
       open("a", "wb") {|f| f.puts "a"}
       open("a", "rt") {|f| f.getc}
     }
-    assert(c.ascii_only?, "should be ascii_only #{bug4557}")
+    assert_predicate(c, :ascii_only?, bug4557)
+  end
+
+  def test_getc_conversion
+    bug8516 = '[ruby-core:55444] [Bug #8516]'
+    c = with_tmpdir {
+      open("a", "wb") {|f| f.putc "\xe1"}
+      open("a", "r:iso-8859-1:utf-8") {|f| f.getc}
+    }
+    assert_not_predicate(c, :ascii_only?, bug8516)
+    assert_equal(1, c.size, bug8516)
   end
 
   def test_default_mode_on_dosish

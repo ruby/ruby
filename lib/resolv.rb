@@ -9,7 +9,7 @@ rescue LoadError
 end
 
 # Resolv is a thread-aware DNS resolver library written in Ruby.  Resolv can
-# handle multiple DNS requests concurrently without blocking the entire ruby
+# handle multiple DNS requests concurrently without blocking the entire Ruby
 # interpreter.
 #
 # See also resolv-replace.rb to replace the libc resolver with Resolv.
@@ -165,10 +165,11 @@ class Resolv
   # Resolv::Hosts is a hostname resolver that uses the system hosts file.
 
   class Hosts
-    if /mswin|mingw|bccwin/ =~ RUBY_PLATFORM
+    begin
+      raise LoadError unless /mswin|mingw|cygwin/ =~ RUBY_PLATFORM
       require 'win32/resolv'
       DefaultFileName = Win32::Resolv.get_hosts_path
-    else
+    rescue LoadError
       DefaultFileName = '/etc/hosts'
     end
 
@@ -506,6 +507,12 @@ class Resolv
     # #getresource for argument details.
 
     def each_resource(name, typeclass, &proc)
+      fetch_resource(name, typeclass) {|reply, reply_name|
+        extract_resources(reply, reply_name, typeclass, &proc)
+      }
+    end
+
+    def fetch_resource(name, typeclass)
       lazy_initialize
       requester = make_udp_requester
       senders = {}
@@ -532,7 +539,7 @@ class Resolv
               # response will not fit in an untruncated UDP packet.
               redo
             else
-              extract_resources(reply, reply_name, typeclass, &proc)
+              yield(reply, reply_name)
             end
             return
           when RCode::NXDomain
@@ -645,7 +652,7 @@ class Resolv
       begin
         port = rangerand(1024..65535)
         udpsock.bind(bind_host, port)
-      rescue Errno::EADDRINUSE
+      rescue Errno::EADDRINUSE, Errno::EACCES
         retry
       end
     end
@@ -659,7 +666,12 @@ class Resolv
       def request(sender, tout)
         start = Time.now
         timelimit = start + tout
-        sender.send
+        begin
+          sender.send
+        rescue Errno::EHOSTUNREACH
+          # multi-homed IPv6 may generate this
+          raise ResolvTimeout
+        end
         while true
           before_select = Time.now
           timeout = timelimit - before_select
@@ -685,13 +697,17 @@ class Resolv
           rescue DecodeError
             next # broken DNS message ignored
           end
-          if s = @senders[[from,msg.id]]
+          if s = sender_for(from, msg)
             break
           else
             # unexpected DNS message ignored
           end
         end
         return msg, s.data
+      end
+
+      def sender_for(addr, msg)
+        @senders[[addr,msg.id]]
       end
 
       def close
@@ -814,6 +830,21 @@ class Resolv
         end
       end
 
+      class MDNSOneShot < UnconnectedUDP # :nodoc:
+        def sender(msg, data, host, port=Port)
+          id = DNS.allocate_request_id(host, port)
+          request = msg.encode
+          request[0,2] = [id].pack('n')
+          sock = @socks_hash[host.index(':') ? "::" : "0.0.0.0"]
+          return @senders[id] =
+            UnconnectedUDP::Sender.new(request, data, sock, host, port)
+        end
+
+        def sender_for(addr, msg)
+          @senders[msg.id]
+        end
+      end
+
       class TCP < Requester # :nodoc:
         def initialize(host, port=Port)
           super()
@@ -877,7 +908,7 @@ class Resolv
           values = Array(values)
           values.each do |t|
             Numeric === t or raise ArgumentError, "#{t.inspect} is not numeric"
-            t > 0.0 or raise ArgumentError, "timeout=#{t} must be postive"
+            t > 0.0 or raise ArgumentError, "timeout=#{t} must be positive"
           end
           @timeouts = values
         else
@@ -1949,6 +1980,97 @@ class Resolv
       end
 
       ##
+      # Location resource
+
+      class LOC < Resource
+
+        TypeValue = 29 # :nodoc:
+
+        def initialize(version, ssize, hprecision, vprecision, latitude, longitude, altitude)
+          @version    = version
+          @ssize      = Resolv::LOC::Size.create(ssize)
+          @hprecision = Resolv::LOC::Size.create(hprecision)
+          @vprecision = Resolv::LOC::Size.create(vprecision)
+          @latitude   = Resolv::LOC::Coord.create(latitude)
+          @longitude  = Resolv::LOC::Coord.create(longitude)
+          @altitude   = Resolv::LOC::Alt.create(altitude)
+        end
+
+        ##
+        # Returns the version value for this LOC record which should always be 00
+
+        attr_reader :version
+
+        ##
+        # The spherical size of this LOC
+        # in meters using scientific notation as 2 integers of XeY
+
+        attr_reader :ssize
+
+        ##
+        # The horizontal precision using ssize type values
+        # in meters using scientific notation as 2 integers of XeY
+        # for precision use value/2 e.g. 2m = +/-1m
+
+        attr_reader :hprecision
+
+        ##
+        # The vertical precision using ssize type values
+        # in meters using scientific notation as 2 integers of XeY
+        # for precision use value/2 e.g. 2m = +/-1m
+
+        attr_reader :vprecision
+
+        ##
+        # The latitude for this LOC where 2**31 is the equator
+        # in thousandths of an arc second as an unsigned 32bit integer
+
+        attr_reader :latitude
+
+        ##
+        # The longitude for this LOC where 2**31 is the prime meridian
+        # in thousandths of an arc second as an unsigned 32bit integer
+
+        attr_reader :longitude
+
+        ##
+        # The altitude of the LOC above a reference sphere whose surface sits 100km below the WGS84 spheroid
+        # in centimeters as an unsigned 32bit integer
+
+        attr_reader :altitude
+
+
+        def encode_rdata(msg) # :nodoc:
+          msg.put_bytes(@version)
+          msg.put_bytes(@ssize.scalar)
+          msg.put_bytes(@hprecision.scalar)
+          msg.put_bytes(@vprecision.scalar)
+          msg.put_bytes(@latitude.coordinates)
+          msg.put_bytes(@longitude.coordinates)
+          msg.put_bytes(@altitude.altitude)
+        end
+
+        def self.decode_rdata(msg) # :nodoc:
+          version    = msg.get_bytes(1)
+          ssize      = msg.get_bytes(1)
+          hprecision = msg.get_bytes(1)
+          vprecision = msg.get_bytes(1)
+          latitude   = msg.get_bytes(4)
+          longitude  = msg.get_bytes(4)
+          altitude   = msg.get_bytes(4)
+          return self.new(
+            version,
+            Resolv::LOC::Size.new(ssize),
+            Resolv::LOC::Size.new(hprecision),
+            Resolv::LOC::Size.new(vprecision),
+            Resolv::LOC::Coord.new(latitude,"lat"),
+            Resolv::LOC::Coord.new(longitude,"lon"),
+            Resolv::LOC::Alt.new(altitude)
+          )
+        end
+      end
+
+      ##
       # A Query type requesting any RR.
 
       class ANY < Query
@@ -1956,7 +2078,7 @@ class Resolv
       end
 
       ClassInsensitiveTypes = [ # :nodoc:
-        NS, CNAME, SOA, PTR, HINFO, MINFO, MX, TXT, ANY
+        NS, CNAME, SOA, PTR, HINFO, MINFO, MX, TXT, LOC, ANY
       ]
 
       ##
@@ -2382,9 +2504,311 @@ class Resolv
   end
 
   ##
+  # Resolv::MDNS is a one-shot Multicast DNS (mDNS) resolver.  It blindly
+  # makes queries to the mDNS addresses without understanding anything about
+  # multicast ports.
+  #
+  # Information taken form the following places:
+  #
+  # * RFC 6762
+
+  class MDNS < DNS
+
+    ##
+    # Default mDNS Port
+
+    Port = 5353
+
+    ##
+    # Default IPv4 mDNS address
+
+    AddressV4 = '224.0.0.251'
+
+    ##
+    # Default IPv6 mDNS address
+
+    AddressV6 = 'ff02::fb'
+
+    ##
+    # Default mDNS addresses
+
+    Addresses = [
+      [AddressV4, Port],
+      [AddressV6, Port],
+    ]
+
+    ##
+    # Creates a new one-shot Multicast DNS (mDNS) resolver.
+    #
+    # +config_info+ can be:
+    #
+    # nil::
+    #   Uses the default mDNS addresses
+    #
+    # Hash::
+    #   Must contain :nameserver or :nameserver_port like
+    #   Resolv::DNS#initialize.
+
+    def initialize(config_info=nil)
+      if config_info then
+        super({ nameserver_port: Addresses }.merge(config_info))
+      else
+        super(nameserver_port: Addresses)
+      end
+    end
+
+    ##
+    # Iterates over all IP addresses for +name+ retrieved from the mDNS
+    # resolver, provided name ends with "local".  If the name does not end in
+    # "local" no records will be returned.
+    #
+    # +name+ can be a Resolv::DNS::Name or a String.  Retrieved addresses will
+    # be a Resolv::IPv4 or Resolv::IPv6
+
+    def each_address(name)
+      name = Resolv::DNS::Name.create(name)
+
+      return unless name.to_a.last == 'local'
+
+      super(name)
+    end
+
+    def make_udp_requester # :nodoc:
+      nameserver_port = @config.nameserver_port
+      Requester::MDNSOneShot.new(*nameserver_port)
+    end
+
+  end
+
+  module LOC
+
+    ##
+    # A Resolv::LOC::Size
+
+    class Size
+
+      Regex = /^(\d+\.*\d*)[m]$/
+
+      ##
+      # Creates a new LOC::Size from +arg+ which may be:
+      #
+      # LOC::Size:: returns +arg+.
+      # String:: +arg+ must match the LOC::Size::Regex constant
+
+      def self.create(arg)
+        case arg
+        when Size
+          return arg
+        when String
+          scalar = ''
+          if Regex =~ arg
+            scalar = [(($1.to_f*(1e2)).to_i.to_s[0].to_i*(2**4)+(($1.to_f*(1e2)).to_i.to_s.length-1))].pack("C")
+          else
+            raise ArgumentError.new("not a properly formed Size string: " + arg)
+          end
+          return Size.new(scalar)
+        else
+          raise ArgumentError.new("cannot interpret as Size: #{arg.inspect}")
+        end
+      end
+
+      def initialize(scalar)
+        @scalar = scalar
+      end
+
+      ##
+      # The raw size
+
+      attr_reader :scalar
+
+      def to_s # :nodoc:
+        s = @scalar.unpack("H2").join.to_s
+        return ((s[0].to_i)*(10**(s[1].to_i-2))).to_s << "m"
+      end
+
+      def inspect # :nodoc:
+        return "#<#{self.class} #{self.to_s}>"
+      end
+
+      def ==(other) # :nodoc:
+        return @scalar == other.scalar
+      end
+
+      def eql?(other) # :nodoc:
+        return self == other
+      end
+
+      def hash # :nodoc:
+        return @scalar.hash
+      end
+
+    end
+
+    ##
+    # A Resolv::LOC::Coord
+
+    class Coord
+
+      Regex = /^(\d+)\s(\d+)\s(\d+\.\d+)\s([NESW])$/
+
+      ##
+      # Creates a new LOC::Coord from +arg+ which may be:
+      #
+      # LOC::Coord:: returns +arg+.
+      # String:: +arg+ must match the LOC::Coord::Regex constant
+
+      def self.create(arg)
+        case arg
+        when Coord
+          return arg
+        when String
+          coordinates = ''
+          if Regex =~ arg &&  $1<180
+            hemi = ($4[/([NE])/,1]) || ($4[/([SW])/,1]) ? 1 : -1
+            coordinates = [(($1.to_i*(36e5))+($2.to_i*(6e4))+($3.to_f*(1e3)))*hemi+(2**31)].pack("N")
+            (orientation ||= '') << $4[[/NS/],1] ? 'lat' : 'lon'
+          else
+            raise ArgumentError.new("not a properly formed Coord string: " + arg)
+          end
+          return Coord.new(coordinates,orientation)
+        else
+          raise ArgumentError.new("cannot interpret as Coord: #{arg.inspect}")
+        end
+      end
+
+      def initialize(coordinates,orientation)
+        unless coordinates.kind_of?(String)
+          raise ArgumentError.new("Coord must be a 32bit unsigned integer in hex format: #{coordinates.inspect}")
+        end
+        unless orientation.kind_of?(String) && orientation[/^lon$|^lat$/]
+          raise ArgumentError.new('Coord expects orientation to be a String argument of "lat" or "lon"')
+        end
+        @coordinates = coordinates
+        @orientation = orientation
+      end
+
+      ##
+      # The raw coordinates
+
+      attr_reader :coordinates
+
+      ## The orientation of the hemisphere as 'lat' or 'lon'
+
+      attr_reader :orientation
+
+      def to_s # :nodoc:
+          c = @coordinates.unpack("N").join.to_i
+          val      = (c - (2**31)).abs
+          fracsecs = (val % 1e3).to_i.to_s
+          val      = val / 1e3
+          secs     = (val % 60).to_i.to_s
+          val      = val / 60
+          mins     = (val % 60).to_i.to_s
+          degs     = (val / 60).to_i.to_s
+          posi = (c >= 2**31)
+          case posi
+          when true
+            hemi = @orientation[/^lat$/] ? "N" : "E"
+          else
+            hemi = @orientation[/^lon$/] ? "W" : "S"
+          end
+          return degs << " " << mins << " " << secs << "." << fracsecs << " " << hemi
+      end
+
+      def inspect # :nodoc:
+        return "#<#{self.class} #{self.to_s}>"
+      end
+
+      def ==(other) # :nodoc:
+        return @coordinates == other.coordinates
+      end
+
+      def eql?(other) # :nodoc:
+        return self == other
+      end
+
+      def hash # :nodoc:
+        return @coordinates.hash
+      end
+
+    end
+
+    ##
+    # A Resolv::LOC::Alt
+
+    class Alt
+
+      Regex = /^([+-]*\d+\.*\d*)[m]$/
+
+      ##
+      # Creates a new LOC::Alt from +arg+ which may be:
+      #
+      # LOC::Alt:: returns +arg+.
+      # String:: +arg+ must match the LOC::Alt::Regex constant
+
+      def self.create(arg)
+        case arg
+        when Alt
+          return arg
+        when String
+          altitude = ''
+          if Regex =~ arg
+            altitude = [($1.to_f*(1e2))+(1e7)].pack("N")
+          else
+            raise ArgumentError.new("not a properly formed Alt string: " + arg)
+          end
+          return Alt.new(altitude)
+        else
+          raise ArgumentError.new("cannot interpret as Alt: #{arg.inspect}")
+        end
+      end
+
+      def initialize(altitude)
+        @altitude = altitude
+      end
+
+      ##
+      # The raw altitude
+
+      attr_reader :altitude
+
+      def to_s # :nodoc:
+        a = @altitude.unpack("N").join.to_i
+        return ((a.to_f/1e2)-1e5).to_s + "m"
+      end
+
+      def inspect # :nodoc:
+        return "#<#{self.class} #{self.to_s}>"
+      end
+
+      def ==(other) # :nodoc:
+        return @altitude == other.altitude
+      end
+
+      def eql?(other) # :nodoc:
+        return self == other
+      end
+
+      def hash # :nodoc:
+        return @altitude.hash
+      end
+
+    end
+
+  end
+
+  ##
   # Default resolver to use for Resolv class methods.
 
   DefaultResolver = self.new
+
+  ##
+  # Replaces the resolvers in the default resolver with +new_resolvers+.  This
+  # allows resolvers to be changed for resolv-replace.
+
+  def DefaultResolver.replace_resolvers new_resolvers
+    @resolvers = new_resolvers
+  end
 
   ##
   # Address Regexp to use for matching IP addresses.

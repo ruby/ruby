@@ -42,7 +42,7 @@ Sun Aug  3 23:56:50 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sun Aug  3 22:07:47 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tkentry.rb: support 'validatecommand' option of 
+	* ext/tk/lib/tkentry.rb: support 'validatecommand' option of
 	  TkEntry/TkSpinbox widget
 
 	* ext/tk/sample/{demos-en,demos-jp}/spin.rb: add
@@ -60,7 +60,7 @@ Sun Aug  3 18:03:44 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 Sun Aug  3 08:53:06 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/sample/{demos-en,demos-jp}/image3.rb: add 
+	* ext/tk/sample/{demos-en,demos-jp}/image3.rb: add
 
 	* ext/tk/lib/tkcanvas.rb: bug fix on Tk object ID management
 
@@ -84,7 +84,7 @@ Sat Aug  2 23:51:52 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Sat Aug  2 09:58:13 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk.rb: bug fix --- TkGrid failed to treat 
+	* ext/tk/lib/tk.rb: bug fix --- TkGrid failed to treat
 	  RELATIVE PLACEMENT
 
 	* ext/tk/sample/demos-en/, demos-jp/: add or modify some
@@ -122,7 +122,7 @@ Sat Aug  2 14:02:39 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sat Aug  2 09:58:13 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk.rb: bug fix --- forgot to entry a widget class 
+	* ext/tk/lib/tk.rb: bug fix --- forgot to entry a widget class
 	  name of 'labelframe' widget
 
 	* ext/tk/sample/{demos-en,demos-jp}/{labelframe.rb,paned1.rb,
@@ -238,7 +238,7 @@ Fri Aug  1 09:54:38 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Aug  1 04:58:55 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk.rb: bug fix --- forget to eval given block to 
+	* ext/tk/lib/tk.rb: bug fix --- forget to eval given block to
 	  TkRoot.new method
 
 	* ext/tk/sample/tkoptdb-safeTk.rb: new sample script
@@ -255,13 +255,13 @@ Thu Jul 31 23:44:00 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 Thu Jul 31 23:04:45 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/sample/resource.en, ext/tk/sample/resource.jp: 
+	* ext/tk/sample/resource.en, ext/tk/sample/resource.jp:
 	  wrong resource file format
 
-	* ext/tk/lib/tk.rb: add Tk::Encoding.{encoding_convertfrom, 
+	* ext/tk/lib/tk.rb: add Tk::Encoding.{encoding_convertfrom,
 	  encoding_convertto}
 
-	* ext/tk/lib/tk.rb: add TkOptionDB.read_with_encoding to read 
+	* ext/tk/lib/tk.rb: add TkOptionDB.read_with_encoding to read
 	  non-utf8 resource file
 
 Thu Jul 31 23:02:47 2003  NAKAMURA Usaku <usa@ruby-lang.org>
@@ -274,15 +274,15 @@ Thu Jul 31 20:52:40 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tk.rb: (IMPORTANT BUG FIX) scan of event keywords
 	  doesn't work on recent versions of Tck/Tk
 
-	* ext/tk/lib/tk.rb: initialize error of instance variable on 
+	* ext/tk/lib/tk.rb: initialize error of instance variable on
 	  TkComposite
 
-	* ext/tk/lib/multi-tk.rb: initialize error on encoding-system on 
+	* ext/tk/lib/multi-tk.rb: initialize error on encoding-system on
 	  MultiTkIp
 
 	* ext/tk/lib/tk.rb: trouble on destroying widgets
 
-	* ext/tk/sample/demos-en/, demos-jp/: add JP and EN version of 
+	* ext/tk/sample/demos-en/, demos-jp/: add JP and EN version of
 	  Ruby/Tk widget demos
 
 Thu Jul 31 15:25:12 2003  NAKAMURA Usaku <usa@ruby-lang.org>
@@ -311,13 +311,13 @@ Thu Jul 31 08:18:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
 Thu Jul 31 07:59:18 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk.rb: wrap the command-proc of TkScale --- pass 
+	* ext/tk/lib/tk.rb: wrap the command-proc of TkScale --- pass
 	  the numeric object to the proc
 
-	* ext/tk/lib/tk.rb: better support for widgets created on 
+	* ext/tk/lib/tk.rb: better support for widgets created on
 	  Tk interpreter (without Ruby)
 
-	* ext/tk/lib/multi-tk.rb: a little more stable on Multiple Tk 
+	* ext/tk/lib/multi-tk.rb: a little more stable on Multiple Tk
 	  interpreters running
 
 Thu Jul 31 00:17:19 2003  Shugo Maeda  <shugo@ruby-lang.org>
@@ -411,17 +411,17 @@ Wed Jul 30 07:23:14 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkentry.rb: fix lack of methods for TkEntry
 
-	* ext/tk/lib/multi-tk.rb, ext/tk/lib/tk.rb, 
-	  ext/tk/lib/tkdialog.rb, ext/tk/lib/tkentry.rb, 
+	* ext/tk/lib/multi-tk.rb, ext/tk/lib/tk.rb,
+	  ext/tk/lib/tkdialog.rb, ext/tk/lib/tkentry.rb,
 	  ext/tk/sample/safe-tk.rb, ext/tk/sample/tktimer2.rb: bug fix
 
-	* ext/tk/lib/multi-tk.rb: MultiTkIp.new_* accept a block to 
+	* ext/tk/lib/multi-tk.rb: MultiTkIp.new_* accept a block to
 	  eval under the new interpreter
 
 Wed Jul 30 04:36:30 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
-	* ext/tcltklib/tcltklib.c, 
-	  ext/tk/lib/tk.rb, ext/tk/lib/tkafter.rb: additional check of 
+	* ext/tcltklib/tcltklib.c,
+	  ext/tk/lib/tk.rb, ext/tk/lib/tkafter.rb: additional check of
 	  Tk interpreters' status for a little more safety
 
 Wed Jul 30 02:37:12 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -514,14 +514,14 @@ Mon Jul 28 22:57:52 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Tue Jul 29 16:20:36 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
-	* ext/tcltklib/tcltklib.c: bug fix and 
+	* ext/tcltklib/tcltklib.c: bug fix and
 	  change mainloop_abort_on_no_widget_cmd => mainloop_abort_on_exception
 	  ( to avoid thread timing trouble on accessing destroyed widgets )
 
-	* ext/tk/lib/multi-tk.rb: change default mode of 
+	* ext/tk/lib/multi-tk.rb: change default mode of
 	  mainloop_abort_on_exception on multi-tk.rb
 
-	* ext/tk/lib/multi-tk.rb: fix a bug of the procedure for 
+	* ext/tk/lib/multi-tk.rb: fix a bug of the procedure for
 	  'Delete' button on the safe-Tk frmae
 
 Tue Jul 29 12:22:28 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
@@ -541,8 +541,8 @@ Tue Jul 29 12:15:37 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 Tue Jul 29 08:05:30 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk.rb, ext/tk/lib/tkdialog.rb, ext/tk/lib/tktext.rb, 
-	  ext/tk/sample/tkbiff.rb, ext/tk/sample/tkdialog.rb, 
+	* ext/tk/lib/tk.rb, ext/tk/lib/tkdialog.rb, ext/tk/lib/tktext.rb,
+	  ext/tk/sample/tkbiff.rb, ext/tk/sample/tkdialog.rb,
 	  ext/tk/sample/tkform.rb: bug fix ( tested with Ruby/Tk widget demo )
 
 Tue Jul 29 04:22:08 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
@@ -571,7 +571,7 @@ Tue Jul 29 01:24:32 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/multi-tk.rb: bug fix and pack options are pssed
 	  to the safeTk container
 
-	* ext/tk/sample/safe-tk.rb: add example for pack options of 
+	* ext/tk/sample/safe-tk.rb: add example for pack options of
 	  safeTk container
 
 Mon Jul 28 23:23:08 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
@@ -643,7 +643,7 @@ Sun Jul 27 19:35:06 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 	* ext/tcltklib/tcltklib.c: add some methods to support
 	  multiple interpreters (low level)
 
-	* ext/tk/lib/multi-tk.rb: new library to support multiple Tk 
+	* ext/tk/lib/multi-tk.rb: new library to support multiple Tk
 	  interpreters (high level)
 
 	* ext/tcltklib/demo/safeTk.rb: new sample of safeTk interpreter
@@ -732,12 +732,12 @@ Fri Jul 26 00:04:25 2003  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 Fri Jul 25 16:43:03 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
-	* ext/tcltklib/tcltklib.c: add TclTkIp#create_slave, 
+	* ext/tcltklib/tcltklib.c: add TclTkIp#create_slave,
 	  TclTkIp#_make_safe and TclTkIp#safe?
 
 	* ext/tcltklib/MANUAL.euc: modify descriptions
 
-	* ext/tk/lib/tk.rb: bug fix [ruby-talk:76980] and modify to 
+	* ext/tk/lib/tk.rb: bug fix [ruby-talk:76980] and modify to
 	  support multi Tk IPs
 
 	* ext/tk/lib/tkafter.rb: modify to support multi Tk IPs
@@ -747,10 +747,10 @@ Fri Jul 25 15:47:39 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	* ext/openssl/extconf.rb: add check for BN_rand_range() and
 	  BN_pseudo_rand_range().
 
-	* ext/openssl/ossl_bn.c (ossl_bn_s_rand_range): should raise 
+	* ext/openssl/ossl_bn.c (ossl_bn_s_rand_range): should raise
 	  NotImplementedError if BN_rand_range() wan not defined.
 
-	* ext/openssl/ossl_bn.c (ossl_bn_s_pseudo_rand_range): should raise 
+	* ext/openssl/ossl_bn.c (ossl_bn_s_pseudo_rand_range): should raise
 	  NotImplementedError if BN_pseudo_rand_range() wan not defined.
 
 	* ext/openssl/ossl_pkcs7.c (ossl_pkcs7_s_encrypt): avoid compiler
@@ -1110,7 +1110,7 @@ Thu Jul 17 13:42:53 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 Thu Jul 17 06:40:28 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk.rb: recover and fix typo : Tk.chooseDirectory 
+	* ext/tk/lib/tk.rb: recover and fix typo : Tk.chooseDirectory
 	  (Tk8.4 feature)
 
 Wed Jul 16 16:23:58 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -1139,7 +1139,7 @@ Tue Jul 15 14:38:21 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Tue Jul 15 03:30:41 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
-	* ext/syck/rubyext.c (syck_mark_emitter): forgot to rb_gc_mark the 
+	* ext/syck/rubyext.c (syck_mark_emitter): forgot to rb_gc_mark the
 	  outgoing IO object.
 
 Sun Jul 13 14:55:36 2003  Koji Arai  <jca02266@nifty.ne.jp>
@@ -1196,7 +1196,7 @@ Fri Jul 11 16:09:09 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Jul 11 07:17:47 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk.rb: not create a Tcl/Tk interpreter if already 
+	* ext/tk/lib/tk.rb: not create a Tcl/Tk interpreter if already
 	  defined TkCore::INTERP
 
 	* ext/tk/lib/tk.rb: bugfix on TkWindow#configure
@@ -1306,7 +1306,7 @@ Thu Jul  3 14:22:46 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu Jul  3 12:13:05 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	* lib/mkmf.rb (VPATH): convert from Windows form to Unix form on 
+	* lib/mkmf.rb (VPATH): convert from Windows form to Unix form on
 	  MinGW.  This fixes the build with GNU make 3.80-1 for Cygwin.
 
 Wed Jul  2 23:27:34 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -1459,11 +1459,11 @@ Thu Jun 26 21:34:49 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 Wed Jun 25 14:40:33 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk.rb: add and modify methods --- 
-	  TkWidget.database_class, TkWidget.database_classname, 
-          TkWidget#database_class, TkWidget#database_classname 
+	* ext/tk/lib/tk.rb: add and modify methods ---
+	  TkWidget.database_class, TkWidget.database_classname,
+          TkWidget#database_class, TkWidget#database_classname
 
-	* ext/tk/lib/tk.rb: instances of a subclass of TkToplevel or 
+	* ext/tk/lib/tk.rb: instances of a subclass of TkToplevel or
 	  TkFrame are created with ":class=>subclass" option as default.
 
 	* ext/tk/sample/tkoptdb.rb: add a new part
@@ -1478,7 +1478,7 @@ Wed Jun 25 05:49:10 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: add widget destroy hook binding to TkBindTag::ALL
 
-	* ext/tk/lib/tkcanvas.rb: Although requiring manual control of GC, 
+	* ext/tk/lib/tkcanvas.rb: Although requiring manual control of GC,
 	  memory eating problem of TkCanvas Items is fixed.
 
 	* ext/tk/lib/tktext.rb: add some methods and bug fix
@@ -1493,10 +1493,10 @@ Tue Jun 24 16:46:07 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tk.rb: bug fix on TkToplevel, TkFrame,
 	  TkPanedwindow, TkOptionDB
 
-	* ext/tk/lib/tk.rb: TkOptionDB --- make it more secure to use procs 
+	* ext/tk/lib/tk.rb: TkOptionDB --- make it more secure to use procs
 	  defined on resourceDB
 
-	* ext/tk/sample/tkoptdb.rb, resource.ja, resource.en: 
+	* ext/tk/sample/tkoptdb.rb, resource.ja, resource.en:
 	  sample script how to use TkOptionDB.
 
 Tue Jun 24 14:22:41 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
@@ -1610,14 +1610,14 @@ Sun Jun 22 23:42:20 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 Sun Jun 22 16:17:02 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk.rb: TkRoot.new and TkToplevel.new accept Wm 
+	* ext/tk/lib/tk.rb: TkRoot.new and TkToplevel.new accept Wm
 	  commands as elements
 
 	* ext/tk/lib/tk.rb: TkMenu --- add some methods
 
 	* ext/tk/lib/tk.rb: TkOptionMenubutton --- bug fix
 
-	* ext/tk/sample/tkmenubutton.rb: sample of TkMenubutton and 
+	* ext/tk/sample/tkmenubutton.rb: sample of TkMenubutton and
 	  TkOptionMenubutton
 
 Sat Jun 21 23:15:08 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -1625,7 +1625,7 @@ Sat Jun 21 23:15:08 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* eval.c (proc_invoke): should not propagate distination tag if
 	  tag is already handled in this level. (ruby-bugs-ja PR#501)
 
-	* object.c (str_to_id): check for empty string before intern. 
+	* object.c (str_to_id): check for empty string before intern.
 	  [ruby-talk:74006]
 
 Sat Jun 21 13:56:09 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
@@ -1636,10 +1636,10 @@ Sat Jun 21 13:56:09 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
 
 Sat Jun 21 12:55:17 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk.rb: TkRoot.new and TkToplevel.new accept Wm commands 
-	  as elements of a hash argument. 
+	* ext/tk/lib/tk.rb: TkRoot.new and TkToplevel.new accept Wm commands
+	  as elements of a hash argument.
 
-	* ext/tk/sample/tktimer2.rb: add comments about the usage of a 
+	* ext/tk/sample/tktimer2.rb: add comments about the usage of a
 	  TkTimer object.
 
 Sat Jun 21 08:47:22 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
@@ -1647,10 +1647,10 @@ Sat Jun 21 08:47:22 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tk*.rb: remove direct-accesses to TkComm::INTERP and
 	  TkComm::INITIALIZE_TARGETS
 
-	* ext/tk/lib/tk*.rb: use TkINTERP_SETUP_SCRIPTS constant for setting 
+	* ext/tk/lib/tk*.rb: use TkINTERP_SETUP_SCRIPTS constant for setting
 	  up the interpreter
 
-	* ext/tcltklib/tcltklib.c: support to create a safe interpreter 
+	* ext/tcltklib/tcltklib.c: support to create a safe interpreter
 	  with safe-Tk
 
 Fri Jun 20 23:28:27 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -1660,7 +1660,7 @@ Fri Jun 20 23:28:27 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Jun 20 15:04:28 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
-	* defines.h (PATH_ENV): name of PATH environment. [new]. 
+	* defines.h (PATH_ENV): name of PATH environment. [new].
 
 	* defines.h (ENV_IGNORECASE): define for case insensitive platforms
 	  to access environment variables.
@@ -1678,7 +1678,7 @@ Fri Jun 20 14:52:46 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
 Fri Jun 20 03:09:21 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* parse.y (new_yield): distinguish "yield 1,2" and "yield [1,2]". 
+	* parse.y (new_yield): distinguish "yield 1,2" and "yield [1,2]".
 	  [ruby-dev:20360]
 
 	* eval.c (rb_eval): support new_yield() change.
@@ -1688,7 +1688,7 @@ Fri Jun 20 03:09:21 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  [ruby-list:36935]
 
 	* parse.y (no_blockarg): separate no block argument check and
-	  ret_args argument processing. 
+	  ret_args argument processing.
 
 Fri Jun 20 00:45:19 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>
 
@@ -1696,9 +1696,9 @@ Fri Jun 20 00:45:19 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>
 
 Thu Jun 19 22:51:41 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
-	* lib/drb.rb, lib/drb/drb.rb, lib/drb/eq.rb, 
-	  lib/drb/extserv.rb, lib/drb/extservm.rb, lib/drb/gw.rb, 
-	  lib/drb/invokemethod.rb, lib/drb/observer.rb, 
+	* lib/drb.rb, lib/drb/drb.rb, lib/drb/eq.rb,
+	  lib/drb/extserv.rb, lib/drb/extservm.rb, lib/drb/gw.rb,
+	  lib/drb/invokemethod.rb, lib/drb/observer.rb,
 	  lib/drb/timeridconv.rb, lib/drb/unix.rb: import drb-2.0.4b3
 
 Thu Jun 19 16:14:43 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
@@ -1710,17 +1710,17 @@ Thu Jun 19 16:14:43 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: add TclTkLib::EventFlag::NONE ( == 0 )
 
-	* ext/tcltklib/tcltklib.c: add set_no_event_wait() and 
+	* ext/tcltklib/tcltklib.c: add set_no_event_wait() and
 	  get_no_event_wait()
 
 	* ext/tcltklib/MANUAL.euc: modify
 
 	* ext/tcltklib/README.euc: ditto
 
-	* ext/tk/lib/tk.rb: change default value of TkCore.do_one_event 
+	* ext/tk/lib/tk.rb: change default value of TkCore.do_one_event
 	  argument
 
-	* ext/tk/lib/tk.rb: add TkCore.set_no_event_wait(wait) and 
+	* ext/tk/lib/tk.rb: add TkCore.set_no_event_wait(wait) and
 	  TkCore.get_no_event_wait
 
 	* ext/tk/lib/tk.rb: add Tk.exit ( == destroy root widget )
@@ -1730,7 +1730,7 @@ Thu Jun 19 16:14:43 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkafter.rb: set_callback returns self
 
-	* ext/tk/lib/tkafter.rb: continue() raises an exception, if already 
+	* ext/tk/lib/tkafter.rb: continue() raises an exception, if already
 	  running or no procedure.
 
 	* ext/tk/lib/tkafter.rb: skip() raises an exception, if not running.
@@ -1768,15 +1768,15 @@ Wed Jun 18 19:46:21 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: rename 'no_create' option to 'without_creating'
 
-	* ext/tk/lib/tk.rb: add TkWindow#pack_in, TkWindow#grid_in, 
+	* ext/tk/lib/tk.rb: add TkWindow#pack_in, TkWindow#grid_in,
 	  TkWindow#place_in
 
 	* ext/tk/lib/tk.rb: add TkWindow#bind_class and TkWindow#database_class
 
-	* ext/tk/lib/tk.rb: add TkBindTag.new_by_name and TkDatabaseClass 
+	* ext/tk/lib/tk.rb: add TkBindTag.new_by_name and TkDatabaseClass
 	  for binding to database class
 
-	* ext/tk/lib/tk.rb: check varname whether already exsist or not. 
+	* ext/tk/lib/tk.rb: check varname whether already exsist or not.
 	  (TkVarAccess.new)
 
 	* ext/tk/lib/tk.rb: TkTextWin#bbox returns an array of four numbers
@@ -1788,21 +1788,21 @@ Wed Jun 18 19:46:21 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: TkBindTag.new accepts a block
 
-	* ext/tk/lib/tk.rb: If given taglist, TkWindow#bindtags(taglist) 
+	* ext/tk/lib/tk.rb: If given taglist, TkWindow#bindtags(taglist)
 	  returns taglist
 
 	* ext/tk/lib/tk.rb: add TkWindow#bindtags=(taglist)
 
-	* ext/tk/lib/tk.rb: Tk.focue and Tk.focus_lastfor return nil 
+	* ext/tk/lib/tk.rb: Tk.focue and Tk.focus_lastfor return nil
 	  if there is no target widget.
 
-	* ext/tk/lib/tk.rb: Tk::Wm.client returns the argument string 
+	* ext/tk/lib/tk.rb: Tk::Wm.client returns the argument string
 	  when setting name
 
-	* ext/tk/lib/tk.rb: TkGrid.columnconfiginfo and rowconfiginfo 
+	* ext/tk/lib/tk.rb: TkGrid.columnconfiginfo and rowconfiginfo
 	  given a slot return a number.
 
-	* ext/tk/lib/tk.rb: TkWindow.grid_columnconfiginfo and 
+	* ext/tk/lib/tk.rb: TkWindow.grid_columnconfiginfo and
 	  grid_rowconfiginfo --- ditto
 
 	* ext/tk/lib/tk.rb: rename and define alias :: TkOption ==> TkOptionDB
@@ -1813,10 +1813,10 @@ Wed Jun 18 19:46:21 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: some TkComm methods change to module functions
 
-	* ext/tk/lib/tk.rb: add support for -displayof option to some 
+	* ext/tk/lib/tk.rb: add support for -displayof option to some
 	  TkWinfo methods
 
-	* ext/tk/lib/tk.rb: bind, bind_append and bind_remove --- 
+	* ext/tk/lib/tk.rb: bind, bind_append and bind_remove ---
 	  returns the target of event-binding
 
 	* ext/tk/lib/tk.rb: add Tk8.4 features
@@ -1837,7 +1837,7 @@ Wed Jun 18 19:46:21 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkentry.rb: TkEntry#bbox returns an array of four numbers
 
-	* ext/tk/lib/tkentry.rb: scan validatecommand arguments and 
+	* ext/tk/lib/tkentry.rb: scan validatecommand arguments and
 	  convert to proper type
 
 	* ext/tk/lib/tkbgerror.rb: support to define a error handler by user
@@ -1932,7 +1932,7 @@ Fri Jun 13 09:24:39 2003  Shugo Maeda  <shugo@ruby-lang.org>
 Thu Jun 12 22:13:13 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb : add 'no_create' option to widget
-	  initialize method. 
+	  initialize method.
 
 	* ext/tk/MANIFEST : forgot to commit when added tkmacpkg.rb
 	  and tkwinpkg.rb
@@ -1947,7 +1947,7 @@ Thu Jun 12 21:14:11 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tkmacpkg.rb : Mac resource (not new but not
 	  included until now)
 
-	* ext/tk/lib/tkwinpkg.rb : Win DDE and registry (not new but not 
+	* ext/tk/lib/tkwinpkg.rb : Win DDE and registry (not new but not
 	  included until now)
 
 Tue Jun 10 14:26:30 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
@@ -8346,7 +8346,7 @@ Tue Jun  4 07:03:33 2002  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkfont.rb:  Fix bugs on TkFont.init_widget_font for Tk8.x.
 
-	* ext/tk/lib/tkafter.rb: Add self to 1st argument of interval- 
+	* ext/tk/lib/tkafter.rb: Add self to 1st argument of interval-
 	  and loop-proc
 	  TkAfter#current_interval returns an interval (sleep) time value
 	  TkAfter#current_args returns an array of arguments
@@ -8354,7 +8354,7 @@ Tue Jun  4 07:03:33 2002  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk*.rb: Allow to use Symbols for parameters.
 
-	* ext/tk/lib/tkcanvas.rb: (TkcItem) Add 'coords' parameter to the 
+	* ext/tk/lib/tkcanvas.rb: (TkcItem) Add 'coords' parameter to the
 	  canvas item constructor (for new notation of constructor).
 
 	* ext/tcltklib/tcltklib.c: New 'mainloop' and 'mainloop_watchdog'.
@@ -8363,7 +8363,7 @@ Tue Jun  4 07:03:33 2002  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 	  'use' parameter.
 
 	* ext/tk/lib/tk.rb: Add new parameter 'widgetname' to the widget
-	  constructor to support effective use of Resource Database. 
+	  constructor to support effective use of Resource Database.
 
 	* ext/tk/lib/tk.rb: TkOption::get always returns a tainted string.
 
@@ -13763,7 +13763,7 @@ Tue Apr 17 17:33:55 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (handle_rescue): use === to compare exception match.
 
-	* error.c (syserr_eqq): comparison between SytemCallErrors should
+	* error.c (syserr_eqq): comparison between SystemCallErrors should
 	  based on their error numbers.
 
 Tue Apr 17 16:54:39 2001  K.Kosako  <kosako@sofnec.co.jp>

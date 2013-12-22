@@ -80,7 +80,7 @@ bsock_shutdown(int argc, VALUE *argv, VALUE sock)
     }
     GetOpenFile(sock, fptr);
     if (shutdown(fptr->fd, how) == -1)
-	rb_sys_fail(0);
+	rb_sys_fail("shutdown(2)");
 
     return INT2FIX(0);
 }
@@ -243,15 +243,13 @@ bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
       default:
 	StringValue(val);
 	v = RSTRING_PTR(val);
-	vlen = RSTRING_LENINT(val);
+	vlen = RSTRING_SOCKLEN(val);
 	break;
     }
 
-#define rb_sys_fail_path(path) rb_sys_fail_str(path)
-
     rb_io_check_closed(fptr);
     if (setsockopt(fptr->fd, level, option, v, vlen) < 0)
-	rb_sys_fail_path(fptr->pathv);
+        rsock_sys_fail_path("setsockopt(2)", fptr->pathv);
 
     return INT2FIX(0);
 }
@@ -332,7 +330,7 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
     rb_io_check_closed(fptr);
 
     if (getsockopt(fptr->fd, level, option, buf, &len) < 0)
-	rb_sys_fail_path(fptr->pathv);
+	rsock_sys_fail_path("getsockopt(2)", fptr->pathv);
 
     return rsock_sockopt_new(family, level, option, rb_str_new(buf, len));
 }
@@ -356,13 +354,15 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
 static VALUE
 bsock_getsockname(VALUE sock)
 {
-    struct sockaddr_storage buf;
+    union_sockaddr buf;
     socklen_t len = (socklen_t)sizeof buf;
+    socklen_t len0 = len;
     rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
-    if (getsockname(fptr->fd, (struct sockaddr*)&buf, &len) < 0)
+    if (getsockname(fptr->fd, &buf.addr, &len) < 0)
 	rb_sys_fail("getsockname(2)");
+    if (len0 < len) len = len0;
     return rb_str_new((char*)&buf, len);
 }
 
@@ -385,13 +385,15 @@ bsock_getsockname(VALUE sock)
 static VALUE
 bsock_getpeername(VALUE sock)
 {
-    struct sockaddr_storage buf;
+    union_sockaddr buf;
     socklen_t len = (socklen_t)sizeof buf;
+    socklen_t len0 = len;
     rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
-    if (getpeername(fptr->fd, (struct sockaddr*)&buf, &len) < 0)
+    if (getpeername(fptr->fd, &buf.addr, &len) < 0)
 	rb_sys_fail("getpeername(2)");
+    if (len0 < len) len = len0;
     return rb_str_new((char*)&buf, len);
 }
 
@@ -427,7 +429,7 @@ bsock_getpeereid(VALUE self)
     gid_t egid;
     GetOpenFile(self, fptr);
     if (getpeereid(fptr->fd, &euid, &egid) == -1)
-	rb_sys_fail("getpeereid");
+	rb_sys_fail("getpeereid(3)");
     return rb_assoc_new(UIDT2NUM(euid), GIDT2NUM(egid));
 #elif defined(SO_PEERCRED) /* GNU/Linux */
     rb_io_t *fptr;
@@ -443,7 +445,7 @@ bsock_getpeereid(VALUE self)
     VALUE ret;
     GetOpenFile(self, fptr);
     if (getpeerucred(fptr->fd, &uc) == -1)
-	rb_sys_fail("getpeerucred");
+	rb_sys_fail("getpeerucred(3C)");
     ret = rb_assoc_new(UIDT2NUM(ucred_geteuid(uc)), GIDT2NUM(ucred_getegid(uc)));
     ucred_free(uc);
     return ret;
@@ -473,14 +475,16 @@ bsock_getpeereid(VALUE self)
 static VALUE
 bsock_local_address(VALUE sock)
 {
-    struct sockaddr_storage buf;
+    union_sockaddr buf;
     socklen_t len = (socklen_t)sizeof buf;
+    socklen_t len0 = len;
     rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
-    if (getsockname(fptr->fd, (struct sockaddr*)&buf, &len) < 0)
+    if (getsockname(fptr->fd, &buf.addr, &len) < 0)
 	rb_sys_fail("getsockname(2)");
-    return rsock_fd_socket_addrinfo(fptr->fd, (struct sockaddr *)&buf, len);
+    if (len0 < len) len = len0;
+    return rsock_fd_socket_addrinfo(fptr->fd, &buf.addr, len);
 }
 
 /*
@@ -505,14 +509,16 @@ bsock_local_address(VALUE sock)
 static VALUE
 bsock_remote_address(VALUE sock)
 {
-    struct sockaddr_storage buf;
+    union_sockaddr buf;
     socklen_t len = (socklen_t)sizeof buf;
+    socklen_t len0 = len;
     rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
-    if (getpeername(fptr->fd, (struct sockaddr*)&buf, &len) < 0)
+    if (getpeername(fptr->fd, &buf.addr, &len) < 0)
 	rb_sys_fail("getpeername(2)");
-    return rsock_fd_socket_addrinfo(fptr->fd, (struct sockaddr *)&buf, len);
+    if (len0 < len) len = len0;
+    return rsock_fd_socket_addrinfo(fptr->fd, &buf.addr, len);
 }
 
 /*
@@ -541,7 +547,6 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
     int n;
     rb_blocking_function_t *func;
 
-    rb_secure(4);
     rb_scan_args(argc, argv, "21", &arg.mesg, &flags, &to);
 
     StringValue(arg.mesg);
@@ -549,7 +554,7 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
 	SockAddrStringValue(to);
 	to = rb_str_new4(to);
 	arg.to = (struct sockaddr *)RSTRING_PTR(to);
-	arg.tolen = (socklen_t)RSTRING_LENINT(to);
+	arg.tolen = RSTRING_SOCKLEN(to);
 	func = rsock_sendto_blocking;
     }
     else {
@@ -607,7 +612,6 @@ bsock_do_not_reverse_lookup_set(VALUE sock, VALUE state)
 {
     rb_io_t *fptr;
 
-    rb_secure(4);
     GetOpenFile(sock, fptr);
     if (RTEST(state)) {
 	fptr->mode |= FMODE_NOREVLOOKUP;
@@ -727,7 +731,6 @@ bsock_do_not_rev_lookup(void)
 static VALUE
 bsock_do_not_rev_lookup_set(VALUE self, VALUE val)
 {
-    rb_secure(4);
     rsock_do_not_reverse_lookup = RTEST(val);
     return val;
 }

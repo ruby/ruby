@@ -2,14 +2,13 @@ require 'test/unit'
 
 require 'tmpdir'
 require 'fileutils'
-require 'pathname'
 
 class TestDir < Test::Unit::TestCase
 
   def setup
     @verbose = $VERBOSE
     $VERBOSE = nil
-    @root = Pathname.new(Dir.mktmpdir('__test_dir__')).realpath.to_s
+    @root = File.realpath(Dir.mktmpdir('__test_dir__'))
     @nodir = File.join(@root, "dummy")
     for i in ?a..?z
       if i.ord % 2 == 0
@@ -41,15 +40,6 @@ class TestDir < Test::Unit::TestCase
     ensure
       dir.close
     end
-  end
-
-  def test_JVN_13947696
-    b = lambda {
-      d = Dir.open('.')
-      $SAFE = 4
-      d.close
-    }
-    assert_raise(SecurityError) { b.call }
   end
 
   def test_nodir
@@ -90,12 +80,6 @@ class TestDir < Test::Unit::TestCase
     d.rewind
     b = (0..5).map { d.read }
     assert_equal(a, b)
-    assert_raise(SecurityError) do
-      Thread.new do
-        $SAFE = 4
-        d.rewind
-      end.join
-    end
   ensure
     d.close
   end
@@ -168,7 +152,10 @@ class TestDir < Test::Unit::TestCase
 
   def test_glob_recursive
     bug6977 = '[ruby-core:47418]'
+    bug8006 = '[ruby-core:53108] [Bug #8006]'
     Dir.chdir(@root) do
+      assert_include(Dir.glob("a/**/*", File::FNM_DOTMATCH), "a/.", bug8006)
+
       FileUtils.mkdir_p("a/b/c/d/e/f")
       assert_equal(["a/b/c/d/e/f"], Dir.glob("a/**/e/f"), bug6977)
       assert_equal(["a/b/c/d/e/f"], Dir.glob("a/**/d/e/f"), bug6977)
@@ -177,6 +164,15 @@ class TestDir < Test::Unit::TestCase
       assert_equal(["a/b/c/d/e/f"], Dir.glob("a/**/c/?/e/f"), bug6977)
       assert_equal(["a/b/c/d/e/f"], Dir.glob("a/**/c/**/d/e/f"), bug6977)
       assert_equal(["a/b/c/d/e/f"], Dir.glob("a/**/c/**/d/e/f"), bug6977)
+
+      bug8283 = '[ruby-core:54387] [Bug #8283]'
+      dirs = ["a/.x", "a/b/.y"]
+      FileUtils.mkdir_p(dirs)
+      dirs.map {|dir| open("#{dir}/z", "w") {}}
+      assert_equal([], Dir.glob("a/**/z").sort, bug8283)
+      assert_equal(["a/.x/z"], Dir.glob("a/**/.x/z"), bug8283)
+      assert_equal(["a/.x/z"], Dir.glob("a/.x/**/z"), bug8283)
+      assert_equal(["a/b/.y/z"], Dir.glob("a/**/.y/z"), bug8283)
     end
   end
 
@@ -204,6 +200,13 @@ class TestDir < Test::Unit::TestCase
     end
   end
 
+  def test_unknown_keywords
+    bug8060 = '[ruby-dev:47152] [Bug #8060]'
+    assert_raise_with_message(ArgumentError, /unknown keyword/, bug8060) do
+      Dir.open(@root, xawqij: "a") {}
+    end
+  end
+
   def test_symlink
     begin
       ["dummy", *?a..?z].each do |f|
@@ -220,4 +223,47 @@ class TestDir < Test::Unit::TestCase
     Dir.glob(File.join(@root, "**/"))
   end
 
+  def test_glob_metachar
+    bug8597 = '[ruby-core:55764] [Bug #8597]'
+    assert_empty(Dir.glob(File.join(@root, "<")), bug8597)
+  end
+
+  def test_home
+    env_home = ENV["HOME"]
+    env_logdir = ENV["LOGDIR"]
+    ENV.delete("HOME")
+    ENV.delete("LOGDIR")
+
+    assert_raise(ArgumentError) { Dir.home }
+    assert_raise(ArgumentError) { Dir.home("") }
+    ENV["HOME"] = @nodir
+    assert_nothing_raised(ArgumentError) {
+      assert_equal(@nodir, Dir.home)
+      assert_equal(@nodir, Dir.home(""))
+    }
+    %W[no:such:user \u{7559 5b88}:\u{756a}].each do |user|
+      assert_raise_with_message(ArgumentError, /#{user}/) {Dir.home(user)}
+    end
+  ensure
+    ENV["HOME"] = env_home
+    ENV["LOGDIR"] = env_logdir
+  end
+
+  def test_symlinks_not_resolved
+    Dir.mktmpdir do |dirname|
+      Dir.chdir(dirname) do
+        begin
+          File.symlink('some-dir', 'dir-symlink')
+        rescue NotImplementedError
+          return
+        end
+
+        Dir.mkdir('some-dir')
+        File.write('some-dir/foo', 'some content')
+
+        assert_equal [ 'dir-symlink', 'some-dir' ], Dir['*'].sort
+        assert_equal [ 'dir-symlink', 'some-dir', 'some-dir/foo' ], Dir['**/*'].sort
+      end
+    end
+  end
 end

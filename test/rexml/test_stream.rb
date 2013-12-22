@@ -63,6 +63,29 @@ class StreamTester < Test::Unit::TestCase
     assert( listener.events[:elementdecl] )
     assert( listener.events[:notationdecl] )
   end
+
+  def test_entity
+    listener = MyListener.new
+    class << listener
+      attr_accessor :entities
+      def entity(content)
+        @entities << content
+      end
+    end
+    listener.entities = []
+
+    source = StringIO.new(<<-XML)
+<!DOCTYPE root [
+<!ENTITY % ISOLat2
+         SYSTEM "http://www.xml.com/iso/isolat2-xml.entities" >
+%ISOLat2;
+]>
+<root/>
+    XML
+    REXML::Document.parse_stream(source, listener)
+
+    assert_equal(["ISOLat2"], listener.entities)
+  end
 end
 
 

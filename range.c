@@ -20,14 +20,24 @@
 #include <math.h>
 
 VALUE rb_cRange;
-static ID id_cmp, id_succ, id_beg, id_end, id_excl;
+static ID id_cmp, id_succ, id_beg, id_end, id_excl, id_integer_p, id_div;
 
 #define RANGE_BEG(r) (RSTRUCT(r)->as.ary[0])
 #define RANGE_END(r) (RSTRUCT(r)->as.ary[1])
 #define RANGE_EXCL(r) (RSTRUCT(r)->as.ary[2])
+#define RANGE_SET_BEG(r, v) (RSTRUCT_SET(r, 0, v))
+#define RANGE_SET_END(r, v) (RSTRUCT_SET(r, 1, v))
+#define RANGE_SET_EXCL(r, v) (RSTRUCT_SET(r, 2, v))
+#define RBOOL(v) ((v) ? Qtrue : Qfalse)
 
 #define EXCL(r) RTEST(RANGE_EXCL(r))
-#define SET_EXCL(r,v) (RSTRUCT(r)->as.ary[2] = (v) ? Qtrue : Qfalse)
+static inline VALUE
+SET_EXCL(VALUE r, VALUE v)
+{
+    v = RBOOL(RTEST(v));
+    RANGE_SET_EXCL(r, v);
+    return v;
+}
 
 static VALUE
 range_failed(void)
@@ -43,7 +53,7 @@ range_check(VALUE *args)
 }
 
 static void
-range_init(VALUE range, VALUE beg, VALUE end, int exclude_end)
+range_init(VALUE range, VALUE beg, VALUE end, VALUE exclude_end)
 {
     VALUE args[2];
 
@@ -58,9 +68,9 @@ range_init(VALUE range, VALUE beg, VALUE end, int exclude_end)
 	    range_failed();
     }
 
-    SET_EXCL(range, exclude_end);
-    RSTRUCT(range)->as.ary[0] = beg;
-    RSTRUCT(range)->as.ary[1] = end;
+    RANGE_SET_EXCL(range, exclude_end);
+    RANGE_SET_BEG(range, beg);
+    RANGE_SET_END(range, end);
 }
 
 VALUE
@@ -68,8 +78,17 @@ rb_range_new(VALUE beg, VALUE end, int exclude_end)
 {
     VALUE range = rb_obj_alloc(rb_cRange);
 
-    range_init(range, beg, end, exclude_end);
+    range_init(range, beg, end, RBOOL(exclude_end));
     return range;
+}
+
+static void
+range_modify(VALUE range)
+{
+    /* Ranges are immutable, so that they should be initialized only once. */
+    if (RANGE_EXCL(range) != Qnil) {
+	rb_name_error(idInitialize, "`initialize' called twice");
+    }
 }
 
 /*
@@ -87,15 +106,19 @@ range_initialize(int argc, VALUE *argv, VALUE range)
     VALUE beg, end, flags;
 
     rb_scan_args(argc, argv, "21", &beg, &end, &flags);
-    /* Ranges are immutable, so that they should be initialized only once. */
-    if (RANGE_EXCL(range) != Qnil) {
-	rb_name_error(idInitialize, "`initialize' called twice");
-    }
-    range_init(range, beg, end, RTEST(flags));
+    range_modify(range);
+    range_init(range, beg, end, RBOOL(RTEST(flags)));
     return Qnil;
 }
 
-#define range_initialize_copy rb_struct_init_copy /* :nodoc: */
+/* :nodoc: */
+static VALUE
+range_initialize_copy(VALUE range, VALUE orig)
+{
+    range_modify(range);
+    rb_struct_init_copy(range, orig);
+    return range;
+}
 
 /*
  *  call-seq:
@@ -220,25 +243,6 @@ range_eql(VALUE range, VALUE obj)
     return rb_exec_recursive_paired(recursive_eql, range, obj, obj);
 }
 
-static VALUE
-recursive_hash(VALUE range, VALUE dummy, int recur)
-{
-    st_index_t hash = EXCL(range);
-    VALUE v;
-
-    hash = rb_hash_start(hash);
-    if (!recur) {
-	v = rb_hash(RANGE_BEG(range));
-	hash = rb_hash_uint(hash, NUM2LONG(v));
-	v = rb_hash(RANGE_END(range));
-	hash = rb_hash_uint(hash, NUM2LONG(v));
-    }
-    hash = rb_hash_uint(hash, EXCL(range) << 24);
-    hash = rb_hash_end(hash);
-
-    return LONG2FIX(hash);
-}
-
 /*
  * call-seq:
  *   rng.hash    -> fixnum
@@ -251,11 +255,22 @@ recursive_hash(VALUE range, VALUE dummy, int recur)
 static VALUE
 range_hash(VALUE range)
 {
-    return rb_exec_recursive_outer(recursive_hash, range, 0);
+    st_index_t hash = EXCL(range);
+    VALUE v;
+
+    hash = rb_hash_start(hash);
+    v = rb_hash(RANGE_BEG(range));
+    hash = rb_hash_uint(hash, NUM2LONG(v));
+    v = rb_hash(RANGE_END(range));
+    hash = rb_hash_uint(hash, NUM2LONG(v));
+    hash = rb_hash_uint(hash, EXCL(range) << 24);
+    hash = rb_hash_end(hash);
+
+    return LONG2FIX(hash);
 }
 
 static void
-range_each_func(VALUE range, VALUE (*func) (VALUE, void *), void *arg)
+range_each_func(VALUE range, rb_block_call_func *func, VALUE arg)
 {
     int c;
     VALUE b = RANGE_BEG(range);
@@ -264,13 +279,13 @@ range_each_func(VALUE range, VALUE (*func) (VALUE, void *), void *arg)
 
     if (EXCL(range)) {
 	while (r_lt(v, e)) {
-	    (*func) (v, arg);
+	    (*func) (v, arg, 0, 0, 0);
 	    v = rb_funcall(v, id_succ, 0, 0);
 	}
     }
     else {
 	while ((c = r_le(v, e)) != Qfalse) {
-	    (*func) (v, arg);
+	    (*func) (v, arg, 0, 0, 0);
 	    if (c == (int)INT2FIX(0))
 		break;
 	    v = rb_funcall(v, id_succ, 0, 0);
@@ -279,9 +294,9 @@ range_each_func(VALUE range, VALUE (*func) (VALUE, void *), void *arg)
 }
 
 static VALUE
-sym_step_i(VALUE i, void *arg)
+sym_step_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, arg))
 {
-    VALUE *iter = arg;
+    VALUE *iter = (VALUE *)arg;
 
     if (FIXNUM_P(iter[0])) {
 	iter[0] -= INT2FIX(1) & ~FIXNUM_FLAG;
@@ -297,9 +312,9 @@ sym_step_i(VALUE i, void *arg)
 }
 
 static VALUE
-step_i(VALUE i, void *arg)
+step_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, arg))
 {
-    VALUE *iter = arg;
+    VALUE *iter = (VALUE *)arg;
 
     if (FIXNUM_P(iter[0])) {
 	iter[0] -= INT2FIX(1) & ~FIXNUM_FLAG;
@@ -322,12 +337,12 @@ discrete_object_p(VALUE obj)
 }
 
 static VALUE
-range_step_size(VALUE range, VALUE args)
+range_step_size(VALUE range, VALUE args, VALUE eobj)
 {
     VALUE b = RANGE_BEG(range), e = RANGE_END(range);
     VALUE step = INT2FIX(1);
     if (args) {
-	step = RARRAY_PTR(args)[0];
+	step = RARRAY_AREF(args, 0);
 	if (!rb_obj_is_kind_of(step, rb_cNumeric)) {
 	    step = rb_to_int(step);
 	}
@@ -340,7 +355,7 @@ range_step_size(VALUE range, VALUE args)
     }
 
     if (rb_obj_is_kind_of(b, rb_cNumeric) && rb_obj_is_kind_of(e, rb_cNumeric)) {
-	return num_interval_step_size(b, e, step, EXCL(range));
+	return ruby_num_interval_step_size(b, e, step, EXCL(range));
     }
     return Qnil;
 }
@@ -465,10 +480,46 @@ range_step(int argc, VALUE *argv, VALUE range)
 	    }
 	    args[0] = INT2FIX(1);
 	    args[1] = step;
-	    range_each_func(range, step_i, args);
+	    range_each_func(range, step_i, (VALUE)args);
 	}
     }
     return range;
+}
+
+#if SIZEOF_DOUBLE == 8 && defined(HAVE_INT64_T)
+union int64_double {
+    int64_t i;
+    double d;
+};
+
+static VALUE
+int64_as_double_to_num(int64_t i)
+{
+    union int64_double convert;
+    if (i < 0) {
+	convert.i = -i;
+	return DBL2NUM(-convert.d);
+    }
+    else {
+	convert.i = i;
+	return DBL2NUM(convert.d);
+    }
+}
+
+static int64_t
+double_as_int64(double d)
+{
+    union int64_double convert;
+    convert.d = fabs(d);
+    return d < 0 ? -convert.i : convert.i;
+}
+#endif
+
+static int
+is_integer_p(VALUE v)
+{
+    VALUE is_int = rb_check_funcall(v, id_integer_p, 0, 0);
+    return RTEST(is_int) && is_int != Qundef;
 }
 
 /*
@@ -476,10 +527,10 @@ range_step(int argc, VALUE *argv, VALUE range)
  *     rng.bsearch {|obj| block }  -> value
  *
  *  By using binary search, finds a value in range which meets the given
- *  condition in O(log n) where n is the size of the array.
+ *  condition in O(log n) where n is the size of the range.
  *
  *  You can use this method in two use cases: a find-minimum mode and
- *  a find-any mode.  In either case, the elements of the array must be
+ *  a find-any mode.  In either case, the elements of the range must be
  *  monotone (or sorted) with respect to the block.
  *
  *  In find-minimum mode (this is a good choice for typical use case),
@@ -529,6 +580,20 @@ range_bsearch(VALUE range)
     VALUE beg, end;
     int smaller, satisfied = 0;
 
+    /* Implementation notes:
+     * Floats are handled by mapping them to 64 bits integers.
+     * Apart from sign issues, floats and their 64 bits integer have the
+     * same order, assuming they are represented as exponent followed
+     * by the mantissa. This is true with or without implicit bit.
+     *
+     * Finding the average of two ints needs to be careful about
+     * potential overflow (since float to long can use 64 bits)
+     * as well as the fact that -1/2 can be 0 or -1 in C89.
+     *
+     * Note that -0.0 is mapped to the same int as 0.0 as we don't want
+     * (-1...0.0).bsearch to yield -0.0.
+     */
+
 #define BSEARCH_CHECK(val) \
     do { \
 	VALUE v = rb_yield(val); \
@@ -549,9 +614,36 @@ range_bsearch(VALUE range)
 	    smaller = cmp < 0; \
 	} \
 	else { \
-	    smaller = RTEST(v); \
+	    rb_raise(rb_eTypeError, "wrong argument type %s" \
+		" (must be numeric, true, false or nil)", \
+		rb_obj_classname(v)); \
 	} \
     } while (0)
+
+#define BSEARCH(conv) \
+    do { \
+	RETURN_ENUMERATOR(range, 0, 0); \
+	if (EXCL(range)) high--; \
+	org_high = high; \
+	while (low < high) { \
+	    mid = ((high < 0) == (low < 0)) ? low + ((high - low) / 2) \
+		: (low < -high) ? -((-1 - low - high)/2 + 1) : (low + high) / 2; \
+	    BSEARCH_CHECK(conv(mid)); \
+	    if (smaller) { \
+		high = mid; \
+	    } \
+	    else { \
+		low = mid + 1; \
+	    } \
+	} \
+	if (low == org_high) { \
+	    BSEARCH_CHECK(conv(low)); \
+	    if (!smaller) return Qnil; \
+	} \
+	if (!satisfied) return Qnil; \
+	return conv(low); \
+    } while (0)
+
 
     beg = RANGE_BEG(range);
     end = RANGE_END(range);
@@ -560,178 +652,26 @@ range_bsearch(VALUE range)
 	long low = FIX2LONG(beg);
 	long high = FIX2LONG(end);
 	long mid, org_high;
-	if (EXCL(range)) high--;
-	org_high = high;
-
-	while (low < high) {
-	    mid = low + ((high - low) / 2);
-	    BSEARCH_CHECK(INT2FIX(mid));
-	    if (smaller) {
-		high = mid;
-	    }
-	    else {
-		low = mid + 1;
-	    }
-	}
-	if (low == org_high) {
-	    BSEARCH_CHECK(INT2FIX(low));
-	    if (!smaller) return Qnil;
-	}
-	if (!satisfied) return Qnil;
-	return INT2FIX(low);
+	BSEARCH(INT2FIX);
     }
+#if SIZEOF_DOUBLE == 8 && defined(HAVE_INT64_T)
     else if (RB_TYPE_P(beg, T_FLOAT) || RB_TYPE_P(end, T_FLOAT)) {
-	double low  = RFLOAT_VALUE(rb_Float(beg));
-	double high = RFLOAT_VALUE(rb_Float(end));
-	double mid, org_high;
-	int count;
-	org_high = high;
-#ifdef FLT_RADIX
-#ifdef DBL_MANT_DIG
-#define BSEARCH_MAXCOUNT (((FLT_RADIX) - 1) * (DBL_MANT_DIG + DBL_MAX_EXP) + 100)
-#else
-#define BSEARCH_MAXCOUNT (53 + 1023 + 100)
-#endif
-#else
-#define BSEARCH_MAXCOUNT (53 + 1023 + 100)
-#endif
-	if (isinf(high) && high > 0) {
-	    /* the range is (low..INFINITY) */
-	    double nhigh = 1.0, inc;
-	    if (nhigh < low) nhigh = low;
-	    count = BSEARCH_MAXCOUNT;
-	    /* find upper bound by checking low, low*2, low*4, ... */
-	    while (count >= 0 && !isinf(nhigh)) {
-		BSEARCH_CHECK(DBL2NUM(nhigh));
-		if (smaller) break;
-		high = nhigh;
-		nhigh *= 2;
-		count--;
-	    }
-	    if (isinf(nhigh) || count < 0) {
-		/* upper bound not found; then, search in very near INFINITY */
-		/* (x..INFINITY where x is not INFINITY but x*2 is INFINITY) */
-		inc = high / 2;
-		count = BSEARCH_MAXCOUNT;
-		while (count >= 0 && inc > 0) {
-		    nhigh = high + inc;
-		    if (!isinf(nhigh)) {
-			BSEARCH_CHECK(DBL2NUM(nhigh));
-			if (smaller) {
-			    /* upper bound found; */
-			    /* the desired value is within high..nhigh */
-			    low = high;
-			    high = nhigh;
-			    goto binsearch;
-			}
-			else {
-			    high = nhigh;
-			}
-		    }
-		    inc /= 2;
-		    count--;
-		}
-		/* lower bound not found; */
-		/* there is no candidate except INFINITY itself */
-		high *= 2; /* generate INFINITY */
-		if (isinf(high) && !EXCL(range)) {
-		    BSEARCH_CHECK(DBL2NUM(high));
-		    if (!satisfied) return Qnil;
-		    if (smaller) return DBL2NUM(high);
-		}
-		return Qnil;
-	    }
-	    /* upper bound found; the desired value is within low..nhigh */
-	    high = nhigh;
-	}
-	if (isinf(low) && low < 0) {
-	    /* the range is (-INFINITY..high) */
-	    volatile double nlow = -1.0, dec;
-	    if (nlow > high) nlow = high;
-	    count = BSEARCH_MAXCOUNT;
-	    /* find lower bound by checking low, low*2, low*4, ... */
-	    while (count >= 0 && !isinf(nlow)) {
-		BSEARCH_CHECK(DBL2NUM(nlow));
-		if (!smaller) break;
-		low = nlow;
-		nlow *= 2;
-		count--;
-	    }
-	    if (isinf(nlow) || count < 0) {
-		/* lower bound not found; then, search in very near -INFINITY */
-		/* (-INFINITY..x where x is not -INFINITY but x*2 is -INFINITY) */
-		dec = low / 2;
-		count = BSEARCH_MAXCOUNT;
-		while (count >= 0 && dec < 0) {
-		    nlow = low + dec;
-		    if (!isinf(nlow)) {
-			BSEARCH_CHECK(DBL2NUM(nlow));
-			if (!smaller) {
-			    /* lower bound found; */
-			    /* the desired value is within nlow..low */
-			    high = low;
-			    low = nlow;
-			    goto binsearch;
-			}
-			else {
-			    low = nlow;
-			}
-		    }
-		    dec /= 2;
-		    count--;
-		}
-		/* lower bound not found; */
-		/* there is no candidate except -INFINITY itself */
-		nlow = low * 2; /* generate -INFINITY */
-		if (isinf(nlow)) {
-		    BSEARCH_CHECK(DBL2NUM(nlow));
-		    if (!satisfied) return Qnil;
-		    if (smaller) return DBL2NUM(nlow);
-		}
-		if (!satisfied) return Qnil;
-		return DBL2NUM(low);
-	    }
-	    low = nlow;
-	}
-
-    binsearch:
-	/* find the desired value within low..high */
-	/* where low is not -INFINITY and high is not INFINITY */
-	count = BSEARCH_MAXCOUNT;
-	while (low < high && count >= 0) {
-	    mid = low + ((high - low) / 2);
-	    BSEARCH_CHECK(DBL2NUM(mid));
-	    if (smaller) {
-		high = mid;
-	    }
-	    else {
-		low = mid;
-	    }
-	    count--;
-	}
-	BSEARCH_CHECK(DBL2NUM(low));
-	if (!smaller) {
-	    BSEARCH_CHECK(DBL2NUM(high));
-	    if (!smaller) {
-		return Qnil;
-	    }
-	    low = high;
-	}
-	if (!satisfied) return Qnil;
-	if (EXCL(range) && low >= org_high) return Qnil;
-	return DBL2NUM(low);
-#undef BSEARCH_MAXCOUNT
+	int64_t low  = double_as_int64(RFLOAT_VALUE(rb_Float(beg)));
+	int64_t high = double_as_int64(RFLOAT_VALUE(rb_Float(end)));
+	int64_t mid, org_high;
+	BSEARCH(int64_as_double_to_num);
     }
-    else if (!NIL_P(rb_check_to_integer(beg, "to_int")) &&
-	     !NIL_P(rb_check_to_integer(end, "to_int"))) {
-	VALUE low = beg;
-	VALUE high = end;
+#endif
+    else if (is_integer_p(beg) && is_integer_p(end)) {
+	VALUE low = rb_to_int(beg);
+	VALUE high = rb_to_int(end);
 	VALUE mid, org_high;
+	RETURN_ENUMERATOR(range, 0, 0);
 	if (EXCL(range)) high = rb_funcall(high, '-', 1, INT2FIX(1));
 	org_high = high;
 
 	while (rb_cmpint(rb_funcall(low, id_cmp, 1, high), low, high) < 0) {
-	    mid = rb_funcall(rb_funcall(high, '+', 1, low), '/', 1, INT2FIX(2));
+	    mid = rb_funcall(rb_funcall(high, '+', 1, low), id_div, 1, INT2FIX(2));
 	    BSEARCH_CHECK(mid);
 	    if (smaller) {
 		high = mid;
@@ -754,14 +694,14 @@ range_bsearch(VALUE range)
 }
 
 static VALUE
-each_i(VALUE v, void *arg)
+each_i(RB_BLOCK_CALL_FUNC_ARGLIST(v, arg))
 {
     rb_yield(v);
     return Qnil;
 }
 
 static VALUE
-sym_each_i(VALUE v, void *arg)
+sym_each_i(RB_BLOCK_CALL_FUNC_ARGLIST(v, arg))
 {
     rb_yield(rb_str_intern(v));
     return Qnil;
@@ -781,9 +721,15 @@ range_size(VALUE range)
 {
     VALUE b = RANGE_BEG(range), e = RANGE_END(range);
     if (rb_obj_is_kind_of(b, rb_cNumeric) && rb_obj_is_kind_of(e, rb_cNumeric)) {
-	return num_interval_step_size(b, e, INT2FIX(1), EXCL(range));
+	return ruby_num_interval_step_size(b, e, INT2FIX(1), EXCL(range));
     }
     return Qnil;
+}
+
+static VALUE
+range_enum_size(VALUE range, VALUE args, VALUE eobj)
+{
+    return range_size(range);
 }
 
 /*
@@ -812,7 +758,7 @@ range_each(VALUE range)
 {
     VALUE beg, end;
 
-    RETURN_SIZED_ENUMERATOR(range, 0, 0, range_size);
+    RETURN_SIZED_ENUMERATOR(range, 0, 0, range_enum_size);
 
     beg = RANGE_BEG(range);
     end = RANGE_END(range);
@@ -842,14 +788,14 @@ range_each(VALUE range)
 
 	    args[0] = end;
 	    args[1] = EXCL(range) ? Qtrue : Qfalse;
-	    rb_block_call(tmp, rb_intern("upto"), 2, args, rb_yield, 0);
+	    rb_block_call(tmp, rb_intern("upto"), 2, args, each_i, 0);
 	}
 	else {
 	    if (!discrete_object_p(beg)) {
 		rb_raise(rb_eTypeError, "can't iterate from %s",
 			 rb_obj_classname(beg));
 	    }
-	    range_each_func(range, each_i, NULL);
+	    range_each_func(range, each_i, 0);
 	}
     }
     return range;
@@ -890,8 +836,9 @@ range_end(VALUE range)
 
 
 static VALUE
-first_i(VALUE i, VALUE *ary)
+first_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, cbarg))
 {
+    VALUE *ary = (VALUE *)cbarg;
     long n = NUM2LONG(ary[0]);
 
     if (n <= 0) {
@@ -1286,7 +1233,7 @@ static VALUE
 range_dumper(VALUE range)
 {
     VALUE v;
-    NEWOBJ_OF(m, struct RObject, rb_cObject, T_OBJECT);
+    NEWOBJ_OF(m, struct RObject, rb_cObject, T_OBJECT | (RGENGC_WB_PROTECTED_OBJECT ? FL_WB_PROTECTED : 1));
 
     v = (VALUE)m;
 
@@ -1303,9 +1250,10 @@ range_loader(VALUE range, VALUE obj)
         rb_raise(rb_eTypeError, "not a dumped range object");
     }
 
-    RSTRUCT(range)->as.ary[0] = rb_ivar_get(obj, id_beg);
-    RSTRUCT(range)->as.ary[1] = rb_ivar_get(obj, id_end);
-    RSTRUCT(range)->as.ary[2] = rb_ivar_get(obj, id_excl);
+    range_modify(range);
+    RANGE_SET_BEG(range, rb_ivar_get(obj, id_beg));
+    RANGE_SET_END(range, rb_ivar_get(obj, id_end));
+    RANGE_SET_EXCL(range, rb_ivar_get(obj, id_excl));
     return range;
 }
 
@@ -1313,7 +1261,7 @@ static VALUE
 range_alloc(VALUE klass)
 {
   /* rb_struct_alloc_noinit itself should not be used because
-   * rb_marshal_define_compat uses equality of allocaiton function */
+   * rb_marshal_define_compat uses equality of allocation function */
     return rb_struct_alloc_noinit(klass);
 }
 
@@ -1385,6 +1333,8 @@ Init_Range(void)
     id_beg = rb_intern("begin");
     id_end = rb_intern("end");
     id_excl = rb_intern("excl");
+    id_integer_p = rb_intern("integer?");
+    id_div = rb_intern("div");
 
     rb_cRange = rb_struct_define_without_accessor(
         "Range", rb_cObject, range_alloc,

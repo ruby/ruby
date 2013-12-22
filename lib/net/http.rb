@@ -266,7 +266,7 @@ module Net   #:nodoc:
   #     response = http.request request # Net::HTTPResponse object
   #   end
   #
-  # In previous versions of ruby you would need to require 'net/https' to use
+  # In previous versions of Ruby you would need to require 'net/https' to use
   # HTTPS.  This is no longer true.
   #
   # === Proxies
@@ -334,6 +334,7 @@ module Net   #:nodoc:
   #   HTTPResetContent::                    205
   #   HTTPPartialContent::                  206
   #   HTTPMultiStatus::                     207
+  #   HTTPIMUsed::                          226
   # HTTPRedirection::                    3xx
   #   HTTPMultipleChoices::                 300
   #   HTTPMovedPermanently::                301
@@ -395,8 +396,8 @@ module Net   #:nodoc:
     end
     # :startdoc:
 
-    # Turns on net/http 1.2 (ruby 1.8) features.
-    # Defaults to ON in ruby 1.8 or later.
+    # Turns on net/http 1.2 (Ruby 1.8) features.
+    # Defaults to ON in Ruby 1.8 or later.
     def HTTP.version_1_2
       true
     end
@@ -496,8 +497,8 @@ module Net   #:nodoc:
     #   require 'net/http'
     #   require 'uri'
     #
-    #   HTTP.post_form URI('http://www.example.com/search.cgi'),
-    #                  { "q" => "ruby", "max" => "50" }
+    #   Net::HTTP.post_form URI('http://www.example.com/search.cgi'),
+    #                       { "q" => "ruby", "max" => "50" }
     #
     def HTTP.post_form(url, params)
       req = Post.new(url)
@@ -671,7 +672,7 @@ module Net   #:nodoc:
     #
     # Sets an output stream for debugging.
     #
-    #   http = Net::HTTP.new
+    #   http = Net::HTTP.new(hostname)
     #   http.set_debug_output $stderr
     #   http.start { .... }
     #
@@ -701,13 +702,13 @@ module Net   #:nodoc:
     # Number of seconds to wait for the connection to open. Any number
     # may be used, including Floats for fractional seconds. If the HTTP
     # object cannot open a connection in this many seconds, it raises a
-    # Net::OpenTimeout exception.
+    # Net::OpenTimeout exception. The default value is +nil+.
     attr_accessor :open_timeout
 
     # Number of seconds to wait for one block to be read (via one read(2)
     # call). Any number may be used, including Floats for fractional
     # seconds. If the HTTP object cannot read data in this many seconds,
-    # it raises a Net::ReadTimeout exception.
+    # it raises a Net::ReadTimeout exception. The default value is 60 seconds.
     attr_reader :read_timeout
 
     # Setter for the read_timeout attribute.
@@ -716,8 +717,9 @@ module Net   #:nodoc:
       @read_timeout = sec
     end
 
-    # Seconds to wait for 100 Continue response.  If the HTTP object does not
-    # receive a response in this many seconds it sends the request body.
+    # Seconds to wait for 100 Continue response. If the HTTP object does not
+    # receive a response in this many seconds it sends the request body. The
+    # default value is +nil+.
     attr_reader :continue_timeout
 
     # Setter for the continue_timeout attribute.
@@ -876,6 +878,7 @@ module Net   #:nodoc:
       s = Timeout.timeout(@open_timeout, Net::OpenTimeout) {
         TCPSocket.open(conn_address, conn_port, @local_host, @local_port)
       }
+      s.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
       D "opened"
       if use_ssl?
         ssl_parameters = Hash.new
@@ -1122,13 +1125,6 @@ module Net   #:nodoc:
     #
     def get(path, initheader = {}, dest = nil, &block) # :yield: +body_segment+
       res = nil
-      if HAVE_ZLIB
-        unless  initheader.keys.any?{|k| k.downcase == "accept-encoding"}
-          initheader = initheader.merge({
-            "accept-encoding" => "gzip;q=1.0,deflate;q=0.6,identity;q=0.3"
-          })
-        end
-      end
       request(Get.new(path, initheader)) {|r|
         r.read_body dest, &block
         res = r
@@ -1410,6 +1406,7 @@ module Net   #:nodoc:
           req.exec @socket, @curr_http_version, edit_path(req.path)
           begin
             res = HTTPResponse.read_new(@socket)
+            res.decode_content = req.decode_content
           end while res.kind_of?(HTTPContinue)
 
           res.uri = req.uri
@@ -1423,7 +1420,9 @@ module Net   #:nodoc:
         raise
       rescue Net::ReadTimeout, IOError, EOFError,
              Errno::ECONNRESET, Errno::ECONNABORTED, Errno::EPIPE,
-             OpenSSL::SSL::SSLError, Timeout::Error => exception
+             # avoid a dependency on OpenSSL
+             defined?(OpenSSL::SSL) ? OpenSSL::SSL::SSLError : IOError,
+             Timeout::Error => exception
         if count == 0 && IDEMPOTENT_METHODS_.include?(req.method)
           count += 1
           @socket.close if @socket and not @socket.closed?

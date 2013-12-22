@@ -1,3 +1,20 @@
+# configure option:
+#   --with-dbm-type=COMMA-SEPARATED-NDBM-TYPES
+#
+# ndbm type:
+#   libc        ndbm compatible library in libc.
+#   db          Berkeley DB (libdb)
+#   db2         Berkeley DB (libdb2)
+#   db1         Berkeley DB (libdb1)
+#   db5         Berkeley DB (libdb5)
+#   db4         Berkeley DB (libdb4)
+#   db3         Berkeley DB (libdb3)
+#   gdbm_compat GDBM since 1.8.1 (libgdbm_compat)
+#   gdbm        GDBM until 1.8.0 (libgdbm)
+#   qdbm        QDBM (libqdbm)
+#   ndbm        Some legacy OS may have libndbm.
+
+# :stopdoc:
 require 'mkmf'
 
 dir_config("dbm")
@@ -252,3 +269,4 @@ if dblib.any? {|db| headers.fetch(db, ["ndbm.h"]).any? {|hdr| headers.db_check(d
   convertible_int("datum.dsize", headers.found, headers.defs)
   create_makefile("dbm")
 end
+# :startdoc:

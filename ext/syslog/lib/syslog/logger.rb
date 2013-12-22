@@ -24,6 +24,14 @@ require 'logger'
 #   log = Syslog::Logger.new 'my_program'
 #   log.info 'this line will be logged via syslog(3)'
 #
+# Also the facility may be set to specify the facility level which will be used:
+#
+#   log.info 'this line will be logged using Syslog default facility level'
+#
+#   log_local1 = Syslog::Logger.new 'my_program', Syslog::LOG_LOCAL1
+#   log_local1.info 'this line will be logged using local1 facility level'
+#
+#
 # You may need to perform some syslog.conf setup first.  For a BSD machine add
 # the following lines to /etc/syslog.conf:
 #
@@ -63,9 +71,9 @@ class Syslog::Logger
   ##
   # Maps Logger warning types to syslog(3) warning types.
   #
-  # Messages from ruby applications are not considered as critical as messages
+  # Messages from Ruby applications are not considered as critical as messages
   # from other system daemons using syslog(3), so most messages are reduced by
-  # one level.  For example, a fatal message for ruby's Logger is considered
+  # one level.  For example, a fatal message for Ruby's Logger is considered
   # an error for syslog(3).
 
   LEVEL_MAP = {
@@ -168,17 +176,24 @@ class Syslog::Logger
   attr_accessor :formatter
 
   ##
+  # The facility argument is used to specify what type of program is logging the message.
+
+  attr_accessor :facility
+
+  ##
   # Fills in variables for Logger compatibility.  If this is the first
   # instance of Syslog::Logger, +program_name+ may be set to change the logged
-  # program name.
+  # program name. The +facility+ may be set to specify the facility level which will be used.
   #
   # Due to the way syslog works, only one program name may be chosen.
 
-  def initialize program_name = 'ruby'
+  def initialize program_name = 'ruby', facility = nil
     @level = ::Logger::DEBUG
     @formatter = Formatter.new
 
     @@syslog ||= Syslog.open(program_name)
+
+    @facility = (facility || @@syslog.facility)
   end
 
   ##
@@ -187,8 +202,7 @@ class Syslog::Logger
   def add severity, message = nil, progname = nil, &block
     severity ||= ::Logger::UNKNOWN
     @level <= severity and
-      @@syslog.log LEVEL_MAP[severity], '%s', formatter.call(severity, Time.now, progname, (message || block.call))
+      @@syslog.log( (LEVEL_MAP[severity] | @facility), '%s', formatter.call(severity, Time.now, progname, (message || block.call)) )
     true
   end
 end
-

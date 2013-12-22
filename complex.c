@@ -210,17 +210,16 @@ f_negative_p(VALUE x)
 inline static VALUE
 f_zero_p(VALUE x)
 {
-    switch (TYPE(x)) {
-      case T_FIXNUM:
+    if (RB_TYPE_P(x, T_FIXNUM)) {
 	return f_boolcast(FIX2LONG(x) == 0);
-      case T_BIGNUM:
+    }
+    else if (RB_TYPE_P(x, T_BIGNUM)) {
 	return Qfalse;
-      case T_RATIONAL:
-      {
-	  VALUE num = RRATIONAL(x)->num;
+    }
+    else if (RB_TYPE_P(x, T_RATIONAL)) {
+	VALUE num = RRATIONAL(x)->num;
 
-	  return f_boolcast(FIXNUM_P(num) && FIX2LONG(num) == 0);
-      }
+	return f_boolcast(FIXNUM_P(num) && FIX2LONG(num) == 0);
     }
     return rb_funcall(x, id_eqeq_p, 1, ZERO);
 }
@@ -230,19 +229,18 @@ f_zero_p(VALUE x)
 inline static VALUE
 f_one_p(VALUE x)
 {
-    switch (TYPE(x)) {
-      case T_FIXNUM:
+    if (RB_TYPE_P(x, T_FIXNUM)) {
 	return f_boolcast(FIX2LONG(x) == 1);
-      case T_BIGNUM:
+    }
+    else if (RB_TYPE_P(x, T_BIGNUM)) {
 	return Qfalse;
-      case T_RATIONAL:
-      {
-	  VALUE num = RRATIONAL(x)->num;
-	  VALUE den = RRATIONAL(x)->den;
+    }
+    else if (RB_TYPE_P(x, T_RATIONAL)) {
+	VALUE num = RRATIONAL(x)->num;
+	VALUE den = RRATIONAL(x)->den;
 
-	  return f_boolcast(FIXNUM_P(num) && FIX2LONG(num) == 1 &&
-			    FIXNUM_P(den) && FIX2LONG(den) == 1);
-      }
+	return f_boolcast(FIXNUM_P(num) && FIX2LONG(num) == 1 &&
+			  FIXNUM_P(den) && FIX2LONG(den) == 1);
     }
     return rb_funcall(x, id_eqeq_p, 1, ONE);
 }
@@ -313,10 +311,10 @@ k_complex_p(VALUE x)
 inline static VALUE
 nucomp_s_new_internal(VALUE klass, VALUE real, VALUE imag)
 {
-    NEWOBJ_OF(obj, struct RComplex, klass, T_COMPLEX);
+    NEWOBJ_OF(obj, struct RComplex, klass, T_COMPLEX | (RGENGC_WB_PROTECTED_COMPLEX ? FL_WB_PROTECTED : 0));
 
-    obj->real = real;
-    obj->imag = imag;
+    RCOMPLEX_SET_REAL(obj, real);
+    RCOMPLEX_SET_IMAG(obj, imag);
 
     return (VALUE)obj;
 }
@@ -383,13 +381,10 @@ nucomp_canonicalization(int f)
 inline static void
 nucomp_real_check(VALUE num)
 {
-    switch (TYPE(num)) {
-      case T_FIXNUM:
-      case T_BIGNUM:
-      case T_FLOAT:
-      case T_RATIONAL:
-	break;
-      default:
+    if (!RB_TYPE_P(num, T_FIXNUM) &&
+	!RB_TYPE_P(num, T_BIGNUM) &&
+	!RB_TYPE_P(num, T_FLOAT) &&
+	!RB_TYPE_P(num, T_RATIONAL)) {
 	if (!k_numeric_p(num) || !f_real_p(num))
 	    rb_raise(rb_eTypeError, "not a real");
     }
@@ -483,6 +478,28 @@ f_complex_new2(VALUE klass, VALUE x, VALUE y)
  *
  *    Complex(1, 2)    #=> (1+2i)
  *    Complex('1+2i')  #=> (1+2i)
+ *
+ * Syntax of string form:
+ *
+ *   string form = extra spaces , complex , extra spaces ;
+ *   complex = real part | [ sign ] , imaginary part
+ *           | real part , sign , imaginary part
+ *           | rational , "@" , rational ;
+ *   real part = rational ;
+ *   imaginary part = imaginary unit | unsigned rational , imaginary unit ;
+ *   rational = [ sign ] , unsigned rational ;
+ *   unsigned rational = numerator | numerator , "/" , denominator ;
+ *   numerator = integer part | fractional part | integer part , fractional part ;
+ *   denominator = digits ;
+ *   integer part = digits ;
+ *   fractional part = "." , digits , [ ( "e" | "E" ) , [ sign ] , digits ] ;
+ *   imaginary unit = "i" | "I" | "j" | "J" ;
+ *   sign = "-" | "+" ;
+ *   digits = digit , { digit | "_" , digit };
+ *   digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+ *   extra spaces = ? \s* ? ;
+ *
+ * See String#to_c.
  */
 static VALUE
 nucomp_f_complex(int argc, VALUE *argv, VALUE klass)
@@ -1220,11 +1237,9 @@ f_signbit(VALUE x)
     !defined(signbit)
     extern int signbit(double);
 #endif
-    switch (TYPE(x)) {
-      case T_FLOAT: {
+    if (RB_TYPE_P(x, T_FLOAT)) {
 	double f = RFLOAT_VALUE(x);
 	return f_boolcast(!isnan(f) && signbit(f));
-      }
     }
     return f_negative_p(x);
 }
@@ -1310,8 +1325,8 @@ nucomp_loader(VALUE self, VALUE a)
 {
     get_dat1(self);
 
-    dat->real = rb_ivar_get(a, id_i_real);
-    dat->imag = rb_ivar_get(a, id_i_imag);
+    RCOMPLEX_SET_REAL(dat, rb_ivar_get(a, id_i_real));
+    RCOMPLEX_SET_IMAG(dat, rb_ivar_get(a, id_i_imag));
 
     return self;
 }
@@ -1324,6 +1339,7 @@ nucomp_marshal_dump(VALUE self)
     get_dat1(self);
 
     a = rb_assoc_new(dat->real, dat->imag);
+    rb_copy_generic_ivar(a, self);
     return a;
 }
 
@@ -1334,8 +1350,8 @@ nucomp_marshal_load(VALUE self, VALUE a)
     Check_Type(a, T_ARRAY);
     if (RARRAY_LEN(a) != 2)
 	rb_raise(rb_eArgError, "marshaled complex must have an array whose length is 2 but %ld", RARRAY_LEN(a));
-    rb_ivar_set(self, id_i_real, RARRAY_PTR(a)[0]);
-    rb_ivar_set(self, id_i_imag, RARRAY_PTR(a)[1]);
+    rb_ivar_set(self, id_i_real, RARRAY_AREF(a, 0));
+    rb_ivar_set(self, id_i_imag, RARRAY_AREF(a, 1));
     return self;
 }
 
@@ -1824,6 +1840,8 @@ string_to_c_strict(VALUE self)
  *    '-0.0-0.0i'.to_c   #=> (-0.0-0.0i)
  *    '1/2+3/4i'.to_c    #=> ((1/2)+(3/4)*i)
  *    'ruby'.to_c        #=> (0+0i)
+ *
+ * See Kernel.Complex.
  */
 static VALUE
 string_to_c(VALUE self)
@@ -1862,30 +1880,17 @@ nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
     backref = rb_backref_get();
     rb_match_busy(backref);
 
-    switch (TYPE(a1)) {
-      case T_FIXNUM:
-      case T_BIGNUM:
-      case T_FLOAT:
-	break;
-      case T_STRING:
+    if (RB_TYPE_P(a1, T_STRING)) {
 	a1 = string_to_c_strict(a1);
-	break;
     }
 
-    switch (TYPE(a2)) {
-      case T_FIXNUM:
-      case T_BIGNUM:
-      case T_FLOAT:
-	break;
-      case T_STRING:
+    if (RB_TYPE_P(a2, T_STRING)) {
 	a2 = string_to_c_strict(a2);
-	break;
     }
 
     rb_backref_set(backref);
 
-    switch (TYPE(a1)) {
-      case T_COMPLEX:
+    if (RB_TYPE_P(a1, T_COMPLEX)) {
 	{
 	    get_dat1(a1);
 
@@ -1894,8 +1899,7 @@ nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
 	}
     }
 
-    switch (TYPE(a2)) {
-      case T_COMPLEX:
+    if (RB_TYPE_P(a2, T_COMPLEX)) {
 	{
 	    get_dat1(a2);
 
@@ -1904,8 +1908,7 @@ nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
 	}
     }
 
-    switch (TYPE(a1)) {
-      case T_COMPLEX:
+    if (RB_TYPE_P(a1, T_COMPLEX)) {
 	if (argc == 1 || (k_exact_zero_p(a2)))
 	    return a1;
     }
@@ -1993,6 +1996,7 @@ numeric_arg(VALUE self)
 /*
  * call-seq:
  *    num.rect  ->  array
+ *    num.rectangular  ->  array
  *
  * Returns an array; [num, 0].
  */

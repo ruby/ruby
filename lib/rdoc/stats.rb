@@ -187,12 +187,12 @@ class RDoc::Stats
   # A report that says you did a great job!
 
   def great_job
-    report = []
-    report << '100% documentation!'
-    report << nil
-    report << 'Great Job!'
+    report = RDoc::Markup::Document.new
 
-    report.join "\n"
+    report << RDoc::Markup::Paragraph.new('100% documentation!')
+    report << RDoc::Markup::Paragraph.new('Great Job!')
+
+    report
   end
 
   ##
@@ -217,8 +217,6 @@ class RDoc::Stats
       extend RDoc::Text
     end
 
-    report = []
-
     if @coverage_level.zero? then
       calculate
 
@@ -227,14 +225,20 @@ class RDoc::Stats
 
     ucm = @store.unique_classes_and_modules
 
+    report = RDoc::Markup::Document.new
+    report << RDoc::Markup::Paragraph.new('The following items are not documented:')
+    report << RDoc::Markup::BlankLine.new
+
     ucm.sort.each do |cm|
-      report << report_class_module(cm) {
+      body = report_class_module(cm) {
         [
           report_constants(cm),
           report_attributes(cm),
           report_methods(cm),
         ].compact
       }
+
+      report << body if body
     end
 
     if @coverage_level > 0 then
@@ -243,10 +247,7 @@ class RDoc::Stats
       return great_job if @num_items == @doc_items
     end
 
-    report.unshift nil
-    report.unshift 'The following items are not documented:'
-
-    report.join "\n"
+    report
   end
 
   ##
@@ -260,7 +261,8 @@ class RDoc::Stats
     cm.each_attribute do |attr|
       next if attr.documented?
       line = attr.line ? ":#{attr.line}" : nil
-      report << "  #{attr.definition} :#{attr.name} # in file #{attr.file.full_name}#{line}"
+      report << "  #{attr.definition} :#{attr.name} # in file #{attr.file.full_name}#{line}\n"
+      report << "\n"
     end
 
     report
@@ -273,38 +275,47 @@ class RDoc::Stats
     return if cm.fully_documented? and @coverage_level.zero?
     return unless cm.display?
 
-    report = []
+    report = RDoc::Markup::Document.new
 
     if cm.in_files.empty? then
-      report << "# #{cm.definition} is referenced but empty."
-      report << "#"
-      report << "# It probably came from another project.  I'm sorry I'm holding it against you."
-      report << nil
+      report << RDoc::Markup::Paragraph.new("#{cm.definition} is referenced but empty.")
+      report << RDoc::Markup::Paragraph.new("It probably came from another project.  I'm sorry I'm holding it against you.")
 
       return report
     elsif cm.documented? then
       documented = true
-      report << "#{cm.definition} # is documented"
+      klass = RDoc::Markup::Verbatim.new("#{cm.definition} # is documented\n")
     else
-      report << '# in files:'
+      report << RDoc::Markup::Paragraph.new('In files:')
+
+      list = RDoc::Markup::List.new :BULLET
 
       cm.in_files.each do |file|
-        report << "#   #{file.full_name}"
+        para = RDoc::Markup::Paragraph.new file.full_name
+        list << RDoc::Markup::ListItem.new(nil, para)
       end
 
-      report << nil
+      report << list
+      report << RDoc::Markup::BlankLine.new
 
-      report << "#{cm.definition}"
+      klass = RDoc::Markup::Verbatim.new("#{cm.definition}\n")
     end
+
+    klass << "\n"
 
     body = yield.flatten # HACK remove #flatten
 
-    return if body.empty? and documented
+    if body.empty? then
+      return if documented
 
-    report << nil << body unless body.empty?
+      klass.parts.pop
+    else
+      klass.parts.concat body
+    end
 
-    report << 'end'
-    report << nil
+    klass << "end\n"
+
+    report << klass
 
     report
   end
@@ -323,8 +334,9 @@ class RDoc::Stats
       next if constant.documented? || constant.is_alias_for
 
       line = constant.line ? ":#{constant.line}" : line
-      report << "  # in file #{constant.file.full_name}#{line}"
-      report << "  #{constant.name} = nil"
+      report << "  # in file #{constant.file.full_name}#{line}\n"
+      report << "  #{constant.name} = nil\n"
+      report << "\n"
     end
 
     report
@@ -350,7 +362,7 @@ class RDoc::Stats
           @undoc_params += undoc.length
 
           undoc = undoc.map do |param| "+#{param}+" end
-          param_report = "  # #{undoc.join ', '} is not documented"
+          param_report = "  # #{undoc.join ', '} is not documented\n"
         end
       end
 
@@ -359,10 +371,10 @@ class RDoc::Stats
       line = method.line ? ":#{method.line}" : nil
       scope = method.singleton ? 'self.' : nil
 
-      report << "  # in file #{method.file.full_name}#{line}"
+      report << "  # in file #{method.file.full_name}#{line}\n"
       report << param_report if param_report
-      report << "  def #{scope}#{method.name}#{method.params}; end"
-      report << nil
+      report << "  def #{scope}#{method.name}#{method.params}; end\n"
+      report << "\n"
     end
 
     report
@@ -385,35 +397,36 @@ class RDoc::Stats
       @undoc_params,
     ].max.to_s.length
 
-    report = []
-    report << 'Files:      %*d' % [num_width, @num_files]
+    report = RDoc::Markup::Verbatim.new
 
-    report << nil
+    report << "Files:      %*d\n" % [num_width, @num_files]
 
-    report << 'Classes:    %*d (%*d undocumented)' % [
+    report << "\n"
+
+    report << "Classes:    %*d (%*d undocumented)\n" % [
       num_width, @num_classes, undoc_width, @undoc_classes]
-    report << 'Modules:    %*d (%*d undocumented)' % [
+    report << "Modules:    %*d (%*d undocumented)\n" % [
       num_width, @num_modules, undoc_width, @undoc_modules]
-    report << 'Constants:  %*d (%*d undocumented)' % [
+    report << "Constants:  %*d (%*d undocumented)\n" % [
       num_width, @num_constants, undoc_width, @undoc_constants]
-    report << 'Attributes: %*d (%*d undocumented)' % [
+    report << "Attributes: %*d (%*d undocumented)\n" % [
       num_width, @num_attributes, undoc_width, @undoc_attributes]
-    report << 'Methods:    %*d (%*d undocumented)' % [
+    report << "Methods:    %*d (%*d undocumented)\n" % [
       num_width, @num_methods, undoc_width, @undoc_methods]
-    report << 'Parameters: %*d (%*d undocumented)' % [
+    report << "Parameters: %*d (%*d undocumented)\n" % [
       num_width, @num_params, undoc_width, @undoc_params] if
         @coverage_level > 0
 
-    report << nil
+    report << "\n"
 
-    report << 'Total:      %*d (%*d undocumented)' % [
+    report << "Total:      %*d (%*d undocumented)\n" % [
       num_width, @num_items, undoc_width, @undoc_items]
 
-    report << '%6.2f%% documented' % percent_doc
-    report << nil
-    report << 'Elapsed: %0.1fs' % (Time.now - @start)
+    report << "%6.2f%% documented\n" % percent_doc
+    report << "\n"
+    report << "Elapsed: %0.1fs\n" % (Time.now - @start)
 
-    report.join "\n"
+    RDoc::Markup::Document.new report
   end
 
   ##

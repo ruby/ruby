@@ -25,18 +25,26 @@ extern "C" {
 #include RUBY_EXTCONF_H
 #endif
 
+#if !defined(HAVE_STRUCT_TIMEVAL) || !defined(HAVE_STRUCT_TIMESPEC)
+#if defined(HAVE_TIME_H)
+# include <time.h>
+#endif
 #if defined(HAVE_SYS_TIME_H)
-#  include <sys/time.h>
-#elif !defined(_WIN32)
-#  define time_t long
+# include <sys/time.h>
+#endif
+#endif
+
+#ifndef RUBY_SYMBOL_EXPORT_BEGIN
+# define RUBY_SYMBOL_EXPORT_BEGIN /* begin */
+# define RUBY_SYMBOL_EXPORT_END   /* end */
+#endif
+
+#if !defined(HAVE_STRUCT_TIMEVAL)
 struct timeval {
     time_t tv_sec;	/* seconds */
     long tv_usec;	/* microseconds */
 };
-#endif
-#if defined(HAVE_SYS_TYPES_H)
-#  include <sys/types.h>
-#endif
+#endif /* HAVE_STRUCT_TIMEVAL */
 
 #if !defined(HAVE_STRUCT_TIMESPEC)
 struct timespec {
@@ -52,11 +60,6 @@ struct timezone {
 };
 #endif
 
-#if defined(HAVE___SYSCALL) && (defined(__APPLE__) || defined(__OpenBSD__))
-/* Mac OS X and OpenBSD have __syscall but don't define it in headers */
-off_t __syscall(quad_t number, ...);
-#endif
-
 #ifdef RUBY_EXPORT
 #undef RUBY_EXTERN
 #endif
@@ -64,9 +67,7 @@ off_t __syscall(quad_t number, ...);
 #define RUBY_EXTERN extern
 #endif
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+RUBY_SYMBOL_EXPORT_BEGIN
 
 #ifndef HAVE_ACOSH
 RUBY_EXTERN double acosh(double);
@@ -231,9 +232,7 @@ RUBY_EXTERN int ruby_close(int);
 RUBY_EXTERN void setproctitle(const char *fmt, ...);
 #endif
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+RUBY_SYMBOL_EXPORT_END
 
 #if defined(__cplusplus)
 #if 0

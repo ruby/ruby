@@ -18,6 +18,10 @@ Usage:  irb.rb [options] [programfile] [arguments]
   -E enc            ruby -E と同じ.
   -w                ruby -w と同じ.
   -W[level=2]       ruby -W と同じ.
+  --context-mode n  新しいワークスペースを作成した時に関連する Binding
+		    オブジェクトの作成方法を 0 から 3 のいずれかに設定する.
+  --echo	    実行結果を表示する(デフォルト).
+  --noecho	    実行結果を表示しない.
   --inspect	    結果出力にinspectを用いる(bcモード以外はデフォルト).
   --noinspect	    結果出力にinspectを用いない.
   --readline	    readlineライブラリを利用する.
@@ -28,14 +32,22 @@ Usage:  irb.rb [options] [programfile] [arguments]
 		    用意されています.
   --inf-ruby-mode   emacsのinf-ruby-mode用のプロンプト表示を行なう. 特
 		    に指定がない限り, readlineライブラリは使わなくなる.
-  --simple-prompt   非常にシンプルなプロンプトを用いるモードです.
+  --sample-book-mode/--simple-prompt
+		    非常にシンプルなプロンプトを用いるモードです.
   --noprompt	    プロンプト表示を行なわない.
+  --single-irb	    irb 中で self を実行して得られるオブジェクトをサ
+		    ブ irb と共有する.
   --tracer	    コマンド実行時にトレースを行なう.
   --back-trace-limit n
 		    バックトレース表示をバックトレースの頭から n, 後ろ
 		    からnだけ行なう. デフォルトは16
-  --irb_debug n	    irbのデバッグデバッグレベルをnに設定する(利用しな
-		    い方が無難でしょう).
-  -v, --version	    irbのバージョンを表示する
+
+  --irb_debug n	    irbのデバッグレベルをnに設定する(非推奨).
+
+  --verbose	    詳細なメッセージを出力する.
+  --noverbose	    詳細なメッセージを出力しない(デフォルト).
+  -v, --version	    irbのバージョンを表示する.
+  -h, --help	    irb のヘルプを表示する.
+  --		    以降のコマンドライン引数をオプションとして扱わない.
 
 # vim:fileencoding=utf-8

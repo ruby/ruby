@@ -22,11 +22,12 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
       --rdoc
       --ri
       -E
-      -P HighSecurity
       -f
       -i /install_to
       -w
     ]
+
+    args.concat %w[-P HighSecurity] if defined?(OpenSSL::SSL)
 
     assert @cmd.handles?(args)
   end
@@ -100,6 +101,8 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
   end
 
   def test_security_policy
+    skip 'openssl is missing' unless defined?(OpenSSL::SSL)
+
     @cmd.handle_options %w[-P HighSecurity]
 
     assert_equal Gem::Security::HighSecurity, @cmd.options[:security_policy]

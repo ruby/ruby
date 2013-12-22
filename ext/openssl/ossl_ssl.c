@@ -29,6 +29,9 @@ VALUE eSSLError;
 VALUE cSSLContext;
 VALUE cSSLSocket;
 
+static VALUE eSSLErrorWaitReadable;
+static VALUE eSSLErrorWaitWritable;
+
 #define ossl_sslctx_set_cert(o,v)        	rb_iv_set((o),"@cert",(v))
 #define ossl_sslctx_set_key(o,v)         	rb_iv_set((o),"@key",(v))
 #define ossl_sslctx_set_client_ca(o,v)   	rb_iv_set((o),"@client_ca",(v))
@@ -99,6 +102,8 @@ static const char *ossl_ssl_attrs[] = {
 };
 
 ID ID_callback_state;
+
+static VALUE sym_exception;
 
 /*
  * SSLContext class
@@ -418,7 +423,7 @@ ossl_sslctx_session_new_cb(SSL *ssl, SSL_SESSION *sess)
     }
 
     /*
-     * return 0 which means to OpenSSL that the the session is still
+     * return 0 which means to OpenSSL that the session is still
      * valid (since we created Ruby Session object) and was not freed by us
      * with SSL_SESSION_free(). Call SSLContext#remove_session(sess) in
      * session_get_cb block if you don't want OpenSSL to cache the session
@@ -472,7 +477,7 @@ ossl_sslctx_session_remove_cb(SSL_CTX *ctx, SSL_SESSION *sess)
 }
 
 static VALUE
-ossl_sslctx_add_extra_chain_cert_i(VALUE i, VALUE arg)
+ossl_sslctx_add_extra_chain_cert_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, arg))
 {
     X509 *x509;
     SSL_CTX *ctx;
@@ -1092,6 +1097,7 @@ ossl_sslctx_flush_sessions(int argc, VALUE *argv, VALUE self)
 /*
  * SSLSocket class
  */
+#ifndef OPENSSL_NO_SOCK
 static void
 ossl_ssl_shutdown(SSL *ssl)
 {
@@ -1116,7 +1122,6 @@ ossl_ssl_shutdown(SSL *ssl)
 static void
 ossl_ssl_free(SSL *ssl)
 {
-    ossl_ssl_shutdown(ssl);
     SSL_free(ssl);
 }
 
@@ -1132,7 +1137,7 @@ ossl_ssl_s_alloc(VALUE klass)
  *    SSLSocket.new(io, ctx) => aSSLSocket
  *
  * Creates a new SSL socket from +io+ which must be a real ruby object (not an
- * IO-like object that responds to read/write.
+ * IO-like object that responds to read/write).
  *
  * If +ctx+ is provided the SSL Sockets initial params will be taken from
  * the context.
@@ -1230,8 +1235,7 @@ static void
 write_would_block(int nonblock)
 {
     if (nonblock) {
-        VALUE exc = ossl_exc_new(eSSLError, "write would block");
-        rb_extend_object(exc, rb_mWaitWritable);
+        VALUE exc = ossl_exc_new(eSSLErrorWaitWritable, "write would block");
         rb_exc_raise(exc);
     }
 }
@@ -1240,8 +1244,7 @@ static void
 read_would_block(int nonblock)
 {
     if (nonblock) {
-        VALUE exc = ossl_exc_new(eSSLError, "read would block");
-        rb_extend_object(exc, rb_mWaitReadable);
+        VALUE exc = ossl_exc_new(eSSLErrorWaitReadable, "read would block");
         rb_exc_raise(exc);
     }
 }
@@ -1372,10 +1375,16 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 {
     SSL *ssl;
     int ilen, nread = 0;
+    int no_exception = 0;
     VALUE len, str;
     rb_io_t *fptr;
+    VALUE opts = Qnil;
 
-    rb_scan_args(argc, argv, "11", &len, &str);
+    rb_scan_args(argc, argv, "11:", &len, &str, &opts);
+
+    if (!NIL_P(opts) && Qfalse == rb_hash_aref(opts, sym_exception))
+	no_exception = 1;
+
     ilen = NUM2INT(len);
     if(NIL_P(str)) str = rb_str_new(0, ilen);
     else{
@@ -1396,17 +1405,23 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 	    case SSL_ERROR_NONE:
 		goto end;
 	    case SSL_ERROR_ZERO_RETURN:
+		if (no_exception) { return Qnil; }
 		rb_eof_error();
 	    case SSL_ERROR_WANT_WRITE:
+		if (no_exception) { return ID2SYM(rb_intern("wait_writable")); }
                 write_would_block(nonblock);
                 rb_io_wait_writable(FPTR_TO_FD(fptr));
                 continue;
 	    case SSL_ERROR_WANT_READ:
+		if (no_exception) { return ID2SYM(rb_intern("wait_readable")); }
                 read_would_block(nonblock);
                 rb_io_wait_readable(FPTR_TO_FD(fptr));
 		continue;
 	    case SSL_ERROR_SYSCALL:
-		if(ERR_peek_error() == 0 && nread == 0) rb_eof_error();
+		if(ERR_peek_error() == 0 && nread == 0) {
+		    if (no_exception) { return Qnil; }
+		    rb_eof_error();
+		}
 		rb_sys_fail(0);
 	    default:
 		ossl_raise(eSSLError, "SSL_read");
@@ -1444,9 +1459,11 @@ ossl_ssl_read(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *    ssl.sysread_nonblock(length) => string
  *    ssl.sysread_nonblock(length, buffer) => buffer
+ *    ssl.sysread_nonblock(length[, buffer [, opts]) => buffer
  *
  * A non-blocking version of #sysread.  Raises an SSLError if reading would
- * block.
+ * block.  If "exception: false" is passed, this method returns a symbol of
+ * :wait_readable, :wait_writable, or nil, rather than raising an exception.
  *
  * Reads +length+ bytes from the SSL connection.  If a pre-allocated +buffer+
  * is provided the data will be written into it.
@@ -1458,7 +1475,7 @@ ossl_ssl_read_nonblock(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-ossl_ssl_write_internal(VALUE self, VALUE str, int nonblock)
+ossl_ssl_write_internal(VALUE self, VALUE str, int nonblock, int no_exception)
 {
     SSL *ssl;
     int nwrite = 0;
@@ -1475,10 +1492,12 @@ ossl_ssl_write_internal(VALUE self, VALUE str, int nonblock)
 	    case SSL_ERROR_NONE:
 		goto end;
 	    case SSL_ERROR_WANT_WRITE:
+		if (no_exception) { return ID2SYM(rb_intern("wait_writable")); }
                 write_would_block(nonblock);
                 rb_io_wait_writable(FPTR_TO_FD(fptr));
                 continue;
 	    case SSL_ERROR_WANT_READ:
+		if (no_exception) { return ID2SYM(rb_intern("wait_readable")); }
                 read_would_block(nonblock);
                 rb_io_wait_readable(FPTR_TO_FD(fptr));
                 continue;
@@ -1508,7 +1527,7 @@ ossl_ssl_write_internal(VALUE self, VALUE str, int nonblock)
 static VALUE
 ossl_ssl_write(VALUE self, VALUE str)
 {
-    return ossl_ssl_write_internal(self, str, 0);
+    return ossl_ssl_write_internal(self, str, 0, 0);
 }
 
 /*
@@ -1519,9 +1538,18 @@ ossl_ssl_write(VALUE self, VALUE str)
  * SSLError if writing would block.
  */
 static VALUE
-ossl_ssl_write_nonblock(VALUE self, VALUE str)
+ossl_ssl_write_nonblock(int argc, VALUE *argv, VALUE self)
 {
-    return ossl_ssl_write_internal(self, str, 1);
+    VALUE str;
+    VALUE opts = Qnil;
+    int no_exception = 0;
+
+    rb_scan_args(argc, argv, "1:", &str, &opts);
+
+    if (!NIL_P(opts) && Qfalse == rb_hash_aref(opts, sym_exception))
+	no_exception = 1;
+
+    return ossl_ssl_write_internal(self, str, 1, no_exception);
 }
 
 /*
@@ -1537,9 +1565,16 @@ ossl_ssl_close(VALUE self)
 
     ossl_ssl_data_get_struct(self, ssl);
 
-    ossl_ssl_shutdown(ssl);
-    if (RTEST(ossl_ssl_get_sync_close(self)))
-	rb_funcall(ossl_ssl_get_io(self), rb_intern("close"), 0);
+    if (ssl) {
+	VALUE io = ossl_ssl_get_io(self);
+	if (!RTEST(rb_funcall(io, rb_intern("closed?"), 0))) {
+	    ossl_ssl_shutdown(ssl);
+	    SSL_free(ssl);
+	    DATA_PTR(self) = NULL;
+	    if (RTEST(ossl_ssl_get_sync_close(self)))
+		rb_funcall(io, rb_intern("close"), 0);
+	}
+    }
 
     return Qnil;
 }
@@ -1627,7 +1662,7 @@ ossl_ssl_get_peer_cert_chain(VALUE self)
 
 /*
 * call-seq:
-*    ssl.version => String
+*    ssl.ssl_version => String
 *
 * Returns a String representing the SSL/TLS version that was negotiated
 * for the connection, for example "TLSv1.2".
@@ -1788,7 +1823,7 @@ ossl_ssl_get_client_ca_list(VALUE self)
     return ossl_x509name_sk2ary(ca);
 }
 
-#ifdef HAVE_OPENSSL_NPN_NEGOTIATED
+# ifdef HAVE_OPENSSL_NPN_NEGOTIATED
 /*
  * call-seq:
  *    ssl.npn_protocol => String
@@ -1811,7 +1846,8 @@ ossl_ssl_npn_protocol(VALUE self)
     else
 	return rb_str_new((const char *) out, outlen);
 }
-#endif
+# endif
+#endif /* !defined(OPENSSL_NO_SOCK) */
 
 void
 Init_ossl_ssl()
@@ -1846,6 +1882,10 @@ Init_ossl_ssl()
      * Generic error class raised by SSLSocket and SSLContext.
      */
     eSSLError = rb_define_class_under(mSSL, "SSLError", eOSSLError);
+    eSSLErrorWaitReadable = rb_define_class_under(mSSL, "SSLErrorWaitReadable", eSSLError);
+    rb_include_module(eSSLErrorWaitReadable, rb_mWaitReadable);
+    eSSLErrorWaitWritable = rb_define_class_under(mSSL, "SSLErrorWaitWritable", eSSLError);
+    rb_include_module(eSSLErrorWaitWritable, rb_mWaitWritable);
 
     Init_ossl_ssl_session();
 
@@ -1964,7 +2004,7 @@ Init_ossl_ssl()
 
     /*
      * Sets the context in which a session can be reused.  This allows
-     * sessions for multiple applications to be distinguished, for exapmle, by
+     * sessions for multiple applications to be distinguished, for example, by
      * name.
      */
     rb_attr(cSSLContext, rb_intern("session_id_context"), 1, 1, Qfalse);
@@ -2138,6 +2178,9 @@ Init_ossl_ssl()
      *
      */
     cSSLSocket = rb_define_class_under(mSSL, "SSLSocket", rb_cObject);
+#ifdef OPENSSL_NO_SOCK
+    rb_define_method(cSSLSocket, "initialize", rb_notimplement, -1);
+#else
     rb_define_alloc_func(cSSLSocket, ossl_ssl_s_alloc);
     for(i = 0; i < numberof(ossl_ssl_attr_readers); i++)
         rb_attr(cSSLSocket, rb_intern(ossl_ssl_attr_readers[i]), 1, 0, Qfalse);
@@ -2152,7 +2195,7 @@ Init_ossl_ssl()
     rb_define_method(cSSLSocket, "sysread",    ossl_ssl_read, -1);
     rb_define_private_method(cSSLSocket, "sysread_nonblock",    ossl_ssl_read_nonblock, -1);
     rb_define_method(cSSLSocket, "syswrite",   ossl_ssl_write, 1);
-    rb_define_private_method(cSSLSocket, "syswrite_nonblock",    ossl_ssl_write_nonblock, 1);
+    rb_define_private_method(cSSLSocket, "syswrite_nonblock",    ossl_ssl_write_nonblock, -1);
     rb_define_method(cSSLSocket, "sysclose",   ossl_ssl_close, 0);
     rb_define_method(cSSLSocket, "cert",       ossl_ssl_get_cert, 0);
     rb_define_method(cSSLSocket, "peer_cert",  ossl_ssl_get_peer_cert, 0);
@@ -2166,8 +2209,9 @@ Init_ossl_ssl()
     rb_define_method(cSSLSocket, "session=",    ossl_ssl_set_session, 1);
     rb_define_method(cSSLSocket, "verify_result", ossl_ssl_get_verify_result, 0);
     rb_define_method(cSSLSocket, "client_ca", ossl_ssl_get_client_ca_list, 0);
-#ifdef HAVE_OPENSSL_NPN_NEGOTIATED
+# ifdef HAVE_OPENSSL_NPN_NEGOTIATED
     rb_define_method(cSSLSocket, "npn_protocol", ossl_ssl_npn_protocol, 0);
+# endif
 #endif
 
 #define ossl_ssl_def_const(x) rb_define_const(mSSL, #x, INT2NUM(SSL_##x))
@@ -2222,4 +2266,6 @@ Init_ossl_ssl()
     ossl_ssl_def_const(OP_PKCS1_CHECK_2);
     ossl_ssl_def_const(OP_NETSCAPE_CA_DN_BUG);
     ossl_ssl_def_const(OP_NETSCAPE_DEMO_CIPHER_CHANGE_BUG);
+
+    sym_exception = ID2SYM(rb_intern("exception"));
 }

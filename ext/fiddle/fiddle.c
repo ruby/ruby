@@ -48,7 +48,6 @@ rb_fiddle_malloc(VALUE self, VALUE size)
 {
     void *ptr;
 
-    rb_secure(4);
     ptr = (void*)ruby_xmalloc(NUM2INT(size));
     return PTR2NUM(ptr);
 }
@@ -65,7 +64,6 @@ rb_fiddle_realloc(VALUE self, VALUE addr, VALUE size)
 {
     void *ptr = NUM2PTR(addr);
 
-    rb_secure(4);
     ptr = (void*)ruby_xrealloc(ptr, NUM2INT(size));
     return PTR2NUM(ptr);
 }
@@ -80,7 +78,6 @@ rb_fiddle_free(VALUE self, VALUE addr)
 {
     void *ptr = NUM2PTR(addr);
 
-    rb_secure(4);
     ruby_xfree(ptr);
     return Qnil;
 }
@@ -104,7 +101,6 @@ rb_fiddle_free(VALUE self, VALUE addr)
 VALUE
 rb_fiddle_ptr2value(VALUE self, VALUE addr)
 {
-    rb_secure(4);
     return (VALUE)NUM2PTR(addr);
 }
 
@@ -144,7 +140,7 @@ Init_fiddle(void)
      *
      * It wraps {libffi}[http://sourceware.org/libffi/], a popular C library
      * which provides a portable interface that allows code written in one
-     * language to clal code written in another language.
+     * language to call code written in another language.
      *
      * == Example
      *

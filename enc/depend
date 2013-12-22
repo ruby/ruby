@@ -10,6 +10,9 @@
 % rule_subst = CONFIG["RULE_SUBST"] || "%s"
 % transvpath = rule_subst.dup.sub!(/\{[^{}]+\}/, '$(TRANSVPATH)/') || "enc/trans/%s"
 % transvpath_prefix = (rule_subst.dup.sub!(/\{[^{}]+\}/, '{$(TRANSVPATH)}') || "%s") % ""
+% CONFIG['ARFLAGS'] = 'rcu ' if (CONFIG['ARFLAGS'] || "").empty?
+% CONFIG['RANLIB'] = ':' if (CONFIG['RANLIB'] || "").empty?
+% CONFIG['CPPFLAGS'] += " -DRUBY_EXPORT=1" if CONFIG["EXTSTATIC"] == "static"
 % if File::ALT_SEPARATOR
 %   pathrep = proc {|path| path.gsub('/', File::ALT_SEPARATOR).gsub(/\$\(([@<?*]\w?|\w+)\)/, "$(\\1:/=\\#{File::ALT_SEPARATOR})")}
 % else
@@ -63,12 +66,12 @@ libtrans: $(LIBTRANS)
 $(LIBENC): $(ENCOBJS)
 	@$(RM) $@
 	$(ECHO) linking statically-linked encoding library $@
-	$(Q) $(AR) <%=CONFIG['ARFLAGS'] || 'rcu' %> $@ $(ENCOBJS)
+	$(Q) $(AR) $(ARFLAGS)$@ $(ENCOBJS)
 	@-$(RANLIB) $@ 2> /dev/null || true
 $(LIBTRANS): $(TRANSOBJS)
 	@$(RM) $@
 	$(ECHO) linking statically-linked transcoder library $@
-	$(Q) $(AR) <%=CONFIG['ARFLAGS'] || 'rcu' %> $@ $(TRANSOBJS)
+	$(Q) $(AR) $(ARFLAGS)$@ $(TRANSOBJS)
 	@-$(RANLIB) $@ 2> /dev/null || true
 
 srcs: $(TRANSCSRCS)
@@ -80,13 +83,13 @@ srcs: $(TRANSCSRCS)
 % unless ENCS.empty? or TRANS.empty?
 
 %   unless ENCS.empty?
-$(ENCOBJS): regenc.h oniguruma.h config.h defines.h
+$(ENCOBJS): $(hdrdir)/ruby.h regenc.h oniguruma.h config.h defines.h ruby.h missing.h subst.h intern.h st.h encoding.h
 %   end
 %   ENC_DEPS.each do |e, deps|
 enc/<%=e%>.$(OBJEXT): <%=deps.map {|n| rule_subst % n}.join(' ')%>
 %   end
 %   unless TRANS.empty?
-$(TRANSOBJS): ruby.h intern.h config.h defines.h missing.h encoding.h oniguruma.h st.h transcode_data.h
+$(TRANSOBJS): $(hdrdir)/ruby.h ruby.h intern.h config.h defines.h missing.h encoding.h oniguruma.h st.h transcode_data.h subst.h encoding.h
 %   end
 %   ATRANS.each do |e|
 %     src = "#{e}.trans"

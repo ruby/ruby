@@ -188,6 +188,13 @@ module XMLRPC # :nodoc:
     end
 
 
+    # Returns the Net::HTTP object for the client. If you want to
+    # change HTTP client options except header, cookie, timeout,
+    # user and password, use Net::HTTP directly.
+    #
+    # Since 2.1.0.
+    attr_reader :http
+
     # Add additional HTTP headers to the request
     attr_accessor :http_header_extra
 
@@ -469,7 +476,7 @@ module XMLRPC # :nodoc:
         }
       else
         # reuse the HTTP object for each call => connection alive is possible
-        # we must start connection explicitely first time so that http.request
+        # we must start connection explicitly first time so that http.request
         # does not assume that we don't want keepalive
         @http.start if not @http.started?
 
@@ -506,16 +513,25 @@ module XMLRPC # :nodoc:
         raise "Wrong size. Was #{data.bytesize}, should be #{expected}"
       end
 
-      set_cookies = resp.get_fields("Set-Cookie")
-      if set_cookies and !set_cookies.empty?
-        require 'webrick/cookie'
-        @cookie = set_cookies.collect do |set_cookie|
-          cookie = WEBrick::Cookie.parse_set_cookie(set_cookie)
-          WEBrick::Cookie.new(cookie.name, cookie.value).to_s
-        end.join("; ")
-      end
+      parse_set_cookies(resp.get_fields("Set-Cookie"))
 
       return data
+    end
+
+    def parse_set_cookies(set_cookies)
+      return if set_cookies.nil?
+      return if set_cookies.empty?
+      require 'webrick/cookie'
+      pairs = {}
+      set_cookies.each do |set_cookie|
+        cookie = WEBrick::Cookie.parse_set_cookie(set_cookie)
+        pairs.delete(cookie.name)
+        pairs[cookie.name] = cookie.value
+      end
+      cookies = pairs.collect do |name, value|
+        WEBrick::Cookie.new(name, value).to_s
+      end
+      @cookie = cookies.join("; ")
     end
 
     def gen_multicall(methods=[], async=false)

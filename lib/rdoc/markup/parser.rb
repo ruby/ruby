@@ -389,7 +389,7 @@ class RDoc::Markup::Parser
         skip :NEWLINE
       when :TEXT then
         unget
-        parent << build_paragraph(indent)
+        parse_text parent, indent
       when *LIST_TOKENS then
         unget
         parent << build_list(indent)
@@ -403,6 +403,13 @@ class RDoc::Markup::Parser
 
     parent
 
+  end
+
+  ##
+  # Small hook that is overridden by RDoc::TomDoc
+
+  def parse_text parent, indent # :nodoc:
+    parent << build_paragraph(indent)
   end
 
   ##
@@ -528,8 +535,8 @@ class RDoc::Markup::Parser
   end
 
   ##
-  # Calculates the column (by character) and line of the current token from
-  # +scanner+ based on +byte_offset+.
+  # Calculates the column (by character) and line of the current token based
+  # on +byte_offset+.
 
   def token_pos byte_offset
     offset = char_pos byte_offset

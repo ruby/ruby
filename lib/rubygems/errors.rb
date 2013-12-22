@@ -1,8 +1,9 @@
-##
+#--
 # This file contains all the various exceptions and other errors that are used
 # inside of RubyGems.
 #
 # DOC: Confirm _all_
+#++
 
 module Gem
   ##
@@ -18,8 +19,6 @@ module Gem
     attr_accessor :requirement
   end
 
-  # FIX: does this need to exist? The subclass is the only other reference
-  # I can find.
   class ErrorReason; end
 
   # Generated when trying to lookup a gem to indicate that the gem
@@ -61,10 +60,10 @@ module Gem
     ##
     # A wordy description of the error.
     def wordy
-      "Found %s (%), but was for platform%s %s" %
+      "Found %s (%s), but was for platform%s %s" %
         [@name,
          @version,
-         @platforms.size == 1 ? 's' : '',
+         @platforms.size == 1 ? '' : 's',
          @platforms.join(' ,')]
     end
   end
@@ -74,15 +73,35 @@ module Gem
   # data from a source
 
   class SourceFetchProblem < ErrorReason
+
+    ##
+    # Creates a new SourceFetchProblem for the given +source+ and +error+.
+
     def initialize(source, error)
       @source = source
       @error = error
     end
 
-    attr_reader :source, :error
+    ##
+    # The source that had the fetch problem.
+
+    attr_reader :source
+
+    ##
+    # The fetch error which is an Exception subclass.
+
+    attr_reader :error
+
+    ##
+    # An English description of the error.
 
     def wordy
       "Unable to download data from #{@source.uri} - #{@error.message}"
     end
+
+    ##
+    # The "exception" alias allows you to call raise on a SourceFetchProblem.
+
+    alias exception error
   end
 end

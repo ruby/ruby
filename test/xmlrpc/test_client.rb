@@ -1,6 +1,10 @@
 require 'minitest/autorun'
 require 'xmlrpc/client'
 require 'net/http'
+begin
+  require 'openssl'
+rescue LoadError
+end
 
 module XMLRPC
   class ClientTest < MiniTest::Unit::TestCase
@@ -16,6 +20,7 @@ module XMLRPC
         def started?
           @started
         end
+
         def start
           @started = true
           if block_given?
@@ -277,6 +282,24 @@ module XMLRPC
       resp = client.call('wp.getUsersBlogs', 'tlo', 'omg')
 
       assert_equal 1, resp.first['blogid']
+    end
+
+    def test_cookie_simple
+      client = Fake::Client.new2('http://example.org/cookie')
+      assert_nil(client.cookie)
+      client.send(:parse_set_cookies, ["param1=value1", "param2=value2"])
+      assert_equal("param1=value1; param2=value2", client.cookie)
+    end
+
+    def test_cookie_override
+      client = Fake::Client.new2('http://example.org/cookie')
+      client.send(:parse_set_cookies,
+                  [
+                    "param1=value1",
+                    "param2=value2",
+                    "param1=value3",
+                  ])
+      assert_equal("param2=value2; param1=value3", client.cookie)
     end
 
     private

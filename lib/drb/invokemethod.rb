@@ -1,6 +1,6 @@
 # for ruby-1.8.0
 
-module DRb
+module DRb # :nodoc: all
   class DRbServer
     module InvokeMethod18Mixin
       def block_yield(x)

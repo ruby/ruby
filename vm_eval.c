@@ -14,13 +14,14 @@
 static inline VALUE method_missing(VALUE obj, ID id, int argc, const VALUE *argv, int call_status);
 static inline VALUE vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const NODE *cref);
 static inline VALUE vm_yield(rb_thread_t *th, int argc, const VALUE *argv);
+static inline VALUE vm_yield_with_block(rb_thread_t *th, int argc, const VALUE *argv, const rb_block_t *blockargptr);
 static NODE *vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr);
 static VALUE vm_exec(rb_thread_t *th);
 static void vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref, rb_block_t *base_block);
 static int vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, VALUE ary);
 
 /* vm_backtrace.c */
-VALUE vm_backtrace_str_ary(rb_thread_t *th, int lev, int n);
+VALUE rb_vm_backtrace_str_ary(rb_thread_t *th, int lev, int n);
 
 typedef enum call_type {
     CALL_PUBLIC,
@@ -34,7 +35,7 @@ static VALUE send_internal(int argc, const VALUE *argv, VALUE recv, call_type sc
 static VALUE vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv);
 
 static VALUE
-vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
+vm_call0(rb_thread_t* th, VALUE recv, ID id, int argc, const VALUE *argv,
 	 const rb_method_entry_t *me, VALUE defined_class)
 {
     rb_call_info_t ci_entry, *ci = &ci_entry;
@@ -109,7 +110,7 @@ vm_call0_cfunc_with_frame(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv
 	rb_control_frame_t *reg_cfp = th->cfp;
 
 	vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC, recv, defined_class,
-		      VM_ENVVAL_BLOCK_PTR(blockptr), 0, reg_cfp->sp, 1, me);
+		      VM_ENVVAL_BLOCK_PTR(blockptr), 0, reg_cfp->sp, 1, me, 0);
 
 	if (len >= 0) rb_check_arity(argc, len, len);
 
@@ -139,6 +140,8 @@ vm_call0_cfunc(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 static VALUE
 vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 {
+    VALUE ret;
+
     if (!ci->me->def) return Qnil;
 
     if (th->passed_block) {
@@ -165,19 +168,23 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 
 	    vm_call_iseq_setup(th, reg_cfp, ci);
 	    th->cfp->flag |= VM_FRAME_FLAG_FINISH;
-	    return vm_exec(th);
+	    return vm_exec(th); /* CHECK_INTS in this function */
 	}
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
       case VM_METHOD_TYPE_CFUNC:
-	return vm_call0_cfunc(th, ci, argv);
+	ret = vm_call0_cfunc(th, ci, argv);
+	goto success;
       case VM_METHOD_TYPE_ATTRSET:
 	rb_check_arity(ci->argc, 1, 1);
-	return rb_ivar_set(ci->recv, ci->me->def->body.attr.id, argv[0]);
+	ret = rb_ivar_set(ci->recv, ci->me->def->body.attr.id, argv[0]);
+	goto success;
       case VM_METHOD_TYPE_IVAR:
 	rb_check_arity(ci->argc, 0, 0);
-	return rb_attr_get(ci->recv, ci->me->def->body.attr.id);
+	ret = rb_attr_get(ci->recv, ci->me->def->body.attr.id);
+	goto success;
       case VM_METHOD_TYPE_BMETHOD:
-	return vm_call_bmethod_body(th, ci, argv);
+	ret = vm_call_bmethod_body(th, ci, argv);
+	goto success;
       case VM_METHOD_TYPE_ZSUPER:
       case VM_METHOD_TYPE_REFINED:
 	{
@@ -190,7 +197,8 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 	    ci->defined_class = RCLASS_SUPER(ci->defined_class);
 
 	    if (!ci->defined_class || !(ci->me = rb_method_entry(ci->defined_class, ci->mid, &ci->defined_class))) {
-		return method_missing(ci->recv, ci->mid, ci->argc, argv, NOEX_SUPER);
+		ret = method_missing(ci->recv, ci->mid, ci->argc, argv, NOEX_SUPER);
+		goto success;
 	    }
 	    RUBY_VM_CHECK_INTS(th);
 	    if (!ci->me->def) return Qnil;
@@ -208,12 +216,14 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
       case VM_METHOD_TYPE_OPTIMIZED:
 	switch (ci->me->def->body.optimize_type) {
 	  case OPTIMIZED_METHOD_TYPE_SEND:
-	    return send_internal(ci->argc, argv, ci->recv, CALL_FCALL);
+	    ret = send_internal(ci->argc, argv, ci->recv, CALL_FCALL);
+	    goto success;
 	  case OPTIMIZED_METHOD_TYPE_CALL:
 	    {
 		rb_proc_t *proc;
 		GetProcPtr(ci->recv, proc);
-		return rb_vm_invoke_proc(th, proc, ci->argc, argv, ci->blockptr);
+		ret = rb_vm_invoke_proc(th, proc, ci->argc, argv, ci->blockptr);
+		goto success;
 	    }
 	  default:
 	    rb_bug("vm_call0: unsupported optimized method type (%d)", ci->me->def->body.optimize_type);
@@ -224,6 +234,10 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
     }
     rb_bug("vm_call0: unsupported method type (%d)", ci->me->def->type);
     return Qundef;
+
+  success:
+    RUBY_VM_CHECK_INTS(th);
+    return ret;
 }
 
 VALUE
@@ -315,7 +329,7 @@ struct rescue_funcall_args {
     VALUE recv;
     VALUE sym;
     int argc;
-    VALUE *argv;
+    const VALUE *argv;
 };
 
 static VALUE
@@ -345,7 +359,8 @@ check_funcall_respond_to(rb_thread_t *th, VALUE klass, VALUE recv, ID mid)
     const rb_method_entry_t *me = rb_method_entry(klass, idRespond_to, &defined_class);
 
     if (me && !(me->flag & NOEX_BASIC)) {
-	VALUE args[2];
+	const rb_block_t *passed_block = th->passed_block;
+	VALUE args[2], result;
 	int arity = rb_method_entry_arity(me);
 
 	if (arity > 2)
@@ -355,7 +370,9 @@ check_funcall_respond_to(rb_thread_t *th, VALUE klass, VALUE recv, ID mid)
 
 	args[0] = ID2SYM(mid);
 	args[1] = Qtrue;
-	if (!RTEST(vm_call0(th, recv, idRespond_to, arity, args, me, defined_class))) {
+	result = vm_call0(th, recv, idRespond_to, arity, args, me, defined_class);
+	th->passed_block = passed_block;
+	if (!RTEST(result)) {
 	    return FALSE;
 	}
     }
@@ -369,7 +386,7 @@ check_funcall_callable(rb_thread_t *th, const rb_method_entry_t *me)
 }
 
 static VALUE
-check_funcall_missing(rb_thread_t *th, VALUE klass, VALUE recv, ID mid, int argc, VALUE *argv)
+check_funcall_missing(rb_thread_t *th, VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv)
 {
     if (rb_method_basic_definition_p(klass, idMethodMissing)) {
 	return Qundef;
@@ -389,7 +406,7 @@ check_funcall_missing(rb_thread_t *th, VALUE klass, VALUE recv, ID mid, int argc
 }
 
 VALUE
-rb_check_funcall(VALUE recv, ID mid, int argc, VALUE *argv)
+rb_check_funcall(VALUE recv, ID mid, int argc, const VALUE *argv)
 {
     VALUE klass = CLASS_OF(recv);
     const rb_method_entry_t *me;
@@ -408,7 +425,7 @@ rb_check_funcall(VALUE recv, ID mid, int argc, VALUE *argv)
 }
 
 VALUE
-rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, VALUE *argv,
+rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
 			   rb_check_funcall_hook *hook, VALUE arg)
 {
     VALUE klass = CLASS_OF(recv);
@@ -734,14 +751,14 @@ rb_apply(VALUE recv, ID mid, VALUE args)
     argc = RARRAY_LENINT(args);
     if (argc >= 0x100) {
 	args = rb_ary_subseq(args, 0, argc);
-	RBASIC(args)->klass = 0;
+	RBASIC_CLEAR_CLASS(args);
 	OBJ_FREEZE(args);
 	ret = rb_call(recv, mid, argc, RARRAY_PTR(args), CALL_FCALL);
 	RB_GC_GUARD(args);
 	return ret;
     }
     argv = ALLOCA_N(VALUE, argc);
-    MEMCPY(argv, RARRAY_PTR(args), VALUE, argc);
+    MEMCPY(argv, RARRAY_CONST_PTR(args), VALUE, argc);
     return rb_call(recv, mid, argc, argv, CALL_FCALL);
 }
 
@@ -786,7 +803,7 @@ rb_funcall(VALUE recv, ID mid, int n, ...)
  * \param argv   pointer to an array of method arguments
  */
 VALUE
-rb_funcall2(VALUE recv, ID mid, int argc, const VALUE *argv)
+rb_funcallv(VALUE recv, ID mid, int argc, const VALUE *argv)
 {
     return rb_call(recv, mid, argc, argv, CALL_FCALL);
 }
@@ -801,7 +818,7 @@ rb_funcall2(VALUE recv, ID mid, int argc, const VALUE *argv)
  * \param argv   pointer to an array of method arguments
  */
 VALUE
-rb_funcall3(VALUE recv, ID mid, int argc, const VALUE *argv)
+rb_funcallv_public(VALUE recv, ID mid, int argc, const VALUE *argv)
 {
     return rb_call(recv, mid, argc, argv, CALL_PUBLIC);
 }
@@ -810,6 +827,23 @@ VALUE
 rb_funcall_passing_block(VALUE recv, ID mid, int argc, const VALUE *argv)
 {
     PASS_PASSED_BLOCK_TH(GET_THREAD());
+
+    return rb_call(recv, mid, argc, argv, CALL_PUBLIC);
+}
+
+VALUE
+rb_funcall_with_block(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE pass_procval)
+{
+    if (!NIL_P(pass_procval)) {
+	rb_thread_t *th = GET_THREAD();
+	rb_block_t *block = 0;
+
+	rb_proc_t *pass_proc;
+	GetProcPtr(pass_procval, pass_proc);
+	block = &pass_proc->block;
+
+	th->passed_block = block;
+    }
 
     return rb_call(recv, mid, argc, argv, CALL_PUBLIC);
 }
@@ -849,13 +883,17 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
 }
 
 /*
- *  call-seq:
- *     foo.send(symbol [, args...])        -> obj
- *     foo.__send__(symbol [, args...])      -> obj
+ * call-seq:
+ *    foo.send(symbol [, args...])       -> obj
+ *    foo.__send__(symbol [, args...])   -> obj
+ *    foo.send(string [, args...])       -> obj
+ *    foo.__send__(string [, args...])   -> obj
  *
  *  Invokes the method identified by _symbol_, passing it any
  *  arguments specified. You can use <code>__send__</code> if the name
  *  +send+ clashes with an existing method in _obj_.
+ *  When the method is identified by a string, the string is converted
+ *  to a symbol.
  *
  *     class Klass
  *       def hello(*args)
@@ -875,10 +913,13 @@ rb_f_send(int argc, VALUE *argv, VALUE recv)
 /*
  *  call-seq:
  *     obj.public_send(symbol [, args...])  -> obj
+ *     obj.public_send(string [, args...])  -> obj
  *
  *  Invokes the method identified by _symbol_, passing it any
  *  arguments specified. Unlike send, public_send calls public
  *  methods only.
+ *  When the method is identified by a string, the string is converted
+ *  to a symbol.
  *
  *     1.public_send(:puts, "hello")  # causes NoMethodError
  */
@@ -944,8 +985,20 @@ rb_yield_splat(VALUE values)
     if (NIL_P(tmp)) {
         rb_raise(rb_eArgError, "not an array");
     }
-    v = rb_yield_0(RARRAY_LENINT(tmp), RARRAY_PTR(tmp));
+    v = rb_yield_0(RARRAY_LENINT(tmp), RARRAY_CONST_PTR(tmp));
     return v;
+}
+
+VALUE
+rb_yield_block(VALUE val, VALUE arg, int argc, const VALUE *argv, VALUE blockarg)
+{
+    const rb_block_t *blockptr = 0;
+    if (!NIL_P(blockarg)) {
+	rb_proc_t *blockproc;
+	GetProcPtr(blockarg, blockproc);
+	blockptr = &blockproc->block;
+    }
+    return vm_yield_with_block(GET_THREAD(), argc, argv, blockptr);
 }
 
 static VALUE
@@ -958,7 +1011,7 @@ loop_i(void)
 }
 
 static VALUE
-rb_f_loop_size(VALUE self, VALUE args)
+rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
 {
     return DBL2NUM(INFINITY);
 }
@@ -1082,7 +1135,7 @@ struct iter_method_arg {
     VALUE obj;
     ID mid;
     int argc;
-    VALUE *argv;
+    const VALUE *argv;
 };
 
 static VALUE
@@ -1095,7 +1148,7 @@ iterate_method(VALUE obj)
 }
 
 VALUE
-rb_block_call(VALUE obj, ID mid, int argc, VALUE * argv,
+rb_block_call(VALUE obj, ID mid, int argc, const VALUE * argv,
 	      VALUE (*bl_proc) (ANYARGS), VALUE data2)
 {
     struct iter_method_arg arg;
@@ -1117,7 +1170,7 @@ iterate_check_method(VALUE obj)
 }
 
 VALUE
-rb_check_block_call(VALUE obj, ID mid, int argc, VALUE * argv,
+rb_check_block_call(VALUE obj, ID mid, int argc, const VALUE *argv,
 		    VALUE (*bl_proc) (ANYARGS), VALUE data2)
 {
     struct iter_method_arg arg;
@@ -1136,20 +1189,21 @@ rb_each(VALUE obj)
 }
 
 static VALUE
-eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char *volatile file, volatile int line)
+eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *const cref_arg, volatile VALUE file, volatile int line)
 {
     int state;
     VALUE result = Qundef;
     VALUE envval;
-    rb_binding_t *bind = 0;
     rb_thread_t *th = GET_THREAD();
     rb_env_t *env = NULL;
     rb_block_t block, *base_block;
     volatile int parse_in_eval;
     volatile int mild_compile_error;
+    NODE *orig_cref;
+    VALUE crefval;
 
     if (file == 0) {
-	file = rb_sourcefile();
+	file = rb_sourcefilename();
 	line = rb_sourceline();
     }
 
@@ -1157,22 +1211,25 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
     mild_compile_error = th->mild_compile_error;
     TH_PUSH_TAG(th);
     if ((state = TH_EXEC_TAG()) == 0) {
+	NODE *cref = cref_arg;
+	rb_binding_t *bind = 0;
 	rb_iseq_t *iseq;
 	volatile VALUE iseqval;
+	VALUE absolute_path = Qnil;
+	VALUE fname;
 
 	if (scope != Qnil) {
-	    if (rb_obj_is_kind_of(scope, rb_cBinding)) {
-		GetBindingPtr(scope, bind);
+	    bind = Check_TypedStruct(scope, &ruby_binding_data_type);
+	    {
 		envval = bind->env;
-		if (strcmp(file, "(eval)") == 0 && bind->path != Qnil) {
-		    file = RSTRING_PTR(bind->path);
-		    line = bind->first_lineno;
+		if (file != Qundef) {
+		    absolute_path = file;
 		}
-	    }
-	    else {
-		rb_raise(rb_eTypeError,
-			 "wrong argument type %s (expected Binding)",
-			 rb_obj_classname(scope));
+		else if (!NIL_P(bind->path)) {
+		    file = bind->path;
+		    line = bind->first_lineno;
+		    absolute_path = rb_current_realfilepath();
+		}
 	    }
 	    GetEnvPtr(envval, env);
 	    base_block = &env->block;
@@ -1191,14 +1248,30 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 	    }
 	}
 
+	if ((fname = file) == Qundef) {
+	    fname = rb_usascii_str_new_cstr("(eval)");
+	}
+
+	if (RTEST(fname))
+	    fname = rb_fstring(fname);
+	if (RTEST(absolute_path))
+	    absolute_path = rb_fstring(absolute_path);
+
 	/* make eval iseq */
 	th->parse_in_eval++;
 	th->mild_compile_error++;
-	iseqval = rb_iseq_compile_on_base(src, rb_str_new2(file), INT2FIX(line), base_block);
+	iseqval = rb_iseq_compile_with_option(src, fname, absolute_path, INT2FIX(line), base_block, Qnil);
 	th->mild_compile_error--;
 	th->parse_in_eval--;
 
+	if (!cref && base_block->iseq) {
+	    orig_cref = rb_vm_get_cref(base_block->iseq, base_block->ep);
+	    cref = NEW_CREF(Qnil);
+	    crefval = (VALUE) cref;
+	    COPY_CREF(cref, orig_cref);
+	}
 	vm_set_eval_stack(th, iseqval, cref, base_block);
+	RB_GC_GUARD(crefval);
 
 	if (0) {		/* for debug */
 	    VALUE disasm = rb_iseq_disasm(iseqval);
@@ -1212,7 +1285,6 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 	}
 
 	/* kick */
-	CHECK_VM_STACK_OVERFLOW(th->cfp, iseq->stack_max);
 	result = vm_exec(th);
     }
     TH_POP_TAG();
@@ -1222,7 +1294,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
     if (state) {
 	if (state == TAG_RAISE) {
 	    VALUE errinfo = th->errinfo;
-	    if (strcmp(file, "(eval)") == 0) {
+	    if (file == Qundef) {
 		VALUE mesg, errat, bt2;
 		ID id_mesg;
 
@@ -1230,18 +1302,18 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 		errat = rb_get_backtrace(errinfo);
 		mesg = rb_attr_get(errinfo, id_mesg);
 		if (!NIL_P(errat) && RB_TYPE_P(errat, T_ARRAY) &&
-		    (bt2 = vm_backtrace_str_ary(th, 0, 0), RARRAY_LEN(bt2) > 0)) {
+		    (bt2 = rb_vm_backtrace_str_ary(th, 0, 0), RARRAY_LEN(bt2) > 0)) {
 		    if (!NIL_P(mesg) && RB_TYPE_P(mesg, T_STRING) && !RSTRING_LEN(mesg)) {
 			if (OBJ_FROZEN(mesg)) {
-			    VALUE m = rb_str_cat(rb_str_dup(RARRAY_PTR(errat)[0]), ": ", 2);
+			    VALUE m = rb_str_cat(rb_str_dup(RARRAY_AREF(errat, 0)), ": ", 2);
 			    rb_ivar_set(errinfo, id_mesg, rb_str_append(m, mesg));
 			}
 			else {
 			    rb_str_update(mesg, 0, 0, rb_str_new2(": "));
-			    rb_str_update(mesg, 0, 0, RARRAY_PTR(errat)[0]);
+			    rb_str_update(mesg, 0, 0, RARRAY_AREF(errat, 0));
 			}
 		    }
-		    RARRAY_PTR(errat)[0] = RARRAY_PTR(bt2)[0];
+		    RARRAY_ASET(errat, 0, RARRAY_AREF(bt2, 0));
 		}
 	    }
 	    rb_exc_raise(errinfo);
@@ -1252,7 +1324,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 }
 
 static VALUE
-eval_string(VALUE self, VALUE src, VALUE scope, const char *file, int line)
+eval_string(VALUE self, VALUE src, VALUE scope, VALUE file, int line)
 {
     return eval_string_with_cref(self, src, scope, 0, file, line);
 }
@@ -1279,20 +1351,11 @@ VALUE
 rb_f_eval(int argc, VALUE *argv, VALUE self)
 {
     VALUE src, scope, vfile, vline;
-    const char *file = "(eval)";
+    VALUE file = Qundef;
     int line = 1;
 
     rb_scan_args(argc, argv, "13", &src, &scope, &vfile, &vline);
-    if (rb_safe_level() >= 4) {
-	StringValue(src);
-	if (!NIL_P(scope) && !OBJ_TAINTED(scope)) {
-	    rb_raise(rb_eSecurityError,
-		     "Insecure: can't modify trusted binding");
-	}
-    }
-    else {
-	SafeStringValue(src);
-    }
+    SafeStringValue(src);
     if (argc >= 3) {
 	StringValue(vfile);
     }
@@ -1301,7 +1364,7 @@ rb_f_eval(int argc, VALUE *argv, VALUE self)
     }
 
     if (!NIL_P(vfile))
-	file = RSTRING_PTR(vfile);
+	file = vfile;
     return eval_string(self, src, scope, file, line);
 }
 
@@ -1309,28 +1372,29 @@ rb_f_eval(int argc, VALUE *argv, VALUE self)
 VALUE
 ruby_eval_string_from_file(const char *str, const char *filename)
 {
-    return eval_string(rb_vm_top_self(), rb_str_new2(str), Qnil, filename, 1);
+    VALUE file = filename ? rb_str_new_cstr(filename) : 0;
+    return eval_string(rb_vm_top_self(), rb_str_new2(str), Qnil, file, 1);
 }
 
 struct eval_string_from_file_arg {
-    const char *str;
-    const char *filename;
+    VALUE str;
+    VALUE filename;
 };
 
 static VALUE
-eval_string_from_file_helper(void *data)
+eval_string_from_file_helper(VALUE data)
 {
     const struct eval_string_from_file_arg *const arg = (struct eval_string_from_file_arg*)data;
-    return eval_string(rb_vm_top_self(), rb_str_new2(arg->str), Qnil, arg->filename, 1);
+    return eval_string(rb_vm_top_self(), arg->str, Qnil, arg->filename, 1);
 }
 
 VALUE
 ruby_eval_string_from_file_protect(const char *str, const char *filename, int *state)
 {
     struct eval_string_from_file_arg arg;
-    arg.str = str;
-    arg.filename = filename;
-    return rb_protect((VALUE (*)(VALUE))eval_string_from_file_helper, (VALUE)&arg, state);
+    arg.str = rb_str_new_cstr(str);
+    arg.filename = filename ? rb_str_new_cstr(filename) : 0;
+    return rb_protect(eval_string_from_file_helper, (VALUE)&arg, state);
 }
 
 /**
@@ -1409,7 +1473,7 @@ VALUE
 rb_eval_cmd(VALUE cmd, VALUE arg, int level)
 {
     int state;
-    VALUE val = Qnil;		/* OK */
+    volatile VALUE val = Qnil;		/* OK */
     volatile int safe = rb_safe_level();
 
     if (OBJ_TAINTED(cmd)) {
@@ -1464,7 +1528,7 @@ yield_under(VALUE under, VALUE self, VALUE values)
 	return vm_yield_with_cref(th, 1, &self, cref);
     }
     else {
-	return vm_yield_with_cref(th, RARRAY_LENINT(values), RARRAY_PTR(values), cref);
+	return vm_yield_with_cref(th, RARRAY_LENINT(values), RARRAY_CONST_PTR(values), cref);
     }
 }
 
@@ -1482,26 +1546,21 @@ rb_yield_refine_block(VALUE refinement, VALUE refinements)
     }
     cref = vm_cref_push(th, refinement, NOEX_PUBLIC, blockptr);
     cref->flags |= NODE_FL_CREF_PUSHED_BY_EVAL;
-    cref->nd_refinements = refinements;
+    RB_OBJ_WRITE(cref, &cref->nd_refinements, refinements);
 
     return vm_yield_with_cref(th, 0, NULL, cref);
 }
 
 /* string eval under the class/module context */
 static VALUE
-eval_under(VALUE under, VALUE self, VALUE src, const char *file, int line)
+eval_under(VALUE under, VALUE self, VALUE src, VALUE file, int line)
 {
     NODE *cref = vm_cref_push(GET_THREAD(), under, NOEX_PUBLIC, NULL);
 
     if (SPECIAL_CONST_P(self) && !NIL_P(under)) {
 	cref->flags |= NODE_FL_CREF_PUSHED_BY_EVAL;
     }
-    if (rb_safe_level() >= 4) {
-	StringValue(src);
-    }
-    else {
-	SafeStringValue(src);
-    }
+    SafeStringValue(src);
 
     return eval_string_with_cref(self, src, Qnil, cref, file, line);
 }
@@ -1514,20 +1573,16 @@ specific_eval(int argc, VALUE *argv, VALUE klass, VALUE self)
 	return yield_under(klass, self, Qundef);
     }
     else {
-	const char *file = "(eval)";
+	VALUE file = Qundef;
 	int line = 1;
 
 	rb_check_arity(argc, 1, 3);
-	if (rb_safe_level() >= 4) {
-	    StringValue(argv[0]);
-	}
-	else {
-	    SafeStringValue(argv[0]);
-	}
+	SafeStringValue(argv[0]);
 	if (argc > 2)
 	    line = NUM2INT(argv[2]);
 	if (argc > 1) {
-	    file = StringValuePtr(argv[1]);
+	    file = argv[1];
+	    if (!NIL_P(file)) StringValue(file);
 	}
 	return eval_under(klass, self, argv[0], file, line);
     }
@@ -1640,6 +1695,8 @@ rb_mod_module_eval(int argc, VALUE *argv, VALUE mod)
  *
  *  Evaluates the given block in the context of the class/module.
  *  The method defined in the block will belong to the receiver.
+ *  Any arguments passed to the method will be passed to the block.
+ *  This can be used if the block needs to access instance variables.
  *
  *     class Thing
  *     end
@@ -1696,8 +1753,7 @@ rb_throw_obj(VALUE tag, VALUE value)
     }
     if (!tt) {
 	VALUE desc = rb_inspect(tag);
-	RB_GC_GUARD(desc);
-	rb_raise(rb_eArgError, "uncaught throw %s", RSTRING_PTR(desc));
+	rb_raise(rb_eArgError, "uncaught throw %"PRIsVALUE, desc);
     }
     th->errinfo = NEW_THROW_OBJECT(tag, 0, TAG_THROW);
 
@@ -1775,20 +1831,31 @@ rb_catch(const char *tag, VALUE (*func)(), VALUE data)
 }
 
 VALUE
-rb_catch_obj(VALUE tag, VALUE (*func)(), VALUE data)
+rb_catch_obj(VALUE t, VALUE (*func)(), VALUE data)
+{
+    int state;
+    VALUE val = rb_catch_protect(t, (rb_block_call_func *)func, data, &state);
+    if (state)
+	JUMP_TAG(state);
+    return val;
+}
+
+VALUE
+rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, int *stateptr)
 {
     int state;
     volatile VALUE val = Qnil;		/* OK */
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *saved_cfp = th->cfp;
+    volatile VALUE tag = t;
 
     TH_PUSH_TAG(th);
 
-    th->tag->tag = tag;
+    _tag.tag = tag;
 
     if ((state = TH_EXEC_TAG()) == 0) {
 	/* call with argc=1, argv = [tag], block = Qnil to insure compatibility */
-	val = (*func)(tag, data, 1, &tag, Qnil);
+	val = (*func)(tag, data, 1, (const VALUE *)&tag, Qnil);
     }
     else if (state == TAG_THROW && RNODE(th->errinfo)->u1.value == tag) {
 	th->cfp = saved_cfp;
@@ -1797,8 +1864,8 @@ rb_catch_obj(VALUE tag, VALUE (*func)(), VALUE data)
 	state = 0;
     }
     TH_POP_TAG();
-    if (state)
-	JUMP_TAG(state);
+    if (stateptr)
+	*stateptr = state;
 
     return val;
 }

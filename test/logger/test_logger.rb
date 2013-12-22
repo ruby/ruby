@@ -2,6 +2,8 @@
 require 'test/unit'
 require 'logger'
 require 'tempfile'
+require 'tmpdir'
+require_relative '../ruby/envutil'
 
 
 class TestLoggerSeverity < Test::Unit::TestCase
@@ -41,13 +43,12 @@ class TestLogger < Test::Unit::TestCase
   end
 
   def log_raw(logger, msg_id, *arg, &block)
-    logdev = Tempfile.new(File.basename(__FILE__) + '.log')
-    logger.instance_eval { @logdev = Logger::LogDevice.new(logdev) }
-    logger.__send__(msg_id, *arg, &block)
-    logdev.open
-    msg = logdev.read
-    logdev.close
-    msg
+    Tempfile.create(File.basename(__FILE__) + '.log') {|logdev|
+      logger.instance_eval { @logdev = Logger::LogDevice.new(logdev) }
+      logger.__send__(msg_id, *arg, &block)
+      logdev.rewind
+      logdev.read
+    }
   end
 
   def test_level
@@ -126,7 +127,7 @@ class TestLogger < Test::Unit::TestCase
     end
     logger.formatter = o
     line = log_raw(logger, :info, "foo")
-    assert_equal("<<INFO-foo>>\n", line)
+    assert_equal("<""<INFO-foo>>\n", line)
   end
 
   def test_initialize
@@ -354,11 +355,13 @@ class TestLogDevice < Test::Unit::TestCase
   end
 
   def test_shifting_size
-    logfile = File.basename(__FILE__) + '_1.log'
+    tmpfile = Tempfile.new([File.basename(__FILE__, '.*'), '_1.log'])
+    logfile = tmpfile.path
     logfile0 = logfile + '.0'
     logfile1 = logfile + '.1'
     logfile2 = logfile + '.2'
     logfile3 = logfile + '.3'
+    tmpfile.close(true)
     File.unlink(logfile) if File.exist?(logfile)
     File.unlink(logfile0) if File.exist?(logfile0)
     File.unlink(logfile1) if File.exist?(logfile1)
@@ -386,11 +389,13 @@ class TestLogDevice < Test::Unit::TestCase
     File.unlink(logfile1)
     File.unlink(logfile2)
 
-    logfile = File.basename(__FILE__) + '_2.log'
+    tmpfile = Tempfile.new([File.basename(__FILE__, '.*'), '_2.log'])
+    logfile = tmpfile.path
     logfile0 = logfile + '.0'
     logfile1 = logfile + '.1'
     logfile2 = logfile + '.2'
     logfile3 = logfile + '.3'
+    tmpfile.close(true)
     logger = Logger.new(logfile, 4, 150)
     logger.error("0" * 15)
     assert(File.exist?(logfile))
@@ -468,6 +473,126 @@ class TestLogDevice < Test::Unit::TestCase
         File.unlink(filename) if File.exist?(filename)
       end
     end
+  end
+
+  def test_shifting_size_in_multiprocess
+    tmpfile = Tempfile.new([File.basename(__FILE__, '.*'), '_1.log'])
+    logfile = tmpfile.path
+    logfile0 = logfile + '.0'
+    logfile1 = logfile + '.1'
+    logfile2 = logfile + '.2'
+    logfile3 = logfile + '.3'
+    tmpfile.close(true)
+    File.unlink(logfile) if File.exist?(logfile)
+    File.unlink(logfile0) if File.exist?(logfile0)
+    File.unlink(logfile1) if File.exist?(logfile1)
+    File.unlink(logfile2) if File.exist?(logfile2)
+    begin
+      stderr = run_children(2, [logfile], <<-'END')
+        logger = Logger.new(ARGV[0], 4, 10)
+        10.times do
+          logger.info '0' * 15
+        end
+      END
+      assert_no_match(/log shifting failed/, stderr)
+      assert_no_match(/log writing failed/, stderr)
+      assert_no_match(/log rotation inter-process lock failed/, stderr)
+    ensure
+      File.unlink(logfile) if File.exist?(logfile)
+      File.unlink(logfile0) if File.exist?(logfile0)
+      File.unlink(logfile1) if File.exist?(logfile1)
+      File.unlink(logfile2) if File.exist?(logfile2)
+    end
+  end
+
+  def test_shifting_age_in_multiprocess
+    yyyymmdd = Time.now.strftime("%Y%m%d")
+    begin
+      stderr = run_children(2, [@filename], <<-'END')
+        logger = Logger.new(ARGV[0], 'now')
+        10.times do
+          logger.info '0' * 15
+        end
+      END
+      assert_no_match(/log shifting failed/, stderr)
+      assert_no_match(/log writing failed/, stderr)
+      assert_no_match(/log rotation inter-process lock failed/, stderr)
+    ensure
+      Dir.glob("#{@filename}.#{yyyymmdd}{,.[1-9]*}") do |filename|
+        File.unlink(filename) if File.exist?(filename)
+      end
+    end
+  end
+
+  def test_open_logfile_in_multiprocess
+    tmpfile = Tempfile.new([File.basename(__FILE__, '.*'), '_1.log'])
+    logfile = tmpfile.path
+    tmpfile.close(true)
+    begin
+      20.times do
+        run_children(2, [logfile], <<-'END')
+          logfile = ARGV[0]
+          logdev = Logger::LogDevice.new(logfile)
+          logdev.send(:open_logfile, logfile)
+        END
+        assert_equal(1, File.readlines(logfile).grep(/# Logfile created on/).size)
+        File.unlink(logfile)
+      end
+    ensure
+      File.unlink(logfile) if File.exist?(logfile)
+    end
+  end
+
+  def test_shifting_size_not_rotate_too_much
+    d(@filename).__send__(:add_log_header, @tempfile)
+    header_size = @tempfile.size
+    message = "*" * 99 + "\n"
+    shift_size = header_size + message.size * 3 - 1
+    opt = {shift_age: 1, shift_size: shift_size}
+
+    Dir.mktmpdir do |tmpdir|
+      begin
+        log = File.join(tmpdir, "log")
+        logdev1 = d(log, opt)
+        logdev2 = d(log, opt)
+
+        assert_file.identical?(log, logdev1.dev)
+        assert_file.identical?(log, logdev2.dev)
+
+        3.times{logdev1.write(message)}
+        assert_file.identical?(log, logdev1.dev)
+        assert_file.identical?(log, logdev2.dev)
+
+        logdev1.write(message)
+        assert_file.identical?(log, logdev1.dev)
+        assert_file.identical?(log + ".0", logdev2.dev)
+
+        logdev2.write(message)
+        assert_file.identical?(log, logdev1.dev)
+        assert_file.identical?(log, logdev2.dev)
+
+        logdev1.write(message)
+        assert_file.identical?(log, logdev1.dev)
+        assert_file.identical?(log, logdev2.dev)
+      ensure
+        logdev1.close if logdev1
+        logdev2.close if logdev2
+      end
+    end
+  end unless /mswin|mingw/ =~ RUBY_PLATFORM
+
+  private
+
+  def run_children(n, args, src)
+    r, w = IO.pipe
+    [w, *(1..n).map do
+       f = IO.popen([EnvUtil.rubybin, *%w[--disable=gems -rlogger -], *args], "w", err: w)
+       f.puts(src)
+       f
+     end].each(&:close)
+    stderr = r.read
+    r.close
+    stderr
   end
 end
 

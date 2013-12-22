@@ -166,7 +166,7 @@ class TestRakeFileList < Rake::TestCase
   def test_excluding_via_block
     fl = FileList['a.c', 'b.c', 'xyz.c']
     fl.exclude { |fn| fn.pathmap('%n') == 'xyz' }
-    assert fl.exclude?("xyz.c"), "Should exclude xyz.c"
+    assert fl.excluded_from_list?("xyz.c"), "Should exclude xyz.c"
     assert_equal ['a.c', 'b.c'], fl
   end
 
@@ -404,24 +404,24 @@ class TestRakeFileList < Rake::TestCase
 
   def test_exclude_with_alternate_file_seps
     fl = FileList.new
-    assert fl.exclude?("x/CVS/y")
-    assert fl.exclude?("x\\CVS\\y")
-    assert fl.exclude?("x/.svn/y")
-    assert fl.exclude?("x\\.svn\\y")
-    assert fl.exclude?("x/core")
-    assert fl.exclude?("x\\core")
+    assert fl.excluded_from_list?("x/CVS/y")
+    assert fl.excluded_from_list?("x\\CVS\\y")
+    assert fl.excluded_from_list?("x/.svn/y")
+    assert fl.excluded_from_list?("x\\.svn\\y")
+    assert fl.excluded_from_list?("x/core")
+    assert fl.excluded_from_list?("x\\core")
   end
 
   def test_add_default_exclude_list
     fl = FileList.new
     fl.exclude(/~\d+$/)
-    assert fl.exclude?("x/CVS/y")
-    assert fl.exclude?("x\\CVS\\y")
-    assert fl.exclude?("x/.svn/y")
-    assert fl.exclude?("x\\.svn\\y")
-    assert fl.exclude?("x/core")
-    assert fl.exclude?("x\\core")
-    assert fl.exclude?("x/abc~1")
+    assert fl.excluded_from_list?("x/CVS/y")
+    assert fl.excluded_from_list?("x\\CVS\\y")
+    assert fl.excluded_from_list?("x/.svn/y")
+    assert fl.excluded_from_list?("x\\.svn\\y")
+    assert fl.excluded_from_list?("x/core")
+    assert fl.excluded_from_list?("x\\core")
+    assert fl.excluded_from_list?("x/abc~1")
   end
 
   def test_basic_array_functions
@@ -482,12 +482,12 @@ class TestRakeFileList < Rake::TestCase
     a = ['b', 'a']
     b = ['b', 'b']
     c = ['b', 'c']
-    assert_equal( 1,  fl <=> a )
-    assert_equal( 0,  fl <=> b )
-    assert_equal( -1, fl <=> c )
-    assert_equal( -1, a <=> fl )
-    assert_equal( 0,  b <=> fl )
-    assert_equal( 1,  c <=> fl )
+    assert_equal(1,  fl <=> a)
+    assert_equal(0,  fl <=> b)
+    assert_equal(-1, fl <=> c)
+    assert_equal(-1, a <=> fl)
+    assert_equal(0,  b <=> fl)
+    assert_equal(1,  c <=> fl)
   end
 
   def test_array_equality
@@ -503,7 +503,7 @@ class TestRakeFileList < Rake::TestCase
 
   def test_enumeration_methods
     a = FileList['a', 'b']
-    b = a.collect { |it| it.upcase }
+    b = a.map { |it| it.upcase }
     assert_equal ['A', 'B'], b
     assert_equal FileList,  b.class
 
@@ -519,7 +519,7 @@ class TestRakeFileList < Rake::TestCase
     assert_equal ['a', 'b'], b
     assert_equal FileList,  b.class
 
-    b = a.find_all { |it| it == 'b'}
+    b = a.select { |it| it == 'b' }
     assert_equal ['b'], b
     assert_equal FileList,  b.class
 
@@ -609,7 +609,7 @@ class TestRakeFileList < Rake::TestCase
     assert_equal FileList, r.class
 
     f = FileList['a', 'b', 'c', 'd']
-    r = f.values_at(1,3)
+    r = f.values_at(1, 3)
     assert_equal ['b', 'd'], r
     assert_equal FileList, r.class
   end
@@ -625,4 +625,3 @@ class TestRakeFileList < Rake::TestCase
   end
 
 end
-

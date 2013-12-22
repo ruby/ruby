@@ -533,8 +533,8 @@ static VALUE ossl_ec_key_to_string(VALUE self, VALUE ciph, VALUE pass, int forma
 
 /*
  *  call-seq:
- *     key.export   => String
- *     key.export(cipher, pass_phrase) => String
+ *     key.export([cipher, pass_phrase]) => String
+ *     key.to_pem([cipher, pass_phrase]) => String
  *
  * Outputs the EC key in PEM encoding.  If +cipher+ and +pass_phrase+ are
  * given they will be used to encrypt the key.  +cipher+ must be an
@@ -762,8 +762,10 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
                 method = EC_GFp_mont_method();
             } else if (id == s_GFp_nist) {
                 method = EC_GFp_nist_method();
+#if !defined(OPENSSL_NO_EC2M)
             } else if (id == s_GF2m_simple) {
                 method = EC_GF2m_simple_method();
+#endif
             }
 
             if (method) {
@@ -817,8 +819,10 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
 
             if (id == s_GFp) {
                 new_curve = EC_GROUP_new_curve_GFp;
+#if !defined(OPENSSL_NO_EC2M)
             } else if (id == s_GF2m) {
                 new_curve = EC_GROUP_new_curve_GF2m;
+#endif
             } else {
                 ossl_raise(rb_eArgError, "unknown symbol, must be :GFp or :GF2m");
             }
@@ -843,6 +847,7 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 /*  call-seq:
+ *     group1.eql?(group2)   => true | false
  *     group1 == group2   => true | false
  *
  */
@@ -1312,6 +1317,7 @@ static VALUE ossl_ec_point_initialize(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
+ *     point1.eql?(point2) => true | false
  *     point1 == point2 => true | false
  *
  */

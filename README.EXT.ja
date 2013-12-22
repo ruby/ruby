@@ -140,13 +140,15 @@ var は lvalue である必要があります．
 あるのは文字列と配列くらいだと思います．
 
 ruby.hでは構造体へキャストするマクロも「RXXXXX()」(全部大文
-字にしたもの)という名前で提供されています(例: RSTRING())．
+字にしたもの)という名前で提供されています(例: RSTRING())．た
+だし、構造体への直接のアクセスはできるだけ避け，対応する
+rb_xxxx() といった関数を使うようにして下さい．例えば，配列の
+要素へアクセスする場合は，rb_ary_entry(ary, offset)，
+rb_ary_store(ary, offset, obj) を利用するようにして下さい．
 
 構造体からデータを取り出すマクロが提供されています．文字列
 strの長さを得るためには「RSTRING_LEN(str)」とし，文字列strを
-char*として得るためには「RSTRING_PTR(str)」とします．配列の
-場合には，それぞれ「RARRAY_LEN(ary)」，「RARRAY_PTR(ary)」と
-なります．
+char*として得るためには「RSTRING_PTR(str)」とします．
 
 Rubyの構造体を直接アクセスする時に気をつけなければならないこ
 とは，配列や文字列の構造体の中身は参照するだけで，直接変更し
@@ -193,7 +195,7 @@ INT2NUM()は整数がFIXNUMの範囲に収まらない場合，Bignumに変換
 Rubyが用意している関数を用いてください．
 
 ここではもっとも使われるであろう文字列と配列の生成/操作を行
-い関数をあげます(全部ではないです)．
+う関数をあげます(全部ではないです)．
 
 === 文字列に対する関数
 
@@ -224,6 +226,9 @@ rb_vsprintf(const char *format, va_list ap)
   Cの文字列formatと続く引数をprintf(3)のフォーマットにしたがって
   整形し，Rubyの文字列を生成する．
 
+  注意: %iはObject#to_s('+'フラグが指定されているときはObject#inspect)を
+  使ったVALUEの出力に使用されているため，整数には%dを使用すること．
+
 rb_str_cat(VALUE str, const char *ptr, long len)
 
   Rubyの文字列strにlenバイトの文字列ptrを追加する．
@@ -242,6 +247,7 @@ rb_str_vcatf(VALUE str, const char* format, va_list ap)
   rb_str_cat2(str, rb_vsprintf(format, ap)) と同等である．
 
 rb_enc_str_new(const char *ptr, long len, rb_encoding *enc)
+rb_enc_str_new_cstr(const char *ptr, rb_encoding *enc)
 
   指定されたエンコーディングでRubyの文字列を生成する.
 
@@ -274,15 +280,18 @@ rb_ary_new()
   要素が0の配列を生成する．
 
 rb_ary_new2(long len)
+rb_ary_new_capa(long len)
 
   要素が0の配列を生成する．len要素分の領域をあらかじめ割り
   当てておく．
 
 rb_ary_new3(long n, ...)
+rb_ary_new_from_args(long n, ...)
 
   引数で指定したn要素を含む配列を生成する．
 
 rb_ary_new4(long n, VALUE *elts)
+rb_ary_new_from_values(long n, VALUE *elts)
 
   配列で与えたn要素の配列を生成する．
 
@@ -302,6 +311,10 @@ rb_ary_aref(argc, VALUE *argv, VALUE ary)
 rb_ary_entry(VALUE ary, long offset)
 
   ary[offset]
+
+rb_ary_store(VALUE ary, long offset, VALUE obj) ::
+
+  ary[offset] = obj
 
 rb_ary_subseq(VALUE ary, long beg, long len)
 
@@ -521,6 +534,7 @@ Cから文字列を経由せずにRubyのメソッドを呼び出すためには
 します．その他に引数の指定の仕方が違う以下の関数もあります．
 
   VALUE rb_funcall2(VALUE recv, ID mid, int argc, VALUE *argv)
+  VALUE rb_funcallv(VALUE recv, ID mid, int argc, VALUE *argv)
   VALUE rb_apply(VALUE recv, ID mid, VALUE args)
 
 applyには引数としてRubyの配列を与えます．
@@ -628,10 +642,9 @@ Dataオブジェクトを生成して構造体をRubyオブジェクトにカプ
 
 このマクロの戻り値は生成されたDataオブジェクトです．
 
-klassはこのDataオブジェクトのクラスです．ptrはカプセル化する
-Cの構造体へのポインタです．markはこの構造体がRubyのオブジェ
-クトへの参照がある時に使う関数です．そのような参照を含まない
-時には0を指定します．
+klassはこのDataオブジェクトのクラスです．markはこの構造体が
+Rubyのオブジェクトへの参照がある時に使う関数です．そのような
+参照を含まない時には0を指定します．
 
 # そのような参照は勧められません．
 
@@ -649,7 +662,10 @@ Cの構造体の割当とDataオブジェクトの生成を同時に行うマク
 
   Data_Make_Struct(klass, type, mark, free, sval)
 
-このマクロの戻り値は生成されたDataオブジェクトです．
+このマクロの戻り値は生成されたDataオブジェクトです．このマク
+ロは以下の式のように働きます:
+
+  (sval = ALLOC(type), Data_Wrap_Struct(klass, mark, free, sval))
 
 klass, mark, freeはData_Wrap_Structと同じ働きをします．type
 は割り当てるC構造体の型です．割り当てられた構造体は変数sval
@@ -712,17 +728,17 @@ Rubyは拡張ライブラリをロードする時に「Init_ライブラリ名�
       cDBM = rb_define_class("DBM", rb_cObject);
       /* DBMはEnumerateモジュールをインクルードする */
       rb_include_module(cDBM, rb_mEnumerable);
-  
+
       /* DBMクラスのクラスメソッドopen(): 引数はCの配列で受ける */
       rb_define_singleton_method(cDBM, "open", fdbm_s_open, -1);
-  
+
       /* DBMクラスのメソッドclose(): 引数はなし */
       rb_define_method(cDBM, "close", fdbm_close, 0);
       /* DBMクラスのメソッド[]: 引数は1個 */
       rb_define_method(cDBM, "[]", fdbm_fetch, 1);
 
       /* ... */
-  
+
       /* DBMデータを格納するインスタンス変数名のためのID */
       id_dbm = rb_intern("dbm");
   }
@@ -736,8 +752,8 @@ dbm.cではData_Make_Structを以下のように使っています．
       int  di_size;
       DBM *di_dbm;
   };
-  
-  
+
+
   obj = Data_Make_Struct(klass, struct dbmdata, 0, free_dbm, dbmp);
 
 ここではdbmstruct構造体へのポインタをDataにカプセル化してい
@@ -1099,6 +1115,7 @@ Data_Get_Struct(data, type, sval) ::
   NUM2OFFT(value), OFFT2NUM(off)
   NUM2SIZET(value), SIZET2NUM(size)
   NUM2SSIZET(value), SSIZET2NUM(ssize)
+  rb_integer_pack(value, words, numwords, wordsize, nails, flags), rb_integer_unpack(words, numwords, wordsize, nails, flags)
   NUM2DBL(value)
   rb_float_new(f)
   StringValue(value)
@@ -1250,10 +1267,18 @@ VALUE rb_funcall(VALUE recv, ID mid, int narg, ...) ::
 
   メソッド呼び出し．文字列からmidを得るためにはrb_intern()を
   使う．
+  private/protectedなメソッドでも呼び出せる．
 
 VALUE rb_funcall2(VALUE recv, ID mid, int argc, VALUE *argv) ::
+VALUE rb_funcallv(VALUE recv, ID mid, int argc, VALUE *argv) ::
 
   メソッド呼び出し．引数をargc, argv形式で渡す．
+  private/protectedなメソッドでも呼び出せる．
+
+VALUE rb_funcallv_public(VALUE recv, ID mid, int argc, VALUE *argv) ::
+
+  メソッド呼び出し．
+  publicなメソッドしか呼べない．
 
 VALUE rb_eval_string(const char *str)
 
@@ -1305,7 +1330,7 @@ VALUE rb_block_call(VALUE obj, ID mid, int argc, VALUE * argv, VALUE (*func) (AN
   func2をブロックとして設定し, func1をイテレータとして呼ぶ．
   func1には arg1が引数として渡され, func2には第1引数にイテレー
   タから与えられた値, 第2引数にarg2が渡される．
-  
+
   1.9でrb_iterateを使う場合は, func1の中でRubyレベルのメソッド
   を呼び出さなければならない.
   1.9でobsoleteとなった. 代わりにrb_block_callが用意された.
@@ -1378,6 +1403,9 @@ void rb_bug(const char *fmt, ...) ::
   インタープリタなどプログラムのバグでしか発生するはずのない
   状況の時呼ぶ．インタープリタはコアダンプし直ちに終了する．
   例外処理は一切行なわれない．
+
+注意: %iはObject#to_s('+'フラグが指定されているときはObject#inspect)を
+使ったVALUEの出力に使用されているため，整数には%dを使用すること．
 
 == Rubyの初期化・実行
 
@@ -1487,53 +1515,62 @@ have_macro(macro, headers) ::
 have_library(lib, func) ::
 
   関数funcを定義しているライブラリlibの存在をチェックする．
-  ライブラリが存在する時，trueを返す．
+  チェックに成功すると，-llibを$libsに追加し，trueを返す．
 
 find_library(lib, func, path...) ::
 
   関数funcを定義しているライブラリlibの存在を -Lpath を追加
-  しながらチェックする．ライブラリが見付かった時，trueを返す．
+  しながらチェックする．チェックに成功すると，-llibを$libsに
+  追加し，trueを返す．
 
 have_func(func, header) ::
 
   ヘッダファイルheaderをインクルードして関数funcの存在をチェ
   ックする．funcが標準ではリンクされないライブラリ内のもので
   ある時には先にhave_libraryでそのライブラリをチェックしてお
-  く事．関数が存在する時trueを返す．
+  く事．チェックに成功すると，プリプロセッサマクロ
+  `HAVE_{FUNC}` を定義し，trueを返す．
 
 have_var(var, header) ::
 
   ヘッダファイルheaderをインクルードして変数varの存在をチェッ
   クする．varが標準ではリンクされないライブラリ内のものであ
   る時には先にhave_libraryでそのライブラリをチェックしておく
-  事．変数が存在する時trueを返す．
+  事．チェックに成功すると，プリプロセッサマクロ
+  `HAVE_{VAR}` を定義し，trueを返す．
 
 have_header(header) ::
 
-  ヘッダファイルの存在をチェックする．ヘッダファイルが存在す
-  る時trueを返す．
+  ヘッダファイルの存在をチェックする．チェックに成功すると，
+  プリプロセッサマクロ `HAVE_{HEADER_H}` を定義し，trueを返す．
+  (スラッシュやドットはアンダースコアに置換される)
 
 find_header(header, path...) ::
 
   ヘッダファイルheaderの存在を -Ipath を追加しながらチェック
-  する．ヘッダファイルが見付かった時，trueを返す．
+  する．チェックに成功すると，プリプロセッサマクロ
+  `HAVE_{HEADER_H}` を定義し，trueを返す．
+  (スラッシュやドットはアンダースコアに置換される)
 
 have_struct_member(type, member[, header[, opt]]) ::
 
-  ヘッダファイルheaderをインクルードして型typeにメンバmember
-  が存在するかをチェックする．typeが定義されていて，memberを
-  持つする時trueを返す．
+  ヘッダファイルheaderをインクルードして型typeが定義され，
+  なおかつメンバmemberが存在するかをチェックする．チェックに
+  成功すると，プリプロセッサマクロ `HAVE_{TYPE}_{MEMBER}` を
+  定義し，trueを返す．
 
 have_type(type, header, opt) ::
 
   ヘッダファイルheaderをインクルードして型typeが存在するかを
-  チェックする．typeが定義されている時trueを返す．
+  チェックする．チェックに成功すると，プリプロセッサマクロ
+  `HAVE_TYPE_{TYPE}` を定義し，trueを返す．
 
 check_sizeof(type, header) ::
 
   ヘッダファイルheaderをインクルードして型typeのchar単位サイ
-  ズを調べる．typeが定義されている時そのサイズを返す．定義さ
-  れていないときはnilを返す．
+  ズを調べる．チェックに成功すると，プリプロセッサマクロ
+  `SIZEOF_{TYPE}` を定義し，そのサイズを返す．定義されていな
+  いときはnilを返す．
 
 create_makefile(target[, target_prefix]) ::
 
@@ -1574,11 +1611,21 @@ dir_config(target[, default_include, default_lib]) ::
   と等価である．追加された include ディレクトリと lib ディレ
   クトリの配列を返す． ([include_dir, lib_dir])
 
-pkg_config(pkg) ::
+pkg_config(pkg, option=nil) ::
 
-  pkg-configコマンドからパッケージpkgの情報を得る．
-  pkg-configの実際のコマンド名は，--with-pkg-configコマンド
-  ラインオプションで指定可能．
+  pkg-configコマンドからパッケージpkgの情報を [cflags, ldflags, libs]
+  の配列として得る．$CFLAGS, $LDFLAGS, $libs にはそれぞれの値が
+  追加される．
+
+  pkg-configの実際のコマンドは，以下の順で試される．
+
+  1. コマンドラインで--with-{pkg}-config={command}オプションが
+     指定された場合: {command} {option}
+  2. {pkg}-config {option}
+  3. pkg-config {option} {pkg}
+
+  optionが指定された場合は、上記の配列の代わりにそのオプションを
+  指定して得られた出力をstripしたものを返す．
 
 /*
  * Local variables:

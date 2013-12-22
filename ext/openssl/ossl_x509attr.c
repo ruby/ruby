@@ -165,8 +165,8 @@ ossl_x509attr_get_oid(VALUE self)
 #  define OSSL_X509ATTR_IS_SINGLE(attr)  ((attr)->single)
 #  define OSSL_X509ATTR_SET_SINGLE(attr) ((attr)->single = 1)
 #else
-#  define OSSL_X509ATTR_IS_SINGLE(attr)  (!(attr)->set)
-#  define OSSL_X509ATTR_SET_SINGLE(attr) ((attr)->set = 0)
+#  define OSSL_X509ATTR_IS_SINGLE(attr)  (!(attr)->value.set)
+#  define OSSL_X509ATTR_SET_SINGLE(attr) ((attr)->value.set = 0)
 #endif
 
 /*

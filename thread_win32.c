@@ -24,8 +24,8 @@
 static volatile DWORD ruby_native_thread_key = TLS_OUT_OF_INDEXES;
 
 static int w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th);
-static int native_mutex_lock(rb_thread_lock_t *lock);
-static int native_mutex_unlock(rb_thread_lock_t *lock);
+static int native_mutex_lock(rb_nativethread_lock_t *lock);
+static int native_mutex_unlock(rb_nativethread_lock_t *lock);
 
 static void
 w32_error(const char *func)
@@ -269,7 +269,7 @@ w32_resume_thread(HANDLE handle)
 #ifdef HAVE__BEGINTHREADEX
 #define start_thread (HANDLE)_beginthreadex
 #define thread_errno errno
-typedef unsigned long (_stdcall *w32_thread_start_func)(void*);
+typedef unsigned long (__stdcall *w32_thread_start_func)(void*);
 #else
 #define start_thread CreateThread
 #define thread_errno rb_w32_map_errno(GetLastError())
@@ -301,14 +301,8 @@ rb_w32_Sleep(unsigned long msec)
 static void
 native_sleep(rb_thread_t *th, struct timeval *tv)
 {
-    DWORD msec;
-
-    if (tv) {
-	msec = tv->tv_sec * 1000 + tv->tv_usec / 1000;
-    }
-    else {
-	msec = INFINITE;
-    }
+    const volatile DWORD msec = (tv) ?
+	(DWORD)(tv->tv_sec * 1000 + tv->tv_usec / 1000) : INFINITE;
 
     GVL_UNLOCK_BEGIN();
     {
@@ -337,7 +331,7 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 }
 
 static int
-native_mutex_lock(rb_thread_lock_t *lock)
+native_mutex_lock(rb_nativethread_lock_t *lock)
 {
 #if USE_WIN32_MUTEX
     w32_mutex_lock(lock->mutex);
@@ -348,7 +342,7 @@ native_mutex_lock(rb_thread_lock_t *lock)
 }
 
 static int
-native_mutex_unlock(rb_thread_lock_t *lock)
+native_mutex_unlock(rb_nativethread_lock_t *lock)
 {
 #if USE_WIN32_MUTEX
     thread_debug("release mutex: %p\n", lock->mutex);
@@ -360,7 +354,7 @@ native_mutex_unlock(rb_thread_lock_t *lock)
 }
 
 static int
-native_mutex_trylock(rb_thread_lock_t *lock)
+native_mutex_trylock(rb_nativethread_lock_t *lock)
 {
 #if USE_WIN32_MUTEX
     int result;
@@ -380,7 +374,7 @@ native_mutex_trylock(rb_thread_lock_t *lock)
 }
 
 static void
-native_mutex_initialize(rb_thread_lock_t *lock)
+native_mutex_initialize(rb_nativethread_lock_t *lock)
 {
 #if USE_WIN32_MUTEX
     lock->mutex = w32_mutex_create();
@@ -391,7 +385,7 @@ native_mutex_initialize(rb_thread_lock_t *lock)
 }
 
 static void
-native_mutex_destroy(rb_thread_lock_t *lock)
+native_mutex_destroy(rb_nativethread_lock_t *lock)
 {
 #if USE_WIN32_MUTEX
     w32_close_handle(lock->mutex);
@@ -407,7 +401,7 @@ struct cond_event_entry {
 };
 
 static void
-native_cond_signal(rb_thread_cond_t *cond)
+native_cond_signal(rb_nativethread_cond_t *cond)
 {
     /* cond is guarded by mutex */
     struct cond_event_entry *e = cond->next;
@@ -426,7 +420,7 @@ native_cond_signal(rb_thread_cond_t *cond)
 }
 
 static void
-native_cond_broadcast(rb_thread_cond_t *cond)
+native_cond_broadcast(rb_nativethread_cond_t *cond)
 {
     /* cond is guarded by mutex */
     struct cond_event_entry *e = cond->next;
@@ -448,7 +442,7 @@ native_cond_broadcast(rb_thread_cond_t *cond)
 
 
 static int
-native_cond_timedwait_ms(rb_thread_cond_t *cond, rb_thread_lock_t *mutex, unsigned long msec)
+native_cond_timedwait_ms(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex, unsigned long msec)
 {
     DWORD r;
     struct cond_event_entry entry;
@@ -479,7 +473,7 @@ native_cond_timedwait_ms(rb_thread_cond_t *cond, rb_thread_lock_t *mutex, unsign
 }
 
 static int
-native_cond_wait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex)
+native_cond_wait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex)
 {
     return native_cond_timedwait_ms(cond, mutex, INFINITE);
 }
@@ -501,7 +495,7 @@ abs_timespec_to_timeout_ms(struct timespec *ts)
 }
 
 static int
-native_cond_timedwait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex, struct timespec *ts)
+native_cond_timedwait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex, struct timespec *ts)
 {
     unsigned long timeout_ms;
 
@@ -512,20 +506,8 @@ native_cond_timedwait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex, struct ti
     return native_cond_timedwait_ms(cond, mutex, timeout_ms);
 }
 
-#if SIZEOF_TIME_T == SIZEOF_LONG
-typedef unsigned long unsigned_time_t;
-#elif SIZEOF_TIME_T == SIZEOF_INT
-typedef unsigned int unsigned_time_t;
-#elif SIZEOF_TIME_T == SIZEOF_LONG_LONG
-typedef unsigned LONG_LONG unsigned_time_t;
-#else
-# error cannot find integer type which size is same as time_t.
-#endif
-
-#define TIMET_MAX (~(time_t)0 <= 0 ? (time_t)((~(unsigned_time_t)0) >> 1) : (time_t)(~(unsigned_time_t)0))
-
 static struct timespec
-native_cond_timeout(rb_thread_cond_t *cond, struct timespec timeout_rel)
+native_cond_timeout(rb_nativethread_cond_t *cond, struct timespec timeout_rel)
 {
     int ret;
     struct timeval tv;
@@ -555,14 +537,14 @@ native_cond_timeout(rb_thread_cond_t *cond, struct timespec timeout_rel)
 }
 
 static void
-native_cond_initialize(rb_thread_cond_t *cond, int flags)
+native_cond_initialize(rb_nativethread_cond_t *cond, int flags)
 {
     cond->next = (struct cond_event_entry *)cond;
     cond->prev = (struct cond_event_entry *)cond;
 }
 
 static void
-native_cond_destroy(rb_thread_cond_t *cond)
+native_cond_destroy(rb_nativethread_cond_t *cond)
 {
     /* */
 }
@@ -605,7 +587,7 @@ native_thread_destroy(rb_thread_t *th)
     w32_close_handle(intr);
 }
 
-static unsigned long _stdcall
+static unsigned long __stdcall
 thread_start_func_1(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
@@ -713,7 +695,7 @@ ubf_handle(void *ptr)
 static HANDLE timer_thread_id = 0;
 static HANDLE timer_thread_lock;
 
-static unsigned long _stdcall
+static unsigned long __stdcall
 timer_thread_func(void *dummy)
 {
     thread_debug("timer_thread\n");
@@ -766,6 +748,12 @@ native_reset_timer_thread(void)
     }
 }
 
+int
+ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
+{
+    return rb_thread_raised_p(th, RAISED_STACKOVERFLOW);
+}
+
 #ifdef RUBY_ALLOCA_CHKSTK
 void
 ruby_alloca_chkstk(size_t len, void *sp)
@@ -784,4 +772,11 @@ rb_reserved_fd_p(int fd)
 {
     return 0;
 }
+
+rb_nativethread_id_t
+rb_nativethread_self(void)
+{
+    return GetCurrentThread();
+}
+
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

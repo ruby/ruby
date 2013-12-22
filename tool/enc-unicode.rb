@@ -187,7 +187,7 @@ def parse_age(data)
   IO.foreach(get_file('DerivedAge.txt')) do |line|
     if /^# Total code points: / =~ line
       constname = constantize_agename(current)
-			# each version matches all previous versions
+      # each version matches all previous versions
       cps.concat(data[last_constname]) if last_constname
       data[constname] = cps
       make_const(constname, cps, "Derived Age #{current}")
@@ -225,13 +225,20 @@ def parse_block(data)
   blocks << constname
 end
 
+# shim for Ruby 1.8
+unless {}.respond_to?(:key)
+  class Hash
+    alias key index
+  end
+end
+
 $const_cache = {}
 # make_const(property, pairs, name): Prints a 'static const' structure for a
 # given property, group of paired codepoints, and a human-friendly name for
 # the group
 def make_const(prop, data, name)
   puts "\n/* '#{prop}': #{name} */"
-  if origprop = $const_cache.index(data) # don't use Hash#key because it is 1.9 feature
+  if origprop = $const_cache.key(data)
     puts "#define CR_#{prop} CR_#{origprop}"
   else
     $const_cache[prop] = data

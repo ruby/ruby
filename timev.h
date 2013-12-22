@@ -18,4 +18,25 @@ struct vtm {
 
 #define TIME_SCALE 1000000000
 
+#ifndef TYPEOF_TIMEVAL_TV_SEC
+# define TYPEOF_TIMEVAL_TV_SEC time_t
+#endif
+#ifndef TYPEOF_TIMEVAL_TV_USEC
+# if INT_MAX >= 1000000
+# define TYPEOF_TIMEVAL_TV_USEC int
+# else
+# define TYPEOF_TIMEVAL_TV_USEC long
+# endif
+#endif
+
+#if SIZEOF_TIME_T == SIZEOF_LONG
+typedef unsigned long unsigned_time_t;
+#elif SIZEOF_TIME_T == SIZEOF_INT
+typedef unsigned int unsigned_time_t;
+#elif SIZEOF_TIME_T == SIZEOF_LONG_LONG
+typedef unsigned LONG_LONG unsigned_time_t;
+#else
+# error cannot find integer type which size is same as time_t.
+#endif
+
 #endif

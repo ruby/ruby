@@ -8,8 +8,6 @@ class TestGemCommandsDependencyCommand < Gem::TestCase
 
     @cmd = Gem::Commands::DependencyCommand.new
     @cmd.options[:domain] = :local
-
-    util_setup_fake_fetcher true
   end
 
   def test_execute
@@ -30,6 +28,13 @@ class TestGemCommandsDependencyCommand < Gem::TestCase
   end
 
   def test_execute_no_args
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 1
+      fetcher.spec 'a', '2.a'
+      fetcher.spec 'dep_x', 1, 'x' => '>= 1'
+      fetcher.legacy_platform
+    end
+
     @cmd.options[:args] = []
 
     use_ui @ui do
@@ -41,22 +46,10 @@ Gem a-1
 
 Gem a-2.a
 
-Gem a-2
-
-Gem a-3.a
-
-Gem a_evil-9
-
-Gem b-2
-
-Gem c-1.2
-
 Gem dep_x-1
   x (>= 1)
 
 Gem pl-1-x86-linux
-
-Gem x-1
 
     EOF
 
@@ -78,7 +71,7 @@ Gem x-1
   end
 
   def test_execute_pipe_format
-    quick_spec 'foo' do |gem|
+    util_spec 'foo' do |gem|
       gem.add_dependency 'bar', '> 1'
     end
 
@@ -94,6 +87,13 @@ Gem x-1
   end
 
   def test_execute_regexp
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a',      1
+      fetcher.spec 'a',      '2.a'
+      fetcher.spec 'a_evil', 9
+      fetcher.spec 'b',      2
+    end
+
     @cmd.options[:args] = %w[/[ab]/]
 
     use_ui @ui do
@@ -104,10 +104,6 @@ Gem x-1
 Gem a-1
 
 Gem a-2.a
-
-Gem a-2
-
-Gem a-3.a
 
 Gem a_evil-9
 
@@ -168,16 +164,9 @@ ERROR:  Only reverse dependencies for local gems are supported.
   end
 
   def test_execute_remote
-    foo = quick_gem 'foo' do |gem|
-      gem.add_dependency 'bar', '> 1'
+    spec_fetcher do |fetcher|
+      fetcher.spec 'foo', 2, 'bar' => '> 1'
     end
-
-    @fetcher = Gem::FakeFetcher.new
-    Gem::RemoteFetcher.fetcher = @fetcher
-
-    util_setup_spec_fetcher foo
-
-    FileUtils.rm File.join(@gemhome, 'specifications', foo.spec_name)
 
     @cmd.options[:args] = %w[foo]
     @cmd.options[:domain] = :remote
@@ -194,7 +183,10 @@ ERROR:  Only reverse dependencies for local gems are supported.
     @fetcher = Gem::FakeFetcher.new
     Gem::RemoteFetcher.fetcher = @fetcher
 
-    util_setup_spec_fetcher @a1, @a2
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 1
+      fetcher.spec 'a', 2
+    end
 
     @cmd.options[:args] = %w[a]
     @cmd.options[:domain] = :remote
@@ -209,11 +201,9 @@ ERROR:  Only reverse dependencies for local gems are supported.
   end
 
   def test_execute_prerelease
-    @fetcher = Gem::FakeFetcher.new
-    Gem::RemoteFetcher.fetcher = @fetcher
-
-    util_clear_gems
-    util_setup_spec_fetcher @a2_pre
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', '2.a'
+    end
 
     @cmd.options[:args] = %w[a]
     @cmd.options[:domain] = :remote

@@ -1,4 +1,4 @@
-require "rexml_test_utils"
+require_relative "rexml_test_utils"
 require "rexml/light/node"
 require "rexml/parsers/lightparser"
 

@@ -20,7 +20,14 @@ class TestLazyEnumerator < Test::Unit::TestCase
 
   def test_initialize
     assert_equal([1, 2, 3], [1, 2, 3].lazy.to_a)
-    assert_equal([1, 2, 3], Enumerator::Lazy.new([1, 2, 3]).to_a)
+    assert_equal([1, 2, 3], Enumerator::Lazy.new([1, 2, 3]){|y, v| y << v}.to_a)
+    assert_raise(ArgumentError) { Enumerator::Lazy.new([1, 2, 3]) }
+
+    a = [1, 2, 3].lazy
+    a.freeze
+    assert_raise(RuntimeError) {
+      a.__send__ :initialize, [4, 5], &->(y, *v) { y << yield(*v) }
+    }
   end
 
   def test_each_args
@@ -132,6 +139,11 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal(["1", "2", "3"], [1, 2, 3].lazy.flat_map {|x| x.to_s}.force)
   end
 
+  def test_flat_map_hash
+    assert_equal([{?a=>97}, {?b=>98}, {?c=>99}], [?a, ?b, ?c].flat_map {|x| {x=>x.ord}})
+    assert_equal([{?a=>97}, {?b=>98}, {?c=>99}], [?a, ?b, ?c].lazy.flat_map {|x| {x=>x.ord}}.force)
+  end
+
   def test_reject
     a = Step.new(1..6)
     assert_equal(4, a.reject {|x| x < 4}.first)
@@ -208,6 +220,11 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal(1, a.current)
   end
 
+  def test_zip_bad_arg
+    a = Step.new(1..3)
+    assert_raise(TypeError){ a.lazy.zip(42) }
+  end
+
   def test_zip_with_block
     # zip should be eager when a block is given
     a = Step.new(1..3)
@@ -238,6 +255,71 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal((1..5).to_a, take5.force, bug6428)
   end
 
+  def test_take_nested
+    bug7696 = '[ruby-core:51470]'
+    a = Step.new(1..10)
+    take5 = a.lazy.take(5)
+    assert_equal([*(1..5)]*5, take5.flat_map{take5}.force, bug7696)
+  end
+
+  def test_drop_while_nested
+    bug7696 = '[ruby-core:51470]'
+    a = Step.new(1..10)
+    drop5 = a.lazy.drop_while{|x| x < 6}
+    assert_equal([*(6..10)]*5, drop5.flat_map{drop5}.force, bug7696)
+  end
+
+  def test_drop_nested
+    bug7696 = '[ruby-core:51470]'
+    a = Step.new(1..10)
+    drop5 = a.lazy.drop(5)
+    assert_equal([*(6..10)]*5, drop5.flat_map{drop5}.force, bug7696)
+  end
+
+  def test_zip_nested
+    bug7696 = '[ruby-core:51470]'
+    enum = ('a'..'z').each
+    enum.next
+    zip = (1..3).lazy.zip(enum, enum)
+    assert_equal([[1, 'a', 'a'], [2, 'b', 'b'], [3, 'c', 'c']]*3, zip.flat_map{zip}.force, bug7696)
+  end
+
+  def test_zip_lazy_on_args
+    zip = Step.new(1..2).lazy.zip(42..Float::INFINITY)
+    assert_equal [[1, 42], [2, 43]], zip.force
+  end
+
+  def test_zip_efficient_on_array_args
+    ary = [42, :foo]
+    %i[to_enum enum_for lazy each].each do |forbid|
+      ary.define_singleton_method(forbid){ fail "#{forbid} was called"}
+    end
+    zip = Step.new(1..2).lazy.zip(ary)
+    assert_equal [[1, 42], [2, :foo]], zip.force
+  end
+
+  def test_zip_nonsingle
+    bug8735 = '[ruby-core:56383] [Bug #8735]'
+
+    obj = Object.new
+    def obj.each
+      yield
+      yield 1, 2
+    end
+
+    assert_equal(obj.to_enum.zip(obj.to_enum), obj.to_enum.lazy.zip(obj.to_enum).force, bug8735)
+  end
+
+  def test_take_rewound
+    bug7696 = '[ruby-core:51470]'
+    e=(1..42).lazy.take(2)
+    assert_equal 1, e.next
+    assert_equal 2, e.next
+    e.rewind
+    assert_equal 1, e.next
+    assert_equal 2, e.next
+  end
+
   def test_take_while
     a = Step.new(1..10)
     assert_equal(1, a.take_while {|i| i < 5}.first)
@@ -258,11 +340,11 @@ class TestLazyEnumerator < Test::Unit::TestCase
 
   def test_drop_while
     a = Step.new(1..10)
-    assert_equal(5, a.drop_while {|i| i < 5}.first)
+    assert_equal(5, a.drop_while {|i| i % 5 > 0}.first)
     assert_equal(10, a.current)
-    assert_equal(5, a.lazy.drop_while {|i| i < 5}.first)
+    assert_equal(5, a.lazy.drop_while {|i| i % 5 > 0}.first)
     assert_equal(5, a.current)
-    assert_equal((5..10).to_a, a.lazy.drop_while {|i| i < 5}.to_a)
+    assert_equal((5..10).to_a, a.lazy.drop_while {|i| i % 5 > 0}.to_a)
   end
 
   def test_drop_and_take
@@ -298,10 +380,6 @@ class TestLazyEnumerator < Test::Unit::TestCase
   end
 
   def test_inspect
-    assert_equal("#<Enumerator::Lazy: 1..10:each>",
-                 Enumerator::Lazy.new(1..10).inspect)
-    assert_equal("#<Enumerator::Lazy: 1..10:cycle(2)>",
-                 Enumerator::Lazy.new(1..10, :cycle, 2).inspect)
     assert_equal("#<Enumerator::Lazy: 1..10>", (1..10).lazy.inspect)
     assert_equal('#<Enumerator::Lazy: #<Enumerator: "foo":each_char>>',
                  "foo".each_char.lazy.inspect)
@@ -325,15 +403,33 @@ class TestLazyEnumerator < Test::Unit::TestCase
 EOS
   end
 
+  def test_lazy_to_enum
+    lazy = [1, 2, 3].lazy
+    def lazy.foo(*args)
+      yield args
+      yield args
+    end
+    enum = lazy.to_enum(:foo, :hello, :world)
+    assert_equal Enumerator::Lazy, enum.class
+    assert_equal nil, enum.size
+    assert_equal [[:hello, :world], [:hello, :world]], enum.to_a
+
+    assert_equal [1, 2, 3], lazy.to_enum.to_a
+  end
+
   def test_size
     lazy = [1, 2, 3].lazy
     assert_equal 3, lazy.size
-    assert_equal 42, Enumerator.new(42){}.lazy.size
-    %i[map collect flat_map collect_concat].each do |m|
+    assert_equal 42, Enumerator::Lazy.new([],->{42}){}.size
+    assert_equal 42, Enumerator::Lazy.new([],42){}.size
+    assert_equal 42, Enumerator::Lazy.new([],42){}.lazy.size
+    assert_equal 42, lazy.to_enum{ 42 }.size
+
+    %i[map collect].each do |m|
       assert_equal 3, lazy.send(m){}.size
     end
     assert_equal 3, lazy.zip([4]).size
-    %i[select find_all reject take_while drop_while].each do |m|
+    %i[flat_map collect_concat select find_all reject take_while drop_while].each do |m|
       assert_equal nil, lazy.send(m){}.size
     end
     assert_equal nil, lazy.grep(//).size
@@ -360,7 +456,38 @@ EOS
 
   def test_map_zip
     bug7507 = '[ruby-core:50545]'
-    assert_ruby_status(["-e", "GC.stress = true", "-e", "(1..10).lazy.map{}.zip(){}"], bug7507)
-    assert_ruby_status(["-e", "GC.stress = true", "-e", "(1..10).lazy.map{}.zip().to_a"], bug7507)
+    assert_ruby_status(["-e", "GC.stress = true", "-e", "(1..10).lazy.map{}.zip(){}"], "", bug7507)
+    assert_ruby_status(["-e", "GC.stress = true", "-e", "(1..10).lazy.map{}.zip().to_a"], "", bug7507)
+  end
+
+  def test_require_block
+    %i[select reject drop_while take_while map flat_map].each do |method|
+      assert_raise(ArgumentError){ [].lazy.send(method) }
+    end
+  end
+
+  def test_laziness_conservation
+    bug7507 = '[ruby-core:51510]'
+    {
+      slice_before: //,
+      with_index: nil,
+      cycle: nil,
+      each_with_object: 42,
+      each_slice: 42,
+      each_entry: nil,
+      each_cons: 42,
+    }.each do |method, arg|
+      assert_equal Enumerator::Lazy, [].lazy.send(method, *arg).class, bug7507
+    end
+    assert_equal Enumerator::Lazy, [].lazy.chunk{}.class, bug7507
+  end
+
+  def test_no_warnings
+    le = (1..3).lazy
+    assert_warning("") {le.zip([4,5,6]).force}
+    assert_warning("") {le.zip(4..6).force}
+    assert_warning("") {le.take(1).force}
+    assert_warning("") {le.drop(1).force}
+    assert_warning("") {le.drop_while{false}.force}
   end
 end

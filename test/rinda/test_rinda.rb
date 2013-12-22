@@ -2,6 +2,7 @@ require 'test/unit'
 
 require 'drb/drb'
 require 'drb/eq'
+require 'rinda/ring'
 require 'rinda/tuplespace'
 
 require 'singleton'
@@ -49,7 +50,7 @@ class MockClock
   end
 
   def rewind
-    now ,= @ts.take([nil, :now])
+    @ts.take([nil, :now])
     @ts.write([@inf, :now])
     @ts.take([nil, :now])
     @now = 2
@@ -75,7 +76,7 @@ module Time
   module_function :at
 
   def now
-    @m ? @m.now : 2
+    defined?(@m) && @m ? @m.now : 2
   end
   module_function :now
 
@@ -150,7 +151,7 @@ module TupleSpaceTestModule
     assert(!tmpl.match({"message"=>"Hello", "no_name"=>"Foo"}))
 
     assert_raise(Rinda::InvalidHashTupleKey) do
-      tmpl = Rinda::Template.new({:message=>String, "name"=>String})
+      Rinda::Template.new({:message=>String, "name"=>String})
     end
     tmpl = Rinda::Template.new({"name"=>String})
     assert_equal(1, tmpl.size)
@@ -262,7 +263,7 @@ module TupleSpaceTestModule
   end
 
   def test_core_01
-    5.times do |n|
+    5.times do
       @ts.write([:req, 2])
     end
 
@@ -297,7 +298,7 @@ module TupleSpaceTestModule
       s
     end
 
-    5.times do |n|
+    5.times do
       @ts.write([:req, 2])
     end
 
@@ -310,7 +311,7 @@ module TupleSpaceTestModule
     notify1 = @ts.notify(nil, [:req, Integer])
     notify2 = @ts.notify(nil, {"message"=>String, "name"=>String})
 
-    5.times do |n|
+    5.times do
       @ts.write([:req, 2])
     end
 
@@ -477,7 +478,255 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
                  @ts.take({'head' => 1, 'tail' => 2}, 0))
   end
 
+  def test_take_bug_8215
+    require_relative '../ruby/envutil'
+    service = DRb.start_service(nil, @ts_base)
+
+    uri = service.uri
+
+    args = [EnvUtil.rubybin, *%W[-rdrb/drb -rdrb/eq -rrinda/ring -rrinda/tuplespace -e]]
+
+    take = spawn(*args, <<-'end;', uri)
+      uri = ARGV[0]
+      DRb.start_service
+      ro = DRbObject.new_with_uri(uri)
+      ts = Rinda::TupleSpaceProxy.new(ro)
+      th = Thread.new do
+        ts.take([:test_take, nil])
+      end
+      Kernel.sleep(0.1)
+      th.raise(Interrupt) # causes loss of the taken tuple
+      ts.write([:barrier, :continue])
+      Kernel.sleep
+    end;
+
+    @ts_base.take([:barrier, :continue])
+
+    write = spawn(*args, <<-'end;', uri)
+      uri = ARGV[0]
+      DRb.start_service
+      ro = DRbObject.new_with_uri(uri)
+      ts = Rinda::TupleSpaceProxy.new(ro)
+      ts.write([:test_take, 42])
+    end;
+
+    status = Process.wait(write)
+
+    assert_equal([[:test_take, 42]], @ts_base.read_all([:test_take, nil]),
+                 '[bug:8215] tuple lost')
+  ensure
+    signal = /mswin|mingw/ =~ RUBY_PLATFORM ? "KILL" : "TERM"
+    Process.kill(signal, write) if write && status.nil?
+    Process.kill(signal, take)  if take
+    Process.wait(write) if write && status.nil?
+    Process.wait(take)  if take
+  end
+
   @server = DRb.primary_server || DRb.start_service
+end
+
+module RingIPv6
+  def prepare_ipv6(r)
+    begin
+      Socket.getifaddrs.each do |ifaddr|
+        next unless ifaddr.addr
+        next unless ifaddr.addr.ipv6_linklocal?
+        next if ifaddr.name[0, 2] == "lo"
+        r.multicast_interface = ifaddr.ifindex
+        return ifaddr
+      end
+    rescue NotImplementedError
+      # ifindex() function may not be implemented on Windows.
+      return if
+        Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? }
+    end
+    skip 'IPv6 not available'
+  end
+end
+
+class TestRingServer < Test::Unit::TestCase
+
+  def setup
+    @port = Rinda::Ring_PORT
+
+    @ts = Rinda::TupleSpace.new
+    @rs = Rinda::RingServer.new(@ts, [], @port)
+  end
+  def teardown
+    # implementation-dependent
+    @ts.instance_eval{@keeper.kill if @keeper}
+    @rs.shutdown
+  end
+
+  def test_do_reply
+    called = nil
+
+    callback = proc { |ts|
+      called = ts
+    }
+
+    callback = DRb::DRbObject.new callback
+
+    @ts.write [:lookup_ring, callback]
+
+    @rs.do_reply
+
+    Thread.pass until called
+
+    assert_same @ts, called
+  end
+
+  def test_do_reply_local
+    called = nil
+
+    callback = proc { |ts|
+      called = ts
+    }
+
+    @ts.write [:lookup_ring, callback]
+
+    @rs.do_reply
+
+    Thread.pass until called
+
+    assert_same @ts, called
+  end
+
+  def test_make_socket_unicast
+    v4 = @rs.make_socket('127.0.0.1')
+
+    assert_equal('127.0.0.1', v4.local_address.ip_address)
+    assert_equal(@port,       v4.local_address.ip_port)
+  end
+
+  def test_make_socket_ipv4_multicast
+    v4mc = @rs.make_socket('239.0.0.1')
+
+    if Socket.const_defined?(:SO_REUSEPORT) then
+      assert(v4mc.getsockopt(:SOCKET, :SO_REUSEPORT).bool)
+    else
+      assert(v4mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool)
+    end
+
+    assert_equal('0.0.0.0', v4mc.local_address.ip_address)
+    assert_equal(@port,     v4mc.local_address.ip_port)
+  end
+
+  def test_make_socket_ipv6_multicast
+    skip 'IPv6 not available' unless
+      Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? }
+
+    begin
+      v6mc = @rs.make_socket('ff02::1')
+    rescue Errno::EADDRNOTAVAIL
+      return # IPv6 address for multicast not available
+    end
+
+    if Socket.const_defined?(:SO_REUSEPORT) then
+      assert v6mc.getsockopt(:SOCKET, :SO_REUSEPORT).bool
+    else
+      assert v6mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool
+    end
+
+    assert_equal('::1', v6mc.local_address.ip_address)
+    assert_equal(@port, v6mc.local_address.ip_port)
+  end
+
+  def test_ring_server_ipv4_multicast
+    @rs = Rinda::RingServer.new(@ts, [['239.0.0.1', '0.0.0.0']], @port)
+    v4mc = @rs.instance_variable_get('@sockets').first
+
+    if Socket.const_defined?(:SO_REUSEPORT) then
+      assert(v4mc.getsockopt(:SOCKET, :SO_REUSEPORT).bool)
+    else
+      assert(v4mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool)
+    end
+
+    assert_equal('0.0.0.0', v4mc.local_address.ip_address)
+    assert_equal(@port,     v4mc.local_address.ip_port)
+  end
+
+  def test_ring_server_ipv6_multicast
+    skip 'IPv6 not available' unless
+      Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? }
+
+    begin
+      @rs = Rinda::RingServer.new(@ts, [['ff02::1', '::1', 0]], @port)
+    rescue Errno::EADDRNOTAVAIL
+      return # IPv6 address for multicast not available
+    end
+
+    v6mc = @rs.instance_variable_get('@sockets').first
+
+    if Socket.const_defined?(:SO_REUSEPORT) then
+      assert v6mc.getsockopt(:SOCKET, :SO_REUSEPORT).bool
+    else
+      assert v6mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool
+    end
+
+    assert_equal('::1', v6mc.local_address.ip_address)
+    assert_equal(@port, v6mc.local_address.ip_port)
+  end
+
+  def test_shutdown
+    @rs.shutdown
+
+    assert_nil(@rs.do_reply, 'otherwise should hang forever')
+  end
+
+end
+
+class TestRingFinger < Test::Unit::TestCase
+  include RingIPv6
+
+  def setup
+    @rf = Rinda::RingFinger.new
+  end
+
+  def test_make_socket_unicast
+    v4 = @rf.make_socket('127.0.0.1')
+
+    assert(v4.getsockopt(:SOL_SOCKET, :SO_BROADCAST).bool)
+  end
+
+  def test_make_socket_ipv4_multicast
+    v4mc = @rf.make_socket('239.0.0.1')
+
+    assert_equal(1, v4mc.getsockopt(:IPPROTO_IP, :IP_MULTICAST_LOOP).ipv4_multicast_loop)
+    assert_equal(1, v4mc.getsockopt(:IPPROTO_IP, :IP_MULTICAST_TTL).ipv4_multicast_ttl)
+  end
+
+  def test_make_socket_ipv6_multicast
+    ifaddr = prepare_ipv6(@rf)
+    begin
+      v6mc = @rf.make_socket("ff02::1")
+    rescue Errno::EINVAL
+      # somehow Debian 6.0.7 needs ifname
+      v6mc = @rf.make_socket("ff02::1%#{ifaddr.name}")
+    end
+
+    assert_equal(1, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_LOOP).int)
+    assert_equal(1, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_HOPS).int)
+  end
+
+  def test_make_socket_ipv4_multicast_hops
+    @rf.multicast_hops = 2
+    v4mc = @rf.make_socket('239.0.0.1')
+    assert_equal(2, v4mc.getsockopt(:IPPROTO_IP, :IP_MULTICAST_TTL).ipv4_multicast_ttl)
+  end
+
+  def test_make_socket_ipv6_multicast_hops
+    ifaddr = prepare_ipv6(@rf)
+    @rf.multicast_hops = 2
+    begin
+      v6mc = @rf.make_socket("ff02::1")
+    rescue Errno::EINVAL
+      # somehow Debian 6.0.7 needs ifname
+      v6mc = @rf.make_socket("ff02::1%#{ifaddr.name}")
+    end
+    assert_equal(2, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_HOPS).int)
+  end
+
 end
 
 end

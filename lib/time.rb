@@ -80,7 +80,7 @@ require 'date'
 #
 # #strptime works similar to +parse+ except that instead of using a heuristic
 # to detect the format of the input string, you provide a second argument that
-# is describes the format of the string. For example:
+# describes the format of the string. For example:
 #
 #   Time.strptime("2000-10-31", "%Y-%m-%d") #=> 2000-10-31 00:00:00 -0500
 
@@ -174,8 +174,8 @@ class Time
     end
     private :zone_utc?
 
-    LeapYearMonthDays = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-    CommonYearMonthDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    LeapYearMonthDays = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] # :nodoc:
+    CommonYearMonthDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] # :nodoc:
     def month_days(y, m)
       if ((y % 4 == 0) && (y % 100 != 0)) || (y % 400 == 0)
         LeapYearMonthDays[m-1]
@@ -393,7 +393,11 @@ class Time
       d = Date._strptime(date, format)
       raise ArgumentError, "invalid strptime format - `#{format}'" unless d
       if seconds = d[:seconds]
-        Time.at(seconds)
+        if offset = d[:offset]
+          Time.at(seconds).localtime(offset)
+        else
+          Time.at(seconds)
+        end
       else
         year = d[:year]
         year = yield(year) if year && block_given?
@@ -401,7 +405,7 @@ class Time
       end
     end
 
-    MonthValue = {
+    MonthValue = { # :nodoc:
       'JAN' => 1, 'FEB' => 2, 'MAR' => 3, 'APR' => 4, 'MAY' => 5, 'JUN' => 6,
       'JUL' => 7, 'AUG' => 8, 'SEP' => 9, 'OCT' =>10, 'NOV' =>11, 'DEC' =>12
     }
@@ -577,10 +581,12 @@ class Time
   end
   alias rfc822 rfc2822
 
-  RFC2822_DAY_NAME = [
+
+  RFC2822_DAY_NAME = [ # :nodoc:
     'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'
   ]
-  RFC2822_MONTH_NAME = [
+
+  RFC2822_MONTH_NAME = [ # :nodoc:
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
   ]

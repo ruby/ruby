@@ -15,11 +15,13 @@ class TestMkmf
         hdr.puts "void #{FUNC_NAME}_fake(void);"
       end
       create_tmpsrc("#include \"#{HEADER_NAME}\"\n""void #{FUNC_NAME}(void) {}")
-      xsystem(cc_command)
-      xsystem("#{CONFIG['AR']} #{config_string('ARFLAGS') || 'cru '}#{lib} conftest.#{$OBJEXT}")
-      File.unlink("conftest.#{$OBJEXT}")
+      assert(xsystem(cc_command), "compile failed: #{cc_command}")
+      command = "#{CONFIG['AR']} #{config_string('ARFLAGS') || 'cru '}#{lib} #{CONFTEST}.#{$OBJEXT}"
+      assert(xsystem(command), "making library failed: #{command}")
+      File.unlink("#{CONFTEST}.#{$OBJEXT}")
       config_string('RANLIB') do |ranlib|
-        xsystem("#{ranlib} #{lib}")
+        command = "#{ranlib} #{lib}"
+        assert(xsystem(command), "ranlib failed: #{command}")
       end
     end
 

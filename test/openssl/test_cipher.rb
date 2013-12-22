@@ -133,7 +133,7 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
     end
   end
 
-  if has_ciphers?(['aes-128-gcm', 'aes-192-gcm', 'aes-128-gcm'])
+  if has_ciphers?(['aes-128-gcm', 'aes-192-gcm', 'aes-256-gcm'])
 
     def test_authenticated
       cipher = OpenSSL::Cipher.new('aes-128-gcm')
@@ -143,7 +143,7 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
     end
 
     def test_aes_gcm
-      ['aes-128-gcm', 'aes-192-gcm', 'aes-128-gcm'].each do |algo|
+      ['aes-128-gcm', 'aes-192-gcm', 'aes-256-gcm'].each do |algo|
         pt = "You should all use Authenticated Encryption!"
         cipher, key, iv = new_encryptor(algo)
 
@@ -161,7 +161,7 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
     end
 
     def test_aes_gcm_short_tag
-      ['aes-128-gcm', 'aes-192-gcm', 'aes-128-gcm'].each do |algo|
+      ['aes-128-gcm', 'aes-192-gcm', 'aes-256-gcm'].each do |algo|
         pt = "You should all use Authenticated Encryption!"
         cipher, key, iv = new_encryptor(algo)
 
@@ -187,7 +187,8 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
       tag = cipher.auth_tag
 
       decipher = new_decryptor('aes-128-gcm', key, iv)
-      decipher.auth_tag = tag[0..-2] << tag[-1].succ
+      tag.setbyte(-1, (tag.getbyte(-1) + 1) & 0xff)
+      decipher.auth_tag = tag
       decipher.auth_data = "aad"
 
       assert_raise OpenSSL::Cipher::CipherError do

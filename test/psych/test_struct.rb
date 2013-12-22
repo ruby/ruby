@@ -1,4 +1,4 @@
-require 'psych/helper'
+require_relative 'helper'
 
 class PsychStructWithIvar < Struct.new(:foo)
   attr_reader :bar

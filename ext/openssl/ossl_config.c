@@ -15,6 +15,11 @@
  * Classes
  */
 VALUE cConfig;
+/* Document-class: OpenSSL::ConfigError
+ *
+ * General error for openssl library configuration files. Including formating,
+ * parsing errors, etc.
+ */
 VALUE eConfigError;
 
 /*
@@ -55,6 +60,10 @@ GetConfigPtr(VALUE obj)
     return conf;
 }
 
+/* Document-const: DEFAULT_CONFIG_FILE
+ *
+ * The default system configuration file for openssl
+ */
 
 /*
  * INIT

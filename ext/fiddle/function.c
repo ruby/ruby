@@ -126,6 +126,15 @@ function_call(int argc, VALUE argv[], VALUE self)
 
     TypedData_Get_Struct(self, ffi_cif, &function_data_type, cif);
 
+    if (rb_safe_level() >= 1) {
+	for (i = 0; i < argc; i++) {
+	    VALUE src = argv[i];
+	    if (OBJ_TAINTED(src)) {
+		rb_raise(rb_eSecurityError, "tainted parameter not allowed");
+	    }
+	}
+    }
+
     values = xcalloc((size_t)argc + 1, (size_t)sizeof(void *));
     generic_args = xcalloc((size_t)argc, (size_t)sizeof(fiddle_generic));
 
@@ -135,9 +144,9 @@ function_call(int argc, VALUE argv[], VALUE self)
 
 	if(NUM2INT(type) == TYPE_VOIDP) {
 	    if(NIL_P(src)) {
-		src = INT2NUM(0);
+		src = INT2FIX(0);
 	    } else if(cPointer != CLASS_OF(src)) {
-	        src = rb_funcall(cPointer, rb_intern("[]"), 1, src);
+		src = rb_funcall(cPointer, rb_intern("[]"), 1, src);
 	    }
 	    src = rb_Integer(src);
 	}

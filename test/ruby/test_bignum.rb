@@ -106,6 +106,8 @@ class TestBignum < Test::Unit::TestCase
     assert_equal("nd075ib45k86g" ,18446744073709551616.to_s(31), "[ruby-core:10686]")
     assert_equal("1777777777777777777777" ,18446744073709551615.to_s(8))
     assert_equal("-1777777777777777777777" ,-18446744073709551615.to_s(8))
+    assert_match(/\A10{99}1\z/, (10**100+1).to_s)
+    assert_match(/\A10{900}9{100}\z/, (10**1000+(10**100-1)).to_s)
   end
 
   b = 2**64
@@ -122,6 +124,12 @@ class TestBignum < Test::Unit::TestCase
   T64P = b.coerce(T64 - 1).first # 18446744073709551615
   T1024  = b.coerce(2**1024).first
   T1024P = b.coerce(T1024 - 1).first
+
+  f = b
+  while Bignum === f-1
+    f = f >> 1
+  end
+  FIXNUM_MAX = f-1
 
   def test_prepare
     assert_instance_of(Bignum, T_ZERO)
@@ -413,6 +421,8 @@ class TestBignum < Test::Unit::TestCase
   end
 
   def test_quo
+    assert_kind_of(Float, T32.quo(1.0))
+
     assert_equal(T32.to_f, T32.quo(1))
     assert_equal(T32.to_f, T32.quo(1.0))
     assert_equal(T32.to_f, T32.quo(T_ONE))
@@ -420,7 +430,7 @@ class TestBignum < Test::Unit::TestCase
     assert_raise(TypeError) { T32.quo("foo") }
 
     assert_equal(1024**1024, (1024**1024).quo(1))
-    assert_equal(1024**1024, (1024**1024).quo(1.0))
+    assert_equal(Float::INFINITY, (1024**1024).quo(1.0))
     assert_equal(1024**1024*2, (1024**1024*2).quo(1))
     inf = 1 / 0.0; nan = inf / inf
 
@@ -452,6 +462,7 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(T32 + T31, T32 | T31)
     assert_equal(-T31, (-T32) | (-T31))
     assert_equal(T64 + T32, T32 | T64)
+    assert_equal(FIXNUM_MAX, T_ZERO | FIXNUM_MAX)
   end
 
   def test_xor
@@ -524,6 +535,11 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(-1, -(2**31) >> 32)
   end
 
+  def test_shift_bigshift
+    big = 2**300
+    assert_equal(2**65538 / (2**65537), 2**65538 >> big.coerce(65537).first)
+  end
+
   def test_aref
     assert_equal(0, (2**32)[0])
     assert_equal(0, (2**32)[2**32])
@@ -560,28 +576,31 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(true, (2**32).even?)
   end
 
-  def assert_interrupt
+  def test_interrupt_during_to_s
+    if defined?(Bignum::GMP_VERSION)
+      return # GMP doesn't support interrupt during an operation.
+    end
     time = Time.now
     start_flag = false
     end_flag = false
+    num = (65536 ** 65536)
     thread = Thread.new do
       start_flag = true
-      yield
+      num.to_s
       end_flag = true
     end
-    Thread.pass until start_flag
+    sleep 0.001 until start_flag
     thread.raise
     thread.join rescue nil
     time = Time.now - time
-    assert_equal([true, false], [start_flag, end_flag])
+    skip "too fast cpu" if end_flag
     assert_operator(time, :<, 10)
   end
 
-  def test_interrupt
-    assert_interrupt {(65536 ** 65536).to_s}
-  end
-
   def test_interrupt_during_bigdivrem
+    if defined?(Bignum::GMP_VERSION)
+      return # GMP doesn't support interrupt during an operation.
+    end
     return unless Process.respond_to?(:kill)
     begin
       trace = []
@@ -615,8 +634,7 @@ class TestBignum < Test::Unit::TestCase
     if (big = 2**31-1).is_a?(Fixnum)
       return
     end
-    e = assert_raise(RangeError) {(1 << big).to_s}
-    assert_match(/too big to convert/, e.message)
+    assert_raise_with_message(RangeError, /too big to convert/) {(1 << big).to_s}
   end
 
   def test_fix_fdiv

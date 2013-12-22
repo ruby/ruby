@@ -8,9 +8,11 @@ class TestGemCommandsQueryCommand < Gem::TestCase
 
     @cmd = Gem::Commands::QueryCommand.new
 
-    util_setup_fake_fetcher
-    util_clear_gems
-    util_setup_spec_fetcher @a1, @a2, @pl1, @a3a
+    @specs = spec_fetcher do |fetcher|
+      fetcher.spec 'a', 1
+      fetcher.spec 'a', 2
+      fetcher.spec 'a', '3.a'
+    end
 
     @fetcher.data["#{@gem_repo}Marshal.#{Gem.marshal_version}"] = proc do
       raise Gem::RemoteFetcher::FetchError
@@ -18,6 +20,10 @@ class TestGemCommandsQueryCommand < Gem::TestCase
   end
 
   def test_execute
+    spec_fetcher do |fetcher|
+      fetcher.legacy_platform
+    end
+
     @cmd.handle_options %w[-r]
 
     use_ui @ui do
@@ -37,13 +43,18 @@ pl (1 i386-linux)
   end
 
   def test_execute_platform
-    @a1r = @a1.dup
+    spec_fetcher do |fetcher|
+      fetcher.clear
 
-    @a1.platform = 'x86-linux'
-    @a2.platform = 'universal-darwin'
+      fetcher.spec 'a', 1
+      fetcher.spec 'a', 1 do |s|
+        s.platform = 'x86-linux'
+      end
 
-    util_clear_gems
-    util_setup_spec_fetcher @a1, @a1r, @a2, @b2, @pl1
+      fetcher.spec 'a', 2 do |s|
+        s.platform = 'universal-darwin'
+      end
+    end
 
     @cmd.handle_options %w[-r -a]
 
@@ -56,8 +67,6 @@ pl (1 i386-linux)
 *** REMOTE GEMS ***
 
 a (2 universal-darwin, 1 ruby x86-linux)
-b (2)
-pl (1 i386-linux)
     EOF
 
     assert_equal expected, @ui.output
@@ -65,6 +74,10 @@ pl (1 i386-linux)
   end
 
   def test_execute_all
+    spec_fetcher do |fetcher|
+      fetcher.legacy_platform
+    end
+
     @cmd.handle_options %w[-r --all]
 
     use_ui @ui do
@@ -84,6 +97,10 @@ pl (1 i386-linux)
   end
 
   def test_execute_all_prerelease
+    spec_fetcher do |fetcher|
+      fetcher.legacy_platform
+    end
+
     @cmd.handle_options %w[-r --all --prerelease]
 
     use_ui @ui do
@@ -103,12 +120,15 @@ pl (1 i386-linux)
   end
 
   def test_execute_details
-    @a2.summary = 'This is a lot of text. ' * 4
-    @a2.authors = ['Abraham Lincoln', 'Hirohito']
-    @a2.homepage = 'http://a.example.com/'
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 2 do |s|
+        s.summary = 'This is a lot of text. ' * 4
+        s.authors = ['Abraham Lincoln', 'Hirohito']
+        s.homepage = 'http://a.example.com/'
+      end
 
-    util_clear_gems
-    util_setup_spec_fetcher @a1, @a2, @pl1
+      fetcher.legacy_platform
+    end
 
     @cmd.handle_options %w[-r -d]
 
@@ -140,15 +160,22 @@ pl (1)
   end
 
   def test_execute_details_platform
-    @a1.platform = 'x86-linux'
+    spec_fetcher do |fetcher|
+      fetcher.clear
 
-    @a2.summary = 'This is a lot of text. ' * 4
-    @a2.authors = ['Abraham Lincoln', 'Hirohito']
-    @a2.homepage = 'http://a.example.com/'
-    @a2.platform = 'universal-darwin'
+      fetcher.spec 'a', 1 do |s|
+        s.platform = 'x86-linux'
+      end
 
-    util_clear_gems
-    util_setup_spec_fetcher @a1, @a2, @pl1
+      fetcher.spec 'a', 2 do |s|
+        s.summary = 'This is a lot of text. ' * 4
+        s.authors = ['Abraham Lincoln', 'Hirohito']
+        s.homepage = 'http://a.example.com/'
+        s.platform = 'universal-darwin'
+      end
+
+      fetcher.legacy_platform
+    end
 
     @cmd.handle_options %w[-r -d]
 
@@ -184,6 +211,34 @@ pl (1)
 
   def test_execute_installed
     @cmd.handle_options %w[-n a --installed]
+
+    assert_raises Gem::MockGemUi::SystemExitException do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_equal "true\n", @ui.output
+    assert_equal '', @ui.error
+  end
+
+  def test_execute_installed_inverse
+    @cmd.handle_options %w[-n a --no-installed]
+
+    e = assert_raises Gem::MockGemUi::TermError do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_equal "false\n", @ui.output
+    assert_equal '', @ui.error
+
+    assert_equal 1, e.exit_code
+  end
+
+  def test_execute_installed_inverse_not_installed
+    @cmd.handle_options %w[-n not_installed --no-installed]
 
     assert_raises Gem::MockGemUi::SystemExitException do
       use_ui @ui do
@@ -253,7 +308,34 @@ pl (1)
     assert_equal 1, e.exit_code
   end
 
+  def test_execute_local
+    spec_fetcher do |fetcher|
+      fetcher.legacy_platform
+    end
+
+    @cmd.options[:domain] = :local
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+
+*** LOCAL GEMS ***
+
+a (3.a, 2, 1)
+pl (1 i386-linux)
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal '', @ui.error
+  end
+
   def test_execute_local_notty
+    spec_fetcher do |fetcher|
+      fetcher.legacy_platform
+    end
+
     @cmd.handle_options %w[]
 
     @ui.outs.tty = false
@@ -271,7 +353,32 @@ pl (1 i386-linux)
     assert_equal '', @ui.error
   end
 
+  def test_execute_local_quiet
+    spec_fetcher do |fetcher|
+      fetcher.legacy_platform
+    end
+
+    @cmd.options[:domain] = :local
+    Gem.configuration.verbose = false
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+a (3.a, 2, 1)
+pl (1 i386-linux)
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal '', @ui.error
+  end
+
   def test_execute_no_versions
+    spec_fetcher do |fetcher|
+      fetcher.legacy_platform
+    end
+
     @cmd.handle_options %w[-r --no-versions]
 
     use_ui @ui do
@@ -291,6 +398,10 @@ pl
   end
 
   def test_execute_notty
+    spec_fetcher do |fetcher|
+      fetcher.legacy_platform
+    end
+
     @cmd.handle_options %w[-r]
 
     @ui.outs.tty = false
@@ -327,6 +438,10 @@ a (3.a)
   end
 
   def test_execute_prerelease_local
+    spec_fetcher do |fetcher|
+      fetcher.legacy_platform
+    end
+
     @cmd.handle_options %w[-l --prerelease]
 
     use_ui @ui do
@@ -345,16 +460,89 @@ pl (1 i386-linux)
     assert_equal "WARNING:  prereleases are always shown locally\n", @ui.error
   end
 
+  def test_execute_remote
+    spec_fetcher do |fetcher|
+      fetcher.legacy_platform
+    end
+
+    @cmd.options[:domain] = :remote
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+
+*** REMOTE GEMS ***
+
+a (2)
+pl (1 i386-linux)
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal '', @ui.error
+  end
+
+  def test_execute_remote_notty
+    spec_fetcher do |fetcher|
+      fetcher.legacy_platform
+    end
+
+    @cmd.handle_options %w[]
+
+    @ui.outs.tty = false
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+a (3.a, 2, 1)
+pl (1 i386-linux)
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal '', @ui.error
+  end
+
+  def test_execute_remote_quiet
+    spec_fetcher do |fetcher|
+      fetcher.legacy_platform
+    end
+
+    @cmd.options[:domain] = :remote
+    Gem.configuration.verbose = false
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+a (2)
+pl (1 i386-linux)
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal '', @ui.error
+  end
+
   def test_execute_local_details
-    @a1.platform = 'x86-linux'
+    spec_fetcher do |fetcher|
+      fetcher.clear
 
-    @a2.summary = 'This is a lot of text. ' * 4
-    @a2.authors = ['Abraham Lincoln', 'Hirohito']
-    @a2.homepage = 'http://a.example.com/'
-    @a2.platform = 'universal-darwin'
+      fetcher.spec 'a', 1 do |s|
+        s.platform = 'x86-linux'
+      end
 
-    util_clear_gems
-    util_setup_spec_fetcher @a1, @a2, @pl1
+      fetcher.spec 'a', 2 do |s|
+        s.summary = 'This is a lot of text. ' * 4
+        s.authors = ['Abraham Lincoln', 'Hirohito']
+        s.homepage = 'http://a.example.com/'
+        s.platform = 'universal-darwin'
+      end
+
+      fetcher.legacy_platform
+    end
 
     @cmd.handle_options %w[-l -d]
 
@@ -368,6 +556,7 @@ pl (1 i386-linux)
     str.gsub!(/at: [^\n]*/, "at: -")
 
     expected = <<-EOF
+
 *** LOCAL GEMS ***
 
 a (2, 1)
@@ -382,7 +571,7 @@ a (2, 1)
     This is a lot of text. This is a lot of text. This is a lot of text.
     This is a lot of text.
 
-pl \(1\)
+pl (1)
     Platform: i386-linux
     Author: A User
     Homepage: http://example.com
@@ -391,13 +580,18 @@ pl \(1\)
     this is a summary
     EOF
 
-    assert_match expected, @ui.output
+    assert_equal expected, @ui.output
   end
 
   def test_execute_default_details
-    default_gem_dir = Gem::Specification.default_specifications_dir
-    @a1.loaded_from =
-      File.join default_gem_dir, @a1.spec_name
+    spec_fetcher do |fetcher|
+      fetcher.clear
+
+      fetcher.spec 'a', 2
+    end
+
+    a1 = new_default_spec 'a', 1
+    install_default_specs a1
 
     @cmd.handle_options %w[-l -d]
 
@@ -409,25 +603,65 @@ pl \(1\)
 
 *** LOCAL GEMS ***
 
-a (3.a, 2, 1)
+a (2, 1)
     Author: A User
     Homepage: http://example.com
-    Installed at (3.a): #{@gemhome}
-                 (2): #{@gemhome}
-                 (1, default): #{@a1.base_dir}
-
-    this is a summary
-
-pl \(1\)
-    Platform: i386-linux
-    Author: A User
-    Homepage: http://example.com
-    Installed at: #{@gemhome}
+    Installed at (2): #{@gemhome}
+                 (1, default): #{a1.base_dir}
 
     this is a summary
     EOF
 
     assert_equal expected, @ui.output
+  end
+
+  def test_make_entry
+    a_2_name = @specs['a-2'].original_name
+
+    @fetcher.data.delete \
+      "#{@gem_repo}quick/Marshal.#{Gem.marshal_version}/#{a_2_name}.gemspec.rz"
+
+    a2 = @specs['a-2']
+    entry_tuples = [
+      [Gem::NameTuple.new(a2.name, a2.version, a2.platform),
+       Gem.sources.first],
+    ]
+
+    platforms = { a2.version => [a2.platform] }
+
+    entry = @cmd.send :make_entry, entry_tuples, platforms
+
+    assert_equal 'a (2)', entry
+  end
+
+  # Test for multiple args handling!
+  def test_execute_multiple_args
+    spec_fetcher do |fetcher|
+      fetcher.legacy_platform
+    end
+
+    @cmd.handle_options %w[a pl]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_match %r%^a %, @ui.output
+    assert_match %r%^pl %, @ui.output
+    assert_equal '', @ui.error
+  end
+
+  def test_show_gems
+    @cmd.options[:name] = //
+    @cmd.options[:domain] = :remote
+
+    use_ui @ui do
+      @cmd.send :show_gems, /a/i, false
+    end
+
+    assert_match %r%^a %,  @ui.output
+    refute_match %r%^pl %, @ui.output
+    assert_empty @ui.error
   end
 
 end

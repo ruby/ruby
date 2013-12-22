@@ -26,7 +26,7 @@ module IRB
     #
     # The optional +prefix+ will be appended to all objects being inspected
     # during output, using the given +output_method+ as the output source. If
-    # no +output_method+ is given, StdioOuputMethod will be used, and all
+    # no +output_method+ is given, StdioOutputMethod will be used, and all
     # expressions will be sent directly to STDOUT without any additional
     # formatting.
     def def_notifier(prefix = "", output_method = StdioOutputMethod.new)
@@ -161,7 +161,7 @@ module IRB
 	  @level_notifier = value
 	when Integer
 	  l = @notifiers[value]
-	  Notifier.Raise ErrUndefinedNotifer, value unless l
+	  Notifier.Raise ErrUndefinedNotifier, value unless l
 	  @level_notifier = l
 	else
 	  Notifier.Raise ErrUnrecognizedLevel, value unless l

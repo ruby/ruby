@@ -502,6 +502,7 @@ class TestBasicInstructions < Test::Unit::TestCase
 
   class OP
     attr_reader :x
+    attr_accessor :foo
     def x=(x)
       @x = x
       :Bug1996
@@ -602,6 +603,19 @@ class TestBasicInstructions < Test::Unit::TestCase
     assert_equal 4, x[0]
   end
 
+  def test_send_opassign
+    return if defined?(RUBY_ENGINE) and RUBY_ENGINE != "ruby"
+
+    bug7773 = '[ruby-core:51821]'
+    x = OP.new
+    assert_equal 42, x.foo = 42, bug7773
+    assert_equal 42, x.foo, bug7773
+    assert_equal -6, x.send(:foo=, -6), bug7773
+    assert_equal -6, x.foo, bug7773
+    assert_equal :Bug1996, x.send(:x=, :case_when_setter_returns_other_value), bug7773
+    assert_equal :case_when_setter_returns_other_value, x.x, bug7773
+  end
+
   def test_backref
     /re/ =~ 'not match'
     assert_nil $~
@@ -683,5 +697,4 @@ class TestBasicInstructions < Test::Unit::TestCase
     assert_equal [], [*a]
     assert_equal [1], [1, *a]
   end
-
 end

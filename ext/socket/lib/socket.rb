@@ -64,13 +64,18 @@ class Addrinfo
       else
         sock.connect(self)
       end
-      if block_given?
+    rescue Exception
+      sock.close
+      raise
+    end
+    if block_given?
+      begin
         yield sock
-      else
-        sock
+      ensure
+        sock.close if !sock.closed?
       end
-    ensure
-      sock.close if !sock.closed? && (block_given? || $!)
+    else
+      sock
     end
   end
   private :connect_internal
@@ -177,13 +182,18 @@ class Addrinfo
       sock.ipv6only! if self.ipv6?
       sock.setsockopt(:SOCKET, :REUSEADDR, 1)
       sock.bind(self)
-      if block_given?
+    rescue Exception
+      sock.close
+      raise
+    end
+    if block_given?
+      begin
         yield sock
-      else
-        sock
+      ensure
+        sock.close if !sock.closed?
       end
-    ensure
-      sock.close if !sock.closed? && (block_given? || $!)
+    else
+      sock
     end
   end
 
@@ -195,13 +205,18 @@ class Addrinfo
       sock.setsockopt(:SOCKET, :REUSEADDR, 1)
       sock.bind(self)
       sock.listen(backlog)
-      if block_given?
+    rescue Exception
+      sock.close
+      raise
+    end
+    if block_given?
+      begin
         yield sock
-      else
-        sock
+      ensure
+        sock.close if !sock.closed?
       end
-    ensure
-      sock.close if !sock.closed? && (block_given? || $!)
+    else
+      sock
     end
   end
 
@@ -288,11 +303,6 @@ class Socket < BasicSocket
   # The value of the block is returned.
   # The socket is closed when this method returns.
   #
-  # The optional last argument _opts_ is options represented by a hash.
-  # _opts_ may have following options:
-  #
-  # [:timeout] specify the timeout in seconds.
-  #
   # If no block is given, the socket is returned.
   #
   #   Socket.tcp("www.ruby-lang.org", 80) {|sock|
@@ -353,8 +363,9 @@ class Socket < BasicSocket
 
   # :stopdoc:
   def self.ip_sockets_port0(ai_list, reuseaddr)
+    sockets = []
     begin
-      sockets = []
+      sockets.clear
       port = nil
       ai_list.each {|ai|
         begin
@@ -375,14 +386,13 @@ class Socket < BasicSocket
         end
       }
     rescue Errno::EADDRINUSE
-      sockets.each {|s|
-        s.close
-      }
+      sockets.each {|s| s.close }
       retry
+    rescue Exception
+      sockets.each {|s| s.close }
+      raise
     end
     sockets
-  ensure
-    sockets.each {|s| s.close if !s.closed? } if $!
   end
   class << self
     private :ip_sockets_port0
@@ -391,12 +401,15 @@ class Socket < BasicSocket
   def self.tcp_server_sockets_port0(host)
     ai_list = Addrinfo.getaddrinfo(host, 0, nil, :STREAM, nil, Socket::AI_PASSIVE)
     sockets = ip_sockets_port0(ai_list, true)
-    sockets.each {|s|
-      s.listen(Socket::SOMAXCONN)
-    }
+    begin
+      sockets.each {|s|
+        s.listen(Socket::SOMAXCONN)
+      }
+    rescue Exception
+      sockets.each {|s| s.close }
+      raise
+    end
     sockets
-  ensure
-    sockets.each {|s| s.close if !s.closed? } if $! && sockets
   end
   class << self
     private :tcp_server_sockets_port0
@@ -413,7 +426,7 @@ class Socket < BasicSocket
   # The value of the block is returned.
   # The socket is closed when this method returns.
   #
-  # If _port_ is 0, actual port number is choosen dynamically.
+  # If _port_ is 0, actual port number is chosen dynamically.
   # However all sockets in the result has same port number.
   #
   #   # tcp_server_sockets returns two sockets.
@@ -425,7 +438,7 @@ class Socket < BasicSocket
   #   #=> #<Addrinfo: [::]:1296 TCP>
   #   #   #<Addrinfo: 0.0.0.0:1296 TCP>
   #
-  #   # IPv6 and IPv4 socket has same port number, 53114, even if it is choosen dynamically.
+  #   # IPv6 and IPv4 socket has same port number, 53114, even if it is chosen dynamically.
   #   sockets = Socket.tcp_server_sockets(0)
   #   sockets.each {|s| p s.local_address }
   #   #=> #<Addrinfo: [::]:53114 TCP>
@@ -440,9 +453,9 @@ class Socket < BasicSocket
     if port == 0
       sockets = tcp_server_sockets_port0(host)
     else
+      last_error = nil
+      sockets = []
       begin
-        last_error = nil
-        sockets = []
         Addrinfo.foreach(host, port, nil, :STREAM, nil, Socket::AI_PASSIVE) {|ai|
           begin
             s = ai.listen
@@ -455,8 +468,9 @@ class Socket < BasicSocket
         if sockets.empty?
           raise last_error
         end
-      ensure
-        sockets.each {|s| s.close if !s.closed? } if $!
+      rescue Exception
+        sockets.each {|s| s.close }
+        raise
       end
     end
     if block_given?
@@ -555,8 +569,8 @@ class Socket < BasicSocket
   # The value of the block is returned.
   # The sockets are closed when this method returns.
   #
-  # If _port_ is zero, some port is choosen.
-  # But the choosen port is used for the all sockets.
+  # If _port_ is zero, some port is chosen.
+  # But the chosen port is used for the all sockets.
   #
   #   # UDP/IP echo server
   #   Socket.udp_server_sockets(0) {|sockets|
@@ -718,9 +732,9 @@ class Socket < BasicSocket
 
   # UDP/IP address information used by Socket.udp_server_loop.
   class UDPSource
-    # +remote_adress+ is an Addrinfo object.
+    # +remote_address+ is an Addrinfo object.
     #
-    # +local_adress+ is an Addrinfo object.
+    # +local_address+ is an Addrinfo object.
     #
     # +reply_proc+ is a Proc used to send reply back to the source.
     def initialize(remote_address, local_address, &reply_proc)
@@ -791,12 +805,14 @@ class Socket < BasicSocket
   #   }
   #
   def self.unix_server_socket(path)
-    begin
-      st = File.lstat(path)
-    rescue Errno::ENOENT
-    end
-    if st && st.socket? && st.owned?
-      File.unlink path
+    if !unix_socket_abstract_name?(path)
+      begin
+        st = File.lstat(path)
+      rescue Errno::ENOENT
+      end
+      if st && st.socket? && st.owned?
+        File.unlink path
+      end
     end
     s = Addrinfo.unix(path).listen
     if block_given?
@@ -804,10 +820,20 @@ class Socket < BasicSocket
         yield s
       ensure
         s.close if !s.closed?
-        File.unlink path
+        if !unix_socket_abstract_name?(path)
+          File.unlink path
+        end
       end
     else
       s
+    end
+  end
+
+  class << self
+    private
+
+    def unix_socket_abstract_name?(path)
+      /linux/ =~ RUBY_PLATFORM && /\A(\0|\z)/ =~ path
     end
   end
 

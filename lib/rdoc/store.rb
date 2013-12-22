@@ -305,8 +305,10 @@ class RDoc::Store
     # cache included modules before they are removed from the documentation
     all_classes_and_modules.each { |cm| cm.ancestors }
 
-    remove_nodoc @classes_hash
-    remove_nodoc @modules_hash
+    unless min_visibility == :nodoc then
+      remove_nodoc @classes_hash
+      remove_nodoc @modules_hash
+    end
 
     @unique_classes = find_unique @classes_hash
     @unique_modules = find_unique @modules_hash
@@ -661,7 +663,7 @@ class RDoc::Store
   end
 
   ##
-  # Converts the variable => ClassModule map +variables+ from a C parser into 
+  # Converts the variable => ClassModule map +variables+ from a C parser into
   # a variable => class name map.
 
   def make_variable_map variables
@@ -819,13 +821,13 @@ class RDoc::Store
     @cache[:ancestors][full_name] ||= []
     @cache[:ancestors][full_name].concat ancestors
 
-    attributes = klass.attributes.map do |attribute|
+    attribute_definitions = klass.attributes.map do |attribute|
       "#{attribute.definition} #{attribute.name}"
     end
 
-    unless attributes.empty? then
+    unless attribute_definitions.empty? then
       @cache[:attributes][full_name] ||= []
-      @cache[:attributes][full_name].concat attributes
+      @cache[:attributes][full_name].concat attribute_definitions
     end
 
     to_delete = []
@@ -839,13 +841,15 @@ class RDoc::Store
 
       class_methods    = class_methods.   map { |method| method.name }
       instance_methods = instance_methods.map { |method| method.name }
+      attribute_names  = klass.attributes.map { |attr|   attr.name }
 
       old = @cache[:class_methods][full_name] - class_methods
       to_delete.concat old.map { |method|
         method_file full_name, "#{full_name}::#{method}"
       }
 
-      old = @cache[:instance_methods][full_name] - instance_methods
+      old = @cache[:instance_methods][full_name] -
+        instance_methods - attribute_names
       to_delete.concat old.map { |method|
         method_file full_name, "#{full_name}##{method}"
       }

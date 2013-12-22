@@ -11,7 +11,82 @@ A method definition consists of the +def+ keyword, a method name, the body of
 the method, then the +end+ keyword.  When called the method will execute the
 body of the method.  This method returns +2+.
 
-== Return values
+This section only covers defining methods.  See also the {syntax documentation
+on calling methods}[rdoc-ref:syntax/calling_methods.rdoc].
+
+== Method Names
+
+Method names may be one of the operators or must start a letter or a character
+with the eight bit set.  Typically method names are US-ASCII compatible since
+the keys to type them exist on all keyboards.
+
+(Ruby programs must be written in a US-ASCII-compatible character set.  In
+such character sets if the eight bit is set it indicates an extended
+character.  Ruby allows method names and other identifiers to contain such
+characters.)
+
+Method names may contain letters, numbers, an <code>_</code> (underscore or
+low line) or a character with the eight bit set.
+
+Method names may end with a <code>!</code> (bang or exclamation mark), a
+<code>?</code> (question mark) or <code>=</code> equals sign.
+
+In the ruby core library when a method ends with a bang it indicates there is
+a non-bang method that has does not modify the receiver.  This is typically
+true for the standard library but does not hold true for other ruby libraries.
+
+Methods that end with a question mark do not always return just +true+ or
++false+.  Often they will may return an object to indicate a true value (or
+"truthy" value).
+
+Methods that end with an equals sign indicate an assignment method.  For
+assignment methods the return value is ignored, the arguments are returned
+instead.
+
+These are method names for the various ruby operators.  Each of these
+operators accept only one argument.  Following the operator is the typical
+use or name of the operator.  Creating an alternate meaning for the operator
+may lead to confusion as the user expects plus to add things, minus to
+subtract things, etc.  Additionally, you cannot alter the precedence of the
+operators.
+
+<code>+</code>   :: add
+<code>-</code>   :: subtract
+<code>*</code>   :: multiply
+<code>**</code>  :: power
+<code>/</code>   :: divide
+<code>%</code>   :: modulus division, String#%
+<code>&</code>   :: AND
+<code>^</code>   :: XOR (exclusive OR)
+<code>>></code>  :: right-shift
+<code><<</code>  :: left-shift, append
+<code>==</code>  :: equal
+<code>!=</code>  :: not equal
+<code>===</code> :: case equality.  See Object#===
+<code>=~</code>  :: pattern match.  (Not just for regular expressions)
+<code>!~</code>  :: does not match
+<code><=></code> :: comparison aka spaceship operator.  See Comparable
+<code><</code>   :: less-than
+<code><=</code>  :: less-than or equal
+<code>></code>   :: greater-than
+<code>>=</code>  :: greater-than or equal
+
+To define unary methods minus, plus, tilde and not (<code>!</code>) follow the
+operator with an <code>@</code> as in <code>+@</code> or <code>!@</code>:
+
+  class C
+    def -@
+      puts "you inverted this object"
+    end
+  end
+
+  obj = C.new
+
+  -obj # prints "you inverted this object"
+
+Unary methods accept zero arguments.
+
+== Return Values
 
 By default, a method returns the last expression that was evaluated in the body
 of the method.  In the example above, the last (and only) expression evaluated
@@ -29,6 +104,15 @@ evaluated.
     return 2 + 2
     1 + 1  # this expression is never evaluated
   end
+
+Note that for assignment methods the return value will always be ignored.
+Instead the argument will be returned:
+
+  def a=(value)
+    return 1 + value
+  end
+
+  p(a = 5) # prints 5
 
 == Scope
 
@@ -153,25 +237,71 @@ This will raise a SyntaxError:
     a + b + c
   end
 
-=== Keyword Arguments
+=== Array Decomposition
 
-Keyword arguments are similar to positional arguments with default values:
+You can decompose (unpack or extract values from) an Array using extra
+parentheses in the arguments:
 
-  def add_values(first: 1, second: 2)
-    first + second
+  def my_method((a, b))
+    p a: a, b: b
   end
 
-When calling a method with keyword arguments the arguments may appear in any
-order.  If an unknown keyword argument is sent by the caller an ArgumentError
-is raised.
+  my_method([1, 2])
 
-When mixing keyword arguments and positional arguments, all positional
-arguments must appear before any keyword arguments.
+This prints:
+
+  {:a=>1, :b=>2}
+
+If the argument has extra elements in the Array they will be ignored:
+
+  def my_method((a, b))
+    p a: a, b: b
+  end
+
+  my_method([1, 2, 3])
+
+This has the same output as above.
+
+You can use a <code>*</code> to collect the remaining arguments.  This splits
+an Array into a first element and the rest:
+
+  def my_method((a, *b))
+    p a: a, b: b
+  end
+
+  my_method([1, 2, 3])
+
+This prints:
+
+  {:a=>1, :b=>[2, 3]}
+
+The argument will be decomposed if it responds to #to_ary.  You should only
+define #to_ary if you can use your object in place of an Array.
+
+Use of the inner parentheses only uses one of the sent arguments.  If the
+argument is not an Array it will be assigned to the first argument in the
+decomposition and the remaining arguments in the decomposition will be +nil+:
+
+  def my_method(a, (b, c), d)
+    p a: a, b: b, c: c, d: d
+  end
+
+  my_method(1, 2, 3)
+
+This prints:
+
+  {:a=>1, :b=>2, :c=>nil, :d=>3}
+
+You can nest decomposition arbitrarily:
+
+  def my_method(((a, b), c))
+    # ...
+  end
 
 === Array/Hash Argument
 
-Prefixing an argument with "*" causes any remaining arguments to be converted
-to an Array:
+Prefixing an argument with <code>*</code> causes any remaining arguments to be
+converted to an Array:
 
   def gather_arguments(*arguments)
     p arguments
@@ -196,6 +326,67 @@ However, this only occurs if the method does not declare any keyword arguments.
   gather_arguments_keyword 1, 2, three: 3
   #=> raises: unknown keyword: three (ArgumentError)
 
+Also, note that a bare <code>*</code> can be used to ignore arguments:
+
+  def ignore_arguments(*)
+  end
+
+=== Keyword Arguments
+
+Keyword arguments are similar to positional arguments with default values:
+
+  def add_values(first: 1, second: 2)
+    first + second
+  end
+
+Arbitrary keyword arguments will be accepted with <code>**</code>:
+
+  def gather_arguments(first: nil, **rest)
+    p first, rest
+  end
+
+  gather_arguments first: 1, second: 2, third: 3
+  # prints 1 then {:second=>2, :third=>3}
+
+When calling a method with keyword arguments the arguments may appear in any
+order.  If an unknown keyword argument is sent by the caller an ArgumentError
+is raised.
+
+When mixing keyword arguments and positional arguments, all positional
+arguments must appear before any keyword arguments.
+
+== Block Argument
+
+The block argument is indicated by <code>&</code> and must come last:
+
+  def my_method(&my_block)
+    my_method.call(self)
+  end
+
+Most frequently the block argument is used to pass a block to another method:
+
+  def each_item(&block)
+    @items.each(&block)
+  end
+
+If you are only going to call the block and will not otherwise manipulate it
+or send it to another method using <code>yield</code> without an explicit
+block parameter is preferred.  This method is equivalent to the first method
+in this section:
+
+  def my_method
+    yield self
+  end
+
+There is also a performance benefit to using yield over a calling a block
+parameter.  When a block argument is assigned to a variable a Proc object is
+created which holds the block.  When using yield this Proc object is not
+created.
+
+If you only need to use the block sometimes you can use Proc.new to create a
+proc from the block that was passed to your method.  See Proc.new for further
+details.
+
 == Exception Handling
 
 Methods have an implied exception handling block so you do not need to use
@@ -218,6 +409,6 @@ May be written as:
   end
 
 If you wish to rescue an exception for only part of your method use +begin+ and
-+end+.  For more details see the page on {Exception
-Handling}[rdoc-ref:doc/syntax/exceptions.rdoc].
++end+.  For more details see the page on {exception
+handling}[rdoc-ref:syntax/exceptions.rdoc].
 

@@ -12,7 +12,7 @@
 
 /*
  * call-seq:
- *   TCPServer.new([hostname,] port)                    => tcpserver
+ *   TCPServer.new([hostname,] port) => tcpserver
  *
  * Creates a new server socket bound to _port_.
  *
@@ -22,6 +22,13 @@
  *   s = serv.accept
  *   s.puts Time.now
  *   s.close
+ *
+ * Internally, TCPServer.new calls getaddrinfo() function to
+ * obtain addresses.
+ * If getaddrinfo() returns multiple addresses,
+ * TCPServer.new tries to create a server socket for each address
+ * and returns first one that is successful.
+ *
  */
 static VALUE
 tcp_svr_init(int argc, VALUE *argv, VALUE sock)
@@ -36,6 +43,8 @@ tcp_svr_init(int argc, VALUE *argv, VALUE sock)
  * call-seq:
  *   tcpserver.accept => tcpsocket
  *
+ * Accepts an incoming connection. It returns a new TCPSocket object.
+ *
  *   TCPServer.open("127.0.0.1", 14641) {|serv|
  *     s = serv.accept
  *     s.puts Time.now
@@ -47,18 +56,17 @@ static VALUE
 tcp_accept(VALUE sock)
 {
     rb_io_t *fptr;
-    struct sockaddr_storage from;
+    union_sockaddr from;
     socklen_t fromlen;
 
     GetOpenFile(sock, fptr);
     fromlen = (socklen_t)sizeof(from);
-    return rsock_s_accept(rb_cTCPSocket, fptr->fd,
-		          (struct sockaddr*)&from, &fromlen);
+    return rsock_s_accept(rb_cTCPSocket, fptr->fd, &from.addr, &fromlen);
 }
 
 /*
  * call-seq:
- * 	tcpserver.accept_nonblock => tcpsocket
+ *   tcpserver.accept_nonblock => tcpsocket
  *
  * Accepts an incoming connection using accept(2) after
  * O_NONBLOCK is set for the underlying file descriptor.
@@ -93,13 +101,12 @@ static VALUE
 tcp_accept_nonblock(VALUE sock)
 {
     rb_io_t *fptr;
-    struct sockaddr_storage from;
+    union_sockaddr from;
     socklen_t fromlen;
 
     GetOpenFile(sock, fptr);
     fromlen = (socklen_t)sizeof(from);
-    return rsock_s_accept_nonblock(rb_cTCPSocket, fptr,
-			           (struct sockaddr *)&from, &fromlen);
+    return rsock_s_accept_nonblock(rb_cTCPSocket, fptr, &from.addr, &fromlen);
 }
 
 /*
@@ -120,12 +127,12 @@ static VALUE
 tcp_sysaccept(VALUE sock)
 {
     rb_io_t *fptr;
-    struct sockaddr_storage from;
+    union_sockaddr from;
     socklen_t fromlen;
 
     GetOpenFile(sock, fptr);
     fromlen = (socklen_t)sizeof(from);
-    return rsock_s_accept(0, fptr->fd, (struct sockaddr*)&from, &fromlen);
+    return rsock_s_accept(0, fptr->fd, &from.addr, &fromlen);
 }
 
 void

@@ -1,0 +1,778 @@
+= Contributors to Ruby
+
+The following list might be imcomplete. Feel free to add your name if your
+patch was accepted into Ruby.
+
+== A
+
+Ayumu AIZAWA (ayumin)
+* committer
+
+AKIYOSHI, Masamichi (akiyoshi)
+* committer
+* He had maintained the VMS support on 2003-2004.
+
+Muhammad Ali
+* wrote rdoc for Fiber
+
+Minero Aoki (aamine)
+* committer
+* He is the maintainer of:
+  * fileutils
+  * net/http, net/https
+  * net/pop
+  * net/smtp
+  * racc
+  * ripper
+  * strscan
+
+Wakou Aoyama (wakou)
+* committer
+* He was the maintainer of some standard libraries.
+
+Koji Arai
+* committer
+
+arton
+* He is the distributor of ActiveScriptRuby and experimental 1.9.0-x installers for win32.
+* Wrote patches for win32ole, gc.c, tmpdir.rb
+
+== B
+
+Daniel Berger
+* a patch for irb
+* documentation
+* He wrote forwardable.rb
+
+David Black (dblack)
+* committer
+* He is the maintainer of scanf
+
+Ken Bloom
+* a patch for REXML.
+
+Oliver M. Bolzer
+* a patch for soap
+
+Alexey Borzenkov
+* a patch for mkmf.rb
+
+Richard Brown
+* a patch for configure.in
+
+Dirkjan Bussink
+* a patch for date.rb
+
+Daniel Bovensiepen
+* documentation
+* a patch for irb
+
+== C
+
+Brian Candler
+* a patch for configure.in, net/telnet
+
+keith cascio
+* a patch for optparse.rb
+
+Frederick Cheung
+* a patch for test/ruby/test_symbol.rb
+
+Christoph
+* patches for set.rb
+
+Sean Chittenden
+* pathces for net/http, cgi
+
+William D. Clinger
+* ruby_strtod is based on his paper.
+
+== D
+
+Ryan Davis (ryan)
+* committer
+* He wrote and is the maintainer of miniunit
+
+Guy Decoux (ts)
+* committer
+
+Zach Dennis
+
+Martin Duerst (duerst)
+* committer
+* M17N
+
+Paul Duncan
+* pathces for rdoc
+
+Alexander Dymo
+* a patch for lib/benchmark.rb
+
+== E
+
+Yusuke Endoh (mame)
+* committer
+* He wrote and is the maintainer of base64 library (1.9)
+* did much upon YARV compiler.
+
+erlercw
+* wrote Integer::gcd2
+
+== F
+
+Frank S.Fejes
+* a patch for net/pop
+
+Fundakowski Feldman
+* a patch for process.c
+
+Mauricio Fernandez
+* patches for parse.y
+
+David Flanagan (davidflanagan)
+* committer
+* M17N
+
+Takeyuki Fujioka (xibbar)
+* committer
+* He is the maintainer of cgi/*
+
+FUKUMOTO, Atsushi
+* a patch for tracer.rb
+
+Shota Fukumori (sorah)
+* committer
+* #4415 parallel unit/test
+
+Tadayoshi Funaba (tadf)
+* committer
+* He wrote and is the maintainer of
+  * date
+  * parsedate (1.8)
+* He ported rational.rb and complex.rb, which 1.8 contains, into rational.c and complex.c of 1.9.
+
+== G
+
+David M. Gay
+* ruby_strtod
+
+Florian Gilcher
+* documentation
+
+GOTOU, Kentaro (gotoken)
+* committer
+* He wrote benchmark.rb
+* He is the maintainer of:
+  * benchmark.rb
+  * open3
+
+GOTOU, Yuuzou (gotoyuzo)
+* committer
+
+James Edward Gray II (jeg2)
+* committer
+* He wrote the faster implementation of CSV and is the maintainer of csv.
+* Wrote documentation for rdoc
+
+== H
+
+Phil Hagelberg
+* patch for ruby-mode.el's documentation.
+
+Kirk Haines (wyhaines)
+* committer
+* the maintainer of ruby_1_8_6 branch
+
+Shinichiro Hamaji
+* fixed memory leaks (marshal.c, string.c)
+
+Shin-ichiro HARA
+* the developer and the sysop of ruby-{dev,list,core,talk} archive.
+* a patch for numeric.c
+
+Chris Heath (traumdeutung)
+* a patch for proc.c
+
+HIROKAWA Hisashi
+* fixed socket/socket.c
+
+Daniel Hob
+* He wrote:
+  * SMTP-TLS support for net/smtp.
+  * POP3S support
+
+Eric Hodel (drbrain)
+* committer
+* He is the maintainer of:
+  * rdoc
+  * ri
+  * rubygems
+
+Erik Hollensbe
+* a patch for delegate.rb
+
+Johan Holmberg
+* a patch for dir.c
+* documentation
+
+Erik Huelsmann
+
+Dae San Hwang
+* built a continuous integration environment on OpenSolaris.
+
+== I
+
+Nobuhiro IMAI
+* a patch for logger.rb
+
+"incorporate"
+* a patch for sprintf.c
+
+Keiju Ishitsuka (keiju)
+* committer
+* He wrote and is the maintainer of:
+  * cmath.rb (1.9)
+  * complex.rb (1.8)
+  * e2mmap.rb
+  * forwardable.rb
+  * irb
+  * mathn
+  * matrix.rb
+  * mutex_m.rb
+  * rational.rb (1.8)
+  * sync.rb
+  * shell/*
+  * thwait.rb
+  * tracer.rb
+
+== J
+
+Curtis Jackson
+* missing/dup2.c
+
+Alan Johnson
+* a patch for net/ftp
+
+Lyle Johnson
+* patches for nkf, bigdecimal, numeric.c
+
+== K
+
+Yoshihiro Kambayashi
+* a patch for enc/trans/single_byte.trans.
+* He wrote supports for some encodings.
+
+Yutaka Kanemoto
+* patches for common.mk, AIX AF_INET6 support
+
+Motoyuki Kasahara
+* He wrote getoptlong.rb
+
+Masahiro Kawato
+* a patch for shellwords.rb
+
+Wataru Kimura
+* a patch for configure.in
+
+Michael Klishin
+* patch for make help.
+
+Noritada Kobayashi
+* a patch for optparse.rb
+
+Shigeo Kobayashi (shigek)
+* committer
+* He is the maintainer of bigdecimal
+
+KONISHI, Hiromasa (H_Konishi)
+* committer
+* He had maintained the bcc32 support in 2004.
+
+Kornelius "murphy" Kalnbach
+* documentation
+
+K.Kosako (kosako)
+* committer
+* He wrote Oniguruma.
+
+Takehiro Kubo
+* patches for dl 64bit support.
+
+== L
+
+Marc-Andre Lafortune (marcandre)
+* committer
+* patches for hash.c, array.c, thread.c, enumc, string.c, range.c and rdoc documentation.
+
+Hongli Lai
+* improved pstore.rb
+* patch for tool/file2lastrev.rb.
+
+raspberry lemon
+* a patch for webrick/httpproxy.rb.
+
+Christian Loew
+* a patch for fileutils.rb
+
+== M
+
+Shugo Maeda (shugo)
+* committer
+* A system administrator of ruby-lang.org servers.
+* He wrote and is the maintainer of:
+  * monitor.rb
+  * net/ftp
+  * net/imap
+
+Stephan Maka (mathew)
+* documentation
+
+Yukihiro Matsumoto (matz)
+* Matz -- the founder, language designer of Ruby.
+* committer
+* Ruby itself, most of Ruby.
+* He is the maintainer of:
+  * singleton
+  * timeout
+  * gdbm
+  * sdbm
+
+Konrad Meyer
+* documentation
+
+Mib Software
+* missing/vsnprintf.c
+
+Todd C. Miller
+* missing/strlcat.c
+* missing/strlcpy.c
+
+MIYASAKA, Masaru
+* a patch for cgi.rb
+
+Stefan Monnier
+* regex.c was fixed with based on his Emacs21 patch.
+
+Marcel Moolenaar
+* patches for eval.c and gc.c.
+
+moonwolf
+* a patch for REXML, xmlrpc
+
+Hiroshi Moriyama
+* a patch for yaml.
+
+Kyosuke Morohashi
+* a patch for gem_prelude.rb
+
+Kenta Murata
+* patches for json, bignum.c
+
+Akinori MUSHA (knu)
+* committer
+* He wrote and is the maintainer of:
+  * abbrev.rb
+  * generator (1.8)
+  * enumerator (1.8)
+  * set
+  * ipaddr.rb
+  * digest/*
+  * syslog
+* He is the branch maintainer of ruby_1_8, the release manager of 1.8 series.
+
+== N
+
+Hidetoshi NAGAI (nagai)
+* committer
+* He is the maintainer of tk/*
+
+Nobuyoshi Nakada (nobu)
+* committer
+* a.k.a. the "patch monster"
+* He wrote and is the maintainer of:
+  * optparse
+  * stringio
+  * io/wait
+  * iconv
+
+Satoshi Nakagawa
+* patches for util.c
+
+Narihiro Nakamura (nari)
+* committer
+* a.k.a. authorNari
+* working at GC
+
+NAKAMURA, Hiroshi (nahi)
+* committer
+* He is the maintainer of:
+  * csv.rb (1.8)
+  * logger.rb
+  * soap/* (1.8)
+  * wsdl/* (1.8)
+  * xsd/* (1.8)
+
+NAKAMURA, Usaku (usa)
+* committer
+* a.k.a. unak
+* He is the maintainer of mswin32 and mswin64 support.
+
+NARUSE, Yui (naruse)
+* committer
+* a.k.a. "nurse"
+* Did much upon m17n.
+* He is the maintainer of:
+  * json
+  * nkf
+
+Christian Neukirchen
+* a patch for webrick/httputils
+
+Michael Neumann (mneumann)
+* committer
+* He is the maintainer of
+  * xmlrpc (1.8)
+  * gserver (1.8)
+
+NISHIO Hirokazu
+* wrote a patch for CVE-2010-0541
+
+Kazuhiro NISHIYAMA (kazu)
+* committer
+* a.k.a. znz
+
+Go Noguchi
+
+Martin Nordholts
+* misc/rdebug.el
+
+nmu
+* a patch for socket
+
+== O
+
+okkez
+* He is a sysop of the Ruby Reference Manual Renewal Project.
+* fixed ipaddr.rb, ext/etc
+
+Haruhiko Okumura
+* some of missing/* is based on his book:
+  * missing/erf.c
+  * missing/lgamma_r.c
+  * missing/tgamma.c
+
+OMAE, jun
+* a patch for debug.rb
+
+Eugene Ossintsev
+* documentation
+
+== P
+
+Heesob Park
+* a patch for win32/win32.c.
+
+pegacorn
+* a patch for instruby.rb
+
+== Q
+
+== R
+
+Gaston Ramos
+* documentation
+
+The Regents of the University of California
+* missing/crypt.c
+* missing/vsnprintf.c
+
+Sam Roberts
+* patch for socket
+* documentation
+
+Michal Rokos (michal)
+* committer
+* He was the maintainer of DJGPP support.
+
+rubikitch
+* a patch for io.c
+
+Marcus Rueckert
+* a patch for mkconfig.rb.
+
+Run Paint Run Run
+* patch for enc/unicode.c
+* documentation
+
+Sean Russell (ser)
+* committer
+* He wrote and is the maintainer of REXML.
+
+== S
+
+Kazuo Saito (ksaito)
+* committer
+* M17N
+
+Tadashi Saito
+* patches for test/ruby/test_math.rb, thread_*.c, bignum.c
+* working upon BigDecimal.
+* did much upon documentation
+
+Masahiro Sakai
+* a patch for io.c
+
+Laurent Sansonetti
+* a patch for tool/ytab.sed
+
+Jeff Saracco
+* documentation
+
+Koichi Sasada (ko1)
+* committer
+* He wrote YARV.
+
+Hugh Sasse
+* a patch for net/http
+* documentation
+
+Charlie Savage
+* a patch for win32/Makefile.sub
+
+Michael Scholz
+* a patch for ruby-mode.el
+
+Arthur Schreiber
+* patch for net/http and rdoc.
+
+Masatoshi SEKI (seki)
+* committer
+* He wrote and is the maintainer of:
+  * drb/*
+  * erb
+  * rinda
+
+Roman Shterenzon
+* a patch for open-uri.
+
+Kent Sibilev
+
+Gavin Sinclair (gsinclair)
+* committer
+
+John W. Small
+* He wrote gserver.rb
+
+Yuki Sonoda (yugui)
+* committer
+* She is the maintainer of man/* manual pages and is the release manager of 1.9 series.
+* She wrote prime.rb.
+* A developer and a sysop of redmine.ruby-lang.org.
+
+SOUMA, Yutaka
+* a patch for pack.c.
+
+Tatsuki Sugiura
+* WebDAV support for net/http
+
+Masaki Suketa (suke)
+* committer
+* He is the maintainer of win32ole
+
+sheepman
+* patches for ruby.c, thread.c, stringio, enum.c, webrick, net/http
+
+Siena. (siena)
+* committer
+
+Kirill A. Shutemov
+* a patch for parse.y
+
+Darren Smith
+* a patch for golf_prelude.rb
+
+Richard M. Stallman
+* missing/alloca.c
+
+Robin Stocker
+* documentation
+
+Adam Strzelecki
+* a patch for compile.c
+
+Masashi Sumi
+* improved net/pop.rb
+
+Eric Sunshine
+* NeXT OpenStep, Rhapsody support
+
+Kouhei Sutou (kou)
+* committer
+* He wrote and is the maintainer of rss/*
+
+David Symonds
+* documentation
+
+== T
+
+TAKANO Mitsuhiro (takano32)
+* committer
+* He is the maintainer of IA-64 support.
+* BigDecimal
+
+TAKAO, Kouji (kouji)
+* committer
+* He is the maintainer of readline.
+
+Nathaniel Talbott (ntalbott)
+* committer
+* He was the maintainer of test/unit, runit, rubyunit.
+
+TANAKA, Akira (akr)
+* committer
+* Did much upon m17n.
+* And he is the maintainer of:
+  * open-uri
+  * pathname
+  * pp
+  * resolv-replace
+  * resolv
+  * time
+  * tsort
+
+Takaaki Tateishi (ttate)
+* committer
+* He was the maintainer of dl
+
+Technorama Ltd. (technoroma)
+* committer
+* openssl
+
+Andrew Thompson
+* a patch for socket.c IRIX support.
+
+Dave Thomas (dave)
+* committer
+* a.k.a. the Pragmatic Programmer.
+* He wrote rdoc.
+
+Tietew
+* patches for win32 support
+
+Masahiro Tomita
+* a patch for cgi.rb
+
+Jakub Travnik
+* a patch for eval.c
+
+Tom Truscott
+* missing/crypt.c
+
+== U
+
+UEDA, Satoshi
+* a patch for uri
+
+Takaaki Uematsu (uema2)
+* committer
+* He was the maintainer of WinCE support.
+
+UENO, Katsuhiro (katsu)
+* committer
+* He is the maintainer of zlib
+
+Hajimu UMEMOTO
+* He wrote ipaddr.rb
+
+URABE, Shyouhei (shyouhei)
+* committer
+* a.k.a. mput.
+* He is the branch maintainer of ruby_1_8_6 and ruby_1_8_7
+* and is the release manager of 1.8.x-pXXX.
+
+== V
+
+Joel VanderWerf
+* a patch for numeric.c
+
+Peter Vanbroekhoven
+
+Corinna Vinschen
+
+== W
+
+wanabe (wanabe)
+* committer
+* fixed YARV and Oniguruma.
+
+Chun Wang
+* a patch for time.rb
+
+WATANABE, Hirofumi (eban)
+* committer
+* He is the maintainer of
+  * ftools (1.8)
+  * tmpdir
+  * un
+  * Win32API
+
+WATANABE, Tetsuya
+* a patch for ruby.c
+
+William Webber (wew)
+* committer
+
+Jim Weirich (jim)
+* committer
+* He wrote Rake.
+
+Nathan Weizenbaum
+* fixed misc/ruby-mode.el.
+
+why the lukky stiff (why)
+* committer
+* He is the maintainer of syck
+
+Caley Woods
+* documentation
+
+Gary Wright
+* documentation
+
+== X
+
+== Y
+
+Akira Yamada (akira)
+* committer
+* He is the maintainer of ruby related packages at Debian project.
+
+Keita Yamaguchi
+* patches for enum.c, parse.y
+* documentation
+
+Hirokazu Yamamoto (ocean)
+* committer
+
+Hirotaka Yoshioka
+* a patch for improving SEGV handling
+
+== Z
+
+Aristarkh A Zagorodnikov
+* a patch for io.c
+
+Alexander Zavorine
+* committer
+* He is the maintainer for Symbian OS.
+
+Chiyuan Zhang
+* a patch for misc/ruby-mode.el.
+
+Dee Zsombor (zunda)
+* a patch for thread_pthread.c
+
+Dan Zwell
+* a patch for net/pop
+
+

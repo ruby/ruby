@@ -5,6 +5,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
 
   def setup
     super
+    common_installer_setup
 
     build_rake_in do
       use_ui ui do
@@ -26,7 +27,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
   end
 
   def test_ask_if_ok
-    c = quick_spec 'c'
+    c = util_spec 'c'
 
     uninstaller = Gem::Uninstaller.new nil
 
@@ -204,6 +205,32 @@ class TestGemUninstaller < Gem::InstallerTestCase
     refute_path_exists spec.gem_dir
   end
 
+  def test_uninstall_extension
+    @spec.extensions << 'extconf.rb'
+    write_file File.join(@tempdir, 'extconf.rb') do |io|
+      io.write <<-RUBY
+require 'mkmf'
+create_makefile '#{@spec.name}'
+      RUBY
+    end
+
+    @spec.files += %w[extconf.rb]
+
+    use_ui @ui do
+      path = Gem::Package.build @spec
+
+      installer = Gem::Installer.new path
+      installer.install
+    end
+
+    assert_path_exists @spec.extension_dir, 'sanity check'
+
+    uninstaller = Gem::Uninstaller.new @spec.name, :executables => true
+    uninstaller.uninstall
+
+    refute_path_exists @spec.extension_dir
+  end
+
   def test_uninstall_nonexistent
     uninstaller = Gem::Uninstaller.new 'bogus', :executables => true
 
@@ -239,7 +266,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
     assert File.exist?(executable), 'executable must still exist'
   end
 
-  def test_uninstall_user
+  def test_uninstall_user_install
     @user_spec = Gem::Specification.find_by_name 'b'
 
     uninstaller = Gem::Uninstaller.new(@user_spec.name,
@@ -375,6 +402,19 @@ class TestGemUninstaller < Gem::InstallerTestCase
     assert_equal "Successfully uninstalled q-1.0", lines.shift
   end
 
+  def test_uninstall_doesnt_prompt_and_raises_when_abort_on_dependent_set
+    quick_gem 'r', '1' do |s| s.add_dependency 'q', '= 1' end
+    quick_gem 'q', '1'
+
+    un = Gem::Uninstaller.new('q', :abort_on_dependent => true)
+    ui = Gem::MockGemUi.new("y\n")
+
+    assert_raises Gem::DependencyRemovalException do
+      use_ui ui do
+        un.uninstall
+      end
+    end
+  end
 
   def test_uninstall_prompt_includes_dep_type
     quick_gem 'r', '1' do |s|

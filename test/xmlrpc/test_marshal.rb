@@ -1,6 +1,7 @@
 require 'test/unit'
 require "xmlrpc/marshal"
 
+module TestXMLRPC
 class Test_Marshal < Test::Unit::TestCase
   # for test_parser_values
   class Person
@@ -105,4 +106,5 @@ class Test_Marshal < Test::Unit::TestCase
     assert_equal(expect, str)
   end
 
+end
 end

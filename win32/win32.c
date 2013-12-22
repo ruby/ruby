@@ -19,9 +19,10 @@
   Copyright (C) 2000  Information-technology Promotion Agency, Japan
  */
 
+#undef __STRICT_ANSI__
+
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
-#include "dln.h"
 #include <fcntl.h>
 #include <process.h>
 #include <sys/stat.h>
@@ -38,6 +39,7 @@
 #include <share.h>
 #include <shlobj.h>
 #include <mbstring.h>
+#include <shlwapi.h>
 #if _MSC_VER >= 1400
 #include <crtdbg.h>
 #include <rtcapi.h>
@@ -47,12 +49,37 @@
 #endif
 #include "ruby/win32.h"
 #include "win32/dir.h"
+#include "internal.h"
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
+
+#if defined _MSC_VER && _MSC_VER <= 1200
+# define CharNextExA(cp, p, flags) CharNextExA((WORD)(cp), (p), (flags))
+#endif
+
+static int w32_stati64(const char *path, struct stati64 *st, UINT cp);
+static char *w32_getenv(const char *name, UINT cp);
+
+#undef getenv
+#define DLN_FIND_EXTRA_ARG_DECL ,UINT cp
+#define DLN_FIND_EXTRA_ARG ,cp
+#define rb_w32_stati64(path, st) w32_stati64(path, st, cp)
+#define getenv(name) w32_getenv(name, cp)
+#define dln_find_exe_r rb_w32_udln_find_exe_r
+#define dln_find_file_r rb_w32_udln_find_file_r
+#include "dln.h"
+#include "dln_find.c"
+#undef MAXPATHLEN
+#undef rb_w32_stati64
+#undef dln_find_exe_r
+#undef dln_find_file_r
+#define dln_find_exe_r(fname, path, buf, size) rb_w32_udln_find_exe_r(fname, path, buf, size, cp)
+#define dln_find_file_r(fname, path, buf, size) rb_w32_udln_find_file_r(fname, path, buf, size, cp)
 
 #undef stat
 #undef fclose
 #undef close
 #undef setsockopt
+#undef dup2
 
 #if defined __BORLANDC__
 #  define _filbuf _fgetc
@@ -73,7 +100,7 @@
 #define TO_SOCKET(x)	_get_osfhandle(x)
 
 static struct ChildRecord *CreateChild(const WCHAR *, const WCHAR *, SECURITY_ATTRIBUTES *, HANDLE, HANDLE, HANDLE, DWORD);
-static int has_redirection(const char *);
+static int has_redirection(const char *, UINT);
 int rb_w32_wait_events(HANDLE *events, int num, DWORD timeout);
 static int rb_w32_open_osfhandle(intptr_t osfhandle, int flags);
 static int wstati64(const WCHAR *path, struct stati64 *st);
@@ -353,12 +380,12 @@ translate_wchar(WCHAR *p, int from, int to)
 
 /* License: Ruby's */
 static inline char *
-translate_char(char *p, int from, int to)
+translate_char(char *p, int from, int to, UINT cp)
 {
     while (*p) {
 	if ((unsigned char)*p == from)
 	    *p = to;
-	p = CharNext(p);
+	p = CharNextExA(cp, p, 0);
     }
     return p;
 }
@@ -442,8 +469,6 @@ get_system_directory(WCHAR *path, UINT len)
     return GetWindowsDirectoryW(path, len);
 }
 
-#define numberof(array) (sizeof(array) / sizeof(*array))
-
 /* License: Ruby's */
 VALUE
 rb_w32_special_folder(int type)
@@ -467,9 +492,9 @@ rb_w32_system_tmpdir(WCHAR *path, UINT len)
     }
     p = translate_wchar(path, L'\\', L'/');
     if (*(p - 1) != L'/') *p++ = L'/';
-    if (p - path + numberof(temp) >= len) return 0;
+    if ((UINT)(p - path + numberof(temp)) >= len) return 0;
     memcpy(p, temp, sizeof(temp));
-    return p - path + numberof(temp) - 1;
+    return (UINT)(p - path + numberof(temp) - 1);
 }
 
 /* License: Ruby's */
@@ -482,8 +507,8 @@ init_env(void)
     BOOL f;
 #define env wk.val
 #define set_env_val(vname) do { \
-	typedef char namesizecheck[numberof(wk.name) < numberof(vname) - 1 ? -1 : 1]; \
-	WCHAR *const buf = wk.name + numberof(wk.name) - numberof(vname) + 1; \
+	typedef char wk_name_offset[(numberof(wk.name) - (numberof(vname) - 1)) * 2 + 1]; \
+	WCHAR *const buf = wk.name + sizeof(wk_name_offset) / 2; \
 	MEMCPY(buf, vname, WCHAR, numberof(vname) - 1); \
 	_wputenv(buf); \
     } while (0)
@@ -581,6 +606,7 @@ static CRITICAL_SECTION select_mutex;
 static int NtSocketsInitialized = 0;
 static st_table *socklist = NULL;
 static st_table *conlist = NULL;
+#define conlist_disabled ((st_table *)-1)
 static char *envarea;
 static char *uenvarea;
 
@@ -606,7 +632,7 @@ free_conlist(st_data_t key, st_data_t val, st_data_t arg)
 static void
 constat_delete(HANDLE h)
 {
-    if (conlist) {
+    if (conlist && conlist != conlist_disabled) {
 	st_data_t key = (st_data_t)h, val;
 	st_delete(conlist, &key, &val);
 	xfree((struct constat *)val);
@@ -626,7 +652,7 @@ exit_handler(void)
 	DeleteCriticalSection(&select_mutex);
 	NtSocketsInitialized = 0;
     }
-    if (conlist) {
+    if (conlist && conlist != conlist_disabled) {
 	st_foreach(conlist, free_conlist, 0);
 	st_free_table(conlist);
 	conlist = NULL;
@@ -649,7 +675,7 @@ StartSockets(void)
     WSADATA retdata;
 
     //
-    // initalize the winsock interface and insure that it's
+    // initialize the winsock interface and insure that it's
     // cleaned up at exit.
     //
     version = MAKEWORD(2, 0);
@@ -962,7 +988,7 @@ rb_w32_get_osfhandle(int fh)
 
 /* License: Ruby's */
 static int
-join_argv(char *cmd, char *const *argv, BOOL escape)
+join_argv(char *cmd, char *const *argv, BOOL escape, UINT cp, int backslash)
 {
     const char *p, *s;
     char *q, *const *t;
@@ -1008,7 +1034,7 @@ join_argv(char *cmd, char *const *argv, BOOL escape)
 		}
 	      default:
 		bs = 0;
-		p = CharNext(p) - 1;
+		p = CharNextExA(cp, p, 0) - 1;
 		break;
 	    }
 	}
@@ -1016,6 +1042,11 @@ join_argv(char *cmd, char *const *argv, BOOL escape)
 	if (quote) len++;
 	if (q) {
 	    memcpy(q, s, n);
+	    if (backslash > 0) {
+		--backslash;
+		q[n] = 0;
+		translate_char(q, '/', '\\', cp);
+	    }
 	    q += n;
 	    if (quote) *q++ = '"';
 	    *q++ = ' ';
@@ -1176,16 +1207,19 @@ static char *wstr_to_mbstr(UINT, const WCHAR *, int, long *);
 #define wstr_to_utf8(str, plen) wstr_to_mbstr(CP_UTF8, str, -1, plen)
 
 /* License: Artistic or GPL */
-rb_pid_t
-rb_w32_spawn(int mode, const char *cmd, const char *prog)
+static rb_pid_t
+w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
 {
     char fbuf[MAXPATHLEN];
     char *p = NULL;
     const char *shell = NULL;
-    WCHAR *wcmd, *wshell;
-    rb_pid_t ret;
+    WCHAR *wcmd = NULL, *wshell = NULL;
+    int e = 0;
+    rb_pid_t ret = -1;
     VALUE v = 0;
     VALUE v2 = 0;
+    int sep = 0;
+    char *cmd_sep = NULL;
 
     if (check_spawn_mode(mode)) return -1;
 
@@ -1195,21 +1229,24 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 	}
 	else {
 	    shell = p;
-	    translate_char(p, '/', '\\');
+	    translate_char(p, '/', '\\', cp);
 	}
     }
     else {
 	int redir = -1;
 	int nt;
 	while (ISSPACE(*cmd)) cmd++;
-	if ((shell = getenv("RUBYSHELL")) && (redir = has_redirection(cmd))) {
-	    char *tmp = ALLOCV(v, strlen(shell) + strlen(cmd) + sizeof(" -c ") + 2);
-	    sprintf(tmp, "%s -c \"%s\"", shell, cmd);
+	if ((shell = getenv("RUBYSHELL")) && (redir = has_redirection(cmd, cp))) {
+	    size_t shell_len = strlen(shell);
+	    char *tmp = ALLOCV(v, shell_len + strlen(cmd) + sizeof(" -c ") + 2);
+	    memcpy(tmp, shell, shell_len + 1);
+	    translate_char(tmp, '/', '\\', cp);
+	    sprintf(tmp + shell_len, " -c \"%s\"", cmd);
 	    cmd = tmp;
 	}
 	else if ((shell = getenv("COMSPEC")) &&
 		 (nt = !is_command_com(shell),
-		  (redir < 0 ? has_redirection(cmd) : redir) ||
+		  (redir < 0 ? has_redirection(cmd, cp) : redir) ||
 		  is_internal_cmd(cmd, nt))) {
 	    char *tmp = ALLOCV(v, strlen(shell) + strlen(cmd) + sizeof(" /c ") + (nt ? 2 : 0));
 	    sprintf(tmp, nt ? "%s /c \"%s\"" : "%s /c %s", shell, cmd);
@@ -1217,9 +1254,15 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 	}
 	else {
 	    int len = 0, quote = (*cmd == '"') ? '"' : (*cmd == '\'') ? '\'' : 0;
-	    for (prog = cmd + !!quote;; prog = CharNext(prog)) {
+	    int slash = 0;
+	    for (prog = cmd + !!quote;; prog = CharNextExA(cp, prog, 0)) {
+		if (*prog == '/') slash = 1;
 		if (!*prog) {
 		    len = prog - cmd;
+		    if (slash) {
+			STRNDUPV(p, v2, cmd, len);
+			cmd = p;
+		    }
 		    shell = cmd;
 		    break;
 		}
@@ -1232,12 +1275,18 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 		if (quote) continue;
 		if (ISSPACE(*prog) || strchr("<>|*?\"", *prog)) {
 		    len = prog - cmd;
-		    STRNDUPV(p, v2, cmd, len);
+		    STRNDUPV(p, v2, cmd, len + (slash ? strlen(prog) : 0));
+		    if (slash) {
+			cmd = p;
+			sep = *(cmd_sep = &p[len]);
+			*cmd_sep = '\0';
+		    }
 		    shell = p;
 		    break;
 		}
 	    }
 	    shell = dln_find_exe_r(shell, NULL, fbuf, sizeof(fbuf));
+	    if (p && slash) translate_char(p, '/', '\\', cp);
 	    if (!shell) {
 		shell = p ? p : cmd;
 	    }
@@ -1251,7 +1300,7 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 		    STRNDUPV(p, v2, shell, len);
 		    shell = p;
 		}
-		if (p) translate_char(p, '/', '\\');
+		if (p) translate_char(p, '/', '\\', cp);
 		if (is_batch(shell)) {
 		    int alen = strlen(prog);
 		    cmd = p = ALLOCV(v, len + alen + (quote ? 2 : 0) + 1);
@@ -1266,29 +1315,48 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 	}
     }
 
-    /* assume ACP */
-    wcmd = cmd ? acp_to_wstr(cmd, NULL) : NULL;
-    if (v) ALLOCV_END(v);
-    wshell = shell ? acp_to_wstr(shell, NULL) : NULL;
+    if (!e && shell && !(wshell = mbstr_to_wstr(cp, shell, -1, NULL))) e = E2BIG;
     if (v2) ALLOCV_END(v2);
+    if (cmd_sep) *cmd_sep = sep;
+    if (!e && cmd && !(wcmd = mbstr_to_wstr(cp, cmd, -1, NULL))) e = E2BIG;
+    if (v) ALLOCV_END(v);
 
-    ret = child_result(CreateChild(wcmd, wshell, NULL, NULL, NULL, NULL, 0), mode);
+    if (!e) {
+	ret = child_result(CreateChild(wcmd, wshell, NULL, NULL, NULL, NULL, 0), mode);
+    }
     free(wshell);
     free(wcmd);
+    if (e) errno = e;
     return ret;
 }
 
-/* License: Artistic or GPL */
+/* License: Ruby's */
 rb_pid_t
-rb_w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags)
+rb_w32_spawn(int mode, const char *cmd, const char *prog)
+{
+    /* assume ACP */
+    return w32_spawn(mode, cmd, prog, filecp());
+}
+
+/* License: Ruby's */
+rb_pid_t
+rb_w32_uspawn(int mode, const char *cmd, const char *prog)
+{
+    return w32_spawn(mode, cmd, prog, CP_UTF8);
+}
+
+/* License: Artistic or GPL */
+static rb_pid_t
+w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags, UINT cp)
 {
     int c_switch = 0;
     size_t len;
     BOOL ntcmd = FALSE, tmpnt;
     const char *shell;
     char *cmd, fbuf[MAXPATHLEN];
-    WCHAR *wcmd, *wprog;
-    rb_pid_t ret;
+    WCHAR *wcmd = NULL, *wprog = NULL;
+    int e = 0;
+    rb_pid_t ret = -1;
     VALUE v = 0;
 
     if (check_spawn_mode(mode)) return -1;
@@ -1302,7 +1370,7 @@ rb_w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags)
     }
     else if ((cmd = dln_find_exe_r(prog, NULL, fbuf, sizeof(fbuf)))) {
 	if (cmd == prog) strlcpy(cmd = fbuf, prog, sizeof(fbuf));
-	translate_char(cmd, '/', '\\');
+	translate_char(cmd, '/', '\\', cp);
 	prog = cmd;
     }
     else if (strchr(prog, '/')) {
@@ -1311,44 +1379,69 @@ rb_w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags)
 	    strlcpy(cmd = fbuf, prog, sizeof(fbuf));
 	else
 	    STRNDUPV(cmd, v, prog, len);
-	translate_char(cmd, '/', '\\');
+	translate_char(cmd, '/', '\\', cp);
 	prog = cmd;
     }
     if (c_switch || is_batch(prog)) {
 	char *progs[2];
 	progs[0] = (char *)prog;
 	progs[1] = NULL;
-	len = join_argv(NULL, progs, ntcmd);
+	len = join_argv(NULL, progs, ntcmd, cp, 1);
 	if (c_switch) len += 3;
 	else ++argv;
-	if (argv[0]) len += join_argv(NULL, argv, ntcmd);
+	if (argv[0]) len += join_argv(NULL, argv, ntcmd, cp, 0);
 	cmd = ALLOCV(v, len);
-	join_argv(cmd, progs, ntcmd);
+	join_argv(cmd, progs, ntcmd, cp, 1);
 	if (c_switch) strlcat(cmd, " /c", len);
-	if (argv[0]) join_argv(cmd + strlcat(cmd, " ", len), argv, ntcmd);
+	if (argv[0]) join_argv(cmd + strlcat(cmd, " ", len), argv, ntcmd, cp, 0);
 	prog = c_switch ? shell : 0;
     }
     else {
-	len = join_argv(NULL, argv, FALSE);
+	len = join_argv(NULL, argv, FALSE, cp, 1);
 	cmd = ALLOCV(v, len);
-	join_argv(cmd, argv, FALSE);
+	join_argv(cmd, argv, FALSE, cp, 1);
     }
 
-    /* assume ACP */
-    wcmd = cmd ? acp_to_wstr(cmd, NULL) : NULL;
+    if (!e && cmd && !(wcmd = mbstr_to_wstr(cp, cmd, -1, NULL))) e = E2BIG;
     if (v) ALLOCV_END(v);
-    wprog = prog ? acp_to_wstr(prog, NULL) : NULL;
+    if (!e && prog && !(wprog = mbstr_to_wstr(cp, prog, -1, NULL))) e = E2BIG;
 
-    ret = child_result(CreateChild(wcmd, wprog, NULL, NULL, NULL, NULL, flags), mode);
+    if (!e) {
+	ret = child_result(CreateChild(wcmd, wprog, NULL, NULL, NULL, NULL, flags), mode);
+    }
     free(wprog);
     free(wcmd);
+    if (e) errno = e;
     return ret;
 }
 
+/* License: Ruby's */
+rb_pid_t
+rb_w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags)
+{
+    /* assume ACP */
+    return w32_aspawn_flags(mode, prog, argv, flags, filecp());
+}
+
+/* License: Ruby's */
+rb_pid_t
+rb_w32_uaspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags)
+{
+    return w32_aspawn_flags(mode, prog, argv, flags, CP_UTF8);
+}
+
+/* License: Ruby's */
 rb_pid_t
 rb_w32_aspawn(int mode, const char *prog, char *const *argv)
 {
     return rb_w32_aspawn_flags(mode, prog, argv, 0);
+}
+
+/* License: Ruby's */
+rb_pid_t
+rb_w32_uaspawn(int mode, const char *prog, char *const *argv)
+{
+    return rb_w32_uaspawn_flags(mode, prog, argv, 0);
 }
 
 /* License: Artistic or GPL */
@@ -1422,7 +1515,7 @@ cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail)
 
 /* License: Artistic or GPL */
 static int
-has_redirection(const char *cmd)
+has_redirection(const char *cmd, UINT cp)
 {
     char quote = '\0';
     const char *ptr;
@@ -1462,7 +1555,7 @@ has_redirection(const char *cmd)
 	  case '\\':
 	    ptr++;
 	  default:
-	    ptr = CharNext(ptr);
+	    ptr = CharNextExA(cp, ptr, 0);
 	    break;
 	}
     }
@@ -1509,8 +1602,8 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
     // When we've finished, and it's an input command (meaning that it's
     // the processes argv), we'll do globing and then build the argument
     // vector.
-    // The outer loop does one interation for each element seen.
-    // The inner loop does one interation for each character in the element.
+    // The outer loop does one iteration for each element seen.
+    // The inner loop does one iteration for each character in the element.
     //
 
     while (*(ptr = skipspace(ptr))) {
@@ -1561,7 +1654,7 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 		//
 		// if we're already in a string, see if this is the
 		// terminating close-quote. If it is, we're finished with
-		// the string, but not neccessarily with the element.
+		// the string, but not necessarily with the element.
 		// If we're not already in a string, start one.
 		//
 
@@ -1717,8 +1810,6 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 // UNIX compatible directory access functions for NT
 //
 
-#define PATHLEN 1024
-
 //
 // The idea here is to read all the directory names into a string table
 // (separated by nulls) and when one of the other dir functions is called
@@ -1865,10 +1956,14 @@ static char *
 wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen, long *plen)
 {
     char *ptr;
-    int len = WideCharToMultiByte(cp, 0, wstr, clen, NULL, 0, NULL, NULL) - 1;
-    if (!(ptr = malloc(len + 1))) return 0;
-    WideCharToMultiByte(cp, 0, wstr, clen, ptr, len + 1, NULL, NULL);
-    if (plen) *plen = len;
+    int len = WideCharToMultiByte(cp, 0, wstr, clen, NULL, 0, NULL, NULL);
+    if (!(ptr = malloc(len))) return 0;
+    WideCharToMultiByte(cp, 0, wstr, clen, ptr, len, NULL, NULL);
+    if (plen) {
+	/* exclude NUL only if NUL-terminated string */
+	if (clen == -1) --len;
+	*plen = len;
+    }
     return ptr;
 }
 
@@ -1877,10 +1972,14 @@ static WCHAR *
 mbstr_to_wstr(UINT cp, const char *str, int clen, long *plen)
 {
     WCHAR *ptr;
-    int len = MultiByteToWideChar(cp, 0, str, clen, NULL, 0) - 1;
-    if (!(ptr = malloc(sizeof(WCHAR) * (len + 1)))) return 0;
-    MultiByteToWideChar(cp, 0, str, clen, ptr, len + 1);
-    if (plen) *plen = len;
+    int len = MultiByteToWideChar(cp, 0, str, clen, NULL, 0);
+    if (!(ptr = malloc(sizeof(WCHAR) * len))) return 0;
+    MultiByteToWideChar(cp, 0, str, clen, ptr, len);
+    if (plen) {
+	/* exclude NUL only if NUL-terminated string */
+	if (clen == -1) --len;
+	*plen = len;
+    }
     return ptr;
 }
 
@@ -1944,20 +2043,31 @@ win32_direct_conv(const WCHAR *file, struct direct *entry, rb_encoding *dummy)
 VALUE
 rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc)
 {
-    static rb_encoding *utf16 = (rb_encoding *)-1;
     VALUE src;
+    long len = lstrlenW(wstr);
+    int encindex = ENC_TO_ENCINDEX(enc);
 
-    if (utf16 == (rb_encoding *)-1) {
-	utf16 = rb_enc_find("UTF-16LE");
-	if (utf16 == rb_ascii8bit_encoding())
-	    utf16 = NULL;
+    if (encindex == ENCINDEX_UTF_16LE) {
+	return rb_enc_str_new((char *)wstr, len * sizeof(WCHAR), enc);
     }
-    if (!utf16)
-	/* maybe miniruby */
-	return Qnil;
-
-    src = rb_enc_str_new((char *)wstr, lstrlenW(wstr) * sizeof(WCHAR), utf16);
-    return rb_str_encode(src, rb_enc_from_encoding(enc), ECONV_UNDEF_REPLACE, Qnil);
+    else {
+#if SIZEOF_INT < SIZEOF_LONG
+# error long should equal to int on Windows
+#endif
+	int clen = rb_long2int(len);
+	len = WideCharToMultiByte(CP_UTF8, 0, wstr, clen, NULL, 0, NULL, NULL);
+	src = rb_enc_str_new(0, len, rb_enc_from_index(ENCINDEX_UTF_8));
+	WideCharToMultiByte(CP_UTF8, 0, wstr, clen, RSTRING_PTR(src), len, NULL, NULL);
+    }
+    switch (encindex) {
+      case ENCINDEX_ASCII:
+      case ENCINDEX_US_ASCII:
+	/* assume UTF-8 */
+      case ENCINDEX_UTF_8:
+	/* do nothing */
+	return src;
+    }
+    return rb_str_conv_enc_opts(src, NULL, enc, ECONV_UNDEF_REPLACE, Qnil);
 }
 
 /* License: Ruby's */
@@ -2581,7 +2691,7 @@ is_not_socket(SOCKET sock)
 
 /* License: Ruby's */
 static int
-is_pipe(SOCKET sock) /* DONT call this for SOCKET! it clains it is PIPE. */
+is_pipe(SOCKET sock) /* DONT call this for SOCKET! it claims it is PIPE. */
 {
     int ret;
 
@@ -2659,7 +2769,7 @@ is_invalid_handle(SOCKET sock)
 /* License: Artistic or GPL */
 static int
 do_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
-            struct timeval *timeout)
+	  struct timeval *timeout)
 {
     int r = 0;
 
@@ -2803,10 +2913,8 @@ rb_w32_select_with_thread(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 
     {
 	struct timeval rest;
-	struct timeval wait;
-	struct timeval zero;
-	wait.tv_sec = 0; wait.tv_usec = 10 * 1000; // 10ms
-	zero.tv_sec = 0; zero.tv_usec = 0;         //  0ms
+	const struct timeval wait = {0, 10 * 1000}; // 10ms
+	struct timeval zero = {0, 0};		    // 0ms
 	for (;;) {
 	    if (th && rb_w32_check_interrupt(th) != WAIT_TIMEOUT) {
 		r = -1;
@@ -2829,7 +2937,7 @@ rb_w32_select_with_thread(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 		break;
 	    }
 	    else {
-		struct timeval *dowait = &wait;
+		const struct timeval *dowait = &wait;
 
 		fd_set orig_rd;
 		fd_set orig_wr;
@@ -2855,7 +2963,7 @@ rb_w32_select_with_thread(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 		    if (!rb_w32_time_subtract(&rest, &now)) break;
 		    if (compare(&rest, &wait) < 0) dowait = &rest;
 		}
-		Sleep(dowait->tv_sec * 1000 + dowait->tv_usec / 1000);
+		Sleep(dowait->tv_sec * 1000 + (dowait->tv_usec + 999) / 1000);
 	    }
 	}
     }
@@ -3706,7 +3814,7 @@ socketpair_internal(int af, int type, int protocol, SOCKET *sv)
 
 /* License: Ruby's */
 int
-rb_w32_socketpair(int af, int type, int protocol, int *sv)
+socketpair(int af, int type, int protocol, int *sv)
 {
     SOCKET pair[2];
 
@@ -3729,6 +3837,152 @@ rb_w32_socketpair(int af, int type, int protocol, int *sv)
 
     return 0;
 }
+
+#if !defined(_MSC_VER) || _MSC_VER >= 1400
+/* License: Ruby's */
+static void
+str2guid(const char *str, GUID *guid)
+{
+#define hex2byte(str) \
+    ((isdigit(*(str)) ? *(str) - '0' : toupper(*(str)) - 'A' + 10) << 4 | (isdigit(*((str) + 1)) ? *((str) + 1) - '0' : toupper(*((str) + 1)) - 'A' + 10))
+    char *end;
+    int i;
+    if (*str == '{') str++;
+    guid->Data1 = (long)strtoul(str, &end, 16);
+    str += 9;
+    guid->Data2 = (unsigned short)strtoul(str, &end, 16);
+    str += 5;
+    guid->Data3 = (unsigned short)strtoul(str, &end, 16);
+    str += 5;
+    guid->Data4[0] = hex2byte(str);
+    str += 2;
+    guid->Data4[1] = hex2byte(str);
+    str += 3;
+    for (i = 0; i < 6; i++) {
+	guid->Data4[i + 2] = hex2byte(str);
+	str += 2;
+    }
+}
+
+/* License: Ruby's */
+#ifndef HAVE_TYPE_NET_LUID
+    typedef struct {
+	uint64_t Value;
+	struct {
+	    uint64_t Reserved :24;
+	    uint64_t NetLuidIndex :24;
+	    uint64_t IfType :16;
+	} Info;
+    } NET_LUID;
+#endif
+typedef DWORD (WINAPI *cigl_t)(const GUID *, NET_LUID *);
+typedef DWORD (WINAPI *cilnA_t)(const NET_LUID *, char *, size_t);
+static cigl_t pConvertInterfaceGuidToLuid = NULL;
+static cilnA_t pConvertInterfaceLuidToNameA = NULL;
+
+int
+getifaddrs(struct ifaddrs **ifap)
+{
+    ULONG size = 0;
+    ULONG ret;
+    IP_ADAPTER_ADDRESSES *root, *addr;
+    struct ifaddrs *prev;
+
+    ret = GetAdaptersAddresses(AF_UNSPEC, 0, NULL, NULL, &size);
+    if (ret != ERROR_BUFFER_OVERFLOW) {
+	errno = map_errno(ret);
+	return -1;
+    }
+    root = ruby_xmalloc(size);
+    ret = GetAdaptersAddresses(AF_UNSPEC, 0, NULL, root, &size);
+    if (ret != ERROR_SUCCESS) {
+	errno = map_errno(ret);
+	ruby_xfree(root);
+	return -1;
+    }
+
+    if (!pConvertInterfaceGuidToLuid)
+	pConvertInterfaceGuidToLuid =
+	    (cigl_t)get_proc_address("iphlpapi.dll",
+				     "ConvertInterfaceGuidToLuid", NULL);
+    if (!pConvertInterfaceLuidToNameA)
+	pConvertInterfaceLuidToNameA =
+	    (cilnA_t)get_proc_address("iphlpapi.dll",
+				      "ConvertInterfaceLuidToNameA", NULL);
+
+    for (prev = NULL, addr = root; addr; addr = addr->Next) {
+	struct ifaddrs *ifa = ruby_xcalloc(1, sizeof(*ifa));
+	char name[IFNAMSIZ];
+	GUID guid;
+	NET_LUID luid;
+
+	if (prev)
+	    prev->ifa_next = ifa;
+	else
+	    *ifap = ifa;
+
+	str2guid(addr->AdapterName, &guid);
+	if (pConvertInterfaceGuidToLuid && pConvertInterfaceLuidToNameA &&
+	    pConvertInterfaceGuidToLuid(&guid, &luid) == NO_ERROR &&
+	    pConvertInterfaceLuidToNameA(&luid, name, sizeof(name)) == NO_ERROR) {
+	    ifa->ifa_name = ruby_xmalloc(lstrlen(name) + 1);
+	    lstrcpy(ifa->ifa_name, name);
+	}
+	else {
+	    ifa->ifa_name = ruby_xmalloc(lstrlen(addr->AdapterName) + 1);
+	    lstrcpy(ifa->ifa_name, addr->AdapterName);
+	}
+
+	if (addr->IfType & IF_TYPE_SOFTWARE_LOOPBACK)
+	    ifa->ifa_flags |= IFF_LOOPBACK;
+	if (addr->OperStatus == IfOperStatusUp) {
+	    ifa->ifa_flags |= IFF_UP;
+
+	    if (addr->FirstUnicastAddress) {
+		IP_ADAPTER_UNICAST_ADDRESS *cur;
+		int added = 0;
+		for (cur = addr->FirstUnicastAddress; cur; cur = cur->Next) {
+		    if (cur->Flags & IP_ADAPTER_ADDRESS_TRANSIENT ||
+			cur->DadState == IpDadStateDeprecated) {
+			continue;
+		    }
+		    if (added) {
+			prev = ifa;
+			ifa = ruby_xcalloc(1, sizeof(*ifa));
+			prev->ifa_next = ifa;
+			ifa->ifa_name =
+			    ruby_xmalloc(lstrlen(prev->ifa_name) + 1);
+			lstrcpy(ifa->ifa_name, prev->ifa_name);
+			ifa->ifa_flags = prev->ifa_flags;
+		    }
+		    ifa->ifa_addr = ruby_xmalloc(cur->Address.iSockaddrLength);
+		    memcpy(ifa->ifa_addr, cur->Address.lpSockaddr,
+			   cur->Address.iSockaddrLength);
+		    added = 1;
+		}
+	    }
+	}
+
+	prev = ifa;
+    }
+
+    ruby_xfree(root);
+    return 0;
+}
+
+/* License: Ruby's */
+void
+freeifaddrs(struct ifaddrs *ifp)
+{
+    while (ifp) {
+	struct ifaddrs *next = ifp->ifa_next;
+	if (ifp->ifa_addr) ruby_xfree(ifp->ifa_addr);
+	if (ifp->ifa_name) ruby_xfree(ifp->ifa_name);
+	ruby_xfree(ifp);
+	ifp = next;
+    }
+}
+#endif
 
 //
 // Networking stubs
@@ -3878,16 +4132,19 @@ poll_child_status(struct ChildRecord *child, int *stat_loc)
     DWORD err;
 
     if (!GetExitCodeProcess(child->hProcess, &exitcode)) {
-	/* If an error occured, return immediatly. */
+	/* If an error occurred, return immediately. */
     error_exit:
 	err = GetLastError();
-	if (err == ERROR_INVALID_PARAMETER)
+	switch (err) {
+	  case ERROR_INVALID_PARAMETER:
 	    errno = ECHILD;
-	else {
-	    if (GetLastError() == ERROR_INVALID_HANDLE)
-		errno = EINVAL;
-	    else
-		errno = map_errno(GetLastError());
+	    break;
+	  case ERROR_INVALID_HANDLE:
+	    errno = EINVAL;
+	    break;
+	  default:
+	    errno = map_errno(err);
+	    break;
 	}
 	CloseChildHandle(child);
 	return -1;
@@ -3900,7 +4157,43 @@ poll_child_status(struct ChildRecord *child, int *stat_loc)
         }
 	pid = child->pid;
 	CloseChildHandle(child);
-	if (stat_loc) *stat_loc = exitcode << 8;
+	if (stat_loc) {
+	    *stat_loc = exitcode << 8;
+	    if (exitcode & 0xC0000000) {
+		static const struct {
+		    DWORD status;
+		    int sig;
+		} table[] = {
+		    {STATUS_ACCESS_VIOLATION,        SIGSEGV},
+		    {STATUS_ILLEGAL_INSTRUCTION,     SIGILL},
+		    {STATUS_PRIVILEGED_INSTRUCTION,  SIGILL},
+		    {STATUS_FLOAT_DENORMAL_OPERAND,  SIGFPE},
+		    {STATUS_FLOAT_DIVIDE_BY_ZERO,    SIGFPE},
+		    {STATUS_FLOAT_INEXACT_RESULT,    SIGFPE},
+		    {STATUS_FLOAT_INVALID_OPERATION, SIGFPE},
+		    {STATUS_FLOAT_OVERFLOW,          SIGFPE},
+		    {STATUS_FLOAT_STACK_CHECK,       SIGFPE},
+		    {STATUS_FLOAT_UNDERFLOW,         SIGFPE},
+#ifdef STATUS_FLOAT_MULTIPLE_FAULTS
+		    {STATUS_FLOAT_MULTIPLE_FAULTS,   SIGFPE},
+#endif
+#ifdef STATUS_FLOAT_MULTIPLE_TRAPS
+		    {STATUS_FLOAT_MULTIPLE_TRAPS,    SIGFPE},
+#endif
+		    {STATUS_CONTROL_C_EXIT,          SIGINT},
+		};
+		int i;
+		for (i = 0; i < (int)numberof(table); i++) {
+		    if (table[i].status == exitcode) {
+			*stat_loc |= table[i].sig;
+			break;
+		    }
+		}
+		// if unknown status, assume SEGV
+		if (i >= (int)numberof(table))
+		    *stat_loc |= SIGSEGV;
+	    }
+	}
 	return pid;
     }
     return 0;
@@ -3956,6 +4249,7 @@ waitpid(rb_pid_t pid, int *stat_loc, int options)
     }
     else {
 	struct ChildRecord* child = FindChildSlot(pid);
+	int retried = 0;
 	if (!child) {
 	    errno = ECHILD;
 	    return -1;
@@ -3965,10 +4259,14 @@ waitpid(rb_pid_t pid, int *stat_loc, int options)
 	    /* wait... */
 	    if (rb_w32_wait_events_blocking(&child->hProcess, 1, timeout) != WAIT_OBJECT_0) {
 		/* still active */
-		pid = 0;
-		break;
+		if (options & WNOHANG) {
+		    pid = 0;
+		    break;
+		}
+		++retried;
 	    }
 	}
+	if (pid == -1 && retried) pid = 0;
     }
 
     return pid;
@@ -4001,7 +4299,7 @@ filetime_to_timeval(const FILETIME* ft, struct timeval *tv)
 }
 
 /* License: Ruby's */
-int _cdecl
+int __cdecl
 gettimeofday(struct timeval *tv, struct timezone *tz)
 {
     FILETIME ft;
@@ -4010,6 +4308,72 @@ gettimeofday(struct timeval *tv, struct timezone *tz)
     filetime_to_timeval(&ft, tv);
 
     return 0;
+}
+
+/* License: Ruby's */
+int
+clock_gettime(clockid_t clock_id, struct timespec *sp)
+{
+    switch (clock_id) {
+      case CLOCK_REALTIME:
+	{
+	    struct timeval tv;
+	    gettimeofday(&tv, NULL);
+	    sp->tv_sec = tv.tv_sec;
+	    sp->tv_nsec = tv.tv_usec * 1000;
+	    return 0;
+	}
+      case CLOCK_MONOTONIC:
+	{
+	    LARGE_INTEGER freq;
+	    LARGE_INTEGER count;
+	    if (!QueryPerformanceFrequency(&freq)) {
+		errno = map_errno(GetLastError());
+		return -1;
+	    }
+	    if (!QueryPerformanceCounter(&count)) {
+		errno = map_errno(GetLastError());
+		return -1;
+	    }
+	    sp->tv_sec = count.QuadPart / freq.QuadPart;
+	    if (freq.QuadPart < 1000000000)
+		sp->tv_nsec = (count.QuadPart % freq.QuadPart) * 1000000000 / freq.QuadPart;
+	    else
+		sp->tv_nsec = (long)((count.QuadPart % freq.QuadPart) * (1000000000.0 / freq.QuadPart));
+	    return 0;
+	}
+      default:
+	errno = EINVAL;
+	return -1;
+    }
+}
+
+/* License: Ruby's */
+int
+clock_getres(clockid_t clock_id, struct timespec *sp)
+{
+    switch (clock_id) {
+      case CLOCK_REALTIME:
+	{
+	    sp->tv_sec = 0;
+	    sp->tv_nsec = 1000;
+	    return 0;
+	}
+      case CLOCK_MONOTONIC:
+	{
+	    LARGE_INTEGER freq;
+	    if (!QueryPerformanceFrequency(&freq)) {
+		errno = map_errno(GetLastError());
+		return -1;
+	    }
+	    sp->tv_sec = 0;
+	    sp->tv_nsec = (long)(1000000000.0 / freq.QuadPart);
+	    return 0;
+	}
+      default:
+	errno = EINVAL;
+	return -1;
+    }
 }
 
 /* License: Ruby's */
@@ -4047,7 +4411,7 @@ rb_w32_getcwd(char *buffer, int size)
         return NULL;
     }
 
-    translate_char(p, '\\', '/');
+    translate_char(p, '\\', '/', filecp());
 
     return p;
 }
@@ -4250,8 +4614,8 @@ wait(int *status)
 }
 
 /* License: Ruby's */
-char *
-rb_w32_ugetenv(const char *name)
+static char *
+w32_getenv(const char *name, UINT cp)
 {
     WCHAR *wenvarea, *wenv;
     int len = strlen(name);
@@ -4275,7 +4639,7 @@ rb_w32_ugetenv(const char *name)
     }
     for (wenv = wenvarea, wlen = 1; *wenv; wenv += lstrlenW(wenv) + 1)
 	wlen += lstrlenW(wenv) + 1;
-    uenvarea = wstr_to_mbstr(CP_UTF8, wenvarea, wlen, NULL);
+    uenvarea = wstr_to_mbstr(cp, wenvarea, wlen, NULL);
     FreeEnvironmentStringsW(wenvarea);
     if (!uenvarea)
 	return NULL;
@@ -4289,31 +4653,16 @@ rb_w32_ugetenv(const char *name)
 
 /* License: Ruby's */
 char *
+rb_w32_ugetenv(const char *name)
+{
+    return w32_getenv(name, CP_UTF8);
+}
+
+/* License: Ruby's */
+char *
 rb_w32_getenv(const char *name)
 {
-    int len = strlen(name);
-    char *env;
-
-    if (len == 0) return NULL;
-    if (uenvarea) {
-	free(uenvarea);
-	uenvarea = NULL;
-    }
-    if (envarea) {
-	FreeEnvironmentStrings(envarea);
-	envarea = NULL;
-    }
-    envarea = GetEnvironmentStrings();
-    if (!envarea) {
-	map_errno(GetLastError());
-	return NULL;
-    }
-
-    for (env = envarea; *env; env += strlen(env) + 1)
-	if (strncasecmp(env, name, len) == 0 && *(env + len) == '=')
-	    return env + len + 1;
-
-    return NULL;
+    return w32_getenv(name, CP_ACP);
 }
 
 /* License: Artistic or GPL */
@@ -4336,17 +4685,8 @@ wrename(const WCHAR *oldpath, const WCHAR *newpath)
 	if (newatts != -1 && newatts & FILE_ATTRIBUTE_READONLY)
 	    SetFileAttributesW(newpath, newatts & ~ FILE_ATTRIBUTE_READONLY);
 
-	if (!MoveFileW(oldpath, newpath))
+	if (!MoveFileExW(oldpath, newpath, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED))
 	    res = -1;
-
-	if (res) {
-	    switch (GetLastError()) {
-	      case ERROR_ALREADY_EXISTS:
-	      case ERROR_FILE_EXISTS:
-		if (MoveFileExW(oldpath, newpath, MOVEFILE_REPLACE_EXISTING))
-		    res = 0;
-	    }
-	}
 
 	if (res)
 	    errno = map_errno(GetLastError());
@@ -4705,24 +5045,24 @@ wstati64(const WCHAR *path, struct stati64 *st)
 int
 rb_w32_ustati64(const char *path, struct stati64 *st)
 {
-    WCHAR *wpath;
-    int ret;
-
-    if (!(wpath = utf8_to_wstr(path, NULL)))
-	return -1;
-    ret = wstati64(wpath, st);
-    free(wpath);
-    return ret;
+    return w32_stati64(path, st, CP_UTF8);
 }
 
 /* License: Ruby's */
 int
 rb_w32_stati64(const char *path, struct stati64 *st)
 {
+    return w32_stati64(path, st, filecp());
+}
+
+/* License: Ruby's */
+static int
+w32_stati64(const char *path, struct stati64 *st, UINT cp)
+{
     WCHAR *wpath;
     int ret;
 
-    if (!(wpath = filecp_to_wstr(path, NULL)))
+    if (!(wpath = mbstr_to_wstr(cp, path, -1, NULL)))
 	return -1;
     ret = wstati64(wpath, st);
     free(wpath);
@@ -4852,38 +5192,6 @@ _lseeki64(int fd, off_t offset, int whence)
     return ((off_t)u << 32) | l;
 }
 #endif
-
-/* License: Ruby's */
-int
-fseeko(FILE *stream, off_t offset, int whence)
-{
-    off_t pos;
-    switch (whence) {
-      case SEEK_CUR:
-	if (fgetpos(stream, (fpos_t *)&pos))
-	    return -1;
-	pos += offset;
-	break;
-      case SEEK_END:
-	if ((pos = _filelengthi64(fileno(stream))) == (off_t)-1)
-	    return -1;
-	pos += offset;
-	break;
-      default:
-	pos = offset;
-	break;
-    }
-    return fsetpos(stream, (fpos_t *)&pos);
-}
-
-/* License: Ruby's */
-off_t
-rb_w32_ftello(FILE *stream)
-{
-    off_t pos;
-    if (fgetpos(stream, (fpos_t *)&pos)) return (off_t)-1;
-    return pos;
-}
 
 /* License: Ruby's */
 static long
@@ -5156,6 +5464,28 @@ rb_w32_getppid(void)
     }
 
     return ppid;
+}
+
+STATIC_ASSERT(std_handle, (STD_OUTPUT_HANDLE-STD_INPUT_HANDLE)==(STD_ERROR_HANDLE-STD_OUTPUT_HANDLE));
+
+/* License: Ruby's */
+#define set_new_std_handle(newfd, handle) do { \
+	if ((unsigned)(newfd) > 2) break; \
+	SetStdHandle(STD_INPUT_HANDLE+(STD_OUTPUT_HANDLE-STD_INPUT_HANDLE)*(newfd), \
+		     (handle)); \
+    } while (0)
+#define set_new_std_fd(newfd) set_new_std_handle(newfd, (HANDLE)rb_w32_get_osfhandle(newfd))
+
+/* License: Ruby's */
+int
+rb_w32_dup2(int oldfd, int newfd)
+{
+    int ret;
+
+    if (oldfd == newfd) return newfd;
+    ret = dup2(oldfd, newfd);
+    set_new_std_fd(newfd);
+    return ret;
 }
 
 /* License: Ruby's */
@@ -5431,8 +5761,14 @@ int
 rb_w32_pipe(int fds[2])
 {
     static DWORD serial = 0;
-    char name[] = "\\\\.\\pipe\\ruby0000000000000000-0000000000000000";
-    char *p;
+    static const char prefix[] = "\\\\.\\pipe\\ruby";
+    enum {
+	width_of_prefix = (int)sizeof(prefix) - 1,
+	width_of_pid = (int)sizeof(rb_pid_t) * 2,
+	width_of_serial = (int)sizeof(serial) * 2,
+	width_of_ids = width_of_pid + 1 + width_of_serial + 1
+    };
+    char name[sizeof(prefix) + width_of_ids];
     SECURITY_ATTRIBUTES sec;
     HANDLE hRead, hWrite, h;
     int fdRead, fdWrite;
@@ -5442,8 +5778,9 @@ rb_w32_pipe(int fds[2])
     if (!cancel_io)
 	return _pipe(fds, 65536L, _O_NOINHERIT);
 
-    p = strchr(name, '0');
-    snprintf(p, strlen(p) + 1, "%"PRI_PIDT_PREFIX"x-%lx", rb_w32_getpid(), serial++);
+    memcpy(name, prefix, width_of_prefix);
+    snprintf(name + width_of_prefix, width_of_ids, "%.*"PRI_PIDT_PREFIX"x-%.*lx",
+	     width_of_pid, rb_w32_getpid(), width_of_serial, serial++);
 
     sec.nLength = sizeof(sec);
     sec.lpSecurityDescriptor = NULL;
@@ -5520,13 +5857,41 @@ rb_w32_pipe(int fds[2])
 }
 
 /* License: Ruby's */
+static int
+console_emulator_p(void)
+{
+#ifdef _WIN32_WCE
+    return FALSE;
+#else
+    const void *const func = WriteConsoleW;
+    HMODULE k;
+    MEMORY_BASIC_INFORMATION m;
+
+    memset(&m, 0, sizeof(m));
+    if (!VirtualQuery(func, &m, sizeof(m))) {
+	return FALSE;
+    }
+    k = GetModuleHandle("kernel32.dll");
+    if (!k) return FALSE;
+    return (HMODULE)m.AllocationBase != k;
+#endif
+}
+
+/* License: Ruby's */
 static struct constat *
 constat_handle(HANDLE h)
 {
     st_data_t data;
     struct constat *p;
     if (!conlist) {
+	if (console_emulator_p()) {
+	    conlist = conlist_disabled;
+	    return NULL;
+	}
 	conlist = st_init_numtable();
+    }
+    else if (conlist == conlist_disabled) {
+	return NULL;
     }
     if (st_lookup(conlist, (st_data_t)h, &data)) {
 	p = (struct constat *)data;
@@ -5558,12 +5923,12 @@ constat_reset(HANDLE h)
 }
 
 /* License: Ruby's */
-static DWORD
-constat_attr(int count, const int *seq, DWORD attr, DWORD default_attr)
+static WORD
+constat_attr(int count, const int *seq, WORD attr, WORD default_attr)
 {
 #define FOREGROUND_MASK (FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED)
 #define BACKGROUND_MASK (BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED)
-    DWORD bold = attr & (FOREGROUND_INTENSITY | BACKGROUND_INTENSITY);
+    WORD bold = attr & (FOREGROUND_INTENSITY | BACKGROUND_INTENSITY);
     int rev = 0;
 
     if (!count) return attr;
@@ -5621,6 +5986,7 @@ constat_attr(int count, const int *seq, DWORD attr, DWORD default_attr)
 
 	  case 40:
 	    attr &= ~(BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED);
+	    break;
 	  case 41:
 	    attr = attr & ~(BACKGROUND_BLUE | BACKGROUND_GREEN) | BACKGROUND_RED;
 	    break;
@@ -5787,9 +6153,19 @@ constat_parse(HANDLE h, struct constat *s, const WCHAR **ptrp, long *lenp)
 	WCHAR wc = *ptr++;
 	if (wc == 0x1b) {
 	    rest = *lenp - len - 1;
+	    if (s->vt100.state == constat_esc) {
+		rest++;		/* reuse this ESC */
+	    }
+	    s->vt100.state = constat_init;
+	    if (len > 0 && *ptr != L'[') continue;
 	    s->vt100.state = constat_esc;
 	}
-	else if (s->vt100.state == constat_esc && wc == L'[') {
+	else if (s->vt100.state == constat_esc) {
+	    if (wc != L'[') {
+		/* TODO: supply dropped ESC at beginning */
+		s->vt100.state = constat_init;
+		continue;
+	    }
 	    rest = *lenp - len - 1;
 	    if (rest > 0) --rest;
 	    s->vt100.state = constat_seq;
@@ -5858,6 +6234,49 @@ rb_w32_close(int fd)
     return 0;
 }
 
+static int
+setup_overlapped(OVERLAPPED *ol, int fd)
+{
+    memset(ol, 0, sizeof(*ol));
+    if (!(_osfile(fd) & (FDEV | FPIPE))) {
+	LONG high = 0;
+	DWORD method = _osfile(fd) & FAPPEND ? FILE_END : FILE_CURRENT;
+	DWORD low = SetFilePointer((HANDLE)_osfhnd(fd), 0, &high, method);
+#ifndef INVALID_SET_FILE_POINTER
+#define INVALID_SET_FILE_POINTER ((DWORD)-1)
+#endif
+	if (low == INVALID_SET_FILE_POINTER) {
+	    DWORD err = GetLastError();
+	    if (err != NO_ERROR) {
+		errno = map_errno(err);
+		return -1;
+	    }
+	}
+	ol->Offset = low;
+	ol->OffsetHigh = high;
+    }
+    ol->hEvent = CreateEvent(NULL, TRUE, TRUE, NULL);
+    if (!ol->hEvent) {
+	errno = map_errno(GetLastError());
+	return -1;
+    }
+    return 0;
+}
+
+static void
+finish_overlapped(OVERLAPPED *ol, int fd, DWORD size)
+{
+    CloseHandle(ol->hEvent);
+
+    if (!(_osfile(fd) & (FDEV | FPIPE))) {
+	LONG high = ol->OffsetHigh;
+	DWORD low = ol->Offset + size;
+	if (low < ol->Offset)
+	    ++high;
+	SetFilePointer((HANDLE)_osfhnd(fd), low, &high, FILE_BEGIN);
+    }
+}
+
 #undef read
 /* License: Ruby's */
 ssize_t
@@ -5918,25 +6337,7 @@ rb_w32_read(int fd, void *buf, size_t size)
 
     /* if have cancel_io, use Overlapped I/O */
     if (cancel_io) {
-	memset(&ol, 0, sizeof(ol));
-	if (!(_osfile(fd) & (FDEV | FPIPE))) {
-	    LONG high = 0;
-	    DWORD low = SetFilePointer((HANDLE)_osfhnd(fd), 0, &high,
-				       FILE_CURRENT);
-#ifndef INVALID_SET_FILE_POINTER
-#define INVALID_SET_FILE_POINTER ((DWORD)-1)
-#endif
-	    if (low == INVALID_SET_FILE_POINTER) {
-		errno = map_errno(GetLastError());
-		MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
-		return -1;
-	    }
-	    ol.Offset = low;
-	    ol.OffsetHigh = high;
-	}
-	ol.hEvent = CreateEvent(NULL, TRUE, TRUE, NULL);
-	if (!ol.hEvent) {
-	    errno = map_errno(GetLastError());
+	if (setup_overlapped(&ol, fd)) {
 	    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
 	    return -1;
 	}
@@ -5994,15 +6395,7 @@ rb_w32_read(int fd, void *buf, size_t size)
     }
 
     if (pol) {
-	CloseHandle(ol.hEvent);
-
-	if (!(_osfile(fd) & (FDEV | FPIPE))) {
-	    LONG high = ol.OffsetHigh;
-	    DWORD low = ol.Offset + read;
-	    if (low < ol.Offset)
-		++high;
-	    SetFilePointer((HANDLE)_osfhnd(fd), low, &high, FILE_BEGIN);
-	}
+	finish_overlapped(&ol, fd, read);
     }
 
     ret += read;
@@ -6062,25 +6455,7 @@ rb_w32_write(int fd, const void *buf, size_t size)
 
     /* if have cancel_io, use Overlapped I/O */
     if (cancel_io) {
-	memset(&ol, 0, sizeof(ol));
-	if (!(_osfile(fd) & (FDEV | FPIPE))) {
-	    LONG high = 0;
-	    DWORD method = _osfile(fd) & FAPPEND ? FILE_END : FILE_CURRENT;
-	    DWORD low = SetFilePointer((HANDLE)_osfhnd(fd), 0, &high, method);
-#ifndef INVALID_SET_FILE_POINTER
-#define INVALID_SET_FILE_POINTER ((DWORD)-1)
-#endif
-	    if (low == INVALID_SET_FILE_POINTER) {
-		errno = map_errno(GetLastError());
-		MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
-		return -1;
-	    }
-	    ol.Offset = low;
-	    ol.OffsetHigh = high;
-	}
-	ol.hEvent = CreateEvent(NULL, TRUE, TRUE, NULL);
-	if (!ol.hEvent) {
-	    errno = map_errno(GetLastError());
+	if (setup_overlapped(&ol, fd)) {
 	    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
 	    return -1;
 	}
@@ -6126,15 +6501,7 @@ rb_w32_write(int fd, const void *buf, size_t size)
     }
 
     if (pol) {
-	CloseHandle(ol.hEvent);
-
-	if (!(_osfile(fd) & (FDEV | FPIPE))) {
-	    LONG high = ol.OffsetHigh;
-	    DWORD low = ol.Offset + written;
-	    if (low < ol.Offset)
-		++high;
-	    SetFilePointer((HANDLE)_osfhnd(fd), low, &high, FILE_BEGIN);
-	}
+	finish_overlapped(&ol, fd, written);
     }
 
     ret += written;
@@ -6157,34 +6524,53 @@ rb_w32_write_console(uintptr_t strarg, int fd)
     HANDLE handle;
     DWORD dwMode, reslen;
     VALUE str = strarg;
-    rb_encoding *utf16 = rb_enc_find("UTF-16LE");
+    int encindex;
+    WCHAR *wbuffer = 0;
     const WCHAR *ptr, *next;
     struct constat *s;
     long len;
 
     if (disable) return -1L;
     handle = (HANDLE)_osfhnd(fd);
-    if (!GetConsoleMode(handle, &dwMode) ||
-	!rb_econv_has_convpath_p(rb_enc_name(rb_enc_get(str)), "UTF-16LE"))
+    if (!GetConsoleMode(handle, &dwMode))
 	return -1L;
 
-    str = rb_str_encode(str, rb_enc_from_encoding(utf16),
-			ECONV_INVALID_REPLACE|ECONV_UNDEF_REPLACE, Qnil);
-    ptr = (const WCHAR *)RSTRING_PTR(str);
-    len = RSTRING_LEN(str) / sizeof(WCHAR);
     s = constat_handle(handle);
+    if (!s) return -1L;
+    encindex = ENCODING_GET(str);
+    switch (encindex) {
+      default:
+	if (!rb_econv_has_convpath_p(rb_enc_name(rb_enc_from_index(encindex)), "UTF-8"))
+	    return -1L;
+	str = rb_str_conv_enc_opts(str, NULL, rb_enc_from_index(ENCINDEX_UTF_8),
+				   ECONV_INVALID_REPLACE|ECONV_UNDEF_REPLACE, Qnil);
+	/* fall through */
+      case ENCINDEX_US_ASCII:
+      case ENCINDEX_ASCII:
+	/* assume UTF-8 */
+      case ENCINDEX_UTF_8:
+	ptr = wbuffer = mbstr_to_wstr(CP_UTF8, RSTRING_PTR(str), RSTRING_LEN(str), &len);
+	if (!ptr) return -1L;
+	break;
+      case ENCINDEX_UTF_16LE:
+	ptr = (const WCHAR *)RSTRING_PTR(str);
+	len = RSTRING_LEN(str) / sizeof(WCHAR);
+	break;
+    }
     while (len > 0) {
 	long curlen = constat_parse(handle, s, (next = ptr, &next), &len);
 	if (curlen > 0) {
 	    if (!WriteConsoleW(handle, ptr, curlen, &reslen, NULL)) {
 		if (GetLastError() == ERROR_CALL_NOT_IMPLEMENTED)
 		    disable = TRUE;
-		return -1L;
+		reslen = (DWORD)-1L;
+		break;
 	    }
 	}
 	ptr = next;
     }
     RB_GC_GUARD(str);
+    if (wbuffer) free(wbuffer);
     return (long)reslen;
 }
 
@@ -6574,7 +6960,8 @@ rb_w32_inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
 
 /* License: Ruby's */
 char
-rb_w32_fd_is_text(int fd) {
+rb_w32_fd_is_text(int fd)
+{
     return _osfile(fd) & FTEXT;
 }
 
@@ -6734,3 +7121,22 @@ rb_w32_unwrap_io_handle(int fd)
     }
     return _close(fd);
 }
+
+#if !defined(__MINGW64__) && defined(__MINGW64_VERSION_MAJOR)
+/*
+ * Set floating point precision for pow() of mingw-w64 x86.
+ * With default precision the result is not proper on WinXP.
+ */
+double
+rb_w32_pow(double x, double y)
+{
+#undef pow
+    double r;
+    unsigned int default_control = _controlfp(0, 0);
+    _controlfp(_PC_64, _MCW_PC);
+    r = pow(x, y);
+    /* Restore setting */
+    _controlfp(default_control, _MCW_PC);
+    return r;
+}
+#endif

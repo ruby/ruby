@@ -25,7 +25,7 @@ module Base64
 
   # Returns the Base64-encoded version of +bin+.
   # This method complies with RFC 2045.
-  # Line feeds are added to every 60 encoded charactors.
+  # Line feeds are added to every 60 encoded characters.
   #
   #    require 'base64'
   #    Base64.encode64("Now is the time for all good coders\nto learn Ruby")

@@ -14,18 +14,13 @@ class TestGemCommandsOutdatedCommand < Gem::TestCase
   end
 
   def test_execute
-    remote_10 = quick_spec 'foo', '1.0'
-    remote_20 = quick_spec 'foo', '2.0'
-
-    Gem::RemoteFetcher.fetcher = @fetcher = Gem::FakeFetcher.new
-
-    util_clear_gems
-    util_setup_spec_fetcher remote_10, remote_20
-
-    quick_gem 'foo', '0.1'
-    quick_gem 'foo', '0.2'
-
-    Gem::Specification.reset
+    spec_fetcher do |fetcher|
+      fetcher.spec 'foo', '1.0'
+      fetcher.spec 'foo', '2.0'
+      fetcher.clear
+      fetcher.gem 'foo', '0.1'
+      fetcher.gem 'foo', '0.2'
+    end
 
     use_ui @ui do
       @cmd.execute

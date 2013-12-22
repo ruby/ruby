@@ -637,8 +637,8 @@ ENC_ALIAS("euc-jp-ms", "eucJP-ms")
 ENC_REPLICATE("CP51932", "EUC-JP")
 
 /*
- * Name: EUC-JP-2004
- * Link: http://ja.wikipedia.org/wiki/EUC-JP-2004
+ * Name: EUC-JIS-2004
+ * Link: http://ja.wikipedia.org/wiki/EUC-JIS-2004
  */
-ENC_REPLICATE("EUC-JP-2004", "EUC-JP") /* defined at JIS X 0213:2004 */
-ENC_ALIAS("EUC-JISX0213", "EUC-JP-2004") /* defined at JIS X 0213:2000, and obsolete at JIS X 0213:2004 */
+ENC_REPLICATE("EUC-JIS-2004", "EUC-JP") /* defined at JIS X 0213:2004 */
+ENC_ALIAS("EUC-JISX0213", "EUC-JIS-2004") /* defined at JIS X 0213:2000, and obsolete at JIS X 0213:2004 */

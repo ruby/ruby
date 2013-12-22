@@ -1,9 +1,13 @@
+# :stopdoc:
+
+#--
 # This file contains all sorts of little compatibility hacks that we've
 # had to introduce over the years. Quarantining them into one file helps
 # us know when we can get rid of them.
-
+#
 # Ruby 1.9.x has introduced some things that are awkward, and we need to
 # support them, so we define some constants to use later.
+#++
 module Gem
   # Only MRI 1.9.2 has the custom prelude.
   GEM_PRELUDE_SUCKAGE = RUBY_VERSION =~ /^1\.9\.2/ and RUBY_ENGINE == "ruby"
@@ -30,6 +34,9 @@ module Gem
   RubyGemsVersion = VERSION
 
   RbConfigPriorities = %w[
+    MAJOR
+    MINOR
+    TEENY
     EXEEXT RUBY_SO_NAME arch bindir datadir libdir ruby_install_name
     ruby_version rubylibprefix sitedir sitelibdir vendordir vendorlibdir
     rubylibdir

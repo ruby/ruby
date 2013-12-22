@@ -5,7 +5,7 @@ module Psych
   # Scan scalars for built in types
   class ScalarScanner
     # Taken from http://yaml.org/type/timestamp.html
-    TIME = /^\d{4}-\d{1,2}-\d{1,2}([Tt]|\s+)\d{1,2}:\d\d:\d\d(\.\d*)?(\s*Z|[-+]\d{1,2}(:\d\d)?)?/
+    TIME = /^-?\d{4}-\d{1,2}-\d{1,2}(?:[Tt]|\s+)\d{1,2}:\d\d:\d\d(?:\.\d*)?(?:\s*(?:Z|[-+]\d{1,2}:?(?:\d\d)?))?$/
 
     # Taken from http://yaml.org/type/float.html
     FLOAT = /^(?:[-+]?([0-9][0-9_,]*)?\.[0-9]*([eE][-+][0-9]+)?(?# base 10)
@@ -19,13 +19,16 @@ module Psych
                   |[-+]?(?:0|[1-9][0-9_]*) (?# base 10)
                   |[-+]?0x[0-9a-fA-F_]+    (?# base 16))$/x
 
+    attr_reader :class_loader
+
     # Create a new scanner
-    def initialize
+    def initialize class_loader
       @string_cache = {}
       @symbol_cache = {}
+      @class_loader = class_loader
     end
 
-    # Tokenize +string+ returning the ruby object
+    # Tokenize +string+ returning the Ruby object
     def tokenize string
       return nil if string.empty?
       return string if @string_cache.key?(string)
@@ -63,21 +66,21 @@ module Psych
       when /^\d{4}-(?:1[012]|0\d|\d)-(?:[12]\d|3[01]|0\d|\d)$/
         require 'date'
         begin
-          Date.strptime(string, '%Y-%m-%d')
+          class_loader.date.strptime(string, '%Y-%m-%d')
         rescue ArgumentError
           string
         end
       when /^\.inf$/i
-        1 / 0.0
+        Float::INFINITY
       when /^-\.inf$/i
-        -1 / 0.0
+        -Float::INFINITY
       when /^\.nan$/i
-        0.0 / 0.0
+        Float::NAN
       when /^:./
         if string =~ /^:(["'])(.*)\1/
-          @symbol_cache[string] = $2.sub(/^:/, '').to_sym
+          @symbol_cache[string] = class_loader.symbolize($2.sub(/^:/, ''))
         else
-          @symbol_cache[string] = string.sub(/^:/, '').to_sym
+          @symbol_cache[string] = class_loader.symbolize(string.sub(/^:/, ''))
         end
       when /^[-+]?[0-9][0-9_]*(:[0-5]?[0-9])+$/
         i = 0
@@ -92,11 +95,11 @@ module Psych
         end
         i
       when FLOAT
-        if string == '.'
+        if string =~ /\A[-+]?\.\Z/
           @string_cache[string] = true
           string
         else
-          Float(string.gsub(/[,_]/, ''))
+          Float(string.gsub(/[,_]|\.$/, ''))
         end
       else
         int = parse_int string.gsub(/[,_]/, '')
@@ -117,17 +120,19 @@ module Psych
     ###
     # Parse and return a Time from +string+
     def parse_time string
+      klass = class_loader.load 'Time'
+
       date, time = *(string.split(/[ tT]/, 2))
-      (yy, m, dd) = date.split('-').map { |x| x.to_i }
+      (yy, m, dd) = date.match(/^(-?\d{4})-(\d{1,2})-(\d{1,2})/).captures.map { |x| x.to_i }
       md = time.match(/(\d+:\d+:\d+)(?:\.(\d*))?\s*(Z|[-+]\d+(:\d\d)?)?/)
 
       (hh, mm, ss) = md[1].split(':').map { |x| x.to_i }
       us = (md[2] ? Rational("0.#{md[2]}") : 0) * 1000000
 
-      time = Time.utc(yy, m, dd, hh, mm, ss, us)
+      time = klass.utc(yy, m, dd, hh, mm, ss, us)
 
       return time if 'Z' == md[3]
-      return Time.at(time.to_i, us) unless md[3]
+      return klass.at(time.to_i, us) unless md[3]
 
       tz = md[3].match(/^([+\-]?\d{1,2})\:?(\d{1,2})?$/)[1..-1].compact.map { |digit| Integer(digit, 10) }
       offset = tz.first * 3600
@@ -138,7 +143,7 @@ module Psych
         offset += ((tz[1] || 0) * 60)
       end
 
-      Time.at((time - offset).to_i, us)
+      klass.at((time - offset).to_i, us)
     end
   end
 end

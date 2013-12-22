@@ -106,6 +106,8 @@ class TestIntegerComb < Test::Unit::TestCase
   ]
 
   #VS.map! {|v| 0x4000000000000000.coerce(v)[0] }
+  #VS.concat VS.find_all {|v| Fixnum === v }.map {|v| 0x4000000000000000.coerce(v)[0] }
+  #VS.sort! {|a, b| a.abs <=> b.abs }
 
   min = -1
   min *= 2 while min.class == Fixnum
@@ -185,6 +187,7 @@ class TestIntegerComb < Test::Unit::TestCase
         c = a * b
         check_class(c)
         assert_equal(b * a, c, "#{a} * #{b}")
+        assert_equal(b.send(:*, a), c, "#{a} * #{b}")
         assert_equal(b, c / a, "(#{a} * #{b}) / #{a}") if a != 0
         assert_equal(a.abs * b.abs, (a * b).abs, "(#{a} * #{b}).abs")
         assert_equal((a-100)*(b-100)+(a-100)*100+(b-100)*100+10000, c, "#{a} * #{b}")
@@ -203,8 +206,14 @@ class TestIntegerComb < Test::Unit::TestCase
           check_class(q)
           check_class(r)
           assert_equal(a, b*q+r)
-          assert(r.abs < b.abs)
-          assert(0 < b ? (0 <= r && r < b) : (b < r && r <= 0))
+          assert_operator(r.abs, :<, b.abs)
+          if 0 < b
+            assert_operator(r, :>=, 0)
+            assert_operator(r, :<, b)
+          else
+            assert_operator(r, :>, b)
+            assert_operator(r, :<=, 0)
+          end
           assert_equal(q, a/b)
           assert_equal(q, a.div(b))
           assert_equal(r, a%b)

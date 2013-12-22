@@ -18,7 +18,7 @@ static void vm_analysis_insn(int insn);
 #if VMDEBUG > 0
 #define DECL_SC_REG(type, r, reg) register type reg_##r
 
-#elif defined(__GNUC__) && defined(_x86_64__)
+#elif defined(__GNUC__) && defined(__x86_64__)
 #define DECL_SC_REG(type, r, reg) register type reg_##r __asm__("r" reg)
 
 #elif defined(__GNUC__) && defined(__i386__)
@@ -28,6 +28,17 @@ static void vm_analysis_insn(int insn);
 #define DECL_SC_REG(type, r, reg) register type reg_##r
 #endif
 /* #define DECL_SC_REG(r, reg) VALUE reg_##r */
+
+#if VM_DEBUG_STACKOVERFLOW
+NORETURN(static void vm_stack_overflow_for_insn(void));
+static void
+vm_stack_overflow_for_insn(void)
+{
+    rb_bug("CHECK_VM_STACK_OVERFLOW_FOR_INSN: should not overflow here. "
+	   "Please contact ruby-core/dev with your (a part of) script. "
+	   "This check will be removed soon.");
+}
+#endif
 
 #if !OPT_CALL_THREADED_CODE
 static VALUE

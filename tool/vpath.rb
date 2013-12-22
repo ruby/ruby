@@ -6,7 +6,7 @@ class VPath
   def initialize(*list)
     @list = list
     @additional = []
-    @separator = File::PATH_SEPARATOR
+    @separator = nil
   end
 
   def inspect
@@ -59,8 +59,9 @@ class VPath
     opt.on("-L", "--vpath=PATH LIST", "add directories to search path") {|dirs|
       @additional << [dirs]
     }
-    opt.on("--path-separator=SEP", /\A\W\z/, "separator for vpath") {|sep|
-      @separator = sep
+    opt.on("--path-separator=SEP", /\A(?:\W\z|\.(\W).+)/, "separator for vpath") {|sep, vsep|
+      # hack for msys make.
+      @separator = vsep || sep
     }
   end
 
@@ -70,6 +71,8 @@ class VPath
       when String
         @list << dirs
       when Array
+        raise "--path-separator option is needed for vpath list" unless @separator
+        # @separator ||= (require 'rbconfig'; RbConfig::CONFIG["PATH_SEPARATOR"])
         @list.concat(dirs[0].split(@separator))
       end
       true

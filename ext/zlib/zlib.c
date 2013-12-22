@@ -633,7 +633,7 @@ zstream_expand_buffer(struct zstream *z)
 	    VALUE self = (VALUE)z->stream.opaque;
 
 	    rb_str_resize(z->buf, z->buf_filled);
-	    RBASIC(z->buf)->klass = rb_cString;
+	    rb_obj_reveal(z->buf, rb_cString);
 	    OBJ_INFECT(z->buf, self);
 
 	    rb_protect(rb_yield, z->buf, &state);
@@ -678,7 +678,7 @@ zstream_expand_buffer_into(struct zstream *z, unsigned long size)
 	z->buf_filled = 0;
 	z->stream.next_out = (Bytef*)RSTRING_PTR(z->buf);
 	z->stream.avail_out = MAX_UINT(size);
-	RBASIC(z->buf)->klass = 0;
+	rb_obj_hide(z->buf);
     }
     else if (z->stream.avail_out != size) {
 	rb_str_resize(z->buf, z->buf_filled + size);
@@ -740,7 +740,7 @@ zstream_append_buffer(struct zstream *z, const Bytef *src, long len)
 	z->buf_filled = len;
 	z->stream.next_out = (Bytef*)RSTRING_PTR(z->buf);
 	z->stream.avail_out = 0;
-	RBASIC(z->buf)->klass = 0;
+	rb_obj_hide(z->buf);
 	return;
     }
 
@@ -782,7 +782,7 @@ zstream_detach_buffer(struct zstream *z)
     else {
 	dst = z->buf;
 	rb_str_resize(dst, z->buf_filled);
-	RBASIC(dst)->klass = rb_cString;
+	rb_obj_reveal(dst, rb_cString);
     }
 
     OBJ_INFECT(dst, self);
@@ -811,7 +811,7 @@ zstream_shift_buffer(struct zstream *z, long len)
     }
 
     dst = rb_str_subseq(z->buf, 0, len);
-    RBASIC(dst)->klass = rb_cString;
+    rb_obj_reveal(dst, rb_cString);
     z->buf_filled -= len;
     memmove(RSTRING_PTR(z->buf), RSTRING_PTR(z->buf) + len,
 	    z->buf_filled);
@@ -866,7 +866,7 @@ zstream_append_input(struct zstream *z, const Bytef *src, long len)
     if (NIL_P(z->input)) {
 	z->input = rb_str_buf_new(len);
 	rb_str_buf_cat(z->input, (const char*)src, len);
-	RBASIC(z->input)->klass = 0;
+	rb_obj_hide(z->input);
     }
     else {
 	rb_str_buf_cat(z->input, (const char*)src, len);
@@ -915,10 +915,10 @@ zstream_detach_input(struct zstream *z)
     }
     else {
 	dst = z->input;
-	RBASIC(dst)->klass = rb_cString;
+	rb_obj_reveal(dst, rb_cString);
     }
     z->input = Qnil;
-    RBASIC(dst)->klass = rb_cString;
+    rb_obj_reveal(dst, rb_cString);
     return dst;
 }
 
@@ -1074,11 +1074,13 @@ loop:
 	}
 	if (err == Z_NEED_DICT) {
 	    VALUE self = (VALUE)z->stream.opaque;
-	    VALUE dicts = rb_ivar_get(self, id_dictionaries);
-	    VALUE dict = rb_hash_aref(dicts, rb_uint2inum(z->stream.adler));
-	    if (!NIL_P(dict)) {
-		rb_inflate_set_dictionary(self, dict);
-		goto loop;
+	    if (self) {
+		VALUE dicts = rb_ivar_get(self, id_dictionaries);
+		VALUE dict = rb_hash_aref(dicts, rb_uint2inum(z->stream.adler));
+		if (!NIL_P(dict)) {
+		    rb_inflate_set_dictionary(self, dict);
+		    goto loop;
+		}
 	    }
 	}
 	raise_zlib_error(err, z->stream.msg);
@@ -1293,12 +1295,8 @@ rb_zstream_finish(VALUE obj)
 
 /*
  * call-seq:
- *   flush_next_out                 -> String
- *   flush_next_out { |chunk| ... } -> nil
+ *   flush_next_in -> input
  *
- * Flushes output buffer and returns all data in that buffer.  If a block is
- * given each chunk is yielded to the block until the current output buffer
- * has been flushed.
  */
 static VALUE
 rb_zstream_flush_next_in(VALUE obj)
@@ -1313,7 +1311,13 @@ rb_zstream_flush_next_in(VALUE obj)
 }
 
 /*
- * Flushes output buffer and returns all data in that buffer.
+ * call-seq:
+ *   flush_next_out                 -> String
+ *   flush_next_out { |chunk| ... } -> nil
+ *
+ * Flushes output buffer and returns all data in that buffer.  If a block is
+ * given each chunk is yielded to the block until the current output buffer
+ * has been flushed.
  */
 static VALUE
 rb_zstream_flush_next_out(VALUE obj)
@@ -1850,12 +1854,12 @@ rb_inflate_s_allocate(VALUE klass)
  * == Example
  *
  *   open "compressed.file" do |compressed_io|
- *     inflate = Zlib::Inflate.new(Zlib::MAX_WBITS + 32)
+ *     zi = Zlib::Inflate.new(Zlib::MAX_WBITS + 32)
  *
  *     begin
  *       open "uncompressed.file", "w+" do |uncompressed_io|
  *         uncompressed_io << zi.inflate(compressed_io.read)
- *       }
+ *       end
  *     ensure
  *       zi.close
  *     end
@@ -2707,7 +2711,7 @@ gzfile_read(struct gzfile *gz, long len)
     if (len == 0) return rb_str_new(0, 0);
     if (len < 0) return Qnil;
     dst = zstream_shift_buffer(&gz->z, len);
-    gzfile_calc_crc(gz, dst);
+    if (!NIL_P(dst)) gzfile_calc_crc(gz, dst);
     return dst;
 }
 
@@ -2770,6 +2774,7 @@ gzfile_read_all(struct gzfile *gz)
     }
 
     dst = zstream_detach_buffer(&gz->z);
+    if (NIL_P(dst)) return dst;
     gzfile_calc_crc(gz, dst);
     OBJ_TAINT(dst);
     return gzfile_newstr(gz, dst);
@@ -2816,6 +2821,7 @@ gzfile_getc(struct gzfile *gz)
 	buf = gz->z.buf;
 	len = rb_enc_mbclen(RSTRING_PTR(buf), RSTRING_END(buf), gz->enc);
 	dst = gzfile_read(gz, len);
+	if (NIL_P(dst)) return dst;
 	return gzfile_newstr(gz, dst);
     }
 }
@@ -3188,13 +3194,9 @@ rb_gzfile_set_mtime(VALUE obj, VALUE mtime)
 	rb_raise(cGzError, "header is already written");
     }
 
-    if (FIXNUM_P(mtime)) {
-	gz->mtime = FIX2INT(mtime);
-    }
-    else {
-	val = rb_Integer(mtime);
-	gz->mtime = FIXNUM_P(val) ? FIX2UINT(val) : rb_big2ulong(val);
-    }
+    val = rb_Integer(mtime);
+    gz->mtime = NUM2UINT(val);
+
     return mtime;
 }
 
@@ -4041,6 +4043,7 @@ gzreader_gets(int argc, VALUE *argv, VALUE obj)
 		n = limit;
 	    }
 	    dst = zstream_shift_buffer(&gz->z, n);
+	    if (NIL_P(dst)) return dst;
 	    gzfile_calc_crc(gz, dst);
 	    dst = gzfile_newstr(gz, dst);
 	}
@@ -4102,6 +4105,7 @@ gzreader_gets(int argc, VALUE *argv, VALUE obj)
 
     gz->lineno++;
     dst = gzfile_read(gz, n);
+    if (NIL_P(dst)) return dst;
     if (rspara) {
 	gzreader_skip_linebreaks(gz);
     }

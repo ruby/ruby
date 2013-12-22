@@ -19,7 +19,7 @@ class Matrix
     include Matrix::ConversionHelper
 
     def l
-      Matrix.build(@row_count, @column_count) do |i, j|
+      Matrix.build(@row_count, [@column_count, @row_count].min) do |i, j|
         if (i > j)
           @lu[i][j]
         elsif (i == j)
@@ -33,7 +33,7 @@ class Matrix
     # Returns the upper triangular factor +U+
 
     def u
-      Matrix.build(@column_count, @column_count) do |i, j|
+      Matrix.build([@column_count, @row_count].min, @column_count) do |i, j|
         if (i <= j)
           @lu[i][j]
         else
@@ -45,9 +45,9 @@ class Matrix
     # Returns the permutation matrix +P+
 
     def p
-      rows = Array.new(@row_count){Array.new(@column_count, 0)}
+      rows = Array.new(@row_count){Array.new(@row_count, 0)}
       @pivots.each_with_index{|p, i| rows[i][p] = 1}
-      Matrix.send :new, rows, @column_count
+      Matrix.send :new, rows, @row_count
     end
 
     # Returns +L+, +U+, +P+ in an array
@@ -77,7 +77,7 @@ class Matrix
 
     def det
       if (@row_count != @column_count)
-        Matrix.Raise Matrix::ErrDimensionMismatch unless square?
+        Matrix.Raise Matrix::ErrDimensionMismatch
       end
       d = @pivot_sign
       @column_count.times do |j|

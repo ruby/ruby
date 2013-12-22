@@ -1,0 +1,7 @@
+#!/usr/bin/ruby
+require File.expand_path('../config_files', __FILE__)
+ARGV.each {|n|
+  STDOUT.print "Downloading #{n}..."; STDOUT.flush
+  ConfigFiles.download(n)
+  STDOUT.puts
+}

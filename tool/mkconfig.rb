@@ -72,12 +72,13 @@ File.foreach "config.status" do |line|
   if name
     case name
     when /^(?:ac_.*|configure_input|(?:top_)?srcdir|\w+OBJS)$/; next
-    when /^(?:X|(?:MINI|RUN)RUBY$)/; next
+    when /^(?:X|(?:MINI|RUN|BASE)RUBY$)/; next
     when /^(?:MAJOR|MINOR|TEENY)$/; next
+    when /^LIBRUBY_D?LD/; next
     when /^RUBY_INSTALL_NAME$/; next if $install_name
     when /^RUBY_SO_NAME$/; next if $so_name
     when /^arch$/; if val.empty? then val = arch else arch = val end
-    when /^sitearch/; val = '$(arch)' if val.empty?
+    when /^sitearch$/; val = '$(arch)' if val.empty?
     end
     case val
     when /^\$\(ac_\w+\)$/; next
@@ -112,8 +113,9 @@ File.foreach "config.status" do |line|
         end
       end
     end
+    eq = win32 && vars[name] ? '<< "\n"' : '='
+    vars[name] = val
     if name == "configure_args"
-      val.gsub!(/ +(?!-)/, "=") if win32
       val.gsub!(/--with-out-ext/, "--without-ext")
     end
     val = val.gsub(/\$(?:\$|\{?(\w+)\}?)/) {$1 ? "$(#{$1})" : $&}.dump
@@ -129,8 +131,7 @@ File.foreach "config.status" do |line|
         val.sub!(/universal/, %q[#{arch && universal[/(?:\A|\s)#{Regexp.quote(arch)}=(\S+)/, 1] || '\&'}])
       end
     end
-    v = "  CONFIG[\"#{name}\"] #{win32 && vars[name] ? '<< "\n" +' : '='} #{val}\n"
-    vars[name] = true
+    v = "  CONFIG[\"#{name}\"] #{eq} #{val}\n"
     if fast[name]
       v_fast << v
     else
@@ -146,7 +147,27 @@ end
 
 drive = File::PATH_SEPARATOR == ';'
 
-prefix = "/lib/ruby/#{version}/#{arch}"
+def vars.expand(val, config = self)
+  newval = val.gsub(/\$\$|\$\(([^()]+)\)|\$\{([^{}]+)\}/) {
+    var = $&
+    if !(v = $1 || $2)
+      '$'
+    elsif key = config[v = v[/\A[^:]+(?=(?::(.*?)=(.*))?\z)/]]
+      pat, sub = $1, $2
+      config[v] = false
+      config[v] = expand(key, config)
+      key = key.gsub(/#{Regexp.quote(pat)}(?=\s|\z)/n) {sub} if pat
+      key
+    else
+      var
+    end
+  }
+  val.replace(newval) unless newval == val
+  val
+end
+vars["prefix"] = ""
+vars["exec_prefix"] = ""
+prefix = vars.expand(vars["rubyarchdir"])
 print "  TOPDIR = File.dirname(__FILE__).chomp!(#{prefix.dump})\n"
 print "  DESTDIR = ", (drive ? "TOPDIR && TOPDIR[/\\A[a-z]:/i] || " : ""), "'' unless defined? DESTDIR\n"
 print <<'ARCH' if universal
@@ -204,18 +225,7 @@ end
 print(*v_fast)
 print(*v_others)
 print <<EOS
-  CONFIG["rubylibdir"] = "$(rubylibprefix)/$(ruby_version)"
-  CONFIG["archdir"] = "$(rubylibdir)/$(arch)"
-EOS
-print <<EOS unless v_disabled["sitedir"]
-  CONFIG["sitelibdir"] = "$(sitedir)/$(ruby_version)"
-  CONFIG["sitearchdir"] = "$(sitelibdir)/$(sitearch)"
-EOS
-print <<EOS unless v_disabled["vendordir"]
-  CONFIG["vendorlibdir"] = "$(vendordir)/$(ruby_version)"
-  CONFIG["vendorarchdir"] = "$(vendorlibdir)/$(sitearch)"
-EOS
-print <<EOS
+  CONFIG["archdir"] = "$(rubyarchdir)"
   CONFIG["topdir"] = File.dirname(__FILE__)
   MAKEFILE_CONFIG = {}
   CONFIG.each{|k,v| MAKEFILE_CONFIG[k] = v.dup}

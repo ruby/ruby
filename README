@@ -23,6 +23,11 @@ Perl).  It is simple, straight-forward, and extensible.
 
 == How to get Ruby
 
+For a complete list of ways to install Ruby, including using third party
+tools like rvm, see:
+
+http://www.ruby-lang.org/en/downloads/
+
 The Ruby distribution files can be found in the following FTP site:
 
 ftp://ftp.ruby-lang.org/pub/ruby/
@@ -32,7 +37,7 @@ following command:
 
   $ svn co http://svn.ruby-lang.org/repos/ruby/trunk/ ruby
 
-Or if you are using git then use following command:
+Or if you are using git then use the following command:
 
   $ git clone git://github.com/ruby/ruby.git
 
@@ -41,7 +46,7 @@ command and see the list of branches:
 
   $ svn ls http://svn.ruby-lang.org/repos/ruby/branches/
 
-Or if you are using git then use following command:
+Or if you are using git then use the following command:
 
   $ git ls-remote git://github.com/ruby/ruby.git
 
@@ -132,21 +137,29 @@ This is what you need to do to compile and install Ruby:
 If you fail to compile ruby, please send the detailed error report with
 the error log and machine/OS type, to help others.
 
+Some extension libraries may not get compiled because of lack of
+necessary external libraries and/or headers, then you will need to run
+'<tt>make distclean-ext</tt>' to remove old configuration after
+installing them in such case.
 
 == Copying
 
 See the file +COPYING+.
 
+== Feedback
+
+Questions about the Ruby language can be asked on the Ruby-Talk mailing list
+(http://www.ruby-lang.org/en/community/mailing-lists) or on websites like
+(http://stackoverflow.com).
+
+Bug reports should be filed at http://bugs.ruby-lang.org
 
 == The Author
 
-Feel free to send comments and bug reports to the author.  Here is the
-author's latest mail address:
+Ruby was originally designed and developed by Yukihiro Matsumoto (Matz) in 1995.
 
 <mailto:matz@ruby-lang.org>
 
--------------------------------------------------------
-created at: Thu Aug  3 11:57:36 JST 1995
 --
 Local variables:
 mode: rdoc

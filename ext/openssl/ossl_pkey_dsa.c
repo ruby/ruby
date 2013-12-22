@@ -291,7 +291,9 @@ ossl_dsa_is_private(VALUE self)
 
 /*
  *  call-seq:
+ *    dsa.export([cipher, password]) -> aString
  *    dsa.to_pem([cipher, password]) -> aString
+ *    dsa.to_s([cipher, password]) -> aString
  *
  * Encodes this DSA to its PEM encoding.
  *

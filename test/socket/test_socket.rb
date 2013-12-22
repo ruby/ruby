@@ -70,6 +70,22 @@ class TestSocket < Test::Unit::TestCase
     }
   end
 
+  def test_bind
+    Socket.open(Socket::AF_INET, Socket::SOCK_STREAM, 0) {|bound|
+      bound.bind(Socket.sockaddr_in(0, "127.0.0.1"))
+      addr = bound.getsockname
+      port, = Socket.unpack_sockaddr_in(addr)
+
+      Socket.open(Socket::AF_INET, Socket::SOCK_STREAM, 0) {|s|
+        e = assert_raises(Errno::EADDRINUSE) do
+          s.bind(Socket.sockaddr_in(port, "127.0.0.1"))
+        end
+
+        assert_match "bind(2) for 127.0.0.1:#{port}", e.message
+      }
+    }
+  end
+
   def test_getaddrinfo
     # This should not send a DNS query because AF_UNIX.
     assert_raise(SocketError) { Socket.getaddrinfo("www.kame.net", 80, "AF_UNIX") }
@@ -394,7 +410,7 @@ class TestSocket < Test::Unit::TestCase
         }
       rescue NotImplementedError, Errno::ENOSYS
         skipped = true
-        skip "need sendmsg and recvmsg"
+        skip "need sendmsg and recvmsg: #{$!}"
       ensure
         if th
           if skipped
@@ -548,4 +564,86 @@ class TestSocket < Test::Unit::TestCase
     accepted.close if accepted
     sock.close if sock && ! sock.closed?
   end
+
+  def test_getifaddrs
+    begin
+      list = Socket.getifaddrs
+    rescue NotImplementedError
+      return
+    end
+    list.each {|ifaddr|
+      assert_instance_of(Socket::Ifaddr, ifaddr)
+    }
+  end
+
+  def test_connect_in_rescue
+    serv = Addrinfo.tcp(nil, 0).listen
+    addr = serv.connect_address
+    begin
+      raise "dummy error"
+    rescue
+      s = addr.connect
+      assert(!s.closed?)
+    end
+  ensure
+    serv.close if serv && !serv.closed?
+    s.close if s && !s.closed?
+  end
+
+  def test_bind_in_rescue
+    begin
+      raise "dummy error"
+    rescue
+      s = Addrinfo.tcp(nil, 0).bind
+      assert(!s.closed?)
+    end
+  ensure
+    s.close if s && !s.closed?
+  end
+
+  def test_listen_in_rescue
+    begin
+      raise "dummy error"
+    rescue
+      s = Addrinfo.tcp(nil, 0).listen
+      assert(!s.closed?)
+    end
+  ensure
+    s.close if s && !s.closed?
+  end
+
+  def test_udp_server_sockets_in_rescue
+    begin
+      raise "dummy error"
+    rescue
+      ss = Socket.udp_server_sockets(0)
+      ss.each {|s|
+        assert(!s.closed?)
+      }
+    end
+  ensure
+    if ss
+      ss.each {|s|
+        s.close if !s.closed?
+      }
+    end
+  end
+
+  def test_tcp_server_sockets_in_rescue
+    begin
+      raise "dummy error"
+    rescue
+      ss = Socket.tcp_server_sockets(0)
+      ss.each {|s|
+        assert(!s.closed?)
+      }
+    end
+  ensure
+    if ss
+      ss.each {|s|
+        s.close if !s.closed?
+      }
+    end
+  end
+
 end if defined?(Socket)

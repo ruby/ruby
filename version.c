@@ -9,47 +9,16 @@
 
 **********************************************************************/
 
-#include "verconf.h"
 #include "ruby/ruby.h"
 #include "version.h"
 #include <stdio.h>
 
+#ifndef EXIT_SUCCESS
+#define EXIT_SUCCESS 0
+#endif
+
 #define PRINT(type) puts(ruby_##type)
 #define MKSTR(type) rb_obj_freeze(rb_usascii_str_new(ruby_##type, sizeof(ruby_##type)-1))
-
-#ifndef RUBY_ARCH
-#define RUBY_ARCH RUBY_PLATFORM
-#endif
-#ifndef RUBY_SITEARCH
-#define RUBY_SITEARCH RUBY_ARCH
-#endif
-#ifdef RUBY_PLATFORM_CPU
-#define RUBY_THINARCH RUBY_PLATFORM_CPU"-"RUBY_PLATFORM_OS
-#endif
-#ifndef RUBY_LIB_PREFIX
-#ifndef RUBY_EXEC_PREFIX
-#error RUBY_EXEC_PREFIX must be defined
-#endif
-#define RUBY_LIB_PREFIX RUBY_EXEC_PREFIX"/lib/ruby"
-#endif
-#ifndef RUBY_SITE_LIB
-#define RUBY_SITE_LIB RUBY_LIB_PREFIX"/site_ruby"
-#endif
-#ifndef RUBY_VENDOR_LIB
-#define RUBY_VENDOR_LIB RUBY_LIB_PREFIX"/vendor_ruby"
-#endif
-
-#define RUBY_LIB                    RUBY_LIB_PREFIX  "/"RUBY_LIB_VERSION
-#define RUBY_SITE_LIB2              RUBY_SITE_LIB    "/"RUBY_LIB_VERSION
-#define RUBY_VENDOR_LIB2            RUBY_VENDOR_LIB  "/"RUBY_LIB_VERSION
-#define RUBY_ARCHLIB                RUBY_LIB         "/"RUBY_ARCH
-#define RUBY_SITE_ARCHLIB           RUBY_SITE_LIB2   "/"RUBY_SITEARCH
-#define RUBY_VENDOR_ARCHLIB         RUBY_VENDOR_LIB2 "/"RUBY_SITEARCH
-#ifdef  RUBY_THINARCH
-#define RUBY_THIN_ARCHLIB           RUBY_LIB         "/"RUBY_THINARCH
-#define RUBY_SITE_THIN_ARCHLIB      RUBY_SITE_LIB2   "/"RUBY_THINARCH
-#define RUBY_VENDOR_THIN_ARCHLIB    RUBY_VENDOR_LIB2 "/"RUBY_THINARCH
-#endif
 
 const int ruby_api_version[] = {
     RUBY_API_VERSION_MAJOR,
@@ -64,37 +33,6 @@ const char ruby_description[] = RUBY_DESCRIPTION;
 const char ruby_copyright[] = RUBY_COPYRIGHT;
 const char ruby_engine[] = "ruby";
 VALUE ruby_engine_name = Qnil;
-
-const char ruby_initial_load_paths[] =
-#ifndef NO_INITIAL_LOAD_PATH
-#ifdef RUBY_SEARCH_PATH
-    RUBY_SEARCH_PATH "\0"
-#endif
-#ifndef NO_RUBY_SITE_LIB
-    RUBY_SITE_LIB2 "\0"
-#ifdef RUBY_SITE_THIN_ARCHLIB
-    RUBY_SITE_THIN_ARCHLIB "\0"
-#endif
-    RUBY_SITE_ARCHLIB "\0"
-    RUBY_SITE_LIB "\0"
-#endif
-
-#ifndef NO_RUBY_VENDOR_LIB
-    RUBY_VENDOR_LIB2 "\0"
-#ifdef RUBY_VENDOR_THIN_ARCHLIB
-    RUBY_VENDOR_THIN_ARCHLIB "\0"
-#endif
-    RUBY_VENDOR_ARCHLIB "\0"
-    RUBY_VENDOR_LIB "\0"
-#endif
-
-    RUBY_LIB "\0"
-#ifdef RUBY_THIN_ARCHLIB
-    RUBY_THIN_ARCHLIB "\0"
-#endif
-    RUBY_ARCHLIB "\0"
-#endif
-    "";
 
 /*! Defines platform-depended Ruby-level constants */
 void
@@ -150,5 +88,5 @@ void
 ruby_show_copyright(void)
 {
     PRINT(copyright);
-    exit(0);
+    exit(EXIT_SUCCESS);
 }

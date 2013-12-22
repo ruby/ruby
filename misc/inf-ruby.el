@@ -156,6 +156,7 @@
        (define-key inferior-ruby-mode-map "\C-c\C-l" 'ruby-load-file)
 ))
 
+;;;###autoload
 (defun inf-ruby-keys ()
   "Set local key defs for inf-ruby in ruby-mode"
   (define-key ruby-mode-map "\M-\C-x" 'ruby-send-definition)
@@ -265,6 +266,7 @@ Defaults to a regexp ignoring all inputs of 0, 1, or 2 letters.")
                  (ruby-args-to-list (substring string pos
                                                  (length string)))))))))
 
+;;;###autoload
 (defun run-ruby (cmd)
   "Run an inferior Ruby process, input and output via buffer *ruby*.
 If there is a process already running in `*ruby*', switch to that buffer.

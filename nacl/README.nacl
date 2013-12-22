@@ -12,7 +12,7 @@ You need to install the following things before building NaCl port of Ruby.
 == Steps
 (1) Extract all files from the tarball:
      $ tar xzf ruby-X.Y.Z.tar.gz
-(2) Set NACL_SDK_ROOT environment vairanble to the path to the Native Client SDK you installed:
+(2) Set NACL_SDK_ROOT environment variable to the path to the Native Client SDK you installed:
      $ export NACL_SDK_ROOT=/home/yugui/src/nacl_sdk/pepper_16
 (3) Configure
      $ ./configure --prefix=/tmp/nacl-ruby --host=x86_64-nacl --with-baseruby=/path/to/ruby-1.9.3

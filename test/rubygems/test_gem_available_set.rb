@@ -22,6 +22,25 @@ class TestGemAvailableSet < Gem::TestCase
     assert_equal [a1], set.all_specs
   end
 
+  def test_find_all
+    a1, a1_gem = util_gem 'a', 1
+
+    source = Gem::Source::SpecificFile.new a1_gem
+
+    set = Gem::AvailableSet.new
+    set.add a1, source
+
+    dep = Gem::Resolver::DependencyRequest.new dep('a'), nil
+
+    specs = set.find_all dep
+
+    spec = specs.first
+
+    assert_kind_of Gem::Resolver::LocalSpecification, spec
+
+    assert_equal 'a-1', spec.full_name
+  end
+
   def test_match_platform
     a1, _ = util_gem 'a', '1' do |g|
       g.platform = "something-weird-yep"

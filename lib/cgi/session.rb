@@ -62,7 +62,7 @@ class CGI
   #                           works with String data.  This is the default
   #                           storage type.
   # CGI::Session::MemoryStore:: stores data in an in-memory hash.  The data
-  #                             only persists for as long as the current ruby
+  #                             only persists for as long as the current Ruby
   #                             interpreter instance does.
   # CGI::Session::PStore:: stores data in Marshalled format.  Provided by
   #                        cgi/session/pstore.rb.  Supports data of any type,
@@ -308,7 +308,7 @@ class CGI
       @data[key]
     end
 
-    # Set the session date for key +key+.
+    # Set the session data for key +key+.
     def []=(key, val)
       @write_lock ||= true
       @data ||= @dbman.restore
@@ -437,14 +437,14 @@ class CGI
       def delete
         File::unlink @path+".lock" rescue nil
         File::unlink @path+".new" rescue nil
-        File::unlink @path rescue Errno::ENOENT
+        File::unlink @path rescue nil
       end
     end
 
     # In-memory session storage class.
     #
     # Implements session storage as a global in-memory hash.  Session
-    # data will only persist for as long as the ruby interpreter
+    # data will only persist for as long as the Ruby interpreter
     # instance does.
     class MemoryStore
       GLOBAL_HASH_TABLE = {} #:nodoc:

@@ -76,11 +76,11 @@ class TestIOWait < Test::Unit::TestCase
   end
 
   def test_wait_writable_timeout
-    assert_equal @w, @w.wait_writable(0.001)
+    assert_equal @w, @w.wait_writable(0.01)
     written = fill_pipe
-    assert_nil @w.wait_writable(0.001)
+    assert_nil @w.wait_writable(0.01)
     @r.read(written)
-    assert_equal @w, @w.wait_writable(0.001)
+    assert_equal @w, @w.wait_writable(0.01)
   end
 
   def test_wait_writable_EPIPE

@@ -156,7 +156,7 @@ class Matrix
     end
     size = (rows[0] || []).size
     rows.each do |row|
-      Matrix.Raise ErrDimensionMismatch, "row size differs (#{row.size} should be #{size})" unless row.size == size
+      raise ErrDimensionMismatch, "row size differs (#{row.size} should be #{size})" unless row.size == size
     end
     new rows, size
   end
@@ -286,8 +286,8 @@ class Matrix
   #     => Matrix[[0, 0, 0], [0, 0, 0]]
   #
   def Matrix.empty(row_count = 0, column_count = 0)
-    Matrix.Raise ArgumentError, "One size must be 0" if column_count != 0 && row_count != 0
-    Matrix.Raise ArgumentError, "Negative size" if column_count < 0 || row_count < 0
+    raise ArgumentError, "One size must be 0" if column_count != 0 && row_count != 0
+    raise ArgumentError, "Negative size" if column_count < 0 || row_count < 0
 
     new([[]]*row_count, column_count)
   end
@@ -446,7 +446,7 @@ class Matrix
         end
       end
     else
-      Matrix.Raise ArgumentError, "expected #{which.inspect} to be one of :all, :diagonal, :off_diagonal, :lower, :strict_lower, :strict_upper or :upper"
+      raise ArgumentError, "expected #{which.inspect} to be one of :all, :diagonal, :off_diagonal, :lower, :strict_lower, :strict_upper or :upper"
     end
     self
   end
@@ -508,7 +508,7 @@ class Matrix
         end
       end
     else
-      Matrix.Raise ArgumentError, "expected #{which.inspect} to be one of :all, :diagonal, :off_diagonal, :lower, :strict_lower, :strict_upper or :upper"
+      raise ArgumentError, "expected #{which.inspect} to be one of :all, :diagonal, :off_diagonal, :lower, :strict_lower, :strict_upper or :upper"
     end
     self
   end
@@ -579,7 +579,7 @@ class Matrix
       from_row += row_count if from_row < 0
       from_col += column_count if from_col < 0
     else
-      Matrix.Raise ArgumentError, param.inspect
+      raise ArgumentError, param.inspect
     end
 
     return nil if from_row > row_count || from_col > column_count || from_row < 0 || from_col < 0
@@ -1519,6 +1519,7 @@ end
 #
 # Vector functions:
 # * #inner_product(v)
+# * #cross_product(v)
 # * #collect
 # * #magnitude
 # * #map
@@ -1752,9 +1753,20 @@ class Vector
 
     p = 0
     each2(v) {|v1, v2|
-      p += v1 * v2
+      p += v1 * v2.conj
     }
     p
+  end
+
+  #
+  # Returns the cross product of this vector with the other.
+  #   Vector[1, 0, 0].cross_product Vector[0, 1, 0]   => Vector[0, 0, 1]
+  #
+  def cross_product(v)
+    Vector.Raise ErrDimensionMismatch unless size == v.size && v.size == 3
+    Vector[ v[1]*@elements[2] - v[2]*@elements[1],
+            v[2]*@elements[0] - v[0]*@elements[2],
+            v[0]*@elements[1] - v[1]*@elements[0] ]
   end
 
   #

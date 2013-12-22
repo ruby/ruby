@@ -231,7 +231,7 @@ require 'drb/eq'
 #       def get_logger(name)
 #           if !@loggers.has_key? name
 #               # make the filename safe, then declare it to be so
-#               fname = name.gsub(/[.\/]/, "_").untaint
+#               fname = name.gsub(/[.\/\\\:]/, "_").untaint
 #               @loggers[name] = Logger.new(name, @basedir + "/" + fname)
 #           end
 #           return @loggers[name]
@@ -426,6 +426,8 @@ module DRb
 
   # An exception wrapping an error object
   class DRbRemoteError < DRbError
+
+    # Creates a new remote error that wraps the Exception +error+
     def initialize(error)
       @reason = error.class.to_s
       super("#{error.message} (#{error.class})")
@@ -505,7 +507,16 @@ module DRb
     end
   end
 
+  # An Array wrapper that can be sent to another server via DRb.
+  #
+  # All entries in the array will be dumped or be references that point to
+  # the local server.
+
   class DRbArray
+
+    # Creates a new DRbArray that either dumps or wraps all the items in the
+    # Array +ary+ so they can be loaded by a remote DRb server.
+
     def initialize(ary)
       @ary = ary.collect { |obj|
         if obj.kind_of? DRbUndumped
@@ -521,11 +532,11 @@ module DRb
       }
     end
 
-    def self._load(s)
+    def self._load(s) # :nodoc:
       Marshal::load(s)
     end
 
-    def _dump(lv)
+    def _dump(lv) # :nodoc:
       Marshal.dump(@ary)
     end
   end
@@ -629,7 +640,7 @@ module DRb
     end
 
     private
-    def make_proxy(obj, error=false)
+    def make_proxy(obj, error=false) # :nodoc:
       if error
         DRbRemoteError.new(obj)
       else
@@ -793,10 +804,13 @@ module DRb
     module_function :auto_load
   end
 
-  # The default drb protocol.
+  # The default drb protocol which communicates over a TCP socket.
   #
-  # Communicates over a TCP socket.
+  # The DRb TCP protocol URI looks like:
+  # <code>druby://<host>:<port>?<option></code>.  The option is optional.
+
   class DRbTCPSocket
+    # :stopdoc:
     private
     def self.parse_uri(uri)
       if uri =~ /^druby:\/\/(.*?):(\d+)(\?(.*))?$/
@@ -812,7 +826,12 @@ module DRb
 
     public
 
-    # Open a client connection to +uri+ using configuration +config+.
+    # Open a client connection to +uri+ (DRb URI string) using configuration
+    # +config+.
+    #
+    # This can raise DRb::DRbBadScheme or DRb::DRbBadURI if +uri+ is not for a
+    # recognized protocol.  See DRb::DRbServer.new for information on built-in
+    # URI protocols.
     def self.open(uri, config)
       host, port, = parse_uri(uri)
       host.untaint
@@ -821,6 +840,7 @@ module DRb
       self.new(uri, soc, config)
     end
 
+    # Returns the hostname of this server
     def self.getservername
       host = Socket::gethostname
       begin
@@ -830,6 +850,9 @@ module DRb
       end
     end
 
+    # For the families available for +host+, returns a TCPServer on +port+.
+    # If +port+ is 0 the first available port is used.  IPv4 servers are
+    # preferred over IPv6 servers.
     def self.open_server_inaddr_any(host, port)
       infos = Socket::getaddrinfo(host, nil,
                                   Socket::AF_UNSPEC,
@@ -840,6 +863,7 @@ module DRb
       return TCPServer.open('0.0.0.0', port) if families.has_key?('AF_INET')
       return TCPServer.open('::', port) if families.has_key?('AF_INET6')
       return TCPServer.open(port)
+      # :stopdoc:
     end
 
     # Open a server listening for connections at +uri+ using
@@ -1008,6 +1032,9 @@ module DRb
       self.new_with(uri, ref)
     end
 
+    # Creates a DRb::DRbObject given the reference information to the remote
+    # host +uri+ and object +ref+.
+
     def self.new_with(uri, ref)
       it = self.allocate
       it.instance_variable_set(:@uri, uri)
@@ -1058,6 +1085,7 @@ module DRb
     undef :to_s
     undef :to_a if respond_to?(:to_a)
 
+    # Routes respond_to? to the referenced remote object.
     def respond_to?(msg_id, priv=false)
       case msg_id
       when :_dump
@@ -1069,7 +1097,7 @@ module DRb
       end
     end
 
-    # Routes method calls to the referenced object.
+    # Routes method calls to the referenced remote object.
     def method_missing(msg_id, *a, &b)
       if DRb.here?(@uri)
         obj = DRb.to_obj(@ref)
@@ -1094,7 +1122,8 @@ module DRb
       end
     end
 
-    def self.with_friend(uri)
+    # Given the +uri+ of another host executes the block provided.
+    def self.with_friend(uri) # :nodoc:
       friend = DRb.fetch_server(uri)
       return yield() unless friend
 
@@ -1105,7 +1134,9 @@ module DRb
       Thread.current['DRb'] = save if friend
     end
 
-    def self.prepare_backtrace(uri, result)
+    # Returns a modified backtrace from +result+ with the +uri+ where each call
+    # in the backtrace came from.
+    def self.prepare_backtrace(uri, result) # :nodoc:
       prefix = "(#{uri}) "
       bt = []
       result.backtrace.each do |x|
@@ -1236,9 +1267,9 @@ module DRb
       @@load_limit = sz
     end
 
-    # Set the default value for the :acl option.
+    # Set the default access control list to +acl+.  The default ACL is +nil+.
     #
-    # See #new().  The initial default value is nil.
+    # See also DRb::ACL and #new()
     def self.default_acl(acl)
       @@acl = acl
     end
@@ -1250,6 +1281,9 @@ module DRb
       @@idconv = idconv
     end
 
+    # Set the default safe level to +level+.  The default safe level is 0
+    #
+    # See #new for more information.
     def self.default_safe_level(level)
       @@safe_level = level
     end
@@ -1307,6 +1341,9 @@ module DRb
     # :argc_limit :: the maximum number of arguments to a remote
     #                method accepted by the server.  Defaults to
     #                256.
+    # :safe_level :: The safe level of the DRbServer.  The attribute
+    #                sets $SAFE for methods performed in the main_loop.
+    #                Defaults to 0.
     #
     # The default values of these options can be modified on
     # a class-wide basis by the class methods #default_argc_limit,
@@ -1366,6 +1403,10 @@ module DRb
     # The configuration of this DRbServer
     attr_reader :config
 
+    # The safe level for this server.  This is a number corresponding to
+    # $SAFE.
+    #
+    # The default safe_level is 0
     attr_reader :safe_level
 
     # Set whether to operate in verbose mode.
@@ -1383,6 +1424,7 @@ module DRb
       @thread.alive?
     end
 
+    # Is +uri+ the URI for this server?
     def here?(uri)
       @exported_uri.include?(uri)
     end
@@ -1411,6 +1453,10 @@ module DRb
     end
 
     private
+
+    ##
+    # Starts the DRb main loop in a new thread.
+
     def run
       Thread.start do
         begin
@@ -1720,7 +1766,10 @@ module DRb
   end
   module_function :thread
 
-  # Set the default id conv object.
+  # Set the default id conversion object.
+  #
+  # This is expected to be an instance such as DRb::DRbIdConv that responds to
+  # #to_id and #to_obj that can convert objects to and from DRb references.
   #
   # See DRbServer#default_id_conv.
   def install_id_conv(idconv)
@@ -1728,7 +1777,7 @@ module DRb
   end
   module_function :install_id_conv
 
-  # Set the default acl.
+  # Set the default ACL to +acl+.
   #
   # See DRb::DRbServer.default_acl.
   def install_acl(acl)
@@ -1737,12 +1786,24 @@ module DRb
   module_function :install_acl
 
   @mutex = Mutex.new
-  def mutex
+  def mutex # :nodoc:
     @mutex
   end
   module_function :mutex
 
   @server = {}
+  # Registers +server+ with DRb.
+  #
+  # This is called when a new DRb::DRbServer is created.
+  #
+  # If there is no primary server then +server+ becomes the primary server.
+  #
+  # Example:
+  #
+  #  require 'drb'
+  #
+  #  s = DRb::DRbServer.new # automatically calls regist_server
+  #  DRb.fetch_server s.uri #=> #<DRb::DRbServer:0x...>
   def regist_server(server)
     @server[server.uri] = server
     mutex.synchronize do
@@ -1751,11 +1812,15 @@ module DRb
   end
   module_function :regist_server
 
+  # Removes +server+ from the list of registered servers.
   def remove_server(server)
     @server.delete(server.uri)
   end
   module_function :remove_server
 
+  # Retrieves the server with the given +uri+.
+  #
+  # See also regist_server and remove_server.
   def fetch_server(uri)
     @server[uri]
   end

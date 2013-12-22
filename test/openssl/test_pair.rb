@@ -141,7 +141,7 @@ class OpenSSL::TestPair < Test::Unit::TestCase
   def test_read_nonblock
     ssl_pair {|s1, s2|
       err = nil
-      assert_raise(OpenSSL::SSL::SSLError) {
+      assert_raise(OpenSSL::SSL::SSLErrorWaitReadable) {
         begin
           s2.read_nonblock(10)
         ensure
@@ -156,20 +156,69 @@ class OpenSSL::TestPair < Test::Unit::TestCase
       ret = nil
       assert_nothing_raised("[ruby-core:20298]") { ret = s2.read_nonblock(10) }
       assert_equal("def\n", ret)
+      s1.close
+      sleep 0.1
+      assert_raise(EOFError) { s2.read_nonblock(10) }
     }
+  end
+
+  def test_read_nonblock_no_exception
+    ssl_pair {|s1, s2|
+      assert_equal :wait_readable, s2.read_nonblock(10, exception: false)
+      s1.write "abc\ndef\n"
+      IO.select([s2])
+      assert_equal("ab", s2.read_nonblock(2, exception: false))
+      assert_equal("c\n", s2.gets)
+      ret = nil
+      assert_nothing_raised("[ruby-core:20298]") { ret = s2.read_nonblock(10, exception: false) }
+      assert_equal("def\n", ret)
+      s1.close
+      sleep 0.1
+      assert_equal(nil, s2.read_nonblock(10, exception: false))
+    }
+  end
+
+  def write_nonblock(socket, meth, str)
+    ret = socket.send(meth, str)
+    ret.is_a?(Symbol) ? 0 : ret
+  end
+
+  def write_nonblock_no_ex(socket, str)
+    ret = socket.write_nonblock str, exception: false
+    ret.is_a?(Symbol) ? 0 : ret
   end
 
   def test_write_nonblock
     ssl_pair {|s1, s2|
       n = 0
       begin
-        n += s1.write_nonblock("a" * 100000)
-        n += s1.write_nonblock("b" * 100000)
-        n += s1.write_nonblock("c" * 100000)
-        n += s1.write_nonblock("d" * 100000)
-        n += s1.write_nonblock("e" * 100000)
-        n += s1.write_nonblock("f" * 100000)
+        n += write_nonblock s1, :write_nonblock, "a" * 100000
+        n += write_nonblock s1, :write_nonblock, "b" * 100000
+        n += write_nonblock s1, :write_nonblock, "c" * 100000
+        n += write_nonblock s1, :write_nonblock, "d" * 100000
+        n += write_nonblock s1, :write_nonblock, "e" * 100000
+        n += write_nonblock s1, :write_nonblock, "f" * 100000
       rescue IO::WaitWritable
+      end
+      s1.close
+      assert_equal(n, s2.read.length)
+    }
+  end
+
+  def test_write_nonblock_no_exceptions
+    ssl_pair {|s1, s2|
+      n = 0
+      begin
+        n += write_nonblock_no_ex s1, "a" * 100000
+        n += write_nonblock_no_ex s1, "b" * 100000
+        n += write_nonblock_no_ex s1, "c" * 100000
+        n += write_nonblock_no_ex s1, "d" * 100000
+        n += write_nonblock_no_ex s1, "e" * 100000
+        n += write_nonblock_no_ex s1, "f" * 100000
+      rescue OpenSSL::SSL::SSLError => e
+        # on some platforms (maybe depend on OpenSSL version), writing to
+        # SSLSocket after SSL_ERROR_WANT_WRITE causes this error.
+        raise e if n == 0
       end
       s1.close
       assert_equal(n, s2.read.length)
@@ -180,6 +229,16 @@ class OpenSSL::TestPair < Test::Unit::TestCase
     ssl_pair {|s1, s2|
       s1.write "foo"
       s1.write_nonblock("bar")
+      s1.write "baz"
+      s1.close
+      assert_equal("foobarbaz", s2.read)
+    }
+  end
+
+  def test_write_nonblock_with_buffered_data_no_exceptions
+    ssl_pair {|s1, s2|
+      s1.write "foo"
+      s1.write_nonblock("bar", exception: false)
       s1.write "baz"
       s1.close
       assert_equal("foobarbaz", s2.read)

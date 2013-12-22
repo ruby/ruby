@@ -1,11 +1,14 @@
 /*
-  date_core.c: Coded by Tadayoshi Funaba 2010-2012
+  date_core.c: Coded by Tadayoshi Funaba 2010-2013
 */
 
 #include "ruby.h"
 #include "ruby/encoding.h"
 #include <math.h>
 #include <time.h>
+#if defined(HAVE_SYS_TIME_H)
+#include <sys/time.h>
+#endif
 
 #define NDEBUG
 #include <assert.h>
@@ -679,7 +682,7 @@ c_julian_leap_p(int y)
 inline static int
 c_gregorian_leap_p(int y)
 {
-    return MOD(y, 4) == 0 && y % 100 != 0 || MOD(y, 400) == 0;
+    return (MOD(y, 4) == 0 && y % 100 != 0) || MOD(y, 400) == 0;
 }
 
 static int
@@ -1104,6 +1107,28 @@ m_virtual_sg(union DateData *x)
 	return c_virtual_sg(x);
 }
 
+#define canonicalize_jd(_nth, _jd) \
+{\
+    if (_jd < 0) {\
+	_nth = f_sub(_nth, INT2FIX(1));\
+	_jd += CM_PERIOD;\
+    }\
+    if (_jd >= CM_PERIOD) {\
+	_nth = f_add(_nth, INT2FIX(1));\
+	_jd -= CM_PERIOD;\
+    }\
+}
+
+inline static void
+canonicalize_s_jd(union DateData *x)
+{
+    int j = x->s.jd;
+    assert(have_jd_p(x));
+    canonicalize_jd(x->s.nth, x->s.jd);
+    if (x->s.jd != j)
+	x->flags &= ~HAVE_CIVIL;
+}
+
 inline static void
 get_s_jd(union DateData *x)
 {
@@ -1186,6 +1211,16 @@ get_c_time(union DateData *x)
 	x->c.flags |= HAVE_TIME;
 #endif
     }
+}
+
+inline static void
+canonicalize_c_jd(union DateData *x)
+{
+    int j = x->c.jd;
+    assert(have_jd_p(x));
+    canonicalize_jd(x->c.nth, x->c.jd);
+    if (x->c.jd != j)
+	x->flags &= ~HAVE_CIVIL;
 }
 
 inline static void
@@ -1359,6 +1394,19 @@ guess_style(VALUE y, double sg) /* -/+oo or zero */
 	    style = negative_inf;
     }
     return style;
+}
+
+inline static void
+m_canonicalize_jd(union DateData *x)
+{
+    if (simple_dat_p(x)) {
+	get_s_jd(x);
+	canonicalize_s_jd(x);
+    }
+    else {
+	get_c_jd(x);
+	canonicalize_c_jd(x);
+    }
 }
 
 inline static VALUE
@@ -1967,7 +2015,7 @@ civil_to_jd(VALUE y, int m, int d, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2002,7 +2050,7 @@ ordinal_to_jd(VALUE y, int d, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2037,7 +2085,7 @@ commercial_to_jd(VALUE y, int w, int d, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2072,7 +2120,7 @@ weeknum_to_jd(VALUE y, int w, int d, int f, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2107,7 +2155,7 @@ nth_kday_to_jd(VALUE y, int m, int n, int k, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2146,7 +2194,7 @@ valid_ordinal_p(VALUE y, int d, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2185,7 +2233,7 @@ valid_civil_p(VALUE y, int m, int d, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2221,7 +2269,7 @@ valid_commercial_p(VALUE y, int w, int d, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2251,7 +2299,7 @@ valid_weeknum_p(VALUE y, int w, int d, int f, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2282,7 +2330,7 @@ valid_nth_kday_p(VALUE y, int m, int n, int k, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -5476,15 +5524,7 @@ d_lite_plus(VALUE self, VALUE other)
 		jd = m_jd(dat);
 	    else {
 		jd = m_jd(dat) + (int)t;
-
-		if (jd < 0) {
-		    nth = f_sub(nth, INT2FIX(1));
-		    jd += CM_PERIOD;
-		}
-		else if (jd >= CM_PERIOD) {
-		    nth = f_add(nth, INT2FIX(1));
-		    jd -= CM_PERIOD;
-		}
+		canonicalize_jd(nth, jd);
 	    }
 
 	    if (simple_dat_p(dat))
@@ -5537,14 +5577,7 @@ d_lite_plus(VALUE self, VALUE other)
 		jd = m_jd(dat);
 	    else {
 		jd = m_jd(dat) + jd;
-		if (jd < 0) {
-		    nth = f_sub(nth, INT2FIX(1));
-		    jd += CM_PERIOD;
-		}
-		else if (jd >= CM_PERIOD) {
-		    nth = f_add(nth, INT2FIX(1));
-		    jd -= CM_PERIOD;
-		}
+		canonicalize_jd(nth, jd);
 	    }
 
 	    if (f_zero_p(nth))
@@ -5651,14 +5684,7 @@ d_lite_plus(VALUE self, VALUE other)
 		jd = m_jd(dat);
 	    else {
 		jd = m_jd(dat) + jd;
-		if (jd < 0) {
-		    nth = f_sub(nth, INT2FIX(1));
-		    jd += CM_PERIOD;
-		}
-		else if (jd >= CM_PERIOD) {
-		    nth = f_add(nth, INT2FIX(1));
-		    jd -= CM_PERIOD;
-		}
+		canonicalize_jd(nth, jd);
 	    }
 
 	    if (f_zero_p(nth))
@@ -5761,14 +5787,7 @@ d_lite_plus(VALUE self, VALUE other)
 		jd = m_jd(dat);
 	    else {
 		jd = m_jd(dat) + jd;
-		if (jd < 0) {
-		    nth = f_sub(nth, INT2FIX(1));
-		    jd += CM_PERIOD;
-		}
-		else if (jd >= CM_PERIOD) {
-		    nth = f_add(nth, INT2FIX(1));
-		    jd -= CM_PERIOD;
-		}
+		canonicalize_jd(nth, jd);
 	    }
 
 	    if (f_zero_p(nth))
@@ -5812,15 +5831,7 @@ minus_dd(VALUE self, VALUE other)
 	d = m_jd(adat) - m_jd(bdat);
 	df = m_df(adat) - m_df(bdat);
 	sf = f_sub(m_sf(adat), m_sf(bdat));
-
-	if (d < 0) {
-	    n = f_sub(n, INT2FIX(1));
-	    d += CM_PERIOD;
-	}
-	else if (d >= CM_PERIOD) {
-	    n = f_add(n, INT2FIX(1));
-	    d -= CM_PERIOD;
-	}
+	canonicalize_jd(n, d);
 
 	if (df < 0) {
 	    d -= 1;
@@ -5932,6 +5943,7 @@ d_lite_prev_day(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
+ *    d.succ  ->  date
  *    d.next  ->  date
  *
  * Returns a date object denoting the following day.
@@ -6198,6 +6210,8 @@ cmp_dd(VALUE self, VALUE other)
 	int a_jd, b_jd,
 	    a_df, b_df;
 
+	m_canonicalize_jd(adat);
+	m_canonicalize_jd(bdat);
 	a_nth = m_nth(adat);
 	b_nth = m_nth(bdat);
 	if (f_eqeq_p(a_nth, b_nth)) {
@@ -6271,11 +6285,12 @@ d_lite_cmp(VALUE self, VALUE other)
 	      m_gregorian_p(adat) == m_gregorian_p(bdat)))
 	    return cmp_dd(self, other);
 
-	if (have_jd_p(adat) &&
-	    have_jd_p(bdat)) {
+	{
 	    VALUE a_nth, b_nth;
 	    int a_jd, b_jd;
 
+	    m_canonicalize_jd(adat);
+	    m_canonicalize_jd(bdat);
 	    a_nth = m_nth(adat);
 	    b_nth = m_nth(bdat);
 	    if (f_eqeq_p(a_nth, b_nth)) {
@@ -6292,74 +6307,6 @@ d_lite_cmp(VALUE self, VALUE other)
 		}
 	    }
 	    else if (a_nth < b_nth) {
-		return INT2FIX(-1);
-	    }
-	    else {
-		return INT2FIX(1);
-	    }
-	}
-	else {
-#ifndef USE_PACK
-	    VALUE a_nth, b_nth;
-	    int a_year, b_year,
-		a_mon, b_mon,
-		a_mday, b_mday;
-#else
-	    VALUE a_nth, b_nth;
-	    int a_year, b_year,
-		a_pd, b_pd;
-#endif
-
-	    a_nth = m_nth(adat);
-	    b_nth = m_nth(bdat);
-	    if (f_eqeq_p(a_nth, b_nth)) {
-		a_year = m_year(adat);
-		b_year = m_year(bdat);
-		if (a_year == b_year) {
-#ifndef USE_PACK
-		    a_mon = m_mon(adat);
-		    b_mon = m_mon(bdat);
-		    if (a_mon == b_mon) {
-			a_mday = m_mday(adat);
-			b_mday = m_mday(bdat);
-			if (a_mday == b_mday) {
-			    return INT2FIX(0);
-			}
-			else if (a_mday < b_mday) {
-			    return INT2FIX(-1);
-			}
-			else {
-			    return INT2FIX(1);
-			}
-		    }
-		    else if (a_mon < b_mon) {
-			return INT2FIX(-1);
-		    }
-		    else {
-			return INT2FIX(1);
-		    }
-#else
-		    a_pd = m_pc(adat);
-		    b_pd = m_pc(bdat);
-		    if (a_pd == b_pd) {
-			return INT2FIX(0);
-		    }
-		    else if (a_pd < b_pd) {
-			return INT2FIX(-1);
-		    }
-		    else {
-			return INT2FIX(1);
-		    }
-#endif
-		}
-		else if (a_year < b_year) {
-		    return INT2FIX(-1);
-		}
-		else {
-		    return INT2FIX(1);
-		}
-	    }
-	    else if (f_lt_p(a_nth, b_nth)) {
 		return INT2FIX(-1);
 	    }
 	    else {
@@ -6410,11 +6357,12 @@ d_lite_equal(VALUE self, VALUE other)
 	if (!(m_gregorian_p(adat) == m_gregorian_p(bdat)))
 	    return equal_gen(self, other);
 
-	if (have_jd_p(adat) &&
-	    have_jd_p(bdat)) {
+	{
 	    VALUE a_nth, b_nth;
 	    int a_jd, b_jd;
 
+	    m_canonicalize_jd(adat);
+	    m_canonicalize_jd(bdat);
 	    a_nth = m_nth(adat);
 	    b_nth = m_nth(bdat);
 	    a_jd = m_local_jd(adat);
@@ -6422,45 +6370,6 @@ d_lite_equal(VALUE self, VALUE other)
 	    if (f_eqeq_p(a_nth, b_nth) &&
 		a_jd == b_jd)
 		return Qtrue;
-	    return Qfalse;
-	}
-	else {
-#ifndef USE_PACK
-	    VALUE a_nth, b_nth;
-	    int a_year, b_year,
-		a_mon, b_mon,
-		a_mday, b_mday;
-#else
-	    VALUE a_nth, b_nth;
-	    int a_year, b_year,
-		a_pd, b_pd;
-#endif
-
-	    a_nth = m_nth(adat);
-	    b_nth = m_nth(bdat);
-	    if (f_eqeq_p(a_nth, b_nth)) {
-		a_year = m_year(adat);
-		b_year = m_year(bdat);
-		if (a_year == b_year) {
-#ifndef USE_PACK
-		    a_mon = m_mon(adat);
-		    b_mon = m_mon(bdat);
-		    if (a_mon == b_mon) {
-			a_mday = m_mday(adat);
-			b_mday = m_mday(bdat);
-			if (a_mday == b_mday)
-			    return Qtrue;
-		    }
-#else
-		    /* mon and mday only */
-		    a_pd = (m_pc(adat) >> MDAY_SHIFT);
-		    b_pd = (m_pc(bdat) >> MDAY_SHIFT);
-		    if (a_pd == b_pd) {
-			return Qtrue;
-		    }
-#endif
-		}
-	    }
 	    return Qfalse;
 	}
     }
@@ -7765,7 +7674,7 @@ datetime_s_now(int argc, VALUE *argv, VALUE klass)
     of = tm.tm_gmtoff;
 #elif defined(HAVE_VAR_TIMEZONE)
 #ifdef HAVE_VAR_ALTZONE
-    of = (long)((tm.tm_isdst > 0) ? altzone : timezone);
+    of = (long)-((tm.tm_isdst > 0) ? altzone : timezone);
 #else
     of = (long)-timezone;
     if (tm.tm_isdst) {
@@ -9312,23 +9221,23 @@ Init_date_core(void)
 
     rb_include_module(cDate, rb_mComparable);
 
-    /* An array of stirng of full month name in English.  The first
+    /* An array of strings of full month names in English.  The first
      * element is nil.
      */
     rb_define_const(cDate, "MONTHNAMES", mk_ary_of_str(13, monthnames));
 
-    /* An array of string of abbreviated month name in English.  The
+    /* An array of strings of abbreviated month names in English.  The
      * first element is nil.
      */
     rb_define_const(cDate, "ABBR_MONTHNAMES",
 		    mk_ary_of_str(13, abbr_monthnames));
 
-    /* An array of string of full name of days of the week in English.
+    /* An array of strings of the full names of days of the week in English.
      * The first is "Sunday".
      */
     rb_define_const(cDate, "DAYNAMES", mk_ary_of_str(7, daynames));
 
-    /* An array of string of abbreviated day name in English.  The
+    /* An array of strings of abbreviated day names in English.  The
      * first is "Sun".
      */
     rb_define_const(cDate, "ABBR_DAYNAMES", mk_ary_of_str(7, abbr_daynames));

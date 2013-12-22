@@ -5,7 +5,7 @@ require 'rake/thread_history_display'
 class TestThreadHistoryDisplay < Rake::TestCase
   def setup
     super
-    @time = 1000000
+    @time = 1_000_000
     @stats = []
     @display = Rake::ThreadHistoryDisplay.new(@stats)
   end
@@ -60,24 +60,34 @@ class TestThreadHistoryDisplay < Rake::TestCase
   end
 
   def test_thread_deleted
-    @stats << event(:thread_deleted, :deleted_thread => 123456, :thread_count => 12)
+    @stats << event(
+      :thread_deleted,
+      :deleted_thread => 123_456,
+      :thread_count => 12)
     out, _ = capture_io do
       @display.show
     end
-    assert_match(/^ *1000000 +A +thread_deleted( +deleted_thread:B| +thread_count:12){2}$/, out)
+    assert_match(
+      /^ *1000000 +A +thread_deleted( +deleted_thread:B| +thread_count:12){2}$/,
+      out)
   end
 
   def test_thread_created
-    @stats << event(:thread_created, :new_thread => 123456, :thread_count => 13)
+    @stats << event(
+      :thread_created,
+      :new_thread => 123_456,
+      :thread_count => 13)
     out, _ = capture_io do
       @display.show
     end
-    assert_match(/^ *1000000 +A +thread_created( +new_thread:B| +thread_count:13){2}$/, out)
+    assert_match(
+      /^ *1000000 +A +thread_created( +new_thread:B| +thread_count:13){2}$/,
+      out)
   end
 
   private
 
-  def event(type, data={})
+  def event(type, data = {})
     result = {
       :event => type,
       :time  => @time / 1_000_000.0,

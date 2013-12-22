@@ -134,7 +134,7 @@ private
   # If an Exception is raised while handling the request, the client will receive
   # a 500 "Internal Server Error" message.
   def serve(io) # :doc:
-    # perform IP authentification
+    # perform IP authentication
     unless @handler.ip_auth_handler(io)
       io << http_resp(403, "Forbidden")
       return

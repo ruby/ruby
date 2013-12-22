@@ -37,90 +37,164 @@ class Gem::Commands::SourcesCommand < Gem::Command
     add_proxy_option
   end
 
-  def defaults_str
+  def add_source source_uri # :nodoc:
+    check_rubygems_https source_uri
+
+    source = Gem::Source.new source_uri
+
+    begin
+      if Gem.sources.include? source_uri then
+        say "source #{source_uri} already present in the cache"
+      else
+        source.load_specs :released
+        Gem.sources << source
+        Gem.configuration.write
+
+        say "#{source_uri} added to sources"
+      end
+    rescue URI::Error, ArgumentError
+      say "#{source_uri} is not a URI"
+      terminate_interaction 1
+    rescue Gem::RemoteFetcher::FetchError => e
+      say "Error fetching #{source_uri}:\n\t#{e.message}"
+      terminate_interaction 1
+    end
+  end
+
+  def check_rubygems_https source_uri # :nodoc:
+    uri = URI source_uri
+
+    if uri.scheme and uri.scheme.downcase == 'http' and
+       uri.host.downcase == 'rubygems.org' then
+      question = <<-QUESTION.chomp
+https://rubygems.org is recommended for security over #{uri}
+
+Do you want to add this insecure source?
+      QUESTION
+
+      terminate_interaction 1 unless ask_yes_no question
+    end
+  end
+
+  def clear_all # :nodoc:
+    path = Gem.spec_cache_dir
+    FileUtils.rm_rf path
+
+    unless File.exist? path then
+      say "*** Removed specs cache ***"
+    else
+      unless File.writable? path then
+        say "*** Unable to remove source cache (write protected) ***"
+      else
+        say "*** Unable to remove source cache ***"
+      end
+
+      terminate_interaction 1
+    end
+  end
+
+  def defaults_str # :nodoc:
     '--list'
   end
 
-  def execute
-    options[:list] = !(options[:add] ||
-                       options[:clear_all] ||
-                       options[:remove] ||
-                       options[:update])
+  def description # :nodoc:
+    <<-EOF
+RubyGems fetches gems from the sources you have configured (stored in your
+~/.gemrc).
 
-    if options[:clear_all] then
-      path = File.join Gem.user_home, '.gem', 'specs'
-      FileUtils.rm_rf path
+The default source is https://rubygems.org, but you may have older sources
+configured.  This guide will help you update your sources or configure
+yourself to use your own gem server.
 
-      unless File.exist? path then
-        say "*** Removed specs cache ***"
-      else
-        unless File.writable? path then
-          say "*** Unable to remove source cache (write protected) ***"
-        else
-          say "*** Unable to remove source cache ***"
-        end
+Without any arguments the sources lists your currently configured sources:
 
-        terminate_interaction 1
-      end
-    end
+  $ gem sources
+  *** CURRENT SOURCES ***
 
-    if source_uri = options[:add] then
-      source = Gem::Source.new source_uri
+  https://rubygems.org
 
-      begin
-        if Gem.sources.include? source_uri then
-          say "source #{source_uri} already present in the cache"
-        else
-          source.load_specs :released
-          Gem.sources << source
-          Gem.configuration.write
+This may list multiple sources or non-rubygems sources.  You probably
+configured them before or have an old `~/.gemrc`.  If you have sources you
+do not recognize you should remove them.
 
-          say "#{source_uri} added to sources"
-        end
-      rescue URI::Error, ArgumentError
-        say "#{source_uri} is not a URI"
-        terminate_interaction 1
-      rescue Gem::RemoteFetcher::FetchError => e
-        say "Error fetching #{source_uri}:\n\t#{e.message}"
-        terminate_interaction 1
-      end
-    end
+RubyGems has been configured to serve gems via the following URLs through
+its history:
 
-    if options[:remove] then
-      source_uri = options[:remove]
+* http://gems.rubyforge.org (RubyGems 1.3.6 and earlier)
+* http://rubygems.org       (RubyGems 1.3.7 through 1.8.25)
+* https://rubygems.org      (RubyGems 2.0.1 and newer)
 
-      unless Gem.sources.include? source_uri then
-        say "source #{source_uri} not present in cache"
-      else
-        Gem.sources.delete source_uri
-        Gem.configuration.write
+Since all of these sources point to the same set of gems you only need one
+of them in your list.  https://rubygems.org is recommended as it brings the
+protections of an SSL connection to gem downloads.
 
-        say "#{source_uri} removed from sources"
-      end
-    end
+To add a source use the --add argument:
 
-    if options[:update] then
-      Gem.sources.each_source do |src|
-        src.load_specs :released
-        src.load_specs :latest
-      end
+    $ gem sources --add https://rubygems.org
+    https://rubygems.org added to sources
 
-      say "source cache successfully updated"
-    end
+RubyGems will check to see if gems can be installed from the source given
+before it is added.
 
-    if options[:list] then
-      say "*** CURRENT SOURCES ***"
-      say
+To remove a source use the --remove argument:
 
-      Gem.sources.each do |src|
-        say src
-      end
+    $ gem sources --remove http://rubygems.org
+    http://rubygems.org removed from sources
+
+    EOF
+  end
+
+  def list # :nodoc:
+    say "*** CURRENT SOURCES ***"
+    say
+
+    Gem.sources.each do |src|
+      say src
     end
   end
 
-  private
+  def list? # :nodoc:
+    !(options[:add] ||
+      options[:clear_all] ||
+      options[:remove] ||
+      options[:update])
+  end
 
-  def remove_cache_file(desc, path)
+  def execute
+    clear_all if options[:clear_all]
+
+    source_uri = options[:add]
+    add_source source_uri if source_uri
+
+    source_uri = options[:remove]
+    remove_source source_uri if source_uri
+
+    update if options[:update]
+
+    list if list?
+  end
+
+  def remove_source source_uri # :nodoc:
+    unless Gem.sources.include? source_uri then
+      say "source #{source_uri} not present in cache"
+    else
+      Gem.sources.delete source_uri
+      Gem.configuration.write
+
+      say "#{source_uri} removed from sources"
+    end
+  end
+
+  def update # :nodoc:
+    Gem.sources.each_source do |src|
+      src.load_specs :released
+      src.load_specs :latest
+    end
+
+    say "source cache successfully updated"
+  end
+
+  def remove_cache_file desc, path # :nodoc:
     FileUtils.rm_rf path
 
     if not File.exist?(path) then

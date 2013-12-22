@@ -379,4 +379,15 @@ class TestRubyYieldGen < Test::Unit::TestCase
     }
   end
 
+  def test_block_with_mock
+    y = Object.new
+    def y.s(a)
+      yield(a)
+    end
+    m = Object.new
+    def m.method_missing(*a)
+      super
+    end
+    assert_equal [m, nil], y.s(m){|a,b|[a,b]}
+  end
 end

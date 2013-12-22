@@ -218,6 +218,8 @@ class RDoc::Parser
 
     return unless parser
 
+    content = remove_modeline content
+
     parser.new top_level, file_name, content, options, stats
   rescue SystemCallError
     nil
@@ -230,6 +232,13 @@ class RDoc::Parser
 
   def self.parse_files_matching(regexp)
     RDoc::Parser.parsers.unshift [regexp, self]
+  end
+
+  ##
+  # Removes an emacs-style modeline from the first line of the document
+
+  def self.remove_modeline content
+    content.sub(/\A.*-\*-\s*(.*?\S)\s*-\*-.*\r?\n/, '')
   end
 
   ##
@@ -259,9 +268,11 @@ class RDoc::Parser
 
     markup = Regexp.escape markup
 
-    RDoc::Parser.parsers.find do |_, parser|
+    _, selected = RDoc::Parser.parsers.find do |_, parser|
       /^#{markup}$/i =~ parser.name.sub(/.*:/, '')
-    end.last
+    end
+
+    selected
   end
 
   ##

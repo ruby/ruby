@@ -65,24 +65,24 @@ EOF
     assert_raise(RuntimeError) do
       doc.root.children.first.value
     end
-    REXML::Document.entity_expansion_limit = 100
-    assert_equal(100, REXML::Document.entity_expansion_limit)
+    REXML::Security.entity_expansion_limit = 100
+    assert_equal(100, REXML::Security.entity_expansion_limit)
     doc = REXML::Document.new(XML_WITH_NESTED_ENTITY)
     assert_raise(RuntimeError) do
       doc.root.children.first.value
     end
     assert_equal(101, doc.entity_expansion_count)
 
-    REXML::Document.entity_expansion_limit = 4
+    REXML::Security.entity_expansion_limit = 4
     doc = REXML::Document.new(XML_WITH_4_ENTITY_EXPANSION)
     assert_equal("\na\na a\n<\n", doc.root.children.first.value)
-    REXML::Document.entity_expansion_limit = 3
+    REXML::Security.entity_expansion_limit = 3
     doc = REXML::Document.new(XML_WITH_4_ENTITY_EXPANSION)
     assert_raise(RuntimeError) do
       doc.root.children.first.value
     end
   ensure
-    REXML::Document.entity_expansion_limit = 10000
+    REXML::Security.entity_expansion_limit = 10000
   end
 
   def test_tag_in_cdata_with_not_ascii_only_but_ascii8bit_encoding_source

@@ -3,7 +3,7 @@
 
   *** RELEASE_DATE of the libraries => see 'tkextlib/version.rb' ***
 
-The following list shows *CURRENT* status when this file was modifyed
+The following list shows *CURRENT* status when this file was modified
 at last. If you want to add other Tcl/Tk extensions to the planed list
 (or change its status position), please request them at the ruby-talk,
 ruby-list, or ruby-dev ML. Although we cannot promise to support your
@@ -34,7 +34,7 @@ script may give you some hints about that.
     If you cannot use installed Tcl/Tk extension, please check the
     followings.
 
-     (1) On your Tcl/Tk, does the extention work?
+     (1) On your Tcl/Tk, does the extension work?
 
      (2) Do DLL libraries of the extension exist on DLL load-path?
          (See also "<ruby archive>/ext/tcltklib/README.ActiveTcl")
@@ -44,8 +44,8 @@ script may give you some hints about that.
 
     The check results may request you to do some setup operations
     before using the extension. If so, then please write the step
-    of setup oprations into the "setup.rb" file in the directory
-    of the wrapper libraries for the extention (It is the wrapper
+    of setup operations into the "setup.rb" file in the directory
+    of the wrapper libraries for the extension (It is the wrapper
     libraries have the standard structure of the libraries in this
     directory). The "setup" file is required before requiring the
     Tcl library package (TkPackage.require(<libname>)).
@@ -77,10 +77,7 @@ ICONS        1.0     http://www.satisoft.com/tcltk/icons/        ==> ICONS
 TkImg        1.3     http://sourceforge.net/projects/tkimg       ==> tkimg
 
 
-BLT          2.4z    http://sourceforge.net/projects/blt
-                        * see also tcltk-ext library on RAA
-                                (http://raa.ruby-lang.org/)
-                      ==> blt
+BLT          2.4z    http://sourceforge.net/projects/blt         ==> blt
 
 TkTreeCtrl   2.2.9
                      http://tktreectrl.sourceforge.net/          ==> treectrl
@@ -129,8 +126,6 @@ Tkgeomap     ***     http://tkgeomap.sourceforge.net/index.html
 ===< not determined to supprt or not >========================================
 
 Tix          ***     http://tixlibrary.sourceforge.net/
-                        * see also tcltk-ext library on RAA
-                                (http://raa.ruby-lang.org/)
 
 TkZinc       ***     http://www.tkzinc.org/
 

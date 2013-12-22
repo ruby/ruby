@@ -52,7 +52,7 @@ some or all of the following options.
 
  --with-tclConfig-file=<file>/--without-tclConfig-file
  --with-tkConfig-file=<file>/--without-tkConfig-file
-                               file path of tclConfig.sh/tkConfig.sh, or don't 
+                               file path of tclConfig.sh/tkConfig.sh, or don't
                                refer those.
                                If you want use non-standard filenames of config
                                files (e.g. tclConfig-static.sh), you must use
@@ -80,11 +80,11 @@ some or all of the following options.
  --with-tk-dir=<path>
       equal to "--with-tk-include=<path>/include --with-tk-lib=<path>/lib"
 
- --with-tcl-include=<dir>      the directry contains 'tcl.h'
- --with-tk-include=<dir>       the directry contains 'tk.h'
+ --with-tcl-include=<dir>      the directory contains 'tcl.h'
+ --with-tk-include=<dir>       the directory contains 'tk.h'
 
- --with-tcl-lib=<dir>          the directry contains 'libtcl<version>.so'
- --with-tk-lib=<dir>           the directry contains 'libtk<version>.so'
+ --with-tcl-lib=<dir>          the directory contains 'libtcl<version>.so'
+ --with-tk-lib=<dir>           the directory contains 'libtk<version>.so'
 
  --enable-mac-tcltk-framework  (MacOS X) use Tcl/Tk framework
                                (Obsolete. Please use '--enable-tcltk-framework'.)
@@ -116,12 +116,12 @@ some or all of the following options.
  --with-X11-dir=<path>
       equal to "--with-X11-include=<path>/include --with-X11-lib=<path>/lib"
 
- --with-X11-include=<dir>      the directry contais X11 header files
- --with-X11-lib=<dir>          the directry contais X11 libraries
+ --with-X11-include=<dir>      the directory contais X11 header files
+ --with-X11-lib=<dir>          the directory contais X11 libraries
 
 
 If you forgot to give the options when do 'configure' on toplevel
-directry of Ruby sources, please try something like as the followings.
+directory of Ruby sources, please try something like as the followings.
 
  $ cd ext/tcltklib
  $ rm Makefile

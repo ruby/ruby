@@ -474,6 +474,59 @@ class TestSH < Test::Unit::TestCase
     period2_iter(+cm_period * (1 << 64) - 3, +cm_period * (1 << 64) + 3)
   end
 
+  def test_different_alignments
+    assert_equal(0, Date.jd(0) <=> Date.civil(-4713, 11, 24, Date::GREGORIAN))
+    assert_equal(0, Date.jd(213447717) <=> Date.civil(579687, 11, 24))
+    assert_equal(0, Date.jd(-213447717) <=> Date.civil(-589113, 11, 24, Date::GREGORIAN))
+
+    assert_equal(0, Date.jd(0) <=> DateTime.civil(-4713, 11, 24, 0, 0, 0, 0, Date::GREGORIAN))
+    assert_equal(0, Date.jd(213447717) <=> DateTime.civil(579687, 11, 24))
+    assert_equal(0, Date.jd(-213447717) <=> DateTime.civil(-589113, 11, 24, 0, 0, 0, 0, Date::GREGORIAN))
+
+    assert(Date.jd(0) == Date.civil(-4713, 11, 24, Date::GREGORIAN))
+    assert(Date.jd(213447717) == Date.civil(579687, 11, 24))
+    assert(Date.jd(-213447717) == Date.civil(-589113, 11, 24, Date::GREGORIAN))
+
+    assert(Date.jd(0) == DateTime.civil(-4713, 11, 24, 0, 0, 0, 0, Date::GREGORIAN))
+    assert(Date.jd(213447717) == DateTime.civil(579687, 11, 24))
+    assert(Date.jd(-213447717) == DateTime.civil(-589113, 11, 24, 0, 0, 0, 0, Date::GREGORIAN))
+
+    assert(Date.jd(0) === Date.civil(-4713, 11, 24, Date::GREGORIAN))
+    assert(Date.jd(213447717) === Date.civil(579687, 11, 24))
+    assert(Date.jd(-213447717) === Date.civil(-589113, 11, 24, Date::GREGORIAN))
+
+    assert(Date.jd(0) === DateTime.civil(-4713, 11, 24, 12, 0, 0, 0, Date::GREGORIAN))
+    assert(Date.jd(213447717) === DateTime.civil(579687, 11, 24, 12))
+    assert(Date.jd(-213447717) === DateTime.civil(-589113, 11, 24, 12, 0, 0, 0, Date::GREGORIAN))
+
+    a = Date.jd(0)
+    b = Date.civil(-4713, 11, 24, Date::GREGORIAN)
+    assert_equal(0, a <=> b)
+
+    a = Date.civil(-4712, 1, 1, Date::JULIAN)
+    b = Date.civil(-4713, 11, 24, Date::GREGORIAN)
+    a.jd; b.jd
+    assert_equal(0, a <=> b)
+
+    a = Date.jd(0)
+    b = Date.civil(-4713, 11, 24, Date::GREGORIAN)
+    assert(a == b)
+
+    a = Date.civil(-4712, 1, 1, Date::JULIAN)
+    b = Date.civil(-4713, 11, 24, Date::GREGORIAN)
+    a.jd; b.jd
+    assert(a == b)
+
+    a = Date.jd(0)
+    b = Date.civil(-4713, 11, 24, Date::GREGORIAN)
+    assert(a === b)
+
+    a = Date.civil(-4712, 1, 1, Date::JULIAN)
+    b = Date.civil(-4713, 11, 24, Date::GREGORIAN)
+    a.jd; b.jd
+    assert(a === b)
+  end
+
   def test_marshal14
     s = "\x04\x03u:\x01\x04Date\x01\v\x04\x03[\x01\x02i\x03\xE8i%T"
     d = Marshal.load(s)

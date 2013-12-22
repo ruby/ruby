@@ -49,7 +49,7 @@
 #endif
 
 #if defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
-    defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD86) || \
+    defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD64) || \
     defined(__mc68020__)
 #define PLATFORM_UNALIGNED_WORD_ACCESS
 #endif
@@ -262,9 +262,7 @@ typedef unsigned int uintptr_t;
 
 #include "regenc.h"
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+RUBY_SYMBOL_EXPORT_BEGIN
 
 #ifdef MIN
 #undef MIN
@@ -390,7 +388,7 @@ typedef unsigned int  BitStatusType;
 /* bitset */
 #define BITS_PER_BYTE      8
 #define SINGLE_BYTE_SIZE   (1 << BITS_PER_BYTE)
-#define BITS_IN_ROOM       ((int)sizeof(Bits) * BITS_PER_BYTE)
+#define BITS_IN_ROOM       ((int )sizeof(Bits) * BITS_PER_BYTE)
 #define BITSET_SIZE        (SINGLE_BYTE_SIZE / BITS_IN_ROOM)
 
 #ifdef PLATFORM_UNALIGNED_WORD_ACCESS
@@ -405,11 +403,11 @@ typedef Bits*          BitSetRef;
 
 #define BITSET_CLEAR(bs) do {\
   int i;\
-  for (i = 0; i < (int )BITSET_SIZE; i++) { (bs)[i] = 0; }	\
+  for (i = 0; i < BITSET_SIZE; i++) { (bs)[i] = 0; }	\
 } while (0)
 
-#define BS_ROOM(bs,pos)            (bs)[(int)(pos) / BITS_IN_ROOM]
-#define BS_BIT(pos)                (1 << ((int)(pos) % BITS_IN_ROOM))
+#define BS_ROOM(bs,pos)            (bs)[(int )(pos) / BITS_IN_ROOM]
+#define BS_BIT(pos)                (1 << ((int )(pos) % BITS_IN_ROOM))
 
 #define BITSET_AT(bs, pos)         (BS_ROOM(bs,pos) & BS_BIT(pos))
 #define BITSET_SET_BIT(bs, pos)     BS_ROOM(bs,pos) |= BS_BIT(pos)
@@ -457,7 +455,7 @@ typedef struct _BBuf {
 #define BBUF_WRITE1(buf,pos,byte) do{\
   int used = (pos) + 1;\
   if ((buf)->alloc < (unsigned int )used) BBUF_EXPAND((buf),used);\
-  (buf)->p[(pos)] = (byte);\
+  (buf)->p[(pos)] = (UChar )(byte);\
   if ((buf)->used < (unsigned int )used) (buf)->used = used;\
 } while (0)
 
@@ -805,7 +803,7 @@ typedef struct _OnigStackType {
     struct {
       int num;           /* memory num */
       UChar *pstr;       /* start/end position */
-      /* Following information is setted, if this stack type is MEM-START */
+      /* Following information is set, if this stack type is MEM-START */
       OnigStackIndex start;  /* prev. info (for backtrack  "(...)*" ) */
       OnigStackIndex end;    /* prev. info (for backtrack  "(...)*" ) */
     } mem;
@@ -878,6 +876,7 @@ typedef void hash_table_type;
 #include "ruby/st.h"
 typedef st_data_t hash_data_type;
 #else
+#include "st.h"
 typedef uintptr_t hash_data_type;
 #endif
 
@@ -907,8 +906,6 @@ extern int onigenc_property_list_init P_((ONIGENC_INIT_PROPERTY_LIST_FUNC_TYPE))
 extern size_t onig_memsize P_((const regex_t *reg));
 extern size_t onig_region_memsize P_((const struct re_registers *regs));
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+RUBY_SYMBOL_EXPORT_END
 
 #endif /* ONIGURUMA_REGINT_H */

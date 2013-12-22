@@ -57,109 +57,103 @@ p Foo::Bar
   end
 
   def test_require_explicit
-    file = Tempfile.open(['autoload', '.rb'])
-    file.puts 'class Object; AutoloadTest = 1; end'
-    file.close
-    add_autoload(file.path)
-    begin
-      assert_nothing_raised do
-        assert(require file.path)
-        assert_equal(1, ::AutoloadTest)
+    Tempfile.create(['autoload', '.rb']) {|file|
+      file.puts 'class Object; AutoloadTest = 1; end'
+      file.close
+      add_autoload(file.path)
+      begin
+        assert_nothing_raised do
+          assert(require file.path)
+          assert_equal(1, ::AutoloadTest)
+        end
+      ensure
+        remove_autoload_constant
       end
-    ensure
-      remove_autoload_constant
-    end
-  ensure
-    file.unlink
+    }
   end
 
   def test_threaded_accessing_constant
-    file = Tempfile.open(['autoload', '.rb'])
-    file.puts 'sleep 0.5; class AutoloadTest; X = 1; end'
-    file.close
-    add_autoload(file.path)
-    begin
-      assert_nothing_raised do
-        t1 = Thread.new { ::AutoloadTest::X }
-        t2 = Thread.new { ::AutoloadTest::X }
-        [t1, t2].each(&:join)
+    Tempfile.create(['autoload', '.rb']) {|file|
+      file.puts 'sleep 0.5; class AutoloadTest; X = 1; end'
+      file.close
+      add_autoload(file.path)
+      begin
+        assert_nothing_raised do
+          t1 = Thread.new { ::AutoloadTest::X }
+          t2 = Thread.new { ::AutoloadTest::X }
+          [t1, t2].each(&:join)
+        end
+      ensure
+        remove_autoload_constant
       end
-    ensure
-      remove_autoload_constant
-    end
-  ensure
-    file.unlink
+    }
   end
 
   def test_threaded_accessing_inner_constant
-    file = Tempfile.open(['autoload', '.rb'])
-    file.puts 'class AutoloadTest; sleep 0.5; X = 1; end'
-    file.close
-    add_autoload(file.path)
-    begin
-      assert_nothing_raised do
-        t1 = Thread.new { ::AutoloadTest::X }
-        t2 = Thread.new { ::AutoloadTest::X }
-        [t1, t2].each(&:join)
+    Tempfile.create(['autoload', '.rb']) {|file|
+      file.puts 'class AutoloadTest; sleep 0.5; X = 1; end'
+      file.close
+      add_autoload(file.path)
+      begin
+        assert_nothing_raised do
+          t1 = Thread.new { ::AutoloadTest::X }
+          t2 = Thread.new { ::AutoloadTest::X }
+          [t1, t2].each(&:join)
+        end
+      ensure
+        remove_autoload_constant
       end
-    ensure
-      remove_autoload_constant
-    end
-  ensure
-    file.unlink
+    }
   end
 
   def test_nameerror_when_autoload_did_not_define_the_constant
-    file = Tempfile.open(['autoload', '.rb'])
-    file.puts ''
-    file.close
-    add_autoload(file.path)
-    begin
-      assert_raise(NameError) do
-        AutoloadTest
+    Tempfile.create(['autoload', '.rb']) {|file|
+      file.puts ''
+      file.close
+      add_autoload(file.path)
+      begin
+        assert_raise(NameError) do
+          AutoloadTest
+        end
+      ensure
+        remove_autoload_constant
       end
-    ensure
-      remove_autoload_constant
-    end
-  ensure
-    file.unlink
+    }
   end
 
   def test_override_autoload
-    file = Tempfile.open(['autoload', '.rb'])
-    file.puts ''
-    file.close
-    add_autoload(file.path)
-    begin
-      eval %q(class AutoloadTest; end)
-      assert_equal(Class, AutoloadTest.class)
-    ensure
-      remove_autoload_constant
-    end
-  ensure
-    file.unlink
+    Tempfile.create(['autoload', '.rb']) {|file|
+      file.puts ''
+      file.close
+      add_autoload(file.path)
+      begin
+        eval %q(class AutoloadTest; end)
+        assert_equal(Class, AutoloadTest.class)
+      ensure
+        remove_autoload_constant
+      end
+    }
   end
 
   def test_override_while_autoloading
-    file = Tempfile.open(['autoload', '.rb'])
-    file.puts 'class AutoloadTest; sleep 0.5; end'
-    file.close
-    add_autoload(file.path)
-    begin
-      # while autoloading...
-      t = Thread.new { AutoloadTest }
-      sleep 0.1
-      # override it
-      EnvUtil.suppress_warning {
-        eval %q(AutoloadTest = 1)
-      }
-      t.join
-      assert_equal(1, AutoloadTest)
-    ensure
-      remove_autoload_constant
-    end
-  ensure
-    file.unlink
+    Tempfile.create(['autoload', '.rb']) {|file|
+      file.puts 'class AutoloadTest; sleep 0.5; end'
+      file.close
+      add_autoload(file.path)
+      begin
+        # while autoloading...
+        t = Thread.new { AutoloadTest }
+        sleep 0.1
+        # override it
+        EnvUtil.suppress_warning {
+          eval %q(AutoloadTest = 1)
+        }
+        t.join
+        assert_equal(1, AutoloadTest)
+      ensure
+        remove_autoload_constant
+      end
+    }
   end
 
   def add_autoload(path)

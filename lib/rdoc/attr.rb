@@ -121,6 +121,8 @@ class RDoc::Attr < RDoc::MethodAttr
   # * #parent_name
 
   def marshal_load array
+    initialize_visibility
+
     @aliases      = []
     @parent       = nil
     @parent_name  = nil

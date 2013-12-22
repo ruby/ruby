@@ -8,9 +8,18 @@ TkLib_Config = {}
 TkLib_Config['search_versions'] =
   # %w[8.9 8.8 8.7 8.6 8.5 8.4 8.3 8.2 8.1 8.0 7.6 4.2]
   # %w[8.7 8.6 8.5 8.4 8.3 8.2 8.1 8.0]
-  %w[8.7 8.6 8.5 8.4 8.0] # to shorten search steps
+  # %w[8.7 8.6 8.5 8.4 8.0] # to shorten search steps
+  %w[8.5 8.4] # At present, Tcl/Tk8.6 is not supported.
+
+TkLib_Config['unsupported_versions'] =
+  %w[8.8 8.7 8.6] # At present, Tcl/Tk8.6 is not supported.
 
 TkLib_Config['major_nums'] = '87'
+
+
+##############################################################
+
+TkLib_Config['enable-shared'] = enable_config("shared")
 
 
 ##############################################################
@@ -114,7 +123,7 @@ def is_macosx?
 end
 
 def maybe_64bit?
-  /64|universal/ =~ RUBY_PLATFORM
+  /64|universal|s390x/ =~ RUBY_PLATFORM
 end
 
 def check_tcltk_version(version)
@@ -313,7 +322,9 @@ def find_macosx_framework
   paths.reverse! unless TkLib_Config["ActiveTcl"] # system has higher priority
 
   paths.map{|dir| dir.strip.chomp('/')}.each{|dir|
+    next unless File.exist?(File.join(dir, "Tcl.framework", "Headers"))
     next unless File.directory?(tcldir = File.join(dir, "Tcl.framework"))
+    next unless File.exist?(File.join(dir, "Tk.framework", "Headers"))
     next unless File.directory?(tkdir  = File.join(dir, "Tk.framework"))
     TkLib_Config["tcltk-framework"] = dir
     return [tcldir, tkdir]
@@ -540,13 +551,13 @@ end
 
 def get_ext_list()
   exts = [CONFIG['DLEXT']]
-  exts.concat %w(dll lib) if is_win32?
+  exts.concat %w(dll) if is_win32?
   exts.concat %w(bundle dylib) if is_macosx?
 
-  if enable_config("shared") == false
-    [CONFIG['LIBEXT'], "a"].concat exts
-  else
-    exts.concat [CONFIG['LIBEXT'], "a"]
+  if TkLib_Config["tcltk-stubs"] || TkLib_Config['enable-shared'] == false
+    exts.unshift "lib" if is_win32?
+    exts.unshift "a"
+    exts.unshift CONFIG['LIBEXT']
   end
 
   if is_win32?
@@ -734,6 +745,7 @@ def search_tclConfig(*paths) # libdir list or [tcl-libdir|file, tk-libdir|file]
   end
 
   conf = nil
+  progress_flag = false
 
   config_dir.uniq!
   config_dir.map{|dir|
@@ -744,7 +756,7 @@ def search_tclConfig(*paths) # libdir list or [tcl-libdir|file, tk-libdir|file]
       dir.strip.chomp('/')
     end
   }.each{|dir|
-    print(".") # progress
+    print("."); progress_flag = true # progress
     # print("check #{dir} ==>");
     if dir.kind_of? Array
       tcldir, tkdir = dir
@@ -783,10 +795,36 @@ def search_tclConfig(*paths) # libdir list or [tcl-libdir|file, tk-libdir|file]
 
       # parse tclConfig.sh/tkConfig.sh
       tclconf = (tclpath)? parse_tclConfig(tclpath): nil
-      next if tclconf && tclver && ((tclver_major && tclver_major != tclconf['TCL_MAJOR_VERSION']) || (tclver_minor && tclver_minor != tclconf['TCL_MINOR_VERSION']))
+      if tclconf
+        if tclver && ((tclver_major && tclver_major != tclconf['TCL_MAJOR_VERSION']) || (tclver_minor && tclver_minor != tclconf['TCL_MINOR_VERSION']))
+          print("\n") if progress_flag
+          puts "Ignore \"#{tclpath}\" (unmatch with configured version)."
+          progress_flag = false
+          next
+        end
+        if TkLib_Config['unsupported_versions'].find{|ver| ver == "#{tclconf['TCL_MAJOR_VERSION']}.#{tclconf['TCL_MINOR_VERSION']}"}
+          print("\n") if progress_flag
+          puts "Ignore \"#{tclpath}\" (unsupported version of Tcl/Tk)."
+          progress_flag = false
+          next
+        end
+      end
 
       tkconf = (tkpath)? parse_tclConfig(tkpath): nil
-      next if tkconf && tkver && ((tkver_major && tkver_major != tkconf['TK_MAJOR_VERSION']) || (tkver_minor && tkver_minor != tkconf['TK_MINOR_VERSION']))
+      if tkconf
+        if tkver && ((tkver_major && tkver_major != tkconf['TK_MAJOR_VERSION']) || (tkver_minor && tkver_minor != tkconf['TK_MINOR_VERSION']))
+          print("\n") if progress_flag
+          puts "Ignore \"#{tkpath}\" (unmatch with configured version)."
+          progress_flag = false
+          next
+        end
+        if TkLib_Config['unsupported_versions'].find{|ver| ver == "#{tkconf['TK_MAJOR_VERSION']}.#{tkconf['TK_MINOR_VERSION']}"}
+          print("\n") if progress_flag
+          puts "Ignore \"#{tkpath}\" (unsupported version of Tcl/Tk)."
+          progress_flag = false
+          next
+        end
+      end
 
       # nativethread check
       if !TkLib_Config["ruby_with_thread"]
@@ -1289,6 +1327,10 @@ end
 def find_tcltk_library(tcllib, tklib, stubs, tclversion, tkversion,
                        tcl_opt_paths, tk_opt_paths)
   st,path,lib,libs,*inc = find_tcl(tcllib, stubs, tclversion, *tcl_opt_paths)
+  if !st && TkLib_Config['enable-shared'] == nil
+    TkLib_Config['enable-shared'] = false
+    st,path,lib,libs,*inc = find_tcl(tcllib, stubs, tclversion, *tcl_opt_paths)
+  end
   unless st
     puts("Warning:: cannot find Tcl library. tcltklib will not be compiled (tcltklib is disabled on your Ruby. That is, Ruby/Tk will not work). Please check configure options.")
     return false
@@ -1301,6 +1343,10 @@ def find_tcltk_library(tcllib, tklib, stubs, tclversion, tkversion,
   end
 
   st,path,lib,libs,*inc = find_tk(tklib, stubs, tkversion, *tk_opt_paths)
+  if !st && TkLib_Config['enable-shared'] == nil
+    TkLib_Config['enable-shared'] = false
+    st,path,lib,libs,*inc = find_tk(tklib, stubs, tkversion, *tk_opt_paths)
+  end
   unless st
     puts("Warning:: cannot find Tk library. tcltklib will not be compiled (tcltklib is disabled on your Ruby. That is, Ruby/Tk will not work). Please check configure options.")
     return false
@@ -1358,10 +1404,15 @@ def find_tcltk_header(tclver, tkver)
     print(".") # progress
     if major && minor
       # version check on tcl.h
-      have_tcl_h = try_cpp("#include <tcl.h>\n#if TCL_MAJOR_VERSION != #{major} || TCL_MINOR_VERSION != #{minor}\n#error VERSION does not match\n#endif")
+      version_check = proc {|code|
+        code << ("#if TCL_MAJOR_VERSION != #{major} || TCL_MINOR_VERSION != #{minor}\n" \
+                 "#error VERSION does not match\n" \
+                 "#endif")
+      }
     else
-      have_tcl_h = have_header('tcl.h')
+      version_check = nil
     end
+    have_tcl_h = have_header('tcl.h', &version_check)
     unless have_tcl_h
       if tclver && ! tclver.empty?
         versions = [tclver]
@@ -1383,13 +1434,19 @@ def find_tcltk_header(tclver, tkver)
         (File.directory?(dir))? File.expand_path(dir): nil
       }.compact.uniq
 
-      code = "#include <tcl.h>\n"
-      code << "#if TCL_MAJOR_VERSION != #{major}\n#error MAJOR_VERSION does not match\n#endif\n" if major
-      code << "#if TCL_MINOR_VERSION != #{minor}\n#error MINOR_VERSION does not match\n#endif\n" if minor
+      if major || minor
+        version_check = proc {|code|
+          code << "#if TCL_MAJOR_VERSION != #{major}\n#error MAJOR_VERSION does not match\n#endif\n" if major
+          code << "#if TCL_MINOR_VERSION != #{minor}\n#error MINOR_VERSION does not match\n#endif\n" if minor
+          code
+        }
+      else
+        version_check = nil
+      end
       have_tcl_h = paths.find{|path|
         print(".") # progress
         inc_opt = " -I#{path.quote}"
-        if try_cpp(code, inc_opt)
+        if try_header("tcl", inc_opt, &version_check)
           ($INCFLAGS ||= "") << inc_opt
           true
         else
@@ -1414,10 +1471,15 @@ def find_tcltk_header(tclver, tkver)
     print(".") # progress
     if major && minor
       # version check on tk.h
-      have_tk_h = try_cpp("#include <tk.h>\n#if TK_MAJOR_VERSION != #{major} || TK_MINOR_VERSION != #{minor}\n#error VERSION does not match\n#endif")
+      version_check = proc {|code|
+        code << ("#if TK_MAJOR_VERSION != #{major} || TK_MINOR_VERSION != #{minor}\n" \
+                 "#error VERSION does not match\n" \
+                 "#endif")
+      }
     else
-      have_tk_h = have_header('tk.h')
+      version_check = nil
     end
+    have_tk_h = have_header('tk.h')
     unless have_tk_h
       if tkver && ! tkver.empty?
         versions = [tkver]
@@ -1439,13 +1501,19 @@ def find_tcltk_header(tclver, tkver)
         (File.directory?(dir))? File.expand_path(dir): nil
       }.compact.uniq
 
-      code = "#include <tcl.h>\n#include <tk.h>\n"
-      code << "#if TK_MAJOR_VERSION != #{major}\n#error MAJOR_VERSION does not match\n#endif\n" if major
-      code << "#if TK_MINOR_VERSION != #{minor}\n#error MINOR_VERSION does not match\n#endif\n" if minor
+      if major || minor
+        version_check = proc {|code|
+          code << "#if TK_MAJOR_VERSION != #{major}\n#error MAJOR_VERSION does not match\n#endif\n" if major
+          code << "#if TK_MINOR_VERSION != #{minor}\n#error MINOR_VERSION does not match\n#endif\n" if minor
+          code
+        }
+      else
+        version_check = nil
+      end
       have_tk_h = paths.find{|path|
         print(".") # progress
         inc_opt = " -I#{path.quote}"
-        if try_cpp(code, inc_opt)
+        if try_header(%w'tcl.h tk.h', inc_opt, &version_check)
           ($INCFLAGS ||= "") << inc_opt
           true
         else
@@ -1462,8 +1530,8 @@ end
 
 def setup_for_macosx_framework(tclver, tkver)
   # use framework, but no tclConfig.sh
-  unless $LDFLAGS && $LDFLAGS.include?('-framework')
-    ($LDFLAGS ||= "") << ' -framework Tk -framework Tcl'
+  unless $LIBS && $LIBS.include?('-framework')
+    ($LIBS ||= "") << ' -framework Tk -framework Tcl'
   end
 
   if TkLib_Config["tcl-framework-header"]
@@ -1724,23 +1792,13 @@ end
 ##############################################################
 # check header file
 print("check functions.")
-have_func("ruby_native_thread_p", "ruby.h")
-print(".") # progress
-have_func("rb_errinfo", "ruby.h")
-print(".") # progress
-have_func("rb_safe_level", "ruby.h")
-print(".") # progress
-have_func("rb_hash_lookup", "ruby.h")
-print(".") # progress
-have_func("rb_proc_new", "ruby.h")
-print(".") # progress
-have_func("rb_obj_untrust", "ruby.h")
-print(".") # progress
-have_func("rb_obj_taint", "ruby.h")
-print(".") # progress
-have_func("rb_set_safe_level_force", "ruby.h")
-print(".") # progress
-have_func("rb_sourcefile", "ruby.h")
+
+%w"ruby_native_thread_p rb_errinfo rb_safe_level rb_hash_lookup
+ rb_proc_new rb_obj_untrust rb_obj_taint rb_set_safe_level_force
+ rb_sourcefile rb_thread_alive_p rb_thread_check_trap_pending".each do |func|
+  have_func(func, "ruby.h")
+  print(".") # progress
+end
 print("\n") # progress
 
 print("check struct members.")
@@ -1996,7 +2054,6 @@ if TkLib_Config["tcltk-framework"]
     end
   end
   $LDFLAGS << ' ' << libs
-  $libs << ' -ltk -ltcl'
   setup_for_macosx_framework(tclver, tkver) if tcl_cfg_dir && tk_cfg_dir
 end
 
@@ -2032,4 +2089,6 @@ if (TkLib_Config["tcltk-framework"] ||
   puts "\nFind Tcl/Tk libraries. Make tcltklib.so which is required by Ruby/Tk."
 else
   puts "\nCan't find proper Tcl/Tk libraries. So, can't make tcltklib.so which is required by Ruby/Tk."
+  puts "If you have Tcl/Tk libraries on your environment, you may be able to use them with configure options (see ext/tk/README.tcltklib)."
+  puts "At present, Tcl/Tk8.6 is not supported. Although you can try to use Tcl/Tk8.6 with configure options, it will not work correctly. I recommend you to use Tcl/Tk8.5 or 8.4."
 end

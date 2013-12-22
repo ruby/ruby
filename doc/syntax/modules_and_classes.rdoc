@@ -4,8 +4,8 @@ Modules serve two purposes in Ruby, namespacing and mix-in functionality.
 
 A namespace can be used to organize code by package or functionality that
 separates common names from interference by other packages.  For example, the
-Curses namespace provides functionality for curses that prevents a collision
-for the common name "Window".
+IRB namespace provides functionality for irb that prevents a collision
+for the common name "Context".
 
 Mix-in functionality allows sharing common methods across multiple classes or
 modules.  Ruby comes with the Enumerable mix-in module which provides many
@@ -93,8 +93,9 @@ nesting:
     end
   end
 
-However, if you use <code>::</code> to define <code>A::B</code> without nesting
-it inside +A+ a NameError exception will be raised because the nesting does not include +A+: 
+However, if you use <code>::</code> to define <code>A::B</code> without
+nesting it inside +A+ a NameError exception will be raised because the nesting
+does not include +A+:
 
   module A
     Z = 1
@@ -121,7 +122,7 @@ If a constant is defined at the top-level you may preceded it with
 === Methods
 
 For method definition documentation see the {syntax documentation for
-methods}[rdoc-ref:doc/syntax/methods.rdoc].
+methods}[rdoc-ref:syntax/methods.rdoc].
 
 Class methods may be called directly.  (This is slightly confusing, but a
 method on a module is often called a "class method" instead of a "module
@@ -192,6 +193,12 @@ Here is an example:
 The third visibility is +private+.  A private method may not be called with a
 receiver, not even +self+.  If a private method is called with a receiver a
 NoMethodError will be raised.
+
+=== +alias+ and +undef+
+
+You may also alias or undefine methods, but these operations are not
+restricted to modules or classes.  See the {miscellaneous syntax
+section}[rdoc-ref:syntax/miscellaneous.rdoc] for documentation.
 
 = Classes
 

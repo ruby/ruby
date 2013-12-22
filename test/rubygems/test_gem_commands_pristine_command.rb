@@ -9,7 +9,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute
-    a = quick_spec 'a' do |s|
+    a = util_spec 'a' do |s|
       s.executables = %w[foo]
       s.files = %w[bin/foo lib/a.rb]
     end
@@ -51,7 +51,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_all
-    a = quick_spec 'a' do |s| s.executables = %w[foo] end
+    a = util_spec 'a' do |s| s.executables = %w[foo] end
     write_file File.join(@tempdir, 'bin', 'foo') do |fp|
       fp.puts "#!/usr/bin/ruby"
     end
@@ -80,8 +80,74 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert_empty out, out.inspect
   end
 
+  def test_execute_env_shebang
+    a = util_spec 'a' do |s|
+      s.executables = %w[foo]
+      s.files = %w[bin/foo]
+    end
+    write_file File.join(@tempdir, 'bin', 'foo') do |fp|
+      fp.puts "#!/usr/bin/ruby"
+    end
+
+    install_gem a
+
+    gem_exec = File.join @gemhome, 'bin', 'foo'
+
+    FileUtils.rm gem_exec
+
+    @cmd.handle_options %w[--all --env-shebang]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_path_exists gem_exec
+
+    if win_platform?
+      assert_match %r%\A#!\s*ruby%, File.read(gem_exec)
+    else
+      assert_match %r%\A#!\s*/usr/bin/env ruby%, File.read(gem_exec)
+    end
+  end
+
+  def test_execute_extensions_explicit
+    a = util_spec 'a' do |s| s.extensions << 'ext/a/extconf.rb' end
+
+    ext_path = File.join @tempdir, 'ext', 'a', 'extconf.rb'
+    write_file ext_path do |io|
+      io.write <<-'RUBY'
+      File.open "Makefile", "w" do |f|
+        f.puts "clean:\n\techo cleaned\n"
+        f.puts "all:\n\techo built\n"
+        f.puts "install:\n\techo installed\n"
+      end
+      RUBY
+    end
+
+    b = util_spec 'b'
+
+    install_gem a
+    install_gem b
+
+    @cmd.options[:extensions]     = true
+    @cmd.options[:extensions_set] = true
+    @cmd.options[:args] = []
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+
+    assert_equal 'Restoring gems to pristine condition...', out.shift
+    assert_equal 'Building native extensions.  This could take a while...',
+                 out.shift
+    assert_equal "Restored #{a.full_name}", out.shift
+    assert_empty out, out.inspect
+  end
+
   def test_execute_no_extension
-    a = quick_spec 'a' do |s| s.extensions << 'ext/a/extconf.rb' end
+    a = util_spec 'a' do |s| s.extensions << 'ext/a/extconf.rb' end
 
     ext_path = File.join @tempdir, 'ext', 'a', 'extconf.rb'
     write_file ext_path do |io|
@@ -106,14 +172,15 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_with_extension_with_build_args
-    a = quick_spec 'a' do |s| s.extensions << 'ext/a/extconf.rb' end
+    a = util_spec 'a' do |s| s.extensions << 'ext/a/extconf.rb' end
 
     ext_path = File.join @tempdir, 'ext', 'a', 'extconf.rb'
     write_file ext_path do |io|
       io.write <<-'RUBY'
       File.open "Makefile", "w" do |f|
+        f.puts "clean:\n\techo cleaned\n"
         f.puts "all:\n\techo built\n"
-        f.puts "install:\n\techo built\n"
+        f.puts "install:\n\techo installed\n"
       end
       RUBY
     end
@@ -138,8 +205,8 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_many
-    a = quick_spec 'a'
-    b = quick_spec 'b'
+    a = util_spec 'a'
+    b = util_spec 'b'
 
     install_gem a
     install_gem b
@@ -159,14 +226,14 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_many_multi_repo
-    a = quick_spec 'a'
+    a = util_spec 'a'
     install_gem a
 
     Gem.clear_paths
     gemhome2 = File.join @tempdir, 'gemhome2'
     Gem.paths = { "GEM_PATH" => [gemhome2, @gemhome], "GEM_HOME" => gemhome2 }
 
-    b = quick_spec 'b'
+    b = util_spec 'b'
     install_gem b
 
     @cmd.options[:args] = %w[a b]
@@ -189,24 +256,14 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_missing_cache_gem
-    a_2 = quick_spec 'a', 2
-    a_3 = quick_spec 'a', 3
-
-    install_gem a_2
-    install_gem a_3
-
-    a_2_data = nil
-    open File.join(@gemhome, 'cache', a_2.file_name), 'rb' do |fp|
-      a_2_data = fp.read
+    specs = spec_fetcher do |fetcher|
+      fetcher.gem 'a', 1
+      fetcher.gem 'a', 2
+      fetcher.gem 'a', 3
+      fetcher.gem 'a', '3.a'
     end
 
-    util_setup_fake_fetcher
-    util_setup_spec_fetcher a_2
-
-    url = "http://gems.example.com/gems/#{a_2.file_name}"
-    Gem::RemoteFetcher.fetcher.data[url] = a_2_data
-
-    FileUtils.rm a_2.cache_file
+    FileUtils.rm specs['a-2'].cache_file
 
     @cmd.options[:args] = %w[a]
 
@@ -243,7 +300,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_only_executables
-    a = quick_spec 'a' do |s|
+    a = util_spec 'a' do |s|
       s.executables = %w[foo]
       s.files = %w[bin/foo lib/a.rb]
     end
@@ -290,5 +347,24 @@ class TestGemCommandsPristineCommand < Gem::TestCase
                  @ui.output.split("\n"))
     assert_empty(@ui.error)
   end
+
+  def test_handle_options
+    @cmd.handle_options %w[]
+
+    refute @cmd.options[:all]
+
+    assert @cmd.options[:extensions]
+    refute @cmd.options[:extensions_set]
+
+    assert_equal Gem::Requirement.default, @cmd.options[:version]
+  end
+
+  def test_handle_options_extensions
+    @cmd.handle_options %w[--extensions]
+
+    assert @cmd.options[:extensions]
+    assert @cmd.options[:extensions_set]
+  end
+
 end
 

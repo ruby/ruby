@@ -278,7 +278,9 @@ ossl_dh_is_private(VALUE self)
 
 /*
  *  call-seq:
+ *     dh.export -> aString
  *     dh.to_pem -> aString
+ *     dh.to_s -> aString
  *
  * Encodes this DH to its PEM encoding. Note that any existing per-session
  * public/private keys will *not* get encoded, just the Diffie-Hellman
@@ -428,7 +430,7 @@ ossl_dh_to_public_key(VALUE self)
 
 /*
  *  call-seq:
- *     dh.check_params -> true | false
+ *     dh.params_ok? -> true | false
  *
  * Validates the Diffie-Hellman parameters associated with this instance.
  * It checks whether a safe prime and a suitable generator are used. If this

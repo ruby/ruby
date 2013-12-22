@@ -37,30 +37,36 @@ module Find
   def find(*paths) # :yield: path
     block_given? or return enum_for(__method__, *paths)
 
-    paths.collect!{|d| raise Errno::ENOENT unless File.exist?(d); d.dup}
-    while file = paths.shift
-      catch(:prune) do
-        yield file.dup.taint
-        begin
-          s = File.lstat(file)
-        rescue Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR, Errno::ELOOP, Errno::ENAMETOOLONG
-          next
-        end
-        if s.directory? then
+    fs_encoding = Encoding.find("filesystem")
+
+    paths.collect!{|d| raise Errno::ENOENT unless File.exist?(d); d.dup}.each do |path|
+      enc = path.encoding == Encoding::US_ASCII ? fs_encoding : path.encoding
+      ps = [path]
+      while file = ps.shift
+        catch(:prune) do
+          yield file.dup.taint
           begin
-            fs = Dir.entries(file)
+            s = File.lstat(file)
           rescue Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR, Errno::ELOOP, Errno::ENAMETOOLONG
             next
           end
-          fs.sort!
-          fs.reverse_each {|f|
-            next if f == "." or f == ".."
-            f = File.join(file, f)
-            paths.unshift f.untaint
-          }
+          if s.directory? then
+            begin
+              fs = Dir.entries(file, encoding: enc)
+            rescue Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR, Errno::ELOOP, Errno::ENAMETOOLONG
+              next
+            end
+            fs.sort!
+            fs.reverse_each {|f|
+              next if f == "." or f == ".."
+              f = File.join(file, f)
+              ps.unshift f.untaint
+            }
+          end
         end
       end
     end
+    nil
   end
 
   #

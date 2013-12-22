@@ -499,19 +499,19 @@ class Complex_Test < Test::Unit::TestCase
   end
 
   def test_eqeq
-    assert(Complex(1,0) == Complex(1))
-    assert(Complex(-1,0) == Complex(-1))
+    assert_equal(Complex(1), Complex(1,0))
+    assert_equal(Complex(-1), Complex(-1,0))
 
-    assert_equal(false, Complex(2,1) == Complex(1))
-    assert_equal(true, Complex(2,1) != Complex(1))
-    assert_equal(false, Complex(1) == nil)
-    assert_equal(false, Complex(1) == '')
+    assert_not_equal(Complex(1), Complex(2,1))
+    assert_operator(Complex(2,1), :!=, Complex(1))
+    assert_not_equal(nil, Complex(1))
+    assert_not_equal('', Complex(1))
 
     nan = 0.0 / 0
     if nan.nan? && nan != nan
-      assert_equal(false, Complex(nan, 0) == Complex(nan, 0))
-      assert_equal(false, Complex(0, nan) == Complex(0, nan))
-      assert_equal(false, Complex(nan, nan) == Complex(nan, nan))
+      assert_not_equal(Complex(nan, 0), Complex(nan, 0))
+      assert_not_equal(Complex(0, nan), Complex(0, nan))
+      assert_not_equal(Complex(nan, nan), Complex(nan, nan))
     end
   end
 
@@ -660,7 +660,7 @@ class Complex_Test < Test::Unit::TestCase
     bug3656 = '[ruby-core:31622]'
     c = Complex(1,2)
     c.freeze
-    assert(c.frozen?)
+    assert_predicate(c, :frozen?)
     result = c.marshal_load([2,3]) rescue :fail
     assert_equal(:fail, result, bug3656)
     assert_equal(Complex(1,2), c)
@@ -972,9 +972,9 @@ class Complex_Test < Test::Unit::TestCase
 
     if (0.0/0).nan?
       nan = 0.0/0
-      assert(nan.arg.equal?(nan))
-      assert(nan.angle.equal?(nan))
-      assert(nan.phase.equal?(nan))
+      assert_same(nan, nan.arg)
+      assert_same(nan, nan.angle)
+      assert_same(nan, nan.phase)
     end
 
     assert_equal(Math::PI, -1.arg)

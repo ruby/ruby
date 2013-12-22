@@ -122,7 +122,7 @@ EOT
 
   def test_sym_eq
     s = "aa".force_encoding("utf-16le")
-    assert(s.intern != :aa, "#{encdump s}.intern != :aa")
+    assert_not_equal(:aa, s.intern, "#{encdump s}.intern != :aa")
   end
 
   def test_compatible
@@ -253,10 +253,10 @@ EOT
 
   def test_succ
     s = "\xff\xff".force_encoding("utf-16be")
-    assert(s.succ.valid_encoding?, "#{encdump s}.succ.valid_encoding?")
+    assert_predicate(s.succ, :valid_encoding?, "#{encdump s}.succ.valid_encoding?")
 
     s = "\xdb\xff\xdf\xff".force_encoding("utf-16be")
-    assert(s.succ.valid_encoding?, "#{encdump s}.succ.valid_encoding?")
+    assert_predicate(s.succ, :valid_encoding?, "#{encdump s}.succ.valid_encoding?")
   end
 
   def test_regexp_union
@@ -366,7 +366,7 @@ EOT
   def test_regexp_escape
     s = "\0*".force_encoding("UTF-16BE")
     r = Regexp.new(Regexp.escape(s))
-    assert(r =~ s, "#{encdump(r)} =~ #{encdump(s)}")
+    assert_match(r, s, "#{encdump(r)} =~ #{encdump(s)}")
   end
 
   def test_casecmp2

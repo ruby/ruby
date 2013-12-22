@@ -67,7 +67,7 @@ static const struct st_hash_type type_strhash = {
 
 static st_index_t strcasehash(st_data_t);
 static const struct st_hash_type type_strcasehash = {
-    st_strcasecmp,
+    st_locale_insensitive_strcasecmp,
     strcasehash,
 };
 
@@ -102,7 +102,7 @@ st_realloc_bins(st_table_entry **bins, st_index_t newsize, st_index_t oldsize)
     return bins;
 }
 
-/* Shortage */
+/* Shortcut */
 #define bins as.big.bins
 #define head as.big.head
 #define tail as.big.tail
@@ -196,7 +196,7 @@ new_size(st_index_t size)
     for (i = 0, newsize = MINSIZE; i < numberof(primes); i++, newsize <<= 1) {
 	if (newsize > size) return primes[i];
     }
-    /* Ran out of polynomials */
+    /* Ran out of primes */
 #ifndef NOT_RUBY
     rb_raise(rb_eRuntimeError, "st_table too big");
 #endif
@@ -793,6 +793,34 @@ st_delete_safe(register st_table *table, register st_data_t *key, st_data_t *val
     return 0;
 }
 
+int
+st_shift(register st_table *table, register st_data_t *key, st_data_t *value)
+{
+    st_table_entry **prev;
+    register st_table_entry *ptr;
+
+    if (table->num_entries == 0) {
+        if (value != 0) *value = 0;
+        return 0;
+    }
+
+    if (table->entries_packed) {
+        if (value != 0) *value = PVAL(table, 0);
+        *key = PKEY(table, 0);
+        remove_packed_entry(table, 0);
+        return 1;
+    }
+
+    prev = &table->bins[table->head->hash % table->num_bins];
+    while ((ptr = *prev) != table->head) prev = &ptr->next;
+    *prev = ptr->next;
+    if (value != 0) *value = ptr->record;
+    *key = ptr->key;
+    remove_entry(table, ptr);
+    st_free_entry(ptr);
+    return 1;
+}
+
 void
 st_cleanup_safe(st_table *table, st_data_t never)
 {
@@ -920,7 +948,7 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 	    val = PVAL(table, i);
 	    hash = PHASH(table, i);
 	    if (key == never) continue;
-	    retval = (*func)(key, val, arg);
+	    retval = (*func)(key, val, arg, 0);
 	    if (!table->entries_packed) {
 		FIND_ENTRY(table, ptr, hash, i);
 		if (retval == ST_CHECK) {
@@ -959,7 +987,7 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 	    if (ptr->key == never)
 		goto unpacked_continue;
 	    i = ptr->hash % table->num_bins;
-	    retval = (*func)(ptr->key, ptr->record, arg);
+	    retval = (*func)(ptr->key, ptr->record, arg, 0);
 	  unpacked:
 	    switch (retval) {
 	      case ST_CHECK:	/* check if hash is modified during iteration */
@@ -1009,7 +1037,7 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 	    key = PKEY(table, i);
 	    val = PVAL(table, i);
 	    hash = PHASH(table, i);
-	    retval = (*func)(key, val, arg);
+	    retval = (*func)(key, val, arg, 0);
 	    if (!table->entries_packed) {
 		FIND_ENTRY(table, ptr, hash, i);
 		if (!ptr) return 0;
@@ -1036,7 +1064,7 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
     if (ptr != 0) {
 	do {
 	    i = ptr->hash % table->num_bins;
-	    retval = (*func)(ptr->key, ptr->record, arg);
+	    retval = (*func)(ptr->key, ptr->record, arg, 0);
 	  unpacked:
 	    switch (retval) {
 	      case ST_CONTINUE:
@@ -1063,6 +1091,88 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
     return 0;
 }
 
+static st_index_t
+get_keys(st_table *table, st_data_t *keys, st_index_t size, int check, st_data_t never)
+{
+    st_data_t key;
+    st_data_t *keys_start = keys;
+
+    if (table->entries_packed) {
+	st_index_t i;
+
+	if (size > table->real_entries) size = table->real_entries;
+	for (i = 0; i < size; i++) {
+	    key = PKEY(table, i);
+	    if (check && key == never) continue;
+	    *keys++ = key;
+	}
+    }
+    else {
+	st_table_entry *ptr = table->head;
+	st_data_t *keys_end = keys + size;
+	for (; ptr && keys < keys_end; ptr = ptr->fore) {
+	    key = ptr->key;
+	    if (check && key == never) continue;
+	    *keys++ = key;
+	}
+    }
+
+    return keys - keys_start;
+}
+
+st_index_t
+st_keys(st_table *table, st_data_t *keys, st_index_t size)
+{
+    return get_keys(table, keys, size, 0, 0);
+}
+
+st_index_t
+st_keys_check(st_table *table, st_data_t *keys, st_index_t size, st_data_t never)
+{
+    return get_keys(table, keys, size, 1, never);
+}
+
+static st_index_t
+get_values(st_table *table, st_data_t *values, st_index_t size, int check, st_data_t never)
+{
+    st_data_t key;
+    st_data_t *values_start = values;
+
+    if (table->entries_packed) {
+	st_index_t i;
+
+	if (size > table->real_entries) size = table->real_entries;
+	for (i = 0; i < size; i++) {
+	    key = PKEY(table, i);
+	    if (check && key == never) continue;
+	    *values++ = PVAL(table, i);
+	}
+    }
+    else {
+	st_table_entry *ptr = table->head;
+	st_data_t *values_end = values + size;
+	for (; ptr && values < values_end; ptr = ptr->fore) {
+	    key = ptr->key;
+	    if (check && key == never) continue;
+	    *values++ = ptr->record;
+	}
+    }
+
+    return values - values_start;
+}
+
+st_index_t
+st_values(st_table *table, st_data_t *values, st_index_t size)
+{
+    return get_values(table, values, size, 0, 0);
+}
+
+st_index_t
+st_values_check(st_table *table, st_data_t *values, st_index_t size, st_data_t never)
+{
+    return get_values(table, values, size, 1, never);
+}
+
 #if 0  /* unused right now */
 int
 st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
@@ -1077,7 +1187,7 @@ st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
             st_data_t key, val;
             key = PKEY(table, i);
             val = PVAL(table, i);
-            retval = (*func)(key, val, arg);
+            retval = (*func)(key, val, arg, 0);
             switch (retval) {
 	      case ST_CHECK:	/* check if hash is modified during iteration */
                 for (j = 0; j < table->num_entries; j++) {
@@ -1242,7 +1352,7 @@ strhash(st_data_t arg)
 
 #ifndef UNALIGNED_WORD_ACCESS
 # if defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
-     defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD86) || \
+     defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD64) || \
      defined(__mc68020__)
 #   define UNALIGNED_WORD_ACCESS 1
 # endif
@@ -1497,7 +1607,7 @@ strhash(st_data_t arg)
 #endif
 
 int
-st_strcasecmp(const char *s1, const char *s2)
+st_locale_insensitive_strcasecmp(const char *s1, const char *s2)
 {
     unsigned int c1, c2;
 
@@ -1521,7 +1631,7 @@ st_strcasecmp(const char *s1, const char *s2)
 }
 
 int
-st_strncasecmp(const char *s1, const char *s2, size_t n)
+st_locale_insensitive_strncasecmp(const char *s1, const char *s2, size_t n)
 {
     unsigned int c1, c2;
 

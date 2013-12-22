@@ -47,7 +47,7 @@ rsock_init_sock(VALUE sock, int fd)
     struct stat sbuf;
 
     if (fstat(fd, &sbuf) < 0)
-        rb_sys_fail(0);
+        rb_sys_fail("fstat(2)");
     rb_update_max_fd(fd);
     if (!S_ISSOCK(sbuf.st_mode))
         rb_raise(rb_eArgError, "not a socket file descriptor");
@@ -91,15 +91,20 @@ struct recvfrom_arg {
     int fd, flags;
     VALUE str;
     socklen_t alen;
-    struct sockaddr_storage buf;
+    union_sockaddr buf;
 };
 
 static VALUE
 recvfrom_blocking(void *data)
 {
     struct recvfrom_arg *arg = data;
-    return (VALUE)recvfrom(arg->fd, RSTRING_PTR(arg->str), RSTRING_LEN(arg->str),
-			   arg->flags, (struct sockaddr*)&arg->buf, &arg->alen);
+    socklen_t len0 = arg->alen;
+    ssize_t ret;
+    ret = recvfrom(arg->fd, RSTRING_PTR(arg->str), RSTRING_LEN(arg->str),
+                   arg->flags, &arg->buf.addr, &arg->alen);
+    if (ret != -1 && len0 < arg->alen)
+        arg->alen = len0;
+    return (VALUE)ret;
 }
 
 VALUE
@@ -127,7 +132,7 @@ rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 
     arg.str = str = rb_tainted_str_new(0, buflen);
     klass = RBASIC(str)->klass;
-    RBASIC(str)->klass = 0;
+    rb_obj_hide(str);
 
     while (rb_io_check_closed(fptr),
 	   rb_thread_wait_fd(arg.fd),
@@ -140,7 +145,7 @@ rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 	}
     }
 
-    RBASIC(str)->klass = klass;
+    rb_obj_reveal(str, klass);
     if (slen < RSTRING_LEN(str)) {
 	rb_str_set_len(str, slen);
     }
@@ -155,16 +160,16 @@ rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 	}
 #endif
 	if (arg.alen && arg.alen != sizeof(arg.buf)) /* OSX doesn't return a from result for connection-oriented sockets */
-	    return rb_assoc_new(str, rsock_ipaddr((struct sockaddr*)&arg.buf, fptr->mode & FMODE_NOREVLOOKUP));
+	    return rb_assoc_new(str, rsock_ipaddr(&arg.buf.addr, arg.alen, fptr->mode & FMODE_NOREVLOOKUP));
 	else
 	    return rb_assoc_new(str, Qnil);
 
 #ifdef HAVE_SYS_UN_H
       case RECV_UNIX:
-        return rb_assoc_new(str, rsock_unixaddr((struct sockaddr_un*)&arg.buf, arg.alen));
+        return rb_assoc_new(str, rsock_unixaddr(&arg.buf.un, arg.alen));
 #endif
       case RECV_SOCKET:
-	return rb_assoc_new(str, rsock_io_socket_addrinfo(sock, (struct sockaddr*)&arg.buf, arg.alen));
+	return rb_assoc_new(str, rsock_io_socket_addrinfo(sock, &arg.buf.addr, arg.alen));
       default:
 	rb_bug("rsock_s_recvfrom called with bad value");
     }
@@ -175,13 +180,14 @@ rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type
 {
     rb_io_t *fptr;
     VALUE str;
-    struct sockaddr_storage buf;
+    union_sockaddr buf;
     socklen_t alen = (socklen_t)sizeof buf;
     VALUE len, flg;
     long buflen;
     long slen;
     int fd, flags;
     VALUE addr = Qnil;
+    socklen_t len0;
 
     rb_scan_args(argc, argv, "11", &len, &flg);
 
@@ -205,7 +211,10 @@ rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type
 
     rb_io_check_closed(fptr);
     rb_io_set_nonblock(fptr);
-    slen = recvfrom(fd, RSTRING_PTR(str), buflen, flags, (struct sockaddr*)&buf, &alen);
+    len0 = alen;
+    slen = recvfrom(fd, RSTRING_PTR(str), buflen, flags, &buf.addr, &alen);
+    if (slen != -1 && len0 < alen)
+        alen = len0;
 
     if (slen < 0) {
 	switch (errno) {
@@ -213,7 +222,7 @@ rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
 #endif
-            rb_mod_sys_fail(rb_mWaitReadable, "recvfrom(2) would block");
+            rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "recvfrom(2) would block");
 	}
 	rb_sys_fail("recvfrom(2)");
     }
@@ -227,11 +236,11 @@ rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type
 
       case RECV_IP:
         if (alen && alen != sizeof(buf)) /* connection-oriented socket may not return a from result */
-            addr = rsock_ipaddr((struct sockaddr*)&buf, fptr->mode & FMODE_NOREVLOOKUP);
+            addr = rsock_ipaddr(&buf.addr, alen, fptr->mode & FMODE_NOREVLOOKUP);
         break;
 
       case RECV_SOCKET:
-        addr = rsock_io_socket_addrinfo(sock, (struct sockaddr*)&buf, alen);
+        addr = rsock_io_socket_addrinfo(sock, &buf.addr, alen);
         break;
 
       default:
@@ -466,14 +475,14 @@ make_fd_nonblock(int fd)
 #ifdef F_GETFL
     flags = fcntl(fd, F_GETFL);
     if (flags == -1) {
-        rb_sys_fail(0);
+        rb_sys_fail("fnctl(2)");
     }
 #else
     flags = 0;
 #endif
     flags |= O_NONBLOCK;
     if (fcntl(fd, F_SETFL, flags) == -1) {
-        rb_sys_fail(0);
+        rb_sys_fail("fnctl(2)");
     }
 }
 
@@ -481,28 +490,34 @@ static int
 cloexec_accept(int socket, struct sockaddr *address, socklen_t *address_len)
 {
     int ret;
+    socklen_t len0 = 0;
 #ifdef HAVE_ACCEPT4
     static int try_accept4 = 1;
+#endif
+    if (address_len) len0 = *address_len;
+#ifdef HAVE_ACCEPT4
     if (try_accept4) {
-        ret = accept4(socket, address, address_len, SOCK_CLOEXEC);
+        int flags = 0;
+#ifdef SOCK_CLOEXEC
+        flags |= SOCK_CLOEXEC;
+#endif
+        ret = accept4(socket, address, address_len, flags);
         /* accept4 is available since Linux 2.6.28, glibc 2.10. */
         if (ret != -1) {
             if (ret <= 2)
                 rb_maygvl_fd_fix_cloexec(ret);
+            if (address_len && len0 < *address_len) *address_len = len0;
             return ret;
         }
-        if (errno == ENOSYS) {
-            try_accept4 = 0;
-            ret = accept(socket, address, address_len);
+        if (errno != ENOSYS) {
+            return -1;
         }
+        try_accept4 = 0;
     }
-    else {
-        ret = accept(socket, address, address_len);
-    }
-#else
-    ret = accept(socket, address, address_len);
 #endif
+    ret = accept(socket, address, address_len);
     if (ret == -1) return -1;
+    if (address_len && len0 < *address_len) *address_len = len0;
     rb_maygvl_fd_fix_cloexec(ret);
     return ret;
 }
@@ -526,7 +541,7 @@ rsock_s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, s
 #if defined EPROTO
 	  case EPROTO:
 #endif
-            rb_mod_sys_fail(rb_mWaitReadable, "accept(2) would block");
+            rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "accept(2) would block");
 	}
         rb_sys_fail("accept(2)");
     }
@@ -575,7 +590,7 @@ rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
 	    retry = 0;
 	    goto retry;
 	}
-	rb_sys_fail(0);
+	rb_sys_fail("accept(2)");
     }
     rb_update_max_fd(fd2);
     if (!klass) return INT2NUM(fd2);
@@ -585,14 +600,14 @@ rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
 int
 rsock_getfamily(int sockfd)
 {
-    struct sockaddr_storage ss;
+    union_sockaddr ss;
     socklen_t sslen = (socklen_t)sizeof(ss);
 
-    ss.ss_family = AF_UNSPEC;
-    if (getsockname(sockfd, (struct sockaddr*)&ss, &sslen) < 0)
+    ss.addr.sa_family = AF_UNSPEC;
+    if (getsockname(sockfd, &ss.addr, &sslen) < 0)
         return AF_UNSPEC;
 
-    return ss.ss_family;
+    return ss.addr.sa_family;
 }
 
 void
@@ -612,5 +627,6 @@ rsock_init_socket_init()
     rsock_init_sockopt();
     rsock_init_ancdata();
     rsock_init_addrinfo();
+    rsock_init_sockifaddr();
     rsock_init_socket_constants();
 }

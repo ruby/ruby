@@ -1,4 +1,4 @@
-require 'dtrace/helper'
+require_relative 'helper'
 require 'tempfile'
 
 module DTrace

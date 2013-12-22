@@ -8,7 +8,7 @@
 #
 # A WEBrick server can be composed of multiple WEBrick servers or servlets to
 # provide differing behavior on a per-host or per-path basis.  WEBrick
-# includes servlets for handling CGI scripts, ERb pages, ruby blocks and
+# includes servlets for handling CGI scripts, ERb pages, Ruby blocks and
 # directory listings.
 #
 # WEBrick also includes tools for daemonizing a process and starting a process
@@ -42,7 +42,7 @@
 #     res.body = 'Hello, world!'
 #   end
 #
-# Remember that <tt>server.mount_proc</tt> must <tt>server.start</tt>.
+# Remember that +server.mount_proc+ must precede +server.start+.
 #
 # == Servlets
 #

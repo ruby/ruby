@@ -8,13 +8,6 @@ class TestRDocMarkupDocument < RDoc::TestCase
     @d = @RM::Document.new
   end
 
-  def mu_pp obj
-    s = ''
-    s = PP.pp obj, s
-    s.force_encoding Encoding.default_external if defined? Encoding
-    s.chomp
-  end
-
   def test_append
     @d << @RM::Paragraph.new('hi')
 

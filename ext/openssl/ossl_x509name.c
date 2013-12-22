@@ -92,7 +92,7 @@ static VALUE ossl_x509name_add_entry(int, VALUE*, VALUE);
 #define rb_aref(obj, key) rb_funcall((obj), id_aref, 1, (key))
 
 static VALUE
-ossl_x509name_init_i(VALUE i, VALUE args)
+ossl_x509name_init_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 {
     VALUE self = rb_ary_entry(args, 0);
     VALUE template = rb_ary_entry(args, 1);
@@ -459,7 +459,7 @@ Init_ossl_x509name()
      */
     rb_define_const(cX509Name, "DEFAULT_OBJECT_TYPE", utf8str);
     hash = rb_hash_new();
-    RHASH(hash)->ifnone = utf8str;
+    RHASH_SET_IFNONE(hash, utf8str);
     rb_hash_aset(hash, rb_str_new2("C"), ptrstr);
     rb_hash_aset(hash, rb_str_new2("countryName"), ptrstr);
     rb_hash_aset(hash, rb_str_new2("serialNumber"), ptrstr);

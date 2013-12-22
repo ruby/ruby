@@ -297,7 +297,12 @@ class TestCSV::Row < TestCSV
   end
 
   def test_to_hash
-    assert_equal({"A" => nil, "B" => 2, "C" => 3}, @row.to_hash)
+    hash = @row.to_hash
+    assert_equal({"A" => nil, "B" => 2, "C" => 3}, hash)
+    hash.keys.each_with_index do |string_key, h|
+      assert_predicate(string_key, :frozen?)
+      assert_same(string_key, @row.headers[h])
+    end
   end
 
   def test_to_csv

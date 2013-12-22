@@ -117,7 +117,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	fprintf(stderr, "p:%04"PRIdPTRDIFF" ", pc);
     }
     fprintf(stderr, "s:%04"PRIdPTRDIFF" ", cfp->sp - th->stack);
-    fprintf(stderr, ep_in_heap == ' ' ? "e:%06"PRIdPTRDIFF" " : "e:%06"PRIxPTRDIFF" ", ep % 10000);
+    fprintf(stderr, ep_in_heap == ' ' ? "e:%06"PRIdPTRDIFF" " : "E:%06"PRIxPTRDIFF" ", ep % 10000);
     fprintf(stderr, "%-6s", magic);
     if (line) {
 	fprintf(stderr, " %s", posbuf);
@@ -349,19 +349,21 @@ rb_vmdebug_thread_dump_regs(VALUE thval)
 }
 
 void
-rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp)
+rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp,VALUE *_pc)
 {
     rb_iseq_t *iseq = cfp->iseq;
 
     if (iseq != 0) {
 	VALUE *seq = iseq->iseq;
-	ptrdiff_t pc = cfp->pc - iseq->iseq_encoded;
+	ptrdiff_t pc = _pc - iseq->iseq_encoded;
 	int i;
 
 	for (i=0; i<(int)VM_CFP_CNT(th, cfp); i++) {
 	    printf(" ");
 	}
 	printf("| ");
+	if(0)printf("[%03ld] ", (long)(cfp->sp - th->stack));
+
 	/* printf("%3"PRIdPTRDIFF" ", VM_CFP_CNT(th, cfp)); */
 	if (pc >= 0) {
 	    rb_iseq_disasm_insn(0, seq, (size_t)pc, iseq, 0);
@@ -424,9 +426,78 @@ rb_vmdebug_thread_dump_state(VALUE self)
     return Qnil;
 }
 
-#ifndef HAVE_BACKTRACE
-#define HAVE_BACKTRACE 0
+#if defined(HAVE_BACKTRACE)
+# if HAVE_LIBUNWIND
+#  undef backtrace
+#  define backtrace unw_backtrace
+# elif defined(__APPLE__) && defined(__x86_64__)
+#  define UNW_LOCAL_ONLY
+#  include <libunwind.h>
+#  undef backtrace
+int backtrace (void **trace, int size) {
+    unw_cursor_t cursor; unw_context_t uc;
+    unw_word_t ip;
+    int n = 0;
+
+    unw_getcontext(&uc);
+    unw_init_local(&cursor, &uc);
+    while (unw_step(&cursor) > 0) {
+	unw_get_reg(&cursor, UNW_REG_IP, &ip);
+	trace[n++] = (void *)ip;
+	{
+	    char buf[256];
+	    unw_get_proc_name(&cursor, buf, 256, &ip);
+	    if (strncmp("_sigtramp", buf, sizeof("_sigtramp")) == 0) {
+		goto darwin_sigtramp;
+	    }
+	}
+    }
+    return n;
+darwin_sigtramp:
+    /* darwin's bundled libunwind doesn't support signal trampoline */
+    {
+	ucontext_t *uctx;
+	/* get _sigtramp's ucontext_t and set values to cursor
+	 * http://www.opensource.apple.com/source/Libc/Libc-825.25/i386/sys/_sigtramp.s
+	 * http://www.opensource.apple.com/source/libunwind/libunwind-35.1/src/unw_getcontext.s
+	 */
+	unw_get_reg(&cursor, UNW_X86_64_RBX, &ip);
+	uctx = (ucontext_t *)ip;
+	unw_set_reg(&cursor, UNW_X86_64_RAX, uctx->uc_mcontext->__ss.__rax);
+	unw_set_reg(&cursor, UNW_X86_64_RBX, uctx->uc_mcontext->__ss.__rbx);
+	unw_set_reg(&cursor, UNW_X86_64_RCX, uctx->uc_mcontext->__ss.__rcx);
+	unw_set_reg(&cursor, UNW_X86_64_RDX, uctx->uc_mcontext->__ss.__rdx);
+	unw_set_reg(&cursor, UNW_X86_64_RDI, uctx->uc_mcontext->__ss.__rdi);
+	unw_set_reg(&cursor, UNW_X86_64_RSI, uctx->uc_mcontext->__ss.__rsi);
+	unw_set_reg(&cursor, UNW_X86_64_RBP, uctx->uc_mcontext->__ss.__rbp);
+	unw_set_reg(&cursor, UNW_X86_64_RSP, 8+(uctx->uc_mcontext->__ss.__rsp));
+	unw_set_reg(&cursor, UNW_X86_64_R8,  uctx->uc_mcontext->__ss.__r8);
+	unw_set_reg(&cursor, UNW_X86_64_R9,  uctx->uc_mcontext->__ss.__r9);
+	unw_set_reg(&cursor, UNW_X86_64_R10, uctx->uc_mcontext->__ss.__r10);
+	unw_set_reg(&cursor, UNW_X86_64_R11, uctx->uc_mcontext->__ss.__r11);
+	unw_set_reg(&cursor, UNW_X86_64_R12, uctx->uc_mcontext->__ss.__r12);
+	unw_set_reg(&cursor, UNW_X86_64_R13, uctx->uc_mcontext->__ss.__r13);
+	unw_set_reg(&cursor, UNW_X86_64_R14, uctx->uc_mcontext->__ss.__r14);
+	unw_set_reg(&cursor, UNW_X86_64_R15, uctx->uc_mcontext->__ss.__r15);
+	ip = *(unw_word_t*)uctx->uc_mcontext->__ss.__rsp;
+	unw_set_reg(&cursor, UNW_REG_IP, ip);
+	trace[n++] = (void *)uctx->uc_mcontext->__ss.__rip;
+	trace[n++] = (void *)ip;
+    }
+    while (unw_step(&cursor) > 0) {
+	unw_get_reg(&cursor, UNW_REG_IP, &ip);
+	trace[n++] = (void *)ip;
+    }
+    return n;
+}
+# elif defined(BROKEN_BACKTRACE)
+#  undef HAVE_BACKTRACE
+#  define HAVE_BACKTRACE 0
+# endif
+#else
+# define HAVE_BACKTRACE 0
 #endif
+
 #if HAVE_BACKTRACE
 # include <execinfo.h>
 #elif defined(_WIN32)
@@ -606,6 +677,34 @@ dump_thread(void *arg)
 #endif
 
 void
+rb_print_backtrace(void)
+{
+#if HAVE_BACKTRACE
+#define MAX_NATIVE_TRACE 1024
+    static void *trace[MAX_NATIVE_TRACE];
+    int n = backtrace(trace, MAX_NATIVE_TRACE);
+    char **syms = backtrace_symbols(trace, n);
+
+    if (syms) {
+#ifdef USE_ELF
+	rb_dump_backtrace_with_lines(n, trace, syms);
+#else
+	int i;
+	for (i=0; i<n; i++) {
+	    fprintf(stderr, "%s\n", syms[i]);
+	}
+#endif
+	free(syms);
+    }
+#elif defined(_WIN32)
+    DWORD tid = GetCurrentThreadId();
+    HANDLE th = (HANDLE)_beginthread(dump_thread, 0, &tid);
+    if (th != (HANDLE)-1)
+	WaitForSingleObject(th, INFINITE);
+#endif
+}
+
+void
 rb_vm_bugreport(void)
 {
 #ifdef __linux__
@@ -617,6 +716,19 @@ rb_vm_bugreport(void)
     enum {other_runtime_info = 0};
 #endif
     const rb_vm_t *const vm = GET_VM();
+
+#if defined __APPLE__
+    fputs("-- Crash Report log information "
+	  "--------------------------------------------\n"
+	  "   See Crash Report log file under the one of following:\n"
+	  "     * ~/Library/Logs/CrashReporter\n"
+	  "     * /Library/Logs/CrashReporter\n"
+	  "     * ~/Library/Logs/DiagnosticReports\n"
+	  "     * /Library/Logs/DiagnosticReports\n"
+	  "   for more details.\n"
+	  "\n",
+	  stderr);
+#endif
     if (vm) {
 	SDR();
 	rb_backtrace_print_as_bugreport();
@@ -626,41 +738,8 @@ rb_vm_bugreport(void)
 #if HAVE_BACKTRACE || defined(_WIN32)
     fprintf(stderr, "-- C level backtrace information "
 	    "-------------------------------------------\n");
+    rb_print_backtrace();
 
-    {
-#if defined __APPLE__
-	fprintf(stderr, "\n");
-	fprintf(stderr,
-		"   See Crash Report log file under the one of following:\n"
-		"     * ~/Library/Logs/CrashReporter\n"
-		"     * /Library/Logs/CrashReporter\n"
-		"     * ~/Library/Logs/DiagnosticReports\n"
-		"     * /Library/Logs/DiagnosticReports\n"
-		"   the more detail of.\n");
-#elif HAVE_BACKTRACE
-#define MAX_NATIVE_TRACE 1024
-	static void *trace[MAX_NATIVE_TRACE];
-	int n = backtrace(trace, MAX_NATIVE_TRACE);
-	char **syms = backtrace_symbols(trace, n);
-
-	if (syms) {
-#ifdef USE_ELF
-	    rb_dump_backtrace_with_lines(n, trace, syms);
-#else
-	    int i;
-	    for (i=0; i<n; i++) {
-		fprintf(stderr, "%s\n", syms[i]);
-	    }
-#endif
-	    free(syms);
-	}
-#elif defined(_WIN32)
-	DWORD tid = GetCurrentThreadId();
-	HANDLE th = (HANDLE)_beginthread(dump_thread, 0, &tid);
-	if (th != (HANDLE)-1)
-	    WaitForSingleObject(th, INFINITE);
-#endif
-    }
 
     fprintf(stderr, "\n");
 #endif /* HAVE_BACKTRACE */
@@ -683,14 +762,23 @@ rb_vm_bugreport(void)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "* Loaded features:\n\n");
 	for (i=0; i<RARRAY_LEN(vm->loaded_features); i++) {
-	    name = RARRAY_PTR(vm->loaded_features)[i];
+	    name = RARRAY_AREF(vm->loaded_features, i);
 	    if (RB_TYPE_P(name, T_STRING)) {
 		fprintf(stderr, " %4d %.*s\n", i,
 			LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
 	    }
+	    else if (RB_TYPE_P(name, T_CLASS) || RB_TYPE_P(name, T_MODULE)) {
+		const char *const type = RB_TYPE_P(name, T_CLASS) ?
+		    "class" : "module";
+		name = rb_class_name(name);
+		fprintf(stderr, " %4d %s:%.*s\n", i, type,
+			LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
+	    }
 	    else {
-		fprintf(stderr, " %4d #<%s:%p>\n", i,
-			rb_class2name(CLASS_OF(name)), (void *)name);
+		VALUE klass = rb_class_name(CLASS_OF(name));
+		fprintf(stderr, " %4d #<%.*s:%p>\n", i,
+			LIMITED_NAME_LENGTH(klass), RSTRING_PTR(klass),
+			(void *)name);
 	    }
 	}
 	fprintf(stderr, "\n");

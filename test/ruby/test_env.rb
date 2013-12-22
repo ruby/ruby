@@ -103,7 +103,10 @@ class TestEnv < Test::Unit::TestCase
     ENV["test"] = "foo"
     assert_equal("foo", ENV.fetch("test"))
     ENV.delete("test")
-    assert_raise(KeyError) { ENV.fetch("test") }
+    feature8649 = '[ruby-core:56062] [Feature #8649]'
+    assert_raise_with_message(KeyError, 'key not found: "test"', feature8649) do
+      ENV.fetch("test")
+    end
     assert_equal("foo", ENV.fetch("test", "foo"))
     assert_equal("bar", ENV.fetch("test") { "bar" })
     assert_equal("bar", ENV.fetch("test", "foo") { "bar" })
@@ -114,12 +117,6 @@ class TestEnv < Test::Unit::TestCase
   end
 
   def test_aset
-    assert_raise(SecurityError) do
-      Thread.new do
-        $SAFE = 4
-        ENV["test"] = "foo"
-      end.join
-    end
     assert_nothing_raised { ENV["test"] = nil }
     assert_equal(nil, ENV["test"])
     assert_raise(ArgumentError) { ENV["foo\0bar"] = "test" }
@@ -270,15 +267,15 @@ class TestEnv < Test::Unit::TestCase
 
   def test_empty_p
     ENV.clear
-    assert(ENV.empty?)
+    assert_predicate(ENV, :empty?)
     ENV["test"] = "foo"
-    assert(!ENV.empty?)
+    assert_not_predicate(ENV, :empty?)
   end
 
   def test_has_key
-    assert(!ENV.has_key?("test"))
+    assert_not_send([ENV, :has_key?, "test"])
     ENV["test"] = "foo"
-    assert(ENV.has_key?("test"))
+    assert_send([ENV, :has_key?, "test"])
     assert_raise(ArgumentError) { ENV.has_key?("foo\0bar") }
   end
 
@@ -298,9 +295,9 @@ class TestEnv < Test::Unit::TestCase
 
   def test_has_value2
     ENV.clear
-    assert(!ENV.has_value?("foo"))
+    assert_not_send([ENV, :has_value?, "foo"])
     ENV["test"] = "foo"
-    assert(ENV.has_value?("foo"))
+    assert_send([ENV, :has_value?, "foo"])
   end
 
   def test_rassoc
@@ -396,13 +393,19 @@ class TestEnv < Test::Unit::TestCase
 
   if /mswin|mingw/ =~ RUBY_PLATFORM
     def test_win32_blocksize
-      len = 32767 - ENV.to_a.flatten.inject(0) {|r,e| r + e.size + 2 }
+      keys = []
+      len = 32767 - ENV.to_a.flatten.inject(0) {|r,e| r + e.bytesize + 1}
       val = "bar" * 1000
       key = nil
+      while (len -= val.size + (key="foo#{len}").size + 2) > 0
+        keys << key
+        ENV[key] = val
+      end
       1.upto(12) {|i|
-        ENV[key] = val while (len -= val.size + (key="foo#{len}").size + 2) > 0
         assert_raise(Errno::EINVAL) { ENV[key] = val }
       }
+    ensure
+      keys.each {|k| ENV.delete(k)}
     end
   end
 end

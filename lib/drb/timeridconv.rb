@@ -2,8 +2,17 @@ require 'drb/drb'
 require 'monitor'
 
 module DRb
+
+  # Timer id conversion keeps objects alive for a certain amount of time after
+  # their last access.  The default time period is 600 seconds and can be
+  # changed upon initialization.
+  #
+  # To use TimerIdConv:
+  #
+  #  DRb.install_id_conv TimerIdConv.new 60 # one minute
+
   class TimerIdConv < DRbIdConv
-    class TimerHolder2
+    class TimerHolder2 # :nodoc:
       include MonitorMixin
 
       class InvalidIndexError < RuntimeError; end
@@ -71,18 +80,19 @@ module DRb
       end
     end
 
+    # Creates a new TimerIdConv which will hold objects for +timeout+ seconds.
     def initialize(timeout=600)
       @holder = TimerHolder2.new(timeout)
     end
 
-    def to_obj(ref)
+    def to_obj(ref) # :nodoc:
       return super if ref.nil?
       @holder.fetch(ref)
     rescue TimerHolder2::InvalidIndexError
       raise "invalid reference"
     end
 
-    def to_id(obj)
+    def to_id(obj) # :nodoc:
       return @holder.add(obj)
     end
   end

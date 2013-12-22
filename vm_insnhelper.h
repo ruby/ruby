@@ -55,11 +55,13 @@ enum {
   BOP_GE,
   BOP_NOT,
   BOP_NEQ,
+  BOP_MATCH,
+  BOP_FREEZE,
 
   BOP_LAST_
 };
 
-extern char ruby_vm_redefined_flag[BOP_LAST_];
+extern short ruby_vm_redefined_flag[BOP_LAST_];
 extern VALUE ruby_vm_const_missing_count;
 
 #if VM_COLLECT_USAGE_DETAILS
@@ -172,7 +174,7 @@ enum vm_regan_acttype {
 /**********************************************************/
 
 #define COPY_CREF_OMOD(c1, c2) do {  \
-  (c1)->nd_refinements = (c2)->nd_refinements; \
+  RB_OBJ_WRITE((c1), &(c1)->nd_refinements, (c2)->nd_refinements); \
   if (!NIL_P((c2)->nd_refinements)) { \
       (c1)->flags |= NODE_FL_CREF_OMOD_SHARED; \
       (c2)->flags |= NODE_FL_CREF_OMOD_SHARED; \
@@ -182,9 +184,9 @@ enum vm_regan_acttype {
 #define COPY_CREF(c1, c2) do {  \
   NODE *__tmp_c2 = (c2); \
   COPY_CREF_OMOD(c1, __tmp_c2); \
-  (c1)->nd_clss = __tmp_c2->nd_clss; \
+  RB_OBJ_WRITE((c1), &(c1)->nd_clss, __tmp_c2->nd_clss); \
   (c1)->nd_visi = __tmp_c2->nd_visi;\
-  (c1)->nd_next = __tmp_c2->nd_next; \
+  RB_OBJ_WRITE((c1), &(c1)->nd_next, __tmp_c2->nd_next); \
   if (__tmp_c2->flags & NODE_FL_CREF_PUSHED_BY_EVAL) { \
       (c1)->flags |= NODE_FL_CREF_PUSHED_BY_EVAL; \
   } \
@@ -237,6 +239,7 @@ enum vm_regan_acttype {
 #define BIGNUM_REDEFINED_OP_FLAG (1 << 5)
 #define SYMBOL_REDEFINED_OP_FLAG (1 << 6)
 #define TIME_REDEFINED_OP_FLAG   (1 << 7)
+#define REGEXP_REDEFINED_OP_FLAG (1 << 8)
 
 #define BASIC_OP_UNREDEFINED_P(op, klass) (LIKELY((ruby_vm_redefined_flag[(op)]&(klass)) == 0))
 
@@ -246,26 +249,22 @@ enum vm_regan_acttype {
 #else
 #define FLONUM_2_P(a, b) 0
 #endif
-#define HEAP_CLASS_OF(obj) (RBASIC(obj)->klass)
 
 #ifndef USE_IC_FOR_SPECIALIZED_METHOD
 #define USE_IC_FOR_SPECIALIZED_METHOD 1
 #endif
 
-#define CALL_SIMPLE_METHOD(recv) do { \
+#define CALL_SIMPLE_METHOD(recv_) do { \
     ci->blockptr = 0; ci->argc = ci->orig_argc; \
-    vm_search_method(ci, ci->recv = (recv)); \
+    vm_search_method(ci, ci->recv = (recv_)); \
     CALL_METHOD(ci); \
 } while (0)
 
-static VALUE ruby_vm_global_state_version = 1;
-
-#define GET_VM_STATE_VERSION() (ruby_vm_global_state_version)
-#define INC_VM_STATE_VERSION() do { \
-    ruby_vm_global_state_version = (ruby_vm_global_state_version + 1); \
-    if (ruby_vm_global_state_version == 0) vm_clear_all_cache(); \
-} while (0)
-static void vm_clear_all_cache(void);
+#define NEXT_CLASS_SERIAL() (++ruby_vm_class_serial)
+#define GET_GLOBAL_METHOD_STATE() (ruby_vm_global_method_state)
+#define INC_GLOBAL_METHOD_STATE() (++ruby_vm_global_method_state)
+#define GET_GLOBAL_CONSTANT_STATE() (ruby_vm_global_constant_state)
+#define INC_GLOBAL_CONSTANT_STATE() (++ruby_vm_global_constant_state)
 
 static VALUE make_no_method_exception(VALUE exc, const char *format,
 				      VALUE obj, int argc, const VALUE *argv);

@@ -11,16 +11,34 @@
 
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
+#include "internal.h"
 #include <sys/types.h>
 #include <ctype.h>
 #include <errno.h>
 
-#define GCC_VERSION_SINCE(major, minor, patchlevel) \
-  (defined(__GNUC__) && !defined(__INTEL_COMPILER) && \
-   ((__GNUC__ > (major)) ||  \
-    (__GNUC__ == (major) && __GNUC_MINOR__ > (minor)) || \
-    (__GNUC__ == (major) && __GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ >= (patchlevel))))
-#if SIZEOF_SHORT != 2 || SIZEOF_LONG != 4
+/*
+ * It is intentional that the condition for natstr is HAVE_TRUE_LONG_LONG
+ * instead of HAVE_LONG_LONG or LONG_LONG.
+ * This means q! and Q! means always the standard long long type and
+ * causes ArgumentError for platforms which has no long long type,
+ * even if the platform has an implementation specific 64bit type.
+ * This behavior is consistent with the document of pack/unpack.
+ */
+#ifdef HAVE_TRUE_LONG_LONG
+static const char natstr[] = "sSiIlLqQ";
+#else
+static const char natstr[] = "sSiIlL";
+#endif
+static const char endstr[] = "sSiIlLqQ";
+
+#ifdef HAVE_TRUE_LONG_LONG
+/* It is intentional to use long long instead of LONG_LONG. */
+# define NATINT_LEN_Q NATINT_LEN(long long, 8)
+#else
+# define NATINT_LEN_Q 8
+#endif
+
+#if SIZEOF_SHORT != 2 || SIZEOF_LONG != 4 || (defined(HAVE_TRUE_LONG_LONG) && SIZEOF_LONG_LONG != 8)
 # define NATINT_PACK
 #endif
 
@@ -81,36 +99,6 @@ TOKEN_PASTE(swap,x)(xtype z)		\
     xfree(zp);				\
     return r;				\
 }
-
-#if GCC_VERSION_SINCE(4,3,0)
-# define swap32(x) __builtin_bswap32(x)
-# define swap64(x) __builtin_bswap64(x)
-#endif
-
-#ifndef swap16
-# define swap16(x)	((uint16_t)((((x)&0xFF)<<8) | (((x)>>8)&0xFF)))
-#endif
-
-#ifndef swap32
-# define swap32(x)	((uint32_t)((((x)&0xFF)<<24)	\
-			|(((x)>>24)&0xFF)	\
-			|(((x)&0x0000FF00)<<8)	\
-			|(((x)&0x00FF0000)>>8)	))
-#endif
-
-#ifndef swap64
-# ifdef HAVE_INT64_T
-#  define byte_in_64bit(n) ((uint64_t)0xff << (n))
-#  define swap64(x)       ((uint64_t)((((x)&byte_in_64bit(0))<<56) 	\
-			   |(((x)>>56)&0xFF)	                \
-			   |(((x)&byte_in_64bit(8))<<40)	\
-			   |(((x)&byte_in_64bit(48))>>40)	\
-			   |(((x)&byte_in_64bit(16))<<24)	\
-			   |(((x)&byte_in_64bit(40))>>24)	\
-			   |(((x)&byte_in_64bit(24))<<8)	\
-			   |(((x)&byte_in_64bit(32))>>8)))
-# endif
-#endif
 
 #if SIZEOF_SHORT == 2
 # define swaps(x)	swap16(x)
@@ -237,22 +225,7 @@ TOKEN_PASTE(swap,x)(xtype z)		\
 # define VTOHD(x,y)	rb_vtohd(x)
 #endif
 
-static unsigned long
-num2i32(VALUE x)
-{
-    x = rb_to_int(x); /* is nil OK? (should not) */
-
-    if (FIXNUM_P(x)) return FIX2LONG(x);
-    if (RB_TYPE_P(x, T_BIGNUM)) {
-	return rb_big2ulong_pack(x);
-    }
-    rb_raise(rb_eTypeError, "can't convert %s to `integer'", rb_obj_classname(x));
-
-    UNREACHABLE;
-}
-
 #define MAX_INTEGER_PACK_SIZE 8
-/* #define FORCE_BIG_PACK */
 
 static const char toofew[] = "too few arguments";
 
@@ -303,24 +276,30 @@ static unsigned long utf8_to_uv(const char*,long*);
  *      S_, S!    | Integer | unsigned short, native endian
  *      I, I_, I! | Integer | unsigned int, native endian
  *      L_, L!    | Integer | unsigned long, native endian
+ *      Q_, Q!    | Integer | unsigned long long, native endian (ArgumentError
+ *                |         | if the platform has no long long type.)
+ *                |         | (Q_ and Q! is available since Ruby 2.1.)
  *                |         |
  *      s_, s!    | Integer | signed short, native endian
  *      i, i_, i! | Integer | signed int, native endian
  *      l_, l!    | Integer | signed long, native endian
+ *      q_, q!    | Integer | signed long long, native endian (ArgumentError
+ *                |         | if the platform has no long long type.)
+ *                |         | (q_ and q! is available since Ruby 2.1.)
  *                |         |
  *      S> L> Q>  | Integer | same as the directives without ">" except
  *      s> l> q>  |         | big endian
  *      S!> I!>   |         | (available since Ruby 1.9.3)
- *      L!>       |         | "S>" is same as "n"
+ *      L!> Q!>   |         | "S>" is same as "n"
  *      s!> i!>   |         | "L>" is same as "N"
- *      l!>       |         |
+ *      l!> q!>   |         |
  *                |         |
  *      S< L< Q<  | Integer | same as the directives without "<" except
  *      s< l< q<  |         | little endian
  *      S!< I!<   |         | (available since Ruby 1.9.3)
- *      L!<       |         | "S<" is same as "v"
+ *      L!< Q!<   |         | "S<" is same as "v"
  *      s!< i!<   |         | "L<" is same as "V"
- *      l!<       |         |
+ *      l!< q!<   |         |
  *                |         |
  *      n         | Integer | 16-bit unsigned, network (big-endian) byte order
  *      N         | Integer | 32-bit unsigned, network (big-endian) byte order
@@ -390,8 +369,8 @@ pack_pack(VALUE ary, VALUE fmt)
     idx = 0;
 
 #define TOO_FEW (rb_raise(rb_eArgError, toofew), 0)
-#define THISFROM (items > 0 ? RARRAY_PTR(ary)[idx] : TOO_FEW)
-#define NEXTFROM (items-- > 0 ? RARRAY_PTR(ary)[idx++] : TOO_FEW)
+#define THISFROM (items > 0 ? RARRAY_AREF(ary, idx) : TOO_FEW)
+#define NEXTFROM (items-- > 0 ? RARRAY_AREF(ary, idx++) : TOO_FEW)
 
     while (p < pend) {
 	int explicit_endian = 0;
@@ -412,9 +391,6 @@ pack_pack(VALUE ary, VALUE fmt)
 	}
 
 	{
-	    static const char natstr[] = "sSiIlL";
-	    static const char endstr[] = "sSiIlLqQ";
-
           modifiers:
 	    switch (*p) {
 	      case '_':
@@ -641,71 +617,66 @@ pack_pack(VALUE ary, VALUE fmt)
 
 	  case 'c':		/* signed char */
 	  case 'C':		/* unsigned char */
-	    while (len-- > 0) {
-		char c;
+            integer_size = 1;
+            bigendian_p = BIGENDIAN_P(); /* not effective */
+            goto pack_integer;
 
-		from = NEXTFROM;
-		c = (char)num2i32(from);
-		rb_str_buf_cat(res, &c, sizeof(char));
-	    }
-	    break;
-
-	  case 's':		/* signed short */
+	  case 's':		/* s for int16_t, s! for signed short */
             integer_size = NATINT_LEN(short, 2);
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
-	  case 'S':		/* unsigned short */
+	  case 'S':		/* S for uint16_t, S! for unsigned short */
             integer_size = NATINT_LEN(short, 2);
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
-	  case 'i':		/* signed int */
+	  case 'i':		/* i and i! for signed int */
             integer_size = (int)sizeof(int);
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
-	  case 'I':		/* unsigned int */
+	  case 'I':		/* I and I! for unsigned int */
             integer_size = (int)sizeof(int);
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
-	  case 'l':		/* signed long */
+	  case 'l':		/* l for int32_t, l! for signed long */
             integer_size = NATINT_LEN(long, 4);
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
-	  case 'L':		/* unsigned long */
+	  case 'L':		/* L for uint32_t, L! for unsigned long */
             integer_size = NATINT_LEN(long, 4);
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
-	  case 'q':		/* signed quad (64bit) int */
-	    integer_size = 8;
+	  case 'q':		/* q for int64_t, q! for signed long long */
+	    integer_size = NATINT_LEN_Q;
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
-	  case 'Q':		/* unsigned quad (64bit) int */
-	    integer_size = 8;
+	  case 'Q':		/* Q for uint64_t, Q! for unsigned long long */
+	    integer_size = NATINT_LEN_Q;
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
-	  case 'n':		/* unsigned short (network byte-order)  */
+	  case 'n':		/* 16 bit (2 bytes) integer (network byte-order)  */
             integer_size = 2;
             bigendian_p = 1;
             goto pack_integer;
 
-	  case 'N':		/* unsigned long (network byte-order) */
+	  case 'N':		/* 32 bit (4 bytes) integer (network byte-order) */
             integer_size = 4;
             bigendian_p = 1;
             goto pack_integer;
 
-	  case 'v':		/* unsigned short (VAX byte-order) */
+	  case 'v':		/* 16 bit (2 bytes) integer (VAX byte-order) */
             integer_size = 2;
             bigendian_p = 0;
             goto pack_integer;
 
-	  case 'V':		/* unsigned long (VAX byte-order) */
+	  case 'V':		/* 32 bit (4 bytes) integer (VAX byte-order) */
             integer_size = 4;
             bigendian_p = 0;
             goto pack_integer;
@@ -714,88 +685,17 @@ pack_pack(VALUE ary, VALUE fmt)
 	    if (explicit_endian) {
 		bigendian_p = explicit_endian == '>';
 	    }
+            if (integer_size > MAX_INTEGER_PACK_SIZE)
+                rb_bug("unexpected intger size for pack: %d", integer_size);
+            while (len-- > 0) {
+                char intbuf[MAX_INTEGER_PACK_SIZE];
 
-            switch (integer_size) {
-#if defined(HAVE_INT16_T) && !defined(FORCE_BIG_PACK)
-              case SIZEOF_INT16_T:
-		while (len-- > 0) {
-                    union {
-                        int16_t i;
-                        char a[sizeof(int16_t)];
-                    } v;
-
-		    from = NEXTFROM;
-		    v.i = (int16_t)num2i32(from);
-		    if (bigendian_p != BIGENDIAN_P()) v.i = swap16(v.i);
-		    rb_str_buf_cat(res, v.a, sizeof(int16_t));
-		}
-		break;
-#endif
-
-#if defined(HAVE_INT32_T) && !defined(FORCE_BIG_PACK)
-              case SIZEOF_INT32_T:
-		while (len-- > 0) {
-		    union {
-                        int32_t i;
-                        char a[sizeof(int32_t)];
-                    } v;
-
-		    from = NEXTFROM;
-		    v.i = (int32_t)num2i32(from);
-		    if (bigendian_p != BIGENDIAN_P()) v.i = swap32(v.i);
-		    rb_str_buf_cat(res, v.a, sizeof(int32_t));
-		}
-		break;
-#endif
-
-#if defined(HAVE_INT64_T) && SIZEOF_LONG == SIZEOF_INT64_T && !defined(FORCE_BIG_PACK)
-              case SIZEOF_INT64_T:
-		while (len-- > 0) {
-		    union {
-                        int64_t i;
-                        char a[sizeof(int64_t)];
-                    } v;
-
-		    from = NEXTFROM;
-		    v.i = num2i32(from); /* can return 64bit value if SIZEOF_LONG == SIZEOF_INT64_T */
-		    if (bigendian_p != BIGENDIAN_P()) v.i = swap64(v.i);
-		    rb_str_buf_cat(res, v.a, sizeof(int64_t));
-		}
-		break;
-#endif
-
-	      default:
-                if (integer_size > MAX_INTEGER_PACK_SIZE)
-                    rb_bug("unexpected intger size for pack: %d", integer_size);
-                while (len-- > 0) {
-                    union {
-                        unsigned long i[(MAX_INTEGER_PACK_SIZE+SIZEOF_LONG-1)/SIZEOF_LONG];
-                        char a[(MAX_INTEGER_PACK_SIZE+SIZEOF_LONG-1)/SIZEOF_LONG*SIZEOF_LONG];
-                    } v;
-                    int num_longs = (integer_size+SIZEOF_LONG-1)/SIZEOF_LONG;
-                    int i;
-
-                    from = NEXTFROM;
-                    rb_big_pack(from, v.i, num_longs);
-                    if (bigendian_p) {
-                        for (i = 0; i < num_longs/2; i++) {
-                            unsigned long t = v.i[i];
-                            v.i[i] = v.i[num_longs-1-i];
-                            v.i[num_longs-1-i] = t;
-                        }
-                    }
-		    if (bigendian_p != BIGENDIAN_P()) {
-                        for (i = 0; i < num_longs; i++)
-                            v.i[i] = swapl(v.i[i]);
-                    }
-                    rb_str_buf_cat(res,
-                                   bigendian_p ?
-                                     v.a + sizeof(long)*num_longs - integer_size :
-                                     v.a,
-                                   integer_size);
-                }
-                break;
-	    }
+                from = NEXTFROM;
+                rb_integer_pack(from, intbuf, integer_size, 1, 0,
+                    INTEGER_PACK_2COMP |
+                    (bigendian_p ? INTEGER_PACK_BIG_ENDIAN : INTEGER_PACK_LITTLE_ENDIAN));
+                rb_str_buf_cat(res, intbuf, integer_size);
+            }
 	    break;
 
 	  case 'f':		/* single precision float in native format */
@@ -983,50 +883,33 @@ pack_pack(VALUE ary, VALUE fmt)
 
 	  case 'w':		/* BER compressed integer  */
 	    while (len-- > 0) {
-		unsigned long ul;
 		VALUE buf = rb_str_new(0, 0);
-		char c, *bufs, *bufe;
+                size_t numbytes;
+                int sign;
+                char *cp;
 
 		from = NEXTFROM;
-		if (RB_TYPE_P(from, T_BIGNUM)) {
-		    VALUE big128 = rb_uint2big(128);
-		    while (RB_TYPE_P(from, T_BIGNUM)) {
-			from = rb_big_divmod(from, big128);
-			c = castchar(NUM2INT(RARRAY_PTR(from)[1]) | 0x80); /* mod */
-			rb_str_buf_cat(buf, &c, sizeof(char));
-			from = RARRAY_PTR(from)[0]; /* div */
-		    }
-		}
+                from = rb_to_int(from);
+                numbytes = rb_absint_numwords(from, 7, NULL);
+                if (numbytes == 0)
+                    numbytes = 1;
+                buf = rb_str_new(NULL, numbytes);
 
-		{
-		    long l = NUM2LONG(from);
-		    if (l < 0) {
-			rb_raise(rb_eArgError, "can't compress negative numbers");
-		    }
-		    ul = l;
-		}
+                sign = rb_integer_pack(from, RSTRING_PTR(buf), RSTRING_LEN(buf), 1, 1, INTEGER_PACK_BIG_ENDIAN);
 
-		while (ul) {
-		    c = castchar((ul & 0x7f) | 0x80);
-		    rb_str_buf_cat(buf, &c, sizeof(char));
-		    ul >>=  7;
-		}
+                if (sign < 0)
+                    rb_raise(rb_eArgError, "can't compress negative numbers");
+                if (sign == 2)
+                    rb_bug("buffer size problem?");
 
-		if (RSTRING_LEN(buf)) {
-		    bufs = RSTRING_PTR(buf);
-		    bufe = bufs + RSTRING_LEN(buf) - 1;
-		    *bufs &= 0x7f; /* clear continue bit */
-		    while (bufs < bufe) { /* reverse */
-			c = *bufs;
-			*bufs++ = *bufe;
-			*bufe-- = c;
-		    }
-		    rb_str_buf_cat(res, RSTRING_PTR(buf), RSTRING_LEN(buf));
-		}
-		else {
-		    c = 0;
-		    rb_str_buf_cat(res, &c, sizeof(char));
-		}
+                cp = RSTRING_PTR(buf);
+                while (1 < numbytes) {
+                  *cp |= 0x80;
+                  cp++;
+                  numbytes--;
+                }
+
+                rb_str_buf_cat(res, RSTRING_PTR(buf), RSTRING_LEN(buf));
 	    }
 	    break;
 
@@ -1164,19 +1047,11 @@ qpencode(VALUE str, VALUE from, long len)
 static inline int
 hex2num(char c)
 {
-    switch (c) {
-      case '0': case '1': case '2': case '3': case '4':
-      case '5': case '6': case '7': case '8': case '9':
-        return c - '0';
-      case 'a': case 'b': case 'c':
-      case 'd': case 'e': case 'f':
-	return c - 'a' + 10;
-      case 'A': case 'B': case 'C':
-      case 'D': case 'E': case 'F':
-	return c - 'A' + 10;
-      default:
-	return -1;
-    }
+    int n;
+    n = ruby_digit36_to_number_table[(unsigned char)c];
+    if (16 <= n)
+        n = -1;
+    return n;
 }
 
 #define PACK_LENGTH_ADJUST_SIZE(sz) do {	\
@@ -1249,10 +1124,16 @@ infected_str_new(const char *ptr, long len, VALUE str)
  *      S_, S!    | Integer | unsigned short, native endian
  *      I, I_, I! | Integer | unsigned int, native endian
  *      L_, L!    | Integer | unsigned long, native endian
+ *      Q_, Q!    | Integer | unsigned long long, native endian (ArgumentError
+ *                |         | if the platform has no long long type.)
+ *                |         | (Q_ and Q! is available since Ruby 2.1.)
  *                |         |
  *      s_, s!    | Integer | signed short, native endian
  *      i, i_, i! | Integer | signed int, native endian
  *      l_, l!    | Integer | signed long, native endian
+ *      q_, q!    | Integer | signed long long, native endian (ArgumentError
+ *                |         | if the platform has no long long type.)
+ *                |         | (q_ and q! is available since Ruby 2.1.)
  *                |         |
  *      S> L> Q>  | Integer | same as the directives without ">" except
  *      s> l> q>  |         | big endian
@@ -1361,9 +1242,6 @@ pack_unpack(VALUE str, VALUE fmt)
 
 	star = 0;
 	{
-	    static const char natstr[] = "sSiIlL";
-	    static const char endstr[] = "sSiIlLqQ";
-
           modifiers:
 	    switch (*p) {
 	      case '_':
@@ -1534,23 +1412,16 @@ pack_unpack(VALUE str, VALUE fmt)
 	    break;
 
 	  case 'c':
-	    PACK_LENGTH_ADJUST_SIZE(sizeof(char));
-	    while (len-- > 0) {
-                int c = *s++;
-                if (c > (char)127) c-=256;
-		UNPACK_PUSH(INT2FIX(c));
-	    }
-	    PACK_ITEM_ADJUST();
-	    break;
+	    signed_p = 1;
+	    integer_size = 1;
+	    bigendian_p = BIGENDIAN_P(); /* not effective */
+	    goto unpack_integer;
 
 	  case 'C':
-	    PACK_LENGTH_ADJUST_SIZE(sizeof(unsigned char));
-	    while (len-- > 0) {
-		unsigned char c = *s++;
-		UNPACK_PUSH(INT2FIX(c));
-	    }
-	    PACK_ITEM_ADJUST();
-	    break;
+	    signed_p = 0;
+	    integer_size = 1;
+	    bigendian_p = BIGENDIAN_P(); /* not effective */
+	    goto unpack_integer;
 
 	  case 's':
 	    signed_p = 1;
@@ -1590,13 +1461,13 @@ pack_unpack(VALUE str, VALUE fmt)
 
 	  case 'q':
 	    signed_p = 1;
-	    integer_size = 8;
+	    integer_size = NATINT_LEN_Q;
 	    bigendian_p = BIGENDIAN_P();
 	    goto unpack_integer;
 
 	  case 'Q':
 	    signed_p = 0;
-	    integer_size = 8;
+	    integer_size = NATINT_LEN_Q;
 	    bigendian_p = BIGENDIAN_P();
 	    goto unpack_integer;
 
@@ -1628,144 +1499,17 @@ pack_unpack(VALUE str, VALUE fmt)
 	    if (explicit_endian) {
 		bigendian_p = explicit_endian == '>';
 	    }
-
-	    switch (integer_size) {
-#if defined(HAVE_INT16_T) && !defined(FORCE_BIG_PACK)
-	      case SIZEOF_INT16_T:
-		if (signed_p) {
-		    PACK_LENGTH_ADJUST_SIZE(sizeof(int16_t));
-		    while (len-- > 0) {
-			union {
-                            int16_t i;
-                            char a[sizeof(int16_t)];
-                        } v;
-			memcpy(v.a, s, sizeof(int16_t));
-			if (bigendian_p != BIGENDIAN_P()) v.i = swap16(v.i);
-			s += sizeof(int16_t);
-			UNPACK_PUSH(INT2FIX(v.i));
-		    }
-		    PACK_ITEM_ADJUST();
-		}
-		else {
-		    PACK_LENGTH_ADJUST_SIZE(sizeof(uint16_t));
-		    while (len-- > 0) {
-			union {
-                            uint16_t i;
-                            char a[sizeof(uint16_t)];
-                        } v;
-			memcpy(v.a, s, sizeof(uint16_t));
-			if (bigendian_p != BIGENDIAN_P()) v.i = swap16(v.i);
-			s += sizeof(uint16_t);
-			UNPACK_PUSH(INT2FIX(v.i));
-		    }
-		    PACK_ITEM_ADJUST();
-		}
-		break;
-#endif
-
-#if defined(HAVE_INT32_T) && !defined(FORCE_BIG_PACK)
-	      case SIZEOF_INT32_T:
-		if (signed_p) {
-		    PACK_LENGTH_ADJUST_SIZE(sizeof(int32_t));
-		    while (len-- > 0) {
-			union {
-                            int32_t i;
-                            char a[sizeof(int32_t)];
-                        } v;
-			memcpy(v.a, s, sizeof(int32_t));
-			if (bigendian_p != BIGENDIAN_P()) v.i = swap32(v.i);
-			s += sizeof(int32_t);
-			UNPACK_PUSH(INT2NUM(v.i));
-		    }
-		    PACK_ITEM_ADJUST();
-		}
-		else {
-		    PACK_LENGTH_ADJUST_SIZE(sizeof(uint32_t));
-		    while (len-- > 0) {
-			union {
-                            uint32_t i;
-                            char a[sizeof(uint32_t)];
-                        } v;
-			memcpy(v.a, s, sizeof(uint32_t));
-			if (bigendian_p != BIGENDIAN_P()) v.i = swap32(v.i);
-			s += sizeof(uint32_t);
-			UNPACK_PUSH(UINT2NUM(v.i));
-		    }
-		    PACK_ITEM_ADJUST();
-		}
-		break;
-#endif
-
-#if defined(HAVE_INT64_T) && !defined(FORCE_BIG_PACK)
-	      case SIZEOF_INT64_T:
-		if (signed_p) {
-		    PACK_LENGTH_ADJUST_SIZE(sizeof(int64_t));
-		    while (len-- > 0) {
-			union {
-                            int64_t i;
-                            char a[sizeof(int64_t)];
-                        } v;
-			memcpy(v.a, s, sizeof(int64_t));
-			if (bigendian_p != BIGENDIAN_P()) v.i = swap64(v.i);
-			s += sizeof(int64_t);
-			UNPACK_PUSH(INT64toNUM(v.i));
-		    }
-		    PACK_ITEM_ADJUST();
-		}
-		else {
-		    PACK_LENGTH_ADJUST_SIZE(sizeof(uint64_t));
-		    while (len-- > 0) {
-			union {
-                            uint64_t i;
-                            char a[sizeof(uint64_t)];
-                        } v;
-			memcpy(v.a, s, sizeof(uint64_t));
-			if (bigendian_p != BIGENDIAN_P()) v.i = swap64(v.i);
-			s += sizeof(uint64_t);
-			UNPACK_PUSH(UINT64toNUM(v.i));
-		    }
-		    PACK_ITEM_ADJUST();
-		}
-		break;
-#endif
-
-              default:
-                if (integer_size > MAX_INTEGER_PACK_SIZE)
-                    rb_bug("unexpected integer size for pack: %d", integer_size);
-                PACK_LENGTH_ADJUST_SIZE(integer_size);
-                while (len-- > 0) {
-                    union {
-                        unsigned long i[(MAX_INTEGER_PACK_SIZE+SIZEOF_LONG)/SIZEOF_LONG];
-                        char a[(MAX_INTEGER_PACK_SIZE+SIZEOF_LONG)/SIZEOF_LONG*SIZEOF_LONG];
-                    } v;
-                    int num_longs = (integer_size+SIZEOF_LONG)/SIZEOF_LONG;
-                    int i;
-
-                    if (signed_p && (signed char)s[bigendian_p ? 0 : (integer_size-1)] < 0)
-                        memset(v.a, 0xff, sizeof(long)*num_longs);
-                    else
-                        memset(v.a, 0, sizeof(long)*num_longs);
-                    if (bigendian_p)
-                        memcpy(v.a + sizeof(long)*num_longs - integer_size, s, integer_size);
-                    else
-                        memcpy(v.a, s, integer_size);
-                    if (bigendian_p) {
-                        for (i = 0; i < num_longs/2; i++) {
-                            unsigned long t = v.i[i];
-                            v.i[i] = v.i[num_longs-1-i];
-                            v.i[num_longs-1-i] = t;
-                        }
-                    }
-                    if (bigendian_p != BIGENDIAN_P()) {
-                        for (i = 0; i < num_longs; i++)
-                            v.i[i] = swapl(v.i[i]);
-                    }
-                    s += integer_size;
-                    UNPACK_PUSH(rb_big_unpack(v.i, num_longs));
-                }
-                PACK_ITEM_ADJUST();
-		break;
-	    }
+            PACK_LENGTH_ADJUST_SIZE(integer_size);
+            while (len-- > 0) {
+                int flags = bigendian_p ? INTEGER_PACK_BIG_ENDIAN : INTEGER_PACK_LITTLE_ENDIAN;
+                VALUE val;
+                if (signed_p)
+                    flags |= INTEGER_PACK_2COMP;
+                val = rb_integer_unpack(s, integer_size, 1, 0, flags);
+                UNPACK_PUSH(val);
+                s += integer_size;
+            }
+            PACK_ITEM_ADJUST();
             break;
 
 	  case 'f':
@@ -1917,7 +1661,7 @@ pack_unpack(VALUE str, VALUE fmt)
 
 	  case 'm':
 	    {
-		VALUE buf = infected_str_new(0, (send - s)*3/4, str);
+		VALUE buf = infected_str_new(0, (send - s + 3)*3/4, str); /* +3 is for skipping paddings */
 		char *ptr = RSTRING_PTR(buf);
 		int a = -1,b = -1,c = 0,d = 0;
 		static signed char b64_xtable[256];
@@ -1980,11 +1724,12 @@ pack_unpack(VALUE str, VALUE fmt)
 			*ptr++ = castchar(a << 2 | b >> 4);
 			*ptr++ = castchar(b << 4 | c >> 2);
 			*ptr++ = castchar(c << 6 | d);
+			a = -1;
 		    }
 		    if (a != -1 && b != -1) {
-			if (c == -1 && *s == '=')
+			if (c == -1)
 			    *ptr++ = castchar(a << 2 | b >> 4);
-			else if (c != -1 && *s == '=') {
+			else {
 			    *ptr++ = castchar(a << 2 | b >> 4);
 			    *ptr++ = castchar(b << 4 | c >> 2);
 			}
@@ -2053,12 +1798,13 @@ pack_unpack(VALUE str, VALUE fmt)
 		s += sizeof(char *);
 
 		if (t) {
-		    VALUE a, *p, *pend;
+		    VALUE a;
+		    const VALUE *p, *pend;
 
 		    if (!(a = rb_str_associated(str))) {
 			rb_raise(rb_eArgError, "no associated pointer");
 		    }
-		    p = RARRAY_PTR(a);
+		    p = RARRAY_CONST_PTR(a);
 		    pend = p + RARRAY_LEN(a);
 		    while (p < pend) {
 			if (RB_TYPE_P(*p, T_STRING) && RSTRING_PTR(*p) == t) {
@@ -2095,12 +1841,13 @@ pack_unpack(VALUE str, VALUE fmt)
 		    s += sizeof(char *);
 
 		    if (t) {
-			VALUE a, *p, *pend;
+			VALUE a;
+			const VALUE *p, *pend;
 
 			if (!(a = rb_str_associated(str))) {
 			    rb_raise(rb_eArgError, "no associated pointer");
 			}
-			p = RARRAY_PTR(a);
+			p = RARRAY_CONST_PTR(a);
 			pend = p + RARRAY_LEN(a);
 			while (p < pend) {
 			    if (RB_TYPE_P(*p, T_STRING) && RSTRING_PTR(*p) == t) {
@@ -2120,32 +1867,18 @@ pack_unpack(VALUE str, VALUE fmt)
 
 	  case 'w':
 	    {
-		unsigned long ul = 0;
-		unsigned long ulmask = 0xfeUL << ((sizeof(unsigned long) - 1) * 8);
-
-		while (len > 0 && s < send) {
-		    ul <<= 7;
-		    ul |= (*s & 0x7f);
-		    if (!(*s++ & 0x80)) {
-			UNPACK_PUSH(ULONG2NUM(ul));
-			len--;
-			ul = 0;
-		    }
-		    else if (ul & ulmask) {
-			VALUE big = rb_uint2big(ul);
-			VALUE big128 = rb_uint2big(128);
-			while (s < send) {
-			    big = rb_big_mul(big, big128);
-			    big = rb_big_plus(big, rb_uint2big(*s & 0x7f));
-			    if (!(*s++ & 0x80)) {
-				UNPACK_PUSH(big);
-				len--;
-				ul = 0;
-				break;
-			    }
-			}
-		    }
-		}
+                char *s0 = s;
+                while (len > 0 && s < send) {
+                    if (*s & 0x80) {
+                        s++;
+                    }
+                    else {
+                        s++;
+                        UNPACK_PUSH(rb_integer_unpack(s0, s-s0, 1, 1, INTEGER_PACK_BIG_ENDIAN));
+                        len--;
+                        s0 = s;
+                    }
+                }
 	    }
 	    break;
 

@@ -1,4 +1,4 @@
-require 'dtrace/helper'
+require_relative 'helper'
 
 module DTrace
   class TestRaise < TestCase

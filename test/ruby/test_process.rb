@@ -1,6 +1,5 @@
 require 'test/unit'
 require 'tempfile'
-require 'pathname'
 require 'timeout'
 require_relative 'envutil'
 require 'rbconfig'
@@ -17,6 +16,9 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def windows?
+    self.class.windows?
+  end
+  def self.windows?
     return /mswin|mingw|bccwin/ =~ RUBY_PLATFORM
   end
 
@@ -28,7 +30,7 @@ class TestProcess < Test::Unit::TestCase
 
   def with_tmpchdir
     Dir.mktmpdir {|d|
-      d = Pathname.new(d).realpath.to_s
+      d = File.realpath(d)
       Dir.chdir(d) {
         yield d
       }
@@ -235,6 +237,8 @@ class TestProcess < Test::Unit::TestCase
     MANDATORY_ENVS << 'LD_PRELOAD'
   when /mswin|mingw/
     MANDATORY_ENVS.concat(%w[HOME USER TMPDIR])
+  when /darwin/
+    MANDATORY_ENVS.concat(ENV.keys.grep(/\A__CF_/))
   end
   if e = RbConfig::CONFIG['LIBPATHENV']
     MANDATORY_ENVS << e
@@ -469,7 +473,7 @@ class TestProcess < Test::Unit::TestCase
       # problem occur with valgrind
       #Process.wait Process.spawn(*ECHO["a"], STDOUT=>:close, STDERR=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644])
       #p File.read("out")
-      #assert(!File.read("out").empty?) # error message such as "-e:1:in `flush': Bad file descriptor (Errno::EBADF)"
+      #assert_not_empty(File.read("out")) # error message such as "-e:1:in `flush': Bad file descriptor (Errno::EBADF)"
       Process.wait Process.spawn(*ECHO["c"], STDERR=>STDOUT, STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644])
       assert_equal("c", File.read("out").chomp)
       File.open("out", "w") {|f|
@@ -808,7 +812,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_execopts_redirect_tempfile
     bug6269 = '[ruby-core:44181]'
-    Tempfile.open("execopts") do |tmp|
+    Tempfile.create("execopts") do |tmp|
       pid = assert_nothing_raised(ArgumentError, bug6269) do
         break spawn(RUBY, "-e", "print $$", out: tmp)
       end
@@ -881,7 +885,7 @@ class TestProcess < Test::Unit::TestCase
       ret = system(str)
       status = $?
       assert_equal(false, ret)
-      assert(status.exited?)
+      assert_predicate(status, :exited?)
       assert_equal(5, status.exitstatus)
       assert_equal("haha pid=#{status.pid} ppid=#{$$}", File.read("result"))
     }
@@ -898,7 +902,7 @@ class TestProcess < Test::Unit::TestCase
       Process.wait pid
       status = $?
       assert_equal(pid, status.pid)
-      assert(status.exited?)
+      assert_predicate(status, :exited?)
       assert_equal(6, status.exitstatus)
       assert_equal("hihi pid=#{status.pid} ppid=#{$$}", File.read("result"))
     }
@@ -917,7 +921,7 @@ class TestProcess < Test::Unit::TestCase
       io.close
       status = $?
       assert_equal(pid, status.pid)
-      assert(status.exited?)
+      assert_predicate(status, :exited?)
       assert_equal(7, status.exitstatus)
       assert_equal("fufu pid=#{status.pid} ppid=#{$$}", result)
     }
@@ -936,7 +940,7 @@ class TestProcess < Test::Unit::TestCase
       io.close
       status = $?
       assert_equal(pid, status.pid)
-      assert(status.exited?)
+      assert_predicate(status, :exited?)
       assert_equal(7, status.exitstatus)
       assert_equal("fufumm pid=#{status.pid} ppid=#{$$}", result)
     }
@@ -962,7 +966,7 @@ class TestProcess < Test::Unit::TestCase
       Process.wait pid
       status = $?
       assert_equal(pid, status.pid)
-      assert(status.exited?)
+      assert_predicate(status, :exited?)
       assert_equal(6, status.exitstatus)
       if windows?
         expected = "hehe ppid=#{status.pid}"
@@ -986,7 +990,7 @@ class TestProcess < Test::Unit::TestCase
       ret = system("#{RUBY} script1 || #{RUBY} script2")
       status = $?
       assert_equal(false, ret)
-      assert(status.exited?)
+      assert_predicate(status, :exited?)
       result1 = File.read("result1")
       result2 = File.read("result2")
       assert_match(/\Ataka pid=\d+ ppid=\d+\z/, result1)
@@ -1017,8 +1021,8 @@ class TestProcess < Test::Unit::TestCase
       pid = spawn("#{RUBY} script1 || #{RUBY} script2")
       Process.wait pid
       status = $?
-      assert(status.exited?)
-      assert(!status.success?)
+      assert_predicate(status, :exited?)
+      assert_not_predicate(status, :success?)
       result1 = File.read("result1")
       result2 = File.read("result2")
       assert_match(/\Ataku pid=\d+ ppid=\d+\z/, result1)
@@ -1031,14 +1035,14 @@ class TestProcess < Test::Unit::TestCase
         pid = spawn(bat, "foo 'bar'")
         Process.wait pid
         status = $?
-        assert(status.exited?)
-        assert(status.success?)
+        assert_predicate(status, :exited?)
+        assert_predicate(status, :success?)
         assert_equal(%["foo 'bar'"\n], File.read("out"), '[ruby-core:22960]')
         pid = spawn(%[#{bat.dump} "foo 'bar'"])
         Process.wait pid
         status = $?
-        assert(status.exited?)
-        assert(status.success?)
+        assert_predicate(status, :exited?)
+        assert_predicate(status, :success?)
         assert_equal(%["foo 'bar'"\n], File.read("out"), '[ruby-core:22960]')
       end
     }
@@ -1058,8 +1062,8 @@ class TestProcess < Test::Unit::TestCase
       result = io.read
       io.close
       status = $?
-      assert(status.exited?)
-      assert(!status.success?)
+      assert_predicate(status, :exited?)
+      assert_not_predicate(status, :success?)
       assert_match(/\Atako pid=\d+ ppid=\d+\ntika pid=\d+ ppid=\d+\n\z/, result)
       assert_not_equal(result[/\d+/].to_i, status.pid)
 
@@ -1091,8 +1095,8 @@ class TestProcess < Test::Unit::TestCase
       pid = spawn RUBY, "s"
       Process.wait pid
       status = $?
-      assert(status.exited?)
-      assert(!status.success?)
+      assert_predicate(status, :exited?)
+      assert_not_predicate(status, :success?)
       result1 = File.read("result1")
       result2 = File.read("result2")
       assert_match(/\Atiki pid=\d+ ppid=\d+\z/, result1)
@@ -1146,19 +1150,19 @@ class TestProcess < Test::Unit::TestCase
       with_stdin("f") { assert_equal(false, system([RUBY, "wsx"])) }
 
       with_stdin("t") { Process.wait spawn([RUBY, "edc"]) }
-      assert($?.success?)
+      assert_predicate($?, :success?)
       with_stdin("f") { Process.wait spawn([RUBY, "rfv"]) }
-      assert(!$?.success?)
+      assert_not_predicate($?, :success?)
 
       with_stdin("t") { IO.popen([[RUBY, "tgb"]]) {|io| assert_equal("", io.read) } }
-      assert($?.success?)
+      assert_predicate($?, :success?)
       with_stdin("f") { IO.popen([[RUBY, "yhn"]]) {|io| assert_equal("", io.read) } }
-      assert(!$?.success?)
+      assert_not_predicate($?, :success?)
 
       status = run_in_child "STDIN.reopen('t'); exec([#{RUBY.dump}, 'ujm'])"
-      assert(status.success?)
+      assert_predicate(status, :success?)
       status = run_in_child "STDIN.reopen('f'); exec([#{RUBY.dump}, 'ik,'])"
-      assert(!status.success?)
+      assert_not_predicate(status, :success?)
     }
   end
 
@@ -1182,10 +1186,15 @@ class TestProcess < Test::Unit::TestCase
     return unless Signal.list.include?("QUIT")
 
     with_tmpchdir do
-      write_file("foo", "sleep 30")
-      pid = spawn(RUBY, "foo")
-      Thread.new { sleep 1; Process.kill(:SIGQUIT, pid) }
-      Process.wait(pid)
+      write_file("foo", "puts;STDOUT.flush;sleep 30")
+      pid = nil
+      IO.pipe do |r, w|
+        pid = spawn(RUBY, "foo", out: w)
+        w.close
+        Thread.new { r.read(1); Process.kill(:SIGQUIT, pid) }
+        Process.wait(pid)
+      end
+      t = Time.now
       s = $?
       assert_equal([false, true, false],
                    [s.exited?, s.signaled?, s.stopped?],
@@ -1197,6 +1206,7 @@ class TestProcess < Test::Unit::TestCase
          s.inspect])
       assert_equal(false, s.exited?)
       assert_equal(nil, s.success?)
+      EnvUtil.diagnostic_reports("QUIT", RUBY, pid, t)
     end
   end
 
@@ -1300,22 +1310,22 @@ class TestProcess < Test::Unit::TestCase
 
   def test_uid_re_exchangeable_p
     r = Process::UID.re_exchangeable?
-    assert(true == r || false == r)
+    assert_include([true, false], r)
   end
 
   def test_gid_re_exchangeable_p
     r = Process::GID.re_exchangeable?
-    assert(true == r || false == r)
+    assert_include([true, false], r)
   end
 
   def test_uid_sid_available?
     r = Process::UID.sid_available?
-    assert(true == r || false == r)
+    assert_include([true, false], r)
   end
 
   def test_gid_sid_available?
     r = Process::GID.sid_available?
-    assert(true == r || false == r)
+    assert_include([true, false], r)
   end
 
   def test_pst_inspect
@@ -1330,10 +1340,17 @@ class TestProcess < Test::Unit::TestCase
     end
     signal_received = []
     Signal.trap(:CHLD)  { signal_received << true }
-    pid = fork { sleep 0.1; exit }
-    Thread.start { raise }
+    pid = nil
+    IO.pipe do |r, w|
+      pid = fork { r.read(1); exit }
+      Thread.start { raise }
+      w.puts
+    end
     Process.wait pid
-    sleep 0.1
+    10.times do
+      break unless signal_received.empty?
+      sleep 0.01
+    end
     assert_equal [true], signal_received, " [ruby-core:19744]"
   rescue NotImplementedError, ArgumentError
   ensure
@@ -1350,13 +1367,13 @@ class TestProcess < Test::Unit::TestCase
       Dir.chdir("vd") {
         dir = "#{d}/vd"
         # OpenSolaris cannot remove the current directory.
-        system(RUBY, "--disable-gems", "-e", "Dir.chdir '..'; Dir.rmdir #{dir.dump}")
+        system(RUBY, "--disable-gems", "-e", "Dir.chdir '..'; Dir.rmdir #{dir.dump}", err: File::NULL)
         system({"RUBYLIB"=>nil}, RUBY, "--disable-gems", "-e", "exit true")
         status = $?
       }
-      assert(status.success?, "[ruby-dev:38105]")
+      assert_predicate(status, :success?, "[ruby-dev:38105]")
     }
-  end unless /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+  end
 
   def test_fallback_to_sh
     feature = '[ruby-core:32745]'
@@ -1377,20 +1394,40 @@ class TestProcess < Test::Unit::TestCase
     end
   end if File.executable?("/bin/sh")
 
-  def test_too_long_path
+  def test_spawn_too_long_path
     bug4314 = '[ruby-core:34842]'
+    assert_fail_too_long_path(%w"echo", bug4314)
+  end
+
+  def test_aspawn_too_long_path
+    bug4315 = '[ruby-core:34833]'
+    assert_fail_too_long_path(%w"echo |", bug4315)
+  end
+
+  def assert_fail_too_long_path((cmd, sep), mesg)
+    sep ||= ""
+    min = 1_000 / (cmd.size + sep.size)
+    cmds = Array.new(min, cmd)
     exs = [Errno::ENOENT]
     exs << Errno::E2BIG if defined?(Errno::E2BIG)
     EnvUtil.suppress_warning do
-      assert_raise(*exs, bug4314) {Process.spawn("a" * 10_000_000)}
+      assert_raise(*exs, mesg) do
+        begin
+          loop do
+            Process.spawn(cmds.join(sep), [STDOUT, STDERR]=>File::NULL)
+            min = [cmds.size, min].max
+            cmds *= 100
+          end
+        rescue NoMemoryError
+          size = cmds.size
+          raise if min >= size - 1
+          min = [min, size /= 2].max
+          cmds[size..-1] = []
+          raise if size < 250
+          retry
+        end
+      end
     end
-  end
-
-  def test_too_long_path2
-    bug4315 = '[ruby-core:34833]'
-    exs = [Errno::ENOENT]
-    exs << Errno::E2BIG if defined?(Errno::E2BIG)
-    assert_raise(*exs, bug4315) {Process.spawn('"a"|'*10_000_000)}
   end
 
   def test_system_sigpipe
@@ -1450,6 +1487,15 @@ class TestProcess < Test::Unit::TestCase
       assert_equal("ok?\n", data)
     end
 
+    def test_daemon_pid
+      cpid, dpid = IO.popen("-", "r+") do |f|
+        break f.pid, Integer(f.read) if f
+        Process.daemon(false, true)
+        puts $$
+      end
+      assert_not_equal(cpid, dpid)
+    end
+
     if File.directory?("/proc/self/task") && /netbsd[a-z]*[1-6]/ !~ RUBY_PLATFORM
       def test_daemon_no_threads
         pid, data = IO.popen("-", "r+") do |f|
@@ -1461,13 +1507,25 @@ class TestProcess < Test::Unit::TestCase
         assert_equal(2, data.size, bug4920)
         assert_not_include(data.map(&:to_i), pid)
       end
+    else # darwin
+      def test_daemon_no_threads
+        data = Timeout.timeout(3) do
+          IO.popen("-") do |f|
+            break f.readlines.map(&:chomp) if f
+            th = Thread.start {sleep 3}
+            Process.daemon(true, true)
+            puts Thread.list.size, th.status.inspect
+          end
+        end
+        assert_equal(["1", "false"], data)
+      end
     end
   end
 
   def test_popen_cloexec
     return unless defined? Fcntl::FD_CLOEXEC
     IO.popen([RUBY, "-e", ""]) {|io|
-      assert(io.close_on_exec?)
+      assert_predicate(io, :close_on_exec?)
     }
   end
 
@@ -1563,20 +1621,243 @@ class TestProcess < Test::Unit::TestCase
   def test_setsid
     return unless Process.respond_to?(:setsid)
     return unless Process.respond_to?(:getsid)
+    # OpenBSD doesn't allow Process::getsid(pid) when pid is in
+    # different session.
+    return if /openbsd/ =~ RUBY_PLATFORM
 
     IO.popen([RUBY, "-e", <<EOS]) do|io|
 	Marshal.dump(Process.getsid, STDOUT)
 	newsid = Process.setsid
 	Marshal.dump(newsid, STDOUT)
 	STDOUT.flush
-	sleep 3
+	# getsid() on MacOS X return ESRCH when target process is zombie
+	# even if it is valid process id.
+	sleep
 EOS
+      begin
+        # test Process.getsid() w/o arg
+        assert_equal(Marshal.load(io), Process.getsid)
 
-      # test Process.getsid() w/o arg
-      assert_equal(Marshal.load(io), Process.getsid)
-      # test Process.setsid return value and Process::getsid(pid)
-      assert_equal(Marshal.load(io), Process.getsid(io.pid))
-      Process.kill(:KILL, io.pid)
+        # test Process.setsid return value and Process::getsid(pid)
+        assert_equal(Marshal.load(io), Process.getsid(io.pid))
+      ensure
+        Process.kill(:KILL, io.pid) rescue nil
+        Process.wait(io.pid)
+      end
     end
   end
+
+  def test_spawn_nonascii
+    bug1771 = '[ruby-core:24309] [Bug #1771]'
+
+    with_tmpchdir do
+      [
+       "\u{7d05 7389}",
+       "zuf\u{00E4}llige_\u{017E}lu\u{0165}ou\u{010D}k\u{00FD}_\u{10D2 10D0 10DB 10D4 10DD 10E0 10D4 10D1}_\u{0440 0430 0437 043B 043E 0433 0430}_\u{548C 65B0 52A0 5761 4EE5 53CA 4E1C}",
+       "c\u{1EE7}a",
+      ].each do |name|
+        msg = "#{bug1771} #{name}"
+        exename = "./#{name}.exe"
+        FileUtils.cp(ENV["COMSPEC"], exename)
+        assert_equal(true, system("#{exename} /c exit"), msg)
+        system("#{exename} /c exit 12")
+        assert_equal(12, $?.exitstatus, msg)
+        _, status = Process.wait2(Process.spawn("#{exename} /c exit 42"))
+        assert_equal(42, status.exitstatus, msg)
+        assert_equal("ok\n", `#{exename} /c echo ok`, msg)
+        assert_equal("ok\n", IO.popen("#{exename} /c echo ok", &:read), msg)
+        assert_equal("ok\n", IO.popen(%W"#{exename} /c echo ok", &:read), msg)
+        File.binwrite("#{name}.txt", "ok")
+        assert_equal("ok", `type #{name}.txt`)
+      end
+    end
+  end if windows?
+
+  def test_clock_gettime
+    t1 = Process.clock_gettime(Process::CLOCK_REALTIME, :nanosecond)
+    t2 = Time.now; t2 = t2.tv_sec * 1000000000 + t2.tv_nsec
+    t3 = Process.clock_gettime(Process::CLOCK_REALTIME, :nanosecond)
+    assert_operator(t1, :<=, t2)
+    assert_operator(t2, :<=, t3)
+    assert_raise(Errno::EINVAL) { Process.clock_gettime(:foo) }
+  end
+
+  def test_clock_gettime_unit
+    t0 = Time.now.to_f
+    [
+      [:nanosecond,  1_000_000_000],
+      [:microsecond, 1_000_000],
+      [:millisecond, 1_000],
+      [:second, 1],
+      [:float_microsecond, 1_000_000.0],
+      [:float_millisecond, 1_000.0],
+      [:float_second, 1.0],
+      [nil, 1.0],
+      [:foo],
+    ].each do |unit, num|
+      unless num
+        assert_raise(ArgumentError){ Process.clock_gettime(Process::CLOCK_REALTIME, unit) }
+        next
+      end
+      t1 = Process.clock_gettime(Process::CLOCK_REALTIME, unit)
+      assert_kind_of num.integer? ? Integer : num.class, t1, [unit, num].inspect
+      assert_in_delta t0, t1/num, 1, [unit, num].inspect
+    end
+  end
+
+  def test_clock_gettime_constants
+    Process.constants.grep(/\ACLOCK_/).each {|n|
+      c = Process.const_get(n)
+      begin
+        t = Process.clock_gettime(c)
+      rescue Errno::EINVAL
+        next
+      end
+      assert_kind_of(Float, t, "Process.clock_gettime(Process::#{n})")
+    }
+  end
+
+  def test_clock_gettime_GETTIMEOFDAY_BASED_CLOCK_REALTIME
+    n = :GETTIMEOFDAY_BASED_CLOCK_REALTIME
+    t = Process.clock_gettime(n)
+    assert_kind_of(Float, t, "Process.clock_gettime(:#{n})")
+  end
+
+  def test_clock_gettime_TIME_BASED_CLOCK_REALTIME
+    n = :TIME_BASED_CLOCK_REALTIME
+    t = Process.clock_gettime(n)
+    assert_kind_of(Float, t, "Process.clock_gettime(:#{n})")
+  end
+
+  def test_clock_gettime_TIMES_BASED_CLOCK_MONOTONIC
+    n = :TIMES_BASED_CLOCK_MONOTONIC
+    begin
+      t = Process.clock_gettime(n)
+    rescue Errno::EINVAL
+      return
+    end
+    assert_kind_of(Float, t, "Process.clock_gettime(:#{n})")
+  end
+
+  def test_clock_gettime_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID
+    n = :GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID
+    begin
+      t = Process.clock_gettime(n)
+    rescue Errno::EINVAL
+      return
+    end
+    assert_kind_of(Float, t, "Process.clock_gettime(:#{n})")
+  end
+
+  def test_clock_gettime_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID
+    n = :TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID
+    begin
+      t = Process.clock_gettime(n)
+    rescue Errno::EINVAL
+      return
+    end
+    assert_kind_of(Float, t, "Process.clock_gettime(:#{n})")
+  end
+
+  def test_clock_gettime_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID
+    n = :CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID
+    t = Process.clock_gettime(n)
+    assert_kind_of(Float, t, "Process.clock_gettime(:#{n})")
+  end
+
+  def test_clock_gettime_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC
+    n = :MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC
+    begin
+      t = Process.clock_gettime(n)
+    rescue Errno::EINVAL
+      return
+    end
+    assert_kind_of(Float, t, "Process.clock_gettime(:#{n})")
+  end
+
+  def test_clock_getres
+    r = Process.clock_getres(Process::CLOCK_REALTIME, :nanosecond)
+    assert_kind_of(Integer, r)
+    assert_raise(Errno::EINVAL) { Process.clock_getres(:foo) }
+  end
+
+  def test_clock_getres_constants
+    Process.constants.grep(/\ACLOCK_/).each {|n|
+      c = Process.const_get(n)
+      begin
+        t = Process.clock_getres(c)
+      rescue Errno::EINVAL
+        next
+      end
+      assert_kind_of(Float, t, "Process.clock_getres(Process::#{n})")
+    }
+  end
+
+  def test_clock_getres_GETTIMEOFDAY_BASED_CLOCK_REALTIME
+    n = :GETTIMEOFDAY_BASED_CLOCK_REALTIME
+    t = Process.clock_getres(n)
+    assert_kind_of(Float, t, "Process.clock_getres(:#{n})")
+    assert_equal(1000, Process.clock_getres(n, :nanosecond))
+  end
+
+  def test_clock_getres_TIME_BASED_CLOCK_REALTIME
+    n = :TIME_BASED_CLOCK_REALTIME
+    t = Process.clock_getres(n)
+    assert_kind_of(Float, t, "Process.clock_getres(:#{n})")
+    assert_equal(1000000000, Process.clock_getres(n, :nanosecond))
+  end
+
+  def test_clock_getres_TIMES_BASED_CLOCK_MONOTONIC
+    n = :TIMES_BASED_CLOCK_MONOTONIC
+    begin
+      t = Process.clock_getres(n)
+    rescue Errno::EINVAL
+      return
+    end
+    assert_kind_of(Float, t, "Process.clock_getres(:#{n})")
+    f = Process.clock_getres(n, :hertz)
+    assert_equal(0, f - f.floor)
+  end
+
+  def test_clock_getres_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID
+    n = :GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID
+    begin
+      t = Process.clock_getres(n)
+    rescue Errno::EINVAL
+      return
+    end
+    assert_kind_of(Float, t, "Process.clock_getres(:#{n})")
+    assert_equal(1000, Process.clock_getres(n, :nanosecond))
+  end
+
+  def test_clock_getres_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID
+    n = :TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID
+    begin
+      t = Process.clock_getres(n)
+    rescue Errno::EINVAL
+      return
+    end
+    assert_kind_of(Float, t, "Process.clock_getres(:#{n})")
+    f = Process.clock_getres(n, :hertz)
+    assert_equal(0, f - f.floor)
+  end
+
+  def test_clock_getres_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID
+    n = :CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID
+    t = Process.clock_getres(n)
+    assert_kind_of(Float, t, "Process.clock_getres(:#{n})")
+    f = Process.clock_getres(n, :hertz)
+    assert_equal(0, f - f.floor)
+  end
+
+  def test_clock_getres_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC
+    n = :MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC
+    begin
+      t = Process.clock_getres(n)
+    rescue Errno::EINVAL
+      return
+    end
+    assert_kind_of(Float, t, "Process.clock_getres(:#{n})")
+  end
+
 end

@@ -16,9 +16,20 @@ require 'webrick/httpservlet/abstract'
 module WEBrick
   module HTTPServlet
 
+    ##
+    # Servlet for handling CGI scripts
+    #
+    # Example:
+    #
+    #  server.mount('/cgi/my_script', WEBrick::HTTPServlet::CGIHandler,
+    #               '/path/to/my_script')
+
     class CGIHandler < AbstractServlet
-      Ruby = RbConfig.ruby
-      CGIRunner = "\"#{Ruby}\" \"#{WEBrick::Config::LIBDIR}/httpservlet/cgi_runner.rb\""
+      Ruby = RbConfig.ruby # :nodoc:
+      CGIRunner = "\"#{Ruby}\" \"#{WEBrick::Config::LIBDIR}/httpservlet/cgi_runner.rb\"" # :nodoc:
+
+      ##
+      # Creates a new CGI script servlet for the script at +name+
 
       def initialize(server, name)
         super(server, name)
@@ -26,6 +37,8 @@ module WEBrick
         @tempdir = server[:TempDir]
         @cgicmd = "#{CGIRunner} #{server[:CGIInterpreter]}"
       end
+
+      # :stopdoc:
 
       def do_GET(req, res)
         data = nil
@@ -102,6 +115,8 @@ module WEBrick
         res.body = body
       end
       alias do_POST do_GET
+
+      # :startdoc:
     end
 
   end

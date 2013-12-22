@@ -1,1 +1,3 @@
-etc.o : etc.c $(hdrdir)/ruby.h $(topdir)/config.h $(hdrdir)/defines.h
+etc.o : etc.c $(HDRS) $(ruby_headers) \
+  $(hdrdir)/ruby/encoding.h \
+  $(hdrdir)/ruby/oniguruma.h

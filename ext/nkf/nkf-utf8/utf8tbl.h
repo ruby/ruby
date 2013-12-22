@@ -1,7 +1,6 @@
 /*
  * utf8tbl.h - Header file for Convertion Table
  *
- * $Id: utf8tbl.h,v 1.3 2008/01/23 09:10:25 naruse Exp $
  */
 
 #ifndef _UTF8TBL_H_

@@ -162,9 +162,9 @@ module RDoc::RI::Paths
   ##
   # The location of ri data installed into the site dir.
   #
-  # Historically this was available for documentation installed by ruby
+  # Historically this was available for documentation installed by Ruby
   # libraries predating RubyGems.  It is unlikely to contain any content for
-  # modern ruby installations.
+  # modern Ruby installations.
 
   def self.site_dir
     File.join BASE, 'site'
@@ -173,11 +173,11 @@ module RDoc::RI::Paths
   ##
   # The location of the built-in ri data.
   #
-  # This data is built automatically when `make` is run when ruby is
-  # installed.  If you did not install ruby by hand you may need to install
+  # This data is built automatically when `make` is run when Ruby is
+  # installed.  If you did not install Ruby by hand you may need to install
   # the documentation yourself.  Please consult the documentation for your
-  # package manager or ruby installer for details.  You can also use the
-  # rdoc-data gem to install system ri data for common versions of ruby.
+  # package manager or Ruby installer for details.  You can also use the
+  # rdoc-data gem to install system ri data for common versions of Ruby.
 
   def self.system_dir
     File.join BASE, 'system'

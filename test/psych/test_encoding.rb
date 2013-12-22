@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-require 'psych/helper'
+require_relative 'helper'
 
 module Psych
   class TestEncoding < TestCase
@@ -50,58 +50,54 @@ module Psych
     end
 
     def test_io_shiftjis
-      t = Tempfile.new(['shiftjis', 'yml'], :encoding => 'SHIFT_JIS')
-      t.write '--- こんにちは！'
-      t.close
+      Tempfile.create(['shiftjis', 'yml'], :encoding => 'SHIFT_JIS') {|t|
+        t.write '--- こんにちは！'
+        t.close
 
-      # If the external encoding isn't utf8, utf16le, or utf16be, we cannot
-      # process the file.
-      File.open(t.path, 'r', :encoding => 'SHIFT_JIS') do |f|
-        assert_raises Psych::SyntaxError do
-          Psych.load(f)
+        # If the external encoding isn't utf8, utf16le, or utf16be, we cannot
+        # process the file.
+        File.open(t.path, 'r', :encoding => 'SHIFT_JIS') do |f|
+          assert_raises Psych::SyntaxError do
+            Psych.load(f)
+          end
         end
-      end
-
-      t.close(true)
+      }
     end
 
     def test_io_utf16le
-      t = Tempfile.new(['utf16le', 'yml'])
-      t.binmode
-      t.write '--- こんにちは！'.encode('UTF-16LE')
-      t.close
+      Tempfile.create(['utf16le', 'yml']) {|t|
+        t.binmode
+        t.write '--- こんにちは！'.encode('UTF-16LE')
+        t.close
 
-      File.open(t.path, 'rb', :encoding => 'UTF-16LE') do |f|
-        assert_equal "こんにちは！", Psych.load(f)
-      end
-
-      t.close(true)
+        File.open(t.path, 'rb', :encoding => 'UTF-16LE') do |f|
+          assert_equal "こんにちは！", Psych.load(f)
+        end
+      }
     end
 
     def test_io_utf16be
-      t = Tempfile.new(['utf16be', 'yml'])
-      t.binmode
-      t.write '--- こんにちは！'.encode('UTF-16BE')
-      t.close
+      Tempfile.create(['utf16be', 'yml']) {|t|
+        t.binmode
+        t.write '--- こんにちは！'.encode('UTF-16BE')
+        t.close
 
-      File.open(t.path, 'rb', :encoding => 'UTF-16BE') do |f|
-        assert_equal "こんにちは！", Psych.load(f)
-      end
-
-      t.close(true)
+        File.open(t.path, 'rb', :encoding => 'UTF-16BE') do |f|
+          assert_equal "こんにちは！", Psych.load(f)
+        end
+      }
     end
 
     def test_io_utf8
-      t = Tempfile.new(['utf8', 'yml'])
-      t.binmode
-      t.write '--- こんにちは！'.encode('UTF-8')
-      t.close
+      Tempfile.create(['utf8', 'yml']) {|t|
+        t.binmode
+        t.write '--- こんにちは！'.encode('UTF-8')
+        t.close
 
-      File.open(t.path, 'rb', :encoding => 'UTF-8') do |f|
-        assert_equal "こんにちは！", Psych.load(f)
-      end
-
-      t.close(true)
+        File.open(t.path, 'rb', :encoding => 'UTF-8') do |f|
+          assert_equal "こんにちは！", Psych.load(f)
+        end
+      }
     end
 
     def test_emit_alias
@@ -114,19 +110,14 @@ module Psych
     end
 
     def test_to_yaml_is_valid
-      ext_before = Encoding.default_external
-      int_before = Encoding.default_internal
-
-      Encoding.default_external = Encoding::US_ASCII
-      Encoding.default_internal = nil
-
-      s = "こんにちは！"
-      # If no encoding is specified, use UTF-8
-      assert_equal Encoding::UTF_8, Psych.dump(s).encoding
-      assert_equal s, Psych.load(Psych.dump(s))
-    ensure
-      Encoding.default_external = ext_before
-      Encoding.default_internal = int_before
+      with_default_external(Encoding::US_ASCII) do
+        with_default_internal(nil) do
+          s = "こんにちは！"
+          # If no encoding is specified, use UTF-8
+          assert_equal Encoding::UTF_8, Psych.dump(s).encoding
+          assert_equal s, Psych.load(Psych.dump(s))
+        end
+      end
     end
 
     def test_start_mapping
@@ -191,19 +182,14 @@ module Psych
     end
 
     def test_default_internal
-      before = Encoding.default_internal
+      with_default_internal(Encoding::EUC_JP) do
+        str  = "壁に耳あり、障子に目あり"
+        assert_equal @utf8, str.encoding
 
-      Encoding.default_internal = 'EUC-JP'
-
-      str  = "壁に耳あり、障子に目あり"
-      yaml = "--- #{str}"
-      assert_equal @utf8, str.encoding
-
-      @parser.parse str
-      assert_encodings Encoding.find('EUC-JP'), @handler.strings
-      assert_equal str, @handler.strings.first.encode('UTF-8')
-    ensure
-      Encoding.default_internal = before
+        @parser.parse str
+        assert_encodings Encoding::EUC_JP, @handler.strings
+        assert_equal str, @handler.strings.first.encode('UTF-8')
+      end
     end
 
     def test_scalar

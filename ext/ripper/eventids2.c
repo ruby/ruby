@@ -19,6 +19,7 @@ static ID ripper_id_embvar;
 static ID ripper_id_float;
 static ID ripper_id_gvar;
 static ID ripper_id_ident;
+static ID ripper_id_imaginary;
 static ID ripper_id_int;
 static ID ripper_id_ivar;
 static ID ripper_id_kw;
@@ -41,6 +42,7 @@ static ID ripper_id_qwords_beg;
 static ID ripper_id_qsymbols_beg;
 static ID ripper_id_symbols_beg;
 static ID ripper_id_words_sep;
+static ID ripper_id_rational;
 static ID ripper_id_regexp_beg;
 static ID ripper_id_regexp_end;
 static ID ripper_id_label;
@@ -74,6 +76,7 @@ ripper_init_eventids2(void)
     ripper_id_float = rb_intern_const("on_float");
     ripper_id_gvar = rb_intern_const("on_gvar");
     ripper_id_ident = rb_intern_const("on_ident");
+    ripper_id_imaginary = rb_intern_const("on_imaginary");
     ripper_id_int = rb_intern_const("on_int");
     ripper_id_ivar = rb_intern_const("on_ivar");
     ripper_id_kw = rb_intern_const("on_kw");
@@ -96,6 +99,7 @@ ripper_init_eventids2(void)
     ripper_id_qsymbols_beg = rb_intern_const("on_qsymbols_beg");
     ripper_id_symbols_beg = rb_intern_const("on_symbols_beg");
     ripper_id_words_sep = rb_intern_const("on_words_sep");
+    ripper_id_rational = rb_intern_const("on_rational");
     ripper_id_regexp_beg = rb_intern_const("on_regexp_beg");
     ripper_id_regexp_end = rb_intern_const("on_regexp_end");
     ripper_id_label = rb_intern_const("on_label");
@@ -209,6 +213,7 @@ static const struct token_assoc {
     {tGEQ,		&ripper_id_op},
     {tGVAR,		&ripper_id_gvar},
     {tIDENTIFIER,	&ripper_id_ident},
+    {tIMAGINARY,	&ripper_id_imaginary},
     {tINTEGER,		&ripper_id_int},
     {tIVAR,		&ripper_id_ivar},
     {tLBRACE,		&ripper_id_lbrace},
@@ -234,6 +239,7 @@ static const struct token_assoc {
     {tQWORDS_BEG,	&ripper_id_qwords_beg},
     {tQSYMBOLS_BEG,	&ripper_id_qsymbols_beg},
     {tSYMBOLS_BEG,	&ripper_id_symbols_beg},
+    {tRATIONAL,		&ripper_id_rational},
     {tREGEXP_BEG,	&ripper_id_regexp_beg},
     {tREGEXP_END,	&ripper_id_regexp_end},
     {tRPAREN,		&ripper_id_rparen},

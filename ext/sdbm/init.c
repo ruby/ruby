@@ -117,11 +117,11 @@ fsdbm_close(VALUE obj)
 }
 
 /*
-* call-seq:
-*   sdbm.closed? -> true or false
-*
-* Returns +true+ if the database is closed.
-*/
+ * call-seq:
+ *   sdbm.closed? -> true or false
+ *
+ * Returns +true+ if the database is closed.
+ */
 static VALUE
 fsdbm_closed(VALUE obj)
 {
@@ -142,20 +142,20 @@ fsdbm_alloc(VALUE klass)
     return Data_Wrap_Struct(klass, 0, free_sdbm, 0);
 }
 /*
-* call-seq:
-*   SDBM.new(filename, mode = 0666)
-*
-* Creates a new database handle by opening the given +filename+. SDBM actually
-* uses two physical files, with extensions '.dir' and '.pag'. These extensions
-* will automatically be appended to the +filename+.
-*
-* If the file does not exist, a new file will be created using the given
-* +mode+, unless +mode+ is explicitly set to nil. In the latter case, no
-* database will be created.
-*
-* If the file exists, it will be opened in read/write mode. If this fails, it
-* will be opened in read-only mode.
-*/
+ * call-seq:
+ *   SDBM.new(filename, mode = 0666)
+ *
+ * Creates a new database handle by opening the given +filename+. SDBM actually
+ * uses two physical files, with extensions '.dir' and '.pag'. These extensions
+ * will automatically be appended to the +filename+.
+ *
+ * If the file does not exist, a new file will be created using the given
+ * +mode+, unless +mode+ is explicitly set to nil. In the latter case, no
+ * database will be created.
+ *
+ * If the file exists, it will be opened in read/write mode. If this fails, it
+ * will be opened in read-only mode.
+ */
 static VALUE
 fsdbm_initialize(int argc, VALUE *argv, VALUE obj)
 {
@@ -396,7 +396,6 @@ fsdbm_values_at(int argc, VALUE *argv, VALUE obj)
 static void
 fdbm_modify(VALUE obj)
 {
-    rb_secure(4);
     if (OBJ_FROZEN(obj)) rb_error_frozen("SDBM");
 }
 
@@ -633,7 +632,7 @@ fsdbm_store(VALUE obj, VALUE keystr, VALUE valstr)
 }
 
 static VALUE
-update_i(VALUE pair, VALUE dbm)
+update_i(RB_BLOCK_CALL_FUNC_ARGLIST(pair, dbm))
 {
     Check_Type(pair, T_ARRAY);
     if (RARRAY_LEN(pair) < 2) {

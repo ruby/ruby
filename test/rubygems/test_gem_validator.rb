@@ -32,5 +32,14 @@ class TestGemValidator < Gem::TestCase
 
     assert_equal expected, alien
   end
+
+  def test_alien_default
+    new_default_spec 'c', 1, nil, 'lib/c.rb'
+
+    alien = @validator.alien 'c'
+
+    assert_empty alien
+  end
+
 end
 

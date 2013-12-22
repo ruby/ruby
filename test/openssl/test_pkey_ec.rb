@@ -7,26 +7,27 @@ class OpenSSL::TestEC < Test::Unit::TestCase
     @data1 = 'foo'
     @data2 = 'bar' * 1000 # data too long for DSA sig
 
-    @group1 = OpenSSL::PKey::EC::Group.new('secp112r1')
-    @group2 = OpenSSL::PKey::EC::Group.new('sect163k1')
-    @group3 = OpenSSL::PKey::EC::Group.new('prime256v1')
+    @groups = []
+    @keys = []
 
-    @key1 = OpenSSL::PKey::EC.new
-    @key1.group = @group1
-    @key1.generate_key
+    OpenSSL::PKey::EC.builtin_curves.each do |curve, comment|
+      next if curve.start_with?("Oakley") # Oakley curves are not suitable for ECDSA
+      group = OpenSSL::PKey::EC::Group.new(curve)
 
-    @key2 = OpenSSL::PKey::EC.new(@group2.curve_name)
-    @key2.generate_key
+      key = OpenSSL::PKey::EC.new(group)
+      key.generate_key
 
-    @key3 = OpenSSL::PKey::EC.new(@group3)
-    @key3.generate_key
-
-    @groups = [@group1, @group2, @group3]
-    @keys = [@key1, @key2, @key3]
+      @groups << group
+      @keys << key
+    end
   end
 
   def compare_keys(k1, k2)
     assert_equal(k1.to_pem, k2.to_pem)
+  end
+
+  def test_builtin_curves
+    assert(!OpenSSL::PKey::EC.builtin_curves.empty?)
   end
 
   def test_curve_names
@@ -44,11 +45,12 @@ class OpenSSL::TestEC < Test::Unit::TestCase
     end
   end
 
-  def test_encoding
+  def test_group_encoding
     for group in @groups
       for meth in [:to_der, :to_pem]
         txt = group.send(meth)
         gr = OpenSSL::PKey::EC::Group.new(txt)
+
         assert_equal(txt, gr.send(meth))
 
         assert_equal(group.generator.to_bn, gr.generator.to_bn)
@@ -58,7 +60,9 @@ class OpenSSL::TestEC < Test::Unit::TestCase
         assert_equal(group.degree, gr.degree)
       end
     end
+  end
 
+  def test_key_encoding
     for key in @keys
       group = key.group
 

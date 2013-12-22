@@ -3,7 +3,7 @@
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2008  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * Copyright (c) 2011-2012  K.Takata  <kentkt AT csc DOT jp>
+ * Copyright (c) 2011-2013  K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -118,7 +118,7 @@ static int
 bitset_is_empty(BitSetRef bs)
 {
   int i;
-  for (i = 0; i < (int )BITSET_SIZE; i++) {
+  for (i = 0; i < BITSET_SIZE; i++) {
     if (bs[i] != 0) return 0;
   }
   return 1;
@@ -1943,7 +1943,12 @@ renumber_by_map(Node* node, GroupNumRemap* map)
     r = renumber_by_map(NQTFR(node)->target, map);
     break;
   case NT_ENCLOSE:
-    r = renumber_by_map(NENCLOSE(node)->target, map);
+    {
+      EncloseNode* en = NENCLOSE(node);
+      if (en->type == ENCLOSE_CONDITION)
+        en->regnum = map[en->regnum].new_val;
+      r = renumber_by_map(en->target, map);
+    }
     break;
 
   case NT_BREF:
@@ -4090,8 +4095,8 @@ restart:
   ( BIT_NT_LIST | BIT_NT_ALT | BIT_NT_STR | BIT_NT_CCLASS | BIT_NT_CTYPE | \
     BIT_NT_CANY | BIT_NT_ANCHOR | BIT_NT_ENCLOSE | BIT_NT_QTFR | BIT_NT_CALL )
 
-#define ALLOWED_ENCLOSE_IN_LB       ( ENCLOSE_MEMORY )
-#define ALLOWED_ENCLOSE_IN_LB_NOT   0
+#define ALLOWED_ENCLOSE_IN_LB       ( ENCLOSE_MEMORY | ENCLOSE_OPTION )
+#define ALLOWED_ENCLOSE_IN_LB_NOT   ENCLOSE_OPTION
 
 #define ALLOWED_ANCHOR_IN_LB \
 ( ANCHOR_LOOK_BEHIND | ANCHOR_LOOK_BEHIND_NOT | ANCHOR_BEGIN_LINE | \
@@ -4311,7 +4316,7 @@ typedef struct {
   OptAncInfo anc;
 
   int   reach_end;
-  int   ignore_case;
+  int   ignore_case;  /* -1: unset, 0: case sensitive, 1: ignore case */
   int   len;
   UChar s[OPT_EXACT_MAXLEN];
 } OptExactInfo;
@@ -4548,7 +4553,7 @@ clear_opt_exact_info(OptExactInfo* ex)
   clear_mml(&ex->mmd);
   clear_opt_anc_info(&ex->anc);
   ex->reach_end   = 0;
-  ex->ignore_case = 0;
+  ex->ignore_case = -1;   /* unset */
   ex->len         = 0;
   ex->s[0]        = '\0';
 }
@@ -4566,11 +4571,10 @@ concat_opt_exact_info(OptExactInfo* to, OptExactInfo* add, OnigEncoding enc)
   UChar *p, *end;
   OptAncInfo tanc;
 
-  if (! to->ignore_case && add->ignore_case) {
-    if (to->len >= add->len) return ;  /* avoid */
-
-    to->ignore_case = 1;
-  }
+  if (to->ignore_case < 0)
+    to->ignore_case = add->ignore_case;
+  else if (to->ignore_case != add->ignore_case)
+    return ;  /* avoid */
 
   p = add->s;
   end = p + add->len;
@@ -4636,7 +4640,10 @@ alt_merge_opt_exact_info(OptExactInfo* to, OptExactInfo* add, OptEnv* env)
     to->reach_end = 0;
   }
   to->len = i;
-  to->ignore_case |= add->ignore_case;
+  if (to->ignore_case < 0)
+    to->ignore_case = add->ignore_case;
+  else if (add->ignore_case >= 0)
+    to->ignore_case |= add->ignore_case;
 
   alt_merge_opt_anc_info(&to->anc, &add->anc);
   if (! to->reach_end) to->anc.right_anchor = 0;
@@ -4666,8 +4673,8 @@ select_opt_exact_info(OnigEncoding enc, OptExactInfo* now, OptExactInfo* alt)
     if (alt->len > 1) v2 += 5;
   }
 
-  if (now->ignore_case == 0) v1 *= 2;
-  if (alt->ignore_case == 0) v2 *= 2;
+  if (now->ignore_case <= 0) v1 *= 2;
+  if (alt->ignore_case <= 0) v2 *= 2;
 
   if (comp_distance_value(&now->mmd, &alt->mmd, v1, v2) > 0)
     copy_opt_exact_info(now, alt);
@@ -4765,7 +4772,7 @@ comp_opt_exact_or_map_info(OptExactInfo* e, OptMapInfo* m)
 
   if (m->value <= 0) return -1;
 
-  ve = COMP_EM_BASE * e->len * (e->ignore_case ? 1 : 2);
+  ve = COMP_EM_BASE * e->len * (e->ignore_case > 0 ? 1 : 2);
   vm = COMP_EM_BASE * 5 * 2 / m->value;
   return comp_distance_value(&e->mmd, &m->mmd, ve, vm);
 }
@@ -4947,7 +4954,8 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
 
       if (! NSTRING_IS_AMBIG(node)) {
 	concat_opt_exact_info_str(&opt->exb, sn->s, sn->end,
-				  NSTRING_IS_RAW(node), env->enc);
+				  is_raw, env->enc);
+	opt->exb.ignore_case = 0;
 	if (slen > 0) {
 	  add_char_opt_map_info(&opt->map, *(sn->s), env->enc);
 	}
@@ -4987,7 +4995,7 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
       int i, z;
       CClassNode* cc = NCCLASS(node);
 
-      /* no need to check ignore case. (setted in setup_tree()) */
+      /* no need to check ignore case. (set in setup_tree()) */
 
       if (IS_NOT_NULL(cc->mbuf) || IS_NCCLASS_NOT(cc)) {
         OnigDistance min = ONIGENC_MBC_MINLEN(env->enc);
@@ -5260,7 +5268,7 @@ set_optimize_exact_info(regex_t* reg, OptExactInfo* e)
   allow_reverse =
 	ONIGENC_IS_ALLOWED_REVERSE_MATCH(reg->enc, reg->exact, reg->exact_end);
 
-  if (e->ignore_case) {
+  if (e->ignore_case > 0) {
     if (e->len >= 3 || (e->len >= 2 && allow_reverse)) {
       r = set_bm_skip(reg->exact, reg->exact_end, reg,
 		      reg->map, &(reg->int_map), 1);
@@ -6643,7 +6651,7 @@ print_indent_tree(FILE* f, Node* node, int indent)
     fprintf(f, "<enclose:%"PRIxPTR"> ", (intptr_t)node);
     switch (NENCLOSE(node)->type) {
     case ENCLOSE_OPTION:
-      fprintf(f, "option:%d\n", NENCLOSE(node)->option);
+      fprintf(f, "option:%d", NENCLOSE(node)->option);
       break;
     case ENCLOSE_MEMORY:
       fprintf(f, "memory:%d", NENCLOSE(node)->regnum);

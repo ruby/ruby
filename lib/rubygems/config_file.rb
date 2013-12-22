@@ -4,6 +4,9 @@
 # See LICENSE.txt for permissions.
 #++
 
+require 'rubygems/user_interaction'
+require 'rbconfig'
+
 ##
 # Gem::ConfigFile RubyGems options and gem command options from gemrc.
 #
@@ -33,6 +36,8 @@
 
 class Gem::ConfigFile
 
+  include Gem::UserInteraction
+
   DEFAULT_BACKTRACE = false
   DEFAULT_BULK_THRESHOLD = 1000
   DEFAULT_VERBOSITY = true
@@ -49,6 +54,8 @@ class Gem::ConfigFile
   # rubygems/defaults/#{RUBY_ENGINE}.rb
 
   PLATFORM_DEFAULTS = {}
+
+  # :stopdoc:
 
   system_config_path =
     begin
@@ -76,6 +83,8 @@ class Gem::ConfigFile
         RbConfig::CONFIG["sysconfdir"] || "/etc"
       end
     end
+
+  # :startdoc:
 
   SYSTEM_WIDE_CONFIG_FILE = File.join system_config_path, 'gemrc'
 
@@ -119,16 +128,6 @@ class Gem::ConfigFile
   attr_accessor :update_sources
 
   ##
-  # API key for RubyGems.org
-
-  attr_reader :rubygems_api_key
-
-  ##
-  # Hash of RubyGems.org and alternate API keys
-
-  attr_reader :api_keys
-
-  ##
   # True if we want to force specification of gem server when pushing a gem
 
   attr_accessor :disable_default_gem_server
@@ -141,6 +140,11 @@ class Gem::ConfigFile
   # Path name of directory or file of openssl CA certificate, used for remote https connection
 
   attr_reader :ssl_ca_cert
+
+  ##
+  # Path name of directory or file of openssl client certificate, used for remote https connection with client authentication
+
+  attr_reader :ssl_client_cert
 
   ##
   # Create the config file object.  +args+ is the list of arguments
@@ -212,11 +216,55 @@ class Gem::ConfigFile
 
     @ssl_verify_mode  = @hash[:ssl_verify_mode]  if @hash.key? :ssl_verify_mode
     @ssl_ca_cert      = @hash[:ssl_ca_cert]      if @hash.key? :ssl_ca_cert
+    @ssl_client_cert  = @hash[:ssl_client_cert]  if @hash.key? :ssl_client_cert
 
-    load_api_keys
+    @api_keys         = nil
+    @rubygems_api_key = nil
 
     Gem.sources = @hash[:sources] if @hash.key? :sources
     handle_arguments arg_list
+  end
+
+  ##
+  # Hash of RubyGems.org and alternate API keys
+
+  def api_keys
+    load_api_keys unless @api_keys
+
+    @api_keys
+  end
+
+  ##
+  # Checks the permissions of the credentials file.  If they are not 0600 an
+  # error message is displayed and RubyGems aborts.
+
+  def check_credentials_permissions
+    return if Gem.win_platform? # windows doesn't write 0600 as 0600
+    return unless File.exist? credentials_path
+
+    existing_permissions = File.stat(credentials_path).mode & 0777
+
+    return if existing_permissions == 0600
+
+    alert_error <<-ERROR
+Your gem push credentials file located at:
+
+\t#{credentials_path}
+
+has file permissions of 0#{existing_permissions.to_s 8} but 0600 is required.
+
+To fix this error run:
+
+\tchmod 0600 #{credentials_path}
+
+You should reset your credentials at:
+
+\thttps://rubygems.org/profile/edit
+
+if you believe they were disclosed to a third party.
+    ERROR
+
+    terminate_interaction 1
   end
 
   ##
@@ -227,6 +275,8 @@ class Gem::ConfigFile
   end
 
   def load_api_keys
+    check_credentials_permissions
+
     @api_keys = if File.exist? credentials_path then
                   load_file(credentials_path)
                 else
@@ -234,12 +284,27 @@ class Gem::ConfigFile
                 end
 
     if @api_keys.key? :rubygems_api_key then
-      @rubygems_api_key = @api_keys[:rubygems_api_key]
-      @api_keys[:rubygems] = @api_keys.delete :rubygems_api_key unless @api_keys.key? :rubygems
+      @rubygems_api_key    = @api_keys[:rubygems_api_key]
+      @api_keys[:rubygems] = @api_keys.delete :rubygems_api_key unless
+        @api_keys.key? :rubygems
     end
   end
 
-  def rubygems_api_key=(api_key)
+  ##
+  # Returns the RubyGems.org API key
+
+  def rubygems_api_key
+    load_api_keys unless @rubygems_api_key
+
+    @rubygems_api_key
+  end
+
+  ##
+  # Sets the RubyGems.org API key to +api_key+
+
+  def rubygems_api_key= api_key
+    check_credentials_permissions
+
     config = load_file(credentials_path).merge(:rubygems_api_key => api_key)
 
     dirname = File.dirname credentials_path
@@ -255,6 +320,9 @@ class Gem::ConfigFile
     @rubygems_api_key = api_key
   end
 
+  YAMLErrors = [ArgumentError]
+  YAMLErrors << Psych::SyntaxError if defined?(Psych::SyntaxError)
+
   def load_file(filename)
     Gem.load_yaml
 
@@ -263,14 +331,14 @@ class Gem::ConfigFile
     begin
       content = YAML.load(File.read(filename))
       unless content.kind_of? Hash
-        warn "Failed to load #{config_file_name} because it doesn't contain valid YAML hash"
+        warn "Failed to load #{filename} because it doesn't contain valid YAML hash"
         return {}
       end
       return content
-    rescue ArgumentError
-      warn "Failed to load #{config_file_name}"
+    rescue *YAMLErrors => e
+      warn "Failed to load #{filename}, #{e.to_s}"
     rescue Errno::EACCES
-      warn "Failed to load #{config_file_name} due to permissions problem."
+      warn "Failed to load #{filename} due to permissions problem."
     end
 
     {}

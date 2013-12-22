@@ -10,7 +10,7 @@
 #
 
 class Shell #:nodoc:
-  # Any result of command exection is a Filter.
+  # Any result of command execution is a Filter.
   #
   # This class includes Enumerable, therefore a Filter object can use all
   # Enumerable

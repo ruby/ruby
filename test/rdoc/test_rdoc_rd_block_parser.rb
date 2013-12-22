@@ -8,13 +8,6 @@ class TestRDocRdBlockParser < RDoc::TestCase
     @block_parser = RDoc::RD::BlockParser.new
   end
 
-  def mu_pp(obj)
-    s = ""
-    s = PP.pp obj, s
-    s = s.force_encoding(Encoding.default_external) if defined? Encoding
-    s.chomp
-  end
-
   def test_add_footnote
     index = @block_parser.add_footnote 'context'
 
@@ -538,4 +531,3 @@ two
   end
 
 end
-

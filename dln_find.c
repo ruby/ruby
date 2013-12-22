@@ -11,19 +11,11 @@
 
 #ifdef RUBY_EXPORT
 #include "ruby/ruby.h"
-#define dln_notimplement rb_notimplement
-#define dln_memerror rb_memerror
-#define dln_exit rb_exit
-#define dln_loaderror rb_loaderror
 #define dln_warning rb_warning
 #define dln_warning_arg
 #else
-#define dln_notimplement --->>> dln not implemented <<<---
-#define dln_memerror abort
-#define dln_exit exit
 #define dln_warning fprintf
 #define dln_warning_arg stderr,
-static void dln_loaderror(const char *format, ...);
 #endif
 #include "dln.h"
 
@@ -67,14 +59,16 @@ char *dln_argv0;
 # include <unistd.h>
 #endif
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !HAVE_DECL_GETENV
 char *getenv();
 #endif
 
-static char *dln_find_1(const char *fname, const char *path, char *buf, size_t size, int exe_flag);
+static char *dln_find_1(const char *fname, const char *path, char *buf, size_t size, int exe_flag
+			DLN_FIND_EXTRA_ARG_DECL);
 
 char *
-dln_find_exe_r(const char *fname, const char *path, char *buf, size_t size)
+dln_find_exe_r(const char *fname, const char *path, char *buf, size_t size
+	       DLN_FIND_EXTRA_ARG_DECL)
 {
     char *envpath = 0;
 
@@ -90,35 +84,23 @@ dln_find_exe_r(const char *fname, const char *path, char *buf, size_t size)
 	path = "/usr/local/bin:/usr/ucb:/usr/bin:/bin:.";
 #endif
     }
-    buf = dln_find_1(fname, path, buf, size, 1);
+    buf = dln_find_1(fname, path, buf, size, 1 DLN_FIND_EXTRA_ARG);
     if (envpath) free(envpath);
     return buf;
 }
 
 char *
-dln_find_file_r(const char *fname, const char *path, char *buf, size_t size)
+dln_find_file_r(const char *fname, const char *path, char *buf, size_t size
+		DLN_FIND_EXTRA_ARG_DECL)
 {
     if (!path) path = ".";
-    return dln_find_1(fname, path, buf, size, 0);
-}
-
-static char fbuf[MAXPATHLEN];
-
-char *
-dln_find_exe(const char *fname, const char *path)
-{
-    return dln_find_exe_r(fname, path, fbuf, sizeof(fbuf));
-}
-
-char *
-dln_find_file(const char *fname, const char *path)
-{
-    return dln_find_file_r(fname, path, fbuf, sizeof(fbuf));
+    return dln_find_1(fname, path, buf, size, 0 DLN_FIND_EXTRA_ARG);
 }
 
 static char *
 dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
-	   int exe_flag /* non 0 if looking for executable. */)
+	   int exe_flag /* non 0 if looking for executable. */
+	   DLN_FIND_EXTRA_ARG_DECL)
 {
     register const char *dp;
     register const char *ep;

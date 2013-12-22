@@ -98,14 +98,22 @@ module OpenSSL
       should_verify_common_name = true
       cert.extensions.each{|ext|
         next if ext.oid != "subjectAltName"
-        ext.value.split(/,\s+/).each{|general_name|
-          if /\ADNS:(.*)/ =~ general_name
+        ostr = OpenSSL::ASN1.decode(ext.to_der).value.last
+        sequence = OpenSSL::ASN1.decode(ostr.value)
+        sequence.value.each{|san|
+          case san.tag
+          when 2 # dNSName in GeneralName (RFC5280)
             should_verify_common_name = false
-            reg = Regexp.escape($1).gsub(/\\\*/, "[^.]+")
+            reg = Regexp.escape(san.value).gsub(/\\\*/, "[^.]+")
             return true if /\A#{reg}\z/i =~ hostname
-          elsif /\AIP Address:(.*)/ =~ general_name
+          when 7 # iPAddress in GeneralName (RFC5280)
             should_verify_common_name = false
-            return true if $1 == hostname
+            # follows GENERAL_NAME_print() in x509v3/v3_alt.c
+            if san.value.size == 4
+              return true if san.value.unpack('C*').join('.') == hostname
+            elsif san.value.size == 16
+              return true if san.value.unpack('n*').map { |e| sprintf("%X", e) }.join(':') == hostname
+            end
           end
         }
       }
@@ -140,10 +148,16 @@ module OpenSSL
       end
     end
 
+    ##
+    # SSLServer represents a TCP/IP server socket with Secure Sockets Layer.
     class SSLServer
       include SocketForwarder
+      # When true then #accept works exactly the same as TCPServer#accept
       attr_accessor :start_immediately
 
+      # Creates a new instance of SSLServer.
+      # * +srv+ is an instance of TCPServer.
+      # * +ctx+ is an instance of OpenSSL::SSL::SSLContext.
       def initialize(svr, ctx)
         @svr = svr
         @ctx = ctx
@@ -156,18 +170,22 @@ module OpenSSL
         @start_immediately = true
       end
 
+      # Returns the TCPServer passed to the SSLServer when initialized.
       def to_io
         @svr
       end
 
+      # See TCPServer#listen for details.
       def listen(backlog=5)
         @svr.listen(backlog)
       end
 
+      # See BasicSocket#shutdown for details.
       def shutdown(how=Socket::SHUT_RDWR)
         @svr.shutdown(how)
       end
 
+      # Works similar to TCPServer#accept.
       def accept
         sock = @svr.accept
         begin
@@ -181,6 +199,7 @@ module OpenSSL
         end
       end
 
+      # See IO#close for details.
       def close
         @svr.close
       end

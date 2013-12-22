@@ -1,0 +1,11 @@
+$(OBJS): $(HDRS) $(ruby_headers) \
+  $(top_srcdir)/vm_core.h \
+  $(top_srcdir)/node.h \
+  $(top_srcdir)/vm_debug.h \
+  $(top_srcdir)/vm_opts.h \
+  {$(VPATH)}id.h \
+  $(top_srcdir)/method.h \
+  $(top_srcdir)/ruby_atomic.h \
+  $(top_srcdir)/thread_pthread.h \
+  $(top_srcdir)/internal.h \
+  $(top_srcdir)/thread_native.h

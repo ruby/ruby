@@ -1,5 +1,6 @@
 #!ruby
 
+ARGF.binmode
 source = ARGF.read
 source = source.gsub(%r{/\*([!*])((?!\*/).+?)\*/}m) do |comment|
   marker, comment = $1, $2

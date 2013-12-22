@@ -105,6 +105,32 @@ class TestClass < Test::Unit::TestCase
     end
   end
 
+  def test_extend_object
+    c = Class.new
+    assert_raise(TypeError) do
+      Module.instance_method(:extend_object).bind(c).call(Object.new)
+    end
+  end
+
+  def test_append_features
+    c = Class.new
+    assert_raise(TypeError) do
+      Module.instance_method(:append_features).bind(c).call(Module.new)
+    end
+  end
+
+  def test_prepend_features
+    c = Class.new
+    assert_raise(TypeError) do
+      Module.instance_method(:prepend_features).bind(c).call(Module.new)
+    end
+  end
+
+  def test_module_specific_methods
+    assert_empty(Class.private_instance_methods(true) &
+      [:module_function, :extend_object, :append_features, :prepend_features])
+  end
+
   def test_method_redefinition
     feature2155 = '[ruby-dev:39400]'
 
@@ -118,23 +144,21 @@ class TestClass < Test::Unit::TestCase
     assert_match(/:#{line}: warning: method redefined; discarding old foo/, stderr)
     assert_match(/:#{line-1}: warning: previous definition of foo/, stderr, feature2155)
 
-    stderr = EnvUtil.verbose_warning do
+    assert_warning '' do
       Class.new do
         def foo; end
         alias bar foo
         def foo; end
       end
     end
-    assert_equal("", stderr)
 
-    stderr = EnvUtil.verbose_warning do
+    assert_warning '' do
       Class.new do
         def foo; end
         alias bar foo
         alias bar foo
       end
     end
-    assert_equal("", stderr)
 
     line = __LINE__+4
     stderr = EnvUtil.verbose_warning do
@@ -146,22 +170,20 @@ class TestClass < Test::Unit::TestCase
     assert_match(/:#{line}: warning: method redefined; discarding old foo/, stderr)
     assert_match(/:#{line-1}: warning: previous definition of foo/, stderr, feature2155)
 
-    stderr = EnvUtil.verbose_warning do
+    assert_warning '' do
       Class.new do
         define_method(:foo) do end
         alias bar foo
         alias bar foo
       end
     end
-    assert_equal("", stderr)
 
-    stderr = EnvUtil.verbose_warning do
+    assert_warning '' do
       Class.new do
         def foo; end
         undef foo
       end
     end
-    assert_equal("", stderr)
   end
 
   def test_check_inheritable
@@ -349,5 +371,11 @@ class TestClass < Test::Unit::TestCase
     d = c.clone
     assert_empty(added.grep(->(k) {c == k[0]}), bug5283)
     assert_equal(:foo, d.foo)
+  end
+
+  def test_singleton_class_p
+    feature7609 = '[ruby-core:51087] [Feature #7609]'
+    assert_predicate(self.singleton_class, :singleton_class?, feature7609)
+    assert_not_predicate(self.class, :singleton_class?, feature7609)
   end
 end

@@ -11,8 +11,10 @@
 #ifndef METHOD_H
 #define METHOD_H
 
+#include "internal.h"
+
 #ifndef END_OF_ENUMERATION
-# ifdef __GNUC__
+# if defined(__GNUC__) &&! defined(__STRICT_ANSI__)
 #   define END_OF_ENUMERATION(key)
 # else
 #   define END_OF_ENUMERATION(key) END_OF_##key##_PLACEHOLDER = 0
@@ -68,7 +70,7 @@ typedef struct rb_method_cfunc_struct {
 
 typedef struct rb_method_attr_struct {
     ID id;
-    VALUE location;
+    const VALUE location;
 } rb_method_attr_t;
 
 typedef struct rb_iseq_struct rb_iseq_t;
@@ -77,10 +79,10 @@ typedef struct rb_method_definition_struct {
     rb_method_type_t type; /* method type */
     ID original_id;
     union {
-	rb_iseq_t *iseq;            /* should be mark */
+	rb_iseq_t * const iseq;            /* should be mark */
 	rb_method_cfunc_t cfunc;
 	rb_method_attr_t attr;
-	VALUE proc;                 /* should be mark */
+	const VALUE proc;                 /* should be mark */
 	enum method_optimized_type {
 	    OPTIMIZED_METHOD_TYPE_SEND,
 	    OPTIMIZED_METHOD_TYPE_CALL,
@@ -110,9 +112,10 @@ struct unlinked_method_entry_list_entry {
 void rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_flag_t noex);
 rb_method_entry_t *rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *option, rb_method_flag_t noex);
 rb_method_entry_t *rb_method_entry(VALUE klass, ID id, VALUE *define_class_ptr);
+rb_method_entry_t *rb_method_entry_at(VALUE obj, ID id);
 void rb_add_refined_method_entry(VALUE refined_class, ID mid);
 rb_method_entry_t *rb_resolve_refined_method(VALUE refinements,
-					     rb_method_entry_t *me,
+					     const rb_method_entry_t *me,
 					     VALUE *defined_class_ptr);
 rb_method_entry_t *rb_method_entry_with_refinements(VALUE klass, ID id,
 						    VALUE *defined_class_ptr);
@@ -126,9 +129,14 @@ int rb_method_entry_arity(const rb_method_entry_t *me);
 int rb_method_entry_eq(const rb_method_entry_t *m1, const rb_method_entry_t *m2);
 st_index_t rb_hash_method_entry(st_index_t hash, const rb_method_entry_t *me);
 
+VALUE rb_method_entry_location(rb_method_entry_t *me);
+VALUE rb_mod_method_location(VALUE mod, ID id);
+VALUE rb_obj_method_location(VALUE obj, ID id);
+
 void rb_mark_method_entry(const rb_method_entry_t *me);
 void rb_free_method_entry(rb_method_entry_t *me);
 void rb_sweep_method_entry(void *vm);
-void rb_free_m_table(st_table *tbl);
+void rb_free_m_tbl(st_table *tbl);
+void rb_free_m_tbl_wrapper(struct method_table_wrapper *wrapper);
 
 #endif /* METHOD_H */

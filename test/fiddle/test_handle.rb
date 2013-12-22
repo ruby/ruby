@@ -1,4 +1,7 @@
-require_relative 'helper'
+begin
+  require_relative 'helper'
+rescue LoadError
+end
 
 module Fiddle
   class TestHandle < TestCase
@@ -27,13 +30,13 @@ module Fiddle
       skip "Fiddle::Handle.sym is not supported" if /mswin|mingw/ =~ RUBY_PLATFORM
       begin
         # Linux / Darwin / FreeBSD
-       refute_nil Fiddle::Handle.sym('dlopen')
-       assert_equal Fiddle::Handle.sym('dlopen'), Fiddle::Handle['dlopen']
+        refute_nil Fiddle::Handle.sym('dlopen')
+        assert_equal Fiddle::Handle.sym('dlopen'), Fiddle::Handle['dlopen']
       rescue
         # NetBSD
         require 'objspace'
-       refute_nil Fiddle::Handle.sym('Init_objspace')
-       assert_equal Fiddle::Handle.sym('Init_objspace'), Fiddle::Handle['Init_objspace']
+        refute_nil Fiddle::Handle.sym('Init_objspace')
+        assert_equal Fiddle::Handle.sym('Init_objspace'), Fiddle::Handle['Init_objspace']
       end
     end
 
@@ -183,4 +186,4 @@ module Fiddle
       Fiddle.dlopen("/usr/lib/libc.so").sym('strcpy')
     end if /freebsd/=~ RUBY_PLATFORM
   end
-end
+end if defined?(Fiddle)

@@ -10,7 +10,7 @@
  */
 #include RUBY_EXTCONF_H
 
-#if defined(HAVE_OPENSSL_ENGINE_H) && defined(HAVE_ST_ENGINE)
+#if defined(HAVE_OPENSSL_ENGINE_H) && defined(HAVE_EVP_CIPHER_CTX_ENGINE)
 # include <openssl/engine.h>
 #endif
 #include <openssl/x509_vfy.h>
@@ -122,7 +122,7 @@ EVP_CIPHER_CTX_copy(EVP_CIPHER_CTX *out, EVP_CIPHER_CTX *in)
 {
     memcpy(out, in, sizeof(EVP_CIPHER_CTX));
 
-#if defined(HAVE_ENGINE_ADD) && defined(HAVE_ST_ENGINE)
+#if defined(HAVE_ENGINE_ADD) && defined(HAVE_EVP_CIPHER_CTX_ENGINE)
     if (in->engine) ENGINE_add(out->engine);
     if (in->cipher_data) {
 	out->cipher_data = OPENSSL_malloc(in->cipher->ctx_size);

@@ -403,8 +403,17 @@ class TestPack < Test::Unit::TestCase
     assert_equal([578437695752307201, -506097522914230529], s2.unpack("q*"))
     assert_equal([578437695752307201, 17940646550795321087], s1.unpack("Q*"))
 
+    # Note: q! and Q! should not work on platform which has no long long type.
+    # Is there a such platform now?
+    s1 = [578437695752307201, -506097522914230529].pack("q!*")
+    s2 = [578437695752307201, 17940646550795321087].pack("Q!*")
+    assert_equal([578437695752307201, -506097522914230529], s2.unpack("q!*"))
+    assert_equal([578437695752307201, 17940646550795321087], s1.unpack("Q!*"))
+
     assert_equal(8, [1].pack("q").bytesize)
     assert_equal(8, [1].pack("Q").bytesize)
+    assert_operator(8, :<=, [1].pack("q!").bytesize)
+    assert_operator(8, :<=, [1].pack("Q!").bytesize)
   end
 
   def test_pack_unpack_nN
@@ -436,7 +445,7 @@ class TestPack < Test::Unit::TestCase
       %w(f d e E g G).each do |f|
         v = [x].pack(f).unpack(f)
         if x.nan?
-          assert(v.first.nan?)
+          assert_predicate(v.first, :nan?)
         else
           assert_equal([x], v)
         end
@@ -536,6 +545,10 @@ EXPECTED
     assert_equal(["\377"], "/w==\n".unpack("m"))
     assert_equal(["\377\377"], "//8=\n".unpack("m"))
     assert_equal(["\377\377\377"], "////\n".unpack("m"))
+    assert_equal([""], "A\n".unpack("m"))
+    assert_equal(["\0"], "AA\n".unpack("m"))
+    assert_equal(["\0"], "AA=\n".unpack("m"))
+    assert_equal(["\0\0"], "AAA\n".unpack("m"))
   end
 
   def test_pack_unpack_m0
@@ -629,16 +642,6 @@ EXPECTED
     assert_equal([0x40000000], "\204\200\200\200\000".unpack("w"), [0x40000000])
     assert_equal([0xffffffff], "\217\377\377\377\177".unpack("w"), [0xffffffff])
     assert_equal([0x100000000], "\220\200\200\200\000".unpack("w"), [0x100000000])
-  end
-
-  def test_modify_under_safe4
-    s = "foo"
-    assert_raise(SecurityError) do
-      Thread.new do
-        $SAFE = 4
-        s.clear
-      end.join
-    end
   end
 
   def test_length_too_big

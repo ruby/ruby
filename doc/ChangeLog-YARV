@@ -86,7 +86,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* blockinlining.c, compile.c, compile.h, debug.c, debug.h,
 	insnhelper.h, insns.def, iseq.c, thread.c, thread_pthread.ci,
 	thread_pthread.h, thread_win32.ci, thread_win32.h, vm.c, vm.h,
-	vm_dump.c, vm_evalbody.ci,  vm_opts.h.base,  yarv.h, 
+	vm_dump.c, vm_evalbody.ci,  vm_opts.h.base,  yarv.h,
 	yarv_version.h, yarvcore.c, yarvcore.h :
 	add a header includes copyright
 
@@ -110,7 +110,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* signal.c : ditto
 
-	* test/ruby/test_signal.rb : 
+	* test/ruby/test_signal.rb :
 
 	* thread_pthread.ci : rename timer thread functions
 
@@ -203,7 +203,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/dbm, dl, gdbm, iconv, io, pty, sdbm : added
 
-	* test/dbm, gdbm, io, logger, net, readline, sdbm, soap, 
+	* test/dbm, gdbm, io, logger, net, readline, sdbm, soap,
 	  webrick, win32ole, wsdl, xsd : added
 
 
@@ -652,7 +652,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
         * vm.c : ditto
 
-        * yarvcore.c : prohibit tail call optimization to mark 
+        * yarvcore.c : prohibit tail call optimization to mark
 	iseq object
 
         * yarvcore.h : add some allocator function declaration
@@ -906,7 +906,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h : disable to use get/setcontext
 
-	* lib/webrick/server.rb : add experimental implementation 
+	* lib/webrick/server.rb : add experimental implementation
 	using thraeds pool
 
 
@@ -1447,7 +1447,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def : ditto
 
-	* vm_dump.c : 
+	* vm_dump.c :
 
 	* intern.h : change rb_thread_signal_raise/exit interface
 
@@ -2060,7 +2060,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 2006-02-15(Wed) 17:39:16 +0900  Koichi Sasada  <ko1@atdot.net>
 
-	* eval_intern.h : 
+	* eval_intern.h :
 
 	* eval_jump.h, vm.c : localjump_error() and jump_tag_but_local_jump()
 	move to th_localjump_error and th_jump_tag_but_local_jump at vm.c
@@ -2618,123 +2618,123 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c : revert last commit
 
-	* ascii.c : ditto 
+	* ascii.c : ditto
 
-	* bignum.c : ditto 
+	* bignum.c : ditto
 
-	* class.c : ditto 
+	* class.c : ditto
 
-	* compar.c : ditto 
+	* compar.c : ditto
 
-	* defines.h : ditto 
+	* defines.h : ditto
 
-	* dir.c : ditto 
+	* dir.c : ditto
 
-	* dln.c : ditto 
+	* dln.c : ditto
 
-	* dln.h : ditto 
+	* dln.h : ditto
 
-	* enum.c : ditto 
+	* enum.c : ditto
 
-	* enumerator.c : ditto 
+	* enumerator.c : ditto
 
-	* error.c : ditto 
+	* error.c : ditto
 
-	* euc_jp.c : ditto 
+	* euc_jp.c : ditto
 
-	* file.c : ditto 
+	* file.c : ditto
 
-	* gc.c : ditto 
+	* gc.c : ditto
 
-	* hash.c : ditto 
+	* hash.c : ditto
 
-	* intern.h : ditto 
+	* intern.h : ditto
 
-	* io.c : ditto 
+	* io.c : ditto
 
-	* lex.c : ditto 
+	* lex.c : ditto
 
-	* main.c : ditto 
+	* main.c : ditto
 
-	* marshal.c : ditto 
+	* marshal.c : ditto
 
-	* math.c : ditto 
+	* math.c : ditto
 
-	* missing.h : ditto 
+	* missing.h : ditto
 
-	* node.h : ditto 
+	* node.h : ditto
 
-	* numeric.c : ditto 
+	* numeric.c : ditto
 
-	* object.c : ditto 
+	* object.c : ditto
 
-	* oniguruma.h : ditto 
+	* oniguruma.h : ditto
 
-	* pack.c : ditto 
+	* pack.c : ditto
 
-	* prec.c : ditto 
+	* prec.c : ditto
 
-	* process.c : ditto 
+	* process.c : ditto
 
-	* random.c : ditto 
+	* random.c : ditto
 
-	* range.c : ditto 
+	* range.c : ditto
 
-	* rb/mklog.rb : ditto 
+	* rb/mklog.rb : ditto
 
-	* re.c : ditto 
+	* re.c : ditto
 
-	* regcomp.c : ditto 
+	* regcomp.c : ditto
 
-	* regenc.c : ditto 
+	* regenc.c : ditto
 
-	* regenc.h : ditto 
+	* regenc.h : ditto
 
-	* regerror.c : ditto 
+	* regerror.c : ditto
 
-	* regex.h : ditto 
+	* regex.h : ditto
 
-	* regexec.c : ditto 
+	* regexec.c : ditto
 
-	* regint.h : ditto 
+	* regint.h : ditto
 
-	* regparse.c : ditto 
+	* regparse.c : ditto
 
-	* regparse.h : ditto 
+	* regparse.h : ditto
 
-	* ruby.c : ditto 
+	* ruby.c : ditto
 
-	* ruby.h : ditto 
+	* ruby.h : ditto
 
-	* rubyio.h : ditto 
+	* rubyio.h : ditto
 
-	* rubysig.h : ditto 
+	* rubysig.h : ditto
 
-	* signal.c : ditto 
+	* signal.c : ditto
 
-	* sjis.c : ditto 
+	* sjis.c : ditto
 
-	* sprintf.c : ditto 
+	* sprintf.c : ditto
 
-	* st.c : ditto 
+	* st.c : ditto
 
-	* st.h : ditto 
+	* st.h : ditto
 
-	* string.c : ditto 
+	* string.c : ditto
 
-	* struct.c : ditto 
+	* struct.c : ditto
 
-	* time.c : ditto 
+	* time.c : ditto
 
-	* utf8.c : ditto 
+	* utf8.c : ditto
 
-	* util.c : ditto 
+	* util.c : ditto
 
-	* util.h : ditto 
+	* util.h : ditto
 
-	* variable.c : ditto 
+	* variable.c : ditto
 
-	* version.c : ditto 
+	* version.c : ditto
 
 
 2006-02-12(Sun) 21:33:10 +0900  Koichi Sasada  <ko1@atdot.net>
@@ -3151,7 +3151,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 2006-02-12(Sun) 05:05:02 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c, eval_intern.h, eval_load.c, eval_proc.c, node.h,
-	insnhelper.h, insns.def, vm.c, yarvcore.c, yarvcore.h : 
+	insnhelper.h, insns.def, vm.c, yarvcore.c, yarvcore.h :
 	change cref data structure and unify ruby_class and ruby_cbase
 	and some refoctoring
 
@@ -3810,7 +3810,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_eval.rb : added
 
-	* yarvtest/test_proc.rb : 
+	* yarvtest/test_proc.rb :
 
 
 2005-12-29(Thu) 12:27:12 +0900  Koichi Sasada  <ko1@atdot.net>
@@ -4091,7 +4091,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 2005-12-25(Sun) 01:45:55 +0900  Koichi Sasada  <ko1@atdot.net>
 
-	* insns.def, compile.c, rb/insns2vm.rb, template/insns_info.inc.tmpl : 
+	* insns.def, compile.c, rb/insns2vm.rb, template/insns_info.inc.tmpl :
 	trace stack depth at compile time
 	and use it  as cont_sp for exception handling
 
@@ -4167,7 +4167,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, yarvcore.h : support all defined?() syntax
 
-	* compile.c : fix NODE_COLON2 
+	* compile.c : fix NODE_COLON2
 
 	* yarvtest/test_bin.rb : add or fix tests for above
 
@@ -4278,7 +4278,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def : remove logic for zsuper
 
-	* template/optinsn.inc.tmpl : 
+	* template/optinsn.inc.tmpl :
 
 	* vm.c : remove thread_yield_light_prepare, thread_yield_light_invoke
 
@@ -4292,7 +4292,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* array.c, numeric.c, range.c : add prototype of
 	block inlining function
 
-	* blockinlining.c, vm_opts.h.base : add block inlining flag 
+	* blockinlining.c, vm_opts.h.base : add block inlining flag
 
 	* common.mk, debug.h, debug.c : add debug_breakpoint() for gdb
 
@@ -4328,7 +4328,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c : fix to skip pushing value at "next"
 
-	* yarvcore.h : move definision of 
+	* yarvcore.h : move definition of
 	"struct iseq_compile_data_ensure_node_stack" to compile.c
 
 	* compile.c : fix ensure catch table creation
@@ -4390,7 +4390,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 2005-11-29(Tue) 16:39:07 +0900  Koichi Sasada  <ko1@atdot.net>
 
-	* eval.c, eval_proc.c, vm.c, vm_macro.def : 
+	* eval.c, eval_proc.c, vm.c, vm_macro.def :
 	support define_method and invoke NODE_BMETHOD method
 
 
@@ -4478,7 +4478,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* debug.c : add debug_v() and change to use only printf
 	on debug_id()
 
-	* sample/test.rb : 
+	* sample/test.rb :
 
 	* vm.c : fix make_proc_from_block
 
@@ -4539,7 +4539,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c : support rb_frame_pop() and rb_frame_callee(),
 	add rb_sourcefile(), rb_sourceline(),
-	
+
 
 	* compile.c : support postposition while/until,
 	fix block parameter index
@@ -4582,7 +4582,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/other-lang/eval.rb : fix path
 
-	* lib/English.rb, lib/cgi.rb, lib/complex.rb, lib/delegate.rb : 
+	* lib/English.rb, lib/cgi.rb, lib/complex.rb, lib/delegate.rb :
 	added
 
 
@@ -4712,7 +4712,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 2005-10-05(Wed) 21:20:13 +0900  Koichi Sasada  <ko1@atdot.net>
 
-	* eva.c, eval_thread.c, ruby.h, eval_error.h, eval_jump.h, 
+	* eva.c, eval_thread.c, ruby.h, eval_error.h, eval_jump.h,
 	eval_load.c, thread.c, error.c, compile.h : remove ruby_errinfo
 
 	* thread_win32.h, thread_pthread.h : set stack size to 4KB
@@ -4795,7 +4795,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c, common.mk : add thread.c
 
-	* thread.c, gc.c, eval_thread.c, yarvcore.c, yarvcore.h : 
+	* thread.c, gc.c, eval_thread.c, yarvcore.c, yarvcore.h :
 	support native thread (on pthread)
 
 	* insns.def : add YARV_CHECK_INTS() check
@@ -5322,7 +5322,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c, yarvcore.h : remove cYarvThrowObject (unused)
 
-	* yarvcore.c, yarvcore.h, insns.def : 
+	* yarvcore.c, yarvcore.h, insns.def :
 	thread_object#stack_mark_poinetr
 
 	* depend, rb/eval.rb : BOPT, TOPT -> OPT
@@ -5394,7 +5394,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* tmpl/vmtc.inc.tmpl : add const prefix
 
-	* /rb/asm_parse.rb, extconf.rb : added and make assembler analised output 
+	* /rb/asm_parse.rb, extconf.rb : added and make assembler analised output
 
 	* opt_operand.def : add send operands unification
 
@@ -5493,7 +5493,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* depend : adde reconf rule
 
-	* insnhelper.h : 
+	* insnhelper.h :
 
 	* vm_evalbody.inc : rename to vm_evalbody.h
 
@@ -5711,7 +5711,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h : make type "struct iseq_compile_data"
 
-	* yarvcore.h : iseq_object#insn_info_ary to iseq_object#insn_info_tbl 
+	* yarvcore.h : iseq_object#insn_info_ary to iseq_object#insn_info_tbl
 
 
 2005-02-21(Mon) 05:24:01 +0900  Koichi Sasada  <ko1@atdot.net>
@@ -5736,7 +5736,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test/test_method.rb : add tests for above
 
-	* insns.def : opt_ltlt and 
+	* insns.def : opt_ltlt and
 
 
 2005-02-18(Fri) 08:54:40 +0900  Koichi Sasada  <ko1@atdot.net>
@@ -5770,7 +5770,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h, insns.def, compile.c : support defined? expression (limited)
 
-	* test/test_syn.rb : tests for above is added 
+	* test/test_syn.rb : tests for above is added
 
 	* compile.c, insns.def : support block passed method dispatch
 
@@ -6002,7 +6002,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (thread_dump_regs) : added
 
-	* vm.c (thread_call0, thread_call0_cfunc, thread_invoke_yield, 
+	* vm.c (thread_call0, thread_call0_cfunc, thread_invoke_yield,
 	thread_invoke_yield_cfunc), insns.def (yield, send) :
 	fixed, added to support IFUNC
 
@@ -6322,7 +6322,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 2004-12-02(Thu) 13:20:41 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c, vm.h, vm.c, insns.def, insnhelper.h, yarvutil.rb :
-	add usage analisys framework 
+	add usage analisys framework
 
 	* disasm.c : insn_operand_intern to separate function
 
@@ -6433,7 +6433,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarv.h : added
 
-	* yarvcore.c, yarv.h : support yarv_is_working, yarv_block_given_p, 
+	* yarvcore.c, yarv.h : support yarv_is_working, yarv_block_given_p,
 	yarv_yield, yarv_funcall (only dummy function)
 
 	* vm.c : thread_eval_body changed return value
@@ -6488,7 +6488,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 2004-11-01(Mon) 04:45:54 +0900  Koichi Sasada  <ko1@atdot.net>
 
-	* yarvcore.h, compile.c, debug.c, version.h : 
+	* yarvcore.h, compile.c, debug.c, version.h :
 	redesgin gc debug scheme (GC_CHECK())
 
 	* yarvcore.c : mark iseqobj->current_block on GC

@@ -236,9 +236,9 @@ rb_memsearch(const void *x0, long m, const void *y0, long n, rb_encoding *enc)
 	return 0;
     }
     else if (m == 1) {
-	const unsigned char *ys;
+	const unsigned char *ys = memchr(y, *x, n);
 
-	if (ys = memchr(y, *x, n))
+	if (ys)
 	    return ys - y;
 	else
 	    return -1;
@@ -307,10 +307,10 @@ rb_char_to_option_kcode(int c, int *option, int *kcode)
         *kcode = rb_ascii8bit_encindex();
         return (*option = ARG_ENCODING_NONE);
       case 'e':
-	*kcode = rb_enc_find_index("EUC-JP");
+	*kcode = ENCINDEX_EUC_JP;
 	break;
       case 's':
-	*kcode = rb_enc_find_index("Windows-31J");
+	*kcode = ENCINDEX_Windows_31J;
 	break;
       case 'u':
 	*kcode = rb_utf8_encindex();
@@ -571,12 +571,15 @@ rb_reg_to_s(VALUE re)
 	}
 	if (*ptr == ':' && ptr[len-1] == ')') {
 	    Regexp *rp;
+	    VALUE verbose = ruby_verbose;
+	    ruby_verbose = Qfalse;
 
 	    ++ptr;
 	    len -= 2;
             err = onig_new(&rp, ptr, ptr + len, ONIG_OPTION_DEFAULT,
 			   enc, OnigDefaultSyntax, NULL);
 	    onig_free(rp);
+	    ruby_verbose = verbose;
 	}
 	if (err) {
 	    options = RREGEXP(re)->ptr->options;
@@ -594,8 +597,30 @@ rb_reg_to_s(VALUE re)
     }
 
     rb_str_buf_cat2(str, ":");
-    rb_reg_expr_str(str, (char*)ptr, len, enc, NULL);
-    rb_str_buf_cat2(str, ")");
+    if (rb_enc_asciicompat(enc)) {
+	rb_reg_expr_str(str, (char*)ptr, len, enc, NULL);
+	rb_str_buf_cat2(str, ")");
+    }
+    else {
+	const char *s, *e;
+	char *paren;
+	ptrdiff_t n;
+	rb_str_buf_cat2(str, ")");
+	rb_enc_associate(str, rb_usascii_encoding());
+	str = rb_str_encode(str, rb_enc_from_encoding(enc), 0, Qnil);
+
+	/* backup encoded ")" to paren */
+	s = RSTRING_PTR(str);
+	e = RSTRING_END(str);
+	s = rb_enc_left_char_head(s, e-1, e, enc);
+	n = e - s;
+	paren = ALLOCA_N(char, n);
+	memcpy(paren, s, n);
+	rb_str_resize(str, RSTRING_LEN(str) - n);
+
+	rb_reg_expr_str(str, (char*)ptr, len, enc, NULL);
+	rb_str_buf_cat(str, paren, n);
+    }
     rb_enc_copy(str, re);
 
     OBJ_INFECT(str, re);
@@ -607,7 +632,7 @@ rb_reg_raise(const char *s, long len, const char *err, VALUE re)
 {
     volatile VALUE desc = rb_reg_desc(s, len, re);
 
-    rb_raise(rb_eRegexpError, "%s: %s", err, RSTRING_PTR(desc));
+    rb_raise(rb_eRegexpError, "%s: %"PRIsVALUE, err, desc);
 }
 
 static VALUE
@@ -1348,6 +1373,7 @@ rb_reg_adjust_startpos(VALUE re, VALUE str, long pos, int reverse)
     return pos;
 }
 
+/* returns byte offset */
 long
 rb_reg_search(VALUE re, VALUE str, long pos, int reverse)
 {
@@ -2338,7 +2364,7 @@ rb_reg_preprocess_dregexp(VALUE ary, int options)
     }
 
     for (i = 0; i < RARRAY_LEN(ary); i++) {
-        VALUE str = RARRAY_PTR(ary)[i];
+        VALUE str = RARRAY_AREF(ary, i);
         VALUE buf;
         char *p, *end;
         rb_encoding *src_enc;
@@ -2391,8 +2417,6 @@ rb_reg_initialize(VALUE obj, const char *s, long len, rb_encoding *enc,
     rb_encoding *fixed_enc = 0;
     rb_encoding *a_enc = rb_ascii8bit_encoding();
 
-    if (!OBJ_UNTRUSTED(obj) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't modify regexp");
     rb_check_frozen(obj);
     if (FL_TEST(obj, REG_LITERAL))
 	rb_raise(rb_eSecurityError, "can't modify literal regexp");
@@ -2436,8 +2460,7 @@ rb_reg_initialize(VALUE obj, const char *s, long len, rb_encoding *enc,
 			  options & ARG_REG_OPTION_MASK, err,
 			  sourcefile, sourceline);
     if (!re->ptr) return -1;
-    re->src = rb_enc_str_new(s, len, enc);
-    OBJ_FREEZE(re->src);
+    RB_OBJ_WRITE(obj, &re->src, rb_fstring(rb_enc_str_new(s, len, enc)));
     RB_GC_GUARD(unescaped);
     return 0;
 }
@@ -2468,10 +2491,10 @@ rb_reg_initialize_str(VALUE obj, VALUE str, int options, onig_errmsg_buffer err,
 static VALUE
 rb_reg_s_alloc(VALUE klass)
 {
-    NEWOBJ_OF(re, struct RRegexp, klass, T_REGEXP);
+    NEWOBJ_OF(re, struct RRegexp, klass, T_REGEXP | (RGENGC_WB_PROTECTED_REGEXP ? FL_WB_PROTECTED : 0));
 
     re->ptr = 0;
-    re->src = 0;
+    RB_OBJ_WRITE(re, &re->src, 0);
     re->usecnt = 0;
 
     return (VALUE)re;
@@ -2639,6 +2662,7 @@ match_hash(VALUE match)
 /*
  * call-seq:
  *    mtch == mtch2   -> true or false
+ *    mtch.eql?(mtch2)   -> true or false
  *
  *  Equality---Two matchdata are equal if their target strings,
  *  patterns, and matched positions are identical.
@@ -2667,12 +2691,7 @@ reg_operand(VALUE s, int check)
 	return rb_sym_to_s(s);
     }
     else {
-	VALUE tmp = rb_check_string_type(s);
-	if (check && NIL_P(tmp)) {
-	    rb_raise(rb_eTypeError, "can't convert %s to String",
-		     rb_obj_classname(s));
-	}
-	return tmp;
+	return (check ? rb_str_to_str : rb_check_string_type)(s);
     }
 }
 
@@ -2889,9 +2908,9 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 
 /*
  *  call-seq:
- *     Regexp.new(string, [options [, lang]])        -> regexp
+ *     Regexp.new(string, [options [, kcode]])        -> regexp
  *     Regexp.new(regexp)                            -> regexp
- *     Regexp.compile(string, [options [, lang]])    -> regexp
+ *     Regexp.compile(string, [options [, kcode]])    -> regexp
  *     Regexp.compile(regexp)                        -> regexp
  *
  *  Constructs a new regular expression from +pattern+, which can be either a
@@ -2903,7 +2922,8 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
  *  <em>or</em>-ed together.  Otherwise, if +options+ is not
  *  +nil+ or +false+, the regexp will be case insensitive.
  *
- *  When the +lang+ parameter is `n' or `N' sets the regexp no encoding.
+ *  When the +kcode+ parameter is `n' or `N' sets the regexp no encoding.
+ *  It means that the regexp is for binary strings.
  *
  *    r1 = Regexp.new('^a-z+:\\s+\w+') #=> /^a-z+:\s+\w+/
  *    r2 = Regexp.new('cat', true)     #=> /cat/i
@@ -3255,6 +3275,9 @@ rb_reg_s_union(VALUE self, VALUE args0)
  *     Regexp.union("skiing", "sledding")   #=> /skiing|sledding/
  *     Regexp.union(["skiing", "sledding"]) #=> /skiing|sledding/
  *     Regexp.union(/dogs/, /cats/i)        #=> /(?-mix:dogs)|(?i-mx:cats)/
+ *
+ *  Note: the arguments for ::union will try to be converted into a regular
+ *  expression literal via #to_regexp.
  */
 static VALUE
 rb_reg_s_union_m(VALUE self, VALUE args)
@@ -3519,7 +3542,7 @@ re_warn(const char *s)
  *  <code>%r{...}</code> literals, and by the <code>Regexp::new</code>
  *  constructor.
  *
- *  :include: doc/re.rdoc
+ *  :include: doc/regexp.rdoc
  */
 
 void

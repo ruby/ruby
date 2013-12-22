@@ -1,5 +1,9 @@
 require 'rubygems/test_case'
 
+unless defined?(OpenSSL::SSL) then
+  warn 'Skipping Gem::Security::Signer tests.  openssl not found.'
+end
+
 class TestGemSecuritySigner < Gem::TestCase
 
   ALTERNATE_KEY  = load_key 'alternate'
@@ -50,10 +54,12 @@ class TestGemSecuritySigner < Gem::TestCase
   end
 
   def test_initialize_default
-    private_key_path = File.join Gem.user_home, 'gem-private_key.pem'
+    FileUtils.mkdir_p File.join(Gem.user_home, '.gem')
+
+    private_key_path = File.join Gem.user_home, '.gem', 'gem-private_key.pem'
     Gem::Security.write PRIVATE_KEY, private_key_path
 
-    public_cert_path = File.join Gem.user_home, 'gem-public_cert.pem'
+    public_cert_path = File.join Gem.user_home, '.gem', 'gem-public_cert.pem'
     Gem::Security.write PUBLIC_CERT, public_cert_path
 
     signer = Gem::Security::Signer.new nil, nil
@@ -68,6 +74,20 @@ class TestGemSecuritySigner < Gem::TestCase
     signer = Gem::Security::Signer.new key_file, nil
 
     assert_equal PRIVATE_KEY.to_s, signer.key.to_s
+  end
+
+  def test_initialize_encrypted_key_path
+    key_file = ENCRYPTED_PRIVATE_KEY_PATH
+
+    signer = Gem::Security::Signer.new key_file, nil, PRIVATE_KEY_PASSPHRASE
+
+    assert_equal ENCRYPTED_PRIVATE_KEY.to_s, signer.key.to_s
+  end
+
+  def test_extract_name
+    signer = Gem::Security::Signer.new nil, nil
+
+    assert_equal 'child@example', signer.extract_name(CHILD_CERT)
   end
 
   def test_load_cert_chain
@@ -120,12 +140,12 @@ c7NM7KZZjj7G++SXjYTEI1PHSA7aFQ/i/+qSUvx+Pg==
   end
 
   def test_sign_expired_auto_update
-    FileUtils.mkdir_p Gem.user_home, :mode => 0700
+    FileUtils.mkdir_p File.join(Gem.user_home, '.gem'), :mode => 0700
 
-    private_key_path = File.join(Gem.user_home, 'gem-private_key.pem')
+    private_key_path = File.join(Gem.user_home, '.gem', 'gem-private_key.pem')
     Gem::Security.write PRIVATE_KEY, private_key_path
 
-    cert_path = File.join Gem.user_home, 'gem-public_cert.pem'
+    cert_path = File.join Gem.user_home, '.gem', 'gem-public_cert.pem'
     Gem::Security.write EXPIRED_CERT, cert_path
 
     signer = Gem::Security::Signer.new PRIVATE_KEY, [EXPIRED_CERT]
@@ -140,14 +160,14 @@ c7NM7KZZjj7G++SXjYTEI1PHSA7aFQ/i/+qSUvx+Pg==
     expiry = EXPIRED_CERT.not_after.strftime "%Y%m%d%H%M%S"
 
     expired_path =
-      File.join Gem.user_home, "gem-public_cert.pem.expired.#{expiry}"
+      File.join Gem.user_home, '.gem', "gem-public_cert.pem.expired.#{expiry}"
 
     assert_path_exists expired_path
     assert_equal EXPIRED_CERT.to_pem, File.read(expired_path)
   end
 
   def test_sign_expired_auto_update_exists
-    FileUtils.mkdir_p Gem.user_home, :mode => 0700
+    FileUtils.mkdir_p File.join(Gem.user_home, '.gem'), :mode => 0700
 
     expiry = EXPIRED_CERT.not_after.strftime "%Y%m%d%H%M%S"
     expired_path =
@@ -184,5 +204,5 @@ c7NM7KZZjj7G++SXjYTEI1PHSA7aFQ/i/+qSUvx+Pg==
     end
   end
 
-end
+end if defined?(OpenSSL::SSL)
 

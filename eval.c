@@ -20,8 +20,6 @@
 #include "vm_core.h"
 #include "probes_helper.h"
 
-#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
-
 NORETURN(void rb_raise_jump(VALUE));
 
 NODE *rb_vm_get_cref(const rb_iseq_t *, const VALUE *);
@@ -34,9 +32,13 @@ VALUE rb_eSysStackError;
 #include "eval_error.c"
 #include "eval_jump.c"
 
+#define CLASS_OR_MODULE_P(obj) \
+    (!SPECIAL_CONST_P(obj) && \
+     (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE))
+
 /* Initializes the Ruby VM and builtin libraries.
  * @retval 0 if succeeded.
- * @retval non-zero an error occured.
+ * @retval non-zero an error occurred.
  */
 int
 ruby_setup(void)
@@ -65,7 +67,7 @@ ruby_setup(void)
 
 /* Calls ruby_setup() and check error.
  *
- * Prints errors and calls exit(3) if an error occured.
+ * Prints errors and calls exit(3) if an error occurred.
  */
 void
 ruby_init(void)
@@ -80,7 +82,7 @@ ruby_init(void)
 /*! Processes command line arguments and compiles the Ruby source to execute.
  *
  * This function does:
- * \li  Processses the given command line flags and arguments for ruby(1)
+ * \li  Processes the given command line flags and arguments for ruby(1)
  * \li compiles the source code from the given argument, -e or stdin, and
  * \li returns the compiled source as an opaque pointer to an internal data structure
  *
@@ -129,7 +131,7 @@ ruby_finalize_1(void)
 
 /** Runs the VM finalization processes.
  *
- * <code>END{}</code> and procs registered by <code>Kernel.#at_ext</code> are
+ * <code>END{}</code> and procs registered by <code>Kernel.#at_exit</code> are
  * executed here. See the Ruby language spec for more details.
  *
  * @note This function is allowed to raise an exception if an error occurred.
@@ -147,7 +149,7 @@ ruby_finalize(void)
  * resources used by the VM.
  *
  * @param ex Default value to the return value.
- * @return If an error occured returns a non-zero. If otherwise, returns the
+ * @return If an error occurred returns a non-zero. If otherwise, returns the
  *         given ex.
  * @note This function does not raise any exception.
  */
@@ -190,12 +192,6 @@ ruby_cleanup(volatile int ex)
     }
     th->errinfo = errs[1];
     ex = error_handle(ex);
-    ruby_finalize_1();
-
-    /* unlock again if finalizer took mutexes. */
-    rb_threadptr_unlock_all_locking_mutexes(GET_THREAD());
-    POP_TAG();
-    rb_thread_stop_timer_thread(1);
 
 #if EXIT_SUCCESS != 0 || EXIT_FAILURE != 1
     switch (ex) {
@@ -230,6 +226,13 @@ ruby_cleanup(volatile int ex)
 	    ex = EXIT_FAILURE;
 	}
     }
+
+    ruby_finalize_1();
+
+    /* unlock again if finalizer took mutexes. */
+    rb_threadptr_unlock_all_locking_mutexes(GET_THREAD());
+    POP_TAG();
+    rb_thread_stop_timer_thread(1);
     ruby_vm_destruct(GET_VM());
     if (state) ruby_default_signal(state);
 
@@ -293,7 +296,7 @@ ruby_executable_node(void *n, int *status)
 }
 
 /*! Runs the given compiled source and exits this process.
- * @retval 0 if successfully run thhe source
+ * @retval 0 if successfully run the source
  * @retval non-zero if an error occurred.
 */
 int
@@ -402,13 +405,17 @@ rb_mod_s_constants(int argc, VALUE *argv, VALUE mod)
 void
 rb_frozen_class_p(VALUE klass)
 {
-    const char *desc = "something(?!)";
-
+    if (SPECIAL_CONST_P(klass)) {
+      noclass:
+	Check_Type(klass, T_CLASS);
+    }
     if (OBJ_FROZEN(klass)) {
+	const char *desc;
+
 	if (FL_TEST(klass, FL_SINGLETON))
 	    desc = "object";
 	else {
-	    switch (TYPE(klass)) {
+	    switch (BUILTIN_TYPE(klass)) {
 	      case T_MODULE:
 	      case T_ICLASS:
 		desc = "module";
@@ -416,6 +423,8 @@ rb_frozen_class_p(VALUE klass)
 	      case T_CLASS:
 		desc = "class";
 		break;
+	      default:
+		goto noclass;
 	    }
 	}
 	rb_error_frozen(desc);
@@ -423,6 +432,34 @@ rb_frozen_class_p(VALUE klass)
 }
 
 NORETURN(static void rb_longjmp(int, volatile VALUE));
+static VALUE get_errinfo(void);
+static VALUE get_thread_errinfo(rb_thread_t *th);
+
+static VALUE
+exc_setup_cause(VALUE exc, VALUE cause)
+{
+    ID id_cause;
+    CONST_ID(id_cause, "cause");
+
+#if SUPPORT_JOKE
+    if (NIL_P(cause)) {
+	ID id_true_cause;
+	CONST_ID(id_true_cause, "true_cause");
+
+	cause = rb_attr_get(rb_eFatal, id_true_cause);
+	if (NIL_P(cause)) {
+	    cause = rb_exc_new_cstr(rb_eFatal, "because using such Ruby");
+	    rb_ivar_set(cause, id_cause, INT2FIX(42)); /* the answer */
+	    OBJ_FREEZE(cause);
+	    rb_ivar_set(rb_eFatal, id_true_cause, cause);
+	}
+    }
+#endif
+    if (!NIL_P(cause) && cause != exc) {
+	rb_ivar_set(exc, id_cause, cause);
+    }
+    return exc;
+}
 
 static void
 setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg)
@@ -439,6 +476,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg)
     if (NIL_P(mesg)) {
 	mesg = rb_exc_new(rb_eRuntimeError, 0, 0);
     }
+    exc_setup_cause(mesg, get_thread_errinfo(th));
 
     file = rb_sourcefile();
     if (file) line = rb_sourceline();
@@ -455,10 +493,12 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg)
 		if (OBJ_FROZEN(mesg)) {
 		    mesg = rb_obj_dup(mesg);
 		}
+		rb_iv_set(mesg, "bt_locations", at);
 		set_backtrace(mesg, at);
 	    }
 	}
     }
+
     if (!NIL_P(mesg)) {
 	th->errinfo = mesg;
     }
@@ -471,19 +511,16 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg)
 	if ((status = EXEC_TAG()) == 0) {
 	    RB_GC_GUARD(e) = rb_obj_as_string(e);
 	    if (file && line) {
-		warn_printf("Exception `%s' at %s:%d - %s\n",
-			    rb_obj_classname(th->errinfo),
-			    file, line, RSTRING_PTR(e));
+		warn_printf("Exception `%s' at %s:%d - %"PRIsVALUE"\n",
+			    rb_obj_classname(th->errinfo), file, line, e);
 	    }
 	    else if (file) {
-		warn_printf("Exception `%s' at %s - %s\n",
-			    rb_obj_classname(th->errinfo),
-			    file, RSTRING_PTR(e));
+		warn_printf("Exception `%s' at %s - %"PRIsVALUE"\n",
+			    rb_obj_classname(th->errinfo), file, e);
 	    }
 	    else {
-		warn_printf("Exception `%s' - %s\n",
-			    rb_obj_classname(th->errinfo),
-			    RSTRING_PTR(e));
+		warn_printf("Exception `%s' - %"PRIsVALUE"\n",
+			    rb_obj_classname(th->errinfo), e);
 	    }
 	}
 	POP_TAG();
@@ -547,8 +584,6 @@ rb_interrupt(void)
     rb_raise(rb_eInterrupt, "%s", "");
 }
 
-static VALUE get_errinfo(void);
-
 /*
  *  call-seq:
  *     raise
@@ -592,7 +627,7 @@ rb_f_raise(int argc, VALUE *argv)
 static VALUE
 make_exception(int argc, VALUE *argv, int isstr)
 {
-    VALUE mesg;
+    VALUE mesg, exc;
     ID exception;
     int n;
 
@@ -601,10 +636,11 @@ make_exception(int argc, VALUE *argv, int isstr)
       case 0:
 	break;
       case 1:
-	if (NIL_P(argv[0]))
+	exc = argv[0];
+	if (NIL_P(exc))
 	    break;
 	if (isstr) {
-	    mesg = rb_check_string_type(argv[0]);
+	    mesg = rb_check_string_type(exc);
 	    if (!NIL_P(mesg)) {
 		mesg = rb_exc_new3(rb_eRuntimeError, mesg);
 		break;
@@ -615,11 +651,12 @@ make_exception(int argc, VALUE *argv, int isstr)
 
       case 2:
       case 3:
+	exc = argv[0];
 	n = 1;
       exception_call:
-	if (argv[0] == sysstack_error) return argv[0];
+	if (exc == sysstack_error) return exc;
 	CONST_ID(exception, "exception");
-	mesg = rb_check_funcall(argv[0], exception, n, argv+1);
+	mesg = rb_check_funcall(exc, exception, n, argv+1);
 	if (mesg == Qundef) {
 	    rb_raise(rb_eTypeError, "exception class/object expected");
 	}
@@ -654,10 +691,10 @@ rb_raise_jump(VALUE mesg)
     ID mid = cfp->me->called_id;
 
     th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, self, mid, klass, Qnil);
 
     setup_exception(th, TAG_RAISE, mesg);
 
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, self, mid, klass, Qnil);
     rb_thread_raised_clear(th);
     JUMP_TAG(TAG_RAISE);
 }
@@ -704,7 +741,7 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
     int state;
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
-    volatile VALUE result;
+    volatile VALUE result = Qfalse;
     volatile VALUE e_info = th->errinfo;
     va_list args;
 
@@ -712,6 +749,15 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
     if ((state = TH_EXEC_TAG()) == 0) {
       retry_entry:
 	result = (*b_proc) (data1);
+    }
+    else if (result) {
+	/* escape from r_proc */
+	if (state == TAG_RETRY) {
+	    state = 0;
+	    th->errinfo = Qnil;
+	    result = Qfalse;
+	    goto retry_entry;
+	}
     }
     else {
 	th->cfp = cfp; /* restore */
@@ -730,25 +776,12 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 	    va_end(args);
 
 	    if (handle) {
+		result = Qnil;
+		state = 0;
 		if (r_proc) {
-		    PUSH_TAG();
-		    if ((state = EXEC_TAG()) == 0) {
-			result = (*r_proc) (data2, th->errinfo);
-		    }
-		    POP_TAG();
-		    if (state == TAG_RETRY) {
-			state = 0;
-			th->errinfo = Qnil;
-			goto retry_entry;
-		    }
+		    result = (*r_proc) (data2, th->errinfo);
 		}
-		else {
-		    result = Qnil;
-		    state = 0;
-		}
-		if (state == 0) {
-		    th->errinfo = e_info;
-		}
+		th->errinfo = e_info;
 	    }
 	}
     }
@@ -771,7 +804,7 @@ VALUE
 rb_protect(VALUE (* proc) (VALUE), VALUE data, int * state)
 {
     volatile VALUE result = Qnil;
-    int status;
+    volatile int status;
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
     struct rb_vm_protect_tag protect_tag;
@@ -785,16 +818,15 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int * state)
     if ((status = TH_EXEC_TAG()) == 0) {
 	SAVE_ROOT_JMPBUF(th, result = (*proc) (data));
     }
+    else {
+	th->cfp = cfp;
+    }
     MEMCPY(&(th)->root_jmpbuf, &org_jmpbuf, rb_jmpbuf_t, 1);
     th->protect_tag = protect_tag.prev;
     TH_POP_TAG();
 
     if (state) {
 	*state = status;
-    }
-    if (status != 0) {
-	th->cfp = cfp;
-	return Qnil;
     }
 
     return result;
@@ -805,7 +837,14 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
 {
     int state;
     volatile VALUE result = Qnil;
-
+    volatile VALUE errinfo;
+    rb_thread_t *const th = GET_THREAD();
+    rb_ensure_list_t ensure_list;
+    ensure_list.entry.marker = 0;
+    ensure_list.entry.e_proc = e_proc;
+    ensure_list.entry.data2 = data2;
+    ensure_list.next = th->ensure_list;
+    th->ensure_list = &ensure_list;
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
 	result = (*b_proc) (data1);
@@ -813,7 +852,10 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
     POP_TAG();
     /* TODO: fix me */
     /* retval = prot_tag ? prot_tag->retval : Qnil; */     /* save retval */
-    (*e_proc) (data2);
+    errinfo = th->errinfo;
+    th->ensure_list=ensure_list.next;
+    (*ensure_list.entry.e_proc)(ensure_list.entry.data2);
+    th->errinfo = errinfo;
     if (state)
 	JUMP_TAG(state);
     return result;
@@ -846,7 +888,7 @@ frame_func_id(rb_control_frame_t *cfp)
 	if (RUBY_VM_IFUNC_P(iseq)) {
 	    NODE *ifunc = (NODE *)iseq;
 	    if (ifunc->nd_aid) return ifunc->nd_aid;
-	    return rb_intern("<ifunc>");
+	    return idIFUNC;
 	}
 	me_local = method_entry_of_iseq(cfp, iseq);
 	if (me_local) {
@@ -876,7 +918,7 @@ frame_called_id(rb_control_frame_t *cfp)
 	if (RUBY_VM_IFUNC_P(iseq)) {
 	    NODE *ifunc = (NODE *)iseq;
 	    if (ifunc->nd_aid) return ifunc->nd_aid;
-	    return rb_intern("<ifunc>");
+	    return idIFUNC;
 	}
 	me_local = method_entry_of_iseq(cfp, iseq);
 	if (me_local) {
@@ -900,6 +942,12 @@ rb_frame_this_func(void)
     return frame_func_id(GET_THREAD()->cfp);
 }
 
+ID
+rb_frame_callee(void)
+{
+    return frame_called_id(GET_THREAD()->cfp);
+}
+
 static rb_control_frame_t *
 previous_frame(rb_thread_t *th)
 {
@@ -911,8 +959,8 @@ previous_frame(rb_thread_t *th)
     return prev_cfp;
 }
 
-ID
-rb_frame_callee(void)
+static ID
+prev_frame_callee(void)
 {
     rb_control_frame_t *prev_cfp = previous_frame(GET_THREAD());
     if (!prev_cfp) return 0;
@@ -920,7 +968,7 @@ rb_frame_callee(void)
 }
 
 static ID
-rb_frame_caller(void)
+prev_frame_func(void)
 {
     rb_control_frame_t *prev_cfp = previous_frame(GET_THREAD());
     if (!prev_cfp) return 0;
@@ -949,13 +997,8 @@ rb_frame_pop(void)
 static VALUE
 rb_mod_append_features(VALUE module, VALUE include)
 {
-    switch (TYPE(include)) {
-      case T_CLASS:
-      case T_MODULE:
-	break;
-      default:
+    if (!CLASS_OR_MODULE_P(include)) {
 	Check_Type(include, T_CLASS);
-	break;
     }
     rb_include_module(include, module);
 
@@ -1002,13 +1045,8 @@ rb_mod_include(int argc, VALUE *argv, VALUE module)
 static VALUE
 rb_mod_prepend_features(VALUE module, VALUE prepend)
 {
-    switch (TYPE(prepend)) {
-      case T_CLASS:
-      case T_MODULE:
-	break;
-      default:
+    if (!CLASS_OR_MODULE_P(prepend)) {
 	Check_Type(prepend, T_CLASS);
-	break;
     }
     rb_prepend_module(prepend, module);
 
@@ -1039,24 +1077,13 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
     return module;
 }
 
-static void
-warn_refinements_once()
-{
-    static int warned = 0;
-
-    if (warned)
-	return;
-    rb_warn("Refinements are experimental, and the behavior may change in future versions of Ruby!");
-    warned = 1;
-}
-
 static VALUE
 hidden_identity_hash_new()
 {
     VALUE hash = rb_hash_new();
 
     rb_funcall(hash, rb_intern("compare_by_identity"), 0);
-    RBASIC(hash)->klass = 0;  /* hide from ObjectSpace */
+    RBASIC_CLEAR_CLASS(hash); /* hide from ObjectSpace */
     return hash;
 }
 
@@ -1089,11 +1116,14 @@ rb_using_refinement(NODE *cref, VALUE klass, VALUE module)
     FL_SET(module, RMODULE_IS_OVERLAID);
     c = iclass = rb_include_class_new(module, superclass);
     RCLASS_REFINED_CLASS(c) = klass;
-    RCLASS_M_TBL(c) = RCLASS_M_TBL(module);
+
+    RCLASS_M_TBL_WRAPPER(OBJ_WB_UNPROTECT(c)) =
+	RCLASS_M_TBL_WRAPPER(OBJ_WB_UNPROTECT(module));
+
     module = RCLASS_SUPER(module);
     while (module && module != klass) {
 	FL_SET(module, RMODULE_IS_OVERLAID);
-	c = RCLASS_SUPER(c) = rb_include_class_new(module, RCLASS_SUPER(c));
+	c = RCLASS_SET_SUPER(c, rb_include_class_new(module, RCLASS_SUPER(c)));
 	RCLASS_REFINED_CLASS(c) = klass;
 	module = RCLASS_SUPER(module);
     }
@@ -1109,20 +1139,46 @@ using_refinement(VALUE klass, VALUE module, VALUE arg)
     return ST_CONTINUE;
 }
 
-void
-rb_using_module(NODE *cref, VALUE module)
+static void
+using_module_recursive(NODE *cref, VALUE klass)
 {
     ID id_refinements;
-    VALUE refinements;
+    VALUE super, module, refinements;
 
-    Check_Type(module, T_MODULE);
+    super = RCLASS_SUPER(klass);
+    if (super) {
+	using_module_recursive(cref, super);
+    }
+    switch (BUILTIN_TYPE(klass)) {
+      case T_MODULE:
+	module = klass;
+	break;
+
+      case T_ICLASS:
+	module = RBASIC(klass)->klass;
+	break;
+
+      default:
+	rb_raise(rb_eTypeError, "wrong argument type %s (expected Module)",
+		 rb_obj_classname(klass));
+	break;
+    }
     CONST_ID(id_refinements, "__refinements__");
     refinements = rb_attr_get(module, id_refinements);
     if (NIL_P(refinements)) return;
     rb_hash_foreach(refinements, using_refinement, (VALUE) cref);
 }
 
-VALUE rb_refinement_module_get_refined_class(VALUE module)
+void
+rb_using_module(NODE *cref, VALUE module)
+{
+    Check_Type(module, T_MODULE);
+    using_module_recursive(cref, module);
+    rb_clear_method_cache_by_class(rb_cObject);
+}
+
+VALUE
+rb_refinement_module_get_refined_class(VALUE module)
 {
     ID id_refined_class;
 
@@ -1152,8 +1208,7 @@ add_activated_refinement(VALUE activated_refinements,
     refinement = RCLASS_SUPER(refinement);
     while (refinement) {
 	FL_SET(refinement, RMODULE_IS_OVERLAID);
-	c = RCLASS_SUPER(c) =
-	    rb_include_class_new(refinement, RCLASS_SUPER(c));
+	c = RCLASS_SET_SUPER(c, rb_include_class_new(refinement, RCLASS_SUPER(c)));
 	RCLASS_REFINED_CLASS(c) = klass;
 	refinement = RCLASS_SUPER(refinement);
     }
@@ -1181,7 +1236,6 @@ rb_mod_refine(VALUE module, VALUE klass)
     rb_thread_t *th = GET_THREAD();
     rb_block_t *block = rb_vm_control_frame_block_ptr(th->cfp);
 
-    warn_refinements_once();
     if (!block) {
         rb_raise(rb_eArgError, "no block given");
     }
@@ -1206,7 +1260,7 @@ rb_mod_refine(VALUE module, VALUE klass)
     refinement = rb_hash_lookup(refinements, klass);
     if (NIL_P(refinement)) {
 	refinement = rb_module_new();
-	RCLASS_SUPER(refinement) = klass;
+	RCLASS_SET_SUPER(refinement, klass);
 	FL_SET(refinement, RMODULE_IS_REFINEMENT);
 	CONST_ID(id_refined_class, "__refined_class__");
 	rb_ivar_set(refinement, id_refined_class, klass);
@@ -1217,6 +1271,31 @@ rb_mod_refine(VALUE module, VALUE klass)
     }
     rb_yield_refine_block(refinement, activated_refinements);
     return refinement;
+}
+
+/*
+ *  call-seq:
+ *     using(module)    -> self
+ *
+ *  Import class refinements from <i>module</i> into the current class or
+ *  module definition.
+ */
+
+static VALUE
+mod_using(VALUE self, VALUE module)
+{
+    NODE *cref = rb_vm_cref();
+    rb_control_frame_t *prev_cfp = previous_frame(GET_THREAD());
+
+    if (prev_frame_func()) {
+	rb_raise(rb_eRuntimeError,
+		 "Module#using is not permitted in methods");
+    }
+    if (prev_cfp && prev_cfp->self != self) {
+	rb_raise(rb_eRuntimeError, "Module#using is not called on self");
+    }
+    rb_using_module(cref, module);
+    return self;
 }
 
 void
@@ -1324,7 +1403,6 @@ top_include(int argc, VALUE *argv, VALUE self)
 {
     rb_thread_t *th = GET_THREAD();
 
-    rb_secure(4);
     if (th->top_wrapper) {
 	rb_warning("main.include in the wrapped load is effective only in wrapper module");
 	return rb_mod_include(argc, argv, th->top_wrapper);
@@ -1346,13 +1424,11 @@ top_using(VALUE self, VALUE module)
     NODE *cref = rb_vm_cref();
     rb_control_frame_t *prev_cfp = previous_frame(GET_THREAD());
 
-    warn_refinements_once();
     if (cref->nd_next || (prev_cfp && prev_cfp->me)) {
-	rb_raise(rb_eRuntimeError, "using is permitted only at toplevel");
+	rb_raise(rb_eRuntimeError,
+		 "main.using is permitted only at toplevel");
     }
-    Check_Type(module, T_MODULE);
     rb_using_module(cref, module);
-    rb_clear_cache();
     return self;
 }
 
@@ -1468,9 +1544,9 @@ errat_setter(VALUE val, ID id, VALUE *var)
 /*
  *  call-seq:
  *     __method__         -> symbol
- *     __callee__         -> symbol
  *
- *  Returns the name of the current method as a Symbol.
+ *  Returns the name at the definition of the current method as a
+ *  Symbol.
  *  If called outside of a method, it returns <code>nil</code>.
  *
  */
@@ -1478,7 +1554,7 @@ errat_setter(VALUE val, ID id, VALUE *var)
 static VALUE
 rb_f_method_name(void)
 {
-    ID fname = rb_frame_caller(); /* need *caller* ID */
+    ID fname = prev_frame_func(); /* need *method* ID */
 
     if (fname) {
 	return ID2SYM(fname);
@@ -1488,10 +1564,19 @@ rb_f_method_name(void)
     }
 }
 
+/*
+ *  call-seq:
+ *     __callee__         -> symbol
+ *
+ *  Returns the called name of the current method as a Symbol.
+ *  If called outside of a method, it returns <code>nil</code>.
+ *
+ */
+
 static VALUE
 rb_f_callee_name(void)
 {
-    ID fname = rb_frame_callee(); /* need *callee* ID */
+    ID fname = prev_frame_callee(); /* need *callee* ID */
 
     if (fname) {
 	return ID2SYM(fname);
@@ -1505,8 +1590,10 @@ rb_f_callee_name(void)
  *  call-seq:
  *     __dir__         -> string
  *
- *  Returns the value of <code>File.dirname(__FILE__)</code>
+ *  Returns the canonicalized absolute path of the directory of the file from
+ *  which this method is called. It means symlinks in the path is resolved.
  *  If <code>__FILE__</code> is <code>nil</code>, it returns <code>nil</code>.
+ *  The return value equals to <code>File.dirname(File.realpath(__FILE__))</code>.
  *
  */
 static VALUE
@@ -1535,12 +1622,14 @@ Init_eval(void)
     rb_define_global_function("__callee__", rb_f_callee_name, 0);
     rb_define_global_function("__dir__", f_current_dirname, 0);
 
+    rb_define_method(rb_cModule, "include", rb_mod_include, -1);
+    rb_define_method(rb_cModule, "prepend", rb_mod_prepend, -1);
+
     rb_define_private_method(rb_cModule, "append_features", rb_mod_append_features, 1);
     rb_define_private_method(rb_cModule, "extend_object", rb_mod_extend_object, 1);
-    rb_define_private_method(rb_cModule, "include", rb_mod_include, -1);
     rb_define_private_method(rb_cModule, "prepend_features", rb_mod_prepend_features, 1);
-    rb_define_private_method(rb_cModule, "prepend", rb_mod_prepend, -1);
     rb_define_private_method(rb_cModule, "refine", rb_mod_refine, 1);
+    rb_define_private_method(rb_cModule, "using", mod_using, 1);
     rb_undef_method(rb_cClass, "refine");
 
     rb_undef_method(rb_cClass, "module_function");

@@ -21,6 +21,11 @@ class TestRDocNormalClass < XrefTestCase
     assert_equal [c2, c1, 'Object'], c3.ancestors
   end
 
+  def test_aref
+    assert_equal 'class-C1',     @c1.aref
+    assert_equal 'class-C2::C3', @c2_c3.aref
+  end
+
   def test_direct_ancestors
     incl = RDoc::Include.new 'Incl', ''
 

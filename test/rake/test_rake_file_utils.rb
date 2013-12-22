@@ -44,15 +44,19 @@ class TestRakeFileUtils < Rake::TestCase
   class BadLink
     include Rake::FileUtilsExt
     attr_reader :cp_args
+
     def initialize(klass)
       @failure_class = klass
     end
+
     def cp(*args)
       @cp_args = args
     end
+
     def ln(*args)
       fail @failure_class, "ln not supported"
     end
+
     public :safe_ln
   end
 
@@ -94,7 +98,7 @@ class TestRakeFileUtils < Rake::TestCase
     assert_equal true, nowrite
     nowrite false
     assert_equal false, nowrite
-    nowrite(true){
+    nowrite(true) {
       assert_equal true, nowrite
     }
     assert_equal false, nowrite
@@ -250,7 +254,7 @@ class TestRakeFileUtils < Rake::TestCase
     assert_equal ['..', 'a', 'b'], Rake::FileUtilsExt.split_all('../a/b')
   end
 
-  def command name, text
+  def command(name, text)
     open name, 'w', 0750 do |io|
       io << text
     end

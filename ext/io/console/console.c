@@ -7,6 +7,8 @@
 #include "ruby/io.h"
 #else
 #include "rubyio.h"
+/* assumes rb_io_t doesn't have pathv */
+#include "util.h"		/* for ruby_strdup() */
 #endif
 
 #ifndef HAVE_RB_IO_T
@@ -21,6 +23,10 @@ typedef OpenFile rb_io_t;
 #endif
 #ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
+#endif
+
+#ifndef RB_TYPE_P
+#define RB_TYPE_P(obj, type) (TYPE(obj) == type)
 #endif
 
 #if defined HAVE_TERMIOS_H
@@ -101,17 +107,35 @@ rawmode_opt(int argc, VALUE *argv, rawmode_arg_t *opts)
 {
     rawmode_arg_t *optp = NULL;
     VALUE vopts;
+#ifdef HAVE_RB_SCAN_ARGS_OPTIONAL_HASH
     rb_scan_args(argc, argv, "0:", &vopts);
+#else
+    vopts = Qnil;
+    if (argc > 0) {
+	vopts = argv[--argc];
+	if (!NIL_P(vopts)) {
+# ifdef HAVE_RB_CHECK_HASH_TYPE
+	    vopts = rb_check_hash_type(vopts);
+	    if (NIL_P(vopts)) ++argc;
+# else
+	    Check_Type(vopts, T_HASH);
+# endif
+	}
+    }
+    rb_scan_args(argc, argv, "0");
+#endif
     if (!NIL_P(vopts)) {
 	VALUE vmin = rb_hash_aref(vopts, ID2SYM(rb_intern("min")));
 	VALUE vtime = rb_hash_aref(vopts, ID2SYM(rb_intern("time")));
-	VALUE v10 = INT2FIX(10);
+	/* default values by `stty raw` */
+	opts->vmin = 1;
+	opts->vtime = 0;
 	if (!NIL_P(vmin)) {
-	    vmin = rb_funcall3(vmin, '*', 1, &v10);
 	    opts->vmin = NUM2INT(vmin);
 	    optp = opts;
 	}
 	if (!NIL_P(vtime)) {
+	    VALUE v10 = INT2FIX(10);
 	    vtime = rb_funcall3(vtime, '*', 1, &v10);
 	    opts->vtime = NUM2INT(vtime);
 	    optp = opts;
@@ -586,6 +610,7 @@ console_iflush(VALUE io)
 #if defined HAVE_TERMIOS_H || defined HAVE_TERMIO_H
     if (tcflush(fd, TCIFLUSH)) rb_sys_fail(0);
 #endif
+    (void)fd;
     return io;
 }
 
@@ -608,6 +633,7 @@ console_oflush(VALUE io)
 #if defined HAVE_TERMIOS_H || defined HAVE_TERMIO_H
     if (tcflush(fd, TCOFLUSH)) rb_sys_fail(0);
 #endif
+    (void)fd;
     return io;
 }
 
@@ -703,7 +729,11 @@ console_dev(VALUE klass)
 	args[0] = INT2NUM(fd);
 	con = rb_class_new_instance(2, args, klass);
 	GetOpenFile(con, fptr);
+#ifdef HAVE_RUBY_IO_H
 	fptr->pathv = rb_obj_freeze(rb_str_new2(CONSOLE_DEVICE));
+#else
+	fptr->path = ruby_strdup(CONSOLE_DEVICE);
+#endif
 #ifdef CONSOLE_DEVICE_FOR_WRITING
 	GetOpenFile(out, ofptr);
 # ifdef HAVE_RB_IO_GET_WRITE_IO
@@ -721,6 +751,12 @@ console_dev(VALUE klass)
     return con;
 }
 
+/*
+ * call-seq:
+ *   io.getch(min: nil, time: nil)       -> char
+ *
+ * See IO#getch.
+ */
 static VALUE
 io_getch(int argc, VALUE *argv, VALUE io)
 {
@@ -756,7 +792,7 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "ioflush", console_ioflush, 0);
     rb_define_singleton_method(rb_cIO, "console", console_dev, 0);
     {
-	VALUE mReadable = rb_define_module_under(rb_cIO, "readable");
+	VALUE mReadable = rb_define_module_under(rb_cIO, "generic_readable");
 	rb_define_method(mReadable, "getch", io_getch, -1);
     }
 }

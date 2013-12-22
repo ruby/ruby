@@ -1,9 +1,12 @@
 require 'observer'
 
 module DRb
+  # The Observable module extended to DRb.  See Observable for details.
   module DRbObservable
     include Observable
 
+    # Notifies observers of a change in state.  See also
+    # Observable#notify_observers
     def notify_observers(*arg)
       if defined? @observer_state and @observer_state
         if defined? @observer_peers

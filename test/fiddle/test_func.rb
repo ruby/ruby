@@ -1,10 +1,23 @@
-require_relative 'helper'
+begin
+  require_relative 'helper'
+rescue LoadError
+end
 
 module Fiddle
   class TestFunc < TestCase
     def test_random
       f = Function.new(@libc['srand'], [-TYPE_LONG], TYPE_VOID)
       assert_nil f.call(10)
+    end
+
+    def test_syscall_with_tainted_string
+      f = Function.new(@libc['system'], [TYPE_VOIDP], TYPE_INT)
+      assert_raises(SecurityError) do
+        Thread.new {
+          $SAFE = 1
+          f.call("uname -rs".taint)
+        }.join
+      end
     end
 
     def test_sinf
@@ -76,4 +89,4 @@ module Fiddle
       assert_equal("1349", buff, bug4929)
     end
   end
-end
+end if defined?(Fiddle)

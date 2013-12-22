@@ -14,7 +14,7 @@ class Gem::Commands::QueryCommand < Gem::Command
                  summary = 'Query gem information in local or remote repositories')
     super name, summary,
          :name => //, :domain => :local, :details => false, :versions => true,
-         :installed => false, :version => Gem::Requirement.default
+         :installed => nil, :version => Gem::Requirement.default
 
     add_option('-i', '--[no-]installed',
                'Check for installed gem') do |value, options|
@@ -61,26 +61,66 @@ class Gem::Commands::QueryCommand < Gem::Command
     "--local --name-matches // --no-details --versions --no-installed"
   end
 
+  def description # :nodoc:
+    <<-EOF
+The query command is the basis for the list and search commands.
+
+You should really use the list and search commands instead.  This command
+is too hard to use.
+    EOF
+  end
+
   def execute
     exit_code = 0
+    if options[:args].to_a.empty? and options[:name].source.empty?
+      name = options[:name]
+      no_name = true
+    elsif !options[:name].source.empty?
+      name = Array(options[:name])
+    else
+      name = options[:args].to_a.map{|arg| /#{arg}/i }
+    end
 
-    name = options[:name]
     prerelease = options[:prerelease]
 
-    if options[:installed] then
-      if name.source.empty? then
+    unless options[:installed].nil? then
+      if no_name then
         alert_error "You must specify a gem name"
         exit_code |= 4
-      elsif installed? name, options[:version] then
-        say "true"
+      elsif name.count > 1
+        alert_error "You must specify only ONE gem!"
+        exit_code |= 4
       else
-        say "false"
-        exit_code |= 1
+        installed = installed? name.first, options[:version]
+        installed = !installed unless options[:installed]
+
+        if installed then
+          say "true"
+        else
+          say "false"
+          exit_code |= 1
+        end
       end
 
       terminate_interaction exit_code
     end
 
+    names = Array(name)
+    names.each { |n| show_gems n, prerelease }
+  end
+
+  private
+
+  def display_header type
+    if (ui.outs.tty? and Gem.configuration.verbose) or both? then
+      say
+      say "*** #{type} GEMS ***"
+      say
+    end
+  end
+
+  #Guts of original execute
+  def show_gems name, prerelease
     req = Gem::Requirement.default
     # TODO: deprecate for real
     dep = Gem::Deprecate.skip_during { Gem::Dependency.new name, req }
@@ -91,11 +131,7 @@ class Gem::Commands::QueryCommand < Gem::Command
         alert_warning "prereleases are always shown locally"
       end
 
-      if ui.outs.tty? or both? then
-        say
-        say "*** LOCAL GEMS ***"
-        say
-      end
+      display_header 'LOCAL'
 
       specs = Gem::Specification.find_all { |s|
         s.name =~ name and req =~ s.version
@@ -109,11 +145,7 @@ class Gem::Commands::QueryCommand < Gem::Command
     end
 
     if remote? then
-      if ui.outs.tty? or both? then
-        say
-        say "*** REMOTE GEMS ***"
-        say
-      end
+      display_header 'REMOTE'
 
       fetcher = Gem::SpecFetcher.fetcher
 
@@ -129,19 +161,17 @@ class Gem::Commands::QueryCommand < Gem::Command
                :latest
              end
 
-      if options[:name].source.empty?
+      if name.source.empty?
         spec_tuples = fetcher.detect(type) { true }
       else
         spec_tuples = fetcher.detect(type) do |name_tuple|
-          options[:name] === name_tuple.name
+          name === name_tuple.name
         end
       end
 
       output_query_results spec_tuples
     end
   end
-
-  private
 
   ##
   # Check if gem +name+ version +version+ is installed.
@@ -192,8 +222,12 @@ class Gem::Commands::QueryCommand < Gem::Command
     end
   end
 
-  def entry_details entry, spec, specs, platforms
+  def entry_details entry, detail_tuple, specs, platforms
     return unless options[:details]
+
+    name_tuple, spec = detail_tuple
+
+    spec = spec.fetch_spec name_tuple unless Gem::Specification === spec
 
     entry << "\n"
 
@@ -228,19 +262,15 @@ class Gem::Commands::QueryCommand < Gem::Command
 
   def make_entry entry_tuples, platforms
     detail_tuple = entry_tuples.first
-    name_tuple, latest_spec = detail_tuple
-
-    latest_spec = latest_spec.fetch_spec name_tuple unless
-      Gem::Specification === latest_spec
 
     name_tuples, specs = entry_tuples.flatten.partition do |item|
       Gem::NameTuple === item
     end
 
-    entry = [latest_spec.name]
+    entry = [name_tuples.first.name]
 
     entry_versions entry, name_tuples, platforms
-    entry_details  entry, latest_spec, specs, platforms
+    entry_details  entry, detail_tuple, specs, platforms
 
     entry.join
   end

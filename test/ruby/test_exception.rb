@@ -28,7 +28,7 @@ class TestException < Test::Unit::TestCase
 
   def test_exception_in_rescue
     string = "this must be handled no.3"
-    e = assert_raise(RuntimeError) do
+    assert_raise_with_message(RuntimeError, string) do
       begin
         raise "exception in rescue clause"
       rescue
@@ -36,12 +36,11 @@ class TestException < Test::Unit::TestCase
       end
       assert(false)
     end
-    assert_equal(string, e.message)
   end
 
   def test_exception_in_ensure
     string = "exception in ensure clause"
-    e = assert_raise(RuntimeError) do
+    assert_raise_with_message(RuntimeError, string) do
       begin
         raise "this must be handled no.4"
       ensure
@@ -51,7 +50,6 @@ class TestException < Test::Unit::TestCase
       end
       assert(false)
     end
-    assert_equal(string, e.message)
   end
 
   def test_exception_ensure
@@ -108,12 +106,11 @@ class TestException < Test::Unit::TestCase
 
   def test_catch_throw_in_require
     bug7185 = '[ruby-dev:46234]'
-    t = Tempfile.open(["dep", ".rb"])
-    t.puts("throw :extdep, 42")
-    t.close
-    assert_equal(42, catch(:extdep) {require t.path}, bug7185)
-  ensure
-    t.close! if t
+    Tempfile.create(["dep", ".rb"]) {|t|
+      t.puts("throw :extdep, 42")
+      t.close
+      assert_equal(42, catch(:extdep) {require t.path}, bug7185)
+    }
   end
 
   def test_else_no_exception
@@ -256,27 +253,8 @@ class TestException < Test::Unit::TestCase
     INPUT
   end
 
-  def test_safe4
-    cmd = proc{raise SystemExit}
-    safe0_p = proc{|*args| args}
-
-    test_proc = proc {
-      $SAFE = 4
-      begin
-        cmd.call
-      rescue SystemExit => e
-        safe0_p["SystemExit: #{e.inspect}"]
-        raise e
-      rescue Exception => e
-        safe0_p["Exception (NOT SystemExit): #{e.inspect}"]
-        raise e
-      end
-    }
-    assert_raise(SystemExit, '[ruby-dev:38760]') {test_proc.call}
-  end
-
   def test_thread_signal_location
-    _, stderr, _ = EnvUtil.invoke_ruby("-d", <<-RUBY, false, true)
+    _, stderr, _ = EnvUtil.invoke_ruby("--disable-gems -d", <<-RUBY, false, true)
 Thread.start do
   begin
     Process.kill(:INT, $$)
@@ -308,6 +286,17 @@ end.join
       def to_s; ""; end
     end
     assert_equal(e.inspect, e.new.inspect)
+  end
+
+  def test_to_s
+    e = StandardError.new("foo")
+    assert_equal("foo", e.to_s)
+
+    def (s = Object.new).to_s
+      "bar"
+    end
+    e = StandardError.new(s)
+    assert_equal("bar", e.to_s)
   end
 
   def test_set_backtrace
@@ -353,8 +342,10 @@ end.join
     bug3237 = '[ruby-core:29948]'
     str = "\u2600"
     id = :"\u2604"
-    e = assert_raise(NoMethodError) {str.__send__(id)}
-    assert_equal("undefined method `#{id}' for #{str.inspect}:String", e.message, bug3237)
+    msg = "undefined method `#{id}' for #{str.inspect}:String"
+    assert_raise_with_message(NoMethodError, msg, bug3237) do
+      str.__send__(id)
+    end
   end
 
   def test_errno
@@ -398,9 +389,7 @@ end.join
 
   def test_exception_in_name_error_to_str
     bug5575 = '[ruby-core:41612]'
-    t = nil
-    Tempfile.open(["test_exception_in_name_error_to_str", ".rb"]) do |f|
-      t = f
+    Tempfile.create(["test_exception_in_name_error_to_str", ".rb"]) do |t|
       t.puts <<-EOC
       begin
         BasicObject.new.inspect
@@ -408,12 +397,11 @@ end.join
         $!.inspect
       end
     EOC
+      t.close
+      assert_nothing_raised(NameError, bug5575) do
+        load(t.path)
+      end
     end
-    assert_nothing_raised(NameError, bug5575) do
-      load(t.path)
-    end
-  ensure
-    t.close(true) if t
   end
 
   def test_equal
@@ -424,21 +412,18 @@ end.join
 
   def test_exception_in_exception_equal
     bug5865 = '[ruby-core:41979]'
-    t = nil
-    Tempfile.open(["test_exception_in_exception_equal", ".rb"]) do |f|
-      t = f
+    Tempfile.create(["test_exception_in_exception_equal", ".rb"]) do |t|
       t.puts <<-EOC
       o = Object.new
       def o.exception(arg)
       end
       _ = RuntimeError.new("a") == o
-    EOC
+      EOC
+      t.close
+      assert_nothing_raised(ArgumentError, bug5865) do
+        load(t.path)
+      end
     end
-    assert_nothing_raised(ArgumentError, bug5865) do
-      load(t.path)
-    end
-  ensure
-    t.close(true) if t
   end
 
   Bug4438 = '[ruby-core:35364]'
@@ -483,31 +468,53 @@ end.join
     assert_equal(false, s.tainted?)
   end
 
-  def test_exception_to_s_should_not_propagate_untrustedness
-    favorite_lang = "Ruby"
+  def m;
+    m &->{return 0};
+    42;
+  end
 
-    for exc in [Exception, NameError]
-      assert_raise(SecurityError) do
-        lambda {
-          $SAFE = 4
-          exc.new(favorite_lang).to_s
-          favorite_lang.replace("Python")
-        }.call
+  def test_stackoverflow
+    assert_raise(SystemStackError){m}
+  end
+
+  def test_machine_stackoverflow
+    bug9109 = '[ruby-dev:47804] [Bug #9109]'
+    assert_separately([], <<-SRC)
+    assert_raise(SystemStackError, #{bug9109.dump}) {
+      h = {a: ->{h[:a].call}}
+      h[:a].call
+    }
+    SRC
+  rescue SystemStackError
+  end
+
+  def test_cause
+    msg = "[Feature #8257]"
+    cause = nil
+    e = assert_raise(StandardError) {
+      begin
+        raise msg
+      rescue => e
+        cause = e.cause
+        raise StandardError
       end
-    end
+    }
+    assert_nil(cause, msg)
+    cause = e.cause
+    assert_instance_of(RuntimeError, cause, msg)
+    assert_equal(msg, cause.message, msg)
+  end
 
-    assert_raise(SecurityError) do
-      lambda {
-        $SAFE = 4
-        o = Object.new
-        o.singleton_class.send(:define_method, :to_str) {
-          favorite_lang
-        }
-        NameError.new(o).to_s
-        favorite_lang.replace("Python")
-      }.call
-    end
-
-    assert_equal("Ruby", favorite_lang)
+  def test_cause_reraised
+    msg = "[Feature #8257]"
+    cause = nil
+    e = assert_raise(RuntimeError) {
+      begin
+        raise msg
+      rescue => e
+        raise e
+      end
+    }
+    assert_not_same(e, e.cause, "#{msg}: should not be recursive")
   end
 end

@@ -1,4 +1,4 @@
-require 'psych/helper'
+require_relative 'helper'
 
 class ObjectWithInstanceVariables
   attr_accessor :var1, :var2

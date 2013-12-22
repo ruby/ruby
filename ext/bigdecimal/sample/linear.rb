@@ -10,6 +10,7 @@
 #   ruby linear.rb [input file solved]
 #
 
+# :stopdoc:
 require "bigdecimal"
 require "bigdecimal/ludcmp"
 

@@ -445,7 +445,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
     @spec_dirs = @gem_dirs.map { |gem_dir| File.join gem_dir, 'specifications' }
     @spec_dirs.reject! { |spec_dir| !File.directory? spec_dir }
 
-    Gem::Specification.dirs = @gem_dirs
+    reset_gems
 
     @have_rdoc_4_plus = nil
   end
@@ -470,7 +470,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
   end
 
   def latest_specs(req, res)
-    Gem::Specification.reset
+    reset_gems
 
     res['content-type'] = 'application/x-gzip'
 
@@ -531,7 +531,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
   end
 
   def quick(req, res)
-    Gem::Specification.reset
+    reset_gems
 
     res['content-type'] = 'text/plain'
     add_date res
@@ -567,7 +567,8 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
   end
 
   def root(req, res)
-    Gem::Specification.reset
+    reset_gems
+
     add_date res
 
     raise WEBrick::HTTPStatus::NotFound, "`#{req.path}' not found." unless
@@ -670,13 +671,13 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
   # documentation for the particular gem, otherwise a list with results is
   # shown.
   #
-  # === Additional trick - install documentation for ruby core
+  # === Additional trick - install documentation for Ruby core
   #
   # Note: please adjust paths accordingly use for example 'locate yaml.rb' and
   # 'gem environment' to identify directories, that are specific for your
   # local installation
   #
-  # 1. install ruby sources
+  # 1. install Ruby sources
   #      cd /usr/src
   #      sudo apt-get source ruby
   #
@@ -698,11 +699,18 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
   end
 
   ##
+  # Updates the server to use the latest installed gems.
+
+  def reset_gems # :nodoc:
+    Gem::Specification.dirs = @gem_dirs
+  end
+
+  ##
   # Returns true and prepares http response, if rdoc for the requested gem
   # name pattern was found.
   #
   # The search is based on the file system content, not on the gems metadata.
-  # This allows additional documentation folders like 'core' for the ruby core
+  # This allows additional documentation folders like 'core' for the Ruby core
   # documentation - just put it underneath the main doc folder.
 
   def show_rdoc_for_pattern(pattern, res)
@@ -787,7 +795,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
   end
 
   def specs(req, res)
-    Gem::Specification.reset
+    reset_gems
 
     add_date res
 

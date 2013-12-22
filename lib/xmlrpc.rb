@@ -30,7 +30,7 @@
 #
 # == Documentation
 #
-# See http://www.ntecs.de/projects/xmlrpc4r.  There is plenty of detail there to
+# See http://www.ntecs.de/ruby/xmlrpc4r/.  There is plenty of detail there to
 # use the client and implement a server.
 #
 # == Features of XMLRPC for Ruby
@@ -48,7 +48,7 @@
 #
 # * Client
 #   * synchronous/asynchronous calls
-#   * Basic HTTP-401 Authentification
+#   * Basic HTTP-401 Authentication
 #   * HTTPS protocol (SSL)
 #
 # * Parsers

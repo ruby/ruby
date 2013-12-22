@@ -28,7 +28,7 @@ class Gem::Commands::SpecificationCommand < Gem::Command
       options[:format] = :ruby
     end
 
-    add_option('--yaml', 'Output RUBY format') do |value, options|
+    add_option('--yaml', 'Output YAML format') do |value, options|
       options[:format] = :yaml
     end
 
@@ -48,6 +48,22 @@ FIELD         name of gemspec field to show
 
   def defaults_str # :nodoc:
     "--local --version '#{Gem::Requirement.default}' --yaml"
+  end
+
+  def description # :nodoc:
+    <<-EOF
+The specification command allows you to extract the specification from
+a gem for examination.
+
+The specification can be output in YAML, ruby or Marshal formats.
+
+Specific fields in the specification can be extracted in YAML format:
+
+  $ gem spec rake summary
+  --- Ruby based make-like utility.
+  ...
+
+    EOF
   end
 
   def usage # :nodoc:
@@ -111,7 +127,7 @@ FIELD         name of gemspec field to show
     end
 
     unless options[:all] then
-      specs = [specs.sort_by { |s| s.version }.last]
+      specs = [specs.max_by { |s| s.version }]
     end
 
     specs.each do |s|

@@ -5,7 +5,7 @@
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2009  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * Copyright (c) 2011-2012  K.Takata  <kentkt AT csc DOT jp>
+ * Copyright (c) 2011-2013  K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,7 +40,7 @@ extern "C" {
 #define ONIGURUMA
 #define ONIGURUMA_VERSION_MAJOR   5
 #define ONIGURUMA_VERSION_MINOR   13
-#define ONIGURUMA_VERSION_TEENY   1
+#define ONIGURUMA_VERSION_TEENY   5
 
 #ifdef __cplusplus
 # ifndef  HAVE_PROTOTYPES
@@ -98,9 +98,7 @@ extern "C" {
 #define ONIG_EXTERN   extern
 #endif
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+RUBY_SYMBOL_EXPORT_BEGIN
 
 #include <stddef.h>		/* for size_t */
 
@@ -825,9 +823,7 @@ const char* onig_version P_((void));
 ONIG_EXTERN
 const char* onig_copyright P_((void));
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+RUBY_SYMBOL_EXPORT_END
 
 #ifdef __cplusplus
 #if 0

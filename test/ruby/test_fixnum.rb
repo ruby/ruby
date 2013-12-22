@@ -87,8 +87,14 @@ class TestFixnum < Test::Unit::TestCase
         next if b == 0
         q, r = a.divmod(b)
         assert_equal(a, b*q+r)
-        assert(r.abs < b.abs)
-        assert(0 < b ? (0 <= r && r < b) : (b < r && r <= 0))
+        assert_operator(r.abs, :<, b.abs)
+        if 0 < b
+          assert_operator(r, :>=, 0)
+          assert_operator(r, :<, b)
+        else
+          assert_operator(r, :>, b)
+          assert_operator(r, :<=, 0)
+        end
         assert_equal(q, a/b)
         assert_equal(q, a.div(b))
         assert_equal(r, a%b)
@@ -157,6 +163,7 @@ class TestFixnum < Test::Unit::TestCase
     assert_equal(0, 1 / (2**32))
     assert_equal(0, 1.div(2**32))
 
+    assert_kind_of(Float, 1.quo(2.0))
     assert_equal(0.5, 1.quo(2.0))
     assert_equal(0.5, 1 / 2.0)
     assert_equal(0, 1.div(2.0))
@@ -194,40 +201,40 @@ class TestFixnum < Test::Unit::TestCase
   end
 
   def test_cmp
-    assert(1 != nil)
+    assert_operator(1, :!=, nil)
 
     assert_equal(0, 1 <=> 1)
     assert_equal(-1, 1 <=> 4294967296)
     assert_equal(0, 1 <=> 1.0)
     assert_nil(1 <=> nil)
 
-    assert(1.send(:>, 0))
-    assert(!(1.send(:>, 1)))
-    assert(!(1.send(:>, 2)))
-    assert(!(1.send(:>, 4294967296)))
-    assert(1.send(:>, 0.0))
-    assert_raise(ArgumentError) { 1.send(:>, nil) }
+    assert_operator(1, :>, 0)
+    assert_not_operator(1, :>, 1)
+    assert_not_operator(1, :>, 2)
+    assert_not_operator(1, :>, 4294967296)
+    assert_operator(1, :>, 0.0)
+    assert_raise(ArgumentError) { 1 > nil }
 
-    assert(1.send(:>=, 0))
-    assert(1.send(:>=, 1))
-    assert(!(1.send(:>=, 2)))
-    assert(!(1.send(:>=, 4294967296)))
-    assert(1.send(:>=, 0.0))
-    assert_raise(ArgumentError) { 1.send(:>=, nil) }
+    assert_operator(1, :>=, 0)
+    assert_operator(1, :>=, 1)
+    assert_not_operator(1, :>=, 2)
+    assert_not_operator(1, :>=, 4294967296)
+    assert_operator(1, :>=, 0.0)
+    assert_raise(ArgumentError) { 1 >= nil }
 
-    assert(!(1.send(:<, 0)))
-    assert(!(1.send(:<, 1)))
-    assert(1.send(:<, 2))
-    assert(1.send(:<, 4294967296))
-    assert(!(1.send(:<, 0.0)))
-    assert_raise(ArgumentError) { 1.send(:<, nil) }
+    assert_not_operator(1, :<, 0)
+    assert_not_operator(1, :<, 1)
+    assert_operator(1, :<, 2)
+    assert_operator(1, :<, 4294967296)
+    assert_not_operator(1, :<, 0.0)
+    assert_raise(ArgumentError) { 1 < nil }
 
-    assert(!(1.send(:<=, 0)))
-    assert(1.send(:<=, 1))
-    assert(1.send(:<=, 2))
-    assert(1.send(:<=, 4294967296))
-    assert(!(1.send(:<=, 0.0)))
-    assert_raise(ArgumentError) { 1.send(:<=, nil) }
+    assert_not_operator(1, :<=, 0)
+    assert_operator(1, :<=, 1)
+    assert_operator(1, :<=, 2)
+    assert_operator(1, :<=, 4294967296)
+    assert_not_operator(1, :<=, 0.0)
+    assert_raise(ArgumentError) { 1 <= nil }
   end
 
   class DummyNumeric < Numeric
@@ -278,5 +285,24 @@ class TestFixnum < Test::Unit::TestCase
 
   def test_frozen
     assert_equal(true, 1.frozen?)
+  end
+
+  def assert_eql(a, b, mess)
+    assert a.eql?(b), "expected #{a} & #{b} to be eql? #{mess}"
+  end
+
+  def test_power_of_1_and_minus_1
+    bug5715 = '[ruby-core:41498]'
+    big = 1 << 66
+    assert_eql  1, 1 ** -big        , bug5715
+    assert_eql  1, (-1) ** -big     , bug5715
+    assert_eql -1, (-1) ** -(big+1) , bug5715
+  end
+
+  def test_power_of_0
+    bug5713 = '[ruby-core:41494]'
+    big = 1 << 66
+    assert_raise(ZeroDivisionError, bug5713) { 0 ** -big }
+    assert_raise(ZeroDivisionError, bug5713) { 0 ** Rational(-2,3) }
   end
 end

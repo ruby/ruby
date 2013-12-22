@@ -16,50 +16,44 @@ class TestBeginEndBlock < Test::Unit::TestCase
     result = IO.popen([ruby, target]){|io|io.read}
     assert_equal(%w(b1 b2-1 b2 main b3-1 b3 b4 e1 e1-1 e4 e4-2 e4-1 e4-1-1 e3 e2), result.split)
 
-    input = Tempfile.new(self.class.name)
-    inputpath = input.path
-    input.close
-    result = IO.popen([ruby, "-n", "-eBEGIN{p :begin}", "-eEND{p :end}", inputpath]){|io|io.read}
-    assert_equal(%w(:begin), result.split)
-    result = IO.popen([ruby, "-p", "-eBEGIN{p :begin}", "-eEND{p :end}", inputpath]){|io|io.read}
-    assert_equal(%w(:begin), result.split)
-    input.open
-    input.puts "foo\nbar"
-    input.close
-    result = IO.popen([ruby, "-n", "-eBEGIN{p :begin}", "-eEND{p :end}", inputpath]){|io|io.read}
-    assert_equal(%w(:begin :end), result.split)
-    result = IO.popen([ruby, "-p", "-eBEGIN{p :begin}", "-eEND{p :end}", inputpath]){|io|io.read}
-    assert_equal(%w(:begin foo bar :end), result.split)
-  ensure
-    input.unlink
+    Tempfile.create(self.class.name) {|input|
+      inputpath = input.path
+      result = IO.popen([ruby, "-n", "-eBEGIN{p :begin}", "-eEND{p :end}", inputpath]){|io|io.read}
+      assert_equal(%w(:begin), result.split)
+      result = IO.popen([ruby, "-p", "-eBEGIN{p :begin}", "-eEND{p :end}", inputpath]){|io|io.read}
+      assert_equal(%w(:begin), result.split)
+      input.puts "foo\nbar"
+      input.close
+      result = IO.popen([ruby, "-n", "-eBEGIN{p :begin}", "-eEND{p :end}", inputpath]){|io|io.read}
+      assert_equal(%w(:begin :end), result.split)
+      result = IO.popen([ruby, "-p", "-eBEGIN{p :begin}", "-eEND{p :end}", inputpath]){|io|io.read}
+      assert_equal(%w(:begin foo bar :end), result.split)
+    }
   end
 
   def test_begininmethod
-    e = assert_raise(SyntaxError) do
+    assert_raise_with_message(SyntaxError, /BEGIN is permitted only at toplevel/) do
       eval("def foo; BEGIN {}; end")
     end
-    assert_match(/BEGIN is permitted only at toplevel/, e.message)
 
-    e = assert_raise(SyntaxError) do
+    assert_raise_with_message(SyntaxError, /BEGIN is permitted only at toplevel/) do
       eval('eval("def foo; BEGIN {}; end")')
     end
-    assert_match(/BEGIN is permitted only at toplevel/, e.message)
   end
 
   def test_begininclass
-    e = assert_raise(SyntaxError) do
+    assert_raise_with_message(SyntaxError, /BEGIN is permitted only at toplevel/) do
       eval("class TestBeginEndBlock; BEGIN {}; end")
     end
-    assert_match(/BEGIN is permitted only at toplevel/, e.message)
   end
 
   def test_endblockwarn
     ruby = EnvUtil.rubybin
     # Use Tempfile to create temporary file path.
-    launcher = Tempfile.new(self.class.name)
-    errout = Tempfile.new(self.class.name)
+    Tempfile.create(self.class.name) {|launcher|
+      Tempfile.create(self.class.name) {|errout|
 
-    launcher << <<EOF
+        launcher << <<EOF
 # -*- coding: #{ruby.encoding.name} -*-
 errout = ARGV.shift
 STDERR.reopen(File.open(errout, "w"))
@@ -67,20 +61,18 @@ STDERR.sync = true
 Dir.chdir(#{q(DIR)})
 system("#{ruby}", "endblockwarn_rb")
 EOF
-    launcher.close
-    launcherpath = launcher.path
-    errout.close
-    erroutpath = errout.path
-    system(ruby, launcherpath, erroutpath)
-    expected = <<EOW
+        launcher.close
+        launcherpath = launcher.path
+        errout.close
+        erroutpath = errout.path
+        system(ruby, launcherpath, erroutpath)
+        expected = <<EOW
 endblockwarn_rb:2: warning: END in method; use at_exit
 (eval):2: warning: END in method; use at_exit
 EOW
-    assert_equal(expected, File.read(erroutpath))
-    # expecting Tempfile to unlink launcher and errout file.
-  ensure
-    launcher.unlink
-    errout.unlink
+        assert_equal(expected, File.read(erroutpath))
+      }
+    }
   end
 
   def test_raise_in_at_exit
@@ -90,18 +82,33 @@ EOW
                      '-e', 'raise %[SomethingElse]']) {|f|
       f.read
     }
+    status = $?
     assert_match(/SomethingBad/, out, "[ruby-core:9675]")
     assert_match(/SomethingElse/, out, "[ruby-core:9675]")
+    assert_not_predicate(status, :success?)
   end
 
-  def test_should_propagate_exit_code
+  def test_exitcode_in_at_exit
+    bug8501 = '[ruby-core:55365] [Bug #8501]'
+    ruby = EnvUtil.rubybin
+    out = IO.popen([ruby, '-e', 'STDERR.reopen(STDOUT)',
+                    '-e', 'o = Object.new; def o.inspect; raise "[Bug #8501]"; end',
+                    '-e', 'at_exit{o.nope}']) {|f|
+      f.read
+    }
+    status = $?
+    assert_match(/undefined method `nope'/, out, bug8501)
+    assert_not_predicate(status, :success?, bug8501)
+  end
+
+  def test_propagate_exit_code
     ruby = EnvUtil.rubybin
     assert_equal false, system(ruby, '-e', 'at_exit{exit 2}')
     assert_equal 2, $?.exitstatus
     assert_nil $?.termsig
   end
 
-  def test_should_propagate_signaled
+  def test_propagate_signaled
     ruby = EnvUtil.rubybin
     out = IO.popen(
       [ruby,
@@ -134,25 +141,24 @@ EOW
   end
 
   def test_nested_at_exit
-    t = Tempfile.new(["test_nested_at_exit_", ".rb"])
-    t.puts "at_exit { puts :outer0 }"
-    t.puts "at_exit { puts :outer1_begin; at_exit { puts :inner1 }; puts :outer1_end }"
-    t.puts "at_exit { puts :outer2_begin; at_exit { puts :inner2 }; puts :outer2_end }"
-    t.puts "at_exit { puts :outer3 }"
-    t.flush
+    Tempfile.create(["test_nested_at_exit_", ".rb"]) {|t|
+      t.puts "at_exit { puts :outer0 }"
+      t.puts "at_exit { puts :outer1_begin; at_exit { puts :inner1 }; puts :outer1_end }"
+      t.puts "at_exit { puts :outer2_begin; at_exit { puts :inner2 }; puts :outer2_end }"
+      t.puts "at_exit { puts :outer3 }"
+      t.flush
 
-    expected = [ "outer3",
-                 "outer2_begin",
-                 "outer2_end",
-                 "inner2",
-                 "outer1_begin",
-                 "outer1_end",
-                 "inner1",
-                 "outer0" ]
+      expected = [ "outer3",
+                   "outer2_begin",
+                   "outer2_end",
+                   "inner2",
+                   "outer1_begin",
+                   "outer1_end",
+                   "inner1",
+                   "outer0" ]
 
-    assert_in_out_err(t.path, "", expected, [], "[ruby-core:35237]")
-  ensure
-    t.close(true)
+      assert_in_out_err(t.path, "", expected, [], "[ruby-core:35237]")
+    }
   end
 
   def test_rescue_at_exit
@@ -166,5 +172,16 @@ EOW
       out, err, status = EnvUtil.invoke_ruby(cmd.map {|s|["-e", "#{ex} {#{s}}"]}.flatten, "", true, true)
       assert_equal(["", "", 42], [out, err, status.exitstatus], "#{bug5218}: #{ex}")
     end
+  end
+
+  def test_callcc_at_exit
+    bug9110 = '[ruby-core:58329][Bug #9110]'
+    script = <<EOS
+require "continuation"
+c = nil
+at_exit { c.call }
+at_exit { callcc {|_c| c = _c } }
+EOS
+    assert_normal_exit(script, bug9110)
   end
 end

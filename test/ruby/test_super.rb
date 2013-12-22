@@ -7,6 +7,7 @@ class TestSuper < Test::Unit::TestCase
     def double(a, b) [a,b] end
     def array(*a) a end
     def optional(a = 0) a end
+    def keyword(**a) a end
   end
   class Single1 < Base
     def single(*) super end
@@ -49,6 +50,18 @@ class TestSuper < Test::Unit::TestCase
   end
   class Optional5 < Base
     def array(a = 1, b = 2, *) super end
+  end
+  class Keyword1 < Base
+    def keyword(foo: "keyword1") super end
+  end
+  class Keyword2 < Base
+    def keyword(foo: "keyword2")
+      foo = "changed1"
+      x = super
+      foo = "changed2"
+      y = super
+      [x, y]
+    end
   end
 
   def test_single1
@@ -112,6 +125,14 @@ class TestSuper < Test::Unit::TestCase
     assert_equal([9, 8], Optional5.new.array(9, 8))
     assert_equal([9, 8, 7], Optional5.new.array(9, 8, 7))
   end
+  def test_keyword1
+    assert_equal({foo: "keyword1"}, Keyword1.new.keyword)
+    bug8008 = '[ruby-core:53114] [Bug #8008]'
+    assert_equal({foo: bug8008}, Keyword1.new.keyword(foo: bug8008))
+  end
+  def test_keyword2
+    assert_equal([{foo: "changed1"}, {foo: "changed2"}], Keyword2.new.keyword)
+  end
 
   class A
     def tt(aa)
@@ -131,14 +152,13 @@ class TestSuper < Test::Unit::TestCase
     a = A.new
     a.uu(12)
     assert_equal("A#tt", a.tt(12), "[ruby-core:3856]")
-    e = assert_raise(RuntimeError, "[ruby-core:24244]") {
+    assert_raise_with_message(RuntimeError, /implicit argument passing of super from method defined by define_method/, "[ruby-core:24244]") {
       lambda {
         Class.new {
           define_method(:a) {super}
         }.new.a
       }.call
     }
-    assert_match(/implicit argument passing of super from method defined by define_method/, e.message)
   end
 
   class SubSeq
@@ -265,7 +285,7 @@ class TestSuper < Test::Unit::TestCase
       end
     }
     obj = sub_class.new
-    assert_raise(NotImplementedError) do
+    assert_raise(TypeError) do
       obj.foo
     end
   end
@@ -285,7 +305,7 @@ class TestSuper < Test::Unit::TestCase
       end
     }
     obj = sub_class.new
-    assert_raise(NotImplementedError) do
+    assert_raise(TypeError) do
       obj.foo
     end
   end
@@ -321,7 +341,7 @@ class TestSuper < Test::Unit::TestCase
       end
     }
     obj = sub_class.new
-    assert_raise(NotImplementedError) do
+    assert_raise(TypeError) do
       obj.foo.call
     end
   end
@@ -363,5 +383,28 @@ class TestSuper < Test::Unit::TestCase
 
   def test_super_in_BEGIN
     assert_super_in_block("BEGIN")
+  end
+
+  class X
+    def foo(*args)
+      args
+    end
+  end
+
+  class Y < X
+    define_method(:foo) do |*args|
+      super(*args)
+    end
+  end
+
+  def test_super_splat
+    # [ruby-list:49575]
+    y = Y.new
+    assert_equal([1, 2], y.foo(1, 2))
+    assert_equal([1, false], y.foo(1, false))
+    assert_equal([1, 2, 3, 4, 5], y.foo(1, 2, 3, 4, 5))
+    assert_equal([false, true], y.foo(false, true))
+    assert_equal([false, false], y.foo(false, false))
+    assert_equal([1, 2, 3, false, 5], y.foo(1, 2, 3, false, 5))
   end
 end

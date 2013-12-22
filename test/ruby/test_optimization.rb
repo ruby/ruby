@@ -67,6 +67,7 @@ class TestRubyOptimization < Test::Unit::TestCase
 
   def test_fixnum_div
     assert_equal 3, 15 / 5
+    assert_equal 6.66, redefine_method('Float', '/') { 4.2 / 6.66 }, "bug 9238"
   end
 
   def test_fixnum_mod

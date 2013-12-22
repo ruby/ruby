@@ -25,7 +25,7 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def assert_regexp_generic_encoding(r)
-    assert(!r.fixed_encoding?)
+    assert_not_predicate(r, :fixed_encoding?)
     %w[ASCII-8BIT EUC-JP Windows-31J UTF-8].each {|ename|
       # "\xc2\xa1" is a valid sequence for ASCII-8BIT, EUC-JP, Windows-31J and UTF-8.
       assert_nothing_raised { r =~ "\xc2\xa1".force_encoding(ename) }
@@ -33,7 +33,7 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def assert_regexp_fixed_encoding(r)
-    assert(r.fixed_encoding?)
+    assert_predicate(r, :fixed_encoding?)
     %w[ASCII-8BIT EUC-JP Windows-31J UTF-8].each {|ename|
       enc = Encoding.find(ename)
       if enc == r.encoding
@@ -107,7 +107,7 @@ class TestM17N < Test::Unit::TestCase
     elsif !s2.ascii_only?
       assert_equal(s2.encoding, t.encoding)
     else
-      assert([s1.encoding, s2.encoding].include?(t.encoding))
+      assert_include([s1.encoding, s2.encoding], t.encoding)
     end
   end
 
@@ -195,31 +195,35 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_string_inspect_encoding
-    orig_int = Encoding.default_internal
-    orig_ext = Encoding.default_external
-    Encoding.default_internal = nil
-    [Encoding::UTF_8, Encoding::EUC_JP, Encoding::Windows_31J, Encoding::GB18030].
-      each do |e|
-      Encoding.default_external = e
-      str = "\x81\x30\x81\x30".force_encoding('GB18030')
-      assert_equal(Encoding::GB18030 == e ? %{"#{str}"} : '"\x{81308130}"', str.inspect)
-      str = e("\xa1\x8f\xa1\xa1")
-      expected = "\"\\xA1\x8F\xA1\xA1\"".force_encoding("EUC-JP")
-      assert_equal(Encoding::EUC_JP == e ? expected : "\"\\xA1\\x{8FA1A1}\"", str.inspect)
-      str = s("\x81@")
-      assert_equal(Encoding::Windows_31J == e ? %{"#{str}"} : '"\x{8140}"', str.inspect)
-      str = "\u3042\u{10FFFD}"
-      assert_equal(Encoding::UTF_8 == e ? %{"#{str}"} : '"\u3042\u{10FFFD}"', str.inspect)
+    EnvUtil.suppress_warning do
+      begin
+        orig_int = Encoding.default_internal
+        orig_ext = Encoding.default_external
+        Encoding.default_internal = nil
+        [Encoding::UTF_8, Encoding::EUC_JP, Encoding::Windows_31J, Encoding::GB18030].
+          each do |e|
+          Encoding.default_external = e
+          str = "\x81\x30\x81\x30".force_encoding('GB18030')
+          assert_equal(Encoding::GB18030 == e ? %{"#{str}"} : '"\x{81308130}"', str.inspect)
+          str = e("\xa1\x8f\xa1\xa1")
+          expected = "\"\\xA1\x8F\xA1\xA1\"".force_encoding("EUC-JP")
+          assert_equal(Encoding::EUC_JP == e ? expected : "\"\\xA1\\x{8FA1A1}\"", str.inspect)
+          str = s("\x81@")
+          assert_equal(Encoding::Windows_31J == e ? %{"#{str}"} : '"\x{8140}"', str.inspect)
+          str = "\u3042\u{10FFFD}"
+          assert_equal(Encoding::UTF_8 == e ? %{"#{str}"} : '"\u3042\u{10FFFD}"', str.inspect)
+          end
+        Encoding.default_external = Encoding::UTF_8
+        [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE,
+          Encoding::UTF8_SOFTBANK].each do |e|
+          str = "abc".encode(e)
+          assert_equal('"abc"', str.inspect)
+          end
+      ensure
+        Encoding.default_internal = orig_int
+        Encoding.default_external = orig_ext
+      end
     end
-    Encoding.default_external = Encoding::UTF_8
-    [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE,
-      Encoding::UTF8_SOFTBANK].each do |e|
-      str = "abc".encode(e)
-      assert_equal('"abc"', str.inspect)
-    end
-  ensure
-    Encoding.default_internal = orig_int
-    Encoding.default_external = orig_ext
   end
 
   def test_utf_16_32_inspect
@@ -247,18 +251,22 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_object_utf16_32_inspect
-    orig_int = Encoding.default_internal
-    orig_ext = Encoding.default_external
-    Encoding.default_internal = nil
-    Encoding.default_external = Encoding::UTF_8
-    o = Object.new
-    [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE].each do |e|
-      o.instance_eval "undef inspect;def inspect;'abc'.encode('#{e}');end"
-      assert_raise(Encoding::CompatibilityError) { [o].inspect }
+    EnvUtil.suppress_warning do
+      begin
+        orig_int = Encoding.default_internal
+        orig_ext = Encoding.default_external
+        Encoding.default_internal = nil
+        Encoding.default_external = Encoding::UTF_8
+        o = Object.new
+        [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE].each do |e|
+          o.instance_eval "undef inspect;def inspect;'abc'.encode('#{e}');end"
+          assert_raise(Encoding::CompatibilityError) { [o].inspect }
+        end
+      ensure
+        Encoding.default_internal = orig_int
+        Encoding.default_external = orig_ext
+      end
     end
-  ensure
-    Encoding.default_internal = orig_int
-    Encoding.default_external = orig_ext
   end
 
   def test_object_inspect_external
@@ -352,15 +360,15 @@ class TestM17N < Test::Unit::TestCase
         ].each {|pat2|
           s = [pat2.gsub(/ /, "")].pack("B*").force_encoding("utf-8")
           if pat2 <= bits_0x10ffff
-            assert(s.valid_encoding?, "#{pat2}")
+            assert_predicate(s, :valid_encoding?, "#{pat2}")
           else
-            assert(!s.valid_encoding?, "#{pat2}")
+            assert_not_predicate(s, :valid_encoding?, "#{pat2}")
           end
         }
         if / / =~ pat0
           pat3 = pat1.gsub(/X/, "0")
           s = [pat3.gsub(/ /, "")].pack("B*").force_encoding("utf-8")
-          assert(!s.valid_encoding?, "#{pat3}")
+          assert_not_predicate(s, :valid_encoding?, "#{pat3}")
         end
       }
     }
@@ -380,12 +388,12 @@ class TestM17N < Test::Unit::TestCase
         pat0.gsub(/x/, '1'),
       ].each {|pat1|
         s = [pat1.gsub(/ /, "")].pack("B*").force_encoding("utf-8")
-        assert(!s.valid_encoding?, "#{pat1}")
+        assert_not_predicate(s, :valid_encoding?, "#{pat1}")
       }
     }
     pats.values_at(0,3).each {|pat|
       s = [pat.gsub(/ /, "")].pack("B*").force_encoding("utf-8")
-      assert(s.valid_encoding?, "#{pat}")
+      assert_predicate(s, :valid_encoding?, "#{pat}")
     }
   end
 
@@ -584,38 +592,38 @@ class TestM17N < Test::Unit::TestCase
     assert_nothing_raised {
       r = Regexp.new(s)
     }
-    assert(r.fixed_encoding?)
+    assert_predicate(r, :fixed_encoding?)
     assert_match(r, "\xa4\xa2".force_encoding("euc-jp"))
 
     r = eval('/\p{Hiragana}/'.force_encoding("euc-jp"))
-    assert(r.fixed_encoding?)
+    assert_predicate(r, :fixed_encoding?)
     assert_match(r, "\xa4\xa2".force_encoding("euc-jp"))
 
     r = /\p{Hiragana}/e
-    assert(r.fixed_encoding?)
+    assert_predicate(r, :fixed_encoding?)
     assert_match(r, "\xa4\xa2".force_encoding("euc-jp"))
 
     r = /\p{AsciI}/e
-    assert(r.fixed_encoding?)
+    assert_predicate(r, :fixed_encoding?)
     assert_match(r, "a".force_encoding("euc-jp"))
 
     r = /\p{hiraganA}/e
-    assert(r.fixed_encoding?)
+    assert_predicate(r, :fixed_encoding?)
     assert_match(r, "\xa4\xa2".force_encoding("euc-jp"))
 
     r = eval('/\u{3042}\p{Hiragana}/'.force_encoding("euc-jp"))
-    assert(r.fixed_encoding?)
+    assert_predicate(r, :fixed_encoding?)
     assert_equal(Encoding::UTF_8, r.encoding)
 
     r = eval('/\p{Hiragana}\u{3042}/'.force_encoding("euc-jp"))
-    assert(r.fixed_encoding?)
+    assert_predicate(r, :fixed_encoding?)
     assert_equal(Encoding::UTF_8, r.encoding)
   end
 
   def test_regexp_embed_preprocess
     r1 = /\xa4\xa2/e
     r2 = /#{r1}/
-    assert(r2.source.include?(r1.source))
+    assert_include(r2.source, r1.source)
   end
 
   def test_begin_end_offset
@@ -660,10 +668,10 @@ class TestM17N < Test::Unit::TestCase
   def test_union_0
     r = Regexp.union
     assert_regexp_generic_ascii(r)
-    assert(r !~ a(""))
-    assert(r !~ e(""))
-    assert(r !~ s(""))
-    assert(r !~ u(""))
+    assert_not_match(r, a(""))
+    assert_not_match(r, e(""))
+    assert_not_match(r, s(""))
+    assert_not_match(r, u(""))
   end
 
   def test_union_1_asciionly_string
@@ -886,9 +894,9 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_str_lt
-    assert(a("a") < a("\xa1"))
-    assert(a("a") < s("\xa1"))
-    assert(s("a") < a("\xa1"))
+    assert_operator(a("a"), :<, a("\xa1"))
+    assert_operator(a("a"), :<, s("\xa1"))
+    assert_operator(s("a"), :<, a("\xa1"))
   end
 
   def test_str_multiply
@@ -1061,15 +1069,15 @@ class TestM17N < Test::Unit::TestCase
     s = "\x80".force_encoding("ASCII-8BIT")
     r = Regexp.new("\x80".force_encoding("ASCII-8BIT"))
     s2 = s.sub(r, "")
-    assert(s2.empty?)
-    assert(s2.ascii_only?)
+    assert_empty(s2)
+    assert_predicate(s2, :ascii_only?)
   end
 
   def test_sub3
     repl = "\x81".force_encoding("sjis")
     assert_equal(false, repl.valid_encoding?)
     s = "a@".sub(/a/, repl)
-    assert(s.valid_encoding?)
+    assert_predicate(s, :valid_encoding?)
   end
 
   def test_insert
@@ -1222,7 +1230,7 @@ class TestM17N < Test::Unit::TestCase
 
   def test_symbol_op
     ops = %w"
-      .. ... + - +(binary) -(binary) * / % ** +@ -@ | ^ & ! <=> > >= < <= ==
+      .. ... + - * / % ** +@ -@ | ^ & ! <=> > >= < <= ==
       === != =~ !~ ~ ! [] []= << >> :: `
     "
     ops.each do |op|
@@ -1451,12 +1459,14 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_force_encoding
-    assert(("".center(1, "\x80".force_encoding("utf-8")); true),
-           "moved from btest/knownbug, [ruby-dev:33807]")
+    assert_equal(u("\x80"), "".center(1, u("\x80")),
+                 "moved from btest/knownbug, [ruby-dev:33807]")
     a = "".force_encoding("ascii-8bit") << 0xC3 << 0xB6
     assert_equal(1, a.force_encoding("utf-8").size, '[ruby-core:22437]')
     b = "".force_encoding("ascii-8bit") << 0xC3.chr << 0xB6.chr
     assert_equal(1, b.force_encoding("utf-8").size, '[ruby-core:22437]')
+
+    assert_raise(TypeError){ ''.force_encoding(nil) }
   end
 
   def test_combchar_codepoint
@@ -1478,7 +1488,69 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(Encoding::ASCII_8BIT, s.b.encoding)
     s.taint
     assert_equal(true, s.b.tainted?)
-    s.untrust
-    assert_equal(true, s.b.untrusted?)
+    s = "abc".b
+    assert_equal(true, s.b.ascii_only?)
+  end
+
+  def test_scrub
+    str = "\u3042\u3044"
+    assert_not_same(str, str.scrub)
+    str.force_encoding(Encoding::ISO_2022_JP) # dummy encoding
+    assert_not_same(str, str.scrub)
+    assert_nothing_raised(ArgumentError) {str.scrub(nil)}
+
+    assert_equal("\uFFFD\uFFFD\uFFFD", u("\x80\x80\x80").scrub)
+    assert_equal("\uFFFDA", u("\xF4\x80\x80A").scrub)
+
+    # examples in Unicode 6.1.0 D93b
+    assert_equal("\x41\uFFFD\uFFFD\x41\uFFFD\x41",
+                 u("\x41\xC0\xAF\x41\xF4\x80\x80\x41").scrub)
+    assert_equal("\x41\uFFFD\uFFFD\uFFFD\x41",
+                 u("\x41\xE0\x9F\x80\x41").scrub)
+    assert_equal("\u0061\uFFFD\uFFFD\uFFFD\u0062\uFFFD\u0063\uFFFD\uFFFD\u0064",
+                 u("\x61\xF1\x80\x80\xE1\x80\xC2\x62\x80\x63\x80\xBF\x64").scrub)
+    assert_equal("abcdefghijklmnopqrstuvwxyz\u0061\uFFFD\uFFFD\uFFFD\u0062\uFFFD\u0063\uFFFD\uFFFD\u0064",
+                 u("abcdefghijklmnopqrstuvwxyz\x61\xF1\x80\x80\xE1\x80\xC2\x62\x80\x63\x80\xBF\x64").scrub)
+
+    assert_equal("\u3042\u3013", u("\xE3\x81\x82\xE3\x81").scrub("\u3013"))
+    assert_raise(Encoding::CompatibilityError){ u("\xE3\x81\x82\xE3\x81").scrub(e("\xA4\xA2")) }
+    assert_raise(TypeError){ u("\xE3\x81\x82\xE3\x81").scrub(1) }
+    assert_raise(ArgumentError){ u("\xE3\x81\x82\xE3\x81\x82\xE3\x81").scrub(u("\x81")) }
+    assert_equal(e("\xA4\xA2\xA2\xAE"), e("\xA4\xA2\xA4").scrub(e("\xA2\xAE")))
+
+    assert_equal("\u3042<e381>", u("\xE3\x81\x82\xE3\x81").scrub{|x|'<'+x.unpack('H*')[0]+'>'})
+    assert_raise(Encoding::CompatibilityError){ u("\xE3\x81\x82\xE3\x81").scrub{e("\xA4\xA2")} }
+    assert_raise(TypeError){ u("\xE3\x81\x82\xE3\x81").scrub{1} }
+    assert_raise(ArgumentError){ u("\xE3\x81\x82\xE3\x81\x82\xE3\x81").scrub{u("\x81")} }
+    assert_equal(e("\xA4\xA2\xA2\xAE"), e("\xA4\xA2\xA4").scrub{e("\xA2\xAE")})
+
+    assert_equal(u("\x81"), u("a\x81").scrub {|c| break c})
+    assert_raise(ArgumentError) {u("a\x81").scrub {|c| c}}
+
+    assert_equal("\uFFFD\u3042".encode("UTF-16BE"),
+                 "\xD8\x00\x30\x42".force_encoding(Encoding::UTF_16BE).
+                 scrub)
+    assert_equal("\uFFFD\u3042".encode("UTF-16LE"),
+                 "\x00\xD8\x42\x30".force_encoding(Encoding::UTF_16LE).
+                 scrub)
+    assert_equal("\uFFFD".encode("UTF-32BE"),
+                 "\xff".force_encoding(Encoding::UTF_32BE).
+                 scrub)
+    assert_equal("\uFFFD".encode("UTF-32LE"),
+                 "\xff".force_encoding(Encoding::UTF_32LE).
+                 scrub)
+  end
+
+  def test_scrub_bang
+    str = "\u3042\u3044"
+    assert_same(str, str.scrub!)
+    str.force_encoding(Encoding::ISO_2022_JP) # dummy encoding
+    assert_same(str, str.scrub!)
+    assert_nothing_raised(ArgumentError) {str.scrub!(nil)}
+
+    str = u("\x80\x80\x80")
+    str.scrub!
+    assert_same(str, str.scrub!)
+    assert_equal("\uFFFD\uFFFD\uFFFD", str)
   end
 end

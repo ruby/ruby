@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestRand < Test::Unit::TestCase
   def assert_random_int(ws, m, init = 0)
@@ -176,7 +177,7 @@ class TestRand < Test::Unit::TestCase
   end
 
   def test_big_seed
-    assert_random_int(%w(1143843490), 0x100000000, 2**1000000-1)
+    assert_random_int(%w(2757555016), 0x100000000, 2**1000000-1)
   end
 
   def test_random_gc
@@ -404,14 +405,14 @@ END
 
   def test_random_equal
     r = Random.new(0)
-    assert(r == r)
-    assert(r == r.dup)
+    assert_equal(r, r)
+    assert_equal(r, r.dup)
     r1 = r.dup
     r2 = r.dup
     r1.rand(0x100)
-    assert(r1 != r2)
+    assert_not_equal(r1, r2)
     r2.rand(0x100)
-    assert(r1 == r2)
+    assert_equal(r1, r2)
   end
 
   def test_fork_shuffle
@@ -420,7 +421,7 @@ END
       raise 'default seed is not set' if srand == 0
     end
     p2, st = Process.waitpid2(pid)
-    assert(st.success?, "#{st.inspect}")
+    assert_predicate(st, :success?, "#{st.inspect}")
   rescue NotImplementedError, ArgumentError
   end
 
@@ -436,6 +437,7 @@ END
   end
 
   def test_rand_reseed_on_fork
+    GC.start
     bug5661 = '[ruby-core:41209]'
 
     assert_fork_status(1, bug5661) {Random.rand(4)}
@@ -503,15 +505,23 @@ END
     end
   end
 
-  def test_marshal_load_insecure
-    r = Random.new(0)
-    d = r.__send__(:marshal_dump)
-    l = proc do
-      $SAFE = 4
-      r.__send__(:marshal_load, d)
+  def test_random_ulong_limited
+    def (gen = Object.new).rand(*) 1 end
+    assert_equal([2], (1..100).map {[1,2,3].sample(random: gen)}.uniq)
+
+    def (gen = Object.new).rand(*) 100 end
+    assert_raise_with_message(RangeError, /big 100\z/) {[1,2,3].sample(random: gen)}
+
+    bug7903 = '[ruby-dev:47061] [Bug #7903]'
+    def (gen = Object.new).rand(*) -1 end
+    assert_raise_with_message(RangeError, /small -1\z/, bug7903) {[1,2,3].sample(random: gen)}
+
+    bug7935 = '[ruby-core:52779] [Bug #7935]'
+    class << (gen = Object.new)
+      def rand(limit) @limit = limit; 0 end
+      attr_reader :limit
     end
-    assert_raise(SecurityError, '[Bug #6540]') do
-      l.call
-    end
+    [1, 2].sample(1, random: gen)
+    assert_equal(2, gen.limit, bug7935)
   end
 end

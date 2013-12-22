@@ -37,7 +37,7 @@ class TestRakeTaskManager < Rake::TestCase
       t = @tm.define_task(Rake::Task, :t)
       assert_equal "x:t", t.name
     end
-    assert_equal ["x:t"], @tm.tasks.collect { |t| t.name }
+    assert_equal ["x:t"], @tm.tasks.map { |t| t.name }
   end
 
   def test_anonymous_namespace
@@ -55,7 +55,7 @@ class TestRakeTaskManager < Rake::TestCase
       assert_equal "fn", t.name
     end
 
-    assert_equal ["fn"], @tm.tasks.collect { |t| t.name }
+    assert_equal ["fn"], @tm.tasks.map { |t| t.name }
   end
 
   def test_namespace_yields_same_namespace_as_returned
@@ -93,7 +93,7 @@ class TestRakeTaskManager < Rake::TestCase
         bb = @tm.define_task(Rake::Task, :bb)
         bot_z = @tm.define_task(Rake::Task, :z)
 
-        assert_equal ["a", "b"], @tm.current_scope
+        assert_equal Rake::Scope.make("b", "a"), @tm.current_scope
 
         assert_equal bb, @tm["a:b:bb"]
         assert_equal aa, @tm["a:aa"]
@@ -101,10 +101,11 @@ class TestRakeTaskManager < Rake::TestCase
         assert_equal bot_z, @tm["z"]
         assert_equal mid_z, @tm["^z"]
         assert_equal top_z, @tm["^^z"]
+        assert_equal top_z, @tm["^^^z"] # Over the top
         assert_equal top_z, @tm["rake:z"]
       end
 
-      assert_equal ["a"], @tm.current_scope
+      assert_equal Rake::Scope.make("a"), @tm.current_scope
 
       assert_equal bb, @tm["a:b:bb"]
       assert_equal aa, @tm["a:aa"]
@@ -113,18 +114,19 @@ class TestRakeTaskManager < Rake::TestCase
       assert_equal aa, @tm["aa"]
       assert_equal mid_z, @tm["z"]
       assert_equal top_z, @tm["^z"]
+      assert_equal top_z, @tm["^^z"] # Over the top
       assert_equal top_z, @tm["rake:z"]
     end
 
-    assert_equal [], @tm.current_scope
+    assert_equal Rake::Scope.make, @tm.current_scope
 
-    assert_equal [], xx.scope
-    assert_equal ['a'], aa.scope
-    assert_equal ['a', 'b'], bb.scope
+    assert_equal Rake::Scope.make, xx.scope
+    assert_equal Rake::Scope.make('a'), aa.scope
+    assert_equal Rake::Scope.make('b', 'a'), bb.scope
   end
 
   def test_lookup_with_explicit_scopes
-    t1, t2, t3, s = (0...4).collect { nil }
+    t1, t2, t3, s = (0...4).map { nil }
     t1 = @tm.define_task(Rake::Task, :t)
     @tm.in_namespace("a") do
       t2 = @tm.define_task(Rake::Task, :t)
@@ -133,11 +135,11 @@ class TestRakeTaskManager < Rake::TestCase
         t3 = @tm.define_task(Rake::Task, :t)
       end
     end
-    assert_equal t1, @tm[:t, []]
-    assert_equal t2, @tm[:t, ["a"]]
-    assert_equal t3, @tm[:t, ["a", "b"]]
-    assert_equal s,  @tm[:s, ["a", "b"]]
-    assert_equal s,  @tm[:s, ["a"]]
+    assert_equal t1, @tm[:t, Rake::Scope.make]
+    assert_equal t2, @tm[:t, Rake::Scope.make("a")]
+    assert_equal t3, @tm[:t, Rake::Scope.make("b", "a")]
+    assert_equal s,  @tm[:s, Rake::Scope.make("b", "a")]
+    assert_equal s,  @tm[:s, Rake::Scope.make("a")]
   end
 
   def test_correctly_scoped_prerequisites_are_invoked
@@ -154,4 +156,3 @@ class TestRakeTaskManager < Rake::TestCase
   end
 
 end
-

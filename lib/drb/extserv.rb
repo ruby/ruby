@@ -42,6 +42,8 @@ module DRb
   end
 end
 
+# :stopdoc:
+
 if __FILE__ == $0
   class Foo
     include DRbUndumped

@@ -145,11 +145,11 @@ module Net::HTTPHeader
     @header.key?(key.downcase)
   end
 
-  # Returns a Hash consisting of header names and values.
+  # Returns a Hash consisting of header names and array of values.
   # e.g.
-  # {"cache-control" => "private",
-  #  "content-type" => "text/html",
-  #  "date" => "Wed, 22 Jun 2005 22:11:50 GMT"}
+  # {"cache-control" => ["private"],
+  #  "content-type" => ["text/html"],
+  #  "date" => ["Wed, 22 Jun 2005 22:11:50 GMT"]}
   def to_hash
     @header.dup
   end
@@ -237,7 +237,7 @@ module Net::HTTPHeader
       rangestr = (n > 0 ? "0-#{n-1}" : "-#{-n}")
     when Range
       first = r.first
-      last = r.last
+      last = r.end
       last -= 1 if r.exclude_end?
       if last == -1
         rangestr = (first > 0 ? "#{first}-" : "-#{-first}")

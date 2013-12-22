@@ -30,6 +30,20 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
+  def test_ssl_gets
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true) { |server, port|
+      server_connect(port) { |ssl|
+        ssl.write "abc\n"
+        IO.select [ssl]
+
+        line = ssl.gets
+
+        assert_equal "abc\n", line
+        assert_equal Encoding::BINARY, line.encoding
+      }
+    }
+  end
+
   def test_ssl_read_nonblock
     start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true) { |server, port|
       server_connect(port) { |ssl|
@@ -337,6 +351,35 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  def test_verify_certificate_identity
+    [true, false].each do |criticality|
+      cert = create_null_byte_SAN_certificate(criticality)
+      assert_equal(false, OpenSSL::SSL.verify_certificate_identity(cert, 'www.example.com'))
+      assert_equal(true,  OpenSSL::SSL.verify_certificate_identity(cert, "www.example.com\0.evil.com"))
+      assert_equal(false, OpenSSL::SSL.verify_certificate_identity(cert, '192.168.7.255'))
+      assert_equal(true,  OpenSSL::SSL.verify_certificate_identity(cert, '192.168.7.1'))
+      assert_equal(false, OpenSSL::SSL.verify_certificate_identity(cert, '13::17'))
+      assert_equal(true,  OpenSSL::SSL.verify_certificate_identity(cert, '13:0:0:0:0:0:0:17'))
+    end
+  end
+
+  # Create NULL byte SAN certificate
+  def create_null_byte_SAN_certificate(critical = false)
+    ef = OpenSSL::X509::ExtensionFactory.new
+    cert = OpenSSL::X509::Certificate.new
+    cert.subject = OpenSSL::X509::Name.parse "/DC=some/DC=site/CN=Some Site"
+    ext = ef.create_ext('subjectAltName', 'DNS:placeholder,IP:192.168.7.1,IP:13::17', critical)
+    ext_asn1 = OpenSSL::ASN1.decode(ext.to_der)
+    san_list_der = ext_asn1.value.reduce(nil) { |memo,val| val.tag == 4 ? val.value : memo }
+    san_list_asn1 = OpenSSL::ASN1.decode(san_list_der)
+    san_list_asn1.value[0].value = "www.example.com\0.evil.com"
+    pos = critical ? 2 : 1
+    ext_asn1.value[pos].value = san_list_asn1.to_der
+    real_ext = OpenSSL::X509::Extension.new ext_asn1
+    cert.add_extension(real_ext)
+    cert
+  end
+
   def test_tlsext_hostname
     return unless OpenSSL::SSL::SSLSocket.instance_methods.include?(:hostname)
 
@@ -591,6 +634,33 @@ if OpenSSL::OPENSSL_VERSION_NUMBER > 0x10001000
   end
 
 end
+
+  def test_invalid_shutdown_by_gc
+    assert_nothing_raised {
+      start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|server, port|
+        10.times {
+          sock = TCPSocket.new("127.0.0.1", port)
+          ssl = OpenSSL::SSL::SSLSocket.new(sock)
+          GC.start
+          ssl.connect
+          sock.close
+        }
+      }
+    }
+  end
+
+  def test_close_after_socket_close
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|server, port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock)
+      ssl.sync_close = true
+      ssl.connect
+      sock.close
+      assert_nothing_raised do
+        ssl.close
+      end
+    }
+  end
 
   private
 

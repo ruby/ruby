@@ -1,9 +1,25 @@
+##
+# The TrustDir manages the trusted certificates for gem signature
+# verification.
+
 class Gem::Security::TrustDir
+
+  ##
+  # Default permissions for the trust directory and its contents
 
   DEFAULT_PERMISSIONS = {
     :trust_dir    => 0700,
     :trusted_cert => 0600,
   }
+
+  ##
+  # The directory where trusted certificates will be stored.
+
+  attr_reader :dir
+
+  ##
+  # Creates a new TrustDir using +dir+ where the directory and file
+  # permissions will be checked according to +permissions+
 
   def initialize dir, permissions = DEFAULT_PERMISSIONS
     @dir = dir
@@ -11,8 +27,6 @@ class Gem::Security::TrustDir
 
     @digester = Gem::Security::DIGEST_ALGORITHM
   end
-
-  attr_reader :dir
 
   ##
   # Returns the path to the trusted +certificate+

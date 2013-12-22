@@ -1,6 +1,6 @@
 require "rexml/document"
 
-require "rss-testcase"
+require_relative "rss-testcase"
 
 module RSS
   class TestRSS20Core < TestCase

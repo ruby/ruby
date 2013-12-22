@@ -163,6 +163,26 @@ class MiniTest::Unit # :nodoc:
 
     ##
     # Runs the given +work+ and asserts that the times gathered fit to
+    # match a logarithmic curve within a given error +threshold+.
+    #
+    # Fit is calculated by #fit_logarithmic.
+    #
+    # Ranges are specified by ::bench_range.
+    #
+    # Eg:
+    #
+    #   def bench_algorithm
+    #     assert_performance_logarithmic 0.9999 do |n|
+    #       @obj.algorithm(n)
+    #     end
+    #   end
+
+    def assert_performance_logarithmic threshold = 0.99, &work
+      assert_performance validation_for_fit(:logarithmic, threshold), &work
+    end
+
+    ##
+    # Runs the given +work+ and asserts that the times gathered fit to
     # match a straight line within a given error +threshold+.
     #
     # Fit is calculated by #fit_linear.
@@ -235,6 +255,29 @@ class MiniTest::Unit # :nodoc:
 
       return Math.exp(a), b, fit_error(xys) { |x| Math.exp(a + b * x) }
     end
+
+    ##
+    # To fit a functional form: y = a + b*ln(x).
+    #
+    # Takes x and y values and returns [a, b, r^2].
+    #
+    # See: http://mathworld.wolfram.com/LeastSquaresFittingLogarithmic.html
+
+    def fit_logarithmic xs, ys
+      n     = xs.size
+      xys   = xs.zip(ys)
+      slnx2 = sigma(xys) { |x,y| Math.log(x) ** 2 }
+      slnx  = sigma(xys) { |x,y| Math.log(x)      }
+      sylnx = sigma(xys) { |x,y| y * Math.log(x)  }
+      sy    = sigma(xys) { |x,y| y                }
+
+      c = n * slnx2 - slnx ** 2
+      b = ( n * sylnx - sy * slnx ) / c
+      a = (sy - b * slnx) / n
+
+      return a, b, fit_error(xys) { |x| a + b * Math.log(x) }
+    end
+
 
     ##
     # Fits the functional form: a + bx.

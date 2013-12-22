@@ -152,16 +152,52 @@ Trace the rules resolution.
 .Pp
 .El
 .Pp
+.Sh ENVIRONMENT
+.Bl -tag -width "RAKE_SYSTEM" -compact
+.It Ev RAKE_SYSTEM
+The directory path containing the system wide rakefiles.
+.Pp
+.It Ev RAKE_COLUMNS
+Override the number of columns used for output, such as
+.Fl Fl tasks
+.Pp
+.It Ev RAKEOPT
+Used to provide default command line arguments to Rake.
+.Pp
+.It Ev TAGS
+Generate an Emacs TAGS file
+.Pp
+.It Ev TEST
+The list of test files will be overridden to include only the filename specified on the command line.
+.Pp
+This provides an easy way to run just one test.
+.Pp
+.It Ev TESTOPTS
+.It Ev TESTOPT
+.It Ev TEST_OPTS
+.It Ev TEST_OPT
+The given options are passed to the test process after a
+.Fl Fl
+.Pp
+This allows Test::Unit options to be passed to the test suite.
+.Pp
+.It Ev USERPROFILE
+.It Ev HOME
+.It Ev HOMEDRIVE
+.It Ev HOMEPATH
+The standard directory containing system wide rake files on Win 32 systems.
+
 .Sh SEE ALSO
 .Xr ruby 1
 .Xr make 1
 .Pp
-http://rake.rubyforge.org/
+.Pa http://rake.rubyforge.org/
 .Sh REPORTING BUGS
 Bugs, features requests and other issues can be logged at
-<\fBhttp://onestepback.org/redmine/projects/show/rake\fR>.
+.Aq Pa http://onestepback.org/redmine/projects/show/rake .
 .Pp
-You will need an account to before you can post issues. Register at <\fBhttp://onestepback.org/redmine/account/register\fR>.
+You will need an account to before you can post issues. Register at
+.Aq Pa http://onestepback.org/redmine/account/register .
 Or you can send an email to the author.
 .Sh AUTHOR
 .Nm Rake

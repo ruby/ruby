@@ -40,6 +40,12 @@ class TestCSV::Interface < TestCSV
     end
   end
 
+  def test_foreach_enum
+    CSV.foreach(@path, col_sep: "\t", row_sep: "\r\n").zip(@expected) do |row, exp|
+      assert_equal(exp, row)
+    end
+  end
+
   def test_open_and_close
     csv = CSV.open(@path, "r+", col_sep: "\t", row_sep: "\r\n")
     assert_not_nil(csv)
@@ -189,6 +195,25 @@ class TestCSV::Interface < TestCSV
                            converters:        :all,
                            header_converters: :symbol ) do |csv|
       csv.each { |line| assert_equal(lines.shift, line.to_hash) }
+    end
+  end
+
+  def test_write_hash_with_string_keys
+    File.unlink(@path)
+
+    lines = [{a: 1, b: 2, c: 3}, {a: 4, b: 5, c: 6}]
+    CSV.open( @path, "wb", headers: true ) do |csv|
+      csv << lines.first.keys
+      lines.each { |line| csv << line }
+    end
+    CSV.open( @path, "rb", headers: true ) do |csv|
+      csv.each do |line|
+        csv.headers.each_with_index do |header, h|
+          keys = line.to_hash.keys
+          assert_instance_of(String, keys[h])
+          assert_same(header, keys[h])
+        end
+      end
     end
   end
 

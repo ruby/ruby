@@ -103,4 +103,23 @@ class TestCase < Test::Unit::TestCase
       assert(false)
     end
   end
+
+  def test_method_missing
+    flag = false
+
+    case 1
+    when Class.new(BasicObject) { def method_missing(*) true end }.new
+      flag = true
+    end
+
+    assert(flag)
+  end
+
+  def test_nomethoderror
+    assert_raise(NoMethodError) {
+      case 1
+      when Class.new(BasicObject) { }.new
+      end
+    }
+  end
 end

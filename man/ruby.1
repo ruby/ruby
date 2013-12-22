@@ -124,7 +124,7 @@ Libraries called "builtin libraries" and "standard libraries" are bundled with R
 And you can obtain more libraries via the package management system called `RubyGems'.
 .Pp
 Moreover there are thousands of Ruby projects on GitHub
-.Pf <\fBhttps://github.com/languages/Ruby\fR> Ns .
+.Aq Pa https://github.com/languages/Ruby .
 .El
 .Pp
 .Sh OPTIONS
@@ -162,6 +162,10 @@ Specifies the default value(s) for external encodings and internal encoding. Val
 .Pp
 You can omit the one for internal encodings, then the value
 .Pf ( Li "Encoding.default_internal" ) will be nil.
+.Pp
+.It Fl -external-encoding Ns = Ns Ar encoding
+.It Fl -internal-encoding Ns = Ns Ar encoding
+Specify the default external or internal character encoding
 .Pp
 .It Fl F Ar pattern
 Specifies input field separator
@@ -487,8 +491,8 @@ as bellow.
 The official web site.
 .It http://www.rubyforge.org
 hosting many open source ruby projects.
-.It http://raa.ruby-lang.org
-Ruby Application Archive.
+.It https://www.ruby-toolbox.com
+Comprehensive catalog of Ruby libraries.
 .It https://github.com/languages/Ruby
 Ruby projects on Github.
 .El
@@ -509,4 +513,6 @@ via the system because it publishes the vulnerabilities immediately.
 Ruby is designed and implemented by
 .An Yukihiro Matsumoto Aq matz@netlab.jp .
 .Pp
-See <\fBhttp://bugs.ruby-lang.org/wiki/ruby/Contributors\fR> for contributors to Ruby.
+See
+.Aq Pa http://bugs.ruby-lang.org/wiki/ruby/Contributors
+for contributors to Ruby.

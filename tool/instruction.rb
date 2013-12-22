@@ -64,7 +64,7 @@ class RubyVM
     def sp_increase_c_expr
       if(pops.any?{|t, v| v == '...'} ||
          rets.any?{|t, v| v == '...'})
-        # user definision
+        # user definition
         raise "no sp increase definition" if @sp_inc.nil?
         ret = "int inc = 0;\n"
 
@@ -692,7 +692,7 @@ class RubyVM
 
       n = 0
       push_ba.each {|pushs| n += pushs.length}
-      commit "  CHECK_VM_STACK_OVERFLOW(REG_CFP, #{n});" if n > 0
+      commit "  CHECK_VM_STACK_OVERFLOW_FOR_INSN(REG_CFP, #{n});" if n > 0
       push_ba.each{|pushs|
         pushs.each{|r|
           commit "  PUSH(SCREG(#{r}));"
@@ -816,7 +816,7 @@ class RubyVM
       commit  "  POPN(#{@popn});" if @popn > 0
     end
 
-    def make_hader_debug insn
+    def make_header_debug insn
       comment "  /* for debug */"
       commit  "  DEBUG_ENTER_INSN(\"#{insn.name}\");"
     end
@@ -842,7 +842,7 @@ class RubyVM
       each_footer_stack_val(insn){|v|
         n += 1 unless v[2]
       }
-      commit "  CHECK_VM_STACK_OVERFLOW(REG_CFP, #{n});" if n > 0
+      commit "  CHECK_VM_STACK_OVERFLOW_FOR_INSN(REG_CFP, #{n});" if n > 0
       each_footer_stack_val(insn){|v|
         if v[2]
           commit "  SCREG(#{v[2]}) = #{v[1]};"
@@ -869,7 +869,7 @@ class RubyVM
       make_header_stack_pops insn
       make_header_temporary_vars insn
       #
-      make_hader_debug insn
+      make_header_debug insn
       make_header_pc insn
       make_header_popn insn
       make_header_defines insn

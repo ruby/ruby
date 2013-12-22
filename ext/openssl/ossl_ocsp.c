@@ -149,7 +149,7 @@ ossl_ocspreq_add_nonce(int argc, VALUE *argv, VALUE self)
  *  2: nonces both absent.
  *  3: nonce present in response only.
  *  0: nonces both present and not equal.
- * -1: nonce in request only.
+ *  -1: nonce in request only.
  *
  *  For most responders clients can check return > 0.
  *  If responder doesn't handle nonces return != 0 may be

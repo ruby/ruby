@@ -12,21 +12,10 @@
 * { padding: 0; margin: 0; }
 
 body {
-  background: #efefef;
-  font: 14px "Helvetica Neue", Helvetica, Tahoma, sans-serif;
-  margin-left: 40px;
+  background: #fafafa;
+  font-family: Lato, sans-serif;
+  font-weight: 300;
 }
-body.file-popup {
-  font-size: 90%;
-  margin-left: 0;
-}
-
-h1 {
-  font-size: 300%;
-  text-shadow: rgba(135,145,135,0.65) 2px 2px 3px;
-  color: #6C8C22;
-}
-h2,h3,h4 { margin-top: 1.5em; }
 
 h1 span,
 h2 span,
@@ -36,7 +25,7 @@ h5 span,
 h6 span {
   display: none;
   padding-left: 1em;
-  font-size: 50%;
+  font-size: 10px;
   vertical-align: super;
 }
 
@@ -54,24 +43,15 @@ h6:hover span {
   color: #6C8C22;
   text-decoration: none;
 }
+
 :link:hover,
 :visited:hover {
   border-bottom: 1px dotted #6C8C22;
 }
 
+code,
 pre {
-  background: #ddd;
-  padding: 0.5em 0;
-}
-
-blockquote {
-  background: #ddd;
-  margin: 1em;
-  padding: 0.25em;
-}
-
-blockquote > :first-child {
-  margin-top: 0 !important;
+  font-family: "Source Code Pro", Monaco, monospace;
 }
 
 /* @group Generic Classes */
@@ -82,10 +62,13 @@ blockquote > :first-child {
 
 #search-field {
   width: 98%;
-  background: #eee;
+  background: white;
   border: none;
   height: 1.5em;
   -webkit-border-radius: 4px;
+  -moz-border-radius: 4px;
+  border-radius: 4px;
+  text-align: left;
 }
 #search-field:focus {
   background: #f1edba;
@@ -121,44 +104,31 @@ blockquote > :first-child {
 /* @end */
 
 /* @group Index Page, Standalone file pages */
-.indexpage ul {
-  line-height: 160%;
+.table-of-contents ul {
+  margin: 1em;
   list-style: none;
 }
-.indexpage ul :link,
-.indexpage ul :visited {
+
+.table-of-contents ul ul {
+  margin-top: 0.25em;
+}
+
+.table-of-contents ul :link,
+.table-of-contents ul :visited {
   font-size: 16px;
 }
 
-.indexpage li {
-  padding-left: 20px;
+.table-of-contents li {
+  margin-bottom: 0.25em;
 }
 
-.indexpage ul > li {
-  background: url(images/bullet_black.png) no-repeat left 4px;
-}
-.indexpage li.method {
-  background: url(images/plugin.png) no-repeat left 4px;
-}
-.indexpage li.module {
-  background: url(images/package.png) no-repeat left 4px;
-}
-.indexpage li.class {
-  background: url(images/ruby.png) no-repeat left 4px;
-}
-.indexpage li.file {
-  background: url(images/page_white_text.png) no-repeat left 4px;
-}
-.indexpage li li {
-  background: url(images/tag_blue.png) no-repeat left 4px;
-}
-.indexpage li .toc-toggle {
+.table-of-contents li .toc-toggle {
   width: 16px;
   height: 16px;
   background: url(images/add.png) no-repeat;
 }
 
-.indexpage li .toc-toggle.open {
+.table-of-contents li .toc-toggle.open {
   background: url(images/delete.png) no-repeat;
 }
 
@@ -166,14 +136,32 @@ blockquote > :first-child {
 
 /* @group Top-Level Structure */
 
-#metadata {
+nav {
   float: left;
   width: 260px;
+  font-family: Helvetica, sans-serif;
+  font-size: 14px;
 }
 
-#documentation {
-  margin: 2em 1em 5em 300px;
+main {
+  display: block;
+  margin: 0 2em 5em 260px;
+  padding-left: 20px;
   min-width: 340px;
+  font-size: 16px;
+}
+
+main h1,
+main h2,
+main h3,
+main h4,
+main h5,
+main h6 {
+  font-family: Helvetica, sans-serif;
+}
+
+.table-of-contents main {
+  margin-left: 2em;
 }
 
 #validator-badges {
@@ -184,67 +172,74 @@ blockquote > :first-child {
 
 /* @end */
 
-/* @group Metadata Section */
-#metadata .section {
-  background-color: #dedede;
-  -moz-border-radius: 5px;
-  -webkit-border-radius: 5px;
-  border: 1px solid #aaa;
-  margin: 0 8px 8px;
+/* @group navigation */
+nav {
+  margin-bottom: 1em;
+}
+
+nav .nav-section {
+  margin-top: 2em;
+  border-top: 2px solid #aaa;
   font-size: 90%;
   overflow: hidden;
 }
-#metadata h3.section-header {
+
+nav h2 {
   margin: 0;
-  padding: 2px 8px;
-  background: #ccc;
-  color: #666;
-  -moz-border-radius-topleft: 4px;
-  -moz-border-radius-topright: 4px;
-  -webkit-border-top-left-radius: 4px;
-  -webkit-border-top-right-radius: 4px;
-  border-bottom: 1px solid #aaa;
-}
-#metadata #home-section h3.section-header {
-  border-bottom: 0;
+  padding: 2px 8px 2px 8px;
+  background-color: #e8e8e8;
+  color: #555;
+  font-size: 125%;
+  text-align: center;
 }
 
-#metadata ul,
-#metadata dl,
-#metadata p {
-  padding:  8px;
+nav h3,
+#table-of-contents-navigation {
+  margin: 0;
+  padding: 2px 8px 2px 8px;
+  text-align: right;
+  background-color: #e8e8e8;
+  color: #555;
+}
+
+nav ul,
+nav dl,
+nav p {
+  padding: 4px 8px 0;
   list-style: none;
 }
 
-#file-metadata {
-  margin-top: 2em;
-}
-
-#file-metadata ul {
-  padding-left: 28px;
-  list-style-image: url(images/page_green.png);
-}
-
-#table-of-contents {
-  margin-top: 2em;
-}
-
-#table-of-contents ul {
-  padding-left: 28px;
-  list-style-image: url(images/tag_blue.png);
-}
-
-dl.svninfo {
-  color: #666;
+#project-navigation .nav-section {
   margin: 0;
+  border-top: 0;
 }
-dl.svninfo dt {
+
+#home-section h2 {
+  text-align: center;
+}
+
+#table-of-contents-navigation {
+  font-size: 1.2em;
   font-weight: bold;
+  text-align: center;
+}
+
+#search-section {
+  margin-top: 0;
+  border-top: 0;
+}
+
+#search-field-wrapper {
+  border-top: 1px solid #aaa;
+  border-bottom: 1px solid #aaa;
+  padding: 3px 8px;
+  background-color: #e8e8e8;
+  color: #555;
 }
 
 ul.link-list li {
   white-space: nowrap;
-  line-height: 20px;
+  line-height: 1.4em;
 }
 
 ul.link-list .type {
@@ -262,100 +257,119 @@ ul.link-list .type {
 
 /* @end */
 
-/* @group Class Metadata Section */
-#class-metadata {
-  margin-top: 2em;
-}
-/* @end */
-
-/* @group Project Metadata Section */
-#project-metadata {
-  margin-top: 2em;
-}
-
-#project-metadata .section {
-  border: 1px solid #aaa;
-}
-#project-metadata h3.section-header {
-  border-bottom: 1px solid #aaa;
-  position: relative;
-}
-
-#project-metadata form {
-  color: #777;
-  background: #ccc;
-}
-
-/* @end */
-
 /* @group Documentation Section */
-.description {
-  font-size: 100%;
+main {
   color: #333;
 }
 
-.description p {
-  margin: 1em 0.4em;
+main > h1:first-child,
+main > h2:first-child,
+main > h3:first-child,
+main > h4:first-child,
+main > h5:first-child,
+main > h6:first-child {
+  margin-top: 0px;
 }
 
-.description li p {
-  margin: 0;
+main sup {
+  vertical-align: super;
+  font-size: 0.8em;
 }
 
-.description ol,
-.description ul {
-  margin-left: 1.5em;
+/* The heading with the class name */
+main h1[class] {
+  margin-top: 0;
+  margin-bottom: 1em;
+  font-size: 2em;
+  color: #6C8C22;
 }
-.description ol li,
-.description ul li {
+
+main h1 {
+  margin: 2em 0 0.5em;
+  font-size: 1.7em;
+}
+
+main h2 {
+  margin: 2em 0 0.5em;
+  font-size: 1.5em;
+}
+
+main h3 {
+  margin: 2em 0 0.5em;
+  font-size: 1.2em;
+}
+
+main h4 {
+  margin: 2em 0 0.5em;
+  font-size: 1.1em;
+}
+
+main h5 {
+  margin: 2em 0 0.5em;
+  font-size: 1em;
+}
+
+main h6 {
+  margin: 2em 0 0.5em;
+  font-size: 1em;
+}
+
+main p {
+  margin: 0 0 0.5em;
   line-height: 1.4em;
 }
 
-.note-list {
-  margin: 8px 0;
+main pre {
+  margin: 1.2em 0.5em;
+  padding: 1em;
+  font-size: 0.8em;
 }
 
-.label-list {
-  margin: 8px 1.5em;
-  border: 1px solid #ccc;
-}
-.description .label-list {
-  font-size: 14px;
+main hr {
+  margin: 1.5em 1em;
+  border: 2px solid #ddd;
 }
 
-.note-list dt {
+main blockquote {
+  margin: 0 2em 1.2em 1.2em;
+  padding-left: 0.5em;
+  border-left: 2px solid #ddd;
+}
+
+main ol,
+main ul {
+  margin: 1em 2em;
+}
+
+main li > p {
+  margin-bottom: 0.5em;
+}
+
+main dl {
+  margin: 1em 0.5em;
+}
+
+main dt {
+  margin-bottom: 0.5em;
   font-weight: bold;
 }
-.note-list dd {
-  padding: 0 12px;
+
+main dd {
+  margin: 0 1em 1em 0.5em;
 }
 
-.label-list dt {
-  padding: 2px 4px;
-  font-weight: bold;
-  background: #ddd;
-}
-.label-list dd {
-  padding: 2px 12px;
-}
-.label-list dd + dt,
-.note-list dd + dt {
-  margin-top: 0.7em;
+main header h2 {
+  margin-top: 2em;
+  border-width: 0;
+  border-top: 4px solid #bbb;
+  font-size: 130%;
 }
 
-#documentation .section {
-  font-size: 90%;
-}
-
-#documentation h2.section-header {
-  margin-top: 1em;
-  padding: 0.25em 0.5em;
-  background: #ccc;
-  color: #333;
-  font-size: 175%;
-  border: 1px solid #bbb;
-  -moz-border-radius: 3px;
-  -webkit-border-radius: 3px;
+main header h3 {
+  margin: 2em 0 1.5em;
+  border-width: 0;
+  border-top: 3px solid #bbb;
+  font-size: 120%;
 }
 
 .documentation-section-title {
@@ -364,47 +378,35 @@ ul.link-list .type {
 .documentation-section-title .section-click-top {
   position: absolute;
   top: 6px;
-  right: 12px;
+  left: 12px;
   font-size: 10px;
   color: #9b9877;
   visibility: hidden;
-  padding-right: 0.5px;
+  padding-left: 0.5px;
 }
 
 .documentation-section-title:hover .section-click-top {
   visibility: visible;
 }
 
-#documentation h3.section-header {
-  margin-top: 1em;
-  padding: 0.25em 0.5em;
-  background-color: #dedede;
-  color: #333;
-  font-size: 150%;
-  border: 1px solid #bbb;
-  -moz-border-radius: 3px;
-  -webkit-border-radius: 3px;
-}
-
-#constants-list > dl,
-#attributes-list > dl {
+.constants-list > dl {
   margin: 1em 0 2em;
   border: 0;
 }
-#constants-list > dl dt,
-#attributes-list > dl dt {
+
+.constants-list > dl dt {
+  margin-bottom: 0.75em;
   padding-left: 0;
-  font-weight: bold;
-  font-family: Monaco, "Andale Mono";
-  background: inherit;
+  font-family: "Source Code Pro", Monaco, monospace;
+  font-size: 110%;
 }
-#constants-list > dl dt a,
-#attributes-list > dl dt a {
+
+.constants-list > dl dt a {
   color: inherit;
 }
-#constants-list > dl dd,
-#attributes-list > dl dd {
-  margin: 0 0 1em 0;
+
+.constants-list > dl dd {
+  margin: 0 0 2em 0;
   padding: 0;
   color: #666;
 }
@@ -428,93 +430,77 @@ ul.link-list .type {
 
 /* @group Method Details */
 
-#documentation .method-source-code {
+main .method-source-code {
   display: none;
 }
 
-#documentation .method-description .method-calls-super {
+main .method-description .method-calls-super {
   color: #333;
-  font-weight: bolder;
+  font-weight: bold;
 }
 
-#documentation .method-detail {
-  margin: 0.5em 0;
-  padding: 0.5em 0;
+main .method-detail {
+  margin-bottom: 2.5em;
   cursor: pointer;
 }
-#documentation .method-detail:hover {
-  background-color: #f1edba;
+
+main .method-detail:target {
+  margin-left: -10px;
+  border-left: 10px solid #f1edba;
 }
-#documentation .method-heading {
+
+main .method-heading {
   position: relative;
-  padding: 2px 4px 0 20px;
-  font-size: 125%;
+  font-family: "Source Code Pro", Monaco, monospace;
+  font-size: 110%;
   font-weight: bold;
   color: #333;
-  background: url(images/brick.png) no-repeat left bottom;
 }
-#documentation .method-heading :link,
-#documentation .method-heading :visited {
+main .method-heading :link,
+main .method-heading :visited {
   color: inherit;
 }
-#documentation .method-click-advice {
+main .method-click-advice {
   position: absolute;
   top: 2px;
   right: 5px;
-  font-size: 10px;
+  font-size: 12px;
   color: #9b9877;
   visibility: hidden;
   padding-right: 20px;
   line-height: 20px;
   background: url(images/zoom.png) no-repeat right top;
 }
-#documentation .method-heading:hover .method-click-advice {
+main .method-heading:hover .method-click-advice {
   visibility: visible;
 }
 
-#documentation .method-alias .method-heading {
-  color: #666;
-  background: url(images/brick_link.png) no-repeat left bottom;
-}
-
-#documentation .method-description,
-#documentation .aliases {
-  margin: 0 20px;
+main .method-alias .method-heading {
   color: #666;
 }
 
-#documentation .method-description p,
-#documentation .aliases p {
-  line-height: 1.2em;
+main .method-description,
+main .aliases {
+  margin-top: 0.75em;
+  color: #333;
 }
 
-#documentation .aliases {
+main .aliases {
   padding-top: 4px;
   font-style: italic;
   cursor: default;
 }
-#documentation .method-description p {
-  margin-bottom: 0.5em;
-}
-#documentation .method-description ul {
+main .method-description ul {
   margin-left: 1.5em;
 }
-pre {
-  margin: 0.5em 0;
-}
 
-#documentation .attribute-method-heading {
-  background: url(images/tag_green.png) no-repeat left bottom;
-}
-#documentation #attribute-method-details .method-detail:hover {
+main #attribute-method-details .method-detail:hover {
   background-color: transparent;
   cursor: default;
 }
-#documentation .attribute-access-type {
-  font-size: 60%;
+main .attribute-access-type {
   text-transform: uppercase;
-  vertical-align: super;
-  padding: 0 2px;
+  padding: 0 1em;
 }
 /* @end */
 
@@ -523,15 +509,12 @@ pre {
 /* @group Source Code */
 
 pre {
-  overflow: auto;
-  background: #262626;
-  color: white;
+  margin: 0.5em 0;
   border: 1px dashed #999;
   padding: 0.5em;
-}
-
-.description pre {
-  margin: 0 0.4em;
+  background: #262626;
+  color: white;
+  overflow: auto;
 }
 
 .ruby-constant   { color: #7fffd4; background: transparent; }
@@ -540,7 +523,7 @@ pre {
 .ruby-operator   { color: #00ffee; background: transparent; }
 .ruby-identifier { color: #ffdead; background: transparent; }
 .ruby-node       { color: #ffa07a; background: transparent; }
-.ruby-comment    { color: #dc0000; font-weight: bold; background: transparent; }
+.ruby-comment    { color: #dc0000; background: transparent; }
 .ruby-regexp     { color: #ffa07a; background: transparent; }
 .ruby-value      { color: #7fffd4; background: transparent; }
 
@@ -548,23 +531,24 @@ pre {
 
 
 /* @group search results */
-#search-results h1 {
-  font-size: 1em;
-  font-weight: normal;
-  text-shadow: none;
+#search-results {
+  font-family: Lato, sans-serif;
+  font-weight: 300;
 }
 
-#search-results .current {
-  background: #ccc;
+#search-results .search-match {
+  font-family: Helvetica, sans-serif;
+  font-weight: normal;
+}
+
+#search-results .search-selected {
+  background: #e8e8e8;
   border-bottom: 1px solid transparent;
 }
 
 #search-results li {
   list-style: none;
   border-bottom: 1px solid #aaa;
-  -moz-border-radius: 4px;
-  -webkit-border-radius: 4px;
-  border-radius: 4px;
   margin-bottom: 0.5em;
 }
 
@@ -589,6 +573,7 @@ pre {
 
 #search-results pre {
   margin: 0.5em;
+  font-family: "Source Code Pro", Monaco, monospace;
 }
 
 /* @end */

@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestDefined < Test::Unit::TestCase
   class Foo
@@ -89,6 +90,13 @@ class TestDefined < Test::Unit::TestCase
     assert_equal("true", defined?(true))
     assert_equal("false", defined?(false))
     assert_equal("expression", defined?(1))
+
+    bug8224 = '[ruby-core:54024] [Bug #8224]'
+    (1..3).each do |level|
+      expr = "("*level+")"*level
+      assert_equal("nil", eval("defined? #{expr}"), "#{bug8224} defined? #{expr}")
+      assert_equal("nil", eval("defined?(#{expr})"), "#{bug8224} defined?(#{expr})")
+    end
   end
 
   def test_defined_impl_specific
@@ -180,5 +188,25 @@ class TestDefined < Test::Unit::TestCase
       end
     end
     assert_equal("super", c.new.m)
+  end
+
+  def test_super_in_block
+    bug8367 = '[ruby-core:54769] [Bug #8367]'
+    c = Class.new do
+      def x; end
+    end
+
+    m = Module.new do
+      def b; yield; end
+      def x; b {return defined?(super)}; end
+    end
+
+    o = c.new
+    o.extend(m)
+    assert_equal("super", o.x)
+  end
+
+  def test_super_toplevel
+    assert_separately([], "assert_nil(defined?(super))")
   end
 end

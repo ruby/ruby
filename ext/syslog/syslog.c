@@ -37,7 +37,6 @@ static void syslog_write(int pri, int argc, VALUE *argv)
 {
     VALUE str;
 
-    rb_secure(4);
     if (argc < 1) {
         rb_raise(rb_eArgError, "no log message supplied");
     }
@@ -56,7 +55,6 @@ static void syslog_write(int pri, int argc, VALUE *argv)
  */
 static VALUE mSyslog_close(VALUE self)
 {
-    rb_secure(4);
     if (!syslog_opened) {
         rb_raise(rb_eRuntimeError, "syslog not opened");
     }
@@ -263,7 +261,6 @@ static VALUE mSyslog_get_mask(VALUE self)
  */
 static VALUE mSyslog_set_mask(VALUE self, VALUE mask)
 {
-    rb_secure(4);
     if (!syslog_opened) {
         rb_raise(rb_eRuntimeError, "must open syslog before setting log mask");
     }
@@ -446,7 +443,7 @@ void Init_syslog()
     rb_define_module_function(mSyslog, "mask", mSyslog_get_mask, 0);
     rb_define_module_function(mSyslog, "mask=", mSyslog_set_mask, 1);
 
-    rb_define_module_function(mSyslog, "inspect", mSyslog_inspect, 0);
+    rb_define_singleton_method(mSyslog, "inspect", mSyslog_inspect, 0);
     rb_define_module_function(mSyslog, "instance", mSyslog_instance, 0);
 
     /* Syslog options */

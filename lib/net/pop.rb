@@ -42,8 +42,6 @@ module Net
   class POPBadResponse < POPError; end
 
   #
-  # = Net::POP3
-  #
   # == What is This Library?
   #
   # This library provides functionality for retrieving
@@ -498,12 +496,12 @@ module Net
 
     # Seconds to wait until a connection is opened.
     # If the POP3 object cannot open a connection within this time,
-    # it raises a Net::OpenTimeout exception.
+    # it raises a Net::OpenTimeout exception. The default value is 30 seconds.
     attr_accessor :open_timeout
 
     # Seconds to wait until reading one block (by one read(1) call).
     # If the POP3 object cannot complete a read() within this time,
-    # it raises a Net::ReadTimeout exception.
+    # it raises a Net::ReadTimeout exception. The default value is 60 seconds.
     attr_reader :read_timeout
 
     # Set the read timeout.
@@ -709,7 +707,7 @@ module Net
       @mails.each {|m| m.uid = uidl[m.number] }
     end
 
-    # deguging output for +msg+
+    # debugging output for +msg+
     def logging(msg)
       @debug_output << msg + "\n" if @debug_output
     end
@@ -717,9 +715,9 @@ module Net
   end   # class POP3
 
   # class aliases
-  POP = POP3
-  POPSession  = POP3
-  POP3Session = POP3
+  POP = POP3 # :nodoc:
+  POPSession  = POP3 # :nodoc:
+  POP3Session = POP3 # :nodoc:
 
   #
   # This class is equivalent to POP3, except that it uses APOP authentication.
@@ -891,7 +889,7 @@ module Net
 
     def initialize(sock)
       @socket = sock
-      @error_occured = false
+      @error_occurred = false
       res = check_response(critical { recv_response() })
       @apop_stamp = res.slice(/<[!-~]+@[!-~]+>/)
     end
@@ -1009,11 +1007,11 @@ module Net
     end
 
     def critical
-      return '+OK dummy ok response' if @error_occured
+      return '+OK dummy ok response' if @error_occurred
       begin
         return yield()
       rescue Exception
-        @error_occured = true
+        @error_occurred = true
         raise
       end
     end

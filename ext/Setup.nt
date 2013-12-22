@@ -1,8 +1,8 @@
+#option platform cygwin|mingw|mswin
 #option nodynamic
 
 Win32API
 bigdecimal
-#curses
 #dbm
 digest
 digest/md5

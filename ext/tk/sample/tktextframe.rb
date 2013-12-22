@@ -21,7 +21,7 @@ module Tk::ScrollbarComposite
   private :create_component
 
   def component_delegates
-    # if want to override defalut option-methods or delegates,
+    # if want to override default option-methods or delegates,
     # please define here.
   end
   private :component_delegates

@@ -1,5 +1,6 @@
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
+#include "internal.h"
 #include <winbase.h>
 #include <wchar.h>
 #include <shlwapi.h>
@@ -9,7 +10,10 @@
 #endif
 
 /* cache 'encoding name' => 'code page' into a hash */
-static VALUE rb_code_page;
+static struct code_page_table {
+    USHORT *table;
+    unsigned int count;
+} rb_code_page;
 
 #define IS_DIR_SEPARATOR_P(c) (c == L'\\' || c == L'/')
 #define IS_DIR_UNC_P(c) (IS_DIR_SEPARATOR_P(c[0]) && IS_DIR_SEPARATOR_P(c[1]))
@@ -32,19 +36,14 @@ replace_wchar(wchar_t *s, int find, int replace)
 
 /* Convert str from multibyte char to wchar with specified code page */
 static inline void
-convert_mb_to_wchar(VALUE str, wchar_t **wstr, wchar_t **wstr_pos, size_t *wstr_len, UINT code_page)
+convert_mb_to_wchar(const char *str, wchar_t **wstr, size_t *wstr_len, UINT code_page)
 {
     size_t len;
 
-    if (NIL_P(str))
-	return;
-
-    len = MultiByteToWideChar(code_page, 0, RSTRING_PTR(str), -1, NULL, 0) + 1;
+    len = MultiByteToWideChar(code_page, 0, str, -1, NULL, 0) + 1;
     *wstr = (wchar_t *)xmalloc(len * sizeof(wchar_t));
-    if (wstr_pos)
-	*wstr_pos = *wstr;
 
-    MultiByteToWideChar(code_page, 0, RSTRING_PTR(str), -1, *wstr, len);
+    MultiByteToWideChar(code_page, 0, str, -1, *wstr, len);
     *wstr_len = len - 2;
 }
 
@@ -172,6 +171,30 @@ system_code_page(void)
     return AreFileApisANSI() ? CP_ACP : CP_OEMCP;
 }
 
+void rb_enc_foreach_name(int (*func)(st_data_t name, st_data_t idx, st_data_t arg), st_data_t arg);
+
+static int
+code_page_i(st_data_t name, st_data_t idx, st_data_t arg)
+{
+    const char *n = (const char *)name;
+    if (strncmp("CP", n, 2) == 0) {
+	int code_page = atoi(n + 2);
+	if (code_page != 0) {
+	    struct code_page_table *cp = (struct code_page_table *)arg;
+	    unsigned int count = cp->count;
+	    USHORT *table = cp->table;
+	    if (count <= idx) {
+		unsigned int i = count;
+		cp->count = count = ((idx + 4) & ~31 | 28);
+		cp->table = table = realloc(table, count * sizeof(*table));
+		while (i < count) table[i++] = INVALID_CODE_PAGE;
+	    }
+	    table[idx] = (USHORT)code_page;
+	}
+    }
+    return ST_CONTINUE;
+}
+
 /*
   Return code page number of the encoding.
   Cache code page into a hash for performance since finding the code page in
@@ -180,72 +203,25 @@ system_code_page(void)
 static UINT
 code_page(rb_encoding *enc)
 {
-    VALUE code_page_value, name_key;
-    VALUE encoding, names_ary = Qundef, name;
-    char *enc_name;
-    struct RString fake_str;
-    ID names;
-    long i;
+    int enc_idx;
 
     if (!enc)
 	return system_code_page();
 
-    enc_name = (char *)rb_enc_name(enc);
+    enc_idx = rb_enc_to_index(enc);
 
-    fake_str.basic.flags = T_STRING|RSTRING_NOEMBED;
-    fake_str.basic.klass = rb_cString;
-    fake_str.as.heap.len = strlen(enc_name);
-    fake_str.as.heap.ptr = enc_name;
-    fake_str.as.heap.aux.capa = fake_str.as.heap.len;
-    name_key = (VALUE)&fake_str;
-    ENCODING_CODERANGE_SET(name_key, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
-
-    code_page_value = rb_hash_lookup(rb_code_page, name_key);
-    if (code_page_value != Qnil)
-	return (UINT)FIX2INT(code_page_value);
-
-    name_key = rb_usascii_str_new2(enc_name);
-
-    encoding = rb_enc_from_encoding(enc);
-    if (!NIL_P(encoding)) {
-	CONST_ID(names, "names");
-	names_ary = rb_funcall(encoding, names, 0);
+    /* map US-ASCII and ASCII-8bit as code page 1252 (us-ascii) */
+    if (enc_idx == rb_usascii_encindex() || enc_idx == rb_ascii8bit_encindex()) {
+	return 1252;
     }
 
-    /* map US-ASCII and ASCII-8bit as code page 20127 (us-ascii) */
-    if (enc == rb_usascii_encoding() || enc == rb_ascii8bit_encoding()) {
-	UINT code_page = 20127;
-	rb_hash_aset(rb_code_page, name_key, INT2FIX(code_page));
-	return code_page;
-    }
+    if (0 <= enc_idx && (unsigned int)enc_idx < rb_code_page.count)
+	return rb_code_page.table[enc_idx];
 
-    if (names_ary != Qundef) {
-	for (i = 0; i < RARRAY_LEN(names_ary); i++) {
-	    name = RARRAY_PTR(names_ary)[i];
-	    if (strncmp("CP", RSTRING_PTR(name), 2) == 0) {
-		int code_page = atoi(RSTRING_PTR(name) + 2);
-		if (code_page != 0) {
-		    rb_hash_aset(rb_code_page, name_key, INT2FIX(code_page));
-		    return (UINT)code_page;
-		}
-	    }
-	}
-    }
-
-    rb_hash_aset(rb_code_page, name_key, INT2FIX(INVALID_CODE_PAGE));
     return INVALID_CODE_PAGE;
 }
 
-static inline VALUE
-fix_string_encoding(VALUE str, rb_encoding *encoding)
-{
-    VALUE result, tmp;
-
-    tmp = rb_enc_str_new(RSTRING_PTR(str), RSTRING_LEN(str), encoding);
-    result = rb_str_encode(tmp, rb_enc_from_encoding(rb_utf8_encoding()), 0, Qnil);
-
-    return result;
-}
+#define fix_string_encoding(str, encoding) rb_str_conv_enc((str), (encoding), rb_utf8_encoding())
 
 /*
   Replace the last part of the path to long name.
@@ -317,13 +293,45 @@ replace_to_long_name(wchar_t **wfullpath, size_t size, int heap)
     return size;
 }
 
+static inline VALUE
+get_user_from_path(wchar_t **wpath, int offset, UINT cp, UINT path_cp, rb_encoding *path_encoding)
+{
+    VALUE result, tmp;
+    wchar_t *wuser = *wpath + offset;
+    wchar_t *pos = wuser;
+    char *user;
+    size_t size;
+
+    while (!IS_DIR_SEPARATOR_P(*pos) && *pos != '\0')
+	pos++;
+
+    *pos = '\0';
+    convert_wchar_to_mb(wuser, &user, &size, cp);
+
+    /* convert to VALUE and set the path encoding */
+    if (path_cp == INVALID_CODE_PAGE) {
+	tmp = rb_enc_str_new(user, size, rb_utf8_encoding());
+	result = rb_str_encode(tmp, rb_enc_from_encoding(path_encoding), 0, Qnil);
+	rb_str_resize(tmp, 0);
+    }
+    else {
+	result = rb_enc_str_new(user, size, path_encoding);
+    }
+
+    if (user)
+	xfree(user);
+
+    return result;
+}
+
 VALUE
 rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_name, VALUE result)
 {
     size_t size = 0, wpath_len = 0, wdir_len = 0, whome_len = 0;
     size_t buffer_len = 0;
     char *fullpath = NULL;
-    wchar_t *wfullpath = NULL, *wpath = NULL, *wpath_pos = NULL, *wdir = NULL;
+    wchar_t *wfullpath = NULL, *wpath = NULL, *wpath_pos = NULL;
+    wchar_t *wdir = NULL, *wdir_pos = NULL;
     wchar_t *whome = NULL, *buffer = NULL, *buffer_pos = NULL;
     UINT path_cp, cp;
     VALUE path = fname, dir = dname;
@@ -355,7 +363,10 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     }
 
     /* convert char * to wchar_t */
-    convert_mb_to_wchar(path, &wpath, &wpath_pos, &wpath_len, cp);
+    if (!NIL_P(path)) {
+	convert_mb_to_wchar(RSTRING_PTR(path), &wpath, &wpath_len, cp);
+	wpath_pos = wpath;
+    }
 
     /* determine if we need the user's home directory */
     /* expand '~' only if NOT rb_file_absolute_path() where `abs_mode` is 1 */
@@ -373,14 +384,17 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
 	if (PathIsRelativeW(whome) && !(whome_len >= 2 && IS_DIR_UNC_P(whome))) {
 	    xfree(wpath);
+	    xfree(whome);
 	    rb_raise(rb_eArgError, "non-absolute home");
 	}
 
-	/* use filesystem encoding if expanding home dir */
-	path_encoding = rb_filesystem_encoding();
-	cp = path_cp = system_code_page();
+	if (path_cp == INVALID_CODE_PAGE || rb_enc_str_asciionly_p(path)) {
+	    /* use filesystem encoding if expanding home dir */
+	    path_encoding = rb_filesystem_encoding();
+	    cp = path_cp = system_code_page();
+	}
 
-	/* ignores dir since we are expading home */
+	/* ignores dir since we are expanding home */
 	ignore_dir = 1;
 
 	/* exclude ~ from the result */
@@ -404,32 +418,10 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	}
     }
     else if (abs_mode == 0 && wpath_len >= 2 && wpath_pos[0] == L'~') {
-	wchar_t *wuser = wpath_pos + 1;
-	wchar_t *pos = wuser;
-	char *user;
+	result = get_user_from_path(&wpath_pos, 1, cp, path_cp, path_encoding);
 
-	/* tainted if expanding '~' */
-	tainted = 1;
-
-	while (!IS_DIR_SEPARATOR_P(*pos) && *pos != '\0')
-	    pos++;
-
-	*pos = '\0';
-	convert_wchar_to_mb(wuser, &user, &size, cp);
-
-	/* convert to VALUE and set the path encoding */
-	if (path_cp == INVALID_CODE_PAGE) {
-	    VALUE tmp = rb_enc_str_new(user, size, rb_utf8_encoding());
-	    result = rb_str_encode(tmp, rb_enc_from_encoding(path_encoding), 0, Qnil);
-	    rb_str_resize(tmp, 0);
-	}
-	else {
-	    result = rb_enc_str_new(user, size, path_encoding);
-	}
-
-	xfree(wpath);
-	if (user)
-	    xfree(user);
+	if (wpath)
+	    xfree(wpath);
 
 	rb_raise(rb_eArgError, "can't find user %s", StringValuePtr(result));
     }
@@ -442,9 +434,42 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	}
 
 	/* convert char * to wchar_t */
-	convert_mb_to_wchar(dir, &wdir, NULL, &wdir_len, cp);
+	if (!NIL_P(dir)) {
+	    convert_mb_to_wchar(RSTRING_PTR(dir), &wdir, &wdir_len, cp);
+	    wdir_pos = wdir;
+	}
 
-	if (wdir_len >= 2 && wdir[1] == L':') {
+	if (abs_mode == 0 && wdir_len > 0 && wdir_pos[0] == L'~' &&
+	    (wdir_len == 1 || IS_DIR_SEPARATOR_P(wdir_pos[1]))) {
+	    /* tainted if expanding '~' */
+	    tainted = 1;
+
+	    whome = home_dir();
+	    if (whome == NULL) {
+		xfree(wpath);
+		xfree(wdir);
+		rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
+	    }
+	    whome_len = wcslen(whome);
+
+	    if (PathIsRelativeW(whome) && !(whome_len >= 2 && IS_DIR_UNC_P(whome))) {
+		xfree(wpath);
+		xfree(wdir);
+		xfree(whome);
+		rb_raise(rb_eArgError, "non-absolute home");
+	    }
+
+	    /* exclude ~ from the result */
+	    wdir_pos++;
+	    wdir_len--;
+
+	    /* exclude separator if present */
+	    if (wdir_len && IS_DIR_SEPARATOR_P(wdir_pos[0])) {
+		wdir_pos++;
+		wdir_len--;
+	    }
+	}
+	else if (wdir_len >= 2 && wdir[1] == L':') {
 	    dir_drive = wdir[0];
 	    if (wpath_len && IS_DIR_SEPARATOR_P(wpath_pos[0])) {
 		wdir_len = 2;
@@ -465,6 +490,16 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 		if (separators == 2)
 		    wdir_len = pos - 1;
 	    }
+	}
+	else if (abs_mode == 0 && wdir_len >= 2 && wdir_pos[0] == L'~') {
+	    result = get_user_from_path(&wdir_pos, 1, cp, path_cp, path_encoding);
+	    if (wpath)
+		xfree(wpath);
+
+	    if (wdir)
+		xfree(wdir);
+
+	    rb_raise(rb_eArgError, "can't find user %s", StringValuePtr(result));
 	}
     }
 
@@ -515,7 +550,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	if (!tainted && OBJ_TAINTED(dir))
 	    tainted = 1;
 
-	wcsncpy(buffer_pos, wdir, wdir_len);
+	wcsncpy(buffer_pos, wdir_pos, wdir_len);
 	buffer_pos += wdir_len;
     }
 
@@ -636,16 +671,22 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 int
 rb_file_load_ok(const char *path)
 {
+    DWORD attr;
     int ret = 1;
-    DWORD attr = GetFileAttributes(path);
+    size_t len;
+    wchar_t* wpath;
+
+    convert_mb_to_wchar(path, &wpath, &len, CP_UTF8);
+
+    attr = GetFileAttributesW(wpath);
     if (attr == INVALID_FILE_ATTRIBUTES ||
-	attr & FILE_ATTRIBUTE_DIRECTORY) {
+	(attr & FILE_ATTRIBUTE_DIRECTORY)) {
 	ret = 0;
     }
     else {
-	HANDLE h = CreateFile(path, GENERIC_READ,
-			      FILE_SHARE_READ | FILE_SHARE_WRITE,
-			      NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	HANDLE h = CreateFileW(wpath, GENERIC_READ,
+			       FILE_SHARE_READ | FILE_SHARE_WRITE,
+			       NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (h != INVALID_HANDLE_VALUE) {
 	    CloseHandle(h);
 	}
@@ -653,14 +694,13 @@ rb_file_load_ok(const char *path)
 	    ret = 0;
 	}
     }
+    xfree(wpath);
     return ret;
 }
 
 void
-rb_w32_init_file(void)
+Init_w32_codepage(void)
 {
-    rb_code_page = rb_hash_new();
-
-    /* prevent GC removing rb_code_page */
-    rb_gc_register_mark_object(rb_code_page);
+    if (rb_code_page.count) return;
+    rb_enc_foreach_name(code_page_i, (st_data_t)&rb_code_page);
 }

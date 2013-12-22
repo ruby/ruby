@@ -1,7 +1,9 @@
+# This file contains the implementation of trackbacks. It is entirely internal
+# and not useful to outside developers.
 require 'rss/1.0'
 require 'rss/2.0'
 
-module RSS
+module RSS # :nodoc: all
 
   TRACKBACK_PREFIX = 'trackback'
   TRACKBACK_URI = 'http://madskills.com/public/xml/rss/module/trackback/'

@@ -154,7 +154,7 @@ class TestPrime < Test::Unit::TestCase
       # simulates that Timeout.timeout interrupts Prime::EratosthenesSieve#extend_table
       def sieve.Integer(n)
         n = super(n)
-        sleep 10 if /extend_table/ =~ caller.first
+        sleep 10 if /compute_primes/ =~ caller.first
         return n
       end
 

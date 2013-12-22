@@ -23,6 +23,7 @@
 .ppack
 .svn
 Makefile
+Makefile.old
 extconf.h
 y.output
 y.tab.c
@@ -36,6 +37,7 @@ y.tab.c
 /ChangeLog.pre1_1
 /Doxyfile
 /GNUmakefile
+/GNUmakefile.old
 /README.atheos
 /README.fat-patch
 /README.v6
@@ -82,6 +84,7 @@ y.tab.c
 /rubicon
 /ruby
 /ruby-man.rd.gz
+/sizes.c
 /test.rb
 /tmp
 /transdb.h
@@ -103,6 +106,9 @@ y.tab.c
 /ext/dl/callback/callback-*.c
 /ext/dl/callback/callback.c
 
+# /ext/rbconfig/
+/ext/rbconfig/sizeof/sizes.c
+
 # /ext/ripper/
 /ext/ripper/eventids1.c
 /ext/ripper/eventids2table.c
@@ -121,6 +127,10 @@ y.tab.c
 # /spec/
 /spec/mspec
 /spec/rubyspec
+
+# /tool/
+/tool/config.guess
+/tool/config.sub
 
 # /win32/
 /win32/*.ico

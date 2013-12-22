@@ -22,7 +22,7 @@
 #else
 # if defined(_WIN32)
 #   include <windows.h>
-#   define dlopen(name,flag) ((void*)LoadLibrary(name))
+#   define dlopen(name,flag) ((void)(flag),(void*)LoadLibrary(name))
 #   define dlerror() strerror(rb_w32_map_errno(GetLastError()))
 #   define dlsym(handle,name) ((void*)GetProcAddress((handle),(name)))
 #   define RTLD_LAZY -1

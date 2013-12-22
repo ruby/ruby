@@ -1,10 +1,14 @@
-<nav id="search-section" class="section project-section" class="initially-hidden">
+<div id="search-section" role="search" class="project-section initially-hidden">
   <form action="#" method="get" accept-charset="utf-8">
-    <h3 class="section-header">
-      <input type="text" name="search" placeholder="Search" id="search-field"
+    <div id="search-field-wrapper">
+      <input id="search-field" role="combobox" aria-label="Search"
+             aria-autocomplete="list" aria-controls="search-results"
+             type="text" name="search" placeholder="Search" spellcheck="false"
              title="Type to search, Up and Down to navigate, Enter to load">
-    </h3>
-  </form>
+    </div>
 
-  <ul id="search-results" class="initially-hidden"></ul>
-</nav>
+    <ul id="search-results" aria-label="Search Results"
+        aria-busy="false" aria-expanded="false"
+        aria-atomic="false" class="initially-hidden"></ul>
+  </form>
+</div>

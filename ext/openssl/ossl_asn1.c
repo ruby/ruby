@@ -33,15 +33,22 @@ asn1time_to_time(ASN1_TIME *time)
 {
     struct tm tm;
     VALUE argv[6];
+    int count;
 
     if (!time || !time->data) return Qnil;
     memset(&tm, 0, sizeof(struct tm));
 
     switch (time->type) {
     case V_ASN1_UTCTIME:
-	if (sscanf((const char *)time->data, "%2d%2d%2d%2d%2d%2dZ", &tm.tm_year, &tm.tm_mon,
-    		&tm.tm_mday, &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
-	    ossl_raise(rb_eTypeError, "bad UTCTIME format");
+	count = sscanf((const char *)time->data, "%2d%2d%2d%2d%2d%2dZ",
+		&tm.tm_year, &tm.tm_mon, &tm.tm_mday, &tm.tm_hour, &tm.tm_min,
+		&tm.tm_sec);
+
+	if (count == 5) {
+	    tm.tm_sec = 0;
+	} else if (count != 6) {
+	    ossl_raise(rb_eTypeError, "bad UTCTIME format: \"%s\"",
+		    time->data);
 	}
 	if (tm.tm_year < 69) {
 	    tm.tm_year += 2000;
@@ -726,7 +733,7 @@ ossl_asn1data_initialize(VALUE self, VALUE value, VALUE tag, VALUE tag_class)
 }
 
 static VALUE
-join_der_i(VALUE i, VALUE str)
+join_der_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, str))
 {
     i = ossl_to_der_if_possible(i);
     StringValue(i);
@@ -1351,6 +1358,17 @@ ossl_asn1cons_each(VALUE self)
     return self;
 }
 
+/*
+ * call-seq:
+ *    ObjectId.register(object_id, short_name, long_name)
+ *
+ * This adds a new ObjectId to the internal tables. Where +object_id+ is the
+ * numerical form, +short_name+ is the short name, and +long_name+ is the long
+ * name.
+ *
+ * Returns +true+ if successful. Raises an ASN1Error otherwise.
+ *
+ */
 static VALUE
 ossl_asn1obj_s_register(VALUE self, VALUE oid, VALUE sn, VALUE ln)
 {
@@ -1364,6 +1382,14 @@ ossl_asn1obj_s_register(VALUE self, VALUE oid, VALUE sn, VALUE ln)
     return Qtrue;
 }
 
+/* Document-method: OpenSSL::ASN1::ObjectId#sn
+ *
+ * The short name of the ObjectId, as defined in +openssl/objects.h+.
+ */
+/* Document-method: OpenSSL::ASN1::ObjectId#short_name
+ *
+ * #short_name is an alias to #sn
+ */
 static VALUE
 ossl_asn1obj_get_sn(VALUE self)
 {
@@ -1377,6 +1403,14 @@ ossl_asn1obj_get_sn(VALUE self)
     return ret;
 }
 
+/* Document-method: OpenSSL::ASN1::ObjectId#ln
+ *
+ * The long name of the ObjectId, as defined in +openssl/objects.h+.
+ */
+/* Document-method: OpenSSL::ASN1::ObjectId.long_name
+ *
+ * #long_name is an alias to #ln
+ */
 static VALUE
 ossl_asn1obj_get_ln(VALUE self)
 {
@@ -1390,6 +1424,10 @@ ossl_asn1obj_get_ln(VALUE self)
     return ret;
 }
 
+/* Document-method: OpenSSL::ASN1::ObjectId#oid
+ *
+ * The object identifier as a String.
+ */
 static VALUE
 ossl_asn1obj_get_oid(VALUE self)
 {
@@ -1771,6 +1809,10 @@ Init_ossl_asn1()
      *
      * == OpenSSL::ASN1::ObjectId
      *
+     * While OpenSSL::ASN1::ObjectId.new will allocate a new ObjectId, it is
+     * not typically allocated this way, but rather that are received from
+     * parsed ASN1 encodings.
+     *
      * === Additional attributes
      * * +sn+: the short name as defined in <openssl/objects.h>.
      * * +ln+: the long name as defined in <openssl/objects.h>.
@@ -1910,6 +1952,10 @@ do{\
     OSSL_ASN1_DEFINE_CLASS(EndOfContent, Data);
 
 
+    /* Document-class: OpenSSL::ASN1::ObjectId
+     *
+     * Represents the primitive object id for OpenSSL::ASN1
+     */
 #if 0
     cASN1ObjectId = rb_define_class_under(mASN1, "ObjectId", cASN1Primitive);  /* let rdoc know */
 #endif

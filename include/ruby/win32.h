@@ -8,9 +8,7 @@ extern "C" {
 #endif
 #endif
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+RUBY_SYMBOL_EXPORT_BEGIN
 
 /*
  *  Copyright (c) 1993, Intergraph Corporation
@@ -39,6 +37,9 @@ extern "C++" {			/* template without extern "C++" */
 #endif
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#if !defined(_MSC_VER) || _MSC_VER >= 1400
+#include <iphlpapi.h>
+#endif
 #if defined(__cplusplus) && defined(_MSC_VER)
 }
 #endif
@@ -87,6 +88,14 @@ typedef int intptr_t;
 #  endif
 #  define _INTPTR_T_DEFINED
 # endif
+# if !defined(INTPTR_MAX)
+#  ifdef _WIN64
+#    define INTPTR_MAX 9223372036854775807I64
+#  else
+#    define INTPTR_MAX 2147483647
+#  endif
+#  define INTPTR_MIN (-INTPTR_MAX-1)
+# endif
 # if !defined(_UINTPTR_T_DEFINED)
 #  ifdef _WIN64
 typedef unsigned __int64 uintptr_t;
@@ -94,6 +103,13 @@ typedef unsigned __int64 uintptr_t;
 typedef unsigned int uintptr_t;
 #  endif
 #  define _UINTPTR_T_DEFINED
+# endif
+# if !defined(UINTPTR_MAX)
+#  ifdef _WIN64
+#    define UINTPTR_MAX 18446744073709551615UI64
+#  else
+#    define UINTPTR_MAX 4294967295U
+#  endif
 # endif
 #endif
 #ifndef __MINGW32__
@@ -107,6 +123,10 @@ typedef unsigned int uintptr_t;
 #define rb_w32_iswin95()  FALSE
 
 #define WNOHANG -1
+
+typedef int clockid_t;
+#define CLOCK_REALTIME  0
+#define CLOCK_MONOTONIC 1
 
 #undef getc
 #undef putc
@@ -177,7 +197,7 @@ typedef unsigned int uintptr_t;
 #if SIZEOF_OFF_T == 8
 #define off_t __int64
 #define stat stati64
-#define fstat(fd,st)		_fstati64(fd,st)
+#define fstat(fd,st)		fstati64(fd,st)
 #if defined(__BORLANDC__)
 #define stati64(path, st) rb_w32_stati64(path, st)
 #elif !defined(_MSC_VER) || RT_VER < 80
@@ -222,6 +242,26 @@ struct msghdr {
     int msg_flags;
 };
 
+/* for getifaddrs() and others */
+struct ifaddrs {
+    struct ifaddrs *ifa_next;
+    char *ifa_name;
+    u_int ifa_flags;
+    struct sockaddr *ifa_addr;
+    struct sockaddr *ifa_netmask;
+    struct sockaddr *ifa_broadaddr;
+    struct sockaddr *ifa_dstaddr;
+    void *ifa_data;
+};
+#ifdef IF_NAMESIZE
+#define IFNAMSIZ IF_NAMESIZE
+#else
+#define IFNAMSIZ 256
+#endif
+#ifdef IFF_POINTTOPOINT
+#define IFF_POINTOPOINT IFF_POINTTOPOINT
+#endif
+
 extern DWORD  rb_w32_osid(void);
 extern int    rb_w32_cmdvector(const char *, char ***);
 extern rb_pid_t  rb_w32_pipe_exec(const char *, const char *, int, int *, int *);
@@ -257,7 +297,9 @@ extern struct protoent *WSAAPI rb_w32_getprotobyname(const char *);
 extern struct protoent *WSAAPI rb_w32_getprotobynumber(int);
 extern struct servent  *WSAAPI rb_w32_getservbyname(const char *, const char *);
 extern struct servent  *WSAAPI rb_w32_getservbyport(int, const char *);
-extern int    rb_w32_socketpair(int, int, int, int *);
+extern int    socketpair(int, int, int, int *);
+extern int    getifaddrs(struct ifaddrs **);
+extern void   freeifaddrs(struct ifaddrs *);
 extern char * rb_w32_getcwd(char *, int);
 extern char * rb_w32_ugetenv(const char *);
 extern char * rb_w32_getenv(const char *);
@@ -274,10 +316,15 @@ extern int rb_w32_uchown(const char *, int, int);
 extern int link(const char *, const char *);
 extern int rb_w32_ulink(const char *, const char *);
 extern int gettimeofday(struct timeval *, struct timezone *);
+extern int clock_gettime(clockid_t, struct timespec *);
+extern int clock_getres(clockid_t, struct timespec *);
 extern rb_pid_t waitpid (rb_pid_t, int *, int);
 extern rb_pid_t rb_w32_spawn(int, const char *, const char*);
 extern rb_pid_t rb_w32_aspawn(int, const char *, char *const *);
 extern rb_pid_t rb_w32_aspawn_flags(int, const char *, char *const *, DWORD);
+extern rb_pid_t rb_w32_uspawn(int, const char *, const char*);
+extern rb_pid_t rb_w32_uaspawn(int, const char *, char *const *);
+extern rb_pid_t rb_w32_uaspawn_flags(int, const char *, char *const *, DWORD);
 extern int kill(int, int);
 extern int fcntl(int, int, ...);
 extern rb_pid_t rb_w32_getpid(void);
@@ -299,6 +346,7 @@ extern int rb_w32_access(const char *, int);
 extern int rb_w32_uaccess(const char *, int);
 extern char rb_w32_fd_is_text(int);
 extern int rb_w32_fstati64(int, struct stati64 *);
+extern int rb_w32_dup2(int, int);
 
 #ifdef __BORLANDC__
 extern off_t _lseeki64(int, off_t, int);
@@ -308,6 +356,20 @@ extern FILE *rb_w32_fsopen(const char *, const char *, int);
 #endif
 
 #include <float.h>
+
+#if defined _MSC_VER && _MSC_VER >= 1800 && defined INFINITY
+#pragma warning(push)
+#pragma warning(disable:4756)
+static inline float
+rb_infinity_float(void)
+{
+    return INFINITY;
+}
+#pragma warning(pop)
+#undef INFINITY
+#define INFINITY rb_infinity_float()
+#endif
+
 #if !defined __MINGW32__ || defined __NO_ISOCEXT
 #ifndef isnan
 #define isnan(x) _isnan(x)
@@ -325,6 +387,8 @@ scalb(double a, long b)
 {
     return _scalb(a, b);
 }
+#else
+__declspec(dllimport) extern int finite(double);
 #endif
 
 #if !defined S_IFIFO && defined _S_IFIFO
@@ -382,8 +446,6 @@ scalb(double a, long b)
 
 extern int 	 rb_w32_ftruncate(int fd, off_t length);
 extern int 	 rb_w32_truncate(const char *path, off_t length);
-extern off_t	 rb_w32_ftello(FILE *stream);
-extern int 	 rb_w32_fseeko(FILE *stream, off_t offset, int whence);
 
 #undef HAVE_FTRUNCATE
 #define HAVE_FTRUNCATE 1
@@ -401,22 +463,6 @@ extern int 	 rb_w32_fseeko(FILE *stream, off_t offset, int whence);
 #define truncate rb_w32_truncate
 #endif
 
-#undef HAVE_FSEEKO
-#define HAVE_FSEEKO 1
-#if defined HAVE_FSEEKO64
-#define fseeko fseeko64
-#else
-#define fseeko rb_w32_fseeko
-#endif
-
-#undef HAVE_FTELLO
-#define HAVE_FTELLO 1
-#if defined HAVE_FTELLO64
-#define ftello ftello64
-#else
-#define ftello rb_w32_ftello
-#endif
-
 /*
  * stubs
  */
@@ -427,6 +473,8 @@ extern rb_gid_t  getgid (void);
 extern rb_gid_t  getegid (void);
 extern int       setuid (rb_uid_t);
 extern int       setgid (rb_gid_t);
+
+extern int fstati64(int, struct stati64 *);
 
 extern char *rb_w32_strerror(int);
 
@@ -673,9 +721,6 @@ extern char *rb_w32_strerror(int);
 #undef getservbyport
 #define getservbyport(p, pr)	rb_w32_getservbyport(p, pr)
 
-#undef socketpair
-#define socketpair(a, t, p, s)	rb_w32_socketpair(a, t, p, s)
-
 #undef get_osfhandle
 #define get_osfhandle(h)	rb_w32_get_osfhandle(h)
 
@@ -690,6 +735,9 @@ extern char *rb_w32_strerror(int);
 
 #undef times
 #define times(t)		rb_w32_times(t)
+
+#undef dup2
+#define dup2(o, n)		rb_w32_dup2(o, n)
 #endif
 
 struct tms {
@@ -735,9 +783,7 @@ in asynchronous_func_t.
 typedef uintptr_t (*asynchronous_func_t)(uintptr_t self, int argc, uintptr_t* argv);
 uintptr_t rb_w32_asynchronize(asynchronous_func_t func, uintptr_t self, int argc, uintptr_t* argv, uintptr_t intrval);
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+RUBY_SYMBOL_EXPORT_END
 
 #ifdef __MINGW_ATTRIB_PURE
 /* License: Ruby's */
@@ -776,21 +822,7 @@ rb_w32_pow(double x, double y)
     return powl(x, y);
 }
 #elif defined(__MINGW64_VERSION_MAJOR)
-/*
- * Set floating point precision for pow() of mingw-w64 x86.
- * With default precision the result is not proper on WinXP.
- */
-static inline double
-rb_w32_pow(double x, double y)
-{
-    double r;
-    unsigned int default_control = _controlfp(0, 0);
-    _controlfp(_PC_64, _MCW_PC);
-    r = pow(x, y);
-    /* Restore setting */
-    _controlfp(default_control, _MCW_PC);
-    return r;
-}
+double rb_w32_pow(double x, double y);
 #endif
 #if defined(__MINGW64_VERSION_MAJOR) || defined(__MINGW64__)
 #define pow rb_w32_pow

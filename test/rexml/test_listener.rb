@@ -1,6 +1,6 @@
 # coding: binary
 
-require 'rexml_test_utils'
+require_relative 'rexml_test_utils'
 
 require 'rexml/document'
 require 'rexml/streamlistener'
@@ -82,16 +82,16 @@ class BaseTester < Test::Unit::TestCase
   end
 
   def test_accents
-    source = '<?xml version="1.0" encoding="ISO-8859-1"?>
+    source = %[<?xml version="1.0" encoding="ISO-8859-1"?>
 <g>
-<f  a="é" />
-</g>'
+<f  a="\xE9" />
+</g>]
     doc = REXML::Document.new( source )
     a = doc.elements['/g/f'].attribute('a')
                 if a.value.respond_to? :force_encoding
                   a.value.force_encoding('binary')
                 end
-    assert_equal( 'Ã©', a.value)
+    assert_equal( "\xC3\xA9", a.value)
     doc = REXML::Document.parse_stream(
       File::new(fixture_path("stream_accents.xml")),
       AccentListener::new

@@ -86,7 +86,6 @@ rb_dlcfunc_new(void (*func)(), int type, const char *name, ID calltype)
     VALUE val;
     struct cfunc_data *data;
 
-    rb_secure(4);
     if( func ){
 	val = TypedData_Make_Struct(rb_cDLCFunc, struct cfunc_data, &dlcfunc_data_type, data);
 	data->ptr  = (void *)(VALUE)func;
@@ -285,7 +284,9 @@ rb_dlcfunc_set_ptr(VALUE self, VALUE addr)
 }
 
 /*
- * call-seq: inspect
+ * call-seq:
+ *    inspect
+ *    to_s
  *
  * Returns a string formatted with an easily readable representation of the
  * internal state of the DL::CFunc
@@ -344,8 +345,6 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
     DLSTACK_TYPE stack[DLSTACK_SIZE];
     VALUE result = Qnil;
 
-    rb_secure_update(self);
-
     memset(stack, 0, sizeof(DLSTACK_TYPE) * DLSTACK_SIZE);
     Check_Type(ary, T_ARRAY);
 
@@ -367,11 +366,14 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 	    stack[i] = (DLSTACK_TYPE)FIX2LONG(arg);
 	}
 	else if (RB_TYPE_P(arg, T_BIGNUM)) {
-#if SIZEOF_VOIDP == SIZEOF_LONG
-	    stack[i] = (DLSTACK_TYPE)rb_big2ulong_pack(arg);
-#else
-	    stack[i] = (DLSTACK_TYPE)rb_big2ull(arg);
-#endif
+            unsigned long ls[(sizeof(DLSTACK_TYPE) + sizeof(long) - 1)/sizeof(long)];
+            DLSTACK_TYPE d;
+            int j;
+            rb_big_pack(arg, ls, sizeof(ls)/sizeof(*ls));
+            d = 0;
+            for (j = 0; j < (int)(sizeof(ls)/sizeof(*ls)); j++)
+                d |= (DLSTACK_TYPE)ls[j] << (j * sizeof(long) * CHAR_BIT);
+	    stack[i] = d;
 	}
 	else {
 	    Check_Type(arg, T_FIXNUM);
@@ -637,7 +639,7 @@ Init_dlcfunc(void)
      *   => "/lib64/libc.so.6"
      *   libc = DL::dlopen(libc_so)
      *   => #<DL::Handle:0x00000000e05b00>
-     *   @cfunc = DL::CFunc.new(libc,['strcpy'], DL::TYPE_VOIDP, 'strcpy')
+     *   @cfunc = DL::CFunc.new(libc['strcpy'], DL::TYPE_VOIDP, 'strcpy')
      *   => #<DL::CFunc:0x000000012daec0 ptr=0x007f62ca5a8300 type=1 name='strcpy'>
      *
      */

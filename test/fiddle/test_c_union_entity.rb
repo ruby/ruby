@@ -1,6 +1,9 @@
-require_relative 'helper'
+begin
+  require_relative 'helper'
+  require 'fiddle/struct'
+rescue LoadError
+end
 
-require 'fiddle/struct'
 
 module Fiddle
   class TestCUnionEntity < TestCase
@@ -28,4 +31,4 @@ module Fiddle
       assert_equal 1, union['int']
     end
   end
-end
+end if defined?(Fiddle)

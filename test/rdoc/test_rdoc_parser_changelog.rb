@@ -15,13 +15,6 @@ class TestRDocParserChangeLog < RDoc::TestCase
     @tempfile.close
   end
 
-  def mu_pp obj
-    s = ''
-    s = PP.pp obj, s
-    s = s.force_encoding Encoding.default_external if defined? Encoding
-    s.chomp
-  end
-
   def test_class_can_parse
     parser = RDoc::Parser::ChangeLog
 

@@ -43,12 +43,13 @@ module REXML
       REFERENCE_RE = /#{REFERENCE}/
 
       DOCTYPE_START = /\A\s*<!DOCTYPE\s/um
+      DOCTYPE_END = /\A\s*\]\s*>/um
       DOCTYPE_PATTERN = /\s*<!DOCTYPE\s+(.*?)(\[|>)/um
       ATTRIBUTE_PATTERN = /\s*(#{NAME_STR})\s*=\s*(["'])(.*?)\4/um
       COMMENT_START = /\A<!--/u
       COMMENT_PATTERN = /<!--(.*?)-->/um
       CDATA_START = /\A<!\[CDATA\[/u
-      CDATA_END = /^\s*\]\s*>/um
+      CDATA_END = /\A\s*\]\s*>/um
       CDATA_PATTERN = /<!\[CDATA\[(.*?)\]\]>/um
       XMLDECL_START = /\A<\?xml\s/u;
       XMLDECL_PATTERN = /<\?xml\s+(.*?)\?>/um
@@ -61,11 +62,11 @@ module REXML
       ENCODING = /\bencoding\s*=\s*["'](.*?)['"]/um
       STANDALONE = /\bstandalone\s*=\s*["'](.*?)['"]/um
 
-      ENTITY_START = /^\s*<!ENTITY/
+      ENTITY_START = /\A\s*<!ENTITY/
       IDENTITY = /^([!\*\w\-]+)(\s+#{NCNAME_STR})?(\s+["'](.*?)['"])?(\s+['"](.*?)["'])?/u
-      ELEMENTDECL_START = /^\s*<!ELEMENT/um
-      ELEMENTDECL_PATTERN = /^\s*(<!ELEMENT.*?)>/um
-      SYSTEMENTITY = /^\s*(%.*?;)\s*$/um
+      ELEMENTDECL_START = /\A\s*<!ELEMENT/um
+      ELEMENTDECL_PATTERN = /\A\s*(<!ELEMENT.*?)>/um
+      SYSTEMENTITY = /\A\s*(%.*?;)\s*$/um
       ENUMERATION = "\\(\\s*#{NMTOKEN}(?:\\s*\\|\\s*#{NMTOKEN})*\\s*\\)"
       NOTATIONTYPE = "NOTATION\\s+\\(\\s*#{NAME}(?:\\s*\\|\\s*#{NAME})*\\s*\\)"
       ENUMERATEDTYPE = "(?:(?:#{NOTATIONTYPE})|(?:#{ENUMERATION}))"
@@ -74,11 +75,11 @@ module REXML
       DEFAULTDECL = "(#REQUIRED|#IMPLIED|(?:(#FIXED\\s+)?#{ATTVALUE}))"
       ATTDEF = "\\s+#{NAME}\\s+#{ATTTYPE}\\s+#{DEFAULTDECL}"
       ATTDEF_RE = /#{ATTDEF}/
-      ATTLISTDECL_START = /^\s*<!ATTLIST/um
-      ATTLISTDECL_PATTERN = /^\s*<!ATTLIST\s+#{NAME}(?:#{ATTDEF})*\s*>/um
-      NOTATIONDECL_START = /^\s*<!NOTATION/um
-      PUBLIC = /^\s*<!NOTATION\s+(\w[\-\w]*)\s+(PUBLIC)\s+(["'])(.*?)\3(?:\s+(["'])(.*?)\5)?\s*>/um
-      SYSTEM = /^\s*<!NOTATION\s+(\w[\-\w]*)\s+(SYSTEM)\s+(["'])(.*?)\3\s*>/um
+      ATTLISTDECL_START = /\A\s*<!ATTLIST/um
+      ATTLISTDECL_PATTERN = /\A\s*<!ATTLIST\s+#{NAME}(?:#{ATTDEF})*\s*>/um
+      NOTATIONDECL_START = /\A\s*<!NOTATION/um
+      PUBLIC = /\A\s*<!NOTATION\s+(\w[\-\w]*)\s+(PUBLIC)\s+(["'])(.*?)\3(?:\s+(["'])(.*?)\5)?\s*>/um
+      SYSTEM = /\A\s*<!NOTATION\s+(\w[\-\w]*)\s+(SYSTEM)\s+(["'])(.*?)\3\s*>/um
 
       TEXT_PATTERN = /\A([^<]*)/um
 
@@ -282,7 +283,8 @@ module REXML
               # External reference
               match[3] = match[3][1..-2] # PUBID
               match[4] = match[4][1..-2] # HREF
-              # match is [ :entity, name, PUBLIC, pubid, href ]
+              match.delete_at(5) if match.size > 5 # Chop out NDATA decl
+              # match is [ :entity, name, PUBLIC, pubid, href(, ndata)? ]
             else
               match[2] = match[2][1..-2]
               match.pop if match.size == 4
@@ -322,9 +324,9 @@ module REXML
               raise REXML::ParseException.new( "error parsing notation: no matching pattern", @source )
             end
             return [ :notationdecl, *vals ]
-          when CDATA_END
+          when DOCTYPE_END
             @document_status = :after_doctype
-            @source.match( CDATA_END, true )
+            @source.match( DOCTYPE_END, true )
             return [ :end_doctype ]
           end
         end

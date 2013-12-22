@@ -4,9 +4,10 @@
 # $Id$
 
 require 'test/unit'
+require 'tempfile'
 
 require 'digest'
-%w[digest/md5 digest/rmd160 digest/sha1 digest/sha2].each do |lib|
+%w[digest/md5 digest/rmd160 digest/sha1 digest/sha2 digest/bubblebabble].each do |lib|
   begin
     require lib
   rescue LoadError
@@ -78,6 +79,16 @@ module TestDigest
     assert_equal(md1, md2, self.class::ALGO)
   end
 
+  def test_s_file
+    Tempfile.create("test_digest_file", mode: File::BINARY) { |tmpfile|
+      str = "hello, world.\r\n"
+      tmpfile.print str
+      tmpfile.close
+
+      assert_equal self.class::ALGO.new.update(str), self.class::ALGO.file(tmpfile.path)
+    }
+  end
+
   def test_instance_eval
     assert_nothing_raised {
       self.class::ALGO.new.instance_eval { update "a" }
@@ -91,6 +102,23 @@ module TestDigest
       md.update('a' * 97)
       md.hexdigest
     }
+  end
+
+  def test_bubblebabble
+    expected = "xirek-hasol-fumik-lanax"
+    assert_equal expected, Digest.bubblebabble('message')
+  end
+
+  def test_bubblebabble_class
+    expected = "xopoh-fedac-fenyh-nehon-mopel-nivor-lumiz-rypon-gyfot-cosyz-rimez-lolyv-pekyz-rosud-ricob-surac-toxox"
+    assert_equal expected, Digest::SHA256.bubblebabble('message')
+  end
+
+  def test_bubblebabble_instance
+    expected = "xumor-boceg-dakuz-sulic-gukoz-rutas-mekek-zovud-gunap-vabov-genin-rygyg-sanun-hykac-ruvah-dovah-huxex"
+
+    hash = Digest::SHA256.new
+    assert_equal expected, hash.bubblebabble
   end
 
   class TestMD5 < Test::Unit::TestCase
@@ -137,6 +165,20 @@ module TestDigest
       Data2 => "204a8fc6dda82f0a0ced7beb8e08a41657c16ef468b228a8279be331a703c33596fd15c13b1b07f9aa1d3bea57789ca031ad85c7a71dd70354ec631238ca3445",
     }
   end if defined?(Digest::SHA512)
+
+  class TestSHA2 < Test::Unit::TestCase
+
+  def test_s_file
+    Tempfile.create("test_digest_file") { |tmpfile|
+      str = Data1
+      tmpfile.print str
+      tmpfile.close
+
+      assert_equal "cb00753f45a35e8bb5a03d699ac65007272c32ab0eded1631a8b605a43ff5bed8086072ba1e7cc2358baeca134c825a7", Digest::SHA2.file(tmpfile.path, 384).hexdigest
+    }
+  end
+
+  end if defined?(Digest::SHA2)
 
   class TestRMD160 < Test::Unit::TestCase
     include TestDigest

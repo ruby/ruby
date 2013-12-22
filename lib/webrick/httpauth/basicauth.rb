@@ -34,7 +34,7 @@ module WEBrick
     class BasicAuth
       include Authenticator
 
-      AuthScheme = "Basic"
+      AuthScheme = "Basic" # :nodoc:
 
       ##
       # Used by UserDB to create a basic password entry

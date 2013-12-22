@@ -495,6 +495,13 @@ if defined?(WIN32OLE)
     def test_const_LOCALE_USER_DEFAULT
       assert_equal(0x0400, WIN32OLE::LOCALE_USER_DEFAULT);
     end
+
+    def test_method_missing
+      assert_raise(ArgumentError) {@dict1.method_missing}
+      assert_raise(TypeError) {@dict1.method_missing(1)}
+      assert_raise(ArgumentError) {@dict1.method_missing("foo=")}
+      assert_raise(ArgumentError) {@dict1.method_missing("foo=", 1, 2)}
+    end
   end
 
   # test of subclass of WIN32OLE

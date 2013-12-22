@@ -1,5 +1,6 @@
 @echo off
 @setlocal disabledelayedexpansion
+set witharg=
 
 echo> ~tmp~.mak ####
 echo>> ~tmp~.mak conf = %0
@@ -9,6 +10,7 @@ echo>> ~tmp~.mak 	@-$(MAKE) -l$(MAKEFLAGS) -f $(@D)/setup.mak \
 if exist pathlist.tmp del pathlist.tmp
 echo>confargs.tmp #define CONFIGURE_ARGS \
 :loop
+set opt=%1
 if "%1" == "" goto :end
 if "%1" == "--prefix" goto :prefix
 if "%1" == "--srcdir" goto :srcdir
@@ -31,23 +33,20 @@ if "%1" == "--extout" goto :extout
 if "%1" == "--path" goto :path
 if "%1" == "--with-baseruby" goto :baseruby
 if "%1" == "--with-ntver" goto :ntver
-echo %1| findstr "^--with-.*-dir$" > nul
-if not errorlevel 1 goto :witharg
-echo %1| findstr "^--with-.*-include$" > nul
-if not errorlevel 1 goto :witharg
-echo %1| findstr "^--with-.*-lib$" > nul
-if not errorlevel 1 goto :witharg
-echo %1| findstr "^--with-ext$" > nul
-if not errorlevel 1 goto :witharg
-echo %1| findstr "^--with-extensions$" > nul
-if not errorlevel 1 goto :witharg
-echo %1| findstr "^--without-ext$" > nul
-if not errorlevel 1 goto :witharg
-echo %1| findstr "^--without-extensions$" > nul
-if not errorlevel 1 goto :witharg
+if "%1" == "--without-ext" goto :witharg
+if "%1" == "--without-extensions" goto :witharg
+if "%opt:~0,10%" == "--without-" goto :withoutarg
+if "%opt:~0,7%" == "--with-" goto :witharg
 if "%1" == "-h" goto :help
 if "%1" == "--help" goto :help
-  echo>>confargs.tmp %1 \
+  if "%opt:~0,1%" == "-" (
+    echo>>confargs.tmp  %1 \
+    set witharg=
+  ) else if "%witharg" == "" (
+    echo>>confargs.tmp  %1 \
+  ) else (
+    echo>>confargs.tmp ,%1\
+  )
   shift
 goto :loop
 :srcdir
@@ -58,31 +57,31 @@ goto :loop
 goto :loop
 :prefix
   echo>> ~tmp~.mak 	"prefix=%~2" \
-  echo>>confargs.tmp %1=%2 \
+  echo>>confargs.tmp  %1=%2 \
   shift
   shift
 goto :loop
 :pprefix
   echo>> ~tmp~.mak 	"PROGRAM_PREFIX=%~2" \
-  echo>>confargs.tmp %1=%2 \
+  echo>>confargs.tmp  %1=%2 \
   shift
   shift
 goto :loop
 :suffix
   echo>> ~tmp~.mak 	"PROGRAM_SUFFIX=%~2" \
-  echo>>confargs.tmp %1=%2 \
+  echo>>confargs.tmp  %1=%2 \
   shift
   shift
 goto :loop
 :installname
   echo>> ~tmp~.mak 	"RUBY_INSTALL_NAME=%~2" \
-  echo>>confargs.tmp %1=%2 \
+  echo>>confargs.tmp  %1=%2 \
   shift
   shift
 goto :loop
 :soname
   echo>> ~tmp~.mak 	"RUBY_SO_NAME=%~2" \
-  echo>>confargs.tmp %1=%2 \
+  echo>>confargs.tmp  %1=%2 \
   shift
   shift
 goto :loop
@@ -134,31 +133,36 @@ goto :loop
 goto :loop
 :ntver
   echo>> ~tmp~.mak 	"NTVER=%~2" \
-  echo>>confargs.tmp %1=%2 \
+  echo>>confargs.tmp  %1=%2 \
   shift
   shift
 goto :loop
 :extout
   echo>> ~tmp~.mak 	"EXTOUT=%~2" \
-  echo>>confargs.tmp %1=%2 \
+  echo>>confargs.tmp  %1=%2 \
   shift
   shift
 goto :loop
 :path
   echo>>pathlist.tmp %~2;\
-  echo>>confargs.tmp %1=%2 \
+  echo>>confargs.tmp  %1=%2 \
   shift
   shift
 goto :loop
 :baseruby
   echo>> ~tmp~.mak 	"BASERUBY=%~2" \
-  echo>>confargs.tmp %1=%2 \
+  echo>>confargs.tmp  %1=%2 \
   shift
   shift
 goto :loop
 :witharg
-  echo>>confargs.tmp %1=%2 \
+  echo>>confargs.tmp  %1=%2\
+  set witharg=1
   shift
+  shift
+goto :loop
+:withoutarg
+  echo>>confargs.tmp  %1 \
   shift
 goto :loop
 :help
@@ -175,7 +179,6 @@ goto :loop
   echo   --with-ext="a,b,..."    use extensions a, b, ...
   echo   --without-ext="a,b,..." ignore extensions a, b, ...
   echo   --disable-install-doc   do not install rdoc indexes during install
-  echo   --disable-win95         disable win95 support
   echo   --with-ntver=0xXXXX     target NT version (shouldn't use with old SDK)
   del *.tmp
   del ~tmp~.mak

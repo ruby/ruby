@@ -1,3 +1,5 @@
+$extmk = true
+
 require 'test/unit'
 require 'mkmf'
 require 'tmpdir'
@@ -10,9 +12,6 @@ $extout_prefix = "$(extout)$(target_prefix)/"
 
 class TestMkmf < Test::Unit::TestCase
   MKMFLOG = proc {File.read("mkmf.log") rescue ""}
-  class << MKMFLOG
-    alias to_s call
-  end
 
   class Capture
     attr_accessor :origin
@@ -54,11 +53,7 @@ class TestMkmf < Test::Unit::TestCase
   attr_reader :stdout
 
   def mkmflog(msg)
-    log = proc {MKMFLOG[] << msg}
-    class << log
-      alias to_s call
-    end
-    log
+    proc {MKMFLOG[] << msg}
   end
 
   def setup

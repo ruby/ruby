@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestAlias < Test::Unit::TestCase
   class Alias0
@@ -50,16 +51,6 @@ class TestAlias < Test::Unit::TestCase
     def m
       $SAFE
     end
-  end
-
-  def test_JVN_83768862
-    d = lambda {
-      $SAFE = 4
-      dclass = Class.new(C)
-      dclass.send(:alias_method, :mm, :m)
-      dclass.new
-    }.call
-    assert_raise(SecurityError) { d.mm }
   end
 
   def test_nonexistmethod
@@ -128,5 +119,17 @@ class TestAlias < Test::Unit::TestCase
   # [ruby-dev:46028]
   def test_super_in_aliased_module_method # fails in 1.8
     assert_equal([:Base, :M], SuperInAliasedModuleMethod::Derived.new.bar)
+  end
+
+  def test_alias
+    assert_normal_exit %q{
+      require 'stringio'
+      GC.verify_internal_consistency
+      GC.start
+      class StringIO
+        alias_method :read_nonblock, :sysread
+      end
+      GC.verify_internal_consistency
+    }
   end
 end

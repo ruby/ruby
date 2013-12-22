@@ -190,6 +190,20 @@ class TestSocketNonblock < Test::Unit::TestCase
     s.close if s
   end
 
+  def test_read_nonblock_no_exception
+    c, s = tcp_pair
+    assert_equal :wait_readable, c.read_nonblock(100, exception: false)
+    assert_equal :wait_readable, s.read_nonblock(100, exception: false)
+    c.write("abc")
+    IO.select [s]
+    assert_equal("a", s.read_nonblock(1, exception: false))
+    assert_equal("bc", s.read_nonblock(100, exception: false))
+    assert_equal :wait_readable, s.read_nonblock(100, exception: false)
+  ensure
+    c.close if c
+    s.close if s
+  end
+
 =begin
   def test_write_nonblock
     c, s = tcp_pair
@@ -221,7 +235,7 @@ class TestSocketNonblock < Test::Unit::TestCase
           s1.sendmsg_nonblock("a" * 100000)
         }
       rescue NotImplementedError, Errno::ENOSYS
-        skip "sendmsg not implemented on this platform."
+        skip "sendmsg not implemented on this platform: #{$!}"
       rescue Errno::EMSGSIZE
         # UDP has 64K limit (if no Jumbograms).  No problem.
       rescue Errno::EWOULDBLOCK

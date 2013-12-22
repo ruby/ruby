@@ -86,6 +86,7 @@ x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15
 EOS
 
     res = Net::HTTPResponse.read_new(io)
+    res.decode_content = true
 
     body = nil
 
@@ -118,6 +119,7 @@ x\x9C\xCBH\xCD\xC9
 EOS
 
     res = Net::HTTPResponse.read_new(io)
+    res.decode_content = true
 
     body = nil
 
@@ -134,6 +136,29 @@ EOS
     end
   end
 
+  def test_read_body_content_encoding_deflate_disabled
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Encoding: deflate
+Content-Length: 13
+
+x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+    res.decode_content = false # user set accept-encoding in request
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal 'deflate', res['content-encoding'], 'Bug #7831'
+    assert_equal "x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15", body, 'Bug #7381'
+  end
+
   def test_read_body_content_encoding_deflate_no_length
     io = dummy_io(<<EOS)
 HTTP/1.1 200 OK
@@ -144,6 +169,7 @@ x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15
 EOS
 
     res = Net::HTTPResponse.read_new(io)
+    res.decode_content = true
 
     body = nil
 

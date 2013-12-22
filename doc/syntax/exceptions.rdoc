@@ -55,6 +55,23 @@ The exception is matched to the rescue section starting at the top, and matches
 only once.  If an ArgumentError is raised in the begin section it will not be
 handled in the StandardError section.
 
+You may retry rescued exceptions:
+
+  begin
+    # ...
+  rescue
+    # do something that may change the result of the begin block
+    retry
+  end
+
+Execution will resume at the start of the begin block, so be careful not to
+create an infinite loop.
+
+Inside a rescue block is the only valid location for +retry+, all other uses
+will raise a SyntaxError.  If you wish to retry a block iteration use +redo+.
+See {Control Expressions}[rdoc-ref:syntax/control_expressions.rdoc] for
+details.
+
 To always run some code whether an exception was raised or not, use +ensure+:
 
   begin

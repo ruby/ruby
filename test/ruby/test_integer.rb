@@ -35,9 +35,9 @@ class TestInteger < Test::Unit::TestCase
 
   def test_rshift
     # assert_equal(bdsize(0x40000001), (1 >> -0x40000001).size)
-    assert((1 >> 0x80000000).zero?)
-    assert((1 >> 0xffffffff).zero?)
-    assert((1 >> 0x100000000).zero?)
+    assert_predicate((1 >> 0x80000000), :zero?)
+    assert_predicate((1 >> 0xffffffff), :zero?)
+    assert_predicate((1 >> 0x100000000), :zero?)
     # assert_equal((1 << 0x40000000), (1 >> -0x40000000))
     # assert_equal((1 << 0x40000001), (1 >> -0x40000001))
   end
@@ -100,8 +100,8 @@ class TestInteger < Test::Unit::TestCase
   end
 
   def test_int_p
-    assert(!(1.0.integer?))
-    assert(1.integer?)
+    assert_not_predicate(1.0, :integer?)
+    assert_predicate(1, :integer?)
   end
 
   def test_odd_p_even_p
@@ -111,10 +111,10 @@ class TestInteger < Test::Unit::TestCase
       remove_method :odd?, :even?
     end
 
-    assert(1.odd?)
-    assert(!(2.odd?))
-    assert(!(1.even?))
-    assert(2.even?)
+    assert_predicate(1, :odd?)
+    assert_not_predicate(2, :odd?)
+    assert_not_predicate(1, :even?)
+    assert_predicate(2, :even?)
 
   ensure
     Fixnum.class_eval do
@@ -240,5 +240,41 @@ class TestInteger < Test::Unit::TestCase
       [other, 10]
     end
     assert_equal(3 ^ 10, 3 ^ obj)
+  end
+
+  def test_bit_length
+    assert_equal(13, (-2**12-1).bit_length)
+    assert_equal(12, (-2**12).bit_length)
+    assert_equal(12, (-2**12+1).bit_length)
+    assert_equal(9, -0x101.bit_length)
+    assert_equal(8, -0x100.bit_length)
+    assert_equal(8, -0xff.bit_length)
+    assert_equal(1, -2.bit_length)
+    assert_equal(0, -1.bit_length)
+    assert_equal(0, 0.bit_length)
+    assert_equal(1, 1.bit_length)
+    assert_equal(8, 0xff.bit_length)
+    assert_equal(9, 0x100.bit_length)
+    assert_equal(9, 0x101.bit_length)
+    assert_equal(12, (2**12-1).bit_length)
+    assert_equal(13, (2**12).bit_length)
+    assert_equal(13, (2**12+1).bit_length)
+
+    assert_equal(10001, (-2**10000-1).bit_length)
+    assert_equal(10000, (-2**10000).bit_length)
+    assert_equal(10000, (-2**10000+1).bit_length)
+    assert_equal(10000, (2**10000-1).bit_length)
+    assert_equal(10001, (2**10000).bit_length)
+    assert_equal(10001, (2**10000+1).bit_length)
+
+    2.upto(1000) {|i|
+      n = 2**i
+      assert_equal(i+1, (-n-1).bit_length, "(#{-n-1}).bit_length")
+      assert_equal(i,   (-n).bit_length, "(#{-n}).bit_length")
+      assert_equal(i,   (-n+1).bit_length, "(#{-n+1}).bit_length")
+      assert_equal(i,   (n-1).bit_length, "#{n-1}.bit_length")
+      assert_equal(i+1, (n).bit_length, "#{n}.bit_length")
+      assert_equal(i+1, (n+1).bit_length, "#{n+1}.bit_length")
+    }
   end
 end

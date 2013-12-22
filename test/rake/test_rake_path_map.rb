@@ -52,7 +52,7 @@ class TestRakePathMap < Rake::TestCase
     assert_equal "", "dir/.depends".pathmap("%x")
   end
 
-  def test_X_returns_everything_but_extension
+  def test_x_returns_everything_but_extension
     assert_equal "abc", "abc".pathmap("%X")
     assert_equal "abc", "abc.rb".pathmap("%X")
     assert_equal "abc.xyz", "abc.xyz.rb".pathmap("%X")
@@ -142,16 +142,27 @@ class TestRakePathMap < Rake::TestCase
 
   def test_complex_patterns
     sep = "".pathmap("%s")
-    assert_equal "dir/abc.rb", "dir/abc.rb".pathmap("%d/%n%x")
-    assert_equal "./abc.rb", "abc.rb".pathmap("%d/%n%x")
-    assert_equal "Your file extension is '.rb'",
-      "dir/abc.rb".pathmap("Your file extension is '%x'")
-    assert_equal "bin/org/onstepback/proj/A.class",
-      "src/org/onstepback/proj/A.java".pathmap("%{src,bin}d/%n.class")
-    assert_equal "src_work/bin/org/onstepback/proj/A.class",
-      "src_work/src/org/onstepback/proj/A.java".pathmap('%{\bsrc\b,bin}X.class')
-    assert_equal ".depends.bak", ".depends".pathmap("%X.bak")
-    assert_equal "d#{sep}a/b/c#{sep}file.txt", "a/b/c/d/file.txt".pathmap("%-1d%s%3d%s%f")
+    assert_equal(
+      "dir/abc.rb",
+      "dir/abc.rb".pathmap("%d/%n%x"))
+    assert_equal(
+      "./abc.rb",
+      "abc.rb".pathmap("%d/%n%x"))
+    assert_equal(
+      "Your file extension is '.rb'",
+      "dir/abc.rb".pathmap("Your file extension is '%x'"))
+    assert_equal(
+      "bin/org/onstepback/proj/A.class",
+      "src/org/onstepback/proj/A.java".pathmap("%{src,bin}d/%n.class"))
+    assert_equal(
+      "src_work/bin/org/onstepback/proj/A.class",
+      "src_work/src/org/onstepback/proj/A.java"
+        .pathmap('%{\bsrc\b,bin}X.class'))
+    assert_equal(
+      ".depends.bak",
+      ".depends".pathmap("%X.bak"))
+    assert_equal(
+      "d#{sep}a/b/c#{sep}file.txt",
+      "a/b/c/d/file.txt".pathmap("%-1d%s%3d%s%f"))
   end
 end
-

@@ -105,7 +105,7 @@ module IRB # :nodoc:
     end
 
     # Proc to call when the inspector is activated, good for requiring
-    # dependant libraries.
+    # dependent libraries.
     def init
       @init.call if @init
     end

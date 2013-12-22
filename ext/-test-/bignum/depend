@@ -1,0 +1,7 @@
+$(OBJS): $(HDRS) $(ruby_headers)
+
+intpack.o: intpack.c $(top_srcdir)/internal.h
+mul.o: mul.c $(top_srcdir)/internal.h
+div.o: div.c $(top_srcdir)/internal.h
+big2str.o: big2str.c $(top_srcdir)/internal.h
+str2big.o: big2str.c $(top_srcdir)/internal.h

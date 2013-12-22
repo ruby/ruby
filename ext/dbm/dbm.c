@@ -392,7 +392,6 @@ fdbm_values_at(int argc, VALUE *argv, VALUE obj)
 static void
 fdbm_modify(VALUE obj)
 {
-    rb_secure(4);
     if (OBJ_FROZEN(obj)) rb_error_frozen("DBM");
 }
 
@@ -575,7 +574,7 @@ fdbm_invert(VALUE obj)
 static VALUE fdbm_store(VALUE,VALUE,VALUE);
 
 static VALUE
-update_i(VALUE pair, VALUE dbm)
+update_i(RB_BLOCK_CALL_FUNC_ARGLIST(pair, dbm))
 {
     Check_Type(pair, T_ARRAY);
     if (RARRAY_LEN(pair) < 2) {
@@ -655,6 +654,7 @@ fdbm_store(VALUE obj, VALUE keystr, VALUE valstr)
 /*
  * call-seq:
  *   dbm.length -> integer
+ *   dbm.size -> integer
  *
  * Returns the number of entries in the database.
  */
@@ -832,7 +832,10 @@ fdbm_values(VALUE obj)
 
 /*
  * call-seq:
+ *   dbm.include?(key) -> boolean
  *   dbm.has_key?(key) -> boolean
+ *   dbm.member?(key) -> boolean
+ *   dbm.key?(key) -> boolean
  *
  * Returns true if the database contains the specified key, false otherwise.
  */
@@ -859,6 +862,7 @@ fdbm_has_key(VALUE obj, VALUE keystr)
 /*
  * call-seq:
  *   dbm.has_value?(value) -> boolean
+ *   dbm.value?(value) -> boolean
  *
  * Returns true if the database contains the specified string value, false
  * otherwise.
@@ -953,8 +957,7 @@ fdbm_reject(VALUE obj)
 }
 
 /*
- * Documented by mathew meta@pobox.com.
- * = Introduction
+ * == Introduction
  *
  * The DBM class provides a wrapper to a Unix-style
  * {dbm}[http://en.wikipedia.org/wiki/Dbm] or Database Manager library.
@@ -980,7 +983,7 @@ fdbm_reject(VALUE obj)
  * All of these dbm implementations have their own Ruby interfaces
  * available, which provide richer (but varying) APIs.
  *
- * = Cautions
+ * == Cautions
  *
  * Before you decide to use DBM, there are some issues you should consider:
  *
@@ -1005,10 +1008,10 @@ fdbm_reject(VALUE obj)
  * important data. It is probably best used as a fast and easy alternative
  * to a Hash for processing large amounts of data.
  *
- * = Example
+ * == Example
  *
  *  require 'dbm'
- *  db = DBM.open('rfcs', 666, DBM::CREATRW)
+ *  db = DBM.open('rfcs', 666, DBM::WRCREAT)
  *  db['822'] = 'Standard for the Format of ARPA Internet Text Messages'
  *  db['1123'] = 'Requirements for Internet Hosts - Application and Support'
  *  db['3068'] = 'An Anycast Prefix for 6to4 Relay Routers'

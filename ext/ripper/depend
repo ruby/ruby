@@ -8,11 +8,18 @@ BISON = bison
 src: ripper.c eventids1.c eventids2table.c
 
 ripper.o: ripper.c id.c lex.c eventids1.c eventids2.c eventids2table.c \
-	$(hdrdir)/ruby/ruby.h $(arch_hdrdir)/ruby/config.h \
-	$(hdrdir)/ruby/defines.h $(hdrdir)/ruby/intern.h \
-	$(hdrdir)/ruby/encoding.h $(hdrdir)/missing.h \
-	$(hdrdir)/../node.h $(hdrdir)/oniguruma.h \
-	$(hdrdir)/regex.h $(hdrdir)/st.h $(hdrdir)/util.h
+	$(HDRS) $(ruby_headers) \
+	$(hdrdir)/ruby/encoding.h \
+	$(hdrdir)/ruby/oniguruma.h \
+	$(hdrdir)/ruby/regex.h \
+	$(hdrdir)/ruby/util.h \
+	$(top_srcdir)/node.h \
+	$(top_srcdir)/internal.h \
+	{$(VPATH)}parse.h \
+	{$(VPATH)}id.h \
+	$(top_srcdir)/regenc.h \
+	$(top_srcdir)/vm_opts.h \
+	$(topdir)/probes.h
 
 .y.c:
 	$(ECHO) compiling compiler $<
@@ -25,7 +32,7 @@ static: check
 
 ripper.y: $(srcdir)/tools/preproc.rb $(top_srcdir)/parse.y
 	$(ECHO) extracting $@ from $(top_srcdir)/parse.y
-	$(Q) $(RUBY) $(top_srcdir)/tool/id2token.rb --vpath=$(VPATH) id.h $(top_srcdir)/parse.y > ripper.tmp.y
+	$(Q) $(RUBY) $(top_srcdir)/tool/id2token.rb --path-separator=.$(PATH_SEPARATOR)./ --vpath=$(VPATH) id.h $(top_srcdir)/parse.y > ripper.tmp.y
 	$(Q) $(RUBY) $(srcdir)/tools/preproc.rb ripper.tmp.y --output=$@
 	$(Q) $(RM) ripper.tmp.y
 

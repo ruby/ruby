@@ -1,6 +1,8 @@
 require 'test/unit'
 require 'delegate'
 require 'timeout'
+require 'bigdecimal'
+require_relative 'envutil'
 
 class TestRange < Test::Unit::TestCase
   def test_range_string
@@ -80,6 +82,7 @@ class TestRange < Test::Unit::TestCase
   def test_initialize_twice
     r = eval("1..2")
     assert_raise(NameError) { r.instance_eval { initialize 3, 4 } }
+    assert_raise(NameError) { r.instance_eval { initialize_copy 3..4 } }
   end
 
   def test_uninitialized_range
@@ -94,36 +97,36 @@ class TestRange < Test::Unit::TestCase
   end
 
   def test_exclude_end
-    assert(!((0..1).exclude_end?))
-    assert((0...1).exclude_end?)
+    assert_not_predicate(0..1, :exclude_end?)
+    assert_predicate(0...1, :exclude_end?)
   end
 
   def test_eq
     r = (0..1)
-    assert(r == r)
-    assert(r == (0..1))
-    assert(r != 0)
-    assert(r != (1..2))
-    assert(r != (0..2))
-    assert(r != (0...1))
+    assert_equal(r, r)
+    assert_equal(r, (0..1))
+    assert_not_equal(r, 0)
+    assert_not_equal(r, (1..2))
+    assert_not_equal(r, (0..2))
+    assert_not_equal(r, (0...1))
     subclass = Class.new(Range)
-    assert(r == subclass.new(0,1))
+    assert_equal(r, subclass.new(0,1))
   end
 
   def test_eql
     r = (0..1)
-    assert(r.eql?(r))
-    assert(r.eql?(0..1))
-    assert(!r.eql?(0))
-    assert(!r.eql?(1..2))
-    assert(!r.eql?(0..2))
-    assert(!r.eql?(0...1))
+    assert_operator(r, :eql?, r)
+    assert_operator(r, :eql?, 0..1)
+    assert_not_operator(r, :eql?, 0)
+    assert_not_operator(r, :eql?, 1..2)
+    assert_not_operator(r, :eql?, 0..2)
+    assert_not_operator(r, :eql?, 0...1)
     subclass = Class.new(Range)
-    assert(r.eql?(subclass.new(0,1)))
+    assert_operator(r, :eql?, subclass.new(0,1))
   end
 
   def test_hash
-    assert((0..1).hash.is_a?(Fixnum))
+    assert_kind_of(Fixnum, (0..1).hash)
   end
 
   def test_step
@@ -248,6 +251,16 @@ class TestRange < Test::Unit::TestCase
   def test_first_last
     assert_equal([0, 1, 2], (0..10).first(3))
     assert_equal([8, 9, 10], (0..10).last(3))
+    assert_equal(0, (0..10).first)
+    assert_equal(10, (0..10).last)
+    assert_equal("a", ("a".."c").first)
+    assert_equal("c", ("a".."c").last)
+    assert_equal(0, (2..0).last)
+
+    assert_equal([0, 1, 2], (0...10).first(3))
+    assert_equal([7, 8, 9], (0...10).last(3))
+    assert_equal(0, (0...10).first)
+    assert_equal("a", ("a"..."c").first)
   end
 
   def test_to_s
@@ -261,25 +274,25 @@ class TestRange < Test::Unit::TestCase
   end
 
   def test_eqq
-    assert((0..10) === 5)
-    assert(!((0..10) === 11))
+    assert_operator(0..10, :===, 5)
+    assert_not_operator(0..10, :===, 11)
   end
 
   def test_include
-    assert(("a".."z").include?("c"))
-    assert(!(("a".."z").include?("5")))
-    assert(("a"..."z").include?("y"))
-    assert(!(("a"..."z").include?("z")))
-    assert(!(("a".."z").include?("cc")))
-    assert((0...10).include?(5))
+    assert_include("a".."z", "c")
+    assert_not_include("a".."z", "5")
+    assert_include("a"..."z", "y")
+    assert_not_include("a"..."z", "z")
+    assert_not_include("a".."z", "cc")
+    assert_include(0...10, 5)
   end
 
   def test_cover
-    assert(("a".."z").cover?("c"))
-    assert(!(("a".."z").cover?("5")))
-    assert(("a"..."z").cover?("y"))
-    assert(!(("a"..."z").cover?("z")))
-    assert(("a".."z").cover?("cc"))
+    assert_operator("a".."z", :cover?, "c")
+    assert_not_operator("a".."z", :cover?, "5")
+    assert_operator("a"..."z", :cover?, "y")
+    assert_not_operator("a"..."z", :cover?, "z")
+    assert_operator("a".."z", :cover?, "cc")
   end
 
   def test_beg_len
@@ -319,14 +332,14 @@ class TestRange < Test::Unit::TestCase
     x = CyclicRange.allocate; x.send(:initialize, x, 1)
     y = CyclicRange.allocate; y.send(:initialize, y, 1)
     Timeout.timeout(1) {
-      assert x == y
-      assert x.eql? y
+      assert_equal x, y
+      assert_operator x, :eql?, y
     }
 
     z = CyclicRange.allocate; z.send(:initialize, z, :another)
     Timeout.timeout(1) {
-      assert x != z
-      assert !x.eql?(z)
+      assert_not_equal x, z
+      assert_not_operator x, :eql?, z
     }
 
     x = CyclicRange.allocate
@@ -334,8 +347,8 @@ class TestRange < Test::Unit::TestCase
     x.send(:initialize, y, 1)
     y.send(:initialize, x, 1)
     Timeout.timeout(1) {
-      assert x == y
-      assert x.eql?(y)
+      assert_equal x, y
+      assert_operator x, :eql?, y
     }
 
     x = CyclicRange.allocate
@@ -343,8 +356,8 @@ class TestRange < Test::Unit::TestCase
     x.send(:initialize, z, 1)
     z.send(:initialize, x, :other)
     Timeout.timeout(1) {
-      assert x != z
-      assert !x.eql?(z)
+      assert_not_equal x, z
+      assert_not_operator x, :eql?, z
     }
   end
 
@@ -354,6 +367,28 @@ class TestRange < Test::Unit::TestCase
     assert_equal 6, (1...6.3).size
     assert_equal 5, (1.1...6).size
     assert_equal 42, (1..42).each.size
+  end
+
+  def test_bsearch_typechecks_return_values
+    assert_raise(TypeError) do
+      (1..42).bsearch{ "not ok" }
+    end
+    assert_equal (1..42).bsearch{}, (1..42).bsearch{false}
+  end
+
+  def test_bsearch_with_no_block
+    enum = (42...666).bsearch
+    assert_nil enum.size
+    assert_equal 200, enum.each{|x| x >= 200 }
+  end
+
+  def test_bsearch_for_other_numerics
+    assert_raise(TypeError) {
+      (Rational(-1,2)..Rational(9,4)).bsearch
+    }
+    assert_raise(TypeError) {
+      (BigDecimal('0.5')..BigDecimal('2.25')).bsearch
+    }
   end
 
   def test_bsearch_for_fixnum
@@ -422,6 +457,83 @@ class TestRange < Test::Unit::TestCase
     assert_in_delta(7.0, (0.0..10).bsearch {|x| 7.0 - x })
   end
 
+  def check_bsearch_values(range, search)
+    from, to = range.begin, range.end
+    cmp = range.exclude_end? ? :< : :<=
+
+    # (0) trivial test
+    r = Range.new(to, from, range.exclude_end?).bsearch do |x|
+      fail "#{to}, #{from}, #{range.exclude_end?}, #{x}"
+    end
+    assert_equal nil, r
+
+    r = (to...to).bsearch do
+      fail
+    end
+    assert_equal nil, r
+
+    # prepare for others
+    yielded = []
+    r = range.bsearch do |val|
+      yielded << val
+      val >= search
+    end
+
+    # (1) log test
+    max = case from
+          when Float then 65
+          when Integer then Math.log(to-from+(range.exclude_end? ? 0 : 1), 2).to_i + 1
+          end
+    assert_operator yielded.size, :<=, max
+
+    # (2) coverage test
+    expect =  if search < from
+                from
+              elsif search.send(cmp, to)
+                search
+              else
+                nil
+              end
+    assert_equal expect, r
+
+    # (3) uniqueness test
+    assert_equal nil, yielded.uniq!
+
+    # (4) end of range test
+    case
+    when range.exclude_end?
+      assert_not_include yielded, to
+      assert_not_equal r, to
+    when search >= to
+      assert_include yielded, to
+      assert_equal search == to ? to : nil, r
+    end
+
+    # start of range test
+    if search <= from
+      assert_include yielded, from
+      assert_equal from, r
+    end
+
+    # (5) out of range test
+    yielded.each do |val|
+      assert_operator from, :<=, val
+      assert_send [val, cmp, to]
+    end
+  end
+
+  def test_range_bsearch_for_floats
+    ints   = [-1 << 100, -123456789, -42, -1, 0, 1, 42, 123456789, 1 << 100]
+    floats = [-Float::INFINITY, -Float::MAX, -42.0, -4.2, -Float::EPSILON, -Float::MIN, 0.0, Float::MIN, Float::EPSILON, Math::PI, 4.2, 42.0, Float::MAX, Float::INFINITY]
+
+    [ints, floats].each do |values|
+      values.combination(2).to_a.product(values).each do |(from, to), search|
+        check_bsearch_values(from..to, search)
+        check_bsearch_values(from...to, search)
+      end
+    end
+  end
+
   def test_bsearch_for_bignum
     bignum = 2**100
     ary = [3, 4, 7, 9, 12]
@@ -435,5 +547,24 @@ class TestRange < Test::Unit::TestCase
     assert_equal(nil, (bignum...bignum+ary.size).bsearch {|i| false })
 
     assert_raise(TypeError) { ("a".."z").bsearch {} }
+  end
+
+  def test_bsearch_with_mathn
+    assert_separately ['-r', 'mathn'], %q{
+      msg = '[ruby-core:25740]'
+      answer = (1..(1 << 100)).bsearch{|x|
+        assert_predicate(x, :integer?, msg)
+        x >= 42
+      }
+      assert_equal(42, answer, msg)
+    }
+  end
+
+  def test_each_no_blockarg
+    a = "a"
+    def a.upto(x, e, &b)
+      super {|y| b.call(y) {|z| assert(false)}}
+    end
+    (a.."c").each {|x, &b| assert_nil(b)}
   end
 end

@@ -1,4 +1,3 @@
-#!/usr/bin/env ruby
 # -*- coding: utf-8 -*-
 #
 #  Created by Henrik Mårtensson on 2007-02-18.

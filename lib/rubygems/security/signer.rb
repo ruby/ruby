@@ -29,24 +29,24 @@ class Gem::Security::Signer
   # +chain+ containing X509 certificates, encoding certificates or paths to
   # certificates.
 
-  def initialize key, cert_chain
+  def initialize key, cert_chain, passphrase = nil
     @cert_chain = cert_chain
     @key        = key
 
     unless @key then
-      default_key  = File.join Gem.user_home, 'gem-private_key.pem'
+      default_key  = File.join Gem.default_key_path
       @key = default_key if File.exist? default_key
     end
 
     unless @cert_chain then
-      default_cert = File.join Gem.user_home, 'gem-public_cert.pem'
+      default_cert = File.join Gem.default_cert_path
       @cert_chain = [default_cert] if File.exist? default_cert
     end
 
     @digest_algorithm = Gem::Security::DIGEST_ALGORITHM
     @digest_name      = Gem::Security::DIGEST_NAME
 
-    @key = OpenSSL::PKey::RSA.new File.read @key if
+    @key = OpenSSL::PKey::RSA.new File.read(@key), passphrase if
       @key and not OpenSSL::PKey::RSA === @key
 
     if @cert_chain then
@@ -59,6 +59,22 @@ class Gem::Security::Signer
       end
 
       load_cert_chain
+    end
+  end
+
+  ##
+  # Extracts the full name of +cert+.  If the certificate has a subjectAltName
+  # this value is preferred, otherwise the subject is used.
+
+  def extract_name cert # :nodoc:
+    subject_alt_name = cert.extensions.find { |e| 'subjectAltName' == e.oid }
+
+    if subject_alt_name then
+      /\Aemail:/ =~ subject_alt_name.value
+
+      $' || subject_alt_name.value
+    else
+      cert.subject
     end
   end
 
@@ -89,7 +105,9 @@ class Gem::Security::Signer
       re_sign_key
     end
 
-    Gem::Security::SigningPolicy.verify @cert_chain, @key
+    full_name = extract_name @cert_chain.last
+
+    Gem::Security::SigningPolicy.verify @cert_chain, @key, {}, {}, full_name
 
     @key.sign @digest_algorithm.new, data
   end
@@ -110,15 +128,15 @@ class Gem::Security::Signer
   def re_sign_key # :nodoc:
     old_cert = @cert_chain.last
 
-    disk_cert_path = File.join Gem.user_home, 'gem-public_cert.pem'
+    disk_cert_path = File.join Gem.default_cert_path
     disk_cert = File.read disk_cert_path rescue nil
     disk_key  =
-      File.read File.join(Gem.user_home, 'gem-private_key.pem') rescue nil
+      File.read File.join(Gem.default_key_path) rescue nil
 
     if disk_key == @key.to_pem and disk_cert == old_cert.to_pem then
       expiry = old_cert.not_after.strftime '%Y%m%d%H%M%S'
       old_cert_file = "gem-public_cert.pem.expired.#{expiry}"
-      old_cert_path = File.join Gem.user_home, old_cert_file
+      old_cert_path = File.join Gem.user_home, ".gem", old_cert_file
 
       unless File.exist? old_cert_path then
         Gem::Security.write old_cert, old_cert_path

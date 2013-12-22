@@ -1,7 +1,7 @@
 #--
 # set.rb - defines the Set class
 #++
-# Copyright (c) 2002-2008 Akinori MUSHA <knu@iDaemons.org>
+# Copyright (c) 2002-2013 Akinori MUSHA <knu@iDaemons.org>
 #
 # Documentation by Akinori MUSHA and Gavin Sinclair.
 #
@@ -15,7 +15,7 @@
 # This library provides the Set class, which deals with a collection
 # of unordered values with no duplicates.  It is a hybrid of Array's
 # intuitive inter-operation facilities and Hash's fast lookup.  If you
-# need to keep values ordered, use the SortedSet class.
+# need to keep values sorted in some order, use the SortedSet class.
 #
 # The method +to_set+ is added to Enumerable for convenience.
 #
@@ -27,13 +27,20 @@
 # This is a hybrid of Array's intuitive inter-operation facilities and
 # Hash's fast lookup.
 #
-# The equality of each couple of elements is determined according to
-# Object#eql? and Object#hash, since Set uses Hash as storage.
-#
 # Set is easy to use with Enumerable objects (implementing +each+).
 # Most of the initializer methods and binary operators accept generic
 # Enumerable objects besides sets and arrays.  An Enumerable object
 # can be converted to Set using the +to_set+ method.
+#
+# Set uses Hash as storage, so you must note the following points:
+#
+# * Equality of elements is determined according to Object#eql? and
+#   Object#hash.
+# * Set assumes that the identity of each element does not change
+#   while it is stored.  Modifying an element of a set will render the
+#   set to an unreliable state.
+# * When a string is to be stored, a frozen copy of the string is
+#   stored instead unless the original string is already frozen.
 #
 # == Comparison
 #
@@ -49,7 +56,7 @@
 #   s2 = [1, 2].to_set                    # -> #<Set: {1, 2}>
 #   s1 == s2                              # -> true
 #   s1.add("foo")                         # -> #<Set: {1, 2, "foo"}>
-#   s1.merge([2, 6])                      # -> #<Set: {6, 1, 2, "foo"}>
+#   s1.merge([2, 6])                      # -> #<Set: {1, 2, "foo", 6}>
 #   s1.subset? s2                         # -> false
 #   s2.subset? s1                         # -> true
 #
@@ -99,21 +106,18 @@ class Set
   end
 
   def freeze    # :nodoc:
-    super
     @hash.freeze
-    self
+    super
   end
 
   def taint     # :nodoc:
-    super
     @hash.taint
-    self
+    super
   end
 
   def untaint   # :nodoc:
-    super
     @hash.untaint
-    self
+    super
   end
 
   # Returns the number of elements.
@@ -149,6 +153,16 @@ class Set
   # Converts the set to an array.  The order of elements is uncertain.
   def to_a
     @hash.keys
+  end
+
+  # Returns self if no arguments are given.  Otherwise, converts the
+  # set to another with klass.new(self, *args, &block).
+  #
+  # In subclasses, returns klass.new(self, *args, &block) unless
+  # overridden.
+  def to_set(klass = Set, *args, &block)
+    return self if instance_of?(Set) && klass == Set && block.nil? && args.empty?
+    klass.new(self, *args, &block)
   end
 
   def flatten_merge(set, seen = Set.new) # :nodoc:
@@ -224,6 +238,23 @@ class Set
   end
   alias < proper_subset?
 
+  # Returns true if the set and the given set have at least one
+  # element in common.
+  def intersect?(set)
+    set.is_a?(Set) or raise ArgumentError, "value must be a set"
+    if size < set.size
+      any? { |o| set.include?(o) }
+    else
+      set.any? { |o| include?(o) }
+    end
+  end
+
+  # Returns true if the set and the given set have no element in
+  # common.  This method is the opposite of +intersect?+.
+  def disjoint?(set)
+    !intersect?(set)
+  end
+
   # Calls the given block once for each element in the set, passing
   # the element as parameter.  Returns an enumerator if no block is
   # given.
@@ -272,7 +303,9 @@ class Set
   # true, and returns self.
   def delete_if
     block_given? or return enum_for(__method__)
-    to_a.each { |o| @hash.delete(o) if yield(o) }
+    # @hash.delete_if should be faster, but using it breaks the order
+    # of enumeration in subclasses.
+    select { |o| yield o }.each { |o| @hash.delete(o) }
     self
   end
 
@@ -280,7 +313,9 @@ class Set
   # false, and returns self.
   def keep_if
     block_given? or return enum_for(__method__)
-    to_a.each { |o| @hash.delete(o) unless yield(o) }
+    # @hash.keep_if should be faster, but using it breaks the order of
+    # enumeration in subclasses.
+    reject { |o| yield o }.each { |o| @hash.delete(o) }
     self
   end
 
@@ -539,7 +574,7 @@ class SortedSet < Set
       begin
         require 'rbtree'
 
-        module_eval %{
+        module_eval <<-END, __FILE__, __LINE__+1
           def initialize(*args)
             @hash = RBTree.new
             super
@@ -550,9 +585,9 @@ class SortedSet < Set
             super
           end
           alias << add
-        }
+        END
       rescue LoadError
-        module_eval %{
+        module_eval <<-END, __FILE__, __LINE__+1
           def initialize(*args)
             @keys = nil
             super
@@ -612,7 +647,7 @@ class SortedSet < Set
             (@keys = @hash.keys).sort! unless @keys
             @keys
           end
-        }
+        END
       end
       module_eval {
         # a hack to shut up warning

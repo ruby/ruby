@@ -1,7 +1,6 @@
 /*
  * utf8tbl.c - Convertion Table for nkf
  *
- * $Id$
  */
 
 #include "config.h"

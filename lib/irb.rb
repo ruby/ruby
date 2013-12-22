@@ -21,16 +21,16 @@ require "irb/locale"
 
 STDOUT.sync = true
 
-# IRB stands for "interactive ruby" and is a tool to interactively execute ruby
+# IRB stands for "interactive Ruby" and is a tool to interactively execute Ruby
 # expressions read from the standard input.
 #
 # The +irb+ command from your shell will start the interpreter.
 #
 # == Usage
 #
-# Use of irb is easy if you know ruby.
+# Use of irb is easy if you know Ruby.
 #
-# When executing irb, prompts are displayed as follows. Then, enter the ruby
+# When executing irb, prompts are displayed as follows. Then, enter the Ruby
 # expression. An input is executed when it is syntactically complete.
 #
 #     $ irb
@@ -101,9 +101,33 @@ STDOUT.sync = true
 #     IRB.conf[:USE_TRACER] = false
 #     IRB.conf[:IGNORE_SIGINT] = true
 #     IRB.conf[:IGNORE_EOF] = false
-#     IRB.conf[:PROMPT_MODE] = :DEFALUT
+#     IRB.conf[:PROMPT_MODE] = :DEFAULT
 #     IRB.conf[:PROMPT] = {...}
 #     IRB.conf[:DEBUG_LEVEL]=0
+#
+# === Auto indentation
+#
+# To enable auto-indent mode in irb, add the following to your +.irbrc+:
+#
+#     IRB.conf[:AUTO_INDENT] = true
+#
+# === Autocompletion
+#
+# To enable autocompletion for irb, add the following to your +.irbrc+:
+#
+#     require 'irb/completion'
+#
+# === History
+#
+# By default, irb disables history and will not store any commands you used.
+#
+# If you want to enable history, add the following to your +.irbrc+:
+#
+#     IRB.conf[:SAVE_HISTORY] = 1000
+#
+# This will now store the last 1000 commands in <code>~/.irb_history</code>.
+#
+# See IRB::Context#save_history= for more information.
 #
 # == Customizing the IRB Prompt
 #
@@ -114,21 +138,20 @@ STDOUT.sync = true
 # This example can be used in your +.irbrc+
 #
 #     IRB.conf[:PROMPT][:MY_PROMPT] = { # name of prompt mode
+#       :AUTO_INDENT => true            # enables auto-indent mode
 #       :PROMPT_I => nil,		# normal prompt
 #       :PROMPT_S => nil,		# prompt for continuated strings
 #       :PROMPT_C => nil,		# prompt for continuated statement
 #       :RETURN => "    ==>%s\n"	# format to return value
 #     }
 #
-# Then, invoke irb with the above prompt mode by:
+#     IRB.conf[:PROMPT_MODE] = :MY_PROMPT
+#
+# Or, invoke irb with the above prompt mode by:
 #
 #     irb --prompt my-prompt
 #
-# Or, add the following in your +.irbrc+:
-#
-#     IRB.conf[:PROMPT_MODE] = :MY_PROMPT
-#
-# Contants +PROMPT_I+, +PROMPT_S+ and +PROMPT_C+ specify the format. In the
+# Constants +PROMPT_I+, +PROMPT_S+ and +PROMPT_C+ specify the format. In the
 # prompt specification, some special strings are available:
 #
 #     %N    # command name which is running
@@ -198,17 +221,7 @@ STDOUT.sync = true
 # == Restrictions
 #
 # Because irb evaluates input immediately after it is syntactically complete,
-# the results may be slightly different than directly using ruby.
-#
-# One of the obvious differences is how irb handles symbols as continuated
-# statements:
-#
-#   ruby -e 'p :+' #=> :+
-#   irb
-#   irb(main):001:0> p :+
-#   irb(main):002:0*
-#
-# irb tries to contiue the statement 'p :+' on the next line.
+# the results may be slightly different than directly using Ruby.
 #
 # == IRB Sessions
 #

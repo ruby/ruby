@@ -4,8 +4,6 @@ require 'rubygems/dependency_installer'
 require 'rubygems/local_remote_options'
 require 'rubygems/validator'
 require 'rubygems/version_option'
-require 'rubygems/install_message' # must come before rdoc for messaging
-require 'rubygems/rdoc'
 
 ##
 # Gem installer command line tool
@@ -24,6 +22,7 @@ class Gem::Commands::InstallCommand < Gem::Command
     defaults = Gem::DependencyInstaller::DEFAULT_OPTIONS.merge({
       :format_executable => false,
       :version           => Gem::Requirement.default,
+      :without_groups    => [],
     })
 
     super 'install', 'Install a gem into the local repository', defaults
@@ -34,10 +33,40 @@ class Gem::Commands::InstallCommand < Gem::Command
     add_version_option
     add_prerelease_option "to be installed. (Only for listed gems)"
 
-    add_option(:"Install/Update", '-g', '--file FILE',
+    add_option(:"Install/Update", '-g', '--file [FILE]',
                'Read from a gem dependencies API file and',
                'install the listed gems') do |v,o|
+      v = Gem::GEM_DEP_FILES.find do |file|
+        File.exist? file
+      end unless v
+
+      unless v then
+        message = v ? v : "(tried #{Gem::GEM_DEP_FILES.join ', '})"
+
+        raise OptionParser::InvalidArgument,
+                "cannot find gem dependencies file #{message}"
+      end
+
       o[:gemdeps] = v
+    end
+
+    add_option(:"Install/Update", '--without GROUPS', Array,
+               'Omit the named groups (comma separated)',
+               'when installing from a gem dependencies',
+               'file') do |v,o|
+      o[:without_groups].concat v.map { |without| without.intern }
+    end
+
+    add_option(:"Install/Update", '--default',
+               'Add the gem\'s full specification to',
+               'specifications/default and extract only its bin') do |v,o|
+      o[:install_as_default] = v
+    end
+
+    add_option(:"Install/Update", '--explain',
+               'Rather than install the gems, indicate which would',
+               'be installed') do |v,o|
+      o[:explain] = v
     end
 
     @installed_specs = nil
@@ -109,14 +138,48 @@ to write the specification by hand.  For example:
     "#{program_name} GEMNAME [GEMNAME ...] [options] -- --build-flags"
   end
 
-  def install_from_gemdeps(gf)
+  def check_install_dir # :nodoc:
+    if options[:install_dir] and options[:user_install] then
+      alert_error "Use --install-dir or --user-install but not both"
+      terminate_interaction 1
+    end
+  end
+
+  def check_version # :nodoc:
+    if options[:version] != Gem::Requirement.default and
+         get_all_gem_names.size > 1 then
+      alert_error "Can't use --version w/ multiple gems. Use name:ver instead."
+      terminate_interaction 1
+    end
+  end
+
+  def execute
+    if options.include? :gemdeps then
+      install_from_gemdeps
+      return # not reached
+    end
+
+    @installed_specs = []
+
+    ENV.delete 'GEM_PATH' if options[:install_dir].nil? and RUBY_VERSION > '1.9'
+
+    check_install_dir
+    check_version
+
+    load_hooks
+
+    exit_code = install_gems
+
+    show_installed
+
+    terminate_interaction exit_code
+  end
+
+  def install_from_gemdeps # :nodoc:
     require 'rubygems/request_set'
     rs = Gem::RequestSet.new
-    rs.load_gemdeps gf
 
-    rs.resolve
-
-    specs = rs.install options do |req, inst|
+    specs = rs.install_from_gemdeps options do |req, inst|
       s = req.full_spec
 
       if inst
@@ -128,54 +191,50 @@ to write the specification by hand.  For example:
 
     @installed_specs = specs
 
-    raise Gem::SystemExitException, 0
+    terminate_interaction
   end
 
-  def execute
-    if gf = options[:gemdeps] then
-      install_from_gemdeps gf
-      return
+  def install_gem name, version # :nodoc:
+    return if options[:conservative] and
+      not Gem::Dependency.new(name, version).matching_specs.empty?
+
+    req = Gem::Requirement.create(version)
+
+    if options[:ignore_dependencies]
+      inst = Gem::Installer.new name, options
+      inst.install
+      @installed_specs.push(inst.spec)
+    else
+      inst = Gem::DependencyInstaller.new options
+
+      if options[:explain]
+        request_set = inst.resolve_dependencies name, req
+
+        puts "Gems to install:"
+
+        request_set.specs.map { |s| s.full_name }.sort.each do |s|
+          puts "  #{s}"
+        end
+
+        return
+      else
+        inst.install name, req
+      end
+
+      @installed_specs.push(*inst.installed_gems)
+
+      show_install_errors inst.errors
     end
+  end
 
-    @installed_specs = []
-
-    ENV.delete 'GEM_PATH' if options[:install_dir].nil? and RUBY_VERSION > '1.9'
-
-    if options[:install_dir] and options[:user_install]
-      alert_error "Use --install-dir or --user-install but not both"
-      terminate_interaction 1
-    end
-
+  def install_gems # :nodoc:
     exit_code = 0
-
-    if options[:version] != Gem::Requirement.default &&
-        get_all_gem_names.size > 1 then
-      alert_error "Can't use --version w/ multiple gems. Use name:ver instead."
-      terminate_interaction 1
-    end
-
 
     get_all_gem_names_and_versions.each do |gem_name, gem_version|
       gem_version ||= options[:version]
 
       begin
-        next if options[:conservative] and
-          not Gem::Dependency.new(gem_name, gem_version).matching_specs.empty?
-
-        inst = Gem::DependencyInstaller.new options
-        inst.install gem_name, Gem::Requirement.create(gem_version)
-
-        @installed_specs.push(*inst.installed_gems)
-
-        next unless errs = inst.errors
-
-        errs.each do |x|
-          next unless Gem::SourceFetchProblem === x
-
-          msg = "Unable to pull data from '#{x.source.uri}': #{x.error.message}"
-
-          alert_warning msg
-        end
+        install_gem gem_name, gem_version
       rescue Gem::InstallError => e
         alert_error "Error installing #{gem_name}:\n\t#{e.message}"
         exit_code |= 1
@@ -186,12 +245,38 @@ to write the specification by hand.  For example:
       end
     end
 
-    unless @installed_specs.empty? then
-      gems = @installed_specs.length == 1 ? 'gem' : 'gems'
-      say "#{@installed_specs.length} #{gems} installed"
-    end
+    exit_code
+  end
 
-    raise Gem::SystemExitException, exit_code
+  ##
+  # Loads post-install hooks
+
+  def load_hooks # :nodoc:
+    if options[:install_as_default]
+      require 'rubygems/install_default_message'
+    else
+      require 'rubygems/install_message'
+    end
+    require 'rubygems/rdoc'
+  end
+
+  def show_install_errors errors # :nodoc:
+    return unless errors
+
+    errors.each do |x|
+      return unless Gem::SourceFetchProblem === x
+
+      msg = "Unable to pull data from '#{x.source.uri}': #{x.error.message}"
+
+      alert_warning msg
+    end
+  end
+
+  def show_installed # :nodoc:
+    return if @installed_specs.empty?
+
+    gems = @installed_specs.length == 1 ? 'gem' : 'gems'
+    say "#{@installed_specs.length} #{gems} installed"
   end
 
 end

@@ -33,7 +33,7 @@
 # This method will escape the String for you to safely use with a Bourne shell.
 #
 #   argv = Shellwords.escape("special's.txt")
-#   argv #=> "special\\s.txt"
+#   argv #=> "special\\'s.txt"
 #   system("cat " + argv)
 #
 # Shellwords also comes with a core extension for Array, Array#shelljoin.

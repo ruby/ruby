@@ -11,83 +11,119 @@
 #include <sys/stat.h>
 
 #ifdef HAVE_UNISTD_H
-#include <unistd.h>
+#  include <unistd.h>
 #endif
 
 #ifdef HAVE_SYS_UIO_H
-#include <sys/uio.h>
+#  include <sys/uio.h>
 #endif
 
 #ifdef HAVE_XTI_H
-#include <xti.h>
+#  include <xti.h>
 #endif
 
-#ifndef _WIN32
-#if defined(__BEOS__) && !defined(__HAIKU__) && !defined(BONE)
-# include <net/socket.h>
+#ifdef _WIN32
+#  if defined(_MSC_VER)
+#    undef HAVE_TYPE_STRUCT_SOCKADDR_DL
+#  endif
 #else
-# include <sys/socket.h>
+#  if defined(__BEOS__) && !defined(__HAIKU__) && !defined(BONE)
+#    include <net/socket.h>
+#  else
+#    include <sys/socket.h>
+#  endif
+#  include <netinet/in.h>
+#  ifdef HAVE_NETINET_IN_SYSTM_H
+#    include <netinet/in_systm.h>
+#  endif
+#  ifdef HAVE_NETINET_TCP_H
+#    include <netinet/tcp.h>
+#  endif
+#  ifdef HAVE_NETINET_UDP_H
+#    include <netinet/udp.h>
+#  endif
+#  ifdef HAVE_ARPA_INET_H
+#    include <arpa/inet.h>
+#  endif
+#  include <netdb.h>
 #endif
-#include <netinet/in.h>
-#ifdef HAVE_NETINET_IN_SYSTM_H
-# include <netinet/in_systm.h>
+
+#ifdef HAVE_NETPACKET_PACKET_H
+#  include <netpacket/packet.h>
 #endif
-#ifdef HAVE_NETINET_TCP_H
-# include <netinet/tcp.h>
+#ifdef HAVE_NET_ETHERNET_H
+#  include <net/ethernet.h>
 #endif
-#ifdef HAVE_NETINET_UDP_H
-# include <netinet/udp.h>
-#endif
-#ifdef HAVE_ARPA_INET_H
-# include <arpa/inet.h>
-#endif
-#include <netdb.h>
-#endif
+
 #include <errno.h>
+
 #ifdef HAVE_SYS_UN_H
-#include <sys/un.h>
+#  include <sys/un.h>
 #endif
 
 #if defined(HAVE_FCNTL)
-#ifdef HAVE_SYS_SELECT_H
-#include <sys/select.h>
-#endif
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
+#  ifdef HAVE_SYS_SELECT_H
+#    include <sys/select.h>
+#  endif
+#  ifdef HAVE_SYS_TYPES_H
+#    include <sys/types.h>
+#  endif
+#  ifdef HAVE_SYS_TIME_H
+#    include <sys/time.h>
+#  endif
+#  ifdef HAVE_FCNTL_H
+#    include <fcntl.h>
+#  endif
 #endif
 
 #ifdef HAVE_IFADDRS_H
-#include <ifaddrs.h>
+#  include <ifaddrs.h>
 #endif
 #ifdef HAVE_SYS_IOCTL_H
-#include <sys/ioctl.h>
+#  include <sys/ioctl.h>
 #endif
 #ifdef HAVE_SYS_SOCKIO_H
-#include <sys/sockio.h>
+#  include <sys/sockio.h>
 #endif
 #ifdef HAVE_NET_IF_H
-#include <net/if.h>
+#  include <net/if.h>
 #endif
 
 #ifdef HAVE_SYS_PARAM_H
-#include <sys/param.h>
+#  include <sys/param.h>
 #endif
 #ifdef HAVE_SYS_UCRED_H
-#include <sys/ucred.h>
+#  include <sys/ucred.h>
 #endif
 #ifdef HAVE_UCRED_H
-#include <ucred.h>
+#  include <ucred.h>
+#endif
+#ifdef HAVE_NET_IF_DL_H
+#  include <net/if_dl.h>
+#endif
+
+#ifndef HAVE_TYPE_SOCKLEN_T
+typedef int socklen_t;
+#endif
+
+#ifdef NEED_IF_INDEXTONAME_DECL
+char *if_indextoname(unsigned int, char *);
+#endif
+#ifdef NEED_IF_NAMETOINDEX_DECL
+unsigned int if_nametoindex(const char *);
+#endif
+
+#define SOCKLEN_MAX \
+  (0 < (socklen_t)-1 ? \
+   ~(socklen_t)0 : \
+   (((((socklen_t)1) << (sizeof(socklen_t) * CHAR_BIT - 2)) - 1) * 2 + 1))
+
+#ifndef RSTRING_SOCKLEN
+#  define RSTRING_SOCKLEN (socklen_t)RSTRING_LENINT
 #endif
 
 #ifndef EWOULDBLOCK
-#define EWOULDBLOCK EAGAIN
+#  define EWOULDBLOCK EAGAIN
 #endif
 
 /*
@@ -100,49 +136,66 @@
 #define pseudo_AF_FTIP pseudo_AF_RTIP
 
 #ifndef HAVE_GETADDRINFO
-#include "addrinfo.h"
+#  include "addrinfo.h"
 #endif
+
 #include "sockport.h"
 
 #ifndef NI_MAXHOST
-# define NI_MAXHOST 1025
+#  define NI_MAXHOST 1025
 #endif
 #ifndef NI_MAXSERV
-# define NI_MAXSERV 32
+#  define NI_MAXSERV 32
 #endif
 
 #ifdef AF_INET6
-# define IS_IP_FAMILY(af) ((af) == AF_INET || (af) == AF_INET6)
+#  define IS_IP_FAMILY(af) ((af) == AF_INET || (af) == AF_INET6)
 #else
-# define IS_IP_FAMILY(af) ((af) == AF_INET)
+#  define IS_IP_FAMILY(af) ((af) == AF_INET)
 #endif
 
 #ifndef IN6_IS_ADDR_UNIQUE_LOCAL
-# define IN6_IS_ADDR_UNIQUE_LOCAL(a) (((a)->s6_addr[0] == 0xfc) || ((a)->s6_addr[0] == 0xfd))
+#  define IN6_IS_ADDR_UNIQUE_LOCAL(a) (((a)->s6_addr[0] == 0xfc) || ((a)->s6_addr[0] == 0xfd))
 #endif
 
-#ifndef HAVE_SOCKADDR_STORAGE
+#ifndef HAVE_TYPE_STRUCT_SOCKADDR_STORAGE
 /*
  * RFC 2553: protocol-independent placeholder for socket addresses
  */
-#define _SS_MAXSIZE     128
-#define _SS_ALIGNSIZE   (sizeof(double))
-#define _SS_PAD1SIZE    (_SS_ALIGNSIZE - sizeof(unsigned char) * 2)
-#define _SS_PAD2SIZE    (_SS_MAXSIZE - sizeof(unsigned char) * 2 - \
+#  define _SS_MAXSIZE     128
+#  define _SS_ALIGNSIZE   (sizeof(double))
+#  define _SS_PAD1SIZE    (_SS_ALIGNSIZE - sizeof(unsigned char) * 2)
+#  define _SS_PAD2SIZE    (_SS_MAXSIZE - sizeof(unsigned char) * 2 - \
                                 _SS_PAD1SIZE - _SS_ALIGNSIZE)
 
 struct sockaddr_storage {
-#ifdef HAVE_SA_LEN
+#  ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
         unsigned char ss_len;           /* address length */
         unsigned char ss_family;        /* address family */
-#else
+#  else
         unsigned short ss_family;
-#endif
+#  endif
         char    __ss_pad1[_SS_PAD1SIZE];
         double  __ss_align;     /* force desired structure storage alignment */
         char    __ss_pad2[_SS_PAD2SIZE];
 };
 #endif
+
+typedef union {
+  struct sockaddr addr;
+  struct sockaddr_in in;
+#ifdef AF_INET6
+  struct sockaddr_in6 in6;
+#endif
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
+  struct sockaddr_un un;
+#endif
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_DL
+  struct sockaddr_dl dl; /* AF_LINK */
+#endif
+  struct sockaddr_storage storage;
+  char place_holder[2048]; /* sockaddr_storage is not enough for Unix domain sockets on SunOS and Darwin. */
+} union_sockaddr;
 
 #ifdef __APPLE__
 /*
@@ -150,22 +203,22 @@ struct sockaddr_storage {
  * aligns up to __darwin_size_t which is 64bit, but CMSG_DATA is
  * 32bit-aligned.
  */
-#undef __DARWIN_ALIGNBYTES
-#define __DARWIN_ALIGNBYTES (sizeof(unsigned int) - 1)
+#  undef __DARWIN_ALIGNBYTES
+#  define __DARWIN_ALIGNBYTES (sizeof(unsigned int) - 1)
 #endif
 
 #if defined(_AIX)
-#ifndef CMSG_SPACE
-# define CMSG_SPACE(len) (_CMSG_ALIGN(sizeof(struct cmsghdr)) + _CMSG_ALIGN(len))
-#endif
-#ifndef CMSG_LEN
-# define CMSG_LEN(len) (_CMSG_ALIGN(sizeof(struct cmsghdr)) + (len))
-#endif
+#  ifndef CMSG_SPACE
+#    define CMSG_SPACE(len) (_CMSG_ALIGN(sizeof(struct cmsghdr)) + _CMSG_ALIGN(len))
+#  endif
+#  ifndef CMSG_LEN
+#    define CMSG_LEN(len) (_CMSG_ALIGN(sizeof(struct cmsghdr)) + (len))
+#  endif
 #endif
 
 #ifdef __BEOS__
-#undef close
-#define close closesocket
+#  undef close
+#  define close closesocket
 #endif
 
 #define INET_CLIENT 0
@@ -192,12 +245,12 @@ extern VALUE rb_eSocket;
 
 #ifdef SOCKS
 extern VALUE rb_cSOCKSSocket;
-#ifdef SOCKS5
-#include <socks.h>
-#else
+#  ifdef SOCKS5
+#    include <socks.h>
+#  else
 void SOCKSinit();
 int Rconnect();
-#endif
+#  endif
 #endif
 
 #include "constdefs.h"
@@ -207,8 +260,11 @@ int Rconnect();
 
 #define SockAddrStringValue(v) rsock_sockaddr_string_value(&(v))
 #define SockAddrStringValuePtr(v) rsock_sockaddr_string_value_ptr(&(v))
+#define SockAddrStringValueWithAddrinfo(v, rai_ret) rsock_sockaddr_string_value_with_addrinfo(&(v), &(rai_ret))
 VALUE rsock_sockaddr_string_value(volatile VALUE *);
 char *rsock_sockaddr_string_value_ptr(volatile VALUE *);
+VALUE rsock_sockaddr_string_value_with_addrinfo(volatile VALUE *v, VALUE *ai_ret);
+
 VALUE rb_check_sockaddr_string_type(VALUE);
 
 NORETURN(void rsock_raise_socket_error(const char *, int));
@@ -230,16 +286,21 @@ VALUE rsock_fd_socket_addrinfo(int fd, struct sockaddr *addr, socklen_t len);
 VALUE rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len);
 
 VALUE rsock_addrinfo_new(struct sockaddr *addr, socklen_t len, int family, int socktype, int protocol, VALUE canonname, VALUE inspectname);
+VALUE rsock_addrinfo_inspect_sockaddr(VALUE rai);
 
-VALUE rsock_make_ipaddr(struct sockaddr *addr);
-VALUE rsock_ipaddr(struct sockaddr *sockaddr, int norevlookup);
-VALUE rsock_make_hostent(VALUE host, struct addrinfo *addr, VALUE (*ipaddr)(struct sockaddr *, size_t));
+VALUE rsock_make_ipaddr(struct sockaddr *addr, socklen_t addrlen);
+VALUE rsock_ipaddr(struct sockaddr *sockaddr, socklen_t sockaddrlen, int norevlookup);
+VALUE rsock_make_hostent(VALUE host, struct addrinfo *addr, VALUE (*ipaddr)(struct sockaddr *, socklen_t));
+VALUE rsock_inspect_sockaddr(struct sockaddr *addr, socklen_t socklen, VALUE ret);
+socklen_t rsock_sockaddr_len(struct sockaddr *addr);
+VALUE rsock_sockaddr_obj(struct sockaddr *addr, socklen_t len);
 
 int rsock_revlookup_flag(VALUE revlookup, int *norevlookup);
 
 #ifdef HAVE_SYS_UN_H
 VALUE rsock_unixpath_str(struct sockaddr_un *sockaddr, socklen_t len);
 VALUE rsock_unixaddr(struct sockaddr_un *sockaddr, socklen_t len);
+socklen_t rsock_unix_sockaddr_len(VALUE path);
 #endif
 
 int rsock_socket(int domain, int type, int proto);
@@ -284,6 +345,7 @@ VALUE rsock_bsock_sendmsg_nonblock(int argc, VALUE *argv, VALUE sock);
 #define rsock_bsock_sendmsg rb_f_notimplement
 #define rsock_bsock_sendmsg_nonblock rb_f_notimplement
 #endif
+
 #if defined(HAVE_RECVMSG)
 VALUE rsock_bsock_recvmsg(int argc, VALUE *argv, VALUE sock);
 VALUE rsock_bsock_recvmsg_nonblock(int argc, VALUE *argv, VALUE sock);
@@ -293,7 +355,7 @@ ssize_t rsock_recvmsg(int socket, struct msghdr *message, int flags);
 #define rsock_bsock_recvmsg_nonblock rb_f_notimplement
 #endif
 
-#ifdef HAVE_ST_MSG_CONTROL
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
 void rsock_discard_cmsg_resource(struct msghdr *mh, int msg_peek_p);
 #endif
 
@@ -309,6 +371,13 @@ void rsock_init_socket_constants(void);
 void rsock_init_ancdata(void);
 void rsock_init_addrinfo(void);
 void rsock_init_sockopt(void);
+void rsock_init_sockifaddr(void);
 void rsock_init_socket_init(void);
+
+NORETURN(void rsock_sys_fail_host_port(const char *, VALUE, VALUE));
+NORETURN(void rsock_sys_fail_path(const char *, VALUE));
+NORETURN(void rsock_sys_fail_sockaddr(const char *, struct sockaddr *addr, socklen_t len));
+NORETURN(void rsock_sys_fail_raddrinfo(const char *, VALUE rai));
+NORETURN(void rsock_sys_fail_raddrinfo_or_sockaddr(const char *, VALUE addr, VALUE rai));
 
 #endif

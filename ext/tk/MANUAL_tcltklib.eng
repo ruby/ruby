@@ -37,7 +37,7 @@ module TclTklib
          : Same to 'WINDOW | FILE | TIMER | IDLE'.
 
        DONT_WAIT
-         : Without this flag, 'do_one_event' waits the occurence of
+         : Without this flag, 'do_one_event' waits the occurrence of
          : a target event. With this flag, doesn't wait and returns
          : false if there is no target event for processing.
 
@@ -145,7 +145,7 @@ module TclTklib
      mainloop(check_root = true)
        : Starts the eventloop. If 'check_root' is true, this method
        : doesn't return when a root widget exists.
-       : If 'check_root' is false, doen't return by the other
+       : If 'check_root' is false, doesn't return by the other
        : reasons than exceptions.
 
     mainloop_thread?
@@ -181,7 +181,7 @@ module TclTklib
        : is based on the count of processed events.
        : ( see 'set_eventloop_weight' method )
        : However, if the eventloop thread is the only thread,
-       : timer_tick cannt be set to 0. If 0, then is set to 100 ms
+       : timer_tick cannot be set to 0. If 0, then is set to 100 ms
        : automatically (see NO_THREAD_INTERRUPT_TIME on tcltklib.c).
        : On $SAFE >= 4, cannot call this method.
 
@@ -204,9 +204,9 @@ module TclTklib
        : That is invalid when the eventloop is the only thread.
        : 'loop_max' is the max events for thread-switching.
        : 'no_event_tick' is the increment value of the event count
-       : when no event for processing (And then, the eventloop thead
+       : when no event for processing (And then, the eventloop thread
        : sleeps 'no_event_wait' mili-seconds).
-       : 'loop_max == 800' and 'no_event_tick == 10' are defalut.
+       : 'loop_max == 800' and 'no_event_tick == 10' are default.
        : On $SAFE >= 4, cannot call this method.
 
     get_eventloop_weight
@@ -215,8 +215,8 @@ module TclTklib
     mainloop_abort_on_exception=(bool)
        : Define whether the eventloop stops on exception or not.
        : If true (default value), stops on exception.
-       : If false, show a warinig message but ignore the exception.
-       : If nil, no warning message and ignore the excepsion.
+       : If false, show a waring message but ignore the exception.
+       : If nil, no warning message and ignore the exception.
        : This parameter is sometimes useful when multiple Tk
        : interpreters are working. Because the only one eventloop
        : admins all Tk interpreters, sometimes exception on a
@@ -277,11 +277,11 @@ class TclTkIp
        : The information is used to generate the root widget of the
        : interpreter.
        : ( e.g. TclTkIp.new('FOO', '-geometry 500x200 -use 0x2200009') )
-       : If is given nil or falsr for the 'option' argument, generates
+       : If is given nil or false for the 'option' argument, generates
        : the Tcl interpreter without Tk library. Then the interpreter
        : doesn't need GUI environment. Therefore, even if a window
        : system doesn't exist or cannot be used, Ruby can control the
-       : Tcl interpreter and the extention libraries loaded on the
+       : Tcl interpreter and the extension libraries loaded on the
        : interpreter.
 
   [instance methods]
@@ -350,7 +350,7 @@ class TclTkIp
        : So _invoke can call only the command which already
        : registered on the interpreter by 'load' command and so on.
        : On _eval command, auto_load mechanism words. So if succeed
-       : to _eval and regist the command once, after that, the
+       : to _eval and register the command once, after that, the
        : command can be called by _invoke.
 
     _cancel_eval(str)
@@ -464,8 +464,8 @@ class TkCallbackContinue < StandardError
   : 'break' code to Tk interpreter (Then the Tk interpreter will
   : break the operation for the current event).
   : If raise TkCallbackContinue, returns 'continue' code (Then the Tk
-  : interpreter will break the operateion for the current bindtag and
-  : starts the operation for the next buindtag for the current event).
+  : interpreter will break the operation for the current bindtag and
+  : starts the operation for the next bindtag for the current event).
   : However, current tcltklib supports Ruby's 'break' and 'next' to
   : get the same effect. That is, those classes are obsolete. Those
   : exist for backward compatibility.

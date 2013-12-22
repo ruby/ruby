@@ -10,12 +10,9 @@
 prelude.rb
 
 # the lib/ directory (which has its own .document file)
-
 lib
 
-
 # and some of the ext/ directory (which has its own .document file)
-
 ext
 
 # rdoc files

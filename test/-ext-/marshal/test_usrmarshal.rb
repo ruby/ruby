@@ -21,8 +21,7 @@ module Bug::Marshal
     end
 
     def test_incompat
-      e = assert_raise(ArgumentError) {::Marshal.load(old_dump)}
-      assert_equal("dump format error", e.message)
+      assert_raise_with_message(ArgumentError, "dump format error") {::Marshal.load(old_dump)}
     end
 
     def test_compat

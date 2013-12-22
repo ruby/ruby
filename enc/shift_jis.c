@@ -231,7 +231,7 @@ code_to_mbclen(OnigCodePoint code, OnigEncoding enc ARG_UNUSED)
   }
   else if (code <= 0xffff) {
     int low = code & 0xff;
-    if (low < 0x40 || low == 0x7f || 0xfc < low)
+    if (! SJIS_ISMB_TRAIL(low))
       return ONIGERR_INVALID_CODE_POINT_VALUE;
     return 2;
   }

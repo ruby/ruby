@@ -12,6 +12,24 @@ end
 
 ENV["GEM_SKIP"] = ENV["GEM_HOME"] = ENV["GEM_PATH"] = "".freeze
 
-require_relative 'profile_test_all' if ENV['RUBY_TEST_ALL_PROFILE'] == 'true'
+require_relative 'profile_test_all' if ENV.has_key?('RUBY_TEST_ALL_PROFILE')
 
-exit Test::Unit::AutoRunner.run(true, src_testdir)
+module Test::Unit
+  module ZombieHunter
+    def after_teardown
+      super
+      assert_empty(Process.waitall)
+    end
+  end
+  class TestCase
+    include ZombieHunter
+  end
+end
+
+begin
+  exit Test::Unit::AutoRunner.run(true, src_testdir)
+rescue NoMemoryError
+  system("cat /proc/meminfo") if File.exist?("/proc/meminfo")
+  system("ps x -opid,args,%cpu,%mem,nlwp,rss,vsz,wchan,stat,start,time,etime,blocked,caught,ignored,pending,f") if File.exist?("/bin/ps")
+  raise
+end

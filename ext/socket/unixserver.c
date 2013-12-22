@@ -31,8 +31,8 @@ unix_svr_init(VALUE sock, VALUE path)
  * call-seq:
  *   unixserver.accept => unixsocket
  *
- * Accepts a new connection.
- * It returns new UNIXSocket object.
+ * Accepts an incoming connection.
+ * It returns a new UNIXSocket object.
  *
  *   UNIXServer.open("/tmp/sock") {|serv|
  *     UNIXSocket.open("/tmp/sock") {|c|
@@ -59,7 +59,7 @@ unix_accept(VALUE sock)
 
 /*
  * call-seq:
- * 	unixserver.accept_nonblock => unixsocket
+ *   unixserver.accept_nonblock => unixsocket
  *
  * Accepts an incoming connection using accept(2) after
  * O_NONBLOCK is set for the underlying file descriptor.

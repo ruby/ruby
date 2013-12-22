@@ -128,7 +128,7 @@ class TestEval < Test::Unit::TestCase
   end
 
   def forall_TYPE
-    objects = [Object.new, [], nil, true, false, :sym] # TODO: check
+    objects = [Object.new, [], nil, true, false] # TODO: check
     objects.each do |obj|
       obj.instance_variable_set :@ivar, 12
       yield obj
@@ -212,6 +212,13 @@ class TestEval < Test::Unit::TestCase
       class << o
         remove_method :defd_using_instance_eval
       end
+    end
+  end
+
+  def test_instance_eval_on_argf_singleton_class
+    bug8188 = '[ruby-core:53839] [Bug #8188]'
+    assert_warning('', bug8188) do
+      ARGF.singleton_class.instance_eval{}
     end
   end
 
@@ -433,16 +440,6 @@ class TestEval < Test::Unit::TestCase
     assert_raise(RuntimeError) { eval("raise ''") }
   end
 
-  def test_eval_using_untainted_binding_under_safe4
-    assert_raise(SecurityError) do
-      Thread.new do
-        b = binding
-        $SAFE = 4
-        eval("", b)
-      end.join
-    end
-  end
-
   def test_eval_with_toplevel_binding # [ruby-dev:37142]
     ruby("-e", "x = 0; eval('p x', TOPLEVEL_BINDING)") do |f|
       f.close_write
@@ -470,5 +467,21 @@ class TestEval < Test::Unit::TestCase
     foo_pr = foo.method(:get).to_proc
     result = foo.instance_eval(&foo_pr)
     assert_equal(1, result, 'Bug #3786, Bug #3860, [ruby-core:32501]')
+  end
+
+  def test_file_encoding
+    fname = "\u{3042}".encode("euc-jp")
+    assert_equal(fname, eval("__FILE__", nil, fname, 1))
+  end
+
+  def test_eval_location_fstring
+    o = Object.new
+    o.instance_eval "def foo() end", "generated code"
+    o.instance_eval "def bar() end", "generated code"
+
+    a, b = o.method(:foo).source_location[0],
+           o.method(:bar).source_location[0]
+
+    assert_same a, b
   end
 end

@@ -624,7 +624,7 @@ pkcs7_get_crls(VALUE self)
 }
 
 static VALUE
-ossl_pkcs7_set_certs_i(VALUE i, VALUE arg)
+ossl_pkcs7_set_certs_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, arg))
 {
     return ossl_pkcs7_add_certificate(arg, i);
 }
@@ -664,7 +664,7 @@ ossl_pkcs7_add_crl(VALUE self, VALUE crl)
 }
 
 static VALUE
-ossl_pkcs7_set_crls_i(VALUE i, VALUE arg)
+ossl_pkcs7_set_crls_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, arg))
 {
     return ossl_pkcs7_add_crl(arg, i);
 }

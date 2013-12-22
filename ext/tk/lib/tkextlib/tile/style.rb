@@ -21,8 +21,8 @@ class << Tk::Tile::Style
     TkCommandNames = ['style'.freeze].freeze
 
     # --- Tk::Tile::Style.__define_wrapper_proc_for_compatibility__! ---
-    # On Ttk (Tile) extension, 'style' command has imcompatible changes
-    # depend on the version of the extention. It requires modifying the
+    # On Ttk (Tile) extension, 'style' command has incompatible changes
+    # depend on the version of the extension. It requires modifying the
     # Tcl/Tk scripts to define local styles. The rule for modification
     # is a simple one. But, if users want to keep compatibility between
     # versions of the extension, they will have to contrive to do that.

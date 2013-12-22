@@ -11,6 +11,7 @@ $exported = nil if $exported == ""
 $archname = nil if $archname == ""
 $keep_temp ||= nil
 $patch_file ||= nil
+$tooldir = File.expand_path("..", __FILE__)
 
 def usage
   <<USAGE
@@ -38,6 +39,7 @@ ENV["MV"] ||= "mv"
 ENV["RM"] ||= "rm -f"
 ENV["MINIRUBY"] ||= "ruby"
 ENV["PROGRAM"] ||= "ruby"
+ENV["AUTOCONF"] ||= "autoconf"
 
 class String
   # for older ruby
@@ -173,13 +175,18 @@ def package(rev, destdir)
   "take a breath, and go ahead".scan(/./) {|c|print c; sleep(c == "," ? 0.7 : 0.05)}; puts
   def (clean = []).add(n) push(n); n end
   Dir.chdir(v) do
+    %w[config.guess config.sub].each do |conf|
+      next if File.exist?("tool/#{conf}")
+      require File.expand_path("config_files", $tooldir)
+      ConfigFiles.download(conf, "tool")
+    end
     File.open(clean.add("cross.rb"), "w") do |f|
       f.puts "Object.__send__(:remove_const, :CROSS_COMPILING) if defined?(CROSS_COMPILING)"
       f.puts "CROSS_COMPILING=true"
     end
     unless File.exist?("configure")
       print "creating configure..."
-      unless system("autoconf")
+      unless system(ENV["AUTOCONF"])
         puts " failed"
         return
       end
@@ -203,10 +210,11 @@ def package(rev, destdir)
         f.puts "s,@LIBEXT@,|#_!!_#|a,g"
         f.puts "s,@OBJEXT@,|#_!!_#|o,g"
         f.puts "s,@EXEEXT@,|#_!!_#|,g"
-        f.puts "s,@LIBRUBY@,|#_!!_#|liburyb.a,g"
-        f.puts "s,@LIBRUBY_A@,|#_!!_#|liburyb.a,g"
+        f.puts "s,@LIBRUBY@,|#_!!_#|libruby.a,g"
+        f.puts "s,@LIBRUBY_A@,|#_!!_#|libruby.a,g"
         f.puts "s,@RM@,|#_!!_#|rm -f,g"
         f.puts "s,@CP@,|#_!!_#|cp,g"
+        f.puts "s,@rubyarchdir@,|#_!!_#|,g"
       }
       FileUtils.mkpath(hdrdir = "#{extout}/include/ruby")
       File.open("#{hdrdir}/config.h", "w") {}
@@ -243,7 +251,7 @@ def package(rev, destdir)
           ["gzip tarball", ".tar.gz", %w"tar czf"],
           ["zip archive", ".zip", %w"zip -qr"]
          ].collect do |mesg, ext, cmd|
-    file = "#{destdir}/#{v||$archname}#{ext}"
+    file = File.join(destdir, "#{$archname||v}#{ext}")
     print "creating #{mesg}... #{file}"
     if system(*(cmd + [file, v]))
       puts " done"
@@ -257,8 +265,12 @@ ensure
   FileUtils.rm_rf(v) if v and !$exported and !$keep_temp
 end
 
+success = true
 revisions.collect {|rev| package(rev, destdir)}.flatten.each do |name|
-  name or next
+  if !name
+    success = false
+    next
+  end
   str = open(name, "rb") {|f| f.read}
   md5 = Digest::MD5.hexdigest str
   sha = Digest::SHA256.hexdigest str
@@ -268,5 +280,7 @@ revisions.collect {|rev| package(rev, destdir)}.flatten.each do |name|
   puts "  SHA256: #{sha}"
   puts
 end
+
+exit false if !success
 
 # vim:fileencoding=US-ASCII sw=2 ts=4 noexpandtab ff=unix

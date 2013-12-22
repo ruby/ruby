@@ -67,6 +67,16 @@ class TestEnumerator < Test::Unit::TestCase
     assert_match 'Enumerator.new without a block is deprecated', err
     assert_equal([1, 2, 3], Enumerator.new { |y| i = 0; loop { y << (i += 1) } }.take(3))
     assert_raise(ArgumentError) { Enumerator.new }
+
+    enum = @obj.to_enum
+    assert_raise(NoMethodError) { enum.each {} }
+    enum.freeze
+    assert_raise(RuntimeError) {
+      capture_io do
+        # warning: Enumerator.new without a block is deprecated; use Object#to_enum
+        enum.__send__(:initialize, @obj, :foo)
+      end
+    }
   end
 
   def test_initialize_copy
@@ -102,6 +112,36 @@ class TestEnumerator < Test::Unit::TestCase
   def test_with_index
     assert_equal([[1,0],[2,1],[3,2]], @obj.to_enum(:foo, 1, 2, 3).with_index.to_a)
     assert_equal([[1,5],[2,6],[3,7]], @obj.to_enum(:foo, 1, 2, 3).with_index(5).to_a)
+  end
+
+  def test_with_index_large_offset
+    bug8010 = '[ruby-dev:47131] [Bug #8010]'
+    s = 1 << (8*1.size-2)
+    assert_equal([[1,s],[2,s+1],[3,s+2]], @obj.to_enum(:foo, 1, 2, 3).with_index(s).to_a, bug8010)
+    s <<= 1
+    assert_equal([[1,s],[2,s+1],[3,s+2]], @obj.to_enum(:foo, 1, 2, 3).with_index(s).to_a, bug8010)
+  end
+
+  def test_with_index_nonnum_offset
+    bug8010 = '[ruby-dev:47131] [Bug #8010]'
+    s = Object.new
+    def s.to_int; 1 end
+    assert_equal([[1,1],[2,2],[3,3]], @obj.to_enum(:foo, 1, 2, 3).with_index(s).to_a, bug8010)
+  end
+
+  def test_with_index_string_offset
+    bug8010 = '[ruby-dev:47131] [Bug #8010]'
+    assert_raise(TypeError, bug8010){ @obj.to_enum(:foo, 1, 2, 3).with_index('1').to_a }
+  end
+
+  def test_with_index_dangling_memo
+    bug9178 = '[ruby-core:58692] [Bug #9178]'
+    assert_separately([], <<-"end;")
+    bug = "#{bug9178}"
+    e = [1].to_enum(:chunk).with_index {|c,i| i == 5}
+    assert_kind_of(Enumerator, e)
+    assert_equal([false, [1]], e.to_a[0], bug)
+    end;
   end
 
   def test_with_object
@@ -371,6 +411,14 @@ class TestEnumerator < Test::Unit::TestCase
     assert_warning("", bug6214) { [].lazy.inspect }
   end
 
+  def test_inspect_encoding
+    c = Class.new{define_method("\u{3042}"){}}
+    e = c.new.enum_for("\u{3042}")
+    s = assert_nothing_raised(Encoding::CompatibilityError) {break e.inspect}
+    assert_equal(Encoding::UTF_8, s.encoding)
+    assert_match(/\A#<Enumerator: .*:\u{3042}>\z/, s)
+  end
+
   def test_generator
     # note: Enumerator::Generator is a class just for internal
     g = Enumerator::Generator.new {|y| y << 1 << 2 << 3; :foo }
@@ -381,6 +429,11 @@ class TestEnumerator < Test::Unit::TestCase
     a = []
     assert_equal(:foo, g2.each {|x| a << x })
     assert_equal([1, 2, 3], a)
+
+    g.freeze
+    assert_raise(RuntimeError) {
+      g.__send__ :initialize, proc { |y| y << 4 << 5 }
+    }
   end
 
   def test_generator_args
@@ -409,6 +462,9 @@ class TestEnumerator < Test::Unit::TestCase
   def test_size
     assert_equal nil, Enumerator.new{}.size
     assert_equal 42, Enumerator.new(->{42}){}.size
+    obj = Object.new
+    def obj.call; 42; end
+    assert_equal 42, Enumerator.new(obj){}.size
     assert_equal 42, Enumerator.new(42){}.size
     assert_equal 1 << 70, Enumerator.new(1 << 70){}.size
     assert_equal Float::INFINITY, Enumerator.new(Float::INFINITY){}.size
@@ -445,9 +501,13 @@ class TestEnumerator < Test::Unit::TestCase
 
   def test_size_for_enum_created_from_hash
     h = {a: 1, b: 2, c: 3}
-    %i[delete_if reject! select select! keep_if each each_key each_pair].each do |method|
-      assert_equal 3, h.send(method).size
-    end
+    methods = %i[delete_if reject reject! select select! keep_if each each_key each_pair]
+    enums = methods.map {|method| h.send(method)}
+    s = enums.group_by(&:size)
+    assert_equal([3], s.keys, ->{s.reject!{|k| k==3}.inspect})
+    h[:d] = 4
+    s = enums.group_by(&:size)
+    assert_equal([4], s.keys, ->{s.reject!{|k| k==4}.inspect})
   end
 
   def test_size_for_enum_created_from_env
@@ -555,6 +615,15 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal 5, 'hello'.each_byte.size
     assert_equal 5, 'hello'.each_char.size
     assert_equal 5, 'hello'.each_codepoint.size
+  end
+
+  def test_peek_for_enumerator_objects
+    e = 2.times
+    assert_equal(0, e.peek)
+    e.next
+    assert_equal(1, e.peek)
+    e.next
+    assert_raise(StopIteration) { e.peek }
   end
 end
 

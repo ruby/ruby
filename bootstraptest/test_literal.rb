@@ -224,3 +224,8 @@ assert_equal 'ok', %q{ #  long hash literal (optimized)
   eval "a = {#{(1..10_000).map{|n| "#{n} => #{n}"}.join(', ')}}"
   :ok
 }
+
+assert_equal 'ok', %q{
+  [print(:ok), exit] # void literal with side-effect
+  :dummy
+}

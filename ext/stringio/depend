@@ -1,3 +1,4 @@
-stringio.o: stringio.c $(hdrdir)/ruby/ruby.h $(arch_hdrdir)/ruby/config.h \
-  $(hdrdir)/ruby/defines.h $(hdrdir)/ruby/intern.h $(hdrdir)/ruby/io.h \
-  $(hdrdir)/ruby/encoding.h
+stringio.o: stringio.c $(HDRS) $(ruby_headers) \
+  $(hdrdir)/ruby/io.h \
+  $(hdrdir)/ruby/encoding.h \
+  $(hdrdir)/ruby/oniguruma.h

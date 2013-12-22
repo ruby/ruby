@@ -43,14 +43,15 @@ class Gem::Uninstaller
 
   def initialize(gem, options = {})
     # TODO document the valid options
-    @gem               = gem
-    @version           = options[:version] || Gem::Requirement.default
-    @gem_home          = File.expand_path(options[:install_dir] || Gem.dir)
-    @force_executables = options[:executables]
-    @force_all         = options[:all]
-    @force_ignore      = options[:ignore]
-    @bin_dir           = options[:bin_dir]
-    @format_executable = options[:format_executable]
+    @gem                = gem
+    @version            = options[:version] || Gem::Requirement.default
+    @gem_home           = File.expand_path(options[:install_dir] || Gem.dir)
+    @force_executables  = options[:executables]
+    @force_all          = options[:all]
+    @force_ignore       = options[:ignore]
+    @bin_dir            = options[:bin_dir]
+    @format_executable  = options[:format_executable]
+    @abort_on_dependent = options[:abort_on_dependent]
 
     # Indicate if development dependencies should be checked when
     # uninstalling. (default: false)
@@ -143,7 +144,7 @@ class Gem::Uninstaller
     @spec = spec
 
     unless dependencies_ok? spec
-      unless ask_if_ok(spec)
+      if abort_on_dependent? || !ask_if_ok(spec)
         raise Gem::DependencyRemovalException,
           "Uninstallation aborted due to dependent gem(s)"
       end
@@ -246,13 +247,10 @@ class Gem::Uninstaller
       File.writable?(spec.base_dir)
 
     FileUtils.rm_rf spec.full_gem_path
+    FileUtils.rm_rf spec.extension_dir
 
-    # TODO: should this be moved to spec?... I vote eww (also exists in docmgr)
-    old_platform_name = [spec.name,
-                         spec.version,
-                         spec.original_platform].join '-'
-
-    gemspec = spec.spec_file
+    old_platform_name = spec.original_name
+    gemspec           = spec.spec_file
 
     unless File.exist? gemspec then
       gemspec = File.join(File.dirname(gemspec), "#{old_platform_name}.gemspec")
@@ -283,14 +281,30 @@ class Gem::Uninstaller
     full_path == spec.full_gem_path || original_path == spec.full_gem_path
   end
 
-  def dependencies_ok?(spec)
+  ##
+  # Returns true if it is OK to remove +spec+ or this is a forced
+  # uninstallation.
+
+  def dependencies_ok? spec # :nodoc:
     return true if @force_ignore
 
     deplist = Gem::DependencyList.from_specs
     deplist.ok_to_remove?(spec.full_name, @check_dev)
   end
 
-  def ask_if_ok(spec)
+  ##
+  # Should the uninstallation abort if a dependency will go unsatisfied?
+  #
+  # See ::new.
+
+  def abort_on_dependent? # :nodoc:
+    @abort_on_dependent
+  end
+
+  ##
+  # Asks if it is OK to remove +spec+.  Returns true if it is OK.
+
+  def ask_if_ok spec # :nodoc:
     msg = ['']
     msg << 'You have requested to uninstall the gem:'
     msg << "\t#{spec.full_name}"
@@ -311,7 +325,10 @@ class Gem::Uninstaller
     return ask_yes_no(msg.join("\n"), false)
   end
 
-  def formatted_program_filename(filename)
+  ##
+  # Returns the formatted version of the executable +filename+
+
+  def formatted_program_filename filename # :nodoc:
     # TODO perhaps the installer should leave a small manifest
     # of what it did for us to find rather than trying to recreate
     # it again.

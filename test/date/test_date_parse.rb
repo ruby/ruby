@@ -578,6 +578,15 @@ class TestDateParse < Test::Unit::TestCase
     assert_equal(d2, d1)
   end
 
+  def test__parse_odd_offset
+    h = DateTime._parse('2001-02-03T04:05:06+1')
+    assert_equal(3600, h[:offset])
+    h = DateTime._parse('2001-02-03T04:05:06+123')
+    assert_equal(4980, h[:offset])
+    h = DateTime._parse('2001-02-03T04:05:06+12345')
+    assert_equal(5025, h[:offset])
+  end
+
   require 'time'
 
   def test_parse__time
@@ -1053,8 +1062,14 @@ class TestDateParse < Test::Unit::TestCase
     d = Date.rfc2822('Sat, 3 Feb 2001 04:05:06 +0700', Date::ITALY + 10)
     assert_equal(Date.new(2001,2,3), d)
     assert_equal(Date::ITALY + 10, d.start)
+    d = Date.rfc2822('3 Feb 2001 04:05:06 +0700', Date::ITALY + 10)
+    assert_equal(Date.new(2001,2,3), d)
+    assert_equal(Date::ITALY + 10, d.start)
 
     d = DateTime.rfc2822('Sat, 3 Feb 2001 04:05:06 +0700', Date::ITALY + 10)
+    assert_equal(DateTime.new(2001,2,3,4,5,6,'+07:00'), d)
+    assert_equal(Date::ITALY + 10, d.start)
+    d = DateTime.rfc2822('3 Feb 2001 04:05:06 +0700', Date::ITALY + 10)
     assert_equal(DateTime.new(2001,2,3,4,5,6,'+07:00'), d)
     assert_equal(Date::ITALY + 10, d.start)
   end

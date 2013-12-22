@@ -39,13 +39,13 @@ End
     h = {}
     ObjectSpace.count_objects(h)
     assert_kind_of(Hash, h)
-    assert(h.keys.all? {|x| x.is_a?(Symbol) || x.is_a?(Integer) })
-    assert(h.values.all? {|x| x.is_a?(Integer) })
+    assert_empty(h.keys.delete_if {|x| x.is_a?(Symbol) || x.is_a?(Integer) })
+    assert_empty(h.values.delete_if {|x| x.is_a?(Integer) })
 
     h = ObjectSpace.count_objects
     assert_kind_of(Hash, h)
-    assert(h.keys.all? {|x| x.is_a?(Symbol) || x.is_a?(Integer) })
-    assert(h.values.all? {|x| x.is_a?(Integer) })
+    assert_empty(h.keys.delete_if {|x| x.is_a?(Symbol) || x.is_a?(Integer) })
+    assert_empty(h.values.delete_if {|x| x.is_a?(Integer) })
 
     assert_raise(TypeError) { ObjectSpace.count_objects(1) }
 
@@ -64,9 +64,24 @@ End
       !b
     END
     assert_raise(ArgumentError) { ObjectSpace.define_finalizer([], Object.new) }
+
+    code = proc do |priv|
+      <<-"CODE"
+      fin = Object.new
+      class << fin
+        #{priv}def call(id)
+          puts "finalized"
+        end
+      end
+      ObjectSpace.define_finalizer([], fin)
+      CODE
+    end
+    assert_in_out_err([], code[""], ["finalized"])
+    assert_in_out_err([], code["private "], ["finalized"])
   end
 
   def test_each_object
+    assert_separately([], <<-End)
     GC.disable
     eval('begin; 1.times{}; rescue; ensure; end')
     arys = []
@@ -81,5 +96,6 @@ End
         # rescue "can't modify frozen File" error.
       end
     }
+    End
   end
 end

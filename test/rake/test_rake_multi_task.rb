@@ -49,11 +49,10 @@ class TestRakeMultiTask < Rake::TestCase
   end
 
   def test_multitasks_with_parameters
-    task :a, [:arg] do |t,args| add_run(args[:arg]) end
-    multitask :b, [:arg] => [:a] do |t,args| add_run(args[:arg]+'mt') end
+    task :a, [:arg] do |t, args| add_run(args[:arg]) end
+    multitask :b, [:arg] => [:a] do |t, args| add_run(args[:arg] + 'mt') end
     Task[:b].invoke "b"
     assert @runs[0] == "b"
     assert @runs[1] == "bmt"
   end
 end
-

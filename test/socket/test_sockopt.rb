@@ -25,6 +25,24 @@ class TestSocketOption < Test::Unit::TestCase
     assert_equal(true, opt.bool)
   end
 
+  def test_ipv4_multicast_loop
+    sockopt = Socket::Option.ipv4_multicast_loop(128)
+    assert_equal('#<Socket::Option: INET IP MULTICAST_LOOP 128>', sockopt.inspect)
+    assert_equal(Socket::AF_INET, sockopt.family)
+    assert_equal(Socket::IPPROTO_IP, sockopt.level)
+    assert_equal(Socket::IP_MULTICAST_LOOP, sockopt.optname)
+    assert_equal(128, sockopt.ipv4_multicast_loop)
+  end
+
+  def test_ipv4_multicast_ttl
+    sockopt = Socket::Option.ipv4_multicast_ttl(128)
+    assert_equal('#<Socket::Option: INET IP MULTICAST_TTL 128>', sockopt.inspect)
+    assert_equal(Socket::AF_INET, sockopt.family)
+    assert_equal(Socket::IPPROTO_IP, sockopt.level)
+    assert_equal(Socket::IP_MULTICAST_TTL, sockopt.optname)
+    assert_equal(128, sockopt.ipv4_multicast_ttl)
+  end
+
   def test_unpack
     sockopt = Socket::Option.new(:INET, :SOCKET, :KEEPALIVE, [1].pack("i"))
     assert_equal([1], sockopt.unpack("i"))

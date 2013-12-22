@@ -5,8 +5,11 @@ module Psych
     class JSONTree < YAMLTree
       include Psych::JSON::RubyEvents
 
-      def initialize options = {}, emitter = Psych::JSON::TreeBuilder.new
-        super
+      def self.create options = {}
+        emitter = Psych::JSON::TreeBuilder.new
+        class_loader = ClassLoader.new
+        ss           = ScalarScanner.new class_loader
+        new(emitter, ss, options)
       end
 
       def accept target

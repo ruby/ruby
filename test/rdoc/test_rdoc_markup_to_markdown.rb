@@ -354,6 +354,12 @@ words words words words
     assert_equal "C\n", result
   end
 
+  def test_convert_RDOCLINK_image
+    result = @to.convert 'rdoc-image:/path/to/image.jpg'
+
+    assert_equal "![](/path/to/image.jpg)\n", result
+  end
+
   def test_convert_TIDYLINK
     result = @to.convert \
       '{DSL}[http://en.wikipedia.org/wiki/Domain-specific_language]'

@@ -43,8 +43,8 @@ def get_mailfile(user)
     [ENV['SPOOLDIR'], '/usr/spool', '/var/spool', '/usr', '/var'].each do |m|
       path = "#{m}/mail/#{user}"
       if File.exist?(path)
-	file = path
-	break
+        file = path
+        break
       end
     end
   end
@@ -64,23 +64,23 @@ def from_main
     mtime = File.mtime(file)
     open(file, "r") do |f|
       until f.eof?
-	header = {}
-	f.each_line do |line|
-	  next if /^From / =~ line # skip From-line
-	  break if /^$/ =~ line	 # end of header
+        header = {}
+        f.each_line do |line|
+          next if /^From / =~ line # skip From-line
+          break if /^$/ =~ line	 # end of header
 
-	  if /^(?<attr>\S+?):\s*(?<value>.*)/ =~ line
-	    attr.capitalize!
-	    header[attr] = value
-	  elsif attr
-	    header[attr] += "\n" + line.lstrip
-	  end
-	end
+          if /^(?<attr>\S+?):\s*(?<value>.*)/ =~ line
+            attr.capitalize!
+            header[attr] = value
+          elsif attr
+            header[attr] += "\n" + line.lstrip
+          end
+        end
 
-	f.each_line do |line|
-	  break if /^From / =~ line
-	end
-	outcount += fromout(header['Date'], header['From'], header['Subject'])
+        f.each_line do |line|
+          break if /^From / =~ line
+        end
+        outcount += fromout(header['Date'], header['From'], header['Subject'])
       end
     end
     File.utime(atime, mtime, file)

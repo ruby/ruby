@@ -7,6 +7,7 @@ MKFILES = Makefile
 NULL = nul
 CHDIR = cd
 PATH_SEPARATOR = ;
+TZ =				# skip timezone tests
 
 !ifndef MFLAGS
 MFLAGS=-l
@@ -227,10 +228,17 @@ EXTLIBS =
 EXTSOLIBS =
 !endif
 !if !defined(LIBS)
-LIBS = oldnames.lib user32.lib advapi32.lib shell32.lib ws2_32.lib imagehlp.lib shlwapi.lib $(EXTLIBS)
+LIBS = oldnames.lib user32.lib advapi32.lib shell32.lib ws2_32.lib
+!if $(MSC_VER) >= 1400
+LIBS = $(LIBS) iphlpapi.lib
+!endif
+LIBS = $(LIBS) imagehlp.lib shlwapi.lib $(EXTLIBS)
 !endif
 !if !defined(MISSING)
-MISSING = acosh.obj cbrt.obj crypt.obj erf.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj tgamma.obj win32/win32.obj win32/file.obj setproctitle.obj
+MISSING = crypt.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj win32/win32.obj win32/file.obj setproctitle.obj
+!if $(RT_VER) < 120
+MISSING = $(MISSING) acosh.obj cbrt.obj erf.obj tgamma.obj
+!endif
 !endif
 DLNOBJ = dln.obj
 
@@ -249,7 +257,7 @@ LDSHARED_2 = @if exist $(@).manifest @$(RM) $(@:/=\).manifest
 CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS)
 
 DLDFLAGS = $(LDFLAGS) -dll
-SOLIBS = 
+SOLIBS =
 RCFILES = $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
 !ifndef RCFLAGS
 !if $(MSC_VER) >= 1600
@@ -287,11 +295,7 @@ BTESTRUBY = $(MINIRUBY)
 !ifndef RUBY
 RUBY = ruby
 !endif
-!if "$(USE_RUBYGEMS)" == "NO"
-DEFAULT_PRELUDES = $(NO_GEM_PRELUDE)
-!else
-DEFAULT_PRELUDES = $(YES_GEM_PRELUDE)
-!endif
+DEFAULT_PRELUDES = $(GEM_PRELUDE)
 
 DTRACE_EXT = dmyh
 
@@ -324,7 +328,7 @@ PREP          = miniruby$(EXEEXT)
 !endif
 
 !if !defined(EXTSTATIC)
-EXTSTATIC     = 
+EXTSTATIC     =
 !endif
 
 OBJEXT = obj
@@ -355,6 +359,11 @@ COMMON_MACROS = WIN32_LEAN_AND_MEAN WIN32
 COMMON_HEADERS = winsock2.h ws2tcpip.h windows.h
 !endif
 
+!if "$(EXTSTATIC)" == "static"
+ENCOBJS = enc/encinit.$(OBJEXT) enc/libenc.lib enc/libtrans.lib
+EXTOBJS = ext/extinit.$(OBJEXT)
+!endif
+
 arch_hdrdir = $(EXTOUT)/include/$(arch)
 hdrdir = $(srcdir)/include
 VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/enc;$(srcdir)/missing;$(win_srcdir)
@@ -373,8 +382,11 @@ ruby_pc = $(RUBY_BASE_NAME)-$(MAJOR).$(MINOR).pc
 
 MESSAGE_BEGIN = @for %I in (
 MESSAGE_END = ) do @echo.%~I
+ECHO_BEGIN = @echo.
+ECHO_END =
 
 all: $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub $(srcdir)/common.mk
+prog: config
 
 ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
@@ -448,8 +460,8 @@ test-rubyspec-precheck:
 
 $(MKFILES): $(win_srcdir)/Makefile.sub $(win_srcdir)/configure.bat $(win_srcdir)/setup.mak $(win_srcdir)/enc-setup.mak $(srcdir)/common.mk $(srcdir)/enc/Makefile.in
 	$(COMSPEC) /C $(win_srcdir:/=\)\configure.bat $(configure_args)
-	@echo $(MKFILES) should be updated, re-run $(MAKE).
-	@exit 1
+	@fc Makefile Makefile.old > nul && echo Makefile unchanged || \
+	(echo $(MKFILES) was updated, re-run $(MAKE). & exit 1)
 
 RUBY_CONFIG_H = $(arch_hdrdir)/ruby/config.h
 CONFIG_H = ./.config.h.time
@@ -474,7 +486,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !if !exist("$(arch_hdrdir)/ruby")
 	@md $(arch_hdrdir:/=\)\ruby
 !endif
-	@$(IFCHANGE) $(RUBY_CONFIG_H:/=\) <<
+	@$(IFCHANGE) "--timestamp=$(@:/=\)" $(RUBY_CONFIG_H:/=\) <<
 #ifndef $(guard)
 #define $(guard) 1
 #if _MSC_VER != $(MSC_VER)
@@ -514,6 +526,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !endif
 #define SIZEOF_FLOAT 4
 #define SIZEOF_DOUBLE 8
+#define SIGNEDNESS_OF_TIME_T -1
 !if $(RT_VER) >= 80
 #define SIZEOF_TIME_T 8
 #define TIMET2NUM(v) LL2NUM(v)
@@ -523,6 +536,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define TIMET2NUM(v) LONG2NUM(v)
 #define NUM2TIMET(v) NUM2LONG(v)
 !endif
+#define CLOCKID2NUM(v) INT2NUM(v)
+#define NUM2CLOCKID(v) NUM2INT(v)
+#define SIZEOF_CLOCK_T 4
 #define SIZEOF_RLIM_T 0
 !if "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
 #define SIZEOF_SIZE_T 8
@@ -551,17 +567,22 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define FUNC_STDCALL(x) __stdcall x
 #define FUNC_CDECL(x) __cdecl x
 #define FUNC_FASTCALL(x) __fastcall x
+!if $(MSC_VER) >= 1500
+#define RUBY_FUNCTION_NAME_STRING __FUNCTION__
+!endif
 #define RUBY_EXTERN extern __declspec(dllimport)
 #define HAVE_DECL_SYS_NERR 1
 #define HAVE_LIMITS_H 1
 #define HAVE_FCNTL_H 1
 #define HAVE_SYS_UTIME_H 1
 #define HAVE_FLOAT_H 1
+#define HAVE_TIME_H 1
 #define rb_pid_t int
 #define rb_gid_t int
 #define rb_uid_t int
 #define HAVE_STRUCT_STAT_ST_RDEV 1
 #define HAVE_ST_RDEV 1
+#define HAVE_STRUCT_TIMEVAL 1
 !if $(MSC_VER) >= 1600
 #define HAVE_STDINT_H 1
 !else
@@ -615,11 +636,26 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define GETGROUPS_T int
 #define RETSIGTYPE void
 #define TYPEOF_TIMEVAL_TV_SEC long
+!if $(RT_VER) >= 120
+#define HAVE_ACOSH 1
+#define HAVE_ASINH 1
+#define HAVE_ATANH 1
+#define HAVE_CBRT 1
+#define HAVE_LOG2 1
+#define log2(x) log2(x)
+#define HAVE_ERF 1
+#define HAVE_ERFC 1
+#define HAVE_ROUND 1
+#define HAVE_TGAMMA 1
+!endif
 #define HAVE_ALLOCA 1
 #define HAVE_DUP2 1
 #define HAVE_MEMCMP 1
 #define HAVE_MEMMOVE 1
 #define HAVE_MKDIR 1
+#define HAVE_CLOCK_GETTIME 1
+#define HAVE_CLOCK_GETRES 1
+#define HAVE_SPAWNV 1
 #define HAVE_STRCASECMP 1
 #define HAVE_STRNCASECMP 1
 #define HAVE_STRERROR 1
@@ -642,7 +678,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_TRUNCATE 1
 #define HAVE_FTRUNCATE 1
 #define HAVE_FSEEKO 1
-#define HAVE_FTELLO 1
 #define HAVE_TIMES 1
 #define HAVE_FCNTL 1
 #define HAVE_LINK 1
@@ -657,6 +692,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_TZNAME 1
 #define HAVE_DAYLIGHT 1
 #define HAVE_GMTIME_R 1
+#define HAVE_TYPE_NET_LUID 1
 #define SETPGRP_VOID 1
 #define RSHIFT(x,y) ((x)>>(int)y)
 #define HAVE_RB_FD_INIT 1
@@ -675,9 +711,14 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !endif
 #define LOAD_RELATIVE 1
 #define DLEXT ".so"
+!if "$(EXTSTATIC)" == "static"
+#define EXTSTATIC 1
+!endif
 #define EXECUTABLE_EXTS $(EXECUTABLE_EXTS)
 #define RUBY_COREDLL "$(RT)"
 #define LIBRUBY_SO "$(LIBRUBY_SO)"
+#define RUBY_PLATFORM "$(arch)"
+#define RUBY_SITEARCH "$(sitearch)"
 #if 0
 $(BANG)if "$(RUBY_SO_NAME)"!="$$(RUBY_SO_NAME)" || "$(ARCH)-$(PLATFORM)"!="$$(ARCH)-$$(PLATFORM)"
 config.h: nul
@@ -685,14 +726,6 @@ $(BANG)endif
 #endif
 #endif /* $(guard) */
 <<
-	@echo Creating verconf.h
-	@$(IFCHANGE) verconf.h <<
-#define RUBY_LIB_VERSION_STYLE 3	/* full */
-#define RUBY_LIB_PREFIX "/lib/$(RUBY_BASE_NAME)"
-#define RUBY_PLATFORM "$(arch)"
-#define RUBY_SITEARCH "$(sitearch)"
-<<
-	@exit > $(@:/=\)
 
 #!if exist($(RUBY_CONFIG_H))
 #! if exist(config_h.bak)
@@ -773,6 +806,7 @@ s,@RM@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rm.bat,;t t
 s,@RMDIR@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rmdirs.bat,:t t
 s,@RMDIRS@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rmdirs.bat,;t t
 s,@RMALL@,$$(COMSPEC) /C rmdir /s /q,;t t
+s,@MAKEDIRS@,$$(COMSPEC) /E:ON /C $$(top_srcdir:/=\)\win32\makedirs.bat,;t t
 s,@LIBOBJS@,$(LIBOBJS),;t t
 s,@ALLOCA@,$(ALLOCA),;t t
 s,@DEFAULT_KCODE@,$(DEFAULT_KCODE),;t t
@@ -839,15 +873,30 @@ s,@COMMON_HEADERS@,$(COMMON_HEADERS),;t t
 s,@cleanobjs@,$$*.exp $$*.lib $$*.pdb,;t t
 s,@DISTCLEANFILES@,vc*.pdb,;t t
 s,@EXPORT_PREFIX@, ,;t t
+s,@archlibdir@,$${libdir}/$${arch},;t t
+s,@sitearchlibdir@,$${libdir}/$${sitearch},;t t
+s,@archincludedir@,$${includedir}/$${arch},;t t
+s,@sitearchincludedir@,$${includedir}/$${sitearch},;t t
 s,@arch@,$(ARCH)-$(PLATFORM),;t t
 s,@sitearch@,$(ARCH)-$(RT),;t t
 s,@ruby_version@,$(ruby_version),;t t
 s,@rubylibprefix@,$${prefix}/lib/$${RUBY_BASE_NAME},;t t
+s,@rubyarchdir@,$${rubylibdir}/$${arch},;t t
+s,@rubylibdir@,$${rubylibprefix}/$${ruby_version},;t t
 s,@sitedir@,$${rubylibprefix}/site_ruby,;t t
+s,@sitearchdir@,$${sitelibdir}/$${sitearch},;t t
+s,@sitelibdir@,$${sitedir}/$${ruby_version},;t t
 s,@vendordir@,$${rubylibprefix}/vendor_ruby,;t t
+s,@vendorarchdir@,$${vendorlibdir}/$${sitearch},;t t
+s,@vendorlibdir@,$${vendordir}/$${ruby_version},;t t
 s,@rubyhdrdir@,$$(includedir)/$${RUBY_BASE_NAME}-$$(ruby_version),;t t
 s,@sitehdrdir@,$$(rubyhdrdir)/site_ruby,;t t
 s,@vendorhdrdir@,$$(rubyhdrdir)/vendor_ruby,;t t
+s,@rubyarchhdrdir@,$$(rubyhdrdir)/$${arch},;t t
+s,@sitearchhdrdir@,$$(sitehdrdir)/$${sitearch},;t t
+s,@vendorarchhdrdir@,$$(vendorhdrdir)/$${sitearch},;t t
+s,@PLATFORM_DIR@,$(PLATFORM_DIR),;t t
+s,@THREAD_MODEL@,$(THREAD_MODEL),;t t
 s,@configure_args@,--with-make-prog=nmake --enable-shared $(configure_args),;t t
 s,@configure_input@,$$configure_input,;t t
 s,@srcdir@,$(srcdir),;t t
@@ -920,6 +969,7 @@ $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 		$(Q) $(LDSHARED_0)
 		$(Q) $(LDSHARED_1)
 		$(Q) $(LDSHARED_2)
+# | findstr -v -c:LNK4049 -c:LNK4217
 
 $(RUBYDEF):	$(LIBRUBY_A) $(PREP)
 		$(ECHO) generating $(@:\=/)
@@ -1077,7 +1127,6 @@ probes.h: {$(VPATH)}probes.dmyh
 	  $(Q) $(CP) $(srcdir:/=\)\probes.dmyh $(OS_DEST_FILE)\
 	)
 
-
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 	  vmtc.inc vm.inc
 
@@ -1096,3 +1145,8 @@ INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 ! if [del insns_rules.mk > nul]
 ! endif
 !endif
+
+loadpath: verconf.h
+	@$(CPP) $(XCFLAGS) $(CPPFLAGS) $(srcdir)/loadpath.c | \
+	sed -e '1,/^const char ruby_initial_load_paths/d;/;/,$$d' \
+	    -e '/^^ /!d;s/ *"\\\\0"$$//;s/" *"//g'

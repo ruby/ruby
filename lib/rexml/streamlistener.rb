@@ -57,17 +57,17 @@ module REXML
     # declaration.  It can be in a number of formats, but in general it
     # returns (example, result):
     #  <!ENTITY % YN '"Yes"'>
-    #  ["%", "YN", "'\"Yes\"'", "\""]
+    #  ["YN", "\"Yes\"", "%"]
     #  <!ENTITY % YN 'Yes'>
-    #  ["%", "YN", "'Yes'", "s"]
+    #  ["YN", "Yes", "%"]
     #  <!ENTITY WhatHeSaid "He said %YN;">
-    #  ["WhatHeSaid", "\"He said %YN;\"", "YN"]
+    #  ["WhatHeSaid", "He said %YN;"]
     #  <!ENTITY open-hatch SYSTEM "http://www.textuality.com/boilerplate/OpenHatch.xml">
-    #  ["open-hatch", "SYSTEM", "\"http://www.textuality.com/boilerplate/OpenHatch.xml\""]
+    #  ["open-hatch", "SYSTEM", "http://www.textuality.com/boilerplate/OpenHatch.xml"]
     #  <!ENTITY open-hatch PUBLIC "-//Textuality//TEXT Standard open-hatch boilerplate//EN" "http://www.textuality.com/boilerplate/OpenHatch.xml">
-    #  ["open-hatch", "PUBLIC", "\"-//Textuality//TEXT Standard open-hatch boilerplate//EN\"", "\"http://www.textuality.com/boilerplate/OpenHatch.xml\""]
+    #  ["open-hatch", "PUBLIC", "-//Textuality//TEXT Standard open-hatch boilerplate//EN", "http://www.textuality.com/boilerplate/OpenHatch.xml"]
     #  <!ENTITY hatch-pic SYSTEM "../grafix/OpenHatch.gif" NDATA gif>
-    #  ["hatch-pic", "SYSTEM", "\"../grafix/OpenHatch.gif\"", "\n\t\t\t\t\t\t\tNDATA gif", "gif"]
+    #  ["hatch-pic", "SYSTEM", "../grafix/OpenHatch.gif", "gif"]
     def entitydecl content
     end
     # <!NOTATION ...>

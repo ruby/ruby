@@ -4,6 +4,11 @@
 # See LICENSE.txt for permissions.
 #++
 
+begin
+  require 'io/console'
+rescue LoadError
+end
+
 ##
 # Module that defines the default UserInteraction.  Any class including this
 # module will have access to the +ui+ method that returns the default UI.
@@ -66,9 +71,13 @@ module Gem::DefaultUserInteraction
 end
 
 ##
-# Make the default UI accessible without the "ui." prefix.  Classes
-# including this module may use the interaction methods on the default UI
-# directly.  Classes may also reference the ui and ui= methods.
+# UserInteraction allows RubyGems to interact with the user through standard
+# methods that can be replaced with more-specific UI methods for different
+# displays.
+#
+# Since UserInteraction dispatches to a concrete UI class you may need to
+# reference other classes for specific behavior such as Gem::ConsoleUI or
+# Gem::SilentUI.
 #
 # Example:
 #
@@ -84,40 +93,69 @@ module Gem::UserInteraction
 
   include Gem::DefaultUserInteraction
 
-  def alert(*args)
-    ui.alert(*args)
+  ##
+  # Displays an alert +statement+.  Asks a +question+ if given.
+
+  def alert statement, question = nil
+    ui.alert statement, question
   end
 
-  def alert_error(*args)
-    ui.alert_error(*args)
+  ##
+  # Displays an error +statement+ to the error output location.  Asks a
+  # +question+ if given.
+
+  def alert_error statement, question = nil
+    ui.alert_error statement, question
   end
 
-  def alert_warning(*args)
-    ui.alert_warning(*args)
+  ##
+  # Displays a warning +statement+ to the warning output location.  Asks a
+  # +question+ if given.
+
+  def alert_warning statement, question = nil
+    ui.alert_warning statement, question
   end
 
-  def ask(*args)
-    ui.ask(*args)
+  ##
+  # Asks a +question+ and returns the answer.
+
+  def ask question
+    ui.ask question
   end
 
-  def ask_for_password(*args)
-    ui.ask_for_password(*args)
+  ##
+  # Asks for a password with a +prompt+
+
+  def ask_for_password prompt
+    ui.ask_for_password prompt
   end
 
-  def ask_yes_no(*args)
-    ui.ask_yes_no(*args)
+  ##
+  # Asks a yes or no +question+.  Returns true for yes, false for no.
+
+  def ask_yes_no question, default = nil
+    ui.ask_yes_no question, default
   end
 
-  def choose_from_list(*args)
-    ui.choose_from_list(*args)
+  ##
+  # Asks the user to answer +question+ with an answer from the given +list+.
+
+  def choose_from_list question, list
+    ui.choose_from_list question, list
   end
 
-  def say(*args)
-    ui.say(*args)
+  ##
+  # Displays the given +statement+ on the standard output (or equivalent).
+
+  def say statement = ''
+    ui.say statement
   end
 
-  def terminate_interaction(*args)
-    ui.terminate_interaction(*args)
+  ##
+  # Terminates the RubyGems process with the given +exit_code+
+
+  def terminate_interaction exit_code = 0
+    ui.terminate_interaction exit_code
   end
 end
 
@@ -126,7 +164,26 @@ end
 
 class Gem::StreamUI
 
-  attr_reader :ins, :outs, :errs
+  ##
+  # The input stream
+
+  attr_reader :ins
+
+  ##
+  # The output stream
+
+  attr_reader :outs
+
+  ##
+  # The error stream
+
+  attr_reader :errs
+
+  ##
+  # Creates a new StreamUI wrapping +in_stream+ for user input, +out_stream+
+  # for standard output, +err_stream+ for error output.  If +usetty+ is true
+  # then special operations (like asking for passwords) will use the TTY
+  # commands to disable character echo.
 
   def initialize(in_stream, out_stream, err_stream=STDERR, usetty=true)
     @ins = in_stream
@@ -134,6 +191,9 @@ class Gem::StreamUI
     @errs = err_stream
     @usetty = usetty
   end
+
+  ##
+  # Returns true if TTY methods should be used on this StreamUI.
 
   def tty?
     if RUBY_VERSION < '1.9.3' and RUBY_PLATFORM =~ /mingw|mswin/ then
@@ -228,41 +288,27 @@ class Gem::StreamUI
     result
   end
 
-  if RUBY_VERSION > '1.9.2' then
-    ##
-    # Ask for a password. Does not echo response to terminal.
+  ##
+  # Ask for a password. Does not echo response to terminal.
 
-    def ask_for_password(question)
-      return nil if not tty?
+  def ask_for_password(question)
+    return nil if not tty?
 
-      require 'io/console'
+    @outs.print(question, "  ")
+    @outs.flush
 
-      @outs.print(question + "  ")
-      @outs.flush
+    password = _gets_noecho
+    @outs.puts
+    password.chomp! if password
+    password
+  end
 
-      password = @ins.noecho {@ins.gets}
-      password.chomp! if password
-      password
+  if IO.method_defined?(:noecho) then
+    def _gets_noecho
+      @ins.noecho {@ins.gets}
     end
-  else
-    ##
-    # Ask for a password. Does not echo response to terminal.
-
-    def ask_for_password(question)
-      return nil if not tty?
-
-      @outs.print(question + "  ")
-      @outs.flush
-
-      Gem.win_platform? ? ask_for_password_on_windows : ask_for_password_on_unix
-    end
-
-    ##
-    # Asks for a password that works on windows. Ripped from the Heroku gem.
-
-    def ask_for_password_on_windows
-      return nil if not tty?
-
+  elsif Gem.win_platform?
+    def _gets_noecho
       require "Win32API"
       char = nil
       password = ''
@@ -275,22 +321,16 @@ class Gem::StreamUI
           password << char.chr
         end
       end
-
-      puts
       password
     end
-
-    ##
-    # Asks for a password that works on unix
-
-    def ask_for_password_on_unix
-      return nil if not tty?
-
+  else
+    def _gets_noecho
       system "stty -echo"
-      password = @ins.gets
-      password.chomp! if password
-      system "stty echo"
-      password
+      begin
+        @ins.gets
+      ensure
+        system "stty echo"
+      end
     end
   end
 
@@ -310,8 +350,7 @@ class Gem::StreamUI
   end
 
   ##
-  # Display a warning in a location expected to get error messages.  Will
-  # ask +question+ if it is not nil.
+  # Display a warning on stderr.  Will ask +question+ if it is not nil.
 
   def alert_warning(statement, question=nil)
     @errs.puts "WARNING:  #{statement}"
@@ -364,13 +403,28 @@ class Gem::StreamUI
   # An absolutely silent progress reporter.
 
   class SilentProgressReporter
+
+    ##
+    # The count of items is never updated for the silent progress reporter.
+
     attr_reader :count
+
+    ##
+    # Creates a silent progress reporter that ignores all input arguments.
 
     def initialize(out_stream, size, initial_message, terminal_message = nil)
     end
 
+    ##
+    # Does not print +message+ when updated as this object has taken a vow of
+    # silence.
+
     def updated(message)
     end
+
+    ##
+    # Does not print anything when complete as this object has taken a vow of
+    # silence.
 
     def done
     end
@@ -383,7 +437,15 @@ class Gem::StreamUI
 
     include Gem::DefaultUserInteraction
 
+    ##
+    # The number of progress items counted so far.
+
     attr_reader :count
+
+    ##
+    # Creates a new progress reporter that will write to +out_stream+ for
+    # +size+ items.  Shows the given +initial_message+ when progress starts
+    # and the +terminal_message+ when it is complete.
 
     def initialize(out_stream, size, initial_message,
                    terminal_message = "complete")
@@ -420,7 +482,15 @@ class Gem::StreamUI
 
     include Gem::DefaultUserInteraction
 
+    ##
+    # The number of progress items counted so far.
+
     attr_reader :count
+
+    ##
+    # Creates a new progress reporter that will write to +out_stream+ for
+    # +size+ items.  Shows the given +initial_message+ when progress starts
+    # and the +terminal_message+ when it is complete.
 
     def initialize(out_stream, size, initial_message,
                    terminal_message = 'complete')
@@ -468,14 +538,29 @@ class Gem::StreamUI
   # An absolutely silent download reporter.
 
   class SilentDownloadReporter
+
+    ##
+    # The silent download reporter ignores all arguments
+
     def initialize(out_stream, *args)
     end
+
+    ##
+    # The silent download reporter does not display +filename+ or care about
+    # +filesize+ because it is silent.
 
     def fetch(filename, filesize)
     end
 
+    ##
+    # Nothing can update the silent download reporter.
+
     def update(current)
     end
+
+    ##
+    # The silent download reporter won't tell you when the download is done.
+    # Because it is silent.
 
     def done
     end
@@ -485,12 +570,34 @@ class Gem::StreamUI
   # A progress reporter that prints out messages about the current progress.
 
   class VerboseDownloadReporter
-    attr_reader :file_name, :total_bytes, :progress
+
+    ##
+    # The current file name being displayed
+
+    attr_reader :file_name
+
+    ##
+    # The total bytes in the file
+
+    attr_reader :total_bytes
+
+    ##
+    # The current progress (0 to 100)
+
+    attr_reader :progress
+
+    ##
+    # Creates a new verbose download reporter that will display on
+    # +out_stream+.  The other arguments are ignored.
 
     def initialize(out_stream, *args)
       @out = out_stream
       @progress = 0
     end
+
+    ##
+    # Tells the download reporter that the +file_name+ is being fetched and
+    # contains +total_bytes+.
 
     def fetch(file_name, total_bytes)
       @file_name = file_name
@@ -499,6 +606,9 @@ class Gem::StreamUI
 
       update_display(false)
     end
+
+    ##
+    # Updates the verbose download reporter for the given number of +bytes+.
 
     def update(bytes)
       new_progress = if @units == 'B' then
@@ -513,6 +623,9 @@ class Gem::StreamUI
       update_display
     end
 
+    ##
+    # Indicates the download is complete.
+
     def done
       @progress = 100 if @units == '%'
       update_display(true, true)
@@ -520,7 +633,7 @@ class Gem::StreamUI
 
     private
 
-    def update_display(show_progress = true, new_line = false)
+    def update_display(show_progress = true, new_line = false) # :nodoc:
       return unless @out.tty?
 
       if show_progress then
@@ -538,6 +651,11 @@ end
 # STDOUT, and STDERR.
 
 class Gem::ConsoleUI < Gem::StreamUI
+
+  ##
+  # The Console UI has no arguments as it defaults to reading input from
+  # stdin, output to stdout and warnings or errors to stderr.
+
   def initialize
     super STDIN, STDOUT, STDERR, true
   end
@@ -547,6 +665,10 @@ end
 # SilentUI is a UI choice that is absolutely silent.
 
 class Gem::SilentUI < Gem::StreamUI
+
+  ##
+  # The SilentUI has no arguments as it does not use any stream.
+
   def initialize
     reader, writer = nil, nil
 
@@ -561,11 +683,11 @@ class Gem::SilentUI < Gem::StreamUI
     super reader, writer, writer, false
   end
 
-  def download_reporter(*args)
+  def download_reporter(*args) # :nodoc:
     SilentDownloadReporter.new(@outs, *args)
   end
 
-  def progress_reporter(*args)
+  def progress_reporter(*args) # :nodoc:
     SilentProgressReporter.new(@outs, *args)
   end
 end

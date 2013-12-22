@@ -2,12 +2,14 @@ require "rss/1.0"
 require "rss/dublincore"
 
 module RSS
-
+  # The prefix for the Taxonomy XML namespace.
   TAXO_PREFIX = "taxo"
+  # The URI for the specification of the Taxonomy XML namespace.
   TAXO_URI = "http://purl.org/rss/1.0/modules/taxonomy/"
 
   RDF.install_ns(TAXO_PREFIX, TAXO_URI)
 
+  # The listing of all the taxonomy elements, with the appropriate namespace.
   TAXO_ELEMENTS = []
 
   %w(link).each do |name|

@@ -113,10 +113,18 @@ predefined_fiddle_handle(void *handle)
 
 /*
  * call-seq:
- *    new(lib = nil, flags = Fiddle::RTLD_LAZY | Fiddle::RTLD_GLOBAL)
+ *    new(library = nil, flags = Fiddle::RTLD_LAZY | Fiddle::RTLD_GLOBAL)
  *
- * Create a new handler that opens library named +lib+ with +flags+.  If no
- * library is specified, RTLD_DEFAULT is used.
+ * Create a new handler that opens +library+ with +flags+.
+ *
+ * If no +library+ is specified or +nil+ is given, DEFAULT is used, which is
+ * the equivalent to RTLD_DEFAULT. See <code>man 3 dlopen</code> for more.
+ *
+ *	lib = Fiddle::Handle.new
+ *
+ * The default is dependent on OS, and provide a handle for all libraries
+ * already loaded. For example, in most cases you can use this to access +libc+
+ * functions, or ruby functions like +rb_str_new+.
  */
 static VALUE
 rb_fiddle_handle_initialize(int argc, VALUE argv[], VALUE self)

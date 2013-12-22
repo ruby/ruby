@@ -170,7 +170,7 @@ module TestParallel
       spawn_runner "--no-retry"
       buf = timeout(10){@test_out.read}
       refute_match(/^Retrying\.+$/,buf)
-      assert_match(/^ +\d+\) Failure:\ntest_fail_at_worker\(TestD\)/,buf)
+      assert_match(/^ +\d+\) Failure:\nTestD#test_fail_at_worker/,buf)
     end
 
     def test_jobs_status

@@ -299,7 +299,7 @@ class Rational_Test < Test::Unit::TestCase
     assert_raise(ZeroDivisionError){Rational(1, 3) / Rational(0)}
 
     assert_equal(0, Rational(1, 3) / Float::INFINITY)
-    assert((Rational(1, 3) / 0.0).infinite?, '[ruby-core:31626]')
+    assert_predicate(Rational(1, 3) / 0.0, :infinite?, '[ruby-core:31626]')
   end
 
   def assert_eql(exp, act, *args)
@@ -550,7 +550,7 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(0.25, c.fdiv(2))
     assert_equal(0.25, c.fdiv(2.0))
     assert_equal(0, c.fdiv(Float::INFINITY))
-    assert(c.fdiv(0).infinite?, '[ruby-core:31626]')
+    assert_predicate(c.fdiv(0), :infinite?, '[ruby-core:31626]')
   end
 
   def test_expt
@@ -708,8 +708,8 @@ class Rational_Test < Test::Unit::TestCase
   end
 
   def test_eqeq
-    assert(Rational(1,1) == Rational(1))
-    assert(Rational(-1,1) == Rational(-1))
+    assert_equal(Rational(1,1), Rational(1))
+    assert_equal(Rational(-1,1), Rational(-1))
 
     assert_equal(false, Rational(2,1) == Rational(1))
     assert_equal(true, Rational(2,1) != Rational(1))
@@ -830,7 +830,7 @@ class Rational_Test < Test::Unit::TestCase
     bug3656 = '[ruby-core:31622]'
     c = Rational(1,2)
     c.freeze
-    assert(c.frozen?)
+    assert_predicate(c, :frozen?)
     result = c.marshal_load([2,3]) rescue :fail
     assert_equal(:fail, result, bug3656)
   end
@@ -1121,7 +1121,7 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(0.5, 1.0.quo(2))
     assert_equal(Rational(1,4), Rational(1,2).quo(2))
     assert_equal(0, Rational(1,2).quo(Float::INFINITY))
-    assert(Rational(1,2).quo(0.0).infinite?, '[ruby-core:31626]')
+    assert_predicate(Rational(1,2).quo(0.0), :infinite?, '[ruby-core:31626]')
 
     assert_equal(0.5, 1.fdiv(2))
     assert_equal(5000000000.0, 10000000000.fdiv(2))
@@ -1141,6 +1141,26 @@ class Rational_Test < Test::Unit::TestCase
 
     n = Float::MAX.to_i * 2
     assert_equal(1.0, Rational(n + 2, n + 1).to_f, '[ruby-dev:33852]')
+  end
+
+  def test_power_of_1_and_minus_1
+    bug5715 = '[ruby-core:41498]'
+    big = 1 << 66
+    one = Rational( 1, 1)
+    assert_eql  one,   one  ** -big     , bug5715
+    assert_eql  one, (-one) ** -big     , bug5715
+    assert_eql -one, (-one) ** -(big+1) , bug5715
+    assert_equal Complex, ((-one) ** Rational(1,3)).class
+  end
+
+  def test_power_of_0
+    bug5713 = '[ruby-core:41494]'
+    big = 1 << 66
+    zero = Rational(0, 1)
+    assert_eql zero, zero ** big
+    assert_eql zero, zero ** Rational(2, 3)
+    assert_raise(ZeroDivisionError, bug5713) { Rational(0, 1) ** -big }
+    assert_raise(ZeroDivisionError, bug5713) { Rational(0, 1) ** Rational(-2,3) }
   end
 
   def test_known_bug

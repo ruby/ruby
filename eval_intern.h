@@ -83,9 +83,28 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
 
 #include <sys/stat.h>
 
+#ifdef _MSC_VER
+#define SAVE_ROOT_JMPBUF_BEFORE_STMT \
+    __try {
+#define SAVE_ROOT_JMPBUF_AFTER_STMT \
+    } \
+    __except (GetExceptionCode() == EXCEPTION_STACK_OVERFLOW ? \
+	      (rb_thread_raised_set(GET_THREAD(), RAISED_STACKOVERFLOW), \
+	       raise(SIGSEGV), \
+	       EXCEPTION_EXECUTE_HANDLER) : \
+	      EXCEPTION_CONTINUE_SEARCH) { \
+	/* never reaches here */ \
+    }
+#else
+#define SAVE_ROOT_JMPBUF_BEFORE_STMT
+#define SAVE_ROOT_JMPBUF_AFTER_STMT
+#endif
+
 #define SAVE_ROOT_JMPBUF(th, stmt) do \
   if (ruby_setjmp((th)->root_jmpbuf) == 0) { \
+      SAVE_ROOT_JMPBUF_BEFORE_STMT \
       stmt; \
+      SAVE_ROOT_JMPBUF_AFTER_STMT \
   } \
   else { \
       rb_fiber_start(); \
@@ -95,8 +114,7 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
   rb_thread_t * const _th = (th); \
   struct rb_vm_tag _tag; \
   _tag.tag = 0; \
-  _tag.prev = _th->tag; \
-  _th->tag = &_tag;
+  _tag.prev = _th->tag;
 
 #define TH_POP_TAG() \
   _th->tag = _tag.prev; \
@@ -105,17 +123,42 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
 #define TH_POP_TAG2() \
   _th->tag = _tag.prev
 
+#define TH_PUSH_TAG2() (_th->tag = &_tag, 0)
+
+#define TH_TMPPOP_TAG() TH_POP_TAG2()
+
+#define TH_REPUSH_TAG() TH_PUSH_TAG2()
+
 #define PUSH_TAG() TH_PUSH_TAG(GET_THREAD())
 #define POP_TAG()      TH_POP_TAG()
 
-#define TH_EXEC_TAG() ruby_setjmp(_th->tag->buf)
+/* clear th->state, and return the value */
+static inline int
+rb_threadptr_tag_state(rb_thread_t *th)
+{
+    int state = th->state;
+    th->state = 0;
+    return state;
+}
+
+NORETURN(static inline void rb_threadptr_tag_jump(rb_thread_t *, int));
+static inline void
+rb_threadptr_tag_jump(rb_thread_t *th, int st)
+{
+    ruby_longjmp(th->tag->buf, (th->state = st));
+}
+
+/*
+  setjmp() in assignment expression rhs is undefined behavior
+  [ISO/IEC 9899:1999] 7.13.1.1
+*/
+#define TH_EXEC_TAG() \
+    (ruby_setjmp(_tag.buf) ? rb_threadptr_tag_state(_th) : TH_PUSH_TAG2())
 
 #define EXEC_TAG() \
   TH_EXEC_TAG()
 
-#define TH_JUMP_TAG(th, st) do { \
-  ruby_longjmp((th)->tag->buf,(st)); \
-} while (0)
+#define TH_JUMP_TAG(th, st) rb_threadptr_tag_jump(th, st)
 
 #define JUMP_TAG(st) TH_JUMP_TAG(GET_THREAD(), (st))
 
@@ -195,7 +238,11 @@ VALUE rb_vm_top_self();
 VALUE rb_vm_cbase(void);
 
 #ifndef CharNext		/* defined as CharNext[AW] on Windows. */
-#define CharNext(p) ((p) + mblen((p), RUBY_MBCHAR_MAXSIZE))
+# ifdef HAVE_MBLEN
+#  define CharNext(p) ((p) + mblen((p), RUBY_MBCHAR_MAXSIZE))
+# else
+#  define CharNext(p) ((p) + 1)
+# endif
 #endif
 
 #if defined DOSISH || defined __CYGWIN__

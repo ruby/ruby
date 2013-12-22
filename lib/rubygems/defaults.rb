@@ -11,7 +11,15 @@ module Gem
   # An Array of the default sources that come with RubyGems
 
   def self.default_sources
-    %w[http://rubygems.org/]
+    %w[https://rubygems.org/]
+  end
+
+  ##
+  # Default spec directory path to be used if an alternate value is not
+  # specified in the environment
+
+  def self.default_spec_cache_dir
+    File.join Gem.user_home, '.gem', 'specs'
   end
 
   ##
@@ -44,6 +52,17 @@ module Gem
   end
 
   ##
+  # Returns binary extensions dir for specified RubyGems base dir or nil
+  # if such directory cannot be determined.
+  #
+  # By default, the binary extensions are located side by side with their
+  # Ruby counterparts, therefore nil is returned
+
+  def self.default_ext_dir_for base_dir
+    nil
+  end
+
+  ##
   # Paths where RubyGems' .rb files and bin files are installed
 
   def self.default_rubygems_dirs
@@ -54,7 +73,9 @@ module Gem
   # Path for gems in the user's home directory
 
   def self.user_dir
-    File.join Gem.user_home, '.gem', ruby_engine, ConfigMap[:ruby_version]
+    parts = [Gem.user_home, '.gem', ruby_engine]
+    parts << ConfigMap[:ruby_version] unless ConfigMap[:ruby_version].empty?
+    File.join parts
   end
 
   ##
@@ -110,4 +131,33 @@ module Gem
       'ruby'
     end
   end
+
+  ##
+  # The default signing key path
+
+  def self.default_key_path
+    File.join Gem.user_home, ".gem", "gem-private_key.pem"
+  end
+
+  ##
+  # The default signing certificate chain path
+
+  def self.default_cert_path
+    File.join Gem.user_home, ".gem", "gem-public_cert.pem"
+  end
+
+  ##
+  # Whether to expect full paths in default gems - true for non-MRI
+  # ruby implementations
+  def self.default_gems_use_full_paths?
+    ruby_engine != 'ruby'
+  end
+
+  ##
+  # Install extensions into lib as well as into the extension directory.
+
+  def self.install_extension_in_lib # :nodoc:
+    true
+  end
+
 end

@@ -157,9 +157,17 @@ struct getaddrinfo_arg
 static void *
 nogvl_getaddrinfo(void *arg)
 {
+    int ret;
     struct getaddrinfo_arg *ptr = arg;
-    return (void *)(VALUE)getaddrinfo(ptr->node, ptr->service,
-				      ptr->hints, ptr->res);
+    ret = getaddrinfo(ptr->node, ptr->service, ptr->hints, ptr->res);
+#ifdef __linux__
+    /* On Linux (mainly Ubuntu 13.04) /etc/nsswitch.conf has mdns4 and
+     * it cause getaddrinfo to return EAI_SYSTEM/ENOENT. [ruby-list:49420]
+     */
+    if (ret == EAI_SYSTEM && errno == ENOENT)
+	ret = EAI_NONAME;
+#endif
+    return (void *)(VALUE)ret;
 }
 #endif
 
@@ -229,35 +237,33 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
 }
 
 static void
-make_ipaddr0(struct sockaddr *addr, char *buf, size_t len)
+make_ipaddr0(struct sockaddr *addr, socklen_t addrlen, char *buf, size_t buflen)
 {
     int error;
 
-    error = rb_getnameinfo(addr, SA_LEN(addr), buf, len, NULL, 0, NI_NUMERICHOST);
+    error = rb_getnameinfo(addr, addrlen, buf, buflen, NULL, 0, NI_NUMERICHOST);
     if (error) {
         rsock_raise_socket_error("getnameinfo", error);
     }
 }
 
 VALUE
-rsock_make_ipaddr(struct sockaddr *addr)
+rsock_make_ipaddr(struct sockaddr *addr, socklen_t addrlen)
 {
     char hbuf[1024];
 
-    make_ipaddr0(addr, hbuf, sizeof(hbuf));
+    make_ipaddr0(addr, addrlen, hbuf, sizeof(hbuf));
     return rb_str_new2(hbuf);
 }
 
 static void
-make_inetaddr(unsigned int host, char *buf, size_t len)
+make_inetaddr(unsigned int host, char *buf, size_t buflen)
 {
     struct sockaddr_in sin;
 
-    MEMZERO(&sin, struct sockaddr_in, 1);
-    sin.sin_family = AF_INET;
-    SET_SIN_LEN(&sin, sizeof(sin));
+    INIT_SOCKADDR_IN(&sin, sizeof(sin));
     sin.sin_addr.s_addr = host;
-    make_ipaddr0((struct sockaddr*)&sin, buf, len);
+    make_ipaddr0((struct sockaddr*)&sin, sizeof(sin), buf, buflen);
 }
 
 static int
@@ -276,7 +282,7 @@ str_is_number(const char *p)
 }
 
 static char*
-host_str(VALUE host, char *hbuf, size_t len, int *flags_ptr)
+host_str(VALUE host, char *hbuf, size_t hbuflen, int *flags_ptr)
 {
     if (NIL_P(host)) {
         return NULL;
@@ -284,7 +290,7 @@ host_str(VALUE host, char *hbuf, size_t len, int *flags_ptr)
     else if (rb_obj_is_kind_of(host, rb_cInteger)) {
         unsigned int i = NUM2UINT(host);
 
-        make_inetaddr(htonl(i), hbuf, len);
+        make_inetaddr(htonl(i), hbuf, hbuflen);
         if (flags_ptr) *flags_ptr |= AI_NUMERICHOST;
         return hbuf;
     }
@@ -294,14 +300,14 @@ host_str(VALUE host, char *hbuf, size_t len, int *flags_ptr)
         SafeStringValue(host);
         name = RSTRING_PTR(host);
         if (!name || *name == 0 || (name[0] == '<' && strcmp(name, "<any>") == 0)) {
-            make_inetaddr(INADDR_ANY, hbuf, len);
+            make_inetaddr(INADDR_ANY, hbuf, hbuflen);
             if (flags_ptr) *flags_ptr |= AI_NUMERICHOST;
         }
         else if (name[0] == '<' && strcmp(name, "<broadcast>") == 0) {
-            make_inetaddr(INADDR_BROADCAST, hbuf, len);
+            make_inetaddr(INADDR_BROADCAST, hbuf, hbuflen);
             if (flags_ptr) *flags_ptr |= AI_NUMERICHOST;
         }
-        else if (strlen(name) >= len) {
+        else if (strlen(name) >= hbuflen) {
             rb_raise(rb_eArgError, "hostname too long (%"PRIuSIZE")",
                 strlen(name));
         }
@@ -313,13 +319,13 @@ host_str(VALUE host, char *hbuf, size_t len, int *flags_ptr)
 }
 
 static char*
-port_str(VALUE port, char *pbuf, size_t len, int *flags_ptr)
+port_str(VALUE port, char *pbuf, size_t pbuflen, int *flags_ptr)
 {
     if (NIL_P(port)) {
         return 0;
     }
     else if (FIXNUM_P(port)) {
-        snprintf(pbuf, len, "%ld", FIX2LONG(port));
+        snprintf(pbuf, pbuflen, "%ld", FIX2LONG(port));
 #ifdef AI_NUMERICSERV
         if (flags_ptr) *flags_ptr |= AI_NUMERICSERV;
 #endif
@@ -330,7 +336,7 @@ port_str(VALUE port, char *pbuf, size_t len, int *flags_ptr)
 
         SafeStringValue(port);
         serv = RSTRING_PTR(port);
-        if (strlen(serv) >= len) {
+        if (strlen(serv) >= pbuflen) {
             rb_raise(rb_eArgError, "service name too long (%"PRIuSIZE")",
                 strlen(serv));
         }
@@ -380,7 +386,7 @@ rsock_addrinfo(VALUE host, VALUE port, int socktype, int flags)
 }
 
 VALUE
-rsock_ipaddr(struct sockaddr *sockaddr, int norevlookup)
+rsock_ipaddr(struct sockaddr *sockaddr, socklen_t sockaddrlen, int norevlookup)
 {
     VALUE family, port, addr1, addr2;
     VALUE ary;
@@ -399,13 +405,13 @@ rsock_ipaddr(struct sockaddr *sockaddr, int norevlookup)
 
     addr1 = Qnil;
     if (!norevlookup) {
-        error = rb_getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
+        error = rb_getnameinfo(sockaddr, sockaddrlen, hbuf, sizeof(hbuf),
                                NULL, 0, 0);
         if (! error) {
             addr1 = rb_str_new2(hbuf);
         }
     }
-    error = rb_getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
+    error = rb_getnameinfo(sockaddr, sockaddrlen, hbuf, sizeof(hbuf),
                            pbuf, sizeof(pbuf), NI_NUMERICHOST | NI_NUMERICSERV);
     if (error) {
         rsock_raise_socket_error("getnameinfo", error);
@@ -441,12 +447,35 @@ rsock_unixaddr(struct sockaddr_un *sockaddr, socklen_t len)
     return rb_assoc_new(rb_str_new2("AF_UNIX"),
                         rsock_unixpath_str(sockaddr, len));
 }
+
+socklen_t
+rsock_unix_sockaddr_len(VALUE path)
+{
+#ifdef __linux__
+    if (RSTRING_LEN(path) == 0) {
+	/* autobind; see unix(7) for details. */
+	return (socklen_t) sizeof(sa_family_t);
+    }
+    else if (RSTRING_PTR(path)[0] == '\0') {
+	/* abstract namespace; see unix(7) for details. */
+        if (SOCKLEN_MAX - offsetof(struct sockaddr_un, sun_path) < (size_t)RSTRING_LEN(path))
+            rb_raise(rb_eArgError, "Linux abstract socket too long");
+	return (socklen_t) offsetof(struct sockaddr_un, sun_path) +
+	    RSTRING_SOCKLEN(path);
+    }
+    else {
+#endif
+	return (socklen_t) sizeof(struct sockaddr_un);
+#ifdef __linux__
+    }
+#endif
+}
 #endif
 
 struct hostent_arg {
     VALUE host;
     struct addrinfo* addr;
-    VALUE (*ipaddr)(struct sockaddr*, size_t);
+    VALUE (*ipaddr)(struct sockaddr*, socklen_t);
 };
 
 static VALUE
@@ -454,7 +483,7 @@ make_hostent_internal(struct hostent_arg *arg)
 {
     VALUE host = arg->host;
     struct addrinfo* addr = arg->addr;
-    VALUE (*ipaddr)(struct sockaddr*, size_t) = arg->ipaddr;
+    VALUE (*ipaddr)(struct sockaddr*, socklen_t) = arg->ipaddr;
 
     struct addrinfo *ai;
     struct hostent *h;
@@ -500,7 +529,7 @@ rsock_freeaddrinfo(struct addrinfo *addr)
 }
 
 VALUE
-rsock_make_hostent(VALUE host, struct addrinfo *addr, VALUE (*ipaddr)(struct sockaddr *, size_t))
+rsock_make_hostent(VALUE host, struct addrinfo *addr, VALUE (*ipaddr)(struct sockaddr *, socklen_t))
 {
     struct hostent_arg arg;
 
@@ -518,7 +547,7 @@ typedef struct {
     int socktype;
     int protocol;
     socklen_t sockaddr_len;
-    struct sockaddr_storage addr;
+    union_sockaddr addr;
 } rb_addrinfo_t;
 
 static void
@@ -769,6 +798,7 @@ static void
 init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path, int socktype)
 {
     struct sockaddr_un un;
+    socklen_t len;
 
     StringValue(path);
 
@@ -777,12 +807,11 @@ init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path, int socktype)
             "too long unix socket path (%"PRIuSIZE" bytes given but %"PRIuSIZE" bytes max)",
             (size_t)RSTRING_LEN(path), sizeof(un.sun_path));
 
-    MEMZERO(&un, struct sockaddr_un, 1);
-
-    un.sun_family = AF_UNIX;
+    INIT_SOCKADDR_UN(&un, sizeof(struct sockaddr_un));
     memcpy((void*)&un.sun_path, RSTRING_PTR(path), RSTRING_LEN(path));
 
-    init_addrinfo(rai, (struct sockaddr *)&un, (socklen_t)sizeof(un),
+    len = rsock_unix_sockaddr_len(path);
+    init_addrinfo(rai, (struct sockaddr *)&un, len,
 		  PF_UNIX, socktype, 0, Qnil, Qnil);
 }
 #endif
@@ -904,7 +933,7 @@ addrinfo_initialize(int argc, VALUE *argv, VALUE self)
     else {
         StringValue(sockaddr_arg);
         sockaddr_ptr = (struct sockaddr *)RSTRING_PTR(sockaddr_arg);
-        sockaddr_len = RSTRING_LENINT(sockaddr_arg);
+        sockaddr_len = RSTRING_SOCKLEN(sockaddr_arg);
         init_addrinfo(rai, sockaddr_ptr, sockaddr_len,
                       i_pfamily, i_socktype, i_protocol,
                       canonname, inspectname);
@@ -925,41 +954,69 @@ get_afamily(struct sockaddr *addr, socklen_t len)
 static int
 ai_get_afamily(rb_addrinfo_t *rai)
 {
-    return get_afamily((struct sockaddr *)&rai->addr, rai->sockaddr_len);
+    return get_afamily(&rai->addr.addr, rai->sockaddr_len);
 }
 
 static VALUE
 inspect_sockaddr(VALUE addrinfo, VALUE ret)
 {
     rb_addrinfo_t *rai = get_addrinfo(addrinfo);
+    union_sockaddr *sockaddr = &rai->addr;
+    socklen_t socklen = rai->sockaddr_len;
+    return rsock_inspect_sockaddr((struct sockaddr *)sockaddr, socklen, ret);
+}
 
-    if (rai->sockaddr_len == 0) {
+VALUE
+rsock_inspect_sockaddr(struct sockaddr *sockaddr_arg, socklen_t socklen, VALUE ret)
+{
+    union_sockaddr *sockaddr = (union_sockaddr *)sockaddr_arg;
+    if (socklen == 0) {
         rb_str_cat2(ret, "empty-sockaddr");
     }
-    else if ((long)rai->sockaddr_len < ((char*)&rai->addr.ss_family + sizeof(rai->addr.ss_family)) - (char*)&rai->addr)
+    else if ((long)socklen < ((char*)&sockaddr->addr.sa_family + sizeof(sockaddr->addr.sa_family)) - (char*)sockaddr)
         rb_str_cat2(ret, "too-short-sockaddr");
     else {
-        switch (rai->addr.ss_family) {
+        switch (sockaddr->addr.sa_family) {
+          case AF_UNSPEC:
+	  {
+	    rb_str_cat2(ret, "UNSPEC");
+            break;
+	  }
+
           case AF_INET:
           {
             struct sockaddr_in *addr;
             int port;
-            if (rai->sockaddr_len < (socklen_t)sizeof(struct sockaddr_in)) {
-                rb_str_cat2(ret, "too-short-AF_INET-sockaddr");
-            }
-            else {
-                addr = (struct sockaddr_in *)&rai->addr;
-                rb_str_catf(ret, "%d.%d.%d.%d",
-                            ((unsigned char*)&addr->sin_addr)[0],
-                            ((unsigned char*)&addr->sin_addr)[1],
-                            ((unsigned char*)&addr->sin_addr)[2],
-                            ((unsigned char*)&addr->sin_addr)[3]);
-                port = ntohs(addr->sin_port);
-                if (port)
-                    rb_str_catf(ret, ":%d", port);
-                if ((socklen_t)sizeof(struct sockaddr_in) < rai->sockaddr_len)
-                    rb_str_catf(ret, "(sockaddr %d bytes too long)", (int)(rai->sockaddr_len - sizeof(struct sockaddr_in)));
-            }
+	    addr = &sockaddr->in;
+	    if ((socklen_t)(((char*)&addr->sin_addr)-(char*)addr+0+1) <= socklen)
+		rb_str_catf(ret, "%d", ((unsigned char*)&addr->sin_addr)[0]);
+	    else
+		rb_str_cat2(ret, "?");
+	    if ((socklen_t)(((char*)&addr->sin_addr)-(char*)addr+1+1) <= socklen)
+		rb_str_catf(ret, ".%d", ((unsigned char*)&addr->sin_addr)[1]);
+	    else
+		rb_str_cat2(ret, ".?");
+	    if ((socklen_t)(((char*)&addr->sin_addr)-(char*)addr+2+1) <= socklen)
+		rb_str_catf(ret, ".%d", ((unsigned char*)&addr->sin_addr)[2]);
+	    else
+		rb_str_cat2(ret, ".?");
+	    if ((socklen_t)(((char*)&addr->sin_addr)-(char*)addr+3+1) <= socklen)
+		rb_str_catf(ret, ".%d", ((unsigned char*)&addr->sin_addr)[3]);
+	    else
+		rb_str_cat2(ret, ".?");
+
+	    if ((socklen_t)(((char*)&addr->sin_port)-(char*)addr+(int)sizeof(addr->sin_port)) < socklen) {
+		port = ntohs(addr->sin_port);
+		if (port)
+		    rb_str_catf(ret, ":%d", port);
+	    }
+	    else {
+		rb_str_cat2(ret, ":?");
+	    }
+	    if ((socklen_t)sizeof(struct sockaddr_in) != socklen)
+		rb_str_catf(ret, " (%d bytes for %d bytes sockaddr_in)",
+		  (int)socklen,
+		  (int)sizeof(struct sockaddr_in));
             break;
           }
 
@@ -970,16 +1027,16 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
             char hbuf[1024];
             int port;
             int error;
-            if (rai->sockaddr_len < (socklen_t)sizeof(struct sockaddr_in6)) {
-                rb_str_cat2(ret, "too-short-AF_INET6-sockaddr");
+            if (socklen < (socklen_t)sizeof(struct sockaddr_in6)) {
+                rb_str_catf(ret, "too-short-AF_INET6-sockaddr %d bytes", (int)socklen);
             }
             else {
-                addr = (struct sockaddr_in6 *)&rai->addr;
+                addr = &sockaddr->in6;
                 /* use getnameinfo for scope_id.
                  * RFC 4007: IPv6 Scoped Address Architecture
                  * draft-ietf-ipv6-scope-api-00.txt: Scoped Address Extensions to the IPv6 Basic Socket API
                  */
-                error = getnameinfo((struct sockaddr *)&rai->addr, rai->sockaddr_len,
+                error = getnameinfo(&sockaddr->addr, socklen,
                                     hbuf, (socklen_t)sizeof(hbuf), NULL, 0,
                                     NI_NUMERICHOST|NI_NUMERICSERV);
                 if (error) {
@@ -992,8 +1049,8 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
                     port = ntohs(addr->sin6_port);
                     rb_str_catf(ret, "[%s]:%d", hbuf, port);
                 }
-                if ((socklen_t)sizeof(struct sockaddr_in6) < rai->sockaddr_len)
-                    rb_str_catf(ret, "(sockaddr %d bytes too long)", (int)(rai->sockaddr_len - sizeof(struct sockaddr_in6)));
+                if ((socklen_t)sizeof(struct sockaddr_in6) < socklen)
+                    rb_str_catf(ret, "(sockaddr %d bytes too long)", (int)(socklen - sizeof(struct sockaddr_in6)));
             }
             break;
           }
@@ -1002,10 +1059,10 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
 #ifdef HAVE_SYS_UN_H
           case AF_UNIX:
           {
-            struct sockaddr_un *addr = (struct sockaddr_un *)&rai->addr;
+            struct sockaddr_un *addr = &sockaddr->un;
             char *p, *s, *e;
             s = addr->sun_path;
-            e = (char*)addr + rai->sockaddr_len;
+            e = (char*)addr + socklen;
             while (s < e && *(e-1) == '\0')
                 e--;
             if (e < s)
@@ -1021,27 +1078,170 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
                 }
                 if (printable_only) { /* only printable, no space */
                     if (s[0] != '/') /* relative path */
-                        rb_str_cat2(ret, "AF_UNIX ");
+                        rb_str_cat2(ret, "UNIX ");
                     rb_str_cat(ret, s, p - s);
                 }
                 else {
-                    rb_str_cat2(ret, "AF_UNIX");
+                    rb_str_cat2(ret, "UNIX");
                     while (s < e)
                         rb_str_catf(ret, ":%02x", (unsigned char)*s++);
                 }
-                if (addr->sun_path + sizeof(addr->sun_path) < (char*)&rai->addr + rai->sockaddr_len)
-                    rb_str_catf(ret, "(sockaddr %d bytes too long)",
-                            (int)(rai->sockaddr_len - (addr->sun_path + sizeof(addr->sun_path) - (char*)&rai->addr)));
             }
+            break;
+          }
+#endif
+
+#ifdef AF_PACKET
+          /* GNU/Linux */
+          case AF_PACKET:
+          {
+            struct sockaddr_ll *addr;
+            const char *sep = "[";
+#define CATSEP do { rb_str_cat2(ret, sep); sep = " "; } while (0);
+
+            addr = (struct sockaddr_ll *)sockaddr;
+
+            rb_str_cat2(ret, "PACKET");
+
+            if (offsetof(struct sockaddr_ll, sll_protocol) + sizeof(addr->sll_protocol) <= (size_t)socklen) {
+                CATSEP;
+                rb_str_catf(ret, "protocol=%d", ntohs(addr->sll_protocol));
+            }
+            if (offsetof(struct sockaddr_ll, sll_ifindex) + sizeof(addr->sll_ifindex) <= (size_t)socklen) {
+                char buf[IFNAMSIZ];
+                CATSEP;
+                if (if_indextoname(addr->sll_ifindex, buf) == NULL)
+                    rb_str_catf(ret, "ifindex=%d", addr->sll_ifindex);
+                else
+                    rb_str_catf(ret, "%s", buf);
+            }
+            if (offsetof(struct sockaddr_ll, sll_hatype) + sizeof(addr->sll_hatype) <= (size_t)socklen) {
+                CATSEP;
+                rb_str_catf(ret, "hatype=%d", addr->sll_hatype);
+            }
+            if (offsetof(struct sockaddr_ll, sll_pkttype) + sizeof(addr->sll_pkttype) <= (size_t)socklen) {
+                CATSEP;
+                if (addr->sll_pkttype == PACKET_HOST)
+                    rb_str_cat2(ret, "HOST");
+                else if (addr->sll_pkttype == PACKET_BROADCAST)
+                    rb_str_cat2(ret, "BROADCAST");
+                else if (addr->sll_pkttype == PACKET_MULTICAST)
+                    rb_str_cat2(ret, "MULTICAST");
+                else if (addr->sll_pkttype == PACKET_OTHERHOST)
+                    rb_str_cat2(ret, "OTHERHOST");
+                else if (addr->sll_pkttype == PACKET_OUTGOING)
+                    rb_str_cat2(ret, "OUTGOING");
+                else
+                    rb_str_catf(ret, "pkttype=%d", addr->sll_pkttype);
+            }
+            if (socklen != (socklen_t)(offsetof(struct sockaddr_ll, sll_addr) + addr->sll_halen)) {
+                CATSEP;
+                if (offsetof(struct sockaddr_ll, sll_halen) + sizeof(addr->sll_halen) <= (size_t)socklen) {
+                    rb_str_catf(ret, "halen=%d", addr->sll_halen);
+                }
+            }
+            if (offsetof(struct sockaddr_ll, sll_addr) < (size_t)socklen) {
+                socklen_t len, i;
+                CATSEP;
+                rb_str_cat2(ret, "hwaddr");
+                len = addr->sll_halen;
+                if ((size_t)socklen < offsetof(struct sockaddr_ll, sll_addr) + len)
+                    len = socklen - offsetof(struct sockaddr_ll, sll_addr);
+                for (i = 0; i < len; i++) {
+                    rb_str_cat2(ret, i == 0 ? "=" : ":");
+                    rb_str_catf(ret, "%02x", addr->sll_addr[i]);
+                }
+            }
+
+            if (socklen < (socklen_t)(offsetof(struct sockaddr_ll, sll_halen) + sizeof(addr->sll_halen)) ||
+                (socklen_t)(offsetof(struct sockaddr_ll, sll_addr) + addr->sll_halen) != socklen) {
+                CATSEP;
+                rb_str_catf(ret, "(%d bytes for %d bytes sockaddr_ll)",
+                    (int)socklen, (int)sizeof(struct sockaddr_ll));
+            }
+
+            rb_str_cat2(ret, "]");
+#undef CATSEP
+
+            break;
+          }
+#endif
+
+#if defined(AF_LINK) && defined(HAVE_TYPE_STRUCT_SOCKADDR_DL)
+	  /* AF_LINK is defined in 4.4BSD derivations since Net2.
+	     link_ntoa is also defined at Net2.
+             However Debian GNU/kFreeBSD defines AF_LINK but
+             don't have link_ntoa.  */
+          case AF_LINK:
+	  {
+	    /*
+	     * Simple implementation using link_ntoa():
+	     * This doesn't work on Debian GNU/kFreeBSD 6.0.7 (squeeze).
+             * Also, the format is bit different.
+	     *
+	     * rb_str_catf(ret, "LINK %s", link_ntoa(&sockaddr->dl));
+	     * break;
+	     */
+            struct sockaddr_dl *addr = &sockaddr->dl;
+            char *np = NULL, *ap = NULL, *endp;
+            int nlen = 0, alen = 0;
+            int i, off;
+            const char *sep = "[";
+#define CATSEP do { rb_str_cat2(ret, sep); sep = " "; } while (0);
+
+            rb_str_cat2(ret, "LINK");
+
+            endp = ((char *)addr) + socklen;
+
+            if (offsetof(struct sockaddr_dl, sdl_data) < socklen) {
+                np = addr->sdl_data;
+                nlen = addr->sdl_nlen;
+                if (endp - np < nlen)
+                    nlen = (int)(endp - np);
+            }
+            off = addr->sdl_nlen;
+
+            if (offsetof(struct sockaddr_dl, sdl_data) + off < socklen) {
+                ap = addr->sdl_data + off;
+                alen = addr->sdl_alen;
+                if (endp - ap < alen)
+                    alen = (int)(endp - ap);
+            }
+
+	    CATSEP;
+            if (np)
+                rb_str_catf(ret, "%.*s", nlen, np);
+            else
+                rb_str_cat2(ret, "?");
+
+            if (ap && 0 < alen) {
+		CATSEP;
+                for (i = 0; i < alen; i++)
+                    rb_str_catf(ret, "%s%02x", i == 0 ? "" : ":", (unsigned char)ap[i]);
+            }
+
+            if (socklen < (socklen_t)(offsetof(struct sockaddr_dl, sdl_nlen) + sizeof(addr->sdl_nlen)) ||
+                socklen < (socklen_t)(offsetof(struct sockaddr_dl, sdl_alen) + sizeof(addr->sdl_alen)) ||
+                socklen < (socklen_t)(offsetof(struct sockaddr_dl, sdl_slen) + sizeof(addr->sdl_slen)) ||
+                /* longer length is possible behavior because struct sockaddr_dl has "minimum work area, can be larger" as the last field.
+                 * cf. Net2:/usr/src/sys/net/if_dl.h. */
+                socklen < (socklen_t)(offsetof(struct sockaddr_dl, sdl_data) + addr->sdl_nlen + addr->sdl_alen + addr->sdl_slen)) {
+		CATSEP;
+                rb_str_catf(ret, "(%d bytes for %d bytes sockaddr_dl)",
+                    (int)socklen, (int)sizeof(struct sockaddr_dl));
+	    }
+
+            rb_str_cat2(ret, "]");
+#undef CATSEP
             break;
           }
 #endif
 
           default:
           {
-            ID id = rsock_intern_family(rai->addr.ss_family);
+            ID id = rsock_intern_family(sockaddr->addr.sa_family);
             if (id == 0)
-                rb_str_catf(ret, "unknown address family %d", rai->addr.ss_family);
+                rb_str_catf(ret, "unknown address family %d", sockaddr->addr.sa_family);
             else
                 rb_str_catf(ret, "%s address format unknown", rb_id2name(id));
             break;
@@ -1142,8 +1342,8 @@ addrinfo_inspect(VALUE self)
  *   Addrinfo.unix("/tmp/sock").inspect_sockaddr        #=> "/tmp/sock"
  *
  */
-static VALUE
-addrinfo_inspect_sockaddr(VALUE self)
+VALUE
+rsock_addrinfo_inspect_sockaddr(VALUE self)
 {
     return inspect_sockaddr(self, rb_str_new("", 0));
 }
@@ -1196,7 +1396,7 @@ addrinfo_mdump(VALUE self)
 #ifdef HAVE_SYS_UN_H
       case AF_UNIX:
       {
-        struct sockaddr_un *su = (struct sockaddr_un *)&rai->addr;
+        struct sockaddr_un *su = &rai->addr.un;
         char *s, *e;
         s = su->sun_path;
         e = (char*)su + rai->sockaddr_len;
@@ -1211,7 +1411,7 @@ addrinfo_mdump(VALUE self)
       {
         char hbuf[NI_MAXHOST], pbuf[NI_MAXSERV];
         int error;
-        error = getnameinfo((struct sockaddr *)&rai->addr, rai->sockaddr_len,
+        error = getnameinfo(&rai->addr.addr, rai->sockaddr_len,
                             hbuf, (socklen_t)sizeof(hbuf), pbuf, (socklen_t)sizeof(pbuf),
                             NI_NUMERICHOST|NI_NUMERICSERV);
         if (error) {
@@ -1232,7 +1432,7 @@ addrinfo_mload(VALUE self, VALUE ary)
     VALUE v;
     VALUE canonname, inspectname;
     int afamily, pfamily, socktype, protocol;
-    struct sockaddr_storage ss;
+    union_sockaddr ss;
     socklen_t len;
     rb_addrinfo_t *rai;
 
@@ -1296,8 +1496,7 @@ addrinfo_mload(VALUE self, VALUE ary)
       case AF_UNIX:
       {
         struct sockaddr_un uaddr;
-        MEMZERO(&uaddr, struct sockaddr_un, 1);
-        uaddr.sun_family = AF_UNIX;
+        INIT_SOCKADDR_UN(&uaddr, sizeof(struct sockaddr_un));
 
         StringValue(v);
         if (sizeof(uaddr.sun_path) < (size_t)RSTRING_LEN(v))
@@ -1330,7 +1529,7 @@ addrinfo_mload(VALUE self, VALUE ary)
     }
 
     DATA_PTR(self) = rai = alloc_addrinfo();
-    init_addrinfo(rai, (struct sockaddr *)&ss, len,
+    init_addrinfo(rai, &ss.addr, len,
                   pfamily, socktype, protocol,
                   canonname, inspectname);
     return self;
@@ -1558,7 +1757,7 @@ addrinfo_getnameinfo(int argc, VALUE *argv, VALUE self)
     if (rai->socktype == SOCK_DGRAM)
         flags |= NI_DGRAM;
 
-    error = getnameinfo((struct sockaddr *)&rai->addr, rai->sockaddr_len,
+    error = getnameinfo(&rai->addr.addr, rai->sockaddr_len,
                         hbuf, (socklen_t)sizeof(hbuf), pbuf, (socklen_t)sizeof(pbuf),
                         flags);
     if (error) {
@@ -1649,14 +1848,14 @@ addrinfo_ip_port(VALUE self)
       case AF_INET:
         if (rai->sockaddr_len != sizeof(struct sockaddr_in))
             rb_raise(rb_eSocket, "unexpected sockaddr size for IPv4");
-        port = ntohs(((struct sockaddr_in *)&rai->addr)->sin_port);
+        port = ntohs(rai->addr.in.sin_port);
         break;
 
 #ifdef AF_INET6
       case AF_INET6:
         if (rai->sockaddr_len != sizeof(struct sockaddr_in6))
             rb_raise(rb_eSocket, "unexpected sockaddr size for IPv6");
-        port = ntohs(((struct sockaddr_in6 *)&rai->addr)->sin6_port);
+        port = ntohs(rai->addr.in6.sin6_port);
         break;
 #endif
 
@@ -1673,7 +1872,7 @@ extract_in_addr(VALUE self, uint32_t *addrp)
     rb_addrinfo_t *rai = get_addrinfo(self);
     int family = ai_get_afamily(rai);
     if (family != AF_INET) return 0;
-    *addrp = ntohl(((struct sockaddr_in *)&rai->addr)->sin_addr.s_addr);
+    *addrp = ntohl(rai->addr.in.sin_addr.s_addr);
     return 1;
 }
 
@@ -1729,7 +1928,7 @@ extract_in6_addr(VALUE self)
     rb_addrinfo_t *rai = get_addrinfo(self);
     int family = ai_get_afamily(rai);
     if (family != AF_INET6) return NULL;
-    return &((struct sockaddr_in6 *)&rai->addr)->sin6_addr;
+    return &rai->addr.in6.sin6_addr;
 }
 
 /*
@@ -1905,12 +2104,10 @@ addrinfo_ipv6_to_ipv4(VALUE self)
     struct in6_addr *addr;
     int family = ai_get_afamily(rai);
     if (family != AF_INET6) return Qnil;
-    addr = &((struct sockaddr_in6 *)&rai->addr)->sin6_addr;
+    addr = &rai->addr.in6.sin6_addr;
     if (IN6_IS_ADDR_V4MAPPED(addr) || IN6_IS_ADDR_V4COMPAT(addr)) {
         struct sockaddr_in sin4;
-        MEMZERO(&sin4, struct sockaddr_in, 1);
-        sin4.sin_family = AF_INET;
-        SET_SIN_LEN(&sin4, sizeof(sin4));
+        INIT_SOCKADDR_IN(&sin4, sizeof(sin4));
         memcpy(&sin4.sin_addr, (char*)addr + sizeof(*addr) - sizeof(sin4.sin_addr), sizeof(sin4.sin_addr));
         return rsock_addrinfo_new((struct sockaddr *)&sin4, (socklen_t)sizeof(sin4),
                                   PF_INET, rai->socktype, rai->protocol,
@@ -1943,7 +2140,7 @@ addrinfo_unix_path(VALUE self)
     if (family != AF_UNIX)
 	rb_raise(rb_eSocket, "need AF_UNIX address");
 
-    addr = (struct sockaddr_un *)&rai->addr;
+    addr = &rai->addr.un;
 
     s = addr->sun_path;
     e = (char*)addr + rai->sockaddr_len;
@@ -2114,6 +2311,19 @@ rsock_sockaddr_string_value(volatile VALUE *v)
     return *v;
 }
 
+VALUE
+rsock_sockaddr_string_value_with_addrinfo(volatile VALUE *v, VALUE *rai_ret)
+{
+    VALUE val = *v;
+    *rai_ret = Qnil;
+    if (IS_ADDRINFO(val)) {
+        *v = addrinfo_to_sockaddr(val);
+        *rai_ret = val;
+    }
+    StringValue(*v);
+    return *v;
+}
+
 char *
 rsock_sockaddr_string_value_ptr(volatile VALUE *v)
 {
@@ -2185,7 +2395,7 @@ rsock_init_addrinfo(void)
     rb_define_alloc_func(rb_cAddrinfo, addrinfo_s_allocate);
     rb_define_method(rb_cAddrinfo, "initialize", addrinfo_initialize, -1);
     rb_define_method(rb_cAddrinfo, "inspect", addrinfo_inspect, 0);
-    rb_define_method(rb_cAddrinfo, "inspect_sockaddr", addrinfo_inspect_sockaddr, 0);
+    rb_define_method(rb_cAddrinfo, "inspect_sockaddr", rsock_addrinfo_inspect_sockaddr, 0);
     rb_define_singleton_method(rb_cAddrinfo, "getaddrinfo", addrinfo_s_getaddrinfo, -1);
     rb_define_singleton_method(rb_cAddrinfo, "ip", addrinfo_s_ip, 1);
     rb_define_singleton_method(rb_cAddrinfo, "tcp", addrinfo_s_tcp, 2);

@@ -101,7 +101,6 @@ class OpenSSL::TestX509CRL < Test::Unit::TestCase
     assert_equal(false, revoked[3].extensions[0].critical?)
     assert_equal(false, revoked[4].extensions[0].critical?)
 
-    crl = OpenSSL::X509::CRL.new(crl.to_der)
     assert_equal("Key Compromise", revoked[0].extensions[0].value)
     assert_equal("CA Compromise", revoked[1].extensions[0].value)
     assert_equal("Affiliation Changed", revoked[2].extensions[0].value)

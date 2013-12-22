@@ -137,6 +137,8 @@ class TestRDocAttr < RDoc::TestCase
     # version 3
     assert_equal cm,           loaded.parent
     assert_equal section,      loaded.section
+
+    assert loaded.display?
   end
 
   def test_marshal_load_version_2
@@ -165,6 +167,8 @@ class TestRDocAttr < RDoc::TestCase
     # version 3
     assert_equal cm,           loaded.parent
     assert_equal section,      loaded.section
+
+    assert loaded.display?
   end
 
   def test_params

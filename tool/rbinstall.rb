@@ -18,9 +18,17 @@ require 'shellwords'
 require 'optparse'
 require 'optparse/shellwords'
 require 'ostruct'
+require 'rubygems'
+require_relative 'vcs'
 
 STDOUT.sync = true
 File.umask(0)
+
+begin
+  $vcs = VCS.detect(File.expand_path('../..', __FILE__))
+rescue VCS::NotFoundError
+  $vcs = nil
+end
 
 def parse_args(argv = ARGV)
   $mantype = 'doc'
@@ -198,6 +206,7 @@ def install_recursive(srcdir, dest, options = {})
   opts = options.clone
   noinst = opts.delete(:no_install)
   glob = opts.delete(:glob) || "*"
+  maxdepth = opts.delete(:maxdepth)
   subpath = (srcdir.size+1)..-1
   prune = []
   skip = []
@@ -217,19 +226,21 @@ def install_recursive(srcdir, dest, options = {})
   prune = path_matcher(prune)
   skip = path_matcher(skip)
   File.directory?(srcdir) or return rescue return
-  paths = [[srcdir, dest, true]]
+  paths = [[srcdir, dest, 0]]
   found = []
   while file = paths.shift
     found << file
     file, d, dir = *file
     if dir
+      depth = dir + 1
+      next if maxdepth and maxdepth < depth
       files = []
       Dir.foreach(file) do |f|
         src = File.join(file, f)
         d = File.join(dest, dir = src[subpath])
         stat = File.lstat(src) rescue next
         if stat.directory?
-          files << [src, d, true] if /\A\./ !~ f and !prune[dir]
+          files << [src, d, depth] if maxdepth != depth and /\A\./ !~ f and !prune[dir]
         elsif stat.symlink?
           # skip
         else
@@ -304,11 +315,11 @@ rubyw_install_name = CONFIG["rubyw_install_name"]
 goruby_install_name = "go" + ruby_install_name
 
 bindir = CONFIG["bindir", true]
-libdir = CONFIG["libdir", true]
-archhdrdir = rubyhdrdir = CONFIG["rubyhdrdir", true]
-archhdrdir += "/" + CONFIG["arch", true]
+libdir = CONFIG[CONFIG.fetch("libdirname", "libdir"), true]
+rubyhdrdir = CONFIG["rubyhdrdir", true]
+archhdrdir = CONFIG["rubyarchhdrdir"] || (rubyhdrdir + "/" + CONFIG['arch'])
 rubylibdir = CONFIG["rubylibdir", true]
-archlibdir = CONFIG["archdir", true]
+archlibdir = CONFIG["rubyarchdir", true]
 sitelibdir = CONFIG["sitelibdir"]
 sitearchlibdir = CONFIG["sitearchdir"]
 vendorlibdir = CONFIG["vendorlibdir"]
@@ -453,7 +464,7 @@ install?(:local, :comm, :bin, :'bin-comm') do
   else
     trans = proc {|base| base}
   end
-  install_recursive(File.join(srcdir, "bin"), bindir) do |src, cmd|
+  install_recursive(File.join(srcdir, "bin"), bindir, :maxdepth => 1) do |src, cmd|
     cmd = cmd.sub(/[^\/]*\z/m) {|n| RbConfig.expand(trans[n])}
 
     shebang = ''
@@ -462,6 +473,7 @@ install?(:local, :comm, :bin, :'bin-comm') do
       shebang = f.gets
       body = f.read
     end
+    shebang or raise "empty file - #{src}"
     if PROLOG_SCRIPT
       shebang.sub!(/\A(\#!.*?ruby\b)?/) {PROLOG_SCRIPT + ($1 || "#!ruby\n")}
     else
@@ -560,14 +572,24 @@ module Gem
     def self.load(path)
       src = File.open(path, "rb") {|f| f.read}
       src.sub!(/\A#.*/, '')
-      eval(src, nil, path)
+      spec = eval(src, nil, path)
+      spec.date ||= last_date(path) || RUBY_RELEASE_DATE
+      spec
+    end
+
+    def self.last_date(path)
+      return unless $vcs
+      time = $vcs.get_revisions(path)[2] rescue return
+      return unless time
+      time.strftime("%Y-%m-%d")
     end
 
     def to_ruby
-        <<-GEMSPEC
+      <<-GEMSPEC
 Gem::Specification.new do |s|
   s.name = #{name.dump}
   s.version = #{version.dump}
+  s.date = #{date.dump}
   s.summary = #{summary.dump}
   s.description = #{description.dump}
   s.homepage = #{homepage.dump}
@@ -575,7 +597,11 @@ Gem::Specification.new do |s|
   s.email = #{email.inspect}
   s.files = #{files.inspect}
 end
-        GEMSPEC
+      GEMSPEC
+    end
+
+    def self.unresolved_deps
+      []
     end
   end
 end
@@ -588,7 +614,7 @@ module RbInstall
       end
 
       def collect
-        ruby_libraries + built_libraries
+        (ruby_libraries + built_libraries).sort
       end
 
       private
@@ -688,7 +714,7 @@ install?(:ext, :comm, :gem) do
   $:.unshift(File.join(srcdir, "lib"))
   require("rubygems.rb")
   gem_dir = Gem.default_dir
-  directories = Gem.ensure_gem_subdirectories(gem_dir)
+  directories = Gem.ensure_gem_subdirectories(gem_dir, :mode => $dir_mode)
   prepare "default gems", gem_dir, directories
 
   spec_dir = File.join(gem_dir, directories.grep(/^spec/)[0])
@@ -746,18 +772,23 @@ include FileUtils::NoWrite if $dryrun
 @fileutils_output = STDOUT
 @fileutils_label = ''
 
+all = $install.delete(:all)
 $install << :local << :ext if $install.empty?
-$install.each do |inst|
+installs = $install.map do |inst|
   if !(procs = $install_procs[inst]) || procs.empty?
     next warn("unknown install target - #{inst}")
   end
-  procs.each do |block|
-    dir = Dir.pwd
-    begin
-      block.call
-    ensure
-      Dir.chdir(dir)
-    end
+  procs
+end
+installs.flatten!
+installs.uniq!
+installs |= $install_procs[:all] if all
+installs.each do |block|
+  dir = Dir.pwd
+  begin
+    block.call
+  ensure
+    Dir.chdir(dir)
   end
 end
 

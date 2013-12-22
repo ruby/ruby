@@ -9,6 +9,21 @@ require 'test/unit'
 class TestFileUtils < Test::Unit::TestCase
   TMPROOT = "#{Dir.tmpdir}/fileutils.rb.#{$$}"
   include Test::Unit::FileAssertions
+
+  def assert_output_lines(expected, fu = self, message=nil)
+    old = fu.instance_variable_get(:@fileutils_output)
+    read, write = IO.pipe
+    fu.instance_variable_set(:@fileutils_output, write)
+    th = Thread.new { read.read }
+
+    yield
+
+    write.close
+    lines = th.value.lines.map {|l| l.chomp }
+    assert_equal(expected, lines)
+  ensure
+    fu.instance_variable_set(:@fileutils_output, old) if old
+  end
 end
 
 prevdir = Dir.pwd
@@ -234,9 +249,19 @@ class TestFileUtils
     touch 'tmp/cptmp'
     chmod 0755, 'tmp/cptmp'
     cp 'tmp/cptmp', 'tmp/cptmp2'
-    assert_equal(File.stat('tmp/cptmp').mode,
-                 File.stat('tmp/cptmp2').mode,
-                 bug4507)
+    assert_equal_filemode('tmp/cptmp', 'tmp/cptmp2', bug4507)
+  end
+
+  def test_cp_preserve_permissions_dir
+    bug7246 = '[ruby-core:48603]'
+    mkdir 'tmp/cptmp'
+    mkdir 'tmp/cptmp/d1'
+    chmod 0745, 'tmp/cptmp/d1'
+    mkdir 'tmp/cptmp/d2'
+    chmod 0700, 'tmp/cptmp/d2'
+    cp_r 'tmp/cptmp', 'tmp/cptmp2', :preserve => true
+    assert_equal_filemode('tmp/cptmp/d1', 'tmp/cptmp2/d1', bug7246)
+    assert_equal_filemode('tmp/cptmp/d2', 'tmp/cptmp2/d2', bug7246)
   end
 
   def test_cp_symlink
@@ -740,14 +765,19 @@ class TestFileUtils
 
     mkdir 'tmp/tmp', :mode => 0700
     assert_directory 'tmp/tmp'
-    assert_equal 0700, (File.stat('tmp/tmp').mode & 0777) if have_file_perm?
+    assert_filemode 0700, 'tmp/tmp', mask: 0777 if have_file_perm?
     Dir.rmdir 'tmp/tmp'
+
+    # EISDIR on OS X, FreeBSD; EEXIST on Linux; Errno::EACCES on Windows
+    assert_raise(Errno::EISDIR, Errno::EEXIST, Errno::EACCES) {
+      mkdir '/'
+    }
   end
 
   def test_mkdir_file_perm
     mkdir 'tmp/tmp', :mode => 07777
     assert_directory 'tmp/tmp'
-    assert_equal 07777, (File.stat('tmp/tmp').mode & 07777)
+    assert_filemode 07777, 'tmp/tmp'
     Dir.rmdir 'tmp/tmp'
   end if have_file_perm?
 
@@ -804,23 +834,25 @@ class TestFileUtils
     mkdir_p 'tmp/tmp/tmp', :mode => 0700
     assert_directory 'tmp/tmp'
     assert_directory 'tmp/tmp/tmp'
-    assert_equal 0700, (File.stat('tmp/tmp').mode & 0777) if have_file_perm?
-    assert_equal 0700, (File.stat('tmp/tmp/tmp').mode & 0777) if have_file_perm?
+    assert_filemode 0700, 'tmp/tmp', mask: 0777 if have_file_perm?
+    assert_filemode 0700, 'tmp/tmp/tmp', mask: 0777 if have_file_perm?
     rm_rf 'tmp/tmp'
 
     mkdir_p 'tmp/tmp', :mode => 0
     assert_directory 'tmp/tmp'
-    assert_equal 0, (File.stat('tmp/tmp').mode & 0777) if have_file_perm?
+    assert_filemode 0, 'tmp/tmp', mask: 0777 if have_file_perm?
     # DO NOT USE rm_rf here.
     # (rm(1) try to chdir to parent directory, it fails to remove directory.)
     Dir.rmdir 'tmp/tmp'
     Dir.rmdir 'tmp'
+
+    mkdir_p '/'
   end
 
   def test_mkdir_p_file_perm
     mkdir_p 'tmp/tmp/tmp', :mode => 07777
     assert_directory 'tmp/tmp/tmp'
-    assert_equal 07777, (File.stat('tmp/tmp/tmp').mode & 07777)
+    assert_filemode 07777, 'tmp/tmp/tmp'
     Dir.rmdir 'tmp/tmp/tmp'
     Dir.rmdir 'tmp/tmp'
   end if have_file_perm?
@@ -839,12 +871,12 @@ class TestFileUtils
     File.open('tmp/bbb', 'w') {|f| f.puts 'bbb' }
     install 'tmp/aaa', 'tmp/bbb', :mode => 0600
     assert_equal "aaa\n", File.read('tmp/bbb')
-    assert_equal 0600, (File.stat('tmp/bbb').mode & 0777) if have_file_perm?
+    assert_filemode 0600, 'tmp/bbb', mask: 0777 if have_file_perm?
 
     t = File.mtime('tmp/bbb')
     install 'tmp/aaa', 'tmp/bbb'
     assert_equal "aaa\n", File.read('tmp/bbb')
-    assert_equal 0600, (File.stat('tmp/bbb').mode & 0777) if have_file_perm?
+    assert_filemode 0600, 'tmp/bbb', mask: 0777 if have_file_perm?
     assert_equal_time t, File.mtime('tmp/bbb')
 
     File.unlink 'tmp/aaa'
@@ -900,27 +932,35 @@ class TestFileUtils
 
     touch 'tmp/a'
     chmod 0700, 'tmp/a'
-    assert_equal 0700, File.stat('tmp/a').mode & 0777
+    assert_filemode 0700, 'tmp/a'
     chmod 0500, 'tmp/a'
-    assert_equal 0500, File.stat('tmp/a').mode & 0777
+    assert_filemode 0500, 'tmp/a'
   end if have_file_perm?
 
   def test_chmod_symbol_mode
     check_singleton :chmod
 
     touch 'tmp/a'
+    chmod "u=wrx,g=rx,o=x", 'tmp/a'
+    assert_filemode 0751, 'tmp/a'
+    chmod "g+w-x", 'tmp/a'
+    assert_filemode 0761, 'tmp/a'
+    chmod "o+r,g=o+w,o-r,u-o", 'tmp/a' # 761 => 763 => 773 => 771 => 671
+    assert_filemode 0671, 'tmp/a'
+    chmod "go=u", 'tmp/a'
+    assert_filemode 0666, 'tmp/a'
     chmod "u=wrx,g=,o=", 'tmp/a'
-    assert_equal 0700, File.stat('tmp/a').mode & 0777
+    assert_filemode 0700, 'tmp/a'
     chmod "u=rx,go=", 'tmp/a'
-    assert_equal 0500, File.stat('tmp/a').mode & 0777
+    assert_filemode 0500, 'tmp/a'
     chmod "+wrx", 'tmp/a'
-    assert_equal 0777, File.stat('tmp/a').mode & 0777
+    assert_filemode 0777, 'tmp/a'
     chmod "u+s,o=s", 'tmp/a'
-    assert_equal 04770, File.stat('tmp/a').mode & 07777
+    assert_filemode 04770, 'tmp/a'
     chmod "u-w,go-wrx", 'tmp/a'
-    assert_equal 04500, File.stat('tmp/a').mode & 07777
+    assert_filemode 04500, 'tmp/a'
     chmod "+s", 'tmp/a'
-    assert_equal 06500, File.stat('tmp/a').mode & 07777
+    assert_filemode 06500, 'tmp/a'
 
     # FreeBSD ufs and tmpfs don't allow to change sticky bit against
     # regular file. It's slightly strange. Anyway it's no effect bit.
@@ -928,10 +968,30 @@ class TestFileUtils
     # NetBSD, OpenBSD and Solaris also denies it.
     if /freebsd|netbsd|openbsd|solaris/ !~ RUBY_PLATFORM
       chmod "u+t,o+t", 'tmp/a'
-      assert_equal 07500, File.stat('tmp/a').mode & 07777
+      assert_filemode 07500, 'tmp/a'
       chmod "a-t,a-s", 'tmp/a'
-      assert_equal 0500, File.stat('tmp/a').mode & 07777
+      assert_filemode 0500, 'tmp/a'
     end
+
+    assert_raise_with_message(ArgumentError, /invalid\b.*\bfile mode/) {
+      chmod "a", 'tmp/a'
+    }
+
+    assert_raise_with_message(ArgumentError, /invalid\b.*\bfile mode/) {
+      chmod "x+a", 'tmp/a'
+    }
+
+    assert_raise_with_message(ArgumentError, /invalid\b.*\bfile mode/) {
+      chmod "u+z", 'tmp/a'
+    }
+
+    assert_raise_with_message(ArgumentError, /invalid\b.*\bfile mode/) {
+      chmod ",+x", 'tmp/a'
+    }
+
+    assert_raise_with_message(ArgumentError, /invalid\b.*\bfile mode/) {
+      chmod "755", 'tmp/a'
+    }
 
   end if have_file_perm?
 
@@ -942,15 +1002,15 @@ class TestFileUtils
     mkdir_p 'tmp/dir/dir'
     touch %w( tmp/dir/file tmp/dir/dir/file )
     chmod_R 0700, 'tmp/dir'
-    assert_equal 0700, File.stat('tmp/dir').mode & 0777
-    assert_equal 0700, File.stat('tmp/dir/file').mode & 0777
-    assert_equal 0700, File.stat('tmp/dir/dir').mode & 0777
-    assert_equal 0700, File.stat('tmp/dir/dir/file').mode & 0777
+    assert_filemode 0700, 'tmp/dir', mask: 0777
+    assert_filemode 0700, 'tmp/dir/file', mask: 0777
+    assert_filemode 0700, 'tmp/dir/dir', mask: 0777
+    assert_filemode 0700, 'tmp/dir/dir/file', mask: 0777
     chmod_R 0500, 'tmp/dir'
-    assert_equal 0500, File.stat('tmp/dir').mode & 0777
-    assert_equal 0500, File.stat('tmp/dir/file').mode & 0777
-    assert_equal 0500, File.stat('tmp/dir/dir').mode & 0777
-    assert_equal 0500, File.stat('tmp/dir/dir/file').mode & 0777
+    assert_filemode 0500, 'tmp/dir', mask: 0777
+    assert_filemode 0500, 'tmp/dir/file', mask: 0777
+    assert_filemode 0500, 'tmp/dir/dir', mask: 0777
+    assert_filemode 0500, 'tmp/dir/dir/file', mask: 0777
     chmod_R 0700, 'tmp/dir'   # to remove
   end if have_file_perm?
 
@@ -960,16 +1020,36 @@ class TestFileUtils
     mkdir_p 'tmp/dir/dir'
     touch %w( tmp/dir/file tmp/dir/dir/file )
     chmod_R "u=wrx,g=,o=", 'tmp/dir'
-    assert_equal 0700, File.stat('tmp/dir').mode & 0777
-    assert_equal 0700, File.stat('tmp/dir/file').mode & 0777
-    assert_equal 0700, File.stat('tmp/dir/dir').mode & 0777
-    assert_equal 0700, File.stat('tmp/dir/dir/file').mode & 0777
+    assert_filemode 0700, 'tmp/dir', mask: 0777
+    assert_filemode 0700, 'tmp/dir/file', mask: 0777
+    assert_filemode 0700, 'tmp/dir/dir', mask: 0777
+    assert_filemode 0700, 'tmp/dir/dir/file', mask: 0777
     chmod_R "u=xr,g+X,o=", 'tmp/dir'
-    assert_equal 0510, File.stat('tmp/dir').mode & 0777
-    assert_equal 0500, File.stat('tmp/dir/file').mode & 0777
-    assert_equal 0510, File.stat('tmp/dir/dir').mode & 0777
-    assert_equal 0500, File.stat('tmp/dir/dir/file').mode & 0777
+    assert_filemode 0510, 'tmp/dir', mask: 0777
+    assert_filemode 0500, 'tmp/dir/file', mask: 0777
+    assert_filemode 0510, 'tmp/dir/dir', mask: 0777
+    assert_filemode 0500, 'tmp/dir/dir/file', mask: 0777
     chmod_R 0700, 'tmp/dir'   # to remove
+  end if have_file_perm?
+
+  def test_chmod_verbose
+    check_singleton :chmod
+
+    assert_output_lines(["chmod 700 tmp/a", "chmod 500 tmp/a"]) {
+      touch 'tmp/a'
+      chmod 0700, 'tmp/a', verbose: true
+      assert_filemode 0700, 'tmp/a', mask: 0777
+      chmod 0500, 'tmp/a', verbose: true
+      assert_filemode 0500, 'tmp/a', mask: 0777
+    }
+  end if have_file_perm?
+
+  def test_s_chmod_verbose
+    assert_output_lines(["chmod 700 tmp/a"], FileUtils) {
+      touch 'tmp/a'
+      FileUtils.chmod 0700, 'tmp/a', verbose: true
+      assert_filemode 0700, 'tmp/a', mask: 0777
+    }
   end if have_file_perm?
 
   # FIXME: How can I test this method?
@@ -1117,28 +1197,10 @@ class TestFileUtils
       uptodate? Pathname.new('tmp/a'), [Pathname.new('tmp/b'), Pathname.new('tmp/c')]
     }
     # [Bug #6708] [ruby-core:46256]
-    assert_raises_with_message(ArgumentError, "wrong number of arguments (3 for 2)") {
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (3 for 2)") {
       uptodate?('new',['old', 'oldest'], {})
     }
   end
-
-  def assert_raises_with_message(klass, message)
-    begin
-      yield
-      flunk("Expected Exception #{klass} didn't raise")
-    rescue klass => ex
-      if message.kind_of? String
-        flag = !!(ex.message == message)
-        assert(flag, "Expected Exception(#{klass}) was raised, but the message doesn't match")
-      elsif message.kind_of? Regexp
-        flag = !!(ex.message =~ message)
-        assert(flag, "Expected Exception(#{klass}) was raised, but the message doesn't match")
-      else
-        raise
-      end
-    end
-  end
-  private :assert_raises_with_message
 
   def test_cd
     check_singleton :cd
@@ -1178,6 +1240,27 @@ class TestFileUtils
 
   def test_rmdir
     check_singleton :rmdir
+
+    begin
+      Dir.rmdir '/'
+    rescue Errno::ENOTEMPTY
+    rescue => e
+      assert_raise(e.class) {
+        # Dir.rmdir('') raises Errno::ENOENT.
+        # FileUtils#rmdir ignores it.
+        # And this test failed as expected.
+        rmdir '/'
+      }
+    end
+
+    subdir = 'data/sub/dir'
+    mkdir_p(subdir)
+    assert_nothing_raised(Errno::ENOENT) {
+      rmdir(subdir, parents: true)
+    }
+    assert_file_not_exist(subdir)
+    assert_file_not_exist('data/sub')
+    assert_directory('data')
   end
 
   def test_rmtree

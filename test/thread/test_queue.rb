@@ -1,6 +1,7 @@
 require 'test/unit'
 require 'thread'
 require 'tmpdir'
+require 'timeout'
 require_relative '../ruby/envutil'
 
 class TestQueue < Test::Unit::TestCase
@@ -85,7 +86,7 @@ class TestQueue < Test::Unit::TestCase
     bug5343 = '[ruby-core:39634]'
     Dir.mktmpdir {|d|
       timeout = 30
-      total_count = 2000
+      total_count = 250
       begin
         assert_normal_exit(<<-"_eom", bug5343, {:timeout => timeout, :chdir=>d})
           require "thread"
@@ -98,7 +99,8 @@ class TestQueue < Test::Unit::TestCase
               r.read 1
             }
             queue.pop
-            th.kill.join
+            th.kill
+            th.join
           end
         _eom
       rescue Timeout::Error
@@ -106,5 +108,51 @@ class TestQueue < Test::Unit::TestCase
         flunk "only #{count}/#{total_count} done in #{timeout} seconds."
       end
     }
+  end
+
+  def test_queue_push_return_value
+    q = Queue.new
+    retval = q.push(1)
+    assert_same q, retval
+  end
+
+  def test_queue_clear_return_value
+    q = Queue.new
+    retval = q.clear
+    assert_same q, retval
+  end
+
+  def test_sized_queue_push_return_value
+    q = SizedQueue.new(1)
+    retval = q.push(1)
+    assert_same q, retval
+  end
+
+  def test_sized_queue_clear_return_value
+    q = SizedQueue.new(1)
+    retval = q.clear
+    assert_same q, retval
+  end
+
+  def test_queue_thread_raise
+    q = Queue.new
+    th1 = Thread.new do
+      begin
+        q.pop
+      rescue RuntimeError
+        sleep
+      end
+    end
+    th2 = Thread.new do
+      sleep 0.1
+      q.pop
+    end
+    sleep 0.1
+    th1.raise
+    sleep 0.1
+    q << :s
+    assert_nothing_raised(TimeoutError) do
+      timeout(1) { th2.join }
+    end
   end
 end

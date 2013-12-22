@@ -256,7 +256,7 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
   end
 
   def accept_paragraph_break
-    assert_equal "\n<p>hello<br>\nworld</p>\n", @to.res.join
+    assert_equal "\n<p>hello<br> world</p>\n", @to.res.join
   end
 
   def accept_paragraph_i
@@ -288,7 +288,7 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
   end
 
   def accept_rule
-    assert_equal "<hr style=\"height: 4px\">\n", @to.res.join
+    assert_equal "<hr>\n", @to.res.join
   end
 
   def accept_verbatim
@@ -357,12 +357,12 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     @to.code_object = RDoc::NormalClass.new 'Foo'
     @to.start_accepting
 
-    @to.accept_heading @RM::Heading.new(1, 'Hello')
+    @to.accept_heading head(1, 'Hello')
 
-    links = '<span><a href="#label-Hello">&para;</a> ' +
+    links = '<span><a href="#class-Foo-label-Hello">&para;</a> ' +
             '<a href="#documentation">&uarr;</a></span>'
 
-    assert_equal "\n<h1 id=\"label-Hello\">Hello#{links}</h1>\n",
+    assert_equal "\n<h1 id=\"class-Foo-label-Hello\">Hello#{links}</h1>\n",
                  @to.res.join
   end
 
@@ -387,6 +387,35 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     @to.accept_heading @RM::Heading.new(1, 'Hello')
 
     assert_equal "\n<h1 id=\"label-Hello\">Hello</h1>\n", @to.res.join
+  end
+
+  def test_accept_paragraph_newline
+    @to.start_accepting
+
+    @to.accept_paragraph para("hello\n", "world\n")
+
+    assert_equal "\n<p>hello world</p>\n", @to.res.join
+  end
+
+  def test_accept_heading_output_decoration
+    @options.output_decoration = false
+
+    @to.start_accepting
+
+    @to.accept_heading @RM::Heading.new(1, 'Hello')
+
+    assert_equal "\n<h1>Hello<span><a href=\"#label-Hello\">&para;</a> <a href=\"#documentation\">&uarr;</a></span></h1>\n", @to.res.join
+  end
+
+  def test_accept_heading_output_decoration_with_pipe
+    @options.pipe = true
+    @options.output_decoration = false
+
+    @to.start_accepting
+
+    @to.accept_heading @RM::Heading.new(1, 'Hello')
+
+    assert_equal "\n<h1>Hello</h1>\n", @to.res.join
   end
 
   def test_accept_verbatim_parseable
@@ -417,6 +446,24 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
 
 <pre>#{inner}
 </pre>
+    EXPECTED
+
+    assert_equal expected, @to.res.join
+  end
+
+  def test_accept_verbatim_pipe
+    @options.pipe = true
+
+    verb = @RM::Verbatim.new("1 + 1\n")
+    verb.format = :ruby
+
+    @to.start_accepting
+    @to.accept_verbatim verb
+
+    expected = <<-EXPECTED
+
+<pre><code>1 + 1
+</code></pre>
     EXPECTED
 
     assert_equal expected, @to.res.join
@@ -457,13 +504,13 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
   def test_convert_RDOCLINK_label_foottext
     result = @to.convert 'rdoc-label:foottext-1'
 
-    assert_equal "\n<p><a href=\"#foottext-1\">*1</a></p>\n", result
+    assert_equal "\n<p><a href=\"#foottext-1\">1</a></p>\n", result
   end
 
   def test_convert_RDOCLINK_label_footmark
     result = @to.convert 'rdoc-label:footmark-1'
 
-    assert_equal "\n<p><a href=\"#footmark-1\">^1</a></p>\n", result
+    assert_equal "\n<p><a href=\"#footmark-1\">1</a></p>\n", result
   end
 
   def test_convert_RDOCLINK_ref
@@ -475,7 +522,28 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
   def test_convert_TIDYLINK_footnote
     result = @to.convert 'text{*1}[rdoc-label:foottext-1:footmark-1]'
 
-    assert_equal "\n<p>text<a id=\"footmark-1\" href=\"#foottext-1\">*1</a></p>\n", result
+    assert_equal "\n<p>text<sup><a id=\"footmark-1\" href=\"#foottext-1\">1</a></sup></p>\n", result
+  end
+
+  def test_convert_TIDYLINK_multiple
+    result = @to.convert '{a}[http://example] {b}[http://example]'
+
+    expected = <<-EXPECTED
+
+<p><a href=\"http://example\">a</a> <a href=\"http://example\">b</a></p>
+    EXPECTED
+
+    assert_equal expected, result
+  end
+
+  def test_convert_TIDYLINK_image
+    result =
+      @to.convert '{rdoc-image:path/to/image.jpg}[http://example.com]'
+
+    expected =
+      "\n<p><a href=\"http://example.com\"><img src=\"path/to/image.jpg\"></a></p>\n"
+
+    assert_equal expected, result
   end
 
   def test_convert_TIDYLINK_rdoc_label
@@ -501,7 +569,7 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
   end
 
   def test_gen_url_rdoc_label_id
-    assert_equal '<a id="footmark-1" href="#foottext-1">example</a>',
+    assert_equal '<sup><a id="footmark-1" href="#foottext-1">example</a></sup>',
                  @to.gen_url('rdoc-label:foottext-1:footmark-1', 'example')
   end
 

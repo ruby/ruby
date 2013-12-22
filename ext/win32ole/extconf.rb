@@ -23,6 +23,14 @@ def create_win32ole_makefile
     unless have_type("IMultiLanguage2", "mlang.h")
       have_type("IMultiLanguage", "mlang.h")
     end
+    spec = nil
+    checking_for('thread_specific', '%s') do
+      spec = %w[__declspec(thread) __thread].find {|th|
+        try_compile("#{th} int foo;", "", :werror => true)
+      }
+      spec or 'no'
+    end
+    $defs << "-DRB_THREAD_SPECIFIC=#{spec}" if spec
     create_makefile("win32ole")
   end
 end
@@ -30,6 +38,7 @@ end
 
 case RUBY_PLATFORM
 when /mswin/
-  $CFLAGS += ' /W3'
+  $CFLAGS.sub!(/((?:\A|\s)[-\/])W\d(?=\z|\s)/, '\1W3') or
+    $CFLAGS += ' -W3'
 end
 create_win32ole_makefile

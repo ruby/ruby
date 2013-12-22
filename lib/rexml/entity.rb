@@ -63,7 +63,7 @@ module REXML
       end
     end
 
-    # Evaluates whether the given string matchs an entity definition,
+    # Evaluates whether the given string matches an entity definition,
     # returning true if so, and false otherwise.
     def Entity::matches? string
       (ENTITYDECL =~ string) == 0

@@ -5,13 +5,10 @@
 # File a patch instead and assign it to Ryan Davis.
 ######################################################################
 
-require 'minitest/mock'
-require 'minitest/unit'
-
-MiniTest::Unit.autorun
+require 'minitest/autorun'
 
 class TestMiniTestMock < MiniTest::Unit::TestCase
-  parallelize_me! if ENV["PARALLEL"]
+  parallelize_me!
 
   def setup
     @mock = MiniTest::Mock.new.expect(:foo, nil)
@@ -74,6 +71,8 @@ class TestMiniTestMock < MiniTest::Unit::TestCase
   end
 
   def test_mock_args_does_not_raise
+    skip "non-opaque use of ==" if maglev?
+
     arg = MiniTest::Mock.new
     mock = MiniTest::Mock.new
     mock.expect(:foo, nil, [arg])
@@ -279,7 +278,7 @@ end
 require "minitest/metametameta"
 
 class TestMiniTestStub < MiniTest::Unit::TestCase
-  parallelize_me! if ENV["PARALLEL"]
+  parallelize_me!
 
   def setup
     super
@@ -294,17 +293,55 @@ class TestMiniTestStub < MiniTest::Unit::TestCase
     assert_equal @assertion_count, @tc._assertions
   end
 
+  class Time
+    def self.now
+      24
+    end
+  end
+
   def assert_stub val_or_callable
     @assertion_count += 1
 
-    synchronize do
-      t = Time.now.to_i
+    t = Time.now.to_i
 
-      Time.stub :now, val_or_callable do
-        @tc.assert_equal 42, Time.now
+    Time.stub :now, val_or_callable do
+      @tc.assert_equal 42, Time.now
+    end
+
+    @tc.assert_operator Time.now.to_i, :>=, t
+  end
+
+  def test_stub_private_module_method
+    @assertion_count += 1
+
+    t0 = Time.now
+
+    self.stub :sleep, nil do
+      @tc.assert_nil sleep(10)
+    end
+
+    @tc.assert_operator Time.now - t0, :<=, 1
+  end
+
+  def test_stub_private_module_method_indirect
+    @assertion_count += 1
+
+    slow_clapper = Class.new do
+      def slow_clap
+        sleep 3
+        :clap
       end
+    end.new
 
-      @tc.assert_operator Time.now.to_i, :>=, t
+    slow_clapper.stub :sleep, nil do |fast_clapper|
+      @tc.assert_equal :clap, fast_clapper.slow_clap # either form works
+      @tc.assert_equal :clap, slow_clapper.slow_clap # yay closures
+    end
+  end
+
+  def test_stub_public_module_method
+    Math.stub(:log10, 42.0) do
+      @tc.assert_in_delta 42.0, Math.log10(1000)
     end
   end
 
@@ -319,15 +356,13 @@ class TestMiniTestStub < MiniTest::Unit::TestCase
   def test_stub_block_args
     @assertion_count += 1
 
-    synchronize do
-      t = Time.now.to_i
+    t = Time.now.to_i
 
-      Time.stub :now,  lambda { |n| n * 2 } do
-        @tc.assert_equal 42, Time.now(21)
-      end
-
-      @tc.assert_operator Time.now.to_i, :>=, t
+    Time.stub :now,  lambda { |n| n * 2 } do
+      @tc.assert_equal 42, Time.now(21)
     end
+
+    @tc.assert_operator Time.now.to_i, :>=, t
   end
 
   def test_stub_callable

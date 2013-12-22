@@ -52,16 +52,6 @@ class TestObject < Test::Unit::TestCase
     assert_raise(RuntimeError) { o.untaint }
   end
 
-  def test_freeze_under_safe_4
-    o = Object.new
-    assert_raise(SecurityError) do
-      Thread.new do
-        $SAFE = 4
-        o.freeze
-      end.join
-    end
-  end
-
   def test_freeze_immediate
     assert_equal(true, 1.frozen?)
     1.freeze
@@ -159,19 +149,49 @@ class TestObject < Test::Unit::TestCase
     assert_equal([:foo2], (o2.public_methods(false) - o0.public_methods(false)).sort)
   end
 
+  def test_methods_prepend
+    bug8044 = '[ruby-core:53207] [Bug #8044]'
+    o = Object.new
+    def o.foo; end
+    assert_equal([:foo], o.methods(false))
+    class << o; prepend Module.new; end
+    assert_equal([:foo], o.methods(false), bug8044)
+  end
+
   def test_instance_variable_get
     o = Object.new
     o.instance_eval { @foo = :foo }
     assert_equal(:foo, o.instance_variable_get(:@foo))
     assert_equal(nil, o.instance_variable_get(:@bar))
+    assert_raise(NameError) { o.instance_variable_get('@') }
+    assert_raise(NameError) { o.instance_variable_get(:'@') }
     assert_raise(NameError) { o.instance_variable_get(:foo) }
+    assert_raise(NameError) { o.instance_variable_get("bar") }
+    assert_raise(TypeError) { o.instance_variable_get(1) }
+
+    n = Object.new
+    def n.to_str; @count = defined?(@count) ? @count + 1 : 1; "@foo"; end
+    def n.count; @count; end
+    assert_equal(:foo, o.instance_variable_get(n))
+    assert_equal(1, n.count)
   end
 
   def test_instance_variable_set
     o = Object.new
     o.instance_variable_set(:@foo, :foo)
     assert_equal(:foo, o.instance_eval { @foo })
+    assert_raise(NameError) { o.instance_variable_set(:'@', 1) }
+    assert_raise(NameError) { o.instance_variable_set('@', 1) }
     assert_raise(NameError) { o.instance_variable_set(:foo, 1) }
+    assert_raise(NameError) { o.instance_variable_set("bar", 1) }
+    assert_raise(TypeError) { o.instance_variable_set(1, 1) }
+
+    n = Object.new
+    def n.to_str; @count = defined?(@count) ? @count + 1 : 1; "@foo"; end
+    def n.count; @count; end
+    o.instance_variable_set(n, :bar)
+    assert_equal(:bar, o.instance_eval { @foo })
+    assert_equal(1, n.count)
   end
 
   def test_instance_variable_defined
@@ -179,7 +199,17 @@ class TestObject < Test::Unit::TestCase
     o.instance_eval { @foo = :foo }
     assert_equal(true, o.instance_variable_defined?(:@foo))
     assert_equal(false, o.instance_variable_defined?(:@bar))
+    assert_raise(NameError) { o.instance_variable_defined?(:'@') }
+    assert_raise(NameError) { o.instance_variable_defined?('@') }
     assert_raise(NameError) { o.instance_variable_defined?(:foo) }
+    assert_raise(NameError) { o.instance_variable_defined?("bar") }
+    assert_raise(TypeError) { o.instance_variable_defined?(1) }
+
+    n = Object.new
+    def n.to_str; @count = defined?(@count) ? @count + 1 : 1; "@foo"; end
+    def n.count; @count; end
+    assert_equal(true, o.instance_variable_defined?(n))
+    assert_equal(1, n.count)
   end
 
   def test_remove_instance_variable
@@ -248,17 +278,6 @@ class TestObject < Test::Unit::TestCase
     assert_equal(1+3+5+7+9, n)
   end
 
-  def test_add_method_under_safe4
-    o = Object.new
-    assert_raise(SecurityError) do
-      Thread.new do
-        $SAFE = 4
-        def o.foo
-        end
-      end.join
-    end
-  end
-
   def test_redefine_method_under_verbose
     assert_in_out_err([], <<-INPUT, %w(2), /warning: method redefined; discarding old foo$/)
       $VERBOSE = true
@@ -282,20 +301,6 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_remove_method
-    assert_raise(SecurityError) do
-      Thread.new do
-        $SAFE = 4
-        Object.instance_eval { remove_method(:foo) }
-      end.join
-    end
-
-    assert_raise(SecurityError) do
-      Thread.new do
-        $SAFE = 4
-        Class.instance_eval { remove_method(:foo) }
-      end.join
-    end
-
     c = Class.new
     c.freeze
     assert_raise(RuntimeError) do
@@ -406,8 +411,8 @@ class TestObject < Test::Unit::TestCase
     assert_equal([:foo], foo.foobar);
     assert_equal([:foo, 1], foo.foobar(1));
     assert_equal([:foo, 1, 2, 3, 4, 5], foo.foobar(1, 2, 3, 4, 5));
-    assert(foo.respond_to?(:foobar))
-    assert_equal(false, foo.respond_to?(:foobarbaz))
+    assert_respond_to(foo, :foobar)
+    assert_not_respond_to(foo, :foobarbaz)
     assert_raise(NoMethodError) do
       foo.foobarbaz
     end
@@ -483,11 +488,10 @@ class TestObject < Test::Unit::TestCase
       end
     end
 
-    e = assert_raise(ArgumentError, '[bug:6000]') do
+    msg = 'respond_to? must accept 1 or 2 arguments (requires 3)'
+    assert_raise_with_message(ArgumentError, msg, '[bug:6000]') do
       [[p]].flatten
     end
-
-    assert_equal('respond_to? must accept 1 or 2 arguments (requires 3)', e.message)
   end
 
   def test_method_missing_passed_block
@@ -653,80 +657,33 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_untrusted
-    obj = lambda {
-      $SAFE = 4
-      x = Object.new
-      x.instance_eval { @foo = 1 }
-      x
-    }.call
-    assert_equal(true, obj.untrusted?)
-    assert_equal(true, obj.tainted?)
-
-    x = Object.new
-    assert_equal(false, x.untrusted?)
-    assert_raise(SecurityError) do
-      lambda {
-        $SAFE = 4
-        x.instance_eval { @foo = 1 }
-      }.call
+    verbose = $VERBOSE
+    $VERBOSE = false
+    begin
+      obj = Object.new
+      assert_equal(false, obj.untrusted?)
+      assert_equal(false, obj.tainted?)
+      obj.untrust
+      assert_equal(true, obj.untrusted?)
+      assert_equal(true, obj.tainted?)
+      obj.trust
+      assert_equal(false, obj.untrusted?)
+      assert_equal(false, obj.tainted?)
+      obj.taint
+      assert_equal(true, obj.untrusted?)
+      assert_equal(true, obj.tainted?)
+      obj.untaint
+      assert_equal(false, obj.untrusted?)
+      assert_equal(false, obj.tainted?)
+    ensure
+      $VERBOSE = verbose
     end
-
-    x = Object.new
-    x.taint
-    assert_raise(SecurityError) do
-      lambda {
-        $SAFE = 4
-        x.instance_eval { @foo = 1 }
-      }.call
-    end
-
-    x.untrust
-    assert_equal(true, x.untrusted?)
-    assert_nothing_raised do
-      lambda {
-        $SAFE = 4
-        x.instance_eval { @foo = 1 }
-      }.call
-    end
-
-    x.trust
-    assert_equal(false, x.untrusted?)
-    assert_raise(SecurityError) do
-      lambda {
-        $SAFE = 4
-        x.instance_eval { @foo = 1 }
-      }.call
-    end
-
-    a = Object.new
-    a.untrust
-    assert_equal(true, a.untrusted?)
-    b = a.dup
-    assert_equal(true, b.untrusted?)
-    c = a.clone
-    assert_equal(true, c.untrusted?)
-
-    a = Object.new
-    b = lambda {
-      $SAFE = 4
-      a.dup
-    }.call
-    assert_equal(true, b.untrusted?)
-
-    a = Object.new
-    b = lambda {
-      $SAFE = 4
-      a.clone
-    }.call
-    assert_equal(true, b.untrusted?)
   end
 
   def test_to_s
     x = Object.new
     x.taint
-    x.untrust
     s = x.to_s
-    assert_equal(true, s.untrusted?)
     assert_equal(true, s.tainted?)
 
     x = eval(<<-EOS)
@@ -779,42 +736,6 @@ class TestObject < Test::Unit::TestCase
     assert_match(/\bInspect\u{3042}:.* @\u{3044}=42\b/, x)
   end
 
-  def test_exec_recursive
-    Thread.current[:__recursive_key__] = nil
-    a = [[]]
-    a.inspect
-
-    assert_nothing_raised do
-      -> do
-        $SAFE = 4
-        begin
-          a.hash
-        rescue ArgumentError
-        end
-      end.call
-    end
-
-    -> do
-      assert_nothing_raised do
-        $SAFE = 4
-        a.inspect
-      end
-    end.call
-
-    -> do
-      o = Object.new
-      def o.to_ary(x); end
-      def o.==(x); $SAFE = 4; false; end
-      a = [[o]]
-      b = []
-      b << b
-
-      assert_nothing_raised do
-        b == a
-      end
-    end.call
-  end
-
   def test_singleton_class
     x = Object.new
     xs = class << x; self; end
@@ -861,12 +782,6 @@ class TestObject < Test::Unit::TestCase
     c = a.dup.freeze
     assert_raise(RuntimeError, "frozen") {c.instance_eval {initialize_copy(b)}}
     d = a.dup.trust
-    assert_raise(SecurityError, "untrust") do
-      proc {
-        $SAFE = 4
-        d.instance_eval {initialize_copy(b)}
-      }.call
-    end
     [a, b, c, d]
   end
 
@@ -883,6 +798,11 @@ class TestObject < Test::Unit::TestCase
     assert_not_initialize_copy {/.*/.match("foo")}
     st = Struct.new(:foo)
     assert_not_initialize_copy {st.new}
-    assert_not_initialize_copy {Time.now}
+  end
+
+  def test_type_error_message
+    issue = "Bug #7539"
+    assert_raise_with_message(TypeError, "can't convert Array into Integer") {Integer([42])}
+    assert_raise_with_message(TypeError, 'no implicit conversion of Array into Integer') {[].first([42])}
   end
 end

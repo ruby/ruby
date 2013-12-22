@@ -6,6 +6,35 @@ require 'psych'
 
 module Psych
   class TestCase < MiniTest::Unit::TestCase
+    def self.suppress_warning
+      verbose, $VERBOSE = $VERBOSE, nil
+      yield
+    ensure
+      $VERBOSE = verbose
+    end
+
+    def with_default_external(enc)
+      verbose, $VERBOSE = $VERBOSE, nil
+      origenc, Encoding.default_external = Encoding.default_external, enc
+      $VERBOSE = verbose
+      yield
+    ensure
+      verbose, $VERBOSE = $VERBOSE, nil
+      Encoding.default_external = origenc
+      $VERBOSE = verbose
+    end
+
+    def with_default_internal(enc)
+      verbose, $VERBOSE = $VERBOSE, nil
+      origenc, Encoding.default_internal = Encoding.default_internal, enc
+      $VERBOSE = verbose
+      yield
+    ensure
+      verbose, $VERBOSE = $VERBOSE, nil
+      Encoding.default_internal = origenc
+      $VERBOSE = verbose
+    end
+
     #
     # Convert between Psych and the object to verify correct parsing and
     # emitting
@@ -31,7 +60,7 @@ module Psych
     end
 
     def assert_cycle( obj )
-      v = Visitors::YAMLTree.new
+      v = Visitors::YAMLTree.create
       v << obj
       assert_equal(obj, Psych.load(v.tree.yaml))
       assert_equal( obj, Psych::load(Psych.dump(obj)))
@@ -51,6 +80,35 @@ module Psych
         val = Time.at( val.tv_sec - ofs, val.tv_nsec / 1000.0 )
       end
       return val
+    end
+  end
+end
+
+# backport so that tests will run on 1.9 and 2.0.0
+unless Tempfile.respond_to? :create
+  def Tempfile.create(basename, *rest)
+    tmpfile = nil
+    Dir::Tmpname.create(basename, *rest) do |tmpname, n, opts|
+      mode = File::RDWR|File::CREAT|File::EXCL
+      perm = 0600
+      if opts
+        mode |= opts.delete(:mode) || 0
+        opts[:perm] = perm
+        perm = nil
+      else
+        opts = perm
+      end
+      tmpfile = File.open(tmpname, mode, opts)
+    end
+    if block_given?
+      begin
+        yield tmpfile
+      ensure
+        tmpfile.close if !tmpfile.closed?
+        File.unlink tmpfile
+      end
+    else
+      tmpfile
     end
   end
 end

@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestProc < Test::Unit::TestCase
   def setup
@@ -64,7 +65,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal(1, proc{|x|}.arity)
     assert_equal(0, proc{|x=1|}.arity)
     assert_equal(2, proc{|x, y|}.arity)
-    assert_equal(0, proc{|x=0, y|}.arity)
+    assert_equal(1, proc{|x=0, y|}.arity)
     assert_equal(0, proc{|x=0, y=0|}.arity)
     assert_equal(1, proc{|x, y=0|}.arity)
     assert_equal(-2, proc{|x, *y|}.arity)
@@ -166,11 +167,50 @@ class TestProc < Test::Unit::TestCase
     method(:m2).to_proc
   end
 
+  def m1(var)
+    var
+  end
+
+  def m_block_given?
+    m1(block_given?)
+  end
+
   # [yarv-dev:777] block made by Method#to_proc
   def test_method_to_proc
     b = block()
     assert_equal "OK", b.call
     assert_instance_of(Binding, b.binding, '[ruby-core:25589]')
+  end
+
+  def test_block_given_method
+    m = method(:m_block_given?)
+    assert(!m.call, "without block")
+    assert(m.call {}, "with block")
+    assert(!m.call, "without block second")
+  end
+
+  def test_block_given_method_to_proc
+    bug8341 = '[Bug #8341]'
+    m = method(:m_block_given?).to_proc
+    assert(!m.call, "#{bug8341} without block")
+    assert(m.call {}, "#{bug8341} with block")
+    assert(!m.call, "#{bug8341} without block second")
+  end
+
+  def test_block_persist_between_calls
+    bug8341 = '[Bug #8341]'
+    o = Object.new
+    def o.m1(top=true)
+      if top
+        [block_given?, @m.call(false)]
+      else
+        block_given?
+      end
+    end
+    m = o.method(:m1).to_proc
+    o.instance_variable_set(:@m, m)
+    assert_equal([true, false], m.call {}, "#{bug8341} nested with block")
+    assert_equal([false, false], m.call, "#{bug8341} nested without block")
   end
 
   def test_curry
@@ -268,6 +308,13 @@ class TestProc < Test::Unit::TestCase
 
     assert_equal(3, result[0])
     assert_equal(self, result[1])
+  end
+
+  def test_curry_optional_params
+    obj = Object.new
+    def obj.foo(a, b=42); end
+    assert_raise(ArgumentError) { obj.method(:foo).to_proc.curry(3) }
+    assert_raise(ArgumentError) { ->(a, b=42){}.curry(3) }
   end
 
   def test_dup_clone
@@ -1065,7 +1112,7 @@ class TestProc < Test::Unit::TestCase
     assert_match(/^#<Proc:0x\h+ \(lambda\)>$/, method(:p).to_proc.to_s)
     x = proc {}
     x.taint
-    assert(x.to_s.tainted?)
+    assert_predicate(x.to_s, :tainted?)
   end
 
   @@line_of_source_location_test = __LINE__ + 1
@@ -1149,5 +1196,49 @@ class TestProc < Test::Unit::TestCase
     assert_nothing_raised(LocalJumpError, bug3792) {
       assert_equal('zot', o.method(:foo).to_proc.() {'zot'}, bug3792)
     }
+  end
+
+  def test_overridden_lambda
+    bug8345 = '[ruby-core:54687] [Bug #8345]'
+    assert_normal_exit('def lambda; end; method(:puts).to_proc', bug8345)
+  end
+
+  def test_overridden_proc
+    bug8345 = '[ruby-core:54688] [Bug #8345]'
+    assert_normal_exit('def proc; end; ->{}.curry', bug8345)
+  end
+
+  def get_binding if: 1, case: 2, when: 3, begin: 4, end: 5
+    a = 0
+    binding
+  end
+
+  def test_local_variable_get
+    b = get_binding
+    assert_equal(0, b.local_variable_get(:a))
+    assert_raise(NameError){ b.local_variable_get(:b) }
+
+    # access keyword named local variables
+    assert_equal(1, b.local_variable_get(:if))
+    assert_equal(2, b.local_variable_get(:case))
+    assert_equal(3, b.local_variable_get(:when))
+    assert_equal(4, b.local_variable_get(:begin))
+    assert_equal(5, b.local_variable_get(:end))
+  end
+
+  def test_local_variable_set
+    b = get_binding
+    b.local_variable_set(:a, 10)
+    b.local_variable_set(:b, 20)
+    assert_equal(10, b.local_variable_get(:a))
+    assert_equal(20, b.local_variable_get(:b))
+    assert_equal(10, b.eval("a"))
+    assert_equal(20, b.eval("b"))
+  end
+
+  def test_local_variable_defined?
+    b = get_binding
+    assert_equal(true, b.local_variable_defined?(:a))
+    assert_equal(false, b.local_variable_defined?(:b))
   end
 end

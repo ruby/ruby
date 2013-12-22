@@ -29,7 +29,7 @@
 
 #ifndef UNALIGNED_WORD_ACCESS
 # if defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
-     defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD86) || \
+     defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD64) || \
      defined(__mc68020__)
 #   define UNALIGNED_WORD_ACCESS 1
 # endif
@@ -417,7 +417,7 @@ sip_hash24(const uint8_t key[16], const uint8_t *data, size_t len)
 	    SIP_2_ROUND(m, v0, v1, v2, v3);
         }
     }
-#elif BYTE_ORDER == BIG_ENDIAN
+#else
     for (; data != end; data += sizeof(uint64_t)) {
 	m = U8TO64_LE(data);
 	SIP_2_ROUND(m, v0, v1, v2, v3);
@@ -453,7 +453,7 @@ sip_hash24(const uint8_t key[16], const uint8_t *data, size_t len)
 	    last.lo |= ((uint32_t *) end)[0];
   #endif
 	    break;
-#elif BYTE_ORDER == BIG_ENDIAN
+#else
 	    OR_BYTE(3);
 #endif
 	case 3:

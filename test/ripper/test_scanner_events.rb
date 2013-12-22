@@ -87,31 +87,42 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                   [[1, 1], :on_tstring_content, "\u3042\n\u3044"],
                   [[2, 3], :on_tstring_end, "'"]],
                  Ripper.lex("'\u3042\n\u3044'")
+    assert_equal [[[1, 0], :on_rational, "1r"],
+                  [[1, 2], :on_nl, "\n"],
+                  [[2, 0], :on_imaginary, "2i"],
+                  [[2, 2], :on_nl, "\n"],
+                  [[3, 0], :on_imaginary, "3ri"],
+                  [[3, 3], :on_nl, "\n"],
+                  [[4, 0], :on_rational, "4.2r"],
+                  [[4, 4], :on_nl, "\n"],
+                  [[5, 0], :on_imaginary, "5.6ri"],
+                 ],
+                 Ripper.lex("1r\n2i\n3ri\n4.2r\n5.6ri")
   end
 
   def test_location
-    validate_location ""
-    validate_location " "
-    validate_location "@"
-    validate_location "\n"
-    validate_location "\r\n"
-    validate_location "\n\n\n\n\n\r\n\n\n"
-    validate_location "\n;\n;\n;\n;\n"
-    validate_location "nil"
-    validate_location "@ivar"
-    validate_location "1;2;3"
-    validate_location "1\n2\n3"
-    validate_location "1\n2\n3\n"
-    validate_location "def m(a) nil end"
-    validate_location "if true then false else nil end"
-    validate_location "BEGIN{print nil}"
-    validate_location "%w(a b\nc\r\nd \ne )"
-    validate_location %Q["a\nb\r\nc"]
-    validate_location "print(<<""EOS)\nheredoc\nEOS\n"
-    validate_location "print(<<-\"EOS\")\nheredoc\n     EOS\n"
+    assert_location ""
+    assert_location " "
+    assert_location ":"
+    assert_location "\n"
+    assert_location "\r\n"
+    assert_location "\n\n\n\n\n\r\n\n\n"
+    assert_location "\n;\n;\n;\n;\n"
+    assert_location "nil"
+    assert_location "@ivar"
+    assert_location "1;2;3"
+    assert_location "1\n2\n3"
+    assert_location "1\n2\n3\n"
+    assert_location "def m(a) nil end"
+    assert_location "if true then false else nil end"
+    assert_location "BEGIN{print nil}"
+    assert_location "%w(a b\nc\r\nd \ne )"
+    assert_location %Q["a\nb\r\nc"]
+    assert_location "print(<<""EOS)\nheredoc\nEOS\n"
+    assert_location "print(<<-\"EOS\")\nheredoc\n     EOS\n"
   end
 
-  def validate_location(src)
+  def assert_location(src)
     buf = ''
     Ripper.lex(src).each do |pos, type, tok|
       line, col = *pos
@@ -264,6 +275,13 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('float', 'm(a,b,1.0,c,d)')
   end
 
+  def test_rational
+    assert_equal [],
+                 scan('rational', '')
+    assert_equal ['1r', '10r', '10.1r'],
+                 scan('rational', 'm(1r,10r,10.1r)')
+  end
+
   def test_gvar
     assert_equal [],
                  scan('gvar', '')
@@ -284,6 +302,13 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('ident', 'lvar')
     assert_equal ['m', 'lvar'],
                  scan('ident', 'm(lvar, @ivar, @@cvar, $gvar)')
+  end
+
+  def test_imaginary
+    assert_equal [],
+                 scan('imaginary', '')
+    assert_equal ['1i', '10ri', '10.0i', '10.1ri'],
+                 scan('imaginary', 'm(1i,10ri,10.0i,10.1ri)')
   end
 
   def test_int
@@ -842,8 +867,8 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
   def test_CHAR
     assert_equal [],
                  scan('CHAR', "")
-    assert_equal ["@"],
-                 scan('CHAR', "@")
+    assert_equal ["?a"],
+                 scan('CHAR', "?a")
     assert_equal [],
                  scan('CHAR', "@ivar")
   end

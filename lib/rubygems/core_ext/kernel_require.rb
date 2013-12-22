@@ -4,7 +4,11 @@
 # See LICENSE.txt for permissions.
 #++
 
+require 'monitor'
+
 module Kernel
+
+  RUBYGEMS_ACTIVATION_MONITOR = Monitor.new # :nodoc:
 
   if defined?(gem_original_require) then
     # Ruby ships with a custom_require, override its require
@@ -32,6 +36,10 @@ module Kernel
   # that file has already been loaded is preserved.
 
   def require path
+    RUBYGEMS_ACTIVATION_MONITOR.enter
+
+    path = path.to_path if path.respond_to? :to_path
+
     spec = Gem.find_unresolved_default_spec(path)
     if spec
       Gem.remove_unresolved_default_spec(spec)
@@ -42,7 +50,12 @@ module Kernel
     # normal require handle loading a gem from the rescue below.
 
     if Gem::Specification.unresolved_deps.empty? then
-      return gem_original_require(path)
+      begin
+        RUBYGEMS_ACTIVATION_MONITOR.exit
+        return gem_original_require(path)
+      ensure
+        RUBYGEMS_ACTIVATION_MONITOR.enter
+      end
     end
 
     # If +path+ is for a gem that has already been loaded, don't
@@ -51,11 +64,16 @@ module Kernel
     #--
     # TODO request access to the C implementation of this to speed up RubyGems
 
-    spec = Gem::Specification.find { |s|
+    spec = Gem::Specification.stubs.find { |s|
       s.activated? and s.contains_requirable_file? path
     }
 
-    return gem_original_require(path) if spec
+    begin
+      RUBYGEMS_ACTIVATION_MONITOR.exit
+      return gem_original_require(path)
+    ensure
+      RUBYGEMS_ACTIVATION_MONITOR.enter
+    end if spec
 
     # Attempt to find +path+ in any unresolved gems...
 
@@ -103,14 +121,26 @@ module Kernel
       valid.activate
     end
 
-    gem_original_require path
+    begin
+      RUBYGEMS_ACTIVATION_MONITOR.exit
+      return gem_original_require(path)
+    ensure
+      RUBYGEMS_ACTIVATION_MONITOR.enter
+    end
   rescue LoadError => load_error
     if load_error.message.start_with?("Could not find") or
         (load_error.message.end_with?(path) and Gem.try_activate(path)) then
-      return gem_original_require(path)
+      begin
+        RUBYGEMS_ACTIVATION_MONITOR.exit
+        return gem_original_require(path)
+      ensure
+        RUBYGEMS_ACTIVATION_MONITOR.enter
+      end
     end
 
     raise load_error
+  ensure
+    RUBYGEMS_ACTIVATION_MONITOR.exit
   end
 
   private :require

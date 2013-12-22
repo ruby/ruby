@@ -14,8 +14,27 @@ module WEBrick
   # A generic logging class
 
   class BasicLog
-    # log-level constants
-    FATAL, ERROR, WARN, INFO, DEBUG = 1, 2, 3, 4, 5
+
+    # Fatal log level which indicates a server crash
+
+    FATAL = 1
+
+    # Error log level which indicates a recoverable error
+
+    ERROR = 2
+
+    # Warning log level which indicates a possible problem
+
+    WARN  = 3
+
+    # Information log level which indicates possibly useful information
+
+    INFO  = 4
+
+    # Debugging error level for messages used in server development or
+    # debugging
+
+    DEBUG = 5
 
     # log-level, messages above this level will be logged
     attr_accessor :level

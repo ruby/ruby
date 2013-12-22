@@ -28,14 +28,17 @@
 # define _(args) ()
 #endif
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
+RUBY_SYMBOL_EXPORT_BEGIN
+
+#ifndef DLN_FIND_EXTRA_ARG
+#define DLN_FIND_EXTRA_ARG
+#endif
+#ifndef DLN_FIND_EXTRA_ARG_DECL
+#define DLN_FIND_EXTRA_ARG_DECL
 #endif
 
-DEPRECATED(char *dln_find_exe(const char*,const char*));
-DEPRECATED(char *dln_find_file(const char*,const char*));
-char *dln_find_exe_r(const char*,const char*,char*,size_t);
-char *dln_find_file_r(const char*,const char*,char*,size_t);
+char *dln_find_exe_r(const char*,const char*,char*,size_t DLN_FIND_EXTRA_ARG_DECL);
+char *dln_find_file_r(const char*,const char*,char*,size_t DLN_FIND_EXTRA_ARG_DECL);
 
 #ifdef USE_DLN_A_OUT
 extern char *dln_argv0;
@@ -43,8 +46,6 @@ extern char *dln_argv0;
 
 void *dln_load(const char*);
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+RUBY_SYMBOL_EXPORT_END
 
 #endif

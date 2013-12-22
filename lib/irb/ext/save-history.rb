@@ -29,6 +29,13 @@ module IRB
 
     # Sets <code>IRB.conf[:SAVE_HISTORY]</code> to the given +val+ and calls
     # #init_save_history with this context.
+    #
+    # Will store the number of +val+ entries of history in the #history_file
+    #
+    # Add the following to your +.irbrc+ to change the number of history
+    # entries stored to 1000:
+    #
+    #     IRB.conf[:SAVE_HISTORY] = 1000
     def save_history=(val)
       IRB.conf[:SAVE_HISTORY] = val
       if val
@@ -92,7 +99,18 @@ module IRB
 	  history_file = File.expand_path(history_file)
 	end
 	history_file = IRB.rc_file("_history") unless history_file
-	open(history_file, 'w' ) do |f|
+
+	# Change the permission of a file that already exists[BUG #7694]
+	begin
+	  if File.stat(history_file).mode & 066 != 0
+	    File.chmod(0600, history_file)
+	  end
+	rescue Errno::ENOENT
+	rescue
+	  raise
+	end
+
+	open(history_file, 'w', 0600 ) do |f|
 	  hist = HISTORY.to_a
 	  f.puts(hist[-num..-1] || hist)
 	end

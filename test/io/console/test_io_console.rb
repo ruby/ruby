@@ -25,6 +25,48 @@ class TestIO_Console < Test::Unit::TestCase
     }
   end
 
+  def test_raw_minchar
+    len = 0
+    th = nil
+    helper {|m, s|
+      assert_equal([nil, 0], [s.getch(min: 0), len])
+      main = Thread.current
+      go = false
+      th = Thread.start {
+        len += 1
+        m.print("a")
+        m.flush
+        sleep 0.01 until go and main.stop?
+        len += 10
+        m.print("1234567890")
+        m.flush
+      }
+      assert_equal(["a", 1], [s.getch(min: 1), len])
+      go = true
+      assert_equal(["1", 11], [s.getch, len])
+    }
+  ensure
+    th.kill if th and th.alive?
+  end
+
+  def test_raw_timeout
+    len = 0
+    th = nil
+    helper {|m, s|
+      assert_equal([nil, 0], [s.getch(min: 0, time: 0.1), len])
+      main = Thread.current
+      th = Thread.start {
+        sleep 0.01 until main.stop?
+        len += 2
+        m.print("ab")
+      }
+      assert_equal(["a", 2], [s.getch(min: 1, time: 1), len])
+      assert_equal(["b", 2], [s.getch(time: 1), len])
+    }
+  ensure
+    th.kill if th and th.alive?
+  end
+
   def test_cooked
     helper {|m, s|
       assert_send([s, :echo?])
@@ -222,14 +264,22 @@ class TestIO_Console < Test::Unit::TestCase
       t2.close
       cmd = NOCTTY + [
         '--disable=gems',
-        '-rio/console',
-        '-e', 'open(ARGV[0], "w") {|f| f.puts IO.console.inspect}',
-        '-e', 'File.unlink(ARGV[1])',
+        '-e', 'open(ARGV[0], "w") {|f|',
+        '-e',   'STDOUT.reopen(f)',
+        '-e',   'STDERR.reopen(f)',
+        '-e',   'require "io/console"',
+        '-e',   'f.puts IO.console.inspect',
+        '-e',   'f.flush',
+        '-e',   'File.unlink(ARGV[1])',
+        '-e', '}',
         '--', t.path, t2.path]
       system(*cmd)
-      sleep 0.1 while File.exist?(t2.path)
+      30.times do
+        break unless File.exist?(t2.path)
+        sleep 0.1
+      end
       t.open
-      assert_equal("nil", t.gets.chomp)
+      assert_equal("nil", t.gets(nil).chomp)
     ensure
       t.close! if t and !t.closed?
       t2.close!
@@ -239,8 +289,14 @@ end if defined?(IO.console)
 
 class TestIO_Console < Test::Unit::TestCase
   def test_stringio_getch
-    assert_ruby_status(%w"--disable=gems -rstringio -rio/console", "exit(StringIO.method_defined?(:getch))")
-    assert_ruby_status(%w"--disable=gems -rio/console -rstringio", "exit(StringIO.method_defined?(:getch))")
-    assert_ruby_status(%w"--disable=gems -rstringio", "exit(!StringIO.method_defined?(:getch))")
+    assert_separately %w"--disable=gems -rstringio -rio/console", %q{
+      assert_operator(StringIO, :method_defined?, :getch)
+    }
+    assert_separately %w"--disable=gems -rio/console -rstringio", %q{
+      assert_operator(StringIO, :method_defined?, :getch)
+    }
+    assert_separately %w"--disable=gems -rstringio", %q{
+      assert_not_operator(StringIO, :method_defined?, :getch)
+    }
   end
 end

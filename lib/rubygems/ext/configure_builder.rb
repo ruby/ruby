@@ -4,11 +4,9 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems/ext/builder'
-
 class Gem::Ext::ConfigureBuilder < Gem::Ext::Builder
 
-  def self.build(extension, directory, dest_path, results, args=[])
+  def self.build(extension, directory, dest_path, results, args=[], lib_dir=nil)
     unless File.exist?('Makefile') then
       cmd = "sh ./configure --prefix=#{dest_path}"
       cmd << " #{args.join ' '}" unless args.empty?

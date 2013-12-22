@@ -2,6 +2,37 @@ require "rss/0.9"
 
 module RSS
 
+  ##
+  # = RSS 2.0 support
+  #
+  # RSS has three different versions. This module contains support for version
+  # 2.0[http://www.rssboard.org/rss-specification]
+  #
+  # == Producing RSS 2.0
+  #
+  # Producing our own RSS feeds is easy as well. Let's make a very basic feed:
+  #
+  #  require "rss"
+  #
+  #  rss = RSS::Maker.make("2.0") do |maker|
+  #    maker.channel.language = "en"
+  #    maker.channel.author = "matz"
+  #    maker.channel.updated = Time.now.to_s
+  #    maker.channel.link = "http://www.ruby-lang.org/en/feeds/news.rss"
+  #    maker.channel.title = "Example Feed"
+  #    maker.channel.description = "A longer description of my feed."
+  #    maker.items.new_item do |item|
+  #      item.link = "http://www.ruby-lang.org/en/news/2010/12/25/ruby-1-9-2-p136-is-released/"
+  #      item.title = "Ruby 1.9.2-p136 is released"
+  #      item.updated = Time.now.to_s
+  #    end
+  #  end
+  #
+  #  puts rss
+  #
+  # As you can see, this is a very Builder-like DSL. This code will spit out an
+  # RSS 2.0 feed with one item. If we needed a second item, we'd make another
+  # block with maker.items.new_item and build a second one.
   class Rss
 
     class Channel

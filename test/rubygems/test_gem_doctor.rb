@@ -157,7 +157,7 @@ This directory does not appear to be a RubyGems repository, skipping
 
     refute doctor.gem_repository?, 'no gems installed'
 
-    quick_spec 'a'
+    util_spec 'a'
 
     doctor = Gem::Doctor.new @gemhome
 

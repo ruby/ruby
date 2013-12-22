@@ -40,8 +40,9 @@ module Rake
 
         win32_shared_path ||= ENV['APPDATA']
         win32_shared_path ||= ENV['USERPROFILE']
-        raise Win32HomeError, "Unable to determine home path environment variable." if
-          win32_shared_path.nil? or win32_shared_path.empty?
+        raise Win32HomeError,
+          "Unable to determine home path environment variable." if
+            win32_shared_path.nil? or win32_shared_path.empty?
         normalize(File.join(win32_shared_path, 'Rake'))
       end
 
