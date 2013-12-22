@@ -568,11 +568,8 @@ module Gem
   end
 
   ##
-  # The index to insert activated gem paths into the $LOAD_PATH.
-  #
-  # Defaults to the site lib directory unless gem_prelude.rb has loaded paths,
-  # then it inserts the activated gem's paths before the gem_prelude.rb paths
-  # so you can override the gem_prelude.rb default $LOAD_PATH paths.
+  # The index to insert activated gem paths into the $LOAD_PATH. The activated
+  # gem's paths are inserted before site lib directory by default.
 
   def self.load_path_insert_index
     index = $LOAD_PATH.index ConfigMap[:sitelibdir]

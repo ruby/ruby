@@ -1,3 +1,8 @@
+Sun Dec 22 19:22:01 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems.rb (module Gem):  Fix comment for
+	  Gem::load_path_insert_index.
+
 Sun Dec 22 18:08:42 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (fake.rb): fixed wrong RUBY_PLATFORM, to correctly
