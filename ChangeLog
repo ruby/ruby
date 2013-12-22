@@ -1,3 +1,11 @@
+Mon Dec 23 05:01:55 2013  Zachary Scott  <e@zzak.io>
+
+	* doc/syntax/methods.rdoc: [DOC] Added example for underscore
+	  conventions in method names. Also added doc to clarify encoding
+	  character set support for Ruby programs and elaborated on defining
+	  predicate and bang methods. Based on a patch by @gaurish
+	  [Fixes GH-477] https://github.com/ruby/ruby/pull/477
+
 Mon Dec 23 03:18:09 2013  Zachary Scott  <e@zzak.io>
 
 	* doc/ChangeLog-1.9.3: [DOC] Fix typos by @dvsuresh

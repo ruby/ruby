@@ -8,8 +8,8 @@ definition:
   end
 
 A method definition consists of the +def+ keyword, a method name, the body of
-the method, then the +end+ keyword.  When called the method will execute the
-body of the method.  This method returns +2+.
+the method, +return+ value and the +end+ keyword.  When called the method will
+execute the body of the method.  This method returns +2+.
 
 This section only covers defining methods.  See also the {syntax documentation
 on calling methods}[rdoc-ref:syntax/calling_methods.rdoc].
@@ -17,27 +17,50 @@ on calling methods}[rdoc-ref:syntax/calling_methods.rdoc].
 == Method Names
 
 Method names may be one of the operators or must start a letter or a character
-with the eight bit set.  Typically method names are US-ASCII compatible since
-the keys to type them exist on all keyboards.
+with the eight bit set. It may contain letters, numbers, an <code>_</code>
+(underscore or low line) or a character with the eight bit set. The convention
+is to use underscores to separate words in a multiword method name:
 
-(Ruby programs must be written in a US-ASCII-compatible character set.  In
-such character sets if the eight bit is set it indicates an extended
-character.  Ruby allows method names and other identifiers to contain such
-characters.)
+  def method_name
+    puts "use underscores to separate words"
+  end
 
-Method names may contain letters, numbers, an <code>_</code> (underscore or
-low line) or a character with the eight bit set.
+Ruby programs must be written in a US-ASCII-compatible character set such as
+UTF-8, ISO-8859-1 etc. In such character sets if the eight bit is set it
+indicates an extended character. Ruby allows method names and other identifiers
+to contain such characters. Ruby programs cannot contain some characters like
+ASCII NUL (<code>\x00<code>).
+
+The following are the examples of valid ruby methods:
+
+  def hello
+    "hello"
+  end
+
+  def こんにちは
+    puts "means hello in Japanese"
+  end
+
+Typically method names are US-ASCII compatible since the keys to type them
+exist on all keyboards.
 
 Method names may end with a <code>!</code> (bang or exclamation mark), a
 <code>?</code> (question mark) or <code>=</code> equals sign.
 
-In the ruby core library when a method ends with a bang it indicates there is
-a non-bang method that has does not modify the receiver.  This is typically
-true for the standard library but does not hold true for other ruby libraries.
+The bang methods(<code>!</code> at the end of method name) are called and
+executed just like any other method. However, by convention, a method with an
+exclamation point or bang is considered dangerous. In ruby core library the
+dangerous method implies that when a method ends with a bang(<code>!</code>),
+it indicates that unlike its non-bang equivalent, permanently modifies its
+receiver. Almost always, Ruby core library will have a non-bang
+counterpart(method name which does NOT end with <code>!</code>) of every bang
+method (method name which does end with <code>!</code>) that has does not
+modify the receiver. This convention is typically true for ruby core libary but
+may/may not hold true for other ruby libraries.
 
-Methods that end with a question mark do not always return just +true+ or
-+false+.  Often they will may return an object to indicate a true value (or
-"truthy" value).
+Methods that end with a question mark by convention return boolean. But they
+may not always return just +true+ or +false+.  Often they will may return an
+object to indicate a true value (or "truthy" value).
 
 Methods that end with an equals sign indicate an assignment method.  For
 assignment methods the return value is ignored, the arguments are returned
