@@ -1040,7 +1040,7 @@ class Object
   CROSS_COMPILING = RUBY_PLATFORM
   remove_const :RUBY_PLATFORM
   remove_const :RUBY_VERSION
-  RUBY_PLATFORM = "$(ARCH)"
+  RUBY_PLATFORM = "$(arch)"
   RUBY_VERSION = "$(MAJOR).$(MINOR).$(TEENY)"
 end
 class File
