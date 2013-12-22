@@ -144,9 +144,9 @@ def next_token # :nodoc:
         # call filter, part_out is output(Part object)
         part_out = @tree.filter[@in_part].call(part)
 
-        if @tree.filter[@in_part].mode == :rd # if output is RD formated
+        if @tree.filter[@in_part].mode == :rd # if output is RD formatted
           subtree = parse_subtree(part_out.to_a)
-        else # if output is target formated
+        else # if output is target formatted
           basename = TMPFILE.join('.')
           TMPFILE[-1] += 1
           tmpfile = open(@tree.tmp_dir + "/" + basename + ".#{@in_part}", "w")

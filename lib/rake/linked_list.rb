@@ -80,7 +80,7 @@ module Rake
     #
     # When inheriting from the LinkedList class, you should implement
     # a type specific Empty class as well. Make sure you set the class
-    # instance variable @parent to the assocated list class (this
+    # instance variable @parent to the associated list class (this
     # allows conj, cons and make to work polymorphically).
     class EmptyLinkedList < LinkedList
       @parent = LinkedList
