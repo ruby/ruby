@@ -1,3 +1,22 @@
+Sun Dec 22 22:56:06 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (mnew_from_me): achieve the original defined_class from
+	  prepended iclass, to fix inherited owner.
+
+	* proc.c (method_owner): return the defined class, but not the
+	  class which the method object is created from.
+
+Sun Dec 22 22:56:06 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (method_owner): return the class where alias is defined, not
+	  the class original method is defined.
+
+	* vm_method.c (rb_method_entry_make, rb_alias): store the originally
+	  defined class in me.  [Bug #7993] [Bug #7842] [Bug #9236]
+
+	* vm_method.c (rb_method_entry_get_without_cache): cache included
+	  module but not iclass.
+
 Sun Dec 22 00:07:09 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* insns.def: Fix optimization bug of Float#/ [Bug #9238]

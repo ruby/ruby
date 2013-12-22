@@ -991,15 +991,15 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
 	goto again;
     }
 
+    if (RB_TYPE_P(defined_class, T_ICLASS)) {
+	defined_class = RBASIC(defined_class)->klass;
+    }
+
     klass = defined_class;
 
     while (rclass != klass &&
 	   (FL_TEST(rclass, FL_SINGLETON) || RB_TYPE_P(rclass, T_ICLASS))) {
 	rclass = RCLASS_SUPER(rclass);
-    }
-
-    if (RB_TYPE_P(klass, T_ICLASS)) {
-	klass = RBASIC(klass)->klass;
     }
 
   gen_method:
@@ -1174,7 +1174,7 @@ method_owner(VALUE obj)
     struct METHOD *data;
 
     TypedData_Get_Struct(obj, struct METHOD, &method_data_type, data);
-    return data->me->klass;
+    return data->defined_class;
 }
 
 void
