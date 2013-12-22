@@ -1,3 +1,11 @@
+Sun Dec 22 14:25:54 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* process.c (redirect_dup2): set standard handles when new fd is stdio,
+	  because if there is no allocated console at the moment Windows does
+	  not automatically associate it for child process's standard handle.
+	  this is adhoc workaround.
+	  reported by Martin Thiede at [ruby-core:48542] [Bug #7239].
+
 Tue Dec  3 18:36:42 2013  Narihiro Nakamura  <authornari@gmail.com>
 
 	* object.c (rb_obj_clone): protect FL_MARK of a dest object. A lazy
