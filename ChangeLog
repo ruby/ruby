@@ -1,3 +1,8 @@
+Sun Dec 22 11:08:47 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* test/rubygems/test_gem_ext_builder.rb:  Fix warning due to ambiguous
+	  expression.
+
 Sun Dec 22 11:05:53 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/commands/install_command.rb:  Restore gem install

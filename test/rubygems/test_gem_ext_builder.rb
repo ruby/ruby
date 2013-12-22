@@ -228,7 +228,7 @@ install:
 
     assert_match %r%#{Regexp.escape Gem.ruby} extconf\.rb%,
                  File.read(gem_make_out)
-    assert_match /: No such file/,
+    assert_match %r%: No such file%,
                  File.read(gem_make_out)
 
     refute_path_exists @spec.gem_build_complete_path
