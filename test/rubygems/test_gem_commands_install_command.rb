@@ -533,6 +533,32 @@ ERROR:  Possible alternatives: non_existent_with_hint
     assert_match "1 gem installed", @ui.output
   end
 
+  def test_install_gem_ignore_dependencies_both
+    spec = quick_spec 'a', 2
+
+    util_build_gem spec
+
+    FileUtils.mv spec.cache_file, @tempdir
+
+    @cmd.options[:ignore_dependencies] = true
+
+    @cmd.install_gem 'a', '>= 0'
+
+    assert_equal %w[a-2], @cmd.installed_specs.map { |s| s.full_name }
+  end
+
+  def test_install_gem_ignore_dependencies_remote
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+    end
+
+    @cmd.options[:ignore_dependencies] = true
+
+    @cmd.install_gem 'a', '>= 0'
+
+    assert_equal %w[a-2], @cmd.installed_specs.map { |spec| spec.full_name }
+  end
+
   def test_parses_requirement_from_gemname
     spec_fetcher do |fetcher|
       fetcher.gem 'a', 2
