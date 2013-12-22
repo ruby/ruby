@@ -17,7 +17,7 @@
 VALUE cConfig;
 /* Document-class: OpenSSL::ConfigError
  *
- * General error for openssl library configuration files. Including formating,
+ * General error for openssl library configuration files. Including formatting,
  * parsing errors, etc.
  */
 VALUE eConfigError;
