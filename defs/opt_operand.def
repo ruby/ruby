@@ -1,5 +1,5 @@
 #
-# configration file for operand union optimization
+# configuration file for operand union optimization
 #
 # format:
 #   [insn name] op1, op2 ...
