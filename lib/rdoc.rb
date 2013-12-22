@@ -64,7 +64,7 @@ module RDoc
   ##
   # RDoc version you are using
 
-  VERSION = '4.1.0.rc.1'
+  VERSION = '4.1.0'
 
   ##
   # Method visibilities
