@@ -104,17 +104,11 @@ class TestEnumerable < Test::Unit::TestCase
   end
 
   def test_to_h
-    assert_equal({}, @obj.to_h)
     obj = Object.new
     def obj.each(*args)
-      yield args
+      yield *args
       yield [:key, :value]
-      yield [:ignore_me]
-      yield [:ignore, :me, :too]
       yield :other_key, :other_value
-      yield :ignore_me
-      yield :ignore, :me, :too
-      yield
       kvp = Object.new
       def kvp.to_ary
         [:obtained, :via_to_ary]
@@ -128,6 +122,16 @@ class TestEnumerable < Test::Unit::TestCase
       :other_key => :other_value,
       :obtained => :via_to_ary,
     }, obj.to_h(:hello, :world))
+
+    e = assert_raise(TypeError) {
+      obj.to_h(:not_an_array)
+    }
+    assert_equal "wrong element type Symbol (expected array)", e.message
+
+    e = assert_raise(ArgumentError) {
+      obj.to_h([1])
+    }
+    assert_equal "element has wrong array length (expected 2, was 1)", e.message
   end
 
   def test_inject

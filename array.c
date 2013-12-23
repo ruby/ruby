@@ -2130,8 +2130,7 @@ rb_ary_to_a(VALUE ary)
  *     ary.to_h     -> hash
  *
  *  Returns the result of interpreting <i>ary</i> as an array of
- *  <tt>[key, value]</tt> pairs. Elements other than pairs of
- *  values are ignored.
+ *  <tt>[key, value]</tt> pairs.
  *
  *     [[:foo, :bar], [1, 2]].to_h
  *       # => {:foo => :bar, 1 => 2}
@@ -2144,9 +2143,15 @@ rb_ary_to_h(VALUE ary)
     VALUE hash = rb_hash_new();
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	VALUE key_value_pair = rb_check_array_type(rb_ary_elt(ary, i));
-	if (!NIL_P(key_value_pair) && (RARRAY_LEN(key_value_pair) == 2)) {
-	    rb_hash_aset(hash, RARRAY_AREF(key_value_pair, 0), RARRAY_AREF(key_value_pair, 1));
+	if (NIL_P(key_value_pair)) {
+	    rb_raise(rb_eTypeError, "wrong element type %s at %ld (expected array)",
+		rb_builtin_class_name(rb_ary_elt(ary, i)), i);
 	}
+	if (RARRAY_LEN(key_value_pair) != 2) {
+	    rb_raise(rb_eArgError, "wrong array length at %ld (expected 2, was %ld)",
+		i, RARRAY_LEN(key_value_pair));
+	}
+	rb_hash_aset(hash, RARRAY_AREF(key_value_pair, 0), RARRAY_AREF(key_value_pair, 1));
     }
     return hash;
 }

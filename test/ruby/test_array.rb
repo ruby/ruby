@@ -1467,12 +1467,18 @@ class TestArray < Test::Unit::TestCase
     end
     array = [
       [:key, :value],
-      [:ignore_me],
-      [:ignore, :me, :too],
-      :ignore_me,
       kvp,
     ]
     assert_equal({key: :value, obtained: :via_to_ary}, array.to_h)
+
+    e = assert_raise(TypeError) {
+      [[:first_one, :ok], :not_ok].to_h
+    }
+    assert_equal "wrong element type Symbol at 1 (expected array)", e.message
+    e = assert_raise(ArgumentError) {
+      [[:first_one, :ok], [1, 2], [:not_ok]].to_h
+    }
+    assert_equal "wrong array length at 2 (expected 2, was 1)", e.message
   end
 
   def test_uniq
