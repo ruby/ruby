@@ -28,11 +28,22 @@
 #endif
 
 #define HAS_EXTRA_STATES(hash, klass) ( \
-    (klass = rb_obj_class(hash)) != rb_cHash || \
-    (klass = 0, \
+    (klass = has_extra_methods(rb_obj_class(hash))) != 0 || \
      FL_TEST((hash), FL_EXIVAR|FL_TAINT|HASH_PROC_DEFAULT) || \
      !NIL_P(RHASH_IFNONE(hash))))
 #define HASH_REJECT_COPY_EXTRA_STATES 1
+
+static VALUE
+has_extra_methods(VALUE klass)
+{
+    const VALUE base = rb_cHash;
+    VALUE c = klass;
+    while (c != base) {
+	st_table *mtbl = RCLASS_M_TBL(c);
+	if (mtbl && mtbl->num_entries) return klass;
+    }
+    return 0;
+}
 
 static VALUE rb_hash_s_try_convert(VALUE, VALUE);
 

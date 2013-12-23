@@ -1,3 +1,8 @@
+Mon Dec 23 15:53:45 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (HAS_EXTRA_STATES): warn extra states only when something
+	  differ.  [ruby-core:59254] [Bug #9275]
+
 Mon Dec 23 12:42:13 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* array.c: Have to_h raise on elements that are not key-value pairs
