@@ -69,7 +69,7 @@ class Gem::Commands::InstallCommand < Gem::Command
       o[:explain] = v
     end
 
-    @installed_specs = nil
+    @installed_specs = []
   end
 
   def arguments # :nodoc:
@@ -200,10 +200,8 @@ to write the specification by hand.  For example:
 
     req = Gem::Requirement.create(version)
 
-    if options[:ignore_dependencies]
-      inst = Gem::Installer.new name, options
-      inst.install
-      @installed_specs.push(inst.spec)
+    if options[:ignore_dependencies] then
+      install_gem_without_dependencies name, req
     else
       inst = Gem::DependencyInstaller.new options
 
@@ -225,6 +223,30 @@ to write the specification by hand.  For example:
 
       show_install_errors inst.errors
     end
+  end
+
+  def install_gem_without_dependencies name, req # :nodoc:
+    gem = nil
+
+    if remote? then
+      dependency = Gem::Dependency.new name, req
+      dependency.prerelease = options[:prerelease]
+
+      fetcher = Gem::RemoteFetcher.fetcher
+      gem = fetcher.download_to_cache dependency
+    end
+
+    if local? and not gem then
+      source = Gem::Source::Local.new
+      spec = source.find_gem name, req
+
+      gem = source.download spec
+    end
+
+    inst = Gem::Installer.new gem, options
+    inst.install
+
+    @installed_specs.push(inst.spec)
   end
 
   def install_gems # :nodoc:
