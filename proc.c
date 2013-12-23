@@ -955,6 +955,7 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
 		def->type = VM_METHOD_TYPE_MISSING;
 		def->original_id = id;
 		def->alias_count = 0;
+		defined_class = klass;
 
 		meb.flag = 0;
 		meb.mark = 0;
