@@ -41,6 +41,7 @@ has_extra_methods(VALUE klass)
     while (c != base) {
 	st_table *mtbl = RCLASS_M_TBL(c);
 	if (mtbl && mtbl->num_entries) return klass;
+	c = RCLASS_SUPER(c);
     }
     return 0;
 }
