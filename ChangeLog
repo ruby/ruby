@@ -1,3 +1,12 @@
+Mon Dec 23 18:37:16 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/fileutils/fileasserts.rb (assert_ownership_group): new
+	  assertion for group ownership.
+
+	* test/fileutils/test_fileutils.rb (test_chown{,_verbose,_noop}):
+	  based on the patch by vajrasky (Vajrasky Kok) at
+	  [ruby-core:59281].  [Feature #9286]
+
 Mon Dec 23 15:53:45 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (HAS_EXTRA_STATES): warn extra states only when something

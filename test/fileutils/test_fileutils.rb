@@ -1,6 +1,7 @@
 # $Id$
 
 require 'fileutils'
+require 'etc'
 require_relative 'fileasserts'
 require 'pathname'
 require 'tmpdir'
@@ -111,6 +112,7 @@ class TestFileUtils
 
   def setup
     @prevdir = Dir.pwd
+    @groups = Process.groups
     tmproot = TMPROOT
     mymkdir tmproot unless File.directory?(tmproot)
     Dir.chdir tmproot
@@ -1052,10 +1054,52 @@ class TestFileUtils
     }
   end if have_file_perm?
 
-  # FIXME: How can I test this method?
   def test_chown
     check_singleton :chown
+
+    return unless @groups[1]
+
+    input_group_1 = @groups[0]
+    assert_output_lines([]) {
+      touch 'tmp/a'
+      # integer input for group, nil for user
+      chown nil, input_group_1, 'tmp/a'
+      assert_ownership_group @groups[0], 'tmp/a'
+    }
+
+    input_group_2 = Etc.getgrgid(@groups[1]).name
+    assert_output_lines([]) {
+      touch 'tmp/b'
+      # string input for group, -1 for user
+      chown -1, input_group_2, 'tmp/b'
+      assert_ownership_group @groups[1], 'tmp/b'
+    }
   end if have_file_perm?
+
+  def test_chown_verbose
+    assert_output_lines(["chown :#{@groups[0]} tmp/a1 tmp/a2"]) {
+      touch 'tmp/a1'
+      touch 'tmp/a2'
+      chown nil, @groups[0], ['tmp/a1', 'tmp/a2'], verbose: true
+      assert_ownership_group @groups[0], 'tmp/a1'
+      assert_ownership_group @groups[0], 'tmp/a2'
+    }
+  end if have_file_perm?
+
+  def test_chown_noop
+    return unless @groups[1]
+    assert_output_lines([]) {
+      touch 'tmp/a'
+      chown nil, @groups[0], 'tmp/a', :noop => false
+      assert_ownership_group @groups[0], 'tmp/a'
+      chown nil, @groups[1], 'tmp/a', :noop => true
+      assert_ownership_group @groups[0], 'tmp/a'
+      chown nil, @groups[1], 'tmp/a'
+      assert_ownership_group @groups[1], 'tmp/a'
+    }
+  end if have_file_perm?
+
+  # FIXME: Need to add test for chown with root account
 
   # FIXME: How can I test this method?
   def test_chown_R
