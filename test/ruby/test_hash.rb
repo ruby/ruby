@@ -788,7 +788,7 @@ class TestHash < Test::Unit::TestCase
     assert_equal("foobarbaz", h.default_proc.call("foo", "bar"))
     assert_nil(h.default_proc = nil)
     assert_nil(h.default_proc)
-    h.default_proc = ->(h, k){ true }
+    h.default_proc = ->(_,_){ true }
     assert_equal(true, h[:nope])
     h = @cls[]
     assert_nil(h.default_proc)
@@ -1013,7 +1013,7 @@ class TestHash < Test::Unit::TestCase
     assert_nothing_raised(RuntimeError, bug9105) do
       h=@cls[]
       cnt=0
-      c = callcc {|c|c}
+      c = callcc {|cc|cc}
       h[cnt] = true
       h.each{|i|
         cnt+=1
