@@ -512,12 +512,19 @@ enum_to_a(int argc, VALUE *argv, VALUE obj)
 static VALUE
 enum_to_h_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 {
+    VALUE key_value_pair;
     ENUM_WANT_SVALUE();
     rb_thread_check_ints();
-    i = rb_check_array_type(i);
-    if (!NIL_P(i) && RARRAY_LEN(i) == 2) {
-	rb_hash_aset(hash, RARRAY_AREF(i, 0), RARRAY_AREF(i, 1));
+    key_value_pair = rb_check_array_type(i);
+    if (NIL_P(key_value_pair)) {
+	rb_raise(rb_eTypeError, "wrong element type %s (expected array)",
+	    rb_builtin_class_name(i));
     }
+    if (RARRAY_LEN(key_value_pair) != 2) {
+        rb_raise(rb_eArgError, "element has wrong array length (expected 2, was %ld)",
+	    RARRAY_LEN(key_value_pair));
+    }
+    rb_hash_aset(hash, RARRAY_AREF(key_value_pair, 0), RARRAY_AREF(key_value_pair, 1));
     return Qnil;
 }
 
@@ -526,8 +533,7 @@ enum_to_h_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
  *     enum.to_h(*args)  -> hash
  *
  *  Returns the result of interpreting <i>enum</i> as a list of
- *  <tt>[key, value]</tt> pairs. Elements other than pairs of
- *  values are ignored.
+ *  <tt>[key, value]</tt> pairs.
  *
  *     %i[hello world].each_with_index.to_h
  *       # => {:hello => 0, :world => 1}
