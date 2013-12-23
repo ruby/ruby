@@ -1,3 +1,9 @@
+Tue Dec 24 05:04:56 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/fileutils/test_fileutils.rb (setup): should not call
+	  Process.groups for Windows.  get rid of many errors introduced by
+	  r44364.
+
 Mon Dec 23 18:37:16 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/fileutils/fileasserts.rb (assert_ownership_group): new

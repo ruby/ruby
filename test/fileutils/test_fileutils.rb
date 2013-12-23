@@ -112,7 +112,7 @@ class TestFileUtils
 
   def setup
     @prevdir = Dir.pwd
-    @groups = Process.groups
+    @groups = Process.groups if have_file_perm?
     tmproot = TMPROOT
     mymkdir tmproot unless File.directory?(tmproot)
     Dir.chdir tmproot
