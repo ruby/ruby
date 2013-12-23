@@ -82,7 +82,7 @@ redo:
 	}
     }
     /* deal with lots of cached method_missing */
-    if (tmp.size < tmp.capa / 8) {
+    if (tmp.size < tmp.capa / 8 && tmp.capa > 8) {
 	    xfree(tmp.entries);
 	    while(tmp.capa > tmp.size * 2 && tmp.capa > 8) {
 		    tmp.capa /= 2;
