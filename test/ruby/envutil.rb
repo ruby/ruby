@@ -9,12 +9,13 @@ module EnvUtil
       return ruby
     end
     ruby = "ruby"
-    rubyexe = ruby+".exe"
+    exeext = RbConfig::CONFIG["EXEEXT"]
+    rubyexe = (ruby + exeext if exeext and !exeext.empty?)
     3.times do
       if File.exist? ruby and File.executable? ruby and !File.directory? ruby
         return File.expand_path(ruby)
       end
-      if File.exist? rubyexe and File.executable? rubyexe
+      if rubyexe and File.exist? rubyexe and File.executable? rubyexe
         return File.expand_path(rubyexe)
       end
       ruby = File.join("..", ruby)
