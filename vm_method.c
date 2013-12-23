@@ -70,6 +70,8 @@ rb_mcache_resize(struct rb_meth_cache *cache)
     int i;
 
     MEMZERO(&tmp, struct rb_meth_cache, 1);
+    tmp.method_state = cache->method_state;
+    tmp.class_serial = cache->class_serial;
     tmp.capa = cache->capa * 2;
     tmp.entries = xcalloc(tmp.capa, sizeof(struct cache_entry));
     for(i = 0; i < cache->capa; i++) {
