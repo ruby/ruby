@@ -73,12 +73,22 @@ rb_mcache_resize(struct rb_meth_cache *cache)
     tmp.method_state = cache->method_state;
     tmp.class_serial = cache->class_serial;
     tmp.capa = cache->capa * 2;
+redo:
     tmp.entries = xcalloc(tmp.capa, sizeof(struct cache_entry));
     for(i = 0; i < cache->capa; i++) {
-	if (cache->entries[i].mid) {
+	if (cache->entries[i].mid && (cache->entries[i].me & ~1)) {
 	    struct cache_entry *ent = &cache->entries[i];
 	    rb_mcache_insert(&tmp, ent->mid, ent->me & ~1, ent->defined_class);
 	}
+    }
+    /* deal with lots of cached method_missing */
+    if (tmp.size < tmp.capa / 8) {
+	    xfree(tmp.entries);
+	    while(tmp.capa > tmp.size * 2 && tmp.capa > 8) {
+		    tmp.capa /= 2;
+	    }
+	    tmp.size = 0;
+	    goto redo;
     }
     xfree(cache->entries);
     *cache = tmp;
