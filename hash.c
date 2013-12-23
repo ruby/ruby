@@ -28,9 +28,9 @@
 #endif
 
 #define HAS_EXTRA_STATES(hash, klass) ( \
-    (klass = has_extra_methods(rb_obj_class(hash))) != 0 || \
-     FL_TEST((hash), FL_EXIVAR|FL_TAINT|HASH_PROC_DEFAULT) || \
-     !NIL_P(RHASH_IFNONE(hash))))
+    ((klass = has_extra_methods(rb_obj_class(hash))) != 0) || \
+    FL_TEST((hash), FL_EXIVAR|FL_TAINT|HASH_PROC_DEFAULT) || \
+    !NIL_P(RHASH_IFNONE(hash)))
 #define HASH_REJECT_COPY_EXTRA_STATES 1
 
 static VALUE
