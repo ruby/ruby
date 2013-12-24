@@ -114,7 +114,7 @@ Fri Dec 20 17:03:10 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c, class.c, compile.c, hash.c, internal.h, iseq.c,
 	  proc.c, process.c, re.c, string.c, variable.c, vm.c,
-	  vm_eval.c, vm_insnhelper.c, vm_insnhelper.h, 
+	  vm_eval.c, vm_insnhelper.c, vm_insnhelper.h,
 	  vm_method.c: catch up this change.
 
 Fri Dec 20 16:01:35 2013  Koichi Sasada  <ko1@atdot.net>
