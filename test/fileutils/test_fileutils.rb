@@ -1123,7 +1123,7 @@ class TestFileUtils < Test::Unit::TestCase
 
   if have_file_perm?
     def test_chown_error
-      uid = distinct_uids(1)
+      uid, = distinct_uids(1)
       return unless uid
 
       touch 'tmp/a'
