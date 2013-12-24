@@ -359,7 +359,7 @@ module WEBrick
       begin
         body{|chunk| }   # read remaining body
       rescue HTTPStatus::Error => ex
-        @logger.error("HTTPRequest#fixup: #{ex.class} occured.")
+        @logger.error("HTTPRequest#fixup: #{ex.class} occurred.")
         @keep_alive = false
       rescue => ex
         @logger.error(ex)

@@ -356,7 +356,7 @@ class GetoptLong
   #
   def terminate
     return nil if @status == STATUS_TERMINATED
-    raise RuntimeError, "an error has occured" if @error != nil
+    raise RuntimeError, "an error has occurred" if @error != nil
 
     @status = STATUS_TERMINATED
     @non_option_arguments.reverse_each do |argument|
