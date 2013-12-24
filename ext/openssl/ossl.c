@@ -18,11 +18,12 @@ int
 string2hex(const unsigned char *buf, int buf_len, char **hexbuf, int *hexbuf_len)
 {
     static const char hex[]="0123456789abcdef";
-    int i, len = 2 * buf_len;
+    int i, len;
 
-    if (buf_len < 0 || len < buf_len) { /* PARANOIA? */
+    if (buf_len < 0 || buf_len > INT_MAX / 2) { /* PARANOIA? */
 	return -1;
     }
+    len = 2 * buf_len;
     if (!hexbuf) { /* if no buf, return calculated len */
 	if (hexbuf_len) {
 	    *hexbuf_len = len;
