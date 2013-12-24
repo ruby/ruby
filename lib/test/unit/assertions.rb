@@ -191,12 +191,7 @@ module Test
       #    assert_throw(tag, "#{tag} was not thrown!") do
       #      throw tag
       #    end
-      def assert_throw(tag, msg = nil)
-        catch(tag) do
-          yield(tag)
-          assert(false, message(msg) {"Expected #{mu_pp(tag)} to have been thrown"})
-        end
-      end
+      alias assert_throw assert_throws
 
       # :call-seq:
       #   assert_equal( expected, actual, failure_message = nil )

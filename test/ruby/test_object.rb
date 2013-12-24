@@ -29,8 +29,8 @@ class TestObject < Test::Unit::TestCase
     end
 
     obj = cls.new
-    assert_throws(:initialize_clone) {obj.clone}
-    assert_throws(:initialize_dup) {obj.dup}
+    assert_throw(:initialize_clone) {obj.clone}
+    assert_throw(:initialize_dup) {obj.dup}
   end
 
   def test_instance_of
