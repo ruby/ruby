@@ -900,8 +900,10 @@ struct RArray {
 
 #define RARRAY_AREF(a, i)    (RARRAY_CONST_PTR(a)[i])
 #define RARRAY_ASET(a, i, v) do { \
-    const VALUE _ary_ = (a); \
-    RB_OBJ_WRITE(_ary_, &RARRAY_CONST_PTR(_ary_)[i], (v)); \
+    const VALUE _ary = (a); \
+    VALUE *ptr = (VALUE *)RARRAY_PTR_USE_START(_ary); \
+    RB_OBJ_WRITE(_ary, &ptr[i], (v)); \
+    RARRAY_PTR_USE_END(_ary); \
 } while (0)
 
 #define RARRAY_PTR(a) ((VALUE *)RARRAY_CONST_PTR(RGENGC_WB_PROTECTED_ARRAY ? OBJ_WB_UNPROTECT((VALUE)a) : ((VALUE)a)))
