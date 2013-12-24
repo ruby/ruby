@@ -1491,6 +1491,7 @@ RB_EVENT_HOOKS_HAVE_CALLBACK_DATA ::
 = Appendix C. Functions available for use in extconf.rb
 
 See documentation for {mkmf}[rdoc-ref:MakeMakefile].
+
 = Appendix D. Generational GC
 
 Ruby 2.1 introduced a generational garbage collector (called RGenGC).
@@ -1587,7 +1588,8 @@ Before inserting write barriers, you need to know about RGenGC algorithm
 (gc.c will help you). Macros and functions to insert write barriers are
 available in in include/ruby/ruby.h. An example is available in iseq.c.
 
-For a complete guide for RGenGC and write barriers, please refer to [...].
+For a complete guide for RGenGC and write barriers, please refer to
+<https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/RGenGC>.
 
 /*
  * Local variables:
