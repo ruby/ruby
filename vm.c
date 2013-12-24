@@ -930,6 +930,15 @@ rb_vm_cref(void)
     return rb_vm_get_cref(cfp->iseq, cfp->ep);
 }
 
+NODE *
+rb_vm_cref_in_context(VALUE self)
+{
+    rb_thread_t *th = GET_THREAD();
+    const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
+    if (cfp->self != self) return NULL;
+    return rb_vm_get_cref(cfp->iseq, cfp->ep);
+}
+
 #if 0
 void
 debug_cref(NODE *cref)
