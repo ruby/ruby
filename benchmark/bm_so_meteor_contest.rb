@@ -326,7 +326,7 @@ end
 #  The exact procedure is described in-code
 def prunable( board, location, slotting = false)
   collectors = []
-  # loop accross the rows
+  # loop across the rows
   (location / 6).to_i.upto(9) do | row_on |
     # obtain a set of regions representing the bits of the curent row.
     regions = $regions[(board >> (row_on * 6)) & 0b11111]
