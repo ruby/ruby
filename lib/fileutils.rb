@@ -253,7 +253,7 @@ module FileUtils
   private_module_function :fu_mkdir
 
   #
-  # Options: noop, verbose
+  # Options: parents, noop, verbose
   #
   # Removes one or more directories.
   #
