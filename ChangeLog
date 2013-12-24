@@ -1,3 +1,11 @@
+Tue Dec 24 13:48:45 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* README.EXT: add a document about RGenGC.
+	  Reviewed by havenwood.
+	  [misc #8962]
+
+	* README.EXT.ja: ditto.
+
 Tue Dec 24 12:11:43 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h (RARRAY_ASET): try to avoid compiler warning.
