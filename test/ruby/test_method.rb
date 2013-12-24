@@ -344,7 +344,7 @@ class TestMethod < Test::Unit::TestCase
     class << c
       public :define_method
     end
-    TOPLEVEL_BINDING.eval("proc{|c|c.define_method(:x) {|*x|throw x}}").call(c)
+    TOPLEVEL_BINDING.eval("proc{|c|c.define_method(:x) {|x|throw x}}").call(c)
     o = c.new
     assert_throw(bug9005) {o.x(bug9005)}
   end
