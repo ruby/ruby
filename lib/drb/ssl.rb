@@ -328,8 +328,9 @@ module DRb
       end
       begin
 	ssl = @config.accept(soc)
-      ensure
-        soc.close if $!
+      rescue Exception
+        soc.close
+        raise
       end
       self.class.new(uri, ssl, @config, true)
       rescue OpenSSL::SSL::SSLError
