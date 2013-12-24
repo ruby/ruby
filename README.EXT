@@ -1492,6 +1492,105 @@ RB_EVENT_HOOKS_HAVE_CALLBACK_DATA ::
 
 See documentation for {mkmf}[rdoc-ref:MakeMakefile].
 
+= Appendix D. Generational GC
+
+Ruby 2.1 introduced a generational garbage collector (called RGenGC).
+RGenGC (mostly) keeps compatibility.
+
+Generally, the use of the technique called write barriers is required in
+extension libraries for generational GC
+(http://en.wikipedia.org/wiki/Garbage_collection_%28computer_science%29).
+RGenGC works fine without write barriers in extension libraries.
+
+If your library adheres to the following tips, performance can
+be further improved. Especially, the "Don't touch pointers directly" section is
+important.
+
+== Incompatibility
+
+You can't write RBASIC(obj)->klass field directly because it is const
+value now.
+
+Basically you should not write this field because MRI expects it to be
+an immutable field, but if you want to do it in your extension you can
+use the following functions:
+
+VALUE rb_obj_hide(VALUE obj) ::
+
+  Clear RBasic::klass field. The object will be an internal object.
+  ObjectSpace::each_object can't find this object.
+
+VALUE rb_obj_reveal(VALUE obj, VALUE klass) ::
+
+  Reset RBasic::klass to be klass.
+  We expect the `klass' is hidden class by rb_obj_hide().
+
+== Write barriers
+
+RGenGC doesn't require write barriers to support generational GC.
+However, caring about write barrier can improve the performance of
+RGenGC. Please check the following tips.
+
+=== Don't touch pointers directly
+
+In MRI (include/ruby/ruby.h), some macros to acquire pointers to the
+internal data structures are supported such as RARRAY_PTR(),
+RSTRUCT_PTR() and so on.
+
+DO NOT USE THESE MACROS and instead use the corresponding C-APIs such as
+rb_ary_aref(), rb_ary_store() and so on.
+
+=== Consider whether to insert write barriers
+
+You don't need to care about write barriers if you only use built-in
+types.
+
+If you support T_DATA objects, you may consider using write barriers.
+
+Inserting write barriers into T_DATA objects only works with the
+following type objects: (a) long-lived objects, (b) when a huge number
+of objects are generated and (c) container-type objects that have
+references to other objects. If your extension provides such a type of
+T_DATA objects, consider inserting write barriers.
+
+(a): short-lived objects don't become old generation objects.
+(b): only a few oldgen objects don't have performance impact.
+(c): only a few references don't have performance impact.
+
+Inserting write barriers is a very difficult hack, it is easy to
+introduce critical bugs. And inserting write barriers has several areas
+of overhead. Basically we don't recommend you insert write barriers.
+Please carefully consider the risks.
+
+=== Combine with built-in types
+
+Please consider utilizing built-in types. Most built-in types support
+write barrier, so you can use them to avoid manually inserting write
+barriers.
+
+For example, if your T_DATA has references to other objects, then you
+can move these references to Array. A T_DATA object only has a reference
+to an array object. Or you can also use a Struct object to gather a
+T_DATA object (without any references) and an that Array contains
+references.
+
+With use of such techniques, you don't need to insert write barriers
+anymore.
+
+=== Insert write barriers
+
+[AGAIN] Inserting write barriers is a very difficult hack, and it is
+easy to introduce critical bugs. And inserting write barriers has
+several areas of overhead. Basically we don't recommend you insert write
+barriers. Please carefully consider the risks.
+
+Before inserting write barriers, you need to know about RGenGC algorithm
+(gc.c will help you). Macros and functions to insert write barriers are
+available in in include/ruby/ruby.h. An example is available in iseq.c.
+
+For a complete guide for RGenGC and write barriers, please refer to
+<https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/RGenGC>.
+
 /*
  * Local variables:
  * fill-column: 70
