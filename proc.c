@@ -14,7 +14,7 @@
 #include "gc.h"
 #include "iseq.h"
 
-NODE *rb_vm_cref_in_context(VALUE self);
+const NODE *rb_vm_cref_in_context(VALUE self, VALUE cbase);
 
 struct METHOD {
     VALUE recv;
@@ -1622,9 +1622,9 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
     ID id;
     VALUE body;
     int noex = NOEX_PUBLIC;
-    const NODE *cref = rb_vm_cref_in_context(mod);
+    const NODE *cref = rb_vm_cref_in_context(mod, mod);
 
-    if (cref && cref->nd_clss == mod) {
+    if (cref) {
 	noex = (int)cref->nd_visi;
     }
 
