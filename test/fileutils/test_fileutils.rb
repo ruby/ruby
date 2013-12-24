@@ -25,71 +25,70 @@ class TestFileUtils < Test::Unit::TestCase
   ensure
     fu.instance_variable_set(:@fileutils_output, old) if old
   end
-end
 
-prevdir = Dir.pwd
-tmproot = TestFileUtils::TMPROOT
-Dir.mkdir tmproot unless File.directory?(tmproot)
-Dir.chdir tmproot
+  m = Module.new do
+    def have_drive_letter?
+      /mswin(?!ce)|mingw|bcc|emx/ =~ RUBY_PLATFORM
+    end
 
-def have_drive_letter?
-  /mswin(?!ce)|mingw|bcc|emx/ =~ RUBY_PLATFORM
-end
+    def have_file_perm?
+      /mswin|mingw|bcc|emx/ !~ RUBY_PLATFORM
+    end
 
-def have_file_perm?
-  /mswin|mingw|bcc|emx/ !~ RUBY_PLATFORM
-end
+    @@have_symlink = nil
 
-$fileutils_rb_have_symlink = nil
+    def have_symlink?
+      if @@have_symlink == nil
+        @@have_symlink = check_have_symlink?
+      end
+      @@have_symlink
+    end
 
-def have_symlink?
-  if $fileutils_rb_have_symlink == nil
-    $fileutils_rb_have_symlink = check_have_symlink?
+    def check_have_symlink?
+      File.symlink nil, nil
+    rescue NotImplementedError
+      return false
+    rescue
+      return true
+    end
+
+    @@have_hardlink = nil
+
+    def have_hardlink?
+      if @@have_hardlink == nil
+        @@have_hardlink = check_have_hardlink?
+      end
+      @@have_hardlink
+    end
+
+    def check_have_hardlink?
+      File.link nil, nil
+    rescue NotImplementedError
+      return false
+    rescue
+      return true
+    end
+
+    begin
+      tmproot = TMPROOT
+      Dir.mkdir tmproot unless File.directory?(tmproot)
+      Dir.chdir tmproot do
+        Dir.mkdir("\n")
+        Dir.rmdir("\n")
+      end
+      def lf_in_path_allowed?
+        true
+      end
+    rescue
+      def lf_in_path_allowed?
+        false
+      end
+    ensure
+      Dir.rmdir tmproot
+    end
   end
-  $fileutils_rb_have_symlink
-end
-
-def check_have_symlink?
-  File.symlink nil, nil
-rescue NotImplementedError
-  return false
-rescue
-  return true
-end
-
-$fileutils_rb_have_hardlink = nil
-
-def have_hardlink?
-  if $fileutils_rb_have_hardlink == nil
-    $fileutils_rb_have_hardlink = check_have_hardlink?
-  end
-  $fileutils_rb_have_hardlink
-end
-
-def check_have_hardlink?
-  File.link nil, nil
-rescue NotImplementedError
-  return false
-rescue
-  return true
-end
-
-begin
-  Dir.mkdir("\n")
-  Dir.rmdir("\n")
-  def lf_in_path_allowed?
-    true
-  end
-rescue
-  def lf_in_path_allowed?
-    false
-  end
-end
-
-Dir.chdir prevdir
-Dir.rmdir tmproot
-
-class TestFileUtils
+  include m
+  extend m
 
   include FileUtils
 
