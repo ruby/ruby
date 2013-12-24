@@ -22,8 +22,6 @@
 
 NORETURN(void rb_raise_jump(VALUE));
 
-NODE *rb_vm_get_cref(const rb_iseq_t *, const VALUE *);
-
 VALUE rb_eLocalJumpError;
 VALUE rb_eSysStackError;
 
