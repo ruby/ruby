@@ -1169,7 +1169,7 @@ rb_hash_reject(VALUE hash)
 #endif
 	}
     }
-#if HASH_REJECT_COPY_MISC_ATTRIBUTES
+#if HASH_REJECT_COPY_EXTRA_STATES
     result = rb_hash_dup_empty(hash);
 #else
     result = rb_hash_new();
