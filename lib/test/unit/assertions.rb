@@ -192,7 +192,7 @@ module Test
       #      throw tag
       #    end
       def assert_throw(tag, msg = nil)
-        catch(tag) do
+        ret = catch(tag) do
           begin
             yield(tag)
           rescue ArgumentError => e
@@ -205,6 +205,7 @@ module Test
           assert(false, msg)
         end
         assert(true)
+        ret
       end
 
       # :call-seq:
