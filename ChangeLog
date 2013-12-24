@@ -1,3 +1,10 @@
+Wed Dec 25 00:46:44 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/smtp.rb (Net::SMTP#critical):  Always return a
+	  Net::SMTP::Response.  Patch by Pawel Veselov.
+	  [ruby-trunk - Bug #9125]
+	* test/net/smtp/test_smtp.rb:  Test for the above.
+
 Wed Dec 25 00:18:19 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/lib/socket.rb: Don't test $! in "ensure" clause because
