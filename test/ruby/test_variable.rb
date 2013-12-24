@@ -88,10 +88,9 @@ class TestVariable < Test::Unit::TestCase
     bind.local_variables
   end
 
-  def test_local_variables_from_other_method_binding
+  def test_binding_local_variables
     feature8773 = '[Feature #8773]'
-    x = 1
-    assert_equal([:x], local_variables_of(binding), feature8773)
+    assert_equal([:feature8773], local_variables_of(binding), feature8773)
   end
 
   def test_global_variable_0
