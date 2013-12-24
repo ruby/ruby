@@ -448,6 +448,58 @@ check_local_id(VALUE bindval, volatile VALUE *pname)
 
 /*
  *  call-seq:
+ *     binding.local_variables -> Array
+ *
+ *  Returns the +symbol+ names of the binding's local variables
+ *
+ *	def foo
+ *  	  a = 1
+ *  	  2.times do |n|
+ *  	    binding.local_variables #=> [:a, :n]
+ *  	  end
+ *  	end
+ *
+ *  This method is short version of the following code.
+ *
+ *	binding.eval("local_variables")
+ *
+ */
+static VALUE
+bind_local_variables(VALUE bindval)
+{
+    VALUE ary = rb_ary_new();
+
+    const rb_binding_t *bind;
+    const rb_env_t *env;
+    VALUE envval;
+
+    GetBindingPtr(bindval, bind);
+
+    envval = bind->env;
+    GetEnvPtr(envval, env);
+
+    do {
+	const rb_iseq_t *iseq;
+	int i;
+	ID id;
+	iseq = env->block.iseq;
+
+	for (i = 0; i < iseq->local_table_size; i++) {
+	    id = iseq->local_table[i];
+	    if (id) {
+		const char *vname = rb_id2name(id);
+		if (vname) {
+		    rb_ary_push(ary, ID2SYM(id));
+		}
+	    }
+	}
+    } while ((envval = env->prev_envval) != 0);
+
+    return ary;
+}
+
+/*
+ *  call-seq:
  *     binding.local_variable_get(symbol) -> obj
  *
  *  Returns a +value+ of local variable +symbol+.
@@ -2718,6 +2770,7 @@ Init_Binding(void)
     rb_define_method(rb_cBinding, "clone", binding_clone, 0);
     rb_define_method(rb_cBinding, "dup", binding_dup, 0);
     rb_define_method(rb_cBinding, "eval", bind_eval, -1);
+    rb_define_method(rb_cBinding, "local_variables", bind_local_variables, 0);
     rb_define_method(rb_cBinding, "local_variable_get", bind_local_variable_get, 1);
     rb_define_method(rb_cBinding, "local_variable_set", bind_local_variable_set, 2);
     rb_define_method(rb_cBinding, "local_variable_defined?", bind_local_variable_defined_p, 1);

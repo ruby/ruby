@@ -1,3 +1,9 @@
+Wed Dec 25 01:03:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (bind_local_variables): allowing binding to list its
+	  local variables.  patch by Jack Danger Canty <jackdanger AT
+	  squareup.com> at [ruby-core:56543].  [Feature #8773]
+
 Tue Dec 24 23:20:38 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/fileutils/fileasserts.rb (assert_ownership_user): new
