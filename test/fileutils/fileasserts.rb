@@ -97,6 +97,15 @@ File group ownership of "#{file}" unexpected:
    Actual: <#{actual}>
 EOT
       end
+
+      def assert_ownership_user(expected, file)
+        actual = File.stat(file).uid
+        assert expected == actual, <<EOT
+File user ownership of "#{file}" unexpected:
+ Expected: <#{expected}>
+   Actual: <#{actual}>
+EOT
+      end
     end
   end
 end

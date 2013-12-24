@@ -69,6 +69,29 @@ class TestFileUtils < Test::Unit::TestCase
       return true
     end
 
+    def root_in_posix?
+      if Process.respond_to?('uid')
+        return Process.uid == 0
+      else
+        return false
+      end
+    end
+
+    def distinct_uids(n = 2)
+      return unless user = Etc.getpwent
+      uids = [user.uid]
+      while user = Etc.getpwent
+        uid = user.uid
+        unless uids.include?(uid)
+          uids << uid
+          break if uids.size >= n
+        end
+      end
+      uids
+    ensure
+      Etc.endpwent
+    end
+
     begin
       tmproot = TMPROOT
       Dir.mkdir tmproot unless File.directory?(tmproot)
@@ -1098,7 +1121,58 @@ class TestFileUtils < Test::Unit::TestCase
     }
   end if have_file_perm?
 
-  # FIXME: Need to add test for chown with root account
+  if have_file_perm?
+    def test_chown_error
+      uid = distinct_uids(1)
+      return unless uid
+
+      touch 'tmp/a'
+
+      assert_raise_with_message(ArgumentError, "can't find user for ") {
+        chown '', @groups[0], 'tmp/a'
+      }
+
+      assert_raise_with_message(ArgumentError, "can't find group for ") {
+        chown uid, '', 'tmp/a'
+      }
+
+      assert_raise_with_message(Errno::ENOENT, /No such file or directory/) {
+        chown nil, @groups[0], ''
+      }
+    end
+
+    if root_in_posix?
+      def test_chown_with_root
+        uid_1, uid_2 = distinct_uids(2)
+        return unless uid_1 and uid_2
+
+        gid = @groups[0] # Most of the time, root only has one group
+
+        files = ['tmp/a1', 'tmp/a2']
+        files.each {|file| touch file}
+        [uid_1, uid_2].each {|uid|
+          assert_output_lines(["chown #{uid}:#{gid} tmp/a1 tmp/a2"]) {
+            chown uid, gid, files, verbose: true
+            files.each {|file|
+              assert_ownership_group gid, file
+              assert_ownership_user uid, file
+            }
+          }
+        }
+      end
+    else
+      def test_chown_without_permission
+        uid_1, uid_2 = distinct_uids(2)
+        return unless uid_1 and uid_2
+
+        touch 'tmp/a'
+        exception = assert_raise(Errno::EPERM) {
+          chown uid_1, nil, 'tmp/a'
+          chown uid_2, nil, 'tmp/a'
+        }
+      end
+    end
+  end
 
   # FIXME: How can I test this method?
   def test_chown_R

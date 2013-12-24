@@ -1,3 +1,13 @@
+Tue Dec 24 23:20:38 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/fileutils/fileasserts.rb (assert_ownership_user): new
+	  assertion for user ownership.
+
+	* test/fileutils/test_fileutils.rb (test_chown_error),
+	  (test_chown_without_permission, test_chown_with_root):
+	  based on the patch by vajrasky (Vajrasky Kok) at
+	  [ruby-core:59298].  [Feature #9292]
+
 Tue Dec 24 16:28:05 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (rb_mod_define_method): consider visibility only if self
