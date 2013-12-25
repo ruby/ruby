@@ -1,3 +1,10 @@
+Wed Dec 25 10:42:02 2013  Yamashita Yuu  <yamashita@geishatokyo.com>
+
+	* ext/openssl/ossl_ssl.c (Init_ossl_ssl): Declare a constant
+	  `OP_MSIE_SSLV2_RSA_PADDING` only if the macro is defined.  The
+	  `SSL_OP_MSIE_SSLV2_RSA_PADDING` has been removed from latest
+	  snapshot of OpenSSL 1.0.1.  [Fixes GH-488]
+
 Wed Dec 25 01:03:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (bind_local_variables): allowing binding to list its
