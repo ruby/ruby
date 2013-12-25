@@ -1209,7 +1209,7 @@ class TestProc < Test::Unit::TestCase
   end
 
   def get_binding if: 1, case: 2, when: 3, begin: 4, end: 5
-    a = 0
+    a ||= 0
     binding
   end
 

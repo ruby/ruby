@@ -22,7 +22,7 @@ class TestMethod < Test::Unit::TestCase
   def mo5(a, *b, c) end
   def mo6(a, *b, c, &d) end
   def mo7(a, b = nil, *c, d, &e) end
-  def ma1((a), &b) end
+  def ma1((a), &b) nil && a end
 
   class Base
     def foo() :base end
@@ -293,7 +293,7 @@ class TestMethod < Test::Unit::TestCase
       end
     end
 
-    assert_nothing_raised do
+    assert_nothing_raised(bug8686) do
       m.define_singleton_method(:a, m.method(:a))
     end
   end
@@ -456,7 +456,7 @@ class TestMethod < Test::Unit::TestCase
   define_method(:pmo5) {|a, *b, c|}
   define_method(:pmo6) {|a, *b, c, &d|}
   define_method(:pmo7) {|a, b = nil, *c, d, &e|}
-  define_method(:pma1) {|(a), &b|}
+  define_method(:pma1) {|(a), &b| nil && a}
 
   def test_bound_parameters
     assert_equal([], method(:m0).parameters)
@@ -659,6 +659,7 @@ class TestMethod < Test::Unit::TestCase
       prepend m
     }
     assert_raise(NameError, bug7988) {Module.new{prepend m}.instance_method(:bar)}
+    true || c || bug7836
   end
 
   def test_gced_bmethod
