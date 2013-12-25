@@ -23,13 +23,16 @@ done
 for r in $releases
 do
   xy=`echo $r|grep -o '[0-9]\.[0-9]'`
+  preview=`echo $r|grep -o '-\(preview\|rc\)'`
   dir="${RUBYDIR}/$xy"
   echo "$dir"
   mkdir -p $dir
-  for ext in (.tar.gz .tar.bz2 .zip)
+  for ext in $EXTS
   do
     cp $r$ext $dir/$r$ext
     ln -s $xy/$r$ext ${RUBYDIR}/$r$ext
-    ln -s $xy/$r$ext ${RUBYDIR}/ruby-$xy-stable$ext
+    if [ x$preview = x ];then
+      ln -s $xy/$r$ext ${RUBYDIR}/ruby-$xy-stable$ext
+    fi
   done
 done
