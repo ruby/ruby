@@ -126,20 +126,22 @@ NORETURN(static void argument_error(const rb_iseq_t *iseq, int miss_argc, int mi
 static void
 argument_error(const rb_iseq_t *iseq, int miss_argc, int min_argc, int max_argc)
 {
+    rb_thread_t *th = GET_THREAD();
     VALUE exc = rb_arg_error_new(miss_argc, min_argc, max_argc);
-    VALUE bt = rb_make_backtrace();
-    VALUE err_line = 0;
+    VALUE at;
 
     if (iseq) {
-	int line_no = FIX2INT(rb_iseq_first_lineno(iseq->self));
-
-	err_line = rb_sprintf("%s:%d:in `%s'",
-			      RSTRING_PTR(iseq->location.path),
-			      line_no, RSTRING_PTR(iseq->location.label));
-	rb_funcall(bt, rb_intern("unshift"), 1, err_line);
+	vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD, Qnil /* self */, Qnil /* klass */, Qnil /* specval*/,
+		      iseq->iseq_encoded, th->cfp->sp, 0 /* local_size */, 0 /* me */, 0 /* stack_max */);
+	at = rb_vm_backtrace_object();
+	vm_pop_frame(th);
+    }
+    else {
+	at = rb_vm_backtrace_object();
     }
 
-    rb_funcall(exc, rb_intern("set_backtrace"), 1, bt);
+    rb_iv_set(exc, "bt_locations", at);
+    rb_funcall(exc, rb_intern("set_backtrace"), 1, at);
     rb_exc_raise(exc);
 }
 

@@ -1,3 +1,13 @@
+Wed Dec 25 18:29:22 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (argument_error): insert dummy frame to make
+	  a backtrace object intead of modify backtrace string array.
+	  [Bug #9295]
+
+	* test/ruby/test_backtrace.rb: add a test for this patch.
+	  fix test to compare a result of Exception#backtrace with
+	  a result of Exception#backtrace_locations.
+
 Wed Dec 25 13:00:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: let mingw do something black-magic, and check if
