@@ -1,3 +1,9 @@
+Wed Dec 25 12:33:41 2013  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* sample/trick2013/: added the award-winning entries of TRICK 2013.
+	  See https://github.com/tric/trick2013 for the contest outline.
+	  (Matz has approved the attachment.)
+
 Wed Dec 25 10:42:02 2013  Yamashita Yuu  <yamashita@geishatokyo.com>
 
 	* ext/openssl/ossl_ssl.c (Init_ossl_ssl): Declare a constant
