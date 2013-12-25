@@ -338,6 +338,29 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(true, m.private_method_defined?(:foo))
   end
 
+  def test_define_method_in_private_scope
+    bug9005 = '[ruby-core:57747] [Bug #9005]'
+    c = Class.new
+    class << c
+      public :define_method
+    end
+    TOPLEVEL_BINDING.eval("proc{|c|c.define_method(:x) {|*x|throw x}}").call(c)
+    o = c.new
+    assert_throw(bug9005) {o.x(bug9005)}
+  end
+
+  def test_singleton_define_method_in_private_scope
+    bug9141 = '[ruby-core:58497] [Bug #9141]'
+    o = Object.new
+    class << o
+      public :define_singleton_method
+    end
+    TOPLEVEL_BINDING.eval("proc{|o|o.define_singleton_method(:x) {|x|throw x}}").call(o)
+    assert_throw(bug9141) do
+      o.x(bug9141)
+    end
+  end
+
   def test_super_in_proc_from_define_method
     c1 = Class.new {
       def m

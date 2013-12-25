@@ -1,3 +1,13 @@
+Wed Dec 25 16:58:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (rb_mod_define_method): consider visibility only if self
+	  in the caller is same as the receiver, otherwise make public as
+	  well as old behavior.  [ruby-core:57747] [Bug #9005]
+	  [ruby-core:58497] [Bug #9141]
+
+	* vm.c (rb_vm_cref_in_context): return ruby level cref if self is
+	  same.
+
 Wed Dec 25 16:35:34 2013  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* sample/trick2013/: added the award-winning entries of TRICK 2013.
