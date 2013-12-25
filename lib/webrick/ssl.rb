@@ -31,7 +31,7 @@ module WEBrick
     # :SSLClientCA          :: nil,
     #   Array of certificates that will be sent to the client.
     # :SSLExtraChainCert    :: nil,
-    #   Array of certificates that willbe added to the certificate chain
+    #   Array of certificates that will be added to the certificate chain
     # :SSLCACertificateFile :: nil,
     #   Path to a CA certificate file
     # :SSLCACertificatePath :: nil,
