@@ -1,3 +1,9 @@
+Wed Dec 25 16:35:34 2013  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* sample/trick2013/: added the award-winning entries of TRICK 2013.
+	  See https://github.com/tric/trick2013 for the contest outline.
+	  (Matz has approved the attachment.)
+
 Tue Dec 24 23:47:50 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* README.EXT: add a refer to URL.
