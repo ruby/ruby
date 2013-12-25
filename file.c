@@ -2292,14 +2292,15 @@ static VALUE
 rb_file_chown(VALUE obj, VALUE owner, VALUE group)
 {
     rb_io_t *fptr;
-    int o, g;
+    rb_uid_t o;
+    rb_gid_t g;
 #ifndef HAVE_FCHOWN
     VALUE path;
 #endif
 
     rb_secure(2);
-    o = NIL_P(owner) ? -1 : NUM2INT(owner);
-    g = NIL_P(group) ? -1 : NUM2INT(group);
+    o = NIL_P(owner) ? (rb_uid_t)-1 : NUM2UIDT(owner);
+    g = NIL_P(group) ? (rb_gid_t)-1 : NUM2GIDT(group);
     GetOpenFile(obj, fptr);
 #ifndef HAVE_FCHOWN
     if (NIL_P(fptr->pathv)) return Qnil;
