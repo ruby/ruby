@@ -1,6 +1,7 @@
 #!/bin/sh
 
 RUBYDIR=/home/ftp/pub/ruby
+EXTS=.tar.gz .tar.bz2 .zip
 
 releases=`ls ruby-*|grep -o 'ruby-[0-9]\.[0-9]\.[0-9]\(-\(preview\|rc\|p\)[0-9]\{1,4\}\)\?'|uniq`
 
@@ -8,18 +9,14 @@ releases=`ls ruby-*|grep -o 'ruby-[0-9]\.[0-9]\.[0-9]\(-\(preview\|rc\|p\)[0-9]\
 for r in $releases
 do
   echo "checking files for $r..."
-  if ! [ -f $r.tar.gz ];then
-    echo "ERROR: $r.tar.gz not found"
-    exit 1
-  elif ! [ -f $r.tar.bz2 ];then
-    echo "ERROR: $r.tar.bz2 not found"
-    exit 1
-  elif ! [ -f $r.zip ];then
-    echo "ERROR: $r.zip not found"
-    exit 1
-  else
-    echo "files are ok"
-  fi
+  for ext in $EXTS
+  do
+    if ! [ -f $r$ext ];then
+      echo "ERROR: $r$ext not found"
+      exit 1
+    fi
+  done
+  echo "files are ok"
 done
 
 # version directory
@@ -29,7 +26,10 @@ do
   dir="${RUBYDIR}/$xy"
   echo "$dir"
   mkdir -p $dir
-  cp $r.tar.gz $dir/$r.tar.gz
-  cp $r.tar.bz2 $dir/$r.tar.bz2
-  cp $r.zip $dir/$r.zip
+  for ext in (.tar.gz .tar.bz2 .zip)
+  do
+    cp $r$ext $dir/$r$ext
+    ln -s $xy/$r$ext ${RUBYDIR}/$r$ext
+    ln -s $xy/$r$ext ${RUBYDIR}/ruby-$xy-stable$ext
+  done
 done

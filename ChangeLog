@@ -1,3 +1,7 @@
+Thu Dec 26 01:09:57 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* tool/release.sh: make symbolic links.
+
 Thu Dec 26 00:45:33 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* tool/make-snapshot: support new version scheme.
