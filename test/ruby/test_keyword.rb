@@ -321,7 +321,7 @@ class TestKeywordArguments < Test::Unit::TestCase
   def test_block_required_keyword
     feature7701 = '[ruby-core:51454] [Feature #7701] required keyword argument'
     b = assert_nothing_raised(SyntaxError, feature7701) do
-      break eval("proc {|a:| a}")
+      break eval("proc {|a:| a}", nil, __FILE__, __LINE__)
     end
     assert_raise_with_message(ArgumentError, /missing keyword/, feature7701) {b.call}
     assert_raise_with_message(ArgumentError, /unknown keyword/, feature7701) {b.call(a:0, b:1)}
@@ -330,11 +330,11 @@ class TestKeywordArguments < Test::Unit::TestCase
 
     bug8139 = '[ruby-core:53608] [Bug #8139] required keyword argument with rest hash'
     b = assert_nothing_raised(SyntaxError, feature7701) do
-      break eval("proc {|a:, **b| [a, b]}")
+      break eval("proc {|a:, **bl| [a, bl]}", nil, __FILE__, __LINE__)
     end
     assert_equal([42, {}], b.call(a: 42), feature7701)
     assert_equal([42, {c: feature7701}], b.call(a: 42, c: feature7701), feature7701)
-    assert_equal([[:keyreq, :a], [:keyrest, :b]], b.parameters, feature7701)
+    assert_equal([[:keyreq, :a], [:keyrest, :bl]], b.parameters, feature7701)
     assert_raise_with_message(ArgumentError, /missing keyword/, bug8139) {b.call(c: bug8139)}
     assert_raise_with_message(ArgumentError, /missing keyword/, bug8139) {b.call}
   end
@@ -398,7 +398,7 @@ class TestKeywordArguments < Test::Unit::TestCase
       end
     end
     assert_equal([{}, {}], a.new.foo({}))
-    assert_equal([{}, {:bar=>"x"}], a.new.foo({}, bar: "x"))
+    assert_equal([{}, {:bar=>"x"}], a.new.foo({}, bar: "x"), bug8040)
   end
 
   def test_precedence_of_keyword_arguments_with_post_argument
