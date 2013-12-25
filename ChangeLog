@@ -1,3 +1,7 @@
+Wed Dec 25 22:32:19 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/abbrev.rb: [DOC] rdoc format patch by Giorgos Tsiftsis [Bug #9146]
+
 Wed Dec 25 20:30:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* iseq.c (rb_iseq_parameters): push argument type symbol only for
