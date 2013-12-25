@@ -881,7 +881,7 @@ rb_iseq_min_max_arity(const rb_iseq_t *iseq, int *max)
 	iseq->argc + iseq->arg_post_len + iseq->arg_opts -
 	(iseq->arg_opts > 0) + (iseq->arg_keyword != -1)
       : UNLIMITED_ARGUMENTS;
-    return iseq->argc + iseq->arg_post_len;
+    return iseq->argc + iseq->arg_post_len + (iseq->arg_keyword_required > 0);
 }
 
 static int

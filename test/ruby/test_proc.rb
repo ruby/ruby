@@ -85,6 +85,11 @@ class TestProc < Test::Unit::TestCase
     assert_equal(2, proc{|x, y=0, z, **o|}.arity)
     assert_equal(-3, proc{|x, y=0, *z, w, **o|}.arity)
 
+    assert_equal(2, proc{|x, y=0, z, a:1|}.arity)
+    assert_equal(3, proc{|x, y=0, z, a:|}.arity)
+    assert_equal(-4, proc{|x, y, *rest, a:, b:, c:|}.arity)
+    assert_equal(3, proc{|x, y=0, z, a:, **o|}.arity)
+
     assert_equal(0, lambda{}.arity)
     assert_equal(0, lambda{||}.arity)
     assert_equal(1, lambda{|x|}.arity)
