@@ -1,3 +1,13 @@
+Wed Dec 25 13:00:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: let mingw do something black-magic, and check if
+	  _gmtime64_s() is available actually.
+
+	* win32/win32.c (gmtime_s, localtime_s): use _gmtime64_s() and
+	  _localtime64_s() if available, not depending on very confusing
+	  mingw variants macros.  based on the patch by phasis68 (Heesob
+	  Park) at [ruby-core:58764].  [ruby-core:58391] [Bug #9119]
+
 Wed Dec 25 12:33:41 2013  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* sample/trick2013/: added the award-winning entries of TRICK 2013.

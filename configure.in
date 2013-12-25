@@ -888,6 +888,7 @@ AC_ARG_WITH(winnt-ver,
 AS_CASE(["$target_os"],
 [mingw*], [
   RUBY_APPEND_OPTION(CPPFLAGS, -D_WIN32_WINNT=$with_winnt_ver)
+  RUBY_APPEND_OPTION(CPPFLAGS, -D__MINGW_USE_VC2005_COMPAT)
 ])
 
 AS_CASE(["$target_os"],
@@ -1040,6 +1041,7 @@ main()
 		if test x"$ac_cv_type_NET_LUID" = xyes; then
 		    AC_DEFINE(HAVE_TYPE_NET_LUID, 1)
 		fi
+		AC_CHECK_FUNCS(_gmtime64_s)
 		AC_LIBOBJ([langinfo])
 		],
 [os2-emx*], [	LIBS="-lm $LIBS"
