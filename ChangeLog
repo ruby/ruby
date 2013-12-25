@@ -1,3 +1,8 @@
+Thu Dec 26 06:27:08 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* proc.c: Having optional keyword arguments makes maximum arity +1,
+	  not unlimited [#8072]
+
 Thu Dec 26 01:09:57 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* tool/release.sh: make symbolic links.
