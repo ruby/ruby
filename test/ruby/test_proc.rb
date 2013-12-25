@@ -77,6 +77,13 @@ class TestProc < Test::Unit::TestCase
     assert_equal(2, proc{|(x, y), z|[x,y]}.arity)
     assert_equal(1, proc{|(x, y), z=0|[x,y]}.arity)
     assert_equal(-4, proc{|x, *y, z, a|}.arity)
+    assert_equal(-1, proc{|**|}.arity)
+    assert_equal(-1, proc{|**o|}.arity)
+    assert_equal(-2, proc{|x, **o|}.arity)
+    assert_equal(-1, proc{|x=0, **o|}.arity)
+    assert_equal(-2, proc{|x, y=0, **o|}.arity)
+    assert_equal(-3, proc{|x, y=0, z, **o|}.arity)
+    assert_equal(-3, proc{|x, y=0, *z, w, **o|}.arity)
 
     assert_equal(0, lambda{}.arity)
     assert_equal(0, lambda{||}.arity)
@@ -95,6 +102,13 @@ class TestProc < Test::Unit::TestCase
     assert_equal(2, lambda{|(x, y), z|[x,y]}.arity)
     assert_equal(-2, lambda{|(x, y), z=0|[x,y]}.arity)
     assert_equal(-4, lambda{|x, *y, z, a|}.arity)
+    assert_equal(-1, lambda{|**|}.arity)
+    assert_equal(-1, lambda{|**o|}.arity)
+    assert_equal(-2, lambda{|x, **o|}.arity)
+    assert_equal(-1, lambda{|x=0, **o|}.arity)
+    assert_equal(-2, lambda{|x, y=0, **o|}.arity)
+    assert_equal(-3, lambda{|x, y=0, z, **o|}.arity)
+    assert_equal(-3, lambda{|x, y=0, *z, w, **o|}.arity)
 
     assert_arity(0) {}
     assert_arity(0) {||}
@@ -104,6 +118,10 @@ class TestProc < Test::Unit::TestCase
     assert_arity(-3) {|x, *y, z|}
     assert_arity(-1) {|*x|}
     assert_arity(-1) {|*|}
+    assert_arity(-1) {|**o|}
+    assert_arity(-1) {|**|}
+    assert_arity(-2) {|x, *y, **|}
+    assert_arity(-3) {|x, *y, z, **|}
   end
 
   def m(x)

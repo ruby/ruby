@@ -1,3 +1,8 @@
+Wed Dec 25 20:28:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (rb_iseq_min_max_arity): maximum argument is unlimited if
+	  having rest keywords argument.  [ruby-core:53298] [Bug #8072]
+
 Wed Dec 25 18:29:22 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (argument_error): insert dummy frame to make

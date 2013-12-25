@@ -23,6 +23,13 @@ class TestMethod < Test::Unit::TestCase
   def mo6(a, *b, c, &d) end
   def mo7(a, b = nil, *c, d, &e) end
   def ma1((a), &b) nil && a end
+  def mk1(**) end
+  def mk2(**o) nil && o end
+  def mk3(a, **o) nil && o end
+  def mk4(a = nil, **o) nil && o end
+  def mk5(a, b = nil, **o) nil && o end
+  def mk6(a, b = nil, c, **o) nil && o end
+  def mk7(a, b = nil, *c, d, **o) nil && o end
 
   class Base
     def foo() :base end
@@ -68,6 +75,13 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(-2, method(:mo4).arity)
     assert_equal(-3, method(:mo5).arity)
     assert_equal(-3, method(:mo6).arity)
+    assert_equal(-1, method(:mk1).arity)
+    assert_equal(-1, method(:mk2).arity)
+    assert_equal(-2, method(:mk3).arity)
+    assert_equal(-1, method(:mk4).arity)
+    assert_equal(-2, method(:mk5).arity)
+    assert_equal(-3, method(:mk6).arity)
+    assert_equal(-3, method(:mk7).arity)
   end
 
   def test_arity_special
@@ -457,6 +471,13 @@ class TestMethod < Test::Unit::TestCase
   define_method(:pmo6) {|a, *b, c, &d|}
   define_method(:pmo7) {|a, b = nil, *c, d, &e|}
   define_method(:pma1) {|(a), &b| nil && a}
+  define_method(:pmk1) {|**|}
+  define_method(:pmk2) {|**o|}
+  define_method(:pmk3) {|a, **o|}
+  define_method(:pmk4) {|a = nil, **o|}
+  define_method(:pmk5) {|a, b = nil, **o|}
+  define_method(:pmk6) {|a, b = nil, c, **o|}
+  define_method(:pmk7) {|a, b = nil, *c, d, **o|}
 
   def test_bound_parameters
     assert_equal([], method(:m0).parameters)
