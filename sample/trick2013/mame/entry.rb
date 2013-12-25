@@ -14,7 +14,7 @@
         .to_f*M.sin(y=                 40*(z+m)*2**
         (t/12E0)/463)+               y)*(v-z*d/n)};
         t+=1;v-d};m+=                n;g.flush<<(s.
-          pack"C*");                 puts(l)}}};M= 
+          pack"C*");                 puts(l)}}};M=
                                        Math);S=%:
 
                  Jesu, Joy of Man's Desiring
