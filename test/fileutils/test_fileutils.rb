@@ -1128,12 +1128,16 @@ class TestFileUtils < Test::Unit::TestCase
 
       touch 'tmp/a'
 
-      assert_raise_with_message(ArgumentError, "can't find user for ") {
-        chown '', @groups[0], 'tmp/a'
+      # getpwnam("") on Mac OS X doesn't err.
+      # passwd & group databases format is colon-separated, so user &
+      # group name can't contain a colon.
+
+      assert_raise_with_message(ArgumentError, "can't find user for :::") {
+        chown ":::", @groups[0], 'tmp/a'
       }
 
-      assert_raise_with_message(ArgumentError, "can't find group for ") {
-        chown uid, '', 'tmp/a'
+      assert_raise_with_message(ArgumentError, "can't find group for :::") {
+        chown uid, ":::", 'tmp/a'
       }
 
       assert_raise_with_message(Errno::ENOENT, /No such file or directory/) {
