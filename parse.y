@@ -9485,6 +9485,7 @@ new_args_tail_gen(struct parser_params *parser, NODE *k, ID kr, ID b)
     struct rb_args_info *args;
     NODE *kw_rest_arg = 0;
     NODE *node;
+    int check = 0;
 
     args = ALLOC(struct rb_args_info);
     MEMZERO(args, struct rb_args_info, 1);
@@ -9492,10 +9493,14 @@ new_args_tail_gen(struct parser_params *parser, NODE *k, ID kr, ID b)
 
     args->block_arg      = b;
     args->kw_args        = k;
-    if (k && !kr) kr = internal_id();
+    if (k && !kr) {
+	check = 1;
+	kr = internal_id();
+    }
     if (kr) {
 	arg_var(kr);
 	kw_rest_arg  = NEW_DVAR(kr);
+	kw_rest_arg->nd_cflag = check;
     }
     args->kw_rest_arg    = kw_rest_arg;
 

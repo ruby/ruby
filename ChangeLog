@@ -1,3 +1,16 @@
+Wed Dec 25 22:44:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_set_arguments): set arg_keyword_check from
+	  nd_cflag, which is set by parser.  internal ID is used for
+	  unnamed keyword rest argument, which should be separated from no
+	  keyword check.
+
+	* iseq.c (rb_iseq_parameters): if no keyword check, keyword rest is
+	  present.
+
+	* parse.y (new_args_tail_gen): set keywords check to nd_cflag, which
+	  equals to that keyword rest is not present.
+
 Wed Dec 25 22:32:19 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/abbrev.rb: [DOC] rdoc format patch by Giorgos Tsiftsis [Bug #9146]

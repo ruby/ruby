@@ -2015,8 +2015,10 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
 	    }
 	    rb_ary_push(args, a);
 	}
-	CONST_ID(keyrest, "keyrest");
-	rb_ary_push(args, PARAM(iseq->arg_keyword, keyrest));
+	if (!iseq->arg_keyword_check) {
+	    CONST_ID(keyrest, "keyrest");
+	    rb_ary_push(args, PARAM(iseq->arg_keyword, keyrest));
+	}
     }
     if (iseq->arg_block != -1) {
 	CONST_ID(block, "block");
