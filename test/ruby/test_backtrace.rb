@@ -19,17 +19,16 @@ class TestBacktrace < Test::Unit::TestCase
   end
 
   def test_exception_backtrace_locations
-    bt = Fiber.new{
+    backtrace, backtrace_locations = Fiber.new{
       begin
         raise
       rescue => e
-        e.backtrace_locations
+        [e.backtrace, e.backtrace_locations]
       end
     }.resume
-    assert_equal(1, bt.size)
-    assert_match(/.+:\d+:.+/, bt[0].to_s)
+    assert_equal(backtrace, backtrace_locations.map{|e| e.to_s})
 
-    bt = Fiber.new{
+    backtrace, backtrace_locations = Fiber.new{
       begin
         begin
           helper_test_exception_backtrace_locations
@@ -37,11 +36,34 @@ class TestBacktrace < Test::Unit::TestCase
           raise
         end
       rescue => e
-        e.backtrace_locations
+        [e.backtrace, e.backtrace_locations]
       end
     }.resume
-    assert_equal(2, bt.size)
-    assert_match(/helper_test_exception_backtrace_locations/, bt[0].to_s)
+    assert_equal(backtrace, backtrace_locations.map{|e| e.to_s})
+  end
+
+  def call_helper_test_exception_backtrace_locations
+    helper_test_exception_backtrace_locations(:bad_argument)
+  end
+
+  def test_argument_error_backtrace_locations
+    backtrace, backtrace_locations = Fiber.new{
+      begin
+        helper_test_exception_backtrace_locations(1)
+      rescue ArgumentError => e
+        [e.backtrace, e.backtrace_locations]
+      end
+    }.resume
+    assert_equal(backtrace, backtrace_locations.map{|e| e.to_s})
+
+    backtrace, backtrace_locations = Fiber.new{
+      begin
+        call_helper_test_exception_backtrace_locations
+      rescue ArgumentError => e
+        [e.backtrace, e.backtrace_locations]
+      end
+    }.resume
+    assert_equal(backtrace, backtrace_locations.map{|e| e.to_s})
   end
 
   def test_caller_lev
