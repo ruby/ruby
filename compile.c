@@ -1203,7 +1203,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 		node = node->nd_next;
 		i += 1;
 	    }
-	    iseq->arg_keyword_check = args->kw_rest_arg->nd_cflag;
+	    iseq->arg_keyword_check = args->kw_rest_arg->nd_cflag != 0;
 	    iseq->arg_keywords = i;
 	    iseq->arg_keyword_required = r;
 	    iseq->arg_keyword_table = ALLOC_N(ID, i);
