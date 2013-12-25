@@ -2219,6 +2219,24 @@ rb_file_s_lchmod(int argc, VALUE *argv)
 #define rb_file_s_lchmod rb_f_notimplement
 #endif
 
+static inline rb_uid_t
+to_uid(VALUE u)
+{
+    if (NIL_P(u)) {
+	return (rb_uid_t)-1;
+    }
+    return NUM2UIDT(u);
+}
+
+static inline rb_gid_t
+to_gid(VALUE g)
+{
+    if (NIL_P(g)) {
+	return (rb_gid_t)-1;
+    }
+    return NUM2GIDT(g);
+}
+
 struct chown_args {
     rb_uid_t owner;
     rb_gid_t group;
@@ -2256,18 +2274,8 @@ rb_file_s_chown(int argc, VALUE *argv)
 
     rb_secure(2);
     rb_scan_args(argc, argv, "2*", &o, &g, &rest);
-    if (NIL_P(o)) {
-	arg.owner = -1;
-    }
-    else {
-	arg.owner = NUM2UIDT(o);
-    }
-    if (NIL_P(g)) {
-	arg.group = -1;
-    }
-    else {
-	arg.group = NUM2GIDT(g);
-    }
+    arg.owner = to_uid(o);
+    arg.group = to_gid(g);
 
     n = apply2files(chown_internal, rest, &arg);
     return LONG2FIX(n);
@@ -2299,8 +2307,8 @@ rb_file_chown(VALUE obj, VALUE owner, VALUE group)
 #endif
 
     rb_secure(2);
-    o = NIL_P(owner) ? (rb_uid_t)-1 : NUM2UIDT(owner);
-    g = NIL_P(group) ? (rb_gid_t)-1 : NUM2GIDT(group);
+    o = to_uid(owner);
+    g = to_gid(group);
     GetOpenFile(obj, fptr);
 #ifndef HAVE_FCHOWN
     if (NIL_P(fptr->pathv)) return Qnil;
@@ -2344,18 +2352,8 @@ rb_file_s_lchown(int argc, VALUE *argv)
 
     rb_secure(2);
     rb_scan_args(argc, argv, "2*", &o, &g, &rest);
-    if (NIL_P(o)) {
-	arg.owner = -1;
-    }
-    else {
-	arg.owner = NUM2UIDT(o);
-    }
-    if (NIL_P(g)) {
-	arg.group = -1;
-    }
-    else {
-	arg.group = NUM2GIDT(g);
-    }
+    arg.owner = to_uid(o);
+    arg.group = to_gid(g);
 
     n = apply2files(lchown_internal, rest, &arg);
     return LONG2FIX(n);
