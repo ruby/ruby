@@ -1104,6 +1104,13 @@ class TestProc < Test::Unit::TestCase
   def pmo6(a, *b, c, &d) end
   def pmo7(a, b = :b, *c, d, &e) end
   def pma1((a), &b) a; end
+  def pmk1(**) end
+  def pmk2(**o) nil && o end
+  def pmk3(a, **o) nil && o end
+  def pmk4(a = nil, **o) nil && o end
+  def pmk5(a, b = nil, **o) nil && o end
+  def pmk6(a, b = nil, c, **o) nil && o end
+  def pmk7(a, b = nil, *c, d, **o) nil && o end
 
 
   def test_bound_parameters
@@ -1118,6 +1125,13 @@ class TestProc < Test::Unit::TestCase
     assert_equal([[:req, :a], [:rest, :b], [:req, :c], [:block, :d]], method(:pmo6).to_proc.parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:block, :e]], method(:pmo7).to_proc.parameters)
     assert_equal([[:req], [:block, :b]], method(:pma1).to_proc.parameters)
+    assert_equal([[:keyrest]], method(:pmk1).to_proc.parameters)
+    assert_equal([[:keyrest, :o]], method(:pmk2).to_proc.parameters)
+    assert_equal([[:req, :a], [:keyrest, :o]], method(:pmk3).to_proc.parameters)
+    assert_equal([[:opt, :a], [:keyrest, :o]], method(:pmk4).to_proc.parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:keyrest, :o]], method(:pmk5).to_proc.parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:req, :c], [:keyrest, :o]], method(:pmk6).to_proc.parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], method(:pmk7).to_proc.parameters)
 
     assert_equal([], "".method(:upcase).to_proc.parameters)
     assert_equal([[:rest]], "".method(:gsub).to_proc.parameters)

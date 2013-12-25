@@ -491,6 +491,13 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:rest, :b], [:req, :c], [:block, :d]], method(:mo6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:block, :e]], method(:mo7).parameters)
     assert_equal([[:req], [:block, :b]], method(:ma1).parameters)
+    assert_equal([[:keyrest]], method(:mk1).parameters)
+    assert_equal([[:keyrest, :o]], method(:mk2).parameters)
+    assert_equal([[:req, :a], [:keyrest, :o]], method(:mk3).parameters)
+    assert_equal([[:opt, :a], [:keyrest, :o]], method(:mk4).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:keyrest, :o]], method(:mk5).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:req, :c], [:keyrest, :o]], method(:mk6).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], method(:mk7).parameters)
   end
 
   def test_unbound_parameters
@@ -505,6 +512,13 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:rest, :b], [:req, :c], [:block, :d]], self.class.instance_method(:mo6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:block, :e]], self.class.instance_method(:mo7).parameters)
     assert_equal([[:req], [:block, :b]], self.class.instance_method(:ma1).parameters)
+    assert_equal([[:keyrest]], self.class.instance_method(:mk1).parameters)
+    assert_equal([[:keyrest, :o]], self.class.instance_method(:mk2).parameters)
+    assert_equal([[:req, :a], [:keyrest, :o]], self.class.instance_method(:mk3).parameters)
+    assert_equal([[:opt, :a], [:keyrest, :o]], self.class.instance_method(:mk4).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:keyrest, :o]], self.class.instance_method(:mk5).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:req, :c], [:keyrest, :o]], self.class.instance_method(:mk6).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], self.class.instance_method(:mk7).parameters)
   end
 
   def test_bmethod_bound_parameters
@@ -519,6 +533,13 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:rest, :b], [:req, :c], [:block, :d]], method(:pmo6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:block, :e]], method(:pmo7).parameters)
     assert_equal([[:req], [:block, :b]], method(:pma1).parameters)
+    assert_equal([[:keyrest]], method(:pmk1).parameters)
+    assert_equal([[:keyrest, :o]], method(:pmk2).parameters)
+    assert_equal([[:req, :a], [:keyrest, :o]], method(:pmk3).parameters)
+    assert_equal([[:opt, :a], [:keyrest, :o]], method(:pmk4).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:keyrest, :o]], method(:pmk5).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:req, :c], [:keyrest, :o]], method(:pmk6).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], method(:pmk7).parameters)
   end
 
   def test_bmethod_unbound_parameters
@@ -533,6 +554,14 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:rest, :b], [:req, :c], [:block, :d]], self.class.instance_method(:pmo6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:block, :e]], self.class.instance_method(:pmo7).parameters)
     assert_equal([[:req], [:block, :b]], self.class.instance_method(:pma1).parameters)
+    assert_equal([[:req], [:block, :b]], self.class.instance_method(:pma1).parameters)
+    assert_equal([[:keyrest]], self.class.instance_method(:pmk1).parameters)
+    assert_equal([[:keyrest, :o]], self.class.instance_method(:pmk2).parameters)
+    assert_equal([[:req, :a], [:keyrest, :o]], self.class.instance_method(:pmk3).parameters)
+    assert_equal([[:opt, :a], [:keyrest, :o]], self.class.instance_method(:pmk4).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:keyrest, :o]], self.class.instance_method(:pmk5).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:req, :c], [:keyrest, :o]], self.class.instance_method(:pmk6).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], self.class.instance_method(:pmk7).parameters)
   end
 
   def test_public_method_with_zsuper_method
