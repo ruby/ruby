@@ -1,3 +1,7 @@
+Thu Dec 26 10:49:14 2013  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* version.h (RUBY_VERSION): 2.2.0 development has started.
+
 Thu Dec 26 10:27:53 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* tool/merger.rb (tag): support 2.1.1 semi-automatic tagging and 2.2.0
