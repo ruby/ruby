@@ -1034,7 +1034,7 @@ $(RCFILES): $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
 			-so_name=$(RUBY_SO_NAME) \
 			. $(icondirs) $(win_srcdir)
 
-$(arch)-fake.rb: $(MKFILES)
+$(arch)-fake.rb: $(MKFILES) $(srcdir)/version.h
 	@echo Creating <<$@
 class Object
   CROSS_COMPILING = RUBY_PLATFORM

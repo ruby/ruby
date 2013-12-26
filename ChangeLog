@@ -1,3 +1,9 @@
+Thu Dec 26 16:10:41 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (fake.rb): should depend on version.h because
+	  if RUBY_VERSION is updated, fake.rb need to say the new version
+	  to avoid install error in rbconfig.rb.
+
 Thu Dec 26 14:25:03 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (HASH_REJECT_COPY_EXTRA_STATES): turn off the old
