@@ -1,6 +1,7 @@
 Thu Dec 26 10:27:53 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* tool/merger.rb (tag): support 2.1.1 semi-automatic tagging and 2.2.0 explicit tagging.
+	* tool/merger.rb (tag): support 2.1.1 semi-automatic tagging and 2.2.0
+	  explicit tagging.
 
 Thu Dec 26 06:35:25 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
