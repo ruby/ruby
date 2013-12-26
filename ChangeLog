@@ -1,3 +1,8 @@
+Thu Dec 26 14:25:03 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (HASH_REJECT_COPY_EXTRA_STATES): turn off the old
+	  behavior, copying extra states by accident.
+
 Thu Dec 26 10:49:14 2013  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* version.h (RUBY_VERSION): 2.2.0 development has started.
