@@ -339,7 +339,7 @@ class Time
     #
     #   Time.strptime(...) {|y| y < 100 ? (y >= 69 ? y + 1900 : y + 2000) : y}
     #
-    # Below is a list of the formating options:
+    # Below is a list of the formatting options:
     #
     # %a :: The abbreviated weekday name ("Sun")
     # %A :: The  full  weekday  name ("Sunday")
