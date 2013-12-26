@@ -558,18 +558,6 @@ class TestHash < Test::Unit::TestCase
     assert_equal(h3, h.reject {|k,v| v })
     assert_equal(base, h)
 
-    unless RUBY_VERSION > "2.1.0"
-      if @cls == Hash
-        assert_empty(EnvUtil.verbose_warning {h.reject {false}})
-        bug9275 = '[ruby-core:59254] [Bug #9275]'
-        c = Class.new(Hash)
-        assert_empty(EnvUtil.verbose_warning {c.new.reject {false}}, bug9275)
-      else
-        assert_match(/extra states/, EnvUtil.verbose_warning {h.reject {false}})
-      end
-      return
-    end
-
     h.instance_variable_set(:@foo, :foo)
     h.default = 42
     h.taint

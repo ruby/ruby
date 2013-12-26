@@ -31,7 +31,6 @@
     ((klass = has_extra_methods(rb_obj_class(hash))) != 0) || \
     FL_TEST((hash), FL_EXIVAR|FL_TAINT|HASH_PROC_DEFAULT) || \
     !NIL_P(RHASH_IFNONE(hash)))
-#define HASH_REJECT_COPY_EXTRA_STATES 0
 
 static VALUE
 has_extra_methods(VALUE klass)
@@ -291,7 +290,7 @@ rb_hash_new(void)
     return hash_alloc(rb_cHash);
 }
 
-static VALUE
+static inline VALUE
 rb_hash_dup_empty(VALUE hash)
 {
     NEWOBJ_OF(ret, struct RHash,
@@ -1146,34 +1145,10 @@ rb_hash_reject(VALUE hash)
     if (RTEST(ruby_verbose)) {
 	VALUE klass;
 	if (HAS_EXTRA_STATES(hash, klass)) {
-#if HASH_REJECT_COPY_EXTRA_STATES
-	    rb_warn("copying extra states: %+"PRIsVALUE, hash);
-	    rb_warn("following states will not be copied in the future version:");
-	    if (klass) {
-		rb_warn("  subclass: %+"PRIsVALUE, klass);
-	    }
-	    if (FL_TEST(hash, FL_EXIVAR)) {
-		rb_warn("  instance variables: %+"PRIsVALUE,
-			rb_obj_instance_variables(hash));
-	    }
-	    if (FL_TEST(hash, FL_TAINT)) {
-		rb_warn("  taintedness");
-	    }
-	    if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
-		rb_warn("  default proc: %+"PRIsVALUE, RHASH_IFNONE(hash));
-	    }
-	    else if (!NIL_P(RHASH_IFNONE(hash)))
-		rb_warn("  default value: %+"PRIsVALUE, RHASH_IFNONE(hash));
-#else
 	    rb_warn("extra states are no longer copied: %+"PRIsVALUE, hash);
-#endif
 	}
     }
-#if HASH_REJECT_COPY_EXTRA_STATES
-    result = rb_hash_dup_empty(hash);
-#else
     result = rb_hash_new();
-#endif
     if (!RHASH_EMPTY_P(hash)) {
 	rb_hash_foreach(hash, reject_i, result);
     }
