@@ -3817,6 +3817,11 @@ strings		: string
 			else {
 			    node = evstr2dstr(node);
 			}
+
+			if (parser->immutable_strings) {
+			    node = NEW_CALL(node, idFreeze, 0); 
+			}
+
 			$$ = node;
 		    /*%
 			$$ = $1;
@@ -3839,12 +3844,9 @@ string		: tCHAR
 string1		: tSTRING_BEG string_contents tSTRING_END
 		    {
 		    /*%%%*/
+
 			$$ = $2;
-			if (parser->immutable_strings) {
-			    $$ = NEW_CALL($2, idFreeze, 0);
- 			} else {
-			    $$ = $2;
- 			}
+
 		    /*%
 			$$ = dispatch1(string_literal, $2);
 		    %*/
