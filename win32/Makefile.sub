@@ -1053,11 +1053,7 @@ end
 <<KEEP
 
 $(ruby_pc): $(RBCONFIG)
-	@$(MINIRUBY) -r./rbconfig -p \
-	-e 'STDOUT.binmode' \
-	-e '$$_.gsub!(/@([a-z_]\w*)@/i) {' \
-	-e '(RbConfig::MAKEFILE_CONFIG[$$1] or "").gsub(/\$$\((.+?)\)/, %Q[$${\\1}])' \
-	-e '}' \
+	@$(MINIRUBY) -r./rbconfig $(srcdir)/tool/expand-config.rb \
 	$(srcdir)/template/ruby.pc.in > $@
 
 {$(srcdir)/enc}.c.obj:
