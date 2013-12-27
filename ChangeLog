@@ -1,3 +1,9 @@
+Sat Dec 28 00:42:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (local_push_gen, local_pop_gen): save cmdarg_stack to
+	  isolate command argument state from outer scope.
+	  [ruby-core:59342] [Bug #9308]
+
 Fri Dec 27 13:25:03 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/{setup.mak,Makefile.sub}: update fake.rb like
