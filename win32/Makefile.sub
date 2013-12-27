@@ -1037,11 +1037,14 @@ $(RCFILES): $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
 $(arch)-fake.rb: $(MKFILES) $(srcdir)/version.h
 	@echo Creating <<$@
 class Object
+  remove_const :CROSS_COMPILING if defined?(CROSS_COMPILING)
   CROSS_COMPILING = RUBY_PLATFORM
   remove_const :RUBY_PLATFORM
   remove_const :RUBY_VERSION
+  remove_const :RUBY_DESCRIPTION if defined?(RUBY_DESCRIPTION)
   RUBY_PLATFORM = "$(arch)"
-  RUBY_VERSION = "$(MAJOR).$(MINOR).$(TEENY)"
+  RUBY_VERSION = $(RUBY_PROGRAM_VERSION)
+  RUBY_DESCRIPTION = "ruby #{RUBY_VERSION} (" + $(RUBY_PROGRAM_RELEASE_DATE) + ") [#{RUBY_PLATFORM}]"
 end
 class File
   remove_const :ALT_SEPARATOR
