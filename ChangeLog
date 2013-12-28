@@ -1,3 +1,10 @@
+Sun Dec 29 07:27:51 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* compar.c (cmp_eq_recursive): Fix the return value, the value for
+	  failed #<=> should be nil. It was raising a NoMethodError for
+	  the test case TestComparable#test_no_cmp (undefined method `>'
+	  for false:FalseClass). Yet one more reason for #7688.
+
 Sat Dec 28 22:21:59 2013  Benoit Daloze  <eregontp@gmail.com>
 
 	* object.c (Kernel#<=>) surround Comparable operators with <code> tags.

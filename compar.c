@@ -54,7 +54,7 @@ rb_invcmp(VALUE x, VALUE y)
 static VALUE
 cmp_eq_recursive(VALUE arg1, VALUE arg2, int recursive)
 {
-    if (recursive) return Qfalse;
+    if (recursive) return Qnil;
     return rb_funcallv(arg1, cmp, 1, &arg2);
 }
 
