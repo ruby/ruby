@@ -1403,16 +1403,16 @@ rb_obj_not_match(VALUE obj1, VALUE obj2)
  *  Returns 0 if +obj+ and +other+ are the same object
  *  or <code>obj == other</code>, otherwise nil.
  *
- *  The <=> is used by various methods to compare objects, for example
+ *  The <code><=></code> is used by various methods to compare objects, for example
  *  Enumerable#sort, Enumerable#max etc.
  *
- *  Your implementation of <=> should return one of the following values: -1, 0,
+ *  Your implementation of <code><=></code> should return one of the following values: -1, 0,
  *  1 or nil. -1 means self is smaller than other. 0 means self is equal to other.
  *  1 means self is bigger than other. Nil means the two values could not be
  *  compared.
  *
- *  When you define <=>, you can include Comparable to gain the methods <=, <,
- *  ==, >=, > and between?.
+ *  When you define <code><=></code>, you can include Comparable to gain the methods
+ *  <code><=</code>, <code><</code>, <code>==</code>, <code>>=</code>, <code>></code> and <code>between?</code>.
  */
 static VALUE
 rb_obj_cmp(VALUE obj1, VALUE obj2)
