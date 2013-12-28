@@ -1,3 +1,10 @@
+Sun Dec 29 08:21:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_search_super_method): direct superclass of a
+	  module is found when super called in a Method object generated a
+	  method defined in a module, call method_missing in that case.
+	  [ruby-core:59358] [Bug #9315]
+
 Sun Dec 29 07:27:51 2013  Benoit Daloze  <eregontp@gmail.com>
 
 	* compar.c (cmp_eq_recursive): Fix the return value, the value for
