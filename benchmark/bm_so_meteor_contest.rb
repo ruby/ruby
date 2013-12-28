@@ -32,7 +32,7 @@ class Rotation
     @start_masks = Array.new(60)
 
     # create the rotational masks by placing the base mask at the location and seeing if
-    # 1) it overlaps the boundries and 2) it produces a prunable board.  if either of these
+    # 1) it overlaps the boundaries and 2) it produces a prunable board.  if either of these
     # is true the piece cannot be placed
     0.upto(59) do | offset |
       mask = is_even(offset) ? (@even_mask << offset) : (@odd_mask << offset)
@@ -328,7 +328,7 @@ def prunable( board, location, slotting = false)
   collectors = []
   # loop across the rows
   (location / 6).to_i.upto(9) do | row_on |
-    # obtain a set of regions representing the bits of the curent row.
+    # obtain a set of regions representing the bits of the current row.
     regions = $regions[(board >> (row_on * 6)) & 0b11111]
     converter = $converter[row_on]
 
@@ -370,7 +370,7 @@ def prunable( board, location, slotting = false)
     end
 
     # check the existing collectors, if any collector overlapped no bits in the region its [2] value will
-    # be zero.  The size of any such reaason is tested if it is not a muliple of five true is returned since
+    # be zero.  The size of any such reaason is tested if it is not a multiple of five true is returned since
     # the board is prunable.  if it is a multiple of five it is removed.
     # Collector that are still active have a new adjacent value [0] set based n the matched bits
     # and have [2] cleared out for the next cycle.
@@ -382,7 +382,7 @@ def prunable( board, location, slotting = false)
           collectors[collector_num] = nil
         else
           # if a collector matches all bits in the row then we can return unprunable early for the
-          # follwing reasons:
+          # following reasons:
           #    1) there can be no more unavailable bits bince we fill from the top left downward
           #    2) all previous regions have been closed or joined so only this region can fail
           #    3) this region must be good since there can never be only 1 region that is nuot
@@ -526,7 +526,7 @@ def save( board_string)
     @boards_found += 1
 
     # the exit motif is a time saver.  Ideally the function should return, but those tests
-    # take noticable time (performance).
+    # take noticeable time (performance).
     if (@boards_found == @stop_count) then
       print_results
       exit(0)

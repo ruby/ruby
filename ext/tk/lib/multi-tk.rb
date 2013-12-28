@@ -148,7 +148,7 @@ class MultiTkIp
       end
 
       def delete(idx, &blk)
-        # if gets an entry, is permited to delete
+        # if gets an entry, is permitted to delete
         if self[idx]
           @tbl.delete(idx)
         elsif blk

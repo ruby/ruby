@@ -135,7 +135,7 @@ require 'psych/handlers/document_stream'
 # ==== Exception handling
 #
 #   begin
-#     # The second argument chnages only the exception contents
+#     # The second argument changes only the exception contents
 #     Psych.parse("--- `", "file.txt")
 #   rescue Psych::SyntaxError => ex
 #     ex.file    # => 'file.txt'

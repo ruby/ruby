@@ -1,3 +1,12 @@
+Sat Dec 28 17:24:00 2013  DV Suresh  <e@dvsuresh.me>
+
+	* benchmark/bm_so_meteor_contest.rb: [DOC] Fix a few typos
+	* ext/fiddle/lib/fiddle/import.rb: ditto
+	* ext/psych/lib/psych.rb: ditto
+	* ext/psych/lib/psych/nodes/sequence.rb: ditto
+	* ext/tk/lib/multi-tk.rb: ditto
+	* ext/tk/lib/tcltk.rb: ditto
+
 Sat Dec 28 00:42:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (local_push_gen, local_pop_gen): save cmdarg_stack to
