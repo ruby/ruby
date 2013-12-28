@@ -63,7 +63,7 @@ module Fiddle
     extend Importer
 
     # Creates an array of handlers for the given +libs+, can be an instance of
-    # Fiddle::Handle, Fiddle::Importer, or will create a new istance of
+    # Fiddle::Handle, Fiddle::Importer, or will create a new instance of
     # Fiddle::Handle using Fiddle.dlopen
     #
     # Raises a DLError if the library cannot be loaded.
