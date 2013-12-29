@@ -1224,10 +1224,6 @@ mnew_from_me(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
 	goto again;
     }
 
-    if (RB_TYPE_P(defined_class, T_ICLASS)) {
-	defined_class = RBASIC_CLASS(defined_class);
-    }
-
     klass = defined_class;
 
     while (rclass != klass &&
@@ -1449,9 +1445,16 @@ static VALUE
 method_owner(VALUE obj)
 {
     struct METHOD *data;
+    VALUE defined_class;
 
     TypedData_Get_Struct(obj, struct METHOD, &method_data_type, data);
-    return data->defined_class;
+    defined_class = data->defined_class;
+
+    if (RB_TYPE_P(defined_class, T_ICLASS)) {
+	defined_class = RBASIC_CLASS(defined_class);
+    }
+
+    return defined_class;
 }
 
 void
