@@ -2127,6 +2127,10 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
     }
     if (RHASH_SIZE(hash1) != RHASH_SIZE(hash2))
 	return Qfalse;
+    if (embeddedp(hash1))
+	explode(hash1);		/* FIXME: this is inefficient */
+    if (embeddedp(hash2))
+	explode(hash2);		/* FIXME: this is inefficient */
     if (!RHASH(hash1)->ntbl || !RHASH(hash2)->ntbl)
         return Qtrue;
     if (RHASH(hash1)->ntbl->type != RHASH(hash2)->ntbl->type)
