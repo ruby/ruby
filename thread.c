@@ -3072,8 +3072,22 @@ rb_thread_variable_p(VALUE thread, VALUE key)
 
     locals = rb_ivar_get(thread, id_locals);
 
+    if (FL_TEST(locals, RHASH_EMBED_FLAG)) {
+	struct REmbedHash *h = (struct REmbedHash *)locals;
+	int i;
+	for (i=0; i<RHASH_EMBED_LEN_MAX; i++) {
+	    if (h->as.ary[i][0] == Qundef) {
+		return Qfalse;
+	    }
+	    else if (h->as.ary[i][0] == ID2SYM(id)) {
+		return Qtrue;
+	    }
+	}
+	return Qfalse;
+    }
+
     if (!RHASH(locals)->ntbl)
-        return Qfalse;
+	return Qfalse;
 
     if (st_lookup(RHASH(locals)->ntbl, ID2SYM(id), 0)) {
 	return Qtrue;
