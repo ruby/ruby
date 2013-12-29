@@ -3955,11 +3955,7 @@ ary_make_hash_by(VALUE ary)
 static inline void
 ary_recycle_hash(VALUE hash)
 {
-    if (RHASH(hash)->ntbl) {
-	st_table *tbl = RHASH(hash)->ntbl;
-	RHASH(hash)->ntbl = 0;
-	st_free_table(tbl);
-    }
+    rb_hash_clear(hash);
 }
 
 /*
