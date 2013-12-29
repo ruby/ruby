@@ -1652,10 +1652,16 @@ rb_hash_initialize_copy(VALUE hash, VALUE hash2)
 
     Check_Type(hash2, T_HASH);
 
+    if (embeddedp(hash2)) {
+        return embedded_replace(hash, hash2);
+    }
+    else {
+        explode(hash);
+    }
     ntbl = RHASH(hash)->ntbl;
     if (RHASH(hash2)->ntbl) {
 	if (ntbl) st_free_table(ntbl);
-        RHASH(hash)->ntbl = st_copy(RHASH(hash2)->ntbl);
+	RHASH(hash)->ntbl = st_copy(RHASH(hash2)->ntbl);
 	if (RHASH(hash)->ntbl->num_entries)
 	    rb_hash_rehash(hash);
     }
@@ -1664,7 +1670,7 @@ rb_hash_initialize_copy(VALUE hash, VALUE hash2)
     }
 
     if (FL_TEST(hash2, HASH_PROC_DEFAULT)) {
-        FL_SET(hash, HASH_PROC_DEFAULT);
+	FL_SET(hash, HASH_PROC_DEFAULT);
     }
     else {
 	FL_UNSET(hash, HASH_PROC_DEFAULT);
