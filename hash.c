@@ -897,7 +897,17 @@ rb_hash_fetch_m(int argc, VALUE *argv, VALUE hash)
     if (block_given && argc == 2) {
 	rb_warn("block supersedes default value argument");
     }
+    if (embeddedp(hash)) {
+	val =  (st_data_t)embedded_lookup(hash, key, Qundef);
+	if (val == Qundef) {
+	    goto notfound;
+	}
+	else {
+	    return (VALUE)val;
+	}
+    }
     if (!RHASH(hash)->ntbl || !st_lookup(RHASH(hash)->ntbl, key, &val)) {
+    notfound:
 	if (block_given) return rb_yield(key);
 	if (argc == 1) {
 	    volatile VALUE desc = rb_protect(rb_inspect, key, 0);
