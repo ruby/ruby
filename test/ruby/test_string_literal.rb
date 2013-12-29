@@ -1,14 +1,5 @@
 # -*- immutable: string -*-
 
-#class NilClass
-#  def freeze
-#    raise '!!!'
-#  end
-#end
-#
-#puts('', '')
-
-
 require 'test/unit'
 require_relative 'test_string_literal_mutable.rb'
 
@@ -46,14 +37,6 @@ class TestStringLiteral < Test::Unit::TestCase
     end
   end
 
-  def test_string_interpolation
-    str = interpolated_string("blah blah")
-    exception = assert_raise RuntimeError do
-      mutate(str)
-    end
-    assert_match /can't modify frozen String/, exception.message
-  end
-
   def test_strings_in_other_file_are_mutable
     mutate(TestStringLiteralMutable::CONSTANT)
     assert_equal "SING", TestStringLiteralMutable::CONSTANT
@@ -63,6 +46,20 @@ class TestStringLiteral < Test::Unit::TestCase
     s1 = some_string
     s2 = some_string
     assert_equal s1.object_id, s2.object_id
+  end
+
+  def test_different_literal_strings_with_the_same_value_in_the_same_file_should_have_the_same_object_id
+    s1 = some_string
+    s2 = "A nice frozen string!"
+    assert_equal s2.object_id, s2.object_id
+  end
+
+  def test_string_interpolation
+    str = interpolated_string("blah blah")
+    exception = assert_raise RuntimeError do
+      mutate(str)
+    end
+    assert_match /can't modify frozen String/, exception.message
   end
 
   def test_interpolated_strings_should_have_a_different_object_id
