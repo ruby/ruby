@@ -1,3 +1,8 @@
+Sun Dec 29 18:36:54 2013  Shota Fukumori  <her@sorah.jp>
+
+	* lib/mkmf.rb (configuration): Make CXXFLAGS customizable.
+	  Patch by Kohei Suzuki (eagletmt). [Fixes GH-492]
+
 Sun Dec 29 12:11:11 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (mnew_from_me): keep iclass as-is, to make inheritance
