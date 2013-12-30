@@ -1,6 +1,6 @@
 Mon Dec 30 23:33:07 2013  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
-	* variable.c: adding extra example in docs.
+	* variable.c: [DOC] adding extra example in docs.
 	  patched by Steve Klabnik. [Bug #9210]
 
 Mon Dec 30 18:34:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
