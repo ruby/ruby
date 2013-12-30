@@ -156,7 +156,7 @@ must_encindex(int index)
 	rb_raise(rb_eEncodingError, "encoding index out of bound: %d",
 		 index);
     }
-    if (ENC_TO_ENCINDEX(enc) != index) {
+    if (ENC_TO_ENCINDEX(enc) != (int)(index & ENC_INDEX_MASK)) {
 	rb_raise(rb_eEncodingError, "wrong encoding index %d for %s (expected %d)",
 		 index, rb_enc_name(enc), ENC_TO_ENCINDEX(enc));
     }
@@ -592,7 +592,7 @@ rb_enc_from_index(int index)
     if (!enc_table.list) {
 	rb_enc_init();
     }
-    if (index < 0 || enc_table.count <= index) {
+    if (index < 0 || enc_table.count <= (index &= ENC_INDEX_MASK)) {
 	return 0;
     }
     return enc_table.list[index].enc;
@@ -927,7 +927,7 @@ rb_obj_encoding(VALUE obj)
     if (idx < 0) {
 	rb_raise(rb_eTypeError, "unknown encoding");
     }
-    return rb_enc_from_encoding_index(idx);
+    return rb_enc_from_encoding_index(idx & ENC_INDEX_MASK);
 }
 
 int

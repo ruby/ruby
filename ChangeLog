@@ -1,3 +1,8 @@
+Mon Dec 30 18:34:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (must_encindex, rb_enc_from_index, rb_obj_encoding): mask
+	  encoding index and ignore dummy flags.  [ruby-core:59354] [Bug #9314]
+
 Mon Dec 30 16:11:52 2013  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* tool/make-snapshot: needs CXXFLAGS.  [ruby-core:59393][Bug #9320]
