@@ -1,3 +1,7 @@
+Mon Dec 30 16:11:52 2013  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* tool/make-snapshot: needs CXXFLAGS.  [ruby-core:59393][Bug #9320]
+
 Sun Dec 29 18:36:54 2013  Shota Fukumori  <her@sorah.jp>
 
 	* lib/mkmf.rb (configuration): Make CXXFLAGS customizable.

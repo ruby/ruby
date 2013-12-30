@@ -227,6 +227,7 @@ def package(rev, destdir)
         f.puts "s,@ARCH_FLAG@,|#_!!_#|,g"
         f.puts "s,@CFLAGS@,|#_!!_#|,g"
         f.puts "s,@CPPFLAGS@,|#_!!_#|,g"
+        f.puts "s,@CXXFLAGS@,|#_!!_#|,g"
         f.puts "s,@LDFLAGS@,|#_!!_#|,g"
         f.puts "s,@DLDFLAGS@,|#_!!_#|,g"
         f.puts "s,@LIBEXT@,|#_!!_#|a,g"
