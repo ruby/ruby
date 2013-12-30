@@ -558,7 +558,7 @@ class TestHash < Test::Unit::TestCase
     assert_equal(h3, h.reject {|k,v| v })
     assert_equal(base, h)
 
-    return unless RUBY_VERSION < "2.2.0" # [ruby-core:59154] [Bug #9223]
+    return unless RUBY_VERSION >= "2.2.0" # [ruby-core:59154] [Bug #9223]
 
     h.instance_variable_set(:@foo, :foo)
     h.default = 42
