@@ -1,3 +1,8 @@
+Tue Dec 31 21:44:17 2013  Akio Tajima <artonx@yahoo.co.jp>
+
+	* win32/Makefile.sub: remove HAVE_FSEEKO because fseeko removed from win32/win32.c
+	  Fixed [Bug #9333].
+
 Tue Dec 31 21:02:27 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* io.c (io_fwrite): allocate frozen str only when str is not converted.
