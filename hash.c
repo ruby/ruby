@@ -143,6 +143,15 @@ embedded_clear(VALUE hash)
     return hash;
 }
 
+static inline VALUE
+embedded_dup(VALUE hash)
+{
+    struct RValueStorage *ret = (struct RValueStorage *)rb_newobj();
+
+    memcpy(ret, (void*)hash, sizeof(*ret));
+    return (VALUE)ret;
+}
+
 static const struct st_hash_type objhash;
 static inline void
 explode(VALUE hash)
@@ -467,10 +476,15 @@ rb_hash_dup_empty(VALUE hash)
 VALUE
 rb_hash_dup(VALUE hash)
 {
-    VALUE ret = rb_hash_dup_empty(hash);
-    if (!RHASH_EMPTY_P(hash))
-	RHASH(ret)->ntbl = st_copy(RHASH(hash)->ntbl);
-    return ret;
+    if (embeddedp(hash)) {
+	return embedded_dup(hash);
+    }
+    else {
+	VALUE ret = rb_hash_dup_empty(hash);
+	if (!RHASH_EMPTY_P(hash))
+	    RHASH(ret)->ntbl = st_copy(RHASH(hash)->ntbl);
+	return ret;
+    }
 }
 
 static void
