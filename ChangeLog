@@ -1,3 +1,8 @@
+Tue Dec 31 23:49:07 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_f_raise): add cause: optional keyword argument.
+	  [ruby-core:58610] [Feature #8257] [EXPERIMENTAL]
+
 Tue Dec 31 21:44:17 2013  Akio Tajima <artonx@yahoo.co.jp>
 
 	* win32/Makefile.sub: remove HAVE_FSEEKO because fseeko removed from win32/win32.c

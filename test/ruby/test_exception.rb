@@ -517,4 +517,18 @@ end.join
     }
     assert_not_same(e, e.cause, "#{msg}: should not be recursive")
   end
+
+  def test_raise_with_cause
+    msg = "[Feature #8257]"
+    cause = ArgumentError.new("foobar")
+    e = assert_raise(RuntimeError) {raise msg, cause: cause}
+    assert_same(cause, e.cause)
+  end
+
+  def test_cause_with_no_arguments
+    cause = ArgumentError.new("foobar")
+    assert_raise_with_message(ArgumentError, /with no arguments/) do
+      raise cause: cause
+    end
+  end
 end

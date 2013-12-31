@@ -20,7 +20,7 @@
 #include "vm_core.h"
 #include "probes_helper.h"
 
-NORETURN(void rb_raise_jump(VALUE));
+NORETURN(void rb_raise_jump(VALUE, VALUE));
 
 VALUE rb_eLocalJumpError;
 VALUE rb_eSysStackError;
@@ -429,7 +429,7 @@ rb_frozen_class_p(VALUE klass)
     }
 }
 
-NORETURN(static void rb_longjmp(int, volatile VALUE));
+NORETURN(static void rb_longjmp(int, volatile VALUE, volatile VALUE));
 static VALUE get_errinfo(void);
 static VALUE get_thread_errinfo(rb_thread_t *th);
 
@@ -460,21 +460,27 @@ exc_setup_cause(VALUE exc, VALUE cause)
 }
 
 static void
-setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg)
+setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 {
     VALUE at;
     VALUE e;
     const char *file;
     volatile int line = 0;
+    int nocause = 0;
 
     if (NIL_P(mesg)) {
 	mesg = th->errinfo;
 	if (INTERNAL_EXCEPTION_P(mesg)) JUMP_TAG(TAG_FATAL);
+	nocause = 1;
     }
     if (NIL_P(mesg)) {
 	mesg = rb_exc_new(rb_eRuntimeError, 0, 0);
+	nocause = 0;
     }
-    exc_setup_cause(mesg, get_thread_errinfo(th));
+    if (cause == Qundef) {
+	cause = nocause ? Qnil : get_thread_errinfo(th);
+    }
+    exc_setup_cause(mesg, cause);
 
     file = rb_sourcefile();
     if (file) line = rb_sourceline();
@@ -548,10 +554,10 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg)
 }
 
 static void
-rb_longjmp(int tag, volatile VALUE mesg)
+rb_longjmp(int tag, volatile VALUE mesg, VALUE cause)
 {
     rb_thread_t *th = GET_THREAD();
-    setup_exception(th, tag, mesg);
+    setup_exception(th, tag, mesg, cause);
     rb_thread_raised_clear(th);
     JUMP_TAG(tag);
 }
@@ -564,7 +570,7 @@ rb_exc_raise(VALUE mesg)
     if (!NIL_P(mesg)) {
 	mesg = make_exception(1, &mesg, FALSE);
     }
-    rb_longjmp(TAG_RAISE, mesg);
+    rb_longjmp(TAG_RAISE, mesg, Qundef);
 }
 
 void
@@ -573,13 +579,38 @@ rb_exc_fatal(VALUE mesg)
     if (!NIL_P(mesg)) {
 	mesg = make_exception(1, &mesg, FALSE);
     }
-    rb_longjmp(TAG_FATAL, mesg);
+    rb_longjmp(TAG_FATAL, mesg, Qnil);
 }
 
 void
 rb_interrupt(void)
 {
     rb_raise(rb_eInterrupt, "%s", "");
+}
+
+enum {raise_opt_cause, raise_max_opt};
+
+static int
+extract_raise_opts(int argc, VALUE *argv, VALUE *opts)
+{
+    int i;
+    if (argc > 0) {
+	VALUE opt = argv[argc-1];
+	if (RB_TYPE_P(opt, T_HASH)) {
+	    VALUE kw = rb_extract_keywords(&opt);
+	    if (!opt) --argc;
+	    if (kw) {
+		ID keywords[1];
+		CONST_ID(keywords[0], "cause");
+		rb_get_kwargs(kw, keywords, 0, 1, opts);
+		return argc;
+	    }
+	}
+    }
+    for (i = 0; i < raise_max_opt; ++i) {
+	opts[i] = Qundef;
+    }
+    return argc;
 }
 
 /*
@@ -610,14 +641,20 @@ static VALUE
 rb_f_raise(int argc, VALUE *argv)
 {
     VALUE err;
+    VALUE opts[raise_max_opt], *const cause = &opts[raise_opt_cause];
+
+    argc = extract_raise_opts(argc, argv, opts);
     if (argc == 0) {
+	if (*cause != Qundef) {
+	    rb_raise(rb_eArgError, "only cause is given with no arguments");
+	}
 	err = get_errinfo();
 	if (!NIL_P(err)) {
 	    argc = 1;
 	    argv = &err;
 	}
     }
-    rb_raise_jump(rb_make_exception(argc, argv));
+    rb_raise_jump(rb_make_exception(argc, argv), *cause);
 
     UNREACHABLE;
 }
@@ -680,7 +717,7 @@ rb_make_exception(int argc, VALUE *argv)
 }
 
 void
-rb_raise_jump(VALUE mesg)
+rb_raise_jump(VALUE mesg, VALUE cause)
 {
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
@@ -691,7 +728,7 @@ rb_raise_jump(VALUE mesg)
     th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, self, mid, klass, Qnil);
 
-    setup_exception(th, TAG_RAISE, mesg);
+    setup_exception(th, TAG_RAISE, mesg, cause);
 
     rb_thread_raised_clear(th);
     JUMP_TAG(TAG_RAISE);
