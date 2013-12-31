@@ -119,6 +119,30 @@ embedded_delete(VALUE hash, VALUE key)
     return ret;
 }
 
+static inline VALUE
+embedded_clear(VALUE hash)
+{
+    struct REmbedHash *h = (struct REmbedHash *)hash;
+#ifdef __GNUC__
+    /* gcc can mass-assign so for-loops are avoided. */
+    h->as = (__typeof__(h->as)) {
+	.ary = {
+	    [ 0 ... RHASH_EMBED_LEN_MAX - 1] = {
+		Qundef, Qundef
+	    }
+	}
+    };
+#else
+    int i, j;
+    for (i=0; i<RHASH_EMBED_LEN_MAX; i++) {
+	for (j=0; j<2; j++) {
+	    h->as.ary[i][j] = Qundef;
+	}
+    }
+#endif
+    return hash;
+}
+
 static const struct st_hash_type objhash;
 static inline void
 explode(VALUE hash)
@@ -1447,6 +1471,8 @@ VALUE
 rb_hash_clear(VALUE hash)
 {
     rb_hash_modify_check(hash);
+    if (embeddedp(hash))
+        return embedded_clear(hash);
     if (!RHASH(hash)->ntbl)
         return hash;
     if (RHASH(hash)->ntbl->num_entries > 0) {
