@@ -1988,7 +1988,7 @@ rb_hash_keys(VALUE hash)
     keys = rb_ary_new_capa(size);
     if (size == 0) return keys;
 
-    if (ST_DATA_COMPATIBLE_P(VALUE)) {
+    if (ST_DATA_COMPATIBLE_P(VALUE) &&! embeddedp(hash)) {
 	st_table *table = RHASH(hash)->ntbl;
 
 	if (OBJ_PROMOTED(keys)) rb_gc_writebarrier_remember_promoted(keys);
