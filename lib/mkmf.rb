@@ -2509,6 +2509,8 @@ MESSAGE
   $configure_args["--topdir"] ||= $curdir
   $ruby = arg_config("--ruby", File.join(RbConfig::CONFIG["bindir"], CONFIG["ruby_install_name"]))
 
+  RbConfig.expand(CONFIG["RUBY_SO_NAME"])
+
   # :startdoc:
 
   split = Shellwords.method(:shellwords).to_proc

@@ -1,3 +1,8 @@
+Tue Dec 31 15:44:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (RbConfig): expand RUBY_SO_NAME for extensions
+	  backward compatibility.  [ruby-core:59426] [Bug #9329]
+
 Mon Dec 30 23:33:07 2013  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* variable.c: [DOC] adding extra example in docs.
