@@ -1291,7 +1291,7 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
 # define MODE_BTMODE(a,b,c) ((fmode & FMODE_BINMODE) ? (b) : \
                              (fmode & FMODE_TEXTMODE) ? (c) : (a))
 static VALUE
-do_writeconv(VALUE str, rb_io_t *fptr)
+do_writeconv(VALUE str, rb_io_t *fptr, int *converted)
 {
     if (NEED_WRITECONV(fptr)) {
         VALUE common_encoding = Qnil;
@@ -1319,10 +1319,12 @@ do_writeconv(VALUE str, rb_io_t *fptr)
         if (!NIL_P(common_encoding)) {
             str = rb_str_encode(str, common_encoding,
                 fptr->writeconv_pre_ecflags, fptr->writeconv_pre_ecopts);
+	    *converted = 1;
         }
 
         if (fptr->writeconv) {
             str = rb_econv_str_convert(fptr->writeconv, str, ECONV_PARTIAL_INPUT);
+	    *converted = 1;
         }
     }
 #if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
@@ -1348,13 +1350,15 @@ do_writeconv(VALUE str, rb_io_t *fptr)
 static long
 io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
 {
+    int converted = 0;
 #ifdef _WIN32
     if (fptr->mode & FMODE_TTY) {
 	long len = rb_w32_write_console(str, fptr->fd);
 	if (len > 0) return len;
     }
 #endif
-    str = do_writeconv(str, fptr);
+    str = do_writeconv(str, fptr, &converted);
+    if (!converted) str = rb_str_new_frozen(str);
     return io_binwrite(str, RSTRING_PTR(str), RSTRING_LEN(str),
 		       fptr, nosync);
 }
@@ -1385,8 +1389,6 @@ io_write(VALUE io, VALUE str, int nosync)
     }
     io = tmp;
     if (RSTRING_LEN(str) == 0) return INT2FIX(0);
-
-    str = rb_str_new_frozen(str);
 
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);

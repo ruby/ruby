@@ -1,3 +1,7 @@
+Tue Dec 31 21:02:27 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* io.c (io_fwrite): allocate frozen str only when str is not converted.
+
 Tue Dec 31 15:44:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (RbConfig): expand RUBY_SO_NAME for extensions
