@@ -3921,6 +3921,7 @@ ary_tmp_hash_new(void)
     VALUE hash = rb_hash_new();
 
     RBASIC_CLEAR_CLASS(hash);
+    rb_hash_explode(hash);
     return hash;
 }
 
