@@ -688,7 +688,12 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
 	tmp = rb_hash_s_try_convert(Qnil, argv[0]);
 	if (!NIL_P(tmp)) {
 	    hash = hash_alloc(klass);
+	    if (embeddedp(tmp)) {
+		VALUE rb_hash_initialize_copy(VALUE, VALUE);
+		return rb_hash_initialize_copy(hash, tmp);
+	    }
 	    if (RHASH(tmp)->ntbl) {
+		explode(hash);
 		RHASH(hash)->ntbl = st_copy(RHASH(tmp)->ntbl);
 	    }
 	    return hash;
