@@ -2398,7 +2398,7 @@ site-install-rb: install-rb
       $warnflags = config['warnflags'] unless $extmk
     end
     $CFLAGS = with_config("cflags", arg_config("CFLAGS", config["CFLAGS"])).dup
-    $CXXFLAGS = with_config("cxxflags", arg_config("CXXFLAGS", config["CXXFLAGS"])).dup
+    $CXXFLAGS = (with_config("cxxflags", arg_config("CXXFLAGS", config["CXXFLAGS"]))||'').dup
     $ARCH_FLAG = with_config("arch_flag", arg_config("ARCH_FLAG", config["ARCH_FLAG"])).dup
     $CPPFLAGS = with_config("cppflags", arg_config("CPPFLAGS", config["CPPFLAGS"])).dup
     $LDFLAGS = with_config("ldflags", arg_config("LDFLAGS", config["LDFLAGS"])).dup
