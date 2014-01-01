@@ -950,7 +950,7 @@ struct RHash {
 struct REmbedHash {
     struct RBasic basic;
     union {
-	struct {
+	struct REmbedHashHeap {
 	    struct st_table *ntbl;
 	    int iter_lev;
 	    VALUE ifnone;

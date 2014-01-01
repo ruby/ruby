@@ -68,9 +68,61 @@ VALUE rb_cHash;
 static VALUE envtbl;
 static ID id_hash, id_yield, id_default;
 
+static inline _Bool
+embeddedp(VALUE hash)
+{
+    return FL_TEST(hash, RHASH_EMBED_FLAG);
+}
+
+static const struct st_hash_type objhash;
+static inline void
+explode(VALUE hash)
+{
+    /* This function is destructive. */
+    if (embeddedp(hash)) {	/* otherwise no need to touch */
+	struct REmbedHash *h = (struct REmbedHash *)hash;
+	struct st_table *st = 0;
+	if (h->as.ary[0][0] != Qundef) {
+	    int i;
+	    st = st_init_table(&objhash);
+	    for (i=0; i<RHASH_EMBED_LEN_MAX; i++) {
+		if (h->as.ary[i][0] == Qundef) {
+		    break;
+		}
+		else {
+		    st_data_t k = (st_data_t)h->as.ary[i][0];
+		    st_data_t v = (st_data_t)h->as.ary[i][1];
+		    st_insert(st, k, v);
+		}
+	    }
+	}
+	OBJ_WB_UNPROTECT(hash);
+	FL_UNSET(hash, RHASH_EMBED_FLAG);
+	h->as.heap = (struct REmbedHashHeap) {
+	    .ntbl = st,
+	    .iter_lev = 0,
+	    .ifnone = Qnil, /* or Qundf? */
+	};
+    }
+}
+
+void
+rb_hash_explode(VALUE hash)
+{
+    explode(hash);
+}
+
 VALUE
 rb_hash_set_ifnone(VALUE hash, VALUE ifnone)
 {
+    if (embeddedp(hash)) {
+	if (ifnone == Qnil) {
+	    return hash;	/* OK still embedding */
+	}
+	else {
+	    explode(hash);
+	}
+    }
     RB_OBJ_WRITE(hash, (&RHASH(hash)->ifnone), ifnone);
     return hash;
 }
@@ -869,6 +921,7 @@ static VALUE
 rb_hash_set_default(VALUE hash, VALUE ifnone)
 {
     rb_hash_modify_check(hash);
+    explode(hash);
     RHASH_SET_IFNONE(hash, ifnone);
     FL_UNSET(hash, HASH_PROC_DEFAULT);
     return ifnone;
