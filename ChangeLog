@@ -1,3 +1,9 @@
+Thu Jan  2 04:15:13 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_longjmp): remove an extra modifier from the forward
+	  declaration to match the actual definition.  [ruby-core:59451]
+	  [Bug #9338]
+
 Thu Jan  2 01:23:30 2014  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* vm_eval.c (method_missing): use ALLOCV_N() instead of

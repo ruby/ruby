@@ -429,7 +429,7 @@ rb_frozen_class_p(VALUE klass)
     }
 }
 
-NORETURN(static void rb_longjmp(int, volatile VALUE, volatile VALUE));
+NORETURN(static void rb_longjmp(int, volatile VALUE, VALUE));
 static VALUE get_errinfo(void);
 static VALUE get_thread_errinfo(rb_thread_t *th);
 
