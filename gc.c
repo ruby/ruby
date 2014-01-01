@@ -371,7 +371,10 @@ enum {
 };
 
 struct heap_page_header {
-    struct heap_page *page;
+    union {
+	struct heap_page *page;
+	struct RValueStorage paddng;
+    };
 };
 
 struct heap_page_body {
