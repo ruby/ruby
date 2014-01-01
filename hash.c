@@ -817,6 +817,9 @@ rb_hash_rehash(VALUE hash)
     VALUE tmp;
     st_table *tbl;
 
+    if (embeddedp(hash)) {
+	return hash;		/* no such thing like rehash here. */
+    }
     if (RHASH_ITER_LEV(hash) > 0) {
 	rb_raise(rb_eRuntimeError, "rehash during iteration");
     }
