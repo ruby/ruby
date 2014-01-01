@@ -74,6 +74,23 @@ embeddedp(VALUE hash)
     return FL_TEST(hash, RHASH_EMBED_FLAG);
 }
 
+static int rb_any_cmp(VALUE a, VALUE b);
+static inline VALUE
+embedded_lookup(VALUE hash, VALUE key, VALUE ifnone)
+{
+    struct REmbedHash *h = (struct REmbedHash *)hash;
+    int i;
+    for (i=0; i<RHASH_EMBED_LEN_MAX; i++) {
+	if (h->as.ary[i][0] == Qundef) {
+	    return ifnone;
+	}
+	else if (!rb_any_cmp(h->as.ary[i][0], key)) {
+	    return h->as.ary[i][1];
+	}
+    }
+    return ifnone;
+}
+
 static const struct st_hash_type objhash;
 static inline void
 explode(VALUE hash)
@@ -776,6 +793,10 @@ rb_hash_aref(VALUE hash, VALUE key)
 {
     st_data_t val;
 
+    if (embeddedp(hash)) {
+	/* embedded hashs' default are always Qnil */
+	return embedded_lookup(hash, key, Qnil);
+    }
     if (!RHASH(hash)->ntbl || !st_lookup(RHASH(hash)->ntbl, key, &val)) {
 	return hash_default_value(hash, key);
     }
@@ -787,6 +808,9 @@ rb_hash_lookup2(VALUE hash, VALUE key, VALUE def)
 {
     st_data_t val;
 
+    if (embeddedp(hash)) {
+	return embedded_lookup(hash, key, def);
+    }
     if (!RHASH(hash)->ntbl || !st_lookup(RHASH(hash)->ntbl, key, &val)) {
 	return def; /* without Hash#default */
     }
