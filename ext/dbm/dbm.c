@@ -259,8 +259,11 @@ fdbm_fetch(VALUE obj, VALUE keystr, VALUE ifnone)
     value = dbm_fetch(dbm, key);
     if (value.dptr == 0) {
       not_found:
-	if (ifnone == Qnil && rb_block_given_p())
-	    return rb_yield(rb_tainted_str_new(key.dptr, key.dsize));
+	if (NIL_P(ifnone) && rb_block_given_p()) {
+	    keystr = rb_str_dup(keystr);
+	    OBJ_TAINT(keystr);
+	    return rb_yield(keystr);
+	}
 	return ifnone;
     }
     return rb_tainted_str_new(value.dptr, value.dsize);

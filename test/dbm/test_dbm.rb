@@ -58,6 +58,14 @@ if defined? DBM
         assert_nil(@dbm_rdonly.delete("bar"))
       end
     end
+
+    def test_fetch_not_found
+      notfound = nil
+      result = Object.new
+      assert_same(result, @dbm_rdonly.fetch("bar") {|k| notfound = k; result})
+      assert_equal("bar", notfound)
+      assert_predicate(notfound, :tainted?)
+    end
   end
 
   class TestDBM < Test::Unit::TestCase
