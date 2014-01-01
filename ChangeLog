@@ -1,3 +1,7 @@
+Thu Jan  2 00:53:16 2014  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_zip): use ALLOCV_N() instead of ALLOCA_N().
+
 Thu Jan  2 00:04:29 2014  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* hash.c (rb_hash_keys): make rb_hash_keys() static.

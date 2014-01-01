@@ -3240,8 +3240,10 @@ rb_ary_zip(int argc, VALUE *argv, VALUE ary)
     if (rb_block_given_p()) {
 	int arity = rb_block_arity();
 
-	if (arity > 1 && argc+1 < 0x100) {
-	    VALUE *tmp = ALLOCA_N(VALUE, argc+1);
+	if (arity > 1) {
+	    VALUE work, *tmp;
+
+	    tmp = ALLOCV_N(VALUE, work, argc+1);
 
 	    for (i=0; i<RARRAY_LEN(ary); i++) {
 		tmp[0] = RARRAY_AREF(ary, i);
@@ -3250,6 +3252,8 @@ rb_ary_zip(int argc, VALUE *argv, VALUE ary)
 		}
 		rb_yield_values2(argc+1, tmp);
 	    }
+
+	    if (work) ALLOCV_END(work);
 	}
 	else {
 	    for (i=0; i<RARRAY_LEN(ary); i++) {
