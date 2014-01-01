@@ -1468,8 +1468,8 @@ NOINSERT_UPDATE_CALLBACK(hash_aset_str);
  *
  */
 
-VALUE
-rb_hash_aset(VALUE hash, VALUE key, VALUE val)
+static inline void
+hash_aset_noembed(VALUE hash, VALUE key, VALUE val)
 {
     int iter_lev = RHASH_ITER_LEV(hash);
     st_table *tbl = RHASH(hash)->ntbl;
@@ -1485,7 +1485,39 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
     else {
 	RHASH_UPDATE_ITER(hash, iter_lev, key, hash_aset_str, val);
     }
-    return val;
+}
+
+static inline void
+hash_aset_embed(VALUE hash, VALUE key, VALUE val)
+{
+    struct REmbedHash *h = (struct REmbedHash *)hash;
+    int i;
+    for (i=0; i<RHASH_EMBED_LEN_MAX; i++) {
+	if (h->as.ary[i][0] == Qundef) {
+	    h->as.ary[i][0] = key;
+	    h->as.ary[i][1] = val;
+	    return;
+	}
+	else if (!rb_any_cmp(h->as.ary[i][0], key)) {
+	    h->as.ary[i][1] = val;
+	    return;
+	}
+    }
+    /* no slot */
+    explode(hash);
+    hash_aset_noembed(hash, key, val);
+}
+
+VALUE
+rb_hash_aset(VALUE h, VALUE k, VALUE v)
+{
+    if (embeddedp(h)) {
+	hash_aset_embed(h, k, v);
+    }
+    else {
+	hash_aset_noembed(h, k, v);
+    }
+    return v;
 }
 
 static int
