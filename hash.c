@@ -2519,6 +2519,7 @@ rb_hash_assoc(VALUE hash, VALUE key)
     const struct st_hash_type *orighash;
     VALUE args[2];
 
+    explode(hash);
     if (RHASH_EMPTY_P(hash)) return Qnil;
     table = RHASH(hash)->ntbl;
     orighash = table->type;
