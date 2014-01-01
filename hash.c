@@ -2607,8 +2607,10 @@ rb_hash_compare_by_id(VALUE hash)
 static VALUE
 rb_hash_compare_by_id_p(VALUE hash)
 {
+    if (embeddedp(hash))
+	return Qfalse;
     if (!RHASH(hash)->ntbl)
-        return Qfalse;
+	return Qfalse;
     if (RHASH(hash)->ntbl->type == &identhash) {
 	return Qtrue;
     }
