@@ -1,3 +1,8 @@
+Wed Jan  1 18:19:35 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: reset LDFLAGS and DLDFLAGS for opt-dir again after
+	  LIBPATHFLAG and RPATHFLAG are set.  [ruby-dev:47868] [Bug #9317]
+
 Wed Jan  1 11:12:29 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: use SSE2 instructions for drop unexpected
