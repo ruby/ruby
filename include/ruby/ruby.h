@@ -759,7 +759,12 @@ VALUE rb_obj_reveal(VALUE obj, VALUE klass); /* do not use this API to change kl
 
 #define RBASIC_CLASS(obj) (RBASIC(obj)->klass)
 
+/* RValueStorage can be anything bigger than 5 words, best cache-lined. */
+#if SIZEOF_CACHE_LINE < 5 * SIZEOF_VALUE
 #define SIZEOF_RValueStorage (5 * SIZEOF_VALUE)
+#else
+#define SIZEOF_RValueStorage SIZEOF_CACHE_LINE
+#endif
 #define RValueStorage_EMBED_LEN_MAX(ELEM_SIZE) ((SIZEOF_RValueStorage - SIZEOF_RBasic) / ELEM_SIZE)
 struct RValueStorage {
     /* This is much like struct sockaddr_storage */
