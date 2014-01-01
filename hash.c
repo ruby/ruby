@@ -429,8 +429,11 @@ rb_hash_modify_check(VALUE hash)
 static struct st_table *
 hash_tbl(VALUE hash)
 {
+    if (embeddedp(hash)) {
+	explode(hash);
+    }
     if (!RHASH(hash)->ntbl) {
-        RHASH(hash)->ntbl = st_init_table(&objhash);
+	RHASH(hash)->ntbl = st_init_table(&objhash);
     }
     return RHASH(hash)->ntbl;
 }
