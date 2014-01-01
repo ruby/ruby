@@ -1176,6 +1176,24 @@ class Matrix
   end
   alias t transpose
 
+  #
+  # Returns the rotated matrix.
+  #   Matrix[[1,2], [3,4], [5,6]]
+  #     => 1 2
+  #        3 4
+  #        5 6
+  #   Matrix[[1,2], [3,4], [5,6]].rotate
+  #     => 5 3 1
+  #        6 4 2
+  #
+  def rotate clockwise=true
+    if clockwise
+      new_matrix(@rows.transpose.map(&:reverse), row_count)
+    else
+      new_matrix(@rows.transpose.reverse, row_count)
+    end
+  end
+
   #--
   # DECOMPOSITIONS -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
   #++
