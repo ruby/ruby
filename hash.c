@@ -1892,6 +1892,13 @@ rb_hash_to_h(VALUE hash)
 {
     if (rb_obj_class(hash) != rb_cHash) {
 	VALUE ret = rb_hash_new();
+	if (embeddedp(hash)) {
+	    struct REmbedHash *h = (void*)ret;
+	    struct REmbedHash *y = (void*)hash;
+	    memcpy(&h->as.ary, &y->as.ary, sizeof(h->as.ary));
+	    return ret;
+	}
+	explode(ret);
 	if (!RHASH_EMPTY_P(hash))
 	    RHASH(ret)->ntbl = st_copy(RHASH(hash)->ntbl);
 	if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
