@@ -1,3 +1,8 @@
+Thu Jan  2 01:23:30 2014  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* vm_eval.c (method_missing): use ALLOCV_N() instead of
+	  ALLOCA_N() and rb_ary_tmp_new().
+
 Thu Jan  2 00:53:16 2014  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* array.c (rb_ary_zip): use ALLOCV_N() instead of ALLOCA_N().
