@@ -801,6 +801,7 @@ if test "$GCC" = yes; then
       # various  headers.  Most frequent  situation is  the use  of //
       # comments.   We  bypass  ANSI   C  mode  for  them.   Otherwise
       # extension libs cannot include those headers.
+      RUBY_TRY_CFLAGS(-msse2 -mfpmath=sse, [RUBY_APPEND_OPTION(XCFLAGS, -msse2 -mfpmath=sse)])
     ],
     [cygwin*|darwin*|netbsd*], [
       # need lgamma_r(), finite()

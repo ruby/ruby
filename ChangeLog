@@ -1,3 +1,8 @@
+Wed Jan  1 11:12:29 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: use SSE2 instructions for drop unexpected
+	  precisions.  [ruby-core:54738] [Bug #8358]
+
 Tue Dec 31 23:49:07 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_f_raise): add cause: optional keyword argument.
