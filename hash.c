@@ -2016,8 +2016,12 @@ rb_hash_values(VALUE hash)
 static VALUE
 rb_hash_has_key(VALUE hash, VALUE key)
 {
+    if (embeddedp(hash)) {
+	VALUE val = embedded_lookup(hash, key, Qundef);
+	return val != Qundef ? Qtrue : Qfalse;
+    }
     if (!RHASH(hash)->ntbl)
-        return Qfalse;
+	return Qfalse;
     if (st_lookup(RHASH(hash)->ntbl, key, 0)) {
 	return Qtrue;
     }
