@@ -91,6 +91,34 @@ embedded_lookup(VALUE hash, VALUE key, VALUE ifnone)
     return ifnone;
 }
 
+static inline VALUE
+embedded_delete(VALUE hash, VALUE key)
+{
+    struct REmbedHash *h = (struct REmbedHash *)hash;
+    VALUE ret = Qundef;
+    _Bool f = 0;
+    int i;
+    for (i=0; i<RHASH_EMBED_LEN_MAX - 1; i++) {
+	if (!rb_any_cmp(h->as.ary[i][0], key)) {
+	    f = 1;
+	    ret = h->as.ary[i][1];
+	}
+	if (f) {
+	    h->as.ary[i][0] = h->as.ary[i+1][0];
+	    h->as.ary[i][1] = h->as.ary[i+1][1];
+	}
+    }
+    if (!rb_any_cmp(h->as.ary[i][0], key)) {
+	f = 1;
+	ret = h->as.ary[i][1];
+    }
+    if (f) {
+	h->as.ary[i][0] = Qundef;
+	h->as.ary[i][1] = Qundef;
+    }
+    return ret;
+}
+
 static const struct st_hash_type objhash;
 static inline void
 explode(VALUE hash)
@@ -1068,8 +1096,10 @@ rb_hash_delete_key(VALUE hash, VALUE key)
 {
     st_data_t ktmp = (st_data_t)key, val;
 
+    if (embeddedp(hash))
+	return embedded_delete(hash, key);
     if (!RHASH(hash)->ntbl)
-        return Qundef;
+	return Qundef;
     if (RHASH_ITER_LEV(hash) > 0) {
 	if (st_delete_safe(RHASH(hash)->ntbl, &ktmp, &val, (st_data_t)Qundef)) {
 	    FL_SET(hash, HASH_DELETED);
