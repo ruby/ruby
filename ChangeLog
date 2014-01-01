@@ -1,3 +1,12 @@
+Thu Jan  2 00:04:29 2014  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* hash.c (rb_hash_keys): make rb_hash_keys() static.
+	  it is no longer used from array.c since r43969.
+	  the patch is from normalperson (Eric Wong).
+	  [ruby-core:59449] [Feature #9336]
+
+	* internal.h: remove definition of rb_hash_keys().
+
 Wed Jan  1 18:19:35 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: reset LDFLAGS and DLDFLAGS for opt-dir again after

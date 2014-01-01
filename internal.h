@@ -476,7 +476,6 @@ void rb_gc_resurrect(VALUE ptr);
 /* hash.c */
 struct st_table *rb_hash_tbl_raw(VALUE hash);
 #define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h)
-VALUE rb_hash_keys(VALUE hash);
 VALUE rb_hash_values(VALUE hash);
 #define HASH_DELETED  FL_USER1
 #define HASH_PROC_DEFAULT FL_USER2
