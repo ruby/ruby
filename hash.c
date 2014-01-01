@@ -324,6 +324,7 @@ rb_hash_foreach(VALUE hash, int (*func)(ANYARGS), VALUE farg)
 {
     struct hash_foreach_arg arg;
 
+    explode(hash);
     if (!RHASH(hash)->ntbl)
         return;
     RHASH_ITER_LEV(hash)++;
