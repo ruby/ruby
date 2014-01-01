@@ -1233,6 +1233,7 @@ rb_hash_shift(VALUE hash)
     struct shift_var var;
 
     rb_hash_modify_check(hash);
+    explode(hash);
     if (RHASH(hash)->ntbl) {
 	var.key = Qundef;
 	if (RHASH_ITER_LEV(hash) == 0) {
