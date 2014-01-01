@@ -267,9 +267,45 @@ rb_hash_foreach(VALUE hash, int (*func)(ANYARGS), VALUE farg)
 static VALUE
 hash_alloc(VALUE klass)
 {
+#ifdef __GNUC__
+    struct {
+	struct RBasicRaw basic;
+	union {
+	    struct REmbedHashHeap heap;
+	    VALUE ary[RHASH_EMBED_LEN_MAX][2];
+	} as;
+    } *hash = (__typeof__(hash))rb_newobj();
+
+    *hash = (__typeof__(*hash)) {
+	.basic = {
+	    .flags = (
+		T_HASH |
+		RHASH_EMBED_FLAG |
+		(RGENGC_WB_PROTECTED_HASH ? FL_WB_PROTECTED : 0)
+	    ),
+	    .klass = klass,
+	},
+	.as = {
+	    .ary = {
+		[ 0 ... RHASH_EMBED_LEN_MAX - 1] = {
+		    Qundef, Qundef
+		}
+	    }
+	}
+    };
+#else
+    int i, j;
+    struct REmbedHash *e;
     NEWOBJ_OF(hash, struct RHash, klass, T_HASH | (RGENGC_WB_PROTECTED_HASH ? FL_WB_PROTECTED : 0));
 
-    RHASH_SET_IFNONE((VALUE)hash, Qnil);
+    FL_SET(hash, RHASH_EMBED_FLAG);
+    e = (void *)hash;
+    for (i=0; i<RHASH_EMBED_LEN_MAX; i++) {
+	for (j=0; j<2; j++) {
+	    e->ary[i][j] = Qundef;
+	}
+    }
+#endif
 
     return (VALUE)hash;
 }
