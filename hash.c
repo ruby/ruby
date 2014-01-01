@@ -144,12 +144,32 @@ embedded_clear(VALUE hash)
 }
 
 static inline VALUE
+embedded_copy(VALUE to, VALUE from)
+{
+    struct RValueStorage *dst = (struct RValueStorage *)to;
+    struct RValueStorage *src = (struct RValueStorage *)from;
+
+    return (VALUE)memcpy(dst, src, sizeof(*dst));
+}
+
+static inline VALUE
 embedded_dup(VALUE hash)
 {
-    struct RValueStorage *ret = (struct RValueStorage *)rb_newobj();
+    return embedded_copy(rb_newobj(), hash);
+}
 
-    memcpy(ret, (void*)hash, sizeof(*ret));
-    return (VALUE)ret;
+static inline VALUE
+embedded_replace(VALUE dest, VALUE src)
+{
+    /* src is expected to be embedded, dest unknown */
+    if (!embeddedp(dest)) {
+	rb_hash_clear(dest);
+	if (RHASH(dest)->ntbl) {
+	    st_free_table(RHASH(dest)->ntbl);
+	}
+	FL_SET(dest, RHASH_EMBED_FLAG);
+    }
+    return embedded_copy(dest, src);
 }
 
 static const struct st_hash_type objhash;
@@ -1675,6 +1695,10 @@ rb_hash_replace(VALUE hash, VALUE hash2)
     if (hash == hash2) return hash;
     hash2 = to_hash(hash2);
 
+    if (embeddedp(hash2))
+	return embedded_replace(hash, hash2);
+    else
+	explode(hash);
     RHASH_SET_IFNONE(hash, RHASH_IFNONE(hash2));
     if (FL_TEST(hash2, HASH_PROC_DEFAULT))
 	FL_SET(hash, HASH_PROC_DEFAULT);
