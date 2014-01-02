@@ -2032,7 +2032,7 @@ rb_hash_values(VALUE hash)
     values = rb_ary_new_capa(size);
     if (size == 0) return values;
 
-    if (ST_DATA_COMPATIBLE_P(VALUE)) {
+    if (ST_DATA_COMPATIBLE_P(VALUE) &&! embeddedp(hash)) {
 	st_table *table = RHASH(hash)->ntbl;
 
 	if (OBJ_PROMOTED(values)) rb_gc_writebarrier_remember_promoted(values);
