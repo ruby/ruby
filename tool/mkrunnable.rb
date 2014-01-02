@@ -104,7 +104,13 @@ goruby_install_name = "go" + ruby_install_name
     ln_relative(ruby, "#{bindir}/#{ruby}")
   end
 end
-libruby = config.values_at("LIBRUBY_A", "LIBRUBY_SO")
+so = config["LIBRUBY_SO"]
+libruby = [config["LIBRUBY_A"]]
+if /\.dll\z/i =~ so
+  ln_relative(so, "#{bindir}/#{so}")
+else
+  libruby << so
+end
 libruby.concat(config["LIBRUBY_ALIASES"].split)
 libruby.each {|lib|ln_relative(lib, "#{libdir}/#{lib}")}
 ln_dir_relative("#{extout}/common", rubylibdir)
