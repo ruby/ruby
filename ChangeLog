@@ -1,3 +1,14 @@
+Fri Jan  3 00:09:54 2014  Benoit Daloze  <eregontp@gmail.com>
+
+	* ext/bigdecimal: update class method call style from :: to .
+	  in documentation and usage.
+
+	* ext/bigdecimal/lib/bigdecimal/math.rb: [DOC] fix examples values.
+	  Computations were made using ruby 2.0.0p247 to ensure
+	  no effect of the recent BigDecimal bug.
+
+	* ext/bigdecimal/sample/nlsolve.rb: fix indent.
+
 Thu Jan  2 16:07:21 2014  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* io.c (io_fwrite): freeze converted str.

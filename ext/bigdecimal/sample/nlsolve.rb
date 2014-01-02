@@ -11,11 +11,11 @@ include Newton
 
 class Function # :nodoc: all
   def initialize()
-    @zero = BigDecimal::new("0.0")
-    @one  = BigDecimal::new("1.0")
-    @two  = BigDecimal::new("2.0")
-    @ten  = BigDecimal::new("10.0")
-    @eps  = BigDecimal::new("1.0e-16")
+    @zero = BigDecimal.new("0.0")
+    @one  = BigDecimal.new("1.0")
+    @two  = BigDecimal.new("2.0")
+    @ten  = BigDecimal.new("10.0")
+    @eps  = BigDecimal.new("1.0e-16")
   end
   def zero;@zero;end
   def one ;@one ;end
@@ -31,8 +31,9 @@ class Function # :nodoc: all
     f
   end
 end
- f = BigDecimal::limit(100)
- f = Function.new
- x = [f.zero,f.zero]      # Initial values
- n = nlsolve(f,x)
- p x
+
+f = BigDecimal.limit(100)
+f = Function.new
+x = [f.zero,f.zero]      # Initial values
+n = nlsolve(f,x)
+p x

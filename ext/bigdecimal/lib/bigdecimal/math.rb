@@ -36,8 +36,8 @@ module BigMath
   # Computes the square root of +decimal+ to the specified number of digits of
   # precision, +numeric+.
   #
-  #   BigMath::sqrt(BigDecimal.new('2'), 16).to_s
-  #   #=> "0.14142135623730950488016887242096975E1"
+  #   BigMath.sqrt(BigDecimal.new('2'), 16).to_s
+  #   #=> "0.1414213562373095048801688724E1"
   #
   def sqrt(x, prec)
     x.sqrt(prec)
@@ -51,7 +51,7 @@ module BigMath
   #
   # If +decimal+ is Infinity or NaN, returns NaN.
   #
-  #   BigMath::sin(BigMath::PI(5)/4, 5).to_s
+  #   BigMath.sin(BigMath.PI(5)/4, 5).to_s
   #   #=> "0.70710678118654752440082036563292800375E0"
   #
   def sin(x, prec)
@@ -95,7 +95,7 @@ module BigMath
   #
   # If +decimal+ is Infinity or NaN, returns NaN.
   #
-  #   BigMath::cos(BigMath::PI(4), 16).to_s
+  #   BigMath.cos(BigMath.PI(4), 16).to_s
   #   #=> "-0.999999999999999999999999999999856613163740061349E0"
   #
   def cos(x, prec)
@@ -139,7 +139,7 @@ module BigMath
   #
   # If +decimal+ is NaN, returns NaN.
   #
-  #   BigMath::atan(BigDecimal.new('-1'), 16).to_s
+  #   BigMath.atan(BigDecimal.new('-1'), 16).to_s
   #   #=> "-0.785398163397448309615660845819878471907514682065E0"
   #
   def atan(x, prec)
@@ -176,7 +176,7 @@ module BigMath
   # Computes the value of pi to the specified number of digits of precision,
   # +numeric+.
   #
-  #   BigMath::PI(10).to_s
+  #   BigMath.PI(10).to_s
   #   #=> "0.3141592653589793238462643388813853786957412E1"
   #
   def PI(prec)
@@ -221,7 +221,7 @@ module BigMath
   # Computes e (the base of natural logarithms) to the specified number of
   # digits of precision, +numeric+.
   #
-  #   BigMath::E(10).to_s
+  #   BigMath.E(10).to_s
   #   #=> "0.271828182845904523536028752390026306410273E1"
   #
   def E(prec)

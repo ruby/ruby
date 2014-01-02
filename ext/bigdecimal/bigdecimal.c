@@ -2531,7 +2531,7 @@ BigDecimal_new(int argc, VALUE *argv)
     return VpAlloc(mf, RSTRING_PTR(iniValue));
 }
 
-/* See also BigDecimal::new */
+/* See also BigDecimal.new */
 static VALUE
 BigDecimal_global_new(int argc, VALUE *argv, VALUE self)
 {
