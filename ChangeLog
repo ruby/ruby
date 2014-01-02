@@ -1,3 +1,7 @@
+Thu Jan  2 16:07:21 2014  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* io.c (io_fwrite): freeze converted str.
+
 Thu Jan  2 04:15:13 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_longjmp): remove an extra modifier from the forward

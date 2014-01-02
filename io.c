@@ -1358,7 +1358,11 @@ io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
     }
 #endif
     str = do_writeconv(str, fptr, &converted);
-    if (!converted) str = rb_str_new_frozen(str);
+    if (converted)
+	OBJ_FREEZE(str);
+    else
+	str = rb_str_new_frozen(str);
+
     return io_binwrite(str, RSTRING_PTR(str), RSTRING_LEN(str),
 		       fptr, nosync);
 }
