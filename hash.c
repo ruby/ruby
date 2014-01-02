@@ -1463,6 +1463,7 @@ rb_hash_select_bang(VALUE hash)
 
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     rb_hash_modify_check(hash);
+    explode(hash);
     if (!RHASH(hash)->ntbl)
         return Qnil;
     n = RHASH(hash)->ntbl->num_entries;
