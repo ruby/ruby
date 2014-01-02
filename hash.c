@@ -94,6 +94,7 @@ embedded_lookup(VALUE hash, VALUE key, VALUE ifnone)
 static inline VALUE
 embedded_delete(VALUE hash, VALUE key)
 {
+    /* WB: this does not introduce new refs */
     struct REmbedHash *h = (struct REmbedHash *)hash;
     VALUE ret = Qundef;
     _Bool f = 0;
@@ -122,6 +123,7 @@ embedded_delete(VALUE hash, VALUE key)
 static inline VALUE
 embedded_clear(VALUE hash)
 {
+    /* WB: this does not introduce new refs */
     struct REmbedHash *h = (struct REmbedHash *)hash;
 #ifdef __GNUC__
     /* gcc can mass-assign so for-loops are avoided. */
@@ -146,16 +148,18 @@ embedded_clear(VALUE hash)
 static inline VALUE
 embedded_copy(VALUE to, VALUE from)
 {
-    struct RValueStorage *dst = (struct RValueStorage *)to;
-    struct RValueStorage *src = (struct RValueStorage *)from;
+    struct REmbedHash *dst = (struct REmbedHash *)to;
+    struct REmbedHash *src = (struct REmbedHash *)from;
 
-    return (VALUE)memcpy(dst, src, sizeof(*dst));
+    memcpy(&dst->as.ary, &src->as.ary, sizeof(dst->as.ary));
+    return to;
 }
 
 static inline VALUE
 embedded_dup(VALUE hash)
 {
-    return embedded_copy(rb_newobj(), hash);
+    /* WB: all new refs are for rb_hash_new */
+    return embedded_copy(rb_hash_new(), hash);
 }
 
 static inline VALUE
@@ -169,6 +173,11 @@ embedded_replace(VALUE dest, VALUE src)
 	}
 	FL_SET(dest, RHASH_EMBED_FLAG);
     }
+#if USE_RGENGC
+    if (OBJ_PROMOTED(dest)) {
+        rb_gc_writebarrier_remember_promoted(dest);
+    }
+#endif
     return embedded_copy(dest, src);
 }
 
@@ -177,6 +186,7 @@ static inline void
 explode(VALUE hash)
 {
     /* This function is destructive. */
+    /* WB: this does not introduce new refs */
     if (embeddedp(hash)) {	/* otherwise no need to touch */
 	struct REmbedHash *h = (struct REmbedHash *)hash;
 	struct st_table *st = 0;
@@ -194,7 +204,6 @@ explode(VALUE hash)
 		}
 	    }
 	}
-	OBJ_WB_UNPROTECT(hash);
 	FL_UNSET(hash, RHASH_EMBED_FLAG);
 	h->as.heap = (struct REmbedHashHeap) {
 	    .ntbl = st,
@@ -1608,12 +1617,12 @@ hash_aset_embed(VALUE hash, VALUE key, VALUE val)
     int i;
     for (i=0; i<RHASH_EMBED_LEN_MAX; i++) {
 	if (h->as.ary[i][0] == Qundef) {
-	    h->as.ary[i][0] = key;
-	    h->as.ary[i][1] = val;
+	    RB_OBJ_WRITE(hash, &h->as.ary[i][0], key);
+	    RB_OBJ_WRITE(hash, &h->as.ary[i][1], val);
 	    return;
 	}
 	else if (!rb_any_cmp(h->as.ary[i][0], key)) {
-	    h->as.ary[i][1] = val;
+	    RB_OBJ_WRITE(hash, &h->as.ary[i][1], val);
 	    return;
 	}
     }
@@ -1983,12 +1992,11 @@ rb_hash_to_h(VALUE hash)
     if (rb_obj_class(hash) != rb_cHash) {
 	VALUE ret = rb_hash_new();
 	if (embeddedp(hash)) {
-	    struct REmbedHash *h = (void*)ret;
-	    struct REmbedHash *y = (void*)hash;
-	    memcpy(&h->as.ary, &y->as.ary, sizeof(h->as.ary));
-	    return ret;
+	    return embedded_replace(ret, hash);
 	}
-	explode(ret);
+	else {
+	    explode(ret);
+	}
 	if (!RHASH_EMPTY_P(hash))
 	    RHASH(ret)->ntbl = st_copy(RHASH(hash)->ntbl);
 	if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
