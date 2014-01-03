@@ -1,3 +1,11 @@
+Fri Jan  3 22:25:23 2014  Aman Gupta <ruby@tmm1.net>
+
+	* test/net/imap/cacert.pem: generate new CA cert, since the last one
+	  expired. [Bug #9341] [ruby-core:59459]
+	* test/net/imap/server.crt: new server cert signed with updated CA.
+	* test/net/imap/Makefile: add `make regen_certs` to automate this
+	  process.
+
 Wed Dec 25 00:46:44 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/smtp.rb (Net::SMTP#critical):  Always return a
