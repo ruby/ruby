@@ -1,3 +1,11 @@
+Fri Jan  3 10:43:57 2014  Aman Gupta <ruby@tmm1.net>
+
+	* test/net/imap/cacert.pem: generate new CA cert, since the last one
+	  expired. [Bug #9341] [ruby-core:59459]
+	* test/net/imap/server.crt: new server cert signed with updated CA.
+	* test/net/imap/Makefile: add `make regen_certs` to automate this
+	  process.
+
 Fri Jan  3 00:09:54 2014  Benoit Daloze  <eregontp@gmail.com>
 
 	* ext/bigdecimal: update class method call style from :: to .
