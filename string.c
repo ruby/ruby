@@ -47,6 +47,8 @@ static VALUE rb_str_clear(VALUE str);
 VALUE rb_cString;
 VALUE rb_cSymbol;
 
+STATIC_ASSERT(rbstring_embed_len_max, RSTRING_EMBED_LEN_MAX <= (RSTRING_EMBED_LEN_MASK >> RSTRING_EMBED_LEN_SHIFT));
+
 #define RUBY_MAX_CHAR_LEN 16
 #define STR_TMPLOCK FL_USER7
 #define STR_UNSET_NOCAPA(s) do {\

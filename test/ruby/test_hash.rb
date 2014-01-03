@@ -530,7 +530,7 @@ class TestHash < Test::Unit::TestCase
   def test_rehash
     a = [ "a", "b" ]
     c = [ "c", "d" ]
-    h = @cls[ a => 100, c => 300 ]
+    h = @cls[ a => 100, 'b' => 200, c => 300, 'd' => 400 ]
     assert_equal(100, h[a])
     a[0] = "z"
     assert_nil(h[a])

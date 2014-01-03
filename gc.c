@@ -328,6 +328,7 @@ typedef struct RVALUE {
 	    VALUE flags;		/* always 0 for freed obj */
 	    struct RVALUE *next;
 	} free;
+	struct RValueStorage storage;
 	struct RBasic  basic;
 	struct RObject object;
 	struct RClass  klass;
@@ -336,6 +337,7 @@ typedef struct RVALUE {
 	struct RArray  array;
 	struct RRegexp regexp;
 	struct RHash   hash;
+	struct REmbedHash embedhash;
 	struct RData   data;
 	struct RTypedData   typeddata;
 	struct RStruct rstruct;
@@ -369,7 +371,10 @@ enum {
 };
 
 struct heap_page_header {
-    struct heap_page *page;
+    union {
+	struct heap_page *page;
+	struct RValueStorage paddng;
+    };
 };
 
 struct heap_page_body {
@@ -1545,8 +1550,10 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	rb_ary_free(obj);
 	break;
       case T_HASH:
-	if (RANY(obj)->as.hash.ntbl) {
-	    st_free_table(RANY(obj)->as.hash.ntbl);
+	if (!FL_TEST(obj, RHASH_EMBED_FLAG)) {
+	    if (RANY(obj)->as.hash.ntbl) {
+		st_free_table(RANY(obj)->as.hash.ntbl);
+	    }
 	}
 	break;
       case T_REGEXP:
@@ -2465,8 +2472,10 @@ obj_memsize_of(VALUE obj, int use_tdata)
 	size += rb_ary_memsize(obj);
 	break;
       case T_HASH:
-	if (RHASH(obj)->ntbl) {
-	    size += st_memsize(RHASH(obj)->ntbl);
+	if (!FL_TEST(obj, RHASH_EMBED_FLAG)) {
+	    if (RHASH(obj)->ntbl) {
+		size += st_memsize(RHASH(obj)->ntbl);
+	    }
 	}
 	break;
       case T_REGEXP:
@@ -3856,6 +3865,15 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	break;
 
       case T_HASH:
+	if (FL_TEST(obj, RHASH_EMBED_FLAG)) {
+	    int i, j;
+	    for (i=0; i<RHASH_EMBED_LEN_MAX; i++) {
+		for (j=0; j<2; j++) {
+		    gc_mark(objspace, RANY(obj)->as.embedhash.as.ary[i][j]);
+		}
+	    }
+	    break;
+	}
 	mark_hash(objspace, obj->as.hash.ntbl);
 	ptr = obj->as.hash.ifnone;
 	goto again;
