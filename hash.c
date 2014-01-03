@@ -687,6 +687,8 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
     return hash;
 }
 
+static VALUE rb_hash_initialize_copy(VALUE, VALUE);
+
 /*
  *  call-seq:
  *     Hash[ key, value, ... ]         -> new_hash
@@ -718,7 +720,6 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
 	if (!NIL_P(tmp)) {
 	    hash = hash_alloc(klass);
 	    if (embeddedp(tmp)) {
-		VALUE rb_hash_initialize_copy(VALUE, VALUE);
 		return rb_hash_initialize_copy(hash, tmp);
 	    }
 	    if (RHASH(tmp)->ntbl) {
