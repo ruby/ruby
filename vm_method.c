@@ -2,15 +2,6 @@
  * This file is included by vm.c
  */
 
-#ifndef GLOBAL_METHOD_CACHE_SIZE
-#define GLOBAL_METHOD_CACHE_SIZE 0x800
-#endif
-#ifndef GLOBAL_METHOD_CACHE_MASK
-#define GLOBAL_METHOD_CACHE_MASK 0x7ff
-#endif
-
-#define GLOBAL_METHOD_CACHE_KEY(c,m) ((((c)>>3)^(m))&GLOBAL_METHOD_CACHE_MASK)
-#define GLOBAL_METHOD_CACHE(c,m) (global_method_cache + GLOBAL_METHOD_CACHE_KEY(c,m))
 #include "method.h"
 
 #define NOEX_NOREDEF 0
@@ -30,14 +21,97 @@ static void rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VAL
 #define attached            id__attached__
 
 struct cache_entry {
-    rb_serial_t method_state;
-    rb_serial_t class_serial;
     ID mid;
-    rb_method_entry_t* me;
+    uintptr_t me;
     VALUE defined_class;
 };
 
-static struct cache_entry global_method_cache[GLOBAL_METHOD_CACHE_SIZE];
+#define METHOD_ENTRY(entry) ((rb_method_entry_t*)((entry)->me & ~1))
+#define COLLISION(entry) ((entry).me & 1)
+
+static void rb_mcache_resize(struct rb_meth_cache *cache);
+static void
+rb_mcache_insert(struct rb_meth_cache *cache, ID id, uintptr_t me, VALUE defined_class)
+{
+    int mask, pos, dlt;
+    struct cache_entry *ent;
+    if (cache->capa / 4 * 3 <= cache->size) {
+	rb_mcache_resize(cache);
+    }
+    mask = cache->capa - 1;
+    pos = (id >> 3) & mask;
+
+    ent = cache->entries;
+    if (ent[pos].mid == 0) {
+	goto found;
+    }
+    ent[pos].me |= 1; /* set collision */
+    dlt = (id % mask) | 1;
+    for(;;) {
+	pos = (pos + dlt) & mask;
+	if (ent[pos].mid == 0) {
+	    goto found;
+	}
+	ent[pos].me |= 1;
+    }
+found:
+    ent += pos;
+    ent->defined_class = defined_class;
+    ent->mid = id;
+    ent->me = me;
+    cache->size++;
+}
+
+static void
+rb_mcache_resize(struct rb_meth_cache *cache)
+{
+    struct rb_meth_cache tmp;
+    int i;
+
+    MEMZERO(&tmp, struct rb_meth_cache, 1);
+    tmp.capa = cache->capa * 2;
+    tmp.entries = xcalloc(tmp.capa, sizeof(struct cache_entry));
+    for(i = 0; i < cache->capa; i++) {
+	if (cache->entries[i].mid) {
+	    struct cache_entry *ent = &cache->entries[i];
+	    rb_mcache_insert(&tmp, ent->mid, ent->me & ~1, ent->defined_class);
+	}
+    }
+    xfree(cache->entries);
+    *cache = tmp;
+}
+
+static inline void
+rb_mcache_reset(struct rb_meth_cache *cache, rb_serial_t class_serial)
+{
+    cache->method_state = GET_GLOBAL_METHOD_STATE();
+    cache->class_serial = class_serial;
+    cache->size = 0;
+    if (cache->entries != NULL) {
+	MEMZERO(cache->entries, struct cache_entry, cache->capa);
+    } else {
+	cache->entries = xcalloc(8, sizeof(struct cache_entry));
+	cache->capa = 8;
+    }
+}
+
+static inline struct cache_entry*
+rb_mcache_find(struct rb_meth_cache *cache, ID id)
+{
+    struct cache_entry *ent = cache->entries;
+    int mask = cache->capa - 1;
+    int pos = (id >> 3) & mask;
+    int dlt;
+    if (ent[pos].mid == id) return ent + pos;
+    if (!COLLISION(ent[pos])) return NULL;
+    dlt = (id % mask) | 1;
+    for(;;) {
+	pos = (pos + dlt) & mask;
+	if (ent[pos].mid == id) return ent + pos;
+	if (!COLLISION(ent[pos])) return NULL;
+    }
+}
+
 #define ruby_running (GET_VM()->running)
 /* int ruby_running = 0; */
 
@@ -569,20 +643,11 @@ rb_method_entry_get_without_cache(VALUE klass, ID id,
 	defined_class = me->klass;
 
     if (ruby_running) {
-	struct cache_entry *ent;
-	ent = GLOBAL_METHOD_CACHE(klass, id);
-	ent->class_serial = RCLASS_SERIAL(klass);
-	ent->method_state = GET_GLOBAL_METHOD_STATE();
-	ent->defined_class = defined_class;
-	ent->mid = id;
-
+	struct rb_classext_struct *ext = RCLASS_EXT(klass);
 	if (UNDEFINED_METHOD_ENTRY_P(me)) {
-	    ent->me = 0;
 	    me = 0;
 	}
-	else {
-	    ent->me = me;
-	}
+	rb_mcache_insert(&ext->cache, id, (uintptr_t)me, defined_class);
     }
 
     if (defined_class_ptr)
@@ -608,18 +673,22 @@ rb_method_entry_t *
 rb_method_entry(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
 #if OPT_GLOBAL_METHOD_CACHE
-    struct cache_entry *ent;
-    ent = GLOBAL_METHOD_CACHE(klass, id);
-    if (ent->method_state == GET_GLOBAL_METHOD_STATE() &&
-	ent->class_serial == RCLASS_SERIAL(klass) &&
-	ent->mid == id) {
+    struct rb_classext_struct *ext = RCLASS_EXT(klass);
+    if (ext->cache.method_state != GET_GLOBAL_METHOD_STATE() ||
+	ext->cache.class_serial != ext->class_serial) {
+	rb_mcache_reset(&ext->cache, ext->class_serial);
+    } else {
+	struct cache_entry *ent;
+	ent = rb_mcache_find(&ext->cache, id);
+	if (ent == NULL) goto not_found;
 	if (defined_class_ptr)
 	    *defined_class_ptr = ent->defined_class;
 #if VM_DEBUG_VERIFY_METHOD_CACHE
 	verify_method_cache(klass, id, ent->defined_class, ent->me);
 #endif
-	return ent->me;
+	return METHOD_ENTRY(ent);
     }
+not_found:
 #endif
 
     return rb_method_entry_get_without_cache(klass, id, defined_class_ptr);

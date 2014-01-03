@@ -170,6 +170,7 @@ class_alloc(VALUE flags, VALUE klass)
 
     RCLASS_REFINED_CLASS(obj) = Qnil;
     RCLASS_EXT(obj)->allocator = 0;
+    MEMZERO(&RCLASS_EXT(obj)->cache, struct rb_meth_cache, 1);
     return (VALUE)obj;
 }
 

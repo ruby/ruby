@@ -261,6 +261,13 @@ typedef unsigned long rb_serial_t;
 #define SERIALT2NUM ULONG2NUM
 #endif
 
+struct rb_meth_cache {
+	rb_serial_t method_state;
+	rb_serial_t class_serial;
+	struct cache_entry *entries;
+	int size, capa;
+};
+
 struct rb_classext_struct {
     struct st_table *iv_index_tbl;
     struct st_table *iv_tbl;
@@ -277,7 +284,17 @@ struct rb_classext_struct {
     VALUE origin;
     VALUE refined_class;
     rb_alloc_func_t allocator;
+    struct rb_meth_cache cache;
 };
+
+static inline void
+rb_method_cache_clear(VALUE klass)
+{
+    struct rb_classext_struct *ext = RCLASS(klass)->ptr;
+    if (ext->cache.entries) {
+	xfree(ext->cache.entries);
+    }
+}
 
 struct method_table_wrapper {
     st_table *tbl;
