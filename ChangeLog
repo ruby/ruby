@@ -1,3 +1,14 @@
+Fri Jan  3 19:09:00 2014  Eric Wong  <normalperson@yhbt.net>
+
+	* ext/socket/socket.c (rsock_sys_fail_host_port): save and restore errno
+	  before calling rb_sys_fail_str to prevent [BUG] errno == 0.
+	  Patch by Eric Wong. [ruby-core:59498] [Bug #9352]
+
+	* ext/socket/socket.c (rsock_sys_fail_path): ditto
+	* ext/socket/socket.c (rsock_sys_fail_sockaddr): ditto
+	* ext/socket/socket.c (rsock_sys_fail_raddrinfo): ditto
+	* ext/socket/socket.c (rsock_sys_fail_raddrinfo_or_sockaddr): ditto
+
 Fri Jan  3 10:43:57 2014  Aman Gupta <ruby@tmm1.net>
 
 	* test/net/imap/cacert.pem: generate new CA cert, since the last one
