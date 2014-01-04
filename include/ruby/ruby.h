@@ -851,8 +851,9 @@ struct RString {
 };
 #define RSTRING_NOEMBED FL_USER1
 #define RSTRING_FSTR FL_USER17
+#define RSTRING_EMBED_LEN_OLDMASK (FL_USER2|FL_USER3|FL_USER4|FL_USER5|FL_USER6)
 #if RSTRING_EMBED_LEN_MAX < 32
-#define RSTRING_EMBED_LEN_MASK (FL_USER2|FL_USER3|FL_USER4|FL_USER5|FL_USER6)
+#define RSTRING_EMBED_LEN_MASK RSTRING_EMBED_LEN_OLD_MASK
 #define RSTRING_EMBED_LEN_SHIFT (FL_USHIFT+2)
 #elif RSTRING_EMBED_LEN_MAX < 256
 #define RSTRING_EMBED_LEN_MASK (0xFF00000000ULL)
@@ -898,7 +899,8 @@ struct RArray {
 };
 #define RARRAY_EMBED_FLAG FL_USER1
 /* FL_USER2 is for ELTS_SHARED */
-#define RARRAY_EMBED_LEN_MASK (FL_USER6|FL_USER7|FL_USER8)
+#define RARRAY_EMBED_LEN_MASK \
+  (FL_USER6|FL_USER7|FL_USER8|FL_USER9|FL_USER10|FL_USER11)
 #define RARRAY_EMBED_LEN_SHIFT (FL_USHIFT+6)
 #define RARRAY_LEN(a) \
     ((RBASIC(a)->flags & RARRAY_EMBED_FLAG) ? \
@@ -971,7 +973,7 @@ struct REmbedHash {
 /* RHASH_TBL allocates st_table if not available. */
 #define RHASH_TBL(h) rb_hash_tbl(h)
 #define RHASH_ITER_LEV(h) (RHASH(h)->iter_lev)
-#define RHASH_IFNONE(h) (RHASH(h)->ifnone)
+#define RHASH_IFNONE(h) rb_hash_ifnone(h)
 #define RHASH_SIZE(h) rb_hash_size_inline(h)
 #define RHASH_EMPTY_P(h) (RHASH_SIZE(h) == 0)
 #define RHASH_SET_IFNONE(h, ifnone) rb_hash_set_ifnone((VALUE)h, ifnone)
@@ -1098,7 +1100,8 @@ struct RStruct {
 	const VALUE ary[RSTRUCT_EMBED_LEN_MAX];
     } as;
 };
-#define RSTRUCT_EMBED_LEN_MASK (FL_USER3|FL_USER2|FL_USER1)
+#define RSTRUCT_EMBED_LEN_MASK \
+	(FL_USER6|FL_USER5|FL_USER4|FL_USER3|FL_USER2|FL_USER1)
 #define RSTRUCT_EMBED_LEN_SHIFT (FL_USHIFT+1)
 #define RSTRUCT_LEN(st) \
     ((RBASIC(st)->flags & RSTRUCT_EMBED_LEN_MASK) ? \

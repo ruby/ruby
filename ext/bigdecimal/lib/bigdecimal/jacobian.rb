@@ -75,7 +75,7 @@ module Jacobian
   # Computes the Jacobian of f at x. fx is the value of f at x.
   def jacobian(f,fx,x)
     n = x.size
-    dfdx = Array::new(n*n)
+    dfdx = Array.new(n*n)
     for i in 0...n do
       df = dfdxi(f,fx,x,i)
       for j in 0...n do

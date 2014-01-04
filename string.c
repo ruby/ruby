@@ -62,7 +62,7 @@ STATIC_ASSERT(rbstring_embed_len_max, RSTRING_EMBED_LEN_MAX <= (RSTRING_EMBED_LE
 #define STR_SET_EMBED(str) FL_UNSET((str), STR_NOEMBED)
 #define STR_SET_EMBED_LEN(str, n) do { \
     long tmp_n = (n);\
-    RBASIC(str)->flags &= ~RSTRING_EMBED_LEN_MASK;\
+    RBASIC(str)->flags &= ~(RSTRING_EMBED_LEN_MASK|RSTRING_EMBED_LEN_OLDMASK);\
     RBASIC(str)->flags |= (tmp_n) << RSTRING_EMBED_LEN_SHIFT;\
 } while (0)
 

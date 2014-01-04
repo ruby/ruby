@@ -1,3 +1,33 @@
+Fri Jan  3 19:09:00 2014  Eric Wong  <normalperson@yhbt.net>
+
+	* ext/socket/socket.c (rsock_sys_fail_host_port): save and restore errno
+	  before calling rb_sys_fail_str to prevent [BUG] errno == 0.
+	  Patch by Eric Wong. [ruby-core:59498] [Bug #9352]
+
+	* ext/socket/socket.c (rsock_sys_fail_path): ditto
+	* ext/socket/socket.c (rsock_sys_fail_sockaddr): ditto
+	* ext/socket/socket.c (rsock_sys_fail_raddrinfo): ditto
+	* ext/socket/socket.c (rsock_sys_fail_raddrinfo_or_sockaddr): ditto
+
+Fri Jan  3 10:43:57 2014  Aman Gupta <ruby@tmm1.net>
+
+	* test/net/imap/cacert.pem: generate new CA cert, since the last one
+	  expired. [Bug #9341] [ruby-core:59459]
+	* test/net/imap/server.crt: new server cert signed with updated CA.
+	* test/net/imap/Makefile: add `make regen_certs` to automate this
+	  process.
+
+Fri Jan  3 00:09:54 2014  Benoit Daloze  <eregontp@gmail.com>
+
+	* ext/bigdecimal: update class method call style from :: to .
+	  in documentation and usage.
+
+	* ext/bigdecimal/lib/bigdecimal/math.rb: [DOC] fix examples values.
+	  Computations were made using ruby 2.0.0p247 to ensure
+	  no effect of the recent BigDecimal bug.
+
+	* ext/bigdecimal/sample/nlsolve.rb: fix indent.
+
 Thu Jan  2 16:07:21 2014  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* io.c (io_fwrite): freeze converted str.

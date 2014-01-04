@@ -220,6 +220,16 @@ rb_hash_explode(VALUE hash)
 }
 
 VALUE
+rb_hash_ifnone(VALUE hash)
+{
+    if (embeddedp(hash)) {
+	return Qnil;
+    } else {
+	return RHASH(hash)->ifnone;
+    }
+}
+
+VALUE
 rb_hash_set_ifnone(VALUE hash, VALUE ifnone)
 {
     if (embeddedp(hash)) {
