@@ -156,7 +156,8 @@ rb_struct_set(VALUE obj, VALUE val)
     for (i=0; i<len; i++) {
 	slot = RARRAY_AREF(members, i);
 	if (rb_id_attrset(SYM2ID(slot)) == rb_frame_this_func()) {
-	    return RSTRUCT_SET(obj, i, val);
+	    RSTRUCT_SET(obj, i, val);
+	    return val;
 	}
     }
     rb_name_error(rb_frame_this_func(), "`%s' is not a struct member",

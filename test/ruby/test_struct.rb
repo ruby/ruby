@@ -298,6 +298,12 @@ module TestStruct
     assert_same(x, o.b!)
   end
 
+  def test_setter_method_returns_value
+    klass = @Struct.new(:a)
+    x = klass.new
+    assert_equal "[Bug #9353]", x.send(:a=, "[Bug #9353]")
+  end
+
   class TopStruct < Test::Unit::TestCase
     include TestStruct
 
