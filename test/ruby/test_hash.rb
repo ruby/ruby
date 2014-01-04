@@ -531,6 +531,7 @@ class TestHash < Test::Unit::TestCase
     a = [ "a", "b" ]
     c = [ "c", "d" ]
     h = @cls[ a => 100, 'b' => 200, c => 300, 'd' => 400 ]
+    h.merge!(Hash[*(1..16)]) # increase hash size or else there's no rehashing
     assert_equal(100, h[a])
     a[0] = "z"
     assert_nil(h[a])
