@@ -1,3 +1,10 @@
+Sat Jan  4 22:44:00 2014  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* struct.c (rb_struct_set): return assigned value from setter method
+	  rather than struct object. [Bug #9353] [ruby-core:59509]
+
+	* test/ruby/test_struct.rb (test_setter_method_returns_value): add test
+
 Sat Jan  4 21:44:31 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/test_gc.rb (TestGc#test_latest_gc_info): use
