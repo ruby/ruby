@@ -15,23 +15,32 @@ static VALUE sock_s_unpack_sockaddr_in(VALUE, VALUE);
 void
 rsock_sys_fail_host_port(const char *mesg, VALUE host, VALUE port)
 {
+    rsock_syserr_fail_host_port(errno, mesg, host, port);
+}
+
+void
+rsock_syserr_fail_host_port(int err, const char *mesg, VALUE host, VALUE port)
+{
     VALUE message;
-    int err = errno;
 
     port = rb_String(port);
 
     message = rb_sprintf("%s for \"%s\" port %s",
 	    mesg, StringValueCStr(host), StringValueCStr(port));
 
-    errno = err;
-    rb_sys_fail_str(message);
+    rb_syserr_fail_str(err, message);
 }
 
 void
 rsock_sys_fail_path(const char *mesg, VALUE path)
 {
+    rsock_syserr_fail_path(errno, mesg, path);
+}
+
+void
+rsock_syserr_fail_path(int err, const char *mesg, VALUE path)
+{
     VALUE message;
-    int err = errno;
 
     if (RB_TYPE_P(path, T_STRING)) {
         if (memchr(RSTRING_PTR(path), '\0', RSTRING_LEN(path))) {
@@ -43,54 +52,64 @@ rsock_sys_fail_path(const char *mesg, VALUE path)
             message = rb_sprintf("%s for \"%s\"", mesg,
                     StringValueCStr(path));
         }
-        errno = err;
-        rb_sys_fail_str(message);
+	rb_syserr_fail_str(err, message);
     }
     else {
-        rb_sys_fail(mesg);
+	rb_syserr_fail(err, mesg);
     }
 }
 
 void
 rsock_sys_fail_sockaddr(const char *mesg, struct sockaddr *addr, socklen_t len)
 {
+    rsock_syserr_fail_sockaddr(errno, mesg, addr, len);
+}
+
+void
+rsock_syserr_fail_sockaddr(int err, const char *mesg, struct sockaddr *addr, socklen_t len)
+{
     VALUE rai;
-    int err = errno;
 
     rai = rsock_addrinfo_new(addr, len, PF_UNSPEC, 0, 0, Qnil, Qnil);
 
-    errno = err;
-    rsock_sys_fail_raddrinfo(mesg, rai);
+    rsock_syserr_fail_raddrinfo(err, mesg, rai);
 }
 
 void
 rsock_sys_fail_raddrinfo(const char *mesg, VALUE rai)
 {
+    rsock_syserr_fail_raddrinfo(errno, mesg, rai);
+}
+
+void
+rsock_syserr_fail_raddrinfo(int err, const char *mesg, VALUE rai)
+{
     VALUE str, message;
-    int err = errno;
 
     str = rsock_addrinfo_inspect_sockaddr(rai);
     message = rb_sprintf("%s for %s", mesg, StringValueCStr(str));
 
-    errno = err;
-    rb_sys_fail_str(message);
+    rb_syserr_fail_str(err, message);
 }
 
 void
 rsock_sys_fail_raddrinfo_or_sockaddr(const char *mesg, VALUE addr, VALUE rai)
 {
-    int err = errno;
+    rsock_syserr_fail_raddrinfo_or_sockaddr(errno, mesg, addr, rai);
+}
 
+void
+rsock_syserr_fail_raddrinfo_or_sockaddr(int err, const char *mesg, VALUE addr, VALUE rai)
+{
     if (NIL_P(rai)) {
         StringValue(addr);
 
-        errno = err;
-        rsock_sys_fail_sockaddr(mesg,
+	rsock_syserr_fail_sockaddr(err, mesg,
             (struct sockaddr *)RSTRING_PTR(addr),
             (socklen_t)RSTRING_LEN(addr)); /* overflow should be checked already */
     }
     else
-        rsock_sys_fail_raddrinfo(mesg, rai);
+	rsock_syserr_fail_raddrinfo(err, mesg, rai);
 }
 
 static void
