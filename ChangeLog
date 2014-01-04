@@ -1,3 +1,7 @@
+Sat Jan  4 17:18:58 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm.c (RubyVM::OPTS): get rid of a garbage character.
+
 Sat Jan  4 10:17:54 2014  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rinda/ring.rb (Rinda::RingFinger#make_socket):  Use

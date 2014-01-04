@@ -2577,7 +2577,7 @@ Init_VM(void)
     rb_ary_push(opts, rb_str_new2("stack caching"));
 #endif
 #if OPT_OPERANDS_UNIFICATION
-    rb_ary_push(opts, rb_str_new2("operands unification]"));
+    rb_ary_push(opts, rb_str_new2("operands unification"));
 #endif
 #if OPT_INSTRUCTIONS_UNIFICATION
     rb_ary_push(opts, rb_str_new2("instructions unification"));
