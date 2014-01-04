@@ -1,3 +1,8 @@
+Sat Jan  4 21:44:31 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_gc.rb (TestGc#test_latest_gc_info): use
+	  GC.stat(:key) instead of GC.stat.
+
 Sat Jan  4 19:15:29 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/socket.c (rsock_syserr_fail_host_port): use format flags,

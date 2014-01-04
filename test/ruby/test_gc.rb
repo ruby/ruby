@@ -103,7 +103,7 @@ class TestGc < Test::Unit::TestCase
 
   def test_latest_gc_info
     GC.start
-    GC.stat[:heap_free_slot].times{ "a" + "b" }
+    GC.stat(:heap_free_slot).times{ "a" + "b" }
     assert_equal :newobj, GC.latest_gc_info[:gc_by]
 
     GC.start
