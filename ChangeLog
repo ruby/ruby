@@ -8,7 +8,7 @@ Sat Jan  4 19:15:29 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* ext/socket/socket.c (rsock_syserr_fail_raddrinfo): ditto.
 
 	* ext/socket/socket.c (rsock_syserr_fail_host_port): add errno
-	  argument version anduse rb_syserr_fail_str() instead of
+	  argument version and use rb_syserr_fail_str() instead of
 	  rb_sys_fail_str() with restoring errno.
 
 	* ext/socket/socket.c (rsock_syserr_fail_path): ditto, and
