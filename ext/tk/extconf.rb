@@ -623,7 +623,7 @@ def libcheck_for_tclConfig(tcldir, tkdir, tclconf, tkconf)
           $INCFLAGS << " -I" << File.join(File.dirname(File.dirname(file)),"include") if is_win32?
         else
           tcllibs = append_library($libs, libname)
-          tcllibs = "-L#{tcldir.quote} -Wl,-R#{tcldir.quote} " + tcllibs
+          tcllibs = "-L#{tcldir.quote} -Wl,-rpath,#{tcldir.quote} " + tcllibs
 
           # FIX ME: avoid pathname trouble (fail to find) on MinGW.
           $INCFLAGS << " -I" << File.join(File.dirname(tcldir),"include") if is_win32?
@@ -665,7 +665,7 @@ def libcheck_for_tclConfig(tcldir, tkdir, tclconf, tkconf)
         else
           tklibs = append_library("", libname)
           #tklibs = append_library("", $1)
-          tklibs = "-L#{tkdir.quote} -Wl,-R#{tkdir.quote} " + tklibs
+          tklibs = "-L#{tkdir.quote} -Wl,-rpath,#{tkdir.quote} " + tklibs
 
           # FIX ME: avoid pathname trouble (fail to find) on MinGW.
           $INCFLAGS << " -I" << File.join(File.dirname(tcldir),"include") if is_win32?
@@ -1161,7 +1161,7 @@ def find_tcl(tcllib, stubs, version, *opt_paths)
                   tcllibs = libs_param + " -DSTATIC_BUILD " + fname.quote
                 else
                   tcllibs = append_library($libs, lib_w_sufx)
-                  tcllibs = "-L#{path.quote} -Wl,-R#{path.quote} " + tcllibs
+                  tcllibs = "-L#{path.quote} -Wl,-rpath,#{path.quote} " + tcllibs
                 end
                 if try_func(func, tcllibs, ["tcl.h"])
                   return [true, path, nil, tcllibs, *inc]
@@ -1300,7 +1300,7 @@ def find_tk(tklib, stubs, version, *opt_paths)
                   tklibs = libs_param + " -DSTATIC_BUILD " + fname.quote
                 else
                   tklibs = append_library($libs, lib_w_sufx)
-                  tklibs = "-L#{path.quote} -Wl,-R#{path.quote} " + tklibs
+                  tklibs = "-L#{path.quote} -Wl,-rpath,#{path.quote} " + tklibs
                 end
                 if try_func(func, tklibs, ["tcl.h", "tk.h"])
                   return [true, path, nil, tklibs, *inc]
@@ -2003,7 +2003,7 @@ $defs += collect_tcltk_defs(TclConfig_Info['TCL_DEFS'], TkConfig_Info['TK_DEFS']
 # MacOS X Frameworks?
 if TkLib_Config["tcltk-framework"]
   puts("Use MacOS X Frameworks.")
-  ($LDFLAGS ||= "") << " -L#{TkLib_Config["tcl-build-dir"].quote} -Wl,-R#{TkLib_Config["tcl-build-dir"].quote}" if TkLib_Config["tcl-build-dir"]
+  ($LDFLAGS ||= "") << " -L#{TkLib_Config["tcl-build-dir"].quote} -Wl,-rpath,#{TkLib_Config["tcl-build-dir"].quote}" if TkLib_Config["tcl-build-dir"]
 
   libs = ''
   if tcl_cfg_dir
@@ -2029,7 +2029,7 @@ if TkLib_Config["tcltk-framework"]
     end
   end
 
-  libs << " -L#{TkLib_Config["tk-build-dir"].quote} -Wl,-R#{TkLib_Config["tk-build-dir"].quote}" if TkLib_Config["tk-build-dir"]
+  libs << " -L#{TkLib_Config["tk-build-dir"].quote} -Wl,-rpath,#{TkLib_Config["tk-build-dir"].quote}" if TkLib_Config["tk-build-dir"]
 
   if tk_cfg_dir
     TkConfig_Info['TK_LIBS'] ||= ""
