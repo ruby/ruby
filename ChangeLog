@@ -1,3 +1,9 @@
+Sat Jan  4 10:15:47 2014  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rinda/ring.rb (Rinda::RingFinger#make_socket):  Use
+	  ipv4_multicast_loop option for portability.  Patch by Jeremy Evans.
+	  [ruby-trunk - Bug #9351]
+
 Fri Jan  3 19:09:00 2014  Eric Wong  <normalperson@yhbt.net>
 
 	* ext/socket/socket.c (rsock_sys_fail_host_port): save and restore errno

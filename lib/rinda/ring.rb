@@ -413,7 +413,7 @@ module Rinda
       soc = Socket.new(addrinfo.pfamily, addrinfo.socktype, addrinfo.protocol)
 
       if addrinfo.ipv4_multicast? then
-        soc.setsockopt(:IPPROTO_IP, :IP_MULTICAST_LOOP, true)
+        soc.setsockopt(Socket::Option.ipv4_multicast_loop(1))
         soc.setsockopt(:IPPROTO_IP, :IP_MULTICAST_TTL,
                        [@multicast_hops].pack('c'))
       elsif addrinfo.ipv6_multicast? then
