@@ -1,4 +1,11 @@
-Sat Jan  4 19:13:34 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Jan  4 19:15:29 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/socket.c (rsock_syserr_fail_host_port): use format flags,
+	  '+' to inspect, ' ' to quote unprintables.
+
+	* ext/socket/socket.c (rsock_syserr_fail_path): ditto.
+
+	* ext/socket/socket.c (rsock_syserr_fail_raddrinfo): ditto.
 
 	* ext/socket/socket.c (rsock_syserr_fail_host_port): add errno
 	  argument version anduse rb_syserr_fail_str() instead of
