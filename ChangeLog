@@ -1,3 +1,15 @@
+Sun Jan  5 20:14:14 2014  Benoit Daloze  <eregontp@gmail.com>
+
+	* compar.c (cmp_equal): remove error hiding in Comparable#==.
+	  Comparable#== no longer rescues exceptions silently.
+	  This was the cause of quite a couple bugs. See #7688. [EXPERIMENTAL]
+
+	* test/ruby/test_comparable.rb: adapt assertion to match new behavior.
+
+	* lib/rdoc/method_attr.rb: fix bugs discovered by this change.
+
+	* test/rdoc/test_rdoc_normal_class.rb: fix bugs in tests.
+
 Sat Jan  4 22:44:00 2014  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* struct.c (rb_struct_set): return assigned value from setter method

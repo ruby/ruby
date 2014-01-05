@@ -15,8 +15,8 @@ class TestRDocNormalClass < XrefTestCase
 
   def test_ancestors_multilevel
     c1 = @top_level.add_class RDoc::NormalClass, 'Outer'
-    c2 = @top_level.add_class RDoc::NormalClass, 'Middle', c1
-    c3 = @top_level.add_class RDoc::NormalClass, 'Inner', c2
+    c2 = @top_level.add_class RDoc::NormalClass, 'Middle', c1.full_name
+    c3 = @top_level.add_class RDoc::NormalClass, 'Inner', c2.full_name
 
     assert_equal [c2, c1, 'Object'], c3.ancestors
   end
@@ -30,8 +30,8 @@ class TestRDocNormalClass < XrefTestCase
     incl = RDoc::Include.new 'Incl', ''
 
     c1 = @top_level.add_class RDoc::NormalClass, 'Outer'
-    c2 = @top_level.add_class RDoc::NormalClass, 'Middle', c1
-    c3 = @top_level.add_class RDoc::NormalClass, 'Inner', c2
+    c2 = @top_level.add_class RDoc::NormalClass, 'Middle', c1.full_name
+    c3 = @top_level.add_class RDoc::NormalClass, 'Inner', c2.full_name
     c3.add_include incl
 
     assert_equal [incl.name, c2], c3.direct_ancestors

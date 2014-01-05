@@ -17,8 +17,9 @@ class TestComparable < Test::Unit::TestCase
     assert_equal(true, @o == nil)
     cmp->(x) do 1; end
     assert_equal(false, @o == nil)
-    cmp->(x) do raise; end
-    assert_equal(false, @o == nil)
+    bug7688 = '[ruby-core:51389] [Bug #7688]'
+    cmp->(x) do raise NotImplementedError; end
+    assert_raise(NotImplementedError, bug7688) { @o == nil }
   end
 
   def test_gt
