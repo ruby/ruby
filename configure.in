@@ -2601,9 +2601,6 @@ if test "$with_dln_a_out" != yes; then
        AS_HELP_STRING([--enable-rpath], [embed run path into extension libraries.
        enabled by default on ELF platforms]),
        [enable_rpath=$enableval], [enable_rpath="$rb_cv_binary_elf"])
-  if test "$enable_rpath" = yes; then
-    RPATHFLAG=" ${linker_flag}-R%1\$-s"
-  fi
 
   AS_CASE(["$target_os"],
 	[hpux*], [	DLDFLAGS="$DLDFLAGS -E"
@@ -2735,6 +2732,22 @@ if test "$with_dln_a_out" != yes; then
         [nacl], [ LDSHARED='$(CC) -shared' ],
 	[ 	: ${LDSHARED='$(LD)'}])
   AC_MSG_RESULT($rb_cv_dlopen)
+
+  if test "$enable_rpath" = yes; then
+    if test x"${RPATHFLAG}" = x; then
+      for rpathflag in -R "-rpath "; do
+	AS_CASE("$rpathflag",
+		[*" "], [AS_CASE(["${linker_flag}"],
+				 [*,], [rpathflag=`echo "$rpathflag" | tr ' ' ,`])])
+	rpathflag="${linker_flag}${rpathflag}"
+	RUBY_TRY_LDFLAGS(["${rpathflag}."], [], [rpathflag=])
+	if test "x${rpathflag}" != x; then
+	  RPATHFLAG=" ${rpathflag}%1\$-s"
+	  break
+	fi
+      done
+    fi
+  fi
 fi
 if test "${LDSHAREDXX}" = ""; then
     AS_CASE(["${LDSHARED}"],
@@ -3231,8 +3244,13 @@ AS_CASE("$enable_shared", [yes], [
 ])
 if test "$enable_rpath" = yes; then
     test -z "$LIBRUBY_RPATHFLAGS" || LIBRUBY_RPATHFLAGS="$LIBRUBY_RPATHFLAGS "
-    LIBRUBY_RPATHFLAGS="$LIBRUBY_RPATHFLAGS${linker_flag}-R ${linker_flag}${libprefix}"
-    test "x$cross_compiling" = xyes || LIBRUBY_RPATHFLAGS="$LIBRUBY_RPATHFLAGS -L${libprefix}"
+    rpathflag="${RPATHFLAG}"
+    AS_CASE(["${cross_compiling}${load_relative}"], [*yes*], [], [rpathflag="$RPATHFLAG$LIBPATHFLAG"])
+    rpathflag=`IFS="$PATH_SEPARATOR"
+        echo x "$rpathflag" |
+        sed "s/^x *//;s${IFS}"'%1\\$-s'"${IFS}${libprefix}${IFS}g;s${IFS}%s${IFS}${libprefix}${IFS}g"
+    `
+    LIBRUBY_RPATHFLAGS="$LIBRUBY_RPATHFLAGS${rpathflag}"
     LIBRUBYARG_SHARED="$LIBRUBY_RPATHFLAGS $LIBRUBYARG_SHARED"
     LIBRUBYARG_STATIC="$LIBRUBY_RPATHFLAGS $LIBRUBYARG_STATIC"
 fi
