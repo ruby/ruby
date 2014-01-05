@@ -745,6 +745,7 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
 		 -Werror=shorten-64-to-32 \
 		 -Werror=implicit-function-declaration \
 		 -Werror=division-by-zero \
+		 -Werror=deprecated-declarations \
 		 $extra_warning \
 		 ; do
 	if test "$particular_werror_flags" != yes; then
