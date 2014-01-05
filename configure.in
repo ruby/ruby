@@ -1883,6 +1883,7 @@ AC_CHECK_FUNCS(gettimeofday)		# for making ac_cv_func_gettimeofday
 AC_CHECK_FUNCS(gmtime_r)
 AC_CHECK_FUNCS(initgroups)
 AC_CHECK_FUNCS(ioctl)
+AC_CHECK_FUNCS(isfinite)
 AC_CHECK_FUNCS(issetugid)
 AC_CHECK_FUNCS(killpg)
 AC_CHECK_FUNCS(lchmod)
