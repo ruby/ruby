@@ -2296,6 +2296,21 @@ hash_i(VALUE key, VALUE val, VALUE arg)
     return ST_CONTINUE;
 }
 
+static void embedded_hash(VALUE hash, VALUE *hval)
+{
+    struct REmbedHash *h = (struct REmbedHash *)hash;
+    int i;
+    for (i=0; i<RHASH_EMBED_LEN_MAX; i++) {
+	if (h->as.ary[i][0] == Qundef) {
+	    return;
+	} else {
+	    VALUE key = h->as.ary[i][0];
+	    VALUE val = h->as.ary[i][1];
+	    hash_i(key, val, (VALUE)hval);
+	}
+    }
+}
+
 /*
  *  call-seq:
  *     hsh.hash   -> fixnum
@@ -2311,7 +2326,11 @@ rb_hash_hash(VALUE hash)
     st_index_t hval = rb_hash_start(size);
     hval = rb_hash_uint(hval, (st_index_t)rb_hash_hash);
     if (size) {
-	rb_hash_foreach(hash, hash_i, (VALUE)&hval);
+	if (embeddedp(hash)) {
+	    embedded_hash(hash, &hval);
+	} else {
+	    rb_hash_foreach(hash, hash_i, (VALUE)&hval);
+	}
     }
     hval = rb_hash_end(hval);
     return INT2FIX(hval);

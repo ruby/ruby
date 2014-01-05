@@ -514,6 +514,22 @@ class TestHash < Test::Unit::TestCase
     assert_equal([], expected - keys)
   end
 
+  def test_recursive_keys_inspect
+    h = @cls[]
+    h[h] = h
+    a = h.keys
+    assert_equal 1, a.size
+    assert_equal '[{{...}=>{...}}]', a.inspect
+  end
+
+  def test_hash_hash_embed_vs_explode
+    h = @cls[foo: :bar]
+    before = h.hash
+    h.keys # explode
+    after = h.hash
+    assert_equal before, after
+  end
+
   def test_length
     assert_equal(0, @cls[].length)
     assert_equal(7, @h.length)
