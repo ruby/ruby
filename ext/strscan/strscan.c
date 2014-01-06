@@ -447,9 +447,6 @@ strscan_set_pos(VALUE self, VALUE v)
 static VALUE
 strscan_do_scan(VALUE self, VALUE regex, int succptr, int getstr, int headonly)
 {
-    regex_t *rb_reg_prepare_re(VALUE re, VALUE str);
-    void rb_reg_release_re(regex_t *reg, VALUE re, VALUE str);
-
     struct strscanner *p;
     regex_t *re;
     long ret;
