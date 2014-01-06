@@ -29,6 +29,7 @@ y.output
 y.tab.c
 
 # /
+/*-fake.rb
 /*.pc
 /*_prelude.c
 /COPYING.LIB

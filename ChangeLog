@@ -1,3 +1,8 @@
+Mon Jan  6 21:28:48 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* .gitignore: ignore *-fake.rb generated even when CROSS_COMPILING = no
+	  since r42862.
+
 Sun Jan  5 20:14:14 2014  Benoit Daloze  <eregontp@gmail.com>
 
 	* compar.c (cmp_equal): remove error hiding in Comparable#==.
