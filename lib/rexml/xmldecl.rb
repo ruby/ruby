@@ -105,10 +105,15 @@ module REXML
     end
 
     private
+    def quote(s)
+      q = (parent && parent.context && parent.context[:attribute_quote] == :quote) ? '"' : "'"
+      q + s + q
+    end
+
     def content(enc)
-      rv = "version='#@version'"
-      rv << " encoding='#{enc}'" if @writeencoding || enc !~ /\Autf-8\z/i
-      rv << " standalone='#@standalone'" if @standalone
+      rv = "version=#{quote @version}"
+      rv << " encoding=#{quote enc}" if @writeencoding || enc !~ /\Autf-8\z/i
+      rv << " standalone=#{quote @standalone}" if @standalone
       rv
     end
   end
