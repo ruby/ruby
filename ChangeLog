@@ -1,3 +1,9 @@
+Tue Jan  7 04:35:46 2014  Aman Gupta <ruby@tmm1.net>
+
+	* array.c (ary_add_hash): Fix consistency issue between Array#uniq and
+	  Array#uniq! [Bug #9340] [ruby-core:59457]
+	* test/ruby/test_array.rb (class TestArray): regression test for above.
+
 Mon Jan  6 21:28:48 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* .gitignore: ignore *-fake.rb generated even when CROSS_COMPILING = no
