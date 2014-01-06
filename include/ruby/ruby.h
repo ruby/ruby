@@ -908,9 +908,12 @@ struct RArray {
 
 #define RARRAY_PTR(a) ((VALUE *)RARRAY_CONST_PTR(RGENGC_WB_PROTECTED_ARRAY ? OBJ_WB_UNPROTECT((VALUE)a) : ((VALUE)a)))
 
+#define RREGEXP_CACHE_SIZE 3
+
 struct RRegexp {
     struct RBasic basic;
     struct re_pattern_buffer *ptr;
+    struct re_pattern_buffer *cache[RREGEXP_CACHE_SIZE];
     const VALUE src;
     unsigned long usecnt;
 };
