@@ -1551,12 +1551,12 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	}
 	break;
       case T_REGEXP:
-	if (RANY(obj)->as.regexp.ptr) {
-	    onig_free(RANY(obj)->as.regexp.ptr);
+	if (RREGEXP_PTR(obj)) {
+	    onig_free(RREGEXP_PTR(obj));
 	}
 	for (i = 0; i < RREGEXP_CACHE_SIZE; ++i) {
-	    if (RANY(obj)->as.regexp.cache[i]) {
-		onig_free(RANY(obj)->as.regexp.cache[i]);
+	    if (RREGEXP(obj)->cache[i]) {
+		onig_free(RREGEXP(obj)->cache[i]);
 	    }
 	}
 	break;
@@ -2477,8 +2477,8 @@ obj_memsize_of(VALUE obj, int use_tdata)
 	}
 	break;
       case T_REGEXP:
-	if (RREGEXP(obj)->ptr) {
-	    size += onig_memsize(RREGEXP(obj)->ptr);
+	if (RREGEXP_PTR(obj)) {
+	    size += onig_memsize(RREGEXP_PTR(obj));
 	}
 	for (i = 0; i < RREGEXP_CACHE_SIZE; ++i) {
 	    size += onig_memsize(RREGEXP(obj)->cache[i]);
