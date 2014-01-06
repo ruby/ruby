@@ -688,6 +688,14 @@ VALUE rb_lcm(VALUE x, VALUE y);
 VALUE rb_rational_reciprocal(VALUE x);
 
 /* re.c */
+
+#define RREGEXP_EXT(r) (RREGEXP(r)->ext)
+
+struct rb_regexpext_struct {
+    struct re_pattern_buffer *cache[RREGEXP_CACHE_SIZE];
+    unsigned long usecnt;
+};
+
 VALUE rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline);
 VALUE rb_reg_check_preprocess(VALUE);
 

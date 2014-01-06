@@ -1317,15 +1317,15 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     int cache_index;
 
     if (reg->enc == enc) {
-	RREGEXP(re)->usecnt++;
+	RREGEXP_EXT(re)->usecnt++;
 	return reg;
     }
 
     cache_index = enc->ruby_encoding_index;
     if (cache_index < RREGEXP_CACHE_SIZE) {
-	reg = RREGEXP(re)->cache[cache_index];
+	reg = RREGEXP_EXT(re)->cache[cache_index];
 	if (reg && reg->enc == enc) {
-	    RREGEXP(re)->usecnt++;
+	    RREGEXP_EXT(re)->usecnt++;
 	    return reg;
 	}
     }
@@ -1352,7 +1352,7 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     }
 
     if (cache_index < RREGEXP_CACHE_SIZE) {
-	RREGEXP(re)->cache[cache_index] = reg;
+	RREGEXP_EXT(re)->cache[cache_index] = reg;
     }
 
     RB_GC_GUARD(unescaped);
@@ -1363,18 +1363,18 @@ void rb_reg_release_re(regex_t *reg, VALUE re, VALUE str) {
     int i;
 
     if (reg == RREGEXP_PTR(re)) {
-	RREGEXP(re)->usecnt--;
+	RREGEXP_EXT(re)->usecnt--;
 	return;
     }
 
     for (i = 0; i < RREGEXP_CACHE_SIZE; ++i) {
-	if (reg == RREGEXP(re)->cache[i]) {
-	    RREGEXP(re)->usecnt--;
+	if (reg == RREGEXP_EXT(re)->cache[i]) {
+	    RREGEXP_EXT(re)->usecnt--;
 	    return;
 	}
     }
 
-    if (RREGEXP(re)->usecnt) {
+    if (RREGEXP_EXT(re)->usecnt) {
 	onig_free(reg);
     }
     else {
@@ -2525,12 +2525,15 @@ rb_reg_s_alloc(VALUE klass)
     int i;
     NEWOBJ_OF(re, struct RRegexp, klass, T_REGEXP | (RGENGC_WB_PROTECTED_REGEXP ? FL_WB_PROTECTED : 0));
 
-    re->ptr = 0;
-    for (i = 0; i < RREGEXP_CACHE_SIZE; ++i) {
-	re->cache[i] = 0;
-    }
+    RREGEXP_PTR(re) = 0;
     RB_OBJ_WRITE(re, &re->src, 0);
-    re->usecnt = 0;
+
+    re->ext = ALLOC(rb_regexpext_t);
+
+    for (i = 0; i < RREGEXP_CACHE_SIZE; ++i) {
+	RREGEXP_EXT(re)->cache[i] = 0;
+    }
+    RREGEXP_EXT(re)->usecnt = 0;
 
     return (VALUE)re;
 }
