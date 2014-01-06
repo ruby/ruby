@@ -422,4 +422,22 @@ class TestSuper < Test::Unit::TestCase
       b.new.method(:foo).call
     end
   end
+
+  def test_module_super_in_method_module
+    bug9315 = '[ruby-core:59589] [Bug #9315]'
+    a = Module.new do
+      def foo
+        super
+      end
+    end
+    c = Class.new do
+      def foo
+        :ok
+      end
+    end
+    o = c.new.extend(a)
+    assert_nothing_raised(NoMethodError, bug9315) do
+      assert_equal(:ok, o.method(:foo).call, bug9315)
+    end
+  end
 end
