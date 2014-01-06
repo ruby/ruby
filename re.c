@@ -1315,10 +1315,12 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     rb_encoding *fixed_enc = 0;
     rb_encoding *enc = rb_reg_prepare_enc(re, str, 1);
 
-    if (reg->enc == enc) return reg;
+    if (reg->enc == enc) {
+	RREGEXP(re)->usecnt++;
+	return reg;
+    }
 
     rb_reg_check(re);
-    reg = RREGEXP(re)->ptr;
     pattern = RREGEXP_SRC_PTR(re);
 
     unescaped = rb_reg_preprocess(
@@ -1340,6 +1342,21 @@ rb_reg_prepare_re(VALUE re, VALUE str)
 
     RB_GC_GUARD(unescaped);
     return reg;
+}
+
+void rb_reg_release_re(regex_t *reg, VALUE re, VALUE str) {
+    int tmpreg = reg != RREGEXP(re)->ptr;
+
+    if (!tmpreg) RREGEXP(re)->usecnt--;
+    if (tmpreg) {
+	if (RREGEXP(re)->usecnt) {
+	    onig_free(reg);
+	}
+	else {
+	    onig_free(RREGEXP(re)->ptr);
+	    RREGEXP(re)->ptr = reg;
+	}
+    }
 }
 
 long
@@ -1382,7 +1399,6 @@ rb_reg_search(VALUE re, VALUE str, long pos, int reverse)
     struct re_registers regi, *regs = &regi;
     char *range = RSTRING_PTR(str);
     regex_t *reg;
-    int tmpreg;
 
     if (pos > RSTRING_LEN(str) || pos < 0) {
 	rb_backref_set(Qnil);
@@ -1390,8 +1406,6 @@ rb_reg_search(VALUE re, VALUE str, long pos, int reverse)
     }
 
     reg = rb_reg_prepare_re(re, str);
-    tmpreg = reg != RREGEXP(re)->ptr;
-    if (!tmpreg) RREGEXP(re)->usecnt++;
 
     match = rb_backref_get();
     if (!NIL_P(match)) {
@@ -1414,16 +1428,9 @@ rb_reg_search(VALUE re, VALUE str, long pos, int reverse)
 			 ((UChar*)(RSTRING_PTR(str)) + pos),
 			 ((UChar*)range),
 			 regs, ONIG_OPTION_NONE);
-    if (!tmpreg) RREGEXP(re)->usecnt--;
-    if (tmpreg) {
-	if (RREGEXP(re)->usecnt) {
-	    onig_free(reg);
-	}
-	else {
-	    onig_free(RREGEXP(re)->ptr);
-	    RREGEXP(re)->ptr = reg;
-	}
-    }
+
+    rb_reg_release_re(reg, re, str);
+
     if (result < 0) {
 	if (regs == &regi)
 	    onig_region_free(regs, 0);

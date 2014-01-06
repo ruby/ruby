@@ -58,6 +58,7 @@ long rb_reg_adjust_startpos(VALUE, VALUE, long, int);
 void rb_match_busy(VALUE);
 VALUE rb_reg_quote(VALUE);
 regex_t *rb_reg_prepare_re(VALUE re, VALUE str);
+void rb_reg_release_re(regex_t *, VALUE re, VALUE str);
 
 RUBY_SYMBOL_EXPORT_END
 
