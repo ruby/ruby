@@ -2316,7 +2316,7 @@ rb_num2ull(VALUE val)
 
 	    snprintf(buf, sizeof(buf), "%-.10g", RFLOAT_VALUE(val));
 	    if ((s = strchr(buf, ' ')) != 0) *s = '\0';
-	    rb_raise(rb_eRangeError, "float %s out of range of unsgined long long", buf);
+	    rb_raise(rb_eRangeError, "float %s out of range of unsigned long long", buf);
 	}
     }
     else if (RB_TYPE_P(val, T_BIGNUM)) {
