@@ -1395,11 +1395,13 @@ class TestProcess < Test::Unit::TestCase
   end if File.executable?("/bin/sh")
 
   def test_spawn_too_long_path
+    skip unless windows?
     bug4314 = '[ruby-core:34842]'
     assert_fail_too_long_path(%w"echo", bug4314)
   end
 
   def test_aspawn_too_long_path
+    skip unless windows?
     bug4315 = '[ruby-core:34833]'
     assert_fail_too_long_path(%w"echo |", bug4315)
   end
