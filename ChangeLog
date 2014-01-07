@@ -1,3 +1,9 @@
+Tue Jan  7 12:42:35 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/timeout.rb (Timeout#timeout): when a custom exception is given,
+	  no instance is needed to be caught, so defer creating new instance
+	  until it is raised.  [ruby-core:59511] [Bug #9354]
+
 Tue Jan  7 10:16:02 2014  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems master 21e409d / RubyGems 2.2.1.

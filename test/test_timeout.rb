@@ -57,4 +57,14 @@ class TestTimeout < Test::Unit::TestCase
     end
     assert_raise_with_message(exc, /execution expired/) {raise e if e}
   end
+
+  def test_custom_exception
+    bug9354 = '[ruby-core:59511] [Bug #9354]'
+    err = Class.new(StandardError) do
+      def initialize(msg) super end
+    end
+    assert_nothing_raised(ArgumentError, bug9354) do
+      assert_equal(:ok, timeout(100, err) {:ok})
+    end
+  end
 end
