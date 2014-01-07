@@ -327,7 +327,7 @@ class Gem::Specification < Gem::BasicSpecification
               add_bindir(@executables),
               @extra_rdoc_files,
               @extensions,
-             ].flatten.sort.uniq.compact
+             ].flatten.uniq.compact.sort
   end
 
   ######################################################################

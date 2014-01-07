@@ -1,3 +1,12 @@
+Tue Jan  7 10:16:02 2014  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master 21e409d / RubyGems 2.2.1.
+
+	  See http://rubygems.rubyforge.org/rubygems-update/History_txt.html
+	  for a list of bug fixes.
+
+	* test/rubygems:  ditto.
+
 Tue Jan  7 10:10:46 2014  Eric Wong <e@80x24.org>
 
 	* ext/json/generator/depend: add build dependencies for json extension

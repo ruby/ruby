@@ -179,27 +179,6 @@ class Gem::Resolver
   end
 
   ##
-  # Finds the State in +states+ that matches the +conflict+ so that we can try
-  # other possible sets.
-  #
-  # If no good candidate is found, the first state is tried.
-
-  def find_conflict_state conflict, states # :nodoc:
-    until states.empty? do
-      state = states.pop
-
-      explain :consider, state.dep, conflict.failed_dep
-
-      if conflict.for_spec? state.spec
-        state.conflicts << [state.spec, conflict]
-        return state
-      end
-    end
-
-    nil
-  end
-
-  ##
   # Extracts the specifications that may be able to fulfill +dependency+ and
   # returns those that match the local platform and all those that match.
 
