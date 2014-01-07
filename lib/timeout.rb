@@ -26,21 +26,17 @@ module Timeout
   class Error < RuntimeError
   end
   class ExitException < ::Exception # :nodoc:
-    attr_reader :target
-
-    def self.current_target
-      Thread.current
-    end
+    attr_reader :thread
 
     def self.catch
       exc = new
-      exc.instance_variable_set(:@target, current_target)
+      exc.instance_variable_set(:@thread, Thread.current)
       exc.freeze
       ::Kernel.catch(exc) {yield exc}
     end
 
     def exception(*)
-      throw(self, caller) if self.target == self.class.current_target
+      throw(self, caller) if self.thread == Thread.current
       self
     end
   end
