@@ -1,3 +1,9 @@
+Tue Jan  7 10:10:46 2014  Eric Wong <e@80x24.org>
+
+	* ext/json/generator/depend: add build dependencies for json extension
+	  [Bug #9374] [ruby-core:59609]
+	* ext/json/parser/depend: ditto
+
 Tue Jan  7 04:35:46 2014  Aman Gupta <ruby@tmm1.net>
 
 	* array.c (ary_add_hash): Fix consistency issue between Array#uniq and
