@@ -26,7 +26,7 @@ module Timeout
   class Error < RuntimeError
   end
   class ExitException < ::Exception # :nodoc:
-    attr_reader :klass, :thread
+    attr_reader :thread
 
     def self.catch
       exc = new
