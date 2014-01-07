@@ -6,22 +6,22 @@ class TestTimeout < Test::Unit::TestCase
   def test_queue
     q = Queue.new
     assert_raise(Timeout::Error, "[ruby-dev:32935]") {
-      timeout(0.1) { q.pop }
+      timeout(0.01) { q.pop }
     }
   end
 
   def test_timeout
-    @flag = true
+    flag = true
     Thread.start {
-      sleep 0.1
-      @flag = false
+      sleep 0.01
+      flag = false
     }
     assert_nothing_raised("[ruby-dev:38319]") do
       Timeout.timeout(1) {
-        nil while @flag
+        Thread.pass while flag
       }
     end
-    assert !@flag, "[ruby-dev:38319]"
+    assert !flag, "[ruby-dev:38319]"
   end
 
   def test_cannot_convert_into_time_interval
@@ -34,7 +34,7 @@ class TestTimeout < Test::Unit::TestCase
     bug8730 = '[Bug #8730]'
     e = nil
     assert_raise_with_message(Timeout::Error, /execution expired/, bug8730) do
-      timeout 0.1 do
+      timeout 0.01 do
         begin
           sleep 3
         rescue Exception => e
@@ -48,7 +48,7 @@ class TestTimeout < Test::Unit::TestCase
     exc = Class.new(RuntimeError)
     e = nil
     assert_nothing_raised(exc) do
-      timeout 0.1, exc do
+      timeout 0.01, exc do
         begin
           sleep 3
         rescue exc => e
