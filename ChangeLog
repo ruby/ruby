@@ -1,4 +1,10 @@
-Tue Jan  7 12:42:35 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jan  7 12:43:06 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/timeout.rb (Timeout#timeout): should not rescue ordinarily
+	  raised ExitException, which should not be thrown.
+
+	* lib/timeout.rb (Timeout::ExitException.catch): set @thread only if
+	  it ought to be caught.
 
 	* lib/timeout.rb (Timeout#timeout): when a custom exception is given,
 	  no instance is needed to be caught, so defer creating new instance

@@ -28,10 +28,11 @@ module Timeout
   class ExitException < ::Exception # :nodoc:
     attr_reader :klass, :thread
 
-    def initialize(*)
-      super
-      @thread = Thread.current
-      freeze
+    def self.catch
+      exc = new
+      exc.instance_variable_set(:@thread, Thread.current)
+      exc.freeze
+      ::Kernel.catch(exc) {yield exc}
     end
 
     def exception(*)
@@ -80,8 +81,6 @@ module Timeout
           end
         }
         return yield(sec)
-      rescue klass => e
-        e.backtrace
       ensure
         if y
           y.kill
@@ -89,7 +88,15 @@ module Timeout
         end
       end
     end
-    bt = klass ? bl.call(klass) : catch((klass = ExitException).new, &bl)
+    if klass
+      begin
+        bl.call(klass)
+      rescue klass => e
+        bt = e.backtrace
+      end
+    else
+      bt = ExitException.catch(&bl)
+    end
     rej = /\A#{Regexp.quote(__FILE__)}:#{__LINE__-4}\z/o
     bt.reject! {|m| rej =~ m}
     level = -caller(CALLER_OFFSET).size
