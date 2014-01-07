@@ -67,4 +67,12 @@ class TestTimeout < Test::Unit::TestCase
       assert_equal(:ok, timeout(100, err) {:ok})
     end
   end
+
+  def test_exit_exception
+    assert_raise_with_message(Timeout::ExitException, "boon") do
+      Timeout.timeout(10, Timeout::ExitException) do
+        raise Timeout::ExitException, "boon"
+      end
+    end
+  end
 end
