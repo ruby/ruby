@@ -67,7 +67,7 @@ module Timeout
     return yield(sec) if sec == nil or sec.zero?
     message = "execution expired"
     e = Error
-    bt = catch((klass||ExitException).new) do |exception|
+    bl = proc do |exception|
       begin
         x = Thread.current
         y = Thread.start {
@@ -80,7 +80,7 @@ module Timeout
           end
         }
         return yield(sec)
-      rescue (klass||ExitException) => e
+      rescue klass => e
         e.backtrace
       ensure
         if y
@@ -89,6 +89,7 @@ module Timeout
         end
       end
     end
+    bt = klass ? bl.call(klass) : catch((klass = ExitException).new, &bl)
     rej = /\A#{Regexp.quote(__FILE__)}:#{__LINE__-4}\z/o
     bt.reject! {|m| rej =~ m}
     level = -caller(CALLER_OFFSET).size
