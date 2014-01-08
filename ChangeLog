@@ -1,3 +1,14 @@
+Wed Jan  8 13:12:41 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/timeout.rb (Timeout::ExitException.catch): pass arguments
+	  for new instance.
+
+	* lib/timeout.rb (Timeout::ExitException#exception): fallback to
+	  Timeout::Error if couldn't throw.  [ruby-dev:47872] [Bug #9380]
+
+	* lib/timeout.rb (Timeout#timeout): initialize ExitException with
+	  message for the fallback case.
+
 Tue Jan  7 12:43:06 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/timeout.rb (Timeout#timeout): should not rescue ordinarily

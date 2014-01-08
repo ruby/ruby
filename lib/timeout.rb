@@ -28,15 +28,23 @@ module Timeout
   class ExitException < ::Exception # :nodoc:
     attr_reader :thread
 
-    def self.catch
-      exc = new
+    def self.catch(*args)
+      exc = new(*args)
       exc.instance_variable_set(:@thread, Thread.current)
       exc.freeze
       ::Kernel.catch(exc) {yield exc}
     end
 
     def exception(*)
-      throw(self, caller) if self.thread == Thread.current
+      if self.thread == Thread.current
+        bt = caller
+        begin
+          throw(self, bt)
+        rescue ArgumentError => e
+          raise unless e.message.start_with?("uncaught throw")
+          raise Error, message, backtrace
+        end
+      end
       self
     end
   end
@@ -95,7 +103,7 @@ module Timeout
         bt = e.backtrace
       end
     else
-      bt = ExitException.catch(&bl)
+      bt = ExitException.catch(message, &bl)
     end
     rej = /\A#{Regexp.quote(__FILE__)}:#{__LINE__-4}\z/o
     bt.reject! {|m| rej =~ m}

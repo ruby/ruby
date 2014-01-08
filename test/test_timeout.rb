@@ -75,4 +75,15 @@ class TestTimeout < Test::Unit::TestCase
       end
     end
   end
+
+  def test_enumerator_next
+    bug9380 = '[ruby-dev:47872] [Bug #9380]: timeout in Enumerator#next'
+    e = (o=Object.new).to_enum
+    def o.each
+      sleep
+    end
+    assert_raise_with_message(Timeout::Error, 'execution expired', bug9380) do
+      Timeout.timeout(0.01) {e.next}
+    end
+  end
 end
