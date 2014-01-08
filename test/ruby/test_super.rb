@@ -422,4 +422,18 @@ class TestSuper < Test::Unit::TestCase
       b.new.method(:foo).call
     end
   end
+
+  def test_missing_super_with_bind_and_call
+    bug9377 = '[ruby-core:59643] [Bug #9377]'
+    m = Module.new do
+      def foo; super end
+
+      def self.extended(obj)
+        instance_method(:foo).bind(obj).call
+      end
+    end
+    assert_raise(NoMethodError, bug9377) do
+      Object.new.extend(m)
+    end
+  end
 end
