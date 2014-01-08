@@ -1,3 +1,11 @@
+Wed Jan  8 15:55:21 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_objid_hash): return hash value from object ID with a
+	  salt, extract from rb_any_hash().
+
+	* object.c (rb_obj_hash): return same value as rb_any_hash().
+	  fix r44125.  [ruby-core:59638] [Bug #9381]
+
 Wed Jan  8 13:12:41 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/timeout.rb (Timeout::ExitException.catch): pass arguments

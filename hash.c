@@ -122,6 +122,8 @@ rb_hash(VALUE obj)
     return hval;
 }
 
+st_index_t rb_objid_hash(st_index_t index);
+
 static st_index_t
 rb_any_hash(VALUE a)
 {
@@ -130,9 +132,7 @@ rb_any_hash(VALUE a)
 
     if (SPECIAL_CONST_P(a)) {
 	if (a == Qundef) return 0;
-	hnum = rb_hash_start((st_index_t)a);
-	hnum = rb_hash_uint(hnum, (st_index_t)rb_any_hash);
-	hnum = rb_hash_end(hnum);
+	hnum = rb_objid_hash((st_index_t)a);
     }
     else if (BUILTIN_TYPE(a) == T_STRING) {
 	hnum = rb_str_hash(a);
@@ -143,6 +143,15 @@ rb_any_hash(VALUE a)
     }
     hnum <<= 1;
     return (st_index_t)RSHIFT(hnum, 1);
+}
+
+st_index_t
+rb_objid_hash(st_index_t index)
+{
+    st_index_t hnum = rb_hash_start(index);
+    hnum = rb_hash_uint(hnum, (st_index_t)rb_any_hash);
+    hnum = rb_hash_end(hnum);
+    return hnum;
 }
 
 static const struct st_hash_type objhash = {

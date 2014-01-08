@@ -1215,6 +1215,27 @@ class TestHash < Test::Unit::TestCase
     assert_no_memory_leak([], prepare, code, bug9187)
   end
 
+  def test_wrapper_of_special_const
+    bug9381 = '[ruby-core:59638] [Bug #9381]'
+
+    wrapper = Class.new do
+      def initialize(obj)
+        @obj = obj
+      end
+
+      def hash
+        @obj.hash
+      end
+
+      def eql?(other)
+        @obj.eql?(other)
+      end
+    end
+
+    hash = {5 => bug9381}
+    assert_equal(bug9381, hash[wrapper.new(5)])
+  end
+
   class TestSubHash < TestHash
     class SubHash < Hash
       def reject(*)
