@@ -614,6 +614,10 @@ rb_method_entry(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
 #if OPT_GLOBAL_METHOD_CACHE
     struct cache_entry *ent;
+#endif
+
+    if (!klass) return 0;
+#if OPT_GLOBAL_METHOD_CACHE
     ent = GLOBAL_METHOD_CACHE(klass, id);
     if (ent->method_state == GET_GLOBAL_METHOD_STATE() &&
 	ent->class_serial == RCLASS_SERIAL(klass) &&
