@@ -2024,6 +2024,12 @@ vm_search_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_inf
 		 " by define_method() is not supported."
 		 " Specify all arguments explicitly.");
     }
+    if (!ci->klass) {
+	/* bound instance method of module */
+	ci->aux.missing_reason = NOEX_SUPER;
+	CI_SET_FASTPATH(ci, vm_call_method_missing, 1);
+	return;
+    }
 
     /* TODO: use inline cache */
     ci->me = rb_method_entry(ci->klass, ci->mid, &ci->defined_class);
