@@ -1,3 +1,10 @@
+Wed Jan  8 22:53:16 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_search_super_method): when super called in a
+	  bound UnboundMethod generated from a module, no superclass is
+	  found since the current defined class is the module, then call
+	  method_missing in that case.  [ruby-core:59619] [Bug #9377]
+
 Wed Jan  8 15:55:21 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_objid_hash): return hash value from object ID with a

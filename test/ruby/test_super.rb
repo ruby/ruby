@@ -440,4 +440,17 @@ class TestSuper < Test::Unit::TestCase
       assert_equal(:ok, o.method(:foo).call, bug9315)
     end
   end
+
+  def test_missing_super_in_module_unbound_method
+    bug9377 = '[ruby-core:59619] [Bug #9377]'
+
+    a = Module.new do
+      def foo; super end
+    end
+
+    m = a.instance_method(:foo).bind(Object.new.extend(a))
+    assert_raise(NoMethodError, bug9377) do
+      m.call
+    end
+  end
 end
