@@ -315,7 +315,11 @@ class Gem::TestCase < MiniTest::Unit::TestCase
   def teardown
     $LOAD_PATH.replace @orig_LOAD_PATH if @orig_LOAD_PATH
 
-    RbConfig::CONFIG['BASERUBY'] = @orig_BASERUBY
+    if @orig_BASERUBY
+      RbConfig::CONFIG['BASERUBY'] = @orig_BASERUBY
+    else
+      RbConfig::CONFIG.delete('BASERUBY')
+    end
     RbConfig::CONFIG['arch'] = @orig_arch
 
     if defined? Gem::RemoteFetcher then
