@@ -161,7 +161,7 @@ rb_obj_equal(VALUE obj1, VALUE obj2)
 VALUE
 rb_obj_hash(VALUE obj)
 {
-    st_index_t rb_objid_hash(st_index_t index);
+    long rb_objid_hash(st_index_t index);
     VALUE oid = rb_obj_id(obj);
 #if SIZEOF_LONG == SIZEOF_VOIDP
     st_index_t index = NUM2LONG(oid);
@@ -170,8 +170,7 @@ rb_obj_hash(VALUE obj)
 #else
 # error not supported
 #endif
-    st_index_t h = rb_objid_hash(index);
-    return LONG2FIX(h);
+    return LONG2FIX(rb_objid_hash(index));
 }
 
 /*
