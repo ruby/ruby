@@ -1,3 +1,12 @@
+Thu Jan  9 09:55:20 2014  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: dumping strings with
+	  quotes should not have changed.  [ruby-core:59316] [Bug #9300]
+
+	* ext/psych/lib/psych.rb: fixed missing require.
+
+	* test/psych/test_string.rb: test
+
 Thu Jan  9 09:51:00 2014  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/to_ruby.rb: anonymous structs
