@@ -802,7 +802,6 @@ if test "$GCC" = yes; then
       # various  headers.  Most frequent  situation is  the use  of //
       # comments.   We  bypass  ANSI   C  mode  for  them.   Otherwise
       # extension libs cannot include those headers.
-      RUBY_TRY_CFLAGS(-msse2 -mfpmath=sse, [RUBY_APPEND_OPTION(XCFLAGS, -msse2 -mfpmath=sse)])
     ],
     [cygwin*|darwin*|netbsd*], [
       # need lgamma_r(), finite()
@@ -858,6 +857,14 @@ if test "$GCC" = yes; then
     for oflag in -fno-fast-math; do
 	RUBY_TRY_CFLAGS($oflag, [RUBY_APPEND_OPTION(optflags, $oflag)])
     done
+    AS_CASE(["$target"],
+	[*-darwin*], [
+	    # doesn't seem necessary on Mac OS X
+	],
+	[i[4-6]86], [
+	    RUBY_TRY_CFLAGS(-msse2 -mfpmath=sse, [RUBY_APPEND_OPTION(XCFLAGS, -msse2 -mfpmath=sse)])
+	]
+    )
 fi
 
 AC_ARG_WITH(opt-dir,

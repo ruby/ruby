@@ -1,3 +1,8 @@
+Thu Jan  9 20:46:22 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: use SSE2 instructions to drop unexpected precisions on
+	  other than mingw.  [ruby-core:59472] [Bug #8358]
+
 Thu Jan  9 20:31:10 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* hash.c (rb_objid_hash): should return `long'.  brushup r44534.
