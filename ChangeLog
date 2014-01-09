@@ -16,7 +16,7 @@ Thu Jan  9 19:12:37 2014  Koichi Sasada  <ko1@atdot.net>
 	* test/ruby/test_settracefunc.rb: add tests.
 	  provided by drkaes (Stefan Kaes).
 
-	* vm.c, eval.c, include/ruby/intern.h (rb_frame_pop): 
+	* vm.c, eval.c, include/ruby/intern.h (rb_frame_pop):
 	  move definition of rb_frame_pop() and deprecate it.
 	  It doesn't care about `return' events.
 
