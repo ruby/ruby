@@ -3866,21 +3866,26 @@ recursive_cmp(VALUE ary1, VALUE ary2, int recur)
  *  Comparison --- Returns an integer (+-1+, +0+, or <code>+1</code>) if this
  *  array is less than, equal to, or greater than +other_ary+.
  *
- *  +nil+ is returned if the two values are incomparable.
- *
  *  Each object in each array is compared (using the <=> operator).
  *
- *  Arrays are compared in an "element-wise" manner; the first two elements
- *  that are not equal will determine the return value for the whole
- *  comparison.
+ *  Arrays are compared in an "element-wise" manner; the first element of +ary+
+ *  is compared with the first one of +other_ary+ using the <=> operator, then
+ *  each of the second elements, etc...
+ *  As soon as the result of any such comparison is non zero (i.e. the two
+ *  corresponding elements are not equal), that result is returned for the
+ *  whole array comparison.
  *
- *  If all the values are equal, then the return is based on a comparison of
+ *  If all the elements are equal, then the result is based on a comparison of
  *  the array lengths. Thus, two arrays are "equal" according to Array#<=> if,
  *  and only if, they have the same length and the value of each element is
  *  equal to the value of the corresponding element in the other array.
  *
+ *  +nil+ is returned if the +other_ary+ is not an array or if the comparison
+ *  of two elements returned +nil+.
+ *
  *     [ "a", "a", "c" ]    <=> [ "a", "b", "c" ]   #=> -1
  *     [ 1, 2, 3, 4, 5, 6 ] <=> [ 1, 2 ]            #=> +1
+ *     [ 1, 2 ]             <=> [ 1, :two ]         #=> nil
  *
  */
 

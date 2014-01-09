@@ -401,7 +401,7 @@ static struct timespec stat_mtimespec(struct stat *st);
  *  Compares File::Stat objects by comparing their respective modification
  *  times.
  *
- *  +nil+ is returned if the two values are incomparable.
+ *  +nil+ is returned if +other_stat+ is not a File::Stat object
  *
  *     f1 = File.new("f1", "w")
  *     sleep 1
