@@ -1,3 +1,8 @@
+Fri Jan 10 06:23:21 2014  Benoit Daloze  <eregontp@gmail.com>
+
+	* range.c (Range#size): [DOC] improve description and add examples.
+	  Patch by @skade. [Fixes GH-501]
+
 Fri Jan 10 00:47:52 2014  Josef Stribny  <strzibny@gmail.com>
 
 	* ext/tk/extconf.rb: fix to pass arrays instead of strings to
