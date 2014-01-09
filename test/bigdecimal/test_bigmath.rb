@@ -14,6 +14,10 @@ class TestBigMath < Test::Unit::TestCase
     assert_in_delta(Math::E, E(N))
   end
 
+  def test_division
+    assert_in_delta(1486.868686869, (BigDecimal.new("1472.0") / BigDecimal.new("0.99")).to_f)
+  end
+
   def test_sqrt
     assert_in_delta(2**0.5, sqrt(BigDecimal("2"), N))
     assert_equal(10, sqrt(BigDecimal("100"), N))
