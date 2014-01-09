@@ -1066,4 +1066,88 @@ class TestSetTraceFunc < Test::Unit::TestCase
       :b_return
     ], events)
   end
+
+  def test_const_missing
+    bug59398 = '[ruby-core:59398]'
+    events = []
+    assert !defined?(MISSING_CONSTANT_59398)
+    TracePoint.new(:c_call, :c_return, :call, :return){|tp|
+      next unless tp.defined_class == Module
+      # rake/ext/module.rb aliases :const_missing and Ruby uses the aliased name
+      # but this only happens when running the full test suite
+      events << [tp.event,tp.method_id] if tp.method_id == :const_missing || tp.method_id == :rake_original_const_missing
+    }.enable{
+      MISSING_CONSTANT_59398 rescue nil
+    }
+    if events.map{|e|e[1]}.include?(:rake_original_const_missing)
+      assert_equal([
+        [:call, :const_missing],
+        [:c_call, :rake_original_const_missing],
+        [:c_return, :rake_original_const_missing],
+        [:return, :const_missing],
+      ], events, bug59398)
+    else
+      assert_equal([
+        [:c_call, :const_missing],
+        [:c_return, :const_missing]
+      ], events, bug59398)
+    end
+  end
+
+  class AliasedRubyMethod
+    def foo; 1; end;
+    alias bar foo
+  end
+  def test_aliased_ruby_method
+    events = []
+    aliased = AliasedRubyMethod.new
+    TracePoint.new(:call, :return){|tp|
+      events << [tp.event, tp.method_id]
+    }.enable{
+      aliased.bar
+    }
+    assert_equal([
+      [:call, :foo],
+      [:return, :foo]
+    ], events, "should use original method name for tracing ruby methods")
+  end
+  class AliasedCMethod < Hash
+    alias original_size size
+    def size; original_size; end
+  end
+
+  def test_aliased_c_method
+    events = []
+    aliased = AliasedCMethod.new
+    TracePoint.new(:call, :return, :c_call, :c_return){|tp|
+      events << [tp.event, tp.method_id]
+    }.enable{
+      aliased.size
+    }
+    assert_equal([
+      [:call, :size],
+      [:c_call, :original_size],
+      [:c_return, :original_size],
+      [:return, :size]
+    ], events, "should use alias method name for tracing c methods")
+  end
+
+  def test_method_missing
+    bug59398 = '[ruby-core:59398]'
+    events = []
+    assert !respond_to?(:missing_method_59398)
+    TracePoint.new(:c_call, :c_return, :call, :return){|tp|
+      next unless tp.defined_class == BasicObject
+      # rake/ext/module.rb aliases :const_missing and Ruby uses the aliased name
+      # but this only happens when running the full test suite
+      events << [tp.event,tp.method_id] if tp.method_id == :method_missing
+    }.enable{
+      missing_method_59398 rescue nil
+    }
+    assert_equal([
+      [:c_call, :method_missing],
+      [:c_return, :method_missing]
+    ], events, bug59398)
+  end
+
 end

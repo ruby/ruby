@@ -686,7 +686,7 @@ raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv, VALUE obj,
     {
 	exc = make_no_method_exception(exc, format, obj, argc, argv);
 	if (!(last_call_status & NOEX_MISSING)) {
-	    th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
+	    rb_vm_pop_cfunc_frame();
 	}
 	rb_exc_raise(exc);
     }
@@ -1087,13 +1087,12 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
 #if VMDEBUG
 		    printf("skipped frame: %s\n", vm_frametype_name(th->cfp));
 #endif
-		    if (UNLIKELY(VM_FRAME_TYPE(th->cfp) == VM_FRAME_MAGIC_CFUNC)) {
-			const rb_method_entry_t *me = th->cfp->me;
-			EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, th->cfp->self, me->called_id, me->klass, Qnil);
-			RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, me->klass, me->called_id);
+		    if (VM_FRAME_TYPE(th->cfp) != VM_FRAME_MAGIC_CFUNC) {
+			vm_pop_frame(th);
 		    }
-
-		    th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
+		    else { /* unlikely path */
+			rb_vm_pop_cfunc_frame();
+		    }
 		}
 	    }
 	    else{

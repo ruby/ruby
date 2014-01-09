@@ -1,3 +1,25 @@
+Thu Jan  9 19:12:37 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (rb_vm_pop_cfunc_frame): added.  It cares c_return event.
+	  The patch base by drkaes (Stefan Kaes).
+	  [Bug #9321]
+
+	* variable.c (rb_mod_const_missing): use rb_vm_pop_cfunc_frame()
+	  instead of rb_frame_pop().
+
+	* vm_eval.c (raise_method_missing): ditto.
+
+	* vm_eval.c (rb_iterate): ditto.
+
+	* internal.h (rb_vm_pop_cfunc_frame): add decl.
+
+	* test/ruby/test_settracefunc.rb: add tests.
+	  provided by drkaes (Stefan Kaes).
+
+	* vm.c, eval.c, include/ruby/intern.h (rb_frame_pop): 
+	  move definition of rb_frame_pop() and deprecate it.
+	  It doesn't care about `return' events.
+
 Thu Jan  9 17:40:28 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* hash.c (rb_any_hash): should treat the return value of rb_objid_hash()
