@@ -1,3 +1,11 @@
+Thu Jan  9 14:27:25 2014  Aman Gupta <ruby@tmm1.net>
+
+	* test/net/imap/cacert.pem: generate new CA cert, since the last one
+	  expired. [Bug #9341] [ruby-core:59459]
+	* test/net/imap/server.crt: new server cert signed with updated CA.
+	* test/net/imap/Makefile: add `make regen_certs` to automate this
+	  process.
+
 Sun Dec 22 14:25:54 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* process.c (redirect_dup2): set standard handles when new fd is stdio,
