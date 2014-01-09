@@ -3,11 +3,6 @@ Thu Jan  9 20:49:22 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* configure.in: -mstackrealign is necessary for -msse2 working.
 	  [ruby-core:54716] [Bug #8349]
 
-Thu Jan  9 20:49:06 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* configure.in: -mstackrealign is necessary for -msse2 working.
-	  [ruby-core:54716] [Bug #8349]
-
 	* configure.in: use SSE2 instructions to drop unexpected precisions on
 	  other than mingw.  [ruby-core:59472] [Bug #8358]
 
