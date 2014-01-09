@@ -1048,6 +1048,9 @@ static st_table *immediate_frozen_tbl = 0;
  *
  *     prog.rb:3:in `<<': can't modify frozen array (RuntimeError)
  *     	from prog.rb:3
+ *
+ *  Objects of the following classes are always frozen: Fixnum,
+ *  Bignum, Float, Symbol.
  */
 
 VALUE
