@@ -1,3 +1,14 @@
+Thu Jan  9 14:05:24 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/{setup.mak,Makefile.sub}: update fake.rb like
+	  template/fake.rb.in.
+
+Thu Jan  9 14:05:24 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (fake.rb): should depend on version.h because
+	  if RUBY_VERSION is updated, fake.rb need to say the new version
+	  to avoid install error in rbconfig.rb.
+
 Thu Jan  9 08:21:00 2014  Aman Gupta <ruby@tmm1.net>
 
 	* test/net/imap/cacert.pem: generate new CA cert, since the last one
