@@ -132,7 +132,8 @@ rb_any_hash(VALUE a)
 
     if (SPECIAL_CONST_P(a)) {
 	if (a == Qundef) return 0;
-	hnum = rb_objid_hash((st_index_t)a);
+	/* assume hnum is long, so need to drop upper dword on LLP64. */
+	hnum = (long)rb_objid_hash((st_index_t)a);
     }
     else if (BUILTIN_TYPE(a) == T_STRING) {
 	hnum = rb_str_hash(a);

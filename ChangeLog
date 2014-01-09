@@ -1,3 +1,9 @@
+Thu Jan  9 17:40:28 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* hash.c (rb_any_hash): should treat the return value of rb_objid_hash()
+	  as `long', because ruby assumes the object id of an object is `long'.
+	  this fixes test failures on mswin64 introduced at r44525.
+
 Thu Jan  9 09:55:20 2014  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb: dumping strings with
