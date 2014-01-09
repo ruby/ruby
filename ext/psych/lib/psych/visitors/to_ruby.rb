@@ -181,9 +181,11 @@ module Psych
             klass = class_loader.struct
             members = o.children.map { |c| accept c }
             h = Hash[*members]
-            klass.new(*h.map { |k,v|
+            s = klass.new(*h.map { |k,v|
               class_loader.symbolize k
             }).new(*h.map { |k,v| v })
+            register(o, s)
+            s
           end
 
         when /^!ruby\/object:?(.*)?$/

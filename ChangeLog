@@ -1,3 +1,10 @@
+Thu Jan  9 09:51:00 2014  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: anonymous structs
+	  should be able to roundtrip.  Thanks @splattael!
+
+	* test/psych/test_object_references.rb: test for change
+
 Wed Jan  8 22:53:16 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_search_super_method): when super called in a
