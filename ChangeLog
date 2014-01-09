@@ -1,3 +1,8 @@
+Fri Jan 10 00:47:52 2014  Josef Stribny  <strzibny@gmail.com>
+
+	* ext/tk/extconf.rb: fix to pass arrays instead of strings to
+	  libpathflag.  patch at [ruby-core:59665].  [Bug #9386]
+
 Thu Jan  9 20:49:22 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: -mstackrealign is necessary for -msse2 working.
