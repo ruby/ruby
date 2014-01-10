@@ -448,7 +448,7 @@ class TestSuper < Test::Unit::TestCase
       def foo; super end
     end
 
-    m = a.instance_method(:foo).bind(Object.new.extend(a))
+    m = a.instance_method(:foo).bind(Object.new)
     assert_raise(NoMethodError, bug9377) do
       m.call
     end
