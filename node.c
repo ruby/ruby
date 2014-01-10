@@ -880,6 +880,10 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	F_NODE(nd_body, "body");
 	break;
 
+      case NODE_FILE:
+      case NODE_LINE:
+        break;
+
       default:
 	rb_bug("dump_node: unknown node: %s", ruby_node_name(nd_type(node)));
     }

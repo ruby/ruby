@@ -8668,11 +8668,9 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val)
 	yyerror("Can't assign to false");
 	goto error;
       case keyword__FILE__:
-	yyerror("Can't assign to __FILE__");
-	goto error;
+	return assignable_result(NEW_FILE(id, val));
       case keyword__LINE__:
-	yyerror("Can't assign to __LINE__");
-	goto error;
+	return assignable_result(NEW_LINE(id, val));
       case keyword__ENCODING__:
 	yyerror("Can't assign to __ENCODING__");
 	goto error;
@@ -8916,6 +8914,23 @@ node_assign_gen(struct parser_params *parser, NODE *lhs, NODE *rhs)
       case NODE_CDECL:
       case NODE_CVASGN:
 	lhs->nd_value = rhs;
+	break;
+      case NODE_FILE:
+	if (nd_type(rhs) == NODE_STR) {
+	  ruby_sourcefile_string = rhs->nd_lit;
+	} else {
+	  rb_warning0("__FILE__ can only be set to a String, ignored");
+	}
+	return NEW_STR(rb_str_dup(ruby_sourcefile_string));
+	break;
+      case NODE_LINE:
+	if (FIXNUM_P(rhs->nd_lit)) {
+	  ruby_sourceline = NUM2INT(rhs->nd_lit);
+	} else {
+	  rb_warning0("__LINE__ can only be set to a Fixnum, ignored");
+	}
+/* FIXME better to return a new node */
+	return NEW_LIT(INT2FIX(ruby_sourceline));
 	break;
 
       case NODE_ATTRASGN:

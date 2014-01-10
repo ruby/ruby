@@ -229,3 +229,6 @@ assert_equal 'ok', %q{
   [print(:ok), exit] # void literal with side-effect
   :dummy
 }
+
+assert_equal 'String',          '(__FILE__ = "BOB").class'
+assert_equal 'Fixnum',          '(__LINE__ = 10).class'
