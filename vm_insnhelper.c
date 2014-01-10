@@ -2004,7 +2004,8 @@ vm_search_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_inf
 	current_defined_class = RCLASS_REFINED_CLASS(current_defined_class);
     }
 
-    if (!FL_TEST(current_defined_class, RMODULE_INCLUDED_INTO_REFINEMENT) &&
+    if (BUILTIN_TYPE(current_defined_class) != T_MODULE &&
+	!FL_TEST(current_defined_class, RMODULE_INCLUDED_INTO_REFINEMENT) &&
 	!rb_obj_is_kind_of(ci->recv, current_defined_class)) {
 	VALUE m = RB_TYPE_P(current_defined_class, T_ICLASS) ?
 	    RBASIC(current_defined_class)->klass : current_defined_class;
