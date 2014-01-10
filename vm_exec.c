@@ -63,7 +63,11 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 
 #elif defined(__GNUC__) && defined(__x86_64__)
     DECL_SC_REG(VALUE *, pc, "14");
+# if defined(__native_client__)
+    DECL_SC_REG(rb_control_frame_t *, cfp, "11");
+# else
     DECL_SC_REG(rb_control_frame_t *, cfp, "15");
+# endif
 #define USE_MACHINE_REGS 1
 
 #else

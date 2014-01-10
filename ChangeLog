@@ -1,3 +1,11 @@
+Fri Jan 10 16:27:20 2014  Yuki Yugui Sonoda  <yugui@google.com>
+
+	* vm_exec.c (cfp): Avoid generating invalid binary for
+	  NativeClient.
+	  r15 on x86_64 is reserved by NativeClient.  So r15 to cfp used to
+	  generate invalid binary under some combinations of compiler
+	  optimization flags.
+
 Fri Jan 10 18:01:41 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_search_super_method): allow bound method from a
