@@ -4319,12 +4319,32 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_CALL:
+	/* optimization shortcut
+	 *   "literal".freeze -> opt_str_freeze("literal")
+	 */
 	if (node->nd_recv && nd_type(node->nd_recv) == NODE_STR &&
 	    node->nd_mid == idFreeze && node->nd_args == NULL)
 	{
 	    VALUE str = rb_fstring(node->nd_recv->nd_lit);
 	    iseq_add_mark_object(iseq, str);
 	    ADD_INSN1(ret, line, opt_str_freeze, str);
+	    if (poped) {
+		ADD_INSN(ret, line, pop);
+	    }
+	    break;
+	}
+	/* optimization shortcut
+	 *   obj["literal"] -> opt_aref_with(obj, "literal")
+	 */
+	if (node->nd_mid == idAREF && node->nd_recv != (NODE *)1 && node->nd_args &&
+	    nd_type(node->nd_args) == NODE_ARRAY && node->nd_args->nd_alen == 1 &&
+	    nd_type(node->nd_args->nd_head) == NODE_STR)
+	{
+	    VALUE str = rb_fstring(node->nd_args->nd_head->nd_lit);
+	    node->nd_args->nd_head->nd_lit = str;
+	    COMPILE(ret, "recv", node->nd_recv);
+	    ADD_INSN2(ret, line, opt_aref_with,
+		      new_callinfo(iseq, idAREF, 1, 0, 0), str);
 	    if (poped) {
 		ADD_INSN(ret, line, pop);
 	    }
@@ -5299,6 +5319,25 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	DECL_ANCHOR(args);
 	VALUE flag = 0;
 	VALUE argc;
+
+	/* optimization shortcut
+	 *   obj["literal"] = value -> opt_aset_with(obj, "literal", value)
+	 */
+	if (node->nd_mid == idASET && node->nd_recv != (NODE *)1 && node->nd_args &&
+	    nd_type(node->nd_args) == NODE_ARRAY && node->nd_args->nd_alen == 2 &&
+	    nd_type(node->nd_args->nd_head) == NODE_STR)
+	{
+	    VALUE str = rb_fstring(node->nd_args->nd_head->nd_lit);
+	    node->nd_args->nd_head->nd_lit = str;
+	    COMPILE(ret, "recv", node->nd_recv);
+	    COMPILE(ret, "value", node->nd_args->nd_next->nd_head);
+	    ADD_INSN2(ret, line, opt_aset_with,
+		      new_callinfo(iseq, idASET, 2, 0, 0), str);
+	    if (poped) {
+		ADD_INSN(ret, line, pop);
+	    }
+	    break;
+	}
 
 	INIT_ANCHOR(recv);
 	INIT_ANCHOR(args);

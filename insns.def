@@ -1903,6 +1903,47 @@ opt_aset
 
 /**
   @c optimize
+  @e recv[str] = set
+  @j 最適化された recv[str] = set。
+ */
+DEFINE_INSN
+opt_aset_with
+(CALL_INFO ci, VALUE key)
+(VALUE recv, VALUE val)
+(VALUE val)
+{
+    if (!SPECIAL_CONST_P(recv) && RBASIC_CLASS(recv) == rb_cHash && BASIC_OP_UNREDEFINED_P(BOP_ASET, HASH_REDEFINED_OP_FLAG)) {
+	rb_hash_aset(recv, key, val);
+    } else {
+	PUSH(recv);
+	PUSH(rb_str_resurrect(key));
+	PUSH(val);
+	CALL_SIMPLE_METHOD(recv);
+    }
+}
+
+/**
+  @c optimize
+  @e recv[str]
+  @j 最適化された recv[str]。
+ */
+DEFINE_INSN
+opt_aref_with
+(CALL_INFO ci, VALUE key)
+(VALUE recv)
+(VALUE val)
+{
+    if (!SPECIAL_CONST_P(recv) && RBASIC_CLASS(recv) == rb_cHash && BASIC_OP_UNREDEFINED_P(BOP_AREF, HASH_REDEFINED_OP_FLAG)) {
+	val = rb_hash_aref(recv, key);
+    } else {
+	PUSH(recv);
+	PUSH(rb_str_resurrect(key));
+	CALL_SIMPLE_METHOD(recv);
+    }
+}
+
+/**
+  @c optimize
   @e optimized length
   @j 最適化された recv.length()。
  */

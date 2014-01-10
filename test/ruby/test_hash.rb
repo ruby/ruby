@@ -209,6 +209,20 @@ class TestHash < Test::Unit::TestCase
     assert_equal(256,     h[z])
   end
 
+  def test_AREF_fstring_key
+    h = {"abc" => 1}
+    before = GC.stat(:total_allocated_object)
+    5.times{ h["abc"] }
+    assert_equal before, GC.stat(:total_allocated_object)
+  end
+
+  def test_ASET_fstring_key
+    a, b = {}, {}
+    assert_equal 1, a["abc"] = 1
+    assert_equal 1, b["abc"] = 1
+    assert_same a.keys[0], b.keys[0]
+  end
+
   def test_NEWHASH_fstring_key
     a = {"ABC" => :t}
     b = {"ABC" => :t}
@@ -946,7 +960,7 @@ class TestHash < Test::Unit::TestCase
     h = @cls[]
     h.compare_by_identity
     h["a"] = 1
-    h["a"] = 2
+    h["a".dup] = 2
     assert_equal(["a",1], h.assoc("a"))
   end
 

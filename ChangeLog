@@ -1,3 +1,15 @@
+Fri Jan 10 13:34:04 2014  Aman Gupta <ruby@tmm1.net>
+
+	* insns.def (opt_aref_with): new instruction to optimize Hash#[],
+	  removing any allocation overhead when used with a string literal
+	  key. Patch by normalperson (Eric Wong). [ruby-core:59640] [Bug #9382]
+	* insns.def (opt_aset_with): new instruction to optimize Hash#[]=
+	* compile.c (iseq_compile_each): compiler shortcuts for new
+	  instructions
+	* hash.c (static VALUE rb_hash_compare_by_id_p): fix documentation for
+	  Hash#compare_by_identity to reflect frozen string sharing
+	* test/ruby/test_hash.rb (class TestHash): test for new behavior
+
 Fri Jan 10 06:23:21 2014  Benoit Daloze  <eregontp@gmail.com>
 
 	* range.c (Range#size): [DOC] improve description and add examples.
