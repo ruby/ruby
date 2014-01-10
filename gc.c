@@ -2342,7 +2342,7 @@ id2ref(VALUE obj, VALUE objid)
  *
  *  Note that some objects of builtin classes are reused for optimization.
  *  This is the case for immediate values and frozen string litterals.
- *  Immediate values are not passed by reference by are passed by value:
+ *  Immediate values are not passed by reference but are passed by value:
  *  +nil+, +true+, +false+, Fixnums, Symbols. Some Floats may be immediates too.
  *
  *      Object.new.object_id  == Object.new.object_id  # => false
