@@ -1,4 +1,5 @@
 require_relative "testbase"
+require_relative "../ruby/envutil"
 require "bigdecimal/math"
 
 class TestBigMath < Test::Unit::TestCase
@@ -66,5 +67,8 @@ class TestBigMath < Test::Unit::TestCase
     assert_in_epsilon(Math.log(10)*1000, BigMath.log(BigDecimal("1e1000"), 10))
     assert_raise(Math::DomainError) {BigMath.log(BigDecimal("0"), 10)}
     assert_raise(Math::DomainError) {BigMath.log(BigDecimal("-1"), 10)}
+    assert_separately(%w[-rbigdecimal], <<-SRC)
+    assert_in_epsilon(Math.log(10)*19999999999999, BigMath.log(BigDecimal("1E19999999999999"), 10))
+    SRC
   end
 end
