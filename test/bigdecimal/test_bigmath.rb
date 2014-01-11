@@ -60,4 +60,11 @@ class TestBigMath < Test::Unit::TestCase
     assert_equal(BigDecimal("0.823840753418636291769355073102514088959345624027952954058347023122539489"),
                  atan(BigDecimal("1.08"), 72).round(72), '[ruby-dev:41257]')
   end
+
+  def test_log
+    assert_equal(0, BigMath.log(BigDecimal("1.0"), 10))
+    assert_in_epsilon(Math.log(10)*1000, BigMath.log(BigDecimal("1e1000"), 10))
+    assert_raise(Math::DomainError) {BigMath.log(BigDecimal("0"), 10)}
+    assert_raise(Math::DomainError) {BigMath.log(BigDecimal("-1"), 10)}
+  end
 end
