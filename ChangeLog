@@ -1,3 +1,10 @@
+Sun Jan 12 15:17:00 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/tkutil/tkutil.c: use rb_sprintf(), rb_id2str(), and
+	  rb_intern_str() instead of rb_intern() and RSTRING_PTR() with
+	  RB_GC_GUARD(), to prevent temporary objects from GC.
+	  [ruby-core:39000] [Bug #5199]
+
 Tue Jan  7 01:16:34 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (mnew_from_me): keep iclass as-is, to make inheritance
