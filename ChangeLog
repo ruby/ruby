@@ -1,3 +1,8 @@
+Sun Jan 12 16:41:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (iseq_load): keep type_map to get rid of memory leak.
+	  based on a patch by Eric Wong at [ruby-core:59699].  [Bug #9399]
+
 Sun Jan 12 09:21:35 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/util.h (DECIMAL_SIZE_OF_BITS): a preprocessor

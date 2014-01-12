@@ -484,6 +484,7 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
     VALUE type, body, locals, args, exception;
 
     st_data_t iseq_type;
+    static struct st_table *type_map_cache = 0;
     struct st_table *type_map = 0;
     rb_iseq_t *iseq;
     rb_compile_option_t option;
@@ -524,7 +525,9 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
     iseq->self = iseqval;
     iseq->local_iseq = iseq;
 
+    type_map = type_map_cache;
     if (type_map == 0) {
+	struct st_table *cached_map;
 	type_map = st_init_numtable();
 	st_insert(type_map, ID2SYM(rb_intern("top")), ISEQ_TYPE_TOP);
 	st_insert(type_map, ID2SYM(rb_intern("method")), ISEQ_TYPE_METHOD);
@@ -535,6 +538,11 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
 	st_insert(type_map, ID2SYM(rb_intern("eval")), ISEQ_TYPE_EVAL);
 	st_insert(type_map, ID2SYM(rb_intern("main")), ISEQ_TYPE_MAIN);
 	st_insert(type_map, ID2SYM(rb_intern("defined_guard")), ISEQ_TYPE_DEFINED_GUARD);
+	cached_map = ATOMIC_PTR_CAS(type_map_cache, (struct st_table *)0, type_map);
+	if (cached_map) {
+	    st_free_table(type_map);
+	    type_map = cached_map;
+	}
     }
 
     if (st_lookup(type_map, type, &iseq_type) == 0) {
