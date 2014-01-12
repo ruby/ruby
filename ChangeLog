@@ -1,3 +1,17 @@
+Sun Jan 12 09:21:35 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/util.h (DECIMAL_SIZE_OF_BITS): a preprocessor
+	  constant macro to approximate decimal representation size of n-bits
+	  integer.
+
+	* iseq.c (register_label): use DECIMAL_SIZE_OF_BITS for better
+	  approximation.
+
+	* ext/bigdecimal/bigdecimal.c (BigMath_s_log): ditto.
+
+	* common.mk (iseq.o), ext/bigdecimal/depend (bigdecimal.o): add
+	  dependency to ruby/util.h for DECIMAL_SIZE_OF_BITS.
+
 Fri Jan 10 16:27:20 2014  Yuki Yugui Sonoda  <yugui@google.com>
 
 	* vm_exec.c (cfp): Avoid generating invalid binary for

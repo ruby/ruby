@@ -18,6 +18,7 @@
 # define BIGDECIMAL_ENABLE_VPRINT 1
 #endif
 #include "bigdecimal.h"
+#include "ruby/util.h"
 
 #ifndef BIGDECIMAL_DEBUG
 # define NDEBUG
@@ -2919,7 +2920,7 @@ get_vp_value:
     RB_GC_GUARD(vn) = SSIZET2NUM(n);
     expo = VpExponent10(vx);
     if (expo < 0 || expo >= 3) {
-	char buf[SIZEOF_VALUE * CHAR_BIT / 3 + 4];
+	char buf[DECIMAL_SIZE_OF_BITS(SIZEOF_VALUE * CHAR_BIT) + 4];
 	snprintf(buf, sizeof(buf), "1E%"PRIdVALUE, -expo);
 	x = BigDecimal_mult2(x, ToValue(VpCreateRbObject(1, buf)), vn);
     }

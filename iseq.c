@@ -10,6 +10,7 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
+#include "ruby/util.h"
 #include "internal.h"
 #include "eval_intern.h"
 
@@ -1612,7 +1613,7 @@ static VALUE
 register_label(struct st_table *table, unsigned long idx)
 {
     VALUE sym;
-    char buff[8 + (sizeof(idx) * CHAR_BIT * 32 / 100)];
+    char buff[7 + DECIMAL_SIZE_OF_BITS(sizeof(idx) * CHAR_BIT)];
 
     snprintf(buff, sizeof(buff), "label_%lu", idx);
     sym = ID2SYM(rb_intern(buff));

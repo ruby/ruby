@@ -1,1 +1,1 @@
-bigdecimal.o: bigdecimal.c bigdecimal.h $(HDRS) $(ruby_headers)
+bigdecimal.o: bigdecimal.c bigdecimal.h $(HDRS) $(ruby_headers) $(hdrdir)/ruby/util.h
