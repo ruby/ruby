@@ -68,7 +68,14 @@ class TestBigMath < Test::Unit::TestCase
     assert_raise(Math::DomainError) {BigMath.log(BigDecimal("0"), 10)}
     assert_raise(Math::DomainError) {BigMath.log(BigDecimal("-1"), 10)}
     assert_separately(%w[-rbigdecimal], <<-SRC)
-    assert_in_epsilon(Math.log(10)*19999999999999, BigMath.log(BigDecimal("1E19999999999999"), 10))
+    begin
+      x = BigMath.log(BigDecimal("1E19999999999999"), 10)
+    rescue FloatDomainError
+    else
+      unless x.infinite?
+        assert_in_epsilon(Math.log(10)*19999999999999, x)
+      end
+    end
     SRC
   end
 end
