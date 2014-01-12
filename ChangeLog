@@ -1,3 +1,9 @@
+Sun Jan 12 15:33:11 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.c (ruby_qsort): fix potential stack overflow on a large
+	  machine.  based on the patch by Conrad Irwin <conrad.irwin AT
+	  gmail.com> at [ruby-core:51816].  [Bug #7772]
+
 Sun Jan 12 15:17:00 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/tk/tkutil/tkutil.c: use rb_sprintf(), rb_id2str(), and
