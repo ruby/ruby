@@ -474,6 +474,22 @@ rb_iseq_new_with_bopt(NODE *node, VALUE name, VALUE path, VALUE absolute_path, V
 #define CHECK_STRING(v)  rb_convert_type((v), T_STRING, "String", "to_str")
 #define CHECK_SYMBOL(v)  rb_convert_type((v), T_SYMBOL, "Symbol", "to_sym")
 static inline VALUE CHECK_INTEGER(VALUE v) {(void)NUM2LONG(v); return v;}
+
+static enum iseq_type
+iseq_type_from_id(const ID typeid)
+{
+    if (typeid == rb_intern("top")) return ISEQ_TYPE_TOP;
+    if (typeid == rb_intern("method")) return ISEQ_TYPE_METHOD;
+    if (typeid == rb_intern("block")) return ISEQ_TYPE_BLOCK;
+    if (typeid == rb_intern("class")) return ISEQ_TYPE_CLASS;
+    if (typeid == rb_intern("rescue")) return ISEQ_TYPE_RESCUE;
+    if (typeid == rb_intern("ensure")) return ISEQ_TYPE_ENSURE;
+    if (typeid == rb_intern("eval")) return ISEQ_TYPE_EVAL;
+    if (typeid == rb_intern("main")) return ISEQ_TYPE_MAIN;
+    if (typeid == rb_intern("defined_guard")) return ISEQ_TYPE_DEFINED_GUARD;
+    return (enum iseq_type)-1;
+}
+
 static VALUE
 iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
 {
@@ -484,8 +500,7 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
     VALUE type, body, locals, args, exception;
 
     st_data_t iseq_type;
-    static struct st_table *type_map_cache = 0;
-    struct st_table *type_map = 0;
+    ID typeid;
     rb_iseq_t *iseq;
     rb_compile_option_t option;
     int i = 0;
@@ -525,28 +540,9 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
     iseq->self = iseqval;
     iseq->local_iseq = iseq;
 
-    type_map = type_map_cache;
-    if (type_map == 0) {
-	struct st_table *cached_map;
-	type_map = st_init_numtable();
-	st_insert(type_map, ID2SYM(rb_intern("top")), ISEQ_TYPE_TOP);
-	st_insert(type_map, ID2SYM(rb_intern("method")), ISEQ_TYPE_METHOD);
-	st_insert(type_map, ID2SYM(rb_intern("block")), ISEQ_TYPE_BLOCK);
-	st_insert(type_map, ID2SYM(rb_intern("class")), ISEQ_TYPE_CLASS);
-	st_insert(type_map, ID2SYM(rb_intern("rescue")), ISEQ_TYPE_RESCUE);
-	st_insert(type_map, ID2SYM(rb_intern("ensure")), ISEQ_TYPE_ENSURE);
-	st_insert(type_map, ID2SYM(rb_intern("eval")), ISEQ_TYPE_EVAL);
-	st_insert(type_map, ID2SYM(rb_intern("main")), ISEQ_TYPE_MAIN);
-	st_insert(type_map, ID2SYM(rb_intern("defined_guard")), ISEQ_TYPE_DEFINED_GUARD);
-	cached_map = ATOMIC_PTR_CAS(type_map_cache, (struct st_table *)0, type_map);
-	if (cached_map) {
-	    st_free_table(type_map);
-	    type_map = cached_map;
-	}
-    }
-
-    if (st_lookup(type_map, type, &iseq_type) == 0) {
-	ID typeid = SYM2ID(type);
+    typeid = SYM2ID(type);
+    iseq_type = iseq_type_from_id(typeid);
+    if (iseq_type == (enum iseq_type)-1) {
 	VALUE typename = rb_id2str(typeid);
 	if (typename)
 	    rb_raise(rb_eTypeError, "unsupport type: :%"PRIsVALUE, typename);
