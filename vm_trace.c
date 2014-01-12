@@ -290,6 +290,7 @@ rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
 	const int outer_state = th->state;
 	int state = 0;
 	th->state = 0;
+	th->errinfo = Qnil;
 
 	th->vm->trace_running++;
 	th->trace_arg = trace_arg;

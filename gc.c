@@ -1375,6 +1375,7 @@ run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
     int status;
     VALUE args[3];
     VALUE objid = nonspecial_obj_id(obj);
+    VALUE saved_errinfo = rb_errinfo();
 
     if (RARRAY_LEN(table) > 0) {
 	args[1] = rb_obj_freeze(rb_ary_new3(1, objid));
@@ -1384,6 +1385,7 @@ run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
     }
 
     args[2] = (VALUE)rb_safe_level();
+    rb_set_errinfo(Qnil);
     for (i=0; i<RARRAY_LEN(table); i++) {
 	VALUE final = RARRAY_PTR(table)[i];
 	args[0] = RARRAY_PTR(final)[1];
@@ -1393,6 +1395,7 @@ run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
 	if (status)
 	    rb_set_errinfo(Qnil);
     }
+    GET_THREAD()->errinfo = saved_errinfo;
 }
 
 static void

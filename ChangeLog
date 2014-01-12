@@ -1,3 +1,16 @@
+Sun Jan 12 22:46:49 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	patch inspired from r44260 on trunk. [ruby-core:58652] [Bug #9168]
+
+	* gc.c (run_finalizer): clear th->errinfo before invoke finalizer and
+	  restore afterward.
+
+	* test/ruby/test_gc.rb (test_exception_in_finalizer): add test for
+	  above.
+
+	* vm_trace.c (rb_threadptr_exec_event_hooks_orig): clear th->errinfo
+	  before invoke hook.
+
 Sun Jan 12 16:07:52 2014  vo.x (Vit Ondruch)  <vondruch@redhat.com>
 
 	* tool/rbinstall.rb (Gem::Specification#collect): make stable
