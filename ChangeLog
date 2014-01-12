@@ -1,3 +1,11 @@
+Sun Jan 12 16:07:52 2014  vo.x (Vit Ondruch)  <vondruch@redhat.com>
+
+	* tool/rbinstall.rb (Gem::Specification#collect): make stable
+	  Gem::Specification.files in default .gemspecs the different order of
+	  "files" in .gemspec files makes them different therefore possibly
+	  conflicting in multilib scenario.  patch by vo.x (Vit Ondruch) at
+	  [ruby-core:57544] [Bug #8623].
+
 Sun Jan 12 16:01:54 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/openssl/test_cipher.rb (test_aes_gcm_wrong_tag): Don't use
