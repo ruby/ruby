@@ -848,15 +848,14 @@ create_ip_exc(interp, exc, fmt, va_alist)
 #endif
 {
     va_list args;
-    char buf[BUFSIZ];
+    VALUE msg;
     VALUE einfo;
     struct tcltkip *ptr = get_ip(interp);
 
     va_init_list(args,fmt);
-    vsnprintf(buf, BUFSIZ, fmt, args);
-    buf[BUFSIZ - 1] = '\0';
+    msg = rb_vsprintf(fmt, args);
     va_end(args);
-    einfo = rb_exc_new2(exc, buf);
+    einfo = rb_exc_new_str(exc, msg);
     rb_ivar_set(einfo, ID_at_interp, interp);
     if (ptr) {
         Tcl_ResetResult(ptr->ip);
