@@ -1,3 +1,11 @@
+Sun Jan 12 16:01:54 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/openssl/test_cipher.rb (test_aes_gcm_wrong_tag): Don't use
+	  String#succ because it can make modified (wrong) auth_tag longer
+	  than 16 bytes.  The longer auth_tag makes that
+	  EVP_CIPHER_CTX_ctrl (and internally aes_gcm_ctrl) fail.
+	  [ruby-core:55143] [Bug #8439] reported by Vit Ondruch.
+
 Sun Jan 12 15:33:11 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (ruby_qsort): fix potential stack overflow on a large
