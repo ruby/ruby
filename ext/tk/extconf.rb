@@ -1137,7 +1137,7 @@ def find_tcl(tcllib, stubs, version, *opt_paths)
       if tcllib
         print(".")
         if have_library(tcllib, func, ["tcl.h"])
-          return [true, path, lib_w_sufx, nil, *inc]
+          return [true, path, tcllib, nil, *inc]
         end
       else
         sufx_list = ['', 't', 'g', 's', 'x']
@@ -1277,7 +1277,7 @@ def find_tk(tklib, stubs, version, *opt_paths)
       if tklib
         print(".")
         if have_library(tklib, func, ["tcl.h", "tk.h"])
-          return [true, path, lib_w_sufx, nil, *inc]
+          return [true, path, tklib, nil, *inc]
         end
       else
         sufx_list = ['', 't', 'g', 's', 'x']
