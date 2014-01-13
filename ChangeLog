@@ -1,3 +1,9 @@
+Mon Jan 13 14:47:07 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/net/smtp.rb: [DOC] Remove dead link to RAA by Giorgos Tsiftsis
+	  Fixes the following bugs: [Bug #9152] [Bug #9268] [Bug #9394]
+	* lib/open-uri.rb: ditto
+
 Mon Jan 13 14:25:55 2014  Zachary Scott  <e@zzak.io>
 
 	* ext/openssl/ossl_pkey_dh.c: Fixed typo by Sandor Szücs [Bug #9243]
