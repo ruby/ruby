@@ -1,3 +1,11 @@
+Mon Jan 13 12:03:00 2014  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* ext/thread/thread.c (rb_szqueue_push): check GET_SZQUEUE_WAITERS
+	  instead of GET_QUEUE_WAITERS to prevent deadlock. Patch by Eric Wong.
+	  [Bug #9302] [ruby-core:59324]
+
+	* test/thread/test_queue.rb: add test
+
 Sun Jan 12 16:41:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* iseq.c (iseq_load): keep type_map to get rid of memory leak.
