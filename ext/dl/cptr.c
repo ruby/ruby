@@ -391,7 +391,7 @@ rb_dlptr_inspect(VALUE self)
 
     TypedData_Get_Struct(self, struct ptr_data, &dlptr_data_type, data);
     return rb_sprintf("#<%"PRIsVALUE":%p ptr=%p size=%ld free=%p>",
-		      CLASS_OF(self), data, data->ptr, data->size, data->free);
+		      rb_obj_class(self), data, data->ptr, data->size, data->free);
 }
 
 /*

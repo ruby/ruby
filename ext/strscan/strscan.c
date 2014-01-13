@@ -1159,17 +1159,17 @@ strscan_inspect(VALUE self)
 
     p = check_strscan(self);
     if (NIL_P(p->str)) {
-	a = rb_sprintf("#<%"PRIsVALUE" (uninitialized)>", CLASS_OF(self));
+	a = rb_sprintf("#<%"PRIsVALUE" (uninitialized)>", rb_obj_class(self));
 	return infect(a, p);
     }
     if (EOS_P(p)) {
-	a = rb_sprintf("#<%"PRIsVALUE" fin>", CLASS_OF(self));
+	a = rb_sprintf("#<%"PRIsVALUE" fin>", rb_obj_class(self));
 	return infect(a, p);
     }
     if (p->curr == 0) {
 	b = inspect2(p);
 	a = rb_sprintf("#<%"PRIsVALUE" %ld/%ld @ %"PRIsVALUE">",
-		       CLASS_OF(self),
+		       rb_obj_class(self),
 		       p->curr, S_LEN(p),
 		       b);
 	return infect(a, p);
@@ -1177,7 +1177,7 @@ strscan_inspect(VALUE self)
     a = inspect1(p);
     b = inspect2(p);
     a = rb_sprintf("#<%"PRIsVALUE" %ld/%ld %"PRIsVALUE" @ %"PRIsVALUE">",
-		   CLASS_OF(self),
+		   rb_obj_class(self),
 		   p->curr, S_LEN(p),
 		   a, b);
     return infect(a, p);
