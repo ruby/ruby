@@ -134,6 +134,29 @@ class TestQueue < Test::Unit::TestCase
     assert_same q, retval
   end
 
+  def test_sized_queue_throttle
+    q = SizedQueue.new(1)
+    i = 0
+    consumer = Thread.new do
+      while q.pop
+        i += 1
+        Thread.pass
+      end
+    end
+    nprod = 4
+    npush = 100
+
+    producer = nprod.times.map do
+      Thread.new do
+        npush.times { q.push(true) }
+      end
+    end
+    producer.each(&:join)
+    q.push(nil)
+    consumer.join
+    assert_equal(nprod * npush, i)
+  end
+
   def test_queue_thread_raise
     q = Queue.new
     th1 = Thread.new do
