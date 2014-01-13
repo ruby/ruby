@@ -13,7 +13,7 @@ Mon Jan 13 14:47:07 2014  Zachary Scott  <e@zzak.io>
 
 Mon Jan 13 14:25:55 2014  Zachary Scott  <e@zzak.io>
 
-	* ext/openssl/ossl_pkey_dh.c: Fixed typo by Sandor Szücs [Bug #9243]
+	* ext/openssl/ossl_pkey_dh.c: Fixed typo by Sandor Sz?cs [Bug #9243]
 
 Mon Jan 13 12:03:00 2014  Charlie Somerville  <charliesome@ruby-lang.org>
 
