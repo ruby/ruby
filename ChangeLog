@@ -1,3 +1,10 @@
+Mon Jan 13 14:55:31 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/xmlrpc/client.rb: [DOC] Remove note about SSL package on RAA
+	  Since RAA has been deprecated, and the SSL package has been replaced
+	  with net/https this statement is entirely false and should be
+	  deleted. [Bug #9152]
+
 Mon Jan 13 14:47:07 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/net/smtp.rb: [DOC] Remove dead link to RAA by Giorgos Tsiftsis
