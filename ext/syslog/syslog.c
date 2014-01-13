@@ -327,10 +327,10 @@ static VALUE mSyslog_inspect(VALUE self)
     Check_Type(self, T_MODULE);
 
     if (!syslog_opened)
-	return rb_sprintf("<#%s: opened=false>", rb_class2name(self));
+	return rb_sprintf("<#%"PRIsVALUE": opened=false>", self);
 
-    return rb_sprintf("<#%s: opened=true, ident=\"%s\", options=%d, facility=%d, mask=%d>",
-		      rb_class2name(self),
+    return rb_sprintf("<#%"PRIsVALUE": opened=true, ident=\"%s\", options=%d, facility=%d, mask=%d>",
+		      self,
 		      syslog_ident,
 		      syslog_options,
 		      syslog_facility,
