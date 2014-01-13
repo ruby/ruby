@@ -1,3 +1,13 @@
+Tue Jan 14 02:20:00 2014  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_divide): Add an additional
+	  digit for the quotient to be compatible with bigdecimal 1.2.1 and
+	  the former.  [ruby-core:59365] [#9316] [#9305]
+
+	* test/bigdecimal/test_bigdecimal.rb: tests for the above change.
+
+	* ext/bigdecimal/bigdecimal.gemspec: bigdecimal version 1.2.4.
+
 Mon Jan 13 14:55:31 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/xmlrpc/client.rb: [DOC] Remove note about SSL package on RAA
