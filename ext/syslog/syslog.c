@@ -312,7 +312,7 @@ static VALUE mSyslog_log(int argc, VALUE *argv, VALUE self)
     pri = *argv++;
 
     if (!FIXNUM_P(pri)) {
-      rb_raise(rb_eTypeError, "type mismatch: %s given", rb_class2name(CLASS_OF(pri)));
+	rb_raise(rb_eTypeError, "type mismatch: %"PRIsVALUE" given", rb_obj_class(pri));
     }
 
     syslog_write(FIX2INT(pri), argc, argv);

@@ -2518,8 +2518,8 @@ BigDecimal_new(int argc, VALUE *argv)
       case T_RATIONAL:
 	if (NIL_P(nFig)) {
 	    rb_raise(rb_eArgError,
-		     "can't omit precision for a %s.",
-		     rb_class2name(CLASS_OF(iniValue)));
+		     "can't omit precision for a %"PRIsVALUE".",
+		     rb_obj_class(iniValue));
 	}
 	return GetVpValueWithPrec(iniValue, mf, 1);
 
