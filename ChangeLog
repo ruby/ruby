@@ -1,3 +1,9 @@
+Tue Jan 14 11:28:44 2014  Yuki Yugui Sonoda  <yugui@google.com>
+
+	* vm_exec.c (cfp): Fixes a SEGV issue in r44554.
+	  r11 can be broken by subroutine and sometimes causes SEGV at
+	  runtime.  Use r13 instead.
+
 Tue Jan 14 02:20:00 2014  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_divide): Add an additional
