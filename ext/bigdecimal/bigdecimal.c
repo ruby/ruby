@@ -99,6 +99,17 @@ static ID id_eq;
 # define RRATIONAL_NEGATIVE_P(x) RTEST(rb_funcall((x), '<', 1, INT2FIX(0)))
 #endif
 
+#ifndef DECIMAL_SIZE_OF_BITS
+#define DECIMAL_SIZE_OF_BITS(n) (((n) * 3010 + 9998) / 9999)
+/* an approximation of ceil(n * log10(2)), upto 65536 at least */
+#endif
+
+#ifdef PRIsVALUE
+# define raise_with_class(e, pre, post, obj) rb_raise((e), pre "%" PRIsVALUE post, rb_obj_class(obj))
+#else
+# define raise_with_class(e, pre, post, obj) rb_raise((e), pre "%s" post, rb_obj_classname(obj))
+#endif
+
 /*
  * ================== Ruby Interface part ==========================
  */
@@ -273,9 +284,9 @@ SomeOneMayDoIt:
 
 unable_to_coerce_without_prec:
     if (must) {
-	rb_raise(rb_eArgError,
-		 "%s can't be coerced into BigDecimal without a precision",
-		 rb_obj_classname(v));
+	raise_with_class(rb_eArgError,
+			 "", " can't be coerced into BigDecimal without a precision",
+			 v);
     }
     return NULL;
 }
@@ -2260,9 +2271,9 @@ BigDecimal_power(int argc, VALUE*argv, VALUE self)
 	}
 	/* fall through */
       default:
-	rb_raise(rb_eTypeError,
-		 "wrong argument type %s (expected scalar Numeric)",
-		 rb_obj_classname(vexp));
+	raise_with_class(rb_eTypeError,
+			 "wrong argument type ", " (expected scalar Numeric)",
+			 vexp);
     }
 
     if (VpIsZero(x)) {
@@ -2519,9 +2530,9 @@ BigDecimal_new(int argc, VALUE *argv)
 	/* fall through */
       case T_RATIONAL:
 	if (NIL_P(nFig)) {
-	    rb_raise(rb_eArgError,
-		     "can't omit precision for a %"PRIsVALUE".",
-		     rb_obj_class(iniValue));
+	    raise_with_class(rb_eArgError,
+			     "can't omit precision for a ", ".",
+			     iniValue);
 	}
 	return GetVpValueWithPrec(iniValue, mf, 1);
 
