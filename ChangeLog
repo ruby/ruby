@@ -1,3 +1,11 @@
+Tue Jan 14 21:07:22 2014  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* ext/thread/thread.c (rb_szqueue_clear): notify SZQUEUE_WAITERS
+	  on SizedQueue#clear. [ruby-core:59462] [Bug #9342]
+
+	* test/thread/test_queue.rb: add test. the patch is from
+	  Justin Collins.
+
 Tue Jan 14 15:58:43 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (CLASS_NAME): macro to wrap

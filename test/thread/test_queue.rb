@@ -122,6 +122,28 @@ class TestQueue < Test::Unit::TestCase
     assert_same q, retval
   end
 
+  def test_sized_queue_clear
+    # Fill queue, then test that SizedQueue#clear wakes up all waiting threads
+    sq = SizedQueue.new(2)
+    2.times { sq << 1 }
+
+    t1 = Thread.new do
+      sq << 1
+    end
+
+    t2 = Thread.new do
+      sq << 1
+    end
+
+    t3 = Thread.new do
+      Thread.pass
+      sq.clear
+    end
+
+    [t3, t2, t1].each(&:join)
+    assert_equal sq.length, 2
+  end
+
   def test_sized_queue_push_return_value
     q = SizedQueue.new(1)
     retval = q.push(1)
