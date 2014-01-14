@@ -1,10 +1,10 @@
-Tue Jan 14 14:52:04 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jan 14 15:58:43 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (CLASS_NAME): macro to wrap
+	  depending on PRIsVALUE for 1.9.  [Backport #9406]
 
 	* ext/bigdecimal/bigdecimal.c (DECIMAL_SIZE_OF_BITS): fallback
 	  definition for 2.1 or older.  [ruby-core:59750] [Backport #9406]
-
-	* ext/bigdecimal/bigdecimal.c (raise_with_class): fallback definition
-	  for 1.9.
 
 Tue Jan 14 11:28:44 2014  Yuki Yugui Sonoda  <yugui@google.com>
 

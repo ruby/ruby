@@ -105,9 +105,10 @@ static ID id_eq;
 #endif
 
 #ifdef PRIsVALUE
-# define raise_with_class(e, pre, post, obj) rb_raise((e), pre "%" PRIsVALUE post, rb_obj_class(obj))
+# define CLASS_NAME(obj) rb_obj_class(obj)
 #else
-# define raise_with_class(e, pre, post, obj) rb_raise((e), pre "%s" post, rb_obj_classname(obj))
+# define PRIsVALUE "s"
+# define CLASS_NAME(obj) rb_obj_classname(obj)
 #endif
 
 /*
@@ -284,9 +285,9 @@ SomeOneMayDoIt:
 
 unable_to_coerce_without_prec:
     if (must) {
-	raise_with_class(rb_eArgError,
-			 "", " can't be coerced into BigDecimal without a precision",
-			 v);
+	rb_raise(rb_eArgError,
+		 "%"PRIsVALUE" can't be coerced into BigDecimal without a precision",
+		 CLASS_NAME(v));
     }
     return NULL;
 }
@@ -2271,9 +2272,9 @@ BigDecimal_power(int argc, VALUE*argv, VALUE self)
 	}
 	/* fall through */
       default:
-	raise_with_class(rb_eTypeError,
-			 "wrong argument type ", " (expected scalar Numeric)",
-			 vexp);
+	rb_raise(rb_eTypeError,
+		 "wrong argument type %"PRIsVALUE" (expected scalar Numeric)",
+		 CLASS_NAME(vexp));
     }
 
     if (VpIsZero(x)) {
@@ -2530,9 +2531,9 @@ BigDecimal_new(int argc, VALUE *argv)
 	/* fall through */
       case T_RATIONAL:
 	if (NIL_P(nFig)) {
-	    raise_with_class(rb_eArgError,
-			     "can't omit precision for a ", ".",
-			     iniValue);
+	    rb_raise(rb_eArgError,
+		     "can't omit precision for a %"PRIsVALUE".",
+		     CLASS_NAME(iniValue));
 	}
 	return GetVpValueWithPrec(iniValue, mf, 1);
 
