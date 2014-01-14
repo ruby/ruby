@@ -2354,7 +2354,7 @@ nsdr(void)
 #include <execinfo.h>
 #define MAX_NATIVE_TRACE 1024
     static void *trace[MAX_NATIVE_TRACE];
-    int n = backtrace(trace, MAX_NATIVE_TRACE);
+    int n = (int)backtrace(trace, MAX_NATIVE_TRACE);
     char **syms = backtrace_symbols(trace, n);
     int i;
 
