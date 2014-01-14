@@ -173,6 +173,9 @@ r_value(VALUE value)
 #define NEW_ISEQVAL(node, name, type, line_no)       \
   new_child_iseq(iseq, (node), rb_fstring(name), 0, (type), (line_no))
 
+#define NEW_ISEQFILE(node, name, type, line_no)       \
+  new_file_iseq(iseq, (node), rb_fstring(name), 0, (type), (line_no))
+
 #define NEW_CHILD_ISEQVAL(node, name, type, line_no)       \
   new_child_iseq(iseq, (node), rb_fstring(name), iseq->self, (type), (line_no))
 
@@ -981,6 +984,21 @@ new_insn_send(rb_iseq_t *iseq, int line_no, VALUE id, VALUE argc, VALUE block, V
 
 static VALUE
 new_child_iseq(rb_iseq_t *iseq, NODE *node,
+	       VALUE name, VALUE parent, enum iseq_type type, int line_no)
+{
+    VALUE ret;
+
+    debugs("[new_child_iseq]> ---------------------------------------\n");
+    ret = rb_iseq_new_with_opt(node, name,
+			       iseq_path(iseq->self), iseq_absolute_path(iseq->self),
+			       INT2FIX(line_no), parent, type, iseq->compile_data->option);
+    debugs("[new_child_iseq]< ---------------------------------------\n");
+    iseq_add_mark_object(iseq, ret);
+    return ret;
+}
+
+static VALUE
+new_file_iseq(rb_iseq_t *iseq, NODE *node,
 	       VALUE name, VALUE parent, enum iseq_type type, int line_no)
 {
     VALUE ret;
@@ -5404,6 +5422,20 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    ADD_INSN(ret, line, pop);
 	}
 	break;
+      }
+      case NODE_FILE:{
+#ifdef GAM3
+	VALUE iseqval;
+	NODE *nnode = node->nd_body;
+fprintf(stderr, "Here we are!\n");
+	iseqval = NEW_ISEQFILE(nnode, rb_str_new2("__FILE__"), 0, line);
+        iseq_compile_each(iseqval, ret, nnode, poped);
+#else
+fprintf(stderr, "Here we are! '%s'\n", RSTRING_PTR(node->nd_lit));
+        COMPILE_(ret, "file node", node->nd_body, poped);
+#endif
+
+        break;
       }
       default:
 	rb_bug("iseq_compile_each: unknown node: %s", ruby_node_name(type));
