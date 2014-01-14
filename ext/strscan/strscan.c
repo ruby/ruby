@@ -1198,7 +1198,7 @@ inspect1(struct strscanner *p)
 	str = rb_str_new(0, 0);
 	len = p->curr;
     }
-    rb_str_cat2(str, CURPTR(p) - len, len);
+    rb_str_cat(str, CURPTR(p) - len, len);
     return rb_str_dump(str);
 }
 
