@@ -1221,9 +1221,10 @@ BigDecimal_divide(Real **c, Real **res, Real **div, VALUE self, VALUE r)
 
     *div = b;
     mx = a->Prec + vabs(a->exponent);
-    if (mx<b->Prec + vabs(b->exponent)) mx = b->Prec + vabs(b->exponent);
-    if (mx<3) mx = 3;
-    mx =(mx + 1) * VpBaseFig();
+    if (mx < b->Prec + vabs(b->exponent)) mx = b->Prec + vabs(b->exponent);
+    mx++; /* NOTE: An additional digit is needed for the compatibility to
+                   the version 1.2.1 and the former.  */
+    mx = (mx + 1) * VpBaseFig();
     GUARD_OBJ((*c), VpCreateRbObject(mx, "#0"));
     GUARD_OBJ((*res), VpCreateRbObject((mx+1) * 2 +(VpBaseFig() + 1), "#0"));
     VpDivd(*c, *res, a, b);
@@ -1324,7 +1325,6 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
 
     mx = a->Prec + vabs(a->exponent);
     if (mx<b->Prec + vabs(b->exponent)) mx = b->Prec + vabs(b->exponent);
-    if (mx<3) mx = 3;
     mx = (mx + 1) * VpBaseFig();
     GUARD_OBJ(c, VpCreateRbObject(mx, "0"));
     GUARD_OBJ(res, VpCreateRbObject((mx+1) * 2 +(VpBaseFig() + 1), "#0"));
