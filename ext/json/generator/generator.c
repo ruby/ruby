@@ -812,10 +812,10 @@ static void generate_json_float(FBuffer *buffer, VALUE Vstate, JSON_Generator_St
     if (!allow_nan) {
         if (isinf(value)) {
             fbuffer_free(buffer);
-            rb_raise(eGeneratorError, "%u: %s not allowed in JSON", __LINE__, StringValueCStr(tmp));
+            rb_raise(eGeneratorError, "%u: %"PRIsVALUE" not allowed in JSON", __LINE__, RB_OBJ_STRING(tmp));
         } else if (isnan(value)) {
             fbuffer_free(buffer);
-            rb_raise(eGeneratorError, "%u: %s not allowed in JSON", __LINE__, StringValueCStr(tmp));
+            rb_raise(eGeneratorError, "%u: %"PRIsVALUE" not allowed in JSON", __LINE__, RB_OBJ_STRING(tmp));
         }
     }
     fbuffer_append_str(buffer, tmp);
