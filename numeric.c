@@ -317,9 +317,9 @@ num_sadded(VALUE x, VALUE name)
     /* ruby_frame = ruby_frame->prev; */ /* pop frame for "singleton_method_added" */
     rb_remove_method_id(rb_singleton_class(x), mid);
     rb_raise(rb_eTypeError,
-	     "can't define singleton method \"%s\" for %s",
-	     rb_id2name(mid),
-	     rb_obj_classname(x));
+	     "can't define singleton method \"%"PRIsVALUE"\" for %"PRIsVALUE,
+	     rb_id2str(mid),
+	     rb_obj_class(x));
 
     UNREACHABLE;
 }

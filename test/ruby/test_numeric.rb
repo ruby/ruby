@@ -58,8 +58,8 @@ class TestNumeric < Test::Unit::TestCase
 
   def test_numeric
     a = Numeric.new
-    assert_raise(TypeError) { def a.foo; end }
-    assert_raise(TypeError) { eval("def a.\u3042; end") }
+    assert_raise_with_message(TypeError, /foo/) { def a.foo; end }
+    assert_raise_with_message(TypeError, /\u3042/) { eval("def a.\u3042; end") }
     assert_raise(TypeError) { a.dup }
   end
 
