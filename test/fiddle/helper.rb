@@ -40,6 +40,9 @@ when /gnu/	#GNU/Hurd
 when /mirbsd/
   libc_so = "/usr/lib/libc.so.41.10"
   libm_so = "/usr/lib/libm.so.7.0"
+when /freebsd/
+  libc_so = "/lib/libc.so.7"
+  libm_so = "/lib/libm.so.5"
 when /bsd|dragonfly/
   libc_so = "/usr/lib/libc.so"
   libm_so = "/usr/lib/libm.so"
