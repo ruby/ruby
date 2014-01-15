@@ -86,6 +86,10 @@
 #include <sys/syscall.h>
 #endif
 
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif
+
 #if defined(__BEOS__) || defined(__HAIKU__)
 # ifndef NOFILE
 #  define NOFILE (OPEN_MAX)
@@ -918,6 +922,14 @@ struct io_internal_write_struct {
     size_t capa;
 };
 
+#ifdef HAVE_WRITEV
+struct io_internal_writev_struct {
+    int fd;
+    const struct iovec *iov;
+    int iovcnt;
+};
+#endif
+
 static VALUE
 internal_read_func(void *ptr)
 {
@@ -938,6 +950,15 @@ internal_write_func2(void *ptr)
     struct io_internal_write_struct *iis = ptr;
     return (void*)(intptr_t)write(iis->fd, iis->buf, iis->capa);
 }
+
+#ifdef HAVE_WRITEV
+static VALUE
+internal_writev_func(void *ptr)
+{
+    struct io_internal_writev_struct *iis = ptr;
+    return writev(iis->fd, iis->iov, iis->iovcnt);
+}
+#endif
 
 static ssize_t
 rb_read_internal(int fd, void *buf, size_t count)
@@ -972,6 +993,19 @@ rb_write_internal2(int fd, const void *buf, size_t count)
     return (ssize_t)rb_thread_call_without_gvl2(internal_write_func2, &iis,
 						RUBY_UBF_IO, NULL);
 }
+
+#ifdef HAVE_WRITEV
+static ssize_t
+rb_writev_internal(int fd, const struct iovec *iov, int iovcnt)
+{
+    struct io_internal_writev_struct iis;
+    iis.fd = fd;
+    iis.iov = iov;
+    iis.iovcnt = iovcnt;
+
+    return (ssize_t)rb_thread_io_blocking_region(internal_writev_func, &iis, fd);
+}
+#endif
 
 static long
 io_writable_length(rb_io_t *fptr, long l)
@@ -1201,13 +1235,75 @@ struct write_arg {
     int nosync;
 };
 
+#ifdef HAVE_WRITEV
 static VALUE
 io_binwrite_string(VALUE arg)
 {
     struct binwrite_arg *p = (struct binwrite_arg *)arg;
-    long l = io_writable_length(p->fptr, p->length);
-    return rb_write_internal2(p->fptr->fd, p->ptr, l);
+    rb_io_t *fptr = p->fptr;
+    long r;
+
+    if (fptr->wbuf.len) {
+	struct iovec iov[2];
+
+	iov[0].iov_base = fptr->wbuf.ptr+fptr->wbuf.off;
+	iov[0].iov_len = fptr->wbuf.len;
+	iov[1].iov_base = (char *)p->ptr;
+	iov[1].iov_len = p->length;
+
+	r = rb_writev_internal(fptr->fd, iov, 2);
+
+	if (fptr->wbuf.len <= r) {
+	    r -= fptr->wbuf.len;
+	    fptr->wbuf.off = 0;
+	    fptr->wbuf.len = 0;
+	}
+	else {
+	    fptr->wbuf.off += (int)r;
+	    fptr->wbuf.len -= (int)r;
+	    r = 0L;
+	}
+    }
+    else {
+	long l = io_writable_length(fptr, p->length);
+	r = rb_write_internal(fptr->fd, p->ptr, l);
+    }
+
+    return r;
 }
+#else
+static VALUE
+io_binwrite_string(VALUE arg)
+{
+    struct binwrite_arg *p = (struct binwrite_arg *)arg;
+    rb_io_t *fptr = p->fptr;
+    long l, len;
+
+    l = len = p->length;
+
+    if (fptr->wbuf.len) {
+	if (fptr->wbuf.len+len <= fptr->wbuf.capa) {
+	    if (fptr->wbuf.capa < fptr->wbuf.off+fptr->wbuf.len+len) {
+		MEMMOVE(fptr->wbuf.ptr, fptr->wbuf.ptr+fptr->wbuf.off, char, fptr->wbuf.len);
+		fptr->wbuf.off = 0;
+	    }
+	    MEMMOVE(fptr->wbuf.ptr+fptr->wbuf.off+fptr->wbuf.len, p->ptr, char, len);
+	    fptr->wbuf.len += (int)len;
+	    l = 0;
+	}
+	if (io_fflush(fptr) < 0)
+	    return -2L; /* fail in fflush */
+	if (l == 0)
+	    return len;
+    }
+
+    if (fptr->stdio_file != stderr && !rb_thread_fd_writable(fptr->fd))
+	rb_io_check_closed(fptr);
+
+    l = io_writable_length(p->fptr, p->length);
+    return rb_write_internal(p->fptr->fd, p->ptr, l);
+}
+#endif
 
 static long
 io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
@@ -1230,27 +1326,6 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
         (fptr->wbuf.ptr && fptr->wbuf.capa <= fptr->wbuf.len + len)) {
 	struct binwrite_arg arg;
 
-	/*
-	 * xxx: use writev to avoid double write if available
-	 * writev may help avoid context switch between "a" and "\n" in
-	 * STDERR.puts "a" [ruby-dev:25080] (rebroken since native threads
-	 * introduced in 1.9)
-	 */
-        if (fptr->wbuf.len && fptr->wbuf.len+len <= fptr->wbuf.capa) {
-            if (fptr->wbuf.capa < fptr->wbuf.off+fptr->wbuf.len+len) {
-                MEMMOVE(fptr->wbuf.ptr, fptr->wbuf.ptr+fptr->wbuf.off, char, fptr->wbuf.len);
-                fptr->wbuf.off = 0;
-            }
-            MEMMOVE(fptr->wbuf.ptr+fptr->wbuf.off+fptr->wbuf.len, ptr+offset, char, len);
-            fptr->wbuf.len += (int)len;
-            n = 0;
-        }
-        if (io_fflush(fptr) < 0)
-            return -1L;
-        if (n == 0)
-            return len;
-
-	rb_io_check_closed(fptr);
 	arg.fptr = fptr;
 	arg.str = str;
       retry:
@@ -1260,8 +1335,7 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
 	    r = rb_mutex_synchronize(fptr->write_lock, io_binwrite_string, (VALUE)&arg);
 	}
 	else {
-	    long l = io_writable_length(fptr, n);
-	    r = rb_write_internal(fptr->fd, ptr+offset, l);
+	    r = io_binwrite_string((VALUE)&arg);
 	}
 	/* xxx: other threads may modify given string. */
         if (r == n) return len;
@@ -1269,7 +1343,9 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
             offset += r;
             n -= r;
             errno = EAGAIN;
-        }
+	}
+	if (r == -2L)
+	    return -1L;
         if (rb_io_wait_writable(fptr->fd)) {
             rb_io_check_closed(fptr);
 	    if (offset < len)
@@ -9904,10 +9980,6 @@ simple_sendfile(int out_fd, int in_fd, off_t *offset, off_t count)
  * without cpuset -l 0.
  */
 #  define USE_SENDFILE
-
-#  ifdef HAVE_SYS_UIO_H
-#   include <sys/uio.h>
-#  endif
 
 static ssize_t
 simple_sendfile(int out_fd, int in_fd, off_t *offset, off_t count)

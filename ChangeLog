@@ -1,3 +1,9 @@
+Wed Jan 15 20:30:31 2014  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* io.c (io_binwrite): use writev(2) to avoid double write if available.
+
+	* configure.in: check writev(2)
+
 Wed Jan 15 14:04:33 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (get_encoding): respect BOM on pseudo encodings.

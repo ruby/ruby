@@ -1122,6 +1122,7 @@ AC_CHECK_HEADERS( \
   sys/socket.h \
   process.h \
   sys/prctl.h \
+  sys/uio.h \
   atomic.h \
   malloc.h \
   malloc_np.h \
@@ -1907,6 +1908,7 @@ AC_CHECK_FUNCS(malloc_usable_size)
 AC_CHECK_FUNCS(malloc_size)
 AC_CHECK_FUNCS(mblen)
 AC_CHECK_FUNCS(memalign)
+AC_CHECK_FUNCS(writev)
 AC_CHECK_FUNCS(memrchr)
 AC_CHECK_FUNCS(mktime)
 AC_CHECK_FUNCS(pipe2)
