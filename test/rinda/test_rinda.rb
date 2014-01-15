@@ -567,6 +567,11 @@ class TestRingServer < Test::Unit::TestCase
 
     callback = DRb::DRbObject.new callback
 
+    th = Thread.new(Thread.current) do |mth|
+      sleep 15
+      mth.raise unless called
+    end
+
     @ts.write [:lookup_ring, callback]
 
     @rs.do_reply
@@ -580,6 +585,8 @@ class TestRingServer < Test::Unit::TestCase
     end
 
     assert_same @ts, called
+  ensure
+    th.kill if th
   end
 
   def test_do_reply_local
