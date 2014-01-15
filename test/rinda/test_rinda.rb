@@ -4,7 +4,7 @@ require 'drb/drb'
 require 'drb/eq'
 require 'rinda/ring'
 require 'rinda/tuplespace'
-
+require 'timeout'
 require 'singleton'
 
 module Rinda
@@ -571,7 +571,13 @@ class TestRingServer < Test::Unit::TestCase
 
     @rs.do_reply
 
-    Thread.pass until called
+    t = 10 + Process.clock_gettime(Process::CLOCK_MONOTONIC, :second)
+    until called
+      if t < Process.clock_gettime(Process::CLOCK_MONOTONIC, :second)
+        flunk "timeout during waiting call"
+      end
+      Thread.pass
+    end
 
     assert_same @ts, called
   end
