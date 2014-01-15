@@ -226,24 +226,22 @@ class TestM17N < Test::Unit::TestCase
     end
   end
 
-  def test_utf_16_32_inspect
-    str = "\u3042"
-    %w/UTF-16 UTF-32/.each do |enc|
-      %w/BE LE/.each do |endian|
-        s = str.encode(enc + endian)
+  STR_WITHOUT_BOM = "\u3042".freeze
+  STR_WITH_BOM = "\uFEFF\u3042".freeze
+  %w/UTF-16 UTF-32/.each do |enc|
+    %w/BE LE/.each do |endian|
+      define_method("test_utf_16_32_inspect(#{enc}#{endian})") do
+        s = STR_WITHOUT_BOM.encode(enc + endian)
         # When a UTF-16/32 string doesn't have a BOM,
         # inspect as a dummy encoding string.
         assert_equal(s.dup.force_encoding("ISO-2022-JP").inspect,
                      s.dup.force_encoding(enc).inspect)
       end
-    end
 
-    str = "\uFEFF\u3042"
-    %w/UTF-16 UTF-32/.each do |enc|
-      %w/BE LE/.each do |endian|
-        s = str.encode(enc + endian)
-        # When a UTF-16/32 string doesn't have a BOM,
-        # inspect as a dummy encoding string.
+      define_method("test_utf_16_32_inspect(#{enc}#{endian}-BOM)") do
+        s = STR_WITH_BOM.encode(enc + endian)
+        # When a UTF-16/32 string has a BOM,
+        # inspect as a particular encoding string.
         assert_equal(s.inspect,
                      s.dup.force_encoding(enc).inspect)
       end
