@@ -53,12 +53,12 @@ rb_fiddle_new_function(VALUE address, VALUE arg_types, VALUE ret_type)
 static int
 parse_keyword_arg_i(VALUE key, VALUE value, VALUE self)
 {
-  if (key == ID2SYM(rb_intern("name"))) {
-    rb_iv_set(self, "@name", value);
-  } else {
-    rb_raise(rb_eArgError, "unknown keyword: %"PRIsVALUE, key);
-  }
-  return ST_CONTINUE;
+    if (key == ID2SYM(rb_intern("name"))) {
+	rb_iv_set(self, "@name", value);
+    } else {
+	rb_raise(rb_eArgError, "unknown keyword: %"PRIsVALUE, key);
+    }
+    return ST_CONTINUE;
 }
 
 static VALUE
