@@ -5424,18 +5424,26 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_FILE:{
+	int ic_index;
+	NODE *block_node;
+	VALUE block_iseq;
+fprintf(stderr, "+ %p\n", node->nd_body);
+fprintf(stderr, "+ %p\n", node->nd_lit);
+fprintf(stderr, "+ %s\n", RSTRING_PTR(node->nd_lit));
 #ifdef GAM3
-	VALUE iseqval;
-	NODE *nnode = node->nd_body;
-fprintf(stderr, "Here we are!\n");
-	iseqval = NEW_ISEQFILE(nnode, rb_str_new2("__FILE__"), 0, line);
-        iseq_compile_each(iseqval, ret, nnode, poped);
-#else
-fprintf(stderr, "Here we are! '%s'\n", RSTRING_PTR(node->nd_lit));
-        COMPILE_(ret, "file node", node->nd_body, poped);
+	ic_index = iseq->is_size++;
+	block_node = NEW_NODE(NODE_SCOPE, 0, node->nd_next, 0);
+	block_iseq= NEW_CHILD_ISEQVAL(block_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, line);
+fprintf(stderr, "- %p\n", node->nd_next);
+	ADD_INSN2(ret, line, once, block_iseq, INT2FIX(ic_index));
+	node->nd_next = 0;
+	node->nd_lit = rb_fstring(node->nd_lit);
+	debugp_param("nd_lit", node->nd_lit);
 #endif
-
-        break;
+	if (!poped) {
+	    ADD_INSN1(ret, line, putstring, node->nd_lit);
+	}
+	break;
       }
       default:
 	rb_bug("iseq_compile_each: unknown node: %s", ruby_node_name(type));

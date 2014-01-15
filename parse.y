@@ -1931,27 +1931,7 @@ reswords	: keyword__LINE__ | keyword__FILE__ | keyword__ENCODING__
 		| keyword_while | keyword_until
 		;
 
-arg		: keyword__FILE__ '=' string
-                    {
-		       NODE *rhs = $3;
-		       ruby_sourcefile_string = rhs->nd_lit;
-		       ruby_sourcefile = RSTRING_PTR(rhs->nd_lit);
-                    } top_compstmt
-		    {
-		        NODE *rhs = $3;
-#ifdef GAM3
-fprintf(stderr, "parser __FILE__ = %s %s [%s]\n", ruby_sourcefile, RSTRING_PTR(rhs->nd_lit), RSTRING_PTR(rhs->nd_lit));
-#endif
-		    /*%%%*/
-			$$ = NEW_FILE(rhs->nd_lit, $5);
-		    /*%
-#ifdef GAM3
-fprintf(stderr, "parser __FILE__ = %s %s [%s]\n", ruby_sourcefile, RSTRING_PTR(rhs->nd_lit), RSTRING_PTR(rhs->nd_lit));
-#endif
-			$$ = dispatch2(file, rhs->nd_lit, $5);
-		    %*/
-		    }
-                | lhs '=' arg
+arg		: lhs '=' arg
 		    {
 		    /*%%%*/
 			value_expr($3);
@@ -8935,7 +8915,6 @@ node_assign_gen(struct parser_params *parser, NODE *lhs, NODE *rhs)
       case NODE_CVASGN:
 	lhs->nd_value = rhs;
 	break;
-#ifdef GAM3
       case NODE_FILE:
 	if (nd_type(rhs) == NODE_STR) {
 	    ruby_sourcefile_string = rhs->nd_lit;
@@ -8945,15 +8924,17 @@ node_assign_gen(struct parser_params *parser, NODE *lhs, NODE *rhs)
 	}
 
 	lhs->nd_value = rb_str_dup(ruby_sourcefile_string);
-	return NEW_STR(rb_str_dup(ruby_sourcefile_string));
-#endif
+	lhs->nd_lit = rb_str_dup(ruby_sourcefile_string);
+	break;
       case NODE_LINE:
 	if (FIXNUM_P(rhs->nd_lit)) {
 	    ruby_sourceline = NUM2INT(rhs->nd_lit);
 	} else {
 	    rb_warning0("__LINE__ can only be set to a Fixnum, ignored");
 	}
-	return NEW_LIT(INT2FIX(ruby_sourceline));
+/*	return NEW_LIT(INT2FIX(ruby_sourceline)); FIXME */
+	lhs->nd_value = rhs;
+	break;
 
       case NODE_ATTRASGN:
       case NODE_CALL:
@@ -9124,13 +9105,13 @@ void_stmts_gen(struct parser_params *parser, NODE *node)
     if (nd_type(node) != NODE_BLOCK) return;
 
     for (;;) {
-#ifdef GAM3
 	if (nd_type(node->nd_head) == NODE_FILE) {
 	  ruby_sourcefile_string = node->nd_head->nd_lit;
 	  ruby_sourcefile = RSTRING_PTR(node->nd_head->nd_lit);
+#ifdef GAM3
 	  fprintf(stderr, "void stmts __FILE__ = %s %s\n", ruby_sourcefile, RSTRING_PTR(node->nd_head->nd_lit));
-	}
 #endif
+	}
 	if (!node->nd_next) return;
 	void_expr0(node->nd_head);
 	node = node->nd_next;
