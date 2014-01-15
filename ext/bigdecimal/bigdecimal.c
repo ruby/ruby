@@ -105,10 +105,12 @@ static ID id_eq;
 #endif
 
 #ifdef PRIsVALUE
-# define CLASS_NAME(obj) rb_obj_class(obj)
+# define RB_OBJ_CLASSNAME(obj) rb_obj_class(obj)
+# define RB_OBJ_STRING(obj) (obj)
 #else
 # define PRIsVALUE "s"
-# define CLASS_NAME(obj) rb_obj_classname(obj)
+# define RB_OBJ_CLASSNAME(obj) rb_obj_classname(obj)
+# define RB_OBJ_STRING(obj) StringValueCStr(obj)
 #endif
 
 /*
@@ -287,7 +289,7 @@ unable_to_coerce_without_prec:
     if (must) {
 	rb_raise(rb_eArgError,
 		 "%"PRIsVALUE" can't be coerced into BigDecimal without a precision",
-		 CLASS_NAME(v));
+		 RB_OBJ_CLASSNAME(v));
     }
     return NULL;
 }
@@ -2274,7 +2276,7 @@ BigDecimal_power(int argc, VALUE*argv, VALUE self)
       default:
 	rb_raise(rb_eTypeError,
 		 "wrong argument type %"PRIsVALUE" (expected scalar Numeric)",
-		 CLASS_NAME(vexp));
+		 RB_OBJ_CLASSNAME(vexp));
     }
 
     if (VpIsZero(x)) {
@@ -2533,7 +2535,7 @@ BigDecimal_new(int argc, VALUE *argv)
 	if (NIL_P(nFig)) {
 	    rb_raise(rb_eArgError,
 		     "can't omit precision for a %"PRIsVALUE".",
-		     CLASS_NAME(iniValue));
+		     RB_OBJ_CLASSNAME(iniValue));
 	}
 	return GetVpValueWithPrec(iniValue, mf, 1);
 
