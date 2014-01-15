@@ -13,7 +13,7 @@ module REXML
     def tag_start name, attrs
     end
     # Called when the end tag is reached.  In the case of <tag/>, tag_end
-    # will be called immidiately after tag_start
+    # will be called immediately after tag_start
     # @p the name of the tag
     def tag_end name
     end

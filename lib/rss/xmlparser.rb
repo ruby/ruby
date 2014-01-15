@@ -20,7 +20,7 @@ end
 module XML
   class Parser
     unless defined?(Error)
-      # This erorr is legacy, so we just set it to the new one
+      # This error is legacy, so we just set it to the new one
       Error = ::XMLParserError # :nodoc:
     end
   end

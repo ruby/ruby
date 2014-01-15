@@ -62,7 +62,7 @@ Marshal::MINOR_VERSION constants.  It is used to ensure compatibility.
   end
 
   def execute
-    # This is always true becasue it's the only way now.
+    # This is always true because it's the only way now.
     options[:build_modern] = true
 
     if not File.exist?(options[:directory]) or
