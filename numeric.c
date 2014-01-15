@@ -232,17 +232,19 @@ coerce_body(VALUE *x)
     return rb_funcall(x[1], id_coerce, 1, x[0]);
 }
 
+NORETURN(static void coerce_failed(VALUE x, VALUE y));
+static void
+coerce_failed(VALUE x, VALUE y)
+{
+    rb_raise(rb_eTypeError, "%"PRIsVALUE" can't be coerced into %"PRIsVALUE,
+	     (rb_special_const_p(y)? rb_inspect(y) : rb_obj_class(y)),
+	     rb_obj_class(x));
+}
+
 static VALUE
 coerce_rescue(VALUE *x)
 {
-    volatile VALUE v = rb_inspect(x[1]);
-
-    rb_raise(rb_eTypeError, "%s can't be coerced into %s",
-	     rb_special_const_p(x[1])?
-	     RSTRING_PTR(v):
-	     rb_obj_classname(x[1]),
-	     rb_obj_classname(x[0]));
-
+    coerce_failed(x[0], x[1]);
     return Qnil;		/* dummy */
 }
 
@@ -3261,11 +3263,7 @@ bit_coerce(VALUE *x, VALUE *y, int err)
 	if (!FIXNUM_P(*x) && !RB_TYPE_P(*x, T_BIGNUM)
 	    && !FIXNUM_P(*y) && !RB_TYPE_P(*y, T_BIGNUM)) {
 	    if (!err) return FALSE;
-	    rb_raise(rb_eTypeError,
-		     "%s can't be coerced into %s for bitwise arithmetic",
-		     rb_special_const_p(*y) ?
-			RSTRING_PTR(rb_inspect(*y)) : rb_obj_classname(*y),
-		     rb_obj_classname(*x));
+	    coerce_failed(*x, *y);
 	}
     }
     return TRUE;
