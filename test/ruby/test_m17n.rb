@@ -229,6 +229,7 @@ class TestM17N < Test::Unit::TestCase
   STR_WITHOUT_BOM = "\u3042".freeze
   STR_WITH_BOM = "\uFEFF\u3042".freeze
   bug8940 = '[ruby-core:59757] [Bug #8940]'
+  bug9415 = '[ruby-dev:47895] [Bug #9415]'
   %w/UTF-16 UTF-32/.each do |enc|
     %w/BE LE/.each do |endian|
       bom = "\uFEFF".encode("#{enc}#{endian}").force_encoding(enc)
@@ -240,6 +241,14 @@ class TestM17N < Test::Unit::TestCase
         assert_equal(s.dup.force_encoding("ISO-2022-JP").inspect,
                      s.dup.force_encoding(enc).inspect)
         assert_normal_exit("#{bom.b.dump}.force_encoding('#{enc}').inspect", bug8940)
+      end
+
+      define_method("test_utf_16_32_codepoints(#{enc}#{endian})") do
+        assert_equal([0xFEFF], bom.codepoints, bug9415)
+      end
+
+      define_method("test_utf_16_32_ord(#{enc}#{endian})") do
+        assert_equal(0xFEFF, bom.ord, bug9415)
       end
 
       define_method("test_utf_16_32_inspect(#{enc}#{endian}-BOM)") do

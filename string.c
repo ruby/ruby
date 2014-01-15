@@ -121,7 +121,7 @@ VALUE rb_cSymbol;
 #define STR_HEAP_PTR(str)  (RSTRING(str)->as.heap.ptr)
 #define STR_HEAP_SIZE(str) (RSTRING(str)->as.heap.aux.capa + TERM_LEN(str))
 
-#define STR_ENC_GET(str) rb_enc_from_index(ENCODING_GET(str))
+#define STR_ENC_GET(str) get_encoding(str)
 
 rb_encoding *rb_enc_get_from_index(int index);
 
@@ -153,6 +153,12 @@ get_actual_encoding(const int encidx, VALUE str)
 	return rb_ascii8bit_encoding();
     }
     return rb_enc_from_index(encidx);
+}
+
+static rb_encoding *
+get_encoding(VALUE str)
+{
+    return get_actual_encoding(ENCODING_GET(str), str);
 }
 
 static int fstring_cmp(VALUE a, VALUE b);

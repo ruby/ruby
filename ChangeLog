@@ -1,3 +1,8 @@
+Wed Jan 15 14:04:33 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (get_encoding): respect BOM on pseudo encodings.
+	  [ruby-dev:47895] [Bug #9415]
+
 Wed Jan 15 14:03:47 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (get_actual_encoding): get actual encoding according to
