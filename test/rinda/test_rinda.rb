@@ -576,7 +576,7 @@ class TestRingServer < Test::Unit::TestCase
       if t < Process.clock_gettime(Process::CLOCK_MONOTONIC, :second)
         flunk "timeout during waiting call"
       end
-      Thread.pass
+      sleep 0.1
     end
 
     assert_same @ts, called
