@@ -332,7 +332,7 @@ num_sadded(VALUE x, VALUE name)
 static VALUE
 num_init_copy(VALUE x, VALUE y)
 {
-    rb_raise(rb_eTypeError, "can't copy %s", rb_obj_classname(x));
+    rb_raise(rb_eTypeError, "can't copy %"PRIsVALUE, rb_obj_class(x));
 
     UNREACHABLE;
 }

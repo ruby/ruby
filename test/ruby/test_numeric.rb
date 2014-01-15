@@ -56,11 +56,20 @@ class TestNumeric < Test::Unit::TestCase
     end
   end
 
-  def test_numeric
+  def test_singleton_method
     a = Numeric.new
     assert_raise_with_message(TypeError, /foo/) { def a.foo; end }
     assert_raise_with_message(TypeError, /\u3042/) { eval("def a.\u3042; end") }
+  end
+
+  def test_dup
+    a = Numeric.new
     assert_raise(TypeError) { a.dup }
+
+    c = Module.new do
+      break eval("class C\u{3042} < Numeric; self; end")
+    end
+    assert_raise_with_message(TypeError, /C\u3042/) {c.new.dup}
   end
 
   def test_quo
