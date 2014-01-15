@@ -7,6 +7,15 @@
 #include <ctype.h>
 #include <fiddle.h>
 
+#ifdef PRIsVALUE
+# define RB_OBJ_CLASSNAME(obj) rb_obj_class(obj)
+# define RB_OBJ_STRING(obj) (obj)
+#else
+# define PRIsVALUE "s"
+# define RB_OBJ_CLASSNAME(obj) rb_obj_classname(obj)
+# define RB_OBJ_STRING(obj) StringValueCStr(obj)
+#endif
+
 VALUE rb_cPointer;
 
 typedef void (*freefunc_t)(void*);
@@ -430,7 +439,7 @@ rb_fiddle_ptr_inspect(VALUE self)
 
     TypedData_Get_Struct(self, struct ptr_data, &fiddle_ptr_data_type, data);
     return rb_sprintf("#<%"PRIsVALUE":%p ptr=%p size=%ld free=%p>",
-		      rb_obj_class(self), data, data->ptr, data->size, data->free);
+		      RB_OBJ_CLASSNAME(self), data, data->ptr, data->size, data->free);
 }
 
 /*
