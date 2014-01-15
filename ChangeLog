@@ -1,3 +1,7 @@
+Tue Jan 16 00:17:00 2014  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.gemspec: bigdecimal version 1.2.5.
+
 Wed Jan 15 20:30:31 2014  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* io.c (io_binwrite): use writev(2) to avoid double write if available.
