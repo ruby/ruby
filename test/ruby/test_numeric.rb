@@ -14,6 +14,11 @@ class TestNumeric < Test::Unit::TestCase
     assert_equal(Float, b.class)
 
     assert_raise(TypeError) { -Numeric.new }
+
+    assert_raise_with_message(TypeError, /can't be coerced into /) {1+:foo}
+    assert_raise_with_message(TypeError, /can't be coerced into /) {1&:foo}
+    assert_raise_with_message(TypeError, /can't be coerced into /) {1|:foo}
+    assert_raise_with_message(TypeError, /can't be coerced into /) {1^:foo}
   end
 
   def test_dummynumeric
