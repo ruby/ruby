@@ -1981,6 +1981,23 @@ num_step(int argc, VALUE *argv, VALUE from)
     return from;
 }
 
+static char *
+out_of_range_float(char (*pbuf)[24], VALUE val)
+{
+    char *const buf = *pbuf;
+    char *s;
+
+    snprintf(buf, sizeof(*pbuf), "%-.10g", RFLOAT_VALUE(val));
+    if ((s = strchr(buf, ' ')) != 0) *s = '\0';
+    return buf;
+}
+
+#define FLOAT_OUT_OF_RANGE(val, type) do { \
+    char buf[24]; \
+    rb_raise(rb_eRangeError, "float %s out of range of "type, \
+	     out_of_range_float(&buf, (val))); \
+} while (0)
+
 #define LONG_MIN_MINUS_ONE ((double)LONG_MIN-1)
 #define LONG_MAX_PLUS_ONE (2*(double)(LONG_MAX/2+1))
 #define ULONG_MAX_PLUS_ONE (2*(double)(ULONG_MAX/2+1))
@@ -2005,12 +2022,7 @@ rb_num2long(VALUE val)
 	    return (long)RFLOAT_VALUE(val);
 	}
 	else {
-	    char buf[24];
-	    char *s;
-
-	    snprintf(buf, sizeof(buf), "%-.10g", RFLOAT_VALUE(val));
-	    if ((s = strchr(buf, ' ')) != 0) *s = '\0';
-	    rb_raise(rb_eRangeError, "float %s out of range of integer", buf);
+	    FLOAT_OUT_OF_RANGE(val, "integer");
 	}
     }
     else if (RB_TYPE_P(val, T_BIGNUM)) {
@@ -2047,12 +2059,7 @@ rb_num2ulong_internal(VALUE val, int *wrap_p)
            return (unsigned long)(long)d;
        }
        else {
-           char buf[24];
-           char *s;
-
-           snprintf(buf, sizeof(buf), "%-.10g", RFLOAT_VALUE(val));
-           if ((s = strchr(buf, ' ')) != 0) *s = '\0';
-           rb_raise(rb_eRangeError, "float %s out of range of integer", buf);
+	   FLOAT_OUT_OF_RANGE(val, "integer");
        }
     }
     else if (RB_TYPE_P(val, T_BIGNUM)) {
@@ -2274,12 +2281,7 @@ rb_num2ll(VALUE val)
 	    return (LONG_LONG)(RFLOAT_VALUE(val));
 	}
 	else {
-	    char buf[24];
-	    char *s;
-
-	    snprintf(buf, sizeof(buf), "%-.10g", RFLOAT_VALUE(val));
-	    if ((s = strchr(buf, ' ')) != 0) *s = '\0';
-	    rb_raise(rb_eRangeError, "float %s out of range of long long", buf);
+	    FLOAT_OUT_OF_RANGE(val, "long long");
 	}
     }
     else if (RB_TYPE_P(val, T_BIGNUM)) {
@@ -2313,12 +2315,7 @@ rb_num2ull(VALUE val)
 	    return (unsigned LONG_LONG)(LONG_LONG)(RFLOAT_VALUE(val));
 	}
 	else {
-	    char buf[24];
-	    char *s;
-
-	    snprintf(buf, sizeof(buf), "%-.10g", RFLOAT_VALUE(val));
-	    if ((s = strchr(buf, ' ')) != 0) *s = '\0';
-	    rb_raise(rb_eRangeError, "float %s out of range of unsigned long long", buf);
+	    FLOAT_OUT_OF_RANGE(val, "unsigned long long");
 	}
     }
     else if (RB_TYPE_P(val, T_BIGNUM)) {
