@@ -123,6 +123,38 @@ VALUE rb_cSymbol;
 
 #define STR_ENC_GET(str) rb_enc_from_index(ENCODING_GET(str))
 
+rb_encoding *rb_enc_get_from_index(int index);
+
+static rb_encoding *
+get_actual_encoding(const int encidx, VALUE str)
+{
+    const unsigned char *q;
+
+    switch (encidx) {
+      case ENCINDEX_UTF_16:
+	if (RSTRING_LEN(str) < 2) break;
+	q = (const unsigned char *)RSTRING_PTR(str);
+	if (q[0] == 0xFE && q[1] == 0xFF) {
+	    return rb_enc_get_from_index(ENCINDEX_UTF_16BE);
+	}
+	if (q[0] == 0xFF && q[1] == 0xFE) {
+	    return rb_enc_get_from_index(ENCINDEX_UTF_16LE);
+	}
+	return rb_ascii8bit_encoding();
+      case ENCINDEX_UTF_32:
+	if (RSTRING_LEN(str) < 4) break;
+	q = (const unsigned char *)RSTRING_PTR(str);
+	if (q[0] == 0 && q[1] == 0 && q[2] == 0xFE && q[3] == 0xFF) {
+	    return rb_enc_get_from_index(ENCINDEX_UTF_32BE);
+	}
+	if (q[3] == 0 && q[2] == 0 && q[1] == 0xFE && q[0] == 0xFF) {
+	    return rb_enc_get_from_index(ENCINDEX_UTF_32LE);
+	}
+	return rb_ascii8bit_encoding();
+    }
+    return rb_enc_from_index(encidx);
+}
+
 static int fstring_cmp(VALUE a, VALUE b);
 
 static st_table* frozen_strings;
@@ -4749,8 +4781,8 @@ rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p)
 VALUE
 rb_str_inspect(VALUE str)
 {
-    rb_encoding *enc = STR_ENC_GET(str);
-    int encidx = rb_enc_to_index(enc);
+    int encidx = ENCODING_GET(str);
+    rb_encoding *enc = rb_enc_from_index(encidx), *actenc;
     const char *p, *pend, *prev;
     char buf[CHAR_ESC_LEN + 1];
     VALUE result = rb_str_buf_new(0);
@@ -4765,27 +4797,10 @@ rb_str_inspect(VALUE str)
 
     p = RSTRING_PTR(str); pend = RSTRING_END(str);
     prev = p;
-    if (encidx == ENCINDEX_UTF_16 && p + 2 <= pend) {
-	const unsigned char *q = (const unsigned char *)p;
-	if (q[0] == 0xFE && q[1] == 0xFF)
-	    enc = rb_enc_from_index(ENCINDEX_UTF_16BE);
-	else if (q[0] == 0xFF && q[1] == 0xFE)
-	    enc = rb_enc_from_index(ENCINDEX_UTF_16LE);
-	else {
-	    enc = rb_ascii8bit_encoding();
-	    unicode_p = 0;
-	}
-    }
-    else if (encidx == ENCINDEX_UTF_32 && p + 4 <= pend) {
-	const unsigned char *q = (const unsigned char *)p;
-	if (q[0] == 0 && q[1] == 0 && q[2] == 0xFE && q[3] == 0xFF)
-	    enc = rb_enc_from_index(ENCINDEX_UTF_32BE);
-	else if (q[3] == 0 && q[2] == 0 && q[1] == 0xFE && q[0] == 0xFF)
-	    enc = rb_enc_from_index(ENCINDEX_UTF_32LE);
-	else {
-	    enc = rb_ascii8bit_encoding();
-	    unicode_p = 0;
-	}
+    actenc = get_actual_encoding(encidx, str);
+    if (actenc != enc) {
+	enc = actenc;
+	if (unicode_p) unicode_p = rb_enc_unicode_p(enc);
     }
     while (p < pend) {
 	unsigned int c, cc;

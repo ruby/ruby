@@ -228,14 +228,18 @@ class TestM17N < Test::Unit::TestCase
 
   STR_WITHOUT_BOM = "\u3042".freeze
   STR_WITH_BOM = "\uFEFF\u3042".freeze
+  bug8940 = '[ruby-core:59757] [Bug #8940]'
   %w/UTF-16 UTF-32/.each do |enc|
     %w/BE LE/.each do |endian|
+      bom = "\uFEFF".encode("#{enc}#{endian}").force_encoding(enc)
+
       define_method("test_utf_16_32_inspect(#{enc}#{endian})") do
         s = STR_WITHOUT_BOM.encode(enc + endian)
         # When a UTF-16/32 string doesn't have a BOM,
         # inspect as a dummy encoding string.
         assert_equal(s.dup.force_encoding("ISO-2022-JP").inspect,
                      s.dup.force_encoding(enc).inspect)
+        assert_normal_exit("#{bom.b.dump}.force_encoding('#{enc}').inspect", bug8940)
       end
 
       define_method("test_utf_16_32_inspect(#{enc}#{endian}-BOM)") do

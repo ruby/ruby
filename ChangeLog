@@ -1,3 +1,11 @@
+Wed Jan 15 14:03:47 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (get_actual_encoding): get actual encoding according to
+	  the BOM if exists.
+
+	* string.c (rb_str_inspect): use according encoding, instead of
+	  pseudo encodings, UTF-{16,32}.  [ruby-core:59757] [Bug #8940]
+
 Tue Jan 14 21:07:22 2014  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* ext/thread/thread.c (rb_szqueue_clear): notify SZQUEUE_WAITERS
