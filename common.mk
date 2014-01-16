@@ -198,8 +198,7 @@ capi: $(CAPIOUT)/.timestamp PHONY
 $(CAPIOUT)/.timestamp: Doxyfile $(PREP)
 	$(Q) $(MAKEDIRS) "$(@D)"
 	$(ECHO) generating capi
-	- \
-	$(Q) $(DOXYGEN) -b
+	-$(Q) $(DOXYGEN) -b
 	$(Q) $(MINIRUBY) -e 'File.open(ARGV[0], "w"){|f| f.puts(Time.now)}' "$@"
 
 Doxyfile: $(srcdir)/template/Doxyfile.tmpl $(PREP) $(srcdir)/tool/generic_erb.rb $(RBCONFIG)
