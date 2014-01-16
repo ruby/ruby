@@ -8945,7 +8945,7 @@ node_assign_gen(struct parser_params *parser, NODE *lhs, NODE *rhs)
         break;
 
       default:
-fprintf(stderr, "ERROR %d\n", nd_type(lhs));
+fprintf(stderr, "ERROR type %d\n", nd_type(lhs));
 	/* should not happen */
 	break;
     }
