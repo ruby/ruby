@@ -8923,7 +8923,6 @@ node_assign_gen(struct parser_params *parser, NODE *lhs, NODE *rhs)
 	    rb_warning0("__FILE__ can only be set to a String, ignored");
 	}
 
-	lhs->nd_value = rb_str_dup(ruby_sourcefile_string);
 	lhs->nd_lit = rb_str_dup(ruby_sourcefile_string);
 	break;
       case NODE_LINE:
