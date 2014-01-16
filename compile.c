@@ -173,9 +173,6 @@ r_value(VALUE value)
 #define NEW_ISEQVAL(node, name, type, line_no)       \
   new_child_iseq(iseq, (node), rb_fstring(name), 0, (type), (line_no))
 
-#define NEW_ISEQFILE(node, name, type, line_no)       \
-  new_file_iseq(iseq, (node), rb_fstring(name), 0, (type), (line_no))
-
 #define NEW_CHILD_ISEQVAL(node, name, type, line_no)       \
   new_child_iseq(iseq, (node), rb_fstring(name), iseq->self, (type), (line_no))
 
@@ -984,21 +981,6 @@ new_insn_send(rb_iseq_t *iseq, int line_no, VALUE id, VALUE argc, VALUE block, V
 
 static VALUE
 new_child_iseq(rb_iseq_t *iseq, NODE *node,
-	       VALUE name, VALUE parent, enum iseq_type type, int line_no)
-{
-    VALUE ret;
-
-    debugs("[new_child_iseq]> ---------------------------------------\n");
-    ret = rb_iseq_new_with_opt(node, name,
-			       iseq_path(iseq->self), iseq_absolute_path(iseq->self),
-			       INT2FIX(line_no), parent, type, iseq->compile_data->option);
-    debugs("[new_child_iseq]< ---------------------------------------\n");
-    iseq_add_mark_object(iseq, ret);
-    return ret;
-}
-
-static VALUE
-new_file_iseq(rb_iseq_t *iseq, NODE *node,
 	       VALUE name, VALUE parent, enum iseq_type type, int line_no)
 {
     VALUE ret;
@@ -3198,6 +3180,7 @@ build_postexe_iseq(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *body)
     return Qnil;
 }
 
+void rb_iseq_location_setup(rb_iseq_t *iseq, VALUE path, VALUE absolute_path, VALUE name, size_t first_lineno);
 /**
   compile each node
 
@@ -5423,23 +5406,18 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 	break;
       }
+      case NODE_LINE:{
+	debugp_param("lit", node->nd_lit);
+	if (!poped) {
+	    ADD_INSN1(ret, line, putobject, node->nd_lit);
+	}
+	break;
+      }
       case NODE_FILE:{
-	int ic_index;
-	NODE *block_node;
-	VALUE block_iseq;
-fprintf(stderr, "+ %p\n", node->nd_body);
-fprintf(stderr, "+ %p\n", node->nd_lit);
-fprintf(stderr, "+ %s\n", RSTRING_PTR(node->nd_lit));
-#ifdef GAM3
-	ic_index = iseq->is_size++;
-	block_node = NEW_NODE(NODE_SCOPE, 0, node->nd_next, 0);
-	block_iseq= NEW_CHILD_ISEQVAL(block_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, line);
-fprintf(stderr, "- %p\n", node->nd_next);
-	ADD_INSN2(ret, line, once, block_iseq, INT2FIX(ic_index));
-	node->nd_next = 0;
+	rb_iseq_location_setup(iseq, rb_fstring(node->nd_lit), iseq_absolute_path(iseq),  iseq->location.label, iseq->location.first_lineno);
+
 	node->nd_lit = rb_fstring(node->nd_lit);
 	debugp_param("nd_lit", node->nd_lit);
-#endif
 	if (!poped) {
 	    ADD_INSN1(ret, line, putstring, node->nd_lit);
 	}

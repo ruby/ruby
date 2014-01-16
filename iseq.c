@@ -196,6 +196,14 @@ iseq_location_setup(rb_iseq_t *iseq, VALUE path, VALUE absolute_path, VALUE name
     return loc;
 }
 
+void
+rb_iseq_location_setup(rb_iseq_t *iseq, VALUE path, VALUE absolute_path, VALUE name, size_t first_lineno)
+{
+   fprintf(stderr, "HERE %s,\n", RSTRING_PTR(path));
+   iseq_location_setup(iseq, path, 0, name, first_lineno);
+}
+
+
 #define ISEQ_SET_CREF(iseq, cref) RB_OBJ_WRITE((iseq)->self, &(iseq)->cref_stack, (cref))
 
 static void

@@ -8933,7 +8933,7 @@ node_assign_gen(struct parser_params *parser, NODE *lhs, NODE *rhs)
 	    rb_warning0("__LINE__ can only be set to a Fixnum, ignored");
 	}
 /*	return NEW_LIT(INT2FIX(ruby_sourceline)); FIXME */
-	lhs->nd_value = rhs;
+	lhs->nd_lit = rhs->nd_lit;
 	break;
 
       case NODE_ATTRASGN:
@@ -8941,8 +8941,11 @@ node_assign_gen(struct parser_params *parser, NODE *lhs, NODE *rhs)
 	lhs->nd_args = arg_append(lhs->nd_args, rhs);
 	break;
 
+      case NODE_BEGIN:
+        break;
+
       default:
-fprintf(stderr, "ERROR\n");
+fprintf(stderr, "ERROR %d\n", nd_type(lhs));
 	/* should not happen */
 	break;
     }
