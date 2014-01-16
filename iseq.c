@@ -199,7 +199,6 @@ iseq_location_setup(rb_iseq_t *iseq, VALUE path, VALUE absolute_path, VALUE name
 void
 rb_iseq_location_setup(rb_iseq_t *iseq, VALUE path, VALUE absolute_path, VALUE name, size_t first_lineno)
 {
-   fprintf(stderr, "HERE %s,\n", RSTRING_PTR(path));
    iseq_location_setup(iseq, path, 0, name, first_lineno);
 }
 
