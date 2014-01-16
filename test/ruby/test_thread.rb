@@ -127,17 +127,21 @@ class TestThread < Test::Unit::TestCase
 
   def test_priority
     c1 = c2 = 0
-    t1 = Thread.new { loop { c1 += 1 } }
+    run = true
+    t1 = Thread.new { c1 += 1 while run }
     t1.priority = 3
-    t2 = Thread.new { loop { c2 += 1 } }
+    t2 = Thread.new { c2 += 1 while run }
     t2.priority = -3
     assert_equal(3, t1.priority)
     assert_equal(-3, t2.priority)
     sleep 0.5
     5.times do
+      assert_not_predicate(t1, :stop?)
+      assert_not_predicate(t2, :stop?)
       break if c1 > c2
       sleep 0.1
     end
+    run = false
     t1.kill
     t2.kill
     assert_operator(c1, :>, c2, "[ruby-dev:33124]") # not guaranteed
