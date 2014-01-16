@@ -559,6 +559,15 @@ class TestRingServer < Test::Unit::TestCase
   end
 
   def test_do_reply
+    tl0 = Thread.list
+    tl = nil
+    th = Thread.new(Thread.current) do |mth|
+      sleep 1
+      (tl = Thread.list - tl0).each {|t|t.raise(Timeout::Error)}
+      mth.raise(Timeout::Error)
+    end
+    tl0 << th
+
     called = nil
 
     callback = proc { |ts|
@@ -566,11 +575,6 @@ class TestRingServer < Test::Unit::TestCase
     }
 
     callback = DRb::DRbObject.new callback
-
-    th = Thread.new(Thread.current) do |mth|
-      sleep 15
-      mth.raise unless called
-    end
 
     @ts.write [:lookup_ring, callback]
 
@@ -585,6 +589,19 @@ class TestRingServer < Test::Unit::TestCase
     end
 
     assert_same @ts, called
+  rescue Timeout::Error => e
+    if tl
+      bt = e.backtrace
+      tl.each do |t|
+        begin
+          t.value
+        rescue Timeout::Error => e
+          bt.unshift("")
+          bt[0, 0] = e.backtrace
+        end
+      end
+    end
+    raise Timeout::Error, "timeout", bt
   ensure
     th.kill if th
   end
