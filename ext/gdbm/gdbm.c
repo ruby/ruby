@@ -878,7 +878,7 @@ fgdbm_each_key(VALUE obj)
  *      gdbm.each_pair { |key, value| block } -> gdbm
  *
  * Executes _block_ for each key in the database, passing the _key_ and the
- * correspoding _value_ as a parameter.
+ * corresponding _value_ as a parameter.
  */
 static VALUE
 fgdbm_each_pair(VALUE obj)
@@ -1062,7 +1062,7 @@ fgdbm_reorganize(VALUE obj)
  *     gdbm.sync -> gdbm
  *
  * Unless the _gdbm_ object has been opened with the *SYNC* flag, it is not
- * guarenteed that database modification operations are immediately applied to
+ * guaranteed that database modification operations are immediately applied to
  * the database file. This method ensures that all recent modifications
  * to the database are written to the file. Blocks until all writing operations
  * to the disk have been finished.

@@ -10,7 +10,7 @@
 **********************************************************************/
 
 /*
- * This file incldue two parts:
+ * This file include two parts:
  *
  * (1) set_trace_func internal mechanisms
  *     and C level API

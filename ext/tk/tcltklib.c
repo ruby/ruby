@@ -1375,7 +1375,7 @@ tcltkip_init_tk(interp)
 }
 
 
-/* treat excetiopn on Tcl side */
+/* treat exception on Tcl side */
 static VALUE rbtk_pending_exception;
 static int rbtk_eventloop_depth = 0;
 static int rbtk_internal_eventloop_handler = 0;
@@ -3783,7 +3783,7 @@ ip_RubyExitCommand(clientData, interp, argc, argv)
 #endif
 
     if (argc < 1 || argc > 2) {
-        /* arguemnt error */
+        /* argument error */
         Tcl_AppendResult(interp,
                          "wrong number of arguments: should be \"",
                          cmd, " ?returnCode?\"", (char *)NULL);
@@ -6245,7 +6245,7 @@ ip_init(argc, argv, self)
     /*  FIX ME (2010/06/28)                                                  */
     /*    Don't use ::chan command for Mk4tcl + tclvfs-1.4 on Tcl8.5.        */
     /*    It fails to access VFS files because of vfs::zstream.              */
-    /*    So, force to use ::rechan by temporaly hiding ::chan.              */
+    /*    So, force to use ::rechan by temporarily hiding ::chan.            */
     /*************************************************************************/
     Tcl_Eval(ptr->ip, "catch {rename ::chan ::_tmp_chan}");
     if (Tcl_Init(ptr->ip) == TCL_ERROR) {
@@ -11013,7 +11013,7 @@ Init_tcltklib()
     /* --------------------------------------------------------------- */
 
 #ifdef HAVE_NATIVETHREAD
-    /* if ruby->nativethread-supprt and tcltklib->doen't,
+    /* if ruby->nativethread-support and tcltklib->doesn't,
        the following will cause link-error. */
     ruby_native_thread_p();
 #endif
