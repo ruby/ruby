@@ -1,3 +1,8 @@
+Fri Jan 17 20:05:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator): keep source information methods
+	  which start and end with '__'.  [ruby-core:58572] [Bug #9155]
+
 Fri Jan 17 17:58:04 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_mod_s_constants): return its own constants for other
