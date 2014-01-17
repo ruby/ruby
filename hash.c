@@ -1136,7 +1136,7 @@ rb_hash_reject(VALUE hash)
 	if (HAS_MISC_ATTRIBUTES(hash, klass)) {
 #if HASH_REJECT_COPY_MISC_ATTRIBUTES
 	    rb_warn("copying unguaranteed attributes: %+"PRIsVALUE, hash);
-	    rb_warn("following atributes will not be copied in the future version:");
+	    rb_warn("following attributes will not be copied in the future version:");
 	    if (klass != rb_cHash) {
 		rb_warn("  subclass: %+"PRIsVALUE, klass);
 	    }
@@ -1154,7 +1154,7 @@ rb_hash_reject(VALUE hash)
 		rb_warn("  default value: %+"PRIsVALUE, RHASH_IFNONE(hash));
 #else
 	    rb_warn("unguaranteed attributes are not copied: %+"PRIsVALUE, hash);
-	    rb_warn("following atributes are ignored now:");
+	    rb_warn("following attributes are ignored now:");
 #endif
 	}
     }
