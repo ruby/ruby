@@ -19,6 +19,11 @@
 #include <langinfo.h>
 #endif
 
+#if defined _WIN32
+#define SIZEOF_CP_NAME ((sizeof(UINT) * 8 / 3) + 4)
+#define CP_FORMAT(buf, codepage) snprintf(buf, sizeof(buf), "CP%u", (codepage))
+#endif
+
 VALUE
 rb_locale_charmap(VALUE klass)
 {
@@ -26,7 +31,7 @@ rb_locale_charmap(VALUE klass)
 # error NO_LOCALE_CHARMAP defined
 #elif defined _WIN32 || defined __CYGWIN__
     const char *codeset = 0;
-    char cp[sizeof(int) * 3 + 4];
+    char cp[SIZEOF_CP_NAME];
 # ifdef __CYGWIN__
     const char *nl_langinfo_codeset(void);
     codeset = nl_langinfo_codeset();
@@ -34,7 +39,7 @@ rb_locale_charmap(VALUE klass)
     if (!codeset) {
 	UINT codepage = GetConsoleCP();
 	if (!codepage) codepage = GetACP();
-	snprintf(cp, sizeof(cp), "CP%d", codepage);
+	CP_FORMAT(cp, codepage);
 	codeset = cp;
     }
     return rb_usascii_str_new2(codeset);
@@ -54,8 +59,8 @@ Init_enc_set_filesystem_encoding(void)
 #if defined NO_LOCALE_CHARMAP
 # error NO_LOCALE_CHARMAP defined
 #elif defined _WIN32 || defined __CYGWIN__
-    char cp[sizeof(int) * 8 / 3 + 4];
-    snprintf(cp, sizeof cp, "CP%d", AreFileApisANSI() ? GetACP() : GetOEMCP());
+    char cp[SIZEOF_CP_NAME];
+    CP_FORMAT(cp, AreFileApisANSI() ? GetACP() : GetOEMCP());
     idx = rb_enc_find_index(cp);
     if (idx < 0) idx = ENCINDEX_ASCII;
 #else
