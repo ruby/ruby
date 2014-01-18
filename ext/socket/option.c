@@ -148,8 +148,6 @@ sockopt_data(VALUE self)
  *
  * Creates a new Socket::Option object which contains a byte as data.
  *
- * The size and endian is dependent on the platform.
- *
  *   p Socket::Option.byte(:INET, :SOCKET, :KEEPALIVE, 1)
  *   #=> #<Socket::Option: INET SOCKET KEEPALIVE 1>
  */
@@ -168,8 +166,6 @@ sockopt_s_byte(VALUE klass, VALUE vfamily, VALUE vlevel, VALUE voptname, VALUE v
  *   sockopt.byte => integer
  *
  * Returns the data in _sockopt_ as an byte.
- *
- * The size and endian is dependent on the platform.
  *
  *   sockopt = Socket::Option.byte(:INET, :SOCKET, :KEEPALIVE, 1)
  *   p sockopt.byte => 1
