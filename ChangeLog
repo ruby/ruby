@@ -1,3 +1,16 @@
+Sun Jan 19 06:38:48 2014  Benoit Daloze  <eregontp@gmail.com>
+
+	* compar.c (cmp_equal): warn for this release and still rescue
+	  standard exceptions for a nicer transition. See #7688.
+	  Partly reverts r44502.
+
+	* test/ruby/test_comparable.rb: adapt assertion to match new behavior.
+
+Sun Jan 19 06:27:18 2014  Benoit Daloze  <eregontp@gmail.com>
+
+	* test/ruby/test_comparable.rb: specify behavior for the different
+	  kind of exceptions rescued (or not) by Comparable#==.
+
 Sat Jan 18 23:12:19 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket: Avoid unnecessary ppoll/select on Linux.

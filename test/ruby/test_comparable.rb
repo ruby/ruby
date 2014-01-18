@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestComparable < Test::Unit::TestCase
   def setup
@@ -20,8 +21,9 @@ class TestComparable < Test::Unit::TestCase
     cmp->(x) do raise NotImplementedError, "Not a RuntimeError" end
     assert_raise(NotImplementedError) { @o == nil }
     bug7688 = '[ruby-core:51389] [Bug #7688]'
-    cmp->(x) do raise StandardError, "Even a standard error should not be rescued"; end
-    assert_raise(StandardError, bug7688) { @o == nil }
+    cmp->(x) do raise StandardError, "A standard error should be rescued"; end
+    warn = /Comparable#== will no more rescue exceptions .+ in the next release/
+    assert_warn(warn, bug7688) { @o == nil }
   end
 
   def test_gt
