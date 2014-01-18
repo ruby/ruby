@@ -1,3 +1,8 @@
+Sat Jan 18 21:19:04 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open-uri.rb: Make proxy disabling working again.
+	  Fixed by Christophe Philemotte.   [ruby-core:59650] [Bug #9385]
+
 Fri Jan 17 20:05:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/delegate.rb (Delegator): keep source information methods
