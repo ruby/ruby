@@ -272,7 +272,11 @@ prepare_iseq_build(rb_iseq_t *iseq,
     set_relation(iseq, parent);
 
     name = rb_fstring(name);
-    path = rb_fstring(path);
+    if (TYPE( path ) == T_ARRAY) {
+fprintf(stderr, "rb_iseq_new_with_bopt_and_opt ARRAY\n");
+    } else {
+      path = rb_fstring(path);
+    }
     if (RTEST(absolute_path))
 	absolute_path = rb_fstring(absolute_path);
 
@@ -448,6 +452,9 @@ rb_iseq_new_with_bopt_and_opt(NODE *node, VALUE name, VALUE path, VALUE absolute
     rb_iseq_t *iseq;
     VALUE self = iseq_alloc(rb_cISeq);
 
+    if (TYPE( path ) == T_ARRAY) {
+fprintf(stderr, "rb_iseq_new_with_bopt_and_opt ARRAY\n");
+    }
     GetISeqPtr(self, iseq);
     iseq->self = self;
 

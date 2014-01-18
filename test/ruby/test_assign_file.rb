@@ -57,7 +57,6 @@ EOF
   end
 
   def test_raise_line_block
-    skip "__FILE__ effects entire block"
     assert_block do
       eval(<<'EOF', nil, "BOB", 1)
 begin
@@ -86,7 +85,6 @@ EOF
   end
 
   def test_raise_line_in_block
-    skip "__FILE__ stopped by end of block"
     assert_block do
       eval(<<'EOF', nil, "BOB", 1)
 begin

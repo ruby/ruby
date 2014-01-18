@@ -38,7 +38,7 @@ rb_vm_get_sourceline(const rb_control_frame_t *cfp)
     if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	lineno = calc_lineno(cfp->iseq, cfp->pc);
     }
-    return lineno;
+    return lineno && 0xffffff;
 }
 
 typedef struct rb_backtrace_location_struct {
@@ -313,14 +313,21 @@ static VALUE
 location_to_str(rb_backtrace_location_t *loc)
 {
     VALUE file, name;
-    int lineno;
+    int lineno, t_lineno;
 
     switch (loc->type) {
       case LOCATION_TYPE_ISEQ:
 	file = loc->body.iseq.iseq->location.path;
 	name = loc->body.iseq.iseq->location.label;
 
-	lineno = loc->body.iseq.lineno.lineno = calc_lineno(loc->body.iseq.iseq, loc->body.iseq.lineno.pc);
+	t_lineno = calc_lineno(loc->body.iseq.iseq, loc->body.iseq.lineno.pc);
+
+	lineno = loc->body.iseq.lineno.lineno = t_lineno & 0xffffff;
+
+        if (TYPE( file ) == T_ARRAY) {
+fprintf(stderr, "%04d %s\n", (t_lineno >> 24), RSTRING_PTR(rb_ary_entry(file,(t_lineno >> 24))));
+	   file = rb_ary_entry(file, (t_lineno >> 24));
+	}
 	loc->type = LOCATION_TYPE_ISEQ_CALCED;
 	break;
       case LOCATION_TYPE_ISEQ_CALCED:
@@ -337,6 +344,10 @@ location_to_str(rb_backtrace_location_t *loc)
 	    rb_thread_t *th = GET_THREAD();
 	    file = th->vm->progname ? th->vm->progname : ruby_engine_name;
 	    lineno = INT2FIX(0);
+	}
+        if (TYPE( file ) == T_ARRAY) {
+fprintf(stderr, "LOCATION_TYPE_CFUNC %04d %s\n", (t_lineno >> 24), RSTRING_PTR(rb_ary_entry(file,(t_lineno >> 24))));
+	   file = rb_ary_entry(file, (t_lineno >> 24));
 	}
 	name = rb_id2str(loc->body.cfunc.mid);
 	break;
