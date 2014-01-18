@@ -1,3 +1,9 @@
+Sat Jan 18 22:57:44 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb (Resolv::DNS::Resource::TXT#data): Return concatenated
+	  string.
+	  Patch by Ryan Brunner.  [ruby-core:58220] [Bug #9093]
+
 Sat Jan 18 22:35:15 2014  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_update_max_fd): Return immediately if the given fd is small
