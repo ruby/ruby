@@ -357,7 +357,7 @@ static VALUE
 sockopt_s_ipv4_multicast_loop(VALUE klass, VALUE value)
 {
 #if defined(IPPROTO_IP) && defined(IP_MULTICAST_LOOP)
-# ifdef __NetBSD__
+# if defined(__NetBSD__) || defined(__OpenBSD__)
     unsigned char i = NUM2CHR(rb_to_int(value));
 # else
     int i = NUM2INT(rb_to_int(value));
@@ -387,7 +387,7 @@ sockopt_ipv4_multicast_loop(VALUE self)
 
 #if defined(IPPROTO_IP) && defined(IP_MULTICAST_LOOP)
     if (family == AF_INET && level == IPPROTO_IP && optname == IP_MULTICAST_LOOP) {
-# ifdef __NetBSD__
+# if defined(__NetBSD__) || defined(__OpenBSD__)
 	return sockopt_byte(self);
 # else
 	return sockopt_int(self);
@@ -398,7 +398,7 @@ sockopt_ipv4_multicast_loop(VALUE self)
     UNREACHABLE;
 }
 
-#ifdef __NetBSD__
+#if defined(__NetBSD__) || defined(__OpenBSD__)
 # define inspect_ipv4_multicast_loop(a,b,c,d) inspect_byte(a,b,c,d)
 #else
 # define inspect_ipv4_multicast_loop(a,b,c,d) inspect_int(a,b,c,d)
@@ -420,7 +420,7 @@ static VALUE
 sockopt_s_ipv4_multicast_ttl(VALUE klass, VALUE value)
 {
 #if defined(IPPROTO_IP) && defined(IP_MULTICAST_TTL)
-# ifdef __NetBSD__
+# if defined(__NetBSD__) || defined(__OpenBSD__)
     unsigned char i = NUM2CHR(rb_to_int(value));
 # else
     int i = NUM2INT(rb_to_int(value));
@@ -450,7 +450,7 @@ sockopt_ipv4_multicast_ttl(VALUE self)
 
 #if defined(IPPROTO_IP) && defined(IP_MULTICAST_TTL)
     if (family == AF_INET && level == IPPROTO_IP && optname == IP_MULTICAST_TTL) {
-# ifdef __NetBSD__
+# if defined(__NetBSD__) || defined(__OpenBSD__)
 	return sockopt_byte(self);
 # else
 	return sockopt_int(self);
@@ -461,7 +461,7 @@ sockopt_ipv4_multicast_ttl(VALUE self)
     UNREACHABLE;
 }
 
-#ifdef __NetBSD__
+#if defined(__NetBSD__) || defined(__OpenBSD__)
 # define inspect_ipv4_multicast_ttl(a,b,c,d) inspect_byte(a,b,c,d)
 #else
 # define inspect_ipv4_multicast_ttl(a,b,c,d) inspect_int(a,b,c,d)
@@ -481,7 +481,7 @@ inspect_int(int level, int optname, VALUE data, VALUE ret)
     }
 }
 
-#ifdef __NetBSD__
+#if defined(__NetBSD__) || defined(__OpenBSD__)
 static int
 inspect_byte(int level, int optname, VALUE data, VALUE ret)
 {

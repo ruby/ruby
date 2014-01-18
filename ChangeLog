@@ -1,3 +1,9 @@
+Sat Jan 18 21:24:49 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/option.c: IP_MULTICAST_LOOP and IP_MULTICAST_TTL socket
+	  option takes a byte on OpenBSD.
+	  Fixed by Jeremy Evans.  [ruby-core:59496] [Bug #9350]
+
 Sat Jan 18 21:19:04 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open-uri.rb: Make proxy disabling working again.
