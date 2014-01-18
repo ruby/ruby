@@ -386,4 +386,20 @@ NORETURN(void rsock_sys_fail_sockaddr(const char *, struct sockaddr *addr, sockl
 NORETURN(void rsock_sys_fail_raddrinfo(const char *, VALUE rai));
 NORETURN(void rsock_sys_fail_raddrinfo_or_sockaddr(const char *, VALUE addr, VALUE rai));
 
+/*
+ * It is safe on Linux to attempt using a socket without waiting on it in
+ * all cases.  For some syscalls (e.g. accept/accept4), blocking on the
+ * syscall instead of relying on select/poll allows the kernel to use
+ * "wake-one" behavior and avoid the thundering herd problem.
+ * This is likely safe on all other *nix-like systems, so this whitelist
+ * can be expanded by interested parties.
+ */
+#if defined(__linux__)
+static inline int rsock_maybe_fd_writable(int fd) { return 1; }
+static inline void rsock_maybe_wait_fd(int fd) { }
+#else /* some systems (mswin/mingw) need these.  ref: r36946 */
+#  define rsock_maybe_fd_writable(fd) rb_thread_fd_writable((fd))
+#  define rsock_maybe_wait_fd(fd) rb_thread_wait_fd((fd))
+#endif
+
 #endif

@@ -1,3 +1,8 @@
+Sat Jan 18 23:12:19 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket: Avoid unnecessary ppoll/select on Linux.
+	  Patch by Eric Wong.  [ruby-core:57950] [Bug #9039]
+
 Sat Jan 18 22:57:44 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (Resolv::DNS::Resource::TXT#data): Return concatenated

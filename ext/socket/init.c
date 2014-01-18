@@ -135,7 +135,7 @@ rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
     rb_obj_hide(str);
 
     while (rb_io_check_closed(fptr),
-	   rb_thread_wait_fd(arg.fd),
+	   rsock_maybe_wait_fd(arg.fd),
 	   (slen = BLOCKING_REGION_FD(recvfrom_blocking, &arg)) < 0) {
         if (!rb_io_wait_readable(fptr->fd)) {
             rb_sys_fail("recvfrom(2)");
@@ -575,7 +575,7 @@ rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
     arg.sockaddr = sockaddr;
     arg.len = len;
   retry:
-    rb_thread_wait_fd(fd);
+    rsock_maybe_wait_fd(fd);
     fd2 = (int)BLOCKING_REGION_FD(accept_blocking, &arg);
     if (fd2 < 0) {
 	switch (errno) {

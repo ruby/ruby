@@ -563,7 +563,7 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
     GetOpenFile(sock, fptr);
     arg.fd = fptr->fd;
     arg.flags = NUM2INT(flags);
-    while (rb_thread_fd_writable(arg.fd),
+    while (rsock_maybe_fd_writable(arg.fd),
 	   (n = (int)BLOCKING_REGION_FD(func, &arg)) < 0) {
 	if (rb_io_wait_writable(arg.fd)) {
 	    continue;
