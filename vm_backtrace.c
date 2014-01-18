@@ -38,7 +38,7 @@ rb_vm_get_sourceline(const rb_control_frame_t *cfp)
     if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	lineno = calc_lineno(cfp->iseq, cfp->pc);
     }
-    return lineno && 0xffffff;
+    return lineno & 0xffffff;
 }
 
 typedef struct rb_backtrace_location_struct {
