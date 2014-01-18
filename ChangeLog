@@ -1,3 +1,8 @@
+Sat Jan 18 22:25:53 2014  Tanaka Akira  <akr@fsij.org>
+
+	* io.c: Test O_CLOEXEC only once.
+	  Patch by Eric Wong.  [ruby-core:59419] [Feature #9328]
+
 Sat Jan 18 21:24:49 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/option.c: IP_MULTICAST_LOOP and IP_MULTICAST_TTL socket

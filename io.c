@@ -228,10 +228,29 @@ rb_fd_fix_cloexec(int fd)
     rb_update_max_fd(fd);
 }
 
+/* this is only called once */
+static int
+rb_fix_detect_o_cloexec(int fd)
+{
+#ifdef O_CLOEXEC
+    int flags = fcntl(fd, F_GETFD);
+
+    if (flags == -1)
+        rb_bug("rb_fix_detect_o_cloexec: fcntl(%d, F_GETFD) failed: %s", fd, strerror(errno));
+
+    if (flags & FD_CLOEXEC)
+	return 1;
+#endif /* fall through if O_CLOEXEC does not work: */
+    rb_maygvl_fd_fix_cloexec(fd);
+    return 0;
+}
+
 int
 rb_cloexec_open(const char *pathname, int flags, mode_t mode)
 {
     int ret;
+    static int o_cloexec_state = -1; /* <0: unknown, 0: ignored, >0: working */
+
 #ifdef O_CLOEXEC
     /* O_CLOEXEC is available since Linux 2.6.23.  Linux 2.6.18 silently ignore it. */
     flags |= O_CLOEXEC;
@@ -240,7 +259,13 @@ rb_cloexec_open(const char *pathname, int flags, mode_t mode)
 #endif
     ret = open(pathname, flags, mode);
     if (ret == -1) return -1;
-    rb_maygvl_fd_fix_cloexec(ret);
+    if (ret <= 2 || o_cloexec_state == 0) {
+	rb_maygvl_fd_fix_cloexec(ret);
+    } else if (o_cloexec_state > 0) {
+	return ret;
+    } else {
+	o_cloexec_state = rb_fix_detect_o_cloexec(ret);
+    }
     return ret;
 }
 
