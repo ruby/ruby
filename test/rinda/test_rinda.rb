@@ -559,6 +559,8 @@ class TestRingServer < Test::Unit::TestCase
   end
 
   def test_do_reply
+    aoe = Thread.abort_on_exception
+    Thread.abort_on_exception = true
     tl0 = Thread.list
     tl = nil
     th = Thread.new(Thread.current) do |mth|
@@ -604,6 +606,7 @@ class TestRingServer < Test::Unit::TestCase
     raise Timeout::Error, "timeout", bt
   ensure
     th.kill if th
+    Thread.abort_on_exception = aoe
   end
 
   def test_do_reply_local
