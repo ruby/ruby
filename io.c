@@ -189,6 +189,9 @@ rb_update_max_fd(int fd)
     struct stat buf;
     rb_atomic_t afd = (rb_atomic_t)fd;
 
+    if (afd <= max_file_descriptor)
+        return;
+
     if (fstat(fd, &buf) != 0 && errno == EBADF) {
         rb_bug("rb_update_max_fd: invalid fd (%d) given.", fd);
     }

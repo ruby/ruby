@@ -1,3 +1,8 @@
+Sat Jan 18 22:35:15 2014  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_update_max_fd): Return immediately if the given fd is small
+	  enough.
+
 Sat Jan 18 22:25:53 2014  Tanaka Akira  <akr@fsij.org>
 
 	* io.c: Test O_CLOEXEC only once.
