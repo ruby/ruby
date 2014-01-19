@@ -1,7 +1,13 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestNumeric < Test::Unit::TestCase
   class DummyNumeric < Numeric
+  end
+
+  def assert_raise_with_message(exc, pattern, &blk)
+    e = assert_raise(exc, &blk)
+    assert_match(pattern, e.message)
   end
 
   def test_coerce
@@ -14,6 +20,24 @@ class TestNumeric < Test::Unit::TestCase
     assert_equal(Float, b.class)
 
     assert_raise(TypeError) { -Numeric.new }
+
+    assert_raise_with_message(TypeError, /can't be coerced into /) {1+:foo}
+    assert_raise_with_message(TypeError, /can't be coerced into /) {1&:foo}
+    assert_raise_with_message(TypeError, /can't be coerced into /) {1|:foo}
+    assert_raise_with_message(TypeError, /can't be coerced into /) {1^:foo}
+
+    EnvUtil.with_default_external(Encoding::UTF_8) do
+      assert_raise_with_message(TypeError, /:\u{3042}/) {1+:"\u{3042}"}
+      assert_raise_with_message(TypeError, /:\u{3042}/) {1&:"\u{3042}"}
+      assert_raise_with_message(TypeError, /:\u{3042}/) {1|:"\u{3042}"}
+      assert_raise_with_message(TypeError, /:\u{3042}/) {1^:"\u{3042}"}
+    end
+    EnvUtil.with_default_external(Encoding::US_ASCII) do
+      assert_raise_with_message(TypeError, /:"\\u3042"/) {1+:"\u{3042}"}
+      assert_raise_with_message(TypeError, /:"\\u3042"/) {1&:"\u{3042}"}
+      assert_raise_with_message(TypeError, /:"\\u3042"/) {1|:"\u{3042}"}
+      assert_raise_with_message(TypeError, /:"\\u3042"/) {1^:"\u{3042}"}
+    end
   end
 
   def test_dummynumeric
@@ -46,11 +70,20 @@ class TestNumeric < Test::Unit::TestCase
     end
   end
 
-  def test_numeric
+  def test_singleton_method
     a = Numeric.new
-    assert_raise(TypeError) { def a.foo; end }
-    assert_raise(TypeError) { eval("def a.\u3042; end") }
+    assert_raise_with_message(TypeError, /foo/) { def a.foo; end }
+    assert_raise_with_message(TypeError, /\u3042/) { eval("def a.\u3042; end") }
+  end
+
+  def test_dup
+    a = Numeric.new
     assert_raise(TypeError) { a.dup }
+
+    c = Module.new do
+      break eval("class C\u{3042} < Numeric; self; end")
+    end
+    assert_raise_with_message(TypeError, /C\u3042/) {c.new.dup}
   end
 
   def test_quo
