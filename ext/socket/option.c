@@ -2,6 +2,22 @@
 
 VALUE rb_cSockOpt;
 
+#define pack_var(v) rb_str_new((const char *)&(v), sizeof(v))
+
+static VALUE
+sockopt_pack_byte(VALUE value)
+{
+    char i = NUM2CHR(rb_to_int(value));
+    return pack_var(i);
+}
+
+static VALUE
+sockopt_pack_int(VALUE value)
+{
+    int i = NUM2INT(rb_to_int(value));
+    return pack_var(i);
+}
+
 static VALUE
 constant_to_sym(int constant, ID (*intern_const)(int))
 {
@@ -157,8 +173,7 @@ sockopt_s_byte(VALUE klass, VALUE vfamily, VALUE vlevel, VALUE voptname, VALUE v
     int family = rsock_family_arg(vfamily);
     int level = rsock_level_arg(family, vlevel);
     int optname = rsock_optname_arg(family, level, voptname);
-    unsigned char i = (unsigned char)NUM2CHR(vint);
-    return rsock_sockopt_new(family, level, optname, rb_str_new((char*)&i, sizeof(i)));
+    return rsock_sockopt_new(family, level, optname, sockopt_pack_byte(vint));
 }
 
 /*
@@ -199,8 +214,7 @@ sockopt_s_int(VALUE klass, VALUE vfamily, VALUE vlevel, VALUE voptname, VALUE vi
     int family = rsock_family_arg(vfamily);
     int level = rsock_level_arg(family, vlevel);
     int optname = rsock_optname_arg(family, level, voptname);
-    int i = NUM2INT(vint);
-    return rsock_sockopt_new(family, level, optname, rb_str_new((char*)&i, sizeof(i)));
+    return rsock_sockopt_new(family, level, optname, sockopt_pack_int(vint));
 }
 
 /*
@@ -248,7 +262,7 @@ sockopt_s_bool(VALUE klass, VALUE vfamily, VALUE vlevel, VALUE voptname, VALUE v
     int level = rsock_level_arg(family, vlevel);
     int optname = rsock_optname_arg(family, level, voptname);
     int i = RTEST(vbool) ? 1 : 0;
-    return rsock_sockopt_new(family, level, optname, rb_str_new((char*)&i, sizeof(i)));
+    return rsock_sockopt_new(family, level, optname, pack_var(i));
 }
 
 /*
@@ -298,7 +312,7 @@ sockopt_s_linger(VALUE klass, VALUE vonoff, VALUE vsecs)
     else
         l.l_onoff = RTEST(vonoff) ? 1 : 0;
     l.l_linger = NUM2INT(vsecs);
-    return rsock_sockopt_new(AF_UNSPEC, SOL_SOCKET, SO_LINGER, rb_str_new((char*)&l, sizeof(l)));
+    return rsock_sockopt_new(AF_UNSPEC, SOL_SOCKET, SO_LINGER, pack_var(l));
 }
 
 /*
@@ -354,12 +368,12 @@ sockopt_s_ipv4_multicast_loop(VALUE klass, VALUE value)
 {
 #if defined(IPPROTO_IP) && defined(IP_MULTICAST_LOOP)
 # if defined(__NetBSD__) || defined(__OpenBSD__)
-    unsigned char i = NUM2CHR(rb_to_int(value));
+    VALUE o = sockopt_pack_byte(value);
 # else
-    int i = NUM2INT(rb_to_int(value));
+    VALUE o = sockopt_pack_int(value);
 # endif
     return rsock_sockopt_new(AF_INET, IPPROTO_IP, IP_MULTICAST_LOOP,
-	    rb_str_new((char*)&i, sizeof(i)));
+			     o);
 #else
 # error IPPROTO_IP or IP_MULTICAST_LOOP is not implemented
 #endif
@@ -417,12 +431,12 @@ sockopt_s_ipv4_multicast_ttl(VALUE klass, VALUE value)
 {
 #if defined(IPPROTO_IP) && defined(IP_MULTICAST_TTL)
 # if defined(__NetBSD__) || defined(__OpenBSD__)
-    unsigned char i = NUM2CHR(rb_to_int(value));
+    VALUE o = sockopt_pack_byte(value);
 # else
-    int i = NUM2INT(rb_to_int(value));
+    VALUE o = sockopt_pack_int(value);
 # endif
     return rsock_sockopt_new(AF_INET, IPPROTO_IP, IP_MULTICAST_TTL,
-	    rb_str_new((char*)&i, sizeof(i)));
+			     o);
 #else
 # error IPPROTO_IP or IP_MULTICAST_TTL is not implemented
 #endif
