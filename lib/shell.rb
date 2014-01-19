@@ -37,7 +37,7 @@ require "shell/process-controller"
 #   sh.cd("shell-test-1") # Change to the /tmp/shell-test-1 directory
 #   for dir in ["dir1", "dir3", "dir5"]
 #     if !sh.exists?(dir)
-#       sh.mkdir dir # make dir if it doesnt' already exist
+#       sh.mkdir dir # make dir if it doesn't already exist
 #       sh.cd(dir) do
 #         # change to the `dir` directory
 # 	  f = sh.open("tmpFile", "w") # open a new file in write mode

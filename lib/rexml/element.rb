@@ -206,7 +206,7 @@ module REXML
       return namespaces
     end
 
-    # Evalutas to the URI for a prefix, or the empty string if no such
+    # Evaluates to the URI for a prefix, or the empty string if no such
     # namespace is declared for this element. Evaluates recursively for
     # ancestors.  Returns the default namespace, if there is one.
     # prefix::

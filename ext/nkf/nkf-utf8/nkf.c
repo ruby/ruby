@@ -4340,7 +4340,7 @@ mime_ungetc_buf(nkf_char c, FILE *f)
 static nkf_char
 mime_getc_buf(FILE *f)
 {
-    /* we don't keep eof of mime_input_buf, becase it contains ?= as
+    /* we don't keep eof of mime_input_buf, because it contains ?= as
        a terminator. It was checked in mime_integrity. */
     return ((mimebuf_f)?
 	    (*i_mgetc_buf)(f):mime_input_buf(mime_input_state.input++));
@@ -5713,9 +5713,9 @@ module_connection(void)
 		x0201_f = X0201_DEFAULT;
 	}
 
-    /* replace continucation module, from output side */
+    /* replace continuation module, from output side */
 
-    /* output redicrection */
+    /* output redirection */
 #ifdef CHECK_OPTION
     if (noout_f || guess_f){
 	o_putc = no_putc;
@@ -5752,7 +5752,7 @@ module_connection(void)
 
     i_getc = std_getc;
     i_ungetc = std_ungetc;
-    /* input redicrection */
+    /* input redirection */
 #ifdef INPUT_OPTION
     if (cap_f){
 	i_cgetc = i_getc; i_getc = cap_getc;
@@ -5914,7 +5914,7 @@ kanji_convert(FILE *f)
 		/* in case of 8th bit is on */
 		if (!estab_f&&!mime_decode_mode) {
 		    /* in case of not established yet */
-		    /* It is still ambiguious */
+		    /* It is still ambiguous */
 		    if (h_conv(f, c2, c1)==EOF) {
 			LAST;
 		    }
@@ -6898,7 +6898,7 @@ options(unsigned char *cp)
 	    continue;
 #endif
 	case SP:
-	    /* module muliple options in a string are allowed for Perl moudle  */
+	    /* module multiple options in a string are allowed for Perl module  */
 	    while(*cp && *cp++!='-');
 	    continue;
 	default:

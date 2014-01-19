@@ -1113,7 +1113,7 @@ proc_to_s(VALUE self)
 
 /*
  *  call-seq:
- *     prc.to_proc -> prc
+ *     prc.to_proc -> proc
  *
  *  Part of the protocol for converting objects to <code>Proc</code>
  *  objects. Instances of class <code>Proc</code> simply return
@@ -2366,7 +2366,7 @@ rb_proc_new(
 
 /*
  *  call-seq:
- *     meth.to_proc    -> prc
+ *     meth.to_proc    -> proc
  *
  *  Returns a <code>Proc</code> object corresponding to this method.
  */

@@ -635,7 +635,7 @@ rb_trace_eval(VALUE cmd, VALUE val)
  *     trace_var(symbol) {|val| block }    -> nil
  *
  *  Controls tracing of assignments to global variables. The parameter
- *  +symbol_ identifies the variable (as either a string name or a
+ *  +symbol+ identifies the variable (as either a string name or a
  *  symbol identifier). _cmd_ (which may be a string or a
  *  +Proc+ object) or block is executed whenever the variable
  *  is assigned. The block or +Proc+ object receives the

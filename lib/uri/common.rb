@@ -90,7 +90,7 @@ module URI
     #   u = p.parse("http://example.jp/%uABCD") #=> #<URI::HTTP:0xb78cf4f8 URL:http://example.jp/%uABCD>
     #   URI.parse(u.to_s) #=> raises URI::InvalidURIError
     #
-    #   s = "http://examle.com/ABCD"
+    #   s = "http://example.com/ABCD"
     #   u1 = p.parse(s) #=> #<URI::HTTP:0xb78c3220 URL:http://example.com/ABCD>
     #   u2 = URI.parse(s) #=> #<URI::HTTP:0xb78b6d54 URL:http://example.com/ABCD>
     #   u1 == u2 #=> true

@@ -308,7 +308,7 @@ wait_connectable(int fd)
 
     for (;;) {
 	/*
-	 * Stevens book says, succuessful finish turn on RB_WAITFD_OUT and
+	 * Stevens book says, successful finish turn on RB_WAITFD_OUT and
 	 * failure finish turn on both RB_WAITFD_IN and RB_WAITFD_OUT.
 	 */
 	revents = rb_wait_for_single_fd(fd, RB_WAITFD_IN|RB_WAITFD_OUT, NULL);
