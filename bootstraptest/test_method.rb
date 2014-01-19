@@ -1001,8 +1001,8 @@ assert_equal 'ok', %q{
 
 assert_normal_exit %q{
   begin
-    Process.setrlimit(Process::RLIMIT_STACK, 4_202_496)
-    # FreeBSD fails this less than 4M + 8K bytes.
+    Process.setrlimit(Process::RLIMIT_STACK, 4_206_592)
+    # FreeBSD SEGVs this less than 4M + 12K bytes.
   rescue Exception
     exit
   end
