@@ -64,8 +64,7 @@ tracepoint_track_objspace_events(VALUE self)
     VALUE result = rb_ary_new();
 
     rb_tracepoint_enable(tpval);
-    rb_yield(Qundef);
-    rb_tracepoint_disable(tpval);
+    rb_ensure(rb_yield, Qundef, rb_tracepoint_disable, tpval);
 
     rb_ary_push(result, SIZET2NUM(track.newobj_count));
     rb_ary_push(result, SIZET2NUM(track.free_count));
