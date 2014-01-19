@@ -211,7 +211,7 @@ static ruby_gc_params_t gc_params = {
 
 /* RGENGC_ESTIMATE_OLDMALLOC
  * Enable/disable to estimate increase size of malloc'ed size by old objects.
- * If estimation exceeds threashold, then will invoke full GC.
+ * If estimation exceeds threshold, then will invoke full GC.
  * 0: disable estimation.
  * 1: enable estimation.
  */
@@ -4206,7 +4206,7 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride, v
  *  Verify internal consistency.
  *
  *  This method is implementation specific.
- *  Now this method checks generatioanl consistency
+ *  Now this method checks generational consistency
  *  if RGenGC is supported.
  */
 static VALUE
@@ -5702,7 +5702,7 @@ gc_set_initial_pages(void)
  * * RUBY_GC_HEAP_INIT_SLOTS
  *   - Initial allocation slots.
  * * RUBY_GC_HEAP_FREE_SLOTS
- *   - Prepare at least this ammount of slots after GC.
+ *   - Prepare at least this amount of slots after GC.
  *   - Allocate slots if there are not enough slots.
  * * RUBY_GC_HEAP_GROWTH_FACTOR (new from 2.1)
  *   - Allocate slots by this factor.
