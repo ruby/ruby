@@ -2,16 +2,6 @@
 
 VALUE rb_cSockOpt;
 
-#if defined(__NetBSD__) || defined(__OpenBSD__)
-typedef unsigned char rb_sockopt_t;
-# define NUM2SOCKOPT(value) NUM2CHR(rb_to_int(value))
-# define sockopt_value(obj) sockopt_byte(obj)
-# else
-typedef int rb_sockopt_t;
-# define NUM2SOCKOPT(value) NUM2INT(rb_to_int(value))
-# define sockopt_value(obj) sockopt_int(obj)
-#endif
-
 static VALUE
 constant_to_sym(int constant, ID (*intern_const)(int))
 {
@@ -363,7 +353,11 @@ static VALUE
 sockopt_s_ipv4_multicast_loop(VALUE klass, VALUE value)
 {
 #if defined(IPPROTO_IP) && defined(IP_MULTICAST_LOOP)
-    rb_sockopt_t i = NUM2SOCKOPT(value);
+# if defined(__NetBSD__) || defined(__OpenBSD__)
+    unsigned char i = NUM2CHR(rb_to_int(value));
+# else
+    int i = NUM2INT(rb_to_int(value));
+# endif
     return rsock_sockopt_new(AF_INET, IPPROTO_IP, IP_MULTICAST_LOOP,
 	    rb_str_new((char*)&i, sizeof(i)));
 #else
@@ -389,7 +383,11 @@ sockopt_ipv4_multicast_loop(VALUE self)
 
 #if defined(IPPROTO_IP) && defined(IP_MULTICAST_LOOP)
     if (family == AF_INET && level == IPPROTO_IP && optname == IP_MULTICAST_LOOP) {
-	return sockopt_value(self);
+# if defined(__NetBSD__) || defined(__OpenBSD__)
+	return sockopt_byte(self);
+# else
+	return sockopt_int(self);
+# endif
     }
 #endif
     rb_raise(rb_eTypeError, "ipv4_multicast_loop socket option expected");
@@ -418,7 +416,11 @@ static VALUE
 sockopt_s_ipv4_multicast_ttl(VALUE klass, VALUE value)
 {
 #if defined(IPPROTO_IP) && defined(IP_MULTICAST_TTL)
-    rb_sockopt_t i = NUM2SOCKOPT(value);
+# if defined(__NetBSD__) || defined(__OpenBSD__)
+    unsigned char i = NUM2CHR(rb_to_int(value));
+# else
+    int i = NUM2INT(rb_to_int(value));
+# endif
     return rsock_sockopt_new(AF_INET, IPPROTO_IP, IP_MULTICAST_TTL,
 	    rb_str_new((char*)&i, sizeof(i)));
 #else
@@ -444,7 +446,11 @@ sockopt_ipv4_multicast_ttl(VALUE self)
 
 #if defined(IPPROTO_IP) && defined(IP_MULTICAST_TTL)
     if (family == AF_INET && level == IPPROTO_IP && optname == IP_MULTICAST_TTL) {
-	return sockopt_value(self);
+# if defined(__NetBSD__) || defined(__OpenBSD__)
+	return sockopt_byte(self);
+# else
+	return sockopt_int(self);
+# endif
     }
 #endif
     rb_raise(rb_eTypeError, "ipv4_multicast_ttl socket option expected");
