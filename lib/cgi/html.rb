@@ -865,7 +865,7 @@ class CGI
       %|<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">|
     end
 
-    # Initialise the HTML generation methods for this version.
+    # Initialize the HTML generation methods for this version.
     # - -
     instance_method(:nn_element_def).tap do |m|
       for element in %w[ TT I B BIG SMALL EM STRONG DFN CODE SAMP KBD

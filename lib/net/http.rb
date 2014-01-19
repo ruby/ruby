@@ -687,10 +687,10 @@ module Net   #:nodoc:
     # The port number to connect to.
     attr_reader :port
 
-    # The local host used to estabilish the connection.
+    # The local host used to establish the connection.
     attr_accessor :local_host
 
-    # The local port used to estabilish the connection.
+    # The local port used to establish the connection.
     attr_accessor :local_port
 
     attr_writer :proxy_from_env

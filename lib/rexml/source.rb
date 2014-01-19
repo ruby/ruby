@@ -62,7 +62,7 @@ module REXML
     # requirements; for another, the source can be consumed.  You can easily
     # confuse this method.  Originally, the patterns were easier
     # to construct and this method more robust, because this method
-    # generated search regexes on the fly; however, this was
+    # generated search regexps on the fly; however, this was
     # computationally expensive and slowed down the entire REXML package
     # considerably, since this is by far the most commonly called method.
     # @param pattern must be a Regexp, and must be in the form of
