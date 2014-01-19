@@ -2799,7 +2799,7 @@ fole_s_connect(int argc, VALUE *argv, VALUE self)
  *  so constant variable name of WIN32OLE object is capitalized.
  *  For example, the 'xlTop' constant of Excel is changed to 'XlTop'
  *  in WIN32OLE.
- *  If the first letter of constant variabl is not [A-Z], then
+ *  If the first letter of constant variable is not [A-Z], then
  *  the constant is defined as CONSTANTS hash element.
  *
  *     module EXCEL_CONST
@@ -3173,7 +3173,7 @@ fole_s_create_guid(VALUE self)
 /*
  * WIN32OLE.ole_initialize and WIN32OLE.ole_uninitialize
  * are used in win32ole.rb to fix the issue bug #2618 (ruby-core:27634).
- * You must not use thease method.
+ * You must not use these method.
  */
 
 /* :nodoc */

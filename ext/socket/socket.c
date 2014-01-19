@@ -2006,7 +2006,7 @@ Init_socket()
      *
      * === What's a socket?
      *
-     * Sockets are endpoints of a bidirectionnal communication channel.
+     * Sockets are endpoints of a bidirectional communication channel.
      * Sockets can communicate within a process, between processes on the same
      * machine or between different machines.  There are many types of socket:
      * TCPSocket, UDPSocket or UNIXSocket for example.
@@ -2031,7 +2031,7 @@ Init_socket()
      *
      * *hostname:*
      * The identifier of a network interface:
-     * *    a string (hostname, IPv4 or IPv6 adress or +broadcast+
+     * *    a string (hostname, IPv4 or IPv6 address or +broadcast+
      *	    which specifies a broadcast address)
      * *    a zero-length string which specifies INADDR_ANY
      * *    an integer (interpreted as binary address in host byte order).

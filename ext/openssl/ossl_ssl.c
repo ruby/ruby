@@ -2019,7 +2019,7 @@ Init_ossl_ssl()
     rb_attr(cSSLContext, rb_intern("session_get_cb"), 1, 1, Qfalse);
 
     /*
-     * A callback invoked when a new session was negotiatied.
+     * A callback invoked when a new session was negotiated.
      *
      * The callback is invoked with an SSLSocket.  If false is returned the
      * session will be removed from the internal cache.
