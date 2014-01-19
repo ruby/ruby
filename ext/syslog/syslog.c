@@ -315,7 +315,7 @@ static VALUE mSyslog_log(int argc, VALUE *argv, VALUE self)
     pri = *argv++;
 
     if (!FIXNUM_P(pri)) {
-      rb_raise(rb_eTypeError, "type mismatch: %s given", rb_class2name(CLASS_OF(pri)));
+	rb_raise(rb_eTypeError, "type mismatch: %"PRIsVALUE" given", rb_obj_class(pri));
     }
 
     syslog_write(FIX2INT(pri), argc, argv);
@@ -330,10 +330,10 @@ static VALUE mSyslog_inspect(VALUE self)
     Check_Type(self, T_MODULE);
 
     if (!syslog_opened)
-	return rb_sprintf("<#%s: opened=false>", rb_class2name(self));
+	return rb_sprintf("<#%"PRIsVALUE": opened=false>", self);
 
-    return rb_sprintf("<#%s: opened=true, ident=\"%s\", options=%d, facility=%d, mask=%d>",
-		      rb_class2name(self),
+    return rb_sprintf("<#%"PRIsVALUE": opened=true, ident=\"%s\", options=%d, facility=%d, mask=%d>",
+		      self,
 		      syslog_ident,
 		      syslog_options,
 		      syslog_facility,

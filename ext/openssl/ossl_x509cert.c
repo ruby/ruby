@@ -693,35 +693,15 @@ ossl_x509_add_extension(VALUE self, VALUE extension)
 static VALUE
 ossl_x509_inspect(VALUE self)
 {
-    VALUE str;
-    const char *cname = rb_class2name(rb_obj_class(self));
-
-    str = rb_str_new2("#<");
-    rb_str_cat2(str, cname);
-    rb_str_cat2(str, " ");
-
-    rb_str_cat2(str, "subject=");
-    rb_str_append(str, rb_inspect(ossl_x509_get_subject(self)));
-    rb_str_cat2(str, ", ");
-
-    rb_str_cat2(str, "issuer=");
-    rb_str_append(str, rb_inspect(ossl_x509_get_issuer(self)));
-    rb_str_cat2(str, ", ");
-
-    rb_str_cat2(str, "serial=");
-    rb_str_append(str, rb_inspect(ossl_x509_get_serial(self)));
-    rb_str_cat2(str, ", ");
-
-    rb_str_cat2(str, "not_before=");
-    rb_str_append(str, rb_inspect(ossl_x509_get_not_before(self)));
-    rb_str_cat2(str, ", ");
-
-    rb_str_cat2(str, "not_after=");
-    rb_str_append(str, rb_inspect(ossl_x509_get_not_after(self)));
-
-    str = rb_str_cat2(str, ">");
-
-    return str;
+    return rb_sprintf("#<%"PRIsVALUE": subject=%+"PRIsVALUE", "
+		      "issuer=%+"PRIsVALUE", serial=%+"PRIsVALUE", "
+		      "not_before=%+"PRIsVALUE", not_after=%+"PRIsVALUE">",
+		      rb_obj_class(self),
+		      ossl_x509_get_subject(self),
+		      ossl_x509_get_issuer(self),
+		      ossl_x509_get_serial(self),
+		      ossl_x509_get_not_before(self),
+		      ossl_x509_get_not_after(self));
 }
 
 /*

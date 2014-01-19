@@ -609,7 +609,7 @@ static void
 raise_from_check(pid_t pid, int status)
 {
     const char *state;
-    char buf[1024];
+    VALUE msg;
     VALUE exc;
 
 #if defined(WIFSTOPPED)
@@ -627,8 +627,8 @@ raise_from_check(pid_t pid, int status)
     else {
 	state = "exited";
     }
-    snprintf(buf, sizeof(buf), "pty - %s: %ld", state, (long)pid);
-    exc = rb_exc_new2(eChildExited, buf);
+    msg = rb_sprintf("pty - %s: %ld", state, (long)pid);
+    exc = rb_exc_new3(eChildExited, msg);
     rb_iv_set(exc, "status", rb_last_status_get());
     rb_exc_raise(exc);
 }

@@ -624,8 +624,8 @@ ossl_asn1_default_tag(VALUE obj)
       	}
     	tmp_class = rb_class_superclass(tmp_class);
     }
-    ossl_raise(eASN1Error, "universal tag for %s not found",
-	       rb_class2name(CLASS_OF(obj)));
+    ossl_raise(eASN1Error, "universal tag for %"PRIsVALUE" not found",
+	       rb_obj_class(obj));
 
     return -1; /* dummy */
 }

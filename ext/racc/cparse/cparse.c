@@ -418,10 +418,10 @@ extract_user_token(struct cparse_params *v, VALUE block_args,
 
     if (!RB_TYPE_P(block_args, T_ARRAY)) {
         rb_raise(rb_eTypeError,
-                 "%s() %s %s (must be Array[2])",
+                 "%s() %s %"PRIsVALUE" (must be Array[2])",
                  v->lex_is_iterator ? rb_id2name(v->lexmid) : "next_token",
                  v->lex_is_iterator ? "yielded" : "returned",
-                 rb_class2name(CLASS_OF(block_args)));
+                 rb_obj_class(block_args));
     }
     if (RARRAY_LEN(block_args) != 2) {
         rb_raise(rb_eArgError,

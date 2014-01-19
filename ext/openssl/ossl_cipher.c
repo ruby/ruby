@@ -213,9 +213,9 @@ ossl_cipher_init(int argc, VALUE *argv, VALUE self, int mode)
 	 * We deprecated the arguments for this method, but we decided
 	 * keeping this behaviour for backward compatibility.
 	 */
-	const char *cname  = rb_class2name(rb_obj_class(self));
-	rb_warn("arguments for %s#encrypt and %s#decrypt were deprecated; "
-                "use %s#pkcs5_keyivgen to derive key and IV",
+	VALUE cname  = rb_class_path(rb_obj_class(self));
+	rb_warn("arguments for %"PRIsVALUE"#encrypt and %"PRIsVALUE"#decrypt were deprecated; "
+                "use %"PRIsVALUE"#pkcs5_keyivgen to derive key and IV",
                 cname, cname, cname);
 	StringValue(pass);
 	GetCipher(self, ctx);
