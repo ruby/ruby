@@ -1640,7 +1640,7 @@ RGenGCは、過去の拡張ライブラリに（ほぼ）互換性を保つよ�
 スするようなコードは書かないようにして下さい。代わりに、rb_ary_aref(),
 rb_ary_store() などの、適切な API 関数を利用するようにして下さい。
 
-そのほか、対応についての詳細は README.ext の「Appendix D. Generational
+そのほか、対応についての詳細は README.EXT の「Appendix D. Generational
 GC」を参照して下さい。
 
 /*
