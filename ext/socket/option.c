@@ -4,6 +4,18 @@ VALUE rb_cSockOpt;
 
 #define pack_var(v) rb_str_new((const char *)&(v), sizeof(v))
 
+#define CAT(x,y) x##y
+#define XCAT(x,y) CAT(x,y)
+
+#if defined(__NetBSD__) || defined(__OpenBSD__)
+# define TYPE_IP_MULTICAST_LOOP byte
+# define TYPE_IP_MULTICAST_TTL byte
+# define USE_INSPECT_BYTE 1
+#else
+# define TYPE_IP_MULTICAST_LOOP int
+# define TYPE_IP_MULTICAST_TTL int
+#endif
+
 static VALUE
 sockopt_pack_byte(VALUE value)
 {
@@ -366,14 +378,10 @@ sockopt_linger(VALUE self)
 static VALUE
 sockopt_s_ipv4_multicast_loop(VALUE klass, VALUE value)
 {
+
 #if defined(IPPROTO_IP) && defined(IP_MULTICAST_LOOP)
-# if defined(__NetBSD__) || defined(__OpenBSD__)
-    VALUE o = sockopt_pack_byte(value);
-# else
-    VALUE o = sockopt_pack_int(value);
-# endif
-    return rsock_sockopt_new(AF_INET, IPPROTO_IP, IP_MULTICAST_LOOP,
-			     o);
+    VALUE o = XCAT(sockopt_pack_,TYPE_IP_MULTICAST_LOOP)(value);
+    return rsock_sockopt_new(AF_INET, IPPROTO_IP, IP_MULTICAST_LOOP, o);
 #else
 # error IPPROTO_IP or IP_MULTICAST_LOOP is not implemented
 #endif
@@ -397,22 +405,15 @@ sockopt_ipv4_multicast_loop(VALUE self)
 
 #if defined(IPPROTO_IP) && defined(IP_MULTICAST_LOOP)
     if (family == AF_INET && level == IPPROTO_IP && optname == IP_MULTICAST_LOOP) {
-# if defined(__NetBSD__) || defined(__OpenBSD__)
-	return sockopt_byte(self);
-# else
-	return sockopt_int(self);
-# endif
+	return XCAT(sockopt_,TYPE_IP_MULTICAST_LOOP)(self);
     }
 #endif
     rb_raise(rb_eTypeError, "ipv4_multicast_loop socket option expected");
     UNREACHABLE;
 }
 
-#if defined(__NetBSD__) || defined(__OpenBSD__)
-# define inspect_ipv4_multicast_loop(a,b,c,d) inspect_byte(a,b,c,d)
-#else
-# define inspect_ipv4_multicast_loop(a,b,c,d) inspect_int(a,b,c,d)
-#endif
+#define inspect_ipv4_multicast_loop(a,b,c,d) \
+  XCAT(inspect_,TYPE_IP_MULTICAST_LOOP)(a,b,c,d)
 
 /*
  * call-seq:
@@ -430,13 +431,8 @@ static VALUE
 sockopt_s_ipv4_multicast_ttl(VALUE klass, VALUE value)
 {
 #if defined(IPPROTO_IP) && defined(IP_MULTICAST_TTL)
-# if defined(__NetBSD__) || defined(__OpenBSD__)
-    VALUE o = sockopt_pack_byte(value);
-# else
-    VALUE o = sockopt_pack_int(value);
-# endif
-    return rsock_sockopt_new(AF_INET, IPPROTO_IP, IP_MULTICAST_TTL,
-			     o);
+    VALUE o = XCAT(sockopt_pack_,TYPE_IP_MULTICAST_TTL)(value);
+    return rsock_sockopt_new(AF_INET, IPPROTO_IP, IP_MULTICAST_TTL, o);
 #else
 # error IPPROTO_IP or IP_MULTICAST_TTL is not implemented
 #endif
@@ -460,22 +456,15 @@ sockopt_ipv4_multicast_ttl(VALUE self)
 
 #if defined(IPPROTO_IP) && defined(IP_MULTICAST_TTL)
     if (family == AF_INET && level == IPPROTO_IP && optname == IP_MULTICAST_TTL) {
-# if defined(__NetBSD__) || defined(__OpenBSD__)
-	return sockopt_byte(self);
-# else
-	return sockopt_int(self);
-# endif
+	return XCAT(sockopt_,TYPE_IP_MULTICAST_TTL)(self);
     }
 #endif
     rb_raise(rb_eTypeError, "ipv4_multicast_ttl socket option expected");
     UNREACHABLE;
 }
 
-#if defined(__NetBSD__) || defined(__OpenBSD__)
-# define inspect_ipv4_multicast_ttl(a,b,c,d) inspect_byte(a,b,c,d)
-#else
-# define inspect_ipv4_multicast_ttl(a,b,c,d) inspect_int(a,b,c,d)
-#endif
+#define inspect_ipv4_multicast_ttl(a,b,c,d) \
+    XCAT(inspect_,TYPE_IP_MULTICAST_TTL)(a,b,c,d)
 
 static int
 inspect_int(int level, int optname, VALUE data, VALUE ret)
@@ -491,7 +480,7 @@ inspect_int(int level, int optname, VALUE data, VALUE ret)
     }
 }
 
-#if defined(__NetBSD__) || defined(__OpenBSD__)
+#ifdef USE_INSPECT_BYTE
 static int
 inspect_byte(int level, int optname, VALUE data, VALUE ret)
 {
