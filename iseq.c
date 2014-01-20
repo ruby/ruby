@@ -196,13 +196,6 @@ iseq_location_setup(rb_iseq_t *iseq, VALUE path, VALUE absolute_path, VALUE name
     return loc;
 }
 
-void
-rb_iseq_location_setup(rb_iseq_t *iseq, VALUE path, VALUE absolute_path, VALUE name, size_t first_lineno)
-{
-   iseq_location_setup(iseq, path, 0, name, first_lineno);
-}
-
-
 #define ISEQ_SET_CREF(iseq, cref) RB_OBJ_WRITE((iseq)->self, &(iseq)->cref_stack, (cref))
 
 static void
@@ -272,9 +265,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
     set_relation(iseq, parent);
 
     name = rb_fstring(name);
-    if (TYPE( path ) == T_ARRAY) {
-fprintf(stderr, "rb_iseq_new_with_bopt_and_opt ARRAY\n");
-    } else {
+    if (TYPE( path ) != T_ARRAY) {
       path = rb_fstring(path);
     }
     if (RTEST(absolute_path))
@@ -452,9 +443,6 @@ rb_iseq_new_with_bopt_and_opt(NODE *node, VALUE name, VALUE path, VALUE absolute
     rb_iseq_t *iseq;
     VALUE self = iseq_alloc(rb_cISeq);
 
-    if (TYPE( path ) == T_ARRAY) {
-fprintf(stderr, "rb_iseq_new_with_bopt_and_opt ARRAY\n");
-    }
     GetISeqPtr(self, iseq);
     iseq->self = self;
 

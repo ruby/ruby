@@ -29,6 +29,8 @@ calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
     return rb_iseq_line_no(iseq, pc - iseq->iseq_encoded);
 }
 
+# define FILE_LINE_MASK ((UINT_MAX >> FILE_CNT_BITS))
+
 int
 rb_vm_get_sourceline(const rb_control_frame_t *cfp)
 {
@@ -38,7 +40,11 @@ rb_vm_get_sourceline(const rb_control_frame_t *cfp)
     if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	lineno = calc_lineno(cfp->iseq, cfp->pc);
     }
-    return lineno & 0xffffff;
+    if (iseq->location.path && TYPE( iseq->location.path) == T_ARRAY) {
+        lineno &= FILE_LINE_MASK;
+    }
+
+    return lineno;
 }
 
 typedef struct rb_backtrace_location_struct {
@@ -309,24 +315,28 @@ location_format(VALUE file, int lineno, VALUE name)
     }
 }
 
+# define FILE_LINE_BITS ((sizeof(unsigned int) * 8) - FILE_CNT_BITS)
+# define FILE_LINE_MASK ((UINT_MAX >> FILE_CNT_BITS))
+
 static VALUE
 location_to_str(rb_backtrace_location_t *loc)
 {
     VALUE file, name;
-    int lineno, t_lineno;
+    int lineno;
 
     switch (loc->type) {
       case LOCATION_TYPE_ISEQ:
 	file = loc->body.iseq.iseq->location.path;
 	name = loc->body.iseq.iseq->location.label;
 
-	t_lineno = calc_lineno(loc->body.iseq.iseq, loc->body.iseq.lineno.pc);
-
-	lineno = loc->body.iseq.lineno.lineno = t_lineno & 0xffffff;
-
         if (TYPE( file ) == T_ARRAY) {
-fprintf(stderr, "%04d %s\n", (t_lineno >> 24), RSTRING_PTR(rb_ary_entry(file,(t_lineno >> 24))));
-	   file = rb_ary_entry(file, (t_lineno >> 24));
+            unsigned int t_lineno;
+	    t_lineno = calc_lineno(loc->body.iseq.iseq, loc->body.iseq.lineno.pc);
+	    lineno = loc->body.iseq.lineno.lineno = t_lineno & FILE_LINE_MASK;
+
+	    file = rb_ary_entry(file, (t_lineno >> FILE_LINE_BITS));
+	} else {
+	    lineno = loc->body.iseq.lineno.lineno = calc_lineno(loc->body.iseq.iseq, loc->body.iseq.lineno.pc);
 	}
 	loc->type = LOCATION_TYPE_ISEQ_CALCED;
 	break;
@@ -346,8 +356,8 @@ fprintf(stderr, "%04d %s\n", (t_lineno >> 24), RSTRING_PTR(rb_ary_entry(file,(t_
 	    lineno = INT2FIX(0);
 	}
         if (TYPE( file ) == T_ARRAY) {
-fprintf(stderr, "LOCATION_TYPE_CFUNC %04d %s\n", (t_lineno >> 24), RSTRING_PTR(rb_ary_entry(file,(t_lineno >> 24))));
-	   file = rb_ary_entry(file, (t_lineno >> 24));
+	    unsigned int t_lineno = calc_lineno(loc->body.iseq.iseq, loc->body.iseq.lineno.pc);
+	    file = rb_ary_entry(file, (t_lineno >> FILE_LINE_BITS));
 	}
 	name = rb_id2str(loc->body.cfunc.mid);
 	break;

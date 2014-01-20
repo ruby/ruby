@@ -3180,7 +3180,6 @@ build_postexe_iseq(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *body)
     return Qnil;
 }
 
-void rb_iseq_location_setup(rb_iseq_t *iseq, VALUE path, VALUE absolute_path, VALUE name, size_t first_lineno);
 /**
   compile each node
 

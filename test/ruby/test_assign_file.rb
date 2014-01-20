@@ -58,7 +58,7 @@ EOF
 
   def test_raise_line_block
     assert_block do
-      eval(<<'EOF', nil, "BOB", 1)
+      eval(<<'EOF', nil, "test0", 1)
 begin
   __FILE__ = "test1"
   __LINE__ = 12
@@ -70,12 +70,10 @@ begin
     test1
     __FILE__ = "test3"
   end
-  puts __LINE__; assert __LINE__ == 21
-  puts __FILE__; assert __FILE__ == "test3"
+  assert __LINE__ == 21
+  assert __FILE__ == "test3"
   test2
 rescue => x
-  puts x.backtrace[0]
-  puts x.backtrace[1]
   assert x.backtrace[0] == "test1:14:in `test1'" && x.backtrace[1] == "test2:18:in `test2'"
   return x.backtrace[0] == "test1:14:in `test1'" && x.backtrace[1] == "test2:18:in `test2'"
 end
@@ -86,9 +84,9 @@ EOF
 
   def test_raise_line_in_block
     assert_block do
-      eval(<<'EOF', nil, "BOB", 1)
+      eval(<<'EOF', nil, "test", 1)
 begin
-__FILE__ = "test0"
+  __FILE__ = "test0"
   def test1
     __FILE__ = "test1"
     raise "Error"
@@ -99,14 +97,9 @@ __FILE__ = "test0"
   end
   raise "Error"
 rescue => x
-  puts "[#{x.backtrace[0]}]"
   assert x.backtrace[0] == "test2:11:in `block in test_raise_line_in_block'"
 end
 EOF
     end
   end
-
 end
-
-
-

@@ -266,8 +266,10 @@ struct parser_params {
     int line_count;
     int has_shebang;
     char *parser_ruby_sourcefile; /* current source file */
-    short int parser_ruby_sourcefile_offset;	/* current line no. */
-    int parser_ruby_sourceline;	/* current line no. */
+#if FILE_CNT_BITS > 0
+    short int parser_ruby_sourcefile_offset;	/* current source file. */
+#endif
+    unsigned int parser_ruby_sourceline;	/* current line no. */
     VALUE parser_ruby_sourcefile_string;
     rb_encoding *enc;
 
@@ -342,8 +344,15 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define ruby_sourceline		(parser->parser_ruby_sourceline)
 #define ruby_sourcefile		(parser->parser_ruby_sourcefile)
 #define ruby_sourcefile_string	(parser->parser_ruby_sourcefile_string)
-#define ruby_sourcefile_offset	(parser->parser_ruby_sourcefile_offset)
-#define FILE_SET(x)		(((ruby_sourcefile_offset) << 24) + x)
+#if FILE_CNT_BITS > 0
+# define ruby_sourcefile_offset	(parser->parser_ruby_sourcefile_offset)
+# define FILE_LINE_MASK ((UINT_MAX >> FILE_CNT_BITS))
+# define FILE_LINE_BITS ((sizeof(ruby_sourceline) * 8) - FILE_CNT_BITS)
+# define FILE_CNT_MASK (~(UINT_MAX >> FILE_CNT_BITS))
+# define FILE_CNT_MAX (1 << FILE_CNT_BITS)
+# define FILE_LINE_MAX (1 << FILE_LINE_BITS)
+# define FILE_SET(lineno)		(((ruby_sourcefile_offset) << FILE_LINE_BITS) + lineno)
+#endif
 #define current_enc		(parser->enc)
 #define yydebug			(parser->parser_yydebug)
 #ifdef RIPPER
@@ -8920,10 +8929,18 @@ node_assign_gen(struct parser_params *parser, NODE *lhs, NODE *rhs)
 	lhs->nd_value = rhs;
 	break;
       case NODE_FILE:
+#if FILE_CNT_BITS > 0
 	if (nd_type(rhs) == NODE_STR) {
-	    ruby_sourcefile_string = rhs->nd_lit;
-	    ruby_sourcefile = RSTRING_PTR(rhs->nd_lit);
-	    ruby_sourcefile_offset += 1;
+	    if (strcmp(ruby_sourcefile, RSTRING_PTR(rhs->nd_lit))) {
+	      ruby_sourcefile_string = rhs->nd_lit;
+	      ruby_sourcefile = RSTRING_PTR(rhs->nd_lit);
+	      ruby_sourcefile_offset += 1;
+	      if (ruby_sourcefile_offset  >= FILE_CNT_MAX) {
+		rb_warning0("__FILE__ overflow");
+	      }
+	    } else {
+fprintf(stderr, "skipping %s %s %d\n", ruby_sourcefile, RSTRING_PTR(rhs->nd_lit), strcmp(ruby_sourcefile, RSTRING_PTR(rhs->nd_lit)));
+	    }
 	} else {
 	    rb_warning0("__FILE__ can only be set to a String, ignored");
 	}
@@ -8931,13 +8948,16 @@ node_assign_gen(struct parser_params *parser, NODE *lhs, NODE *rhs)
 	lhs->nd_lit = rb_str_dup(ruby_sourcefile_string);
 	lhs->nd_cnt = ruby_sourcefile_offset;
 	break;
+#else
+        yyerror("Can't assign to __FILE__");
+        goto error;
+#endif
       case NODE_LINE:
 	if (FIXNUM_P(rhs->nd_lit)) {
 	    ruby_sourceline = NUM2INT(rhs->nd_lit);
 	} else {
 	    rb_warning0("__LINE__ can only be set to a Fixnum, ignored");
 	}
-/*	return NEW_LIT(INT2FIX(ruby_sourceline)); FIXME */
 	lhs->nd_lit = rhs->nd_lit;
 	break;
 
@@ -8950,7 +8970,6 @@ node_assign_gen(struct parser_params *parser, NODE *lhs, NODE *rhs)
         break;
 
       default:
-fprintf(stderr, "ERROR type %d\n", nd_type(lhs));
 	/* should not happen */
 	break;
     }
