@@ -1440,7 +1440,9 @@ module URI
 
     # returns the assemble String with path and query components
     def path_query
-      str = @path
+      # +str+ should always be String, even if @path is nil (it can happen
+      # for allocated and not initialized objects)
+      str = @path || ''
       if @query
         str += '?' + @query
       end
