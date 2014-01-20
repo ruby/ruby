@@ -7,7 +7,7 @@ VALUE rb_cSockOpt;
 #define CAT(x,y) x##y
 #define XCAT(x,y) CAT(x,y)
 
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__) || defined(_WIN32)
 # define TYPE_IP_MULTICAST_LOOP int
 # define TYPE_IP_MULTICAST_TTL int
 #else

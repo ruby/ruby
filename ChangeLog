@@ -1,7 +1,7 @@
-Tue Jan 21 04:27:30 2014  Tanaka Akira  <akr@fsij.org>
+Tue Jan 21 04:31:23 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/option.c: Use "int" for IP_MULTICAST_LOOP and
-	  IP_MULTICAST_TTL on Mac OS X.
+	  IP_MULTICAST_TTL on Mac OS X and Windows.
 
 Tue Jan 21 00:39:15 2014  Tanaka Akira  <akr@fsij.org>
 
