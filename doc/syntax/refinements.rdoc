@@ -42,7 +42,7 @@ Activate the refinement with #using:
 
   using M
 
-  x = C.new
+  c = C.new
 
   c.foo # prints "C#foo in M"
 
