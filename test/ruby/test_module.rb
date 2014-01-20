@@ -821,6 +821,27 @@ class TestModule < Test::Unit::TestCase
     end
   end
 
+  def test_attr_return_values
+    a, b, c = nil, nil, nil
+    Class.new do
+      a = attr :foo
+      b = attr :bar, :baz
+      c = attr :qux, true
+    end
+    assert_equal([:foo], a)
+    assert_equal([:bar, :baz], b)
+    assert_equal([:qux, :qux=], c)
+    a, b, c = nil, nil, nil
+    Class.new do
+      a = attr_reader :foo
+      b = attr_writer :bar, :baz
+      c = attr_accessor :qux
+    end
+    assert_equal([:foo], a)
+    assert_equal([:bar=, :baz=], b)
+    assert_equal([:qux, :qux=], c)
+  end
+
   def test_undef
     c = Class.new
     assert_raise(NameError) do
