@@ -1946,6 +1946,18 @@ rb_check_attr_id(ID id)
     return id;
 }
 
+static void
+mod_attr(int argc, VALUE *argv, VALUE klass, int read, int write, int ex)
+{
+    int i;
+    ID id;
+
+    for (i=0; i<argc; i++) {
+        id = id_for_attr(argv[i]);
+        rb_attr(klass, id, read, write, ex);
+    }
+}
+
 /*
  *  call-seq:
  *     attr_reader(symbol, ...)  -> nil
@@ -1963,20 +1975,35 @@ static VALUE
 rb_mod_attr_reader(int argc, VALUE *argv, VALUE klass)
 {
     int i;
+    ID id;
+    VALUE ret;
 
+    mod_attr(argc, argv, klass, TRUE, FALSE, TRUE);
+
+    ret = rb_ary_new_capa(argc);
     for (i=0; i<argc; i++) {
-	rb_attr(klass, id_for_attr(argv[i]), TRUE, FALSE, TRUE);
+        id = id_for_attr(argv[i]);
+        rb_ary_push(ret, ID2SYM(id));
     }
-    return Qnil;
+
+    return ret;
 }
 
 VALUE
 rb_mod_attr(int argc, VALUE *argv, VALUE klass)
 {
+    ID id;
+
     if (argc == 2 && (argv[1] == Qtrue || argv[1] == Qfalse)) {
+        id = id_for_attr(argv[0]);
 	rb_warning("optional boolean argument is obsoleted");
-	rb_attr(klass, id_for_attr(argv[0]), 1, RTEST(argv[1]), TRUE);
-	return Qnil;
+	rb_attr(klass, id, 1, RTEST(argv[1]), TRUE);
+
+        if (RTEST(argv[1])) {
+            return rb_ary_new_from_args(2, ID2SYM(id), ID2SYM(rb_id_attrset(id)));
+        } else {
+            return rb_ary_new_from_args(1, ID2SYM(id));
+        }
     }
     return rb_mod_attr_reader(argc, argv, klass);
 }
@@ -1995,11 +2022,18 @@ static VALUE
 rb_mod_attr_writer(int argc, VALUE *argv, VALUE klass)
 {
     int i;
+    ID id;
+    VALUE ret;
 
+    mod_attr(argc, argv, klass, FALSE, TRUE, TRUE);
+
+    ret = rb_ary_new_capa(argc);
     for (i=0; i<argc; i++) {
-	rb_attr(klass, id_for_attr(argv[i]), FALSE, TRUE, TRUE);
+        id = rb_id_attrset(id_for_attr(argv[i]));
+        rb_ary_push(ret, ID2SYM(id));
     }
-    return Qnil;
+
+    return ret;
 }
 
 /*
@@ -2023,11 +2057,19 @@ static VALUE
 rb_mod_attr_accessor(int argc, VALUE *argv, VALUE klass)
 {
     int i;
+    ID id;
+    VALUE ret;
 
+    mod_attr(argc, argv, klass, TRUE, TRUE, TRUE);
+
+    ret = rb_ary_new_capa(2*argc);
     for (i=0; i<argc; i++) {
-	rb_attr(klass, id_for_attr(argv[i]), TRUE, TRUE, TRUE);
+        id = id_for_attr(argv[i]);
+        rb_ary_push(ret, ID2SYM(id));
+        rb_ary_push(ret, ID2SYM(rb_id_attrset(id)));
     }
-    return Qnil;
+
+    return ret;
 }
 
 /*
