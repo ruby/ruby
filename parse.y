@@ -275,7 +275,7 @@ struct parser_params {
 
     int parser_yydebug;
 
-    int last_cr_line;
+    unsigned int last_cr_line;
 
 #ifndef RIPPER
     /* Ruby core only */
@@ -5637,7 +5637,7 @@ parser_nextc(struct parser_params *parser)
 	    lex_p++;
 	    c = '\n';
 	}
-	else if (ruby_sourceline > parser->last_cr_line) {
+	else if (ruby_sourceline > parser->last_cr_line || parser->last_cr_line == UINT_MAX) {
 	    parser->last_cr_line = ruby_sourceline;
 	    rb_compile_warn(ruby_sourcefile, ruby_sourceline, "encountered \\r in middle of line, treated as a mere space");
 	}
