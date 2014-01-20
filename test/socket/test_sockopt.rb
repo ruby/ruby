@@ -34,6 +34,13 @@ class TestSocketOption < Test::Unit::TestCase
     assert_equal(128, sockopt.ipv4_multicast_loop)
   end
 
+  def test_ipv4_multicast_loop_size
+    expected_size = Socket.open(:INET, :DGRAM) {|s|
+      s.getsockopt(:IP, :MULTICAST_LOOP).to_s.bytesize
+    }
+    assert_equal(expected_size, Socket::Option.ipv4_multicast_loop(0).to_s.bytesize)
+  end
+
   def test_ipv4_multicast_ttl
     sockopt = Socket::Option.ipv4_multicast_ttl(128)
     assert_equal('#<Socket::Option: INET IP MULTICAST_TTL 128>', sockopt.inspect)
