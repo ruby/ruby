@@ -352,6 +352,8 @@ static int parser_yyerror(struct parser_params*, const char*);
 # define FILE_CNT_MAX (1 << FILE_CNT_BITS)
 # define FILE_LINE_MAX (1 << FILE_LINE_BITS)
 # define FILE_SET(lineno)		(((ruby_sourcefile_offset) << FILE_LINE_BITS) + lineno)
+#else
+# define FILE_SET(lineno)		(lineno)
 #endif
 #define current_enc		(parser->enc)
 #define yydebug			(parser->parser_yydebug)
@@ -710,7 +712,7 @@ static void token_info_pop(struct parser_params*, const char *token);
     VALUE val;
     NODE *node;
     ID id;
-    long int num;
+    unsigned int num;
     const struct vtable *vars;
 }
 
@@ -9112,7 +9114,6 @@ void_expr_gen(struct parser_params *parser, NODE *node)
       case NODE_DEFINED:
 	useless = "defined?";
 	break;
-
     }
 
     if (useless) {
@@ -9135,9 +9136,6 @@ void_stmts_gen(struct parser_params *parser, NODE *node)
 	if (nd_type(node->nd_head) == NODE_FILE) {
 	  ruby_sourcefile_string = node->nd_head->nd_lit;
 	  ruby_sourcefile = RSTRING_PTR(node->nd_head->nd_lit);
-#ifdef GAM3
-	  fprintf(stderr, "void stmts __FILE__ = %s %s\n", ruby_sourcefile, RSTRING_PTR(node->nd_head->nd_lit));
-#endif
 	}
 	if (!node->nd_next) return;
 	void_expr0(node->nd_head);
