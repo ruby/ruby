@@ -81,8 +81,8 @@
 #
 # * Any "public" release of a gem should have a different version.  Normally
 #   that means incrementing the build number.  This means a developer can
-#   generate builds all day long for himself, but as soon as he/she makes a
-#   public release, the version must be updated.
+#   generate builds all day long, but as soon as they make a public release,
+#   the version must be updated.
 #
 # === Examples
 #
@@ -99,26 +99,25 @@
 # Version 1.1.1:: Fixed a bug in the linked list implementation.
 # Version 1.1.2:: Fixed a bug introduced in the last fix.
 #
-# Client A needs a stack with basic push/pop capability.  He writes to the
-# original interface (no <tt>top</tt>), so his version constraint looks
-# like:
+# Client A needs a stack with basic push/pop capability.  They write to the
+# original interface (no <tt>top</tt>), so their version constraint looks like:
 #
 #   gem 'stack', '~> 0.0'
 #
 # Essentially, any version is OK with Client A.  An incompatible change to
-# the library will cause him grief, but he is willing to take the chance (we
-# call Client A optimistic).
+# the library will cause them grief, but they are willing to take the chance
+# (we call Client A optimistic).
 #
-# Client B is just like Client A except for two things: (1) He uses the
-# <tt>depth</tt> method and (2) he is worried about future
-# incompatibilities, so he writes his version constraint like this:
+# Client B is just like Client A except for two things: (1) They use the
+# <tt>depth</tt> method and (2) they are worried about future
+# incompatibilities, so they write their version constraint like this:
 #
 #   gem 'stack', '~> 0.1'
 #
 # The <tt>depth</tt> method was introduced in version 0.1.0, so that version
 # or anything later is fine, as long as the version stays below version 1.0
 # where incompatibilities are introduced.  We call Client B pessimistic
-# because he is worried about incompatible future changes (it is OK to be
+# because they are worried about incompatible future changes (it is OK to be
 # pessimistic!).
 #
 # == Preventing Version Catastrophe:

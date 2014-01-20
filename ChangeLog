@@ -1,3 +1,8 @@
+Mon Jan 20 13:55:03 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/rubygems/version.rb: [DOC] Use gender-neutral pronouns [ci skip]
+	* lib/rubygems/security.rb: ditto
+
 Sun Jan 19 06:38:48 2014  Benoit Daloze  <eregontp@gmail.com>
 
 	* compar.c (cmp_equal): warn for this release and still rescue
