@@ -797,6 +797,14 @@ class URI::TestGeneric < Test::Unit::TestCase
     }
   end unless RUBY_PLATFORM =~ /mswin|mingw/
 
+  def test_to_s
+    # should not raise exception on blank object
+    uri = URI::Generic.allocate
+    assert_nothing_raised TypeError do
+      uri.to_s
+    end
+  end
+
   def with_env(h)
     ['http', 'https', 'ftp'].each do |scheme|
       name = "#{scheme}_proxy"
