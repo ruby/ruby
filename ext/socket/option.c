@@ -597,7 +597,7 @@ inspect_timeval_as_interval(int level, int optname, VALUE data, VALUE ret)
  *
  * However Linux and FreeBSD setsockname accepts int argument
  * as well as u_char.
- * Thier getsockname returns int.
+ * Their getsockname returns int.
  *
  * There are 3 socket options which takes a struct.
  *
