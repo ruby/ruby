@@ -1,3 +1,9 @@
+Tue Jan 21 00:39:15 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/option.c: Use "byte" as default argument for
+	  IP_MULTICAST_LOOP and IP_MULTICAST_TTL socket option to follow
+	  the original multicast implementation.
+
 Mon Jan 20 20:20:27 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/option.c: Use preprocessor macros to avoid repeated

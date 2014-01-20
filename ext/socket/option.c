@@ -7,13 +7,13 @@ VALUE rb_cSockOpt;
 #define CAT(x,y) x##y
 #define XCAT(x,y) CAT(x,y)
 
-#if defined(__NetBSD__) || defined(__OpenBSD__)
+#if defined(__linux__) || defined(__FreeBSD__)
+# define TYPE_IP_MULTICAST_LOOP int
+# define TYPE_IP_MULTICAST_TTL int
+#else
 # define TYPE_IP_MULTICAST_LOOP byte
 # define TYPE_IP_MULTICAST_TTL byte
 # define USE_INSPECT_BYTE 1
-#else
-# define TYPE_IP_MULTICAST_LOOP int
-# define TYPE_IP_MULTICAST_TTL int
 #endif
 
 static VALUE
@@ -589,6 +589,15 @@ inspect_timeval_as_interval(int level, int optname, VALUE data, VALUE ret)
  *   IP Multicast Extensions for 4.3BSD UNIX and related systems
  *   (MULTICAST 1.2 Release)
  *   http://www.kohala.com/start/mcast.api.txt
+ *
+ * There are 2 socket options which takes a u_char (unsigned char).
+ *
+ *   IP_MULTICAST_TTL
+ *   IP_MULTICAST_LOOP
+ *
+ * However Linux and FreeBSD setsockname accepts int argument
+ * as well as u_char.
+ * Thier getsockname returns int.
  *
  * There are 3 socket options which takes a struct.
  *
