@@ -1,3 +1,8 @@
+Tue Jan 21 17:55:09 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/uri/common.rb: [DOC] Use static w3.org uri [ci skip]
+	  Patch by @ykzts [Fix GH-484] https://github.com/ruby/ruby/pull/484
+
 Tue Jan 21 16:43:22 2014  Zachary Scott  <e@zzak.io>
 
 	* enum.c: [DOC] Add simple example of Enumerable#zip [ci skip]
