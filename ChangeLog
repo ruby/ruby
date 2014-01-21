@@ -1,3 +1,10 @@
+Tue Jan 21 16:26:44 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (rb_thread_create_timer_thread): expand timer
+	  thread stack size to get rid of segfault on FreeBSD/powerpc64.
+	  based on the patch by Steve Wills at [ruby-core:59923].
+	  [ruby-core:56590] [Bug #8783]
+
 Tue Jan 21 04:31:23 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/option.c: Use "int" for IP_MULTICAST_LOOP and
