@@ -8940,8 +8940,6 @@ node_assign_gen(struct parser_params *parser, NODE *lhs, NODE *rhs)
 	      if (ruby_sourcefile_offset  >= FILE_CNT_MAX) {
 		rb_warning0("__FILE__ overflow");
 	      }
-	    } else {
-fprintf(stderr, "skipping %s %s %d\n", ruby_sourcefile, RSTRING_PTR(rhs->nd_lit), strcmp(ruby_sourcefile, RSTRING_PTR(rhs->nd_lit)));
 	    }
 	} else {
 	    rb_warning0("__FILE__ can only be set to a String, ignored");
