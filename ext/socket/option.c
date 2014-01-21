@@ -7,10 +7,21 @@ VALUE rb_cSockOpt;
 #define CAT(x,y) x##y
 #define XCAT(x,y) CAT(x,y)
 
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__) || defined(_WIN32)
+#if defined(__linux__) || \
+    defined(__GNU__) /* GNU/Hurd */ || \
+    defined(__FreeBSD__) || \
+    defined(__DragonFly__) || \
+    defined(__APPLE__) || \
+    defined(_WIN32) || \
+    defined(__CYGWIN__)
 # define TYPE_IP_MULTICAST_LOOP int
 # define TYPE_IP_MULTICAST_TTL int
 #else
+/* The original IP multicast implementation by Steve Deering
+ * NetBSD
+ * OpenBSD
+ * SunOS
+ */
 # define TYPE_IP_MULTICAST_LOOP byte
 # define TYPE_IP_MULTICAST_TTL byte
 # define USE_INSPECT_BYTE 1
