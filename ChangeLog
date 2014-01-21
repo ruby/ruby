@@ -1,3 +1,9 @@
+Tue Jan 21 20:14:55 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (rb_thread_create_timer_thread): fix for platforms
+	  where PTHREAD_STACK_MIN is a dynamic value and not a compile-time
+	  constant.  [ruby-dev:47911] [Bug #9436]
+
 Tue Jan 21 17:55:09 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/uri/common.rb: [DOC] Use static w3.org uri [ci skip]

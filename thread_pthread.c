@@ -1480,17 +1480,15 @@ rb_thread_create_timer_thread(void)
         }
 # ifdef PTHREAD_STACK_MIN
 	{
-#   define TIMER_THREAD_STACK_MIN_SIZE (4096 * 4)
+	    const size_t min_size = (4096 * 4);
 	    /* Allocate the machine stack for the timer thread
 	     * at least 16KB (4 pages).  FreeBSD 8.2 AMD64 causes
 	     * machine stack overflow only with PTHREAD_STACK_MIN.
 	     */
-#   if TIMER_THREAD_STACK_MIN_SIZE < PTHREAD_STACK_MIN
-#     undef TIMER_THREAD_STACK_MIN_SIZE
-#     define TIMER_THREAD_STACK_MIN_SIZE PTHREAD_STACK_MIN
-#   endif
-	    pthread_attr_setstacksize(&attr,
-				      TIMER_THREAD_STACK_MIN_SIZE + (THREAD_DEBUG ? BUFSIZ : 0));
+	    size_t stack_size = PTHREAD_STACK_MIN; /* may be dynamic, get only once */
+	    if (stack_size < min_size) stack_size = min_size;
+	    if (THREAD_DEBUG) stack_size += BUFSIZ;
+	    pthread_attr_setstacksize(&attr, stack_size);
 	}
 # endif
 #endif
