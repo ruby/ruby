@@ -1,3 +1,9 @@
+Tue Jan 21 16:43:22 2014  Zachary Scott  <e@zzak.io>
+
+	* enum.c: [DOC] Add simple example of Enumerable#zip [ci skip]
+	  Patch by @nruth on documenting-ruby/ruby#22
+	  https://github.com/documenting-ruby/ruby/pull/22
+
 Tue Jan 21 16:26:44 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (rb_thread_create_timer_thread): expand timer
