@@ -136,7 +136,7 @@ module FileUtils
   #
   # Options: (none)
   #
-  # Returns true if +newer+ is newer than all +old_list+.
+  # Returns true if +new+ is newer than all +old_list+.
   # Non-existent files are older than any file.
   #
   #   FileUtils.uptodate?('hello.o', %w(hello.c hello.h)) or \
