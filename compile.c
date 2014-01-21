@@ -226,6 +226,17 @@ r_value(VALUE value)
 	  iseq->compile_data->last_coverable_line = (line); \
 	  ADD_INSN1((seq), (line), trace, INT2FIX(RUBY_EVENT_COVERAGE)); \
       } \
+      if ((event) == RUBY_EVENT_DEFN && iseq->method_coverage) { \
+	  /*iseq->compile_data->last_coverable_line = (line); \
+	  VALUE info = rb_hash_new(); \
+	  rb_hash_aset(info, ID2SYM(rb_intern("count")), INT2FIX(0));*/ \
+	  rb_hash_aset(iseq->method_coverage, LONG2FIX(line), Qnil); \
+      } \
+      if ((event) == RUBY_EVENT_CALL && iseq->method_coverage && \
+	  (line) != iseq->compile_data->last_coverable_line) { \
+	  iseq->compile_data->last_coverable_line = (line); \
+	  ADD_INSN1((seq), (line), trace, INT2FIX(RUBY_EVENT_MCOVERAGE)); \
+      } \
       if (iseq->compile_data->option->trace_instruction) { \
 	  ADD_INSN1((seq), (line), trace, INT2FIX(event)); \
       } \
@@ -4938,6 +4949,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	debugp_param("defn/iseq", iseqval);
 
+	ADD_TRACE(ret, nd_line(node), RUBY_EVENT_DEFN);
 	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
 	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
 	ADD_INSN1(ret, line, putobject, ID2SYM(node->nd_mid));

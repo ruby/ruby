@@ -38,8 +38,12 @@ coverage_result_i(st_data_t key, st_data_t val, st_data_t h)
     VALUE path = (VALUE)key;
     VALUE coverage = (VALUE)val;
     VALUE coverages = (VALUE)h;
-    coverage = rb_ary_dup(coverage);
-    rb_ary_clear((VALUE)val);
+    VALUE line_coverage = rb_hash_lookup(coverage, ID2SYM(rb_intern("lines")));
+    line_coverage = rb_ary_dup(line_coverage);
+    coverage = rb_hash_dup(coverage);
+    rb_hash_clear((VALUE)val);
+    rb_hash_freeze(line_coverage);
+    rb_hash_aset(coverage, ID2SYM(rb_intern("lines")), line_coverage);
     rb_ary_freeze(coverage);
     rb_hash_aset(coverages, path, coverage);
     return ST_CONTINUE;

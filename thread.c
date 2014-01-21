@@ -3862,7 +3862,7 @@ static int
 clear_coverage_i(st_data_t key, st_data_t val, st_data_t dummy)
 {
     int i;
-    VALUE lines = (VALUE)val;
+    VALUE lines = rb_hash_lookup(val, ID2SYM(rb_intern("lines")));
 
     for (i = 0; i < RARRAY_LEN(lines); i++) {
 	if (RARRAY_AREF(lines, i) != Qnil) {
@@ -5254,6 +5254,25 @@ update_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
     }
 }
 
+static void
+update_method_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klass)
+{
+    VALUE method_coverage = GET_THREAD()->cfp->iseq->method_coverage;
+    if (method_coverage) {
+	long line = rb_sourceline();
+	VALUE info = rb_hash_lookup(method_coverage, LONG2FIX(line));
+
+	if (info == Qnil) {
+	    VALUE info = rb_hash_new();
+	    rb_hash_aset(info, ID2SYM(rb_intern("count")), INT2FIX(1));
+	    rb_hash_aset(method_coverage, LONG2FIX(line), info);
+	} else {
+	    long count = FIX2LONG(rb_hash_lookup(info, ID2SYM(rb_intern("count")))) + 1;
+	    rb_hash_aset(info, ID2SYM(rb_intern("count")), LONG2FIX(count));
+	}
+    }
+}
+
 VALUE
 rb_get_coverages(void)
 {
@@ -5265,6 +5284,7 @@ rb_set_coverages(VALUE coverages)
 {
     GET_VM()->coverages = coverages;
     rb_add_event_hook(update_coverage, RUBY_EVENT_COVERAGE, Qnil);
+    rb_add_event_hook(update_method_coverage, RUBY_EVENT_MCOVERAGE, Qnil);
 }
 
 void

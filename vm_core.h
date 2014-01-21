@@ -226,7 +226,8 @@ struct rb_iseq_struct {
     VALUE *iseq_encoded; /* encoded iseq */
     unsigned long iseq_size;
     const VALUE mark_ary;     /* Array: includes operands which should be GC marked */
-    const VALUE coverage;     /* coverage array */
+    const VALUE coverage;        /* coverage array */
+    const VALUE method_coverage; /* method coverage array */
 
     /* insn info, must be freed */
     struct iseq_line_info_entry *line_info_table;

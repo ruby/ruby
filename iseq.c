@@ -113,6 +113,7 @@ iseq_mark(void *ptr)
 	RUBY_MARK_UNLESS_NULL((VALUE)iseq->cref_stack);
 	RUBY_MARK_UNLESS_NULL(iseq->klass);
 	RUBY_MARK_UNLESS_NULL(iseq->coverage);
+	RUBY_MARK_UNLESS_NULL(iseq->method_coverage);
 	RUBY_MARK_UNLESS_NULL(iseq->orig);
 
 	if (iseq->compile_data != 0) {
@@ -305,11 +306,16 @@ prepare_iseq_build(rb_iseq_t *iseq,
     iseq->compile_data->last_coverable_line = -1;
 
     RB_OBJ_WRITE(iseq->self, &iseq->coverage, Qfalse);
+    RB_OBJ_WRITE(iseq->self, &iseq->method_coverage, Qfalse);
     if (!GET_THREAD()->parse_in_eval) {
 	VALUE coverages = rb_get_coverages();
 	if (RTEST(coverages)) {
-	    RB_OBJ_WRITE(iseq->self, &iseq->coverage, rb_hash_lookup(coverages, path));
+	    RB_OBJ_WRITE(iseq->self, &iseq->coverage,
+			 rb_hash_lookup(rb_hash_lookup(coverages, path), ID2SYM(rb_intern("lines"))));
+	    RB_OBJ_WRITE(iseq->self, &iseq->method_coverage,
+			 rb_hash_lookup(rb_hash_lookup(coverages, path), ID2SYM(rb_intern("methods"))));
 	    if (NIL_P(iseq->coverage)) RB_OBJ_WRITE(iseq->self, &iseq->coverage, Qfalse);
+	    if (NIL_P(iseq->method_coverage)) RB_OBJ_WRITE(iseq->self, &iseq->method_coverage, Qfalse);
 	}
     }
 
