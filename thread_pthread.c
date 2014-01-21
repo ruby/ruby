@@ -1490,7 +1490,7 @@ rb_thread_create_timer_thread(void)
 #     define TIMER_THREAD_STACK_MIN_SIZE PTHREAD_STACK_MIN
 #   endif
 	    pthread_attr_setstacksize(&attr,
-				      TIMER_THREAD_STACK_MIN_SIZE + (THREAD_DEBUG ? BUFSIZ : 0);
+				      TIMER_THREAD_STACK_MIN_SIZE + (THREAD_DEBUG ? BUFSIZ : 0));
 	}
 # endif
 #endif
