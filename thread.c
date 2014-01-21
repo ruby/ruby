@@ -5255,15 +5255,26 @@ update_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
 }
 
 static void
-update_method_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klass)
+update_detailed_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klass)
 {
-    VALUE method_coverage = GET_THREAD()->cfp->iseq->method_coverage;
-    if (method_coverage) {
-	long line = rb_sourceline();
-	VALUE info = rb_hash_lookup(method_coverage, LONG2FIX(line));
+    VALUE coverage;
+    if (event == RUBY_EVENT_MCOVERAGE) {
+	coverage = GET_THREAD()->cfp->iseq->method_coverage;
+    } else if (event == RUBY_EVENT_BCOVERAGE) {
+	coverage = GET_THREAD()->cfp->iseq->branch_coverage;
+    } else {
+	rb_raise(rb_eArgError, "unknown detailed coverage event");
+    }
 
-	long count = FIX2LONG(info) + 1;
-	rb_hash_aset(method_coverage, LONG2FIX(line), LONG2FIX(count));
+    if (coverage) {
+	VALUE line = LONG2FIX(rb_sourceline());
+	VALUE count = rb_hash_lookup(coverage, line);
+
+	if (count == Qnil) {
+	    return;
+	}
+
+	rb_hash_aset(coverage, line, LONG2FIX(FIX2LONG(count) + 1));
     }
 }
 
@@ -5278,7 +5289,8 @@ rb_set_coverages(VALUE coverages)
 {
     GET_VM()->coverages = coverages;
     rb_add_event_hook(update_coverage, RUBY_EVENT_COVERAGE, Qnil);
-    rb_add_event_hook(update_method_coverage, RUBY_EVENT_MCOVERAGE, Qnil);
+    rb_add_event_hook(update_detailed_coverage, RUBY_EVENT_MCOVERAGE, Qnil);
+    rb_add_event_hook(update_detailed_coverage, RUBY_EVENT_BCOVERAGE, Qnil);
 }
 
 void

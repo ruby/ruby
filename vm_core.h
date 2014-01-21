@@ -228,6 +228,7 @@ struct rb_iseq_struct {
     const VALUE mark_ary;     /* Array: includes operands which should be GC marked */
     const VALUE coverage;        /* coverage array */
     const VALUE method_coverage; /* method coverage array */
+    const VALUE branch_coverage; /* branch coverage array */
 
     /* insn info, must be freed */
     struct iseq_line_info_entry *line_info_table;

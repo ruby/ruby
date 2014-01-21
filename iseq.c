@@ -114,6 +114,7 @@ iseq_mark(void *ptr)
 	RUBY_MARK_UNLESS_NULL(iseq->klass);
 	RUBY_MARK_UNLESS_NULL(iseq->coverage);
 	RUBY_MARK_UNLESS_NULL(iseq->method_coverage);
+	RUBY_MARK_UNLESS_NULL(iseq->branch_coverage);
 	RUBY_MARK_UNLESS_NULL(iseq->orig);
 
 	if (iseq->compile_data != 0) {
@@ -307,6 +308,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
 
     RB_OBJ_WRITE(iseq->self, &iseq->coverage, Qfalse);
     RB_OBJ_WRITE(iseq->self, &iseq->method_coverage, Qfalse);
+    RB_OBJ_WRITE(iseq->self, &iseq->branch_coverage, Qfalse);
     if (!GET_THREAD()->parse_in_eval) {
 	VALUE coverages = rb_get_coverages();
 	if (RTEST(coverages)) {
@@ -314,6 +316,8 @@ prepare_iseq_build(rb_iseq_t *iseq,
 			 rb_hash_lookup(rb_hash_lookup(coverages, path), ID2SYM(rb_intern("lines"))));
 	    RB_OBJ_WRITE(iseq->self, &iseq->method_coverage,
 			 rb_hash_lookup(rb_hash_lookup(coverages, path), ID2SYM(rb_intern("methods"))));
+	    RB_OBJ_WRITE(iseq->self, &iseq->branch_coverage,
+			 rb_hash_lookup(rb_hash_lookup(coverages, path), ID2SYM(rb_intern("branches"))));
 	    if (NIL_P(iseq->coverage)) RB_OBJ_WRITE(iseq->self, &iseq->coverage, Qfalse);
 	    if (NIL_P(iseq->method_coverage)) RB_OBJ_WRITE(iseq->self, &iseq->method_coverage, Qfalse);
 	}

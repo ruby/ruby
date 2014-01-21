@@ -241,6 +241,10 @@ r_value(VALUE value)
       if ((event) == RUBY_EVENT_DEFN && iseq->method_coverage) { \
 	  rb_hash_aset(iseq->method_coverage, LONG2FIX(line), INT2FIX(0)); \
       } \
+      if ((event) == RUBY_EVENT_BRANCH && iseq->branch_coverage) { \
+	  rb_hash_aset(iseq->branch_coverage, LONG2FIX(line), INT2FIX(0)); \
+	  ADD_INSN1((seq), (line), trace, INT2FIX(RUBY_EVENT_BCOVERAGE)); \
+      } \
   } while (0)
 
 /* add label */
@@ -3257,10 +3261,14 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	ADD_SEQ(ret, cond_seq);
 
 	ADD_LABEL(ret, then_label);
+	if (node->nd_body)
+	    ADD_COVERAGE_TRACE(ret, nd_line(node->nd_body), RUBY_EVENT_BRANCH);
 	ADD_SEQ(ret, then_seq);
 	ADD_INSNL(ret, line, jump, end_label);
 
 	ADD_LABEL(ret, else_label);
+	if (node->nd_else)
+	    ADD_COVERAGE_TRACE(ret, nd_line(node->nd_else), RUBY_EVENT_BRANCH);
 	ADD_SEQ(ret, else_seq);
 
 	ADD_LABEL(ret, end_label);
