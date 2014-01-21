@@ -906,6 +906,7 @@ rb_dir_getwd(void)
  *
  *     Dir.chdir("/tmp")   #=> 0
  *     Dir.getwd           #=> "/tmp"
+ *     Dir.pwd             #=> "/tmp"
  */
 static VALUE
 dir_s_getwd(VALUE dir)
