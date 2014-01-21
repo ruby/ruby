@@ -5262,14 +5262,8 @@ update_method_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VAL
 	long line = rb_sourceline();
 	VALUE info = rb_hash_lookup(method_coverage, LONG2FIX(line));
 
-	if (info == Qnil) {
-	    VALUE info = rb_hash_new();
-	    rb_hash_aset(info, ID2SYM(rb_intern("count")), INT2FIX(1));
-	    rb_hash_aset(method_coverage, LONG2FIX(line), info);
-	} else {
-	    long count = FIX2LONG(rb_hash_lookup(info, ID2SYM(rb_intern("count")))) + 1;
-	    rb_hash_aset(info, ID2SYM(rb_intern("count")), LONG2FIX(count));
-	}
+	long count = FIX2LONG(info) + 1;
+	rb_hash_aset(method_coverage, LONG2FIX(line), LONG2FIX(count));
     }
 }
 
