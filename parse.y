@@ -266,9 +266,7 @@ struct parser_params {
     int line_count;
     int has_shebang;
     char *parser_ruby_sourcefile; /* current source file */
-#if FILE_CNT_BITS > 0
     short int parser_ruby_sourcefile_offset;	/* current source file. */
-#endif
     unsigned int parser_ruby_sourceline;	/* current line no. */
     VALUE parser_ruby_sourcefile_string;
     rb_encoding *enc;
@@ -344,13 +342,13 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define ruby_sourceline		(parser->parser_ruby_sourceline)
 #define ruby_sourcefile		(parser->parser_ruby_sourcefile)
 #define ruby_sourcefile_string	(parser->parser_ruby_sourcefile_string)
-#if FILE_CNT_BITS > 0
 # define ruby_sourcefile_offset	(parser->parser_ruby_sourcefile_offset)
 # define FILE_LINE_MASK ((UINT_MAX >> FILE_CNT_BITS))
 # define FILE_LINE_BITS ((sizeof(ruby_sourceline) * 8) - FILE_CNT_BITS)
 # define FILE_CNT_MASK (~(UINT_MAX >> FILE_CNT_BITS))
 # define FILE_CNT_MAX (1 << FILE_CNT_BITS)
 # define FILE_LINE_MAX (1 << FILE_LINE_BITS)
+#if FILE_CNT_BITS > 0
 # define FILE_SET(lineno)		(((ruby_sourcefile_offset) << FILE_LINE_BITS) + lineno)
 #else
 # define FILE_SET(lineno)		(lineno)
@@ -8931,7 +8929,6 @@ node_assign_gen(struct parser_params *parser, NODE *lhs, NODE *rhs)
 	lhs->nd_value = rhs;
 	break;
       case NODE_FILE:
-#if FILE_CNT_BITS > 0
 	if (nd_type(rhs) == NODE_STR) {
 	    if (strcmp(ruby_sourcefile, RSTRING_PTR(rhs->nd_lit))) {
 	      ruby_sourcefile_string = rhs->nd_lit;
@@ -8948,10 +8945,6 @@ node_assign_gen(struct parser_params *parser, NODE *lhs, NODE *rhs)
 	lhs->nd_lit = rb_str_dup(ruby_sourcefile_string);
 	lhs->nd_cnt = ruby_sourcefile_offset;
 	break;
-#else
-        yyerror("Can't assign to __FILE__");
-        goto error;
-#endif
       case NODE_LINE:
 	if (FIXNUM_P(rhs->nd_lit)) {
 	    ruby_sourceline = NUM2INT(rhs->nd_lit);
@@ -8960,7 +8953,6 @@ node_assign_gen(struct parser_params *parser, NODE *lhs, NODE *rhs)
 	}
 	lhs->nd_lit = rhs->nd_lit;
 	break;
-
       case NODE_ATTRASGN:
       case NODE_CALL:
 	lhs->nd_args = arg_append(lhs->nd_args, rhs);

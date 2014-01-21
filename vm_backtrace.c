@@ -29,7 +29,8 @@ calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
     return rb_iseq_line_no(iseq, pc - iseq->iseq_encoded);
 }
 
-# define FILE_LINE_MASK ((UINT_MAX >> FILE_CNT_BITS))
+#define FILE_LINE_MASK ((UINT_MAX >> FILE_CNT_BITS))
+#define FILE_LINE_BITS ((sizeof(unsigned int) * 8) - FILE_CNT_BITS)
 
 int
 rb_vm_get_sourceline(const rb_control_frame_t *cfp)
@@ -315,8 +316,6 @@ location_format(VALUE file, int lineno, VALUE name)
     }
 }
 
-# define FILE_LINE_BITS ((sizeof(unsigned int) * 8) - FILE_CNT_BITS)
-# define FILE_LINE_MASK ((UINT_MAX >> FILE_CNT_BITS))
 
 static VALUE
 location_to_str(rb_backtrace_location_t *loc)
