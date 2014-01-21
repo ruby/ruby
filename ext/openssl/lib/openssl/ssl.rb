@@ -20,13 +20,19 @@ require "fcntl"
 module OpenSSL
   module SSL
     class SSLContext
+      options = OpenSSL::SSL::OP_ALL
+      if defined?(OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS)
+        options &= ~OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS
+      end
+      if defined?(OpenSSL::SSL::OP_NO_COMPRESSION)
+        options |= OpenSSL::SSL::OP_NO_COMPRESSION
+      end
+
       DEFAULT_PARAMS = {
         :ssl_version => "SSLv23",
         :verify_mode => OpenSSL::SSL::VERIFY_PEER,
-        :ciphers => "ALL:!ADH:!EXPORT:!SSLv2:RC4+RSA:+HIGH:+MEDIUM:+LOW",
-        :options => defined?(OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS) ?
-          OpenSSL::SSL::OP_ALL & ~OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS :
-          OpenSSL::SSL::OP_ALL,
+        :ciphers => "DEFAULT:!aNULL:!eNULL:!LOW:!EXPORT:!SSLv2:!ADH",
+        :options => options,
       }
 
       DEFAULT_CERT_STORE = OpenSSL::X509::Store.new
