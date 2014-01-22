@@ -5,6 +5,12 @@ i\
 a\
 #endif
 }
+/^extern int yydebug;/{
+i\
+#ifndef yydebug
+a\
+#endif
+}
 /^yydestruct.*yymsg/,/#endif/{
   /^yydestruct/{
     /parser/!{
