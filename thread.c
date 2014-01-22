@@ -5298,6 +5298,7 @@ rb_reset_coverages(void)
 {
     GET_VM()->coverages = Qfalse;
     rb_remove_event_hook(update_coverage);
+    rb_remove_event_hook(update_detailed_coverage);
 }
 
 VALUE

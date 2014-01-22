@@ -320,6 +320,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
 			 rb_hash_lookup(rb_hash_lookup(coverages, path), ID2SYM(rb_intern("branches"))));
 	    if (NIL_P(iseq->coverage)) RB_OBJ_WRITE(iseq->self, &iseq->coverage, Qfalse);
 	    if (NIL_P(iseq->method_coverage)) RB_OBJ_WRITE(iseq->self, &iseq->method_coverage, Qfalse);
+	    if (NIL_P(iseq->branch_coverage)) RB_OBJ_WRITE(iseq->self, &iseq->branch_coverage, Qfalse);
 	}
     }
 

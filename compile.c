@@ -3267,7 +3267,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	ADD_INSNL(ret, line, jump, end_label);
 
 	ADD_LABEL(ret, else_label);
-	if (node->nd_else)
+	/* do not trace elsif node */
+	if (node->nd_else && nd_type(node->nd_else) != NODE_IF)
 	    ADD_COVERAGE_TRACE(ret, nd_line(node->nd_else), RUBY_EVENT_BRANCH);
 	ADD_SEQ(ret, else_seq);
 
