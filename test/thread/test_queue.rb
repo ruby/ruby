@@ -200,4 +200,12 @@ class TestQueue < Test::Unit::TestCase
       timeout(1) { th2.join }
     end
   end
+
+  def test_dup
+    bug9440 = '[ruby-core:59961] [Bug #9440]'
+    q = Queue.new
+    assert_raise(NoMethodError, bug9440) do
+      q.dup
+    end
+  end
 end

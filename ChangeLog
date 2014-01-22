@@ -1,3 +1,8 @@
+Wed Jan 22 15:59:39 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/thread/thread.c (Init_thread): ConditionVariable and Queue
+	  are not able to copy.  [ruby-core:59961] [Bug #9440]
+
 Tue Jan 21 20:14:55 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (rb_thread_create_timer_thread): fix for platforms
