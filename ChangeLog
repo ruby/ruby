@@ -1,3 +1,9 @@
+Thu Jan 23 21:08:16 2014  Shota Fukumori  <her@sorah.jp>
+
+	* vm_insnhelper.c (check_match): Fix SEGV with VM_CHECKMATCH_TYPE_CASE
+	  and class of `pattern` has `method_missing`
+	  [Bug #8882] [ruby-core:58606]
+
 Mon Jan 20 01:02:18 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (CLASS_NAME): macro to wrap
