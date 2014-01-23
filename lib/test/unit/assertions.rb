@@ -63,8 +63,36 @@ module Test
       #    assert_raise NameError do
       #      puts x  #Raises NameError, so assertion succeeds
       #    end
-      def assert_raise(*args, &b)
-        assert_raises(*args, &b)
+      def assert_raise(*exp, &b)
+        case exp.last
+        when String, Proc
+          msg = exp.pop
+        end
+
+        begin
+          yield
+        rescue MiniTest::Skip => e
+          return e if exp.include? MiniTest::Skip
+          raise e
+        rescue Exception => e
+          expected = exp.any? { |ex|
+            if ex.instance_of? Module then
+              e.kind_of? ex
+            else
+              e.instance_of? ex
+            end
+          }
+
+          assert expected, proc {
+            exception_details(e, message(msg) {"#{mu_pp(exp)} exception expected, not"}.call)
+          }
+
+          return e
+        end
+
+        exp = exp.first if exp.size == 1
+
+        flunk(message(msg) {"#{mu_pp(exp)} expected but nothing was raised."})
       end
 
       # :call-seq:
