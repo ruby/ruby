@@ -1907,5 +1907,5 @@ EOS
       end
       runner.close
     end
-  end if defined?(Process.fork)
+  end if defined?(fork)
 end
