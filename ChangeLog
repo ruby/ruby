@@ -1,3 +1,9 @@
+Thu Jan 23 20:20:17 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/envutil.rb: try to wait a bit (0.1sec) when ruby process
+	  exits by signals because some SEGV tests fail because of not enough
+	  error output.
+
 Thu Jan 23 20:06:27 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_settracefunc.rb: check the target thread.
