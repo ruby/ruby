@@ -1028,6 +1028,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
   def test_a_call
     events = []
     TracePoint.new(:a_call){|tp|
+      next if !target_thread?
       events << tp.event
     }.enable{
       1.times{
@@ -1049,6 +1050,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
   def test_a_return
     events = []
     TracePoint.new(:a_return){|tp|
+      next if !target_thread?
       events << tp.event
     }.enable{
       1.times{
