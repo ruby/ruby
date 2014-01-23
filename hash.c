@@ -27,12 +27,24 @@
 # endif
 #endif
 
-#define HAS_MISC_ATTRIBUTES(hash, klass) ( \
-    (klass = rb_obj_class(hash)) != rb_cHash || \
-    (klass = 0, \
-     FL_TEST((hash), FL_EXIVAR|FL_TAINT|HASH_PROC_DEFAULT) ||	\
-     !NIL_P(RHASH_IFNONE(hash))))
-#define HASH_REJECT_COPY_MISC_ATTRIBUTES 1
+#define HAS_EXTRA_STATES(hash, klass) ( \
+    ((klass = has_extra_methods(rb_obj_class(hash))) != 0) || \
+    FL_TEST((hash), FL_EXIVAR|FL_TAINT|HASH_PROC_DEFAULT) || \
+    !NIL_P(RHASH_IFNONE(hash)))
+#define HASH_REJECT_COPY_EXTRA_STATES 1
+
+static VALUE
+has_extra_methods(VALUE klass)
+{
+    const VALUE base = rb_cHash;
+    VALUE c = klass;
+    while (c != base) {
+	st_table *mtbl = RCLASS_M_TBL(c);
+	if (mtbl && mtbl->num_entries) return klass;
+	c = RCLASS_SUPER(c);
+    }
+    return 0;
+}
 
 static VALUE rb_hash_s_try_convert(VALUE, VALUE);
 
@@ -1133,11 +1145,11 @@ rb_hash_reject(VALUE hash)
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     if (RTEST(ruby_verbose)) {
 	VALUE klass;
-	if (HAS_MISC_ATTRIBUTES(hash, klass)) {
-#if HASH_REJECT_COPY_MISC_ATTRIBUTES
-	    rb_warn("copying unguaranteed attributes: %+"PRIsVALUE, hash);
-	    rb_warn("following atributes will not be copied in the future version:");
-	    if (klass != rb_cHash) {
+	if (HAS_EXTRA_STATES(hash, klass)) {
+#if HASH_REJECT_COPY_EXTRA_STATES
+	    rb_warn("copying extra states: %+"PRIsVALUE, hash);
+	    rb_warn("following states will not be copied in the future version:");
+	    if (klass) {
 		rb_warn("  subclass: %+"PRIsVALUE, klass);
 	    }
 	    if (FL_TEST(hash, FL_EXIVAR)) {
@@ -1153,8 +1165,7 @@ rb_hash_reject(VALUE hash)
 	    else if (!NIL_P(RHASH_IFNONE(hash)))
 		rb_warn("  default value: %+"PRIsVALUE, RHASH_IFNONE(hash));
 #else
-	    rb_warn("unguaranteed attributes are not copied: %+"PRIsVALUE, hash);
-	    rb_warn("following atributes are ignored now:");
+	    rb_warn("extra states are no longer copied: %+"PRIsVALUE, hash);
 #endif
 	}
     }

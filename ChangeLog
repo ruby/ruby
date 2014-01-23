@@ -1,3 +1,8 @@
+Thu Jan 23 10:37:24 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (HAS_EXTRA_STATES): warn extra states only when something
+	  differ.  [ruby-core:59254] [Bug #9275]
+
 Thu Jan  9 14:05:24 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/{setup.mak,Makefile.sub}: update fake.rb like
