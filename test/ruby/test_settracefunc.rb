@@ -1074,6 +1074,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     events = []
     assert !defined?(MISSING_CONSTANT_59398)
     TracePoint.new(:c_call, :c_return, :call, :return){|tp|
+      next if !target_thread?
       next unless tp.defined_class == Module
       # rake/ext/module.rb aliases :const_missing and Ruby uses the aliased name
       # but this only happens when running the full test suite
@@ -1104,6 +1105,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     events = []
     aliased = AliasedRubyMethod.new
     TracePoint.new(:call, :return){|tp|
+      next if !target_thread?
       events << [tp.event, tp.method_id]
     }.enable{
       aliased.bar
@@ -1122,6 +1124,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     events = []
     aliased = AliasedCMethod.new
     TracePoint.new(:call, :return, :c_call, :c_return){|tp|
+      next if !target_thread?
       events << [tp.event, tp.method_id]
     }.enable{
       aliased.size
@@ -1139,6 +1142,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     events = []
     assert !respond_to?(:missing_method_59398)
     TracePoint.new(:c_call, :c_return, :call, :return){|tp|
+      next if !target_thread?
       next unless tp.defined_class == BasicObject
       # rake/ext/module.rb aliases :const_missing and Ruby uses the aliased name
       # but this only happens when running the full test suite
