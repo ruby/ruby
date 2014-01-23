@@ -77,6 +77,7 @@ typedef struct rb_iseq_struct rb_iseq_t;
 
 typedef struct rb_method_definition_struct {
     rb_method_type_t type; /* method type */
+    int alias_count;
     ID original_id;
     union {
 	rb_iseq_t * const iseq;            /* should be mark */
@@ -91,7 +92,6 @@ typedef struct rb_method_definition_struct {
 	} optimize_type;
 	struct rb_method_entry_struct *orig_me;
     } body;
-    int alias_count;
 } rb_method_definition_t;
 
 typedef struct rb_method_entry_struct {
