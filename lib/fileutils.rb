@@ -1659,7 +1659,7 @@ module FileUtils
   #
   # Returns an Array of option names of the method +mid+.
   #
-  #   p FileUtils.options(:rm)  #=> ["noop", "verbose", "force"]
+  #   p FileUtils.options_of(:rm)  #=> ["noop", "verbose", "force"]
   #
   def FileUtils.options_of(mid)
     OPT_TABLE[mid.to_s].map {|sym| sym.to_s }

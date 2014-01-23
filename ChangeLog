@@ -1,3 +1,8 @@
+Thu Jan 23 14:26:44 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/fileutils.rb: [DOC] Fix typo in options_of() example [Bug #9392]
+	  Patch by Giorgos Tsiftsis
+
 Thu Jan 23 13:56:16 2014  Zachary Scott  <e@zzak.io>
 
 	* README -> README.md: [DOC] Format README with Markdown [Bug #9255]
