@@ -1,3 +1,8 @@
+Thu Jan 23 13:56:16 2014  Zachary Scott  <e@zzak.io>
+
+	* README -> README.md: [DOC] Format README with Markdown [Bug #9255]
+	* README.ja -> README.ja.md: ditto
+
 Wed Jan 22 15:59:39 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/thread/thread.c (Init_thread): ConditionVariable and Queue
