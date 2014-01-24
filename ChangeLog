@@ -1,3 +1,8 @@
+Fri Jan 24 15:13:20 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/racc/rdoc/grammar.en.rdoc: [DOC] Correct grammar and typos
+	  Patch by Giorgos Tsiftsis [Bug #9429] [ci skip]
+
 Thu Jan 23 20:20:17 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/envutil.rb: try to wait a bit (0.1sec) when ruby process
