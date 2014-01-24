@@ -177,6 +177,9 @@ require 'drb/eq'
 #   # Not necessary for this small example, but will be required
 #   # as soon as we pass a non-marshallable object as an argument
 #   # to a dRuby call.
+#   # Notice that this must be called at least once per process
+#   # to take any effect and this is specially important if your
+#   # application forks (even Puma will fork in daemonized mode).
 #   DRb.start_service
 #
 #   timeserver = DRbObject.new_with_uri(SERVER_URI)
