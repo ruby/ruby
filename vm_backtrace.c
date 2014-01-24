@@ -766,7 +766,7 @@ void
 rb_backtrace_print_as_bugreport(void)
 {
     struct oldbt_arg arg;
-    int i;
+    int i = 0;
 
     arg.func = oldbt_bugreport;
     arg.data = (int *)&i;
