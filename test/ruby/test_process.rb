@@ -1777,6 +1777,8 @@ EOS
 
   def test_clock_getres
     r = Process.clock_getres(Process::CLOCK_REALTIME, :nanosecond)
+  rescue Errno::EINVAL
+  else
     assert_kind_of(Integer, r)
     assert_raise(Errno::EINVAL) { Process.clock_getres(:foo) }
   end
