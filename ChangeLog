@@ -1,3 +1,9 @@
+Sat Jan 25 14:21:06 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): result of assignment should be
+	  its rhs instead of returned value from a method.
+	  [ruby-core:60071] [Bug #9448]
+
 Sat Jan 25 11:16:19 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rb_extract_keywords): treat nil keyword_hash same as 0,
