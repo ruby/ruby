@@ -1550,7 +1550,8 @@ opt_mod
 	y = FIX2LONG(obj);
 	if (x > 0 && y > 0) {
 	    val = LONG2FIX(x % y);
-	} else {
+	}
+	else {
 	    /* copied from numeric.c#fixdivmod */
 	    long div, mod;
 
@@ -1914,7 +1915,8 @@ opt_aset_with
 {
     if (!SPECIAL_CONST_P(recv) && RBASIC_CLASS(recv) == rb_cHash && BASIC_OP_UNREDEFINED_P(BOP_ASET, HASH_REDEFINED_OP_FLAG)) {
 	rb_hash_aset(recv, key, val);
-    } else {
+    }
+    else {
 	PUSH(recv);
 	PUSH(rb_str_resurrect(key));
 	PUSH(val);
@@ -1935,7 +1937,8 @@ opt_aref_with
 {
     if (!SPECIAL_CONST_P(recv) && RBASIC_CLASS(recv) == rb_cHash && BASIC_OP_UNREDEFINED_P(BOP_AREF, HASH_REDEFINED_OP_FLAG)) {
 	val = rb_hash_aref(recv, key);
-    } else {
+    }
+    else {
 	PUSH(recv);
 	PUSH(rb_str_resurrect(key));
 	CALL_SIMPLE_METHOD(recv);
@@ -2134,7 +2137,8 @@ opt_regexpmatch1
 {
     if (BASIC_OP_UNREDEFINED_P(BOP_MATCH, REGEXP_REDEFINED_OP_FLAG)) {
 	val = rb_reg_match(r, obj);
-    } else {
+    }
+    else {
 	val = rb_funcall(r, idEqTilde, 1, obj);
     }
 }
