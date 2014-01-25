@@ -692,4 +692,14 @@ class TestAssignmentGen < Test::Unit::TestCase
       check(assign)
     }
   end
+
+  def test_optimized_aset
+    bug9448 = Class.new do
+      def []=(key, new_value)
+        '[ruby-core:60071] [Bug #9448]'
+      end
+    end
+    o = bug9448.new
+    assert_equal("ok", o['current'] = "ok")
+  end
 end

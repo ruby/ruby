@@ -5332,11 +5332,13 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    iseq_add_mark_object(iseq, str);
 	    COMPILE(ret, "recv", node->nd_recv);
 	    COMPILE(ret, "value", node->nd_args->nd_next->nd_head);
+	    if (!poped) {
+		ADD_INSN(ret, line, swap);
+		ADD_INSN1(ret, line, topn, INT2FIX(1));
+	    }
 	    ADD_INSN2(ret, line, opt_aset_with,
 		      new_callinfo(iseq, idASET, 2, 0, 0), str);
-	    if (poped) {
-		ADD_INSN(ret, line, pop);
-	    }
+	    ADD_INSN(ret, line, pop);
 	    break;
 	}
 
