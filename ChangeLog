@@ -1,3 +1,11 @@
+Sat Jan 25 14:50:42 2014  Eric Wong  <normalperson@yhbt.net>
+
+	* process.c (send_child_error): retry write on EINTR to fix
+	  occasional Errno::EINTR from Process.spawn.
+
+	* process.c (recv_child_error): retry read on EINTR to fix
+	  occasional Errno::EINTR from Process.spawn.
+
 Sat Jan 25 14:21:06 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): result of assignment should be
