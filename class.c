@@ -1289,20 +1289,11 @@ rb_class_public_instance_methods(int argc, VALUE *argv, VALUE mod)
 VALUE
 rb_obj_methods(int argc, VALUE *argv, VALUE obj)
 {
-  retry:
-    if (argc == 0) {
-	return class_instance_method_list(argc, argv, CLASS_OF(obj), 1, ins_methods_i);
-    }
-    else {
-	VALUE recur;
-
-	rb_scan_args(argc, argv, "1", &recur);
-	if (RTEST(recur)) {
-	    argc = 0;
-	    goto retry;
-	}
+    rb_check_arity(argc, 0, 1);
+    if (argc > 0 && !RTEST(argv[0])) {
 	return rb_obj_singleton_methods(argc, argv, obj);
     }
+    return class_instance_method_list(argc, argv, CLASS_OF(obj), 1, ins_methods_i);
 }
 
 /*
