@@ -1,3 +1,8 @@
+Sat Jan 25 22:17:02 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* README.ja.md, README.md: update the controller address of
+	  mailing lists.
+
 Sat Jan 25 14:50:42 2014  Eric Wong  <normalperson@yhbt.net>
 
 	* process.c (send_child_error): retry write on EINTR to fix
