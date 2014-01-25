@@ -3316,6 +3316,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	    l1 = NEW_LABEL(line);
 	    ADD_LABEL(body_seq, l1);
+	    if (node->nd_body)
+	        ADD_COVERAGE_TRACE(body_seq, nd_line(node->nd_body), RUBY_EVENT_BRANCH);
 	    ADD_INSN(body_seq, line, pop);
 	    COMPILE_(body_seq, "when body", node->nd_body, poped);
 	    ADD_INSNL(body_seq, line, jump, endlabel);
@@ -3354,6 +3356,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	/* else */
 	if (node) {
 	    ADD_LABEL(cond_seq, elselabel);
+	    ADD_COVERAGE_TRACE(cond_seq, nd_line(node), RUBY_EVENT_BRANCH);
 	    ADD_INSN(cond_seq, line, pop);
 	    COMPILE_(cond_seq, "else", node, poped);
 	    ADD_INSNL(cond_seq, line, jump, endlabel);
@@ -3393,6 +3396,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	while (node && nd_type(node) == NODE_WHEN) {
 	    LABEL *l1 = NEW_LABEL(line = nd_line(node));
 	    ADD_LABEL(body_seq, l1);
+	    if (node->nd_body)
+	        ADD_COVERAGE_TRACE(body_seq, nd_line(node->nd_body), RUBY_EVENT_BRANCH);
 	    COMPILE_(body_seq, "when", node->nd_body, poped);
 	    ADD_INSNL(body_seq, line, jump, endlabel);
 
@@ -3424,6 +3429,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    node = node->nd_next;
 	}
 	/* else */
+	ADD_COVERAGE_TRACE(ret, nd_line(node), RUBY_EVENT_BRANCH);
 	COMPILE_(ret, "else", node, poped);
 	ADD_INSNL(ret, nd_line(orig_node), jump, endlabel);
 
@@ -4980,6 +4986,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	debugp_param("defs/iseq", iseqval);
 
+	ADD_COVERAGE_TRACE(ret, nd_line(node), RUBY_EVENT_DEFN);
 	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
 	COMPILE(ret, "defs: recv", node->nd_recv);
 	ADD_INSN1(ret, line, putobject, ID2SYM(node->nd_mid));
