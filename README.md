@@ -60,13 +60,10 @@ http://www.ruby-lang.org/
 There is a mailing list to talk about Ruby. To subscribe this list, please
 send the following phrase
 
-    subscribe YourFirstName YourFamilyName
-
-e.g.
-    subscribe Joseph Smith
+    subscribe
 
 in the mail body (not subject) to the address
-<mailto:ruby-talk-ctl@ruby-lang.org>.
+<mailto:ruby-talk-request@ruby-lang.org>.
 
 ## How to compile and install
 

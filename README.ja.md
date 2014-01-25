@@ -57,17 +57,17 @@ http://www.ruby-lang.org/
 
 Rubyのメーリングリストがあります。参加希望の方は
 
-mailto:ruby-list-ctl@ruby-lang.org
+mailto:ruby-list-request@ruby-lang.org
 
 まで本文に
 
-    subscribe YourFirstName YourFamilyName
+    subscribe
 
 と書いて送って下さい。
 
 Ruby開発者向けメーリングリストもあります。こちらではrubyのバ グ、将来の仕様拡張など実装上の問題について議論されています。 参加希望の方は
 
-mailto:ruby-dev-ctl@ruby-lang.org
+mailto:ruby-dev-request@ruby-lang.org
 
 までruby-listと同様の方法でメールしてください。
 
