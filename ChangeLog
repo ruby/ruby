@@ -1,3 +1,8 @@
+Sat Jan 25 11:16:19 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_extract_keywords): treat nil keyword_hash same as 0,
+	  for the case rb_scan_args returns nil if no keyword hash.
+
 Fri Jan 24 15:13:20 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/racc/rdoc/grammar.en.rdoc: [DOC] Correct grammar and typos
