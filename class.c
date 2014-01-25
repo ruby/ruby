@@ -1912,6 +1912,8 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
      st_delete(rb_hash_tbl_raw(keyword_hash), &key, (val)) : \
      st_lookup(rb_hash_tbl_raw(keyword_hash), key, (val)))
 
+    if (NIL_P(keyword_hash)) keyword_hash = 0;
+
     if (optional < 0) {
 	rest = 1;
 	optional = -1-optional;
