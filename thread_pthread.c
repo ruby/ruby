@@ -1566,7 +1566,7 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
 	if (pthread_equal(th->thread_id, native_main_thread.id)) {
 	    struct rlimit rlim;
 	    if (getrlimit(RLIMIT_STACK, &rlim) == 0 && rlim.rlim_cur > size) {
-		size = rlim.rlim_cur;
+		size = (size_t)rlim.rlim_cur;
 	    }
 	}
 #endif
