@@ -18,6 +18,8 @@ end
 #
 # Hexadecimal string.
 #
+#   require 'securerandom'
+#
 #   p SecureRandom.hex(10) #=> "52750b30ffbc7de3b362"
 #   p SecureRandom.hex(10) #=> "92b15d6c8dc4beb5f559"
 #   p SecureRandom.hex(13) #=> "39b290146bea6ce975c37cfc23"
