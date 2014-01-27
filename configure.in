@@ -144,6 +144,7 @@ fi
 
 case $target_cpu in
   i?86) frame_address=yes;;
+  x86_64) frame_address=yes;;
   *)    frame_address=no;;
 esac
 AC_ARG_ENABLE(frame-address,

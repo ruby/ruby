@@ -1,3 +1,10 @@
+Tue Jan 28 03:59:15 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: define USE_BUILTIN_FRAME_ADDRESS on x86_64
+	  even if __builtin_frame_address is not used now.
+	  By this, FreeBSD's clang can build ruby 1.8,
+	  and alloca(1) doesn't work on it.
+
 Fri Nov 22 12:43:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (ruby_strtod): ignore too long fraction part, which does not
