@@ -1,3 +1,10 @@
+Tue Jan 28 03:48:25 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: define USE_BUILTIN_FRAME_ADDRESS on x86_64
+	  even if __builtin_frame_address is not used now.
+	  By this, FreeBSD's clang can build ruby 1.8,
+	  and alloca(1) doesn't work on it.
+
 Wed Mar 27 11:09:17 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* array.c (rb_ary_collect), enum.c (enum_collect): rb_warn() is a
