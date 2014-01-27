@@ -691,7 +691,7 @@ sigsegv(int sig SIGINFO_ARG)
 {
     if (segv_received) {
 	ssize_t RB_UNUSED_VAR(err);
-	char msg[] = "SEGV received in SEGV handler\n";
+	static const char msg[] = "SEGV received in SEGV handler\n";
 
 	err = write(2, msg, sizeof(msg));
 	ruby_abort();
