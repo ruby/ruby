@@ -1,3 +1,13 @@
+Mon Jan 27 16:49:52 2014  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_divide): Add an additional
+	  digit for the quotient to be compatible with bigdecimal 1.2.1 and
+	  the former.  [ruby-core:59365] [#9316] [#9305]
+
+	* test/bigdecimal/test_bigdecimal.rb: tests for the above change.
+
+	* ext/bigdecimal/bigdecimal.gemspec: bigdecimal version 1.2.4.
+
 Mon Jan 27 16:45:34 2014  Yamashita Yuu  <yamashita@geishatokyo.com>
 
 	* ext/openssl/ossl_ssl.c (Init_ossl_ssl): Declare a constant
