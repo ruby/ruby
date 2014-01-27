@@ -1,3 +1,10 @@
+Mon Jan 27 16:45:34 2014  Yamashita Yuu  <yamashita@geishatokyo.com>
+
+	* ext/openssl/ossl_ssl.c (Init_ossl_ssl): Declare a constant
+	  `OP_MSIE_SSLV2_RSA_PADDING` only if the macro is defined.  The
+	  `SSL_OP_MSIE_SSLV2_RSA_PADDING` has been removed from latest
+	  snapshot of OpenSSL 1.0.1.  [Fixes GH-488]
+
 Thu Jan 23 10:37:24 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (HAS_EXTRA_STATES): warn extra states only when something
