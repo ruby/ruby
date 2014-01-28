@@ -1562,7 +1562,7 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
 
     if (th) {
 	size = th->machine.stack_maxsize;
-#if defined(HAVE_GETRLIMIT) && MAINSTACKADDR_AVAILABLE
+#if defined(HAVE_GETRLIMIT) && defined(__linux__) && MAINSTACKADDR_AVAILABLE
 	if (pthread_equal(th->thread_id, native_main_thread.id)) {
 	    struct rlimit rlim;
 	    if (getrlimit(RLIMIT_STACK, &rlim) == 0 && rlim.rlim_cur > size) {
