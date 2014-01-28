@@ -1987,11 +1987,11 @@ rb_thread_mark(void *ptr)
 
 	rb_mark_tbl(th->local_storage);
 
-	if (GET_THREAD() != th && th->machine_stack_start && th->machine_stack_end) {
+	if (GET_THREAD() != th && th->machine.stack_start && th->machine.stack_end) {
 	    rb_gc_mark_machine_stack(th);
-	    rb_gc_mark_locations((VALUE *)&th->machine_regs,
-				 (VALUE *)(&th->machine_regs) +
-				 sizeof(th->machine_regs) / sizeof(VALUE));
+	    rb_gc_mark_locations((VALUE *)&th->machine.regs,
+				 (VALUE *)(&th->machine.regs) +
+				 sizeof(th->machine.regs) / sizeof(VALUE));
 	}
 
 	rb_vm_trace_mark_event_hooks(&th->event_hooks);

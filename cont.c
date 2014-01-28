@@ -97,16 +97,18 @@ typedef struct rb_context_struct {
     size_t vm_stack_slen;  /* length of stack (head of th->stack) */
     size_t vm_stack_clen;  /* length of control frames (tail of th->stack) */
 #endif
-    VALUE *machine_stack;
-    VALUE *machine_stack_src;
+    struct {
+	VALUE *stack;
+	VALUE *stack_src;
+	size_t stack_size;
 #ifdef __ia64
-    VALUE *machine_register_stack;
-    VALUE *machine_register_stack_src;
-    int machine_register_stack_size;
+	VALUE *register_stack;
+	VALUE *register_stack_src;
+	int register_stack_size;
 #endif
+    } machine;
     rb_thread_t saved_thread;
     rb_jmpbuf_t jmpbuf;
-    size_t machine_stack_size;
     rb_ensure_entry_t *ensure_array;
     rb_ensure_list_t *ensure_list;
 } rb_context_t;
@@ -188,11 +190,11 @@ cont_mark(void *ptr)
 #endif
 	}
 
-	if (cont->machine_stack) {
+	if (cont->machine.stack) {
 	    if (cont->type == CONTINUATION_CONTEXT) {
 		/* cont */
-		rb_gc_mark_locations(cont->machine_stack,
-				     cont->machine_stack + cont->machine_stack_size);
+		rb_gc_mark_locations(cont->machine.stack,
+				     cont->machine.stack + cont->machine.stack_size);
             }
             else {
 		/* fiber */
@@ -200,15 +202,15 @@ cont_mark(void *ptr)
                 rb_fiber_t *fib = (rb_fiber_t*)cont;
 		GetThreadPtr(cont->saved_thread.self, th);
 		if ((th->fiber != cont->self) && fib->status == RUNNING) {
-		    rb_gc_mark_locations(cont->machine_stack,
-					 cont->machine_stack + cont->machine_stack_size);
+		    rb_gc_mark_locations(cont->machine.stack,
+					 cont->machine.stack + cont->machine.stack_size);
 		}
 	    }
 	}
 #ifdef __ia64
-	if (cont->machine_register_stack) {
-	    rb_gc_mark_locations(cont->machine_register_stack,
-				 cont->machine_register_stack + cont->machine_register_stack_size);
+	if (cont->machine.register_stack) {
+	    rb_gc_mark_locations(cont->machine.register_stack,
+				 cont->machine.register_stack + cont->machine.register_stack_size);
 	}
 #endif
     }
@@ -226,7 +228,7 @@ cont_free(void *ptr)
 	if (cont->type == CONTINUATION_CONTEXT) {
 	    /* cont */
 	    ruby_xfree(cont->ensure_array);
-	    RUBY_FREE_UNLESS_NULL(cont->machine_stack);
+	    RUBY_FREE_UNLESS_NULL(cont->machine.stack);
 	}
 	else {
 	    /* fiber */
@@ -257,10 +259,10 @@ cont_free(void *ptr)
 	}
 #else /* not FIBER_USE_NATIVE */
 	ruby_xfree(cont->ensure_array);
-	RUBY_FREE_UNLESS_NULL(cont->machine_stack);
+	RUBY_FREE_UNLESS_NULL(cont->machine.stack);
 #endif
 #ifdef __ia64
-	RUBY_FREE_UNLESS_NULL(cont->machine_register_stack);
+	RUBY_FREE_UNLESS_NULL(cont->machine.register_stack);
 #endif
 	RUBY_FREE_UNLESS_NULL(cont->vm_stack);
 
@@ -286,12 +288,12 @@ cont_memsize(const void *ptr)
 	    size += n * sizeof(*cont->vm_stack);
 	}
 
-	if (cont->machine_stack) {
-	    size += cont->machine_stack_size * sizeof(*cont->machine_stack);
+	if (cont->machine.stack) {
+	    size += cont->machine.stack_size * sizeof(*cont->machine.stack);
 	}
 #ifdef __ia64
-	if (cont->machine_register_stack) {
-	    size += cont->machine_register_stack_size * sizeof(*cont->machine_register_stack);
+	if (cont->machine.register_stack) {
+	    size += cont->machine.register_stack_size * sizeof(*cont->machine.register_stack);
 	}
 #endif
     }
@@ -380,42 +382,42 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
 {
     size_t size;
 
-    SET_MACHINE_STACK_END(&th->machine_stack_end);
+    SET_MACHINE_STACK_END(&th->machine.stack_end);
 #ifdef __ia64
-    th->machine_register_stack_end = rb_ia64_bsp();
+    th->machine.register_stack_end = rb_ia64_bsp();
 #endif
 
-    if (th->machine_stack_start > th->machine_stack_end) {
-	size = cont->machine_stack_size = th->machine_stack_start - th->machine_stack_end;
-	cont->machine_stack_src = th->machine_stack_end;
+    if (th->machine.stack_start > th->machine.stack_end) {
+	size = cont->machine.stack_size = th->machine.stack_start - th->machine.stack_end;
+	cont->machine.stack_src = th->machine.stack_end;
     }
     else {
-	size = cont->machine_stack_size = th->machine_stack_end - th->machine_stack_start;
-	cont->machine_stack_src = th->machine_stack_start;
+	size = cont->machine.stack_size = th->machine.stack_end - th->machine.stack_start;
+	cont->machine.stack_src = th->machine.stack_start;
     }
 
-    if (cont->machine_stack) {
-	REALLOC_N(cont->machine_stack, VALUE, size);
+    if (cont->machine.stack) {
+	REALLOC_N(cont->machine.stack, VALUE, size);
     }
     else {
-	cont->machine_stack = ALLOC_N(VALUE, size);
+	cont->machine.stack = ALLOC_N(VALUE, size);
     }
 
     FLUSH_REGISTER_WINDOWS;
-    MEMCPY(cont->machine_stack, cont->machine_stack_src, VALUE, size);
+    MEMCPY(cont->machine.stack, cont->machine.stack_src, VALUE, size);
 
 #ifdef __ia64
     rb_ia64_flushrs();
-    size = cont->machine_register_stack_size = th->machine_register_stack_end - th->machine_register_stack_start;
-    cont->machine_register_stack_src = th->machine_register_stack_start;
-    if (cont->machine_register_stack) {
-	REALLOC_N(cont->machine_register_stack, VALUE, size);
+    size = cont->machine.register_stack_size = th->machine.register_stack_end - th->machine.register_stack_start;
+    cont->machine.register_stack_src = th->machine.register_stack_start;
+    if (cont->machine.register_stack) {
+	REALLOC_N(cont->machine.register_stack, VALUE, size);
     }
     else {
-	cont->machine_register_stack = ALLOC_N(VALUE, size);
+	cont->machine.register_stack = ALLOC_N(VALUE, size);
     }
 
-    MEMCPY(cont->machine_register_stack, cont->machine_register_stack_src, VALUE, size);
+    MEMCPY(cont->machine.register_stack, cont->machine.register_stack_src, VALUE, size);
 #endif
 }
 
@@ -430,13 +432,13 @@ cont_save_thread(rb_context_t *cont, rb_thread_t *th)
 {
     /* save thread context */
     cont->saved_thread = *th;
-    /* saved_thread->machine_stack_(start|end) should be NULL */
+    /* saved_thread->machine.stack_(start|end) should be NULL */
     /* because it may happen GC afterward */
-    cont->saved_thread.machine_stack_start = 0;
-    cont->saved_thread.machine_stack_end = 0;
+    cont->saved_thread.machine.stack_start = 0;
+    cont->saved_thread.machine.stack_end = 0;
 #ifdef __ia64
-    cont->saved_thread.machine_register_stack_start = 0;
-    cont->saved_thread.machine_register_stack_end = 0;
+    cont->saved_thread.machine.register_stack_start = 0;
+    cont->saved_thread.machine.register_stack_end = 0;
 #endif
 }
 
@@ -579,7 +581,7 @@ fiber_set_stack_location(void)
     VALUE *ptr;
 
     SET_MACHINE_STACK_END(&ptr);
-    th->machine_stack_start = (void*)(((VALUE)ptr & RB_PAGE_MASK) + STACK_UPPER((void *)&ptr, 0, RB_PAGE_SIZE));
+    th->machine.stack_start = (void*)(((VALUE)ptr & RB_PAGE_MASK) + STACK_UPPER((void *)&ptr, 0, RB_PAGE_SIZE));
 }
 
 static VOID CALLBACK
@@ -654,7 +656,7 @@ fiber_initialize_machine_stack_context(rb_fiber_t *fib, size_t size)
 	    rb_raise(rb_eFiberError, "can't create fiber");
 	}
     }
-    sth->machine_stack_maxsize = size;
+    sth->machine.stack_maxsize = size;
 #else /* not WIN32 */
     ucontext_t *context = &fib->context;
     char *ptr;
@@ -666,11 +668,11 @@ fiber_initialize_machine_stack_context(rb_fiber_t *fib, size_t size)
     context->uc_stack.ss_sp = ptr;
     context->uc_stack.ss_size = size;
     makecontext(context, rb_fiber_start, 0);
-    sth->machine_stack_start = (VALUE*)(ptr + STACK_DIR_UPPER(0, size));
-    sth->machine_stack_maxsize = size - RB_PAGE_SIZE;
+    sth->machine.stack_start = (VALUE*)(ptr + STACK_DIR_UPPER(0, size));
+    sth->machine.stack_maxsize = size - RB_PAGE_SIZE;
 #endif
 #ifdef __ia64
-    sth->machine_register_stack_maxsize = sth->machine_stack_maxsize;
+    sth->machine.register_stack_maxsize = sth->machine.stack_maxsize;
 #endif
 }
 
@@ -687,29 +689,29 @@ fiber_setcontext(rb_fiber_t *newfib, rb_fiber_t *oldfib)
 
     /* restore thread context */
     cont_restore_thread(&newfib->cont);
-    th->machine_stack_maxsize = sth->machine_stack_maxsize;
-    if (sth->machine_stack_end && (newfib != oldfib)) {
-	rb_bug("fiber_setcontext: sth->machine_stack_end has non zero value");
+    th->machine.stack_maxsize = sth->machine.stack_maxsize;
+    if (sth->machine.stack_end && (newfib != oldfib)) {
+	rb_bug("fiber_setcontext: sth->machine.stack_end has non zero value");
     }
 
     /* save  oldfib's machine stack */
     if (oldfib->status != TERMINATED) {
 	STACK_GROW_DIR_DETECTION;
-	SET_MACHINE_STACK_END(&th->machine_stack_end);
+	SET_MACHINE_STACK_END(&th->machine.stack_end);
 	if (STACK_DIR_UPPER(0, 1)) {
-	    oldfib->cont.machine_stack_size = th->machine_stack_start - th->machine_stack_end;
-	    oldfib->cont.machine_stack = th->machine_stack_end;
+	    oldfib->cont.machine.stack_size = th->machine.stack_start - th->machine.stack_end;
+	    oldfib->cont.machine.stack = th->machine.stack_end;
 	}
 	else {
-	    oldfib->cont.machine_stack_size = th->machine_stack_end - th->machine_stack_start;
-	    oldfib->cont.machine_stack = th->machine_stack_start;
+	    oldfib->cont.machine.stack_size = th->machine.stack_end - th->machine.stack_start;
+	    oldfib->cont.machine.stack = th->machine.stack_start;
 	}
     }
     /* exchange machine_stack_start between oldfib and newfib */
-    oldfib->cont.saved_thread.machine_stack_start = th->machine_stack_start;
-    th->machine_stack_start = sth->machine_stack_start;
-    /* oldfib->machine_stack_end should be NULL */
-    oldfib->cont.saved_thread.machine_stack_end = 0;
+    oldfib->cont.saved_thread.machine.stack_start = th->machine.stack_start;
+    th->machine.stack_start = sth->machine.stack_start;
+    /* oldfib->machine.stack_end should be NULL */
+    oldfib->cont.saved_thread.machine.stack_end = 0;
 #ifndef _WIN32
     if (!newfib->context.uc_stack.ss_sp && th->root_fiber != newfib->cont.self) {
 	rb_bug("non_root_fiber->context.uc_stac.ss_sp should not be NULL");
@@ -742,16 +744,16 @@ cont_restore_1(rb_context_t *cont)
 	    ((_JUMP_BUFFER*)(&buf))->Frame;
     }
 #endif
-    if (cont->machine_stack_src) {
+    if (cont->machine.stack_src) {
 	FLUSH_REGISTER_WINDOWS;
-	MEMCPY(cont->machine_stack_src, cont->machine_stack,
-		VALUE, cont->machine_stack_size);
+	MEMCPY(cont->machine.stack_src, cont->machine.stack,
+		VALUE, cont->machine.stack_size);
     }
 
 #ifdef __ia64
-    if (cont->machine_register_stack_src) {
-	MEMCPY(cont->machine_register_stack_src, cont->machine_register_stack,
-	       VALUE, cont->machine_register_stack_size);
+    if (cont->machine.register_stack_src) {
+	MEMCPY(cont->machine.register_stack_src, cont->machine.register_stack,
+	       VALUE, cont->machine.register_stack_size);
     }
 #endif
 
@@ -786,7 +788,7 @@ register_stack_extend(rb_context_t *cont, VALUE *vp, VALUE *curr_bsp)
         E(k) = E(l) = E(m) = E(n) = E(o) =
         E(p) = E(q) = E(r) = E(s) = E(t) = 0;
     }
-    if (curr_bsp < cont->machine_register_stack_src+cont->machine_register_stack_size) {
+    if (curr_bsp < cont->machine.register_stack_src+cont->machine.register_stack_size) {
         register_stack_extend(cont, vp, (VALUE*)rb_ia64_bsp());
     }
     cont_restore_0(cont, vp);
@@ -798,7 +800,7 @@ register_stack_extend(rb_context_t *cont, VALUE *vp, VALUE *curr_bsp)
 static void
 cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
 {
-    if (cont->machine_stack_src) {
+    if (cont->machine.stack_src) {
 #ifdef HAVE_ALLOCA
 #define STACK_PAD_SIZE 1
 #else
@@ -811,7 +813,7 @@ cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
 	    /* Stack grows downward */
 #endif
 #if STACK_GROW_DIRECTION <= 0
-	    volatile VALUE *const end = cont->machine_stack_src;
+	    volatile VALUE *const end = cont->machine.stack_src;
 	    if (&space[0] > end) {
 # ifdef HAVE_ALLOCA
 		volatile VALUE *sp = ALLOCA_N(VALUE, &space[0] - end);
@@ -827,7 +829,7 @@ cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
 	    /* Stack grows upward */
 #endif
 #if STACK_GROW_DIRECTION >= 0
-	    volatile VALUE *const end = cont->machine_stack_src + cont->machine_stack_size;
+	    volatile VALUE *const end = cont->machine.stack_src + cont->machine.stack_size;
 	    if (&space[STACK_PAD_SIZE] < end) {
 # ifdef HAVE_ALLOCA
 		volatile VALUE *sp = ALLOCA_N(VALUE, end - &space[STACK_PAD_SIZE]);
@@ -1258,8 +1260,8 @@ rb_fiber_terminate(rb_fiber_t *fib)
     terminated_machine_stack.ptr = fib->context.uc_stack.ss_sp;
     terminated_machine_stack.size = fib->context.uc_stack.ss_size / sizeof(VALUE);
     fib->context.uc_stack.ss_sp = NULL;
-    fib->cont.machine_stack = NULL;
-    fib->cont.machine_stack_size = 0;
+    fib->cont.machine.stack = NULL;
+    fib->cont.machine.stack_size = 0;
 #endif
     rb_fiber_transfer(return_fiber(), 1, &value);
 }
@@ -1369,7 +1371,7 @@ fiber_store(rb_fiber_t *next_fib)
 		machine_stack_cache_index++;
 	    }
 	    else {
-		if (terminated_machine_stack.ptr != fib->cont.machine_stack) {
+		if (terminated_machine_stack.ptr != fib->cont.machine.stack) {
 		    munmap((void*)terminated_machine_stack.ptr, terminated_machine_stack.size * sizeof(VALUE));
 		}
 		else {
@@ -1659,7 +1661,7 @@ Init_Cont(void)
 #else /* not WIN32 */
     pagesize = sysconf(_SC_PAGESIZE);
 #endif
-    SET_MACHINE_STACK_END(&th->machine_stack_end);
+    SET_MACHINE_STACK_END(&th->machine.stack_end);
 #endif
 
     rb_cFiber = rb_define_class("Fiber", rb_cObject);

@@ -749,8 +749,8 @@ native_thread_init_stack(rb_thread_t *th)
     rb_nativethread_id_t curr = pthread_self();
 
     if (pthread_equal(curr, native_main_thread.id)) {
-	th->machine_stack_start = native_main_thread.stack_start;
-	th->machine_stack_maxsize = native_main_thread.stack_maxsize;
+	th->machine.stack_start = native_main_thread.stack_start;
+	th->machine.stack_maxsize = native_main_thread.stack_maxsize;
     }
     else {
 #ifdef STACKADDR_AVAILABLE
@@ -758,11 +758,11 @@ native_thread_init_stack(rb_thread_t *th)
 	size_t size;
 
 	if (get_stack(&start, &size) == 0) {
-	    th->machine_stack_start = start;
-	    th->machine_stack_maxsize = size;
+	    th->machine.stack_start = start;
+	    th->machine.stack_maxsize = size;
 	}
 #elif defined get_stack_of
-	if (!th->machine_stack_maxsize) {
+	if (!th->machine.stack_maxsize) {
 	    native_mutex_lock(&th->interrupt_lock);
 	    native_mutex_unlock(&th->interrupt_lock);
 	}
@@ -771,9 +771,9 @@ native_thread_init_stack(rb_thread_t *th)
 #endif
     }
 #ifdef __ia64
-    th->machine_register_stack_start = native_main_thread.register_stack_start;
-    th->machine_stack_maxsize /= 2;
-    th->machine_register_stack_maxsize = th->machine_stack_maxsize;
+    th->machine.register_stack_start = native_main_thread.register_stack_start;
+    th->machine.stack_maxsize /= 2;
+    th->machine.register_stack_maxsize = th->machine.stack_maxsize;
 #endif
     return 0;
 }
@@ -800,7 +800,7 @@ thread_start_func_1(void *th_ptr)
 	native_thread_init(th);
 	/* run */
 #if defined USE_NATIVE_THREAD_INIT
-	thread_start_func_2(th, th->machine_stack_start, rb_ia64_bsp());
+	thread_start_func_2(th, th->machine.stack_start, rb_ia64_bsp());
 #else
 	thread_start_func_2(th, &stack_start, rb_ia64_bsp());
 #endif
@@ -922,10 +922,10 @@ native_thread_create(rb_thread_t *th)
 	const size_t stack_size = th->vm->default_params.thread_machine_stack_size;
 	const size_t space = space_size(stack_size);
 
-        th->machine_stack_maxsize = stack_size - space;
+        th->machine.stack_maxsize = stack_size - space;
 #ifdef __ia64
-        th->machine_stack_maxsize /= 2;
-        th->machine_register_stack_maxsize = th->machine_stack_maxsize;
+        th->machine.stack_maxsize /= 2;
+        th->machine.register_stack_maxsize = th->machine.stack_maxsize;
 #endif
 
 #ifdef HAVE_PTHREAD_ATTR_INIT
@@ -948,8 +948,8 @@ native_thread_create(rb_thread_t *th)
 #ifdef get_stack_of
 	if (!err) {
 	    get_stack_of(th->thread_id,
-			 &th->machine_stack_start,
-			 &th->machine_stack_maxsize);
+			 &th->machine.stack_start,
+			 &th->machine.stack_maxsize);
 	}
 	native_mutex_unlock(&th->interrupt_lock);
 #endif
@@ -1561,7 +1561,7 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
     STACK_GROW_DIR_DETECTION;
 
     if (th) {
-	size = th->machine_stack_maxsize;
+	size = th->machine.stack_maxsize;
 #if defined(HAVE_GETRLIMIT) && MAINSTACKADDR_AVAILABLE
 	if (pthread_equal(th->thread_id, native_main_thread.id)) {
 	    struct rlimit rlim;
@@ -1570,7 +1570,7 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
 	    }
 	}
 #endif
-	base = (char *)th->machine_stack_start - STACK_DIR_UPPER(0, size);
+	base = (char *)th->machine.stack_start - STACK_DIR_UPPER(0, size);
     }
 #ifdef STACKADDR_AVAILABLE
     else if (get_stack(&base, &size) == 0) {
