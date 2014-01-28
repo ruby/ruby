@@ -1,3 +1,9 @@
+Tue Jan 28 15:27:36 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* thread_pthread.c: rlimit is only available on Linux.
+	  At least r44712 breaks FreeBSD.
+	  [ruby-core:60113] [Bug #9454]
+
 Tue Jan 28 15:17:59 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/set.rb: [DOC] Add examples for Set#intersect? and Set#disjoint?
