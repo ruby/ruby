@@ -249,24 +249,55 @@ rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type
     return rb_assoc_new(str, addr);
 }
 
+/* returns true if SOCK_CLOEXEC is supported */
+int rsock_detect_cloexec(int fd)
+{
+#ifdef SOCK_CLOEXEC
+    int flags = fcntl(fd, F_GETFD);
+
+    if (flags == -1)
+	rb_bug("rsock_detect_cloexec: fcntl(%d, F_GETFD) failed: %s", fd, strerror(errno));
+
+    if (flags & FD_CLOEXEC)
+	return 1;
+#endif
+    return 0;
+}
+
 static int
 rsock_socket0(int domain, int type, int proto)
 {
     int ret;
 
 #ifdef SOCK_CLOEXEC
-    static int try_sock_cloexec = 1;
-    if (try_sock_cloexec) {
+    static int cloexec_state = -1; /* <0: unknown, 0: ignored, >0: working */
+
+    if (cloexec_state > 0) { /* common path, if SOCK_CLOEXEC is defined */
         ret = socket(domain, type|SOCK_CLOEXEC, proto);
-        if (ret == -1 && errno == EINVAL) {
+        if (ret >= 0) {
+            if (ret <= 2)
+                goto fix_cloexec;
+            goto update_max_fd;
+        }
+    }
+    else if (cloexec_state < 0) { /* usually runs once only for detection */
+        ret = socket(domain, type|SOCK_CLOEXEC, proto);
+        if (ret >= 0) {
+            cloexec_state = rsock_detect_cloexec(ret);
+            if (cloexec_state == 0 || ret <= 2)
+                goto fix_cloexec;
+            goto update_max_fd;
+        }
+        else if (ret == -1 && errno == EINVAL) {
             /* SOCK_CLOEXEC is available since Linux 2.6.27.  Linux 2.6.18 fails with EINVAL */
             ret = socket(domain, type, proto);
             if (ret != -1) {
-                try_sock_cloexec = 0;
+                cloexec_state = 0;
+                /* fall through to fix_cloexec */
             }
         }
     }
-    else {
+    else { /* cloexec_state == 0 */
         ret = socket(domain, type, proto);
     }
 #else
@@ -274,11 +305,12 @@ rsock_socket0(int domain, int type, int proto)
 #endif
     if (ret == -1)
         return -1;
-
-    rb_fd_fix_cloexec(ret);
+fix_cloexec:
+    rb_maygvl_fd_fix_cloexec(ret);
+update_max_fd:
+    rb_update_max_fd(ret);
 
     return ret;
-
 }
 
 int

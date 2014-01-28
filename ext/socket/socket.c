@@ -174,10 +174,24 @@ rsock_socketpair0(int domain, int type, int protocol, int sv[2])
     int ret;
 
 #ifdef SOCK_CLOEXEC
-    static int try_sock_cloexec = 1;
-    if (try_sock_cloexec) {
+    static int cloexec_state = -1; /* <0: unknown, 0: ignored, >0: working */
+
+    if (cloexec_state > 0) { /* common path, if SOCK_CLOEXEC is defined */
         ret = socketpair(domain, type|SOCK_CLOEXEC, protocol, sv);
-        if (ret == -1 && errno == EINVAL) {
+        if (ret == 0 && (sv[0] <= 2 || sv[1] <= 2)) {
+            goto fix_cloexec; /* highly unlikely */
+        }
+        goto update_max_fd;
+    }
+    else if (cloexec_state < 0) { /* usually runs once only for detection */
+        ret = socketpair(domain, type|SOCK_CLOEXEC, protocol, sv);
+        if (ret == 0) {
+            cloexec_state = rsock_detect_cloexec(sv[0]);
+            if ((cloexec_state == 0) || (sv[0] <= 2 || sv[1] <= 2))
+                goto fix_cloexec;
+            goto update_max_fd;
+        }
+        else if (ret == -1 && errno == EINVAL) {
             /* SOCK_CLOEXEC is available since Linux 2.6.27.  Linux 2.6.18 fails with EINVAL */
             ret = socketpair(domain, type, protocol, sv);
             if (ret != -1) {
@@ -185,11 +199,11 @@ rsock_socketpair0(int domain, int type, int protocol, int sv[2])
                  * So disable SOCK_CLOEXEC only if socketpair() succeeds without SOCK_CLOEXEC.
                  * Ex. Socket.pair(:UNIX, 0xff) fails with EINVAL.
                  */
-                try_sock_cloexec = 0;
+                cloexec_state = 0;
             }
         }
     }
-    else {
+    else { /* cloexec_state == 0 */
         ret = socketpair(domain, type, protocol, sv);
     }
 #else
@@ -200,8 +214,13 @@ rsock_socketpair0(int domain, int type, int protocol, int sv[2])
         return -1;
     }
 
-    rb_fd_fix_cloexec(sv[0]);
-    rb_fd_fix_cloexec(sv[1]);
+fix_cloexec:
+    rb_maygvl_fd_fix_cloexec(sv[0]);
+    rb_maygvl_fd_fix_cloexec(sv[1]);
+
+update_max_fd:
+    rb_update_max_fd(sv[0]);
+    rb_update_max_fd(sv[1]);
 
     return ret;
 }
@@ -267,8 +286,6 @@ rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass)
     if (ret < 0) {
 	rb_sys_fail("socketpair(2)");
     }
-    rb_fd_fix_cloexec(sp[0]);
-    rb_fd_fix_cloexec(sp[1]);
 
     s1 = rsock_init_sock(rb_obj_alloc(klass), sp[0]);
     s2 = rsock_init_sock(rb_obj_alloc(klass), sp[1]);

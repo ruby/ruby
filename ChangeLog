@@ -1,3 +1,9 @@
+Tue Jan 28 23:36:01 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket: Avoid redundant fcntl/fstat syscalls for cloexec
+	  sockets.
+	  Patch by Eric Wong.  [ruby-core:59429] [Feature #9330]
+
 Tue Jan 28 20:51:07 2014  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (READ_FROM_CHILD): Apply the last hunk of

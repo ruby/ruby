@@ -226,6 +226,7 @@ typedef union {
 #define INET_SOCKS  2
 
 extern int rsock_do_not_reverse_lookup;
+extern int rsock_cmsg_cloexec_state;
 #define FMODE_NOREVLOOKUP 0x100
 
 extern VALUE rb_cBasicSocket;
@@ -304,6 +305,7 @@ socklen_t rsock_unix_sockaddr_len(VALUE path);
 #endif
 
 int rsock_socket(int domain, int type, int proto);
+int rsock_detect_cloexec(int fd);
 VALUE rsock_init_sock(VALUE sock, int fd);
 VALUE rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass);
 VALUE rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv, int type);
