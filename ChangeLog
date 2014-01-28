@@ -1,3 +1,8 @@
+Tue Jan 28 15:17:59 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/set.rb: [DOC] Add examples for Set#intersect? and Set#disjoint?
+	  Patch by xavier nayrac [Bug #9331] [ci skip]
+
 Tue Jan 28 15:12:22 2014  Zachary Scott  <e@zzak.io>
 
 	* ext/zlib/zlib.c (rb_zlib_adler32): [DOC] Add example for adler32
