@@ -1,3 +1,15 @@
+Tue Jan 28 16:33:18 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (ruby_init_stack, ruby_stack_overflowed_p):
+	  place get_stack above others to get stack boundary information.
+	  [ruby-core:60113] [Bug #9454]
+
+Tue Jan 28 16:31:13 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (ruby_init_stack, ruby_stack_overflowed_p):
+	  place get_stack above others to get stack boundary information.
+	  [ruby-core:60113] [Bug #9454]
+
 Tue Jan 28 15:27:36 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* thread_pthread.c: rlimit is only available on Linux.
