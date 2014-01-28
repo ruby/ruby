@@ -1,3 +1,9 @@
+Tue Jan 28 20:51:07 2014  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (READ_FROM_CHILD): Apply the last hunk of
+	  0001-process.c-avoid-EINTR-from-Process.spawn.patch written by
+	  Eric Wong in [Bug #8770].
+
 Tue Jan 28 16:33:18 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (ruby_init_stack, ruby_stack_overflowed_p):

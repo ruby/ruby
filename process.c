@@ -3362,7 +3362,7 @@ recv_child_error(int fd, int *statep, VALUE *excp, int *errp, char *errmsg, size
         *excp = exc;
     }
 #define READ_FROM_CHILD(ptr, len) \
-    (NIL_P(io) ? read(fd, (ptr), (len)) : rb_io_bufread(io, (ptr), (len)))
+    (NIL_P(io) ? read_retry(fd, (ptr), (len)) : rb_io_bufread(io, (ptr), (len)))
     if ((size = READ_FROM_CHILD(&err, sizeof(err))) < 0) {
         err = errno;
     }
