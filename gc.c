@@ -3209,14 +3209,14 @@ init_mark_stack(mark_stack_t *stack)
 /* Marking */
 
 #ifdef __ia64
-#define SET_STACK_END (SET_MACHINE_STACK_END(&th->machine_stack_end), th->machine_register_stack_end = rb_ia64_bsp())
+#define SET_STACK_END (SET_MACHINE_STACK_END(&th->machine.stack_end), th->machine.register_stack_end = rb_ia64_bsp())
 #else
-#define SET_STACK_END SET_MACHINE_STACK_END(&th->machine_stack_end)
+#define SET_STACK_END SET_MACHINE_STACK_END(&th->machine.stack_end)
 #endif
 
-#define STACK_START (th->machine_stack_start)
-#define STACK_END (th->machine_stack_end)
-#define STACK_LEVEL_MAX (th->machine_stack_maxsize/sizeof(VALUE))
+#define STACK_START (th->machine.stack_start)
+#define STACK_END (th->machine.stack_end)
+#define STACK_LEVEL_MAX (th->machine.stack_maxsize/sizeof(VALUE))
 
 #if STACK_GROW_DIRECTION < 0
 # define STACK_LENGTH  (size_t)(STACK_START - STACK_END)
@@ -3258,8 +3258,8 @@ stack_check(int water_mark)
     ret = STACK_LENGTH > STACK_LEVEL_MAX - water_mark;
 #ifdef __ia64
     if (!ret) {
-        ret = (VALUE*)rb_ia64_bsp() - th->machine_register_stack_start >
-              th->machine_register_stack_maxsize/sizeof(VALUE) - water_mark;
+        ret = (VALUE*)rb_ia64_bsp() - th->machine.register_stack_start >
+              th->machine.register_stack_maxsize/sizeof(VALUE) - water_mark;
     }
 #endif
     return ret;
@@ -3483,7 +3483,7 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
 
     rb_gc_mark_locations(stack_start, stack_end);
 #ifdef __ia64
-    rb_gc_mark_locations(th->machine_register_stack_start, th->machine_register_stack_end);
+    rb_gc_mark_locations(th->machine.register_stack_start, th->machine.register_stack_end);
 #endif
 #if defined(__mc68000__)
     mark_locations_array(objspace, (VALUE*)((char*)STACK_END + 2),
@@ -3500,7 +3500,7 @@ rb_gc_mark_machine_stack(rb_thread_t *th)
     GET_STACK_BOUNDS(stack_start, stack_end, 0);
     rb_gc_mark_locations(stack_start, stack_end);
 #ifdef __ia64
-    rb_gc_mark_locations(th->machine_register_stack_start, th->machine_register_stack_end);
+    rb_gc_mark_locations(th->machine.register_stack_start, th->machine.register_stack_end);
 #endif
 }
 
