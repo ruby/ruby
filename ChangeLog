@@ -1,3 +1,10 @@
+Wed Jan 29 04:29:54 2014  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/openssl/ossl_ssl.c: pass read_nonblock options to underlying IO
+	  when SSL session has not been started.
+
+	* test/openssl/test_ssl.rb: test for change.
+
 Wed Jan 29 03:49:36 2014  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/fiddle/closure.c: use sizeof(*pcl) for correct sizeof value.
