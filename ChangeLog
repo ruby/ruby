@@ -1,3 +1,8 @@
+Tue Jan 28 15:12:22 2014  Zachary Scott  <e@zzak.io>
+
+	* ext/zlib/zlib.c (rb_zlib_adler32): [DOC] Add example for adler32
+	  Patch by Vajrasky Kok [Bug #9307] [ci skip]
+
 Tue Jan 28 08:56:00 2014  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* compile.c (iseq_build_from_ary_body): Use :blockptr instead of :block
