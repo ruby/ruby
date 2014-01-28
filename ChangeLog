@@ -1,3 +1,8 @@
+Wed Jan 29 03:36:42 2014  Eric Wong <e@80x24.org>
+
+	* doc/contributing.rdoc: allow/encourage other git hosts
+	  [ruby-core:59807][misc #9421]
+
 Tue Jan 28 23:36:01 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket: Avoid redundant fcntl/fstat syscalls for cloexec
