@@ -661,6 +661,18 @@ ruby_init_stack(volatile VALUE *addr
     )
 {
     native_main_thread.id = pthread_self();
+#if MAINSTACKADDR_AVAILABLE
+    if (native_main_thread.stack_maxsize) return;
+    {
+	void* stackaddr;
+	size_t size;
+	if (get_main_stack(&stackaddr, &size) == 0) {
+	    native_main_thread.stack_maxsize = size;
+	    native_main_thread.stack_start = stackaddr;
+	    return;
+	}
+    }
+#endif
 #ifdef STACK_END_ADDRESS
     native_main_thread.stack_start = STACK_END_ADDRESS;
 #else
@@ -675,18 +687,6 @@ ruby_init_stack(volatile VALUE *addr
     if (!native_main_thread.register_stack_start ||
         (VALUE*)bsp < native_main_thread.register_stack_start) {
         native_main_thread.register_stack_start = (VALUE*)bsp;
-    }
-#endif
-#if MAINSTACKADDR_AVAILABLE
-    if (native_main_thread.stack_maxsize) return;
-    {
-	void* stackaddr;
-	size_t size;
-	if (get_main_stack(&stackaddr, &size) == 0) {
-	    native_main_thread.stack_maxsize = size;
-	    native_main_thread.stack_start = stackaddr;
-	    return;
-	}
     }
 #endif
     {
@@ -1560,23 +1560,24 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
     const size_t water_mark = 1024 * 1024;
     STACK_GROW_DIR_DETECTION;
 
-    if (th) {
-	size = th->machine.stack_maxsize;
-#if defined(HAVE_GETRLIMIT) && defined(__linux__) && MAINSTACKADDR_AVAILABLE
+#ifdef STACKADDR_AVAILABLE
+    if (get_stack(&base, &size) == 0) {
+# ifdef __APPLE__
 	if (pthread_equal(th->thread_id, native_main_thread.id)) {
 	    struct rlimit rlim;
 	    if (getrlimit(RLIMIT_STACK, &rlim) == 0 && rlim.rlim_cur > size) {
 		size = (size_t)rlim.rlim_cur;
 	    }
 	}
+# endif
+	base = (char *)base + STACK_DIR_UPPER(+size, -size);
+    }
+    else
 #endif
+    if (th) {
+	size = th->machine.stack_maxsize;
 	base = (char *)th->machine.stack_start - STACK_DIR_UPPER(0, size);
     }
-#ifdef STACKADDR_AVAILABLE
-    else if (get_stack(&base, &size) == 0) {
-	STACK_DIR_UPPER((void)(base = (char *)base + size), (void)0);
-    }
-#endif
     else {
 	return 0;
     }
