@@ -429,7 +429,14 @@ do_checksum(argc, argv, func)
  * +adler+. If +string+ is omitted, it returns the Adler-32 initial value. If
  * +adler+ is omitted, it assumes that the initial value is given to +adler+.
  *
- * FIXME: expression.
+ * Example usage:
+ *
+ *   require "zlib"
+ *
+ *   data = "foo"
+ *   puts "Adler32 checksum: #{Zlib.adler32(data).to_s(16)}"
+ *   #=> Adler32 checksum: 2820145
+ *
  */
 static VALUE
 rb_zlib_adler32(int argc, VALUE *argv, VALUE klass)
