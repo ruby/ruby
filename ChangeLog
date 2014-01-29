@@ -1,3 +1,10 @@
+Wed Jan 29 13:25:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/resolv.rb (Resolv::Hosts#lazy_initialize): should not
+	  consider encodings in hosts file.  [ruby-core:59239] [Bug #9273]
+
+	* lib/resolv.rb (Resolv::Config.parse_resolv_conf): ditto.
+
 Wed Jan 29 13:00:17 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (ruby_qsort): fix potential stack overflow on a large
