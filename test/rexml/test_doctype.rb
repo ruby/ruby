@@ -61,6 +61,58 @@ class TestDocTypeAccessor < Test::Unit::TestCase
     }
   end
 
+  # Using double quotes is default behavior of existing code for DocType.
+  # (Although XMLDecl uses single quotes as default)
+  def test_uses_double_quotes_as_default_if_no_option_specified
+    output = ''
+    xml = <<-EOS
+<!DOCTYPE r SYSTEM 'urn:x-test:sysid1' [
+<!NOTATION n1 SYSTEM 'urn:x-test:notation1'>
+<!NOTATION n2 SYSTEM 'urn:x-test:notation2'>
+]>
+    EOS
+    REXML::Document.new(xml).doctype.write output
+
+    expected = <<-EOS
+<!DOCTYPE r SYSTEM "urn:x-test:sysid1" [
+<!NOTATION n1 SYSTEM "urn:x-test:notation1">
+<!NOTATION n2 SYSTEM "urn:x-test:notation2">
+]>
+    EOS
+    assert_equal expected.chomp, output
+  end
+
+  def test_uses_double_quotes_if_specified
+    output = ''
+    xml = %q(<!DOCTYPE name SYSTEM 'long-name' 'uri'>)
+    REXML::Document.new(xml, :xml_prologue_quote => :quote).doctype.write output
+    assert_equal %q(<!DOCTYPE name SYSTEM "long-name" "uri">), output
+  end
+
+  def test_uses_single_quotes_if_specified
+    output = ''
+    xml = %q(<!DOCTYPE name SYSTEM "long-name" "uri">)
+    REXML::Document.new(xml, :xml_prologue_quote => :apos).doctype.write output
+    assert_equal %q(<!DOCTYPE name SYSTEM 'long-name' 'uri'>), output
+  end
+
+  def test_uses_double_quotes_as_default_if_unsupported_option_specified
+    output = ''
+    xml = %q(<!DOCTYPE name SYSTEM 'long-name' 'uri'>)
+    REXML::Document.new(xml, :xml_prologue_quote => :accent).doctype.write output
+    assert_equal %q(<!DOCTYPE name SYSTEM "long-name" "uri">), output
+  end
+
+  def test_uses_double_quotes_as_default_if_orphan
+    output = ''
+    doctype = REXML::DocType.new(['name', "SYSTEM", 'long-name', 'uri'])
+    assert_nil doctype.parent
+
+    doctype.write output
+
+    expected = %q(<!DOCTYPE name SYSTEM "long-name" "uri">)
+    assert_equal expected, output
+  end
 end
 
 class TestNotationDeclPublic < Test::Unit::TestCase
@@ -82,7 +134,7 @@ class TestNotationDeclPublic < Test::Unit::TestCase
 
   private
   def decl(id, uri)
-    REXML::NotationDecl.new(@name, "PUBLIC", id, uri)
+    REXML::NotationDecl.new(nil, @name, "PUBLIC", id, uri)
   end
 end
 
@@ -99,6 +151,6 @@ class TestNotationDeclSystem < Test::Unit::TestCase
 
   private
   def decl(id)
-    REXML::NotationDecl.new(@name, "SYSTEM", id, nil)
+    REXML::NotationDecl.new(nil, @name, "SYSTEM", id, nil)
   end
 end

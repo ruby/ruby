@@ -1,5 +1,6 @@
 require 'rexml/encoding'
 require 'rexml/source'
+require 'rexml/stringquotes'
 
 module REXML
   # NEEDS DOCUMENTATION
@@ -105,15 +106,12 @@ module REXML
     end
 
     private
-    def quote(s)
-      q = (parent && parent.context && parent.context[:attribute_quote] == :quote) ? '"' : "'"
-      q + s + q
-    end
+    include StringQuotes
 
     def content(enc)
-      rv = "version=#{quote @version}"
-      rv << " encoding=#{quote enc}" if @writeencoding || enc !~ /\Autf-8\z/i
-      rv << " standalone=#{quote @standalone}" if @standalone
+      rv = "version=#{adjust_prologue_quotes @version.inspect, "'"}"
+      rv << " encoding=#{adjust_prologue_quotes enc.inspect, "'"}" if @writeencoding || enc !~ /\Autf-8\z/i
+      rv << " standalone=#{adjust_prologue_quotes @standalone.inspect, "'"}" if @standalone
       rv
     end
   end
