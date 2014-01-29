@@ -1,3 +1,15 @@
+Wed Jan 29 13:32:53 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_jump.c (rb_exec_end_proc): unlink and free procs data before
+	  calling for each procs.  [Bug #9110]
+
+Wed Jan 29 13:32:53 2014  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* eval_jump.c (rb_exec_end_proc): fix double free or corruption error
+	  when reentering by callcc. [ruby-core:58329] [Bug #9110]
+
+	* test/ruby/test_beginendblock.rb: test for above.
+
 Wed Jan 29 13:25:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/resolv.rb (Resolv::Hosts#lazy_initialize): should not
