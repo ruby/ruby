@@ -368,11 +368,9 @@ enumerator_each(VALUE obj)
 static VALUE
 enumerator_with_index_i(VALUE val, VALUE m, int argc, VALUE *argv)
 {
-    VALUE idx;
     VALUE *memo = (VALUE *)m;
-
-    idx = INT2FIX(*memo);
-    ++*memo;
+    VALUE idx = *memo;
+    *memo = rb_int_succ(idx);
 
     if (argc <= 1)
 	return rb_yield_values(2, val, idx);
@@ -399,7 +397,10 @@ enumerator_with_index(int argc, VALUE *argv, VALUE obj)
 
     rb_scan_args(argc, argv, "01", &memo);
     RETURN_ENUMERATOR(obj, argc, argv);
-    memo = NIL_P(memo) ? 0 : (VALUE)NUM2LONG(memo);
+    if (NIL_P(memo))
+	memo = INT2FIX(0);
+    else
+	memo = rb_to_int(memo);
     return enumerator_block_call(obj, enumerator_with_index_i, (VALUE)&memo);
 }
 
