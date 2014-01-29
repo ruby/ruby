@@ -1,3 +1,9 @@
+Wed Jan 29 12:54:13 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (local_push_gen, local_pop_gen): save cmdarg_stack to
+	  isolate command argument state from outer scope.
+	  [ruby-core:59342] [Bug #9308]
+
 Wed Jan 29 12:37:33 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (rb_thread_mark): mark a working Proc of bmethod
