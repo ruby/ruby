@@ -1,3 +1,9 @@
+Wed Jan 29 13:00:17 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.c (ruby_qsort): fix potential stack overflow on a large
+	  machine.  based on the patch by Conrad Irwin <conrad.irwin AT
+	  gmail.com> at [ruby-core:51816].  [Bug #7772]
+
 Wed Jan 29 12:54:13 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (local_push_gen, local_pop_gen): save cmdarg_stack to
