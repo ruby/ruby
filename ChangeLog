@@ -1,3 +1,8 @@
+Wed Jan 29 12:35:37 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* lib/rexml/document.rb (REXML::Document.entity_expansion_text_limit):
+	  fix a typo in comment in r39384.
+
 Thu Jan  9 14:27:25 2014  Aman Gupta <ruby@tmm1.net>
 
 	* test/net/imap/cacert.pem: generate new CA cert, since the last one
