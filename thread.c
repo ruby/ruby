@@ -4376,6 +4376,18 @@ rb_clear_trace_func(void)
 static void call_trace_func(rb_event_flag_t, VALUE data, VALUE self, ID id, VALUE klass);
 
 /*
+ * If recursion is detected on the current method, obj and paired_obj,
+ * the outermost func will be called with (obj, arg, Qtrue). All inner
+ * func will be short-circuited using throw.
+ */
+
+VALUE
+rb_exec_recursive_paired_outer(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE paired_obj, VALUE arg)
+{
+    return exec_recursive(func, obj, rb_obj_id(paired_obj), arg, 1);
+}
+
+/*
  *  call-seq:
  *     set_trace_func(proc)    -> proc
  *     set_trace_func(nil)     -> nil

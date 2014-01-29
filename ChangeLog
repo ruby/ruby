@@ -1,3 +1,10 @@
+Wed Jan 29 14:00:15 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compar.c (cmp_eq): fail if recursion.  [ruby-core:57736] [Bug #9003]
+
+	* thread.c (rb_exec_recursive_paired_outer): new function which is
+	  combinnation of paired and outer variants.
+
 Wed Jan 29 13:40:48 2014  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/smtp.rb (Net::SMTP#critical):  Always return a
