@@ -1744,7 +1744,11 @@ rb_thread_mark(void *ptr)
 		if (iseq) {
 		    rb_gc_mark(RUBY_VM_NORMAL_ISEQ_P(iseq) ? iseq->self : (VALUE)iseq);
 		}
-		if (cfp->me) ((rb_method_entry_t *)cfp->me)->mark = 1;
+		if (cfp->me) {
+		    /* TODO: marking `me' can be more sophisticated way */
+		    ((rb_method_entry_t *)cfp->me)->mark = 1;
+		    rb_mark_method_entry(cfp->me);
+		}
 		cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 	    }
 	}
