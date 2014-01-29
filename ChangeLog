@@ -1,3 +1,8 @@
+Wed Jan 29 18:52:09 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* enumerator.c (enumerator_with_index_i): add the declaration of
+	  rb_int_succ().  this fixes test failure on OS X introduced at r44745.
+
 Wed Jan 29 14:44:44 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/date/date_strptime.c (date__strptime_internal): unset
