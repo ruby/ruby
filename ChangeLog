@@ -1,3 +1,18 @@
+Wed Jan 29 12:37:33 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (rb_thread_mark): mark a working Proc of bmethod
+	  (a method defined by define_method) even if the method was removed.
+	  We could not trace working Proc object which represents the body
+	  of bmethod if the method was removed (alias/undef/overridden).
+	  Simply, it was mark miss.
+	  This patch by Kazuki Tsujimoto. [Bug #7825]
+
+	  NOTE: We can brush up this marking because we do not need to mark
+	  `me' on each living control frame. We need to mark `me's
+	  only if `me' was free'ed. This is future work after Ruby 2.0.0.
+
+	* test/ruby/test_method.rb: add a test.
+
 Wed Jan 29 12:35:37 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* lib/rexml/document.rb (REXML::Document.entity_expansion_text_limit):
