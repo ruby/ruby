@@ -1,3 +1,8 @@
+Thu Jan 30 08:26:21 2014  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/fiddle/closure.c: use sizeof(*pcl) for correct sizeof value.
+	  [ruby-core:57599] [Bug #8978].
+
 Wed Jan 29 20:08:15 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (nogvl_copy_stream_sendfile): check socket on other than

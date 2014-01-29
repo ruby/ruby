@@ -27,7 +27,7 @@ dealloc(void * ptr)
 #if USE_FFI_CLOSURE_ALLOC
     ffi_closure_free(cls->pcl);
 #else
-    munmap(cls->pcl, sizeof(cls->pcl));
+    munmap(cls->pcl, sizeof(*cls->pcl));
 #endif
     if (cls->argv) xfree(cls->argv);
     xfree(cls);
