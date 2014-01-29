@@ -229,7 +229,10 @@ LIBS = oldnames.lib user32.lib advapi32.lib shell32.lib ws2_32.lib imagehlp.lib 
 LIBS = unicows.lib $(LIBS)
 !endif
 !if !defined(MISSING)
-MISSING = acosh.obj cbrt.obj crypt.obj erf.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj tgamma.obj win32/win32.obj win32/file.obj setproctitle.obj
+MISSING = crypt.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj win32/win32.obj win32/file.obj setproctitle.obj
+!if $(RT_VER) < 120
+MISSING = $(MISSING) acosh.obj cbrt.obj erf.obj tgamma.obj
+!endif
 !endif
 
 ARFLAGS = -machine:$(MACHINE) -out:
@@ -597,6 +600,18 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define GETGROUPS_T int
 #define RETSIGTYPE void
 #define TYPEOF_TIMEVAL_TV_SEC long
+!if $(RT_VER) >= 120
+#define HAVE_ACOSH 1
+#define HAVE_ASINH 1
+#define HAVE_ATANH 1
+#define HAVE_CBRT 1
+#define HAVE_LOG2 1
+#define log2(x) log2(x)
+#define HAVE_ERF 1
+#define HAVE_ERFC 1
+#define HAVE_ROUND 1
+#define HAVE_TGAMMA 1
+!endif
 #define HAVE_ALLOCA 1
 #define HAVE_DUP2 1
 #define HAVE_MEMCMP 1
