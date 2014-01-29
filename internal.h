@@ -138,6 +138,8 @@ void Init_newline(void);
 int rb_num_to_uint(VALUE val, unsigned int *ret);
 int ruby_float_step(VALUE from, VALUE to, VALUE step, int excl);
 double ruby_float_mod(double x, double y);
+VALUE rb_int_succ(VALUE num);
+VALUE rb_int_pred(VALUE num);
 
 /* object.c */
 VALUE rb_obj_equal(VALUE obj1, VALUE obj2);
