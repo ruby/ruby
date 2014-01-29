@@ -214,11 +214,15 @@ rsock_socketpair0(int domain, int type, int protocol, int sv[2])
         return -1;
     }
 
+#ifdef SOCK_CLOEXEC
 fix_cloexec:
+#endif
     rb_maygvl_fd_fix_cloexec(sv[0]);
     rb_maygvl_fd_fix_cloexec(sv[1]);
 
+#ifdef SOCK_CLOEXEC
 update_max_fd:
+#endif
     rb_update_max_fd(sv[0]);
     rb_update_max_fd(sv[1]);
 
