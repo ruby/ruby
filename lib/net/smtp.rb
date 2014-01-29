@@ -934,11 +934,11 @@ module Net
     end
 
     def critical(&block)
-      return '200 dummy reply code' if @error_occured
+      return Response.parse('200 dummy reply code') if @error_occurred
       begin
         return yield()
       rescue Exception
-        @error_occured = true
+        @error_occurred = true
         raise
       end
     end
