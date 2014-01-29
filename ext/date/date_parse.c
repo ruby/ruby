@@ -701,9 +701,9 @@ parse_time(VALUE str, VALUE hash)
 		   "("
 		     "(?:gmt|utc?)?[-+]\\d+(?:[,.:]\\d+(?::\\d+)?)?"
 		   "|"
-		     "[[:alpha:].\\s]+(?:standard|daylight)\\stime\\b"
+		     "(?-i:[[:alpha:].\\s]+)(?:standard|daylight)\\stime\\b"
 		   "|"
-		     "[[:alpha:]]+(?:\\sdst)?\\b"
+		     "(?-i:[[:alpha:]]+)(?:\\sdst)?\\b"
 		   ")"
 		")?";
     static VALUE pat = Qnil;
