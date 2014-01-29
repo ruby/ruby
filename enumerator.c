@@ -366,6 +366,8 @@ enumerator_each(VALUE obj)
     return enumerator_block_call(obj, 0, obj);
 }
 
+extern VALUE rb_int_succ(VALUE);
+
 static VALUE
 enumerator_with_index_i(VALUE val, VALUE m, int argc, VALUE *argv)
 {
