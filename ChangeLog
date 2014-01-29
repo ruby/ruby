@@ -1,3 +1,9 @@
+Wed Jan 29 20:08:15 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (nogvl_copy_stream_sendfile): check socket on other than
+	  linux, as sendfile(2) on non-socket fd works only on linux.
+	  [Feature #9427]
+
 Wed Jan 29 18:09:48 2014  Eric Wong <e@80x24.org>
 
 	* io.c (nogvl_copy_stream_sendfile): remove socket check
