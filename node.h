@@ -447,6 +447,7 @@ typedef struct RNode {
 #define NEW_ATTRASGN(r,m,a) NEW_NODE(NODE_ATTRASGN,r,m,a)
 #define NEW_PRELUDE(p,b) NEW_NODE(NODE_PRELUDE,p,b,0)
 #define NEW_OPTBLOCK(a) NEW_NODE(NODE_OPTBLOCK,a,0,0)
+#define NEW_MEMO(a,b,c) NEW_NODE(NODE_MEMO,a,b,c)
 
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility push(default)

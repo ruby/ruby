@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative "envutil"
 
 class TestEnumerator < Test::Unit::TestCase
   def setup
@@ -103,6 +104,28 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal([[1,s],[2,s+1],[3,s+2]], @obj.to_enum(:foo, 1, 2, 3).with_index(s).to_a, bug8010)
     s <<= 1
     assert_equal([[1,s],[2,s+1],[3,s+2]], @obj.to_enum(:foo, 1, 2, 3).with_index(s).to_a, bug8010)
+  end
+
+  def test_with_index_nonnum_offset
+    bug8010 = '[ruby-dev:47131] [Bug #8010]'
+    s = Object.new
+    def s.to_int; 1 end
+    assert_equal([[1,1],[2,2],[3,3]], @obj.to_enum(:foo, 1, 2, 3).with_index(s).to_a, bug8010)
+  end
+
+  def test_with_index_string_offset
+    bug8010 = '[ruby-dev:47131] [Bug #8010]'
+    assert_raise(TypeError, bug8010){ @obj.to_enum(:foo, 1, 2, 3).with_index('1').to_a }
+  end
+
+  def test_with_index_dangling_memo
+    bug9178 = '[ruby-core:58692] [Bug #9178]'
+    assert_in_out_err([], <<-"end;", ["Enumerator", "[false, [1]]"], [], bug9178)
+    bug = "#{bug9178}"
+    e = [1].to_enum(:chunk).with_index {|c,i| i == 5}
+    puts e.class
+    p e.to_a[0]
+    end;
   end
 
   def test_with_object
