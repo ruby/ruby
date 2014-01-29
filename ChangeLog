@@ -1,3 +1,8 @@
+Wed Jan 29 18:09:48 2014  Eric Wong <e@80x24.org>
+
+	* io.c (nogvl_copy_stream_sendfile): remove socket check
+	  [ruby-core:59856][Feature #9427]
+
 Wed Jan 29 04:29:54 2014  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/openssl/ossl_ssl.c: pass read_nonblock options to underlying IO
