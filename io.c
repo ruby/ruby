@@ -10062,6 +10062,10 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
         stp->error_no = errno;
         return -1;
     }
+#ifndef __linux__
+    if ((dst_stat.st_mode & S_IFMT) != S_IFSOCK)
+	return 0;
+#endif
 
     src_offset = stp->src_offset;
     use_pread = src_offset != (off_t)-1;
