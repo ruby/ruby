@@ -38,4 +38,13 @@
 #define rb_block_call(arg1, arg2, arg3, arg4, arg5, arg6) rb_iterate(rb_each, (arg1), (arg5), (arg6))
 #endif /* ! HAVE_RB_BLOCK_CALL */
 
+#ifdef PRIsVALUE
+# define RB_OBJ_CLASSNAME(obj) rb_obj_class(obj)
+# define RB_OBJ_STRING(obj) (obj)
+#else
+# define PRIsVALUE "s"
+# define RB_OBJ_CLASSNAME(obj) rb_obj_classname(obj)
+# define RB_OBJ_STRING(obj) StringValueCStr(obj)
+#endif
+
 #endif /* _OSSL_RUBY_MISSING_H_ */
