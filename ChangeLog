@@ -1,3 +1,8 @@
+Thu Jan 30 14:45:49 2014  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* configure.in: use $@ instead of $(.TARGET) because .TARGET is not
+	  supported by GNU make.
+
 Thu Jan 30 08:26:21 2014  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/fiddle/closure.c: use sizeof(*pcl) for correct sizeof value.
