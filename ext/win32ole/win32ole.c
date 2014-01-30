@@ -1196,7 +1196,7 @@ ole_raise(HRESULT hr, VALUE ecs, const char *fmt, ...)
 	rb_str_cat2(msg, "\n");
 	rb_str_append(msg, err_msg);
     }
-    rb_exc_raise(rb_exc_new_str(ecs, msg));
+    rb_exc_raise(rb_exc_new3(ecs, msg));
 }
 
 void

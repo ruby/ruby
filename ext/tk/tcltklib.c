@@ -846,7 +846,7 @@ create_ip_exc(interp, exc, fmt, va_alist)
     va_init_list(args,fmt);
     msg = rb_vsprintf(fmt, args);
     va_end(args);
-    einfo = rb_exc_new_str(exc, msg);
+    einfo = rb_exc_new3(exc, msg);
     rb_ivar_set(einfo, ID_at_interp, interp);
     if (ptr) {
         Tcl_ResetResult(ptr->ip);
