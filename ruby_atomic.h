@@ -19,6 +19,7 @@ typedef unsigned int rb_atomic_t; /* Anything OK */
 # define ATOMIC_SIZE_INC(var) __sync_fetch_and_add(&(var), 1)
 # define ATOMIC_SIZE_DEC(var) __sync_fetch_and_sub(&(var), 1)
 # define ATOMIC_SIZE_EXCHANGE(var, val) __sync_lock_test_and_set(&(var), (val))
+# define ATOMIC_PTR_EXCHANGE(var, val) __atomic_exchange_n(&(var), (val), __ATOMIC_SEQ_CST)
 
 #elif defined _WIN32
 #if defined _MSC_VER && _MSC_VER > 1200
@@ -110,6 +111,12 @@ atomic_size_exchange(size_t *ptr, size_t val)
     *ptr = val;
     return old;
 }
+#endif
+
+#ifndef ATOMIC_PTR_EXCHANGE
+# if SIZEOF_VOIDP == SIZEOF_SIZE_T
+#   define ATOMIC_PTR_EXCHANGE(var, val) (void *)ATOMIC_SIZE_EXCHANGE(*(size_t *)&(var), (size_t)(val))
+# endif
 #endif
 
 #endif /* RUBY_ATOMIC_H */

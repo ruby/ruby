@@ -1,3 +1,9 @@
+Thu Jan 30 19:54:16 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (finalize_deferred): flush all deferred finalizers while other
+	  finalizers can get ready to run newly by lazy sweep.
+	  [ruby-core:58833] [Bug #9205]
+
 Thu Jan 30 19:08:00 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (rb_gc_finalize_deferred, rb_objspace_call_finalizer):
