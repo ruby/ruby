@@ -1,3 +1,8 @@
+Thu Jan 30 15:02:35 2014  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* configure.in: use $@ instead of $(.TARGET) because .TARGET is not
+	  supported by GNU make.
+
 Mon Jan 27 16:49:52 2014  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_divide): Add an additional
