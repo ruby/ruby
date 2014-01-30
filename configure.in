@@ -2664,7 +2664,7 @@ if test "$with_dln_a_out" != yes; then
 			: ${LDSHARED='$(CC) -shared'}
 			if test "$rb_cv_binary_elf" = yes; then
 			    LDFLAGS="$LDFLAGS -rdynamic"
-			    DLDFLAGS="$DLDFLAGS "'-Wl,-soname,$(.TARGET)'
+			    DLDFLAGS="$DLDFLAGS "'-Wl,-soname,$@'
 			else
 			  test "$GCC" = yes && test "$rb_cv_prog_gnu_ld" = yes || LDSHARED='$(LD) -Bshareable'
 			fi
