@@ -1,3 +1,15 @@
+Thu Jan 30 19:08:00 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (rb_gc_finalize_deferred, rb_objspace_call_finalizer):
+	  should use ATOMIC_EXCHANGE() to check the previous value.
+	  [ruby-dev:44596] [Bug #5439]
+
+Thu Jan 30 19:08:00 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (slot_sweep, rb_gc_finalize_deferred)
+	  (rb_objspace_call_finalizer, rb_gc): run finalizers
+	  sequencially.  [ruby-dev:44562]
+
 Thu Jan 30 11:07:09 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (CLASS_NAME): macro to wrap
