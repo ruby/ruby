@@ -496,6 +496,7 @@ end.join
       self.foo
     }
     SRC
+  rescue SystemStackError
   end
 
   def test_cause
