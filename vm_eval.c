@@ -490,35 +490,35 @@ rb_search_method_entry(VALUE recv, ID mid, VALUE *defined_class_ptr)
         VALUE flags, klass;
         if (IMMEDIATE_P(recv)) {
             rb_raise(rb_eNotImpError,
-                     "method `%s' called on unexpected immediate object (%p)",
-                     rb_id2name(mid), (void *)recv);
+                     "method `%"PRIsVALUE"' called on unexpected immediate object (%p)",
+                     rb_id2str(mid), (void *)recv);
         }
         flags = RBASIC(recv)->flags;
         klass = RBASIC(recv)->klass;
         if (flags == 0) {
             rb_raise(rb_eNotImpError,
-                     "method `%s' called on terminated object"
+                     "method `%"PRIsVALUE"' called on terminated object"
                      " (%p flags=0x%"PRIxVALUE" klass=0x%"PRIxVALUE")",
-                     rb_id2name(mid), (void *)recv, flags, klass);
+                     rb_id2str(mid), (void *)recv, flags, klass);
         }
         else {
             int type = BUILTIN_TYPE(recv);
             const char *typestr = rb_type_str(type);
             if (typestr && T_OBJECT <= type && type < T_NIL)
                 rb_raise(rb_eNotImpError,
-                         "method `%s' called on hidden %s object"
+                         "method `%"PRIsVALUE"' called on hidden %s object"
                          " (%p flags=0x%"PRIxVALUE" klass=0x%"PRIxVALUE")",
-                         rb_id2name(mid), typestr, (void *)recv, flags, klass);
+                         rb_id2str(mid), typestr, (void *)recv, flags, klass);
             if (typestr)
                 rb_raise(rb_eNotImpError,
-                         "method `%s' called on unexpected %s object"
+                         "method `%"PRIsVALUE"' called on unexpected %s object"
                          " (%p flags=0x%"PRIxVALUE" klass=0x%"PRIxVALUE")",
-                         rb_id2name(mid), typestr, (void *)recv, flags, klass);
+                         rb_id2str(mid), typestr, (void *)recv, flags, klass);
             else
                 rb_raise(rb_eNotImpError,
-                         "method `%s' called on broken T_???" "(0x%02x) object"
+                         "method `%"PRIsVALUE"' called on broken T_???" "(0x%02x) object"
                          " (%p flags=0x%"PRIxVALUE" klass=0x%"PRIxVALUE")",
-                         rb_id2name(mid), type, (void *)recv, flags, klass);
+                         rb_id2str(mid), type, (void *)recv, flags, klass);
         }
     }
     return rb_method_entry(klass, mid, defined_class_ptr);
