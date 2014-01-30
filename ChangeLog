@@ -1,3 +1,18 @@
+Thu Jan 30 20:31:32 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* process.c (rb_daemon): daemon(3) is implemented with fork(2).
+	  Therefore it needs rb_thread_atfork(). (and revert r41903)
+
+Thu Jan 30 20:31:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (fork_daemon): kill the other threads all and abandon the
+	  kept mutexes.
+
+Thu Jan 30 20:31:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (fork_daemon): kill the other threads all and abandon the
+	  kept mutexes.
+
 Thu Jan 30 19:54:16 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (finalize_deferred): flush all deferred finalizers while other
