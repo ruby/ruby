@@ -628,7 +628,7 @@ raise_from_check(pid_t pid, int status)
 	state = "exited";
     }
     msg = rb_sprintf("pty - %s: %ld", state, (long)pid);
-    exc = rb_exc_new_str(eChildExited, msg);
+    exc = rb_exc_new3(eChildExited, msg);
     rb_iv_set(exc, "status", rb_last_status_get());
     rb_exc_raise(exc);
 }
