@@ -1,3 +1,8 @@
+Fri Jan 31 00:51:50 2014  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* configure.in: use $@ instead of $(.TARGET) because .TARGET is not
+	  supported by GNU make.
+
 Fri Jan 31 00:49:41 2014  Yamashita Yuu  <yamashita@geishatokyo.com>
 
 	* ext/openssl/ossl_ssl.c (Init_ossl_ssl): Declare a constant
