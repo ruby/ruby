@@ -1,3 +1,8 @@
+Fri Jan 31 03:48:40 2014  Eric Wong <e@80x24.org>
+
+	* benchmark/driver: avoid large alloc in driver process
+	  [ruby-core:59869] [Bug #9430]
+
 Thu Jan 30 14:45:49 2014  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* configure.in: use $@ instead of $(.TARGET) because .TARGET is not
