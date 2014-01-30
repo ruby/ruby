@@ -3044,10 +3044,9 @@ run_final(rb_objspace_t *objspace, VALUE obj)
 static void
 finalize_deferred(rb_objspace_t *objspace)
 {
-    RVALUE *p = deferred_final_list;
-    deferred_final_list = 0;
+    RVALUE *p;
 
-    if (p) {
+    while ((p = ATOMIC_PTR_EXCHANGE(deferred_final_list, 0)) != 0) {
 	finalize_list(objspace, p);
     }
 }
