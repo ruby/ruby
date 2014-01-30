@@ -2583,18 +2583,31 @@ convert_type(VALUE val, const char *tname, const char *method, int raise)
     r = rb_check_funcall(val, m, 0, 0);
     if (r == Qundef) {
 	if (raise) {
-	    rb_raise(rb_eTypeError, i < IMPLICIT_CONVERSIONS
-                ? "no implicit conversion of %s into %s"
-                : "can't convert %s into %s",
-		     NIL_P(val) ? "nil" :
-		     val == Qtrue ? "true" :
-		     val == Qfalse ? "false" :
-		     rb_obj_classname(val),
+	    const char *msg = i < IMPLICIT_CONVERSIONS ?
+		"no implicit conversion of" : "can't convert";
+	    const char *cname = NIL_P(val) ? "nil" :
+		val == Qtrue ? "true" :
+		val == Qfalse ? "false" :
+		NULL;
+	    if (cname)
+		rb_raise(rb_eTypeError, "%s %s into %s", msg, cname, tname);
+	    rb_raise(rb_eTypeError, "%s %"PRIsVALUE" into %s", msg,
+		     rb_obj_class(val),
 		     tname);
 	}
 	return Qnil;
     }
     return r;
+}
+
+NORETURN(static void conversion_mismatch(VALUE, const char *, const char *, VALUE));
+static void
+conversion_mismatch(VALUE val, const char *tname, const char *method, VALUE result)
+{
+    VALUE cname = rb_obj_class(val);
+    rb_raise(rb_eTypeError,
+	     "can't convert %"PRIsVALUE" to %s (%"PRIsVALUE"#%s gives %"PRIsVALUE")",
+	     cname, tname, cname, method, rb_obj_class(result));
 }
 
 VALUE
@@ -2605,9 +2618,7 @@ rb_convert_type(VALUE val, int type, const char *tname, const char *method)
     if (TYPE(val) == type) return val;
     v = convert_type(val, tname, method, TRUE);
     if (TYPE(v) != type) {
-	const char *cname = rb_obj_classname(val);
-	rb_raise(rb_eTypeError, "can't convert %s to %s (%s#%s gives %s)",
-		 cname, tname, cname, method, rb_obj_classname(v));
+	conversion_mismatch(val, tname, method, v);
     }
     return v;
 }
@@ -2622,9 +2633,7 @@ rb_check_convert_type(VALUE val, int type, const char *tname, const char *method
     v = convert_type(val, tname, method, FALSE);
     if (NIL_P(v)) return Qnil;
     if (TYPE(v) != type) {
-	const char *cname = rb_obj_classname(val);
-	rb_raise(rb_eTypeError, "can't convert %s to %s (%s#%s gives %s)",
-		 cname, tname, cname, method, rb_obj_classname(v));
+	conversion_mismatch(val, tname, method, v);
     }
     return v;
 }
@@ -2639,9 +2648,7 @@ rb_to_integer(VALUE val, const char *method)
     if (RB_TYPE_P(val, T_BIGNUM)) return val;
     v = convert_type(val, "Integer", method, TRUE);
     if (!rb_obj_is_kind_of(v, rb_cInteger)) {
-	const char *cname = rb_obj_classname(val);
-	rb_raise(rb_eTypeError, "can't convert %s to Integer (%s#%s gives %s)",
-		 cname, cname, method, rb_obj_classname(v));
+	conversion_mismatch(val, "Integer", method, v);
     }
     return v;
 }

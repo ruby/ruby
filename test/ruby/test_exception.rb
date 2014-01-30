@@ -221,6 +221,22 @@ class TestException < Test::Unit::TestCase
     assert_raise(ArgumentError) { raise 1, 1, 1, 1 }
   end
 
+  def test_type_error_message_encoding
+    c = eval("Module.new do break class C\u{4032}; self; end; end")
+    o = c.new
+    assert_raise_with_message(TypeError, /C\u{4032}/) do
+      ""[o]
+    end
+    c.class_eval {def to_int; self; end}
+    assert_raise_with_message(TypeError, /C\u{4032}/) do
+      ""[o]
+    end
+    c.class_eval {def to_a; self; end}
+    assert_raise_with_message(TypeError, /C\u{4032}/) do
+      [*o]
+    end
+  end
+
   def test_errat
     assert_in_out_err([], "p $@", %w(nil), [])
 
