@@ -198,7 +198,7 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 	    ci->defined_class = RCLASS_SUPER(ci->defined_class);
 
 	    if (!ci->defined_class || !(ci->me = rb_method_entry(ci->defined_class, ci->mid, &ci->defined_class))) {
-		int ex = VM_METHOD_TYPE_ZSUPER ? NOEX_SUPER : 0;
+		int ex = type == VM_METHOD_TYPE_ZSUPER ? NOEX_SUPER : 0;
 		ret = method_missing(ci->recv, ci->mid, ci->argc, argv, ex);
 		goto success;
 	    }
