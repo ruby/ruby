@@ -168,12 +168,11 @@ pair_yield(VALUE pair)
 
 #if defined HAVE_SOCKETPAIR
 
+#ifdef SOCK_CLOEXEC
 static int
 rsock_socketpair0(int domain, int type, int protocol, int sv[2])
 {
     int ret;
-
-#ifdef SOCK_CLOEXEC
     static int cloexec_state = -1; /* <0: unknown, 0: ignored, >0: working */
 
     if (cloexec_state > 0) { /* common path, if SOCK_CLOEXEC is defined */
@@ -206,28 +205,34 @@ rsock_socketpair0(int domain, int type, int protocol, int sv[2])
     else { /* cloexec_state == 0 */
         ret = socketpair(domain, type, protocol, sv);
     }
-#else
-    ret = socketpair(domain, type, protocol, sv);
-#endif
-
     if (ret == -1) {
         return -1;
     }
 
-#ifdef SOCK_CLOEXEC
 fix_cloexec:
-#endif
     rb_maygvl_fd_fix_cloexec(sv[0]);
     rb_maygvl_fd_fix_cloexec(sv[1]);
 
-#ifdef SOCK_CLOEXEC
 update_max_fd:
-#endif
     rb_update_max_fd(sv[0]);
     rb_update_max_fd(sv[1]);
 
     return ret;
 }
+#else /* !SOCK_CLOEXEC */
+static int
+rsock_socketpair0(int domain, int type, int protocol, int sv[2])
+{
+    int ret = socketpair(domain, type, protocol, sv);
+
+    if (ret == -1)
+	return -1;
+
+    rb_fd_fix_cloexec(sv[0]);
+    rb_fd_fix_cloexec(sv[1]);
+    return ret;
+}
+#endif /* !SOCK_CLOEXEC */
 
 static int
 rsock_socketpair(int domain, int type, int protocol, int sv[2])
