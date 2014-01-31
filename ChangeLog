@@ -1,3 +1,9 @@
+Fri Jan 31 17:01:47 2014  Eric Wong <e@80x24.org>
+
+	* ext/socket/init.c (rsock_socket0): split out SOCK_CLOEXEC version
+	* ext/socket/socket.c (rsock_socketpair0): ditto
+	  [ruby-core:60377]
+
 Fri Jan 31 03:48:40 2014  Eric Wong <e@80x24.org>
 
 	* benchmark/driver: avoid large alloc in driver process

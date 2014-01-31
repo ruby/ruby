@@ -264,12 +264,11 @@ int rsock_detect_cloexec(int fd)
     return 0;
 }
 
+#ifdef SOCK_CLOEXEC
 static int
 rsock_socket0(int domain, int type, int proto)
 {
     int ret;
-
-#ifdef SOCK_CLOEXEC
     static int cloexec_state = -1; /* <0: unknown, 0: ignored, >0: working */
 
     if (cloexec_state > 0) { /* common path, if SOCK_CLOEXEC is defined */
@@ -300,22 +299,28 @@ rsock_socket0(int domain, int type, int proto)
     else { /* cloexec_state == 0 */
         ret = socket(domain, type, proto);
     }
-#else
-    ret = socket(domain, type, proto);
-#endif
     if (ret == -1)
         return -1;
-#ifdef SOCK_CLOEXEC
 fix_cloexec:
-#endif
     rb_maygvl_fd_fix_cloexec(ret);
-#ifdef SOCK_CLOEXEC
 update_max_fd:
-#endif
     rb_update_max_fd(ret);
 
     return ret;
 }
+#else /* !SOCK_CLOEXEC */
+static int
+rsock_socket0(int domain, int type, int proto)
+{
+    int ret = socket(domain, type, proto);
+
+    if (ret == -1)
+        return -1;
+    rb_fd_fix_cloexec(ret);
+
+    return ret;
+}
+#endif /* !SOCK_CLOEXEC */
 
 int
 rsock_socket(int domain, int type, int proto)
