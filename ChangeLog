@@ -1,3 +1,8 @@
+Sat Feb  1 06:30:20 2014  Zachary Scott  <e@zzak.io>
+
+	* error.c: [DOC] Document Exception#cause by @jasonrclark [ci skip]
+	  [Fixes GH-519] https://github.com/ruby/ruby/pull/519
+
 Sat Feb  1 06:10:49 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/securerandom.rb: [DOC] Add note on require for examples

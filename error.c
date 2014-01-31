@@ -804,6 +804,15 @@ rb_exc_set_backtrace(VALUE exc, VALUE bt)
     return exc_set_backtrace(exc, bt);
 }
 
+/*
+ * call-seq:
+ *   exception.cause   -> an_exception
+ *
+ * Returns the previous exception ($!) at the time this exception was raised.
+ * This is useful for wrapping exceptions and retaining the original exception
+ * information.
+ */
+
 VALUE
 exc_cause(VALUE exc)
 {
