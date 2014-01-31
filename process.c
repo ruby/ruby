@@ -4915,13 +4915,14 @@ rb_daemon(int nochdir, int noclose)
     before_fork();
     err = daemon(nochdir, noclose);
     after_fork();
+    rb_thread_atfork();
 #else
     int n;
 
 #define fork_daemon() \
     switch (rb_fork(0, 0, 0, Qnil)) { \
       case -1: return -1; \
-      case 0:  break; \
+      case 0:  rb_thread_atfork(); break; \
       default: _exit(EXIT_SUCCESS); \
     }
 
