@@ -316,6 +316,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_execute_rdoc
+    skip if RUBY_VERSION <= "1.8.7"
     specs = spec_fetcher do |fetcher|
       fetcher.gem 'a', 2
     end
@@ -557,6 +558,20 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.install_gem 'a', '>= 0'
 
     assert_equal %w[a-2], @cmd.installed_specs.map { |spec| spec.full_name }
+  end
+
+  def test_install_gem_ignore_dependencies_specific_file
+    spec = quick_spec 'a', 2
+
+    util_build_gem spec
+
+    FileUtils.mv spec.cache_file, @tempdir
+
+    @cmd.options[:ignore_dependencies] = true
+
+    @cmd.install_gem File.join(@tempdir, spec.file_name), nil
+
+    assert_equal %w[a-2], @cmd.installed_specs.map { |s| s.full_name }
   end
 
   def test_parses_requirement_from_gemname

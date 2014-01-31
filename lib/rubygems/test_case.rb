@@ -294,10 +294,10 @@ class Gem::TestCase < MiniTest::Unit::TestCase
 
     Gem.searcher = nil
     Gem::SpecFetcher.fetcher = nil
-    @orig_BASERUBY = Gem::ConfigMap[:BASERUBY]
-    Gem::ConfigMap[:BASERUBY] = Gem::ConfigMap[:ruby_install_name]
+    @orig_BASERUBY = RbConfig::CONFIG['BASERUBY']
+    RbConfig::CONFIG['BASERUBY'] = RbConfig::CONFIG['ruby_install_name']
 
-    @orig_arch = Gem::ConfigMap[:arch]
+    @orig_arch = RbConfig::CONFIG['arch']
 
     if win_platform?
       util_set_arch 'i386-mswin32'
@@ -315,8 +315,8 @@ class Gem::TestCase < MiniTest::Unit::TestCase
   def teardown
     $LOAD_PATH.replace @orig_LOAD_PATH if @orig_LOAD_PATH
 
-    Gem::ConfigMap[:BASERUBY] = @orig_BASERUBY
-    Gem::ConfigMap[:arch] = @orig_arch
+    RbConfig::CONFIG['BASERUBY'] = @orig_BASERUBY
+    RbConfig::CONFIG['arch'] = @orig_arch
 
     if defined? Gem::RemoteFetcher then
       Gem::RemoteFetcher.fetcher = nil
@@ -898,7 +898,7 @@ Also, a list:
   # Set the platform to +arch+
 
   def util_set_arch(arch)
-    Gem::ConfigMap[:arch] = arch
+    RbConfig::CONFIG['arch'] = arch
     platform = Gem::Platform.new arch
 
     Gem.instance_variable_set :@platforms, nil

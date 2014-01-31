@@ -218,6 +218,7 @@ GEM
       c (~> 4)
       d
       e (~> 5.0, >= 5.0.1)
+    b (3-x86_64-linux)
 
 PLATFORMS
   #{Gem::Platform::RUBY}
@@ -238,7 +239,14 @@ DEPENDENCIES
 
     assert lockfile_set, 'could not find a LockSet'
 
-    assert_equal %w[a-2], lockfile_set.specs.map { |tuple| tuple.full_name }
+    assert_equal %w[a-2 b-3], lockfile_set.specs.map { |tuple| tuple.full_name }
+
+    expected = [
+      Gem::Platform::RUBY,
+      Gem::Platform.new('x86_64-linux'),
+    ]
+
+    assert_equal expected, lockfile_set.specs.map { |tuple| tuple.platform }
 
     spec = lockfile_set.specs.first
 

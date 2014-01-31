@@ -1,3 +1,12 @@
+Fri Jan 31 18:13:43 2014  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master 21e409d / RubyGems 2.2.1.
+
+	  See http://rubygems.rubyforge.org/rubygems-update/History_txt.html
+	  for a list of bug fixes.
+
+	* test/rubygems:  ditto.
+
 Fri Jan 31 12:10:16 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (mnew_from_me): keep iclass as-is, to make inheritance

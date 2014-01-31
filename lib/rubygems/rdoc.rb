@@ -193,7 +193,7 @@ class Gem::RDoc # :nodoc: all
     ::RDoc::Parser::C.reset
 
     args = @spec.rdoc_options
-    args.concat @spec.require_paths
+    args.concat @spec.source_paths
     args.concat @spec.extra_rdoc_files
 
     case config_args = Gem.configuration[:rdoc]

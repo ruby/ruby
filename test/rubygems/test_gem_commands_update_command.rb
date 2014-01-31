@@ -217,6 +217,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
   end
 
   def test_execute_rdoc
+    skip if RUBY_VERSION <= "1.8.7"
     spec_fetcher do |fetcher|
       fetcher.gem 'a', 2
 
@@ -239,7 +240,6 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     a2 = @specs['a-2']
 
-    assert_path_exists File.join(a2.doc_dir, 'ri')
     assert_path_exists File.join(a2.doc_dir, 'rdoc')
   end
 
