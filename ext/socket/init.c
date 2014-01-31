@@ -305,9 +305,13 @@ rsock_socket0(int domain, int type, int proto)
 #endif
     if (ret == -1)
         return -1;
+#ifdef SOCK_CLOEXEC
 fix_cloexec:
+#endif
     rb_maygvl_fd_fix_cloexec(ret);
+#ifdef SOCK_CLOEXEC
 update_max_fd:
+#endif
     rb_update_max_fd(ret);
 
     return ret;
