@@ -1,3 +1,9 @@
+Sat Feb  1 06:10:49 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/securerandom.rb: [DOC] Add note on require for examples
+	  Based on a patch by @schneems [Fixes GH-518] [ci skip]
+	  https://github.com/ruby/ruby/pull/518
+
 Sat Feb  1 06:04:56 2014  Zachary Scott  <e@zzak.io>
 
 	* numeric.c: [DOC] Fix typo in example for #step [ci skip]

@@ -8,6 +8,10 @@ end
 # This library is an interface for secure random number generator which is
 # suitable for generating session key in HTTP cookies, etc.
 #
+# You can use this library in your application by requiring it:
+#
+#   require 'securerandom'
+#
 # It supports following secure random number generators.
 #
 # * openssl
@@ -17,6 +21,8 @@ end
 # === Examples
 #
 # Hexadecimal string.
+#
+#   require 'securerandom'
 #
 #   p SecureRandom.hex(10) #=> "52750b30ffbc7de3b362"
 #   p SecureRandom.hex(10) #=> "92b15d6c8dc4beb5f559"
