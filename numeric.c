@@ -1879,8 +1879,8 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
 }
 /*
  *  call-seq:
- *     num.step(by: step, to: limit]) {|i| block }  ->  self
- *     num.step(by: step, to: limit])               ->  an_enumerator
+ *     num.step(by: step, to: limit) {|i| block }   ->  self
+ *     num.step(by: step, to: limit)		    ->  an_enumerator
  *     num.step(limit=nil, step=1) {|i| block }     ->  self
  *     num.step(limit=nil, step=1)                  ->  an_enumerator
  *
