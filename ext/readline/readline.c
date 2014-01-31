@@ -527,26 +527,19 @@ readline_readline(int argc, VALUE *argv, VALUE self)
 static VALUE
 readline_s_set_input(VALUE self, VALUE input)
 {
-    rb_io_t *ifp;
-    int fd;
     FILE *f;
 
     if (NIL_P(input)) {
         clear_rl_instream();
     }
     else {
-        Check_Type(input, T_FILE);
-        GetOpenFile(input, ifp);
+        if(!RTEST(rb_class_inherited_p(CLASS_OF(input), rb_path2class("IO"))) &&
+           !RTEST(rb_class_inherited_p(CLASS_OF(input), rb_path2class("StringIO"))))
+            rb_invalid_str(rb_obj_classname(input), "StringIO or IO");
         clear_rl_instream();
-        fd = rb_cloexec_dup(ifp->fd);
-        if (fd == -1)
-            rb_sys_fail("dup");
-        f = fdopen(fd, "r");
+        f = rb_io_stdio_file(RFILE(input)->fptr);
         if (f == NULL) {
-            int save_errno = errno;
-            close(fd);
-            errno = save_errno;
-            rb_sys_fail("fdopen");
+            rb_sys_fail("rb_io_stdio_file");
         }
         rl_instream = readline_rl_instream = f;
         readline_instream = input;
@@ -564,26 +557,19 @@ readline_s_set_input(VALUE self, VALUE input)
 static VALUE
 readline_s_set_output(VALUE self, VALUE output)
 {
-    rb_io_t *ofp;
-    int fd;
     FILE *f;
 
     if (NIL_P(output)) {
         clear_rl_outstream();
     }
     else {
-        Check_Type(output, T_FILE);
-        GetOpenFile(output, ofp);
+        if(!RTEST(rb_class_inherited_p(CLASS_OF(output), rb_path2class("IO"))) &&
+           !RTEST(rb_class_inherited_p(CLASS_OF(output), rb_path2class("StringIO"))))
+            rb_invalid_str(rb_obj_classname(output), "StringIO or IO");
         clear_rl_outstream();
-        fd = rb_cloexec_dup(ofp->fd);
-        if (fd == -1)
-            rb_sys_fail("dup");
-        f = fdopen(fd, "w");
+        f = rb_io_stdio_file(RFILE(output)->fptr);
         if (f == NULL) {
-            int save_errno = errno;
-            close(fd);
-            errno = save_errno;
-            rb_sys_fail("fdopen");
+            rb_sys_fail("rb_io_stdio_file");
         }
         rl_outstream = readline_rl_outstream = f;
         readline_outstream = output;
