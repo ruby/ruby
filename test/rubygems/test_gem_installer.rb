@@ -84,8 +84,8 @@ load Gem.bin_path('a', 'executable', version)
       orig_RUBY_FRAMEWORK_VERSION = RUBY_FRAMEWORK_VERSION
       Object.send :remove_const, :RUBY_FRAMEWORK_VERSION
     end
-    orig_bindir = Gem::ConfigMap[:bindir]
-    Gem::ConfigMap[:bindir] = Gem.bindir
+    orig_bindir = RbConfig::CONFIG['bindir']
+    RbConfig::CONFIG['bindir'] = Gem.bindir
 
     util_conflict_executable false
 
@@ -102,7 +102,7 @@ load Gem.bin_path('a', 'executable', version)
   ensure
     Object.const_set :RUBY_FRAMEWORK_VERSION, orig_RUBY_FRAMEWORK_VERSION if
       orig_RUBY_FRAMEWORK_VERSION
-    Gem::ConfigMap[:bindir] = orig_bindir
+    RbConfig::CONFIG['bindir'] = orig_bindir
   end
 
   def test_check_executable_overwrite_format_executable
@@ -1192,7 +1192,7 @@ gem 'other', version
 
     env_shebang = "/usr/bin/env" unless Gem.win_platform?
 
-    assert_equal("#!#{env_shebang} #{Gem::ConfigMap[:ruby_install_name]}",
+    assert_equal("#!#{env_shebang} #{RbConfig::CONFIG['ruby_install_name']}",
                  shebang)
   end
 
