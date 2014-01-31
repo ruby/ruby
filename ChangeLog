@@ -1,3 +1,8 @@
+Sat Feb  1 06:04:56 2014  Zachary Scott  <e@zzak.io>
+
+	* numeric.c: [DOC] Fix typo in example for #step [ci skip]
+	  Patch by @ksss [Fixes GH-522] https://github.com/ruby/ruby/pull/522
+
 Fri Jan 31 17:01:47 2014  Eric Wong <e@80x24.org>
 
 	* ext/socket/init.c (rsock_socket0): split out SOCK_CLOEXEC version
