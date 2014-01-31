@@ -1,3 +1,9 @@
+Sat Feb  1 06:38:51 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/drb/drb.rb: [DOC] Add note about start_service for each process
+	  Based on a patch by @rosenfeld [Fixes GH-514] [ci skip]
+	  https://github.com/ruby/ruby/pull/514
+
 Sat Feb  1 06:30:20 2014  Zachary Scott  <e@zzak.io>
 
 	* error.c: [DOC] Document Exception#cause by @jasonrclark [ci skip]
