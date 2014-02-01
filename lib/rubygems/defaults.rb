@@ -29,22 +29,22 @@ module Gem
   def self.default_dir
     path = if defined? RUBY_FRAMEWORK_VERSION then
              [
-               File.dirname(RbConfig::CONFIG['sitedir']),
+               File.dirname(ConfigMap[:sitedir]),
                'Gems',
-               RbConfig::CONFIG['ruby_version']
+               ConfigMap[:ruby_version]
              ]
-           elsif RbConfig::CONFIG['rubylibprefix'] then
+           elsif ConfigMap[:rubylibprefix] then
              [
-              RbConfig::CONFIG['rubylibprefix'],
+              ConfigMap[:rubylibprefix],
               'gems',
-              RbConfig::CONFIG['ruby_version']
+              ConfigMap[:ruby_version]
              ]
            else
              [
-               RbConfig::CONFIG['libdir'],
+               ConfigMap[:libdir],
                ruby_engine,
                'gems',
-               RbConfig::CONFIG['ruby_version']
+               ConfigMap[:ruby_version]
              ]
            end
 
@@ -74,7 +74,7 @@ module Gem
 
   def self.user_dir
     parts = [Gem.user_home, '.gem', ruby_engine]
-    parts << RbConfig::CONFIG['ruby_version'] unless RbConfig::CONFIG['ruby_version'].empty?
+    parts << ConfigMap[:ruby_version] unless ConfigMap[:ruby_version].empty?
     File.join parts
   end
 
@@ -100,7 +100,7 @@ module Gem
   # Deduce Ruby's --program-prefix and --program-suffix from its install name
 
   def self.default_exec_format
-    exec_format = RbConfig::CONFIG['ruby_install_name'].sub('ruby', '%s') rescue '%s'
+    exec_format = ConfigMap[:ruby_install_name].sub('ruby', '%s') rescue '%s'
 
     unless exec_format =~ /%s/ then
       raise Gem::Exception,
@@ -117,7 +117,7 @@ module Gem
     if defined? RUBY_FRAMEWORK_VERSION then # mac framework support
       '/usr/bin'
     else # generic install
-      RbConfig::CONFIG['bindir']
+      ConfigMap[:bindir]
     end
   end
 

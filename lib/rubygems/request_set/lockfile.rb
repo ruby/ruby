@@ -303,12 +303,7 @@ class Gem::RequestSet::Lockfile
         type, data, = get [:text, :requirement]
 
         if type == :text and column == 4 then
-          version, platform = data.split '-', 2
-
-          platform =
-            platform ? Gem::Platform.new(platform) : Gem::Platform::RUBY
-
-          last_spec = set.add name, version, platform
+          last_spec = set.add name, data, Gem::Platform::RUBY
         else
           dependency = parse_dependency name, data
 

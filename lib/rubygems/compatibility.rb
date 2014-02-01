@@ -33,8 +33,6 @@ end
 module Gem
   RubyGemsVersion = VERSION
 
-  # TODO remove at RubyGems 3
-
   RbConfigPriorities = %w[
     MAJOR
     MINOR
@@ -47,7 +45,7 @@ module Gem
   unless defined?(ConfigMap)
     ##
     # Configuration settings from ::RbConfig
-    ConfigMap = Hash.new do |cm, key| # TODO remove at RubyGems 3
+    ConfigMap = Hash.new do |cm, key|
       cm[key] = RbConfig::CONFIG[key.to_s]
     end
   else

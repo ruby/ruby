@@ -8,7 +8,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = '2.2.1'
+  VERSION = '2.2.0'
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -572,7 +572,7 @@ module Gem
   # gem's paths are inserted before site lib directory by default.
 
   def self.load_path_insert_index
-    index = $LOAD_PATH.index RbConfig::CONFIG['sitelibdir']
+    index = $LOAD_PATH.index ConfigMap[:sitelibdir]
 
     index
   end
@@ -743,8 +743,8 @@ module Gem
   def self.prefix
     prefix = File.dirname RUBYGEMS_DIR
 
-    if prefix != File.expand_path(RbConfig::CONFIG['sitelibdir']) and
-       prefix != File.expand_path(RbConfig::CONFIG['libdir']) and
+    if prefix != File.expand_path(ConfigMap[:sitelibdir]) and
+       prefix != File.expand_path(ConfigMap[:libdir]) and
        'lib' == File.basename(RUBYGEMS_DIR) then
       prefix
     end
@@ -765,10 +765,6 @@ module Gem
       f.flock(File::LOCK_EX)
       f.read
     end
-  rescue Errno::EACCES
-    open path, 'rb' do |f|
-      f.read
-    end
   end
 
   ##
@@ -776,8 +772,8 @@ module Gem
 
   def self.ruby
     if @ruby.nil? then
-      @ruby = File.join(RbConfig::CONFIG['bindir'],
-                        "#{RbConfig::CONFIG['ruby_install_name']}#{RbConfig::CONFIG['EXEEXT']}")
+      @ruby = File.join(ConfigMap[:bindir],
+                        "#{ConfigMap[:ruby_install_name]}#{ConfigMap[:EXEEXT]}")
 
       @ruby = "\"#{@ruby}\"" if @ruby =~ /\s/
     end
@@ -789,7 +785,8 @@ module Gem
   # Returns a String containing the API compatibility version of Ruby
 
   def self.ruby_api_version
-    @ruby_api_version ||= RbConfig::CONFIG['ruby_version'].dup
+    @ruby_api_version ||=
+      "#{ConfigMap[:MAJOR]}.#{ConfigMap[:MINOR]}.#{ConfigMap[:TEENY]}"
   end
 
   ##
