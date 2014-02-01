@@ -121,7 +121,7 @@ class TestAlias < Test::Unit::TestCase
     assert_equal([:Base, :M], SuperInAliasedModuleMethod::Derived.new.bar)
   end
 
-  def test_alias
+  def test_alias_wb_miss
     assert_normal_exit %q{
       require 'stringio'
       GC.verify_internal_consistency
