@@ -1,3 +1,8 @@
+Sun Feb 2 05:48:42 2014  Eric Wong <e@80x24.org>
+
+	* io.c (rb_io_syswrite): add RB_GC_GUARD
+	  [Bug #9472][ruby-core:60407]
+
 Sat Feb  1 15:09:16 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_typedesc2val): add VT_RECORD case.
