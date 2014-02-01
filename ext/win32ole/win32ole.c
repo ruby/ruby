@@ -143,7 +143,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.5.5"
+#define WIN32OLE_VERSION "1.5.6"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -4730,6 +4730,9 @@ ole_typedesc2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails)
         break;
     case VT_LPSTR:
         typestr = rb_str_new2("LPSTR");
+        break;
+    case VT_RECORD:
+        typestr = rb_str_new2("RECORD");
         break;
     default:
         typestr = rb_str_new2("Unknown Type ");

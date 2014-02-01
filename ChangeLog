@@ -1,3 +1,7 @@
+Sat Feb  1 15:09:16 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_typedesc2val): add VT_RECORD case.
+
 Sat Feb  1 06:38:51 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/drb/drb.rb: [DOC] Add note about start_service for each process
