@@ -94,11 +94,11 @@ prefix or only the files that are requireable.
     spec.files.sort.map do |file|
       case file
       when /\A#{spec.bindir}\//
-        [RbConfig::CONFIG['bindir'], $POSTMATCH]
+        [Gem::ConfigMap[:bindir], $POSTMATCH]
       when /\.so\z/
-        [RbConfig::CONFIG['archdir'], file]
+        [Gem::ConfigMap[:archdir], file]
       else
-        [RbConfig::CONFIG['rubylibdir'], file]
+        [Gem::ConfigMap[:rubylibdir], file]
       end
     end
   end
