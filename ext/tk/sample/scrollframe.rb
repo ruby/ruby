@@ -13,6 +13,8 @@
 #
 require 'tk'
 
+module Tk::RbWidget; end
+
 class Tk::RbWidget::ScrollFrame < TkFrame
   include TkComposite
 
