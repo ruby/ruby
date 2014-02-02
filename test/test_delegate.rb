@@ -180,4 +180,61 @@ class TestDelegateClass < Test::Unit::TestCase
     x = assert_nothing_raised(ArgumentError, bug9155) {break Bug9155.new(1)}
     assert_equal(1, x.to_i, bug9155)
   end
+
+  class Bug9403
+    Name = '[ruby-core:59718] [Bug #9403]'
+    SD = SimpleDelegator.new(new)
+    class << SD
+      def method_name
+        __method__
+      end
+      def callee_name
+        __callee__
+      end
+      alias aliased_name callee_name
+      def dir_name
+        __dir__
+      end
+    end
+    dc = DelegateClass(self)
+    dc.class_eval do
+      def method_name
+        __method__
+      end
+      def callee_name
+        __callee__
+      end
+      alias aliased_name callee_name
+      def dir_name
+        __dir__
+      end
+    end
+    DC = dc.new(new)
+  end
+
+  def test_method_in_simple_delegator
+    assert_equal(:method_name, Bug9403::SD.method_name, Bug9403::Name)
+  end
+
+  def test_callee_in_simple_delegator
+    assert_equal(:callee_name, Bug9403::SD.callee_name, Bug9403::Name)
+    assert_equal(:aliased_name, Bug9403::SD.aliased_name, Bug9403::Name)
+  end
+
+  def test_dir_in_simple_delegator
+    assert_equal(__dir__, Bug9403::SD.dir_name, Bug9403::Name)
+  end
+
+  def test_method_in_delegator_class
+    assert_equal(:method_name, Bug9403::DC.method_name, Bug9403::Name)
+  end
+
+  def test_callee_in_delegator_class
+    assert_equal(:callee_name, Bug9403::DC.callee_name, Bug9403::Name)
+    assert_equal(:aliased_name, Bug9403::DC.aliased_name, Bug9403::Name)
+  end
+
+  def test_dir_in_delegator_class
+    assert_equal(__dir__, Bug9403::DC.dir_name, Bug9403::Name)
+  end
 end

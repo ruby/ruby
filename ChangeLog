@@ -1,3 +1,8 @@
+Sun Feb  2 22:39:28 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator): keep source information methods
+	  which start and end with '__'.  [ruby-core:59718] [Bug #9403]
+
 Fri Jan 31 12:10:16 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (mnew_from_me): keep iclass as-is, to make inheritance
