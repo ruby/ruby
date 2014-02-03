@@ -806,7 +806,7 @@ rb_exc_set_backtrace(VALUE exc, VALUE bt)
 
 /*
  * call-seq:
- *   exception.cause   -> an_exception
+ *   exception.cause   -> an_exception or nil
  *
  * Returns the previous exception ($!) at the time this exception was raised.
  * This is useful for wrapping exceptions and retaining the original exception
