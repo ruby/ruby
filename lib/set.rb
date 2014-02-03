@@ -541,7 +541,7 @@ class Set
 end
 
 #
-# SortedSet implements a Set that guarantees that it's element are
+# SortedSet implements a Set that guarantees that its elements are
 # yielded in sorted order (according to the return values of their
 # #<=> methods) when iterating over them.
 #
