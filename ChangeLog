@@ -1,3 +1,9 @@
+Tue Feb  4 12:55:31 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_modify_expand): enable capacity and disable
+	  assocation with packed objects when setting capa, so that
+	  pack("p") string fails to unpack properly after modified.
+
 Tue Feb  4 12:45:15 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (glob_make_pattern): all alphabets are magic characters on
