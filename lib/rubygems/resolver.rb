@@ -59,6 +59,8 @@ class Gem::Resolver
 
     sets = sets.map do |set|
       case set
+      when Gem::Resolver::BestSet then
+        set
       when Gem::Resolver::ComposedSet then
         set.sets
       else

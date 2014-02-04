@@ -1,8 +1,15 @@
 require 'rubygems/test_case'
 require 'rubygems/request'
 require 'ostruct'
+require 'base64'
 
 class TestGemRequest < Gem::TestCase
+
+  CA_CERT_FILE     = cert_path 'ca'
+  CHILD_CERT       = load_cert 'child'
+  PUBLIC_CERT      = load_cert 'public'
+  PUBLIC_CERT_FILE = cert_path 'public'
+  SSL_CERT         = load_cert 'ssl'
 
   def setup
     @proxies = %w[http_proxy HTTP_PROXY http_proxy_user HTTP_PROXY_USER http_proxy_pass HTTP_PROXY_PASS no_proxy NO_PROXY]
@@ -60,6 +67,44 @@ class TestGemRequest < Gem::TestCase
     proxy = request.proxy_uri
 
     assert_equal URI(@proxy_uri), proxy
+  end
+
+  def test_configure_connection_for_https
+    connection = Net::HTTP.new 'localhost', 443
+
+    request = Gem::Request.new URI('https://example'), nil, nil, nil
+
+    def request.add_rubygems_trusted_certs store
+      store.add_cert TestGemRequest::PUBLIC_CERT
+    end
+
+    request.configure_connection_for_https connection
+
+    cert_store = connection.cert_store
+
+    assert cert_store.verify CHILD_CERT
+  end
+
+  def test_configure_connection_for_https_ssl_ca_cert
+    ssl_ca_cert, Gem.configuration.ssl_ca_cert =
+      Gem.configuration.ssl_ca_cert, CA_CERT_FILE
+
+    connection = Net::HTTP.new 'localhost', 443
+
+    request = Gem::Request.new URI('https://example'), nil, nil, nil
+
+    def request.add_rubygems_trusted_certs store
+      store.add_cert TestGemRequest::PUBLIC_CERT
+    end
+
+    request.configure_connection_for_https connection
+
+    cert_store = connection.cert_store
+
+    assert cert_store.verify CHILD_CERT
+    assert cert_store.verify SSL_CERT
+  ensure
+    Gem.configuration.ssl_ca_cert = ssl_ca_cert
   end
 
   def test_get_proxy_from_env_fallback
@@ -122,6 +167,30 @@ class TestGemRequest < Gem::TestCase
 
     assert_equal 200, response.code
     assert_equal :junk, response.body
+  end
+
+  def test_fetch_basic_auth
+    uri = URI.parse "https://user:pass@example.rubygems/specs.#{Gem.marshal_version}"
+    @request = Gem::Request.new(uri, Net::HTTP::Get, nil, nil)
+    conn = util_stub_connection_for :body => :junk, :code => 200
+
+    @request.fetch
+
+    auth_header = conn.payload['Authorization']
+
+    assert_equal "Basic #{Base64.encode64('user:pass')}".strip, auth_header
+  end
+
+  def test_fetch_basic_auth_encoded
+    uri = URI.parse "https://user:%7BDEScede%7Dpass@example.rubygems/specs.#{Gem.marshal_version}"
+    @request = Gem::Request.new(uri, Net::HTTP::Get, nil, nil)
+    conn = util_stub_connection_for :body => :junk, :code => 200
+
+    @request.fetch
+
+    auth_header = conn.payload['Authorization']
+
+    assert_equal "Basic #{Base64.encode64('user:{DEScede}pass')}".strip, auth_header
   end
 
   def test_fetch_head

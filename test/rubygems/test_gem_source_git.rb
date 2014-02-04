@@ -27,6 +27,26 @@ class TestGemSourceGit < Gem::TestCase
     assert_path_exists File.join @source.install_dir, 'a.gemspec'
   end
 
+  def test_checkout_local
+    @source.remote = false
+
+    @source.checkout
+
+    install_dir = File.join Gem.dir, 'bundler', 'gems', "a-#{@head[0..11]}"
+
+    refute_path_exists File.join install_dir, 'a.gemspec'
+  end
+
+  def test_checkout_local_cached
+    @source.cache
+
+    @source.remote = false
+
+    @source.checkout
+
+    assert_path_exists File.join @source.install_dir, 'a.gemspec'
+  end
+
   def test_checkout_submodules
     source = Gem::Source::Git.new @name, @repository, 'master', true
 
@@ -52,6 +72,14 @@ class TestGemSourceGit < Gem::TestCase
     Dir.chdir @source.repo_cache_dir do
       assert_equal @head, Gem::Util.popen(@git, 'rev-parse', 'master').strip
     end
+  end
+
+  def test_cache_local
+    @source.remote = false
+
+    @source.cache
+
+    refute_path_exists @source.repo_cache_dir
   end
 
   def test_dir_shortref
@@ -97,6 +125,12 @@ class TestGemSourceGit < Gem::TestCase
     expected = File.join Gem.dir, 'bundler', 'gems', "a-#{@head[0..11]}"
 
     assert_equal expected, @source.install_dir
+  end
+
+  def test_install_dir_local
+    @source.remote = false
+
+    assert_nil @source.install_dir
   end
 
   def test_repo_cache_dir
@@ -209,6 +243,15 @@ class TestGemSourceGit < Gem::TestCase
     assert_equal base_dir, b_spec.base_dir
 
     assert_equal extension_dir, b_spec.extension_dir
+  end
+
+  def test_specs_local
+    source = Gem::Source::Git.new @name, @repository, 'master', true
+    source.remote = false
+
+    capture_io do
+      assert_empty source.specs
+    end
   end
 
   def test_uri_hash

@@ -134,7 +134,7 @@ class Gem::Package::TarHeader
     vals[:gid] ||= 0
     vals[:mtime] ||= 0
     vals[:checksum] ||= ""
-    vals[:typeflag] ||= "0"
+    vals[:typeflag] = "0" if vals[:typeflag].nil? || vals[:typeflag].empty?
     vals[:magic] ||= "ustar"
     vals[:version] ||= "00"
     vals[:uname] ||= "wheel"

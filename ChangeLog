@@ -1,3 +1,9 @@
+Tue Feb  4 09:47:57 2014  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems 2.2.2 prerelease to check fixes to
+	  CI.
+	* test/rubygems:  ditto.
+
 Mon Feb  3 12:04:47 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* error.c: [DOC] Exception#cause may return nil. [ci skip]

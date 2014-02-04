@@ -1789,20 +1789,17 @@ dependencies: []
   end
 
   def test_require_paths
-    enable_shared, RbConfig::CONFIG['ENABLE_SHARED'] =
-      RbConfig::CONFIG['ENABLE_SHARED'], 'no'
+    enable_shared 'no' do
+      ext_spec
 
-    ext_spec
+      @ext.require_path = 'lib'
 
-    @ext.require_path = 'lib'
+      ext_install_dir = Pathname(@ext.extension_dir)
+      full_gem_path = Pathname(@ext.full_gem_path)
+      relative_install_dir = ext_install_dir.relative_path_from full_gem_path
 
-    ext_install_dir = Pathname(@ext.extension_dir)
-    full_gem_path = Pathname(@ext.full_gem_path)
-    relative_install_dir = ext_install_dir.relative_path_from full_gem_path
-
-    assert_equal [relative_install_dir.to_s, 'lib'], @ext.require_paths
-  ensure
-    RbConfig::CONFIG['ENABLE_SHARED'] = enable_shared
+      assert_equal [relative_install_dir.to_s, 'lib'], @ext.require_paths
+    end
   end
 
   def test_source
