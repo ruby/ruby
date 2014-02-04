@@ -50,7 +50,7 @@ VALUE rb_cSymbol;
 #define RUBY_MAX_CHAR_LEN 16
 #define STR_TMPLOCK FL_USER7
 #define STR_UNSET_NOCAPA(s) do {\
-    if (FL_TEST((s),STR_NOEMBED)) FL_UNSET((s),(ELTS_SHARED));\
+    if (FL_TEST((s),STR_NOEMBED)) FL_UNSET((s),(STR_SHARED));\
 } while (0)
 
 #define STR_SET_NOEMBED(str) do {\
@@ -115,7 +115,7 @@ VALUE rb_cSymbol;
 
 #define STR_SET_SHARED(str, shared_str) do { \
     RB_OBJ_WRITE((str), &RSTRING(str)->as.heap.aux.shared, (shared_str)); \
-    FL_SET((str), ELTS_SHARED); \
+    FL_SET((str), STR_SHARED); \
 } while (0)
 
 #define STR_HEAP_PTR(str)  (RSTRING(str)->as.heap.ptr)
@@ -942,7 +942,7 @@ rb_str_free(VALUE str)
 RUBY_FUNC_EXPORTED size_t
 rb_str_memsize(VALUE str)
 {
-    if (FL_TEST(str, STR_NOEMBED|ELTS_SHARED) == STR_NOEMBED) {
+    if (FL_TEST(str, STR_NOEMBED|STR_SHARED) == STR_NOEMBED) {
 	return STR_HEAP_SIZE(str);
     }
     else {
@@ -1024,7 +1024,7 @@ str_replace(VALUE str, VALUE str2)
 	STR_SET_NOEMBED(str);
 	RSTRING(str)->as.heap.len = len;
 	RSTRING(str)->as.heap.ptr = RSTRING_PTR(str2);
-	FL_SET(str, ELTS_SHARED);
+	FL_SET(str, STR_SHARED);
 	STR_SET_SHARED(str, shared);
     }
     else {
@@ -3548,7 +3548,7 @@ rb_str_drop_bytes(VALUE str, long len)
     nlen = olen - len;
     if (nlen <= RSTRING_EMBED_LEN_MAX) {
 	char *oldptr = ptr;
-	int fl = (int)(RBASIC(str)->flags & (STR_NOEMBED|ELTS_SHARED));
+	int fl = (int)(RBASIC(str)->flags & (STR_NOEMBED|STR_SHARED));
 	STR_SET_EMBED(str);
 	STR_SET_EMBED_LEN(str, nlen);
 	ptr = RSTRING(str)->as.ary;
