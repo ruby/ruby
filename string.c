@@ -1503,6 +1503,7 @@ rb_str_modify_expand(VALUE str, long expand)
 	int termlen = TERM_LEN(str);
 	if (!STR_EMBED_P(str)) {
 	    REALLOC_N(RSTRING(str)->as.heap.ptr, char, capa + termlen);
+	    STR_UNSET_NOCAPA(str);
 	    RSTRING(str)->as.heap.aux.capa = capa;
 	}
 	else if (capa + termlen > RSTRING_EMBED_LEN_MAX + 1) {
