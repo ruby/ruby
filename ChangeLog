@@ -1,3 +1,8 @@
+Tue Feb  4 16:16:58 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* string.c: use STR_SHARED instead of ELTS_SHARED.
+	  (same value, but more clear meaning)
+
 Tue Feb  4 16:09:14 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* string.c: remvoe STR_ASSOC related code.
