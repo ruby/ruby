@@ -1,3 +1,9 @@
+Tue Feb  4 17:20:03 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (glob_helper): return the filename with actual cases on
+	  the filesystem if it is case-insensitive.  [ruby-core:42469]
+	  [Feature #5994]
+
 Tue Feb  4 16:16:58 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* string.c: use STR_SHARED instead of ELTS_SHARED.
