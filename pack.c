@@ -234,6 +234,45 @@ static void qpencode(VALUE,VALUE,long);
 
 static unsigned long utf8_to_uv(const char*,long*);
 
+static ID id_associated;
+
+static void
+str_associate(VALUE str, VALUE add)
+{
+    VALUE assoc;
+
+    assoc = rb_attr_get(str, id_associated);
+    if (RB_TYPE_P(assoc, T_ARRAY)) {
+	/* already associated */
+	rb_ary_concat(assoc, add);
+    }
+    else {
+	rb_ivar_set(str, id_associated, add);
+    }
+}
+
+static VALUE
+str_associated(VALUE str)
+{
+    VALUE assoc = rb_attr_get(str, id_associated);
+    if (NIL_P(assoc)) assoc = Qfalse;
+    return assoc;
+}
+
+void
+rb_str_associate(VALUE str, VALUE add)
+{
+    rb_warn("rb_str_associate() is only for internal use and deprecated; do not use");
+    str_associate(str, add);
+}
+
+VALUE
+rb_str_associated(VALUE str)
+{
+    rb_warn("rb_str_associated() is only for internal use and deprecated; do not use");
+    return str_associated(str);
+}
+
 /*
  *  call-seq:
  *     arr.pack ( aTemplateString ) -> aBinaryString
@@ -921,7 +960,7 @@ pack_pack(VALUE ary, VALUE fmt)
     }
 
     if (associates) {
-	rb_str_associate(res, associates);
+	str_associate(res, associates);
     }
     OBJ_INFECT(res, fmt);
     switch (enc_info) {
@@ -1801,7 +1840,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		    VALUE a;
 		    const VALUE *p, *pend;
 
-		    if (!(a = rb_str_associated(str))) {
+		    if (!(a = str_associated(str))) {
 			rb_raise(rb_eArgError, "no associated pointer");
 		    }
 		    p = RARRAY_CONST_PTR(a);
@@ -1810,7 +1849,7 @@ pack_unpack(VALUE str, VALUE fmt)
 			if (RB_TYPE_P(*p, T_STRING) && RSTRING_PTR(*p) == t) {
 			    if (len < RSTRING_LEN(*p)) {
 				tmp = rb_tainted_str_new(t, len);
-				rb_str_associate(tmp, a);
+				str_associate(tmp, a);
 			    }
 			    else {
 				tmp = *p;
@@ -1844,7 +1883,7 @@ pack_unpack(VALUE str, VALUE fmt)
 			VALUE a;
 			const VALUE *p, *pend;
 
-			if (!(a = rb_str_associated(str))) {
+			if (!(a = str_associated(str))) {
 			    rb_raise(rb_eArgError, "no associated pointer");
 			}
 			p = RARRAY_CONST_PTR(a);
@@ -2006,4 +2045,6 @@ Init_pack(void)
 {
     rb_define_method(rb_cArray, "pack", pack_pack, 1);
     rb_define_method(rb_cString, "unpack", pack_unpack, 1);
+
+    id_associated = rb_intern_const("__pack_associated__");
 }

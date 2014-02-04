@@ -1,3 +1,10 @@
+Tue Feb  4 14:07:20 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* pack.c (str_associate, str_associated): keep associated objects
+	  in an instance variables, instead of in the internal structure.
+
+	* string.c (rb_str_associate, rb_str_associated): deprecate.
+
 Tue Feb  4 12:55:31 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_modify_expand): enable capacity and disable
