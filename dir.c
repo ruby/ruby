@@ -1210,7 +1210,7 @@ glob_make_pattern(const char *p, const char *e, int flags, rb_encoding *enc)
 	}
 	else {
 	    const char *m = find_dirsep(p, e, flags, enc);
-	    int magic = has_magic(p, m, flags, enc);
+	    const int magic = FNM_SYSCASE || HAVE_HFS || has_magic(p, m, flags, enc);
 	    char *buf;
 
 	    if (!magic && !recursive && *m) {
