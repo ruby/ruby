@@ -715,14 +715,12 @@ VALUE rb_str_locktmp_ensure(VALUE str, VALUE (*func)(VALUE), VALUE arg);
 #ifdef RUBY_ENCODING_H
 VALUE rb_external_str_with_enc(VALUE str, rb_encoding *eenc);
 #endif
-#define STR_NOEMBED FL_USER1
-#define STR_SHARED  FL_USER2 /* = ELTS_SHARED */
-#define STR_ASSOC   FL_USER3
-#define STR_SHARED_P(s) FL_ALL((s), STR_NOEMBED|ELTS_SHARED)
-#define STR_ASSOC_P(s)  FL_ALL((s), STR_NOEMBED|STR_ASSOC)
-#define STR_NOCAPA  (STR_NOEMBED|ELTS_SHARED|STR_ASSOC)
-#define STR_NOCAPA_P(s) (FL_TEST((s),STR_NOEMBED) && FL_ANY((s),ELTS_SHARED|STR_ASSOC))
+#define STR_NOEMBED      FL_USER1
+#define STR_SHARED       FL_USER2 /* = ELTS_SHARED */
+#define STR_NOCAPA       (STR_NOEMBED|ELTS_SHARED)
 #define STR_EMBED_P(str) (!FL_TEST((str), STR_NOEMBED))
+#define STR_SHARED_P(s)  FL_ALL((s), STR_NOCAPA)
+#define STR_NOCAPA_P(s)  FL_ALL((s), STR_NOCAPA)
 #define is_ascii_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT)
 #define is_broken_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN)
 

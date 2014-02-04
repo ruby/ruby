@@ -174,8 +174,6 @@ dump_object(VALUE obj, struct dump_config *dc)
       case T_STRING:
 	if (STR_EMBED_P(obj))
 	    dump_append(dc, ", \"embedded\":true");
-	if (STR_ASSOC_P(obj))
-	    dump_append(dc, ", \"associated\":true");
 	if (is_broken_string(obj))
 	    dump_append(dc, ", \"broken\":true");
 	if (FL_TEST(obj, RSTRING_FSTR))
