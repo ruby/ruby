@@ -1210,10 +1210,10 @@ glob_make_pattern(const char *p, const char *e, int flags, rb_encoding *enc)
 	}
 	else {
 	    const char *m = find_dirsep(p, e, flags, enc);
-	    const int magic = FNM_SYSCASE || HAVE_HFS || has_magic(p, m, flags, enc);
+	    const int magic = has_magic(p, m, flags, enc);
 	    char *buf;
 
-	    if (!magic && !recursive && *m) {
+	    if (!(FNM_SYSCASE || HAVE_HFS || magic) && !recursive && *m) {
 		const char *m2;
 		while (!has_magic(m+1, m2 = find_dirsep(m+1, e, flags, enc), flags, enc) &&
 		       *m2) {
@@ -1397,14 +1397,29 @@ glob_helper(
 
     if (exist == NO || isdir == NO) return 0;
 
-    if (magical || recursive) {
+    if (magical || recursive || ((FNM_SYSCASE || HAVE_HFS) && plain)) {
 	struct dirent *dp;
 	DIR *dirp;
 	IF_HAVE_HFS(int hfs_p);
 	dirp = do_opendir(*path ? path : ".", flags, enc);
-	if (dirp == NULL) return 0;
+	if (dirp == NULL) {
+# if FNM_SYSCASE || HAVE_HFS
+	    if (!(magical || recursive) && (errno == EACCES)) {
+		/* no read permission, fallback */
+		goto literally;
+	    }
+# endif
+	    return 0;
+	}
 	IF_HAVE_HFS(hfs_p = is_hfs(dirp));
 
+# if HAVE_HFS
+	if (!(hfs_p || magical || recursive)) {
+	    closedir(dirp);
+	    goto literally;
+	}
+	flags |= FNM_CASEFOLD;
+# endif
 	while ((dp = READDIR(dirp, enc)) != NULL) {
 	    char *buf;
 	    enum answer new_isdir = UNKNOWN;
@@ -1486,6 +1501,9 @@ glob_helper(
     else if (plain) {
 	struct glob_pattern **copy_beg, **copy_end, **cur2;
 
+# if FNM_SYSCASE || HAVE_HFS
+      literally:
+# endif
 	copy_beg = copy_end = GLOB_ALLOC_N(struct glob_pattern *, end - beg);
 	if (!copy_beg) return -1;
 	for (cur = beg; cur < end; ++cur)

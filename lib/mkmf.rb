@@ -71,7 +71,7 @@ module MakeMakefile
   # Extensions for files complied with a C++ compiler
 
   CXX_EXT = %w[cc mm cxx cpp]
-  if File::FNM_SYSCASE.zero?
+  unless File.exist?(File.join(*File.split(__FILE__).tap {|d, b| b.swapcase}))
     CXX_EXT.concat(%w[C])
   end
 
