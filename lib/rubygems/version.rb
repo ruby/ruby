@@ -22,6 +22,11 @@
 # 3. 1.0.a.2
 # 4. 0.9
 #
+# If you want to specify a version restriction that includes both prereleases
+# and regular releases of the 1.x series this is the best way:
+#
+#   s.add_dependency 'example', '>= 1.0.0.a', '< 2.0.0'
+#
 # == How Software Changes
 #
 # Users expect to be able to specify a version constraint that gives them

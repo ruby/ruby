@@ -25,10 +25,12 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
   # http://guides.rubygems.org/rubygems-org-api
 
   def initialize dep_uri = 'https://rubygems.org/api/v1/dependencies'
+    super()
+
     dep_uri = URI dep_uri unless URI === dep_uri # for ruby 1.8
 
     @dep_uri = dep_uri
-    @uri     = dep_uri + '../../..'
+    @uri     = dep_uri + '../..'
 
     @data   = Hash.new { |h,k| h[k] = [] }
     @source = Gem::Source.new @uri
@@ -40,6 +42,8 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
 
   def find_all req
     res = []
+
+    return res unless @remote
 
     versions(req.name).each do |ver|
       if req.dependency.match? req.name, ver[:number]
@@ -55,6 +59,7 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
   # data for DependencyRequests +reqs+.
 
   def prefetch reqs
+    return unless @remote
     names = reqs.map { |r| r.dependency.name }
     needed = names - @data.keys
 

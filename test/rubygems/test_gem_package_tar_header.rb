@@ -72,6 +72,20 @@ class TestGemPackageTarHeader < Gem::Package::TarTestCase
     end
   end
 
+  def test_initialize_typeflag
+    header = {
+      :mode     => '',
+      :name     => '',
+      :prefix   => '',
+      :size     => '',
+      :typeflag => '',
+    }
+
+    tar_header = Gem::Package::TarHeader.new header
+
+    assert_equal '0', tar_header.typeflag
+  end
+
   def test_empty_eh
     refute_empty @tar_header
 

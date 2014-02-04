@@ -21,6 +21,8 @@ class Gem::Resolver::VendorSet < Gem::Resolver::Set
   attr_reader :specs # :nodoc:
 
   def initialize # :nodoc:
+    super()
+
     @directories = {}
     @specs       = {}
   end

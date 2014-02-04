@@ -137,9 +137,10 @@ class Gem::ConfigFile
   attr_reader :ssl_verify_mode
 
   ##
-  # Path name of directory or file of openssl CA certificate, used for remote https connection
+  # Path name of directory or file of openssl CA certificate, used for remote
+  # https connection
 
-  attr_reader :ssl_ca_cert
+  attr_accessor :ssl_ca_cert
 
   ##
   # Path name of directory or file of openssl client certificate, used for remote https connection with client authentication

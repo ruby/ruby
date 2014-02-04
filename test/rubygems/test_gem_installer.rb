@@ -41,7 +41,7 @@ version = \">= 0\"
 if ARGV.first
   str = ARGV.first
   str = str.dup.force_encoding("BINARY") if str.respond_to? :force_encoding
-  if str =~ /\\A_(.*)_\\z/
+  if str =~ /\\A_(.*)_\\z/ and Gem::Version.correct?($1) then
     version = $1
     ARGV.shift
   end
@@ -102,7 +102,11 @@ load Gem.bin_path('a', 'executable', version)
   ensure
     Object.const_set :RUBY_FRAMEWORK_VERSION, orig_RUBY_FRAMEWORK_VERSION if
       orig_RUBY_FRAMEWORK_VERSION
-    RbConfig::CONFIG['bindir'] = orig_bindir
+    if orig_bindir then
+      RbConfig::CONFIG['bindir'] = orig_bindir
+    else
+      RbConfig::CONFIG.delete 'bindir'
+    end
   end
 
   def test_check_executable_overwrite_format_executable

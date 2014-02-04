@@ -24,14 +24,17 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
   # Creates a new InstallerSet that will look for gems in +domain+.
 
   def initialize domain
+    super()
+
     @domain = domain
+    @remote = consider_remote?
 
     @f = Gem::SpecFetcher.fetcher
 
     @always_install      = []
     @ignore_dependencies = false
     @ignore_installed    = false
-    @remote_set          = Gem::Resolver::BestSet.new if consider_remote?
+    @remote_set          = Gem::Resolver::BestSet.new
     @specs               = {}
   end
 
@@ -117,6 +120,17 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
       q.breakable
       q.text 'always install: '
       q.pp @always_install
+    end
+  end
+
+  def remote= remote # :nodoc:
+    case @domain
+    when :local then
+      @domain = :both if remote
+    when :remote then
+      @domain = nil unless remote
+    when :both then
+      @domain = :local unless remote
     end
   end
 

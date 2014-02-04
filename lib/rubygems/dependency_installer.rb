@@ -419,6 +419,7 @@ class Gem::DependencyInstaller
 
     request_set = as.to_request_set install_development_deps
     request_set.soft_missing = @force
+    request_set.remote = false unless consider_remote?
 
     installer_set = Gem::Resolver::InstallerSet.new @domain
     installer_set.always_install.concat request_set.always_install
