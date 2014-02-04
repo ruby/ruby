@@ -1,3 +1,13 @@
+Wed Feb  5 04:16:41 2014  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/yaml/emitter.c: merge libyaml 0.1.5
+	* ext/psych/yaml/loader.c: ditto
+	* ext/psych/yaml/parser.c: ditto
+	* ext/psych/yaml/reader.c: ditto
+	* ext/psych/yaml/scanner.c: ditto
+	* ext/psych/yaml/writer.c: ditto
+	* ext/psych/yaml/yaml_private.h: ditto
+
 Tue Feb  4 19:10:29 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* string.c: use long allocator names instead of numbered

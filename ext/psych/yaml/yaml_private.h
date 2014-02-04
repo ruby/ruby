@@ -1,6 +1,3 @@
-#ifdef RUBY_EXTCONF_H
-#include RUBY_EXTCONF_H
-#endif
 
 #if HAVE_CONFIG_H
 #include <config.h>
@@ -10,6 +7,17 @@
 
 #include <assert.h>
 #include <limits.h>
+#include <stddef.h>
+
+#ifndef _MSC_VER
+#include <stdint.h>
+#else
+#ifdef _WIN64
+#define PTRDIFF_MAX _I64_MAX
+#else
+#define PTRDIFF_MAX INT_MAX
+#endif
+#endif
 
 /*
  * Memory management.
@@ -231,9 +239,9 @@ yaml_string_join(
         (string).pointer[offset] <= (yaml_char_t) 'f') ?                        \
        ((string).pointer[offset] - (yaml_char_t) 'a' + 10) :                    \
        ((string).pointer[offset] - (yaml_char_t) '0'))
-
+ 
 #define AS_HEX(string)  AS_HEX_AT((string),0)
-
+ 
 /*
  * Check if the character is ASCII.
  */
@@ -423,6 +431,12 @@ yaml_queue_extend(void **start, void **head, void **tail, void **end);
 
 #define STACK_EMPTY(context,stack)                                              \
     ((stack).start == (stack).top)
+
+#define STACK_LIMIT(context,stack,size)                                         \
+    ((stack).top - (stack).start < (size) ?                                     \
+        1 :                                                                     \
+        ((context)->error = YAML_MEMORY_ERROR,                                  \
+         0))
 
 #define PUSH(context,stack,value)                                               \
     (((stack).top != (stack).end                                                \
