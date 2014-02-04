@@ -1,3 +1,12 @@
+Tue Feb  4 16:09:14 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* string.c: remvoe STR_ASSOC related code.
+	  By r44804, string objects can not have STR_ASSOC flag.
+
+	* internal.h: ditto.
+
+	* ext/objspace/objspace_dump.c (dump_object): ditto.
+
 Tue Feb  4 14:07:20 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* pack.c (str_associate, str_associated): keep associated objects
