@@ -8,12 +8,6 @@ Mon Feb  3 12:04:47 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* error.c: [DOC] Exception#cause may return nil. [ci skip]
 
-Mon Feb  3 10:49:48 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* dir.c (glob_helper): return the filename with actual cases on
-	  the filesystem if it is case-insensitive.  [ruby-core:42469]
-	  [Feature #5994]
-
 Sun Feb 2 05:48:42 2014  Eric Wong <e@80x24.org>
 
 	* io.c (rb_io_syswrite): add RB_GC_GUARD
