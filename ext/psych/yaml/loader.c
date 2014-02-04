@@ -286,6 +286,8 @@ yaml_parser_load_scalar(yaml_parser_t *parser, yaml_event_t *first_event)
     int index;
     yaml_char_t *tag = first_event->data.scalar.tag;
 
+    if (!STACK_LIMIT(parser, parser->document->nodes, INT_MAX-1)) goto error;
+
     if (!tag || strcmp((char *)tag, "!") == 0) {
         yaml_free(tag);
         tag = yaml_strdup((yaml_char_t *)YAML_DEFAULT_SCALAR_TAG);
@@ -329,6 +331,8 @@ yaml_parser_load_sequence(yaml_parser_t *parser, yaml_event_t *first_event)
     int index, item_index;
     yaml_char_t *tag = first_event->data.sequence_start.tag;
 
+    if (!STACK_LIMIT(parser, parser->document->nodes, INT_MAX-1)) goto error;
+
     if (!tag || strcmp((char *)tag, "!") == 0) {
         yaml_free(tag);
         tag = yaml_strdup((yaml_char_t *)YAML_DEFAULT_SEQUENCE_TAG);
@@ -351,6 +355,9 @@ yaml_parser_load_sequence(yaml_parser_t *parser, yaml_event_t *first_event)
     if (!yaml_parser_parse(parser, &event)) return 0;
 
     while (event.type != YAML_SEQUENCE_END_EVENT) {
+        if (!STACK_LIMIT(parser,
+                    parser->document->nodes.start[index-1].data.sequence.items,
+                    INT_MAX-1)) return 0;
         item_index = yaml_parser_load_node(parser, &event);
         if (!item_index) return 0;
         if (!PUSH(parser,
@@ -387,6 +394,8 @@ yaml_parser_load_mapping(yaml_parser_t *parser, yaml_event_t *first_event)
     yaml_node_pair_t pair;
     yaml_char_t *tag = first_event->data.mapping_start.tag;
 
+    if (!STACK_LIMIT(parser, parser->document->nodes, INT_MAX-1)) goto error;
+
     if (!tag || strcmp((char *)tag, "!") == 0) {
         yaml_free(tag);
         tag = yaml_strdup((yaml_char_t *)YAML_DEFAULT_MAPPING_TAG);
@@ -409,6 +418,9 @@ yaml_parser_load_mapping(yaml_parser_t *parser, yaml_event_t *first_event)
     if (!yaml_parser_parse(parser, &event)) return 0;
 
     while (event.type != YAML_MAPPING_END_EVENT) {
+        if (!STACK_LIMIT(parser,
+                    parser->document->nodes.start[index-1].data.mapping.pairs,
+                    INT_MAX-1)) return 0;
         pair.key = yaml_parser_load_node(parser, &event);
         if (!pair.key) return 0;
         if (!yaml_parser_parse(parser, &event)) return 0;
