@@ -568,7 +568,7 @@ rb_str_new_cstr(const char *ptr)
 VALUE
 rb_usascii_str_new_cstr(const char *ptr)
 {
-    VALUE str = rb_str_new2(ptr);
+    VALUE str = rb_str_new_cstr(ptr);
     ENCODING_CODERANGE_SET(str, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
     return str;
 }
@@ -597,7 +597,7 @@ rb_tainted_str_new(const char *ptr, long len)
 VALUE
 rb_tainted_str_new_cstr(const char *ptr)
 {
-    VALUE str = rb_str_new2(ptr);
+    VALUE str = rb_str_new_cstr(ptr);
 
     OBJ_TAINT(str);
     return str;
@@ -789,23 +789,17 @@ str_new_shared(VALUE klass, VALUE str)
     return str_replace_shared(str_alloc(klass), str);
 }
 
-static VALUE
-str_new3(VALUE klass, VALUE str)
-{
-    return str_new_shared(klass, str);
-}
-
 VALUE
 rb_str_new_shared(VALUE str)
 {
-    VALUE str2 = str_new3(rb_obj_class(str), str);
+    VALUE str2 = str_new_shared(rb_obj_class(str), str);
 
     OBJ_INFECT(str2, str);
     return str2;
 }
 
 static VALUE
-str_new4(VALUE klass, VALUE str)
+str_new_frozen_with_klass(VALUE klass, VALUE str)
 {
     VALUE str2;
 
@@ -841,7 +835,7 @@ rb_str_new_frozen(VALUE orig)
 	if ((ofs > 0) || (klass != RBASIC(str)->klass) ||
 	    ((RBASIC(str)->flags ^ RBASIC(orig)->flags) & FL_TAINT) ||
 	    ENCODING_GET(str) != ENCODING_GET(orig)) {
-	    str = str_new3(klass, str);
+	    str = str_new_shared(klass, str);
 	    RSTRING(str)->as.heap.ptr += ofs;
 	    RSTRING(str)->as.heap.len -= ofs;
 	    rb_enc_cr_str_exact_copy(str, orig);
@@ -854,7 +848,7 @@ rb_str_new_frozen(VALUE orig)
 	OBJ_INFECT(str, orig);
     }
     else {
-	str = str_new4(klass, orig);
+	str = str_new_frozen_with_klass(klass, orig);
     }
     OBJ_FREEZE(str);
     return str;
@@ -869,7 +863,7 @@ rb_str_new_with_class(VALUE obj, const char *ptr, long len)
 static VALUE
 str_new_empty(VALUE str)
 {
-    VALUE v = rb_str_new5(str, 0, 0);
+    VALUE v = rb_str_new_with_class(str, 0, 0);
     rb_enc_copy(v, str);
     OBJ_INFECT(v, str);
     return v;
@@ -1381,7 +1375,7 @@ rb_str_times(VALUE str, VALUE times)
 	rb_raise(rb_eArgError, "argument too big");
     }
 
-    str2 = rb_str_new5(str, 0, len *= RSTRING_LEN(str));
+    str2 = rb_str_new_with_class(str, 0, len *= RSTRING_LEN(str));
     ptr2 = RSTRING_PTR(str2);
     if (len) {
         n = RSTRING_LEN(str);
@@ -1791,7 +1785,7 @@ rb_str_subseq(VALUE str, long beg, long len)
         rb_str_drop_bytes(str2, beg);
     }
     else {
-        str2 = rb_str_new5(str, RSTRING_PTR(str)+beg, len);
+        str2 = rb_str_new_with_class(str, RSTRING_PTR(str)+beg, len);
 	RB_GC_GUARD(str);
     }
 
@@ -1894,13 +1888,13 @@ rb_str_substr(VALUE str, long beg, long len)
 
     if (!p) return Qnil;
     if (len > RSTRING_EMBED_LEN_MAX && p + len == RSTRING_END(str)) {
-	str2 = rb_str_new4(str);
-	str2 = str_new3(rb_obj_class(str2), str2);
+	str2 = rb_str_new_frozen(str);
+	str2 = str_new_shared(rb_obj_class(str2), str2);
 	RSTRING(str2)->as.heap.ptr += RSTRING(str2)->as.heap.len - len;
 	RSTRING(str2)->as.heap.len = len;
     }
     else {
-	str2 = rb_str_new5(str, p, len);
+	str2 = rb_str_new_with_class(str, p, len);
 	rb_enc_cr_str_copy_for_substr(str2, str);
 	OBJ_INFECT(str2, str);
 	RB_GC_GUARD(str);
@@ -3171,7 +3165,7 @@ rb_str_succ(VALUE orig)
     long carry_pos = 0, carry_len = 1;
     enum neighbor_char neighbor = NEIGHBOR_FOUND;
 
-    str = rb_str_new5(orig, RSTRING_PTR(orig), RSTRING_LEN(orig));
+    str = rb_str_new_with_class(orig, RSTRING_PTR(orig), RSTRING_LEN(orig));
     rb_enc_cr_str_copy_for_substr(str, orig);
     OBJ_INFECT(str, orig);
     if (RSTRING_LEN(str) == 0) return str;
@@ -3556,7 +3550,7 @@ rb_str_drop_bytes(VALUE str, long len)
 	if (fl == STR_NOEMBED) xfree(oldptr);
     }
     else {
-	if (!STR_SHARED_P(str)) rb_str_new4(str);
+	if (!STR_SHARED_P(str)) rb_str_new_frozen(str);
 	ptr = RSTRING(str)->as.heap.ptr += len;
 	RSTRING(str)->as.heap.len = nlen;
     }
@@ -4332,13 +4326,13 @@ str_byte_substr(VALUE str, long beg, long len)
 	p = s + beg;
 
     if (len > RSTRING_EMBED_LEN_MAX && beg + len == n) {
-	str2 = rb_str_new4(str);
-	str2 = str_new3(rb_obj_class(str2), str2);
+	str2 = rb_str_new_frozen(str);
+	str2 = str_new_shared(rb_obj_class(str2), str2);
 	RSTRING(str2)->as.heap.ptr += RSTRING(str2)->as.heap.len - len;
 	RSTRING(str2)->as.heap.len = len;
     }
     else {
-	str2 = rb_str_new5(str, p, len);
+	str2 = rb_str_new_with_class(str, p, len);
     }
 
     str_enc_copy(str2, str);
@@ -4451,7 +4445,7 @@ rb_str_reverse(VALUE str)
 
     if (RSTRING_LEN(str) <= 1) return rb_str_dup(str);
     enc = STR_ENC_GET(str);
-    rev = rb_str_new5(str, 0, RSTRING_LEN(str));
+    rev = rb_str_new_with_class(str, 0, RSTRING_LEN(str));
     s = RSTRING_PTR(str); e = RSTRING_END(str);
     p = RSTRING_END(rev);
 
@@ -4852,7 +4846,7 @@ rb_str_dump(VALUE str)
 	len += strlen(enc->name);
     }
 
-    result = rb_str_new5(str, 0, len);
+    result = rb_str_new_with_class(str, 0, len);
     p = RSTRING_PTR(str); pend = p + RSTRING_LEN(str);
     q = RSTRING_PTR(result); qend = q + len + 1;
 
@@ -6308,7 +6302,7 @@ rb_str_split(VALUE str, const char *sep0)
     VALUE sep;
 
     StringValue(str);
-    sep = rb_str_new2(sep0);
+    sep = rb_str_new_cstr(sep0);
     return rb_str_split_m(1, &sep, str);
 }
 
@@ -6358,7 +6352,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 	}
     }
 
-    str = rb_str_new4(str);
+    str = rb_str_new_frozen(str);
     ptr = subptr = RSTRING_PTR(str);
     pend = RSTRING_END(str);
     len = RSTRING_LEN(str);
@@ -6582,7 +6576,7 @@ rb_str_enumerate_chars(VALUE str, int wantarray)
     rb_encoding *enc;
     VALUE UNINITIALIZED_VAR(ary);
 
-    str = rb_str_new4(str);
+    str = rb_str_new_frozen(str);
     ptr = RSTRING_PTR(str);
     len = RSTRING_LEN(str);
     enc = rb_enc_get(str);
@@ -6686,7 +6680,7 @@ rb_str_enumerate_codepoints(VALUE str, int wantarray)
     if (single_byte_optimizable(str))
 	return rb_str_enumerate_bytes(str, wantarray);
 
-    str = rb_str_new4(str);
+    str = rb_str_new_frozen(str);
     ptr = RSTRING_PTR(str);
     end = RSTRING_END(str);
     enc = STR_ENC_GET(str);
@@ -7331,7 +7325,7 @@ rb_str_crypt(VALUE str, VALUE salt)
     if (!res) {
 	rb_sys_fail("crypt");
     }
-    result = rb_str_new2(res);
+    result = rb_str_new_cstr(res);
     OBJ_INFECT(result, str);
     OBJ_INFECT(result, salt);
     return result;
@@ -7499,7 +7493,7 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
        rb_raise(rb_eArgError, "argument too big");
     }
     len += size;
-    res = rb_str_new5(str, 0, len);
+    res = rb_str_new_with_class(str, 0, len);
     p = RSTRING_PTR(res);
     if (flen <= 1) {
        memset(p, *f, llen);
@@ -8374,7 +8368,7 @@ rb_sym_to_s(VALUE sym)
 {
     ID id = SYM2ID(sym);
 
-    return str_new3(rb_cString, rb_id2str(id));
+    return str_new_shared(rb_cString, rb_id2str(id));
 }
 
 
