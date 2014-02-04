@@ -1,3 +1,8 @@
+Wed Feb  5 04:23:41 2014  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: New release of psych.
+	* ext/psych/psych.gemspec: ditto
+
 Wed Feb  5 04:16:41 2014  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/yaml/emitter.c: merge libyaml 0.1.5
