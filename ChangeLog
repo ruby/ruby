@@ -1,3 +1,9 @@
+Wed Feb  5 17:55:28 2014  Aman Gupta <ruby@tmm1.net>
+
+	* array.c (ary_add_hash): Fix consistency issue between Array#uniq and
+	  Array#uniq! [Bug #9340] [ruby-core:59457]
+	* test/ruby/test_array.rb (class TestArray): regression test for above.
+
 Wed Feb  5 11:48:42 2014  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* struct.c (rb_struct_set): return assigned value from setter method

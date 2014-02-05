@@ -3904,7 +3904,9 @@ ary_add_hash(VALUE hash, VALUE ary)
 
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	VALUE elt = RARRAY_AREF(ary, i);
-	rb_hash_aset(hash, elt, elt);
+	if (rb_hash_lookup2(hash, elt, Qundef) == Qundef) {
+	    rb_hash_aset(hash, elt, elt);
+	}
     }
     return hash;
 }
