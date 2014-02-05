@@ -1,3 +1,9 @@
+Wed Feb  5 11:46:42 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_mark_children): STR_ASSOC is no longer available.
+	  Reported by @nagachika.
+	  http://d.hatena.ne.jp/nagachika/20140204
+
 Wed Feb  5 11:27:22 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* string.c (rb_str_new_frozen): refactoring code.

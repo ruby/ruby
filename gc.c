@@ -3866,8 +3866,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	goto again;
 
       case T_STRING:
-#define STR_ASSOC FL_USER3   /* copied from string.c */
-	if (FL_TEST(obj, RSTRING_NOEMBED) && FL_ANY(obj, ELTS_SHARED|STR_ASSOC)) {
+	if (STR_SHARED_P(obj)) {
 	    ptr = obj->as.string.as.heap.aux.shared;
 	    goto again;
 	}
