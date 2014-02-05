@@ -1,3 +1,8 @@
+Sun Feb 2 05:48:42 2014  Eric Wong <e@80x24.org>
+
+	* io.c (rb_io_syswrite): add RB_GC_GUARD
+	  [Bug #9472][ruby-core:60407]
+
 Wed Feb  5 11:36:30 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in (opt-dir): don't use non portable flag -E of sed.
