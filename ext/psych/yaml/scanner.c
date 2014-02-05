@@ -1231,12 +1231,14 @@ yaml_parser_roll_indent(yaml_parser_t *parser, ptrdiff_t column,
         if (!PUSH(parser, parser->indents, parser->indent))
             return 0;
 
+#if PTRDIFF_MAX > INT_MAX
         if (column > INT_MAX) {
             parser->error = YAML_MEMORY_ERROR;
             return 0;
         }
+#endif
 
-        parser->indent = column;
+        parser->indent = (int)column;
 
         /* Create a token and insert it into the queue. */
 
