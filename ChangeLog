@@ -1,3 +1,24 @@
+Wed Feb  5 23:43:30 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* hash.c (rb_objid_hash): should return `long'.  brushup r44534.
+
+	* object.c (rb_obj_hash): follow above change.
+
+Wed Feb  5 23:43:30 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* hash.c (rb_any_hash): should treat the return value of rb_objid_hash()
+	  as `long', because ruby assumes the hash value of the object id of
+	  an object is `long'.
+	  this fixes test failures on mswin64 introduced at r44525.
+
+Wed Feb  5 23:43:30 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_objid_hash): return hash value from object ID with a
+	  salt, extract from rb_any_hash().
+
+	* object.c (rb_obj_hash): return same value as rb_any_hash().
+	  fix r44125.  [ruby-core:59638] [Bug #9381]
+
 Wed Feb  5 22:28:41 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_search_super_method): allow bound method from a
