@@ -189,31 +189,31 @@ static const rb_data_type_t dump_arg_data = {
     NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-static const char *
+static VALUE
 must_not_be_anonymous(const char *type, VALUE path)
 {
     char *n = RSTRING_PTR(path);
 
     if (!rb_enc_asciicompat(rb_enc_get(path))) {
 	/* cannot occur? */
-	rb_raise(rb_eTypeError, "can't dump non-ascii %s name", type);
+	rb_raise(rb_eTypeError, "can't dump non-ascii %s name % "PRIsVALUE,
+		 type, path);
     }
     if (n[0] == '#') {
-	rb_raise(rb_eTypeError, "can't dump anonymous %s %.*s", type,
-		 (int)RSTRING_LEN(path), n);
+	rb_raise(rb_eTypeError, "can't dump anonymous %s % "PRIsVALUE,
+		 type, path);
     }
-    return n;
+    return path;
 }
 
 static VALUE
 class2path(VALUE klass)
 {
     VALUE path = rb_class_path(klass);
-    const char *n;
 
-    n = must_not_be_anonymous((RB_TYPE_P(klass, T_CLASS) ? "class" : "module"), path);
+    must_not_be_anonymous((RB_TYPE_P(klass, T_CLASS) ? "class" : "module"), path);
     if (rb_path_to_class(path) != rb_class_real(klass)) {
-	rb_raise(rb_eTypeError, "%s can't be referred to", n);
+	rb_raise(rb_eTypeError, "% "PRIsVALUE" can't be referred to", path);
     }
     return path;
 }
