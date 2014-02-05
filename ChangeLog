@@ -1,3 +1,9 @@
+Wed Feb  5 22:54:52 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* time.c (get_timeval, get_new_timeval): use rb_obj_class()
+	  instead of CLASS_OF() because CLASS_OF() may return
+	  a singleton class.
+
 Sun Feb 2 05:48:42 2014  Eric Wong <e@80x24.org>
 
 	* io.c (rb_io_syswrite): add RB_GC_GUARD

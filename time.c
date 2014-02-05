@@ -1910,7 +1910,7 @@ get_timeval(VALUE obj)
     struct time_object *tobj;
     TypedData_Get_Struct(obj, struct time_object, &time_data_type, tobj);
     if (!TIME_INIT_P(tobj)) {
-	rb_raise(rb_eTypeError, "uninitialized %"PRIsVALUE, CLASS_OF(obj));
+	rb_raise(rb_eTypeError, "uninitialized %"PRIsVALUE, rb_obj_class(obj));
     }
     return tobj;
 }
@@ -1921,7 +1921,7 @@ get_new_timeval(VALUE obj)
     struct time_object *tobj;
     TypedData_Get_Struct(obj, struct time_object, &time_data_type, tobj);
     if (TIME_INIT_P(tobj)) {
-	rb_raise(rb_eTypeError, "already initialized %"PRIsVALUE, CLASS_OF(obj));
+	rb_raise(rb_eTypeError, "already initialized %"PRIsVALUE, rb_obj_class(obj));
     }
     return tobj;
 }
