@@ -164,6 +164,8 @@ class TestObject < Test::Unit::TestCase
     o.instance_eval { @foo = :foo }
     assert_equal(:foo, o.instance_variable_get(:@foo))
     assert_equal(nil, o.instance_variable_get(:@bar))
+    assert_raise(NameError) { o.instance_variable_get('@') }
+    assert_raise(NameError) { o.instance_variable_get(:'@') }
     assert_raise(NameError) { o.instance_variable_get(:foo) }
   end
 
@@ -171,6 +173,8 @@ class TestObject < Test::Unit::TestCase
     o = Object.new
     o.instance_variable_set(:@foo, :foo)
     assert_equal(:foo, o.instance_eval { @foo })
+    assert_raise(NameError) { o.instance_variable_set(:'@', 1) }
+    assert_raise(NameError) { o.instance_variable_set('@', 1) }
     assert_raise(NameError) { o.instance_variable_set(:foo, 1) }
   end
 
@@ -179,6 +183,8 @@ class TestObject < Test::Unit::TestCase
     o.instance_eval { @foo = :foo }
     assert_equal(true, o.instance_variable_defined?(:@foo))
     assert_equal(false, o.instance_variable_defined?(:@bar))
+    assert_raise(NameError) { o.instance_variable_defined?(:'@') }
+    assert_raise(NameError) { o.instance_variable_defined?('@') }
     assert_raise(NameError) { o.instance_variable_defined?(:foo) }
   end
 
