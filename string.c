@@ -915,7 +915,8 @@ rb_str_free(VALUE str)
 	st_data_t fstr = (st_data_t)str;
 	st_delete(frozen_strings, &fstr, NULL);
     }
-    if (!STR_EMBED_P(str) && !STR_SHARED_P(str)) {
+
+    if (!STR_EMBED_P(str) && !FL_TEST(str, STR_SHARED)) {
 	ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
     }
 }
@@ -1009,7 +1010,6 @@ str_replace(VALUE str, VALUE str2)
 	STR_SET_NOEMBED(str);
 	RSTRING(str)->as.heap.len = len;
 	RSTRING(str)->as.heap.ptr = RSTRING_PTR(str2);
-	FL_SET(str, STR_SHARED);
 	STR_SET_SHARED(str, shared);
     }
     else {
