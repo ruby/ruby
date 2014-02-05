@@ -127,12 +127,6 @@
 # include <errno.h>
 #endif
 
-#if __GNUC__ >= 3
-#define UNINITIALIZED_VAR(x) x = x
-#else
-#define UNINITIALIZED_VAR(x) x
-#endif
-
 /*
  * NB: to fit things in six character monocase externals, the stdio
  * code uses the prefix `__s' for stdio objects, typically followed
