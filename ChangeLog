@@ -1,3 +1,10 @@
+Wed Feb  5 23:39:36 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (intern_str): sigil only names are junk, at least one
+	  identifier character is needed.  [ruby-dev:47723] [Bug #8928]
+
+	* parse.y (rb_enc_symname_type): fix out of bound access.
+
 Wed Feb  5 22:54:52 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* time.c (get_timeval, get_new_timeval): use rb_obj_class()
