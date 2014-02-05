@@ -1846,6 +1846,7 @@ class TestArray < Test::Unit::TestCase
 
   def test_initialize
     assert_nothing_raised { [].instance_eval { initialize } }
+    assert_raise(RuntimeError) { [].freeze.instance_eval { initialize } }
     assert_nothing_raised { Array.new { } }
     assert_equal([1, 2, 3], Array.new([1, 2, 3]))
     assert_raise(ArgumentError) { Array.new(-1, 1) }

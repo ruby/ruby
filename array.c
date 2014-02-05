@@ -741,7 +741,6 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
     if (len > ARY_MAX_SIZE) {
 	rb_raise(rb_eArgError, "array size too big");
     }
-    rb_ary_modify(ary);
     ary_resize_capa(ary, len);
     if (rb_block_given_p()) {
 	long i;
