@@ -92,7 +92,7 @@ module Test
 
         exp = exp.first if exp.size == 1
 
-        flunk(message(msg) {"#{mu_pp(exp)} expected but nothing was raised."})
+        flunk(message(msg) {"#{mu_pp(exp)} expected but nothing was raised"})
       end
 
       # :call-seq:
