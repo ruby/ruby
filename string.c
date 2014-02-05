@@ -798,58 +798,48 @@ rb_str_new_shared(VALUE str)
     return str2;
 }
 
-static VALUE
-str_new_frozen_with_klass(VALUE klass, VALUE str)
-{
-    VALUE str2;
-
-    str2 = str_alloc(klass);
-    STR_SET_NOEMBED(str2);
-    RSTRING(str2)->as.heap.len = RSTRING_LEN(str);
-    RSTRING(str2)->as.heap.ptr = RSTRING_PTR(str);
-    if (STR_SHARED_P(str)) {
-	VALUE shared = RSTRING(str)->as.heap.aux.shared;
-	assert(OBJ_FROZEN(shared));
-	STR_SET_SHARED(str2, shared); /* TODO: WB is not needed because str2 is *new* object */
-    }
-    else {
-	RSTRING(str2)->as.heap.aux.capa = RSTRING(str)->as.heap.aux.capa;
-	STR_SET_SHARED(str, str2);
-    }
-    rb_enc_cr_str_exact_copy(str2, str);
-    OBJ_INFECT(str2, str);
-    return str2;
-}
-
 VALUE
 rb_str_new_frozen(VALUE orig)
 {
     VALUE klass, str;
 
     if (OBJ_FROZEN(orig)) return orig;
+
     klass = rb_obj_class(orig);
-    if (STR_SHARED_P(orig) && (str = RSTRING(orig)->as.heap.aux.shared)) {
-	long ofs;
-	assert(OBJ_FROZEN(str));
-	ofs = RSTRING_LEN(str) - RSTRING_LEN(orig);
-	if ((ofs > 0) || (klass != RBASIC(str)->klass) ||
-	    ((RBASIC(str)->flags ^ RBASIC(orig)->flags) & FL_TAINT) ||
-	    ENCODING_GET(str) != ENCODING_GET(orig)) {
-	    str = str_new_shared(klass, str);
-	    RSTRING(str)->as.heap.ptr += ofs;
-	    RSTRING(str)->as.heap.len -= ofs;
-	    rb_enc_cr_str_exact_copy(str, orig);
-	    OBJ_INFECT(str, orig);
-	}
-    }
-    else if (STR_EMBED_P(orig)) {
+
+    if (STR_EMBED_P(orig)) {
 	str = str_new(klass, RSTRING_PTR(orig), RSTRING_LEN(orig));
-	rb_enc_cr_str_exact_copy(str, orig);
-	OBJ_INFECT(str, orig);
     }
     else {
-	str = str_new_frozen_with_klass(klass, orig);
+	if (FL_TEST(orig, STR_SHARED)) {
+	    VALUE shared = RSTRING(orig)->as.heap.aux.shared;
+	    long ofs = RSTRING_LEN(shared) - RSTRING_LEN(orig);
+	    assert(OBJ_FROZEN(shared));
+
+	    if ((ofs > 0) ||
+		(klass != RBASIC(shared)->klass) ||
+		((RBASIC(shared)->flags ^ RBASIC(orig)->flags) & FL_TAINT) ||
+		ENCODING_GET(shared) != ENCODING_GET(orig)) {
+		str = str_new_shared(klass, shared);
+		RSTRING(str)->as.heap.ptr += ofs;
+		RSTRING(str)->as.heap.len -= ofs;
+	    }
+	    else {
+		return shared;
+	    }
+	}
+	else {
+	    str = str_alloc(klass);
+	    STR_SET_NOEMBED(str);
+	    RSTRING(str)->as.heap.len = RSTRING_LEN(orig);
+	    RSTRING(str)->as.heap.ptr = RSTRING_PTR(orig);
+	    RSTRING(str)->as.heap.aux.capa = RSTRING(orig)->as.heap.aux.capa;
+	    STR_SET_SHARED(orig, str);
+	}
     }
+
+    rb_enc_cr_str_exact_copy(str, orig);
+    OBJ_INFECT(str, orig);
     OBJ_FREEZE(str);
     return str;
 }
