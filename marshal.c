@@ -513,7 +513,7 @@ w_uclass(VALUE obj, VALUE super, struct dump_arg *arg)
     }
 }
 
-#define to_be_skipped_id(id) (id == rb_id_encoding() || id == rb_intern("E"))
+#define to_be_skipped_id(id) (id == rb_id_encoding() || id == rb_intern("E") || !rb_id2str(id))
 
 static int
 w_obj_each(st_data_t key, st_data_t val, st_data_t a)

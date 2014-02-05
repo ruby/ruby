@@ -1,3 +1,13 @@
+Wed Feb  5 20:56:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (to_be_skipped_id): ignore anonymous attributes.
+
+	* pack.c (Init_pack): use anonymous ID so that associated objects
+	  do not appear in the packed result.
+
+	* parse.y (rb_make_internal_id): return an anonymous ID for
+	  internal use.
+
 Wed Feb  5 14:41:56 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* vsnprintf.c: remove duplicated def of `UNINITIALIZED_VAR()'.

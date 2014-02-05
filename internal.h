@@ -642,6 +642,7 @@ int rb_is_method_name(VALUE name);
 int rb_is_junk_name(VALUE name);
 void rb_gc_mark_parser(void);
 void rb_gc_mark_symbols(int full_mark);
+ID rb_make_internal_id(void);
 
 /* proc.c */
 VALUE rb_proc_location(VALUE self);
