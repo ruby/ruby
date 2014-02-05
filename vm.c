@@ -1543,7 +1543,7 @@ vm_exec(rb_thread_t *th)
 	    if (VM_FRAME_TYPE_FINISH_P(th->cfp)) {
 		vm_pop_frame(th);
 		th->errinfo = err;
-		TH_POP_TAG2();
+		TH_TMPPOP_TAG();
 		JUMP_TAG(state);
 	    }
 	    else {
