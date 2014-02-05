@@ -1524,6 +1524,11 @@ class TestArray < Test::Unit::TestCase
     assert(a.none?(&:frozen?))
     assert_equal(%w(a), b)
     assert(b.none?(&:frozen?))
+
+    bug9340 = "[ruby-core:59457]"
+    ary = [bug9340, bug9340.dup, bug9340.dup]
+    assert_equal 1, ary.uniq.size
+    assert_same bug9340, ary.uniq[0]
   end
 
   def test_uniq_with_block
