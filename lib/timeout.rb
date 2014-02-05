@@ -26,16 +26,25 @@ module Timeout
   class Error < RuntimeError
   end
   class ExitException < ::Exception # :nodoc:
-    attr_reader :klass, :thread
+    attr_reader :thread
 
-    def initialize(*)
-      super
-      @thread = Thread.current
-      freeze
+    def self.catch(*args)
+      exc = new(*args)
+      exc.instance_variable_set(:@thread, Thread.current)
+      exc.freeze
+      ::Kernel.catch(exc) {yield exc}
     end
 
     def exception(*)
-      throw(self, caller) if self.thread == Thread.current
+      if self.thread == Thread.current
+        bt = caller
+        begin
+          throw(self, bt)
+        rescue ArgumentError => e
+          raise unless e.message.start_with?("uncaught throw")
+          raise Error, message, backtrace
+        end
+      end
       self
     end
   end
@@ -67,7 +76,7 @@ module Timeout
     return yield(sec) if sec == nil or sec.zero?
     message = "execution expired"
     e = Error
-    bt = catch((klass||ExitException).new) do |exception|
+    bl = proc do |exception|
       begin
         x = Thread.current
         y = Thread.start {
@@ -80,14 +89,21 @@ module Timeout
           end
         }
         return yield(sec)
-      rescue (klass||ExitException) => e
-        e.backtrace
       ensure
         if y
           y.kill
           y.join # make sure y is dead.
         end
       end
+    end
+    if klass
+      begin
+        bl.call(klass)
+      rescue klass => e
+        bt = e.backtrace
+      end
+    else
+      bt = ExitException.catch(message, &bl)
     end
     rej = /\A#{Regexp.quote(__FILE__)}:#{__LINE__-4}\z/o
     bt.reject! {|m| rej =~ m}

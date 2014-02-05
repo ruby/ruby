@@ -1,3 +1,26 @@
+Wed Feb  5 21:12:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/timeout.rb (Timeout::ExitException.catch): pass arguments
+	  for new instance.
+
+	* lib/timeout.rb (Timeout::ExitException#exception): fallback to
+	  Timeout::Error if couldn't throw.  [ruby-dev:47872] [Bug #9380]
+
+	* lib/timeout.rb (Timeout#timeout): initialize ExitException with
+	  message for the fallback case.
+
+Wed Feb  5 21:12:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/timeout.rb (Timeout#timeout): should not rescue ordinarily
+	  raised ExitException, which should not be thrown.
+
+	* lib/timeout.rb (Timeout::ExitException.catch): set @thread only if
+	  it ought to be caught.
+
+	* lib/timeout.rb (Timeout#timeout): when a custom exception is given,
+	  no instance is needed to be caught, so defer creating new instance
+	  until it is raised.  [ruby-core:59511] [Bug #9354]
+
 Wed Feb  5 17:55:28 2014  Aman Gupta <ruby@tmm1.net>
 
 	* array.c (ary_add_hash): Fix consistency issue between Array#uniq and

@@ -57,4 +57,33 @@ class TestTimeout < Test::Unit::TestCase
     end
     assert_raise_with_message(exc, /execution expired/) {raise e if e}
   end
+
+  def test_custom_exception
+    bug9354 = '[ruby-core:59511] [Bug #9354]'
+    err = Class.new(StandardError) do
+      def initialize(msg) super end
+    end
+    assert_nothing_raised(ArgumentError, bug9354) do
+      assert_equal(:ok, timeout(100, err) {:ok})
+    end
+  end
+
+  def test_exit_exception
+    assert_raise_with_message(Timeout::ExitException, "boon") do
+      Timeout.timeout(10, Timeout::ExitException) do
+        raise Timeout::ExitException, "boon"
+      end
+    end
+  end
+
+  def test_enumerator_next
+    bug9380 = '[ruby-dev:47872] [Bug #9380]: timeout in Enumerator#next'
+    e = (o=Object.new).to_enum
+    def o.each
+      sleep
+    end
+    assert_raise_with_message(Timeout::Error, 'execution expired', bug9380) do
+      Timeout.timeout(0.01) {e.next}
+    end
+  end
 end
