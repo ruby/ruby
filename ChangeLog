@@ -1,3 +1,7 @@
+Wed Feb  5 12:11:04 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* string.c (RESIZE_CAPA): should not resize shared string.
+
 Wed Feb  5 11:46:42 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_mark_children): STR_ASSOC is no longer available.

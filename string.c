@@ -107,9 +107,9 @@ VALUE rb_cSymbol;
 	}\
     }\
     else {\
+	assert(!FL_TEST((str), STR_SHARED)); \
 	REALLOC_N(RSTRING(str)->as.heap.ptr, char, (capacity)+termlen);\
-	if (!STR_NOCAPA_P(str))\
-	    RSTRING(str)->as.heap.aux.capa = (capacity);\
+	RSTRING(str)->as.heap.aux.capa = (capacity);\
     }\
 } while (0)
 
