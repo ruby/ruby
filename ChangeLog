@@ -1,3 +1,7 @@
+Wed Feb  5 11:36:30 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (opt-dir): don't use non portable flag -E of sed.
+
 Thu Jan 30 20:53:42 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/lib/socket.rb: Don't test $! in "ensure" clause because
