@@ -1,3 +1,30 @@
+Wed Feb  5 21:57:40 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/socket.c (rsock_syserr_fail_host_port): add errno
+	  argument version anduse rb_syserr_fail_str() instead of
+	  rb_sys_fail_str() with restoring errno.
+
+	* ext/socket/socket.c (rsock_syserr_fail_path): ditto, and
+	  rb_syserr_fail().
+
+	* ext/socket/socket.c (rsock_sys_fail_sockaddr): ditto, use
+	  rsock_syserr_fail_raddrinfo().
+
+	* ext/socket/socket.c (rsock_sys_fail_raddrinfo): ditto.
+
+	* ext/socket/socket.c (setup_domain_and_type): ditto.
+
+Wed Feb  5 21:57:40 2014  Eric Wong  <normalperson@yhbt.net>
+
+	* ext/socket/socket.c (rsock_sys_fail_host_port): save and restore errno
+	  before calling rb_sys_fail_str to prevent [BUG] errno == 0.
+	  Patch by Eric Wong. [ruby-core:59498] [Bug #9352]
+
+	* ext/socket/socket.c (rsock_sys_fail_path): ditto
+	* ext/socket/socket.c (rsock_sys_fail_sockaddr): ditto
+	* ext/socket/socket.c (rsock_sys_fail_raddrinfo): ditto
+	* ext/socket/socket.c (rsock_sys_fail_raddrinfo_or_sockaddr): ditto
+
 Wed Feb  5 21:12:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/timeout.rb (Timeout::ExitException.catch): pass arguments

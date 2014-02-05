@@ -374,6 +374,12 @@ void rsock_init_sockopt(void);
 void rsock_init_sockifaddr(void);
 void rsock_init_socket_init(void);
 
+NORETURN(void rsock_syserr_fail_host_port(int err, const char *, VALUE, VALUE));
+NORETURN(void rsock_syserr_fail_path(int err, const char *, VALUE));
+NORETURN(void rsock_syserr_fail_sockaddr(int err, const char *mesg, struct sockaddr *addr, socklen_t len));
+NORETURN(void rsock_syserr_fail_raddrinfo(int err, const char *mesg, VALUE rai));
+NORETURN(void rsock_syserr_fail_raddrinfo_or_sockaddr(int err, const char *mesg, VALUE addr, VALUE rai));
+
 NORETURN(void rsock_sys_fail_host_port(const char *, VALUE, VALUE));
 NORETURN(void rsock_sys_fail_path(const char *, VALUE));
 NORETURN(void rsock_sys_fail_sockaddr(const char *, struct sockaddr *addr, socklen_t len));
