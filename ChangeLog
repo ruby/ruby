@@ -1,3 +1,10 @@
+Thu Feb 6 08:23:28 2014  Eric Wong  <e@80x24.org>
+
+	* ext/thread/thread.c (rb_szqueue_max_set): use correct queue and
+	  limit wakeups.  [Bug #9343][ruby-core:60517]
+	* test/thread/test_queue.rb (test_sized_queue_assign_max):
+	  test for bug
+
 Thu Feb  6 07:18:01 2014  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems 2.2.2.  Complete history at:

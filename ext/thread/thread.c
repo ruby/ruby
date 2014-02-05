@@ -437,7 +437,7 @@ rb_szqueue_max_set(VALUE self, VALUE vmax)
 	diff = max - GET_SZQUEUE_ULONGMAX(self);
     }
     RSTRUCT_SET(self, SZQUEUE_MAX, vmax);
-    while (diff > 0 && !NIL_P(t = rb_ary_shift(GET_QUEUE_QUE(self)))) {
+    while (diff-- > 0 && !NIL_P(t = rb_ary_shift(GET_SZQUEUE_WAITERS(self)))) {
 	rb_thread_wakeup_alive(t);
     }
     return vmax;
