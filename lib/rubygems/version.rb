@@ -189,6 +189,8 @@ class Gem::Version
   @@all = {}
 
   def self.new version # :nodoc:
+    return super unless Gem::VERSION == self.class
+
     @@all[version] ||= super
   end
 

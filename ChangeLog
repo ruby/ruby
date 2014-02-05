@@ -1,3 +1,11 @@
+Thu Feb  6 07:18:01 2014  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems 2.2.2.  Complete history at:
+
+	  http://rubygems.rubyforge.org/rubygems-update/History_txt.html#label-2.2.2+%2F+2014-02-05
+
+	* test/rubygems:  ditto.
+
 Wed Feb  5 20:56:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (to_be_skipped_id): ignore anonymous attributes.
