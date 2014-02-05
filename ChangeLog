@@ -1,3 +1,9 @@
+Wed Feb  5 11:13:21 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_modify_expand): enable capacity and disable
+	  assocation with packed objects when setting capa, so that
+	  pack("p") string fails to unpack properly after modified.
+
 Sun Feb  2 22:39:28 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/delegate.rb (Delegator): keep source information methods
