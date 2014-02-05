@@ -459,7 +459,7 @@ static VALUE
 rb_szqueue_push(VALUE self, VALUE obj)
 {
     struct waiting_delete args;
-    args.waiting = GET_QUEUE_WAITERS(self);
+    args.waiting = GET_SZQUEUE_WAITERS(self);
     args.th      = rb_thread_current();
 
     while (queue_length(self) >= GET_SZQUEUE_ULONGMAX(self)) {
