@@ -1,3 +1,9 @@
+Wed Feb  5 11:27:22 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* string.c (rb_str_new_frozen): refactoring code.
+	  * Move code from str_new_frozen_with_klass() (and remove it)
+	  * `aux.shared' should not be 0 for STR_SHARED strings.
+
 Wed Feb  5 04:23:41 2014  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: New release of psych.
