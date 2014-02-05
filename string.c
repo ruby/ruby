@@ -14,7 +14,6 @@
 #include "ruby/ruby.h"
 #include "ruby/re.h"
 #include "ruby/encoding.h"
-#include "vm_core.h"
 #include "internal.h"
 #include "probes.h"
 #include <assert.h>

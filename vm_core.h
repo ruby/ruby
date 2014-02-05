@@ -100,27 +100,6 @@
 #endif /* OPT_STACK_CACHING */
 #endif /* OPT_CALL_THREADED_CODE */
 
-/* likely */
-#if __GNUC__ >= 3
-#define LIKELY(x)   (__builtin_expect((x), 1))
-#define UNLIKELY(x) (__builtin_expect((x), 0))
-#else /* __GNUC__ >= 3 */
-#define LIKELY(x)   (x)
-#define UNLIKELY(x) (x)
-#endif /* __GNUC__ >= 3 */
-
-#ifndef __has_attribute
-# define __has_attribute(x) 0
-#endif
-
-#if __has_attribute(unused)
-#define UNINITIALIZED_VAR(x) x __attribute__((unused))
-#elif defined(__GNUC__) && __GNUC__ >= 3
-#define UNINITIALIZED_VAR(x) x = x
-#else
-#define UNINITIALIZED_VAR(x) x
-#endif
-
 typedef unsigned long rb_num_t;
 
 /* iseq data type */
