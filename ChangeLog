@@ -1,3 +1,8 @@
+Wed Feb  5 14:40:16 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/objspace_dump.c (dump_object): use STR_SHARED_P()
+	  instead of removed STR_NOCAPA_P() macro.
+
 Wed Feb  5 13:51:33 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* internal.h, vm_core.h: move LIKELY/UNLIKELY/UNINITIALIZED_VAR()
