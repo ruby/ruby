@@ -651,6 +651,11 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) { c1.const_set(:foo, :foo) }
     assert_raise(NameError) { c1.const_set("bar", :foo) }
     assert_raise(TypeError) { c1.const_set(1, :foo) }
+    assert_nothing_raised(NameError) { c1.const_set("X\u{3042}", :foo) }
+    assert_raise(NameError) { c1.const_set("X\u{3042}".encode("utf-16be"), :foo) }
+    assert_raise(NameError) { c1.const_set("X\u{3042}".encode("utf-16le"), :foo) }
+    assert_raise(NameError) { c1.const_set("X\u{3042}".encode("utf-32be"), :foo) }
+    assert_raise(NameError) { c1.const_set("X\u{3042}".encode("utf-32le"), :foo) }
   end
 
   def test_const_get_invalid_name
