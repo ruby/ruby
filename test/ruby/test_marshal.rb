@@ -595,4 +595,9 @@ class TestMarshal < Test::Unit::TestCase
       Marshal.dump(TestForRespondToFalse.new)
     end
   end
+
+  def test_packed_string
+    packed = ["foo"].pack("p")
+    assert_equal(Marshal.dump(""+packed), Marshal.dump(packed))
+  end
 end

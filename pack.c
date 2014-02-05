@@ -2046,5 +2046,5 @@ Init_pack(void)
     rb_define_method(rb_cArray, "pack", pack_pack, 1);
     rb_define_method(rb_cString, "unpack", pack_unpack, 1);
 
-    id_associated = rb_intern_const("__pack_associated__");
+    id_associated = rb_make_internal_id();
 }
