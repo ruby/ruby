@@ -283,6 +283,7 @@ static int
 yaml_parser_load_scalar(yaml_parser_t *parser, yaml_event_t *first_event)
 {
     yaml_node_t node;
+    ptrdiff_t node_index;
     int index;
     yaml_char_t *tag = first_event->data.scalar.tag;
 
@@ -300,7 +301,11 @@ yaml_parser_load_scalar(yaml_parser_t *parser, yaml_event_t *first_event)
 
     if (!PUSH(parser, parser->document->nodes, node)) goto error;
 
-    index = parser->document->nodes.top - parser->document->nodes.start;
+    node_index = parser->document->nodes.top - parser->document->nodes.start;
+#if PTRDIFF_MAX > INT_MAX
+    if (node_index > INT_MAX) goto error;
+#endif
+    index = (int)node_index;
 
     if (!yaml_parser_register_anchor(parser, index,
                 first_event->data.scalar.anchor)) return 0;
@@ -329,6 +334,7 @@ yaml_parser_load_sequence(yaml_parser_t *parser, yaml_event_t *first_event)
         yaml_node_item_t *top;
     } items = { NULL, NULL, NULL };
     int index, item_index;
+    ptrdiff_t node_index;
     yaml_char_t *tag = first_event->data.sequence_start.tag;
 
     if (!STACK_LIMIT(parser, parser->document->nodes, INT_MAX-1)) goto error;
@@ -347,7 +353,11 @@ yaml_parser_load_sequence(yaml_parser_t *parser, yaml_event_t *first_event)
 
     if (!PUSH(parser, parser->document->nodes, node)) goto error;
 
-    index = parser->document->nodes.top - parser->document->nodes.start;
+    node_index = parser->document->nodes.top - parser->document->nodes.start;
+#if PTRDIFF_MAX > INT_MAX
+    if (node_index > INT_MAX) goto error;
+#endif
+    index = (int)node_index;
 
     if (!yaml_parser_register_anchor(parser, index,
                 first_event->data.sequence_start.anchor)) return 0;
@@ -391,6 +401,7 @@ yaml_parser_load_mapping(yaml_parser_t *parser, yaml_event_t *first_event)
         yaml_node_pair_t *top;
     } pairs = { NULL, NULL, NULL };
     int index;
+    ptrdiff_t node_index;
     yaml_node_pair_t pair;
     yaml_char_t *tag = first_event->data.mapping_start.tag;
 
@@ -410,7 +421,11 @@ yaml_parser_load_mapping(yaml_parser_t *parser, yaml_event_t *first_event)
 
     if (!PUSH(parser, parser->document->nodes, node)) goto error;
 
-    index = parser->document->nodes.top - parser->document->nodes.start;
+    node_index = parser->document->nodes.top - parser->document->nodes.start;
+#if PTRDIFF_MAX > INT_MAX
+    if (node_index > INT_MAX) goto error;
+#endif
+    index = (int)node_index;
 
     if (!yaml_parser_register_anchor(parser, index,
                 first_event->data.mapping_start.anchor)) return 0;
