@@ -1,3 +1,11 @@
+Wed Feb  5 13:29:01 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* string.c (rb_str_free): use FL_TEST(str, STR_SHARED) directly
+	  because str is not embed.
+
+	* string.c (str_replace): remove `FL_SET(str, STR_SHARED)' line
+	  because STR_SET_SHARED() set STR_SHARED.
+
 Wed Feb  5 13:18:08 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* internal.h: remove macros STR_NOCAPA and STR_NOCAPA_P().
