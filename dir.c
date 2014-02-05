@@ -1748,6 +1748,7 @@ push_glob(VALUE ary, VALUE str, int flags)
     rb_encoding *enc = rb_enc_get(str);
 
     if (enc == rb_usascii_encoding()) enc = rb_filesystem_encoding();
+    if (enc == rb_usascii_encoding()) enc = rb_ascii8bit_encoding();
     args.func = push_pattern;
     args.value = ary;
     args.enc = enc;
