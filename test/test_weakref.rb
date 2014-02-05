@@ -19,9 +19,14 @@ class TestWeakRef < Test::Unit::TestCase
   end
 
   def test_recycled
-    weak = make_weakref
-    ObjectSpace.garbage_collect
-    ObjectSpace.garbage_collect
+    weaks = []
+    weak = nil
+    100.times do
+      weaks << make_weakref
+      ObjectSpace.garbage_collect
+      ObjectSpace.garbage_collect
+      break if weak = weaks.find {|w| !w.weakref_alive?}
+    end
     assert_raise(WeakRef::RefError) {weak.to_s}
     assert_not_predicate(weak, :weakref_alive?)
   end
