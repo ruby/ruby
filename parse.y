@@ -10231,6 +10231,7 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int a
     const char *e = m + len;
     int type = ID_JUNK;
 
+    if (!rb_enc_asciicompat(enc)) return -1;
     if (!m || len <= 0) return -1;
     switch (*m) {
       case '\0':
