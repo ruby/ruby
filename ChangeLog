@@ -1,3 +1,9 @@
+Wed Feb  5 13:43:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_modify_expand): enable capacity and disable
+	  assocation with packed objects when setting capa, so that
+	  pack("p") string fails to unpack properly after modified.
+
 Sun Feb 2 05:48:42 2014  Eric Wong <e@80x24.org>
 
 	* io.c (rb_io_syswrite): add RB_GC_GUARD
