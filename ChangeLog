@@ -1,3 +1,20 @@
+Wed Feb  5 12:54:25 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* string.c: refactoring, especially about string flags.
+
+	* string.c (STR_UNSET_NOCAPA): removed.
+	  Use FL_UNSET() with STR_SHARED.
+
+	* string.c (rb_str_capacity): check STR_SHARED directly
+	  beacuse it is not a embed string.
+
+	* string.c (rb_str_modify_expand): ditto.
+
+	* string.c (rb_str_shared_replace): use STR_SET_SHARED().
+
+	* string.c (str_make_independent_expand): remove STR_UNSET_NOCAPA()
+	  because `str' is not shared string.
+
 Wed Feb  5 12:11:04 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* string.c (RESIZE_CAPA): should not resize shared string.

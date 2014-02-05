@@ -49,9 +49,6 @@ VALUE rb_cSymbol;
 
 #define RUBY_MAX_CHAR_LEN 16
 #define STR_TMPLOCK FL_USER7
-#define STR_UNSET_NOCAPA(s) do {\
-    if (FL_TEST((s),STR_NOEMBED)) FL_UNSET((s),(STR_SHARED));\
-} while (0)
 
 #define STR_SET_NOEMBED(str) do {\
     FL_SET((str), STR_NOEMBED);\
@@ -470,7 +467,7 @@ rb_str_capacity(VALUE str)
     if (STR_EMBED_P(str)) {
 	return RSTRING_EMBED_LEN_MAX;
     }
-    else if (STR_NOCAPA_P(str)) {
+    else if (FL_TEST(str, STR_SHARED)) {
 	return RSTRING(str)->as.heap.len;
     }
     else {
@@ -952,31 +949,35 @@ rb_str_shared_replace(VALUE str, VALUE str2)
     cr = ENC_CODERANGE(str2);
     str_discard(str);
     OBJ_INFECT(str, str2);
+
     if (RSTRING_LEN(str2) <= RSTRING_EMBED_LEN_MAX) {
 	STR_SET_EMBED(str);
 	memcpy(RSTRING_PTR(str), RSTRING_PTR(str2), RSTRING_LEN(str2)+1);
 	STR_SET_EMBED_LEN(str, RSTRING_LEN(str2));
         rb_enc_associate(str, enc);
         ENC_CODERANGE_SET(str, cr);
-	return;
-    }
-    STR_SET_NOEMBED(str);
-    STR_UNSET_NOCAPA(str);
-    RSTRING(str)->as.heap.ptr = RSTRING_PTR(str2);
-    RSTRING(str)->as.heap.len = RSTRING_LEN(str2);
-    if (STR_NOCAPA_P(str2)) {
-	VALUE shared = RSTRING(str2)->as.heap.aux.shared;
-	FL_SET(str, RBASIC(str2)->flags & STR_NOCAPA);
-	RB_OBJ_WRITE(str, &RSTRING(str)->as.heap.aux.shared, shared);
     }
     else {
-	RSTRING(str)->as.heap.aux.capa = RSTRING(str2)->as.heap.aux.capa;
+	STR_SET_NOEMBED(str);
+	FL_UNSET(str, STR_SHARED);
+	RSTRING(str)->as.heap.ptr = RSTRING_PTR(str2);
+	RSTRING(str)->as.heap.len = RSTRING_LEN(str2);
+
+	if (FL_TEST(str2, STR_SHARED)) {
+	    VALUE shared = RSTRING(str2)->as.heap.aux.shared;
+	    STR_SET_SHARED(str, shared);
+	}
+	else {
+	    RSTRING(str)->as.heap.aux.capa = RSTRING(str2)->as.heap.aux.capa;
+	}
+
+	/* abandon str2 */
+	STR_SET_EMBED(str2);
+	RSTRING_PTR(str2)[0] = 0;
+	STR_SET_EMBED_LEN(str2, 0);
+	rb_enc_associate(str, enc);
+	ENC_CODERANGE_SET(str, cr);
     }
-    STR_SET_EMBED(str2);	/* abandon str2 */
-    RSTRING_PTR(str2)[0] = 0;
-    STR_SET_EMBED_LEN(str2, 0);
-    rb_enc_associate(str, enc);
-    ENC_CODERANGE_SET(str, cr);
 }
 
 static ID id_to_s;
@@ -1422,9 +1423,12 @@ static inline int
 str_independent(VALUE str)
 {
     str_modifiable(str);
-    if (!STR_SHARED_P(str)) return 1;
-    if (STR_EMBED_P(str)) return 1;
-    return 0;
+    if (STR_EMBED_P(str) || !FL_TEST(str, STR_SHARED)) {
+	return 1;
+    }
+    else {
+	return 0;
+    }
 }
 
 static void
@@ -1441,7 +1445,7 @@ str_make_independent_expand(VALUE str, long expand)
 	memcpy(ptr, RSTRING_PTR(str), len);
     }
     STR_SET_NOEMBED(str);
-    STR_UNSET_NOCAPA(str);
+    FL_UNSET(str, STR_SHARED);
     TERM_FILL(ptr + len, termlen);
     RSTRING(str)->as.heap.ptr = ptr;
     RSTRING(str)->as.heap.len = len;
@@ -1473,7 +1477,6 @@ rb_str_modify_expand(VALUE str, long expand)
 	int termlen = TERM_LEN(str);
 	if (!STR_EMBED_P(str)) {
 	    REALLOC_N(RSTRING(str)->as.heap.ptr, char, capa + termlen);
-	    STR_UNSET_NOCAPA(str);
 	    RSTRING(str)->as.heap.aux.capa = capa;
 	}
 	else if (capa + termlen > RSTRING_EMBED_LEN_MAX + 1) {
