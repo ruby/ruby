@@ -1962,6 +1962,7 @@ rb_str_resize(VALUE str, long len)
     independent = str_independent(str);
     ENC_CODERANGE_CLEAR(str);
     slen = RSTRING_LEN(str);
+
     if (len != slen) {
 	const int termlen = TERM_LEN(str);
 	if (STR_EMBED_P(str)) {
@@ -1971,7 +1972,6 @@ rb_str_resize(VALUE str, long len)
 		return str;
 	    }
 	    str_make_independent_expand(str, len - slen);
-	    STR_SET_NOEMBED(str);
 	}
 	else if (len + termlen <= RSTRING_EMBED_LEN_MAX + 1) {
 	    char *ptr = STR_HEAP_PTR(str);
@@ -1989,9 +1989,7 @@ rb_str_resize(VALUE str, long len)
 	else if (slen < len || slen - len > 1024) {
 	    REALLOC_N(RSTRING(str)->as.heap.ptr, char, len + termlen);
 	}
-	if (!STR_NOCAPA_P(str)) {
-	    RSTRING(str)->as.heap.aux.capa = len;
-	}
+	RSTRING(str)->as.heap.aux.capa = len;
 	RSTRING(str)->as.heap.len = len;
 	TERM_FILL(RSTRING(str)->as.heap.ptr + len, termlen); /* sentinel */
     }

@@ -1,3 +1,13 @@
+Wed Feb  5 13:18:08 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* internal.h: remove macros STR_NOCAPA and STR_NOCAPA_P().
+
+	* string.c (rb_str_resize): remove `STR_SET_NOEMBED(str)' because
+	  str_make_independent_expand() set NOEMBED flag.
+
+	* string.c (rb_str_resize): remove `STR_NOCAPA_P(str)' check because
+	  `str' is independent (not shared).
+
 Wed Feb  5 12:54:25 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* string.c: refactoring, especially about string flags.
