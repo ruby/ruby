@@ -29,7 +29,7 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
     [ ["C","JP"], ["O","Foo.DRuby.Org"], ["CN", "Sample"] ]
 
   DRb.start_service('drbssl://localhost:0', [1, 2, 'III', 4, "five", 6], config)
-  es = DRb::ExtServ.new(ARGV.shift, ARGV.shift)
+  DRb::ExtServ.new(ARGV.shift, ARGV.shift)
   DRb.thread.join
 end
 

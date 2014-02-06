@@ -30,7 +30,7 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
   DRb::DRbServer.default_argc_limit(8)
   DRb::DRbServer.default_load_limit(4096)
   DRb.start_service('drbssl://localhost:0', DRbEx.new, config)
-  es = DRb::ExtServ.new(ARGV.shift, ARGV.shift)
+  DRb::ExtServ.new(ARGV.shift, ARGV.shift)
   DRb.thread.join
 end
 
