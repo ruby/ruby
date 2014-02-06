@@ -2921,7 +2921,9 @@ gc_before_sweep(rb_objspace_t *objspace)
 	    }
 	}
 
-	if (0) fprintf(stderr, "%d\t%d\t%u\t%u\t%d\n", (int)rb_gc_count(), objspace->rgengc.need_major_gc,
+	if (0) fprintf(stderr, "%d\t%d\t%u\t%u\t%d\n",
+		       (int)rb_gc_count(),
+		       (int)objspace->rgengc.need_major_gc,
 		       (unsigned int)objspace->rgengc.oldmalloc_increase,
 		       (unsigned int)objspace->rgengc.oldmalloc_increase_limit,
 		       (unsigned int)gc_params.oldmalloc_limit_max);
@@ -5651,7 +5653,7 @@ get_envparam_int(const char *name, unsigned int *default_value, int lower_bound)
 
     if (ptr != NULL) {
 	val = atoi(ptr);
-	if (val > lower_bound) {
+	if (val >= lower_bound) {
 	    if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%d (%d)\n", name, val, *default_value);
 	    *default_value = val;
 	    return 1;
@@ -5671,7 +5673,7 @@ get_envparam_double(const char *name, double *default_value, double lower_bound)
 
     if (ptr != NULL) {
 	val = strtod(ptr, NULL);
-	if (val > lower_bound) {
+	if (val >= lower_bound) {
 	    if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%f (%f)\n", name, val, *default_value);
 	    *default_value = val;
 	    return 1;
@@ -5752,7 +5754,10 @@ ruby_gc_set_params(int safe_level)
     get_envparam_double("RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR", &gc_params.malloc_limit_growth_factor, 1.0);
 
 #ifdef RGENGC_ESTIMATE_OLDMALLOC
-    get_envparam_int("RUBY_GC_OLDMALLOC_LIMIT", &gc_params.oldmalloc_limit_min, 0);
+    if (get_envparam_int("RUBY_GC_OLDMALLOC_LIMIT", &gc_params.oldmalloc_limit_min, 0)) {
+	rb_objspace_t *objspace = &rb_objspace;
+	objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
+    }
     get_envparam_int("RUBY_GC_OLDMALLOC_LIMIT_MAX", &gc_params.oldmalloc_limit_max, 0);
     get_envparam_double("RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR", &gc_params.oldmalloc_limit_growth_factor, 1.0);
 #endif
