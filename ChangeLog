@@ -1,3 +1,20 @@
+Thu Feb  6 09:06:00 2014  Kenta Murata  <mrkn@cookpad.com>
+
+	* configure.in (POSTLINK): sign built program using RUBY_CODESIGN
+	  identity.
+	  [Backport #9491]
+
+	* Makefile.in (PROGRAM): ditto.
+
+	* Makefile.in (LIBRUBY_SO): ditto.
+
+	* lib/mkmf.rb (LINK_SO): sign extensions too.  replace empty line with
+	  default command.
+
+	* enc/depend (link_so): prefix $(Q) for each commands.
+
+	* tool/mkconfig.rb: restore embedded newlines.
+
 Wed Feb  5 13:43:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_modify_expand): enable capacity and disable

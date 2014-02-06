@@ -2308,13 +2308,14 @@ COMPILE_CXX = config_string('COMPILE_CXX') || '$(CXX) $(INCFLAGS) $(CPPFLAGS) $(
 TRY_LINK = config_string('TRY_LINK') ||
   "$(CC) #{OUTFLAG}conftest $(INCFLAGS) $(CPPFLAGS) " \
   "$(CFLAGS) $(src) $(LIBPATH) $(LDFLAGS) $(ARCH_FLAG) $(LOCAL_LIBS) $(LIBS)"
-LINK_SO = config_string('LINK_SO') ||
+LINK_SO = (config_string('LINK_SO') || "").sub(/^$/) do
   if CONFIG["DLEXT"] == $OBJEXT
     "ld $(DLDFLAGS) -r -o $@ $(OBJS)\n"
   else
     "$(LDSHARED) #{OUTFLAG}$@ $(OBJS) " \
     "$(LIBPATH) $(DLDFLAGS) $(LOCAL_LIBS) $(LIBS)"
   end
+end
 LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L"%s"'
 RPATHFLAG = config_string('RPATHFLAG') || ''
 LIBARG = config_string('LIBARG') || '-l%s'
