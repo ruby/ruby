@@ -199,30 +199,21 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_default_exec_format
-    orig_RUBY_INSTALL_NAME = Gem::ConfigMap[:ruby_install_name]
-    Gem::ConfigMap[:ruby_install_name] = 'ruby'
-
-    assert_equal '%s', Gem.default_exec_format
-  ensure
-    Gem::ConfigMap[:ruby_install_name] = orig_RUBY_INSTALL_NAME
+    ruby_install_name 'ruby' do
+      assert_equal '%s', Gem.default_exec_format
+    end
   end
 
   def test_self_default_exec_format_18
-    orig_RUBY_INSTALL_NAME = Gem::ConfigMap[:ruby_install_name]
-    Gem::ConfigMap[:ruby_install_name] = 'ruby18'
-
-    assert_equal '%s18', Gem.default_exec_format
-  ensure
-    Gem::ConfigMap[:ruby_install_name] = orig_RUBY_INSTALL_NAME
+    ruby_install_name 'ruby18' do
+      assert_equal '%s18', Gem.default_exec_format
+    end
   end
 
   def test_self_default_exec_format_jruby
-    orig_RUBY_INSTALL_NAME = Gem::ConfigMap[:ruby_install_name]
-    Gem::ConfigMap[:ruby_install_name] = 'jruby'
-
-    assert_equal 'j%s', Gem.default_exec_format
-  ensure
-    Gem::ConfigMap[:ruby_install_name] = orig_RUBY_INSTALL_NAME
+    ruby_install_name 'jruby' do
+      assert_equal 'j%s', Gem.default_exec_format
+    end
   end
 
   def test_self_default_sources
@@ -230,6 +221,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_detect_gemdeps
+    skip 'Insecure operation - chdir' if RUBY_VERSION <= "1.8.7"
     rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], '-'
 
     FileUtils.mkdir_p 'detect/a/b'
@@ -339,21 +331,15 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_extension_dir_shared
-    enable_shared, RbConfig::CONFIG['ENABLE_SHARED'] =
-      RbConfig::CONFIG['ENABLE_SHARED'], 'yes'
-
-    assert_equal Gem.ruby_api_version, Gem.extension_api_version
-  ensure
-    RbConfig::CONFIG['ENABLE_SHARED'] = enable_shared
+    enable_shared 'yes' do
+      assert_equal Gem.ruby_api_version, Gem.extension_api_version
+    end
   end
 
   def test_self_extension_dir_static
-    enable_shared, RbConfig::CONFIG['ENABLE_SHARED'] =
-      RbConfig::CONFIG['ENABLE_SHARED'], 'no'
-
-    assert_equal "#{Gem.ruby_api_version}-static", Gem.extension_api_version
-  ensure
-    RbConfig::CONFIG['ENABLE_SHARED'] = enable_shared
+    enable_shared 'no' do
+      assert_equal "#{Gem.ruby_api_version}-static", Gem.extension_api_version
+    end
   end
 
   def test_self_find_files
@@ -565,24 +551,43 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_prefix_libdir
-    orig_libdir = Gem::ConfigMap[:libdir]
-    Gem::ConfigMap[:libdir] = @@project_dir
+    orig_libdir = RbConfig::CONFIG['libdir']
+    RbConfig::CONFIG['libdir'] = @@project_dir
 
     assert_nil Gem.prefix
   ensure
-    Gem::ConfigMap[:libdir] = orig_libdir
+    RbConfig::CONFIG['libdir'] = orig_libdir
   end
 
   def test_self_prefix_sitelibdir
-    orig_sitelibdir = Gem::ConfigMap[:sitelibdir]
-    Gem::ConfigMap[:sitelibdir] = @@project_dir
+    orig_sitelibdir = RbConfig::CONFIG['sitelibdir']
+    RbConfig::CONFIG['sitelibdir'] = @@project_dir
 
     assert_nil Gem.prefix
   ensure
-    Gem::ConfigMap[:sitelibdir] = orig_sitelibdir
+    RbConfig::CONFIG['sitelibdir'] = orig_sitelibdir
+  end
+
+  def test_self_read_binary
+    open 'test', 'w' do |io|
+      io.write "\xCF\x80"
+    end
+
+    assert_equal ["\xCF", "\x80"], Gem.read_binary('test').chars.to_a
+
+    skip 'chmod not supported' if Gem.win_platform?
+
+    begin
+      File.chmod 0444, 'test'
+
+      assert_equal ["\xCF", "\x80"], Gem.read_binary('test').chars.to_a
+    ensure
+      File.chmod 0644, 'test'
+    end
   end
 
   def test_self_refresh
+    skip 'Insecure operation - mkdir' if RUBY_VERSION <= "1.8.7"
     util_make_gems
 
     a1_spec = @a1.spec_file
@@ -602,6 +607,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_refresh_keeps_loaded_specs_activated
+    skip 'Insecure operation - mkdir' if RUBY_VERSION <= "1.8.7"
     util_make_gems
 
     a1_spec = @a1.spec_file
@@ -624,46 +630,44 @@ class TestGem < Gem::TestCase
 
   def test_self_ruby_escaping_spaces_in_path
     orig_ruby = Gem.ruby
-    orig_bindir = Gem::ConfigMap[:bindir]
-    orig_ruby_install_name = Gem::ConfigMap[:ruby_install_name]
-    orig_exe_ext = Gem::ConfigMap[:EXEEXT]
+    orig_bindir = RbConfig::CONFIG['bindir']
+    orig_ruby_install_name = RbConfig::CONFIG['ruby_install_name']
+    orig_exe_ext = RbConfig::CONFIG['EXEEXT']
 
-    Gem::ConfigMap[:bindir] = "C:/Ruby 1.8/bin"
-    Gem::ConfigMap[:ruby_install_name] = "ruby"
-    Gem::ConfigMap[:EXEEXT] = ".exe"
+    RbConfig::CONFIG['bindir'] = "C:/Ruby 1.8/bin"
+    RbConfig::CONFIG['ruby_install_name'] = "ruby"
+    RbConfig::CONFIG['EXEEXT'] = ".exe"
     Gem.instance_variable_set("@ruby", nil)
 
     assert_equal "\"C:/Ruby 1.8/bin/ruby.exe\"", Gem.ruby
   ensure
     Gem.instance_variable_set("@ruby", orig_ruby)
-    Gem::ConfigMap[:bindir] = orig_bindir
-    Gem::ConfigMap[:ruby_install_name] = orig_ruby_install_name
-    Gem::ConfigMap[:EXEEXT] = orig_exe_ext
+    RbConfig::CONFIG['bindir'] = orig_bindir
+    RbConfig::CONFIG['ruby_install_name'] = orig_ruby_install_name
+    RbConfig::CONFIG['EXEEXT'] = orig_exe_ext
   end
 
   def test_self_ruby_path_without_spaces
     orig_ruby = Gem.ruby
-    orig_bindir = Gem::ConfigMap[:bindir]
-    orig_ruby_install_name = Gem::ConfigMap[:ruby_install_name]
-    orig_exe_ext = Gem::ConfigMap[:EXEEXT]
+    orig_bindir = RbConfig::CONFIG['bindir']
+    orig_ruby_install_name = RbConfig::CONFIG['ruby_install_name']
+    orig_exe_ext = RbConfig::CONFIG['EXEEXT']
 
-    Gem::ConfigMap[:bindir] = "C:/Ruby18/bin"
-    Gem::ConfigMap[:ruby_install_name] = "ruby"
-    Gem::ConfigMap[:EXEEXT] = ".exe"
+    RbConfig::CONFIG['bindir'] = "C:/Ruby18/bin"
+    RbConfig::CONFIG['ruby_install_name'] = "ruby"
+    RbConfig::CONFIG['EXEEXT'] = ".exe"
     Gem.instance_variable_set("@ruby", nil)
 
     assert_equal "C:/Ruby18/bin/ruby.exe", Gem.ruby
   ensure
     Gem.instance_variable_set("@ruby", orig_ruby)
-    Gem::ConfigMap[:bindir] = orig_bindir
-    Gem::ConfigMap[:ruby_install_name] = orig_ruby_install_name
-    Gem::ConfigMap[:EXEEXT] = orig_exe_ext
+    RbConfig::CONFIG['bindir'] = orig_bindir
+    RbConfig::CONFIG['ruby_install_name'] = orig_ruby_install_name
+    RbConfig::CONFIG['EXEEXT'] = orig_exe_ext
   end
 
   def test_self_ruby_api_version
-    orig_MAJOR, Gem::ConfigMap[:MAJOR] = Gem::ConfigMap[:MAJOR], '1'
-    orig_MINOR, Gem::ConfigMap[:MINOR] = Gem::ConfigMap[:MINOR], '2'
-    orig_TEENY, Gem::ConfigMap[:TEENY] = Gem::ConfigMap[:TEENY], '3'
+    orig_ruby_version, RbConfig::CONFIG['ruby_version'] = RbConfig::CONFIG['ruby_version'], '1.2.3'
 
     Gem.instance_variable_set :@ruby_api_version, nil
 
@@ -671,9 +675,7 @@ class TestGem < Gem::TestCase
   ensure
     Gem.instance_variable_set :@ruby_api_version, nil
 
-    Gem::ConfigMap[:MAJOR] = orig_MAJOR
-    Gem::ConfigMap[:MINOR] = orig_MINOR
-    Gem::ConfigMap[:TEENY] = orig_TEENY
+    RbConfig::CONFIG['ruby_version'] = orig_ruby_version
   end
 
   def test_self_ruby_version_1_8_5
@@ -825,7 +827,7 @@ class TestGem < Gem::TestCase
 
   def test_self_user_dir
     parts = [@userhome, '.gem', Gem.ruby_engine]
-    parts << Gem::ConfigMap[:ruby_version] unless Gem::ConfigMap[:ruby_version].empty?
+    parts << RbConfig::CONFIG['ruby_version'] unless RbConfig::CONFIG['ruby_version'].empty?
 
     assert_equal File.join(parts), Gem.user_dir
   end
@@ -857,6 +859,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_needs_picks_up_unresolved_deps
+    skip 'loading from unsafe file' if RUBY_VERSION <= "1.8.7"
     save_loaded_features do
       util_clear_gems
       a = util_spec "a", "1"
@@ -949,6 +952,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_load_plugins
+    skip 'Insecure operation - chdir' if RUBY_VERSION <= "1.8.7"
     plugin_path = File.join "lib", "rubygems_plugin.rb"
 
     Dir.chdir @tempdir do
@@ -1102,6 +1106,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_auto_activation_of_detected_gemdeps_file
+    skip 'Insecure operation - chdir' if RUBY_VERSION <= "1.8.7"
     util_clear_gems
 
     a = new_spec "a", "1", nil, "lib/a.rb"
@@ -1264,6 +1269,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_use_gemdeps_automatic
+    skip 'Insecure operation - chdir' if RUBY_VERSION <= "1.8.7"
     rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], '-'
 
     spec = util_spec 'a', 1
@@ -1300,6 +1306,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_use_gemdeps_specific
+    skip 'Insecure operation - read' if RUBY_VERSION <= "1.8.7"
     rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], 'x'
 
     spec = util_spec 'a', 1
@@ -1315,6 +1322,19 @@ class TestGem < Gem::TestCase
     assert spec.activated?
   ensure
     ENV['RUBYGEMS_GEMDEPS'] = rubygems_gemdeps
+  end
+
+  def ruby_install_name name
+    orig_RUBY_INSTALL_NAME = RbConfig::CONFIG['ruby_install_name']
+    RbConfig::CONFIG['ruby_install_name'] = name
+
+    yield
+  ensure
+    if orig_RUBY_INSTALL_NAME then
+      RbConfig::CONFIG['ruby_install_name'] = orig_RUBY_INSTALL_NAME
+    else
+      RbConfig::CONFIG.delete 'ruby_install_name'
+    end
   end
 
   def with_plugin(path)

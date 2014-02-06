@@ -228,19 +228,23 @@ to write the specification by hand.  For example:
   def install_gem_without_dependencies name, req # :nodoc:
     gem = nil
 
-    if remote? then
+    if local? then
+      if name =~ /\.gem$/ and File.file? name then
+        source = Gem::Source::SpecificFile.new name
+        spec = source.spec
+      else
+        source = Gem::Source::Local.new
+        spec = source.find_gem name, req
+      end
+      gem = source.download spec if spec
+    end
+
+    if remote? and not gem then
       dependency = Gem::Dependency.new name, req
       dependency.prerelease = options[:prerelease]
 
       fetcher = Gem::RemoteFetcher.fetcher
       gem = fetcher.download_to_cache dependency
-    end
-
-    if local? and not gem then
-      source = Gem::Source::Local.new
-      spec = source.find_gem name, req
-
-      gem = source.download spec
     end
 
     inst = Gem::Installer.new gem, options

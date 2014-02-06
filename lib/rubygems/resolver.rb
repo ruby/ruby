@@ -59,6 +59,8 @@ class Gem::Resolver
 
     sets = sets.map do |set|
       case set
+      when Gem::Resolver::BestSet then
+        set
       when Gem::Resolver::ComposedSet then
         set.sets
       else
@@ -176,27 +178,6 @@ class Gem::Resolver
       res.kind_of? Gem::Resolver::Conflict
 
     res.to_a
-  end
-
-  ##
-  # Finds the State in +states+ that matches the +conflict+ so that we can try
-  # other possible sets.
-  #
-  # If no good candidate is found, the first state is tried.
-
-  def find_conflict_state conflict, states # :nodoc:
-    until states.empty? do
-      state = states.pop
-
-      explain :consider, state.dep, conflict.failed_dep
-
-      if conflict.for_spec? state.spec
-        state.conflicts << [state.spec, conflict]
-        return state
-      end
-    end
-
-    nil
   end
 
   ##

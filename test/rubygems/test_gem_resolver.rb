@@ -33,6 +33,14 @@ class TestGemResolver < Gem::TestCase
     assert_same Gem::Resolver, Gem::DependencyResolver
   end
 
+  def test_self_compose_sets_best_set
+    best_set = @DR::BestSet.new
+
+    composed = @DR.compose_sets best_set
+
+    assert_equal best_set, composed
+  end
+
   def test_self_compose_sets_multiple
     index_set  = @DR::IndexSet.new
     vendor_set = @DR::VendorSet.new

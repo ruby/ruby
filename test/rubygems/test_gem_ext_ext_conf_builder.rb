@@ -42,47 +42,46 @@ class TestGemExtExtConfBuilder < Gem::TestCase
   end
 
   def test_class_build_rbconfig_make_prog
-    configure_args = RbConfig::CONFIG['configure_args']
+    configure_args do
 
-    File.open File.join(@ext, 'extconf.rb'), 'w' do |extconf|
-      extconf.puts "require 'mkmf'\ncreate_makefile 'foo'"
-    end
+      File.open File.join(@ext, 'extconf.rb'), 'w' do |extconf|
+        extconf.puts "require 'mkmf'\ncreate_makefile 'foo'"
+      end
 
-    output = []
+      output = []
 
-    Dir.chdir @ext do
-      Gem::Ext::ExtConfBuilder.build 'extconf.rb', nil, @dest_path, output
-    end
-
-    assert_equal "creating Makefile\n", output[1]
-    assert_contains_make_command 'clean', output[2]
-    assert_contains_make_command '', output[4]
-    assert_contains_make_command 'install', output[6]
-  ensure
-    RbConfig::CONFIG['configure_args'] = configure_args
-  end
-
-  def test_class_build_env_make
-    configure_args, env_make = RbConfig::CONFIG['configure_args'], ENV.delete('make')
-    RbConfig::CONFIG['configure_args'] = ''
-    ENV['make'] = 'anothermake'
-
-    File.open File.join(@ext, 'extconf.rb'), 'w' do |extconf|
-      extconf.puts "require 'mkmf'\ncreate_makefile 'foo'"
-    end
-
-    output = []
-
-    assert_raises Gem::InstallError do
       Dir.chdir @ext do
         Gem::Ext::ExtConfBuilder.build 'extconf.rb', nil, @dest_path, output
       end
-    end
 
-    assert_equal "creating Makefile\n",   output[1]
-    assert_contains_make_command 'clean', output[2]
+      assert_equal "creating Makefile\n", output[1]
+      assert_contains_make_command 'clean', output[2]
+      assert_contains_make_command '', output[4]
+      assert_contains_make_command 'install', output[6]
+    end
+  end
+
+  def test_class_build_env_make
+    env_make = ENV.delete 'make'
+    ENV['make'] = 'anothermake'
+
+    configure_args '' do
+      File.open File.join(@ext, 'extconf.rb'), 'w' do |extconf|
+        extconf.puts "require 'mkmf'\ncreate_makefile 'foo'"
+      end
+
+      output = []
+
+      assert_raises Gem::InstallError do
+        Dir.chdir @ext do
+          Gem::Ext::ExtConfBuilder.build 'extconf.rb', nil, @dest_path, output
+        end
+      end
+
+      assert_equal "creating Makefile\n",   output[1]
+      assert_contains_make_command 'clean', output[2]
+    end
   ensure
-    RbConfig::CONFIG['configure_args'] = configure_args
     ENV['make'] = env_make
   end
 
@@ -108,6 +107,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
     assert_equal 'extconf failed, exit code 1', error.message
 
     assert_equal("#{Gem.ruby} extconf.rb", output[0])
+    assert_path_exists File.join @dest_path, 'mkmf.log'
   end
 
   def test_class_build_unconventional
@@ -186,6 +186,20 @@ end
     end
 
     assert_equal 'Makefile not found', error.message
+  end
+
+  def configure_args args = nil
+    configure_args = RbConfig::CONFIG['configure_args']
+    RbConfig::CONFIG['configure_args'] = args if args
+
+    yield
+
+  ensure
+    if configure_args then
+      RbConfig::CONFIG['configure_args'] = configure_args
+    else
+      RbConfig::CONFIG.delete 'configure_args'
+    end
   end
 
 end

@@ -276,6 +276,8 @@ String
     * Improved, iterative resolver (compared to RubyGems 2.1 and earlier)
     * Support for a sharing a GEM_HOME across ruby platforms and versions
 
+  * Updated to 2.2.2.  Fixes some minor bugs and performance regressions.
+
     For a complete list of enhancements and bug fixes see:
     https://github.com/rubygems/rubygems/tree/master/History.txt
 

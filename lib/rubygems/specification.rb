@@ -241,6 +241,28 @@ class Gem::Specification < Gem::BasicSpecification
   attr_reader :summary
 
   ##
+  # Singular writer for #authors
+  #
+  # Usage:
+  #
+  #   spec.author = 'John Jones'
+
+  def author= o
+    self.authors = [o]
+  end
+
+  ##
+  # Sets the list of authors, ensuring it is an array.
+  #
+  # Usage:
+  #
+  #   spec.authors = ['John Jones', 'Mary Smith']
+
+  def authors= value
+    @authors = Array(value).flatten.grep(String)
+  end
+
+  ##
   # The platform this gem runs on.
   #
   # This is usually Gem::Platform::RUBY or Gem::Platform::CURRENT.
@@ -327,7 +349,7 @@ class Gem::Specification < Gem::BasicSpecification
               add_bindir(@executables),
               @extra_rdoc_files,
               @extensions,
-             ].flatten.sort.uniq.compact
+             ].flatten.uniq.compact.sort
   end
 
   ######################################################################
@@ -440,28 +462,6 @@ class Gem::Specification < Gem::BasicSpecification
 
   def add_runtime_dependency(gem, *requirements)
     add_dependency_with_type(gem, :runtime, *requirements)
-  end
-
-  ##
-  # Singular writer for #authors
-  #
-  # Usage:
-  #
-  #   spec.author = 'John Jones'
-
-  def author= o
-    self.authors = [o]
-  end
-
-  ##
-  # Sets the list of authors, ensuring it is an array.
-  #
-  # Usage:
-  #
-  #   spec.authors = ['John Jones', 'Mary Smith']
-
-  def authors= value
-    @authors = Array(value).flatten.grep(String)
   end
 
   ##

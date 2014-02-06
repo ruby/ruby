@@ -34,7 +34,11 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
         ENV["RUBYOPT"] = ["-r#{siteconf_path}", rubyopt].compact.join(' ')
         cmd = [Gem.ruby, File.basename(extension), *args].join ' '
 
-        run cmd, results
+        begin
+          run cmd, results
+        ensure
+          FileUtils.mv 'mkmf.log', dest_path if File.exist? 'mkmf.log'
+        end
 
         ENV["DESTDIR"] = nil
         ENV["RUBYOPT"] = rubyopt

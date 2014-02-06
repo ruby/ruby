@@ -1,3 +1,9 @@
+Thu Feb  6 11:27:39 2014  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems: RubyGems 2.2.2 which contains the following bug fixes:
+	  http://rubygems.rubyforge.org/rubygems-update/History_txt.html#label-2.2.2+%2F+2014-02-05
+	  https://bugs.ruby-lang.org/issues/9489
+
 Thu Feb  6 11:23:59 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (ruby_gc_set_params): if RUBY_GC_OLDMALLOC_LIMIT is provided,

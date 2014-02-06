@@ -131,6 +131,23 @@ class TestGemUninstaller < Gem::InstallerTestCase
     Gem::Installer.exec_format = nil
   end
 
+  def test_remove_not_in_home
+    uninstaller = Gem::Uninstaller.new nil, :install_dir => "#{@gemhome}2"
+
+    e = assert_raises Gem::GemNotInHomeException do
+      use_ui ui do
+        uninstaller.remove @spec
+      end
+    end
+
+    expected =
+      "Gem '#{@spec.full_name}' is not installed in directory #{@gemhome}2"
+
+    assert_equal expected, e.message
+
+    assert_path_exists @spec.gem_dir
+  end
+
   def test_path_ok_eh
     uninstaller = Gem::Uninstaller.new nil
 

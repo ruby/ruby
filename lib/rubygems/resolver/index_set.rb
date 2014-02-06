@@ -5,6 +5,8 @@
 class Gem::Resolver::IndexSet < Gem::Resolver::Set
 
   def initialize source = nil # :nodoc:
+    super()
+
     @f =
       if source then
         sources = Gem::SourceList.from [source]
@@ -33,6 +35,8 @@ class Gem::Resolver::IndexSet < Gem::Resolver::Set
 
   def find_all req
     res = []
+
+    return res unless @remote
 
     name = req.dependency.name
 
