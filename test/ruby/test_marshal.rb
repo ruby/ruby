@@ -598,6 +598,7 @@ class TestMarshal < Test::Unit::TestCase
 
   def test_packed_string
     packed = ["foo"].pack("p")
-    assert_equal(Marshal.dump(""+packed), Marshal.dump(packed))
+    bare = "".force_encoding(Encoding::ASCII_8BIT) << packed
+    assert_equal(Marshal.dump(bare), Marshal.dump(packed))
   end
 end
