@@ -5654,12 +5654,12 @@ get_envparam_int(const char *name, unsigned int *default_value, int lower_bound)
     if (ptr != NULL) {
 	val = atoi(ptr);
 	if (val > lower_bound) {
-	    if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%d (%d)\n", name, val, *default_value);
+	    if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%d (default value: %d)\n", name, val, *default_value);
 	    *default_value = val;
 	    return 1;
 	}
 	else {
-	    if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%d (%d), but ignored because lower than %d\n", name, val, *default_value, lower_bound);
+	    if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%d (default value: %d) is ignored because it must be greater than %d.\n", name, val, *default_value, lower_bound);
 	}
     }
     return 0;
@@ -5679,7 +5679,7 @@ get_envparam_double(const char *name, double *default_value, double lower_bound)
 	    return 1;
 	}
 	else {
-	    if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%f (%f), but ignored because lower than %f\n", name, val, *default_value, lower_bound);
+	    if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%f (default value: %f) is ignored because it must be greater than %f.\n", name, val, *default_value, lower_bound);
 	}
     }
     return 0;
