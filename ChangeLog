@@ -1,3 +1,14 @@
+Thu Feb  6 09:00:35 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (ruby_gc_set_params): if RUBY_GC_OLDMALLOC_LIMIT is provided,
+	  then set objspace->rgengc.oldmalloc_increase_limit.
+	  Without this fix, the env variable RUBY_GC_OLDMALLOC_LIMIT
+	  does not work.
+
+	* gc.c (get_envparam_int): accept a value equals to lowerbounds.
+
+	* gc.c (get_envparam_double): ditto.
+
 Thu Feb 6 08:23:28 2014  Eric Wong  <e@80x24.org>
 
 	* ext/thread/thread.c (rb_szqueue_max_set): use correct queue and
