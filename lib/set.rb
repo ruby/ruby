@@ -13,9 +13,11 @@
 # == Overview
 #
 # This library provides the Set class, which deals with a collection
-# of unordered values with no duplicates.  It is a hybrid of Array's
-# intuitive inter-operation facilities and Hash's fast lookup.  If you
-# need to keep values sorted in some order, use the SortedSet class.
+# of unsorted values with no duplicates.  It is a hybrid of Array's
+# intuitive inter-operation facilities and Hash's fast lookup. Order 
+# corresponds to when keys were inserted. If you need to keep values 
+# sorted in some order, use the SortedSet class. 
+# 
 #
 # The method +to_set+ is added to Enumerable for convenience.
 #
@@ -23,7 +25,7 @@
 
 
 #
-# Set implements a collection of unordered values with no duplicates.
+# Set implements a collection of unsorted values with no duplicates.
 # This is a hybrid of Array's intuitive inter-operation facilities and
 # Hash's fast lookup.
 #
@@ -150,7 +152,8 @@ class Set
     self
   end
 
-  # Converts the set to an array.  The order of elements is uncertain.
+  # Converts the set to an array.  The order of elements is corresponding to when
+  # they were inserted.
   def to_a
     @hash.keys
   end
