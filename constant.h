@@ -18,9 +18,9 @@ typedef enum {
 
 typedef struct rb_const_entry_struct {
     rb_const_flag_t flag;
+    int line;
     const VALUE value;            /* should be mark */
     const VALUE file;             /* should be mark */
-    int line;
 } rb_const_entry_t;
 
 VALUE rb_mod_private_constant(int argc, VALUE *argv, VALUE obj);

@@ -1,3 +1,8 @@
+Fri Feb 7 05:28:38 2014  Eric Wong  <e@80x24.org>
+
+	* constant.h: reduce rb_const_entry_t size on 64-bit
+	  Patch by Adam Avilla [ruby-core:60542] [Feature #9496]
+
 Thu Feb  6 15:27:46 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (get_envparam_int): correct warning messages.
