@@ -55,6 +55,13 @@ class TestQueue < Test::Unit::TestCase
     assert_equal(1, q.max)
     assert_raise(ArgumentError) { q.max = -1 }
     assert_equal(1, q.max)
+
+    before = q.max
+    q.max.times { q << 1 }
+    t1 = Thread.new { q << 1 }
+    sleep 0.01 until t1.stop?
+    q.max = q.max + 1
+    assert_equal before + 1, q.max
   end
 
   def test_queue_pop_interrupt
