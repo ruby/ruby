@@ -5653,7 +5653,7 @@ get_envparam_int(const char *name, unsigned int *default_value, int lower_bound)
 
     if (ptr != NULL) {
 	val = atoi(ptr);
-	if (val >= lower_bound) {
+	if (val > lower_bound) {
 	    if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%d (%d)\n", name, val, *default_value);
 	    *default_value = val;
 	    return 1;
@@ -5673,7 +5673,7 @@ get_envparam_double(const char *name, double *default_value, double lower_bound)
 
     if (ptr != NULL) {
 	val = strtod(ptr, NULL);
-	if (val >= lower_bound) {
+	if (val > lower_bound) {
 	    if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%f (%f)\n", name, val, *default_value);
 	    *default_value = val;
 	    return 1;

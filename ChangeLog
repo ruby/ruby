@@ -1,3 +1,11 @@
+Thu Feb  6 15:17:30 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (get_envparam_int): don't accept a value equals to lowerbound
+	  (changed by last commit) because "" or "foo" (not a number) strings
+	  are parsed as 0. They should be rejected.
+
+	* gc.c (get_envparam_double): ditto.
+
 Thu Feb  6 09:00:35 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (ruby_gc_set_params): if RUBY_GC_OLDMALLOC_LIMIT is provided,
@@ -5,7 +13,7 @@ Thu Feb  6 09:00:35 2014  Koichi Sasada  <ko1@atdot.net>
 	  Without this fix, the env variable RUBY_GC_OLDMALLOC_LIMIT
 	  does not work.
 
-	* gc.c (get_envparam_int): accept a value equals to lowerbounds.
+	* gc.c (get_envparam_int): accept a value equals to lowerbound.
 
 	* gc.c (get_envparam_double): ditto.
 
