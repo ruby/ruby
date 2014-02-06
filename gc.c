@@ -5652,7 +5652,19 @@ get_envparam_int(const char *name, unsigned int *default_value, int lower_bound)
     int val;
 
     if (ptr != NULL) {
-	val = atoi(ptr);
+	char *end;
+	long lval = strtol(ptr, &end, 10);
+	if (!*ptr || *end) {
+	    if (RTEST(ruby_verbose)) fprintf(stderr, "invalid string for %s: %s\n", name, ptr);
+	    return 0;
+	}
+# if LONG_MAX > INT_MAX
+	if (lval < INT_MIN || INT_MAX < lval) {
+	    if (RTEST(ruby_verbose)) fprintf(stderr, "integer overflow for %s: %ld\n", name, lval);
+	    return 0;
+	}
+# endif
+	val = (int)lval;
 	if (val > lower_bound) {
 	    if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%d (default value: %d)\n", name, val, *default_value);
 	    *default_value = val;
@@ -5672,7 +5684,12 @@ get_envparam_double(const char *name, double *default_value, double lower_bound)
     double val;
 
     if (ptr != NULL) {
-	val = strtod(ptr, NULL);
+	char *end;
+	val = strtod(ptr, &end);
+	if (!*ptr || *end) {
+	    if (RTEST(ruby_verbose)) fprintf(stderr, "invalid string for %s: %s\n", name, ptr);
+	    return 0;
+	}
 	if (val > lower_bound) {
 	    if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%f (%f)\n", name, val, *default_value);
 	    *default_value = val;
