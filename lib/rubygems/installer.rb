@@ -480,7 +480,7 @@ class Gem::Installer
   #
 
   def shebang(bin_file_name)
-    ruby_name = Gem::ConfigMap[:ruby_install_name] if @env_shebang
+    ruby_name = RbConfig::CONFIG['ruby_install_name'] if @env_shebang
     path = File.join gem_dir, spec.bindir, bin_file_name
     first_line = File.open(path, "rb") {|file| file.gets}
 
@@ -493,7 +493,7 @@ class Gem::Installer
 
     if which = Gem.configuration[:custom_shebang]
       # replace bin_file_name with "ruby" to avoid endless loops
-      which = which.gsub(/ #{bin_file_name}$/," #{Gem::ConfigMap[:ruby_install_name]}")
+      which = which.gsub(/ #{bin_file_name}$/," #{RbConfig::CONFIG['ruby_install_name']}")
 
       which = which.gsub(/\$(\w+)/) do
         case $1
@@ -641,7 +641,7 @@ version = "#{Gem::Requirement.default}"
 if ARGV.first
   str = ARGV.first
   str = str.dup.force_encoding("BINARY") if str.respond_to? :force_encoding
-  if str =~ /\\A_(.*)_\\z/
+  if str =~ /\\A_(.*)_\\z/ and Gem::Version.correct?($1) then
     version = $1
     ARGV.shift
   end

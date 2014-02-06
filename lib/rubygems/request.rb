@@ -48,15 +48,14 @@ class Gem::Request
       connection.key = OpenSSL::PKey::RSA.new pem
     end
 
+    store.set_default_paths
+    add_rubygems_trusted_certs(store)
     if Gem.configuration.ssl_ca_cert
       if File.directory? Gem.configuration.ssl_ca_cert
         store.add_path Gem.configuration.ssl_ca_cert
       else
         store.add_file Gem.configuration.ssl_ca_cert
       end
-    else
-      store.set_default_paths
-      add_rubygems_trusted_certs(store)
     end
     connection.cert_store = store
   rescue LoadError => e
@@ -106,7 +105,8 @@ class Gem::Request
     request = @request_class.new @uri.request_uri
 
     unless @uri.nil? || @uri.user.nil? || @uri.user.empty? then
-      request.basic_auth @uri.user, @uri.password
+      request.basic_auth Gem::UriFormatter.new(@uri.user).unescape,
+                         Gem::UriFormatter.new(@uri.password).unescape
     end
 
     request.add_field 'User-Agent', @user_agent

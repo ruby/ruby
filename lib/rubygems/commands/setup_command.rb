@@ -13,7 +13,7 @@ class Gem::Commands::SetupCommand < Gem::Command
 
     super 'setup', 'Install RubyGems',
           :format_executable => true, :document => %w[ri],
-          :site_or_vendor => :sitelibdir,
+          :site_or_vendor => 'sitelibdir',
           :destdir => '', :prefix => '', :previous_version => ''
 
     add_option '--previous-version=VERSION',
@@ -36,7 +36,7 @@ class Gem::Commands::SetupCommand < Gem::Command
 
     add_option '--[no-]vendor',
                'Install into vendorlibdir not sitelibdir' do |vendor, options|
-      options[:site_or_vendor] = vendor ? :vendorlibdir : :sitelibdir
+      options[:site_or_vendor] = vendor ? 'vendorlibdir' : 'sitelibdir'
     end
 
     add_option '--[no-]format-executable',
@@ -343,19 +343,19 @@ TEXT
     site_or_vendor = options[:site_or_vendor]
 
     if prefix.empty? then
-      lib_dir = Gem::ConfigMap[site_or_vendor]
-      bin_dir = Gem::ConfigMap[:bindir]
+      lib_dir = RbConfig::CONFIG[site_or_vendor]
+      bin_dir = RbConfig::CONFIG['bindir']
     else
       # Apple installed RubyGems into libdir, and RubyGems <= 1.1.0 gets
       # confused about installation location, so switch back to
       # sitelibdir/vendorlibdir.
       if defined?(APPLE_GEM_HOME) and
         # just in case Apple and RubyGems don't get this patched up proper.
-        (prefix == Gem::ConfigMap[:libdir] or
+        (prefix == RbConfig::CONFIG['libdir'] or
          # this one is important
-         prefix == File.join(Gem::ConfigMap[:libdir], 'ruby')) then
-         lib_dir = Gem::ConfigMap[site_or_vendor]
-         bin_dir = Gem::ConfigMap[:bindir]
+         prefix == File.join(RbConfig::CONFIG['libdir'], 'ruby')) then
+         lib_dir = RbConfig::CONFIG[site_or_vendor]
+         bin_dir = RbConfig::CONFIG['bindir']
       else
         lib_dir = File.join prefix, 'lib'
         bin_dir = File.join prefix, 'bin'

@@ -3,6 +3,9 @@ require "rubygems/version"
 
 class TestGemVersion < Gem::TestCase
 
+  class V < ::Gem::Version
+  end
+
   def test_bump
     assert_bumped_version_equal "5.3", "5.2.4"
   end
@@ -35,6 +38,13 @@ class TestGemVersion < Gem::TestCase
 
     ver = '1.1'.freeze
     assert_equal v('1.1'), Gem::Version.create(ver)
+  end
+
+  def test_class_new_subclass
+    v1 = Gem::Version.new '1'
+    v2 = V.new '1'
+
+    refute_same v1, v2
   end
 
   def test_eql_eh

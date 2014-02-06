@@ -207,6 +207,24 @@ class Gem::BasicSpecification
   end
 
   ##
+  # Returns the paths to the source files for use with analysis and
+  # documentation tools.  These paths are relative to full_gem_path.
+
+  def source_paths
+    paths = raw_require_paths.dup
+
+    if @extensions then
+      ext_dirs = @extensions.map do |extension|
+        extension.split(File::SEPARATOR, 2).first
+      end.uniq
+
+      paths.concat ext_dirs
+    end
+
+    paths.uniq
+  end
+
+  ##
   # Return a Gem::Specification from this gem
 
   def to_spec

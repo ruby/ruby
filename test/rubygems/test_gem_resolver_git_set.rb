@@ -70,6 +70,21 @@ class TestGemResolverGitSet < Gem::TestCase
     assert_equal [@set.specs['a']], found
   end
 
+  def test_find_all_local
+    name, _, repository, = git_gem
+
+    @set.add_git_gem name, repository, 'master', false
+    @set.remote = false
+
+    dependency = dep 'a', '~> 1.0'
+    req = Gem::Resolver::DependencyRequest.new dependency, nil
+    @reqs.add req
+
+    @set.prefetch @reqs
+
+    assert_empty @set.find_all dependency
+  end
+
   def test_root_dir
     assert_equal Gem.dir, @set.root_dir
 

@@ -4,9 +4,12 @@ class Gem::AvailableSet
 
   Tuple = Struct.new(:spec, :source)
 
+  attr_accessor :remote # :nodoc:
+
   def initialize
     @set = []
     @sorted = nil
+    @remote = true
   end
 
   attr_reader :set

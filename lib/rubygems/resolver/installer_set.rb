@@ -24,15 +24,17 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
   # Creates a new InstallerSet that will look for gems in +domain+.
 
   def initialize domain
+    super()
+
     @domain = domain
+    @remote = consider_remote?
 
     @f = Gem::SpecFetcher.fetcher
 
-    @all = Hash.new { |h,k| h[k] = [] }
     @always_install      = []
     @ignore_dependencies = false
     @ignore_installed    = false
-    @loaded_remote_specs = []
+    @remote_set          = Gem::Resolver::BestSet.new
     @specs               = {}
   end
 
@@ -79,16 +81,7 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
       end
     end
 
-    if consider_remote? then
-      load_remote_specs dep
-
-      @all[name].each do |remote_source, n|
-        if dep.match? n then
-          res << Gem::Resolver::IndexSpecification.new(
-            self, n.name, n.version, remote_source, n.platform)
-        end
-      end
-    end
+    res.concat @remote_set.find_all req if consider_remote?
 
     res
   end
@@ -99,27 +92,6 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
     '#<%s domain: %s specs: %p always install: %p>' % [
       self.class, @domain, @specs.keys, always_install,
     ]
-  end
-
-  ##
-  # Loads remote prerelease specs if +dep+ is a prerelease dependency
-
-  def load_remote_specs dep # :nodoc:
-    types = [:released]
-    types << :prerelease if dep.prerelease?
-
-    types.each do |type|
-      next if @loaded_remote_specs.include? type
-      @loaded_remote_specs << type
-
-      list, = @f.available_specs type
-
-      list.each do |uri, specs|
-        specs.each do |n|
-          @all[n.name] << [uri, n]
-        end
-      end
-    end
   end
 
   ##
@@ -148,6 +120,17 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
       q.breakable
       q.text 'always install: '
       q.pp @always_install
+    end
+  end
+
+  def remote= remote # :nodoc:
+    case @domain
+    when :local then
+      @domain = :both if remote
+    when :remote then
+      @domain = nil unless remote
+    when :both then
+      @domain = :local unless remote
     end
   end
 

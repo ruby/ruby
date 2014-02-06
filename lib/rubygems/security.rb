@@ -120,11 +120,11 @@ end
 # * HighSecurity - Here's the bugger that got us into this mess.
 #   The HighSecurity policy is identical to the MediumSecurity policy,
 #   except that it does not allow unsigned gems.  A malicious user
-#   doesn't have a whole lot of options here; he can't modify the
-#   package contents without invalidating the signature, and he can't
+#   doesn't have a whole lot of options here; they can't modify the
+#   package contents without invalidating the signature, and they can't
 #   modify or remove signature or the signing certificate chain, or
 #   RubyGems will simply refuse to install the package.  Oh well, maybe
-#   he'll have better luck causing problems for CPAN users instead :).
+#   they'll have better luck causing problems for CPAN users instead :).
 #
 # The reason RubyGems refused to install your shiny new signed gem was because
 # it was from an untrusted source.  Well, your code is infallible (naturally),

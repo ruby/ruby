@@ -208,15 +208,15 @@ gems:
     fetcher.instance_variable_set :@test_data, data
 
     unless blow then
-      def fetcher.fetch_path arg
+      def fetcher.fetch_path arg, *rest
         @test_arg = arg
         @test_data
       end
     else
-      def fetcher.fetch_path arg
+      def fetcher.fetch_path arg, *rest
         # OMG I'm such an ass
         class << self; remove_method :fetch_path; end
-        def self.fetch_path arg
+        def self.fetch_path arg, *rest
           @test_arg = arg
           @test_data
         end

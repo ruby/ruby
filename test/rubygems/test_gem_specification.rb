@@ -999,8 +999,8 @@ dependencies: []
     assert_equal 'summary', spec.summary
     assert_same spec.summary, new_spec.summary
 
-    assert_equal %w[lib/file.rb test/file.rb bin/exec README.txt
-                    ext/extconf.rb].sort,
+    assert_equal %w[README.txt bin/exec ext/extconf.rb lib/file.rb
+                    test/file.rb].sort,
                  spec.files
     refute_same spec.files, new_spec.files, 'files'
 
@@ -1109,7 +1109,31 @@ dependencies: []
     @a2.executable = 'app'
 
     assert_equal nil, @a2.bindir
-    assert_equal %w[lib/code.rb app].sort, @a2.files
+    assert_equal %w[app lib/code.rb].sort, @a2.files
+  end
+
+  def test_extensions_equals_nil
+    @a2.instance_variable_set(:@extensions, nil)
+    assert_equal nil, @a2.instance_variable_get(:@extensions)
+    assert_equal %w[lib/code.rb], @a2.files
+  end
+
+  def test_test_files_equals_nil
+    @a2.instance_variable_set(:@test_files, nil)
+    assert_equal nil, @a2.instance_variable_get(:@test_files)
+    assert_equal %w[lib/code.rb], @a2.files
+  end
+
+  def test_executables_equals_nil
+    @a2.instance_variable_set(:@executables, nil)
+    assert_equal nil, @a2.instance_variable_get(:@executables)
+    assert_equal %w[lib/code.rb], @a2.files
+  end
+
+  def test_extra_rdoc_files_equals_nil
+    @a2.instance_variable_set(:@extra_rdoc_files, nil)
+    assert_equal nil, @a2.instance_variable_get(:@extra_rdoc_files)
+    assert_equal %w[lib/code.rb], @a2.files
   end
 
   def test_build_extensions
@@ -1437,7 +1461,7 @@ dependencies: []
   def test_executable_equals
     @a2.executable = 'app'
     assert_equal 'app', @a2.executable
-    assert_equal %w[lib/code.rb bin/app].sort, @a2.files
+    assert_equal %w[bin/app lib/code.rb].sort, @a2.files
   end
 
   def test_extensions
@@ -1765,24 +1789,37 @@ dependencies: []
   end
 
   def test_require_paths
-    enable_shared, RbConfig::CONFIG['ENABLE_SHARED'] =
-      RbConfig::CONFIG['ENABLE_SHARED'], 'no'
+    enable_shared 'no' do
+      ext_spec
 
-    ext_spec
+      @ext.require_path = 'lib'
 
-    @ext.require_path = 'lib'
+      ext_install_dir = Pathname(@ext.extension_dir)
+      full_gem_path = Pathname(@ext.full_gem_path)
+      relative_install_dir = ext_install_dir.relative_path_from full_gem_path
 
-    ext_install_dir = Pathname(@ext.extension_dir)
-    full_gem_path = Pathname(@ext.full_gem_path)
-    relative_install_dir = ext_install_dir.relative_path_from full_gem_path
-
-    assert_equal [relative_install_dir.to_s, 'lib'], @ext.require_paths
-  ensure
-    RbConfig::CONFIG['ENABLE_SHARED'] = enable_shared
+      assert_equal [relative_install_dir.to_s, 'lib'], @ext.require_paths
+    end
   end
 
   def test_source
     assert_kind_of Gem::Source::Installed, @a1.source
+  end
+
+  def test_source_paths
+    ext_spec
+
+    @ext.require_paths = %w[lib ext foo]
+    @ext.extensions << 'bar/baz'
+
+    expected = %w[
+      lib
+      ext
+      foo
+      bar
+    ]
+
+    assert_equal expected, @ext.source_paths
   end
 
   def test_full_require_paths
@@ -2435,7 +2472,7 @@ duplicate dependency on b (>= 1.2.3), (~> 1.2) use:
       assert_equal '["lib2"] are not files', e.message
     end
 
-    assert_equal %w[lib/code.rb test/suite.rb bin/exec ext/a/extconf.rb lib2].sort,
+    assert_equal %w[bin/exec ext/a/extconf.rb lib/code.rb lib2 test/suite.rb].sort,
                  @a1.files
   end
 
@@ -2911,9 +2948,9 @@ end
 
   def with_syck
     begin
+      verbose, $VERBOSE = $VERBOSE, nil
       require "yaml"
       old_engine = YAML::ENGINE.yamler
-      verbose, $VERBOSE = $VERBOSE, nil
       YAML::ENGINE.yamler = 'syck'
       load 'rubygems/syck_hack.rb'
     rescue NameError

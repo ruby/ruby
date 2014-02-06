@@ -9,6 +9,8 @@ class Gem::Resolver::LockSet < Gem::Resolver::Set
   # Creates a new LockSet from the given +source+
 
   def initialize source
+    super()
+
     @source = Gem::Source::Lock.new source
     @specs  = []
   end
