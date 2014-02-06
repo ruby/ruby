@@ -152,8 +152,8 @@ class Set
     self
   end
 
-  # Converts the set to an array.  The order of elements is corresponding to when
-  # they were inserted.
+  # Converts the set to an array.  The order of elements is 
+  # corresponding to when they were inserted.
   def to_a
     @hash.keys
   end
