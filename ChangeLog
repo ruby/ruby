@@ -1,3 +1,17 @@
+Fri Feb  7 04:19:19 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (get_envparam_int): correct warning messsages.
+
+	* gc.c (get_envparam_double): ditto.
+
+Fri Feb  7 04:19:19 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (get_envparam_int): don't accept a value equals to lowerbound
+	  (changed by last commit) because "" or "foo" (not a number) strings
+	  are parsed as 0. They should be rejected.
+
+	* gc.c (get_envparam_double): ditto.
+
 Thu Feb 6 08:23:28 2014  Eric Wong  <e@80x24.org>
 
 	* ext/thread/thread.c (rb_szqueue_max_set): use correct queue and
@@ -18,7 +32,7 @@ Thu Feb  6 11:23:59 2014  Koichi Sasada  <ko1@atdot.net>
 	  Without this fix, the env variable RUBY_GC_OLDMALLOC_LIMIT
 	  does not work.
 
-	* gc.c (get_envparam_int): accept a value equals to lowerbounds.
+	* gc.c (get_envparam_int): accept a value equals to lowerbound.
 
 	* gc.c (get_envparam_double): ditto.
 
