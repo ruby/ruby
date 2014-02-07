@@ -1,3 +1,9 @@
+Fri Feb  7 21:54:53 2014  Zachary Scott  <e@zzak.io>
+
+	* ext/ripper/lib/ripper/lexer.rb: [DOC] use lower case version of core
+	  classes when referring to return value, since we aren't directly
+	  talking about the class. Patch by Jonathan Jackson [Bug #9483]
+
 Fri Feb 7 05:28:38 2014  Eric Wong  <e@80x24.org>
 
 	* constant.h: reduce rb_const_entry_t size on 64-bit
