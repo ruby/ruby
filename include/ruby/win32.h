@@ -463,6 +463,11 @@ extern int 	 rb_w32_truncate(const char *path, off_t length);
 #define truncate rb_w32_truncate
 #endif
 
+#if defined(_MSC_VER) && _MSC_VER >= 1400 && _MSC_VER < 1800
+#define strtoll  _strtoi64
+#define strtoull _strtoui64
+#endif
+
 /*
  * stubs
  */
