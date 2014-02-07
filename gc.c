@@ -5651,7 +5651,7 @@ get_envparam_size(const char *name, size_t *default_value, size_t lower_bound)
     char *ptr = getenv(name);
     ssize_t val;
 
-    if (ptr != NULL) {
+    if (ptr != NULL && *ptr) {
 	char *end;
 #if SIZEOF_SIZE_T == SIZEOF_LONG_LONG
 	val = strtoll(ptr, &end, 0);
@@ -5686,7 +5686,7 @@ get_envparam_double(const char *name, double *default_value, double lower_bound)
     char *ptr = getenv(name);
     double val;
 
-    if (ptr != NULL) {
+    if (ptr != NULL && *ptr) {
 	char *end;
 	val = strtod(ptr, &end);
 	if (!*ptr || *end) {
