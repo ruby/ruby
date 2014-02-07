@@ -897,11 +897,9 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 	    if (envopt) goto noenvopt;
 	    forbid_setid("-e");
 	    if (!*++s) {
-		s = argv[1];
-		argc--, argv++;
-	    }
-	    if (!s) {
-		rb_raise(rb_eRuntimeError, "no code specified for -e");
+		if (!--argc)
+		    rb_raise(rb_eRuntimeError, "no code specified for -e");
+		s = *++argv;
 	    }
 	    if (!opt->e_script) {
 		opt->e_script = rb_str_new(0, 0);
@@ -917,7 +915,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 	    if (*++s) {
 		add_modules(&opt->req_list, s);
 	    }
-	    else if (argv[1]) {
+	    else if (argc > 1) {
 		add_modules(&opt->req_list, argv[1]);
 		argc--, argv++;
 	    }
@@ -941,12 +939,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 	  case 'C':
 	  case 'X':
 	    if (envopt) goto noenvopt;
-	    s++;
-	    if (!*s) {
-		s = argv[1];
-		argc--, argv++;
-	    }
-	    if (!s || !*s) {
+	    if (!*++s && (!--argc || !(s = *++argv) || !*s)) {
 		rb_fatal("Can't chdir");
 	    }
 	    if (chdir(s) < 0) {
@@ -1017,7 +1010,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 	    forbid_setid("-I");
 	    if (*++s)
 		ruby_incpush_expand(s);
-	    else if (argv[1]) {
+	    else if (argc > 1) {
 		ruby_incpush_expand(argv[1]);
 		argc--, argv++;
 	    }
