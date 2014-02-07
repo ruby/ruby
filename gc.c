@@ -5667,6 +5667,7 @@ get_envparam_size(const char *name, size_t *default_value, size_t lower_bound)
 		fprintf(stderr, "%s=%"PRIdSIZE" (default value: %"PRIdSIZE")\n", name, val, *default_value);
 	    }
 	    *default_value = (size_t)val;
+	    return 1;
 	}
 	else {
 	    if (RTEST(ruby_verbose)) {
