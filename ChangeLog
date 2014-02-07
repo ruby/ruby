@@ -1,3 +1,9 @@
+Fri Feb  7 23:37:49 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb: Ignore name servers which cause EAFNOSUPPORT on
+	  socket creation.
+	  Reported by Bjoern Rennhak.  [ruby-core:60442] [Bug #9477]
+
 Fri Feb  7 21:58:48 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/open-uri.rb: [DOC] use lower case version of core classes, same
