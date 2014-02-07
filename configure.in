@@ -813,10 +813,13 @@ if test "$GCC" = yes; then
     ],
     [
       # ANSI (no XCFLAGS because this is C only)
-      RUBY_TRY_CFLAGS(-ansi -std=iso9899:199409, [
-        RUBY_APPEND_OPTION(warnflags, -ansi -std=iso9899:199409)
-        RUBY_APPEND_OPTION(strict_warnflags, -ansi -std=iso9899:199409)
-      ])
+	for ansi_options in -std=iso9899:1999 "-ansi -std=iso9899:199409"; do
+	    RUBY_TRY_CFLAGS(${ansi_options}, [
+		RUBY_APPEND_OPTIONS(warnflags, ${ansi_options})
+	  	RUBY_APPEND_OPTIONS(strict_warnflags, ${ansi_options})
+	    ], [ansi_options=])
+	    test "x${ansi_options}" = x || break
+	done
     ])
 
     # suppress annoying -Wstrict-overflow warnings
