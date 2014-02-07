@@ -1,3 +1,8 @@
+Fri Feb  7 21:58:48 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/open-uri.rb: [DOC] use lower case version of core classes, same
+	  as commit r44878, based on patch by Jonathan Jackson [Bug #9483]
+
 Fri Feb  7 21:54:53 2014  Zachary Scott  <e@zzak.io>
 
 	* ext/ripper/lib/ripper/lexer.rb: [DOC] use lower case version of core
