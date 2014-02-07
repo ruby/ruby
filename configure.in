@@ -2755,7 +2755,7 @@ if test "$with_dln_a_out" != yes; then
 		[*" "], [AS_CASE(["${linker_flag}"],
 				 [*,], [rpathflag=`echo "$rpathflag" | tr ' ' ,`])])
 	rpathflag="${linker_flag}${rpathflag}"
-	RUBY_TRY_LDFLAGS(["${rpathflag}."], [], [rpathflag=])
+	RUBY_TRY_LDFLAGS([${rpathflag}.], [], [rpathflag=])
 	if test "x${rpathflag}" != x; then
 	  RPATHFLAG=" ${rpathflag}%1\$-s"
 	  break
