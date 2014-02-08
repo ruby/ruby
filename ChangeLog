@@ -1,3 +1,9 @@
+Sat Feb  8 15:27:02 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb (Resolv::DNS::Message::MessageDecoder): Raise
+	  DecodeError if no data before the limit.
+	  Reported by Will Bryant.  [ruby-core:60557] [Bug #9498]
+
 Sat Feb  8 15:11:21 2014  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (SMALLBUF): Unused macro removed.
