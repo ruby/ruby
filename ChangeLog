@@ -1,3 +1,8 @@
+Sat Feb  8 15:41:37 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb: Don't set CLOEXEC flag explicitly.  (Ruby set it by
+	  default.)
+
 Sat Feb  8 15:27:02 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (Resolv::DNS::Message::MessageDecoder): Raise

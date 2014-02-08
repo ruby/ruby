@@ -1,5 +1,4 @@
 require 'socket'
-require 'fcntl'
 require 'timeout'
 require 'thread'
 
@@ -748,7 +747,6 @@ class Resolv
               next # The kernel doesn't support the address family.
             end
             sock.do_not_reverse_lookup = true
-            sock.fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC) if defined? Fcntl::F_SETFD
             DNS.bind_random_port(sock, bind_host)
             @socks << sock
             @socks_hash[bind_host] = sock
@@ -802,7 +800,6 @@ class Resolv
           sock = UDPSocket.new(is_ipv6 ? Socket::AF_INET6 : Socket::AF_INET)
           @socks = [sock]
           sock.do_not_reverse_lookup = true
-          sock.fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC) if defined? Fcntl::F_SETFD
           DNS.bind_random_port(sock, is_ipv6 ? "::" : "0.0.0.0")
           sock.connect(host, port)
         end
@@ -860,7 +857,6 @@ class Resolv
           @port = port
           sock = TCPSocket.new(@host, @port)
           @socks = [sock]
-          sock.fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC) if defined? Fcntl::F_SETFD
           @senders = {}
         end
 
