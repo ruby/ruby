@@ -3597,6 +3597,17 @@ rb_gc_mark(VALUE ptr)
     gc_mark(&rb_objspace, ptr);
 }
 
+/* CAUTION: THIS FUNCTION ENABLE *ONLY BEFORE* SWEEPING.
+ * This function is only for GC_END_MARK timing.
+ */
+
+int
+rb_objspace_marked_object_p(VALUE obj)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    return gc_marked(objspace, obj) ? TRUE : FALSE;
+}
+
 /* resurrect non-marked `obj' if obj is before swept */
 
 void

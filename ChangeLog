@@ -1,3 +1,11 @@
+Sat Feb  8 15:54:12 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c, gc.h (rb_objspace_marked_object_p): added.
+	  This function *ONLY* works just after marking phase,
+	  before any sweeping.
+	  This function is highly depending current GC implementation
+	  and can be removed future version.
+
 Sat Feb  8 15:41:37 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb: Don't set CLOEXEC flag explicitly.  (Ruby set it by
