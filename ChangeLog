@@ -1,3 +1,8 @@
+Sun Feb  9 05:20:24 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (rb_cv_gnu_qsort_r): use compile error "conflicting
+	  types for 'qsort_r'" instead of AC_RUN_IFELSE.
+
 Sun Feb  9 04:07:34 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/yaml.rb: [DOC] Add links to syck and psych on github [Bug #9501]
