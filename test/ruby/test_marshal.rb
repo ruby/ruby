@@ -601,4 +601,14 @@ class TestMarshal < Test::Unit::TestCase
     bare = "".force_encoding(Encoding::ASCII_8BIT) << packed
     assert_equal(Marshal.dump(bare), Marshal.dump(packed))
   end
+
+  def test_untainted_numeric
+    bug8945 = '[ruby-core:57346] [Bug #8945] Numerics never be tainted'
+    b = 1 << 32
+    b *= b until Bignum === b
+    tainted = [0, 1.0, 1.72723e-77, b].select do |x|
+      Marshal.load(Marshal.dump(x).taint).tainted?
+    end
+    assert_empty(tainted.map {|x| [x, x.class]}, bug8945)
+  end
 end

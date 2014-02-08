@@ -1356,9 +1356,9 @@ r_entry0(VALUE v, st_index_t num, struct load_arg *arg)
     }
     if (arg->infection &&
 	!RB_TYPE_P(v, T_CLASS) && !RB_TYPE_P(v, T_MODULE)) {
-	FL_SET(v, arg->infection);
+	OBJ_TAINT(v);
 	if ((VALUE)real_obj != Qundef)
-	    FL_SET((VALUE)real_obj, arg->infection);
+	    OBJ_TAINT((VALUE)real_obj);
     }
     return v;
 }

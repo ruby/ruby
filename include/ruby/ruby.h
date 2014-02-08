@@ -1175,14 +1175,14 @@ struct RBignum {
 #define FL_UNSET(x,f) do {if (FL_ABLE(x)) RBASIC(x)->flags &= ~(f);} while (0)
 #define FL_REVERSE(x,f) do {if (FL_ABLE(x)) RBASIC(x)->flags ^= (f);} while (0)
 
+#define OBJ_TAINTABLE(x) (FL_ABLE(x) && BUILTIN_TYPE(x) != T_BIGNUM && BUILTIN_TYPE(x) != T_FLOAT)
 #define OBJ_TAINTED(x) (!!FL_TEST((x), FL_TAINT))
-#define OBJ_TAINT(x) FL_SET((x), FL_TAINT)
+#define OBJ_TAINT(x) (OBJ_TAINTABLE(x) ? (RBASIC(x)->flags |= FL_TAINT) : 0)
 #define OBJ_UNTRUSTED(x) OBJ_TAINTED(x)
 #define OBJ_UNTRUST(x) OBJ_TAINT(x)
-#define OBJ_INFECT(x,s) do { \
-  if (FL_ABLE(x) && FL_ABLE(s)) \
-    RBASIC(x)->flags |= RBASIC(s)->flags & FL_TAINT; \
-} while (0)
+#define OBJ_INFECT(x,s) ( \
+    (OBJ_TAINTABLE(x) && FL_ABLE(s)) ? \
+    RBASIC(x)->flags |= RBASIC(s)->flags & FL_TAINT : 0)
 
 #define OBJ_FROZEN(x) (!!(FL_ABLE(x)?(RBASIC(x)->flags&(FL_FREEZE)):(FIXNUM_P(x)||FLONUM_P(x)||SYMBOL_P(x))))
 #define OBJ_FREEZE(x) FL_SET((x), FL_FREEZE)

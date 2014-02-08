@@ -1,3 +1,9 @@
+Sun Feb  9 02:13:53 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (OBJ_TAINTABLE, OBJ_TAINT, OBJ_INFECT),
+	  marshal.c (r_entry0): all Numerics never be tainted now.
+	  [ruby-core:57346] [Bug #8945]
+
 Sat Feb  8 23:40:35 2014  Vit Ondruch  <vondruch@redhat.com>
 
 	* configure.in: add qouting brackets and append wildcard for the
