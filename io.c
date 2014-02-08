@@ -2208,8 +2208,6 @@ rb_io_bufread(VALUE io, void *buf, size_t size)
     return (ssize_t)io_bufread(buf, (long)size, fptr);
 }
 
-#define SMALLBUF 100
-
 static long
 remain_size(rb_io_t *fptr)
 {

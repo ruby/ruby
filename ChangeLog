@@ -1,3 +1,7 @@
+Sat Feb  8 15:11:21 2014  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (SMALLBUF): Unused macro removed.
+
 Fri Feb  7 23:37:49 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb: Ignore name servers which cause EAFNOSUPPORT on
