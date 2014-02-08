@@ -864,7 +864,7 @@ if test "$GCC" = yes; then
 	[*-darwin*], [
 	    # doesn't seem necessary on Mac OS X
 	],
-	[i[4-6]86], [
+	[[i[4-6]86*]], [
 	    RUBY_TRY_CFLAGS(-msse2 -mfpmath=sse, [
 		RUBY_APPEND_OPTION(XCFLAGS, -msse2 -mfpmath=sse)
 		RUBY_TRY_CFLAGS(-mstackrealign, [RUBY_APPEND_OPTION(XCFLAGS, -mstackrealign)])

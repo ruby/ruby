@@ -1,3 +1,9 @@
+Sat Feb  8 23:40:35 2014  Vit Ondruch  <vondruch@redhat.com>
+
+	* configure.in: add qouting brackets and append wildcard for the
+	  rest after target_cpu, to properly detect platform for SSE2
+	  instructions.  [ruby-core:60576] [Bug #8358]
+
 Sat Feb  8 21:44:07 2014  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* configure.in: check qsort_r(3) and whether it is GNU version.
