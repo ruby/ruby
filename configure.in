@@ -1984,7 +1984,7 @@ RUBY_CHECK_BUILTIN_FUNC(__builtin_types_compatible_p, [__builtin_types_compatibl
 if test "$ac_cv_func_qsort_r" != no; then
   AC_CACHE_CHECK(whether qsort_r is GNU version, rb_cv_gnu_qsort_r,
     [AC_TRY_COMPILE([
-#include <stdlib.h>
+@%:@include <stdlib.h>
 void qsort_r(void *base, size_t nmemb, size_t size,
 	    int (*compar)(const void *, const void *, void *),
 	    void *arg);
@@ -1992,9 +1992,19 @@ void qsort_r(void *base, size_t nmemb, size_t size,
       [rb_cv_gnu_qsort_r=yes],
       [rb_cv_gnu_qsort_r=no])
   ])
-  if test "$rb_cv_gnu_qsort_r" != no; then
+  AC_CACHE_CHECK(whether qsort_r is BSD version, rb_cv_bsd_qsort_r,
+    [AC_TRY_COMPILE([
+@%:@include <stdlib.h>
+void qsort_r(void *base, size_t nmemb, size_t size,
+	     void *arg, int (*compar)(void *, const void *, const void *));
+],[ ],
+      [rb_cv_bsd_qsort_r=yes],
+      [rb_cv_bsd_qsort_r=no])
+  ])
+  AS_CASE("$rb_cv_gnu_qsort_r:$rb_cv_bsd_qsort_r",
+  [yes:no], [
     AC_DEFINE(HAVE_GNU_QSORT_R, 1)
-  fi
+  ])
 fi
 
 # Some platform need -lrt for clock_gettime, but the other don't.
