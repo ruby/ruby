@@ -1,3 +1,8 @@
+Sat Feb  8 16:34:36 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb (Resolv::DNS::Message::MessageDecoder#get_labels):
+	  Make it iterative.
+
 Sat Feb  8 15:54:12 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c, gc.h (rb_objspace_marked_object_p): added.
