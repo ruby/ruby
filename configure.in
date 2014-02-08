@@ -1920,6 +1920,7 @@ AC_CHECK_FUNCS(posix_fadvise)
 AC_CHECK_FUNCS(posix_memalign)
 AC_CHECK_FUNCS(ppoll)
 AC_CHECK_FUNCS(pread)
+AC_CHECK_FUNCS(qsort_r)
 AC_CHECK_FUNCS(readlink)
 AC_CHECK_FUNCS(round)
 AC_CHECK_FUNCS(seekdir)
@@ -1979,6 +1980,39 @@ RUBY_CHECK_BUILTIN_FUNC(__builtin_clzl, [__builtin_clzl(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_clzll, [__builtin_clzll(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_choose_expr, [__builtin_choose_expr(0, 0, 0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_types_compatible_p, [__builtin_types_compatible_p(int, int)])
+
+if test "$ac_cv_func_qsort_r" != no; then
+  AC_CACHE_CHECK(that qsort_r is GNU version, rb_cv_gnu_qsort_r,
+    [AC_RUN_IFELSE(
+      [AC_LANG_SOURCE([[
+#include <stdlib.h>
+
+int unsorted[] = { 4, 3, 2, 1 };
+int sorted[] = { 1, 2, 3, 4 };
+
+int
+compar(const void *a, const void *b, void *arg)
+{
+  if (*(int *)arg != 42) exit(1);
+  return *(int *)a - *(int *)b;
+}
+
+int
+main(void)
+{
+  int arg = 42;
+  qsort_r(unsorted, 4, sizeof(int), compar, &arg);
+  if (memcmp(sorted, unsorted, 4) != 0) return 1;
+  return 0;
+}
+      ]])],
+      [rb_cv_gnu_qsort_r=yes],
+      [rb_cv_gnu_qsort_r=no])
+  ])
+  if test "$rb_cv_gnu_qsort_r" != no; then
+    AC_DEFINE(HAVE_GNU_QSORT_R, 1)
+  fi
+fi
 
 # Some platform need -lrt for clock_gettime, but the other don't.
 if test x"$ac_cv_func_clock_gettime" != xyes; then

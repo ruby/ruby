@@ -1,3 +1,12 @@
+Sat Feb  8 21:44:07 2014  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* configure.in: check qsort_r(3) and whether it is GNU version.
+	  BSD version has different prototype.
+
+	* util.h: use qsort_r() as ruby_qsort() if it is GNU version.
+
+	* util.c: define ruby_qsort() if needed.
+
 Sat Feb  8 16:34:36 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (Resolv::DNS::Message::MessageDecoder#get_labels):
