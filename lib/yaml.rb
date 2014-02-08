@@ -56,7 +56,7 @@ end
 #
 # Working with YAML can be very simple, for example:
 #
-#     require 'yaml' # STEP ONE, REQUIRE YAML!
+#     require 'yaml'
 #     # Parse a YAML string
 #     YAML.load("--- foo") #=> "foo"
 #
@@ -85,5 +85,9 @@ end
 #
 # For more advanced details on the implementation see Psych, and also check out
 # http://yaml.org for spec details and other helpful information.
+#
+# Pysch is maintained by Aaron Patterson on github: https://github.com/tenderlove/psych
+#
+# Syck can also be found on github: https://github.com/tenderlove/syck
 module YAML
 end

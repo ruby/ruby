@@ -1,3 +1,8 @@
+Sun Feb  9 04:07:34 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/yaml.rb: [DOC] Add links to syck and psych on github [Bug #9501]
+	  Based on a patch by Giorgos Tsiftsis
+
 Sun Feb  9 02:13:53 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (OBJ_TAINTABLE, OBJ_TAINT, OBJ_INFECT),
