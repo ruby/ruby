@@ -1,3 +1,8 @@
+Mon Feb 10 00:02:18 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (glob_helper): don't skip current directories if FNM_DOTMATCH
+	  is given.  [ruby-core:53108] [Bug #8006]
+
 Wed Feb  5 23:39:36 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (intern_str): sigil only names are junk, at least one

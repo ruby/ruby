@@ -168,7 +168,10 @@ class TestDir < Test::Unit::TestCase
 
   def test_glob_recursive
     bug6977 = '[ruby-core:47418]'
+    bug8006 = '[ruby-core:53108] [Bug #8006]'
     Dir.chdir(@root) do
+      assert_include(Dir.glob("a/**/*", File::FNM_DOTMATCH), "a/.", bug8006)
+
       FileUtils.mkdir_p("a/b/c/d/e/f")
       assert_equal(["a/b/c/d/e/f"], Dir.glob("a/**/e/f"), bug6977)
       assert_equal(["a/b/c/d/e/f"], Dir.glob("a/**/d/e/f"), bug6977)
