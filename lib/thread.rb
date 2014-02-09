@@ -319,6 +319,18 @@ class SizedQueue < Queue
   end
 
   #
+  # Removes all objects from the queue.
+  #
+  def clear
+    super
+    @mutex.synchronize do
+      @max.times do
+        @enque_cond.signal
+      end
+    end
+  end
+
+  #
   # Alias of push
   #
   alias << push

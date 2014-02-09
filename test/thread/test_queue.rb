@@ -108,4 +108,71 @@ class TestQueue < Test::Unit::TestCase
       end
     }
   end
+
+  def test_sized_queue_clear
+    # Fill queue, then test that SizedQueue#clear wakes up all waiting threads
+    sq = SizedQueue.new(2)
+    2.times { sq << 1 }
+
+    t1 = Thread.new do
+      sq << 1
+    end
+
+    t2 = Thread.new do
+      sq << 1
+    end
+
+    t3 = Thread.new do
+      Thread.pass
+      sq.clear
+    end
+
+    [t3, t2, t1].each(&:join)
+    assert_equal sq.length, 2
+  end
+
+  def test_sized_queue_throttle
+    q = SizedQueue.new(1)
+    i = 0
+    consumer = Thread.new do
+      while q.pop
+        i += 1
+        Thread.pass
+      end
+    end
+    nprod = 4
+    npush = 100
+
+    producer = nprod.times.map do
+      Thread.new do
+        npush.times { q.push(true) }
+      end
+    end
+    producer.each(&:join)
+    q.push(nil)
+    consumer.join
+    assert_equal(nprod * npush, i)
+  end
+
+  def test_queue_thread_raise
+    q = Queue.new
+    th1 = Thread.new do
+      begin
+        q.pop
+      rescue RuntimeError
+        sleep
+      end
+    end
+    th2 = Thread.new do
+      sleep 0.1
+      q.pop
+    end
+    sleep 0.1
+    th1.raise
+    sleep 0.1
+    q << :s
+    assert_nothing_raised(TimeoutError) do
+      timeout(1) { th2.join }
+    end
+  end
 end
