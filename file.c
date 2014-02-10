@@ -4182,7 +4182,6 @@ rb_file_truncate(VALUE obj, VALUE len)
 
 #ifdef __CYGWIN__
 #include <winerror.h>
-extern unsigned long __attribute__((stdcall)) GetLastError(void);
 #endif
 
 static VALUE
