@@ -1155,76 +1155,69 @@ static VALUE
 strscan_inspect(VALUE self)
 {
     struct strscanner *p;
-    char buf[BUFSIZE];
-    long len;
     VALUE a, b;
 
     p = check_strscan(self);
     if (NIL_P(p->str)) {
-        len = snprintf(buf, BUFSIZE, "#<%s (uninitialized)>",
-                       rb_class2name(CLASS_OF(self)));
-        return infect(rb_str_new(buf, len), p);
+	a = rb_sprintf("#<%"PRIsVALUE" (uninitialized)>", rb_obj_class(self));
+	return infect(a, p);
     }
     if (EOS_P(p)) {
-        len = snprintf(buf, BUFSIZE, "#<%s fin>",
-                       rb_class2name(CLASS_OF(self)));
-        return infect(rb_str_new(buf, len), p);
+	a = rb_sprintf("#<%"PRIsVALUE" fin>", rb_obj_class(self));
+	return infect(a, p);
     }
     if (p->curr == 0) {
-        b = inspect2(p);
-        len = snprintf(buf, BUFSIZE, "#<%s %ld/%ld @ %s>",
-                       rb_class2name(CLASS_OF(self)),
-                       p->curr, S_LEN(p),
-                       RSTRING_PTR(b));
-        return infect(rb_str_new(buf, len), p);
+	b = inspect2(p);
+	a = rb_sprintf("#<%"PRIsVALUE" %ld/%ld @ %"PRIsVALUE">",
+		       rb_obj_class(self),
+		       p->curr, S_LEN(p),
+		       b);
+	return infect(a, p);
     }
     a = inspect1(p);
     b = inspect2(p);
-    len = snprintf(buf, BUFSIZE, "#<%s %ld/%ld %s @ %s>",
-                   rb_class2name(CLASS_OF(self)),
-                   p->curr, S_LEN(p),
-                   RSTRING_PTR(a),
-                   RSTRING_PTR(b));
-    return infect(rb_str_new(buf, len), p);
+    a = rb_sprintf("#<%"PRIsVALUE" %ld/%ld %"PRIsVALUE" @ %"PRIsVALUE">",
+		   rb_obj_class(self),
+		   p->curr, S_LEN(p),
+		   a, b);
+    return infect(a, p);
 }
 
 static VALUE
 inspect1(struct strscanner *p)
 {
-    char buf[BUFSIZE];
-    char *bp = buf;
+    VALUE str;
     long len;
 
     if (p->curr == 0) return rb_str_new2("");
     if (p->curr > INSPECT_LENGTH) {
-        strcpy(bp, "..."); bp += 3;
-        len = INSPECT_LENGTH;
+	str = rb_str_new_cstr("...");
+	len = INSPECT_LENGTH;
     }
     else {
-        len = p->curr;
+	str = rb_str_new(0, 0);
+	len = p->curr;
     }
-    memcpy(bp, CURPTR(p) - len, len); bp += len;
-    return rb_str_dump(rb_str_new(buf, bp - buf));
+    rb_str_cat(str, CURPTR(p) - len, len);
+    return rb_str_dump(str);
 }
 
 static VALUE
 inspect2(struct strscanner *p)
 {
-    char buf[BUFSIZE];
-    char *bp = buf;
+    VALUE str;
     long len;
 
     if (EOS_P(p)) return rb_str_new2("");
     len = S_LEN(p) - p->curr;
     if (len > INSPECT_LENGTH) {
-        len = INSPECT_LENGTH;
-        memcpy(bp, CURPTR(p), len); bp += len;
-        strcpy(bp, "..."); bp += 3;
+	str = rb_str_new(CURPTR(p), INSPECT_LENGTH);
+	rb_str_cat2(str, "...");
     }
     else {
-        memcpy(bp, CURPTR(p), len); bp += len;
+	str = rb_str_new(CURPTR(p), len);
     }
-    return rb_str_dump(rb_str_new(buf, bp - buf));
+    return rb_str_dump(str);
 }
 
 /* =======================================================================

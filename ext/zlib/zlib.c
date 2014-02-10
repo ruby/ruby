@@ -337,11 +337,8 @@ raise_zlib_error(int err, const char *msg)
 	rb_sys_fail(msg);
 	/* no return */
       default:
-      {
-	  char buf[BUFSIZ];
-	  snprintf(buf, BUFSIZ, "unknown zlib error %d: %s", err, msg);
-	  exc = rb_exc_new2(cZError, buf);
-      }
+	exc = rb_exc_new_str(cZError,
+			     rb_sprintf("unknown zlib error %d: %s", err, msg));
     }
 
     rb_exc_raise(exc);
