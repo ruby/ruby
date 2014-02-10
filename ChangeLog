@@ -1,3 +1,9 @@
+Tue Feb 11 00:26:19 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (GetLastError): already defined in windows.h on nowadays
+	  cygwin, and caused the confliction with the system provided
+	  definition on cygwin64.  by @kou1okada [Fixes GH-433].
+
 Mon Feb 10 01:15:10 2014  Kouhei Sutou  <kou@cozmixng.org>
 
 	* ext/socket/raddrinfo.c (nogvl_getaddrinfo): Fix indent.
