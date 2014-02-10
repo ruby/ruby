@@ -2141,6 +2141,7 @@ take_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *
  *     a = [1, 2, 3, 4, 5, 0]
  *     a.take(3)             #=> [1, 2, 3]
+ *     a.take(30)            #=> [1, 2, 3, 4, 5, 0]
  *
  */
 
