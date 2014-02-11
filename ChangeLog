@@ -1,3 +1,8 @@
+Tue Feb 11 22:59:10 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_bn.c (ossl_bn_initialize): Use rb_integer_pack.
+	  Fix SEGV by OpenSSL::BN.new(1 << (2**34)).
+
 Tue Feb 11 17:00:38 2014  Zachary Scott  <e@zzak.io>
 
 	* ext/tk/README.tcltklib: [DOC] Fix typo by @xta [Fixes GH-532]
