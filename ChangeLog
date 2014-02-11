@@ -1,3 +1,7 @@
+Tue Feb 11 17:00:38 2014  Zachary Scott  <e@zzak.io>
+
+	* ext/tk/README.tcltklib: [DOC] Fix typo by @xta [Fixes GH-532]
+
 Sun Feb  9 13:59:29 2014  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: Fix compilation error.
