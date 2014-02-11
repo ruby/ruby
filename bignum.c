@@ -5395,7 +5395,12 @@ rb_big_cmp(VALUE x, VALUE y)
 {
     int cmp;
 
-    if (FIXNUM_P(y)) {
+    if (y == INT2FIX(0)) {
+        if (BIGZEROP(x)) return INT2FIX(0);
+        if (RBIGNUM_NEGATIVE_P(x)) return INT2FIX(-1);
+        return INT2FIX(1);
+    }
+    else if (FIXNUM_P(y)) {
 	y = rb_int2big(FIX2LONG(y));
     }
     else if (RB_BIGNUM_TYPE_P(y)) {

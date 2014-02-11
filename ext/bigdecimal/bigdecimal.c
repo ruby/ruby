@@ -2095,7 +2095,7 @@ is_negative(VALUE x)
 	return FIX2LONG(x) < 0;
     }
     else if (RB_TYPE_P(x, T_BIGNUM)) {
-	return RBIGNUM_NEGATIVE_P(x);
+	return FIX2INT(rb_big_cmp(x, INT2FIX(0))) < 0;
     }
     else if (RB_TYPE_P(x, T_FLOAT)) {
 	return RFLOAT_VALUE(x) < 0.0;

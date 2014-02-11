@@ -1,3 +1,10 @@
+Tue Feb 11 23:42:27 2014  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big_cmp): Specialize a comparison to zero.
+
+	* ext/bigdecimal/bigdecimal.c (is_negative): Use rb_big_cmp instead of
+	  RBIGNUM_NEGATIVE_P.
+
 Tue Feb 11 22:59:10 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_bn.c (ossl_bn_initialize): Use rb_integer_pack.
