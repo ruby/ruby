@@ -290,8 +290,8 @@ class Logger
 
   #
   # :call-seq:
-  #   Logger.new(name, shift_age = 7, shift_size = 1048576)
-  #   Logger.new(name, shift_age = 'weekly')
+  #   Logger.new(logdev, shift_age = 7, shift_size = 1048576)
+  #   Logger.new(logdev, shift_age = 'weekly')
   #
   # === Args
   #
