@@ -27,8 +27,17 @@ bug_sym_##type##_p(VALUE self, VALUE name) \
 
 FOREACH_ID_TYPES(define_symbol_type_p)
 
+static VALUE
+bug_sym_attrset(VALUE self, VALUE name)
+{
+    ID id = rb_to_id(name);
+    id = rb_id_attrset(id);
+    return ID2SYM(id);
+}
+
 void
 Init_type(VALUE klass)
 {
-    FOREACH_ID_TYPES(declare_symbol_type_p)
+    FOREACH_ID_TYPES(declare_symbol_type_p);
+    rb_define_singleton_method(klass, "attrset", bug_sym_attrset, 1);
 }
