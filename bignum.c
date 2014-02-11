@@ -6999,6 +6999,13 @@ rb_big_size(VALUE big)
  *     (2**10000).bit_length     #=> 10001
  *     (2**10000+1).bit_length   #=> 10001
  *
+ *  This method can be used to detect overflow in Array#pack as follows.
+ *
+ *     if n.bit_length < 32
+ *       [n].pack("l") # no overflow
+ *     else
+ *       raise "overflow"
+ *     end
  */
 
 static VALUE

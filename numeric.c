@@ -3538,6 +3538,14 @@ fix_size(VALUE fix)
  *     (2**12-1).bit_length      #=> 12
  *     (2**12).bit_length        #=> 13
  *     (2**12+1).bit_length      #=> 13
+ *
+ *  This method can be used to detect overflow in Array#pack as follows.
+ *
+ *     if n.bit_length < 32
+ *       [n].pack("l") # no overflow
+ *     else
+ *       raise "overflow"
+ *     end
  */
 
 static VALUE
