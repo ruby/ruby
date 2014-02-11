@@ -2874,8 +2874,9 @@ BigMath_s_log(VALUE klass, VALUE x, VALUE vprec)
 	goto get_vp_value;
 
       case T_BIGNUM:
-	zero = RBIGNUM_ZERO_P(x);
-	negative = RBIGNUM_NEGATIVE_P(x);
+        i = FIX2INT(rb_big_cmp(x, INT2FIX(0)));
+	zero = i == 0;
+	negative = i < 0;
 get_vp_value:
 	if (zero || negative) break;
 	vx = GetVpValue(x, 0);
