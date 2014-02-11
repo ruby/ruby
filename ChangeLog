@@ -1,3 +1,35 @@
+Tue Feb 11 23:21:02 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* test/ruby/test_struct.rb (test_struct_question_mark): add a testcase
+	  for Struct attribute with question mark. the patch was originally
+	  written by Eric Wong [ruby-core:59095] [Backport #9248]
+
+Tue Feb 11 23:21:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_id_attrset, intern_str): allow junk attrset ID for
+	  Struct.
+
+	* parse.y (rb_id_attrset): fix inconsistency with literals, allow
+	  ID_ATTRSET and return it itself, but ID_JUNK cannot make ID_ATTRSET.
+	  and raise a NameError instead of rb_bug() for invalid argument.
+
+Tue Feb 11 23:21:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_enc_symname_type): allow ID_ATTRSET for ID_INSTANCE,
+	  ID_GLOBAL, ID_CLASS, ID_JUNK too.  [Bug #8756]
+
+Tue Feb 11 23:21:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_id_attrset): allow other than ID_ATTRSET.
+
+	* parse.y (intern_str): ditto.  try stem ID for ID_INSTANCE,
+	  ID_GLOBAL, ID_CLASS, ID_JUNK too.  [Bug #8756]
+
+Tue Feb 11 23:21:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_id_attrset): check if the argument is valid type as an
+	  attribute.
+
 Tue Feb 11 00:26:19 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (GetLastError): already defined in windows.h on nowadays
