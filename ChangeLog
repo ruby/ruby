@@ -1,3 +1,8 @@
+Thu Feb 13 00:56:59 2014  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* configure.in: revert r44922. I should have used AC_CHECK_FUNCS()
+	  to just define a symbol if the function is available.
+
 Thu Feb 13 00:20:58 2014  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* configure.in: use AC_CHECK_FUNC instead of AC_CHECK_FUNCS
