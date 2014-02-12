@@ -1918,6 +1918,7 @@ AC_CHECK_FUNCS(mblen)
 AC_CHECK_FUNCS(memalign)
 AC_CHECK_FUNCS(writev)
 AC_CHECK_FUNCS(memrchr)
+AC_CHECK_FUNCS(memmem)
 AC_CHECK_FUNCS(mktime)
 AC_CHECK_FUNCS(pipe2)
 AC_CHECK_FUNCS(poll)
@@ -3586,7 +3587,7 @@ if test "${universal_binary-no}" = yes ; then
     ])])
 fi
 
-AC_CHECK_FUNC(memmem, [
+if test "$ac_cv_func_memmem" = yes; then
   AC_CACHE_CHECK(for broken memmem, rb_cv_broken_memmem, [
     AC_TRY_RUN([
 #include <string.h>
@@ -3616,10 +3617,8 @@ main()
     rb_cv_broken_memmem=yes,
     rb_cv_broken_memmem=yes)
   ])
-  if test "$rb_cv_broken_memmem" = no; then
-    AC_DEFINE(HAVE_MEMMEM, 1)
-  fi
-])
+  AS_CASE([$ac_cv_func_memmem],[yes],[ac_cv_func_memmem=no])
+fi
 
 
 CPPFLAGS="$CPPFLAGS "'$(DEFS)'
