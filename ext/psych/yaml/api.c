@@ -395,7 +395,7 @@ yaml_emitter_delete(yaml_emitter_t *emitter)
     }
     QUEUE_DEL(emitter, emitter->events);
     STACK_DEL(emitter, emitter->indents);
-    while (!STACK_EMPTY(empty, emitter->tag_directives)) {
+    while (!STACK_EMPTY(emitter, emitter->tag_directives)) {
         yaml_tag_directive_t tag_directive = POP(emitter, emitter->tag_directives);
         yaml_free(tag_directive.handle);
         yaml_free(tag_directive.prefix);
