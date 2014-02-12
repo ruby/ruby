@@ -1,3 +1,8 @@
+Thu Feb 13 00:20:58 2014  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* configure.in: use AC_CHECK_FUNC instead of AC_CHECK_FUNCS
+	  if available.
+
 Thu Feb 13 00:15:10 2014  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* configure.in: fix to undefine HAVE_MEMEM collectlly if it is broken.
