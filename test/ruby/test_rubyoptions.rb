@@ -555,7 +555,7 @@ class TestRubyOptions < Test::Unit::TestCase
                          '-e', 'Process.kill :SEGV, $$',
                          '-C', tmpdir,
                         ],
-                        "", [], /#<Bogus:/,
+                        "", [], //,
                         nil,
                         opts)
     end
