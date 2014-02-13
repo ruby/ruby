@@ -1,3 +1,17 @@
+Thu Feb 13 23:30:30 2014  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_call_method): should check ci->me->flag of
+	  a refining method in case the method is private.
+	  [ruby-core:60111] [Bug #9452]
+
+	* vm_method.c (make_method_entry_refined): set me->flag of a refined
+	  method entry to NOEX_PUBLIC in case the original method is private
+	  and it is refined as a public method.  The original flag is stored
+	  in me->def->body.orig_me, so it's OK to make a refined method
+	  entry public.  [ruby-core:60111] [Bug #9452]
+
+	* test/ruby/test_refinement.rb: related tests.
+
 Thu Feb 13 18:38:15 2014  Eric Wong  <e@80x24.org>
 
 	* re.c (rb_reg_raise): remove volatile
