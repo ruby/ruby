@@ -10,7 +10,7 @@ Thu Feb 13 00:20:58 2014  Masaki Matsushita  <glass.saga@gmail.com>
 
 Thu Feb 13 00:15:10 2014  Masaki Matsushita  <glass.saga@gmail.com>
 
-	* configure.in: fix to undefine HAVE_MEMEM collectlly if it is broken.
+	* configure.in: fix to undefine HAVE_MEMMEM correctly if it is broken.
 
 Tue Feb 11 23:54:40 2014  Tanaka Akira  <akr@fsij.org>
 
@@ -52,7 +52,7 @@ Sun Feb  9 02:13:53 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sat Feb  8 23:40:35 2014  Vit Ondruch  <vondruch@redhat.com>
 
-	* configure.in: add qouting brackets and append wildcard for the
+	* configure.in: add quoting brackets and append wildcard for the
 	  rest after target_cpu, to properly detect platform for SSE2
 	  instructions.  [ruby-core:60576] [Bug #8358]
 
