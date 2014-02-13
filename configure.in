@@ -2483,7 +2483,7 @@ if test x"$enable_pthread" = xyes; then
 	pthread_get_stackaddr_np pthread_get_stacksize_np \
 	thr_stksegment pthread_stackseg_np pthread_getthrds_np \
 	pthread_cond_init pthread_condattr_setclock pthread_condattr_init \
-        pthread_sigmask)
+	pthread_sigmask pthread_setname_np)
     if test "${host_os}" = "nacl"; then
       ac_cv_func_pthread_attr_init=no
     else

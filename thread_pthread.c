@@ -1423,7 +1423,7 @@ timer_thread_sleep(rb_global_vm_lock_t* unused)
 
 #if defined(__linux__) && defined(PR_SET_NAME)
 # define SET_THREAD_NAME(name) prctl(PR_SET_NAME, name)
-#elif defined(__APPLE__)
+#elif defined(HAVE_PTHREAD_SETNAME_NP)
 /* pthread_setname_np() on Darwin does not have target thread argument */
 # define SET_THREAD_NAME(name) pthread_setname_np(name)
 #else

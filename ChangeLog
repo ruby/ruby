@@ -1,3 +1,10 @@
+Thu Feb 13 11:06:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: check if pthread_setname_np is available.
+
+	* thread_pthread.c: pthread_setname_np is not available on old
+	  Darwins.  [ruby-core:60524] [Bug #9492]
+
 Thu Feb 13 00:56:59 2014  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* configure.in: revert r44922. I should have used AC_CHECK_FUNCS()
