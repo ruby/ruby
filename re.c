@@ -630,7 +630,7 @@ rb_reg_to_s(VALUE re)
 static void
 rb_reg_raise(const char *s, long len, const char *err, VALUE re)
 {
-    volatile VALUE desc = rb_reg_desc(s, len, re);
+    VALUE desc = rb_reg_desc(s, len, re);
 
     rb_raise(rb_eRegexpError, "%s: %"PRIsVALUE, err, desc);
 }
