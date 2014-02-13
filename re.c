@@ -2569,13 +2569,12 @@ static VALUE reg_cache;
 VALUE
 rb_reg_regcomp(VALUE str)
 {
-    volatile VALUE save_str = str;
     if (reg_cache && RREGEXP_SRC_LEN(reg_cache) == RSTRING_LEN(str)
 	&& ENCODING_GET(reg_cache) == ENCODING_GET(str)
 	&& memcmp(RREGEXP_SRC_PTR(reg_cache), RSTRING_PTR(str), RSTRING_LEN(str)) == 0)
 	return reg_cache;
 
-    return reg_cache = rb_reg_new_str(save_str, 0);
+    return reg_cache = rb_reg_new_str(str, 0);
 }
 
 static st_index_t reg_hash(VALUE re);

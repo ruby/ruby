@@ -1,3 +1,8 @@
+Thu Feb 13 18:28:51 2014  Eric Wong  <e@80x24.org>
+
+	* re.c (rb_reg_regcomp): remove volatile
+	  Unnecessary since r13261
+
 Thu Feb 13 16:54:32 2014  Zachary Scott  <e@zzak.io>
 
 	* test/ruby/test_array.rb: Ensure flatten! is used for test_flatten
