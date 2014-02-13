@@ -10222,7 +10222,7 @@ rb_enc_symname_p(const char *name, rb_encoding *enc)
 }
 
 #define IDSET_ATTRSET_FOR_SYNTAX ((1U<<ID_LOCAL)|(1U<<ID_CONST))
-#define IDSET_ATTRSET_FOR_INTERN (~(~0U<<ID_SCOPE_MASK) & ~(1U<<ID_ATTRSET))
+#define IDSET_ATTRSET_FOR_INTERN (~(~0U<<(1<<ID_SCOPE_SHIFT)) & ~(1U<<ID_ATTRSET))
 
 static int
 rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int allowed_attrset)
@@ -10309,7 +10309,8 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int a
 	    if (type == ID_GLOBAL || type == ID_CLASS || type == ID_INSTANCE) return -1;
 	    type = ID_JUNK;
 	    ++m;
-	    break;
+	    if (m + 1 < e || *m != '=') break;
+	    /* fall through */
 	  case '=':
 	    if (!(allowed_attrset & (1U << type))) return -1;
 	    type = ID_ATTRSET;

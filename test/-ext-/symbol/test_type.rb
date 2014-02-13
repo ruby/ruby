@@ -115,6 +115,10 @@ module Test_Symbol
       assert_equal(:"[foo]=", Bug::Symbol.attrset("[foo]"))
       assert_symtype(Bug::Symbol.attrset("[foo]"), :attrset?)
       assert_equal(:[]=, Bug::Symbol.attrset(:[]))
+      assert_symtype(Bug::Symbol.attrset("foo?="), :attrset?)
+      assert_equal(:"foo?=", Bug::Symbol.attrset(:foo?))
+      assert_symtype(Bug::Symbol.attrset("foo!="), :attrset?)
+      assert_equal(:"foo!=", Bug::Symbol.attrset(:foo!))
     end
   end
 end
