@@ -1,3 +1,8 @@
+Thu Feb 13 16:54:32 2014  Zachary Scott  <e@zzak.io>
+
+	* test/ruby/test_array.rb: Ensure flatten! is used for test_flatten
+	  Patch by @ksss [Fixes GH-530] https://github.com/ruby/ruby/pull/530
+
 Thu Feb 13 15:43:16 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (IDSET_ATTRSET_FOR_INTERN): fix off-by-one bug.
