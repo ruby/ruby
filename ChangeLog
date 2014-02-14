@@ -1,3 +1,10 @@
+Fri Feb 14 16:21:28 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ruby_atomic.h (ATOMIC_CAS): added.
+
+	* signal.c (ruby_atomic_compare_and_swap): ATOMIC_CAS implementation
+	  for non-VC/gcc platform.
+
 Fri Feb 14 15:56:27 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb: Ignore name servers which cause EAFNOSUPPORT on

@@ -29,6 +29,17 @@ ruby_atomic_exchange(rb_atomic_t *ptr, rb_atomic_t val)
     *ptr = val;
     return old;
 }
+
+rb_atomic_t
+ruby_atomic_compare_and_swap(rb_atomic_t *ptr, rb_atomic_t cmp,
+			     rb_atomic_t newval)
+{
+    rb_atomic_t old = *ptr;
+    if (old == cmp) {
+	*ptr = newval;
+    }
+    return old;
+}
 #endif
 
 #if defined(__BEOS__) || defined(__HAIKU__)
