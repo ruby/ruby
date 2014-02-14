@@ -744,6 +744,7 @@ VALUE rb_obj_setup(VALUE obj, VALUE klass, VALUE type);
 #define RGENGC_WB_PROTECTED_NODE_CREF 1
 #endif
 
+#define SIZEOF_RBasic (2 * SIZEOF_VALUE)
 struct RBasic {
     VALUE flags;
     const VALUE klass;
@@ -758,7 +759,19 @@ VALUE rb_obj_reveal(VALUE obj, VALUE klass); /* do not use this API to change kl
 
 #define RBASIC_CLASS(obj) (RBASIC(obj)->klass)
 
-#define ROBJECT_EMBED_LEN_MAX 3
+/* RValueStorage can be anything bigger than 5 words, best cache-lined. */
+#if SIZEOF_CACHE_LINE < 5 * SIZEOF_VALUE
+#define SIZEOF_RValueStorage (5 * SIZEOF_VALUE)
+#else
+#define SIZEOF_RValueStorage SIZEOF_CACHE_LINE
+#endif
+#define RValueStorage_EMBED_LEN_MAX(ELEM_SIZE) ((SIZEOF_RValueStorage - SIZEOF_RBasic) / ELEM_SIZE)
+struct RValueStorage {
+    /* This is much like struct sockaddr_storage */
+    char storage[SIZEOF_RValueStorage];
+};
+
+#define ROBJECT_EMBED_LEN_MAX RValueStorage_EMBED_LEN_MAX(SIZEOF_VALUE)
 struct RObject {
     struct RBasic basic;
     union {
@@ -816,7 +829,12 @@ VALUE rb_float_new_in_heap(double);
 
 #define ELTS_SHARED FL_USER2
 
-#define RSTRING_EMBED_LEN_MAX ((int)((sizeof(VALUE)*3)/sizeof(char)-1))
+#if SIZEOF_VALUE >= 5
+#define RSTRING_EMBED_LEN_MAX (RValueStorage_EMBED_LEN_MAX(1) - 1) /* sizeof(char) is always 1 */
+#else
+/* as.basic.flags has no bits left to hold length of 46 chars this case >< */
+#define RSTRING_EMBED_LEN_MAX (31)
+#endif
 struct RString {
     struct RBasic basic;
     union {
@@ -833,8 +851,16 @@ struct RString {
 };
 #define RSTRING_NOEMBED FL_USER1
 #define RSTRING_FSTR FL_USER17
-#define RSTRING_EMBED_LEN_MASK (FL_USER2|FL_USER3|FL_USER4|FL_USER5|FL_USER6)
+#define RSTRING_EMBED_LEN_OLDMASK (FL_USER2|FL_USER3|FL_USER4|FL_USER5|FL_USER6)
+#if RSTRING_EMBED_LEN_MAX < 32
+#define RSTRING_EMBED_LEN_MASK RSTRING_EMBED_LEN_OLDMASK
 #define RSTRING_EMBED_LEN_SHIFT (FL_USHIFT+2)
+#elif RSTRING_EMBED_LEN_MAX < 256
+#define RSTRING_EMBED_LEN_MASK (0xFF00000000ULL)
+#define RSTRING_EMBED_LEN_SHIFT (32)
+#else
+#error to be defined.
+#endif
 #define RSTRING_EMBED_LEN(str) \
      (long)((RBASIC(str)->flags >> RSTRING_EMBED_LEN_SHIFT) & \
             (RSTRING_EMBED_LEN_MASK >> RSTRING_EMBED_LEN_SHIFT))
@@ -856,7 +882,7 @@ struct RString {
      ((ptrvar) = RSTRING(str)->as.ary, (lenvar) = RSTRING_EMBED_LEN(str)) : \
      ((ptrvar) = RSTRING(str)->as.heap.ptr, (lenvar) = RSTRING(str)->as.heap.len))
 
-#define RARRAY_EMBED_LEN_MAX 3
+#define RARRAY_EMBED_LEN_MAX RValueStorage_EMBED_LEN_MAX(SIZEOF_VALUE)
 struct RArray {
     struct RBasic basic;
     union {
@@ -873,8 +899,9 @@ struct RArray {
 };
 #define RARRAY_EMBED_FLAG FL_USER1
 /* FL_USER2 is for ELTS_SHARED */
-#define RARRAY_EMBED_LEN_MASK (FL_USER4|FL_USER3)
-#define RARRAY_EMBED_LEN_SHIFT (FL_USHIFT+3)
+#define RARRAY_EMBED_LEN_MASK \
+  (FL_USER6|FL_USER7|FL_USER8|FL_USER9|FL_USER10|FL_USER11)
+#define RARRAY_EMBED_LEN_SHIFT (FL_USHIFT+6)
 #define RARRAY_LEN(a) \
     ((RBASIC(a)->flags & RARRAY_EMBED_FLAG) ? \
      (long)((RBASIC(a)->flags >> RARRAY_EMBED_LEN_SHIFT) & \
@@ -925,11 +952,29 @@ struct RHash {
     int iter_lev;
     const VALUE ifnone;
 };
+
+#define RHASH_EMBED_LEN_MAX (RValueStorage_EMBED_LEN_MAX(SIZEOF_VALUE) / 2)
+struct REmbedHash {
+    struct RBasic basic;
+    union {
+	struct REmbedHashHeap {
+	    struct st_table *ntbl;
+	    int iter_lev;
+	    VALUE ifnone;
+	} heap;
+	VALUE ary[RHASH_EMBED_LEN_MAX][2];
+    } as;
+};
+
+/* #define HASH_DELETED  FL_USER1 */
+/* #define HASH_PROC_DEFAULT FL_USER2 */
+#define RHASH_EMBED_FLAG FL_USER3
+
 /* RHASH_TBL allocates st_table if not available. */
 #define RHASH_TBL(h) rb_hash_tbl(h)
 #define RHASH_ITER_LEV(h) (RHASH(h)->iter_lev)
-#define RHASH_IFNONE(h) (RHASH(h)->ifnone)
-#define RHASH_SIZE(h) (RHASH(h)->ntbl ? (st_index_t)RHASH(h)->ntbl->num_entries : 0)
+#define RHASH_IFNONE(h) rb_hash_ifnone(h)
+#define RHASH_SIZE(h) rb_hash_size_inline(h)
 #define RHASH_EMPTY_P(h) (RHASH_SIZE(h) == 0)
 #define RHASH_SET_IFNONE(h, ifnone) rb_hash_set_ifnone((VALUE)h, ifnone)
 
@@ -1044,7 +1089,7 @@ void *rb_check_typeddata(VALUE, const rb_data_type_t *);
     (sval) = (type*)rb_check_typeddata((obj), (data_type)); \
 } while (0)
 
-#define RSTRUCT_EMBED_LEN_MAX 3
+#define RSTRUCT_EMBED_LEN_MAX RValueStorage_EMBED_LEN_MAX(SIZEOF_VALUE)
 struct RStruct {
     struct RBasic basic;
     union {
@@ -1055,7 +1100,8 @@ struct RStruct {
 	const VALUE ary[RSTRUCT_EMBED_LEN_MAX];
     } as;
 };
-#define RSTRUCT_EMBED_LEN_MASK (FL_USER2|FL_USER1)
+#define RSTRUCT_EMBED_LEN_MASK \
+	(FL_USER6|FL_USER5|FL_USER4|FL_USER3|FL_USER2|FL_USER1)
 #define RSTRUCT_EMBED_LEN_SHIFT (FL_USHIFT+1)
 #define RSTRUCT_LEN(st) \
     ((RBASIC(st)->flags & RSTRUCT_EMBED_LEN_MASK) ? \
@@ -1072,10 +1118,10 @@ struct RStruct {
 #define RSTRUCT_SET(st, idx, v) RB_OBJ_WRITE(st, &RSTRUCT_CONST_PTR(st)[idx], (v))
 #define RSTRUCT_GET(st, idx)    (RSTRUCT_CONST_PTR(st)[idx])
 
-#define RBIGNUM_EMBED_LEN_NUMBITS 3
+#define RBIGNUM_EMBED_LEN_NUMBITS 4
 #ifndef RBIGNUM_EMBED_LEN_MAX
-# if (SIZEOF_VALUE*3/SIZEOF_ACTUAL_BDIGIT) < (1 << RBIGNUM_EMBED_LEN_NUMBITS)-1
-#   define RBIGNUM_EMBED_LEN_MAX (SIZEOF_VALUE*3/SIZEOF_ACTUAL_BDIGIT)
+# if RValueStorage_EMBED_LEN_MAX(SIZEOF_ACTUAL_BDIGIT) < (1 << RBIGNUM_EMBED_LEN_NUMBITS)-1
+#   define RBIGNUM_EMBED_LEN_MAX RValueStorage_EMBED_LEN_MAX(SIZEOF_ACTUAL_BDIGIT)
 # else
 #   define RBIGNUM_EMBED_LEN_MAX ((1 << RBIGNUM_EMBED_LEN_NUMBITS)-1)
 # endif
@@ -1100,8 +1146,8 @@ struct RBignum {
 #define RBIGNUM_NEGATIVE_P(b) (!RBIGNUM_SIGN(b))
 
 #define RBIGNUM_EMBED_FLAG FL_USER2
-#define RBIGNUM_EMBED_LEN_MASK (FL_USER5|FL_USER4|FL_USER3)
-#define RBIGNUM_EMBED_LEN_SHIFT (FL_USHIFT+RBIGNUM_EMBED_LEN_NUMBITS)
+#define RBIGNUM_EMBED_LEN_MASK (FL_USER6|FL_USER5|FL_USER4|FL_USER3)
+#define RBIGNUM_EMBED_LEN_SHIFT (FL_USHIFT+3)
 #define RBIGNUM_LEN(b) \
     ((RBASIC(b)->flags & RBIGNUM_EMBED_FLAG) ? \
      (long)((RBASIC(b)->flags >> RBIGNUM_EMBED_LEN_SHIFT) & \

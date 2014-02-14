@@ -498,8 +498,33 @@ void rb_gc_resurrect(VALUE ptr);
 struct st_table *rb_hash_tbl_raw(VALUE hash);
 #define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h)
 VALUE rb_hash_values(VALUE hash);
+void rb_hash_explode(VALUE hash);
 #define HASH_DELETED  FL_USER1
 #define HASH_PROC_DEFAULT FL_USER2
+
+#include "ruby/st.h"
+static inline size_t
+rb_hash_size_inline(VALUE h)
+{
+    struct st_table *ntbl;
+
+    if (FL_TEST(h, RHASH_EMBED_FLAG)) {
+	struct REmbedHash *e = (struct REmbedHash *)h;
+	int i;
+	for (i = 0; i < RHASH_EMBED_LEN_MAX; i++) {
+	    if (e->as.ary[i][0] == Qundef) {
+		return i;
+	    }
+	}
+	return i;
+    }
+    else if (ntbl = RHASH(h)->ntbl) {
+	return ntbl->num_entries;
+    }
+    else {
+	return 0;
+    }
+}
 
 /* inits.c */
 void rb_call_inits(void);

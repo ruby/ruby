@@ -298,6 +298,10 @@ init_copy(VALUE dest, VALUE obj)
 	    RCLASS_IV_TBL(dest) = rb_st_copy(dest, RCLASS_IV_TBL(obj));
 	}
         break;
+    case T_HASH:
+	/* rb_obj_clone() might clobber this flag */
+	FL_SET(dest, RHASH_EMBED_FLAG);
+	break;
     }
 }
 

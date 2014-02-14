@@ -12,6 +12,8 @@
 #include "ruby/ruby.h"
 #include "internal.h"
 
+STATIC_ASSERT(rbstruct_embed_len_max, RSTRUCT_EMBED_LEN_MAX <= (RSTRUCT_EMBED_LEN_MASK >> RSTRUCT_EMBED_LEN_SHIFT));
+
 VALUE rb_cStruct;
 static ID id_members;
 

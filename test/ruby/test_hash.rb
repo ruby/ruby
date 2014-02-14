@@ -528,6 +528,22 @@ class TestHash < Test::Unit::TestCase
     assert_equal([], expected - keys)
   end
 
+  def test_recursive_keys_inspect
+    h = @cls[]
+    h[h] = h
+    a = h.keys
+    assert_equal 1, a.size
+    assert_equal '[{{...}=>{...}}]', a.inspect
+  end
+
+  def test_hash_hash_embed_vs_explode
+    h = @cls[foo: :bar]
+    before = h.hash
+    h.keys # explode
+    after = h.hash
+    assert_equal before, after
+  end
+
   def test_length
     assert_equal(0, @cls[].length)
     assert_equal(7, @h.length)
@@ -544,7 +560,8 @@ class TestHash < Test::Unit::TestCase
   def test_rehash
     a = [ "a", "b" ]
     c = [ "c", "d" ]
-    h = @cls[ a => 100, c => 300 ]
+    h = @cls[ a => 100, 'b' => 200, c => 300, 'd' => 400 ]
+    h.merge!(Hash[*(1..16)]) # increase hash size or else there's no rehashing
     assert_equal(100, h[a])
     a[0] = "z"
     assert_nil(h[a])

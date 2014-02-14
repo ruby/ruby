@@ -28,6 +28,8 @@ VALUE rb_cArray;
 
 static ID id_cmp, id_div, id_power;
 
+STATIC_ASSERT(rbarray_embed_len_max, RARRAY_EMBED_LEN_MAX <= (RARRAY_EMBED_LEN_MASK >> RARRAY_EMBED_LEN_SHIFT));
+
 #define ARY_DEFAULT_SIZE 16
 #define ARY_MAX_SIZE (LONG_MAX / (int)sizeof(VALUE))
 
@@ -3928,6 +3930,7 @@ ary_tmp_hash_new(void)
     VALUE hash = rb_hash_new();
 
     RBASIC_CLEAR_CLASS(hash);
+    rb_hash_explode(hash);
     return hash;
 }
 
@@ -3962,11 +3965,7 @@ ary_make_hash_by(VALUE ary)
 static inline void
 ary_recycle_hash(VALUE hash)
 {
-    if (RHASH(hash)->ntbl) {
-	st_table *tbl = RHASH(hash)->ntbl;
-	RHASH(hash)->ntbl = 0;
-	st_free_table(tbl);
-    }
+    rb_hash_clear(hash);
 }
 
 /*

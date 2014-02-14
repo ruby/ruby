@@ -145,8 +145,13 @@ define rp
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_HASH
     printf "%sT_HASH%s: ", $color_type, $color_end,
-    if ((struct RHash *)($arg0))->ntbl
-      printf "len=%ld ", ((struct RHash *)($arg0))->ntbl->num_entries
+    if ($flags & RUBY_FL_USER3)
+      printf "(embed) "
+      output/x ((struct REmbedHash*)($arg0))->as.ary
+    else
+      if ((struct RHash *)($arg0))->ntbl
+	printf "len=%ld ", ((struct RHash *)($arg0))->ntbl->num_entries
+      end
     end
     print (struct RHash *)($arg0)
   else

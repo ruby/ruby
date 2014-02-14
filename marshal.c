@@ -822,6 +822,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 
 	  case T_HASH:
 	    w_uclass(obj, rb_cHash, arg);
+	    rb_hash_explode(obj);
 	    if (NIL_P(RHASH_IFNONE(obj))) {
 		w_byte(TYPE_HASH, arg);
 	    }
