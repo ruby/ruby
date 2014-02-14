@@ -66,6 +66,10 @@ class TestWEBrickHTTPUtils < Test::Unit::TestCase
     assert_equal("/~foo%20bar", escape("/~foo bar"))
     assert_equal("/~foo%09bar", escape("/~foo\tbar"))
     assert_equal("/~foo+bar", escape("/~foo+bar"))
+    bug8425 = '[Bug #8425] [ruby-core:55052]'
+    assert_nothing_raised(ArgumentError, Encoding::CompatibilityError, bug8425) {
+      assert_equal("%E3%83%AB%E3%83%93%E3%83%BC%E3%81%95%E3%82%93", escape("\u{30EB 30D3 30FC 3055 3093}"))
+    }
   end
 
   def test_escape_form
