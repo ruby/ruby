@@ -1,3 +1,14 @@
+Fri Feb 14 13:51:45 2014  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/optparse.rb:  The Integer acceptable now allows binary and
+	  hexadecimal numbers per the documentation.  [ruby-trunk - Bug #8865]
+
+	  DecimalInteger, OctalInteger, DecimalNumeric now validate their input
+	  before converting to a number.  [ruby-trunk - Bug #8865]
+
+	* test/optparse/test_acceptable.rb:  Tests for the above, tests for all
+	  numeric acceptables for existing behavior.
+
 Fri Feb 14 12:52:50 2014  Kouhei Sutou  <kou@cozmixng.org>
 
 	* ext/socket/raddrinfo.c (nogvl_getaddrinfo): Fix indent.
