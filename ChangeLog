@@ -1,3 +1,12 @@
+Fri Feb 14 12:45:07 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/thread.rb (SizedQueue#clear): wake waiting threads when called.
+	  [Bug #9342] [ruby-core:59462]
+
+	* test/thread/test_queue.rb: add a test for above.
+
+	patched by Justin Collins.
+
 Thu Feb  6 09:06:00 2014  Kenta Murata  <mrkn@cookpad.com>
 
 	* configure.in (POSTLINK): sign built program using RUBY_CODESIGN

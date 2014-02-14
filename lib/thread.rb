@@ -355,6 +355,22 @@ class SizedQueue < Queue
   def num_waiting
     @waiting.size + @queue_wait.size
   end
+
+  #
+  # Removes all objects from the queue and wakes waiting threads, if any.
+  #
+  def clear
+    @mutex.synchronize do
+      @que.clear
+      begin
+        until @queue_wait.empty?
+          @queue_wait.shift.wakeup
+        end
+      rescue ThreadError
+        retry
+      end
+    end
+  end
 end
 
 # Documentation comments:
