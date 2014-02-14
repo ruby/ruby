@@ -1,3 +1,22 @@
+Fri Feb 14 19:07:13 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby_atomic.h (ATOMIC_PTR_EXCHANGE): atomic exchange function for
+	  a generic pointer.
+
+Fri Feb 14 19:07:13 2014  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* ruby_atomic.h: define ATOMIC_SIZE_CAS() with
+	  __atomic_compare_exchange_n() and refactoring.
+
+Fri Feb 14 19:07:13 2014  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* ruby_atomic.h: use __atomic builtin functions supported by GCC.
+	  __sync family are legacy functions now and it is recommended
+	  that new code use the __atomic functions.
+	  http://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html
+
+	* configure.in: check existence of __atomic functions.
+
 Fri Feb 14 16:21:28 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ruby_atomic.h (ATOMIC_CAS): added.

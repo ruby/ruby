@@ -3,6 +3,30 @@
 
 #if 0
 #elif defined HAVE_GCC_ATOMIC_BUILTINS
+typedef unsigned int rb_atomic_t;
+# define ATOMIC_SET(var, val)  (void)__atomic_exchange_n(&(var), (val), __ATOMIC_SEQ_CST)
+# define ATOMIC_INC(var) __atomic_fetch_add(&(var), 1, __ATOMIC_SEQ_CST)
+# define ATOMIC_DEC(var) __atomic_fetch_sub(&(var), 1, __ATOMIC_SEQ_CST)
+# define ATOMIC_OR(var, val) __atomic_or_fetch(&(var), (val), __ATOMIC_SEQ_CST)
+# define ATOMIC_EXCHANGE(var, val) __atomic_exchange_n(&(var), (val), __ATOMIC_SEQ_CST)
+# define ATOMIC_CAS(var, oldval, newval) \
+({ __typeof__(oldval) oldvaldup = (oldval); /* oldval should not be modified */ \
+   __atomic_compare_exchange_n(&(var), &oldvaldup, (newval), 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST); \
+   oldvaldup; })
+
+# define ATOMIC_SIZE_ADD(var, val) __atomic_fetch_add(&(var), (val), __ATOMIC_SEQ_CST)
+# define ATOMIC_SIZE_SUB(var, val) __atomic_fetch_sub(&(var), (val), __ATOMIC_SEQ_CST)
+# define ATOMIC_SIZE_INC(var) __atomic_fetch_add(&(var), 1, __ATOMIC_SEQ_CST)
+# define ATOMIC_SIZE_DEC(var) __atomic_fetch_sub(&(var), 1, __ATOMIC_SEQ_CST)
+# define ATOMIC_SIZE_EXCHANGE(var, val) __atomic_exchange_n(&(var), (val), __ATOMIC_SEQ_CST)
+# define ATOMIC_SIZE_CAS(var, oldval, newval) \
+({ size_t oldvaldup = (oldval); \
+   __atomic_compare_exchange_n(&(var), &oldvaldup, (newval), 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST); \
+   oldvaldup; })
+
+# define ATOMIC_PTR_EXCHANGE(var, val) __atomic_exchange_n(&(var), (val), __ATOMIC_SEQ_CST)
+
+#elif defined HAVE_GCC_SYNC_BUILTINS
 /* @shyouhei hack to support atomic operations in case of gcc. Gcc
  * has its own pseudo-insns to support them.  See info, or
  * http://gcc.gnu.org/onlinedocs/gcc/Atomic-Builtins.html */
@@ -20,6 +44,8 @@ typedef unsigned int rb_atomic_t; /* Anything OK */
 # define ATOMIC_SIZE_INC(var) __sync_fetch_and_add(&(var), 1)
 # define ATOMIC_SIZE_DEC(var) __sync_fetch_and_sub(&(var), 1)
 # define ATOMIC_SIZE_EXCHANGE(var, val) __sync_lock_test_and_set(&(var), (val))
+# define ATOMIC_PTR_EXCHANGE(var, val) __sync_lock_test_and_set(&(var), (val))
+
 # define ATOMIC_PTR_EXCHANGE(var, val) __sync_lock_test_and_set(&(var), (val))
 
 #elif defined _WIN32
