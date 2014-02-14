@@ -1,3 +1,8 @@
+Fri Feb 14 15:23:43 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket: Avoid unnecessary ppoll/select on Linux.
+	  Patch by Eric Wong.  [ruby-core:57950] [Bug #9039]
+
 Fri Feb 14 15:21:21 2014  Eric Wong <e@80x24.org>
 
 	* benchmark/driver: avoid large alloc in driver process
