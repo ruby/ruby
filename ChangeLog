@@ -1,3 +1,13 @@
+Fri Feb 14 15:17:17 2014  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/fiddle/closure.c: use sizeof(*pcl) for correct sizeof value.
+	  [ruby-core:57599] [Bug #8978].
+
+Fri Feb 14 15:17:17 2014  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/fiddle/closure.c: use sizeof(*pcl) for correct sizeof value.
+	  [ruby-core:57599] [Bug #8978].  Thanks mame!
+
 Fri Feb 14 15:04:36 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (rb_thread_create_timer_thread): fix for platforms
