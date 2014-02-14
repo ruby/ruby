@@ -1,3 +1,8 @@
+Fri Feb 14 14:58:19 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_mod_s_constants): return its own constants for other
+	  than Module itself.  [ruby-core:59763] [Bug #9413]
+
 Fri Feb 14 14:40:27 2014  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* array.c (rb_hash_rehash): use hash_alloc() instead of rb_hash_new().
