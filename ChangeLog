@@ -1,3 +1,9 @@
+Fri Feb 14 15:49:55 2014  Eric Wong <e@80x24.org>
+
+	* ext/json/generator/depend: add build dependencies for json extension
+	  [Bug #9374] [ruby-core:59609]
+	* ext/json/parser/depend: ditto
+
 Fri Feb 14 15:40:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* iseq.c (iseq_load): keep type_map to get rid of memory leak.
