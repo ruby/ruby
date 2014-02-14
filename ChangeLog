@@ -1,3 +1,10 @@
+Sat Feb 15 00:27:46 2014  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/ruby.h,
+	  internal.h,
+	  ext/-test-/bignum/bigzero.c: Hide a Bignum definition.
+	  [ruby-core:42891] [Feature #6083]
+
 Sat Feb 15 00:13:14 2014  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h,
