@@ -908,8 +908,10 @@ range_last(int argc, VALUE *argv, VALUE range)
 
 /*
  *  call-seq:
- *     rng.min                    -> obj
- *     rng.min {| a,b | block }   -> obj
+ *     rng.min                       -> obj
+ *     rng.min {| a,b | block }      -> obj
+ *     rng.min(n)                    -> array
+ *     rng.min(n) {| a,b | block }   -> array
  *
  *  Returns the minimum value in the range. Returns +nil+ if the begin
  *  value of the range is larger than the end value.
@@ -922,10 +924,13 @@ range_last(int argc, VALUE *argv, VALUE range)
 
 
 static VALUE
-range_min(VALUE range)
+range_min(int argc, VALUE *argv, VALUE range)
 {
     if (rb_block_given_p()) {
-	return rb_call_super(0, 0);
+	return rb_call_super(argc, argv);
+    }
+    else if (argc != 0) {
+	return range_first(argc, argv, range);
     }
     else {
 	VALUE b = RANGE_BEG(range);
@@ -940,8 +945,10 @@ range_min(VALUE range)
 
 /*
  *  call-seq:
- *     rng.max                    -> obj
- *     rng.max {| a,b | block }   -> obj
+ *     rng.max                       -> obj
+ *     rng.max {| a,b | block }      -> obj
+ *     rng.max(n)                    -> obj
+ *     rng.max(n) {| a,b | block }   -> obj
  *
  *  Returns the maximum value in the range. Returns +nil+ if the begin
  *  value of the range larger than the end value.
@@ -953,13 +960,13 @@ range_min(VALUE range)
  */
 
 static VALUE
-range_max(VALUE range)
+range_max(int argc, VALUE *argv, VALUE range)
 {
     VALUE e = RANGE_END(range);
     int nm = FIXNUM_P(e) || rb_obj_is_kind_of(e, rb_cNumeric);
 
-    if (rb_block_given_p() || (EXCL(range) && !nm)) {
-	return rb_call_super(0, 0);
+    if (rb_block_given_p() || (EXCL(range) && !nm) || argc) {
+	return rb_call_super(argc, argv);
     }
     else {
 	VALUE b = RANGE_BEG(range);
@@ -1358,8 +1365,8 @@ Init_Range(void)
     rb_define_method(rb_cRange, "end", range_end, 0);
     rb_define_method(rb_cRange, "first", range_first, -1);
     rb_define_method(rb_cRange, "last", range_last, -1);
-    rb_define_method(rb_cRange, "min", range_min, 0);
-    rb_define_method(rb_cRange, "max", range_max, 0);
+    rb_define_method(rb_cRange, "min", range_min, -1);
+    rb_define_method(rb_cRange, "max", range_max, -1);
     rb_define_method(rb_cRange, "size", range_size, 0);
     rb_define_method(rb_cRange, "to_s", range_to_s, 0);
     rb_define_method(rb_cRange, "inspect", range_inspect, 0);

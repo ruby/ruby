@@ -1,3 +1,23 @@
+Sat Feb 15 00:38:54 2014  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c: Enumerable#{min,min_by,max,max_by} extended to take an
+	  optional argument.
+	  (nmin_cmp): New function.
+	  (nmin_block_cmp): Ditto
+	  (nmin_filter): Ditto.
+	  (nmin_i): Ditto.
+	  (nmin_run): Ditto.
+	  (enum_min): Call nmin_run if the optional argument is given.
+	  (nmin_max): Ditto.
+	  (nmin_min_by): Ditto.
+	  (nmin_max_by): Ditto.
+
+	* range.c: Range#{min,max} extended to take an optional argument.
+	  (range_min): Call range_first if the optional argument is given.
+	  (range_max): Call rb_call_super if the optional argument is given.
+
+	[ruby-core:57111] [Feature #8887]
+
 Sat Feb 15 00:27:46 2014  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/ruby.h,

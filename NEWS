@@ -15,6 +15,13 @@ with all sufficient information, see the ChangeLog file.
 
 === Core classes updates (outstanding ones only)
 
+* Enumerable
+  * Extended methods:
+    * min
+    * min_by
+    * max
+    * max_by
+
 === Core classes compatibility issues (excluding feature bug fixes)
 
 === Stdlib updates (outstanding ones only)

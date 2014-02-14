@@ -1123,6 +1123,190 @@ DEFINE_ENUMFUNCS(one)
  *
  */
 
+struct nmin_data {
+  long n;
+  long bufmax;
+  long curlen;
+  VALUE buf;
+  int (*cmpfunc)(const void *, const void *, void *);
+  int rev; /* max if 1 */
+  int by; /* min_by if 1 */
+  const char *method;
+};
+
+static int
+nmin_cmp(const void *ap, const void *bp, void *_data)
+{
+    struct nmin_data *data = (struct nmin_data *)_data;
+    VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
+    VALUE cmp = rb_funcall(a, id_cmp, 1, b);
+    if (RBASIC(data->buf)->klass) {
+	rb_raise(rb_eRuntimeError, "%s reentered", data->method);
+    }
+    return rb_cmpint(cmp, a, b);
+}
+
+static int
+nmin_block_cmp(const void *ap, const void *bp, void *_data)
+{
+    struct nmin_data *data = (struct nmin_data *)_data;
+    VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
+    VALUE cmp = rb_yield_values(2, a, b);
+    if (RBASIC(data->buf)->klass) {
+	rb_raise(rb_eRuntimeError, "%s reentered", data->method);
+    }
+    return rb_cmpint(cmp, a, b);
+}
+
+
+static void
+nmin_filter(struct nmin_data *data)
+{
+    long n;
+    VALUE *beg;
+    int eltsize;
+    long numelts;
+
+    long left, right;
+
+    long i, j;
+
+    if (data->curlen <= data->n)
+	return;
+
+    n = data->n;
+    beg = RARRAY_PTR(data->buf);
+    eltsize = data->by ? 2 : 1;
+    numelts = data->curlen;
+
+    left = 0;
+    right = numelts-1;
+
+#define GETPTR(i) (beg+(i)*eltsize)
+
+#define SWAP(i, j) do { \
+    VALUE tmp[2]; \
+    memcpy(tmp, GETPTR(i), sizeof(VALUE)*eltsize); \
+    memcpy(GETPTR(i), GETPTR(j), sizeof(VALUE)*eltsize); \
+    memcpy(GETPTR(j), tmp, sizeof(VALUE)*eltsize); \
+} while (0)
+
+    while (1) {
+	long pivot_index = left + (right-left)/2;
+	long store_index;
+	long num_pivots = 1;
+
+	SWAP(pivot_index, right);
+	pivot_index = right;
+
+	store_index = left;
+	i = left;
+	while (i <= right-num_pivots) {
+	    int c = data->cmpfunc(GETPTR(i), GETPTR(pivot_index), data);
+	    if (data->rev)
+		c = -c;
+	    if (c == 0) {
+	        SWAP(i, right-num_pivots);
+		num_pivots++;
+		continue;
+	    }
+	    if (c < 0) {
+		SWAP(i, store_index);
+		store_index++;
+	    }
+	    i++;
+	}
+	j = store_index;
+	for (i = right; right-num_pivots < i; i--) {
+	    if (i <= j)
+	        break;
+	    SWAP(j, i);
+	    j++;
+	}
+
+	if (store_index <= n && n <= store_index+num_pivots)
+	    break;
+
+	if (n < store_index) {
+	    right = store_index-1;
+	}
+	else {
+	    left = store_index+num_pivots;
+	}
+    }
+#undef GETPTR
+#undef SWAP
+
+    data->curlen = data->n;
+    rb_ary_resize(data->buf, data->n * eltsize);
+}
+
+static VALUE
+nmin_i(VALUE i, VALUE *_data, int argc, VALUE *argv)
+{
+    struct nmin_data *data = (struct nmin_data *)_data;
+
+    ENUM_WANT_SVALUE();
+
+    if (data->by)
+	rb_ary_push(data->buf, rb_yield(i));
+    rb_ary_push(data->buf, i);
+
+    data->curlen++;
+
+    if (data->curlen == data->bufmax) {
+	nmin_filter(data);
+    }
+
+    return Qnil;
+}
+
+static VALUE
+nmin_run(VALUE obj, VALUE num, int by, int rev)
+{
+    VALUE result;
+    struct nmin_data data;
+
+    data.n = NUM2LONG(num);
+    if (data.n < 0)
+        rb_raise(rb_eArgError, "negative size (%ld)", data.n);
+    if (data.n == 0)
+        return rb_ary_new2(0);
+    if (LONG_MAX/4/(by ? 2 : 1) < data.n)
+        rb_raise(rb_eArgError, "too big size");
+    data.bufmax = data.n * 4;
+    data.curlen = 0;
+    data.buf = rb_ary_tmp_new(data.bufmax * (by ? 2 : 1));
+    data.cmpfunc = by ? nmin_cmp :
+                   rb_block_given_p() ? nmin_block_cmp :
+		   nmin_cmp;
+    data.rev = rev;
+    data.by = by;
+    data.method = rev ? (by ? "max_by" : "max")
+                      : (by ? "min_by" : "min");
+    rb_block_call(obj, id_each, 0, 0, nmin_i, (VALUE)&data);
+    nmin_filter(&data);
+    result = data.buf;
+    if (by) {
+	long i;
+	ruby_qsort(RARRAY_PTR(result),
+	           RARRAY_LEN(result)/2,
+		   sizeof(VALUE)*2,
+		   data.cmpfunc, (void *)&data);
+	for (i=1; i<RARRAY_LEN(result); i+=2) {
+	    RARRAY_PTR(result)[i/2] = RARRAY_PTR(result)[i];
+	}
+	rb_ary_resize(result, RARRAY_LEN(result)/2);
+    }
+    else {
+	ruby_qsort(RARRAY_PTR(result), RARRAY_LEN(result), sizeof(VALUE),
+		   data.cmpfunc, (void *)&data);
+    }
+    *((VALUE *)&RBASIC(result)->klass) = rb_cArray;
+    return result;
+
+}
+
 static VALUE
 enum_one(VALUE obj)
 {
@@ -1210,8 +1394,10 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
 /*
  *  call-seq:
- *     enum.min                 -> obj
- *     enum.min { |a, b| block } -> obj
+ *     enum.min                     -> obj
+ *     enum.min {| a,b | block }    -> obj
+ *     enum.min(n)                  -> array
+ *     enum.min(n) {| a,b | block } -> array
  *
  *  Returns the object in <i>enum</i> with the minimum value. The
  *  first form assumes all objects implement <code>Comparable</code>;
@@ -1220,13 +1406,26 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *     a = %w(albatross dog horse)
  *     a.min                                   #=> "albatross"
  *     a.min { |a, b| a.length <=> b.length }  #=> "dog"
+ *
+ *  If the +n+ argument is given, minimum +n+ elements are returned
+ *  as an array.
+ *
+ *     a = %w[albatross dog horse]
+ *     a.min(2)                                  #=> ["albatross", "dog"]
+ *     a.min(2) {|a, b| a.length <=> b.length }  #=> ["dog", "horse"]
  */
 
 static VALUE
-enum_min(VALUE obj)
+enum_min(int argc, VALUE *argv, VALUE obj)
 {
     NODE *memo = NEW_MEMO(Qundef, 0, 0);
     VALUE result;
+    VALUE num;
+
+    rb_scan_args(argc, argv, "01", &num);
+
+    if (!NIL_P(num))
+       return nmin_run(obj, num, 0, 0);
 
     if (rb_block_given_p()) {
 	rb_block_call(obj, id_each, 0, 0, min_ii, (VALUE)memo);
@@ -1281,8 +1480,10 @@ max_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
 /*
  *  call-seq:
- *     enum.max                  -> obj
- *     enum.max { |a, b| block } -> obj
+ *     enum.max                   -> obj
+ *     enum.max { |a, b| block }  -> obj
+ *     enum.max(n)                -> obj
+ *     enum.max(n) {|a,b| block } -> obj
  *
  *  Returns the object in _enum_ with the maximum value. The
  *  first form assumes all objects implement <code>Comparable</code>;
@@ -1291,13 +1492,26 @@ max_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *     a = %w(albatross dog horse)
  *     a.max                                   #=> "horse"
  *     a.max { |a, b| a.length <=> b.length }  #=> "albatross"
+ *
+ *  If the +n+ argument is given, maximum +n+ elements are returned
+ *  as an array.
+ *
+ *     a = %w[albatross dog horse]
+ *     a.max(2)                                  #=> ["dog", "horse"]
+ *     a.max(2) {|a, b| a.length <=> b.length }  #=> ["horse", "albatross"]
  */
 
 static VALUE
-enum_max(VALUE obj)
+enum_max(int argc, VALUE *argv, VALUE obj)
 {
     NODE *memo = NEW_MEMO(Qundef, 0, 0);
     VALUE result;
+    VALUE num;
+
+    rb_scan_args(argc, argv, "01", &num);
+
+    if (!NIL_P(num))
+       return nmin_run(obj, num, 0, 1);
 
     if (rb_block_given_p()) {
 	rb_block_call(obj, id_each, 0, 0, max_ii, (VALUE)memo);
@@ -1485,8 +1699,10 @@ min_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
 /*
  *  call-seq:
- *     enum.min_by { |obj| block } -> obj
- *     enum.min_by                 -> an_enumerator
+ *     enum.min_by {|obj| block }      -> obj
+ *     enum.min_by                     -> an_enumerator
+ *     enum.min_by(n) {|obj| block }   -> array
+ *     enum.min_by(n)                  -> an_enumerator
  *
  *  Returns the object in <i>enum</i> that gives the minimum
  *  value from the given block.
@@ -1495,14 +1711,26 @@ min_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *
  *     a = %w(albatross dog horse)
  *     a.min_by { |x| x.length }   #=> "dog"
+ *
+ *  If the +n+ argument is given, minimum +n+ elements are returned
+ *  as an array.
+ *
+ *     a = %w[albatross dog horse]
+ *     p a.min_by(2) {|x| x.length } #=> ["dog", "horse"]
  */
 
 static VALUE
-enum_min_by(VALUE obj)
+enum_min_by(int argc, VALUE *argv, VALUE obj)
 {
     NODE *memo;
+    VALUE num;
 
-    RETURN_SIZED_ENUMERATOR(obj, 0, 0, enum_size);
+    rb_scan_args(argc, argv, "01", &num);
+
+    RETURN_SIZED_ENUMERATOR(obj, argc, argv, enum_size);
+
+    if (!NIL_P(num))
+        return nmin_run(obj, num, 1, 0);
 
     memo = NEW_MEMO(Qundef, Qnil, 0);
     rb_block_call(obj, id_each, 0, 0, min_by_i, (VALUE)memo);
@@ -1531,8 +1759,10 @@ max_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
 /*
  *  call-seq:
- *     enum.max_by { |obj| block } -> obj
- *     enum.max_by                 -> an_enumerator
+ *     enum.max_by {|obj| block }      -> obj
+ *     enum.max_by                     -> an_enumerator
+ *     enum.max_by(n) {|obj| block }   -> obj
+ *     enum.max_by(n)                  -> an_enumerator
  *
  *  Returns the object in <i>enum</i> that gives the maximum
  *  value from the given block.
@@ -1541,14 +1771,26 @@ max_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *
  *     a = %w(albatross dog horse)
  *     a.max_by { |x| x.length }   #=> "albatross"
+ *
+ *  If the +n+ argument is given, minimum +n+ elements are returned
+ *  as an array.
+ *
+ *     a = %w[albatross dog horse]
+ *     a.max_by(2) {|x| x.length } #=> ["horse", "albatross"]
  */
 
 static VALUE
-enum_max_by(VALUE obj)
+enum_max_by(int argc, VALUE *argv, VALUE obj)
 {
     NODE *memo;
+    VALUE num;
 
-    RETURN_SIZED_ENUMERATOR(obj, 0, 0, enum_size);
+    rb_scan_args(argc, argv, "01", &num);
+
+    RETURN_SIZED_ENUMERATOR(obj, argc, argv, enum_size);
+
+    if (!NIL_P(num))
+        return nmin_run(obj, num, 1, 1);
 
     memo = NEW_MEMO(Qundef, Qnil, 0);
     rb_block_call(obj, id_each, 0, 0, max_by_i, (VALUE)memo);
@@ -2826,11 +3068,11 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "any?", enum_any, 0);
     rb_define_method(rb_mEnumerable, "one?", enum_one, 0);
     rb_define_method(rb_mEnumerable, "none?", enum_none, 0);
-    rb_define_method(rb_mEnumerable, "min", enum_min, 0);
-    rb_define_method(rb_mEnumerable, "max", enum_max, 0);
+    rb_define_method(rb_mEnumerable, "min", enum_min, -1);
+    rb_define_method(rb_mEnumerable, "max", enum_max, -1);
     rb_define_method(rb_mEnumerable, "minmax", enum_minmax, 0);
-    rb_define_method(rb_mEnumerable, "min_by", enum_min_by, 0);
-    rb_define_method(rb_mEnumerable, "max_by", enum_max_by, 0);
+    rb_define_method(rb_mEnumerable, "min_by", enum_min_by, -1);
+    rb_define_method(rb_mEnumerable, "max_by", enum_max_by, -1);
     rb_define_method(rb_mEnumerable, "minmax_by", enum_minmax_by, 0);
     rb_define_method(rb_mEnumerable, "member?", enum_member, 1);
     rb_define_method(rb_mEnumerable, "include?", enum_member, 1);
