@@ -1,3 +1,20 @@
+Fri Feb 14 14:40:27 2014  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_hash_rehash): use hash_alloc() instead of rb_hash_new().
+	  [Bug #9187]
+
+Fri Feb 14 14:40:27 2014  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* hash.c (rb_hash_rehash): make temporary st_table under the control
+	  of GC. [Bug #9187]
+
+	* test/ruby/test_hash.rb: add a test for above.
+
+Fri Feb 14 14:40:27 2014  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* hash.c (rb_hash_rehash): fix to free new st_table when exception
+	  is raised in do_hash(). [Bug #9187]
+
 Fri Feb 14 13:51:45 2014  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/optparse.rb:  The Integer acceptable now allows binary and
