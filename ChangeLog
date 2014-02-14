@@ -1,3 +1,9 @@
+Fri Feb 14 15:54:57 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb (Resolv::DNS::Message::MessageDecoder): Raise
+	  DecodeError if no data before the limit.
+	  Reported by Will Bryant.  [ruby-core:60557] [Bug #9498]
+
 Fri Feb 14 15:49:55 2014  Eric Wong <e@80x24.org>
 
 	* ext/json/generator/depend: add build dependencies for json extension

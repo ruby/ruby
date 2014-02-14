@@ -1457,6 +1457,7 @@ class Resolv
         end
 
         def get_bytes(len = @limit - @index)
+          raise DecodeError.new("limit exceeded") if @limit < @index + len
           d = @data[@index, len]
           @index += len
           return d
@@ -1484,6 +1485,7 @@ class Resolv
         end
 
         def get_string
+          raise DecodeError.new("limit exceeded") if @limit <= @index
           len = @data[@index].ord
           raise DecodeError.new("limit exceeded") if @limit < @index + 1 + len
           d = @data[@index + 1, len]
@@ -1507,6 +1509,7 @@ class Resolv
           limit = @index if !limit || @index < limit
           d = []
           while true
+            raise DecodeError.new("limit exceeded") if @limit <= @index
             case @data[@index].ord
             when 0
               @index += 1
