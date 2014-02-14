@@ -5663,15 +5663,38 @@ get_envparam_size(const char *name, size_t *default_value, size_t lower_bound)
     ssize_t val;
 
     if (ptr != NULL && *ptr) {
+	size_t unit = 0;
 	char *end;
 #if SIZEOF_SIZE_T == SIZEOF_LONG_LONG
 	val = strtoll(ptr, &end, 0);
 #else
 	val = strtol(ptr, &end, 0);
 #endif
-	if (!*ptr || *end) {
+	switch (*end) {
+	  case 'k': case 'K':
+	    unit = 1024;
+	    ++end;
+	    break;
+	  case 'm': case 'M':
+	    unit = 1024*1024;
+	    ++end;
+	    break;
+	  case 'g': case 'G':
+	    unit = 1024*1024*1024;
+	    ++end;
+	    break;
+	}
+	while (*end && isspace(*end)) end++;
+	if (*end) {
 	    if (RTEST(ruby_verbose)) fprintf(stderr, "invalid string for %s: %s\n", name, ptr);
 	    return 0;
+	}
+	if (unit > 0) {
+	    if (val < -(ssize_t)(SIZE_MAX / 2 / unit) || (ssize_t)(SIZE_MAX / 2 / unit) < val) {
+		if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%s is ignored because it overflows\n", name, ptr);
+		return 0;
+	    }
+	    val *= unit;
 	}
 	if (val > 0 && (size_t)val > lower_bound) {
 	    if (RTEST(ruby_verbose)) {
