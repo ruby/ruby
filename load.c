@@ -1049,6 +1049,7 @@ register_init_ext(st_data_t *key, st_data_t *value, st_data_t init, int existing
     else {
 	*value = (st_data_t)NEW_MEMO(init, 0, 0);
 	*key = (st_data_t)ruby_strdup(name);
+	(*(void (*)(void))init)();
     }
     return ST_CONTINUE;
 }
