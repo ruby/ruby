@@ -1900,10 +1900,10 @@ class Resolv
         attr_reader :strings
 
         ##
-        # Returns the first string from +strings+.
+        # Returns the concatenated string from +strings+.
 
         def data
-          @strings[0]
+          @strings.join("")
         end
 
         def encode_rdata(msg) # :nodoc:
