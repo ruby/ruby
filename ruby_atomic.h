@@ -56,6 +56,7 @@ rb_w32_atomic_or(volatile rb_atomic_t *var, rb_atomic_t val)
 #  define ATOMIC_SIZE_INC(var) InterlockedIncrement64(&(var))
 #  define ATOMIC_SIZE_DEC(var) InterlockedDecrement64(&(var))
 #  define ATOMIC_SIZE_EXCHANGE(var, val) InterlockedExchange64(&(var), (val))
+#  define ATOMIC_SIZE_CAS(var, oldval, val) InterlockedCompareExchange64(&(var), (oldval), (val))
 # else
 #  define ATOMIC_SIZE_ADD(var, val) InterlockedExchangeAdd((LONG *)&(var), (val))
 #  define ATOMIC_SIZE_SUB(var, val) InterlockedExchangeAdd((LONG *)&(var), -(val))
@@ -80,7 +81,7 @@ typedef unsigned int rb_atomic_t;
 #  define ATOMIC_SIZE_INC(var) atomic_inc_ulong(&(var))
 #  define ATOMIC_SIZE_DEC(var) atomic_dec_ulong(&(var))
 #  define ATOMIC_SIZE_EXCHANGE(var, val) atomic_swap_ulong(&(var), (val))
-# else
+#  define ATOMIC_SIZE_CAS(var, oldval, val) atomic_cas_ulong(&(var), (oldval), (# else
 #  define ATOMIC_SIZE_ADD(var, val) atomic_add_int(&(var), (val))
 #  define ATOMIC_SIZE_SUB(var, val) atomic_add_int(&(var), -(val))
 #  define ATOMIC_SIZE_INC(var) atomic_inc_uint(&(var))
@@ -113,9 +114,18 @@ atomic_size_exchange(size_t *ptr, size_t val)
 }
 #endif
 
+#ifndef ATOMIC_SIZE_CAS
+# define ATOMIC_SIZE_CAS(var, oldval, val) ATOMIC_CAS(var, oldval, val)
+#endif
+
 #ifndef ATOMIC_PTR_EXCHANGE
 # if SIZEOF_VOIDP == SIZEOF_SIZE_T
 #   define ATOMIC_PTR_EXCHANGE(var, val) (void *)ATOMIC_SIZE_EXCHANGE(*(size_t *)&(var), (size_t)(val))
+# endif
+#endif
+#ifndef ATOMIC_PTR_CAS
+# if SIZEOF_VOIDP == SIZEOF_SIZE_T
+#   define ATOMIC_PTR_CAS(var, oldval, val) (void *)ATOMIC_SIZE_CAS(*(size_t *)&(var), (size_t)(oldval), (size_t)(val))
 # endif
 #endif
 
