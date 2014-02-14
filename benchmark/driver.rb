@@ -220,7 +220,7 @@ class BenchmarkDriver
   def measure executable, file
     cmd = "#{executable} #{file}"
     m = Benchmark.measure{
-      `#{cmd}`
+      system(cmd, out: File::NULL)
     }
 
     if $? != 0
