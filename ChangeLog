@@ -1,3 +1,17 @@
+Fri Feb 14 12:52:50 2014  Kouhei Sutou  <kou@cozmixng.org>
+
+	* ext/socket/raddrinfo.c (nogvl_getaddrinfo): Fix indent.
+
+Fri Feb 14 12:52:50 2014  Kouhei Sutou  <kou@cozmixng.org>
+
+	* ext/socket/raddrinfo.c (nogvl_getaddrinfo): Add missing return
+	  value assignment.
+
+Fri Feb 14 12:52:50 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/socket/raddrinfo.c (nogvl_getaddrinfo): work around for Ubuntu
+	  13.04's getaddrinfo issue with mdns4. [ruby-list:49420]
+
 Fri Feb 14 12:45:07 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/thread.rb (SizedQueue#clear): wake waiting threads when called.
