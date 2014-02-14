@@ -102,18 +102,14 @@ VALUE rb_str_to_inum(VALUE, int, int);
 VALUE rb_cstr2inum(const char*, int);
 VALUE rb_str2inum(VALUE, int);
 VALUE rb_big2str(VALUE, int);
-DEPRECATED(VALUE rb_big2str0(VALUE, int, int));
 SIGNED_VALUE rb_big2long(VALUE);
 #define rb_big2int(x) rb_big2long(x)
 VALUE rb_big2ulong(VALUE);
 #define rb_big2uint(x) rb_big2ulong(x)
-DEPRECATED(VALUE rb_big2ulong_pack(VALUE x));
 #if HAVE_LONG_LONG
 LONG_LONG rb_big2ll(VALUE);
 unsigned LONG_LONG rb_big2ull(VALUE);
 #endif  /* HAVE_LONG_LONG */
-DEPRECATED(void rb_quad_pack(char*,VALUE));
-DEPRECATED(VALUE rb_quad_unpack(const char*,int));
 void rb_big_pack(VALUE val, unsigned long *buf, long num_longs);
 VALUE rb_big_unpack(unsigned long *buf, long num_longs);
 int rb_uv_to_utf8(char[6],unsigned long);
@@ -427,7 +423,6 @@ void rb_thread_wait_fd(int);
 int rb_thread_fd_writable(int);
 void rb_thread_fd_close(int);
 int rb_thread_alone(void);
-DEPRECATED(void rb_thread_polling(void));
 void rb_thread_sleep(int);
 void rb_thread_sleep_forever(void);
 void rb_thread_sleep_deadly(void);
@@ -437,7 +432,6 @@ VALUE rb_thread_wakeup_alive(VALUE);
 VALUE rb_thread_run(VALUE);
 VALUE rb_thread_kill(VALUE);
 VALUE rb_thread_create(VALUE (*)(ANYARGS), void*);
-DEPRECATED(int rb_thread_select(int, fd_set *, fd_set *, fd_set *, struct timeval *));
 int rb_thread_fd_select(int, rb_fdset_t *, rb_fdset_t *, rb_fdset_t *, struct timeval *);
 void rb_thread_wait_for(struct timeval);
 VALUE rb_thread_current(void);
@@ -482,7 +476,6 @@ void rb_gc_call_finalizer_at_exit(void);
 VALUE rb_gc_enable(void);
 VALUE rb_gc_disable(void);
 VALUE rb_gc_start(void);
-DEPRECATED(void rb_gc_set_params(void));
 VALUE rb_define_finalizer(VALUE, VALUE);
 VALUE rb_undefine_finalizer(VALUE);
 size_t rb_gc_count(void);
@@ -623,20 +616,7 @@ VALUE rb_sym_all_symbols(void);
 /* process.c */
 void rb_last_status_set(int status, rb_pid_t pid);
 VALUE rb_last_status_get(void);
-struct rb_exec_arg {
-    VALUE execarg_obj;
-};
-DEPRECATED(int rb_proc_exec_n(int, VALUE*, const char*));
 int rb_proc_exec(const char*);
-DEPRECATED(VALUE rb_exec_arg_init(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e));
-DEPRECATED(int rb_exec_arg_addopt(struct rb_exec_arg *e, VALUE key, VALUE val));
-DEPRECATED(void rb_exec_arg_fixup(struct rb_exec_arg *e));
-DEPRECATED(int rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s));
-DEPRECATED(int rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char*, size_t));
-DEPRECATED(int rb_exec(const struct rb_exec_arg*));
-DEPRECATED(int rb_exec_err(const struct rb_exec_arg*, char*, size_t));
-DEPRECATED(rb_pid_t rb_fork(int*, int (*)(void*), void*, VALUE));
-DEPRECATED(rb_pid_t rb_fork_err(int*, int (*)(void*, char*, size_t), void*, VALUE, char*, size_t));
 VALUE rb_f_exec(int,VALUE*);
 rb_pid_t rb_waitpid(rb_pid_t pid, int *status, int flags);
 void rb_syswait(rb_pid_t pid);
@@ -853,7 +833,6 @@ VALUE rb_struct_initialize(VALUE, VALUE);
 VALUE rb_struct_aref(VALUE, VALUE);
 VALUE rb_struct_aset(VALUE, VALUE, VALUE);
 VALUE rb_struct_getmember(VALUE, ID);
-DEPRECATED(VALUE rb_struct_iv_get(VALUE, const char*));
 VALUE rb_struct_s_members(VALUE);
 VALUE rb_struct_members(VALUE);
 VALUE rb_struct_alloc_noinit(VALUE);
@@ -866,9 +845,6 @@ typedef VALUE rb_blocking_function_t(void *);
 void rb_thread_check_ints(void);
 int rb_thread_interrupted(VALUE thval);
 
-/* Use rb_thread_call_without_gvl family instead. */
-DEPRECATED(VALUE rb_thread_blocking_region(rb_blocking_function_t *func, void *data1,
-					   rb_unblock_function_t *ubf, void *data2));
 #define RUBY_UBF_IO ((rb_unblock_function_t *)-1)
 #define RUBY_UBF_PROCESS ((rb_unblock_function_t *)-1)
 VALUE rb_mutex_new(void);

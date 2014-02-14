@@ -541,13 +541,10 @@ char *rb_string_value_cstr(volatile VALUE*);
 #define StringValueCStr(v) rb_string_value_cstr(&(v))
 
 void rb_check_safe_obj(VALUE);
-DEPRECATED(void rb_check_safe_str(VALUE));
 #define SafeStringValue(v) do {\
     StringValue(v);\
     rb_check_safe_obj(v);\
 } while (0)
-/* obsolete macro - use SafeStringValue(v) */
-#define Check_SafeStr(v) rb_check_safe_str((VALUE)(v))
 
 VALUE rb_str_export(VALUE);
 #define ExportStringValue(v) do {\

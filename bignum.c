@@ -3686,24 +3686,6 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
     return bignorm(val);
 }
 
-#define QUAD_SIZE 8
-
-void
-rb_quad_pack(char *buf, VALUE val)
-{
-    rb_integer_pack(val, buf, 1, QUAD_SIZE, 0,
-            INTEGER_PACK_NATIVE_BYTE_ORDER|
-            INTEGER_PACK_2COMP);
-}
-
-VALUE
-rb_quad_unpack(const char *buf, int signed_p)
-{
-    return rb_integer_unpack(buf, 1, QUAD_SIZE, 0,
-            INTEGER_PACK_NATIVE_BYTE_ORDER|
-            (signed_p ? INTEGER_PACK_2COMP : 0));
-}
-
 #define conv_digit(c) (ruby_digit36_to_number_table[(unsigned char)(c)])
 
 static void
@@ -4540,61 +4522,6 @@ power_cache_get_power(int base, int power_level, size_t *numdigits_ret)
     return base36_power_cache[base - 2][power_level];
 }
 
-/*
- * deprecated.  (used only from deprecated rb_big2str0)
- *
- * big2str_muraken_find_n1
- *
- * Let a natural number x is given by:
- * x = 2^0 * x_0 + 2^1 * x_1 + ... + 2^(B*n_0 - 1) * x_{B*n_0 - 1},
- * where B is BITSPERDIG (i.e. BDIGITS*CHAR_BIT) and n_0 is
- * RBIGNUM_LEN(x).
- *
- * Now, we assume n_1 = min_n \{ n | 2^(B*n_0/2) <= b_1^(n_1) \}, so
- * it is realized that 2^(B*n_0) <= {b_1}^{2*n_1}, where b_1 is a
- * given radix number. And then, we have n_1 <= (B*n_0) /
- * (2*log_2(b_1)), therefore n_1 is given by ceil((B*n_0) /
- * (2*log_2(b_1))).
- */
-static long
-big2str_find_n1(VALUE x, int base)
-{
-    static const double log_2[] = {
-	1.0,              1.58496250072116, 2.0,
-	2.32192809488736, 2.58496250072116, 2.8073549220576,
-	3.0,              3.16992500144231, 3.32192809488736,
-	3.4594316186373,  3.58496250072116, 3.70043971814109,
-	3.8073549220576,  3.90689059560852, 4.0,
-	4.08746284125034, 4.16992500144231, 4.24792751344359,
-	4.32192809488736, 4.39231742277876, 4.4594316186373,
-	4.52356195605701, 4.58496250072116, 4.64385618977472,
-	4.70043971814109, 4.75488750216347, 4.8073549220576,
-	4.85798099512757, 4.90689059560852, 4.95419631038688,
-	5.0,              5.04439411935845, 5.08746284125034,
-	5.12928301694497, 5.16992500144231
-    };
-    long bits;
-
-    if (base < 2 || 36 < base)
-	rb_bug("invalid radix %d", base);
-
-    if (FIXNUM_P(x)) {
-	bits = (SIZEOF_LONG*CHAR_BIT - 1)/2 + 1;
-    }
-    else if (BIGZEROP(x)) {
-	return 0;
-    }
-    else if (RBIGNUM_LEN(x) >= LONG_MAX/BITSPERDIG) {
-	rb_raise(rb_eRangeError, "bignum too big to convert into `string'");
-    }
-    else {
-	bits = BITSPERDIG*RBIGNUM_LEN(x);
-    }
-
-    /* @shyouhei note: vvvvvvvvvvvvv this cast is suspicious.  But I believe it is OK, because if that cast loses data, this x value is too big, and should have raised RangeError. */
-    return (long)ceil(((double)bits)/log_2[base - 2]);
-}
-
 struct big2str_struct {
     int negative;
     int base;
@@ -4976,41 +4903,6 @@ rb_big2str1(VALUE x, int base)
     return big2str_generic(x, base);
 }
 
-/* deprecated */
-VALUE
-rb_big2str0(VALUE x, int base, int trim)
-{
-    VALUE str;
-    long oldlen;
-    long n2;
-
-    str = rb_big2str1(x, base);
-
-    if (trim || FIXNUM_P(x) || BIGZEROP(x))
-        return str;
-
-    oldlen = RSTRING_LEN(str);
-    if (oldlen && RSTRING_PTR(str)[0] != '-') {
-        rb_str_resize(str, oldlen+1);
-        MEMMOVE(RSTRING_PTR(str)+1, RSTRING_PTR(str), char, oldlen);
-        RSTRING_PTR(str)[0] = '+';
-    }
-
-    n2 = big2str_find_n1(x, base);
-
-    oldlen = RSTRING_LEN(str);
-    if (oldlen-1 < n2) {
-        long off = n2 - (oldlen-1);
-        rb_str_resize(str, n2+1);
-        MEMMOVE(RSTRING_PTR(str)+1+off, RSTRING_PTR(str)+1, char, oldlen-1);
-        memset(RSTRING_PTR(str)+1, '0', off);
-    }
-
-    RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
-
-    return str;
-}
-
 VALUE
 rb_big2str(VALUE x, int base)
 {
@@ -5068,16 +4960,6 @@ big2ulong(VALUE x, const char *type)
 	num += (unsigned long)ds[len]; /* overflow is already checked */
     }
 #endif
-    return num;
-}
-
-/* deprecated */
-VALUE
-rb_big2ulong_pack(VALUE x)
-{
-    unsigned long num;
-    rb_integer_pack(x, &num, 1, sizeof(num), 0,
-        INTEGER_PACK_NATIVE_BYTE_ORDER|INTEGER_PACK_2COMP);
     return num;
 }
 

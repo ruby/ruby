@@ -782,7 +782,7 @@ int  rb_w32_unwrap_io_handle(int);
 == ***CAUTION***
 Since this function is very dangerous, ((*NEVER*))
 * lock any HANDLEs(i.e. Mutex, Semaphore, CriticalSection and so on) or,
-* use anything like TRAP_BEG...TRAP_END block structure,
+* use anything like rb_thread_call_without_gvl,
 in asynchronous_func_t.
 */
 typedef uintptr_t (*asynchronous_func_t)(uintptr_t self, int argc, uintptr_t* argv);

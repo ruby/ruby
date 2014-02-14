@@ -1,3 +1,21 @@
+Sat Feb 15 00:13:14 2014  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/intern.h,
+	  include/ruby/io.h,
+	  include/ruby/ruby.h,
+	  include/ruby/win32.h,
+	  include/ruby/backward/rubysig.h,
+	  bignum.c,
+	  gc.c,
+	  io.c,
+	  process.c,
+	  safe.c,
+	  struct.c,
+	  thread.c,
+	  ext/socket/rubysocket.h,
+	  ext/-test-/old_thread_select: Remove deprecated definitions
+	  [ruby-core:60581] [Feature #9502]
+
 Fri Feb 14 18:38:46 2014  Eric Wong  <e@80x24.org>
 
 	* string.c (rb_str_format_m): trade volatile for RB_GC_GUARD

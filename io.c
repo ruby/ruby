@@ -397,22 +397,6 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
 #define argf_of(obj) (*(struct argf *)DATA_PTR(obj))
 #define ARGF argf_of(argf)
 
-#ifdef _STDIO_USES_IOSTREAM  /* GNU libc */
-#  ifdef _IO_fpos_t
-#    define STDIO_READ_DATA_PENDING(fp) ((fp)->_IO_read_ptr != (fp)->_IO_read_end)
-#  else
-#    define STDIO_READ_DATA_PENDING(fp) ((fp)->_gptr < (fp)->_egptr)
-#  endif
-#elif defined(FILE_COUNT)
-#  define STDIO_READ_DATA_PENDING(fp) ((fp)->FILE_COUNT > 0)
-#elif defined(FILE_READEND)
-#  define STDIO_READ_DATA_PENDING(fp) ((fp)->FILE_READPTR < (fp)->FILE_READEND)
-#elif defined(__BEOS__) || defined(__HAIKU__)
-#  define STDIO_READ_DATA_PENDING(fp) ((fp)->_state._eof == 0)
-#else
-#  define STDIO_READ_DATA_PENDING(fp) (!feof(fp))
-#endif
-
 #define GetWriteIO(io) rb_io_get_write_io(io)
 
 #define READ_DATA_PENDING(fptr) ((fptr)->rbuf.len)
@@ -863,14 +847,6 @@ rb_io_read_pending(rb_io_t *fptr)
     if (READ_CHAR_PENDING(fptr))
         return 1; /* should raise? */
     return READ_DATA_PENDING(fptr);
-}
-
-void
-rb_read_check(FILE *fp)
-{
-    if (!STDIO_READ_DATA_PENDING(fp)) {
-	rb_thread_wait_fd(fileno(fp));
-    }
 }
 
 void

@@ -195,7 +195,6 @@ NORETURN(void rb_eof_error(void));
 
 void rb_io_read_check(rb_io_t*);
 int rb_io_read_pending(rb_io_t*);
-DEPRECATED(void rb_read_check(FILE*));
 
 struct stat;
 VALUE rb_stat_new(const struct stat *);

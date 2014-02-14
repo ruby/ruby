@@ -1222,54 +1222,6 @@ proc_exec_cmd(const char *prog, VALUE argv_str, VALUE envp_str)
 #endif
 }
 
-/* deprecated */
-static int
-proc_exec_v(char **argv, const char *prog)
-{
-    char fbuf[MAXPATHLEN];
-
-    if (!prog)
-        prog = argv[0];
-    prog = dln_find_exe_r(prog, 0, fbuf, sizeof(fbuf));
-    if (!prog) {
-        errno = ENOENT;
-        return -1;
-    }
-    before_exec();
-    execv(prog, argv);
-    preserving_errno(try_with_sh(prog, argv, 0); after_exec());
-    return -1;
-}
-
-/* deprecated */
-int
-rb_proc_exec_n(int argc, VALUE *argv, const char *prog)
-{
-#define ARGV_COUNT(n) ((n)+1)
-#define ARGV_SIZE(n) (sizeof(char*) * ARGV_COUNT(n))
-#define ALLOC_ARGV(n, v) ALLOCV_N(char*, (v), ARGV_COUNT(n))
-
-    char **args;
-    int i;
-    int ret = -1;
-    VALUE v;
-
-    args = ALLOC_ARGV(argc+1, v);
-    for (i=0; i<argc; i++) {
-	args[i] = RSTRING_PTR(argv[i]);
-    }
-    args[i] = 0;
-    if (args[0]) {
-	ret = proc_exec_v(args, prog);
-    }
-    ALLOCV_END(v);
-    return ret;
-
-#undef ARGV_COUNT
-#undef ARGV_SIZE
-#undef ALLOC_ARGV
-}
-
 /* This function should be async-signal-safe.  Actually it is. */
 static int
 proc_exec_sh(const char *str, VALUE envp_str)
@@ -1796,12 +1748,6 @@ redirect:
     return ST_CONTINUE;
 }
 
-int
-rb_exec_arg_addopt(struct rb_exec_arg *e, VALUE key, VALUE val)
-{
-    return rb_execarg_addopt(e->execarg_obj, key, val);
-}
-
 static int
 check_exec_options_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
 {
@@ -2252,12 +2198,6 @@ rb_execarg_init(int argc, VALUE *argv, int accept_shell, VALUE execarg_obj)
     return ret;
 }
 
-VALUE
-rb_exec_arg_init(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e)
-{
-    return rb_execarg_init(argc, argv, accept_shell, e->execarg_obj);
-}
-
 void
 rb_execarg_setenv(VALUE execarg_obj, VALUE env)
 {
@@ -2360,13 +2300,9 @@ rb_execarg_fixup(VALUE execarg_obj)
     RB_GC_GUARD(execarg_obj);
 }
 
-void
-rb_exec_arg_fixup(struct rb_exec_arg *e)
-{
-    rb_execarg_fixup(e->execarg_obj);
-}
-
+#if defined(__APPLE__) || defined(__HAIKU__)
 static int rb_exec_without_timer_thread(const struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen);
+#endif
 
 /*
  *  call-seq:
@@ -2825,8 +2761,9 @@ static int
 run_exec_pgroup(const struct rb_execarg *eargp, struct rb_execarg *sargp, char *errmsg, size_t errmsg_buflen)
 {
     /*
-     * If FD_CLOEXEC is available, rb_fork waits the child's execve.
-     * So setpgid is done in the child when rb_fork is returned in the parent.
+     * If FD_CLOEXEC is available, rb_fork_internal waits the child's execve.
+     * So setpgid is done in the child when rb_fork_internal is returned in
+     * the parent.
      * No race condition, even without setpgid from the parent.
      * (Is there an environment which has setpgid but no FD_CLOEXEC?)
      */
@@ -3050,18 +2987,6 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
     return 0;
 }
 
-int
-rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char *errmsg, size_t errmsg_buflen)
-{
-    return rb_execarg_run_options(rb_execarg_get(e->execarg_obj), rb_execarg_get(s->execarg_obj), errmsg, errmsg_buflen);
-}
-
-int
-rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s)
-{
-    return rb_execarg_run_options(rb_execarg_get(e->execarg_obj), rb_execarg_get(s->execarg_obj), NULL, 0);
-}
-
 /* This function should be async-signal-safe.  Hopefully it is. */
 int
 rb_exec_async_signal_safe(const struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
@@ -3096,6 +3021,7 @@ failure:
     return -1;
 }
 
+#if defined(__APPLE__) || defined(__HAIKU__)
 static int
 rb_exec_without_timer_thread(const struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
 {
@@ -3105,34 +3031,7 @@ rb_exec_without_timer_thread(const struct rb_execarg *eargp, char *errmsg, size_
     preserving_errno(after_exec_non_async_signal_safe()); /* not async-signal-safe because it calls rb_thread_start_timer_thread.  */
     return ret;
 }
-
-int
-rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
-{
-    return rb_exec_without_timer_thread(rb_execarg_get(e->execarg_obj), errmsg, errmsg_buflen);
-}
-
-int
-rb_exec(const struct rb_exec_arg *e)
-{
-#if !defined FD_CLOEXEC && !defined HAVE_SPAWNV
-    char errmsg[80] = { '\0' };
-    int ret = rb_exec_without_timer_thread(rb_execarg_get(e->execarg_obj), errmsg, sizeof(errmsg));
-    preserving_errno(
-	if (errmsg[0]) {
-	    fprintf(stderr, "%s\n", errmsg);
-	}
-	else {
-	    fprintf(stderr, "%s:%d: command not found: %s\n",
-		    rb_sourcefile(), rb_sourceline(),
-                    RSTRING_PTR(e->use_shell ? e->invoke.sh.shell_script : e->invoke.cmd.command_name));
-	}
-    );
-    return ret;
-#else
-    return rb_exec_without_timer_thread(rb_execarg_get(e->execarg_obj), NULL, 0);
 #endif
-}
 
 #ifdef HAVE_FORK
 /* This function should be async-signal-safe.  Hopefully it is. */
@@ -3450,44 +3349,10 @@ rb_fork_internal(int *status, int (*chfunc)(void*, char *, size_t), void *charg,
 }
 
 rb_pid_t
-rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fds,
-        char *errmsg, size_t errmsg_buflen)
-{
-    return rb_fork_internal(status, chfunc, charg, FALSE, fds, errmsg, errmsg_buflen);
-}
-
-rb_pid_t
 rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fds,
         char *errmsg, size_t errmsg_buflen)
 {
     return rb_fork_internal(status, chfunc, charg, TRUE, fds, errmsg, errmsg_buflen);
-}
-
-struct chfunc_wrapper_t {
-    int (*chfunc)(void*);
-    void *arg;
-};
-
-static int
-chfunc_wrapper(void *arg_, char *errmsg, size_t errmsg_buflen)
-{
-    struct chfunc_wrapper_t *arg = arg_;
-    return arg->chfunc(arg->arg);
-}
-
-rb_pid_t
-rb_fork(int *status, int (*chfunc)(void*), void *charg, VALUE fds)
-{
-    if (chfunc) {
-        struct chfunc_wrapper_t warg;
-        warg.chfunc = chfunc;
-        warg.arg = charg;
-        return rb_fork_internal(status, chfunc_wrapper, &warg, FALSE, fds, NULL, 0);
-    }
-    else {
-        return rb_fork_internal(status, NULL, NULL, FALSE, fds, NULL, 0);
-    }
-
 }
 
 rb_pid_t

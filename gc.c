@@ -5818,12 +5818,6 @@ ruby_gc_set_params(int safe_level)
 }
 
 void
-rb_gc_set_params(void)
-{
-    ruby_gc_set_params(rb_safe_level());
-}
-
-void
 rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *data)
 {
     rb_objspace_t *objspace = &rb_objspace;
