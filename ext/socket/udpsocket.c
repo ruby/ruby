@@ -176,7 +176,7 @@ udp_send(int argc, VALUE *argv, VALUE sock)
       retry:
 	arg.to = res->ai_addr;
 	arg.tolen = res->ai_addrlen;
-	rsock_maybe_fd_writable(arg.fd);
+	rb_thread_fd_writable(arg.fd);
 	n = (int)BLOCKING_REGION_FD(rsock_sendto_blocking, &arg);
 	if (n >= 0) {
 	    freeaddrinfo(res0);

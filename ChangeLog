@@ -1,3 +1,8 @@
+Fri Feb 14 21:01:12 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket: revert r44943 because it causes errors on some linux
+	  platforms.
+
 Fri Feb 14 20:52:31 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* configure.in (ARCH_FLAG): __sync_val_compare_and_swap_4 needs
