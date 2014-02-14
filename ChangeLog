@@ -1,3 +1,8 @@
+Fri Feb 14 15:21:21 2014  Eric Wong <e@80x24.org>
+
+	* benchmark/driver: avoid large alloc in driver process
+	  [ruby-core:59869] [Bug #9430]
+
 Fri Feb 14 15:17:17 2014  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/fiddle/closure.c: use sizeof(*pcl) for correct sizeof value.
