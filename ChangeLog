@@ -1,3 +1,8 @@
+Sat Feb 15 10:55:12 2014  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* ext/-test-/win32/fd_setsize/depend: fix wrong dependencies.
+	  [ruby-dev:47253]
+
 Sat Feb 15 00:38:54 2014  Tanaka Akira  <akr@fsij.org>
 
 	* enum.c: Enumerable#{min,min_by,max,max_by} extended to take an
