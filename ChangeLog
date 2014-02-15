@@ -1,3 +1,7 @@
+Sat Feb 15 13:22:28 2014  Eric Wong  <e@80x24.org>
+
+	* probes_helper.h (RUBY_DTRACE_HOOK): correct type for _id
+
 Sat Feb 15 11:47:47 2014  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big_cmp): Avoid bignum allocation for comparison
