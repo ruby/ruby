@@ -938,7 +938,7 @@ rand_int(struct MT *mt, VALUE vmax, int restrictive)
     else {
 	VALUE ret;
 	if (rb_bigzero_p(vmax)) return Qnil;
-	if (!RBIGNUM_SIGN(vmax)) {
+	if (!BIGNUM_SIGN(vmax)) {
 	    if (restrictive) return Qnil;
             vmax = rb_big_uminus(vmax);
 	}
@@ -985,7 +985,7 @@ rand_range(struct MT* mt, VALUE range)
 		v = ULONG2NUM(r);
 	    }
 	}
-	else if (BUILTIN_TYPE(vmax) == T_BIGNUM && RBIGNUM_SIGN(vmax) && !rb_bigzero_p(vmax)) {
+	else if (BUILTIN_TYPE(vmax) == T_BIGNUM && BIGNUM_SIGN(vmax) && !rb_bigzero_p(vmax)) {
 	    vmax = excl ? rb_big_minus(vmax, INT2FIX(1)) : rb_big_norm(vmax);
 	    if (FIXNUM_P(vmax)) {
 		excl = 0;

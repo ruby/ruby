@@ -6,7 +6,7 @@ bug_big_zero(VALUE self, VALUE length)
 {
     long len = NUM2ULONG(length);
     VALUE z = rb_big_new(len, 1);
-    MEMZERO(RBIGNUM_DIGITS(z), BDIGIT, len);
+    MEMZERO(BIGNUM_DIGITS(z), BDIGIT, len);
     return z;
 }
 
@@ -15,7 +15,7 @@ bug_big_negzero(VALUE self, VALUE length)
 {
     long len = NUM2ULONG(length);
     VALUE z = rb_big_new(len, 0);
-    MEMZERO(RBIGNUM_DIGITS(z), BDIGIT, len);
+    MEMZERO(BIGNUM_DIGITS(z), BDIGIT, len);
     return z;
 }
 

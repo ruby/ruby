@@ -1,3 +1,42 @@
+Sun Feb 16 06:12:23 2014  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h: Rename macro names: RBIGNUM_FOO to BIGNUM_FOO.
+	  (BIGNUM_EMBED_LEN_NUMBITS): Renamed from RBIGNUM_EMBED_LEN_NUMBITS.
+	  (BIGNUM_EMBED_LEN_MAX): Renamed from RBIGNUM_EMBED_LEN_MAX.
+	  (BIGNUM_SIGN_BIT): Renamed from RBIGNUM_SIGN_BIT.
+	  (BIGNUM_SIGN): Renamed from RBIGNUM_SIGN.
+	  (BIGNUM_SET_SIGN): Renamed from RBIGNUM_SET_SIGN.
+	  (BIGNUM_POSITIVE_P): Renamed from RBIGNUM_POSITIVE_P.
+	  (BIGNUM_NEGATIVE_P): Renamed from RBIGNUM_NEGATIVE_P.
+	  (BIGNUM_EMBED_FLAG): Renamed from RBIGNUM_EMBED_FLAG.
+	  (BIGNUM_EMBED_LEN_MASK): Renamed from RBIGNUM_EMBED_LEN_MASK.
+	  (BIGNUM_EMBED_LEN_SHIFT): Renamed from RBIGNUM_EMBED_LEN_SHIFT.
+	  (BIGNUM_LEN): Renamed from RBIGNUM_LEN.
+	  (RBIGNUM_DIGITS): Renamed from RBIGNUM_DIGITS.
+	  (BIGNUM_LENINT): Renamed from RBIGNUM_LENINT.
+
+	* bignum.c: Follow the above change.
+
+	* gc.c: Ditto.
+
+	* marshal.c: Ditto.
+
+	* math.c: Ditto.
+
+	* numeric.c: Ditto.
+
+	* random.c: Ditto.
+
+	* rational.c: Ditto.
+
+	* sprintf.c: Ditto.
+
+	* ext/-test-/bignum/bigzero.c: Ditto.
+
+	* ext/-test-/bignum/intpack.c: Ditto.
+
+	* ext/bigdecimal/bigdecimal.c: Ditto.
+
 Sat Feb 15 20:48:49 2014  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in (FILE_READEND): Don't detect it because it is not used.

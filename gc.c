@@ -1612,8 +1612,8 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       case T_BIGNUM:
-	if (!(RBASIC(obj)->flags & RBIGNUM_EMBED_FLAG) && RBIGNUM_DIGITS(obj)) {
-	    xfree(RBIGNUM_DIGITS(obj));
+	if (!(RBASIC(obj)->flags & BIGNUM_EMBED_FLAG) && BIGNUM_DIGITS(obj)) {
+	    xfree(BIGNUM_DIGITS(obj));
 	}
 	break;
       case T_NODE:
@@ -2506,8 +2506,8 @@ obj_memsize_of(VALUE obj, int use_tdata)
 	break;
 
       case T_BIGNUM:
-	if (!(RBASIC(obj)->flags & RBIGNUM_EMBED_FLAG) && RBIGNUM_DIGITS(obj)) {
-	    size += RBIGNUM_LEN(obj) * sizeof(BDIGIT);
+	if (!(RBASIC(obj)->flags & BIGNUM_EMBED_FLAG) && BIGNUM_DIGITS(obj)) {
+	    size += BIGNUM_LEN(obj) * sizeof(BDIGIT);
 	}
 	break;
       case T_NODE:

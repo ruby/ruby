@@ -145,7 +145,7 @@ rb_num_to_uint(VALUE val, unsigned int *ret)
     }
 
     if (RB_TYPE_P(val, T_BIGNUM)) {
-	if (RBIGNUM_NEGATIVE_P(val)) return NUMERR_NEGATIVE;
+	if (BIGNUM_NEGATIVE_P(val)) return NUMERR_NEGATIVE;
 #if SIZEOF_INT < SIZEOF_LONG
 	/* long is 64bit */
 	return NUMERR_TOOLARGE;
@@ -172,7 +172,7 @@ positive_int_p(VALUE num)
     }
     else if (RB_TYPE_P(num, T_BIGNUM)) {
 	if (method_basic_p(rb_cBignum))
-	    return RBIGNUM_POSITIVE_P(num);
+	    return BIGNUM_POSITIVE_P(num);
     }
     return RTEST(rb_funcall(num, mid, 1, INT2FIX(0)));
 }
@@ -188,7 +188,7 @@ negative_int_p(VALUE num)
     }
     else if (RB_TYPE_P(num, T_BIGNUM)) {
 	if (method_basic_p(rb_cBignum))
-	    return RBIGNUM_NEGATIVE_P(num);
+	    return BIGNUM_NEGATIVE_P(num);
     }
     return RTEST(rb_funcall(num, mid, 1, INT2FIX(0)));
 }
@@ -2066,7 +2066,7 @@ rb_num2ulong_internal(VALUE val, int *wrap_p)
         {
             unsigned long ul = rb_big2ulong(val);
             if (wrap_p)
-                *wrap_p = RBIGNUM_NEGATIVE_P(val);
+                *wrap_p = BIGNUM_NEGATIVE_P(val);
             return ul;
         }
     }
@@ -3434,7 +3434,7 @@ fix_aref(VALUE fix, VALUE idx)
     if (!FIXNUM_P(idx)) {
 	idx = rb_big_norm(idx);
 	if (!FIXNUM_P(idx)) {
-	    if (!RBIGNUM_SIGN(idx) || val >= 0)
+	    if (!BIGNUM_SIGN(idx) || val >= 0)
 		return INT2FIX(0);
 	    return INT2FIX(1);
 	}

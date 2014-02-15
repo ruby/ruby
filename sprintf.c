@@ -853,7 +853,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                         if (numdigits == 0 ||
                                 ((abs_nlz_bits != (size_t)(numbits-1) ||
                                   !rb_absint_singlebit_p(val)) &&
-                                 (!bignum ? v < 0 : RBIGNUM_NEGATIVE_P(val))))
+                                 (!bignum ? v < 0 : BIGNUM_NEGATIVE_P(val))))
                             numdigits++;
                         tmp = rb_str_new(NULL, numdigits);
                         valsign = rb_integer_pack(val, RSTRING_PTR(tmp), RSTRING_LEN(tmp),

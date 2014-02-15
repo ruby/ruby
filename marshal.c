@@ -764,9 +764,9 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	  case T_BIGNUM:
 	    w_byte(TYPE_BIGNUM, arg);
 	    {
-		char sign = RBIGNUM_SIGN(obj) ? '+' : '-';
-		long len = RBIGNUM_LEN(obj);
-		BDIGIT *d = RBIGNUM_DIGITS(obj);
+		char sign = BIGNUM_SIGN(obj) ? '+' : '-';
+		long len = BIGNUM_LEN(obj);
+		BDIGIT *d = BIGNUM_DIGITS(obj);
 
 		w_byte(sign, arg);
 		w_long(SHORTLEN(len), arg); /* w_short? */

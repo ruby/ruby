@@ -293,14 +293,14 @@ rb_gcd_gmp(VALUE x, VALUE y)
     mpz_init(mx);
     mpz_init(my);
     mpz_init(mz);
-    mpz_import(mx, RBIGNUM_LEN(x), -1, sizeof(BDIGIT), 0, nails, RBIGNUM_DIGITS(x));
-    mpz_import(my, RBIGNUM_LEN(y), -1, sizeof(BDIGIT), 0, nails, RBIGNUM_DIGITS(y));
+    mpz_import(mx, BIGNUM_LEN(x), -1, sizeof(BDIGIT), 0, nails, BIGNUM_DIGITS(x));
+    mpz_import(my, BIGNUM_LEN(y), -1, sizeof(BDIGIT), 0, nails, BIGNUM_DIGITS(y));
 
     mpz_gcd(mz, mx, my);
 
     zn = (mpz_sizeinbase(mz, 16) + SIZEOF_BDIGITS*2 - 1) / (SIZEOF_BDIGITS*2);
     z = rb_big_new(zn, 1);
-    mpz_export(RBIGNUM_DIGITS(z), &count, -1, sizeof(BDIGIT), 0, nails, mz);
+    mpz_export(BIGNUM_DIGITS(z), &count, -1, sizeof(BDIGIT), 0, nails, mz);
 
     return rb_big_norm(z);
 }
@@ -374,8 +374,8 @@ f_gcd(VALUE x, VALUE y)
 {
 #ifdef USE_GMP
     if (RB_TYPE_P(x, T_BIGNUM) && RB_TYPE_P(y, T_BIGNUM)) {
-        long xn = RBIGNUM_LEN(x);
-        long yn = RBIGNUM_LEN(y);
+        long xn = BIGNUM_LEN(x);
+        long yn = BIGNUM_LEN(y);
         if (GMP_GCD_DIGITS <= xn || GMP_GCD_DIGITS <= yn)
             return rb_gcd_gmp(x, y);
     }
