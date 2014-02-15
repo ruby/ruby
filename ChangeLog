@@ -1,3 +1,30 @@
+Sun Feb 16 00:27:04 2014  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* hash.c (rb_hash_assoc): revert r42224. table->type->compare is
+	  called only if hashes are matched.
+
+	* test/ruby/test_hash.rb: add a test to check using #== to compare.
+
+Sun Feb 16 00:27:04 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_initialize_copy): copy st_table type even if empty.
+	  [ruby-core:56256] [Bug #8703]
+
+Sun Feb 16 00:27:04 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_initialize_copy): clear old table before copy new
+	  table.
+
+Sun Feb 16 00:27:04 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_assoc): aggregate object can be initialized only
+	  with link time constants.
+
+Sun Feb 16 00:27:04 2014  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* hash.c (rb_hash_assoc): performance improvement by replacing
+	  compare function in RHASH(hash)->ntbl->type temporarily.
+
 Sun Feb 16 00:01:16 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb: Ignore name servers which cause EAFNOSUPPORT on
