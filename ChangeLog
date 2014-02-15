@@ -1,3 +1,9 @@
+Sat Feb 15 23:58:31 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb (Resolv::DNS::Message::MessageDecoder): Raise
+	  DecodeError if no data before the limit.
+	  Reported by Will Bryant.  [ruby-core:60557] [Bug #9498]
+
 Sat Feb 15 23:46:31 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (IDSET_ATTRSET_FOR_INTERN): fix off-by-one bug.
