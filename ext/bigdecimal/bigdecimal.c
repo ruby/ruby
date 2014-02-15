@@ -86,10 +86,6 @@ static ID id_eq;
 #define DBLE_FIG (DBL_DIG+1)    /* figure of double */
 #endif
 
-#ifndef BIGNUM_ZERO_P
-# define BIGNUM_ZERO_P(x) rb_bigzero_p(x)
-#endif
-
 #ifndef RRATIONAL_ZERO_P
 # define RRATIONAL_ZERO_P(x) (FIXNUM_P(RRATIONAL(x)->num) && \
 			      FIX2LONG(RRATIONAL(x)->num) == 0)

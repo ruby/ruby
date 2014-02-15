@@ -1,3 +1,7 @@
+Sun Feb 16 07:48:20 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/bigdecimal/bigdecimal.c (BIGNUM_ZERO_P): Unused macro removed.
+
 Sun Feb 16 06:12:23 2014  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h: Rename macro names: RBIGNUM_FOO to BIGNUM_FOO.
