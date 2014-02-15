@@ -539,7 +539,7 @@ is_integer_p(VALUE v)
  *
  *  - the block returns false for any value which is less than x, and
  *  - the block returns true for any value which is greater than or
- *    equal to i.
+ *    equal to x.
  *
  *  If x is within the range, this method returns the value x.
  *  Otherwise, it returns nil.
