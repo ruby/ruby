@@ -314,6 +314,18 @@ module TestStruct
     assert_include(klass.new.methods.inspect, ':a?', bug9248)
   end
 
+  def test_question_mark_in_member
+    klass = @Struct.new(:a, :b?)
+    o = klass.new("test", true)
+    assert_predicate(o, :b?)
+  end
+
+  def test_bang_mark_in_member
+    klass = @Struct.new(:a, :b!)
+    o = klass.new("test", true)
+    assert_predicate(o, :b!)
+  end
+
   class TopStruct < Test::Unit::TestCase
     include TestStruct
 

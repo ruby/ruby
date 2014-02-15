@@ -1,3 +1,8 @@
+Sat Feb 15 23:42:04 2014  Richo Healy  <richo@psych0tik.net>
+
+	* test/ruby/test_struct.rb: Add regression test for question marks and
+	  bangs in struct members. [Closes GH-468]
+
 Sat Feb 15 23:26:31 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* struct.c (new_struct): fix warning message, class name and encoding.
