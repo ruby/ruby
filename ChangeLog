@@ -1,3 +1,13 @@
+Sun Feb 16 01:36:57 2014  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/yaml/emitter.c: merge libyaml 0.1.5
+	* ext/psych/yaml/loader.c: ditto
+	* ext/psych/yaml/parser.c: ditto
+	* ext/psych/yaml/reader.c: ditto
+	* ext/psych/yaml/scanner.c: ditto
+	* ext/psych/yaml/writer.c: ditto
+	* ext/psych/yaml/yaml_private.h: ditto
+
 Sun Feb 16 01:02:32 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/racc/rdoc/grammar.en.rdoc: [DOC] Correct grammar and typos
