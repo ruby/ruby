@@ -1,3 +1,7 @@
+Sat Feb 15 23:26:31 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* struct.c (new_struct): fix warning message, class name and encoding.
+
 Sat Feb 15 16:08:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* struct.c (make_struct): avoid inadvertent symbol creation.
