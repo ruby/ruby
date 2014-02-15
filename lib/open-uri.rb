@@ -73,7 +73,7 @@ end
 # The environment variables such as http_proxy, https_proxy and ftp_proxy
 # are in effect by default. Here we disable proxy:
 #
-#   open("http://www.ruby-lang.org/en/raa.html", :proxy => nil) {|f|
+#   open("http://www.ruby-lang.org/en/", :proxy => nil) {|f|
 #     # ...
 #   }
 #

@@ -1,3 +1,9 @@
+Sun Feb 16 00:44:51 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/net/smtp.rb: [DOC] Remove dead link to RAA by Giorgos Tsiftsis
+	  Fixes the following bugs: [Bug #9152] [Bug #9268] [Bug #9394]
+	* lib/open-uri.rb: ditto
+
 Sun Feb 16 00:27:04 2014  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* hash.c (rb_hash_assoc): revert r42224. table->type->compare is
