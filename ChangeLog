@@ -1,3 +1,9 @@
+Sun Feb 16 00:01:16 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb: Ignore name servers which cause EAFNOSUPPORT on
+	  socket creation.
+	  Reported by Bjoern Rennhak.  [ruby-core:60442] [Bug #9477]
+
 Sat Feb 15 23:58:31 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (Resolv::DNS::Message::MessageDecoder): Raise
