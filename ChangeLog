@@ -1,3 +1,10 @@
+Sat Feb 15 23:46:31 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (IDSET_ATTRSET_FOR_INTERN): fix off-by-one bug.
+
+	* parse.y (rb_enc_symname_type): junk ID succeeded by '=' is also
+	  attrset ID.  [ruby-core:60668] [Bug #8756]
+
 Sat Feb 15 23:42:04 2014  Richo Healy  <richo@psych0tik.net>
 
 	* test/ruby/test_struct.rb: Add regression test for question marks and
