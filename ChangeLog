@@ -1,3 +1,7 @@
+Sun Feb 16 00:50:59 2014  Zachary Scott  <e@zzak.io>
+
+	* ext/openssl/ossl_pkey_dh.c: Fixed typo by Sandor Szuecs [Bug #9243]
+
 Sun Feb 16 00:47:36 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/xmlrpc/client.rb: [DOC] Remove note about SSL package on RAA
