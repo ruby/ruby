@@ -77,8 +77,6 @@ module XMLRPC # :nodoc:
     #
     # If +use_ssl+ is set to +true+, communication over SSL is enabled.
     #
-    # Note, that you need the SSL package from RAA installed.
-    #
     # Parameter +timeout+ is the time to wait for a XML-RPC response, defaults to 30.
     def initialize(host=nil, path=nil, port=nil, proxy_host=nil, proxy_port=nil,
                    user=nil, password=nil, use_ssl=nil, timeout=nil)
