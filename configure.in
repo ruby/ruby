@@ -2355,24 +2355,6 @@ AC_CACHE_CHECK([read buffer ptr field in FILE structures], rb_cv_frptr,
 done])
 if test "$rb_cv_frptr" != "not found"; then
   AC_DEFINE_UNQUOTED(FILE_READPTR, $rb_cv_frptr)
-
-  if test "$rb_cv_fcnt" = "not found"; then
-    AC_CACHE_CHECK([read buffer end field in FILE structures], rb_cv_frend,
-    [for frend in	dnl
-         _IO_read_end	dnl
-         bufread 	dnl
-         __bufread 	dnl
-    ; do
-        AC_TRY_COMPILE([#include <stdio.h>
-    ],
-	[FILE *f = stdin; char buf[256]; f->$frend = buf;],
-	rb_cv_frend="$frend"; break,
-	rb_cv_frend="not found")
-    done])
-    if test "$rb_cv_frend" != "not found"; then
-      AC_DEFINE_UNQUOTED(FILE_READEND, $rb_cv_frend)
-    fi
-  fi
 fi
 
 if test x"$ac_cv_func_gettimeofday" != xyes; then
