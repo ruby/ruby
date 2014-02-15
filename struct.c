@@ -187,10 +187,11 @@ make_struct(VALUE name, VALUE members, VALUE klass)
     else {
 	/* old style: should we warn? */
 	name = rb_str_to_str(name);
-	id = rb_to_id(name);
-	if (!rb_is_const_id(id)) {
-	    rb_name_error(id, "identifier %s needs to be constant", StringValuePtr(name));
+	if (!rb_is_const_name(name)) {
+	    rb_name_error_str(name, "identifier %"PRIsVALUE" needs to be constant",
+			      QUOTE(name));
 	}
+	id = rb_to_id(name);
 	if (rb_const_defined_at(klass, id)) {
 	    rb_warn("redefining constant Struct::%s", StringValuePtr(name));
 	    rb_mod_remove_const(klass, ID2SYM(id));
@@ -672,8 +673,16 @@ rb_struct_aref(VALUE s, VALUE idx)
 {
     long i;
 
-    if (RB_TYPE_P(idx, T_STRING) || RB_TYPE_P(idx, T_SYMBOL)) {
-	return rb_struct_aref_id(s, rb_to_id(idx));
+    if (RB_TYPE_P(idx, T_SYMBOL)) {
+	return rb_struct_aref_id(s, SYM2ID(idx));
+    }
+    else if (RB_TYPE_P(idx, T_STRING)) {
+	ID id = rb_check_id(&idx);
+	if (!id) {
+	    rb_name_error_str(idx, "no member '%"PRIsVALUE"' in struct",
+			      QUOTE(idx));
+	}
+	return rb_struct_aref_id(s, id);
     }
 
     i = NUM2LONG(idx);
@@ -739,8 +748,16 @@ rb_struct_aset(VALUE s, VALUE idx, VALUE val)
 {
     long i;
 
-    if (RB_TYPE_P(idx, T_STRING) || RB_TYPE_P(idx, T_SYMBOL)) {
-	return rb_struct_aset_id(s, rb_to_id(idx), val);
+    if (RB_TYPE_P(idx, T_SYMBOL)) {
+	return rb_struct_aset_id(s, SYM2ID(idx), val);
+    }
+    if (RB_TYPE_P(idx, T_STRING)) {
+	ID id = rb_check_id(&idx);
+	if (!id) {
+	    rb_name_error_str(idx, "no member '%"PRIsVALUE"' in struct",
+			      QUOTE(idx));
+	}
+	return rb_struct_aset_id(s, id, val);
     }
 
     i = NUM2LONG(idx);
