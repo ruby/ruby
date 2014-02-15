@@ -519,8 +519,9 @@ module OpenURI
       end
     end
 
-    # returns a list of encodings in Content-Encoding field
-    # as an Array of String.
+    # Returns a list of encodings in Content-Encoding field as an array of
+    # strings.
+    #
     # The encodings are downcased for canonicalization.
     def content_encoding
       v = @meta['content-encoding']
