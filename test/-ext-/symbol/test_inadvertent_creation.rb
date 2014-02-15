@@ -159,5 +159,25 @@ module Test_Symbol
       assert_equal(name, e.name)
       assert_equal([Feature5112], e.args)
     end
+
+    def test_struct_new
+      name = noninterned_name
+      assert_raise(NameError) {Struct.new(name)}
+      assert_not_send([Bug::Symbol, :interned?, name])
+    end
+
+    def test_struct_aref
+      s = Struct.new(:foo).new
+      name = noninterned_name
+      assert_raise(NameError) {s[name]}
+      assert_not_send([Bug::Symbol, :interned?, name])
+    end
+
+    def test_struct_aset
+      s = Struct.new(:foo).new
+      name = noninterned_name
+      assert_raise(NameError) {s[name] = true}
+      assert_not_send([Bug::Symbol, :interned?, name])
+    end
   end
 end
