@@ -1,3 +1,8 @@
+Sun Feb 16 00:57:13 2014  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* variable.c: [DOC] adding extra example in docs.
+	  patched by Steve Klabnik. [Bug #9210]
+
 Sun Feb 16 00:54:50 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (Resolv::DNS::Resource::TXT#data): Return concatenated
