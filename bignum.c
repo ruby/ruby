@@ -5277,13 +5277,17 @@ rb_big_cmp(VALUE x, VALUE y)
 {
     int cmp;
 
-    if (y == INT2FIX(0)) {
-        if (BIGZEROP(x)) return INT2FIX(0);
-        if (RBIGNUM_NEGATIVE_P(x)) return INT2FIX(-1);
-        return INT2FIX(1);
-    }
-    else if (FIXNUM_P(y)) {
-	y = rb_int2big(FIX2LONG(y));
+    if (FIXNUM_P(y)) {
+        x = bignorm(x);
+        if (FIXNUM_P(x)) {
+            if (FIX2LONG(x) > FIX2LONG(y)) return INT2FIX(1);
+            if (FIX2LONG(x) < FIX2LONG(y)) return INT2FIX(-1);
+            return INT2FIX(0);
+        }
+        else {
+            if (RBIGNUM_NEGATIVE_P(x)) return INT2FIX(-1);
+            return INT2FIX(1);
+        }
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
     }
