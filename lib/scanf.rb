@@ -603,7 +603,7 @@ class IO
   # If a block is given, the value from that is returned from
   # the yield is added to an output array.
   #
-  #   "123 456".block_scanf("%d) do |digit,| # the ',' unpacks the Array
+  #   "123 456".block_scanf("%d") do |digit,| # the ',' unpacks the Array
   #     digit + 100
   #   end
   #   # => [223, 556]
