@@ -32,3 +32,35 @@ with all sufficient information, see the ChangeLog file.
 
 === C API updates
 
+* Deprecated APIs removed.  [Feature #9502]
+
+  Check_SafeStr -> SafeStringValue
+  rb_check_safe_str -> SafeStringValue
+  rb_quad_pack -> rb_integer_pack
+  rb_quad_unpack -> rb_integer_unpack
+  rb_read_check : access struct FILE internal. no replacement.
+  rb_struct_iv_get : internal function. no replacement.
+  struct rb_blocking_region_buffer : internal type. no replacement.
+  rb_thread_blocking_region_begin -> rb_thread_call_without_gvl family
+  rb_thread_blocking_region_end -> rb_thread_call_without_gvl family
+  TRAP_BEG -> rb_thread_call_without_gvl family
+  TRAP_END -> rb_thread_call_without_gvl family
+  rb_thread_select -> rb_thread_fd_select
+  struct rb_exec_arg : internal type. no replacement.
+  rb_exec : internal function. no replacement.
+  rb_exec_arg_addopt : internal function. no replacement.
+  rb_exec_arg_fixup : internal function. no replacement.
+  rb_exec_arg_init : internal function. no replacement.
+  rb_exec_err : internal function. no replacement.
+  rb_fork : internal function. no replacement.
+  rb_fork_err : internal function. no replacement.
+  rb_proc_exec_n : internal function. no replacement.
+  rb_run_exec_options : internal function. no replacement.
+  rb_run_exec_options_err : internal function. no replacement.
+  rb_thread_blocking_region -> rb_thread_call_without_gvl family
+  rb_thread_polling -> rb_thread_wait_for
+  rb_big2str0 : internal function. no replacement.
+  rb_big2ulong_pack -> rb_integer_pack
+  rb_gc_set_params : internal function. no replacement.
+
+* struct RBignum is hidden.  [Feature #6083]
