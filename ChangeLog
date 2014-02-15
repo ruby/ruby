@@ -1,3 +1,8 @@
+Sun Feb 16 08:11:23 2014  Zachary Scott  <e@zzak.io>
+
+	* README.EXT.ja: [DOC] Fix typo by @utenmiki [Fixes GH-534]
+	  https://github.com/ruby/ruby/pull/534
+
 Sun Feb 16 07:48:20 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/bigdecimal/bigdecimal.c (BIGNUM_ZERO_P): Unused macro removed.
