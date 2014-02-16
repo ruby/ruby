@@ -1,3 +1,15 @@
+Mon Feb 17 01:51:49 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/webrick/htmlutils.rb (WEBrick::HTMLUtils#escape): replace HTML
+	  meta chars even in non-ascii string.  [Bug #8425] [ruby-core:55052]
+
+	* lib/webrick/httputils.rb (WEBrick::HTTPUtils#{_escape,_unescape}):
+	  fix %-escape encodings.  [Bug #8425] [ruby-core:55052]
+
+Mon Feb 17 01:51:49 2014  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* test/webrick/test_htmlutils.rb: add test for WEBrick::HTMLUtils.
+
 Mon Feb 17 01:41:59 2014  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* array.c (rb_hash_rehash): use hash_alloc() instead of rb_hash_new().
