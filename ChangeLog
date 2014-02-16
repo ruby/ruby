@@ -1,3 +1,8 @@
+Mon Feb 17 05:43:20 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: reset LDFLAGS and DLDFLAGS for opt-dir again after
+	  LIBPATHFLAG and RPATHFLAG are set.  [ruby-dev:47868] [Bug #9317]
+
 Sun Feb 16 07:13:36 2014  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: Fix compilation error.
