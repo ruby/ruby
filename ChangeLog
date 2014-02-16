@@ -1,3 +1,8 @@
+Mon Feb 17 01:57:45 2014  Benoit Daloze  <eregontp@gmail.com>
+
+	* range.c (Range#size): [DOC] improve description and add examples.
+	  Patch by @skade. [Fixes GH-501]
+
 Mon Feb 17 01:51:49 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/webrick/htmlutils.rb (WEBrick::HTMLUtils#escape): replace HTML
