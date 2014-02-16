@@ -321,7 +321,7 @@ class TestLogDevice < Test::Unit::TestCase
     r, w = IO.pipe
     logdev = d(w)
     logdev.write("msg2\n\n")
-    read_ready, = IO.select([r], nil, nil, 0.1)
+    IO.select([r], nil, nil, 0.1)
     w.close
     msg = r.read
     r.close
@@ -347,7 +347,7 @@ class TestLogDevice < Test::Unit::TestCase
     r, w = IO.pipe
     logdev = d(w)
     logdev.write("msg2\n\n")
-    read_ready, = IO.select([r], nil, nil, 0.1)
+    IO.select([r], nil, nil, 0.1)
     assert(!w.closed?)
     logdev.close
     assert(w.closed?)
@@ -481,7 +481,6 @@ class TestLogDevice < Test::Unit::TestCase
     logfile0 = logfile + '.0'
     logfile1 = logfile + '.1'
     logfile2 = logfile + '.2'
-    logfile3 = logfile + '.3'
     tmpfile.close(true)
     File.unlink(logfile) if File.exist?(logfile)
     File.unlink(logfile0) if File.exist?(logfile0)

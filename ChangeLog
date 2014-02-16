@@ -1,3 +1,8 @@
+Sun Feb 16 15:00:28 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/net/ftp/test_ftp.rb: remove unused variables.
+	* test/logger/test_logger.rb: ditto.
+
 Sun Feb 16 14:52:46 2014  Eric Wong  <e@80x24.org>
 
 	* dir.c (dir_s_glob): RB_GC_GUARD instead of volatile
