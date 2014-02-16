@@ -1912,8 +1912,9 @@ dir_s_glob(int argc, VALUE *argv, VALUE obj)
 	ary = rb_push_glob(str, flags);
     }
     else {
-	volatile VALUE v = ary;
+	VALUE v = ary;
 	ary = dir_globs(RARRAY_LEN(v), RARRAY_CONST_PTR(v), flags);
+	RB_GC_GUARD(v);
     }
 
     if (rb_block_given_p()) {

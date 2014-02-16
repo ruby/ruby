@@ -1,3 +1,7 @@
+Sun Feb 16 14:52:46 2014  Eric Wong  <e@80x24.org>
+
+	* dir.c (dir_s_glob): RB_GC_GUARD instead of volatile
+
 Sun Feb 16 14:33:52 2014  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/ruby.h (RBIGNUM_SIGN): Defined for compatibility.
