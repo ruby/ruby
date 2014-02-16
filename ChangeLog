@@ -1,3 +1,13 @@
+Mon Feb 17 01:12:57 2014  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/fiddle/closure.c: use sizeof(*pcl) for correct sizeof value.
+	  [ruby-core:57599] [Bug #8978].
+
+Mon Feb 17 01:12:57 2014  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/fiddle/closure.c: use sizeof(*pcl) for correct sizeof value.
+	  [ruby-core:57599] [Bug #8978].  Thanks mame!
+
 Mon Feb 17 01:09:52 2014  Eric Wong <e@80x24.org>
 
 	* benchmark/driver: avoid large alloc in driver process
