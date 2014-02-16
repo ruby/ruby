@@ -288,7 +288,7 @@ module OpenURI
       end
     end
 
-    http = klass.new(target_host, target_port)
+    http = proxy ? klass.new(target_host, target_port) : klass.new(target_host, target_port, nil)
     if target.class == URI::HTTPS
       require 'net/https'
       http.use_ssl = true
