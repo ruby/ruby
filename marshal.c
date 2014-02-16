@@ -950,7 +950,7 @@ marshal_dump(int argc, VALUE *argv)
     VALUE obj, port, a1, a2;
     int limit = -1;
     struct dump_arg *arg;
-    volatile VALUE wrapper;
+    VALUE wrapper; /* used to avoid memory leak in case of exception */
 
     port = Qnil;
     rb_scan_args(argc, argv, "12", &obj, &a1, &a2);
@@ -964,7 +964,7 @@ marshal_dump(int argc, VALUE *argv)
 	else if (NIL_P(a1)) io_needed();
 	else port = a1;
     }
-    RB_GC_GUARD(wrapper) = TypedData_Make_Struct(rb_cData, struct dump_arg, &dump_arg_data, arg);
+    wrapper = TypedData_Make_Struct(rb_cData, struct dump_arg, &dump_arg_data, arg);
     arg->dest = 0;
     arg->symbols = st_init_numtable();
     arg->data    = st_init_numtable();
@@ -993,8 +993,8 @@ marshal_dump(int argc, VALUE *argv)
 	rb_io_write(arg->dest, arg->str);
 	rb_str_resize(arg->str, 0);
     }
-    clear_dump_arg(arg);
-    RB_GC_GUARD(wrapper);
+    free_dump_arg(arg);
+    rb_gc_force_recycle(wrapper); /* also guards from premature GC */
 
     return port;
 }
@@ -1957,7 +1957,7 @@ marshal_load(int argc, VALUE *argv)
     VALUE port, proc;
     int major, minor, infection = 0;
     VALUE v;
-    volatile VALUE wrapper;
+    VALUE wrapper; /* used to avoid memory leak in case of exception */
     struct load_arg *arg;
 
     rb_scan_args(argc, argv, "11", &port, &proc);
@@ -1973,7 +1973,7 @@ marshal_load(int argc, VALUE *argv)
     else {
 	io_needed();
     }
-    RB_GC_GUARD(wrapper) = TypedData_Make_Struct(rb_cData, struct load_arg, &load_arg_data, arg);
+    wrapper = TypedData_Make_Struct(rb_cData, struct load_arg, &load_arg_data, arg);
     arg->infection = infection;
     arg->src = port;
     arg->offset = 0;
@@ -2004,8 +2004,8 @@ marshal_load(int argc, VALUE *argv)
 
     if (!NIL_P(proc)) arg->proc = proc;
     v = r_object(arg);
-    clear_load_arg(arg);
-    RB_GC_GUARD(wrapper);
+    free_load_arg(arg);
+    rb_gc_force_recycle(wrapper); /* also guards from premature GC */
 
     return v;
 }

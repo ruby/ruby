@@ -1,3 +1,9 @@
+Sun Feb 16 11:55:14 2014  Eric Wong  <e@80x24.org>
+
+	* marshal.c (marshal_dump): use rb_gc_force_recycle for GC-safety
+	  (marshal_load): ditto
+	  [ruby-core:60730] [Bug #7805]
+
 Sun Feb 16 08:11:23 2014  Zachary Scott  <e@zzak.io>
 
 	* README.EXT.ja: [DOC] Fix typo by @utenmiki [Fixes GH-534]
