@@ -8227,7 +8227,7 @@ argf_readlines(int argc, VALUE *argv, VALUE argf)
 static VALUE
 rb_f_backquote(VALUE obj, VALUE str)
 {
-    volatile VALUE port;
+    VALUE port;
     VALUE result;
     rb_io_t *fptr;
 
@@ -8239,6 +8239,8 @@ rb_f_backquote(VALUE obj, VALUE str)
     GetOpenFile(port, fptr);
     result = read_all(fptr, remain_size(fptr), Qnil);
     rb_io_close(port);
+    rb_io_fptr_finalize(fptr);
+    rb_gc_force_recycle(port); /* also guards from premature GC */
 
     return result;
 }

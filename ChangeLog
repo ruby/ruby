@@ -1,3 +1,8 @@
+Sun Feb 16 12:46:47 2014  Eric Wong  <e@80x24.org>
+
+	* io.c (rb_f_backquote): trade volatile for manual recycle
+	  rb_gc_force_recycle ensures object is visible until recycle
+
 Sun Feb 16 11:55:14 2014  Eric Wong  <e@80x24.org>
 
 	* marshal.c (marshal_dump): use rb_gc_force_recycle for GC-safety
