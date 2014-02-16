@@ -1,3 +1,9 @@
+Sun Feb 16 14:33:52 2014  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/ruby.h (RBIGNUM_SIGN): Defined for compatibility.
+	  (RBIGNUM_POSITIVE_P): Ditto.
+	  (RBIGNUM_NEGATIVE_P): Ditto.
+
 Sun Feb 16 12:46:47 2014  Eric Wong  <e@80x24.org>
 
 	* io.c (rb_f_backquote): trade volatile for manual recycle
