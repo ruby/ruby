@@ -1,3 +1,9 @@
+Mon Feb 17 00:45:44 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_modify_expand): enable capacity and disable
+	  association with packed objects when setting capa, so that
+	  pack("p") string fails to unpack properly after modified.
+
 Sun Feb 16 01:36:57 2014  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/yaml/emitter.c: merge libyaml 0.1.5
