@@ -480,6 +480,11 @@ rb_hash_s_try_convert(VALUE dummy, VALUE hash)
     return rb_check_hash_type(hash);
 }
 
+struct rehash_arg {
+    VALUE hash;
+    st_table *tbl;
+};
+
 static int
 rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
 {
@@ -512,6 +517,7 @@ rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
 static VALUE
 rb_hash_rehash(VALUE hash)
 {
+    VALUE tmp;
     st_table *tbl;
 
     if (RHASH_ITER_LEV(hash) > 0) {
@@ -520,10 +526,14 @@ rb_hash_rehash(VALUE hash)
     rb_hash_modify_check(hash);
     if (!RHASH(hash)->ntbl)
         return hash;
+    tmp = hash_alloc(0);
     tbl = st_init_table_with_size(RHASH(hash)->ntbl->type, RHASH(hash)->ntbl->num_entries);
+    RHASH(tmp)->ntbl = tbl;
+
     rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tbl);
     st_free_table(RHASH(hash)->ntbl);
     RHASH(hash)->ntbl = tbl;
+    RHASH(tmp)->ntbl = 0;
 
     return hash;
 }
