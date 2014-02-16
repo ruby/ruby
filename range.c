@@ -696,9 +696,12 @@ sym_each_i(VALUE v, void *arg)
  *  call-seq:
  *     rng.size                   -> num
  *
- *  Returns the number of elements in the range.
+ *  Returns the number of elements in the range. Both the begin and the end of
+ *  the Range must be Numeric, otherwise nil is returned.
  *
  *    (10..20).size    #=> 11
+ *    ('a'..'z').size  #=> nil
+ *    (-Float::INFINITY..Float::INFINITY).size #=> Infinity
  */
 
 static VALUE
