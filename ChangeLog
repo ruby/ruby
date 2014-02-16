@@ -1,3 +1,8 @@
+Mon Feb 17 01:09:52 2014  Eric Wong <e@80x24.org>
+
+	* benchmark/driver: avoid large alloc in driver process
+	  [ruby-core:59869] [Bug #9430]
+
 Mon Feb 17 00:59:40 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (rb_thread_create_timer_thread): fix for platforms
