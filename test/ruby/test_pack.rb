@@ -181,6 +181,7 @@ class TestPack < Test::Unit::TestCase
     assert_equal a[0], a.pack("p").unpack("p")[0]
     assert_equal a, a.pack("p").freeze.unpack("p*")
     assert_raise(ArgumentError) { (a.pack("p") + "").unpack("p*") }
+    assert_raise(ArgumentError) { (a.pack("p") << "d").unpack("p*") }
   end
 
   def test_format_string_modified

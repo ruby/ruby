@@ -1387,6 +1387,7 @@ rb_str_modify_expand(VALUE str, long expand)
 	long capa = len + expand;
 	if (!STR_EMBED_P(str)) {
 	    REALLOC_N(RSTRING(str)->as.heap.ptr, char, capa+1);
+	    STR_UNSET_NOCAPA(str);
 	    RSTRING(str)->as.heap.aux.capa = capa;
 	}
 	else if (capa > RSTRING_EMBED_LEN_MAX) {
