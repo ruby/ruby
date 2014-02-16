@@ -1,3 +1,9 @@
+Sun Feb 17 02:12:00 2014  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_initialize): Insert GC guard.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_global_new): ditto.
+
 Sun Feb 16 15:53:36 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/test_securerandom.rb: File.exists? is deprecated. use File.exist?
