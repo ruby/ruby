@@ -242,7 +242,7 @@ class BenchmarkDriver
     cmd = "#{executable} #{@ruby_arg} #{file}"
 
     m = Benchmark.measure{
-      `#{cmd}`
+      system(cmd, out: File::NULL)
     }
 
     if $? != 0
