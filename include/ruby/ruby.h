@@ -1069,9 +1069,9 @@ struct RStruct {
 #define RSTRUCT_SET(st, idx, v) RB_OBJ_WRITE(st, &RSTRUCT_CONST_PTR(st)[idx], (v))
 #define RSTRUCT_GET(st, idx)    (RSTRUCT_CONST_PTR(st)[idx])
 
-#define RBIGNUM_SIGN(b) (FIX2INT(rb_big_cmp((b), INT2FIX(0))) >= 0)
-#define RBIGNUM_POSITIVE_P(b) (FIX2INT(rb_big_cmp((b), INT2FIX(0))) >= 0)
-#define RBIGNUM_NEGATIVE_P(b) (FIX2INT(rb_big_cmp((b), INT2FIX(0))) < 0)
+#define RBIGNUM_SIGN(b) (FIX2LONG(rb_big_cmp((b), INT2FIX(0))) >= 0)
+#define RBIGNUM_POSITIVE_P(b) (FIX2LONG(rb_big_cmp((b), INT2FIX(0))) >= 0)
+#define RBIGNUM_NEGATIVE_P(b) (FIX2LONG(rb_big_cmp((b), INT2FIX(0))) < 0)
 
 #define R_CAST(st)   (struct st*)
 #define RBASIC(obj)  (R_CAST(RBasic)(obj))
