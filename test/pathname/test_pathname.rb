@@ -1222,7 +1222,7 @@ class TestPathname < Test::Unit::TestCase
       Pathname("d").mkdir
       assert(File.directory?("d"))
       Pathname("d").rmdir
-      assert(!File.exists?("d"))
+      assert(!File.exist?("d"))
     }
   end
 
