@@ -1,3 +1,8 @@
+Mon Feb 17 21:31:31 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_gc.rb: ignore warning messages for running with -w
+	  option such as chkbuild.
+
 Mon Feb 17 20:00:27 2014  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h: Move BDIGIT and related definitions from
