@@ -1,3 +1,8 @@
+Mon Feb 17 15:43:59 2014  Zachary Scott  <e@zzak.io>
+
+	* doc/keywords.rdoc: [DOC] Add keywords doc by documenting-ruby/ruby#29
+	  https://github.com/documenting-ruby/ruby/pull/29
+
 Mon Feb 17 12:31:31 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (get_envparam_double): fix a warning message.
