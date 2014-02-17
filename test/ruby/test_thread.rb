@@ -710,4 +710,31 @@ class TestThreadGroup < Test::Unit::TestCase
     end
     assert_in_delta(t1 - t0, 1, 1)
   end
+
+  def test_blocking_mutex_unlocked_on_fork
+    bug8433 = '[ruby-core:55102] [Bug #8433]'
+
+    mutex = Mutex.new
+    flag = false
+    mutex.lock
+
+    th = Thread.new do
+      mutex.synchronize do
+        flag = true
+        sleep
+      end
+    end
+
+    Thread.pass until th.stop?
+    mutex.unlock
+
+    pid = Process.fork do
+      exit(mutex.locked?)
+    end
+
+    th.kill
+
+    pid, status = Process.waitpid2(pid)
+    assert_equal(false, status.success?, bug8433)
+  end if Process.respond_to?(:fork)
 end

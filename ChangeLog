@@ -1,3 +1,8 @@
+Mon Feb 17 18:04:40 2014  Aaron Pfeifer  <aaron.pfeifer@gmail.com>
+
+	* thread.c (terminate_atfork_i): fix locking mutexes not unlocked in
+	  forks when not tracked in thread.  [ruby-core:55102] [Bug #8433]
+
 Fri Feb 14 21:01:12 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket: revert r44943 because it causes errors on some linux
