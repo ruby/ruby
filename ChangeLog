@@ -1,3 +1,7 @@
+Mon Feb 17 11:27:36 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/test_find.rb: remove unused variables.
+
 Sun Feb 17 02:12:00 2014  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_initialize): Insert GC guard.
