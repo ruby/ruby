@@ -1,3 +1,9 @@
+Mon Feb 17 17:41:55 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (marshal_dump, marshal_load): do not recycle wrapper
+	  objects, to prevent from segfault with continuation.
+	  [ruby-dev:47970] [Bug #9523]
+
 Mon Feb 17 15:43:59 2014  Zachary Scott  <e@zzak.io>
 
 	* doc/keywords.rdoc: [DOC] Add keywords doc by documenting-ruby/ruby#29

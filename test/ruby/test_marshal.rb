@@ -611,4 +611,23 @@ class TestMarshal < Test::Unit::TestCase
     end
     assert_empty(tainted.map {|x| [x, x.class]}, bug8945)
   end
+
+  class Bug9523
+    attr_reader :cc
+    def marshal_dump
+      callcc {|c| @cc = c }
+      nil
+    end
+    def marshal_load(v)
+    end
+  end
+
+  def test_continuation
+    require "continuation"
+    c = Bug9523.new
+    assert_raise_with_message(RuntimeError, /Marshal\.dump reentered at marshal_dump/) do
+      Marshal.dump(c)
+      c.cc.call
+    end
+  end
 end

@@ -993,8 +993,8 @@ marshal_dump(int argc, VALUE *argv)
 	rb_io_write(arg->dest, arg->str);
 	rb_str_resize(arg->str, 0);
     }
-    free_dump_arg(arg);
-    rb_gc_force_recycle(wrapper); /* also guards from premature GC */
+    clear_dump_arg(arg);
+    RB_GC_GUARD(wrapper);
 
     return port;
 }
@@ -2004,8 +2004,8 @@ marshal_load(int argc, VALUE *argv)
 
     if (!NIL_P(proc)) arg->proc = proc;
     v = r_object(arg);
-    free_load_arg(arg);
-    rb_gc_force_recycle(wrapper); /* also guards from premature GC */
+    clear_load_arg(arg);
+    RB_GC_GUARD(wrapper);
 
     return v;
 }
