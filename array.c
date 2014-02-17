@@ -1056,6 +1056,7 @@ rb_ary_shift_m(int argc, VALUE *argv, VALUE ary)
 {
     VALUE result;
     long n;
+    long len = RARRAY_LEN(ary);
 
     if (argc == 0) {
 	return rb_ary_shift(ary);
@@ -1068,13 +1069,21 @@ rb_ary_shift_m(int argc, VALUE *argv, VALUE ary)
 	if (ARY_SHARED_OCCUPIED(ARY_SHARED(ary))) {
 	    ary_mem_clear(ary, 0, n);
 	}
-        ARY_INCREASE_PTR(ary, n);
     }
     else {
-	RARRAY_PTR_USE(ary, ptr, {
-	    MEMMOVE(ptr, ptr + n, VALUE, RARRAY_LEN(ary)-n);
-	}); /* WB: no new reference */
+	if (len < ARY_DEFAULT_SIZE) {
+	    RARRAY_PTR_USE(ary, ptr, {
+		MEMMOVE(ptr, ptr+n, VALUE, len-n);
+	    }); /* WB: no new reference */
+	    ARY_INCREASE_LEN(ary, -n);
+	    return result;
+	}
+	assert(!ARY_EMBED_P(ary)); /* ARY_EMBED_LEN_MAX < ARY_DEFAULT_SIZE */
+
+	ary_mem_clear(ary, 0, n);
+	ary_make_shared(ary);
     }
+    ARY_INCREASE_PTR(ary, n);
     ARY_INCREASE_LEN(ary, -n);
 
     return result;

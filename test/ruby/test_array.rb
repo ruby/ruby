@@ -1886,6 +1886,8 @@ class TestArray < Test::Unit::TestCase
     a[3] = 3
     a.shift(2)
     assert_equal([2, 3], a)
+
+    assert_equal([1,1,1], ([1] * 100).shift(3))
   end
 
   def test_unshift_error
