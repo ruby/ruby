@@ -551,6 +551,7 @@ private
         @filename = log
         @shift_age = opt[:shift_age] || 7
         @shift_size = opt[:shift_size] || 1048576
+        @next_rotate_time = calc_next_rotate_time(Time.now) unless @shift_age.is_a?(Integer)
       end
     end
 
@@ -586,6 +587,38 @@ private
     end
 
   private
+    MONTH_DAY = [31,28,31,30,31,30,31,31,30,31,30,31]
+    LEAP_MONTH_DAY = [31,29,31,30,31,30,31,31,30,31,30,31]
+    SiD = 24 * 60 * 60
+
+    def calc_next_rotate_time(now)
+      case @shift_age
+      when /^daily$/
+        Time.mktime(now.year, now.month, now.mday, 0, 0, 0) + SiD
+      when /^weekly$/
+        Time.mktime(now.year, now.month, now.mday, 0, 0, 0) + SiD * (7 - now.wday)
+      when /^monthly$/
+        Time.mktime(now.year, now.month, 1, 0, 0, 0) + SiD * calc_month_day(now)
+      else
+        now
+      end
+    end
+
+    def calc_month_day(now)
+      (leap_year?(now.year) ? LEAP_MONTH_DAY : MONTH_DAY)[now.month - 1]
+    end
+
+    def leap_year?(year)
+      if year % 400 == 0
+        true
+      elsif year % 100 == 0
+        false
+      elsif year % 4 == 0
+        true
+      else
+        false
+      end
+    end
 
     def open_logfile(filename)
       begin
@@ -616,8 +649,6 @@ private
       ) if file.size == 0
     end
 
-    SiD = 24 * 60 * 60
-
     def check_shift_log
       if @shift_age.is_a?(Integer)
         # Note: always returns false if '0'.
@@ -626,9 +657,9 @@ private
         end
       else
         now = Time.now
-        period_end = previous_period_end(now)
-        if @dev.stat.mtime <= period_end
-          lock_shift_log { shift_log_period(period_end) }
+        if now >= @next_rotate_time
+          @next_rotate_time = calc_next_rotate_time(now)
+          lock_shift_log { shift_log_period(previous_period_end(now)) }
         end
       end
     end
