@@ -1,3 +1,8 @@
+Mon Feb 17 20:00:27 2014  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h: Move BDIGIT and related definitions from
+	  include/ruby/defines.h.
+
 Mon Feb 17 17:41:55 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (marshal_dump, marshal_load): do not recycle wrapper

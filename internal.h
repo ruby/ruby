@@ -305,6 +305,60 @@ struct method_table_wrapper {
     size_t serial;
 };
 
+#ifndef BDIGIT
+# if SIZEOF_INT*2 <= SIZEOF_LONG_LONG
+#  define BDIGIT unsigned int
+#  define SIZEOF_BDIGITS SIZEOF_INT
+#  define BDIGIT_DBL unsigned LONG_LONG
+#  define BDIGIT_DBL_SIGNED LONG_LONG
+#  define PRI_BDIGIT_PREFIX ""
+#  define PRI_BDIGIT_DBL_PREFIX PRI_LL_PREFIX
+# elif SIZEOF_INT*2 <= SIZEOF_LONG
+#  define BDIGIT unsigned int
+#  define SIZEOF_BDIGITS SIZEOF_INT
+#  define BDIGIT_DBL unsigned long
+#  define BDIGIT_DBL_SIGNED long
+#  define PRI_BDIGIT_PREFIX ""
+#  define PRI_BDIGIT_DBL_PREFIX "l"
+# elif SIZEOF_SHORT*2 <= SIZEOF_LONG
+#  define BDIGIT unsigned short
+#  define SIZEOF_BDIGITS SIZEOF_SHORT
+#  define BDIGIT_DBL unsigned long
+#  define BDIGIT_DBL_SIGNED long
+#  define PRI_BDIGIT_PREFIX "h"
+#  define PRI_BDIGIT_DBL_PREFIX "l"
+# else
+#  define BDIGIT unsigned short
+#  define SIZEOF_BDIGITS (SIZEOF_LONG/2)
+#  define SIZEOF_ACTUAL_BDIGIT SIZEOF_LONG
+#  define BDIGIT_DBL unsigned long
+#  define BDIGIT_DBL_SIGNED long
+#  define PRI_BDIGIT_PREFIX "h"
+#  define PRI_BDIGIT_DBL_PREFIX "l"
+# endif
+#endif
+#ifndef SIZEOF_ACTUAL_BDIGIT
+# define SIZEOF_ACTUAL_BDIGIT SIZEOF_BDIGITS
+#endif
+
+#ifdef PRI_BDIGIT_PREFIX
+# define PRIdBDIGIT PRI_BDIGIT_PREFIX"d"
+# define PRIiBDIGIT PRI_BDIGIT_PREFIX"i"
+# define PRIoBDIGIT PRI_BDIGIT_PREFIX"o"
+# define PRIuBDIGIT PRI_BDIGIT_PREFIX"u"
+# define PRIxBDIGIT PRI_BDIGIT_PREFIX"x"
+# define PRIXBDIGIT PRI_BDIGIT_PREFIX"X"
+#endif
+
+#ifdef PRI_BDIGIT_DBL_PREFIX
+# define PRIdBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"d"
+# define PRIiBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"i"
+# define PRIoBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"o"
+# define PRIuBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"u"
+# define PRIxBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"x"
+# define PRIXBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"X"
+#endif
+
 #define BIGNUM_EMBED_LEN_NUMBITS 3
 #ifndef BIGNUM_EMBED_LEN_MAX
 # if (SIZEOF_VALUE*3/SIZEOF_ACTUAL_BDIGIT) < (1 << BIGNUM_EMBED_LEN_NUMBITS)-1
