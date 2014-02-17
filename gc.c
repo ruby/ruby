@@ -5735,7 +5735,7 @@ get_envparam_double(const char *name, double *default_value, double lower_bound)
 	    return 0;
 	}
 	if (val > lower_bound) {
-	    if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%f (%f)\n", name, val, *default_value);
+	    if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%f (default value: %f)\n", name, val, *default_value);
 	    *default_value = val;
 	    return 1;
 	}

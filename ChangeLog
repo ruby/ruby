@@ -1,3 +1,7 @@
+Mon Feb 17 12:31:31 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (get_envparam_double): fix a warning message.
+
 Mon Feb 17 12:09:52 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: introduce new environment variable
