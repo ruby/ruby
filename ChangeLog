@@ -1,3 +1,15 @@
+Mon Feb 17 12:09:52 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: introduce new environment variable
+	  "RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR" to control major/minor GC
+	  frequency.
+
+	  Do full GC when the number of old objects is more than R * N
+	  where R is this factor and
+                N is the number of old objects just after last full GC.
+
+	* test/ruby/test_gc.rb: add a test.
+
 Mon Feb 17 11:28:40 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/test_pty.rb: ignore warnings to unused variables.

@@ -108,6 +108,9 @@ rb_gc_guarded_ptr(volatile VALUE *ptr)
 #ifndef GC_HEAP_GROWTH_MAX_SLOTS
 #define GC_HEAP_GROWTH_MAX_SLOTS 0 /* 0 is disable */
 #endif
+#ifndef GC_HEAP_OLDOBJECT_LIMIT_FACTOR
+#define GC_HEAP_OLDOBJECT_LIMIT_FACTOR 2.0
+#endif
 
 #ifndef GC_MALLOC_LIMIT_MIN
 #define GC_MALLOC_LIMIT_MIN (16 * 1024 * 1024 /* 16MB */)
@@ -134,6 +137,7 @@ typedef struct {
     size_t heap_free_slots;
     double growth_factor;
     size_t growth_max_slots;
+    double oldobject_limit_factor;
     size_t malloc_limit_min;
     size_t malloc_limit_max;
     double malloc_limit_growth_factor;
@@ -150,6 +154,7 @@ static ruby_gc_params_t gc_params = {
     GC_HEAP_INIT_SLOTS,
     GC_HEAP_GROWTH_FACTOR,
     GC_HEAP_GROWTH_MAX_SLOTS,
+    GC_HEAP_OLDOBJECT_LIMIT_FACTOR,
     GC_MALLOC_LIMIT_MIN,
     GC_MALLOC_LIMIT_MAX,
     GC_MALLOC_LIMIT_GROWTH_FACTOR,
@@ -4513,10 +4518,12 @@ gc_marks(rb_objspace_t *objspace, int full_mark)
 #endif
 
 	    gc_marks_body(objspace, TRUE);
-
-	    /* Do full GC if old/remembered_shady object counts is greater than counts two times at last full GC counts */
-	    objspace->rgengc.remembered_shady_object_limit = objspace->rgengc.remembered_shady_object_count * 2;
-	    objspace->rgengc.old_object_limit = objspace->rgengc.old_object_count * 2;
+	    {
+		/* See the comment about RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR */
+		const double r = gc_params.oldobject_limit_factor;
+		objspace->rgengc.remembered_shady_object_limit = objspace->rgengc.remembered_shady_object_count * r;
+		objspace->rgengc.old_object_limit = objspace->rgengc.old_object_count * r;
+	    }
 	}
 	else { /* minor GC */
 	    gc_marks_body(objspace, FALSE);
@@ -5764,6 +5771,10 @@ gc_set_initial_pages(void)
  *   - (next slots number) = (current slots number) * (this factor)
  * * RUBY_GC_HEAP_GROWTH_MAX_SLOTS (new from 2.1)
  *   - Allocation rate is limited to this factor.
+ * * RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR (new from 2.1.1)
+ *   - Do full GC when the number of old objects is more than R * N
+ *     where R is this factor and
+ *           N is the number of old objects just after last full GC.
  *
  *  * obsolete
  *    * RUBY_FREE_MIN       -> RUBY_GC_HEAP_FREE_SLOTS (from 2.1)
@@ -5802,6 +5813,7 @@ ruby_gc_set_params(int safe_level)
 
     get_envparam_double("RUBY_GC_HEAP_GROWTH_FACTOR", &gc_params.growth_factor, 1.0);
     get_envparam_size  ("RUBY_GC_HEAP_GROWTH_MAX_SLOTS", &gc_params.growth_max_slots, 0);
+    get_envparam_double("RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR", &gc_params.oldobject_limit_factor, 0.0);
 
     get_envparam_size  ("RUBY_GC_MALLOC_LIMIT", &gc_params.malloc_limit_min, 0);
     get_envparam_size  ("RUBY_GC_MALLOC_LIMIT_MAX", &gc_params.malloc_limit_max, 0);
