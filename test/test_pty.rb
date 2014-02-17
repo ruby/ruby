@@ -12,7 +12,7 @@ class TestPTY < Test::Unit::TestCase
   RUBY = EnvUtil.rubybin
 
   def test_spawn_without_block
-    r, w, pid = PTY.spawn(RUBY, '-e', 'puts "a"')
+    r, _, pid = PTY.spawn(RUBY, '-e', 'puts "a"')
   rescue RuntimeError
     skip $!
   else
@@ -58,7 +58,7 @@ class TestPTY < Test::Unit::TestCase
     assert_equal(2, ret.length)
     assert_equal(IO, ret[0].class)
     assert_equal(File, ret[1].class)
-    master, slave = ret
+    _, slave = ret
     assert(slave.tty?)
     assert(File.chardev?(slave.path))
   ensure
@@ -77,7 +77,7 @@ class TestPTY < Test::Unit::TestCase
       assert_equal(2, ret.length)
       assert_equal(IO, ret[0].class)
       assert_equal(File, ret[1].class)
-      master, slave = ret
+      _, slave = ret
       assert(slave.tty?)
       assert(File.chardev?(slave.path))
       x

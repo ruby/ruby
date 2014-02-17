@@ -1,3 +1,7 @@
+Mon Feb 17 11:28:40 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/test_pty.rb: ignore warnings to unused variables.
+
 Mon Feb 17 11:27:36 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/test_find.rb: remove unused variables.
