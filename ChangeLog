@@ -1,3 +1,14 @@
+Tue Feb 18 20:48:38 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/socket/test_addrinfo.rb: remove unused variables.
+	* test/socket/test_nonblock.rb: ditto.
+	* test/socket/test_socket.rb: ditto.
+	* test/socket/test_unix.rb: ditto.
+	* test/testunit/test_parallel.rb: ditto.
+	* test/webrick/test_filehandler.rb: ditto.
+	* test/xmlrpc/test_features.rb: ditto.
+	* test/zlib/test_zlib.rb: ditto.
+
 Tue Feb 18 14:27:18 2014  Shota Fukumori  <her@sorah.jp>
 
 	* lib/test/unit.rb: Requires minitest < 5.0.0 if Gem is available.
