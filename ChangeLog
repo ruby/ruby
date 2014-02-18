@@ -1,3 +1,8 @@
+Tue Feb 18 23:48:03 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/envutil.rb (assert_separately): require envutil in the
+	  child process too.
+
 Tue Feb 18 22:38:01 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/envutil.rb (Test::Unit::Assertions#assert_separately):
