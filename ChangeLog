@@ -1,3 +1,9 @@
+Wed Feb 19 07:51:02 2014  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rinda/ring.rb (Rinda::RingFinger#make_socket):  Use
+	  ipv4_multicast_loop option for portability.  Patch by Jeremy Evans.
+	  [ruby-trunk - Bug #9351]
+
 Mon Feb 17 05:43:20 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: reset LDFLAGS and DLDFLAGS for opt-dir again after
