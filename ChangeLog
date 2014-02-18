@@ -1,3 +1,11 @@
+Tue Feb 18 14:24:07 2014  Shota Fukumori  <her@sorah.jp>
+
+	* lib/test/unit/test-unit.gemspec: Add minitest < 5.0.0 dependency
+
+	* tool/rbinstall.rb: Add empty implementations for `add_dependency`,
+	  `add_runtime_dependency`, `add_development_dependency` for
+	  Gem::Specification.
+
 Tue Feb 18 12:06:39 2014  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in (FILE_COUNT): Removed.  (win32.c defines it in itself.)
