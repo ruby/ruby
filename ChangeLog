@@ -1,3 +1,7 @@
+Tue Feb 18 23:18:41 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/socket/test_socket.rb: unix socket is required by test case.
+
 Tue Feb 18 20:48:38 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/socket/test_addrinfo.rb: remove unused variables.

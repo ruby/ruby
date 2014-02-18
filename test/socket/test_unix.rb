@@ -441,6 +441,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     Dir.mktmpdir {|d|
       sockpath = "#{d}/sock"
       serv = Socket.unix_server_socket(sockpath)
+      Socket.unix(sockpath)
       s, = serv.accept
       cred = s.getsockopt(:SOCKET, :PEERCRED)
       inspect = cred.inspect
@@ -456,6 +457,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     Dir.mktmpdir {|d|
       sockpath = "#{d}/sock"
       serv = Socket.unix_server_socket(sockpath)
+      Socket.unix(sockpath)
       s, = serv.accept
       cred = s.getsockopt(0, Socket::LOCAL_PEERCRED)
       inspect = cred.inspect
