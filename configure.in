@@ -2317,46 +2317,6 @@ else
   AC_DEFINE(RSHIFT(x,y), (((x)<0) ? ~((~(x))>>(int)(y)) : (x)>>(int)(y)))
 fi
 
-# win32.c still use this. Don't remove it.
-test "$rb_cv_fcnt" = "not found" && rb_cv_fcnt="not found (OK if using GNU libc)"
-AC_CACHE_CHECK([read count field in FILE structures], rb_cv_fcnt,
-[rb_cv_fcnt="not found (OK if using GNU libc)"
-for fcnt in	dnl
-     _cnt	dnl
-     __cnt	dnl
-     _r		dnl
-     readCount	dnl
-     _rcount	dnl for emx0.9c
-; do
-    AC_TRY_COMPILE([#include <stdio.h>
-],
-	[FILE *f = stdin; f->$fcnt = 0;],
-	[rb_cv_fcnt="$fcnt"; break])
-done])
-AS_CASE("$rb_cv_fcnt",
-	["not found"*], [rb_cv_fcnt="not found"],
-	[AC_DEFINE_UNQUOTED(FILE_COUNT, $rb_cv_fcnt)])
-
-# win32.c still use this. Don't remove it.
-AC_CACHE_CHECK([read buffer ptr field in FILE structures], rb_cv_frptr,
-[for frptr in	dnl
-     _IO_read_ptr dnl
-     _ptr	dnl
-     __ptr	dnl
-     bufpos	dnl
-     _p	dnl
-     __bufpos	dnl
-; do
-    AC_TRY_COMPILE([#include <stdio.h>
-],
-	[FILE *f = stdin; char buf[256]; f->$frptr = buf;],
-	rb_cv_frptr="$frptr"; break,
-	rb_cv_frptr="not found")
-done])
-if test "$rb_cv_frptr" != "not found"; then
-  AC_DEFINE_UNQUOTED(FILE_READPTR, $rb_cv_frptr)
-fi
-
 if test x"$ac_cv_func_gettimeofday" != xyes; then
     AC_MSG_ERROR(gettimeofday() must exist)
 fi

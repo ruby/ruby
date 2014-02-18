@@ -1,3 +1,8 @@
+Tue Feb 18 12:06:39 2014  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in (FILE_COUNT): Removed.  (win32.c defines it in itself.)
+	  (FILE_READPTR): Ditto.
+
 Tue Feb 18 09:35:44 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/test/psych/test_string.rb: remove unused variables.
