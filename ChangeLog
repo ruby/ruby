@@ -1,3 +1,7 @@
+Tue Feb 18 14:27:18 2014  Shota Fukumori  <her@sorah.jp>
+
+	* lib/test/unit.rb: Requires minitest < 5.0.0 if Gem is available.
+
 Tue Feb 18 14:24:07 2014  Shota Fukumori  <her@sorah.jp>
 
 	* lib/test/unit/test-unit.gemspec: Add minitest < 5.0.0 dependency
