@@ -1,3 +1,8 @@
+Tue Feb 18 22:38:01 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/envutil.rb (Test::Unit::Assertions#assert_separately):
+	  specify the encoding of source.
+
 Mon Feb 17 02:00:36 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open-uri.rb: Make proxy disabling working again.
