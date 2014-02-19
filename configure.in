@@ -3559,7 +3559,7 @@ main()
     rb_cv_broken_memmem=yes,
     rb_cv_broken_memmem=yes)
   ])
-  AS_CASE([$ac_cv_func_memmem],[yes],[ac_cv_func_memmem=no])
+  test x"$rb_cv_broken_memmem" = xyes && ac_cv_func_memmem=no
 fi
 
 

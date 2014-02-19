@@ -1,3 +1,7 @@
+Wed Feb 19 11:39:41 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: it must see rb_cv_broken_memmem not rb_cv_func_memmem.
+
 Tue Feb 18 23:18:41 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/socket/test_socket.rb: unix socket is required by test case.
