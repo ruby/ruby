@@ -1,3 +1,10 @@
+Thu Feb 20 01:54:08 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_search_super_method): when super called in a
+	  bound UnboundMethod generated from a module, no superclass is
+	  found since the current defined class is the module, then call
+	  method_missing in that case.  [ruby-core:59619] [Bug #9377]
+
 Thu Feb 20 01:33:06 2014  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/optparse.rb:  The Integer acceptable now allows binary and
