@@ -278,10 +278,15 @@ int rsock_shutdown_how_arg(VALUE how);
 
 int rsock_getfamily(int sockfd);
 
-int rb_getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res);
+struct rb_addrinfo {
+  struct addrinfo *ai;
+};
+int rb_getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct rb_addrinfo **res);
+void rb_freeaddrinfo(struct rb_addrinfo *ai);
+VALUE rsock_freeaddrinfo(VALUE arg);
 int rb_getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags);
-struct addrinfo *rsock_addrinfo(VALUE host, VALUE port, int socktype, int flags);
-struct addrinfo *rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack);
+struct rb_addrinfo *rsock_addrinfo(VALUE host, VALUE port, int socktype, int flags);
+struct rb_addrinfo *rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack);
 VALUE rsock_fd_socket_addrinfo(int fd, struct sockaddr *addr, socklen_t len);
 VALUE rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len);
 
@@ -290,7 +295,7 @@ VALUE rsock_addrinfo_inspect_sockaddr(VALUE rai);
 
 VALUE rsock_make_ipaddr(struct sockaddr *addr, socklen_t addrlen);
 VALUE rsock_ipaddr(struct sockaddr *sockaddr, socklen_t sockaddrlen, int norevlookup);
-VALUE rsock_make_hostent(VALUE host, struct addrinfo *addr, VALUE (*ipaddr)(struct sockaddr *, socklen_t));
+VALUE rsock_make_hostent(VALUE host, struct rb_addrinfo *addr, VALUE (*ipaddr)(struct sockaddr *, socklen_t));
 VALUE rsock_inspect_sockaddr(struct sockaddr *addr, socklen_t socklen, VALUE ret);
 socklen_t rsock_sockaddr_len(struct sockaddr *addr);
 VALUE rsock_sockaddr_obj(struct sockaddr *addr, socklen_t len);
