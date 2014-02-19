@@ -1,3 +1,21 @@
+Wed Feb 19 18:57:02 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket: Bypass getaddrinfo() if node and serv are numeric.
+	  Reporeted by Naotoshi Seo.  [ruby-core:60801] [Bug #9525]
+
+	* ext/socket/extconf.rb: Detect struct sockaddr_in6.sin6_len.
+
+	* ext/socket/sockport.h (SET_SIN6_LEN): New macro.
+	  (INIT_SOCKADDR_IN6): Ditto.
+
+	* ext/socket/rubysocket.h (struct rb_addrinfo): Add
+	  allocated_by_malloc field.
+
+	* ext/socket/raddrinfo.c (numeric_getaddrinfo): New function.
+	  (rb_getaddrinfo): Call numeric_getaddrinfo at first.
+	  (rb_freeaddrinfo): Free struct addrinfo properly when it is
+	  allocated by numeric_getaddrinfo.
+
 Wed Feb 19 18:31:48 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket: Wrap struct addrinfo by struct rb_addrinfo.

@@ -171,6 +171,90 @@ nogvl_getaddrinfo(void *arg)
 }
 #endif
 
+static int
+numeric_getaddrinfo(const char *node, const char *service,
+        const struct addrinfo *hints,
+        struct addrinfo **res)
+{
+    static const struct {
+        int socktype;
+        int protocol;
+    } list[] = {
+        { SOCK_STREAM, IPPROTO_TCP },
+        { SOCK_DGRAM, IPPROTO_UDP },
+        { SOCK_RAW, 0 }
+    };
+
+    struct addrinfo *ai = NULL;
+
+#ifdef HAVE_INET_PTON
+    if (node && (!service || strspn(service, "0123456789") == strlen(service))) {
+        int port = service ? (unsigned short)atoi(service): 0;
+        int hint_family = hints ? hints->ai_family : PF_UNSPEC;
+        int hint_socktype = hints ? hints->ai_socktype : 0;
+        int hint_protocol = hints ? hints->ai_protocol : 0;
+        char ipv4addr[4];
+#ifdef AF_INET6
+        char ipv6addr[16];
+        if ((hint_family == PF_UNSPEC || hint_family == PF_INET6) &&
+            strspn(node, "0123456789abcdefABCDEF.:") == strlen(node) &&
+            inet_pton(AF_INET6, node, ipv6addr)) {
+            int i;
+            for (i = numberof(list)-1; 0 <= i; i--) {
+                if ((hint_socktype == 0 || hint_socktype == list[i].socktype) &&
+                    (hint_protocol == 0 || list[i].protocol == 0 || hint_protocol == list[i].protocol)) {
+                    struct addrinfo *ai0 = xmalloc(sizeof(struct addrinfo));
+                    struct sockaddr_in6 *sa = xmalloc(sizeof(struct sockaddr_in6));
+                    MEMZERO(ai0, sizeof(struct addrinfo), 1);
+                    INIT_SOCKADDR_IN6(sa, sizeof(struct sockaddr_in6));
+                    memcpy(&sa->sin6_addr, ipv6addr, sizeof(ipv6addr));
+                    sa->sin6_port = htons(port);
+                    ai0->ai_family = PF_INET6;
+                    ai0->ai_socktype = list[i].socktype;
+                    ai0->ai_protocol = hint_protocol ? hint_protocol : list[i].protocol;
+                    ai0->ai_addrlen = sizeof(struct sockaddr_in6);
+                    ai0->ai_addr = (struct sockaddr *)sa;
+                    ai0->ai_canonname = NULL;
+                    ai0->ai_next = ai;
+                    ai = ai0;
+                }
+            }
+        }
+        else
+#endif
+        if ((hint_family == PF_UNSPEC || hint_family == PF_INET) &&
+            strspn(node, "0123456789.") == strlen(node) &&
+            inet_pton(AF_INET, node, ipv4addr)) {
+            int i;
+            for (i = numberof(list)-1; 0 <= i; i--) {
+                if ((hint_socktype == 0 || hint_socktype == list[i].socktype) &&
+                    (hint_protocol == 0 || list[i].protocol == 0 || hint_protocol == list[i].protocol)) {
+                    struct addrinfo *ai0 = xmalloc(sizeof(struct addrinfo));
+                    struct sockaddr_in *sa = xmalloc(sizeof(struct sockaddr_in));
+                    MEMZERO(ai0, sizeof(struct addrinfo), 1);
+                    INIT_SOCKADDR_IN(sa, sizeof(struct sockaddr_in));
+                    memcpy(&sa->sin_addr, ipv4addr, sizeof(ipv4addr));
+                    sa->sin_port = htons(port);
+                    ai0->ai_family = PF_INET;
+                    ai0->ai_socktype = list[i].socktype;
+                    ai0->ai_protocol = hint_protocol ? hint_protocol : list[i].protocol;
+                    ai0->ai_addrlen = sizeof(struct sockaddr_in);
+                    ai0->ai_addr = (struct sockaddr *)sa;
+                    ai0->ai_canonname = NULL;
+                    ai0->ai_next = ai;
+                    ai = ai0;
+                }
+            }
+        }
+        if (ai) {
+            *res = ai;
+            return 0;
+        }
+    }
+#endif
+    return EAI_FAIL;
+}
+
 int
 rb_getaddrinfo(const char *node, const char *service,
                const struct addrinfo *hints,
@@ -178,21 +262,28 @@ rb_getaddrinfo(const char *node, const char *service,
 {
     struct addrinfo *ai;
     int ret;
+    int allocated_by_malloc = 0;
 
+    ret = numeric_getaddrinfo(node, service, hints, &ai);
+    if (ret == 0)
+        allocated_by_malloc = 1;
+    else {
 #ifdef GETADDRINFO_EMU
-    ret = getaddrinfo(node, service, hints, &ai);
+        ret = getaddrinfo(node, service, hints, &ai);
 #else
-    struct getaddrinfo_arg arg;
-    MEMZERO(&arg, sizeof arg, 1);
-    arg.node = node;
-    arg.service = service;
-    arg.hints = hints;
-    arg.res = &ai;
-    ret = (int)(VALUE)rb_thread_call_without_gvl(nogvl_getaddrinfo, &arg, RUBY_UBF_IO, 0);
+        struct getaddrinfo_arg arg;
+        MEMZERO(&arg, sizeof arg, 1);
+        arg.node = node;
+        arg.service = service;
+        arg.hints = hints;
+        arg.res = &ai;
+        ret = (int)(VALUE)rb_thread_call_without_gvl(nogvl_getaddrinfo, &arg, RUBY_UBF_IO, 0);
 #endif
+    }
 
     if (ret == 0) {
         *res = (struct rb_addrinfo *)xmalloc(sizeof(struct rb_addrinfo));
+        (*res)->allocated_by_malloc = allocated_by_malloc;
         (*res)->ai = ai;
     }
     return ret;
@@ -201,7 +292,18 @@ rb_getaddrinfo(const char *node, const char *service,
 void
 rb_freeaddrinfo(struct rb_addrinfo *ai)
 {
-    freeaddrinfo(ai->ai);
+    if (!ai->allocated_by_malloc)
+        freeaddrinfo(ai->ai);
+    else {
+        struct addrinfo *ai1, *ai2;
+        ai1 = ai->ai;
+        while (ai1) {
+            ai2 = ai1->ai_next;
+            xfree(ai1->ai_addr);
+            xfree(ai1);
+            ai1 = ai2;
+        }
+    }
     xfree(ai);
 }
 
