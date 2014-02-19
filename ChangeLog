@@ -1,3 +1,8 @@
+Thu Feb 20 01:23:36 2014  Aaron Pfeifer  <aaron.pfeifer@gmail.com>
+
+	* thread.c (terminate_atfork_i): fix locking mutexes not unlocked in
+	  forks when not tracked in thread.  [ruby-core:55102] [Bug #8433]
+
 Tue Feb 18 23:48:03 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/envutil.rb (assert_separately): require envutil in the
