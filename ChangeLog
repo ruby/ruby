@@ -1,3 +1,12 @@
+Thu Feb 20 02:14:18 2014  Zachary Scott  <e@zzak.io>
+
+	* ext/openssl/lib/openssl/buffering.rb: Fix warning in copyright
+
+Thu Feb 20 02:14:18 2014  Zachary Scott  <e@zzak.io>
+
+	* ext/openssl/lib/openssl/buffering.rb: [DOC] Fix HEREDOC comment for
+	  OpenSSL::Buffering which breaks overview because of RDoc bug
+
 Thu Feb 20 02:04:09 2014  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/.document:  Add syslog/lib to documentable items. [Bug #9228]
