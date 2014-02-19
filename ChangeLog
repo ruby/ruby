@@ -1,3 +1,10 @@
+Wed Feb 19 15:25:13 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (ruby_gc_set_params): don't show obsolete warnings for
+	  RUBY_FREE_MIN/RUBY_HEAP_MIN_SLOTS if
+	  RUBY_GC_HEAP_FREE_SLOTS/RUBY_GC_HEAP_INIT_SLOTS are given.
+	  [Bug #9276]
+
 Wed Feb 19 14:25:55 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_gc.rb: ignore warning messages for running with -w
