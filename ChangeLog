@@ -1,3 +1,24 @@
+Wed Feb 19 14:25:55 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_gc.rb: ignore warning messages for running with -w
+	  option such as chkbuild.
+
+Wed Feb 19 14:25:55 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (get_envparam_double): fix a warning message.
+
+Wed Feb 19 14:25:55 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: introduce new environment variable
+	  "RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR" to control major/minor GC
+	  frequency.
+
+	  Do full GC when the number of old objects is more than R * N
+	  where R is this factor and
+	  N is the number of old objects just after last full GC.
+
+	* test/ruby/test_gc.rb: add a test.
+
 Wed Feb 19 07:51:02 2014  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rinda/ring.rb (Rinda::RingFinger#make_socket):  Use
