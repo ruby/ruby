@@ -1,3 +1,7 @@
+Thu Feb 20 02:04:09 2014  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/.document:  Add syslog/lib to documentable items. [Bug #9228]
+
 Thu Feb 20 01:54:08 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_search_super_method): when super called in a
