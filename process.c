@@ -3296,6 +3296,30 @@ retry_fork(int *status, int *ep, int chfunc_is_async_signal_safe)
     }
 }
 
+static ssize_t
+write_retry(int fd, const void *buf, size_t len)
+{
+    ssize_t w;
+
+    do {
+	w = write(fd, buf, len);
+    } while (w < 0 && errno == EINTR);
+
+    return w;
+}
+
+static ssize_t
+read_retry(int fd, void *buf, size_t len)
+{
+    ssize_t r;
+
+    do {
+	r = read(fd, buf, len);
+    } while (r < 0 && errno == EINTR);
+
+    return r;
+}
+
 static void
 send_child_error(int fd, int state, char *errmsg, size_t errmsg_buflen, int chfunc_is_async_signal_safe)
 {
@@ -3303,7 +3327,7 @@ send_child_error(int fd, int state, char *errmsg, size_t errmsg_buflen, int chfu
     int err;
 
     if (!chfunc_is_async_signal_safe) {
-        if (write(fd, &state, sizeof(state)) == sizeof(state) && state) {
+        if (write_retry(fd, &state, sizeof(state)) == sizeof(state) && state) {
             VALUE errinfo = rb_errinfo();
             io = rb_io_fdopen(fd, O_WRONLY|O_BINARY, NULL);
             rb_marshal_dump(errinfo, io);
@@ -3311,11 +3335,11 @@ send_child_error(int fd, int state, char *errmsg, size_t errmsg_buflen, int chfu
         }
     }
     err = errno;
-    if (write(fd, &err, sizeof(err)) < 0) err = errno;
+    if (write_retry(fd, &err, sizeof(err)) < 0) err = errno;
     if (errmsg && 0 < errmsg_buflen) {
         errmsg[errmsg_buflen-1] = '\0';
         errmsg_buflen = strlen(errmsg);
-        if (errmsg_buflen > 0 && write(fd, errmsg, errmsg_buflen) < 0)
+        if (errmsg_buflen > 0 && write_retry(fd, errmsg, errmsg_buflen) < 0)
             err = errno;
     }
     if (!NIL_P(io)) rb_io_close(io);
@@ -3329,7 +3353,7 @@ recv_child_error(int fd, int *statep, VALUE *excp, int *errp, char *errmsg, size
     ssize_t size;
     VALUE exc = Qnil;
     if (!chfunc_is_async_signal_safe) {
-        if ((read(fd, &state, sizeof(state))) == sizeof(state) && state) {
+        if ((read_retry(fd, &state, sizeof(state))) == sizeof(state) && state) {
             io = rb_io_fdopen(fd, O_RDONLY|O_BINARY, NULL);
             exc = rb_marshal_load(io);
             rb_set_errinfo(exc);
@@ -3338,7 +3362,7 @@ recv_child_error(int fd, int *statep, VALUE *excp, int *errp, char *errmsg, size
         *excp = exc;
     }
 #define READ_FROM_CHILD(ptr, len) \
-    (NIL_P(io) ? read(fd, (ptr), (len)) : rb_io_bufread(io, (ptr), (len)))
+    (NIL_P(io) ? read_retry(fd, (ptr), (len)) : rb_io_bufread(io, (ptr), (len)))
     if ((size = READ_FROM_CHILD(&err, sizeof(err))) < 0) {
         err = errno;
     }

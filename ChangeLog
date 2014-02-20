@@ -1,3 +1,17 @@
+Thu Feb 20 12:58:45 2014  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (READ_FROM_CHILD): Apply the last hunk of
+	  0001-process.c-avoid-EINTR-from-Process.spawn.patch written by
+	  Eric Wong in [Bug #8770].
+
+Thu Feb 20 12:58:45 2014  Eric Wong  <normalperson@yhbt.net>
+
+	* process.c (send_child_error): retry write on EINTR to fix
+	  occasional Errno::EINTR from Process.spawn.
+
+	* process.c (recv_child_error): retry read on EINTR to fix
+	  occasional Errno::EINTR from Process.spawn.
+
 Thu Feb 20 12:24:59 2014  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rinda/ring.rb (Rinda::RingFinger#make_socket):  Use
