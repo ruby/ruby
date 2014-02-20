@@ -515,12 +515,16 @@ static inline int rb_type(VALUE obj);
 static inline volatile VALUE *rb_gc_guarded_ptr(volatile VALUE *ptr) {return ptr;}
 #pragma optimize("", on)
 #else
-volatile VALUE *rb_gc_guarded_ptr(volatile VALUE *ptr);
-#define HAVE_RB_GC_GUARDED_PTR 1
+volatile VALUE *rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val);
+#define HAVE_RB_GC_GUARDED_PTR_VAL 1
+#define RB_GC_GUARD(v) (*rb_gc_guarded_ptr_val(&(v),(v)))
 #endif
 #define RB_GC_GUARD_PTR(ptr) rb_gc_guarded_ptr(ptr)
 #endif
+
+#ifndef RB_GC_GUARD
 #define RB_GC_GUARD(v) (*RB_GC_GUARD_PTR(&(v)))
+#endif
 
 #ifdef __GNUC__
 #define RB_UNUSED_VAR(x) x __attribute__ ((unused))

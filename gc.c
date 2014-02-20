@@ -88,10 +88,14 @@
 #define rb_setjmp(env) RUBY_SETJMP(env)
 #define rb_jmp_buf rb_jmpbuf_t
 
-#if defined(HAVE_RB_GC_GUARDED_PTR) && HAVE_RB_GC_GUARDED_PTR
+#if defined(HAVE_RB_GC_GUARDED_PTR_VAL) && HAVE_RB_GC_GUARDED_PTR_VAL
+/* trick the compiler into thinking a external signal handler uses this */
+volatile VALUE rb_gc_guarded_val;
 volatile VALUE *
-rb_gc_guarded_ptr(volatile VALUE *ptr)
+rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 {
+    rb_gc_guarded_val = val;
+
     return ptr;
 }
 #endif
