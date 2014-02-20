@@ -414,8 +414,7 @@ module Rinda
 
       if addrinfo.ipv4_multicast? then
         soc.setsockopt(Socket::Option.ipv4_multicast_loop(1))
-        soc.setsockopt(:IPPROTO_IP, :IP_MULTICAST_TTL,
-                       [@multicast_hops].pack('c'))
+        soc.setsockopt(Socket::Option.ipv4_multicast_ttl(@multicast_hops))
       elsif addrinfo.ipv6_multicast? then
         soc.setsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_LOOP, true)
         soc.setsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_HOPS,

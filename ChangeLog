@@ -1,3 +1,8 @@
+Thu Feb 20 12:24:59 2014  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rinda/ring.rb (Rinda::RingFinger#make_socket):  Use
+	  ipv4_multicast_ttl option for portability.
+
 Thu Feb 20 10:19:40 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/option.c: IP_MULTICAST_LOOP and IP_MULTICAST_TTL socket
