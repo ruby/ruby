@@ -199,6 +199,7 @@ typedef struct rb_iseq_location_struct {
     const VALUE base_label;
     const VALUE label;
     size_t first_lineno;
+    const VALUE path_array;
 } rb_iseq_location_t;
 
 struct rb_iseq_struct;

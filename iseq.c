@@ -183,7 +183,9 @@ static rb_iseq_location_t *
 iseq_location_setup(rb_iseq_t *iseq, VALUE path, VALUE absolute_path, VALUE name, size_t first_lineno)
 {
     rb_iseq_location_t *loc = &iseq->location;
+
     RB_OBJ_WRITE(iseq->self, &loc->path, path);
+    RB_OBJ_WRITE(iseq->self, &loc->path_array, Qnil);
     if (RTEST(absolute_path) && rb_str_cmp(path, absolute_path) == 0) {
 	RB_OBJ_WRITE(iseq->self, &loc->absolute_path, path);
     }
