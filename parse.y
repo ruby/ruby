@@ -352,9 +352,17 @@ static int parser_yyerror(struct parser_params*, const char*);
 # define FILE_LINE_MASK         ((UINT_MAX >> FILE_CNT_BITS))
 # define FIX_LINE(line)         ((UINT_MAX >> FILE_CNT_BITS) & (line))
 # define disp_ruby_sourceline   ((UINT_MAX >> FILE_CNT_BITS) & ruby_sourceline)
-# define disp_ruby_sourcefile   ((ruby_sourceline >> FILE_CNT_BITS) ? \
-                                RSTRING_PTR(rb_ary_entry(ruby_sourcefile_array, (ruby_sourceline >> FILE_LINE_BITS) - 1)) : \
+# define disp_ruby_sourcefile   ((ruby_sourceline >> FILE_LINE_BITS) ? \
+                                RSTRING_PTR(rb_ary_entry(ruby_sourcefile_array, (ruby_sourceline >> FILE_LINE_BITS))) : \
                                 ruby_sourcefile)
+# define disp_ruby_sourcefile_line(line) \
+                                (((line) >> FILE_LINE_BITS) ? \
+                                RSTRING_PTR(rb_ary_entry(ruby_sourcefile_array, ((line) >> FILE_LINE_BITS))) : \
+                                ruby_sourcefile)
+# define disp_ruby_sourcefile_string \
+                                ((ruby_sourceline >> FILE_LINE_BITS) ? \
+                                rb_ary_entry(ruby_sourcefile_array, (ruby_sourceline >> FILE_LINE_BITS)) : \
+                                ruby_sourcefile_string)
 #else
 # define FILE_SET(lineno)       (lineno)
 # define FILE_LINE_MASK         (UINT_MAX)
@@ -660,7 +668,7 @@ new_args_tail_gen(struct parser_params *parser, VALUE k, VALUE kr, VALUE b)
 # define rb_warn0(fmt)    rb_compile_warn(disp_ruby_sourcefile, disp_ruby_sourceline, (fmt))
 # define rb_warnI(fmt,a)  rb_compile_warn(disp_ruby_sourcefile, disp_ruby_sourceline, (fmt), (a))
 # define rb_warnS(fmt,a)  rb_compile_warn(disp_ruby_sourcefile, disp_ruby_sourceline, (fmt), (a))
-# define rb_warn3S(line,fmt,a)  rb_compile_warn(disp_ruby_sourcefile, (line), (fmt), (a))
+# define rb_warn3S(line,fmt,a)  rb_compile_warn(disp_ruby_sourcefile_line(line), FIX_LINE(line), (fmt), (a))
 # define rb_warning0(fmt) rb_compile_warning(disp_ruby_sourcefile, disp_ruby_sourceline, (fmt))
 # define rb_warningS(fmt,a) rb_compile_warning(disp_ruby_sourcefile, disp_ruby_sourceline, (fmt), (a))
 #else
@@ -898,7 +906,10 @@ program		:  {
 				void_expr(node->nd_head);
 			    }
 			}
-fprintf(stderr, "ruby_eval_tree %p\n", ruby_eval_tree);
+if (ruby_eval_tree)
+  fprintf(stderr, "ruby_eval_tree %p\n", ruby_eval_tree);
+			if (ruby_sourcefile_array == Qnil)
+			    ruby_sourcefile_array = rb_ary_new3(1, ruby_sourcefile_string);
 			ruby_eval_tree = NEW_SCOPE(0, block_append(ruby_eval_tree, block_append(NEW_FILES(ruby_sourcefile_array), $2)));
 		    /*%
 			$$ = $2;
@@ -5399,14 +5410,8 @@ yycompile0(VALUE arg)
 static NODE*
 yycompile(struct parser_params *parser, VALUE fname, int line)
 {
-    VALUE str;
-#if 0
     ruby_sourcefile_string = rb_str_new_frozen(fname);
     ruby_sourcefile = RSTRING_PTR(fname);
-#else
-    ruby_sourcefile_string = rb_str_new_frozen( str = rb_str_new("asdf", 4));
-    ruby_sourcefile = RSTRING_PTR(str);
-#endif
     ruby_sourceline = line - 1;
     return (NODE *)rb_suppress_tracing(yycompile0, (VALUE)parser);
 }
@@ -7056,12 +7061,12 @@ parser_yylex(struct parser_params *parser)
 				    len--;
 				    filename[len] = '\0';
 				    if (ruby_sourcefile_hash == Qnil) {
-fprintf(stderr, "allocat hash\n");
 					ruby_sourcefile_hash = rb_hash_new();
 				    }
 				    if (ruby_sourcefile_array == Qnil) {
-fprintf(stderr, "allocat array\n");
 					ruby_sourcefile_array = rb_ary_new();
+					rb_ary_push(ruby_sourcefile_array, ruby_sourcefile_string);
+					rb_hash_aset(ruby_sourcefile_hash,ruby_sourcefile_string, INT2FIX(0));
 				    }
                                     val = rb_hash_aref(ruby_sourcefile_hash, rb_str_new2(filename));
 				    if (val == Qnil) {
@@ -7070,12 +7075,12 @@ fprintf(stderr, "allocat array\n");
 				        idx = RARRAY_LEN(ruby_sourcefile_array);
 					rb_ary_push(ruby_sourcefile_array, string);
 					rb_hash_aset(ruby_sourcefile_hash, string, INT2FIX(idx));
-fprintf(stderr, "added filename \"%s\" @ %ld\n", filename, idx);
+/* fprintf(stderr, "added filename \"%s\" @ %ld\n", filename, idx); */
 				    } else {
 				       idx = FIX2LONG(val);
-fprintf(stderr, "found filename \"%s\" @ %ld\n", filename, idx);
+/* fprintf(stderr, "found filename \"%s\" @ %ld\n", filename, idx); */
 				    }
-				    ruby_sourcefile_count = idx + 1;
+				    ruby_sourcefile_count = idx;
 			        } else {
 				    line = 0;
 				}
@@ -7084,7 +7089,7 @@ fprintf(stderr, "found filename \"%s\" @ %ld\n", filename, idx);
 			    }
 			}
 			if (line > 0) {
-fprintf(stderr, "set line to %d %d\n", ruby_sourcefile_count, line - 1);
+/* fprintf(stderr, "set line to %d %d\n", ruby_sourcefile_count, line - 1); */
 			    ruby_sourceline = (ruby_sourcefile_count << FILE_LINE_BITS) + line - 1;
 			}
 		    }
@@ -8673,7 +8678,7 @@ gettable_gen(struct parser_params *parser, ID id)
       case keyword_false:
 	return NEW_FALSE();
       case keyword__FILE__:
-	return NEW_STR(rb_str_dup(ruby_sourcefile_string));
+	return NEW_STR(rb_str_dup(disp_ruby_sourcefile_string));
       case keyword__LINE__:
 	return NEW_LIT(INT2FIX(FIX_LINE(tokline)));
       case keyword__ENCODING__:
@@ -9728,7 +9733,7 @@ warn_unused_var(struct parser_params *parser, struct local_vars *local)
 	if (!v[i] || (u[i] & LVAR_USED)) continue;
 	if (is_private_local_id(v[i])) continue;
 
-	rb_warn3S(FIX_LINE((int)u[i]), "assigned but unused variable - %s", rb_id2name(v[i]));
+	rb_warn3S((int)u[i], "assigned but unused variable - %s", rb_id2name(v[i]));
     }
 }
 

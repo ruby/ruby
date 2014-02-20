@@ -3214,7 +3214,16 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
     switch (type) {
       case NODE_FILES:{
-fprintf(stderr, "NODE_FILES\n");
+	VALUE path = iseq->location.path;
+	rb_iseq_location_t *loc = &iseq->location;
+	if (TYPE( path ) != T_STRING)
+	    rb_bug("NODE_FILE: must be string");
+	path = node->u1.value;
+
+	if (TYPE( path ) != T_ARRAY)
+	    rb_bug("NODE_FILE: must be array");
+	RB_OBJ_WRITE(iseq->self, &loc->path, path);
+	break;
       }
       case NODE_BLOCK:{
 	while (node && nd_type(node) == NODE_BLOCK) {
