@@ -203,9 +203,8 @@ numeric_getaddrinfo(const char *node, const char *service,
             for (i = numberof(list)-1; 0 <= i; i--) {
                 if ((hint_socktype == 0 || hint_socktype == list[i].socktype) &&
                     (hint_protocol == 0 || list[i].protocol == 0 || hint_protocol == list[i].protocol)) {
-                    struct addrinfo *ai0 = xmalloc(sizeof(struct addrinfo));
+                    struct addrinfo *ai0 = xcalloc(1, sizeof(struct addrinfo));
                     struct sockaddr_in6 *sa = xmalloc(sizeof(struct sockaddr_in6));
-                    MEMZERO(ai0, sizeof(struct addrinfo), 1);
                     INIT_SOCKADDR_IN6(sa, sizeof(struct sockaddr_in6));
                     memcpy(&sa->sin6_addr, ipv6addr, sizeof(ipv6addr));
                     sa->sin6_port = htons(port);
@@ -229,9 +228,8 @@ numeric_getaddrinfo(const char *node, const char *service,
             for (i = numberof(list)-1; 0 <= i; i--) {
                 if ((hint_socktype == 0 || hint_socktype == list[i].socktype) &&
                     (hint_protocol == 0 || list[i].protocol == 0 || hint_protocol == list[i].protocol)) {
-                    struct addrinfo *ai0 = xmalloc(sizeof(struct addrinfo));
+                    struct addrinfo *ai0 = xcalloc(1, sizeof(struct addrinfo));
                     struct sockaddr_in *sa = xmalloc(sizeof(struct sockaddr_in));
-                    MEMZERO(ai0, sizeof(struct addrinfo), 1);
                     INIT_SOCKADDR_IN(sa, sizeof(struct sockaddr_in));
                     memcpy(&sa->sin_addr, ipv4addr, sizeof(ipv4addr));
                     sa->sin_port = htons(port);

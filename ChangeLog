@@ -1,3 +1,9 @@
+Thu Feb 20 22:21:26 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/raddrinfo.c (numeric_getaddrinfo): Use xcalloc.
+	  Suggested by Eric Wong.
+	  https://bugs.ruby-lang.org/issues/9525#note-14
+
 Thu Feb 20 11:21:13 2014  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* hash.c (rb_hash_flatten): fix behavior of flatten(-1).
