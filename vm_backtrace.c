@@ -29,6 +29,9 @@ calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
     return rb_iseq_line_no(iseq, pc - iseq->iseq_encoded);
 }
 
+#define FILE_LINE_MASK ((UINT_MAX >> FILE_CNT_BITS))
+#define FILE_LINE_BITS ((sizeof(unsigned int) * 8) - FILE_CNT_BITS)
+
 int
 rb_vm_get_sourceline(const rb_control_frame_t *cfp)
 {
@@ -38,6 +41,9 @@ rb_vm_get_sourceline(const rb_control_frame_t *cfp)
     if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	lineno = calc_lineno(cfp->iseq, cfp->pc);
     }
+
+    lineno &= FILE_LINE_MASK;
+
     return lineno;
 }
 
@@ -126,6 +132,7 @@ location_ptr(VALUE locobj)
 static int
 location_lineno(rb_backtrace_location_t *loc)
 {
+fprintf(stderr, "location_lineno\n");
     switch (loc->type) {
       case LOCATION_TYPE_ISEQ:
 	loc->type = LOCATION_TYPE_ISEQ_CALCED;
@@ -344,6 +351,8 @@ location_to_str(rb_backtrace_location_t *loc)
       default:
 	rb_bug("location_to_str: unreachable");
     }
+
+    lineno &= FILE_LINE_MASK;		/* FIXME */
 
     return location_format(file, lineno, name);
 }

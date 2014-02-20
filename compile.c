@@ -3213,6 +3213,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
     }
 
     switch (type) {
+      case NODE_FILES:{
+fprintf(stderr, "NODE_FILES\n");
+      }
       case NODE_BLOCK:{
 	while (node && nd_type(node) == NODE_BLOCK) {
 	    COMPILE_(ret, "BLOCK body", node->nd_head,
