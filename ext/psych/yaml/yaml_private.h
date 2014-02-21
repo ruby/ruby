@@ -433,7 +433,8 @@ yaml_queue_extend(void **start, void **head, void **tail, void **end);
      (stack).start = (stack).top = (stack).end = 0)
 
 #define STACK_EMPTY(context,stack)                                              \
-    ((stack).start == (stack).top)
+    ((void)(context),                                                           \
+     ((stack).start == (stack).top))
 
 #define STACK_LIMIT(context,stack,size)                                         \
     ((stack).top - (stack).start < (size) ?                                     \
