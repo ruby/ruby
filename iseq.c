@@ -107,6 +107,7 @@ iseq_mark(void *ptr)
 	RUBY_MARK_UNLESS_NULL(iseq->location.label);
 	RUBY_MARK_UNLESS_NULL(iseq->location.base_label);
 	RUBY_MARK_UNLESS_NULL(iseq->location.path);
+	RUBY_MARK_UNLESS_NULL(iseq->location.path_array);
 	RUBY_MARK_UNLESS_NULL(iseq->location.absolute_path);
 
 	RUBY_MARK_UNLESS_NULL((VALUE)iseq->cref_stack);
