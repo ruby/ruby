@@ -1,3 +1,8 @@
+Fri Feb 21 23:10:12 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (RbConfig): expand RUBY_SO_NAME for extensions
+	  backward compatibility.  [ruby-core:59426] [Bug #9329]
+
 Fri Feb 21 23:07:56 2014  Akio Tajima <artonx@yahoo.co.jp>
 
 	* win32/Makefile.sub: remove HAVE_FSEEKO because fseeko removed from win32/win32.c
