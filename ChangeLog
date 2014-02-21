@@ -1,3 +1,8 @@
+Sat Feb 22 00:58:51 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* ext/socket/raddrinfo.c (rb_getaddrinfo): second argument of
+	  MEMZERO is type.  Coverity Scan found this bug.
+
 Fri Feb 21 23:47:24 2014  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/socket/init.c (wait_connectable): break if the socket is
