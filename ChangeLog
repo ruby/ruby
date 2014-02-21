@@ -1,3 +1,10 @@
+Sat Feb 22 01:35:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: check if pthread_setname_np is available.
+
+	* thread_pthread.c: pthread_setname_np is not available on old
+	  Darwins.  [ruby-core:60524] [Bug #9492]
+
 Sat Feb 22 00:21:50 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (local_push_gen, local_pop_gen): save cmdarg_stack to
