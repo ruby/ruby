@@ -1,6 +1,6 @@
 Fri Feb 21 10:39:33 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
-	*  test/monitor/test_monitor.rb: remove unused variabels.
+	*  test/monitor/test_monitor.rb: remove unused variables.
 	*  test/resolv/test_dns.rb: ditto.
 	*  test/rexml/test_functions.rb: ditto.
 	*  test/rss/test_setup_maker_itunes.rb: ditto.
