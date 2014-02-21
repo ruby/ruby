@@ -1,3 +1,12 @@
+Fri Feb 21 23:00:34 2014  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: dumping strings with
+	  quotes should not have changed.  [ruby-core:59316] [Bug #9300]
+
+	* ext/psych/lib/psych.rb: fixed missing require.
+
+	* test/psych/test_string.rb: test
+
 Sun Feb 2 05:48:42 2014  Eric Wong <e@80x24.org>
 
 	* io.c (rb_io_syswrite): add RB_GC_GUARD

@@ -14,6 +14,7 @@ require 'psych/stream'
 require 'psych/json/tree_builder'
 require 'psych/json/stream'
 require 'psych/handlers/document_stream'
+require 'psych/class_loader'
 
 ###
 # = Overview
