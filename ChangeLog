@@ -1,3 +1,14 @@
+Fri Feb 21 23:47:24 2014  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/socket/init.c (wait_connectable): break if the socket is
+	  writable to avoid infinite loops on FreeBSD and other platforms
+	  which conforms to SUSv3.  This problem cannot be reproduced with
+	  loopback interfaces, so it's hard to write test code.
+	  rsock_connect() and wait_connectable() are overly complicated, so
+	  they should be refactored, but I commit this fix as a workaround
+	  for the release of Ruby 1.9.3 scheduled on Feb 24.
+	  [ruby-core:60940] [Bug #9547]
+
 Fri Feb 21 23:03:39 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/redmine-backporter.rb: added to handle redmine tickets.
