@@ -598,6 +598,12 @@ rb_enc_from_index(int index)
     return enc_table.list[index].enc;
 }
 
+rb_encoding *
+rb_enc_get_from_index(int index)
+{
+    return must_encindex(index);
+}
+
 int
 rb_enc_registered(const char *name)
 {

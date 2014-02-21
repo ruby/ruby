@@ -226,24 +226,35 @@ class TestM17N < Test::Unit::TestCase
     end
   end
 
-  def test_utf_16_32_inspect
-    str = "\u3042"
-    %w/UTF-16 UTF-32/.each do |enc|
-      %w/BE LE/.each do |endian|
-        s = str.encode(enc + endian)
+  STR_WITHOUT_BOM = "\u3042".freeze
+  STR_WITH_BOM = "\uFEFF\u3042".freeze
+  bug8940 = '[ruby-core:59757] [Bug #8940]'
+  bug9415 = '[ruby-dev:47895] [Bug #9415]'
+  %w/UTF-16 UTF-32/.each do |enc|
+    %w/BE LE/.each do |endian|
+      bom = "\uFEFF".encode("#{enc}#{endian}").force_encoding(enc)
+
+      define_method("test_utf_16_32_inspect(#{enc}#{endian})") do
+        s = STR_WITHOUT_BOM.encode(enc + endian)
         # When a UTF-16/32 string doesn't have a BOM,
         # inspect as a dummy encoding string.
         assert_equal(s.dup.force_encoding("ISO-2022-JP").inspect,
                      s.dup.force_encoding(enc).inspect)
+        assert_normal_exit("#{bom.b.dump}.force_encoding('#{enc}').inspect", bug8940)
       end
-    end
 
-    str = "\uFEFF\u3042"
-    %w/UTF-16 UTF-32/.each do |enc|
-      %w/BE LE/.each do |endian|
-        s = str.encode(enc + endian)
-        # When a UTF-16/32 string doesn't have a BOM,
-        # inspect as a dummy encoding string.
+      define_method("test_utf_16_32_codepoints(#{enc}#{endian})") do
+        assert_equal([0xFEFF], bom.codepoints, bug9415)
+      end
+
+      define_method("test_utf_16_32_ord(#{enc}#{endian})") do
+        assert_equal(0xFEFF, bom.ord, bug9415)
+      end
+
+      define_method("test_utf_16_32_inspect(#{enc}#{endian}-BOM)") do
+        s = STR_WITH_BOM.encode(enc + endian)
+        # When a UTF-16/32 string has a BOM,
+        # inspect as a particular encoding string.
         assert_equal(s.inspect,
                      s.dup.force_encoding(enc).inspect)
       end
