@@ -7052,7 +7052,7 @@ parser_yylex(struct parser_params *parser)
 			    while (isspace(filename[0]))
 			        filename++;
 			    if (filename[0] == '"') {
-				int len = strlen(++filename);
+				unsigned long len = strlen(++filename);
 				while (isspace(filename[len-1]))
 				    len--;
 				if (filename[len-1] == '"') {
