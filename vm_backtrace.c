@@ -328,8 +328,9 @@ location_to_str(rb_backtrace_location_t *loc)
 
 	lineno = loc->body.iseq.lineno.lineno = calc_lineno(loc->body.iseq.iseq, loc->body.iseq.lineno.pc);
 
-	if (loc->body.iseq.iseq->location.path_array != Qnil) {
+	if (TYPE(loc->body.iseq.iseq->location.path_array) == T_ARRAY) {
 	    int idx = lineno >> FILE_LINE_BITS;
+fprintf(stderr, "type %d addr %p idx %d\n", TYPE(loc->body.iseq.iseq->location.path_array), loc->body.iseq.iseq->location.path_array, idx);
 	    file = rb_ary_entry(loc->body.iseq.iseq->location.path_array, idx);
 	}
 
