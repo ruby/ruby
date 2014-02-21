@@ -1,3 +1,10 @@
+Fri Feb 21 20:42:01 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_mod_init_copy): do nothing if copying self.
+	  [ruby-dev:47989] [Bug #9535]
+
+	* hash.c (rb_hash_initialize_copy): ditto.
+
 Fri Feb 21 16:45:54 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/logger.rb (next_rotate_time, previous_period_end): consider

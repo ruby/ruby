@@ -1403,6 +1403,8 @@ rb_hash_initialize_copy(VALUE hash, VALUE hash2)
 
     Check_Type(hash2, T_HASH);
 
+    if (hash == hash2) return hash;
+
     ntbl = RHASH(hash)->ntbl;
     if (RHASH(hash2)->ntbl) {
 	if (ntbl) st_free_table(ntbl);
