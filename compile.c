@@ -220,9 +220,9 @@ r_value(VALUE value)
 
 #define ADD_TRACE(seq, line, event) \
   do { \
-      if ((event) == RUBY_EVENT_LINE && iseq->coverage && \
+      if ((event) == RUBY_EVENT_LINE && iseq->coverage->lines && \
 	  (line) != iseq->compile_data->last_coverable_line) { \
-	  RARRAY_ASET(iseq->coverage, (line) - 1, INT2FIX(0)); \
+	  RARRAY_ASET(iseq->coverage->lines, (line) - 1, INT2FIX(0)); \
 	  iseq->compile_data->last_coverable_line = (line); \
 	  ADD_INSN1((seq), (line), trace, INT2FIX(RUBY_EVENT_COVERAGE)); \
       } \
@@ -233,18 +233,18 @@ r_value(VALUE value)
 
 #define ADD_METHOD_COVERAGE_TRACE(seq, line, event, end_line) \
   do { \
-      if ((event) == RUBY_EVENT_DEFN && iseq->method_coverage) { \
-	  rb_hash_aset(iseq->method_coverage, LONG2FIX(line), INT2FIX(0)); \
+      if ((event) == RUBY_EVENT_DEFN && iseq->coverage->methods) { \
+	  rb_hash_aset(iseq->coverage->methods, LONG2FIX(line), INT2FIX(0)); \
       } \
-      if ((event) == RUBY_EVENT_CALL && iseq->method_coverage) { \
+      if ((event) == RUBY_EVENT_CALL && iseq->coverage->methods) { \
 	  ADD_INSN1((seq), (line), trace, INT2FIX(RUBY_EVENT_MCOVERAGE)); \
       } \
   } while (0)
 
 #define ADD_BRANCH_COVERAGE_TRACE(seq, line, event) \
   do { \
-      if ((event) == RUBY_EVENT_BRANCH && iseq->branch_coverage) { \
-	  rb_hash_aset(iseq->branch_coverage, LONG2FIX(line), INT2FIX(0)); \
+      if ((event) == RUBY_EVENT_BRANCH && iseq->coverage->branches) { \
+	  rb_hash_aset(iseq->coverage->branches, LONG2FIX(line), INT2FIX(0)); \
 	  ADD_INSN1((seq), (line), trace, INT2FIX(RUBY_EVENT_BCOVERAGE)); \
       } \
   } while (0)

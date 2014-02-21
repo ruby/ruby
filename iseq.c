@@ -112,10 +112,14 @@ iseq_mark(void *ptr)
 
 	RUBY_MARK_UNLESS_NULL((VALUE)iseq->cref_stack);
 	RUBY_MARK_UNLESS_NULL(iseq->klass);
-	RUBY_MARK_UNLESS_NULL(iseq->coverage);
-	RUBY_MARK_UNLESS_NULL(iseq->method_coverage);
-	RUBY_MARK_UNLESS_NULL(iseq->branch_coverage);
 	RUBY_MARK_UNLESS_NULL(iseq->orig);
+
+	if (iseq->coverage != 0) {
+	    struct rb_coverage_struct *const coverage = iseq->coverage;
+	    RUBY_MARK_UNLESS_NULL(coverage->lines);
+	    RUBY_MARK_UNLESS_NULL(coverage->methods);
+	    RUBY_MARK_UNLESS_NULL(coverage->branches);
+	}
 
 	if (iseq->compile_data != 0) {
 	    struct iseq_compile_data *const compile_data = iseq->compile_data;
@@ -306,21 +310,22 @@ prepare_iseq_build(rb_iseq_t *iseq,
     iseq->compile_data->option = option;
     iseq->compile_data->last_coverable_line = -1;
 
-    RB_OBJ_WRITE(iseq->self, &iseq->coverage, Qfalse);
-    RB_OBJ_WRITE(iseq->self, &iseq->method_coverage, Qfalse);
-    RB_OBJ_WRITE(iseq->self, &iseq->branch_coverage, Qfalse);
+    iseq->coverage = ALLOC(struct rb_coverage_struct);
+    RB_OBJ_WRITE(iseq->self, &iseq->coverage->lines, Qfalse);
+    RB_OBJ_WRITE(iseq->self, &iseq->coverage->methods, Qfalse);
+    RB_OBJ_WRITE(iseq->self, &iseq->coverage->branches, Qfalse);
     if (!GET_THREAD()->parse_in_eval) {
 	VALUE coverages = rb_get_coverages();
 	if (RTEST(coverages)) {
-	    RB_OBJ_WRITE(iseq->self, &iseq->coverage,
+	    RB_OBJ_WRITE(iseq->self, &iseq->coverage->lines,
 			 rb_hash_lookup(rb_hash_lookup(coverages, path), ID2SYM(rb_intern("lines"))));
-	    RB_OBJ_WRITE(iseq->self, &iseq->method_coverage,
+	    RB_OBJ_WRITE(iseq->self, &iseq->coverage->methods,
 			 rb_hash_lookup(rb_hash_lookup(coverages, path), ID2SYM(rb_intern("methods"))));
-	    RB_OBJ_WRITE(iseq->self, &iseq->branch_coverage,
+	    RB_OBJ_WRITE(iseq->self, &iseq->coverage->branches,
 			 rb_hash_lookup(rb_hash_lookup(coverages, path), ID2SYM(rb_intern("branches"))));
-	    if (NIL_P(iseq->coverage)) RB_OBJ_WRITE(iseq->self, &iseq->coverage, Qfalse);
-	    if (NIL_P(iseq->method_coverage)) RB_OBJ_WRITE(iseq->self, &iseq->method_coverage, Qfalse);
-	    if (NIL_P(iseq->branch_coverage)) RB_OBJ_WRITE(iseq->self, &iseq->branch_coverage, Qfalse);
+	    if (NIL_P(iseq->coverage->lines)) RB_OBJ_WRITE(iseq->self, &iseq->coverage->lines, Qfalse);
+	    if (NIL_P(iseq->coverage->methods)) RB_OBJ_WRITE(iseq->self, &iseq->coverage->methods, Qfalse);
+	    if (NIL_P(iseq->coverage->branches)) RB_OBJ_WRITE(iseq->self, &iseq->coverage->branches, Qfalse);
 	}
     }
 

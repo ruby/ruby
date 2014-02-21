@@ -5240,7 +5240,7 @@ rb_check_deadlock(rb_vm_t *vm)
 static void
 update_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klass)
 {
-    VALUE coverage = GET_THREAD()->cfp->iseq->coverage;
+    VALUE coverage = GET_THREAD()->cfp->iseq->coverage->lines;
     if (coverage && RBASIC(coverage)->klass == 0) {
 	long line = rb_sourceline() - 1;
 	long count;
@@ -5259,9 +5259,9 @@ update_detailed_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, V
 {
     VALUE coverage;
     if (event == RUBY_EVENT_MCOVERAGE) {
-	coverage = GET_THREAD()->cfp->iseq->method_coverage;
+	coverage = GET_THREAD()->cfp->iseq->coverage->methods;
     } else if (event == RUBY_EVENT_BCOVERAGE) {
-	coverage = GET_THREAD()->cfp->iseq->branch_coverage;
+	coverage = GET_THREAD()->cfp->iseq->coverage->branches;
     } else {
 	rb_raise(rb_eArgError, "unknown detailed coverage event");
     }
