@@ -256,6 +256,11 @@ WARN
     assert_valid_syntax("p begin 1.times do 1 end end", __FILE__, bug6419)
   end
 
+  def test_do_block_in_call_args
+    bug9308 = '[ruby-core:59342] [Bug #9308]'
+    assert_valid_syntax("bar def foo; self.each do end end", bug9308)
+  end
+
   def test_reserved_method_no_args
     bug6403 = '[ruby-dev:45626]'
     assert_valid_syntax("def self; :foo; end", __FILE__, bug6403)
