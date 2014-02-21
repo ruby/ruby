@@ -259,21 +259,31 @@ prepare_iseq_build(rb_iseq_t *iseq,
 		   VALUE parent, enum iseq_type type, VALUE block_opt,
 		   const rb_compile_option_t *option)
 {
+    VALUE path_array = Qnil;
     iseq->type = type;
     iseq->arg_rest = -1;
     iseq->arg_block = -1;
     iseq->arg_keyword = -1;
+
     RB_OBJ_WRITE(iseq->self, &iseq->klass, 0);
     set_relation(iseq, parent);
 
     name = rb_fstring(name);
-    path = rb_fstring(path);
+    if (TYPE(path) == T_ARRAY) {
+        path_array = path;
+        path = rb_fstring(rb_ary_entry(path_array, 0));
+    } else {
+        path = rb_fstring(path);
+    }
     if (RTEST(absolute_path))
 	absolute_path = rb_fstring(absolute_path);
 
     iseq_location_setup(iseq, path, absolute_path, name, first_lineno);
     if (iseq != iseq->local_iseq) {
 	RB_OBJ_WRITE(iseq->self, &iseq->location.base_label, iseq->local_iseq->location.label);
+    }
+    if (path_array != Qnil ) {
+	RB_OBJ_WRITE(iseq->self, &iseq->location.path_array, path_array);
     }
 
     iseq->defined_method_id = 0;

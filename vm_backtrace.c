@@ -132,7 +132,6 @@ location_ptr(VALUE locobj)
 static int
 location_lineno(rb_backtrace_location_t *loc)
 {
-fprintf(stderr, "location_lineno\n");
     switch (loc->type) {
       case LOCATION_TYPE_ISEQ:
 	loc->type = LOCATION_TYPE_ISEQ_CALCED;
@@ -328,11 +327,20 @@ location_to_str(rb_backtrace_location_t *loc)
 	name = loc->body.iseq.iseq->location.label;
 
 	lineno = loc->body.iseq.lineno.lineno = calc_lineno(loc->body.iseq.iseq, loc->body.iseq.lineno.pc);
+
+	if (loc->body.iseq.iseq->location.path_array != Qnil) {
+	    int idx = lineno >> FILE_LINE_BITS;
+	    file = rb_ary_entry(loc->body.iseq.iseq->location.path_array, idx);
+	}
+
 	loc->type = LOCATION_TYPE_ISEQ_CALCED;
 	break;
       case LOCATION_TYPE_ISEQ_CALCED:
 	file = loc->body.iseq.iseq->location.path;
 	lineno = loc->body.iseq.lineno.lineno;
+	if (loc->body.iseq.iseq->location.path_array != Qnil) {
+	    int idx = lineno >> FILE_LINE_BITS;
+	}
 	name = loc->body.iseq.iseq->location.label;
 	break;
       case LOCATION_TYPE_CFUNC:

@@ -985,12 +985,11 @@ new_child_iseq(rb_iseq_t *iseq, NODE *node,
 {
     VALUE ret;
     VALUE path = iseq_path(iseq->self);
-    if (path != iseq->location.path)
-      fprintf(stderr, "%p %p\n", path, iseq->location.path);
+    VALUE path_array = iseq->location.path_array;
 
     debugs("[new_child_iseq]> ---------------------------------------\n");
     ret = rb_iseq_new_with_opt(node, name,
-			       path, iseq_absolute_path(iseq->self),
+			       path_array == Qnil ? path : path_array, iseq_absolute_path(iseq->self),
 			       INT2FIX(line_no), parent, type, iseq->compile_data->option);
     debugs("[new_child_iseq]< ---------------------------------------\n");
     iseq_add_mark_object(iseq, ret);
