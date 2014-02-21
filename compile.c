@@ -226,21 +226,23 @@ r_value(VALUE value)
 	  iseq->compile_data->last_coverable_line = (line); \
 	  ADD_INSN1((seq), (line), trace, INT2FIX(RUBY_EVENT_COVERAGE)); \
       } \
-      if ((event) == RUBY_EVENT_CALL && iseq->method_coverage && \
-	  (line) != iseq->compile_data->last_coverable_line) { \
-	  iseq->compile_data->last_coverable_line = (line); \
-	  ADD_INSN1((seq), (line), trace, INT2FIX(RUBY_EVENT_MCOVERAGE)); \
-      } \
       if (iseq->compile_data->option->trace_instruction) { \
 	  ADD_INSN1((seq), (line), trace, INT2FIX(event)); \
       } \
   } while (0)
 
-#define ADD_COVERAGE_TRACE(seq, line, event) \
+#define ADD_METHOD_COVERAGE_TRACE(seq, line, event, end_line) \
   do { \
       if ((event) == RUBY_EVENT_DEFN && iseq->method_coverage) { \
 	  rb_hash_aset(iseq->method_coverage, LONG2FIX(line), INT2FIX(0)); \
       } \
+      if ((event) == RUBY_EVENT_CALL && iseq->method_coverage) { \
+	  ADD_INSN1((seq), (line), trace, INT2FIX(RUBY_EVENT_MCOVERAGE)); \
+      } \
+  } while (0)
+
+#define ADD_BRANCH_COVERAGE_TRACE(seq, line, event) \
+  do { \
       if ((event) == RUBY_EVENT_BRANCH && iseq->branch_coverage) { \
 	  rb_hash_aset(iseq->branch_coverage, LONG2FIX(line), INT2FIX(0)); \
 	  ADD_INSN1((seq), (line), trace, INT2FIX(RUBY_EVENT_BCOVERAGE)); \
@@ -515,6 +517,7 @@ rb_iseq_compile_node(VALUE self, NODE *node)
 	  case ISEQ_TYPE_METHOD:
 	    {
 		ADD_TRACE(ret, FIX2INT(iseq->location.first_lineno), RUBY_EVENT_CALL);
+		ADD_METHOD_COVERAGE_TRACE(ret, FIX2INT(iseq->location.first_lineno), RUBY_EVENT_CALL, nd_line(node));
 		COMPILE(ret, "scoped node", node->nd_body);
 		ADD_TRACE(ret, nd_line(node), RUBY_EVENT_RETURN);
 		break;
@@ -3262,14 +3265,14 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	ADD_LABEL(ret, then_label);
 	if (node->nd_body)
-	    ADD_COVERAGE_TRACE(ret, nd_line(node->nd_body), RUBY_EVENT_BRANCH);
+	    ADD_BRANCH_COVERAGE_TRACE(ret, nd_line(node->nd_body), RUBY_EVENT_BRANCH);
 	ADD_SEQ(ret, then_seq);
 	ADD_INSNL(ret, line, jump, end_label);
 
 	ADD_LABEL(ret, else_label);
 	/* do not trace elsif node */
 	if (node->nd_else && nd_type(node->nd_else) != NODE_IF)
-	    ADD_COVERAGE_TRACE(ret, nd_line(node->nd_else), RUBY_EVENT_BRANCH);
+	    ADD_BRANCH_COVERAGE_TRACE(ret, nd_line(node->nd_else), RUBY_EVENT_BRANCH);
 	ADD_SEQ(ret, else_seq);
 
 	ADD_LABEL(ret, end_label);
@@ -3317,7 +3320,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    l1 = NEW_LABEL(line);
 	    ADD_LABEL(body_seq, l1);
 	    if (node->nd_body)
-	        ADD_COVERAGE_TRACE(body_seq, nd_line(node->nd_body), RUBY_EVENT_BRANCH);
+	        ADD_BRANCH_COVERAGE_TRACE(body_seq, nd_line(node->nd_body), RUBY_EVENT_BRANCH);
 	    ADD_INSN(body_seq, line, pop);
 	    COMPILE_(body_seq, "when body", node->nd_body, poped);
 	    ADD_INSNL(body_seq, line, jump, endlabel);
@@ -3356,7 +3359,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	/* else */
 	if (node) {
 	    ADD_LABEL(cond_seq, elselabel);
-	    ADD_COVERAGE_TRACE(cond_seq, nd_line(node), RUBY_EVENT_BRANCH);
+	    ADD_BRANCH_COVERAGE_TRACE(cond_seq, nd_line(node), RUBY_EVENT_BRANCH);
 	    ADD_INSN(cond_seq, line, pop);
 	    COMPILE_(cond_seq, "else", node, poped);
 	    ADD_INSNL(cond_seq, line, jump, endlabel);
@@ -3397,7 +3400,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    LABEL *l1 = NEW_LABEL(line = nd_line(node));
 	    ADD_LABEL(body_seq, l1);
 	    if (node->nd_body)
-	        ADD_COVERAGE_TRACE(body_seq, nd_line(node->nd_body), RUBY_EVENT_BRANCH);
+	        ADD_BRANCH_COVERAGE_TRACE(body_seq, nd_line(node->nd_body), RUBY_EVENT_BRANCH);
 	    COMPILE_(body_seq, "when", node->nd_body, poped);
 	    ADD_INSNL(body_seq, line, jump, endlabel);
 
@@ -3429,7 +3432,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    node = node->nd_next;
 	}
 	/* else */
-	ADD_COVERAGE_TRACE(ret, nd_line(node), RUBY_EVENT_BRANCH);
+	ADD_BRANCH_COVERAGE_TRACE(ret, nd_line(node), RUBY_EVENT_BRANCH);
 	COMPILE_(ret, "else", node, poped);
 	ADD_INSNL(ret, nd_line(orig_node), jump, endlabel);
 
@@ -4965,7 +4968,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	debugp_param("defn/iseq", iseqval);
 
-	ADD_COVERAGE_TRACE(ret, nd_line(node), RUBY_EVENT_DEFN);
+	ADD_METHOD_COVERAGE_TRACE(ret, nd_line(node), RUBY_EVENT_DEFN, nd_line(node->nd_defn));
 	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
 	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
 	ADD_INSN1(ret, line, putobject, ID2SYM(node->nd_mid));
@@ -4986,7 +4989,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	debugp_param("defs/iseq", iseqval);
 
-	ADD_COVERAGE_TRACE(ret, nd_line(node), RUBY_EVENT_DEFN);
+	ADD_METHOD_COVERAGE_TRACE(ret, nd_line(node), RUBY_EVENT_DEFN, nd_line(node->nd_defn));
 	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
 	COMPILE(ret, "defs: recv", node->nd_recv);
 	ADD_INSN1(ret, line, putobject, ID2SYM(node->nd_mid));
