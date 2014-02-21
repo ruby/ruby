@@ -1,4 +1,7 @@
-Fri Feb 21 16:11:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Feb 21 16:45:54 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/logger.rb (next_rotate_time, previous_period_end): consider
+	  DST change.
 
 	* lib/logger.rb (Logger::LogDevice#check_shift_log): compare the
 	  current time with the time for the next rotation to fix rotation

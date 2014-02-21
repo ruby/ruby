@@ -362,6 +362,44 @@ class TestLogDevice < Test::Unit::TestCase
     end
   end
 
+  def test_shifting_dst_change
+    Dir.mktmpdir do |tmpdir|
+      system({"TZ"=>"Europe/London"}, EnvUtil.rubybin, *%W"--disable=gems -rlogger -C#{tmpdir} -e", <<-'end;')
+        begin
+          module FakeTime
+            attr_accessor :now
+          end
+
+          class << Time
+            prepend FakeTime
+          end
+
+          log = "log"
+          File.open(log, "w") {}
+
+          Time.now = Time.mktime(2014, 3, 30, 0, 1, 1)
+          File.utime(Time.now, Time.now, log)
+
+          dev = Logger::LogDevice.new(log, shift_age: 'daily')
+          dev.write("#{Time.now} hello-1\n")
+          File.utime(*[Time.mktime(2014, 3, 30, 0, 2, 3)]*2, log)
+
+          Time.now = Time.mktime(2014, 3, 31, 0, 1, 1)
+          File.utime(Time.now, Time.now, log)
+          dev.write("#{Time.now} hello-2\n")
+        ensure
+          dev.close
+        end
+      end;
+
+      log = File.join(tmpdir, "log")
+      cont = File.read(log)
+      assert_match(/hello-2/, cont)
+      assert_not_match(/hello-1/, cont)
+      assert_file.exist?(log+".20140330")
+    end
+  end
+
   private
 
   def run_children(n, args, src)

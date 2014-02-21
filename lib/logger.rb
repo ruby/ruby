@@ -714,11 +714,11 @@ private
       when /^monthly$/
         t = Time.mktime(now.year, now.month, 1) + SiD * 31
         mday = (1 if t.mday > 1)
-        if mday
-          t = Time.mktime(t.year, t.month, mday)
-        end
       else
         return now
+      end
+      if mday or t.hour.nonzero? or t.min.nonzero? or t.sec.nonzero?
+        t = Time.mktime(t.year, t.month, mday || (t.mday + (t.hour > 12 ? 1 : 0)))
       end
       t
     end
@@ -726,17 +726,14 @@ private
     def previous_period_end(now, shift_age)
       case shift_age
       when /^daily$/
-        eod(now - 1 * SiD)
+        t = Time.mktime(now.year, now.month, now.mday) - SiD / 2
       when /^weekly$/
-        eod(now - ((now.wday + 1) * SiD))
+        t = Time.mktime(now.year, now.month, now.mday) - (SiD * (now.wday + 1) + SiD / 2)
       when /^monthly$/
-        eod(now - now.mday * SiD)
+        t = Time.mktime(now.year, now.month, 1) - SiD / 2
       else
-        now
+        return now
       end
-    end
-
-    def eod(t)
       Time.mktime(t.year, t.month, t.mday, 23, 59, 59)
     end
   end
