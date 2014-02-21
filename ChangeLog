@@ -1,3 +1,16 @@
+Fri Feb 21 16:47:20 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (get_encoding): respect BOM on pseudo encodings.
+	  [ruby-dev:47895] [Bug #9415]
+
+Fri Feb 21 16:47:20 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (get_actual_encoding): get actual encoding according to
+	  the BOM if exists.
+
+	* string.c (rb_str_inspect): use according encoding, instead of
+	  pseudo encodings, UTF-{16,32}.  [ruby-core:59757] [Bug #8940]
+
 Fri Feb 21 13:39:21 2014  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* compile.c (iseq_build_from_ary_body): Use :blockptr instead of :block
