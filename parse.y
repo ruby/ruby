@@ -7044,8 +7044,8 @@ parser_yylex(struct parser_params *parser)
 		    lex_p++;
 		if (lex_p < lex_pend - 1) {
 		    int line;
-		    char *filestring = NULL;
-		    int ret = sscanf(lex_p, "%d %as", &line, &filestring);
+		    char *filestring = xcalloc(1, 257);
+		    int ret = sscanf(lex_p, "%d %256s", &line, filestring);
 		    if (ret > 0 && line > 0) {
 			if (ret == 2) {
 			    char *filename = filestring;
