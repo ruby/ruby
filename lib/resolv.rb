@@ -187,7 +187,7 @@ class Resolv
         unless @initialized
           @name2addr = {}
           @addr2name = {}
-          open(@filename) {|f|
+          open(@filename, 'rb') {|f|
             f.each {|line|
               line.sub!(/#.*/, '')
               addr, hostname, *aliases = line.split(/\s+/)
@@ -920,7 +920,7 @@ class Resolv
         nameserver = []
         search = nil
         ndots = 1
-        open(filename) {|f|
+        open(filename, 'rb') {|f|
           f.each {|line|
             line.sub!(/[#;].*/, '')
             keyword, *args = line.split(/\s+/)

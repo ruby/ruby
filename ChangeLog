@@ -1,3 +1,10 @@
+Fri Feb 21 17:42:42 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/resolv.rb (Resolv::Hosts#lazy_initialize): should not
+	  consider encodings in hosts file.  [ruby-core:59239] [Bug #9273]
+
+	* lib/resolv.rb (Resolv::Config.parse_resolv_conf): ditto.
+
 Fri Feb 21 16:47:20 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (get_encoding): respect BOM on pseudo encodings.
