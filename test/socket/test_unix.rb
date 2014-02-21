@@ -5,6 +5,7 @@ end
 
 require "test/unit"
 require "tempfile"
+require "timeout"
 require "tmpdir"
 require "thread"
 require "io/nonblock"
@@ -367,6 +368,28 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
   ensure
     s1.close if s1
     s2.close if s2
+  end
+
+  def test_dgram_pair_sendrecvmsg_errno_set
+    s1, s2 = to_close = UNIXSocket.pair(Socket::SOCK_DGRAM)
+    pipe = IO.pipe
+    to_close.concat(pipe)
+    set_errno = lambda do
+      begin
+        pipe[0].read_nonblock(1)
+        fail
+      rescue => e
+        assert(IO::EAGAINWaitReadable === e)
+      end
+    end
+    Timeout.timeout(10) do
+      set_errno.call
+      assert_equal(2, s1.sendmsg("HI"))
+      set_errno.call
+      assert_equal("HI", s2.recvmsg[0])
+    end
+  ensure
+    to_close.each(&:close) if to_close
   end
 
   def test_epipe # [ruby-dev:34619]

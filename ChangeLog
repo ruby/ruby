@@ -1,3 +1,9 @@
+Fri Feb 21 09:48:56 2014  Eric Wong  <e@80x24.org>
+
+	* ext/socket/ancdata.c (bsock_sendmsg_internal): only retry on error
+	  (bsock_recvmsg_internal): ditto
+	* test/socket/test_unix.rb: test above for infinite loop
+
 Fri Feb 21 08:27:19 2014  Eric Wong  <e@80x24.org>
 
 	* include/ruby/ruby.h (RB_GC_GUARD):
