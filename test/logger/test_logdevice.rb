@@ -398,7 +398,7 @@ class TestLogDevice < Test::Unit::TestCase
       assert_not_match(/hello-1/, cont)
       assert_file.exist?(log+".20140330")
     end
-  end
+  end if /linux|darwin|freebsd/ =~ RUBY_PLATFORM # borrow from test/ruby/test_time_tz.rb
 
   private
 
