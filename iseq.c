@@ -266,7 +266,9 @@ prepare_iseq_build(rb_iseq_t *iseq,
     set_relation(iseq, parent);
 
     name = rb_fstring(name);
-    path = rb_fstring(path);
+    if (TYPE( path ) != T_ARRAY) {
+      path = rb_fstring(path);
+    }
     if (RTEST(absolute_path))
 	absolute_path = rb_fstring(absolute_path);
 

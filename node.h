@@ -232,6 +232,10 @@ enum node_type {
 #define NODE_PRELUDE     NODE_PRELUDE
     NODE_LAMBDA,
 #define NODE_LAMBDA      NODE_LAMBDA
+    NODE_LINE,
+#define NODE_LINE        NODE_LINE
+    NODE_FILE,
+#define NODE_FILE        NODE_FILE
     NODE_LAST
 #define NODE_LAST        NODE_LAST
 };
@@ -464,6 +468,8 @@ typedef struct RNode {
 #define NEW_ATTRASGN(r,m,a) NEW_NODE(NODE_ATTRASGN,r,m,a)
 #define NEW_PRELUDE(p,b) NEW_NODE(NODE_PRELUDE,p,b,0)
 #define NEW_MEMO(a,b,c) NEW_NODE(NODE_MEMO,a,b,c)
+#define NEW_LINE(v,val) NEW_NODE(NODE_LINE,v,val,0)
+#define NEW_FILE(v,val) NEW_NODE(NODE_FILE,v,val,0)
 
 #define roomof(x, y) ((sizeof(x) + sizeof(y) - 1) / sizeof(y))
 #define MEMO_FOR(type, value) ((type *)RARRAY_PTR(value))

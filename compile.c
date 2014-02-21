@@ -5408,6 +5408,30 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 	break;
       }
+      case NODE_LINE:{
+	debugp_param("lit", node->nd_lit);
+	if (!poped) {
+	    ADD_INSN1(ret, line, putobject, node->nd_lit);
+	}
+	break;
+      }
+      case NODE_FILE:{
+       
+        if (TYPE( iseq->location.path ) == T_ARRAY) {
+	    rb_ary_push(iseq->location.path, node->nd_lit);
+	} else {
+	    VALUE path = iseq->location.path;
+            rb_iseq_location_t *loc = &iseq->location;
+	    path = rb_ary_new3(2, path, node->nd_lit);
+	    RB_OBJ_WRITE(iseq->self, &loc->path, path);
+	}
+	node->nd_lit = rb_fstring(node->nd_lit);
+	debugp_param("nd_lit", node->nd_lit);
+	if (!poped) {
+	    ADD_INSN1(ret, line, putstring, node->nd_lit);
+	}
+	break;
+      }
       default:
 	rb_bug("iseq_compile_each: unknown node: %s", ruby_node_name(type));
 	return COMPILE_NG;

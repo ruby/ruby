@@ -682,12 +682,6 @@ x = __ENCODING__
       eval %q(false = 1)
     end
     assert_raise(SyntaxError) do
-      eval %q(__FILE__ = 1)
-    end
-    assert_raise(SyntaxError) do
-      eval %q(__LINE__ = 1)
-    end
-    assert_raise(SyntaxError) do
       eval %q(__ENCODING__ = 1)
     end
     assert_raise(SyntaxError) do

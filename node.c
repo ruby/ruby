@@ -880,6 +880,21 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	F_NODE(nd_body, "body");
 	break;
 
+      case NODE_FILE:
+	ANN("set the line number of the file a compile time");
+	ANN("format: [nd_else]::[nd_vid](constant) = [nd_value]");
+	ANN("example: X = foo");
+	LAST_NODE;
+	F_NODE(nd_value, "rvalue");
+	break;
+      case NODE_LINE:
+	ANN("set the file name of the code being parsed at compile time");
+	ANN("format: __FILE__ = {alpha numeric string}");
+	ANN("example: __FILE__ = \"test.nw\"");
+	LAST_NODE;
+	F_NODE(nd_value, "rvalue");
+        break;
+
       default:
 	rb_bug("dump_node: unknown node: %s", ruby_node_name(nd_type(node)));
     }

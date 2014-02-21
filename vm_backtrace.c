@@ -29,6 +29,9 @@ calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
     return rb_iseq_line_no(iseq, pc - iseq->iseq_encoded);
 }
 
+#define FILE_LINE_MASK ((UINT_MAX >> FILE_CNT_BITS))
+#define FILE_LINE_BITS ((sizeof(unsigned int) * 8) - FILE_CNT_BITS)
+
 int
 rb_vm_get_sourceline(const rb_control_frame_t *cfp)
 {
@@ -38,6 +41,10 @@ rb_vm_get_sourceline(const rb_control_frame_t *cfp)
     if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	lineno = calc_lineno(cfp->iseq, cfp->pc);
     }
+    if (iseq->location.path && TYPE( iseq->location.path) == T_ARRAY) {
+        lineno &= FILE_LINE_MASK;
+    }
+
     return lineno;
 }
 
@@ -309,6 +316,7 @@ location_format(VALUE file, int lineno, VALUE name)
     }
 }
 
+
 static VALUE
 location_to_str(rb_backtrace_location_t *loc)
 {
@@ -320,7 +328,15 @@ location_to_str(rb_backtrace_location_t *loc)
 	file = loc->body.iseq.iseq->location.path;
 	name = loc->body.iseq.iseq->location.label;
 
-	lineno = loc->body.iseq.lineno.lineno = calc_lineno(loc->body.iseq.iseq, loc->body.iseq.lineno.pc);
+        if (TYPE( file ) == T_ARRAY) {
+            unsigned int t_lineno;
+	    t_lineno = calc_lineno(loc->body.iseq.iseq, loc->body.iseq.lineno.pc);
+	    lineno = loc->body.iseq.lineno.lineno = t_lineno & FILE_LINE_MASK;
+
+	    file = rb_ary_entry(file, (t_lineno >> FILE_LINE_BITS));
+	} else {
+	    lineno = loc->body.iseq.lineno.lineno = calc_lineno(loc->body.iseq.iseq, loc->body.iseq.lineno.pc);
+	}
 	loc->type = LOCATION_TYPE_ISEQ_CALCED;
 	break;
       case LOCATION_TYPE_ISEQ_CALCED:
@@ -337,6 +353,10 @@ location_to_str(rb_backtrace_location_t *loc)
 	    rb_thread_t *th = GET_THREAD();
 	    file = th->vm->progname ? th->vm->progname : ruby_engine_name;
 	    lineno = INT2FIX(0);
+	}
+        if (TYPE( file ) == T_ARRAY) {
+	    unsigned int t_lineno = calc_lineno(loc->body.iseq.iseq, loc->body.iseq.lineno.pc);
+	    file = rb_ary_entry(file, (t_lineno >> FILE_LINE_BITS));
 	}
 	name = rb_id2str(loc->body.cfunc.mid);
 	break;

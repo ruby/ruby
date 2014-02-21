@@ -249,6 +249,7 @@ struct parser_params {
     int parser_tokidx;
     int parser_toksiz;
     int parser_tokline;
+    short int parser_tokfile;
     VALUE parser_lex_input;
     VALUE parser_lex_lastline;
     VALUE parser_lex_nextline;
@@ -265,13 +266,14 @@ struct parser_params {
     int line_count;
     int has_shebang;
     char *parser_ruby_sourcefile; /* current source file */
-    int parser_ruby_sourceline;	/* current line no. */
+    short int parser_ruby_sourcefile_offset;	/* current source file. */
+    unsigned int parser_ruby_sourceline;	/* current line no. */
     VALUE parser_ruby_sourcefile_string;
     rb_encoding *enc;
 
     int parser_yydebug;
 
-    int last_cr_line;
+    unsigned int last_cr_line;
 
 #ifndef RIPPER
     /* Ruby core only */
@@ -340,6 +342,17 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define ruby_sourceline		(parser->parser_ruby_sourceline)
 #define ruby_sourcefile		(parser->parser_ruby_sourcefile)
 #define ruby_sourcefile_string	(parser->parser_ruby_sourcefile_string)
+# define ruby_sourcefile_offset	(parser->parser_ruby_sourcefile_offset)
+# define FILE_LINE_MASK ((UINT_MAX >> FILE_CNT_BITS))
+# define FILE_LINE_BITS ((sizeof(ruby_sourceline) * 8) - FILE_CNT_BITS)
+# define FILE_CNT_MASK (~(UINT_MAX >> FILE_CNT_BITS))
+# define FILE_CNT_MAX (1 << FILE_CNT_BITS)
+# define FILE_LINE_MAX (1 << FILE_LINE_BITS)
+#if FILE_CNT_BITS > 0
+# define FILE_SET(lineno)		(((ruby_sourcefile_offset) << FILE_LINE_BITS) + lineno)
+#else
+# define FILE_SET(lineno)		(lineno)
+#endif
 #define current_enc		(parser->enc)
 #define yydebug			(parser->parser_yydebug)
 #ifdef RIPPER
@@ -697,7 +710,7 @@ static void token_info_pop(struct parser_params*, const char *token);
     VALUE val;
     NODE *node;
     ID id;
-    int num;
+    unsigned int num;
     const struct vtable *vars;
 }
 
@@ -1344,7 +1357,7 @@ cmd_brace_block	: tLBRACE_ARG
 		    {
 			$<vars>1 = dyna_push();
 		    /*%%%*/
-			$<num>$ = ruby_sourceline;
+			$<num>$ = FILE_SET(ruby_sourceline);
 		    /*%
 		    %*/
 		    }
@@ -1364,9 +1377,9 @@ cmd_brace_block	: tLBRACE_ARG
 
 fcall		: operation
 		    {
-		    /*%%%*/
+		  /*%%%*/
 			$$ = NEW_FCALL($1, 0);
-			nd_set_line($$, tokline);
+			nd_set_line($$, FILE_SET(tokline));
 		    /*%
 		    %*/
 		    }
@@ -2581,7 +2594,7 @@ primary		: literal
 			$<val>1 = cmdarg_stack;
 			cmdarg_stack = 0;
 		    /*%%%*/
-			$<num>$ = ruby_sourceline;
+			$<num>$ = FILE_SET(ruby_sourceline);
 		    /*%
 		    %*/
 		    }
@@ -2885,7 +2898,7 @@ primary		: literal
 			    yyerror("class definition in method body");
 			local_push(0);
 		    /*%%%*/
-			$<num>$ = ruby_sourceline;
+			$<num>$ = FILE_SET(ruby_sourceline);
 		    /*%
 		    %*/
 		    }
@@ -2930,7 +2943,7 @@ primary		: literal
 			    yyerror("module definition in method body");
 			local_push(0);
 		    /*%%%*/
-			$<num>$ = ruby_sourceline;
+			$<num>$ = FILE_SET(ruby_sourceline);
 		    /*%
 		    %*/
 		    }
@@ -3093,7 +3106,7 @@ k_def		: keyword_def
 		    {
 			token_info_push("def");
 		    /*%%%*/
-			$<num>$ = ruby_sourceline;
+			$<num>$ = FILE_SET(ruby_sourceline);
 		    /*%
 		    %*/
 		    }
@@ -3456,7 +3469,7 @@ lambda		:   {
 		    }
 		  f_larglist
 		    {
-			$<num>$ = ruby_sourceline;
+			$<num>$ = FILE_SET(ruby_sourceline);
 		    }
 		  lambda_body
 		    {
@@ -3499,7 +3512,7 @@ do_block	: keyword_do_block
 		    {
 			$<vars>1 = dyna_push();
 		    /*%%%*/
-			$<num>$ = ruby_sourceline;
+			$<num>$ = FILE_SET(ruby_sourceline);
 		    /*% %*/
 		    }
 		  opt_block_param
@@ -3579,7 +3592,7 @@ method_call	: fcall paren_args
 		| primary_value '.' operation2
 		    {
 		    /*%%%*/
-			$<num>$ = ruby_sourceline;
+			$<num>$ = FILE_SET(ruby_sourceline);
 		    /*% %*/
 		    }
 		  opt_paren_args
@@ -3595,7 +3608,7 @@ method_call	: fcall paren_args
 		| primary_value tCOLON2 operation2
 		    {
 		    /*%%%*/
-			$<num>$ = ruby_sourceline;
+			$<num>$ = FILE_SET(ruby_sourceline);
 		    /*% %*/
 		    }
 		  paren_args
@@ -3619,7 +3632,7 @@ method_call	: fcall paren_args
 		| primary_value '.'
 		    {
 		    /*%%%*/
-			$<num>$ = ruby_sourceline;
+			$<num>$ = FILE_SET(ruby_sourceline);
 		    /*% %*/
 		    }
 		  paren_args
@@ -3636,7 +3649,7 @@ method_call	: fcall paren_args
 		| primary_value tCOLON2
 		    {
 		    /*%%%*/
-			$<num>$ = ruby_sourceline;
+			$<num>$ = FILE_SET(ruby_sourceline);
 		    /*% %*/
 		    }
 		  paren_args
@@ -3684,7 +3697,7 @@ brace_block	: '{'
 		    {
 			$<vars>1 = dyna_push();
 		    /*%%%*/
-			$<num>$ = ruby_sourceline;
+			$<num>$ = FILE_SET(ruby_sourceline);
 		    /*%
                     %*/
 		    }
@@ -3703,7 +3716,7 @@ brace_block	: '{'
 		    {
 			$<vars>1 = dyna_push();
 		    /*%%%*/
-			$<num>$ = ruby_sourceline;
+			$<num>$ = FILE_SET(ruby_sourceline);
 		    /*%
                     %*/
 		    }
@@ -5624,7 +5637,7 @@ parser_nextc(struct parser_params *parser)
 	    lex_p++;
 	    c = '\n';
 	}
-	else if (ruby_sourceline > parser->last_cr_line) {
+	else if (ruby_sourceline > parser->last_cr_line || parser->last_cr_line == UINT_MAX) {
 	    parser->last_cr_line = ruby_sourceline;
 	    rb_compile_warn(ruby_sourcefile, ruby_sourceline, "encountered \\r in middle of line, treated as a mere space");
 	}
@@ -6359,7 +6372,7 @@ parser_heredoc_identifier(struct parser_params *parser)
 				  STR_NEW(tok(), toklen()),	/* nd_lit */
 				  len,				/* nd_nth */
 				  lex_lastline);		/* nd_orig */
-    nd_set_line(lex_strterm, ruby_sourceline);
+    nd_set_line(lex_strterm, FILE_SET(ruby_sourceline));
     ripper_flush(parser);
     return term == '`' ? tXSTRING_BEG : tSTRING_BEG;
 }
@@ -8248,7 +8261,7 @@ static NODE*
 node_newnode(struct parser_params *parser, enum node_type type, VALUE a0, VALUE a1, VALUE a2)
 {
     NODE *n = (rb_node_newnode)(type, a0, a1, a2);
-    nd_set_line(n, ruby_sourceline);
+    nd_set_line(n, FILE_SET(ruby_sourceline));
     return n;
 }
 
@@ -8668,11 +8681,9 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val)
 	yyerror("Can't assign to false");
 	goto error;
       case keyword__FILE__:
-	yyerror("Can't assign to __FILE__");
-	goto error;
+	return assignable_result(NEW_FILE(id, val));
       case keyword__LINE__:
-	yyerror("Can't assign to __LINE__");
-	goto error;
+	return assignable_result(NEW_LINE(id, val));
       case keyword__ENCODING__:
 	yyerror("Can't assign to __ENCODING__");
 	goto error;
@@ -8917,11 +8928,38 @@ node_assign_gen(struct parser_params *parser, NODE *lhs, NODE *rhs)
       case NODE_CVASGN:
 	lhs->nd_value = rhs;
 	break;
+      case NODE_FILE:
+	if (nd_type(rhs) == NODE_STR) {
+	    if (strcmp(ruby_sourcefile, RSTRING_PTR(rhs->nd_lit))) {
+	      ruby_sourcefile_string = rhs->nd_lit;
+	      ruby_sourcefile = RSTRING_PTR(rhs->nd_lit);
+	      ruby_sourcefile_offset += 1;
+	      if (ruby_sourcefile_offset  >= FILE_CNT_MAX) {
+		rb_warning0("__FILE__ overflow");
+	      }
+	    }
+	} else {
+	    rb_warning0("__FILE__ can only be set to a String, ignored");
+	}
 
+	lhs->nd_lit = rb_str_dup(ruby_sourcefile_string);
+	lhs->nd_cnt = ruby_sourcefile_offset;
+	break;
+      case NODE_LINE:
+	if (FIXNUM_P(rhs->nd_lit)) {
+	    ruby_sourceline = NUM2INT(rhs->nd_lit);
+	} else {
+	    rb_warning0("__LINE__ can only be set to a Fixnum, ignored");
+	}
+	lhs->nd_lit = rhs->nd_lit;
+	break;
       case NODE_ATTRASGN:
       case NODE_CALL:
 	lhs->nd_args = arg_append(lhs->nd_args, rhs);
 	break;
+
+      case NODE_BEGIN:
+        break;
 
       default:
 	/* should not happen */
@@ -9085,6 +9123,10 @@ void_stmts_gen(struct parser_params *parser, NODE *node)
     if (nd_type(node) != NODE_BLOCK) return;
 
     for (;;) {
+	if (nd_type(node->nd_head) == NODE_FILE) {
+	  ruby_sourcefile_string = node->nd_head->nd_lit;
+	  ruby_sourcefile = RSTRING_PTR(node->nd_head->nd_lit);
+	}
 	if (!node->nd_next) return;
 	void_expr0(node->nd_head);
 	node = node->nd_next;
