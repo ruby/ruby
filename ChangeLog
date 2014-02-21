@@ -1,3 +1,9 @@
+Sat Feb 22 00:21:50 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (local_push_gen, local_pop_gen): save cmdarg_stack to
+	  isolate command argument state from outer scope.
+	  [ruby-core:59342] [Bug #9308]
+
 Fri Feb 21 23:51:38 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (must_encindex, rb_enc_from_index, rb_obj_encoding): mask
