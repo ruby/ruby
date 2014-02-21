@@ -83,7 +83,7 @@ class TestMonitor < Test::Unit::TestCase
   def test_try_enter
     queue1 = Queue.new
     queue2 = Queue.new
-    th = Thread.start {
+    Thread.start {
       queue1.deq
       @monitor.enter
       queue2.enq(nil)

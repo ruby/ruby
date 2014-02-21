@@ -83,7 +83,6 @@ class FunctionsTester < Test::Unit::TestCase
     # examples from http://www.w3.org/TR/xpath#function-substring
     doc = Document.new('<test string="12345" />')
 
-    d = Document.new("<a b='1'/>")
     #puts XPath.first(d, 'node()[0 + 1]')
     #d = Document.new("<a b='1'/>")
     #puts XPath.first(d, 'a[0 mod 0]')
