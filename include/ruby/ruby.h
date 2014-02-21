@@ -532,6 +532,10 @@ volatile VALUE *rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val);
 #define RB_UNUSED_VAR(x) x
 #endif
 
+#ifndef FILE_CNT_BITS
+  #define FILE_CNT_BITS 10
+#endif
+
 void rb_check_type(VALUE,int);
 #define Check_Type(v,t) rb_check_type((VALUE)(v),(t))
 
