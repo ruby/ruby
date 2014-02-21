@@ -2080,4 +2080,15 @@ class TestTranscode < Test::Unit::TestCase
       assert_equal "\ufffd", str.encode(invalid: :replace), bug8995
     end
   end
+
+  def test_valid_dummy_encoding
+    bug9314 = '[ruby-core:59354] [Bug #9314]'
+    assert_separately(%W[- -- #{bug9314}], <<-'end;')
+    bug = ARGV.shift
+    result = assert_nothing_raised(TypeError, bug) {break "test".encode(Encoding::UTF_16)}
+    assert_equal("\xFE\xFF\x00t\x00e\x00s\x00t", result.b, bug)
+    result = assert_nothing_raised(TypeError, bug) {break "test".encode(Encoding::UTF_32)}
+    assert_equal("\x00\x00\xFE\xFF\x00\x00\x00t\x00\x00\x00e\x00\x00\x00s\x00\x00\x00t", result.b, bug)
+    end;
+  end
 end
