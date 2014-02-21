@@ -2363,7 +2363,7 @@ bary_mul_precheck(BDIGIT **zdsp, size_t *znp, const BDIGIT **xdsp, size_t *xnp, 
         }
         else {
             do {
-                if (xds[0] != 0)
+                if (yds[0] != 0)
                     break;
                 yds++;
                 yn--;

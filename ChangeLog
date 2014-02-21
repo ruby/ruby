@@ -1,3 +1,8 @@
+Sat Feb 22 01:22:24 2014  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* bignum.c (bary_mul_precheck): fix a copy-paste error.
+	  Coverity Scan found this bug.
+
 Sat Feb 22 00:58:51 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* ext/socket/raddrinfo.c (rb_getaddrinfo): second argument of
