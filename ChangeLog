@@ -1,3 +1,8 @@
+Fri Feb 21 23:51:38 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (must_encindex, rb_enc_from_index, rb_obj_encoding): mask
+	  encoding index and ignore dummy flags.  [ruby-core:59354] [Bug #9314]
+
 Fri Feb 21 23:10:12 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (RbConfig): expand RUBY_SO_NAME for extensions
