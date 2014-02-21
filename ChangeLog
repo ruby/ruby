@@ -1,3 +1,11 @@
+Fri Feb 21 16:11:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/logger.rb (Logger::LogDevice#check_shift_log): compare the
+	  current time with the time for the next rotation to fix rotation
+	  miss when date changed between the comparison and log writing.
+	  based on the patch by megayu <yuhg2310 AT gmail.com>.
+	  [Fixes GH-539]
+
 Fri Feb 21 10:39:33 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	*  test/monitor/test_monitor.rb: remove unused variables.

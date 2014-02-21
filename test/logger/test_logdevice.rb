@@ -326,6 +326,42 @@ class TestLogDevice < Test::Unit::TestCase
     end
   end unless /mswin|mingw/ =~ RUBY_PLATFORM
 
+  def test_shifting_midnight
+    Dir.mktmpdir do |tmpdir|
+      assert_ruby_status([*%W"--disable=gems -rlogger -C#{tmpdir} -"], <<-'end;')
+        begin
+          module FakeTime
+            attr_accessor :now
+          end
+
+          class << Time
+            prepend FakeTime
+          end
+
+          log = "log"
+          File.open(log, "w") {}
+          File.utime(*[Time.mktime(2014, 1, 1, 23, 59, 59)]*2, log)
+
+          Time.now = Time.mktime(2014, 1, 2, 23, 59, 59, 999000)
+          dev = Logger::LogDevice.new(log, shift_age: 'daily')
+          dev.write("#{Time.now} hello-1\n")
+
+          File.utime(*[Time.mktime(2014, 1, 3, 0, 0, 0, 121000)]*2, log)
+          Time.now = Time.mktime(2014, 1, 3, 1, 1, 1)
+          dev.write("#{Time.now} hello-2\n")
+        ensure
+          dev.close
+        end
+      end;
+
+      bug = '[GH-539]'
+      log = File.join(tmpdir, "log")
+      assert_match(/hello-2/, File.read(log))
+      assert_file.for(bug).exist?(log+".20140102")
+      assert_match(/hello-1/, File.read(log+".20140102"), bug)
+    end
+  end
+
   private
 
   def run_children(n, args, src)
