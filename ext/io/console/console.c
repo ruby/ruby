@@ -684,7 +684,7 @@ console_dev(VALUE klass)
 	int fd;
 
 #ifdef CONSOLE_DEVICE_FOR_WRITING
-	fd = open(CONSOLE_DEVICE_FOR_WRITING, O_WRONLY);
+	fd = open(CONSOLE_DEVICE_FOR_WRITING, O_RDWR);
 	if (fd < 0) return Qnil;
         rb_update_max_fd(fd);
 	args[1] = INT2FIX(O_WRONLY);
