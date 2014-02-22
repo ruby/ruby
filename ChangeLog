@@ -1,3 +1,10 @@
+Sat Feb 22 18:20:58 2014  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* hash.c (rb_hash_flatten): fix behavior of flatten(-1).
+	  [ruby-dev:47988] [Bug #9533]
+
+	* test/ruby/test_array.rb: test for above.
+
 Sat Feb 22 17:46:32 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open-uri.rb: Make proxy disabling working again.
