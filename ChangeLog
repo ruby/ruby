@@ -1,3 +1,9 @@
+Sat Feb 22 16:51:36 2014  Eric Wong <e@80x24.org>
+
+	* ext/json/generator/depend: add build dependencies for json extension
+	  [Bug #9374] [ruby-core:59609]
+	* ext/json/parser/depend: ditto
+
 Sat Feb 22 16:34:12 2014  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/fiddle/closure.c: use sizeof(*pcl) for correct sizeof value.
