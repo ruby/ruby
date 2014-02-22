@@ -503,6 +503,20 @@ rb_szqueue_pop(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * Document-method: Queue#clear
+ *
+ * Removes all objects from the queue.
+ */
+
+static VALUE
+rb_szqueue_clear(VALUE self)
+{
+    rb_ary_clear(GET_QUEUE_QUE(self));
+    wakeup_all_threads(GET_SZQUEUE_WAITERS(self));
+    return self;
+}
+
+/*
  * Document-method: SizedQueue#num_waiting
  *
  * Returns the number of threads waiting on the queue.
@@ -586,6 +600,7 @@ Init_thread(void)
     rb_define_method(rb_cSizedQueue, "max=", rb_szqueue_max_set, 1);
     rb_define_method(rb_cSizedQueue, "push", rb_szqueue_push, 1);
     rb_define_method(rb_cSizedQueue, "pop", rb_szqueue_pop, -1);
+    rb_define_method(rb_cSizedQueue, "clear", rb_szqueue_clear, 0);
     rb_define_method(rb_cSizedQueue, "num_waiting", rb_szqueue_num_waiting, 0);
 
     /* Alias for #push. */
