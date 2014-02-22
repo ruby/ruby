@@ -4525,8 +4525,8 @@ gc_marks(rb_objspace_t *objspace, int full_mark)
 	    {
 		/* See the comment about RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR */
 		const double r = gc_params.oldobject_limit_factor;
-		objspace->rgengc.remembered_shady_object_limit = objspace->rgengc.remembered_shady_object_count * r;
-		objspace->rgengc.old_object_limit = objspace->rgengc.old_object_count * r;
+		objspace->rgengc.remembered_shady_object_limit = (size_t)(objspace->rgengc.remembered_shady_object_count * r);
+		objspace->rgengc.old_object_limit = (size_t)(objspace->rgengc.old_object_count * r);
 	    }
 	}
 	else { /* minor GC */
