@@ -1,3 +1,10 @@
+Sat Feb 22 11:44:50 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_mod_init_copy): do nothing if copying self.
+	  [ruby-dev:47989] [Bug #9535]
+
+	* hash.c (rb_hash_initialize_copy): ditto.
+
 Thu Feb 20 02:14:18 2014  Zachary Scott  <e@zzak.io>
 
 	* ext/openssl/lib/openssl/buffering.rb: Fix warning in copyright
