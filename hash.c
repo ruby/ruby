@@ -67,7 +67,7 @@ rb_hash_freeze(VALUE hash)
 VALUE rb_cHash;
 
 static VALUE envtbl;
-static ID id_hash, id_yield, id_default;
+static ID id_hash, id_yield, id_default, id_flatten_bang;
 
 VALUE
 rb_hash_set_ifnone(VALUE hash, VALUE ifnone)
@@ -2399,15 +2399,25 @@ rb_hash_flatten(int argc, VALUE *argv, VALUE hash)
 {
     VALUE ary;
 
-    ary = rb_ary_new_capa(RHASH_SIZE(hash) * 2);
-    rb_hash_foreach(hash, flatten_i, ary);
     if (argc) {
-	int level = NUM2INT(*argv) - 1;
-	if (level > 0) {
-	    *argv = INT2FIX(level);
-	    rb_funcall2(ary, rb_intern("flatten!"), argc, argv);
+	int level = NUM2INT(*argv);
+	if (level == 0) return rb_hash_to_a(hash);
+
+	ary = rb_ary_new_capa(RHASH_SIZE(hash) * 2);
+	rb_hash_foreach(hash, flatten_i, ary);
+	if (level - 1 > 0) {
+	    *argv = INT2FIX(level - 1);
+	    rb_funcall2(ary, id_flatten_bang, argc, argv);
+	}
+	else if (level < 0) {
+	    rb_funcall2(ary, id_flatten_bang, 0, 0);
 	}
     }
+    else {
+	ary = rb_ary_new_capa(RHASH_SIZE(hash) * 2);
+	rb_hash_foreach(hash, flatten_i, ary);
+    }
+
     return ary;
 }
 
@@ -3757,6 +3767,7 @@ Init_Hash(void)
     id_hash = rb_intern("hash");
     id_yield = rb_intern("yield");
     id_default = rb_intern("default");
+    id_flatten_bang = rb_intern("flatten!");
 
     rb_cHash = rb_define_class("Hash", rb_cObject);
 
