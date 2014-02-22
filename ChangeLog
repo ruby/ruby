@@ -1,3 +1,7 @@
+Sat Feb 22 18:40:58 2014  Eric Wong  <e@80x24.org>
+
+	* .gitignore: ignore benchmark files
+
 Sat Feb 22 01:22:24 2014  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* bignum.c (bary_mul_precheck): fix a copy-paste error.

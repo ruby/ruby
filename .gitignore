@@ -47,6 +47,7 @@ y.tab.c
 /autom4te*.cache
 /automake
 /beos
+/bmlog-*
 /breakpoints.gdb
 /config.cache
 /config.h
@@ -96,6 +97,8 @@ y.tab.c
 
 # /benchmark/
 /benchmark/bmx_*.rb
+/benchmark/fasta.output.*
+/benchmark/wc.input
 
 # /enc/trans/
 /enc/trans/*.c
