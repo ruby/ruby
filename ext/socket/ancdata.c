@@ -1280,12 +1280,11 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 
     ss = rb_sendmsg(fptr->fd, &mh, flags);
 
-    if (!nonblock && rb_io_wait_writable(fptr->fd)) {
-        rb_io_check_closed(fptr);
-        goto retry;
-    }
-
     if (ss == -1) {
+        if (!nonblock && rb_io_wait_writable(fptr->fd)) {
+            rb_io_check_closed(fptr);
+            goto retry;
+        }
         if (nonblock && (errno == EWOULDBLOCK || errno == EAGAIN))
             rb_mod_sys_fail(rb_mWaitWritable, "sendmsg(2) would block");
 	rb_sys_fail("sendmsg(2)");
@@ -1589,12 +1588,11 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 
     ss = rb_recvmsg(fptr->fd, &mh, flags);
 
-    if (!nonblock && rb_io_wait_readable(fptr->fd)) {
-        rb_io_check_closed(fptr);
-        goto retry;
-    }
-
     if (ss == -1) {
+        if (!nonblock && rb_io_wait_readable(fptr->fd)) {
+            rb_io_check_closed(fptr);
+            goto retry;
+        }
         if (nonblock && (errno == EWOULDBLOCK || errno == EAGAIN))
             rb_mod_sys_fail(rb_mWaitReadable, "recvmsg(2) would block");
 #if defined(HAVE_ST_MSG_CONTROL)
