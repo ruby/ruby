@@ -1,20 +1,40 @@
 #!/usr/bin/env ruby
 require 'open-uri'
+require 'openssl'
 require 'net/http'
 require 'json'
 require 'io/console'
 require 'stringio'
 require 'strscan'
+require 'optparse'
 require 'pp'
 
-TARGET_VERSION = ENV['TARGET_VERSION']
-RUBY_REPO_PATH = ENV['RUBY_REPO_PATH']
+VERSION = '0.0.1'
+
+opts = OptionParser.new
+target_version = nil
+repo_path = nil
+api_key = nil
+ssl_verify = true
+opts.on('-k REDMINE_API_KEY', '--key=REDMINE_API_KEY', 'specify your REDMINE_API_KEY') {|v| api_key = v}
+opts.on('-t TARGET_VERSION', '--target=TARGET_VARSION', /\A\d(?:\.\d)+\z/, 'specify target version (ex: 2.1)') {|v| target_version = v}
+opts.on('-r RUBY_REPO_PATH', '--repository=RUBY_REPO_PATH', 'specify repository path') {|v| repo_path = v}
+opts.on('--[no-]ssl-verify', TrueClass, 'use / not use SSL verify') {|v| ssl_verify = v}
+opts.version = VERSION
+opts.parse!(ARGV)
+
+http_options = {use_ssl: true}
+http_options[:verify_mode] = OpenSSL::SSL::VERIFY_NONE unless ssl_verify
+openuri_options = {}
+openuri_options[:ssl_verify_mode] = OpenSSL::SSL::VERIFY_NONE unless ssl_verify
+
+TARGET_VERSION = target_version || ENV['TARGET_VERSION'] || (raise 'need to specify TARGET_VERSION')
+RUBY_REPO_PATH = repo_path || ENV['RUBY_REPO_PATH']
 BACKPORT_CF_KEY = 'cf_5'
 STATUS_CLOSE = 5
-REDMINE_API_KEY = ENV['REDMINE_API_KEY']
+REDMINE_API_KEY = api_key || ENV['REDMINE_API_KEY'] || (raise 'need to specify REDMINE_API_KEY')
 REDMINE_BASE = 'https://bugs.ruby-lang.org'
 
-VERSION = '0.0.1'
 @query = {
   'f[]' => BACKPORT_CF_KEY,
   "op[#{BACKPORT_CF_KEY}]" => '~',
@@ -219,7 +239,7 @@ while true
   when 'ls'
     uri = URI(REDMINE_BASE+'/projects/ruby-trunk/issues.json?'+URI.encode_www_form(@query))
     # puts uri
-    res = JSON(uri.read)
+    res = JSON(uri.read(openuri_options))
     @issues = issues = res["issues"]
     from = res["offset"] + 1
     total = res["total_count"]
@@ -235,7 +255,7 @@ while true
     @issue = id
     uri = "#{REDMINE_BASE}/issues/#{id}"
     uri = URI(uri+".json?include=children,attachments,relations,changesets,journals")
-    res = JSON(uri.read)
+    res = JSON(uri.read(openuri_options))
     i = res["issue"]
     id = "##{i["id"]}".color(*PRIORITIES[i["priority"]["name"]])
     sio = StringIO.new
@@ -270,24 +290,32 @@ eom
     more(sio)
 
   when 's'
+    unless @issue
+      puts "ticket not selected"
+      next
+    end
     puts backport_command_string
 
   when /\Adone(?: +(\d+))?(?: -- +(.*))?\z/
     notes = $2
     if $1
-      i = issue.to_i
+      i = $1.to_i
       i = @issues[i]["id"] if @issues && i < @issues.size
       @issue = i
     end
+    unless @issue
+      puts "ticket not selected"
+      next
+    end
 
     uri = URI("#{REDMINE_BASE}/issues/#{@issue}.json")
-    Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
+    Net::HTTP.start(uri.host, uri.port, http_options) do |http|
       res = http.get(uri.path)
       data = JSON(res.body)
       h = data["issue"]["custom_fields"].find{|x|x["id"]==5}
       if h and val = h["value"]
         case val[/(?:\A|, )#{Regexp.quote TARGET_VERSION}: ([^,]+)/, 1]
-        when 'REQUIRED', 'UNKNOWN', 'DONTNEED'
+        when 'REQUIRED', 'UNKNOWN', 'DONTNEED', 'REJECTED'
           val[*$~.offset(1)] = 'DONE'
         when 'DONE' # , /\A\d+\z/
           puts 'already backport is done'
@@ -316,9 +344,13 @@ eom
       i = @issues[i]["id"] if @issues && i < @issues.size
       @issue = i
     end
+    unless @issue
+      puts "ticket not selected"
+      next
+    end
 
     uri = URI("#{REDMINE_BASE}/issues/#{@issue}.json")
-    Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
+    Net::HTTP.start(uri.host, uri.port, http_options) do |http|
       data = { "issue" => { "status_id" => STATUS_CLOSE } }
       res = http.put(uri.path, JSON(data),
                      'X-Redmine-API-Key' => REDMINE_API_KEY,
@@ -333,14 +365,25 @@ eom
       i = @issues[i]["id"] if @issues && i < @issues.size
       @issue = i
     end
+    unless @issue
+      puts "ticket not selected"
+      next
+    end
 
     uri = URI("#{REDMINE_BASE}/issues/#{@issue}.json")
-    Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
+    Net::HTTP.start(uri.host, uri.port, http_options) do |http|
       show_last_journal(http, uri)
     end
   when ''
   when nil, 'quit', 'exit'
     exit
+  when 'help'
+    puts 'ls                     '.color(bold: true) + ' show all required tickets'
+    puts 'show TICKET            '.color(bold: true) + ' show the detail of the TICKET, and select it'
+    puts 'TICKET                 '.color(bold: true) + ' show the backport option of the selected ticket for merger.rb'
+    puts 'done [TICKET] [-- NOTE]'.color(bold: true) + ' set Backport field of the TICKET to DONE'
+    puts 'close [TICKET]         '.color(bold: true) + ' close the TICKET'
+    puts 'last [TICKET]          '.color(bold: true) + ' show the last journal of the TICKET'
   else
     puts "error #{l.inspect}"
   end

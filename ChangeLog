@@ -1,3 +1,7 @@
+Sat Feb 22 20:28:47 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* tool/redmine-backporter.rb: more friendly.
+
 Sat Feb 22 20:24:43 2014  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_xpath*.rb: Move to ...
