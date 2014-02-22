@@ -27,7 +27,7 @@ dealloc(void * ptr)
 #if USE_FFI_CLOSURE_ALLOC
     ffi_closure_free(cls->pcl);
 #else
-    munmap(cls->pcl, sizeof(cls->pcl));
+    munmap(cls->pcl, sizeof(*cls->pcl));
 #endif
     if (cls->argv) xfree(cls->argv);
     xfree(cls);
@@ -234,7 +234,7 @@ initialize(int rbargc, VALUE argv[], VALUE self)
 #else
     result = ffi_prep_closure(pcl, cif, callback, (void *)self);
     cl->code = (void *)pcl;
-    i = mprotect(pcl, sizeof(pcl), PROT_READ | PROT_EXEC);
+    i = mprotect(pcl, sizeof(*pcl), PROT_READ | PROT_EXEC);
     if (i) {
 	rb_sys_fail("mprotect");
     }
