@@ -1,3 +1,9 @@
+Sat Feb 22 10:09:42 2014  Eric Wong  <e@80x24.org>
+
+	* ext/socket/ancdata.c (bsock_sendmsg_internal): only retry on error
+	  (bsock_recvmsg_internal): ditto
+	* test/socket/test_unix.rb: test above for infinite loop
+
 Sat Feb 22 09:51:53 2014  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/socket/init.c (wait_connectable): break if the socket is
