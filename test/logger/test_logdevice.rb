@@ -328,7 +328,7 @@ class TestLogDevice < Test::Unit::TestCase
 
   def test_shifting_midnight
     Dir.mktmpdir do |tmpdir|
-      assert_ruby_status([*%W"--disable=gems -rlogger -C#{tmpdir} -"], <<-'end;')
+      assert_in_out_err([*%W"--disable=gems -rlogger -C#{tmpdir} -"], <<-'end;')
         begin
           module FakeTime
             attr_accessor :now
@@ -364,7 +364,7 @@ class TestLogDevice < Test::Unit::TestCase
 
   def test_shifting_dst_change
     Dir.mktmpdir do |tmpdir|
-      system({"TZ"=>"Europe/London"}, EnvUtil.rubybin, *%W"--disable=gems -rlogger -C#{tmpdir} -e", <<-'end;')
+      assert_in_out_err([{"TZ"=>"Europe/London"}, *%W"--disable=gems -rlogger -C#{tmpdir} -"], <<-'end;')
         begin
           module FakeTime
             attr_accessor :now
