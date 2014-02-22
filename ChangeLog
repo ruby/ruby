@@ -1,3 +1,8 @@
+Sat Feb 22 15:13:38 2014  Benoit Daloze  <eregontp@gmail.com>
+
+	* range.c (Range#size): [DOC] improve description and add examples.
+	  Patch by @skade. [Fixes GH-501]
+
 Sat Feb 22 15:07:58 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/racc/rdoc/grammar.en.rdoc: [DOC] Correct grammar and typos
