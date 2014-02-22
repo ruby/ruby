@@ -1,3 +1,10 @@
+Sat Feb 22 12:55:24 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	(merged partially from r42927)
+	* lib/rubygems/core_ext/kernel_require.rb: Backport a fix for concurrent
+	  requires. [ruby-core:58918] [Backport #9224]
+	  see also https://github.com/rubygems/rubygems/pull/833
+
 Sat Feb 22 11:50:52 2014  Eric Wong  <e@80x24.org>
 
 	* ext/socket/ancdata.c (bsock_sendmsg_internal): only retry on error
