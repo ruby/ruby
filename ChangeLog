@@ -1,3 +1,8 @@
+Sat Feb 22 17:46:32 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open-uri.rb: Make proxy disabling working again.
+	  Fixed by Christophe Philemotte.   [ruby-core:59650] [Bug #9385]
+
 Sat Feb 22 17:33:39 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_mod_s_constants): return its own constants for other
