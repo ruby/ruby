@@ -108,6 +108,12 @@ class TestHash < Test::Unit::TestCase
     assert_empty(h)
   end
 
+  def test_self_initialize_copy
+    h = @cls[1=>2]
+    h.instance_eval {initialize_copy(h)}
+    assert_equal(2, h[1])
+  end
+
   def test_dup_will_rehash
     set1 = @cls[]
     set2 = @cls[set1 => true]
