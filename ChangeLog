@@ -1,3 +1,9 @@
+Sat Feb 22 13:56:38 2014  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* compile.c (iseq_build_from_ary_body): Use :blockptr instead of :block
+	  as hash key when loading serialized instruction sequences from arrays.
+	  [Bug #9455] [ruby-core:60146]
+
 Sat Feb 22 13:04:54 2014  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/socket/init.c (wait_connectable): break if the socket is
