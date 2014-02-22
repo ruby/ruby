@@ -380,8 +380,8 @@ rb_mod_s_constants(int argc, VALUE *argv, VALUE mod)
     VALUE cbase = 0;
     void *data = 0;
 
-    if (argc > 0) {
-	return rb_mod_constants(argc, argv, rb_cModule);
+    if (argc > 0 || mod != rb_cModule) {
+	return rb_mod_constants(argc, argv, mod);
     }
 
     while (cref) {
