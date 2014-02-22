@@ -22,7 +22,14 @@ class TestMethod < Test::Unit::TestCase
   def mo5(a, *b, c) end
   def mo6(a, *b, c, &d) end
   def mo7(a, b = nil, *c, d, &e) end
-  def ma1((a), &b) end
+  def ma1((a), &b) nil && a end
+  def mk1(**) end
+  def mk2(**o) nil && o end
+  def mk3(a, **o) nil && o end
+  def mk4(a = nil, **o) nil && o end
+  def mk5(a, b = nil, **o) nil && o end
+  def mk6(a, b = nil, c, **o) nil && o end
+  def mk7(a, b = nil, *c, d, **o) nil && o end
 
   class Base
     def foo() :base end
@@ -68,6 +75,13 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(-2, method(:mo4).arity)
     assert_equal(-3, method(:mo5).arity)
     assert_equal(-3, method(:mo6).arity)
+    assert_equal(-1, method(:mk1).arity)
+    assert_equal(-1, method(:mk2).arity)
+    assert_equal(-2, method(:mk3).arity)
+    assert_equal(-1, method(:mk4).arity)
+    assert_equal(-2, method(:mk5).arity)
+    assert_equal(-3, method(:mk6).arity)
+    assert_equal(-3, method(:mk7).arity)
   end
 
   def test_arity_special
@@ -293,7 +307,7 @@ class TestMethod < Test::Unit::TestCase
       end
     end
 
-    assert_nothing_raised do
+    assert_nothing_raised(bug8686) do
       m.define_singleton_method(:a, m.method(:a))
     end
   end
@@ -456,7 +470,14 @@ class TestMethod < Test::Unit::TestCase
   define_method(:pmo5) {|a, *b, c|}
   define_method(:pmo6) {|a, *b, c, &d|}
   define_method(:pmo7) {|a, b = nil, *c, d, &e|}
-  define_method(:pma1) {|(a), &b|}
+  define_method(:pma1) {|(a), &b| nil && a}
+  define_method(:pmk1) {|**|}
+  define_method(:pmk2) {|**o|}
+  define_method(:pmk3) {|a, **o|}
+  define_method(:pmk4) {|a = nil, **o|}
+  define_method(:pmk5) {|a, b = nil, **o|}
+  define_method(:pmk6) {|a, b = nil, c, **o|}
+  define_method(:pmk7) {|a, b = nil, *c, d, **o|}
 
   def test_bound_parameters
     assert_equal([], method(:m0).parameters)
@@ -470,6 +491,13 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:rest, :b], [:req, :c], [:block, :d]], method(:mo6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:block, :e]], method(:mo7).parameters)
     assert_equal([[:req], [:block, :b]], method(:ma1).parameters)
+    assert_equal([[:keyrest]], method(:mk1).parameters)
+    assert_equal([[:keyrest, :o]], method(:mk2).parameters)
+    assert_equal([[:req, :a], [:keyrest, :o]], method(:mk3).parameters)
+    assert_equal([[:opt, :a], [:keyrest, :o]], method(:mk4).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:keyrest, :o]], method(:mk5).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:req, :c], [:keyrest, :o]], method(:mk6).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], method(:mk7).parameters)
   end
 
   def test_unbound_parameters
@@ -484,6 +512,13 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:rest, :b], [:req, :c], [:block, :d]], self.class.instance_method(:mo6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:block, :e]], self.class.instance_method(:mo7).parameters)
     assert_equal([[:req], [:block, :b]], self.class.instance_method(:ma1).parameters)
+    assert_equal([[:keyrest]], self.class.instance_method(:mk1).parameters)
+    assert_equal([[:keyrest, :o]], self.class.instance_method(:mk2).parameters)
+    assert_equal([[:req, :a], [:keyrest, :o]], self.class.instance_method(:mk3).parameters)
+    assert_equal([[:opt, :a], [:keyrest, :o]], self.class.instance_method(:mk4).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:keyrest, :o]], self.class.instance_method(:mk5).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:req, :c], [:keyrest, :o]], self.class.instance_method(:mk6).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], self.class.instance_method(:mk7).parameters)
   end
 
   def test_bmethod_bound_parameters
@@ -498,6 +533,13 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:rest, :b], [:req, :c], [:block, :d]], method(:pmo6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:block, :e]], method(:pmo7).parameters)
     assert_equal([[:req], [:block, :b]], method(:pma1).parameters)
+    assert_equal([[:keyrest]], method(:pmk1).parameters)
+    assert_equal([[:keyrest, :o]], method(:pmk2).parameters)
+    assert_equal([[:req, :a], [:keyrest, :o]], method(:pmk3).parameters)
+    assert_equal([[:opt, :a], [:keyrest, :o]], method(:pmk4).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:keyrest, :o]], method(:pmk5).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:req, :c], [:keyrest, :o]], method(:pmk6).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], method(:pmk7).parameters)
   end
 
   def test_bmethod_unbound_parameters
@@ -512,6 +554,14 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:rest, :b], [:req, :c], [:block, :d]], self.class.instance_method(:pmo6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:block, :e]], self.class.instance_method(:pmo7).parameters)
     assert_equal([[:req], [:block, :b]], self.class.instance_method(:pma1).parameters)
+    assert_equal([[:req], [:block, :b]], self.class.instance_method(:pma1).parameters)
+    assert_equal([[:keyrest]], self.class.instance_method(:pmk1).parameters)
+    assert_equal([[:keyrest, :o]], self.class.instance_method(:pmk2).parameters)
+    assert_equal([[:req, :a], [:keyrest, :o]], self.class.instance_method(:pmk3).parameters)
+    assert_equal([[:opt, :a], [:keyrest, :o]], self.class.instance_method(:pmk4).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:keyrest, :o]], self.class.instance_method(:pmk5).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:req, :c], [:keyrest, :o]], self.class.instance_method(:pmk6).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], self.class.instance_method(:pmk7).parameters)
   end
 
   def test_public_method_with_zsuper_method
@@ -659,6 +709,7 @@ class TestMethod < Test::Unit::TestCase
       prepend m
     }
     assert_raise(NameError, bug7988) {Module.new{prepend m}.instance_method(:bar)}
+    true || c || bug7836
   end
 
   def test_gced_bmethod

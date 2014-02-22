@@ -117,6 +117,15 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, 2, [3, 4], 5, :key, {str: "bar"}, nil], f9(1, 2, 3, 4, 5, str: "bar"))
   end
 
+  def f10(a: 1, **)
+    a
+  end
+
+  def test_f10
+    assert_equal(42, f10(a: 42))
+    assert_equal(1, f10(b: 42))
+  end
+
   def test_method_parameters
     assert_equal([[:key, :str], [:key, :num]], method(:f1).parameters);
     assert_equal([[:req, :x], [:key, :str], [:key, :num]], method(:f2).parameters);

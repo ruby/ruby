@@ -1,3 +1,26 @@
+Sat Feb 22 21:56:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_set_arguments): set arg_keyword_check from
+	  nd_cflag, which is set by parser.  internal ID is used for
+	  unnamed keyword rest argument, which should be separated from no
+	  keyword check.
+
+	* iseq.c (rb_iseq_parameters): if no keyword check, keyword rest is
+	  present.
+
+	* parse.y (new_args_tail_gen): set keywords check to nd_cflag, which
+	  equals to that keyword rest is not present.
+
+Sat Feb 22 21:56:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (rb_iseq_parameters): push argument type symbol only for
+	  unnamed rest keywords argument.
+
+Sat Feb 22 21:56:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (rb_iseq_min_max_arity): maximum argument is unlimited if
+	  having rest keywords argument.  [ruby-core:53298] [Bug #8072]
+
 Sat Feb 22 18:55:08 2014  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/socket/init.c (wait_connectable): break if the socket is
