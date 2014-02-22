@@ -77,6 +77,13 @@ class TestProc < Test::Unit::TestCase
     assert_equal(2, proc{|(x, y), z|[x,y]}.arity)
     assert_equal(1, proc{|(x, y), z=0|[x,y]}.arity)
     assert_equal(-4, proc{|x, *y, z, a|}.arity)
+    assert_equal(-1, proc{|**|}.arity)
+    assert_equal(-1, proc{|**o|}.arity)
+    assert_equal(-2, proc{|x, **o|}.arity)
+    assert_equal(-1, proc{|x=0, **o|}.arity)
+    assert_equal(-2, proc{|x, y=0, **o|}.arity)
+    assert_equal(-3, proc{|x, y=0, z, **o|}.arity)
+    assert_equal(-3, proc{|x, y=0, *z, w, **o|}.arity)
 
     assert_equal(0, lambda{}.arity)
     assert_equal(0, lambda{||}.arity)
@@ -95,6 +102,13 @@ class TestProc < Test::Unit::TestCase
     assert_equal(2, lambda{|(x, y), z|[x,y]}.arity)
     assert_equal(-2, lambda{|(x, y), z=0|[x,y]}.arity)
     assert_equal(-4, lambda{|x, *y, z, a|}.arity)
+    assert_equal(-1, lambda{|**|}.arity)
+    assert_equal(-1, lambda{|**o|}.arity)
+    assert_equal(-2, lambda{|x, **o|}.arity)
+    assert_equal(-1, lambda{|x=0, **o|}.arity)
+    assert_equal(-2, lambda{|x, y=0, **o|}.arity)
+    assert_equal(-3, lambda{|x, y=0, z, **o|}.arity)
+    assert_equal(-3, lambda{|x, y=0, *z, w, **o|}.arity)
 
     assert_arity(0) {}
     assert_arity(0) {||}
@@ -104,6 +118,10 @@ class TestProc < Test::Unit::TestCase
     assert_arity(-3) {|x, *y, z|}
     assert_arity(-1) {|*x|}
     assert_arity(-1) {|*|}
+    assert_arity(-1) {|**o|}
+    assert_arity(-1) {|**|}
+    assert_arity(-2) {|x, *y, **|}
+    assert_arity(-3) {|x, *y, z, **|}
   end
 
   def m(x)
@@ -1086,6 +1104,13 @@ class TestProc < Test::Unit::TestCase
   def pmo6(a, *b, c, &d) end
   def pmo7(a, b = :b, *c, d, &e) end
   def pma1((a), &b) a; end
+  def pmk1(**) end
+  def pmk2(**o) nil && o end
+  def pmk3(a, **o) nil && o end
+  def pmk4(a = nil, **o) nil && o end
+  def pmk5(a, b = nil, **o) nil && o end
+  def pmk6(a, b = nil, c, **o) nil && o end
+  def pmk7(a, b = nil, *c, d, **o) nil && o end
 
 
   def test_bound_parameters
@@ -1100,6 +1125,13 @@ class TestProc < Test::Unit::TestCase
     assert_equal([[:req, :a], [:rest, :b], [:req, :c], [:block, :d]], method(:pmo6).to_proc.parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:block, :e]], method(:pmo7).to_proc.parameters)
     assert_equal([[:req], [:block, :b]], method(:pma1).to_proc.parameters)
+    assert_equal([[:keyrest]], method(:pmk1).to_proc.parameters)
+    assert_equal([[:keyrest, :o]], method(:pmk2).to_proc.parameters)
+    assert_equal([[:req, :a], [:keyrest, :o]], method(:pmk3).to_proc.parameters)
+    assert_equal([[:opt, :a], [:keyrest, :o]], method(:pmk4).to_proc.parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:keyrest, :o]], method(:pmk5).to_proc.parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:req, :c], [:keyrest, :o]], method(:pmk6).to_proc.parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], method(:pmk7).to_proc.parameters)
 
     assert_equal([], "".method(:upcase).to_proc.parameters)
     assert_equal([[:rest]], "".method(:gsub).to_proc.parameters)
@@ -1209,7 +1241,7 @@ class TestProc < Test::Unit::TestCase
   end
 
   def get_binding if: 1, case: 2, when: 3, begin: 4, end: 5
-    a = 0
+    a ||= 0
     binding
   end
 
