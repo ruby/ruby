@@ -1,3 +1,8 @@
+Sat Feb 22 20:24:43 2014  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_xpath*.rb: Move to ...
+	* test/rexml/xpath/*.rb: ... here.
+
 Sat Feb 22 20:04:41 2014  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/listener.rb: Untabify.

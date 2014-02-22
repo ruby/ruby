@@ -1,11 +1,7 @@
-# rexml_xpath_attribute_query.rb
-# May 16, 2007
-#
-
 require 'test/unit'
 require 'rexml/document'
 
-class TestRexmlXpathAttributeQuery < Test::Unit::TestCase
+class TestXPathAttribute < Test::Unit::TestCase
 
   # xmlstr1 and xmlstr2 only differ in the second line - namespaces in the root element
   @@xmlstr1 = '<?xml version="1.0" encoding="UTF-8"?>
