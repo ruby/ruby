@@ -346,7 +346,6 @@ class TestLogDevice < Test::Unit::TestCase
           dev = Logger::LogDevice.new(log, shift_age: 'daily')
           dev.write("#{Time.now} hello-1\n")
 
-          File.utime(*[Time.mktime(2014, 1, 3, 0, 0, 0, 121000)]*2, log)
           Time.now = Time.mktime(2014, 1, 3, 1, 1, 1)
           dev.write("#{Time.now} hello-2\n")
         ensure
@@ -356,7 +355,9 @@ class TestLogDevice < Test::Unit::TestCase
 
       bug = '[GH-539]'
       log = File.join(tmpdir, "log")
-      assert_match(/hello-2/, File.read(log))
+      cont = File.read(log)
+      assert_match(/hello-2/, cont)
+      assert_not_match(/hello-1/, cont)
       assert_file.for(bug).exist?(log+".20140102")
       assert_match(/hello-1/, File.read(log+".20140102"), bug)
     end
