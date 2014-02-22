@@ -1,3 +1,8 @@
+Sat Feb 22 13:26:57 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (iseq_load): keep type_map to get rid of memory leak.
+	  based on a patch by Eric Wong at [ruby-core:59699].  [Bug #9399]
+
 Sat Feb 22 13:17:32 2014  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* ext/thread/thread.c (rb_szqueue_clear): notify SZQUEUE_WAITERS

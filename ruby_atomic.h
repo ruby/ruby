@@ -161,5 +161,10 @@ atomic_size_exchange(size_t *ptr, size_t val)
 #   define ATOMIC_PTR_EXCHANGE(var, val) (void *)ATOMIC_SIZE_EXCHANGE(*(size_t *)&(var), (size_t)(val))
 # endif
 #endif
+#ifndef ATOMIC_PTR_CAS
+# if SIZEOF_VOIDP == SIZEOF_SIZE_T
+#   define ATOMIC_PTR_CAS(var, oldval, val) (void *)ATOMIC_SIZE_CAS(*(size_t *)&(var), (size_t)(oldval), (size_t)(val))
+# endif
+#endif
 
 #endif /* RUBY_ATOMIC_H */
