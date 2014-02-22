@@ -1,3 +1,8 @@
+Sat Feb 22 15:07:58 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/racc/rdoc/grammar.en.rdoc: [DOC] Correct grammar and typos
+	  Patch by Giorgos Tsiftsis [Bug #9429] [ci skip]
+
 Sat Feb 22 15:06:32 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/open-uri.rb: [DOC] use lower case version of core classes, same
