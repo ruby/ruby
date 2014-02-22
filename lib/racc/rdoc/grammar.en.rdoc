@@ -4,14 +4,12 @@
 
 == Class Block and User Code Block
 
-There's two block on toplevel.
-one is 'class' block, another is 'user code' block. 'user code' block MUST
-places after 'class' block.
+There are two blocks on toplevel. One is 'class' block, another is 'user code'
+block. 'user code' block MUST be placed after 'class' block.
 
-== Comment
+== Comments
 
-You can insert comment about all places. Two style comment can be used,
-Ruby style (#.....) and C style (/*......*/) .
+You can insert comments about all places. Two style comments can be used, Ruby style '#.....' and C style '/\*......*\/'.
 
 == Class Block
 
@@ -19,19 +17,19 @@ The class block is formed like this:
 
   class CLASS_NAME
     [precedance table]
-    [token declearations]
-    [expected number of S/R conflict]
+    [token declarations]
+    [expected number of S/R conflicts]
     [options]
     [semantic value convertion]
     [start rule]
   rule
     GRAMMARS
 
-CLASS_NAME is a name of parser class.
-This is the name of generating parser class.
+CLASS_NAME is a name of parser class. This is the name of generating parser
+class.
 
-If CLASS_NAME includes '::', Racc outputs module clause.
-For example, writing "class M::C" causes creating the code bellow:
+If CLASS_NAME includes '::', Racc outputs module clause. For example, writing
+"class M::C" causes creating the code bellow:
 
   module M
     class C
@@ -42,8 +40,8 @@ For example, writing "class M::C" causes creating the code bellow:
 
 == Grammar Block
 
-The grammar block discripts grammar which is able
-to be understood by parser.  Syntax is:
+The grammar block describes grammar which is able to be understood by parser.
+Syntax is:
 
   (token): (token) (token) (token).... (action)
 
@@ -59,28 +57,27 @@ to be understood by parser.  Syntax is:
 
 Note that you cannot use '%' string, here document, '%r' regexp in action.
 
-Actions can be omitted.
-When it is omitted, '' (empty string) is used.
+Actions can be omitted. When it is omitted, '' (empty string) is used.
 
-A return value of action is a value of left side value ($$).
-It is value of result, or returned value by "return" statement.
+A return value of action is a value of left side value ($$). It is value of
+result, or returned value by `return` statement.
 
 Here is an example of whole grammar block.
 
   rule
-    goal: definition ruls source { result = val }
+    goal: definition rules source { result = val }
 
     definition: /* none */   { result = [] }
       | definition startdesig  { result[0] = val[1] }
       | definition
-               precrule   # this line continue from upper line
+               precrule   # this line continues from upper line
         {
           result[1] = val[1]
         }
 
     startdesig: START TOKEN
 
-You can use following special local variables in action.
+You can use the following special local variables in action:
 
 * result ($$)
 
@@ -92,8 +89,7 @@ An array of value of right-hand side (rhs).
 
 * _values (...$-2,$-1,$0)
 
-A stack of values.
-DO NOT MODIFY this stack unless you know what you are doing.
+A stack of values. DO NOT MODIFY this stack unless you know what you are doing.
 
 == Operator Precedence
 
@@ -107,9 +103,9 @@ To designate this block:
     right    '='
   preclow
 
-`right' is yacc's %right, `left' is yacc's %left.
+`right` is yacc's %right, `left` is yacc's %left.
 
-`=' + (symbol) means yacc's %prec:
+`=` + (symbol) means yacc's %prec:
 
   prechigh
     nonassoc UMINUS
@@ -136,22 +132,22 @@ Racc has bison's "expect" directive.
       :
       :
 
-This directive declears "expected" number of shift/reduce conflict.
-If "expected" number is equal to real number of conflicts,
-racc does not print confliction warning message.
+This directive declares "expected" number of shift/reduce conflicts. If
+"expected" number is equal to real number of conflicts, Racc does not print
+conflict warning message.
 
 == Declaring Tokens
 
-By declaring tokens, you can avoid many meanless bugs.
-If decleared token does not exist/existing token does not decleared,
-Racc output warnings.  Declearation syntax is:
+By declaring tokens, you can avoid many meaningless bugs. If declared token
+does not exist or existing token does not decleared, Racc output warnings.
+Declaration syntax is:
 
   token TOKEN_NAME AND_IS_THIS
         ALSO_THIS_IS AGAIN_AND_AGAIN THIS_IS_LAST
 
 == Options
 
-You can write options for racc command in your racc file.
+You can write options for Racc command in your Racc file.
 
   options OPTION OPTION ...
 
@@ -159,19 +155,19 @@ Options are:
 
 * omit_action_call
 
-omit empty action call or not.
+omits empty action call or not.
 
 * result_var
 
-use/does not use local variable "result"
+uses local variable "result" or not.
 
-You can use 'no_' prefix to invert its meanings.
+You can use 'no_' prefix to invert their meanings.
 
 == Converting Token Symbol
 
 Token symbols are, as default,
 
-  * naked token string in racc file (TOK, XFILE, this_is_token, ...)
+  * naked token string in Racc file (TOK, XFILE, this_is_token, ...)
     --> symbol (:TOK, :XFILE, :this_is_token, ...)
   * quoted string (':', '.', '(', ...)
     --> same string (':', '.', '(', ...)
@@ -185,7 +181,7 @@ Here is an example:
   end
 
 We can use almost all ruby value can be used by token symbol,
-except 'false' and 'nil'.  These are causes unexpected parse error.
+except 'false' and 'nil'.  These cause unexpected parse error.
 
 If you want to use String as token symbol, special care is required.
 For example:
@@ -202,12 +198,10 @@ For example:
 
   start real_target
 
-This statement will not be used forever, I think.
-
 == User Code Block
 
-"User Code Block" is a Ruby source code which is copied to output.
-There are three user code block, "header" "inner" and "footer".
+"User Code Block" is a Ruby source code which is copied to output. There are
+three user code blocks, "header" "inner" and "footer".
 
 Format of user code is like this:
 
@@ -221,6 +215,5 @@ Format of user code is like this:
        :
        :
 
-If four '-' exist on line head,
-racc treat it as beginning of user code block.
-A name of user code must be one word.
+If four '-' exist on line head, Racc treat it as beginning of user code block.
+The name of user code block must be one word.
