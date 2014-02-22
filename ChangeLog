@@ -1,3 +1,10 @@
+Sun Feb 23 02:19:51 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb (bind_random_port): Rescue EPERM for FreeBSD which
+	  security.mac.portacl.port_high is changed.
+	  See mac_portacl(4) for details.
+	  Reported by Jakub Szafranski.  [ruby-core:60917] [Bug #9544]
+
 Sat Feb 22 23:17:01 2014  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/xpath_parser.rb: Fix indent.

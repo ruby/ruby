@@ -652,7 +652,9 @@ class Resolv
       begin
         port = rangerand(1024..65535)
         udpsock.bind(bind_host, port)
-      rescue Errno::EADDRINUSE, Errno::EACCES
+      rescue Errno::EADDRINUSE, # POSIX
+             Errno::EACCES, # SunOS: See PRIV_SYS_NFS in privileges(5)
+             Errno::EPERM # FreeBSD: security.mac.portacl.port_high is configurable.  See mac_portacl(4).
         retry
       end
     end
