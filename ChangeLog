@@ -1,3 +1,9 @@
+Sat Feb 22 15:01:21 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb (Resolv::DNS::Resource::TXT#data): Return concatenated
+	  string.
+	  Patch by Ryan Brunner.  [ruby-core:58220] [Bug #9093]
+
 Sat Feb 22 14:52:55 2014  Zachary Scott  <e@zzak.io>
 
 	* ext/openssl/ossl_pkey_dh.c: Fixed typo by Sandor Szuecs [Bug #9243]
