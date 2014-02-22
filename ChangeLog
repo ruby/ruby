@@ -1,3 +1,8 @@
+Sat Feb 22 17:33:39 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_mod_s_constants): return its own constants for other
+	  than Module itself.  [ruby-core:59763] [Bug #9413]
+
 Sat Feb 22 16:51:36 2014  Eric Wong <e@80x24.org>
 
 	* ext/json/generator/depend: add build dependencies for json extension

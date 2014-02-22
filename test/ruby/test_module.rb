@@ -866,6 +866,19 @@ class TestModule < Test::Unit::TestCase
     m.instance_eval { remove_const(:Foo) }
   end
 
+  class Bug9413
+    class << self
+      Foo = :foo
+    end
+  end
+
+  def test_singleton_constants
+    bug9413 = '[ruby-core:59763] [Bug #9413]'
+    c = Bug9413.singleton_class
+    assert_include(c.constants(true), :Foo, bug9413)
+    assert_include(c.constants(false), :Foo, bug9413)
+  end
+
   def test_frozen_class
     m = Module.new
     m.freeze
