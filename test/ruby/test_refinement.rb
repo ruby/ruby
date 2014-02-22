@@ -1107,6 +1107,51 @@ class TestRefinement < Test::Unit::TestCase
     INPUT
   end
 
+  def test_adding_private_method
+    bug9452 = '[ruby-core:60111] [Bug #9452]'
+
+    assert_in_out_err([], <<-INPUT, ["Success!", "NoMethodError"], [], bug9452)
+      module R
+        refine Object do
+          def m
+            puts "Success!"
+          end
+
+          private(:m)
+        end
+      end
+
+      using R
+
+      m
+      42.m rescue p($!.class)
+    INPUT
+  end
+
+  def test_making_private_method_public
+    bug9452 = '[ruby-core:60111] [Bug #9452]'
+
+    assert_in_out_err([], <<-INPUT, ["Success!", "Success!"], [], bug9452)
+        class Object
+          private
+          def m
+          end
+        end
+
+        module R
+          refine Object do
+            def m
+              puts "Success!"
+            end
+          end
+        end
+
+        using R
+        m
+        42.m
+    INPUT
+  end
+
   private
 
   def eval_using(mod, s)

@@ -212,6 +212,7 @@ make_method_entry_refined(rb_method_entry_t *me)
     *new_def->body.orig_me = *me;
     rb_vm_check_redefinition_opt_method(me, me->klass);
     if (me->def) me->def->alias_count++;
+    me->flag = NOEX_WITH_SAFE(NOEX_PUBLIC);
     me->def = new_def;
 }
 
