@@ -321,7 +321,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
     if (RB_TYPE_P(clone, T_CLASS)) {
 	class_init_copy_check(clone, orig);
     }
-    rb_obj_init_copy(clone, orig);
+    if (!OBJ_INIT_COPY(clone, orig)) return clone;
     if (!FL_TEST(CLASS_OF(clone), FL_SINGLETON)) {
 	RBASIC_SET_CLASS(clone, rb_singleton_class_clone(orig));
 	rb_singleton_class_attached(RBASIC(clone)->klass, (VALUE)clone);

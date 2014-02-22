@@ -965,6 +965,7 @@ static VALUE cState_init_copy(VALUE obj, VALUE orig)
 {
     JSON_Generator_State *objState, *origState;
 
+    if (obj == orig) return obj;
     Data_Get_Struct(obj, JSON_Generator_State, objState);
     Data_Get_Struct(orig, JSON_Generator_State, origState);
     if (!objState) rb_raise(rb_eArgError, "unallocated JSON::State");
