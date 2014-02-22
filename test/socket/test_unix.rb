@@ -358,7 +358,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
         pipe[0].read_nonblock(1)
         fail
       rescue => e
-        assert(IO::EAGAINWaitReadable === e)
+        assert(IO::WaitReadable === e)
       end
     end
     Timeout.timeout(10) do
