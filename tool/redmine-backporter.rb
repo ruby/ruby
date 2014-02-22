@@ -77,9 +77,9 @@ class String
       seq << "\e[#{c}m"
     end
     if back
-      c = COLORS[back] + 10
+      c = COLORS[back]
       raise "unknown background color #{back}" unless c
-      seq << "\e[#{c}m"
+      seq << "\e[#{c + 10}m"
     end
     if seq.empty?
       self
