@@ -199,6 +199,10 @@ def mergeinfo
   `svn propget svn:mergeinfo #{RUBY_REPO_PATH}`
 end
 
+def find_svn_log(pattern)
+  `svn log --xml --stop-on-copy --search='#{pattern}' #{RUBY_REPO_PATH}`
+end
+
 def show_last_journal(http, uri)
   res = http.get("#{uri.path}?include=journals")
   res.value
@@ -216,7 +220,7 @@ def show_last_journal(http, uri)
 end
 
 def backport_command_string
-  "backport --ticket=#{@issue} #{@changesets.join(',')}"
+  " backport --ticket=#{@issue} #{@changesets.join(',')}"
 end
 
 console = IO.console
@@ -298,6 +302,7 @@ eom
 
   when /\Adone(?: +(\d+))?(?: -- +(.*))?\z/
     notes = $2
+    notes.strip! if notes
     if $1
       i = $1.to_i
       i = @issues[i]["id"] if @issues && i < @issues.size
@@ -307,6 +312,23 @@ eom
       puts "ticket not selected"
       next
     end
+
+    log = find_svn_log("##@issue]")
+    if log
+      rev = log[/revision="(\d+)/, 1]
+      str = log[/merge revision\(s\) ([^:]+)(?=:)/]
+      str.insert(5, "d")
+      str = "ruby_#{TARGET_VERSION.tr('.','_')} r#{rev} #{str}."
+      if notes
+        str << "\n"
+        str << notes
+      end
+      notes = str
+    else
+      puts "no commit is found whose log include ##@issue"
+      next
+    end
+    puts notes
 
     uri = URI("#{REDMINE_BASE}/issues/#{@issue}.json")
     Net::HTTP.start(uri.host, uri.port, http_options) do |http|
