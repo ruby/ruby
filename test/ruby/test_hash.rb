@@ -117,6 +117,12 @@ class TestHash < Test::Unit::TestCase
 
   end
 
+  def test_self_initialize_copy
+    h = @cls[1=>2]
+    h.instance_eval {initialize_copy(h)}
+    assert_equal(2, h[1])
+  end
+
   def test_AREF # '[]'
     t = Time.now
     h = @cls[
@@ -145,8 +151,6 @@ class TestHash < Test::Unit::TestCase
     assert_equal('nil',    h1[nil])
     assert_equal(nil,      h1['nil'])
     assert_equal(:default, h1['koala'])
-
-
   end
 
   def test_ASET # '[]='
