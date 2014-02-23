@@ -3386,7 +3386,7 @@ rb_fork_ruby(int *status)
  *
  *  If fork is not usable, Process.respond_to?(:fork) returns false.
  *
- *  Note that fork(2) is not avaiable on some platforms like Windows and NetBSD 4.
+ *  Note that fork(2) is not available on some platforms like Windows and NetBSD 4.
  *  Therefore you should use spawn() instead of fork().
  */
 
