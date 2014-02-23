@@ -1,7 +1,7 @@
 Sun Feb 23 12:18:54 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* ext/socket/option.c (inet_pton): use rb_w32_inet_pton, instead of
-	  inet_ntop directly, which is unavailable on older version Windows.
+	* ext/socket/raddrinfo.c (inet_pton): use rb_w32_inet_pton, instead of
+	  inet_pton directly, which is unavailable on older version Windows.
 
 	* include/ruby/win32.h, win32/win32.c (rb_w32_inet_pton): add a
 	  wrapper function for inet_pton minimum supported client is
