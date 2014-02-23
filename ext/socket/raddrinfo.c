@@ -176,19 +176,17 @@ numeric_getaddrinfo(const char *node, const char *service,
         const struct addrinfo *hints,
         struct addrinfo **res)
 {
-    static const struct {
-        int socktype;
-        int protocol;
-    } list[] = {
-        { SOCK_STREAM, IPPROTO_TCP },
-        { SOCK_DGRAM, IPPROTO_UDP },
-        { SOCK_RAW, 0 }
-    };
-
-    struct addrinfo *ai = NULL;
-
 #ifdef HAVE_INET_PTON
     if (node && (!service || strspn(service, "0123456789") == strlen(service))) {
+	static const struct {
+	    int socktype;
+	    int protocol;
+	} list[] = {
+	    { SOCK_STREAM, IPPROTO_TCP },
+	    { SOCK_DGRAM, IPPROTO_UDP },
+	    { SOCK_RAW, 0 }
+	};
+	struct addrinfo *ai = NULL;
         int port = service ? (unsigned short)atoi(service): 0;
         int hint_family = hints ? hints->ai_family : PF_UNSPEC;
         int hint_socktype = hints ? hints->ai_socktype : 0;
