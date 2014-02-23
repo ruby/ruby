@@ -309,6 +309,7 @@ extern char **rb_w32_get_environ(void);
 extern void   rb_w32_free_environ(char **);
 extern int    rb_w32_map_errno(DWORD);
 extern const char *WSAAPI rb_w32_inet_ntop(int,const void *,char *,size_t);
+extern int WSAAPI rb_w32_inet_pton(int,const char *,void *);
 extern DWORD  rb_w32_osver(void);
 
 extern int chown(const char *, int, int);
@@ -656,6 +657,9 @@ extern char *rb_w32_strerror(int);
 #ifdef RUBY_EXPORT
 #undef inet_ntop
 #define inet_ntop(f,a,n,l)      rb_w32_inet_ntop(f,a,n,l)
+
+#undef inet_pton
+#define inet_pton(f,s,d)        rb_w32_inet_pton(f,s,d)
 
 #undef accept
 #define accept(s, a, l)		rb_w32_accept(s, a, l)

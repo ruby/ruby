@@ -6959,6 +6959,19 @@ rb_w32_inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
 }
 
 /* License: Ruby's */
+int WSAAPI
+rb_w32_inet_pton(int af, const char *src, void *dst)
+{
+    typedef int (WSAAPI inet_pton_t)(int, const char*, void *);
+    inet_pton_t *pInetPton;
+    pInetPton = (inet_pton_t *)get_proc_address("ws2_32", "inet_pton", NULL);
+    if (pInetPton) {
+	return pInetPton(af, src, dst);
+    }
+    return 0;
+}
+
+/* License: Ruby's */
 char
 rb_w32_fd_is_text(int fd)
 {
