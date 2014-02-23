@@ -1,3 +1,9 @@
+Sun Feb 23 11:33:25 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/net/imap/test_imap.rb: remove unused variables.
+	* test/net/imap/test_imap_response_parser.rb: ditto.
+	* test/net/pop/test_pop.rb: ditto.
+
 Sun Feb 23 02:19:51 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (bind_random_port): Rescue EPERM for FreeBSD which
