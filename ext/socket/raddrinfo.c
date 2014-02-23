@@ -177,6 +177,10 @@ numeric_getaddrinfo(const char *node, const char *service,
         struct addrinfo **res)
 {
 #ifdef HAVE_INET_PTON
+# if defined __MINGW64__
+#   define inet_pton(f,s,d)        rb_w32_inet_pton(f,s,d)
+# endif
+
     if (node && (!service || strspn(service, "0123456789") == strlen(service))) {
 	static const struct {
 	    int socktype;
