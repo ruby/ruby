@@ -1,3 +1,14 @@
+Sun Feb 23 17:55:50 2014  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/xmltokens.rb: Add missing non ASCII valid characters
+	  to element name characters. Now, REXML name tokens exactly
+	  match "[5] Name" in the XML spec and "[4] NCName" in the
+	  Namespaces in XML spec. See comment about the details.
+	  [Bug #9539]  [ruby-core:60901]
+	  Reported by Mario Barcala. Thanks!!!
+
+	* test/rexml/xpath/test_node.rb: Add tests for the above case.
+
 Sun Feb 23 12:18:54 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/raddrinfo.c (inet_pton): use rb_w32_inet_pton, instead of
