@@ -1,3 +1,18 @@
+Mon Feb 24 13:05:48 2014  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: New release of psych.
+	* ext/psych/psych.gemspec: ditto
+
+Mon Feb 24 13:05:48 2014  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/yaml/emitter.c: merge libyaml 0.1.5
+	* ext/psych/yaml/loader.c: ditto
+	* ext/psych/yaml/parser.c: ditto
+	* ext/psych/yaml/reader.c: ditto
+	* ext/psych/yaml/scanner.c: ditto
+	* ext/psych/yaml/writer.c: ditto
+	* ext/psych/yaml/yaml_private.h: ditto
+
 Sat Feb 22 22:26:43 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/io/console/console.c (console_dev): need read access for conout$
