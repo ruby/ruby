@@ -59,7 +59,7 @@ module Fiddle
       func = Function.new(@libc['strcpy'], [TYPE_VOIDP, TYPE_VOIDP], TYPE_VOIDP)
 
       assert_nil Fiddle.last_error
-      str = func.call("000", "123")
+      func.call("000", "123")
       refute_nil Fiddle.last_error
     end
 
