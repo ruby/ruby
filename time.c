@@ -1745,7 +1745,7 @@ struct time_object {
     struct vtm vtm;
     uint8_t gmt:3; /* 0:utc 1:localtime 2:fixoff 3:init */
     uint8_t tm_got:1;
-} PACKED_STRUCT;
+} PACKED_STRUCT_UNALIGNED;
 
 #define GetTimeval(obj, tobj) ((tobj) = get_timeval(obj))
 #define GetNewTimeval(obj, tobj) ((tobj) = get_new_timeval(obj))

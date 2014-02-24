@@ -14,7 +14,7 @@ struct vtm {
     uint8_t sec:6; /* 0..60 */
     uint8_t wday:3; /* 0:Sunday, 1:Monday, ..., 6:Saturday 7:init */
     uint8_t isdst:2; /* 0:StandardTime 1:DayLightSavingTime 3:init */
-} PACKED_STRUCT;
+} PACKED_STRUCT_UNALIGNED;
 
 #define TIME_SCALE 1000000000
 

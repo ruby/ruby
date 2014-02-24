@@ -1,3 +1,10 @@
+Mon Feb 24 20:05:41 2014  Eric Wong  <e@80x24.org>
+
+	* configure.in: define PACKED_STRUCT_UNALIGNED for x86*
+	* timev.h (struct vtm): use PACKED_STRUCT_UNALIGNED
+	* time.c (struct time_object): ditto
+	  [Bug #9558] non-x86 cannot safely access unaligned addresses
+
 Mon Feb 24 18:10:02 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/fiddle/test_function.rb: remove unused variables.
