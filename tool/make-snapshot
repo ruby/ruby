@@ -116,8 +116,14 @@ def package(rev, destdir)
     patchlevel = true
     tag = "p#{$4}"
     url = SVNURL + "tags/v#{$1}_#{$2}_#{$3}_#{$4}"
-  when /\./
-    url = SVNURL + "branches/ruby_#{rev.tr('.', '_')}"
+  when /\A(\d+)\.(\d+)\.(\d+)\z/
+    if $1 > "2" || $1 == "2" && $2 >= "1"
+      patchlevel = true
+      tag = ""
+      url = SVNURL + "tags/v#{$1}_#{$2}_#{$3}"
+    else
+      url = SVNURL + "branches/ruby_#{rev.tr('.', '_')}"
+    end
   else
     warn "#{$0}: unknown version - #{rev}"
     return
@@ -160,14 +166,20 @@ def package(rev, destdir)
   version ||= (versionhdr = IO.read("#{v}/version.h"))[RUBY_VERSION_PATTERN, 1]
   version or return
   if patchlevel
-    versionhdr ||= IO.read("#{v}/version.h")
-    patchlevel = versionhdr[/^\#define\s+RUBY_PATCHLEVEL\s+(\d+)/, 1]
-    tag = (patchlevel ? "p#{patchlevel}" : "r#{revision}")
+    unless tag.empty?
+      versionhdr ||= IO.read("#{v}/version.h")
+      patchlevel = versionhdr[/^\#define\s+RUBY_PATCHLEVEL\s+(\d+)/, 1]
+      tag = (patchlevel ? "p#{patchlevel}" : "r#{revision}")
+    end
   else
     tag ||= "r#{revision}"
   end
   unless v == $exported
-    n = "ruby-#{version}-#{tag}"
+    if tag.empty?
+      n = "ruby-#{version}"
+    else
+      n = "ruby-#{version}-#{tag}"
+    end
     File.directory?(n) or File.rename v, n
     v = n
   end
@@ -177,7 +189,11 @@ def package(rev, destdir)
   Dir.chdir(v) do
     %w[config.guess config.sub].each do |conf|
       next if File.exist?("tool/#{conf}")
-      require File.expand_path("config_files", $tooldir)
+      begin
+        require File.expand_path("config_files", $tooldir)
+      rescue LoadError
+        abort "Error!!! Copy 'config_files.rb' from 'tool' directory of the recent ruby repository!"
+      end
       ConfigFiles.download(conf, "tool")
     end
     File.open(clean.add("cross.rb"), "w") do |f|
@@ -205,6 +221,7 @@ def package(rev, destdir)
         f.puts "s,@ARCH_FLAG@,|#_!!_#|,g"
         f.puts "s,@CFLAGS@,|#_!!_#|,g"
         f.puts "s,@CPPFLAGS@,|#_!!_#|,g"
+        f.puts "s,@CXXFLAGS@,|#_!!_#|,g"
         f.puts "s,@LDFLAGS@,|#_!!_#|,g"
         f.puts "s,@DLDFLAGS@,|#_!!_#|,g"
         f.puts "s,@LIBEXT@,|#_!!_#|a,g"

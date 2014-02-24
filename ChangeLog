@@ -1,3 +1,11 @@
+Mon Feb 24 14:56:41 2014  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* tool/make-snapshot: needs CXXFLAGS.  [ruby-core:59393][Bug #9320]
+
+Mon Feb 24 14:56:41 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* tool/make-snapshot: support new version scheme.
+
 Mon Feb 24 13:05:48 2014  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: New release of psych.
