@@ -40,6 +40,9 @@ static ID id_eq, id_ne, id_quo, id_div, id_cmp, id_lshift;
 #define NMOD(x,y) ((y)-(-((x)+1)%(y))-1)
 #define DIV(n,d) ((n)<0 ? NDIV((n),(d)) : (n)/(d))
 #define MOD(n,d) ((n)<0 ? NMOD((n),(d)) : (n)%(d))
+#define VTM_WDAY_INITVAL (7)
+#define VTM_ISDST_INITVAL (3)
+#define TO_GMT_INITVAL (3)
 
 static int
 eq(VALUE x, VALUE y)
@@ -757,12 +760,13 @@ VALUE rb_cTime;
 static VALUE time_utc_offset _((VALUE));
 
 static int obj2int(VALUE obj);
+static uint32_t obj2ubits(VALUE obj, size_t bits);
 static VALUE obj2vint(VALUE obj);
-static int month_arg(VALUE arg);
+static uint32_t month_arg(VALUE arg);
 static VALUE validate_utc_offset(VALUE utc_offset);
 static VALUE validate_zone_name(VALUE zone_name);
 static void validate_vtm(struct vtm *vtm);
-static int obj2subsecx(VALUE obj, VALUE *subsecx);
+static uint32_t obj2subsecx(VALUE obj, VALUE *subsecx);
 
 static VALUE time_gmtime(VALUE);
 static VALUE time_localtime(VALUE);
@@ -1739,15 +1743,15 @@ localtimew(wideval_t timew, struct vtm *result)
 struct time_object {
     wideval_t timew; /* time_t value * TIME_SCALE.  possibly Rational. */
     struct vtm vtm;
-    int gmt; /* 0:utc 1:localtime 2:fixoff */
-    int tm_got;
-};
+    uint8_t gmt:3; /* 0:utc 1:localtime 2:fixoff 3:init */
+    uint8_t tm_got:1;
+} PACKED_STRUCT;
 
 #define GetTimeval(obj, tobj) ((tobj) = get_timeval(obj))
 #define GetNewTimeval(obj, tobj) ((tobj) = get_new_timeval(obj))
 
 #define IsTimeval(obj) rb_typeddata_is_kind_of((obj), &time_data_type)
-#define TIME_INIT_P(tobj) ((tobj)->gmt != -1)
+#define TIME_INIT_P(tobj) ((tobj)->gmt != TO_GMT_INITVAL)
 
 #define TIME_UTC_P(tobj) ((tobj)->gmt == 1)
 #define TIME_SET_UTC(tobj) ((tobj)->gmt = 1)
@@ -1811,7 +1815,7 @@ time_s_alloc(VALUE klass)
     struct time_object *tobj;
 
     obj = TypedData_Make_Struct(klass, struct time_object, &time_data_type, tobj);
-    tobj->gmt = -1;
+    tobj->gmt = TO_GMT_INITVAL;
     tobj->tm_got=0;
     tobj->timew = WINT2FIXWV(0);
 
@@ -2114,7 +2118,7 @@ time_init_1(int argc, VALUE *argv, VALUE time)
     VALUE v[7];
     struct time_object *tobj;
 
-    vtm.wday = -1;
+    vtm.wday = VTM_WDAY_INITVAL;
     vtm.yday = 0;
     vtm.zone = "";
 
@@ -2125,16 +2129,16 @@ time_init_1(int argc, VALUE *argv, VALUE time)
 
     vtm.mon = NIL_P(v[1]) ? 1 : month_arg(v[1]);
 
-    vtm.mday = NIL_P(v[2]) ? 1 : obj2int(v[2]);
+    vtm.mday = NIL_P(v[2]) ? 1 : obj2ubits(v[2], 5);
 
-    vtm.hour = NIL_P(v[3]) ? 0 : obj2int(v[3]);
+    vtm.hour = NIL_P(v[3]) ? 0 : obj2ubits(v[3], 5);
 
-    vtm.min  = NIL_P(v[4]) ? 0 : obj2int(v[4]);
+    vtm.min  = NIL_P(v[4]) ? 0 : obj2ubits(v[4], 6);
 
     vtm.subsecx = INT2FIX(0);
     vtm.sec  = NIL_P(v[5]) ? 0 : obj2subsecx(v[5], &vtm.subsecx);
 
-    vtm.isdst = -1;
+    vtm.isdst = VTM_ISDST_INITVAL;
     vtm.utc_offset = Qnil;
     if (!NIL_P(v[6])) {
         VALUE arg = v[6];
@@ -2520,6 +2524,22 @@ obj2int(VALUE obj)
     return NUM2INT(obj);
 }
 
+static uint32_t
+obj2ubits(VALUE obj, size_t bits)
+{
+    static const uint32_t u32max = (uint32_t)-1;
+    const uint32_t usable_mask = ~(u32max << bits);
+    uint32_t rv;
+    int tmp = obj2int(obj);
+
+    if (tmp < 0)
+	rb_raise(rb_eArgError, "argument out of range");
+    rv = tmp;
+    if ((rv & usable_mask) != rv)
+	rb_raise(rb_eArgError, "argument out of range");
+    return rv;
+}
+
 static VALUE
 obj2vint(VALUE obj)
 {
@@ -2533,7 +2553,7 @@ obj2vint(VALUE obj)
     return obj;
 }
 
-static int
+static uint32_t
 obj2subsecx(VALUE obj, VALUE *subsecx)
 {
     VALUE subsec;
@@ -2541,12 +2561,11 @@ obj2subsecx(VALUE obj, VALUE *subsecx)
     if (RB_TYPE_P(obj, T_STRING)) {
 	obj = rb_str_to_inum(obj, 10, FALSE);
         *subsecx = INT2FIX(0);
-        return NUM2INT(obj);
+    } else {
+        divmodv(num_exact(obj), INT2FIX(1), &obj, &subsec);
+        *subsecx = w2v(rb_time_magnify(v2w(subsec)));
     }
-
-    divmodv(num_exact(obj), INT2FIX(1), &obj, &subsec);
-    *subsecx = w2v(rb_time_magnify(v2w(subsec)));
-    return NUM2INT(obj);
+    return obj2ubits(obj, 6); /* vtm->sec */
 }
 
 static long
@@ -2559,7 +2578,7 @@ usec2subsecx(VALUE obj)
     return mulquo(num_exact(obj), INT2FIX(TIME_SCALE), INT2FIX(1000000));
 }
 
-static int
+static uint32_t
 month_arg(VALUE arg)
 {
     int i, mon;
@@ -2578,12 +2597,12 @@ month_arg(VALUE arg)
             char c = RSTRING_PTR(s)[0];
 
             if ('0' <= c && c <= '9') {
-                mon = obj2int(s);
+                mon = obj2ubits(s, 4);
             }
         }
     }
     else {
-        mon = obj2int(arg);
+        mon = obj2ubits(arg, 4);
     }
     return mon;
 }
@@ -2649,8 +2668,8 @@ time_arg(int argc, VALUE *argv, struct vtm *vtm)
 	rb_scan_args(argc, argv, "17", &v[0],&v[1],&v[2],&v[3],&v[4],&v[5],&v[6],&v[7]);
 	/* v[6] may be usec or zone (parsedate) */
 	/* v[7] is wday (parsedate; ignored) */
-	vtm->wday = -1;
-	vtm->isdst = -1;
+	vtm->wday = VTM_WDAY_INITVAL;
+	vtm->isdst = VTM_ISDST_INITVAL;
     }
 
     vtm->year = obj2vint(v[0]);
@@ -2666,15 +2685,15 @@ time_arg(int argc, VALUE *argv, struct vtm *vtm)
 	vtm->mday = 1;
     }
     else {
-	vtm->mday = obj2int(v[2]);
+	vtm->mday = obj2ubits(v[2], 5);
     }
 
-    vtm->hour = NIL_P(v[3])?0:obj2int(v[3]);
+    vtm->hour = NIL_P(v[3])?0:obj2ubits(v[3], 5);
 
-    vtm->min  = NIL_P(v[4])?0:obj2int(v[4]);
+    vtm->min  = NIL_P(v[4])?0:obj2ubits(v[4], 6);
 
     if (!NIL_P(v[6]) && argc == 7) {
-        vtm->sec  = NIL_P(v[5])?0:obj2int(v[5]);
+        vtm->sec  = NIL_P(v[5])?0:obj2ubits(v[5],6);
         vtm->subsecx  = usec2subsecx(v[6]);
     }
     else {
@@ -3999,7 +4018,7 @@ time_wday(VALUE time)
 
     GetTimeval(time, tobj);
     MAKE_TM(time, tobj);
-    return INT2FIX(tobj->vtm.wday);
+    return INT2FIX((int)tobj->vtm.wday);
 }
 
 #define wday_p(n) {\

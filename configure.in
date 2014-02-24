@@ -746,6 +746,7 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
 		 -Werror=implicit-function-declaration \
 		 -Werror=division-by-zero \
 		 -Werror=deprecated-declarations \
+		 -Wno-packed-bitfield-compat \
 		 $extra_warning \
 		 ; do
 	if test "$particular_werror_flags" != yes; then
@@ -1270,6 +1271,15 @@ RUBY_CHECK_SIZEOF(float)
 RUBY_CHECK_SIZEOF(double)
 RUBY_CHECK_SIZEOF(time_t, [long "long long"], [], [@%:@include <time.h>])
 RUBY_CHECK_SIZEOF(clock_t, [], [], [@%:@include <time.h>])
+
+AC_CACHE_CHECK(packed struct attribute, rb_cv_packed_struct,
+  [AC_TRY_COMPILE([struct { int a; } __attribute__((packed));], [],
+  [rb_cv_packed_struct=yes], [rb_cv_packed_struct=no])])
+if test "$rb_cv_packed_struct" = yes; then
+  AC_DEFINE_UNQUOTED(PACKED_STRUCT, __attribute__((packed)))
+else
+  AC_DEFINE_UNQUOTED(PACKED_STRUCT,)
+fi
 
 AC_DEFUN([RUBY_CHECK_PRINTF_PREFIX], [
 AC_CACHE_CHECK([for printf prefix for $1], [rb_cv_pri_prefix_]AS_TR_SH($1),[

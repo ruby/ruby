@@ -1,3 +1,11 @@
+Mon Feb 24 12:37:51 2014  Eric Wong  <e@80x24.org>
+
+	* configure.in: use -Wno-packed-bitfield-compat for GCC 4.4+
+	  use __attribute__((packed)) if available
+	* timev.h: shrink and pack struct vtm
+	* time.c: pack struct time_object and adjust/introduce helpers
+	  [ruby-core:60794]
+
 Sun Feb 23 17:55:50 2014  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/xmltokens.rb: Add missing non ASCII valid characters
