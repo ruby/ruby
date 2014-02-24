@@ -5361,13 +5361,16 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	{
 	    VALUE str = rb_fstring(node->nd_args->nd_head->nd_lit);
 	    node->nd_args->nd_head->nd_lit = str;
+	    iseq_add_mark_object(iseq, str);
 	    COMPILE(ret, "recv", node->nd_recv);
 	    COMPILE(ret, "value", node->nd_args->nd_next->nd_head);
+	    if (!poped) {
+		ADD_INSN(ret, line, swap);
+		ADD_INSN1(ret, line, topn, INT2FIX(1));
+	    }
 	    ADD_INSN2(ret, line, opt_aset_with,
 		      new_callinfo(iseq, idASET, 2, 0, 0), str);
-	    if (poped) {
-		ADD_INSN(ret, line, pop);
-	    }
+	    ADD_INSN(ret, line, pop);
 	    break;
 	}
 
@@ -5837,7 +5840,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 				VALUE vmid = rb_hash_aref(op, ID2SYM(rb_intern("mid")));
 				VALUE vflag = rb_hash_aref(op, ID2SYM(rb_intern("flag")));
 				VALUE vorig_argc = rb_hash_aref(op, ID2SYM(rb_intern("orig_argc")));
-				VALUE vblock = rb_hash_aref(op, ID2SYM(rb_intern("block")));
+				VALUE vblock = rb_hash_aref(op, ID2SYM(rb_intern("blockptr")));
 
 				if (!NIL_P(vmid)) mid = SYM2ID(vmid);
 				if (!NIL_P(vflag)) flag = NUM2ULONG(vflag);

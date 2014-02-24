@@ -184,7 +184,6 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
 
   def test_directory_traversal
     config = { :DocumentRoot => File.dirname(__FILE__), }
-    this_file = File.basename(__FILE__)
     TestWEBrick.start_httpserver(config) do |server, addr, port, log|
       http = Net::HTTP.new(addr, port)
       req = Net::HTTP::Get.new("/../../")
@@ -199,7 +198,6 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
   def test_unwise_in_path
     if windows?
       config = { :DocumentRoot => File.dirname(__FILE__), }
-      this_file = File.basename(__FILE__)
       TestWEBrick.start_httpserver(config) do |server, addr, port, log|
         http = Net::HTTP.new(addr, port)
         req = Net::HTTP::Get.new("/..%5c..")

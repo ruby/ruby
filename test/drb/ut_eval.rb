@@ -28,4 +28,5 @@ if __FILE__ == $0
   DRb.start_service('druby://localhost:0', EvalAttack.new, {:safe_level => 2})
   es = DRb::ExtServ.new(ARGV.shift, ARGV.shift)
   DRb.thread.join
+  es.stop_service if es.alive?
 end

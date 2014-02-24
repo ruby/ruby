@@ -88,10 +88,14 @@
 #define rb_setjmp(env) RUBY_SETJMP(env)
 #define rb_jmp_buf rb_jmpbuf_t
 
-#if defined(HAVE_RB_GC_GUARDED_PTR) && HAVE_RB_GC_GUARDED_PTR
+#if defined(HAVE_RB_GC_GUARDED_PTR_VAL) && HAVE_RB_GC_GUARDED_PTR_VAL
+/* trick the compiler into thinking a external signal handler uses this */
+volatile VALUE rb_gc_guarded_val;
 volatile VALUE *
-rb_gc_guarded_ptr(volatile VALUE *ptr)
+rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 {
+    rb_gc_guarded_val = val;
+
     return ptr;
 }
 #endif
@@ -107,6 +111,9 @@ rb_gc_guarded_ptr(volatile VALUE *ptr)
 #endif
 #ifndef GC_HEAP_GROWTH_MAX_SLOTS
 #define GC_HEAP_GROWTH_MAX_SLOTS 0 /* 0 is disable */
+#endif
+#ifndef GC_HEAP_OLDOBJECT_LIMIT_FACTOR
+#define GC_HEAP_OLDOBJECT_LIMIT_FACTOR 2.0
 #endif
 
 #ifndef GC_MALLOC_LIMIT_MIN
@@ -130,15 +137,16 @@ rb_gc_guarded_ptr(volatile VALUE *ptr)
 #endif
 
 typedef struct {
-    unsigned int heap_init_slots;
-    unsigned int heap_free_slots;
+    size_t heap_init_slots;
+    size_t heap_free_slots;
     double growth_factor;
-    unsigned int growth_max_slots;
-    unsigned int malloc_limit_min;
-    unsigned int malloc_limit_max;
+    size_t growth_max_slots;
+    double oldobject_limit_factor;
+    size_t malloc_limit_min;
+    size_t malloc_limit_max;
     double malloc_limit_growth_factor;
-    unsigned int oldmalloc_limit_min;
-    unsigned int oldmalloc_limit_max;
+    size_t oldmalloc_limit_min;
+    size_t oldmalloc_limit_max;
     double oldmalloc_limit_growth_factor;
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     VALUE gc_stress;
@@ -150,6 +158,7 @@ static ruby_gc_params_t gc_params = {
     GC_HEAP_INIT_SLOTS,
     GC_HEAP_GROWTH_FACTOR,
     GC_HEAP_GROWTH_MAX_SLOTS,
+    GC_HEAP_OLDOBJECT_LIMIT_FACTOR,
     GC_MALLOC_LIMIT_MIN,
     GC_MALLOC_LIMIT_MAX,
     GC_MALLOC_LIMIT_GROWTH_FACTOR,
@@ -1612,8 +1621,8 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       case T_BIGNUM:
-	if (!(RBASIC(obj)->flags & RBIGNUM_EMBED_FLAG) && RBIGNUM_DIGITS(obj)) {
-	    xfree(RBIGNUM_DIGITS(obj));
+	if (!(RBASIC(obj)->flags & BIGNUM_EMBED_FLAG) && BIGNUM_DIGITS(obj)) {
+	    xfree(BIGNUM_DIGITS(obj));
 	}
 	break;
       case T_NODE:
@@ -2506,8 +2515,8 @@ obj_memsize_of(VALUE obj, int use_tdata)
 	break;
 
       case T_BIGNUM:
-	if (!(RBASIC(obj)->flags & RBIGNUM_EMBED_FLAG) && RBIGNUM_DIGITS(obj)) {
-	    size += RBIGNUM_LEN(obj) * sizeof(BDIGIT);
+	if (!(RBASIC(obj)->flags & BIGNUM_EMBED_FLAG) && BIGNUM_DIGITS(obj)) {
+	    size += BIGNUM_LEN(obj) * sizeof(BDIGIT);
 	}
 	break;
       case T_NODE:
@@ -2921,7 +2930,9 @@ gc_before_sweep(rb_objspace_t *objspace)
 	    }
 	}
 
-	if (0) fprintf(stderr, "%d\t%d\t%u\t%u\t%d\n", (int)rb_gc_count(), objspace->rgengc.need_major_gc,
+	if (0) fprintf(stderr, "%d\t%d\t%u\t%u\t%d\n",
+		       (int)rb_gc_count(),
+		       (int)objspace->rgengc.need_major_gc,
 		       (unsigned int)objspace->rgengc.oldmalloc_increase,
 		       (unsigned int)objspace->rgengc.oldmalloc_increase_limit,
 		       (unsigned int)gc_params.oldmalloc_limit_max);
@@ -3209,14 +3220,14 @@ init_mark_stack(mark_stack_t *stack)
 /* Marking */
 
 #ifdef __ia64
-#define SET_STACK_END (SET_MACHINE_STACK_END(&th->machine_stack_end), th->machine_register_stack_end = rb_ia64_bsp())
+#define SET_STACK_END (SET_MACHINE_STACK_END(&th->machine.stack_end), th->machine.register_stack_end = rb_ia64_bsp())
 #else
-#define SET_STACK_END SET_MACHINE_STACK_END(&th->machine_stack_end)
+#define SET_STACK_END SET_MACHINE_STACK_END(&th->machine.stack_end)
 #endif
 
-#define STACK_START (th->machine_stack_start)
-#define STACK_END (th->machine_stack_end)
-#define STACK_LEVEL_MAX (th->machine_stack_maxsize/sizeof(VALUE))
+#define STACK_START (th->machine.stack_start)
+#define STACK_END (th->machine.stack_end)
+#define STACK_LEVEL_MAX (th->machine.stack_maxsize/sizeof(VALUE))
 
 #if STACK_GROW_DIRECTION < 0
 # define STACK_LENGTH  (size_t)(STACK_START - STACK_END)
@@ -3258,8 +3269,8 @@ stack_check(int water_mark)
     ret = STACK_LENGTH > STACK_LEVEL_MAX - water_mark;
 #ifdef __ia64
     if (!ret) {
-        ret = (VALUE*)rb_ia64_bsp() - th->machine_register_stack_start >
-              th->machine_register_stack_maxsize/sizeof(VALUE) - water_mark;
+        ret = (VALUE*)rb_ia64_bsp() - th->machine.register_stack_start >
+              th->machine.register_stack_maxsize/sizeof(VALUE) - water_mark;
     }
 #endif
     return ret;
@@ -3483,7 +3494,7 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
 
     rb_gc_mark_locations(stack_start, stack_end);
 #ifdef __ia64
-    rb_gc_mark_locations(th->machine_register_stack_start, th->machine_register_stack_end);
+    rb_gc_mark_locations(th->machine.register_stack_start, th->machine.register_stack_end);
 #endif
 #if defined(__mc68000__)
     mark_locations_array(objspace, (VALUE*)((char*)STACK_END + 2),
@@ -3500,7 +3511,7 @@ rb_gc_mark_machine_stack(rb_thread_t *th)
     GET_STACK_BOUNDS(stack_start, stack_end, 0);
     rb_gc_mark_locations(stack_start, stack_end);
 #ifdef __ia64
-    rb_gc_mark_locations(th->machine_register_stack_start, th->machine_register_stack_end);
+    rb_gc_mark_locations(th->machine.register_stack_start, th->machine.register_stack_end);
 #endif
 }
 
@@ -3593,6 +3604,17 @@ void
 rb_gc_mark(VALUE ptr)
 {
     gc_mark(&rb_objspace, ptr);
+}
+
+/* CAUTION: THIS FUNCTION ENABLE *ONLY BEFORE* SWEEPING.
+ * This function is only for GC_END_MARK timing.
+ */
+
+int
+rb_objspace_marked_object_p(VALUE obj)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    return gc_marked(objspace, obj) ? TRUE : FALSE;
 }
 
 /* resurrect non-marked `obj' if obj is before swept */
@@ -3866,8 +3888,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	goto again;
 
       case T_STRING:
-#define STR_ASSOC FL_USER3   /* copied from string.c */
-	if (FL_TEST(obj, RSTRING_NOEMBED) && FL_ANY(obj, ELTS_SHARED|STR_ASSOC)) {
+	if (STR_SHARED_P(obj)) {
 	    ptr = obj->as.string.as.heap.aux.shared;
 	    goto again;
 	}
@@ -4501,10 +4522,12 @@ gc_marks(rb_objspace_t *objspace, int full_mark)
 #endif
 
 	    gc_marks_body(objspace, TRUE);
-
-	    /* Do full GC if old/remembered_shady object counts is greater than counts two times at last full GC counts */
-	    objspace->rgengc.remembered_shady_object_limit = objspace->rgengc.remembered_shady_object_count * 2;
-	    objspace->rgengc.old_object_limit = objspace->rgengc.old_object_count * 2;
+	    {
+		/* See the comment about RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR */
+		const double r = gc_params.oldobject_limit_factor;
+		objspace->rgengc.remembered_shady_object_limit = (size_t)(objspace->rgengc.remembered_shady_object_count * r);
+		objspace->rgengc.old_object_limit = (size_t)(objspace->rgengc.old_object_count * r);
+	    }
 	}
 	else { /* minor GC */
 	    gc_marks_body(objspace, FALSE);
@@ -5645,20 +5668,58 @@ rb_gc_disable(void)
 }
 
 static int
-get_envparam_int(const char *name, unsigned int *default_value, int lower_bound)
+get_envparam_size(const char *name, size_t *default_value, size_t lower_bound)
 {
     char *ptr = getenv(name);
-    int val;
+    ssize_t val;
 
-    if (ptr != NULL) {
-	val = atoi(ptr);
-	if (val > lower_bound) {
-	    if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%d (%d)\n", name, val, *default_value);
-	    *default_value = val;
+    if (ptr != NULL && *ptr) {
+	size_t unit = 0;
+	char *end;
+#if SIZEOF_SIZE_T == SIZEOF_LONG_LONG
+	val = strtoll(ptr, &end, 0);
+#else
+	val = strtol(ptr, &end, 0);
+#endif
+	switch (*end) {
+	  case 'k': case 'K':
+	    unit = 1024;
+	    ++end;
+	    break;
+	  case 'm': case 'M':
+	    unit = 1024*1024;
+	    ++end;
+	    break;
+	  case 'g': case 'G':
+	    unit = 1024*1024*1024;
+	    ++end;
+	    break;
+	}
+	while (*end && isspace(*end)) end++;
+	if (*end) {
+	    if (RTEST(ruby_verbose)) fprintf(stderr, "invalid string for %s: %s\n", name, ptr);
+	    return 0;
+	}
+	if (unit > 0) {
+	    if (val < -(ssize_t)(SIZE_MAX / 2 / unit) || (ssize_t)(SIZE_MAX / 2 / unit) < val) {
+		if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%s is ignored because it overflows\n", name, ptr);
+		return 0;
+	    }
+	    val *= unit;
+	}
+	if (val > 0 && (size_t)val > lower_bound) {
+	    if (RTEST(ruby_verbose)) {
+		fprintf(stderr, "%s=%"PRIdSIZE" (default value: %"PRIdSIZE")\n", name, val, *default_value);
+	    }
+	    *default_value = (size_t)val;
 	    return 1;
 	}
 	else {
-	    if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%d (%d), but ignored because lower than %d\n", name, val, *default_value, lower_bound);
+	    if (RTEST(ruby_verbose)) {
+		fprintf(stderr, "%s=%"PRIdSIZE" (default value: %"PRIdSIZE") is ignored because it must be greater than %"PRIdSIZE".\n",
+			name, val, *default_value, lower_bound);
+	    }
+	    return 0;
 	}
     }
     return 0;
@@ -5670,15 +5731,20 @@ get_envparam_double(const char *name, double *default_value, double lower_bound)
     char *ptr = getenv(name);
     double val;
 
-    if (ptr != NULL) {
-	val = strtod(ptr, NULL);
+    if (ptr != NULL && *ptr) {
+	char *end;
+	val = strtod(ptr, &end);
+	if (!*ptr || *end) {
+	    if (RTEST(ruby_verbose)) fprintf(stderr, "invalid string for %s: %s\n", name, ptr);
+	    return 0;
+	}
 	if (val > lower_bound) {
-	    if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%f (%f)\n", name, val, *default_value);
+	    if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%f (default value: %f)\n", name, val, *default_value);
 	    *default_value = val;
 	    return 1;
 	}
 	else {
-	    if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%f (%f), but ignored because lower than %f\n", name, val, *default_value, lower_bound);
+	    if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%f (default value: %f) is ignored because it must be greater than %f.\n", name, val, *default_value, lower_bound);
 	}
     }
     return 0;
@@ -5709,6 +5775,10 @@ gc_set_initial_pages(void)
  *   - (next slots number) = (current slots number) * (this factor)
  * * RUBY_GC_HEAP_GROWTH_MAX_SLOTS (new from 2.1)
  *   - Allocation rate is limited to this factor.
+ * * RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR (new from 2.1.1)
+ *   - Do full GC when the number of old objects is more than R * N
+ *     where R is this factor and
+ *           N is the number of old objects just after last full GC.
  *
  *  * obsolete
  *    * RUBY_FREE_MIN       -> RUBY_GC_HEAP_FREE_SLOTS (from 2.1)
@@ -5729,40 +5799,38 @@ ruby_gc_set_params(int safe_level)
     if (safe_level > 0) return;
 
     /* RUBY_GC_HEAP_FREE_SLOTS */
-    if (get_envparam_int("RUBY_GC_HEAP_FREE_SLOTS", &gc_params.heap_free_slots, 0)) {
+    if (get_envparam_size("RUBY_GC_HEAP_FREE_SLOTS", &gc_params.heap_free_slots, 0)) {
 	/* ok */
     }
-    else if (get_envparam_int("RUBY_FREE_MIN", &gc_params.heap_free_slots, 0)) {
+    else if (get_envparam_size("RUBY_FREE_MIN", &gc_params.heap_free_slots, 0)) {
 	rb_warn("RUBY_FREE_MIN is obsolete. Use RUBY_GC_HEAP_FREE_SLOTS instead.");
     }
 
     /* RUBY_GC_HEAP_INIT_SLOTS */
-    if (get_envparam_int("RUBY_GC_HEAP_INIT_SLOTS", &gc_params.heap_init_slots, 0)) {
+    if (get_envparam_size("RUBY_GC_HEAP_INIT_SLOTS", &gc_params.heap_init_slots, 0)) {
 	gc_set_initial_pages();
     }
-    else if (get_envparam_int("RUBY_HEAP_MIN_SLOTS", &gc_params.heap_init_slots, 0)) {
+    else if (get_envparam_size("RUBY_HEAP_MIN_SLOTS", &gc_params.heap_init_slots, 0)) {
 	rb_warn("RUBY_HEAP_MIN_SLOTS is obsolete. Use RUBY_GC_HEAP_INIT_SLOTS instead.");
 	gc_set_initial_pages();
     }
 
     get_envparam_double("RUBY_GC_HEAP_GROWTH_FACTOR", &gc_params.growth_factor, 1.0);
-    get_envparam_int   ("RUBY_GC_HEAP_GROWTH_MAX_SLOTS", &gc_params.growth_max_slots, 0);
+    get_envparam_size  ("RUBY_GC_HEAP_GROWTH_MAX_SLOTS", &gc_params.growth_max_slots, 0);
+    get_envparam_double("RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR", &gc_params.oldobject_limit_factor, 0.0);
 
-    get_envparam_int("RUBY_GC_MALLOC_LIMIT", &gc_params.malloc_limit_min, 0);
-    get_envparam_int("RUBY_GC_MALLOC_LIMIT_MAX", &gc_params.malloc_limit_max, 0);
+    get_envparam_size  ("RUBY_GC_MALLOC_LIMIT", &gc_params.malloc_limit_min, 0);
+    get_envparam_size  ("RUBY_GC_MALLOC_LIMIT_MAX", &gc_params.malloc_limit_max, 0);
     get_envparam_double("RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR", &gc_params.malloc_limit_growth_factor, 1.0);
 
 #ifdef RGENGC_ESTIMATE_OLDMALLOC
-    get_envparam_int("RUBY_GC_OLDMALLOC_LIMIT", &gc_params.oldmalloc_limit_min, 0);
-    get_envparam_int("RUBY_GC_OLDMALLOC_LIMIT_MAX", &gc_params.oldmalloc_limit_max, 0);
+    if (get_envparam_size("RUBY_GC_OLDMALLOC_LIMIT", &gc_params.oldmalloc_limit_min, 0)) {
+	rb_objspace_t *objspace = &rb_objspace;
+	objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
+    }
+    get_envparam_size  ("RUBY_GC_OLDMALLOC_LIMIT_MAX", &gc_params.oldmalloc_limit_max, 0);
     get_envparam_double("RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR", &gc_params.oldmalloc_limit_growth_factor, 1.0);
 #endif
-}
-
-void
-rb_gc_set_params(void)
-{
-    ruby_gc_set_params(rb_safe_level());
 }
 
 void

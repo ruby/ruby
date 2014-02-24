@@ -359,7 +359,6 @@ class TestSocket < Test::Unit::TestCase
             # Mac OS X may sets IFDISABLED as FreeBSD does
             ulSIOCGIFFLAGS = 3223349521
             ulSIOCGIFINFO_IN6 = 3224398156
-            ulSIOCGIFAFLAG_IN6 = 3240126793
             ulIFF_POINTOPOINT = 0x10
             ulND6_IFF_IFDISABLED = 8
             in6_ondireq = ifr_name
@@ -403,7 +402,7 @@ class TestSocket < Test::Unit::TestCase
               raise "no response from #{ai.inspect} #{nd6options}ping=#{ping_p}"
             end
             msg2, addr = s.recvmsg
-            msg2, remote_address, local_address = Marshal.load(msg2)
+            msg2, _, _ = Marshal.load(msg2)
             assert_equal(msg1, msg2)
             assert_equal(ai.ip_address, addr.ip_address)
           }
@@ -454,7 +453,7 @@ class TestSocket < Test::Unit::TestCase
       Addrinfo.udp("127.0.0.1", 0).bind {|s2|
         s1.setsockopt(:SOCKET, :TIMESTAMP, true)
         s2.send "a", 0, s1.local_address
-        msg, addr, rflags, stamp = s1.recvmsg
+        msg, _, _, stamp = s1.recvmsg
         assert_equal("a", msg)
         assert(stamp.cmsg_is?(:SOCKET, :TIMESTAMP))
       }
@@ -481,7 +480,7 @@ class TestSocket < Test::Unit::TestCase
           return
         end
         s2.send "a", 0, s1.local_address
-        msg, addr, rflags, stamp = s1.recvmsg
+        msg, _, _, stamp = s1.recvmsg
         assert_equal("a", msg)
         assert(stamp.cmsg_is?(:SOCKET, :TIMESTAMPNS))
       }
@@ -503,7 +502,7 @@ class TestSocket < Test::Unit::TestCase
       Addrinfo.udp("127.0.0.1", 0).bind {|s2|
         s1.setsockopt(:SOCKET, :BINTIME, true)
         s2.send "a", 0, s1.local_address
-        msg, addr, rflags, stamp = s1.recvmsg
+        msg, _, _, stamp = s1.recvmsg
         assert_equal("a", msg)
         assert(stamp.cmsg_is?(:SOCKET, :BINTIME))
       }

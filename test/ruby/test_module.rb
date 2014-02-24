@@ -364,6 +364,17 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:MIXIN, :USER], User.constants.sort)
   end
 
+  def test_self_initialize_copy
+    bug9535 = '[ruby-dev:47989] [Bug #9535]'
+    m = Module.new do
+      def foo
+        :ok
+      end
+      initialize_copy(self)
+    end
+    assert_equal(:ok, Object.new.extend(m).foo, bug9535)
+  end
+
   def test_dup
     bug6454 = '[ruby-core:45132]'
 
@@ -651,6 +662,11 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) { c1.const_set(:foo, :foo) }
     assert_raise(NameError) { c1.const_set("bar", :foo) }
     assert_raise(TypeError) { c1.const_set(1, :foo) }
+    assert_nothing_raised(NameError) { c1.const_set("X\u{3042}", :foo) }
+    assert_raise(NameError) { c1.const_set("X\u{3042}".encode("utf-16be"), :foo) }
+    assert_raise(NameError) { c1.const_set("X\u{3042}".encode("utf-16le"), :foo) }
+    assert_raise(NameError) { c1.const_set("X\u{3042}".encode("utf-32be"), :foo) }
+    assert_raise(NameError) { c1.const_set("X\u{3042}".encode("utf-32le"), :foo) }
   end
 
   def test_const_get_invalid_name

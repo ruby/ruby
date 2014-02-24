@@ -168,16 +168,29 @@ pair_yield(VALUE pair)
 
 #if defined HAVE_SOCKETPAIR
 
+#ifdef SOCK_CLOEXEC
 static int
 rsock_socketpair0(int domain, int type, int protocol, int sv[2])
 {
     int ret;
+    static int cloexec_state = -1; /* <0: unknown, 0: ignored, >0: working */
 
-#ifdef SOCK_CLOEXEC
-    static int try_sock_cloexec = 1;
-    if (try_sock_cloexec) {
+    if (cloexec_state > 0) { /* common path, if SOCK_CLOEXEC is defined */
         ret = socketpair(domain, type|SOCK_CLOEXEC, protocol, sv);
-        if (ret == -1 && errno == EINVAL) {
+        if (ret == 0 && (sv[0] <= 2 || sv[1] <= 2)) {
+            goto fix_cloexec; /* highly unlikely */
+        }
+        goto update_max_fd;
+    }
+    else if (cloexec_state < 0) { /* usually runs once only for detection */
+        ret = socketpair(domain, type|SOCK_CLOEXEC, protocol, sv);
+        if (ret == 0) {
+            cloexec_state = rsock_detect_cloexec(sv[0]);
+            if ((cloexec_state == 0) || (sv[0] <= 2 || sv[1] <= 2))
+                goto fix_cloexec;
+            goto update_max_fd;
+        }
+        else if (ret == -1 && errno == EINVAL) {
             /* SOCK_CLOEXEC is available since Linux 2.6.27.  Linux 2.6.18 fails with EINVAL */
             ret = socketpair(domain, type, protocol, sv);
             if (ret != -1) {
@@ -185,26 +198,41 @@ rsock_socketpair0(int domain, int type, int protocol, int sv[2])
                  * So disable SOCK_CLOEXEC only if socketpair() succeeds without SOCK_CLOEXEC.
                  * Ex. Socket.pair(:UNIX, 0xff) fails with EINVAL.
                  */
-                try_sock_cloexec = 0;
+                cloexec_state = 0;
             }
         }
     }
-    else {
+    else { /* cloexec_state == 0 */
         ret = socketpair(domain, type, protocol, sv);
     }
-#else
-    ret = socketpair(domain, type, protocol, sv);
-#endif
-
     if (ret == -1) {
         return -1;
     }
 
-    rb_fd_fix_cloexec(sv[0]);
-    rb_fd_fix_cloexec(sv[1]);
+fix_cloexec:
+    rb_maygvl_fd_fix_cloexec(sv[0]);
+    rb_maygvl_fd_fix_cloexec(sv[1]);
+
+update_max_fd:
+    rb_update_max_fd(sv[0]);
+    rb_update_max_fd(sv[1]);
 
     return ret;
 }
+#else /* !SOCK_CLOEXEC */
+static int
+rsock_socketpair0(int domain, int type, int protocol, int sv[2])
+{
+    int ret = socketpair(domain, type, protocol, sv);
+
+    if (ret == -1)
+	return -1;
+
+    rb_fd_fix_cloexec(sv[0]);
+    rb_fd_fix_cloexec(sv[1]);
+    return ret;
+}
+#endif /* !SOCK_CLOEXEC */
 
 static int
 rsock_socketpair(int domain, int type, int protocol, int sv[2])
@@ -267,8 +295,6 @@ rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass)
     if (ret < 0) {
 	rb_sys_fail("socketpair(2)");
     }
-    rb_fd_fix_cloexec(sp[0]);
-    rb_fd_fix_cloexec(sp[1]);
 
     s1 = rsock_init_sock(rb_obj_alloc(klass), sp[0]);
     s2 = rsock_init_sock(rb_obj_alloc(klass), sp[1]);
@@ -1029,7 +1055,7 @@ sock_gethostname(VALUE obj)
 #endif
 
 static VALUE
-make_addrinfo(struct addrinfo *res0, int norevlookup)
+make_addrinfo(struct rb_addrinfo *res0, int norevlookup)
 {
     VALUE base, ary;
     struct addrinfo *res;
@@ -1038,7 +1064,7 @@ make_addrinfo(struct addrinfo *res0, int norevlookup)
 	rb_raise(rb_eSocket, "host not found");
     }
     base = rb_ary_new();
-    for (res = res0; res; res = res->ai_next) {
+    for (res = res0->ai; res; res = res->ai_next) {
 	ary = rsock_ipaddr(res->ai_addr, res->ai_addrlen, norevlookup);
 	if (res->ai_canonname) {
 	    RARRAY_PTR(ary)[2] = rb_str_new2(res->ai_canonname);
@@ -1261,7 +1287,8 @@ static VALUE
 sock_s_getaddrinfo(int argc, VALUE *argv)
 {
     VALUE host, port, family, socktype, protocol, flags, ret, revlookup;
-    struct addrinfo hints, *res;
+    struct addrinfo hints;
+    struct rb_addrinfo *res;
     int norevlookup;
 
     rb_scan_args(argc, argv, "25", &host, &port, &family, &socktype, &protocol, &flags, &revlookup);
@@ -1284,7 +1311,7 @@ sock_s_getaddrinfo(int argc, VALUE *argv)
     res = rsock_getaddrinfo(host, port, &hints, 0);
 
     ret = make_addrinfo(res, norevlookup);
-    freeaddrinfo(res);
+    rb_freeaddrinfo(res);
     return ret;
 }
 
@@ -1317,7 +1344,8 @@ sock_s_getnameinfo(int argc, VALUE *argv)
     char *hptr, *pptr;
     char hbuf[1024], pbuf[1024];
     int fl;
-    struct addrinfo hints, *res = NULL, *r;
+    struct rb_addrinfo *res = NULL;
+    struct addrinfo hints, *r;
     int error;
     union_sockaddr ss;
     struct sockaddr *sap;
@@ -1402,8 +1430,8 @@ sock_s_getnameinfo(int argc, VALUE *argv)
         hints.ai_family = NIL_P(af) ? PF_UNSPEC : rsock_family_arg(af);
 	error = rb_getaddrinfo(hptr, pptr, &hints, &res);
 	if (error) goto error_exit_addr;
-	sap = res->ai_addr;
-        salen = res->ai_addrlen;
+	sap = res->ai->ai_addr;
+        salen = res->ai->ai_addrlen;
     }
     else {
 	rb_raise(rb_eTypeError, "expecting String or Array");
@@ -1414,7 +1442,7 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 			   pbuf, sizeof(pbuf), fl);
     if (error) goto error_exit_name;
     if (res) {
-	for (r = res->ai_next; r; r = r->ai_next) {
+	for (r = res->ai->ai_next; r; r = r->ai_next) {
 	    char hbuf2[1024], pbuf2[1024];
 
 	    sap = r->ai_addr;
@@ -1423,20 +1451,20 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 				   pbuf2, sizeof(pbuf2), fl);
 	    if (error) goto error_exit_name;
 	    if (strcmp(hbuf, hbuf2) != 0|| strcmp(pbuf, pbuf2) != 0) {
-		freeaddrinfo(res);
+		rb_freeaddrinfo(res);
 		rb_raise(rb_eSocket, "sockaddr resolved to multiple nodename");
 	    }
 	}
-	freeaddrinfo(res);
+	rb_freeaddrinfo(res);
     }
     return rb_assoc_new(rb_str_new2(hbuf), rb_str_new2(pbuf));
 
   error_exit_addr:
-    if (res) freeaddrinfo(res);
+    if (res) rb_freeaddrinfo(res);
     rsock_raise_socket_error("getaddrinfo", error);
 
   error_exit_name:
-    if (res) freeaddrinfo(res);
+    if (res) rb_freeaddrinfo(res);
     rsock_raise_socket_error("getnameinfo", error);
 
     UNREACHABLE;
@@ -1459,10 +1487,10 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 static VALUE
 sock_s_pack_sockaddr_in(VALUE self, VALUE port, VALUE host)
 {
-    struct addrinfo *res = rsock_addrinfo(host, port, 0, 0);
-    VALUE addr = rb_str_new((char*)res->ai_addr, res->ai_addrlen);
+    struct rb_addrinfo *res = rsock_addrinfo(host, port, 0, 0);
+    VALUE addr = rb_str_new((char*)res->ai->ai_addr, res->ai->ai_addrlen);
 
-    freeaddrinfo(res);
+    rb_freeaddrinfo(res);
     OBJ_INFECT(addr, port);
     OBJ_INFECT(addr, host);
 

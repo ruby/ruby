@@ -515,12 +515,16 @@ static inline int rb_type(VALUE obj);
 static inline volatile VALUE *rb_gc_guarded_ptr(volatile VALUE *ptr) {return ptr;}
 #pragma optimize("", on)
 #else
-volatile VALUE *rb_gc_guarded_ptr(volatile VALUE *ptr);
-#define HAVE_RB_GC_GUARDED_PTR 1
+volatile VALUE *rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val);
+#define HAVE_RB_GC_GUARDED_PTR_VAL 1
+#define RB_GC_GUARD(v) (*rb_gc_guarded_ptr_val(&(v),(v)))
 #endif
 #define RB_GC_GUARD_PTR(ptr) rb_gc_guarded_ptr(ptr)
 #endif
+
+#ifndef RB_GC_GUARD
 #define RB_GC_GUARD(v) (*RB_GC_GUARD_PTR(&(v)))
+#endif
 
 #ifdef __GNUC__
 #define RB_UNUSED_VAR(x) x __attribute__ ((unused))
@@ -541,13 +545,10 @@ char *rb_string_value_cstr(volatile VALUE*);
 #define StringValueCStr(v) rb_string_value_cstr(&(v))
 
 void rb_check_safe_obj(VALUE);
-DEPRECATED(void rb_check_safe_str(VALUE));
 #define SafeStringValue(v) do {\
     StringValue(v);\
     rb_check_safe_obj(v);\
 } while (0)
-/* obsolete macro - use SafeStringValue(v) */
-#define Check_SafeStr(v) rb_check_safe_str((VALUE)(v))
 
 VALUE rb_str_export(VALUE);
 #define ExportStringValue(v) do {\
@@ -1072,47 +1073,9 @@ struct RStruct {
 #define RSTRUCT_SET(st, idx, v) RB_OBJ_WRITE(st, &RSTRUCT_CONST_PTR(st)[idx], (v))
 #define RSTRUCT_GET(st, idx)    (RSTRUCT_CONST_PTR(st)[idx])
 
-#define RBIGNUM_EMBED_LEN_NUMBITS 3
-#ifndef RBIGNUM_EMBED_LEN_MAX
-# if (SIZEOF_VALUE*3/SIZEOF_ACTUAL_BDIGIT) < (1 << RBIGNUM_EMBED_LEN_NUMBITS)-1
-#   define RBIGNUM_EMBED_LEN_MAX (SIZEOF_VALUE*3/SIZEOF_ACTUAL_BDIGIT)
-# else
-#   define RBIGNUM_EMBED_LEN_MAX ((1 << RBIGNUM_EMBED_LEN_NUMBITS)-1)
-# endif
-#endif
-struct RBignum {
-    struct RBasic basic;
-    union {
-        struct {
-            long len;
-            BDIGIT *digits;
-        } heap;
-        BDIGIT ary[RBIGNUM_EMBED_LEN_MAX];
-    } as;
-};
-#define RBIGNUM_SIGN_BIT FL_USER1
-/* sign: positive:1, negative:0 */
-#define RBIGNUM_SIGN(b) ((RBASIC(b)->flags & RBIGNUM_SIGN_BIT) != 0)
-#define RBIGNUM_SET_SIGN(b,sign) \
-  ((sign) ? (RBASIC(b)->flags |= RBIGNUM_SIGN_BIT) \
-          : (RBASIC(b)->flags &= ~RBIGNUM_SIGN_BIT))
-#define RBIGNUM_POSITIVE_P(b) RBIGNUM_SIGN(b)
-#define RBIGNUM_NEGATIVE_P(b) (!RBIGNUM_SIGN(b))
-
-#define RBIGNUM_EMBED_FLAG FL_USER2
-#define RBIGNUM_EMBED_LEN_MASK (FL_USER5|FL_USER4|FL_USER3)
-#define RBIGNUM_EMBED_LEN_SHIFT (FL_USHIFT+RBIGNUM_EMBED_LEN_NUMBITS)
-#define RBIGNUM_LEN(b) \
-    ((RBASIC(b)->flags & RBIGNUM_EMBED_FLAG) ? \
-     (long)((RBASIC(b)->flags >> RBIGNUM_EMBED_LEN_SHIFT) & \
-            (RBIGNUM_EMBED_LEN_MASK >> RBIGNUM_EMBED_LEN_SHIFT)) : \
-     RBIGNUM(b)->as.heap.len)
-/* LSB:RBIGNUM_DIGITS(b)[0], MSB:RBIGNUM_DIGITS(b)[RBIGNUM_LEN(b)-1] */
-#define RBIGNUM_DIGITS(b) \
-    ((RBASIC(b)->flags & RBIGNUM_EMBED_FLAG) ? \
-     RBIGNUM(b)->as.ary : \
-     RBIGNUM(b)->as.heap.digits)
-#define RBIGNUM_LENINT(b) rb_long2int(RBIGNUM_LEN(b))
+#define RBIGNUM_SIGN(b) (FIX2LONG(rb_big_cmp((b), INT2FIX(0))) >= 0)
+#define RBIGNUM_POSITIVE_P(b) (FIX2LONG(rb_big_cmp((b), INT2FIX(0))) >= 0)
+#define RBIGNUM_NEGATIVE_P(b) (FIX2LONG(rb_big_cmp((b), INT2FIX(0))) < 0)
 
 #define R_CAST(st)   (struct st*)
 #define RBASIC(obj)  (R_CAST(RBasic)(obj))
@@ -1127,7 +1090,6 @@ struct RBignum {
 #define RDATA(obj)   (R_CAST(RData)(obj))
 #define RTYPEDDATA(obj)   (R_CAST(RTypedData)(obj))
 #define RSTRUCT(obj) (R_CAST(RStruct)(obj))
-#define RBIGNUM(obj) (R_CAST(RBignum)(obj))
 #define RFILE(obj)   (R_CAST(RFile)(obj))
 #define RRATIONAL(obj) (R_CAST(RRational)(obj))
 #define RCOMPLEX(obj) (R_CAST(RComplex)(obj))
@@ -1175,14 +1137,14 @@ struct RBignum {
 #define FL_UNSET(x,f) do {if (FL_ABLE(x)) RBASIC(x)->flags &= ~(f);} while (0)
 #define FL_REVERSE(x,f) do {if (FL_ABLE(x)) RBASIC(x)->flags ^= (f);} while (0)
 
+#define OBJ_TAINTABLE(x) (FL_ABLE(x) && BUILTIN_TYPE(x) != T_BIGNUM && BUILTIN_TYPE(x) != T_FLOAT)
 #define OBJ_TAINTED(x) (!!FL_TEST((x), FL_TAINT))
-#define OBJ_TAINT(x) FL_SET((x), FL_TAINT)
+#define OBJ_TAINT(x) (OBJ_TAINTABLE(x) ? (RBASIC(x)->flags |= FL_TAINT) : 0)
 #define OBJ_UNTRUSTED(x) OBJ_TAINTED(x)
 #define OBJ_UNTRUST(x) OBJ_TAINT(x)
-#define OBJ_INFECT(x,s) do { \
-  if (FL_ABLE(x) && FL_ABLE(s)) \
-    RBASIC(x)->flags |= RBASIC(s)->flags & FL_TAINT; \
-} while (0)
+#define OBJ_INFECT(x,s) ( \
+    (OBJ_TAINTABLE(x) && FL_ABLE(s)) ? \
+    RBASIC(x)->flags |= RBASIC(s)->flags & FL_TAINT : 0)
 
 #define OBJ_FROZEN(x) (!!(FL_ABLE(x)?(RBASIC(x)->flags&(FL_FREEZE)):(FIXNUM_P(x)||FLONUM_P(x)||SYMBOL_P(x))))
 #define OBJ_FREEZE(x) FL_SET((x), FL_FREEZE)

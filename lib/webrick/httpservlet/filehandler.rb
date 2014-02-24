@@ -487,6 +487,7 @@ module WEBrick
         res.body << "</TR></THEAD>\n"
         res.body << "<TBODY>\n"
 
+        query.sub!(/\A&/, '?')
         list.unshift [ "..", File::mtime(local_path+"/.."), -1 ]
         list.each{ |name, time, size|
           if name == ".."
@@ -496,7 +497,7 @@ module WEBrick
           else
             dname = name
           end
-          s =  "<TR><TD class=\"name\"><A HREF=\"#{HTTPUtils::escape(name)}\">#{HTMLUtils::escape(dname)}</A></TD>"
+          s =  "<TR><TD class=\"name\"><A HREF=\"#{HTTPUtils::escape(name)}#{query if name.end_with?('/')}\">#{HTMLUtils::escape(dname)}</A></TD>"
           s << "<TD class=\"mtime\">" << (time ? time.strftime("%Y/%m/%d %H:%M") : "") << "</TD>"
           s << "<TD class=\"size\">" << (size >= 0 ? size.to_s : "-") << "</TD></TR>\n"
           res.body << s

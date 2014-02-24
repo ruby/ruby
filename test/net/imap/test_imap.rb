@@ -275,7 +275,6 @@ class IMAPTest < Test::Unit::TestCase
   def test_idle_done_not_during_idle
     server = create_tcp_server
     port = server.addr[1]
-    requests = []
     Thread.start do
       begin
         sock = server.accept
@@ -384,7 +383,6 @@ class IMAPTest < Test::Unit::TestCase
     begin
       imap = Net::IMAP.new(SERVER_ADDR, :port => port)
       begin
-        th = Thread.current
         m = Monitor.new
         in_idle = false
         exception_raised = false

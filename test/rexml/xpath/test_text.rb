@@ -3,7 +3,7 @@ require 'rexml/document'
 require 'rexml/element'
 require 'rexml/xpath'
 
-class XpathTestCase < Test::Unit::TestCase
+class TestXPathText < Test::Unit::TestCase
   def setup
     @doc = REXML::Document.new
   end

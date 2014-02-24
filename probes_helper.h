@@ -10,7 +10,7 @@ VALUE rb_class_path_no_cache(VALUE _klass);
 do { \
     if (RUBY_DTRACE_##name##_ENABLED()) { \
 	VALUE _klass = (klazz); \
-	VALUE _id = (id); \
+	ID _id = (id); \
 	const char * classname; \
 	const char * methodname; \
 	const char * filename; \

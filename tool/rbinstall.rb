@@ -600,6 +600,15 @@ end
       GEMSPEC
     end
 
+    def add_dependency(*)
+    end
+
+    def add_development_dependency(*)
+    end
+
+    def add_runtime_dependency(*)
+    end
+
     def self.unresolved_deps
       []
     end

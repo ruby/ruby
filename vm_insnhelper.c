@@ -927,11 +927,11 @@ check_match(VALUE pattern, VALUE target, enum vm_check_match_type type)
 	VALUE defined_class;
 	rb_method_entry_t *me = rb_method_entry_with_refinements(CLASS_OF(pattern), idEqq, &defined_class);
 	if (me) {
-	  return vm_call0(GET_THREAD(), pattern, idEqq, 1, &target, me, defined_class);
+	    return vm_call0(GET_THREAD(), pattern, idEqq, 1, &target, me, defined_class);
 	}
 	else {
-	  /* fallback to funcall (e.g. method_missing) */
-	  return rb_funcall2(pattern, idEqq, 1, &target);
+	    /* fallback to funcall (e.g. method_missing) */
+	    return rb_funcall2(pattern, idEqq, 1, &target);
 	}
       }
       default:
@@ -1829,7 +1829,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		    ci->me = me;
 		    ci->defined_class = defined_class;
 		    if (me->def->type != VM_METHOD_TYPE_REFINED) {
-			goto normal_method_dispatch;
+			goto start_method_dispatch;
 		    }
 		}
 
@@ -1838,11 +1838,8 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		    ci->me = ci->me->def->body.orig_me;
 		    if (UNDEFINED_METHOD_ENTRY_P(ci->me)) {
 			ci->me = 0;
-			goto start_method_dispatch;
 		    }
-		    else {
-			goto normal_method_dispatch;
-		    }
+		    goto start_method_dispatch;
 		}
 		else {
 		    klass = ci->me->klass;

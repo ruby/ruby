@@ -64,8 +64,8 @@ class TestSocketNonblock < Test::Unit::TestCase
     mesg, inet_addr = u1.recvfrom_nonblock(100)
     assert_equal(4, inet_addr.length)
     assert_equal("aaa", mesg)
-    af, port, host, addr = inet_addr
-    u2_port, u2_addr = Socket.unpack_sockaddr_in(u2.getsockname)
+    _, port, _, _ = inet_addr
+    u2_port, _ = Socket.unpack_sockaddr_in(u2.getsockname)
     assert_equal(u2_port, port)
     assert_raise(IO::WaitReadable) { u1.recvfrom_nonblock(100) }
     u2.send("", 0, u1.getsockname)
@@ -111,8 +111,8 @@ class TestSocketNonblock < Test::Unit::TestCase
     IO.select [s1]
     mesg, sockaddr = s1.recvfrom_nonblock(100)
     assert_equal("aaa", mesg)
-    port, addr = Socket.unpack_sockaddr_in(sockaddr)
-    s2_port, s2_addr = Socket.unpack_sockaddr_in(s2.getsockname)
+    port, _ = Socket.unpack_sockaddr_in(sockaddr)
+    s2_port, _ = Socket.unpack_sockaddr_in(s2.getsockname)
     assert_equal(s2_port, port)
   ensure
     s1.close if s1
@@ -121,7 +121,7 @@ class TestSocketNonblock < Test::Unit::TestCase
 
   def tcp_pair
     serv = TCPServer.new("127.0.0.1", 0)
-    af, port, host, addr = serv.addr
+    _, port, _, addr = serv.addr
     c = TCPSocket.new(addr, port)
     s = serv.accept
     if block_given?
@@ -268,7 +268,7 @@ class TestSocketNonblock < Test::Unit::TestCase
 
   def test_connect_nonblock_error
     serv = TCPServer.new("127.0.0.1", 0)
-    af, port, host, addr = serv.addr
+    _, port, _, _ = serv.addr
     c = Socket.new(:INET, :STREAM)
     begin
       c.connect_nonblock(Socket.sockaddr_in(port, "127.0.0.1"))
@@ -284,7 +284,6 @@ class TestSocketNonblock < Test::Unit::TestCase
     serv = Socket.new(:INET, :STREAM)
     serv.bind(Socket.sockaddr_in(0, "127.0.0.1"))
     serv.listen(5)
-    port = serv.local_address.ip_port
     begin
       s, _ = serv.accept_nonblock
     rescue Errno::EWOULDBLOCK

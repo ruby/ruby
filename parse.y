@@ -10228,7 +10228,7 @@ rb_enc_symname_p(const char *name, rb_encoding *enc)
 }
 
 #define IDSET_ATTRSET_FOR_SYNTAX ((1U<<ID_LOCAL)|(1U<<ID_CONST))
-#define IDSET_ATTRSET_FOR_INTERN (~(~0U<<ID_SCOPE_MASK) & ~(1U<<ID_ATTRSET))
+#define IDSET_ATTRSET_FOR_INTERN (~(~0U<<(1<<ID_SCOPE_SHIFT)) & ~(1U<<ID_ATTRSET))
 
 static int
 rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int allowed_attrset)
@@ -10237,6 +10237,7 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int a
     const char *e = m + len;
     int type = ID_JUNK;
 
+    if (!rb_enc_asciicompat(enc)) return -1;
     if (!m || len <= 0) return -1;
     switch (*m) {
       case '\0':
@@ -10314,7 +10315,8 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int a
 	    if (type == ID_GLOBAL || type == ID_CLASS || type == ID_INSTANCE) return -1;
 	    type = ID_JUNK;
 	    ++m;
-	    break;
+	    if (m + 1 < e || *m != '=') break;
+	    /* fall through */
 	  case '=':
 	    if (!(allowed_attrset & (1U << type))) return -1;
 	    type = ID_ATTRSET;
@@ -10413,6 +10415,15 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
 }
 
 static ID
+next_id_base(void)
+{
+    if (global_symbols.last_id >= ~(ID)0 >> (ID_SCOPE_SHIFT+RUBY_SPECIAL_SHIFT)) {
+	return (ID)-1;
+    }
+    return ++global_symbols.last_id << ID_SCOPE_SHIFT;
+}
+
+static ID
 intern_str(VALUE str)
 {
     const char *name, *m, *e;
@@ -10420,6 +10431,7 @@ intern_str(VALUE str)
     rb_encoding *enc, *symenc;
     unsigned char c;
     ID id;
+    ID nid;
     int mb;
 
     RSTRING_GETMEM(str, name, len);
@@ -10510,7 +10522,7 @@ intern_str(VALUE str)
     if (sym_check_asciionly(str)) symenc = rb_usascii_encoding();
   new_id:
     if (symenc != enc) rb_enc_associate(str, symenc);
-    if (global_symbols.last_id >= ~(ID)0 >> (ID_SCOPE_SHIFT+RUBY_SPECIAL_SHIFT)) {
+    if ((nid = next_id_base()) == (ID)-1) {
 	if (len > 20) {
 	    rb_raise(rb_eRuntimeError, "symbol table overflow (symbol %.20s...)",
 		     name);
@@ -10520,7 +10532,7 @@ intern_str(VALUE str)
 		     (int)len, name);
 	}
     }
-    id |= ++global_symbols.last_id << ID_SCOPE_SHIFT;
+    id |= nid;
   id_register:
     return register_symid_str(id, str);
 }
@@ -10625,6 +10637,12 @@ rb_id2name(ID id)
 
     if (!str) return 0;
     return RSTRING_PTR(str);
+}
+
+ID
+rb_make_internal_id(void)
+{
+    return next_id_base() | ID_INTERNAL;
 }
 
 static int

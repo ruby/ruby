@@ -127,16 +127,6 @@ rb_check_safe_obj(VALUE x)
 }
 
 void
-rb_check_safe_str(VALUE x)
-{
-    rb_check_safe_obj(x);
-    if (!RB_TYPE_P(x, T_STRING)) {
-	rb_raise(rb_eTypeError, "wrong argument type %s (expected String)",
-		 rb_obj_classname(x));
-    }
-}
-
-void
 Init_safe(void)
 {
     rb_define_virtual_variable("$SAFE", safe_getter, safe_setter);

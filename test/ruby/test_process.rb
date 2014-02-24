@@ -1777,6 +1777,8 @@ EOS
 
   def test_clock_getres
     r = Process.clock_getres(Process::CLOCK_REALTIME, :nanosecond)
+  rescue Errno::EINVAL
+  else
     assert_kind_of(Integer, r)
     assert_raise(Errno::EINVAL) { Process.clock_getres(:foo) }
   end
@@ -1860,4 +1862,52 @@ EOS
     assert_kind_of(Float, t, "Process.clock_getres(:#{n})")
   end
 
+  def test_deadlock_by_signal_at_forking
+    ruby = EnvUtil.rubybin
+    er, ew = IO.pipe
+    unless runner = IO.popen("-")
+      er.close
+      begin
+        $stderr.reopen($stdout)
+        trap(:QUIT) {}
+        100.times do |i|
+          pid = fork {Process.kill(:QUIT, Process.ppid)}
+          IO.popen(ruby, 'r+'){}
+          Process.wait(pid)
+          $stdout.puts
+          $stdout.flush
+        end
+      ensure
+        ew.puts([Marshal.dump($!)].pack("m0")) if $!
+        ew.close
+      end
+      exit!(true)
+    end
+    ew.close
+    begin
+      loop do
+        Timeout.timeout(5) do
+          runner.readpartial(100)
+        end
+      end
+    rescue EOFError => e
+      _, status = Process.wait2(runner.pid)
+    rescue Timeout::Error => e
+      Process.kill(:INT, runner.pid)
+      raise Marshal.load(er.read.unpack("m")[0])
+    end
+    assert_predicate(status, :success?)
+  ensure
+    er.close unless er.closed?
+    ew.close unless ew.closed?
+    if runner
+      begin
+        Process.kill(:TERM, runner.pid)
+        sleep 1
+        Process.kill(:KILL, runner.pid)
+      rescue Errno::ESRCH
+      end
+      runner.close
+    end
+  end if defined?(fork)
 end

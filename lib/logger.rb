@@ -290,8 +290,8 @@ class Logger
 
   #
   # :call-seq:
-  #   Logger.new(name, shift_age = 7, shift_size = 1048576)
-  #   Logger.new(name, shift_age = 'weekly')
+  #   Logger.new(logdev, shift_age = 7, shift_size = 1048576)
+  #   Logger.new(logdev, shift_age = 'weekly')
   #
   # === Args
   #
@@ -551,6 +551,7 @@ private
         @filename = log
         @shift_age = opt[:shift_age] || 7
         @shift_size = opt[:shift_size] || 1048576
+        @next_rotate_time = next_rotate_time(Time.now, @shift_age) unless @shift_age.is_a?(Integer)
       end
     end
 
@@ -616,8 +617,6 @@ private
       ) if file.size == 0
     end
 
-    SiD = 24 * 60 * 60
-
     def check_shift_log
       if @shift_age.is_a?(Integer)
         # Note: always returns false if '0'.
@@ -626,9 +625,9 @@ private
         end
       else
         now = Time.now
-        period_end = previous_period_end(now)
-        if @dev.stat.mtime <= period_end
-          lock_shift_log { shift_log_period(period_end) }
+        if now >= @next_rotate_time
+          @next_rotate_time = next_rotate_time(now, @shift_age)
+          lock_shift_log { shift_log_period(previous_period_end(now, @shift_age)) }
         end
       end
     end
@@ -699,23 +698,48 @@ private
       @dev = create_logfile(@filename)
       return true
     end
+  end
 
-    def previous_period_end(now)
-      case @shift_age
+  module Period
+    module_function
+
+    SiD = 24 * 60 * 60
+
+    def next_rotate_time(now, shift_age)
+      case shift_age
       when /^daily$/
-        eod(now - 1 * SiD)
+        t = Time.mktime(now.year, now.month, now.mday) + SiD
       when /^weekly$/
-        eod(now - ((now.wday + 1) * SiD))
+        t = Time.mktime(now.year, now.month, now.mday) + SiD * (7 - now.wday)
       when /^monthly$/
-        eod(now - now.mday * SiD)
+        t = Time.mktime(now.year, now.month, 1) + SiD * 31
+        mday = (1 if t.mday > 1)
       else
-        now
+        return now
       end
+      if mday or t.hour.nonzero? or t.min.nonzero? or t.sec.nonzero?
+        t = Time.mktime(t.year, t.month, mday || (t.mday + (t.hour > 12 ? 1 : 0)))
+      end
+      t
     end
 
-    def eod(t)
+    def previous_period_end(now, shift_age)
+      case shift_age
+      when /^daily$/
+        t = Time.mktime(now.year, now.month, now.mday) - SiD / 2
+      when /^weekly$/
+        t = Time.mktime(now.year, now.month, now.mday) - (SiD * (now.wday + 1) + SiD / 2)
+      when /^monthly$/
+        t = Time.mktime(now.year, now.month, 1) - SiD / 2
+      else
+        return now
+      end
       Time.mktime(t.year, t.month, t.mday, 23, 59, 59)
     end
+  end
+
+  class LogDevice
+    include Period
   end
 
 

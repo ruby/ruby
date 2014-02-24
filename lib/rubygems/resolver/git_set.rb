@@ -33,6 +33,8 @@ class Gem::Resolver::GitSet < Gem::Resolver::Set
   attr_reader :specs # :nodoc:
 
   def initialize # :nodoc:
+    super()
+
     @git             = ENV['git'] || 'git'
     @need_submodules = {}
     @repositories    = {}
@@ -91,6 +93,7 @@ class Gem::Resolver::GitSet < Gem::Resolver::Set
     @repositories.each do |name, (repository, reference)|
       source = Gem::Source::Git.new name, repository, reference
       source.root_dir = @root_dir
+      source.remote = @remote
 
       source.specs.each do |spec|
         git_spec = Gem::Resolver::GitSpecification.new self, spec, source

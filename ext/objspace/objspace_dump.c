@@ -174,8 +174,6 @@ dump_object(VALUE obj, struct dump_config *dc)
       case T_STRING:
 	if (STR_EMBED_P(obj))
 	    dump_append(dc, ", \"embedded\":true");
-	if (STR_ASSOC_P(obj))
-	    dump_append(dc, ", \"associated\":true");
 	if (is_broken_string(obj))
 	    dump_append(dc, ", \"broken\":true");
 	if (FL_TEST(obj, RSTRING_FSTR))
@@ -184,7 +182,7 @@ dump_object(VALUE obj, struct dump_config *dc)
 	    dump_append(dc, ", \"shared\":true");
 	else {
 	    dump_append(dc, ", \"bytesize\":%ld", RSTRING_LEN(obj));
-	    if (!STR_EMBED_P(obj) && !STR_NOCAPA_P(obj) && (long)rb_str_capacity(obj) != RSTRING_LEN(obj))
+	    if (!STR_EMBED_P(obj) && !STR_SHARED_P(obj) && (long)rb_str_capacity(obj) != RSTRING_LEN(obj))
 		dump_append(dc, ", \"capacity\":%ld", rb_str_capacity(obj));
 
 	    if (is_ascii_string(obj)) {

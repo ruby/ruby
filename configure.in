@@ -813,10 +813,13 @@ if test "$GCC" = yes; then
     ],
     [
       # ANSI (no XCFLAGS because this is C only)
-      RUBY_TRY_CFLAGS(-ansi -std=iso9899:199409, [
-        RUBY_APPEND_OPTION(warnflags, -ansi -std=iso9899:199409)
-        RUBY_APPEND_OPTION(strict_warnflags, -ansi -std=iso9899:199409)
-      ])
+	for ansi_options in -std=iso9899:1999 "-ansi -std=iso9899:199409"; do
+	    RUBY_TRY_CFLAGS(${ansi_options}, [
+		RUBY_APPEND_OPTIONS(warnflags, ${ansi_options})
+	  	RUBY_APPEND_OPTIONS(strict_warnflags, ${ansi_options})
+	    ], [ansi_options=])
+	    test "x${ansi_options}" = x || break
+	done
     ])
 
     # suppress annoying -Wstrict-overflow warnings
@@ -861,11 +864,16 @@ if test "$GCC" = yes; then
 	[*-darwin*], [
 	    # doesn't seem necessary on Mac OS X
 	],
-	[i[4-6]86], [
+	[[i[4-6]86*]], [
 	    RUBY_TRY_CFLAGS(-msse2 -mfpmath=sse, [
 		RUBY_APPEND_OPTION(XCFLAGS, -msse2 -mfpmath=sse)
-		RUBY_TRY_CFLAGS(-mstackrealign, [RUBY_APPEND_OPTION(XCFLAGS, -mstackrealign)])
 	    ])
+            AS_CASE(["$XCFLAGS"],
+                [[*-msse2*]], [
+                    RUBY_TRY_CFLAGS(-mstackrealign, [
+                        RUBY_APPEND_OPTION(XCFLAGS, -mstackrealign)
+                    ])
+                ])
 	]
     )
 fi
@@ -1910,6 +1918,7 @@ AC_CHECK_FUNCS(mblen)
 AC_CHECK_FUNCS(memalign)
 AC_CHECK_FUNCS(writev)
 AC_CHECK_FUNCS(memrchr)
+AC_CHECK_FUNCS(memmem)
 AC_CHECK_FUNCS(mktime)
 AC_CHECK_FUNCS(pipe2)
 AC_CHECK_FUNCS(poll)
@@ -1917,6 +1926,7 @@ AC_CHECK_FUNCS(posix_fadvise)
 AC_CHECK_FUNCS(posix_memalign)
 AC_CHECK_FUNCS(ppoll)
 AC_CHECK_FUNCS(pread)
+AC_CHECK_FUNCS(qsort_r)
 AC_CHECK_FUNCS(readlink)
 AC_CHECK_FUNCS(round)
 AC_CHECK_FUNCS(seekdir)
@@ -1976,6 +1986,32 @@ RUBY_CHECK_BUILTIN_FUNC(__builtin_clzl, [__builtin_clzl(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_clzll, [__builtin_clzll(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_choose_expr, [__builtin_choose_expr(0, 0, 0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_types_compatible_p, [__builtin_types_compatible_p(int, int)])
+
+if test "$ac_cv_func_qsort_r" != no; then
+  AC_CACHE_CHECK(whether qsort_r is GNU version, rb_cv_gnu_qsort_r,
+    [AC_TRY_COMPILE([
+@%:@include <stdlib.h>
+void qsort_r(void *base, size_t nmemb, size_t size,
+	    int (*compar)(const void *, const void *, void *),
+	    void *arg);
+],[ ],
+      [rb_cv_gnu_qsort_r=yes],
+      [rb_cv_gnu_qsort_r=no])
+  ])
+  AC_CACHE_CHECK(whether qsort_r is BSD version, rb_cv_bsd_qsort_r,
+    [AC_TRY_COMPILE([
+@%:@include <stdlib.h>
+void qsort_r(void *base, size_t nmemb, size_t size,
+	     void *arg, int (*compar)(void *, const void *, const void *));
+],[ ],
+      [rb_cv_bsd_qsort_r=yes],
+      [rb_cv_bsd_qsort_r=no])
+  ])
+  AS_CASE("$rb_cv_gnu_qsort_r:$rb_cv_bsd_qsort_r",
+  [yes:no], [
+    AC_DEFINE(HAVE_GNU_QSORT_R, 1)
+  ])
+fi
 
 # Some platform need -lrt for clock_gettime, but the other don't.
 if test x"$ac_cv_func_clock_gettime" != xyes; then
@@ -2281,64 +2317,6 @@ else
   AC_DEFINE(RSHIFT(x,y), (((x)<0) ? ~((~(x))>>(int)(y)) : (x)>>(int)(y)))
 fi
 
-# win32.c still use this. Don't remove it.
-test "$rb_cv_fcnt" = "not found" && rb_cv_fcnt="not found (OK if using GNU libc)"
-AC_CACHE_CHECK([read count field in FILE structures], rb_cv_fcnt,
-[rb_cv_fcnt="not found (OK if using GNU libc)"
-for fcnt in	dnl
-     _cnt	dnl
-     __cnt	dnl
-     _r		dnl
-     readCount	dnl
-     _rcount	dnl for emx0.9c
-; do
-    AC_TRY_COMPILE([#include <stdio.h>
-],
-	[FILE *f = stdin; f->$fcnt = 0;],
-	[rb_cv_fcnt="$fcnt"; break])
-done])
-AS_CASE("$rb_cv_fcnt",
-	["not found"*], [rb_cv_fcnt="not found"],
-	[AC_DEFINE_UNQUOTED(FILE_COUNT, $rb_cv_fcnt)])
-
-# win32.c still use this. Don't remove it.
-AC_CACHE_CHECK([read buffer ptr field in FILE structures], rb_cv_frptr,
-[for frptr in	dnl
-     _IO_read_ptr dnl
-     _ptr	dnl
-     __ptr	dnl
-     bufpos	dnl
-     _p	dnl
-     __bufpos	dnl
-; do
-    AC_TRY_COMPILE([#include <stdio.h>
-],
-	[FILE *f = stdin; char buf[256]; f->$frptr = buf;],
-	rb_cv_frptr="$frptr"; break,
-	rb_cv_frptr="not found")
-done])
-if test "$rb_cv_frptr" != "not found"; then
-  AC_DEFINE_UNQUOTED(FILE_READPTR, $rb_cv_frptr)
-
-  if test "$rb_cv_fcnt" = "not found"; then
-    AC_CACHE_CHECK([read buffer end field in FILE structures], rb_cv_frend,
-    [for frend in	dnl
-         _IO_read_end	dnl
-         bufread 	dnl
-         __bufread 	dnl
-    ; do
-        AC_TRY_COMPILE([#include <stdio.h>
-    ],
-	[FILE *f = stdin; char buf[256]; f->$frend = buf;],
-	rb_cv_frend="$frend"; break,
-	rb_cv_frend="not found")
-    done])
-    if test "$rb_cv_frend" != "not found"; then
-      AC_DEFINE_UNQUOTED(FILE_READEND, $rb_cv_frend)
-    fi
-  fi
-fi
-
 if test x"$ac_cv_func_gettimeofday" != xyes; then
     AC_MSG_ERROR(gettimeofday() must exist)
 fi
@@ -2447,7 +2425,7 @@ if test x"$enable_pthread" = xyes; then
 	pthread_get_stackaddr_np pthread_get_stacksize_np \
 	thr_stksegment pthread_stackseg_np pthread_getthrds_np \
 	pthread_cond_init pthread_condattr_setclock pthread_condattr_init \
-        pthread_sigmask)
+	pthread_sigmask pthread_setname_np)
     if test "${host_os}" = "nacl"; then
       ac_cv_func_pthread_attr_init=no
     else
@@ -2664,7 +2642,7 @@ if test "$with_dln_a_out" != yes; then
 			: ${LDSHARED='$(CC) -shared'}
 			if test "$rb_cv_binary_elf" = yes; then
 			    LDFLAGS="$LDFLAGS -rdynamic"
-			    DLDFLAGS="$DLDFLAGS "'-Wl,-soname,$(.TARGET)'
+			    DLDFLAGS="$DLDFLAGS "'-Wl,-soname,$@'
 			else
 			  test "$GCC" = yes && test "$rb_cv_prog_gnu_ld" = yes || LDSHARED='$(LD) -Bshareable'
 			fi
@@ -2752,7 +2730,7 @@ if test "$with_dln_a_out" != yes; then
 		[*" "], [AS_CASE(["${linker_flag}"],
 				 [*,], [rpathflag=`echo "$rpathflag" | tr ' ' ,`])])
 	rpathflag="${linker_flag}${rpathflag}"
-	RUBY_TRY_LDFLAGS(["${rpathflag}."], [], [rpathflag=])
+	RUBY_TRY_LDFLAGS([${rpathflag}.], [], [rpathflag=])
 	if test "x${rpathflag}" != x; then
 	  RPATHFLAG=" ${rpathflag}%1\$-s"
 	  break
@@ -3551,7 +3529,7 @@ if test "${universal_binary-no}" = yes ; then
     ])])
 fi
 
-AC_CHECK_FUNC(memmem, [
+if test "$ac_cv_func_memmem" = yes; then
   AC_CACHE_CHECK(for broken memmem, rb_cv_broken_memmem, [
     AC_TRY_RUN([
 #include <string.h>
@@ -3581,10 +3559,8 @@ main()
     rb_cv_broken_memmem=yes,
     rb_cv_broken_memmem=yes)
   ])
-  if test "$rb_cv_broken_memmem" = no; then
-    AC_DEFINE(HAVE_MEMMEM, 1)
-  fi
-])
+  test x"$rb_cv_broken_memmem" = xyes && ac_cv_func_memmem=no
+fi
 
 
 CPPFLAGS="$CPPFLAGS "'$(DEFS)'

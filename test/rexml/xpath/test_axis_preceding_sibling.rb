@@ -1,7 +1,7 @@
 require "test/unit/testcase"
 require "rexml/document"
 
-class XPathAxesTester < Test::Unit::TestCase
+class TestXPathAxisPredcedingSibling < Test::Unit::TestCase
   include REXML
   SOURCE = <<-EOF
     <a id='1'>

@@ -31,5 +31,6 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
   DRb.start_service('drbssl://localhost:0', [1, 2, 'III', 4, "five", 6], config)
   es = DRb::ExtServ.new(ARGV.shift, ARGV.shift)
   DRb.thread.join
+  es.stop_service if es.alive?
 end
 

@@ -94,7 +94,7 @@ class TestFind < Test::Unit::TestCase
     skip "no meaning test on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
     Dir.mktmpdir {|d|
       Dir.mkdir(dir = "#{d}/dir")
-      File.open(file = "#{dir}/foo", "w"){}
+      File.open("#{dir}/foo", "w"){}
       begin
         File.chmod(0300, dir)
         a = []
@@ -157,7 +157,7 @@ class TestFind < Test::Unit::TestCase
       File.open(file_b = "#{dir_1}/b", "w"){}
       File.open(file_c = "#{dir_1}/c", "w"){}
       Dir.mkdir(dir_d = "#{dir_1}/d")
-      File.open(file_de = "#{dir_d}/e", "w"){}
+      File.open("#{dir_d}/e", "w"){}
       dir_2 = "#{d}/d2"
       a = []
       Find.find(d) {|f|
@@ -178,7 +178,7 @@ class TestFind < Test::Unit::TestCase
       File.open(file_b = "#{dir_1}/b", "w"){}
       File.open(file_c = "#{dir_1}/c", "w"){}
       Dir.mkdir(dir_d = "#{dir_1}/d")
-      File.open(file_de = "#{dir_d}/e", "w"){}
+      File.open("#{dir_d}/e", "w"){}
       dir_2 = "#{d}/d2"
       a = []
       Find.find(d) {|f|

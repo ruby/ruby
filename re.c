@@ -630,7 +630,7 @@ rb_reg_to_s(VALUE re)
 static void
 rb_reg_raise(const char *s, long len, const char *err, VALUE re)
 {
-    volatile VALUE desc = rb_reg_desc(s, len, re);
+    VALUE desc = rb_reg_desc(s, len, re);
 
     rb_raise(rb_eRegexpError, "%s: %"PRIsVALUE, err, desc);
 }
@@ -2569,13 +2569,12 @@ static VALUE reg_cache;
 VALUE
 rb_reg_regcomp(VALUE str)
 {
-    volatile VALUE save_str = str;
     if (reg_cache && RREGEXP_SRC_LEN(reg_cache) == RSTRING_LEN(str)
 	&& ENCODING_GET(reg_cache) == ENCODING_GET(str)
 	&& memcmp(RREGEXP_SRC_PTR(reg_cache), RSTRING_PTR(str), RSTRING_LEN(str)) == 0)
 	return reg_cache;
 
-    return reg_cache = rb_reg_new_str(save_str, 0);
+    return reg_cache = rb_reg_new_str(str, 0);
 }
 
 static st_index_t reg_hash(VALUE re);

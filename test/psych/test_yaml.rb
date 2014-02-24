@@ -250,7 +250,6 @@ EOY
 
 	def test_spec_mapping_between_sequences
 		# Complex key #1
-		dj = Date.new( 2001, 7, 23 )
 		assert_parse_only(
 			{ [ 'Detroit Tigers', 'Chicago Cubs' ] => [ Date.new( 2001, 7, 23 ) ],
 			  [ 'New York Yankees', 'Atlanta Braves' ] => [ Date.new( 2001, 7, 2 ), Date.new( 2001, 8, 12 ), Date.new( 2001, 8, 14 ) ] }, <<EOY
@@ -606,7 +605,7 @@ EOY
 	def test_spec_domain_prefix
         customer_proc = proc { |type, val|
             if Hash === val
-                scheme, domain, type = type.split( ':', 3 )
+                _, _, type = type.split( ':', 3 )
                 val['type'] = "domain #{type}"
                 val
             else

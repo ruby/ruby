@@ -30,7 +30,7 @@ some or all of the following options.
 
  --with-tcltkversion=<version>
  --with-tcltkversion=<tclversion>,<tkversion>
-      force version of Tcl/Tk libaray
+      force version of Tcl/Tk library
       (e.g. libtcl8.4g.so & libtk8.4g.so ==> --with-tcltkversion=8.4g
             libtcl8.4.so  & libtk8.4g.so ==> --with-tcltkversion=8.4,8.4g)
 

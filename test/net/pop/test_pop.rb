@@ -57,7 +57,7 @@ class TestPOP < Test::Unit::TestCase
   def test_apop_invalid_at
     pop_test(@stamp_base.sub('@', '.')) do |pop|
       assert_instance_of Net::APOP, pop
-      e = assert_raise Net::POPAuthenticationError do
+      assert_raise Net::POPAuthenticationError do
         pop.start(@ok_user, @users[@ok_user])
       end
     end

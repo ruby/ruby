@@ -1,3 +1,4 @@
+gem 'minitest', '< 5.0.0' if defined? Gem
 require 'minitest/unit'
 require 'test/unit/assertions'
 require 'test/unit/testcase'

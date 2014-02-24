@@ -321,7 +321,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
     if (RB_TYPE_P(clone, T_CLASS)) {
 	class_init_copy_check(clone, orig);
     }
-    rb_obj_init_copy(clone, orig);
+    if (!OBJ_INIT_COPY(clone, orig)) return clone;
     if (!FL_TEST(CLASS_OF(clone), FL_SINGLETON)) {
 	RBASIC_SET_CLASS(clone, rb_singleton_class_clone(orig));
 	rb_singleton_class_attached(RBASIC(clone)->klass, (VALUE)clone);
@@ -1289,20 +1289,11 @@ rb_class_public_instance_methods(int argc, VALUE *argv, VALUE mod)
 VALUE
 rb_obj_methods(int argc, VALUE *argv, VALUE obj)
 {
-  retry:
-    if (argc == 0) {
-	return class_instance_method_list(argc, argv, CLASS_OF(obj), 1, ins_methods_i);
-    }
-    else {
-	VALUE recur;
-
-	rb_scan_args(argc, argv, "1", &recur);
-	if (RTEST(recur)) {
-	    argc = 0;
-	    goto retry;
-	}
+    rb_check_arity(argc, 0, 1);
+    if (argc > 0 && !RTEST(argv[0])) {
 	return rb_obj_singleton_methods(argc, argv, obj);
     }
+    return class_instance_method_list(argc, argv, CLASS_OF(obj), 1, ins_methods_i);
 }
 
 /*
@@ -1920,6 +1911,8 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
     (key = (st_data_t)(keyword), values ? \
      st_delete(rb_hash_tbl_raw(keyword_hash), &key, (val)) : \
      st_lookup(rb_hash_tbl_raw(keyword_hash), key, (val)))
+
+    if (NIL_P(keyword_hash)) keyword_hash = 0;
 
     if (optional < 0) {
 	rest = 1;

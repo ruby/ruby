@@ -30,12 +30,6 @@ struct_ivar_get(VALUE c, ID id)
 }
 
 VALUE
-rb_struct_iv_get(VALUE c, const char *name)
-{
-    return struct_ivar_get(c, rb_intern(name));
-}
-
-VALUE
 rb_struct_s_members(VALUE klass)
 {
     VALUE members = struct_ivar_get(klass, id_members);

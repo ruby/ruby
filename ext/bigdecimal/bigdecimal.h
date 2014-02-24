@@ -291,7 +291,7 @@ VP_EXPORT Real *VpOne(void);
 #define VpIsZero(a)     (VpIsPosZero(a) || VpIsNegZero(a))
 #define VpSetPosZero(a) ((a)->frac[0]=0,(a)->Prec=1,(a)->sign=VP_SIGN_POSITIVE_ZERO)
 #define VpSetNegZero(a) ((a)->frac[0]=0,(a)->Prec=1,(a)->sign=VP_SIGN_NEGATIVE_ZERO)
-#define VpSetZero(a,s)  ( ((s)>0)?VpSetPosZero(a):VpSetNegZero(a) )
+#define VpSetZero(a,s)  (void)(((s)>0)?VpSetPosZero(a):VpSetNegZero(a))
 
 /* NaN */
 #define VpIsNaN(a)      ((a)->sign==VP_SIGN_NaN)
@@ -304,7 +304,7 @@ VP_EXPORT Real *VpOne(void);
 #define VpIsDef(a)      ( !(VpIsNaN(a)||VpIsInf(a)) )
 #define VpSetPosInf(a)  ((a)->frac[0]=0,(a)->Prec=1,(a)->sign=VP_SIGN_POSITIVE_INFINITE)
 #define VpSetNegInf(a)  ((a)->frac[0]=0,(a)->Prec=1,(a)->sign=VP_SIGN_NEGATIVE_INFINITE)
-#define VpSetInf(a,s)   ( ((s)>0)?VpSetPosInf(a):VpSetNegInf(a) )
+#define VpSetInf(a,s)   (void)(((s)>0)?VpSetPosInf(a):VpSetNegInf(a))
 #define VpHasVal(a)     (a->frac[0])
 #define VpIsOne(a)      ((a->Prec==1)&&(a->frac[0]==1)&&(a->exponent==1))
 #define VpExponent(a)   (a->exponent)

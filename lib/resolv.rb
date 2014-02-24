@@ -1,5 +1,4 @@
 require 'socket'
-require 'fcntl'
 require 'timeout'
 require 'thread'
 
@@ -522,8 +521,9 @@ class Resolv
           msg.rd = 1
           msg.add_question(candidate, typeclass)
           unless sender = senders[[candidate, nameserver, port]]
-            sender = senders[[candidate, nameserver, port]] =
-              requester.sender(msg, candidate, nameserver, port)
+            sender = requester.sender(msg, candidate, nameserver, port)
+            next if !sender
+            senders[[candidate, nameserver, port]] = sender
           end
           reply, reply_name = requester.request(sender, tout)
           case reply.rcode
@@ -652,7 +652,9 @@ class Resolv
       begin
         port = rangerand(1024..65535)
         udpsock.bind(bind_host, port)
-      rescue Errno::EADDRINUSE, Errno::EACCES
+      rescue Errno::EADDRINUSE, # POSIX
+             Errno::EACCES, # SunOS: See PRIV_SYS_NFS in privileges(5)
+             Errno::EPERM # FreeBSD: security.mac.portacl.port_high is configurable.  See mac_portacl(4).
         retry
       end
     end
@@ -741,9 +743,12 @@ class Resolv
               af = Socket::AF_INET
             end
             next if @socks_hash[bind_host]
-            sock = UDPSocket.new(af)
+            begin
+              sock = UDPSocket.new(af)
+            rescue Errno::EAFNOSUPPORT
+              next # The kernel doesn't support the address family.
+            end
             sock.do_not_reverse_lookup = true
-            sock.fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC) if defined? Fcntl::F_SETFD
             DNS.bind_random_port(sock, bind_host)
             @socks << sock
             @socks_hash[bind_host] = sock
@@ -756,11 +761,12 @@ class Resolv
         end
 
         def sender(msg, data, host, port=Port)
+          sock = @socks_hash[host.index(':') ? "::" : "0.0.0.0"]
+          return nil if !sock
           service = [host, port]
           id = DNS.allocate_request_id(host, port)
           request = msg.encode
           request[0,2] = [id].pack('n')
-          sock = @socks_hash[host.index(':') ? "::" : "0.0.0.0"]
           return @senders[[service, id]] =
             Sender.new(request, data, sock, host, port)
         end
@@ -781,6 +787,7 @@ class Resolv
           attr_reader :data
 
           def send
+            raise "@sock is nil." if @sock.nil?
             @sock.send(@msg, 0, @host, @port)
           end
         end
@@ -795,7 +802,6 @@ class Resolv
           sock = UDPSocket.new(is_ipv6 ? Socket::AF_INET6 : Socket::AF_INET)
           @socks = [sock]
           sock.do_not_reverse_lookup = true
-          sock.fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC) if defined? Fcntl::F_SETFD
           DNS.bind_random_port(sock, is_ipv6 ? "::" : "0.0.0.0")
           sock.connect(host, port)
         end
@@ -824,6 +830,7 @@ class Resolv
 
         class Sender < Requester::Sender # :nodoc:
           def send
+            raise "@sock is nil." if @sock.nil?
             @sock.send(@msg, 0)
           end
           attr_reader :data
@@ -852,7 +859,6 @@ class Resolv
           @port = port
           sock = TCPSocket.new(@host, @port)
           @socks = [sock]
-          sock.fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC) if defined? Fcntl::F_SETFD
           @senders = {}
         end
 
@@ -1520,6 +1526,7 @@ class Resolv
         end
 
         def get_bytes(len = @limit - @index)
+          raise DecodeError.new("limit exceeded") if @limit < @index + len
           d = @data[@index, len]
           @index += len
           return d
@@ -1547,6 +1554,7 @@ class Resolv
         end
 
         def get_string
+          raise DecodeError.new("limit exceeded") if @limit <= @index
           len = @data[@index].ord
           raise DecodeError.new("limit exceeded") if @limit < @index + 1 + len
           d = @data[@index + 1, len]
@@ -1566,29 +1574,33 @@ class Resolv
           return Name.new(self.get_labels)
         end
 
-        def get_labels(limit=nil)
-          limit = @index if !limit || @index < limit
+        def get_labels
+          prev_index = @index
+          save_index = nil
           d = []
           while true
+            raise DecodeError.new("limit exceeded") if @limit <= @index
             case @data[@index].ord
             when 0
               @index += 1
+              if save_index
+                @index = save_index
+              end
               return d
             when 192..255
               idx = self.get_unpack('n')[0] & 0x3fff
-              if limit <= idx
+              if prev_index <= idx
                 raise DecodeError.new("non-backward name pointer")
               end
-              save_index = @index
+              prev_index = idx
+              if !save_index
+                save_index = @index
+              end
               @index = idx
-              d += self.get_labels(limit)
-              @index = save_index
-              return d
             else
               d << self.get_label
             end
           end
-          return d
         end
 
         def get_label

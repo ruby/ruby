@@ -1,8 +1,8 @@
-require_relative "rexml_test_utils"
+require_relative "../rexml_test_utils"
 
 require "rexml/document"
 
-class XPathTester < Test::Unit::TestCase
+class TestXPathBase < Test::Unit::TestCase
   include REXMLTestUtils
   include REXML
   SOURCE = <<-EOF

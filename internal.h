@@ -19,6 +19,27 @@ extern "C" {
 #endif
 #endif
 
+/* likely */
+#if __GNUC__ >= 3
+#define LIKELY(x)   (__builtin_expect((x), 1))
+#define UNLIKELY(x) (__builtin_expect((x), 0))
+#else /* __GNUC__ >= 3 */
+#define LIKELY(x)   (x)
+#define UNLIKELY(x) (x)
+#endif /* __GNUC__ >= 3 */
+
+#ifndef __has_attribute
+# define __has_attribute(x) 0
+#endif
+
+#if __has_attribute(unused)
+#define UNINITIALIZED_VAR(x) x __attribute__((unused))
+#elif defined(__GNUC__) && __GNUC__ >= 3
+#define UNINITIALIZED_VAR(x) x = x
+#else
+#define UNINITIALIZED_VAR(x) x
+#endif
+
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 # include <valgrind/memcheck.h>
 # ifndef VALGRIND_MAKE_MEM_DEFINED
@@ -283,6 +304,105 @@ struct method_table_wrapper {
     st_table *tbl;
     size_t serial;
 };
+
+#ifndef BDIGIT
+# if SIZEOF_INT*2 <= SIZEOF_LONG_LONG
+#  define BDIGIT unsigned int
+#  define SIZEOF_BDIGITS SIZEOF_INT
+#  define BDIGIT_DBL unsigned LONG_LONG
+#  define BDIGIT_DBL_SIGNED LONG_LONG
+#  define PRI_BDIGIT_PREFIX ""
+#  define PRI_BDIGIT_DBL_PREFIX PRI_LL_PREFIX
+# elif SIZEOF_INT*2 <= SIZEOF_LONG
+#  define BDIGIT unsigned int
+#  define SIZEOF_BDIGITS SIZEOF_INT
+#  define BDIGIT_DBL unsigned long
+#  define BDIGIT_DBL_SIGNED long
+#  define PRI_BDIGIT_PREFIX ""
+#  define PRI_BDIGIT_DBL_PREFIX "l"
+# elif SIZEOF_SHORT*2 <= SIZEOF_LONG
+#  define BDIGIT unsigned short
+#  define SIZEOF_BDIGITS SIZEOF_SHORT
+#  define BDIGIT_DBL unsigned long
+#  define BDIGIT_DBL_SIGNED long
+#  define PRI_BDIGIT_PREFIX "h"
+#  define PRI_BDIGIT_DBL_PREFIX "l"
+# else
+#  define BDIGIT unsigned short
+#  define SIZEOF_BDIGITS (SIZEOF_LONG/2)
+#  define SIZEOF_ACTUAL_BDIGIT SIZEOF_LONG
+#  define BDIGIT_DBL unsigned long
+#  define BDIGIT_DBL_SIGNED long
+#  define PRI_BDIGIT_PREFIX "h"
+#  define PRI_BDIGIT_DBL_PREFIX "l"
+# endif
+#endif
+#ifndef SIZEOF_ACTUAL_BDIGIT
+# define SIZEOF_ACTUAL_BDIGIT SIZEOF_BDIGITS
+#endif
+
+#ifdef PRI_BDIGIT_PREFIX
+# define PRIdBDIGIT PRI_BDIGIT_PREFIX"d"
+# define PRIiBDIGIT PRI_BDIGIT_PREFIX"i"
+# define PRIoBDIGIT PRI_BDIGIT_PREFIX"o"
+# define PRIuBDIGIT PRI_BDIGIT_PREFIX"u"
+# define PRIxBDIGIT PRI_BDIGIT_PREFIX"x"
+# define PRIXBDIGIT PRI_BDIGIT_PREFIX"X"
+#endif
+
+#ifdef PRI_BDIGIT_DBL_PREFIX
+# define PRIdBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"d"
+# define PRIiBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"i"
+# define PRIoBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"o"
+# define PRIuBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"u"
+# define PRIxBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"x"
+# define PRIXBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"X"
+#endif
+
+#define BIGNUM_EMBED_LEN_NUMBITS 3
+#ifndef BIGNUM_EMBED_LEN_MAX
+# if (SIZEOF_VALUE*3/SIZEOF_ACTUAL_BDIGIT) < (1 << BIGNUM_EMBED_LEN_NUMBITS)-1
+#   define BIGNUM_EMBED_LEN_MAX (SIZEOF_VALUE*3/SIZEOF_ACTUAL_BDIGIT)
+# else
+#   define BIGNUM_EMBED_LEN_MAX ((1 << BIGNUM_EMBED_LEN_NUMBITS)-1)
+# endif
+#endif
+
+struct RBignum {
+    struct RBasic basic;
+    union {
+        struct {
+            long len;
+            BDIGIT *digits;
+        } heap;
+        BDIGIT ary[BIGNUM_EMBED_LEN_MAX];
+    } as;
+};
+#define BIGNUM_SIGN_BIT FL_USER1
+/* sign: positive:1, negative:0 */
+#define BIGNUM_SIGN(b) ((RBASIC(b)->flags & BIGNUM_SIGN_BIT) != 0)
+#define BIGNUM_SET_SIGN(b,sign) \
+  ((sign) ? (RBASIC(b)->flags |= BIGNUM_SIGN_BIT) \
+          : (RBASIC(b)->flags &= ~BIGNUM_SIGN_BIT))
+#define BIGNUM_POSITIVE_P(b) BIGNUM_SIGN(b)
+#define BIGNUM_NEGATIVE_P(b) (!BIGNUM_SIGN(b))
+
+#define BIGNUM_EMBED_FLAG FL_USER2
+#define BIGNUM_EMBED_LEN_MASK (FL_USER5|FL_USER4|FL_USER3)
+#define BIGNUM_EMBED_LEN_SHIFT (FL_USHIFT+BIGNUM_EMBED_LEN_NUMBITS)
+#define BIGNUM_LEN(b) \
+    ((RBASIC(b)->flags & BIGNUM_EMBED_FLAG) ? \
+     (long)((RBASIC(b)->flags >> BIGNUM_EMBED_LEN_SHIFT) & \
+            (BIGNUM_EMBED_LEN_MASK >> BIGNUM_EMBED_LEN_SHIFT)) : \
+     RBIGNUM(b)->as.heap.len)
+/* LSB:BIGNUM_DIGITS(b)[0], MSB:BIGNUM_DIGITS(b)[BIGNUM_LEN(b)-1] */
+#define BIGNUM_DIGITS(b) \
+    ((RBASIC(b)->flags & BIGNUM_EMBED_FLAG) ? \
+     RBIGNUM(b)->as.ary : \
+     RBIGNUM(b)->as.heap.digits)
+#define BIGNUM_LENINT(b) rb_long2int(BIGNUM_LEN(b))
+
+#define RBIGNUM(obj) (R_CAST(RBignum)(obj))
 
 /* class.c */
 void rb_class_subclass_add(VALUE super, VALUE klass);
@@ -621,6 +741,7 @@ int rb_is_method_name(VALUE name);
 int rb_is_junk_name(VALUE name);
 void rb_gc_mark_parser(void);
 void rb_gc_mark_symbols(int full_mark);
+ID rb_make_internal_id(void);
 
 /* proc.c */
 VALUE rb_proc_location(VALUE self);
@@ -715,14 +836,10 @@ VALUE rb_str_locktmp_ensure(VALUE str, VALUE (*func)(VALUE), VALUE arg);
 #ifdef RUBY_ENCODING_H
 VALUE rb_external_str_with_enc(VALUE str, rb_encoding *eenc);
 #endif
-#define STR_NOEMBED FL_USER1
-#define STR_SHARED  FL_USER2 /* = ELTS_SHARED */
-#define STR_ASSOC   FL_USER3
-#define STR_SHARED_P(s) FL_ALL((s), STR_NOEMBED|ELTS_SHARED)
-#define STR_ASSOC_P(s)  FL_ALL((s), STR_NOEMBED|STR_ASSOC)
-#define STR_NOCAPA  (STR_NOEMBED|ELTS_SHARED|STR_ASSOC)
-#define STR_NOCAPA_P(s) (FL_TEST((s),STR_NOEMBED) && FL_ANY((s),ELTS_SHARED|STR_ASSOC))
+#define STR_NOEMBED      FL_USER1
+#define STR_SHARED       FL_USER2 /* = ELTS_SHARED */
 #define STR_EMBED_P(str) (!FL_TEST((str), STR_NOEMBED))
+#define STR_SHARED_P(s)  FL_ALL((s), STR_NOEMBED|ELTS_SHARED)
 #define is_ascii_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT)
 #define is_broken_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN)
 

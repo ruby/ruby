@@ -121,7 +121,7 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
 
 #ifdef __ia64
 #define RB_GC_SAVE_MACHINE_REGISTER_STACK(th)          \
-    do{(th)->machine_register_stack_end = rb_ia64_bsp();}while(0)
+    do{(th)->machine.register_stack_end = rb_ia64_bsp();}while(0)
 #else
 #define RB_GC_SAVE_MACHINE_REGISTER_STACK(th)
 #endif
@@ -129,8 +129,8 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
     do {							\
 	FLUSH_REGISTER_WINDOWS;					\
 	RB_GC_SAVE_MACHINE_REGISTER_STACK(th);			\
-	setjmp((th)->machine_regs);				\
-	SET_MACHINE_STACK_END(&(th)->machine_stack_end);	\
+	setjmp((th)->machine.regs);				\
+	SET_MACHINE_STACK_END(&(th)->machine.stack_end);	\
     } while (0)
 
 #define GVL_UNLOCK_BEGIN() do { \
@@ -465,9 +465,9 @@ thread_cleanup_func_before_exec(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
     th->status = THREAD_KILLED;
-    th->machine_stack_start = th->machine_stack_end = 0;
+    th->machine.stack_start = th->machine.stack_end = 0;
 #ifdef __ia64
-    th->machine_register_stack_start = th->machine_register_stack_end = 0;
+    th->machine.register_stack_start = th->machine.register_stack_end = 0;
 #endif
 }
 
@@ -519,9 +519,9 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 
     ruby_thread_set_native(th);
 
-    th->machine_stack_start = stack_start;
+    th->machine.stack_start = stack_start;
 #ifdef __ia64
-    th->machine_register_stack_start = register_stack_start;
+    th->machine.register_stack_start = register_stack_start;
 #endif
     thread_debug("thread start: %p\n", (void *)th);
 
@@ -1099,30 +1099,11 @@ sleep_wait_for_interrupt(rb_thread_t *th, double sleepsec, int spurious_check)
     sleep_timeval(th, double2timeval(sleepsec), spurious_check);
 }
 
-static void
-sleep_for_polling(rb_thread_t *th)
-{
-    struct timeval time;
-    time.tv_sec = 0;
-    time.tv_usec = 100 * 1000;	/* 0.1 sec */
-    sleep_timeval(th, time, 1);
-}
-
 void
 rb_thread_wait_for(struct timeval time)
 {
     rb_thread_t *th = GET_THREAD();
     sleep_timeval(th, time, 1);
-}
-
-void
-rb_thread_polling(void)
-{
-    if (!rb_thread_alone()) {
-	rb_thread_t *th = GET_THREAD();
-	RUBY_VM_CHECK_INTS_BLOCKING(th);
-	sleep_for_polling(th);
-    }
 }
 
 /*
@@ -1223,26 +1204,6 @@ blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region)
     if (th->status == THREAD_STOPPED) {
 	th->status = region->prev_status;
     }
-}
-
-struct rb_blocking_region_buffer *
-rb_thread_blocking_region_begin(void)
-{
-    rb_thread_t *th = GET_THREAD();
-    struct rb_blocking_region_buffer *region = ALLOC(struct rb_blocking_region_buffer);
-    blocking_region_begin(th, region, ubf_select, th, FALSE);
-    return region;
-}
-
-void
-rb_thread_blocking_region_end(struct rb_blocking_region_buffer *region)
-{
-    int saved_errno = errno;
-    rb_thread_t *th = ruby_thread_from_native();
-    blocking_region_end(th, region);
-    xfree(region);
-    RUBY_VM_CHECK_INTS_BLOCKING(th);
-    errno = saved_errno;
 }
 
 static void *
@@ -1406,19 +1367,10 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
     return val;
 }
 
-VALUE
-rb_thread_blocking_region(
-    rb_blocking_function_t *func, void *data1,
-    rb_unblock_function_t *ubf, void *data2)
-{
-    void *(*f)(void*) = (void *(*)(void*))func;
-    return (VALUE)rb_thread_call_without_gvl(f, data1, ubf, data2);
-}
-
 /*
  * rb_thread_call_with_gvl - re-enter the Ruby world after GVL release.
  *
- * After releasing GVL using rb_thread_blocking_region() or
+ * After releasing GVL using
  * rb_thread_call_without_gvl() you can not access Ruby values or invoke
  * methods. If you need to access Ruby you must use this function
  * rb_thread_call_with_gvl().
@@ -3274,17 +3226,6 @@ rb_fd_copy(rb_fdset_t *dst, const fd_set *src, int max)
     memcpy(dst->fdset, src, size);
 }
 
-static void
-rb_fd_rcopy(fd_set *dst, rb_fdset_t *src)
-{
-    size_t size = howmany(rb_fd_max(src), NFDBITS) * sizeof(fd_mask);
-
-    if (size > sizeof(fd_set)) {
-	rb_raise(rb_eArgError, "too large fdsets");
-    }
-    memcpy(dst, rb_fd_ptr(src), sizeof(fd_set));
-}
-
 void
 rb_fd_dup(rb_fdset_t *dst, const rb_fdset_t *src)
 {
@@ -3348,21 +3289,6 @@ rb_fd_init_copy(rb_fdset_t *dst, rb_fdset_t *src)
     rb_fd_dup(dst, src);
 }
 
-static void
-rb_fd_rcopy(fd_set *dst, rb_fdset_t *src)
-{
-    int max = rb_fd_max(src);
-
-    /* we assume src is the result of select() with dst, so dst should be
-     * larger or equal than src. */
-    if (max > FD_SETSIZE || (UINT)max > dst->fd_count) {
-	rb_raise(rb_eArgError, "too large fdsets");
-    }
-
-    memcpy(dst->fd_array, src->fdset->fd_array, max);
-    dst->fd_count = max;
-}
-
 void
 rb_fd_term(rb_fdset_t *set)
 {
@@ -3399,8 +3325,6 @@ rb_fd_set(int fd, rb_fdset_t *set)
 #define FD_CLR(i, f)	rb_fd_clr((i), (f))
 #define FD_ISSET(i, f)	rb_fd_isset((i), (f))
 
-#else
-#define rb_fd_rcopy(d, s) (*(d) = *(s))
 #endif
 
 static int
@@ -3511,50 +3435,6 @@ rb_thread_fd_writable(int fd)
 {
     rb_thread_wait_fd_rw(fd, 0);
     return TRUE;
-}
-
-int
-rb_thread_select(int max, fd_set * read, fd_set * write, fd_set * except,
-		 struct timeval *timeout)
-{
-    rb_fdset_t fdsets[3];
-    rb_fdset_t *rfds = NULL;
-    rb_fdset_t *wfds = NULL;
-    rb_fdset_t *efds = NULL;
-    int retval;
-
-    if (read) {
-	rfds = &fdsets[0];
-	rb_fd_init(rfds);
-	rb_fd_copy(rfds, read, max);
-    }
-    if (write) {
-	wfds = &fdsets[1];
-	rb_fd_init(wfds);
-	rb_fd_copy(wfds, write, max);
-    }
-    if (except) {
-	efds = &fdsets[2];
-	rb_fd_init(efds);
-	rb_fd_copy(efds, except, max);
-    }
-
-    retval = rb_thread_fd_select(max, rfds, wfds, efds, timeout);
-
-    if (rfds) {
-	rb_fd_rcopy(read, rfds);
-	rb_fd_term(rfds);
-    }
-    if (wfds) {
-	rb_fd_rcopy(write, wfds);
-	rb_fd_term(wfds);
-    }
-    if (efds) {
-	rb_fd_rcopy(except, efds);
-	rb_fd_term(efds);
-    }
-
-    return retval;
 }
 
 int

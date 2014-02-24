@@ -1,2 +1,1 @@
-fd_setsize.o: $(top_srcdir)/win32/win32.c \
-  $(hdrdir)/ruby/ruby.h
+fd_setsize.o: $(ruby_headers) $(hdrdir)/ruby/win32.h

@@ -226,6 +226,7 @@ typedef union {
 #define INET_SOCKS  2
 
 extern int rsock_do_not_reverse_lookup;
+extern int rsock_cmsg_cloexec_state;
 #define FMODE_NOREVLOOKUP 0x100
 
 extern VALUE rb_cBasicSocket;
@@ -255,7 +256,6 @@ int Rconnect();
 
 #include "constdefs.h"
 
-#define BLOCKING_REGION(func, arg) (long)rb_thread_blocking_region((func), (arg), RUBY_UBF_IO, 0)
 #define BLOCKING_REGION_FD(func, arg) (long)rb_thread_io_blocking_region((func), (arg), (arg)->fd)
 
 #define SockAddrStringValue(v) rsock_sockaddr_string_value(&(v))
@@ -278,10 +278,16 @@ int rsock_shutdown_how_arg(VALUE how);
 
 int rsock_getfamily(int sockfd);
 
-int rb_getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res);
+struct rb_addrinfo {
+  struct addrinfo *ai;
+  int allocated_by_malloc;
+};
+int rb_getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct rb_addrinfo **res);
+void rb_freeaddrinfo(struct rb_addrinfo *ai);
+VALUE rsock_freeaddrinfo(VALUE arg);
 int rb_getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags);
-struct addrinfo *rsock_addrinfo(VALUE host, VALUE port, int socktype, int flags);
-struct addrinfo *rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack);
+struct rb_addrinfo *rsock_addrinfo(VALUE host, VALUE port, int socktype, int flags);
+struct rb_addrinfo *rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack);
 VALUE rsock_fd_socket_addrinfo(int fd, struct sockaddr *addr, socklen_t len);
 VALUE rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len);
 
@@ -290,7 +296,7 @@ VALUE rsock_addrinfo_inspect_sockaddr(VALUE rai);
 
 VALUE rsock_make_ipaddr(struct sockaddr *addr, socklen_t addrlen);
 VALUE rsock_ipaddr(struct sockaddr *sockaddr, socklen_t sockaddrlen, int norevlookup);
-VALUE rsock_make_hostent(VALUE host, struct addrinfo *addr, VALUE (*ipaddr)(struct sockaddr *, socklen_t));
+VALUE rsock_make_hostent(VALUE host, struct rb_addrinfo *addr, VALUE (*ipaddr)(struct sockaddr *, socklen_t));
 VALUE rsock_inspect_sockaddr(struct sockaddr *addr, socklen_t socklen, VALUE ret);
 socklen_t rsock_sockaddr_len(struct sockaddr *addr);
 VALUE rsock_sockaddr_obj(struct sockaddr *addr, socklen_t len);
@@ -304,6 +310,7 @@ socklen_t rsock_unix_sockaddr_len(VALUE path);
 #endif
 
 int rsock_socket(int domain, int type, int proto);
+int rsock_detect_cloexec(int fd);
 VALUE rsock_init_sock(VALUE sock, int fd);
 VALUE rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass);
 VALUE rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv, int type);

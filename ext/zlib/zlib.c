@@ -429,7 +429,14 @@ do_checksum(argc, argv, func)
  * +adler+. If +string+ is omitted, it returns the Adler-32 initial value. If
  * +adler+ is omitted, it assumes that the initial value is given to +adler+.
  *
- * FIXME: expression.
+ * Example usage:
+ *
+ *   require "zlib"
+ *
+ *   data = "foo"
+ *   puts "Adler32 checksum: #{Zlib.adler32(data).to_s(16)}"
+ *   #=> Adler32 checksum: 2820145
+ *
  */
 static VALUE
 rb_zlib_adler32(int argc, VALUE *argv, VALUE klass)
@@ -1556,6 +1563,7 @@ rb_deflate_init_copy(VALUE self, VALUE orig)
     Data_Get_Struct(self, struct zstream, z1);
     z2 = get_zstream(orig);
 
+    if (z1 == z2) return self;
     err = deflateCopy(&z1->stream, &z2->stream);
     if (err != Z_OK) {
 	raise_zlib_error(err, 0);

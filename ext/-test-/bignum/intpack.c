@@ -49,7 +49,7 @@ static VALUE
 rb_integer_test_numbits_2comp_without_sign(VALUE val)
 {
   size_t size;
-  int neg = FIXNUM_P(val) ? FIX2LONG(val) < 0 : RBIGNUM_NEGATIVE_P(val);
+  int neg = FIXNUM_P(val) ? FIX2LONG(val) < 0 : BIGNUM_NEGATIVE_P(val);
   size = rb_absint_numwords(val, 1, NULL) - (neg && rb_absint_singlebit_p(val));
   return SIZET2NUM(size);
 }
@@ -57,7 +57,7 @@ rb_integer_test_numbits_2comp_without_sign(VALUE val)
 static VALUE
 rb_integer_test_numbytes_2comp_with_sign(VALUE val)
 {
-  int neg = FIXNUM_P(val) ? FIX2LONG(val) < 0 : RBIGNUM_NEGATIVE_P(val);
+  int neg = FIXNUM_P(val) ? FIX2LONG(val) < 0 : BIGNUM_NEGATIVE_P(val);
   int nlz_bits;
   size_t size = rb_absint_size(val, &nlz_bits);
   if (nlz_bits == 0 && !(neg && rb_absint_singlebit_p(val)))

@@ -72,9 +72,9 @@ static ID id_eq;
 
 /* MACRO's to guard objects from GC by keeping them in stack */
 #define ENTER(n) volatile VALUE RB_UNUSED_VAR(vStack[n]);int iStack=0
-#define PUSH(x)  vStack[iStack++] = (VALUE)(x);
-#define SAVE(p)  PUSH(p->obj);
-#define GUARD_OBJ(p,y) {p=y;SAVE(p);}
+#define PUSH(x)  (vStack[iStack++] = (VALUE)(x))
+#define SAVE(p)  PUSH((p)->obj)
+#define GUARD_OBJ(p,y) ((p)=(y), SAVE(p))
 
 #define BASE_FIG  RMPD_COMPONENT_FIGURES
 #define BASE      RMPD_BASE
@@ -84,10 +84,6 @@ static ID id_eq;
 
 #ifndef DBLE_FIG
 #define DBLE_FIG (DBL_DIG+1)    /* figure of double */
-#endif
-
-#ifndef RBIGNUM_ZERO_P
-# define RBIGNUM_ZERO_P(x) rb_bigzero_p(x)
 #endif
 
 #ifndef RRATIONAL_ZERO_P
@@ -2095,7 +2091,7 @@ is_negative(VALUE x)
 	return FIX2LONG(x) < 0;
     }
     else if (RB_TYPE_P(x, T_BIGNUM)) {
-	return RBIGNUM_NEGATIVE_P(x);
+	return FIX2INT(rb_big_cmp(x, INT2FIX(0))) < 0;
     }
     else if (RB_TYPE_P(x, T_FLOAT)) {
 	return RFLOAT_VALUE(x) < 0.0;
@@ -2471,9 +2467,11 @@ static Real *BigDecimal_new(int argc, VALUE *argv);
 static VALUE
 BigDecimal_initialize(int argc, VALUE *argv, VALUE self)
 {
+    ENTER(1);
     Real *pv = rb_check_typeddata(self, &BigDecimal_data_type);
-    Real *x = BigDecimal_new(argc, argv);
+    Real *x;
 
+    GUARD_OBJ(x, BigDecimal_new(argc, argv));
     if (ToValue(x)) {
 	pv = VpCopy(pv, x);
     }
@@ -2496,7 +2494,9 @@ BigDecimal_initialize_copy(VALUE self, VALUE other)
     Real *pv = rb_check_typeddata(self, &BigDecimal_data_type);
     Real *x = rb_check_typeddata(other, &BigDecimal_data_type);
 
-    DATA_PTR(self) = VpCopy(pv, x);
+    if (self != other) {
+	DATA_PTR(self) = VpCopy(pv, x);
+    }
     return self;
 }
 
@@ -2552,7 +2552,10 @@ BigDecimal_new(int argc, VALUE *argv)
 static VALUE
 BigDecimal_global_new(int argc, VALUE *argv, VALUE self)
 {
-    Real *pv = BigDecimal_new(argc, argv);
+    ENTER(1);
+    Real *pv;
+
+    GUARD_OBJ(pv, BigDecimal_new(argc, argv));
     if (ToValue(pv)) pv = VpCopy(NULL, pv);
     pv->obj = TypedData_Wrap_Struct(rb_cBigDecimal, &BigDecimal_data_type, pv);
     return pv->obj;
@@ -2874,8 +2877,9 @@ BigMath_s_log(VALUE klass, VALUE x, VALUE vprec)
 	goto get_vp_value;
 
       case T_BIGNUM:
-	zero = RBIGNUM_ZERO_P(x);
-	negative = RBIGNUM_NEGATIVE_P(x);
+        i = FIX2INT(rb_big_cmp(x, INT2FIX(0)));
+	zero = i == 0;
+	negative = i < 0;
 get_vp_value:
 	if (zero || negative) break;
 	vx = GetVpValue(x, 0);

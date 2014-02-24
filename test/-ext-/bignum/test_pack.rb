@@ -212,6 +212,30 @@ class TestBignum < Test::Unit::TestCase
         }
       }
 
+      2.upto(16) {|wordsize|
+        w = wordsize
+        b = 8*wordsize-1
+        n = 2**b
+        assert_equal([-2, "\x7F"+"\xFF"*(w-2)+"\xFF"], (-n-1).test_pack(1, wordsize, 1, TWOCOMP|MSBYTE_FIRST))
+        assert_equal([-1, "\x00"+"\x00"*(w-2)+"\x00"], (-n  ).test_pack(1, wordsize, 1, TWOCOMP|MSBYTE_FIRST))
+        assert_equal([-1, "\x00"+"\x00"*(w-2)+"\x01"], (-n+1).test_pack(1, wordsize, 1, TWOCOMP|MSBYTE_FIRST))
+        assert_equal([+1, "\x7F"+"\xFF"*(w-2)+"\xFF"], (+n-1).test_pack(1, wordsize, 1, TWOCOMP|MSBYTE_FIRST))
+        assert_equal([+2, "\x00"+"\x00"*(w-2)+"\x00"], (+n  ).test_pack(1, wordsize, 1, TWOCOMP|MSBYTE_FIRST))
+        assert_equal([+2, "\x00"+"\x00"*(w-2)+"\x01"], (+n+1).test_pack(1, wordsize, 1, TWOCOMP|MSBYTE_FIRST))
+      }
+
+      2.upto(16) {|wordsize|
+        w = wordsize
+        b = 8*wordsize-1
+        n = 2**b
+        assert_equal([-2, "\xFF"+"\xFF"*(w-2)+"\x7F"], (-n-1).test_pack(1, wordsize, 1, TWOCOMP|LSBYTE_FIRST))
+        assert_equal([-1, "\x00"+"\x00"*(w-2)+"\x00"], (-n  ).test_pack(1, wordsize, 1, TWOCOMP|LSBYTE_FIRST))
+        assert_equal([-1, "\x01"+"\x00"*(w-2)+"\x00"], (-n+1).test_pack(1, wordsize, 1, TWOCOMP|LSBYTE_FIRST))
+        assert_equal([+1, "\xFF"+"\xFF"*(w-2)+"\x7F"], (+n-1).test_pack(1, wordsize, 1, TWOCOMP|LSBYTE_FIRST))
+        assert_equal([+2, "\x00"+"\x00"*(w-2)+"\x00"], (+n  ).test_pack(1, wordsize, 1, TWOCOMP|LSBYTE_FIRST))
+        assert_equal([+2, "\x01"+"\x00"*(w-2)+"\x00"], (+n+1).test_pack(1, wordsize, 1, TWOCOMP|LSBYTE_FIRST))
+      }
+
     end
 
     def test_unpack_zero

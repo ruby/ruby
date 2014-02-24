@@ -108,6 +108,12 @@ class TestHash < Test::Unit::TestCase
     assert_empty(h)
   end
 
+  def test_self_initialize_copy
+    h = @cls[1=>2]
+    h.instance_eval {initialize_copy(h)}
+    assert_equal(2, h[1])
+  end
+
   def test_dup_will_rehash
     set1 = @cls[]
     set2 = @cls[set1 => true]
@@ -974,11 +980,11 @@ class TestHash < Test::Unit::TestCase
 
     a =  @cls[1=> "one", 2 => [2,"two"], 3 => [3, ["three"]]]
     assert_equal([1, "one", 2, [2, "two"], 3, [3, ["three"]]], a.flatten)
-    assert_equal([1, "one", 2, [2, "two"], 3, [3, ["three"]]], a.flatten(-1))
-    assert_equal([1, "one", 2, [2, "two"], 3, [3, ["three"]]], a.flatten(0))
+    assert_equal([[1, "one"], [2, [2, "two"]], [3, [3, ["three"]]]], a.flatten(0))
     assert_equal([1, "one", 2, [2, "two"], 3, [3, ["three"]]], a.flatten(1))
     assert_equal([1, "one", 2, 2, "two", 3, 3, ["three"]], a.flatten(2))
     assert_equal([1, "one", 2, 2, "two", 3, 3, "three"], a.flatten(3))
+    assert_equal([1, "one", 2, 2, "two", 3, 3, "three"], a.flatten(-1))
     assert_raise(TypeError){ a.flatten(Object) }
   end
 

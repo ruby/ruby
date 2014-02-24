@@ -309,6 +309,7 @@ extern char **rb_w32_get_environ(void);
 extern void   rb_w32_free_environ(char **);
 extern int    rb_w32_map_errno(DWORD);
 extern const char *WSAAPI rb_w32_inet_ntop(int,const void *,char *,size_t);
+extern int WSAAPI rb_w32_inet_pton(int,const char *,void *);
 extern DWORD  rb_w32_osver(void);
 
 extern int chown(const char *, int, int);
@@ -461,6 +462,11 @@ extern int 	 rb_w32_truncate(const char *path, off_t length);
 #define truncate truncate64
 #else
 #define truncate rb_w32_truncate
+#endif
+
+#if defined(_MSC_VER) && _MSC_VER >= 1400 && _MSC_VER < 1800
+#define strtoll  _strtoi64
+#define strtoull _strtoui64
 #endif
 
 /*
@@ -652,6 +658,9 @@ extern char *rb_w32_strerror(int);
 #undef inet_ntop
 #define inet_ntop(f,a,n,l)      rb_w32_inet_ntop(f,a,n,l)
 
+#undef inet_pton
+#define inet_pton(f,s,d)        rb_w32_inet_pton(f,s,d)
+
 #undef accept
 #define accept(s, a, l)		rb_w32_accept(s, a, l)
 
@@ -777,7 +786,7 @@ int  rb_w32_unwrap_io_handle(int);
 == ***CAUTION***
 Since this function is very dangerous, ((*NEVER*))
 * lock any HANDLEs(i.e. Mutex, Semaphore, CriticalSection and so on) or,
-* use anything like TRAP_BEG...TRAP_END block structure,
+* use anything like rb_thread_call_without_gvl,
 in asynchronous_func_t.
 */
 typedef uintptr_t (*asynchronous_func_t)(uintptr_t self, int argc, uintptr_t* argv);

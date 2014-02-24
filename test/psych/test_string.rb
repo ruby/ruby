@@ -137,7 +137,7 @@ string: &70121654388580 !ruby/string
       ivar = "on rock and roll"
       food.instance_variable_set(:@we_built_this_city, ivar)
 
-      str = Psych.load Psych.dump food
+      Psych.load Psych.dump food
       assert_equal ivar, food.instance_variable_get(:@we_built_this_city)
     end
 

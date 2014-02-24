@@ -1431,7 +1431,11 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
     else {
         ID meth = nonblock ? rb_intern("read_nonblock") : rb_intern("sysread");
         rb_warning("SSL session is not started yet.");
-        return rb_funcall(ossl_ssl_get_io(self), meth, 2, len, str);
+        if (nonblock) {
+          return rb_funcall(ossl_ssl_get_io(self), meth, 3, len, str, opts);
+        } else {
+          return rb_funcall(ossl_ssl_get_io(self), meth, 2, len, str);
+        }
     }
 
   end:

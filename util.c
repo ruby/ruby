@@ -186,6 +186,7 @@ ruby_strtoul(const char *str, char **endptr, int base)
 #endif
 
 
+#ifndef HAVE_GNU_QSORT_R
 /* mm.c */
 
 #define mmtype long
@@ -452,6 +453,7 @@ ruby_qsort(void* base, const size_t nel, const size_t size, cmpfunc_t *cmp, void
     else goto nxt;                         /* need not to sort both sides */
   }
 }
+#endif /* HAVE_GNU_QSORT_R */
 
 char *
 ruby_strdup(const char *str)

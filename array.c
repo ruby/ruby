@@ -735,12 +735,14 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
     }
 
     len = NUM2LONG(size);
+    /* NUM2LONG() may call size.to_int, ary can be frozen, modified, etc */
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative array size");
     }
     if (len > ARY_MAX_SIZE) {
 	rb_raise(rb_eArgError, "array size too big");
     }
+    /* recheck after argument conversion */
     rb_ary_modify(ary);
     ary_resize_capa(ary, len);
     if (rb_block_given_p()) {

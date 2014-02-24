@@ -100,27 +100,6 @@
 #endif /* OPT_STACK_CACHING */
 #endif /* OPT_CALL_THREADED_CODE */
 
-/* likely */
-#if __GNUC__ >= 3
-#define LIKELY(x)   (__builtin_expect((x), 1))
-#define UNLIKELY(x) (__builtin_expect((x), 0))
-#else /* __GNUC__ >= 3 */
-#define LIKELY(x)   (x)
-#define UNLIKELY(x) (x)
-#endif /* __GNUC__ >= 3 */
-
-#ifndef __has_attribute
-# define __has_attribute(x) 0
-#endif
-
-#if __has_attribute(unused)
-#define UNINITIALIZED_VAR(x) x __attribute__((unused))
-#elif defined(__GNUC__) && __GNUC__ >= 3
-#define UNINITIALIZED_VAR(x) x = x
-#else
-#define UNINITIALIZED_VAR(x) x
-#endif
-
 typedef unsigned long rb_num_t;
 
 /* iseq data type */
@@ -623,15 +602,17 @@ typedef struct rb_thread_struct {
     VALUE (*first_func)(ANYARGS);
 
     /* for GC */
-    VALUE *machine_stack_start;
-    VALUE *machine_stack_end;
-    size_t machine_stack_maxsize;
+    struct {
+	VALUE *stack_start;
+	VALUE *stack_end;
+	size_t stack_maxsize;
 #ifdef __ia64
-    VALUE *machine_register_stack_start;
-    VALUE *machine_register_stack_end;
-    size_t machine_register_stack_maxsize;
+	VALUE *register_stack_start;
+	VALUE *register_stack_end;
+	size_t register_stack_maxsize;
 #endif
-    jmp_buf machine_regs;
+	jmp_buf regs;
+    } machine;
     int mark_stack_len;
 
     /* statistics data for profiler */

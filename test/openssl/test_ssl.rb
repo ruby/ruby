@@ -169,6 +169,24 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  def test_read_nonblock_without_session
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, false){|server, port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock)
+      ssl.sync_close = true
+
+      OpenSSL::TestUtils.silent do
+        assert_equal :wait_readable, ssl.read_nonblock(100, exception: false)
+        ssl.write("abc\n")
+        IO.select [ssl]
+        assert_equal('a', ssl.read_nonblock(1))
+        assert_equal("bc\n", ssl.read_nonblock(100))
+        assert_equal :wait_readable, ssl.read_nonblock(100, exception: false)
+      end
+      ssl.close
+    }
+  end
+
   def test_starttls
     start_server(PORT, OpenSSL::SSL::VERIFY_NONE, false){|server, port|
       sock = TCPSocket.new("127.0.0.1", port)

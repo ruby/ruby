@@ -189,37 +189,38 @@ static const rb_data_type_t dump_arg_data = {
     NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-static const char *
+static VALUE
 must_not_be_anonymous(const char *type, VALUE path)
 {
     char *n = RSTRING_PTR(path);
 
     if (!rb_enc_asciicompat(rb_enc_get(path))) {
 	/* cannot occur? */
-	rb_raise(rb_eTypeError, "can't dump non-ascii %s name", type);
+	rb_raise(rb_eTypeError, "can't dump non-ascii %s name % "PRIsVALUE,
+		 type, path);
     }
     if (n[0] == '#') {
-	rb_raise(rb_eTypeError, "can't dump anonymous %s %.*s", type,
-		 (int)RSTRING_LEN(path), n);
+	rb_raise(rb_eTypeError, "can't dump anonymous %s % "PRIsVALUE,
+		 type, path);
     }
-    return n;
+    return path;
 }
 
 static VALUE
 class2path(VALUE klass)
 {
     VALUE path = rb_class_path(klass);
-    const char *n;
 
-    n = must_not_be_anonymous((RB_TYPE_P(klass, T_CLASS) ? "class" : "module"), path);
+    must_not_be_anonymous((RB_TYPE_P(klass, T_CLASS) ? "class" : "module"), path);
     if (rb_path_to_class(path) != rb_class_real(klass)) {
-	rb_raise(rb_eTypeError, "%s can't be referred to", n);
+	rb_raise(rb_eTypeError, "% "PRIsVALUE" can't be referred to", path);
     }
     return path;
 }
 
 static void w_long(long, struct dump_arg*);
-static void w_encoding(VALUE obj, long num, struct dump_call_arg *arg);
+static void w_encoding(VALUE encname, struct dump_call_arg *arg);
+static VALUE encoding_name(VALUE obj, struct dump_arg *arg);
 
 static void
 w_nbyte(const char *s, long n, struct dump_arg *arg)
@@ -410,7 +411,7 @@ w_symbol(ID id, struct dump_arg *arg)
 {
     VALUE sym;
     st_data_t num;
-    int encidx = -1;
+    VALUE encname;
 
     if (st_lookup(arg->symbols, id, &num)) {
 	w_byte(TYPE_SYMLINK, arg);
@@ -421,10 +422,10 @@ w_symbol(ID id, struct dump_arg *arg)
 	if (!sym) {
 	    rb_raise(rb_eTypeError, "can't dump anonymous ID %"PRIdVALUE, id);
 	}
-	encidx = rb_enc_get_index(sym);
-	if (encidx == rb_usascii_encindex() ||
+	encname = encoding_name(sym, arg);
+	if (NIL_P(encname) ||
 	    rb_enc_str_coderange(sym) == ENC_CODERANGE_7BIT) {
-	    encidx = -1;
+	    encname = Qnil;
 	}
 	else {
 	    w_byte(TYPE_IVAR, arg);
@@ -432,11 +433,12 @@ w_symbol(ID id, struct dump_arg *arg)
 	w_byte(TYPE_SYMBOL, arg);
 	w_bytes(RSTRING_PTR(sym), RSTRING_LEN(sym), arg);
 	st_add_direct(arg->symbols, id, arg->symbols->num_entries);
-	if (encidx != -1) {
+	if (!NIL_P(encname)) {
 	    struct dump_call_arg c_arg;
 	    c_arg.limit = 1;
 	    c_arg.arg = arg;
-	    w_encoding(sym, 0, &c_arg);
+	    w_long(1L, arg);
+	    w_encoding(encname, &c_arg);
 	}
     }
 }
@@ -511,6 +513,8 @@ w_uclass(VALUE obj, VALUE super, struct dump_arg *arg)
     }
 }
 
+#define to_be_skipped_id(id) (id == rb_id_encoding() || id == rb_intern("E") || !rb_id2str(id))
+
 static int
 w_obj_each(st_data_t key, st_data_t val, st_data_t a)
 {
@@ -518,56 +522,80 @@ w_obj_each(st_data_t key, st_data_t val, st_data_t a)
     VALUE value = (VALUE)val;
     struct dump_call_arg *arg = (struct dump_call_arg *)a;
 
-    if (id == rb_id_encoding()) return ST_CONTINUE;
-    if (id == rb_intern("E")) return ST_CONTINUE;
+    if (to_be_skipped_id(id)) return ST_CONTINUE;
     w_symbol(id, arg->arg);
     w_object(value, arg->arg, arg->limit);
     return ST_CONTINUE;
 }
 
-static void
-w_encoding(VALUE obj, long num, struct dump_call_arg *arg)
+static int
+obj_count_ivars(st_data_t key, st_data_t val, st_data_t a)
+{
+    ID id = (ID)key;
+    if (!to_be_skipped_id(id)) ++*(st_index_t *)a;
+    return ST_CONTINUE;
+}
+
+static VALUE
+encoding_name(VALUE obj, struct dump_arg *arg)
 {
     int encidx = rb_enc_get_index(obj);
     rb_encoding *enc = 0;
     st_data_t name;
 
     if (encidx <= 0 || !(enc = rb_enc_from_index(encidx))) {
-	w_long(num, arg->arg);
-	return;
+	return Qnil;
     }
-    w_long(num + 1, arg->arg);
 
     /* special treatment for US-ASCII and UTF-8 */
     if (encidx == rb_usascii_encindex()) {
-	w_symbol(rb_intern("E"), arg->arg);
-	w_object(Qfalse, arg->arg, arg->limit + 1);
-	return;
+	return Qfalse;
     }
     else if (encidx == rb_utf8_encindex()) {
-	w_symbol(rb_intern("E"), arg->arg);
-	w_object(Qtrue, arg->arg, arg->limit + 1);
-	return;
+	return Qtrue;
     }
 
-    w_symbol(rb_id_encoding(), arg->arg);
-    do {
-	if (!arg->arg->encodings)
-	    arg->arg->encodings = st_init_strcasetable();
-	else if (st_lookup(arg->arg->encodings, (st_data_t)rb_enc_name(enc), &name))
-	    break;
-	name = (st_data_t)rb_str_new2(rb_enc_name(enc));
-	st_insert(arg->arg->encodings, (st_data_t)rb_enc_name(enc), name);
-    } while (0);
-    w_object(name, arg->arg, arg->limit + 1);
+    if (arg->encodings ?
+	!st_lookup(arg->encodings, (st_data_t)rb_enc_name(enc), &name) :
+	(arg->encodings = st_init_strcasetable(), 1)) {
+	name = (st_data_t)rb_str_new_cstr(rb_enc_name(enc));
+	st_insert(arg->encodings, (st_data_t)rb_enc_name(enc), name);
+    }
+    return (VALUE)name;
 }
 
 static void
-w_ivar(VALUE obj, st_table *tbl, struct dump_call_arg *arg)
+w_encoding(VALUE encname, struct dump_call_arg *arg)
 {
-    long num = tbl ? tbl->num_entries : 0;
+    switch (encname) {
+      case Qfalse:
+      case Qtrue:
+	w_symbol(rb_intern("E"), arg->arg);
+	w_object(encname, arg->arg, arg->limit + 1);
+      case Qnil:
+	return;
+    }
+    w_symbol(rb_id_encoding(), arg->arg);
+    w_object(encname, arg->arg, arg->limit + 1);
+}
 
-    w_encoding(obj, num, arg);
+static st_index_t
+has_ivars(VALUE obj, VALUE encname, st_table **ivtbl)
+{
+    st_index_t num = !NIL_P(encname);
+
+    *ivtbl = rb_generic_ivar_table(obj);
+    if (*ivtbl) {
+	st_foreach_safe(*ivtbl, obj_count_ivars, (st_data_t)&num);
+    }
+    return num;
+}
+
+static void
+w_ivar(st_index_t num, st_table *tbl, VALUE encname, struct dump_call_arg *arg)
+{
+    w_long(num, arg->arg);
+    w_encoding(encname, arg);
     if (tbl) {
 	st_foreach_safe(tbl, w_obj_each, (st_data_t)arg);
     }
@@ -586,7 +614,7 @@ w_objivar(VALUE obj, struct dump_call_arg *arg)
         if (ptr[i] != Qundef)
             num += 1;
 
-    w_encoding(obj, num, arg);
+    w_long(num, arg->arg);
     if (num != 0) {
         rb_ivar_foreach(obj, w_obj_each, (st_data_t)arg);
     }
@@ -598,9 +626,8 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
     struct dump_call_arg c_arg;
     st_table *ivtbl = 0;
     st_data_t num;
-    int hasiv = 0;
-#define has_ivars(obj, ivtbl) ((((ivtbl) = rb_generic_ivar_table(obj)) != 0) || \
-			       (!SPECIAL_CONST_P(obj) && !ENCODING_IS_ASCII8BIT(obj)))
+    st_index_t hasiv = 0;
+    VALUE encname = Qnil;
 
     if (limit == 0) {
 	rb_raise(rb_eArgError, "exceed depth limit");
@@ -663,7 +690,8 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	}
 	if (rb_obj_respond_to(obj, s_dump, TRUE)) {
             st_table *ivtbl2 = 0;
-            int hasiv2;
+	    st_index_t hasiv2;
+	    VALUE encname2;
 
 	    v = INT2NUM(limit);
 	    v = rb_funcall2(obj, s_dump, 1, &v);
@@ -671,18 +699,18 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    if (!RB_TYPE_P(v, T_STRING)) {
 		rb_raise(rb_eTypeError, "_dump() must return string");
 	    }
-	    hasiv = has_ivars(obj, ivtbl);
-	    if (hasiv) w_byte(TYPE_IVAR, arg);
-	    if ((hasiv2 = has_ivars(v, ivtbl2)) != 0 && !hasiv) {
-		w_byte(TYPE_IVAR, arg);
+	    hasiv = has_ivars(obj, (encname = encoding_name(obj, arg)), &ivtbl);
+	    hasiv2 = has_ivars(v, (encname2 = encoding_name(v, arg)), &ivtbl2);
+	    if (hasiv2) {
+		hasiv = hasiv2;
+		ivtbl = ivtbl2;
+		encname = encname2;
 	    }
+	    if (hasiv) w_byte(TYPE_IVAR, arg);
 	    w_class(TYPE_USERDEF, obj, arg, FALSE);
 	    w_bytes(RSTRING_PTR(v), RSTRING_LEN(v), arg);
-            if (hasiv2) {
-		w_ivar(v, ivtbl2, &c_arg);
-            }
-            else if (hasiv) {
-		w_ivar(obj, ivtbl, &c_arg);
+	    if (hasiv) {
+		w_ivar(hasiv, ivtbl, encname, &c_arg);
 	    }
             st_add_direct(arg->data, obj, arg->data->num_entries);
 	    return;
@@ -690,7 +718,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 
         st_add_direct(arg->data, obj, arg->data->num_entries);
 
-	hasiv = has_ivars(obj, ivtbl);
+	hasiv = has_ivars(obj, (encname = encoding_name(obj, arg)), &ivtbl);
         {
             st_data_t compat_data;
             rb_alloc_func_t allocator = rb_get_alloc_func(RBASIC(obj)->klass);
@@ -736,9 +764,9 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	  case T_BIGNUM:
 	    w_byte(TYPE_BIGNUM, arg);
 	    {
-		char sign = RBIGNUM_SIGN(obj) ? '+' : '-';
-		long len = RBIGNUM_LEN(obj);
-		BDIGIT *d = RBIGNUM_DIGITS(obj);
+		char sign = BIGNUM_SIGN(obj) ? '+' : '-';
+		long len = BIGNUM_LEN(obj);
+		BDIGIT *d = BIGNUM_DIGITS(obj);
 
 		w_byte(sign, arg);
 		w_long(SHORTLEN(len), arg); /* w_short? */
@@ -855,7 +883,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	RB_GC_GUARD(obj);
     }
     if (hasiv) {
-	w_ivar(obj, ivtbl, &c_arg);
+	w_ivar(hasiv, ivtbl, encname, &c_arg);
     }
 }
 
@@ -922,7 +950,7 @@ marshal_dump(int argc, VALUE *argv)
     VALUE obj, port, a1, a2;
     int limit = -1;
     struct dump_arg *arg;
-    volatile VALUE wrapper;
+    VALUE wrapper; /* used to avoid memory leak in case of exception */
 
     port = Qnil;
     rb_scan_args(argc, argv, "12", &obj, &a1, &a2);
@@ -936,7 +964,7 @@ marshal_dump(int argc, VALUE *argv)
 	else if (NIL_P(a1)) io_needed();
 	else port = a1;
     }
-    RB_GC_GUARD(wrapper) = TypedData_Make_Struct(rb_cData, struct dump_arg, &dump_arg_data, arg);
+    wrapper = TypedData_Make_Struct(rb_cData, struct dump_arg, &dump_arg_data, arg);
     arg->dest = 0;
     arg->symbols = st_init_numtable();
     arg->data    = st_init_numtable();
@@ -1328,9 +1356,9 @@ r_entry0(VALUE v, st_index_t num, struct load_arg *arg)
     }
     if (arg->infection &&
 	!RB_TYPE_P(v, T_CLASS) && !RB_TYPE_P(v, T_MODULE)) {
-	FL_SET(v, arg->infection);
+	OBJ_TAINT(v);
 	if ((VALUE)real_obj != Qundef)
-	    FL_SET((VALUE)real_obj, arg->infection);
+	    OBJ_TAINT((VALUE)real_obj);
     }
     return v;
 }
@@ -1929,7 +1957,7 @@ marshal_load(int argc, VALUE *argv)
     VALUE port, proc;
     int major, minor, infection = 0;
     VALUE v;
-    volatile VALUE wrapper;
+    VALUE wrapper; /* used to avoid memory leak in case of exception */
     struct load_arg *arg;
 
     rb_scan_args(argc, argv, "11", &port, &proc);
@@ -1945,7 +1973,7 @@ marshal_load(int argc, VALUE *argv)
     else {
 	io_needed();
     }
-    RB_GC_GUARD(wrapper) = TypedData_Make_Struct(rb_cData, struct load_arg, &load_arg_data, arg);
+    wrapper = TypedData_Make_Struct(rb_cData, struct load_arg, &load_arg_data, arg);
     arg->infection = infection;
     arg->src = port;
     arg->offset = 0;
@@ -2090,7 +2118,7 @@ marshal_load(int argc, VALUE *argv)
  *     end
  *   end
  *
- * Since Marhsal.dump outputs a string you can have _dump return a Marshal
+ * Since Marshal.dump outputs a string you can have _dump return a Marshal
  * string which is Marshal.loaded in _load for complex objects.
  */
 void

@@ -136,7 +136,7 @@ module FileUtils
   #
   # Options: (none)
   #
-  # Returns true if +newer+ is newer than all +old_list+.
+  # Returns true if +new+ is newer than all +old_list+.
   # Non-existent files are older than any file.
   #
   #   FileUtils.uptodate?('hello.o', %w(hello.c hello.h)) or \
@@ -1659,7 +1659,7 @@ module FileUtils
   #
   # Returns an Array of option names of the method +mid+.
   #
-  #   p FileUtils.options(:rm)  #=> ["noop", "verbose", "force"]
+  #   p FileUtils.options_of(:rm)  #=> ["noop", "verbose", "force"]
   #
   def FileUtils.options_of(mid)
     OPT_TABLE[mid.to_s].map {|sym| sym.to_s }

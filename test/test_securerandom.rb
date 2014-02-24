@@ -176,7 +176,7 @@ end
     $LOADED_FEATURES.delete_if { |path|
       if File.basename(path) == basename
         $LOAD_PATH.any? { |dir|
-          File.exists?(File.join(dir, basename))
+          File.exist?(File.join(dir, basename))
         }
       end
     }

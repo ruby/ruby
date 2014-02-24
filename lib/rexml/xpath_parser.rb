@@ -63,19 +63,19 @@ module REXML
     end
 
     def parse path, nodeset
-     #puts "#"*40
-     path_stack = @parser.parse( path )
-     #puts "PARSE: #{path} => #{path_stack.inspect}"
-     #puts "PARSE: nodeset = #{nodeset.inspect}"
-     match( path_stack, nodeset )
+      #puts "#"*40
+      path_stack = @parser.parse( path )
+      #puts "PARSE: #{path} => #{path_stack.inspect}"
+      #puts "PARSE: nodeset = #{nodeset.inspect}"
+      match( path_stack, nodeset )
     end
 
     def get_first path, nodeset
-     #puts "#"*40
-     path_stack = @parser.parse( path )
-     #puts "PARSE: #{path} => #{path_stack.inspect}"
-     #puts "PARSE: nodeset = #{nodeset.inspect}"
-     first( path_stack, nodeset )
+      #puts "#"*40
+      path_stack = @parser.parse( path )
+      #puts "PARSE: #{path} => #{path_stack.inspect}"
+      #puts "PARSE: nodeset = #{nodeset.inspect}"
+      first( path_stack, nodeset )
     end
 
     def predicate path, nodeset

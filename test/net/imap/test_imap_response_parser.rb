@@ -120,7 +120,7 @@ EOF
   def test_msg_att_parse_error
     parser = Net::IMAP::ResponseParser.new
     e = assert_raise(Net::IMAP::ResponseParseError) {
-      response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+      parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
 * 123 FETCH (UNKNOWN 92285)
 EOF
     }

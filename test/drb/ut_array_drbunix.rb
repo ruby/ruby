@@ -11,5 +11,6 @@ if __FILE__ == $0
   DRb.start_service('drbunix:', [1, 2, 'III', 4, "five", 6])
   es = DRb::ExtServ.new(ARGV.shift, ARGV.shift)
   DRb.thread.join
+  es.stop_service if es.alive?
 end
 

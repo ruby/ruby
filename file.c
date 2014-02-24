@@ -4433,7 +4433,7 @@ test_check(int n, int argc, VALUE *argv)
  *  call-seq:
  *     test(cmd, file1 [, file2] ) -> obj
  *
- *  Uses the integer +cmd+ to perform various tests on +file1+ (first
+ *  Uses the character +cmd+ to perform various tests on +file1+ (first
  *  table below) or on +file1+ and +file2+ (second table).
  *
  *  File tests on a single file:

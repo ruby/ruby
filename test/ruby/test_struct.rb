@@ -289,6 +289,8 @@ module TestStruct
     x = Object.new
     o = klass.new("test", x)
     assert_same(x, o.b?)
+    o.send("b?=", 42)
+    assert_equal(42, o.b?)
   end
 
   def test_bang_mark_in_member
@@ -296,6 +298,8 @@ module TestStruct
     x = Object.new
     o = klass.new("test", x)
     assert_same(x, o.b!)
+    o.send("b!=", 42)
+    assert_equal(42, o.b!)
   end
 
   def test_setter_method_returns_value
