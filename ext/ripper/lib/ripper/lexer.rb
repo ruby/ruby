@@ -12,13 +12,17 @@ require 'ripper/core'
 
 class Ripper
 
-  # Tokenizes Ruby program and returns an Array of String.
+  # Tokenizes the Ruby program and returns an array of strings.
+  #
+  #   p Ripper.tokenize("def m(a) nil end")
+  #      # => ["def", " ", "m", "(", "a", ")", " ", "nil", " ", "end"]
+  #
   def Ripper.tokenize(src, filename = '-', lineno = 1)
     Lexer.new(src, filename, lineno).tokenize
   end
 
-  # Tokenizes Ruby program and returns an Array of Array,
-  # which is formatted like [[lineno, column], type, token].
+  # Tokenizes the Ruby program and returns an array of an array,
+  # which is formatted like <code>[[lineno, column], type, token]</code>.
   #
   #   require 'ripper'
   #   require 'pp'

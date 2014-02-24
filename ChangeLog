@@ -1,3 +1,14 @@
+Mon Feb 24 12:42:01 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/open-uri.rb: [DOC] use lower case version of core classes, same
+	  as commit r44878, based on patch by Jonathan Jackson [Bug #9483]
+
+Mon Feb 24 12:42:01 2014  Zachary Scott  <e@zzak.io>
+
+	* ext/ripper/lib/ripper/lexer.rb: [DOC] use lower case version of core
+	  classes when referring to return value, since we aren't directly
+	  talking about the class. Patch by Jonathan Jackson [Bug #9483]
+
 Mon Feb 24 12:39:11 2014  Zachary Scott  <e@zzak.io>
 
 	* ext/openssl/ossl_pkey_dh.c: Fixed typo by Sandor Szuecs [Bug #9243]
