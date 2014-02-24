@@ -1,3 +1,7 @@
+Mon Feb 24 21:41:56 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* README.md, README.ja.md: removed (wrong) mode setting for emacs.
+
 Mon Feb 24 20:05:41 2014  Eric Wong  <e@80x24.org>
 
 	* configure.in: define PACKED_STRUCT_UNALIGNED for x86*
