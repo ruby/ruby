@@ -570,8 +570,12 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !if $(MSC_VER) >= 1500
 #define RUBY_FUNCTION_NAME_STRING __FUNCTION__
 !endif
-#define PACKED_STRUCT
-#define PACKED_STRUCT_UNALIGNED
+#define PACKED_STRUCT(x) __pragma(pack(push, 1)) x __pragma(pack(pop))
+!if "$(ARCH)" == "x86" || "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
+#define PACKED_STRUCT_UNALIGNED(x) PACKED_STRUCT(x)
+!else
+#define PACKED_STRUCT_UNALIGNED(x) x
+!endif
 #define RUBY_EXTERN extern __declspec(dllimport)
 #define HAVE_DECL_SYS_NERR 1
 #define HAVE_LIMITS_H 1

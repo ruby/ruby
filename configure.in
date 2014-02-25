@@ -1273,17 +1273,24 @@ RUBY_CHECK_SIZEOF(time_t, [long "long long"], [], [@%:@include <time.h>])
 RUBY_CHECK_SIZEOF(clock_t, [], [], [@%:@include <time.h>])
 
 AC_CACHE_CHECK(packed struct attribute, rb_cv_packed_struct,
-  [AC_TRY_COMPILE([struct { int a; } __attribute__((packed));], [],
-  [rb_cv_packed_struct=yes], [rb_cv_packed_struct=no])])
-if test "$rb_cv_packed_struct" = yes; then
-  AC_DEFINE_UNQUOTED(PACKED_STRUCT, __attribute__((packed)))
-  AS_CASE(["$target_cpu"],
-    [x86*|i?86|x64], [AC_DEFINE_UNQUOTED(PACKED_STRUCT_UNALIGNED, PACKED_STRUCT)],
-    [AC_DEFINE_UNQUOTED(PACKED_STRUCT_UNALIGNED,)])
+    [rb_cv_packed_struct=no
+    for mac in \
+	"__pragma(pack(push, 1)) x __pragma(pack(pop))" \
+	"x __attribute__((packed))" \
+	; do
+	AC_TRY_COMPILE([@%:@define PACKED_STRUCT(x) $mac
+			PACKED_STRUCT(struct { int a; });], [],
+		[rb_cv_packed_struct=$mac; break])
+    done])
+packed_struct_unaligned=x
+if test "$rb_cv_packed_struct" != no; then
+    AC_DEFINE_UNQUOTED([PACKED_STRUCT(x)], [$rb_cv_packed_struct])
+    AS_CASE(["$target_cpu"],
+	    [x86*|i?86|x64], [packed_struct_unaligned='PACKED_STRUCT(x)'])
 else
-  AC_DEFINE_UNQUOTED(PACKED_STRUCT,)
-  AC_DEFINE_UNQUOTED(PACKED_STRUCT_UNALIGNED,)
+    AC_DEFINE_UNQUOTED([PACKED_STRUCT(x)], x)
 fi
+AC_DEFINE_UNQUOTED(PACKED_STRUCT_UNALIGNED(x), $packed_struct_unaligned)
 
 AC_DEFUN([RUBY_CHECK_PRINTF_PREFIX], [
 AC_CACHE_CHECK([for printf prefix for $1], [rb_cv_pri_prefix_]AS_TR_SH($1),[

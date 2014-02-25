@@ -1,7 +1,7 @@
 #ifndef RUBY_TIMEV_H
 #define RUBY_TIMEV_H
 
-struct vtm {
+PACKED_STRUCT_UNALIGNED(struct vtm {
     VALUE year; /* 2000 for example.  Integer. */
     VALUE subsecx; /* 0 <= subsecx < TIME_SCALE.  possibly Rational. */
     VALUE utc_offset; /* -3600 as -01:00 for example.  possibly Rational. */
@@ -14,7 +14,7 @@ struct vtm {
     uint8_t sec:6; /* 0..60 */
     uint8_t wday:3; /* 0:Sunday, 1:Monday, ..., 6:Saturday 7:init */
     uint8_t isdst:2; /* 0:StandardTime 1:DayLightSavingTime 3:init */
-} PACKED_STRUCT_UNALIGNED;
+});
 
 #define TIME_SCALE 1000000000
 
