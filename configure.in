@@ -1278,7 +1278,7 @@ AC_CACHE_CHECK(packed struct attribute, rb_cv_packed_struct,
 if test "$rb_cv_packed_struct" = yes; then
   AC_DEFINE_UNQUOTED(PACKED_STRUCT, __attribute__((packed)))
   AS_CASE(["$target_cpu"],
-    [x86*|x?86], [AC_DEFINE_UNQUOTED(PACKED_STRUCT_UNALIGNED, PACKED_STRUCT)],
+    [x86*|x?86|x64], [AC_DEFINE_UNQUOTED(PACKED_STRUCT_UNALIGNED, PACKED_STRUCT)],
     [AC_DEFINE_UNQUOTED(PACKED_STRUCT_UNALIGNED,)])
 else
   AC_DEFINE_UNQUOTED(PACKED_STRUCT,)
