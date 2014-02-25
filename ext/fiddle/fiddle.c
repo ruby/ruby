@@ -48,7 +48,7 @@ rb_fiddle_malloc(VALUE self, VALUE size)
 {
     void *ptr;
 
-    ptr = (void*)ruby_xmalloc(NUM2INT(size));
+    ptr = (void*)ruby_xmalloc(NUM2SIZET(size));
     return PTR2NUM(ptr);
 }
 
@@ -64,7 +64,7 @@ rb_fiddle_realloc(VALUE self, VALUE addr, VALUE size)
 {
     void *ptr = NUM2PTR(addr);
 
-    ptr = (void*)ruby_xrealloc(ptr, NUM2INT(size));
+    ptr = (void*)ruby_xrealloc(ptr, NUM2SIZET(size));
     return PTR2NUM(ptr);
 }
 

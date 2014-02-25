@@ -1,3 +1,16 @@
+Tue Feb 25 22:52:02 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* ext/dl/dl.c (rb_dl_realloc): use NUM2SIZET instead of NUM2INT.
+
+	* ext/fiddle/fiddle.c (rb_fiddle_realloc): ditto.
+
+Tue Feb 25 22:49:30 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* ext/dl/dl.c (rb_dl_malloc): use NUM2SIZET instead of NUM2INT.
+	  Coverity Scan found this bug.
+
+	* ext/fiddle/fiddle.c (rb_fiddle_malloc): ditto.
+
 Tue Feb 25 12:06:13 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* win32/Makefile.sub: define PACKED_STRUCT.
