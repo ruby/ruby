@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestSymbol < Test::Unit::TestCase
   # [ruby-core:3573]
@@ -205,5 +206,19 @@ class TestSymbol < Test::Unit::TestCase
     assert_equal(true, :+.frozen?)
     assert_equal(true, "foo#{Time.now.to_i}".to_sym.frozen?)
     assert_equal(true, :foo.to_sym.frozen?)
+  end
+
+  def test_sym_find
+    assert_separately(%w[--disable=gems], <<-"end;")
+      assert_equal :intern, Symbol.find("intern")
+      assert_raise(TypeError){ Symbol.find(true) }
+
+      str = "__noexistent__"
+      assert_equal nil, Symbol.find(str)
+      assert_equal nil, Symbol.find(str)
+      sym = str.intern
+      assert_equal str, sym.to_s
+      assert_equal sym, Symbol.find(str)
+    end;
   end
 end

@@ -21,6 +21,9 @@ with all sufficient information, see the ChangeLog file.
     * min_by
     * max
     * max_by
+* Symbol
+  * New methods
+    * Symbol.find(str) returns whether given string is defined as symbol or not.
 
 === Core classes compatibility issues (excluding feature bug fixes)
 
