@@ -518,16 +518,16 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 	    e = rb_obj_as_string(e);
 	    th->errinfo = mesg;
 	    if (file && line) {
-		warn_printf("Exception `%s' at %s:%d - %"PRIsVALUE"\n",
-			    rb_obj_classname(th->errinfo), file, line, e);
+		warn_printf("Exception `%"PRIsVALUE"' at %s:%d - %"PRIsVALUE"\n",
+			    rb_obj_class(mesg), file, line, e);
 	    }
 	    else if (file) {
-		warn_printf("Exception `%s' at %s - %"PRIsVALUE"\n",
-			    rb_obj_classname(th->errinfo), file, e);
+		warn_printf("Exception `%"PRIsVALUE"' at %s - %"PRIsVALUE"\n",
+			    rb_obj_class(mesg), file, e);
 	    }
 	    else {
-		warn_printf("Exception `%s' - %"PRIsVALUE"\n",
-			    rb_obj_classname(th->errinfo), e);
+		warn_printf("Exception `%"PRIsVALUE"' - %"PRIsVALUE"\n",
+			    rb_obj_class(mesg), e);
 	    }
 	}
 	POP_TAG();

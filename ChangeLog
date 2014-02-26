@@ -1,4 +1,7 @@
-Wed Feb 26 13:26:21 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Feb 26 14:10:44 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (setup_exception): preserve exception class name encoding
+	  in debug mode messages.
 
 	* eval.c (setup_exception): preserve errinfo across calling #to_s
 	  method on the exception.  [ruby-core:61091] [Bug #9568]
