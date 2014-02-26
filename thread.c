@@ -49,7 +49,7 @@
  * supports large fd size (>FD_SETSIZE), it wrongly assumes fd is always
  * less than FD_SETSIZE (i.e. 1024). And then when enabling HAVE_RB_FD_INIT,
  * it doesn't work correctly and makes program abort. Therefore we need to
- * disable FORTY_SOURCE until glibc fixes it.
+ * disable FORTIFY_SOURCE until glibc fixes it.
  */
 #undef _FORTIFY_SOURCE
 #undef __USE_FORTIFY_LEVEL

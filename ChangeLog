@@ -1,3 +1,8 @@
+Thu Feb 27 03:55:45 2014  Zachary Scott  <e@zzak.io>
+
+	* thread.c: [DOC] Typo in comment for _FORTIFY_SOURCE [Fixes GH-548]
+	  Patch by @qnet-herwin https://github.com/ruby/ruby/pull/548
+
 Wed Feb 26 18:43:43 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (heap_pages_free_unused_pages): check tomb page availability
