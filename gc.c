@@ -999,28 +999,30 @@ heap_pages_free_unused_pages(rb_objspace_t *objspace)
 {
     size_t i, j;
 
-    for (i = j = 1; j < heap_pages_used; i++) {
-	struct heap_page *page = heap_pages_sorted[i];
+    if (heap_tomb->pages) {
+	for (i = j = 1; j < heap_pages_used; i++) {
+	    struct heap_page *page = heap_pages_sorted[i];
 
-	if (page->heap == heap_tomb && page->final_slots == 0) {
-	    if (heap_pages_swept_slots - page->limit > heap_pages_max_free_slots) {
-		if (0) fprintf(stderr, "heap_pages_free_unused_pages: %d free page %p, heap_pages_swept_slots: %d, heap_pages_max_free_slots: %d\n",
-			       (int)i, page, (int)heap_pages_swept_slots, (int)heap_pages_max_free_slots);
-		heap_pages_swept_slots -= page->limit;
-		heap_unlink_page(objspace, heap_tomb, page);
-		heap_page_free(objspace, page);
-		continue;
+	    if (page->heap == heap_tomb && page->final_slots == 0) {
+		if (heap_pages_swept_slots - page->limit > heap_pages_max_free_slots) {
+		    if (0) fprintf(stderr, "heap_pages_free_unused_pages: %d free page %p, heap_pages_swept_slots: %d, heap_pages_max_free_slots: %d\n",
+				   (int)i, page, (int)heap_pages_swept_slots, (int)heap_pages_max_free_slots);
+		    heap_pages_swept_slots -= page->limit;
+		    heap_unlink_page(objspace, heap_tomb, page);
+		    heap_page_free(objspace, page);
+		    continue;
+		}
+		else if (i == j) {
+		    return; /* no need to check rest pages */
+		}
 	    }
-	    else {
-		/* fprintf(stderr, "heap_pages_free_unused_pages: remain!!\n"); */
+	    if (i != j) {
+		heap_pages_sorted[j] = page;
 	    }
+	    j++;
 	}
-	if (i != j) {
-	    heap_pages_sorted[j] = page;
-	}
-	j++;
+	assert(j == heap_pages_used);
     }
-    assert(j == heap_pages_used);
 }
 
 static struct heap_page *

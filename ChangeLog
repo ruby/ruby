@@ -1,3 +1,9 @@
+Wed Feb 26 18:43:43 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (heap_pages_free_unused_pages): check tomb page availability
+	  at first.
+	  And return immediately if we don't touch sorted list any more.
+
 Wed Feb 26 14:10:44 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (setup_exception): preserve exception class name encoding
