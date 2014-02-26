@@ -157,6 +157,22 @@ module EnvUtil
   end
   module_function :with_default_internal
 
+  def labeled_module(name, &block)
+    Module.new do
+      singleton_class.class_eval {define_method(:to_s) {name}; alias inspect to_s}
+      class_eval(&block) if block
+    end
+  end
+  module_function :labeled_module
+
+  def labeled_class(name, superclass = Object, &block)
+    Class.new(superclass) do
+      singleton_class.class_eval {define_method(:to_s) {name}; alias inspect to_s}
+      class_eval(&block) if block
+    end
+  end
+  module_function :labeled_class
+
   if /darwin/ =~ RUBY_PLATFORM
     DIAGNOSTIC_REPORTS_PATH = File.expand_path("~/Library/Logs/DiagnosticReports")
     DIAGNOSTIC_REPORTS_TIMEFORMAT = '%Y-%m-%d-%H%M%S'
