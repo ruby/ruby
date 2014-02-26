@@ -140,19 +140,17 @@ class TestBranchCoverage < Test::Unit::TestCase
       Dir.chdir(tmp) {
         File.open("test.rb", "w") do |f|
           f.puts <<-EOS
-            def prime?(arg)
+            9.times do |i|
               primes = [2,3,5,7]
               composites = [4,6,8,9]
 
-              case arg
+              case i+1
               when *primes
                 :prime
               when *composites
                 :composite
               end
             end
-
-            9.times {|i| prime?(i+1) }
           EOS
         end
 
@@ -162,6 +160,44 @@ class TestBranchCoverage < Test::Unit::TestCase
         assert_equal 2, decision_coverage.size
         assert_equal [4,5], decision_coverage[6]
         assert_equal [4,1], decision_coverage[8]
+      }
+    }
+  ensure
+    $".replace loaded_features
+  end
+
+  def test_while_coverage
+    loaded_features = $".dup
+
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        File.open("test.rb", "w") do |f|
+          f.puts <<-EOS
+            i = 0
+            while i < 6
+              i += 1
+              next if i % 3 == 0  # next should trigger another decision
+              if i == 4
+                redo  # redo should NOT trigger another decision
+              end
+            end
+
+            until i < 1
+              break if i == 3
+              i -= 1
+            end
+          EOS
+        end
+
+        Coverage.start
+        require tmp + '/test.rb'
+        decision_coverage = Coverage.result[tmp + '/test.rb'][:decisions]
+        assert_equal 5, decision_coverage.size
+        assert_equal [6,1], decision_coverage[2]
+        assert_equal [2,4], decision_coverage[4]
+        assert_equal [1,3], decision_coverage[5]
+        assert_equal [0,4], decision_coverage[10]
+        assert_equal [1,3], decision_coverage[11]
       }
     }
   ensure

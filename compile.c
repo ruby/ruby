@@ -220,7 +220,8 @@ r_value(VALUE value)
 
 #define ADD_TRACE(seq, line, event) \
   do { \
-      if ((event) == RUBY_EVENT_LINE && iseq->coverage->lines && \
+      if ((event) == RUBY_EVENT_LINE && \
+	  iseq->coverage && iseq->coverage->lines && \
 	  (line) != iseq->compile_data->last_coverable_line) { \
 	  RARRAY_ASET(iseq->coverage->lines, (line) - 1, INT2FIX(0)); \
 	  iseq->compile_data->last_coverable_line = (line); \
@@ -233,10 +234,12 @@ r_value(VALUE value)
 
 #define ADD_METHOD_COVERAGE_TRACE(seq, line, event, end_line) \
   do { \
-      if ((event) == RUBY_EVENT_DEFN && iseq->coverage->methods) { \
+      if ((event) == RUBY_EVENT_DEFN && \
+	  iseq->coverage && iseq->coverage->methods) { \
 	  rb_hash_aset(iseq->coverage->methods, LONG2FIX(line), INT2FIX(0)); \
       } \
-      if ((event) == RUBY_EVENT_CALL && iseq->coverage->methods) { \
+      if ((event) == RUBY_EVENT_CALL && \
+	  iseq->coverage && iseq->coverage->methods) { \
 	  ADD_INSN1((seq), (line), trace, INT2FIX(RUBY_EVENT_MCOVERAGE)); \
       } \
   } while (0)
@@ -244,7 +247,7 @@ r_value(VALUE value)
 #define ADD_DECISION_COVERAGE_TRACE(seq, line, event) \
   do { \
       if (((event) == RUBY_EVENT_DECISION_TRUE || (event) == RUBY_EVENT_DECISION_FALSE) \
-		      && iseq->coverage->decisions) { \
+		      && iseq->coverage && iseq->coverage->decisions) { \
 	    rb_hash_aset(iseq->coverage->decisions, LONG2FIX(line), rb_assoc_new(INT2FIX(0), INT2FIX(0))); \
 	    if ((event) == RUBY_EVENT_DECISION_TRUE) \
 		ADD_INSN1((seq), (line), trace, INT2FIX(RUBY_EVENT_DCOVERAGE_TRUE)); \
@@ -3479,6 +3482,10 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	if (tmp_label) ADD_LABEL(ret, tmp_label);
 
 	ADD_LABEL(ret, redo_label);
+	if (type == NODE_WHILE)
+	    ADD_DECISION_COVERAGE_TRACE(ret, nd_line(node->nd_cond), RUBY_EVENT_DECISION_TRUE);
+	else
+	    ADD_DECISION_COVERAGE_TRACE(ret, nd_line(node->nd_cond), RUBY_EVENT_DECISION_FALSE);
 	COMPILE_POPED(ret, "while body", node->nd_body);
 	ADD_LABEL(ret, next_label);	/* next */
 
@@ -3499,6 +3506,10 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 
 	ADD_LABEL(ret, end_label);
+	if (type == NODE_WHILE)
+	    ADD_DECISION_COVERAGE_TRACE(ret, nd_line(node->nd_cond), RUBY_EVENT_DECISION_FALSE);
+	else
+	    ADD_DECISION_COVERAGE_TRACE(ret, nd_line(node->nd_cond), RUBY_EVENT_DECISION_TRUE);
 
 	if (node->nd_state == Qundef) {
 	    /* ADD_INSN(ret, line, putundef); */

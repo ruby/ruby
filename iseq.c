@@ -310,13 +310,11 @@ prepare_iseq_build(rb_iseq_t *iseq,
     iseq->compile_data->option = option;
     iseq->compile_data->last_coverable_line = -1;
 
-    iseq->coverage = ALLOC(struct rb_coverage_struct);
-    RB_OBJ_WRITE(iseq->self, &iseq->coverage->lines, Qfalse);
-    RB_OBJ_WRITE(iseq->self, &iseq->coverage->methods, Qfalse);
-    RB_OBJ_WRITE(iseq->self, &iseq->coverage->decisions, Qfalse);
+    iseq->coverage = 0;
     if (!GET_THREAD()->parse_in_eval) {
 	VALUE coverages = rb_get_coverages();
 	if (RTEST(coverages)) {
+	    iseq->coverage = ALLOC(struct rb_coverage_struct);
 	    RB_OBJ_WRITE(iseq->self, &iseq->coverage->lines,
 			 rb_hash_lookup(rb_hash_lookup(coverages, path), ID2SYM(rb_intern("lines"))));
 	    RB_OBJ_WRITE(iseq->self, &iseq->coverage->methods,
