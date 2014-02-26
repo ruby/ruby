@@ -183,7 +183,7 @@ typedef struct rb_iseq_location_struct {
 struct rb_coverage_struct {
     const VALUE lines;
     const VALUE methods;
-    const VALUE branches;
+    const VALUE decisions;
 };
 
 struct rb_iseq_struct;

@@ -17,7 +17,7 @@ class TestCoverage < Test::Unit::TestCase
       assert_kind_of(Hash, val)
       assert_kind_of(Array, val[:lines])
       assert_kind_of(Hash, val[:methods])
-      assert_kind_of(Hash, val[:branches])
+      assert_kind_of(Hash, val[:decisions])
     end
   end
 

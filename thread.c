@@ -5135,16 +5135,9 @@ update_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
 }
 
 static void
-update_detailed_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klass)
+update_method_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klass)
 {
-    VALUE coverage;
-    if (event == RUBY_EVENT_MCOVERAGE) {
-	coverage = GET_THREAD()->cfp->iseq->coverage->methods;
-    } else if (event == RUBY_EVENT_BCOVERAGE) {
-	coverage = GET_THREAD()->cfp->iseq->coverage->branches;
-    } else {
-	rb_raise(rb_eArgError, "unknown detailed coverage event");
-    }
+    VALUE coverage = GET_THREAD()->cfp->iseq->coverage->methods;
 
     if (coverage) {
 	VALUE line = LONG2FIX(rb_sourceline());
@@ -5155,6 +5148,33 @@ update_detailed_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, V
 	}
 
 	rb_hash_aset(coverage, line, LONG2FIX(FIX2LONG(count) + 1));
+    }
+
+}
+
+static void
+update_decision_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klass)
+{
+    struct rb_coverage_struct *coverages = GET_THREAD()->cfp->iseq->coverage;
+
+    if (coverages && coverages->decisions) {
+	VALUE coverage = coverages->decisions;
+	VALUE line = LONG2FIX(rb_sourceline());
+	VALUE counts = rb_hash_lookup(coverage, line); /* [true counts, false counts] */
+	VALUE count;
+
+	if (counts == Qnil) {
+	    return;
+	}
+
+	if (event == RUBY_EVENT_DCOVERAGE_TRUE) {
+	    count = FIX2LONG(RARRAY_AREF(counts, 0)) + 1;
+	    RARRAY_ASET(counts, 0, LONG2FIX(count));
+	}
+	else {
+	    count = FIX2LONG(RARRAY_AREF(counts, 1)) + 1;
+	    RARRAY_ASET(counts, 1, LONG2FIX(count));
+	}
     }
 }
 
@@ -5169,8 +5189,9 @@ rb_set_coverages(VALUE coverages)
 {
     GET_VM()->coverages = coverages;
     rb_add_event_hook(update_coverage, RUBY_EVENT_COVERAGE, Qnil);
-    rb_add_event_hook(update_detailed_coverage, RUBY_EVENT_MCOVERAGE, Qnil);
-    rb_add_event_hook(update_detailed_coverage, RUBY_EVENT_BCOVERAGE, Qnil);
+    rb_add_event_hook(update_method_coverage, RUBY_EVENT_MCOVERAGE, Qnil);
+    rb_add_event_hook(update_decision_coverage, RUBY_EVENT_DCOVERAGE_TRUE, Qnil);
+    rb_add_event_hook(update_decision_coverage, RUBY_EVENT_DCOVERAGE_FALSE, Qnil);
 }
 
 void
@@ -5178,7 +5199,8 @@ rb_reset_coverages(void)
 {
     GET_VM()->coverages = Qfalse;
     rb_remove_event_hook(update_coverage);
-    rb_remove_event_hook(update_detailed_coverage);
+    rb_remove_event_hook(update_method_coverage);
+    rb_remove_event_hook(update_decision_coverage);
 }
 
 VALUE
