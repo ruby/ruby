@@ -515,7 +515,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 	PUSH_TAG();
 	if ((status = EXEC_TAG()) == 0) {
 	    th->errinfo = Qnil;
-	    e = rb_obj_as_string(e);
+	    e = rb_obj_as_string(mesg);
 	    th->errinfo = mesg;
 	    if (file && line) {
 		warn_printf("Exception `%"PRIsVALUE"' at %s:%d - %"PRIsVALUE"\n",
