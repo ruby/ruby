@@ -879,7 +879,8 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module)
 
 	if (BUILTIN_TYPE(module) == T_ICLASS) {
 	    rb_module_add_to_subclasses_list(RBASIC(module)->klass, iclass);
-	} else {
+	}
+	else {
 	    rb_module_add_to_subclasses_list(module, iclass);
 	}
 
