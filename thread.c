@@ -1013,7 +1013,8 @@ getclockofday(struct timeval *tp)
     if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
 	tp->tv_sec = ts.tv_sec;
 	tp->tv_usec = ts.tv_nsec / 1000;
-    } else
+    }
+    else
 #endif
     {
         gettimeofday(tp, NULL);
@@ -1084,7 +1085,8 @@ timeofday(void)
 
     if (clock_gettime(CLOCK_MONOTONIC, &tp) == 0) {
         return (double)tp.tv_sec + (double)tp.tv_nsec * 1e-9;
-    } else
+    }
+    else
 #endif
     {
         struct timeval tv;

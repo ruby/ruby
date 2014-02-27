@@ -2561,7 +2561,8 @@ obj2subsecx(VALUE obj, VALUE *subsecx)
     if (RB_TYPE_P(obj, T_STRING)) {
 	obj = rb_str_to_inum(obj, 10, FALSE);
         *subsecx = INT2FIX(0);
-    } else {
+    }
+    else {
         divmodv(num_exact(obj), INT2FIX(1), &obj, &subsec);
         *subsecx = w2v(rb_time_magnify(v2w(subsec)));
     }

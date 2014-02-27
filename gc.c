@@ -5562,7 +5562,8 @@ gc_stat(int argc, VALUE *argv, VALUE self)
 	    size_t value = 0;
 	    gc_stat_internal(arg, &value);
 	    return SIZET2NUM(value);
-	} else if (!RB_TYPE_P(arg, T_HASH)) {
+	}
+	else if (!RB_TYPE_P(arg, T_HASH)) {
 	    rb_raise(rb_eTypeError, "non-hash or symbol given");
 	}
     }
@@ -5581,7 +5582,8 @@ rb_gc_stat(VALUE key)
 	size_t value = 0;
 	gc_stat_internal(key, &value);
 	return value;
-    } else {
+    }
+    else {
 	gc_stat_internal(key, 0);
 	return 0;
     }

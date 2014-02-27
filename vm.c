@@ -149,7 +149,8 @@ vm_stat(int argc, VALUE *argv, VALUE self)
 	    hash = arg;
 	else
 	    rb_raise(rb_eTypeError, "non-hash or symbol given");
-    } else if (arg == Qnil) {
+    }
+    else if (NIL_P(arg)) {
 	hash = rb_hash_new();
     }
 

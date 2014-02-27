@@ -1178,25 +1178,26 @@ dln_strerror(void)
 static void
 aix_loaderror(const char *pathname)
 {
-  char *message[1024], errbuf[1024];
-  int i;
+    char *message[1024], errbuf[1024];
+    int i;
 #define ERRBUF_APPEND(s) strlcat(errbuf, (s), sizeof(errbuf))
-  snprintf(errbuf, sizeof(errbuf), "load failed - %s. ", pathname);
+    snprintf(errbuf, sizeof(errbuf), "load failed - %s. ", pathname);
 
-  if (loadquery(L_GETMESSAGES, &message[0], sizeof(message)) != -1) {
-    ERRBUF_APPEND("Please issue below command for detailed reasons:\n\t");
-    ERRBUF_APPEND("/usr/sbin/execerror ruby ");
-    for (i=0; message[i]; i++) {
-      ERRBUF_APPEND("\"");
-      ERRBUF_APPEND(message[i]);
-      ERRBUF_APPEND("\" ");
+    if (loadquery(L_GETMESSAGES, &message[0], sizeof(message)) != -1) {
+	ERRBUF_APPEND("Please issue below command for detailed reasons:\n\t");
+	ERRBUF_APPEND("/usr/sbin/execerror ruby ");
+	for (i=0; message[i]; i++) {
+	    ERRBUF_APPEND("\"");
+	    ERRBUF_APPEND(message[i]);
+	    ERRBUF_APPEND("\" ");
+	}
+	ERRBUF_APPEND("\n");
     }
-    ERRBUF_APPEND("\n");
-  } else {
-    ERRBUF_APPEND(strerror(errno));
-    ERRBUF_APPEND("[loadquery failed]");
-  }
-  dln_loaderror("%s", errbuf);
+    else {
+	ERRBUF_APPEND(strerror(errno));
+	ERRBUF_APPEND("[loadquery failed]");
+    }
+    dln_loaderror("%s", errbuf);
 }
 #endif
 

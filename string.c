@@ -5823,7 +5823,8 @@ rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
 	        *t++ = save = c;
 	    }
 	}
-    } else {
+    }
+    else {
 	while (s < send) {
 	    unsigned int c;
 	    int clen;
