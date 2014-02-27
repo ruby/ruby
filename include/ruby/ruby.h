@@ -878,8 +878,7 @@ struct RArray {
 #define RARRAY_EMBED_LEN_SHIFT (FL_USHIFT+3)
 #define RARRAY_LEN(a) \
     ((RBASIC(a)->flags & RARRAY_EMBED_FLAG) ? \
-     (long)((RBASIC(a)->flags >> RARRAY_EMBED_LEN_SHIFT) & \
-	 (RARRAY_EMBED_LEN_MASK >> RARRAY_EMBED_LEN_SHIFT)) : \
+     (long)((RBASIC(a)->flags & RARRAY_EMBED_LEN_MASK) >> RARRAY_EMBED_LEN_SHIFT) : \
      RARRAY(a)->as.heap.len)
 
 #define RARRAY_LENINT(ary) rb_long2int(RARRAY_LEN(ary))
