@@ -170,18 +170,24 @@ else
   end
 
   q = $repos + (ARGV[1] || default_merge_branch)
-  revs = ARGV[0].split(/,\s*/)
+  revstr = ARGV[0].delete('^, :\-0-9')
+  revs = revstr.split(/[,\s]+/)
   log = ''
   log_svn = ''
 
   revs.each do |rev|
     case rev
-    when /\Ar?\d+:r?\d+\z/
+    when /\A\d+:\d+\z/
       r = ['-r', rev]
-    when /\Ar?\d+\z/
+    when /\A(\d+)-(\d+)\z/
+      r = ['-r', rev]
+    when /\A\d+\z/
       r = ['-c', rev]
     when nil then
       puts "#$0 revision"
+      exit
+    else
+      puts "invalid revision part '#{rev}' in '#{ARGV[0]}'"
       exit
     end
 
@@ -224,7 +230,7 @@ else
 
   version_up
   f = Tempfile.new 'merger.rb'
-  f.printf "merge revision(s) %s:%s\n", ARGV[0], tickets.join
+  f.printf "merge revision(s) %s:%s\n", revstr, tickets.join
   f.write log_svn
   f.flush
   f.close
