@@ -3548,6 +3548,10 @@ if test "${universal_binary-no}" = yes ; then
     mv -f confdefs1.h confdefs.h
     AC_MSG_ERROR([failed])
     ])])
+    AC_CACHE_CHECK(whether __ARCHITECTURE__ is available, rb_cv_architecture_available,
+	AC_TRY_COMPILE([@%:@include <stdio.h>
+		const char arch[[]] = __ARCHITECTURE__;], [puts(arch);],
+		[rb_cv_architecture_available=yes], [rb_cv_architecture_available=no]))
 fi
 
 if test "$ac_cv_func_memmem" = yes; then
@@ -3765,9 +3769,6 @@ AC_SUBST(configure_args, "`echo "${ac_configure_args}" | sed 's/\\$/$$/g'`")dnl
 
 if test "${universal_binary-no}" = yes ; then
     arch="universal-${target_os}"
-    AC_CACHE_CHECK(whether __ARCHITECTURE__ is available, rb_cv_architecture_available,
-	AC_TRY_COMPILE([const char arch[] = __ARCHITECTURE__;], [puts(arch);],
-	     [rb_cv_architecture_available=yes], [rb_cv_architecture_available=no]))
     if test "${rb_cv_architecture_available}" = yes; then
 	AC_DEFINE_UNQUOTED(RUBY_PLATFORM_CPU, __ARCHITECTURE__)
     else
