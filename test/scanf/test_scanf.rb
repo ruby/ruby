@@ -7,7 +7,7 @@
 
 require 'scanf.rb'
 require 'test/unit'
-require 'tmpdir'
+require 'tempfile'
 
 # Comment out either of these lines to skip those tests.
 
@@ -311,15 +311,13 @@ class TestIOScanf
   include Scanf
   extend ScanfTests
 
-  tmpfilename = "#{Dir.tmpdir}/iotest.dat.#{$$}"
-
   self.each_test do |test, i|
     define_method("test_#{i}") do ||
-      File.open(tmpfilename, "w") {|fh| fh.print test[1]}
-      File.open(tmpfilename, "r") { |fh|
+      Tempfile.create("iotest.dat") do |fh|
+        fh.print test[1]
+        fh.rewind
         assert_equal(test[2], fh.scanf(test[0]))
-      }
-      File.delete(tmpfilename)
+      end
     end
   end
 end
