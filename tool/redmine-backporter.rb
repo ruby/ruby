@@ -180,10 +180,10 @@ def more(sio)
   until ss.eos?
     print ":"
     case c = console.getch
-    when ' ', "\x04"
+    when ' '
       rows = ss.getrows(lx, ly)
       puts cls + rows
-    when 'j', ""
+    when 'j', "\r"
       rows = ss.getrows(lx, 1)
       puts cls + rows
     when "q"
