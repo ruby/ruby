@@ -130,13 +130,13 @@ class TestSyslog < Test::Unit::TestCase
       options = Syslog::LOG_PERROR | Syslog::LOG_NDELAY
 
       Syslog.open("syslog_test", options) { |sl|
-	sl.log(Syslog::LOG_NOTICE, "test1 - hello, %s!", "world")
-	sl.notice("test1 - hello, %s!", "world")
+        sl.log(Syslog::LOG_NOTICE, "test1 - hello, %s!", "world")
+        sl.notice("test1 - hello, %s!", "world")
       }
 
       Syslog.open("syslog_test", options | Syslog::LOG_PID) { |sl|
-	sl.log(Syslog::LOG_CRIT, "test2 - pid")
-	sl.crit("test2 - pid")
+        sl.log(Syslog::LOG_CRIT, "test2 - pid")
+        sl.crit("test2 - pid")
       }
       exit!
     }
@@ -172,12 +172,12 @@ class TestSyslog < Test::Unit::TestCase
   def test_inspect
     Syslog.open { |sl|
       assert_equal(format('<#%s: opened=true, ident="%s", options=%d, facility=%d, mask=%d>',
-			  Syslog,
-			  sl.ident,
-			  sl.options,
-			  sl.facility,
-			  sl.mask),
-		   sl.inspect)
+          Syslog,
+          sl.ident,
+          sl.options,
+          sl.facility,
+          sl.mask),
+        sl.inspect)
     }
 
     assert_equal(format('<#%s: opened=false>', Syslog), Syslog.inspect)
