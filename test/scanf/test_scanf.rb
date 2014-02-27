@@ -41,11 +41,8 @@ module ScanfTests
       [ "%d\n%[abc]", "\neabc", [] ],
       [ "%d%[^abc]", "ghiabc", [ ] ],
       [ "%d%[abc]", "abc", [] ],
-      [ "%*d %*3d %*s", "123 +456 abc", [] ],
       [ "%d%s", "", [] ],
       [ "%d%s", "blah 123 string", [] ],
-      [ "%[\n]", "abc\n", [] ],
-      [ "%[\n]", "abc\n", [] ],
       [ "%[\n]", "abc\n", [] ],
       [ "%f", "x", [] ],
       [ "%f", "z", [] ],
@@ -69,7 +66,6 @@ module ScanfTests
       [ "%3c", "a\nb", [ "a\nb" ] ],
       [ "%3c", "a\nbcd", [ "a\nb" ] ],
       [ "%c\n\n", "x\n\n", [ "x" ] ],
-      [ "%c\n\n", "x\n\n", [ "x" ] ],
       [ "%c", "\n", [ "\n" ] ],
       [ "%c", "x\n", [ "x" ] ],
       [ "%2c", " 123", [" 1"] ],
@@ -80,7 +76,6 @@ module ScanfTests
       [ "%5c", "a\nb\n\n", [ "a\nb\n\n" ] ],
       [ "%6c", "a\nb\n\nx", [ "a\nb\n\nx" ] ],
       [ "%5c", "ab\ncd", [ "ab\ncd" ] ],
-      [ "%5c", "a\nb\n\n", [ "a\nb\n\n" ] ],
 
 # Testing 'o'
       [ "%3o", "0xz", [0] ],
@@ -88,7 +83,6 @@ module ScanfTests
 # Testing 'd'
       [ "%d", "\n123", [ 123 ] ],
       [ "%d", "\n\n123", [ 123 ] ],
-      [ "%d", "\n123", [ 123 ] ],
       [ "%1d", "2", [2] ],
 
 # Mixed tests
@@ -98,7 +92,6 @@ module ScanfTests
 #   various mixed specifiers
 
       [ "%[^\\w]%c", "...1", [ "...", "1"] ],
-      [ '%[^\\w]%c', "...1", [ "...", "1"] ],
       [ "%[abc\n]%d", "a\n\nb\n\nc   123", [ "a\n\nb\n\nc", 123 ] ],
       [ "%[abc\n]%d", "a\n\nb\n\nc \t  123", [ "a\n\nb\n\nc", 123 ] ],
       [ "%[abc\t]%d", "a\t\tb\t\tc   123", [ "a\t\tb\t\tc", 123 ] ],
@@ -115,7 +108,6 @@ module ScanfTests
       [ "%d%3[^abc]", "123defdef", [ 123, "def" ] ],
       [ "%d%3[^abc] ", "123defdef   ", [ 123, "def" ] ],
       [ "%d%3[^abc]ghi", "123defghi", [ 123, "def" ] ],
-      [ "%d%3[^abc]", "123defdef", [ 123, "def" ] ],
       [ "%d%3[^abc]", "123adefdef", [ 123 ] ],
       [ "%d%3[^abc]", "123deafdef", [ 123, "de" ] ],
       [ "%d%3[^abc\n]", "123de\nf", [ 123, "de" ] ],
@@ -142,9 +134,7 @@ module ScanfTests
       [ "%c\n\n%c", "x\n\ny", [ "x", "y" ] ],
       [ "%s%d%d", "abc\n123\n456", [ "abc", 123, 456 ] ],
       [ "%3s%c%3c%d", "1.2x\n\ny123", [ "1.2", "x", "\n\ny", 123 ] ],
-      [ "%f%3c", "1.2x\ny", [ 1.2, "x\ny"] ],
       [ "%c\n%c", "x\n\ny", [ "x", "y" ] ],
-      [ "%c\n\n%c", "x\n\ny", [ "x", "y" ] ],
       [ "%c  %c", "x\n\ny", [ "x", "y" ] ],
       [ "%s\n\n%c", "x\n\ny", [ "x", "y" ] ],
       [ "%s\n\n%s", "x\n\ny", [ "x", "y" ] ],
@@ -152,10 +142,6 @@ module ScanfTests
       [ "%d\n%d", "23\n\n45", [ 23, 45 ] ],
       [ "%c\n\n%c", "x y", [ "x", "y" ] ],
       [ "%c%c", "x\n\ny", [ "x", "\n" ] ],
-      [ "%c\n%c", "x y", [ "x", "y" ] ],
-      [ "%c\t%c", "x y", [ "x", "y" ] ],
-      [ "%s\n%s", "x y", [ "x", "y" ] ],
-      [ "%s%s\n", "x y", [ "x", "y" ] ],
       [ "%c%c", "x\n", [ "x", "\n" ] ],
       [ "%d%c%c%d", "345   678", [ 345, " ", " ", 678] ],
       [ "%d   %c%s", "123   x  hello", [123, "x", "hello"] ],
@@ -187,7 +173,6 @@ module ScanfTests
       [ "%s%5x%d", "hello 0xdef 123", [ "hello", "def".hex, 123] ],
       [ "%s%6x%d", "hello +0xdef 123", [ "hello", "def".hex, 123] ],
       [ "%s%6x%d", "hello -0xdef 123", [ "hello", -"def".hex, 123] ],
-      [ "%s%6x%d", "hello -0xdef 123", [ "hello", -"def".hex, 123] ],
       [ "%s%4x%d", "hello -def 123", [ "hello", -"def".hex, 123] ],
       [ "%s%3x%d", "hello def 123", [ "hello", "def".hex, 123] ],
       [ "%s%x%d", "hello -def 123", [ "hello", -"def".hex, 123] ],
@@ -201,7 +186,6 @@ module ScanfTests
       [ "%f %d %s", "12.3e23 45 string", ["12.3e23".to_f, 45, "string"] ],
       [ "%f %d %s", "12.3e+23 45 string", ["12.3e23".to_f, 45, "string"] ],
       [ "%f %d %s", "12.3e-23 45 string", ["12.3e-23".to_f, 45, "string"] ],
-      [ "%f %d %s", "12.3e23 45 string", ["12.3e23".to_f, 45, "string"] ],
       [ "%f %d %s", "-12.3e-23 45 string", ["-12.3e-23".to_f, 45, "string"] ],
       [ "%f %d %s", "12.e23 45 string", ["12.e23".to_f, 45, "string"] ],
       [ "%5f %d %s", "1.2e23 string", ["1.2e2".to_f, 3, "string"] ],
@@ -234,12 +218,10 @@ module ScanfTests
       [ "%d%s", "123", [123] ],
       [ "%s%d", "abc", ["abc"] ],
       [ "%f%x", "3.2e45x", ["3.2e45x".to_f] ],
-      [ "%s%d", "abc", ["abc"] ],
       [ "%*5f%d %d %s", "1.2e23 45 string", [3, 45, "string"] ],
       [ "%5f%*d %d %s", "1.2e23 45 string", ["1.2e2".to_f, 45, "string"] ],
       [ "%*5f%*d %*d %s", "1.2e23 45 string", ["string"] ],
       [ "%f %*d %s", "12.e23 45 string", ["12.e23".to_f, "string"] ],
-      [ "%5f %d %s", "1.2e23 string", ["1.2e2".to_f, 3, "string"] ],
       [ "%s %f %s %d %x%c%c%c%c",
         "float: 1.2e23 dec/hex: 135a23 abc",
         ["float:", "1.2e23".to_f, "dec/hex:", 135, "a23".hex, " ", "a", "b", "c" ] ],
@@ -257,8 +239,6 @@ module ScanfTests
       [ "%[\n]", "\nabc", [ "\n" ] ],
       [ "%[\n\t]", "\t\n", [ "\t\n" ] ],
       [ "%[a-f]", "abczef", [ "abc" ] ],
-      [ "%d%3[abc]", "123 aaab", [ 123 ] ],
-      [ "%d%3[^abc]", "123adefdef", [ 123 ] ],
       [ "%d%3[[:lower:]] %f", "123ade1.2", [ 123,"ade",1.2 ] ],
       [ "%d%3[[:lower:]] %f", "123ad1.2", [ 123,"ad",1.2 ] ],
       [ "%d%3[[:lower:]] %f", "123 ad1.2", [ 123 ] ],
@@ -285,13 +265,13 @@ module ScanfTests
       ["[%d,%f", "[10,1.1", [10,1.1] ],
       [" [%d,%f", " [10,1.1", [10,1.1] ],
 
-     ]
+    ]
   end
 
   def each_test
-    i = "0" * (Math.log(self.tests.size, 10).floor+1)
     self.tests.each do |test|
-      yield test, i.succ!
+      format, string, = test
+      yield test, "#{string.dump}(#{format.dump})"
     end
   end
 end
