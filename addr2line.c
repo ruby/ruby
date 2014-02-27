@@ -444,10 +444,8 @@ follow_debuglink(char *debuglink, int num_traces, void **traces, char **syms,
     subdir = (char *)alloca(strlen(binary_filename) + 1);
     strcpy(subdir, binary_filename);
     strcpy(binary_filename, global_debug_dir);
-    strncat(binary_filename, subdir,
-	    PATH_MAX - strlen(binary_filename) - 1);
-    strncat(binary_filename, debuglink,
-	    PATH_MAX - strlen(binary_filename) - 1);
+    strlcat(binary_filename, subdir, PATH_MAX);
+    strlcat(binary_filename, debuglink, PATH_MAX);
 
     munmap(current_line->mapped, current_line->mapped_size);
     close(current_line->fd);

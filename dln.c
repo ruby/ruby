@@ -1180,7 +1180,7 @@ aix_loaderror(const char *pathname)
 {
   char *message[1024], errbuf[1024];
   int i;
-#define ERRBUF_APPEND(s) strncat(errbuf, (s), sizeof(errbuf)-strlen(errbuf)-1)
+#define ERRBUF_APPEND(s) strlcat(errbuf, (s), sizeof(errbuf))
   snprintf(errbuf, sizeof(errbuf), "load failed - %s. ", pathname);
 
   if (loadquery(L_GETMESSAGES, &message[0], sizeof(message)) != -1) {
