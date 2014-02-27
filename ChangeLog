@@ -1,3 +1,9 @@
+Thu Feb 27 17:59:01 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/optparse.rb: [DOC] Add example of generating help with optparse.
+	  Patch by @joelmccracken documenting-ruby/ruby#19
+	  https://github.com/documenting-ruby/ruby/pull/19
+
 Thu Feb 27 12:10:09 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (ruby_num_interval_step_size): check signs and get rid
