@@ -1808,9 +1808,20 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
 	long delta, diff, result;
 
 	diff = FIX2LONG(step);
+	if (!diff) rb_num_zerodiv();
 	delta = FIX2LONG(to) - FIX2LONG(from);
 	if (excl) {
 	    delta += (diff > 0 ? -1 : +1);
+	}
+	if (delta) {
+	    if (diff < 0) {
+		if (delta > 0) return INT2FIX(0);
+		diff = -diff;
+		delta = -delta;
+	    }
+	    else {
+		if (delta < 0) return INT2FIX(0);
+	    }
 	}
 	result = delta / diff;
 	return LONG2FIX(result >= 0 ? result + 1 : 0);

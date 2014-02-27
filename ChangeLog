@@ -1,3 +1,9 @@
+Thu Feb 27 12:10:09 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (ruby_num_interval_step_size): check signs and get rid
+	  of implementation dependent behavior of negative division.
+	  [ruby-core:61106] [Bug #9570]
+
 Thu Feb 27 03:55:45 2014  Zachary Scott  <e@zzak.io>
 
 	* thread.c: [DOC] Typo in comment for _FORTIFY_SOURCE [Fixes GH-548]

@@ -279,6 +279,8 @@ class TestNumeric < Test::Unit::TestCase
     assert_step [1], [1, 10, 2**32]
     assert_step [1], [1, to: 10, by: 2**32]
 
+    assert_step [], [2, 1, 3]
+    assert_step [], [-2, -1, -3]
     assert_step [3, 3, 3, 3], [3, by: 0], inf: true
     assert_step [10], [10, 1, -(2**32)]
 
