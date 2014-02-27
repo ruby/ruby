@@ -819,13 +819,23 @@ rb_include_class_new(VALUE module, VALUE super)
 }
 
 static int include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super);
+static void include_module_unfrozen(VALUE klass, VALUE module);
+static void prepend_module_unfrozen(VALUE klass, VALUE module);
 
 void
 rb_include_module(VALUE klass, VALUE module)
 {
+    rb_frozen_class_p(klass);
+    include_module_unfrozen(klass, module);
+    rb_class_foreach_subclass(klass, include_module_unfrozen, module);
+}
+
+static void
+include_module_unfrozen(VALUE klass, VALUE module)
+{
     int changed = 0;
 
-    rb_frozen_class_p(klass);
+    if (OBJ_FROZEN(klass)) return;
 
     if (!RB_TYPE_P(module, T_MODULE)) {
 	Check_Type(module, T_MODULE);
@@ -934,10 +944,19 @@ move_refined_method(st_data_t key, st_data_t value, st_data_t data)
 void
 rb_prepend_module(VALUE klass, VALUE module)
 {
+    rb_frozen_class_p(klass);
+    prepend_module_unfrozen(klass, module);
+    rb_class_foreach_subclass(klass, prepend_module_unfrozen, module);
+}
+
+static void
+prepend_module_unfrozen(VALUE klass, VALUE module)
+{
+    void rb_vm_check_redefinition_by_prepend(VALUE klass);
     VALUE origin;
     int changed = 0;
 
-    rb_frozen_class_p(klass);
+    if (OBJ_FROZEN(module)) return;
 
     Check_Type(module, T_MODULE);
 
