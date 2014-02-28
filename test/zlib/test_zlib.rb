@@ -415,7 +415,6 @@ if defined? Zlib
       z = Zlib::Inflate.new
       assert_raise(Zlib::DataError) { z << "\0" * 100 + s }
       assert_equal(true, z.sync(""))
-      #assert_equal(true, z.sync_point?)
 
       z = Zlib::Inflate.new
       assert_equal(false, z.sync("\0" * 100))
@@ -423,7 +422,6 @@ if defined? Zlib
 
       z = Zlib::Inflate.new
       assert_equal(true, z.sync("\0" * 100 + s))
-      #assert_equal(true, z.sync_point?)
     end
 
     def test_set_dictionary
