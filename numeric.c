@@ -1906,7 +1906,7 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
  *
  *  In the recommended keyword argument style, either or both of
  *  +step+ and +limit+ (default infinity) can be omitted.  In the
- *  fixed position argument style, integer zero as a step
+ *  fixed position argument style, zero as a step
  *  (i.e. num.step(limit, 0)) is not allowed for historical
  *  compatibility reasons.
  *
