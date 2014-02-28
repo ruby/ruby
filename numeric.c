@@ -1836,7 +1836,8 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
 	double n = ruby_float_step_size(NUM2DBL(from), NUM2DBL(to), NUM2DBL(step), excl);
 
 	if (isinf(n)) return DBL2NUM(n);
-	return LONG2FIX(n);
+	if (POSFIXABLE(n)) return LONG2FIX(n);
+	return rb_dbl2big(n);
     }
     else {
 	VALUE result;

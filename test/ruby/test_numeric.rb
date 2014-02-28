@@ -271,6 +271,14 @@ class TestNumeric < Test::Unit::TestCase
     assert_equal(bignum*2+1, (-bignum).step(bignum, 1).size)
     assert_equal(bignum*2, (-bignum).step(bignum-1, 1).size)
 
+    assert_equal(10+1, (0.0).step(10.0, 1.0).size)
+
+    i, bigflo = 1, bignum.to_f
+    i <<= 1 until (bigflo - i).to_i < bignum
+    bigflo -= i >> 1
+    assert_equal(bigflo.to_i, (0.0).step(bigflo-1.0, 1.0).size)
+    assert_operator((0.0).step(bignum.to_f, 1.0).size, :>=, bignum) # may loose precision
+
     assert_step [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [1, 10]
     assert_step [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [1, to: 10]
     assert_step [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [1, to: 10, by: nil]
