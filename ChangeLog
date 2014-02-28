@@ -1,3 +1,7 @@
+Fri Feb 28 11:16:55 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* numeric.c: Fix Numeric#step with 0 unit [Bug #9575]
+
 Thu Feb 27 17:59:01 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/optparse.rb: [DOC] Add example of generating help with optparse.
