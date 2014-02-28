@@ -251,7 +251,8 @@ class TestNumeric < Test::Unit::TestCase
   end
 
   def test_step
-    bignum = 1 << 100
+    i, bignum = 32, 1 << 30
+    bignum <<= (i <<= 1) - 32 until bignum.is_a?(Bignum)
     assert_raise(ArgumentError) { 1.step(10, 1, 0) { } }
     assert_raise(ArgumentError) { 1.step(10, 1, 0).size }
     assert_raise(ArgumentError) { 1.step(10, 0) { } }
@@ -266,6 +267,9 @@ class TestNumeric < Test::Unit::TestCase
     assert_nothing_raised { 1.step(by: 0).size }
     assert_nothing_raised { 1.step(by: nil) }
     assert_nothing_raised { 1.step(by: nil).size }
+
+    assert_equal(bignum*2+1, (-bignum).step(bignum, 1).size)
+    assert_equal(bignum*2, (-bignum).step(bignum-1, 1).size)
 
     assert_step [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [1, 10]
     assert_step [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [1, to: 10]

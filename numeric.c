@@ -1830,7 +1830,7 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
 	if (delta < 0) {
 	    return INT2FIX(0);
 	}
-	return LONG2FIX(delta / diff + 1);
+	return ULONG2NUM(delta / diff + 1UL);
     }
     else if (RB_TYPE_P(from, T_FLOAT) || RB_TYPE_P(to, T_FLOAT) || RB_TYPE_P(step, T_FLOAT)) {
 	double n = ruby_float_step_size(NUM2DBL(from), NUM2DBL(to), NUM2DBL(step), excl);
