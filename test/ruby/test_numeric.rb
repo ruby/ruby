@@ -283,6 +283,7 @@ class TestNumeric < Test::Unit::TestCase
     assert_step [], [2, 1, 3]
     assert_step [], [-2, -1, -3]
     assert_step [3, 3, 3, 3], [3, by: 0], inf: true
+    assert_step [3, 3, 3, 3], [3, by: 0, to: 42], inf: true
     assert_step [10], [10, 1, -bignum]
 
     assert_step [], [1, 0, Float::INFINITY]
@@ -292,6 +293,19 @@ class TestNumeric < Test::Unit::TestCase
     assert_step [10, 11, 12, 13], [10], inf: true
     assert_step [10, 9, 8, 7], [10, by: -1], inf: true
     assert_step [10, 9, 8, 7], [10, by: -1, to: nil], inf: true
+
+    assert_step [42, 42, 42, 42], [42, by: 0, to: -Float::INFINITY], inf: true
+    assert_step [42, 42, 42, 42], [42, by: 0, to: 42.5], inf: true
+    assert_step [4.2, 4.2, 4.2, 4.2], [4.2, by: 0.0], inf: true
+    assert_step [4.2, 4.2, 4.2, 4.2], [4.2, by: -0.0], inf: true
+    assert_step [42.0, 42.0, 42.0, 42.0], [42, by: 0.0, to: 44], inf: true
+    assert_step [42.0, 42.0, 42.0, 42.0], [42, by: 0.0, to: 0], inf: true
+    assert_step [42.0, 42.0, 42.0, 42.0], [42, by: -0.0, to: 44], inf: true
+
+    assert_step [bignum]*4, [bignum, by: 0], inf: true
+    assert_step [bignum]*4, [bignum, by: 0.0], inf: true
+    assert_step [bignum]*4, [bignum, by: 0, to: bignum+1], inf: true
+    assert_step [bignum]*4, [bignum, by: 0, to: 0], inf: true
   end
 
   def test_num2long
