@@ -109,7 +109,9 @@ static VALUE fix_uminus(VALUE num);
 static VALUE fix_mul(VALUE x, VALUE y);
 static VALUE int_pow(long x, unsigned long y);
 
-static ID id_coerce, id_to_i, id_eq, id_div, id_cmp;
+static ID id_coerce, id_to_i, id_div;
+#define id_eq  idEq
+#define id_cmp idCmp
 
 VALUE rb_cNumeric;
 VALUE rb_cFloat;
@@ -3849,9 +3851,7 @@ Init_Numeric(void)
 #endif
     id_coerce = rb_intern("coerce");
     id_to_i = rb_intern("to_i");
-    id_eq = rb_intern("==");
     id_div = rb_intern("div");
-    id_cmp = rb_intern("<=>");
 
     rb_eZeroDivError = rb_define_class("ZeroDivisionError", rb_eStandardError);
     rb_eFloatDomainError = rb_define_class("FloatDomainError", rb_eRangeError);
