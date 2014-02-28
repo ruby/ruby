@@ -4440,7 +4440,7 @@ strftimev(const char *fmt, VALUE time, rb_encoding *enc)
  *      %z - Time zone as hour and minute offset from UTC (e.g. +0900)
  *              %:z - hour and minute offset from UTC with a colon (e.g. +09:00)
  *              %::z - hour, minute and second offset from UTC (e.g. +09:00:00)
- *      %Z - Abbreviated time zone name or similar information.
+ *      %Z - Abbreviated time zone name or similar information.  (OS dependent)
  *
  *    Weekday:
  *      %A - The full weekday name (``Sunday'')
