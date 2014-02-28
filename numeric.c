@@ -1864,14 +1864,6 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
     }									\
 } while (0)
 
-#define NUM_STEP_GET_INF(to, desc, inf) do {				\
-    if (RB_TYPE_P(to, T_FLOAT)) {					\
-	double f = RFLOAT_VALUE(to);					\
-	inf = isinf(f) && (signbit(f) ? desc : !desc);			\
-    }									\
-    else inf = 0;							\
-} while (0)
-
 static VALUE
 num_step_size(VALUE from, VALUE args, VALUE eobj)
 {
@@ -1947,8 +1939,11 @@ num_step(int argc, VALUE *argv, VALUE from)
     RETURN_SIZED_ENUMERATOR(from, argc, argv, num_step_size);
 
     NUM_STEP_SCAN_ARGS(argc, argv, to, step, hash, desc);
-    NUM_STEP_GET_INF(to, desc, inf);
-
+    if (RB_TYPE_P(to, T_FLOAT)) {
+	double f = RFLOAT_VALUE(to);
+	inf = isinf(f) && (signbit(f) ? desc : !desc);
+    }
+    else inf = 0;
 
     if (FIXNUM_P(from) && (inf || FIXNUM_P(to)) && FIXNUM_P(step)) {
 	long i = FIX2LONG(from);
