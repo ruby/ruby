@@ -2474,7 +2474,7 @@ if test x"$enable_pthread" = xyes; then
 	    ]
 	)
 	if test -n "${rb_cv_func_pthread_setname_np_arguments}"; then
-	    AC_DEFINE(SET_THREAD_NAME(name), pthread_setname_np${rb_cv_func_pthread_setname_np_arguments})
+	    AC_DEFINE_UNQUOTED(SET_THREAD_NAME(name), pthread_setname_np${rb_cv_func_pthread_setname_np_arguments})
 	else
 	    AC_DEFINE_UNQUOTED(SET_THREAD_NAME(name), (void)0)
 	fi
