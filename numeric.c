@@ -109,7 +109,7 @@ static VALUE fix_uminus(VALUE num);
 static VALUE fix_mul(VALUE x, VALUE y);
 static VALUE int_pow(long x, unsigned long y);
 
-static ID id_coerce, id_to_i, id_eq, id_div;
+static ID id_coerce, id_to_i, id_eq, id_div, id_cmp;
 
 VALUE rb_cNumeric;
 VALUE rb_cFloat;
@@ -1170,7 +1170,7 @@ flo_cmp(VALUE x, VALUE y)
 	    if (a > 0.0) return INT2FIX(1);
 	    return INT2FIX(-1);
 	}
-	return rb_num_coerce_cmp(x, y, rb_intern("<=>"));
+	return rb_num_coerce_cmp(x, y, id_cmp);
     }
     return rb_dbl_cmp(a, b);
 }
@@ -3138,7 +3138,7 @@ fix_cmp(VALUE x, VALUE y)
         return rb_integer_float_cmp(x, y);
     }
     else {
-	return rb_num_coerce_cmp(x, y, rb_intern("<=>"));
+	return rb_num_coerce_cmp(x, y, id_cmp);
     }
 }
 
@@ -3838,6 +3838,7 @@ Init_Numeric(void)
     id_to_i = rb_intern("to_i");
     id_eq = rb_intern("==");
     id_div = rb_intern("div");
+    id_cmp = rb_intern("<=>");
 
     rb_eZeroDivError = rb_define_class("ZeroDivisionError", rb_eStandardError);
     rb_eFloatDomainError = rb_define_class("FloatDomainError", rb_eRangeError);
