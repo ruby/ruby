@@ -1,3 +1,7 @@
+Sat Mar 1 16:05:58 2014  Eric Wong  <e@80x24.org>
+
+	* gc.c (ruby_gc_set_params): fix building without RGenGC
+
 Sat Mar  1 11:08:00 2014  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb: support dumping Encoding

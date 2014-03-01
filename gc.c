@@ -5827,7 +5827,7 @@ ruby_gc_set_params(int safe_level)
     get_envparam_size  ("RUBY_GC_MALLOC_LIMIT_MAX", &gc_params.malloc_limit_max, 0);
     get_envparam_double("RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR", &gc_params.malloc_limit_growth_factor, 1.0);
 
-#ifdef RGENGC_ESTIMATE_OLDMALLOC
+#if (USE_RGENGC) && defined(RGENGC_ESTIMATE_OLDMALLOC)
     if (get_envparam_size("RUBY_GC_OLDMALLOC_LIMIT", &gc_params.oldmalloc_limit_min, 0)) {
 	rb_objspace_t *objspace = &rb_objspace;
 	objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
