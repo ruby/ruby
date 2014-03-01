@@ -1,3 +1,8 @@
+Sat Mar  1 10:52:34 2014  Zachary Scott  <e@zzak.io>
+
+	* README.EXT.ja: [DOC] Fix typo "macro macro" @utenmiki [Fixes GH-551]
+	  https://github.com/ruby/ruby/pull/551
+
 Fri Feb 28 11:16:55 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* numeric.c: Fix Numeric#step with 0 unit [Bug #9575]
