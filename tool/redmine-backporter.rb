@@ -314,8 +314,7 @@ eom
     end
 
     log = find_svn_log("##@issue]")
-    if log
-      rev = log[/revision="(\d+)/, 1]
+    if log && /revision="(?<rev>\d+)/ =~ log
       str = log[/merge revision\(s\) ([^:]+)(?=:)/]
       str.insert(5, "d")
       str = "ruby_#{TARGET_VERSION.tr('.','_')} r#{rev} #{str}."
