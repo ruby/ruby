@@ -1,3 +1,8 @@
+Sat Mar  1 21:00:27 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* proc.c: Having optional keyword arguments makes maximum arity +1,
+	  not unlimited [#8072]
+
 Sat Mar  1 17:25:12 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* proc.c: Having any mandatory keyword argument increases min arity
