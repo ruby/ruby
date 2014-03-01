@@ -1,3 +1,10 @@
+Sat Mar  1 19:51:42 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open3.rb (Open3.capture3): Ignore Errno::EPIPE for writing
+	  stdin_data.
+	  (Open3.capture2): Ditto.
+	  (Open3.capture2e): Ditto.
+
 Sat Mar  1 19:06:47 2014  Eric Wong  <e@80x24.org>
 
 	* gc.c (ruby_gc_set_params): simplify condition

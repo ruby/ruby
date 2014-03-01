@@ -149,6 +149,25 @@ class TestOpen3 < Test::Unit::TestCase
     assert(s.success?)
   end
 
+  def test_capture3_stdin_data
+    o, e, s = Open3.capture3(RUBY, '-e', '', :stdin_data=>"z"*(1024*1024))
+    assert_equal("", o)
+    assert_equal("", e)
+    assert(s.success?)
+  end
+
+  def test_capture2_stdin_data
+    o, s = Open3.capture2(RUBY, '-e', '', :stdin_data=>"z"*(1024*1024))
+    assert_equal("", o)
+    assert(s.success?)
+  end
+
+  def test_capture2e_stdin_data
+    oe, s = Open3.capture2e(RUBY, '-e', '', :stdin_data=>"z"*(1024*1024))
+    assert_equal("", oe)
+    assert(s.success?)
+  end
+
   def test_pipeline_rw
     Open3.pipeline_rw([RUBY, '-e', 'print STDIN.read + "1"'],
                       [RUBY, '-e', 'print STDIN.read + "2"']) {|i,o,ts|

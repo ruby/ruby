@@ -257,7 +257,10 @@ module Open3
       end
       out_reader = Thread.new { o.read }
       err_reader = Thread.new { e.read }
-      i.write stdin_data
+      begin
+        i.write stdin_data
+      rescue Errno::EPIPE
+      end
       i.close
       [out_reader.value, err_reader.value, t.value]
     }
@@ -300,7 +303,10 @@ module Open3
         o.binmode
       end
       out_reader = Thread.new { o.read }
-      i.write stdin_data
+      begin
+        i.write stdin_data
+      rescue Errno::EPIPE
+      end
       i.close
       [out_reader.value, t.value]
     }
@@ -330,7 +336,10 @@ module Open3
         oe.binmode
       end
       outerr_reader = Thread.new { oe.read }
-      i.write stdin_data
+      begin
+        i.write stdin_data
+      rescue Errno::EPIPE
+      end
       i.close
       [outerr_reader.value, t.value]
     }
