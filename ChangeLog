@@ -1,3 +1,15 @@
+Sat Mar  1 11:08:00 2014  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: support dumping Encoding
+	  objects.
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: support loading Encoding
+	  objects.
+
+	* test/psych/test_encoding.rb: add test
+
+	* ext/psych/lib/psych.rb: add version
+
 Sat Mar  1 10:52:34 2014  Zachary Scott  <e@zzak.io>
 
 	* README.EXT.ja: [DOC] Fix typo "macro macro" @utenmiki [Fixes GH-551]
