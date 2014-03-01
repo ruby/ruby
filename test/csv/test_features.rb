@@ -134,10 +134,9 @@ class TestCSV::Features < TestCSV
   def test_csv_behavior_readers
     %w[ unconverted_fields return_headers write_headers
         skip_blanks        force_quotes ].each do |behavior|
-      assert( !CSV.new("abc,def").send("#{behavior}?"),
-              "Behavior defaulted to on." )
+      assert_not_predicate(CSV.new("abc,def"), "#{behavior}?", "Behavior defaulted to on.")
       csv = CSV.new("abc,def", behavior.to_sym => true)
-      assert(csv.send("#{behavior}?"), "Behavior change now registered.")
+      assert_predicate(csv, "#{behavior}?", "Behavior change now registered.")
     end
   end
 
@@ -184,9 +183,9 @@ class TestCSV::Features < TestCSV
   # reported by Chris Roos
   def test_failing_to_reset_headers_in_rewind_bug_fix
     csv = CSV.new("forename,surname", headers: true, return_headers: true)
-    csv.each { |row| assert row.header_row? }
+    csv.each {|row| assert_predicate row, :header_row?}
     csv.rewind
-    csv.each { |row| assert row.header_row? }
+    csv.each {|row| assert_predicate row, :header_row?}
   end
 
   # reported by Dave Burt
@@ -223,25 +222,24 @@ class TestCSV::Features < TestCSV
       zipped << [1, 2, 3]
       zipped.close
 
-      assert( Zlib::GzipReader.open(file) { |f| f.read }.
-                               include?($INPUT_RECORD_SEPARATOR),
-              "@row_sep did not default" )
+      assert_include(Zlib::GzipReader.open(file) {|f| f.read},
+                     $INPUT_RECORD_SEPARATOR, "@row_sep did not default")
     }
   end if defined?(Zlib::GzipWriter)
 
   def test_inspect_is_smart_about_io_types
     str = CSV.new("string,data").inspect
-    assert(str.include?("io_type:StringIO"), "IO type not detected.")
+    assert_include(str, "io_type:StringIO", "IO type not detected.")
 
     str = CSV.new($stderr).inspect
-    assert(str.include?("io_type:$stderr"), "IO type not detected.")
+    assert_include(str, "io_type:$stderr", "IO type not detected.")
 
     Tempfile.create(%w"temp .csv") {|tempfile|
       tempfile.close
       path = tempfile.path
       File.open(path, "w") { |csv| csv << "one,two,three\n1,2,3\n" }
       str  = CSV.open(path) { |csv| csv.inspect }
-      assert(str.include?("io_type:File"), "IO type not detected.")
+      assert_include(str, "io_type:File", "IO type not detected.")
     }
   end
 
@@ -254,7 +252,7 @@ class TestCSV::Features < TestCSV
 
   def test_inspect_shows_headers_when_available
     CSV.new("one,two,three\n1,2,3\n", headers: true) do |csv|
-      assert(csv.inspect.include?("headers:true"), "Header hint not shown.")
+      assert_include(csv.inspect, "headers:true", "Header hint not shown.")
       csv.shift  # load headers
       assert_match(/headers:\[[^\]]+\]/, csv.inspect)
     end
@@ -262,16 +260,16 @@ class TestCSV::Features < TestCSV
 
   def test_inspect_encoding_is_ascii_compatible
     CSV.new("one,two,three\n1,2,3\n".encode("UTF-16BE")) do |csv|
-      assert( Encoding.compatible?( Encoding.find("US-ASCII"),
-                                    csv.inspect.encoding ),
-              "inspect() was not ASCII compatible." )
+      assert_send([Encoding, :compatible?,
+                   Encoding.find("US-ASCII"), csv.inspect.encoding],
+                  "inspect() was not ASCII compatible.")
     end
   end
 
   def test_version
     assert_not_nil(CSV::VERSION)
     assert_instance_of(String, CSV::VERSION)
-    assert(CSV::VERSION.frozen?)
+    assert_predicate(CSV::VERSION, :frozen?)
     assert_match(/\A\d\.\d\.\d\Z/, CSV::VERSION)
   end
 

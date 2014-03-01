@@ -68,7 +68,7 @@ class TestCSV::DataConverters < TestCSV
 
   def test_convert_with_builtin_integer
     # setup parser...
-    assert(@parser.respond_to?(:convert))
+    assert_respond_to(@parser, :convert)
     assert_nothing_raised(Exception) { @parser.convert(:integer) }
 
     # and use
@@ -77,7 +77,7 @@ class TestCSV::DataConverters < TestCSV
 
   def test_convert_with_builtin_float
     # setup parser...
-    assert(@parser.respond_to?(:convert))
+    assert_respond_to(@parser, :convert)
     assert_nothing_raised(Exception) { @parser.convert(:float) }
 
     # and use

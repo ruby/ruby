@@ -40,16 +40,16 @@ class TestCSV::Row < TestCSV
   def test_row_type
     # field rows
     row = CSV::Row.new(%w{A B C}, [1, 2, 3])         # implicit
-    assert(!row.header_row?)
-    assert(row.field_row?)
+    assert_not_predicate(row, :header_row?)
+    assert_predicate(row, :field_row?)
     row = CSV::Row.new(%w{A B C}, [1, 2, 3], false)  # explicit
-    assert(!row.header_row?)
-    assert(row.field_row?)
+    assert_not_predicate(row, :header_row?)
+    assert_predicate(row, :field_row?)
 
     # header row
     row = CSV::Row.new(%w{A B C}, [1, 2, 3], true)
-    assert(row.header_row?)
-    assert(!row.field_row?)
+    assert_predicate(row, :header_row?)
+    assert_not_predicate(row, :field_row?)
   end
 
   def test_headers
@@ -249,10 +249,10 @@ class TestCSV::Row < TestCSV
 
   def test_queries
     # headers
-    assert(@row.header?("A"))
-    assert(@row.header?("C"))
-    assert(!@row.header?("Z"))
-    assert(@row.include?("A"))  # alias
+    assert_send([@row, :header?, "A"])
+    assert_send([@row, :header?, "C"])
+    assert_not_send([@row, :header?, "Z"])
+    assert_send([@row, :include?, "A"])  # alias
 
     # fields
     assert(@row.field?(4))
@@ -316,7 +316,7 @@ class TestCSV::Row < TestCSV
   end
 
   def test_array_delegation
-    assert(!@row.empty?, "Row was empty.")
+    assert_not_empty(@row, "Row was empty.")
 
     assert_equal([@row.headers.size, @row.fields.size].max, @row.size)
   end
@@ -324,26 +324,27 @@ class TestCSV::Row < TestCSV
   def test_inspect_shows_header_field_pairs
     str = @row.inspect
     @row.each do |header, field|
-      assert( str.include?("#{header.inspect}:#{field.inspect}"),
-              "Header field pair not found." )
+      assert_include(str, "#{header.inspect}:#{field.inspect}",
+                     "Header field pair not found.")
     end
   end
 
   def test_inspect_encoding_is_ascii_compatible
-    assert( Encoding.compatible?( Encoding.find("US-ASCII"),
-                                  @row.inspect.encoding ),
-            "inspect() was not ASCII compatible." )
+    assert_send([Encoding, :compatible?,
+                 Encoding.find("US-ASCII"),
+                 @row.inspect.encoding],
+                "inspect() was not ASCII compatible.")
   end
 
   def test_inspect_shows_symbol_headers_as_bare_attributes
     str = CSV::Row.new(@row.headers.map { |h| h.to_sym }, @row.fields).inspect
     @row.each do |header, field|
-      assert( str.include?("#{header}:#{field.inspect}"),
-              "Header field pair not found." )
+      assert_include(str, "#{header}:#{field.inspect}",
+                     "Header field pair not found.")
     end
   end
 
   def test_can_be_compared_with_other_classes
-    assert(CSV::Row.new([ ], [ ]) != nil, "The row was nil")
+    assert_not_nil(CSV::Row.new([ ], [ ]), "The row was nil")
   end
 end
