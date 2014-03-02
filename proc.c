@@ -839,11 +839,14 @@ rb_proc_call_with_block(VALUE self, int argc, const VALUE *argv, VALUE pass_proc
  *  call-seq:
  *     prc.arity -> fixnum
  *
- *  Returns the number of arguments that would not be ignored. If the block
+ *  Returns the number of mandatory arguments. If the block
  *  is declared to take no arguments, returns 0. If the block is known
- *  to take exactly n arguments, returns n. If the block has optional
- *  arguments, return -n-1, where n is the number of mandatory
- *  arguments. A <code>proc</code> with no argument declarations
+ *  to take exactly n arguments, returns n.
+ *  If the block has optional arguments, returns -n-1, where n is the
+ *  number of mandatory arguments, with the exception for blocks that
+ *  are not lambdas and have only a finite number of optional arguments;
+ *  in this latter case, returns n.
+ *  A <code>proc</code> with no argument declarations
  *  is the same a block declaring <code>||</code> as its arguments.
  *
  *     proc {}.arity                  #=>  0
