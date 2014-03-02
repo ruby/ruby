@@ -1,3 +1,8 @@
+Sun Mar  2 11:15:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/find.rb (Find#find): add "ignore_error" keyword argument
+	  defaulted to true.  [ruby-core:51025] [Feature #7596]
+
 Sun Mar  2 11:13:30 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/readline/extconf.rb (rl_hook_func_t): define as Function for

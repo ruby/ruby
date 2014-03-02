@@ -100,6 +100,16 @@ class TestFind < Test::Unit::TestCase
         a = []
         Find.find(d) {|f| a << f }
         assert_equal([d, dir], a)
+
+        a = []
+        Find.find(d, ignore_error: true) {|f| a << f }
+        assert_equal([d, dir], a)
+
+        a = []
+        assert_raise_with_message(Errno::EACCES, /#{Regexp.quote(dir)}/) do
+          Find.find(d, ignore_error: false) {|f| a << f }
+        end
+        assert_equal([d, dir], a)
       ensure
         File.chmod(0700, dir)
       end
@@ -115,6 +125,17 @@ class TestFind < Test::Unit::TestCase
         a = []
         Find.find(d) {|f| a << f }
         assert_equal([d, dir, file], a)
+
+        a = []
+        Find.find(d, ignore_error: true) {|f| a << f }
+        assert_equal([d, dir, file], a)
+
+        a = []
+        assert_raise_with_message(Errno::EACCES, /#{Regexp.quote(file)}/) do
+          Find.find(d, ignore_error: false) {|f| a << f }
+        end
+        assert_equal([d, dir, file], a)
+
         skip "no meaning test on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
         assert_raise(Errno::EACCES) { File.lstat(file) }
       ensure
