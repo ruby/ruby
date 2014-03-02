@@ -763,9 +763,9 @@ dbm.cではData_Make_Structを以下のように使っています．
 Dataオブジェクトからdbmstruct構造体のポインタを取り出すため
 に以下のマクロを使っています．
 
-  #define GetDBM(obj, dbmp) {\
-      Data_Get_Struct(obj, struct dbmdata, dbmp);\
-      if (dbmp->di_dbm == 0) closed_dbm();\
+  #define GetDBM(obj, dbmp) {
+      Data_Get_Struct(obj, struct dbmdata, dbmp);
+      if (dbmp->di_dbm == 0) closed_dbm();
   }
 
 ちょっと複雑なマクロですが，要するにdbmdata構造体のポインタ

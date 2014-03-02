@@ -1,3 +1,9 @@
+Sun Mar  2 10:56:12 2014  Zachary Scott  <e@zzak.io>
+
+	* README.EXT: [DOC] Remove needless char
+
+	* README.EXT.ja: ditto
+
 Sun Mar  2 10:47:58 2014  Eric Wong  <e@80x24.org>
 
 	* load.c (ruby_init_ext): make idempotent to suppress warnings
