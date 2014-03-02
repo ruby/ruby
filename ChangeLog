@@ -1,3 +1,8 @@
+Mon Mar  3 00:43:33 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	(merged partially from r42781)
+	* test/ruby/test_numeric.rb (assert_step): introduce assert_step.
+
 Mon Mar  3 00:24:38 2014  Zachary Scott  <e@zzak.io>
 
 	* README.EXT.ja: [DOC] Fix typo "macro macro" @utenmiki [Fixes GH-551]
