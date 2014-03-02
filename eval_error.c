@@ -6,17 +6,18 @@
 static void
 warn_printf(const char *fmt, ...)
 {
-    char buf[BUFSIZ];
+    VALUE str;
     va_list args;
 
     va_init_list(args, fmt);
-    vsnprintf(buf, BUFSIZ, fmt, args);
+    str = rb_vsprintf(fmt, args);
     va_end(args);
-    rb_write_error(buf);
+    rb_write_error_str(str);
 }
 
 #define warn_print(x) rb_write_error(x)
 #define warn_print2(x,l) rb_write_error2((x),(l))
+#define warn_print_str(x) rb_write_error_str(x)
 
 static void
 error_pos(void)
@@ -117,7 +118,7 @@ error_print(void)
 	if (NIL_P(mesg))
 	    error_pos();
 	else {
-	    warn_print2(RSTRING_PTR(mesg), RSTRING_LEN(mesg));
+	    warn_print_str(mesg);
 	}
     }
 
@@ -143,7 +144,7 @@ error_print(void)
 	epath = rb_class_name(eclass);
 	if (elen == 0) {
 	    warn_print(": ");
-	    warn_print2(RSTRING_PTR(epath), RSTRING_LEN(epath));
+	    warn_print_str(epath);
 	    warn_print("\n");
 	}
 	else {
@@ -160,7 +161,7 @@ error_print(void)
 	    warn_print2(einfo, len);
 	    if (epath) {
 		warn_print(" (");
-		warn_print2(RSTRING_PTR(epath), RSTRING_LEN(epath));
+		warn_print_str(epath);
 		warn_print(")\n");
 	    }
 	    if (tail) {
@@ -182,7 +183,7 @@ error_print(void)
 
 	for (i = 1; i < len; i++) {
 	    if (RB_TYPE_P(ptr[i], T_STRING)) {
-		warn_printf("\tfrom %s\n", RSTRING_PTR(ptr[i]));
+		warn_printf("\tfrom %"PRIsVALUE"\n", ptr[i]);
 	    }
 	    if (skip && i == TRACE_HEAD && len > TRACE_MAX) {
 		warn_printf("\t ... %ld levels...\n",
