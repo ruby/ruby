@@ -683,10 +683,10 @@ wrapping DBM* directly, because we want to cache size information.
 To retrieve the dbmdata structure from a Ruby object, we define the
 following macro:
 
-  #define GetDBM(obj, dbmp) {\
+  #define GetDBM(obj, dbmp) do {\
       Data_Get_Struct(obj, struct dbmdata, dbmp);\
       if (dbmp->di_dbm == 0) closed_dbm();\
-  }
+  } while (0)
 
 This sort of complicated macro does the retrieving and close checking for
 the DBM.

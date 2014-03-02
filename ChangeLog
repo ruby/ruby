@@ -1,3 +1,12 @@
+Mon Mar  3 07:47:17 2014  Eric Wong  <e@80x24.org>
+
+	* README.EXT: wrap GetDBM with do/while(0)
+	* README.EXT.ja: ditto
+	* ext/dbm/dbm.c: ditto, likewise for GetDBM2
+	* ext/gdbm/gdbm.c: ditto
+	* ext/sdbm/init.c: ditto
+	  [ruby-core:61217]
+
 Mon Mar  3 07:17:31 2014  Zachary Scott  <e@zzak.io>
 
 	* NEWS: [DOC] Update doc regarding filesystem load when flushing IO

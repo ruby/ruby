@@ -106,10 +106,10 @@ closed_dbm(void)
     if ((dbmp)->di_dbm == 0) closed_dbm();\
 } while (0)
 
-#define GetDBM2(obj, data, dbm) {\
+#define GetDBM2(obj, data, dbm) do {\
     GetDBM((obj), (data));\
     (dbm) = dbmp->di_dbm;\
-}
+} while (0)
 
 static void
 free_dbm(struct dbmdata *dbmp)

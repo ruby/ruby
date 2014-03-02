@@ -763,10 +763,10 @@ dbm.cではData_Make_Structを以下のように使っています．
 Dataオブジェクトからdbmstruct構造体のポインタを取り出すため
 に以下のマクロを使っています．
 
-  #define GetDBM(obj, dbmp) {\
+  #define GetDBM(obj, dbmp) do {\
       Data_Get_Struct(obj, struct dbmdata, dbmp);\
       if (dbmp->di_dbm == 0) closed_dbm();\
-  }
+  } while (0)
 
 ちょっと複雑なマクロですが，要するにdbmdata構造体のポインタ
 の取り出しと，closeされているかどうかのチェックをまとめてい
