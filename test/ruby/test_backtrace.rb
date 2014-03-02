@@ -101,7 +101,7 @@ class TestBacktrace < Test::Unit::TestCase
         }
       end
     }
-    bt = Fiber.new{
+    Fiber.new{
       rec[max]
     }.resume
   end
@@ -111,21 +111,21 @@ class TestBacktrace < Test::Unit::TestCase
     rec = lambda{|n|
       if n < 0
         (m*6).times{|lev|
-          (m*6).times{|n|
+          (m*6).times{|i|
             t = caller(0).size
-            r = caller(lev, n)
+            r = caller(lev, i)
             r = r.size if r.respond_to? :size
 
-            # STDERR.puts [t, lev, n, r].inspect
-            if n == 0
-              assert_equal(0, r, [t, lev, n, r].inspect)
+            # STDERR.puts [t, lev, i, r].inspect
+            if i == 0
+              assert_equal(0, r, [t, lev, i, r].inspect)
             elsif t < lev
-              assert_equal(nil, r, [t, lev, n, r].inspect)
+              assert_equal(nil, r, [t, lev, i, r].inspect)
             else
-              if t - lev > n
-                assert_equal(n, r, [t, lev, n, r].inspect)
+              if t - lev > i
+                assert_equal(i, r, [t, lev, i, r].inspect)
               else
-                assert_equal(t - lev, r, [t, lev, n, r].inspect)
+                assert_equal(t - lev, r, [t, lev, i, r].inspect)
               end
             end
           }

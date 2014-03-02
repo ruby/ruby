@@ -1,3 +1,8 @@
+Mon Mar  3 00:17:43 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_backtrace.rb: get rid of warnings.  unused variable,
+	  shadowing.
+
 Sun Mar  2 11:15:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/find.rb (Find#find): add "ignore_error" keyword argument
