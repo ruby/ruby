@@ -3988,7 +3988,8 @@ Init_Numeric(void)
      */
     rb_define_const(rb_cFloat, "MANT_DIG", INT2FIX(DBL_MANT_DIG));
     /*
-     *	The number of decimal digits in a double-precision floating point.
+     *	The minimum number of significant decimal digits in a double-precision
+     *	floating point.
      *
      *	Usually defaults to 15.
      */
