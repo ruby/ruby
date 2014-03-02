@@ -1500,17 +1500,11 @@ class TestModule < Test::Unit::TestCase
   end
 
   def labeled_module(name, &block)
-    Module.new do
-      singleton_class.class_eval {define_method(:to_s) {name}; alias inspect to_s}
-      class_eval(&block) if block
-    end
+    EnvUtil.labeled_module(name, &block)
   end
 
   def labeled_class(name, superclass = Object, &block)
-    Class.new(superclass) do
-      singleton_class.class_eval {define_method(:to_s) {name}; alias inspect to_s}
-      class_eval(&block) if block
-    end
+    EnvUtil.labeled_class(name, superclass, &block)
   end
 
   def test_prepend_instance_methods_false

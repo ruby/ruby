@@ -150,6 +150,22 @@ module EnvUtil
     $VERBOSE = verbose
   end
   module_function :with_default_internal
+
+  def labeled_module(name, &block)
+    Module.new do
+      singleton_class.class_eval {define_method(:to_s) {name}; alias inspect to_s}
+      class_eval(&block) if block
+    end
+  end
+  module_function :labeled_module
+
+  def labeled_class(name, superclass = Object, &block)
+    Class.new(superclass) do
+      singleton_class.class_eval {define_method(:to_s) {name}; alias inspect to_s}
+      class_eval(&block) if block
+    end
+  end
+  module_function :labeled_class
 end
 
 module Test
