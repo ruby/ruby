@@ -46,7 +46,7 @@ if defined?(WIN32OLE_VARIANT)
         sql = "INSERT INTO data.csv VALUES (5, 'E')"
         @db.execute(sql, -1)
         c = WIN32OLE::ARGV[1]
-        assert_equal(1, WIN32OLE::ARGV[1])
+        assert_equal(1, c)
         obj = WIN32OLE_VARIANT.new(nil, WIN32OLE::VARIANT::VT_VARIANT|WIN32OLE::VARIANT::VT_BYREF)
         assert_equal(nil, obj.value)
         @db.execute(sql , obj)

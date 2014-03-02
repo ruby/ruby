@@ -26,7 +26,6 @@ def word_installed?
 end
 
 if defined?(WIN32OLE)
-  w = nil
   dotest = word_installed?
   if !dotest
     STDERR.puts("\n#{__FILE__} skipped(Microsoft Word not found.)")

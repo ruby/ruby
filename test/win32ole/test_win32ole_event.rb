@@ -52,7 +52,7 @@ if defined?(WIN32OLE_EVENT)
 
       def test_s_new
         assert_raise(TypeError) {
-          ev = WIN32OLE_EVENT.new("A")
+          WIN32OLE_EVENT.new("A")
         }
       end
 
@@ -149,11 +149,11 @@ if defined?(WIN32OLE_EVENT)
 
       def test_non_exist_event
         assert_raise(RuntimeError) {
-          ev = WIN32OLE_EVENT.new(@db, 'XXXX')
+          WIN32OLE_EVENT.new(@db, 'XXXX')
         }
         dict = WIN32OLE.new('Scripting.Dictionary')
         assert_raise(RuntimeError) {
-          ev = WIN32OLE_EVENT.new(dict)
+          WIN32OLE_EVENT.new(dict)
         }
       end
 

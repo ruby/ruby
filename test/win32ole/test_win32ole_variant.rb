@@ -38,7 +38,7 @@ if defined?(WIN32OLE_VARIANT)
     def test_s_new_no_argument
       ex = nil
       begin
-        obj = WIN32OLE_VARIANT.new
+        WIN32OLE_VARIANT.new
       rescue ArgumentError
         ex = $!
       end
@@ -49,7 +49,7 @@ if defined?(WIN32OLE_VARIANT)
     def test_s_new_one_argument
       ex = nil
       begin
-        obj = WIN32OLE_VARIANT.new('foo')
+        WIN32OLE_VARIANT.new('foo')
       rescue
         ex = $!
       end
@@ -343,7 +343,7 @@ if defined?(WIN32OLE_VARIANT)
 
     def test_s_array_exc
       assert_raise(TypeError) {
-        obj = WIN32OLE_VARIANT.array(2, WIN32OLE::VARIANT::VT_I4)
+        WIN32OLE_VARIANT.array(2, WIN32OLE::VARIANT::VT_I4)
       }
     end
 
@@ -485,7 +485,7 @@ if defined?(WIN32OLE_VARIANT)
 
     def test_create_vt_array_exc
       exc = assert_raise(TypeError) {
-        obj = WIN32OLE_VARIANT.new(1, WIN32OLE::VARIANT::VT_ARRAY);
+        WIN32OLE_VARIANT.new(1, WIN32OLE::VARIANT::VT_ARRAY);
       }
       assert_match(/wrong argument type Fixnum \(expected Array\)/, exc.message)
     end
