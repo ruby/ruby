@@ -846,24 +846,24 @@ rb_proc_call_with_block(VALUE self, int argc, const VALUE *argv, VALUE pass_proc
  *  arguments. A <code>proc</code> with no argument declarations
  *  is the same a block declaring <code>||</code> as its arguments.
  *
- *     proc {}.arity          #=>  0
- *     proc {||}.arity        #=>  0
- *     proc {|a|}.arity       #=>  1
- *     proc {|a,b|}.arity     #=>  2
- *     proc {|a,b,c|}.arity   #=>  3
- *     proc {|*a|}.arity      #=> -1
- *     proc {|a,*b|}.arity    #=> -2
- *     proc {|a,*b, c|}.arity #=> -3
+ *     proc {}.arity                  #=>  0
+ *     proc { || }.arity              #=>  0
+ *     proc { |a| }.arity             #=>  1
+ *     proc { |a, b| }.arity          #=>  2
+ *     proc { |a, b, c| }.arity       #=>  3
+ *     proc { |*a| }.arity            #=> -1
+ *     proc { |a, *b| }.arity         #=> -2
+ *     proc { |a, *b, c| }.arity      #=> -3
  *
- *     proc   { |x = 0| }.arity       #=> 0
- *     lambda { |a = 0| }.arity       #=> -1
- *     proc   { |x=0, y| }.arity      #=> 1
+ *     proc   { |x=0| }.arity         #=>  0
+ *     lambda { |x=0| }.arity         #=> -1
+ *     proc   { |x=0, y| }.arity      #=>  1
  *     lambda { |x=0, y| }.arity      #=> -2
- *     proc   { |x=0, y=0| }.arity    #=> 0
+ *     proc   { |x=0, y=0| }.arity    #=>  0
  *     lambda { |x=0, y=0| }.arity    #=> -1
- *     proc   { |x, y=0| }.arity      #=> 1
+ *     proc   { |x, y=0| }.arity      #=>  1
  *     lambda { |x, y=0| }.arity      #=> -2
- *     proc   { |(x, y), z=0| }.arity #=> 1
+ *     proc   { |(x, y), z=0| }.arity #=>  1
  *     lambda { |(x, y), z=0| }.arity #=> -2
  */
 
