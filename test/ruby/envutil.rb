@@ -339,7 +339,7 @@ module Test
           file ||= loc.path
           line ||= loc.lineno
         end
-        line -= 2
+        line -= 5 # lines until src
         src = <<eom
 # -*- coding: #{src.encoding}; -*-
   require #{__dir__.dump}'/envutil';include Test::Unit::Assertions
