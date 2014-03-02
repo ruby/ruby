@@ -1,3 +1,8 @@
+Mon Mar  3 01:25:28 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (setup_exception): preserve errinfo across calling #to_s
+	  method on the exception.  [ruby-core:61091] [Bug #9568]
+
 Mon Mar  3 01:00:00 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (ruby_num_interval_step_size): check signs and get rid
