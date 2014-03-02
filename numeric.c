@@ -1816,21 +1816,29 @@ VALUE
 num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
 {
     if (FIXNUM_P(from) && FIXNUM_P(to) && FIXNUM_P(step)) {
-	long delta, diff, result;
+	long delta, diff;
 
 	diff = FIX2LONG(step);
+	if (!diff) rb_num_zerodiv();
 	delta = FIX2LONG(to) - FIX2LONG(from);
-	if (excl) {
-	    delta += (diff > 0 ? -1 : +1);
+	if (diff < 0) {
+	    diff = -diff;
+	    delta = -delta;
 	}
-	result = delta / diff;
-	return LONG2FIX(result >= 0 ? result + 1 : 0);
+	if (excl) {
+	    delta--;
+	}
+	if (delta < 0) {
+	    return INT2FIX(0);
+	}
+	return ULONG2NUM(delta / diff + 1UL);
     }
     else if (RB_TYPE_P(from, T_FLOAT) || RB_TYPE_P(to, T_FLOAT) || RB_TYPE_P(step, T_FLOAT)) {
 	double n = ruby_float_step_size(NUM2DBL(from), NUM2DBL(to), NUM2DBL(step), excl);
 
 	if (isinf(n)) return DBL2NUM(n);
-	return LONG2FIX(n);
+	if (POSFIXABLE(n)) return LONG2FIX(n);
+	return rb_dbl2big(n);
     }
     else {
 	VALUE result;

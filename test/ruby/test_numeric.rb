@@ -243,17 +243,32 @@ class TestNumeric < Test::Unit::TestCase
   end
 
   def test_step
+    i, bignum = 32, 1 << 30
+    bignum <<= (i <<= 1) - 32 until bignum.is_a?(Bignum)
     assert_raise(ArgumentError) { 1.step(10, 1, 0) { } }
     assert_raise(ArgumentError) { 1.step(10, 0) { } }
+
+    assert_equal(bignum*2+1, (-bignum).step(bignum, 1).size)
+    assert_equal(bignum*2, (-bignum).step(bignum-1, 1).size)
+
+    assert_equal(10+1, (0.0).step(10.0, 1.0).size)
+
+    i, bigflo = 1, bignum.to_f
+    i <<= 1 until (bigflo - i).to_i < bignum
+    bigflo -= i >> 1
+    assert_equal(bigflo.to_i, (0.0).step(bigflo-1.0, 1.0).size)
+    assert_operator((0.0).step(bignum.to_f, 1.0).size, :>=, bignum) # may loose precision
 
     assert_step [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [1, 10]
     assert_step [1, 3, 5, 7, 9], [1, 10, 2]
 
     assert_step [10, 8, 6, 4, 2], [10, 1, -2]
     assert_step [1.0, 3.0, 5.0, 7.0, 9.0], [1.0, 10.0, 2.0]
-    assert_step [1], [1, 10, 2**32]
+    assert_step [1], [1, 10, bignum]
 
-    assert_step [10], [10, 1, -(2**32)]
+    assert_step [], [2, 1, 3]
+    assert_step [], [-2, -1, -3]
+    assert_step [10], [10, 1, -(bignum)]
 
     assert_step [], [1, 0, Float::INFINITY]
     assert_step [], [0, 1, -Float::INFINITY]
