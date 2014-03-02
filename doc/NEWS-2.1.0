@@ -104,6 +104,8 @@ with all sufficient information, see the ChangeLog file.
     * Numeric#step allows the limit argument to be omitted, in which
       case an infinite sequence of numbers is generated.  Keyword
       arguments `to` and `by` are introduced for ease of use.
+      `by` can be 0, in which case the same value will be generated
+      indefinitely.
 
 * Process
   * New methods:
