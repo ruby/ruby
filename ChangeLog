@@ -1,3 +1,8 @@
+Mon Mar  3 00:24:38 2014  Zachary Scott  <e@zzak.io>
+
+	* README.EXT.ja: [DOC] Fix typo "macro macro" @utenmiki [Fixes GH-551]
+	  https://github.com/ruby/ruby/pull/551
+
 Sat Feb 22 22:11:58 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/io/console/console.c (console_dev): need read access for conout$
