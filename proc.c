@@ -846,6 +846,8 @@ rb_proc_call_with_block(VALUE self, int argc, const VALUE *argv, VALUE pass_proc
  *  number of mandatory arguments, with the exception for blocks that
  *  are not lambdas and have only a finite number of optional arguments;
  *  in this latter case, returns n.
+ *  Keywords arguments will considered as a single additional argument,
+ *  that argument being mandatory if any keyword argument is mandatory.
  *  A <code>proc</code> with no argument declarations
  *  is the same a block declaring <code>||</code> as its arguments.
  *
@@ -857,6 +859,8 @@ rb_proc_call_with_block(VALUE self, int argc, const VALUE *argv, VALUE pass_proc
  *     proc { |*a| }.arity            #=> -1
  *     proc { |a, *b| }.arity         #=> -2
  *     proc { |a, *b, c| }.arity      #=> -3
+ *     proc { |x:, y:, z:0| }.arity   #=>  1
+ *     proc { |*a, x:, y:0| }.arity   #=> -2
  *
  *     proc   { |x=0| }.arity         #=>  0
  *     lambda { |x=0| }.arity         #=> -1
@@ -868,6 +872,8 @@ rb_proc_call_with_block(VALUE self, int argc, const VALUE *argv, VALUE pass_proc
  *     lambda { |x, y=0| }.arity      #=> -2
  *     proc   { |(x, y), z=0| }.arity #=>  1
  *     lambda { |(x, y), z=0| }.arity #=> -2
+ *     proc   { |a, x:0, y:0| }.arity #=>  1
+ *     lambda { |a, x:0, y:0| }.arity #=> -2
  */
 
 static VALUE
