@@ -27,6 +27,12 @@ with all sufficient information, see the ChangeLog file.
 
 === Core classes compatibility issues (excluding feature bug fixes)
 
+* IO
+  * incompatible changes:
+    * When flushing file IO, you cannot assume that the metadata of the file
+      is updated immediately.  On some platforms (especially Windows), it is
+      delayed till the load of the filesystem is decreased.
+
 === Stdlib updates (outstanding ones only)
 
 === Stdlib compatibility issues (excluding feature bug fixes)
