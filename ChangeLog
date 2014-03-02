@@ -1,3 +1,7 @@
+Mon Mar  3 07:17:31 2014  Zachary Scott  <e@zzak.io>
+
+	* NEWS: [DOC] Update doc regarding filesystem load when flushing IO
+
 Mon Mar  3 04:37:50 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (rb_io_fsync): need to fsync even if on Windows.  fixed mistake
