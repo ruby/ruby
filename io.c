@@ -1564,11 +1564,6 @@ rb_io_flush_raw(VALUE io, int sync)
     if (fptr->mode & FMODE_WRITABLE) {
         if (io_fflush(fptr) < 0)
             rb_sys_fail(0);
-#ifdef _WIN32
-	if (sync && GetFileType((HANDLE)rb_w32_get_osfhandle(fptr->fd)) == FILE_TYPE_DISK) {
-	    rb_thread_io_blocking_region(nogvl_fsync, fptr, fptr->fd);
-	}
-#endif
     }
     if (fptr->mode & FMODE_READABLE) {
         io_unread(fptr);
@@ -1930,10 +1925,6 @@ rb_io_fsync(VALUE io)
 
     if (io_fflush(fptr) < 0)
         rb_sys_fail(0);
-# ifndef _WIN32	/* already called in io_fflush() */
-    if ((int)rb_thread_io_blocking_region(nogvl_fsync, fptr, fptr->fd) < 0)
-	rb_sys_fail_path(fptr->pathv);
-# endif
     return INT2FIX(0);
 }
 #else
