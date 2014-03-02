@@ -1,3 +1,8 @@
+Mon Mar  3 04:37:50 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (rb_io_fsync): need to fsync even if on Windows.  fixed mistake
+	  of r45254 and r45256.
+
 Mon Mar  3 04:21:34 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/win32ole: get rid of warnings (unused variable).
