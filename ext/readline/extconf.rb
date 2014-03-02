@@ -19,6 +19,10 @@ def readline.have_func(func)
   return super(func, headers)
 end
 
+def readline.have_type(type)
+  return super(type, headers)
+end
+
 dir_config('curses')
 dir_config('ncurses')
 dir_config('termcap')
@@ -94,4 +98,8 @@ readline.have_func("clear_history")
 readline.have_func("rl_redisplay")
 readline.have_func("rl_insert_text")
 readline.have_func("rl_delete_text")
+unless readline.have_type("rl_hook_func_t")
+  $DEFS << "-Drl_hook_func_t=Function"
+end
+
 create_makefile("readline")

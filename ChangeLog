@@ -1,3 +1,8 @@
+Sun Mar  2 11:13:30 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/readline/extconf.rb (rl_hook_func_t): define as Function for
+	  very old readline versions.  [ruby-core:61209] [Bug #9578]
+
 Sun Mar  2 10:56:12 2014  Zachary Scott  <e@zzak.io>
 
 	* README.EXT: [DOC] Remove needless char
