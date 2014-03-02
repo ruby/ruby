@@ -1,3 +1,9 @@
+Mon Mar  3 08:10:04 2014  Eric Wong  <e@80x24.org>
+
+	* vm_method.c (rb_method_entry_get_without_cache): disable GMC
+	  writing if GMC is disabled.
+	  [ruby-core:61218]
+
 Mon Mar  3 07:47:17 2014  Eric Wong  <e@80x24.org>
 
 	* README.EXT: wrap GetDBM with do/while(0)

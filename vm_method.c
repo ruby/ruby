@@ -2,6 +2,7 @@
  * This file is included by vm.c
  */
 
+#if OPT_GLOBAL_METHOD_CACHE
 #ifndef GLOBAL_METHOD_CACHE_SIZE
 #define GLOBAL_METHOD_CACHE_SIZE 0x800
 #endif
@@ -16,6 +17,9 @@
 
 #define GLOBAL_METHOD_CACHE_KEY(c,m) ((((c)>>3)^(m))&GLOBAL_METHOD_CACHE_MASK)
 #define GLOBAL_METHOD_CACHE(c,m) (global_method_cache + GLOBAL_METHOD_CACHE_KEY(c,m))
+#else
+#define GLOBAL_METHOD_CACHE(c,m) 0,rb_bug("global method cache disabled improperly")
+#endif
 #include "method.h"
 
 #define NOEX_NOREDEF 0
@@ -42,7 +46,10 @@ struct cache_entry {
     VALUE defined_class;
 };
 
+#if OPT_GLOBAL_METHOD_CACHE
 static struct cache_entry global_method_cache[GLOBAL_METHOD_CACHE_SIZE];
+#endif
+
 #define ruby_running (GET_VM()->running)
 /* int ruby_running = 0; */
 
@@ -575,19 +582,24 @@ rb_method_entry_get_without_cache(VALUE klass, ID id,
 	defined_class = me->klass;
 
     if (ruby_running) {
-	struct cache_entry *ent;
-	ent = GLOBAL_METHOD_CACHE(klass, id);
-	ent->class_serial = RCLASS_SERIAL(klass);
-	ent->method_state = GET_GLOBAL_METHOD_STATE();
-	ent->defined_class = defined_class;
-	ent->mid = id;
+	if (OPT_GLOBAL_METHOD_CACHE) {
+	    struct cache_entry *ent;
+	    ent = GLOBAL_METHOD_CACHE(klass, id);
+	    ent->class_serial = RCLASS_SERIAL(klass);
+	    ent->method_state = GET_GLOBAL_METHOD_STATE();
+	    ent->defined_class = defined_class;
+	    ent->mid = id;
 
-	if (UNDEFINED_METHOD_ENTRY_P(me)) {
-	    ent->me = 0;
-	    me = 0;
+	    if (UNDEFINED_METHOD_ENTRY_P(me)) {
+		ent->me = 0;
+		me = 0;
+	    }
+	    else {
+		ent->me = me;
+	    }
 	}
-	else {
-	    ent->me = me;
+	else if (UNDEFINED_METHOD_ENTRY_P(me)) {
+	    me = 0;
 	}
     }
 
