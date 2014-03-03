@@ -35,7 +35,7 @@ module Find
   # See the +Find+ module documentation for an example.
   #
   def find(*paths, ignore_error: true) # :yield: path
-    block_given? or return enum_for(__method__, *paths)
+    block_given? or return enum_for(__method__, *paths, ignore_error: ignore_error)
 
     fs_encoding = Encoding.find("filesystem")
 
