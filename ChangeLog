@@ -1,3 +1,187 @@
+Tue Mar  4 00:25:35 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* lib/find.rb (Find#find): should pass ignore_error option to enumerators.
+
+Mon Mar  3 13:27:35 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/test_find.rb (TestFind#test_unsearchable_dir): ruby cannot make
+	  directory unreachable by owner on Windows.
+
+Mon Mar  3 08:10:04 2014  Eric Wong  <e@80x24.org>
+
+	* vm_method.c (rb_method_entry_get_without_cache): disable GMC
+	  writing if GMC is disabled.
+	  [ruby-core:61218]
+
+Mon Mar  3 07:47:17 2014  Eric Wong  <e@80x24.org>
+
+	* README.EXT: wrap GetDBM with do/while(0)
+	* README.EXT.ja: ditto
+	* ext/dbm/dbm.c: ditto, likewise for GetDBM2
+	* ext/gdbm/gdbm.c: ditto
+	* ext/sdbm/init.c: ditto
+	  [ruby-core:61217]
+
+Mon Mar  3 07:17:31 2014  Zachary Scott  <e@zzak.io>
+
+	* NEWS: [DOC] Update doc regarding filesystem load when flushing IO
+
+Mon Mar  3 04:37:50 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (rb_io_fsync): need to fsync even if on Windows.  fixed mistake
+	  of r45254 and r45256.
+
+Mon Mar  3 04:21:34 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/win32ole: get rid of warnings (unused variable).
+
+Mon Mar  3 02:53:53 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (rb_io_flush_raw): [EXPERIMENTAL] remove force syncing for Win32
+	  to speed up IO.  this may break some tests, and they'll be fixed
+	  later.
+	  [ruby-core:58570] [Bug #9153]
+
+Mon Mar  3 00:17:43 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_backtrace.rb: get rid of warnings.  unused variable,
+	  shadowing.
+
+Sun Mar  2 11:15:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/find.rb (Find#find): add "ignore_error" keyword argument
+	  defaulted to true.  [ruby-core:51025] [Feature #7596]
+
+Sun Mar  2 11:13:30 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/readline/extconf.rb (rl_hook_func_t): define as Function for
+	  very old readline versions.  [ruby-core:61209] [Bug #9578]
+
+Sun Mar  2 10:47:58 2014  Eric Wong  <e@80x24.org>
+
+	* load.c (ruby_init_ext): make idempotent to suppress warnings
+
+Sat Mar  1 19:51:42 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open3.rb (Open3.capture3): Ignore Errno::EPIPE for writing
+	  stdin_data.
+	  (Open3.capture2): Ditto.
+	  (Open3.capture2e): Ditto.
+
+Sat Mar  1 19:06:47 2014  Eric Wong  <e@80x24.org>
+
+	* gc.c (ruby_gc_set_params): simplify condition
+
+Sat Mar  1 16:18:40 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/readline/readline.c (Init_readline): Use rl_hook_func_t instead
+	  of Function to support readline-6.3.  (rl_hook_func_t is available
+	  since readline-4.2.)
+	  Reported by Dmitry Medvinsky.  [ruby-core:61141] [Bug #9578]
+
+Sat Mar  1 16:05:58 2014  Eric Wong  <e@80x24.org>
+
+	* gc.c (ruby_gc_set_params): fix building without RGenGC
+
+Sat Mar  1 11:08:00 2014  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: support dumping Encoding
+	  objects.
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: support loading Encoding
+	  objects.
+
+	* test/psych/test_encoding.rb: add test
+
+	* ext/psych/lib/psych.rb: add version
+
+Sat Mar  1 10:52:34 2014  Zachary Scott  <e@zzak.io>
+
+	* README.EXT.ja: [DOC] Fix typo "macro macro" @utenmiki [Fixes GH-551]
+	  https://github.com/ruby/ruby/pull/551
+
+Fri Feb 28 11:16:55 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* numeric.c: Fix Numeric#step with 0 unit [Bug #9575]
+
+Thu Feb 27 17:59:01 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/optparse.rb: [DOC] Add example of generating help with optparse.
+	  Patch by @joelmccracken documenting-ruby/ruby#19
+	  https://github.com/documenting-ruby/ruby/pull/19
+
+Thu Feb 27 12:10:09 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (ruby_num_interval_step_size): check signs and get rid
+	  of implementation dependent behavior of negative division.
+	  [ruby-core:61106] [Bug #9570]
+
+Thu Feb 27 03:55:45 2014  Zachary Scott  <e@zzak.io>
+
+	* thread.c: [DOC] Typo in comment for _FORTIFY_SOURCE [Fixes GH-548]
+	  Patch by @qnet-herwin https://github.com/ruby/ruby/pull/548
+
+Wed Feb 26 18:43:43 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (heap_pages_free_unused_pages): check tomb page availability
+	  at first.
+	  And return immediately if we don't touch sorted list any more.
+
+Wed Feb 26 14:10:44 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (setup_exception): preserve exception class name encoding
+	  in debug mode messages.
+
+	* eval.c (setup_exception): preserve errinfo across calling #to_s
+	  method on the exception.  [ruby-core:61091] [Bug #9568]
+
+Wed Feb 26 01:29:27 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (sym_find): Add Symbol.find(str), which returns whether given
+	  string is defined as symbol or not. [Feature #7854]
+
+Tue Feb 25 22:52:02 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* ext/dl/dl.c (rb_dl_realloc): use NUM2SIZET instead of NUM2INT.
+
+	* ext/fiddle/fiddle.c (rb_fiddle_realloc): ditto.
+
+Tue Feb 25 22:49:30 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* ext/dl/dl.c (rb_dl_malloc): use NUM2SIZET instead of NUM2INT.
+	  Coverity Scan found this bug.
+
+	* ext/fiddle/fiddle.c (rb_fiddle_malloc): ditto.
+
+Tue Feb 25 12:06:13 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* win32/Makefile.sub: define PACKED_STRUCT.
+
+Mon Feb 24 21:41:56 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* README.md, README.ja.md: removed (wrong) mode setting for emacs.
+
+Mon Feb 24 20:05:41 2014  Eric Wong  <e@80x24.org>
+
+	* configure.in: define PACKED_STRUCT_UNALIGNED for x86*
+	* timev.h (struct vtm): use PACKED_STRUCT_UNALIGNED
+	* time.c (struct time_object): ditto
+	  [Bug #9558] non-x86 cannot safely access unaligned addresses
+
+Mon Feb 24 18:10:02 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/fiddle/test_function.rb: remove unused variables.
+	* test/fileutils/test_fileutils.rb: ditto.
+	* test/io/console/test_io_console.rb: ditto.
+
+Mon Feb 24 12:37:51 2014  Eric Wong  <e@80x24.org>
+
+	* configure.in: use -Wno-packed-bitfield-compat for GCC 4.4+
+	  use __attribute__((packed)) if available
+	* timev.h: shrink and pack struct vtm
+	* time.c: pack struct time_object and adjust/introduce helpers
+	  [ruby-core:60794]
+
 Sun Feb 23 17:55:50 2014  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/xmltokens.rb: Add missing non ASCII valid characters

@@ -1170,7 +1170,7 @@ class TestFileUtils < Test::Unit::TestCase
         return unless uid_1 and uid_2
 
         touch 'tmp/a'
-        exception = assert_raise(Errno::EPERM) {
+        assert_raise(Errno::EPERM) {
           chown uid_1, nil, 'tmp/a'
           chown uid_2, nil, 'tmp/a'
         }

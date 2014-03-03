@@ -160,4 +160,4 @@ UNIXであれば `configure` がほとんどの差異を吸収してくれるは
 
 コメント，バグレポートその他は mailto:matz@ruby-lang.org まで．
 ---
-created at: Thu Aug  3 11:57:36 JST 1995 -- Local variables: mode: rdoc end:
+created at: Thu Aug  3 11:57:36 JST 1995

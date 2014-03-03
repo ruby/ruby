@@ -513,19 +513,11 @@ class TC_Set < Test::Unit::TestCase
     set2 = Set["a", "b", set1]
     set1 = set1.add(set1.clone)
 
-#    assert_equal(set1, set2)
-#    assert_equal(set2, set1)
     assert_equal(set2, set2.clone)
     assert_equal(set1.clone, set1)
 
     assert_not_equal(Set[Exception.new,nil], Set[Exception.new,Exception.new], "[ruby-dev:26127]")
   end
-
-  # def test_hash
-  # end
-
-  # def test_eql?
-  # end
 
   def test_classify
     set = Set.new(1..10)
@@ -604,12 +596,6 @@ class TC_Set < Test::Unit::TestCase
     set1.add(set2)
     assert_equal(true, set1.inspect.include?('#<Set: {...}>'))
   end
-
-  # def test_pretty_print
-  # end
-
-  # def test_pretty_print_cycle
-  # end
 end
 
 class TC_SortedSet < Test::Unit::TestCase
@@ -681,38 +667,3 @@ class TC_Enumerable < Test::Unit::TestCase
     assert_equal([-10,-8,-6,-4,-2], set.sort)
   end
 end
-
-# class TC_RestricedSet < Test::Unit::TestCase
-#   def test_s_new
-#     assert_raises(ArgumentError) { RestricedSet.new }
-#
-#     s = RestricedSet.new([-1,2,3]) { |o| o > 0 }
-#     assert_equal([2,3], s.sort)
-#   end
-#
-#   def test_restriction_proc
-#     s = RestricedSet.new([-1,2,3]) { |o| o > 0 }
-#
-#     f = s.restriction_proc
-#     assert_instance_of(Proc, f)
-#     assert(f[1])
-#     assert(!f[0])
-#   end
-#
-#   def test_replace
-#     s = RestricedSet.new(-3..3) { |o| o > 0 }
-#     assert_equal([1,2,3], s.sort)
-#
-#     s.replace([-2,0,3,4,5])
-#     assert_equal([3,4,5], s.sort)
-#   end
-#
-#   def test_merge
-#     s = RestricedSet.new { |o| o > 0 }
-#     s.merge(-5..5)
-#     assert_equal([1,2,3,4,5], s.sort)
-#
-#     s.merge([10,-10,-8,8])
-#     assert_equal([1,2,3,4,5,8,10], s.sort)
-#   end
-# end

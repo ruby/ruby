@@ -3832,10 +3832,12 @@ ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encodin
  *  <code>File::ALT_SEPARATOR</code> as the separator when
  *  <code>File::ALT_SEPARATOR</code> is not <code>nil</code>. If
  *  <i>suffix</i> is given and present at the end of <i>file_name</i>,
- *  it is removed.
+ *  it is removed. If <i>suffix</i> is ".*", any extension will be
+ *  removed.
  *
  *     File.basename("/home/gumby/work/ruby.rb")          #=> "ruby.rb"
  *     File.basename("/home/gumby/work/ruby.rb", ".rb")   #=> "ruby"
+ *     File.basename("/home/gumby/work/ruby.rb", ".*")    #=> "ruby"
  */
 
 static VALUE

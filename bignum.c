@@ -4036,8 +4036,10 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 	    if (c == '_') {
 		if (++us >= 2)
 		    break;
-	    } else
+	    }
+	    else {
 		us = 0;
+	    }
 	}
 	if (!(c = *str) || ISSPACE(c)) --str;
     }

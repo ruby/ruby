@@ -116,6 +116,7 @@ module XMLRPC
       assert_equal 'example.org', host
       assert_equal '/foo', path
       assert_equal 1234, port
+      assert use_ssl
 
       refute proxy_host
       refute proxy_port

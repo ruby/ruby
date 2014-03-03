@@ -1059,10 +1059,13 @@ ruby_init_ext(const char *name, void (*init)(void))
 {
     st_table *loading_tbl = get_loading_table();
 
+    if (rb_provided(name))
+	return;
     if (!loading_tbl) {
 	GET_VM()->loading_table = loading_tbl = st_init_strtable();
     }
     st_update(loading_tbl, (st_data_t)name, register_init_ext, (st_data_t)init);
+    rb_provide(name);
 }
 
 /*

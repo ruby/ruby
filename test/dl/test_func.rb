@@ -153,12 +153,17 @@ module DL
     end
 
     def test_qsort1()
+      assert_separately(%W[--disable=gems -r#{__dir__}/test_base.rb -rdl/func], __FILE__, __LINE__, <<-"end;")
+      include DL
+      @libc = dlopen(LIBC_SO)
+      @libm = dlopen(LIBM_SO)
       begin
         cb = Function.new(CFunc.new(0, TYPE_INT, '<callback>qsort'),
                           [TYPE_VOIDP, TYPE_VOIDP]){|x,y| CPtr.new(x)[0] <=> CPtr.new(y)[0]}
         qsort = Function.new(CFunc.new(@libc['qsort'], TYPE_VOID, 'qsort'),
                              [TYPE_VOIDP, TYPE_SIZE_T, TYPE_SIZE_T, TYPE_VOIDP])
         buff = "9341"
+
         qsort.call(buff, buff.size, 1, cb)
         assert_equal("1349", buff)
 
@@ -169,6 +174,7 @@ module DL
       ensure
         cb.unbind if cb # max number of callbacks is limited to MAX_CALLBACK
       end
+      end;
     end
 
     def test_qsort2()

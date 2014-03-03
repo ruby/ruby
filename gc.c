@@ -999,28 +999,30 @@ heap_pages_free_unused_pages(rb_objspace_t *objspace)
 {
     size_t i, j;
 
-    for (i = j = 1; j < heap_pages_used; i++) {
-	struct heap_page *page = heap_pages_sorted[i];
+    if (heap_tomb->pages) {
+	for (i = j = 1; j < heap_pages_used; i++) {
+	    struct heap_page *page = heap_pages_sorted[i];
 
-	if (page->heap == heap_tomb && page->final_slots == 0) {
-	    if (heap_pages_swept_slots - page->limit > heap_pages_max_free_slots) {
-		if (0) fprintf(stderr, "heap_pages_free_unused_pages: %d free page %p, heap_pages_swept_slots: %d, heap_pages_max_free_slots: %d\n",
-			       (int)i, page, (int)heap_pages_swept_slots, (int)heap_pages_max_free_slots);
-		heap_pages_swept_slots -= page->limit;
-		heap_unlink_page(objspace, heap_tomb, page);
-		heap_page_free(objspace, page);
-		continue;
+	    if (page->heap == heap_tomb && page->final_slots == 0) {
+		if (heap_pages_swept_slots - page->limit > heap_pages_max_free_slots) {
+		    if (0) fprintf(stderr, "heap_pages_free_unused_pages: %d free page %p, heap_pages_swept_slots: %d, heap_pages_max_free_slots: %d\n",
+				   (int)i, page, (int)heap_pages_swept_slots, (int)heap_pages_max_free_slots);
+		    heap_pages_swept_slots -= page->limit;
+		    heap_unlink_page(objspace, heap_tomb, page);
+		    heap_page_free(objspace, page);
+		    continue;
+		}
+		else if (i == j) {
+		    return; /* no need to check rest pages */
+		}
 	    }
-	    else {
-		/* fprintf(stderr, "heap_pages_free_unused_pages: remain!!\n"); */
+	    if (i != j) {
+		heap_pages_sorted[j] = page;
 	    }
+	    j++;
 	}
-	if (i != j) {
-	    heap_pages_sorted[j] = page;
-	}
-	j++;
+	assert(j == heap_pages_used);
     }
-    assert(j == heap_pages_used);
 }
 
 static struct heap_page *
@@ -5560,7 +5562,8 @@ gc_stat(int argc, VALUE *argv, VALUE self)
 	    size_t value = 0;
 	    gc_stat_internal(arg, &value);
 	    return SIZET2NUM(value);
-	} else if (!RB_TYPE_P(arg, T_HASH)) {
+	}
+	else if (!RB_TYPE_P(arg, T_HASH)) {
 	    rb_raise(rb_eTypeError, "non-hash or symbol given");
 	}
     }
@@ -5579,7 +5582,8 @@ rb_gc_stat(VALUE key)
 	size_t value = 0;
 	gc_stat_internal(key, &value);
 	return value;
-    } else {
+    }
+    else {
 	gc_stat_internal(key, 0);
 	return 0;
     }
@@ -5823,7 +5827,7 @@ ruby_gc_set_params(int safe_level)
     get_envparam_size  ("RUBY_GC_MALLOC_LIMIT_MAX", &gc_params.malloc_limit_max, 0);
     get_envparam_double("RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR", &gc_params.malloc_limit_growth_factor, 1.0);
 
-#ifdef RGENGC_ESTIMATE_OLDMALLOC
+#if RGENGC_ESTIMATE_OLDMALLOC
     if (get_envparam_size("RUBY_GC_OLDMALLOC_LIMIT", &gc_params.oldmalloc_limit_min, 0)) {
 	rb_objspace_t *objspace = &rb_objspace;
 	objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;

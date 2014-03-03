@@ -78,6 +78,45 @@ class TestException < Test::Unit::TestCase
     assert(!bad)
   end
 
+  def test_errinfo_in_debug
+    bug9568 = EnvUtil.labeled_class("[ruby-core:61091] [Bug #9568]", RuntimeError) do
+      def to_s
+        require '\0'
+      rescue LoadError
+        self.class.to_s
+      end
+    end
+
+    err = EnvUtil.verbose_warning do
+      assert_raise(bug9568) do
+        $DEBUG, debug = true, $DEBUG
+        begin
+          raise bug9568
+        ensure
+          $DEBUG = debug
+        end
+      end
+    end
+    assert_include(err, bug9568.to_s)
+  end
+
+  def test_errinfo_encoding_in_debug
+    exc = Module.new {break class_eval("class C\u{30a8 30e9 30fc} < RuntimeError; self; end".encode(Encoding::EUC_JP))}
+    exc.inspect
+
+    err = EnvUtil.verbose_warning do
+      assert_raise(exc) do
+        $DEBUG, debug = true, $DEBUG
+        begin
+          raise exc
+        ensure
+          $DEBUG = debug
+        end
+      end
+    end
+    assert_include(err, exc.to_s)
+  end
+
   def test_break_ensure
     bad = true
     while true

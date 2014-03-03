@@ -1101,7 +1101,8 @@ init_sigchld(int sig)
     oldfunc = ruby_signal(sig, SIG_DFL);
     if (oldfunc != SIG_DFL && oldfunc != SIG_IGN) {
 	ruby_signal(sig, oldfunc);
-    } else {
+    }
+    else {
 	GET_VM()->trap_list[sig].cmd = 0;
     }
     rb_enable_interrupt();

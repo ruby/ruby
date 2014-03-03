@@ -21,8 +21,17 @@ with all sufficient information, see the ChangeLog file.
     * min_by
     * max
     * max_by
+* Symbol
+  * New methods
+    * Symbol.find(str) returns whether given string is defined as symbol or not.
 
 === Core classes compatibility issues (excluding feature bug fixes)
+
+* IO
+  * incompatible changes:
+    * When flushing file IO, you cannot assume that the metadata of the file
+      is updated immediately.  On some platforms (especially Windows), it is
+      delayed until the filesystem load is decreased.
 
 === Stdlib updates (outstanding ones only)
 

@@ -34,8 +34,8 @@ module Find
   #
   # See the +Find+ module documentation for an example.
   #
-  def find(*paths) # :yield: path
-    block_given? or return enum_for(__method__, *paths)
+  def find(*paths, ignore_error: true) # :yield: path
+    block_given? or return enum_for(__method__, *paths, ignore_error: ignore_error)
 
     fs_encoding = Encoding.find("filesystem")
 
@@ -48,12 +48,14 @@ module Find
           begin
             s = File.lstat(file)
           rescue Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR, Errno::ELOOP, Errno::ENAMETOOLONG
+            raise unless ignore_error
             next
           end
           if s.directory? then
             begin
               fs = Dir.entries(file, encoding: enc)
             rescue Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR, Errno::ELOOP, Errno::ENAMETOOLONG
+              raise unless ignore_error
               next
             end
             fs.sort!

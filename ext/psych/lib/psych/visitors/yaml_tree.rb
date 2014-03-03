@@ -157,6 +157,11 @@ module Psych
         @emitter.end_sequence
       end
 
+      def visit_Encoding o
+        tag = "!ruby/encoding"
+        @emitter.scalar o.name, nil, tag, false, false, Nodes::Scalar::ANY
+      end
+
       def visit_Object o
         tag = Psych.dump_tags[o.class]
         unless tag

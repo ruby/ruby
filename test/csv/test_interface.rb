@@ -50,16 +50,16 @@ class TestCSV::Interface < TestCSV
     csv = CSV.open(@path, "r+", col_sep: "\t", row_sep: "\r\n")
     assert_not_nil(csv)
     assert_instance_of(CSV, csv)
-    assert_equal(false, csv.closed?)
+    assert_not_predicate(csv, :closed?)
     csv.close
-    assert(csv.closed?)
+    assert_predicate(csv, :closed?)
 
     ret = CSV.open(@path) do |new_csv|
       csv = new_csv
       assert_instance_of(CSV, new_csv)
       "Return value."
     end
-    assert(csv.closed?)
+    assert_predicate(csv, :closed?)
     assert_equal("Return value.", ret)
   end
 

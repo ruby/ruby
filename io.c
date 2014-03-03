@@ -264,9 +264,11 @@ rb_cloexec_open(const char *pathname, int flags, mode_t mode)
     if (ret == -1) return -1;
     if (ret <= 2 || o_cloexec_state == 0) {
 	rb_maygvl_fd_fix_cloexec(ret);
-    } else if (o_cloexec_state > 0) {
+    }
+    else if (o_cloexec_state > 0) {
 	return ret;
-    } else {
+    }
+    else {
 	o_cloexec_state = rb_fix_detect_o_cloexec(ret);
     }
     return ret;
@@ -1074,10 +1076,11 @@ io_flush_buffer_async2(VALUE arg)
 	/* pending async interrupt is there. */
 	errno = EAGAIN;
 	return -1;
-    } else if (ret == 1) {
+    }
+    else if (ret == 1) {
 	return 0;
-    } else
-	return ret;
+    }
+    return ret;
 }
 
 static inline int
@@ -1561,11 +1564,6 @@ rb_io_flush_raw(VALUE io, int sync)
     if (fptr->mode & FMODE_WRITABLE) {
         if (io_fflush(fptr) < 0)
             rb_sys_fail(0);
-#ifdef _WIN32
-	if (sync && GetFileType((HANDLE)rb_w32_get_osfhandle(fptr->fd)) == FILE_TYPE_DISK) {
-	    rb_thread_io_blocking_region(nogvl_fsync, fptr, fptr->fd);
-	}
-#endif
     }
     if (fptr->mode & FMODE_READABLE) {
         io_unread(fptr);
@@ -1927,10 +1925,8 @@ rb_io_fsync(VALUE io)
 
     if (io_fflush(fptr) < 0)
         rb_sys_fail(0);
-# ifndef _WIN32	/* already called in io_fflush() */
     if ((int)rb_thread_io_blocking_region(nogvl_fsync, fptr, fptr->fd) < 0)
 	rb_sys_fail_path(fptr->pathv);
-# endif
     return INT2FIX(0);
 }
 #else
@@ -2716,7 +2712,8 @@ io_write_nonblock(VALUE io, VALUE str, int no_exception)
         if (errno == EWOULDBLOCK || errno == EAGAIN) {
 	    if (no_exception) {
 		return ID2SYM(rb_intern("wait_writable"));
-	    } else {
+	    }
+	    else {
 		rb_readwrite_sys_fail(RB_IO_WAIT_WRITABLE, "write would block");
 	    }
 	}

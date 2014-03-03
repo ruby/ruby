@@ -82,6 +82,43 @@
 #   p options
 #   p ARGV
 #
+# === Generating Help
+#
+# OptionParser can be used to automatically generate help for the commands you
+# write:
+#
+#   require 'optparse'
+#
+#   Options = Struct.new(:name)
+#
+#   class Parser
+#     def self.parse(options)
+#       args = Options.new("world")
+#
+#       opt_parser = OptionParser.new do |opts|
+#         opts.banner = "Usage: example.rb [options]"
+#
+#         opts.on("-nNAME", "--name=NAME", "Name to say hello to") do |n|
+#           args.name = n
+#         end
+#
+#         opts.on("-h", "--help", "Prints this help") do
+#           puts opts
+#           exit
+#         end
+#       end
+#
+#       opt_parser.parse!(options)
+#       return args
+#     end
+#   end
+#   options = Parser.parse %w[--help]
+#
+#   #=>
+#      # Usage: example.rb [options]
+#      #     -n, --name=NAME                  Name to say hello to
+#      #     -h, --help                       Prints this help#
+#
 # === Complete example
 #
 # The following example is a complete Ruby program.  You can run it and see the

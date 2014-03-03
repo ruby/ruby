@@ -746,6 +746,7 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
 		 -Werror=implicit-function-declaration \
 		 -Werror=division-by-zero \
 		 -Werror=deprecated-declarations \
+		 -Wno-packed-bitfield-compat \
 		 $extra_warning \
 		 ; do
 	if test "$particular_werror_flags" != yes; then
@@ -1270,6 +1271,26 @@ RUBY_CHECK_SIZEOF(float)
 RUBY_CHECK_SIZEOF(double)
 RUBY_CHECK_SIZEOF(time_t, [long "long long"], [], [@%:@include <time.h>])
 RUBY_CHECK_SIZEOF(clock_t, [], [], [@%:@include <time.h>])
+
+AC_CACHE_CHECK(packed struct attribute, rb_cv_packed_struct,
+    [rb_cv_packed_struct=no
+    for mac in \
+	"__pragma(pack(push, 1)) x __pragma(pack(pop))" \
+	"x __attribute__((packed))" \
+	; do
+	AC_TRY_COMPILE([@%:@define PACKED_STRUCT(x) $mac
+			PACKED_STRUCT(struct { int a; });], [],
+		[rb_cv_packed_struct=$mac; break])
+    done])
+packed_struct_unaligned=x
+if test "$rb_cv_packed_struct" != no; then
+    AC_DEFINE_UNQUOTED([PACKED_STRUCT(x)], [$rb_cv_packed_struct])
+    AS_CASE(["$target_cpu"],
+	    [x86*|i?86|x64], [packed_struct_unaligned='PACKED_STRUCT(x)'])
+else
+    AC_DEFINE_UNQUOTED([PACKED_STRUCT(x)], x)
+fi
+AC_DEFINE_UNQUOTED(PACKED_STRUCT_UNALIGNED(x), $packed_struct_unaligned)
 
 AC_DEFUN([RUBY_CHECK_PRINTF_PREFIX], [
 AC_CACHE_CHECK([for printf prefix for $1], [rb_cv_pri_prefix_]AS_TR_SH($1),[
@@ -2431,6 +2452,33 @@ if test x"$enable_pthread" = xyes; then
     else
       AC_CHECK_FUNCS(pthread_attr_init)
     fi
+    if test "$ac_cv_func_pthread_setname_np" = yes; then
+	AC_CACHE_CHECK([arguments of pthread_setname_np], [rb_cv_func_pthread_setname_np_arguments],
+	    [rb_cv_func_pthread_setname_np_arguments=
+	    for mac in \
+		"(pthread_self(), name)" \
+		"(pthread_self(), "%s", name)" \
+		"(name)" \
+		; do
+		AC_TRY_COMPILE([
+		    @%:@include <pthread.h>
+		    @%:@ifdef HAVE_PTHREAD_NP_H
+		    @%:@include <pthread_np.h>
+		    @%:@endif
+		    @%:@define SET_THREAD_NAME(name) pthread_setname_np${mac}
+		    ],
+		    [if (SET_THREAD_NAME("conftest")) return 1;],
+		    [rb_cv_func_pthread_setname_np_arguments="${mac}"
+		    break])
+	    done
+	    ]
+	)
+	if test -n "${rb_cv_func_pthread_setname_np_arguments}"; then
+	    AC_DEFINE_UNQUOTED(SET_THREAD_NAME(name), pthread_setname_np${rb_cv_func_pthread_setname_np_arguments})
+	else
+	    AC_DEFINE_UNQUOTED(SET_THREAD_NAME(name), (void)0)
+	fi
+    fi
 fi
 if test x"$ac_cv_header_ucontext_h" = xyes; then
     if test x"$rb_with_pthread" = xyes; then
@@ -3527,6 +3575,10 @@ if test "${universal_binary-no}" = yes ; then
     mv -f confdefs1.h confdefs.h
     AC_MSG_ERROR([failed])
     ])])
+    AC_CACHE_CHECK(whether __ARCHITECTURE__ is available, rb_cv_architecture_available,
+	AC_TRY_COMPILE([@%:@include <stdio.h>
+		const char arch[[]] = __ARCHITECTURE__;], [puts(arch);],
+		[rb_cv_architecture_available=yes], [rb_cv_architecture_available=no]))
 fi
 
 if test "$ac_cv_func_memmem" = yes; then
@@ -3744,9 +3796,6 @@ AC_SUBST(configure_args, "`echo "${ac_configure_args}" | sed 's/\\$/$$/g'`")dnl
 
 if test "${universal_binary-no}" = yes ; then
     arch="universal-${target_os}"
-    AC_CACHE_CHECK(whether __ARCHITECTURE__ is available, rb_cv_architecture_available,
-	AC_TRY_COMPILE([const char arch[] = __ARCHITECTURE__;], [puts(arch);],
-	     [rb_cv_architecture_available=yes], [rb_cv_architecture_available=no]))
     if test "${rb_cv_architecture_available}" = yes; then
 	AC_DEFINE_UNQUOTED(RUBY_PLATFORM_CPU, __ARCHITECTURE__)
     else

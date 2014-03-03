@@ -49,7 +49,7 @@
  * supports large fd size (>FD_SETSIZE), it wrongly assumes fd is always
  * less than FD_SETSIZE (i.e. 1024). And then when enabling HAVE_RB_FD_INIT,
  * it doesn't work correctly and makes program abort. Therefore we need to
- * disable FORTY_SOURCE until glibc fixes it.
+ * disable FORTIFY_SOURCE until glibc fixes it.
  */
 #undef _FORTIFY_SOURCE
 #undef __USE_FORTIFY_LEVEL
@@ -1013,7 +1013,8 @@ getclockofday(struct timeval *tp)
     if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
 	tp->tv_sec = ts.tv_sec;
 	tp->tv_usec = ts.tv_nsec / 1000;
-    } else
+    }
+    else
 #endif
     {
         gettimeofday(tp, NULL);
@@ -1084,7 +1085,8 @@ timeofday(void)
 
     if (clock_gettime(CLOCK_MONOTONIC, &tp) == 0) {
         return (double)tp.tv_sec + (double)tp.tv_nsec * 1e-9;
-    } else
+    }
+    else
 #endif
     {
         struct timeval tv;

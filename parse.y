@@ -10744,7 +10744,7 @@ rb_check_id(volatile VALUE *namep)
 	tmp = rb_check_string_type(name);
 	if (NIL_P(tmp)) {
 	    tmp = rb_inspect(name);
-	    rb_raise(rb_eTypeError, "%s is not a symbol",
+	    rb_raise(rb_eTypeError, "%s is not a symbol nor a string",
 		     RSTRING_PTR(tmp));
 	}
 	name = tmp;

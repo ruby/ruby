@@ -77,16 +77,16 @@ closed_sdbm()
     rb_raise(rb_eDBMError, "closed SDBM file");
 }
 
-#define GetDBM(obj, dbmp) {\
+#define GetDBM(obj, dbmp) do {\
     Data_Get_Struct((obj), struct dbmdata, (dbmp));\
     if ((dbmp) == 0) closed_sdbm();\
     if ((dbmp)->di_dbm == 0) closed_sdbm();\
-}
+} while (0)
 
-#define GetDBM2(obj, data, dbm) {\
+#define GetDBM2(obj, data, dbm) do {\
     GetDBM((obj), (data));\
     (dbm) = dbmp->di_dbm;\
-}
+} while (0)
 
 static void
 free_sdbm(struct dbmdata *dbmp)

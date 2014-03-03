@@ -222,7 +222,7 @@ class TestIO_Console < Test::Unit::TestCase
     end
   else
     def test_sync
-      r, w, pid = PTY.spawn(EnvUtil.rubybin, "-rio/console", "-e", "p IO.console.class")
+      r, _, pid = PTY.spawn(EnvUtil.rubybin, "-rio/console", "-e", "p IO.console.class")
     rescue RuntimeError
       skip $!
     else

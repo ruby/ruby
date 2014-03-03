@@ -38,11 +38,27 @@ class VCS
     super()
   end
 
+  NullDevice = defined?(IO::NULL) ? IO::NULL :
+    %w[/dev/null NUL NIL: NL:].find {|dev| File.exist?(dev)}
+
   # return a pair of strings, the last revision and the last revision in which
   # +path+ was modified.
   def get_revisions(path)
     path = relative_to(path)
-    last, changed, modified, *rest = Dir.chdir(@srcdir) {self.class.get_revisions(path)}
+    last, changed, modified, *rest = Dir.chdir(@srcdir) {
+      begin
+        if NullDevice
+          save_stderr = STDERR.dup
+          STDERR.reopen NullDevice, 'w'
+        end
+        self.class.get_revisions(path)
+      ensure
+        if save_stderr
+          STDERR.reopen save_stderr
+          save_stderr.close
+        end
+      end
+    }
     last or raise VCS::NotFoundError, "last revision not found"
     changed or raise VCS::NotFoundError, "changed revision not found"
     modified &&= Time.parse(modified)
@@ -73,19 +89,7 @@ class VCS
     register(".svn")
 
     def self.get_revisions(path)
-      begin
-        nulldevice = %w[/dev/null NUL NIL: NL:].find {|dev| File.exist?(dev)}
-        if nulldevice
-          save_stderr = STDERR.dup
-          STDERR.reopen nulldevice, 'w'
-        end
-        info_xml = `svn info --xml "#{path}"`
-      ensure
-        if save_stderr
-          STDERR.reopen save_stderr
-          save_stderr.close
-        end
-      end
+      info_xml = `svn info --xml "#{path}"`
       _, last, _, changed, _ = info_xml.split(/revision="(\d+)"/)
       modified = info_xml[/<date>([^<>]*)/, 1]
       [last, changed, modified]
