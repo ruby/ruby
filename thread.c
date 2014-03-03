@@ -5139,9 +5139,10 @@ update_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
 static void
 update_method_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klass)
 {
-    VALUE coverage = GET_THREAD()->cfp->iseq->coverage->methods;
+    struct rb_coverage_struct *coverages = GET_THREAD()->cfp->iseq->coverage;
 
-    if (coverage) {
+    if (coverages && coverages->methods) {
+	VALUE coverage = coverages->methods;
 	VALUE line = LONG2FIX(rb_sourceline());
 	VALUE count = rb_hash_lookup(coverage, line);
 

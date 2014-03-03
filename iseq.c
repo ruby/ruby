@@ -314,14 +314,15 @@ prepare_iseq_build(rb_iseq_t *iseq,
     if (!GET_THREAD()->parse_in_eval) {
 	VALUE coverages = rb_get_coverages();
 	if (RTEST(coverages)) {
-	    if (!NIL_P(rb_hash_lookup(coverages, path))) {
+	    VALUE coverage = rb_hash_lookup(coverages, path);
+	    if (!NIL_P(coverage)) {
 		iseq->coverage = ALLOC(struct rb_coverage_struct);
 		RB_OBJ_WRITE(iseq->self, &iseq->coverage->lines,
-			 rb_hash_lookup(rb_hash_lookup(coverages, path), ID2SYM(rb_intern("lines"))));
+			rb_hash_lookup(coverage, ID2SYM(rb_intern("lines"))));
 		RB_OBJ_WRITE(iseq->self, &iseq->coverage->methods,
-			 rb_hash_lookup(rb_hash_lookup(coverages, path), ID2SYM(rb_intern("methods"))));
+			rb_hash_lookup(coverage, ID2SYM(rb_intern("methods"))));
 		RB_OBJ_WRITE(iseq->self, &iseq->coverage->decisions,
-			 rb_hash_lookup(rb_hash_lookup(coverages, path), ID2SYM(rb_intern("decisions"))));
+			rb_hash_lookup(coverage, ID2SYM(rb_intern("decisions"))));
 
 		if (NIL_P(iseq->coverage->lines)) RB_OBJ_WRITE(iseq->self, &iseq->coverage->lines, Qfalse);
 		if (NIL_P(iseq->coverage->methods)) RB_OBJ_WRITE(iseq->self, &iseq->coverage->methods, Qfalse);
