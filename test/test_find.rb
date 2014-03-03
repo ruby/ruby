@@ -130,13 +130,13 @@ class TestFind < Test::Unit::TestCase
         Find.find(d, ignore_error: true) {|f| a << f }
         assert_equal([d, dir, file], a)
 
+        skip "no meaning test on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
         a = []
         assert_raise_with_message(Errno::EACCES, /#{Regexp.quote(file)}/) do
           Find.find(d, ignore_error: false) {|f| a << f }
         end
         assert_equal([d, dir, file], a)
 
-        skip "no meaning test on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
         assert_raise(Errno::EACCES) { File.lstat(file) }
       ensure
         File.chmod(0700, dir)
