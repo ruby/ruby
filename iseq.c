@@ -314,16 +314,19 @@ prepare_iseq_build(rb_iseq_t *iseq,
     if (!GET_THREAD()->parse_in_eval) {
 	VALUE coverages = rb_get_coverages();
 	if (RTEST(coverages)) {
-	    iseq->coverage = ALLOC(struct rb_coverage_struct);
-	    RB_OBJ_WRITE(iseq->self, &iseq->coverage->lines,
+	    if (!NIL_P(rb_hash_lookup(coverages, path))) {
+		iseq->coverage = ALLOC(struct rb_coverage_struct);
+		RB_OBJ_WRITE(iseq->self, &iseq->coverage->lines,
 			 rb_hash_lookup(rb_hash_lookup(coverages, path), ID2SYM(rb_intern("lines"))));
-	    RB_OBJ_WRITE(iseq->self, &iseq->coverage->methods,
+		RB_OBJ_WRITE(iseq->self, &iseq->coverage->methods,
 			 rb_hash_lookup(rb_hash_lookup(coverages, path), ID2SYM(rb_intern("methods"))));
-	    RB_OBJ_WRITE(iseq->self, &iseq->coverage->decisions,
+		RB_OBJ_WRITE(iseq->self, &iseq->coverage->decisions,
 			 rb_hash_lookup(rb_hash_lookup(coverages, path), ID2SYM(rb_intern("decisions"))));
-	    if (NIL_P(iseq->coverage->lines)) RB_OBJ_WRITE(iseq->self, &iseq->coverage->lines, Qfalse);
-	    if (NIL_P(iseq->coverage->methods)) RB_OBJ_WRITE(iseq->self, &iseq->coverage->methods, Qfalse);
-	    if (NIL_P(iseq->coverage->decisions)) RB_OBJ_WRITE(iseq->self, &iseq->coverage->decisions, Qfalse);
+
+		if (NIL_P(iseq->coverage->lines)) RB_OBJ_WRITE(iseq->self, &iseq->coverage->lines, Qfalse);
+		if (NIL_P(iseq->coverage->methods)) RB_OBJ_WRITE(iseq->self, &iseq->coverage->methods, Qfalse);
+		if (NIL_P(iseq->coverage->decisions)) RB_OBJ_WRITE(iseq->self, &iseq->coverage->decisions, Qfalse);
+	    }
 	}
     }
 
