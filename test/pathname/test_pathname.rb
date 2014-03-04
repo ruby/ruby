@@ -1253,6 +1253,31 @@ class TestPathname < Test::Unit::TestCase
       assert_equal([Pathname("."), Pathname("a"), Pathname("b"), Pathname("d"), Pathname("d/x"), Pathname("d/y")], a)
       a = Pathname("d").find.sort
       assert_equal([Pathname("d"), Pathname("d/x"), Pathname("d/y")], a)
+
+      begin
+        File.unlink("d/y")
+        File.chmod(0600, "d")
+        a = []; Pathname(".").find(ignore_error: true) {|v| a << v }; a.sort!
+        assert_equal([Pathname("."), Pathname("a"), Pathname("b"), Pathname("d"), Pathname("d/x")], a)
+        a = []; Pathname("d").find(ignore_error: true) {|v| a << v }; a.sort!
+        assert_equal([Pathname("d"), Pathname("d/x")], a)
+
+        skip "no meaning test on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
+        a = [];
+        assert_raise_with_message(Errno::EACCES, %r{d/x}) do
+          Pathname(".").find(ignore_error: false) {|v| a << v }
+        end
+        a.sort!
+        assert_equal([Pathname("."), Pathname("a"), Pathname("b"), Pathname("d"), Pathname("d/x")], a)
+        a = [];
+        assert_raise_with_message(Errno::EACCES, %r{d/x}) do
+          Pathname("d").find(ignore_error: false) {|v| a << v }
+        end
+        a.sort!
+        assert_equal([Pathname("d"), Pathname("d/x")], a)
+      ensure
+        File.chmod(0700, "d")
+      end
     }
   end
 

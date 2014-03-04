@@ -534,13 +534,13 @@ class Pathname    # * Find *
   #
   # See Find.find
   #
-  def find # :yield: pathname
-    return to_enum(__method__) unless block_given?
+  def find(ignore_error: true) # :yield: pathname
+    return to_enum(__method__, ignore_error: ignore_error) unless block_given?
     require 'find'
     if @path == '.'
-      Find.find(@path) {|f| yield self.class.new(f.sub(%r{\A\./}, '')) }
+      Find.find(@path, ignore_error: ignore_error) {|f| yield self.class.new(f.sub(%r{\A\./}, '')) }
     else
-      Find.find(@path) {|f| yield self.class.new(f) }
+      Find.find(@path, ignore_error: ignore_error) {|f| yield self.class.new(f) }
     end
   end
 end
