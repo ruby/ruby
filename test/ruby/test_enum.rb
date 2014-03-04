@@ -106,7 +106,7 @@ class TestEnumerable < Test::Unit::TestCase
   def test_to_h
     obj = Object.new
     def obj.each(*args)
-      yield *args
+      yield(*args)
       yield [:key, :value]
       yield :other_key, :other_value
       kvp = Object.new

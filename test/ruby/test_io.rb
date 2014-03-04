@@ -1643,7 +1643,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_pos_with_getc
-    bug6179 = '[ruby-core:43497]'
+    _bug6179 = '[ruby-core:43497]'
     make_tempfile {|t|
       ["", "t", "b"].each do |mode|
         open(t.path, "w#{mode}") do |f|
@@ -1699,7 +1699,7 @@ class TestIO < Test::Unit::TestCase
       end
 
       if defined?(IO::SEEK_HOLE)
-        open(t.path) { |f|2
+        open(t.path) { |f|
           assert_equal("foo\n", f.gets)
           f.seek(0, IO::SEEK_HOLE)
           assert_equal("", f.read)

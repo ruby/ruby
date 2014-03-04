@@ -523,9 +523,9 @@ end.join
     assert_equal(false, s.tainted?)
   end
 
-  def m;
-    m &->{return 0};
-    42;
+  def m
+    m(&->{return 0})
+    42
   end
 
   def test_stackoverflow
@@ -573,7 +573,6 @@ end.join
 
   def test_cause_reraised
     msg = "[Feature #8257]"
-    cause = nil
     e = assert_raise(RuntimeError) {
       begin
         raise msg
