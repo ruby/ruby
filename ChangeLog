@@ -1,3 +1,8 @@
+Tue Mar  4 19:41:40 2014  Tanaka Akira  <akr@fsij.org>
+
+	* Makefile.in: ".DEFAULT" target removed because it is not for
+	  specifying default target.
+
 Tue Mar  4 00:25:35 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* lib/find.rb (Find#find): should pass ignore_error option to enumerators.
