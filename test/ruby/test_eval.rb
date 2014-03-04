@@ -238,7 +238,7 @@ class TestEval < Test::Unit::TestCase
   # From ruby/test/ruby/test_eval.rb
   #
 
-  def test_ev
+  def make_test_binding
     local1 = "local1"
     lambda {
       local2 = "local2"
@@ -273,7 +273,7 @@ class TestEval < Test::Unit::TestCase
     assert_equal(5, eval("i"))
     assert(eval("defined? i"))
 
-    x = test_ev
+    x = make_test_binding
     assert_equal("local1", eval("local1", x)) # normal local var
     assert_equal("local2", eval("local2", x)) # nested local var
     bad = true
