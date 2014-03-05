@@ -111,6 +111,30 @@ class TestSyntax < Test::Unit::TestCase
     assert_raise(TypeError) {o.kw(**h)}
   end
 
+  def test_keyword_self_reference
+    bug9593 = '[ruby-core:61299] [Bug #9593]'
+    o = Object.new
+    def o.foo(var: defined?(var)) var end
+    assert_equal(42, o.foo(var: 42))
+    assert_equal("local-variable", o.foo, bug9593)
+
+    o = Object.new
+    def o.foo(var: var) var end
+    assert_nil(o.foo, bug9593)
+  end
+
+  def test_optional_self_reference
+    bug9593 = '[ruby-core:61299] [Bug #9593]'
+    o = Object.new
+    def o.foo(var = defined?(var)) var end
+    assert_equal(42, o.foo(42))
+    assert_equal("local-variable", o.foo, bug9593)
+
+    o = Object.new
+    def o.foo(var = var) var end
+    assert_nil(o.foo, bug9593)
+  end
+
   def test_warn_grouped_expression
     bug5214 = '[ruby-core:39050]'
     assert_warning("", bug5214) do

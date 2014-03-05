@@ -784,7 +784,7 @@ static void token_info_pop(struct parser_params*, const char *token);
 %type <node> mlhs mlhs_head mlhs_basic mlhs_item mlhs_node mlhs_post mlhs_inner
 %type <id>   fsym keyword_variable user_variable sym symbol operation operation2 operation3
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
-%type <id>   f_kwrest f_label
+%type <id>   f_kwrest f_label f_arg_asgn
 /*%%%*/
 /*%
 %type <val> program reswords then do dot_or_colon
@@ -4548,9 +4548,15 @@ f_norm_arg	: f_bad_arg
 		    }
 		;
 
-f_arg_item	: f_norm_arg
+f_arg_asgn	: f_norm_arg
 		    {
 			arg_var(get_id($1));
+			$$ = $1;
+		    }
+		;
+
+f_arg_item	: f_arg_asgn
+		    {
 		    /*%%%*/
 			$$ = NEW_ARGS_AUX($1, 1);
 		    /*%
@@ -4708,9 +4714,8 @@ f_kwrest	: kwrest_mark tIDENTIFIER
 		    }
 		;
 
-f_opt		: f_norm_arg '=' arg_value
+f_opt		: f_arg_asgn '=' arg_value
 		    {
-			arg_var(get_id($1));
 			$$ = assignable($1, $3);
 		    /*%%%*/
 			$$ = NEW_OPT_ARG(0, $$);
@@ -4720,9 +4725,8 @@ f_opt		: f_norm_arg '=' arg_value
 		    }
 		;
 
-f_block_opt	: f_norm_arg '=' primary_value
+f_block_opt	: f_arg_asgn '=' primary_value
 		    {
-			arg_var(get_id($1));
 			$$ = assignable($1, $3);
 		    /*%%%*/
 			$$ = NEW_OPT_ARG(0, $$);

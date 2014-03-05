@@ -1,3 +1,9 @@
+Wed Mar  5 15:56:18 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (f_arg_asgn): define optional arguments as argument
+	  variables in the rhs default expressions.
+	  [ruby-core:61299] [Bug #9593]
+
 Wed Mar  5 11:58:30 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/ossl.c (ossl_make_error): check NULL for unknown
