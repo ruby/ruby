@@ -1,5 +1,4 @@
 require 'test/unit'
-require 'rational'
 require 'delegate'
 require 'timeout'
 require 'delegate'

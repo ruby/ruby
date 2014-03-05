@@ -259,7 +259,7 @@ class TestRefinement < Test::Unit::TestCase
   def test_return_value_of_refine
     mod = nil
     result = nil
-    m = Module.new {
+    Module.new {
       result = refine(Object) {
         mod = self
       }
@@ -433,7 +433,6 @@ class TestRefinement < Test::Unit::TestCase
   end
 
   def test_module_using_class
-    c = Class.new
     assert_raise(TypeError) do
       eval("using TestRefinement::UsingClass", TOPLEVEL_BINDING)
     end

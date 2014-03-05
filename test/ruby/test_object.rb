@@ -801,7 +801,7 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_type_error_message
-    issue = "Bug #7539"
+    _issue = "Bug #7539"
     assert_raise_with_message(TypeError, "can't convert Array into Integer") {Integer([42])}
     assert_raise_with_message(TypeError, 'no implicit conversion of Array into Integer') {[].first([42])}
   end

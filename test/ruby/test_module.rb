@@ -1258,7 +1258,7 @@ class TestModule < Test::Unit::TestCase
     c = Class.new do
       attr_writer :foo
     end
-    assert_raise(ArgumentError) { c.new.send :foo= }
+    assert_raise(ArgumentError, bug8540) { c.new.send :foo= }
   end
 
   def test_private_constant

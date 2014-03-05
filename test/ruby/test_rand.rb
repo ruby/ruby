@@ -210,7 +210,8 @@ class TestRand < Test::Unit::TestCase
     assert_raise(ArgumentError, '[ruby-dev:39166]') { r.rand(0..-1) }
     assert_raise(ArgumentError, '[ruby-dev:39166]') { r.rand(0.0...0.0) }
     assert_raise(ArgumentError, '[ruby-dev:39166]') { r.rand(0.0...-0.1) }
-    assert_raise(ArgumentError, bug3027 = '[ruby-core:29075]') { r.rand(nil) }
+    bug3027 = '[ruby-core:29075]'
+    assert_raise(ArgumentError, bug3027) { r.rand(nil) }
   end
 
   def test_random_seed
@@ -420,7 +421,7 @@ END
       (1..10).to_a.shuffle
       raise 'default seed is not set' if srand == 0
     end
-    p2, st = Process.waitpid2(pid)
+    _, st = Process.waitpid2(pid)
     assert_predicate(st, :success?, "#{st.inspect}")
   rescue NotImplementedError, ArgumentError
   end

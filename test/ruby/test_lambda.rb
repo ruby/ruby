@@ -91,7 +91,7 @@ class TestLambdaParameters < Test::Unit::TestCase
   end
 
   def return_in_current(val)
-    1.tap &->(*) {return 0}
+    1.tap(&->(*) {return 0})
     val
   end
 
@@ -100,7 +100,7 @@ class TestLambdaParameters < Test::Unit::TestCase
   end
 
   def return_in_callee(val)
-    yield_block &->(*) {return 0}
+    yield_block(&->(*) {return 0})
     val
   end
 

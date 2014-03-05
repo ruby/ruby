@@ -218,7 +218,6 @@ class TestParse < Test::Unit::TestCase
     def o.>(x); x; end
     def o./(x); x; end
 
-    a = nil
     assert_nothing_raised do
       o.instance_eval <<-END, __FILE__, __LINE__+1
         undef >, /
