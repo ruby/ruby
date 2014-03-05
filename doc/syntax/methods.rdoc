@@ -383,7 +383,7 @@ arguments must appear before any keyword arguments.
 The block argument is indicated by <code>&</code> and must come last:
 
   def my_method(&my_block)
-    my_method.call(self)
+    my_block.call(self)
   end
 
 Most frequently the block argument is used to pass a block to another method:
