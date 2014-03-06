@@ -1,3 +1,8 @@
+Thu Mar  6 15:15:24 2014  Zachary Scott  <e@zzak.io>
+
+	* doc/syntax/assignment.rdoc: [DOC] Fix assignment directions
+	  By @idupree [Fixes GH-555] https://github.com/ruby/ruby/pull/555
+
 Thu Mar  6 15:07:18 2014  Zachary Scott  <e@zzak.io>
 
 	* doc/syntax/methods.rdoc: [DOC] Fix example for block arguments
