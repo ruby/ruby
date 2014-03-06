@@ -154,8 +154,8 @@ typedef struct {
 } ruby_gc_params_t;
 
 static ruby_gc_params_t gc_params = {
-    GC_HEAP_FREE_SLOTS,
     GC_HEAP_INIT_SLOTS,
+    GC_HEAP_FREE_SLOTS,
     GC_HEAP_GROWTH_FACTOR,
     GC_HEAP_GROWTH_MAX_SLOTS,
     GC_HEAP_OLDOBJECT_LIMIT_FACTOR,
