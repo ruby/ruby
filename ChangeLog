@@ -1,3 +1,11 @@
+Thu Mar  6 10:33:31 2014  Martin Bosslet  <Martin.Bosslet@gmail.com>
+
+	* lib/openssl/ssl.rb: Explicitly whitelist the default
+	  SSL/TLS ciphers. Forbid SSLv2 and SSLv3, disable
+	  compression by default.
+	  Reported by Jeff Hodges.
+	  [ruby-core:59829] [Bug #9424]
+
 Wed Mar  5 15:56:18 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (f_arg_asgn): define optional arguments as argument
