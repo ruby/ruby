@@ -20,19 +20,51 @@ require "fcntl"
 module OpenSSL
   module SSL
     class SSLContext
-      options = OpenSSL::SSL::OP_ALL
-      if defined?(OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS)
-        options &= ~OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS
-      end
-      if defined?(OpenSSL::SSL::OP_NO_COMPRESSION)
-        options |= OpenSSL::SSL::OP_NO_COMPRESSION
-      end
-
       DEFAULT_PARAMS = {
         :ssl_version => "SSLv23",
         :verify_mode => OpenSSL::SSL::VERIFY_PEER,
-        :ciphers => "DEFAULT:!aNULL:!eNULL:!LOW:!EXPORT:!SSLv2:!ADH",
-        :options => options,
+        :ciphers => %w{
+          ECDHE-ECDSA-AES128-GCM-SHA256
+          ECDHE-RSA-AES128-GCM-SHA256
+          ECDHE-ECDSA-AES256-GCM-SHA384
+          ECDHE-RSA-AES256-GCM-SHA384
+          DHE-RSA-AES128-GCM-SHA256
+          DHE-DSS-AES128-GCM-SHA256
+          DHE-RSA-AES256-GCM-SHA384
+          DHE-DSS-AES256-GCM-SHA384
+          ECDHE-ECDSA-AES128-SHA256
+          ECDHE-RSA-AES128-SHA256
+          ECDHE-ECDSA-AES128-SHA
+          ECDHE-RSA-AES128-SHA
+          ECDHE-ECDSA-AES256-SHA384
+          ECDHE-RSA-AES256-SHA384
+          ECDHE-ECDSA-AES256-SHA
+          ECDHE-RSA-AES256-SHA
+          DHE-RSA-AES128-SHA256
+          DHE-RSA-AES256-SHA256
+          DHE-RSA-AES128-SHA
+          DHE-RSA-AES256-SHA
+          DHE-DSS-AES128-SHA256
+          DHE-DSS-AES256-SHA256
+          DHE-DSS-AES128-SHA
+          DHE-DSS-AES256-SHA
+          AES128-GCM-SHA256
+          AES256-GCM-SHA384
+          AES128-SHA256
+          AES256-SHA256
+          AES128-SHA
+          AES256-SHA
+          ECDHE-ECDSA-RC4-SHA
+          ECDHE-RSA-RC4-SHA
+          RC4-SHA
+        }.join(":"),
+        :options => -> {
+          opts = OpenSSL::SSL::OP_ALL
+          opts &= ~OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS if defined?(OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS)
+          opts |= OpenSSL::SSL::OP_NO_COMPRESSION if defined?(OpenSSL::SSL::OP_NO_COMPRESSION)
+          opts |= OpenSSL::SSL::OP_NO_SSLv2 if defined?(OpenSSL::SSL::OP_NO_SSLv2)
+          opts |= OpenSSL::SSL::OP_NO_SSLv3 if defined?(OpenSSL::SSL::OP_NO_SSLv3)
+        }.call
       }
 
       DEFAULT_CERT_STORE = OpenSSL::X509::Store.new
