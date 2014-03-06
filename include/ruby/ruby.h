@@ -1691,9 +1691,9 @@ int ruby_native_thread_p(void);
 /* special events */
 #define RUBY_EVENT_SPECIFIED_LINE         0x010000
 #define RUBY_EVENT_COVERAGE               0x020000
-#define RUBY_EVENT_MCOVERAGE              0x040000
-#define RUBY_EVENT_DCOVERAGE_TRUE         0x080000
-#define RUBY_EVENT_DCOVERAGE_FALSE       0x2000000
+#define RUBY_EVENT_MCOVERAGE              0x080000
+#define RUBY_EVENT_DCOVERAGE_TRUE        0x2000000
+#define RUBY_EVENT_DCOVERAGE_FALSE       0x4000000
 
 /* internal events */
 #define RUBY_INTERNAL_EVENT_SWITCH          0x040000

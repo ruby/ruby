@@ -2,7 +2,7 @@ require "test/unit"
 require "coverage"
 require "tmpdir"
 
-class TestBranchCoverage < Test::Unit::TestCase
+class TestDecisionCoverage < Test::Unit::TestCase
   def test_if_else_coverage
     loaded_features = $".dup
 
