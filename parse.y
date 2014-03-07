@@ -301,8 +301,7 @@ struct parser_params {
 #define STR_NEW0() rb_enc_str_new(0,0,current_enc)
 #define STR_NEW2(p) rb_enc_str_new((p),strlen(p),current_enc)
 #define STR_NEW3(p,n,e,func) parser_str_new((p),(n),(e),(func),current_enc)
-#define ENC_SINGLE(cr) ((cr)==ENC_CODERANGE_7BIT)
-#define TOK_INTERN(mb) rb_intern3(tok(), toklen(), current_enc)
+#define TOK_INTERN() rb_intern3(tok(), toklen(), current_enc)
 
 static int parser_yyerror(struct parser_params*, const char*);
 #define yyerror(msg) parser_yyerror(parser, (msg))
@@ -8150,7 +8149,7 @@ parser_yylex(struct parser_params *parser)
 		if (IS_LABEL_SUFFIX(0)) {
 		    lex_state = EXPR_BEG;
 		    nextc();
-		    set_yylval_name(TOK_INTERN(!ENC_SINGLE(mb)));
+		    set_yylval_name(TOK_INTERN());
 		    return tLABEL;
 		}
 	    }
@@ -8208,7 +8207,7 @@ parser_yylex(struct parser_params *parser)
 	    }
 	}
         {
-            ID ident = TOK_INTERN(!ENC_SINGLE(mb));
+            ID ident = TOK_INTERN();
 
             set_yylval_name(ident);
             if (!IS_lex_state_for(last_state, EXPR_DOT|EXPR_FNAME) &&

@@ -1,3 +1,7 @@
+Fri Mar  7 14:48:17 2014  Narihiro Nakamura  <authornari@gmail.com>
+
+	* parse.y (ENC_SINGLE): Unused macro removed.
+
 Fri Mar  7 12:06:19 2014  Martin Bosslet  <Martin.Bosslet@gmail.com>
 
 	* test/openssl/test_ssl.rb: Reuse TLS default options from
