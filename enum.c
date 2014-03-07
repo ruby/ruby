@@ -62,7 +62,7 @@ grep_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
     ENUM_WANT_SVALUE();
 
     if (RTEST(rb_funcall(memo->u1.value, id_eqq, 1, i))) {
-	rb_ary_push(memo->u2.value, rb_yield(i));
+	rb_ary_push(memo->u2.value, enum_yield(argc, argv));
     }
     return Qnil;
 }
@@ -180,7 +180,7 @@ find_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 {
     ENUM_WANT_SVALUE();
 
-    if (RTEST(rb_yield(i))) {
+    if (RTEST(enum_yield(argc, argv))) {
 	NODE *memo = RNODE(memop);
 	memo->u1.value = i;
 	memo->u3.cnt = 1;
@@ -303,7 +303,7 @@ find_all_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
     ENUM_WANT_SVALUE();
 
-    if (RTEST(rb_yield(i))) {
+    if (RTEST(enum_yield(argc, argv))) {
 	rb_ary_push(ary, i);
     }
     return Qnil;
@@ -355,7 +355,7 @@ reject_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
     ENUM_WANT_SVALUE();
 
-    if (!RTEST(rb_yield(i))) {
+    if (!RTEST(enum_yield(argc, argv))) {
 	rb_ary_push(ary, i);
     }
     return Qnil;
@@ -674,7 +674,7 @@ partition_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, arys))
     VALUE ary;
     ENUM_WANT_SVALUE();
 
-    if (RTEST(rb_yield(i))) {
+    if (RTEST(enum_yield(argc, argv))) {
 	ary = memo->u1.value;
     }
     else {
@@ -720,7 +720,7 @@ group_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 
     ENUM_WANT_SVALUE();
 
-    group = rb_yield(i);
+    group = enum_yield(argc, argv);
     values = rb_hash_aref(hash, group);
     if (!RB_TYPE_P(values, T_ARRAY)) {
 	values = rb_ary_new3(1, i);
@@ -846,7 +846,7 @@ sort_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, _data))
 
     ENUM_WANT_SVALUE();
 
-    v = rb_yield(i);
+    v = enum_yield(argc, argv);
 
     if (RBASIC(ary)->klass) {
 	rb_raise(rb_eRuntimeError, "sort_by reentered");
@@ -1249,7 +1249,7 @@ nmin_i(VALUE i, VALUE *_data, int argc, VALUE *argv)
     ENUM_WANT_SVALUE();
 
     if (data->by)
-	rb_ary_push(data->buf, rb_yield(i));
+	rb_ary_push(data->buf, enum_yield(argc, argv));
     rb_ary_push(data->buf, i);
 
     data->curlen++;
@@ -1685,7 +1685,7 @@ min_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
     ENUM_WANT_SVALUE();
 
-    v = rb_yield(i);
+    v = enum_yield(argc, argv);
     if (memo->u1.value == Qundef) {
 	memo->u1.value = v;
 	memo->u2.value = i;
@@ -1745,7 +1745,7 @@ max_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
     ENUM_WANT_SVALUE();
 
-    v = rb_yield(i);
+    v = enum_yield(argc, argv);
     if (memo->u1.value == Qundef) {
 	memo->u1.value = v;
 	memo->u2.value = i;
@@ -1836,7 +1836,7 @@ minmax_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
 
     ENUM_WANT_SVALUE();
 
-    vi = rb_yield(i);
+    vi = enum_yield(argc, argv);
 
     if (memo->last_bv == Qundef) {
         memo->last_bv = vi;
@@ -2017,7 +2017,7 @@ static VALUE
 each_val_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, p))
 {
     ENUM_WANT_SVALUE();
-    rb_yield(i);
+    enum_yield(argc, argv);
     return Qnil;
 }
 
@@ -2247,7 +2247,7 @@ zip_ary(RB_BLOCK_CALL_FUNC_ARGLIST(val, memoval))
 	}
     }
     if (NIL_P(result)) {
-	rb_yield(tmp);
+	rb_yield_splat(tmp);
     }
     else {
 	rb_ary_push(result, tmp);
@@ -2295,7 +2295,7 @@ zip_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, memoval))
 	}
     }
     if (NIL_P(result)) {
-	rb_yield(tmp);
+	rb_yield_splat(tmp);
     }
     else {
 	rb_ary_push(result, tmp);
@@ -2489,7 +2489,7 @@ drop_while_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
     NODE *memo = RNODE(args);
     ENUM_WANT_SVALUE();
 
-    if (!memo->u3.state && !RTEST(rb_yield(i))) {
+    if (!memo->u3.state && !RTEST(enum_yield(argc, argv))) {
 	memo->u3.state = TRUE;
     }
     if (memo->u3.state) {
@@ -2532,8 +2532,9 @@ cycle_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
     ENUM_WANT_SVALUE();
 
+    if (argc == 1) i = rb_ary_new4(argc, argv);
     rb_ary_push(ary, i);
-    rb_yield(i);
+    enum_yield(argc, argv);
     return Qnil;
 }
 
@@ -2600,7 +2601,7 @@ enum_cycle(int argc, VALUE *argv, VALUE obj)
     if (len == 0) return Qnil;
     while (n < 0 || 0 < --n) {
         for (i=0; i<len; i++) {
-            rb_yield(RARRAY_AREF(ary, i));
+            rb_yield_splat(RARRAY_AREF(ary, i));
         }
     }
     return Qnil;
