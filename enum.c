@@ -1249,7 +1249,7 @@ nmin_i(VALUE i, VALUE *_data, int argc, VALUE *argv)
     ENUM_WANT_SVALUE();
 
     if (data->by)
-	rb_ary_push(data->buf, rb_yield(i));
+	rb_ary_push(data->buf, enum_yield(argc, argv));
     rb_ary_push(data->buf, i);
 
     data->curlen++;
@@ -1685,7 +1685,7 @@ min_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
     ENUM_WANT_SVALUE();
 
-    v = rb_yield(i);
+    v = enum_yield(argc, argv);
     if (memo->u1.value == Qundef) {
 	memo->u1.value = v;
 	memo->u2.value = i;
@@ -1745,7 +1745,7 @@ max_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
     ENUM_WANT_SVALUE();
 
-    v = rb_yield(i);
+    v = enum_yield(argc, argv);
     if (memo->u1.value == Qundef) {
 	memo->u1.value = v;
 	memo->u2.value = i;
@@ -1836,7 +1836,7 @@ minmax_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
 
     ENUM_WANT_SVALUE();
 
-    vi = rb_yield(i);
+    vi = enum_yield(argc, argv);
 
     if (memo->last_bv == Qundef) {
         memo->last_bv = vi;
