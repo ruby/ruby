@@ -846,7 +846,7 @@ sort_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, _data))
 
     ENUM_WANT_SVALUE();
 
-    v = rb_yield(i);
+    v = enum_yield(argc, argv);
 
     if (RBASIC(ary)->klass) {
 	rb_raise(rb_eRuntimeError, "sort_by reentered");
