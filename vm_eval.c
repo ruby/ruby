@@ -212,7 +212,8 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 
 	    rb_ary_unshift(new_args, ID2SYM(ci->mid));
 	    th->passed_block = ci->blockptr;
-	    ret = rb_funcall2(ci->recv, idMethodMissing, ci->argc+1, RARRAY_PTR(new_args));
+	    ret = rb_funcall2(ci->recv, idMethodMissing, ci->argc+1,
+	                      RARRAY_CONST_PTR(new_args));
 	    RB_GC_GUARD(new_args);
 	    return ret;
 	}
@@ -343,7 +344,7 @@ check_funcall_exec(struct rescue_funcall_args *args)
 
     rb_ary_unshift(new_args, args->sym);
     ret = rb_funcall2(args->recv, idMethodMissing,
-		       args->argc+1, RARRAY_PTR(new_args));
+		       args->argc+1, RARRAY_CONST_PTR(new_args));
     RB_GC_GUARD(new_args);
     return ret;
 }

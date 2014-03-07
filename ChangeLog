@@ -1,3 +1,9 @@
+Fri Mar  7 19:29:13 2014  Eric Wong  <e@80x24.org>
+
+	* vm_eval.c (vm_call0_body): use RARRAY_CONST_PTR
+	  (check_funcall_exec): ditto
+	  [ruby-core:61360]
+
 Fri Mar  7 19:14:11 2014  Eric Wong  <e@80x24.org>
 
 	* vm_eval.c (vm_call0_body): fix RB_GC_GUARD location
