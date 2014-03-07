@@ -303,7 +303,7 @@ find_all_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
     ENUM_WANT_SVALUE();
 
-    if (RTEST(rb_yield(i))) {
+    if (RTEST(enum_yield(argc, argv))) {
 	rb_ary_push(ary, i);
     }
     return Qnil;
