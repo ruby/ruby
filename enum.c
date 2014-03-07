@@ -2017,7 +2017,7 @@ static VALUE
 each_val_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, p))
 {
     ENUM_WANT_SVALUE();
-    rb_yield(i);
+    enum_yield(argc, argv);
     return Qnil;
 }
 

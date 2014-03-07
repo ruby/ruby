@@ -332,6 +332,10 @@ class TestEnumerable < Test::Unit::TestCase
   def test_each_entry
     assert_equal([1, 2, 3], [1, 2, 3].each_entry.to_a)
     assert_equal([1, [1, 2]], Foo.new.each_entry.to_a)
+    a = []
+    cond = ->(x, i) { a << x }
+    @obj.each_with_index.each_entry(&cond)
+    assert_equal([1, 2, 3, 1, 2], a)
   end
 
   def test_zip
