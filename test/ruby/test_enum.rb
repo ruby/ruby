@@ -383,6 +383,13 @@ class TestEnumerable < Test::Unit::TestCase
 
   def test_cycle
     assert_equal([1,2,3,1,2,1,2,3,1,2], @obj.cycle.take(10))
+    a = []
+    @obj.cycle(2) {|x| a << x}
+    assert_equal([1,2,3,1,2,1,2,3,1,2], a)
+    a = []
+    cond = ->(x, i) {a << x}
+    @obj.each_with_index.cycle(2, &cond)
+    assert_equal([1,2,3,1,2,1,2,3,1,2], a)
   end
 
   def test_callcc

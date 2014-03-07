@@ -2532,8 +2532,9 @@ cycle_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
     ENUM_WANT_SVALUE();
 
+    if (argc == 1) i = rb_ary_new4(argc, argv);
     rb_ary_push(ary, i);
-    rb_yield(i);
+    enum_yield(argc, argv);
     return Qnil;
 }
 
@@ -2600,7 +2601,7 @@ enum_cycle(int argc, VALUE *argv, VALUE obj)
     if (len == 0) return Qnil;
     while (n < 0 || 0 < --n) {
         for (i=0; i<len; i++) {
-            rb_yield(RARRAY_AREF(ary, i));
+            rb_yield_splat(RARRAY_AREF(ary, i));
         }
     }
     return Qnil;
