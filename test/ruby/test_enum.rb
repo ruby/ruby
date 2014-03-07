@@ -509,4 +509,65 @@ class TestEnumerable < Test::Unit::TestCase
     assert_not_warn{ss.slice_before(/\A...\z/).to_a}
   end
 
+  def test_detect
+    @obj = ('a'..'z')
+    assert_equal('c', @obj.detect {|x| x == 'c' })
+
+    proc = Proc.new {|x| x == 'c' }
+    assert_equal('c', @obj.detect(&proc))
+
+    lambda = ->(x) { x == 'c' }
+    assert_equal('c', @obj.detect(&lambda))
+
+    assert_equal(['c',2], @obj.each_with_index.detect {|x, i| x == 'c' })
+
+    proc2 = Proc.new {|x, i| x == 'c' }
+    assert_equal(['c',2], @obj.each_with_index.detect(&proc2))
+
+    bug9605 = '[ruby-core:61340]'
+    lambda2 = ->(x, i) { x == 'c' }
+    assert_equal(['c',2], @obj.each_with_index.detect(&lambda2))
+  end
+
+  def test_select
+    @obj = ('a'..'z')
+    assert_equal(['c'], @obj.select {|x| x == 'c' })
+
+    proc = Proc.new {|x| x == 'c' }
+    assert_equal(['c'], @obj.select(&proc))
+
+    lambda = ->(x) { x == 'c' }
+    assert_equal(['c'], @obj.select(&lambda))
+
+    assert_equal([['c',2]], @obj.each_with_index.select {|x, i| x == 'c' })
+
+    proc2 = Proc.new {|x, i| x == 'c' }
+    assert_equal([['c',2]], @obj.each_with_index.select(&proc2))
+
+    bug9605 = '[ruby-core:61340]'
+    lambda2 = ->(x, i) { x == 'c' }
+    assert_equal([['c',2]], @obj.each_with_index.select(&lambda2))
+  end
+
+  def test_map
+    @obj = ('a'..'e')
+    assert_equal(['A', 'B', 'C', 'D', 'E'], @obj.map {|x| x.upcase })
+
+    proc = Proc.new {|x| x.upcase }
+    assert_equal(['A', 'B', 'C', 'D', 'E'], @obj.map(&proc))
+
+    lambda = ->(x) { x.upcase }
+    assert_equal(['A', 'B', 'C', 'D', 'E'], @obj.map(&lambda))
+
+    assert_equal([['A',0], ['B',1], ['C',2], ['D',3], ['E',4]],
+      @obj.each_with_index.map {|x, i| [x.upcase, i] })
+
+    proc2 = Proc.new {|x, i| [x.upcase, i] }
+    assert_equal([['A',0], ['B',1], ['C',2], ['D',3], ['E',4]],
+      @obj.each_with_index.map(&proc2))
+
+    lambda2 = ->(x, i) { [x.upcase, i] }
+    assert_equal([['A',0], ['B',1], ['C',2], ['D',3], ['E',4]],
+      @obj.each_with_index.map(&lambda2))
+  end
 end
