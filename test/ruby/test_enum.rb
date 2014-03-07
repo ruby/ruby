@@ -155,6 +155,8 @@ class TestEnumerable < Test::Unit::TestCase
 
   def test_partition
     assert_equal([[1, 3, 1], [2, 2]], @obj.partition {|x| x % 2 == 1 })
+    cond = ->(x, i) { x % 2 == 1 }
+    assert_equal([[[1, 0], [3, 2], [1, 3]], [[2, 1], [2, 4]]], @obj.each_with_index.partition(&cond))
   end
 
   def test_group_by

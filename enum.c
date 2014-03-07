@@ -674,7 +674,7 @@ partition_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, arys))
     VALUE ary;
     ENUM_WANT_SVALUE();
 
-    if (RTEST(rb_yield(i))) {
+    if (RTEST(enum_yield(argc, argv))) {
 	ary = memo->u1.value;
     }
     else {
