@@ -180,7 +180,7 @@ find_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 {
     ENUM_WANT_SVALUE();
 
-    if (RTEST(rb_yield(i))) {
+    if (RTEST(enum_yield(argc, argv))) {
 	NODE *memo = RNODE(memop);
 	memo->u1.value = i;
 	memo->u3.cnt = 1;
