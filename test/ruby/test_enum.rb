@@ -106,6 +106,8 @@ class TestEnumerable < Test::Unit::TestCase
 
   def test_reject
     assert_equal([2, 3, 2], @obj.reject {|x| x < 2 })
+    cond = ->(x, i) {x < 2}
+    assert_equal([[2, 1], [3, 2], [2, 4]], @obj.each_with_index.reject(&cond))
   end
 
   def test_to_a
