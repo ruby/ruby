@@ -1,3 +1,8 @@
+Fri Mar  7 12:06:19 2014  Martin Bosslet  <Martin.Bosslet@gmail.com>
+
+	* test/openssl/test_ssl.rb: Reuse TLS default options from
+	  OpenSSL::SSL::SSLContext::DEFAULT_PARAMS.
+
 Thu Mar  6 15:15:24 2014  Zachary Scott  <e@zzak.io>
 
 	* doc/syntax/assignment.rdoc: [DOC] Fix assignment directions
