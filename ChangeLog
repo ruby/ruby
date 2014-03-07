@@ -1,3 +1,9 @@
+Fri Mar  7 19:14:11 2014  Eric Wong  <e@80x24.org>
+
+	* vm_eval.c (vm_call0_body): fix RB_GC_GUARD location
+	  (check_funcall_exec): ditto
+	  [Bug #9609]
+
 Fri Mar  7 14:48:17 2014  Narihiro Nakamura  <authornari@gmail.com>
 
 	* parse.y (ENC_SINGLE): Unused macro removed.
