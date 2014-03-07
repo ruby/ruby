@@ -363,6 +363,8 @@ class TestEnumerable < Test::Unit::TestCase
 
   def test_take_while
     assert_equal([1,2], @obj.take_while {|x| x <= 2})
+    cond = ->(x, i) {x <= 2}
+    assert_equal([[1, 0], [2, 1]], @obj.each_with_index.take_while(&cond))
 
     bug5801 = '[ruby-dev:45040]'
     @empty.take_while {true}
@@ -375,6 +377,8 @@ class TestEnumerable < Test::Unit::TestCase
 
   def test_drop_while
     assert_equal([3,1,2], @obj.drop_while {|x| x <= 2})
+    cond = ->(x, i) {x <= 2}
+    assert_equal([[3, 2], [1, 3], [2, 4]], @obj.each_with_index.drop_while(&cond))
   end
 
   def test_cycle

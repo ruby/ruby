@@ -2489,7 +2489,7 @@ drop_while_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
     NODE *memo = RNODE(args);
     ENUM_WANT_SVALUE();
 
-    if (!memo->u3.state && !RTEST(rb_yield(i))) {
+    if (!memo->u3.state && !RTEST(enum_yield(argc, argv))) {
 	memo->u3.state = TRUE;
     }
     if (memo->u3.state) {
