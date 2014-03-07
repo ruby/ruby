@@ -720,7 +720,7 @@ group_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 
     ENUM_WANT_SVALUE();
 
-    group = rb_yield(i);
+    group = enum_yield(argc, argv);
     values = rb_hash_aref(hash, group);
     if (!RB_TYPE_P(values, T_ARRAY)) {
 	values = rb_ary_new3(1, i);

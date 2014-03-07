@@ -162,6 +162,10 @@ class TestEnumerable < Test::Unit::TestCase
   def test_group_by
     h = { 1 => [1, 1], 2 => [2, 2], 3 => [3] }
     assert_equal(h, @obj.group_by {|x| x })
+
+    h = {1=>[[1, 0], [1, 3]], 2=>[[2, 1], [2, 4]], 3=>[[3, 2]]}
+    cond = ->(x, i) { x }
+    assert_equal(h, @obj.each_with_index.group_by(&cond))
   end
 
   def test_first
