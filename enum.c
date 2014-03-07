@@ -2247,7 +2247,7 @@ zip_ary(RB_BLOCK_CALL_FUNC_ARGLIST(val, memoval))
 	}
     }
     if (NIL_P(result)) {
-	rb_yield(tmp);
+	rb_yield_splat(tmp);
     }
     else {
 	rb_ary_push(result, tmp);
@@ -2295,7 +2295,7 @@ zip_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, memoval))
 	}
     }
     if (NIL_P(result)) {
-	rb_yield(tmp);
+	rb_yield_splat(tmp);
     }
     else {
 	rb_ary_push(result, tmp);

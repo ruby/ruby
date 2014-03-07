@@ -345,6 +345,11 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([[1,:a],[2,:b],[3,:c],[1,nil],[2,nil]], a)
 
     a = []
+    cond = ->((x, i), y) { a << [x, y, i] }
+    @obj.each_with_index.zip([:a, :b, :c], &cond)
+    assert_equal([[1,:a,0],[2,:b,1],[3,:c,2],[1,nil,3],[2,nil,4]], a)
+
+    a = []
     @obj.zip({a: "A", b: "B", c: "C"}) {|x,y| a << [x, y] }
     assert_equal([[1,[:a,"A"]],[2,[:b,"B"]],[3,[:c,"C"]],[1,nil],[2,nil]], a)
 
