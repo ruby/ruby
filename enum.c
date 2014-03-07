@@ -62,7 +62,7 @@ grep_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
     ENUM_WANT_SVALUE();
 
     if (RTEST(rb_funcall(memo->u1.value, id_eqq, 1, i))) {
-	rb_ary_push(memo->u2.value, rb_yield(i));
+	rb_ary_push(memo->u2.value, enum_yield(argc, argv));
     }
     return Qnil;
 }

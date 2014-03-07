@@ -56,6 +56,11 @@ class TestEnumerable < Test::Unit::TestCase
     bug5801 = '[ruby-dev:45041]'
     @empty.grep(//)
     assert_nothing_raised(bug5801) {100.times {@empty.block.call}}
+
+    a = []
+    lambda = ->(x, i) {a << [x, i]}
+    @obj.each_with_index.grep(proc{|x,i|x==2}, &lambda)
+    assert_equal([[2, 1], [2, 4]], a)
   end
 
   def test_count
