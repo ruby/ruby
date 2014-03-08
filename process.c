@@ -4738,7 +4738,8 @@ obj2uid(VALUE id
 	    getpw_buf = rb_alloc_tmp_buffer(getpw_tmp, getpw_buf_len);
 	}
 	else {
-	    RSTRING_GETMEM(*getpw_tmp, getpw_buf, getpw_buf_len);
+	    getpw_buf = RSTRING_PTR(*getpw_tmp);
+	    getpw_buf_len = rb_str_capacity(*getpw_tmp);
 	}
 	if (getpwnam_r(usrname, &pwbuf, getpw_buf, getpw_buf_len, &pwptr))
 	    rb_sys_fail("getpwnam_r");
@@ -4806,7 +4807,8 @@ obj2gid(VALUE id
 	    getgr_buf = rb_alloc_tmp_buffer(getgr_tmp, getgr_buf_len);
 	}
 	else {
-	    RSTRING_GETMEM(*getgr_tmp, getgr_buf, getgr_buf_len);
+	    getgr_buf = RSTRING_PTR(*getgr_tmp);
+	    getgr_buf_len = rb_str_capacity(*getgr_tmp);
 	}
 	if (getgrnam_r(grpname, &grbuf, getgr_buf, getgr_buf_len, &grptr))
 	    rb_sys_fail("getgrnam_r");
