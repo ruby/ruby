@@ -2016,7 +2016,6 @@ enum_reverse_each(int argc, VALUE *argv, VALUE obj)
 static VALUE
 each_val_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, p))
 {
-    ENUM_WANT_SVALUE();
     enum_yield(argc, argv);
     return Qnil;
 }
