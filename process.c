@@ -153,6 +153,7 @@ static void check_gid_switch(void);
 #  define USE_GETPWNAM_R 1
 #  define GETPW_R_SIZE_INIT sysconf(_SC_GETPW_R_SIZE_MAX)
 #  define GETPW_R_SIZE_DEFAULT 0x1000
+#  define GETPW_R_SIZE_LIMIT  0x10000
 # endif
 # ifdef USE_GETPWNAM_R
 #   define PREPARE_GETPWNAM \
@@ -192,6 +193,7 @@ static rb_uid_t obj2uid(VALUE id);
 #  define USE_GETGRNAM_R
 #  define GETGR_R_SIZE_INIT sysconf(_SC_GETGR_R_SIZE_MAX)
 #  define GETGR_R_SIZE_DEFAULT 0x1000
+#  define GETGR_R_SIZE_LIMIT  0x10000
 # endif
 # ifdef USE_GETGRNAM_R
 #   define PREPARE_GETGRNAM \
@@ -4741,8 +4743,17 @@ obj2uid(VALUE id
 	    getpw_buf = RSTRING_PTR(*getpw_tmp);
 	    getpw_buf_len = rb_str_capacity(*getpw_tmp);
 	}
-	if (getpwnam_r(usrname, &pwbuf, getpw_buf, getpw_buf_len, &pwptr))
-	    rb_sys_fail("getpwnam_r");
+	errno = ERANGE;
+	/* gepwnam_r() on MacOS X doesn't set errno if buffer size is insufficient */
+	while (getpwnam_r(usrname, &pwbuf, getpw_buf, getpw_buf_len, &pwptr)) {
+	    if (errno != ERANGE || getpw_buf_len >= GETPW_R_SIZE_LIMIT) {
+		rb_free_tmp_buffer(getpw_tmp);
+		rb_sys_fail("getpwnam_r");
+	    }
+	    rb_str_modify_expand(*getpw_tmp, getpw_buf_len);
+	    getpw_buf = RSTRING_PTR(*getpw_tmp);
+	    getpw_buf_len = rb_str_capacity(*getpw_tmp);
+	}
 #else
 	pwptr = getpwnam(usrname);
 #endif
@@ -4810,8 +4821,17 @@ obj2gid(VALUE id
 	    getgr_buf = RSTRING_PTR(*getgr_tmp);
 	    getgr_buf_len = rb_str_capacity(*getgr_tmp);
 	}
-	if (getgrnam_r(grpname, &grbuf, getgr_buf, getgr_buf_len, &grptr))
-	    rb_sys_fail("getgrnam_r");
+	errno = ERANGE;
+	/* gegrnam_r() on MacOS X doesn't set errno if buffer size is insufficient */
+	while (getgrnam_r(grpname, &grbuf, getgr_buf, getgr_buf_len, &grptr)) {
+	    if (errno != ERANGE || getgr_buf_len >= GETGR_R_SIZE_LIMIT) {
+		rb_free_tmp_buffer(getgr_tmp);
+		rb_sys_fail("getgrnam_r");
+	    }
+	    rb_str_modify_expand(*getgr_tmp, getgr_buf_len);
+	    getgr_buf = RSTRING_PTR(*getgr_tmp);
+	    getgr_buf_len = rb_str_capacity(*getgr_tmp);
+	}
 #else
 	grptr = getgrnam(grpname);
 #endif

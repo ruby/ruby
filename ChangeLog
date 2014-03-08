@@ -1,3 +1,10 @@
+Sat Mar  8 13:30:39 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (obj2uid, obj2gid): now getpwnam_r() and getgrnam_r()
+	  may need larger buffers than sysconf values, so retry with
+	  expanding the buffer when ERANGE is returned.
+	  [ruby-core:61325] [Bug #9600]
+
 Sat Mar  8 07:35:40 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c (find_i): yield multiple values instead of a packed
