@@ -151,6 +151,8 @@ static void check_gid_switch(void);
 #if defined(HAVE_PWD_H)
 # if defined(HAVE_GETPWNAM_R) && defined(_SC_GETPW_R_SIZE_MAX)
 #  define USE_GETPWNAM_R 1
+#  define GETPW_R_SIZE_INIT sysconf(_SC_GETPW_R_SIZE_MAX)
+#  define GETPW_R_SIZE_DEFAULT 0x1000
 # endif
 # ifdef USE_GETPWNAM_R
 #   define PREPARE_GETPWNAM \
@@ -188,6 +190,8 @@ static rb_uid_t obj2uid(VALUE id);
 #if defined(HAVE_GRP_H)
 # if defined(HAVE_GETGRNAM_R) && defined(_SC_GETGR_R_SIZE_MAX)
 #  define USE_GETGRNAM_R
+#  define GETGR_R_SIZE_INIT sysconf(_SC_GETGR_R_SIZE_MAX)
+#  define GETGR_R_SIZE_DEFAULT 0x1000
 # endif
 # ifdef USE_GETGRNAM_R
 #   define PREPARE_GETGRNAM \
@@ -4729,8 +4733,8 @@ obj2uid(VALUE id
 	char *getpw_buf;
 	long getpw_buf_len;
 	if (!*getpw_tmp) {
-	    getpw_buf_len = sysconf(_SC_GETPW_R_SIZE_MAX);
-	    if (getpw_buf_len < 0) getpw_buf_len = 4096;
+	    getpw_buf_len = GETPW_R_SIZE_INIT;
+	    if (getpw_buf_len < 0) getpw_buf_len = GETPW_R_SIZE_DEFAULT;
 	    getpw_buf = rb_alloc_tmp_buffer(getpw_tmp, getpw_buf_len);
 	}
 	else {
@@ -4797,8 +4801,8 @@ obj2gid(VALUE id
 	char *getgr_buf;
 	long getgr_buf_len;
 	if (!*getgr_tmp) {
-	    getgr_buf_len = sysconf(_SC_GETGR_R_SIZE_MAX);
-	    if (getgr_buf_len < 0) getgr_buf_len = 4096;
+	    getgr_buf_len = GETGR_R_SIZE_INIT;
+	    if (getgr_buf_len < 0) getgr_buf_len = GETGR_R_SIZE_DEFAULT;
 	    getgr_buf = rb_alloc_tmp_buffer(getgr_tmp, getgr_buf_len);
 	}
 	else {
