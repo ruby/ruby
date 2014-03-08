@@ -1,3 +1,10 @@
+Sat Mar  8 13:46:40 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/cptr.c (dlptr_free), ext/dl/handle.c (dlhandle_free),
+	  ext/fiddle/handle.c (fiddle_handle_free),
+	  ext/fiddle/pointer.c (fiddle_ptr_free): fix memory leak.
+	  based on the patch Heesob Park at [ruby-dev:48021] [Bug #9599].
+
 Sat Mar  8 13:30:39 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (obj2uid, obj2gid): now getpwnam_r() and getgrnam_r()

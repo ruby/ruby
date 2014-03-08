@@ -38,6 +38,7 @@ dlhandle_free(void *ptr)
     if( dlhandle->ptr && dlhandle->open && dlhandle->enable_close ){
 	dlclose(dlhandle->ptr);
     }
+    xfree(ptr);
 }
 
 static size_t
