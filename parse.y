@@ -10104,7 +10104,8 @@ static const struct {
 static struct symbols {
     ID last_id;
     st_table *sym_id;
-    st_table *id_str;
+    size_t id_str_cap;
+    VALUE *id_str;
 #if ENABLE_SELECTOR_NAMESPACE
     st_table *ivar2_id;
     st_table *id_ivar2;
@@ -10149,7 +10150,12 @@ void
 Init_sym(void)
 {
     global_symbols.sym_id = st_init_table_with_size(&symhash, 1000);
-    global_symbols.id_str = st_init_numtable_with_size(1000);
+
+    global_symbols.id_str_cap = 1024;
+    #undef calloc
+    global_symbols.id_str = calloc(1024, sizeof(VALUE));
+    #define calloc YYCALLOC
+
 #if ENABLE_SELECTOR_NAMESPACE
     global_symbols.ivar2_id = st_init_table_with_size(&ivar2_hash_type, 1000);
     global_symbols.id_ivar2 = st_init_numtable_with_size(1000);
@@ -10168,7 +10174,8 @@ void
 rb_gc_mark_symbols(int full_mark)
 {
     if (full_mark || global_symbols.minor_marked == 0) {
-	rb_mark_tbl(global_symbols.id_str);
+	rb_gc_mark_locations(global_symbols.id_str,
+	                     global_symbols.id_str + global_symbols.id_str_cap);
 	rb_gc_mark_locations(global_symbols.op_sym,
 			     global_symbols.op_sym + numberof(global_symbols.op_sym));
 
@@ -10359,7 +10366,18 @@ register_symid_str(ID id, VALUE str)
     }
 
     st_add_direct(global_symbols.sym_id, (st_data_t)str, id);
-    st_add_direct(global_symbols.id_str, id, (st_data_t)str);
+
+    if (id >= global_symbols.id_str_cap) {
+	size_t old_cap = global_symbols.id_str_cap;
+	global_symbols.id_str_cap *= 2;
+	#undef realloc
+	global_symbols.id_str = realloc(global_symbols.id_str,
+	    sizeof(VALUE) * global_symbols.id_str_cap);
+	#define realloc YYREALLOC
+	memset(global_symbols.id_str + old_cap, 0, old_cap / 2 * sizeof(VALUE));
+    }
+
+    global_symbols.id_str[id] = str;
     global_symbols.minor_marked = 0;
     return id;
 }
@@ -10594,7 +10612,7 @@ rb_id2str(ID id)
 	}
     }
 
-    if (st_lookup(global_symbols.id_str, id, &data)) {
+    if (id < global_symbols.id_str_cap && (data = global_symbols.id_str[id])) {
         VALUE str = (VALUE)data;
         if (RBASIC(str)->klass == 0)
             RBASIC_SET_CLASS_RAW(str, rb_cString);
@@ -10617,12 +10635,11 @@ rb_id2str(ID id)
 	str = rb_str_dup(str);
 	rb_str_cat(str, "=", 1);
 	register_symid_str(id, str);
-	if (st_lookup(global_symbols.id_str, id, &data)) {
-            VALUE str = (VALUE)data;
-            if (RBASIC(str)->klass == 0)
-                RBASIC_SET_CLASS_RAW(str, rb_cString);
-            return str;
-        }
+
+	str = global_symbols.id_str[id];
+	if (RBASIC(str)->klass == 0)
+	    RBASIC_SET_CLASS_RAW(str, rb_cString);
+	return str;
     }
     return 0;
 }
