@@ -424,11 +424,11 @@ struct trace_var {
 
 struct global_variable {
     int   counter;
+    int block_trace;
     void *data;
     gvar_getter_t *getter;
     gvar_setter_t *setter;
     gvar_marker_t *marker;
-    int block_trace;
     struct trace_var *trace;
 };
 

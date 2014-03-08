@@ -1,3 +1,7 @@
+Sun Mar  9 06:42:40 2014  Eric Wong  <e@80x24.org>
+
+	* variable.c (struct global_variable): shrink by 8 bytes on 64-bit
+
 Sat Mar  8 17:42:51 2014  Eric Wong  <e@80x24.org>
 
 	* vm.c (add_opt_method): cleanup to use rb_method_entry_at
