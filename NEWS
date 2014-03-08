@@ -35,6 +35,10 @@ with all sufficient information, see the ChangeLog file.
 
 === Stdlib updates (outstanding ones only)
 
+* Find, Pathname
+  * Extended methods:
+    * find method accepts "ignore_error" keyword argument.
+
 === Stdlib compatibility issues (excluding feature bug fixes)
 
 === Built-in global variables compatibility issues
