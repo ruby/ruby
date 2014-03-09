@@ -137,6 +137,7 @@ function_call(int argc, VALUE argv[], VALUE self)
     void **values;
     VALUE cfunc, types, cPointer;
     int i;
+    VALUE alloc_buffer = 0;
 
     cfunc    = rb_iv_get(self, "@ptr");
     types    = rb_iv_get(self, "@args");
@@ -159,8 +160,9 @@ function_call(int argc, VALUE argv[], VALUE self)
 	}
     }
 
-    values = xcalloc((size_t)argc + 1, (size_t)sizeof(void *));
-    generic_args = xcalloc((size_t)argc, (size_t)sizeof(fiddle_generic));
+    generic_args = ALLOCV(alloc_buffer,
+	(size_t)(argc + 1) * sizeof(void *) + (size_t)argc * sizeof(fiddle_generic));
+    values = (void **)((char *)generic_args + (size_t)argc * sizeof(fiddle_generic));
 
     for (i = 0; i < argc; i++) {
 	VALUE type = RARRAY_PTR(types)[i];
@@ -187,8 +189,7 @@ function_call(int argc, VALUE argv[], VALUE self)
     rb_funcall(mFiddle, rb_intern("win32_last_error="), 1, INT2NUM(errno));
 #endif
 
-    xfree(values);
-    xfree(generic_args);
+    ALLOCV_END(alloc_buffer);
 
     return GENERIC2VALUE(rb_iv_get(self, "@return_type"), retval);
 }

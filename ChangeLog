@@ -1,3 +1,8 @@
+Sun Mar  9 13:51:16 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/fiddle/function.c (function_call): fix memory leak when an
+	  exception occurs at argument conversion or the function call.
+
 Sun Mar  9 06:42:40 2014  Eric Wong  <e@80x24.org>
 
 	* variable.c (struct global_variable): shrink by 8 bytes on 64-bit
