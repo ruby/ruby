@@ -80,7 +80,7 @@ ruby_init(void)
 /*! Processes command line arguments and compiles the Ruby source to execute.
  *
  * This function does:
- * \li  Processes the given command line flags and arguments for ruby(1)
+ * \li Processes the given command line flags and arguments for ruby(1)
  * \li compiles the source code from the given argument, -e or stdin, and
  * \li returns the compiled source as an opaque pointer to an internal data structure
  *
