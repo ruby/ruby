@@ -1,3 +1,11 @@
+Sun Mar  9 14:14:49 2014  Eric Wong  <e@80x24.org>
+
+	* class.c (rb_class_subclass_add): use xmalloc
+	* class.c (rb_module_add_to_subclasses_list): ditto
+	* class.c (rb_class_remove_from_super_subclasses): use xfree
+	* class.c (rb_class_remove_from_module_subclasses): ditto
+	  [Bug #9616]
+
 Sun Mar  9 13:51:16 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/fiddle/function.c (function_call): fix memory leak when an
