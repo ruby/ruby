@@ -11,6 +11,18 @@
 
 VALUE cFiddleFunction;
 
+#define MAX_ARGS (SIZE_MAX / (sizeof(void *) + sizeof(fiddle_generic)) - 1)
+
+#define Check_Max_Args(name, len) \
+    if ((size_t)(len) < MAX_ARGS) { \
+	/* OK */ \
+    } \
+    else { \
+	rb_raise(rb_eTypeError, \
+		 name" is so large that it can cause integer overflow (%d)", \
+		 (len)); \
+    }
+
 static void
 deallocate(void *p)
 {
@@ -84,6 +96,7 @@ initialize(int argc, VALUE argv[], VALUE self)
     if(NIL_P(abi)) abi = INT2NUM(FFI_DEFAULT_ABI);
 
     Check_Type(args, T_ARRAY);
+    Check_Max_Args("args", RARRAY_LENINT(args));
 
     rb_iv_set(self, "@ptr", ptr);
     rb_iv_set(self, "@args", args);
@@ -129,6 +142,7 @@ function_call(int argc, VALUE argv[], VALUE self)
     types    = rb_iv_get(self, "@args");
     cPointer = rb_const_get(mFiddle, rb_intern("Pointer"));
 
+    Check_Max_Args("number of arguments", argc);
     if(argc != RARRAY_LENINT(types)) {
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
 		argc, RARRAY_LENINT(types));
