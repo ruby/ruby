@@ -391,6 +391,7 @@ eom
       end
 
       def assert_no_memory_leak(args, prepare, code, message=nil, limit: 1.5, **opt)
+        require_relative 'memory_status'
         token = "\e[7;1m#{$$.to_s}:#{Time.now.strftime('%s.%L')}:#{rand(0x10000).to_s(16)}:\e[m"
         token_dump = token.dump
         token_re = Regexp.quote(token)
@@ -403,16 +404,22 @@ eom
         ]
         args.unshift(envs) if envs
         cmd = [
-          'END {STDERR.puts '"#{token_dump}"'"FINAL=#{Memory::Status.new.size}"}',
+          'END {STDERR.puts '"#{token_dump}"'"FINAL=#{Memory::Status.new}"}',
           prepare,
-          'STDERR.puts('"#{token_dump}"'"START=#{$initial_size = Memory::Status.new.size}")',
+          'STDERR.puts('"#{token_dump}"'"START=#{$initial_size = Memory::Status.new}")',
           code,
+          'GC.start',
         ].join("\n")
         _, err, status = EnvUtil.invoke_ruby(args, cmd, true, true, **opt)
-        before = err.sub!(/^#{token_re}START=(\d+)\n/, '') && $1.to_i
-        after = err.sub!(/^#{token_re}FINAL=(\d+)\n/, '') && $1.to_i
+        before = err.sub!(/^#{token_re}START=(\{.*\})\n/, '') && Memory::Status.parse($1)
+        after = err.sub!(/^#{token_re}FINAL=(\{.*\})\n/, '') && Memory::Status.parse($1)
         assert_equal([true, ""], [status.success?, err], message)
-        assert_operator(after.fdiv(before), :<, limit, message)
+        ([:size, :rss] & after.members).each do |n|
+          b = before[n]
+          a = after[n]
+          next unless a > 0 and b > 0
+          assert_operator(a.fdiv(b), :<, limit, message(message) {"#{n}: #{b} => #{a}"})
+        end
       end
 
       def assert_is_minus_zero(f)
