@@ -1,3 +1,8 @@
+Mon Mar 10 10:51:17 2014  ksss  <co000ri@gmail.com>
+
+	* test/ruby/test_enumerator.rb (test_iterators): fix test for hash
+	  iterators.  [Fixes GH-558]
+
 Sun Mar  9 14:14:49 2014  Eric Wong  <e@80x24.org>
 
 	* class.c (rb_class_subclass_add): use xmalloc
