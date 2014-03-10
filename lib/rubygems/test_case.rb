@@ -115,6 +115,23 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     assert File.exist?(path), msg
   end
 
+  ##
+  # Sets the ENABLE_SHARED entry in RbConfig::CONFIG to +value+ and restores
+  # the original value when the block ends
+
+  def enable_shared value
+    enable_shared = RbConfig::CONFIG['ENABLE_SHARED']
+    RbConfig::CONFIG['ENABLE_SHARED'] = value
+
+    yield
+  ensure
+    if enable_shared then
+      RbConfig::CONFIG['enable_shared'] = enable_shared
+    else
+      RbConfig::CONFIG.delete 'enable_shared'
+    end
+  end
+
   # TODO: move to minitest
   def refute_path_exists path, msg = nil
     msg = message(msg) { "Expected path '#{path}' to not exist" }
@@ -294,10 +311,10 @@ class Gem::TestCase < MiniTest::Unit::TestCase
 
     Gem.searcher = nil
     Gem::SpecFetcher.fetcher = nil
-    @orig_BASERUBY = Gem::ConfigMap[:BASERUBY]
-    Gem::ConfigMap[:BASERUBY] = Gem::ConfigMap[:ruby_install_name]
+    @orig_BASERUBY = RbConfig::CONFIG['BASERUBY']
+    RbConfig::CONFIG['BASERUBY'] = RbConfig::CONFIG['ruby_install_name']
 
-    @orig_arch = Gem::ConfigMap[:arch]
+    @orig_arch = RbConfig::CONFIG['arch']
 
     if win_platform?
       util_set_arch 'i386-mswin32'
@@ -315,8 +332,12 @@ class Gem::TestCase < MiniTest::Unit::TestCase
   def teardown
     $LOAD_PATH.replace @orig_LOAD_PATH if @orig_LOAD_PATH
 
-    Gem::ConfigMap[:BASERUBY] = @orig_BASERUBY
-    Gem::ConfigMap[:arch] = @orig_arch
+    if @orig_BASERUBY
+      RbConfig::CONFIG['BASERUBY'] = @orig_BASERUBY
+    else
+      RbConfig::CONFIG.delete('BASERUBY')
+    end
+    RbConfig::CONFIG['arch'] = @orig_arch
 
     if defined? Gem::RemoteFetcher then
       Gem::RemoteFetcher.fetcher = nil
@@ -898,7 +919,7 @@ Also, a list:
   # Set the platform to +arch+
 
   def util_set_arch(arch)
-    Gem::ConfigMap[:arch] = arch
+    RbConfig::CONFIG['arch'] = arch
     platform = Gem::Platform.new arch
 
     Gem.instance_variable_set :@platforms, nil
@@ -1245,10 +1266,17 @@ Also, a list:
   class StaticSet
 
     ##
+    # A StaticSet ignores remote because it has a fixed set of gems.
+
+    attr_accessor :remote
+
+    ##
     # Creates a new StaticSet for the given +specs+
 
     def initialize(specs)
       @specs = specs
+
+      @remote = true
     end
 
     ##

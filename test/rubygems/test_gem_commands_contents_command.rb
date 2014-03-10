@@ -169,9 +169,9 @@ lib/foo.rb
     end
 
     expected = [
-      File.join(Gem::ConfigMap[:bindir], 'default_command'),
-      File.join(Gem::ConfigMap[:rubylibdir], 'default/gem.rb'),
-      File.join(Gem::ConfigMap[:archdir], 'default_gem.so')
+      File.join(RbConfig::CONFIG['bindir'], 'default_command'),
+      File.join(RbConfig::CONFIG['rubylibdir'], 'default/gem.rb'),
+      File.join(RbConfig::CONFIG['archdir'], 'default_gem.so')
     ].sort.join "\n"
 
     assert_equal expected, @ui.output.chomp

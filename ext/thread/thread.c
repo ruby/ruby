@@ -437,7 +437,7 @@ rb_szqueue_max_set(VALUE self, VALUE vmax)
 	diff = max - GET_SZQUEUE_ULONGMAX(self);
     }
     RSTRUCT_SET(self, SZQUEUE_MAX, vmax);
-    while (diff > 0 && !NIL_P(t = rb_ary_shift(GET_QUEUE_QUE(self)))) {
+    while (diff-- > 0 && !NIL_P(t = rb_ary_shift(GET_SZQUEUE_WAITERS(self)))) {
 	rb_thread_wakeup_alive(t);
     }
     return vmax;
@@ -500,6 +500,20 @@ rb_szqueue_pop(int argc, VALUE *argv, VALUE self)
 {
     VALUE should_block = queue_pop_should_block(argc, argv);
     return szqueue_do_pop(self, should_block);
+}
+
+/*
+ * Document-method: Queue#clear
+ *
+ * Removes all objects from the queue.
+ */
+
+static VALUE
+rb_szqueue_clear(VALUE self)
+{
+    rb_ary_clear(GET_QUEUE_QUE(self));
+    wakeup_all_threads(GET_SZQUEUE_WAITERS(self));
+    return self;
 }
 
 /*
@@ -586,6 +600,7 @@ Init_thread(void)
     rb_define_method(rb_cSizedQueue, "max=", rb_szqueue_max_set, 1);
     rb_define_method(rb_cSizedQueue, "push", rb_szqueue_push, 1);
     rb_define_method(rb_cSizedQueue, "pop", rb_szqueue_pop, -1);
+    rb_define_method(rb_cSizedQueue, "clear", rb_szqueue_clear, 0);
     rb_define_method(rb_cSizedQueue, "num_waiting", rb_szqueue_num_waiting, 0);
 
     /* Alias for #push. */

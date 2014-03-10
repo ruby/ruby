@@ -59,6 +59,8 @@ class TestGemRequestSet < Gem::TestCase
     assert_includes installed, 'a-2'
     assert_path_exists File.join @gemhome, 'gems', 'a-2'
     assert_path_exists 'gem.deps.rb.lock'
+
+    assert rs.remote
   end
 
   def test_install_from_gemdeps_install_dir
@@ -87,6 +89,25 @@ class TestGemRequestSet < Gem::TestCase
 
     assert_includes installed, 'a-2'
     refute_path_exists File.join Gem.dir, 'gems', 'a-2'
+  end
+
+  def test_install_from_gemdeps_local
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+    end
+
+    rs = Gem::RequestSet.new
+
+    open 'gem.deps.rb', 'w' do |io|
+      io.puts 'gem "a"'
+      io.flush
+
+      assert_raises Gem::UnsatisfiableDependencyError do
+        rs.install_from_gemdeps :gemdeps => io.path, :domain => :local
+      end
+    end
+
+    refute rs.remote
   end
 
   def test_install_from_gemdeps_lockfile

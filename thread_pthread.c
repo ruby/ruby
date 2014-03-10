@@ -1423,7 +1423,7 @@ timer_thread_sleep(rb_global_vm_lock_t* unused)
 
 #if defined(__linux__) && defined(PR_SET_NAME)
 # define SET_THREAD_NAME(name) prctl(PR_SET_NAME, name)
-#elif defined(__APPLE__)
+#elif defined(HAVE_PTHREAD_SETNAME_NP)
 /* pthread_setname_np() on Darwin does not have target thread argument */
 # define SET_THREAD_NAME(name) pthread_setname_np(name)
 #else
@@ -1479,17 +1479,16 @@ rb_thread_create_timer_thread(void)
 	    exit(EXIT_FAILURE);
         }
 # ifdef PTHREAD_STACK_MIN
-	if (PTHREAD_STACK_MIN < 4096 * 3) {
+	{
+	    const size_t min_size = (4096 * 4);
 	    /* Allocate the machine stack for the timer thread
-             * at least 12KB (3 pages).  FreeBSD 8.2 AMD64 causes
-             * machine stack overflow only with PTHREAD_STACK_MIN.
+	     * at least 16KB (4 pages).  FreeBSD 8.2 AMD64 causes
+	     * machine stack overflow only with PTHREAD_STACK_MIN.
 	     */
-	    pthread_attr_setstacksize(&attr,
-				      4096 * 3 + (THREAD_DEBUG ? BUFSIZ : 0));
-	}
-	else {
-	    pthread_attr_setstacksize(&attr,
-				      PTHREAD_STACK_MIN + (THREAD_DEBUG ? BUFSIZ : 0));
+	    size_t stack_size = PTHREAD_STACK_MIN; /* may be dynamic, get only once */
+	    if (stack_size < min_size) stack_size = min_size;
+	    if (THREAD_DEBUG) stack_size += BUFSIZ;
+	    pthread_attr_setstacksize(&attr, stack_size);
 	}
 # endif
 #endif

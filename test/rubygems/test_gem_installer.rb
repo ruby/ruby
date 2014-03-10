@@ -41,7 +41,7 @@ version = \">= 0\"
 if ARGV.first
   str = ARGV.first
   str = str.dup.force_encoding("BINARY") if str.respond_to? :force_encoding
-  if str =~ /\\A_(.*)_\\z/
+  if str =~ /\\A_(.*)_\\z/ and Gem::Version.correct?($1) then
     version = $1
     ARGV.shift
   end
@@ -84,8 +84,8 @@ load Gem.bin_path('a', 'executable', version)
       orig_RUBY_FRAMEWORK_VERSION = RUBY_FRAMEWORK_VERSION
       Object.send :remove_const, :RUBY_FRAMEWORK_VERSION
     end
-    orig_bindir = Gem::ConfigMap[:bindir]
-    Gem::ConfigMap[:bindir] = Gem.bindir
+    orig_bindir = RbConfig::CONFIG['bindir']
+    RbConfig::CONFIG['bindir'] = Gem.bindir
 
     util_conflict_executable false
 
@@ -102,7 +102,11 @@ load Gem.bin_path('a', 'executable', version)
   ensure
     Object.const_set :RUBY_FRAMEWORK_VERSION, orig_RUBY_FRAMEWORK_VERSION if
       orig_RUBY_FRAMEWORK_VERSION
-    Gem::ConfigMap[:bindir] = orig_bindir
+    if orig_bindir then
+      RbConfig::CONFIG['bindir'] = orig_bindir
+    else
+      RbConfig::CONFIG.delete 'bindir'
+    end
   end
 
   def test_check_executable_overwrite_format_executable
@@ -1192,7 +1196,7 @@ gem 'other', version
 
     env_shebang = "/usr/bin/env" unless Gem.win_platform?
 
-    assert_equal("#!#{env_shebang} #{Gem::ConfigMap[:ruby_install_name]}",
+    assert_equal("#!#{env_shebang} #{RbConfig::CONFIG['ruby_install_name']}",
                  shebang)
   end
 

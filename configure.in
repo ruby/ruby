@@ -856,6 +856,22 @@ if test "$GCC" = yes; then
     for oflag in -fno-fast-math; do
 	RUBY_TRY_CFLAGS($oflag, [RUBY_APPEND_OPTION(optflags, $oflag)])
     done
+    AS_CASE(["$target"],
+	[*-darwin*], [
+	    # doesn't seem necessary on Mac OS X
+	],
+	[[i[4-6]86*]], [
+	    RUBY_TRY_CFLAGS(-msse2 -mfpmath=sse, [
+		RUBY_APPEND_OPTION(XCFLAGS, -msse2 -mfpmath=sse)
+	    ])
+            AS_CASE(["$XCFLAGS"],
+                [[*-msse2*]], [
+                    RUBY_TRY_CFLAGS(-mstackrealign, [
+                        RUBY_APPEND_OPTION(XCFLAGS, -mstackrealign)
+                    ])
+                ])
+	]
+    )
 fi
 
 AC_ARG_WITH(opt-dir,
@@ -864,17 +880,11 @@ AC_ARG_WITH(opt-dir,
 	[
 		val=`echo "$PATH_SEPARATOR$withval" | sed "s|$PATH_SEPARATOR\([[^$PATH_SEPARATOR]*]\)| -I\1/include|g;s/^ //"`
 		CPPFLAGS="$CPPFLAGS $val"
-		val=`IFS="$PATH_SEPARATOR"
-		    for dir in $withval; do
-			echo x ${LIBPATHFLAG} ${RPATHFLAG} |
-			sed "s/^x *//;s${IFS}"'%1\\$-s'"${IFS}${dir}/lib${IFS}g;s${IFS}%s${IFS}${dir}/lib${IFS}g"
-		    done | tr '\012' ' '`
+		val=`echo "$PATH_SEPARATOR$withval" | sed "s|$PATH_SEPARATOR\([[^$PATH_SEPARATOR]*]\)| -L\1/lib|g;s/^ //"`
+		LDFLAGS="$LDFLAGS $val"
 		LDFLAGS_OPTDIR="$val"
-		test x"${LDFLAGS}" = x || LDFLAGS="$LDFLAGS "
-		LDFLAGS="$LDFLAGS$val"
-		test x"${DLDFLAGS}" = x || DLDFLAGS="$DLDFLAGS "
-		DLDFLAGS="$DLDFLAGS$val"
-	])
+		OPT_DIR="$withval"
+	], [OPT_DIR=])
 
 test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $ARCH_FLAG\""
 test -z "${ac_env_CXXFLAGS_set}" -a -n "${cxxflags+set}" && eval CXXFLAGS="\"$cxxflags $ARCH_FLAG\""
@@ -888,6 +898,7 @@ AC_ARG_WITH(winnt-ver,
 AS_CASE(["$target_os"],
 [mingw*], [
   RUBY_APPEND_OPTION(CPPFLAGS, -D_WIN32_WINNT=$with_winnt_ver)
+  RUBY_APPEND_OPTION(CPPFLAGS, -D__MINGW_USE_VC2005_COMPAT)
 ])
 
 AS_CASE(["$target_os"],
@@ -1040,6 +1051,7 @@ main()
 		if test x"$ac_cv_type_NET_LUID" = xyes; then
 		    AC_DEFINE(HAVE_TYPE_NET_LUID, 1)
 		fi
+		AC_CHECK_FUNCS(_gmtime64_s)
 		AC_LIBOBJ([langinfo])
 		],
 [os2-emx*], [	LIBS="-lm $LIBS"
@@ -2437,7 +2449,7 @@ if test x"$enable_pthread" = xyes; then
 	pthread_get_stackaddr_np pthread_get_stacksize_np \
 	thr_stksegment pthread_stackseg_np pthread_getthrds_np \
 	pthread_cond_init pthread_condattr_setclock pthread_condattr_init \
-        pthread_sigmask)
+	pthread_sigmask pthread_setname_np)
     if test "${host_os}" = "nacl"; then
       ac_cv_func_pthread_attr_init=no
     else
@@ -2657,7 +2669,7 @@ if test "$with_dln_a_out" != yes; then
 			: ${LDSHARED='$(CC) -shared'}
 			if test "$rb_cv_binary_elf" = yes; then
 			    LDFLAGS="$LDFLAGS -rdynamic"
-			    DLDFLAGS="$DLDFLAGS "'-Wl,-soname,$(.TARGET)'
+			    DLDFLAGS="$DLDFLAGS "'-Wl,-soname,$@'
 			else
 			  test "$GCC" = yes && test "$rb_cv_prog_gnu_ld" = yes || LDSHARED='$(LD) -Bshareable'
 			fi
@@ -2759,6 +2771,21 @@ AC_SUBST(LIBPATHFLAG)
 AC_SUBST(RPATHFLAG)
 AC_SUBST(LIBPATHENV, "${LIBPATHENV-LD_LIBRARY_PATH}")
 AC_SUBST(TRY_LINK)
+
+if test "x$OPT_DIR" != x; then
+    pat=`echo "${LDFLAGS_OPTDIR}" | sed ['s/[][\\.*|]/\\\\&/']`
+    LDFLAGS=`echo "${LDFLAGS}" | sed "s| ${pat}||"`
+    val=`IFS="$PATH_SEPARATOR"
+        for dir in $OPT_DIR; do
+            echo x ${LIBPATHFLAG} ${RPATHFLAG} |
+            sed "s/^x *//;s${IFS}"'%1\\$-s'"${IFS}${dir}/lib${IFS}g;s${IFS}%s${IFS}${dir}/lib${IFS}g"
+        done | tr '\012' ' '`
+    test x"${LDFLAGS}" = x || LDFLAGS="$LDFLAGS "
+    LDFLAGS="$LDFLAGS$val"
+    test x"${DLDFLAGS}" = x || DLDFLAGS="$DLDFLAGS "
+    DLDFLAGS="$DLDFLAGS$val"
+    LDFLAGS_OPTDIR="$val"
+fi
 
 AS_CASE(["$target_cpu-$target_os"],
 [*-darwin*], [

@@ -1829,7 +1829,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		    ci->me = me;
 		    ci->defined_class = defined_class;
 		    if (me->def->type != VM_METHOD_TYPE_REFINED) {
-			goto normal_method_dispatch;
+			goto start_method_dispatch;
 		    }
 		}
 
@@ -1838,11 +1838,8 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		    ci->me = ci->me->def->body.orig_me;
 		    if (UNDEFINED_METHOD_ENTRY_P(ci->me)) {
 			ci->me = 0;
-			goto start_method_dispatch;
 		    }
-		    else {
-			goto normal_method_dispatch;
-		    }
+		    goto start_method_dispatch;
 		}
 		else {
 		    klass = ci->me->klass;
@@ -2004,7 +2001,8 @@ vm_search_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_inf
 	current_defined_class = RCLASS_REFINED_CLASS(current_defined_class);
     }
 
-    if (!FL_TEST(current_defined_class, RMODULE_INCLUDED_INTO_REFINEMENT) &&
+    if (BUILTIN_TYPE(current_defined_class) != T_MODULE &&
+	!FL_TEST(current_defined_class, RMODULE_INCLUDED_INTO_REFINEMENT) &&
 	!rb_obj_is_kind_of(ci->recv, current_defined_class)) {
 	VALUE m = RB_TYPE_P(current_defined_class, T_ICLASS) ?
 	    RBASIC(current_defined_class)->klass : current_defined_class;

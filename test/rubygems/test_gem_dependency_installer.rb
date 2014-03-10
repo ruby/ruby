@@ -551,7 +551,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     env = "/\\S+/env" unless Gem.win_platform?
 
-    assert_match %r|\A#!#{env} #{Gem::ConfigMap[:ruby_install_name]}\n|,
+    assert_match %r|\A#!#{env} #{RbConfig::CONFIG['ruby_install_name']}\n|,
                  File.read(File.join(@gemhome, 'bin', 'a_bin'))
   end
 

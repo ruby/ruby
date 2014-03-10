@@ -24,6 +24,11 @@ class Gem::Source::Git < Gem::Source
   attr_reader :reference
 
   ##
+  # When false the cache for this repository will not be updated.
+
+  attr_accessor :remote
+
+  ##
   # The git repository this gem is sourced from.
 
   attr_reader :repository
@@ -53,6 +58,7 @@ class Gem::Source::Git < Gem::Source
     @reference       = reference
     @need_submodules = submodules
 
+    @remote   = true
     @root_dir = Gem.dir
     @git      = ENV['git'] || 'git'
   end
@@ -85,6 +91,8 @@ class Gem::Source::Git < Gem::Source
   def checkout # :nodoc:
     cache
 
+    return false unless File.exist? repo_cache_dir
+
     unless File.exist? install_dir then
       system @git, 'clone', '--quiet', '--no-checkout',
              repo_cache_dir, install_dir
@@ -107,6 +115,8 @@ class Gem::Source::Git < Gem::Source
   # Creates a local cache repository for the git gem.
 
   def cache # :nodoc:
+    return unless @remote
+
     if File.exist? repo_cache_dir then
       Dir.chdir repo_cache_dir do
         system @git, 'fetch', '--quiet', '--force', '--tags',
@@ -142,6 +152,8 @@ class Gem::Source::Git < Gem::Source
   # The directory where the git gem will be installed.
 
   def install_dir # :nodoc:
+    return unless File.exist? repo_cache_dir
+
     File.join base_dir, 'gems', "#{@name}-#{dir_shortref}"
   end
 
@@ -176,6 +188,8 @@ class Gem::Source::Git < Gem::Source
 
   def specs
     checkout
+
+    return [] unless install_dir
 
     Dir.chdir install_dir do
       Dir['{,*,*/*}.gemspec'].map do |spec_file|

@@ -114,6 +114,7 @@ with all sufficient information, see the ChangeLog file.
     * Process.clock_getres
 
 * String
+  * "literal".freeze is now optimized to return the same object
   * New methods:
     * String#scrub and String#scrub! verify and fix invalid byte sequence.
       If you want to use this function with older Ruby,
@@ -132,6 +133,10 @@ with all sufficient information, see the ChangeLog file.
       inheritance by Module#include.
 
 === Core classes compatibility issues (excluding feature bug fixes)
+
+* Dir
+  * incompatible changes:
+    * Dir#glob returns composed characters (previously Apple Modofied UTF-8).
 
 * Hash
   * incompatible changes:
@@ -250,7 +255,7 @@ String
 * REXML::Parsers::SAX2Parser
   * Fixes wrong number of arguments of entitydecl event. Document of the event
     says "an array of the entity declaration" but implementation passes two
-    or more arguments. It is an implementation bug but it breaks backword
+    or more arguments. It is an implementation bug but it breaks backward
     compatibility.
 
 * REXML::Parsers::StreamParser
@@ -270,6 +275,8 @@ String
     * Gemfile or gem.deps.rb support including Gem.file.lock (experimental)
     * Improved, iterative resolver (compared to RubyGems 2.1 and earlier)
     * Support for a sharing a GEM_HOME across ruby platforms and versions
+
+  * Updated to 2.2.2.  Fixes some minor bugs and performance regressions.
 
     For a complete list of enhancements and bug fixes see:
     https://github.com/rubygems/rubygems/tree/master/History.txt

@@ -55,6 +55,13 @@ class TestQueue < Test::Unit::TestCase
     assert_equal(1, q.max)
     assert_raise(ArgumentError) { q.max = -1 }
     assert_equal(1, q.max)
+
+    before = q.max
+    q.max.times { q << 1 }
+    t1 = Thread.new { q << 1 }
+    sleep 0.01 until t1.stop?
+    q.max = q.max + 1
+    assert_equal before + 1, q.max
   end
 
   def test_queue_pop_interrupt
@@ -120,6 +127,28 @@ class TestQueue < Test::Unit::TestCase
     q = Queue.new
     retval = q.clear
     assert_same q, retval
+  end
+
+  def test_sized_queue_clear
+    # Fill queue, then test that SizedQueue#clear wakes up all waiting threads
+    sq = SizedQueue.new(2)
+    2.times { sq << 1 }
+
+    t1 = Thread.new do
+      sq << 1
+    end
+
+    t2 = Thread.new do
+      sq << 1
+    end
+
+    t3 = Thread.new do
+      Thread.pass
+      sq.clear
+    end
+
+    [t3, t2, t1].each(&:join)
+    assert_equal sq.length, 2
   end
 
   def test_sized_queue_push_return_value

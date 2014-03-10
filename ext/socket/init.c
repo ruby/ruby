@@ -323,8 +323,12 @@ wait_connectable(int fd)
 	     */
 	    if (ret < 0)
 		break;
-	    if (sockerr == 0)
-		continue;	/* workaround for winsock */
+	    if (sockerr == 0) {
+		if (revents & RB_WAITFD_OUT)
+		    break;
+		else
+		    continue;	/* workaround for winsock */
+	    }
 
 	    /* BSD and Linux use sockerr. */
 	    errno = sockerr;

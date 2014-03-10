@@ -27,12 +27,24 @@
 # endif
 #endif
 
-#define HAS_MISC_ATTRIBUTES(hash, klass) ( \
-    (klass = rb_obj_class(hash)) != rb_cHash || \
-    (klass = 0, \
-     FL_TEST((hash), FL_EXIVAR|FL_TAINT|HASH_PROC_DEFAULT) ||	\
-     !NIL_P(RHASH_IFNONE(hash))))
-#define HASH_REJECT_COPY_MISC_ATTRIBUTES 1
+#define HAS_EXTRA_STATES(hash, klass) ( \
+    ((klass = has_extra_methods(rb_obj_class(hash))) != 0) || \
+    FL_TEST((hash), FL_EXIVAR|FL_TAINT|HASH_PROC_DEFAULT) || \
+    !NIL_P(RHASH_IFNONE(hash)))
+#define HASH_REJECT_COPY_EXTRA_STATES 1
+
+static VALUE
+has_extra_methods(VALUE klass)
+{
+    const VALUE base = rb_cHash;
+    VALUE c = klass;
+    while (c != base) {
+	st_table *mtbl = RCLASS_M_TBL(c);
+	if (mtbl && mtbl->num_entries) return klass;
+	c = RCLASS_SUPER(c);
+    }
+    return 0;
+}
 
 static VALUE rb_hash_s_try_convert(VALUE, VALUE);
 
@@ -55,7 +67,7 @@ rb_hash_freeze(VALUE hash)
 VALUE rb_cHash;
 
 static VALUE envtbl;
-static ID id_hash, id_yield, id_default;
+static ID id_hash, id_yield, id_default, id_flatten_bang;
 
 VALUE
 rb_hash_set_ifnone(VALUE hash, VALUE ifnone)
@@ -111,7 +123,7 @@ rb_hash(VALUE obj)
     return hval;
 }
 
-st_index_t rb_objid_hash(st_index_t index);
+long rb_objid_hash(st_index_t index);
 
 static st_index_t
 rb_any_hash(VALUE a)
@@ -134,7 +146,7 @@ rb_any_hash(VALUE a)
     return (st_index_t)RSHIFT(hnum, 1);
 }
 
-st_index_t
+long
 rb_objid_hash(st_index_t index)
 {
     st_index_t hnum = rb_hash_start(index);
@@ -1142,11 +1154,11 @@ rb_hash_reject(VALUE hash)
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     if (RTEST(ruby_verbose)) {
 	VALUE klass;
-	if (HAS_MISC_ATTRIBUTES(hash, klass)) {
-#if HASH_REJECT_COPY_MISC_ATTRIBUTES
-	    rb_warn("copying unguaranteed attributes: %+"PRIsVALUE, hash);
-	    rb_warn("following atributes will not be copied in the future version:");
-	    if (klass != rb_cHash) {
+	if (HAS_EXTRA_STATES(hash, klass)) {
+#if HASH_REJECT_COPY_EXTRA_STATES
+	    rb_warn("copying extra states: %+"PRIsVALUE, hash);
+	    rb_warn("following states will not be copied in the future version:");
+	    if (klass) {
 		rb_warn("  subclass: %+"PRIsVALUE, klass);
 	    }
 	    if (FL_TEST(hash, FL_EXIVAR)) {
@@ -1162,8 +1174,7 @@ rb_hash_reject(VALUE hash)
 	    else if (!NIL_P(RHASH_IFNONE(hash)))
 		rb_warn("  default value: %+"PRIsVALUE, RHASH_IFNONE(hash));
 #else
-	    rb_warn("unguaranteed attributes are not copied: %+"PRIsVALUE, hash);
-	    rb_warn("following atributes are ignored now:");
+	    rb_warn("extra states are no longer copied: %+"PRIsVALUE, hash);
 #endif
 	}
     }
@@ -1416,6 +1427,8 @@ rb_hash_initialize_copy(VALUE hash, VALUE hash2)
     hash2 = to_hash(hash2);
 
     Check_Type(hash2, T_HASH);
+
+    if (hash == hash2) return hash;
 
     ntbl = RHASH(hash)->ntbl;
     if (RHASH(hash2)->ntbl) {
@@ -2388,15 +2401,25 @@ rb_hash_flatten(int argc, VALUE *argv, VALUE hash)
 {
     VALUE ary;
 
-    ary = rb_ary_new_capa(RHASH_SIZE(hash) * 2);
-    rb_hash_foreach(hash, flatten_i, ary);
     if (argc) {
-	int level = NUM2INT(*argv) - 1;
-	if (level > 0) {
-	    *argv = INT2FIX(level);
-	    rb_funcall2(ary, rb_intern("flatten!"), argc, argv);
+	int level = NUM2INT(*argv);
+	if (level == 0) return rb_hash_to_a(hash);
+
+	ary = rb_ary_new_capa(RHASH_SIZE(hash) * 2);
+	rb_hash_foreach(hash, flatten_i, ary);
+	if (level - 1 > 0) {
+	    *argv = INT2FIX(level - 1);
+	    rb_funcall2(ary, id_flatten_bang, argc, argv);
+	}
+	else if (level < 0) {
+	    rb_funcall2(ary, id_flatten_bang, 0, 0);
 	}
     }
+    else {
+	ary = rb_ary_new_capa(RHASH_SIZE(hash) * 2);
+	rb_hash_foreach(hash, flatten_i, ary);
+    }
+
     return ary;
 }
 
@@ -3746,6 +3769,7 @@ Init_Hash(void)
     id_hash = rb_intern("hash");
     id_yield = rb_intern("yield");
     id_default = rb_intern("default");
+    id_flatten_bang = rb_intern("flatten!");
 
     rb_cHash = rb_define_class("Hash", rb_cObject);
 

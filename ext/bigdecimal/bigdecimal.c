@@ -2481,7 +2481,9 @@ BigDecimal_initialize_copy(VALUE self, VALUE other)
     Real *pv = rb_check_typeddata(self, &BigDecimal_data_type);
     Real *x = rb_check_typeddata(other, &BigDecimal_data_type);
 
-    DATA_PTR(self) = VpCopy(pv, x);
+    if (self != other) {
+	DATA_PTR(self) = VpCopy(pv, x);
+    }
     return self;
 }
 
@@ -2519,8 +2521,8 @@ BigDecimal_new(int argc, VALUE *argv)
       case T_RATIONAL:
 	if (NIL_P(nFig)) {
 	    rb_raise(rb_eArgError,
-		     "can't omit precision for a %s.",
-		     rb_class2name(CLASS_OF(iniValue)));
+		     "can't omit precision for a %"PRIsVALUE".",
+		     rb_obj_class(iniValue));
 	}
 	return GetVpValueWithPrec(iniValue, mf, 1);
 

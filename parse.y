@@ -130,6 +130,7 @@ struct local_vars {
     struct vtable *vars;
     struct vtable *used;
     struct local_vars *prev;
+    stack_type cmdargs;
 };
 
 #define DVARS_INHERIT ((void*)1)
@@ -9485,6 +9486,7 @@ new_args_tail_gen(struct parser_params *parser, NODE *k, ID kr, ID b)
     struct rb_args_info *args;
     NODE *kw_rest_arg = 0;
     NODE *node;
+    int check = 0;
 
     args = ALLOC(struct rb_args_info);
     MEMZERO(args, struct rb_args_info, 1);
@@ -9492,10 +9494,14 @@ new_args_tail_gen(struct parser_params *parser, NODE *k, ID kr, ID b)
 
     args->block_arg      = b;
     args->kw_args        = k;
-    if (k && !kr) kr = internal_id();
+    if (k && !kr) {
+	check = 1;
+	kr = internal_id();
+    }
     if (kr) {
 	arg_var(kr);
 	kw_rest_arg  = NEW_DVAR(kr);
+	kw_rest_arg->nd_cflag = check;
     }
     args->kw_rest_arg    = kw_rest_arg;
 
@@ -9642,6 +9648,8 @@ local_push_gen(struct parser_params *parser, int inherit_dvars)
     local->used = !(inherit_dvars &&
 		    (ifndef_ripper(compile_for_eval || e_option_supplied(parser))+0)) &&
 	RTEST(ruby_verbose) ? vtable_alloc(0) : 0;
+    local->cmdargs = cmdarg_stack;
+    cmdarg_stack = 0;
     lvtbl = local;
 }
 
@@ -9655,6 +9663,7 @@ local_pop_gen(struct parser_params *parser)
     }
     vtable_free(lvtbl->args);
     vtable_free(lvtbl->vars);
+    cmdarg_stack = lvtbl->cmdargs;
     xfree(lvtbl);
     lvtbl = local;
 }

@@ -108,6 +108,12 @@ class TestHash < Test::Unit::TestCase
     assert_empty(h)
   end
 
+  def test_self_initialize_copy
+    h = @cls[1=>2]
+    h.instance_eval {initialize_copy(h)}
+    assert_equal(2, h[1])
+  end
+
   def test_dup_will_rehash
     set1 = @cls[]
     set2 = @cls[set1 => true]
@@ -565,12 +571,23 @@ class TestHash < Test::Unit::TestCase
     assert_equal(h3, h.reject {|k,v| v })
     assert_equal(base, h)
 
-    return unless RUBY_VERSION >= "2.2.0" # [ruby-core:59154] [Bug #9223]
+    unless RUBY_VERSION >= "2.2.0"
+      # [ruby-core:59154] [Bug #9223]
+      if @cls == Hash
+        assert_empty(EnvUtil.verbose_warning {h.reject {false}})
+        bug9275 = '[ruby-core:59254] [Bug #9275]'
+        c = Class.new(Hash)
+        assert_empty(EnvUtil.verbose_warning {c.new.reject {false}}, bug9275)
+      else
+        assert_match(/extra states/, EnvUtil.verbose_warning {h.reject {false}})
+      end
+      return
+    end
 
     h.instance_variable_set(:@foo, :foo)
     h.default = 42
     h.taint
-    h = h.reject {false}
+    h = EnvUtil.suppress_warning {h.reject {false}}
     assert_instance_of(Hash, h)
     assert_not_predicate(h, :tainted?)
     assert_nil(h.default)
@@ -969,11 +986,11 @@ class TestHash < Test::Unit::TestCase
 
     a =  @cls[1=> "one", 2 => [2,"two"], 3 => [3, ["three"]]]
     assert_equal([1, "one", 2, [2, "two"], 3, [3, ["three"]]], a.flatten)
-    assert_equal([1, "one", 2, [2, "two"], 3, [3, ["three"]]], a.flatten(-1))
-    assert_equal([1, "one", 2, [2, "two"], 3, [3, ["three"]]], a.flatten(0))
+    assert_equal([[1, "one"], [2, [2, "two"]], [3, [3, ["three"]]]], a.flatten(0))
     assert_equal([1, "one", 2, [2, "two"], 3, [3, ["three"]]], a.flatten(1))
     assert_equal([1, "one", 2, 2, "two", 3, 3, ["three"]], a.flatten(2))
     assert_equal([1, "one", 2, 2, "two", 3, 3, "three"], a.flatten(3))
+    assert_equal([1, "one", 2, 2, "two", 3, 3, "three"], a.flatten(-1))
     assert_raise(TypeError){ a.flatten(Object) }
   end
 
@@ -1247,6 +1264,9 @@ class TestHash < Test::Unit::TestCase
 
   class TestSubHash < TestHash
     class SubHash < Hash
+      def reject(*)
+        super
+      end
     end
 
     def setup

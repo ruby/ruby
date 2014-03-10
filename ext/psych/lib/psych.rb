@@ -14,6 +14,7 @@ require 'psych/stream'
 require 'psych/json/tree_builder'
 require 'psych/json/stream'
 require 'psych/handlers/document_stream'
+require 'psych/class_loader'
 
 ###
 # = Overview
@@ -216,7 +217,7 @@ require 'psych/handlers/document_stream'
 
 module Psych
   # The version is Psych you're using
-  VERSION         = '2.0.2'
+  VERSION         = '2.0.3'
 
   # The version of libyaml Psych is using
   LIBYAML_VERSION = Psych.libyaml_version.join '.'

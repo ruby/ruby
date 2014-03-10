@@ -73,7 +73,7 @@ end
 # The environment variables such as http_proxy, https_proxy and ftp_proxy
 # are in effect by default. Here we disable proxy:
 #
-#   open("http://www.ruby-lang.org/en/raa.html", :proxy => nil) {|f|
+#   open("http://www.ruby-lang.org/en/", :proxy => nil) {|f|
 #     # ...
 #   }
 #
@@ -288,7 +288,7 @@ module OpenURI
       end
     end
 
-    http = klass.new(target_host, target_port)
+    http = proxy ? klass.new(target_host, target_port) : klass.new(target_host, target_port, nil)
     if target.class == URI::HTTPS
       require 'net/https'
       http.use_ssl = true
@@ -534,8 +534,9 @@ module OpenURI
       end
     end
 
-    # returns a list of encodings in Content-Encoding field
-    # as an Array of String.
+    # Returns a list of encodings in Content-Encoding field as an array of
+    # strings.
+    #
     # The encodings are downcased for canonicalization.
     def content_encoding
       vs = @metas['content-encoding']

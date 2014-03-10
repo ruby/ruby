@@ -364,6 +364,17 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:MIXIN, :USER], User.constants.sort)
   end
 
+  def test_self_initialize_copy
+    bug9535 = '[ruby-dev:47989] [Bug #9535]'
+    m = Module.new do
+      def foo
+        :ok
+      end
+      initialize_copy(self)
+    end
+    assert_equal(:ok, Object.new.extend(m).foo, bug9535)
+  end
+
   def test_dup
     bug6454 = '[ruby-core:45132]'
 
@@ -864,6 +875,19 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:Foo], m.constants(true))
     assert_equal([:Foo], m.constants(false))
     m.instance_eval { remove_const(:Foo) }
+  end
+
+  class Bug9413
+    class << self
+      Foo = :foo
+    end
+  end
+
+  def test_singleton_constants
+    bug9413 = '[ruby-core:59763] [Bug #9413]'
+    c = Bug9413.singleton_class
+    assert_include(c.constants(true), :Foo, bug9413)
+    assert_include(c.constants(false), :Foo, bug9413)
   end
 
   def test_frozen_class

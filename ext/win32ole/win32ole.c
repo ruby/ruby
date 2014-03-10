@@ -1209,19 +1209,18 @@ static void
 ole_raise(HRESULT hr, VALUE ecs, const char *fmt, ...)
 {
     va_list args;
-    char buf[BUFSIZ];
+    VALUE msg;
     VALUE err_msg;
     va_init_list(args, fmt);
-    vsnprintf(buf, BUFSIZ, fmt, args);
+    msg = rb_vsprintf(fmt, args);
     va_end(args);
 
     err_msg = ole_hresult2msg(hr);
     if(err_msg != Qnil) {
-        rb_raise(ecs, "%s\n%s", buf, StringValuePtr(err_msg));
+	rb_str_cat2(msg, "\n");
+	rb_str_append(msg, err_msg);
     }
-    else {
-        rb_raise(ecs, "%s", buf);
-    }
+    rb_exc_raise(rb_exc_new_str(ecs, msg));
 }
 
 void
