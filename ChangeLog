@@ -1,3 +1,14 @@
+Mon Mar 10 12:14:26 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: always check dladdr(1).
+
+	* addr2line.c (fill_lines): show the line number in C backtrace if
+	  ruby is built without --enable-shared (PIE) on Linux.
+	  patch is originally by Shinichiro Hamaji
+	  https://twitter.com/shinh/status/441957774264504321
+	  NOTE: ld doesn't insert __executable_start for PIE.
+	  dladdr(3)'s argument must be a function pointer.
+
 Mon Mar 10 10:51:17 2014  ksss  <co000ri@gmail.com>
 
 	* test/ruby/test_enumerator.rb (test_iterators): fix test for hash

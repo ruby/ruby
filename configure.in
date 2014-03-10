@@ -1897,6 +1897,7 @@ AC_CHECK_FUNCS(cosh)
 AC_CHECK_FUNCS(daemon)
 AC_CHECK_FUNCS(dl_iterate_phdr)
 AC_CHECK_FUNCS(dlopen)
+AC_CHECK_FUNCS(dladdr)
 AC_CHECK_FUNCS(dup)
 AC_CHECK_FUNCS(dup3)
 AC_CHECK_FUNCS(eaccess)
@@ -2946,7 +2947,6 @@ else
 	DLEXT=so])
 fi
 if test "$rb_cv_dlopen:$load_relative" = yes:yes; then
-    AC_CHECK_FUNCS(dladdr)
     if test "$ac_cv_func_dladdr" = yes; then
 	LOAD_RELATIVE=1
     fi

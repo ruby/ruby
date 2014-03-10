@@ -514,6 +514,14 @@ fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
 	size_t len;
 	if (get_path_from_symbol(syms[i], &path, &len) &&
 		!strncmp(path, binary_filename, len)) {
+#if defined(HAVE_DLADDR) && defined(__pie__) && defined(__linux__)
+	    if (ehdr->e_type == ET_DYN && lines[i].base_addr == 0) {
+		Dl_info info;
+		if (dladdr(fill_lines, &info)) {
+		    lines[i].base_addr = (unsigned long)info.dli_fbase;
+		}
+	    }
+#endif
 	    lines[i].line = -1;
 	}
     }
