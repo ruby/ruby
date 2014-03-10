@@ -1,3 +1,10 @@
+Tue Mar 11 06:54:00 2014  Scott Francis  <scott.francis@shopify.com>
+
+	* ext/objspace/objspace_dump.c: Check fptr before trying to dump RFILE
+	  object fd. [GH-562]
+
+	* test/objspace/test_objspace.rb: add test
+
 Tue Mar 11 02:04:36 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm_dump.c (rb_vm_bugreport): show vm maps on FreeBSD.
