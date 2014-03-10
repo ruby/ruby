@@ -1,3 +1,10 @@
+Tue Mar 11 02:04:36 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_dump.c (rb_vm_bugreport): show vm maps on FreeBSD.
+
+	* vm_dump.c (procstat_vm): copied from FreeBSD.
+	  http://svnweb.freebsd.org/base/head/usr.bin/procstat/procstat_vm.c?revision=261780
+
 Mon Mar 10 12:14:26 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: always check dladdr(1).
