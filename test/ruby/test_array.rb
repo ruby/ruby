@@ -1983,6 +1983,9 @@ class TestArray < Test::Unit::TestCase
 
   def test_select
     assert_equal([0, 2], [0, 1, 2, 3].select {|x| x % 2 == 0 })
+    assert_equal(["foo", "bar", "baz"],
+                 ["foo", "bar", "baz", "quux"].select(/ba/, /f/))
+    assert_equal([1, 3.1, {}], [1, "two", 3.1, {}, :bar].select(Numeric, Enumerable))
   end
 
   # also keep_if

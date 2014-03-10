@@ -93,6 +93,8 @@ class TestEnumerable < Test::Unit::TestCase
 
   def test_find_all
     assert_equal([1, 3, 1], @obj.find_all {|x| x % 2 == 1 })
+    assert_equal([1, 2, 3, 1, 2], @obj.find_all(Numeric))
+    assert_equal([2, 3, 2], @obj.find_all(3, 2))
   end
 
   def test_reject

@@ -320,6 +320,7 @@ find_all_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
     for (j=0; j<RARRAY_LEN(ary); j++) {
 	if (RTEST(rb_funcall(RARRAY_AREF(ary, j), id_eqq, 1, i))) {
 	    rb_ary_push(memo->u2.value, i);
+	    break;
 	}
     }
     return Qnil;
@@ -337,14 +338,23 @@ enum_size(VALUE self, VALUE args, VALUE eobj)
  *  call-seq:
  *     enum.find_all { |obj| block } -> array
  *     enum.select   { |obj| block } -> array
+ *     enum.find_all(selector, ...)  -> array
+ *     enum.select(selector, ...)    -> array
  *     enum.find_all                 -> an_enumerator
  *     enum.select                   -> an_enumerator
  *
- *  Returns an array containing all elements of +enum+
- *  for which the given +block+ returns a true value.
+ *  If a list of selectors is given, returns an array containing all elements
+ *  of +enum+ for which <code>selector === enum</code> for one of the
+ *  selectors.
+ *
+ *  If no arguments are given, returns an array containing all elements of
+ *  +enum+ for which the given +block+ returns a true value.
  *
  *  If no block is given, an Enumerator is returned instead.
  *
+ *
+ *     ("aaa".."zzz").select(/ru[a-e]/, /[ie]rb/)
+ *       #=> ["erb", "irb", "rua", "rub", "ruc", "rud", "rue"]
  *
  *     (1..10).find_all { |i|  i % 3 == 0 }   #=> [3, 6, 9]
  *

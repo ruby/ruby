@@ -2777,12 +2777,20 @@ rb_ary_values_at(int argc, VALUE *argv, VALUE ary)
 /*
  *  call-seq:
  *     ary.select { |item| block } -> new_ary
+ *     ary.select(selector, ...)   -> new_ary
  *     ary.select                  -> Enumerator
  *
- *  Returns a new array containing all elements of +ary+
- *  for which the given +block+ returns a true value.
+ *  If a list of selectors is given, returns an array containing all elements
+ *  of +ary+ for which <code>selector === ary</code> for one of the selectors.
+ *
+ *  If no arguments are given, returns a new array containing all elements of
+ *  +ary+ for which the given +block+ returns a true value.
  *
  *  If no block is given, an Enumerator is returned instead.
+ *
+ *     %w{ foo bar baz quux }.select(/ba/, /f/)  #=> ["foo", "bar", "baz"]
+ *
+ *     [1, "two", 3.14, {}, :five].select(Numeric, Enumerable)  #=> [1, 3.14, {}]
  *
  *     [1,2,3,4,5].select { |num|  num.even?  }   #=> [2, 4]
  *
@@ -2793,18 +2801,34 @@ rb_ary_values_at(int argc, VALUE *argv, VALUE ary)
  */
 
 static VALUE
-rb_ary_select(VALUE ary)
+rb_ary_select(int argc, VALUE *argv, VALUE ary)
 {
     VALUE result;
-    long i;
+    long i, j;
 
-    RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
-    result = rb_ary_new2(RARRAY_LEN(ary));
-    for (i = 0; i < RARRAY_LEN(ary); i++) {
-	if (RTEST(rb_yield(RARRAY_AREF(ary, i)))) {
-	    rb_ary_push(result, rb_ary_elt(ary, i));
+    if (argc == 0) {
+	RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
+	result = rb_ary_new2(RARRAY_LEN(ary));
+	for (i = 0; i < RARRAY_LEN(ary); i++) {
+	    if (RTEST(rb_yield(RARRAY_AREF(ary, i)))) {
+		rb_ary_push(result, rb_ary_elt(ary, i));
+	    }
+	}
+    } else {
+	if (rb_block_given_p())
+	    rb_warn("given block not used");
+
+	result = rb_ary_new2(RARRAY_LEN(ary));
+	for (i = 0; i < RARRAY_LEN(ary); i++) {
+	    for (j = 0; j < argc; j++) {
+		if (RTEST(rb_funcall(argv[j], idEqq, 1, RARRAY_AREF(ary, i)))) {
+		    rb_ary_push(result, rb_ary_elt(ary, i));
+		    break;
+		}
+	    }
 	}
     }
+
     return result;
 }
 
@@ -5666,7 +5690,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "collect!", rb_ary_collect_bang, 0);
     rb_define_method(rb_cArray, "map", rb_ary_collect, 0);
     rb_define_method(rb_cArray, "map!", rb_ary_collect_bang, 0);
-    rb_define_method(rb_cArray, "select", rb_ary_select, 0);
+    rb_define_method(rb_cArray, "select", rb_ary_select, -1);
     rb_define_method(rb_cArray, "select!", rb_ary_select_bang, 0);
     rb_define_method(rb_cArray, "keep_if", rb_ary_keep_if, 0);
     rb_define_method(rb_cArray, "values_at", rb_ary_values_at, -1);
