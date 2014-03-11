@@ -1416,13 +1416,16 @@ void ruby_init() ::
 
   Rubyインタプリタの初期化を行なう．
 
-void ruby_options(int argc, char **argv) ::
+void *ruby_options(int argc, char **argv) ::
 
-  Rubyインタプリタのコマンドライン引数の処理を行なう．
+  Rubyインタプリタのコマンドライン引数の処理を行ない，
+  Rubyのソースコードをコンパイルする．
+  コンパイルされたソースへのポインタ，もしくは特殊値を返す.
 
-void ruby_run() ::
+int ruby_run_node(void *n) ::
 
-  Rubyインタプリタを実行する．
+  コンパイルされたコードを実行する．
+  実行に成功した場合はEXIT_SUCCESSを，エラーが起こったときはそれ以外を返す．
 
 void ruby_script(char *name) ::
 

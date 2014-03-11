@@ -1,3 +1,9 @@
+Tue Mar 11 10:55:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* README.EXT{,.ja} (Appendix B): update contents of `ruby_options`
+	  and replace `ruby_run` with `ruby_run_node`.  based on the patch
+	  by Kaneko Yuichiro at [ruby-dev:48030] [Bug #9619].
+
 Tue Mar 11 06:54:00 2014  Scott Francis  <scott.francis@shopify.com>
 
 	* ext/objspace/objspace_dump.c: Check fptr before trying to dump RFILE

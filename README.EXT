@@ -1405,13 +1405,18 @@ void ruby_init() ::
 
   Initializes the interpreter.
 
-void ruby_options(int argc, char **argv) ::
+void *ruby_options(int argc, char **argv) ::
 
   Process command line arguments for the interpreter.
+  And compiles the Ruby source to execute.
+  It returns an opaque pointer to the compiled source
+  or an internal special value.
 
-void ruby_run() ::
+int ruby_run_node(void *n) ::
 
-  Starts execution of the interpreter.
+  Runs the given compiled source and exits this process.
+  It returns EXIT_SUCCESS if successfully runs the source.
+  Otherwise, it returns other value.
 
 void ruby_script(char *name) ::
 
