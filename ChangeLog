@@ -1,3 +1,10 @@
+Wed Mar 12 07:26:05 2014  Eric Wong  <e@80x24.org>
+
+	* insns.def (opt_regexpmatch2): respect redefined match op
+	  Thanks to Sam Rawlins for the fix.
+	* test/ruby/test_string.rb: test based on Tsuyoshi Sawada's report
+	  [Bug #9581]
+
 Tue Mar 11 22:31:25 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* ext/.document: add objspace/objspace_dump.c to document file.

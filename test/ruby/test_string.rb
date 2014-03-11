@@ -2219,6 +2219,19 @@ class TestString < Test::Unit::TestCase
       assert_equal("foo", "" =~ //)
     RUBY
   end
+
+  class Bug9581 < String
+    def =~ re; :foo end
+  end
+
+  def test_regexp_match_subclass
+    s = Bug9581.new("abc")
+    r = /abc/
+    assert_equal(:foo, s =~ r)
+    assert_equal(:foo, s.send(:=~, r))
+    assert_equal(:foo, s.send(:=~, /abc/))
+    assert_equal(:foo, s =~ /abc/, "should not use optimized instruction")
+  end
 end
 
 class TestString2 < TestString
