@@ -1208,6 +1208,8 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_exception_in_rehash
+    return unless @cls == Hash
+
     bug9187 = '[ruby-core:58728] [Bug #9187]'
 
     prepare = <<-EOS
@@ -1222,10 +1224,10 @@ class TestHash < Test::Unit::TestCase
         return 0
       end
     end
+    h = {Foo.new => true}
     EOS
 
     code = <<-EOS
-    h = {Foo.new => true}
     10_0000.times do
       h.rehash rescue nil
     end
