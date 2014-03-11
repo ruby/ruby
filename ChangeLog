@@ -1,3 +1,7 @@
+Tue Mar 11 22:31:25 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* ext/.document: add objspace/objspace_dump.c to document file.
+
 Tue Mar 11 22:22:38 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* test/objspace/test_objspace.rb (TestObjSpace#test_dump_uninitialized_file):

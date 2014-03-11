@@ -43,6 +43,7 @@ mathn/rational/rational.c
 nkf/lib
 nkf/nkf.c
 objspace/objspace.c
+objspace/objspace_dump.c
 objspace/object_tracing.c
 openssl/lib
 openssl/ossl.c
