@@ -1,3 +1,8 @@
+Tue Mar 11 22:22:38 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* test/objspace/test_objspace.rb (TestObjSpace#test_dump_uninitialized_file):
+	  remove dependency on json library.
+
 Tue Mar 11 10:55:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* README.EXT{,.ja} (Appendix B): update contents of `ruby_options`

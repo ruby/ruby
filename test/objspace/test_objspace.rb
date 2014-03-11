@@ -268,13 +268,12 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_dump_uninitialized_file
-    assert_in_out_err(%[-robjspace], <<-RUBY) do |output, error|
+    assert_in_out_err(%[-robjspace], <<-RUBY) do |(output), (error)|
       puts ObjectSpace.dump(File.allocate)
     RUBY
-      assert_equal [], error
-      json = JSON.load(output.join)
-      assert_equal "FILE", json["type"]
-      assert_nil json["fd"]
+      assert_nil error
+      assert_match /"type":"FILE"/, output
+      assert_not_match /"fd":/, output
     end
   end
 end
