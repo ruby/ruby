@@ -2825,6 +2825,10 @@ if test "x$OPT_DIR" != x; then
     LDFLAGS_OPTDIR="$val"
 fi
 
+AS_CASE(["$target_os"],
+[freebsd*], [
+    AC_CHECK_LIB([procstat], [procstat_open_sysctl])
+    fi])
 AS_CASE(["$target_cpu-$target_os"],
 [*-darwin*], [
     AC_CHECK_HEADERS([execinfo.h])
