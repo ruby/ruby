@@ -406,7 +406,8 @@ eom
         cmd = [
           'END {STDERR.puts '"#{token_dump}"'"FINAL=#{Memory::Status.new}"}',
           prepare,
-          'STDERR.puts('"#{token_dump}"'"START=#{$initial_size = Memory::Status.new}")',
+          'STDERR.puts('"#{token_dump}"'"START=#{$initial_status = Memory::Status.new}")',
+          '$initial_size = $initial_status.size',
           code,
           'GC.start',
         ].join("\n")
