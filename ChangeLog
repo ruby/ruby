@@ -94,12 +94,6 @@ Sat Mar  8 13:30:39 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  expanding the buffer when ERANGE is returned.
 	  [ruby-core:61325] [Bug #9600]
 
-Sat Mar  8 07:35:40 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* enum.c (find_i): yield multiple values instead of a packed
-	  array, so that lambda block can work.  with tests by Alex
-	  Rothenberg.  [ruby-core:61340] [Bug #9605]
-
 Fri Mar  7 19:29:13 2014  Eric Wong  <e@80x24.org>
 
 	* vm_eval.c (vm_call0_body): use RARRAY_CONST_PTR
