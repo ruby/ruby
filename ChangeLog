@@ -1,4 +1,8 @@
-Wed Mar 12 11:18:40 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Mar 12 11:19:03 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_callee_setup_arg): disable fastpath if splat
+	  argument, since argc may differ for each calls.
+	  [ruby-core:61422] [Bug #9622]
 
 	* vm_insnhelper.c (vm_callee_setup_arg): turn a macro into an
 	  inline function.

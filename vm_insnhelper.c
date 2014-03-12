@@ -1210,7 +1210,9 @@ vm_callee_setup_arg(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t *iseq,
 			(UNLIKELY(ci->flag & VM_CALL_TAILCALL) ?
 			 vm_call_iseq_setup_tailcall :
 			 vm_call_iseq_setup_normal),
-			!is_lambda && !(ci->me->flag & NOEX_PROTECTED));
+			(!is_lambda &&
+			 !(ci->flag & VM_CALL_ARGS_SPLAT) && /* argc may differ for each calls */
+			 !(ci->me->flag & NOEX_PROTECTED)));
     }
     else {
 	ci->aux.opt_pc = vm_callee_setup_arg_complex(th, ci, iseq, argv);
