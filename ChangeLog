@@ -1,3 +1,8 @@
+Wed Mar 12 11:18:40 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_callee_setup_arg): turn a macro into an
+	  inline function.
+
 Wed Mar 12 07:26:05 2014  Eric Wong  <e@80x24.org>
 
 	* insns.def (opt_regexpmatch2): respect redefined match op
