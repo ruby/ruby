@@ -1177,25 +1177,25 @@ class_instance_method_list(int argc, VALUE *argv, VALUE mod, int obj, int (*func
  *
  *  Returns an array containing the names of the public and protected instance
  *  methods in the receiver. For a module, these are the public and protected methods;
- *  for a class, they are the instance (not singleton) methods. With no
- *  argument, or with an argument that is <code>false</code>, the
- *  instance methods in <i>mod</i> are returned, otherwise the methods
- *  in <i>mod</i> and <i>mod</i>'s superclasses are returned.
+ *  for a class, they are the instance (not singleton) methods. If the optional
+ *  parameter is <code>false</code>, the methods of any ancestors are not included.
  *
  *     module A
  *       def method1()  end
  *     end
  *     class B
+ *       include A
  *       def method2()  end
  *     end
  *     class C < B
  *       def method3()  end
  *     end
  *
- *     A.instance_methods                #=> [:method1]
- *     B.instance_methods(false)         #=> [:method2]
- *     C.instance_methods(false)         #=> [:method3]
- *     C.instance_methods(true).length   #=> 43
+ *     A.instance_methods(false)                   #=> [:method1]
+ *     B.instance_methods(false)                   #=> [:method2]
+ *     B.instance_methods(true).include?(:method1) #=> true
+ *     C.instance_methods(false)                   #=> [:method3]
+ *     C.instance_methods.include?(:method2)       #=> true
  */
 
 VALUE
