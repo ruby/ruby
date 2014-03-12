@@ -1209,8 +1209,8 @@ rb_class_instance_methods(int argc, VALUE *argv, VALUE mod)
  *     mod.protected_instance_methods(include_super=true)   -> array
  *
  *  Returns a list of the protected instance methods defined in
- *  <i>mod</i>. If the optional parameter is not <code>false</code>, the
- *  methods of any ancestors are included.
+ *  <i>mod</i>. If the optional parameter is <code>false</code>, the
+ *  methods of any ancestors are not included.
  */
 
 VALUE
@@ -1224,8 +1224,8 @@ rb_class_protected_instance_methods(int argc, VALUE *argv, VALUE mod)
  *     mod.private_instance_methods(include_super=true)    -> array
  *
  *  Returns a list of the private instance methods defined in
- *  <i>mod</i>. If the optional parameter is not <code>false</code>, the
- *  methods of any ancestors are included.
+ *  <i>mod</i>. If the optional parameter is <code>false</code>, the
+ *  methods of any ancestors are not included.
  *
  *     module Mod
  *       def method1()  end
@@ -1247,8 +1247,8 @@ rb_class_private_instance_methods(int argc, VALUE *argv, VALUE mod)
  *     mod.public_instance_methods(include_super=true)   -> array
  *
  *  Returns a list of the public instance methods defined in <i>mod</i>.
- *  If the optional parameter is not <code>false</code>, the methods of
- *  any ancestors are included.
+ *  If the optional parameter is <code>false</code>, the methods of
+ *  any ancestors are not included.
  */
 
 VALUE
@@ -1264,8 +1264,8 @@ rb_class_public_instance_methods(int argc, VALUE *argv, VALUE mod)
  *  Returns a list of the names of public and protected methods of
  *  <i>obj</i>. This will include all the methods accessible in
  *  <i>obj</i>'s ancestors.
- *  If the <i>regular</i> parameter is set to <code>false</code>,
- *  Returns an array of obj's public and protected singleton methods,
+ *  If the optional parameter is <code>false</code>, it
+ *  returns an array of <i>obj<i>'s public and protected singleton methods,
  *  the array will not include methods in modules included in <i>obj</i>.
  *
  *     class Klass
@@ -1276,7 +1276,7 @@ rb_class_public_instance_methods(int argc, VALUE *argv, VALUE mod)
  *     k.methods[0..9]    #=> [:klass_method, :nil?, :===,
  *                        #    :==~, :!, :eql?
  *                        #    :hash, :<=>, :class, :singleton_class]
- *     k.methods.length   #=> 57
+ *     k.methods.length   #=> 56
  *
  *     k.methods(false)   #=> []
  *     def k.singleton_method; end
