@@ -190,7 +190,7 @@ module Fiddle
     end if /freebsd/=~ RUBY_PLATFORM
 
     def test_no_memory_leak
-      assert_no_memory_leak(%w[-W0 -rfiddle.so], '', '100_000.times {Fiddle::Handle.allocate}; GC.start', limit: 1.2, rss: true)
+      assert_no_memory_leak(%w[-W0 -rfiddle.so], '', '100_000.times {Fiddle::Handle.allocate}; GC.start', rss: true)
     end
   end
 end if defined?(Fiddle)

@@ -221,6 +221,6 @@ module DL
   end
 
   def test_no_memory_leak
-    assert_no_memory_leak(%w[-W0 -rdl.so], '', '100_000.times {DL::CPtr.allocate}', limit: 1.2, rss: true)
+    assert_no_memory_leak(%w[-W0 -rdl.so], '', '100_000.times {DL::CPtr.allocate}', rss: true)
   end
 end
