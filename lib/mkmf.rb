@@ -702,7 +702,7 @@ int main() {printf("%"PRI_CONFTEST_PREFIX"#{neg ? 'd' : 'u'}\\n", conftest_const
       begin
         if try_link0(src, opt, &b)
           xpopen("./#{CONFTEST}") do |f|
-            return Integer((v=f.gets) ? v : 0)
+            return Integer(v=f.gets || 0)
           end
         end
       ensure
