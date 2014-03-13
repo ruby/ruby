@@ -1,3 +1,9 @@
+Thu Mar 13 23:51:02 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/-test-/win32/dln/libdlntest.c (dlntest_ordinal): no need to
+	  specify export in the source file because .def file do it.
+	  get rid of warning on linking.
+
 Wed Mar 12 11:19:03 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_callee_setup_arg): disable fastpath if splat
