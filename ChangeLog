@@ -1,3 +1,15 @@
+Fri Mar 14 01:18:24 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (invoke_block_from_c): add splattable argument.
+
+	* vm.c (vm_invoke_proc): disallow to splat when directly invoked.
+
+	* vm_insnhelper.c (vm_callee_setup_arg_complex, vm_callee_setup_arg):
+	  relax arity check of yielded lambda.  [ruby-core:61340] [Bug #9605]
+
+	* test/ruby/test_yield.rb (TestRubyYieldGen#emu_bind_params): no
+	  longer raise ArgumentError when splatting to lambda.
+
 Thu Mar 13 23:51:02 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/-test-/win32/dln/libdlntest.c (dlntest_ordinal): no need to

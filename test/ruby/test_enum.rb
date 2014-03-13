@@ -56,6 +56,11 @@ class TestEnumerable < Test::Unit::TestCase
     bug5801 = '[ruby-dev:45041]'
     @empty.grep(//)
     assert_nothing_raised(bug5801) {100.times {@empty.block.call}}
+
+    a = []
+    lambda = ->(x, i) {a << [x, i]}
+    @obj.each_with_index.grep(proc{|x,i|x==2}, &lambda)
+    assert_equal([[2, 1], [2, 4]], a)
   end
 
   def test_count
@@ -81,6 +86,8 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(2, @obj.find {|x| x % 2 == 0 })
     assert_equal(nil, @obj.find {|x| false })
     assert_equal(:foo, @obj.find(proc { :foo }) {|x| false })
+    cond = ->(x, i) { x % 2 == 0 }
+    assert_equal([2, 1], @obj.each_with_index.find(&cond))
   end
 
   def test_find_index
@@ -93,10 +100,14 @@ class TestEnumerable < Test::Unit::TestCase
 
   def test_find_all
     assert_equal([1, 3, 1], @obj.find_all {|x| x % 2 == 1 })
+    cond = ->(x, i) { x % 2 == 1 }
+    assert_equal([[1, 0], [3, 2], [1, 3]], @obj.each_with_index.find_all(&cond))
   end
 
   def test_reject
     assert_equal([2, 3, 2], @obj.reject {|x| x < 2 })
+    cond = ->(x, i) {x < 2}
+    assert_equal([[2, 1], [3, 2], [2, 4]], @obj.each_with_index.reject(&cond))
   end
 
   def test_to_a
@@ -144,11 +155,17 @@ class TestEnumerable < Test::Unit::TestCase
 
   def test_partition
     assert_equal([[1, 3, 1], [2, 2]], @obj.partition {|x| x % 2 == 1 })
+    cond = ->(x, i) { x % 2 == 1 }
+    assert_equal([[[1, 0], [3, 2], [1, 3]], [[2, 1], [2, 4]]], @obj.each_with_index.partition(&cond))
   end
 
   def test_group_by
     h = { 1 => [1, 1], 2 => [2, 2], 3 => [3] }
     assert_equal(h, @obj.group_by {|x| x })
+
+    h = {1=>[[1, 0], [1, 3]], 2=>[[2, 1], [2, 4]], 3=>[[3, 2]]}
+    cond = ->(x, i) { x }
+    assert_equal(h, @obj.each_with_index.group_by(&cond))
   end
 
   def test_first
@@ -164,6 +181,9 @@ class TestEnumerable < Test::Unit::TestCase
   def test_sort_by
     assert_equal([3, 2, 2, 1, 1], @obj.sort_by {|x| -x })
     assert_equal((1..300).to_a.reverse, (1..300).sort_by {|x| -x })
+
+    cond = ->(x, i) { [-x, i] }
+    assert_equal([[3, 2], [2, 1], [2, 4], [1, 0], [1, 3]], @obj.each_with_index.sort_by(&cond))
   end
 
   def test_all
@@ -205,6 +225,8 @@ class TestEnumerable < Test::Unit::TestCase
   def test_min
     assert_equal(1, @obj.min)
     assert_equal(3, @obj.min {|a,b| b <=> a })
+    cond = ->((a, ia), (b, ib)) { (b <=> a).nonzero? or ia <=> ib }
+    assert_equal([3, 2], @obj.each_with_index.min(&cond))
     ary = %w(albatross dog horse)
     assert_equal("albatross", ary.min)
     assert_equal("dog", ary.min {|a,b| a.length <=> b.length })
@@ -217,6 +239,8 @@ class TestEnumerable < Test::Unit::TestCase
   def test_max
     assert_equal(3, @obj.max)
     assert_equal(1, @obj.max {|a,b| b <=> a })
+    cond = ->((a, ia), (b, ib)) { (b <=> a).nonzero? or ia <=> ib }
+    assert_equal([1, 3], @obj.each_with_index.max(&cond))
     ary = %w(albatross dog horse)
     assert_equal("horse", ary.max)
     assert_equal("albatross", ary.max {|a,b| a.length <=> b.length })
@@ -239,6 +263,8 @@ class TestEnumerable < Test::Unit::TestCase
 
   def test_min_by
     assert_equal(3, @obj.min_by {|x| -x })
+    cond = ->(x, i) { -x }
+    assert_equal([3, 2], @obj.each_with_index.min_by(&cond))
     a = %w(albatross dog horse)
     assert_equal("dog", a.min_by {|x| x.length })
     assert_equal(3, [2,3,1].min_by {|x| -x })
@@ -247,6 +273,8 @@ class TestEnumerable < Test::Unit::TestCase
 
   def test_max_by
     assert_equal(1, @obj.max_by {|x| -x })
+    cond = ->(x, i) { -x }
+    assert_equal([1, 0], @obj.each_with_index.max_by(&cond))
     a = %w(albatross dog horse)
     assert_equal("albatross", a.max_by {|x| x.length })
     assert_equal(1, [2,3,1].max_by {|x| -x })
@@ -255,6 +283,8 @@ class TestEnumerable < Test::Unit::TestCase
 
   def test_minmax_by
     assert_equal([3, 1], @obj.minmax_by {|x| -x })
+    cond = ->(x, i) { -x }
+    assert_equal([[3, 2], [1, 0]], @obj.each_with_index.minmax_by(&cond))
     a = %w(albatross dog horse)
     assert_equal(["dog", "albatross"], a.minmax_by {|x| x.length })
     assert_equal([3, 1], [2,3,1].minmax_by {|x| -x })
@@ -302,6 +332,10 @@ class TestEnumerable < Test::Unit::TestCase
   def test_each_entry
     assert_equal([1, 2, 3], [1, 2, 3].each_entry.to_a)
     assert_equal([1, [1, 2]], Foo.new.each_entry.to_a)
+    a = []
+    cond = ->(x, i) { a << x }
+    @obj.each_with_index.each_entry(&cond)
+    assert_equal([1, 2, 3, 1, 2], a)
   end
 
   def test_zip
@@ -309,6 +343,11 @@ class TestEnumerable < Test::Unit::TestCase
     a = []
     @obj.zip([:a, :b, :c]) {|x,y| a << [x, y] }
     assert_equal([[1,:a],[2,:b],[3,:c],[1,nil],[2,nil]], a)
+
+    a = []
+    cond = ->((x, i), y) { a << [x, y, i] }
+    @obj.each_with_index.zip([:a, :b, :c], &cond)
+    assert_equal([[1,:a,0],[2,:b,1],[3,:c,2],[1,nil,3],[2,nil,4]], a)
 
     a = []
     @obj.zip({a: "A", b: "B", c: "C"}) {|x,y| a << [x, y] }
@@ -329,6 +368,8 @@ class TestEnumerable < Test::Unit::TestCase
 
   def test_take_while
     assert_equal([1,2], @obj.take_while {|x| x <= 2})
+    cond = ->(x, i) {x <= 2}
+    assert_equal([[1, 0], [2, 1]], @obj.each_with_index.take_while(&cond))
 
     bug5801 = '[ruby-dev:45040]'
     @empty.take_while {true}
@@ -341,10 +382,19 @@ class TestEnumerable < Test::Unit::TestCase
 
   def test_drop_while
     assert_equal([3,1,2], @obj.drop_while {|x| x <= 2})
+    cond = ->(x, i) {x <= 2}
+    assert_equal([[3, 2], [1, 3], [2, 4]], @obj.each_with_index.drop_while(&cond))
   end
 
   def test_cycle
     assert_equal([1,2,3,1,2,1,2,3,1,2], @obj.cycle.take(10))
+    a = []
+    @obj.cycle(2) {|x| a << x}
+    assert_equal([1,2,3,1,2,1,2,3,1,2], a)
+    a = []
+    cond = ->(x, i) {a << x}
+    @obj.each_with_index.cycle(2, &cond)
+    assert_equal([1,2,3,1,2,1,2,3,1,2], a)
   end
 
   def test_callcc
@@ -459,4 +509,65 @@ class TestEnumerable < Test::Unit::TestCase
     assert_not_warn{ss.slice_before(/\A...\z/).to_a}
   end
 
+  def test_detect
+    @obj = ('a'..'z')
+    assert_equal('c', @obj.detect {|x| x == 'c' })
+
+    proc = Proc.new {|x| x == 'c' }
+    assert_equal('c', @obj.detect(&proc))
+
+    lambda = ->(x) { x == 'c' }
+    assert_equal('c', @obj.detect(&lambda))
+
+    assert_equal(['c',2], @obj.each_with_index.detect {|x, i| x == 'c' })
+
+    proc2 = Proc.new {|x, i| x == 'c' }
+    assert_equal(['c',2], @obj.each_with_index.detect(&proc2))
+
+    bug9605 = '[ruby-core:61340]'
+    lambda2 = ->(x, i) { x == 'c' }
+    assert_equal(['c',2], @obj.each_with_index.detect(&lambda2))
+  end
+
+  def test_select
+    @obj = ('a'..'z')
+    assert_equal(['c'], @obj.select {|x| x == 'c' })
+
+    proc = Proc.new {|x| x == 'c' }
+    assert_equal(['c'], @obj.select(&proc))
+
+    lambda = ->(x) { x == 'c' }
+    assert_equal(['c'], @obj.select(&lambda))
+
+    assert_equal([['c',2]], @obj.each_with_index.select {|x, i| x == 'c' })
+
+    proc2 = Proc.new {|x, i| x == 'c' }
+    assert_equal([['c',2]], @obj.each_with_index.select(&proc2))
+
+    bug9605 = '[ruby-core:61340]'
+    lambda2 = ->(x, i) { x == 'c' }
+    assert_equal([['c',2]], @obj.each_with_index.select(&lambda2))
+  end
+
+  def test_map
+    @obj = ('a'..'e')
+    assert_equal(['A', 'B', 'C', 'D', 'E'], @obj.map {|x| x.upcase })
+
+    proc = Proc.new {|x| x.upcase }
+    assert_equal(['A', 'B', 'C', 'D', 'E'], @obj.map(&proc))
+
+    lambda = ->(x) { x.upcase }
+    assert_equal(['A', 'B', 'C', 'D', 'E'], @obj.map(&lambda))
+
+    assert_equal([['A',0], ['B',1], ['C',2], ['D',3], ['E',4]],
+      @obj.each_with_index.map {|x, i| [x.upcase, i] })
+
+    proc2 = Proc.new {|x, i| [x.upcase, i] }
+    assert_equal([['A',0], ['B',1], ['C',2], ['D',3], ['E',4]],
+      @obj.each_with_index.map(&proc2))
+
+    lambda2 = ->(x, i) { [x.upcase, i] }
+    assert_equal([['A',0], ['B',1], ['C',2], ['D',3], ['E',4]],
+      @obj.each_with_index.map(&lambda2))
+  end
 end

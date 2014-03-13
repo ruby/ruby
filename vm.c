@@ -716,7 +716,7 @@ static inline VALUE
 invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
 		    VALUE self, int argc, const VALUE *argv,
 		    const rb_block_t *blockptr, const NODE *cref,
-		    VALUE defined_class)
+		    VALUE defined_class, int splattable)
 {
     if (SPECIAL_CONST_P(block->iseq))
 	return Qnil;
@@ -734,7 +734,7 @@ invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
 	}
 
 	opt_pc = vm_yield_setup_args(th, iseq, argc, cfp->sp, blockptr,
-				     type == VM_FRAME_MAGIC_LAMBDA);
+				     (type == VM_FRAME_MAGIC_LAMBDA) ? splattable+1 : 0);
 
 	vm_push_frame(th, iseq, type | VM_FRAME_FLAG_FINISH,
 		      self, defined_class,
@@ -772,7 +772,7 @@ vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const NODE *cre
 {
     const rb_block_t *blockptr = check_block(th);
     return invoke_block_from_c(th, blockptr, blockptr->self, argc, argv, 0, cref,
-			       blockptr->klass);
+			       blockptr->klass, 1);
 }
 
 static inline VALUE
@@ -780,7 +780,7 @@ vm_yield(rb_thread_t *th, int argc, const VALUE *argv)
 {
     const rb_block_t *blockptr = check_block(th);
     return invoke_block_from_c(th, blockptr, blockptr->self, argc, argv, 0, 0,
-			       blockptr->klass);
+			       blockptr->klass, 1);
 }
 
 static inline VALUE
@@ -788,7 +788,7 @@ vm_yield_with_block(rb_thread_t *th, int argc, const VALUE *argv, const rb_block
 {
     const rb_block_t *blockptr = check_block(th);
     return invoke_block_from_c(th, blockptr, blockptr->self, argc, argv, blockargptr, 0,
-			       blockptr->klass);
+			       blockptr->klass, 1);
 }
 
 static VALUE
@@ -805,7 +805,7 @@ vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self, VALUE defined_class
 	    th->safe_level = proc->safe_level;
 	}
 	val = invoke_block_from_c(th, &proc->block, self, argc, argv, blockptr, 0,
-				  defined_class);
+				  defined_class, 0);
     }
     TH_POP_TAG();
 

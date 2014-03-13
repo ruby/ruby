@@ -25,8 +25,13 @@ class TestLambdaParameters < Test::Unit::TestCase
   def test_lambda_as_iterator
     a = 0
     2.times(&->(_){ a += 1 })
-    assert_equal(a, 2)
+    assert_equal(2, a)
     assert_raise(ArgumentError) {1.times(&->(){ a += 1 })}
+    bug9605 = '[ruby-core:61468] [Bug #9605]'
+    assert_nothing_raised(ArgumentError, bug9605) {1.times(&->(n){ a += 1 })}
+    assert_equal(3, a, bug9605)
+    assert_nothing_raised(ArgumentError, bug9605) {a = [[1, 2]].map(&->(x, y) {x+y})}
+    assert_equal([3], a, bug9605)
   end
 
   def test_call_rest_args
@@ -58,6 +63,12 @@ class TestLambdaParameters < Test::Unit::TestCase
     b = nil
     assert_equal(1, ->(&b){ b.call }.call { 1 })
     assert_nil(b)
+  end
+
+  def test_call_block_from_lambda
+    bug9605 = '[ruby-core:61470] [Bug #9605]'
+    plus = ->(x,y) {x+y}
+    assert_raise(ArgumentError, bug9605) {proc(&plus).call [1,2]}
   end
 
   def foo
