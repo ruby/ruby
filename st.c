@@ -921,7 +921,6 @@ st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data
 	    last = &table->bins[bin_pos];
 	    for (; (tmp = *last) != 0; last = &tmp->next) {
 		if (ptr == tmp) {
-		    tmp = ptr->fore;
 		    *last = ptr->next;
 		    remove_entry(table, ptr);
 		    st_free_entry(ptr);
