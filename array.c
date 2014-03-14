@@ -3796,6 +3796,8 @@ rb_ary_eql(VALUE ary1, VALUE ary2)
  *
  *  Two arrays with the same content will have the same hash code (and will
  *  compare using #eql?).
+ *
+ *  See also Object#hash.
  */
 
 static VALUE

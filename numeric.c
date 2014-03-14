@@ -1107,6 +1107,8 @@ flo_eq(VALUE x, VALUE y)
  *   float.hash  ->  integer
  *
  * Returns a hash code for this float.
+ *
+ * See also Object#hash.
  */
 
 static VALUE

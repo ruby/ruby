@@ -1067,6 +1067,8 @@ rb_hash_proc(st_index_t hash, VALUE prc)
  *   prc.hash   ->  integer
  *
  * Returns a hash value corresponding to proc body.
+ *
+ * See also Object#hash.
  */
 
 static VALUE
@@ -1347,6 +1349,8 @@ method_eq(VALUE method, VALUE other)
  *    meth.hash   -> integer
  *
  * Returns a hash value corresponding to the method object.
+ *
+ * See also Object#hash.
  */
 
 static VALUE

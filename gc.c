@@ -2375,6 +2375,8 @@ id2ref(VALUE obj, VALUE objid)
  *
  *  Any hash value that exceeds the capacity of a Fixnum will be truncated
  *  before being used.
+ *
+ *  See also Object#hash.
  */
 
 VALUE

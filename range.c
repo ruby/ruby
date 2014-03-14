@@ -250,6 +250,8 @@ range_eql(VALUE range, VALUE obj)
  * Compute a hash-code for this range. Two ranges with equal
  * begin and end points (using <code>eql?</code>), and the same
  * #exclude_end? value will generate the same hash-code.
+ *
+ * See also Object#hash.
  */
 
 static VALUE

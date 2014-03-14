@@ -2010,6 +2010,8 @@ hash_i(VALUE key, VALUE val, VALUE arg)
  *
  *  Compute a hash-code for this hash. Two hashes with the same content
  *  will have the same hash code (and will compare using <code>eql?</code>).
+ *
+ *  See also Object#hash.
  */
 
 static VALUE

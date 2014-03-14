@@ -2583,6 +2583,8 @@ static st_index_t reg_hash(VALUE re);
  *   rxp.hash   -> fixnum
  *
  * Produce a hash based on the text and options of this regular expression.
+ *
+ * See also Object#hash.
  */
 
 static VALUE
@@ -2641,6 +2643,8 @@ rb_reg_equal(VALUE re1, VALUE re2)
  *
  * Produce a hash based on the target string, regexp and matched
  * positions of this matchdata.
+ *
+ * See also Object#hash.
  */
 
 static VALUE

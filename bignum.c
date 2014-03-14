@@ -6782,6 +6782,8 @@ rb_big_aref(VALUE x, VALUE y)
  *   big.hash   -> fixnum
  *
  * Compute a hash based on the value of _big_.
+ *
+ * See also Object#hash.
  */
 
 static VALUE

@@ -3405,6 +3405,8 @@ time_utc_p(VALUE time)
  *   time.hash   -> fixnum
  *
  * Returns a hash code for this Time object.
+ *
+ * See also Object#hash.
  */
 
 static VALUE

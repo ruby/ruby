@@ -949,6 +949,8 @@ rb_struct_equal(VALUE s, VALUE s2)
  *   struct.hash   -> fixnum
  *
  * Returns a hash value based on this struct's contents (see Object#hash).
+ *
+ * See also Object#hash.
  */
 
 static VALUE
