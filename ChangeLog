@@ -1,3 +1,9 @@
+Fri Mar 14 12:07:46 2014  Zachary Scott  <e@zzak.io>
+
+	* doc/syntax/literals.rdoc: [DOC] Single quote strings allows escape
+	  of backslash as well, patch by @idupree [Fixes GH-553]
+	  https://github.com/ruby/ruby/pull/553
+
 Fri Mar 14 01:18:24 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (invoke_block_from_c): add splattable argument.
