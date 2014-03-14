@@ -31,13 +31,6 @@ static ID id_cmp, id_succ, id_beg, id_end, id_excl, id_integer_p, id_div;
 #define RBOOL(v) ((v) ? Qtrue : Qfalse)
 
 #define EXCL(r) RTEST(RANGE_EXCL(r))
-static inline VALUE
-SET_EXCL(VALUE r, VALUE v)
-{
-    v = RBOOL(RTEST(v));
-    RANGE_SET_EXCL(r, v);
-    return v;
-}
 
 static VALUE
 range_failed(void)
