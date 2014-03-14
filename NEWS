@@ -32,6 +32,12 @@ with all sufficient information, see the ChangeLog file.
     * When flushing file IO, you cannot assume that the metadata of the file
       is updated immediately.  On some platforms (especially Windows), it is
       delayed until the filesystem load is decreased.
+* Proc
+  * incompatible changes:
+    * ArgumentError is no longer raised when lambda Proc is passed as a
+      block, and the number of yielded arguments does not match the formal
+      arguments of the lambda, if just an array is yielded and its length
+      matches.
 
 === Stdlib updates (outstanding ones only)
 
