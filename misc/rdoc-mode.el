@@ -32,15 +32,49 @@
   (run-hooks 'rdoc-mode-hook)
   )
 
-(defun rdoc-fill-paragraph (&rest args)
+(defun rdoc-fill-paragraph (&optional justify region)
   "Fills paragraph, except for cited region"
   (interactive (progn
 		 (barf-if-buffer-read-only)
 		 (list (if current-prefix-arg 'full))))
   (save-excursion
     (beginning-of-line)
-    (unless (looking-at "^ +")
-      (apply 'fill-paragraph args))))
+    (save-restriction
+      (let ((pos (point)) beg end indent hanging)
+	(cond
+	 ((looking-at "^ +\\(\\*\\s *\\)")
+	  (setq indent (- (match-end 0) (match-beginning 0))
+		hanging (- (match-end 1) (match-beginning 1))))
+	 ((looking-at "^ +")
+	  (setq indent (- (match-end 0) (match-beginning 0)))
+	  (when (and (re-search-backward "^[^ ]\\|^\\( *\\(\\* *\\)\\)" nil t)
+		     (match-beginning 1)
+		     (= indent (- (match-end 1) (match-beginning 1))))
+	    (setq hanging (- (match-end 2) (match-beginning 2)))
+	    (setq beg (match-beginning 1))))
+	 ((setq beg t)))
+	(when beg
+	  (when indent
+	    (goto-char pos)
+	    (while (progn (beginning-of-line 2)
+			  (and (looking-at "^\\( +\\)\\S ")
+			       (= indent (- (match-end 1) (match-beginning 1))))))
+	    (setq end (point))
+	    (when (and beg (not region))
+	      (setq region (list beg end))
+	      (narrow-to-region beg end)
+	      ))
+	  (goto-char pos)
+	  (fill-paragraph justify region)
+	  (when (and indent
+		     (or (goto-char beg) t)
+		     (or (beginning-of-line 2) t)
+		     (looking-at "^\\( +\\)")
+		     (= (- indent hanging) (- (match-end 0) (match-beginning 0))))
+	    (insert-char ?\s hanging)
+	    (beginning-of-line)
+	    (narrow-to-region (point) end)
+	    (fill-paragraph justify (list (point) end))))))))
 
 (defun rdoc-setup-keys ()
   (interactive)
