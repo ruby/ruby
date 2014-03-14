@@ -1,3 +1,25 @@
+Fri Mar 14 14:58:38 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c (fill_lines): fetch symbol names from ELF binary's
+	  symbol table if it is built with cc -g and not stripped.
+	  Now ruby can show static symbols on Linux though glibc's
+	  backtrace_symbols(3) don't show them.
+
+	* addr2line.c (rb_dump_backtrace_with_lines): use dladdr(3) to
+	  detect what object file declares the symbol because
+	  dl_iterate_phdr can't detect the main executable file
+	  and codes on the stack.
+	  NOTE: signal trampolines sometimes on the user stack. (FreeBSD)
+
+	* addr2line.c (rb_dump_backtrace_with_lines): stop showing
+	  backtrace if the function's name is main.
+	  NOTE: FreeBSD's backtrace (libexecinfo) shows _start and
+	  an additional address. Why it doesn't remove them on dladdr phase
+	  is, dladdr may fail to detect the main function but detect
+	  as _start function. Therefore it must be after scanning
+	  the symbol table and getting correct name.
+
+
 Fri Mar 14 12:07:46 2014  Zachary Scott  <e@zzak.io>
 
 	* doc/syntax/literals.rdoc: [DOC] Single quote strings allows escape

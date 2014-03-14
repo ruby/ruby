@@ -55,11 +55,9 @@ void *alloca();
 # endif	/* HAVE_ALLOCA_H */
 #endif /* __GNUC__ */
 
-#ifdef HAVE_DL_ITERATE_PHDR
-# ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-# endif
+#ifdef HAVE_DLADDR
 # include <link.h>
+# include <dlfcn.h>
 #endif
 
 #define DW_LNS_copy                     0x01
@@ -88,6 +86,13 @@ void *alloca();
 #  define ElfW(x) Elf32##_##x
 # endif
 #endif
+#ifndef ELF_ST_TYPE
+# if SIZEOF_VOIDP == 8
+#  define ELF_ST_TYPE ELF64_ST_TYPE
+# else
+#  define ELF_ST_TYPE ELF32_ST_TYPE
+# endif
+#endif
 #ifndef PATH_MAX
 #define PATH_MAX 4096
 #endif
@@ -97,16 +102,23 @@ int kprintf(const char *fmt, ...);
 typedef struct {
     const char *dirname;
     const char *filename;
+    const char *path; /* object path */
     int line;
 
     int fd;
     void *mapped;
     size_t mapped_size;
-    unsigned long base_addr;
+    int fd2;
+    void *mapped2;
+    size_t mapped_size2;
+    intptr_t base_addr;
+    intptr_t saddr;
+    const char *sname; /* function name */
 } line_info_t;
 
 /* Avoid consuming stack as this module may be used from signal handler */
 static char binary_filename[PATH_MAX];
+static intptr_t curobj_baseaddr;
 
 static unsigned long
 uleb128(char **p)
@@ -218,12 +230,13 @@ get_path_from_symbol(const char *symbol, const char **p, size_t *len)
 
 static void
 fill_line(int num_traces, void **traces,
-	  unsigned long addr, int file, int line,
+	  intptr_t addr, int file, int line,
 	  char *include_directories, char *filenames, line_info_t *lines)
 {
     int i;
+    addr += curobj_baseaddr;
     for (i = 0; i < num_traces; i++) {
-	unsigned long a = (unsigned long)traces[i] - lines[i].base_addr;
+	intptr_t a = (intptr_t)traces[i];
 	/* We assume one line code doesn't result >100 bytes of native code.
        We may want more reliable way eventually... */
 	if (addr < a && a < addr + 100) {
@@ -447,8 +460,13 @@ follow_debuglink(char *debuglink, int num_traces, void **traces, char **syms,
     strlcat(binary_filename, subdir, PATH_MAX);
     strlcat(binary_filename, debuglink, PATH_MAX);
 
-    munmap(current_line->mapped, current_line->mapped_size);
-    close(current_line->fd);
+    if (current_line->fd2) {
+	munmap(current_line->mapped2, current_line->mapped_size2);
+	close(current_line->fd2);
+    }
+    current_line->mapped2 = current_line->mapped;
+    current_line->mapped_size2 = current_line->mapped_size;
+    current_line->fd2 = current_line->fd;
     fill_lines(num_traces, traces, syms, 0, current_line, lines);
 }
 
@@ -457,7 +475,7 @@ static void
 fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
 	   line_info_t *current_line, line_info_t *lines)
 {
-    int i;
+    int i, j;
     char *shstr;
     char *section_name;
     ElfW(Ehdr) *ehdr;
@@ -466,6 +484,8 @@ fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
     int fd;
     off_t filesize;
     char *file;
+    ElfW(Shdr) *symtab_shdr = NULL;
+    ElfW(Shdr) *strtab_shdr = NULL;
 
     fd = open(binary_filename, O_RDONLY);
     if (fd < 0) {
@@ -509,36 +529,63 @@ fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
     current_line->mapped = file;
     current_line->mapped_size = (size_t)filesize;
 
-    for (i = 0; i < num_traces; i++) {
-	const char *path;
-	size_t len;
-	if (get_path_from_symbol(syms[i], &path, &len) &&
-		!strncmp(path, binary_filename, len)) {
-#if defined(HAVE_DLADDR) && defined(__pie__) && defined(__linux__)
-	    if (ehdr->e_type == ET_DYN && lines[i].base_addr == 0) {
-		Dl_info info;
-		if (dladdr(fill_lines, &info)) {
-		    lines[i].base_addr = (unsigned long)info.dli_fbase;
-		}
-	    }
-#endif
-	    lines[i].line = -1;
-	}
-    }
-
     shdr = (ElfW(Shdr) *)(file + ehdr->e_shoff);
 
     shstr_shdr = shdr + ehdr->e_shstrndx;
     shstr = file + shstr_shdr->sh_offset;
 
+    if (ehdr->e_type == ET_EXEC) {
+	/*
+	 * if object file type is ET_EXEC, base address must be 0
+	 */
+	intptr_t current_base_addr = current_line->base_addr;
+	for (i = 0; i < num_traces; i++) {
+	    if (current_base_addr == lines[i].base_addr) {
+		lines[i].base_addr = 0;
+	    }
+	}
+    }
+
+    /* j: ....xxx
+     * 1: debug_line
+     * 2: .symtab
+     * 4: .strtab
+     */
+    j = 0;
     for (i = 0; i < ehdr->e_shnum; i++) {
 	section_name = shstr + shdr[i].sh_name;
 	if (!strcmp(section_name, ".debug_line")) {
 	    debug_line_shdr = shdr + i;
-	    break;
+	    j |= 1;
 	} else if (!strcmp(section_name, ".gnu_debuglink")) {
 	    gnu_debuglink_shdr = shdr + i;
+	} else if (!strcmp(section_name, ".symtab")) {
+	    symtab_shdr = shdr + i;
+	    j |= 2;
+	} else if (!strcmp(section_name, ".strtab")) {
+	    strtab_shdr = shdr + i;
+	    j |= 4;
 	}
+	if (j == 7) break;
+    }
+
+    if (symtab_shdr && strtab_shdr) {
+	char *strtab = file + strtab_shdr->sh_offset;
+	ElfW(Sym) *symtab = (ElfW(Sym) *)(file + symtab_shdr->sh_offset);
+	int symtab_count = (int)(symtab_shdr->sh_size / sizeof(ElfW(Sym)));
+	for (j = 0; j < symtab_count; j++) {
+	    int type = ELF_ST_TYPE(symtab[j].st_info);
+	    if (type != STT_FUNC) continue;
+	    for (i = 0; i < num_traces; i++) {
+		ElfW(Sym) *sym = &symtab[j];
+		intptr_t saddr = (intptr_t)sym->st_value + lines[i].base_addr;
+		ptrdiff_t d = (intptr_t)traces[i] - saddr;
+		if (d < 0 || d > (ptrdiff_t)sym->st_size) continue;
+		lines[i].sname = strtab + sym->st_name;
+		lines[i].saddr = saddr;
+	    }
+	}
+
     }
 
     if (!debug_line_shdr) {
@@ -558,91 +605,96 @@ fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
 		     lines);
 }
 
-#ifdef HAVE_DL_ITERATE_PHDR
-
-typedef struct {
-    int num_traces;
-    char **syms;
-    line_info_t *lines;
-} fill_base_addr_state_t;
-
-static int
-fill_base_addr(struct dl_phdr_info *info, size_t size, void *data)
-{
-    int i;
-    fill_base_addr_state_t *st = (fill_base_addr_state_t *)data;
-    for (i = 0; i < st->num_traces; i++) {
-	const char *path;
-	size_t len;
-	size_t name_len = strlen(info->dlpi_name);
-
-	if (get_path_from_symbol(st->syms[i], &path, &len) &&
-		(len == name_len || (len > name_len && path[len-name_len-1] == '/')) &&
-		!strncmp(path+len-name_len, info->dlpi_name, name_len)) {
-	    st->lines[i].base_addr = info->dlpi_addr;
-	}
-    }
-    return 0;
-}
-
-#endif /* HAVE_DL_ITERATE_PHDR */
-
 void
-rb_dump_backtrace_with_lines(int num_traces, void **trace, char **syms)
+rb_dump_backtrace_with_lines(int num_traces, void **traces, char **syms)
 {
     int i;
     /* async-signal unsafe */
-    line_info_t *lines = (line_info_t *)calloc(num_traces,
-					       sizeof(line_info_t));
+    line_info_t *lines = (line_info_t *)calloc(num_traces, sizeof(line_info_t));
 
-    /* Note that line info of shared objects might not be shown
-       if we don't have dl_iterate_phdr */
-#ifdef HAVE_DL_ITERATE_PHDR
-    fill_base_addr_state_t fill_base_addr_state;
-
-    fill_base_addr_state.num_traces = num_traces;
-    fill_base_addr_state.syms = syms;
-    fill_base_addr_state.lines = lines;
-    /* maybe async-signal unsafe */
-    dl_iterate_phdr(fill_base_addr, &fill_base_addr_state);
-#endif /* HAVE_DL_ITERATE_PHDR */
-
+#ifdef HAVE_DLADDR
+    /* get object name in which the symbol is */
     for (i = 0; i < num_traces; i++) {
-	const char *path;
-	size_t len;
-	if (lines[i].line) {
-	    continue;
+	Dl_info info;
+	if (dladdr(traces[i], &info)) {
+	    lines[i].path = info.dli_fname;
+	    /* this may set base addr even if executable is not shared object file */
+	    lines[i].base_addr = (intptr_t)info.dli_fbase;
+	    lines[i].line = 0;
+	    if (info.dli_saddr) {
+		lines[i].sname = info.dli_sname;
+		lines[i].saddr = (intptr_t)info.dli_saddr;
+	    }
 	}
+    }
+#endif
 
-	if (!get_path_from_symbol(syms[i], &path, &len)) {
+    /* fill source lines by reading dwarf */
+    for (i = 0; i < num_traces; i++) {
+	const char *path = NULL;
+	size_t len;
+
+	if (lines[i].line > 0) continue;
+
+	if (lines[i].path) {
+	    path = lines[i].path;
+	    len = strlen(path);
+	}
+	else if (syms[i] && get_path_from_symbol(syms[i], &path, &len)) {
+	    lines[i].path = path;
+	}
+	else {
 	    continue;
 	}
 
 	strncpy(binary_filename, path, len);
 	binary_filename[len] = '\0';
 
-	fill_lines(num_traces, trace, syms, 1, &lines[i], lines);
+	curobj_baseaddr = lines[i].base_addr;
+	fill_lines(num_traces, traces, syms, 1, &lines[i], lines);
     }
 
+    /* output */
     for (i = 0; i < num_traces; i++) {
 	line_info_t *line = &lines[i];
 
-	if (line->line > 0) {
-	    if (line->filename) {
-		if (line->dirname && line->dirname[0]) {
-		    kprintf("%s %s/%s:%d\n", syms[i], line->dirname, line->filename, line->line);
-		}
-		else {
-		    kprintf("%s %s:%d\n", syms[i], line->filename, line->line);
-		}
-	    } else {
-		kprintf("%s ???:%d\n", syms[i], line->line);
+	if (line->sname) {
+	    intptr_t addr = (intptr_t)traces[i];
+	    intptr_t d = addr - line->saddr;
+	    if (line->line <= 0) {
+		kprintf("%s(%s+0x%lx) [0x%lx]\n", line->path, line->sname,
+			d, addr);
 	    }
-	} else {
+	    else if (!line->filename) {
+		kprintf("%s(%s+0x%lx) [0x%lx] ???:%d\n", line->path, line->sname,
+			d, addr, line->line);
+	    }
+	    else if (line->dirname && line->dirname[0]) {
+		kprintf("%s(%s+0x%lx) [0x%lx] %s/%s:%d\n", line->path, line->sname,
+			d, addr, line->dirname, line->filename, line->line);
+	    }
+	    else {
+		kprintf("%s(%s+0x%lx) [0x%lx] %s:%d\n", line->path, line->sname,
+			d, addr, line->filename, line->line);
+	    }
+	    /* FreeBSD's backtrace may show _start and so on */
+	    if (strcmp("main", line->sname) == 0)
+		break;
+	}
+	else if (line->line <= 0) {
 	    kprintf("%s\n", syms[i]);
+	}
+	else if (!line->filename) {
+	    kprintf("%s ???:%d\n", syms[i], line->line);
+	} else if (line->dirname && line->dirname[0]) {
+	    kprintf("%s %s/%s:%d\n", syms[i], line->dirname, line->filename, line->line);
+	}
+	else {
+	    kprintf("%s %s:%d\n", syms[i], line->filename, line->line);
 	}
     }
 
+    /* free */
     for (i = 0; i < num_traces; i++) {
 	line_info_t *line = &lines[i];
 	if (line->fd) {
