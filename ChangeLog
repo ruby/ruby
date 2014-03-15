@@ -1,3 +1,7 @@
+Sat Mar 15 18:54:03 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* ext/.document: remove refinement from documentable directories.
+
 Sat Mar 15 11:02:58 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (DLDFLAGS): check for each options to control
