@@ -467,7 +467,7 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 	break;
       case VM_METHOD_TYPE_ATTRSET:
       case VM_METHOD_TYPE_IVAR:
-	def->body.attr.id = (ID)opts;
+	def->body.attr.id = (ID)(VALUE)opts;
 	RB_OBJ_WRITE(klass, &def->body.attr.location, Qfalse);
 	th = GET_THREAD();
 	cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
@@ -868,7 +868,7 @@ extern ID rb_check_attr_id(ID id);
 void
 rb_attr(VALUE klass, ID id, int read, int write, int ex)
 {
-    ID attriv;
+    VALUE attriv;
     VALUE aname;
     rb_method_flag_t noex;
 
@@ -894,7 +894,7 @@ rb_attr(VALUE klass, ID id, int read, int write, int ex)
     if (NIL_P(aname)) {
 	rb_raise(rb_eArgError, "argument needs to be symbol or string");
     }
-    attriv = rb_intern_str(rb_sprintf("@%"PRIsVALUE, aname));
+    attriv = (VALUE)rb_intern_str(rb_sprintf("@%"PRIsVALUE, aname));
     if (read) {
 	rb_add_method(klass, id, VM_METHOD_TYPE_IVAR, (void *)attriv, noex);
     }
