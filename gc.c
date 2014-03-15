@@ -6231,6 +6231,8 @@ objspace_xcalloc(rb_objspace_t *objspace, size_t count, size_t elsize)
     size = objspace_malloc_prepare(objspace, size);
 
     TRY_WITH_GC(mem = calloc(1, size));
+    size = objspace_malloc_size(objspace, mem, size);
+    objspace_malloc_increase(objspace, mem, size, 0, MEMOP_TYPE_MALLOC);
     return objspace_malloc_fixup(objspace, mem, size);
 }
 
