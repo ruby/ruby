@@ -1,3 +1,7 @@
+Sun Mar 16 00:57:20 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* ext/.document: remove refinement from documentable directories.
+
 Mon Mar  3 01:43:30 2014  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* eval_error.c (warn_printf): use rb_vsprintf instead so ruby specific
