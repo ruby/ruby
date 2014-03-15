@@ -2702,10 +2702,6 @@ if test "$with_dln_a_out" != yes; then
 			fi
 			rb_cv_dlopen=yes],
 	[darwin*], [	: ${LDSHARED='$(CC) -dynamic -bundle'}
-			RUBY_APPEND_OPTIONS(DLDFLAGS, [ \
-			    "${linker_flag}-undefined${linker_flag:+,}dynamic_lookup" \
-			    "${linker_flag}-multiply_defined${linker_flag:+,}suppress" \
-			    ])
 			: ${LDFLAGS=""}
 			: ${LIBPATHENV=DYLD_LIBRARY_PATH}
 			# /usr/local/include is always searched for
@@ -2771,6 +2767,21 @@ if test "$with_dln_a_out" != yes; then
         [nacl], [ LDSHARED='$(CC) -shared' ],
 	[ 	: ${LDSHARED='$(LD)'}])
   AC_MSG_RESULT($rb_cv_dlopen)
+
+  if test "$rb_cv_dlopen" = yes; then
+    AS_CASE(["$target_os"],
+      [darwin*] [
+	for flag in \
+	  "${linker_flag}-undefined${linker_flag:+,}dynamic_lookup" \
+	  "${linker_flag}-multiply_defined${linker_flag:+,}suppress" \
+	  ; do
+	  RUBY_TRY_LDFLAGS([$flag], [], [flag=])
+	  if test "x$flag" != x; then
+	    RUBY_APPEND_OPTIONS(DLDFLAGS, [$flag])
+	  fi
+	done
+      ])
+  fi
 
   if test "$enable_rpath" = yes; then
     if test x"${RPATHFLAG}" = x; then

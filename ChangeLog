@@ -1,3 +1,8 @@
+Sat Mar 15 11:02:58 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (DLDFLAGS): check for each options to control
+	  symbol resolution.  [ruby-core:61429] [Bug #9624]
+
 Sat Mar 15 07:02:35 2014  Eric Wong  <e@80x24.org>
 
 	* st.c (st_update): remove unnecessary assignment
