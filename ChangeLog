@@ -1,3 +1,9 @@
+Sun Mar 16 06:33:35 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c (fill_lines): return address is just after calling
+	  address. Therefore noreturn function with tail call's return
+	  address may be in another function.
+
 Sun Mar 16 05:51:55 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/gserver.rb: [DOC] Fixed typo in example by @stomar [Bug #9543]

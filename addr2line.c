@@ -580,7 +580,7 @@ fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
 		ElfW(Sym) *sym = &symtab[j];
 		intptr_t saddr = (intptr_t)sym->st_value + lines[i].base_addr;
 		ptrdiff_t d = (intptr_t)traces[i] - saddr;
-		if (d < 0 || d > (ptrdiff_t)sym->st_size) continue;
+		if (d <= 0 || d > (ptrdiff_t)sym->st_size) continue;
 		lines[i].sname = strtab + sym->st_name;
 		lines[i].saddr = saddr;
 	    }
