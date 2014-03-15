@@ -2362,23 +2362,6 @@ id2ref(VALUE obj, VALUE objid)
  *      "hi".freeze.object_id == "hi".freeze.object_id # => true
  */
 
-/*
- *  call-seq:
- *     obj.hash    -> fixnum
- *
- *  Generates a Fixnum hash value for this object.
- *
- *  This function must have the property that <code>a.eql?(b)</code> implies
- *  <code>a.hash == b.hash</code>.
- *
- *  The hash value is used by Hash class.
- *
- *  Any hash value that exceeds the capacity of a Fixnum will be truncated
- *  before being used.
- *
- *  See also Object#hash.
- */
-
 VALUE
 rb_obj_id(VALUE obj)
 {

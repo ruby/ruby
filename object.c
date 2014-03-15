@@ -146,6 +146,9 @@ rb_obj_equal(VALUE obj1, VALUE obj2)
 }
 
 /*
+ * call-seq:
+ *    obj.hash    -> fixnum
+ *
  * Generates a Fixnum hash value for this object.  This function must have the
  * property that <code>a.eql?(b)</code> implies <code>a.hash == b.hash</code>.
  *
