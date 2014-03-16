@@ -1,3 +1,8 @@
+Sun Mar 16 21:33:01 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/time.rb: [DOC] Fix timezone in example of Time.parse [Bug #9521]
+	  Based on patch by @stomar
+
 Sun Mar 16 13:21:40 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (DLDFLAGS): insert a space between option and its

@@ -279,7 +279,7 @@ class Time
     # values (1 or 0) are assumed if broken or missing.  For example:
     #
     #     # Suppose it is "Thu Nov 29 14:33:20 GMT 2001" now and
-    #     # your time zone is GMT:
+    #     # your time zone is JST:
     #     now = Time.parse("Thu Nov 29 14:33:20 GMT 2001")
     #     Time.parse("16:30", now)     #=> 2001-11-29 16:30:00 +0900
     #     Time.parse("7/23", now)      #=> 2001-07-23 00:00:00 +0900
