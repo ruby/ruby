@@ -58,6 +58,7 @@ end
 # * #each_with_index
 # * #find_index
 # * #minor(*param)
+# * #first_minor(row, column)
 #
 # Properties of a matrix:
 # * #diagonal?
@@ -587,6 +588,34 @@ class Matrix
       row[from_col, size_col]
     }
     new_matrix rows, [column_count - from_col, size_col].min
+  end
+
+  #
+  # Returns a the submatrix formed by deleting the i-th row and j-th column.
+  #
+  #   Matrix.diagonal(9, 5, -3, 4).first_minor(1, 2)
+  #     => 9 0 0
+  #        0 0 0
+  #        0 0 4
+  #
+  def first_minor(row, column)
+    raise TypeError, "first_minor of empty matrix is not defined" if empty?
+
+    unless 0 <= row && row < row_count
+      raise ArgumentError, "expected #{row.inspect} to be 0 to #{row_count - 1}"
+    end
+
+    unless 0 <= column && column < column_count
+      raise ArgumentError, "expected #{column.inspect} to be 0 to #{column_count - 1}"
+    end
+
+    arrays = to_a
+    arrays.delete_at(row)
+    arrays.each do |array|
+      array.delete_at(column)
+    end
+
+    new_matrix arrays, column_count - 1
   end
 
   #--
