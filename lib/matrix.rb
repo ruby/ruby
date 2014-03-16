@@ -601,7 +601,7 @@ class Matrix
   #        0 0 4
   #
   def first_minor(row, column)
-    raise TypeError, "first_minor of empty matrix is not defined" if empty?
+    raise RuntimeError, "first_minor of empty matrix is not defined" if empty?
 
     unless 0 <= row && row < row_count
       raise ArgumentError, "expected #{row.inspect} to be 0 to #{row_count - 1}"
@@ -627,7 +627,7 @@ class Matrix
   #     => -108
   #
   def cofactor(row, column)
-    raise TypeError, "cofactor of empty matrix is not defined" if empty?
+    raise RuntimeError, "cofactor of empty matrix is not defined" if empty?
     Matrix.Raise ErrDimensionMismatch unless square?
 
     det_of_minor = first_minor(row, column).determinant
