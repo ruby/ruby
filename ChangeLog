@@ -1,3 +1,8 @@
+Sun Mar 16 13:21:40 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (DLDFLAGS): insert a space between option and its
+	  argument for non-GCC compilers.  [ruby-core:61429] [Bug #9624]
+
 Sun Mar 16 08:05:06 2014  Eric Wong  <e@80x24.org>
 
 	* gc.c (objspace_xcalloc): fix GC accounting

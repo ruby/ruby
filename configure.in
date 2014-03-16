@@ -2772,9 +2772,10 @@ if test "$with_dln_a_out" != yes; then
     AS_CASE(["$target_os"],
       [darwin*], [
 	for flag in \
-	  "${linker_flag}-undefined${linker_flag:+,}dynamic_lookup" \
-	  "${linker_flag}-multiply_defined${linker_flag:+,}suppress" \
+	  "-undefined dynamic_lookup" \
+	  "-multiply_defined suppress" \
 	  ; do
+	  test "x${linker_flag}" = x || flag="${linker_flag}${flag// /,}"
 	  RUBY_TRY_LDFLAGS([$flag], [], [flag=])
 	  if test "x$flag" != x; then
 	    RUBY_APPEND_OPTIONS(DLDFLAGS, [$flag])
