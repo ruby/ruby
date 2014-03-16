@@ -593,7 +593,7 @@ class Matrix
   end
 
   #
-  # Returns a the submatrix formed by deleting the i-th row and j-th column.
+  # Returns a the submatrix formed by deleting the specified row and column.
   #
   #   Matrix.diagonal(9, 5, -3, 4).first_minor(1, 2)
   #     => 9 0 0
@@ -621,7 +621,7 @@ class Matrix
   end
 
   #
-  # Returns a (i,j) cofactor which is obtained by multiplying the first minor by (-1)**(i+j).
+  # Returns a (row, column) cofactor which is obtained by multiplying the first minor by (-1)**(row + column).
   #
   #   Matrix.diagonal(9, 5, -3, 4).cofactor(1, 1)
   #     => -108
