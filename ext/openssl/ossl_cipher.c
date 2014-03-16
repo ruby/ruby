@@ -526,6 +526,26 @@ ossl_cipher_set_auth_data(VALUE self, VALUE data)
 				(nid) == NID_aes_192_gcm || \
 				(nid) == NID_aes_256_gcm
 
+#define ossl_is_ccm(nid)	(nid) == NID_aes_128_ccm || \
+				(nid) == NID_aes_192_ccm || \
+				(nid) == NID_aes_256_ccm
+
+static VALUE
+ossl_cipher_set_iv_len(VALUE self, VALUE len) {
+
+  EVP_CIPHER_CTX *ctx;
+  int nid;
+
+  GetCipher(self, ctx);
+  nid = EVP_CIPHER_CTX_nid(ctx);
+
+  if (ossl_is_ccm(nid))
+    EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_CCM_SET_IVLEN, NUM2INT(len), NULL);
+
+  return len;
+
+}
+
 static VALUE
 ossl_get_gcm_auth_tag(EVP_CIPHER_CTX *ctx, int len)
 {
@@ -535,6 +555,22 @@ ossl_get_gcm_auth_tag(EVP_CIPHER_CTX *ctx, int len)
     tag = ALLOC_N(unsigned char, len);
 
     if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, len, tag))
+        ossl_raise(eCipherError, "retrieving the authentication tag failed");
+
+    ret = rb_str_new((const char *) tag, len);
+    xfree(tag);
+    return ret;
+}
+
+static VALUE
+ossl_get_ccm_auth_tag(EVP_CIPHER_CTX *ctx, int len)
+{
+    unsigned char *tag;
+    VALUE ret;
+
+    tag = ALLOC_N(unsigned char, len);
+
+    if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_CCM_GET_TAG, len, tag))
         ossl_raise(eCipherError, "retrieving the authentication tag failed");
 
     ret = rb_str_new((const char *) tag, len);
@@ -574,6 +610,8 @@ ossl_cipher_get_auth_tag(int argc, VALUE *argv, VALUE self)
 
     if (ossl_is_gcm(nid)) {
 	return ossl_get_gcm_auth_tag(ctx, tag_len);
+    } else if (ossl_is_ccm(nid)) {
+	return ossl_get_ccm_auth_tag(ctx, tag_len);    
     } else {
 	ossl_raise(eCipherError, "authentication tag not supported by this cipher");
 	return Qnil; /* dummy */
@@ -585,6 +623,13 @@ ossl_set_gcm_auth_tag(EVP_CIPHER_CTX *ctx, unsigned char *tag, int tag_len)
 {
     if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, tag_len, tag))
         ossl_raise(eCipherError, "unable to set GCM tag");
+}
+
+static inline void
+ossl_set_ccm_auth_tag(EVP_CIPHER_CTX *ctx, unsigned char *tag, int tag_len)
+{
+    if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_CCM_SET_TAG, tag_len, tag))
+        ossl_raise(eCipherError, "unable to set CCM tag");
 }
 
 /*
@@ -616,6 +661,8 @@ ossl_cipher_set_auth_tag(VALUE self, VALUE vtag)
 
     if (ossl_is_gcm(nid)) {
 	ossl_set_gcm_auth_tag(ctx, tag, tag_len);
+    } else if (ossl_is_ccm(nid)) {
+	ossl_set_ccm_auth_tag(ctx, tag, tag_len);   
     } else {
 	ossl_raise(eCipherError, "authentication tag not supported by this cipher");
     }
@@ -639,7 +686,7 @@ ossl_cipher_is_authenticated(VALUE self)
     GetCipher(self, ctx);
     nid = EVP_CIPHER_CTX_nid(ctx);
 
-    if (ossl_is_gcm(nid)) {
+    if (ossl_is_gcm(nid) || ossl_is_ccm(nid)) {
 	return Qtrue;
     } else {
 	return Qfalse;
@@ -940,6 +987,11 @@ Init_ossl_cipher(void)
      *   plain = decipher.update(encrypted) + decipher.final
      *
      *   puts data == plain #=> true
+     *
+     * If CCM mode is used, it may be necessary to set the IV length parameter
+     * for compatibility with libraries that use a non-default IV length. This
+     * can be achieved by calling OpenSSL::Cipher#iv_len= immediately after
+     * putting the cipher in decrypt mode using OpenSSL::Cipher#decrypt.
      */
     cCipher = rb_define_class_under(mOSSL, "Cipher", rb_cObject);
     eCipherError = rb_define_class_under(cCipher, "CipherError", eOSSLError);
@@ -963,6 +1015,7 @@ Init_ossl_cipher(void)
     rb_define_method(cCipher, "key_len=", ossl_cipher_set_key_length, 1);
     rb_define_method(cCipher, "key_len", ossl_cipher_key_length, 0);
     rb_define_method(cCipher, "iv=", ossl_cipher_set_iv, 1);
+    rb_define_method(cCipher, "iv_len=", ossl_cipher_set_iv_len, 1);
     rb_define_method(cCipher, "iv_len", ossl_cipher_iv_length, 0);
     rb_define_method(cCipher, "block_size", ossl_cipher_block_size, 0);
     rb_define_method(cCipher, "padding=", ossl_cipher_set_padding, 1);
