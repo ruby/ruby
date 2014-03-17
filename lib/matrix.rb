@@ -621,7 +621,8 @@ class Matrix
   end
 
   #
-  # Returns a (row, column) cofactor which is obtained by multiplying the first minor by (-1)**(row + column).
+  # Returns the (row, column) cofactor which is obtained by multiplying
+  # the first minor by (-1)**(row + column).
   #
   #   Matrix.diagonal(9, 5, -3, 4).cofactor(1, 1)
   #     => -108
