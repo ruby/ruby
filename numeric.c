@@ -1889,7 +1889,7 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
     VALUE to, step, hash;
     int desc;
     int argc = args ? RARRAY_LENINT(args) : 0;
-    VALUE *argv = args ? RARRAY_PTR(args) : 0;
+    const VALUE *argv = args ? RARRAY_CONST_PTR(args) : 0;
 
     NUM_STEP_SCAN_ARGS(argc, argv, to, step, hash, desc);
 

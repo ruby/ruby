@@ -751,7 +751,7 @@ rb_apply(VALUE recv, ID mid, VALUE args)
 	args = rb_ary_subseq(args, 0, argc);
 	RBASIC_CLEAR_CLASS(args);
 	OBJ_FREEZE(args);
-	ret = rb_call(recv, mid, argc, RARRAY_PTR(args), CALL_FCALL);
+	ret = rb_call(recv, mid, argc, RARRAY_CONST_PTR(args), CALL_FCALL);
 	RB_GC_GUARD(args);
 	return ret;
     }
@@ -1482,7 +1482,7 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
 	rb_set_safe_level_force(level);
 	if ((state = EXEC_TAG()) == 0) {
 	    val = rb_funcall2(cmd, rb_intern("call"), RARRAY_LENINT(arg),
-			      RARRAY_PTR(arg));
+			      RARRAY_CONST_PTR(arg));
 	}
 	POP_TAG();
 

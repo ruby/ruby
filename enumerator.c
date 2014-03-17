@@ -422,13 +422,13 @@ static VALUE
 enumerator_block_call(VALUE obj, rb_block_call_func *func, VALUE arg)
 {
     int argc = 0;
-    VALUE *argv = 0;
+    const VALUE *argv = 0;
     const struct enumerator *e = enumerator_ptr(obj);
     ID meth = e->meth;
 
     if (e->args) {
 	argc = RARRAY_LENINT(e->args);
-	argv = RARRAY_PTR(e->args);
+	argv = RARRAY_CONST_PTR(e->args);
     }
     return rb_block_call(e->obj, meth, argc, argv, func, arg);
 }

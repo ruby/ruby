@@ -1,3 +1,16 @@
+Mon Mar 17 13:17:47 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* enumerator.c (enumerator_block_call): use PARRAY_CONST_PTR()
+	  instead of RARRAY_PTR().
+
+	* io.c (rb_io_s_popen): ditto.
+
+	* numeric.c (num_step_size): ditto.
+
+	* vm_eval.c (rb_apply): ditto.
+
+	* vm_eval.c (rb_eval_cmd): ditto.
+
 Mon Mar 17 10:11:59 2014  Eric Wong  <e@80x24.org>
 
 	* variable.c (rb_const_set): delete existing entry on redefinition

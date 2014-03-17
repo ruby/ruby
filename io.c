@@ -6227,7 +6227,7 @@ rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
 #endif
 	tmp = rb_ary_dup(tmp);
 	RBASIC_CLEAR_CLASS(tmp);
-	execarg_obj = rb_execarg_new((int)len, RARRAY_PTR(tmp), FALSE);
+	execarg_obj = rb_execarg_new((int)len, RARRAY_CONST_PTR(tmp), FALSE);
 	rb_ary_clear(tmp);
     }
     else {
