@@ -242,14 +242,21 @@ test x"$target_alias" = x &&
 target_os=`echo $target_os | sed 's/linux-gnu$/linux/;s/linux-gnu/linux-/'`
 ac_install_sh='' # unusable for extension libraries.
 
-AS_CASE($target_os,
-	[darwin*], [os_version_style=major+0],
-	[os_version_style=full])
 AC_ARG_WITH(os-version-style,
 	AS_HELP_STRING([--with-os-version-style=TYPE],
 		       [OS version number for target and target_os [[full]]]
 		       [(full|teeny|minor+0|minor|major+0|major|none)]),
-	[os_version_style=$withval])
+	[os_version_style=$withval],
+	[os_version_style=full
+	    AS_CASE($target_os, [[*[0-9].*]],
+		[AS_CASE([`/usr/bin/ruby -e 'puts RUBY_PLATFORM' 2>/dev/null`],
+		    [[*-*[0-9].*.0]], [os_version_style=minor+0],
+		    [[*-*[0-9].*.*]], [os_version_style=full],
+		    [[*-*[0-9].0]  ], [os_version_style=major+0],
+		    [[*-*[0-9].*]  ], [os_version_style=minor],
+		    [[*-*[0-9]]    ], [os_version_style=major],
+		)])
+	])
 os_version_style_transform=
 AS_CASE("${os_version_style}",
 	[full|teeny], [],
