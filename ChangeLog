@@ -1,3 +1,9 @@
+Mon Mar 17 10:11:59 2014  Eric Wong  <e@80x24.org>
+
+	* variable.c (rb_const_set): delete existing entry on redefinition
+	  [Bug #9645]
+	* test/ruby/test_const.rb (test_redefinition): test for leak
+
 Sun Mar 16 21:33:01 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/time.rb: [DOC] Fix timezone in example of Time.parse [Bug #9521]

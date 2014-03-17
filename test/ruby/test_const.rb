@@ -1,5 +1,6 @@
 # -*- coding: us-ascii -*-
 require 'test/unit'
+require_relative 'envutil'
 
 class TestConst < Test::Unit::TestCase
   TEST1 = 1
@@ -54,5 +55,12 @@ class TestConst < Test::Unit::TestCase
 #{__FILE__}:#{__LINE__-1}: warning: already initialized constant #{c}::X
 #{__FILE__}:#{__LINE__-3}: warning: previous definition of X was here
 WARNING
+    code = <<-PRE
+olderr = $stderr.dup
+$stderr.reopen(File::NULL, "wb")
+350000.times { FOO = :BAR }
+$stderr.reopen(olderr)
+PRE
+    assert_no_memory_leak([], '', code, 'redefined constant')
   end
 end
