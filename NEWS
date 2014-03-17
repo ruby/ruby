@@ -22,6 +22,11 @@ with all sufficient information, see the ChangeLog file.
     * max
     * max_by
 
+* Matrix
+  * New methods:
+    * Matrix#first_minor(row, column) returns a the submatrix formed
+      by deleting the specified row and column.
+
 === Core classes compatibility issues (excluding feature bug fixes)
 
 === Stdlib updates (outstanding ones only)
