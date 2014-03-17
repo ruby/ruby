@@ -2198,7 +2198,7 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
 }
 
 VALUE
-rb_execarg_new(int argc, VALUE *argv, int accept_shell)
+rb_execarg_new(int argc, const VALUE *argv, int accept_shell)
 {
     VALUE execarg_obj;
     struct rb_execarg *eargp;
@@ -2217,13 +2217,17 @@ rb_execarg_get(VALUE execarg_obj)
 }
 
 VALUE
-rb_execarg_init(int argc, VALUE *argv, int accept_shell, VALUE execarg_obj)
+rb_execarg_init(int argc, const VALUE *orig_argv, int accept_shell, VALUE execarg_obj)
 {
     struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
     VALUE prog, ret;
     VALUE env = Qnil, opthash = Qnil;
+    VALUE argv_buf;
+    VALUE *argv = ALLOCV_N(VALUE, argv_buf, argc);
+    MEMCPY(argv, orig_argv, VALUE, argc);
     prog = rb_exec_getargs(&argc, &argv, accept_shell, &env, &opthash);
     rb_exec_fillarg(prog, argc, argv, env, opthash, execarg_obj);
+    ALLOCV_END(argv_buf);
     ret = eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name;
     RB_GC_GUARD(execarg_obj);
     return ret;

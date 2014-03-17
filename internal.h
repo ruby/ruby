@@ -963,9 +963,9 @@ VALUE rb_int_positive_pow(long x, unsigned long y);
 /* process.c */
 int rb_exec_async_signal_safe(const struct rb_execarg *e, char *errmsg, size_t errmsg_buflen);
 rb_pid_t rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fds, char *errmsg, size_t errmsg_buflen);
-VALUE rb_execarg_new(int argc, VALUE *argv, int accept_shell);
+VALUE rb_execarg_new(int argc, const VALUE *argv, int accept_shell);
 struct rb_execarg *rb_execarg_get(VALUE execarg_obj); /* dangerous.  needs GC guard. */
-VALUE rb_execarg_init(int argc, VALUE *argv, int accept_shell, VALUE execarg_obj);
+VALUE rb_execarg_init(int argc, const VALUE *argv, int accept_shell, VALUE execarg_obj);
 int rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val);
 void rb_execarg_fixup(VALUE execarg_obj);
 int rb_execarg_run_options(const struct rb_execarg *e, struct rb_execarg *s, char* errmsg, size_t errmsg_buflen);

@@ -6225,10 +6225,8 @@ rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
 	    rb_raise(rb_eArgError, "too many arguments");
 	}
 #endif
-	tmp = rb_ary_dup(tmp);
-	RBASIC_CLEAR_CLASS(tmp);
 	execarg_obj = rb_execarg_new((int)len, RARRAY_CONST_PTR(tmp), FALSE);
-	rb_ary_clear(tmp);
+	RB_GC_GUARD(tmp);
     }
     else {
 	SafeStringValue(pname);
