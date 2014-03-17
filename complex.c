@@ -20,8 +20,8 @@ VALUE rb_cComplex;
 
 static ID id_abs, id_arg, id_convert,
     id_denominator, id_eqeq_p, id_expt, id_fdiv,
-    id_inspect, id_negate, id_numerator, id_quo,
-    id_real_p, id_to_f, id_to_i, id_to_r, id_to_s,
+    id_negate, id_numerator, id_quo,
+    id_real_p, id_to_f, id_to_i, id_to_r,
     id_i_real, id_i_imag;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
@@ -130,7 +130,6 @@ f_sub(VALUE x, VALUE y)
 fun1(abs)
 fun1(arg)
 fun1(denominator)
-fun1(inspect)
 fun1(negate)
 fun1(numerator)
 fun1(real_p)
@@ -151,7 +150,6 @@ f_to_f(VALUE x)
 }
 
 fun1(to_r)
-fun1(to_s)
 
 inline static VALUE
 f_eqeq_p(VALUE x, VALUE y)
@@ -1241,7 +1239,7 @@ f_format(VALUE self, VALUE (*func)(VALUE))
 static VALUE
 nucomp_to_s(VALUE self)
 {
-    return f_format(self, f_to_s);
+    return f_format(self, rb_String);
 }
 
 /*
@@ -1262,7 +1260,7 @@ nucomp_inspect(VALUE self)
     VALUE s;
 
     s = rb_usascii_str_new2("(");
-    rb_str_concat(s, f_format(self, f_inspect));
+    rb_str_concat(s, f_format(self, rb_inspect));
     rb_str_cat2(s, ")");
 
     return s;
@@ -1359,9 +1357,8 @@ nucomp_to_i(VALUE self)
     get_dat1(self);
 
     if (k_inexact_p(dat->imag) || f_nonzero_p(dat->imag)) {
-	VALUE s = f_to_s(self);
-	rb_raise(rb_eRangeError, "can't convert %s into Integer",
-		 StringValuePtr(s));
+	rb_raise(rb_eRangeError, "can't convert %"PRIsVALUE" into Integer",
+		 self);
     }
     return f_to_i(dat->real);
 }
@@ -1383,9 +1380,8 @@ nucomp_to_f(VALUE self)
     get_dat1(self);
 
     if (k_inexact_p(dat->imag) || f_nonzero_p(dat->imag)) {
-	VALUE s = f_to_s(self);
-	rb_raise(rb_eRangeError, "can't convert %s into Float",
-		 StringValuePtr(s));
+	rb_raise(rb_eRangeError, "can't convert %"PRIsVALUE" into Float",
+		 self);
     }
     return f_to_f(dat->real);
 }
@@ -1409,9 +1405,8 @@ nucomp_to_r(VALUE self)
     get_dat1(self);
 
     if (k_inexact_p(dat->imag) || f_nonzero_p(dat->imag)) {
-	VALUE s = f_to_s(self);
-	rb_raise(rb_eRangeError, "can't convert %s into Rational",
-		 StringValuePtr(s));
+	rb_raise(rb_eRangeError, "can't convert %"PRIsVALUE" into Rational",
+		 self);
     }
     return f_to_r(dat->real);
 }
@@ -1437,9 +1432,8 @@ nucomp_rationalize(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "01", NULL);
 
     if (k_inexact_p(dat->imag) || f_nonzero_p(dat->imag)) {
-       VALUE s = f_to_s(self);
-       rb_raise(rb_eRangeError, "can't convert %s into Rational",
-                StringValuePtr(s));
+       rb_raise(rb_eRangeError, "can't convert %"PRIsVALUE" into Rational",
+                self);
     }
     return rb_funcall2(dat->real, rb_intern("rationalize"), argc, argv);
 }
@@ -1768,9 +1762,8 @@ string_to_c_strict(VALUE self)
 	s = (char *)"";
 
     if (!parse_comp(s, 1, &num)) {
-	VALUE ins = f_inspect(self);
-	rb_raise(rb_eArgError, "invalid value for convert(): %s",
-		 StringValuePtr(ins));
+	rb_raise(rb_eArgError, "invalid value for convert(): %+"PRIsVALUE,
+		 self);
     }
 
     return num;
@@ -2053,7 +2046,6 @@ Init_Complex(void)
     id_eqeq_p = rb_intern("==");
     id_expt = rb_intern("**");
     id_fdiv = rb_intern("fdiv");
-    id_inspect = rb_intern("inspect");
     id_negate = rb_intern("-@");
     id_numerator = rb_intern("numerator");
     id_quo = rb_intern("quo");
@@ -2061,7 +2053,6 @@ Init_Complex(void)
     id_to_f = rb_intern("to_f");
     id_to_i = rb_intern("to_i");
     id_to_r = rb_intern("to_r");
-    id_to_s = rb_intern("to_s");
     id_i_real = rb_intern("@real");
     id_i_imag = rb_intern("@image"); /* @image, not @imag */
 
