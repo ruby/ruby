@@ -604,11 +604,11 @@ class Matrix
     raise RuntimeError, "first_minor of empty matrix is not defined" if empty?
 
     unless 0 <= row && row < row_count
-      raise ArgumentError, "expected #{row.inspect} to be 0 to #{row_count - 1}"
+      raise ArgumentError, "invalid row (#{row.inspect} for 0..#{row_count - 1})"
     end
 
     unless 0 <= column && column < column_count
-      raise ArgumentError, "expected #{column.inspect} to be 0 to #{column_count - 1}"
+      raise ArgumentError, "invalid column (#{column.inspect} for 0..#{column_count - 1})"
     end
 
     arrays = to_a
