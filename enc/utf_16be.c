@@ -33,6 +33,7 @@
 #define UTF16_IS_SURROGATE_SECOND(c)   (((c) & 0xfc) == 0xdc)
 #define UTF16_IS_SURROGATE(c)          (((c) & 0xf8) == 0xd8)
 
+#if 0
 static const int EncLen_UTF16[] = {
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -51,6 +52,7 @@ static const int EncLen_UTF16[] = {
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2
 };
+#endif
 
 static int
 utf16be_mbc_enc_len(const UChar* p, const OnigUChar* e ARG_UNUSED,

@@ -31,7 +31,7 @@
 VALUE rb_cRational;
 
 static ID id_abs, id_cmp, id_convert, id_eqeq_p, id_expt, id_fdiv,
-    id_floor, id_idiv, id_integer_p, id_negate, id_to_f,
+    id_idiv, id_integer_p, id_negate, id_to_f,
     id_to_i, id_truncate, id_i_num, id_i_den;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
@@ -92,14 +92,6 @@ f_div(VALUE x, VALUE y)
 }
 
 inline static VALUE
-f_gt_p(VALUE x, VALUE y)
-{
-    if (FIXNUM_P(x) && FIXNUM_P(y))
-	return f_boolcast(FIX2LONG(x) > FIX2LONG(y));
-    return rb_funcall(x, '>', 1, y);
-}
-
-inline static VALUE
 f_lt_p(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y))
@@ -142,7 +134,6 @@ f_sub(VALUE x, VALUE y)
 }
 
 fun1(abs)
-fun1(floor)
 fun1(integer_p)
 fun1(negate)
 
@@ -160,8 +151,6 @@ f_to_f(VALUE x)
 	return DBL2NUM(rb_str_to_dbl(x, 0));
     return rb_funcall(x, id_to_f, 0);
 }
-
-fun1(truncate)
 
 inline static VALUE
 f_eqeq_p(VALUE x, VALUE y)
@@ -474,14 +463,6 @@ f_rational_new_bang1(VALUE klass, VALUE x)
     return nurat_s_new_internal(klass, x, ONE);
 }
 
-inline static VALUE
-f_rational_new_bang2(VALUE klass, VALUE x, VALUE y)
-{
-    assert(f_positive_p(y));
-    assert(f_nonzero_p(y));
-    return nurat_s_new_internal(klass, x, y);
-}
-
 #ifdef CANONICALIZATION_FOR_MATHN
 #define CANON
 #endif
@@ -580,25 +561,11 @@ nurat_s_new(int argc, VALUE *argv, VALUE klass)
 }
 
 inline static VALUE
-f_rational_new1(VALUE klass, VALUE x)
-{
-    assert(!k_rational_p(x));
-    return nurat_s_canonicalize_internal(klass, x, ONE);
-}
-
-inline static VALUE
 f_rational_new2(VALUE klass, VALUE x, VALUE y)
 {
     assert(!k_rational_p(x));
     assert(!k_rational_p(y));
     return nurat_s_canonicalize_internal(klass, x, y);
-}
-
-inline static VALUE
-f_rational_new_no_reduce1(VALUE klass, VALUE x)
-{
-    assert(!k_rational_p(x));
-    return nurat_s_canonicalize_internal_no_reduce(klass, x, ONE);
 }
 
 inline static VALUE
@@ -2530,7 +2497,6 @@ Init_Rational(void)
     id_eqeq_p = rb_intern("==");
     id_expt = rb_intern("**");
     id_fdiv = rb_intern("fdiv");
-    id_floor = rb_intern("floor");
     id_idiv = rb_intern("div");
     id_integer_p = rb_intern("integer?");
     id_negate = rb_intern("-@");

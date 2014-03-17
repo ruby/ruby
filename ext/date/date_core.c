@@ -1723,23 +1723,6 @@ m_real_year(union DateData *x)
     return ry;
 }
 
-
-#ifdef USE_PACK
-inline static int
-m_pc(union DateData *x)
-{
-    if (simple_dat_p(x)) {
-	get_s_civil(x);
-	return x->s.pc;
-    }
-    else {
-	get_c_civil(x);
-	get_c_time(x);
-	return x->c.pc;
-    }
-}
-#endif
-
 inline static int
 m_mon(union DateData *x)
 {
@@ -1977,12 +1960,6 @@ inline static VALUE
 k_date_p(VALUE x)
 {
     return f_kind_of_p(x, cDate);
-}
-
-inline static VALUE
-k_datetime_p(VALUE x)
-{
-    return f_kind_of_p(x, cDateTime);
 }
 
 inline static VALUE

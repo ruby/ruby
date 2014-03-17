@@ -18,10 +18,10 @@
 
 VALUE rb_cComplex;
 
-static ID id_abs, id_abs2, id_arg, id_cmp, id_conj, id_convert,
-    id_denominator, id_divmod, id_eqeq_p, id_expt, id_fdiv,  id_floor,
-    id_idiv, id_imag, id_inspect, id_negate, id_numerator, id_quo,
-    id_real, id_real_p, id_to_f, id_to_i, id_to_r, id_to_s,
+static ID id_abs, id_arg, id_convert,
+    id_denominator, id_eqeq_p, id_expt, id_fdiv,
+    id_inspect, id_negate, id_numerator, id_quo,
+    id_real_p, id_to_f, id_to_i, id_to_r, id_to_s,
     id_i_real, id_i_imag;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
@@ -76,20 +76,6 @@ f_add(VALUE x, VALUE y)
 }
 
 inline static VALUE
-f_cmp(VALUE x, VALUE y)
-{
-    if (FIXNUM_P(x) && FIXNUM_P(y)) {
-	long c = FIX2LONG(x) - FIX2LONG(y);
-	if (c > 0)
-	    c = 1;
-	else if (c < 0)
-	    c = -1;
-	return INT2FIX(c);
-    }
-    return rb_funcall(x, id_cmp, 1, y);
-}
-
-inline static VALUE
 f_div(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y) && FIX2LONG(y) == 1)
@@ -104,16 +90,6 @@ f_gt_p(VALUE x, VALUE y)
 	return f_boolcast(FIX2LONG(x) > FIX2LONG(y));
     return rb_funcall(x, '>', 1, y);
 }
-
-inline static VALUE
-f_lt_p(VALUE x, VALUE y)
-{
-    if (FIXNUM_P(x) && FIXNUM_P(y))
-	return f_boolcast(FIX2LONG(x) < FIX2LONG(y));
-    return rb_funcall(x, '<', 1, y);
-}
-
-binop(mod, '%')
 
 inline static VALUE
 f_mul(VALUE x, VALUE y)
@@ -152,16 +128,11 @@ f_sub(VALUE x, VALUE y)
 }
 
 fun1(abs)
-fun1(abs2)
 fun1(arg)
-fun1(conj)
 fun1(denominator)
-fun1(floor)
-fun1(imag)
 fun1(inspect)
 fun1(negate)
 fun1(numerator)
-fun1(real)
 fun1(real_p)
 
 inline static VALUE
@@ -182,8 +153,6 @@ f_to_f(VALUE x)
 fun1(to_r)
 fun1(to_s)
 
-fun2(divmod)
-
 inline static VALUE
 f_eqeq_p(VALUE x, VALUE y)
 {
@@ -194,7 +163,6 @@ f_eqeq_p(VALUE x, VALUE y)
 
 fun2(expt)
 fun2(fdiv)
-fun2(idiv)
 fun2(quo)
 
 inline static VALUE
@@ -255,12 +223,6 @@ inline static VALUE
 k_numeric_p(VALUE x)
 {
     return f_kind_of_p(x, rb_cNumeric);
-}
-
-inline static VALUE
-k_integer_p(VALUE x)
-{
-    return f_kind_of_p(x, rb_cInteger);
 }
 
 inline static VALUE
@@ -457,13 +419,6 @@ nucomp_s_new(int argc, VALUE *argv, VALUE klass)
 }
 
 inline static VALUE
-f_complex_new1(VALUE klass, VALUE x)
-{
-    assert(!k_complex_p(x));
-    return nucomp_s_canonicalize_internal(klass, x, ZERO);
-}
-
-inline static VALUE
 f_complex_new2(VALUE klass, VALUE x, VALUE y)
 {
     assert(!k_complex_p(x));
@@ -537,7 +492,6 @@ m_log_bang(VALUE x)
 
 imp1(sin)
 imp1(sinh)
-imp1(sqrt)
 
 static VALUE
 m_cos(VALUE x)
@@ -570,6 +524,8 @@ m_sin(VALUE x)
 }
 
 #if 0
+imp1(sqrt)
+
 static VALUE
 m_sqrt(VALUE x)
 {
@@ -2091,24 +2047,16 @@ Init_Complex(void)
     assert(fprintf(stderr, "assert() is now active\n"));
 
     id_abs = rb_intern("abs");
-    id_abs2 = rb_intern("abs2");
     id_arg = rb_intern("arg");
-    id_cmp = rb_intern("<=>");
-    id_conj = rb_intern("conj");
     id_convert = rb_intern("convert");
     id_denominator = rb_intern("denominator");
-    id_divmod = rb_intern("divmod");
     id_eqeq_p = rb_intern("==");
     id_expt = rb_intern("**");
     id_fdiv = rb_intern("fdiv");
-    id_floor = rb_intern("floor");
-    id_idiv = rb_intern("div");
-    id_imag = rb_intern("imag");
     id_inspect = rb_intern("inspect");
     id_negate = rb_intern("-@");
     id_numerator = rb_intern("numerator");
     id_quo = rb_intern("quo");
-    id_real = rb_intern("real");
     id_real_p = rb_intern("real?");
     id_to_f = rb_intern("to_f");
     id_to_i = rb_intern("to_i");
