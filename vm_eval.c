@@ -1223,7 +1223,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *const cref_arg, 
 	    bind = Check_TypedStruct(scope, &ruby_binding_data_type);
 	    {
 		envval = bind->env;
-		if (absolute_path == Qnil && !NIL_P(bind->path)) {
+		if (NIL_P(absolute_path) && !NIL_P(bind->path)) {
 		    file = bind->path;
 		    line = bind->first_lineno;
 		    absolute_path = rb_current_realfilepath();

@@ -1,3 +1,7 @@
+Tue Mar 18 23:20:12 2014  Shota Fukumori  <her@sorah.jp>
+
+	* vm_eval.c (eval_string_with_cref): Unify to use NIL_P.
+
 Tue Mar 18 22:03:41 2014  Shota Fukumori  <her@sorah.jp>
 
 	* vm_eval.c (eval_string_with_cref): Use file path even if scope is
