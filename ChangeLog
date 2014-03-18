@@ -1,3 +1,8 @@
+Tue Mar 18 22:03:41 2014  Shota Fukumori  <her@sorah.jp>
+
+	* vm_eval.c (eval_string_with_cref): Use file path even if scope is
+	  given. Related to [ruby-core:56099] [Bug #8662] and r42103.
+
 Mon Mar 17 13:17:47 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* enumerator.c (enumerator_block_call): use RARRAY_CONST_PTR()
