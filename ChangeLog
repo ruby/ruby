@@ -1,6 +1,6 @@
 Mon Mar 17 13:17:47 2014  Koichi Sasada  <ko1@atdot.net>
 
-	* enumerator.c (enumerator_block_call): use PARRAY_CONST_PTR()
+	* enumerator.c (enumerator_block_call): use RARRAY_CONST_PTR()
 	  instead of RARRAY_PTR().
 
 	* io.c (rb_io_s_popen): ditto.
