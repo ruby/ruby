@@ -310,6 +310,21 @@ class TestTime < Test::Unit::TestCase
     end
   end
 
+  def test_marshal_zone_gc
+    assert_separately(%w(--disable-gems), <<-'end;')
+      ENV["TZ"] = "Japan"
+      s = Marshal.dump(Time.now)
+      t = Marshal.load(s)
+      n = 0
+      done = 1000000
+      while t.zone.dup == "JST" && n < done
+        n += 1
+      end
+      assert_equal n, done, "Bug #9652"
+      assert_equal "JST", t.zone, "Bug #9652"
+    end;
+  end
+
   def test_marshal_to_s
     t1 = Time.new(2011,11,8, 0,42,25, 9*3600)
     t2 = Time.at(Marshal.load(Marshal.dump(t1)))

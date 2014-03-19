@@ -1,3 +1,9 @@
+Wed Mar 19 17:13:06 2014  Eric Wong  <e@80x24.org>
+
+	* time.c (time_mload): freeze and preserve marshal-loaded time zone
+	* test/ruby/test_time.rb: add test for GC on loaded object
+	  [Bug #9652]
+
 Tue Mar 18 23:20:12 2014  Shota Fukumori  <her@sorah.jp>
 
 	* vm_eval.c (eval_string_with_cref): Unify to use NIL_P.
