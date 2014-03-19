@@ -761,7 +761,7 @@ define rb_method_entry
     rb_numtable_entry $rb_method_entry_klass->m_tbl_wrapper->tbl $rb_method_entry_id
     set $rb_method_entry_me = (rb_method_entry_t *)$rb_numtable_rec
     if !$rb_method_entry_me
-      set $rb_method_entry_klass = (struct RClass *)$rb_method_entry_klass->ptr->super
+      set $rb_method_entry_klass = (struct RClass *)RCLASS_SUPER($rb_method_entry_klass)
     end
   end
   if $rb_method_entry_me
@@ -790,7 +790,7 @@ define rb_ancestors
   set $rb_ancestors_module = $arg0
   while $rb_ancestors_module
     rp_class $rb_ancestors_module
-    set $rb_ancestors_module = ((struct RClass *)($rb_ancestors_module))->ptr.super
+    set $rb_ancestors_module = RCLASS_SUPER($rb_ancestors_module)
   end
 end
 document rb_ancestors
