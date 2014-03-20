@@ -1,6 +1,8 @@
-require_relative 'helper'
-
-require 'fiddle/cparser'
+begin
+  require_relative 'helper'
+  require 'fiddle/cparser'
+rescue LoadError
+end
 
 module Fiddle
   class TestCParser < TestCase
@@ -30,4 +32,4 @@ module Fiddle
       assert_equal(TYPE_UINTPTR_T, parse_ctype("uintptr_t"))
     end
   end
-end
+end if defined?(Fiddle)

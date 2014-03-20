@@ -1,6 +1,8 @@
-require_relative 'helper'
-
-require 'fiddle/struct'
+begin
+  require_relative 'helper'
+  require 'fiddle/struct'
+rescue LoadError
+end
 
 module Fiddle
   class TestCStructEntity < TestCase
@@ -71,4 +73,4 @@ module Fiddle
       assert_equal("Alice", user["name"].to_s)
     end
   end
-end
+end if defined?(Fiddle)

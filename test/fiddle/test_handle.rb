@@ -1,4 +1,7 @@
-require_relative 'helper'
+begin
+  require_relative 'helper'
+rescue LoadError
+end
 
 module Fiddle
   class TestHandle < TestCase
@@ -183,4 +186,4 @@ module Fiddle
       Fiddle.dlopen("/lib/libc.so.7").sym('strcpy')
     end if /freebsd/=~ RUBY_PLATFORM
   end
-end
+end if defined?(Fiddle)
