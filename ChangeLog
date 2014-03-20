@@ -1,3 +1,12 @@
+Thu Mar 20 16:53:07 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (objspace_malloc_increase): should not invoke
+	  garbage_collect_with_gvl() here on non-ruby threads.
+
+	  Should just ignore the malloc_increase.
+
+	  This issue is pointed by Eric Wong [ruby-core:61519].
+
 Thu Mar 20 13:05:16 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* struct.c (rb_struct_alloc): use RARRAY_CONST_PTR() instead of
