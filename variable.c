@@ -2183,6 +2183,8 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 		    rb_compile_warn(RSTRING_PTR(ce->file), ce->line,
 				    "previous definition of %"PRIsVALUE" was here", name);
 		}
+		st_delete(RCLASS_CONST_TBL(klass), &id, 0);
+		xfree(ce);
 	    }
 	}
     }
