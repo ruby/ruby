@@ -1,4 +1,7 @@
-require_relative 'helper'
+begin
+  require_relative 'helper'
+rescue LoadError
+end
 
 module Fiddle
   class TestFunc < TestCase
@@ -86,4 +89,4 @@ module Fiddle
       assert_equal("1349", buff, bug4929)
     end
   end
-end
+end if defined?(Fiddle)

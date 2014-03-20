@@ -1,3 +1,12 @@
+Thu Mar 20 20:44:17 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* test/fiddle/test_c_struct_entry.rb,
+	  test/fiddle/test_c_union_entity.rb,
+	  test/fiddle/test_cparser.rb, test/fiddle/test_func.rb,
+	  test/fiddle/test_handle.rb, test/fiddle/test_import.rb,
+	  test/fiddle/test_pointer.rb: don't run test if the system
+	  don't support fiddle.
+
 Sun Mar 16 00:57:20 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* ext/.document: remove refinement from documentable directories.

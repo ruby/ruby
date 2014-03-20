@@ -1,5 +1,8 @@
-require_relative 'helper'
-require_relative '../ruby/envutil'
+begin
+  require_relative 'helper'
+  require_relative '../ruby/envutil'
+rescue LoadError
+end
 
 module Fiddle
   class TestPointer < TestCase
@@ -228,4 +231,4 @@ module Fiddle
       assert_raise(DLError) {nullpo[0] = 1}
     end
   end
-end
+end if defined?(Fiddle)
