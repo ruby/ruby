@@ -1,3 +1,9 @@
+Thu Mar 20 21:13:18 2014  Eric Wong  <e@80x24.org>
+
+	* variable.c (rb_const_set): delete existing entry on redefinition
+	  [Bug #9645]
+	* test/ruby/test_const.rb (test_redefinition): test for leak
+
 Thu Mar 20 20:44:17 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* test/fiddle/test_c_struct_entry.rb,
