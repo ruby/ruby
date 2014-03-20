@@ -1330,7 +1330,7 @@ mod_using(VALUE self, VALUE module)
 }
 
 void
-rb_obj_call_init(VALUE obj, int argc, VALUE *argv)
+rb_obj_call_init(VALUE obj, int argc, const VALUE *argv)
 {
     PASS_PASSED_BLOCK();
     rb_funcall2(obj, idInitialize, argc, argv);

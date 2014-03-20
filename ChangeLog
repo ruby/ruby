@@ -1,3 +1,12 @@
+Thu Mar 20 12:59:39 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/intern.h (rb_obj_call_init, rb_class_new_instance):
+	  constify a parameter (VALUE *).
+	  I believe this incompatibility doesn't break any code.
+	  However, if you have trouble, please tell us.
+
+	* eval.c, object.c: ditto.
+
 Thu Mar 20 12:31:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_method.c (rb_method_entry_get_without_cache): get rid of

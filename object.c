@@ -1840,7 +1840,7 @@ rb_class_allocate_instance(VALUE klass)
  */
 
 VALUE
-rb_class_new_instance(int argc, VALUE *argv, VALUE klass)
+rb_class_new_instance(int argc, const VALUE *argv, VALUE klass)
 {
     VALUE obj;
 
