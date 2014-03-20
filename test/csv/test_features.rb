@@ -74,6 +74,14 @@ class TestCSV::Features < TestCSV
     end
   end
 
+  def test_bug_8405
+    TEST_CASES.each do |test_case|
+      assert_equal( test_case.last.map { |t| t.tr('"', "|") unless t.nil? },
+                    CSV.parse_line( test_case.first.tr('"', "|"),
+                                    quote_char: "|" ) )
+    end
+  end
+
   def test_csv_char_readers
     %w[col_sep row_sep quote_char].each do |reader|
       csv = CSV.new("abc,def", reader.to_sym => "|")

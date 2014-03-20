@@ -1,3 +1,11 @@
+Thu Mar 20 11:37:28 2014  James Edward Gray II  <james@graysoftinc.com>
+
+	* lib/csv.rb: Fixed a broken regular expression that was causing
+	  CSV to miss escaping some special meaning characters when used
+	  in parsing.
+	  Reported by David Unric
+	  [ruby-core:54986] [Bug #8405]
+
 Thu Mar 20 16:53:07 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (objspace_malloc_increase): should not invoke
