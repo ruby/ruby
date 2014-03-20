@@ -1,5 +1,3 @@
-require_relative "envutil"
-
 module Memory
   keys = []
   vals = []
@@ -109,6 +107,21 @@ module Memory
 
     def initialize
       _update
+    end
+
+    def to_s
+      status = each_pair.map {|n,v|
+        "#{n}:#{v}"
+      }
+      "{#{status.join(",")}}"
+    end
+
+    def self.parse(str)
+      status = allocate
+      str.scan(/(?:\A\{|\G,)(#{members.join('|')}):(\d+)(?=,|\}\z)/) do
+        status[$1] = $2.to_i
+      end
+      status
     end
   end
 end
