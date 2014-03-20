@@ -5138,8 +5138,8 @@ Init_stack(volatile VALUE *addr)
  *  call-seq:
  *     GC.start                     -> nil
  *     GC.garbage_collect           -> nil
- *     ObjectSpace.garbage_collect  -> nil
- *     GC.start(full_mark: false)   -> nil
+ *     GC.start(full_mark: true, immediate_sweep: true)           -> nil
+ *     GC.garbage_collect(full_mark: true, immediate_sweep: true) -> nil
  *
  *  Initiates garbage collection, unless manually disabled.
  *
