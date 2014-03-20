@@ -1,3 +1,10 @@
+Thu Mar 20 12:31:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_method_entry_get_without_cache): get rid of
+	  infinite recursion at aliases in a subclass and a superclass.
+	  return actually defined class for other than singleton class.
+	  [ruby-core:60431] [Bug #9475]
+
 Wed Mar 19 17:13:06 2014  Eric Wong  <e@80x24.org>
 
 	* time.c (time_mload): freeze and preserve marshal-loaded time zone
