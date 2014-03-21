@@ -1,3 +1,11 @@
+Sat Mar 22 06:46:16 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/cgi/util.rb (escape_html, unescape_html): make synonyms
+	  aliases instead of wrapper methods.
+
+	* lib/cgi/util.rb (escape_element, unescape_element): ditto.
+	  [Fixes GH-573]
+
 Fri Mar 21 21:57:34 2014  Akinori MUSHA  <knu@iDaemons.org>
 
 	* configure.in: Fix a build problem with clang and --with-opt-dir.
