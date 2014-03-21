@@ -223,6 +223,13 @@ class TestCSV::Headers < TestCSV
     assert_equal([:one, :two_three], csv.headers)
   end
 
+  def test_builtin_converters_with_blank_header
+    csv = CSV.parse( "one,,three", headers:           true,
+                                   return_headers:    true,
+                                   header_converters: [:downcase, :symbol] )
+    assert_equal([:one, nil, :three], csv.headers)
+  end
+
   def test_custom_converter
     converter = lambda { |header| header.tr(" ", "_") }
     csv       = CSV.parse( "One,TWO Three",
