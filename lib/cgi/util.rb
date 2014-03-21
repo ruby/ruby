@@ -143,14 +143,14 @@ module CGI::Util
     end
   end
 
-  # Synonym for CGI::escapeElement(str)
-  def escape_element(str)
-    escapeElement(str)
+  # Synonym for CGI::escapeElement(str, *elements)
+  def escape_element(str, *elements)
+    escapeElement(str, *elements)
   end
 
-  # Synonym for CGI::unescapeElement(str)
-  def unescape_element(str)
-    unescapeElement(str)
+  # Synonym for CGI::unescapeElement(str, *elements)
+  def unescape_element(str, *elements)
+    unescapeElement(str, *elements)
   end
 
   # Abbreviated day-of-week names specified by RFC 822
