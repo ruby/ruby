@@ -779,6 +779,8 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
     rb_cv_warnflags="$warnflags"
     warnflags=
 fi
+RUBY_TRY_CFLAGS(-Qunused-arguments, [RUBY_APPEND_OPTIONS(rb_cv_wsuppress_flags, -Qunused-arguments)])
+
 if test "$GCC" = yes; then
     # -D_FORTIFY_SOURCE
     # When defined _FORTIFY_SOURCE, glibc enables some additional sanity
@@ -1302,7 +1304,8 @@ AC_DEFINE_UNQUOTED(PACKED_STRUCT_UNALIGNED(x), $packed_struct_unaligned)
 AC_DEFUN([RUBY_CHECK_PRINTF_PREFIX], [
 AC_CACHE_CHECK([for printf prefix for $1], [rb_cv_pri_prefix_]AS_TR_SH($1),[
     [rb_cv_pri_prefix_]AS_TR_SH($1)=[NONE]
-    RUBY_WERROR_FLAG(for pri in $2; do
+    RUBY_WERROR_FLAG(RUBY_APPEND_OPTIONS(CFLAGS, $rb_cv_wsuppress_flags)
+    for pri in $2; do
         AC_TRY_COMPILE(
             [@%:@include <stdio.h>
 	    @%:@include <stddef.h>

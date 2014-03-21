@@ -1,3 +1,16 @@
+Fri Mar 21 21:57:34 2014  Akinori MUSHA  <knu@iDaemons.org>
+
+	* configure.in: Fix a build problem with clang and --with-opt-dir.
+	  If ruby is configured with --with-opt-dir=dir when using clang
+	  as compiler, a warning `clang: warning: argument unused during
+	  compilation: '-I dir'` is emitted almost every time clang
+	  compiles a file.  Unfortunately, RUBY_CHECK_PRINTF_PREFIX takes
+	  any output from the compiler as fatal error, and the check thus
+	  fails due to the warning.  This is an attempt to fix the problem
+	  by adding a flag -Qunused-arguments to CFLAGS locally in the
+	  function to suppress the warning. [ruby-dev:48062] [Bug #9658]
+	  [Fixes GH-571] https://github.com/ruby/ruby/pull/571
+
 Fri Mar 21 16:31:56 2014  Zachary Scott  <e@zzak.io>
 
 	* gc.c: [DOC] Fix call-seq for GC.start by @jasonrclark [Fixes GH-572]
