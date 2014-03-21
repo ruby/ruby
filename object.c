@@ -2746,13 +2746,15 @@ rb_Integer(VALUE val)
  *  In any case, strings should be strictly conformed to numeric
  *  representation. This behavior is different from that of
  *  <code>String#to_i</code>.  Non string values will be converted using
- *  <code>to_int</code>, and <code>to_i</code>.
+ *  <code>to_int</code>, and <code>to_i</code>. Passing <code>nil</code>
+ *  raises a TypeError.
  *
  *     Integer(123.999)    #=> 123
  *     Integer("0x1a")     #=> 26
  *     Integer(Time.new)   #=> 1204973019
  *     Integer("0930", 10) #=> 930
  *     Integer("111", 2)   #=> 7
+ *     Integer(nil)        #=> TypeError
  */
 
 static VALUE

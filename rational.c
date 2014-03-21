@@ -584,6 +584,8 @@ f_rational_new_no_reduce2(VALUE klass, VALUE x, VALUE y)
  *
  *    Rational(1, 2)   #=> (1/2)
  *    Rational('1/2')  #=> (1/2)
+ *    Rational(nil)    #=> TypeError
+ *    Rational(1, nil) #=> TypeError
  *
  * Syntax of string form:
  *
