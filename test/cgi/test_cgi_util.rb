@@ -26,14 +26,14 @@ class CGIUtilTest < Test::Unit::TestCase
 
   def test_cgi_escape_with_invalid_byte_sequence
     assert_nothing_raised(ArgumentError) do
-      assert_equal('%C0%3C%3C', CGI::escape("\xC0<<".force_encoding("UTF-8")))
+      assert_equal('%C0%3C%3C', CGI::escape("\xC0\<\<".force_encoding("UTF-8")))
     end
   end
 
   def test_cgi_escape_preserve_encoding
-    assert_equal(Encoding::US_ASCII, CGI::escape("\xC0<<".force_encoding("US-ASCII")).encoding)
-    assert_equal(Encoding::ASCII_8BIT, CGI::escape("\xC0<<".force_encoding("ASCII-8BIT")).encoding)
-    assert_equal(Encoding::UTF_8, CGI::escape("\xC0<<".force_encoding("UTF-8")).encoding)
+    assert_equal(Encoding::US_ASCII, CGI::escape("\xC0\<\<".force_encoding("US-ASCII")).encoding)
+    assert_equal(Encoding::ASCII_8BIT, CGI::escape("\xC0\<\<".force_encoding("ASCII-8BIT")).encoding)
+    assert_equal(Encoding::UTF_8, CGI::escape("\xC0\<\<".force_encoding("UTF-8")).encoding)
   end
 
   def test_cgi_unescape
