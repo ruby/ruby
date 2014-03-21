@@ -1,3 +1,8 @@
+Fri Mar 21 16:31:56 2014  Zachary Scott  <e@zzak.io>
+
+	* gc.c: [DOC] Fix call-seq for GC.start by @jasonrclark [Fixes GH-572]
+	  https://github.com/ruby/ruby/pull/572
+
 Thu Mar 20 11:37:28 2014  James Edward Gray II  <james@graysoftinc.com>
 
 	* lib/csv.rb: Fixed a broken regular expression that was causing

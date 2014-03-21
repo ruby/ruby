@@ -5138,14 +5138,14 @@ Init_stack(volatile VALUE *addr)
  *  call-seq:
  *     GC.start                     -> nil
  *     GC.garbage_collect           -> nil
- *     ObjectSpace.garbage_collect  -> nil
- *     GC.start(full_mark: false)   -> nil
+ *     GC.start(full_mark: true, immediate_sweep: true)           -> nil
+ *     GC.garbage_collect(full_mark: true, immediate_sweep: true) -> nil
  *
  *  Initiates garbage collection, unless manually disabled.
  *
  *  This method is defined with keyword arguments that default to true:
  *
- *     def GC.start(full_mark: true, immediate_sweep: true) end
+ *     def GC.start(full_mark: true, immediate_sweep: true); end
  *
  *  Use full_mark: false to perform a minor GC.
  *  Use immediate_sweep: false to defer sweeping (use lazy sweep).
