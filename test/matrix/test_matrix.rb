@@ -156,6 +156,7 @@ class TestMatrix < Test::Unit::TestCase
 
   def test_inverse
     assert_equal(Matrix[[-1, 1], [0, -1]], Matrix[[-1, -1], [0, -1]].inverse)
+    assert_raise(RuntimeError) { Matrix.empty.inverse }
   end
 
   def test_determinant
