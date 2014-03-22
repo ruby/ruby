@@ -436,11 +436,11 @@ parse_debug_line(int num_traces, void **traces,
 /* read file and fill lines */
 static void
 fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
-	   line_info_t *current_line, line_info_t *lines);
+	   line_info_t *current_line, line_info_t *lines, int offset);
 
 static void
 follow_debuglink(char *debuglink, int num_traces, void **traces, char **syms,
-		 line_info_t *current_line, line_info_t *lines)
+		 line_info_t *current_line, line_info_t *lines, int offset)
 {
     /* Ideally we should check 4 paths to follow gnu_debuglink,
        but we handle only one case for now as this format is used
@@ -467,13 +467,13 @@ follow_debuglink(char *debuglink, int num_traces, void **traces, char **syms,
     current_line->mapped2 = current_line->mapped;
     current_line->mapped_size2 = current_line->mapped_size;
     current_line->fd2 = current_line->fd;
-    fill_lines(num_traces, traces, syms, 0, current_line, lines);
+    fill_lines(num_traces, traces, syms, 0, current_line, lines, offset);
 }
 
 /* read file and fill lines */
 static void
 fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
-	   line_info_t *current_line, line_info_t *lines)
+	   line_info_t *current_line, line_info_t *lines, int offset)
 {
     int i, j;
     char *shstr;
@@ -574,13 +574,18 @@ fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
 	ElfW(Sym) *symtab = (ElfW(Sym) *)(file + symtab_shdr->sh_offset);
 	int symtab_count = (int)(symtab_shdr->sh_size / sizeof(ElfW(Sym)));
 	for (j = 0; j < symtab_count; j++) {
-	    int type = ELF_ST_TYPE(symtab[j].st_info);
+	    ElfW(Sym) *sym = &symtab[j];
+	    int type = ELF_ST_TYPE(sym->st_info);
+	    intptr_t saddr = (intptr_t)sym->st_value + lines[offset].base_addr;
 	    if (type != STT_FUNC) continue;
-	    for (i = 0; i < num_traces; i++) {
-		ElfW(Sym) *sym = &symtab[j];
-		intptr_t saddr = (intptr_t)sym->st_value + lines[i].base_addr;
-		ptrdiff_t d = (intptr_t)traces[i] - saddr;
-		if (d <= 0 || d > (ptrdiff_t)sym->st_size) continue;
+	    for (i = offset; i < num_traces; i++) {
+		intptr_t d = (intptr_t)traces[i] - saddr;
+		const char *path = lines[i].path;
+		if (path && strcmp(lines[offset].path, path) != 0)
+		    continue;
+		if (d <= 0 || d > (intptr_t)sym->st_size)
+		    continue;
+		/* fill symbol name and addr from .symtab */
 		lines[i].sname = strtab + sym->st_name;
 		lines[i].saddr = saddr;
 	    }
@@ -594,7 +599,7 @@ fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
 	if (gnu_debuglink_shdr && check_debuglink) {
 	    follow_debuglink(file + gnu_debuglink_shdr->sh_offset,
 			     num_traces, traces, syms,
-			     current_line, lines);
+			     current_line, lines, offset);
 	}
 	return;
     }
@@ -651,7 +656,7 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces, char **syms)
 	binary_filename[len] = '\0';
 
 	curobj_baseaddr = lines[i].base_addr;
-	fill_lines(num_traces, traces, syms, 1, &lines[i], lines);
+	fill_lines(num_traces, traces, syms, 1, &lines[i], lines, i);
     }
 
     /* output */

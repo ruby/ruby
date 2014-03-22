@@ -1,3 +1,8 @@
+Sat Mar 22 22:56:45 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c (fill_lines): compare the file names of object in which
+	  symbols exist. [Bug #9654] [ruby-dev:48058]
+
 Sat Mar 22 06:46:16 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/cgi/util.rb (escape_html, unescape_html): make synonyms
