@@ -84,3 +84,9 @@ with all sufficient information, see the ChangeLog file.
 
 * struct RBignum is hidden.  [Feature #6083]
   Use rb_integer_pack and rb_integer_unpack instead.
+
+* st hash table uses power-of-two sizes for speed [Feature #9425].
+  Lookups are 10-25% faster if using appropriate hash functions.
+  However, weaknesses in hash distribution can no longer be masked
+  by prime number-sized tables, so extensions may need to tweak
+  hash functions to ensure good distribution.

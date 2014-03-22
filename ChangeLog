@@ -1,3 +1,19 @@
+Sun Mar 23 08:12:27 2014  Eric Wong  <e@80x24.org>
+
+	* st.c (hash_pos): use bitwise AND to avoid slow modulo op
+	  (new_size): power-of-two sizes for hash_pos change
+	  (st_numhash): adjust for common keys due to lack of prime modulo
+	  [Feature #9425]
+	* hash.c (rb_any_hash): right shift for symbols
+	* benchmark/bm_hash_aref_miss.rb: added to show improvement
+	* benchmark/bm_hash_aref_sym_long.rb: ditto
+	* benchmark/bm_hash_aref_str.rb: ditto
+	* benchmark/bm_hash_aref_sym.rb: ditto
+	* benchmark/bm_hash_ident_num.rb: added to prevent regression
+	* benchmark/bm_hash_ident_obj.rb: ditto
+	* benchmark/bm_hash_ident_str.rb: ditto
+	* benchmark/bm_hash_ident_sym.rb: ditto
+
 Sat Mar 22 22:56:45 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* addr2line.c (fill_lines): compare the file names of object in which
