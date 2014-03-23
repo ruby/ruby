@@ -18,6 +18,7 @@
 #include "internal.h"
 #include <errno.h>
 #include "probes.h"
+#include "id.h"
 
 #ifdef __APPLE__
 # ifdef HAVE_CRT_EXTERNS_H
@@ -132,7 +133,7 @@ rb_any_hash(VALUE a)
 
     if (SPECIAL_CONST_P(a)) {
 	if (a == Qundef) return 0;
-	if (SYMBOL_P(a)) a >>= (RUBY_SPECIAL_SHIFT + 3); /* 3=ID_SCOPE_SHIFT */
+	if (SYMBOL_P(a)) a >>= (RUBY_SPECIAL_SHIFT + ID_SCOPE_SHIFT);
 	hnum = rb_objid_hash((st_index_t)a);
     }
     else if (BUILTIN_TYPE(a) == T_STRING) {
