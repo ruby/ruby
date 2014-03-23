@@ -1,4 +1,4 @@
-Sun Mar 23 11:03:27 2014  Kohei Suzuki  <eagletmt@gmail.com>
+Sun Mar 23 11:03:50 2014  Kohei Suzuki  <eagletmt@gmail.com>
 
 	* vm_method.c (rb_method_entry_get_without_cache): me->klass is 0
 	  for a method aliased in a module.  [ruby-core:61636] [Bug #9663]
