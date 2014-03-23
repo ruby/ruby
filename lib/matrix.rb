@@ -911,7 +911,6 @@ class Matrix
   #         0 -1
   #
   def inverse
-    raise RuntimeError, "inverse of empty matrix is not defined" if empty?
     Matrix.Raise ErrDimensionMismatch unless square?
     self.class.I(row_count).send(:inverse_from, self)
   end
