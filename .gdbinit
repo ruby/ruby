@@ -731,7 +731,7 @@ define rb_numtable_entry
       end
     end
   else
-    set $rb_numtable_p = $rb_numtable_tbl->as.big.bins[$rb_numtable_id % $rb_numtable_tbl->num_bins]
+    set $rb_numtable_p = $rb_numtable_tbl->as.big.bins[st_numhash($rb_numtable_id) % $rb_numtable_tbl->num_bins]
     while $rb_numtable_p
       if $rb_numtable_p->key == $rb_numtable_id
 	set $rb_numtable_key = $rb_numtable_p->key
