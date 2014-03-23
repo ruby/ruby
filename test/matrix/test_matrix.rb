@@ -155,6 +155,7 @@ class TestMatrix < Test::Unit::TestCase
   end
 
   def test_inverse
+    assert_equal(Matrix.empty(0, 0), Matrix.empty.inverse)
     assert_equal(Matrix[[-1, 1], [0, -1]], Matrix[[-1, -1], [0, -1]].inverse)
     assert_raise(ExceptionForMatrix::ErrDimensionMismatch) { @m1.inverse }
   end
@@ -180,11 +181,13 @@ class TestMatrix < Test::Unit::TestCase
   end
 
   def test_diagonal
+    assert_equal(Matrix.empty(0, 0), Matrix.diagonal( ))
     assert_equal(Matrix[[3,0,0],[0,2,0],[0,0,1]], Matrix.diagonal(3, 2, 1))
     assert_equal(Matrix[[4,0,0,0],[0,3,0,0],[0,0,2,0],[0,0,0,1]], Matrix.diagonal(4, 3, 2, 1))
   end
 
   def test_scalar
+    assert_equal(Matrix.empty(0, 0), Matrix.scalar(0, 1))
     assert_equal(Matrix[[2,0,0],[0,2,0],[0,0,2]], Matrix.scalar(3, 2))
     assert_equal(Matrix[[2,0,0,0],[0,2,0,0],[0,0,2,0],[0,0,0,2]], Matrix.scalar(4, 2))
   end
