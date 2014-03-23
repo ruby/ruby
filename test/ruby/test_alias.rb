@@ -179,4 +179,19 @@ class TestAlias < Test::Unit::TestCase
       assert_equal("ABC", c.new.foo, bug9475)
     end
   end
+
+  def test_alias_in_module
+    bug9663 = '[ruby-core:61635] [Bug #9663]'
+
+    assert_separately(['-', bug9663], <<-'end;')
+      bug = ARGV[0]
+
+      m = Module.new do
+        alias orig_to_s to_s
+      end
+
+      o = Object.new.extend(m)
+      assert_equal(o.to_s, o.orig_to_s, bug)
+    end;
+  end
 end

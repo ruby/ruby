@@ -578,7 +578,7 @@ rb_method_entry_get_without_cache(VALUE klass, ID id,
     VALUE defined_class;
     rb_method_entry_t *me = search_method(klass, id, &defined_class);
 
-    if (me) {
+    if (me && !me->klass) {
 	switch (BUILTIN_TYPE(me->klass)) {
 	  case T_CLASS:
 	    if (RBASIC(klass)->flags & FL_SINGLETON) break;

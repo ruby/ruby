@@ -1,3 +1,8 @@
+Sun Mar 23 11:03:27 2014  Kohei Suzuki  <eagletmt@gmail.com>
+
+	* vm_method.c (rb_method_entry_get_without_cache): me->klass is 0
+	  for a method aliased in a module.  [ruby-core:61636] [Bug #9663]
+
 Sun Mar 23 08:12:27 2014  Eric Wong  <e@80x24.org>
 
 	* st.c (hash_pos): use bitwise AND to avoid slow modulo op
