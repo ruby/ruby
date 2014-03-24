@@ -2250,22 +2250,18 @@ m_core_set_postexe(VALUE self)
     return Qnil;
 }
 
+static VALUE m_core_hash_merge_ary(VALUE self, VALUE hash, VALUE ary);
+
 static VALUE
 m_core_hash_from_ary(VALUE self, VALUE ary)
 {
     VALUE hash = rb_hash_new();
-    int i;
 
     if (RUBY_DTRACE_HASH_CREATE_ENABLED()) {
 	RUBY_DTRACE_HASH_CREATE(RARRAY_LEN(ary), rb_sourcefile(), rb_sourceline());
     }
 
-    assert(RARRAY_LEN(ary) % 2 == 0);
-    for (i=0; i<RARRAY_LEN(ary); i+=2) {
-	rb_hash_aset(hash, RARRAY_AREF(ary, i), RARRAY_AREF(ary, i+1));
-    }
-
-    return hash;
+    return m_core_hash_merge_ary(self, hash, ary);
 }
 
 static VALUE
