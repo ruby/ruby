@@ -320,7 +320,7 @@ class TestTime < Test::Unit::TestCase
       while t.zone.dup == "JST" && n < done
         n += 1
       end
-      assert_equal n, done, "Bug #9652"
+      assert_equal done, n, "Bug #9652"
       assert_equal "JST", t.zone, "Bug #9652"
     end;
   end
