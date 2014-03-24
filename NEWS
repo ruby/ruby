@@ -17,10 +17,9 @@ with all sufficient information, see the ChangeLog file.
 
 * Enumerable
   * Extended methods:
-    * min
-    * min_by
-    * max
-    * max_by
+    * min, min_by, max and max_by supports optional argument to return
+      multiple elements.
+
 * Symbol
   * New methods
     * Symbol.find(str) returns whether given string is defined as symbol or not.
