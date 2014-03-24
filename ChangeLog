@@ -1,3 +1,8 @@
+Mon Mar 24 15:19:47 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c (rb_dump_backtrace_with_lines): fetch path of the
+	  executable from /proc/self/exe on Linux.
+
 Mon Mar 24 14:14:37 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* gc.c: Fix up default GC params by @csfrancis [fix GH-556]

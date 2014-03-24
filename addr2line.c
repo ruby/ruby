@@ -618,13 +618,39 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces, char **syms)
     line_info_t *lines = (line_info_t *)calloc(num_traces, sizeof(line_info_t));
 
 #ifdef HAVE_DLADDR
+# ifdef __linux__
+#  define PROC_SELF_EXE "/proc/self/exe"
+    intptr_t main_fbase;
+    char *main_path;
+    {
+	Dl_info info;
+	dladdr(rb_dump_backtrace_with_lines, &info);
+	main_fbase = (intptr_t)info.dli_fbase;
+    }
+    {
+	ssize_t len = readlink(PROC_SELF_EXE, binary_filename, PATH_MAX);
+	main_path = (char *)alloca(len + 1);
+	if (!main_path) return;
+	strncpy(main_path, binary_filename, len);
+	main_path[len] = 0;
+    }
+# endif
     /* get object name in which the symbol is */
     for (i = 0; i < num_traces; i++) {
 	Dl_info info;
 	if (dladdr(traces[i], &info)) {
-	    lines[i].path = info.dli_fname;
 	    /* this may set base addr even if executable is not shared object file */
 	    lines[i].base_addr = (intptr_t)info.dli_fbase;
+# ifdef __linux__
+	    if (lines[i].base_addr == main_fbase) {
+		lines[i].path = main_path;
+	    }
+	    else {
+		lines[i].path = info.dli_fname;
+	    }
+# else
+	    lines[i].path = info.dli_fname;
+# endif
 	    lines[i].line = 0;
 	    if (info.dli_saddr) {
 		lines[i].sname = info.dli_sname;
