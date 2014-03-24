@@ -2253,6 +2253,18 @@ m_core_set_postexe(VALUE self)
 static VALUE m_core_hash_merge_ary(VALUE self, VALUE hash, VALUE ary);
 
 static VALUE
+core_hash_merge(VALUE hash, long argc, const VALUE *argv)
+{
+    long i;
+
+    assert(argc % 2 == 0);
+    for (i=0; i<argc; i+=2) {
+	rb_hash_aset(hash, argv[i], argv[i+1]);
+    }
+    return hash;
+}
+
+static VALUE
 m_core_hash_from_ary(VALUE self, VALUE ary)
 {
     VALUE hash = rb_hash_new();
@@ -2267,25 +2279,16 @@ m_core_hash_from_ary(VALUE self, VALUE ary)
 static VALUE
 m_core_hash_merge_ary(VALUE self, VALUE hash, VALUE ary)
 {
-    int i;
-
-    assert(RARRAY_LEN(ary) % 2 == 0);
-    for (i=0; i<RARRAY_LEN(ary); i+=2) {
-	rb_hash_aset(hash, RARRAY_AREF(ary, i), RARRAY_AREF(ary, i+1));
-    }
-
+    core_hash_merge(hash, RARRAY_LEN(ary), RARRAY_CONST_PTR(ary));
     return hash;
 }
 
 static VALUE
 m_core_hash_merge_ptr(int argc, VALUE *argv, VALUE recv)
 {
-    int i;
     VALUE hash = argv[0];
 
-    for (i=1; i<argc; i+=2) {
-	rb_hash_aset(hash, argv[i], argv[i+1]);
-    }
+    core_hash_merge(hash, argc-1, argv+1);
 
     return hash;
 }
