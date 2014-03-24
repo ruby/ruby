@@ -1,3 +1,7 @@
+Mon Mar 24 14:14:37 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* gc.c: Fix up default GC params by @csfrancis [fix GH-556]
+
 Mon Mar 24 13:13:36 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* addr2line.c (parse_debug_line_cu): explicitly specify signed char
