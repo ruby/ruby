@@ -1,3 +1,9 @@
+Mon Mar 24 13:13:36 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c (parse_debug_line_cu): explicitly specify signed char
+	  because DWARF's line_Base is signed char and char maybe unsigned.
+	  patched by Rei Odaira. [ruby-dev:48068] [Bug #9654]
+
 Sun Mar 23 11:03:50 2014  Kohei Suzuki  <eagletmt@gmail.com>
 
 	* vm_method.c (rb_method_entry_get_without_cache): me->klass is 0

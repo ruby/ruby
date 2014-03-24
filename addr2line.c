@@ -294,7 +294,7 @@ parse_debug_line_cu(int num_traces, void **traces,
     is_stmt = default_is_stmt = *(unsigned char *)p;
     p++;
 
-    line_base = *(char *)p;
+    line_base = *(signed char *)p;
     p++;
 
     line_range = *(unsigned char *)p;
