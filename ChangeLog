@@ -1,3 +1,7 @@
+Mon Mar 24 22:19:56 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (ripper_initialize): filename can not be modified.
+
 Mon Mar 24 15:19:47 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* addr2line.c (rb_dump_backtrace_with_lines): fetch path of the

@@ -26,6 +26,10 @@ class TestRipper::Ripper < Test::Unit::TestCase
 
   def test_filename
     assert_equal '(ripper)', @ripper.filename
+    filename = "ripper"
+    ripper = Ripper.new("", filename)
+    filename.clear
+    assert_equal "ripper", ripper.filename
   end
 
   def test_lineno

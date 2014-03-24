@@ -11445,9 +11445,11 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
     parser->eofp = Qfalse;
     if (NIL_P(fname)) {
         fname = STR_NEW2("(ripper)");
+	OBJ_FREEZE(fname);
     }
     else {
         StringValue(fname);
+	fname = rb_str_new_frozen(fname);
     }
     parser_initialize(parser);
 
