@@ -571,11 +571,17 @@ fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
 	char *strtab = file + strtab_shdr->sh_offset;
 	ElfW(Sym) *symtab = (ElfW(Sym) *)(file + symtab_shdr->sh_offset);
 	int symtab_count = (int)(symtab_shdr->sh_size / sizeof(ElfW(Sym)));
+#ifdef __powerpc64__
+	kprintf("\n= %s %lx\n",lines[offset].path,lines[offset].base_addr);
+#endif
 	for (j = 0; j < symtab_count; j++) {
 	    ElfW(Sym) *sym = &symtab[j];
 	    int type = ELF_ST_TYPE(sym->st_info);
 	    intptr_t saddr = (intptr_t)sym->st_value + current_line->base_addr;
 	    if (type != STT_FUNC) continue;
+#ifdef __powerpc64__
+	kprintf("%s %lx %lx\n",strtab + sym->st_name,sym->st_value,sym->st_size);
+#endif
 	    for (i = offset; i < num_traces; i++) {
 		intptr_t d = (intptr_t)traces[i] - saddr;
 		if (lines[i].line != -1)

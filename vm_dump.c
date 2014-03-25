@@ -819,15 +819,6 @@ rb_vm_bugreport(void)
 	fputs("\n", stderr);
     }
 
-#if HAVE_BACKTRACE || defined(_WIN32)
-    fprintf(stderr, "-- C level backtrace information "
-	    "-------------------------------------------\n");
-    rb_print_backtrace();
-
-
-    fprintf(stderr, "\n");
-#endif /* HAVE_BACKTRACE */
-
     if (other_runtime_info || vm) {
 	fprintf(stderr, "-- Other runtime information "
 		"-----------------------------------------------\n\n");
@@ -907,5 +898,14 @@ rb_vm_bugreport(void)
 	    fprintf(stderr, "\n");
 	}
 #endif /* __FreeBSD__ */
+#if HAVE_BACKTRACE || defined(_WIN32)
+    fprintf(stderr, "-- C level backtrace information "
+	    "-------------------------------------------\n");
+    rb_print_backtrace();
+
+
+    fprintf(stderr, "\n");
+#endif /* HAVE_BACKTRACE */
+
     }
 }
