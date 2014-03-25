@@ -74,6 +74,7 @@ enum lex_state_bits {
     EXPR_DOT_bit,		/* right after `.' or `::', no reserved words. */
     EXPR_CLASS_bit,		/* immediate after `class', no here document. */
     EXPR_VALUE_bit,		/* alike EXPR_BEG but label is disallowed. */
+    EXPR_LABELARG_bit,		/* ignore significant, +/- is a sign. */
     EXPR_MAX_STATE
 };
 /* examine combinations */
@@ -90,7 +91,8 @@ enum lex_state_e {
     DEF_EXPR(DOT),
     DEF_EXPR(CLASS),
     DEF_EXPR(VALUE),
-    EXPR_BEG_ANY  =  (EXPR_BEG | EXPR_VALUE | EXPR_MID | EXPR_CLASS),
+    DEF_EXPR(LABELARG),
+    EXPR_BEG_ANY  =  (EXPR_BEG | EXPR_VALUE | EXPR_MID | EXPR_CLASS | EXPR_LABELARG),
     EXPR_ARG_ANY  =  (EXPR_ARG | EXPR_CMDARG),
     EXPR_END_ANY  =  (EXPR_END | EXPR_ENDARG | EXPR_ENDFN)
 };
@@ -244,6 +246,7 @@ struct parser_params {
     int parser_brace_nest;
     int parser_compile_for_eval;
     VALUE parser_cur_mid;
+    int parser_in_kwarg;
     int parser_in_defined;
     char *parser_tokenbuf;
     int parser_tokidx;
@@ -4402,9 +4405,14 @@ f_arglist	: '(' f_args rparen
 			lex_state = EXPR_BEG;
 			command_start = TRUE;
 		    }
-		| f_args term
+		|   {
+			$<num>$ = parser->parser_in_kwarg;
+			parser->parser_in_kwarg = 1;
+		    }
+		    f_args term
 		    {
-			$$ = $1;
+			parser->parser_in_kwarg = $<num>1;
+			$$ = $2;
 			lex_state = EXPR_BEG;
 			command_start = TRUE;
 		    }
@@ -8147,7 +8155,7 @@ parser_yylex(struct parser_params *parser)
 
 	    if (IS_LABEL_POSSIBLE()) {
 		if (IS_LABEL_SUFFIX(0)) {
-		    lex_state = EXPR_BEG;
+		    lex_state = EXPR_LABELARG;
 		    nextc();
 		    set_yylval_name(TOK_INTERN());
 		    return tLABEL;
@@ -10861,6 +10869,7 @@ parser_initialize(struct parser_params *parser)
     parser->parser_in_single = 0;
     parser->parser_in_def = 0;
     parser->parser_in_defined = 0;
+    parser->parser_in_kwarg = 0;
     parser->parser_compile_for_eval = 0;
     parser->parser_cur_mid = 0;
     parser->parser_tokenbuf = NULL;

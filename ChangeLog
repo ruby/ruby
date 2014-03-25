@@ -1,3 +1,10 @@
+Tue Mar 25 16:47:36 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (lex_state_e, parser_params, f_arglist, parser_yylex):
+	  separate EXPR_LABELARG from EXPR_BEG and let newline significant,
+	  so that required keyword argument can place at the end of
+	  argument list without parentheses.  [ruby-core:61658] [Bug #9669]
+
 Mon Mar 24 22:19:56 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (ripper_initialize): filename can not be modified.

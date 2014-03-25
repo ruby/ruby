@@ -325,6 +325,16 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([[:keyreq, :a], [:keyrest, :b]], o.method(:bar).parameters, feature7701)
     assert_raise_with_message(ArgumentError, /missing keyword/, bug8139) {o.bar(c: bug8139)}
     assert_raise_with_message(ArgumentError, /missing keyword/, bug8139) {o.bar}
+
+    bug9669 = '[ruby-core:61658] [Bug #9669]'
+    assert_nothing_raised(SyntaxError, bug9669) do
+      eval(<<-'end;', nil, __FILE__, __LINE__)
+        def bug9669.foo a:
+          return a
+        end
+      end;
+    end
+    assert_equal(42, bug9669.foo(a: 42))
   end
 
   def test_block_required_keyword
