@@ -1,3 +1,15 @@
+Wed Mar 26 08:45:00 2014  Sam Rawlins  <sam.rawlins@gmail.com>
+
+	* internal.h: add prototype for rb_reg_search0
+
+	* re.c: rename rb_reg_search to rb_reg_search0, add set_backref_str
+	  argument to allow callers to indicate that they don't require the
+	  backref string to be allocated.
+
+	* string.c: don't allocate backref str if replacement string is provided
+
+	[GH-578] [Bug #9676] [ruby-core:61682]
+
 Wed Mar 26 08:29:43 2014  mo khan  <mo@mokhan.ca>
 
 	* lib/rubygem.rb: fix spelling of Jim Weirich.  [Fixes GH-577]

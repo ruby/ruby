@@ -1375,7 +1375,7 @@ rb_reg_adjust_startpos(VALUE re, VALUE str, long pos, int reverse)
 
 /* returns byte offset */
 long
-rb_reg_search(VALUE re, VALUE str, long pos, int reverse)
+rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
 {
     long result;
     VALUE match;
@@ -1450,15 +1450,24 @@ rb_reg_search(VALUE re, VALUE str, long pos, int reverse)
 	    FL_UNSET(match, FL_TAINT);
     }
 
-    RMATCH(match)->str = rb_str_new4(str);
+    if (set_backref_str) {
+	RMATCH(match)->str = rb_str_new4(str);
+	OBJ_INFECT(match, str);
+    }
+
     RMATCH(match)->regexp = re;
     RMATCH(match)->rmatch->char_offset_updated = 0;
     rb_backref_set(match);
 
     OBJ_INFECT(match, re);
-    OBJ_INFECT(match, str);
 
     return result;
+}
+
+long
+rb_reg_search(VALUE re, VALUE str, long pos, int reverse)
+{
+	return rb_reg_search0(re, str, pos, reverse, 1);
 }
 
 VALUE
