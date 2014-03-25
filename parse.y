@@ -7017,13 +7017,16 @@ parser_yylex(struct parser_params *parser)
 #endif
 	/* fall through */
       case '\n':
-	if (IS_lex_state(EXPR_BEG | EXPR_VALUE | EXPR_CLASS | EXPR_FNAME | EXPR_DOT)) {
+	if (IS_lex_state(EXPR_BEG | EXPR_VALUE | EXPR_CLASS | EXPR_FNAME | EXPR_DOT | EXPR_LABELARG)) {
 #ifdef RIPPER
             if (!fallthru) {
                 ripper_dispatch_scan_event(parser, tIGNORED_NL);
             }
             fallthru = FALSE;
 #endif
+	    if (IS_lex_state(EXPR_LABELARG) && parser->parser_in_kwarg) {
+		goto normal_newline;
+	    }
 	    goto retry;
 	}
 	while ((c = nextc())) {

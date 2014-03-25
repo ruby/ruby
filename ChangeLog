@@ -1,3 +1,8 @@
+Tue Mar 25 23:57:17 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): only a newline after label should be
+	  significant.  [ruby-core:61658] [Bug #9669]
+
 Tue Mar 25 23:32:25 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* ext/pathname/lib/pathname.rb (Pathname#join): remove unnecessary

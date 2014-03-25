@@ -335,6 +335,15 @@ class TestKeywordArguments < Test::Unit::TestCase
       end;
     end
     assert_equal(42, bug9669.foo(a: 42))
+    assert_nothing_raised(SyntaxError, bug9669) do
+      eval(<<-'end;', nil, __FILE__, __LINE__)
+        o = {
+          a:
+          1
+        }
+      end;
+    end
+    assert_equal({a: 1}, o, bug9669)
   end
 
   def test_block_required_keyword
