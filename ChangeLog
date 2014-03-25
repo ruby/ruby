@@ -1,3 +1,7 @@
+Wed Mar 26 08:29:43 2014  mo khan  <mo@mokhan.ca>
+
+	* lib/rubygem.rb: fix spelling of Jim Weirich.  [Fixes GH-577]
+
 Wed Mar 26 01:55:45 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* addr2line.c (rb_dump_backtrace_with_lines): a function to get must
