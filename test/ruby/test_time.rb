@@ -312,7 +312,7 @@ class TestTime < Test::Unit::TestCase
 
   def test_marshal_zone_gc
     assert_separately(%w(--disable-gems), <<-'end;')
-      ENV["TZ"] = "Asia/Tokyo"
+      ENV["TZ"] = "JST-9"
       s = Marshal.dump(Time.now)
       t = Marshal.load(s)
       n = 0
