@@ -810,6 +810,7 @@ VALUE rb_rational_reciprocal(VALUE x);
 /* re.c */
 VALUE rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline);
 VALUE rb_reg_check_preprocess(VALUE);
+long rb_reg_search0(VALUE, VALUE, long, int, int);
 
 /* signal.c */
 int rb_get_next_signal(void);
@@ -977,9 +978,6 @@ VALUE rb_gcd_normal(VALUE self, VALUE other);
 #if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
 VALUE rb_gcd_gmp(VALUE x, VALUE y);
 #endif
-
-/* re.c */
-long rb_reg_search0(VALUE, VALUE, long, int, int);
 
 /* util.c */
 extern const signed char ruby_digit36_to_number_table[];
