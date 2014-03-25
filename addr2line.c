@@ -489,20 +489,20 @@ fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
 
     fd = open(binary_filename, O_RDONLY);
     if (fd < 0) {
-	return;
+	goto fail;
     }
     filesize = lseek(fd, 0, SEEK_END);
     if (filesize < 0) {
 	int e = errno;
 	close(fd);
 	kprintf("lseek: %s\n", strerror(e));
-	return;
+	goto fail;
     }
 #if SIZEOF_OFF_T > SIZEOF_SIZE_T
     if (filesize > (off_t)SIZE_MAX) {
 	close(fd);
 	kprintf("Too large file %s\n", binary_filename);
-	return;
+	goto fail;
     }
 #endif
     lseek(fd, 0, SEEK_SET);
@@ -512,7 +512,7 @@ fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
 	int e = errno;
 	close(fd);
 	kprintf("mmap: %s\n", strerror(e));
-	return;
+	goto fail;
     }
 
     ehdr = (ElfW(Ehdr) *)file;
@@ -522,7 +522,7 @@ fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
 	 * it match non-elf file.
 	 */
 	close(fd);
-	return;
+	goto fail;
     }
 
     current_line->fd = fd;
@@ -534,13 +534,11 @@ fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
     shstr_shdr = shdr + ehdr->e_shstrndx;
     shstr = file + shstr_shdr->sh_offset;
 
-    if (ehdr->e_type == ET_EXEC) {
-	/*
-	 * if object file type is ET_EXEC, base address must be 0
-	 */
-	intptr_t current_base_addr = current_line->base_addr;
-	for (i = 0; i < num_traces; i++) {
-	    if (current_base_addr == lines[i].base_addr) {
+    for (i = offset; i < num_traces; i++) {
+	if (current_line->base_addr == lines[i].base_addr) {
+	    lines[i].line = -1;
+	    if (ehdr->e_type == ET_EXEC) {
+		/* if object type is ET_EXEC, base address must be 0 */
 		lines[i].base_addr = 0;
 	    }
 	}
@@ -576,12 +574,11 @@ fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
 	for (j = 0; j < symtab_count; j++) {
 	    ElfW(Sym) *sym = &symtab[j];
 	    int type = ELF_ST_TYPE(sym->st_info);
-	    intptr_t saddr = (intptr_t)sym->st_value + lines[offset].base_addr;
+	    intptr_t saddr = (intptr_t)sym->st_value + current_line->base_addr;
 	    if (type != STT_FUNC) continue;
 	    for (i = offset; i < num_traces; i++) {
 		intptr_t d = (intptr_t)traces[i] - saddr;
-		const char *path = lines[i].path;
-		if (!path || strcmp(lines[offset].path, path) != 0)
+		if (lines[i].line != -1)
 		    continue;
 		if (d <= 0 || d > (intptr_t)sym->st_size)
 		    continue;
@@ -601,13 +598,27 @@ fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
 			     num_traces, traces, syms,
 			     current_line, lines, offset);
 	}
-	return;
+	goto finish;
     }
 
     parse_debug_line(num_traces, traces,
 		     file + debug_line_shdr->sh_offset,
 		     debug_line_shdr->sh_size,
 		     lines);
+finish:
+    for (i = offset; i < num_traces; i++) {
+	if (lines[i].line == -1) {
+	    lines[i].line = -2;
+	}
+    }
+    return;
+fail:
+    for (i = offset; i < num_traces; i++) {
+	if (current_line->base_addr == lines[i].base_addr) {
+	    lines[i].line = -2;
+	}
+    }
+    return;
 }
 
 void
@@ -666,7 +677,7 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces, char **syms)
 	const char *path = NULL;
 	size_t len;
 
-	if (lines[i].line > 0) continue;
+	if (lines[i].line) continue;
 
 	if (lines[i].path) {
 	    path = lines[i].path;
