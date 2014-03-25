@@ -1,3 +1,10 @@
+Tue Mar 25 23:32:25 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* ext/pathname/lib/pathname.rb (Pathname#join): remove unnecessary
+	  unshift.
+
+	* test/pathname/test_pathname.rb (TestPathname#test_join): add tests.
+
 Tue Mar 25 16:47:36 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (lex_state_e, parser_params, f_arglist, parser_yylex):

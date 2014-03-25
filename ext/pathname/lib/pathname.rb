@@ -384,7 +384,6 @@ class Pathname
   #       #=> true
   #
   def join(*args)
-    args.unshift self
     result = args.pop
     result = Pathname.new(result) unless Pathname === result
     return result if result.absolute?
@@ -393,7 +392,7 @@ class Pathname
       result = arg + result
       return result if result.absolute?
     }
-    result
+    self + result
   end
 
   #

@@ -234,6 +234,14 @@ class TestPathname < Test::Unit::TestCase
   def test_join
     r = Pathname("a").join(Pathname("b"), Pathname("c"))
     assert_equal(Pathname("a/b/c"), r)
+    r = Pathname("/a").join(Pathname("b"), Pathname("c"))
+    assert_equal(Pathname("/a/b/c"), r)
+    r = Pathname("/a").join(Pathname("/b"), Pathname("c"))
+    assert_equal(Pathname("/b/c"), r)
+    r = Pathname("/a").join(Pathname("/b"), Pathname("/c"))
+    assert_equal(Pathname("/c"), r)
+    r = Pathname("/a").join("/b", "/c")
+    assert_equal(Pathname("/c"), r)
   end
 
   def test_absolute
