@@ -226,7 +226,6 @@ typedef struct token_info {
                      token
 */
 struct parser_params {
-    int is_ripper;
     NODE *heap;
 
     YYSTYPE *parser_yylval;
@@ -236,6 +235,7 @@ struct parser_params {
     enum lex_state_e parser_lex_state;
     stack_type parser_cond_stack;
     stack_type parser_cmdarg_stack;
+    int is_ripper;
     int parser_class_nest;
     int parser_paren_nest;
     int parser_lpar_beg;
