@@ -1,3 +1,7 @@
+Wed Mar 26 01:34:50 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c (fill_lines): skip if path is NULL.
+
 Tue Mar 25 23:57:17 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): only a newline after label should be

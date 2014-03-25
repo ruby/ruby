@@ -581,7 +581,7 @@ fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
 	    for (i = offset; i < num_traces; i++) {
 		intptr_t d = (intptr_t)traces[i] - saddr;
 		const char *path = lines[i].path;
-		if (path && strcmp(lines[offset].path, path) != 0)
+		if (!path || strcmp(lines[offset].path, path) != 0)
 		    continue;
 		if (d <= 0 || d > (intptr_t)sym->st_size)
 		    continue;
