@@ -1,3 +1,9 @@
+Wed Mar 26 01:55:45 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c (rb_dump_backtrace_with_lines): a function to get must
+	  be a function in the main executable, whose absolute path is not
+	  available by dladdr, and ruby get it by /proc/self/exe on Linux.
+
 Wed Mar 26 01:34:50 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* addr2line.c (fill_lines): skip if path is NULL.
