@@ -623,9 +623,9 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces, char **syms)
     intptr_t main_fbase;
     char *main_path;
     {
-	extern int main(int argc, char **argv); /* a function in the main executalbe */
+	extern void _start(void); /* a function in the main executalbe */
 	Dl_info info;
-	dladdr(main, &info);
+	dladdr(_start, &info);
 	main_fbase = (intptr_t)info.dli_fbase;
     }
     {
