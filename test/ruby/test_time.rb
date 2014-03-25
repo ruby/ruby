@@ -311,12 +311,12 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_marshal_zone_gc
-    assert_separately(%w(--disable-gems), <<-'end;')
+    assert_separately(%w(--disable-gems), <<-'end;', timeout: 30)
       ENV["TZ"] = "JST-9"
       s = Marshal.dump(Time.now)
       t = Marshal.load(s)
       n = 0
-      done = 1000000
+      done = 100000
       while t.zone.dup == "JST" && n < done
         n += 1
       end
