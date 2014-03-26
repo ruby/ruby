@@ -3275,7 +3275,9 @@ AS_CASE("$enable_shared", [yes], [
   LIBRUBYARG_SHARED=
 
   # enable PIE if possible
-  pie=
+  AC_ARG_ENABLE(pie,
+          AS_HELP_STRING([--disable-pie], [disable PIE feature]),
+          [pie=$enableval], [pie=])
   AS_CASE(["$target_os"],
   [haiku], [
     # gcc supports PIE, but doesn't work correctly in Haiku
