@@ -541,7 +541,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	}
     }
 
-    if (symtab_shdr && strtab_shdr) {
+    if (check_debuglink && symtab_shdr && strtab_shdr) {
 	char *strtab = file + strtab_shdr->sh_offset;
 	ElfW(Sym) *symtab = (ElfW(Sym) *)(file + symtab_shdr->sh_offset);
 	int symtab_count = (int)(symtab_shdr->sh_size / sizeof(ElfW(Sym)));
