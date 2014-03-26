@@ -10669,6 +10669,7 @@ rb_gc_free_dsymbol(VALUE ptr)
 VALUE
 rb_str_dynamic_intern(VALUE s)
 {
+#if USE_SYMBOL_GC
     VALUE str = RB_GC_GUARD(s);
     VALUE dup;
     rb_encoding *enc;
@@ -10704,6 +10705,9 @@ rb_str_dynamic_intern(VALUE s)
     }
 
     return dsym;
+#else
+    return rb_str_intern(s);
+#endif
 }
 
 static int

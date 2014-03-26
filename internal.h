@@ -729,6 +729,9 @@ struct RBasicRaw {
 } while (0)
 
 /* parse.y */
+#ifndef USE_SYMBOL_GC
+#define USE_SYMBOL_GC 1
+#endif
 VALUE rb_parser_get_yydebug(VALUE);
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
 int rb_is_const_name(VALUE name);
