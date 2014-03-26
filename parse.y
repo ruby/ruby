@@ -10723,7 +10723,7 @@ lookup_id_str(ID id, st_data_t *data)
     return FALSE;
 }
 
-inline ID
+ID
 rb_sym2id(VALUE x)
 {
     if (STATIC_SYM_P(x)) {
@@ -10734,7 +10734,7 @@ rb_sym2id(VALUE x)
     }
 }
 
-inline ID
+ID
 rb_sym2id_without_pindown(VALUE x)
 {
     if (STATIC_SYM_P(x)) {
@@ -10745,7 +10745,7 @@ rb_sym2id_without_pindown(VALUE x)
     }
 }
 
-inline VALUE
+VALUE
 rb_id2sym(ID x)
 {
     if (!ID_DYNAMIC_SYM_P(x)) {
