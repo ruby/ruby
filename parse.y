@@ -10672,7 +10672,7 @@ rb_str_dynamic_intern(VALUE s)
 #if USE_SYMBOL_GC
     VALUE str = RB_GC_GUARD(s);
     VALUE dup;
-    rb_encoding *enc;
+    rb_encoding *enc, *ascii;
     VALUE dsym;
     ID id, type;
 
@@ -10682,9 +10682,10 @@ rb_str_dynamic_intern(VALUE s)
 
     dup = rb_str_dup(str);
     enc = rb_enc_get(str);
-    if (rb_enc_asciicompat(enc)) {
+    ascii = rb_usascii_encoding();
+    if (enc != ascii) {
 	if (sym_check_asciionly(str)) {
-	    rb_enc_associate(dup, rb_usascii_encoding());
+	    rb_enc_associate(dup, ascii);
 	}
     }
 
