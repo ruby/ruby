@@ -460,6 +460,7 @@ follow_debuglink(char *debuglink, int num_traces, void **traces, char **syms,
     strlcat(binary_filename, debuglink, PATH_MAX);
 
     if (current_line->fd2) {
+	kprintf("follow_debuglink twice %s\n", binary_filename);
 	munmap(current_line->mapped2, current_line->mapped_size2);
 	close(current_line->fd2);
     }
