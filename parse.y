@@ -10683,7 +10683,7 @@ rb_str_dynamic_intern(VALUE str)
     if (enc != ascii) {
 	if (sym_check_asciionly(str)) {
 	    str = rb_str_dup(str);
-	    rb_enc_associate(dup, ascii);
+	    rb_enc_associate(str, ascii);
 	    OBJ_FREEZE(str);
 	}
     }
