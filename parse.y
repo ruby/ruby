@@ -10234,7 +10234,7 @@ id_type(ID id)
     }
     else {
 	VALUE dsym = (VALUE)id;
-	return RSYMBOL(dsym)->type;
+	return (int)(RSYMBOL(dsym)->type);
     }
 }
 
