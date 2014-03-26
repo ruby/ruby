@@ -110,6 +110,7 @@ class TestEncoding < Test::Unit::TestCase
     bin = "\xff".force_encoding(Encoding::ASCII_8BIT).to_sym
     asc = "b".force_encoding(Encoding::ASCII_8BIT)
     assert_equal(Encoding::ASCII_8BIT, Encoding.compatible?(bin, asc))
+    assert_equal(Encoding::UTF_8, Encoding.compatible?("\u{3042}".to_sym, ua.to_sym))
   end
 
   def test_errinfo_after_autoload

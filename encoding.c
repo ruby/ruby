@@ -747,6 +747,9 @@ rb_enc_get_index(VALUE obj)
 	obj = rb_id2str(SYM2ID(obj));
     }
     switch (BUILTIN_TYPE(obj)) {
+      case T_SYMBOL:
+	obj = RSYMBOL(obj)->fstr;
+	/* fall through */
       as_default:
       default:
       case T_STRING:
