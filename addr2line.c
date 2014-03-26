@@ -533,6 +533,9 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
     j = 0;
     for (i = 0; i < ehdr->e_shnum; i++) {
 	section_name = shstr + shdr[i].sh_name;
+#ifdef __powerpc64__
+	kprintf("%s:: %s: flag(%lx)\n",binary_filename,section_name,shdr[i].sh_flags);
+#endif
 	if (!strcmp(section_name, ".debug_line")) {
 	    debug_line_shdr = shdr + i;
 	    j |= 1;
@@ -561,7 +564,8 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	    uintptr_t saddr = (uintptr_t)sym->st_value + current_line->base_addr;
 	    if (type != STT_FUNC) continue;
 #ifdef __powerpc64__
-	kprintf("%s %lx %lx\n",strtab + sym->st_name,sym->st_value,sym->st_size);
+	    kprintf("%lx %lx %lx %lx\n",strtab,sym->st_name,sym->st_value,sym->st_size);
+	    kprintf("%s\n",strtab + sym->st_name);
 #endif
 	    for (i = offset; i < num_traces; i++) {
 		uintptr_t d = (uintptr_t)traces[i] - saddr;
