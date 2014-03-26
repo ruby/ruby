@@ -10667,10 +10667,9 @@ rb_gc_free_dsymbol(VALUE ptr)
 }
 
 VALUE
-rb_str_dynamic_intern(VALUE s)
+rb_str_dynamic_intern(VALUE str)
 {
 #if USE_SYMBOL_GC
-    VALUE str = RB_GC_GUARD(s);
     rb_encoding *enc, *ascii;
     VALUE dsym;
     ID id, type;
@@ -10702,11 +10701,12 @@ rb_str_dynamic_intern(VALUE s)
 
     if (RUBY_DTRACE_SYMBOL_CREATE_ENABLED()) {
 	RUBY_DTRACE_SYMBOL_CREATE(RSTRING_PTR(str), rb_sourcefile(), rb_sourceline());
+	RB_GC_GUARD(str);
     }
 
     return dsym;
 #else
-    return rb_str_intern(s);
+    return rb_str_intern(str);
 #endif
 }
 
