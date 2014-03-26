@@ -742,6 +742,13 @@ int rb_is_junk_name(VALUE name);
 void rb_gc_mark_parser(void);
 void rb_gc_mark_symbols(int full_mark);
 ID rb_make_internal_id(void);
+void rb_gc_free_dsymbol(VALUE);
+VALUE rb_str_dynamic_intern(VALUE);
+ID rb_check_id_without_pindown(VALUE *);
+ID rb_sym2id_without_pindown(VALUE);
+#ifdef RUBY_ENCODING_H
+ID rb_check_id_cstr_without_pindown(const char *, long, rb_encoding *);
+#endif
 
 /* proc.c */
 VALUE rb_proc_location(VALUE self);

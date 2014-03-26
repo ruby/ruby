@@ -2776,7 +2776,7 @@ rb_thread_local_aref(VALUE thread, ID id)
 static VALUE
 rb_thread_aref(VALUE thread, VALUE key)
 {
-    ID id = rb_check_id(&key);
+    ID id = rb_check_id_without_pindown(&key);
     if (!id) return Qnil;
     return rb_thread_local_aref(thread, id);
 }
@@ -2853,7 +2853,7 @@ static VALUE
 rb_thread_variable_get(VALUE thread, VALUE key)
 {
     VALUE locals;
-    ID id = rb_check_id(&key);
+    ID id = rb_check_id_without_pindown(&key);
 
     if (!id) return Qnil;
     locals = rb_ivar_get(thread, id_locals);
@@ -2899,7 +2899,7 @@ static VALUE
 rb_thread_key_p(VALUE self, VALUE key)
 {
     rb_thread_t *th;
-    ID id = rb_check_id(&key);
+    ID id = rb_check_id_without_pindown(&key);
 
     GetThreadPtr(self, th);
 
@@ -3020,7 +3020,7 @@ static VALUE
 rb_thread_variable_p(VALUE thread, VALUE key)
 {
     VALUE locals;
-    ID id = rb_check_id(&key);
+    ID id = rb_check_id_without_pindown(&key);
 
     if (!id) return Qfalse;
 

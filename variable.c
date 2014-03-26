@@ -353,7 +353,7 @@ rb_path_to_class(VALUE pathname)
     }
     while (*p) {
 	while (*p && *p != ':') p++;
-	id = rb_check_id_cstr(pbeg, p-pbeg, enc);
+	id = rb_check_id_cstr_without_pindown(pbeg, p-pbeg, enc);
 	if (p[0] == ':') {
 	    if (p[1] != ':') goto undefined_class;
 	    p += 2;
@@ -1403,7 +1403,7 @@ VALUE
 rb_obj_remove_instance_variable(VALUE obj, VALUE name)
 {
     VALUE val = Qnil;
-    const ID id = rb_check_id(&name);
+    const ID id = rb_check_id_without_pindown(&name);
     st_data_t n, v;
     struct st_table *iv_index_tbl;
     st_data_t index;
@@ -1919,7 +1919,7 @@ rb_public_const_get_at(VALUE klass, ID id)
 VALUE
 rb_mod_remove_const(VALUE mod, VALUE name)
 {
-    const ID id = rb_check_id(&name);
+    const ID id = rb_check_id_without_pindown(&name);
 
     if (!id) {
 	if (rb_is_const_name(name)) {
@@ -2568,7 +2568,7 @@ rb_mod_class_variables(int argc, VALUE *argv, VALUE mod)
 VALUE
 rb_mod_remove_cvar(VALUE mod, VALUE name)
 {
-    const ID id = rb_check_id(&name);
+    const ID id = rb_check_id_without_pindown(&name);
     st_data_t val, n = id;
 
     if (!id) {

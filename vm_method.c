@@ -791,7 +791,7 @@ rb_mod_remove_method(int argc, VALUE *argv, VALUE mod)
 
     for (i = 0; i < argc; i++) {
 	VALUE v = argv[i];
-	ID id = rb_check_id(&v);
+	ID id = rb_check_id_without_pindown(&v);
 	if (!id) {
 	    rb_name_error_str(v, "method `%s' not defined in %s",
 			      RSTRING_PTR(v), rb_class2name(mod));
@@ -1002,7 +1002,7 @@ rb_mod_undef_method(int argc, VALUE *argv, VALUE mod)
     int i;
     for (i = 0; i < argc; i++) {
 	VALUE v = argv[i];
-	ID id = rb_check_id(&v);
+	ID id = rb_check_id_without_pindown(&v);
 	if (!id) {
 	    rb_method_name_error(mod, v);
 	}
@@ -1042,7 +1042,7 @@ rb_mod_undef_method(int argc, VALUE *argv, VALUE mod)
 static VALUE
 rb_mod_method_defined(VALUE mod, VALUE mid)
 {
-    ID id = rb_check_id(&mid);
+    ID id = rb_check_id_without_pindown(&mid);
     if (!id || !rb_method_boundp(mod, id, 1)) {
 	return Qfalse;
     }
@@ -1056,7 +1056,7 @@ static VALUE
 check_definition(VALUE mod, VALUE mid, rb_method_flag_t noex)
 {
     const rb_method_entry_t *me;
-    ID id = rb_check_id(&mid);
+    ID id = rb_check_id_without_pindown(&mid);
     if (!id) return Qfalse;
     me = rb_method_entry(mod, id, 0);
     if (me) {
@@ -1685,7 +1685,7 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
     ID id;
 
     rb_scan_args(argc, argv, "11", &mid, &priv);
-    if (!(id = rb_check_id(&mid))) {
+    if (!(id = rb_check_id_without_pindown(&mid))) {
 	if (!rb_method_basic_definition_p(CLASS_OF(obj), idRespond_to_missing)) {
 	    VALUE args[2];
 	    args[0] = ID2SYM(rb_to_id(mid));

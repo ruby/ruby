@@ -749,7 +749,7 @@ rb_struct_aref(VALUE s, VALUE idx)
 	return rb_struct_aref_id(s, SYM2ID(idx));
     }
     else if (RB_TYPE_P(idx, T_STRING)) {
-	ID id = rb_check_id(&idx);
+	ID id = rb_check_id_without_pindown(&idx);
 	if (!id) {
 	    rb_name_error_str(idx, "no member '%"PRIsVALUE"' in struct",
 			      QUOTE(idx));

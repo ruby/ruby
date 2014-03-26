@@ -1,3 +1,56 @@
+Tue Mar 25 22:57:11 2014  Narihiro Nakamura  <authornari@gmail.com>
+
+	* parse.y: support Symbol GC. [ruby-trunk Feature #9634]
+	  See this ticket about Symbol GC.
+
+	* include/ruby/ruby.h:
+	  Declare few functions.
+	  * rb_sym2id: almost same as old SYM2ID but support dynamic symbols.
+	  * rb_id2sym: almost same as old ID2SYM but support dynamic symbols.
+	  * rb_sym2str: almost same as `rb_id2str(SYM2ID(sym))` but not
+	    pin down a dynamic symbol.
+	  Declare a new struct.
+	  * struct RSymbol: represents a dynamic symbol as object in
+	    Ruby's heaps.
+	  Add few macros.
+	  * STATIC_SYM_P: check a static symbol.
+	  * DYNAMIC_SYM_P: check a dynamic symbol.
+	  * RSYMBOL: cast to RSymbol
+
+	* gc.c: declare RSymbol. support T_SYMBOL.
+
+	* internal.h: Declare few functions.
+	  * rb_gc_free_dsymbol: free up a dynamic symbol. GC call this
+	    function at a sweep phase.
+	  * rb_str_dynamic_intern: convert a string to a dynamic symbol.
+	  * rb_check_id_without_pindown: not pinning function.
+	  * rb_sym2id_without_pindown: ditto.
+	  * rb_check_id_cstr_without_pindown: ditto.
+
+	* string.c (Init_String): String#intern and String#to_sym use
+	  rb_str_dynamic_intern.
+
+	* template/id.h.tmpl: use LSB of ID as a flag for determining a
+	  static symbol, so we shift left other ruby_id_types.
+
+	* string.c: use rb_sym2str instead `rb_id2str(SYM2ID(sym))` to
+	  avoid pinning.
+
+	* load.c: use xx_without_pindown function at creating temporary ID
+	  to avoid pinning.
+
+	* object.c: ditto.
+
+	* sprintf.c: ditto.
+
+	* struct.c: ditto.
+
+	* thread.c: ditto.
+
+	* variable.c: ditto.
+
+	* vm_method.c: ditto.
+
 Wed Mar 26 13:25:54 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* addr2line.c (fill_lines): loop reverse order not to overwrite

@@ -41,26 +41,26 @@
 #define free	YYFREE
 
 #ifndef RIPPER
-static ID register_symid(ID, const char *, long, rb_encoding *);
-static ID register_symid_str(ID, VALUE);
-#define REGISTER_SYMID(id, name) register_symid((id), (name), strlen(name), enc)
+static ID register_static_symid(ID, const char *, long, rb_encoding *);
+static ID register_static_symid_str(ID, VALUE);
+#define REGISTER_SYMID(id, name) register_static_symid((id), (name), strlen(name), enc)
 #include "id.c"
 #endif
 
+static inline int id_type(ID);
 #define is_notop_id(id) ((id)>tLAST_OP_ID)
-#define is_local_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_LOCAL)
-#define is_global_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_GLOBAL)
-#define is_instance_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_INSTANCE)
-#define is_attrset_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_ATTRSET)
-#define is_const_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_CONST)
-#define is_class_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_CLASS)
-#define is_junk_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_JUNK)
-#define id_type(id) (is_notop_id(id) ? (int)((id)&ID_SCOPE_MASK) : -1)
+#define is_local_id(id) (id_type(id)==ID_LOCAL)
+#define is_global_id(id) (id_type(id)==ID_GLOBAL)
+#define is_instance_id(id) (id_type(id)==ID_INSTANCE)
+#define is_attrset_id(id) (id_type(id)==ID_ATTRSET)
+#define is_const_id(id) (id_type(id)==ID_CONST)
+#define is_class_id(id) (id_type(id)==ID_CLASS)
+#define is_junk_id(id) (id_type(id)==ID_JUNK)
 
 #define is_asgn_or_id(id) ((is_notop_id(id)) && \
-	(((id)&ID_SCOPE_MASK) == ID_GLOBAL || \
-	 ((id)&ID_SCOPE_MASK) == ID_INSTANCE || \
-	 ((id)&ID_SCOPE_MASK) == ID_CLASS))
+	((id_type(id)) == ID_GLOBAL || \
+	 (id_type(id)) == ID_INSTANCE || \
+	 (id_type(id)) == ID_CLASS))
 
 enum lex_state_bits {
     EXPR_BEG_bit,		/* ignore newline, +/- is a sign. */
@@ -300,11 +300,17 @@ struct parser_params {
 #endif
 };
 
+#ifdef RIPPER
+#define intern_cstr_without_pindown(n,l,en) rb_intern3(n,l,en)
+#else
+static ID intern_cstr_without_pindown(const char *, long, rb_encoding *);
+#endif
+
 #define STR_NEW(p,n) rb_enc_str_new((p),(n),current_enc)
 #define STR_NEW0() rb_enc_str_new(0,0,current_enc)
 #define STR_NEW2(p) rb_enc_str_new((p),strlen(p),current_enc)
 #define STR_NEW3(p,n,e,func) parser_str_new((p),(n),(e),(func),current_enc)
-#define TOK_INTERN() rb_intern3(tok(), toklen(), current_enc)
+#define TOK_INTERN() intern_cstr_without_pindown(tok(), toklen(), current_enc)
 
 static int parser_yyerror(struct parser_params*, const char*);
 #define yyerror(msg) parser_yyerror(parser, (msg))
@@ -8010,7 +8016,7 @@ parser_yylex(struct parser_params *parser)
 		return '$';
 	    }
 	  gvar:
-	    set_yylval_name(rb_intern3(tok(), tokidx, current_enc));
+	    set_yylval_name(intern_cstr_without_pindown(tok(), tokidx, current_enc));
 	    return tGVAR;
 
 	  case '&':		/* $&: last match */
@@ -8813,6 +8819,8 @@ static const char id_type_names[][9] = {
     "JUNK",
 };
 
+static ID rb_pin_dynamic_symbol(VALUE);
+
 ID
 rb_id_attrset(ID id)
 {
@@ -8824,7 +8832,7 @@ rb_id_attrset(ID id)
 	rb_name_error(id, "cannot make operator ID :%s attrset", rb_id2name(id));
     }
     else {
-	int scope = (int)(id & ID_SCOPE_MASK);
+	int scope = id_type(id);
 	switch (scope) {
 	  case ID_LOCAL: case ID_INSTANCE: case ID_GLOBAL:
 	  case ID_CONST: case ID_CLASS: case ID_JUNK:
@@ -8837,8 +8845,19 @@ rb_id_attrset(ID id)
 
 	}
     }
-    id &= ~ID_SCOPE_MASK;
-    id |= ID_ATTRSET;
+    if (id&ID_STATIC_SYM) {
+        id &= ~ID_SCOPE_MASK;
+        id |= ID_ATTRSET;
+    }
+    else {
+	VALUE str;
+
+        /* make new dynamic symbol */
+	str = rb_str_dup(RSYMBOL((VALUE)id)->fstr);
+	rb_str_cat(str, "=", 1);
+	id = (ID)rb_str_dynamic_intern(str);
+	rb_pin_dynamic_symbol((VALUE)id);
+    }
     return id;
 }
 
@@ -9930,7 +9949,7 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
 	!rb_enc_symname2_p(s, len, enc)) {
         return ST_CONTINUE;
     }
-    var = rb_intern3(s, len, enc);
+    var = intern_cstr_without_pindown(s, len, enc);
     if (dvar_defined(var) || local_id(var)) {
         rb_warningS("named capture conflicts a local variable - %s",
                     rb_id2name(var));
@@ -10116,12 +10135,14 @@ static struct symbols {
     ID last_id;
     st_table *sym_id;
     st_table *id_str;
+    st_table *pinned_dsym;
 #if ENABLE_SELECTOR_NAMESPACE
     st_table *ivar2_id;
     st_table *id_ivar2;
 #endif
     VALUE op_sym[tLAST_OP_ID];
     int minor_marked;
+    int pinned_dsym_minor_marked;
 } global_symbols = {tLAST_TOKEN};
 
 static const struct st_hash_type symhash = {
@@ -10161,6 +10182,7 @@ Init_sym(void)
 {
     global_symbols.sym_id = st_init_table_with_size(&symhash, 1000);
     global_symbols.id_str = st_init_numtable_with_size(1000);
+    global_symbols.pinned_dsym = st_init_numtable_with_size(1000);
 #if ENABLE_SELECTOR_NAMESPACE
     global_symbols.ivar2_id = st_init_table_with_size(&ivar2_hash_type, 1000);
     global_symbols.id_ivar2 = st_init_numtable_with_size(1000);
@@ -10185,6 +10207,11 @@ rb_gc_mark_symbols(int full_mark)
 
 	if (!full_mark) global_symbols.minor_marked = 1;
     }
+
+    if (full_mark || global_symbols.pinned_dsym_minor_marked == 0) {
+	rb_mark_tbl(global_symbols.pinned_dsym);
+	if (!full_mark) global_symbols.pinned_dsym_minor_marked = 1;
+    }
 }
 #endif /* !RIPPER */
 
@@ -10193,7 +10220,22 @@ internal_id_gen(struct parser_params *parser)
 {
     ID id = (ID)vtable_size(lvtbl->args) + (ID)vtable_size(lvtbl->vars);
     id += ((tLAST_TOKEN - ID_INTERNAL) >> ID_SCOPE_SHIFT) + 1;
-    return ID_INTERNAL | (id << ID_SCOPE_SHIFT);
+    return ID_STATIC_SYM | ID_INTERNAL | (id << ID_SCOPE_SHIFT);
+}
+
+static inline int
+id_type(ID id)
+{
+    if (id<=tLAST_OP_ID) {
+	return -1;
+    }
+    if (id&ID_STATIC_SYM) {
+	return (int)((id)&ID_SCOPE_MASK);
+    }
+    else {
+	VALUE dsym = (VALUE)id;
+	return RSYMBOL(dsym)->type;
+    }
 }
 
 #ifndef RIPPER
@@ -10353,14 +10395,14 @@ rb_str_symname_type(VALUE name, unsigned int allowed_attrset)
 }
 
 static ID
-register_symid(ID id, const char *name, long len, rb_encoding *enc)
+register_static_symid(ID id, const char *name, long len, rb_encoding *enc)
 {
     VALUE str = rb_enc_str_new(name, len, enc);
-    return register_symid_str(id, str);
+    return register_static_symid_str(id, str);
 }
 
 static ID
-register_symid_str(ID id, VALUE str)
+register_static_symid_str(ID id, VALUE str)
 {
     OBJ_FREEZE(str);
     str = rb_fstring(str);
@@ -10406,8 +10448,35 @@ setup_fake_str(struct RString *fake_str, const char *name, long len)
     return (VALUE)fake_str;
 }
 
+#define ID_DYNAMIC_SYM_P(id) (!(id&ID_STATIC_SYM)&&id>tLAST_TOKEN)
+
 ID
-rb_intern3(const char *name, long len, rb_encoding *enc)
+rb_pin_dynamic_symbol(VALUE sym)
+{
+    /* stick dynamic symbol */
+    if (!st_insert(global_symbols.pinned_dsym, sym, (st_data_t)sym)) {
+	global_symbols.pinned_dsym_minor_marked = 0;
+    }
+    return (ID)sym;
+}
+
+static int
+lookup_sym_id(st_data_t str, st_data_t *data)
+{
+    ID id;
+
+    if (!st_lookup(global_symbols.sym_id, str, data)) {
+	return FALSE;
+    }
+    id = (ID)*data;
+    if (ID_DYNAMIC_SYM_P(id)) {
+	rb_pin_dynamic_symbol((VALUE)id);
+    }
+    return TRUE;
+}
+
+static ID
+intern_cstr_without_pindown(const char *name, long len, rb_encoding *enc)
 {
     st_data_t data;
     struct RString fake_str;
@@ -10422,17 +10491,31 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
     return intern_str(str);
 }
 
+ID
+rb_intern3(const char *name, long len, rb_encoding *enc)
+{
+    ID id;
+
+    id = intern_cstr_without_pindown(name, len, enc);
+    if (ID_DYNAMIC_SYM_P(id)) {
+	rb_pin_dynamic_symbol((VALUE)id);
+    }
+
+    return id;
+}
+
 static ID
 next_id_base(void)
 {
     if (global_symbols.last_id >= ~(ID)0 >> (ID_SCOPE_SHIFT+RUBY_SPECIAL_SHIFT)) {
 	return (ID)-1;
     }
-    return ++global_symbols.last_id << ID_SCOPE_SHIFT;
+    ++global_symbols.last_id;
+    return global_symbols.last_id << ID_SCOPE_SHIFT;
 }
 
 static ID
-intern_str(VALUE str)
+next_id(VALUE str)
 {
     const char *name, *m, *e;
     long len, last;
@@ -10484,13 +10567,13 @@ intern_str(VALUE str)
 
 	    if (len == 1) {
 		id = c;
-		goto id_register;
+                return id;
 	    }
 	    for (i = 0; i < op_tbl_count; i++) {
 		if (*op_tbl[i].name == *m &&
 		    strcmp(op_tbl[i].name, m) == 0) {
 		    id = op_tbl[i].token;
-		    goto id_register;
+                    return id;
 		}
 	    }
 	}
@@ -10501,10 +10584,11 @@ intern_str(VALUE str)
 	if (last > 1 && name[last-1] == '=')
 	    goto junk;
 	id = rb_intern3(name, last, enc);
+	id |= ID_STATIC_SYM;
 	if (id > tLAST_OP_ID && !is_attrset_id(id)) {
 	    enc = rb_enc_get(rb_id2str(id));
 	    id = rb_id_attrset(id);
-	    goto id_register;
+	    return id;
 	}
 	id = ID_ATTRSET;
     }
@@ -10541,8 +10625,14 @@ intern_str(VALUE str)
 	}
     }
     id |= nid;
-  id_register:
-    return register_symid_str(id, str);
+    id |= ID_STATIC_SYM;
+    return id;
+}
+
+static ID
+intern_str(VALUE str)
+{
+    return register_static_symid_str(next_id(str), str);
 }
 
 ID
@@ -10563,10 +10653,112 @@ rb_intern_str(VALUE str)
 {
     st_data_t id;
 
-    if (st_lookup(global_symbols.sym_id, str, &id))
+    if (lookup_sym_id(str, &id))
 	return (ID)id;
     return intern_str(rb_str_dup(str));
 }
+
+void
+rb_gc_free_dsymbol(VALUE ptr)
+{
+    st_delete(global_symbols.sym_id, (st_data_t *)&RSYMBOL(ptr)->fstr, 0);
+    st_delete(global_symbols.id_str, (st_data_t *)&ptr, 0);
+    RSYMBOL(ptr)->fstr = (VALUE)NULL;
+}
+
+VALUE
+rb_str_dynamic_intern(VALUE s)
+{
+    VALUE str = RB_GC_GUARD(s);
+    VALUE dup;
+    rb_encoding *enc;
+    VALUE dsym;
+    ID id, type;
+
+    if (st_lookup(global_symbols.sym_id, str, &id)) {
+	return ID2SYM(id);
+    }
+
+    dup = rb_str_dup(str);
+    enc = rb_enc_get(str);
+    if (rb_enc_asciicompat(enc)) {
+	if (sym_check_asciionly(str)) {
+	    rb_enc_associate(dup, rb_usascii_encoding());
+	}
+    }
+
+    type = rb_str_symname_type(str, TRUE);
+    OBJ_FREEZE(dup);
+    str = rb_fstring(dup);
+    dsym = rb_newobj_of(rb_cSymbol, T_SYMBOL);
+    OBJ_FREEZE(dsym);
+    RSYMBOL(dsym)->fstr = str;
+    RSYMBOL(dsym)->type = type;
+
+    st_add_direct(global_symbols.sym_id, (st_data_t)str, (ID)dsym);
+    st_add_direct(global_symbols.id_str, (ID)dsym, (st_data_t)str);
+    global_symbols.minor_marked = 0;
+
+    if (RUBY_DTRACE_SYMBOL_CREATE_ENABLED()) {
+	RUBY_DTRACE_SYMBOL_CREATE(RSTRING_PTR(str), rb_sourcefile(), rb_sourceline());
+    }
+
+    return dsym;
+}
+
+static int
+lookup_id_str(ID id, st_data_t *data)
+{
+    if (ID_DYNAMIC_SYM_P(id)) {
+	*data = RSYMBOL(id)->fstr;
+	return TRUE;
+    }
+    if (st_lookup(global_symbols.id_str, id, data)) {
+	return TRUE;
+    }
+    return FALSE;
+}
+
+inline ID
+rb_sym2id(VALUE x)
+{
+    if (STATIC_SYM_P(x)) {
+	return RSHIFT((unsigned long)(x),RUBY_SPECIAL_SHIFT);
+    }
+    else {
+	return rb_pin_dynamic_symbol(x);
+    }
+}
+
+inline ID
+rb_sym2id_without_pindown(VALUE x)
+{
+    if (STATIC_SYM_P(x)) {
+	return RSHIFT((unsigned long)(x),RUBY_SPECIAL_SHIFT);
+    }
+    else {
+	return (ID)x;
+    }
+}
+
+inline VALUE
+rb_id2sym(ID x)
+{
+    if (!ID_DYNAMIC_SYM_P(x)) {
+	return ((VALUE)(x)<<RUBY_SPECIAL_SHIFT)|SYMBOL_FLAG;
+    }
+    else {
+	return (VALUE)x;
+    }
+}
+
+
+VALUE
+rb_sym2str(VALUE sym)
+{
+    return rb_id2str(rb_sym2id_without_pindown(sym));
+}
+
 
 VALUE
 rb_id2str(ID id)
@@ -10605,7 +10797,7 @@ rb_id2str(ID id)
 	}
     }
 
-    if (st_lookup(global_symbols.id_str, id, &data)) {
+    if (lookup_id_str(id, &data)) {
         VALUE str = (VALUE)data;
         if (RBASIC(str)->klass == 0)
             RBASIC_SET_CLASS_RAW(str, rb_cString);
@@ -10613,7 +10805,7 @@ rb_id2str(ID id)
     }
 
     if (is_attrset_id(id)) {
-	ID id_stem = (id & ~ID_SCOPE_MASK);
+	ID id_stem = (id & ~ID_SCOPE_MASK) | ID_STATIC_SYM;
 	VALUE str;
 
 	do {
@@ -10627,7 +10819,7 @@ rb_id2str(ID id)
 	} while (0);
 	str = rb_str_dup(str);
 	rb_str_cat(str, "=", 1);
-	register_symid_str(id, str);
+	register_static_symid_str(id, str);
 	if (st_lookup(global_symbols.id_str, id, &data)) {
             VALUE str = (VALUE)data;
             if (RBASIC(str)->klass == 0)
@@ -10650,7 +10842,7 @@ rb_id2name(ID id)
 ID
 rb_make_internal_id(void)
 {
-    return next_id_base() | ID_INTERNAL;
+    return next_id_base() | ID_INTERNAL | ID_STATIC_SYM;
 }
 
 static int
@@ -10741,12 +10933,38 @@ rb_is_junk_id(ID id)
 ID
 rb_check_id(volatile VALUE *namep)
 {
+    ID id;
+
+    id = rb_check_id_without_pindown((VALUE *)namep);
+    if (ID_DYNAMIC_SYM_P(id)) {
+        rb_pin_dynamic_symbol((VALUE)id);
+    }
+
+    return id;
+}
+
+ID
+rb_check_id_cstr(const char *ptr, long len, rb_encoding *enc)
+{
+    ID id;
+
+    id = rb_check_id_cstr_without_pindown(ptr, len, enc);
+    if (ID_DYNAMIC_SYM_P(id)) {
+        rb_pin_dynamic_symbol((VALUE)id);
+    }
+
+    return id;
+}
+
+ID
+rb_check_id_without_pindown(VALUE *namep)
+{
     st_data_t id;
     VALUE tmp;
     VALUE name = *namep;
 
     if (SYMBOL_P(name)) {
-	return SYM2ID(name);
+	return rb_sym2id_without_pindown(name);
     }
     else if (!RB_TYPE_P(name, T_STRING)) {
 	tmp = rb_check_string_type(name);
@@ -10781,7 +10999,7 @@ rb_check_id(volatile VALUE *namep)
 }
 
 ID
-rb_check_id_cstr(const char *ptr, long len, rb_encoding *enc)
+rb_check_id_cstr_without_pindown(const char *ptr, long len, rb_encoding *enc)
 {
     st_data_t id;
     struct RString fake_str;

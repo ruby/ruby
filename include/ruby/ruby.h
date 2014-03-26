@@ -351,9 +351,13 @@ rb_long2int_inline(long n)
 
 #define IMMEDIATE_P(x) ((VALUE)(x) & IMMEDIATE_MASK)
 
-#define SYMBOL_P(x) (((VALUE)(x)&~((~(VALUE)0)<<RUBY_SPECIAL_SHIFT))==SYMBOL_FLAG)
-#define ID2SYM(x) (((VALUE)(x)<<RUBY_SPECIAL_SHIFT)|SYMBOL_FLAG)
-#define SYM2ID(x) RSHIFT((unsigned long)(x),RUBY_SPECIAL_SHIFT)
+ID rb_sym2id(VALUE);
+VALUE rb_id2sym(ID);
+#define STATIC_SYM_P(x) (((VALUE)(x)&~((~(VALUE)0)<<RUBY_SPECIAL_SHIFT))==SYMBOL_FLAG)
+#define DYNAMIC_SYM_P(x) (!SPECIAL_CONST_P(x) && BUILTIN_TYPE(x) == (T_SYMBOL))
+#define SYMBOL_P(x) (STATIC_SYM_P(x)||DYNAMIC_SYM_P(x))
+#define ID2SYM(x) (rb_id2sym(x))
+#define SYM2ID(x) (rb_sym2id(x))
 
 #ifndef USE_FLONUM
 #if SIZEOF_VALUE >= SIZEOF_DOUBLE
@@ -957,6 +961,12 @@ struct RComplex {
 #define RCOMPLEX_SET_REAL(cmp, r) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->real,(r))
 #define RCOMPLEX_SET_IMAG(cmp, i) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->imag,(i))
 
+struct RSymbol {
+    struct RBasic basic;
+    VALUE fstr;
+    ID type;
+};
+
 struct RData {
     struct RBasic basic;
     void (*dmark)(void*);
@@ -1093,6 +1103,7 @@ struct RStruct {
 #define RFILE(obj)   (R_CAST(RFile)(obj))
 #define RRATIONAL(obj) (R_CAST(RRational)(obj))
 #define RCOMPLEX(obj) (R_CAST(RComplex)(obj))
+#define RSYMBOL(obj) (R_CAST(RSymbol)(obj))
 
 #define FL_SINGLETON FL_USER0
 #define FL_WB_PROTECTED (((VALUE)1)<<5)
@@ -1146,7 +1157,7 @@ struct RStruct {
     (OBJ_TAINTABLE(x) && FL_ABLE(s)) ? \
     RBASIC(x)->flags |= RBASIC(s)->flags & FL_TAINT : 0)
 
-#define OBJ_FROZEN(x) (!!(FL_ABLE(x)?(RBASIC(x)->flags&(FL_FREEZE)):(FIXNUM_P(x)||FLONUM_P(x)||SYMBOL_P(x))))
+#define OBJ_FROZEN(x) (!!(FL_ABLE(x)?(RBASIC(x)->flags&(FL_FREEZE)):(FIXNUM_P(x)||FLONUM_P(x)||STATIC_SYM_P(x))))
 #define OBJ_FREEZE(x) FL_SET((x), FL_FREEZE)
 
 #if USE_RGENGC
@@ -1381,6 +1392,7 @@ const char *rb_id2name(ID);
 ID rb_check_id(volatile VALUE *);
 ID rb_to_id(VALUE);
 VALUE rb_id2str(ID);
+VALUE rb_sym2str(VALUE);
 
 #define CONST_ID_CACHE(result, str)			\
     {							\
@@ -1597,7 +1609,7 @@ rb_class_of(VALUE obj)
 	if (FIXNUM_P(obj)) return rb_cFixnum;
 	if (FLONUM_P(obj)) return rb_cFloat;
 	if (obj == Qtrue)  return rb_cTrueClass;
-	if (SYMBOL_P(obj)) return rb_cSymbol;
+	if (STATIC_SYM_P(obj)) return rb_cSymbol;
     }
     else if (!RTEST(obj)) {
 	if (obj == Qnil)   return rb_cNilClass;
@@ -1613,7 +1625,7 @@ rb_type(VALUE obj)
 	if (FIXNUM_P(obj)) return T_FIXNUM;
         if (FLONUM_P(obj)) return T_FLOAT;
         if (obj == Qtrue)  return T_TRUE;
-	if (SYMBOL_P(obj)) return T_SYMBOL;
+	if (STATIC_SYM_P(obj)) return T_SYMBOL;
 	if (obj == Qundef) return T_UNDEF;
     }
     else if (!RTEST(obj)) {
