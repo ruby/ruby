@@ -196,4 +196,12 @@ INPUT
       condvar.dup
     end
   end
+
+  def test_dump
+    bug9674 = '[ruby-core:61677] [Bug #9674]'
+    condvar = ConditionVariable.new
+    assert_raise_with_message(TypeError, /#{ConditionVariable}/, bug9674) do
+      Marshal.dump(condvar)
+    end
+  end
 end

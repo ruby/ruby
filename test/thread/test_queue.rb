@@ -215,4 +215,17 @@ class TestQueue < Test::Unit::TestCase
       q.dup
     end
   end
+
+  def test_dump
+    bug9674 = '[ruby-core:61677] [Bug #9674]'
+    q = Queue.new
+    assert_raise_with_message(TypeError, /#{Queue}/, bug9674) do
+      Marshal.dump(q)
+    end
+
+    sq = SizedQueue.new(1)
+    assert_raise_with_message(TypeError, /#{SizedQueue}/, bug9674) do
+      Marshal.dump(sq)
+    end
+  end
 end
