@@ -10685,12 +10685,14 @@ rb_str_dynamic_intern(VALUE str)
 	    str = rb_str_dup(str);
 	    rb_enc_associate(str, ascii);
 	    OBJ_FREEZE(str);
+	    enc = ascii;
 	}
     }
 
     type = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
     str = rb_fstring(str);
     dsym = rb_newobj_of(rb_cSymbol, T_SYMBOL);
+    rb_enc_associate(dsym, enc);
     OBJ_FREEZE(dsym);
     RSYMBOL(dsym)->fstr = str;
     RSYMBOL(dsym)->type = type;
