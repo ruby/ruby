@@ -10671,7 +10671,6 @@ rb_str_dynamic_intern(VALUE s)
 {
 #if USE_SYMBOL_GC
     VALUE str = RB_GC_GUARD(s);
-    VALUE dup;
     rb_encoding *enc, *ascii;
     VALUE dsym;
     ID id, type;
@@ -10680,18 +10679,18 @@ rb_str_dynamic_intern(VALUE s)
 	return ID2SYM(id);
     }
 
-    dup = rb_str_dup(str);
     enc = rb_enc_get(str);
     ascii = rb_usascii_encoding();
     if (enc != ascii) {
 	if (sym_check_asciionly(str)) {
+	    str = rb_str_dup(str);
 	    rb_enc_associate(dup, ascii);
+	    OBJ_FREEZE(str);
 	}
     }
 
     type = rb_str_symname_type(str, TRUE);
-    OBJ_FREEZE(dup);
-    str = rb_fstring(dup);
+    str = rb_fstring(str);
     dsym = rb_newobj_of(rb_cSymbol, T_SYMBOL);
     OBJ_FREEZE(dsym);
     RSYMBOL(dsym)->fstr = str;
