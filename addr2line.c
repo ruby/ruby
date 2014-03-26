@@ -525,12 +525,6 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	}
     }
 
-    /* j: ....xxx
-     * 1: debug_line
-     * 2: .symtab
-     * 4: .strtab
-     */
-    j = 0;
     for (i = 0; i < ehdr->e_shnum; i++) {
 	section_name = shstr + shdr[i].sh_name;
 #ifdef __powerpc64__
@@ -538,17 +532,13 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 #endif
 	if (!strcmp(section_name, ".debug_line")) {
 	    debug_line_shdr = shdr + i;
-	    j |= 1;
 	} else if (!strcmp(section_name, ".gnu_debuglink")) {
 	    gnu_debuglink_shdr = shdr + i;
 	} else if (!strcmp(section_name, ".symtab")) {
 	    symtab_shdr = shdr + i;
-	    j |= 2;
 	} else if (!strcmp(section_name, ".strtab")) {
 	    strtab_shdr = shdr + i;
-	    j |= 4;
 	}
-	if (j == 7) break;
     }
 
     if (symtab_shdr && strtab_shdr) {
