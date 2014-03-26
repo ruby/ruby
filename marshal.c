@@ -677,6 +677,11 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
     else {
 	VALUE v;
 
+	if (!RBASIC_CLASS(obj)) {
+	    rb_raise(rb_eTypeError, "can't dump internal %s",
+		     rb_builtin_type_name(BUILTIN_TYPE(obj)));
+	}
+
 	arg->infection |= (int)FL_TEST(obj, MARSHAL_INFECTION);
 
 	if (rb_obj_respond_to(obj, s_mdump, TRUE)) {

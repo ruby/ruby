@@ -216,6 +216,8 @@ class TestQueue < Test::Unit::TestCase
     end
   end
 
+  (DumpableQueue = Queue.dup).class_eval {remove_method :marshal_dump}
+
   def test_dump
     bug9674 = '[ruby-core:61677] [Bug #9674]'
     q = Queue.new
@@ -226,6 +228,11 @@ class TestQueue < Test::Unit::TestCase
     sq = SizedQueue.new(1)
     assert_raise_with_message(TypeError, /#{SizedQueue}/, bug9674) do
       Marshal.dump(sq)
+    end
+
+    q = DumpableQueue.new
+    assert_raise_with_message(TypeError, /internal Array/, bug9674) do
+      Marshal.dump(q)
     end
   end
 end

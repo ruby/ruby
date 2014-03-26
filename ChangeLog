@@ -1,4 +1,7 @@
-Wed Mar 26 11:20:24 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Mar 26 11:20:50 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_object): internal objects are not dumpable.
+	  [ruby-core:61677] [Bug #9674]
 
 	* ext/thread/thread.c (undumpable): ConditionVariable and Queue
 	  are not dumpable.  [ruby-core:61677] [Bug #9674]
