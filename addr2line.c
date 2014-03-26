@@ -118,7 +118,6 @@ typedef struct {
 
 /* Avoid consuming stack as this module may be used from signal handler */
 static char binary_filename[PATH_MAX];
-static intptr_t curobj_baseaddr;
 
 static unsigned long
 uleb128(char **p)
@@ -231,11 +230,11 @@ get_path_from_symbol(const char *symbol, const char **p, size_t *len)
 static void
 fill_line(int num_traces, void **traces,
 	  intptr_t addr, int file, int line,
-	  char *include_directories, char *filenames, line_info_t *lines)
+	  char *include_directories, char *filenames, line_info_t *lines, int offset)
 {
     int i;
-    addr += curobj_baseaddr;
-    for (i = 0; i < num_traces; i++) {
+    addr += lines[offset].base_addr;
+    for (i = offset; i < num_traces; i++) {
 	intptr_t a = (intptr_t)traces[i];
 	/* We assume one line code doesn't result >100 bytes of native code.
        We may want more reliable way eventually... */
@@ -248,7 +247,7 @@ fill_line(int num_traces, void **traces,
 
 static void
 parse_debug_line_cu(int num_traces, void **traces,
-		    char **debug_line, line_info_t *lines)
+		    char **debug_line, line_info_t *lines, int offset)
 {
     char *p, *cu_end, *cu_start, *include_directories, *filenames;
     unsigned long unit_length;
@@ -322,7 +321,7 @@ parse_debug_line_cu(int num_traces, void **traces,
 #define FILL_LINE()						    \
     do {							    \
 	fill_line(num_traces, traces, addr, file, line,		    \
-		  include_directories, filenames, lines);	    \
+		  include_directories, filenames, lines, offset);	    \
 	/*basic_block = prologue_end = epilogue_begin = 0;*/	    \
     } while (0)
 
@@ -421,11 +420,11 @@ parse_debug_line_cu(int num_traces, void **traces,
 
 static void
 parse_debug_line(int num_traces, void **traces,
-		 char *debug_line, unsigned long size, line_info_t *lines)
+		 char *debug_line, unsigned long size, line_info_t *lines, int offset)
 {
     char *debug_line_end = debug_line + size;
     while (debug_line < debug_line_end) {
-	parse_debug_line_cu(num_traces, traces, &debug_line, lines);
+	parse_debug_line_cu(num_traces, traces, &debug_line, lines, offset);
     }
     if (debug_line != debug_line_end) {
 	kprintf("Unexpected size of .debug_line in %s\n",
@@ -610,7 +609,7 @@ fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
     parse_debug_line(num_traces, traces,
 		     file + debug_line_shdr->sh_offset,
 		     debug_line_shdr->sh_size,
-		     lines);
+		     lines, offset);
 finish:
     for (i = offset; i < num_traces; i++) {
 	if (lines[i].line == -1) {
@@ -700,7 +699,6 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces, char **syms)
 	strncpy(binary_filename, path, len);
 	binary_filename[len] = '\0';
 
-	curobj_baseaddr = lines[i].base_addr;
 	fill_lines(num_traces, traces, syms, 1, &lines[i], lines, i);
     }
 

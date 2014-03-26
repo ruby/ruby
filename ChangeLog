@@ -1,3 +1,8 @@
+Wed Mar 26 10:34:25 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c (fill_line): pass and use offset instead of
+	  curobj_baseaddr.
+
 Wed Mar 26 09:07:48 2014  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
 
 	* configure.in: add --disable-pie. [Feature #9673]
