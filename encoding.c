@@ -720,6 +720,7 @@ enc_capable(VALUE obj)
       case T_STRING:
       case T_REGEXP:
       case T_FILE:
+      case T_SYMBOL:
 	return TRUE;
       case T_DATA:
 	if (is_data_encoding(obj)) return TRUE;

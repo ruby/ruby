@@ -107,6 +107,9 @@ class TestEncoding < Test::Unit::TestCase
     bin = "a".force_encoding(Encoding::ASCII_8BIT)
     asc = "b".force_encoding(Encoding::US_ASCII)
     assert_equal(Encoding::ASCII_8BIT, Encoding.compatible?(bin, asc))
+    bin = "\xff".force_encoding(Encoding::ASCII_8BIT).to_sym
+    asc = "b".force_encoding(Encoding::ASCII_8BIT)
+    assert_equal(Encoding::ASCII_8BIT, Encoding.compatible?(bin, asc))
   end
 
   def test_errinfo_after_autoload
