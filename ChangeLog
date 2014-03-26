@@ -1,3 +1,16 @@
+Wed Mar 26 13:25:54 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c (fill_lines): loop reverse order not to overwrite
+	  the basis of base addresses comparison.
+
+	* addr2line.c: use uintptr_t instead of intptr_t for poinrters.
+
+	* addr2line.c (rb_dump_backtrace_with_lines): don't use syms.
+
+	* vm_dump.c (rb_print_backtrace): ditto.
+
+	* addr2line.h: ditto.
+
 Wed Mar 26 11:20:50 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_object): internal objects are not dumpable.

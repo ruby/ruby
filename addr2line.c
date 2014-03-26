@@ -111,8 +111,8 @@ typedef struct {
     int fd2;
     void *mapped2;
     size_t mapped_size2;
-    intptr_t base_addr;
-    intptr_t saddr;
+    uintptr_t base_addr;
+    uintptr_t saddr;
     const char *sname; /* function name */
 } line_info_t;
 
@@ -207,35 +207,15 @@ fill_filename(int file, char *include_directories, char *filenames,
     }
 }
 
-static int
-get_path_from_symbol(const char *symbol, const char **p, size_t *len)
-{
-    if (symbol[0] == '0') {
-	/* libexecinfo */
-	*p   = strchr(symbol, '/');
-	if (*p == NULL) return 0;
-	*len = strlen(*p);
-    }
-    else {
-	/* glibc */
-	const char *q;
-	*p   = symbol;
-	q   = strchr(symbol, '(');
-	if (q == NULL) return 0;
-	*len = q - symbol;
-    }
-    return 1;
-}
-
 static void
 fill_line(int num_traces, void **traces,
-	  intptr_t addr, int file, int line,
+	  uintptr_t addr, int file, int line,
 	  char *include_directories, char *filenames, line_info_t *lines, int offset)
 {
     int i;
     addr += lines[offset].base_addr;
     for (i = offset; i < num_traces; i++) {
-	intptr_t a = (intptr_t)traces[i];
+	uintptr_t a = (uintptr_t)traces[i];
 	/* We assume one line code doesn't result >100 bytes of native code.
        We may want more reliable way eventually... */
 	if (addr < a && a < addr + 100) {
@@ -434,11 +414,11 @@ parse_debug_line(int num_traces, void **traces,
 
 /* read file and fill lines */
 static void
-fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
+fill_lines(int num_traces, void **traces, int check_debuglink,
 	   line_info_t *current_line, line_info_t *lines, int offset);
 
 static void
-follow_debuglink(char *debuglink, int num_traces, void **traces, char **syms,
+follow_debuglink(char *debuglink, int num_traces, void **traces,
 		 line_info_t *current_line, line_info_t *lines, int offset)
 {
     /* Ideally we should check 4 paths to follow gnu_debuglink,
@@ -467,12 +447,12 @@ follow_debuglink(char *debuglink, int num_traces, void **traces, char **syms,
     current_line->mapped2 = current_line->mapped;
     current_line->mapped_size2 = current_line->mapped_size;
     current_line->fd2 = current_line->fd;
-    fill_lines(num_traces, traces, syms, 0, current_line, lines, offset);
+    fill_lines(num_traces, traces, 0, current_line, lines, offset);
 }
 
 /* read file and fill lines */
 static void
-fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
+fill_lines(int num_traces, void **traces, int check_debuglink,
 	   line_info_t *current_line, line_info_t *lines, int offset)
 {
     int i, j;
@@ -534,7 +514,8 @@ fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
     shstr_shdr = shdr + ehdr->e_shstrndx;
     shstr = file + shstr_shdr->sh_offset;
 
-    for (i = offset; i < num_traces; i++) {
+    /* reverse order not to overwrite current_line->base_addr */
+    for (i = num_traces-1; i >= offset; i--) {
 	if (current_line->base_addr == lines[i].base_addr) {
 	    lines[i].line = -1;
 	    if (ehdr->e_type == ET_EXEC) {
@@ -577,16 +558,14 @@ fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
 	for (j = 0; j < symtab_count; j++) {
 	    ElfW(Sym) *sym = &symtab[j];
 	    int type = ELF_ST_TYPE(sym->st_info);
-	    intptr_t saddr = (intptr_t)sym->st_value + current_line->base_addr;
+	    uintptr_t saddr = (uintptr_t)sym->st_value + current_line->base_addr;
 	    if (type != STT_FUNC) continue;
 #ifdef __powerpc64__
 	kprintf("%s %lx %lx\n",strtab + sym->st_name,sym->st_value,sym->st_size);
 #endif
 	    for (i = offset; i < num_traces; i++) {
-		intptr_t d = (intptr_t)traces[i] - saddr;
-		if (lines[i].line != -1)
-		    continue;
-		if (d <= 0 || d > (intptr_t)sym->st_size)
+		uintptr_t d = (uintptr_t)traces[i] - saddr;
+		if (lines[i].line != -1 || d <= 0 || d > (uintptr_t)sym->st_size)
 		    continue;
 		/* fill symbol name and addr from .symtab */
 		lines[i].sname = strtab + sym->st_name;
@@ -601,7 +580,7 @@ fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
 	   let's check .gnu_debuglink section instead. */
 	if (gnu_debuglink_shdr && check_debuglink) {
 	    follow_debuglink(file + gnu_debuglink_shdr->sh_offset,
-			     num_traces, traces, syms,
+			     num_traces, traces,
 			     current_line, lines, offset);
 	}
 	goto finish;
@@ -628,7 +607,7 @@ fail:
 }
 
 void
-rb_dump_backtrace_with_lines(int num_traces, void **traces, char **syms)
+rb_dump_backtrace_with_lines(int num_traces, void **traces)
 {
     int i;
     /* async-signal unsafe */
@@ -637,14 +616,14 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces, char **syms)
 #ifdef HAVE_DLADDR
 # ifdef __linux__
 #  define PROC_SELF_EXE "/proc/self/exe"
-    intptr_t main_fbase;
+    uintptr_t main_fbase;
     char *main_path;
     {
 	Dl_info info;
 	void *handle = dlopen(NULL, RTLD_LAZY);
 	void *sym = dlsym(handle, "_start");
 	dladdr(sym, &info);
-	main_fbase = (intptr_t)info.dli_fbase;
+	main_fbase = (uintptr_t)info.dli_fbase;
     }
     {
 	ssize_t len = readlink(PROC_SELF_EXE, binary_filename, PATH_MAX);
@@ -659,7 +638,7 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces, char **syms)
 	Dl_info info;
 	if (dladdr(traces[i], &info)) {
 	    /* this may set base addr even if executable is not shared object file */
-	    lines[i].base_addr = (intptr_t)info.dli_fbase;
+	    lines[i].base_addr = (uintptr_t)info.dli_fbase;
 # ifdef __linux__
 	    if (lines[i].base_addr == main_fbase) {
 		lines[i].path = main_path;
@@ -673,7 +652,7 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces, char **syms)
 	    lines[i].line = 0;
 	    if (info.dli_saddr) {
 		lines[i].sname = info.dli_sname;
-		lines[i].saddr = (intptr_t)info.dli_saddr;
+		lines[i].saddr = (uintptr_t)info.dli_saddr;
 	    }
 	}
     }
@@ -690,9 +669,6 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces, char **syms)
 	    path = lines[i].path;
 	    len = strlen(path);
 	}
-	else if (syms[i] && get_path_from_symbol(syms[i], &path, &len)) {
-	    lines[i].path = path;
-	}
 	else {
 	    continue;
 	}
@@ -700,47 +676,39 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces, char **syms)
 	strncpy(binary_filename, path, len);
 	binary_filename[len] = '\0';
 
-	fill_lines(num_traces, traces, syms, 1, &lines[i], lines, i);
+	fill_lines(num_traces, traces, 1, &lines[i], lines, i);
     }
 
     /* output */
     for (i = 0; i < num_traces; i++) {
 	line_info_t *line = &lines[i];
-
-	if (line->sname) {
-	    intptr_t addr = (intptr_t)traces[i];
-	    intptr_t d = addr - line->saddr;
-	    if (line->line <= 0) {
-		kprintf("%s(%s+0x%lx) [0x%lx]\n", line->path, line->sname,
-			d, addr);
-	    }
-	    else if (!line->filename) {
-		kprintf("%s(%s+0x%lx) [0x%lx] ???:%d\n", line->path, line->sname,
-			d, addr, line->line);
-	    }
-	    else if (line->dirname && line->dirname[0]) {
-		kprintf("%s(%s+0x%lx) [0x%lx] %s/%s:%d\n", line->path, line->sname,
-			d, addr, line->dirname, line->filename, line->line);
-	    }
-	    else {
-		kprintf("%s(%s+0x%lx) [0x%lx] %s:%d\n", line->path, line->sname,
-			d, addr, line->filename, line->line);
-	    }
-	    /* FreeBSD's backtrace may show _start and so on */
-	    if (strcmp("main", line->sname) == 0)
-		break;
+	uintptr_t addr = (uintptr_t)traces[i];
+	uintptr_t d = addr - line->saddr;
+	if (!line->path) {
+	    kprintf("[0x%lx]\n", addr);
+	}
+	else if (!line->saddr || !line->sname) {
+	    kprintf("%s [0x%lx]\n", line->path, addr);
 	}
 	else if (line->line <= 0) {
-	    kprintf("%s\n", syms[i]);
+	    kprintf("%s(%s+0x%lx) [0x%lx]\n", line->path, line->sname,
+		    d, addr);
 	}
 	else if (!line->filename) {
-	    kprintf("%s ???:%d\n", syms[i], line->line);
-	} else if (line->dirname && line->dirname[0]) {
-	    kprintf("%s %s/%s:%d\n", syms[i], line->dirname, line->filename, line->line);
+	    kprintf("%s(%s+0x%lx) [0x%lx] ???:%d\n", line->path, line->sname,
+		    d, addr, line->line);
+	}
+	else if (line->dirname && line->dirname[0]) {
+	    kprintf("%s(%s+0x%lx) [0x%lx] %s/%s:%d\n", line->path, line->sname,
+		    d, addr, line->dirname, line->filename, line->line);
 	}
 	else {
-	    kprintf("%s %s:%d\n", syms[i], line->filename, line->line);
+	    kprintf("%s(%s+0x%lx) [0x%lx] %s:%d\n", line->path, line->sname,
+		    d, addr, line->filename, line->line);
 	}
+	/* FreeBSD's backtrace may show _start and so on */
+	if (line->sname && strcmp("main", line->sname) == 0)
+	    break;
     }
 
     /* free */

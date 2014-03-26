@@ -683,19 +683,18 @@ rb_print_backtrace(void)
 #define MAX_NATIVE_TRACE 1024
     static void *trace[MAX_NATIVE_TRACE];
     int n = backtrace(trace, MAX_NATIVE_TRACE);
-    char **syms = backtrace_symbols(trace, n);
-
-    if (syms) {
 #ifdef USE_ELF
-	rb_dump_backtrace_with_lines(n, trace, syms);
+    rb_dump_backtrace_with_lines(n, trace);
 #else
+    char **syms = backtrace_symbols(trace, n);
+    if (syms) {
 	int i;
 	for (i=0; i<n; i++) {
 	    fprintf(stderr, "%s\n", syms[i]);
 	}
-#endif
 	free(syms);
     }
+#endif
 #elif defined(_WIN32)
     DWORD tid = GetCurrentThreadId();
     HANDLE th = (HANDLE)_beginthread(dump_thread, 0, &tid);
