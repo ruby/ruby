@@ -1,6 +1,6 @@
 Wed Mar 26 09:07:48 2014  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
 
-	* configure.in: add --disable-pie. 
+	* configure.in: add --disable-pie. [Feature #9673]
 
 Wed Mar 26 08:47:04 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
