@@ -10688,7 +10688,7 @@ rb_str_dynamic_intern(VALUE str)
 	}
     }
 
-    type = rb_str_symname_type(str, TRUE);
+    type = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
     str = rb_fstring(str);
     dsym = rb_newobj_of(rb_cSymbol, T_SYMBOL);
     OBJ_FREEZE(dsym);
