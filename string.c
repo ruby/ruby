@@ -4021,7 +4021,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     int iter = 0;
     char *sp, *cp;
     int tainted = 0;
-    int str_replace;
+    int need_backref;
     rb_encoding *str_enc;
 
     switch (argc) {
@@ -4042,8 +4042,8 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     }
 
     pat = get_pat(argv[0], 1);
-    str_replace = !iter && NIL_P(hash);
-    beg = rb_reg_search0(pat, str, 0, 0, !str_replace);
+    need_backref = iter || !NIL_P(hash);
+    beg = rb_reg_search0(pat, str, 0, 0, need_backref);
     if (beg < 0) {
 	if (bang) return Qnil;	/* no match, no substitution */
 	return rb_str_dup(str);
@@ -4066,7 +4066,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	regs = RMATCH_REGS(match);
 	beg0 = BEG(0);
 	end0 = END(0);
-	if (!str_replace) {
+	if (need_backref) {
             if (iter) {
                 val = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
             }
@@ -4106,7 +4106,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	}
 	cp = RSTRING_PTR(str) + offset;
 	if (offset > RSTRING_LEN(str)) break;
-	beg = rb_reg_search0(pat, str, offset, 0, !str_replace);
+	beg = rb_reg_search0(pat, str, offset, 0, need_backref);
     } while (beg >= 0);
     if (RSTRING_LEN(str) > offset) {
         rb_enc_str_buf_cat(dest, cp, RSTRING_LEN(str) - offset, str_enc);
