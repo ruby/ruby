@@ -831,6 +831,8 @@ class TestString < Test::Unit::TestCase
     c.force_encoding Encoding::US_ASCII
 
     assert_equal Encoding::UTF_8, a.gsub(/world/, c).encoding
+
+    assert_equal S("aéapos&lt;"), S("aé'&lt;").gsub("'", "apos")
   end
 
   def test_gsub!
