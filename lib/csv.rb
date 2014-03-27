@@ -1484,6 +1484,10 @@ class CSV
   # so be sure to set what you want here.
   #
   def initialize(data, options = Hash.new)
+    if data.nil?
+      raise ArgumentError.new("Cannot parse nil as CSV")
+    end
+
     # build the options for this read/write
     options = DEFAULT_OPTIONS.merge(options)
 
