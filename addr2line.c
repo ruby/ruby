@@ -530,18 +530,28 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 #ifdef __powerpc64__
 	kprintf("%s:: %s: flag(%lx)\n",binary_filename,section_name,shdr[i].sh_flags);
 #endif
-	if (!strcmp(section_name, ".debug_line")) {
-	    debug_line_shdr = shdr + i;
-	} else if (!strcmp(section_name, ".gnu_debuglink")) {
-	    gnu_debuglink_shdr = shdr + i;
-	} else if (!strcmp(section_name, ".symtab")) {
+	switch (shdr[i].sh_type) {
+	  case SHT_STRTAB:
+	    if (!strcmp(section_name, ".strtab")) {
+		strtab_shdr = shdr + i;
+	    }
+	    break;
+	  case SHT_SYMTAB:
+	    /* if (!strcmp(section_name, ".symtab")) */
 	    symtab_shdr = shdr + i;
-	} else if (!strcmp(section_name, ".strtab")) {
-	    strtab_shdr = shdr + i;
+	    break;
+	  case SHT_PROGBITS:
+	    if (!strcmp(section_name, ".debug_line")) {
+		debug_line_shdr = shdr + i;
+	    }
+	    else if (!strcmp(section_name, ".gnu_debuglink")) {
+		gnu_debuglink_shdr = shdr + i;
+	    }
+	    break;
 	}
     }
 
-    if (check_debuglink && symtab_shdr && strtab_shdr) {
+    if (symtab_shdr && strtab_shdr) {
 	char *strtab = file + strtab_shdr->sh_offset;
 	ElfW(Sym) *symtab = (ElfW(Sym) *)(file + symtab_shdr->sh_offset);
 	int symtab_count = (int)(symtab_shdr->sh_size / sizeof(ElfW(Sym)));
