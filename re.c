@@ -1898,7 +1898,7 @@ match_inspect_name_iter(const OnigUChar *name, const OnigUChar *name_end,
 static VALUE
 match_inspect(VALUE match)
 {
-    const char *cname = rb_obj_classname(match);
+    VALUE cname = rb_class_path(rb_obj_class(match));
     VALUE str;
     int i;
     struct re_registers *regs = RMATCH_REGS(match);
@@ -1907,7 +1907,7 @@ match_inspect(VALUE match)
     VALUE regexp = RMATCH(match)->regexp;
 
     if (regexp == 0) {
-        return rb_sprintf("#<%s:%p>", cname, (void*)match);
+        return rb_sprintf("#<%"PRIsVALUE":%p>", cname, (void*)match);
     }
 
     names = ALLOCA_N(struct backref_name_tag, num_regs);
@@ -1917,7 +1917,7 @@ match_inspect(VALUE match)
             match_inspect_name_iter, names);
 
     str = rb_str_buf_new2("#<");
-    rb_str_buf_cat2(str, cname);
+    rb_str_append(str, cname);
 
     for (i = 0; i < num_regs; i++) {
         VALUE v;
