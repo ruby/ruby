@@ -2906,7 +2906,7 @@ rb_str_match(VALUE x, VALUE y)
 }
 
 
-static VALUE get_pat(VALUE, int);
+static VALUE get_pat(VALUE);
 
 
 /*
@@ -2946,7 +2946,7 @@ rb_str_match_m(int argc, VALUE *argv, VALUE str)
 	rb_check_arity(argc, 1, 2);
     re = argv[0];
     argv[0] = str;
-    result = rb_funcall2(get_pat(re, 0), rb_intern("match"), argc, argv);
+    result = rb_funcall2(get_pat(re), rb_intern("match"), argc, argv);
     if (!NIL_P(result) && rb_block_given_p()) {
 	return rb_yield(result);
     }
@@ -3837,11 +3837,12 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
 }
 
 static VALUE
-get_pat(VALUE pat, int quote)
+get_pat(VALUE pat)
 {
     VALUE val;
 
-    switch (TYPE(pat)) {
+    if (SPECIAL_CONST_P(pat)) goto to_string;
+    switch (BUILTIN_TYPE(pat)) {
       case T_REGEXP:
 	return pat;
 
@@ -3849,6 +3850,7 @@ get_pat(VALUE pat, int quote)
 	break;
 
       default:
+      to_string:
 	val = rb_check_string_type(pat);
 	if (NIL_P(val)) {
 	    Check_Type(pat, T_REGEXP);
@@ -3856,11 +3858,50 @@ get_pat(VALUE pat, int quote)
 	pat = val;
     }
 
-    if (quote) {
-	pat = rb_reg_quote(pat);
-    }
-
     return rb_reg_regcomp(pat);
+}
+
+static VALUE
+get_pat_quoted(VALUE pat, int check)
+{
+    VALUE val;
+
+    if (SPECIAL_CONST_P(pat)) goto to_string;
+    switch (BUILTIN_TYPE(pat)) {
+      case T_REGEXP:
+	return pat;
+
+      case T_STRING:
+	break;
+
+      default:
+      to_string:
+	val = rb_check_string_type(pat);
+	if (NIL_P(val)) {
+	    Check_Type(pat, T_REGEXP);
+	}
+	pat = val;
+    }
+    if (check && is_broken_string(pat)) {
+	rb_raise(rb_eTypeError, "%"PRIsVALUE, rb_reg_new_str(pat, 0));
+    }
+    return pat;
+}
+
+static long
+rb_pat_search(VALUE pat, VALUE str, long pos, int set_backref_str)
+{
+    if (BUILTIN_TYPE(pat) == T_STRING) {
+	pos = rb_str_index(str, pat, pos);
+	if (pos >= 0 && set_backref_str) {
+	    str = rb_str_new_frozen(str);
+	    rb_backref_set_string(str, pos, RSTRING_LEN(pat));
+	}
+	return pos;
+    }
+    else {
+	return rb_reg_search0(pat, str, pos, 0, set_backref_str);
+    }
 }
 
 
@@ -3883,6 +3924,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
     int tainted = 0;
     long plen;
     int min_arity = rb_block_given_p() ? 1 : 2;
+    long beg;
 
     rb_check_arity(argc, min_arity, 2);
     if (argc == 1) {
@@ -3897,23 +3939,38 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	if (OBJ_TAINTED(repl)) tainted = 1;
     }
 
-    pat = get_pat(argv[0], 1);
+    pat = get_pat_quoted(argv[0], 1);
+
     str_modifiable(str);
-    if (rb_reg_search(pat, str, 0, 0) >= 0) {
+    beg = rb_pat_search(pat, str, 0, 1);
+    if (beg >= 0) {
 	rb_encoding *enc;
 	int cr = ENC_CODERANGE(str);
-	VALUE match = rb_backref_get();
-	struct re_registers *regs = RMATCH_REGS(match);
-	long beg0 = BEG(0);
-	long end0 = END(0);
+	long beg0, end0;
+	VALUE match, match0;
+	struct re_registers *regs;
 	char *p, *rp;
 	long len, rlen;
+
+	if (RB_TYPE_P(pat, T_STRING)) {
+	    beg0 = beg;
+	    end0 = beg0 + RSTRING_LEN(pat);
+	    match0 = pat;
+	}
+	else {
+	    match = rb_backref_get();
+	    regs = RMATCH_REGS(match);
+	    beg0 = BEG(0);
+	    end0 = END(0);
+	    if (!iter && NIL_P(hash)) repl = rb_reg_regsub(repl, str, regs, pat);
+	    if (iter) match0 = rb_reg_nth_match(0, match);
+	}
 
 	if (iter || !NIL_P(hash)) {
 	    p = RSTRING_PTR(str); len = RSTRING_LEN(str);
 
             if (iter) {
-                repl = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
+                repl = rb_obj_as_string(rb_yield(match0));
             }
             else {
                 repl = rb_hash_aref(hash, rb_str_subseq(str, beg0, end0 - beg0));
@@ -3922,9 +3979,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	    str_mod_check(str, p, len);
 	    rb_check_frozen(str);
 	}
-	else {
-	    repl = rb_reg_regsub(repl, str, regs, pat);
-	}
+
         enc = rb_enc_compatible(str, repl);
         if (!enc) {
             rb_encoding *str_enc = STR_ENC_GET(str);
@@ -4021,7 +4076,7 @@ rb_str_sub(int argc, VALUE *argv, VALUE str)
 static VALUE
 str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 {
-    VALUE pat, val, repl, match, dest, hash = Qnil;
+    VALUE pat, val, repl, match, match0, dest, hash = Qnil;
     struct re_registers *regs;
     long beg, n;
     long beg0, end0;
@@ -4049,9 +4104,9 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	rb_check_arity(argc, 1, 2);
     }
 
-    pat = get_pat(argv[0], 1);
+    pat = get_pat_quoted(argv[0], 1);
     need_backref = iter || !NIL_P(hash);
-    beg = rb_reg_search0(pat, str, 0, 0, need_backref);
+    beg = rb_pat_search(pat, str, 0, need_backref);
     if (beg < 0) {
 	if (bang) return Qnil;	/* no match, no substitution */
 	return rb_str_dup(str);
@@ -4070,25 +4125,34 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 
     do {
 	n++;
-	match = rb_backref_get();
-	regs = RMATCH_REGS(match);
-	beg0 = BEG(0);
-	end0 = END(0);
+
+	if (RB_TYPE_P(pat, T_STRING)) {
+	    beg0 = beg;
+	    end0 = beg0 + RSTRING_LEN(pat);
+	    if (!need_backref) val = repl;
+	    match0 = pat;
+	}
+	else {
+	    match = rb_backref_get();
+	    regs = RMATCH_REGS(match);
+	    beg0 = BEG(0);
+	    end0 = END(0);
+	    if (!need_backref) val = rb_reg_regsub(repl, str, regs, pat);
+	    if (iter) match0 = rb_reg_nth_match(0, match);
+	}
+
 	if (need_backref) {
             if (iter) {
-                val = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
+                val = rb_obj_as_string(rb_yield(match0));
             }
             else {
-                val = rb_hash_aref(hash, rb_str_subseq(str, BEG(0), END(0) - BEG(0)));
+                val = rb_hash_aref(hash, rb_str_subseq(str, beg0, end0 - beg0));
                 val = rb_obj_as_string(val);
             }
 	    str_mod_check(str, sp, slen);
 	    if (val == dest) { 	/* paranoid check [ruby-dev:24827] */
 		rb_raise(rb_eRuntimeError, "block should not cheat");
 	    }
-	}
-	else {
-	    val = rb_reg_regsub(repl, str, regs, pat);
 	}
 
 	if (OBJ_TAINTED(val)) tainted = 1;
@@ -4114,12 +4178,12 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	}
 	cp = RSTRING_PTR(str) + offset;
 	if (offset > RSTRING_LEN(str)) break;
-	beg = rb_reg_search0(pat, str, offset, 0, need_backref);
+	beg = rb_pat_search(pat, str, offset, need_backref);
     } while (beg >= 0);
     if (RSTRING_LEN(str) > offset) {
         rb_enc_str_buf_cat(dest, cp, RSTRING_LEN(str) - offset, str_enc);
     }
-    rb_reg_search(pat, str, last, 0);
+    rb_pat_search(pat, str, last, 1);
     if (bang) {
         rb_str_shared_replace(str, dest);
     }
@@ -6118,7 +6182,8 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
     }
     else {
       fs_set:
-	if (RB_TYPE_P(spat, T_STRING)) {
+	spat = get_pat_quoted(spat, 1);
+	if (BUILTIN_TYPE(spat) == T_STRING) {
 	    rb_encoding *enc2 = STR_ENC_GET(spat);
 
 	    split_type = string;
@@ -6141,7 +6206,6 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	    }
 	}
 	else {
-	    spat = get_pat(spat, 1);
 	    split_type = regexp;
 	}
     }
@@ -7143,7 +7207,7 @@ scan_once(VALUE str, VALUE pat, long *start)
     struct re_registers *regs;
     int i;
 
-    if (rb_reg_search(pat, str, *start, 0) >= 0) {
+    if (rb_pat_search(pat, str, *start, 1) >= 0) {
 	match = rb_backref_get();
 	regs = RMATCH_REGS(match);
 	if (BEG(0) == END(0)) {
@@ -7213,7 +7277,8 @@ rb_str_scan(VALUE str, VALUE pat)
     long last = -1, prev = 0;
     char *p = RSTRING_PTR(str); long len = RSTRING_LEN(str);
 
-    pat = get_pat(pat, 1);
+    pat = get_pat_quoted(pat, 1);
+    mustnot_broken(str);
     if (!rb_block_given_p()) {
 	VALUE ary = rb_ary_new();
 
@@ -7222,7 +7287,7 @@ rb_str_scan(VALUE str, VALUE pat)
 	    prev = start;
 	    rb_ary_push(ary, result);
 	}
-	if (last >= 0) rb_reg_search(pat, str, last, 0);
+	if (last >= 0) rb_pat_search(pat, str, last, 1);
 	return ary;
     }
 
@@ -7232,7 +7297,7 @@ rb_str_scan(VALUE str, VALUE pat)
 	rb_yield(result);
 	str_mod_check(str, p, len);
     }
-    if (last >= 0) rb_reg_search(pat, str, last, 0);
+    if (last >= 0) rb_pat_search(pat, str, last, 1);
     return str;
 }
 
@@ -7619,30 +7684,20 @@ static VALUE
 rb_str_partition(VALUE str, VALUE sep)
 {
     long pos;
-    int regex = FALSE;
 
+    sep = get_pat_quoted(sep, 0);
     if (RB_TYPE_P(sep, T_REGEXP)) {
 	pos = rb_reg_search(sep, str, 0, 0);
-	regex = TRUE;
-    }
-    else {
-	VALUE tmp;
-
-	tmp = rb_check_string_type(sep);
-	if (NIL_P(tmp)) {
-	    rb_raise(rb_eTypeError, "type mismatch: %s given",
-		     rb_obj_classname(sep));
+	if (pos < 0) {
+	  failed:
+	    return rb_ary_new3(3, str, str_new_empty(str), str_new_empty(str));
 	}
-	sep = tmp;
-	pos = rb_str_index(str, sep, 0);
-    }
-    if (pos < 0) {
-      failed:
-	return rb_ary_new3(3, str, str_new_empty(str), str_new_empty(str));
-    }
-    if (regex) {
 	sep = rb_str_subpat(str, sep, INT2FIX(0));
 	if (pos == 0 && RSTRING_LEN(sep) == 0) goto failed;
+    }
+    else {
+	pos = rb_str_index(str, sep, 0);
+	if (pos < 0) goto failed;
     }
     return rb_ary_new3(3, rb_str_subseq(str, 0, pos),
 		          sep,

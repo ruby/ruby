@@ -821,6 +821,7 @@ VALUE rb_rational_reciprocal(VALUE x);
 VALUE rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline);
 VALUE rb_reg_check_preprocess(VALUE);
 long rb_reg_search0(VALUE, VALUE, long, int, int);
+void rb_backref_set_string(VALUE string, long pos, long len);
 
 /* signal.c */
 int rb_get_next_signal(void);

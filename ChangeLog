@@ -1,3 +1,15 @@
+Thu Mar 27 18:58:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (match_regexp): set regexp for MatchData from string.
+
+	* re.c (rb_backref_set_string): create MatchData from string and
+	  set backref.
+
+	* string.c (rb_pat_search, rb_str_sub, rb_str_sub_bang, str_gsub),
+	  (scan_once, rb_str_scan, rb_str_partition): use rb_str_index
+	  instead of rb_reg_search() when pattern is a String.  based on
+	  the patch by Sam Rawlins <sam.rawlins@gmail.com> [Fixes GH-579]
+
 Thu Mar 27 11:58:55 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* addr2line.c (fill_lines): check shdr[i].sh_type because even if

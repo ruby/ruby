@@ -831,6 +831,8 @@ class TestString < Test::Unit::TestCase
     c.force_encoding Encoding::US_ASCII
 
     assert_equal Encoding::UTF_8, a.gsub(/world/, c).encoding
+
+    assert_equal S("a\u{e9}apos&lt;"), S("a\u{e9}'&lt;").gsub("'", "apos")
   end
 
   def test_gsub!
@@ -1454,6 +1456,12 @@ class TestString < Test::Unit::TestCase
     o = Object.new
     def o.to_s; self; end
     assert_match(/^foo#<Object:0x.*>baz$/, "foobarbaz".sub("bar") { o })
+
+    assert_equal(S("Abc"), S("abc").sub("a", "A"))
+    m = nil
+    assert_equal(S("Abc"), S("abc").sub("a") {m = $~; "A"})
+    assert_equal(S("a"), m[0])
+    assert_equal(/a/, m.regexp)
   end
 
   def test_sub!

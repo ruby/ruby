@@ -1017,8 +1017,15 @@ match_init_copy(VALUE obj, VALUE orig)
 static VALUE
 match_regexp(VALUE match)
 {
+    VALUE regexp;
     match_check(match);
-    return RMATCH(match)->regexp;
+    regexp = RMATCH(match)->regexp;
+    if (NIL_P(regexp)) {
+	VALUE str = rb_reg_nth_match(0, match);
+	regexp = rb_reg_regcomp(rb_reg_quote(str));
+	RMATCH(match)->regexp = regexp;
+    }
+    return regexp;
 }
 
 /*
@@ -1214,6 +1221,31 @@ void
 rb_match_busy(VALUE match)
 {
     FL_SET(match, MATCH_BUSY);
+}
+
+static void
+match_set_string(VALUE m, VALUE string, long pos, long len)
+{
+    struct RMatch *match = (struct RMatch *)m;
+    struct rmatch *rmatch = match->rmatch;
+
+    match->str = string;
+    match->regexp = Qnil;
+    onig_region_resize(&rmatch->regs, 1);
+    rmatch->regs.beg[0] = pos;
+    rmatch->regs.end[0] = pos + len;
+    rmatch->char_offset_updated = 0;
+}
+
+void
+rb_backref_set_string(VALUE string, long pos, long len)
+{
+    VALUE match = rb_backref_get();
+    if (NIL_P(match) || FL_TEST(match, MATCH_BUSY)) {
+	match = match_alloc(rb_cMatch);
+    }
+    match_set_string(match, string, pos, len);
+    rb_backref_set(match);
 }
 
 /*
@@ -1908,6 +1940,10 @@ match_inspect(VALUE match)
 
     if (regexp == 0) {
         return rb_sprintf("#<%"PRIsVALUE":%p>", cname, (void*)match);
+    }
+    else if (NIL_P(regexp)) {
+        return rb_sprintf("#<%"PRIsVALUE": %"PRIsVALUE">",
+			  cname, rb_reg_nth_match(0, match));
     }
 
     names = ALLOCA_N(struct backref_name_tag, num_regs);
