@@ -157,6 +157,14 @@ get_encoding(VALUE str)
     return get_actual_encoding(ENCODING_GET(str), str);
 }
 
+static void
+mustnot_broken(VALUE str)
+{
+    if (is_broken_string(str)) {
+	rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(STR_ENC_GET(str)));
+    }
+}
+
 static int fstring_cmp(VALUE a, VALUE b);
 
 static st_table* frozen_strings;
@@ -6207,12 +6215,8 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	char *sptr = RSTRING_PTR(spat);
 	long slen = RSTRING_LEN(spat);
 
-	if (is_broken_string(str)) {
-	    rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(STR_ENC_GET(str)));
-	}
-	if (is_broken_string(spat)) {
-	    rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(STR_ENC_GET(spat)));
-	}
+	mustnot_broken(str);
+	mustnot_broken(spat);
 	enc = rb_enc_check(str, spat);
 	while (ptr < eptr &&
 	       (end = rb_memsearch(sptr, slen, ptr, eptr - ptr, enc)) >= 0) {
