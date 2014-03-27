@@ -1036,25 +1036,26 @@ class TestM17NComb < Test::Unit::TestCase
 
   def test_str_scan
     combination(STRINGS, STRINGS) {|s1, s2|
+      desc = proc {"#{s1.dump}.scan(#{s2.dump})"}
       if !s2.valid_encoding?
-        assert_raise(RegexpError) { s1.scan(s2) }
+        assert_raise(RegexpError, desc) { s1.scan(s2) }
         next
       end
       if !s1.ascii_only? && !s2.ascii_only? && s1.encoding != s2.encoding
         if s1.valid_encoding?
-          assert_raise(Encoding::CompatibilityError) { s1.scan(s2) }
+          assert_raise(Encoding::CompatibilityError, desc) { s1.scan(s2) }
         else
-          assert_match(/invalid byte sequence/, assert_raise(ArgumentError) { s1.scan(s2) }.message)
+          assert_raise_with_message(ArgumentError, /invalid byte sequence/, desc) { s1.scan(s2) }
         end
         next
       end
       if !s1.valid_encoding?
-        assert_raise(ArgumentError) { s1.scan(s2) }
+        assert_raise(ArgumentError, desc) { s1.scan(s2) }
         next
       end
       r = enccall(s1, :scan, s2)
       r.each {|t|
-        assert_equal(s2, t)
+        assert_equal(s2, t, desc)
       }
     }
   end
