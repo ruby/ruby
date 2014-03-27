@@ -10661,8 +10661,11 @@ rb_intern_str(VALUE str)
 void
 rb_gc_free_dsymbol(VALUE ptr)
 {
-    st_delete(global_symbols.sym_id, (st_data_t *)&RSYMBOL(ptr)->fstr, 0);
-    st_delete(global_symbols.id_str, (st_data_t *)&ptr, 0);
+    st_data_t data;
+    data = (st_data_t)RSYMBOL(ptr)->fstr;
+    st_delete(global_symbols.sym_id, &data, 0);
+    data = (st_data_t)ptr;
+    st_delete(global_symbols.id_str, &data, 0);
     RSYMBOL(ptr)->fstr = (VALUE)NULL;
 }
 
