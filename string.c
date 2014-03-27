@@ -3947,7 +3947,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	rb_encoding *enc;
 	int cr = ENC_CODERANGE(str);
 	long beg0, end0;
-	VALUE match, match0;
+	VALUE match, match0 = Qnil;
 	struct re_registers *regs;
 	char *p, *rp;
 	long len, rlen;
@@ -4076,7 +4076,7 @@ rb_str_sub(int argc, VALUE *argv, VALUE str)
 static VALUE
 str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 {
-    VALUE pat, val, repl, match, match0, dest, hash = Qnil;
+    VALUE pat, val = Qnil, repl, match, match0 = Qnil, dest, hash = Qnil;
     struct re_registers *regs;
     long beg, n;
     long beg0, end0;
