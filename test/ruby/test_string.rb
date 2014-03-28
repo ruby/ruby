@@ -1156,6 +1156,8 @@ class TestString < Test::Unit::TestCase
     /h/ =~ a
     a.scan('x')
     assert_nil($~)
+
+    assert_equal(3, S("hello hello hello").scan("hello".taint).count(&:tainted?))
   end
 
   def test_size

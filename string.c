@@ -3895,8 +3895,11 @@ rb_pat_search(VALUE pat, VALUE str, long pos, int set_backref_str)
 	pos = rb_str_index(str, pat, pos);
 	if (set_backref_str) {
 	    if (pos >= 0) {
+		VALUE match;
 		str = rb_str_new_frozen(str);
 		rb_backref_set_string(str, pos, RSTRING_LEN(pat));
+		match = rb_backref_get();
+		OBJ_INFECT(match, pat);
 	    }
 	    else {
 		rb_backref_set(Qnil);
