@@ -8820,6 +8820,7 @@ static const char id_type_names[][9] = {
 };
 
 static ID rb_pin_dynamic_symbol(VALUE);
+static ID attrsetname_to_attr(VALUE name);
 
 ID
 rb_id_attrset(ID id)
@@ -8859,6 +8860,12 @@ rb_id_attrset(ID id)
 	rb_pin_dynamic_symbol((VALUE)id);
     }
     return id;
+}
+
+ID
+rb_id_attrget(ID id)
+{
+    return attrsetname_to_attr(rb_id2str(id));
 }
 
 static NODE *
@@ -10991,7 +10998,19 @@ rb_check_id_without_pindown(VALUE *namep)
     if (st_lookup(global_symbols.sym_id, (st_data_t)name, &id))
 	return (ID)id;
 
+    {
+	ID gid = attrsetname_to_attr(name);
+	if (gid) return rb_id_attrset(gid);
+    }
+
+    return (ID)0;
+}
+
+static ID
+attrsetname_to_attr(VALUE name)
+{
     if (rb_is_attrset_name(name)) {
+	st_data_t id;
 	struct RString fake_str;
 	/* make local name by chopping '=' */
 	const VALUE localname = setup_fake_str(&fake_str, RSTRING_PTR(name), RSTRING_LEN(name) - 1);
@@ -10999,7 +11018,7 @@ rb_check_id_without_pindown(VALUE *namep)
 	OBJ_FREEZE(localname);
 
 	if (st_lookup(global_symbols.sym_id, (st_data_t)localname, &id)) {
-	    return rb_id_attrset((ID)id);
+	    return (ID)id;
 	}
 	RB_GC_GUARD(name);
     }

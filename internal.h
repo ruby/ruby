@@ -752,6 +752,7 @@ ID rb_sym2id_without_pindown(VALUE);
 #ifdef RUBY_ENCODING_H
 ID rb_check_id_cstr_without_pindown(const char *, long, rb_encoding *);
 #endif
+ID rb_id_attrget(ID id);
 
 /* proc.c */
 VALUE rb_proc_location(VALUE self);
