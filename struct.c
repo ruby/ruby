@@ -84,7 +84,7 @@ NORETURN(static void not_a_member(ID id));
 static void
 not_a_member(ID id)
 {
-    rb_name_error(id, "`%s' is not a struct member", rb_id2name(id));
+    rb_name_error(id, "`%"PRIsVALUE"' is not a struct member", QUOTE_ID(id));
 }
 
 VALUE
