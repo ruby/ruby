@@ -3893,9 +3893,14 @@ rb_pat_search(VALUE pat, VALUE str, long pos, int set_backref_str)
 {
     if (BUILTIN_TYPE(pat) == T_STRING) {
 	pos = rb_str_index(str, pat, pos);
-	if (pos >= 0 && set_backref_str) {
-	    str = rb_str_new_frozen(str);
-	    rb_backref_set_string(str, pos, RSTRING_LEN(pat));
+	if (set_backref_str) {
+	    if (pos >= 0) {
+		str = rb_str_new_frozen(str);
+		rb_backref_set_string(str, pos, RSTRING_LEN(pat));
+	    }
+	    else {
+		rb_backref_set(Qnil);
+	    }
 	}
 	return pos;
     }

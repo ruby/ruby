@@ -1147,6 +1147,14 @@ class TestString < Test::Unit::TestCase
     res = []
     a.scan(/./) { |w| res << w }
     assert_predicate(res[0], :tainted?, '[ruby-core:33338] #4087')
+
+    /h/ =~ a
+    a.scan(/x/)
+    assert_nil($~)
+
+    /h/ =~ a
+    a.scan('x')
+    assert_nil($~)
   end
 
   def test_size
