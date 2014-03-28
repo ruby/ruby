@@ -211,7 +211,35 @@ define rp
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_SYMBOL
     printf "%sT_SYMBOL%s: ", $color_type, $color_end
-    print (struct RBasic *)($arg0)
+    print (struct RSymbol *)($arg0)
+    set $id_type = ((struct RSymbol *)($arg0))->type
+    if $id_type == RUBY_ID_LOCAL
+      printf "l"
+    else
+    if $id_type == RUBY_ID_INSTANCE
+      printf "i"
+    else
+    if $id_type == RUBY_ID_GLOBAL
+      printf "G"
+    else
+    if $id_type == RUBY_ID_ATTRSET
+      printf "a"
+    else
+    if $id_type == RUBY_ID_CONST
+      printf "C"
+    else
+    if $id_type == RUBY_ID_CLASS
+      printf "c"
+    else
+      printf "j"
+    end
+    end
+    end
+    end
+    end
+    end
+    set $id_fstr = ((struct RSymbol *)($arg0))->fstr
+    rp_string $id_fstr
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_UNDEF
     printf "%sT_UNDEF%s: ", $color_type, $color_end
