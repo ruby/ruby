@@ -808,6 +808,7 @@ class TestString < Test::Unit::TestCase
                  S("hello").gsub(/./) { |s| s[0].to_s + S(' ')})
     assert_equal(S("HELL-o"),
                  S("hello").gsub(/(hell)(.)/) { |s| $1.upcase + S('-') + $2 })
+    assert_equal(S("<>h<>e<>l<>l<>o<>"), S("hello").gsub(S(''), S('<\0>')))
 
     a = S("hello")
     a.taint
@@ -1415,6 +1416,7 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("HELL-o"),   S("hello").sub(/(hell)(.)/) {
                    |s| $1.upcase + S('-') + $2
                    })
+    assert_equal(S("h<e>llo"),  S("hello").sub('e', S('<\0>')))
 
     assert_equal(S("a\\aba"), S("ababa").sub(/b/, '\\'))
     assert_equal(S("ab\\aba"), S("ababa").sub(/(b)/, '\1\\'))

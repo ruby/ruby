@@ -3957,17 +3957,16 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	char *p, *rp;
 	long len, rlen;
 
+	match = rb_backref_get();
+	regs = RMATCH_REGS(match);
 	if (RB_TYPE_P(pat, T_STRING)) {
 	    beg0 = beg;
 	    end0 = beg0 + RSTRING_LEN(pat);
 	    match0 = pat;
 	}
 	else {
-	    match = rb_backref_get();
-	    regs = RMATCH_REGS(match);
 	    beg0 = BEG(0);
 	    end0 = END(0);
-	    if (!iter && NIL_P(hash)) repl = rb_reg_regsub(repl, str, regs, pat);
 	    if (iter) match0 = rb_reg_nth_match(0, match);
 	}
 
@@ -3983,6 +3982,9 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
             }
 	    str_mod_check(str, p, len);
 	    rb_check_frozen(str);
+	}
+	else {
+	    repl = rb_reg_regsub(repl, str, regs, RB_TYPE_P(pat, T_STRING) ? Qnil : pat);
 	}
 
         enc = rb_enc_compatible(str, repl);
@@ -4086,22 +4088,25 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     long beg, n;
     long beg0, end0;
     long offset, blen, slen, len, last;
-    int iter = 0;
+    enum {STR, ITER, MAP} mode = STR;
     char *sp, *cp;
     int tainted = 0;
-    int need_backref;
+    int need_backref = -1;
     rb_encoding *str_enc;
 
     switch (argc) {
       case 1:
 	RETURN_ENUMERATOR(str, argc, argv);
-	iter = 1;
+	mode = ITER;
 	break;
       case 2:
 	repl = argv[1];
 	hash = rb_check_hash_type(argv[1]);
 	if (NIL_P(hash)) {
 	    StringValue(repl);
+	}
+	else {
+	    mode = MAP;
 	}
 	if (OBJ_TAINTED(repl)) tainted = 1;
 	break;
@@ -4110,7 +4115,6 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     }
 
     pat = get_pat_quoted(argv[0], 1);
-    need_backref = iter || !NIL_P(hash);
     beg = rb_pat_search(pat, str, 0, need_backref);
     if (beg < 0) {
 	if (bang) return Qnil;	/* no match, no substitution */
@@ -4131,23 +4135,21 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     do {
 	n++;
 
+	match = rb_backref_get();
+	regs = RMATCH_REGS(match);
 	if (RB_TYPE_P(pat, T_STRING)) {
 	    beg0 = beg;
 	    end0 = beg0 + RSTRING_LEN(pat);
-	    if (!need_backref) val = repl;
 	    match0 = pat;
 	}
 	else {
-	    match = rb_backref_get();
-	    regs = RMATCH_REGS(match);
 	    beg0 = BEG(0);
 	    end0 = END(0);
-	    if (!need_backref) val = rb_reg_regsub(repl, str, regs, pat);
-	    if (iter) match0 = rb_reg_nth_match(0, match);
+	    if (mode == ITER) match0 = rb_reg_nth_match(0, match);
 	}
 
-	if (need_backref) {
-            if (iter) {
+	if (mode) {
+            if (mode == ITER) {
                 val = rb_obj_as_string(rb_yield(match0));
             }
             else {
@@ -4159,6 +4161,16 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 		rb_raise(rb_eRuntimeError, "block should not cheat");
 	    }
 	}
+	else if (need_backref) {
+	    val = rb_reg_regsub(repl, str, regs, RB_TYPE_P(pat, T_STRING) ? Qnil : pat);
+	    if (need_backref < 0) {
+		need_backref = val != repl;
+	    }
+	}
+	else {
+	    val = repl;
+	}
+
 
 	if (OBJ_TAINTED(val)) tainted = 1;
 

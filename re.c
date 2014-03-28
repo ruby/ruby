@@ -3402,7 +3402,7 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
 	switch (c) {
 	  case '1': case '2': case '3': case '4':
 	  case '5': case '6': case '7': case '8': case '9':
-            if (onig_noname_group_capture_is_active(RREGEXP(regexp)->ptr)) {
+            if (!NIL_P(regexp) && onig_noname_group_capture_is_active(RREGEXP(regexp)->ptr)) {
                 no = c - '0';
             }
             else {
