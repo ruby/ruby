@@ -1,3 +1,9 @@
+Fri Mar 28 19:32:13 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* struct.c (not_a_member): extract name error and use same error
+	  messages.  based on the patch by Marcus Stollsteimer <sto.mar AT
+	  web.de> at [ruby-core:61721].  [Bug #9684]
+
 Fri Mar 28 09:21:54 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* ext/psych/psych.gemspec: update gemspec for psych-2.0.5
