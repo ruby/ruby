@@ -527,9 +527,6 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 
     for (i = 0; i < ehdr->e_shnum; i++) {
 	section_name = shstr + shdr[i].sh_name;
-#ifdef __powerpc64__
-	kprintf("%s:: %s: flag(%lx)\n",binary_filename,section_name,shdr[i].sh_flags);
-#endif
 	switch (shdr[i].sh_type) {
 	  case SHT_STRTAB:
 	    if (!strcmp(section_name, ".strtab")) {
@@ -555,18 +552,11 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	char *strtab = file + strtab_shdr->sh_offset;
 	ElfW(Sym) *symtab = (ElfW(Sym) *)(file + symtab_shdr->sh_offset);
 	int symtab_count = (int)(symtab_shdr->sh_size / sizeof(ElfW(Sym)));
-#ifdef __powerpc64__
-	kprintf("\n= %s %lx\n",lines[offset].path,lines[offset].base_addr);
-#endif
 	for (j = 0; j < symtab_count; j++) {
 	    ElfW(Sym) *sym = &symtab[j];
 	    int type = ELF_ST_TYPE(sym->st_info);
 	    uintptr_t saddr = (uintptr_t)sym->st_value + current_line->base_addr;
 	    if (type != STT_FUNC) continue;
-#ifdef __powerpc64__
-	    kprintf("%lx %lx %lx %lx\n",strtab,sym->st_name,sym->st_value,sym->st_size);
-	    kprintf("%s\n",strtab + sym->st_name);
-#endif
 	    for (i = offset; i < num_traces; i++) {
 		uintptr_t d = (uintptr_t)traces[i] - saddr;
 		if (lines[i].line != -1 || d <= 0 || d > (uintptr_t)sym->st_size)
