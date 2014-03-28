@@ -1,3 +1,7 @@
+Fri Mar 28 09:21:54 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* ext/psych/psych.gemspec: update gemspec for psych-2.0.5
+
 Fri Mar 28 09:11:06 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* ext/psych/lib/psych.rb: Merge psych-2.0.5. bump version to
