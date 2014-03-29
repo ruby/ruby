@@ -2890,7 +2890,7 @@ gc_before_sweep(rb_objspace_t *objspace)
 	    malloc_limit = (size_t)(inc * gc_params.malloc_limit_growth_factor);
 	    if (gc_params.malloc_limit_max > 0 && /* ignore max-check if 0 */
 		malloc_limit > gc_params.malloc_limit_max) {
-		malloc_limit = inc;
+		malloc_limit = gc_params.malloc_limit_max;
 	    }
 	}
 	else {

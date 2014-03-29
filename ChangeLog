@@ -1,3 +1,13 @@
+Sat Mar 29 13:04:22 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_before_sweep): cap `malloc_limit' to
+	  gc_params.malloc_limit_max.  It can grow and grow with such case:
+	    `loop{"a" * (1024 ** 2)}'
+	  [Bug #9687]
+
+	  This issue is pointed by Tim Robertson.
+	  http://www.omniref.com/blog/blog/2014/03/27/ruby-garbage-collection-still-not-ready-for-production/
+
 Fri Mar 28 19:32:13 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* struct.c (not_a_member): extract name error and use same error
