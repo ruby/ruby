@@ -1194,14 +1194,15 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, volatile V
 	VALUE absolute_path = Qnil;
 	VALUE fname;
 
+	if (file != Qundef) {
+	    absolute_path = file;
+	}
+
 	if (scope != Qnil) {
 	    if (rb_obj_is_kind_of(scope, rb_cBinding)) {
 		GetBindingPtr(scope, bind);
 		envval = bind->env;
-		if (file != Qundef) {
-		    absolute_path = file;
-		}
-		else if (!NIL_P(bind->path)) {
+		if (NIL_P(absolute_path) && !NIL_P(bind->path)) {
 		    file = bind->path;
 		    line = bind->first_lineno;
 		    absolute_path = rb_current_realfilepath();
