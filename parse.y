@@ -268,6 +268,7 @@ struct parser_params {
     int has_shebang;
     char *parser_ruby_sourcefile; /* current source file */
     int parser_ruby_sourceline;	/* current line no. */
+    VALUE parser_ruby_sourcefile_string;
     rb_encoding *enc;
 
     int parser_yydebug;
@@ -284,7 +285,6 @@ struct parser_params {
     token_info *parser_token_info;
 #else
     /* Ripper only */
-    VALUE parser_ruby_sourcefile_string;
     const char *tokp;
     VALUE delayed;
     int delayed_line;
@@ -339,6 +339,7 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define ruby__end__seen		(parser->parser_ruby__end__seen)
 #define ruby_sourceline		(parser->parser_ruby_sourceline)
 #define ruby_sourcefile		(parser->parser_ruby_sourcefile)
+#define ruby_sourcefile_string	(parser->parser_ruby_sourcefile_string)
 #define current_enc		(parser->enc)
 #define yydebug			(parser->parser_yydebug)
 #ifdef RIPPER
@@ -5262,14 +5263,13 @@ static void parser_prepare(struct parser_params *parser);
 
 #ifndef RIPPER
 static VALUE
-debug_lines(const char *f)
+debug_lines(VALUE fname)
 {
     ID script_lines;
     CONST_ID(script_lines, "SCRIPT_LINES__");
     if (rb_const_defined_at(rb_cObject, script_lines)) {
 	VALUE hash = rb_const_get_at(rb_cObject, script_lines);
 	if (RB_TYPE_P(hash, T_HASH)) {
-	    VALUE fname = rb_external_str_new_with_enc(f, strlen(f), rb_filesystem_encoding());
 	    VALUE lines = rb_ary_new();
 	    rb_hash_aset(hash, fname, lines);
 	    return lines;
@@ -5279,11 +5279,10 @@ debug_lines(const char *f)
 }
 
 static VALUE
-coverage(const char *f, int n)
+coverage(VALUE fname, int n)
 {
     VALUE coverages = rb_get_coverages();
     if (RTEST(coverages) && RBASIC(coverages)->klass == 0) {
-	VALUE fname = rb_external_str_new_with_enc(f, strlen(f), rb_filesystem_encoding());
 	VALUE lines = rb_ary_new2(n);
 	int i;
 	RBASIC(lines)->klass = 0;
@@ -5309,7 +5308,7 @@ yycompile0(VALUE arg)
     struct parser_params *parser = (struct parser_params *)arg;
 
     if (!compile_for_eval && rb_safe_level() == 0) {
-	ruby_debug_lines = debug_lines(ruby_sourcefile);
+	ruby_debug_lines = debug_lines(ruby_sourcefile_string);
 	if (ruby_debug_lines && ruby_sourceline > 0) {
 	    VALUE str = STR_NEW0();
 	    n = ruby_sourceline;
@@ -5319,7 +5318,7 @@ yycompile0(VALUE arg)
 	}
 
 	if (!e_option_supplied(parser)) {
-	    ruby_coverage = coverage(ruby_sourcefile, ruby_sourceline);
+	    ruby_coverage = coverage(ruby_sourcefile_string, ruby_sourceline);
 	}
     }
 
@@ -5362,9 +5361,10 @@ yycompile0(VALUE arg)
 }
 
 static NODE*
-yycompile(struct parser_params *parser, const char *f, int line)
+yycompile(struct parser_params *parser, VALUE fname, int line)
 {
-    ruby_sourcefile = ruby_strdup(f);
+    ruby_sourcefile_string = rb_str_new_frozen(fname);
+    ruby_sourcefile = RSTRING_PTR(fname);
     ruby_sourceline = line - 1;
     return (NODE *)rb_suppress_tracing(yycompile0, (VALUE)parser);
 }
@@ -5424,7 +5424,7 @@ static rb_data_type_t parser_data_type;
 static const rb_data_type_t parser_data_type;
 
 static NODE*
-parser_compile_string(volatile VALUE vparser, const char *f, VALUE s, int line)
+parser_compile_string(volatile VALUE vparser, VALUE fname, VALUE s, int line)
 {
     struct parser_params *parser;
     NODE *node;
@@ -5436,7 +5436,7 @@ parser_compile_string(volatile VALUE vparser, const char *f, VALUE s, int line)
     lex_pbeg = lex_p = lex_pend = 0;
     compile_for_eval = rb_parse_in_eval();
 
-    node = yycompile(parser, f, line);
+    node = yycompile(parser, fname, line);
     RB_GC_GUARD(vparser); /* prohibit tail call optimization */
 
     return node;
@@ -5446,11 +5446,17 @@ NODE*
 rb_compile_string(const char *f, VALUE s, int line)
 {
     must_be_ascii_compatible(s);
-    return parser_compile_string(rb_parser_new(), f, s, line);
+    return parser_compile_string(rb_parser_new(), rb_filesystem_str_new_cstr(f), s, line);
 }
 
 NODE*
 rb_parser_compile_string(volatile VALUE vparser, const char *f, VALUE s, int line)
+{
+    return rb_parser_compile_string_path(vparser, rb_filesystem_str_new_cstr(f), s, line);
+}
+
+NODE*
+rb_parser_compile_string_path(volatile VALUE vparser, VALUE f, VALUE s, int line)
 {
     must_be_ascii_compatible(s);
     return parser_compile_string(vparser, f, s, line);
@@ -5460,14 +5466,14 @@ NODE*
 rb_compile_cstr(const char *f, const char *s, int len, int line)
 {
     VALUE str = rb_str_new(s, len);
-    return parser_compile_string(rb_parser_new(), f, str, line);
+    return parser_compile_string(rb_parser_new(), rb_filesystem_str_new_cstr(f), str, line);
 }
 
 NODE*
 rb_parser_compile_cstr(volatile VALUE vparser, const char *f, const char *s, int len, int line)
 {
     VALUE str = rb_str_new(s, len);
-    return parser_compile_string(vparser, f, str, line);
+    return parser_compile_string(vparser, rb_filesystem_str_new_cstr(f), str, line);
 }
 
 static VALUE
@@ -5487,6 +5493,12 @@ rb_compile_file(const char *f, VALUE file, int start)
 NODE*
 rb_parser_compile_file(volatile VALUE vparser, const char *f, VALUE file, int start)
 {
+    return rb_parser_compile_file_path(vparser, rb_filesystem_str_new_cstr(f), file, start);
+}
+
+NODE*
+rb_parser_compile_file_path(volatile VALUE vparser, VALUE fname, VALUE file, int start)
+{
     struct parser_params *parser;
     NODE *node;
 
@@ -5496,7 +5508,7 @@ rb_parser_compile_file(volatile VALUE vparser, const char *f, VALUE file, int st
     lex_pbeg = lex_p = lex_pend = 0;
     compile_for_eval = rb_parse_in_eval();
 
-    node = yycompile(parser, f, start);
+    node = yycompile(parser, fname, start);
     RB_GC_GUARD(vparser); /* prohibit tail call optimization */
 
     return node;
@@ -8467,8 +8479,7 @@ gettable_gen(struct parser_params *parser, ID id)
       case keyword_false:
 	return NEW_FALSE();
       case keyword__FILE__:
-	return NEW_STR(rb_external_str_new_with_enc(ruby_sourcefile, strlen(ruby_sourcefile),
-						    rb_filesystem_encoding()));
+	return NEW_STR(rb_str_dup(ruby_sourcefile_string));
       case keyword__LINE__:
 	return NEW_LIT(INT2FIX(tokline));
       case keyword__ENCODING__:
@@ -10722,13 +10733,13 @@ parser_initialize(struct parser_params *parser)
     parser->parser_lvtbl = 0;
     parser->parser_ruby__end__seen = 0;
     parser->parser_ruby_sourcefile = 0;
+    parser->parser_ruby_sourcefile_string = Qnil;
 #ifndef RIPPER
     parser->is_ripper = 0;
     parser->parser_eval_tree_begin = 0;
     parser->parser_eval_tree = 0;
 #else
     parser->is_ripper = 1;
-    parser->parser_ruby_sourcefile_string = Qnil;
     parser->delayed = Qnil;
 
     parser->result = Qnil;
@@ -10756,12 +10767,12 @@ parser_mark(void *ptr)
     rb_gc_mark(p->parser_lex_input);
     rb_gc_mark(p->parser_lex_lastline);
     rb_gc_mark(p->parser_lex_nextline);
+    rb_gc_mark(p->parser_ruby_sourcefile_string);
 #ifndef RIPPER
     rb_gc_mark((VALUE)p->parser_eval_tree_begin) ;
     rb_gc_mark((VALUE)p->parser_eval_tree) ;
     rb_gc_mark(p->debug_lines);
 #else
-    rb_gc_mark(p->parser_ruby_sourcefile_string);
     rb_gc_mark(p->delayed);
     rb_gc_mark(p->value);
     rb_gc_mark(p->result);
@@ -10786,9 +10797,6 @@ parser_free(void *ptr)
 	prev = local->prev;
 	xfree(local);
     }
-#ifndef RIPPER
-    xfree(p->parser_ruby_sourcefile);
-#endif
     xfree(p);
 }
 
@@ -10805,11 +10813,6 @@ parser_memsize(const void *ptr)
 	size += sizeof(*local);
 	if (local->vars) size += local->vars->capa * sizeof(ID);
     }
-#ifndef RIPPER
-    if (p->parser_ruby_sourcefile) {
-	size += strlen(p->parser_ruby_sourcefile) + 1;
-    }
-#endif
     return size;
 }
 
