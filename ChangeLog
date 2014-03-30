@@ -1,3 +1,11 @@
+Mon Mar 31 00:57:39 2014  James Edward Gray II  <james@graysoftinc.com>
+
+	* lib/csv.rb: Fixed a broken regular expression that was causing
+	  CSV to miss escaping some special meaning characters when used
+	  in parsing.
+	  Reported by David Unric
+	  [ruby-core:54986] [Bug #8405]
+
 Mon Mar 31 00:48:12 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* test/ruby/envutil.rb (assert_no_memory_leak): increase default value
