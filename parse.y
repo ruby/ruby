@@ -10676,6 +10676,26 @@ rb_gc_free_dsymbol(VALUE ptr)
     RSYMBOL(ptr)->fstr = (VALUE)NULL;
 }
 
+/*
+ *  call-seq:
+ *     str.intern   -> symbol
+ *     str.to_sym   -> symbol
+ *
+ *  Returns the <code>Symbol</code> corresponding to <i>str</i>, creating the
+ *  symbol if it did not previously exist. See <code>Symbol#id2name</code>.
+ *
+ *     "Koala".intern         #=> :Koala
+ *     s = 'cat'.to_sym       #=> :cat
+ *     s == :cat              #=> true
+ *     s = '@cat'.to_sym      #=> :@cat
+ *     s == :@cat             #=> true
+ *
+ *  This can also be used to create symbols that cannot be represented using the
+ *  <code>:xxx</code> notation.
+ *
+ *     'cat and dog'.to_sym   #=> :"cat and dog"
+ */
+
 VALUE
 rb_str_dynamic_intern(VALUE str)
 {
