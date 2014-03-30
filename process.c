@@ -4527,7 +4527,7 @@ rlimit_resource_type(VALUE rtype)
     if (r != -1)
         return r;
 
-    rb_raise(rb_eArgError, "invalid resource name: %s", name);
+    rb_raise(rb_eArgError, "invalid resource name: %"PRIsVALUE, rtype);
 
     UNREACHABLE;
 }
@@ -4567,7 +4567,7 @@ rlimit_resource_value(VALUE rval)
 #ifdef RLIM_SAVED_CUR
     if (strcmp(name, "SAVED_CUR") == 0) return RLIM_SAVED_CUR;
 #endif
-    rb_raise(rb_eArgError, "invalid resource value: %s", name);
+    rb_raise(rb_eArgError, "invalid resource value: %"PRIsVALUE, rval);
 
     UNREACHABLE;
 }
