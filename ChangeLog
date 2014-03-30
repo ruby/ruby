@@ -1,3 +1,15 @@
+Mon Mar 31 00:02:04 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (yycompile): store file name as String to keep the encoding.
+
+	* parse.y (rb_parser_compile_string_path, rb_parser_compile_file_path):
+	  new functions to pass file name as a String.
+
+	* parse.y (gettable_gen): return a copy of the original file name, not
+	  a copy in filesystem encoding.
+
+	* vm_eval.c (eval_string_with_cref): use Qundef instead of "(eval)".
+
 Sun Mar 30 23:49:21 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/ossl.c (ossl_make_error): check NULL for unknown

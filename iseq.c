@@ -581,18 +581,6 @@ rb_iseq_load(VALUE data, VALUE parent, VALUE opt)
     return iseq_load(rb_cISeq, data, parent, opt);
 }
 
-static NODE *
-parse_string(VALUE str, const char *file, int line)
-{
-    VALUE parser = rb_parser_new();
-    NODE *node = rb_parser_compile_string(parser, file, str, line);
-
-    if (!node) {
-	rb_exc_raise(GET_THREAD()->errinfo);	/* TODO: check err */
-    }
-    return node;
-}
-
 VALUE
 rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE line, rb_block_t *base_block, VALUE opt)
 {
@@ -605,17 +593,25 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE li
 
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
+	VALUE parser;
 	int ln = NUM2INT(line);
-	const char *fn = StringValueCStr(file);
 	NODE *node;
 	rb_compile_option_t option;
 
+	StringValueCStr(file);
 	make_compile_option(&option, opt);
 
+	parser = rb_parser_new();
+
 	if (RB_TYPE_P((src), T_FILE))
-	    node = rb_compile_file(fn, src, ln);
-	else
-	    node = parse_string(StringValue(src), fn, ln);
+	    node = rb_parser_compile_file_path(parser, file, src, ln);
+	else {
+	    node = rb_parser_compile_string_path(parser, file, src, ln);
+
+	    if (!node) {
+		rb_exc_raise(GET_THREAD()->errinfo);	/* TODO: check err */
+	    }
+	}
 
 	if (base_block && base_block->iseq) {
 	    iseqval = rb_iseq_new_with_opt(node, base_block->iseq->location.label,
