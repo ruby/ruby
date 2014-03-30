@@ -131,7 +131,7 @@ class TestProcess < Test::Unit::TestCase
           exit false
         end
       End
-      assert_not_equal(0, s.exitstatus)
+      assert_not_predicate(s, :success?)
       s = run_in_child(<<-'End')
         cur, max = Process.getrlimit(:NOFILE)
         Process.setrlimit(:NOFILE, [max-10, cur].min)
@@ -141,7 +141,7 @@ class TestProcess < Test::Unit::TestCase
           exit false
         end
       End
-      assert_not_equal(0, s.exitstatus)
+      assert_not_predicate(s, :success?)
     end
   end
 
