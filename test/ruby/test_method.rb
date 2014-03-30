@@ -550,6 +550,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(__dir__, eval("__dir__", binding), bug8436)
     bug8662 = '[ruby-core:56099] [Bug #8662]'
     assert_equal("arbitrary", eval("__dir__", binding, "arbitrary/file.rb"), bug8662)
+    assert_equal("arbitrary", Object.new.instance_eval("__dir__", "arbitrary/file.rb"), bug8662)
   end
 
   def test_alias_owner
