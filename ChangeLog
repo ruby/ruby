@@ -1,3 +1,11 @@
+Sun Mar 30 23:39:26 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_accept, open_ifs_socket, socketpair_internal):
+	  reset inherit flag of socket to avoid unintentional inheritance of
+	  socket.  note that the return value of SetHandleInformation() is not
+	  verified intentionally because old Windows may return an error.
+	  [Bug #9688] [ruby-core:61754]
+
 Sat Mar 29 13:04:22 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_before_sweep): cap `malloc_limit' to
