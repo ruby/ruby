@@ -5325,8 +5325,9 @@ gc_info_decode(int flags, VALUE hash_or_key)
     SET(immediate_sweep, (flags & GPR_FLAG_IMMEDIATE_SWEEP) ? Qtrue : Qfalse);
 #undef SET
 
-    if (key != Qnil) /* matched key should return above */
-	rb_raise(rb_eArgError, "unknown key: %s", RSTRING_PTR(rb_id2str(SYM2ID(key))));
+    if (!NIL_P(key)) {/* matched key should return above */
+	rb_raise(rb_eArgError, "unknown key: %"PRIsVALUE, rb_sym2str(key));
+    }
 
     return hash;
 }
@@ -5486,8 +5487,9 @@ gc_stat_internal(VALUE hash_or_sym, size_t *out)
 #endif /* USE_RGENGC */
 #undef SET
 
-    if (key != Qnil) /* matched key should return above */
-	rb_raise(rb_eArgError, "unknown key: %s", RSTRING_PTR(rb_id2str(SYM2ID(key))));
+    if (!NIL_P(key)) { /* matched key should return above */
+	rb_raise(rb_eArgError, "unknown key: %"PRIsVALUE, rb_sym2str(key));
+    }
 
 #if defined(RGENGC_PROFILE) && RGENGC_PROFILE >= 2
     if (hash != Qnil) {

@@ -95,6 +95,10 @@ class TestGc < Test::Unit::TestCase
     assert_equal(count[:FREE], stat[:heap_free_slot])
   end
 
+  def test_stat_argument
+    assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) {GC.stat(:"\u{30eb 30d3 30fc}")}
+  end
+
   def test_stat_single
     stat = GC.stat
     assert_equal stat[:count], GC.stat(:count)
@@ -124,6 +128,7 @@ class TestGc < Test::Unit::TestCase
     assert_not_empty info
     assert_equal info[:gc_by], GC.latest_gc_info(:gc_by)
     assert_raises(ArgumentError){ GC.latest_gc_info(:invalid) }
+    assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) {GC.latest_gc_info(:"\u{30eb 30d3 30fc}")}
   end
 
   def test_singleton_method
