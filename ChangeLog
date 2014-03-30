@@ -1,3 +1,9 @@
+Mon Mar 31 00:48:12 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* test/ruby/envutil.rb (assert_no_memory_leak): increase default value
+	  of `limit` keyword argument.
+	  assert_no_memory_leak occasionally fails with limit=1.5.
+
 Mon Mar 31 00:15:45 2014  Shota Fukumori  <her@sorah.jp>
 
 	* vm_eval.c (eval_string_with_cref): Unify to use NIL_P.
