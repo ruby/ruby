@@ -208,6 +208,8 @@ static const struct signals {
     {NULL, 0}
 };
 
+static const char signame_prefix[3] = "SIG";
+
 static int
 signm2signo(const char *nm)
 {
@@ -298,11 +300,16 @@ esignal_init(int argc, VALUE *argv, VALUE self)
 	}
     }
     else {
+	int len = sizeof(signame_prefix);
 	signm = SYMBOL_P(sig) ? rb_id2name(SYM2ID(sig)) : StringValuePtr(sig);
-	if (strncmp(signm, "SIG", 3) == 0) signm += 3;
+	if (strncmp(signm, signame_prefix, len) == 0) {
+	    signm += len;
+	    len = 0;
+	}
 	signo = signm2signo(signm);
 	if (!signo) {
-	    rb_raise(rb_eArgError, "unsupported name `SIG%s'", signm);
+	    rb_raise(rb_eArgError, "unsupported name `%.*s%"PRIsVALUE"'",
+		     len, signame_prefix, sig);
 	}
 	sig = rb_sprintf("SIG%s", signm);
     }
@@ -409,7 +416,7 @@ rb_f_kill(int argc, VALUE *argv)
 	    negative++;
 	    s++;
 	}
-	if (strncmp("SIG", s, 3) == 0)
+	if (strncmp(signame_prefix, s, sizeof(signame_prefix)) == 0)
 	    s += 3;
 	if ((sig = signm2signo(s)) == 0)
 	    rb_raise(rb_eArgError, "unsupported name `SIG%s'", s);
@@ -919,7 +926,7 @@ trap_signm(VALUE vsig)
 	s = StringValuePtr(vsig);
 
       str_signal:
-	if (strncmp("SIG", s, 3) == 0)
+	if (strncmp(signame_prefix, s, sizeof(signame_prefix)) == 0)
 	    s += 3;
 	sig = signm2signo(s);
 	if (sig == 0 && strcmp(s, "EXIT") != 0)

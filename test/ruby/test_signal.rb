@@ -79,6 +79,7 @@ class TestSignal < Test::Unit::TestCase
     assert_raise(ArgumentError) { SignalException.new }
     assert_raise(ArgumentError) { SignalException.new(-1) }
     assert_raise(ArgumentError) { SignalException.new(:XXXXXXXXXX) }
+    assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) { SignalException.new("\u{30eb 30d3 30fc}") }
     Signal.list.each do |signm, signo|
       next if signm == "EXIT"
       assert_equal(SignalException.new(signm).signo, signo)
