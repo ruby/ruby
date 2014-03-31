@@ -1,3 +1,8 @@
+Mon Mar 31 17:23:50 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/memory_status.rb: require envutil before accessing EnvUtil
+	  module.  reported by ko1 via twitter.
+
 Mon Mar 31 10:28:01 2014  Eric Wong  <e@80x24.org>
 
 	* st.c (st_init_table_with_size): update comment

@@ -18,6 +18,7 @@ module Memory
     begin
       require 'fiddle/import'
     rescue LoadError
+      require_relative 'envutil'
       EnvUtil.suppress_warning do
         require 'dl/import'
       end
@@ -25,6 +26,7 @@ module Memory
     begin
       require 'fiddle/types'
     rescue LoadError
+      require_relative 'envutil'
       EnvUtil.suppress_warning do
         require 'dl/types'
       end
