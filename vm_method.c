@@ -333,6 +333,8 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 	rb_unlink_method_entry(old_me);
     }
 
+    mid = SYM2ID(ID2SYM(mid));
+
     me = ALLOC(rb_method_entry_t);
 
     rb_clear_method_cache_by_class(klass);
