@@ -464,8 +464,8 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
     int fd;
     off_t filesize;
     char *file;
-    ElfW(Shdr) *symtab_shdr = NULL;
-    ElfW(Shdr) *strtab_shdr = NULL;
+    ElfW(Shdr) *symtab_shdr = NULL, *strtab_shdr = NULL;
+    ElfW(Shdr) *dynsym_shdr = NULL, *dynstr_shdr = NULL;
 
     fd = open(binary_filename, O_RDONLY);
     if (fd < 0) {
@@ -532,10 +532,17 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	    if (!strcmp(section_name, ".strtab")) {
 		strtab_shdr = shdr + i;
 	    }
+	    else if (!strcmp(section_name, ".dynstr")) {
+		dynstr_shdr = shdr + i;
+	    }
 	    break;
 	  case SHT_SYMTAB:
 	    /* if (!strcmp(section_name, ".symtab")) */
 	    symtab_shdr = shdr + i;
+	    break;
+	  case SHT_DYNSYM:
+	    /* if (!strcmp(section_name, ".dynsym")) */
+	    dynsym_shdr = shdr + i;
 	    break;
 	  case SHT_PROGBITS:
 	    if (!strcmp(section_name, ".debug_line")) {
@@ -546,6 +553,11 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	    }
 	    break;
 	}
+    }
+
+    if (!symtab_shdr) {
+	symtab_shdr = dynsym_shdr;
+	strtab_shdr = dynstr_shdr;
     }
 
     if (symtab_shdr && strtab_shdr) {
