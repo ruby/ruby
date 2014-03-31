@@ -1,3 +1,9 @@
+Mon Mar 31 15:38:07 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl/ossl.c (ossl_make_error): check NULL for unknown
+	  error reasons with old OpenSSL, and insert a colon iff formatted
+	  message is not empty.
+
 Mon Feb 24 12:42:01 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/open-uri.rb: [DOC] use lower case version of core classes, same
