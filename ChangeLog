@@ -1,3 +1,8 @@
+Mon Mar 31 10:28:01 2014  Eric Wong  <e@80x24.org>
+
+	* st.c (st_init_table_with_size): update comment
+	  [Feature #9425]
+
 Sun Mar 30 23:39:26 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_accept, open_ifs_socket, socketpair_internal):

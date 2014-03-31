@@ -201,7 +201,7 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
 	size = ST_DEFAULT_PACKED_TABLE_SIZE;
     }
     else {
-	size = new_size(size);	/* round up to prime number */
+	size = new_size(size);	/* round up to power-of-two */
     }
     tbl->num_bins = size;
     tbl->bins = st_alloc_bins(size);
