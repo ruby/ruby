@@ -12,5 +12,6 @@ class TestRubyVM < Test::Unit::TestCase
 
   def test_stat_unknown
     assert_raise(ArgumentError){ RubyVM.stat(:unknown) }
+    assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) {RubyVM.stat(:"\u{30eb 30d3 30fc}")}
   end
 end

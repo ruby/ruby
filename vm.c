@@ -173,8 +173,9 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     SET(class_serial, ruby_vm_class_serial);
 #undef SET
 
-    if (key != Qnil) /* matched key should return above */
-	rb_raise(rb_eArgError, "unknown key: %s", RSTRING_PTR(rb_id2str(SYM2ID(key))));
+    if (!NIL_P(key)) { /* matched key should return above */
+	rb_raise(rb_eArgError, "unknown key: %"PRIsVALUE, rb_sym2str(key));
+    }
 
     return hash;
 }
