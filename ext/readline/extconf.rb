@@ -102,7 +102,7 @@ unless readline.have_type("rl_hook_func_t")
   # rl_hook_func_t is available since readline-4.2 (2001).
   # Function is removed at readline-6.3 (2014).
   # However, editline (NetBSD 6.1.3, 2014) doesn't have rl_hook_func_t.
-  $DEFS << "-Drl_hook_func_t=Function"
+  $defs << "-Drl_hook_func_t=Function"
 end
 
 create_makefile("readline")
