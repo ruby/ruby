@@ -217,9 +217,10 @@ class TestCSV::Headers < TestCSV
   end
 
   def test_builtin_symbol_converter
-    csv = CSV.parse( "One,TWO Three", headers:           true,
-                                      return_headers:    true,
-                                      header_converters: :symbol )
+    # Note that the trailing space is intentional
+    csv = CSV.parse( "One,TWO Three ", headers:           true,
+                                       return_headers:    true,
+                                       header_converters: :symbol )
     assert_equal([:one, :two_three], csv.headers)
   end
 
