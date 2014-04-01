@@ -73,7 +73,7 @@ module Psych
 
           method = respond_to?(method) ? method : h[klass.superclass]
 
-          raise(TypeError, "Can't dump #{target.class}") unless method
+          raise(TypeError, "can't dump #{klass.name}") unless method
 
           h[klass] = method
         end.compare_by_identity
