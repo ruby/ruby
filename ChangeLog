@@ -1,3 +1,8 @@
+Tue Apr  1 17:29:35 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/config_files.rb (ConfigFiles.download): show failed URI.
+	  [ruby-core:61792] [Bug #9690]
+
 Tue Apr  1 12:06:49 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* addr2line.c (rb_dump_backtrace_with_lines): don't depend hard coded

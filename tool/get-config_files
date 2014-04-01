@@ -2,6 +2,11 @@
 require File.expand_path('../config_files', __FILE__)
 ARGV.each {|n|
   STDOUT.print "Downloading #{n}..."; STDOUT.flush
-  ConfigFiles.download(n)
-  STDOUT.puts
+  begin
+    ConfigFiles.download(n)
+    STDOUT.puts
+  rescue => e
+    STDOUT.puts
+    abort("#{$0}: #{e.message}")
+  end
 }
