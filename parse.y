@@ -10705,7 +10705,13 @@ rb_str_dynamic_intern(VALUE str)
     ID id, type;
 
     if (st_lookup(global_symbols.sym_id, str, &id)) {
-	return ID2SYM(id);
+	VALUE sym = ID2SYM(id);
+	if (!STATIC_SYM_P(sym)) {
+	    /* because of lazy sweep, dynamic symbol may be unmarked already and swept
+	     * at next time */
+	    rb_gc_resurrect(sym);
+	}
+	return sym;
     }
 
     enc = rb_enc_get(str);

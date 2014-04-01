@@ -1,3 +1,8 @@
+Tue Apr  1 08:58:39 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* parse.y (rb_str_dynamic_intern): set mark bit if dynamic symbol
+	  is before sweeping.
+
 Tue Apr  1 07:37:00 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* addr2line.c (fill_lines): use dynsym, which is used for dynamic
