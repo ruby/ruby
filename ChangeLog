@@ -1,3 +1,8 @@
+Tue Apr  1 11:34:04 2014  James Edward Gray II  <james@graysoftinc.com>
+
+	* lib/csv.rb: Don't attempt to convert nil headers.
+	  Reported by Skye Shaw
+
 Tue Apr  1 17:29:35 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/config_files.rb (ConfigFiles.download): show failed URI.
