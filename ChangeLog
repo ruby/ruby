@@ -1,3 +1,16 @@
+Tue Apr  1 12:06:49 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c (rb_dump_backtrace_with_lines): don't depend hard coded
+	  symbol '_start'.
+
+	* addr2line.c (fill_lines): instead of above, get a dynamic symbol
+	  in the main executable and use it to know the base address.
+
+	* addr2line.c (follow_debuglink0): use obj_info_t instead of
+	  line_info_t to handle object related data.
+
+	* addr2line.c (main_exe_path): defined for Linux.
+
 Tue Apr  1 08:58:39 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* parse.y (rb_str_dynamic_intern): set mark bit if dynamic symbol
