@@ -1,6 +1,6 @@
 require 'open-uri'
 
-ConfigFiles = "http://git0.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=%s;hb=HEAD"
+ConfigFiles = "http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=%s;hb=HEAD"
 def ConfigFiles.download(name, dir = nil)
   uri = URI(self % name)
   data = uri.read
