@@ -56,7 +56,7 @@ http://www.geocities.jp/kosako3/oniguruma/
 http://www.ruby-lang.org/cgi-bin/cvsweb.cgi/oniguruma/
 http://www.freebsd.org/cgi/cvsweb.cgi/ports/devel/oniguruma/
 
-   When this software is partly used or it is distributed with Ruby, 
+   When this software is partly used or it is distributed with Ruby,
    this of Ruby follows the license of Ruby.
 
 configure:
@@ -98,7 +98,7 @@ tool/config.sub:
 
 parse.c:
 
-  This file is licensed under the GPL, but is incorporated into Ruby and 
+  This file is licensed under the GPL, but is incorporated into Ruby and
   redistributed under the terms of the Ruby license, as permitted by the
   exception to the GPL below.
 
@@ -193,11 +193,11 @@ random.c
     This is a faster version by taking Shawn Cokus's optimization,
     Matthe Bellew's simplification, Isaku Wada's real version.
 
-    Before using, initialize the state by using init_genrand(seed) 
+    Before using, initialize the state by using init_genrand(seed)
     or init_by_array(init_key, key_length).
 
     Copyright (C) 1997 - 2002, Makoto Matsumoto and Takuji Nishimura,
-    All rights reserved.                          
+    All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
     modification, are permitted provided that the following conditions
@@ -210,8 +210,8 @@ random.c
 	 notice, this list of conditions and the following disclaimer in the
 	 documentation and/or other materials provided with the distribution.
 
-      3. The names of its contributors may not be used to endorse or promote 
-	 products derived from this software without specific prior written 
+      3. The names of its contributors may not be used to endorse or promote
+	 products derived from this software without specific prior written
 	 permission.
 
     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
@@ -504,7 +504,7 @@ ext/nkf/nkf-utf8/utf8tbl.c:
   copyrighted semi-public-domain software.
 
     Copyright (C) 1987, Fujitsu LTD. (Itaru ICHIKAWA)
-       Everyone is permitted to do anything on this program 
+       Everyone is permitted to do anything on this program
        including copying, modifying, improving,
        as long as you don't try to pretend that you wrote it.
        i.e., the above copyright notice has to appear in all copies.
@@ -555,7 +555,7 @@ ext/win32ole/win32ole.c:
 
     Other modifications Copyright (c) 1997, 1998 by Gurusamy Sarathy
     <gsar@umich.edu> and Jan Dubois <jan.dubois@ibm.net>
- 
+
     You may distribute under the terms of either the GNU General Public
     License or the Artistic License, as specified in the README file
     of the Perl distribution.
