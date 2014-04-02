@@ -2089,7 +2089,7 @@ RUBY_WERROR_FLAG(
     void (*volatile f)(void) = t;
     if (!__builtin_setjmp($cast jb)) printf("%d\n", f != 0);
     ],
-    [ac_cv_func___builtin_setjmp="yes with cast ($cast)"],
+    [ac_cv_func___builtin_setjmp="yes with cast ($cast)"; break],
     [ac_cv_func___builtin_setjmp=no])
 ])
 done])
