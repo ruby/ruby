@@ -1,3 +1,8 @@
+Wed Apr  2 21:50:06 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ac_cv_func___builtin_setjmp): __builtin_longjmp() in
+	  clang 5.1 uses `void**`, not `jmp_buf`.  [Bug #9692]
+
 Wed Apr  2 20:57:15 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c, gc.h (rb_objspace_each_objects_without_setup):
