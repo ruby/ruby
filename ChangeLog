@@ -1,3 +1,11 @@
+Wed Apr  2 11:46:29 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* ext/pathname/lib/pathname.rb (Pathname#join): Fix error with
+	  empty args. Reported by ko1 via IRC.
+
+	* test/pathname/test_pathname.rb (TestPathname#test_join): Add the
+	  test for above case.
+
 Tue Apr  1 11:39:57 2014  James Edward Gray II  <james@graysoftinc.com>
 
 	* lib/csv.rb: Symbol HeaderConverter: strip leading/trailing space.

@@ -384,6 +384,7 @@ class Pathname
   #       #=> true
   #
   def join(*args)
+    return self if args.empty?
     result = args.pop
     result = Pathname.new(result) unless Pathname === result
     return result if result.absolute?

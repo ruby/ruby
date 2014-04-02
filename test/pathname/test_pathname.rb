@@ -242,6 +242,8 @@ class TestPathname < Test::Unit::TestCase
     assert_equal(Pathname("/c"), r)
     r = Pathname("/a").join("/b", "/c")
     assert_equal(Pathname("/c"), r)
+    r = Pathname("/foo/var").join()
+    assert_equal(Pathname("/foo/var"), r)
   end
 
   def test_absolute
