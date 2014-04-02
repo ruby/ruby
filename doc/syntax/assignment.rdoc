@@ -354,7 +354,7 @@ Here is an example:
 
   p a # prints 1
 
-Note that these two operators behave more like <code>a || a = 0<code> than
+Note that these two operators behave more like <code>a || a = 0</code> than
 <code>a = a || 0</code>.
 
 == Implicit Array Assignment
