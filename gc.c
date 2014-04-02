@@ -1788,6 +1788,16 @@ rb_objspace_each_objects(each_obj_callback *callback, void *data)
     }
 }
 
+void
+rb_objspace_each_objects_without_setup(each_obj_callback *callback, void *data)
+{
+    struct each_obj_args args;
+    args.callback = callback;
+    args.data = data;
+
+    objspace_each_objects((VALUE)&args);
+}
+
 struct os_each_struct {
     size_t num;
     VALUE of;
