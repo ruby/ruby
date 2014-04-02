@@ -1,3 +1,8 @@
+Wed Apr  2 15:12:18 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* common.mk: Use redmine-2.x url for DeveloperHowto wiki.
+	  [ruby-core:60657] [Bug #9511]
+
 Wed Apr  2 11:46:29 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* ext/pathname/lib/pathname.rb (Pathname#join): Fix error with
