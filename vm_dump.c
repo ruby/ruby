@@ -428,8 +428,14 @@ rb_vmdebug_thread_dump_state(VALUE self)
 
 #if defined(HAVE_BACKTRACE)
 # if HAVE_LIBUNWIND
-#  undef backtrace
-#  define backtrace unw_backtrace
+#  define UNW_LOCAL_ONLY
+#  include <libunwind.h>
+#  if defined(__linux__)
+
+#  else
+#   undef backtrace
+#   define backtrace unw_backtrace
+#  endif
 # elif defined(__APPLE__) && defined(__x86_64__)
 #  define UNW_LOCAL_ONLY
 #  include <libunwind.h>
