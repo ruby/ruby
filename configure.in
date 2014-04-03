@@ -2078,21 +2078,21 @@ if test x"${ac_cv_func___builtin_setjmp}" = xyes; then
    unset ac_cv_func___builtin_setjmp
 fi
 AC_CACHE_CHECK(for __builtin_setjmp, ac_cv_func___builtin_setjmp,
-[
-for cast in "" "(void *)"; do
-RUBY_WERROR_FLAG(
-[AC_TRY_LINK([@%:@include <setjmp.h>
-    @%:@include <stdio.h>
-    jmp_buf jb;
-    void t(void) {__builtin_longjmp($cast jb, 1);}],
     [
-    void (*volatile f)(void) = t;
-    if (!__builtin_setjmp($cast jb)) printf("%d\n", f != 0);
-    ],
-    [ac_cv_func___builtin_setjmp="yes with cast ($cast)"; break],
-    [ac_cv_func___builtin_setjmp=no])
-])
-done])
+    for cast in "" "(void *)"; do
+	RUBY_WERROR_FLAG(
+	[AC_TRY_LINK([@%:@include <setjmp.h>
+	    @%:@include <stdio.h>
+	    jmp_buf jb;
+	    void t(void) {__builtin_longjmp($cast jb, 1);}],
+	    [
+	    void (*volatile f)(void) = t;
+	    if (!__builtin_setjmp($cast jb)) printf("%d\n", f != 0);
+	    ],
+	    [ac_cv_func___builtin_setjmp="yes with cast ($cast)"; break],
+	    [ac_cv_func___builtin_setjmp=no])
+	])
+    done])
 
 # we don't use _setjmp if _longjmp doesn't exist.
 test x$ac_cv_func__longjmp = xno && ac_cv_func__setjmp=no
