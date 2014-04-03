@@ -427,12 +427,8 @@ rb_vmdebug_thread_dump_state(VALUE self)
 }
 
 #if defined(HAVE_BACKTRACE)
-# if HAVE_LIBUNWIND
-#  define UNW_LOCAL_ONLY
-#  include <libunwind.h>
-#  if defined(__linux__)
-
-#  else
+# if defined(HAVE_LIBUNWIND)
+#  if !defined(__linux__)
 #   undef backtrace
 #   define backtrace unw_backtrace
 #  endif
