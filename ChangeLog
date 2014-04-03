@@ -1,3 +1,9 @@
+Fri Apr  4 07:13:44 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ac_cv_func___builtin_setjmp): should not skip
+	  flags restoration in RUBY_WERROR_FLAG by `break`.
+	  [ruby-dev:48086] [Bug #9698]
+
 Wed Apr  2 21:50:06 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (ac_cv_func___builtin_setjmp): __builtin_longjmp() in

@@ -2079,6 +2079,7 @@ if test x"${ac_cv_func___builtin_setjmp}" = xyes; then
 fi
 AC_CACHE_CHECK(for __builtin_setjmp, ac_cv_func___builtin_setjmp,
     [
+    ac_cv_func___builtin_setjmp=no
     for cast in "" "(void *)"; do
 	RUBY_WERROR_FLAG(
 	[AC_TRY_LINK([@%:@include <setjmp.h>
@@ -2089,9 +2090,9 @@ AC_CACHE_CHECK(for __builtin_setjmp, ac_cv_func___builtin_setjmp,
 	    void (*volatile f)(void) = t;
 	    if (!__builtin_setjmp($cast jb)) printf("%d\n", f != 0);
 	    ],
-	    [ac_cv_func___builtin_setjmp="yes with cast ($cast)"; break],
-	    [ac_cv_func___builtin_setjmp=no])
+	    [ac_cv_func___builtin_setjmp="yes with cast ($cast)"])
 	])
+	test "$ac_cv_func___builtin_setjmp" = no || break
     done])
 
 # we don't use _setjmp if _longjmp doesn't exist.
