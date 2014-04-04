@@ -1060,6 +1060,8 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
     TH_PUSH_TAG(th);
     state = TH_EXEC_TAG();
     if (state == 0) {
+	VAR_INITIALIZED(th);
+	VAR_INITIALIZED(node);
       iter_retry:
 	{
 	    rb_block_t *blockptr;

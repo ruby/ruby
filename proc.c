@@ -1899,6 +1899,7 @@ rb_method_call_with_block(int argc, VALUE *argv, VALUE method, VALUE pass_procva
 	}
 
 	th->passed_block = block;
+	VAR_INITIALIZED(data);
 	result = rb_vm_call(th, data->recv, data->id,  argc, argv, data->me, data->defined_class);
     }
     POP_TAG();

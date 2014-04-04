@@ -128,6 +128,14 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
 #define PUSH_TAG() TH_PUSH_TAG(GET_THREAD())
 #define POP_TAG()      TH_POP_TAG()
 
+#if defined __GNUC__ && __GNUC__ == 4 && (__GNUC_MINOR__ == 7 || __GNUC_MINOR__ == 8)
+# define VAR_FROM_MEMORY(var) __extension__(*(__typeof__(var) volatile *)&(var))
+# define VAR_INITIALIZED(var) ((var) = VAR_FROM_MEMORY(var))
+#else
+# define VAR_FROM_MEMORY(var) (var)
+# define VAR_INITIALIZED(var) ((void)&(var))
+#endif
+
 /* clear th->state, and return the value */
 static inline int
 rb_threadptr_tag_state(rb_thread_t *th)
@@ -150,7 +158,7 @@ rb_threadptr_tag_jump(rb_thread_t *th, int st)
   [ISO/IEC 9899:1999] 7.13.1.1
 */
 #define TH_EXEC_TAG() \
-    (ruby_setjmp(_tag.buf) ? rb_threadptr_tag_state(_th) : (TH_REPUSH_TAG(), 0))
+    (ruby_setjmp(_tag.buf) ? rb_threadptr_tag_state(VAR_FROM_MEMORY(_th)) : (TH_REPUSH_TAG(), 0))
 
 #define EXEC_TAG() \
   TH_EXEC_TAG()
