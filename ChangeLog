@@ -1,3 +1,9 @@
+Sun Apr  6 08:52:50 2014  Bugra Barin  <bugrabarin@hotmail.com>
+
+	* dln.c (dln_load): use wchar version to load a library in
+	  non-ascii path on Windows.  based on the patch by Bugra Barin
+	  <bugrabarin AT hotmail.com> in [ruby-core:61845].  [Bug #9699]
+
 Sat Apr  5 19:36:33 2014  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c (d_lite_cmp): should compare with #<.
