@@ -1,3 +1,7 @@
+Sat Apr  5 19:36:33 2014  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c (d_lite_cmp): should compare with #<.
+
 Sat Apr  5 00:31:21 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/readline/extconf.rb (rl_hook_func_t): check pointer type.
