@@ -1,3 +1,9 @@
+Mon Apr  7 07:20:23 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/xmlrpc/client.rb (do_rpc): don't check body length.
+	  If HTTP content-encoding is used, the length may be different.
+	  [Bug #8182] [ruby-core:53811]
+
 Mon Apr  7 02:39:48 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: Add Matrix#cofactor [fix GH-568]
