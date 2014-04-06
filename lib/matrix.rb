@@ -58,6 +58,8 @@ end
 # * #each_with_index
 # * #find_index
 # * #minor(*param)
+# * #first_minor(row, column)
+# * #cofactor(row, column)
 #
 # Properties of a matrix:
 # * #diagonal?
@@ -543,6 +545,7 @@ class Matrix
     nil
   end
   alias_method :find_index, :index
+
   #
   # Returns a section of the matrix.  The parameters are either:
   # *  start_row, nrows, start_col, ncols; OR
@@ -587,6 +590,49 @@ class Matrix
       row[from_col, size_col]
     }
     new_matrix rows, [column_count - from_col, size_col].min
+  end
+
+  #
+  # Returns a the submatrix formed by deleting the specified row and column.
+  #
+  #   Matrix.diagonal(9, 5, -3, 4).first_minor(1, 2)
+  #     => 9 0 0
+  #        0 0 0
+  #        0 0 4
+  #
+  def first_minor(row, column)
+    raise RuntimeError, "first_minor of empty matrix is not defined" if empty?
+
+    unless 0 <= row && row < row_count
+      raise ArgumentError, "invalid row (#{row.inspect} for 0..#{row_count - 1})"
+    end
+
+    unless 0 <= column && column < column_count
+      raise ArgumentError, "invalid column (#{column.inspect} for 0..#{column_count - 1})"
+    end
+
+    arrays = to_a
+    arrays.delete_at(row)
+    arrays.each do |array|
+      array.delete_at(column)
+    end
+
+    new_matrix arrays, column_count - 1
+  end
+
+  #
+  # Returns the (row, column) cofactor which is obtained by multiplying
+  # the first minor by (-1)**(row + column).
+  #
+  #   Matrix.diagonal(9, 5, -3, 4).cofactor(1, 1)
+  #     => -108
+  #
+  def cofactor(row, column)
+    raise RuntimeError, "cofactor of empty matrix is not defined" if empty?
+    Matrix.Raise ErrDimensionMismatch unless square?
+
+    det_of_minor = first_minor(row, column).determinant
+    det_of_minor * (-1) ** (row + column)
   end
 
   #--
