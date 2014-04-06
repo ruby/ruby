@@ -27,6 +27,11 @@ with all sufficient information, see the ChangeLog file.
     * Most symbols which are returned by String#to_sym and
       String#intern are GC-able.
 
+* Matrix
+  * New methods:
+    * Matrix#first_minor(row, column) returns the submatrix obtained
+      by deleting the specified row and column.
+
 === Core classes compatibility issues (excluding feature bug fixes)
 
 * IO

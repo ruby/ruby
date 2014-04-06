@@ -250,6 +250,18 @@ class TestMatrix < Test::Unit::TestCase
     assert_raise(ArgumentError) { @m1.minor(0) }
   end
 
+  def test_first_minor
+    assert_equal(Matrix.empty(0, 0), Matrix[[1]].first_minor(0, 0))
+    assert_equal(Matrix.empty(0, 2), Matrix[[1, 4, 2]].first_minor(0, 1))
+    assert_equal(Matrix[[1, 3]], @m1.first_minor(1, 1))
+    assert_equal(Matrix[[4, 6]], @m1.first_minor(0, 1))
+    assert_equal(Matrix[[1, 2]], @m1.first_minor(1, 2))
+    assert_raise(RuntimeError) { Matrix.empty(0, 0).first_minor(0, 0) }
+    assert_raise(ArgumentError) { @m1.first_minor(4, 0) }
+    assert_raise(ArgumentError) { @m1.first_minor(0, -1) }
+    assert_raise(ArgumentError) { @m1.first_minor(-1, 4) }
+  end
+
   def test_regular?
     assert(Matrix[[1, 0], [0, 1]].regular?)
     assert(Matrix[[1, 0, 0], [0, 1, 0], [0, 0, 1]].regular?)
