@@ -262,6 +262,17 @@ class TestMatrix < Test::Unit::TestCase
     assert_raise(ArgumentError) { @m1.first_minor(-1, 4) }
   end
 
+  def test_cofactor
+    assert_equal(1, Matrix[[1]].cofactor(0, 0))
+    assert_equal(9, Matrix[[7,6],[3,9]].cofactor(0, 0))
+    assert_equal(0, Matrix[[0,0],[0,0]].cofactor(0, 0))
+    assert_equal(3, Matrix[[0,0,1],[0,7,6],[1,3,9]].cofactor(1, 0))
+    assert_equal(-21, Matrix[[7,0,1,0,12],[8,1,1,9,1],[4,0,0,-7,17],[-1,0,0,-4,8],[10,1,1,8,6]].cofactor(2, 3))
+    assert_raise(RuntimeError) { Matrix.empty(0, 0).cofactor(0, 0) }
+    assert_raise(ArgumentError) { Matrix[[0,0],[0,0]].cofactor(-1, 4) }
+    assert_raise(ExceptionForMatrix::ErrDimensionMismatch) { Matrix[[2,0,1],[0,-2,2]].cofactor(0, 0) }
+  end
+
   def test_regular?
     assert(Matrix[[1, 0], [0, 1]].regular?)
     assert(Matrix[[1, 0, 0], [0, 1, 0], [0, 0, 1]].regular?)

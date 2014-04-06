@@ -31,6 +31,8 @@ with all sufficient information, see the ChangeLog file.
   * New methods:
     * Matrix#first_minor(row, column) returns the submatrix obtained
       by deleting the specified row and column.
+    * Matrix#cofactor(row, column) returns the (row, column) cofactor
+      which is obtained by multiplying the first minor by (-1)**(row + column).
 
 === Core classes compatibility issues (excluding feature bug fixes)
 

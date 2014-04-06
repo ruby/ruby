@@ -59,6 +59,7 @@ end
 # * #find_index
 # * #minor(*param)
 # * #first_minor(row, column)
+# * #cofactor(row, column)
 #
 # Properties of a matrix:
 # * #diagonal?
@@ -545,6 +546,7 @@ class Matrix
     nil
   end
   alias_method :find_index, :index
+
   #
   # Returns a section of the matrix.  The parameters are either:
   # *  start_row, nrows, start_col, ncols; OR
@@ -617,6 +619,21 @@ class Matrix
     end
 
     new_matrix arrays, column_count - 1
+  end
+
+  #
+  # Returns the (row, column) cofactor which is obtained by multiplying
+  # the first minor by (-1)**(row + column).
+  #
+  #   Matrix.diagonal(9, 5, -3, 4).cofactor(1, 1)
+  #     => -108
+  #
+  def cofactor(row, column)
+    raise RuntimeError, "cofactor of empty matrix is not defined" if empty?
+    Matrix.Raise ErrDimensionMismatch unless square?
+
+    det_of_minor = first_minor(row, column).determinant
+    det_of_minor * (-1) ** (row + column)
   end
 
   #--
