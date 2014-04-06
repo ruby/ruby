@@ -179,6 +179,7 @@ class TestMatrix < Test::Unit::TestCase
   end
 
   def test_diagonal
+    assert_equal(Matrix.empty(0, 0), Matrix.diagonal( ))
     assert_equal(Matrix[[3,0,0],[0,2,0],[0,0,1]], Matrix.diagonal(3, 2, 1))
     assert_equal(Matrix[[4,0,0,0],[0,3,0,0],[0,0,2,0],[0,0,0,1]], Matrix.diagonal(4, 3, 2, 1))
   end

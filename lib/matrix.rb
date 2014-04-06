@@ -204,6 +204,7 @@ class Matrix
   #
   def Matrix.diagonal(*values)
     size = values.size
+    return Matrix.empty if size == 0
     rows = Array.new(size) {|j|
       row = Array.new(size, 0)
       row[j] = values[j]
