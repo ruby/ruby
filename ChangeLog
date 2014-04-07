@@ -1,3 +1,9 @@
+Mon Apr  7 21:11:49 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (sock_s_getnameinfo): Save errno for EAI_SYSTEM.
+	  Reported by Saravana kumar.  [ruby-core:61820] [Bug #9697]
+	  Fixed by Heesob Park.  [ruby-core:61868]
+
 Mon Apr  7 07:20:23 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/xmlrpc/client.rb (do_rpc): don't check body length.
