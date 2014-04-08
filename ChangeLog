@@ -1,3 +1,13 @@
+Tue Apr  8 22:31:44 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: rename `RGENGC_THREEGEN' to `RGENGC_AGE2_PROMOTION'.
+
+	* gc.c (rgengc_rememberset_mark): don't promote, but remain in
+	  remember set for infant objects.
+
+	* gc.c (RVALUE_PROMOTE_INFANT, RVALUE_PROMOTE_YOUNG): count numbers
+	  in these functions.
+
 Mon Apr  7 21:11:49 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (sock_s_getnameinfo): Save errno for EAI_SYSTEM.
