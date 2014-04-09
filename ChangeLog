@@ -1,3 +1,8 @@
+Wed Apr  9 14:43:00 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_gc.rb: more long timeout.
+	  This test failed under RGENGC_CHECK_MODE >= 2.
+
 Wed Apr  9 13:07:13 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: get rid of __builtin_setjmp/__builtin_longjmp on
