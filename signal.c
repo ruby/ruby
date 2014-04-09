@@ -636,7 +636,7 @@ rb_get_next_signal(void)
 
 #if defined(USE_SIGALTSTACK) || defined(_WIN32)
 NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
-#if defined __linux__ && (defined __i386__ || defined __x86_64__)
+#if defined(HAVE_UCONTEXT_H) && defined __linux__ && (defined __i386__ || defined __x86_64__)
 static void
 check_stack_overflow(const uintptr_t addr, const ucontext_t *ctx)
 {
@@ -665,7 +665,7 @@ check_stack_overflow(const void *addr)
 #define CHECK_STACK_OVERFLOW() check_stack_overflow(0)
 #else
 #define FAULT_ADDRESS info->si_addr
-#if defined __linux__ && (defined __i386__ || defined __x86_64__)
+#if defined(HAVE_UCONTEXT_H) && defined __linux__ && (defined __i386__ || defined __x86_64__)
 # define CHECK_STACK_OVERFLOW() check_stack_overflow((uintptr_t)FAULT_ADDRESS, ctx)
 #else
 # define CHECK_STACK_OVERFLOW() check_stack_overflow(FAULT_ADDRESS)

@@ -1,3 +1,9 @@
+Thu Apr 10 08:13:47 2014  Tanaka Akira  <akr@fsij.org>
+
+	* signal.c (check_stack_overflow): Don't use ucontext_t if ucontext.h
+	  is not available.
+	  Fixes build on Android (x86).
+
 Wed Apr  9 23:22:44 2014  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c (mark_current_machine_context): Call SET_STACK_END.
