@@ -1,3 +1,9 @@
+Wed Apr  9 23:22:44 2014  Tanaka Akira  <akr@fsij.org>
+
+	* gc.c (mark_current_machine_context): Call SET_STACK_END.
+	  This reverts a hunk of r40703 by ko1.
+	  This fixes [ruby-dev:48098] [Bug #9717].
+
 Wed Apr  9 21:02:04 2014  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (OBJ2UID1): Defined even if getpwnam_r is not usable.
