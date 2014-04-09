@@ -1,3 +1,9 @@
+Wed Apr  9 15:16:59 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_default_internal): fix rdoc.  `__FILE__` is
+	  in filesystem encoding but not `default_internal`.
+	  [ruby-core:61894] [Bug #9713]
+
 Wed Apr  9 14:43:00 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_gc.rb: more long timeout.
