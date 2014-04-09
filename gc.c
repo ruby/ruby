@@ -3507,6 +3507,9 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
     /* This assumes that all registers are saved into the jmp_buf (and stack) */
     rb_setjmp(save_regs_gc_mark.j);
 
+    /* SET_STACK_END must be called in this function because
+     * the stack frame of this function may contain
+     * callee save registers and they should be marked. */
     SET_STACK_END;
     GET_STACK_BOUNDS(stack_start, stack_end, 1);
 
