@@ -1059,6 +1059,7 @@ main()
                 ac_cv_func_clock_gettime=yes
                 ac_cv_func_clock_getres=yes
 		ac_cv_func_malloc_usable_size=no
+		{ test "$target_cpu" = x64 && ac_cv_func___builtin_setjmp=no; }
 		AC_CHECK_TYPE([NET_LUID], [], [],
 			      [@%:@include <windows.h>
 		  	      @%:@include <iphlpapi.h>])
