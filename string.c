@@ -2009,7 +2009,6 @@ static VALUE
 str_buf_cat(VALUE str, const char *ptr, long len)
 {
     long capa, total, off = -1;
-    const int termlen = TERM_LEN(str);
 
     if (ptr >= RSTRING_PTR(str) && ptr <= RSTRING_END(str)) {
         off = ptr - RSTRING_PTR(str);
@@ -2028,11 +2027,11 @@ str_buf_cat(VALUE str, const char *ptr, long len)
     total = RSTRING_LEN(str)+len;
     if (capa <= total) {
 	while (total > capa) {
-	    if (capa + termlen >= LONG_MAX / 2) {
+	    if (capa > LONG_MAX / 2) {
 		capa = (total + 4095) / 4096 * 4096;
 		break;
 	    }
-	    capa = (capa + termlen) * 2;
+	    capa = 2 * capa;
 	}
 	RESIZE_CAPA(str, capa);
     }
