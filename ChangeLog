@@ -1,3 +1,8 @@
+Wed Apr  9 12:44:54 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_buf_cat): should round up the capacity by 4KiB,
+	  but not number of rooms.  [ruby-core:61886] [Bug #9709]
+
 Tue Apr  8 22:55:32 2014  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/mkmf.rb (MakeMakefile#dir_config): Improve documentation.
