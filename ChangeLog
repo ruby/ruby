@@ -78,7 +78,8 @@ Wed Apr  9 12:44:54 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Apr  8 22:55:32 2014  Akinori MUSHA  <knu@iDaemons.org>
 
-	* lib/mkmf.rb (MakeMakefile#dir_config): Improve documentation.
+	* lib/mkmf.rb (MakeMakefile#dir_config): [DOC] Improve
+	  documentation.
 
 Tue Apr  8 22:31:44 2014  Koichi Sasada  <ko1@atdot.net>
 
