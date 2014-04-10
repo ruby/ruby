@@ -2447,7 +2447,6 @@ class TestArray < Test::Unit::TestCase
         end
       end
     rescue TimeoutError
-      assert(true)
     end
     EOS
   end

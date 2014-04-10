@@ -1,3 +1,7 @@
+Thu Apr 10 19:22:58 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_array.rb: remove useless `assert'.
+
 Thu Apr 10 19:11:11 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c (rb_ary_modify): remember shared array owner if a shared
