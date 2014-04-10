@@ -1017,6 +1017,8 @@ vm_caller_setup_args(const rb_thread_t *th, rb_control_frame_t *cfp, rb_call_inf
 	if (proc != Qnil) {
 	    if (!rb_obj_is_proc(proc)) {
 		VALUE b;
+		rb_env_t *env;
+		int i;
 
 		SAVE_RESTORE_CI(b = rb_check_convert_type(proc, T_DATA, "Proc", "to_proc"), ci);
 
@@ -1026,8 +1028,14 @@ vm_caller_setup_args(const rb_thread_t *th, rb_control_frame_t *cfp, rb_call_inf
 			     rb_obj_classname(proc));
 		}
 		proc = b;
+		GetProcPtr(proc, po);
+		GetEnvPtr(po->envval, env);
+		for (i = 0; i < env->local_size; ++i) {
+		    env->env[i] = Qnil;
+		}
+	    } else {
+		GetProcPtr(proc, po);
 	    }
-	    GetProcPtr(proc, po);
 	    ci->blockptr = &po->block;
 	    RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp)->proc = proc;
 	}
