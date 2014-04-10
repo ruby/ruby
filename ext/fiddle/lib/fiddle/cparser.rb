@@ -28,7 +28,7 @@ module Fiddle
     #     #=> [[Fiddle::TYPE_INT, Fiddle::TYPE_CHAR], ["i", "c"]]
     #
     #   parse_struct_signature(['char buffer[80]'])
-    #     #=> [[Fiddle::TYPE_VOIDP], ["buffer"]]
+    #     #=> [[[Fiddle::TYPE_CHAR, 80]], ["buffer"]]
     #
     def parse_struct_signature(signature, tymap=nil)
       if signature.is_a?(String)
@@ -71,6 +71,12 @@ module Fiddle
     #
     #   parse_signature('double sum(double, double)')
     #     #=> ["sum", Fiddle::TYPE_DOUBLE, [Fiddle::TYPE_DOUBLE, Fiddle::TYPE_DOUBLE]]
+    #
+    #   parse_signature('void update(void (*cb)(int code))')
+    #     #=> ["update", Fiddle::TYPE_VOID, [Fiddle::TYPE_VOIDP]]
+    #
+    #   parse_signature('char (*getbuffer(void))[80]')
+    #     #=> ["getbuffer", Fiddle::TYPE_VOIDP, []]
     #
     def parse_signature(signature, tymap=nil)
       tymap ||= {}
