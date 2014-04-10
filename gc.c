@@ -4199,82 +4199,6 @@ gc_marks_body(rb_objspace_t *objspace, int full_mark)
     rgengc_report(1, objspace, "gc_marks_body: end (%s)\n", full_mark ? "full" : "minor");
 }
 
-struct verify_internal_consistency_struct {
-    rb_objspace_t *objspace;
-    int err_count;
-    VALUE parent;
-};
-
-#if USE_RGENGC
-static void
-verify_internal_consistency_reachable_i(VALUE child, void *ptr)
-{
-    struct verify_internal_consistency_struct *data = (struct verify_internal_consistency_struct *)ptr;
-
-    assert(RVALUE_OLD_P(data->parent));
-
-    if (!RVALUE_OLD_P(child)) {
-	if (!MARKED_IN_BITMAP(GET_HEAP_PAGE(data->parent)->rememberset_bits, data->parent) &&
-	    !MARKED_IN_BITMAP(GET_HEAP_PAGE(child)->rememberset_bits, child)) {
-	    fprintf(stderr, "verify_internal_consistency_reachable_i: WB miss %p (%s) -> %p (%s)\n",
-		    (void *)data->parent, obj_type_name(data->parent),
-		    (void *)child, obj_type_name(child));
-	    data->err_count++;
-	}
-    }
-}
-
-static int
-verify_internal_consistency_i(void *page_start, void *page_end, size_t stride, void *ptr)
-{
-    struct verify_internal_consistency_struct *data = (struct verify_internal_consistency_struct *)ptr;
-    VALUE v;
-
-    for (v = (VALUE)page_start; v != (VALUE)page_end; v += stride) {
-	if (is_live_object(data->objspace, v)) {
-	    if (RVALUE_OLD_P(v)) {
-		data->parent = v;
-		/* reachable objects from an oldgen object should be old or (young with remember) */
-		rb_objspace_reachable_objects_from(v, verify_internal_consistency_reachable_i, (void *)data);
-	    }
-	}
-    }
-
-    return 0;
-}
-#endif /* USE_RGENGC */
-
-/*
- *  call-seq:
- *     GC.verify_internal_consistency                  -> nil
- *
- *  Verify internal consistency.
- *
- *  This method is implementation specific.
- *  Now this method checks generational consistency
- *  if RGenGC is supported.
- */
-static VALUE
-gc_verify_internal_consistency(VALUE self)
-{
-#if USE_RGENGC
-    struct verify_internal_consistency_struct data;
-    data.objspace = &rb_objspace;
-    data.err_count = 0;
-
-    {
-	struct each_obj_args eo_args;
-	eo_args.callback = verify_internal_consistency_i;
-	eo_args.data = (void *)&data;
-	objspace_each_objects((VALUE)&eo_args);
-    }
-    if (data.err_count != 0) {
-	rb_bug("gc_verify_internal_consistency: found internal consistency.\n");
-    }
-#endif
-    return Qnil;
-}
-
 #if RGENGC_CHECK_MODE >= 3
 
 #define MAKE_ROOTSIG(obj) (((VALUE)(obj) << 1) | 0x01)
@@ -4493,7 +4417,6 @@ gc_check_after_marks_i(st_data_t k, st_data_t v, void *ptr)
 static void
 gc_marks_check(rb_objspace_t *objspace, int (*checker_func)(ANYARGS), const char *checker_name)
 {
-
     size_t saved_malloc_increase = objspace->malloc_params.increase;
 #if RGENGC_ESTIMATE_OLDMALLOC
     size_t saved_oldmalloc_increase = objspace->rgengc.oldmalloc_increase;
@@ -4501,13 +4424,16 @@ gc_marks_check(rb_objspace_t *objspace, int (*checker_func)(ANYARGS), const char
     VALUE already_disabled = rb_gc_disable();
 
     objspace->rgengc.allrefs_table = objspace_allrefs(objspace);
-    st_foreach(objspace->rgengc.allrefs_table, checker_func, (st_data_t)objspace);
+
+    if (checker_func) {
+	st_foreach(objspace->rgengc.allrefs_table, checker_func, (st_data_t)objspace);
+    }
 
     if (objspace->rgengc.error_count > 0) {
 #if RGENGC_CHECK_MODE >= 4
 	allrefs_dump(objspace);
 #endif
-	rb_bug("%s: GC has problem.", checker_name);
+	if (checker_name) rb_bug("%s: GC has problem.", checker_name);
     }
 
     objspace_allrefs_destruct(objspace->rgengc.allrefs_table);
@@ -4521,6 +4447,90 @@ gc_marks_check(rb_objspace_t *objspace, int (*checker_func)(ANYARGS), const char
 }
 
 #endif /* RGENGC_CHECK_MODE >= 2 */
+
+#if USE_RGENGC
+
+struct verify_internal_consistency_struct {
+    rb_objspace_t *objspace;
+    int err_count;
+    VALUE parent;
+};
+
+static void
+verify_internal_consistency_reachable_i(VALUE child, void *ptr)
+{
+    struct verify_internal_consistency_struct *data = (struct verify_internal_consistency_struct *)ptr;
+
+    assert(RVALUE_OLD_P(data->parent));
+
+    if (!RVALUE_OLD_P(child)) {
+	if (!MARKED_IN_BITMAP(GET_HEAP_PAGE(data->parent)->rememberset_bits, data->parent) &&
+	    !MARKED_IN_BITMAP(GET_HEAP_PAGE(child)->rememberset_bits, child)) {
+	    fprintf(stderr, "verify_internal_consistency_reachable_i: WB miss %p (%s) -> %p (%s)\n",
+		    (void *)data->parent, obj_type_name(data->parent),
+		    (void *)child, obj_type_name(child));
+	    data->err_count++;
+	}
+    }
+}
+
+static int
+verify_internal_consistency_i(void *page_start, void *page_end, size_t stride, void *ptr)
+{
+    struct verify_internal_consistency_struct *data = (struct verify_internal_consistency_struct *)ptr;
+    VALUE v;
+
+    for (v = (VALUE)page_start; v != (VALUE)page_end; v += stride) {
+	if (is_live_object(data->objspace, v)) {
+	    if (RVALUE_OLD_P(v)) {
+		data->parent = v;
+		/* reachable objects from an oldgen object should be old or (young with remember) */
+		rb_objspace_reachable_objects_from(v, verify_internal_consistency_reachable_i, (void *)data);
+	    }
+	}
+    }
+
+    return 0;
+}
+
+#endif /* USE_RGENGC */
+
+/*
+ *  call-seq:
+ *     GC.verify_internal_consistency                  -> nil
+ *
+ *  Verify internal consistency.
+ *
+ *  This method is implementation specific.
+ *  Now this method checks generational consistency
+ *  if RGenGC is supported.
+ */
+static VALUE
+gc_verify_internal_consistency(VALUE self)
+{
+#if USE_RGENGC
+    struct verify_internal_consistency_struct data;
+    data.objspace = &rb_objspace;
+    data.err_count = 0;
+
+    {
+	struct each_obj_args eo_args;
+	eo_args.callback = verify_internal_consistency_i;
+	eo_args.data = (void *)&data;
+	objspace_each_objects((VALUE)&eo_args);
+    }
+    if (data.err_count != 0) {
+#if RGENGC_CHECK_MODE >= 4
+	rb_objspace_t *objspace = &rb_objspace;
+	objspace->rgengc.error_count = data.err_count;
+	gc_marks_check(objspace, NULL, NULL);
+	allrefs_dump(objspace);
+#endif
+	rb_bug("gc_verify_internal_consistency: found internal consistency.\n");
+    }
+#endif
+    return Qnil;
+}
 
 static void
 gc_marks(rb_objspace_t *objspace, int full_mark)
