@@ -4252,21 +4252,21 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride, v
 static VALUE
 gc_verify_internal_consistency(VALUE self)
 {
+#if USE_RGENGC
     struct verify_internal_consistency_struct data;
     data.objspace = &rb_objspace;
     data.err_count = 0;
 
-#if USE_RGENGC
     {
 	struct each_obj_args eo_args;
 	eo_args.callback = verify_internal_consistency_i;
 	eo_args.data = (void *)&data;
 	objspace_each_objects((VALUE)&eo_args);
     }
-#endif
     if (data.err_count != 0) {
 	rb_bug("gc_verify_internal_consistency: found internal consistency.\n");
     }
+#endif
     return Qnil;
 }
 
