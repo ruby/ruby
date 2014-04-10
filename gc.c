@@ -858,7 +858,7 @@ static inline void
 RVALUE_DEMOTE_FROM_YOUNG(VALUE obj)
 {
     if (RGENGC_CHECK_MODE && !RVALUE_YOUNG_P(obj))
-      rb_bug("RVALUE_DEMOTE_FROM_YOUNG: %p (%s) is not young object.", (void *)obj, obj_type_name(obj));
+	rb_bug("RVALUE_DEMOTE_FROM_YOUNG: %p (%s) is not young object.", (void *)obj, obj_type_name(obj));
 
     check_gen_consistency(obj);
     FL_UNSET2(obj, FL_PROMOTED);
@@ -870,7 +870,7 @@ static inline void
 RVALUE_DEMOTE_FROM_OLD(VALUE obj)
 {
     if (RGENGC_CHECK_MODE && !RVALUE_OLD_P(obj))
-      rb_bug("RVALUE_DEMOTE_FROM_OLD: %p (%s) is not old object.", (void *)obj, obj_type_name(obj));
+	rb_bug("RVALUE_DEMOTE_FROM_OLD: %p (%s) is not old object.", (void *)obj, obj_type_name(obj));
 
     check_gen_consistency(obj);
     FL_UNSET2(obj, FL_PROMOTED);
