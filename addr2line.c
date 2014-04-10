@@ -423,7 +423,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 
 static void
 append_obj(obj_info_t **objp) {
-    obj_info_t *newobj = malloc(sizeof(obj_info_t));
+    obj_info_t *newobj = calloc(1, sizeof(obj_info_t));
     if (*objp) (*objp)->next = newobj;
     *objp = newobj;
 }
@@ -668,7 +668,7 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces)
 	    o = obj;
 	    obj->path = main_path;
 	    fill_lines(num_traces, traces, 1, &obj, lines, -1);
-	    for (i=0; o=o->next; i++) {
+	    for (i=0; o=o->next; i++) { /* 1 or 2 times */
 		base_addrs[i] = (void *)o->base_addr;
 	    }
 	}
@@ -741,6 +741,7 @@ next_line:
 	free(o);
     }
     free(lines);
+    free(base_addrs);
 }
 
 /* From FreeBSD's lib/libstand/printf.c */

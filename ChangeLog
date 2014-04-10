@@ -1,3 +1,9 @@
+Thu Apr 10 15:01:06 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c (append_obj): clear allocated memory.
+
+	* addr2line.c (rb_dump_backtrace_with_lines): free `base_addrs'.
+
 Thu Apr 10 14:40:18 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_gc_writebarrier_unprotect_promoted): disable to dump debug
