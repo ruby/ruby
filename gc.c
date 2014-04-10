@@ -692,8 +692,13 @@ static inline void gc_prof_set_heap_info(rb_objspace_t *);
 #define gc_prof_record(objspace) (objspace)->profile.current_record
 #define gc_prof_enabled(objspace) ((objspace)->profile.run && (objspace)->profile.current_record)
 
-#define rgengc_report if (RGENGC_DEBUG) rgengc_report_body
-static void rgengc_report_body(int level, rb_objspace_t *objspace, const char *fmt, ...);
+#ifdef HAVE_VA_ARGS_MACRO
+# define rgengc_report(level, objspace, fmt, ...) \
+    if ((level) > RGENGC_DEBUG) {} else rgengc_report_body(level, objspace, fmt, ##__VA_ARGS__)
+#else
+# define rgengc_report if (!(RGENGC_DEBUG)) {} else rgengc_report_body
+#endif
+PRINTF_ARGS(static void rgengc_report_body(int level, rb_objspace_t *objspace, const char *fmt, ...), 3, 4);
 static const char * type_name(int type, VALUE obj);
 static const char *obj_type_name(VALUE obj);
 
@@ -1111,7 +1116,7 @@ heap_page_allocate(rb_objspace_t *objspace)
     page_body->header.page = page;
 
     for (p = start; p != end; p++) {
-	rgengc_report(3, objspace, "assign_heap_page: %p is added to freelist\n");
+	rgengc_report(3, objspace, "assign_heap_page: %p is added to freelist\n", p);
 	heap_page_add_freeobj(objspace, page, (VALUE)p);
     }
 
