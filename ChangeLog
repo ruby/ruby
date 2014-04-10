@@ -1,3 +1,8 @@
+Thu Apr 10 14:40:18 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_gc_writebarrier_unprotect_promoted): disable to dump debug
+	  message when RGENGC_CHECK_MODE == 0.
+
 Thu Apr 10 08:13:47 2014  Tanaka Akira  <akr@fsij.org>
 
 	* signal.c (check_stack_overflow): Don't use ucontext_t if ucontext.h

@@ -4807,7 +4807,7 @@ rb_gc_writebarrier_unprotect_promoted(VALUE obj)
 	if (!RVALUE_WB_PROTECTED(obj)) rb_bug("rb_gc_writebarrier_unprotect_promoted: called on shady object");
     }
 
-    rgengc_report(0, objspace, "rb_gc_writebarrier_unprotect_promoted: %p (%s)%s\n", (void *)obj, obj_type_name(obj),
+    rgengc_report(1, objspace, "rb_gc_writebarrier_unprotect_promoted: %p (%s)%s\n", (void *)obj, obj_type_name(obj),
 		  rgengc_remembered(objspace, obj) ? " (already remembered)" : "");
 
     if (RVALUE_OLD_P(obj)) {
