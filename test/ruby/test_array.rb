@@ -2389,7 +2389,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal([], a.rotate!(13))
     assert_equal([], a.rotate!(-13))
     a = [].freeze
-    assert_raise_with_message(RuntimeError, /can't modify frozen/) {a.rotate!}
+    assert_raise_with_message(RuntimeError, /can\'t modify frozen/) {a.rotate!}
     a = [1,2,3]
     assert_raise(ArgumentError) { a.rotate!(1, 1) }
   end
@@ -2427,5 +2427,28 @@ class TestArray < Test::Unit::TestCase
     assert_equal(nil, a.bsearch {|x| (-1) * (2**100) })
 
     assert_include([4, 7], a.bsearch {|x| (2**100).coerce((1 - x / 4) * (2**100)).first })
+  end
+
+  def test_shared_marking
+    assert_normal_exit <<-EOS, '[Bug #9718]'
+    begin
+      require 'timeout'
+      timeout(5) do
+        queue = []
+        i = 0
+        srand(0)
+        loop do
+          if (i+=1) > rand(100_000)
+            GC.verify_internal_consistency
+            queue.shift.call
+            i = 0
+          end
+          queue << lambda{}
+        end
+      end
+    rescue TimeoutError
+      assert(true)
+    end
+    EOS
   end
 end

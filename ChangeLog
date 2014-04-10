@@ -1,3 +1,16 @@
+Thu Apr 10 19:11:11 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c (rb_ary_modify): remember shared array owner if a shared
+	  array owner is promoted and a shared array is not promoted.
+
+	  Now, shared array is WB-unprotected so that shared arrays are not
+	  promoted.  All objects referred from shared array should be marked
+	  correctly.
+
+	  [ruby-core:61919] [ruby-trunk - Bug #9718]
+
+	* test/ruby/test_array.rb: add a test for above.
+
 Thu Apr 10 18:57:12 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_verify_internal_consistency): move lines and enable
