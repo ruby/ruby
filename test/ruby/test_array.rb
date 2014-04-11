@@ -2430,24 +2430,19 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_shared_marking
-    assert_normal_exit <<-EOS, '[Bug #9718]'
-    begin
-      require 'timeout'
-      timeout(5) do
-        queue = []
-        i = 0
-        srand(0)
-        loop do
-          if (i+=1) > rand(100_000)
-            GC.verify_internal_consistency
-            queue.shift.call
-            i = 0
-          end
+    reduce = proc do |s|
+      s.gsub(/(verify_internal_consistency_reachable_i:\sWB\smiss\s\S+\s\(T_ARRAY\)\s->\s)\S+\s\(proc\)\n
+             \K(?:\1\S+\s\(proc\)\n)*/x, "...\n")
+    end
+    assert_normal_exit(<<-EOS, '[Bug #9718]', timeout: 5, stdout_filter: reduce)
+      queue = []
+      10.times do
+        100_000.times do
           queue << lambda{}
         end
+        GC.verify_internal_consistency
+        queue.shift.call
       end
-    rescue TimeoutError
-    end
     EOS
   end
 end
