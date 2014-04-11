@@ -2452,10 +2452,11 @@ class TestArray < Test::Unit::TestCase
         "...(snip #{$&.count("\n")} lines)...\n"
       end
     end
-    assert_normal_exit(<<-EOS, '[Bug #9718]', stdout_filter: reduce)
+    begin
+      assert_normal_exit(<<-EOS, '[Bug #9718]', timeout: 5, stdout_filter: reduce)
       queue = []
-      10.times do
-        100_000.times do
+      50.times do
+        10_000.times do
           queue << lambda{}
         end
         GC.start(full_mark: false, immediate_sweep: true)
@@ -2463,5 +2464,8 @@ class TestArray < Test::Unit::TestCase
         queue.shift.call
       end
     EOS
+    rescue Timeout::Error => e
+      skip e.message
+    end
   end
 end
