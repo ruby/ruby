@@ -31,7 +31,9 @@ module EnvUtil
   LANG_ENVS = %w"LANG LC_ALL LC_CTYPE"
 
   def invoke_ruby(args, stdin_data = "", capture_stdout = false, capture_stderr = false,
-                  encoding: nil, timeout: 10, reprieve: 1, **opt)
+                  encoding: nil, timeout: 10, reprieve: 1,
+                  stdout_filter: nil, stderr_filter: nil,
+                  **opt)
     in_c, in_p = IO.pipe
     out_p, out_c = IO.pipe if capture_stdout
     err_p, err_c = IO.pipe if capture_stderr && capture_stderr != :merge_to_stdout
@@ -85,6 +87,8 @@ module EnvUtil
       err_p.close if capture_stderr && capture_stderr != :merge_to_stdout
       Process.wait pid
       status = $?
+      stdout = stdout_filter.call(stdout) if stdout_filter
+      stderr = stderr_filter.call(stderr) if stderr_filter
       return stdout, stderr, status
     end
   ensure
