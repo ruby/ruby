@@ -1,3 +1,12 @@
+Fri Apr 11 15:05:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (rb_method_call_with_block, umethod_bind): call with
+	  IClass including the module for a module instance method.
+	  [ruby-core:61936] [Bug #9721]
+
+	* vm_insnhelper.c (vm_search_super_method): allow bound
+	  UnboundMethod case.
+
 Fri Apr 11 12:02:30 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* addr2line.c (rb_dump_backtrace_with_lines): set base address
