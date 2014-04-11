@@ -2431,8 +2431,10 @@ class TestArray < Test::Unit::TestCase
 
   def test_shared_marking
     reduce = proc do |s|
-      s.gsub(/(verify_internal_consistency_reachable_i:\sWB\smiss\s\S+\s\(T_ARRAY\)\s->\s)\S+\s\(proc\)\n
-             \K(?:\1\S+\s\(proc\)\n)*/x, "...\n")
+      s.gsub(/(verify_internal_consistency_reachable_i:\sWB\smiss\s\S+\s\(T_ARRAY\)\s->\s)\S+\s\((proc|T_NONE)\)\n
+             \K(?:\1\S+\s\(\2\)\n)*/x) do
+        "...(snip #{$&.count("\n")} lines)...\n"
+      end
     end
     assert_normal_exit(<<-EOS, '[Bug #9718]', timeout: 5, stdout_filter: reduce)
       queue = []
@@ -2440,6 +2442,7 @@ class TestArray < Test::Unit::TestCase
         100_000.times do
           queue << lambda{}
         end
+        GC.start(full_mark: false, immediate_sweep: true)
         GC.verify_internal_consistency
         queue.shift.call
       end
