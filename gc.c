@@ -1357,8 +1357,8 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
     rgengc_report(5, objspace, "newobj: %p (%s)\n", (void *)obj, obj_type_name(obj));
 
 #if USE_RGENGC && RGENGC_CHECK_MODE
-    if (RVALUE_PROMOTED_P(obj)) rb_bug("newobj: %p (%s) is promoted.\n", (void *)obj, obj_type_name(obj));
-    if (rgengc_remembered(objspace, (VALUE)obj)) rb_bug("newobj: %p (%s) is remembered.\n", (void *)obj, obj_type_name(obj));
+    if (RVALUE_PROMOTED_P(obj)) rb_bug("newobj: %p (%s) is promoted.", (void *)obj, obj_type_name(obj));
+    if (rgengc_remembered(objspace, (VALUE)obj)) rb_bug("newobj: %p (%s) is remembered.", (void *)obj, obj_type_name(obj));
 #endif
 
     objspace->profile.total_allocated_object_num++;
@@ -2771,8 +2771,8 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 		    if (p->as.basic.flags) {
 			rgengc_report(3, objspace, "page_sweep: free %p (%s)\n", p, obj_type_name((VALUE)p));
 #if USE_RGENGC && RGENGC_CHECK_MODE
-			if (objspace->rgengc.during_minor_gc && RVALUE_OLD_P((VALUE)p)) rb_bug("page_sweep: %p (%s) is old while minor GC.\n", p, obj_type_name((VALUE)p));
-			if (rgengc_remembered(objspace, (VALUE)p)) rb_bug("page_sweep: %p (%s) is remembered.\n", p, obj_type_name((VALUE)p));
+			if (objspace->rgengc.during_minor_gc && RVALUE_OLD_P((VALUE)p)) rb_bug("page_sweep: %p (%s) is old while minor GC.", p, obj_type_name((VALUE)p));
+			if (rgengc_remembered(objspace, (VALUE)p)) rb_bug("page_sweep: %p (%s) is remembered.", p, obj_type_name((VALUE)p));
 #endif
 			if (obj_free(objspace, (VALUE)p)) {
 			    final_slots++;
@@ -4526,7 +4526,7 @@ gc_verify_internal_consistency(VALUE self)
 	gc_marks_check(objspace, NULL, NULL);
 	allrefs_dump(objspace);
 #endif
-	rb_bug("gc_verify_internal_consistency: found internal consistency.\n");
+	rb_bug("gc_verify_internal_consistency: found internal consistency.");
     }
 #endif
     return Qnil;
@@ -4652,7 +4652,7 @@ rgengc_remember(rb_objspace_t *objspace, VALUE obj)
 	switch (BUILTIN_TYPE(obj)) {
 	  case T_NONE:
 	  case T_ZOMBIE:
-	    rb_bug("rgengc_remember: should not remember %p (%s)\n",
+	    rb_bug("rgengc_remember: should not remember %p (%s)",
 		   (void *)obj, obj_type_name(obj));
 	  default:
 	    ;
@@ -4782,7 +4782,7 @@ void
 rb_gc_writebarrier(VALUE a, VALUE b)
 {
     if (RGENGC_CHECK_MODE) {
-	if (!RVALUE_PROMOTED_P(a)) rb_bug("rb_gc_writebarrier: referer object %p (%s) is not promoted.\n", (void *)a, obj_type_name(a));
+	if (!RVALUE_PROMOTED_P(a)) rb_bug("rb_gc_writebarrier: referer object %p (%s) is not promoted.", (void *)a, obj_type_name(a));
     }
 
     if (!RVALUE_OLD_P(b) && RVALUE_OLD_BITMAP_P(a)) {
