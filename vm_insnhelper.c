@@ -2041,8 +2041,8 @@ vm_search_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_inf
 
 	rb_raise(rb_eTypeError,
 		 "self has wrong type to call super in this context: "
-		 "%s (expected %s)",
-		 rb_obj_classname(ci->recv), rb_class2name(m));
+		 "%"PRIsVALUE" (expected %"PRIsVALUE")",
+		 rb_obj_class(ci->recv), m);
     }
 
     switch (vm_search_superclass(GET_CFP(), iseq, sigval, ci)) {

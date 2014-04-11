@@ -271,12 +271,12 @@ class TestSuper < Test::Unit::TestCase
   end
 
   def test_super_in_instance_eval
-    super_class = Class.new {
+    super_class = EnvUtil.labeled_class("Super\u{30af 30e9 30b9}") {
       def foo
         return [:super, self]
       end
     }
-    sub_class = Class.new(super_class) {
+    sub_class = EnvUtil.labeled_class("Sub\u{30af 30e9 30b9}", super_class) {
       def foo
         x = Object.new
         x.instance_eval do
@@ -285,18 +285,18 @@ class TestSuper < Test::Unit::TestCase
       end
     }
     obj = sub_class.new
-    assert_raise(TypeError) do
+    assert_raise_with_message(TypeError, /Sub\u{30af 30e9 30b9}/) do
       obj.foo
     end
   end
 
   def test_super_in_instance_eval_with_define_method
-    super_class = Class.new {
+    super_class = EnvUtil.labeled_class("Super\u{30af 30e9 30b9}") {
       def foo
         return [:super, self]
       end
     }
-    sub_class = Class.new(super_class) {
+    sub_class = EnvUtil.labeled_class("Sub\u{30af 30e9 30b9}", super_class) {
       define_method(:foo) do
         x = Object.new
         x.instance_eval do
@@ -305,18 +305,18 @@ class TestSuper < Test::Unit::TestCase
       end
     }
     obj = sub_class.new
-    assert_raise(TypeError) do
+    assert_raise_with_message(TypeError, /Sub\u{30af 30e9 30b9}/) do
       obj.foo
     end
   end
 
   def test_super_in_orphan_block
-    super_class = Class.new {
+    super_class = EnvUtil.labeled_class("Super\u{30af 30e9 30b9}") {
       def foo
         return [:super, self]
       end
     }
-    sub_class = Class.new(super_class) {
+    sub_class = EnvUtil.labeled_class("Sub\u{30af 30e9 30b9}", super_class) {
       def foo
         lambda { super() }
       end
@@ -326,12 +326,12 @@ class TestSuper < Test::Unit::TestCase
   end
 
   def test_super_in_orphan_block_with_instance_eval
-    super_class = Class.new {
+    super_class = EnvUtil.labeled_class("Super\u{30af 30e9 30b9}") {
       def foo
         return [:super, self]
       end
     }
-    sub_class = Class.new(super_class) {
+    sub_class = EnvUtil.labeled_class("Sub\u{30af 30e9 30b9}", super_class) {
       def foo
         x = Object.new
         x.instance_eval do
@@ -340,7 +340,7 @@ class TestSuper < Test::Unit::TestCase
       end
     }
     obj = sub_class.new
-    assert_raise(TypeError) do
+    assert_raise_with_message(TypeError, /Sub\u{30af 30e9 30b9}/) do
       obj.foo.call
     end
   end
