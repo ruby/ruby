@@ -2452,7 +2452,7 @@ class TestArray < Test::Unit::TestCase
         "...(snip #{$&.count("\n")} lines)...\n"
       end
     end
-    assert_normal_exit(<<-EOS, '[Bug #9718]', timeout: 5, stdout_filter: reduce)
+    assert_normal_exit(<<-EOS, '[Bug #9718]', stdout_filter: reduce)
       queue = []
       10.times do
         100_000.times do
