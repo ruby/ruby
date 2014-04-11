@@ -1,3 +1,10 @@
+Fri Apr 11 18:52:38 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c (ARY_SET): added.
+
+	  ARY_SET() is same functionality of RARRAY_ASET(), but
+	  it has an assertion (`ary' doesn't have shared array).
+
 Fri Apr 11 16:54:26 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c: make shared arrays WB-protected objects.

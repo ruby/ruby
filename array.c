@@ -131,6 +131,8 @@ static ID id_cmp, id_div, id_power;
     FL_SET((ary), RARRAY_SHARED_ROOT_FLAG); \
 } while (0)
 
+#define ARY_SET(a, i, v) RARRAY_ASET((assert(!ARY_SHARED_P(a)), (a)), (i), (v))
+
 void
 rb_mem_clear(register VALUE *mem, register long size)
 {
@@ -520,7 +522,7 @@ rb_ary_new_from_args(long n, ...)
 
     va_start(ar, n);
     for (i=0; i<n; i++) {
-	RARRAY_ASET(ary, i, va_arg(ar, VALUE));
+	ARY_SET(ary, i, va_arg(ar, VALUE));
     }
     va_end(ar);
 
@@ -827,7 +829,7 @@ rb_ary_store(VALUE ary, long idx, VALUE val)
     if (idx >= len) {
 	ARY_SET_LEN(ary, idx + 1);
     }
-    RARRAY_ASET(ary, idx, val);
+    ARY_SET(ary, idx, val);
 }
 
 static VALUE
@@ -1020,11 +1022,11 @@ rb_ary_shift(VALUE ary)
 	}
         assert(!ARY_EMBED_P(ary)); /* ARY_EMBED_LEN_MAX < ARY_DEFAULT_SIZE */
 
-	RARRAY_ASET(ary, 0, Qnil);
+	ARY_SET(ary, 0, Qnil);
 	ary_make_shared(ary);
     }
     else if (ARY_SHARED_OCCUPIED(ARY_SHARED(ary))) {
-	RARRAY_ASET(ary, 0, Qnil);
+	RARRAY_PTR_USE(ary, ptr, ptr[0] = Qnil);
     }
     ARY_INCREASE_PTR(ary, 1);		/* shift ptr */
     ARY_INCREASE_LEN(ary, -1);
@@ -3504,7 +3506,7 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
 	for (i=beg; i<end; i++) {
 	    v = rb_yield(LONG2NUM(i));
 	    if (i>=RARRAY_LEN(ary)) break;
-	    RARRAY_ASET(ary, i, v);
+	    ARY_SET(ary, i, v);
 	}
     }
     else {
