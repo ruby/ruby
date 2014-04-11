@@ -39,7 +39,7 @@ Fri Apr 11 15:05:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Fri Apr 11 12:02:30 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* addr2line.c (rb_dump_backtrace_with_lines): set base address
-	  which is retrived from dladdr to dladdr_fbases, to skip already
+	  which is retrieved from dladdr to dladdr_fbases, to skip already
 	  parsed objects.
 
 Fri Apr 11 12:44:50 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
