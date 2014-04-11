@@ -478,20 +478,20 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 
     fd = open(binary_filename, O_RDONLY);
     if (fd < 0) {
-	goto fail;
+	return;
     }
     filesize = lseek(fd, 0, SEEK_END);
     if (filesize < 0) {
 	int e = errno;
 	close(fd);
 	kprintf("lseek: %s\n", strerror(e));
-	goto fail;
+	return;
     }
 #if SIZEOF_OFF_T > SIZEOF_SIZE_T
     if (filesize > (off_t)SIZE_MAX) {
 	close(fd);
 	kprintf("Too large file %s\n", binary_filename);
-	goto fail;
+	return;
     }
 #endif
     lseek(fd, 0, SEEK_SET);
@@ -501,7 +501,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	int e = errno;
 	close(fd);
 	kprintf("mmap: %s\n", strerror(e));
-	goto fail;
+	return;
     }
 
     ehdr = (ElfW(Ehdr) *)file;
@@ -511,7 +511,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	 * it match non-elf file.
 	 */
 	close(fd);
-	goto fail;
+	return;
     }
 
     if (ehdr->e_type == ET_EXEC) obj->base_addr = 0;
@@ -555,8 +555,10 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
     }
 
     if (offset == -1) {
+	/* main executable */
 	offset = 0;
 	if (ehdr->e_type != ET_EXEC && dynsym_shdr && dynstr_shdr) {
+	    /* PIE (position-independent executable) */
 	    char *strtab = file + dynstr_shdr->sh_offset;
 	    ElfW(Sym) *symtab = (ElfW(Sym) *)(file + dynsym_shdr->sh_offset);
 	    int symtab_count = (int)(dynsym_shdr->sh_size / sizeof(ElfW(Sym)));
@@ -574,7 +576,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 		    break;
 		}
 	    }
-	}
+	} /* otherwise, base address is 0 */
     }
 
     if (!symtab_shdr) {
@@ -611,27 +613,13 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 			     num_traces, traces,
 			     objp, lines, offset);
 	}
-	goto finish;
+	return;
     }
 
     parse_debug_line(num_traces, traces,
 		     file + debug_line_shdr->sh_offset,
 		     debug_line_shdr->sh_size,
 		     obj, lines, offset);
-finish:
-    for (i = offset; i < num_traces; i++) {
-	if (lines[i].line == -1) {
-	    lines[i].line = -2;
-	}
-    }
-    return;
-fail:
-    for (i = offset; i < num_traces; i++) {
-	if (obj->base_addr == lines[i].base_addr) {
-	    lines[i].line = -2;
-	}
-    }
-    return;
 }
 
 #define HAVE_MAIN_EXE_PATH
@@ -655,9 +643,10 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces)
     /* async-signal unsafe */
     line_info_t *lines = (line_info_t *)calloc(num_traces, sizeof(line_info_t));
     obj_info_t *obj = NULL;
-    void **base_addrs = (void **)calloc(num_traces+1, sizeof(void *));
+    /* 2 is NULL + main executable */
+    void **dladdr_fbases = (void **)calloc(num_traces+2, sizeof(void *));
 #ifdef HAVE_MAIN_EXE_PATH
-    char *main_path = NULL; /* keep while this func */
+    char *main_path = NULL; /* used on printing backtrace */
     ssize_t len;
     if ((len = main_exe_path()) > 0) {
 	main_path = (char *)alloca(len + 1);
@@ -665,11 +654,20 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces)
 	    obj_info_t *o;
 	    memcpy(main_path, binary_filename, len+1);
 	    append_obj(&obj);
-	    o = obj;
+	    o = obj; /* obj may be chaneged with gnu_debuglink */
 	    obj->path = main_path;
 	    fill_lines(num_traces, traces, 1, &obj, lines, -1);
-	    for (i=0; o=o->next; i++) { /* 1 or 2 times */
-		base_addrs[i] = (void *)o->base_addr;
+
+	    /* set dladdr.dli_fbase */
+	    if (o->base_addr) { /* PIE */
+		dladdr_fbases[0] = (void *)o->base_addr;
+	    }
+	    else { /* non PIE */
+		/* base addr is 0, but get dli_fbase to skip with dladdr */
+		Dl_info info;
+		if (dladdr(traces[i], &info)) {
+		    dladdr_fbases[0] = info.dli_fbase;
+		}
 	    }
 	}
     }
@@ -682,10 +680,18 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces)
 	if (dladdr(traces[i], &info)) {
 	    const char *path;
 	    void **p;
-	    for (p=base_addrs; *p; p++) {
-		if (*p == info.dli_fbase)
+
+	    /* skip symbols which is in already checked objects */
+	    /* if the binary is strip-ed, this may effect */
+	    for (p=dladdr_fbases; *p; p++) {
+		if (*p == info.dli_fbase) {
+		    lines[i].path = info.dli_fname;
+		    lines[i].sname = info.dli_sname;
 		    goto next_line;
+		}
 	    }
+	    *p = info.dli_fbase;
+
 	    append_obj(&obj);
 	    obj->base_addr = (uintptr_t)info.dli_fbase;
 	    path = info.dli_fname;
@@ -741,7 +747,7 @@ next_line:
 	free(o);
     }
     free(lines);
-    free(base_addrs);
+    free(dladdr_fbases);
 }
 
 /* From FreeBSD's lib/libstand/printf.c */
