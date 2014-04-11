@@ -31,70 +31,6 @@ static ID id_cmp, id_div, id_power;
 #define ARY_DEFAULT_SIZE 16
 #define ARY_MAX_SIZE (LONG_MAX / (int)sizeof(VALUE))
 
-void
-rb_mem_clear(register VALUE *mem, register long size)
-{
-    while (size--) {
-	*mem++ = Qnil;
-    }
-}
-
-static void
-ary_mem_clear(VALUE ary, long beg, long size)
-{
-    RARRAY_PTR_USE(ary, ptr, {
-	rb_mem_clear(ptr + beg, size);
-    });
-}
-
-static inline void
-memfill(register VALUE *mem, register long size, register VALUE val)
-{
-    while (size--) {
-	*mem++ = val;
-    }
-}
-
-static void
-ary_memfill(VALUE ary, long beg, long size, VALUE val)
-{
-    RARRAY_PTR_USE(ary, ptr, {
-	memfill(ptr + beg, size, val);
-	RB_OBJ_WRITTEN(ary, Qundef, val);
-    });
-}
-
-static void
-ary_memcpy(VALUE ary, long beg, long argc, const VALUE *argv)
-{
-#if 1
-    if (OBJ_PROMOTED(ary)) {
-	if (argc > (int)(128/sizeof(VALUE)) /* is magic number (cache line size) */) {
-	    rb_gc_writebarrier_remember_promoted(ary);
-	    RARRAY_PTR_USE(ary, ptr, {
-		MEMCPY(ptr+beg, argv, VALUE, argc);
-	    });
-	}
-	else {
-	    int i;
-	    RARRAY_PTR_USE(ary, ptr, {
-		for (i=0; i<argc; i++) {
-		    RB_OBJ_WRITE(ary, &ptr[i+beg], argv[i]);
-		}
-	    });
-	}
-    }
-    else {
-	RARRAY_PTR_USE(ary, ptr, {
-	    MEMCPY(ptr+beg, argv, VALUE, argc);
-	});
-    }
-#else
-    /* giveup write barrier (traditional way) */
-    MEMCPY(RARRAY_PTR(ary)+beg, argv, VALUE, argc);
-#endif
-}
-
 # define ARY_SHARED_P(ary) \
     (assert(!FL_TEST((ary), ELTS_SHARED) || !FL_TEST((ary), RARRAY_EMBED_FLAG)), \
      FL_TEST((ary),ELTS_SHARED)!=0)
@@ -194,6 +130,79 @@ ary_memcpy(VALUE ary, long beg, long argc, const VALUE *argv)
     assert(!ARY_EMBED_P(ary)); \
     FL_SET((ary), RARRAY_SHARED_ROOT_FLAG); \
 } while (0)
+
+void
+rb_mem_clear(register VALUE *mem, register long size)
+{
+    while (size--) {
+	*mem++ = Qnil;
+    }
+}
+
+static void
+ary_mem_clear(VALUE ary, long beg, long size)
+{
+    RARRAY_PTR_USE(ary, ptr, {
+	rb_mem_clear(ptr + beg, size);
+    });
+}
+
+static inline void
+memfill(register VALUE *mem, register long size, register VALUE val)
+{
+    while (size--) {
+	*mem++ = val;
+    }
+}
+
+static void
+ary_memfill(VALUE ary, long beg, long size, VALUE val)
+{
+    RARRAY_PTR_USE(ary, ptr, {
+	memfill(ptr + beg, size, val);
+	RB_OBJ_WRITTEN(ary, Qundef, val);
+    });
+}
+
+static void
+ary_memcpy0(VALUE ary, long beg, long argc, const VALUE *argv, VALUE buff_owner_ary)
+{
+#if 1
+    assert(!ARY_SHARED_P(buff_owner_ary));
+
+    if (OBJ_PROMOTED(buff_owner_ary)) {
+	if (argc > (int)(128/sizeof(VALUE)) /* is magic number (cache line size) */) {
+	    rb_gc_writebarrier_remember_promoted(buff_owner_ary);
+	    RARRAY_PTR_USE(ary, ptr, {
+		MEMCPY(ptr+beg, argv, VALUE, argc);
+	    });
+	}
+	else {
+	    int i;
+	    RARRAY_PTR_USE(ary, ptr, {
+		for (i=0; i<argc; i++) {
+		    RB_OBJ_WRITE(buff_owner_ary, &ptr[i+beg], argv[i]);
+		}
+	    });
+	}
+    }
+    else {
+	RARRAY_PTR_USE(ary, ptr, {
+	    MEMCPY(ptr+beg, argv, VALUE, argc);
+	});
+    }
+#else
+    /* giveup write barrier (traditional way) */
+    RARRAY_PTR(buff_owner_ary);
+    MEMCPY(RARRAY_PTR(ary)+beg, argv, VALUE, argc);
+#endif
+}
+
+static void
+ary_memcpy(VALUE ary, long beg, long argc, const VALUE *argv)
+{
+    ary_memcpy0(ary, beg, argc, argv, ary);
+}
 
 static void
 ary_resize_capa(VALUE ary, long capacity)
@@ -351,7 +360,7 @@ rb_ary_modify(VALUE ary)
     }
 }
 
-static void
+static VALUE
 ary_ensure_room_for_push(VALUE ary, long add_len)
 {
     long new_len = RARRAY_LEN(ary) + add_len;
@@ -363,6 +372,7 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
 	    if (ARY_SHARED_OCCUPIED(shared)) {
 		if (RARRAY_CONST_PTR(ary) - RARRAY_CONST_PTR(shared) + new_len <= RARRAY_LEN(shared)) {
 		    rb_ary_modify_check(ary);
+		    return shared;
 		}
 		else {
 		    /* if array is shared, then it is likely it participate in push/shift pattern */
@@ -371,8 +381,8 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
 		    if (new_len > capa - (capa >> 6)) {
 			ary_double_capa(ary, new_len);
 		    }
+		    return ary;
 		}
-		return;
 	    }
 	}
     }
@@ -381,6 +391,8 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
     if (new_len > capa) {
 	ary_double_capa(ary, new_len);
     }
+
+    return ary;
 }
 
 /*
@@ -581,7 +593,7 @@ ary_make_shared(VALUE ary)
     }
     else {
 	long capa = ARY_CAPA(ary), len = RARRAY_LEN(ary);
-	NEWOBJ_OF(shared, struct RArray, 0, T_ARRAY); /* keep shared ary as non-WB-protected */
+	NEWOBJ_OF(shared, struct RArray, 0, T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0));
         FL_UNSET_EMBED(shared);
 
 	ARY_SET_LEN((VALUE)shared, capa);
@@ -898,20 +910,20 @@ VALUE
 rb_ary_push(VALUE ary, VALUE item)
 {
     long idx = RARRAY_LEN(ary);
-
-    ary_ensure_room_for_push(ary, 1);
-    RARRAY_ASET(ary, idx, item);
+    VALUE target_ary = ary_ensure_room_for_push(ary, 1);
+    RARRAY_PTR_USE(ary, ptr, {
+	RB_OBJ_WRITE(target_ary, &ptr[idx], item);
+    });
     ARY_SET_LEN(ary, idx + 1);
     return ary;
 }
 
 VALUE
-rb_ary_cat(VALUE ary, const VALUE *ptr, long len)
+rb_ary_cat(VALUE ary, const VALUE *argv, long len)
 {
     long oldlen = RARRAY_LEN(ary);
-
-    ary_ensure_room_for_push(ary, len);
-    ary_memcpy(ary, oldlen, len, ptr);
+    VALUE target_ary = ary_ensure_room_for_push(ary, len);
+    ary_memcpy0(ary, oldlen, len, argv, target_ary);
     ARY_SET_LEN(ary, oldlen + len);
     return ary;
 }
@@ -1072,7 +1084,7 @@ rb_ary_shift_m(int argc, VALUE *argv, VALUE ary)
     return result;
 }
 
-static void
+static VALUE
 ary_ensure_room_for_unshift(VALUE ary, int argc)
 {
     long len = RARRAY_LEN(ary);
@@ -1114,12 +1126,16 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
 	    head = sharedp + argc + room;
 	}
 	ARY_SET_PTR(ary, head - argc);
+	assert(ARY_SHARED_OCCUPIED(ARY_SHARED(ary)));
+	return ARY_SHARED(ary);
     }
     else {
 	/* sliding items */
 	RARRAY_PTR_USE(ary, ptr, {
 	    MEMMOVE(ptr + argc, ptr, VALUE, len);
 	});
+
+	return ary;
     }
 }
 
@@ -1139,14 +1155,15 @@ static VALUE
 rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary)
 {
     long len = RARRAY_LEN(ary);
+    VALUE target_ary;
 
     if (argc == 0) {
 	rb_ary_modify_check(ary);
 	return ary;
     }
 
-    ary_ensure_room_for_unshift(ary, argc);
-    ary_memcpy(ary, 0, argc, argv);
+    target_ary = ary_ensure_room_for_unshift(ary, argc);
+    ary_memcpy0(ary, 0, argc, argv, target_ary);
     ARY_SET_LEN(ary, len + argc);
     return ary;
 }
@@ -1557,14 +1574,15 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 	olen = RARRAY_LEN(ary);	/* ary may be resized in rpl.to_ary too */
     }
     if (beg >= olen) {
+	VALUE target_ary;
 	if (beg > ARY_MAX_SIZE - rlen) {
 	    rb_raise(rb_eIndexError, "index %ld too big", beg);
 	}
-	ary_ensure_room_for_push(ary, rlen-len); /* len is 0 or negative */
+	target_ary = ary_ensure_room_for_push(ary, rlen-len); /* len is 0 or negative */
 	len = beg + rlen;
 	ary_mem_clear(ary, olen, beg - olen);
 	if (rlen > 0) {
-	    ary_memcpy(ary, beg, rlen, RARRAY_CONST_PTR(rpl));
+	    ary_memcpy0(ary, beg, rlen, RARRAY_CONST_PTR(rpl), target_ary);
 	}
 	ARY_SET_LEN(ary, len);
     }

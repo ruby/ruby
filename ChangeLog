@@ -1,3 +1,25 @@
+Fri Apr 11 16:54:26 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c: make shared arrays WB-protected objects.
+
+	  Shared arrays were WB-unprotected object because
+	  sharing array can modify shared array's buffer
+	  if it occupied shared array.
+
+	  [sharing array (ary)] -> [shared array (shared)] -> <buff>
+	                |                                       A
+	                +---------------------------------------+
+	             write `buff' with WB(ary, &buff[i], obj)
+	             -> if `ary' and `shared' are old, then only `ary'
+	                will be remembered.
+	             -> traverse from `ary'. But `shared' is old, so
+	                that written `obj' is not marked.
+
+	  It cause WB miss so that shared arrays were WB-unprotected.
+	  (WB-unprotected objects are marked everytime if it is living)
+
+	  This patch insert WB() for `shared' if it is needed.
+
 Fri Apr 11 15:05:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (rb_method_call_with_block, umethod_bind): call with
