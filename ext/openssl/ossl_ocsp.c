@@ -99,6 +99,15 @@ ossl_ocspreq_alloc(VALUE klass)
     return obj;
 }
 
+/*
+ * call-seq:
+ *   OpenSSL::OCSP::Request.new              -> request
+ *   OpenSSL::OCSP::Request.new(request_der) -> request
+ *
+ * Creates a new OpenSSL::OCSP::Request.  The request may be created empty or
+ * from a +request_der+ string.
+ */
+
 static VALUE
 ossl_ocspreq_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -120,6 +129,17 @@ ossl_ocspreq_initialize(int argc, VALUE *argv, VALUE self)
 
     return self;
 }
+
+/*
+ * call-seq:
+ *   request.add_nonce(nonce = nil) -> request
+ *
+ * Adds a +nonce+ to the OCSP request.  If no nonce is given a random one will
+ * be generated.
+ *
+ * The nonce is used to prevent replay attacks but some servers do not support
+ * it.
+ */
 
 static VALUE
 ossl_ocspreq_add_nonce(int argc, VALUE *argv, VALUE self)
@@ -143,18 +163,25 @@ ossl_ocspreq_add_nonce(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
-/* Check nonce validity in a request and response.
- * Return value reflects result:
- *  1: nonces present and equal.
- *  2: nonces both absent.
- *  3: nonce present in response only.
- *  0: nonces both present and not equal.
- *  -1: nonce in request only.
+/*
+ * call-seq:
+ *   request.check_nonce(response) -> result
  *
- *  For most responders clients can check return > 0.
- *  If responder doesn't handle nonces return != 0 may be
- *  necessary. return == 0 is always an error.
+ * Checks the nonce validity for this request and +response+.
+ *
+ * The return value is one of the following:
+ *
+ * -1 :: nonce in request only.
+ *  0 :: nonces both present and not equal.
+ *  1 :: nonces present and equal.
+ *  2 :: nonces both absent.
+ *  3 :: nonce present in response only.
+ *
+ * For most responses, clients can check +result+ > 0.  If a responder doesn't
+ * handle nonces <code>result.nonzero?</code> may be necessary.  A result of
+ * <code>0</code> is always an error.
  */
+
 static VALUE
 ossl_ocspreq_check_nonce(VALUE self, VALUE basic_resp)
 {
@@ -169,6 +196,13 @@ ossl_ocspreq_check_nonce(VALUE self, VALUE basic_resp)
     return INT2NUM(res);
 }
 
+/*
+ * call-seq:
+ *   request.add_certid(certificate_id) -> request
+ *
+ * Adds +certificate_id+ to the request.  
+ */
+
 static VALUE
 ossl_ocspreq_add_certid(VALUE self, VALUE certid)
 {
@@ -182,6 +216,13 @@ ossl_ocspreq_add_certid(VALUE self, VALUE certid)
 
     return self;
 }
+
+/*
+ * call-seq:
+ *   request.certid -> [certificate_id, ...]
+ *
+ * Returns all certificate IDs in this request.
+ */
 
 static VALUE
 ossl_ocspreq_get_certid(VALUE self)
@@ -205,6 +246,17 @@ ossl_ocspreq_get_certid(VALUE self)
 
     return ary;
 }
+
+/*
+ * call-seq:
+ *   request.sign(signer_cert, signer_key)                      -> self
+ *   request.sign(signer_cert, signer_key, certificates)        -> self
+ *   request.sign(signer_cert, signer_key, certificates, flags) -> self
+ *
+ * Signs this OCSP request using +signer_cert+ and +signer_key+.
+ * +certificates+ is an optional Array of certificates that may be included in
+ * the request.
+ */
 
 static VALUE
 ossl_ocspreq_sign(int argc, VALUE *argv, VALUE self)
@@ -234,6 +286,14 @@ ossl_ocspreq_sign(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+/*
+ * call-seq:
+ *   request.verify(certificates, store)        -> true or false
+ *   request.verify(certificates, store, flags) -> true or false
+ *
+ * Verifies this request using the given +certificates+ and X509 +store+.
+ */
+
 static VALUE
 ossl_ocspreq_verify(int argc, VALUE *argv, VALUE self)
 {
@@ -254,6 +314,10 @@ ossl_ocspreq_verify(int argc, VALUE *argv, VALUE self)
 
     return result ? Qtrue : Qfalse;
 }
+
+/*
+ * Returns this request as a DER-encoded string
+ */
 
 static VALUE
 ossl_ocspreq_to_der(VALUE self)
@@ -278,6 +342,13 @@ ossl_ocspreq_to_der(VALUE self)
 /*
  * OCSP::Response
  */
+
+/* call-seq:
+ *   OpenSSL::OCSP::Response.create(status, basic_response = nil) -> response
+ *
+ * Creates an OpenSSL::OCSP::Response from +status+ and +basic_response+.
+ */
+
 static VALUE
 ossl_ocspres_s_create(VALUE klass, VALUE status, VALUE basic_resp)
 {
@@ -308,6 +379,15 @@ ossl_ocspres_alloc(VALUE klass)
     return obj;
 }
 
+/*
+ * call-seq:
+ *   OpenSSL::OCSP::Response.new               -> response
+ *   OpenSSL::OCSP::Response.new(response_der) -> response
+ *
+ * Creates a new OpenSSL::OCSP::Response.  The response may be created empty or
+ * from a +response_der+ string.
+ */
+
 static VALUE
 ossl_ocspres_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -330,6 +410,13 @@ ossl_ocspres_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+/*
+ * call-seq:
+ *   response.status -> Integer
+ *
+ * Returns the status of the response.
+ */
+
 static VALUE
 ossl_ocspres_status(VALUE self)
 {
@@ -342,6 +429,13 @@ ossl_ocspres_status(VALUE self)
     return INT2NUM(st);
 }
 
+/*
+ * call-seq:
+ *   response.status_string -> String
+ *
+ * Returns a status string for the response.
+ */
+
 static VALUE
 ossl_ocspres_status_string(VALUE self)
 {
@@ -353,6 +447,13 @@ ossl_ocspres_status_string(VALUE self)
 
     return rb_str_new2(OCSP_response_status_str(st));
 }
+
+/*
+ * call-seq:
+ *   response.basic
+ *
+ * Returns a BasicResponse for this response
+ */
 
 static VALUE
 ossl_ocspres_get_basic(VALUE self)
@@ -368,6 +469,13 @@ ossl_ocspres_get_basic(VALUE self)
 
     return ret;
 }
+
+/*
+ * call-seq:
+ *   response.to_der -> String
+ *
+ * Returns this response as a DER-encoded string.
+ */
 
 static VALUE
 ossl_ocspres_to_der(VALUE self)
@@ -405,11 +513,26 @@ ossl_ocspbres_alloc(VALUE klass)
     return obj;
 }
 
+/*
+ * call-seq:
+ *   OpenSSL::OCSP::BasicResponse.new(*) -> basic_response
+ *
+ * Creates a new BasicResponse and ignores all arguments.
+ */
+
 static VALUE
 ossl_ocspbres_initialize(int argc, VALUE *argv, VALUE self)
 {
     return self;
 }
+
+/*
+ * call-seq:
+ *   basic_response.copy_nonce(request) -> Integer
+ *
+ * Copies the nonce from +request+ into this response.  Returns 1 on success
+ * and 0 on failure.
+ */
 
 static VALUE
 ossl_ocspbres_copy_nonce(VALUE self, VALUE request)
@@ -424,6 +547,14 @@ ossl_ocspbres_copy_nonce(VALUE self, VALUE request)
 
     return INT2NUM(ret);
 }
+
+/*
+ * call-seq:
+ *   basic_response.add_nonce(nonce = nil)
+ *
+ * Adds +nonce+ to this response.  If no nonce was provided a random nonce
+ * will be added.
+ */
 
 static VALUE
 ossl_ocspbres_add_nonce(int argc, VALUE *argv, VALUE self)
@@ -446,6 +577,22 @@ ossl_ocspbres_add_nonce(int argc, VALUE *argv, VALUE self)
 
     return self;
 }
+
+/*
+ * call-seq:
+ *   basic_response.add_status(certificate_id, status, reason, revocation_time, this_update, next_update, extensions) -> basic_response
+ *
+ * Adds a validation +status+ (0 for revoked, 1 for success) to this
+ * response for +certificate_id+.  +reason+ describes the reason for the
+ * revocation, if any.
+ *
+ * The +revocation_time+, +this_update+ and +next_update+ are times for the
+ * certificate's revocation time, the time of this status and the next update
+ * time for a new status, respectively.
+ *
+ * +extensions+ may be an Array of OpenSSL::X509::Extension that will
+ * be added to this response or nil.
+ */
 
 static VALUE
 ossl_ocspbres_add_status(VALUE self, VALUE cid, VALUE status,
@@ -515,6 +662,16 @@ ossl_ocspbres_add_status(VALUE self, VALUE cid, VALUE status,
     return self;
 }
 
+/*
+ * call-seq:
+ *   basic_response.status -> statuses
+ *
+ * Returns an Array of statuses for this response.  Each status contains a
+ * CertificateId, the status (0 for success, 1 for revoked), the reason for
+ * the status, the revocation time, the time of this update, the time for the
+ * next update and a list of OpenSSL::X509::Extensions.
+ */
+
 static VALUE
 ossl_ocspbres_get_status(VALUE self)
 {
@@ -560,6 +717,16 @@ ossl_ocspbres_get_status(VALUE self)
     return ret;
 }
 
+/*
+ * call-seq:
+ *   basic_response.sign(signer_cert, signer_key) -> self
+ *   basic_response.sign(signer_cert, signer_key, certificates) -> self
+ *   basic_response.sign(signer_cert, signer_key, certificates, flags) -> self
+ *
+ * Signs this response using the +signer_cert+ and +signer_key+.  Additional
+ * +certificates+ may be added to the signature along with a set of +flags+.
+ */
+
 static VALUE
 ossl_ocspbres_sign(int argc, VALUE *argv, VALUE self)
 {
@@ -590,6 +757,14 @@ ossl_ocspbres_sign(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+/*
+ * call-seq:
+ *   basic_response.verify(certificates, store) -> true or false
+ *   basic_response.verify(certificates, store, flags) -> true or false
+ *
+ * Verifies the signature of the response using the given +certificates+,
+ * +store+ and +flags+.
+ */
 static VALUE
 ossl_ocspbres_verify(int argc, VALUE *argv, VALUE self)
 {
@@ -627,6 +802,15 @@ ossl_ocspcid_alloc(VALUE klass)
     return obj;
 }
 
+/*
+ * call-seq:
+ *   OpenSSL::OCSP::CertificateId.new(subject, issuer, digest = nil) -> certificate_id
+ *
+ * Creates a new OpenSSL::OCSP::CertificateId for the given +subject+ and
+ * +issuer+ X509 certificates.  The +digest+ is used to compute the
+ * certificate ID and must be an OpenSSL::Digest instance.
+ */
+
 static VALUE
 ossl_ocspcid_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -657,6 +841,13 @@ ossl_ocspcid_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+/*
+ * call-seq:
+ *   certificate_id.cmp(other) -> true or false
+ *
+ * Compares this certificate id with +other+ and returns true if they are the
+ * same.
+ */
 static VALUE
 ossl_ocspcid_cmp(VALUE self, VALUE other)
 {
@@ -669,6 +860,14 @@ ossl_ocspcid_cmp(VALUE self, VALUE other)
 
     return (result == 0) ? Qtrue : Qfalse;
 }
+
+/*
+ * call-seq:
+ *   certificate_id.cmp_issuer(other) -> true or false
+ *
+ * Compares this certificate id's issuer with +other+ and returns true if
+ * they are the same.
+ */
 
 static VALUE
 ossl_ocspcid_cmp_issuer(VALUE self, VALUE other)
@@ -683,6 +882,13 @@ ossl_ocspcid_cmp_issuer(VALUE self, VALUE other)
     return (result == 0) ? Qtrue : Qfalse;
 }
 
+/*
+ * call-seq:
+ *   certificate_id.get_serial -> Integer
+ *
+ * Returns the serial number of the issuing certificate.
+ */
+
 static VALUE
 ossl_ocspcid_get_serial(VALUE self)
 {
@@ -696,9 +902,129 @@ ossl_ocspcid_get_serial(VALUE self)
 void
 Init_ossl_ocsp()
 {
+    /*
+     * OpenSSL::OCSP implements Online Certificate Status Protocol requests
+     * and responses.
+     *
+     * Creating and sending an OCSP request requires a subject certificate
+     * that contains an OCSP URL in an authorityInfoAccess extension and the
+     * issuer certificate for the subject certificate.  First, load the issuer
+     * and subject certificates:
+     *
+     *   subject = OpenSSL::X509::Certificate.new subject_pem
+     *   issuer  = OpenSSL::X509::Certificate.new issuer_pem
+     *
+     * To create the request we need to create a certificate ID for the
+     * subject certificate so the CA knows which certificate we are asking
+     * about:
+     *
+     *   digest = OpenSSL::Digest::SHA1.new
+     *   certificate_id =
+     *     OpenSSL::OCSP::CertificateId.new subject, issuer, digest
+     *
+     * Then create a request and add the certificate ID to it:
+     *
+     *   request = OpenSSL::OCSP::Request.new
+     *   request.add_certid certificate_id
+     *
+     * Adding a nonce to the request protects against replay attacks but not
+     * all CA process the nonce.
+     *
+     *   request.add_nonce
+     *
+     * To submit the request to the CA for verification we need to extract the
+     * OCSP URI from the subject certificate:
+     *
+     *   authority_info_access = subject.extensions.find do |extension|
+     *     extension.oid == 'authorityInfoAccess'
+     *   end
+     *
+     *   descriptions = authority_info_access.value.split "\n"
+     *   ocsp = descriptions.find do |description|
+     *     description.start_with? 'OCSP'
+     *   end
+     *
+     *   require 'uri'
+     *
+     *   ocsp_uri = URI ocsp[/URI:(.*)/, 1]
+     *
+     * To submit the request we'll POST the request to the OCSP URI (per RFC
+     * 2560).  Note that we only handle HTTP requests and don't handle any
+     * redirects in this example, so this is insufficient for serious use.
+     *
+     *   require 'net/http'
+     *
+     *   http_response =
+     *     Net::HTTP.start ocsp_uri.hostname, ocsp.port do |http|
+     *       http.post ocsp_uri.path, request.to_der,
+     *                 'content-type' => 'application/ocsp-request'
+     *   end
+     *
+     *   response = OpenSSL::OCSP::Response.new http_response.body
+     *   response_basic = response.basic
+     *
+     * First we check if the response has a valid signature.  Without a valid
+     * signature we cannot trust it.  If you get a failure here you may be
+     * missing a system certificate store or may be missing the intermediate
+     * certificates.
+     *
+     *   store = OpenSSL::X509::Store.new
+     *   store.set_default_paths
+     *
+     *   unless response.verify [], store then
+     *     raise 'response is not signed by a trusted certificate'
+     *   end
+     *
+     * The response contains the status information (success/fail).  We can
+     * display the status as a string:
+     *
+     *   puts response.status_string #=> successful
+     *
+     * Next we need to know the response details to determine if the response
+     * matches our request.  First we check the nonce.  Again, not all CAs
+     * support a nonce.  See Request#check_nonce for the meanings of the
+     * return values.
+     *
+     *   p request.check_nonce basic_response #=> value from -1 to 3
+     *
+     * Then extract the status information from the basic response.  (You can
+     * check multiple certificates in a request, but for this example we only
+     * submitted one.)
+     *
+     *   response_certificate_id, status, reason, revocation_time,
+     *     this_update, next_update, extensions = basic_response.status
+     *
+     * Then check the various fields.
+     *
+     *   unless response_certificate_id == certificate_id then
+     *     raise 'certificate id mismatch'
+     *   end
+     *
+     *   now = Time.now
+     *
+     *   if this_update > now then
+     *     raise 'update date is in the future'
+     *   end
+     *
+     *   if now > next_update then
+     *     raise 'next update time has passed'
+     *   end
+     */
+
     mOCSP = rb_define_module_under(mOSSL, "OCSP");
 
+    /*
+     * OCSP error class.
+     */
+
     eOCSPError = rb_define_class_under(mOCSP, "OCSPError", eOSSLError);
+
+    /*
+     * An OpenSSL::OCSP::Request contains the certificate information for
+     * determining if a certificate has been revoked or not.  A Request can be
+     * created for a certificate or from a DER-encoded request created
+     * elsewhere.
+     */
 
     cOCSPReq = rb_define_class_under(mOCSP, "Request", rb_cObject);
     rb_define_alloc_func(cOCSPReq, ossl_ocspreq_alloc);
@@ -711,6 +1037,11 @@ Init_ossl_ocsp()
     rb_define_method(cOCSPReq, "verify", ossl_ocspreq_verify, -1);
     rb_define_method(cOCSPReq, "to_der", ossl_ocspreq_to_der, 0);
 
+    /*
+     * An OpenSSL::OCSP::Response contains the status of a certificate check
+     * which is created from an OpenSSL::OCSP::Request.
+     */
+
     cOCSPRes = rb_define_class_under(mOCSP, "Response", rb_cObject);
     rb_define_singleton_method(cOCSPRes, "create", ossl_ocspres_s_create, 2);
     rb_define_alloc_func(cOCSPRes, ossl_ocspres_alloc);
@@ -719,6 +1050,12 @@ Init_ossl_ocsp()
     rb_define_method(cOCSPRes, "status_string", ossl_ocspres_status_string, 0);
     rb_define_method(cOCSPRes, "basic", ossl_ocspres_get_basic, 0);
     rb_define_method(cOCSPRes, "to_der", ossl_ocspres_to_der, 0);
+
+    /*
+     * An OpenSSL::OCSP::BasicResponse contains the status of a certificate
+     * check which is created from an OpenSSL::OCSP::Request.  A
+     * BasicResponse is more detailed than a Response.
+     */
 
     cOCSPBasicRes = rb_define_class_under(mOCSP, "BasicResponse", rb_cObject);
     rb_define_alloc_func(cOCSPBasicRes, ossl_ocspbres_alloc);
@@ -730,6 +1067,11 @@ Init_ossl_ocsp()
     rb_define_method(cOCSPBasicRes, "sign", ossl_ocspbres_sign, -1);
     rb_define_method(cOCSPBasicRes, "verify", ossl_ocspbres_verify, -1);
 
+    /*
+     * An OpenSSL::OCSP::CertificateId identifies a certificate to the CA so
+     * that a status check can be performed.
+     */
+
     cOCSPCertId = rb_define_class_under(mOCSP, "CertificateId", rb_cObject);
     rb_define_alloc_func(cOCSPCertId, ossl_ocspcid_alloc);
     rb_define_method(cOCSPCertId, "initialize", ossl_ocspcid_initialize, -1);
@@ -739,43 +1081,107 @@ Init_ossl_ocsp()
 
 #define DefOCSPConst(x) rb_define_const(mOCSP, #x, INT2NUM(OCSP_##x))
 
-    DefOCSPConst(RESPONSE_STATUS_SUCCESSFUL);
-    DefOCSPConst(RESPONSE_STATUS_MALFORMEDREQUEST);
-    DefOCSPConst(RESPONSE_STATUS_INTERNALERROR);
-    DefOCSPConst(RESPONSE_STATUS_TRYLATER);
-    DefOCSPConst(RESPONSE_STATUS_SIGREQUIRED);
-    DefOCSPConst(RESPONSE_STATUS_UNAUTHORIZED);
+    /* Internal error in issuer */
+    rb_define_const(mOCSP, "RESPONSE_STATUS_INTERNALERROR", INT2NUM(OCSP_RESPONSE_STATUS_INTERNALERROR));
 
-    DefOCSPConst(REVOKED_STATUS_NOSTATUS);
-    DefOCSPConst(REVOKED_STATUS_UNSPECIFIED);
-    DefOCSPConst(REVOKED_STATUS_KEYCOMPROMISE);
-    DefOCSPConst(REVOKED_STATUS_CACOMPROMISE);
-    DefOCSPConst(REVOKED_STATUS_AFFILIATIONCHANGED);
-    DefOCSPConst(REVOKED_STATUS_SUPERSEDED);
-    DefOCSPConst(REVOKED_STATUS_CESSATIONOFOPERATION);
-    DefOCSPConst(REVOKED_STATUS_CERTIFICATEHOLD);
-    DefOCSPConst(REVOKED_STATUS_REMOVEFROMCRL);
+    /* Illegal confirmation request */
+    rb_define_const(mOCSP, "RESPONSE_STATUS_MALFORMEDREQUEST", INT2NUM(OCSP_RESPONSE_STATUS_MALFORMEDREQUEST));
 
-    DefOCSPConst(NOCERTS);
-    DefOCSPConst(NOINTERN);
-    DefOCSPConst(NOSIGS);
-    DefOCSPConst(NOCHAIN);
-    DefOCSPConst(NOVERIFY);
-    DefOCSPConst(NOEXPLICIT);
-    DefOCSPConst(NOCASIGN);
-    DefOCSPConst(NODELEGATED);
-    DefOCSPConst(NOCHECKS);
-    DefOCSPConst(TRUSTOTHER);
-    DefOCSPConst(RESPID_KEY);
-    DefOCSPConst(NOTIME);
+    /* The certificate was revoked for an unknown reason */
+    rb_define_const(mOCSP, "REVOKED_STATUS_NOSTATUS", INT2NUM(OCSP_REVOKED_STATUS_NOSTATUS));
+
+    /* You must sign the request and resubmit */
+    rb_define_const(mOCSP, "RESPONSE_STATUS_SIGREQUIRED", INT2NUM(OCSP_RESPONSE_STATUS_SIGREQUIRED));
+
+    /* Response has valid confirmations */
+    rb_define_const(mOCSP, "RESPONSE_STATUS_SUCCESSFUL", INT2NUM(OCSP_RESPONSE_STATUS_SUCCESSFUL));
+
+    /* Try again later */
+    rb_define_const(mOCSP, "RESPONSE_STATUS_TRYLATER", INT2NUM(OCSP_RESPONSE_STATUS_TRYLATER));
+
+    /* The certificate subject's name or other information changed */
+    rb_define_const(mOCSP, "REVOKED_STATUS_AFFILIATIONCHANGED", INT2NUM(OCSP_REVOKED_STATUS_AFFILIATIONCHANGED));
+
+    /* This CA certificate was revoked due to a key compromise */
+    rb_define_const(mOCSP, "REVOKED_STATUS_CACOMPROMISE", INT2NUM(OCSP_REVOKED_STATUS_CACOMPROMISE));
+
+    /* The certificate is on hold */
+    rb_define_const(mOCSP, "REVOKED_STATUS_CERTIFICATEHOLD", INT2NUM(OCSP_REVOKED_STATUS_CERTIFICATEHOLD));
+
+    /* The certificate is no longer needed */
+    rb_define_const(mOCSP, "REVOKED_STATUS_CESSATIONOFOPERATION", INT2NUM(OCSP_REVOKED_STATUS_CESSATIONOFOPERATION));
+
+    /* The certificate was revoked due to a key compromise */
+    rb_define_const(mOCSP, "REVOKED_STATUS_KEYCOMPROMISE", INT2NUM(OCSP_REVOKED_STATUS_KEYCOMPROMISE));
+
+    /* The certificate was previously on hold and should now be removed from
+     * the CRL */
+    rb_define_const(mOCSP, "REVOKED_STATUS_REMOVEFROMCRL", INT2NUM(OCSP_REVOKED_STATUS_REMOVEFROMCRL));
+
+    /* The certificate was superseded by a new certificate */
+    rb_define_const(mOCSP, "REVOKED_STATUS_SUPERSEDED", INT2NUM(OCSP_REVOKED_STATUS_SUPERSEDED));
+
+    /* Your request is unauthorized. */
+    rb_define_const(mOCSP, "RESPONSE_STATUS_UNAUTHORIZED", INT2NUM(OCSP_RESPONSE_STATUS_UNAUTHORIZED));
+
+    /* The certificate was revoked for an unspecified reason */
+    rb_define_const(mOCSP, "REVOKED_STATUS_UNSPECIFIED", INT2NUM(OCSP_REVOKED_STATUS_UNSPECIFIED));
+
+    /* Do not include certificates in the response */
+    rb_define_const(mOCSP, "NOCERTS", INT2NUM(OCSP_NOCERTS));
+
+    /* Do not search certificates contained in the response for a signer */
+    rb_define_const(mOCSP, "NOINTERN", INT2NUM(OCSP_NOINTERN));
+
+    /* Do not check the signature on the response */
+    rb_define_const(mOCSP, "NOSIGS", INT2NUM(OCSP_NOSIGS));
+
+    /* Do not verify the certificate chain on the response */
+    rb_define_const(mOCSP, "NOCHAIN", INT2NUM(OCSP_NOCHAIN));
+
+    /* Do not verify the response at all */
+    rb_define_const(mOCSP, "NOVERIFY", INT2NUM(OCSP_NOVERIFY));
+
+    /* Do not check trust */
+    rb_define_const(mOCSP, "NOEXPLICIT", INT2NUM(OCSP_NOEXPLICIT));
+
+    /* (This flag is not used by OpenSSL 1.0.1g) */
+    rb_define_const(mOCSP, "NOCASIGN", INT2NUM(OCSP_NOCASIGN));
+
+    /* (This flag is not used by OpenSSL 1.0.1g) */
+    rb_define_const(mOCSP, "NODELEGATED", INT2NUM(OCSP_NODELEGATED));
+
+    /* Do not make additional signing certificate checks */
+    rb_define_const(mOCSP, "NOCHECKS", INT2NUM(OCSP_NOCHECKS));
+
+    /* Do not verify additional certificates */
+    rb_define_const(mOCSP, "TRUSTOTHER", INT2NUM(OCSP_TRUSTOTHER));
+
+    /* Identify the response by signing the certificate key ID */
+    rb_define_const(mOCSP, "RESPID_KEY", INT2NUM(OCSP_RESPID_KEY));
+
+    /* Do not include producedAt time in response */
+    rb_define_const(mOCSP, "NOTIME", INT2NUM(OCSP_NOTIME));
 
 #define DefOCSPVConst(x) rb_define_const(mOCSP, "V_" #x, INT2NUM(V_OCSP_##x))
 
-    DefOCSPVConst(CERTSTATUS_GOOD);
-    DefOCSPVConst(CERTSTATUS_REVOKED);
-    DefOCSPVConst(CERTSTATUS_UNKNOWN);
-    DefOCSPVConst(RESPID_NAME);
-    DefOCSPVConst(RESPID_KEY);
+    /* Indicates the certificate is not revoked but does not necessarily mean
+     * the certificate was issued or that this response is within the
+     * certificate's validity interval */
+    rb_define_const(mOCSP, "V_CERTSTATUS_GOOD", INT2NUM(V_OCSP_CERTSTATUS_GOOD));
+    /* Indicates the certificate has been revoked either permanently or
+     * temporarily (on hold). */
+    rb_define_const(mOCSP, "V_CERTSTATUS_REVOKED", INT2NUM(V_OCSP_CERTSTATUS_REVOKED));
+
+    /* Indicates the responder does not know about the certificate being
+     * requested. */
+    rb_define_const(mOCSP, "V_CERTSTATUS_UNKNOWN", INT2NUM(V_OCSP_CERTSTATUS_UNKNOWN));
+
+    /* The responder ID is based on the key name. */
+    rb_define_const(mOCSP, "V_RESPID_NAME", INT2NUM(V_OCSP_RESPID_NAME));
+
+    /* The responder ID is based on the public key. */
+    rb_define_const(mOCSP, "V_RESPID_KEY", INT2NUM(V_OCSP_RESPID_KEY));
 }
 
 #else /* ! OSSL_OCSP_ENABLED */

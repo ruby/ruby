@@ -1,3 +1,7 @@
+Sat Apr 12 09:26:48 2014  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/openssl/ossl_ocsp.c:  [DOC] Document OpenSSL::OCSP.
+
 Fri Apr 11 18:52:38 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c (ARY_SET): added.
