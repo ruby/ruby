@@ -710,6 +710,17 @@ rb_block_lambda(void)
 }
 
 VALUE
+rb_block_clear_env_self(VALUE proc)
+{
+    rb_proc_t *po;
+    rb_env_t *env;
+    GetProcPtr(proc, po);
+    GetEnvPtr(po->envval, env);
+    env->env[0] = Qnil;
+    return proc;
+}
+
+VALUE
 rb_f_lambda(void)
 {
     rb_warn("rb_f_lambda() is deprecated; use rb_block_proc() instead");

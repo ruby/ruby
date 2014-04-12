@@ -8506,6 +8506,7 @@ sym_to_proc(VALUE sym)
     }
     else {
 	proc = rb_proc_new(sym_call, (VALUE)id);
+	rb_block_clear_env_self(proc);
 	aryp[index] = sym;
 	aryp[index + 1] = proc;
 	return proc;

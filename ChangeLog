@@ -1,3 +1,9 @@
+Sat Apr 12 22:11:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (sym_to_proc), proc.c (rb_block_clear_env_self): clear
+	  caller's self which is useless, so that it can get collected.
+	  [Fixes GH-592]
+
 Sat Apr 12 09:26:48 2014  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/openssl/ossl_ocsp.c:  [DOC] Document OpenSSL::OCSP.
