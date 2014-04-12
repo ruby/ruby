@@ -1079,8 +1079,6 @@ Init_ossl_ocsp()
     rb_define_method(cOCSPCertId, "cmp_issuer", ossl_ocspcid_cmp_issuer, 1);
     rb_define_method(cOCSPCertId, "serial", ossl_ocspcid_get_serial, 0);
 
-#define DefOCSPConst(x) rb_define_const(mOCSP, #x, INT2NUM(OCSP_##x))
-
     /* Internal error in issuer */
     rb_define_const(mOCSP, "RESPONSE_STATUS_INTERNALERROR", INT2NUM(OCSP_RESPONSE_STATUS_INTERNALERROR));
 
@@ -1162,8 +1160,6 @@ Init_ossl_ocsp()
 
     /* Do not include producedAt time in response */
     rb_define_const(mOCSP, "NOTIME", INT2NUM(OCSP_NOTIME));
-
-#define DefOCSPVConst(x) rb_define_const(mOCSP, "V_" #x, INT2NUM(V_OCSP_##x))
 
     /* Indicates the certificate is not revoked but does not necessarily mean
      * the certificate was issued or that this response is within the
