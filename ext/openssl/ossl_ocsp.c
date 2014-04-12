@@ -200,7 +200,7 @@ ossl_ocspreq_check_nonce(VALUE self, VALUE basic_resp)
  * call-seq:
  *   request.add_certid(certificate_id) -> request
  *
- * Adds +certificate_id+ to the request.  
+ * Adds +certificate_id+ to the request.
  */
 
 static VALUE
