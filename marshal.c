@@ -9,6 +9,10 @@
 
 **********************************************************************/
 
+#if defined __GNUC__ && __GNUC__ < 3
+# error too old GCC
+#endif
+
 #include "ruby/ruby.h"
 #include "ruby/io.h"
 #include "ruby/st.h"
@@ -1700,7 +1704,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
       case TYPE_ARRAY:
 	{
-	    volatile long len = r_long(arg); /* gcc 2.7.2.3 -O2 bug?? */
+	    long len = r_long(arg);
 
 	    v = rb_ary_new2(len);
 	    v = r_entry(v, arg);
@@ -1739,7 +1743,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
       case TYPE_STRUCT:
 	{
 	    VALUE mem, values;
-	    volatile long i;	/* gcc 2.7.2.3 -O2 bug?? */
+	    long i;
 	    ID slot;
 	    st_index_t idx = r_prepare(arg);
 	    VALUE klass = path2class(r_unique(arg));
