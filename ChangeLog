@@ -1,3 +1,11 @@
+Sun Apr 13 10:18:09 2014  Tanaka Akira  <akr@fsij.org>
+
+	* common.mk: Unused target, $(MKMAIN_CMD), removed.
+
+	* Makefile.in (MKMAIN_CMD): Unused macro removed.
+
+	* win32/Makefile.sub (MKMAIN_CMD): Ditto.
+
 Sat Apr 12 22:11:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (sym_to_proc), proc.c (rb_block_clear_env_self): clear

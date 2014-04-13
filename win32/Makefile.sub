@@ -336,8 +336,6 @@ ASMEXT = asm
 
 INSTALLED_LIST= .installed.list
 
-MKMAIN_CMD    = mkmain.bat
-
 SRC_FILE = $(<:\=/)
 OS_SRC_FILE = $(<:/=\)
 DEST_FILE = $(@:\=/)
