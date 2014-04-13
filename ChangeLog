@@ -1,3 +1,13 @@
+Sun Apr 13 12:46:58 2014  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (SIZEOF_BDIGIT): Renamed from SIZEOF_BDIGITS.
+
+	* internal.h: Ditto.
+
+	* marshal.c: Ditto.
+
+	* rational.c: Ditto.
+
 Sun Apr 13 10:18:09 2014  Tanaka Akira  <akr@fsij.org>
 
 	* common.mk: Unused target, $(MKMAIN_CMD), removed.
