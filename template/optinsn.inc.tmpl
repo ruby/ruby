@@ -9,7 +9,7 @@
   DO NOT TOUCH!
 
   If you want to fix something, you must edit 'template/optinsn.inc.tmpl'
-  or rb/insns2vm.rb
+  or tool/insns2vm.rb
  */
 
 static INSN *
