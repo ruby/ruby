@@ -1,3 +1,9 @@
+Mon Apr 14 18:05:48 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c (main_exe_path): support FreeBSD.
+	  At least sh, csh, tcsh, bash, and zsh sets realpath of the main
+	  executable for dladdr, but gdb doesn't.
+
 Mon Apr 14 17:20:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (umethod_bind): use the ancestor iclass instead of new

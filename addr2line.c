@@ -623,6 +623,15 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 }
 
 #define HAVE_MAIN_EXE_PATH
+#if defined(__FreeBSD__)
+# include <sys/sysctl.h>
+#endif
+/* ssize_t main_exe_path(void)
+ *
+ * store the path of the main executable to `binary_filename`,
+ * and returns strlen(binary_filename).
+ * it is NUL terminated.
+ */
 #if defined(__linux__)
 ssize_t
 main_exe_path(void)
@@ -630,6 +639,20 @@ main_exe_path(void)
 # define PROC_SELF_EXE "/proc/self/exe"
     ssize_t len = readlink(PROC_SELF_EXE, binary_filename, PATH_MAX);
     binary_filename[len] = 0;
+    return len;
+}
+#elif defined(__FreeBSD__)
+ssize_t
+main_exe_path(void)
+{
+    int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1};
+    size_t len = PATH_MAX;
+    int err = sysctl(mib, 4, binary_filename, &len, NULL, 0);
+    if (err) {
+	kprintf("Can't get the path of ruby");
+	return -1;
+    }
+    len--; /* sysctl sets strlen+1 */
     return len;
 }
 #else
