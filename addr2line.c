@@ -417,7 +417,7 @@ parse_debug_line(int num_traces, void **traces,
 }
 
 /* read file and fill lines */
-static void
+static uintptr_t
 fill_lines(int num_traces, void **traces, int check_debuglink,
 	   obj_info_t **objp, line_info_t *lines, int offset);
 
@@ -459,7 +459,7 @@ follow_debuglink(char *debuglink, int num_traces, void **traces,
 }
 
 /* read file and fill lines */
-static void
+static uintptr_t
 fill_lines(int num_traces, void **traces, int check_debuglink,
 	   obj_info_t **objp, line_info_t *lines, int offset)
 {
@@ -475,23 +475,24 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
     ElfW(Shdr) *symtab_shdr = NULL, *strtab_shdr = NULL;
     ElfW(Shdr) *dynsym_shdr = NULL, *dynstr_shdr = NULL;
     obj_info_t *obj = *objp;
+    uintptr_t dladdr_fbase = 0;
 
     fd = open(binary_filename, O_RDONLY);
     if (fd < 0) {
-	return;
+	goto fail;
     }
     filesize = lseek(fd, 0, SEEK_END);
     if (filesize < 0) {
 	int e = errno;
 	close(fd);
 	kprintf("lseek: %s\n", strerror(e));
-	return;
+	goto fail;
     }
 #if SIZEOF_OFF_T > SIZEOF_SIZE_T
     if (filesize > (off_t)SIZE_MAX) {
 	close(fd);
 	kprintf("Too large file %s\n", binary_filename);
-	return;
+	goto fail;
     }
 #endif
     lseek(fd, 0, SEEK_SET);
@@ -501,7 +502,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	int e = errno;
 	close(fd);
 	kprintf("mmap: %s\n", strerror(e));
-	return;
+	goto fail;
     }
 
     ehdr = (ElfW(Ehdr) *)file;
@@ -511,10 +512,9 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	 * it match non-elf file.
 	 */
 	close(fd);
-	return;
+	goto fail;
     }
 
-    if (ehdr->e_type == ET_EXEC) obj->base_addr = 0;
     obj->fd = fd;
     obj->mapped = file;
     obj->mapped_size = (size_t)filesize;
@@ -557,8 +557,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
     if (offset == -1) {
 	/* main executable */
 	offset = 0;
-	if (ehdr->e_type != ET_EXEC && dynsym_shdr && dynstr_shdr) {
-	    /* PIE (position-independent executable) */
+	if (dynsym_shdr && dynstr_shdr) {
 	    char *strtab = file + dynstr_shdr->sh_offset;
 	    ElfW(Sym) *symtab = (ElfW(Sym) *)(file + dynsym_shdr->sh_offset);
 	    int symtab_count = (int)(dynsym_shdr->sh_size / sizeof(ElfW(Sym)));
@@ -572,11 +571,18 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 		s = dlsym(h, strtab + sym->st_name);
 		if (!s) continue;
 		if (dladdr(s, &info)) {
-		    obj->base_addr = (uintptr_t)info.dli_fbase;
+		    dladdr_fbase = (uintptr_t)info.dli_fbase;
 		    break;
 		}
 	    }
-	} /* otherwise, base address is 0 */
+	    if (ehdr->e_type == ET_EXEC) {
+		obj->base_addr = 0;
+	    }
+	    else {
+		/* PIE (position-independent executable) */
+		obj->base_addr = dladdr_fbase;
+	    }
+	}
     }
 
     if (!symtab_shdr) {
@@ -613,13 +619,17 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 			     num_traces, traces,
 			     objp, lines, offset);
 	}
-	return;
+	goto finish;
     }
 
     parse_debug_line(num_traces, traces,
 		     file + debug_line_shdr->sh_offset,
 		     debug_line_shdr->sh_size,
 		     obj, lines, offset);
+finish:
+    return dladdr_fbase;
+fail:
+    return (uintptr_t)-1;
 }
 
 #define HAVE_MAIN_EXE_PATH
@@ -674,23 +684,13 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces)
     if ((len = main_exe_path()) > 0) {
 	main_path = (char *)alloca(len + 1);
 	if (main_path) {
-	    obj_info_t *o;
+	    uintptr_t addr;
 	    memcpy(main_path, binary_filename, len+1);
 	    append_obj(&obj);
-	    o = obj; /* obj may be chaneged with gnu_debuglink */
 	    obj->path = main_path;
-	    fill_lines(num_traces, traces, 1, &obj, lines, -1);
-
-	    /* set dladdr.dli_fbase */
-	    if (o->base_addr) { /* PIE */
-		dladdr_fbases[0] = (void *)o->base_addr;
-	    }
-	    else { /* non PIE */
-		/* base addr is 0, but get dli_fbase to skip with dladdr */
-		Dl_info info;
-		if (dladdr(traces[i], &info)) {
-		    dladdr_fbases[0] = info.dli_fbase;
-		}
+	    addr = fill_lines(num_traces, traces, 1, &obj, lines, -1);
+	    if (addr != (uintptr_t)-1) {
+		dladdr_fbases[0] = (void *)addr;
 	    }
 	}
     }
