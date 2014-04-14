@@ -1,3 +1,9 @@
+Mon Apr 14 17:20:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (umethod_bind): use the ancestor iclass instead of new
+	  iclass to get rid of infinite recursion, if the defined module
+	  is already included.  [ruby-core:62014] [Bug #9721]
+
 Sun Apr 13 12:46:58 2014  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (SIZEOF_BDIGIT): Renamed from SIZEOF_BDIGITS.

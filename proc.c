@@ -2044,7 +2044,13 @@ umethod_bind(VALUE method, VALUE recv)
     if (bound->me->def) bound->me->def->alias_count++;
     rclass = CLASS_OF(recv);
     if (BUILTIN_TYPE(bound->defined_class) == T_MODULE) {
-	rclass = rb_include_class_new(methclass, rclass);
+	VALUE ic = rb_class_search_ancestor(rclass, bound->defined_class);
+	if (ic) {
+	    rclass = ic;
+	}
+	else {
+	    rclass = rb_include_class_new(methclass, rclass);
+	}
     }
     bound->recv = recv;
     bound->rclass = rclass;
