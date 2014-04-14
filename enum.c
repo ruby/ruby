@@ -2071,7 +2071,11 @@ each_slice_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, m))
 
     if (RARRAY_LEN(ary) == size) {
 	v = rb_yield(ary);
-	memo->u1.value = rb_ary_new2(size);
+
+	if (memo->u2.value)
+	    memo->u1.value = rb_ary_new2(size);
+	else
+	    rb_ary_clear(ary);
     }
 
     return v;
@@ -2117,7 +2121,8 @@ enum_each_slice(VALUE obj, VALUE n)
     if (size <= 0) rb_raise(rb_eArgError, "invalid slice size");
     RETURN_SIZED_ENUMERATOR(obj, 1, &n, enum_each_slice_size);
     ary = rb_ary_new2(size);
-    memo = NEW_MEMO(ary, 0, size);
+    int preserve_memo = (rb_block_arity() == 1 || rb_block_arity() == -1);
+    memo = NEW_MEMO(ary, preserve_memo, size);
     rb_block_call(obj, id_each, 0, 0, each_slice_i, (VALUE)memo);
     ary = memo->u1.value;
     if (RARRAY_LEN(ary) > 0) rb_yield(ary);
@@ -2139,7 +2144,10 @@ each_cons_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
     }
     rb_ary_push(ary, i);
     if (RARRAY_LEN(ary) == size) {
-	v = rb_yield(rb_ary_dup(ary));
+	if (memo->u2.value)
+	    v = rb_yield(ary);
+	else
+	    v = rb_yield(rb_ary_dup(ary));
     }
     return v;
 }
@@ -2187,7 +2195,8 @@ enum_each_cons(VALUE obj, VALUE n)
 
     if (size <= 0) rb_raise(rb_eArgError, "invalid size");
     RETURN_SIZED_ENUMERATOR(obj, 1, &n, enum_each_cons_size);
-    memo = NEW_MEMO(rb_ary_new2(size), 0, size);
+    int preserve_memo = (rb_block_arity() == 1 || rb_block_arity() == -1);
+    memo = NEW_MEMO(rb_ary_new2(size), preserve_memo, size);
     rb_block_call(obj, id_each, 0, 0, each_cons_i, (VALUE)memo);
 
     return Qnil;
