@@ -9,6 +9,10 @@
 
 **********************************************************************/
 
+#if defined __GNUC__ && __GNUC__ < 3
+# error too old GCC
+#endif
+
 #include "ruby/ruby.h"
 #include "ruby/io.h"
 #include "ruby/st.h"
@@ -28,7 +32,7 @@
 #define SHORTMASK ((1<<BITSPERSHORT)-1)
 #define SHORTDN(x) RSHIFT((x),BITSPERSHORT)
 
-#if SIZEOF_SHORT == SIZEOF_BDIGITS
+#if SIZEOF_SHORT == SIZEOF_BDIGIT
 #define SHORTLEN(x) (x)
 #else
 static long
@@ -42,7 +46,7 @@ shortlen(long len, BDIGIT *ds)
 	num = SHORTDN(num);
 	offset++;
     }
-    return (len - 1)*SIZEOF_BDIGITS/2 + offset;
+    return (len - 1)*SIZEOF_BDIGIT/2 + offset;
 }
 #define SHORTLEN(x) shortlen((x),d)
 #endif
@@ -776,11 +780,11 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 		w_byte(sign, arg);
 		w_long(SHORTLEN(len), arg); /* w_short? */
 		while (len--) {
-#if SIZEOF_BDIGITS > SIZEOF_SHORT
+#if SIZEOF_BDIGIT > SIZEOF_SHORT
 		    BDIGIT num = *d;
 		    int i;
 
-		    for (i=0; i<SIZEOF_BDIGITS; i+=SIZEOF_SHORT) {
+		    for (i=0; i<SIZEOF_BDIGIT; i+=SIZEOF_SHORT) {
 			w_short(num & SHORTMASK, arg);
 			num = SHORTDN(num);
 			if (len == 0 && num == 0) break;
@@ -1700,7 +1704,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
       case TYPE_ARRAY:
 	{
-	    volatile long len = r_long(arg); /* gcc 2.7.2.3 -O2 bug?? */
+	    long len = r_long(arg);
 
 	    v = rb_ary_new2(len);
 	    v = r_entry(v, arg);
@@ -1739,7 +1743,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
       case TYPE_STRUCT:
 	{
 	    VALUE mem, values;
-	    volatile long i;	/* gcc 2.7.2.3 -O2 bug?? */
+	    long i;
 	    ID slot;
 	    st_index_t idx = r_prepare(arg);
 	    VALUE klass = path2class(r_unique(arg));

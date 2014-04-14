@@ -2009,7 +2009,6 @@ static VALUE
 str_buf_cat(VALUE str, const char *ptr, long len)
 {
     long capa, total, off = -1;
-    const int termlen = TERM_LEN(str);
 
     if (ptr >= RSTRING_PTR(str) && ptr <= RSTRING_END(str)) {
         off = ptr - RSTRING_PTR(str);
@@ -2028,11 +2027,11 @@ str_buf_cat(VALUE str, const char *ptr, long len)
     total = RSTRING_LEN(str)+len;
     if (capa <= total) {
 	while (total > capa) {
-	    if (capa + termlen >= LONG_MAX / 2) {
-		capa = (total + 4095) / 4096;
+	    if (capa > LONG_MAX / 2) {
+		capa = (total + 4095) / 4096 * 4096;
 		break;
 	    }
-	    capa = (capa + termlen) * 2;
+	    capa = 2 * capa;
 	}
 	RESIZE_CAPA(str, capa);
     }
@@ -2087,19 +2086,18 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
     int str_encindex = ENCODING_GET(str);
     int res_encindex;
     int str_cr, res_cr;
+    rb_encoding *str_enc, *ptr_enc;
 
     str_cr = RSTRING_LEN(str) ? ENC_CODERANGE(str) : ENC_CODERANGE_7BIT;
 
     if (str_encindex == ptr_encindex) {
-        if (str_cr == ENC_CODERANGE_UNKNOWN)
-            ptr_cr = ENC_CODERANGE_UNKNOWN;
-        else if (ptr_cr == ENC_CODERANGE_UNKNOWN) {
+	if (str_cr != ENC_CODERANGE_UNKNOWN && ptr_cr == ENC_CODERANGE_UNKNOWN) {
             ptr_cr = coderange_scan(ptr, len, rb_enc_from_index(ptr_encindex));
         }
     }
     else {
-        rb_encoding *str_enc = rb_enc_from_index(str_encindex);
-        rb_encoding *ptr_enc = rb_enc_from_index(ptr_encindex);
+	str_enc = rb_enc_from_index(str_encindex);
+	ptr_enc = rb_enc_from_index(ptr_encindex);
         if (!rb_enc_asciicompat(str_enc) || !rb_enc_asciicompat(ptr_enc)) {
             if (len == 0)
                 return str;
@@ -2125,10 +2123,11 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
     if (str_encindex != ptr_encindex &&
         str_cr != ENC_CODERANGE_7BIT &&
         ptr_cr != ENC_CODERANGE_7BIT) {
+	str_enc = rb_enc_from_index(str_encindex);
+	ptr_enc = rb_enc_from_index(ptr_encindex);
       incompatible:
         rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
-            rb_enc_name(rb_enc_from_index(str_encindex)),
-            rb_enc_name(rb_enc_from_index(ptr_encindex)));
+		 rb_enc_name(str_enc), rb_enc_name(ptr_enc));
     }
 
     if (str_cr == ENC_CODERANGE_UNKNOWN) {
@@ -8507,6 +8506,7 @@ sym_to_proc(VALUE sym)
     }
     else {
 	proc = rb_proc_new(sym_call, (VALUE)id);
+	rb_block_clear_env_self(proc);
 	aryp[index] = sym;
 	aryp[index + 1] = proc;
 	return proc;

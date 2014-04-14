@@ -209,13 +209,13 @@ static ruby_gc_params_t gc_params = {
 #define RGENGC_PROFILE     0
 #endif
 
-/* RGENGC_THREEGEN
- * Enable/disable three gen GC.
+/* RGENGC_AGE2_PROMOTION
+ * Enable/disable age2 promotion strategy
  * 0: Infant gen -> Old gen
  * 1: Infant gen -> Young -> Old gen
  */
-#ifndef RGENGC_THREEGEN
-#define RGENGC_THREEGEN    0
+#ifndef RGENGC_AGE2_PROMOTION
+#define RGENGC_AGE2_PROMOTION 0
 #endif
 
 /* RGENGC_ESTIMATE_OLDMALLOC
@@ -233,7 +233,7 @@ static ruby_gc_params_t gc_params = {
 #define RGENGC_DEBUG       0
 #define RGENGC_CHECK_MODE  0
 #define RGENGC_PROFILE     0
-#define RGENGC_THREEGEN    0
+#define RGENGC_AGE2_PROMOTION    0
 #define RGENGC_ESTIMATE_OLDMALLOC 0
 
 #endif /* USE_RGENGC */
@@ -478,7 +478,7 @@ typedef struct rb_objspace {
 	size_t generated_shady_object_count;
 	size_t shade_operation_count;
 	size_t promote_infant_count;
-#if RGENGC_THREEGEN
+#if RGENGC_AGE2_PROMOTION
 	size_t promote_young_count;
 #endif
 	size_t remembered_normal_object_count;
@@ -489,7 +489,7 @@ typedef struct rb_objspace {
 	size_t generated_shady_object_count_types[RUBY_T_MASK];
 	size_t shade_operation_count_types[RUBY_T_MASK];
 	size_t promote_infant_types[RUBY_T_MASK];
-#if RGENGC_THREEGEN
+#if RGENGC_AGE2_PROMOTION
 	size_t promote_young_types[RUBY_T_MASK];
 #endif
 	size_t remembered_normal_object_count_types[RUBY_T_MASK];
@@ -528,7 +528,7 @@ typedef struct rb_objspace {
 	size_t remembered_shady_object_limit;
 	size_t old_object_count;
 	size_t old_object_limit;
-#if RGENGC_THREEGEN
+#if RGENGC_AGE2_PROMOTION
 	size_t young_object_count;
 #endif
 
@@ -692,8 +692,13 @@ static inline void gc_prof_set_heap_info(rb_objspace_t *);
 #define gc_prof_record(objspace) (objspace)->profile.current_record
 #define gc_prof_enabled(objspace) ((objspace)->profile.run && (objspace)->profile.current_record)
 
-#define rgengc_report if (RGENGC_DEBUG) rgengc_report_body
-static void rgengc_report_body(int level, rb_objspace_t *objspace, const char *fmt, ...);
+#ifdef HAVE_VA_ARGS_MACRO
+# define rgengc_report(level, objspace, fmt, ...) \
+    if ((level) > RGENGC_DEBUG) {} else rgengc_report_body(level, objspace, fmt, ##__VA_ARGS__)
+#else
+# define rgengc_report if (!(RGENGC_DEBUG)) {} else rgengc_report_body
+#endif
+PRINTF_ARGS(static void rgengc_report_body(int level, rb_objspace_t *objspace, const char *fmt, ...), 3, 4);
 static const char * type_name(int type, VALUE obj);
 static const char *obj_type_name(VALUE obj);
 
@@ -735,7 +740,7 @@ check_gen_consistency(VALUE obj)
 		rb_bug("check_gen_consistency: %p (%s) is not WB protected, but %s object.", (void *)obj, obj_type_name(obj), type);
 	    }
 
-#if !RGENGC_THREEGEN
+#if !RGENGC_AGE2_PROMOTION
 	    if (!old_flag) {
 		rb_bug("check_gen_consistency: %p (%s) is not infant, but is not old (on 2gen).", (void *)obj, obj_type_name(obj));
 	    }
@@ -772,7 +777,7 @@ static inline VALUE
 RVALUE_OLD_P(VALUE obj)
 {
     check_gen_consistency(obj);
-#if RGENGC_THREEGEN
+#if RGENGC_AGE2_PROMOTION
     return FL_TEST2(obj, FL_PROMOTED) && RVALUE_OLD_BITMAP_P(obj);
 #else
     return FL_TEST2(obj, FL_PROMOTED);
@@ -787,14 +792,25 @@ RVALUE_PROMOTED_P(VALUE obj)
 }
 
 static inline void
-RVALUE_PROMOTE_INFANT(VALUE obj)
+RVALUE_PROMOTE_INFANT(rb_objspace_t *objspace, VALUE obj)
 {
     check_gen_consistency(obj);
+
     if (RGENGC_CHECK_MODE && !RVALUE_INFANT_P(obj)) rb_bug("RVALUE_PROMOTE_INFANT: %p (%s) is not infant object.", (void *)obj, obj_type_name(obj));
     FL_SET2(obj, FL_PROMOTED);
-#if !RGENGC_THREEGEN
+
+#if RGENGC_AGE2_PROMOTION
+    /* infant -> young */
+    objspace->rgengc.young_object_count++;
+#else
+    /* infant -> old */
+    objspace->rgengc.old_object_count++;
+#endif
+
+#if !RGENGC_AGE2_PROMOTION
     MARK_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj), obj);
 #endif
+
     check_gen_consistency(obj);
 
 #if RGENGC_PROFILE >= 1
@@ -809,10 +825,10 @@ RVALUE_PROMOTE_INFANT(VALUE obj)
 #endif
 }
 
-#if RGENGC_THREEGEN
+#if RGENGC_AGE2_PROMOTION
 /*
- * Two gen: Infant -> Old.
- * Three gen: Infant -> Young -> Old.
+ * Age1 promotion: Infant (0) -> Old (1 and later).
+ * Age2 promotion: Infant (0) -> Young (1) -> Old (2 and later).
  */
 static inline VALUE
 RVALUE_YOUNG_P(VALUE obj)
@@ -822,11 +838,14 @@ RVALUE_YOUNG_P(VALUE obj)
 }
 
 static inline void
-RVALUE_PROMOTE_YOUNG(VALUE obj)
+RVALUE_PROMOTE_YOUNG(rb_objspace_t *objspace, VALUE obj)
 {
     check_gen_consistency(obj);
+
     if (RGENGC_CHECK_MODE && !RVALUE_YOUNG_P(obj)) rb_bug("RVALUE_PROMOTE_YOUNG: %p (%s) is not young object.", (void *)obj, obj_type_name(obj));
     MARK_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj), obj);
+    objspace->rgengc.old_object_count++;
+
     check_gen_consistency(obj);
 
 #if RGENGC_PROFILE >= 1
@@ -844,7 +863,7 @@ static inline void
 RVALUE_DEMOTE_FROM_YOUNG(VALUE obj)
 {
     if (RGENGC_CHECK_MODE && !RVALUE_YOUNG_P(obj))
-      rb_bug("RVALUE_DEMOTE_FROM_YOUNG: %p (%s) is not young object.", (void *)obj, obj_type_name(obj));
+	rb_bug("RVALUE_DEMOTE_FROM_YOUNG: %p (%s) is not young object.", (void *)obj, obj_type_name(obj));
 
     check_gen_consistency(obj);
     FL_UNSET2(obj, FL_PROMOTED);
@@ -856,7 +875,7 @@ static inline void
 RVALUE_DEMOTE_FROM_OLD(VALUE obj)
 {
     if (RGENGC_CHECK_MODE && !RVALUE_OLD_P(obj))
-      rb_bug("RVALUE_DEMOTE_FROM_OLD: %p (%s) is not old object.", (void *)obj, obj_type_name(obj));
+	rb_bug("RVALUE_DEMOTE_FROM_OLD: %p (%s) is not old object.", (void *)obj, obj_type_name(obj));
 
     check_gen_consistency(obj);
     FL_UNSET2(obj, FL_PROMOTED);
@@ -1097,7 +1116,7 @@ heap_page_allocate(rb_objspace_t *objspace)
     page_body->header.page = page;
 
     for (p = start; p != end; p++) {
-	rgengc_report(3, objspace, "assign_heap_page: %p is added to freelist\n");
+	rgengc_report(3, objspace, "assign_heap_page: %p is added to freelist\n", p);
 	heap_page_add_freeobj(objspace, page, (VALUE)p);
     }
 
@@ -1338,8 +1357,8 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
     rgengc_report(5, objspace, "newobj: %p (%s)\n", (void *)obj, obj_type_name(obj));
 
 #if USE_RGENGC && RGENGC_CHECK_MODE
-    if (RVALUE_PROMOTED_P(obj)) rb_bug("newobj: %p (%s) is promoted.\n", (void *)obj, obj_type_name(obj));
-    if (rgengc_remembered(objspace, (VALUE)obj)) rb_bug("newobj: %p (%s) is remembered.\n", (void *)obj, obj_type_name(obj));
+    if (RVALUE_PROMOTED_P(obj)) rb_bug("newobj: %p (%s) is promoted.", (void *)obj, obj_type_name(obj));
+    if (rgengc_remembered(objspace, (VALUE)obj)) rb_bug("newobj: %p (%s) is remembered.", (void *)obj, obj_type_name(obj));
 #endif
 
     objspace->profile.total_allocated_object_num++;
@@ -1786,6 +1805,16 @@ rb_objspace_each_objects(each_obj_callback *callback, void *data)
     else {
 	rb_ensure(objspace_each_objects, (VALUE)&args, lazy_sweep_enable, Qnil);
     }
+}
+
+void
+rb_objspace_each_objects_without_setup(each_obj_callback *callback, void *data)
+{
+    struct each_obj_args args;
+    args.callback = callback;
+    args.data = data;
+
+    objspace_each_objects((VALUE)&args);
 }
 
 struct os_each_struct {
@@ -2742,8 +2771,8 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 		    if (p->as.basic.flags) {
 			rgengc_report(3, objspace, "page_sweep: free %p (%s)\n", p, obj_type_name((VALUE)p));
 #if USE_RGENGC && RGENGC_CHECK_MODE
-			if (objspace->rgengc.during_minor_gc && RVALUE_OLD_P((VALUE)p)) rb_bug("page_sweep: %p (%s) is old while minor GC.\n", p, obj_type_name((VALUE)p));
-			if (rgengc_remembered(objspace, (VALUE)p)) rb_bug("page_sweep: %p (%s) is remembered.\n", p, obj_type_name((VALUE)p));
+			if (objspace->rgengc.during_minor_gc && RVALUE_OLD_P((VALUE)p)) rb_bug("page_sweep: %p (%s) is old while minor GC.", p, obj_type_name((VALUE)p));
+			if (rgengc_remembered(objspace, (VALUE)p)) rb_bug("page_sweep: %p (%s) is remembered.", p, obj_type_name((VALUE)p));
 #endif
 			if (obj_free(objspace, (VALUE)p)) {
 			    final_slots++;
@@ -2986,7 +3015,7 @@ gc_after_sweep(rb_objspace_t *objspace)
 		(int)objspace->profile.major_gc_count,
 		(int)objspace->profile.minor_gc_count,
 		(int)objspace->profile.promote_infant_count,
-#if RGENGC_THREEGEN
+#if RGENGC_AGE2_PROMOTION
 		(int)objspace->profile.promote_young_count,
 #else
 		0,
@@ -3483,6 +3512,10 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
     /* This assumes that all registers are saved into the jmp_buf (and stack) */
     rb_setjmp(save_regs_gc_mark.j);
 
+    /* SET_STACK_END must be called in this function because
+     * the stack frame of this function may contain
+     * callee save registers and they should be marked. */
+    SET_STACK_END;
     GET_STACK_BOUNDS(stack_start, stack_end, 1);
 
     mark_locations_array(objspace, save_regs_gc_mark.v, numberof(save_regs_gc_mark.v));
@@ -3561,7 +3594,7 @@ rgengc_check_relation(rb_objspace_t *objspace, VALUE obj)
 		objspace->rgengc.remembered_shady_object_count++;
 	    }
 	}
-#if RGENGC_THREEGEN
+#if RGENGC_AGE2_PROMOTION
 	else {
 	    if (gc_marked(objspace, obj)) {
 		if (!RVALUE_OLD_P(obj)) {
@@ -3571,7 +3604,7 @@ rgengc_check_relation(rb_objspace_t *objspace, VALUE obj)
 	    }
 	    else {
 		if (RVALUE_INFANT_P(obj)) {
-		    RVALUE_PROMOTE_INFANT(obj);
+		    RVALUE_PROMOTE_INFANT(objspace, obj);
 		}
 	    }
 	}
@@ -3655,14 +3688,10 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	if (RVALUE_WB_PROTECTED(obj)) {
 	    if (RVALUE_INFANT_P((VALUE)obj)) {
 		/* infant -> young */
-		RVALUE_PROMOTE_INFANT((VALUE)obj);
-#if RGENGC_THREEGEN
-		/* infant -> young */
-		objspace->rgengc.young_object_count++;
+		RVALUE_PROMOTE_INFANT(objspace, (VALUE)obj);
+#if RGENGC_AGE2_PROMOTION
 		objspace->rgengc.parent_object_is_old = FALSE;
 #else
-		/* infant -> old */
-		objspace->rgengc.old_object_count++;
 		objspace->rgengc.parent_object_is_old = TRUE;
 #endif
 		rgengc_report(3, objspace, "gc_mark_children: promote infant -> young %p (%s).\n", (void *)obj, obj_type_name((VALUE)obj));
@@ -3670,11 +3699,10 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	    else {
 		objspace->rgengc.parent_object_is_old = TRUE;
 
-#if RGENGC_THREEGEN
+#if RGENGC_AGE2_PROMOTION
 		if (RVALUE_YOUNG_P((VALUE)obj)) {
 		    /* young -> old */
-		    RVALUE_PROMOTE_YOUNG((VALUE)obj);
-		    objspace->rgengc.old_object_count++;
+		    RVALUE_PROMOTE_YOUNG(objspace, (VALUE)obj);
 		    rgengc_report(3, objspace, "gc_mark_children: promote young -> old %p (%s).\n", (void *)obj, obj_type_name((VALUE)obj));
 		}
 		else {
@@ -3683,7 +3711,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 			/* major/full GC */
 			objspace->rgengc.old_object_count++;
 		    }
-#if RGENGC_THREEGEN
+#if RGENGC_AGE2_PROMOTION
 		}
 #endif
 	    }
@@ -4171,82 +4199,6 @@ gc_marks_body(rb_objspace_t *objspace, int full_mark)
     rgengc_report(1, objspace, "gc_marks_body: end (%s)\n", full_mark ? "full" : "minor");
 }
 
-struct verify_internal_consistency_struct {
-    rb_objspace_t *objspace;
-    int err_count;
-    VALUE parent;
-};
-
-#if USE_RGENGC
-static void
-verify_internal_consistency_reachable_i(VALUE child, void *ptr)
-{
-    struct verify_internal_consistency_struct *data = (struct verify_internal_consistency_struct *)ptr;
-
-    assert(RVALUE_OLD_P(data->parent));
-
-    if (!RVALUE_OLD_P(child)) {
-	if (!MARKED_IN_BITMAP(GET_HEAP_PAGE(data->parent)->rememberset_bits, data->parent) &&
-	    !MARKED_IN_BITMAP(GET_HEAP_PAGE(child)->rememberset_bits, child)) {
-	    fprintf(stderr, "verify_internal_consistency_reachable_i: WB miss %p (%s) -> %p (%s)\n",
-		    (void *)data->parent, obj_type_name(data->parent),
-		    (void *)child, obj_type_name(child));
-	    data->err_count++;
-	}
-    }
-}
-
-static int
-verify_internal_consistency_i(void *page_start, void *page_end, size_t stride, void *ptr)
-{
-    struct verify_internal_consistency_struct *data = (struct verify_internal_consistency_struct *)ptr;
-    VALUE v;
-
-    for (v = (VALUE)page_start; v != (VALUE)page_end; v += stride) {
-	if (is_live_object(data->objspace, v)) {
-	    if (RVALUE_OLD_P(v)) {
-		data->parent = v;
-		/* reachable objects from an oldgen object should be old or (young with remember) */
-		rb_objspace_reachable_objects_from(v, verify_internal_consistency_reachable_i, (void *)data);
-	    }
-	}
-    }
-
-    return 0;
-}
-#endif /* USE_RGENGC */
-
-/*
- *  call-seq:
- *     GC.verify_internal_consistency                  -> nil
- *
- *  Verify internal consistency.
- *
- *  This method is implementation specific.
- *  Now this method checks generational consistency
- *  if RGenGC is supported.
- */
-static VALUE
-gc_verify_internal_consistency(VALUE self)
-{
-    struct verify_internal_consistency_struct data;
-    data.objspace = &rb_objspace;
-    data.err_count = 0;
-
-#if USE_RGENGC
-    {
-	struct each_obj_args eo_args;
-	eo_args.callback = verify_internal_consistency_i;
-	eo_args.data = (void *)&data;
-	objspace_each_objects((VALUE)&eo_args);
-    }
-#endif
-    if (data.err_count != 0) {
-	rb_bug("gc_verify_internal_consistency: found internal consistency.\n");
-    }
-    return Qnil;
-}
-
 #if RGENGC_CHECK_MODE >= 3
 
 #define MAKE_ROOTSIG(obj) (((VALUE)(obj) << 1) | 0x01)
@@ -4465,7 +4417,6 @@ gc_check_after_marks_i(st_data_t k, st_data_t v, void *ptr)
 static void
 gc_marks_check(rb_objspace_t *objspace, int (*checker_func)(ANYARGS), const char *checker_name)
 {
-
     size_t saved_malloc_increase = objspace->malloc_params.increase;
 #if RGENGC_ESTIMATE_OLDMALLOC
     size_t saved_oldmalloc_increase = objspace->rgengc.oldmalloc_increase;
@@ -4473,13 +4424,16 @@ gc_marks_check(rb_objspace_t *objspace, int (*checker_func)(ANYARGS), const char
     VALUE already_disabled = rb_gc_disable();
 
     objspace->rgengc.allrefs_table = objspace_allrefs(objspace);
-    st_foreach(objspace->rgengc.allrefs_table, checker_func, (st_data_t)objspace);
+
+    if (checker_func) {
+	st_foreach(objspace->rgengc.allrefs_table, checker_func, (st_data_t)objspace);
+    }
 
     if (objspace->rgengc.error_count > 0) {
 #if RGENGC_CHECK_MODE >= 4
 	allrefs_dump(objspace);
 #endif
-	rb_bug("%s: GC has problem.", checker_name);
+	if (checker_name) rb_bug("%s: GC has problem.", checker_name);
     }
 
     objspace_allrefs_destruct(objspace->rgengc.allrefs_table);
@@ -4493,6 +4447,90 @@ gc_marks_check(rb_objspace_t *objspace, int (*checker_func)(ANYARGS), const char
 }
 
 #endif /* RGENGC_CHECK_MODE >= 2 */
+
+#if USE_RGENGC
+
+struct verify_internal_consistency_struct {
+    rb_objspace_t *objspace;
+    int err_count;
+    VALUE parent;
+};
+
+static void
+verify_internal_consistency_reachable_i(VALUE child, void *ptr)
+{
+    struct verify_internal_consistency_struct *data = (struct verify_internal_consistency_struct *)ptr;
+
+    assert(RVALUE_OLD_P(data->parent));
+
+    if (!RVALUE_OLD_P(child)) {
+	if (!MARKED_IN_BITMAP(GET_HEAP_PAGE(data->parent)->rememberset_bits, data->parent) &&
+	    !MARKED_IN_BITMAP(GET_HEAP_PAGE(child)->rememberset_bits, child)) {
+	    fprintf(stderr, "verify_internal_consistency_reachable_i: WB miss %p (%s) -> %p (%s)\n",
+		    (void *)data->parent, obj_type_name(data->parent),
+		    (void *)child, obj_type_name(child));
+	    data->err_count++;
+	}
+    }
+}
+
+static int
+verify_internal_consistency_i(void *page_start, void *page_end, size_t stride, void *ptr)
+{
+    struct verify_internal_consistency_struct *data = (struct verify_internal_consistency_struct *)ptr;
+    VALUE v;
+
+    for (v = (VALUE)page_start; v != (VALUE)page_end; v += stride) {
+	if (is_live_object(data->objspace, v)) {
+	    if (RVALUE_OLD_P(v)) {
+		data->parent = v;
+		/* reachable objects from an oldgen object should be old or (young with remember) */
+		rb_objspace_reachable_objects_from(v, verify_internal_consistency_reachable_i, (void *)data);
+	    }
+	}
+    }
+
+    return 0;
+}
+
+#endif /* USE_RGENGC */
+
+/*
+ *  call-seq:
+ *     GC.verify_internal_consistency                  -> nil
+ *
+ *  Verify internal consistency.
+ *
+ *  This method is implementation specific.
+ *  Now this method checks generational consistency
+ *  if RGenGC is supported.
+ */
+static VALUE
+gc_verify_internal_consistency(VALUE self)
+{
+#if USE_RGENGC
+    struct verify_internal_consistency_struct data;
+    data.objspace = &rb_objspace;
+    data.err_count = 0;
+
+    {
+	struct each_obj_args eo_args;
+	eo_args.callback = verify_internal_consistency_i;
+	eo_args.data = (void *)&data;
+	objspace_each_objects((VALUE)&eo_args);
+    }
+    if (data.err_count != 0) {
+#if RGENGC_CHECK_MODE >= 4
+	rb_objspace_t *objspace = &rb_objspace;
+	objspace->rgengc.error_count = data.err_count;
+	gc_marks_check(objspace, NULL, NULL);
+	allrefs_dump(objspace);
+#endif
+	rb_bug("gc_verify_internal_consistency: found internal consistency.");
+    }
+#endif
+    return Qnil;
+}
 
 static void
 gc_marks(rb_objspace_t *objspace, int full_mark)
@@ -4513,7 +4551,7 @@ gc_marks(rb_objspace_t *objspace, int full_mark)
 	if (full_mark == TRUE) { /* major/full GC */
 	    objspace->rgengc.remembered_shady_object_count = 0;
 	    objspace->rgengc.old_object_count = 0;
-#if RGENGC_THREEGEN
+#if RGENGC_AGE2_PROMOTION
 	    objspace->rgengc.young_object_count = 0;
 #endif
 
@@ -4614,7 +4652,7 @@ rgengc_remember(rb_objspace_t *objspace, VALUE obj)
 	switch (BUILTIN_TYPE(obj)) {
 	  case T_NONE:
 	  case T_ZOMBIE:
-	    rb_bug("rgengc_remember: should not remember %p (%s)\n",
+	    rb_bug("rgengc_remember: should not remember %p (%s)",
 		   (void *)obj, obj_type_name(obj));
 	  default:
 	    ;
@@ -4681,11 +4719,18 @@ rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap)
 
 			if (RVALUE_WB_PROTECTED(p)) {
 			    rgengc_report(2, objspace, "rgengc_rememberset_mark: clear %p (%s)\n", p, obj_type_name((VALUE)p));
-#if RGENGC_THREEGEN
-			    if (RVALUE_INFANT_P((VALUE)p)) RVALUE_PROMOTE_INFANT((VALUE)p);
-			    if (RVALUE_YOUNG_P((VALUE)p)) RVALUE_PROMOTE_YOUNG((VALUE)p);
-#endif
+#if RGENGC_AGE2_PROMOTION
+			    if (RVALUE_INFANT_P((VALUE)p)) {
+				/* infant objects should remain in remembered because remembered objects should become old objects */
+				/* young objects become old objects soon */
+			    }
+			    else {
+				CLEAR_IN_BITMAP(bits, p);
+			    }
+#else
 			    CLEAR_IN_BITMAP(bits, p);
+#endif
+
 #if RGENGC_PROFILE > 0
 			    clear_count++;
 #endif
@@ -4737,7 +4782,7 @@ void
 rb_gc_writebarrier(VALUE a, VALUE b)
 {
     if (RGENGC_CHECK_MODE) {
-	if (!RVALUE_PROMOTED_P(a)) rb_bug("rb_gc_writebarrier: referer object %p (%s) is not promoted.\n", (void *)a, obj_type_name(a));
+	if (!RVALUE_PROMOTED_P(a)) rb_bug("rb_gc_writebarrier: referer object %p (%s) is not promoted.", (void *)a, obj_type_name(a));
     }
 
     if (!RVALUE_OLD_P(b) && RVALUE_OLD_BITMAP_P(a)) {
@@ -4772,7 +4817,7 @@ rb_gc_writebarrier_unprotect_promoted(VALUE obj)
 	if (!RVALUE_WB_PROTECTED(obj)) rb_bug("rb_gc_writebarrier_unprotect_promoted: called on shady object");
     }
 
-    rgengc_report(0, objspace, "rb_gc_writebarrier_unprotect_promoted: %p (%s)%s\n", (void *)obj, obj_type_name(obj),
+    rgengc_report(1, objspace, "rb_gc_writebarrier_unprotect_promoted: %p (%s)%s\n", (void *)obj, obj_type_name(obj),
 		  rgengc_remembered(objspace, obj) ? " (already remembered)" : "");
 
     if (RVALUE_OLD_P(obj)) {
@@ -4788,7 +4833,7 @@ rb_gc_writebarrier_unprotect_promoted(VALUE obj)
 #endif /* RGENGC_PROFILE >= 2 */
 #endif /* RGENGC_PROFILE */
     }
-#if RGENGC_THREEGEN
+#if RGENGC_AGE2_PROMOTION
     else {
 	RVALUE_DEMOTE_FROM_YOUNG(obj);
     }
@@ -4868,7 +4913,7 @@ rb_obj_gc_flags(VALUE obj, ID* flags, size_t max)
     static ID ID_marked;
 #if USE_RGENGC
     static ID ID_wb_protected, ID_old, ID_remembered;
-#if RGENGC_THREEGEN
+#if RGENGC_AGE2_PROMOTION
     static ID ID_young, ID_infant;
 #endif
 #endif
@@ -4880,7 +4925,7 @@ rb_obj_gc_flags(VALUE obj, ID* flags, size_t max)
 	I(wb_protected);
 	I(old);
 	I(remembered);
-#if RGENGC_THREEGEN
+#if RGENGC_AGE2_PROMOTION
 	I(young);
 	I(infant);
 #endif
@@ -4893,7 +4938,7 @@ rb_obj_gc_flags(VALUE obj, ID* flags, size_t max)
 	flags[n++] = ID_wb_protected;
     if (RVALUE_OLD_P(obj) && n<max)
 	flags[n++] = ID_old;
-#if RGENGC_THREEGEN
+#if RGENGC_AGE2_PROMOTION
     if (RVALUE_YOUNG_P(obj) && n<max)
 	flags[n++] = ID_young;
     if (RVALUE_INFANT_P(obj) && n<max)
@@ -5478,7 +5523,7 @@ gc_stat_internal(VALUE hash_or_sym, size_t *out)
     SET(generated_shady_object_count, objspace->profile.generated_shady_object_count);
     SET(shade_operation_count, objspace->profile.shade_operation_count);
     SET(promote_infant_count, objspace->profile.promote_infant_count);
-#if RGENGC_THREEGEN
+#if RGENGC_AGE2_PROMOTION
     SET(promote_young_count, objspace->profile.promote_young_count);
 #endif
     SET(remembered_normal_object_count, objspace->profile.remembered_normal_object_count);
@@ -5497,7 +5542,7 @@ gc_stat_internal(VALUE hash_or_sym, size_t *out)
 	gc_count_add_each_types(hash, "generated_shady_object_count_types", objspace->profile.generated_shady_object_count_types);
 	gc_count_add_each_types(hash, "shade_operation_count_types", objspace->profile.shade_operation_count_types);
 	gc_count_add_each_types(hash, "promote_infant_types", objspace->profile.promote_infant_types);
-#if RGENGC_THREEGEN
+#if RGENGC_AGE2_PROMOTION
 	gc_count_add_each_types(hash, "promote_young_types", objspace->profile.promote_young_types);
 #endif
 	gc_count_add_each_types(hash, "remembered_normal_object_count_types", objspace->profile.remembered_normal_object_count_types);
@@ -7435,7 +7480,7 @@ rb_gcdebug_print_obj_condition(VALUE obj)
 
     fprintf(stderr, "marked?      : %s\n", MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj) ? "true" : "false");
 #if USE_RGENGC
-#if RGENGC_THREEGEN
+#if RGENGC_AGE2_PROMOTION
     fprintf(stderr, "young?       : %s\n", RVALUE_YOUNG_P(obj) ? "true" : "false");
 #endif
     fprintf(stderr, "old?         : %s\n", RVALUE_OLD_P(obj) ? "true" : "false");
@@ -7621,7 +7666,7 @@ Init_GC(void)
 	OPT(RGENGC_DEBUG);
 	OPT(RGENGC_CHECK_MODE);
 	OPT(RGENGC_PROFILE);
-	OPT(RGENGC_THREEGEN);
+	OPT(RGENGC_AGE2_PROMOTION);
 	OPT(RGENGC_ESTIMATE_OLDMALLOC);
 	OPT(GC_PROFILE_MORE_DETAIL);
 	OPT(GC_ENABLE_LAZY_SWEEP);

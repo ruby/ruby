@@ -1396,7 +1396,7 @@ class CSV
   #                                       <tt>'</tt> as the quote character
   #                                       instead of the correct <tt>"</tt>.
   #                                       CSV will always consider a double
-  #                                       sequence this character to be an
+  #                                       sequence of this character to be an
   #                                       escaped quote. This String will be
   #                                       transcoded into the data's Encoding
   #                                       before parsing.

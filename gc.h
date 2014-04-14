@@ -97,6 +97,10 @@ void rb_objspace_each_objects(
     int (*callback)(void *start, void *end, size_t stride, void *data),
     void *data);
 
+void rb_objspace_each_objects_without_setup(
+    int (*callback)(void *, void *, size_t, void *),
+    void *data);
+
 RUBY_SYMBOL_EXPORT_END
 
 #endif /* RUBY_GC_H */

@@ -510,6 +510,7 @@ cont_capture(volatile int *stat)
     if (ruby_setjmp(cont->jmpbuf)) {
 	volatile VALUE value;
 
+	VAR_INITIALIZED(cont);
 	value = cont->value;
 	if (cont->argc == -1) rb_exc_raise(value);
 	cont->value = Qnil;
@@ -1271,15 +1272,14 @@ rb_fiber_start(void)
 {
     rb_thread_t *th = GET_THREAD();
     rb_fiber_t *fib;
-    rb_context_t *cont;
     rb_proc_t *proc;
     int state;
 
     GetFiberPtr(th->fiber, fib);
-    cont = &fib->cont;
 
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
+	rb_context_t *cont = &VAR_FROM_MEMORY(fib)->cont;
 	int argc;
 	const VALUE *argv, args = cont->value;
 	GetProcPtr(cont->saved_thread.first_proc, proc);

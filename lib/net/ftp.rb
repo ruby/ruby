@@ -443,12 +443,12 @@ module Net
     private :transfercmd
 
     #
-    # Logs in to the remote host. The session must have been previously
-    # connected.  If +user+ is the string "anonymous" and the +password+ is
-    # +nil+, a password of <tt>user@host</tt> is synthesized. If the +acct+
-    # parameter is not +nil+, an FTP ACCT command is sent following the
-    # successful login.  Raises an exception on error (typically
-    # <tt>Net::FTPPermError</tt>).
+    # Logs in to the remote host.  The session must have been
+    # previously connected.  If +user+ is the string "anonymous" and
+    # the +password+ is +nil+, "anonymous@" is used as a password.  If
+    # the +acct+ parameter is not +nil+, an FTP ACCT command is sent
+    # following the successful login.  Raises an exception on error
+    # (typically <tt>Net::FTPPermError</tt>).
     #
     def login(user = "anonymous", passwd = nil, acct = nil)
       if user == "anonymous" and passwd == nil

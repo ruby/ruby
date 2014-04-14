@@ -1,3 +1,250 @@
+Mon Apr 14 18:44:45 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c (fill_lines): get base addrs in fill_lines to use it
+	  with dladdr_fbases introduced at r45563.
+	  it didn't get before if the executable is not pie.
+
+Mon Apr 14 18:05:48 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c (main_exe_path): support FreeBSD.
+	  At least sh, csh, tcsh, bash, and zsh sets realpath of the main
+	  executable for dladdr, but gdb doesn't.
+
+Mon Apr 14 17:20:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (umethod_bind): use the ancestor iclass instead of new
+	  iclass to get rid of infinite recursion, if the defined module
+	  is already included.  [ruby-core:62014] [Bug #9721]
+
+Sun Apr 13 12:46:58 2014  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (SIZEOF_BDIGIT): Renamed from SIZEOF_BDIGITS.
+
+	* internal.h: Ditto.
+
+	* marshal.c: Ditto.
+
+	* rational.c: Ditto.
+
+Sun Apr 13 10:18:09 2014  Tanaka Akira  <akr@fsij.org>
+
+	* common.mk: Unused target, $(MKMAIN_CMD), removed.
+
+	* Makefile.in (MKMAIN_CMD): Unused macro removed.
+
+	* win32/Makefile.sub (MKMAIN_CMD): Ditto.
+
+Sat Apr 12 22:11:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (sym_to_proc), proc.c (rb_block_clear_env_self): clear
+	  caller's self which is useless, so that it can get collected.
+	  [Fixes GH-592]
+
+Sat Apr 12 09:26:48 2014  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/openssl/ossl_ocsp.c:  [DOC] Document OpenSSL::OCSP.
+
+Fri Apr 11 18:52:38 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c (ARY_SET): added.
+
+	  ARY_SET() is same functionality of RARRAY_ASET(), but
+	  it has an assertion (`ary' doesn't have shared array).
+
+Fri Apr 11 16:54:26 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c: make shared arrays WB-protected objects.
+
+	  Shared arrays were WB-unprotected object because
+	  sharing array can modify shared array's buffer
+	  if it occupied shared array.
+
+	  [sharing array (ary)] -> [shared array (shared)] -> <buff>
+	                |                                       A
+	                +---------------------------------------+
+	             write `buff' with WB(ary, &buff[i], obj)
+	             -> if `ary' and `shared' are old, then only `ary'
+	                will be remembered.
+	             -> traverse from `ary'. But `shared' is old, so
+	                that written `obj' is not marked.
+
+	  It cause WB miss so that shared arrays were WB-unprotected.
+	  (WB-unprotected objects are marked everytime if it is living)
+
+	  This patch insert WB() for `shared' if it is needed.
+
+Fri Apr 11 15:05:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (rb_method_call_with_block, umethod_bind): call with
+	  IClass including the module for a module instance method.
+	  [ruby-core:61936] [Bug #9721]
+
+	* vm_insnhelper.c (vm_search_super_method): allow bound
+	  UnboundMethod case.
+
+Fri Apr 11 12:02:30 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c (rb_dump_backtrace_with_lines): set base address
+	  which is retrieved from dladdr to dladdr_fbases, to skip already
+	  parsed objects.
+
+Fri Apr 11 12:44:50 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (ary_reject): may be turned into a shared array during
+	  the given block.  [ruby-dev:48101] [Bug #9727]
+
+Thu Apr 10 23:41:21 2014  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/net/ftp.rb (Net::FTP#login): [DOC] The default password for
+	  anonymous login was changed to "anonymous@" in r25313.
+
+Thu Apr 10 19:22:58 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_array.rb: remove useless `assert'.
+
+Thu Apr 10 19:11:11 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c (rb_ary_modify): remember shared array owner if a shared
+	  array owner is promoted and a shared array is not promoted.
+
+	  Now, shared array is WB-unprotected so that shared arrays are not
+	  promoted.  All objects referred from shared array should be marked
+	  correctly.
+
+	  [ruby-core:61919] [ruby-trunk - Bug #9718]
+
+	* test/ruby/test_array.rb: add a test for above.
+
+Thu Apr 10 18:57:12 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_verify_internal_consistency): move lines and enable
+	  allrefs_dump() on RGENGC_CHECK_MODE >= 4.
+
+Thu Apr 10 15:01:06 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c (append_obj): clear allocated memory.
+
+	* addr2line.c (rb_dump_backtrace_with_lines): free `base_addrs'.
+
+Thu Apr 10 14:40:18 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_gc_writebarrier_unprotect_promoted): disable to dump debug
+	  message when RGENGC_CHECK_MODE == 0.
+
+Thu Apr 10 08:13:47 2014  Tanaka Akira  <akr@fsij.org>
+
+	* signal.c (check_stack_overflow): Don't use ucontext_t if ucontext.h
+	  is not available.
+	  Fixes build on Android (x86).
+
+Wed Apr  9 23:22:44 2014  Tanaka Akira  <akr@fsij.org>
+
+	* gc.c (mark_current_machine_context): Call SET_STACK_END.
+	  This reverts a hunk of r40703 by ko1.
+	  This fixes [ruby-dev:48098] [Bug #9717].
+
+Wed Apr  9 21:02:04 2014  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (OBJ2UID1): Defined even if getpwnam_r is not usable.
+	  (OBJ2GID1): Defined even if getgrnam_r is not usable.
+	  This fixes compilation error on Android.
+
+Wed Apr  9 15:16:59 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_default_internal): fix rdoc.  `__FILE__` is
+	  in filesystem encoding but not `default_internal`.
+	  [ruby-core:61894] [Bug #9713]
+
+Wed Apr  9 14:43:00 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_gc.rb: more long timeout.
+	  This test failed under RGENGC_CHECK_MODE >= 2.
+
+Wed Apr  9 13:07:13 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: get rid of __builtin_setjmp/__builtin_longjmp on
+	  x64-mingw, which causes SEGV with callcc.
+	  [ruby-core:61887] [Bug #9710]
+
+Wed Apr  9 12:44:54 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_buf_cat): should round up the capacity by 4KiB,
+	  but not number of rooms.  [ruby-core:61886] [Bug #9709]
+
+Tue Apr  8 22:55:32 2014  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/mkmf.rb (MakeMakefile#dir_config): [DOC] Improve
+	  documentation.
+
+Tue Apr  8 22:31:44 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: rename `RGENGC_THREEGEN' to `RGENGC_AGE2_PROMOTION'.
+
+	* gc.c (rgengc_rememberset_mark): don't promote, but remain in
+	  remember set for infant objects.
+
+	* gc.c (RVALUE_PROMOTE_INFANT, RVALUE_PROMOTE_YOUNG): count numbers
+	  in these functions.
+
+Mon Apr  7 21:11:49 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (sock_s_getnameinfo): Save errno for EAI_SYSTEM.
+	  Reported by Saravana kumar.  [ruby-core:61820] [Bug #9697]
+	  Fixed by Heesob Park.  [ruby-core:61868]
+
+Mon Apr  7 07:20:23 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/xmlrpc/client.rb (do_rpc): don't check body length.
+	  If HTTP content-encoding is used, the length may be different.
+	  [Bug #8182] [ruby-core:53811]
+
+Mon Apr  7 02:39:48 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Add Matrix#cofactor [fix GH-568]
+	  Add first_minor [fix GH-568]
+	  Handle empty diagonal matrix case [fix GH-576]
+	  Patches by gogotanaka
+
+Sun Apr  6 08:52:50 2014  Bugra Barin  <bugrabarin@hotmail.com>
+
+	* dln.c (dln_load): use wchar version to load a library in
+	  non-ascii path on Windows.  based on the patch by Bugra Barin
+	  <bugrabarin AT hotmail.com> in [ruby-core:61845].  [Bug #9699]
+
+Sat Apr  5 19:36:33 2014  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c (d_lite_cmp): should compare with #<.
+
+Sat Apr  5 00:31:21 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/readline/extconf.rb (rl_hook_func_t): check pointer type.
+	  [ruby-dev:48089] [Bug #9702]
+
+Fri Apr  4 07:13:44 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ac_cv_func___builtin_setjmp): should not skip
+	  flags restoration in RUBY_WERROR_FLAG by `break`.
+	  [ruby-dev:48086] [Bug #9698]
+
+Wed Apr  2 21:50:06 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ac_cv_func___builtin_setjmp): __builtin_longjmp() in
+	  clang 5.1 uses `void**`, not `jmp_buf`.  [Bug #9692]
+
+Wed Apr  2 20:57:15 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c, gc.h (rb_objspace_each_objects_without_setup):
+	  Add a new (hidden) C-API to iterate objspace snapshot.
+
+	  This API is not safe to call any C-APIs in a given callback
+	  function. Be careful to use this C-API.
+
+Wed Apr  2 17:43:17 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ac_cv_func___builtin_setjmp): gcc 4.9 disallows a
+	  variable as the second argument of __builtin_longjmp().
+	  [ruby-core:61800] [Bug #9692]
+
 Wed Apr  2 15:12:18 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* common.mk: Use redmine-2.x url for DeveloperHowto wiki.

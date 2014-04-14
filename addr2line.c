@@ -417,13 +417,13 @@ parse_debug_line(int num_traces, void **traces,
 }
 
 /* read file and fill lines */
-static void
+static uintptr_t
 fill_lines(int num_traces, void **traces, int check_debuglink,
 	   obj_info_t **objp, line_info_t *lines, int offset);
 
 static void
 append_obj(obj_info_t **objp) {
-    obj_info_t *newobj = malloc(sizeof(obj_info_t));
+    obj_info_t *newobj = calloc(1, sizeof(obj_info_t));
     if (*objp) (*objp)->next = newobj;
     *objp = newobj;
 }
@@ -459,7 +459,7 @@ follow_debuglink(char *debuglink, int num_traces, void **traces,
 }
 
 /* read file and fill lines */
-static void
+static uintptr_t
 fill_lines(int num_traces, void **traces, int check_debuglink,
 	   obj_info_t **objp, line_info_t *lines, int offset)
 {
@@ -475,6 +475,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
     ElfW(Shdr) *symtab_shdr = NULL, *strtab_shdr = NULL;
     ElfW(Shdr) *dynsym_shdr = NULL, *dynstr_shdr = NULL;
     obj_info_t *obj = *objp;
+    uintptr_t dladdr_fbase = 0;
 
     fd = open(binary_filename, O_RDONLY);
     if (fd < 0) {
@@ -514,7 +515,6 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	goto fail;
     }
 
-    if (ehdr->e_type == ET_EXEC) obj->base_addr = 0;
     obj->fd = fd;
     obj->mapped = file;
     obj->mapped_size = (size_t)filesize;
@@ -555,8 +555,9 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
     }
 
     if (offset == -1) {
+	/* main executable */
 	offset = 0;
-	if (ehdr->e_type != ET_EXEC && dynsym_shdr && dynstr_shdr) {
+	if (dynsym_shdr && dynstr_shdr) {
 	    char *strtab = file + dynstr_shdr->sh_offset;
 	    ElfW(Sym) *symtab = (ElfW(Sym) *)(file + dynsym_shdr->sh_offset);
 	    int symtab_count = (int)(dynsym_shdr->sh_size / sizeof(ElfW(Sym)));
@@ -570,9 +571,16 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 		s = dlsym(h, strtab + sym->st_name);
 		if (!s) continue;
 		if (dladdr(s, &info)) {
-		    obj->base_addr = (uintptr_t)info.dli_fbase;
+		    dladdr_fbase = (uintptr_t)info.dli_fbase;
 		    break;
 		}
+	    }
+	    if (ehdr->e_type == ET_EXEC) {
+		obj->base_addr = 0;
+	    }
+	    else {
+		/* PIE (position-independent executable) */
+		obj->base_addr = dladdr_fbase;
 	    }
 	}
     }
@@ -619,22 +627,21 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 		     debug_line_shdr->sh_size,
 		     obj, lines, offset);
 finish:
-    for (i = offset; i < num_traces; i++) {
-	if (lines[i].line == -1) {
-	    lines[i].line = -2;
-	}
-    }
-    return;
+    return dladdr_fbase;
 fail:
-    for (i = offset; i < num_traces; i++) {
-	if (obj->base_addr == lines[i].base_addr) {
-	    lines[i].line = -2;
-	}
-    }
-    return;
+    return (uintptr_t)-1;
 }
 
 #define HAVE_MAIN_EXE_PATH
+#if defined(__FreeBSD__)
+# include <sys/sysctl.h>
+#endif
+/* ssize_t main_exe_path(void)
+ *
+ * store the path of the main executable to `binary_filename`,
+ * and returns strlen(binary_filename).
+ * it is NUL terminated.
+ */
 #if defined(__linux__)
 ssize_t
 main_exe_path(void)
@@ -642,6 +649,20 @@ main_exe_path(void)
 # define PROC_SELF_EXE "/proc/self/exe"
     ssize_t len = readlink(PROC_SELF_EXE, binary_filename, PATH_MAX);
     binary_filename[len] = 0;
+    return len;
+}
+#elif defined(__FreeBSD__)
+ssize_t
+main_exe_path(void)
+{
+    int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1};
+    size_t len = PATH_MAX;
+    int err = sysctl(mib, 4, binary_filename, &len, NULL, 0);
+    if (err) {
+	kprintf("Can't get the path of ruby");
+	return -1;
+    }
+    len--; /* sysctl sets strlen+1 */
     return len;
 }
 #else
@@ -655,21 +676,21 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces)
     /* async-signal unsafe */
     line_info_t *lines = (line_info_t *)calloc(num_traces, sizeof(line_info_t));
     obj_info_t *obj = NULL;
-    void **base_addrs = (void **)calloc(num_traces+1, sizeof(void *));
+    /* 2 is NULL + main executable */
+    void **dladdr_fbases = (void **)calloc(num_traces+2, sizeof(void *));
 #ifdef HAVE_MAIN_EXE_PATH
-    char *main_path = NULL; /* keep while this func */
+    char *main_path = NULL; /* used on printing backtrace */
     ssize_t len;
     if ((len = main_exe_path()) > 0) {
 	main_path = (char *)alloca(len + 1);
 	if (main_path) {
-	    obj_info_t *o;
+	    uintptr_t addr;
 	    memcpy(main_path, binary_filename, len+1);
 	    append_obj(&obj);
-	    o = obj;
 	    obj->path = main_path;
-	    fill_lines(num_traces, traces, 1, &obj, lines, -1);
-	    for (i=0; o=o->next; i++) {
-		base_addrs[i] = (void *)o->base_addr;
+	    addr = fill_lines(num_traces, traces, 1, &obj, lines, -1);
+	    if (addr != (uintptr_t)-1) {
+		dladdr_fbases[0] = (void *)addr;
 	    }
 	}
     }
@@ -682,10 +703,18 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces)
 	if (dladdr(traces[i], &info)) {
 	    const char *path;
 	    void **p;
-	    for (p=base_addrs; *p; p++) {
-		if (*p == info.dli_fbase)
+
+	    /* skip symbols which is in already checked objects */
+	    /* if the binary is strip-ed, this may effect */
+	    for (p=dladdr_fbases; *p; p++) {
+		if (*p == info.dli_fbase) {
+		    lines[i].path = info.dli_fname;
+		    lines[i].sname = info.dli_sname;
 		    goto next_line;
+		}
 	    }
+	    *p = info.dli_fbase;
+
 	    append_obj(&obj);
 	    obj->base_addr = (uintptr_t)info.dli_fbase;
 	    path = info.dli_fname;
@@ -741,6 +770,7 @@ next_line:
 	free(o);
     }
     free(lines);
+    free(dladdr_fbases);
 }
 
 /* From FreeBSD's lib/libstand/printf.c */

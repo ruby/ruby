@@ -175,12 +175,14 @@ obj2uid0(VALUE id)
 # else
 #   define PREPARE_GETPWNAM	/* do nothing */
 #   define FINISH_GETPWNAM	/* do nothing */
+#   define OBJ2UID1(id) obj2uid((id))
 #   define OBJ2UID(id) obj2uid((id))
 static rb_uid_t obj2uid(VALUE id);
 # endif
 #else
 # define PREPARE_GETPWNAM	/* do nothing */
 # define FINISH_GETPWNAM	/* do nothing */
+# define OBJ2UID1(id) NUM2UIDT(id)
 # define OBJ2UID(id) NUM2UIDT(id)
 # ifdef p_uid_from_name
 #   undef p_uid_from_name
@@ -216,12 +218,14 @@ static rb_gid_t obj2gid(VALUE id, VALUE *getgr_buf);
 # else
 #   define PREPARE_GETGRNAM	/* do nothing */
 #   define FINISH_GETGRNAM	/* do nothing */
+#   define OBJ2GID1(id) obj2gid((id))
 #   define OBJ2GID(id) obj2gid((id))
 static rb_gid_t obj2gid(VALUE id);
 # endif
 #else
 # define PREPARE_GETGRNAM	/* do nothing */
 # define FINISH_GETGRNAM	/* do nothing */
+# define OBJ2GID1(id) NUM2GIDT(id)
 # define OBJ2GID(id) NUM2GIDT(id)
 # ifdef p_gid_from_name
 #   undef p_gid_from_name

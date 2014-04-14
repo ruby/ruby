@@ -1470,7 +1470,6 @@ rb_enc_default_internal(void)
  * * Time#zone
  * * Values from ENV
  * * Values in ARGV including $PROGRAM_NAME
- * * __FILE__
  *
  * Additionally String#encode and String#encode! use the default internal
  * encoding if no encoding is given.
