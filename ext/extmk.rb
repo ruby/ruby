@@ -69,6 +69,18 @@ def system(*args)
   super
 end
 
+def atomic_write_open(filename)
+  filename_new = filename + ".new.#$$"
+  open(filename_new, "wb") do |f|
+    yield f
+  end
+  if File.binread(filename_new) != (File.binread(filename) rescue nil)
+    File.rename(filename_new, filename)
+  else
+    File.unlink(filename_new)
+  end
+end
+
 def extract_makefile(makefile, keep = true)
   m = File.read(makefile)
   if !(target = m[/^TARGET[ \t]*=[ \t]*(\S*)/, 1])
@@ -229,7 +241,7 @@ def extmake(target)
         f.truncate(f.pos)
       end unless $static
     else
-      open(makefile, "wb") do |f|
+      atomic_write_open(makefile) do |f|
         f.puts "# " + DUMMY_SIGNATURE
 	f.print(*dummy_makefile(CONFIG["srcdir"]))
       end
@@ -636,7 +648,7 @@ $mflags.unshift("topdir=#$topdir")
 ENV.delete("RUBYOPT")
 if $configure_only and $command_output
   exts.map! {|d| "ext/#{d}/."}
-  open($command_output, "wb") do |mf|
+  atomic_write_open($command_output) do |mf|
     mf.puts "V = 0"
     mf.puts "Q1 = $(V:1=)"
     mf.puts "Q = $(Q1:0=@)"
