@@ -1449,7 +1449,7 @@ rb_w32_uaspawn(int mode, const char *prog, char *const *argv)
 typedef struct _NtCmdLineElement {
     struct _NtCmdLineElement *next;
     char *str;
-    int len;
+    long len;
     int flags;
 } NtCmdLineElement;
 
