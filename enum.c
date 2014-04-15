@@ -2058,6 +2058,9 @@ enum_each_entry(int argc, VALUE *argv, VALUE obj)
     return obj;
 }
 
+#define dont_recycle_block_arg(arity) ((arity) == 1 || (arity) == -1)
+#define nd_no_recycle u2.value
+
 static VALUE
 each_slice_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, m))
 {
@@ -2071,7 +2074,13 @@ each_slice_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, m))
 
     if (RARRAY_LEN(ary) == size) {
 	v = rb_yield(ary);
-	memo->u1.value = rb_ary_new2(size);
+
+	if (memo->nd_no_recycle) {
+	    memo->u1.value = rb_ary_new2(size);
+	}
+	else {
+	    rb_ary_clear(ary);
+	}
     }
 
     return v;
@@ -2113,11 +2122,13 @@ enum_each_slice(VALUE obj, VALUE n)
     long size = NUM2LONG(n);
     VALUE ary;
     NODE *memo;
+    int arity;
 
     if (size <= 0) rb_raise(rb_eArgError, "invalid slice size");
     RETURN_SIZED_ENUMERATOR(obj, 1, &n, enum_each_slice_size);
     ary = rb_ary_new2(size);
-    memo = NEW_MEMO(ary, 0, size);
+    arity = rb_block_arity();
+    memo = NEW_MEMO(ary, dont_recycle_block_arg(arity), size);
     rb_block_call(obj, id_each, 0, 0, each_slice_i, (VALUE)memo);
     ary = memo->u1.value;
     if (RARRAY_LEN(ary) > 0) rb_yield(ary);
@@ -2139,7 +2150,10 @@ each_cons_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
     }
     rb_ary_push(ary, i);
     if (RARRAY_LEN(ary) == size) {
-	v = rb_yield(rb_ary_dup(ary));
+	if (memo->nd_no_recycle) {
+	    ary = rb_ary_dup(ary);
+	}
+	v = rb_yield(ary);
     }
     return v;
 }
@@ -2184,10 +2198,12 @@ enum_each_cons(VALUE obj, VALUE n)
 {
     long size = NUM2LONG(n);
     NODE *memo;
+    int arity;
 
     if (size <= 0) rb_raise(rb_eArgError, "invalid size");
     RETURN_SIZED_ENUMERATOR(obj, 1, &n, enum_each_cons_size);
-    memo = NEW_MEMO(rb_ary_new2(size), 0, size);
+    arity = rb_block_arity();
+    memo = NEW_MEMO(rb_ary_new2(size), dont_recycle_block_arg(arity), size);
     rb_block_call(obj, id_each, 0, 0, each_cons_i, (VALUE)memo);
 
     return Qnil;
