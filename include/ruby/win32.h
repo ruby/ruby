@@ -263,7 +263,6 @@ struct ifaddrs {
 #endif
 
 extern DWORD  rb_w32_osid(void);
-extern int    rb_w32_cmdvector(const char *, char ***);
 extern rb_pid_t  rb_w32_pipe_exec(const char *, const char *, int, int *, int *);
 extern int    flock(int fd, int oper);
 extern int    rb_w32_io_cancelable_p(int);

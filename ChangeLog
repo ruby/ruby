@@ -1,3 +1,15 @@
+Tue Apr 15 19:36:42 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/win32.h (rb_w32_cmdvector): removed.
+
+	* win32/win32.c (rb_w32_sysinit): use WCHAR version of GetCommandLine()
+	  internally.
+
+	* win32/win32.c (w32_cmdvector): renamed from rb_w32_cmdvector.  use
+	  WCHAR* instead of char* internally.
+
+	these changes are expected to not changing the behavior yet.
+
 Tue Apr 15 19:26:05 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/extmk.rb: Re-generate extmk.mk and dummy makefiles only if

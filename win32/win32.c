@@ -741,6 +741,7 @@ socklist_delete(SOCKET *sockp, int *flagp)
     return ret;
 }
 
+static int w32_cmdvector(const WCHAR *, char ***, UINT);
 //
 // Initialization stuff
 //
@@ -764,7 +765,7 @@ rb_w32_sysinit(int *argc, char ***argv)
     //
     // subvert cmd.exe's feeble attempt at command line parsing
     //
-    *argc = rb_w32_cmdvector(GetCommandLine(), argv);
+    *argc = w32_cmdvector(GetCommandLineW(), argv, CP_ACP);
 
     //
     // Now set up the correct time stuff
@@ -1482,7 +1483,7 @@ insert(const char *path, VALUE vinfo, void *enc)
 
 /* License: Artistic or GPL */
 static NtCmdLineElement **
-cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail)
+cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail, UINT cp)
 {
     char buffer[MAXPATHLEN], *buf = buffer;
     char *p;
@@ -1494,7 +1495,7 @@ cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail)
 
     strlcpy(buf, patt->str, patt->len + 1);
     buf[patt->len] = '\0';
-    for (p = buf; *p; p = CharNext(p))
+    for (p = buf; *p; p = CharNextExA(cp, p, 0))
 	if (*p == '\\')
 	    *p = '/';
     status = ruby_brace_glob(buf, 0, insert, (VALUE)&tail);
@@ -1563,39 +1564,39 @@ has_redirection(const char *cmd, UINT cp)
 }
 
 /* License: Ruby's */
-static inline char *
-skipspace(char *ptr)
+static inline WCHAR *
+skipspace(WCHAR *ptr)
 {
-    while (ISSPACE(*ptr))
+    while (iswspace(*ptr))
 	ptr++;
     return ptr;
 }
 
 /* License: Artistic or GPL */
-int
-rb_w32_cmdvector(const char *cmd, char ***vec)
+static int
+w32_cmdvector(const WCHAR *cmd, char ***vec, UINT cp)
 {
     int globbing, len;
     int elements, strsz, done;
     int slashes, escape;
-    char *ptr, *base, *buffer, *cmdline;
+    WCHAR *ptr, *base, *cmdline;
+    char *cptr, *buffer;
     char **vptr;
-    char quote;
+    WCHAR quote;
     NtCmdLineElement *curr, **tail;
     NtCmdLineElement *cmdhead = NULL, **cmdtail = &cmdhead;
 
     //
     // just return if we don't have a command line
     //
-
-    while (ISSPACE(*cmd))
+    while (iswspace(*cmd))
 	cmd++;
     if (!*cmd) {
 	*vec = NULL;
 	return 0;
     }
 
-    ptr = cmdline = strdup(cmd);
+    ptr = cmdline = wcsdup(cmd);
 
     //
     // Ok, parse the command line, building a list of CmdLineElements.
@@ -1617,13 +1618,13 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 	    //
 
 	    switch (*ptr) {
-	      case '\\':
-		if (quote != '\'') slashes++;
+	      case L'\\':
+		if (quote != L'\'') slashes++;
 	        break;
 
-	      case ' ':
-	      case '\t':
-	      case '\n':
+	      case L' ':
+	      case L'\t':
+	      case L'\n':
 		//
 		// if we're not in a string, then we're finished with this
 		// element
@@ -1635,22 +1636,22 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 		}
 		break;
 
-	      case '*':
-	      case '?':
-	      case '[':
-	      case '{':
+	      case L'*':
+	      case L'?':
+	      case L'[':
+	      case L'{':
 		//
 		// record the fact that this element has a wildcard character
 		// N.B. Don't glob if inside a single quoted string
 		//
 
-		if (quote != '\'')
+		if (quote != L'\'')
 		    globbing++;
 		slashes = 0;
 		break;
 
-	      case '\'':
-	      case '\"':
+	      case L'\'':
+	      case L'\"':
 		//
 		// if we're already in a string, see if this is the
 		// terminating close-quote. If it is, we're finished with
@@ -1662,9 +1663,9 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 		    if (!quote)
 			quote = *ptr;
 		    else if (quote == *ptr) {
-			if (quote == '"' && quote == ptr[1])
+			if (quote == L'"' && quote == ptr[1])
 			    ptr++;
-			quote = '\0';
+			quote = L'\0';
 		    }
 		}
 		escape++;
@@ -1672,7 +1673,7 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 		break;
 
 	      default:
-		ptr = CharNext(ptr);
+		ptr = CharNextW(ptr);
 		slashes = 0;
 		continue;
 	    }
@@ -1694,31 +1695,31 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 	//
 
 	if (escape) {
-	    char *p = base, c;
+	    WCHAR *p = base, c;
 	    slashes = quote = 0;
 	    while (p < base + len) {
 		switch (c = *p) {
-		  case '\\':
+		  case L'\\':
 		    p++;
-		    if (quote != '\'') slashes++;
+		    if (quote != L'\'') slashes++;
 		    break;
 
-		  case '\'':
-		  case '"':
+		  case L'\'':
+		  case L'"':
 		    if (!(slashes & 1) && quote && quote != c) {
 			p++;
 			slashes = 0;
 			break;
 		    }
 		    memcpy(p - ((slashes + 1) >> 1), p + (~slashes & 1),
-			   base + len - p);
+			   sizeof(WCHAR) * (base + len - p));
 		    len -= ((slashes + 1) >> 1) + (~slashes & 1);
 		    p -= (slashes + 1) >> 1;
 		    if (!(slashes & 1)) {
 			if (quote) {
-			    if (quote == '"' && quote == *p)
+			    if (quote == L'"' && quote == *p)
 				p++;
-			    quote = '\0';
+			    quote = L'\0';
 			}
 			else
 			    quote = c;
@@ -1729,7 +1730,7 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 		    break;
 
 		  default:
-		    p = CharNext(p);
+		    p = CharNextW(p);
 		    slashes = 0;
 		    break;
 		}
@@ -1738,10 +1739,10 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 
 	curr = (NtCmdLineElement *)calloc(sizeof(NtCmdLineElement), 1);
 	if (!curr) goto do_nothing;
-	curr->str = base;
-	curr->len = len;
+	curr->str = rb_w32_wstr_to_mbstr(cp, base, len, &curr->len);
+	curr->flags |= NTMALLOC;
 
-	if (globbing && (tail = cmdglob(curr, cmdtail))) {
+	if (globbing && (tail = cmdglob(curr, cmdtail, cp))) {
 	    cmdtail = tail;
 	}
 	else {
@@ -1777,7 +1778,7 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 
     //
     // make vptr point to the start of the buffer
-    // and ptr point to the area we'll consider the string table.
+    // and cptr point to the area we'll consider the string table.
     //
     //   buffer (*vec)
     //   |
@@ -1789,12 +1790,12 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 
     vptr = (char **) buffer;
 
-    ptr = buffer + (elements+1) * sizeof(char *);
+    cptr = buffer + (elements+1) * sizeof(char *);
 
     while (curr = cmdhead) {
-	strlcpy(ptr, curr->str, curr->len + 1);
-	*vptr++ = ptr;
-	ptr += curr->len + 1;
+	strlcpy(cptr, curr->str, curr->len + 1);
+	*vptr++ = cptr;
+	cptr += curr->len + 1;
 	cmdhead = curr->next;
 	if (curr->flags & NTMALLOC) free(curr->str);
 	free(curr);
