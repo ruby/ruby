@@ -1,3 +1,10 @@
+Wed Apr 16 09:51:16 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl/ossl_pkey.c (ossl_pkey_verify): as EVP_VerifyFinal()
+	  finalizes only a copy of the digest context, the context must be
+	  cleaned up after initialization by EVP_MD_CTX_cleanup() or a
+	  memory leak will occur.  [ruby-core:62038] [Bug #9743]
+
 Tue Apr 15 19:36:42 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/win32.h (rb_w32_cmdvector): removed.
