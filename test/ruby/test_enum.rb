@@ -338,6 +338,18 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([1, 2, 3, 1, 2], a)
   end
 
+  def test_each_slice
+    ary = []
+    (1..10).each_slice(3) {|a| ary << a}
+    assert_equal([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10]], ary)
+  end
+
+  def test_each_cons
+    ary = []
+    (1..5).each_cons(3) {|a| ary << a}
+    assert_equal([[1, 2, 3], [2, 3, 4], [3, 4, 5]], ary)
+  end
+
   def test_zip
     assert_equal([[1,1],[2,2],[3,3],[1,1],[2,2]], @obj.zip(@obj))
     a = []
