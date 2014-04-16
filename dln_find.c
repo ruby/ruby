@@ -78,11 +78,12 @@ dln_find_exe_r(const char *fname, const char *path, char *buf, size_t size
     }
 
     if (!path) {
-#if defined(_WIN32)
-	path = "/usr/local/bin;/usr/ucb;/usr/bin;/bin;.";
-#else
-	path = "/usr/local/bin:/usr/ucb:/usr/bin:/bin:.";
-#endif
+	path =
+	    "/usr/local/bin" PATH_SEP
+	    "/usr/ucb" PATH_SEP
+	    "/usr/bin" PATH_SEP
+	    "/bin" PATH_SEP
+	    ".";
     }
     buf = dln_find_1(fname, path, buf, size, 1 DLN_FIND_EXTRA_ARG);
     if (envpath) free(envpath);
