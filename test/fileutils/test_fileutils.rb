@@ -272,7 +272,7 @@ class TestFileUtils < Test::Unit::TestCase
     bug4507 = '[ruby-core:35518]'
     touch 'tmp/cptmp'
     chmod 0755, 'tmp/cptmp'
-    cp 'tmp/cptmp', 'tmp/cptmp2'
+    cp 'tmp/cptmp', 'tmp/cptmp2', :preserve => true
     assert_equal_filemode('tmp/cptmp', 'tmp/cptmp2', bug4507)
   end
 
