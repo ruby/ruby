@@ -1,3 +1,9 @@
+Wed Apr 16 23:47:36 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c (dont_recycle_block_arg): fix condition to recycle block
+	  argument.  lambda with rest can get internal array directly.
+	  [ruby-core:62060] [Bug #9749]
+
 Wed Apr 16 09:51:16 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/ossl_pkey.c (ossl_pkey_verify): as EVP_VerifyFinal()

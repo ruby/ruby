@@ -2058,7 +2058,7 @@ enum_each_entry(int argc, VALUE *argv, VALUE obj)
     return obj;
 }
 
-#define dont_recycle_block_arg(arity) ((arity) == 1 || (arity) == -1)
+#define dont_recycle_block_arg(arity) ((arity) == 1 || (arity) < 0)
 #define nd_no_recycle u2.value
 
 static VALUE
