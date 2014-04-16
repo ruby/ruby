@@ -207,49 +207,7 @@ usage(const char *name, int help)
 	SHOW(features[i]);
 }
 
-#ifdef MANGLED_PATH
-static VALUE
-rubylib_mangled_path(const char *s, unsigned int l)
-{
-    static char *newp, *oldp;
-    static int newl, oldl, notfound;
-    char *ptr;
-    VALUE ret;
-
-    if (!newp && !notfound) {
-	newp = getenv("RUBYLIB_PREFIX");
-	if (newp) {
-	    oldp = newp = strdup(newp);
-	    while (*newp && !ISSPACE(*newp) && *newp != ';') {
-		newp = CharNext(newp);	/* Skip digits. */
-	    }
-	    oldl = newp - oldp;
-	    while (*newp && (ISSPACE(*newp) || *newp == ';')) {
-		newp = CharNext(newp);	/* Skip whitespace. */
-	    }
-	    newl = strlen(newp);
-	    if (newl == 0 || oldl == 0) {
-		rb_fatal("malformed RUBYLIB_PREFIX");
-	    }
-	    translit_char(newp, '\\', '/');
-	}
-	else {
-	    notfound = 1;
-	}
-    }
-    if (!newp || l < oldl || STRNCASECMP(oldp, s, oldl) != 0) {
-	return rb_str_new(s, l);
-    }
-    ret = rb_str_new(0, l + newl - oldl);
-    ptr = RSTRING_PTR(ret);
-    memcpy(ptr, newp, newl);
-    memcpy(ptr + newl, s + oldl, l - oldl);
-    ptr[l + newl - oldl] = 0;
-    return ret;
-}
-#else
-#define rubylib_mangled_path rb_str_new
-#endif
+#define rubylib_path_new rb_str_new
 
 static void
 push_include(const char *path, VALUE (*filter)(VALUE))
@@ -264,7 +222,7 @@ push_include(const char *path, VALUE (*filter)(VALUE))
 	    p++;
 	if (!*p) break;
 	for (s = p; *s && *s != sep; s = CharNext(s));
-	rb_ary_push(load_path, (*filter)(rubylib_mangled_path(p, s - p)));
+	rb_ary_push(load_path, (*filter)(rubylib_path_new(p, s - p)));
 	p = s;
     }
 }
@@ -510,15 +468,12 @@ ruby_init_loadpath_safe(int safe_level)
 #else
     extern const char ruby_exec_prefix[];
     const size_t exec_prefix_len = strlen(ruby_exec_prefix);
-#define RUBY_RELATIVE(path, len) rubylib_mangled_path((path), (len))
+#define RUBY_RELATIVE(path, len) rubylib_path_new((path), (len))
 #define PREFIX_PATH() RUBY_RELATIVE(ruby_exec_prefix, exec_prefix_len)
 #endif
     load_path = GET_VM()->load_path;
 
     if (safe_level == 0) {
-#ifdef MANGLED_PATH
-	rubylib_mangled_path("", 0);
-#endif
 	ruby_push_include(getenv("RUBYLIB"), identical_path);
     }
 
