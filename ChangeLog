@@ -1,3 +1,9 @@
+Thu Apr 17 10:03:53 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils#copy_entry): update rdoc about
+	  preserve option and permissions, following r31123.
+	  [ruby-core:62065] [Bug #9748]
+
 Wed Apr 16 23:47:36 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c (dont_recycle_block_arg): fix condition to recycle block
