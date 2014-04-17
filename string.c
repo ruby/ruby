@@ -38,8 +38,10 @@
 #undef rb_locale_str_new_cstr
 #undef rb_str_dup_frozen
 #undef rb_str_buf_new_cstr
+#undef rb_str_buf_cat
 #undef rb_str_buf_cat2
 #undef rb_str_cat2
+#undef rb_str_cat_cstr
 
 static VALUE rb_str_clear(VALUE str);
 
@@ -2048,7 +2050,7 @@ str_buf_cat(VALUE str, const char *ptr, long len)
 #define str_buf_cat2(str, ptr) str_buf_cat((str), (ptr), strlen(ptr))
 
 VALUE
-rb_str_buf_cat(VALUE str, const char *ptr, long len)
+rb_str_cat(VALUE str, const char *ptr, long len)
 {
     if (len == 0) return str;
     if (len < 0) {
@@ -2058,13 +2060,14 @@ rb_str_buf_cat(VALUE str, const char *ptr, long len)
 }
 
 VALUE
-rb_str_buf_cat2(VALUE str, const char *ptr)
+rb_str_cat_cstr(VALUE str, const char *ptr)
 {
     return rb_str_buf_cat(str, ptr, strlen(ptr));
 }
 
-RUBY_ALIAS_FUNCTION(rb_str_cat(VALUE str, const char *ptr, long len), rb_str_buf_cat, (str, ptr, len))
-RUBY_ALIAS_FUNCTION(rb_str_cat2(VALUE str, const char *ptr), rb_str_buf_cat2, (str, ptr))
+RUBY_ALIAS_FUNCTION(rb_str_buf_cat(VALUE str, const char *ptr, long len), rb_str_cat, (str, ptr, len))
+RUBY_ALIAS_FUNCTION(rb_str_buf_cat2(VALUE str, const char *ptr), rb_str_cat_cstr, (str, ptr))
+RUBY_ALIAS_FUNCTION(rb_str_cat2(VALUE str, const char *ptr), rb_str_cat_cstr, (str, ptr))
 
 static VALUE
 rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,

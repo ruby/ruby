@@ -105,3 +105,5 @@ with all sufficient information, see the ChangeLog file.
 
 * struct RSymbol added. This represents a dynamic symbol as object in
   Ruby's heaps.
+
+* rb_str_cat_cstr() added. This is same as `rb_str_cat2()`.

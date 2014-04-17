@@ -727,6 +727,7 @@ VALUE rb_str_freeze(VALUE);
 void rb_str_set_len(VALUE, long);
 VALUE rb_str_resize(VALUE, long);
 VALUE rb_str_cat(VALUE, const char*, long);
+VALUE rb_str_cat_cstr(VALUE, const char*);
 VALUE rb_str_cat2(VALUE, const char*);
 VALUE rb_str_append(VALUE, VALUE);
 VALUE rb_str_concat(VALUE, VALUE);
@@ -798,17 +799,11 @@ VALUE rb_str_scrub(VALUE, VALUE);
 		       (str), (long)strlen(str)) : \
 	rb_str_buf_new_cstr(str);		\
 })
-#define rb_str_buf_cat2(str, ptr) __extension__ ( \
-{						\
-    (__builtin_constant_p(ptr)) ?	        \
-	rb_str_buf_cat((str), (ptr), (long)strlen(ptr)) : \
-	rb_str_buf_cat2((str), (ptr));		\
-})
-#define rb_str_cat2(str, ptr) __extension__ (	\
+#define rb_str_cat_cstr(str, ptr) __extension__ ( \
 {						\
     (__builtin_constant_p(ptr)) ?	        \
 	rb_str_cat((str), (ptr), (long)strlen(ptr)) : \
-	rb_str_cat2((str), (ptr));			\
+	rb_str_cat_cstr((str), (ptr));		\
 })
 #define rb_exc_new_cstr(klass, ptr) __extension__ ( \
 {						\
@@ -824,6 +819,9 @@ VALUE rb_str_scrub(VALUE, VALUE);
 #define rb_tainted_str_new2 rb_tainted_str_new_cstr
 #define rb_str_buf_new2 rb_str_buf_new_cstr
 #define rb_usascii_str_new2 rb_usascii_str_new_cstr
+#define rb_str_buf_cat rb_str_cat
+#define rb_str_buf_cat2 rb_str_cat_cstr
+#define rb_str_cat2 rb_str_cat_cstr
 /* struct.c */
 VALUE rb_struct_new(VALUE, ...);
 VALUE rb_struct_define(const char*, ...);
