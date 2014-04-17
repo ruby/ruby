@@ -257,8 +257,7 @@ push_include_cygwin(const char *path, VALUE (*filter)(VALUE))
 #define CONV_TO_POSIX_PATH(p, lib) \
 	cygwin_conv_path(CCP_WIN_A_TO_POSIX|CCP_RELATIVE, (p), (lib), sizeof(lib))
 #else
-#define CONV_TO_POSIX_PATH(p, lib) \
-	cygwin_conv_to_posix_path((p), (lib))
+# error no cygwin_conv_path
 #endif
 	if (CONV_TO_POSIX_PATH(p, rubylib) == 0)
 	    p = rubylib;
@@ -348,7 +347,7 @@ ruby_init_loadpath_safe(int safe_level)
     extern const char ruby_initial_load_paths[];
     const char *paths = ruby_initial_load_paths;
 #if defined LOAD_RELATIVE
-# if defined HAVE_DLADDR || defined HAVE_CYGWIN_CONV_PATH
+# if defined HAVE_DLADDR || defined __CYGWIN__ || defined _WIN32
 #   define VARIABLE_LIBPATH 1
 # else
 #   define VARIABLE_LIBPATH 0
@@ -363,13 +362,9 @@ ruby_init_loadpath_safe(int safe_level)
     char *p;
 
 #if defined _WIN32 || defined __CYGWIN__
-# if VARIABLE_LIBPATH
     sopath = rb_str_new(0, MAXPATHLEN);
     libpath = RSTRING_PTR(sopath);
     GetModuleFileName(libruby, libpath, MAXPATHLEN);
-# else
-    GetModuleFileName(libruby, libpath, sizeof libpath);
-# endif
 #elif defined(__EMX__)
     _execname(libpath, sizeof(libpath) - 1);
 #elif defined(HAVE_DLADDR)
@@ -394,7 +389,6 @@ ruby_init_loadpath_safe(int safe_level)
     translit_char(libpath, '\\', '/');
 #elif defined __CYGWIN__
     {
-# if VARIABLE_LIBPATH
 	const int win_to_posix = CCP_WIN_A_TO_POSIX | CCP_RELATIVE;
 	size_t newsize = cygwin_conv_path(win_to_posix, libpath, 0, 0);
 	if (newsize > 0) {
@@ -406,11 +400,6 @@ ruby_init_loadpath_safe(int safe_level)
 		libpath = p;
 	    }
 	}
-# else
-	char rubylib[FILENAME_MAX];
-	cygwin_conv_to_posix_path(libpath, rubylib);
-	strncpy(libpath, rubylib, sizeof(libpath));
-# endif
     }
 #endif
     p = strrchr(libpath, '/');
