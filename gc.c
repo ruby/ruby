@@ -5740,7 +5740,7 @@ get_envparam_size(const char *name, size_t *default_value, size_t lower_bound)
 	    ++end;
 	    break;
 	}
-	while (*end && isspace(*end)) end++;
+	while (*end && isspace((unsigned char)*end)) end++;
 	if (*end) {
 	    if (RTEST(ruby_verbose)) fprintf(stderr, "invalid string for %s: %s\n", name, ptr);
 	    return 0;
