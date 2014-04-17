@@ -1,3 +1,8 @@
+Fri Apr 18 08:50:18 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rb_cv_getcwd_malloc): check if getcwd allocates
+	  buffer if NULL is given [ruby-core:62072] [Bug #9752]
+
 Thu Apr 17 16:28:10 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* prelude.rb: [DOC] Update Thread::exclusive docs by @stevenharman.
