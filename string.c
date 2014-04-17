@@ -2063,17 +2063,8 @@ rb_str_buf_cat2(VALUE str, const char *ptr)
     return rb_str_buf_cat(str, ptr, strlen(ptr));
 }
 
-VALUE
-rb_str_cat(VALUE str, const char *ptr, long len)
-{
-    return rb_str_buf_cat(str, ptr, len);
-}
-
-VALUE
-rb_str_cat2(VALUE str, const char *ptr)
-{
-    return rb_str_buf_cat2(str, ptr);
-}
+RUBY_ALIAS_FUNCTION(rb_str_cat(VALUE str, const char *ptr, long len), rb_str_buf_cat, (str, ptr, len))
+RUBY_ALIAS_FUNCTION(rb_str_cat2(VALUE str, const char *ptr), rb_str_buf_cat2, (str, ptr))
 
 static VALUE
 rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
