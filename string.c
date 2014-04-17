@@ -484,6 +484,14 @@ rb_str_capacity(VALUE str)
     }
 }
 
+static inline void
+must_not_null(const char *ptr)
+{
+    if (!ptr) {
+	rb_raise(rb_eArgError, "NULL pointer given");
+    }
+}
+
 static inline VALUE
 str_alloc(VALUE klass)
 {
@@ -565,9 +573,7 @@ rb_enc_str_new(const char *ptr, long len, rb_encoding *enc)
 VALUE
 rb_str_new_cstr(const char *ptr)
 {
-    if (!ptr) {
-	rb_raise(rb_eArgError, "NULL pointer given");
-    }
+    must_not_null(ptr);
     return rb_str_new(ptr, strlen(ptr));
 }
 
@@ -582,9 +588,7 @@ rb_usascii_str_new_cstr(const char *ptr)
 VALUE
 rb_enc_str_new_cstr(const char *ptr, rb_encoding *enc)
 {
-    if (!ptr) {
-	rb_raise(rb_eArgError, "NULL pointer given");
-    }
+    must_not_null(ptr);
     if (rb_enc_mbminlen(enc) != 1) {
 	rb_raise(rb_eArgError, "wchar encoding given");
     }
@@ -2062,6 +2066,7 @@ rb_str_cat(VALUE str, const char *ptr, long len)
 VALUE
 rb_str_cat_cstr(VALUE str, const char *ptr)
 {
+    must_not_null(ptr);
     return rb_str_buf_cat(str, ptr, strlen(ptr));
 }
 
