@@ -1,3 +1,7 @@
+Thu Apr 17 16:28:10 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* prelude.rb: [DOC] Update Thread::exclusive docs by @stevenharman.
+
 Thu Apr 17 10:03:53 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/fileutils.rb (FileUtils#copy_entry): update rdoc about
