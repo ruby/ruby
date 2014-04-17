@@ -2066,17 +2066,13 @@ rb_str_buf_cat2(VALUE str, const char *ptr)
 VALUE
 rb_str_cat(VALUE str, const char *ptr, long len)
 {
-    if (len < 0) {
-	rb_raise(rb_eArgError, "negative string size (or size too big)");
-    }
-
     return rb_str_buf_cat(str, ptr, len);
 }
 
 VALUE
 rb_str_cat2(VALUE str, const char *ptr)
 {
-    return rb_str_cat(str, ptr, strlen(ptr));
+    return rb_str_buf_cat2(str, ptr);
 }
 
 static VALUE
