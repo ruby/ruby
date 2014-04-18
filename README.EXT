@@ -1081,6 +1081,15 @@ rb_float_new(f) ::
 
   double -> Float
 
+RSTRING_LEN(str) ::
+
+  String -> length of String data in bytes
+
+RSTRING_PTR(str) ::
+
+  String -> pointer to String data
+  Note that the result pointer may not be NULL-terminated
+
 StringValue(value) ::
 
   Object with #to_str -> String
@@ -1092,6 +1101,7 @@ StringValuePtr(value) ::
 StringValueCStr(value) ::
 
   Object with #to_str -> pointer to String data without NULL bytes
+  It is guaranteed that the result data is NULL-terminated
 
 rb_str_new2(s) ::
 

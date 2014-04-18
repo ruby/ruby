@@ -1119,6 +1119,8 @@ Data_Get_Struct(data, type, sval) ::
   rb_integer_pack(value, words, numwords, wordsize, nails, flags), rb_integer_unpack(words, numwords, wordsize, nails, flags)
   NUM2DBL(value)
   rb_float_new(f)
+  RSTRING_LEN(str)
+  RSTRING_PTR(str)
   StringValue(value)
   StringValuePtr(value)
   StringValueCStr(value)
