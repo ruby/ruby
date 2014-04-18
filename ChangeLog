@@ -1,3 +1,8 @@
+Fri Apr 18 15:40:05 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c: use uintptr_t instead of VALUE because they are not ruby
+	  object.
+
 Fri Apr 18 14:51:42 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c: check str_strlen's argument, and add comment or

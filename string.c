@@ -259,22 +259,22 @@ VALUE rb_fs;
 static inline const char *
 search_nonascii(const char *p, const char *e)
 {
-#if SIZEOF_VALUE == 8
+#if SIZEOF_VOIDP == 8
 # define NONASCII_MASK 0x8080808080808080ULL
-#elif SIZEOF_VALUE == 4
+#elif SIZEOF_VOIDP == 4
 # define NONASCII_MASK 0x80808080UL
 #endif
 #ifdef NONASCII_MASK
-    if ((int)sizeof(VALUE) * 2 < e - p) {
-        const VALUE *s, *t;
-        const VALUE lowbits = sizeof(VALUE) - 1;
-        s = (const VALUE*)(~lowbits & ((VALUE)p + lowbits));
+    if ((int)SIZEOF_VOIDP * 2 < e - p) {
+        const uintptr_t *s, *t;
+        const uintptr_t lowbits = SIZEOF_VOIDP - 1;
+        s = (const uintptr_t*)(~lowbits & ((uintptr_t)p + lowbits));
         while (p < (const char *)s) {
             if (!ISASCII(*p))
                 return p;
             p++;
         }
-        t = (const VALUE*)(~lowbits & (VALUE)e);
+        t = (const uintptr_t*)(~lowbits & (uintptr_t)e);
         while (s < t) {
             if (*s & NONASCII_MASK) {
                 t = s;
@@ -1090,10 +1090,10 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
  * This function calculate every bytes in the argument word `s'
  * using the above logic concurrently. and gather every bytes result.
  */
-static inline VALUE
-count_utf8_lead_bytes_with_word(const VALUE *s)
+static inline uintptr_t
+count_utf8_lead_bytes_with_word(const uintptr_t *s)
 {
-    VALUE d = *s;
+    uintptr_t d = *s;
 
     /* Transform into bit0 represent UTF-8 leading or not. */
     d |= ~(d>>1);
@@ -1103,7 +1103,7 @@ count_utf8_lead_bytes_with_word(const VALUE *s)
     /* Gather every bytes. */
     d += (d>>8);
     d += (d>>16);
-#if SIZEOF_VALUE == 8
+#if SIZEOF_VOIDP == 8
     d += (d>>32);
 #endif
     return (d&0xF);
@@ -1121,12 +1121,12 @@ enc_strlen(const char *p, const char *e, rb_encoding *enc, int cr)
     }
 #ifdef NONASCII_MASK
     else if (cr == ENC_CODERANGE_VALID && enc == rb_utf8_encoding()) {
-	VALUE len = 0;
-	if ((int)sizeof(VALUE) * 2 < e - p) {
-	    const VALUE *s, *t;
-	    const VALUE lowbits = sizeof(VALUE) - 1;
-	    s = (const VALUE*)(~lowbits & ((VALUE)p + lowbits));
-	    t = (const VALUE*)(~lowbits & (VALUE)e);
+	uintptr_t len = 0;
+	if ((int)sizeof(uintptr_t) * 2 < e - p) {
+	    const uintptr_t *s, *t;
+	    const uintptr_t lowbits = sizeof(uintptr_t) - 1;
+	    s = (const uintptr_t*)(~lowbits & ((uintptr_t)p + lowbits));
+	    t = (const uintptr_t*)(~lowbits & (uintptr_t)e);
 	    while (p < (const char *)s) {
 		if (is_utf8_lead_byte(*p)) len++;
 		p++;
@@ -1738,11 +1738,11 @@ static char *
 str_utf8_nth(const char *p, const char *e, long *nthp)
 {
     long nth = *nthp;
-    if ((int)SIZEOF_VALUE * 2 < e - p && (int)SIZEOF_VALUE * 2 < nth) {
-	const VALUE *s, *t;
-	const VALUE lowbits = sizeof(VALUE) - 1;
-	s = (const VALUE*)(~lowbits & ((VALUE)p + lowbits));
-	t = (const VALUE*)(~lowbits & (VALUE)e);
+    if ((int)SIZEOF_VOIDP * 2 < e - p && (int)SIZEOF_VOIDP * 2 < nth) {
+	const uintptr_t *s, *t;
+	const uintptr_t lowbits = SIZEOF_VOIDP - 1;
+	s = (const uintptr_t*)(~lowbits & ((uintptr_t)p + lowbits));
+	t = (const uintptr_t*)(~lowbits & (uintptr_t)e);
 	while (p < (const char *)s) {
 	    if (is_utf8_lead_byte(*p)) nth--;
 	    p++;
@@ -1750,7 +1750,7 @@ str_utf8_nth(const char *p, const char *e, long *nthp)
 	do {
 	    nth -= count_utf8_lead_bytes_with_word(s);
 	    s++;
-	} while (s < t && (int)sizeof(VALUE) <= nth);
+	} while (s < t && (int)SIZEOF_VOIDP <= nth);
 	p = (char *)s;
     }
     while (p < e) {
