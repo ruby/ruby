@@ -1,3 +1,8 @@
+Fri Apr 18 14:21:21 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (enc_strlen): move UTF-8 optimization from str_strlen to
+	  enc_strlen.
+
 Fri Apr 18 08:50:18 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (rb_cv_getcwd_malloc): check if getcwd allocates

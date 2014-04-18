@@ -1075,6 +1075,41 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
     return str;
 }
 
+#ifdef NONASCII_MASK
+#define is_utf8_lead_byte(c) (((c)&0xC0) != 0x80)
+
+/*
+ * UTF-8 leading bytes have either 0xxxxxxx or 11xxxxxx
+ * bit representation. (see http://en.wikipedia.org/wiki/UTF-8)
+ * Therefore, following pseudo code can detect UTF-8 leading byte.
+ *
+ * if (!(byte & 0x80))
+ *   byte |= 0x40;          // turn on bit6
+ * return ((byte>>6) & 1);  // bit6 represent it's leading byte or not.
+ *
+ * This function calculate every bytes in the argument word `s'
+ * using the above logic concurrently. and gather every bytes result.
+ */
+static inline VALUE
+count_utf8_lead_bytes_with_word(const VALUE *s)
+{
+    VALUE d = *s;
+
+    /* Transform into bit0 represent UTF-8 leading or not. */
+    d |= ~(d>>1);
+    d >>= 6;
+    d &= NONASCII_MASK >> 7;
+
+    /* Gather every bytes. */
+    d += (d>>8);
+    d += (d>>16);
+#if SIZEOF_VALUE == 8
+    d += (d>>32);
+#endif
+    return (d&0xF);
+}
+#endif
+
 static inline long
 enc_strlen(const char *p, const char *e, rb_encoding *enc, int cr)
 {
@@ -1084,6 +1119,31 @@ enc_strlen(const char *p, const char *e, rb_encoding *enc, int cr)
     if (rb_enc_mbmaxlen(enc) == rb_enc_mbminlen(enc)) {
         return (e - p + rb_enc_mbminlen(enc) - 1) / rb_enc_mbminlen(enc);
     }
+#ifdef NONASCII_MASK
+    else if (cr == ENC_CODERANGE_VALID && enc == rb_utf8_encoding()) {
+	VALUE len = 0;
+	if ((int)sizeof(VALUE) * 2 < e - p) {
+	    const VALUE *s, *t;
+	    const VALUE lowbits = sizeof(VALUE) - 1;
+	    s = (const VALUE*)(~lowbits & ((VALUE)p + lowbits));
+	    t = (const VALUE*)(~lowbits & (VALUE)e);
+	    while (p < (const char *)s) {
+		if (is_utf8_lead_byte(*p)) len++;
+		p++;
+	    }
+	    while (s < t) {
+		len += count_utf8_lead_bytes_with_word(s);
+		s++;
+	    }
+	    p = (const char *)s;
+	}
+	while (p < e) {
+	    if (is_utf8_lead_byte(*p)) len++;
+	    p++;
+	}
+	return (long)len;
+    }
+#endif
     else if (rb_enc_asciicompat(enc)) {
         c = 0;
 	if (cr == ENC_CODERANGE_7BIT || cr == ENC_CODERANGE_VALID) {
@@ -1183,41 +1243,7 @@ rb_enc_strlen_cr(const char *p, const char *e, rb_encoding *enc, int *cr)
     return c;
 }
 
-#ifdef NONASCII_MASK
-#define is_utf8_lead_byte(c) (((c)&0xC0) != 0x80)
-
-/*
- * UTF-8 leading bytes have either 0xxxxxxx or 11xxxxxx
- * bit representation. (see http://en.wikipedia.org/wiki/UTF-8)
- * Therefore, following pseudo code can detect UTF-8 leading byte.
- *
- * if (!(byte & 0x80))
- *   byte |= 0x40;          // turn on bit6
- * return ((byte>>6) & 1);  // bit6 represent it's leading byte or not.
- *
- * This function calculate every bytes in the argument word `s'
- * using the above logic concurrently. and gather every bytes result.
- */
-static inline VALUE
-count_utf8_lead_bytes_with_word(const VALUE *s)
-{
-    VALUE d = *s;
-
-    /* Transform into bit0 represent UTF-8 leading or not. */
-    d |= ~(d>>1);
-    d >>= 6;
-    d &= NONASCII_MASK >> 7;
-
-    /* Gather every bytes. */
-    d += (d>>8);
-    d += (d>>16);
-#if SIZEOF_VALUE == 8
-    d += (d>>32);
-#endif
-    return (d&0xF);
-}
-#endif
-
+/* enc must be compatible with str's enc */
 static long
 str_strlen(VALUE str, rb_encoding *enc)
 {
@@ -1230,33 +1256,7 @@ str_strlen(VALUE str, rb_encoding *enc)
     p = RSTRING_PTR(str);
     e = RSTRING_END(str);
     cr = ENC_CODERANGE(str);
-#ifdef NONASCII_MASK
-    if (ENC_CODERANGE(str) == ENC_CODERANGE_VALID &&
-        enc == rb_utf8_encoding()) {
 
-	VALUE len = 0;
-	if ((int)sizeof(VALUE) * 2 < e - p) {
-	    const VALUE *s, *t;
-	    const VALUE lowbits = sizeof(VALUE) - 1;
-	    s = (const VALUE*)(~lowbits & ((VALUE)p + lowbits));
-	    t = (const VALUE*)(~lowbits & (VALUE)e);
-	    while (p < (const char *)s) {
-		if (is_utf8_lead_byte(*p)) len++;
-		p++;
-	    }
-	    while (s < t) {
-		len += count_utf8_lead_bytes_with_word(s);
-		s++;
-	    }
-	    p = (const char *)s;
-	}
-	while (p < e) {
-	    if (is_utf8_lead_byte(*p)) len++;
-	    p++;
-	}
-	return (long)len;
-    }
-#endif
     n = rb_enc_strlen_cr(p, e, enc, &cr);
     if (cr) {
         ENC_CODERANGE_SET(str, cr);
