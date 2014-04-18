@@ -1500,10 +1500,7 @@ rb_str_modify_expand(VALUE str, long expand)
 	    str_make_independent_expand(str, expand);
 	}
     }
-    if (ENC_CODERANGE(str) == ENC_CODERANGE_BROKEN) {
-	/* Force re-scan later */
-	ENC_CODERANGE_CLEAR(str);
-    }
+    ENC_CODERANGE_CLEAR(str);
 }
 
 /* As rb_str_modify(), but don't clear coderange */
