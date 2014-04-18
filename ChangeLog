@@ -1,3 +1,7 @@
+Fri Apr 18 14:32:40 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (str_strlen): use enc_strlen if the coderange is known.
+
 Fri Apr 18 14:21:21 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (enc_strlen): move UTF-8 optimization from str_strlen to

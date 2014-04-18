@@ -1187,6 +1187,9 @@ rb_enc_strlen(const char *p, const char *e, rb_encoding *enc)
     return enc_strlen(p, e, enc, ENC_CODERANGE_UNKNOWN);
 }
 
+/* To get strlen with cr
+ * Note that given cr is not used.
+ */
 long
 rb_enc_strlen_cr(const char *p, const char *e, rb_encoding *enc, int *cr)
 {
@@ -1243,12 +1246,11 @@ rb_enc_strlen_cr(const char *p, const char *e, rb_encoding *enc, int *cr)
     return c;
 }
 
-/* enc must be compatible with str's enc */
+/* enc must be str's enc or rb_enc_check(str, str2) */
 static long
 str_strlen(VALUE str, rb_encoding *enc)
 {
     const char *p, *e;
-    long n;
     int cr;
 
     if (single_byte_optimizable(str)) return RSTRING_LEN(str);
@@ -1257,11 +1259,14 @@ str_strlen(VALUE str, rb_encoding *enc)
     e = RSTRING_END(str);
     cr = ENC_CODERANGE(str);
 
-    n = rb_enc_strlen_cr(p, e, enc, &cr);
-    if (cr) {
-        ENC_CODERANGE_SET(str, cr);
+    if (cr == ENC_CODERANGE_UNKNOWN) {
+	long n = rb_enc_strlen_cr(p, e, enc, &cr);
+	if (cr) ENC_CODERANGE_SET(str, cr);
+	return n;
     }
-    return n;
+    else {
+	return enc_strlen(p, e, enc, cr);
+    }
 }
 
 long
