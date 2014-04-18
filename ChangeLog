@@ -1,3 +1,17 @@
+Sat Apr 19 00:32:07 2014  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_num2long): Returns a long.
+	  (rb_num2ulong): Returns a unsigned long.
+	
+	* bignum.c (rb_big2long): Returns a long.
+	  (rb_big2ulong): Returns a unsigned long.
+
+	* include/ruby/intern.h: Follow above changes.
+
+	* include/ruby/ruby.h: Follow above changes.
+	  (rb_num2long_inline): No need to cast.
+	  (rb_num2ulong_inline): Ditto.
+
 Sat Apr 19 00:17:20 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (SHARABLE_SUBSTRING_P): predicate if substring can be

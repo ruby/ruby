@@ -4962,7 +4962,7 @@ big2ulong(VALUE x, const char *type)
     return num;
 }
 
-VALUE
+unsigned long
 rb_big2ulong(VALUE x)
 {
     unsigned long num = big2ulong(x, "unsigned long");
@@ -4979,7 +4979,7 @@ rb_big2ulong(VALUE x)
     rb_raise(rb_eRangeError, "bignum out of range of unsigned long");
 }
 
-SIGNED_VALUE
+long
 rb_big2long(VALUE x)
 {
     unsigned long num = big2ulong(x, "long");

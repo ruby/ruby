@@ -2030,7 +2030,7 @@ out_of_range_float(char (*pbuf)[24], VALUE val)
    LONG_MIN <= (n): \
    LONG_MIN_MINUS_ONE < (n))
 
-SIGNED_VALUE
+long
 rb_num2long(VALUE val)
 {
   again:
@@ -2100,7 +2100,7 @@ rb_num2ulong_internal(VALUE val, int *wrap_p)
     }
 }
 
-VALUE
+unsigned long
 rb_num2ulong(VALUE val)
 {
     return rb_num2ulong_internal(val, NULL);

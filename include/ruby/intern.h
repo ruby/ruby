@@ -102,9 +102,9 @@ VALUE rb_str_to_inum(VALUE, int, int);
 VALUE rb_cstr2inum(const char*, int);
 VALUE rb_str2inum(VALUE, int);
 VALUE rb_big2str(VALUE, int);
-SIGNED_VALUE rb_big2long(VALUE);
+long rb_big2long(VALUE);
 #define rb_big2int(x) rb_big2long(x)
-VALUE rb_big2ulong(VALUE);
+unsigned long rb_big2ulong(VALUE);
 #define rb_big2uint(x) rb_big2ulong(x)
 #if HAVE_LONG_LONG
 LONG_LONG rb_big2ll(VALUE);
