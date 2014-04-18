@@ -2,7 +2,7 @@ Sat Apr 19 00:32:07 2014  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (rb_num2long): Returns a long.
 	  (rb_num2ulong): Returns a unsigned long.
-	
+
 	* bignum.c (rb_big2long): Returns a long.
 	  (rb_big2ulong): Returns a unsigned long.
 
