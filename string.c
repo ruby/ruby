@@ -121,6 +121,12 @@ VALUE rb_cSymbol;
 
 #define STR_ENC_GET(str) get_encoding(str)
 
+#if 1
+#define SHARABLE_SUBSTRING_P(beg, len, end) ((beg) + (len) == (end))
+#else
+#define SHARABLE_SUBSTRING_P(beg, len, end) 1
+#endif
+
 rb_encoding *rb_enc_get_from_index(int index);
 
 static rb_encoding *
@@ -1790,7 +1796,7 @@ rb_str_subseq(VALUE str, long beg, long len)
 {
     VALUE str2;
 
-    if (RSTRING_EMBED_LEN_MAX < len) {
+    if (RSTRING_EMBED_LEN_MAX < len && SHARABLE_SUBSTRING_P(beg, len, RSTRING_LEN(str))) {
 	long olen;
 	str2 = rb_str_new_shared(rb_str_new_frozen(str));
 	RSTRING(str2)->as.heap.ptr += beg;
@@ -1900,7 +1906,7 @@ rb_str_substr(VALUE str, long beg, long len)
     char *p = rb_str_subpos(str, beg, &len);
 
     if (!p) return Qnil;
-    if (len > RSTRING_EMBED_LEN_MAX) {
+    if (len > RSTRING_EMBED_LEN_MAX && SHARABLE_SUBSTRING_P(p, len, RSTRING_END(str))) {
 	long ofs = p - RSTRING_PTR(str);
 	str2 = rb_str_new_frozen(str);
 	str2 = str_new_shared(rb_obj_class(str2), str2);
@@ -4413,7 +4419,7 @@ str_byte_substr(VALUE str, long beg, long len)
     else
 	p = s + beg;
 
-    if (len > RSTRING_EMBED_LEN_MAX) {
+    if (len > RSTRING_EMBED_LEN_MAX && SHARABLE_SUBSTRING_P(beg, len, n)) {
 	str2 = rb_str_new_frozen(str);
 	str2 = str_new_shared(rb_obj_class(str2), str2);
 	RSTRING(str2)->as.heap.ptr += beg;

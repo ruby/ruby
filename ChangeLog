@@ -1,3 +1,10 @@
+Sat Apr 19 00:17:20 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (SHARABLE_SUBSTRING_P): predicate if substring can be
+	  shared with the original string.  true if just at the end of the
+	  original string, for the time being.  all substring will be able to
+	  be shared in the future.
+
 Fri Apr 18 21:48:24 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_new_frozen): consider the shared string at
