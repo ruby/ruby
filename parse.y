@@ -5416,21 +5416,21 @@ must_be_ascii_compatible(VALUE s)
 static VALUE
 lex_get_str(struct parser_params *parser, VALUE s)
 {
-    char *beg, *end, *pend;
-    rb_encoding *enc = must_be_ascii_compatible(s);
+    char *beg, *end, *start;
+    long len;
 
     beg = RSTRING_PTR(s);
+    len = RSTRING_LEN(s);
+    start = beg;
     if (lex_gets_ptr) {
-	if (RSTRING_LEN(s) == lex_gets_ptr) return Qnil;
+	if (len == lex_gets_ptr) return Qnil;
 	beg += lex_gets_ptr;
+	len -= lex_gets_ptr;
     }
-    pend = RSTRING_PTR(s) + RSTRING_LEN(s);
-    end = beg;
-    while (end < pend) {
-	if (*end++ == '\n') break;
-    }
-    lex_gets_ptr = end - RSTRING_PTR(s);
-    return rb_enc_str_new(beg, end - beg, enc);
+    end = memchr(beg, '\n', len);
+    if (end) len = ++end - beg;
+    lex_gets_ptr += len;
+    return rb_str_subseq(s, beg - start, len);
 }
 
 static VALUE
@@ -5465,7 +5465,7 @@ parser_compile_string(volatile VALUE vparser, VALUE fname, VALUE s, int line)
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, parser);
     lex_gets = lex_get_str;
     lex_gets_ptr = 0;
-    lex_input = s;
+    lex_input = rb_str_new_frozen(s);
     lex_pbeg = lex_p = lex_pend = 0;
     compile_for_eval = rb_parse_in_eval();
 
