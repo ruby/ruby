@@ -2021,7 +2021,7 @@ str_buf_cat(VALUE str, const char *ptr, long len)
     if (ptr >= RSTRING_PTR(str) && ptr <= RSTRING_END(str)) {
         off = ptr - RSTRING_PTR(str);
     }
-    rb_str_modify(str);
+    str_modify_keep_cr(str);
     if (len == 0) return 0;
     if (STR_EMBED_P(str)) {
 	capa = RSTRING_EMBED_LEN_MAX;
