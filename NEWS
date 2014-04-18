@@ -110,5 +110,5 @@ with all sufficient information, see the ChangeLog file.
 
 * `rb_str_substr()` and `rb_str_subseq()` now share middle of a string,
   but not only the end of a string.  Therefore, result strings may not
-  be NULL-terminated, `StringValueCStr()` is needed calling to obtain a
-  NULL-terminated C string.
+  be NUL-terminated, `StringValueCStr()` is needed calling to obtain a
+  NUL-terminated C string.
