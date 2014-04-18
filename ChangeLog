@@ -1,3 +1,8 @@
+Fri Apr 18 14:51:42 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c: check str_strlen's argument, and add comment or
+	  use NULL if simply it uses str's enc.
+
 Fri Apr 18 14:32:40 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (str_strlen): use enc_strlen if the coderange is known.

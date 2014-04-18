@@ -1272,7 +1272,7 @@ str_strlen(VALUE str, rb_encoding *enc)
 long
 rb_str_strlen(VALUE str)
 {
-    return str_strlen(str, STR_ENC_GET(str));
+    return str_strlen(str, NULL);
 }
 
 /*
@@ -1286,10 +1286,7 @@ rb_str_strlen(VALUE str)
 VALUE
 rb_str_length(VALUE str)
 {
-    long len;
-
-    len = str_strlen(str, STR_ENC_GET(str));
-    return LONG2NUM(len);
+    return LONG2NUM(str_strlen(str, NULL));
 }
 
 /*
@@ -1857,7 +1854,7 @@ rb_str_subpos(VALUE str, long beg, long *lenp)
 	return 0;
     }
     if (len == 0) {
-	if (beg > str_strlen(str, enc)) return 0;
+	if (beg > str_strlen(str, enc)) return 0; /* str's enc */
 	p = s + beg;
     }
 #ifdef NONASCII_MASK
@@ -2594,8 +2591,8 @@ rb_str_index(VALUE str, VALUE sub, long offset)
     enc = rb_enc_check(str, sub);
     if (is_broken_string(sub)) return -1;
 
-    len = single_byte ? RSTRING_LEN(str) : str_strlen(str, enc);
-    slen = str_strlen(sub, enc);
+    len = single_byte ? RSTRING_LEN(str) : str_strlen(str, enc); /* rb_enc_check */
+    slen = str_strlen(sub, enc); /* rb_enc_check */
     if (offset < 0) {
 	offset += len;
 	if (offset < 0) return -1;
@@ -2659,7 +2656,7 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
 	pos = 0;
     }
     if (pos < 0) {
-	pos += str_strlen(str, STR_ENC_GET(str));
+	pos += str_strlen(str, NULL);
 	if (pos < 0) {
 	    if (RB_TYPE_P(sub, T_REGEXP)) {
 		rb_backref_set(Qnil);
@@ -2671,7 +2668,7 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
     if (SPECIAL_CONST_P(sub)) goto generic;
     switch (BUILTIN_TYPE(sub)) {
       case T_REGEXP:
-	if (pos > str_strlen(str, STR_ENC_GET(str)))
+	if (pos > str_strlen(str, NULL))
 	    return Qnil;
 	pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
 			 rb_enc_check(str, sub), single_byte_optimizable(str));
@@ -2770,8 +2767,8 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
     enc = rb_enc_check(str, sub);
     if (is_broken_string(sub)) return -1;
     singlebyte = single_byte_optimizable(str);
-    len = singlebyte ? RSTRING_LEN(str) : str_strlen(str, enc);
-    slen = str_strlen(sub, enc);
+    len = singlebyte ? RSTRING_LEN(str) : str_strlen(str, enc); /* rb_enc_check */
+    slen = str_strlen(sub, enc); /* rb_enc_check */
 
     /* substring longer than string */
     if (len < slen) return -1;
@@ -2816,7 +2813,7 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
     VALUE sub;
     VALUE vpos;
     rb_encoding *enc = STR_ENC_GET(str);
-    long pos, len = str_strlen(str, enc);
+    long pos, len = str_strlen(str, enc); /* str's enc */
 
     if (rb_scan_args(argc, argv, "11", &sub, &vpos) == 2) {
 	pos = NUM2LONG(vpos);
@@ -2840,7 +2837,7 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
       case T_REGEXP:
 	/* enc = rb_get_check(str, sub); */
 	pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
-			 STR_ENC_GET(str), single_byte_optimizable(str));
+			 enc, single_byte_optimizable(str));
 
 	if (!RREGEXP(sub)->ptr || RREGEXP_SRC_LEN(sub)) {
 	    pos = rb_reg_search(sub, str, pos, 1);
@@ -3431,7 +3428,7 @@ rb_str_aref(VALUE str, VALUE indx)
 	    long beg, len;
 	    VALUE tmp;
 
-	    len = str_strlen(str, STR_ENC_GET(str));
+	    len = str_strlen(str, NULL);
 	    switch (rb_range_beg_len(indx, &beg, &len, len, 0)) {
 	      case Qfalse:
 		break;
@@ -3606,7 +3603,7 @@ rb_str_splice(VALUE str, long beg, long len, VALUE val)
 
     StringValue(val);
     enc = rb_enc_check(str, val);
-    slen = str_strlen(str, enc);
+    slen = str_strlen(str, enc); /* rb_enc_check */
 
     if (slen < beg) {
       out_of_range:
@@ -3704,7 +3701,7 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 	    rb_raise(rb_eIndexError, "string not matched");
 	}
 	beg = rb_str_sublen(str, beg);
-	rb_str_splice(str, beg, str_strlen(indx, 0), val);
+	rb_str_splice(str, beg, str_strlen(indx, NULL), val);
 	return val;
 
       generic:
@@ -3712,7 +3709,7 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 	/* check if indx is Range */
 	{
 	    long beg, len;
-	    if (rb_range_beg_len(indx, &beg, &len, str_strlen(str, 0), 2)) {
+	    if (rb_range_beg_len(indx, &beg, &len, str_strlen(str, NULL), 2)) {
 		rb_str_splice(str, beg, len, val);
 		return val;
 	    }
@@ -6669,7 +6666,7 @@ rb_str_enumerate_chars(VALUE str, int wantarray)
 	if (wantarray) {
 #if STRING_ENUMERATORS_WANTARRAY
 	    rb_warn("given block not used");
-	    ary = rb_ary_new_capa(str_strlen(str, enc));
+	    ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
 #else
 	    rb_warning("passing a block to String#chars is deprecated");
 	    wantarray = 0;
@@ -6678,7 +6675,7 @@ rb_str_enumerate_chars(VALUE str, int wantarray)
     }
     else {
 	if (wantarray)
-	    ary = rb_ary_new_capa(str_strlen(str, enc));
+	    ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
 	else
 	    RETURN_SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
     }
@@ -6773,7 +6770,7 @@ rb_str_enumerate_codepoints(VALUE str, int wantarray)
 	if (wantarray) {
 #if STRING_ENUMERATORS_WANTARRAY
 	    rb_warn("given block not used");
-	    ary = rb_ary_new_capa(str_strlen(str, enc));
+	    ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
 #else
 	    rb_warning("passing a block to String#codepoints is deprecated");
 	    wantarray = 0;
@@ -6782,7 +6779,7 @@ rb_str_enumerate_codepoints(VALUE str, int wantarray)
     }
     else {
 	if (wantarray)
-	    ary = rb_ary_new_capa(str_strlen(str, enc));
+	    ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
 	else
 	    RETURN_SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
     }
@@ -7535,13 +7532,13 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
 	enc = rb_enc_check(str, pad);
 	f = RSTRING_PTR(pad);
 	flen = RSTRING_LEN(pad);
-	fclen = str_strlen(pad, enc);
+	fclen = str_strlen(pad, enc); /* rb_enc_check */
 	singlebyte = single_byte_optimizable(pad);
 	if (flen == 0 || fclen == 0) {
 	    rb_raise(rb_eArgError, "zero width padding");
 	}
     }
-    len = str_strlen(str, enc);
+    len = str_strlen(str, enc); /* rb_enc_check */
     if (width < 0 || len >= width) return rb_str_dup(str);
     n = width - len;
     llen = (jflag == 'l') ? 0 : ((jflag == 'r') ? n : n/2);
