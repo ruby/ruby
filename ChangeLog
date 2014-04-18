@@ -1,3 +1,11 @@
+Fri Apr 18 21:48:24 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_new_frozen): consider the shared string at
+	  middle.
+
+	* string.c (rb_str_subseq, rb_str_substr, str_byte_substr): share
+	  middle of a string.
+
 Fri Apr 18 15:40:05 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c: use uintptr_t instead of VALUE because they are not ruby

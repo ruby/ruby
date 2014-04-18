@@ -823,16 +823,17 @@ rb_str_new_frozen(VALUE orig)
     else {
 	if (FL_TEST(orig, STR_SHARED)) {
 	    VALUE shared = RSTRING(orig)->as.heap.aux.shared;
-	    long ofs = RSTRING_LEN(shared) - RSTRING_LEN(orig);
+	    long ofs = RSTRING_PTR(orig) - RSTRING_PTR(shared);
+	    long rest = RSTRING_LEN(shared) - ofs - RSTRING_LEN(orig);
 	    assert(OBJ_FROZEN(shared));
 
-	    if ((ofs > 0) ||
+	    if ((ofs > 0) || (rest > 0) ||
 		(klass != RBASIC(shared)->klass) ||
 		((RBASIC(shared)->flags ^ RBASIC(orig)->flags) & FL_TAINT) ||
 		ENCODING_GET(shared) != ENCODING_GET(orig)) {
 		str = str_new_shared(klass, shared);
 		RSTRING(str)->as.heap.ptr += ofs;
-		RSTRING(str)->as.heap.len -= ofs;
+		RSTRING(str)->as.heap.len -= ofs + rest;
 	    }
 	    else {
 		return shared;
@@ -1789,10 +1790,12 @@ rb_str_subseq(VALUE str, long beg, long len)
 {
     VALUE str2;
 
-    if (RSTRING_LEN(str) == beg + len &&
-        RSTRING_EMBED_LEN_MAX < len) {
-        str2 = rb_str_new_shared(rb_str_new_frozen(str));
-        rb_str_drop_bytes(str2, beg);
+    if (RSTRING_EMBED_LEN_MAX < len) {
+	long olen;
+	str2 = rb_str_new_shared(rb_str_new_frozen(str));
+	RSTRING(str2)->as.heap.ptr += beg;
+	olen = RSTRING(str2)->as.heap.len;
+	if (olen > len) RSTRING(str2)->as.heap.len = len;
     }
     else {
         str2 = rb_str_new_with_class(str, RSTRING_PTR(str)+beg, len);
@@ -1897,10 +1900,11 @@ rb_str_substr(VALUE str, long beg, long len)
     char *p = rb_str_subpos(str, beg, &len);
 
     if (!p) return Qnil;
-    if (len > RSTRING_EMBED_LEN_MAX && p + len == RSTRING_END(str)) {
+    if (len > RSTRING_EMBED_LEN_MAX) {
+	long ofs = p - RSTRING_PTR(str);
 	str2 = rb_str_new_frozen(str);
 	str2 = str_new_shared(rb_obj_class(str2), str2);
-	RSTRING(str2)->as.heap.ptr += RSTRING(str2)->as.heap.len - len;
+	RSTRING(str2)->as.heap.ptr += ofs;
 	RSTRING(str2)->as.heap.len = len;
     }
     else {
@@ -4409,10 +4413,10 @@ str_byte_substr(VALUE str, long beg, long len)
     else
 	p = s + beg;
 
-    if (len > RSTRING_EMBED_LEN_MAX && beg + len == n) {
+    if (len > RSTRING_EMBED_LEN_MAX) {
 	str2 = rb_str_new_frozen(str);
 	str2 = str_new_shared(rb_obj_class(str2), str2);
-	RSTRING(str2)->as.heap.ptr += RSTRING(str2)->as.heap.len - len;
+	RSTRING(str2)->as.heap.ptr += beg;
 	RSTRING(str2)->as.heap.len = len;
     }
     else {

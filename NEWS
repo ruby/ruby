@@ -107,3 +107,8 @@ with all sufficient information, see the ChangeLog file.
   Ruby's heaps.
 
 * rb_str_cat_cstr() added. This is same as `rb_str_cat2()`.
+
+* `rb_str_substr()` and `rb_str_subseq()` now share middle of a string,
+  but not only the end of a string.  Therefore, result strings may not
+  be NULL-terminated, `StringValueCStr()` is needed calling to obtain a
+  NULL-terminated C string.
