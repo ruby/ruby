@@ -2585,11 +2585,11 @@ month_arg(VALUE arg)
     int i, mon;
 
     VALUE s = rb_check_string_type(arg);
-    if (!NIL_P(s)) {
+    if (!NIL_P(s) && RSTRING_LEN(s) > 0) {
         mon = 0;
         for (i=0; i<12; i++) {
             if (RSTRING_LEN(s) == 3 &&
-                STRCASECMP(months[i], RSTRING_PTR(s)) == 0) {
+                STRNCASECMP(months[i], RSTRING_PTR(s), 3) == 0) {
                 mon = i+1;
                 break;
             }
@@ -4569,7 +4569,7 @@ time_strftime(VALUE time, VALUE format)
     if (len == 0) {
 	rb_warning("strftime called with empty format string");
     }
-    else if (memchr(fmt, '\0', len)) {
+    else if (fmt[len] || memchr(fmt, '\0', len)) {
 	/* Ruby string may contain \0's. */
 	const char *p = fmt, *pe = fmt + len;
 
@@ -4828,7 +4828,7 @@ end_submicro: ;
     }
     if (!NIL_P(zone)) {
 	zone = rb_str_new_frozen(zone);
-	tobj->vtm.zone = RSTRING_PTR(zone);
+	tobj->vtm.zone = StringValueCStr(zone);
 	rb_ivar_set(time, id_zone, zone);
     }
 
