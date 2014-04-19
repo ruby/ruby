@@ -2620,12 +2620,18 @@ primary		: literal
 			$$ = dispatch1(paren, 0);
 		    %*/
 		    }
-		| tLPAREN_ARG expr {lex_state = EXPR_ENDARG;} rparen
+		| tLPAREN_ARG
 		    {
+			$<val>1 = cmdarg_stack;
+			cmdarg_stack = 0;
+		    }
+		  expr {lex_state = EXPR_ENDARG;} rparen
+		    {
+			cmdarg_stack = $<val>1;
 		    /*%%%*/
-			$$ = $2;
+			$$ = $3;
 		    /*%
-			$$ = dispatch1(paren, $2);
+			$$ = dispatch1(paren, $3);
 		    %*/
 		    }
 		| tLPAREN compstmt ')'
