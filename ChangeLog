@@ -1,3 +1,8 @@
+Sun Apr 20 06:01:18 2014  Eric Wong  <e@80x24.org>
+
+	* gc.c (rb_gc_writebarrier): drop special case for big hash/array
+	  [Bug #9518]
+
 Sat Apr 19 15:38:29 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (primary): flush cmdarg flags inside left-paren in a
