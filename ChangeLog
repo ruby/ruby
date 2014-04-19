@@ -1,3 +1,9 @@
+Sun Apr 20 08:41:33 2014  Andrew DeMaria  <ademariad@gmail.com>
+
+	* lib/mkmf.rb (link_command, libpathflag, create_makefile): prefer
+	  user specified `$LIBPATH` than `$DEFLIBPATH`.  [ruby-core:62100]
+	  [ruby-trunk - Bug #9760]
+
 Sun Apr 20 06:01:18 2014  Eric Wong  <e@80x24.org>
 
 	* gc.c (rb_gc_writebarrier): drop special case for big hash/array

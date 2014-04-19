@@ -467,7 +467,7 @@ MSG
     end
   end
 
-  def link_command(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
+  def link_command(ldflags, opt="", libpath=$LIBPATH|$DEFLIBPATH)
     librubyarg = $extmk ? $LIBRUBYARG_STATIC : "$(LIBRUBYARG)"
     conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote,
                                   'src' => "#{CONFTEST_C}",
@@ -503,7 +503,7 @@ MSG
                      conf)
   end
 
-  def libpathflag(libpath=$DEFLIBPATH|$LIBPATH)
+  def libpathflag(libpath=$LIBPATH|$DEFLIBPATH)
     libpath.map{|x|
       case x
       when "$(topdir)", /\A\./
@@ -2125,7 +2125,7 @@ RULES
   #
   def create_makefile(target, srcprefix = nil)
     $target = target
-    libpath = $DEFLIBPATH|$LIBPATH
+    libpath = $LIBPATH|$DEFLIBPATH
     message "creating Makefile\n"
     MakeMakefile.rm_f "#{CONFTEST}*"
     if CONFIG["DLEXT"] == $OBJEXT
@@ -2206,7 +2206,7 @@ RULES
     conf = yield(conf) if block_given?
     mfile.puts(conf)
     mfile.print "
-libpath = #{($DEFLIBPATH|$LIBPATH).join(" ")}
+libpath = #{($LIBPATH|$DEFLIBPATH).join(" ")}
 LIBPATH = #{libpath}
 DEFFILE = #{deffile}
 
