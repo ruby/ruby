@@ -35,8 +35,8 @@
 #if SIZEOF_SHORT == SIZEOF_BDIGIT
 #define SHORTLEN(x) (x)
 #else
-static long
-shortlen(long len, BDIGIT *ds)
+static size_t
+shortlen(size_t len, BDIGIT *ds)
 {
     BDIGIT num;
     int offset = 0;
@@ -774,11 +774,17 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    w_byte(TYPE_BIGNUM, arg);
 	    {
 		char sign = BIGNUM_SIGN(obj) ? '+' : '-';
-		long len = BIGNUM_LEN(obj);
+		size_t len = BIGNUM_LEN(obj);
+		size_t slen;
 		BDIGIT *d = BIGNUM_DIGITS(obj);
 
+                slen = SHORTLEN(len);
+                if (LONG_MAX < slen) {
+                    rb_raise(rb_eTypeError, "too big Bignum can't be dumped");
+                }
+
 		w_byte(sign, arg);
-		w_long(SHORTLEN(len), arg); /* w_short? */
+		w_long((long)slen, arg);
 		while (len--) {
 #if SIZEOF_BDIGIT > SIZEOF_SHORT
 		    BDIGIT num = *d;

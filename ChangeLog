@@ -1,3 +1,17 @@
+Sat Apr 19 10:07:24 2014  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (struct RBignum): Use size_t for len.
+
+	* include/ruby/intern.h (rb_big_new): Use size_t instead of long to
+	  specify the size of bignum.
+	  (rb_big_resize): Ditto.
+
+	* bignum.c: Follow above changes.
+
+	* rational.c: Follow above changes.
+
+	* marshal.c: Follow above changes.
+
 Sat Apr 19 00:32:07 2014  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (rb_num2long): Returns a long.

@@ -148,7 +148,7 @@ static void bary_divmod(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BD
 
 static VALUE bigmul0(VALUE x, VALUE y);
 static void bary_mul_toom3(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn, BDIGIT *wds, size_t wn);
-static VALUE bignew_1(VALUE klass, long len, int sign);
+static VALUE bignew_1(VALUE klass, size_t len, int sign);
 static inline VALUE bigtrunc(VALUE x);
 
 static VALUE bigsq(VALUE x);
@@ -2879,7 +2879,7 @@ dump_bignum(VALUE x)
     for (i = BIGNUM_LEN(x); i--; ) {
         printf("_%0*"PRIxBDIGIT, SIZEOF_BDIGIT*2, BDIGITS(x)[i]);
     }
-    printf(", len=%lu", BIGNUM_LEN(x));
+    printf(", len=%"PRIuSIZE, BIGNUM_LEN(x));
     puts("");
 }
 
@@ -2935,7 +2935,7 @@ rb_cmpint(VALUE val, VALUE a, VALUE b)
      (void)(RBIGNUM(b)->as.heap.len = (l)))
 
 static void
-rb_big_realloc(VALUE big, long len)
+rb_big_realloc(VALUE big, size_t len)
 {
     BDIGIT *ds;
     if (RBASIC(big)->flags & BIGNUM_EMBED_FLAG) {
@@ -2970,14 +2970,14 @@ rb_big_realloc(VALUE big, long len)
 }
 
 void
-rb_big_resize(VALUE big, long len)
+rb_big_resize(VALUE big, size_t len)
 {
     rb_big_realloc(big, len);
     BIGNUM_SET_LEN(big, len);
 }
 
 static VALUE
-bignew_1(VALUE klass, long len, int sign)
+bignew_1(VALUE klass, size_t len, int sign)
 {
     NEWOBJ_OF(big, struct RBignum, klass, T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0));
     BIGNUM_SET_SIGN(big, sign?1:0);
@@ -2995,7 +2995,7 @@ bignew_1(VALUE klass, long len, int sign)
 }
 
 VALUE
-rb_big_new(long len, int sign)
+rb_big_new(size_t len, int sign)
 {
     return bignew(len, sign != 0);
 }
@@ -3003,7 +3003,7 @@ rb_big_new(long len, int sign)
 VALUE
 rb_big_clone(VALUE x)
 {
-    long len = BIGNUM_LEN(x);
+    size_t len = BIGNUM_LEN(x);
     VALUE z = bignew_1(CLASS_OF(x), len, BIGNUM_SIGN(x));
 
     MEMCPY(BDIGITS(z), BDIGITS(x), BDIGIT, len);
@@ -3068,7 +3068,7 @@ twocomp2abs_bang(VALUE x, int hibits)
 static inline VALUE
 bigtrunc(VALUE x)
 {
-    long len = BIGNUM_LEN(x);
+    size_t len = BIGNUM_LEN(x);
     BDIGIT *ds = BDIGITS(x);
 
     if (len == 0) return x;
@@ -4940,7 +4940,7 @@ rb_big_to_s(int argc, VALUE *argv, VALUE x)
 static unsigned long
 big2ulong(VALUE x, const char *type)
 {
-    long len = BIGNUM_LEN(x);
+    size_t len = BIGNUM_LEN(x);
     unsigned long num;
     BDIGIT *ds;
 
@@ -5002,7 +5002,7 @@ rb_big2long(VALUE x)
 static unsigned LONG_LONG
 big2ull(VALUE x, const char *type)
 {
-    long len = BIGNUM_LEN(x);
+    size_t len = BIGNUM_LEN(x);
     unsigned LONG_LONG num;
     BDIGIT *ds = BDIGITS(x);
 
@@ -5724,7 +5724,7 @@ static VALUE
 bigadd(VALUE x, VALUE y, int sign)
 {
     VALUE z;
-    long len;
+    size_t len;
 
     sign = (sign == BIGNUM_SIGN(y));
     if (BIGNUM_SIGN(x) != sign) {
@@ -6738,24 +6738,29 @@ static VALUE
 rb_big_aref(VALUE x, VALUE y)
 {
     BDIGIT *xds;
-    unsigned long shift;
-    long i, s1, s2;
+    size_t shift;
+    size_t i, s1, s2;
+    long l;
     BDIGIT bit;
 
     if (RB_BIGNUM_TYPE_P(y)) {
 	if (!BIGNUM_SIGN(y))
 	    return INT2FIX(0);
 	bigtrunc(y);
-	if (BIGSIZE(y) > sizeof(long)) {
+	if (BIGSIZE(y) > sizeof(size_t)) {
 	  out_of_range:
 	    return BIGNUM_SIGN(x) ? INT2FIX(0) : INT2FIX(1);
 	}
+#if SIZEOF_SIZE_T <= SIZEOF_LONG
 	shift = big2ulong(y, "long");
+#else
+	shift = big2ull(y, "long long");
+#endif
     }
     else {
-	i = NUM2LONG(y);
-	if (i < 0) return INT2FIX(0);
-	shift = i;
+	l = NUM2LONG(y);
+	if (l < 0) return INT2FIX(0);
+	shift = (size_t)l;
     }
     s1 = shift/BITSPERDIG;
     s2 = shift%BITSPERDIG;

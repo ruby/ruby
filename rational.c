@@ -363,8 +363,8 @@ f_gcd(VALUE x, VALUE y)
 {
 #ifdef USE_GMP
     if (RB_TYPE_P(x, T_BIGNUM) && RB_TYPE_P(y, T_BIGNUM)) {
-        long xn = BIGNUM_LEN(x);
-        long yn = BIGNUM_LEN(y);
+        size_t xn = BIGNUM_LEN(x);
+        size_t yn = BIGNUM_LEN(y);
         if (GMP_GCD_DIGITS <= xn || GMP_GCD_DIGITS <= yn)
             return rb_gcd_gmp(x, y);
     }

@@ -91,12 +91,12 @@ VALUE rb_ary_resize(VALUE ary, long len);
 #define rb_ary_new3 rb_ary_new_from_args
 #define rb_ary_new4 rb_ary_new_from_values
 /* bignum.c */
-VALUE rb_big_new(long, int);
+VALUE rb_big_new(size_t, int);
 int rb_bigzero_p(VALUE x);
 VALUE rb_big_clone(VALUE);
 void rb_big_2comp(VALUE);
 VALUE rb_big_norm(VALUE);
-void rb_big_resize(VALUE big, long len);
+void rb_big_resize(VALUE big, size_t len);
 VALUE rb_cstr_to_inum(const char*, int, int);
 VALUE rb_str_to_inum(VALUE, int, int);
 VALUE rb_cstr2inum(const char*, int);

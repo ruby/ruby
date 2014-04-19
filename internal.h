@@ -372,7 +372,7 @@ struct RBignum {
     struct RBasic basic;
     union {
         struct {
-            long len;
+            size_t len;
             BDIGIT *digits;
         } heap;
         BDIGIT ary[BIGNUM_EMBED_LEN_MAX];
