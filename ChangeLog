@@ -1,6 +1,6 @@
 Sun Apr 20 12:57:15 2014  Masaya Tarui  <tarui@ruby-lang.org>
 
-	* st.c (st_foreach_check): chnage start point of search at check
+	* st.c (st_foreach_check): change start point of search at check
 	  from top to current. [ruby-dev:48047] [Bug #9646]
 
 Sun Apr 20 08:41:33 2014  Andrew DeMaria  <ademariad@gmail.com>
