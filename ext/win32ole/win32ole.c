@@ -330,10 +330,10 @@ static void oleparam_free(struct oleparamdata *pole);
 static LPWSTR ole_vstr2wc(VALUE vstr);
 static LPWSTR ole_mb2wc(char *pm, int len);
 static VALUE ole_wc2vstr(LPWSTR pw, BOOL isfree);
-static VALUE ole_ary_m_entry(VALUE val, long *pid);
+static VALUE ole_ary_m_entry(VALUE val, LONG *pid);
 static void * get_ptr_of_variant(VARIANT *pvar);
-static VALUE is_all_index_under(long *pid, long *pub, long dim);
-static void ole_set_safe_array(long n, SAFEARRAY *psa, long *pid, long *pub, VALUE val, long dim,  VARTYPE vt);
+static VALUE is_all_index_under(LONG *pid, long *pub, long dim);
+static void ole_set_safe_array(long n, SAFEARRAY *psa, LONG *pid, long *pub, VALUE val, long dim,  VARTYPE vt);
 static long dimension(VALUE val);
 static long ary_len_of_dim(VALUE ary, long dim);
 static HRESULT ole_val_ary2variant_ary(VALUE val, VARIANT *var, VARTYPE vt);
@@ -348,8 +348,8 @@ static VALUE default_inspect(VALUE self, const char *class_name);
 static VALUE ole_set_member(VALUE self, IDispatch *dispatch);
 static VALUE fole_s_allocate(VALUE klass);
 static VALUE create_win32ole_object(VALUE klass, IDispatch *pDispatch, int argc, VALUE *argv);
-static VALUE ary_new_dim(VALUE myary, long *pid, long *plb, long dim);
-static void ary_store_dim(VALUE myary, long *pid, long *plb, long dim, VALUE val);
+static VALUE ary_new_dim(VALUE myary, LONG *pid, LONG *plb, LONG dim);
+static void ary_store_dim(VALUE myary, LONG *pid, LONG *plb, LONG dim, VALUE val);
 static VALUE ole_variant2val(VARIANT *pvar);
 static LONG reg_open_key(HKEY hkey, const char *name, HKEY *phkey);
 static LONG reg_open_vkey(HKEY hkey, VALUE key, HKEY *phkey);
@@ -586,7 +586,7 @@ static VALUE folevariant_s_allocate(VALUE klass);
 static VALUE folevariant_s_array(VALUE klass, VALUE dims, VALUE vvt);
 static void check_type_val2variant(VALUE val);
 static VALUE folevariant_initialize(VALUE self, VALUE args);
-static long *ary2safe_array_index(int ary_size, VALUE *ary, SAFEARRAY *psa);
+static LONG *ary2safe_array_index(int ary_size, VALUE *ary, SAFEARRAY *psa);
 static void unlock_safe_array(SAFEARRAY *psa);
 static SAFEARRAY *get_locked_safe_array(VALUE val);
 static VALUE folevariant_ary_aref(int argc, VALUE *argv, VALUE self);
@@ -1180,7 +1180,7 @@ ole_excepinfo2msg(EXCEPINFO *pExInfo)
         pDescription = ole_wc2mb(pExInfo->bstrDescription);
     }
     if(pExInfo->wCode == 0) {
-        sprintf(error_code, "\n    OLE error code:%lX in ", pExInfo->scode);
+        sprintf(error_code, "\n    OLE error code:%X in ", pExInfo->scode);
     }
     else{
         sprintf(error_code, "\n    OLE error code:%u in ", pExInfo->wCode);
@@ -1418,7 +1418,7 @@ ole_wc2vstr(LPWSTR pw, BOOL isfree)
 }
 
 static VALUE
-ole_ary_m_entry(VALUE val, long *pid)
+ole_ary_m_entry(VALUE val, LONG *pid)
 {
     VALUE obj = Qnil;
     int i = 0;
@@ -1500,7 +1500,7 @@ get_ptr_of_variant(VARIANT *pvar)
 }
 
 static VALUE
-is_all_index_under(long *pid, long *pub, long dim)
+is_all_index_under(LONG *pid, long *pub, long dim)
 {
   long i = 0;
   for (i = 0; i < dim; i++) {
@@ -1512,7 +1512,7 @@ is_all_index_under(long *pid, long *pub, long dim)
 }
 
 static void
-ole_set_safe_array(long n, SAFEARRAY *psa, long *pid, long *pub, VALUE val, long dim,  VARTYPE vt)
+ole_set_safe_array(long n, SAFEARRAY *psa, LONG *pid, long *pub, VALUE val, long dim,  VARTYPE vt)
 {
     VALUE val1;
     HRESULT hr = S_OK;
@@ -1597,7 +1597,8 @@ ole_val_ary2variant_ary(VALUE val, VARIANT *var, VARTYPE vt)
 
     SAFEARRAYBOUND *psab = NULL;
     SAFEARRAY *psa = NULL;
-    long      *pub, *pid;
+    long      *pub;
+    LONG      *pid;
 
     Check_Type(val, T_ARRAY);
 
@@ -1605,7 +1606,7 @@ ole_val_ary2variant_ary(VALUE val, VARIANT *var, VARTYPE vt)
 
     psab = ALLOC_N(SAFEARRAYBOUND, dim);
     pub  = ALLOC_N(long, dim);
-    pid  = ALLOC_N(long, dim);
+    pid  = ALLOC_N(LONG, dim);
 
     if(!psab || !pub || !pid) {
         if(pub) free(pub);
@@ -2063,7 +2064,7 @@ create_win32ole_object(VALUE klass, IDispatch *pDispatch, int argc, VALUE *argv)
 }
 
 static VALUE
-ary_new_dim(VALUE myary, long *pid, long *plb, long dim) {
+ary_new_dim(VALUE myary, LONG *pid, LONG *plb, LONG dim) {
     long i;
     VALUE obj = Qnil;
     VALUE pobj = Qnil;
@@ -2089,7 +2090,7 @@ ary_new_dim(VALUE myary, long *pid, long *plb, long dim) {
 }
 
 static void
-ary_store_dim(VALUE myary, long *pid, long *plb, long dim, VALUE val) {
+ary_store_dim(VALUE myary, LONG *pid, LONG *plb, LONG dim, VALUE val) {
     long id = pid[dim - 1] - plb[dim - 1];
     VALUE obj = ary_new_dim(myary, pid, plb, dim);
     rb_ary_store(obj, id, val);
@@ -2106,7 +2107,7 @@ ole_variant2val(VARIANT *pvar)
     if(V_ISARRAY(pvar)) {
         SAFEARRAY *psa = V_ISBYREF(pvar) ? *V_ARRAYREF(pvar) : V_ARRAY(pvar);
         UINT i = 0;
-        long *pid, *plb, *pub;
+        LONG *pid, *plb, *pub;
         VARIANT variant;
         VALUE val;
         UINT dim = 0;
@@ -2117,9 +2118,9 @@ ole_variant2val(VARIANT *pvar)
         VariantInit(&variant);
         V_VT(&variant) = (V_VT(pvar) & ~VT_ARRAY) | VT_BYREF;
 
-        pid = ALLOC_N(long, dim);
-        plb = ALLOC_N(long, dim);
-        pub = ALLOC_N(long, dim);
+        pid = ALLOC_N(LONG, dim);
+        plb = ALLOC_N(LONG, dim);
+        pub = ALLOC_N(LONG, dim);
 
         if(!pid || !plb || !pub) {
             if(pid) free(pid);
@@ -3111,7 +3112,7 @@ static BOOL
 lcid_installed(LCID lcid)
 {
     g_lcid_installed = FALSE;
-    snprintf(g_lcid_to_check, sizeof(g_lcid_to_check), "%08lx", lcid);
+    snprintf(g_lcid_to_check, sizeof(g_lcid_to_check), "%08x", lcid);
     EnumSystemLocales(installed_lcid_proc, LCID_INSTALLED);
     return g_lcid_installed;
 }
@@ -8850,17 +8851,17 @@ get_locked_safe_array(VALUE val)
     return psa;
 }
 
-static long *
+static LONG *
 ary2safe_array_index(int ary_size, VALUE *ary, SAFEARRAY *psa)
 {
     long dim;
-    long *pid;
+    LONG *pid;
     long i;
     dim = SafeArrayGetDim(psa);
     if (dim != ary_size) {
         rb_raise(rb_eArgError, "unmatch number of indices");
     }
-    pid = ALLOC_N(long, dim);
+    pid = ALLOC_N(LONG, dim);
     if (pid == NULL) {
         rb_raise(rb_eRuntimeError, "failed to allocate memory for indices");
     }
@@ -8907,7 +8908,7 @@ folevariant_ary_aref(int argc, VALUE *argv, VALUE self)
     SAFEARRAY *psa;
     VALUE val = Qnil;
     VARIANT variant;
-    long *pid;
+    LONG *pid;
     HRESULT hr;
 
     Data_Get_Struct(self, struct olevariantdata, pvar);
@@ -8987,7 +8988,7 @@ folevariant_ary_aset(int argc, VALUE *argv, VALUE self)
     SAFEARRAY *psa;
     VARIANT var;
     VARTYPE vt;
-    long *pid;
+    LONG *pid;
     HRESULT hr;
     VOID *p = NULL;
 
