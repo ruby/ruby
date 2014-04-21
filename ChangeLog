@@ -1,4 +1,7 @@
-Tue Apr 22 06:53:30 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Apr 22 06:54:15 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (objspace_malloc_increase): run full mark if 0x04 bit is
+	  set in ruby_gc_stress.  [ruby-core:62103] [Feature #9761]
 
 	* gc.c (objspace_malloc_increase): run GC after realloc not only
 	  malloc and calloc by GC.stress.  [ruby-core:62103] [Feature #9761]

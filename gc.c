@@ -5020,8 +5020,12 @@ rb_global_variable(VALUE *var)
 enum {
     gc_stress_no_major,
     gc_stress_no_immediate_sweep,
+    gc_stress_full_mark_after_malloc,
     gc_stress_max
 };
+
+#define gc_stress_full_mark_after_malloc_p() \
+    (FIXNUM_P(ruby_gc_stress) && (FIX2LONG(ruby_gc_stress) & (1<<gc_stress_full_mark_after_malloc)))
 
 static int
 garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep, int reason)
@@ -5653,6 +5657,7 @@ gc_stress_get(VALUE self)
  *  flag can be true, false, or a fixnum bit-ORed following flags.
  *    0x01:: no major GC
  *    0x02:: no immediate sweep
+ *    0x04:: full mark after malloc/calloc/realloc
  */
 
 static VALUE
@@ -6093,8 +6098,9 @@ objspace_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, si
     }
 
     if (type == MEMOP_TYPE_MALLOC || type == MEMOP_TYPE_REALLOC) {
+	int full_mark = gc_stress_full_mark_after_malloc_p();
 	if (ruby_gc_stress && !ruby_disable_gc_stress && ruby_native_thread_p()) {
-	    garbage_collect_with_gvl(objspace, FALSE, TRUE, GPR_FLAG_MALLOC);
+	    garbage_collect_with_gvl(objspace, full_mark, TRUE, GPR_FLAG_MALLOC);
 	}
 	else {
 	  retry:
@@ -6103,7 +6109,7 @@ objspace_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, si
 		    gc_rest_sweep(objspace); /* rest_sweep can reduce malloc_increase */
 		    goto retry;
 		}
-		garbage_collect_with_gvl(objspace, FALSE, TRUE, GPR_FLAG_MALLOC);
+		garbage_collect_with_gvl(objspace, full_mark, TRUE, GPR_FLAG_MALLOC);
 	    }
 	}
     }
