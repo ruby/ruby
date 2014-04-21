@@ -328,9 +328,6 @@ coderange_scan(const char *p, long len, rb_encoding *enc)
                 }
             }
         }
-        if (e < p) {
-            return ENC_CODERANGE_BROKEN;
-        }
         return ENC_CODERANGE_VALID;
     }
 
@@ -341,9 +338,6 @@ coderange_scan(const char *p, long len, rb_encoding *enc)
             return ENC_CODERANGE_BROKEN;
         }
         p += MBCLEN_CHARFOUND_LEN(ret);
-    }
-    if (e < p) {
-        return ENC_CODERANGE_BROKEN;
     }
     return ENC_CODERANGE_VALID;
 }
@@ -383,7 +377,7 @@ rb_str_coderange_scan_restartable(const char *s, const char *e, rb_encoding *enc
 		}
 	    }
 	}
-	*cr = e < p ? ENC_CODERANGE_BROKEN: ENC_CODERANGE_VALID;
+	*cr = ENC_CODERANGE_VALID;
 	return p - s;
     }
     else {
@@ -395,7 +389,7 @@ rb_str_coderange_scan_restartable(const char *s, const char *e, rb_encoding *enc
 	    }
 	    p += MBCLEN_CHARFOUND_LEN(ret);
 	}
-	*cr = e < p ? ENC_CODERANGE_BROKEN: ENC_CODERANGE_VALID;
+	*cr = ENC_CODERANGE_VALID;
 	return p - s;
     }
 }

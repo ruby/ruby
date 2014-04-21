@@ -1,3 +1,9 @@
+Mon Apr 21 18:19:35 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (coderange_scan): remove unused logic.
+
+	* string.c (rb_str_coderange_scan_restartable): ditto.
+
 Mon Apr 21 14:11:48 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_putc): fix for non-ascii
