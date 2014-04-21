@@ -5017,17 +5017,23 @@ rb_global_variable(VALUE *var)
 
 #define GC_NOTIFY 0
 
+enum {
+    gc_stress_no_major,
+    gc_stress_no_immediate_sweep,
+    gc_stress_max
+};
+
 static int
 garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep, int reason)
 {
     if (ruby_gc_stress && !ruby_disable_gc_stress) {
 	int flag = FIXNUM_P(ruby_gc_stress) ? FIX2INT(ruby_gc_stress) : 0;
 
-	if (flag & 0x01)
+	if (flag & (1<<gc_stress_no_major))
 	    reason &= ~GPR_FLAG_MAJOR_MASK;
 	else
 	    reason |= GPR_FLAG_MAJOR_BY_STRESS;
-	immediate_sweep = !(flag & 0x02);
+	immediate_sweep = !(flag & (1<<gc_stress_no_immediate_sweep));
     }
     else {
 	if (!GC_ENABLE_LAZY_SWEEP || objspace->flags.dont_lazy_sweep) {
@@ -5635,7 +5641,7 @@ gc_stress_get(VALUE self)
 
 /*
  *  call-seq:
- *    GC.stress = bool          -> bool
+ *    GC.stress = flag          -> flag
  *
  *  Updates the GC stress mode.
  *
@@ -5643,6 +5649,10 @@ gc_stress_get(VALUE self)
  *  all memory and object allocations.
  *
  *  Enabling stress mode will degrade performance, it is only for debugging.
+ *
+ *  flag can be true, false, or a fixnum bit-ORed following flags.
+ *    0x01:: no major GC
+ *    0x02:: no immediate sweep
  */
 
 static VALUE
