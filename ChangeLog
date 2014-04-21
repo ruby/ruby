@@ -1,3 +1,8 @@
+Tue Apr 22 06:53:30 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (objspace_malloc_increase): run GC after realloc not only
+	  malloc and calloc by GC.stress.  [ruby-core:62103] [Feature #9761]
+
 Mon Apr 21 19:12:20 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_coderange_scan_restartable): coderange is always

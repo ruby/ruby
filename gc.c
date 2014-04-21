@@ -6092,7 +6092,7 @@ objspace_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, si
 #endif
     }
 
-    if (type == MEMOP_TYPE_MALLOC) {
+    if (type == MEMOP_TYPE_MALLOC || type == MEMOP_TYPE_REALLOC) {
 	if (ruby_gc_stress && !ruby_disable_gc_stress && ruby_native_thread_p()) {
 	    garbage_collect_with_gvl(objspace, FALSE, TRUE, GPR_FLAG_MALLOC);
 	}
