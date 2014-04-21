@@ -304,7 +304,7 @@ coderange_scan(const char *p, long len, rb_encoding *enc)
 {
     const char *e = p + len;
 
-    if (rb_enc_to_index(enc) == 0) {
+    if (rb_enc_to_index(enc) == rb_ascii8bit_encindex()) {
         /* enc is ASCII-8BIT.  ASCII-8BIT string never be broken. */
         p = search_nonascii(p, e);
         return p ? ENC_CODERANGE_VALID : ENC_CODERANGE_7BIT;
@@ -340,10 +340,11 @@ rb_str_coderange_scan_restartable(const char *s, const char *e, rb_encoding *enc
     if (*cr == ENC_CODERANGE_BROKEN)
 	return e - s;
 
-    if (rb_enc_to_index(enc) == 0) {
+    if (rb_enc_to_index(enc) == rb_ascii8bit_encindex()) {
 	/* enc is ASCII-8BIT.  ASCII-8BIT string never be broken. */
+	if (*cr == ENC_CODERANGE_VALID) return e - s;
 	p = search_nonascii(p, e);
-	*cr = (!p && *cr != ENC_CODERANGE_VALID) ? ENC_CODERANGE_7BIT : ENC_CODERANGE_VALID;
+        *cr = p ? ENC_CODERANGE_VALID : ENC_CODERANGE_7BIT;
 	return e - s;
     }
     else if (rb_enc_asciicompat(enc)) {
