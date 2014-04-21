@@ -312,32 +312,22 @@ coderange_scan(const char *p, long len, rb_encoding *enc)
 
     if (rb_enc_asciicompat(enc)) {
         p = search_nonascii(p, e);
-        if (!p) {
-            return ENC_CODERANGE_7BIT;
+        if (!p) return ENC_CODERANGE_7BIT;
+        for (;;) {
+            int ret = rb_enc_precise_mbclen(p, e, enc);
+            if (!MBCLEN_CHARFOUND_P(ret)) return ENC_CODERANGE_BROKEN;
+            p += MBCLEN_CHARFOUND_LEN(ret);
+            if (p == e) break;
+            p = search_nonascii(p, e);
+            if (!p) break;
         }
+    }
+    else {
         while (p < e) {
             int ret = rb_enc_precise_mbclen(p, e, enc);
-            if (!MBCLEN_CHARFOUND_P(ret)) {
-                return ENC_CODERANGE_BROKEN;
-            }
+            if (!MBCLEN_CHARFOUND_P(ret)) return ENC_CODERANGE_BROKEN;
             p += MBCLEN_CHARFOUND_LEN(ret);
-            if (p < e) {
-                p = search_nonascii(p, e);
-                if (!p) {
-                    return ENC_CODERANGE_VALID;
-                }
-            }
         }
-        return ENC_CODERANGE_VALID;
-    }
-
-    while (p < e) {
-        int ret = rb_enc_precise_mbclen(p, e, enc);
-
-        if (!MBCLEN_CHARFOUND_P(ret)) {
-            return ENC_CODERANGE_BROKEN;
-        }
-        p += MBCLEN_CHARFOUND_LEN(ret);
     }
     return ENC_CODERANGE_VALID;
 }
@@ -362,23 +352,17 @@ rb_str_coderange_scan_restartable(const char *s, const char *e, rb_encoding *enc
 	    if (*cr != ENC_CODERANGE_VALID) *cr = ENC_CODERANGE_7BIT;
 	    return e - s;
 	}
-	while (p < e) {
+	for (;;) {
 	    int ret = rb_enc_precise_mbclen(p, e, enc);
 	    if (!MBCLEN_CHARFOUND_P(ret)) {
 		*cr = MBCLEN_INVALID_P(ret) ? ENC_CODERANGE_BROKEN: ENC_CODERANGE_UNKNOWN;
 		return p - s;
 	    }
 	    p += MBCLEN_CHARFOUND_LEN(ret);
-	    if (p < e) {
-		p = search_nonascii(p, e);
-		if (!p) {
-		    *cr = ENC_CODERANGE_VALID;
-		    return e - s;
-		}
-	    }
+	    if (p == e) break;
+	    p = search_nonascii(p, e);
+	    if (!p) break;
 	}
-	*cr = ENC_CODERANGE_VALID;
-	return p - s;
     }
     else {
 	while (p < e) {
@@ -389,9 +373,9 @@ rb_str_coderange_scan_restartable(const char *s, const char *e, rb_encoding *enc
 	    }
 	    p += MBCLEN_CHARFOUND_LEN(ret);
 	}
-	*cr = ENC_CODERANGE_VALID;
-	return p - s;
     }
+    *cr = ENC_CODERANGE_VALID;
+    return e - s;
 }
 
 static inline void

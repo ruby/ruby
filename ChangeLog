@@ -1,3 +1,10 @@
+Mon Apr 21 19:02:44 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (coderange_scan): remove useless condtion `p < e` after
+	  search_nonascii.
+
+	* string.c (rb_str_coderange_scan_restartable): ditto.
+
 Mon Apr 21 18:55:21 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/-test-/string/coderange.c: add Bug::String.new#coderange_scan
