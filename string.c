@@ -3600,8 +3600,8 @@ rb_str_splice_0(VALUE str, long beg, long len, VALUE val)
     OBJ_INFECT(str, val);
 }
 
-static void
-rb_str_splice(VALUE str, long beg, long len, VALUE val)
+void
+rb_str_update(VALUE str, long beg, long len, VALUE val)
 {
     long slen;
     char *p, *e;
@@ -3643,11 +3643,7 @@ rb_str_splice(VALUE str, long beg, long len, VALUE val)
 	ENC_CODERANGE_SET(str, cr);
 }
 
-void
-rb_str_update(VALUE str, long beg, long len, VALUE val)
-{
-    rb_str_splice(str, beg, len, val);
-}
+#define rb_str_splice(str, beg, len, val) rb_str_update(str, beg, len, val)
 
 static void
 rb_str_subpat_set(VALUE str, VALUE re, VALUE backref, VALUE val)
