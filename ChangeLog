@@ -1,3 +1,12 @@
+Tue Apr 22 08:22:33 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (objspace_malloc_increase): don't cause GC by malloc_increase
+	  when memop type is MEMOP_TYPE_REALLOC.
+
+	  GC at realloc is not well maintained.
+	  We need a time to make it safe.
+	  [ruby-dev:48117]
+
 Tue Apr 22 06:54:15 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (objspace_malloc_increase): run full mark if 0x04 bit is

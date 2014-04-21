@@ -6097,20 +6097,20 @@ objspace_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, si
 #endif
     }
 
-    if (type == MEMOP_TYPE_MALLOC || type == MEMOP_TYPE_REALLOC) {
-	int full_mark = gc_stress_full_mark_after_malloc_p();
-	if (ruby_gc_stress && !ruby_disable_gc_stress && ruby_native_thread_p()) {
-	    garbage_collect_with_gvl(objspace, full_mark, TRUE, GPR_FLAG_MALLOC);
-	}
-	else {
-	  retry:
-	    if (malloc_increase > malloc_limit && ruby_native_thread_p()) {
-		if (ruby_thread_has_gvl_p() && is_lazy_sweeping(heap_eden)) {
-		    gc_rest_sweep(objspace); /* rest_sweep can reduce malloc_increase */
-		    goto retry;
-		}
-		garbage_collect_with_gvl(objspace, full_mark, TRUE, GPR_FLAG_MALLOC);
+    if (type != MEMOP_TYPE_FREE &&
+	ruby_gc_stress && !ruby_disable_gc_stress &&
+	ruby_native_thread_p()) {
+	garbage_collect_with_gvl(objspace, gc_stress_full_mark_after_malloc_p(), TRUE, GPR_FLAG_MALLOC);
+    }
+
+    if (type == MEMOP_TYPE_MALLOC) {
+      retry:
+	if (malloc_increase > malloc_limit && ruby_native_thread_p()) {
+	    if (ruby_thread_has_gvl_p() && is_lazy_sweeping(heap_eden)) {
+		gc_rest_sweep(objspace); /* rest_sweep can reduce malloc_increase */
+		goto retry;
 	    }
+	    garbage_collect_with_gvl(objspace, FALSE, TRUE, GPR_FLAG_MALLOC);
 	}
     }
 
