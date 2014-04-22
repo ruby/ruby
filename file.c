@@ -5545,7 +5545,7 @@ statfs_fstypename(VALUE self)
     return rb_str_new_cstr(get_statfs(self)->f_fstypename);
 }
 #else
-#define statfs_fsname rb_f_notimplement
+#define statfs_fstypename rb_f_notimplement
 #endif
 
 VALUE rb_mFConst;
