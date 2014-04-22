@@ -50,7 +50,7 @@ before_script:
   - "make -sj exts"
 script:
   - "make test OPTS=-v"
-#  - "make test-all TESTS='-v'"
+  - "make test-all TESTS='-qv -j2'"
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:
