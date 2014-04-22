@@ -13,12 +13,6 @@ Tue Apr 22 23:56:24 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* configure.in (fstatfs): check it.
 
-Tue Apr 22 23:14:28 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* ext/stringio/stringio.c (strio_write): use rb_str_append to
-	  reuse coderange bits and keep taintedness.
-	  [ruby-dev:48118] [Bug #9769]
-
 Tue Apr 22 22:15:51 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (rb_io_statfs): need to define even if the system doesn't have

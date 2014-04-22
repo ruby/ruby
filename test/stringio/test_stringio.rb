@@ -119,17 +119,6 @@ class TestStringIO < Test::Unit::TestCase
     f.close unless f.closed?
   end
 
-  def test_write_infection
-    bug9769 = '[ruby-dev:48118] [Bug #9769]'
-    s = "".untaint
-    f = StringIO.new(s, "w")
-    f.print("bar".taint)
-    f.close
-    assert_predicate(s, :tainted?, bug9769)
-  ensure
-    f.close unless f.closed?
-  end
-
   def test_mode_error
     f = StringIO.new("", "r")
     assert_raise(IOError) { f.write("foo") }
