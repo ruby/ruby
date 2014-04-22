@@ -69,7 +69,9 @@ int flock(int, int);
 #ifdef HAVE_SYS_VFS_H
 #include <sys/vfs.h>
 #endif
-VALUE rb_statfs_new(const struct statfs *st);
+#ifdef HAVE_STRUCT_STATFS
+static VALUE rb_statfs_new(const struct statfs *st);
+#endif
 
 #if defined(__native_client__) && defined(NACL_NEWLIB)
 # include "nacl/utime.h"
@@ -1095,6 +1097,7 @@ rb_file_lstat(VALUE obj)
 #endif
 }
 
+#ifdef HAVE_STRUCT_STATFS
 /*
  *  call-seq:
  *     ios.statfs    -> statfs
@@ -1122,6 +1125,7 @@ rb_io_statfs(VALUE obj)
     }
     return rb_statfs_new(&st);
 }
+#endif
 
 static int
 rb_group_member(GETGROUPS_T gid)
@@ -5300,6 +5304,7 @@ rb_stat_sticky(VALUE obj)
     return Qfalse;
 }
 
+#ifdef HAVE_STRUCT_STATFS
 /* File::Statfs */
 
 static size_t
@@ -5326,7 +5331,7 @@ statfs_new_0(VALUE klass, const struct statfs *st)
     return TypedData_Wrap_Struct(klass, &statfs_data_type, nst);
 }
 
-VALUE
+static VALUE
 rb_statfs_new(const struct statfs *st)
 {
     return statfs_new_0(rb_cStatfs, st);
@@ -5546,6 +5551,7 @@ statfs_fstypename(VALUE self)
 }
 #else
 #define statfs_fstypename rb_f_notimplement
+#endif
 #endif
 
 VALUE rb_mFConst;
@@ -6132,6 +6138,7 @@ Init_File(void)
     rb_define_method(rb_cStat, "setgid?",  rb_stat_sgid, 0);
     rb_define_method(rb_cStat, "sticky?",  rb_stat_sticky, 0);
 
+#ifdef HAVE_STRUCT_STATFS
     rb_cStatfs = rb_define_class_under(rb_cFile, "Statfs", rb_cObject);
     rb_define_alloc_func(rb_cStatfs,  rb_statfs_s_alloc);
     rb_define_method(rb_cStatfs, "initialize", rb_statfs_init, 1);
@@ -6145,4 +6152,5 @@ Init_File(void)
     rb_define_method(rb_cStatfs, "ffree", statfs_ffree, 0);
     rb_define_method(rb_cStatfs, "fsid", statfs_fsid, 0);
     rb_define_method(rb_cStatfs, "fstypename", statfs_fstypename, 0);
+#endif
 }
