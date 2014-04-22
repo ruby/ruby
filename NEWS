@@ -20,6 +20,13 @@ with all sufficient information, see the ChangeLog file.
     * min, min_by, max and max_by supports optional argument to return
       multiple elements.
 
+* File
+  * new class File::Statfs to hold filesystem information. (experimental)
+
+* IO
+  * New methods
+    * IO#statfs returns filesystem information as File::Statfs. (experimental)
+
 * Symbol
   * New methods
     * Symbol.find(str) returns whether given string is defined as symbol or not.

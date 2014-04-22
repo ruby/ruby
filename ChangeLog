@@ -1,3 +1,7 @@
+Tue Apr 22 19:32:48 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* file.c: newly added a class File::Statfs. (experimental)
+
 Tue Apr 22 08:22:33 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (objspace_malloc_increase): don't cause GC by malloc_increase

@@ -1116,10 +1116,12 @@ AC_CHECK_HEADERS( \
   sys/syscall.h \
   fcntl.h \
   sys/fcntl.h \
+  sys/mount.h \
   sys/select.h \
   sys/time.h \
   sys/times.h \
   sys/param.h \
+  sys/vfs.h \
   syscall.h \
   pwd.h \
   grp.h \
@@ -1717,6 +1719,25 @@ AC_CHECK_TYPES([struct timezone], [], [], [@%:@ifdef HAVE_TIME_H
 @%:@endif
 @%:@ifdef HAVE_SYS_TIME_H
 @%:@ include <sys/time.h>
+@%:@endif])
+
+AC_CHECK_TYPES([struct statfs], [], [], [@%:@ifdef HAVE_SYS_PARAM_H
+@%:@ include <sys/param.h>
+@%:@endif
+@%:@ifdef HAVE_SYS_MOUNT_H
+@%:@ include <sys/mount.h>
+@%:@endif
+@%:@ifdef HAVE_SYS_VFS_H
+@%:@ include <sys/vfs.h>
+@%:@endif])
+AC_CHECK_MEMBERS([struct statfs.f_fstypename], [], [], [@%:@ifdef HAVE_SYS_PARAM_H
+@%:@ include <sys/param.h>
+@%:@endif
+@%:@ifdef HAVE_SYS_MOUNT_H
+@%:@ include <sys/mount.h>
+@%:@endif
+@%:@ifdef HAVE_SYS_VFS_H
+@%:@ include <sys/vfs.h>
 @%:@endif])
 
 AC_CHECK_TYPES([clockid_t], [], [], [@%:@ifdef HAVE_TIME_H

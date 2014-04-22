@@ -383,4 +383,23 @@ class TestFile < Test::Unit::TestCase
       assert_file.not_exist?(path)
     end
   end
+
+  def test_statfs
+    open(__FILE__) do |f|
+      st = f.statfs
+      assert_kind_of File::Statfs, st
+      assert_kind_of Integer, st.type
+      assert_kind_of Integer, st.bsize
+      assert_kind_of Integer, st.blocks
+      assert_kind_of Integer, st.bfree
+      assert_kind_of Integer, st.bavail
+      assert_kind_of Integer, st.files
+      assert_kind_of Integer, st.ffree
+      assert_kind_of Integer, st.fsid
+      begin
+        assert_kind_of String, st.fstypename
+      rescue NotImplementedError
+      end
+    end
+  end
 end
