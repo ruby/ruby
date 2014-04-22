@@ -1,3 +1,12 @@
+Wed Apr 23 00:43:00 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c, include/ruby/win32.h (ustatfs): implementation of
+	  statfs(2) clone. [EXPERIMENTAL]
+
+	* file.c (rb_io_statfs): use above function.
+
+	* configure.in, win32/Makefile.sub (struct statfs): available.
+
 Tue Apr 22 23:56:24 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (rb_io_stafs): use statfs(2) if fstatfs(2) is unavailable.

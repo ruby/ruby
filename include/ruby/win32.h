@@ -262,6 +262,20 @@ struct ifaddrs {
 #define IFF_POINTOPOINT IFF_POINTTOPOINT
 #endif
 
+/* for ustatfs() */
+typedef uint32_t fsid_t;
+struct statfs {
+    uint32_t f_type;
+    uint64_t f_bsize;
+    uint64_t f_blocks;
+    uint64_t f_bfree;
+    int64_t f_bavail;
+    uint64_t f_files;
+    uint64_t f_ffree;
+    fsid_t f_fsid;
+    char f_fstypename[MAX_PATH];
+};
+
 extern DWORD  rb_w32_osid(void);
 extern rb_pid_t  rb_w32_pipe_exec(const char *, const char *, int, int *, int *);
 extern int    flock(int fd, int oper);
@@ -347,6 +361,7 @@ extern int rb_w32_uaccess(const char *, int);
 extern char rb_w32_fd_is_text(int);
 extern int rb_w32_fstati64(int, struct stati64 *);
 extern int rb_w32_dup2(int, int);
+extern int ustatfs(const char *, struct statfs *);
 
 #ifdef __BORLANDC__
 extern off_t _lseeki64(int, off_t, int);

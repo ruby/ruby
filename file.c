@@ -115,6 +115,8 @@ static VALUE rb_statfs_new(const struct statfs *st);
 #define unlink(p)	rb_w32_uunlink(p)
 #undef rename
 #define rename(f, t)	rb_w32_urename((f), (t))
+#undef statfs
+#define statfs(f, s)	ustatfs((f), (s))
 #else
 #define STAT(p, s)	stat((p), (s))
 #endif
@@ -1118,12 +1120,16 @@ rb_io_statfs(VALUE obj)
 {
     rb_io_t *fptr;
     struct statfs st;
+#ifndef HAVE_FSTATFS
+    VALUE path;
+#endif
 
     GetOpenFile(obj, fptr);
 #ifdef HAVE_FSTATFS
     if (fstatfs(fptr->fd, &st) == -1)
 #else
-    if (statfs(RSTRING_PTR(fptr->pathv), &st) == -1)
+    path = rb_str_encode_ospath(fptr->pathv);
+    if (statfs(StringValueCStr(path), &st) == -1)
 #endif
     {
 	rb_sys_fail_path(fptr->pathv);
