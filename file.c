@@ -1125,6 +1125,8 @@ rb_io_statfs(VALUE obj)
     }
     return rb_statfs_new(&st);
 }
+#else
+#define rb_io_statfs rb_f_notimplement
 #endif
 
 static int

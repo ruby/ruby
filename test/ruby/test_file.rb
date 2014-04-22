@@ -385,6 +385,7 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_statfs
+    skip "not implemented" unless $stdout.respond_to?(:statfs)
     open(__FILE__) do |f|
       st = f.statfs
       assert_kind_of File::Statfs, st
