@@ -1696,12 +1696,22 @@ class TestIO < Test::Unit::TestCase
           f.seek(0, IO::SEEK_DATA)
           assert_equal("foo\nbar\nbaz\n", f.read)
         }
+        open(t.path, 'r+') { |f|
+          pos = f.pos
+          f.seek(100*1024, IO::SEEK_SET)
+          f.print("zot\n")
+          f.seek(50*1024, IO::SEEK_DATA)
+          assert_operator(f.pos, :>=, 50*1024)
+          assert_match(/\A\0*zot\n\z/, f.read)
+        }
       end
 
       if defined?(IO::SEEK_HOLE)
         open(t.path) { |f|
           assert_equal("foo\n", f.gets)
           f.seek(0, IO::SEEK_HOLE)
+          assert_operator(f.pos, :>, 20)
+          f.seek(100*1024, IO::SEEK_HOLE)
           assert_equal("", f.read)
         }
       end
@@ -1732,12 +1742,22 @@ class TestIO < Test::Unit::TestCase
           f.seek(0, :DATA)
           assert_equal("foo\nbar\nbaz\n", f.read)
         }
+        open(t.path, 'r+') { |f|
+          pos = f.pos
+          f.seek(100*1024, :SET)
+          f.print("zot\n")
+          f.seek(50*1024, :DATA)
+          assert_operator(f.pos, :>=, 50*1024)
+          assert_match(/\A\0*zot\n\z/, f.read)
+        }
       end
 
       if defined?(IO::SEEK_HOLE)
         open(t.path) { |f|
           assert_equal("foo\n", f.gets)
           f.seek(0, :HOLE)
+          assert_operator(f.pos, :>, 20)
+          f.seek(100*1024, :HOLE)
           assert_equal("", f.read)
         }
       end
