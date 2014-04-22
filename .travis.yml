@@ -57,6 +57,9 @@ branches:
   only:
     - trunk
     - ruby_1_9_3
+    - ruby_2_0_0
+    - ruby_2_1
+    - ruby_2_2
 
 # We want to be notified when something happens.
 notifications:
