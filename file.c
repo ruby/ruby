@@ -1120,7 +1120,12 @@ rb_io_statfs(VALUE obj)
     struct statfs st;
 
     GetOpenFile(obj, fptr);
-    if (fstatfs(fptr->fd, &st) == -1) {
+#ifdef HAVE_FSTATFS
+    if (fstatfs(fptr->fd, &st) == -1)
+#else
+    if (statfs(RSTRING_PTR(fptr->pathv), &st) == -1)
+#endif
+    {
 	rb_sys_fail_path(fptr->pathv);
     }
     return rb_statfs_new(&st);

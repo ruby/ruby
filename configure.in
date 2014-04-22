@@ -1946,6 +1946,7 @@ AC_CHECK_FUNCS(fcntl)
 AC_CHECK_FUNCS(fdatasync)
 AC_CHECK_FUNCS(fmod)
 AC_CHECK_FUNCS(fork)
+AC_CHECK_FUNCS(fstatfs)
 AC_CHECK_FUNCS(fsync)
 AC_CHECK_FUNCS(ftruncate)
 AC_CHECK_FUNCS(ftruncate64)		# used for Win32 platform
