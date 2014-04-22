@@ -1666,6 +1666,22 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def can_seek_data(f)
+    if /linux/ =~ RUBY_PLATFORM
+      # include/uapi/linux/magic.h
+      case f.statfs.type
+      when 0x9123683E # BTRFS_SUPER_MAGIC
+      when 0x7461636f # OCFS2_SUPER_MAGIC
+      when 0xEF53 # EXT4_SUPER_MAGIC
+      when 0x58465342 # XFS_SUPER_MAGIC
+      when 0x01021994 # TMPFS_MAGIC
+      else
+        return false
+      end
+    end
+    true
+  end
+
 
   def test_seek
     make_tempfile {|t|
@@ -1692,6 +1708,7 @@ class TestIO < Test::Unit::TestCase
 
       if defined?(IO::SEEK_DATA)
         open(t.path) { |f|
+          break unless can_seek_data(f)
           assert_equal("foo\n", f.gets)
           assert_nothing_raised("cannot SEEK_DATA on FS(0x%X)" % f.statfs.type) do
             f.seek(0, IO::SEEK_DATA)
@@ -1699,6 +1716,7 @@ class TestIO < Test::Unit::TestCase
           assert_equal("foo\nbar\nbaz\n", f.read)
         }
         open(t.path, 'r+') { |f|
+          break unless can_seek_data(f)
           pos = f.pos
           f.seek(100*1024, IO::SEEK_SET)
           f.print("zot\n")
@@ -1740,6 +1758,7 @@ class TestIO < Test::Unit::TestCase
 
       if defined?(IO::SEEK_DATA)
         open(t.path) { |f|
+          break unless can_seek_data(f)
           assert_equal("foo\n", f.gets)
           assert_nothing_raised("cannot SEEK_DATA on FS(0x%X)" % f.statfs.type) do
             f.seek(0, :DATA)
@@ -1747,6 +1766,7 @@ class TestIO < Test::Unit::TestCase
           assert_equal("foo\nbar\nbaz\n", f.read)
         }
         open(t.path, 'r+') { |f|
+          break unless can_seek_data(f)
           pos = f.pos
           f.seek(100*1024, :SET)
           f.print("zot\n")
