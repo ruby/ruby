@@ -1693,8 +1693,10 @@ class TestIO < Test::Unit::TestCase
       if defined?(IO::SEEK_DATA)
         open(t.path) { |f|
           assert_equal("foo\n", f.gets)
-          f.seek(0, IO::SEEK_DATA)
-          assert_equal("foo\nbar\nbaz\n", f.read, "cannot SEEK_DATA at fs(#{f.statfs.type})")
+          assert_nothing_raised("cannot SEEK_DATA on FS(0x%X)" % f.statfs.type) do
+            f.seek(0, IO::SEEK_DATA)
+          end
+          assert_equal("foo\nbar\nbaz\n", f.read)
         }
         open(t.path, 'r+') { |f|
           pos = f.pos
@@ -1739,8 +1741,10 @@ class TestIO < Test::Unit::TestCase
       if defined?(IO::SEEK_DATA)
         open(t.path) { |f|
           assert_equal("foo\n", f.gets)
-          f.seek(0, :DATA)
-          assert_equal("foo\nbar\nbaz\n", f.read, "cannot SEEK_DATA at fs(#{f.statfs.type})")
+          assert_nothing_raised("cannot SEEK_DATA on FS(0x%X)" % f.statfs.type) do
+            f.seek(0, :DATA)
+          end
+          assert_equal("foo\nbar\nbaz\n", f.read)
         }
         open(t.path, 'r+') { |f|
           pos = f.pos
