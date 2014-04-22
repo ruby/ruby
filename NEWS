@@ -94,6 +94,12 @@ with all sufficient information, see the ChangeLog file.
 * struct RBignum is hidden.  [Feature #6083]
   Use rb_integer_pack and rb_integer_unpack instead.
 
+* rb_big_new and rb_big_resize takes a size_t instead of long.
+
+* rb_num2long returns a long instead of SIGNED_VALUE.
+
+* rb_num2ulong returns an unsigned long instead of VALUE.
+
 * st hash table uses power-of-two sizes for speed [Feature #9425].
   Lookups are 10-25% faster if using appropriate hash functions.
   However, weaknesses in hash distribution can no longer be masked
