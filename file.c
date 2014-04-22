@@ -5529,8 +5529,12 @@ statfs_ffree(VALUE self)
 static VALUE
 statfs_fsid(VALUE self)
 {
-    fsid_t n = get_statfs(self)->f_fsid;
-    return LL2NUM(*(LONG_LONG*)&n);
+    union {
+	uint64_t v;
+	fsid_t f;
+    } n = {0};
+    n.f = get_statfs(self)->f_fsid;
+    return LL2NUM(n.v);
 }
 
 #ifdef HAVE_STRUCT_STATFS_F_FSTYPENAME
