@@ -701,6 +701,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_RB_FD_INIT 1
 #define HAVE_STRUCT_STATFS 1
 #define HAVE_STRUCT_STATFS_F_FSTYPENAME 1
+#define HAVE_FSID_T 1
 #define RUBY_SETJMP(env) _setjmp(env)
 #define RUBY_LONGJMP(env,val) longjmp(env,val)
 #define RUBY_JMP_BUF jmp_buf
