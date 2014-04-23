@@ -1,3 +1,7 @@
+Wed Apr 23 20:36:22 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/etc/extconf.rb: Build ext/etc unconditionally.
+
 Wed Apr 23 14:10:50 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* file.c (statfs_fsid): remove statfs.f_fsid because it doesn't return
