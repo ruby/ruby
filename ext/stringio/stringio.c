@@ -1170,7 +1170,6 @@ strio_write(VALUE self, VALUE str)
     long len, olen;
     rb_encoding *enc, *enc2;
 
-    RB_GC_GUARD(str);
     if (!RB_TYPE_P(str, T_STRING))
 	str = rb_obj_as_string(str);
     enc = rb_enc_get(ptr->string);
@@ -1194,6 +1193,7 @@ strio_write(VALUE self, VALUE str)
 	OBJ_INFECT(ptr->string, str);
     }
     OBJ_INFECT(ptr->string, self);
+    RB_GC_GUARD(str);
     ptr->pos += len;
     return LONG2NUM(len);
 }
