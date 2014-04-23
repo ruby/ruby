@@ -39,7 +39,6 @@ install: "sudo apt-get -qq build-dep ruby1.9.1 2>/dev/null"
 # enough for Travis to shut down the VM as being stalled.
 before_script:
   - "uname -a"
-  - "cat /proc/version_signature"
   - "make -f common.mk BASERUBY=ruby srcdir=. update-config_files"
   - "autoconf"
   - "mkdir config_1st config_2nd"
