@@ -1733,6 +1733,7 @@ class TestIO < Test::Unit::TestCase
 
       if defined?(IO::SEEK_HOLE)
         open(t.path) { |f|
+          break unless can_seek_data(f)
           assert_equal("foo\n", f.gets)
           f.seek(0, IO::SEEK_HOLE)
           assert_operator(f.pos, :>, 20)
@@ -1783,6 +1784,7 @@ class TestIO < Test::Unit::TestCase
 
       if defined?(IO::SEEK_HOLE)
         open(t.path) { |f|
+          break unless can_seek_data(f)
           assert_equal("foo\n", f.gets)
           f.seek(0, :HOLE)
           assert_operator(f.pos, :>, 20)
