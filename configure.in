@@ -1061,7 +1061,6 @@ main()
 		ac_cv_func_malloc_usable_size=no
 		ac_cv_type_struct_statfs=yes
 		ac_cv_member_struct_statfs_f_fstypename=yes
-		ac_cv_type_fsid_t=yes
 		{ test "$target_cpu" = x64 && ac_cv_func___builtin_setjmp=no; }
 		AC_CHECK_TYPE([NET_LUID], [], [],
 			      [@%:@include <windows.h>
@@ -1735,15 +1734,6 @@ AC_CHECK_TYPES([struct statfs], [], [], [@%:@ifdef HAVE_SYS_PARAM_H
 @%:@endif])
 AS_IF([test "$ac_cv_type_struct_statfs" = yes], [
 AC_CHECK_MEMBERS([struct statfs.f_fstypename], [], [], [@%:@ifdef HAVE_SYS_PARAM_H
-@%:@ include <sys/param.h>
-@%:@endif
-@%:@ifdef HAVE_SYS_MOUNT_H
-@%:@ include <sys/mount.h>
-@%:@endif
-@%:@ifdef HAVE_SYS_VFS_H
-@%:@ include <sys/vfs.h>
-@%:@endif])
-AC_CHECK_TYPES([fsid_t], [], [], [@%:@ifdef HAVE_SYS_PARAM_H
 @%:@ include <sys/param.h>
 @%:@endif
 @%:@ifdef HAVE_SYS_MOUNT_H

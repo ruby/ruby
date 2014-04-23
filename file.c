@@ -5540,16 +5540,9 @@ statfs_ffree(VALUE self)
 static VALUE
 statfs_fsid(VALUE self)
 {
-#ifdef HAVE_FSID_T
-    union {
-	uint64_t v;
-	fsid_t f;
-    } n = {0};
-    n.f = get_statfs(self)->f_fsid;
-    return LL2NUM(n.v);
-#else
-    return LONG2NUM(get_statfs(self)->f_fsid);
-#endif
+    return rb_integer_unpack(&get_statfs(self)->f_fsid,
+			     1, sizeof(get_statfs(self)->f_fsid),
+			     0, INTEGER_PACK_2COMP|INTEGER_PACK_NATIVE_BYTE_ORDER);
 }
 
 #ifdef HAVE_STRUCT_STATFS_F_FSTYPENAME
