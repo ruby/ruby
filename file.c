@@ -5529,22 +5529,6 @@ statfs_ffree(VALUE self)
     return LL2NUM(get_statfs(self)->f_ffree);
 }
 
-/*
- *  call-seq:
- *     st.fsid    -> integer
- *
- *  Returns filesystem id.
- *
- */
-
-static VALUE
-statfs_fsid(VALUE self)
-{
-    return rb_integer_unpack(&get_statfs(self)->f_fsid,
-			     1, sizeof(get_statfs(self)->f_fsid),
-			     0, INTEGER_PACK_2COMP|INTEGER_PACK_NATIVE_BYTE_ORDER);
-}
-
 #ifdef HAVE_STRUCT_STATFS_F_FSTYPENAME
 /*
  *  call-seq:
@@ -6164,7 +6148,6 @@ Init_File(void)
     rb_define_method(rb_cStatfs, "bavail", statfs_bavail, 0);
     rb_define_method(rb_cStatfs, "files", statfs_files, 0);
     rb_define_method(rb_cStatfs, "ffree", statfs_ffree, 0);
-    rb_define_method(rb_cStatfs, "fsid", statfs_fsid, 0);
     rb_define_method(rb_cStatfs, "fstypename", statfs_fstypename, 0);
 #endif
 }

@@ -396,7 +396,6 @@ class TestFile < Test::Unit::TestCase
       assert_kind_of Integer, st.bavail
       assert_kind_of Integer, st.files
       assert_kind_of Integer, st.ffree
-      assert_kind_of Integer, st.fsid
       begin
         assert_kind_of String, st.fstypename
       rescue NotImplementedError

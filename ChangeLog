@@ -1,3 +1,8 @@
+Wed Apr 23 14:10:50 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* file.c (statfs_fsid): remove statfs.f_fsid because it doesn't return
+	  meaningful value portably. http://togetter.com/li/658517
+
 Wed Apr 23 11:03:41 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_write): use rb_str_append to
