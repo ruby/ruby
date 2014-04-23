@@ -1675,7 +1675,7 @@ class TestIO < Test::Unit::TestCase
       when 0xEF53 # EXT2_SUPER_MAGIC EXT3_SUPER_MAGIC EXT4_SUPER_MAGIC
         # ext3's timestamp resolution is seconds
         s = f.stat
-        stat.mtime.nsec != 0 || stat.atime.nsec != 0 || stat.ctime.nsec != 0
+        s.mtime.nsec != 0 || s.atime.nsec != 0 || s.ctime.nsec != 0
       when 0x58465342 # XFS_SUPER_MAGIC
       when 0x01021994 # TMPFS_MAGIC
       else
