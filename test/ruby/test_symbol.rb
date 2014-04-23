@@ -221,4 +221,10 @@ class TestSymbol < Test::Unit::TestCase
       assert_equal sym, Symbol.find(str)
     end;
   end
+
+  def test_symol_gc_1
+    assert_normal_exit('".".intern;GC.start(immediate_sweep:false);eval %[GC.start;:"."]',
+                       '',
+                       child_env: '--disable-gems')
+  end
 end
