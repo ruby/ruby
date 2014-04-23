@@ -1185,7 +1185,13 @@ strio_write(VALUE self, VALUE str)
 	ptr->pos = olen;
     }
     if (ptr->pos == olen) {
-	rb_enc_str_buf_cat(ptr->string, RSTRING_PTR(str), len, enc);
+	if (enc2 == rb_ascii8bit_encoding()) {
+	    rb_enc_str_buf_cat(ptr->string, RSTRING_PTR(str), len, enc);
+	    OBJ_INFECT(ptr->string, str);
+	}
+	else {
+	    rb_str_buf_append(ptr->string, str);
+	}
     }
     else {
 	strio_extend(ptr, ptr->pos, len);

@@ -1,3 +1,9 @@
+Wed Apr 23 11:03:41 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_write): use rb_str_append to
+	  reuse coderange bits other than ASCII-8BIT, and keep
+	  taintedness.  [ruby-dev:48118] [Bug #9769]
+
 Wed Apr 23 00:43:00 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c, include/ruby/win32.h (ustatfs): implementation of
