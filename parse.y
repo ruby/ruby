@@ -10715,7 +10715,7 @@ rb_str_dynamic_intern(VALUE str)
 
     if (st_lookup(global_symbols.sym_id, str, &id)) {
 	VALUE sym = ID2SYM(id);
-	if (!STATIC_SYM_P(sym)) {
+	if (ID_DYNAMIC_SYM_P(id)) {
 	    /* because of lazy sweep, dynamic symbol may be unmarked already and swept
 	     * at next time */
 	    rb_gc_resurrect(sym);
