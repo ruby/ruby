@@ -9571,9 +9571,6 @@ dsym_node_gen(struct parser_params *parser, NODE *node)
       case NODE_STR:
 	lit = node->nd_lit;
 	node->nd_lit = ID2SYM(rb_intern_str(lit));
-	if (!STATIC_SYM_P(node->nd_lit)) {
-	    rb_gc_resurrect(node->nd_lit);
-	}
 	nd_set_type(node, NODE_LIT);
 	break;
       default:
@@ -10469,6 +10466,7 @@ setup_fake_str(struct RString *fake_str, const char *name, long len)
 ID
 rb_pin_dynamic_symbol(VALUE sym)
 {
+    rb_gc_resurrect(sym);
     /* stick dynamic symbol */
     if (!st_insert(global_symbols.pinned_dsym, sym, (st_data_t)sym)) {
 	global_symbols.pinned_dsym_minor_marked = 0;
