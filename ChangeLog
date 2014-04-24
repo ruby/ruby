@@ -1,3 +1,8 @@
+Thu Apr 24 11:21:37 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_sym2id, rb_sym2id_without_pindown): return 0 for
+	  non-symbol values, for the time being.
+
 Thu Apr 24 05:50:13 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* parse.y (dsym_node_gen): like r45492, call rb_gc_resurrect().

@@ -10774,8 +10774,11 @@ rb_sym2id(VALUE x)
     if (STATIC_SYM_P(x)) {
 	return RSHIFT((unsigned long)(x),RUBY_SPECIAL_SHIFT);
     }
-    else {
+    else if (!SPECIAL_CONST_P(x) && BUILTIN_TYPE(x) == T_SYMBOL) {
 	return rb_pin_dynamic_symbol(x);
+    }
+    else {
+	return 0;
     }
 }
 
@@ -10785,8 +10788,11 @@ rb_sym2id_without_pindown(VALUE x)
     if (STATIC_SYM_P(x)) {
 	return RSHIFT((unsigned long)(x),RUBY_SPECIAL_SHIFT);
     }
-    else {
+    else if (!SPECIAL_CONST_P(x) && BUILTIN_TYPE(x) == T_SYMBOL) {
 	return (ID)x;
+    }
+    else {
+	return 0;
     }
 }
 
