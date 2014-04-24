@@ -1722,7 +1722,6 @@ class TestIO < Test::Unit::TestCase
         }
         open(t.path, 'r+') { |f|
           break unless can_seek_data(f)
-          pos = f.pos
           f.seek(100*1024, IO::SEEK_SET)
           f.print("zot\n")
           f.seek(50*1024, IO::SEEK_DATA)
@@ -1773,7 +1772,6 @@ class TestIO < Test::Unit::TestCase
         }
         open(t.path, 'r+') { |f|
           break unless can_seek_data(f)
-          pos = f.pos
           f.seek(100*1024, :SET)
           f.print("zot\n")
           f.seek(50*1024, :DATA)
