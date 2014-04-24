@@ -223,7 +223,13 @@ class TestSymbol < Test::Unit::TestCase
   end
 
   def test_symol_gc_1
+    assert_normal_exit('".".intern;GC.start(immediate_sweep:false);eval %[GC.start;".".intern]',
+                       '',
+                       child_env: '--disable-gems')
     assert_normal_exit('".".intern;GC.start(immediate_sweep:false);eval %[GC.start;:"."]',
+                       '',
+                       child_env: '--disable-gems')
+    assert_normal_exit('".".intern;GC.start(immediate_sweep:false);eval %[GC.start;%i"."]',
                        '',
                        child_env: '--disable-gems')
   end
