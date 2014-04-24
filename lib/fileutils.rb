@@ -1106,7 +1106,7 @@ module FileUtils
       when /\A\d+\z/
         user.to_i
       else
-        Etc.getpwnam(user).uid
+        Etc.getpwnam(user) ? Etc.getpwnam(user).uid : nil
       end
     end
     private_module_function :fu_get_uid
@@ -1119,7 +1119,7 @@ module FileUtils
       when /\A\d+\z/
         group.to_i
       else
-        Etc.getgrnam(group).gid
+        Etc.getgrnam(group) ? Etc.getgrnam(group).gid : nil
       end
     end
     private_module_function :fu_get_gid

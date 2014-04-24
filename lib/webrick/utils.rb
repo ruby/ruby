@@ -41,8 +41,7 @@ module WEBrick
     ##
     # Changes the process's uid and gid to the ones of +user+
     def su(user)
-      if defined?(Etc)
-        pw = Etc.getpwnam(user)
+      if defined?(Etc) && (pw = Etc.getpwnam(user))
         Process::initgroups(user, pw.gid)
         Process::Sys::setgid(pw.gid)
         Process::Sys::setuid(pw.uid)
