@@ -1,3 +1,8 @@
+Thu Apr 24 17:39:53 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* file.c (statfs_inspect): suppress warnings.
+	  assume those values won't be larger than LONG_LONG_MAX.
+
 Thu Apr 24 11:53:28 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/ossl_asn1.c (ossl_asn1_initialize): SYMID on a value

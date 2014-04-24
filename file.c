@@ -5570,7 +5570,7 @@ static VALUE
 statfs_inspect(VALUE self)
 {
     struct statfs*st = get_statfs(self);
-    return rb_sprintf("#<%"PRIsVALUE" type=%d"
+    return rb_sprintf("#<%"PRIsVALUE" type=%ld"
 #ifdef HAVE_STRUCT_STATFS_F_FSTYPENAME
 		      "(%s)"
 #endif
@@ -5578,13 +5578,13 @@ statfs_inspect(VALUE self)
 		      ", blocks=%"PRI_LL_PREFIX"d/%"PRI_LL_PREFIX"d/%"PRI_LL_PREFIX"d"
 		      ", files=%"PRI_LL_PREFIX"d/%"PRI_LL_PREFIX"d"
 		      ">",
-		      rb_obj_class(self), st->f_type,
+		      rb_obj_class(self), (long)st->f_type,
 #ifdef HAVE_STRUCT_STATFS_F_FSTYPENAME
 		      st->f_fstypename,
 #endif
 		      (long)st->f_bsize,
-		      st->f_bavail, st->f_bfree, st->f_blocks,
-		      st->f_ffree, st->f_files);
+		      (LONG_LONG)st->f_bavail, (LONG_LONG)st->f_bfree, (LONG_LONG)st->f_blocks,
+		      (LONG_LONG)st->f_ffree, (LONG_LONG)st->f_files);
 }
 
 #endif
