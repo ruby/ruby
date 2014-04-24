@@ -5550,6 +5550,43 @@ statfs_fstypename(VALUE self)
 #else
 #define statfs_fstypename rb_f_notimplement
 #endif
+
+/*
+ *  call-seq:
+ *     st.inspect    -> string
+ *
+ *  Returns total file nodes in filesystem.
+ *
+ *     f = File.new("testfile")
+ *     s = f.statfs
+ *     s.inspect   #=> ""
+ *       #=> "#<File::Statfs type=zfs, bsize=4096, blocks=900000/1000000/2000000, files=100000/200000>
+ *
+ *  +blocks+ are numbers of available/free/total blocks.
+ *  +files+ are numbers of free/total files.
+ */
+
+static VALUE
+statfs_inspect(VALUE self)
+{
+    struct statfs*st = get_statfs(self);
+    return rb_sprintf("#<%"PRIsVALUE" type=%d"
+#ifdef HAVE_STRUCT_STATFS_F_FSTYPENAME
+		      "(%s)"
+#endif
+		      ", bsize=%ld"
+		      ", blocks=%"PRI_LL_PREFIX"d/%"PRI_LL_PREFIX"d/%"PRI_LL_PREFIX"d"
+		      ", files=%"PRI_LL_PREFIX"d/%"PRI_LL_PREFIX"d"
+		      ">",
+		      rb_obj_class(self), st->f_type,
+#ifdef HAVE_STRUCT_STATFS_F_FSTYPENAME
+		      st->f_fstypename,
+#endif
+		      (long)st->f_bsize,
+		      st->f_bavail, st->f_bfree, st->f_blocks,
+		      st->f_ffree, st->f_files);
+}
+
 #endif
 
 VALUE rb_mFConst;
@@ -6149,5 +6186,6 @@ Init_File(void)
     rb_define_method(rb_cStatfs, "files", statfs_files, 0);
     rb_define_method(rb_cStatfs, "ffree", statfs_ffree, 0);
     rb_define_method(rb_cStatfs, "fstypename", statfs_fstypename, 0);
+    rb_define_method(rb_cStatfs, "inspect", statfs_inspect, 0);
 #endif
 }
