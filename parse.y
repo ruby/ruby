@@ -10759,6 +10759,8 @@ static int
 lookup_id_str(ID id, st_data_t *data)
 {
     if (ID_DYNAMIC_SYM_P(id)) {
+	rb_gc_resurrect((VALUE)id);
+	rb_gc_resurrect(RSYMBOL(id)->fstr);
 	*data = RSYMBOL(id)->fstr;
 	return TRUE;
     }
