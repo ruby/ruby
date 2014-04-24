@@ -1,3 +1,7 @@
+Thu Apr 24 21:09:55 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* man/ruby.1: fix broken link.
+
 Thu Apr 24 20:53:02 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/tmpdir.rb: Don't need to rescue LoadError for etc.so.
