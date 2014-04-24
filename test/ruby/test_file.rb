@@ -401,10 +401,10 @@ class TestFile < Test::Unit::TestCase
       rescue NotImplementedError
       end
       s = st.inspect
-      assert_match /\A\#<File::Statfs\b.*>\z/, s
-      assert_match /\bbsize=\d+\b/, s
-      assert_match /\bblocks=(?:\d+[,>\/])+\b/, s
-      assert_match /\bfiles=(?:\d+[,>\/])+\b/, s
+      assert_match(/\A\#<File::Statfs\b.*>\z/, s)
+      assert_match(/\bbsize=\d+\b/, s)
+      assert_match(/\bblocks=(?:\d+[,>\/])+\b/, s)
+      assert_match(/\bfiles=(?:\d+[,>\/])+\b/, s)
     end
   end
 end
