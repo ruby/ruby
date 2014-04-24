@@ -1,3 +1,9 @@
+Thu Apr 24 11:53:28 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl/ossl_asn1.c (ossl_asn1_initialize): SYMID on a value
+	  other than Symbol is an undefined behavior.  fix up r31699.
+	  [ruby-core:62142] [Bug #9771]
+
 Thu Apr 24 11:21:37 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_sym2id, rb_sym2id_without_pindown): return 0 for
