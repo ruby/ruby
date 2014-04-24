@@ -10768,17 +10768,24 @@ lookup_id_str(ID id, st_data_t *data)
     return FALSE;
 }
 
+static void
+must_be_dynamic_symbol(VALUE x)
+{
+    if (SPECIAL_CONST_P(x) || BUILTIN_TYPE(x) != T_SYMBOL) {
+	rb_raise(rb_eTypeError, "wrong argument type %s (expected Symbol)",
+		 rb_builtin_class_name(x));
+    }
+}
+
 ID
 rb_sym2id(VALUE x)
 {
     if (STATIC_SYM_P(x)) {
 	return RSHIFT((unsigned long)(x),RUBY_SPECIAL_SHIFT);
     }
-    else if (!SPECIAL_CONST_P(x) && BUILTIN_TYPE(x) == T_SYMBOL) {
-	return rb_pin_dynamic_symbol(x);
-    }
     else {
-	return 0;
+	must_be_dynamic_symbol(x);
+	return rb_pin_dynamic_symbol(x);
     }
 }
 
@@ -10788,11 +10795,9 @@ rb_sym2id_without_pindown(VALUE x)
     if (STATIC_SYM_P(x)) {
 	return RSHIFT((unsigned long)(x),RUBY_SPECIAL_SHIFT);
     }
-    else if (!SPECIAL_CONST_P(x) && BUILTIN_TYPE(x) == T_SYMBOL) {
-	return (ID)x;
-    }
     else {
-	return 0;
+	must_be_dynamic_symbol(x);
+	return (ID)x;
     }
 }
 
