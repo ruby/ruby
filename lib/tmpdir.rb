@@ -5,10 +5,7 @@
 #
 
 require 'fileutils'
-begin
-  require 'etc.so'
-rescue LoadError
-end
+require 'etc.so'
 
 class Dir
 
