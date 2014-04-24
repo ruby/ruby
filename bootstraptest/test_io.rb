@@ -42,8 +42,9 @@ assert_finish 1, %q{
 }
 
 assert_equal 'ok', %q{
+  require 'tmpdir'
   begin
-    tmpname = "/tmp/ruby-btest-#{$$}-#{rand(0x100000000).to_s(36)}"
+    tmpname = "#{Dir.tmpdir}/ruby-btest-#{$$}-#{rand(0x100000000).to_s(36)}"
     rw = File.open(tmpname, File::RDWR|File::CREAT|File::EXCL)
   rescue Errno::EEXIST
     retry
@@ -57,8 +58,9 @@ assert_equal 'ok', %q{
 }
 
 assert_equal 'ok', %q{
+  require 'tmpdir'
   begin
-    tmpname = "/tmp/ruby-btest-#{$$}-#{rand(0x100000000).to_s(36)}"
+    tmpname = "#{Dir.tmpdir}/ruby-btest-#{$$}-#{rand(0x100000000).to_s(36)}"
     rw = File.open(tmpname, File::RDWR|File::CREAT|File::EXCL)
   rescue Errno::EEXIST
     retry

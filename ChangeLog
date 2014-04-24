@@ -1,8 +1,3 @@
-Thu Apr 24 22:38:55 2014  Tanaka Akira  <akr@fsij.org>
-
-	* bootstraptest/test_io.rb: Don't use tmpdir because etc.so is not
-	  usable from miniruby.
-
 Thu Apr 24 21:09:55 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* man/ruby.1: fix broken link.
