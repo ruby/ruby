@@ -1,3 +1,9 @@
+Fri Apr 25 14:55:59 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rb_cv_func___builtin_unreachable): try with an
+	  external variable not only by a warning, which might not be
+	  shown due to the optimization.  [ruby-core:61647] [Bug #9665]
+
 Fri Apr 25 13:11:49 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: NetBSD's ksh, used by configure, needs escapes.

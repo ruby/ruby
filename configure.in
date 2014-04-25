@@ -1595,8 +1595,8 @@ if test "$GCC" = yes; then
 
     AC_CACHE_CHECK(for __builtin_unreachable, rb_cv_func___builtin_unreachable,
     [RUBY_WERROR_FLAG(
-    [AC_TRY_LINK([@%:@include <stdlib.h>],
-	[exit(0); __builtin_unreachable();],
+    [AC_TRY_LINK([volatile int zero;],
+	[if (zero) __builtin_unreachable();],
 	[rb_cv_func___builtin_unreachable=yes],
 	[rb_cv_func___builtin_unreachable=no])
     ])
