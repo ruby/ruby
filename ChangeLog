@@ -1,3 +1,7 @@
+Fri Apr 25 19:16:30 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/webrick/utils.rb: Don't rescue LoadError for 'etc' extension.
+
 Fri Apr 25 14:55:59 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (rb_cv_func___builtin_unreachable): try with an
