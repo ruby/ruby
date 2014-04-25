@@ -169,7 +169,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("for statement");
 	ANN("format: for * in [nd_iter] do [nd_body] end");
 	ANN("example: for i in 1..3 do foo end");
-	iter:
+      iter:
 	F_NODE(nd_iter, "iteration receiver");
 	LAST_NODE;
 	F_NODE(nd_body, "body");
@@ -189,7 +189,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("return statement");
 	ANN("format: return [nd_stts]");
 	ANN("example: return 1");
-        jump:
+      jump:
 	LAST_NODE;
 	F_NODE(nd_stts, "value");
 	break;
@@ -252,7 +252,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("|| operator");
 	ANN("format: [nd_1st] || [nd_2nd]");
 	ANN("example: foo && bar");
-	andor:
+      andor:
 	F_NODE(nd_1st, "left expr");
 	LAST_NODE;
 	F_NODE(nd_2nd, "right expr");
@@ -297,7 +297,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("class variable assignment");
 	ANN("format: [nd_vid](cvar) = [nd_value]");
 	ANN("example: @@x = foo");
-	asgn:
+      asgn:
 	F_ID(nd_vid, "variable");
 	LAST_NODE;
 	F_NODE(nd_value, "rvalue");
@@ -350,9 +350,9 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	F_ID(nd_next->nd_aid, "writer");
 	F_CUSTOM1(nd_next->nd_mid, "operator", {
 	   switch (node->nd_next->nd_mid) {
-	   case 0: A("0 (||)"); break;
-	   case 1: A("1 (&&)"); break;
-	   default: A_ID(node->nd_next->nd_mid);
+	     case 0: A("0 (||)"); break;
+	     case 1: A("1 (&&)"); break;
+	     default: A_ID(node->nd_next->nd_mid);
 	   }
 	});
 	LAST_NODE;
@@ -368,7 +368,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("assignment with || operator");
 	ANN("format: [nd_head] ||= [nd_value]");
 	ANN("example: foo ||= bar");
-	asgn_andor:
+      asgn_andor:
 	F_NODE(nd_head, "variable");
 	LAST_NODE;
 	F_NODE(nd_value, "rvalue");
@@ -423,7 +423,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("return arguments");
 	ANN("format: [ [nd_head], [nd_next].. ] (length: [nd_alen])");
 	ANN("example: return 1, 2, 3");
-	ary:
+      ary:
 	F_LONG(nd_alen, "length");
 	F_NODE(nd_head, "element");
 	LAST_NODE;
@@ -476,7 +476,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("class variable reference");
 	ANN("format: [nd_vid](cvar)");
 	ANN("example: @@x");
-        var:
+      var:
 	F_ID(nd_vid, "local variable");
 	break;
 
@@ -546,7 +546,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("xstring literal");
 	ANN("format: [nd_lit]");
 	ANN("example: `foo`");
-	lit:
+      lit:
 	F_LIT(nd_lit, "literal");
 	break;
 
@@ -574,7 +574,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("symbol literal with interpolation");
 	ANN("format: [nd_lit]");
 	ANN("example: :\"foo#{ bar }baz\"");
-	dlit:
+      dlit:
 	F_LIT(nd_lit, "literal");
 	F_NODE(nd_next->nd_head, "preceding string");
 	LAST_NODE;
@@ -731,7 +731,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("flip-flop condition (excl.)");
 	ANN("format: [nd_beg]...[nd_end]");
 	ANN("example: if (x==1)...(x==5); foo; end");
-	dot:
+      dot:
 	F_NODE(nd_beg, "begin");
 	LAST_NODE;
 	F_NODE(nd_end, "end");
