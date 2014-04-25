@@ -528,6 +528,11 @@ MSG
   def try_link0(src, opt="", *opts, &b) # :nodoc:
     cmd = link_command("", opt)
     if $universal
+      begin
+        require 'etc'
+      rescue LoadError
+        $" << 'etc.so'
+      end
       require 'tmpdir'
       Dir.mktmpdir("mkmf_", oldtmpdir = ENV["TMPDIR"]) do |tmpdir|
         begin
