@@ -2546,9 +2546,12 @@ if test x"$enable_pthread" = xyes; then
     if test "$ac_cv_func_pthread_setname_np" = yes; then
 	AC_CACHE_CHECK([arguments of pthread_setname_np], [rb_cv_func_pthread_setname_np_arguments],
 	    [rb_cv_func_pthread_setname_np_arguments=
+	    # Linux,AIX,  (pthread_self(), name)
+	    # NetBSD (pthread_self(), name, \"%s\")
+	    # Darwin (name)
 	    for mac in \
 		"(pthread_self(), name)" \
-		"(pthread_self(), "%s", name)" \
+		"(pthread_self(), name, \"%s\")" \
 		"(name)" \
 		; do
 		AC_TRY_COMPILE([
