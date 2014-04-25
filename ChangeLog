@@ -1,3 +1,7 @@
+Fri Apr 25 13:11:49 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: NetBSD's ksh, used by configure, needs escapes.
+
 Fri Apr 25 12:51:08 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: correct pthread_setname_np's prototype on NetBSD.
