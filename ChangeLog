@@ -1,3 +1,11 @@
+Fri Apr 25 22:54:34 2014  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* lib/fileutils.rb (rmdir): rescue Errno::EEXIST in addition to
+	  ENOTEMPTY (and ENOENT), because SUSv3 describes that "If the
+	  directory is not an empty directory, rmdir() shall fail and set
+	  errno to [EEXIST] or [ENOTEMPTY]" and Solaris uses EEXIST.
+	  [Bug #9571] [ruby-dev:48017]
+
 Fri Apr 25 19:16:30 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/webrick/utils.rb: Don't rescue LoadError for 'etc' extension.
