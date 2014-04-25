@@ -65,8 +65,11 @@ class TestProcess < Test::Unit::TestCase
     return unless rlimit_exist?
     with_tmpchdir {
       write_file 's', <<-"End"
-	# if limit=0, this test freeze pn OpenBSD
-	limit = /openbsd/ =~ RUBY_PLATFORM ? 1 : 0
+        # Too small RLIMIT_NOFILE causes problems.
+        # [OpenBSD] Setting to zero freezes this test.
+        # [GNU/Linux] EINVAL on poll().  EINVAL on ruby's internal poll() ruby with "[ASYNC BUG] thread_timer: select".
+        pipes = IO.pipe
+	limit = pipes.map {|io| io.fileno }.min
 	result = 1
 	begin
 	  Process.setrlimit(Process::RLIMIT_NOFILE, limit)
