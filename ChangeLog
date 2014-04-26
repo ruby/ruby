@@ -1,3 +1,9 @@
+Sat Apr 26 10:55:33 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (compile_array_): make copy a first hash not to modify
+	  the argument itself.  keyword splat should be non-destructive.
+	  [ruby-core:62161] [Bug #9776]
+
 Sat Apr 26 08:05:36 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_process.rb (test_rlimit_nofile): Don't limit
