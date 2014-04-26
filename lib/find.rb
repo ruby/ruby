@@ -47,15 +47,15 @@ module Find
           yield file.dup.taint
           begin
             s = File.lstat(file)
+            fs = if s.directory?
+                   Dir.entries(file, encoding: enc)
+                 elsif s.symlink?
+                   Dir.entries(File.readlink(file), encoding: enc)
+                 end
           rescue Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR, Errno::ELOOP, Errno::ENAMETOOLONG
             next
           end
-          if s.directory? then
-            begin
-              fs = Dir.entries(file, encoding: enc)
-            rescue Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR, Errno::ELOOP, Errno::ENAMETOOLONG
-              next
-            end
+          if fs then
             fs.sort!
             fs.reverse_each {|f|
               next if f == "." or f == ".."
