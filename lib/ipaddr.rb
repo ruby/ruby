@@ -201,8 +201,7 @@ class IPAddr
   end
 
   # Returns a string containing the IP address representation.
-  def to_s
-    str = to_string
+  def to_s(str = to_string)
     return str if ipv4?
 
     str.gsub!(/\b0{1,3}([\da-f]+)\b/i, '\1')
@@ -229,6 +228,10 @@ class IPAddr
   # canonical form.
   def to_string
     return _to_string(@addr)
+  end
+
+  def to_unmasked_host_string
+    return to_s(_to_string(@unmasked_addr))
   end
 
   # Returns a network byte ordered string form of the IP address.
@@ -408,7 +411,12 @@ class IPAddr
   end
 
   # Set current netmask to given mask.
+  #
+  # We add a instance variable to track the unmasked address.
+  # This is used by cidr records which store both a host and
+  # a network.
   def mask!(mask)
+    @unmasked_addr = @addr
     if mask.kind_of?(String)
       if mask =~ /^\d+$/
         prefixlen = mask.to_i
@@ -817,6 +825,10 @@ class TC_IPAddr < Test::Unit::TestCase
   def test_to_s
     assert_equal("3ffe:0505:0002:0000:0000:0000:0000:0001", IPAddr.new("3ffe:505:2::1").to_string)
     assert_equal("3ffe:505:2::1", IPAddr.new("3ffe:505:2::1").to_s)
+  end
+
+  def test_to_unmasked_host_string
+    assert_equal('192.168.1.100', IPAddr.new('192.168.1.100/24').to_unmasked_host_string)
   end
 end
 
