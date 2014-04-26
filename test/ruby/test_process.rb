@@ -65,7 +65,7 @@ class TestProcess < Test::Unit::TestCase
     return unless rlimit_exist?
     with_tmpchdir {
       write_file 's', <<-"End"
-        # Too small RLIMIT_NOFILE causes problems.
+        # Too small RLIMIT_NOFILE, such as zero, causes problems.
         # [OpenBSD] Setting to zero freezes this test.
         # [GNU/Linux] EINVAL on poll().  EINVAL on ruby's internal poll() ruby with "[ASYNC BUG] thread_timer: select".
         pipes = IO.pipe
