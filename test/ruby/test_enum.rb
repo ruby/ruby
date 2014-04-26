@@ -592,4 +592,26 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([['A',0], ['B',1], ['C',2], ['D',3], ['E',4]],
       @obj.each_with_index.map(&lambda2))
   end
+
+  def test_flat_map
+    @obj = [[1,2], [3,4]]
+    assert_equal([2,4,6,8], @obj.flat_map {|i| i.map{|j| j*2} })
+
+    proc = Proc.new {|i| i.map{|j| j*2} }
+    assert_equal([2,4,6,8], @obj.flat_map(&proc))
+
+    lambda = ->(i) { i.map{|j| j*2} }
+    assert_equal([2,4,6,8], @obj.flat_map(&lambda))
+
+    assert_equal([[1,2],0,[3,4],1],
+                 @obj.each_with_index.flat_map {|x, i| [x,i] })
+
+    proc2 = Proc.new {|x, i| [x,i] }
+    assert_equal([[1,2],0,[3,4],1],
+                 @obj.each_with_index.flat_map(&proc2))
+
+    lambda2 = ->(x, i) { [x,i] }
+    assert_equal([[1,2],0,[3,4],1],
+                 @obj.each_with_index.flat_map(&lambda2))
+  end
 end
