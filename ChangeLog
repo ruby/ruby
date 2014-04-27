@@ -1,7 +1,7 @@
 Sat Apr 26 11:50:08 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/ruby/test_enum.rb (test_flat_map): Added test for flat_map.
-	 Contribute from @igaiga. [fix GH-598]
+	  Contribute from @igaiga. [fix GH-598]
 
 Sat Apr 26 10:55:33 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
