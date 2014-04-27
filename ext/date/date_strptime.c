@@ -291,8 +291,9 @@ date__strptime_internal(const char *str, size_t slen,
 		    if (!valid_range_p(n, 0, 99))
 			fail();
 		    set_hash("cwyear",n);
-		    set_hash("_cent",
-			     INT2FIX(f_ge_p(n, INT2FIX(69)) ? 19 : 20));
+		    if (NIL_P(ref_hash("_cent")))
+			set_hash("_cent",
+				 INT2FIX(f_ge_p(n, INT2FIX(69)) ? 19 : 20));
 		    goto matched;
 		}
 
@@ -556,8 +557,9 @@ date__strptime_internal(const char *str, size_t slen,
 		    if (sign == -1)
 			n = f_negate(n);
 		    set_hash("year", n);
-		    set_hash("_cent",
-			     INT2FIX(f_ge_p(n, INT2FIX(69)) ? 19 : 20));
+		    if (NIL_P(ref_hash("_cent")))
+			set_hash("_cent",
+				 INT2FIX(f_ge_p(n, INT2FIX(69)) ? 19 : 20));
 		    goto matched;
 		}
 

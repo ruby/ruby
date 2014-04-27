@@ -195,8 +195,12 @@ class TestDateStrptime < Test::Unit::TestCase
      [['01', '%y'], [2001,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
      [['19 99', '%C %y'], [1999,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
      [['20 01', '%C %y'], [2001,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
+     [['30 99', '%C %y'], [3099,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
+     [['30 01', '%C %y'], [3001,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
      [['1999', '%C%y'], [1999,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
      [['2001', '%C%y'], [2001,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
+     [['3099', '%C%y'], [3099,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
+     [['3001', '%C%y'], [3001,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
 
      [['20060806', '%Y'], [20060806,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
      [['20060806', "%Y\s"], [20060806,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
