@@ -84,7 +84,7 @@ assert_equal '0',               're = /test/; re =~ "test"'
 assert_equal '0',               'str = "test"; /test/ =~ str'
 assert_equal '0',               're = /test/; str = "test"; re =~ str'
 
-# dynacmi regexp
+# dynamic regexp
 assert_equal 'regexp',          %q(/re#{'ge'}xp/.source)
 assert_equal 'Regexp',          %q(/re#{'ge'}xp/.class)
 
