@@ -1,3 +1,11 @@
+Tue Apr 29 00:20:26 2014  Rajarshi Das  <rajarshid@cybage.com>
+
+	* bootstraptest/test_literal.rb: fix typo of "dynamic".  [ci skip]
+
+	* regexp.rdoc: fix typo of "organized".  [ci skip]
+
+	* lib/session.rb: fix typo of "recognized".  [ci skip]
+
 Mon Apr 28 21:40:27 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in (HAVE_STRUCT_STATFS_F_TYPE): check struct statfs.f_type
