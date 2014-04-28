@@ -72,9 +72,21 @@ int flock(int, int);
 #ifdef HAVE_STRUCT_STATFS
 typedef struct statfs statfs_t;
 #define STATFS(f, s) statfs((f), (s))
+#ifdef HAVE_STRUCT_STATFS_F_FSTYPENAME
+#define HAVE_STRUCT_STATFS_T_F_FSTYPENAME 1
+#endif
+#ifdef HAVE_STRUCT_STATFS_F_TYPE
+#define HAVE_STRUCT_STATFS_T_F_TYPE 1
+#endif
 #elif defined(HAVE_STRUCT_STATVFS)
 typedef struct statvfs statfs_t;
 #define STATFS(f, s) statvfs((f), (s))
+#ifdef HAVE_STRUCT_STATVFS_F_FSTYPENAME
+#define HAVE_STRUCT_STATFS_T_F_FSTYPENAME 1
+#endif
+#ifdef HAVE_STRUCT_STATVFS_F_TYPE
+#define HAVE_STRUCT_STATFS_T_F_TYPE 1
+#endif
 #else
 # define WITHOUT_STATFS
 #endif
@@ -1135,13 +1147,13 @@ rb_io_statfs(VALUE obj)
 {
     rb_io_t *fptr;
     statfs_t st;
-#if !defined(HAVE_FSTATFS) && !defined(HAVE_FSTATVFS)
+#ifndef FSTATFS
     VALUE path;
 #endif
     int ret;
 
     GetOpenFile(obj, fptr);
-#if defined(HAVE_FSTATFS) || defined(HAVE_FSTATVFS)
+#ifdef FSTATFS
     ret = FSTATFS(fptr->fd, &st);
 #else
     path = rb_str_encode_ospath(fptr->pathv);
@@ -5443,7 +5455,7 @@ rb_statfs_init_copy(VALUE copy, VALUE orig)
     return copy;
 }
 
-#ifdef HAVE_STRUCT_STATFS_F_TYPE
+#ifdef HAVE_STRUCT_STATFS_T_F_TYPE
 /*
  *  call-seq:
  *     st.type    -> fixnum
@@ -5549,7 +5561,7 @@ statfs_ffree(VALUE self)
     return LL2NUM(get_statfs(self)->f_ffree);
 }
 
-#if defined(HAVE_STRUCT_STATFS_F_FSTYPENAME) || defined(HAVE_STRUCT_STATVFS_F_FSTYPENAME)
+#ifdef HAVE_STRUCT_STATFS_T_F_FSTYPENAME
 /*
  *  call-seq:
  *     st.fstypename    -> string
@@ -5591,10 +5603,10 @@ statfs_inspect(VALUE self)
 {
     statfs_t *st = get_statfs(self);
     return rb_sprintf("#<%"PRIsVALUE" "
-#ifdef HAVE_STRUCT_STATFS_F_TYPE
+#ifdef HAVE_STRUCT_STATFS_T_F_TYPE
 		      "type=%ld"
 #endif
-#if defined(HAVE_STRUCT_STATFS_F_FSTYPENAME) || defined(HAVE_STRUCT_STATVFS_F_FSTYPENAME)
+#ifdef HAVE_STRUCT_STATFS_T_F_FSTYPENAME
 		      "(%s)"
 #endif
 		      ", bsize=%ld"
@@ -5602,10 +5614,10 @@ statfs_inspect(VALUE self)
 		      ", files=%"PRI_LL_PREFIX"d/%"PRI_LL_PREFIX"d"
 		      ">",
 		      rb_obj_class(self),
-#ifdef HAVE_STRUCT_STATFS_F_TYPE
+#ifdef HAVE_STRUCT_STATFS_T_F_TYPE
 		      (long)st->f_type,
 #endif
-#if defined(HAVE_STRUCT_STATFS_F_FSTYPENAME) || defined(HAVE_STRUCT_STATVFS_F_FSTYPENAME)
+#ifdef HAVE_STRUCT_STATFS_T_F_FSTYPENAME
 		      st->f_fstypename,
 #endif
 		      (long)st->f_bsize,

@@ -1,3 +1,16 @@
+Tue Apr 29 04:29:05 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* file.c (HAVE_STRUCT_STATFS_T_F_FSTYPENAME): Add new macro for
+	  statfs_t.
+	* file.c (HAVE_STRUCT_STATFS_T_F_TYPE): ditto.
+
+	* file.c (rb_io_statfs): check FSTATFS macro only instead of
+	  HAVE_FSTATFS and HAVE_FSTATVFS.
+
+	* file.c (statfs_type): use new macro.
+	* file.c (statfs_fstypename): ditto.
+	* file.c (statfs_inspect): ditto.
+
 Tue Apr 29 00:20:26 2014  Rajarshi Das  <rajarshid@cybage.com>
 
 	* bootstraptest/test_literal.rb: fix typo of "dynamic".  [ci skip]
