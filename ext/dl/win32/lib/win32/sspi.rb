@@ -25,6 +25,9 @@ module Win32
 		SECURITY_NATIVE_DREP = 0x00000010
 		SECURITY_NETWORK_DREP = 0x00000000
 
+		# QueryContextAttributes attributes flags
+		SECPKG_ATTR_SIZES = 0x00000000
+
 		# InitializeSecurityContext Requirement flags
 		ISC_REQ_REPLAY_DETECT = 0x00000004
 		ISC_REQ_SEQUENCE_DETECT = 0x00000008
@@ -43,6 +46,10 @@ module Win32
 			DeleteSecurityContext = Win32API.new("secur32", "DeleteSecurityContext", 'P', 'L')
 			# Can be called with FreeCredentialsHandle.call()
 			FreeCredentialsHandle = Win32API.new("secur32", "FreeCredentialsHandle", 'P', 'L')
+			# APIs to support encryption/decryption using secur32
+			QueryContextAttributes = Win32API.new("secur32", "QueryContextAttributes", 'pLp', 'L')
+			EncryptMessage = Win32API.new("secur32", "EncryptMessage", 'pLpL', 'L')
+			DecryptMessage = Win32API.new("secur32", "DecryptMessage", 'ppLp', 'L')
 		end
 
 		# SecHandle struct
@@ -150,6 +157,130 @@ module Win32
 			end
 		end
 
+		# Structure filled by QueryContextAttributes() API
+    class SecPkgContext_Sizes
+      attr_accessor :cbMaxToken, :cbMaxSignature, :cbBlockSize, :cbSecurityTrailer
+
+      def initialize
+        @cbMaxToken = @cbMaxSignature = @cbBlockSize = @cbSecurityTrailer = 0
+      end
+
+      def cbMaxToken
+        @cbMaxToken = @struct.unpack("LLLL")[0] if @struct
+      end
+
+      def cbMaxSignature
+        @cbMaxSignature = @struct.unpack("LLLL")[1] if @struct
+      end
+
+      def cbBlockSize
+        @cbBlockSize = @struct.unpack("LLLL")[2] if @struct
+      end
+
+      def cbSecurityTrailer
+        @cbSecurityTrailer = @struct.unpack("LLLL")[3] if @struct
+      end
+
+      def to_p
+        @struct ||= [@cbMaxToken, @cbMaxSignature, @cbBlockSize, @cbSecurityTrailer].pack("LLLL")
+      end
+    end
+
+    #  SecurityBuffer for data to be encrypted
+    class EncryptedSecurityBuffer
+
+      SECBUFFER_DATA = 0x1    # Security buffer data
+      SECBUFFER_TOKEN = 0x2   # Security token
+      SECBUFFER_VERSION = 0
+
+      def initialize(data_buffer, sizes)
+        @original_msg_len = data_buffer.length
+        @cbSecurityTrailer = sizes.cbSecurityTrailer
+        @data_buffer = data_buffer
+        @security_trailer = "\0" * sizes.cbSecurityTrailer
+      end
+
+      def to_p
+        # Assumption is that when to_p is called we are going to get a packed structure. Therefore,
+        # set @unpacked back to nil so we know to unpack when accessors are next accessed.
+        @unpacked = nil
+        # Assignment of inner structure to variable is very important here. Without it,
+        # will not be able to unpack changes to the structure. Alternative, nested unpacks,
+        # does not work (i.e. @struct.unpack("LLP12")[2].unpack("LLP12") results in "no associated pointer")
+        @sec_buffer = [@original_msg_len, SECBUFFER_DATA, @data_buffer, @cbSecurityTrailer, SECBUFFER_TOKEN, @security_trailer].pack("LLPLLP")
+        @struct ||= [SECBUFFER_VERSION, 2, @sec_buffer].pack("LLP")
+      end
+
+      def buffer
+        unpack
+        @buffer
+      end
+
+    private
+
+      # Unpacks the SecurityBufferDesc structure into member variables. We
+      # only want to do this once per struct, so the struct is deleted
+      # after unpacking.
+      def unpack
+        if ! @unpacked && @sec_buffer && @struct
+          dataBufferSize, dType, dataBuffer, tokenBufferSize, tType, tokenBuffer = @sec_buffer.unpack("LLPLLP")
+          dataBufferSize, dType, dataBuffer, tokenBufferSize, tType, tokenBuffer = @sec_buffer.unpack("LLP#{dataBufferSize}LLP#{tokenBufferSize}")
+          # Form the buffer stream as required by server
+          @buffer = [tokenBufferSize].pack("L")
+          @buffer << tokenBuffer << dataBuffer
+          @struct = nil
+          @sec_buffer = nil
+          @unpacked = true
+        end
+      end
+    end
+
+    class DecryptedSecurityBuffer
+
+      SECBUFFER_DATA = 0x1    # Security buffer data
+      SECBUFFER_TOKEN = 0x2   # Security token
+      SECBUFFER_VERSION = 0
+
+      def initialize(buffer)
+        # unpack to extract the msg and token
+        token_size, token_buffer, enc_buffer = buffer.unpack("L")
+        @original_msg_len = buffer.length - token_size - 4
+        @cbSecurityTrailer, @security_trailer, @data_buffer = buffer.unpack("La#{token_size}a#{@original_msg_len}")
+      end
+
+      def to_p
+        # Assumption is that when to_p is called we are going to get a packed structure. Therefore,
+        # set @unpacked back to nil so we know to unpack when accessors are next accessed.
+        @unpacked = nil
+        # Assignment of inner structure to variable is very important here. Without it,
+        # will not be able to unpack changes to the structure. Alternative, nested unpacks,
+        # does not work (i.e. @struct.unpack("LLP12")[2].unpack("LLP12") results in "no associated pointer")
+        @sec_buffer = [@original_msg_len, SECBUFFER_DATA, @data_buffer, @cbSecurityTrailer, SECBUFFER_TOKEN, @security_trailer].pack("LLPLLP")
+        @struct ||= [SECBUFFER_VERSION, 2, @sec_buffer].pack("LLP")
+      end
+
+      def buffer
+        unpack
+        @buffer
+      end
+
+    private
+
+      # Unpacks the SecurityBufferDesc structure into member variables. We
+      # only want to do this once per struct, so the struct is deleted
+      # after unpacking.
+      def unpack
+        if ! @unpacked && @sec_buffer && @struct
+          dataBufferSize, dType, dataBuffer, tokenBufferSize, tType, tokenBuffer = @sec_buffer.unpack("LLPLLP")
+          dataBufferSize, dType, dataBuffer, tokenBufferSize, tType, tokenBuffer = @sec_buffer.unpack("LLP#{dataBufferSize}LLP#{tokenBufferSize}")
+          @buffer = dataBuffer
+          @struct = nil
+          @sec_buffer = nil
+          @unpacked = true
+        end
+      end
+    end
+
 		# Takes a return result from an SSPI function and interprets the value.
 		class SSPIResult
 			# Good results
@@ -234,13 +365,14 @@ module Win32
 			# Creates a new instance ready for authentication as the given user in the given domain.
 			# Defaults to current user and domain as defined by ENV["USERDOMAIN"] and ENV["USERNAME"] if
 			# no arguments are supplied.
-			def initialize(user = nil, domain = nil)
+			def initialize(user = nil, domain = nil, password = nil)
 				if user.nil? && domain.nil? && ENV["USERNAME"].nil? && ENV["USERDOMAIN"].nil?
 					raise "A username or domain must be supplied since they cannot be retrieved from the environment"
 				end
 
 				@user = user || ENV["USERNAME"]
 				@domain = domain || ENV["USERDOMAIN"]
+				@password = password
 			end
 
 			# Gets the initial Negotiate token. Returns it as a base64 encoded string suitable for use in HTTP. Can
@@ -267,7 +399,9 @@ module Win32
 			# The token can include the "Negotiate" header and it will be stripped.
 			# Does not indicate if SEC_I_CONTINUE or SEC_E_OK was returned.
 			# Token returned is Base64 encoded w/ all new lines removed.
-			def complete_authentication(token)
+			# cleanup_context_handle should be set to false when encrypt/decrypt needs to be used since we need 
+			# the same context to encrypt/decrypt, post auth. default is true so existing uses of this class are unaffected.
+			def complete_authentication(token, cleanup_context_handle = true)
 				raise "This object is no longer usable because its resources have been freed." if @cleaned_up
 
 				# Nil token OK, just set it to empty string
@@ -296,8 +430,46 @@ module Win32
 				end
 			ensure
 				# need to make sure we don't clean up if we've already cleaned up.
-				clean_up unless @cleaned_up
+				if cleanup_context_handle
+					clean_up unless @cleaned_up
+				end
 			end
+
+			# Support for encryption/decryption.
+      def encrypt_payload(body)
+        if @auth_successful
+          # Approach - http://msdn.microsoft.com/en-us/magazine/cc301890.aspx
+          sizes = SecPkgContext_Sizes.new
+          result = SSPIResult.new(API::QueryContextAttributes.call(@context.to_p, SECPKG_ATTR_SIZES, sizes.to_p))
+
+          outputBuffer = EncryptedSecurityBuffer.new(body, sizes)
+          result = SSPIResult.new(API::EncryptMessage.call(@context.to_p, 0, outputBuffer.to_p, 0 ))
+          encrypted_msg = outputBuffer.buffer
+
+          body = <<-EOF
+--Encrypted Boundary\r
+Content-Type: application/HTTP-SPNEGO-session-encrypted\r
+OriginalContent: type=application/soap+xml;charset=UTF-8;Length=#{encrypted_msg.length - sizes.cbSecurityTrailer - 4}\r
+--Encrypted Boundary\r
+Content-Type: application/octet-stream\r
+#{encrypted_msg}--Encrypted Boundary\r
+EOF
+        end
+        body
+      end
+
+      def decrypt_payload(body)
+        if @auth_successful
+
+          matched_data = /--Encrypted Boundary\s+Content-Type:\s+application\/HTTP-SPNEGO-session-encrypted\s+OriginalContent:\s+type=\S+Length=(\d+)\s+--Encrypted Boundary\s+Content-Type:\s+application\/octet-stream\s+([\S\s]+)--Encrypted Boundary/.match(body)
+          encrypted_msg = matched_data[2]
+
+          outputBuffer = DecryptedSecurityBuffer.new(encrypted_msg)
+          result = SSPIResult.new(API::DecryptMessage.call(@context.to_p, outputBuffer.to_p, 0, 0 ))
+          body = outputBuffer.buffer
+        end
+        body
+      end
 
 		 private
 
@@ -315,7 +487,7 @@ module Win32
 			def get_credentials
 				@credentials = CredHandle.new
 				ts = TimeStamp.new
-				@identity = Identity.new @user, @domain
+				@identity = Identity.new @user, @domain, @password
 				result = SSPIResult.new(API::AcquireCredentialsHandle.call(nil, "Negotiate", SECPKG_CRED_OUTBOUND, nil, @identity.to_p,
 					nil, nil, @credentials.to_p, ts.to_p))
 				raise "Error acquire credentials: #{result}" unless result.ok?
