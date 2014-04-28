@@ -71,13 +71,20 @@ int flock(int, int);
 #endif
 #ifdef HAVE_STRUCT_STATFS
 typedef struct statfs statfs_t;
+#define STATFS(f, s) statfs((f), (s))
 #elif defined(HAVE_STRUCT_STATVFS)
 typedef struct statvfs statfs_t;
+#define STATFS(f, s) statvfs((f), (s))
 #else
 # define WITHOUT_STATFS
 #endif
 #ifndef WITHOUT_STATFS
 static VALUE rb_statfs_new(const statfs_t *st);
+#if defined(HAVE_FSTATFS)
+#define FSTATFS(f, s) Fstatfs((f), (s))
+#elif !defined(HAVE_FSTATVFS)
+#define FSTATFS(f, s) Fstatvfs((f), (s))
+#endif
 #endif
 
 #if defined(__native_client__) && defined(NACL_NEWLIB)
@@ -122,8 +129,9 @@ static VALUE rb_statfs_new(const statfs_t *st);
 #define unlink(p)	rb_w32_uunlink(p)
 #undef rename
 #define rename(f, t)	rb_w32_urename((f), (t))
-#undef statfs
-#define statfs(f, s)	ustatfs((f), (s))
+#undef STATFS
+#define STATFS(f, s)	ustatfs((f), (s))
+#define HAVE_STATFS 1
 #else
 #define STAT(p, s)	stat((p), (s))
 #endif
@@ -1130,16 +1138,16 @@ rb_io_statfs(VALUE obj)
 #if !defined(HAVE_FSTATFS) && !defined(HAVE_FSTATVFS)
     VALUE path;
 #endif
+    int ret;
 
     GetOpenFile(obj, fptr);
-#ifdef HAVE_FSTATFS
-    if (fstatfs(fptr->fd, &st) == -1)
-#elif defined(HAVE_FSTATVFS)
-    if (fstatvfs(fptr->fd, &st) == -1)
+#if defined(HAVE_FSTATFS) || defined(HAVE_FSTATVFS)
+    ret = FSTATFS(fptr->fd, &st);
 #else
-    if (statfs(StringValueCStr(rb_str_encode_ospath(fptr->pathv)), &st) == -1)
+    path = rb_str_encode_ospath(fptr->pathv);
+    ret = STATFS(StringValueCStr(path), &st);
 #endif
-    {
+    if (ret == -1) {
 	rb_sys_fail_path(fptr->pathv);
     }
     return rb_statfs_new(&st);
@@ -5401,11 +5409,7 @@ rb_statfs_init(VALUE obj, VALUE fname)
     rb_secure(2);
     FilePathValue(fname);
     fname = rb_str_encode_ospath(fname);
-#ifdef HAVE_FSTATFS
-    if (statfs(StringValueCStr(fname), &st) == -1) {
-#elif HAVE_FSTATVFS
-    if (statvfs(StringValueCStr(fname), &st) == -1) {
-#endif
+    if (STATFS(StringValueCStr(fname), &st) == -1) {
 	rb_sys_fail_path(fname);
     }
     if (DATA_PTR(obj)) {
@@ -5598,7 +5602,7 @@ statfs_inspect(VALUE self)
 		      ", files=%"PRI_LL_PREFIX"d/%"PRI_LL_PREFIX"d"
 		      ">",
 		      rb_obj_class(self),
-#ifdef HAVE_STRUCT_STATFS
+#ifdef HAVE_STRUCT_STATFS_F_TYPE
 		      (long)st->f_type,
 #endif
 #if defined(HAVE_STRUCT_STATFS_F_FSTYPENAME) || defined(HAVE_STRUCT_STATVFS_F_FSTYPENAME)
