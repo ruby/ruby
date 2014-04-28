@@ -1,3 +1,7 @@
+Mon Apr 28 17:42:42 2014  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c: This argument must be a pointer.
+
 Mon Apr 28 17:40:15 2014  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c: Fix typos. These are undefined variables.

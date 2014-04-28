@@ -6127,7 +6127,7 @@ objspace_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, si
 	    rb_bug("objspace_malloc_increase: underflow malloc_params.allocated_size.");
 	}
 #endif
-	atomic_sub_nounderflow(objspace->malloc_params.allocated_size, dec_size);
+	atomic_sub_nounderflow(&objspace->malloc_params.allocated_size, dec_size);
     }
 
     if (0) fprintf(stderr, "incraese - ptr: %p, type: %s, new_size: %d, old_size: %d\n",
@@ -6145,7 +6145,7 @@ objspace_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, si
 	{
 	    size_t allocations = objspace->malloc_params.allocations;
 	    if (allocations > 0) {
-		atomic_sub_nounderflow(objspace->malloc_params.allocations, 1);
+		atomic_sub_nounderflow(&objspace->malloc_params.allocations, 1);
 	    }
 #if MALLOC_ALLOCATED_SIZE_CHECK
 	    else {
