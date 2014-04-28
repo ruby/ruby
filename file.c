@@ -5439,7 +5439,7 @@ rb_statfs_init_copy(VALUE copy, VALUE orig)
     return copy;
 }
 
-#ifdef HAVE_STRUCT_STATFS
+#ifdef HAVE_STRUCT_STATFS_F_TYPE
 /*
  *  call-seq:
  *     st.type    -> fixnum
@@ -5587,7 +5587,7 @@ statfs_inspect(VALUE self)
 {
     statfs_t *st = get_statfs(self);
     return rb_sprintf("#<%"PRIsVALUE" "
-#ifdef HAVE_STRUCT_STATFS
+#ifdef HAVE_STRUCT_STATFS_F_TYPE
 		      "type=%ld"
 #endif
 #if defined(HAVE_STRUCT_STATFS_F_FSTYPENAME) || defined(HAVE_STRUCT_STATVFS_F_FSTYPENAME)

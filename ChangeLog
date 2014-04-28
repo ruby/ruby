@@ -1,3 +1,12 @@
+Mon Apr 28 21:40:27 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (HAVE_STRUCT_STATFS_F_TYPE): check struct statfs.f_type
+	  to support OpenBSD.
+
+	* file.c (statfs_type): use above macro to switch.
+
+	* file.c (statfs_inspect): ditto.
+
 Mon Apr 28 18:06:08 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: check struct statvfs and struct statvfs.f_fstypename.

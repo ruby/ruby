@@ -1736,7 +1736,7 @@ AC_CHECK_TYPES([struct statfs], [], [], [@%:@ifdef HAVE_SYS_PARAM_H
 @%:@ include <sys/vfs.h>
 @%:@endif])
 AS_IF([test "$ac_cv_type_struct_statfs" = yes], [
-AC_CHECK_MEMBERS([struct statfs.f_fstypename], [], [], [@%:@ifdef HAVE_SYS_PARAM_H
+AC_CHECK_MEMBERS([struct statfs.f_type, struct statfs.f_fstypename], [], [], [@%:@ifdef HAVE_SYS_PARAM_H
 @%:@ include <sys/param.h>
 @%:@endif
 @%:@ifdef HAVE_SYS_MOUNT_H
