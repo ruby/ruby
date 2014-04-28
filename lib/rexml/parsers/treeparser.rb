@@ -80,8 +80,7 @@ module REXML
               entities[ event[1] ] = event[2] unless event[2] =~ /PUBLIC|SYSTEM/
               @build_context.add(Entity.new(event))
             when :notationdecl
-              n = NotationDecl.new( *event[1..-1] )
-              @build_context.add( n )
+              n = NotationDecl.new( @build_context, *event[1..-1] )
             when :xmldecl
               x = XMLDecl.new( event[1], event[2], event[3] )
               @build_context.add( x )

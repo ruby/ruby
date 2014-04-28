@@ -4,6 +4,7 @@ require "rexml/namespace"
 require 'rexml/entity'
 require 'rexml/attlistdecl'
 require 'rexml/xmltokens'
+require 'rexml/stringquotes'
 
 module REXML
   # Represents an XML DOCTYPE declaration; that is, the contents of <!DOCTYPE
@@ -112,8 +113,8 @@ module REXML
       output << ' '
       output << @name
       output << " #@external_id" if @external_id
-      output << " #{@long_name.inspect}" if @long_name
-      output << " #{@uri.inspect}" if @uri
+      output << " #{adjust_prologue_quotes @long_name.inspect}" if @long_name
+      output << " #{adjust_prologue_quotes @uri.inspect}" if @uri
       unless @children.empty?
         output << ' ['
         @children.each { |child|
@@ -184,13 +185,8 @@ module REXML
     end
 
     private
+    include StringQuotes
 
-    # Method contributed by Henrik Martensson
-    def strip_quotes(quoted_string)
-      quoted_string =~ /^[\'\"].*[\'\"]$/ ?
-        quoted_string[1, quoted_string.length-2] :
-        quoted_string
-    end
   end
 
   # We don't really handle any of these since we're not a validating
@@ -239,8 +235,8 @@ module REXML
 
   class NotationDecl < Child
     attr_accessor :public, :system
-    def initialize name, middle, pub, sys
-      super(nil)
+    def initialize parent, name, middle, pub, sys
+      super(parent)
       @name = name
       @middle = middle
       @public = pub
@@ -249,8 +245,8 @@ module REXML
 
     def to_s
       notation = "<!NOTATION #{@name} #{@middle}"
-      notation << " #{@public.inspect}" if @public
-      notation << " #{@system.inspect}" if @system
+      notation << " #{adjust_prologue_quotes @public.inspect}" if @public
+      notation << " #{adjust_prologue_quotes @system.inspect}" if @system
       notation << ">"
       notation
     end
@@ -265,5 +261,8 @@ module REXML
     def name
       @name
     end
+
+    private
+    include StringQuotes
   end
 end
