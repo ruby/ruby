@@ -389,7 +389,10 @@ class TestFile < Test::Unit::TestCase
     open(__FILE__) do |f|
       st = f.statfs
       assert_kind_of File::Statfs, st
-      assert_kind_of Integer, st.type
+      begin
+        assert_kind_of Integer, st.type
+      rescue NotImplementedError
+      end
       assert_kind_of Integer, st.bsize
       assert_kind_of Integer, st.blocks
       assert_kind_of Integer, st.bfree

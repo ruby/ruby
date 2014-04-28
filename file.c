@@ -70,7 +70,14 @@ int flock(int, int);
 #include <sys/vfs.h>
 #endif
 #ifdef HAVE_STRUCT_STATFS
-static VALUE rb_statfs_new(const struct statfs *st);
+typedef struct statfs statfs_t;
+#elif defined(HAVE_STRUCT_STATVFS)
+typedef struct statvfs statfs_t;
+#else
+# define WITHOUT_STATFS
+#endif
+#ifndef WITHOUT_STATFS
+static VALUE rb_statfs_new(const statfs_t *st);
 #endif
 
 #if defined(__native_client__) && defined(NACL_NEWLIB)
@@ -1099,7 +1106,7 @@ rb_file_lstat(VALUE obj)
 #endif
 }
 
-#ifdef HAVE_STRUCT_STATFS
+#ifndef WITHOUT_STATFS
 /*
  *  call-seq:
  *     ios.statfs    -> statfs
@@ -1119,17 +1126,18 @@ static VALUE
 rb_io_statfs(VALUE obj)
 {
     rb_io_t *fptr;
-    struct statfs st;
-#ifndef HAVE_FSTATFS
+    statfs_t st;
+#if !defined(HAVE_FSTATFS) && !defined(HAVE_FSTATVFS)
     VALUE path;
 #endif
 
     GetOpenFile(obj, fptr);
 #ifdef HAVE_FSTATFS
     if (fstatfs(fptr->fd, &st) == -1)
+#elif defined(HAVE_FSTATVFS)
+    if (fstatvfs(fptr->fd, &st) == -1)
 #else
-    path = rb_str_encode_ospath(fptr->pathv);
-    if (statfs(StringValueCStr(path), &st) == -1)
+    if (statfs(StringValueCStr(rb_str_encode_ospath(fptr->pathv)), &st) == -1)
 #endif
     {
 	rb_sys_fail_path(fptr->pathv);
@@ -5317,13 +5325,13 @@ rb_stat_sticky(VALUE obj)
     return Qfalse;
 }
 
-#ifdef HAVE_STRUCT_STATFS
+#ifndef WITHOUT_STATFS
 /* File::Statfs */
 
 static size_t
 statfs_memsize(const void *p)
 {
-    return p ? sizeof(struct statfs) : 0;
+    return p ? sizeof(statfs_t) : 0;
 }
 
 static const rb_data_type_t statfs_data_type = {
@@ -5333,28 +5341,28 @@ static const rb_data_type_t statfs_data_type = {
 };
 
 static VALUE
-statfs_new_0(VALUE klass, const struct statfs *st)
+statfs_new_0(VALUE klass, const statfs_t *st)
 {
-    struct statfs *nst = 0;
+    statfs_t *nst = 0;
 
     if (st) {
-	nst = ALLOC(struct statfs);
+	nst = ALLOC(statfs_t);
 	*nst = *st;
     }
     return TypedData_Wrap_Struct(klass, &statfs_data_type, nst);
 }
 
 static VALUE
-rb_statfs_new(const struct statfs *st)
+rb_statfs_new(const statfs_t *st)
 {
     return statfs_new_0(rb_cStatfs, st);
 }
 
-static struct statfs*
+static statfs_t*
 get_statfs(VALUE self)
 {
-    struct statfs* st;
-    TypedData_Get_Struct(self, struct statfs, &statfs_data_type, st);
+    statfs_t* st;
+    TypedData_Get_Struct(self, statfs_t, &statfs_data_type, st);
     if (!st) rb_raise(rb_eTypeError, "uninitialized File::Statfs");
     return st;
 }
@@ -5388,19 +5396,23 @@ rb_statfs_s_alloc(VALUE klass)
 static VALUE
 rb_statfs_init(VALUE obj, VALUE fname)
 {
-    struct statfs st, *nst;
+    statfs_t st, *nst;
 
     rb_secure(2);
     FilePathValue(fname);
     fname = rb_str_encode_ospath(fname);
+#ifdef HAVE_FSTATFS
     if (statfs(StringValueCStr(fname), &st) == -1) {
+#elif HAVE_FSTATVFS
+    if (statvfs(StringValueCStr(fname), &st) == -1) {
+#endif
 	rb_sys_fail_path(fname);
     }
     if (DATA_PTR(obj)) {
 	xfree(DATA_PTR(obj));
 	DATA_PTR(obj) = NULL;
     }
-    nst = ALLOC(struct statfs);
+    nst = ALLOC(statfs_t);
     *nst = st;
     DATA_PTR(obj) = nst;
 
@@ -5411,7 +5423,7 @@ rb_statfs_init(VALUE obj, VALUE fname)
 static VALUE
 rb_statfs_init_copy(VALUE copy, VALUE orig)
 {
-    struct statfs *nst;
+    statfs_t *nst;
 
     if (!OBJ_INIT_COPY(copy, orig)) return copy;
     if (DATA_PTR(copy)) {
@@ -5419,14 +5431,15 @@ rb_statfs_init_copy(VALUE copy, VALUE orig)
 	DATA_PTR(copy) = 0;
     }
     if (DATA_PTR(orig)) {
-	nst = ALLOC(struct statfs);
-	*nst = *(struct statfs*)DATA_PTR(orig);
+	nst = ALLOC(statfs_t);
+	*nst = *(statfs_t*)DATA_PTR(orig);
 	DATA_PTR(copy) = nst;
     }
 
     return copy;
 }
 
+#ifdef HAVE_STRUCT_STATFS
 /*
  *  call-seq:
  *     st.type    -> fixnum
@@ -5444,6 +5457,9 @@ statfs_type(VALUE self)
 {
     return LL2NUM(get_statfs(self)->f_type);
 }
+#else
+#define statfs_type rb_f_notimplement
+#endif
 
 /*
  *  call-seq:
@@ -5529,7 +5545,7 @@ statfs_ffree(VALUE self)
     return LL2NUM(get_statfs(self)->f_ffree);
 }
 
-#ifdef HAVE_STRUCT_STATFS_F_FSTYPENAME
+#if defined(HAVE_STRUCT_STATFS_F_FSTYPENAME) || defined(HAVE_STRUCT_STATVFS_F_FSTYPENAME)
 /*
  *  call-seq:
  *     st.fstypename    -> string
@@ -5569,17 +5585,23 @@ statfs_fstypename(VALUE self)
 static VALUE
 statfs_inspect(VALUE self)
 {
-    struct statfs*st = get_statfs(self);
-    return rb_sprintf("#<%"PRIsVALUE" type=%ld"
-#ifdef HAVE_STRUCT_STATFS_F_FSTYPENAME
+    statfs_t *st = get_statfs(self);
+    return rb_sprintf("#<%"PRIsVALUE" "
+#ifdef HAVE_STRUCT_STATFS
+		      "type=%ld"
+#endif
+#if defined(HAVE_STRUCT_STATFS_F_FSTYPENAME) || defined(HAVE_STRUCT_STATVFS_F_FSTYPENAME)
 		      "(%s)"
 #endif
 		      ", bsize=%ld"
 		      ", blocks=%"PRI_LL_PREFIX"d/%"PRI_LL_PREFIX"d/%"PRI_LL_PREFIX"d"
 		      ", files=%"PRI_LL_PREFIX"d/%"PRI_LL_PREFIX"d"
 		      ">",
-		      rb_obj_class(self), (long)st->f_type,
-#ifdef HAVE_STRUCT_STATFS_F_FSTYPENAME
+		      rb_obj_class(self),
+#ifdef HAVE_STRUCT_STATFS
+		      (long)st->f_type,
+#endif
+#if defined(HAVE_STRUCT_STATFS_F_FSTYPENAME) || defined(HAVE_STRUCT_STATVFS_F_FSTYPENAME)
 		      st->f_fstypename,
 #endif
 		      (long)st->f_bsize,
@@ -6173,7 +6195,7 @@ Init_File(void)
     rb_define_method(rb_cStat, "setgid?",  rb_stat_sgid, 0);
     rb_define_method(rb_cStat, "sticky?",  rb_stat_sticky, 0);
 
-#ifdef HAVE_STRUCT_STATFS
+#ifndef WITHOUT_STATFS
     rb_cStatfs = rb_define_class_under(rb_cFile, "Statfs", rb_cObject);
     rb_define_alloc_func(rb_cStatfs,  rb_statfs_s_alloc);
     rb_define_method(rb_cStatfs, "initialize", rb_statfs_init, 1);

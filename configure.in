@@ -1083,6 +1083,9 @@ main()
 		ac_cv_func_shutdown=no
 		ac_cv_func_close=no
 		],
+[netbsd*], [	LIBS="-lm $LIBS"
+		ac_cv_func_fstatfs=no
+		],
 [dragonfly*], [	LIBS="-lm $LIBS"
 		# isinf() and isnan() are macros on DragonFly.
 		ac_cv_func_isinf=yes
@@ -1743,6 +1746,9 @@ AC_CHECK_MEMBERS([struct statfs.f_fstypename], [], [], [@%:@ifdef HAVE_SYS_PARAM
 @%:@ include <sys/vfs.h>
 @%:@endif])
 ])
+# NetBSD
+AC_CHECK_TYPES([struct statvfs], [], [], [@%:@ include <sys/statvfs.h>])
+AC_CHECK_MEMBERS([struct statvfs.f_fstypename], [], [], [@%:@ include <sys/statvfs.h>])
 
 AC_CHECK_TYPES([clockid_t], [], [], [@%:@ifdef HAVE_TIME_H
 @%:@ include <time.h>
@@ -1951,6 +1957,7 @@ AC_CHECK_FUNCS(fdatasync)
 AC_CHECK_FUNCS(fmod)
 AC_CHECK_FUNCS(fork)
 AC_CHECK_FUNCS(fstatfs)
+AC_CHECK_FUNCS(fstatvfs)
 AC_CHECK_FUNCS(fsync)
 AC_CHECK_FUNCS(ftruncate)
 AC_CHECK_FUNCS(ftruncate64)		# used for Win32 platform
