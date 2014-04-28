@@ -6229,7 +6229,7 @@ objspace_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t ol
 #if CALC_EXACT_MALLOC_SIZE
     new_size += sizeof(size_t);
     ptr = (size_t *)ptr - 1;
-    oldsize = ((size_t *)ptr)[0];
+    old_size = ((size_t *)ptr)[0];
 #endif
 
     old_size = objspace_malloc_size(objspace, ptr, old_size);
@@ -6251,7 +6251,7 @@ objspace_xfree(rb_objspace_t *objspace, void *ptr, size_t old_size)
 {
 #if CALC_EXACT_MALLOC_SIZE
     ptr = ((size_t *)ptr) - 1;
-    oldsize = ((size_t*)ptr)[0];
+    old_size = ((size_t*)ptr)[0];
 #endif
     old_size = objspace_malloc_size(objspace, ptr, old_size);
 

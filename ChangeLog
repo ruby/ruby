@@ -1,3 +1,7 @@
+Mon Apr 28 17:40:15 2014  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c: Fix typos. These are undefined variables.
+
 Sun Apr 27 19:39:42 2014  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_strptime.c (date__strptime_internal): do not
