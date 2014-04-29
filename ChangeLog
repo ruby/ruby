@@ -1,3 +1,8 @@
+Tue Apr 29 12:50:02 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/fileutils.rb: Don't need to define fu_get_gid and fu_get_gid in
+	  rescue LoadError on 'etc'.
+
 Tue Apr 29 10:21:38 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* parse.y (symbols_i): like r45492, call rb_gc_resurrect().

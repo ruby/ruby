@@ -1097,46 +1097,34 @@ module FileUtils
 
   begin
     require 'etc'
-
-    def fu_get_uid(user)   #:nodoc:
-      return nil unless user
-      case user
-      when Integer
-        user
-      when /\A\d+\z/
-        user.to_i
-      else
-        Etc.getpwnam(user) ? Etc.getpwnam(user).uid : nil
-      end
-    end
-    private_module_function :fu_get_uid
-
-    def fu_get_gid(group)   #:nodoc:
-      return nil unless group
-      case group
-      when Integer
-        group
-      when /\A\d+\z/
-        group.to_i
-      else
-        Etc.getgrnam(group) ? Etc.getgrnam(group).gid : nil
-      end
-    end
-    private_module_function :fu_get_gid
-
-  rescue LoadError
-    # need Win32 support???
-
-    def fu_get_uid(user)   #:nodoc:
-      user    # FIXME
-    end
-    private_module_function :fu_get_uid
-
-    def fu_get_gid(group)   #:nodoc:
-      group   # FIXME
-    end
-    private_module_function :fu_get_gid
+  rescue LoadError # rescue LoadError for miniruby
   end
+
+  def fu_get_uid(user)   #:nodoc:
+    return nil unless user
+    case user
+    when Integer
+      user
+    when /\A\d+\z/
+      user.to_i
+    else
+      Etc.getpwnam(user) ? Etc.getpwnam(user).uid : nil
+    end
+  end
+  private_module_function :fu_get_uid
+
+  def fu_get_gid(group)   #:nodoc:
+    return nil unless group
+    case group
+    when Integer
+      group
+    when /\A\d+\z/
+      group.to_i
+    else
+      Etc.getgrnam(group) ? Etc.getgrnam(group).gid : nil
+    end
+  end
+  private_module_function :fu_get_gid
 
   #
   # Options: noop verbose
