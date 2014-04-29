@@ -222,7 +222,7 @@ class TestSymbol < Test::Unit::TestCase
     end;
   end
 
-  def test_symol_gc_1
+  def test_symbol_gc_1
     assert_normal_exit('".".intern;GC.start(immediate_sweep:false);eval %[GC.start;".".intern]',
                        '',
                        child_env: '--disable-gems')
