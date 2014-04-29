@@ -1,3 +1,8 @@
+Tue Apr 29 14:17:57 2014  Tanaka Akira  <akr@fsij.org>
+
+	* (lib/tmpdir.rb): Rescue LoadError on etc.so for miniruby.
+	  Revert r45707, r45711, r45717.
+
 Tue Apr 29 12:50:02 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/fileutils.rb: Don't need to define fu_get_gid and fu_get_gid in

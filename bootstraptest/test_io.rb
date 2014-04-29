@@ -42,7 +42,6 @@ assert_finish 1, %q{
 }
 
 assert_equal 'ok', %q{
-  $" << 'etc.so'
   require 'tmpdir'
   begin
     tmpname = "#{Dir.tmpdir}/ruby-btest-#{$$}-#{rand(0x100000000).to_s(36)}"
@@ -59,7 +58,6 @@ assert_equal 'ok', %q{
 }
 
 assert_equal 'ok', %q{
-  $" << 'etc.so'
   require 'tmpdir'
   begin
     tmpname = "#{Dir.tmpdir}/ruby-btest-#{$$}-#{rand(0x100000000).to_s(36)}"
