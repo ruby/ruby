@@ -232,5 +232,9 @@ class TestSymbol < Test::Unit::TestCase
     assert_normal_exit('".".intern;GC.start(immediate_sweep:false);eval %[GC.start;%i"."]',
                        '',
                        child_env: '--disable-gems')
+    assert_normal_exit('tap{".".intern};GC.start(immediate_sweep:false);' +
+                       'eval %[syms=Symbol.all_symbols;GC.start;syms.each(&:to_sym)]',
+                       '',
+                       child_env: '--disable-gems')
   end
 end

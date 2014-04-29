@@ -10908,9 +10908,13 @@ rb_make_internal_id(void)
 }
 
 static int
-symbols_i(VALUE sym, ID value, VALUE ary)
+symbols_i(VALUE key, ID value, VALUE ary)
 {
-    rb_ary_push(ary, ID2SYM(value));
+    VALUE sym = ID2SYM(value);
+    if (ID_DYNAMIC_SYM_P(value)) {
+	rb_gc_resurrect(sym);
+    }
+    rb_ary_push(ary, sym);
     return ST_CONTINUE;
 }
 
