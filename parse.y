@@ -10642,14 +10642,9 @@ next_id(VALUE str)
   new_id:
     if (symenc != enc) rb_enc_associate(str, symenc);
     if ((nid = next_id_base()) == (ID)-1) {
-	if (len > 20) {
-	    rb_raise(rb_eRuntimeError, "symbol table overflow (symbol %.20s...)",
-		     name);
-	}
-	else {
-	    rb_raise(rb_eRuntimeError, "symbol table overflow (symbol %.*s)",
-		     (int)len, name);
-	}
+	str = rb_str_ellipsize(str, 20);
+	rb_raise(rb_eRuntimeError, "symbol table overflow (symbol %"PRIsVALUE")",
+		 str);
     }
     id |= nid;
     id |= ID_STATIC_SYM;
