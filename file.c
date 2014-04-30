@@ -92,9 +92,9 @@ typedef struct statvfs statfs_t;
 #endif
 #ifndef WITHOUT_STATFS
 static VALUE rb_statfs_new(const statfs_t *st);
-#if defined(HAVE_FSTATFS)
+#if defined(HAVE_FSTATFS) && defined(HAVE_STRUCT_STATFS)
 #define FSTATFS(f, s) fstatfs((f), (s))
-#elif defined(HAVE_FSTATVFS)
+#elif defined(HAVE_FSTATVFS) && defined(HAVE_STRUCT_STATVFS)
 #define FSTATFS(f, s) fstatvfs((f), (s))
 #endif
 #endif

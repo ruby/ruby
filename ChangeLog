@@ -1,3 +1,9 @@
+Thu May  1 00:36:26 2014  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* file.c (FSTATFS): check availability of struct statfs and
+	  struct statvfs in addition to fstatfs(2) and fstatvfs(2).
+	  This fixes error in Solaris. [Bug #9788] [ruby-dev:48145]
+
 Wed Apr 30 19:46:23 2014  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c (gc_after_sweep): suppress unnecessary expanding heap.
