@@ -1,3 +1,11 @@
+Wed Apr 30 17:06:49 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_id_attrset): pin down dynamic symbol only. it is
+	  possibe that attrset ID can be registered as a static symbol
+	  after the corresponding attrget ID has been registered as a
+	  dynamic, and then the latter may be collected.
+	  [ruby-core:62226] [Bug #9787]
+
 Tue Apr 29 14:17:57 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/tmpdir.rb: Rescue LoadError on etc.so for miniruby.

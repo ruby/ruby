@@ -46,6 +46,7 @@ static ID register_static_symid_str(ID, VALUE);
 #define REGISTER_SYMID(id, name) register_static_symid((id), (name), strlen(name), enc)
 #include "id.c"
 #endif
+#define ID_DYNAMIC_SYM_P(id) (!(id&ID_STATIC_SYM)&&id>tLAST_TOKEN)
 
 static inline int id_type(ID);
 #define is_notop_id(id) ((id)>tLAST_OP_ID)
@@ -8863,7 +8864,11 @@ rb_id_attrset(ID id)
 	str = rb_str_dup(RSYMBOL((VALUE)id)->fstr);
 	rb_str_cat(str, "=", 1);
 	id = (ID)rb_str_dynamic_intern(str);
-	rb_pin_dynamic_symbol((VALUE)id);
+	if (ID_DYNAMIC_SYM_P(id)) {
+	    /* attrset ID may have been registered as a static
+	     * symbol */
+	    rb_pin_dynamic_symbol((VALUE)id);
+	}
     }
     return id;
 }
@@ -10450,6 +10455,15 @@ sym_check_asciionly(VALUE str)
  */
 static ID intern_str(VALUE str);
 
+static void
+must_be_dynamic_symbol(VALUE x)
+{
+    if (SPECIAL_CONST_P(x) || BUILTIN_TYPE(x) != T_SYMBOL) {
+	rb_raise(rb_eTypeError, "wrong argument type %s (expected Symbol)",
+		 rb_builtin_class_name(x));
+    }
+}
+
 static VALUE
 setup_fake_str(struct RString *fake_str, const char *name, long len)
 {
@@ -10461,11 +10475,10 @@ setup_fake_str(struct RString *fake_str, const char *name, long len)
     return (VALUE)fake_str;
 }
 
-#define ID_DYNAMIC_SYM_P(id) (!(id&ID_STATIC_SYM)&&id>tLAST_TOKEN)
-
 ID
 rb_pin_dynamic_symbol(VALUE sym)
 {
+    must_be_dynamic_symbol(sym);
     rb_gc_resurrect(sym);
     /* stick dynamic symbol */
     if (!st_insert(global_symbols.pinned_dsym, sym, (st_data_t)sym)) {
@@ -10770,15 +10783,6 @@ lookup_id_str(ID id, st_data_t *data)
     return FALSE;
 }
 
-static void
-must_be_dynamic_symbol(VALUE x)
-{
-    if (SPECIAL_CONST_P(x) || BUILTIN_TYPE(x) != T_SYMBOL) {
-	rb_raise(rb_eTypeError, "wrong argument type %s (expected Symbol)",
-		 rb_builtin_class_name(x));
-    }
-}
-
 ID
 rb_sym2id(VALUE x)
 {
@@ -10786,7 +10790,6 @@ rb_sym2id(VALUE x)
 	return RSHIFT((unsigned long)(x),RUBY_SPECIAL_SHIFT);
     }
     else {
-	must_be_dynamic_symbol(x);
 	return rb_pin_dynamic_symbol(x);
     }
 }

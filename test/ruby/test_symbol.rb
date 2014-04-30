@@ -237,4 +237,22 @@ class TestSymbol < Test::Unit::TestCase
                        '',
                        child_env: '--disable-gems')
   end
+
+  def test_gc_attrset
+    bug9787 = '[ruby-core:62226] [Bug #9787]'
+    assert_normal_exit(<<-'end;', '', child_env: '--disable-gems')
+      def noninterned_name(prefix = "")
+        prefix += "_#{Thread.current.object_id.to_s(36).tr('-', '_')}"
+        begin
+          name = "#{prefix}_#{rand(0x1000).to_s(16)}_#{Time.now.usec}"
+        end while Symbol.find(name) or Symbol.find(name + "=")
+        name
+      end
+      n = noninterned_name("gc")
+      n.to_sym
+      GC.start(immediate_sweep: false)
+      eval(":#{n}=")
+      eval("proc{self.#{n} = nil}")
+    end;
+  end
 end
