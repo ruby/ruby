@@ -521,7 +521,7 @@ typedef struct rb_thread_struct {
     const rb_block_t *passed_block;
 
     /* for bmethod */
-    const rb_method_entry_t *passed_me;
+    const rb_method_entry_t *passed_bmethod_me;
 
     /* for cfunc */
     rb_call_info_t *passed_ci;
@@ -749,9 +749,11 @@ enum vm_special_object_type {
 #define VM_FRAME_TYPE(cfp) ((cfp)->flag & VM_FRAME_MAGIC_MASK)
 
 /* other frame flag */
-#define VM_FRAME_FLAG_PASSED 0x0100
-#define VM_FRAME_FLAG_FINISH 0x0200
-#define VM_FRAME_TYPE_FINISH_P(cfp) (((cfp)->flag & VM_FRAME_FLAG_FINISH) != 0)
+#define VM_FRAME_FLAG_PASSED  0x0100
+#define VM_FRAME_FLAG_FINISH  0x0200
+#define VM_FRAME_FLAG_BMETHOD 0x0400
+#define VM_FRAME_TYPE_FINISH_P(cfp)  (((cfp)->flag & VM_FRAME_FLAG_FINISH) != 0)
+#define VM_FRAME_TYPE_BMETHOD_P(cfp) (((cfp)->flag & VM_FRAME_FLAG_BMETHOD) != 0)
 
 #define RUBYVM_CFUNC_FRAME_P(cfp) \
   (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_CFUNC)

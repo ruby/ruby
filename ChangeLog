@@ -1,3 +1,19 @@
+Wed Apr 30 17:58:40 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (invoke_block_from_c): add VM_FRAME_FLAG_BMETHOD to record
+	  it is bmethod frame.
+
+	* vm.c (vm_exec): invoke RUBY_EVENT_RETURN event if rollbacked frame
+	  is VM_FRAME_FLAG_BMETHOD.
+	  [Bug #9759]
+
+	* test/ruby/test_settracefunc.rb: add a test for TracePoint/set_trace_func.
+
+	* vm_core.h: renmae rb_thread_t::passed_me to
+	  rb_thread_t::passed_bmethod_me to clarify the usage.
+
+	* vm_insnhelper.c (vm_call_bmethod_body): use renamed member.
+
 Wed Apr 30 17:06:49 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_id_attrset): pin down dynamic symbol only. it is

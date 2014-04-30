@@ -1619,7 +1619,7 @@ vm_call_bmethod_body(rb_thread_t *th, rb_call_info_t *ci, const VALUE *argv)
     EXEC_EVENT_HOOK(th, RUBY_EVENT_CALL, ci->recv, ci->me->called_id, ci->me->klass, Qnil);
 
     /* control block frame */
-    th->passed_me = ci->me;
+    th->passed_bmethod_me = ci->me;
     GetProcPtr(ci->me->def->body.proc, proc);
     val = vm_invoke_proc(th, proc, ci->recv, ci->defined_class, ci->argc, argv, ci->blockptr);
 
