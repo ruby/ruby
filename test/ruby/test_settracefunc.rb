@@ -1188,6 +1188,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
       assert_equal([['call', :foo], ['return', :foo]], events, 'Bug #9759')
     ensure
     end
-    
+
   end
 end
