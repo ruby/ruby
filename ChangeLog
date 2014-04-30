@@ -1,3 +1,15 @@
+Wed Apr 30 16:15:09 2014  Kohei Suzuki  <eagletmt@gmail.com>
+
+	* vm_method.c (rb_method_entry_get_without_cache): me->klass is 0
+	  for a method aliased in a module.  [ruby-core:61636] [Bug #9663]
+
+Wed Apr 30 16:15:09 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_method_entry_get_without_cache): get rid of
+	  infinite recursion at aliases in a subclass and a superclass.
+	  return actually defined class for other than singleton class.
+	  [ruby-core:60431] [Bug #9475]
+
 Wed Apr 30 16:09:18 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_callee_setup_arg): turn a macro into an
