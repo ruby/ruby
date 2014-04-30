@@ -1,3 +1,8 @@
+Wed Apr 30 16:39:43 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/readline/extconf.rb (rl_hook_func_t): check pointer type.
+	  [ruby-dev:48089] [Bug #9702]
+
 Wed Apr 30 16:37:16 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_accept, open_ifs_socket, socketpair_internal):

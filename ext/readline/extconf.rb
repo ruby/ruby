@@ -97,7 +97,7 @@ readline.have_func("remove_history")
 readline.have_func("clear_history")
 readline.have_func("rl_redisplay")
 readline.have_func("rl_insert_text")
-unless readline.have_type("rl_hook_func_t")
+unless readline.have_type("rl_hook_func_t*")
   $defs << "-Drl_hook_func_t=Function"
 end
 
