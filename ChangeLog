@@ -1,3 +1,9 @@
+Wed Apr 30 16:33:57 2014  Eric Wong  <e@80x24.org>
+
+	* time.c (time_mload): freeze and preserve marshal-loaded time zone
+	* test/ruby/test_time.rb: add test for GC on loaded object
+	  [Bug #9652]
+
 Wed Apr 30 16:15:09 2014  Kohei Suzuki  <eagletmt@gmail.com>
 
 	* vm_method.c (rb_method_entry_get_without_cache): me->klass is 0
