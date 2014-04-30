@@ -1,3 +1,8 @@
+Wed Apr 30 15:04:25 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/readline/extconf.rb: fix typo, `$defs` not `$DEFS`.
+	  [ruby-core:61756] [Bug #9578]
+
 Mon Mar 31 00:57:39 2014  James Edward Gray II  <james@graysoftinc.com>
 
 	* lib/csv.rb: Fixed a broken regular expression that was causing
