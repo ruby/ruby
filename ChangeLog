@@ -1,3 +1,8 @@
+Wed Apr 30 16:09:18 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_callee_setup_arg): turn a macro into an
+	  inline function.
+
 Wed Apr 30 15:20:44 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/delegate.rb (SimpleDelegator#__getobj__): target object must be set.
