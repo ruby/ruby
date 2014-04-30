@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestCall < Test::Unit::TestCase
   def aaa(a, b=100, *rest)
