@@ -98,7 +98,7 @@ readline.have_func("clear_history")
 readline.have_func("rl_redisplay")
 readline.have_func("rl_insert_text")
 unless readline.have_type("rl_hook_func_t")
-  $DEFS << "-Drl_hook_func_t=Function"
+  $defs << "-Drl_hook_func_t=Function"
 end
 
 create_makefile("readline")
