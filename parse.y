@@ -8815,17 +8815,6 @@ block_dup_check_gen(struct parser_params *parser, NODE *node1, NODE *node2)
     }
 }
 
-static const char id_type_names[][9] = {
-    "LOCAL",
-    "INSTANCE",
-    "",				/* INSTANCE2 */
-    "GLOBAL",
-    "ATTRSET",
-    "CONST",
-    "CLASS",
-    "JUNK",
-};
-
 static ID rb_pin_dynamic_symbol(VALUE);
 static ID attrsetname_to_attr(VALUE name);
 
@@ -8849,9 +8838,8 @@ rb_id_attrset(ID id)
 	  case ID_ATTRSET:
 	    return id;
 	  default:
-	    rb_name_error(id, "cannot make %s ID :%"PRIsVALUE" attrset",
-			  id_type_names[scope], rb_id2str(id));
-
+	    rb_name_error(id, "cannot make unknown type ID %d:%p attrset",
+			  scope, (void *)id);
 	}
     }
     if (id&ID_STATIC_SYM) {
