@@ -1,3 +1,9 @@
+Wed Apr 30 19:46:23 2014  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (gc_after_sweep): suppress unnecessary expanding heap.
+	  Tomb heap pages are freed pages here, so expanding heap is
+	  not required.
+
 Wed Apr 30 17:58:40 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (invoke_block_from_c): add VM_FRAME_FLAG_BMETHOD to record

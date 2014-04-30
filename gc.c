@@ -3005,7 +3005,6 @@ gc_after_sweep(rb_objspace_t *objspace)
     /* if heap_pages has unused pages, then assign them to increment */
     if (heap_pages_increment < heap_tomb->page_length) {
 	heap_pages_increment = heap_tomb->page_length;
-	heap_pages_expand_sorted(objspace);
     }
 
 #if RGENGC_PROFILE > 0
