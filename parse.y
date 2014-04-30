@@ -8837,7 +8837,8 @@ rb_id_attrset(ID id)
 	  case tAREF: case tASET:
 	    return tASET;	/* only exception */
 	}
-	rb_name_error(id, "cannot make operator ID :%s attrset", rb_id2name(id));
+	rb_name_error(id, "cannot make operator ID :%"PRIsVALUE" attrset",
+		      rb_id2str(id));
     }
     else {
 	int scope = id_type(id);
@@ -8848,8 +8849,8 @@ rb_id_attrset(ID id)
 	  case ID_ATTRSET:
 	    return id;
 	  default:
-	    rb_name_error(id, "cannot make %s ID %+"PRIsVALUE" attrset",
-			  id_type_names[scope], ID2SYM(id));
+	    rb_name_error(id, "cannot make %s ID :%"PRIsVALUE" attrset",
+			  id_type_names[scope], rb_id2str(id));
 
 	}
     }
