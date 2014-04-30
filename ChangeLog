@@ -1,3 +1,24 @@
+Wed Apr 30 15:20:44 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/delegate.rb (SimpleDelegator#__getobj__): target object must be set.
+
+	* lib/delegate.rb (DelegateClass#__getobj__): ditto.
+
+Wed Apr 30 15:20:44 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator#method_missing): try private methods defined in
+	  Kernel after the target.  [Fixes GH-449]
+
+Wed Apr 30 15:20:44 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator#send): separate from method_missing so
+	  that super calls proper method.
+
+Wed Apr 30 15:20:44 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator#send): override to get rid of global function interference.
+	  [Fixes GH-449]
+
 Wed Apr 30 15:04:25 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/readline/extconf.rb: fix typo, `$defs` not `$DEFS`.
