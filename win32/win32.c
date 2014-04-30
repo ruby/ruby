@@ -5872,6 +5872,7 @@ ustatfs(const char *path, struct statfs *buf)
     WCHAR root[MAX_PATH], system[8];
     DWORD serial, spc, bps, unused, total;
     char *tmp;
+    BOOL WINAPI GetVolumePathNameW(LPCWSTR, LPWSTR, DWORD);
 
     if (!wpath) {
 	return -1;
