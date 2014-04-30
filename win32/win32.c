@@ -2917,6 +2917,7 @@ rb_w32_accept(int s, struct sockaddr *addr, int *addrlen)
 	if (fd != -1) {
 	    r = accept(TO_SOCKET(s), addr, addrlen);
 	    if (r != INVALID_SOCKET) {
+		SetHandleInformation((HANDLE)r, HANDLE_FLAG_INHERIT, 0);
 		MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fd)->lock)));
 		_set_osfhnd(fd, r);
 		MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
@@ -3457,6 +3458,8 @@ open_ifs_socket(int af, int type, int protocol)
 		}
 		if (out == INVALID_SOCKET)
 		    out = WSASocket(af, type, protocol, NULL, 0, 0);
+		if (out != INVALID_SOCKET)
+		    SetHandleInformation((HANDLE)out, HANDLE_FLAG_INHERIT, 0);
 	    }
 
 	    free(proto_buffers);
@@ -3690,6 +3693,7 @@ socketpair_internal(int af, int type, int protocol, SOCKET *sv)
 	    r = accept(svr, addr, &len);
 	    if (r == INVALID_SOCKET)
 		break;
+	    SetHandleInformation((HANDLE)r, HANDLE_FLAG_INHERIT, 0);
 
 	    ret = 0;
 	} while (0);
