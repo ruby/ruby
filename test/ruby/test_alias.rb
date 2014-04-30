@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'envutil'
 
 class TestAlias < Test::Unit::TestCase
   class Alias0
@@ -128,5 +129,67 @@ class TestAlias < Test::Unit::TestCase
   # [ruby-dev:46028]
   def test_super_in_aliased_module_method # fails in 1.8
     assert_equal([:Base, :M], SuperInAliasedModuleMethod::Derived.new.bar)
+  end
+
+  def test_cyclic_zsuper
+    bug9475 = '[ruby-core:60431] [Bug #9475]'
+
+    a = Module.new do
+      def foo
+        "A"
+      end
+    end
+
+    b = Class.new do
+      include a
+      attr_reader :b
+
+      def foo
+        @b ||= 0
+        raise SystemStackError if (@b += 1) > 1
+        # "foo from B"
+        super + "B"
+      end
+    end
+
+    c = Class.new(b) do
+      alias orig_foo foo
+
+      def foo
+        # "foo from C"
+        orig_foo + "C"
+      end
+    end
+
+    b.class_eval do
+      alias orig_foo foo
+      attr_reader :b2
+
+      def foo
+        @b2 ||= 0
+        raise SystemStackError if (@b2 += 1) > 1
+        # "foo from B (again)"
+        orig_foo + "B2"
+      end
+    end
+
+    assert_nothing_raised(SystemStackError, bug9475) do
+      assert_equal("ABC", c.new.foo, bug9475)
+    end
+  end
+
+  def test_alias_in_module
+    bug9663 = '[ruby-core:61635] [Bug #9663]'
+
+    assert_separately(['-', bug9663], <<-'end;')
+      bug = ARGV[0]
+
+      m = Module.new do
+        alias orig_to_s to_s
+      end
+
+      o = Object.new.extend(m)
+      assert_equal(o.to_s, o.orig_to_s, bug)
+    end;
   end
 end
