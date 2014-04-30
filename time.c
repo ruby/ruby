@@ -4887,7 +4887,9 @@ end_submicro: ;
 	time_fixoff(time);
     }
     if (!NIL_P(zone)) {
+	zone = rb_str_new_frozen(zone);
 	tobj->vtm.zone = RSTRING_PTR(zone);
+	rb_ivar_set(time, id_zone, zone);
     }
 
     return time;
