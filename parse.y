@@ -8817,6 +8817,7 @@ block_dup_check_gen(struct parser_params *parser, NODE *node1, NODE *node2)
 
 static ID rb_pin_dynamic_symbol(VALUE);
 static ID attrsetname_to_attr(VALUE name);
+static int lookup_id_str(ID id, st_data_t *data);
 
 ID
 rb_id_attrset(ID id)
@@ -8838,8 +8839,17 @@ rb_id_attrset(ID id)
 	  case ID_ATTRSET:
 	    return id;
 	  default:
-	    rb_name_error(id, "cannot make unknown type ID %d:%p attrset",
-			  scope, (void *)id);
+	    {
+		st_data_t data;
+		if (lookup_id_str(id, &data)) {
+		    rb_name_error(id, "cannot make unknown type ID %d:%"PRIsVALUE" attrset",
+				  scope, (VALUE)data);
+		}
+		else {
+		    rb_name_error(id, "cannot make unknown type ID %d:%"PRIxVALUE" attrset",
+				  scope, (VALUE)id);
+		}
+	    }
 	}
     }
     if (id&ID_STATIC_SYM) {
