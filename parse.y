@@ -10457,12 +10457,13 @@ static ID intern_str(VALUE str);
 static void
 must_be_dynamic_symbol(VALUE x)
 {
-    if (STATIC_SYM_P(x)) {
-	rb_raise(rb_eTypeError, "wrong argument %+"PRIsVALUE" (expected dynamic Symbol)", x);
+    st_data_t data;
+    if (STATIC_SYM_P(x) && lookup_id_str(RSHIFT((unsigned long)(x),RUBY_SPECIAL_SHIFT), &data)) {
+	rb_bug("wrong argument :%s (inappropriate Symbol)", RSTRING_PTR((VALUE)data));
     }
     if (SPECIAL_CONST_P(x) || BUILTIN_TYPE(x) != T_SYMBOL) {
-	rb_raise(rb_eTypeError, "wrong argument type %s (expected Symbol)",
-		 rb_builtin_class_name(x));
+	rb_bug("wrong argument type %s (expected Symbol)",
+	       rb_builtin_class_name(x));
     }
 }
 
