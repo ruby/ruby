@@ -10457,6 +10457,9 @@ static ID intern_str(VALUE str);
 static void
 must_be_dynamic_symbol(VALUE x)
 {
+    if (STATIC_SYM_P(x)) {
+	rb_raise(rb_eTypeError, "wrong argument %+"PRIsVALUE" (expected dynamic Symbol)", x);
+    }
     if (SPECIAL_CONST_P(x) || BUILTIN_TYPE(x) != T_SYMBOL) {
 	rb_raise(rb_eTypeError, "wrong argument type %s (expected Symbol)",
 		 rb_builtin_class_name(x));
