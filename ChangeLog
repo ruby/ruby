@@ -1,3 +1,7 @@
+Thu May  1 22:19:34 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* file.c: Change AND condition to nested condition.
+
 Thu May  1 00:36:26 2014  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* file.c (FSTATFS): check availability of struct statfs and
