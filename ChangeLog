@@ -1,3 +1,8 @@
+Thu May  1 20:56:56 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/readline/extconf.rb (rl_hook_func_t): check pointer type.
+	  [ruby-dev:48089] [Bug #9702]
+
 Thu May  1 20:47:08 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/readline/extconf.rb: fix typo, `$defs` not `$DEFS`.
