@@ -25,7 +25,7 @@ Wed Apr 30 17:58:40 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_settracefunc.rb: add a test for TracePoint/set_trace_func.
 
-	* vm_core.h: renmae rb_thread_t::passed_me to
+	* vm_core.h: rename rb_thread_t::passed_me to
 	  rb_thread_t::passed_bmethod_me to clarify the usage.
 
 	* vm_insnhelper.c (vm_call_bmethod_body): use renamed member.
@@ -33,7 +33,7 @@ Wed Apr 30 17:58:40 2014  Koichi Sasada  <ko1@atdot.net>
 Wed Apr 30 17:06:49 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_id_attrset): pin down dynamic symbol only. it is
-	  possibe that attrset ID can be registered as a static symbol
+	  possible that attrset ID can be registered as a static symbol
 	  after the corresponding attrget ID has been registered as a
 	  dynamic, and then the latter may be collected.
 	  [ruby-core:62226] [Bug #9787]
