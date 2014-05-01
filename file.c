@@ -71,28 +71,28 @@ int flock(int, int);
 #endif
 #ifdef HAVE_STRUCT_STATFS
 typedef struct statfs statfs_t;
-#define STATFS(f, s) statfs((f), (s))
+# define STATFS(f, s) statfs((f), (s))
 # ifdef HAVE_FSTATFS
 #  define FSTATFS(f, s) fstatfs((f), (s))
 # endif
-#ifdef HAVE_STRUCT_STATFS_F_FSTYPENAME
-#define HAVE_STRUCT_STATFS_T_F_FSTYPENAME 1
-#endif
-#ifdef HAVE_STRUCT_STATFS_F_TYPE
-#define HAVE_STRUCT_STATFS_T_F_TYPE 1
-#endif
+# ifdef HAVE_STRUCT_STATFS_F_FSTYPENAME
+#  define HAVE_STRUCT_STATFS_T_F_FSTYPENAME 1
+# endif
+# ifdef HAVE_STRUCT_STATFS_F_TYPE
+#  define HAVE_STRUCT_STATFS_T_F_TYPE 1
+# endif
 #elif defined(HAVE_STRUCT_STATVFS)
 typedef struct statvfs statfs_t;
-#define STATFS(f, s) statvfs((f), (s))
+# define STATFS(f, s) statvfs((f), (s))
 # ifdef HAVE_FSTATVFS
 #  define FSTATFS(f, s) fstatvfs((f), (s))
 # endif
-#ifdef HAVE_STRUCT_STATVFS_F_FSTYPENAME
-#define HAVE_STRUCT_STATFS_T_F_FSTYPENAME 1
-#endif
-#ifdef HAVE_STRUCT_STATVFS_F_TYPE
-#define HAVE_STRUCT_STATFS_T_F_TYPE 1
-#endif
+# ifdef HAVE_STRUCT_STATVFS_F_FSTYPENAME
+#  define HAVE_STRUCT_STATFS_T_F_FSTYPENAME 1
+# endif
+# ifdef HAVE_STRUCT_STATVFS_F_TYPE
+#  define HAVE_STRUCT_STATFS_T_F_TYPE 1
+# endif
 #else
 # define WITHOUT_STATFS
 #endif
