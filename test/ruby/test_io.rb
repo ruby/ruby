@@ -1715,7 +1715,7 @@ class TestIO < Test::Unit::TestCase
         open(t.path) { |f|
           break unless can_seek_data(f)
           assert_equal("foo\n", f.gets)
-          assert_nothing_raised("cannot SEEK_DATA on FS(0x%X)" % f.statfs.type) do
+          assert_nothing_raised(proc {"cannot SEEK_DATA on FS(0x%X)" % f.statfs.type}) do
             f.seek(0, IO::SEEK_DATA)
           end
           assert_equal("foo\nbar\nbaz\n", f.read)
@@ -1765,7 +1765,7 @@ class TestIO < Test::Unit::TestCase
         open(t.path) { |f|
           break unless can_seek_data(f)
           assert_equal("foo\n", f.gets)
-          assert_nothing_raised("cannot SEEK_DATA on FS(0x%X)" % f.statfs.type) do
+          assert_nothing_raised(proc {"cannot SEEK_DATA on FS(0x%X)" % f.statfs.type}) do
             f.seek(0, :DATA)
           end
           assert_equal("foo\nbar\nbaz\n", f.read)

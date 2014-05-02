@@ -1,3 +1,10 @@
+Fri May  2 11:32:51 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_io.rb (test_seek, test_seek_symwhence): defer
+	  File::Statfs#type call which may not be implemented, to mitigate
+	  errors on platforms where SEEK_DATA is available but f_type in
+	  struct statfs is not.  [ruby-dev:48154] [Bug #9789]
+
 Fri May  2 10:37:55 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_id_attrset): turn dynamically interned Symbol into
