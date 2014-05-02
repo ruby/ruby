@@ -239,8 +239,8 @@ class TestSymbol < Test::Unit::TestCase
   end
 
   def test_gc_attrset
-    bug9787 = '[ruby-core:62226] [Bug #9787]'
-    assert_normal_exit(<<-'end;', '', child_env: '--disable-gems')
+    assert_separately(['-', '[ruby-core:62226] [Bug #9787]'], <<-'end;') #    begin
+      bug = ARGV.shift
       def noninterned_name(prefix = "")
         prefix += "_#{Thread.current.object_id.to_s(36).tr('-', '_')}"
         begin
@@ -248,11 +248,13 @@ class TestSymbol < Test::Unit::TestCase
         end while Symbol.find(name) or Symbol.find(name + "=")
         name
       end
-      n = noninterned_name("gc")
-      n.to_sym
+      names = Array.new(1000) {noninterned_name("gc")}
+      names.each {|n| n.to_sym}
       GC.start(immediate_sweep: false)
-      eval(":#{n}=")
-      eval("proc{self.#{n} = nil}")
+      names.each do |n|
+        eval(":#{n}=")
+        assert_nothing_raised(TypeError, bug) {eval("proc{self.#{n} = nil}")}
+      end
     end;
   end
 end

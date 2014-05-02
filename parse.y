@@ -8862,12 +8862,7 @@ rb_id_attrset(ID id)
         /* make new dynamic symbol */
 	str = rb_str_dup(RSYMBOL((VALUE)id)->fstr);
 	rb_str_cat(str, "=", 1);
-	id = (ID)rb_str_dynamic_intern(str);
-	if (ID_DYNAMIC_SYM_P(id)) {
-	    /* attrset ID may have been registered as a static
-	     * symbol */
-	    rb_pin_dynamic_symbol((VALUE)id);
-	}
+	id = SYM2ID(rb_str_dynamic_intern(str));
     }
     return id;
 }
