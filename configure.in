@@ -1746,9 +1746,12 @@ AC_CHECK_MEMBERS([struct statfs.f_type, struct statfs.f_fstypename], [], [], [@%
 @%:@ include <sys/vfs.h>
 @%:@endif])
 ])
-# NetBSD
+# AIX, HP-UX, NetBSD, Solaris
 AC_CHECK_TYPES([struct statvfs], [], [], [@%:@ include <sys/statvfs.h>])
+# NetBSD
 AC_CHECK_MEMBERS([struct statvfs.f_fstypename], [], [], [@%:@ include <sys/statvfs.h>])
+# AIX, HP-UX, Solaris
+AC_CHECK_MEMBERS([struct statvfs.f_basetype], [], [], [@%:@ include <sys/statvfs.h>])
 
 AC_CHECK_TYPES([clockid_t], [], [], [@%:@ifdef HAVE_TIME_H
 @%:@ include <time.h>

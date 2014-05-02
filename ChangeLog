@@ -1,3 +1,12 @@
+Sat May  3 00:06:30 2014  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* file.c (HAVE_STRUCT_STATVFS_F_BASETYPE): File::Statfs#fstypename
+	  is supported on AIX, HP-UX, and Solaris, by using the value of
+	  struct statvfs.f_basetype.
+
+	* configure.in (HAVE_STRUCT_STATVFS_F_BASETYPE): check struct
+	  statvfs.f_basetype which is available on AIX, HP-UX, and Solaris.
+
 Fri May  2 21:04:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (next_id): no reason to set ID_STATIC_SYM here, as ID

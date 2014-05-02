@@ -87,8 +87,11 @@ typedef struct statvfs statfs_t;
 # ifdef HAVE_FSTATVFS
 #  define FSTATFS(f, s) fstatvfs((f), (s))
 # endif
-# ifdef HAVE_STRUCT_STATVFS_F_FSTYPENAME
+# if defined(HAVE_STRUCT_STATVFS_F_FSTYPENAME) /* NetBSD */
 #  define HAVE_STRUCT_STATFS_T_F_FSTYPENAME 1
+# elif defined(HAVE_STRUCT_STATVFS_F_BASETYPE) /* AIX, HP-UX, Solaris */
+#  define HAVE_STRUCT_STATFS_T_F_FSTYPENAME 1
+#  define f_fstypename f_basetype
 # endif
 # ifdef HAVE_STRUCT_STATVFS_F_TYPE
 #  define HAVE_STRUCT_STATFS_T_F_TYPE 1
