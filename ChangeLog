@@ -1,3 +1,9 @@
+Sat May  3 04:04:16 2014  Eric Wong  <e@80x24.org>
+
+	* complex.c (parse_comp): replace ALLOCA_N with ALLOCV_N/ALLOCV_END
+	  [Bug #9608]
+	* rational.c (read_digits): ditto
+
 Sat May  3 00:06:30 2014  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* file.c (HAVE_STRUCT_STATVFS_F_BASETYPE): File::Statfs#fstypename

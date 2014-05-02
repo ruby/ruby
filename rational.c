@@ -2136,13 +2136,14 @@ read_digits(const char **s, int strict,
 {
     char *b, *bb;
     int us = 1, ret = 1;
+    VALUE tmp;
 
     if (!isdecimal(**s)) {
 	*num = ZERO;
 	return 0;
     }
 
-    bb = b = ALLOCA_N(char, strlen(*s) + 1);
+    bb = b = ALLOCV_N(char, tmp, strlen(*s) + 1);
 
     while (isdecimal(**s) || **s == '_') {
 	if (**s == '_') {
@@ -2169,6 +2170,7 @@ read_digits(const char **s, int strict,
   conv:
     *b = '\0';
     *num = rb_cstr_to_inum(bb, 10, 0);
+    ALLOCV_END(tmp);
     return ret;
 }
 
