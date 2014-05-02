@@ -2310,7 +2310,11 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
         end
       end
       mfile.print "pre-install-rb#{sfx}:\n"
-      mfile.print("\t$(ECHO) installing#{sfx.sub(/^-/, " ")} #{target} libraries\n")
+      if files.empty?
+        mfile.print("\t@#{CONFIG['NULLCMD']}\n")
+      else
+        mfile.print("\t$(ECHO) installing#{sfx.sub(/^-/, " ")} #{target} libraries\n")
+      end
       if $extout
         dirs.uniq!
         unless dirs.empty?
