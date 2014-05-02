@@ -10609,7 +10609,6 @@ next_id(VALUE str)
 	if (last > 1 && name[last-1] == '=')
 	    goto junk;
 	id = rb_intern3(name, last, enc);
-	id |= ID_STATIC_SYM;
 	if (id > tLAST_OP_ID && !is_attrset_id(id)) {
 	    enc = rb_enc_get(rb_id2str(id));
 	    id = rb_id_attrset(id);

@@ -1,3 +1,9 @@
+Fri May  2 21:04:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (next_id): no reason to set ID_STATIC_SYM here, as ID
+	  returned by rb_intern3 can be a dynamic symbol and the static
+	  symbol flag is set otherwise.  [Bug #9787]
+
 Fri May  2 11:32:51 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_io.rb (test_seek, test_seek_symwhence): defer
