@@ -8846,8 +8846,8 @@ rb_id_attrset(ID id)
 				  scope, (VALUE)data);
 		}
 		else {
-		    rb_name_error(id, "cannot make unknown type ID %d:%"PRIxVALUE" attrset",
-				  scope, (VALUE)id);
+		    rb_name_error_str(Qnil, "cannot make unknown type anonymous ID %d:%"PRIxVALUE" attrset",
+				      scope, (VALUE)id);
 		}
 	    }
 	}
