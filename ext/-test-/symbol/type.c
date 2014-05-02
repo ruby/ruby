@@ -41,10 +41,24 @@ bug_id2str(VALUE self, VALUE sym)
     return rb_id2str(SYM2ID(sym));
 }
 
+static VALUE
+bug_static_p(VALUE self, VALUE sym)
+{
+    return STATIC_SYM_P(sym) ? Qtrue : Qfalse;
+}
+
+static VALUE
+bug_dynamic_p(VALUE self, VALUE sym)
+{
+    return DYNAMIC_SYM_P(sym) ? Qtrue : Qfalse;
+}
+
 void
 Init_type(VALUE klass)
 {
     FOREACH_ID_TYPES(declare_symbol_type_p);
     rb_define_singleton_method(klass, "attrset", bug_sym_attrset, 1);
     rb_define_singleton_method(klass, "id2str", bug_id2str, 1);
+    rb_define_singleton_method(klass, "static?", bug_static_p, 1);
+    rb_define_singleton_method(klass, "dynamic?", bug_dynamic_p, 1);
 }
