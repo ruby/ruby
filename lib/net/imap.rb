@@ -37,7 +37,7 @@ module Net
   # arranged in an hierarchical namespace, and each of which
   # contains zero or more messages.  How this is implemented on
   # the server is implementation-dependent; on a UNIX server, it
-  # will frequently be implemented as a files in mailbox format
+  # will frequently be implemented as files in mailbox format
   # within a hierarchy of directories.
   #
   # To work on the messages within a mailbox, the client must
@@ -48,12 +48,12 @@ module Net
   # related commands implicitly operate.
   #
   # Messages have two sorts of identifiers: message sequence
-  # numbers, and UIDs.
+  # numbers and UIDs.
   #
-  # Message sequence numbers number messages within a mail box
-  # from 1 up to the number of items in the mail box.  If new
+  # Message sequence numbers number messages within a mailbox
+  # from 1 up to the number of items in the mailbox.  If a new
   # message arrives during a session, it receives a sequence
-  # number equal to the new size of the mail box.  If messages
+  # number equal to the new size of the mailbox.  If messages
   # are expunged from the mailbox, remaining messages have their
   # sequence numbers "shuffled down" to fill the gaps.
   #
@@ -63,7 +63,7 @@ module Net
   # be assigned in ascending (but not necessarily sequential)
   # order within a mailbox; this means that if a non-IMAP client
   # rearranges the order of mailitems within a mailbox, the
-  # UIDs have to be reassigned.  An IMAP client cannot thus
+  # UIDs have to be reassigned.  An IMAP client thus cannot
   # rearrange message orders.
   #
   # == Examples of Usage
@@ -113,7 +113,7 @@ module Net
   #
   # NO:: the attempted command could not be successfully completed.  For
   #      instance, the username/password used for logging in are incorrect;
-  #      the selected mailbox does not exists; etc.
+  #      the selected mailbox does not exist; etc.
   #
   # BAD:: the request from the client does not follow the server's
   #       understanding of the IMAP protocol.  This includes attempting
@@ -125,7 +125,7 @@ module Net
   # BYE:: the server is saying goodbye.  This can be part of a normal
   #       logout sequence, and can be used as part of a login sequence
   #       to indicate that the server is (for some reason) unwilling
-  #       to accept our connection.  As a response to any other command,
+  #       to accept your connection.  As a response to any other command,
   #       it indicates either that the server is shutting down, or that
   #       the server is timing out the client connection due to inactivity.
   #
@@ -223,14 +223,14 @@ module Net
     # The thread to receive exceptions.
     attr_accessor :client_thread
 
-    # Flag indicating a message has been seen
+    # Flag indicating a message has been seen.
     SEEN = :Seen
 
-    # Flag indicating a message has been answered
+    # Flag indicating a message has been answered.
     ANSWERED = :Answered
 
     # Flag indicating a message has been flagged for special or urgent
-    # attention
+    # attention.
     FLAGGED = :Flagged
 
     # Flag indicating a message has been marked for deletion.  This
@@ -240,7 +240,7 @@ module Net
     # Flag indicating a message is only a draft or work-in-progress version.
     DRAFT = :Draft
 
-    # Flag indicating that the message is "recent", meaning that this
+    # Flag indicating that the message is "recent," meaning that this
     # session is the first session in which the client has been notified
     # of this message.
     RECENT = :Recent
@@ -386,7 +386,7 @@ module Net
     # Sends an AUTHENTICATE command to authenticate the client.
     # The +auth_type+ parameter is a string that represents
     # the authentication mechanism to be used. Currently Net::IMAP
-    # supports authentication mechanisms:
+    # supports the authentication mechanisms:
     #
     #   LOGIN:: login using cleartext user and password.
     #   CRAM-MD5:: login with cleartext user and encrypted password
@@ -394,8 +394,8 @@ module Net
     #              mechanism requires that the server have the user's
     #              password stored in clear-text password.
     #
-    # For both these mechanisms, there should be two +args+: username
-    # and (cleartext) password.  A server may not support one or other
+    # For both of these mechanisms, there should be two +args+: username
+    # and (cleartext) password.  A server may not support one or the other
     # of these mechanisms; check #capability() for a capability of
     # the form "AUTH=LOGIN" or "AUTH=CRAM-MD5".
     #
@@ -500,7 +500,7 @@ module Net
     # by #lsub().
     #
     # A Net::IMAP::NoResponseError is raised if +mailbox+ cannot be
-    # subscribed to, for instance because it does not exist.
+    # subscribed to; for instance, because it does not exist.
     def subscribe(mailbox)
       send_command("SUBSCRIBE", mailbox)
     end
@@ -509,7 +509,7 @@ module Net
     # from the server's set of "active" or "subscribed" mailboxes.
     #
     # A Net::IMAP::NoResponseError is raised if +mailbox+ cannot be
-    # unsubscribed from, for instance because the client is not currently
+    # unsubscribed from; for instance, because the client is not currently
     # subscribed to it.
     def unsubscribe(mailbox)
       send_command("UNSUBSCRIBE", mailbox)
@@ -576,9 +576,9 @@ module Net
       end
     end
 
-    # Sends the GETQUOTAROOT command along with specified +mailbox+.
+    # Sends the GETQUOTAROOT command along with the specified +mailbox+.
     # This command is generally available to both admin and user.
-    # If mailbox exists, returns an array containing objects of
+    # If this mailbox exists, it returns an array containing objects of type
     # Net::IMAP::MailboxQuotaRoot and Net::IMAP::MailboxQuota.
     def getquotaroot(mailbox)
       synchronize do
@@ -593,7 +593,7 @@ module Net
     # Sends the GETQUOTA command along with specified +mailbox+.
     # If this mailbox exists, then an array containing a
     # Net::IMAP::MailboxQuota object is returned.  This
-    # command generally is only available to server admin.
+    # command is generally only available to server admin.
     def getquota(mailbox)
       synchronize do
         send_command("GETQUOTA", mailbox)
@@ -602,8 +602,8 @@ module Net
     end
 
     # Sends a SETQUOTA command along with the specified +mailbox+ and
-    # +quota+.  If +quota+ is nil, then quota will be unset for that
-    # mailbox.  Typically one needs to be logged in as server admin
+    # +quota+.  If +quota+ is nil, then +quota+ will be unset for that
+    # mailbox.  Typically one needs to be logged in as a server admin
     # for this to work.  The IMAP quota commands are described in
     # [RFC-2087].
     def setquota(mailbox, quota)
@@ -627,7 +627,7 @@ module Net
       end
     end
 
-    # Send the GETACL command along with specified +mailbox+.
+    # Send the GETACL command along with a specified +mailbox+.
     # If this mailbox exists, an array containing objects of
     # Net::IMAP::MailboxACLItem will be returned.
     def getacl(mailbox)
@@ -639,7 +639,7 @@ module Net
 
     # Sends a LSUB command, and returns a subset of names from the set
     # of names that the user has declared as being "active" or
-    # "subscribed".  +refname+ and +mailbox+ are interpreted as
+    # "subscribed."  +refname+ and +mailbox+ are interpreted as
     # for #list().
     # The return value is an array of +Net::IMAP::MailboxList+.
     def lsub(refname, mailbox)
@@ -650,8 +650,8 @@ module Net
     end
 
     # Sends a STATUS command, and returns the status of the indicated
-    # +mailbox+. +attr+ is a list of one or more attributes that
-    # we are request the status of.  Supported attributes include:
+    # +mailbox+. +attr+ is a list of one or more attributes whose
+    # statuses are to be requested.  Supported attributes include:
     #
     #   MESSAGES:: the number of messages in the mailbox.
     #   RECENT:: the number of recent messages in the mailbox.
@@ -663,7 +663,7 @@ module Net
     #   #=> {"RECENT"=>0, "MESSAGES"=>44}
     #
     # A Net::IMAP::NoResponseError is raised if status values
-    # for +mailbox+ cannot be returned, for instance because it
+    # for +mailbox+ cannot be returned; for instance, because it
     # does not exist.
     def status(mailbox, attr)
       synchronize do
@@ -674,7 +674,7 @@ module Net
 
     # Sends a APPEND command to append the +message+ to the end of
     # the +mailbox+. The optional +flags+ argument is an array of
-    # flags to initially passing to the new message.  The optional
+    # flags initially passed to the new message.  The optional
     # +date_time+ argument specifies the creation time to assign to the
     # new message; it defaults to the current time.
     # For example:
@@ -702,7 +702,7 @@ module Net
 
     # Sends a CHECK command to request a checkpoint of the currently
     # selected mailbox.  This performs implementation-specific
-    # housekeeping, for instance, reconciling the mailbox's
+    # housekeeping; for instance, reconciling the mailbox's
     # in-memory and on-disk state.
     def check
       send_command("CHECK")
@@ -768,14 +768,14 @@ module Net
       return search_internal("SEARCH", keys, charset)
     end
 
-    # As for #search(), but returns unique identifiers.
+    # Similar to #search(), but returns unique identifiers.
     def uid_search(keys, charset = nil)
       return search_internal("UID SEARCH", keys, charset)
     end
 
     # Sends a FETCH command to retrieve data associated with a message
-    # in the mailbox. The +set+ parameter is a number or an array of
-    # numbers or a Range object. The number is a message sequence
+    # in the mailbox. The +set+ parameter is a number, an array of
+    # numbers, or a Range object. The number is a message sequence
     # number.  +attr+ is a list of attributes to fetch; see the
     # documentation for Net::IMAP::FetchData for a list of valid
     # attributes.
@@ -800,18 +800,18 @@ module Net
       return fetch_internal("FETCH", set, attr)
     end
 
-    # As for #fetch(), but +set+ contains unique identifiers.
+    # Similar to #fetch(), but +set+ contains unique identifiers.
     def uid_fetch(set, attr)
       return fetch_internal("UID FETCH", set, attr)
     end
 
     # Sends a STORE command to alter data associated with messages
     # in the mailbox, in particular their flags. The +set+ parameter
-    # is a number or an array of numbers or a Range object. Each number
+    # is a number, an array of numbers, or a Range object. Each number
     # is a message sequence number.  +attr+ is the name of a data item
-    # to store: 'FLAGS' means to replace the message's flag list
-    # with the provided one; '+FLAGS' means to add the provided flags;
-    # and '-FLAGS' means to remove them.  +flags+ is a list of flags.
+    # to store: 'FLAGS' will replace the message's flag list
+    # with the provided one, '+FLAGS' will add the provided flags,
+    # and '-FLAGS' will remove them.  +flags+ is a list of flags.
     #
     # The return value is an array of Net::IMAP::FetchData. For example:
     #
@@ -823,20 +823,20 @@ module Net
       return store_internal("STORE", set, attr, flags)
     end
 
-    # As for #store(), but +set+ contains unique identifiers.
+    # Similar to #store(), but +set+ contains unique identifiers.
     def uid_store(set, attr, flags)
       return store_internal("UID STORE", set, attr, flags)
     end
 
     # Sends a COPY command to copy the specified message(s) to the end
     # of the specified destination +mailbox+. The +set+ parameter is
-    # a number or an array of numbers or a Range object. The number is
+    # a number, an array of numbers, or a Range object. The number is
     # a message sequence number.
     def copy(set, mailbox)
       copy_internal("COPY", set, mailbox)
     end
 
-    # As for #copy(), but +set+ contains unique identifiers.
+    # Similar to #copy(), but +set+ contains unique identifiers.
     def uid_copy(set, mailbox)
       copy_internal("UID COPY", set, mailbox)
     end
@@ -854,16 +854,16 @@ module Net
       return sort_internal("SORT", sort_keys, search_keys, charset)
     end
 
-    # As for #sort(), but returns an array of unique identifiers.
+    # Similar to #sort(), but returns an array of unique identifiers.
     def uid_sort(sort_keys, search_keys, charset)
       return sort_internal("UID SORT", sort_keys, search_keys, charset)
     end
 
     # Adds a response handler. For example, to detect when
-    # the server sends us a new EXISTS response (which normally
-    # indicates new messages being added to the mail box),
-    # you could add the following handler after selecting the
-    # mailbox.
+    # the server sends a new EXISTS response (which normally
+    # indicates new messages being added to the mailbox),
+    # add the following handler after selecting the
+    # mailbox:
     #
     #   imap.add_response_handler { |resp|
     #     if resp.kind_of?(Net::IMAP::UntaggedResponse) and resp.name == "EXISTS"
@@ -880,7 +880,7 @@ module Net
       @response_handlers.delete(handler)
     end
 
-    # As for #search(), but returns message sequence numbers in threaded
+    # Similar to #search(), but returns message sequence numbers in threaded
     # format, as a Net::IMAP::ThreadMember tree.  The supported algorithms
     # are:
     #
@@ -897,7 +897,7 @@ module Net
       return thread_internal("THREAD", algorithm, search_keys, charset)
     end
 
-    # As for #thread(), but returns unique identifiers instead of
+    # Similar to #thread(), but returns unique identifiers instead of
     # message sequence numbers.
     def uid_thread(algorithm, search_keys, charset)
       return thread_internal("UID THREAD", algorithm, search_keys, charset)
@@ -953,7 +953,7 @@ module Net
     # containing non-ASCII characters; see [IMAP] section 5.1.3.
     #
     # Net::IMAP does _not_ automatically encode and decode
-    # mailbox names to and from utf7.
+    # mailbox names to and from UTF-7.
     def self.decode_utf7(s)
       return s.gsub(/&([^-]+)?-/n) {
         if $1
@@ -1006,24 +1006,24 @@ module Net
     #
     # The available options are:
     #
-    # port::  port number (default value is 143 for imap, or 993 for imaps)
-    # ssl::   if options[:ssl] is true, then an attempt will be made
+    # port::  Port number (default value is 143 for imap, or 993 for imaps)
+    # ssl::   If options[:ssl] is true, then an attempt will be made
     #         to use SSL (now TLS) to connect to the server.  For this to work
     #         OpenSSL [OSSL] and the Ruby OpenSSL [RSSL] extensions need to
     #         be installed.
-    #         if options[:ssl] is a hash, it's passed to
+    #         If options[:ssl] is a hash, it's passed to
     #         OpenSSL::SSL::SSLContext#set_params as parameters.
     #
     # The most common errors are:
     #
-    # Errno::ECONNREFUSED:: connection refused by +host+ or an intervening
+    # Errno::ECONNREFUSED:: Connection refused by +host+ or an intervening
     #                       firewall.
-    # Errno::ETIMEDOUT:: connection timed out (possibly due to packets
+    # Errno::ETIMEDOUT:: Connection timed out (possibly due to packets
     #                    being dropped by an intervening firewall).
-    # Errno::ENETUNREACH:: there is no route to that network.
-    # SocketError:: hostname not known or other socket error.
-    # Net::IMAP::ByeResponseError:: we connected to the host, but they
-    #                               immediately said goodbye to us.
+    # Errno::ENETUNREACH:: There is no route to that network.
+    # SocketError:: Hostname not known or other socket error.
+    # Net::IMAP::ByeResponseError:: The connected to the host was successful, but
+    #                               it immediately said goodbye.
     def initialize(host, port_or_options = {},
                    usessl = false, certs = nil, verify = true)
       super()
@@ -1608,10 +1608,10 @@ module Net
     #
     # ==== Fields:
     #
-    # name:: Returns the name such as "FLAGS", "LIST", "FETCH"....
+    # name:: Returns the name, such as "FLAGS", "LIST", or "FETCH".
     #
     # data:: Returns the data such as an array of flag symbols,
-    #         a ((<Net::IMAP::MailboxList>)) object....
+    #        a ((<Net::IMAP::MailboxList>)) object.
     #
     # raw_data:: Returns the raw data string.
     UntaggedResponse = Struct.new(:name, :data, :raw_data)
@@ -1632,7 +1632,7 @@ module Net
     #
     # tag:: Returns the tag.
     #
-    # name:: Returns the name. the name is one of "OK", "NO", "BAD".
+    # name:: Returns the name, one of "OK", "NO", or "BAD".
     #
     # data:: Returns the data. See ((<Net::IMAP::ResponseText>)).
     #
@@ -1654,7 +1654,6 @@ module Net
     #
     ResponseText = Struct.new(:code, :text)
 
-    #
     # Net::IMAP::ResponseCode represents response codes.
     #
     #   resp_text_code  ::= "ALERT" / "PARSE" /
@@ -1666,9 +1665,9 @@ module Net
     #
     # ==== Fields:
     #
-    # name:: Returns the name such as "ALERT", "PERMANENTFLAGS", "UIDVALIDITY"....
+    # name:: Returns the name, such as "ALERT", "PERMANENTFLAGS", or "UIDVALIDITY".
     #
-    # data:: Returns the data if it exists.
+    # data:: Returns the data, if it exists.
     #
     ResponseCode = Struct.new(:name, :data)
 
@@ -1683,7 +1682,7 @@ module Net
     # attr:: Returns the name attributes. Each name attribute is a symbol
     #        capitalized by String#capitalize, such as :Noselect (not :NoSelect).
     #
-    # delim:: Returns the hierarchy delimiter
+    # delim:: Returns the hierarchy delimiter.
     #
     # name:: Returns the mailbox name.
     #
@@ -1704,9 +1703,9 @@ module Net
     #
     # mailbox:: The mailbox with the associated quota.
     #
-    # usage:: Current storage usage of mailbox.
+    # usage:: Current storage usage of the mailbox.
     #
-    # quota:: Quota limit imposed on mailbox.
+    # quota:: Quota limit imposed on the mailbox.
     #
     MailboxQuota = Struct.new(:mailbox, :usage, :quota)
 
@@ -1719,12 +1718,12 @@ module Net
     #
     # mailbox:: The mailbox with the associated quota.
     #
-    # quotaroots:: Zero or more quotaroots that effect the quota on the
+    # quotaroots:: Zero or more quotaroots that affect the quota on the
     #              specified mailbox.
     #
     MailboxQuotaRoot = Struct.new(:mailbox, :quotaroots)
 
-    # Net::IMAP::MailboxACLItem represents response from GETACL.
+    # Net::IMAP::MailboxACLItem represents the response from GETACL.
     #
     #    acl_data        ::= "ACL" SPACE mailbox *(SPACE identifier SPACE rights)
     #
@@ -1742,7 +1741,7 @@ module Net
     #
     MailboxACLItem = Struct.new(:user, :rights, :mailbox)
 
-    # Net::IMAP::StatusData represents contents of the STATUS response.
+    # Net::IMAP::StatusData represents the contents of the STATUS response.
     #
     # ==== Fields:
     #
@@ -1753,7 +1752,7 @@ module Net
     #
     StatusData = Struct.new(:mailbox, :attr)
 
-    # Net::IMAP::FetchData represents contents of the FETCH response.
+    # Net::IMAP::FetchData represents the contents of the FETCH response.
     #
     # ==== Fields:
     #
@@ -1777,7 +1776,7 @@ module Net
     #           A Net::IMAP::Envelope object that describes the envelope
     #           structure of a message.
     #        [FLAGS]
-    #           A array of flag symbols that are set for this message. flag symbols
+    #           A array of flag symbols that are set for this message. Flag symbols
     #           are capitalized by String#capitalize.
     #        [INTERNALDATE]
     #           A string representing the internal date of the message.
@@ -1832,7 +1831,7 @@ module Net
     #
     # mailbox:: nil indicates end of [RFC-822] group.
     #           If non-nil and host is nil, returns [RFC-822] group name.
-    #           Otherwise, returns [RFC-822] local-part
+    #           Otherwise, returns [RFC-822] local-part.
     #
     # host:: nil indicates [RFC-822] group syntax.
     #        Otherwise, returns [RFC-822] domain name.
@@ -1852,14 +1851,14 @@ module Net
     ContentDisposition = Struct.new(:dsp_type, :param)
 
     # Net::IMAP::ThreadMember represents a thread-node returned
-    # by Net::IMAP#thread
+    # by Net::IMAP#thread.
     #
     # ==== Fields:
     #
     # seqno:: The sequence number of this message.
     #
-    # children:: an array of Net::IMAP::ThreadMember objects for mail
-    # items that are children of this in the thread.
+    # children:: An array of Net::IMAP::ThreadMember objects for mail
+    #            items that are children of this in the thread.
     #
     ThreadMember = Struct.new(:seqno, :children)
 
