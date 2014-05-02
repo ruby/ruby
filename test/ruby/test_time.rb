@@ -484,6 +484,7 @@ class TestTime < Test::Unit::TestCase
     t3 = t1.getlocal("-02:00")
     assert_equal(t1, t3)
     assert_equal(-7200, t3.utc_offset)
+    assert_equal([1999, 12, 31, 22, 0, 0], [t3.year, t3.mon, t3.mday, t3.hour, t3.min, t3.sec])
     t1.localtime
     assert_equal(t1, t2)
     assert_equal(t1.gmt?, t2.gmt?)

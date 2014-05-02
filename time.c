@@ -1997,37 +1997,40 @@ vtm_add_offset(struct vtm *vtm, VALUE off)
       not_zero_sec:
         /* If sec + subsec == 0, don't change vtm->sec.
          * It may be 60 which is a leap second. */
-        vtm->sec += sec;
-        if (vtm->sec < 0) {
-            vtm->sec += 60;
+        sec += vtm->sec;
+        if (sec < 0) {
+            sec += 60;
             min -= 1;
         }
-        if (60 <= vtm->sec) {
-            vtm->sec -= 60;
+        if (60 <= sec) {
+            sec -= 60;
             min += 1;
         }
+        vtm->sec = sec;
     }
     if (min) {
-        vtm->min += min;
-        if (vtm->min < 0) {
-            vtm->min += 60;
+        min += vtm->min;
+        if (min < 0) {
+            min += 60;
             hour -= 1;
         }
-        if (60 <= vtm->min) {
-            vtm->min -= 60;
+        if (60 <= min) {
+            min -= 60;
             hour += 1;
         }
+        vtm->min = min;
     }
     if (hour) {
-        vtm->hour += hour;
-        if (vtm->hour < 0) {
-            vtm->hour += 24;
+        hour += vtm->hour;
+        if (hour < 0) {
+            hour += 24;
             day = -1;
         }
-        if (24 <= vtm->hour) {
-            vtm->hour -= 24;
+        if (24 <= hour) {
+            hour -= 24;
             day = 1;
         }
+        vtm->hour = hour;
     }
 
     if (day) {
