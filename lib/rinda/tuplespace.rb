@@ -76,7 +76,7 @@ module Rinda
     # Reset the expiry time according to +sec_or_renewer+.
     #
     # +nil+::    it is set to expire in the far future.
-    # +false+::  it has expired.
+    # +true+::   it has expired.
     # Numeric::  it will expire in that many seconds.
     #
     # Otherwise the argument refers to some kind of renewer object
