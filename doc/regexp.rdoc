@@ -558,8 +558,11 @@ A contrived pattern to match a number with optional decimal places:
     \Z/x
     float_pat.match('3.14') #=> #<MatchData "3.14" 1:".14">
 
-*Note*: To match whitespace in an <tt>x</tt> pattern use an escape such as
-<tt>\s</tt> or <tt>\p{Space}</tt>.
+There are a number of strategies for matching whitespace:
+
+* Use a pattern such as <tt>\s</tt> or <tt>\p{Space}</tt>.
+* Use escaped whitespace such as <tt>\ </tt>, i.e. a space preceded by a backslash.
+* Use a character class such as <tt>[ ]</tt>.
 
 Comments can be included in a non-<tt>x</tt> pattern with the
 <tt>(?#</tt><i>comment</i><tt>)</tt> construct, where <i>comment</i> is
