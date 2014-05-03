@@ -438,7 +438,7 @@ math_exp(VALUE obj, VALUE x)
  */
 
 static VALUE
-math_log(int argc, VALUE *argv)
+math_log(int argc, VALUE *argv, VALUE obj)
 {
     VALUE x, base;
     double d0, d;
@@ -895,7 +895,7 @@ exp2(hypot)
 VALUE
 rb_math_log(int argc, VALUE *argv)
 {
-    return math_log(argc, argv);
+    return math_log(argc, argv, rb_mMath);
 }
 
 exp1(sin)
