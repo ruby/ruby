@@ -1,3 +1,7 @@
+Sun May  4 03:46:42 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb (Time.httpdate): Always return a UTC Time object.
+
 Sun May  4 03:26:39 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/time.rb (Time.make_time): Refactored.
