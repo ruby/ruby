@@ -11,10 +11,11 @@ class TestMath < Test::Unit::TestCase
     assert_predicate(a, :nan?, *rest)
   end
 
-  def check(a, b)
+  def assert_float(a, b)
     err = [Float::EPSILON * 4, [a.abs, b.abs].max * Float::EPSILON * 256].max
     assert_in_delta(a, b, err)
   end
+  alias check assert_float
 
   def test_atan2
     check(+0.0, Math.atan2(+0.0, +0.0))
