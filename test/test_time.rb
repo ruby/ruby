@@ -401,8 +401,23 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal(Time.utc(2005, 8, 28, 06, 54, 20), Time.strptime("28/Aug/2005:06:54:20 +0000", "%d/%b/%Y:%T %z"))
     assert_equal(Time.at(1).localtime, Time.strptime("1", "%s"))
     assert_equal(false, Time.strptime('0', '%s').utc?)
-    assert_equal(3600, Time.strptime('0 +0100', '%s %z').utc_offset)
-    assert_equal(-7200, Time.strptime('20010203 -0200', '%Y%m%d %z').utc_offset)
+  end
+
+  def test_strptime_s_z
+    t = Time.strptime('0 +0100', '%s %z')
+    assert_equal(0, t.to_r)
+    assert_equal(3600, t.utc_offset)
+  end
+
+  def test_strptime_Ymd_z
+    t = Time.strptime('20010203 -0200', '%Y%m%d %z')
+    assert_equal(2001, t.year)
+    assert_equal(2, t.mon)
+    assert_equal(3, t.day)
+    assert_equal(0, t.hour)
+    assert_equal(0, t.min)
+    assert_equal(0, t.sec)
+    assert_equal(-7200, t.utc_offset)
   end
 
   def test_nsec
