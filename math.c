@@ -416,6 +416,8 @@ math_exp(VALUE obj, VALUE x)
 # define log10(x) ((x) < 0.0 ? nan("") : log10(x))
 #endif
 
+static double math_log1(VALUE x);
+
 /*
  *  call-seq:
  *     Math.log(x)          -> Float
@@ -441,10 +443,21 @@ static VALUE
 math_log(int argc, VALUE *argv, VALUE obj)
 {
     VALUE x, base;
-    double d0, d;
-    size_t numbits;
+    double d;
 
     rb_scan_args(argc, argv, "11", &x, &base);
+    d = math_log1(x);
+    if (argc == 2) {
+	d /= math_log1(base);
+    }
+    return DBL2NUM(d);
+}
+
+static double
+math_log1(VALUE x)
+{
+    double d0, d;
+    size_t numbits;
 
     if (RB_BIGNUM_TYPE_P(x) && BIGNUM_POSITIVE_P(x) &&
             DBL_MAX_EXP <= (numbits = rb_absint_numwords(x, 1, NULL))) {
@@ -460,15 +473,11 @@ math_log(int argc, VALUE *argv, VALUE obj)
     /* check for domain error */
     if (d0 < 0.0) domain_error("log");
     /* check for pole error */
-    if (d0 == 0.0) return DBL2NUM(-INFINITY);
+    if (d0 == 0.0) return -INFINITY;
     d = log(d0);
     if (numbits)
         d += numbits * log(2); /* log(2**numbits) */
-    if (argc == 2) {
-	Need_Float(base);
-	d /= log(RFLOAT_VALUE(base));
-    }
-    return DBL2NUM(d);
+    return d;
 }
 
 #ifndef log2

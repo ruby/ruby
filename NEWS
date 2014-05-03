@@ -48,6 +48,13 @@ with all sufficient information, see the ChangeLog file.
     * When flushing file IO, you cannot assume that the metadata of the file
       is updated immediately.  On some platforms (especially Windows), it is
       delayed until the filesystem load is decreased.
+
+* Math
+  * incompatible changes:
+    * Math.log now raises Math::DomainError instead of returning NaN if the
+      base is less than 0, and returns NaN instead of -infinity if both of
+      two arguments are 0.
+
 * Proc
   * incompatible changes:
     * ArgumentError is no longer raised when lambda Proc is passed as a

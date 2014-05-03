@@ -142,6 +142,8 @@ class TestMath < Test::Unit::TestCase
     assert_nothing_raised { assert_infinity(-Math.log(-0.0)) }
     assert_raise(Math::DomainError) { Math.log(-1.0) }
     assert_raise(TypeError) { Math.log(1,nil) }
+    assert_raise(Math::DomainError, '[ruby-core:62309] [ruby-Bug #9797]') { Math.log(1.0, -1.0) }
+    assert_nothing_raised { assert_nan(Math.log(0.0, 0.0)) }
   end
 
   def test_log2
