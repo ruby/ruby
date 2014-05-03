@@ -258,11 +258,7 @@ class Time
         year, mon, day, hour, min, sec =
           apply_offset(year, mon, day, hour, min, sec, off)
         t = self.utc(year, mon, day, hour, min, sec, usec)
-        if zone_utc?(zone)
-          t.utc
-        else
-          t.localtime(off)
-        end
+        t.localtime(off) if !zone_utc?(zone)
         t
       else
         self.local(year, mon, day, hour, min, sec, usec)
