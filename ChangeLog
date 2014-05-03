@@ -1,3 +1,9 @@
+Sun May  4 02:53:17 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb (Time.rfc2822): Fix year completion.
+	  Produce fixed-offset time object if appropriate.
+	  (Time.xmlschema): Produce fixed-offset time object if appropriate.
+
 Sat May  3 23:52:20 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/time.rb (make_time): Produce fixed-offset time object if

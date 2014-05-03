@@ -4,46 +4,61 @@ require_relative 'ruby/envutil.rb'
 
 class TestTimeExtension < Test::Unit::TestCase # :nodoc:
   def test_rfc822
-    assert_equal(Time.utc(1976, 8, 26, 14, 30) + 4 * 3600,
-                 Time.rfc2822("26 Aug 76 14:30 EDT"))
-    assert_equal(Time.utc(1976, 8, 27, 9, 32) + 7 * 3600,
-                 Time.rfc2822("27 Aug 76 09:32 PDT"))
+    t = Time.rfc2822("26 Aug 76 14:30 EDT")
+    assert_equal(Time.utc(1976, 8, 26, 14, 30) + 4 * 3600, t)
+    assert_equal(-4 * 3600, t.utc_offset)
+    t = Time.rfc2822("27 Aug 76 09:32 PDT")
+    assert_equal(Time.utc(1976, 8, 27, 9, 32) + 7 * 3600, t)
+    assert_equal(-7 * 3600, t.utc_offset)
   end
 
   def test_rfc2822
-    assert_equal(Time.utc(1997, 11, 21, 9, 55, 6) + 6 * 3600,
-                 Time.rfc2822("Fri, 21 Nov 1997 09:55:06 -0600"))
-    assert_equal(Time.utc(2003, 7, 1, 10, 52, 37) - 2 * 3600,
-                 Time.rfc2822("Tue, 1 Jul 2003 10:52:37 +0200"))
-    assert_equal(Time.utc(1997, 11, 21, 10, 1, 10) + 6 * 3600,
-                 Time.rfc2822("Fri, 21 Nov 1997 10:01:10 -0600"))
-    assert_equal(Time.utc(1997, 11, 21, 11, 0, 0) + 6 * 3600,
-                 Time.rfc2822("Fri, 21 Nov 1997 11:00:00 -0600"))
-    assert_equal(Time.utc(1997, 11, 24, 14, 22, 1) + 8 * 3600,
-                 Time.rfc2822("Mon, 24 Nov 1997 14:22:01 -0800"))
+    t = Time.rfc2822("Fri, 21 Nov 1997 09:55:06 -0600")
+    assert_equal(Time.utc(1997, 11, 21, 9, 55, 6) + 6 * 3600, t)
+    assert_equal(-6 * 3600, t.utc_offset)
+    t = Time.rfc2822("Tue, 1 Jul 2003 10:52:37 +0200")
+    assert_equal(Time.utc(2003, 7, 1, 10, 52, 37) - 2 * 3600, t)
+    assert_equal(2 * 3600, t.utc_offset)
+    t = Time.rfc2822("Fri, 21 Nov 1997 10:01:10 -0600")
+    assert_equal(Time.utc(1997, 11, 21, 10, 1, 10) + 6 * 3600, t)
+    assert_equal(-6 * 3600, t.utc_offset)
+    t = Time.rfc2822("Fri, 21 Nov 1997 11:00:00 -0600")
+    assert_equal(Time.utc(1997, 11, 21, 11, 0, 0) + 6 * 3600, t)
+    assert_equal(-6 * 3600, t.utc_offset)
+    t = Time.rfc2822("Mon, 24 Nov 1997 14:22:01 -0800")
+    assert_equal(Time.utc(1997, 11, 24, 14, 22, 1) + 8 * 3600, t)
+    assert_equal(-8 * 3600, t.utc_offset)
     begin
       Time.at(-1)
     rescue ArgumentError
       # ignore
     else
-      assert_equal(Time.utc(1969, 2, 13, 23, 32, 54) + 3 * 3600 + 30 * 60,
-                   Time.rfc2822("Thu, 13 Feb 1969 23:32:54 -0330"))
-      assert_equal(Time.utc(1969, 2, 13, 23, 32, 0) + 3 * 3600 + 30 * 60,
-                   Time.rfc2822(" Thu,
+      t = Time.rfc2822("Thu, 13 Feb 1969 23:32:54 -0330")
+      assert_equal(Time.utc(1969, 2, 13, 23, 32, 54) + 3 * 3600 + 30 * 60, t)
+      assert_equal(-3 * 3600 - 30 * 60, t.utc_offset)
+      t = Time.rfc2822(" Thu,
       13
         Feb
           1969
       23:32
-               -0330 (Newfoundland Time)"))
+               -0330 (Newfoundland Time)")
+      assert_equal(Time.utc(1969, 2, 13, 23, 32, 0) + 3 * 3600 + 30 * 60, t)
+      assert_equal(-3 * 3600 - 30 * 60, t.utc_offset)
     end
-    assert_equal(Time.utc(1997, 11, 21, 9, 55, 6),
-                 Time.rfc2822("21 Nov 97 09:55:06 GMT"))
-    assert_equal(Time.utc(1997, 11, 21, 9, 55, 6) + 6 * 3600,
-                 Time.rfc2822("Fri, 21 Nov 1997 09 :   55  :  06 -0600"))
+    t = Time.rfc2822("21 Nov 97 09:55:06 GMT")
+    assert_equal(Time.utc(1997, 11, 21, 9, 55, 6), t)
+    assert_equal(0, t.utc_offset)
+    t = Time.rfc2822("Fri, 21 Nov 1997 09 :   55  :  06 -0600")
+    assert_equal(Time.utc(1997, 11, 21, 9, 55, 6) + 6 * 3600, t)
+    assert_equal(-6 * 3600, t.utc_offset)
     assert_raise(ArgumentError) {
       # inner comment is not supported.
       Time.rfc2822("Fri, 21 Nov 1997 09(comment):   55  :  06 -0600")
     }
+    t = Time.rfc2822("Mon, 01 Jan 0001 00:00:00 -0000")
+    assert_equal(Time.utc(1, 1, 1, 0, 0, 0), t)
+    assert_equal(0, t.utc_offset)
+    assert_equal(true, t.utc?)
   end
 
   def test_encode_rfc2822
@@ -389,8 +404,13 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
 
   def test_ruby_talk_152866
     t = Time::xmlschema('2005-08-30T22:48:00-07:00')
+    assert_equal(30, t.day)
+    assert_equal(8, t.mon)
+    assert_equal(-7*3600, t.utc_offset)
+    t.utc
     assert_equal(31, t.day)
     assert_equal(8, t.mon)
+    assert_equal(0, t.utc_offset)
   end
 
   def test_parse_fraction

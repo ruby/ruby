@@ -445,24 +445,26 @@ class Time
         day = $1.to_i
         mon = MonthValue[$2.upcase]
         year = $3.to_i
+        short_year_p = $3.length <= 3
         hour = $4.to_i
         min = $5.to_i
         sec = $6 ? $6.to_i : 0
         zone = $7
 
-        # following year completion is compliant with RFC 2822.
-        year = if year < 50
-                 2000 + year
-               elsif year < 1000
-                 1900 + year
-               else
-                 year
-               end
+        if short_year_p
+          # following year completion is compliant with RFC 2822.
+          year = if year < 50
+                   2000 + year
+                 else
+                   1900 + year
+                 end
+        end
 
+        off = zone_offset(zone)
         year, mon, day, hour, min, sec =
-          apply_offset(year, mon, day, hour, min, sec, zone_offset(zone))
+          apply_offset(year, mon, day, hour, min, sec, off)
         t = self.utc(year, mon, day, hour, min, sec)
-        t.localtime if !zone_utc?(zone)
+        t.localtime(off) if !zone_utc?(zone)
         t
       else
         raise ArgumentError.new("not RFC 2822 compliant date: #{date.inspect}")
@@ -550,9 +552,12 @@ class Time
         end
         if $8
           zone = $8
+          off = zone_offset(zone)
           year, mon, day, hour, min, sec =
-            apply_offset(year, mon, day, hour, min, sec, zone_offset(zone))
-          self.utc(year, mon, day, hour, min, sec, usec)
+            apply_offset(year, mon, day, hour, min, sec, off)
+          t = self.utc(year, mon, day, hour, min, sec, usec)
+          t.localtime(off) if !zone_utc?(zone)
+          t
         else
           self.local(year, mon, day, hour, min, sec, usec)
         end
