@@ -28,7 +28,7 @@ class Time
             datetime = apply_offset(*(datetime + [off]))
             datetime << usec
             time = Time.utc(*datetime)
-            time.localtime unless zone_utc?(zone)
+            time.localtime(off) unless zone_utc?(zone)
             time
           else
             datetime << usec

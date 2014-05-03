@@ -1,3 +1,12 @@
+Sat May  3 23:52:20 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb (make_time): Produce fixed-offset time object if
+	  appropriate.
+	  (Time.strptime): Use d[:zone] instead of d[:offset].
+
+	* lib/rss/rss.rb (Time.w3cdtf): Produce fixed-offset time object if
+	  appropriate.
+
 Sat May  3 20:21:38 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/time.rb (Time.strptime): Use d[:offset] if d[:seconds] is not

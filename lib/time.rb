@@ -258,7 +258,11 @@ class Time
         year, mon, day, hour, min, sec =
           apply_offset(year, mon, day, hour, min, sec, off)
         t = self.utc(year, mon, day, hour, min, sec, usec)
-        t.localtime if !zone_utc?(zone)
+        if zone_utc?(zone)
+          t.utc
+        else
+          t.localtime(off)
+        end
         t
       else
         self.local(year, mon, day, hour, min, sec, usec)
@@ -394,13 +398,17 @@ class Time
       raise ArgumentError, "invalid strptime format - `#{format}'" unless d
       if seconds = d[:seconds]
         t = Time.at(seconds)
+        if zone = d[:zone]
+          if zone_utc?(zone)
+            t.utc
+          elsif offset = zone_offset(zone)
+            t.localtime(offset)
+          end
+        end
       else
         year = d[:year]
         year = yield(year) if year && block_given?
         t = make_time(year, d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
-      end
-      if offset = d[:offset]
-        t.localtime(offset)
       end
       t
     end
