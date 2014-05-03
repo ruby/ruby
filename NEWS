@@ -70,6 +70,11 @@ with all sufficient information, see the ChangeLog file.
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
+* time.rb
+  * Time.parse, Time.strptime, Time.rfc2822, Time.xmlschema produces
+    fixed-offset Time objects to preserve the offset from UTC.
+  * Time.httpdate produces always UTC Time object.
+
 === Built-in global variables compatibility issues
 
 === C API updates
