@@ -393,16 +393,16 @@ class Time
       d = Date._strptime(date, format)
       raise ArgumentError, "invalid strptime format - `#{format}'" unless d
       if seconds = d[:seconds]
-        if offset = d[:offset]
-          Time.at(seconds).localtime(offset)
-        else
-          Time.at(seconds)
-        end
+        t = Time.at(seconds)
       else
         year = d[:year]
         year = yield(year) if year && block_given?
-        make_time(year, d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
+        t = make_time(year, d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
       end
+      if offset = d[:offset]
+        t.localtime(offset)
+      end
+      t
     end
 
     MonthValue = { # :nodoc:

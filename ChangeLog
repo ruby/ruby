@@ -1,3 +1,9 @@
+Sat May  3 20:21:38 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb (Time.strptime): Use d[:offset] if d[:seconds] is not
+	  given.
+	  Reported by tadayoshi funaba.  [ruby-core:62322]
+
 Sat May  3 04:04:16 2014  Eric Wong  <e@80x24.org>
 
 	* complex.c (parse_comp): replace ALLOCA_N with ALLOCV_N/ALLOCV_END
