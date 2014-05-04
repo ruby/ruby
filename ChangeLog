@@ -1,3 +1,13 @@
+Sun May  4 17:58:12 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb (Time.force_zone!): New private method.
+	  (Time.make_time): Use Time.force_zone!.
+	  (Time.strptime): Ditto.
+	  (Time.rfc2822): Ditto.
+	  (Time.xmlschema): Ditto.
+
+	* lib/rss/rss.rb (Time.w3cdtf): Use Time.force_zone!.
+
 Sun May  4 10:22:59 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* math.c (math_atan2): return values like as expected by C99 if

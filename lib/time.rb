@@ -174,6 +174,17 @@ class Time
     end
     private :zone_utc?
 
+    def force_zone!(t, zone, offset=nil)
+      if zone_utc?(zone)
+        t.utc
+      elsif offset ||= zone_offset(zone)
+        t.localtime(offset)
+      else
+        t.localtime
+      end
+    end
+    private :force_zone!
+
     LeapYearMonthDays = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] # :nodoc:
     CommonYearMonthDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] # :nodoc:
     def month_days(y, m)
@@ -258,7 +269,7 @@ class Time
         year, mon, day, hour, min, sec =
           apply_offset(year, mon, day, hour, min, sec, off)
         t = self.utc(year, mon, day, hour, min, sec, usec)
-        t.localtime(off) if !zone_utc?(zone)
+        force_zone!(t, zone, off)
         t
       else
         self.local(year, mon, day, hour, min, sec, usec)
@@ -395,11 +406,7 @@ class Time
       if seconds = d[:seconds]
         t = Time.at(seconds)
         if zone = d[:zone]
-          if zone_utc?(zone)
-            t.utc
-          elsif offset = zone_offset(zone)
-            t.localtime(offset)
-          end
+          force_zone!(t, zone)
         end
       else
         year = d[:year]
@@ -460,7 +467,7 @@ class Time
         year, mon, day, hour, min, sec =
           apply_offset(year, mon, day, hour, min, sec, off)
         t = self.utc(year, mon, day, hour, min, sec)
-        t.localtime(off) if !zone_utc?(zone)
+        force_zone!(t, zone, off)
         t
       else
         raise ArgumentError.new("not RFC 2822 compliant date: #{date.inspect}")
@@ -552,7 +559,7 @@ class Time
           year, mon, day, hour, min, sec =
             apply_offset(year, mon, day, hour, min, sec, off)
           t = self.utc(year, mon, day, hour, min, sec, usec)
-          t.localtime(off) if !zone_utc?(zone)
+          force_zone!(t, zone, off)
           t
         else
           self.local(year, mon, day, hour, min, sec, usec)
