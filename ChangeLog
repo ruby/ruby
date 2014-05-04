@@ -1,3 +1,8 @@
+Mon May  5 01:20:27 2014  Eric Wong  <e@80x24.org>
+
+	* gc.c (rb_gc_writebarrier): drop special case for big hash/array
+	  [Bug #9518]
+
 Mon May  5 01:13:00 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_before_sweep): cap `malloc_limit' to
