@@ -1,5 +1,5 @@
 /*
-  date_core.c: Coded by Tadayoshi Funaba 2010-2013
+  date_core.c: Coded by Tadayoshi Funaba 2010-2014
 */
 
 #include "ruby.h"
@@ -3667,7 +3667,11 @@ rt_rewrite_frags(VALUE hash)
 
     seconds = ref_hash("seconds");
     if (!NIL_P(seconds)) {
-	VALUE d, h, min, s, fr;
+	VALUE offset, d, h, min, s, fr;
+
+	offset = ref_hash("offset");
+	if (!NIL_P(offset))
+	    seconds = f_add(seconds, offset);
 
 	d = f_idiv(seconds, INT2FIX(DAY_IN_SECONDS));
 	fr = f_mod(seconds, INT2FIX(DAY_IN_SECONDS));
@@ -3687,7 +3691,6 @@ rt_rewrite_frags(VALUE hash)
 	set_hash("sec", s);
 	set_hash("sec_fraction", fr);
 	del_hash("seconds");
-	del_hash("offset");
     }
     return hash;
 }

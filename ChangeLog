@@ -1,3 +1,10 @@
+Mon May  5 01:12:27 2014  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c (rt_rewrite_frags): a new feature (not a
+	  bug fix) of strptime.  applies offset even if the given date is
+	  not local time (%s and %Q).  This is an exceptional feature and
+	  I do NOT recommend to use this at all.  Thank you git community.
+
 Sun May  4 20:51:32 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/time.rb (Time.force_zone!): Use usual local time if it has

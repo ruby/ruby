@@ -493,4 +493,21 @@ class TestDateStrptime < Test::Unit::TestCase
     assert_equal(s0, s)
   end
 
+  def test_sz
+    d = DateTime.strptime('0 -0200', '%s %z')
+    assert_equal([1969, 12, 31, 22, 0, 0], [d.year, d.mon, d.mday, d.hour, d.min, d.sec])
+    assert_equal(Rational(-2, 24), d.offset)
+    d = DateTime.strptime('9 +0200', '%s %z')
+    assert_equal([1970, 1, 1, 2, 0, 9], [d.year, d.mon, d.mday, d.hour, d.min, d.sec])
+    assert_equal(Rational(2, 24), d.offset)
+
+    d = DateTime.strptime('0 -0200', '%Q %z')
+    assert_equal([1969, 12, 31, 22, 0, 0], [d.year, d.mon, d.mday, d.hour, d.min, d.sec])
+    assert_equal(Rational(-2, 24), d.offset)
+    d = DateTime.strptime('9000 +0200', '%Q %z')
+    assert_equal([1970, 1, 1, 2, 0, 9], [d.year, d.mon, d.mday, d.hour, d.min, d.sec])
+    assert_equal(Rational(2, 24), d.offset)
+
+  end
+
 end
