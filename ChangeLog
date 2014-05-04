@@ -1,3 +1,10 @@
+Mon May  5 02:21:48 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/cptr.c (dlptr_free), ext/dl/handle.c (dlhandle_free),
+	  ext/fiddle/handle.c (fiddle_handle_free),
+	  ext/fiddle/pointer.c (fiddle_ptr_free): fix memory leak.
+	  based on the patch Heesob Park at [ruby-dev:48021] [Bug #9599].
+
 Mon May  5 01:20:27 2014  Eric Wong  <e@80x24.org>
 
 	* gc.c (rb_gc_writebarrier): drop special case for big hash/array
