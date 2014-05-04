@@ -178,7 +178,10 @@ class Time
       if zone_utc?(zone)
         t.utc
       elsif offset ||= zone_offset(zone)
-        t.localtime(offset)
+        t.localtime
+        if t.utc_offset != offset
+          t.localtime(offset)
+        end
       else
         t.localtime
       end

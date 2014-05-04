@@ -1,3 +1,8 @@
+Sun May  4 20:51:32 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb (Time.force_zone!): Use usual local time if it has
+	  expected offset from UTC.
+
 Sun May  4 17:58:12 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/time.rb (Time.force_zone!): New private method.
