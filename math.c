@@ -79,7 +79,7 @@ math_atan2(VALUE obj, VALUE y, VALUE x)
 	    return DBL2NUM(M_PI);
 	return DBL2NUM(-M_PI);
     }
-#if !(defined(HAVE_ATAN2L) && defined(HAVE_ATAN2F)) || 1
+#if !(defined(HAVE_ATAN2L) && defined(HAVE_ATAN2F))
     /* assume atan2() doesn't handle Inf as C99 */
     if (isinf(dx) && isinf(dy)) {
 	/* optimization for FLONUM */
