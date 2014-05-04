@@ -75,6 +75,8 @@ module Psych
           class_loader.date_time
           require 'date'
           @ss.parse_time(o.value).to_datetime
+        when '!ruby/encoding'
+          ::Encoding.find o.value
         when "!ruby/object:Complex"
           class_loader.complex
           Complex(o.value)
