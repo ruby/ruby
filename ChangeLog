@@ -1,3 +1,7 @@
+Mon May  5 00:16:35 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* gc.c: Fix up default GC params by @csfrancis [fix GH-556]
+
 Fri May  2 00:19:36 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/ossl.c (ossl_make_error): check NULL for unknown
