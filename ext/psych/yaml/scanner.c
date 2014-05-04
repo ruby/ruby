@@ -2629,6 +2629,9 @@ yaml_parser_scan_tag_uri(yaml_parser_t *parser, int directive,
         /* Check if it is a URI-escape sequence. */
 
         if (CHECK(parser->buffer, '%')) {
+            if (!STRING_EXTEND(parser, string))
+                goto error;
+
             if (!yaml_parser_scan_uri_escapes(parser,
                         directive, start_mark, &string)) goto error;
         }
