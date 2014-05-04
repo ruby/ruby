@@ -1,3 +1,9 @@
+Sun May  4 10:22:59 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* math.c (math_atan2): return values like as expected by C99 if
+	  both two arguments are infinity.  based on the patch by cremno
+	  phobia <cremno AT mail.ru> in [ruby-core:62310].  [Feature #9799]
+
 Sun May  4 03:46:42 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/time.rb (Time.httpdate): Always return a UTC Time object.

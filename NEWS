@@ -54,6 +54,8 @@ with all sufficient information, see the ChangeLog file.
     * Math.log now raises Math::DomainError instead of returning NaN if the
       base is less than 0, and returns NaN instead of -infinity if both of
       two arguments are 0.
+    * Math.atan2 now returns values like as expected by C99 if both two
+      arguments are infinity.
 
 * Proc
   * incompatible changes:

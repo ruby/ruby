@@ -55,6 +55,10 @@ VALUE rb_eMathDomainError;
  *    Math.atan2(1.0, 0.0)   #=> 1.5707963267948966
  *    Math.atan2(1.0, -1.0)  #=> 2.356194490192345
  *    Math.atan2(0.0, -1.0)  #=> 3.141592653589793
+ *    Math.atan2(INFINITY, INFINITY)   #=> 0.7853981633974483
+ *    Math.atan2(INFINITY, -INFINITY)  #=> 2.356194490192345
+ *    Math.atan2(-INFINITY, INFINITY)  #=> -0.7853981633974483
+ *    Math.atan2(-INFINITY, -INFINITY) #=> -2.356194490192345
  *
  */
 
@@ -75,7 +79,20 @@ math_atan2(VALUE obj, VALUE y, VALUE x)
 	    return DBL2NUM(M_PI);
 	return DBL2NUM(-M_PI);
     }
-    if (isinf(dx) && isinf(dy)) domain_error("atan2");
+#if !(defined(HAVE_ATAN2L) && defined(HAVE_ATAN2F)) || 1
+    /* assume atan2() doesn't handle Inf as C99 */
+    if (isinf(dx) && isinf(dy)) {
+	/* optimization for FLONUM */
+	if (dx < 0.0) {
+	    const double dz = (3.0 * M_PI / 4.0);
+	    return (dy < 0.0) ? DBL2NUM(-dz) : DBL2NUM(dz);
+	}
+	else {
+	    const double dz = (M_PI / 4.0);
+	    return (dy < 0.0) ? DBL2NUM(-dz) : DBL2NUM(dz);
+	}
+    }
+#endif
     return DBL2NUM(atan2(dy, dx));
 }
 
