@@ -2726,7 +2726,17 @@ Init_BareVM(void)
     th->vm = vm;
     th_init(th, 0);
     ruby_thread_init_stack(th);
+}
+
+void
+Init_vm_objects(void)
+{
+    rb_vm_t *vm = GET_VM();
+
     vm->defined_module_hash = rb_hash_new();
+
+    /* initialize mark object array, hash */
+    vm->mark_object_ary = rb_ary_tmp_new(1);
 }
 
 /* top self */
@@ -2751,9 +2761,6 @@ Init_top_self(void)
     vm->top_self = rb_obj_alloc(rb_cObject);
     rb_define_singleton_method(rb_vm_top_self(), "to_s", main_to_s, 0);
     rb_define_alias(rb_singleton_class(rb_vm_top_self()), "inspect", "to_s");
-
-    /* initialize mark object array, hash */
-    vm->mark_object_ary = rb_ary_tmp_new(1);
 }
 
 VALUE *

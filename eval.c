@@ -51,6 +51,7 @@ ruby_setup(void)
     ruby_init_stack((void *)&state);
     Init_BareVM();
     Init_heap();
+    Init_vm_objects();
 
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {

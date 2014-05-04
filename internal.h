@@ -889,6 +889,7 @@ rb_serial_t rb_next_class_serial(void);
 VALUE rb_obj_is_thread(VALUE obj);
 void rb_vm_mark(void *ptr);
 void Init_BareVM(void);
+void Init_vm_objects(void);
 VALUE rb_vm_top_self(void);
 void rb_thread_recycle_stack_release(VALUE *);
 void rb_vm_change_state(void);
