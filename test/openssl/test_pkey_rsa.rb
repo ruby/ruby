@@ -75,6 +75,36 @@ class OpenSSL::TestPKeyRSA < Test::Unit::TestCase
     assert(key.verify(digest, sig, data))
   end
 
+  def test_sign_verify_memory_leak
+    bug9743 = '[ruby-core:62038] [Bug #9743]'
+    assert_no_memory_leak(%w[-ropenssl], <<-PREP, <<-CODE, bug9743, rss: true)
+    data = 'Sign me!'
+    digest = OpenSSL::Digest::SHA512.new
+    pkey = OpenSSL::PKey::RSA.new(2048)
+    signature = pkey.sign(digest, data)
+    pub_key = pkey.public_key
+    PREP
+    20_000.times {
+      pub_key.verify(digest, signature, data)
+    }
+    CODE
+
+    assert_no_memory_leak(%w[-ropenssl], <<-PREP, <<-CODE, bug9743, rss: true)
+    data = 'Sign me!'
+    digest = OpenSSL::Digest::SHA512.new
+    pkey = OpenSSL::PKey::RSA.new(2048)
+    signature = pkey.sign(digest, data)
+    pub_key = pkey.public_key
+    PREP
+    20_000.times {
+      begin
+        pub_key.verify(digest, signature, 1)
+      rescue TypeError
+      end
+    }
+    CODE
+  end
+
   def test_digest_state_irrelevant_sign
     key = OpenSSL::TestUtils::TEST_KEY_RSA1024
     digest1 = OpenSSL::Digest::SHA1.new
