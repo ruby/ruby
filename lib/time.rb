@@ -178,8 +178,8 @@ class Time
       if zone_utc?(zone)
         t.utc
       elsif offset ||= zone_offset(zone)
-        # Prefer the local (real) timezone over the fixed offset (artificial)
-        # timezone.
+        # Prefer the local timezone over the fixed offset timezone because
+        # the former is a real timezone and latter is an artificial timezone.
         t.localtime
         if t.utc_offset != offset
           # Use the fixed offset timezone only if the local timezone cannot
