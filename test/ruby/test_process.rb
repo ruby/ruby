@@ -613,6 +613,17 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_execopts_redirect_to_out_and_err
+    with_tmpchdir {|d|
+      ret = system(RUBY, "-e", 'STDERR.print "e"; STDOUT.print "o"', [:out, :err] => "foo")
+      assert_equal(true, ret)
+      assert_equal("eo", File.read("foo"))
+      ret = system(RUBY, "-e", 'STDERR.print "E"; STDOUT.print "O"', [:err, :out] => "bar")
+      assert_equal(true, ret)
+      assert_equal("EO", File.read("bar"))
+    }
+  end
+
   def test_execopts_redirect_dup2_child
     with_tmpchdir {|d|
       Process.wait spawn(RUBY, "-e", "STDERR.print 'err'; STDOUT.print 'out'",

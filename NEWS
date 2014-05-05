@@ -27,6 +27,11 @@ with all sufficient information, see the ChangeLog file.
   * New methods
     * IO#statfs returns filesystem information as File::Statfs. (experimental)
 
+* Process
+  * Extended method:
+    * Process execution methods such as Process.spawn opens the file in write
+      mode for redirect from [:out, :err].
+
 * Symbol
   * New methods
     * Symbol.find(str) returns whether given string is defined as symbol or not.
@@ -63,6 +68,11 @@ with all sufficient information, see the ChangeLog file.
       block, and the number of yielded arguments does not match the formal
       arguments of the lambda, if just an array is yielded and its length
       matches.
+
+* Process
+  * Process execution methods such as Process.spawn opens the file in write
+    mode for redirect from [:out, :err].
+    Before Ruby 2.2, it was opened in read mode.
 
 === Stdlib updates (outstanding ones only)
 

@@ -1595,7 +1595,19 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
             key = check_exec_redirect_fd(key, 1);
         if (FIXNUM_P(key) && (FIX2INT(key) == 1 || FIX2INT(key) == 2))
             flags = INT2NUM(O_WRONLY|O_CREAT|O_TRUNC);
-        else
+        else if (TYPE(key) == T_ARRAY) {
+	    int i;
+	    for (i = 0; i < RARRAY_LEN(key); i++) {
+		VALUE v = RARRAY_PTR(key)[i];
+		VALUE fd = check_exec_redirect_fd(v, 1);
+		if (FIX2INT(fd) != 1 && FIX2INT(fd) != 2) break;
+	    }
+	    if (i == RARRAY_LEN(key))
+		flags = INT2NUM(O_WRONLY|O_CREAT|O_TRUNC);
+	    else
+		flags = INT2NUM(O_RDONLY);
+	}
+	else
             flags = INT2NUM(O_RDONLY);
         perm = INT2FIX(0644);
         param = hide_obj(rb_ary_new3(3, hide_obj(EXPORT_DUP(path)),

@@ -1,3 +1,10 @@
+Mon May  5 22:29:47 2014  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (check_exec_redirect): Open the file in write mode for
+	  redirect from [:out, :err].
+	  Proposed and implemented by Yusuke Endoh.
+	  [ruby-dev:41430] [Feature #3348]
+
 Mon May  5 21:52:35 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/lib/pathname.rb (cleanpath_aggressive): make all
