@@ -425,7 +425,7 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
 
   def test_strptime_empty
     assert_raise(ArgumentError) { Time.strptime('', '') }
-    assert_raise(ArgumentError) { Time.strptime('+09:00', '%z') }
+    assert_raise(ArgumentError) { Time.strptime('+09:00', '%z') } # [ruby-core:62351] by matz.
   end
 
   def test_strptime_s_z
