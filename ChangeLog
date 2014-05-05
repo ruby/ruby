@@ -1,3 +1,12 @@
+Mon May  5 21:52:35 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/lib/pathname.rb (cleanpath_aggressive): make all
+	  separators File::SEPARATOR from File::ALT_SEPARATOR.
+	  Reported by Daniel Rikowski.
+	  Fixed by Nobuyoshi Nakada.  [Bug #9618]
+
+	* ext/pathname/lib/pathname.rb (cleanpath_conservative): ditto.
+
 Mon May  5 21:48:04 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/lib/pathname.rb (Pathname#/): Aliased to Pathname#+.
