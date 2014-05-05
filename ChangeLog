@@ -1,3 +1,9 @@
+Mon May  5 17:26:09 2014  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* math.c (rb_math_sqrt): omitted exporting an unused function,
+	  anyway.
+	* internal.h: follows the above change.
+
 Mon May  5 11:44:03 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/time.rb (Time.strptime): Raise ArgumentError if Date._strptime
