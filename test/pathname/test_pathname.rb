@@ -213,6 +213,10 @@ class TestPathname < Test::Unit::TestCase
 
   defassert(:plus, 'a//b/d//e', 'a//b/c', '../d//e')
 
+  def test_slash
+    assert_kind_of(Pathname, Pathname("a") / Pathname("b"))
+  end
+
   def test_parent
     assert_equal(Pathname("."), Pathname("a").parent)
   end

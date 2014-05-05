@@ -1,3 +1,8 @@
+Mon May  5 21:48:04 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/lib/pathname.rb (Pathname#/): Aliased to Pathname#+.
+	  Suggested by Alexey Muranov.  [ruby-core:61432] [Feature #9625]
+
 Mon May  5 17:26:09 2014  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* math.c (rb_math_sqrt): omitted exporting an unused function,

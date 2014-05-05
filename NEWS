@@ -70,6 +70,9 @@ with all sufficient information, see the ChangeLog file.
   * Extended methods:
     * find method accepts "ignore_error" keyword argument.
 
+* Pathname
+  * Pathname#/ is aliased to Pathname#+.
+
 === Stdlib compatibility issues (excluding feature bug fixes)
 
 * time.rb
