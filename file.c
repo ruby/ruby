@@ -4604,7 +4604,6 @@ rb_f_test(int argc, VALUE *argv)
 	  case 'd':
 	    return rb_file_directory_p(0, argv[1]);
 
-	  case 'a':
 	  case 'e':
 	    return rb_file_exist_p(0, argv[1]);
 
