@@ -540,6 +540,7 @@ IP_FREEBIND	nil	Allow binding to nonexistent IP addresses
 IP_IPSEC_POLICY	nil	IPsec security policy
 IP_XFRM_POLICY
 IP_PASSSEC	nil	Retrieve security context with datagram
+IP_TRANSPARENT  nil     Transparent proxy
 IP_PMTUDISC_DONT	nil	Never send DF frames
 IP_PMTUDISC_WANT	nil	Use per-route hints
 IP_PMTUDISC_DO	nil	Always send DF frames

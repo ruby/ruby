@@ -1,3 +1,9 @@
+Mon May  5 23:53:24 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb: Add IP_TRANSPARENT.
+	  IP_TRANSPARENT is provieded since glibc-2.12.
+	  Reported by Eliezer Croitoru.  [ruby-core:50372] [Bug #7476]
+
 Mon May  5 22:29:47 2014  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (check_exec_redirect): Open the file in write mode for
