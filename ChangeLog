@@ -1,3 +1,9 @@
+Tue May  6 00:54:56 2014  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (gc_after_sweep): suppress unnecessary expanding heap.
+	  Tomb heap pages are freed pages here, so expanding heap is
+	  not required.
+
 Mon May  5 02:35:20 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/ossl_pkey.c (ossl_pkey_verify): as EVP_VerifyFinal()
