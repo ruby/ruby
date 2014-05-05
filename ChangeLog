@@ -1,3 +1,9 @@
+Mon May  5 11:44:03 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb (Time.strptime): Raise ArgumentError if Date._strptime
+	  doesn't extract date information.
+	  Reported by tadayoshi funaba.  [ruby-core:62349]
+
 Mon May  5 01:12:27 2014  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c (rt_rewrite_frags): a new feature (not a

@@ -416,6 +416,9 @@ class Time
           force_zone!(t, zone)
         end
       else
+        if !d[:year] && !d[:mon] && !d[:mday] && !d[:hour] && !d[:min] && !d[:sec] && !d[:sec_fraction]
+          raise ArgumentError, "no time information in #{date.inspect}"
+        end
         year = d[:year]
         year = yield(year) if year && block_given?
         t = make_time(year, d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)

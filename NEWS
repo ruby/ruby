@@ -77,6 +77,7 @@ with all sufficient information, see the ChangeLog file.
     fixed-offset Time objects.
     It is happen when usual localtime doesn't preserve the offset from UTC.
   * Time.httpdate produces always UTC Time object.
+  * Time.strptime raises ArgumentError when no date information.
 
 === Built-in global variables compatibility issues
 

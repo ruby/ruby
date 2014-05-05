@@ -423,6 +423,11 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal(false, Time.strptime('0', '%s').utc?)
   end
 
+  def test_strptime_empty
+    assert_raise(ArgumentError) { Time.strptime('', '') }
+    assert_raise(ArgumentError) { Time.strptime('+09:00', '%z') }
+  end
+
   def test_strptime_s_z
     t = Time.strptime('0 +0100', '%s %z')
     assert_equal(0, t.to_r)
