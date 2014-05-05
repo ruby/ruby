@@ -238,6 +238,12 @@ class BenchmarkDriver
     result
   end
 
+  unless defined?(File::NULL)
+    if File.exist?('/dev/null')
+      File::NULL = '/dev/null'
+    end
+  end
+
   def measure executable, file
     cmd = "#{executable} #{@ruby_arg} #{file}"
 

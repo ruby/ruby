@@ -1,3 +1,8 @@
+Tue May  6 01:08:01 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/driver.rb: define File::NULL if not defiend and /dev/null
+	  is available to run benchmark driver on ruby 1.9.2.
+
 Mon May  5 23:53:24 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: Add IP_TRANSPARENT.
