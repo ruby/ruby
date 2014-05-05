@@ -155,7 +155,7 @@ module OpenURI
         if io.respond_to? :close!
           io.close! # Tempfile
         else
-          io.close
+          io.close if !io.closed?
         end
       end
     else

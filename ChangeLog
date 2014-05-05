@@ -1,3 +1,9 @@
+Tue May  6 01:28:14 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open-uri.rb (OpenURI.open_uri): Call StringIO#close only if
+	  the StringIO object is not closed yet.
+	  Reported by Jordi Massaguer Pla.  [ruby-core:42538] [Bug #6010]
+
 Tue May  6 01:08:01 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/driver.rb: define File::NULL if not defiend and /dev/null

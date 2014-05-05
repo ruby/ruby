@@ -163,6 +163,29 @@ class TestOpenURI < Test::Unit::TestCase
     }
   end
 
+  def test_close_in_block_small
+    with_http {|srv, dr, url|
+      srv.mount_proc("/close200", lambda { |req, res| res.body = "close200" } )
+      assert_nothing_raised {
+        open("#{url}/close200") {|f|
+          f.close
+        }
+      }
+    }
+  end
+
+  def test_close_in_block_big
+    with_http {|srv, dr, url|
+      content = "close200big"*10240
+      srv.mount_proc("/close200big", lambda { |req, res| res.body = content } )
+      assert_nothing_raised {
+        open("#{url}/close200big") {|f|
+          f.close
+        }
+      }
+    }
+  end
+
   def test_header
     myheader1 = 'barrrr'
     myheader2 = nil
