@@ -487,7 +487,12 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
     if (file) line = rb_sourceline();
     if (file && !NIL_P(mesg)) {
 	if (mesg == sysstack_error) {
+	    ID func = rb_frame_this_func();
 	    at = rb_enc_sprintf(rb_usascii_encoding(), "%s:%d", file, line);
+	    if (func) {
+		VALUE name = rb_id2str(func);
+		if (name) rb_str_catf(at, ":in `%"PRIsVALUE"'", name);
+	    }
 	    at = rb_ary_new3(1, at);
 	    rb_iv_set(mesg, "bt", at);
 	}
