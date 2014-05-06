@@ -238,6 +238,14 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_raise(ArgumentError) { Time.parse("foo", now) }
   end
 
+  def test_completion_with_different_timezone
+    now = Time.new(2001,2,3,0,0,0,"+09:00") # 2001-02-02 15:00:00 UTC
+    t = Time.parse("10:20:30 GMT", now)
+    assert_equal(Time.utc(2001,2,2,10,20,30), t)
+    assert_equal(false, t.utc?)
+    assert_equal(0, t.utc_offset)
+  end
+
   def test_invalid
     # They were actually used in some web sites.
     assert_raise(ArgumentError) { Time.httpdate("1 Dec 2001 10:23:57 GMT") }
