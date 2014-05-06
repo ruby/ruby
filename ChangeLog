@@ -1,3 +1,8 @@
+Tue May  6 23:28:47 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (local_tbl_gen): remove local variables duplicated with
+	  arguments.
+
 Tue May  6 18:48:50 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/time.rb (Time.make_time): Adjust the time zone of "now".

@@ -83,6 +83,12 @@ class TestVariable < Test::Unit::TestCase
     end.call
   end
 
+  def test_shadowing_local_variables
+    bug9486 = '[ruby-core:60501] [Bug #9486]'
+    x = tap {|x| break local_variables}
+    assert_equal([:x, :bug9486, :x], x)
+  end
+
   def local_variables_of(bind)
     this_should_not_be_in_bind = 2
     bind.local_variables
