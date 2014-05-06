@@ -180,7 +180,7 @@ module WEBrick
                   end
                 }
               end
-            rescue Errno::EBADF, IOError => ex
+            rescue Errno::EBADF, Errno::ENOTSOCK, IOError => ex
               # if the listening socket was closed in GenericServer#shutdown,
               # IO::select raise it.
             rescue StandardError => ex
