@@ -17,7 +17,7 @@ Tue May  6 01:28:14 2014  Tanaka Akira  <akr@fsij.org>
 
 Tue May  6 01:08:01 2014  Koichi Sasada  <ko1@atdot.net>
 
-	* benchmark/driver.rb: define File::NULL if not defiend and /dev/null
+	* benchmark/driver.rb: define File::NULL if not defined and /dev/null
 	  is available to run benchmark driver on ruby 1.9.2.
 
 Mon May  5 23:53:24 2014  Tanaka Akira  <akr@fsij.org>
