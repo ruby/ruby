@@ -1,4 +1,7 @@
-Tue May  6 23:28:47 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue May  6 23:29:05 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (new_bv_gen): no duplicated names, if already added in
+	  shadowing_lvar().
 
 	* parse.y (local_tbl_gen): remove local variables duplicated with
 	  arguments.
