@@ -1,3 +1,8 @@
+Tue May  6 18:03:05 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb (Time.make_time): Argument validation code moved from
+	  Time.parse and Time.strptime.
+
 Tue May  6 17:27:06 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/time.rb (Time.parse): [DOC] Fix an example in the documentation
