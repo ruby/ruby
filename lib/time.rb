@@ -296,13 +296,13 @@ class Time
     # supplied with those of +now+.  For the lower components, the minimum
     # values (1 or 0) are assumed if broken or missing.  For example:
     #
-    #     # Suppose it is "Thu Nov 29 14:33:20 GMT 2001" now and
-    #     # your time zone is JST:
-    #     now = Time.parse("Thu Nov 29 14:33:20 GMT 2001")
-    #     Time.parse("16:30", now)     #=> 2001-11-29 16:30:00 +0900
-    #     Time.parse("7/23", now)      #=> 2001-07-23 00:00:00 +0900
-    #     Time.parse("Aug 31", now)    #=> 2001-08-31 00:00:00 +0900
-    #     Time.parse("Aug 2000", now)  #=> 2000-08-01 00:00:00 +0900
+    #     # Suppose it is "Thu Nov 29 14:33:20 2001" now and
+    #     # your time zone is EST5EDT (Eastern Standard Time in US):
+    #     now = Time.parse("Thu Nov 29 14:33:20 2001")
+    #     Time.parse("16:30", now)     #=> 2001-11-29 16:30:00 -0500
+    #     Time.parse("7/23", now)      #=> 2001-07-23 00:00:00 -0400
+    #     Time.parse("Aug 31", now)    #=> 2001-08-31 00:00:00 -0400
+    #     Time.parse("Aug 2000", now)  #=> 2000-08-01 00:00:00 -0400
     #
     # Since there are numerous conflicts among locally defined time zone
     # abbreviations all over the world, this method is not intended to

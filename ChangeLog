@@ -1,3 +1,9 @@
+Tue May  6 17:16:11 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb (Time.parse): [DOC] Fix an example in the documentation.
+	  Reported by Marcus Stollsteimer.
+	  [ruby-core:60778] [Bug #9521] and [ruby-core:61718] [Bug #9682]
+
 Tue May  6 04:31:48 2014  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* file.c (rb_f_test): removed meaningless "case 'a'".
