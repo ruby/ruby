@@ -2615,6 +2615,19 @@ io_readpartial(int argc, VALUE *argv, VALUE io)
     return ret;
 }
 
+static VALUE
+get_kwargs_exception(VALUE opts)
+{
+    static ID ids[1];
+    VALUE except;
+
+    if (!ids[0])
+	ids[0] = sym_exception;
+
+    rb_get_kwargs(opts, ids, 0, 1, &except);
+    return except;
+}
+
 /*
  *  call-seq:
  *     ios.read_nonblock(maxlen)              -> string
@@ -2675,7 +2688,7 @@ io_read_nonblock(int argc, VALUE *argv, VALUE io)
 
     rb_scan_args(argc, argv, "11:", NULL, NULL, &opts);
 
-    if (!NIL_P(opts) && Qfalse == rb_hash_aref(opts, sym_exception))
+    if (!NIL_P(opts) && Qfalse == get_kwargs_exception(opts))
 	no_exception = 1;
 
     ret = io_getpartial(argc, argv, io, 1, no_exception);
@@ -2790,7 +2803,7 @@ rb_io_write_nonblock(int argc, VALUE *argv, VALUE io)
 
     rb_scan_args(argc, argv, "10:", &str, &opts);
 
-    if (!NIL_P(opts) && Qfalse == rb_hash_aref(opts, sym_exception))
+    if (!NIL_P(opts) && Qfalse == get_kwargs_exception(opts))
 	no_exceptions = 1;
 
     return io_write_nonblock(io, str, no_exceptions);

@@ -1,3 +1,8 @@
+Tue May  6 18:33:12 2014  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* io.c (io_{read,write}_nonblock): use rb_get_kwargs instead of
+	  rb_hash_aref.
+
 Tue May  6 18:03:05 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/time.rb (Time.make_time): Argument validation code moved from
