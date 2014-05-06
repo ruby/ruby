@@ -508,9 +508,9 @@ static void local_push_gen(struct parser_params*,int);
 #define local_push(top) local_push_gen(parser,(top))
 static void local_pop_gen(struct parser_params*);
 #define local_pop() local_pop_gen(parser)
-static int local_var_gen(struct parser_params*, ID);
+static void local_var_gen(struct parser_params*, ID);
 #define local_var(id) local_var_gen(parser, (id))
-static int arg_var_gen(struct parser_params*, ID);
+static void arg_var_gen(struct parser_params*, ID);
 #define arg_var(id) arg_var_gen(parser, (id))
 static int  local_id_gen(struct parser_params*, ID);
 #define local_id(id) local_id_gen(parser, (id))
@@ -9744,21 +9744,19 @@ local_tbl_gen(struct parser_params *parser)
 }
 #endif
 
-static int
+static void
 arg_var_gen(struct parser_params *parser, ID id)
 {
     vtable_add(lvtbl->args, id);
-    return vtable_size(lvtbl->args) - 1;
 }
 
-static int
+static void
 local_var_gen(struct parser_params *parser, ID id)
 {
     vtable_add(lvtbl->vars, id);
     if (lvtbl->used) {
 	vtable_add(lvtbl->used, (ID)ruby_sourceline);
     }
-    return vtable_size(lvtbl->vars) - 1;
 }
 
 static int
