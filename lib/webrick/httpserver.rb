@@ -65,7 +65,7 @@ module WEBrick
     # Processes requests on +sock+
 
     def run(sock)
-      while true
+      while @status == :Running
         res = HTTPResponse.new(@config)
         req = HTTPRequest.new(@config)
         server = self
