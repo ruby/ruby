@@ -1,6 +1,7 @@
-Tue May  6 17:16:11 2014  Tanaka Akira  <akr@fsij.org>
+Tue May  6 17:27:06 2014  Tanaka Akira  <akr@fsij.org>
 
-	* lib/time.rb (Time.parse): [DOC] Fix an example in the documentation.
+	* lib/time.rb (Time.parse): [DOC] Fix an example in the documentation
+	  to use EST.
 	  Reported by Marcus Stollsteimer.
 	  [ruby-core:60778] [Bug #9521] and [ruby-core:61718] [Bug #9682]
 
