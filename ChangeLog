@@ -1,3 +1,8 @@
+Thu May  8 01:13:10 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: correct pthread_setname_np's prototype on NetBSD.
+	  [Bug #9586]
+
 Tue May  6 00:54:56 2014  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c (gc_after_sweep): suppress unnecessary expanding heap.

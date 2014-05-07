@@ -2454,6 +2454,36 @@ if test x"$enable_pthread" = xyes; then
     else
       AC_CHECK_FUNCS(pthread_attr_init)
     fi
+    if test "$ac_cv_func_pthread_setname_np" = yes; then
+	AC_CACHE_CHECK([arguments of pthread_setname_np], [rb_cv_func_pthread_setname_np_arguments],
+	    [rb_cv_func_pthread_setname_np_arguments=
+	    # Linux,AIX,  (pthread_self(), name)
+	    # NetBSD (pthread_self(), name, \"%s\")
+	    # Darwin (name)
+	    for mac in \
+		"(pthread_self(), name)" \
+		"(pthread_self(), name, \"%s\")" \
+		"(name)" \
+		; do
+		AC_TRY_COMPILE([
+		    @%:@include <pthread.h>
+		    @%:@ifdef HAVE_PTHREAD_NP_H
+		    @%:@include <pthread_np.h>
+		    @%:@endif
+		    @%:@define SET_THREAD_NAME(name) pthread_setname_np${mac}
+		    ],
+		    [if (SET_THREAD_NAME("conftest")) return 1;],
+		    [rb_cv_func_pthread_setname_np_arguments="${mac}"
+		    break])
+	    done
+	    ]
+	)
+	if test -n "${rb_cv_func_pthread_setname_np_arguments}"; then
+	    AC_DEFINE_UNQUOTED(SET_THREAD_NAME(name), pthread_setname_np${rb_cv_func_pthread_setname_np_arguments})
+	else
+	    AC_DEFINE_UNQUOTED(SET_THREAD_NAME(name), (void)0)
+	fi
+    fi
 fi
 if test x"$ac_cv_header_ucontext_h" = xyes; then
     if test x"$rb_with_pthread" = xyes; then
