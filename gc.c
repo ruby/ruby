@@ -1454,8 +1454,9 @@ is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
 }
 
 static int
-free_method_entry_i(ID key, rb_method_entry_t *me, st_data_t data)
+free_method_entry_i(st_data_t key, st_data_t value, st_data_t data)
 {
+    rb_method_entry_t *me = (rb_method_entry_t *)value;
     if (!me->mark) {
 	rb_free_method_entry(me);
     }
@@ -1479,8 +1480,9 @@ rb_free_m_tbl_wrapper(struct method_table_wrapper *wrapper)
 }
 
 static int
-free_const_entry_i(ID key, rb_const_entry_t *ce, st_data_t data)
+free_const_entry_i(st_data_t key, st_data_t value, st_data_t data)
 {
+    rb_const_entry_t *ce = (rb_const_entry_t *)value;
     xfree(ce);
     return ST_CONTINUE;
 }
@@ -3447,8 +3449,9 @@ rb_mark_method_entry(const rb_method_entry_t *me)
 }
 
 static int
-mark_method_entry_i(ID key, const rb_method_entry_t *me, st_data_t data)
+mark_method_entry_i(st_data_t key, st_data_t value, st_data_t data)
 {
+    const rb_method_entry_t *me = (const rb_method_entry_t *)value;
     struct mark_tbl_arg *arg = (void*)data;
     mark_method_entry(arg->objspace, me);
     return ST_CONTINUE;
@@ -3471,8 +3474,9 @@ mark_m_tbl_wrapper(rb_objspace_t *objspace, struct method_table_wrapper *wrapper
 }
 
 static int
-mark_const_entry_i(ID key, const rb_const_entry_t *ce, st_data_t data)
+mark_const_entry_i(st_data_t key, st_data_t value, st_data_t data)
 {
+    const rb_const_entry_t *ce = (const rb_const_entry_t *)value;
     struct mark_tbl_arg *arg = (void*)data;
     gc_mark(arg->objspace, ce->value);
     gc_mark(arg->objspace, ce->file);
@@ -4838,7 +4842,7 @@ rb_gc_writebarrier_remember_promoted(VALUE obj)
 static st_table *rgengc_unprotect_logging_table;
 
 static int
-rgengc_unprotect_logging_exit_func_i(st_data_t key, st_data_t val)
+rgengc_unprotect_logging_exit_func_i(st_data_t key, st_data_t val, st_data_t arg)
 {
     fprintf(stderr, "%s\t%d\n", (char *)key, (int)val);
     return ST_CONTINUE;
