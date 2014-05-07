@@ -1847,8 +1847,8 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
 	VALUE result;
 	ID cmp = '>';
 	switch (rb_cmpint(rb_num_coerce_cmp(step, INT2FIX(0), id_cmp), step, INT2FIX(0))) {
-	    case 0: return DBL2NUM(INFINITY);
-	    case -1: cmp = '<'; break;
+	  case 0: return DBL2NUM(INFINITY);
+	  case -1: cmp = '<'; break;
 	}
 	if (RTEST(rb_funcall(from, cmp, 1, to))) return INT2FIX(0);
 	result = rb_funcall(rb_funcall(to, '-', 1, from), id_div, 1, step);
