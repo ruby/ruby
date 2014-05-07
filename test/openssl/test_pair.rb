@@ -5,14 +5,14 @@ if defined?(OpenSSL)
 require 'socket'
 require_relative '../ruby/ut_eof'
 
-module SSLPair
+module OpenSSL::SSLPairM
   def server
     host = "127.0.0.1"
     port = 0
     ctx = OpenSSL::SSL::SSLContext.new()
     ctx.ciphers = "ADH"
     ctx.tmp_dh_callback = proc { OpenSSL::TestUtils::TEST_KEY_DH1024 }
-    tcps = TCPServer.new(host, port)
+    tcps = create_tcp_server(host, port)
     ssls = OpenSSL::SSL::SSLServer.new(tcps, ctx)
     return ssls
   end
@@ -21,7 +21,7 @@ module SSLPair
     host = "127.0.0.1"
     ctx = OpenSSL::SSL::SSLContext.new()
     ctx.ciphers = "ADH"
-    s = TCPSocket.new(host, port)
+    s = create_tcp_client(host, port)
     ssl = OpenSSL::SSL::SSLSocket.new(s, ctx)
     ssl.connect
     ssl.sync_close = true
@@ -35,7 +35,7 @@ module SSLPair
       ssls.close
       ns
     }
-    port = ssls.to_io.addr[1]
+    port = ssls.to_io.local_address.ip_port
     c = client(port)
     s = th.value
     if block_given?
@@ -56,68 +56,31 @@ module SSLPair
   end
 end
 
-module SSLPairLowlevelSocket
-  def server
-    host = "127.0.0.1"
-    port = 0
-    ctx = OpenSSL::SSL::SSLContext.new()
-    ctx.ciphers = "ADH"
-    ctx.tmp_dh_callback = proc { OpenSSL::TestUtils::TEST_KEY_DH1024 }
-    tcps = Addrinfo.tcp(host, port).listen
-    ssls = OpenSSL::SSL::SSLServer.new(tcps, ctx)
-    return ssls
+module OpenSSL::SSLPair
+  include OpenSSL::SSLPairM
+
+  def create_tcp_server(host, port)
+    TCPServer.new(host, port)
   end
 
-  def client(port)
-    host = "127.0.0.1"
-    ctx = OpenSSL::SSL::SSLContext.new()
-    ctx.ciphers = "ADH"
-    s = Addrinfo.tcp(host, port).connect
-    ssl = OpenSSL::SSL::SSLSocket.new(s, ctx)
-    ssl.connect
-    ssl.sync_close = true
-    ssl
-  end
-
-  def ssl_pair
-    ssls = server
-    ths = Thread.new {
-      ns = ssls.accept
-      ssls.close
-      ns
-    }
-    port = ssls.to_io.connect_address.ip_port
-    thc = Thread.new {
-      client(port)
-    }
-    s = ths.value
-    c = thc.value
-    if block_given?
-      begin
-        yield c, s
-      ensure
-        c.close unless c.closed?
-        s.close unless s.closed?
-      end
-    else
-      return c, s
-    end
-  ensure
-    if ths && ths.alive?
-      ths.kill
-      ths.join
-    end
-    if thc && thc.alive?
-      thc.kill
-      thc.join
-    end
+  def create_tcp_client(host, port)
+    TCPSocket.new(host, port)
   end
 end
 
-class OpenSSL::TestEOF1 < Test::Unit::TestCase
-  include TestEOF
-  include SSLPair
+module OpenSSL::SSLPairLowlevelSocket
+  include OpenSSL::SSLPairM
 
+  def create_tcp_server(host, port)
+    Addrinfo.tcp(host, port).listen
+  end
+
+  def create_tcp_client(host, port)
+    Addrinfo.tcp(host, port).connect
+  end
+end
+
+module OpenSSL::TestEOF1M
   def open_file(content)
     s1, s2 = ssl_pair
     Thread.new { s2 << content; s2.close }
@@ -125,10 +88,7 @@ class OpenSSL::TestEOF1 < Test::Unit::TestCase
   end
 end
 
-class OpenSSL::TestEOF2 < Test::Unit::TestCase
-  include TestEOF
-  include SSLPair
-
+module OpenSSL::TestEOF2M
   def open_file(content)
     s1, s2 = ssl_pair
     Thread.new { s1 << content; s1.close }
@@ -136,9 +96,7 @@ class OpenSSL::TestEOF2 < Test::Unit::TestCase
   end
 end
 
-class OpenSSL::TestPair < Test::Unit::TestCase
-  include SSLPair
-
+module OpenSSL::TestPairM
   def test_getc
     ssl_pair {|s1, s2|
       s1 << "a"
@@ -364,18 +322,40 @@ class OpenSSL::TestPair < Test::Unit::TestCase
     sock1.close if sock1 && !sock1.closed?
     sock2.close if sock2 && !sock2.closed?
   end
+end
 
+class OpenSSL::TestEOF1 < Test::Unit::TestCase
+  include TestEOF
+  include OpenSSL::SSLPair
+  include OpenSSL::TestEOF1M
+end
+
+class OpenSSL::TestEOF1LowlevelSocket < Test::Unit::TestCase
+  include TestEOF
+  include OpenSSL::SSLPairLowlevelSocket
+  include OpenSSL::TestEOF1M
+end
+
+class OpenSSL::TestEOF2 < Test::Unit::TestCase
+  include TestEOF
+  include OpenSSL::SSLPair
+  include OpenSSL::TestEOF2M
+end
+
+class OpenSSL::TestEOF2LowlevelSocket < Test::Unit::TestCase
+  include TestEOF
+  include OpenSSL::SSLPairLowlevelSocket
+  include OpenSSL::TestEOF2M
+end
+
+class OpenSSL::TestPair < Test::Unit::TestCase
+  include OpenSSL::SSLPair
+  include OpenSSL::TestPairM
 end
 
 class OpenSSL::TestPairLowlevelSocket < Test::Unit::TestCase
-  include SSLPairLowlevelSocket
-
-  def test_getc
-    ssl_pair {|s1, s2|
-      s1 << "a"
-      assert_equal(?a, s2.getc)
-    }
-  end
+  include OpenSSL::SSLPairLowlevelSocket
+  include OpenSSL::TestPairM
 end
 
 end
