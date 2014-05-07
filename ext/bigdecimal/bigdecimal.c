@@ -2402,9 +2402,11 @@ static Real *BigDecimal_new(int argc, VALUE *argv);
 static VALUE
 BigDecimal_initialize(int argc, VALUE *argv, VALUE self)
 {
+    ENTER(1);
     Real *pv = rb_check_typeddata(self, &BigDecimal_data_type);
-    Real *x = BigDecimal_new(argc, argv);
+    Real *x;
 
+    GUARD_OBJ(x, BigDecimal_new(argc, argv));
     if (ToValue(x)) {
 	pv = VpCopy(pv, x);
     }
@@ -2484,7 +2486,10 @@ BigDecimal_new(int argc, VALUE *argv)
 static VALUE
 BigDecimal_global_new(int argc, VALUE *argv, VALUE self)
 {
-    Real *pv = BigDecimal_new(argc, argv);
+    ENTER(1);
+    Real *pv;
+
+    GUARD_OBJ(pv, BigDecimal_new(argc, argv));
     if (ToValue(pv)) pv = VpCopy(NULL, pv);
     pv->obj = TypedData_Wrap_Struct(rb_cBigDecimal, &BigDecimal_data_type, pv);
     return pv->obj;
