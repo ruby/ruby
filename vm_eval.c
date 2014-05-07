@@ -18,7 +18,7 @@ static inline VALUE vm_yield_with_block(rb_thread_t *th, int argc, const VALUE *
 static NODE *vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr);
 static VALUE vm_exec(rb_thread_t *th);
 static void vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref, rb_block_t *base_block);
-static int vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, VALUE ary);
+static int vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, VALUE vars);
 
 /* vm_backtrace.c */
 VALUE rb_vm_backtrace_str_ary(rb_thread_t *th, int lev, int n);
@@ -1886,7 +1886,7 @@ rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, int *stateptr)
 static VALUE
 rb_f_local_variables(void)
 {
-    VALUE ary = rb_ary_new();
+    VALUE vars = rb_ary_new();
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp =
 	vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp));
@@ -1900,7 +1900,7 @@ rb_f_local_variables(void)
 		    const char *vname = rb_id2name(lid);
 		    /* should skip temporary variable */
 		    if (vname) {
-			rb_ary_push(ary, ID2SYM(lid));
+			rb_ary_push(vars, ID2SYM(lid));
 		    }
 		}
 	    }
@@ -1909,7 +1909,7 @@ rb_f_local_variables(void)
 	    /* block */
 	    VALUE *ep = VM_CF_PREV_EP(cfp);
 
-	    if (vm_collect_local_variables_in_heap(th, ep, ary)) {
+	    if (vm_collect_local_variables_in_heap(th, ep, vars)) {
 		break;
 	    }
 	    else {
@@ -1922,7 +1922,7 @@ rb_f_local_variables(void)
 	    break;
 	}
     }
-    return ary;
+    return vars;
 }
 
 /*

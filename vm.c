@@ -516,24 +516,24 @@ vm_make_env_each(rb_thread_t * const th, rb_control_frame_t * const cfp,
 }
 
 static int
-collect_local_variables_in_iseq(rb_iseq_t *iseq, const VALUE ary)
+collect_local_variables_in_iseq(rb_iseq_t *iseq, const VALUE vars)
 {
     int i;
     if (!iseq) return 0;
     for (i = 0; i < iseq->local_table_size; i++) {
 	ID lid = iseq->local_table[i];
 	if (rb_is_local_id(lid)) {
-	    rb_ary_push(ary, ID2SYM(lid));
+	    rb_ary_push(vars, ID2SYM(lid));
 	}
     }
     return 1;
 }
 
 static int
-collect_local_variables_in_env(rb_env_t * env, const VALUE ary)
+collect_local_variables_in_env(rb_env_t *env, const VALUE vars)
 {
 
-    while (collect_local_variables_in_iseq(env->block.iseq, ary),
+    while (collect_local_variables_in_iseq(env->block.iseq, vars),
 	   env->prev_envval) {
 	GetEnvPtr(env->prev_envval, env);
     }
@@ -541,12 +541,12 @@ collect_local_variables_in_env(rb_env_t * env, const VALUE ary)
 }
 
 static int
-vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *ep, VALUE ary)
+vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *ep, VALUE vars)
 {
     if (ENV_IN_HEAP_P(th, ep)) {
 	rb_env_t *env;
 	GetEnvPtr(ENV_VAL(ep), env);
-	collect_local_variables_in_env(env, ary);
+	collect_local_variables_in_env(env, vars);
 	return 1;
     }
     else {
