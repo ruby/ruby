@@ -1,3 +1,9 @@
+Thu May  8 02:01:51 2014  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_initialize): Insert GC guard.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_global_new): ditto.
+
 Thu May  8 01:51:19 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/ossl_pkey.c (ossl_pkey_verify): as EVP_VerifyFinal()
