@@ -1887,6 +1887,7 @@ static VALUE
 rb_f_local_variables(void)
 {
     VALUE vars = rb_hash_new();
+    VALUE ary;
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp =
 	vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp));
@@ -1924,7 +1925,9 @@ rb_f_local_variables(void)
     }
     /* TODO: rb_hash_keys() directly, or something not to depend on
      * the order of st_table */
-    return rb_funcallv(vars, rb_intern("keys"), 0, 0);
+    ary = rb_funcallv(vars, rb_intern("keys"), 0, 0);
+    rb_hash_clear(vars);
+    return ary;
 }
 
 /*
