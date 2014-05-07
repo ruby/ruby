@@ -1867,8 +1867,8 @@ num_step_scan_args(int argc, const VALUE *argv, VALUE *to, VALUE *step)
 
     argc = rb_scan_args(argc, argv, "02:", to, step, &hash);
     if (!NIL_P(hash)) {
-	step = rb_hash_aref(hash, sym_by);
-	to = rb_hash_aref(hash, sym_to);
+	*step = rb_hash_aref(hash, sym_by);
+	*to = rb_hash_aref(hash, sym_to);
     }
     else {
 	/* compatibility */
