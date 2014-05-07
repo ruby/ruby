@@ -516,21 +516,18 @@ vm_make_env_each(rb_thread_t * const th, rb_control_frame_t * const cfp,
 }
 
 static int
-collect_local_variables_in_iseq(rb_iseq_t *iseq, const VALUE vars)
+collect_local_variables_in_iseq(rb_iseq_t *iseq, const struct local_var_list *vars)
 {
     int i;
     if (!iseq) return 0;
     for (i = 0; i < iseq->local_table_size; i++) {
-	ID lid = iseq->local_table[i];
-	if (rb_is_local_id(lid)) {
-	    rb_hash_aset(vars, ID2SYM(lid), Qtrue);
-	}
+	local_var_list_add(vars, iseq->local_table[i]);
     }
     return 1;
 }
 
 static int
-collect_local_variables_in_env(rb_env_t *env, const VALUE vars)
+collect_local_variables_in_env(rb_env_t *env, const struct local_var_list *vars)
 {
 
     while (collect_local_variables_in_iseq(env->block.iseq, vars),
@@ -541,7 +538,7 @@ collect_local_variables_in_env(rb_env_t *env, const VALUE vars)
 }
 
 static int
-vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *ep, VALUE vars)
+vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *ep, const struct local_var_list *vars)
 {
     if (ENV_IN_HEAP_P(th, ep)) {
 	rb_env_t *env;

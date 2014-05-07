@@ -11,6 +11,10 @@
 
 **********************************************************************/
 
+struct local_var_list {
+    VALUE tbl;
+};
+
 static inline VALUE method_missing(VALUE obj, ID id, int argc, const VALUE *argv, int call_status);
 static inline VALUE vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const NODE *cref);
 static inline VALUE vm_yield(rb_thread_t *th, int argc, const VALUE *argv);
@@ -18,7 +22,7 @@ static inline VALUE vm_yield_with_block(rb_thread_t *th, int argc, const VALUE *
 static NODE *vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr);
 static VALUE vm_exec(rb_thread_t *th);
 static void vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref, rb_block_t *base_block);
-static int vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, VALUE vars);
+static int vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, const struct local_var_list *vars);
 
 /* vm_backtrace.c */
 VALUE rb_vm_backtrace_str_ary(rb_thread_t *th, int lev, int n);
@@ -1870,6 +1874,15 @@ rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, int *stateptr)
     return val;
 }
 
+static void
+local_var_list_add(const struct local_var_list *vars, ID lid)
+{
+    if (lid && rb_id2str(lid)) {
+	/* should skip temporary variable */
+	rb_hash_aset(vars->tbl, ID2SYM(lid), Qtrue);
+    }
+}
+
 /*
  *  call-seq:
  *     local_variables    -> array
@@ -1886,31 +1899,25 @@ rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, int *stateptr)
 static VALUE
 rb_f_local_variables(void)
 {
-    VALUE vars = rb_hash_new();
+    struct local_var_list vars;
     VALUE ary;
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp =
 	vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp));
     int i;
 
+    vars.tbl = rb_hash_new();
     while (cfp) {
 	if (cfp->iseq) {
 	    for (i = 0; i < cfp->iseq->local_table_size; i++) {
-		ID lid = cfp->iseq->local_table[i];
-		if (lid) {
-		    const char *vname = rb_id2name(lid);
-		    /* should skip temporary variable */
-		    if (vname) {
-			rb_hash_aset(vars, ID2SYM(lid), Qtrue);
-		    }
-		}
+		local_var_list_add(&vars, cfp->iseq->local_table[i]);
 	    }
 	}
 	if (!VM_EP_LEP_P(cfp->ep)) {
 	    /* block */
 	    VALUE *ep = VM_CF_PREV_EP(cfp);
 
-	    if (vm_collect_local_variables_in_heap(th, ep, vars)) {
+	    if (vm_collect_local_variables_in_heap(th, ep, &vars)) {
 		break;
 	    }
 	    else {
@@ -1925,8 +1932,8 @@ rb_f_local_variables(void)
     }
     /* TODO: rb_hash_keys() directly, or something not to depend on
      * the order of st_table */
-    ary = rb_funcallv(vars, rb_intern("keys"), 0, 0);
-    rb_hash_clear(vars);
+    ary = rb_funcallv(vars.tbl, rb_intern("keys"), 0, 0);
+    rb_hash_clear(vars.tbl);
     return ary;
 }
 
