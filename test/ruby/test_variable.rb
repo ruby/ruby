@@ -86,13 +86,13 @@ class TestVariable < Test::Unit::TestCase
   def test_shadowing_local_variables
     bug9486 = '[ruby-core:60501] [Bug #9486]'
     x = tap {|x| break local_variables}
-    assert_equal([:x, :bug9486, :x], x)
+    assert_equal([:x, :bug9486], x)
   end
 
   def test_shadowing_block_local_variables
     bug9486 = '[ruby-core:60501] [Bug #9486]'
     x = tap {|;x| break local_variables}
-    assert_equal([:x, :bug9486, :x], x)
+    assert_equal([:x, :bug9486], x)
   end
 
   def local_variables_of(bind)

@@ -523,7 +523,7 @@ collect_local_variables_in_iseq(rb_iseq_t *iseq, const VALUE vars)
     for (i = 0; i < iseq->local_table_size; i++) {
 	ID lid = iseq->local_table[i];
 	if (rb_is_local_id(lid)) {
-	    rb_ary_push(vars, ID2SYM(lid));
+	    rb_hash_aset(vars, ID2SYM(lid), Qtrue);
 	}
     }
     return 1;

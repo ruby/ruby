@@ -1886,7 +1886,7 @@ rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, int *stateptr)
 static VALUE
 rb_f_local_variables(void)
 {
-    VALUE vars = rb_ary_new();
+    VALUE vars = rb_hash_new();
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp =
 	vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp));
@@ -1900,7 +1900,7 @@ rb_f_local_variables(void)
 		    const char *vname = rb_id2name(lid);
 		    /* should skip temporary variable */
 		    if (vname) {
-			rb_ary_push(vars, ID2SYM(lid));
+			rb_hash_aset(vars, ID2SYM(lid), Qtrue);
 		    }
 		}
 	    }
@@ -1922,7 +1922,9 @@ rb_f_local_variables(void)
 	    break;
 	}
     }
-    return vars;
+    /* TODO: rb_hash_keys() directly, or something not to depend on
+     * the order of st_table */
+    return rb_funcallv(vars, rb_intern("keys"), 0, 0);
 }
 
 /*
