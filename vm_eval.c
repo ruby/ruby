@@ -1874,12 +1874,22 @@ rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, int *stateptr)
     return val;
 }
 
+static int
+local_var_list_update(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
+{
+    if (existing) return ST_STOP;
+    *value = (st_data_t)Qtrue;	/* INT2FIX(arg) */
+    return ST_CONTINUE;
+}
+
 static void
 local_var_list_add(const struct local_var_list *vars, ID lid)
 {
     if (lid && rb_id2str(lid)) {
 	/* should skip temporary variable */
-	rb_hash_aset(vars->tbl, ID2SYM(lid), Qtrue);
+	st_table *tbl = RHASH_TBL_RAW(vars->tbl);
+	st_data_t idx = 0;	/* tbl->num_entries */
+	st_update(tbl, ID2SYM(lid), local_var_list_update, idx);
     }
 }
 
@@ -1907,6 +1917,7 @@ rb_f_local_variables(void)
     int i;
 
     vars.tbl = rb_hash_new();
+    RHASH(vars.tbl)->ntbl = st_init_numtable(); /* compare_by_identity */
     while (cfp) {
 	if (cfp->iseq) {
 	    for (i = 0; i < cfp->iseq->local_table_size; i++) {
