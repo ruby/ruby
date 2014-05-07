@@ -134,8 +134,7 @@ class BenchmarkDriver
       h[:cpuinfo] = File.read('/proc/cpuinfo') if File.exist?('/proc/cpuinfo')
       h[:executables] = @execs
       h[:results] = @results
-      pp h
-      # @rawdata_output.puts h.inspect
+      @rawdata_output.puts h.inspect
     end
 
     output '-----------------------------------------------------------'

@@ -1,3 +1,8 @@
+Wed May  7 12:06:14 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/driver.rb: remove debug output and output results into
+	  specified file.
+
 Wed May  7 11:55:40 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/driver.rb: add '--rawdata-output=[FILE] option to output
