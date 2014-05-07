@@ -31,6 +31,11 @@ module Psych
       @emitter = Psych::Emitter.new @buffer
     end
 
+    def test_dump_load_encoding_object
+      assert_cycle Encoding::US_ASCII
+      assert_cycle Encoding::UTF_8
+    end
+
     def test_transcode_shiftjis
       str = "こんにちは！"
       loaded = Psych.load("--- こんにちは！".encode('SHIFT_JIS'))
