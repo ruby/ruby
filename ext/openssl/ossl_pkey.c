@@ -318,13 +318,16 @@ ossl_pkey_verify(VALUE self, VALUE digest, VALUE sig, VALUE data)
 {
     EVP_PKEY *pkey;
     EVP_MD_CTX ctx;
+    int result;
 
     GetPKey(self, pkey);
-    EVP_VerifyInit(&ctx, GetDigestPtr(digest));
     StringValue(sig);
     StringValue(data);
+    EVP_VerifyInit(&ctx, GetDigestPtr(digest));
     EVP_VerifyUpdate(&ctx, RSTRING_PTR(data), RSTRING_LEN(data));
-    switch (EVP_VerifyFinal(&ctx, (unsigned char *)RSTRING_PTR(sig), RSTRING_LENINT(sig), pkey)) {
+    result = EVP_VerifyFinal(&ctx, (unsigned char *)RSTRING_PTR(sig), RSTRING_LENINT(sig), pkey);
+    EVP_MD_CTX_cleanup(&ctx);
+    switch (result) {
     case 0:
 	return Qfalse;
     case 1:
