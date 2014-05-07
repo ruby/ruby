@@ -1,3 +1,8 @@
+Wed May  7 11:55:40 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/driver.rb: add '--rawdata-output=[FILE] option to output
+	  raw results into FILE.
+
 Wed May  7 11:25:41 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (rb_f_local_variables): exclude variables hidden by

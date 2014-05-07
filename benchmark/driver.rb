@@ -77,6 +77,7 @@ class BenchmarkDriver
     @exclude = opt[:exclude] || nil
     @verbose = opt[:quiet] ? false : (opt[:verbose] || false)
     @output = opt[:output] ? open(opt[:output], 'w') : nil
+    @rawdata_output = opt[:rawdata_output] ? open(opt[:rawdata_output], 'w') : nil
     @loop_wl1 = @loop_wl2 = nil
     @ruby_arg = opt[:ruby_arg] || nil
     @opt = opt
@@ -126,6 +127,15 @@ class BenchmarkDriver
       message PP.pp(@results, "", 79)
       message
       message "Elapsed time: #{Time.now - @start_time} (sec)"
+    end
+
+    if @rawdata_output
+      h = {}
+      h[:cpuinfo] = File.read('/proc/cpuinfo') if File.exist?('/proc/cpuinfo')
+      h[:executables] = @execs
+      h[:results] = @results
+      pp h
+      # @rawdata_output.puts h.inspect
     end
 
     output '-----------------------------------------------------------'
@@ -266,6 +276,7 @@ if __FILE__ == $0
     :dir => File.dirname(__FILE__),
     :repeat => 1,
     :output => "bmlog-#{Time.now.strftime('%Y%m%d-%H%M%S')}.#{$$}",
+    :raw_output => nil
   }
 
   parser = OptionParser.new{|o|
@@ -293,11 +304,15 @@ if __FILE__ == $0
     o.on('--ruby-arg [ARG]', "Optional argument for ruby"){|a|
       opt[:ruby_arg] = a
     }
-    o.on('-q', '--quiet', "Run without notify information except result table."){|q|
-      opt[:quiet] = q
+    o.on('--rawdata-output [FILE]', 'output rawdata'){|r|
+      opt[:rawdata_output] = r
     }
     o.on('-v', '--verbose'){|v|
       opt[:verbose] = v
+    }
+    o.on('-q', '--quiet', "Run without notify information except result table."){|q|
+      opt[:quiet] = q
+      opt[:verbose] = false
     }
   }
 
