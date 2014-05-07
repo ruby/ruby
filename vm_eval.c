@@ -1918,6 +1918,7 @@ rb_f_local_variables(void)
 
     vars.tbl = rb_hash_new();
     RHASH(vars.tbl)->ntbl = st_init_numtable(); /* compare_by_identity */
+    RBASIC_CLEAR_CLASS(vars.tbl);
     while (cfp) {
 	if (cfp->iseq) {
 	    for (i = 0; i < cfp->iseq->local_table_size; i++) {
@@ -1941,9 +1942,8 @@ rb_f_local_variables(void)
 	    break;
 	}
     }
-    /* TODO: rb_hash_keys() directly, or something not to depend on
-     * the order of st_table */
-    ary = rb_funcallv(vars.tbl, rb_intern("keys"), 0, 0);
+    /* TODO: not to depend on the order of st_table */
+    ary = rb_hash_keys(vars.tbl);
     rb_hash_clear(vars.tbl);
     return ary;
 }
