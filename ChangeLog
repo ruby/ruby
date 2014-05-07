@@ -1,3 +1,9 @@
+Wed May  7 17:24:07 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (num_step_scan_args): check keyword arguments and fail
+	  if they conflict with positional arguments.
+	  [ruby-dev:48177] [Bug #9811]
+
 Wed May  7 12:06:14 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/driver.rb: remove debug output and output results into

@@ -268,6 +268,14 @@ class TestNumeric < Test::Unit::TestCase
     assert_nothing_raised { 1.step(by: nil) }
     assert_nothing_raised { 1.step(by: nil).size }
 
+    bug9811 = '[ruby-dev:48177] [Bug #9811]'
+    assert_raise(ArgumentError, bug9811) { 1.step(10, foo: nil) {} }
+    assert_raise(ArgumentError, bug9811) { 1.step(10, foo: nil).size }
+    assert_raise(ArgumentError, bug9811) { 1.step(10, to: 11) {} }
+    assert_raise(ArgumentError, bug9811) { 1.step(10, to: 11).size }
+    assert_raise(ArgumentError, bug9811) { 1.step(10, 1, by: 11) {} }
+    assert_raise(ArgumentError, bug9811) { 1.step(10, 1, by: 11).size }
+
     assert_equal(bignum*2+1, (-bignum).step(bignum, 1).size)
     assert_equal(bignum*2, (-bignum).step(bignum-1, 1).size)
 

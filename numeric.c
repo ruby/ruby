@@ -1867,8 +1867,19 @@ num_step_scan_args(int argc, const VALUE *argv, VALUE *to, VALUE *step)
 
     argc = rb_scan_args(argc, argv, "02:", to, step, &hash);
     if (!NIL_P(hash)) {
-	*step = rb_hash_aref(hash, sym_by);
-	*to = rb_hash_aref(hash, sym_to);
+	ID keys[2];
+	VALUE values[2];
+	keys[0] = sym_to;
+	keys[1] = sym_by;
+	rb_get_kwargs(hash, keys, 0, 2, values);
+	if (values[0] != Qundef) {
+	    if (argc > 0) rb_raise(rb_eArgError, "to is given twice");
+	    *to = values[0];
+	}
+	if (values[1] != Qundef) {
+	    if (argc > 1) rb_raise(rb_eArgError, "step is given twice");
+	    *step = values[1];
+	}
     }
     else {
 	/* compatibility */
