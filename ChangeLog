@@ -1,3 +1,9 @@
+Wed May  7 21:45:00 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SSLServer#accept):
+	  Consider Socket#accept as well as TCPServer#accept.
+	  Reported by Sam Stelfox.  [ruby-core:62064] [Bug #9750]
+
 Wed May  7 17:24:07 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (num_step_scan_args): check keyword arguments and fail

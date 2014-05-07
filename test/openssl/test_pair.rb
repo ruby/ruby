@@ -56,6 +56,64 @@ module SSLPair
   end
 end
 
+module SSLPairLowlevelSocket
+  def server
+    host = "127.0.0.1"
+    port = 0
+    ctx = OpenSSL::SSL::SSLContext.new()
+    ctx.ciphers = "ADH"
+    ctx.tmp_dh_callback = proc { OpenSSL::TestUtils::TEST_KEY_DH1024 }
+    tcps = Addrinfo.tcp(host, port).listen
+    ssls = OpenSSL::SSL::SSLServer.new(tcps, ctx)
+    return ssls
+  end
+
+  def client(port)
+    host = "127.0.0.1"
+    ctx = OpenSSL::SSL::SSLContext.new()
+    ctx.ciphers = "ADH"
+    s = Addrinfo.tcp(host, port).connect
+    ssl = OpenSSL::SSL::SSLSocket.new(s, ctx)
+    ssl.connect
+    ssl.sync_close = true
+    ssl
+  end
+
+  def ssl_pair
+    ssls = server
+    ths = Thread.new {
+      ns = ssls.accept
+      ssls.close
+      ns
+    }
+    port = ssls.to_io.connect_address.ip_port
+    thc = Thread.new {
+      client(port)
+    }
+    s = ths.value
+    c = thc.value
+    if block_given?
+      begin
+        yield c, s
+      ensure
+        c.close unless c.closed?
+        s.close unless s.closed?
+      end
+    else
+      return c, s
+    end
+  ensure
+    if ths && ths.alive?
+      ths.kill
+      ths.join
+    end
+    if thc && thc.alive?
+      thc.kill
+      thc.join
+    end
+  end
+end
+
 class OpenSSL::TestEOF1 < Test::Unit::TestCase
   include TestEOF
   include SSLPair
@@ -307,6 +365,17 @@ class OpenSSL::TestPair < Test::Unit::TestCase
     sock2.close if sock2 && !sock2.closed?
   end
 
+end
+
+class OpenSSL::TestPairLowlevelSocket < Test::Unit::TestCase
+  include SSLPairLowlevelSocket
+
+  def test_getc
+    ssl_pair {|s1, s2|
+      s1 << "a"
+      assert_equal(?a, s2.getc)
+    }
+  end
 end
 
 end
