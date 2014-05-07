@@ -245,19 +245,24 @@ class OpenSSL::TestPair < Test::Unit::TestCase
     }
   end
 
-  def test_connect_accept_nonblock
+  def tcp_pair
     host = "127.0.0.1"
-    port = 0
-    ctx = OpenSSL::SSL::SSLContext.new()
-    ctx.ciphers = "ADH"
-    ctx.tmp_dh_callback = proc { OpenSSL::TestUtils::TEST_KEY_DH1024 }
-    serv = TCPServer.new(host, port)
-
+    serv = TCPServer.new(host, 0)
     port = serv.connect_address.ip_port
-
     sock1 = TCPSocket.new(host, port)
     sock2 = serv.accept
     serv.close
+    [sock1, sock2]
+  ensure
+    serv.close if serv && !serv.closed?
+  end
+
+  def test_connect_accept_nonblock
+    ctx = OpenSSL::SSL::SSLContext.new()
+    ctx.ciphers = "ADH"
+    ctx.tmp_dh_callback = proc { OpenSSL::TestUtils::TEST_KEY_DH1024 }
+
+    sock1, sock2 = tcp_pair
 
     th = Thread.new {
       s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx)
@@ -298,7 +303,6 @@ class OpenSSL::TestPair < Test::Unit::TestCase
   ensure
     s1.close if s1 && !s1.closed?
     s2.close if s2 && !s2.closed?
-    serv.close if serv && !serv.closed?
     sock1.close if sock1 && !sock1.closed?
     sock2.close if sock2 && !sock2.closed?
   end
