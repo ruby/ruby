@@ -244,7 +244,7 @@ class TestGc < Test::Unit::TestCase
     GC::Profiler.clear
 
     GC.start
-    assert_operator(GC::Profiler.total_time, :>, 0)
+    assert_operator(GC::Profiler.total_time, :>=, 0)
   ensure
     GC::Profiler.disable
   end
