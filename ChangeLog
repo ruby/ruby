@@ -1,3 +1,9 @@
+Fri May  9 03:07:09 2014  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* lib/prime.rb (Prime#prime?): negative numbers can't be primes
+	  by definition. reported by Ivan Kataitsev. [Bug #7395]
+	* test/test_prime.rb: add test.
+
 Thu May  8 14:34:29 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rb_mod_init_copy): always clear instance variable,
