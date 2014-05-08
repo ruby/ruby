@@ -1,3 +1,12 @@
+Thu May  8 10:17:04 2014  Karsten Sperling  <karsten@sperling.co.nz>
+
+	* lib/webrick/httpserver.rb (WEBrick::HTTPServer#run): stop
+	  handling requests on shutdown, even if the socket is readable
+	  and IO.select() returns true.  [Fixes GH-607]
+
+	* lib/webrick/server.rb (WEBrick::GenericServer#start): IO.select()
+	  raises ENOTSOCK on shutdown on Windows.
+
 Wed May  7 21:45:00 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SSLServer#accept):

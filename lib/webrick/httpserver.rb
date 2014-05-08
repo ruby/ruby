@@ -73,10 +73,10 @@ module WEBrick
           timeout = @config[:RequestTimeout]
           while timeout > 0
             break if IO.select([sock], nil, nil, 0.5)
-            timeout = 0 if @status != :Running
+            break if @status != :Running
             timeout -= 0.5
           end
-          raise HTTPStatus::EOFError if timeout <= 0
+          raise HTTPStatus::EOFError if timeout <= 0 || @status != :Running
           raise HTTPStatus::EOFError if sock.eof?
           req.parse(sock)
           res.request_method = req.request_method
