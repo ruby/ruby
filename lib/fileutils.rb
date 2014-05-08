@@ -12,35 +12,37 @@
 #
 # === Module Functions
 #
-#   cd(dir, options)
-#   cd(dir, options) {|dir| .... }
-#   pwd()
-#   mkdir(dir, options)
-#   mkdir(list, options)
-#   mkdir_p(dir, options)
-#   mkdir_p(list, options)
-#   rmdir(dir, options)
-#   rmdir(list, options)
-#   ln(old, new, options)
-#   ln(list, destdir, options)
-#   ln_s(old, new, options)
-#   ln_s(list, destdir, options)
-#   ln_sf(src, dest, options)
-#   cp(src, dest, options)
-#   cp(list, dir, options)
-#   cp_r(src, dest, options)
-#   cp_r(list, dir, options)
-#   mv(src, dest, options)
-#   mv(list, dir, options)
-#   rm(list, options)
-#   rm_r(list, options)
-#   rm_rf(list, options)
-#   install(src, dest, mode = <src's>, options)
-#   chmod(mode, list, options)
-#   chmod_R(mode, list, options)
-#   chown(user, group, list, options)
-#   chown_R(user, group, list, options)
-#   touch(list, options)
+#   require 'fileutils'
+#
+#   FileUtils.cd(dir, options)
+#   FileUtils.cd(dir, options) {|dir| .... }
+#   FileUtils.pwd()
+#   FileUtils.mkdir(dir, options)
+#   FileUtils.mkdir(list, options)
+#   FileUtils.mkdir_p(dir, options)
+#   FileUtils.mkdir_p(list, options)
+#   FileUtils.rmdir(dir, options)
+#   FileUtils.rmdir(list, options)
+#   FileUtils.ln(old, new, options)
+#   FileUtils.ln(list, destdir, options)
+#   FileUtils.ln_s(old, new, options)
+#   FileUtils.ln_s(list, destdir, options)
+#   FileUtils.ln_sf(src, dest, options)
+#   FileUtils.cp(src, dest, options)
+#   FileUtils.cp(list, dir, options)
+#   FileUtils.cp_r(src, dest, options)
+#   FileUtils.cp_r(list, dir, options)
+#   FileUtils.mv(src, dest, options)
+#   FileUtils.mv(list, dir, options)
+#   FileUtils.rm(list, options)
+#   FileUtils.rm_r(list, options)
+#   FileUtils.rm_rf(list, options)
+#   FileUtils.install(src, dest, mode = <src's>, options)
+#   FileUtils.chmod(mode, list, options)
+#   FileUtils.chmod_R(mode, list, options)
+#   FileUtils.chown(user, group, list, options)
+#   FileUtils.chown_R(user, group, list, options)
+#   FileUtils.touch(list, options)
 #
 # The <tt>options</tt> parameter is a hash of options, taken from the list
 # <tt>:force</tt>, <tt>:noop</tt>, <tt>:preserve</tt>, and <tt>:verbose</tt>.
@@ -53,15 +55,15 @@
 #
 # There are some `low level' methods, which do not accept any option:
 #
-#   copy_entry(src, dest, preserve = false, dereference = false)
-#   copy_file(src, dest, preserve = false, dereference = true)
-#   copy_stream(srcstream, deststream)
-#   remove_entry(path, force = false)
-#   remove_entry_secure(path, force = false)
-#   remove_file(path, force = false)
-#   compare_file(path_a, path_b)
-#   compare_stream(stream_a, stream_b)
-#   uptodate?(file, cmp_list)
+#   FileUtils.copy_entry(src, dest, preserve = false, dereference = false)
+#   FileUtils.copy_file(src, dest, preserve = false, dereference = true)
+#   FileUtils.copy_stream(srcstream, deststream)
+#   FileUtils.remove_entry(path, force = false)
+#   FileUtils.remove_entry_secure(path, force = false)
+#   FileUtils.remove_file(path, force = false)
+#   FileUtils.compare_file(path_a, path_b)
+#   FileUtils.compare_stream(stream_a, stream_b)
+#   FileUtils.uptodate?(file, cmp_list)
 #
 # == module FileUtils::Verbose
 #

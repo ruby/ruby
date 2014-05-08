@@ -1,3 +1,8 @@
+Fri May  9 03:28:04 2014  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* lib/fileutils.rb: show fileutils require at top.
+	  patched from Richard Schneeman. [Fixes GH-604]
+
 Fri May  9 03:07:09 2014  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* lib/prime.rb (Prime#prime?): negative numbers can't be primes
