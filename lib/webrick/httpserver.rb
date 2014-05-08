@@ -65,18 +65,17 @@ module WEBrick
     # Processes requests on +sock+
 
     def run(sock)
-      while @status == :Running
+      while true
         res = HTTPResponse.new(@config)
         req = HTTPRequest.new(@config)
         server = self
         begin
           timeout = @config[:RequestTimeout]
-          while timeout > 0
+          while timeout > 0 && @status == :Running
             break if IO.select([sock], nil, nil, 0.5)
-            timeout = 0 if @status != :Running
             timeout -= 0.5
           end
-          raise HTTPStatus::EOFError if timeout <= 0
+          raise HTTPStatus::EOFError unless timeout > 0 && @status == :Running
           raise HTTPStatus::EOFError if sock.eof?
           req.parse(sock)
           res.request_method = req.request_method
