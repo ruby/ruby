@@ -265,8 +265,7 @@ init_copy(VALUE dest, VALUE obj)
     RBASIC(dest)->flags |= RBASIC(obj)->flags & (T_MASK|FL_EXIVAR|FL_TAINT);
     rb_copy_generic_ivar(dest, obj);
     rb_gc_copy_finalizer(dest, obj);
-    switch (TYPE(obj)) {
-      case T_OBJECT:
+    if (RB_TYPE_P(obj, T_OBJECT)) {
         if (!(RBASIC(dest)->flags & ROBJECT_EMBED) && ROBJECT_IVPTR(dest)) {
             xfree(ROBJECT_IVPTR(dest));
             ROBJECT(dest)->as.heap.ivptr = 0;
@@ -286,21 +285,6 @@ init_copy(VALUE dest, VALUE obj)
             ROBJECT(dest)->as.heap.iv_index_tbl = ROBJECT(obj)->as.heap.iv_index_tbl;
             RBASIC(dest)->flags &= ~ROBJECT_EMBED;
         }
-        break;
-      case T_CLASS:
-      case T_MODULE:
-	if (RCLASS_IV_TBL(dest)) {
-	    st_free_table(RCLASS_IV_TBL(dest));
-	    RCLASS_IV_TBL(dest) = 0;
-	}
-	if (RCLASS_CONST_TBL(dest)) {
-	    rb_free_const_table(RCLASS_CONST_TBL(dest));
-	    RCLASS_CONST_TBL(dest) = 0;
-	}
-	if (RCLASS_IV_TBL(obj)) {
-	    RCLASS_IV_TBL(dest) = rb_st_copy(dest, RCLASS_IV_TBL(obj));
-	}
-        break;
     }
 }
 
