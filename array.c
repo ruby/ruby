@@ -671,7 +671,7 @@ rb_ary_s_try_convert(VALUE dummy, VALUE ary)
 
 /*
  *  call-seq:
- *     Array.new(size=0, obj=nil)
+ *     Array.new(size=0, default=nil)
  *     Array.new(array)
  *     Array.new(size) {|index| block }
  *
