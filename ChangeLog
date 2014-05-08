@@ -1,3 +1,9 @@
+Thu May  8 14:34:29 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_mod_init_copy): always clear instance variable,
+	  constant and method tables first, regardless the source tables.
+	  [ruby-dev:48182] [Bug #9813]
+
 Thu May  8 10:53:14 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: OpenBSD needs to include sys/param.h before include
