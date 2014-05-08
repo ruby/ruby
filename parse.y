@@ -1061,40 +1061,40 @@ stmt_or_begin	: stmt
 		    %*/
 		    }
 
-stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
+stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} opt_comma fitem
 		    {
 		    /*%%%*/
-			$$ = NEW_ALIAS($2, $4);
+			$$ = NEW_ALIAS($2, $5);
 		    /*%
-			$$ = dispatch2(alias, $2, $4);
+			$$ = dispatch2(alias, $2, $5);
 		    %*/
 		    }
-		| keyword_alias tGVAR tGVAR
+		| keyword_alias tGVAR opt_comma tGVAR
 		    {
 		    /*%%%*/
-			$$ = NEW_VALIAS($2, $3);
+			$$ = NEW_VALIAS($2, $4);
 		    /*%
-			$$ = dispatch2(var_alias, $2, $3);
+			$$ = dispatch2(var_alias, $2, $4);
 		    %*/
 		    }
-		| keyword_alias tGVAR tBACK_REF
+		| keyword_alias tGVAR opt_comma tBACK_REF
 		    {
 		    /*%%%*/
 			char buf[2];
 			buf[0] = '$';
-			buf[1] = (char)$3->nd_nth;
+			buf[1] = (char)$4->nd_nth;
 			$$ = NEW_VALIAS($2, rb_intern2(buf, 2));
 		    /*%
-			$$ = dispatch2(var_alias, $2, $3);
+			$$ = dispatch2(var_alias, $2, $4);
 		    %*/
 		    }
-		| keyword_alias tGVAR tNTH_REF
+		| keyword_alias tGVAR opt_comma tNTH_REF
 		    {
 		    /*%%%*/
 			yyerror("can't make alias for the number variables");
 			$$ = NEW_BEGIN(0);
 		    /*%
-			$$ = dispatch2(var_alias, $2, $3);
+			$$ = dispatch2(var_alias, $2, $4);
 			$$ = dispatch1(alias_error, $$);
 		    %*/
 		    }
@@ -5000,6 +5000,10 @@ opt_terms	: /* none */
 
 opt_nl		: /* none */
 		| '\n'
+		;
+
+opt_comma	: /* none */
+		| ','
 		;
 
 rparen		: opt_nl ')'
