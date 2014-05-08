@@ -248,7 +248,7 @@ end
 #
 #   class User
 #     def born_on
-#       Date.new(1989, 09, 10)
+#       Date.new(1989, 9, 10)
 #     end
 #   end
 #

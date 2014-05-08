@@ -1,3 +1,8 @@
+Fri May  9 03:59:06 2014  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* lib/delegate.rb: Fix example of using delegator.
+	  patched from Andrey Koleshko. [Fixes GH-505]
+
 Fri May  9 03:42:43 2014  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* lib/shell.rb: add documentation in lib/shell.rb
