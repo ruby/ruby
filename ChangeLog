@@ -1,3 +1,8 @@
+Fri May  9 03:42:43 2014  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* lib/shell.rb: add documentation in lib/shell.rb
+	  patched from reprah. [Fixes GH-516]
+
 Fri May  9 03:28:04 2014  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* lib/fileutils.rb: show fileutils require at top.
