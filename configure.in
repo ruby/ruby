@@ -1121,7 +1121,6 @@ AC_CHECK_HEADERS( \
   sys/syscall.h \
   fcntl.h \
   sys/fcntl.h \
-  sys/mount.h \
   sys/select.h \
   sys/time.h \
   sys/times.h \
@@ -1155,6 +1154,9 @@ AC_CHECK_HEADERS( \
   malloc/malloc.h \
   setjmpex.h
 )
+AC_CHECK_HEADERS(sys/mount.h, [], [], [@%:@ifdef HAVE_SYS_PARAM_H
+@%:@ include <sys/param.h>
+@%:@endif])
 
 AC_ARG_WITH([gmp],
   [AS_HELP_STRING([--without-gmp],

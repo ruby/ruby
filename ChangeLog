@@ -1,3 +1,8 @@
+Thu May  8 10:53:14 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: OpenBSD needs to include sys/param.h before include
+	  sys/mount.h. [ruby-dev:48167]
+
 Thu May  8 10:17:04 2014  Karsten Sperling  <karsten@sperling.co.nz>
 
 	* lib/webrick/httpserver.rb (WEBrick::HTTPServer#run): stop
