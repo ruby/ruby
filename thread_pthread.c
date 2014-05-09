@@ -338,7 +338,7 @@ native_cond_wait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex)
 }
 
 static int
-native_cond_timedwait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex, struct timespec *ts)
+native_cond_timedwait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *ts)
 {
     int r;
 
