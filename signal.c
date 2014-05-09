@@ -532,18 +532,22 @@ ruby_signal(int signum, sighandler_t handler)
     sigact.sa_flags = 0;
 #endif
 
+    switch (signum) {
 #ifdef SA_NOCLDWAIT
-    if (signum == SIGCHLD && handler == SIG_IGN)
-	sigact.sa_flags |= SA_NOCLDWAIT;
+      case SIGCHLD:
+	if (handler == SIG_IGN)
+	    sigact.sa_flags |= SA_NOCLDWAIT;
+	break;
 #endif
 #if defined(SA_ONSTACK) && defined(USE_SIGALTSTACK)
-    if (signum == SIGSEGV
+      case SIGSEGV:
 #ifdef SIGBUS
-	|| signum == SIGBUS
+      case SIGBUS:
 #endif
-       )
 	sigact.sa_flags |= SA_ONSTACK;
+	break;
 #endif
+    }
     (void)VALGRIND_MAKE_MEM_DEFINED(&old, sizeof(old));
     if (sigaction(signum, &sigact, &old) < 0) {
 	if (errno != 0 && errno != EINVAL) {
