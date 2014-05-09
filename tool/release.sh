@@ -1,7 +1,7 @@
 #!/bin/sh
 
 RUBYDIR=/home/ftp/pub/ruby
-EXTS=.tar.gz .tar.bz2 .zip
+EXTS='.tar.gz .tar.bz2 .zip'
 
 releases=`ls ruby-*|grep -o 'ruby-[0-9]\.[0-9]\.[0-9]\(-\(preview\|rc\|p\)[0-9]\{1,4\}\)\?'|uniq`
 
@@ -23,7 +23,7 @@ done
 for r in $releases
 do
   xy=`echo $r|grep -o '[0-9]\.[0-9]'`
-  preview=`echo $r|grep -o '-\(preview\|rc\)'`
+  preview=`echo $r|grep -o -- '-\(preview\|rc\)'`
   dir="${RUBYDIR}/$xy"
   echo "$dir"
   mkdir -p $dir
