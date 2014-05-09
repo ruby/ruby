@@ -1,3 +1,9 @@
+Fri May  9 14:27:05 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_SETJMP_TYPE): check for setjmp type after
+	  CCDLFLAGS is appended to CFLAGS, since __builtin_setjmp can be
+	  affected.  [ruby-core:62469] [Bug #9818]
+
 Fri May  9 03:59:06 2014  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* lib/delegate.rb: Fix example of using delegator.

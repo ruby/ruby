@@ -2151,6 +2151,7 @@ AC_CACHE_CHECK(for sigsetjmp as a macro or function, ac_cv_func_sigsetjmp,
 	ac_cv_func_sigsetjmp=yes,
 	ac_cv_func_sigsetjmp=no)])
 
+AC_DEFUN(RUBY_CHECK_BUILTIN_SETJMP, [
 if test x"${ac_cv_func___builtin_setjmp}" = xyes; then
    unset ac_cv_func___builtin_setjmp
 fi
@@ -2172,10 +2173,13 @@ AC_CACHE_CHECK(for __builtin_setjmp, ac_cv_func___builtin_setjmp,
 	])
 	test "$ac_cv_func___builtin_setjmp" = no || break
     done])
+])
 
 # we don't use _setjmp if _longjmp doesn't exist.
 test x$ac_cv_func__longjmp = xno && ac_cv_func__setjmp=no
 
+AC_DEFUN(RUBY_SETJMP_TYPE, [
+RUBY_CHECK_BUILTIN_SETJMP
 AC_MSG_CHECKING(for setjmp type)
 setjmp_suffix=
 AC_ARG_WITH(setjmp-type,
@@ -2220,6 +2224,7 @@ AC_MSG_RESULT(${setjmp_prefix}setjmp${setjmp_suffix}${setjmp_cast:+\($setjmp_cas
 AC_DEFINE_UNQUOTED([RUBY_SETJMP(env)], [${setjmp_prefix}setjmp${setjmp_suffix}($setjmp_cast(env)${setjmp_sigmask+,0})])
 AC_DEFINE_UNQUOTED([RUBY_LONGJMP(env,val)], [${setjmp_prefix}longjmp($setjmp_cast(env),val)])
 AC_DEFINE_UNQUOTED(RUBY_JMP_BUF, ${setjmp_sigmask+${setjmp_prefix}}jmp_buf)
+])
 # End of setjmp check.
 
 AC_ARG_ENABLE(setreuid,
@@ -3474,6 +3479,7 @@ AC_SUBST(DTRACE_OBJ)
 AC_SUBST(DTRACE_GLOMMED_OBJ)
 AC_SUBST(LIBRUBY_A_OBJS)
 
+RUBY_SETJMP_TYPE
 }
 { # build section
 
