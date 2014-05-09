@@ -256,7 +256,7 @@ EOS
     # that signal will be deliverd synchronously.
     # This ugly workaround was introduced to don't break
     # compatibility against silly example codes.
-    assert_separately(<<-RUBY)
+    assert_separately([], <<-RUBY)
     trap(:HUP, "DEFAULT")
     assert_raise(SignalException) {
       Process.kill('HUP', Process.pid)
