@@ -141,6 +141,16 @@ def extmake(target)
 
   FileUtils.mkpath target unless File.directory?(target)
   begin
+    # don't build if parent library isn't build
+    parent = true
+    d = target
+    until (d = File.dirname(d)) == '.'
+      if File.exist?("#{$top_srcdir}/ext/#{d}/extconf.rb")
+        parent = (/^all:\s*install/ =~ IO.read("#{d}/Makefile") rescue false)
+        break
+      end
+    end
+
     dir = Dir.pwd
     FileUtils.mkpath target unless File.directory?(target)
     Dir.chdir target
@@ -161,8 +171,8 @@ def extmake(target)
     makefile = "./Makefile"
     static = $static
     $static = nil if noinstall = File.fnmatch?("-*", target)
-    ok = File.exist?(makefile)
-    unless $ignore
+    ok = parent && File.exist?(makefile)
+    if parent && !$ignore
       rbconfig0 = RbConfig::CONFIG
       mkconfig0 = CONFIG
       rbconfig = {
@@ -288,13 +298,15 @@ def extmake(target)
     end
   ensure
     Logging::log_close
-    unless $ignore
+    if rbconfig0
       RbConfig.module_eval {
 	remove_const(:CONFIG)
 	const_set(:CONFIG, rbconfig0)
 	remove_const(:MAKEFILE_CONFIG)
 	const_set(:MAKEFILE_CONFIG, mkconfig0)
       }
+    end
+    if mkconfig0
       MakeMakefile.class_eval {
 	remove_const(:CONFIG)
 	const_set(:CONFIG, mkconfig0)
