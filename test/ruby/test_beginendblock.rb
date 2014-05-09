@@ -112,6 +112,7 @@ EOW
     ruby = EnvUtil.rubybin
     out = IO.popen(
       [ruby,
+       '-e', 'trap(:INT, "DEFAULT")',
        '-e', 'STDERR.reopen(STDOUT)',
        '-e', 'at_exit{Process.kill(:INT, $$); sleep 5 }']) {|f|
       timeout(10) {
