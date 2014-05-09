@@ -976,6 +976,7 @@ trap(int sig, sighandler_t func, VALUE command)
     switch (oldcmd) {
       case 0:
 	if (oldfunc == SIG_IGN) oldcmd = rb_str_new2("IGNORE");
+        else if (oldfunc == SIG_DFL) oldcmd = rb_str_new2("SYSTEM_DEFAULT");
 	else if (oldfunc == sighandler) oldcmd = rb_str_new2("DEFAULT");
 	else oldcmd = Qnil;
 	break;

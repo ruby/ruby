@@ -175,6 +175,13 @@ class TestSignal < Test::Unit::TestCase
     end;
   end if Process.respond_to?(:kill)
 
+  def test_trap_system_default
+    assert_separately([], <<-End)
+      trap(:QUIT, "SYSTEM_DEFAULT")
+      assert_equal("SYSTEM_DEFAULT", trap(:QUIT, "DEFAULT"))
+    End
+  end
+
   def test_signal_requiring
     t = Tempfile.new(%w"require_ensure_test .rb")
     t.puts "sleep"
