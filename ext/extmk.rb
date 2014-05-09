@@ -523,7 +523,7 @@ Dir::chdir('ext')
 hdrdir = $hdrdir
 $hdrdir = ($top_srcdir = relative_from(srcdir, $topdir = "..")) + "/include"
 exts.each do |d|
-  $static = $force_static ? true : $static_ext[target]
+  $static = $force_static ? true : $static_ext[d]
 
   if $ignore or !$nodynamic or $static
     extmake(d) or abort
