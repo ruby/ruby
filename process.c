@@ -3949,9 +3949,10 @@ rb_f_system(int argc, VALUE *argv)
  *    pid = spawn(command, :in=>"/dev/null") # read mode
  *    pid = spawn(command, :out=>"/dev/null") # write mode
  *    pid = spawn(command, :err=>"log") # write mode
+ *    pid = spawn(command, [:out, :err]=>"/dev/null") # write mode
  *    pid = spawn(command, 3=>"/dev/null") # read mode
  *
- *  For stdout and stderr,
+ *  For stdout and stderr (and combination of them),
  *  it is opened in write mode.
  *  Otherwise read mode is used.
  *
