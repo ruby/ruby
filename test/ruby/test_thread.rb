@@ -730,7 +730,7 @@ _eom
     bug5757 = '[ruby-dev:44985]'
     t0 = Time.now.to_f
     pid = nil
-    cmd = 'r,=IO.pipe; Thread.start {Thread.pass until Thread.main.stop?; puts; STDOUT.flush}; r.read'
+    cmd = 'Signal.trap(:INT, "DEFAULT"); r,=IO.pipe; Thread.start {Thread.pass until Thread.main.stop?; puts; STDOUT.flush}; r.read'
     opt = {}
     opt[:new_pgroup] = true if /mswin|mingw/ =~ RUBY_PLATFORM
     s, _err = EnvUtil.invoke_ruby(['-e', cmd], "", true, true, opt) do |in_p, out_p, err_p, cpid|
@@ -750,6 +750,7 @@ _eom
 
   def test_thread_join_in_trap
     assert_separately [], <<-'EOS'
+    Signal.trap(:INT, "DEFAULT")
     t0 = Thread.current
     assert_nothing_raised{
       t = Thread.new {Thread.pass until t0.stop?; Process.kill(:INT, $$)}
@@ -765,6 +766,7 @@ _eom
 
   def test_thread_value_in_trap
     assert_separately [], <<-'EOS'
+    Signal.trap(:INT, "DEFAULT")
     t0 = Thread.current
     t = Thread.new {Thread.pass until t0.stop?; Process.kill(:INT, $$); :normal_end}
 
