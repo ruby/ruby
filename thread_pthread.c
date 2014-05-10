@@ -1389,13 +1389,14 @@ timer_thread_sleep(rb_global_vm_lock_t* gvl)
 	consume_communication_pipe(timer_thread_pipe_low[0]);
     }
     else { /* result < 0 */
-	switch (errno) {
-	case EBADF:
-	case EINVAL:
-	case ENOMEM: /* from Linux man */
-	case EFAULT: /* from FreeBSD man */
-	    rb_async_bug_errno("thread_timer: select", errno);
-	default:
+	int e = errno;
+	switch (e) {
+	  case EBADF:
+	  case EINVAL:
+	  case ENOMEM: /* from Linux man */
+	  case EFAULT: /* from FreeBSD man */
+	    rb_async_bug_errno("thread_timer: select", e);
+	  default:
 	    /* ignore */;
 	}
     }
