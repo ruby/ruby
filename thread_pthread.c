@@ -1172,7 +1172,7 @@ ubf_select(void *ptr)
      * In the other hands, we shouldn't call rb_thread_wakeup_timer_thread()
      * if running on timer thread because it may make endless wakeups.
      */
-    if (pthread_self() != timer_thread_id)
+    if (!pthread_equal(pthread_self(), timer_thread_id))
 	rb_thread_wakeup_timer_thread();
     ubf_select_each(th);
 }
