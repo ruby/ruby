@@ -1,3 +1,7 @@
+Sat May 10 09:32:19 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* man/ruby.1: remove deadlink. [ruby-core:62145][Bug #9773]
+
 Sat May 10 08:47:36 2014  Tanaka Akira  <akr@fsij.org>
 
 	* signal.c (trap): Return "SYSTEM_DEFAULT" if SIG_DFL is set.
