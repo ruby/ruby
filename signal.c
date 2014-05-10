@@ -350,6 +350,9 @@ ruby_default_signal(int sig)
     raise(sig);
 }
 
+static int signal_ignored(int sig);
+static void signal_enque(int sig);
+
 /*
  *  call-seq:
  *     Process.kill(signal, pid, ...)    -> fixnum
@@ -436,6 +439,8 @@ rb_f_kill(int argc, VALUE *argv)
 	break;
     }
 
+    if (argc <= 1) return INT2FIX(0);
+
     if (sig < 0) {
 	sig = -sig;
 	for (i=1; i<argc; i++) {
@@ -444,8 +449,36 @@ rb_f_kill(int argc, VALUE *argv)
 	}
     }
     else {
+	const rb_pid_t self = (GET_THREAD() == GET_VM()->main_thread) ? getpid() : -1;
+	int wakeup = 0;
+
 	for (i=1; i<argc; i++) {
-	    ruby_kill(NUM2PIDT(argv[i]), sig);
+	    rb_pid_t pid = NUM2PIDT(argv[i]);
+
+	    if ((sig != 0) && (self != -1) && (pid == self)) {
+		/*
+		 * When target pid is self, many caller assume signal will be
+		 * delivered immediately and synchronously.
+		 */
+		switch (sig) {
+		  case SIGSEGV:
+#ifdef SIGBUS
+		  case SIGBUS:
+#endif
+		    ruby_kill(pid, sig);
+		    break;
+		  default:
+		    if (signal_ignored(sig)) break;
+		    signal_enque(sig);
+		    wakeup = 1;
+		}
+	    }
+	    else if (kill(pid, sig) < 0) {
+		rb_sys_fail(0);
+	    }
+	}
+	if (wakeup) {
+	    rb_threadptr_check_signal(GET_VM()->main_thread);
 	}
     }
     rb_thread_execute_interrupts(rb_thread_current());
@@ -578,11 +611,32 @@ ruby_nativethread_signal(int signum, sighandler_t handler)
 #endif
 #endif
 
-static RETSIGTYPE
-sighandler(int sig)
+static int
+signal_ignored(int sig)
+{
+#ifdef POSIX_SIGNAL
+    struct sigaction old;
+    (void)VALGRIND_MAKE_MEM_DEFINED(&old, sizeof(old));
+    if (sigaction(sig, NULL, &old) < 0) return FALSE;
+    return old.sa_handler == SIG_IGN;
+#else
+    sighandler_t old = signal(sig, SIG_DFL);
+    signal(sig, old);
+    return old == SIG_IGN;
+#endif
+}
+
+static void
+signal_enque(int sig)
 {
     ATOMIC_INC(signal_buff.cnt[sig]);
     ATOMIC_INC(signal_buff.size);
+}
+
+static RETSIGTYPE
+sighandler(int sig)
+{
+    signal_enque(sig);
     rb_thread_wakeup_timer_thread();
 #if !defined(BSD_SIGNAL) && !defined(POSIX_SIGNAL)
     ruby_signal(sig, sighandler);
