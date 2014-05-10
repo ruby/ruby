@@ -272,9 +272,10 @@ module Test
         pid = status.pid
         now = Time.now
         faildesc = proc do
-          signo = status.termsig
-          signame = Signal.signame(signo)
-          sigdesc = "signal #{signo}"
+          if signo = status.termsig
+            signame = Signal.signame(signo)
+            sigdesc = "signal #{signo}"
+          end
           log = EnvUtil.diagnostic_reports(signame, EnvUtil.rubybin, pid, now)
           if signame
             sigdesc = "SIG#{signame} (#{sigdesc})"
