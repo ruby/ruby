@@ -33,6 +33,7 @@ module EnvUtil
   def invoke_ruby(args, stdin_data = "", capture_stdout = false, capture_stderr = false,
                   encoding: nil, timeout: 10, reprieve: 1,
                   stdout_filter: nil, stderr_filter: nil,
+                  rubybin: EnvUtil.rubybin,
                   **opt)
     in_c, in_p = IO.pipe
     out_p, out_c = IO.pipe if capture_stdout
@@ -51,7 +52,7 @@ module EnvUtil
       child_env.update(args.shift)
     end
     args = [args] if args.kind_of?(String)
-    pid = spawn(child_env, EnvUtil.rubybin, *args, **opt)
+    pid = spawn(child_env, rubybin, *args, **opt)
     in_c.close
     out_c.close if capture_stdout
     err_c.close if capture_stderr && capture_stderr != :merge_to_stdout
