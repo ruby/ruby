@@ -5176,13 +5176,12 @@ ruby_kill(rb_pid_t pid, int sig)
 {
     int err;
     rb_thread_t *th = GET_THREAD();
-    rb_vm_t *vm = GET_VM();
 
     /*
      * When target pid is self, many caller assume signal will be
      * delivered immediately and synchronously.
      */
-    if ((sig != 0) && (th == vm->main_thread) && (pid == getpid())) {
+    {
 	GVL_UNLOCK_BEGIN();
 	native_mutex_lock(&th->interrupt_lock);
 	err = kill(pid, sig);
@@ -5190,9 +5189,7 @@ ruby_kill(rb_pid_t pid, int sig)
 	native_mutex_unlock(&th->interrupt_lock);
 	GVL_UNLOCK_END();
     }
-    else {
-	err = kill(pid, sig);
-    }
-    if (err < 0)
+    if (err < 0) {
 	rb_sys_fail(0);
+    }
 }
