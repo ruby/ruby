@@ -368,12 +368,8 @@ rb_threadptr_trap_interrupt(rb_thread_t *th)
 }
 
 static int
-terminate_i(st_data_t key, st_data_t val, rb_thread_t *main_thread)
+terminate_i(rb_thread_t *th, void *main_thread)
 {
-    VALUE thval = key;
-    rb_thread_t *th;
-    GetThreadPtr(thval, th);
-
     if (th != main_thread) {
 	thread_debug("terminate_i: %p\n", (void *)th);
 	rb_threadptr_pending_interrupt_enque(th, eTerminateSignal);
@@ -433,7 +429,7 @@ rb_thread_terminate_all(void)
 
   retry:
     thread_debug("rb_thread_terminate_all (main thread: %p)\n", (void *)th);
-    st_foreach(vm->living_threads, terminate_i, (st_data_t)th);
+    rb_vm_living_threads_foreach(vm, terminate_i, th);
 
     while (!rb_thread_alone()) {
 	int state;
@@ -585,7 +581,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	}
 
 	/* delete self other than main thread from living_threads */
-	st_delete_wrap(th->vm->living_threads, th->self);
+	rb_vm_living_threads_remove(th->vm, th);
 	if (rb_thread_alone()) {
 	    /* I'm last thread. wake up main thread from rb_thread_terminate_all */
 	    rb_threadptr_interrupt(main_th);
@@ -657,7 +653,7 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
 	th->status = THREAD_KILLED;
 	rb_raise(rb_eThreadError, "can't create Thread: %s", strerror(err));
     }
-    st_insert(th->vm->living_threads, thval, (st_data_t) th->thread_id);
+    rb_vm_living_threads_insert(th->vm, th);
     return thval;
 }
 
@@ -2067,13 +2063,10 @@ rb_threadptr_reset_raised(rb_thread_t *th)
 }
 
 static int
-thread_fd_close_i(st_data_t key, st_data_t val, st_data_t data)
+thread_fd_close_i(rb_thread_t *th, void *fdp)
 {
-    int fd = (int)data;
-    rb_thread_t *th;
-    GetThreadPtr((VALUE)key, th);
-
-    if (th->waiting_fd == fd) {
+    int *fd = fdp;
+    if (th->waiting_fd == *fd) {
 	VALUE err = th->vm->special_exceptions[ruby_error_closed_stream];
 	rb_threadptr_pending_interrupt_enque(th, err);
 	rb_threadptr_interrupt(th);
@@ -2084,7 +2077,7 @@ thread_fd_close_i(st_data_t key, st_data_t val, st_data_t data)
 void
 rb_thread_fd_close(int fd)
 {
-    st_foreach(GET_THREAD()->vm->living_threads, thread_fd_close_i, (st_index_t)fd);
+    rb_vm_living_threads_foreach(GET_THREAD()->vm, thread_fd_close_i, &fd);
 }
 
 /*
@@ -2304,11 +2297,9 @@ rb_thread_stop(void)
 }
 
 static int
-thread_list_i(st_data_t key, st_data_t val, void *data)
+thread_list_i(rb_thread_t *th, void *data)
 {
     VALUE ary = (VALUE)data;
-    rb_thread_t *th;
-    GetThreadPtr((VALUE)key, th);
 
     switch (th->status) {
       case THREAD_RUNNABLE:
@@ -2347,7 +2338,7 @@ VALUE
 rb_thread_list(void)
 {
     VALUE ary = rb_ary_new();
-    st_foreach(GET_THREAD()->vm->living_threads, thread_list_i, ary);
+    rb_vm_living_threads_foreach(GET_THREAD()->vm, thread_list_i, (void *)ary);
     return ary;
 }
 
@@ -2925,14 +2916,14 @@ thread_keys_i(ID key, VALUE value, VALUE ary)
 static int
 vm_living_thread_num(rb_vm_t *vm)
 {
-    return (int)vm->living_threads->num_entries;
+    return (int)vm->living_thread_num;
 }
 
 int
 rb_thread_alone(void)
 {
     int num = 1;
-    if (GET_THREAD()->vm->living_threads) {
+    if (!list_empty(&GET_THREAD()->vm->living_threads)) {
 	num = vm_living_thread_num(GET_THREAD()->vm);
 	thread_debug("rb_thread_alone: %d\n", num);
     }
@@ -3767,28 +3758,23 @@ clear_coverage(void)
 }
 
 static void
-rb_thread_atfork_internal(int (*atfork)(st_data_t, st_data_t, st_data_t))
+rb_thread_atfork_internal(int (*atfork)(rb_thread_t *, void *))
 {
     rb_thread_t *th = GET_THREAD();
     rb_vm_t *vm = th->vm;
-    VALUE thval = th->self;
     vm->main_thread = th;
 
     gvl_atfork(th->vm);
-    st_foreach(vm->living_threads, atfork, (st_data_t)th);
-    st_clear(vm->living_threads);
-    st_insert(vm->living_threads, thval, (st_data_t)th->thread_id);
+    rb_vm_living_threads_foreach(vm, atfork, th);
+    rb_vm_living_threads_init(vm);
+    rb_vm_living_threads_insert(vm, th);
     vm->sleeper = 0;
     clear_coverage();
 }
 
 static int
-terminate_atfork_i(st_data_t key, st_data_t val, st_data_t current_th)
+terminate_atfork_i(rb_thread_t *th, void *current_th)
 {
-    VALUE thval = key;
-    rb_thread_t *th;
-    GetThreadPtr(thval, th);
-
     if (th != (rb_thread_t *)current_th) {
 	rb_mutex_abandon_keeping_mutexes(th);
 	rb_mutex_abandon_locking_mutex(th);
@@ -3808,12 +3794,8 @@ rb_thread_atfork(void)
 }
 
 static int
-terminate_atfork_before_exec_i(st_data_t key, st_data_t val, st_data_t current_th)
+terminate_atfork_before_exec_i(rb_thread_t *th, void *current_th)
 {
-    VALUE thval = key;
-    rb_thread_t *th;
-    GetThreadPtr(thval, th);
-
     if (th != (rb_thread_t *)current_th) {
 	thread_cleanup_func_before_exec(th);
     }
@@ -3881,13 +3863,12 @@ struct thgroup_list_params {
 };
 
 static int
-thgroup_list_i(st_data_t key, st_data_t val, st_data_t data)
+thgroup_list_i(rb_thread_t *th, void *arg)
 {
-    VALUE thread = (VALUE)key;
-    VALUE ary = ((struct thgroup_list_params *)data)->ary;
-    VALUE group = ((struct thgroup_list_params *)data)->group;
-    rb_thread_t *th;
-    GetThreadPtr(thread, th);
+    struct thgroup_list_params *params = arg;
+    VALUE thread = th->self;
+    VALUE ary = params->ary;
+    VALUE group = params->group;
 
     if (th->thgroup == group) {
 	rb_ary_push(ary, thread);
@@ -3912,7 +3893,7 @@ thgroup_list(VALUE group)
 
     param.ary = ary;
     param.group = group;
-    st_foreach(GET_THREAD()->vm->living_threads, thgroup_list_i, (st_data_t) & param);
+    rb_vm_living_threads_foreach(GET_THREAD()->vm, thgroup_list_i, &param);
     return ary;
 }
 
@@ -5051,12 +5032,9 @@ ruby_native_thread_p(void)
 }
 
 static int
-check_deadlock_i(st_data_t key, st_data_t val, int *found)
+check_deadlock_i(rb_thread_t *th, void *arg)
 {
-    VALUE thval = key;
-    rb_thread_t *th;
-    GetThreadPtr(thval, th);
-
+    int *found = arg;
     if (th->status != THREAD_STOPPED_FOREVER || RUBY_VM_INTERRUPTED(th)) {
 	*found = 1;
     }
@@ -5076,12 +5054,8 @@ check_deadlock_i(st_data_t key, st_data_t val, int *found)
 
 #ifdef DEBUG_DEADLOCK_CHECK
 static int
-debug_i(st_data_t key, st_data_t val, int *found)
+debug_i(rb_thread_t *th, int *found)
 {
-    VALUE thval = key;
-    rb_thread_t *th;
-    GetThreadPtr(thval, th);
-
     printf("th:%p %d %d", th, th->status, th->interrupt_flag);
     if (th->locking_mutex) {
 	rb_mutex_t *mutex;
@@ -5107,15 +5081,15 @@ rb_check_deadlock(rb_vm_t *vm)
     if (vm_living_thread_num(vm) < vm->sleeper) rb_bug("sleeper must not be more than vm_living_thread_num(vm)");
     if (patrol_thread && patrol_thread != GET_THREAD()) return;
 
-    st_foreach(vm->living_threads, check_deadlock_i, (st_data_t)&found);
+    rb_vm_living_threads_foreach(vm, check_deadlock_i, &found);
 
     if (!found) {
 	VALUE argv[2];
 	argv[0] = rb_eFatal;
 	argv[1] = rb_str_new2("No live threads left. Deadlock?");
 #ifdef DEBUG_DEADLOCK_CHECK
-	printf("%d %d %p %p\n", vm->living_threads->num_entries, vm->sleeper, GET_THREAD(), vm->main_thread);
-	st_foreach(vm->living_threads, debug_i, (st_data_t)0);
+	printf("%d %d %p %p\n", vm_living_thread_num(vm), vm->sleeper, GET_THREAD(), vm->main_thread);
+	rb_vm_living_threads_foreach(vm, debug_i, 0);
 #endif
 	vm->sleeper--;
 	rb_threadptr_raise(vm->main_thread, 2, argv);

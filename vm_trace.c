@@ -213,10 +213,8 @@ rb_remove_event_hook_with_data(rb_event_hook_func_t func, VALUE data)
 }
 
 static int
-clear_trace_func_i(st_data_t key, st_data_t val, st_data_t flag)
+clear_trace_func_i(rb_thread_t *th, void *unused)
 {
-    rb_thread_t *th;
-    GetThreadPtr((VALUE)key, th);
     rb_threadptr_remove_event_hook(th, 0, Qundef);
     return ST_CONTINUE;
 }
@@ -224,7 +222,7 @@ clear_trace_func_i(st_data_t key, st_data_t val, st_data_t flag)
 void
 rb_clear_trace_func(void)
 {
-    st_foreach(GET_VM()->living_threads, clear_trace_func_i, (st_data_t) 0);
+    rb_vm_living_threads_foreach(GET_VM(), clear_trace_func_i, 0);
     rb_remove_event_hook(0);
 }
 

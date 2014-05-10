@@ -1,3 +1,27 @@
+Sun May 11 08:02:49 2014  Eric Wong  <e@80x24.org>
+
+	* vm_core.h (rb_vm_t): list_head and counter for living_threads
+	  (rb_thread_t): vmlt_node for living_threads linkage
+	  (rb_vm_living_threads_init): new function wrapper
+	  (rb_vm_living_threads_insert): ditto
+	  (rb_vm_living_threads_remove): ditto
+	* vm.c (rb_vm_living_threads_foreach): new function wrapper
+	* thread.c (terminate_i, thread_start_func_2, thread_create_core,
+	  thread_fd_close_i, thread_fd_close): update to use new APIs
+	* vm.c (vm_mark_each_thread_func, rb_vm_mark, ruby_vm_destruct,
+	  vm_memsize, vm_init2, Init_VM): ditto
+	* vm_trace.c (clear_trace_func_i, rb_clear_trace_func): ditto
+	* benchmark/bm_vm_thread_close.rb: added to show improvement
+	* ccan/build_assert/build_assert.h: added as a dependency of list.h
+	* ccan/check_type/check_type.h: ditto
+	* ccan/container_of/container_of.h: ditto
+	* ccan/licenses/BSD-MIT: ditto
+	* ccan/licenses/CC0: ditto
+	* ccan/str/str.h: ditto (stripped of unused macros)
+	* ccan/list/list.h: ditto
+	* common.mk: add CCAN_LIST_INCLUDES
+	  [ruby-core:61871][Feature #9632 (part 1)]
+
 Sun May 11 01:10:31 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* signal.c (rb_f_kill): directly enqueue an ignored signal to self,

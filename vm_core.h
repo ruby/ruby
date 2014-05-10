@@ -23,8 +23,8 @@
 #include "id.h"
 #include "method.h"
 #include "ruby_atomic.h"
-
 #include "thread_native.h"
+#include "ccan/list/list.h"
 
 #ifndef ENABLE_VM_OBJSPACE
 #ifdef _WIN32
@@ -333,7 +333,8 @@ typedef struct rb_vm_struct {
     struct rb_thread_struct *main_thread;
     struct rb_thread_struct *running_thread;
 
-    st_table *living_threads;
+    struct list_head living_threads;
+    size_t living_thread_num;
     VALUE thgroup_default;
 
     int running;
@@ -501,6 +502,7 @@ typedef struct rb_ensure_list {
 } rb_ensure_list_t;
 
 typedef struct rb_thread_struct {
+    struct list_node vmlt_node;
     VALUE self;
     rb_vm_t *vm;
 
@@ -856,6 +858,28 @@ void rb_thread_stop_timer_thread(int);
 void rb_thread_reset_timer_thread(void);
 void rb_thread_wakeup_timer_thread(void);
 
+static inline void
+rb_vm_living_threads_init(rb_vm_t *vm)
+{
+    list_head_init(&vm->living_threads);
+    vm->living_thread_num = 0;
+}
+
+static inline void
+rb_vm_living_threads_insert(rb_vm_t *vm, rb_thread_t *th)
+{
+    list_add(&vm->living_threads, &th->vmlt_node);
+    vm->living_thread_num++;
+}
+
+static inline void
+rb_vm_living_threads_remove(rb_vm_t *vm, rb_thread_t *th)
+{
+    list_del(&th->vmlt_node);
+    vm->living_thread_num--;
+}
+
+void rb_vm_living_threads_foreach(rb_vm_t*, int (*)(rb_thread_t*, void*), void*);
 int ruby_thread_has_gvl_p(void);
 typedef int rb_backtrace_iter_func(void *, VALUE, int, VALUE);
 rb_control_frame_t *rb_vm_get_ruby_level_next_cfp(rb_thread_t *th, const rb_control_frame_t *cfp);

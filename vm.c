@@ -1687,10 +1687,9 @@ rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg,
 /* vm */
 
 static int
-vm_mark_each_thread_func(st_data_t key, st_data_t value, st_data_t dummy)
+vm_mark_each_thread_func(rb_thread_t *th, void *dummy)
 {
-    VALUE thval = (VALUE)key;
-    rb_gc_mark(thval);
+    rb_gc_mark(th->self);
     return ST_CONTINUE;
 }
 
@@ -1705,9 +1704,7 @@ rb_vm_mark(void *ptr)
     RUBY_GC_INFO("-------------------------------------------------\n");
     if (ptr) {
 	rb_vm_t *vm = ptr;
-	if (vm->living_threads) {
-	    st_foreach(vm->living_threads, vm_mark_each_thread_func, 0);
-	}
+	rb_vm_living_threads_foreach(vm, vm_mark_each_thread_func, 0);
 	RUBY_MARK_UNLESS_NULL(vm->thgroup_default);
 	RUBY_MARK_UNLESS_NULL(vm->mark_object_ary);
 	RUBY_MARK_UNLESS_NULL(vm->load_path);
@@ -1767,10 +1764,7 @@ ruby_vm_destruct(rb_vm_t *vm)
 	    rb_fiber_reset_root_local_storage(th->self);
 	    thread_free(th);
 	}
-	if (vm->living_threads) {
-	    st_free_table(vm->living_threads);
-	    vm->living_threads = 0;
-	}
+	rb_vm_living_threads_init(vm);
 	ruby_vm_run_at_exit_hooks(vm);
 	rb_vm_gvl_destroy(vm);
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
@@ -1792,9 +1786,9 @@ vm_memsize(const void *ptr)
     if (ptr) {
 	const rb_vm_t *vmobj = ptr;
 	size_t size = sizeof(rb_vm_t);
-	if (vmobj->living_threads) {
-	    size += st_memsize(vmobj->living_threads);
-	}
+
+	size += vmobj->living_thread_num * sizeof(rb_thread_t);
+
 	if (vmobj->defined_strings) {
 	    size += DEFINED_EXPR * sizeof(VALUE);
 	}
@@ -1894,6 +1888,7 @@ static void
 vm_init2(rb_vm_t *vm)
 {
     MEMZERO(vm, rb_vm_t, 1);
+    rb_vm_living_threads_init(vm);
     vm->src_encoding_index = -1;
     vm->at_exit.basic.flags = (T_ARRAY | RARRAY_EMBED_FLAG) & ~RARRAY_EMBED_LEN_MASK; /* len set 0 */
     rb_obj_hide((VALUE)&vm->at_exit);
@@ -2665,8 +2660,7 @@ Init_VM(void)
 	th->top_self = rb_vm_top_self();
 	rb_thread_set_current(th);
 
-	vm->living_threads = st_init_numtable();
-	st_insert(vm->living_threads, th_self, (st_data_t) th->thread_id);
+	rb_vm_living_threads_insert(vm, th);
 
 	rb_gc_register_mark_object(iseqval);
 	GetISeqPtr(iseqval, iseq);
@@ -3001,3 +2995,23 @@ vm_collect_usage_register(int reg, int isset)
 }
 #endif
 
+void
+rb_vm_living_threads_foreach(rb_vm_t *vm,
+			    int (*fn)(rb_thread_t *, void*), void *arg)
+{
+    rb_thread_t *cur, *next;
+    list_for_each_safe(&vm->living_threads, cur, next, vmlt_node) {
+	int rc = fn(cur, arg);
+	switch (rc) {
+	  case ST_CHECK:
+	  case ST_CONTINUE: break;
+	  case ST_STOP: return;
+	  case ST_DELETE: /* untested */
+	    rb_vm_living_threads_remove(vm, cur);
+	    xfree(cur);
+	    break;
+	  default:
+	    rb_bug("rb_vm_living_threads_foreach: unexpected: %d", rc);
+	}
+    }
+}
