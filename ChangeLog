@@ -1,3 +1,8 @@
+Sun May 11 01:10:31 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (rb_f_kill): directly enqueue an ignored signal to self,
+	  except for SIGSEGV and SIGBUS.  [ruby-dev:48203] [Bug #9820]
+
 Sat May 10 22:37:56 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (push_glob): match in UTF-8 on Mac OS X.
