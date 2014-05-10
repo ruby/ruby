@@ -973,4 +973,25 @@ Thread.new(Thread.current) {|mth|
     pid, status = Process.waitpid2(pid)
     assert_equal(false, status.success?, bug8433)
   end if Process.respond_to?(:fork)
+
+  def test_fork_in_thread
+    bug9751 = '[ruby-core:62070] [Bug #9751]'
+    f = nil
+    th = Thread.start do
+      unless f = IO.popen("-")
+        STDERR.reopen(STDOUT)
+        exit
+      end
+      Process.wait2(f.pid)
+    end
+    unless th.join(3)
+      Process.kill(:QUIT, f.pid)
+      Process.kill(:KILL, f.pid) unless th.join(1)
+    end
+    _, status = th.value
+    output = f.read
+    f.close
+    assert_not_predicate(status, :signaled?, FailDesc[status, bug9751, output])
+    assert_predicate(status, :success?, bug9751)
+  end if Process.respond_to?(:fork)
 end

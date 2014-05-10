@@ -1,3 +1,9 @@
+Sat May 10 13:32:18 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (thread_start_func_2): stop if forked in a sub-thread,
+	  the thread has become the main thread.
+	  [ruby-core:62070] [Bug #9751]
+
 Sat May 10 09:32:19 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* man/ruby.1: remove deadlink. [ruby-core:62145][Bug #9773]
