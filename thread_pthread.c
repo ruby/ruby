@@ -1238,7 +1238,8 @@ rb_thread_wakeup_timer_thread_fd(int fd)
 	const char *buff = "!";
       retry:
 	if ((result = write(fd, buff, 1)) <= 0) {
-	    switch (errno) {
+	    int e = errno;
+	    switch (e) {
 	      case EINTR: goto retry;
 	      case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
@@ -1246,7 +1247,7 @@ rb_thread_wakeup_timer_thread_fd(int fd)
 #endif
 		break;
 	      default:
-		rb_async_bug_errno("rb_thread_wakeup_timer_thread - write", errno);
+		rb_async_bug_errno("rb_thread_wakeup_timer_thread - write", e);
 	    }
 	}
 	if (TT_DEBUG) WRITE_CONST(2, "rb_thread_wakeup_timer_thread: write\n");
@@ -1283,13 +1284,17 @@ consume_communication_pipe(int fd)
 	    return;
 	}
 	else if (result < 0) {
-	    switch (errno) {
-	    case EINTR:
+	    int e = errno;
+	    switch (e) {
+	      case EINTR:
 		continue; /* retry */
-	    case EAGAIN:
+	      case EAGAIN:
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+	      case EWOULDBLOCK:
+#endif
 		return;
-	    default:
-		rb_async_bug_errno("consume_communication_pipe: read\n", errno);
+	      default:
+		rb_async_bug_errno("consume_communication_pipe: read\n", e);
 	    }
 	}
     }
