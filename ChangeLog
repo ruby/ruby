@@ -1,3 +1,8 @@
+Sat May 10 22:37:56 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (push_glob): match in UTF-8 on Mac OS X.
+	  [ruby-dev:48213] [Bug #9825]
+
 Sat May 10 13:32:18 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (thread_start_func_2): stop if forked in a sub-thread,

@@ -1745,10 +1745,16 @@ static int
 push_glob(VALUE ary, VALUE str, int flags)
 {
     struct glob_args args;
+#ifdef __APPLE__
+    rb_encoding *enc = rb_utf8_encoding();
+
+    str = rb_str_encode_ospath(str);
+#else
     rb_encoding *enc = rb_enc_get(str);
 
     if (enc == rb_usascii_encoding()) enc = rb_filesystem_encoding();
     if (enc == rb_usascii_encoding()) enc = rb_ascii8bit_encoding();
+#endif
     args.func = push_pattern;
     args.value = ary;
     args.enc = enc;
