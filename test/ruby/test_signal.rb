@@ -180,7 +180,7 @@ class TestSignal < Test::Unit::TestCase
       trap(:QUIT, "SYSTEM_DEFAULT")
       assert_equal("SYSTEM_DEFAULT", trap(:QUIT, "DEFAULT"))
     End
-  end
+  end if Signal.list.key?('QUIT')
 
   def test_signal_requiring
     t = Tempfile.new(%w"require_ensure_test .rb")
