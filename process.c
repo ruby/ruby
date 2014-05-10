@@ -3532,8 +3532,7 @@ rb_exit(int status)
 	args[1] = rb_str_new2("exit");
 	rb_exc_raise(rb_class_new_instance(2, args, rb_eSystemExit));
     }
-    ruby_finalize();
-    exit(status);
+    ruby_stop(status);
 }
 
 
