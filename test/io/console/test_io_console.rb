@@ -262,8 +262,7 @@ class TestIO_Console < Test::Unit::TestCase
       t.close
       t2 = Tempfile.new("console")
       t2.close
-      cmd = NOCTTY + [
-        '--disable=gems',
+      cmd = [*NOCTTY[1..-1],
         '-e', 'open(ARGV[0], "w") {|f|',
         '-e',   'STDOUT.reopen(f)',
         '-e',   'STDERR.reopen(f)',
@@ -273,7 +272,7 @@ class TestIO_Console < Test::Unit::TestCase
         '-e',   'File.unlink(ARGV[1])',
         '-e', '}',
         '--', t.path, t2.path]
-      system(*cmd)
+      assert_ruby_status(cmd, rubybin: NOCTTY[0])
       30.times do
         break unless File.exist?(t2.path)
         sleep 0.1
