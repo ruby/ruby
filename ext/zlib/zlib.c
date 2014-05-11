@@ -27,9 +27,6 @@
 
 #define RUBY_ZLIB_VERSION  "0.6.0"
 
-
-#define OBJ_IS_FREED(val)  (RBASIC(val)->flags == 0)
-
 #ifndef GZIP_SUPPORT
 #define GZIP_SUPPORT  1
 #endif

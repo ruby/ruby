@@ -1138,7 +1138,6 @@ strscan_restsize(VALUE self)
 }
 
 #define INSPECT_LENGTH 5
-#define BUFSIZE 256
 
 /*
  * Returns a string that represents the StringScanner object, showing:

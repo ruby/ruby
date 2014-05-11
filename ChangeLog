@@ -1,3 +1,11 @@
+Mon May 12 01:30:59 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ifaddr.c (IS_IFADDRS): Unused macro removed.
+
+	* ext/strscan/strscan.c (BUFSIZE): Ditto.
+
+	* ext/zlib/zlib.c (OBJ_IS_FREED): Ditto.
+
 Sun May 11 22:27:18 2014  Tanaka Akira  <akr@fsij.org>
 
 	* compile.c (BUFSIZE): Unused macro removed.

@@ -74,7 +74,6 @@ static const rb_data_type_t ifaddr_type = {
     {ifaddr_mark, ifaddr_free, ifaddr_memsize,},
 };
 
-#define IS_IFADDRS(obj) rb_typeddata_is_kind_of((obj), &ifaddr_type)
 static inline rb_ifaddr_t *
 check_ifaddr(VALUE self)
 {
