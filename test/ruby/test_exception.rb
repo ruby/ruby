@@ -529,7 +529,8 @@ end.join
   end
 
   def test_stackoverflow
-    assert_raise(SystemStackError){m}
+    e = assert_raise(SystemStackError){m}
+    assert_operator(e.backtrace.size, :>, 10)
   end
 
   def test_machine_stackoverflow

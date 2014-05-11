@@ -255,6 +255,30 @@ rb_obj_singleton_class(VALUE obj)
     return rb_singleton_class(obj);
 }
 
+void
+rb_obj_copy_ivar(VALUE dest, VALUE obj)
+{
+    if (!(RBASIC(dest)->flags & ROBJECT_EMBED) && ROBJECT_IVPTR(dest)) {
+	xfree(ROBJECT_IVPTR(dest));
+	ROBJECT(dest)->as.heap.ivptr = 0;
+	ROBJECT(dest)->as.heap.numiv = 0;
+	ROBJECT(dest)->as.heap.iv_index_tbl = 0;
+    }
+    if (RBASIC(obj)->flags & ROBJECT_EMBED) {
+	MEMCPY(ROBJECT(dest)->as.ary, ROBJECT(obj)->as.ary, VALUE, ROBJECT_EMBED_LEN_MAX);
+	RBASIC(dest)->flags |= ROBJECT_EMBED;
+    }
+    else {
+	long len = ROBJECT(obj)->as.heap.numiv;
+	VALUE *ptr = ALLOC_N(VALUE, len);
+	MEMCPY(ptr, ROBJECT(obj)->as.heap.ivptr, VALUE, len);
+	ROBJECT(dest)->as.heap.ivptr = ptr;
+	ROBJECT(dest)->as.heap.numiv = len;
+	ROBJECT(dest)->as.heap.iv_index_tbl = ROBJECT(obj)->as.heap.iv_index_tbl;
+	RBASIC(dest)->flags &= ~ROBJECT_EMBED;
+    }
+}
+
 static void
 init_copy(VALUE dest, VALUE obj)
 {
@@ -266,25 +290,7 @@ init_copy(VALUE dest, VALUE obj)
     rb_copy_generic_ivar(dest, obj);
     rb_gc_copy_finalizer(dest, obj);
     if (RB_TYPE_P(obj, T_OBJECT)) {
-        if (!(RBASIC(dest)->flags & ROBJECT_EMBED) && ROBJECT_IVPTR(dest)) {
-            xfree(ROBJECT_IVPTR(dest));
-            ROBJECT(dest)->as.heap.ivptr = 0;
-            ROBJECT(dest)->as.heap.numiv = 0;
-            ROBJECT(dest)->as.heap.iv_index_tbl = 0;
-        }
-        if (RBASIC(obj)->flags & ROBJECT_EMBED) {
-            MEMCPY(ROBJECT(dest)->as.ary, ROBJECT(obj)->as.ary, VALUE, ROBJECT_EMBED_LEN_MAX);
-            RBASIC(dest)->flags |= ROBJECT_EMBED;
-        }
-        else {
-            long len = ROBJECT(obj)->as.heap.numiv;
-            VALUE *ptr = ALLOC_N(VALUE, len);
-            MEMCPY(ptr, ROBJECT(obj)->as.heap.ivptr, VALUE, len);
-            ROBJECT(dest)->as.heap.ivptr = ptr;
-            ROBJECT(dest)->as.heap.numiv = len;
-            ROBJECT(dest)->as.heap.iv_index_tbl = ROBJECT(obj)->as.heap.iv_index_tbl;
-            RBASIC(dest)->flags &= ~ROBJECT_EMBED;
-        }
+	rb_obj_copy_ivar(dest, obj);
     }
 }
 
