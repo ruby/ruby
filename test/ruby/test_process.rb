@@ -1201,6 +1201,21 @@ class TestProcess < Test::Unit::TestCase
 
   def test_status_kill
     return unless Process.respond_to?(:kill)
+    return unless Signal.list.include?("KILL")
+
+    with_tmpchdir do
+      write_file("foo", "Process.kill(:KILL, $$); exit(42)")
+      system(RUBY, "foo")
+      s = $?
+      assert_equal([false, true, false, nil],
+                   [s.exited?, s.signaled?, s.stopped?, s.success?],
+                   "[s.exited?, s.signaled?, s.stopped?, s.success?]")
+      assert_equal(false, s.exited?)
+    end
+  end
+
+  def test_status_quit
+    return unless Process.respond_to?(:kill)
     return unless Signal.list.include?("QUIT")
 
     with_tmpchdir do

@@ -465,6 +465,12 @@ rb_f_kill(int argc, VALUE *argv)
 #ifdef SIGBUS
 		  case SIGBUS:
 #endif
+#ifdef SIGKILL
+		  case SIGKILL:
+#endif
+#ifdef SIGSTOP
+		  case SIGSTOP:
+#endif
 		    ruby_kill(pid, sig);
 		    break;
 		  default:
