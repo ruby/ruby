@@ -1203,11 +1203,14 @@ class TestProcess < Test::Unit::TestCase
     return unless Process.respond_to?(:kill)
     return unless Signal.list.include?("KILL")
 
+    # assume the system supports signal if SIGQUIT is available
+    expected = Signal.list.include?("QUIT") ? [false, true, false, nil] : [true, false, false, true]
+
     with_tmpchdir do
       write_file("foo", "Process.kill(:KILL, $$); exit(42)")
       system(RUBY, "foo")
       s = $?
-      assert_equal([false, true, false, nil],
+      assert_equal(expected,
                    [s.exited?, s.signaled?, s.stopped?, s.success?],
                    "[s.exited?, s.signaled?, s.stopped?, s.success?]")
       assert_equal(false, s.exited?)
