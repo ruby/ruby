@@ -100,38 +100,6 @@ TOKEN_PASTE(swap,x)(xtype z)		\
     return r;				\
 }
 
-#if SIZEOF_SHORT == 2
-# define swaps(x)	swap16(x)
-#elif SIZEOF_SHORT == 4
-# define swaps(x)	swap32(x)
-#else
-  define_swapx(s,short)
-#endif
-
-#if SIZEOF_INT == 2
-# define swapi(x)	swap16(x)
-#elif SIZEOF_INT == 4
-# define swapi(x)	swap32(x)
-#else
-  define_swapx(i,int)
-#endif
-
-#if SIZEOF_LONG == 4
-# define swapl(x)	swap32(x)
-#elif SIZEOF_LONG == 8
-# define swapl(x)        swap64(x)
-#else
-  define_swapx(l,long)
-#endif
-
-#ifdef HAVE_LONG_LONG
-# if SIZEOF_LONG_LONG == 8
-#  define swapll(x)        swap64(x)
-# else
-   define_swapx(ll,LONG_LONG)
-# endif
-#endif
-
 #if SIZEOF_FLOAT == 4 && defined(HAVE_INT32_T)
 #   define swapf(x)	swap32(x)
 #   define FLOAT_SWAPPER	uint32_t

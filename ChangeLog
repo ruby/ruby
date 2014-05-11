@@ -1,3 +1,10 @@
+Sun May 11 21:23:27 2014  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c (swaps): Unused macro removed.
+	  (swapi): Ditto.
+	  (swapl): Ditto.
+	  (swapll): Ditto.
+
 Sun May 11 08:02:49 2014  Eric Wong  <e@80x24.org>
 
 	* vm_core.h (rb_vm_t): list_head and counter for living_threads
