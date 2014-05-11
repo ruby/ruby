@@ -70,14 +70,6 @@ static const char endstr[] = "sSiIlLqQ";
 # define NATINT_LEN(type,len) ((int)sizeof(type))
 #endif
 
-#if SIZEOF_LONG == 8
-# define INT64toNUM(x) LONG2NUM(x)
-# define UINT64toNUM(x) ULONG2NUM(x)
-#elif defined(HAVE_LONG_LONG) && SIZEOF_LONG_LONG == 8
-# define INT64toNUM(x) LL2NUM(x)
-# define UINT64toNUM(x) ULL2NUM(x)
-#endif
-
 #define define_swapx(x, xtype)		\
 static xtype				\
 TOKEN_PASTE(swap,x)(xtype z)		\
@@ -1898,8 +1890,6 @@ pack_unpack(VALUE str, VALUE fmt)
 
     return ary;
 }
-
-#define BYTEWIDTH 8
 
 int
 rb_uv_to_utf8(char buf[6], unsigned long uv)

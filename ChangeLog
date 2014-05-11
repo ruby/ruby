@@ -1,3 +1,17 @@
+Sun May 11 22:27:18 2014  Tanaka Akira  <akr@fsij.org>
+
+	* compile.c (BUFSIZE): Unused macro removed.
+
+	* vm.c (BUFSIZE): Ditto.
+
+	* pack.c (INT64toNUM): Ditto.
+	  (UINT64toNUM): Ditto.
+	  (BYTEWIDTH): Ditto.
+
+	* time.c (lshift): Ditto.
+	  (UINT64toNUM): Ditto.
+	  (id_lshift): Unused variable removed.
+
 Sun May 11 21:23:27 2014  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c (swaps): Unused macro removed.

@@ -85,7 +85,6 @@ static rb_serial_t ruby_vm_class_serial = 1;
 
 #include <assert.h>
 
-#define BUFSIZE 0x100
 #define PROCDEBUG 0
 
 rb_serial_t

@@ -2996,8 +2996,6 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
     return done;
 }
 
-#define BUFSIZE 0x100
-
 static VALUE
 make_name_for_block(rb_iseq_t *iseq)
 {

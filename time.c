@@ -34,7 +34,7 @@
 #include "timev.h"
 
 static ID id_divmod, id_mul, id_submicro, id_nano_num, id_nano_den, id_offset, id_zone;
-static ID id_eq, id_ne, id_quo, id_div, id_cmp, id_lshift;
+static ID id_eq, id_ne, id_quo, id_div, id_cmp;
 
 #define NDIV(x,y) (-(-((x)+1)/(y))-1)
 #define NMOD(x,y) ((y)-(-((x)+1)%(y))-1)
@@ -172,7 +172,6 @@ mod(VALUE x, VALUE y)
 }
 
 #define neg(x) (sub(INT2FIX(0), (x)))
-#define lshift(x,y) (rb_funcall((x), id_lshift, 1, (y)))
 
 static VALUE
 quo(VALUE x, VALUE y)
@@ -214,10 +213,8 @@ divmodv(VALUE n, VALUE d, VALUE *q, VALUE *r)
 
 #if SIZEOF_LONG == 8
 # define INT64toNUM(x) LONG2NUM(x)
-# define UINT64toNUM(x) ULONG2NUM(x)
 #elif defined(HAVE_LONG_LONG) && SIZEOF_LONG_LONG == 8
 # define INT64toNUM(x) LL2NUM(x)
-# define UINT64toNUM(x) ULL2NUM(x)
 #endif
 
 #if defined(HAVE_UINT64_T) && SIZEOF_LONG*2 <= SIZEOF_UINT64_T
@@ -4947,7 +4944,6 @@ Init_Time(void)
     id_quo = rb_intern("quo");
     id_div = rb_intern("div");
     id_cmp = rb_intern("<=>");
-    id_lshift = rb_intern("<<");
     id_divmod = rb_intern("divmod");
     id_mul = rb_intern("*");
     id_submicro = rb_intern("submicro");
