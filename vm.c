@@ -2999,7 +2999,7 @@ void
 rb_vm_living_threads_foreach(rb_vm_t *vm,
 			    int (*fn)(rb_thread_t *, void*), void *arg)
 {
-    rb_thread_t *cur, *next;
+    rb_thread_t *cur = NULL, *next;
     list_for_each_safe(&vm->living_threads, cur, next, vmlt_node) {
 	int rc = fn(cur, arg);
 	switch (rc) {
