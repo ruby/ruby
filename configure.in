@@ -1505,6 +1505,12 @@ EOH
 ])dnl
 ])dnl
 
+AC_CACHE_CHECK(for typeof, rb_cv_typeof,
+  [AC_TRY_COMPILE([int i; typeof(i) j;], [], [rb_cv_typeof=yes], [rb_cv_typeof=no])])
+if test "$rb_cv_typeof" = yes; then
+  AC_DEFINE(HAVE_TYPEOF)
+fi
+
 dnl RUBY_FUNC_ATTRIBUTE(attrib, macroname, cachevar, condition)
 AC_DEFUN([RUBY_FUNC_ATTRIBUTE], [dnl
 m4_ifval([$2], dnl
