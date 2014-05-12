@@ -844,6 +844,8 @@ RVALUE_PROMOTE_YOUNG(rb_objspace_t *objspace, VALUE obj)
 
     if (RGENGC_CHECK_MODE && !RVALUE_YOUNG_P(obj)) rb_bug("RVALUE_PROMOTE_YOUNG: %p (%s) is not young object.", (void *)obj, obj_type_name(obj));
     MARK_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj), obj);
+
+    objspace->rgengc.young_object_count--;
     objspace->rgengc.old_object_count++;
 
     check_gen_consistency(obj);
@@ -1531,8 +1533,14 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
     }
 
 #if USE_RGENGC
-    if (MARKED_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj),obj))
+#if RGENGC_AGE2_PROMOTION
+    if (RVALUE_YOUNG_P(obj)) {
+	objspace->rgengc.young_object_count--;
+    }
+#endif
+    if (MARKED_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj),obj)) {
 	CLEAR_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj),obj);
+    }
 #endif
 
     switch (BUILTIN_TYPE(obj)) {
@@ -4554,9 +4562,6 @@ gc_marks(rb_objspace_t *objspace, int full_mark)
 	if (full_mark == TRUE) { /* major/full GC */
 	    objspace->rgengc.remembered_shady_object_count = 0;
 	    objspace->rgengc.old_object_count = 0;
-#if RGENGC_AGE2_PROMOTION
-	    objspace->rgengc.young_object_count = 0;
-#endif
 
 	    gc_marks_body(objspace, TRUE);
 	    {
@@ -5426,6 +5431,9 @@ gc_stat_internal(VALUE hash_or_sym, size_t *out)
     static VALUE sym_minor_gc_count, sym_major_gc_count;
     static VALUE sym_remembered_shady_object, sym_remembered_shady_object_limit;
     static VALUE sym_old_object, sym_old_object_limit;
+#if RGENGC_AGE2_PROMOTION
+    static VALUE sym_young_object;
+#endif
 #if RGENGC_ESTIMATE_OLDMALLOC
     static VALUE sym_oldmalloc_increase, sym_oldmalloc_limit;
 #endif
@@ -5469,6 +5477,9 @@ gc_stat_internal(VALUE hash_or_sym, size_t *out)
 	S(remembered_shady_object_limit);
 	S(old_object);
 	S(old_object_limit);
+#if RGENGC_AGE2_PROMOTION
+	S(young_object);
+#endif
 #if RGENGC_ESTIMATE_OLDMALLOC
 	S(oldmalloc_increase);
 	S(oldmalloc_limit);
@@ -5515,6 +5526,9 @@ gc_stat_internal(VALUE hash_or_sym, size_t *out)
     SET(remembered_shady_object_limit, objspace->rgengc.remembered_shady_object_limit);
     SET(old_object, objspace->rgengc.old_object_count);
     SET(old_object_limit, objspace->rgengc.old_object_limit);
+#if RGENGC_AGE2_PROMOTION
+    SET(young_object, objspace->rgengc.young_object_count);
+#endif
 #if RGENGC_ESTIMATE_OLDMALLOC
     SET(oldmalloc_increase, objspace->rgengc.oldmalloc_increase);
     SET(oldmalloc_limit, objspace->rgengc.oldmalloc_increase_limit);

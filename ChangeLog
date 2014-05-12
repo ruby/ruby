@@ -1,3 +1,18 @@
+Mon May 12 19:52:11 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: count young object correctly and show it in GC.stat
+	  on RGENGC_AGE2_PROMOTION.
+
+	* gc.c (RVALUE_PROMOTE_YOUNG): decrement young object count on
+	  YOUNG->OLD.
+
+	* gc.c (obj_free): decrement young object count when young object
+	  freed.
+
+	* gc.c (gc_marks): should not clear young object count.
+
+	* gc.c (gc_stat_internal): GC.stat :young_object information.
+
 Mon May 12 01:30:59 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ifaddr.c (IS_IFADDRS): Unused macro removed.
