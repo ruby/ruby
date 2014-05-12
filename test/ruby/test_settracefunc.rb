@@ -1066,4 +1066,38 @@ class TestSetTraceFunc < Test::Unit::TestCase
       :b_return
     ], events)
   end
+  class C9759
+    define_method(:foo){
+      raise
+    }
+  end
+
+  def test_define_method_on_exception
+    events = []
+    obj = C9759.new
+    TracePoint.new(:call, :return){|tp|
+      next unless target_thread?
+      events << [tp.event, tp.method_id]
+    }.enable{
+      obj.foo rescue nil
+    }
+    assert_equal([[:call, :foo], [:return, :foo]], events, 'Bug #9759')
+
+    events = []
+    begin
+      set_trace_func(lambda{|event, file, lineno, mid, binding, klass|
+        next unless target_thread?
+        case event
+        when 'call', 'return'
+          events << [event, mid]
+        end
+      })
+      obj.foo rescue nil
+      set_trace_func(nil)
+
+      assert_equal([['call', :foo], ['return', :foo]], events, 'Bug #9759')
+    ensure
+    end
+
+  end
 end
