@@ -2145,6 +2145,35 @@ void qsort_r(void *base, size_t nmemb, size_t size,
   ])
 fi
 
+AC_CACHE_CHECK(whether atan2 handles Inf as C99, rb_cv_atan2_inf_c99, [
+    AS_IF([test $ac_cv_func_atan2f:$ac_cv_func_atan2l = yes:yes], [
+	AC_TRY_RUN([
+@%:@include <math.h>
+@%:@ifdef HAVE_UNISTD_H
+@%:@include <unistd.h>
+@%:@endif
+@%:@ifndef EXIT_SUCCESS
+@%:@define EXIT_SUCCESS 0
+@%:@endif
+@%:@ifndef EXIT_FAILURE
+@%:@define EXIT_FAILURE 1
+@%:@endif
+
+int
+main(int argc, char **argv)
+{
+    if (fabs(atan2(INFINITY, INFINITY) - M_PI_4) <= 0.01) return EXIT_SUCCESS;
+    return EXIT_FAILURE;
+}
+],
+	[rb_cv_atan2_inf_c99=yes],
+	[rb_cv_atan2_inf_c99=no],
+	[AS_CASE($target_os, [mingw*|mswin*], [rb_cv_atan2_inf_c99=no], [rb_cv_atan2_inf_c99=yes])]
+	)
+    ])
+])
+AS_IF([test $rb_cv_atan2_inf_c99 = yes], [AC_DEFINE(ATAN2_INF_C99)])
+
 # Some platform need -lrt for clock_gettime, but the other don't.
 if test x"$ac_cv_func_clock_gettime" != xyes; then
     # glibc 2.17 moves clock_* functions from librt to the main C library.
