@@ -1218,14 +1218,15 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *const cref_arg, 
 	VALUE absolute_path = Qnil;
 	VALUE fname;
 
+	if (file != Qundef) {
+	    absolute_path = file;
+	}
+
 	if (scope != Qnil) {
 	    bind = Check_TypedStruct(scope, &ruby_binding_data_type);
 	    {
 		envval = bind->env;
-		if (file != Qundef) {
-		    absolute_path = file;
-		}
-		else if (!NIL_P(bind->path)) {
+		if (NIL_P(absolute_path) && !NIL_P(bind->path)) {
 		    file = bind->path;
 		    line = bind->first_lineno;
 		    absolute_path = rb_current_realfilepath();

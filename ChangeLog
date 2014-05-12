@@ -1,3 +1,12 @@
+Mon May 12 22:11:47 2014  Shota Fukumori  <her@sorah.jp>
+
+	* vm_eval.c (eval_string_with_cref): Unify to use NIL_P.
+
+Mon May 12 22:11:47 2014  Shota Fukumori  <her@sorah.jp>
+
+	* vm_eval.c (eval_string_with_cref): Use file path even if scope is
+	  given. Related to [ruby-core:56099] [Bug #8662] and r42103.
+
 Thu May  8 01:13:10 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: correct pthread_setname_np's prototype on NetBSD.
