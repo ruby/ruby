@@ -1920,10 +1920,27 @@ AS_CASE(["$target_os"],[freebsd*],[
 	 AC_DEFINE(BROKEN_CLOSE)
 	 AC_REPLACE_FUNCS(close)
 	 ])
-AC_REPLACE_FUNCS(dup2 memmove strerror\
-		 strchr strstr crypt flock\
-		 isnan finite isinf hypot acosh erf tgamma lgamma_r cbrt \
-                 strlcpy strlcat ffs setproctitle)
+
+AC_REPLACE_FUNCS(acosh)
+AC_REPLACE_FUNCS(cbrt)
+AC_REPLACE_FUNCS(crypt)
+AC_REPLACE_FUNCS(dup2)
+AC_REPLACE_FUNCS(erf)
+AC_REPLACE_FUNCS(ffs)
+AC_REPLACE_FUNCS(finite)
+AC_REPLACE_FUNCS(flock)
+AC_REPLACE_FUNCS(hypot)
+AC_REPLACE_FUNCS(isinf)
+AC_REPLACE_FUNCS(isnan)
+AC_REPLACE_FUNCS(lgamma_r)
+AC_REPLACE_FUNCS(memmove)
+AC_REPLACE_FUNCS(setproctitle)
+AC_REPLACE_FUNCS(strchr)
+AC_REPLACE_FUNCS(strerror)
+AC_REPLACE_FUNCS(strlcat)
+AC_REPLACE_FUNCS(strlcpy)
+AC_REPLACE_FUNCS(strstr)
+AC_REPLACE_FUNCS(tgamma)
 
 # for missing/setproctitle.c
 AS_CASE(["$target_os"],

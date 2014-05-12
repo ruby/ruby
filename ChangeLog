@@ -1,3 +1,7 @@
+Mon May 12 20:33:01 2014  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: Invoke AC_REPLACE_FUNCS for each function.
+
 Mon May 12 19:52:11 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: count young object correctly and show it in GC.stat
