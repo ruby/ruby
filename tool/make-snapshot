@@ -27,6 +27,7 @@ each versions may be followed by optional @revision.
 USAGE
 end
 
+DIGESTS = %w[MD5 SHA256 SHA512]
 PACKAGES = {
   "bzip" => %w".tar.bz2 bzip2 -c",
   "gzip" => %w".tar.gz  gzip -c",
@@ -325,9 +326,9 @@ revisions.collect {|rev| package(rev, destdir)}.flatten.each do |name|
   sha = Digest::SHA256.hexdigest str
   puts "* #{name}"
   puts "  SIZE:   #{str.bytesize} bytes"
-  puts "  MD5:    #{md5}"
-  puts "  SHA256: #{sha}"
-  puts
+  DIGESTS.each do |alg|
+    printf "  %-8s%s\n", "#{alg}:", Digest.const_get(alg).hexdigest(str)
+  end
 end
 
 exit false if !success
