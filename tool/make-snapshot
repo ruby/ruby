@@ -22,6 +22,7 @@ options:
   -keep_temp            keep temporary working directory
   -patch_file=PATCH     apply PATCH file after export
   -packages=PKG[,...]   make PKG packages (#{PACKAGES.keys.join(", ")})
+  -digests=ALG[,...]    show ALG digests (#{DIGESTS.join(", ")})
 version:
   trunk, stable, branches/*, tags/*, X.Y.Z, X.Y.Z-pL
 each versions may be followed by optional @revision.
@@ -73,6 +74,12 @@ $packages &&= $packages.split(/[, ]+/).tap {|pkg|
   pkg.empty? or abort "#{File.basename $0}: unknown packages - #{pkg.join(", ")}"
 }
 $packages ||= PACKAGES.keys
+
+$digests &&= $digests.split(/[, ]+/).tap {|dig|
+  dig -= DIGESTS
+  dig.empty? or abort "#{File.basename $0}: unknown digests - #{dig.join(", ")}"
+}
+$digests ||= DIGESTS
 
 $patch_file &&= File.expand_path($patch_file)
 path = ENV["PATH"].split(File::PATH_SEPARATOR)
@@ -332,7 +339,7 @@ revisions.collect {|rev| package(rev, destdir)}.flatten.each do |name|
   str = open(name, "rb") {|f| f.read}
   puts "* #{name}"
   puts "  SIZE:   #{str.bytesize} bytes"
-  DIGESTS.each do |alg|
+  $digests.each do |alg|
     printf "  %-8s%s\n", "#{alg}:", Digest.const_get(alg).hexdigest(str)
   end
 end
