@@ -27,6 +27,13 @@ each versions may be followed by optional @revision.
 USAGE
 end
 
+PACKAGES = {
+  "bzip" => %w".tar.bz2 bzip2 -c",
+  "gzip" => %w".tar.gz  gzip -c",
+  "xz"   => %w".tar.xz  xz -c",
+  "zip"  => %w".zip     zip -qr",
+}
+
 ENV["LC_ALL"] = ENV["LANG"] = "C"
 SVNURL = URI.parse("http://svn.ruby-lang.org/repos/ruby/")
 RUBY_VERSION_PATTERN = /^\#define\s+RUBY_VERSION\s+"([\d.]+)"/
@@ -270,13 +277,32 @@ def package(rev, destdir)
     v = File.basename(v)
   end
 
-  return [["bzip tarball", ".tar.bz2", %w"tar cjf"],
-          ["gzip tarball", ".tar.gz", %w"tar czf"],
-          ["zip archive", ".zip", %w"zip -qr"]
-         ].collect do |mesg, ext, cmd|
+  tarball = nil
+  return PACKAGES.collect do |mesg, (ext, *cmd)|
+    File.directory?(destdir) or FileUtils.mkpath(destdir)
     file = File.join(destdir, "#{$archname||v}#{ext}")
-    print "creating #{mesg}... #{file}"
-    if system(*(cmd + [file, v]))
+    case ext
+    when /\.tar/
+      if tarball
+        next if tarball.empty?
+      else
+        tarball = "#{$archname||v}.tar"
+        print "creating tarball... #{tarball}"
+        if system("tar", "cf", tarball, v)
+          puts " done"
+        else
+          puts " failed"
+          tarball = ""
+          next
+        end
+      end
+      print "creating #{mesg} tarball... #{file}"
+      done = system(*(cmd + [tarball]), out: file)
+    else
+      print "creating #{mesg} archive... #{file}"
+      done = system(*(cmd + [file, v]))
+    end
+    if done
       puts " done"
       file
     else
