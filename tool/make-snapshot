@@ -21,6 +21,7 @@ options:
   -archname=NAME        make the basename of snapshots NAME
   -keep_temp            keep temporary working directory
   -patch_file=PATCH     apply PATCH file after export
+  -packages=PKG[,...]   make PKG packages (#{PACKAGES.keys.join(", ")})
 version:
   trunk, stable, branches/*, tags/*, X.Y.Z, X.Y.Z-pL
 each versions may be followed by optional @revision.
@@ -66,6 +67,12 @@ class Dir
     path
   end unless respond_to?(:mktmpdir)
 end
+
+$packages &&= $packages.split(/[, ]+/).tap {|pkg|
+  pkg -= PACKAGES.keys
+  pkg.empty? or abort "#{File.basename $0}: unknown packages - #{pkg.join(", ")}"
+}
+$packages ||= PACKAGES.keys
 
 $patch_file &&= File.expand_path($patch_file)
 path = ENV["PATH"].split(File::PATH_SEPARATOR)
@@ -279,7 +286,8 @@ def package(rev, destdir)
   end
 
   tarball = nil
-  return PACKAGES.collect do |mesg, (ext, *cmd)|
+  return $packages.collect do |mesg|
+    (ext, *cmd) = PACKAGES[mesg]
     File.directory?(destdir) or FileUtils.mkpath(destdir)
     file = File.join(destdir, "#{$archname||v}#{ext}")
     case ext
