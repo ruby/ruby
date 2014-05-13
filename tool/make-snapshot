@@ -322,8 +322,6 @@ revisions.collect {|rev| package(rev, destdir)}.flatten.each do |name|
     next
   end
   str = open(name, "rb") {|f| f.read}
-  md5 = Digest::MD5.hexdigest str
-  sha = Digest::SHA256.hexdigest str
   puts "* #{name}"
   puts "  SIZE:   #{str.bytesize} bytes"
   DIGESTS.each do |alg|
