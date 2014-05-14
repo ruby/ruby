@@ -23,8 +23,14 @@
 #include "id.h"
 #include "method.h"
 #include "ruby_atomic.h"
-#include "thread_native.h"
 #include "ccan/list/list.h"
+
+#include "ruby/thread_native.h"
+#if   defined(_WIN32)
+#include "thread_win32.h"
+#elif defined(HAVE_PTHREAD_H)
+#include "thread_pthread.h"
+#endif
 
 #ifndef ENABLE_VM_OBJSPACE
 #ifdef _WIN32

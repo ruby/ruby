@@ -467,7 +467,7 @@ ossl_fips_mode_set(VALUE self, VALUE enabled)
 /**
  * Stores locks needed for OpenSSL thread safety
  */
-#include "../../thread_native.h"
+#include "ruby/thread_native.h"
 static rb_nativethread_lock_t *ossl_locks;
 
 static void

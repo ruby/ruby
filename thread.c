@@ -62,6 +62,7 @@
 #include "timev.h"
 #include "ruby/io.h"
 #include "ruby/thread.h"
+#include "ruby/thread_native.h"
 #include "internal.h"
 
 #ifndef USE_NATIVE_THREAD_PRIORITY

@@ -1,3 +1,28 @@
+Wed May 14 19:31:03 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/openssl/depend: remove dependency from internal headers.
+	  [Feature #9612]
+
+	* ext/openssl/ossl.c (ossl_fips_mode_set): ditto.
+
+	* ext/coverage/depend: ditto.
+
+	* include/ruby/thread_native.h: added.
+
+	  This header file only provides wrapper functions to control
+	  native threads. These wrapper functions are used by MRI
+	  implementation.
+
+	* vm_core.h: use include/ruby/thread_native.h.
+
+	* thread.c: ditto.
+
+	* thread_pthread.h: ditto.
+
+	* thread_win32.h: ditto.
+
+	* thread_native.h: removed.
+
 Wed May 14 18:03:28 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: enable RGENGC_AGE2_PROMOTION.

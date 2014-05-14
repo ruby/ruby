@@ -11,12 +11,9 @@
 #ifndef RUBY_THREAD_PTHREAD_H
 #define RUBY_THREAD_PTHREAD_H
 
-#include <pthread.h>
 #ifdef HAVE_PTHREAD_NP_H
 #include <pthread_np.h>
 #endif
-typedef pthread_t rb_nativethread_id_t;
-typedef pthread_mutex_t rb_nativethread_lock_t;
 
 typedef struct rb_thread_cond_struct {
     pthread_cond_t cond;
