@@ -1,3 +1,7 @@
+Wed May 14 18:02:30 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rgengc_rememberset_mark): promote remembered object earlier.
+
 Mon May 12 23:57:15 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (rb_cv_atan2_inf_c99): check whether runtime atan2

@@ -4729,16 +4729,14 @@ rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap)
 			    rgengc_report(2, objspace, "rgengc_rememberset_mark: clear %p (%s)\n", p, obj_type_name((VALUE)p));
 #if RGENGC_AGE2_PROMOTION
 			    if (RVALUE_INFANT_P((VALUE)p)) {
-				/* infant objects should remain in remembered because remembered objects should become old objects */
-				/* young objects become old objects soon */
+				RVALUE_PROMOTE_INFANT(objspace, (VALUE)p);
+				RVALUE_PROMOTE_YOUNG(objspace, (VALUE)p);
 			    }
-			    else {
-				CLEAR_IN_BITMAP(bits, p);
+			    else if (RVALUE_YOUNG_P((VALUE)p)) {
+				RVALUE_PROMOTE_YOUNG(objspace, (VALUE)p);
 			    }
-#else
-			    CLEAR_IN_BITMAP(bits, p);
 #endif
-
+			    CLEAR_IN_BITMAP(bits, p);
 #if RGENGC_PROFILE > 0
 			    clear_count++;
 #endif
