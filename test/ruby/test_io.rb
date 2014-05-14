@@ -1643,7 +1643,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_pos_with_getc
-    bug6179 = '[ruby-core:43497]'
+    _bug6179 = '[ruby-core:43497]'
     make_tempfile {|t|
       ["", "t", "b"].each do |mode|
         open(t.path, "w#{mode}") do |f|
@@ -1666,6 +1666,27 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def can_seek_data(f)
+    if /linux/ =~ RUBY_PLATFORM
+      # include/uapi/linux/magic.h
+      case f.statfs.type
+      when 0x9123683E # BTRFS_SUPER_MAGIC
+      when 0x7461636f # OCFS2_SUPER_MAGIC
+      when 0xEF53 # EXT2_SUPER_MAGIC EXT3_SUPER_MAGIC EXT4_SUPER_MAGIC
+        return false if (`/bin/uname -r`.split('.').map(&:to_i) <=> [3,8]) < 0
+        # ext3's timestamp resolution is seconds
+        s = f.stat
+        s.mtime.nsec != 0 || s.atime.nsec != 0 || s.ctime.nsec != 0
+      when 0x58465342 # XFS_SUPER_MAGIC
+        return false if (`/bin/uname -r`.split('.').map(&:to_i) <=> [3,5]) < 0
+      when 0x01021994 # TMPFS_MAGIC
+        return false if (`/bin/uname -r`.split('.').map(&:to_i) <=> [3,8]) < 0
+      else
+        return false
+      end
+    end
+    true
+  end
 
   def test_seek
     make_tempfile {|t|
@@ -1692,16 +1713,30 @@ class TestIO < Test::Unit::TestCase
 
       if defined?(IO::SEEK_DATA)
         open(t.path) { |f|
+          break unless can_seek_data(f)
           assert_equal("foo\n", f.gets)
-          f.seek(0, IO::SEEK_DATA)
+          assert_nothing_raised(proc {"cannot SEEK_DATA on FS(0x%X)" % f.statfs.type}) do
+            f.seek(0, IO::SEEK_DATA)
+          end
           assert_equal("foo\nbar\nbaz\n", f.read)
+        }
+        open(t.path, 'r+') { |f|
+          break unless can_seek_data(f)
+          f.seek(100*1024, IO::SEEK_SET)
+          f.print("zot\n")
+          f.seek(50*1024, IO::SEEK_DATA)
+          assert_operator(f.pos, :>=, 50*1024)
+          assert_match(/\A\0*zot\n\z/, f.read)
         }
       end
 
       if defined?(IO::SEEK_HOLE)
-        open(t.path) { |f|2
+        open(t.path) { |f|
+          break unless can_seek_data(f)
           assert_equal("foo\n", f.gets)
           f.seek(0, IO::SEEK_HOLE)
+          assert_operator(f.pos, :>, 20)
+          f.seek(100*1024, IO::SEEK_HOLE)
           assert_equal("", f.read)
         }
       end
@@ -1728,16 +1763,30 @@ class TestIO < Test::Unit::TestCase
 
       if defined?(IO::SEEK_DATA)
         open(t.path) { |f|
+          break unless can_seek_data(f)
           assert_equal("foo\n", f.gets)
-          f.seek(0, :DATA)
+          assert_nothing_raised(proc {"cannot SEEK_DATA on FS(0x%X)" % f.statfs.type}) do
+            f.seek(0, :DATA)
+          end
           assert_equal("foo\nbar\nbaz\n", f.read)
+        }
+        open(t.path, 'r+') { |f|
+          break unless can_seek_data(f)
+          f.seek(100*1024, :SET)
+          f.print("zot\n")
+          f.seek(50*1024, :DATA)
+          assert_operator(f.pos, :>=, 50*1024)
+          assert_match(/\A\0*zot\n\z/, f.read)
         }
       end
 
       if defined?(IO::SEEK_HOLE)
         open(t.path) { |f|
+          break unless can_seek_data(f)
           assert_equal("foo\n", f.gets)
           f.seek(0, :HOLE)
+          assert_operator(f.pos, :>, 20)
+          f.seek(100*1024, :HOLE)
           assert_equal("", f.read)
         }
       end

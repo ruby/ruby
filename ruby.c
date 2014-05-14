@@ -207,49 +207,7 @@ usage(const char *name, int help)
 	SHOW(features[i]);
 }
 
-#ifdef MANGLED_PATH
-static VALUE
-rubylib_mangled_path(const char *s, unsigned int l)
-{
-    static char *newp, *oldp;
-    static int newl, oldl, notfound;
-    char *ptr;
-    VALUE ret;
-
-    if (!newp && !notfound) {
-	newp = getenv("RUBYLIB_PREFIX");
-	if (newp) {
-	    oldp = newp = strdup(newp);
-	    while (*newp && !ISSPACE(*newp) && *newp != ';') {
-		newp = CharNext(newp);	/* Skip digits. */
-	    }
-	    oldl = newp - oldp;
-	    while (*newp && (ISSPACE(*newp) || *newp == ';')) {
-		newp = CharNext(newp);	/* Skip whitespace. */
-	    }
-	    newl = strlen(newp);
-	    if (newl == 0 || oldl == 0) {
-		rb_fatal("malformed RUBYLIB_PREFIX");
-	    }
-	    translit_char(newp, '\\', '/');
-	}
-	else {
-	    notfound = 1;
-	}
-    }
-    if (!newp || l < oldl || STRNCASECMP(oldp, s, oldl) != 0) {
-	return rb_str_new(s, l);
-    }
-    ret = rb_str_new(0, l + newl - oldl);
-    ptr = RSTRING_PTR(ret);
-    memcpy(ptr, newp, newl);
-    memcpy(ptr + newl, s + oldl, l - oldl);
-    ptr[l + newl - oldl] = 0;
-    return ret;
-}
-#else
-#define rubylib_mangled_path rb_str_new
-#endif
+#define rubylib_path_new rb_str_new
 
 static void
 push_include(const char *path, VALUE (*filter)(VALUE))
@@ -264,7 +222,7 @@ push_include(const char *path, VALUE (*filter)(VALUE))
 	    p++;
 	if (!*p) break;
 	for (s = p; *s && *s != sep; s = CharNext(s));
-	rb_ary_push(load_path, (*filter)(rubylib_mangled_path(p, s - p)));
+	rb_ary_push(load_path, (*filter)(rubylib_path_new(p, s - p)));
 	p = s;
     }
 }
@@ -299,8 +257,7 @@ push_include_cygwin(const char *path, VALUE (*filter)(VALUE))
 #define CONV_TO_POSIX_PATH(p, lib) \
 	cygwin_conv_path(CCP_WIN_A_TO_POSIX|CCP_RELATIVE, (p), (lib), sizeof(lib))
 #else
-#define CONV_TO_POSIX_PATH(p, lib) \
-	cygwin_conv_to_posix_path((p), (lib))
+# error no cygwin_conv_path
 #endif
 	if (CONV_TO_POSIX_PATH(p, rubylib) == 0)
 	    p = rubylib;
@@ -390,7 +347,7 @@ ruby_init_loadpath_safe(int safe_level)
     extern const char ruby_initial_load_paths[];
     const char *paths = ruby_initial_load_paths;
 #if defined LOAD_RELATIVE
-# if defined HAVE_DLADDR || defined HAVE_CYGWIN_CONV_PATH
+# if defined HAVE_DLADDR || defined __CYGWIN__ || defined _WIN32
 #   define VARIABLE_LIBPATH 1
 # else
 #   define VARIABLE_LIBPATH 0
@@ -405,13 +362,9 @@ ruby_init_loadpath_safe(int safe_level)
     char *p;
 
 #if defined _WIN32 || defined __CYGWIN__
-# if VARIABLE_LIBPATH
     sopath = rb_str_new(0, MAXPATHLEN);
     libpath = RSTRING_PTR(sopath);
     GetModuleFileName(libruby, libpath, MAXPATHLEN);
-# else
-    GetModuleFileName(libruby, libpath, sizeof libpath);
-# endif
 #elif defined(__EMX__)
     _execname(libpath, sizeof(libpath) - 1);
 #elif defined(HAVE_DLADDR)
@@ -436,7 +389,6 @@ ruby_init_loadpath_safe(int safe_level)
     translit_char(libpath, '\\', '/');
 #elif defined __CYGWIN__
     {
-# if VARIABLE_LIBPATH
 	const int win_to_posix = CCP_WIN_A_TO_POSIX | CCP_RELATIVE;
 	size_t newsize = cygwin_conv_path(win_to_posix, libpath, 0, 0);
 	if (newsize > 0) {
@@ -448,11 +400,6 @@ ruby_init_loadpath_safe(int safe_level)
 		libpath = p;
 	    }
 	}
-# else
-	char rubylib[FILENAME_MAX];
-	cygwin_conv_to_posix_path(libpath, rubylib);
-	strncpy(libpath, rubylib, sizeof(libpath));
-# endif
     }
 #endif
     p = strrchr(libpath, '/');
@@ -510,15 +457,12 @@ ruby_init_loadpath_safe(int safe_level)
 #else
     extern const char ruby_exec_prefix[];
     const size_t exec_prefix_len = strlen(ruby_exec_prefix);
-#define RUBY_RELATIVE(path, len) rubylib_mangled_path((path), (len))
+#define RUBY_RELATIVE(path, len) rubylib_path_new((path), (len))
 #define PREFIX_PATH() RUBY_RELATIVE(ruby_exec_prefix, exec_prefix_len)
 #endif
     load_path = GET_VM()->load_path;
 
     if (safe_level == 0) {
-#ifdef MANGLED_PATH
-	rubylib_mangled_path("", 0);
-#endif
 	ruby_push_include(getenv("RUBYLIB"), identical_path);
     }
 

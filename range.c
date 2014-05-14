@@ -31,13 +31,6 @@ static ID id_cmp, id_succ, id_beg, id_end, id_excl, id_integer_p, id_div;
 #define RBOOL(v) ((v) ? Qtrue : Qfalse)
 
 #define EXCL(r) RTEST(RANGE_EXCL(r))
-static inline VALUE
-SET_EXCL(VALUE r, VALUE v)
-{
-    v = RBOOL(RTEST(v));
-    RANGE_SET_EXCL(r, v);
-    return v;
-}
 
 static VALUE
 range_failed(void)
@@ -250,6 +243,8 @@ range_eql(VALUE range, VALUE obj)
  * Compute a hash-code for this range. Two ranges with equal
  * begin and end points (using <code>eql?</code>), and the same
  * #exclude_end? value will generate the same hash-code.
+ *
+ * See also Object#hash.
  */
 
 static VALUE

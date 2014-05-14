@@ -5,6 +5,10 @@ TEST_TARGETS := $(patsubst test-%,yes-test-%,$(patsubst btest-%,yes-btest-%,$(TE
 TEST_DEPENDS := $(if $(TEST_TARGETS),$(filter all main exts,$(MAKECMDGOALS)))
 TEST_DEPENDS += $(TEST_DEPENDS) $(if $(filter check%,$(MAKECMDGOALS)),main)
 
+ifneq ($(filter -O0 -Od,$(optflags)),)
+override XCFLAGS := $(filter-out -D_FORTIFY_SOURCE=%,$(XCFLAGS))
+endif
+
 ifneq ($(filter check% test,$(MAKECMDGOALS)),)
 yes-test-knownbug: $(TEST_DEPENDS) yes-btest-ruby
 yes-btest-ruby: $(TEST_DEPENDS) yes-test-sample

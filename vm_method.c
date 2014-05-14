@@ -333,6 +333,8 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 	rb_unlink_method_entry(old_me);
     }
 
+    mid = SYM2ID(ID2SYM(mid));
+
     me = ALLOC(rb_method_entry_t);
 
     rb_clear_method_cache_by_class(klass);
@@ -467,7 +469,7 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 	break;
       case VM_METHOD_TYPE_ATTRSET:
       case VM_METHOD_TYPE_IVAR:
-	def->body.attr.id = (ID)opts;
+	def->body.attr.id = (ID)(VALUE)opts;
 	RB_OBJ_WRITE(klass, &def->body.attr.location, Qfalse);
 	th = GET_THREAD();
 	cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
@@ -578,8 +580,15 @@ rb_method_entry_get_without_cache(VALUE klass, ID id,
     VALUE defined_class;
     rb_method_entry_t *me = search_method(klass, id, &defined_class);
 
-    if (me && RB_TYPE_P(me->klass, T_ICLASS))
-	defined_class = me->klass;
+    if (me && me->klass) {
+	switch (BUILTIN_TYPE(me->klass)) {
+	  case T_CLASS:
+	    if (RBASIC(klass)->flags & FL_SINGLETON) break;
+	    /* fall through */
+	  case T_ICLASS:
+	    defined_class = me->klass;
+	}
+    }
 
     if (ruby_running) {
 	if (OPT_GLOBAL_METHOD_CACHE) {
@@ -784,7 +793,7 @@ rb_mod_remove_method(int argc, VALUE *argv, VALUE mod)
 
     for (i = 0; i < argc; i++) {
 	VALUE v = argv[i];
-	ID id = rb_check_id(&v);
+	ID id = rb_check_id_without_pindown(&v);
 	if (!id) {
 	    rb_name_error_str(v, "method `%s' not defined in %s",
 			      RSTRING_PTR(v), rb_class2name(mod));
@@ -868,7 +877,7 @@ extern ID rb_check_attr_id(ID id);
 void
 rb_attr(VALUE klass, ID id, int read, int write, int ex)
 {
-    ID attriv;
+    VALUE attriv;
     VALUE aname;
     rb_method_flag_t noex;
 
@@ -894,7 +903,7 @@ rb_attr(VALUE klass, ID id, int read, int write, int ex)
     if (NIL_P(aname)) {
 	rb_raise(rb_eArgError, "argument needs to be symbol or string");
     }
-    attriv = rb_intern_str(rb_sprintf("@%"PRIsVALUE, aname));
+    attriv = (VALUE)rb_intern_str(rb_sprintf("@%"PRIsVALUE, aname));
     if (read) {
 	rb_add_method(klass, id, VM_METHOD_TYPE_IVAR, (void *)attriv, noex);
     }
@@ -995,7 +1004,7 @@ rb_mod_undef_method(int argc, VALUE *argv, VALUE mod)
     int i;
     for (i = 0; i < argc; i++) {
 	VALUE v = argv[i];
-	ID id = rb_check_id(&v);
+	ID id = rb_check_id_without_pindown(&v);
 	if (!id) {
 	    rb_method_name_error(mod, v);
 	}
@@ -1035,7 +1044,7 @@ rb_mod_undef_method(int argc, VALUE *argv, VALUE mod)
 static VALUE
 rb_mod_method_defined(VALUE mod, VALUE mid)
 {
-    ID id = rb_check_id(&mid);
+    ID id = rb_check_id_without_pindown(&mid);
     if (!id || !rb_method_boundp(mod, id, 1)) {
 	return Qfalse;
     }
@@ -1049,7 +1058,7 @@ static VALUE
 check_definition(VALUE mod, VALUE mid, rb_method_flag_t noex)
 {
     const rb_method_entry_t *me;
-    ID id = rb_check_id(&mid);
+    ID id = rb_check_id_without_pindown(&mid);
     if (!id) return Qfalse;
     me = rb_method_entry(mod, id, 0);
     if (me) {
@@ -1678,7 +1687,7 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
     ID id;
 
     rb_scan_args(argc, argv, "11", &mid, &priv);
-    if (!(id = rb_check_id(&mid))) {
+    if (!(id = rb_check_id_without_pindown(&mid))) {
 	if (!rb_method_basic_definition_p(CLASS_OF(obj), idRespond_to_missing)) {
 	    VALUE args[2];
 	    args[0] = ID2SYM(rb_to_id(mid));

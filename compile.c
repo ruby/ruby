@@ -2505,6 +2505,7 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE* node_root,
 			    if (i > 0 || !first) ADD_INSN(ret, line, swap);
 			    COMPILE(ret, "keyword splat", kw);
 			    ADD_SEND(ret, line, ID2SYM(id_core_hash_merge_kwd), nhash);
+			    if (nhash == INT2FIX(1)) ADD_SEND(ret, line, ID2SYM(rb_intern("dup")), INT2FIX(0));
 			}
 			first = 0;
 			break;
@@ -3021,8 +3022,6 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
     }
     return done;
 }
-
-#define BUFSIZE 0x100
 
 static VALUE
 make_name_for_block(rb_iseq_t *iseq)

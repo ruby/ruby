@@ -208,6 +208,8 @@ static const struct signals {
     {NULL, 0}
 };
 
+static const char signame_prefix[3] = "SIG";
+
 static int
 signm2signo(const char *nm)
 {
@@ -298,11 +300,16 @@ esignal_init(int argc, VALUE *argv, VALUE self)
 	}
     }
     else {
+	int len = sizeof(signame_prefix);
 	signm = SYMBOL_P(sig) ? rb_id2name(SYM2ID(sig)) : StringValuePtr(sig);
-	if (strncmp(signm, "SIG", 3) == 0) signm += 3;
+	if (strncmp(signm, signame_prefix, len) == 0) {
+	    signm += len;
+	    len = 0;
+	}
 	signo = signm2signo(signm);
 	if (!signo) {
-	    rb_raise(rb_eArgError, "unsupported name `SIG%s'", signm);
+	    rb_raise(rb_eArgError, "unsupported name `%.*s%"PRIsVALUE"'",
+		     len, signame_prefix, sig);
 	}
 	sig = rb_sprintf("SIG%s", signm);
     }
@@ -342,6 +349,9 @@ ruby_default_signal(int sig)
     signal(sig, SIG_DFL);
     raise(sig);
 }
+
+static int signal_ignored(int sig);
+static void signal_enque(int sig);
 
 /*
  *  call-seq:
@@ -409,7 +419,7 @@ rb_f_kill(int argc, VALUE *argv)
 	    negative++;
 	    s++;
 	}
-	if (strncmp("SIG", s, 3) == 0)
+	if (strncmp(signame_prefix, s, sizeof(signame_prefix)) == 0)
 	    s += 3;
 	if ((sig = signm2signo(s)) == 0)
 	    rb_raise(rb_eArgError, "unsupported name `SIG%s'", s);
@@ -429,6 +439,8 @@ rb_f_kill(int argc, VALUE *argv)
 	break;
     }
 
+    if (argc <= 1) return INT2FIX(0);
+
     if (sig < 0) {
 	sig = -sig;
 	for (i=1; i<argc; i++) {
@@ -437,8 +449,42 @@ rb_f_kill(int argc, VALUE *argv)
 	}
     }
     else {
+	const rb_pid_t self = (GET_THREAD() == GET_VM()->main_thread) ? getpid() : -1;
+	int wakeup = 0;
+
 	for (i=1; i<argc; i++) {
-	    ruby_kill(NUM2PIDT(argv[i]), sig);
+	    rb_pid_t pid = NUM2PIDT(argv[i]);
+
+	    if ((sig != 0) && (self != -1) && (pid == self)) {
+		/*
+		 * When target pid is self, many caller assume signal will be
+		 * delivered immediately and synchronously.
+		 */
+		switch (sig) {
+		  case SIGSEGV:
+#ifdef SIGBUS
+		  case SIGBUS:
+#endif
+#ifdef SIGKILL
+		  case SIGKILL:
+#endif
+#ifdef SIGSTOP
+		  case SIGSTOP:
+#endif
+		    ruby_kill(pid, sig);
+		    break;
+		  default:
+		    if (signal_ignored(sig)) break;
+		    signal_enque(sig);
+		    wakeup = 1;
+		}
+	    }
+	    else if (kill(pid, sig) < 0) {
+		rb_sys_fail(0);
+	    }
+	}
+	if (wakeup) {
+	    rb_threadptr_check_signal(GET_VM()->main_thread);
 	}
     }
     rb_thread_execute_interrupts(rb_thread_current());
@@ -525,18 +571,22 @@ ruby_signal(int signum, sighandler_t handler)
     sigact.sa_flags = 0;
 #endif
 
+    switch (signum) {
 #ifdef SA_NOCLDWAIT
-    if (signum == SIGCHLD && handler == SIG_IGN)
-	sigact.sa_flags |= SA_NOCLDWAIT;
+      case SIGCHLD:
+	if (handler == SIG_IGN)
+	    sigact.sa_flags |= SA_NOCLDWAIT;
+	break;
 #endif
 #if defined(SA_ONSTACK) && defined(USE_SIGALTSTACK)
-    if (signum == SIGSEGV
+      case SIGSEGV:
 #ifdef SIGBUS
-	|| signum == SIGBUS
+      case SIGBUS:
 #endif
-       )
 	sigact.sa_flags |= SA_ONSTACK;
+	break;
 #endif
+    }
     (void)VALGRIND_MAKE_MEM_DEFINED(&old, sizeof(old));
     if (sigaction(signum, &sigact, &old) < 0) {
 	if (errno != 0 && errno != EINVAL) {
@@ -567,11 +617,32 @@ ruby_nativethread_signal(int signum, sighandler_t handler)
 #endif
 #endif
 
-static RETSIGTYPE
-sighandler(int sig)
+static int
+signal_ignored(int sig)
+{
+#ifdef POSIX_SIGNAL
+    struct sigaction old;
+    (void)VALGRIND_MAKE_MEM_DEFINED(&old, sizeof(old));
+    if (sigaction(sig, NULL, &old) < 0) return FALSE;
+    return old.sa_handler == SIG_IGN;
+#else
+    sighandler_t old = signal(sig, SIG_DFL);
+    signal(sig, old);
+    return old == SIG_IGN;
+#endif
+}
+
+static void
+signal_enque(int sig)
 {
     ATOMIC_INC(signal_buff.cnt[sig]);
     ATOMIC_INC(signal_buff.size);
+}
+
+static RETSIGTYPE
+sighandler(int sig)
+{
+    signal_enque(sig);
     rb_thread_wakeup_timer_thread();
 #if !defined(BSD_SIGNAL) && !defined(POSIX_SIGNAL)
     ruby_signal(sig, sighandler);
@@ -628,21 +699,49 @@ rb_get_next_signal(void)
 
 
 #if defined(USE_SIGALTSTACK) || defined(_WIN32)
+NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
+#if defined(HAVE_UCONTEXT_H) && defined __linux__ && (defined __i386__ || defined __x86_64__)
+# define USE_UCONTEXT_REG 1
+#endif
+#ifdef USE_UCONTEXT_REG
+static void
+check_stack_overflow(const uintptr_t addr, const ucontext_t *ctx)
+{
+# if defined REG_RSP
+    const greg_t sp = ctx->uc_mcontext.gregs[REG_RSP];
+# else
+    const greg_t sp = ctx->uc_mcontext.gregs[REG_ESP];
+# endif
+    enum {pagesize = 4096};
+    const uintptr_t sp_page = (uintptr_t)sp / pagesize;
+    const uintptr_t fault_page = addr / pagesize;
+
+    /* SP in ucontext is not decremented yet when `push` failed, so
+     * the fault page can be the next. */
+    if (sp_page == fault_page || sp_page == fault_page + 1) {
+	ruby_thread_stack_overflow(GET_THREAD());
+    }
+}
+#else
 static void
 check_stack_overflow(const void *addr)
 {
     int ruby_stack_overflowed_p(const rb_thread_t *, const void *);
-    NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
     rb_thread_t *th = GET_THREAD();
     if (ruby_stack_overflowed_p(th, addr)) {
 	ruby_thread_stack_overflow(th);
     }
 }
+#endif
 #ifdef _WIN32
 #define CHECK_STACK_OVERFLOW() check_stack_overflow(0)
 #else
 #define FAULT_ADDRESS info->si_addr
-#define CHECK_STACK_OVERFLOW() check_stack_overflow(FAULT_ADDRESS)
+# ifdef USE_UCONTEXT_REG
+# define CHECK_STACK_OVERFLOW() check_stack_overflow((uintptr_t)FAULT_ADDRESS, ctx)
+#else
+# define CHECK_STACK_OVERFLOW() check_stack_overflow(FAULT_ADDRESS)
+#endif
 #define MESSAGE_FAULT_ADDRESS " at %p", FAULT_ADDRESS
 #endif
 #else
@@ -919,7 +1018,7 @@ trap_signm(VALUE vsig)
 	s = StringValuePtr(vsig);
 
       str_signal:
-	if (strncmp("SIG", s, 3) == 0)
+	if (strncmp(signame_prefix, s, sizeof(signame_prefix)) == 0)
 	    s += 3;
 	sig = signm2signo(s);
 	if (sig == 0 && strcmp(s, "EXIT") != 0)
@@ -945,6 +1044,7 @@ trap(int sig, sighandler_t func, VALUE command)
     switch (oldcmd) {
       case 0:
 	if (oldfunc == SIG_IGN) oldcmd = rb_str_new2("IGNORE");
+        else if (oldfunc == SIG_DFL) oldcmd = rb_str_new2("SYSTEM_DEFAULT");
 	else if (oldfunc == sighandler) oldcmd = rb_str_new2("DEFAULT");
 	else oldcmd = Qnil;
 	break;

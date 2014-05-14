@@ -1,4 +1,7 @@
-gem 'minitest', '< 5.0.0' if defined? Gem
+begin
+  gem 'minitest', '< 5.0.0' if defined? Gem
+rescue Gem::LoadError
+end
 require 'minitest/unit'
 require 'test/unit/assertions'
 require 'test/unit/testcase'

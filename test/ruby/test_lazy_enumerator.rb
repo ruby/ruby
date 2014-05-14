@@ -313,11 +313,11 @@ class TestLazyEnumerator < Test::Unit::TestCase
   def test_take_rewound
     bug7696 = '[ruby-core:51470]'
     e=(1..42).lazy.take(2)
-    assert_equal 1, e.next
-    assert_equal 2, e.next
+    assert_equal 1, e.next, bug7696
+    assert_equal 2, e.next, bug7696
     e.rewind
-    assert_equal 1, e.next
-    assert_equal 2, e.next
+    assert_equal 1, e.next, bug7696
+    assert_equal 2, e.next, bug7696
   end
 
   def test_take_while

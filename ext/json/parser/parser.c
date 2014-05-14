@@ -89,11 +89,11 @@ static ID i_json_creatable_p, i_json_create, i_create_id, i_create_additions,
 
 
 #line 92 "parser.c"
-static const int JSON_object_start = 1;
-static const int JSON_object_first_final = 27;
-static const int JSON_object_error = 0;
+enum {JSON_object_start = 1};
+enum {JSON_object_first_final = 27};
+enum {JSON_object_error = 0};
 
-static const int JSON_object_en_main = 1;
+enum {JSON_object_en_main = 1};
 
 
 #line 151 "parser.rl"
@@ -467,11 +467,11 @@ case 26:
 
 
 #line 470 "parser.c"
-static const int JSON_value_start = 1;
-static const int JSON_value_first_final = 21;
-static const int JSON_value_error = 0;
+enum {JSON_value_start = 1};
+enum {JSON_value_first_final = 21};
+enum {JSON_value_error = 0};
 
-static const int JSON_value_en_main = 1;
+enum {JSON_value_en_main = 1};
 
 
 #line 271 "parser.rl"
@@ -776,11 +776,11 @@ case 20:
 
 
 #line 779 "parser.c"
-static const int JSON_integer_start = 1;
-static const int JSON_integer_first_final = 3;
-static const int JSON_integer_error = 0;
+enum {JSON_integer_start = 1};
+enum {JSON_integer_first_final = 3};
+enum {JSON_integer_error = 0};
 
-static const int JSON_integer_en_main = 1;
+enum {JSON_integer_en_main = 1};
 
 
 #line 295 "parser.rl"
@@ -875,11 +875,11 @@ case 5:
 
 
 #line 878 "parser.c"
-static const int JSON_float_start = 1;
-static const int JSON_float_first_final = 8;
-static const int JSON_float_error = 0;
+enum {JSON_float_start = 1};
+enum {JSON_float_first_final = 8};
+enum {JSON_float_error = 0};
 
-static const int JSON_float_en_main = 1;
+enum {JSON_float_en_main = 1};
 
 
 #line 329 "parser.rl"
@@ -1041,11 +1041,11 @@ case 7:
 
 
 #line 1044 "parser.c"
-static const int JSON_array_start = 1;
-static const int JSON_array_first_final = 17;
-static const int JSON_array_error = 0;
+enum {JSON_array_start = 1};
+enum {JSON_array_first_final = 17};
+enum {JSON_array_error = 0};
 
-static const int JSON_array_en_main = 1;
+enum {JSON_array_en_main = 1};
 
 
 #line 381 "parser.rl"
@@ -1373,11 +1373,11 @@ static VALUE json_string_unescape(VALUE result, char *string, char *stringEnd)
 
 
 #line 1376 "parser.c"
-static const int JSON_string_start = 1;
-static const int JSON_string_first_final = 8;
-static const int JSON_string_error = 0;
+enum {JSON_string_start = 1};
+enum {JSON_string_first_final = 8};
+enum {JSON_string_error = 0};
 
-static const int JSON_string_en_main = 1;
+enum {JSON_string_en_main = 1};
 
 
 #line 494 "parser.rl"
@@ -1730,11 +1730,11 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
 
 
 #line 1733 "parser.c"
-static const int JSON_start = 1;
-static const int JSON_first_final = 10;
-static const int JSON_error = 0;
+enum {JSON_start = 1};
+enum {JSON_first_final = 10};
+enum {JSON_error = 0};
 
-static const int JSON_en_main = 1;
+enum {JSON_en_main = 1};
 
 
 #line 740 "parser.rl"
@@ -1904,11 +1904,11 @@ case 9:
 
 
 #line 1907 "parser.c"
-static const int JSON_quirks_mode_start = 1;
-static const int JSON_quirks_mode_first_final = 10;
-static const int JSON_quirks_mode_error = 0;
+enum {JSON_quirks_mode_start = 1};
+enum {JSON_quirks_mode_first_final = 10};
+enum {JSON_quirks_mode_error = 0};
 
-static const int JSON_quirks_mode_en_main = 1;
+enum {JSON_quirks_mode_en_main = 1};
 
 
 #line 778 "parser.rl"

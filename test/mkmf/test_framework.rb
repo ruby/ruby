@@ -36,7 +36,7 @@ class TestMkmf
     end
 
     def test_different_name_header
-      bug8593 = '[ruby-core:55745] [Bug #8593]'
+      _bug8593 = '[ruby-core:55745] [Bug #8593]'
       create_framework("MkmfTest", "test_mkmf.h") do |fw, hdrname|
         assert(!have_framework(fw), MKMFLOG)
         assert(have_framework([fw, hdrname]), MKMFLOG)

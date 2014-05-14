@@ -27,9 +27,6 @@
 
 #define RUBY_ZLIB_VERSION  "0.6.0"
 
-
-#define OBJ_IS_FREED(val)  (RBASIC(val)->flags == 0)
-
 #ifndef GZIP_SUPPORT
 #define GZIP_SUPPORT  1
 #endif
@@ -814,8 +811,7 @@ zstream_shift_buffer(struct zstream *z, long len)
 	return zstream_detach_buffer(z);
     }
 
-    dst = rb_str_subseq(z->buf, 0, len);
-    rb_obj_reveal(dst, rb_cString);
+    dst = rb_str_new(RSTRING_PTR(z->buf), len);
     z->buf_filled -= len;
     memmove(RSTRING_PTR(z->buf), RSTRING_PTR(z->buf) + len,
 	    z->buf_filled);

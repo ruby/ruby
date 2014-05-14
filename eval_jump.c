@@ -123,6 +123,7 @@ rb_exec_end_proc(void)
 	exec_end_procs_chain(&end_procs);
     }
     else {
+	VAR_INITIALIZED(th);
 	TH_TMPPOP_TAG();
 	error_handle(status);
 	if (!NIL_P(th->errinfo)) errinfo = th->errinfo;

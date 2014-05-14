@@ -33,8 +33,7 @@ typedef struct st_packed_entry {
 #define STATIC_ASSERT(name, expr) typedef int static_assert_##name##_check[(expr) ? 1 : -1];
 
 #define ST_DEFAULT_MAX_DENSITY 5
-#define ST_DEFAULT_INIT_TABLE_SIZE 11
-#define ST_DEFAULT_SECOND_TABLE_SIZE 19
+#define ST_DEFAULT_INIT_TABLE_SIZE 16
 #define ST_DEFAULT_PACKED_TABLE_SIZE 18
 #define PACKED_UNIT (int)(sizeof(st_packed_entry) / sizeof(st_table_entry*))
 #define MAX_PACKED_HASH (int)(ST_DEFAULT_PACKED_TABLE_SIZE * sizeof(st_table_entry*) / sizeof(st_packed_entry))
@@ -85,7 +84,7 @@ static void rehash(st_table *);
 #define EQUAL(table,x,y) ((x)==(y) || (*(table)->type->compare)((x),(y)) == 0)
 
 #define do_hash(key,table) (st_index_t)(*(table)->type->hash)((key))
-#define hash_pos(h,n) ((h) % (n))
+#define hash_pos(h,n) ((h) & (n - 1))
 #define do_hash_bin(key,table) hash_pos(do_hash((key), (table)), (table)->num_bins)
 
 /* preparation for possible allocation improvements */
@@ -140,69 +139,18 @@ remove_safe_packed_entry(st_table *table, st_index_t i, st_data_t never)
     PHASH_SET(table, i, 0);
 }
 
-/*
- * MINSIZE is the minimum size of a dictionary.
- */
-
-#define MINSIZE 8
-
-/*
-Table of prime numbers 2^n+a, 2<=n<=30.
-*/
-static const unsigned int primes[] = {
-	ST_DEFAULT_INIT_TABLE_SIZE,
-	ST_DEFAULT_SECOND_TABLE_SIZE,
-	32 + 5,
-	64 + 3,
-	128 + 3,
-	256 + 27,
-	512 + 9,
-	1024 + 9,
-	2048 + 5,
-	4096 + 3,
-	8192 + 27,
-	16384 + 43,
-	32768 + 3,
-	65536 + 45,
-	131072 + 29,
-	262144 + 3,
-	524288 + 21,
-	1048576 + 7,
-	2097152 + 17,
-	4194304 + 15,
-	8388608 + 9,
-	16777216 + 43,
-	33554432 + 35,
-	67108864 + 15,
-	134217728 + 29,
-	268435456 + 3,
-	536870912 + 11,
-	1073741824 + 85,
-	0
-};
-
 static st_index_t
 new_size(st_index_t size)
 {
-    int i;
+    st_index_t i;
 
-#if 0
     for (i=3; i<31; i++) {
-	if ((1<<i) > size) return 1<<i;
+	if ((st_index_t)(1<<i) > size) return 1<<i;
     }
-    return -1;
-#else
-    st_index_t newsize;
-
-    for (i = 0, newsize = MINSIZE; i < numberof(primes); i++, newsize <<= 1) {
-	if (newsize > size) return primes[i];
-    }
-    /* Ran out of primes */
 #ifndef NOT_RUBY
     rb_raise(rb_eRuntimeError, "st_table too big");
 #endif
     return -1;			/* should raise exception */
-#endif
 }
 
 #ifdef HASH_LOG
@@ -253,7 +201,7 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
 	size = ST_DEFAULT_PACKED_TABLE_SIZE;
     }
     else {
-	size = new_size(size);	/* round up to prime number */
+	size = new_size(size);	/* round up to power-of-two */
     }
     tbl->num_bins = size;
     tbl->bins = st_alloc_bins(size);
@@ -394,14 +342,19 @@ find_entry(st_table *table, st_data_t key, st_index_t hash_val, st_index_t bin_p
 }
 
 static inline st_index_t
-find_packed_index(st_table *table, st_index_t hash_val, st_data_t key)
+find_packed_index_from(st_table *table, st_index_t hash_val, st_data_t key, st_index_t i)
 {
-    st_index_t i = 0;
     while (i < table->real_entries &&
 	   (PHASH(table, i) != hash_val || !EQUAL(table, key, PKEY(table, i)))) {
 	i++;
     }
     return i;
+}
+
+static inline st_index_t
+find_packed_index(st_table *table, st_index_t hash_val, st_data_t key)
+{
+    return find_packed_index_from(table, hash_val, key, 0);
 }
 
 #define collision_check 0
@@ -921,7 +874,6 @@ st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data
 	    last = &table->bins[bin_pos];
 	    for (; (tmp = *last) != 0; last = &tmp->next) {
 		if (ptr == tmp) {
-		    tmp = ptr->fore;
 		    *last = ptr->next;
 		    remove_entry(table, ptr);
 		    st_free_entry(ptr);
@@ -963,9 +915,10 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 		if (PHASH(table, i) == 0 && PKEY(table, i) == never) {
 		    break;
 		}
-		i = find_packed_index(table, hash, key);
-		if (i == table->real_entries) {
-		    goto deleted;
+		i = find_packed_index_from(table, hash, key, i);
+		if (i >= table->real_entries) {
+		    i = find_packed_index(table, hash, key);
+		    if (i >= table->real_entries) goto deleted;
 		}
 		/* fall through */
 	      case ST_CONTINUE:
@@ -1034,7 +987,8 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 
     if (table->entries_packed) {
 	for (i = 0; i < table->real_entries; i++) {
-	    st_data_t key, val, hash;
+	    st_data_t key, val;
+	    st_index_t hash;
 	    key = PKEY(table, i);
 	    val = PVAL(table, i);
 	    hash = PHASH(table, i);
@@ -1685,5 +1639,17 @@ st_numcmp(st_data_t x, st_data_t y)
 st_index_t
 st_numhash(st_data_t n)
 {
-    return (st_index_t)n;
+    /*
+     * This hash function is lightly-tuned for Ruby.  Further tuning
+     * should be possible.  Notes:
+     *
+     * - (n >> 3) alone is great for heap objects and OK for fixnum,
+     *   however symbols perform poorly.
+     * - (n >> (RUBY_SPECIAL_SHIFT+3)) was added to make symbols hash well,
+     *   n.b.: +3 to remove ID scope, +1 worked well initially, too
+     * - (n << 3) was finally added to avoid losing bits for fixnums
+     * - avoid expensive modulo instructions, it is currently only
+     *   shifts and bitmask operations.
+     */
+    return (st_index_t)((n>>(RUBY_SPECIAL_SHIFT+3)|(n<<3)) ^ (n>>3));
 }

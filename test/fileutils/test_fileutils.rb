@@ -1093,7 +1093,7 @@ class TestFileUtils < Test::Unit::TestCase
     assert_output_lines([]) {
       touch 'tmp/b'
       # string input for group, -1 for user
-      chown -1, input_group_2, 'tmp/b'
+      chown(-1, input_group_2, 'tmp/b')
       assert_ownership_group @groups[1], 'tmp/b'
     }
   end if have_file_perm?

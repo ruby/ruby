@@ -887,12 +887,15 @@ class TestRegexp < Test::Unit::TestCase
     assert_no_match(/^\p{age=1.1}$/u, "\u2754")
   end
 
+  MatchData_A = eval("class MatchData_\u{3042} < MatchData; self; end")
+
   def test_matchdata
     a = "haystack".match(/hay/)
     b = "haystack".match(/hay/)
     assert_equal(a, b, '[ruby-core:24748]')
     h = {a => 42}
     assert_equal(42, h[b], '[ruby-core:24748]')
+    assert_match(/#<TestRegexp::MatchData_\u{3042}:/, MatchData_A.allocate.inspect)
   end
 
   def test_regexp_poped

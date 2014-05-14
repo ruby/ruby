@@ -338,7 +338,7 @@ native_cond_wait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex)
 }
 
 static int
-native_cond_timedwait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex, struct timespec *ts)
+native_cond_timedwait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *ts)
 {
     int r;
 
@@ -1172,7 +1172,7 @@ ubf_select(void *ptr)
      * In the other hands, we shouldn't call rb_thread_wakeup_timer_thread()
      * if running on timer thread because it may make endless wakeups.
      */
-    if (pthread_self() != timer_thread_id)
+    if (!pthread_equal(pthread_self(), timer_thread_id))
 	rb_thread_wakeup_timer_thread();
     ubf_select_each(th);
 }
@@ -1218,9 +1218,14 @@ static int check_signal_thread_list(void) { return 0; }
 #define TIME_QUANTUM_USEC (100 * 1000)
 
 #if USE_SLEEPY_TIMER_THREAD
-static int timer_thread_pipe[2] = {-1, -1};
-static int timer_thread_pipe_low[2] = {-1, -1}; /* low priority */
-static int timer_thread_pipe_owner_process;
+static struct {
+    int normal[2];
+    int low[2];
+    int owner_process;
+} timer_thread_pipe = {
+    {-1, -1},
+    {-1, -1}, /* low priority */
+};
 
 /* only use signal-safe system calls here */
 static void
@@ -1229,11 +1234,12 @@ rb_thread_wakeup_timer_thread_fd(int fd)
     ssize_t result;
 
     /* already opened */
-    if (timer_thread_pipe_owner_process == getpid()) {
+    if (timer_thread_pipe.owner_process == getpid()) {
 	const char *buff = "!";
       retry:
 	if ((result = write(fd, buff, 1)) <= 0) {
-	    switch (errno) {
+	    int e = errno;
+	    switch (e) {
 	      case EINTR: goto retry;
 	      case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
@@ -1241,7 +1247,7 @@ rb_thread_wakeup_timer_thread_fd(int fd)
 #endif
 		break;
 	      default:
-		rb_async_bug_errno("rb_thread_wakeup_timer_thread - write", errno);
+		rb_async_bug_errno("rb_thread_wakeup_timer_thread - write", e);
 	    }
 	}
 	if (TT_DEBUG) WRITE_CONST(2, "rb_thread_wakeup_timer_thread: write\n");
@@ -1254,13 +1260,13 @@ rb_thread_wakeup_timer_thread_fd(int fd)
 void
 rb_thread_wakeup_timer_thread(void)
 {
-    rb_thread_wakeup_timer_thread_fd(timer_thread_pipe[1]);
+    rb_thread_wakeup_timer_thread_fd(timer_thread_pipe.normal[1]);
 }
 
 static void
 rb_thread_wakeup_timer_thread_low(void)
 {
-    rb_thread_wakeup_timer_thread_fd(timer_thread_pipe_low[1]);
+    rb_thread_wakeup_timer_thread_fd(timer_thread_pipe.low[1]);
 }
 
 /* VM-dependent API is not available for this function */
@@ -1278,13 +1284,17 @@ consume_communication_pipe(int fd)
 	    return;
 	}
 	else if (result < 0) {
-	    switch (errno) {
-	    case EINTR:
+	    int e = errno;
+	    switch (e) {
+	      case EINTR:
 		continue; /* retry */
-	    case EAGAIN:
+	      case EAGAIN:
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+	      case EWOULDBLOCK:
+#endif
 		return;
-	    default:
-		rb_async_bug_errno("consume_communication_pipe: read\n", errno);
+	      default:
+		rb_async_bug_errno("consume_communication_pipe: read\n", e);
 	    }
 	}
     }
@@ -1341,15 +1351,15 @@ setup_communication_pipe_internal(int pipes[2])
 static void
 setup_communication_pipe(void)
 {
-    if (timer_thread_pipe_owner_process == getpid()) {
+    if (timer_thread_pipe.owner_process == getpid()) {
 	/* already set up. */
 	return;
     }
-    setup_communication_pipe_internal(timer_thread_pipe);
-    setup_communication_pipe_internal(timer_thread_pipe_low);
+    setup_communication_pipe_internal(timer_thread_pipe.normal);
+    setup_communication_pipe_internal(timer_thread_pipe.low);
 
     /* validate pipe on this process */
-    timer_thread_pipe_owner_process = getpid();
+    timer_thread_pipe.owner_process = getpid();
 }
 
 /**
@@ -1365,9 +1375,9 @@ timer_thread_sleep(rb_global_vm_lock_t* gvl)
     int need_polling;
     struct pollfd pollfds[2];
 
-    pollfds[0].fd = timer_thread_pipe[0];
+    pollfds[0].fd = timer_thread_pipe.normal[0];
     pollfds[0].events = POLLIN;
-    pollfds[1].fd = timer_thread_pipe_low[0];
+    pollfds[1].fd = timer_thread_pipe.low[0];
     pollfds[1].events = POLLIN;
 
     need_polling = check_signal_thread_list();
@@ -1385,17 +1395,18 @@ timer_thread_sleep(rb_global_vm_lock_t* gvl)
 	/* maybe timeout */
     }
     else if (result > 0) {
-	consume_communication_pipe(timer_thread_pipe[0]);
-	consume_communication_pipe(timer_thread_pipe_low[0]);
+	consume_communication_pipe(timer_thread_pipe.normal[0]);
+	consume_communication_pipe(timer_thread_pipe.low[0]);
     }
     else { /* result < 0 */
-	switch (errno) {
-	case EBADF:
-	case EINVAL:
-	case ENOMEM: /* from Linux man */
-	case EFAULT: /* from FreeBSD man */
-	    rb_async_bug_errno("thread_timer: select", errno);
-	default:
+	int e = errno;
+	switch (e) {
+	  case EBADF:
+	  case EINVAL:
+	  case ENOMEM: /* from Linux man */
+	  case EFAULT: /* from FreeBSD man */
+	    rb_async_bug_errno("thread_timer: select", e);
+	  default:
 	    /* ignore */;
 	}
     }
@@ -1597,10 +1608,10 @@ int
 rb_reserved_fd_p(int fd)
 {
 #if USE_SLEEPY_TIMER_THREAD
-    if (fd == timer_thread_pipe[0]     ||
-	fd == timer_thread_pipe[1]     ||
-	fd == timer_thread_pipe_low[0] ||
-	fd == timer_thread_pipe_low[1]) {
+    if (fd == timer_thread_pipe.normal[0] ||
+	fd == timer_thread_pipe.normal[1] ||
+	fd == timer_thread_pipe.low[0] ||
+	fd == timer_thread_pipe.low[1]) {
 	return 1;
     }
     else {

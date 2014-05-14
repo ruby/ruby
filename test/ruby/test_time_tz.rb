@@ -150,7 +150,7 @@ class TestTimeTZ < Test::Unit::TestCase
   end
 
   def test_europe_lisbon
-    with_tz(tz="Europe/Lisbon") {
+    with_tz("Europe/Lisbon") {
       assert_equal("LMT", Time.new(-0x1_0000_0000_0000_0000).zone)
     }
   end if has_right_tz
@@ -250,7 +250,7 @@ class TestTimeTZ < Test::Unit::TestCase
       }
     }
     group_by(sample) {|tz, _, _, _| tz }.each {|tz, a|
-      a.each_with_index {|(_, u, l, gmtoff), i|
+      a.each_with_index {|(_, _, l, gmtoff), i|
         expected = "%04d-%02d-%02d %02d:%02d:%02d %s" % (l+[format_gmtoff(gmtoff)])
         monotonic_to_past = i == 0 || (a[i-1][2] <=> l) < 0
         monotonic_to_future = i == a.length-1 || (l <=> a[i+1][2]) < 0

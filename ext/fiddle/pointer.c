@@ -65,6 +65,7 @@ fiddle_ptr_free(void *ptr)
 	    (*(data->free))(data->ptr);
 	}
     }
+    xfree(ptr);
 }
 
 static size_t

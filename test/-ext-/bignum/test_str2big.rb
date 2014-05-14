@@ -4,7 +4,7 @@ require "-test-/bignum"
 class TestBignum < Test::Unit::TestCase
   class TestStr2big < Test::Unit::TestCase
 
-    SIZEOF_BDIGITS = Bignum::SIZEOF_BDIGITS
+    SIZEOF_BDIGIT = Bignum::SIZEOF_BDIGIT
     BITSPERDIG = Bignum::BITSPERDIG
     BDIGMAX = (1 << BITSPERDIG) - 1
 

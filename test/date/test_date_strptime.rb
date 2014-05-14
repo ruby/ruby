@@ -195,8 +195,12 @@ class TestDateStrptime < Test::Unit::TestCase
      [['01', '%y'], [2001,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
      [['19 99', '%C %y'], [1999,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
      [['20 01', '%C %y'], [2001,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
+     [['30 99', '%C %y'], [3099,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
+     [['30 01', '%C %y'], [3001,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
      [['1999', '%C%y'], [1999,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
      [['2001', '%C%y'], [2001,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
+     [['3099', '%C%y'], [3099,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
+     [['3001', '%C%y'], [3001,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
 
      [['20060806', '%Y'], [20060806,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
      [['20060806', "%Y\s"], [20060806,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
@@ -487,6 +491,23 @@ class TestDateStrptime < Test::Unit::TestCase
 
     assert_not_equal({}, Date._strptime(s, '%FT%T%Z'))
     assert_equal(s0, s)
+  end
+
+  def test_sz
+    d = DateTime.strptime('0 -0200', '%s %z')
+    assert_equal([1969, 12, 31, 22, 0, 0], [d.year, d.mon, d.mday, d.hour, d.min, d.sec])
+    assert_equal(Rational(-2, 24), d.offset)
+    d = DateTime.strptime('9 +0200', '%s %z')
+    assert_equal([1970, 1, 1, 2, 0, 9], [d.year, d.mon, d.mday, d.hour, d.min, d.sec])
+    assert_equal(Rational(2, 24), d.offset)
+
+    d = DateTime.strptime('0 -0200', '%Q %z')
+    assert_equal([1969, 12, 31, 22, 0, 0], [d.year, d.mon, d.mday, d.hour, d.min, d.sec])
+    assert_equal(Rational(-2, 24), d.offset)
+    d = DateTime.strptime('9000 +0200', '%Q %z')
+    assert_equal([1970, 1, 1, 2, 0, 9], [d.year, d.mon, d.mday, d.hour, d.min, d.sec])
+    assert_equal(Rational(2, 24), d.offset)
+
   end
 
 end

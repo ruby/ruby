@@ -467,7 +467,7 @@ MSG
     end
   end
 
-  def link_command(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
+  def link_command(ldflags, opt="", libpath=$LIBPATH|$DEFLIBPATH)
     librubyarg = $extmk ? $LIBRUBYARG_STATIC : "$(LIBRUBYARG)"
     conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote,
                                   'src' => "#{CONFTEST_C}",
@@ -503,7 +503,7 @@ MSG
                      conf)
   end
 
-  def libpathflag(libpath=$DEFLIBPATH|$LIBPATH)
+  def libpathflag(libpath=$LIBPATH|$DEFLIBPATH)
     libpath.map{|x|
       case x
       when "$(topdir)", /\A\./
@@ -1677,13 +1677,28 @@ SRC
     $extconf_h = header
   end
 
-  # Sets a +target+ name that the user can then use to configure various
-  # "with" options with on the command line by using that name.  For example,
-  # if the target is set to "foo", then the user could use the
-  # <code>--with-foo-dir</code> command line option.
+  # call-seq:
+  #   dir_config(target)
+  #   dir_config(target, prefix)
+  #   dir_config(target, idefault, ldefault)
   #
-  # You may pass along additional "include" or "lib" defaults via the
-  # +idefault+ and +ldefault+ parameters, respectively.
+  # Sets a +target+ name that the user can then use to configure
+  # various "with" options with on the command line by using that
+  # name.  For example, if the target is set to "foo", then the user
+  # could use the <code>--with-foo-dir=prefix</code>,
+  # <code>--with-foo-include=dir</code> and
+  # <code>--with-foo-lib=dir</code> command line options to tell where
+  # to search for header/library files.
+  #
+  # You may pass along additional parameters to specify default
+  # values.  If one is given it is taken as default +prefix+, and if
+  # two are given they are taken as "include" and "lib" defaults in
+  # that order.
+  #
+  # In any case, the return value will be an array of determined
+  # "include" and "lib" directories, either of which can be nil if no
+  # corresponding command line option is given when no default value
+  # is specified.
   #
   # Note that dir_config only adds to the list of places to search for
   # libraries and include files.  It does not link the libraries into your
@@ -2110,7 +2125,7 @@ RULES
   #
   def create_makefile(target, srcprefix = nil)
     $target = target
-    libpath = $DEFLIBPATH|$LIBPATH
+    libpath = $LIBPATH|$DEFLIBPATH
     message "creating Makefile\n"
     MakeMakefile.rm_f "#{CONFTEST}*"
     if CONFIG["DLEXT"] == $OBJEXT
@@ -2191,7 +2206,7 @@ RULES
     conf = yield(conf) if block_given?
     mfile.puts(conf)
     mfile.print "
-libpath = #{($DEFLIBPATH|$LIBPATH).join(" ")}
+libpath = #{($LIBPATH|$DEFLIBPATH).join(" ")}
 LIBPATH = #{libpath}
 DEFFILE = #{deffile}
 
@@ -2295,7 +2310,11 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
         end
       end
       mfile.print "pre-install-rb#{sfx}:\n"
-      mfile.print("\t$(ECHO) installing#{sfx.sub(/^-/, " ")} #{target} libraries\n")
+      if files.empty?
+        mfile.print("\t@#{CONFIG['NULLCMD']}\n")
+      else
+        mfile.print("\t$(ECHO) installing#{sfx.sub(/^-/, " ")} #{target} libraries\n")
+      end
       if $extout
         dirs.uniq!
         unless dirs.empty?

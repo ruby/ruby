@@ -17,13 +17,34 @@ with all sufficient information, see the ChangeLog file.
 
 * Enumerable
   * Extended methods:
-    * min
-    * min_by
-    * max
-    * max_by
+    * min, min_by, max and max_by supports optional argument to return
+      multiple elements.
+
+* File
+  * new class File::Statfs to hold filesystem information. (experimental)
+
+* IO
+  * New methods
+    * IO#statfs returns filesystem information as File::Statfs. (experimental)
+
+* Process
+  * Extended method:
+    * Process execution methods such as Process.spawn opens the file in write
+      mode for redirect from [:out, :err].
+
 * Symbol
   * New methods
     * Symbol.find(str) returns whether given string is defined as symbol or not.
+  * Improvements
+    * Most symbols which are returned by String#to_sym and
+      String#intern are GC-able.
+
+* Matrix
+  * New methods:
+    * Matrix#first_minor(row, column) returns the submatrix obtained
+      by deleting the specified row and column.
+    * Matrix#cofactor(row, column) returns the (row, column) cofactor
+      which is obtained by multiplying the first minor by (-1)**(row + column).
 
 === Core classes compatibility issues (excluding feature bug fixes)
 
@@ -33,9 +54,43 @@ with all sufficient information, see the ChangeLog file.
       is updated immediately.  On some platforms (especially Windows), it is
       delayed until the filesystem load is decreased.
 
+* Math
+  * incompatible changes:
+    * Math.log now raises Math::DomainError instead of returning NaN if the
+      base is less than 0, and returns NaN instead of -infinity if both of
+      two arguments are 0.
+    * Math.atan2 now returns values like as expected by C99 if both two
+      arguments are infinity.
+
+* Proc
+  * incompatible changes:
+    * ArgumentError is no longer raised when lambda Proc is passed as a
+      block, and the number of yielded arguments does not match the formal
+      arguments of the lambda, if just an array is yielded and its length
+      matches.
+
+* Process
+  * Process execution methods such as Process.spawn opens the file in write
+    mode for redirect from [:out, :err].
+    Before Ruby 2.2, it was opened in read mode.
+
 === Stdlib updates (outstanding ones only)
 
+* Find, Pathname
+  * Extended methods:
+    * find method accepts "ignore_error" keyword argument.
+
+* Pathname
+  * Pathname#/ is aliased to Pathname#+.
+
 === Stdlib compatibility issues (excluding feature bug fixes)
+
+* time.rb
+  * Time.parse, Time.strptime, Time.rfc2822, Time.xmlschema may produce
+    fixed-offset Time objects.
+    It is happen when usual localtime doesn't preserve the offset from UTC.
+  * Time.httpdate produces always UTC Time object.
+  * Time.strptime raises ArgumentError when no date information.
 
 === Built-in global variables compatibility issues
 
@@ -74,3 +129,28 @@ with all sufficient information, see the ChangeLog file.
 
 * struct RBignum is hidden.  [Feature #6083]
   Use rb_integer_pack and rb_integer_unpack instead.
+
+* rb_big_new and rb_big_resize takes a size_t instead of long.
+
+* rb_num2long returns a long instead of SIGNED_VALUE.
+
+* rb_num2ulong returns an unsigned long instead of VALUE.
+
+* st hash table uses power-of-two sizes for speed [Feature #9425].
+  Lookups are 10-25% faster if using appropriate hash functions.
+  However, weaknesses in hash distribution can no longer be masked
+  by prime number-sized tables, so extensions may need to tweak
+  hash functions to ensure good distribution.
+
+* rb_sym2str() added. This is almost same as `rb_id2str(SYM2ID(sym))`
+  but not pinning a dynamic symbol.
+
+* struct RSymbol added. This represents a dynamic symbol as object in
+  Ruby's heaps.
+
+* rb_str_cat_cstr() added. This is same as `rb_str_cat2()`.
+
+* `rb_str_substr()` and `rb_str_subseq()` now share middle of a string,
+  but not only the end of a string.  Therefore, result strings may not
+  be NUL-terminated, `StringValueCStr()` is needed calling to obtain a
+  NUL-terminated C string.

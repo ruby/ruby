@@ -11,6 +11,18 @@
 
 VALUE cFiddleFunction;
 
+#define MAX_ARGS (SIZE_MAX / (sizeof(void *) + sizeof(fiddle_generic)) - 1)
+
+#define Check_Max_Args(name, len) \
+    if ((size_t)(len) < MAX_ARGS) { \
+	/* OK */ \
+    } \
+    else { \
+	rb_raise(rb_eTypeError, \
+		 name" is so large that it can cause integer overflow (%d)", \
+		 (len)); \
+    }
+
 static void
 deallocate(void *p)
 {
@@ -84,6 +96,7 @@ initialize(int argc, VALUE argv[], VALUE self)
     if(NIL_P(abi)) abi = INT2NUM(FFI_DEFAULT_ABI);
 
     Check_Type(args, T_ARRAY);
+    Check_Max_Args("args", RARRAY_LENINT(args));
 
     rb_iv_set(self, "@ptr", ptr);
     rb_iv_set(self, "@args", args);
@@ -124,11 +137,13 @@ function_call(int argc, VALUE argv[], VALUE self)
     void **values;
     VALUE cfunc, types, cPointer;
     int i;
+    VALUE alloc_buffer = 0;
 
     cfunc    = rb_iv_get(self, "@ptr");
     types    = rb_iv_get(self, "@args");
     cPointer = rb_const_get(mFiddle, rb_intern("Pointer"));
 
+    Check_Max_Args("number of arguments", argc);
     if(argc != RARRAY_LENINT(types)) {
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
 		argc, RARRAY_LENINT(types));
@@ -145,8 +160,9 @@ function_call(int argc, VALUE argv[], VALUE self)
 	}
     }
 
-    values = xcalloc((size_t)argc + 1, (size_t)sizeof(void *));
-    generic_args = xcalloc((size_t)argc, (size_t)sizeof(fiddle_generic));
+    generic_args = ALLOCV(alloc_buffer,
+	(size_t)(argc + 1) * sizeof(void *) + (size_t)argc * sizeof(fiddle_generic));
+    values = (void **)((char *)generic_args + (size_t)argc * sizeof(fiddle_generic));
 
     for (i = 0; i < argc; i++) {
 	VALUE type = RARRAY_PTR(types)[i];
@@ -173,8 +189,7 @@ function_call(int argc, VALUE argv[], VALUE self)
     rb_funcall(mFiddle, rb_intern("win32_last_error="), 1, INT2NUM(errno));
 #endif
 
-    xfree(values);
-    xfree(generic_args);
+    ALLOCV_END(alloc_buffer);
 
     return GENERIC2VALUE(rb_iv_get(self, "@return_type"), retval);
 }

@@ -7,7 +7,7 @@ module Test_Symbol
       prefix += "_#{Thread.current.object_id.to_s(36).tr('-', '_')}"
       begin
         name = "#{prefix}_#{rand(0x1000).to_s(16)}_#{Time.now.usec}"
-      end while Bug::Symbol.interned?(name)
+      end while ::Symbol.find(name)
       name
     end
 
@@ -16,7 +16,7 @@ module Test_Symbol
     end
 
     def assert_not_interned(name, msg = nil)
-      assert_not_send([Bug::Symbol, :interned?, name], msg)
+      assert_not_send([::Symbol, :find, name], msg)
     end
 
     def assert_not_interned_error(obj, meth, name, msg = nil)

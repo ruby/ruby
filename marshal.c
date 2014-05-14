@@ -9,6 +9,10 @@
 
 **********************************************************************/
 
+#if defined __GNUC__ && __GNUC__ < 3
+# error too old GCC
+#endif
+
 #include "ruby/ruby.h"
 #include "ruby/io.h"
 #include "ruby/st.h"
@@ -28,11 +32,11 @@
 #define SHORTMASK ((1<<BITSPERSHORT)-1)
 #define SHORTDN(x) RSHIFT((x),BITSPERSHORT)
 
-#if SIZEOF_SHORT == SIZEOF_BDIGITS
+#if SIZEOF_SHORT == SIZEOF_BDIGIT
 #define SHORTLEN(x) (x)
 #else
-static long
-shortlen(long len, BDIGIT *ds)
+static size_t
+shortlen(size_t len, BDIGIT *ds)
 {
     BDIGIT num;
     int offset = 0;
@@ -42,7 +46,7 @@ shortlen(long len, BDIGIT *ds)
 	num = SHORTDN(num);
 	offset++;
     }
-    return (len - 1)*SIZEOF_BDIGITS/2 + offset;
+    return (len - 1)*SIZEOF_BDIGIT/2 + offset;
 }
 #define SHORTLEN(x) shortlen((x),d)
 #endif
@@ -677,6 +681,11 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
     else {
 	VALUE v;
 
+	if (!RBASIC_CLASS(obj)) {
+	    rb_raise(rb_eTypeError, "can't dump internal %s",
+		     rb_builtin_type_name(BUILTIN_TYPE(obj)));
+	}
+
 	arg->infection |= (int)FL_TEST(obj, MARSHAL_INFECTION);
 
 	if (rb_obj_respond_to(obj, s_mdump, TRUE)) {
@@ -765,17 +774,23 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    w_byte(TYPE_BIGNUM, arg);
 	    {
 		char sign = BIGNUM_SIGN(obj) ? '+' : '-';
-		long len = BIGNUM_LEN(obj);
+		size_t len = BIGNUM_LEN(obj);
+		size_t slen;
 		BDIGIT *d = BIGNUM_DIGITS(obj);
 
+                slen = SHORTLEN(len);
+                if (LONG_MAX < slen) {
+                    rb_raise(rb_eTypeError, "too big Bignum can't be dumped");
+                }
+
 		w_byte(sign, arg);
-		w_long(SHORTLEN(len), arg); /* w_short? */
+		w_long((long)slen, arg);
 		while (len--) {
-#if SIZEOF_BDIGITS > SIZEOF_SHORT
+#if SIZEOF_BDIGIT > SIZEOF_SHORT
 		    BDIGIT num = *d;
 		    int i;
 
-		    for (i=0; i<SIZEOF_BDIGITS; i+=SIZEOF_SHORT) {
+		    for (i=0; i<SIZEOF_BDIGIT; i+=SIZEOF_SHORT) {
 			w_short(num & SHORTMASK, arg);
 			num = SHORTDN(num);
 			if (len == 0 && num == 0) break;
@@ -1695,7 +1710,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
       case TYPE_ARRAY:
 	{
-	    volatile long len = r_long(arg); /* gcc 2.7.2.3 -O2 bug?? */
+	    long len = r_long(arg);
 
 	    v = rb_ary_new2(len);
 	    v = r_entry(v, arg);
@@ -1734,7 +1749,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
       case TYPE_STRUCT:
 	{
 	    VALUE mem, values;
-	    volatile long i;	/* gcc 2.7.2.3 -O2 bug?? */
+	    long i;
 	    ID slot;
 	    st_index_t idx = r_prepare(arg);
 	    VALUE klass = path2class(r_unique(arg));

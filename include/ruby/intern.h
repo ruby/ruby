@@ -91,20 +91,20 @@ VALUE rb_ary_resize(VALUE ary, long len);
 #define rb_ary_new3 rb_ary_new_from_args
 #define rb_ary_new4 rb_ary_new_from_values
 /* bignum.c */
-VALUE rb_big_new(long, int);
+VALUE rb_big_new(size_t, int);
 int rb_bigzero_p(VALUE x);
 VALUE rb_big_clone(VALUE);
 void rb_big_2comp(VALUE);
 VALUE rb_big_norm(VALUE);
-void rb_big_resize(VALUE big, long len);
+void rb_big_resize(VALUE big, size_t len);
 VALUE rb_cstr_to_inum(const char*, int, int);
 VALUE rb_str_to_inum(VALUE, int, int);
 VALUE rb_cstr2inum(const char*, int);
 VALUE rb_str2inum(VALUE, int);
 VALUE rb_big2str(VALUE, int);
-SIGNED_VALUE rb_big2long(VALUE);
+long rb_big2long(VALUE);
 #define rb_big2int(x) rb_big2long(x)
-VALUE rb_big2ulong(VALUE);
+unsigned long rb_big2ulong(VALUE);
 #define rb_big2uint(x) rb_big2ulong(x)
 #if HAVE_LONG_LONG
 LONG_LONG rb_big2ll(VALUE);
@@ -398,8 +398,8 @@ int rb_feature_provided(const char *, const char **);
 void rb_provide(const char*);
 VALUE rb_f_require(VALUE, VALUE);
 VALUE rb_require_safe(VALUE, int);
-void rb_obj_call_init(VALUE, int, VALUE*);
-VALUE rb_class_new_instance(int, VALUE*, VALUE);
+void rb_obj_call_init(VALUE, int, const VALUE*);
+VALUE rb_class_new_instance(int, const VALUE*, VALUE);
 VALUE rb_block_proc(void);
 VALUE rb_block_lambda(void);
 VALUE rb_proc_new(VALUE (*)(ANYARGS/* VALUE yieldarg[, VALUE procarg] */), VALUE);
@@ -727,6 +727,7 @@ VALUE rb_str_freeze(VALUE);
 void rb_str_set_len(VALUE, long);
 VALUE rb_str_resize(VALUE, long);
 VALUE rb_str_cat(VALUE, const char*, long);
+VALUE rb_str_cat_cstr(VALUE, const char*);
 VALUE rb_str_cat2(VALUE, const char*);
 VALUE rb_str_append(VALUE, VALUE);
 VALUE rb_str_concat(VALUE, VALUE);
@@ -798,17 +799,11 @@ VALUE rb_str_scrub(VALUE, VALUE);
 		       (str), (long)strlen(str)) : \
 	rb_str_buf_new_cstr(str);		\
 })
-#define rb_str_buf_cat2(str, ptr) __extension__ ( \
-{						\
-    (__builtin_constant_p(ptr)) ?	        \
-	rb_str_buf_cat((str), (ptr), (long)strlen(ptr)) : \
-	rb_str_buf_cat2((str), (ptr));		\
-})
-#define rb_str_cat2(str, ptr) __extension__ (	\
+#define rb_str_cat_cstr(str, ptr) __extension__ ( \
 {						\
     (__builtin_constant_p(ptr)) ?	        \
 	rb_str_cat((str), (ptr), (long)strlen(ptr)) : \
-	rb_str_cat2((str), (ptr));			\
+	rb_str_cat_cstr((str), (ptr));		\
 })
 #define rb_exc_new_cstr(klass, ptr) __extension__ ( \
 {						\
@@ -824,6 +819,9 @@ VALUE rb_str_scrub(VALUE, VALUE);
 #define rb_tainted_str_new2 rb_tainted_str_new_cstr
 #define rb_str_buf_new2 rb_str_buf_new_cstr
 #define rb_usascii_str_new2 rb_usascii_str_new_cstr
+#define rb_str_buf_cat rb_str_cat
+#define rb_str_buf_cat2 rb_str_cat_cstr
+#define rb_str_cat2 rb_str_cat_cstr
 /* struct.c */
 VALUE rb_struct_new(VALUE, ...);
 VALUE rb_struct_define(const char*, ...);

@@ -69,6 +69,18 @@ def system(*args)
   super
 end
 
+def atomic_write_open(filename)
+  filename_new = filename + ".new.#$$"
+  open(filename_new, "wb") do |f|
+    yield f
+  end
+  if File.binread(filename_new) != (File.binread(filename) rescue nil)
+    File.rename(filename_new, filename)
+  else
+    File.unlink(filename_new)
+  end
+end
+
 def extract_makefile(makefile, keep = true)
   m = File.read(makefile)
   if !(target = m[/^TARGET[ \t]*=[ \t]*(\S*)/, 1])
@@ -129,6 +141,16 @@ def extmake(target)
 
   FileUtils.mkpath target unless File.directory?(target)
   begin
+    # don't build if parent library isn't build
+    parent = true
+    d = target
+    until (d = File.dirname(d)) == '.'
+      if File.exist?("#{$top_srcdir}/ext/#{d}/extconf.rb")
+        parent = (/^all:\s*install/ =~ IO.read("#{d}/Makefile") rescue false)
+        break
+      end
+    end
+
     dir = Dir.pwd
     FileUtils.mkpath target unless File.directory?(target)
     Dir.chdir target
@@ -149,8 +171,8 @@ def extmake(target)
     makefile = "./Makefile"
     static = $static
     $static = nil if noinstall = File.fnmatch?("-*", target)
-    ok = File.exist?(makefile)
-    unless $ignore
+    ok = parent && File.exist?(makefile)
+    if parent && !$ignore
       rbconfig0 = RbConfig::CONFIG
       mkconfig0 = CONFIG
       rbconfig = {
@@ -229,7 +251,7 @@ def extmake(target)
         f.truncate(f.pos)
       end unless $static
     else
-      open(makefile, "wb") do |f|
+      atomic_write_open(makefile) do |f|
         f.puts "# " + DUMMY_SIGNATURE
 	f.print(*dummy_makefile(CONFIG["srcdir"]))
       end
@@ -276,13 +298,15 @@ def extmake(target)
     end
   ensure
     Logging::log_close
-    unless $ignore
+    if rbconfig0
       RbConfig.module_eval {
 	remove_const(:CONFIG)
 	const_set(:CONFIG, rbconfig0)
 	remove_const(:MAKEFILE_CONFIG)
 	const_set(:MAKEFILE_CONFIG, mkconfig0)
       }
+    end
+    if mkconfig0
       MakeMakefile.class_eval {
 	remove_const(:CONFIG)
 	const_set(:CONFIG, mkconfig0)
@@ -511,7 +535,7 @@ Dir::chdir('ext')
 hdrdir = $hdrdir
 $hdrdir = ($top_srcdir = relative_from(srcdir, $topdir = "..")) + "/include"
 exts.each do |d|
-  $static = $force_static ? true : $static_ext[target]
+  $static = $force_static ? true : $static_ext[d]
 
   if $ignore or !$nodynamic or $static
     extmake(d) or abort
@@ -636,7 +660,7 @@ $mflags.unshift("topdir=#$topdir")
 ENV.delete("RUBYOPT")
 if $configure_only and $command_output
   exts.map! {|d| "ext/#{d}/."}
-  open($command_output, "wb") do |mf|
+  atomic_write_open($command_output) do |mf|
     mf.puts "V = 0"
     mf.puts "Q1 = $(V:1=)"
     mf.puts "Q = $(Q1:0=@)"

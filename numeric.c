@@ -1107,6 +1107,8 @@ flo_eq(VALUE x, VALUE y)
  *   float.hash  ->  integer
  *
  * Returns a hash code for this float.
+ *
+ * See also Object#hash.
  */
 
 static VALUE
@@ -1845,8 +1847,8 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
 	VALUE result;
 	ID cmp = '>';
 	switch (rb_cmpint(rb_num_coerce_cmp(step, INT2FIX(0), id_cmp), step, INT2FIX(0))) {
-	    case 0: return DBL2NUM(INFINITY);
-	    case -1: cmp = '<'; break;
+	  case 0: return DBL2NUM(INFINITY);
+	  case -1: cmp = '<'; break;
 	}
 	if (RTEST(rb_funcall(from, cmp, 1, to))) return INT2FIX(0);
 	result = rb_funcall(rb_funcall(to, '-', 1, from), id_div, 1, step);
@@ -1857,39 +1859,55 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
     }
 }
 
-#define NUM_STEP_SCAN_ARGS(argc, argv, to, step, hash, desc) do {	\
-    argc = rb_scan_args(argc, argv, "02:", &to, &step, &hash);		\
-    if (!NIL_P(hash)) {							\
-	step = rb_hash_aref(hash, sym_by);				\
-	to = rb_hash_aref(hash, sym_to);				\
-    }									\
-    else {								\
-	/* compatibility */						\
-        if (argc > 1 && NIL_P(step)) {				       	\
-            rb_raise(rb_eTypeError, "step must be numeric");		\
-	}								\
-	if (rb_equal(step, INT2FIX(0))) {				\
-	    rb_raise(rb_eArgError, "step can't be 0");			\
-	}								\
-    }									\
-    if (NIL_P(step)) {							\
-        step = INT2FIX(1);						\
-    }									\
-    desc = !positive_int_p(step);					\
-    if (NIL_P(to)) {							\
-        to = desc ? DBL2NUM(-INFINITY) : DBL2NUM(INFINITY);		\
-    }									\
-} while (0)
+static int
+num_step_scan_args(int argc, const VALUE *argv, VALUE *to, VALUE *step)
+{
+    VALUE hash;
+    int desc;
+
+    argc = rb_scan_args(argc, argv, "02:", to, step, &hash);
+    if (!NIL_P(hash)) {
+	ID keys[2];
+	VALUE values[2];
+	keys[0] = sym_to;
+	keys[1] = sym_by;
+	rb_get_kwargs(hash, keys, 0, 2, values);
+	if (values[0] != Qundef) {
+	    if (argc > 0) rb_raise(rb_eArgError, "to is given twice");
+	    *to = values[0];
+	}
+	if (values[1] != Qundef) {
+	    if (argc > 1) rb_raise(rb_eArgError, "step is given twice");
+	    *step = values[1];
+	}
+    }
+    else {
+	/* compatibility */
+	if (argc > 1 && NIL_P(*step)) {
+	    rb_raise(rb_eTypeError, "step must be numeric");
+	}
+	if (rb_equal(*step, INT2FIX(0))) {
+	    rb_raise(rb_eArgError, "step can't be 0");
+	}
+    }
+    if (NIL_P(*step)) {
+	*step = INT2FIX(1);
+    }
+    desc = !positive_int_p(*step);
+    if (NIL_P(*to)) {
+	*to = desc ? DBL2NUM(-INFINITY) : DBL2NUM(INFINITY);
+    }
+    return desc;
+}
 
 static VALUE
 num_step_size(VALUE from, VALUE args, VALUE eobj)
 {
-    VALUE to, step, hash;
-    int desc;
+    VALUE to, step;
     int argc = args ? RARRAY_LENINT(args) : 0;
-    VALUE *argv = args ? RARRAY_PTR(args) : 0;
+    const VALUE *argv = args ? RARRAY_CONST_PTR(args) : 0;
 
-    NUM_STEP_SCAN_ARGS(argc, argv, to, step, hash, desc);
+    num_step_scan_args(argc, argv, &to, &step);
 
     return ruby_num_interval_step_size(from, to, step, FALSE);
 }
@@ -1950,12 +1968,12 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
 static VALUE
 num_step(int argc, VALUE *argv, VALUE from)
 {
-    VALUE to, step, hash;
+    VALUE to, step;
     int desc, inf;
 
     RETURN_SIZED_ENUMERATOR(from, argc, argv, num_step_size);
 
-    NUM_STEP_SCAN_ARGS(argc, argv, to, step, hash, desc);
+    desc = num_step_scan_args(argc, argv, &to, &step);
     if (RTEST(rb_num_coerce_cmp(step, INT2FIX(0), id_eq))) {
 	inf = 1;
     }
@@ -2028,7 +2046,7 @@ out_of_range_float(char (*pbuf)[24], VALUE val)
    LONG_MIN <= (n): \
    LONG_MIN_MINUS_ONE < (n))
 
-SIGNED_VALUE
+long
 rb_num2long(VALUE val)
 {
   again:
@@ -2098,7 +2116,7 @@ rb_num2ulong_internal(VALUE val, int *wrap_p)
     }
 }
 
-VALUE
+unsigned long
 rb_num2ulong(VALUE val)
 {
     return rb_num2ulong_internal(val, NULL);

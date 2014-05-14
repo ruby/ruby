@@ -38,6 +38,8 @@ install: "sudo apt-get -qq build-dep ruby1.9.1 2>/dev/null"
 # like  test-all, test-rubyspec.   This is  because  they take  too much  time,
 # enough for Travis to shut down the VM as being stalled.
 before_script:
+  - "uname -a"
+  - "uname -r"
   - "make -f common.mk BASERUBY=ruby srcdir=. update-config_files"
   - "autoconf"
   - "mkdir config_1st config_2nd"
@@ -50,13 +52,16 @@ before_script:
   - "make -sj exts"
 script:
   - "make test OPTS=-v"
-#  - "make test-all TESTS='-v'"
+  - "make test-all TESTS='-qv -j2'"
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:
   only:
     - trunk
     - ruby_1_9_3
+    - ruby_2_0_0
+    - ruby_2_1
+    - ruby_2_2
 
 # We want to be notified when something happens.
 notifications:

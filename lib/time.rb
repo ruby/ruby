@@ -174,6 +174,24 @@ class Time
     end
     private :zone_utc?
 
+    def force_zone!(t, zone, offset=nil)
+      if zone_utc?(zone)
+        t.utc
+      elsif offset ||= zone_offset(zone)
+        # Prefer the local timezone over the fixed offset timezone because
+        # the former is a real timezone and latter is an artificial timezone.
+        t.localtime
+        if t.utc_offset != offset
+          # Use the fixed offset timezone only if the local timezone cannot
+          # represent the given offset.
+          t.localtime(offset)
+        end
+      else
+        t.localtime
+      end
+    end
+    private :force_zone!
+
     LeapYearMonthDays = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] # :nodoc:
     CommonYearMonthDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] # :nodoc:
     def month_days(y, m)
@@ -228,9 +246,24 @@ class Time
     end
     private :apply_offset
 
-    def make_time(year, mon, day, hour, min, sec, sec_fraction, zone, now)
+    def make_time(date, year, mon, day, hour, min, sec, sec_fraction, zone, now)
+      if !year && !mon && !day && !hour && !min && !sec && !sec_fraction
+        raise ArgumentError, "no time information in #{date.inspect}"
+      end
+
+      off_year = year || now.year
+      off = nil
+      off = zone_offset(zone, off_year) if zone
+
+      if off
+        now = now.getlocal(off) if now.utc_offset != off
+      else
+        now = now.getlocal
+      end
+
       usec = nil
       usec = sec_fraction * 1000000 if sec_fraction
+
       if now
         begin
           break if year; year = now.year
@@ -251,14 +284,16 @@ class Time
       sec ||= 0
       usec ||= 0
 
-      off = nil
-      off = zone_offset(zone, year) if zone
+      if year != off_year
+        off = nil
+        off = zone_offset(zone, year) if zone
+      end
 
       if off
         year, mon, day, hour, min, sec =
           apply_offset(year, mon, day, hour, min, sec, off)
         t = self.utc(year, mon, day, hour, min, sec, usec)
-        t.localtime if !zone_utc?(zone)
+        force_zone!(t, zone, off)
         t
       else
         self.local(year, mon, day, hour, min, sec, usec)
@@ -278,13 +313,13 @@ class Time
     # supplied with those of +now+.  For the lower components, the minimum
     # values (1 or 0) are assumed if broken or missing.  For example:
     #
-    #     # Suppose it is "Thu Nov 29 14:33:20 GMT 2001" now and
-    #     # your time zone is GMT:
-    #     now = Time.parse("Thu Nov 29 14:33:20 GMT 2001")
-    #     Time.parse("16:30", now)     #=> 2001-11-29 16:30:00 +0900
-    #     Time.parse("7/23", now)      #=> 2001-07-23 00:00:00 +0900
-    #     Time.parse("Aug 31", now)    #=> 2001-08-31 00:00:00 +0900
-    #     Time.parse("Aug 2000", now)  #=> 2000-08-01 00:00:00 +0900
+    #     # Suppose it is "Thu Nov 29 14:33:20 2001" now and
+    #     # your time zone is EST which is GMT-5.
+    #     now = Time.parse("Thu Nov 29 14:33:20 2001")
+    #     Time.parse("16:30", now)     #=> 2001-11-29 16:30:00 -0500
+    #     Time.parse("7/23", now)      #=> 2001-07-23 00:00:00 -0500
+    #     Time.parse("Aug 31", now)    #=> 2001-08-31 00:00:00 -0500
+    #     Time.parse("Aug 2000", now)  #=> 2000-08-01 00:00:00 -0500
     #
     # Since there are numerous conflicts among locally defined time zone
     # abbreviations all over the world, this method is not intended to
@@ -323,12 +358,9 @@ class Time
     def parse(date, now=self.now)
       comp = !block_given?
       d = Date._parse(date, comp)
-      if !d[:year] && !d[:mon] && !d[:mday] && !d[:hour] && !d[:min] && !d[:sec] && !d[:sec_fraction]
-        raise ArgumentError, "no time information in #{date.inspect}"
-      end
       year = d[:year]
       year = yield(year) if year && !comp
-      make_time(year, d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
+      make_time(date, year, d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
     end
 
     #
@@ -393,16 +425,16 @@ class Time
       d = Date._strptime(date, format)
       raise ArgumentError, "invalid strptime format - `#{format}'" unless d
       if seconds = d[:seconds]
-        if offset = d[:offset]
-          Time.at(seconds).localtime(offset)
-        else
-          Time.at(seconds)
+        t = Time.at(seconds)
+        if zone = d[:zone]
+          force_zone!(t, zone)
         end
       else
         year = d[:year]
         year = yield(year) if year && block_given?
-        make_time(year, d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
+        t = make_time(date, year, d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
       end
+      t
     end
 
     MonthValue = { # :nodoc:
@@ -437,24 +469,26 @@ class Time
         day = $1.to_i
         mon = MonthValue[$2.upcase]
         year = $3.to_i
+        short_year_p = $3.length <= 3
         hour = $4.to_i
         min = $5.to_i
         sec = $6 ? $6.to_i : 0
         zone = $7
 
-        # following year completion is compliant with RFC 2822.
-        year = if year < 50
-                 2000 + year
-               elsif year < 1000
-                 1900 + year
-               else
-                 year
-               end
+        if short_year_p
+          # following year completion is compliant with RFC 2822.
+          year = if year < 50
+                   2000 + year
+                 else
+                   1900 + year
+                 end
+        end
 
+        off = zone_offset(zone)
         year, mon, day, hour, min, sec =
-          apply_offset(year, mon, day, hour, min, sec, zone_offset(zone))
+          apply_offset(year, mon, day, hour, min, sec, off)
         t = self.utc(year, mon, day, hour, min, sec)
-        t.localtime if !zone_utc?(zone)
+        force_zone!(t, zone, off)
         t
       else
         raise ArgumentError.new("not RFC 2822 compliant date: #{date.inspect}")
@@ -482,7 +516,7 @@ class Time
           (\d{2}):(\d{2}):(\d{2})\x20
           GMT
           \s*\z/ix =~ date
-        self.rfc2822(date)
+        self.rfc2822(date).utc
       elsif /\A\s*
              (?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\x20
              (\d\d)-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d\d)\x20
@@ -542,9 +576,12 @@ class Time
         end
         if $8
           zone = $8
+          off = zone_offset(zone)
           year, mon, day, hour, min, sec =
-            apply_offset(year, mon, day, hour, min, sec, zone_offset(zone))
-          self.utc(year, mon, day, hour, min, sec, usec)
+            apply_offset(year, mon, day, hour, min, sec, off)
+          t = self.utc(year, mon, day, hour, min, sec, usec)
+          force_zone!(t, zone, off)
+          t
         else
           self.local(year, mon, day, hour, min, sec, usec)
         end

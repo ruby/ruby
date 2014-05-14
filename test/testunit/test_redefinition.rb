@@ -2,8 +2,8 @@ require 'test/unit'
 
 class TestRedefinition < Test::Unit::TestCase
   def test_redefinition
-    assert_match /^test\/unit warning: method TestForTestRedefinition#test_redefinition is redefined$/,
-                 redefinition
+    assert_match(/^test\/unit warning: method TestForTestRedefinition#test_redefinition is redefined$/,
+                 redefinition)
   end
 
   def redefinition(*args)

@@ -248,14 +248,14 @@ class TestFloat < Test::Unit::TestCase
 
   def test_modulo3
     bug6048 = '[ruby-core:42726]'
-    assert_equal(4.2, 4.2.send(:%, Float::INFINITY))
-    assert_equal(4.2, 4.2 % Float::INFINITY)
+    assert_equal(4.2, 4.2.send(:%, Float::INFINITY), bug6048)
+    assert_equal(4.2, 4.2 % Float::INFINITY, bug6048)
     assert_is_minus_zero(-0.0 % 4.2)
     assert_is_minus_zero(-0.0.send :%, 4.2)
-    assert_raise(ZeroDivisionError) { 4.2.send(:%, 0.0) }
-    assert_raise(ZeroDivisionError) { 4.2 % 0.0 }
-    assert_raise(ZeroDivisionError) { 42.send(:%, 0) }
-    assert_raise(ZeroDivisionError) { 42 % 0 }
+    assert_raise(ZeroDivisionError, bug6048) { 4.2.send(:%, 0.0) }
+    assert_raise(ZeroDivisionError, bug6048) { 4.2 % 0.0 }
+    assert_raise(ZeroDivisionError, bug6048) { 42.send(:%, 0) }
+    assert_raise(ZeroDivisionError, bug6048) { 42 % 0 }
   end
 
   def test_divmod2

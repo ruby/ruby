@@ -1346,7 +1346,7 @@ sock_s_getnameinfo(int argc, VALUE *argv)
     int fl;
     struct rb_addrinfo *res = NULL;
     struct addrinfo hints, *r;
-    int error;
+    int error, saved_errno;
     union_sockaddr ss;
     struct sockaddr *sap;
     socklen_t salen;
@@ -1460,11 +1460,15 @@ sock_s_getnameinfo(int argc, VALUE *argv)
     return rb_assoc_new(rb_str_new2(hbuf), rb_str_new2(pbuf));
 
   error_exit_addr:
+    saved_errno = errno;
     if (res) rb_freeaddrinfo(res);
+    errno = saved_errno;
     rsock_raise_socket_error("getaddrinfo", error);
 
   error_exit_name:
+    saved_errno = errno;
     if (res) rb_freeaddrinfo(res);
+    errno = saved_errno;
     rsock_raise_socket_error("getnameinfo", error);
 
     UNREACHABLE;

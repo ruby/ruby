@@ -184,4 +184,8 @@ module DL
       DL.dlopen("/lib/libc.so.7").sym('strcpy')
     end if /freebsd/=~ RUBY_PLATFORM
   end
+
+  def test_no_memory_leak
+    assert_no_memory_leak(%w[-W0 -rdl.so], '', '100_000.times {DL::Handle.allocate}; GC.start', rss: true)
+  end
 end

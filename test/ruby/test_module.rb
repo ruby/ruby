@@ -375,6 +375,25 @@ class TestModule < Test::Unit::TestCase
     assert_equal(:ok, Object.new.extend(m).foo, bug9535)
   end
 
+  def test_initialize_copy_empty
+    bug9813 = '[ruby-dev:48182] [Bug #9813]'
+    m = Module.new do
+      def x
+      end
+      const_set(:X, 1)
+      @x = 2
+    end
+    assert_equal([:x], m.instance_methods)
+    assert_equal([:@x], m.instance_variables)
+    assert_equal([:X], m.constants)
+    m.module_eval do
+      initialize_copy(Module.new)
+    end
+    assert_empty(m.instance_methods, bug9813)
+    assert_empty(m.instance_variables, bug9813)
+    assert_empty(m.constants, bug9813)
+  end
+
   def test_dup
     bug6454 = '[ruby-core:45132]'
 
@@ -1258,7 +1277,7 @@ class TestModule < Test::Unit::TestCase
     c = Class.new do
       attr_writer :foo
     end
-    assert_raise(ArgumentError) { c.new.send :foo= }
+    assert_raise(ArgumentError, bug8540) { c.new.send :foo= }
   end
 
   def test_private_constant

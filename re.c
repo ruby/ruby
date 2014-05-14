@@ -1017,8 +1017,15 @@ match_init_copy(VALUE obj, VALUE orig)
 static VALUE
 match_regexp(VALUE match)
 {
+    VALUE regexp;
     match_check(match);
-    return RMATCH(match)->regexp;
+    regexp = RMATCH(match)->regexp;
+    if (NIL_P(regexp)) {
+	VALUE str = rb_reg_nth_match(0, match);
+	regexp = rb_reg_regcomp(rb_reg_quote(str));
+	RMATCH(match)->regexp = regexp;
+    }
+    return regexp;
 }
 
 /*
@@ -1216,6 +1223,32 @@ rb_match_busy(VALUE match)
     FL_SET(match, MATCH_BUSY);
 }
 
+static void
+match_set_string(VALUE m, VALUE string, long pos, long len)
+{
+    struct RMatch *match = (struct RMatch *)m;
+    struct rmatch *rmatch = match->rmatch;
+
+    match->str = string;
+    match->regexp = Qnil;
+    onig_region_resize(&rmatch->regs, 1);
+    rmatch->regs.beg[0] = pos;
+    rmatch->regs.end[0] = pos + len;
+    rmatch->char_offset_updated = 0;
+    OBJ_INFECT(match, string);
+}
+
+void
+rb_backref_set_string(VALUE string, long pos, long len)
+{
+    VALUE match = rb_backref_get();
+    if (NIL_P(match) || FL_TEST(match, MATCH_BUSY)) {
+	match = match_alloc(rb_cMatch);
+    }
+    match_set_string(match, string, pos, len);
+    rb_backref_set(match);
+}
+
 /*
  *  call-seq:
  *     rxp.fixed_encoding?   -> true or false
@@ -1375,7 +1408,7 @@ rb_reg_adjust_startpos(VALUE re, VALUE str, long pos, int reverse)
 
 /* returns byte offset */
 long
-rb_reg_search(VALUE re, VALUE str, long pos, int reverse)
+rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
 {
     long result;
     VALUE match;
@@ -1450,15 +1483,24 @@ rb_reg_search(VALUE re, VALUE str, long pos, int reverse)
 	    FL_UNSET(match, FL_TAINT);
     }
 
-    RMATCH(match)->str = rb_str_new4(str);
+    if (set_backref_str) {
+	RMATCH(match)->str = rb_str_new4(str);
+	OBJ_INFECT(match, str);
+    }
+
     RMATCH(match)->regexp = re;
     RMATCH(match)->rmatch->char_offset_updated = 0;
     rb_backref_set(match);
 
     OBJ_INFECT(match, re);
-    OBJ_INFECT(match, str);
 
     return result;
+}
+
+long
+rb_reg_search(VALUE re, VALUE str, long pos, int reverse)
+{
+    return rb_reg_search0(re, str, pos, reverse, 1);
 }
 
 VALUE
@@ -1889,7 +1931,7 @@ match_inspect_name_iter(const OnigUChar *name, const OnigUChar *name_end,
 static VALUE
 match_inspect(VALUE match)
 {
-    const char *cname = rb_obj_classname(match);
+    VALUE cname = rb_class_path(rb_obj_class(match));
     VALUE str;
     int i;
     struct re_registers *regs = RMATCH_REGS(match);
@@ -1898,7 +1940,11 @@ match_inspect(VALUE match)
     VALUE regexp = RMATCH(match)->regexp;
 
     if (regexp == 0) {
-        return rb_sprintf("#<%s:%p>", cname, (void*)match);
+        return rb_sprintf("#<%"PRIsVALUE":%p>", cname, (void*)match);
+    }
+    else if (NIL_P(regexp)) {
+        return rb_sprintf("#<%"PRIsVALUE": %"PRIsVALUE">",
+			  cname, rb_reg_nth_match(0, match));
     }
 
     names = ALLOCA_N(struct backref_name_tag, num_regs);
@@ -1908,7 +1954,7 @@ match_inspect(VALUE match)
             match_inspect_name_iter, names);
 
     str = rb_str_buf_new2("#<");
-    rb_str_buf_cat2(str, cname);
+    rb_str_append(str, cname);
 
     for (i = 0; i < num_regs; i++) {
         VALUE v;
@@ -2583,6 +2629,8 @@ static st_index_t reg_hash(VALUE re);
  *   rxp.hash   -> fixnum
  *
  * Produce a hash based on the text and options of this regular expression.
+ *
+ * See also Object#hash.
  */
 
 static VALUE
@@ -2641,6 +2689,8 @@ rb_reg_equal(VALUE re1, VALUE re2)
  *
  * Produce a hash based on the target string, regexp and matched
  * positions of this matchdata.
+ *
+ * See also Object#hash.
  */
 
 static VALUE
@@ -3353,7 +3403,7 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
 	switch (c) {
 	  case '1': case '2': case '3': case '4':
 	  case '5': case '6': case '7': case '8': case '9':
-            if (onig_noname_group_capture_is_active(RREGEXP(regexp)->ptr)) {
+            if (!NIL_P(regexp) && onig_noname_group_capture_is_active(RREGEXP(regexp)->ptr)) {
                 no = c - '0';
             }
             else {

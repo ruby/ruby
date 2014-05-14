@@ -325,6 +325,25 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([[:keyreq, :a], [:keyrest, :b]], o.method(:bar).parameters, feature7701)
     assert_raise_with_message(ArgumentError, /missing keyword/, bug8139) {o.bar(c: bug8139)}
     assert_raise_with_message(ArgumentError, /missing keyword/, bug8139) {o.bar}
+
+    bug9669 = '[ruby-core:61658] [Bug #9669]'
+    assert_nothing_raised(SyntaxError, bug9669) do
+      eval(<<-'end;', nil, __FILE__, __LINE__)
+        def bug9669.foo a:
+          return a
+        end
+      end;
+    end
+    assert_equal(42, bug9669.foo(a: 42))
+    assert_nothing_raised(SyntaxError, bug9669) do
+      eval(<<-'end;', nil, __FILE__, __LINE__)
+        o = {
+          a:
+          1
+        }
+      end;
+    end
+    assert_equal({a: 1}, o, bug9669)
   end
 
   def test_block_required_keyword
@@ -418,6 +437,19 @@ class TestKeywordArguments < Test::Unit::TestCase
       end
     end
     assert_equal([1, 2, 1, [], {:f=>5}, 2, {}], a.new.foo(1, 2, f:5), bug8993)
+  end
+
+  def test_splat_keyword_nondestructive
+    bug9776 = '[ruby-core:62161] [Bug #9776]'
+
+    h = {a: 1}
+    assert_equal({a:1, b:2}, {**h, b:2})
+    assert_equal({a:1}, h, bug9776)
+
+    pr = proc {|**opt| next opt}
+    assert_equal({a: 1}, pr.call(**h))
+    assert_equal({a: 1, b: 2}, pr.call(**h, b: 2))
+    assert_equal({a: 1}, h, bug9776)
   end
 
   def test_gced_object_in_stack

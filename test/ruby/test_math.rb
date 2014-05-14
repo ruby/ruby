@@ -11,20 +11,26 @@ class TestMath < Test::Unit::TestCase
     assert_predicate(a, :nan?, *rest)
   end
 
-  def check(a, b)
+  def assert_float(a, b)
     err = [Float::EPSILON * 4, [a.abs, b.abs].max * Float::EPSILON * 256].max
     assert_in_delta(a, b, err)
   end
+  alias check assert_float
 
   def test_atan2
     check(+0.0, Math.atan2(+0.0, +0.0))
     check(-0.0, Math.atan2(-0.0, +0.0))
     check(+Math::PI, Math.atan2(+0.0, -0.0))
     check(-Math::PI, Math.atan2(-0.0, -0.0))
-    assert_raise(Math::DomainError) { Math.atan2(Float::INFINITY, Float::INFINITY) }
-    assert_raise(Math::DomainError) { Math.atan2(Float::INFINITY, -Float::INFINITY) }
-    assert_raise(Math::DomainError) { Math.atan2(-Float::INFINITY, Float::INFINITY) }
-    assert_raise(Math::DomainError) { Math.atan2(-Float::INFINITY, -Float::INFINITY) }
+
+    inf = Float::INFINITY
+    expected = 3.0 * Math::PI / 4.0
+    assert_nothing_raised { check(+expected, Math.atan2(+inf, -inf)) }
+    assert_nothing_raised { check(-expected, Math.atan2(-inf, -inf)) }
+    expected = Math::PI / 4.0
+    assert_nothing_raised { check(+expected, Math.atan2(+inf, +inf)) }
+    assert_nothing_raised { check(-expected, Math.atan2(-inf, +inf)) }
+
     check(0, Math.atan2(0, 1))
     check(Math::PI / 4, Math.atan2(1, 1))
     check(Math::PI / 2, Math.atan2(1, 0))
@@ -142,6 +148,8 @@ class TestMath < Test::Unit::TestCase
     assert_nothing_raised { assert_infinity(-Math.log(-0.0)) }
     assert_raise(Math::DomainError) { Math.log(-1.0) }
     assert_raise(TypeError) { Math.log(1,nil) }
+    assert_raise(Math::DomainError, '[ruby-core:62309] [ruby-Bug #9797]') { Math.log(1.0, -1.0) }
+    assert_nothing_raised { assert_nan(Math.log(0.0, 0.0)) }
   end
 
   def test_log2

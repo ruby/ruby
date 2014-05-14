@@ -11,7 +11,7 @@ class TestISeq < Test::Unit::TestCase
 
   def lines src
     body = RubyVM::InstructionSequence.new(src).to_a[13]
-    lines = body.find_all{|e| e.kind_of? Fixnum}
+    body.find_all{|e| e.kind_of? Fixnum}
   end
 
   def test_to_a_lines

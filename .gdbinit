@@ -211,7 +211,35 @@ define rp
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_SYMBOL
     printf "%sT_SYMBOL%s: ", $color_type, $color_end
-    print (struct RBasic *)($arg0)
+    print (struct RSymbol *)($arg0)
+    set $id_type = ((struct RSymbol *)($arg0))->type
+    if $id_type == RUBY_ID_LOCAL
+      printf "l"
+    else
+    if $id_type == RUBY_ID_INSTANCE
+      printf "i"
+    else
+    if $id_type == RUBY_ID_GLOBAL
+      printf "G"
+    else
+    if $id_type == RUBY_ID_ATTRSET
+      printf "a"
+    else
+    if $id_type == RUBY_ID_CONST
+      printf "C"
+    else
+    if $id_type == RUBY_ID_CLASS
+      printf "c"
+    else
+      printf "j"
+    end
+    end
+    end
+    end
+    end
+    end
+    set $id_fstr = ((struct RSymbol *)($arg0))->fstr
+    rp_string $id_fstr
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_UNDEF
     printf "%sT_UNDEF%s: ", $color_type, $color_end
@@ -731,7 +759,7 @@ define rb_numtable_entry
       end
     end
   else
-    set $rb_numtable_p = $rb_numtable_tbl->as.big.bins[$rb_numtable_id % $rb_numtable_tbl->num_bins]
+    set $rb_numtable_p = $rb_numtable_tbl->as.big.bins[st_numhash($rb_numtable_id) % $rb_numtable_tbl->num_bins]
     while $rb_numtable_p
       if $rb_numtable_p->key == $rb_numtable_id
 	set $rb_numtable_key = $rb_numtable_p->key
@@ -761,7 +789,7 @@ define rb_method_entry
     rb_numtable_entry $rb_method_entry_klass->m_tbl_wrapper->tbl $rb_method_entry_id
     set $rb_method_entry_me = (rb_method_entry_t *)$rb_numtable_rec
     if !$rb_method_entry_me
-      set $rb_method_entry_klass = (struct RClass *)$rb_method_entry_klass->ptr->super
+      set $rb_method_entry_klass = (struct RClass *)RCLASS_SUPER($rb_method_entry_klass)
     end
   end
   if $rb_method_entry_me
@@ -790,7 +818,7 @@ define rb_ancestors
   set $rb_ancestors_module = $arg0
   while $rb_ancestors_module
     rp_class $rb_ancestors_module
-    set $rb_ancestors_module = ((struct RClass *)($rb_ancestors_module))->ptr.super
+    set $rb_ancestors_module = RCLASS_SUPER($rb_ancestors_module)
   end
 end
 document rb_ancestors

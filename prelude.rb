@@ -4,9 +4,9 @@ class Thread
   # call-seq:
   #    Thread.exclusive { block }   => obj
   #
-  # Wraps a block in Thread.critical, restoring the original value
-  # upon exit from the critical section, and returns the value of the
-  # block.
+  # Wraps the block in a single, VM-global Mutex.synchronize, returning the
+  # value of the block. A thread executing inside the exclusive section will
+  # only block other threads which also use the Thread.exclusive mechanism.
   def self.exclusive
     MUTEX_FOR_THREAD_EXCLUSIVE.synchronize{
       yield

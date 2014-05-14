@@ -453,7 +453,7 @@ class CGI
       #
       # +session+ is the session this instance is associated with.
       # +option+ is a list of initialisation options.  None are
-      # currently recognised.
+      # currently recognized.
       def initialize(session, option=nil)
         @session_id = session.session_id
         unless GLOBAL_HASH_TABLE.key?(@session_id)

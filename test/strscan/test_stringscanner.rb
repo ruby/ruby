@@ -461,7 +461,7 @@ class TestStringScanner < Test::Unit::TestCase
     assert_equal true, s[4].tainted?
 
     s = StringScanner.new("foo bar baz")
-    s.scan /(?<a>\w+) (?<b>\w+) (\w+)/
+    s.scan(/(?<a>\w+) (?<b>\w+) (\w+)/)
     assert_equal 'foo', s[1]
     assert_equal 'bar', s[2]
     assert_nil s[3]

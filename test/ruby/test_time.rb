@@ -1,5 +1,4 @@
 require 'test/unit'
-require 'rational'
 require 'delegate'
 require 'timeout'
 require 'delegate'
@@ -311,6 +310,21 @@ class TestTime < Test::Unit::TestCase
     end
   end
 
+  def test_marshal_zone_gc
+    assert_separately(%w(--disable-gems), <<-'end;', timeout: 30)
+      ENV["TZ"] = "JST-9"
+      s = Marshal.dump(Time.now)
+      t = Marshal.load(s)
+      n = 0
+      done = 100000
+      while t.zone.dup == "JST" && n < done
+        n += 1
+      end
+      assert_equal done, n, "Bug #9652"
+      assert_equal "JST", t.zone, "Bug #9652"
+    end;
+  end
+
   def test_marshal_to_s
     t1 = Time.new(2011,11,8, 0,42,25, 9*3600)
     t2 = Time.at(Marshal.load(Marshal.dump(t1)))
@@ -470,6 +484,7 @@ class TestTime < Test::Unit::TestCase
     t3 = t1.getlocal("-02:00")
     assert_equal(t1, t3)
     assert_equal(-7200, t3.utc_offset)
+    assert_equal([1999, 12, 31, 22, 0, 0], [t3.year, t3.mon, t3.mday, t3.hour, t3.min, t3.sec])
     t1.localtime
     assert_equal(t1, t2)
     assert_equal(t1.gmt?, t2.gmt?)

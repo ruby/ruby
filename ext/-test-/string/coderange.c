@@ -2,10 +2,11 @@
 #include "ruby/encoding.h"
 
 static VALUE sym_7bit, sym_valid, sym_unknown, sym_broken;
+
 static VALUE
-str_coderange(VALUE str)
+coderange_int2sym(int coderange)
 {
-    switch (ENC_CODERANGE(str)) {
+    switch (coderange) {
       case ENC_CODERANGE_7BIT:
 	return sym_7bit;
       case ENC_CODERANGE_VALID:
@@ -19,6 +20,21 @@ str_coderange(VALUE str)
     UNREACHABLE;
 }
 
+/* return coderange without scan */
+static VALUE
+str_coderange(VALUE str)
+{
+    return coderange_int2sym(ENC_CODERANGE(str));
+}
+
+/* scan coderange and return the result */
+static VALUE
+str_coderange_scan(VALUE str)
+{
+    ENC_CODERANGE_SET(str, ENC_CODERANGE_UNKNOWN);
+    return coderange_int2sym(rb_enc_str_coderange(str));
+}
+
 void
 Init_coderange(VALUE klass)
 {
@@ -27,4 +43,5 @@ Init_coderange(VALUE klass)
     sym_unknown = ID2SYM(rb_intern("unknown"));
     sym_broken = ID2SYM(rb_intern("broken"));
     rb_define_method(klass, "coderange", str_coderange, 0);
+    rb_define_method(klass, "coderange_scan", str_coderange_scan, 0);
 }

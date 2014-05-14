@@ -83,7 +83,7 @@ require 'rubygems/errors'
 # * Chad Fowler  -- chad(at)chadfowler.com
 # * David Black  -- dblack(at)wobblini.net
 # * Paul Brannan -- paul(at)atdesk.com
-# * Jim Weirch   -- jim(at)weirichhouse.org
+# * Jim Weirich  -- jim(at)weirichhouse.org
 #
 # Contributors:
 #

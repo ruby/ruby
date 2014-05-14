@@ -179,9 +179,6 @@ configure-ext: $(EXTS_MK)
 build-ext: $(EXTS_MK)
 	$(Q)$(MAKE) -f $(EXTS_MK) $(MFLAGS) $(EXTSTATIC) LIBRUBY_EXTS=$(LIBRUBY_EXTS) ENCOBJS="$(ENCOBJS)"
 
-$(MKMAIN_CMD): $(MKFILES) all-incs $(PREP) $(RBCONFIG) $(LIBRUBY)
-	$(Q)$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --command-output=$@ $(EXTMK_ARGS)
-
 prog: program wprogram
 
 $(PREP): $(MKFILES)
@@ -603,6 +600,12 @@ $(PLATFORM_D):
 	@exit > $@
 
 ###
+CCAN_DIR = {$(VPATH)}ccan
+CCAN_LIST_INCLUDES = $(CCAN_DIR)/build_assert/build_assert.h \
+			$(CCAN_DIR)/check_type/check_type.h \
+			$(CCAN_DIR)/container_of/container_of.h \
+			$(CCAN_DIR)/list/list.h \
+			$(CCAN_DIR)/str/str.h
 
 RUBY_H_INCLUDES    = {$(VPATH)}ruby.h {$(VPATH)}config.h {$(VPATH)}defines.h \
 		     {$(VPATH)}intern.h {$(VPATH)}missing.h {$(VPATH)}st.h \
@@ -611,7 +614,8 @@ ENCODING_H_INCLUDES= {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h
 PROBES_H_INCLUDES  = {$(VPATH)}probes.h
 VM_CORE_H_INCLUDES = {$(VPATH)}vm_core.h {$(VPATH)}thread_$(THREAD_MODEL).h \
 		     {$(VPATH)}node.h {$(VPATH)}method.h {$(VPATH)}ruby_atomic.h \
-	             {$(VPATH)}vm_debug.h {$(VPATH)}id.h {$(VPATH)}thread_native.h
+	             {$(VPATH)}vm_debug.h {$(VPATH)}id.h {$(VPATH)}thread_native.h \
+	             $(CCAN_LIST_INCLUDES)
 
 ###
 
@@ -684,7 +688,7 @@ gc.$(OBJEXT): {$(VPATH)}gc.c $(RUBY_H_INCLUDES) {$(VPATH)}re.h \
   {$(VPATH)}gc.h {$(VPATH)}io.h {$(VPATH)}eval_intern.h {$(VPATH)}util.h \
   {$(VPATH)}internal.h {$(VPATH)}constant.h \
   {$(VPATH)}thread.h $(PROBES_H_INCLUDES) {$(VPATH)}vm_opts.h {$(VPATH)}debug.h
-hash.$(OBJEXT): {$(VPATH)}hash.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h \
+hash.$(OBJEXT): {$(VPATH)}hash.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h {$(VPATH)}id.h \
   $(ENCODING_H_INCLUDES) {$(VPATH)}internal.h $(PROBES_H_INCLUDES) {$(VPATH)}vm_opts.h
 inits.$(OBJEXT): {$(VPATH)}inits.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}internal.h
@@ -1102,5 +1106,5 @@ help: PHONY
 	"  golf:            for golfers" \
 	"" \
 	"see DeveloperHowto for more detail: " \
-	"  http://bugs.ruby-lang.org/wiki/ruby/DeveloperHowto" \
+	"  https://bugs.ruby-lang.org/projects/ruby/wiki/DeveloperHowto" \
 	$(MESSAGE_END)

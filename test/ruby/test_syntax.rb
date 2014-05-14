@@ -78,6 +78,11 @@ class TestSyntax < Test::Unit::TestCase
     end
   end
 
+  def test_do_block_in_cmdarg
+    bug9726 = '[ruby-core:61950] [Bug #9726]'
+    assert_valid_syntax("tap (proc do end)", __FILE__, bug9726)
+  end
+
   def test_keyword_rest
     bug5989 = '[ruby-core:42455]'
     assert_valid_syntax("def kwrest_test(**a) a; end", __FILE__, bug5989)
@@ -109,6 +114,30 @@ class TestSyntax < Test::Unit::TestCase
     assert_raise(ArgumentError) {o.kw(**h)}
     h = {"k1"=>11, k2: 12}
     assert_raise(TypeError) {o.kw(**h)}
+  end
+
+  def test_keyword_self_reference
+    bug9593 = '[ruby-core:61299] [Bug #9593]'
+    o = Object.new
+    def o.foo(var: defined?(var)) var end
+    assert_equal(42, o.foo(var: 42))
+    assert_equal("local-variable", o.foo, bug9593)
+
+    o = Object.new
+    def o.foo(var: var) var end
+    assert_nil(o.foo, bug9593)
+  end
+
+  def test_optional_self_reference
+    bug9593 = '[ruby-core:61299] [Bug #9593]'
+    o = Object.new
+    def o.foo(var = defined?(var)) var end
+    assert_equal(42, o.foo(42))
+    assert_equal("local-variable", o.foo, bug9593)
+
+    o = Object.new
+    def o.foo(var = var) var end
+    assert_nil(o.foo, bug9593)
   end
 
   def test_warn_grouped_expression

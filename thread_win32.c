@@ -479,7 +479,7 @@ native_cond_wait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex)
 }
 
 static unsigned long
-abs_timespec_to_timeout_ms(struct timespec *ts)
+abs_timespec_to_timeout_ms(const struct timespec *ts)
 {
     struct timeval tv;
     struct timeval now;
@@ -495,7 +495,7 @@ abs_timespec_to_timeout_ms(struct timespec *ts)
 }
 
 static int
-native_cond_timedwait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex, struct timespec *ts)
+native_cond_timedwait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex, const struct timespec *ts)
 {
     unsigned long timeout_ms;
 

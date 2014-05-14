@@ -355,7 +355,22 @@ class Shell
     @process_controller.kill_job(sig, command)
   end
 
-  # Convenience method for Shell::CommandProcessor.def_system_command
+  # call-seq:
+  #   def_system_command(command, path = command)
+  #
+  # Convenience method for Shell::CommandProcessor.def_system_command.
+  # Defines an instance method which will execute the given shell command.
+  # If the executable is not in Shell.default_system_path, you must
+  # supply the path to it.
+  #
+  #    Shell.def_system_command('hostname')
+  #    Shell.new.hostname # => localhost
+  #
+  #    # How to use an executable that's not in the default path
+  #
+  #    Shell.def_system_command('run_my_program', "~/hello")
+  #    Shell.new.run_my_program # prints "Hello from a C program!"
+  #
   def Shell.def_system_command(command, path = command)
     CommandProcessor.def_system_command(command, path)
   end
@@ -365,7 +380,17 @@ class Shell
     CommandProcessor.undef_system_command(command)
   end
 
-  # Convenience method for Shell::CommandProcessor.alias_command
+  # call-seq:
+  #   alias_command(alias, command, *opts, &block)
+  #
+  # Convenience method for Shell::CommandProcessor.alias_command.
+  # Defines an instance method which will execute a command under
+  # an alternative name.
+  #
+  #    Shell.def_system_command('date')
+  #    Shell.alias_command('date_in_utc', 'date', '-u')
+  #    Shell.new.date_in_utc # => Sat Jan 25 16:59:57 UTC 2014
+  #
   def Shell.alias_command(ali, command, *opts, &block)
     CommandProcessor.alias_command(ali, command, *opts, &block)
   end
@@ -375,7 +400,17 @@ class Shell
     CommandProcessor.unalias_command(ali)
   end
 
-  # Convenience method for Shell::CommandProcessor.install_system_commands
+  # call-seq:
+  #   install_system_commands(pre = "sys_")
+  #
+  # Convenience method for Shell::CommandProcessor.install_system_commands.
+  # Defines instance methods representing all the executable files found in
+  # Shell.default_system_path, with the given prefix prepended to their
+  # names.
+  #
+  #    Shell.install_system_commands
+  #    Shell.new.sys_echo("hello") # => hello
+  #
   def Shell.install_system_commands(pre = "sys_")
     CommandProcessor.install_system_commands(pre)
   end

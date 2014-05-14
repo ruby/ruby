@@ -366,4 +366,27 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
     }
     assert_equal(requested, 1)
   end
+
+  def test_shutdown_with_busy_keepalive_connection
+    requested = 0
+    config = {
+      :ServerName => "localhost",
+    }
+    TestWEBrick.start_httpserver(config){|server, addr, port, log|
+      server.mount_proc("/", lambda {|req, res| res.body = "heffalump" })
+      Thread.pass while server.status != :Running
+
+      Net::HTTP.start(addr, port) do |http|
+        req = Net::HTTP::Get.new("/")
+        http.request(req){|res| assert_equal('Keep-Alive', res['Connection'], log.call) }
+        server.shutdown
+        begin
+          10.times {|n| http.request(req); requested += 1 }
+        rescue
+          # Errno::ECONNREFUSED or similar
+        end
+      end
+    }
+    assert_equal(0, requested, "Server responded to #{requested} requests after shutdown")
+  end
 end

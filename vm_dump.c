@@ -683,19 +683,18 @@ rb_print_backtrace(void)
 #define MAX_NATIVE_TRACE 1024
     static void *trace[MAX_NATIVE_TRACE];
     int n = backtrace(trace, MAX_NATIVE_TRACE);
-    char **syms = backtrace_symbols(trace, n);
-
-    if (syms) {
-#ifdef USE_ELF
-	rb_dump_backtrace_with_lines(n, trace, syms);
+#if defined(USE_ELF) && defined(HAVE_DLADDR)
+    rb_dump_backtrace_with_lines(n, trace);
 #else
+    char **syms = backtrace_symbols(trace, n);
+    if (syms) {
 	int i;
 	for (i=0; i<n; i++) {
 	    fprintf(stderr, "%s\n", syms[i]);
 	}
-#endif
 	free(syms);
     }
+#endif
 #elif defined(_WIN32)
     DWORD tid = GetCurrentThreadId();
     HANDLE th = (HANDLE)_beginthread(dump_thread, 0, &tid);
@@ -703,6 +702,90 @@ rb_print_backtrace(void)
 	WaitForSingleObject(th, INFINITE);
 #endif
 }
+
+#ifdef __FreeBSD__
+#include <sys/user.h>
+#include <sys/sysctl.h>
+#include <sys/param.h>
+#include <libprocstat.h>
+# ifndef KVME_TYPE_MGTDEVICE
+# define KVME_TYPE_MGTDEVICE     8
+# endif
+void
+procstat_vm(struct procstat *procstat, struct kinfo_proc *kipp)
+{
+	struct kinfo_vmentry *freep, *kve;
+	int ptrwidth;
+	unsigned int i, cnt;
+	const char *str;
+#ifdef __x86_64__
+	ptrwidth = 14;
+#else
+	ptrwidth = 2*sizeof(void *) + 2;
+#endif
+	fprintf(stderr, "%*s %*s %3s %4s %4s %3s %3s %4s %-2s %-s\n",
+		ptrwidth, "START", ptrwidth, "END", "PRT", "RES",
+		"PRES", "REF", "SHD", "FL", "TP", "PATH");
+
+	freep = procstat_getvmmap(procstat, kipp, &cnt);
+	if (freep == NULL)
+		return;
+	for (i = 0; i < cnt; i++) {
+		kve = &freep[i];
+		fprintf(stderr, "%#*jx ", ptrwidth, (uintmax_t)kve->kve_start);
+		fprintf(stderr, "%#*jx ", ptrwidth, (uintmax_t)kve->kve_end);
+		fprintf(stderr, "%s", kve->kve_protection & KVME_PROT_READ ? "r" : "-");
+		fprintf(stderr, "%s", kve->kve_protection & KVME_PROT_WRITE ? "w" : "-");
+		fprintf(stderr, "%s ", kve->kve_protection & KVME_PROT_EXEC ? "x" : "-");
+		fprintf(stderr, "%4d ", kve->kve_resident);
+		fprintf(stderr, "%4d ", kve->kve_private_resident);
+		fprintf(stderr, "%3d ", kve->kve_ref_count);
+		fprintf(stderr, "%3d ", kve->kve_shadow_count);
+		fprintf(stderr, "%-1s", kve->kve_flags & KVME_FLAG_COW ? "C" : "-");
+		fprintf(stderr, "%-1s", kve->kve_flags & KVME_FLAG_NEEDS_COPY ? "N" :
+		    "-");
+		fprintf(stderr, "%-1s", kve->kve_flags & KVME_FLAG_SUPER ? "S" : "-");
+		fprintf(stderr, "%-1s ", kve->kve_flags & KVME_FLAG_GROWS_UP ? "U" :
+		    kve->kve_flags & KVME_FLAG_GROWS_DOWN ? "D" : "-");
+		switch (kve->kve_type) {
+		case KVME_TYPE_NONE:
+			str = "--";
+			break;
+		case KVME_TYPE_DEFAULT:
+			str = "df";
+			break;
+		case KVME_TYPE_VNODE:
+			str = "vn";
+			break;
+		case KVME_TYPE_SWAP:
+			str = "sw";
+			break;
+		case KVME_TYPE_DEVICE:
+			str = "dv";
+			break;
+		case KVME_TYPE_PHYS:
+			str = "ph";
+			break;
+		case KVME_TYPE_DEAD:
+			str = "dd";
+			break;
+		case KVME_TYPE_SG:
+			str = "sg";
+			break;
+		case KVME_TYPE_MGTDEVICE:
+			str = "md";
+			break;
+		case KVME_TYPE_UNKNOWN:
+		default:
+			str = "??";
+			break;
+		}
+		fprintf(stderr, "%-2s ", str);
+		fprintf(stderr, "%-s\n", kve->kve_path);
+	}
+	free(freep);
+}
+#endif
 
 void
 rb_vm_bugreport(void)
@@ -803,5 +886,25 @@ rb_vm_bugreport(void)
 	    }
 	}
 #endif /* __linux__ */
+#ifdef __FreeBSD__
+# define MIB_KERN_PROC_PID_LEN 4
+	int mib[MIB_KERN_PROC_PID_LEN];
+	struct kinfo_proc kp;
+	size_t len = sizeof(struct kinfo_proc);
+	mib[0] = CTL_KERN;
+	mib[1] = KERN_PROC;
+	mib[2] = KERN_PROC_PID;
+	mib[3] = getpid();
+	if (sysctl(mib, MIB_KERN_PROC_PID_LEN, &kp, &len, NULL, 0) == -1) {
+	    perror("sysctl");
+	}
+	else {
+	    struct procstat *prstat = procstat_open_sysctl();
+	    fprintf(stderr, "* Process memory map:\n\n");
+	    procstat_vm(prstat, &kp);
+	    procstat_close(prstat);
+	    fprintf(stderr, "\n");
+	}
+#endif /* __FreeBSD__ */
     }
 }

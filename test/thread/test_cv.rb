@@ -196,4 +196,19 @@ INPUT
       condvar.dup
     end
   end
+
+  (DumpableCV = ConditionVariable.dup).class_eval {remove_method :marshal_dump}
+
+  def test_dump
+    bug9674 = '[ruby-core:61677] [Bug #9674]'
+    condvar = ConditionVariable.new
+    assert_raise_with_message(TypeError, /#{ConditionVariable}/, bug9674) do
+      Marshal.dump(condvar)
+    end
+
+    condvar = DumpableCV.new
+    assert_raise_with_message(TypeError, /internal Array/, bug9674) do
+      Marshal.dump(condvar)
+    end
+  end
 end

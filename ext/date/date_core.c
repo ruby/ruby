@@ -1,5 +1,5 @@
 /*
-  date_core.c: Coded by Tadayoshi Funaba 2010-2013
+  date_core.c: Coded by Tadayoshi Funaba 2010-2014
 */
 
 #include "ruby.h"
@@ -1723,23 +1723,6 @@ m_real_year(union DateData *x)
     return ry;
 }
 
-
-#ifdef USE_PACK
-inline static int
-m_pc(union DateData *x)
-{
-    if (simple_dat_p(x)) {
-	get_s_civil(x);
-	return x->s.pc;
-    }
-    else {
-	get_c_civil(x);
-	get_c_time(x);
-	return x->c.pc;
-    }
-}
-#endif
-
 inline static int
 m_mon(union DateData *x)
 {
@@ -1977,12 +1960,6 @@ inline static VALUE
 k_date_p(VALUE x)
 {
     return f_kind_of_p(x, cDate);
-}
-
-inline static VALUE
-k_datetime_p(VALUE x)
-{
-    return f_kind_of_p(x, cDateTime);
 }
 
 inline static VALUE
@@ -3690,7 +3667,11 @@ rt_rewrite_frags(VALUE hash)
 
     seconds = ref_hash("seconds");
     if (!NIL_P(seconds)) {
-	VALUE d, h, min, s, fr;
+	VALUE offset, d, h, min, s, fr;
+
+	offset = ref_hash("offset");
+	if (!NIL_P(offset))
+	    seconds = f_add(seconds, offset);
 
 	d = f_idiv(seconds, INT2FIX(DAY_IN_SECONDS));
 	fr = f_mod(seconds, INT2FIX(DAY_IN_SECONDS));
@@ -3710,7 +3691,6 @@ rt_rewrite_frags(VALUE hash)
 	set_hash("sec", s);
 	set_hash("sec_fraction", fr);
 	del_hash("seconds");
-	del_hash("offset");
     }
     return hash;
 }
@@ -6306,7 +6286,7 @@ d_lite_cmp(VALUE self, VALUE other)
 		    return INT2FIX(1);
 		}
 	    }
-	    else if (a_nth < b_nth) {
+	    else if (f_lt_p(a_nth, b_nth)) {
 		return INT2FIX(-1);
 	    }
 	    else {

@@ -100,7 +100,8 @@ single-quote strings:
   '#{1 + 1}' #=> "\#{1 + 1}"
 
 In addition to disabling interpolation, single-quoted strings also disable all
-escape sequences except for the single-quote (<tt>\'</tt>).
+escape sequences except for the single-quote (<tt>\'</tt>) and backslash
+(<tt>\\\\</tt>).
 
 You may also create strings using <tt>%</tt>:
 

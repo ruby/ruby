@@ -65,8 +65,11 @@ class TestProcess < Test::Unit::TestCase
     return unless rlimit_exist?
     with_tmpchdir {
       write_file 's', <<-"End"
-	# if limit=0, this test freeze pn OpenBSD
-	limit = /openbsd/ =~ RUBY_PLATFORM ? 1 : 0
+        # Too small RLIMIT_NOFILE, such as zero, causes problems.
+        # [OpenBSD] Setting to zero freezes this test.
+        # [GNU/Linux] EINVAL on poll().  EINVAL on ruby's internal poll() ruby with "[ASYNC BUG] thread_timer: select".
+        pipes = IO.pipe
+	limit = pipes.map {|io| io.fileno }.min
 	result = 1
 	begin
 	  Process.setrlimit(Process::RLIMIT_NOFILE, limit)
@@ -116,11 +119,15 @@ class TestProcess < Test::Unit::TestCase
     }
     assert_raise(ArgumentError) { Process.getrlimit(:FOO) }
     assert_raise(ArgumentError) { Process.getrlimit("FOO") }
+    assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) { Process.getrlimit("\u{30eb 30d3 30fc}") }
   end
 
   def test_rlimit_value
     return unless rlimit_exist?
+    assert_raise(ArgumentError) { Process.setrlimit(:FOO, 0) }
     assert_raise(ArgumentError) { Process.setrlimit(:CORE, :FOO) }
+    assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) { Process.setrlimit("\u{30eb 30d3 30fc}", 0) }
+    assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) { Process.setrlimit(:CORE, "\u{30eb 30d3 30fc}") }
     with_tmpchdir do
       s = run_in_child(<<-'End')
         cur, max = Process.getrlimit(:NOFILE)
@@ -131,7 +138,7 @@ class TestProcess < Test::Unit::TestCase
           exit false
         end
       End
-      assert_not_equal(0, s.exitstatus)
+      assert_not_predicate(s, :success?)
       s = run_in_child(<<-'End')
         cur, max = Process.getrlimit(:NOFILE)
         Process.setrlimit(:NOFILE, [max-10, cur].min)
@@ -141,7 +148,7 @@ class TestProcess < Test::Unit::TestCase
           exit false
         end
       End
-      assert_not_equal(0, s.exitstatus)
+      assert_not_predicate(s, :success?)
     end
   end
 
@@ -603,6 +610,17 @@ class TestProcess < Test::Unit::TestCase
       IO.popen([*CAT, :in=>"out"]) {|io|
         assert_equal("henya\n", io.read)
       }
+    }
+  end
+
+  def test_execopts_redirect_to_out_and_err
+    with_tmpchdir {|d|
+      ret = system(RUBY, "-e", 'STDERR.print "e"; STDOUT.print "o"', [:out, :err] => "foo")
+      assert_equal(true, ret)
+      assert_equal("eo", File.read("foo"))
+      ret = system(RUBY, "-e", 'STDERR.print "E"; STDOUT.print "O"', [:err, :out] => "bar")
+      assert_equal(true, ret)
+      assert_equal("EO", File.read("bar"))
     }
   end
 
@@ -1183,6 +1201,23 @@ class TestProcess < Test::Unit::TestCase
 
   def test_status_kill
     return unless Process.respond_to?(:kill)
+    return unless Signal.list.include?("KILL")
+
+    # assume the system supports signal if SIGQUIT is available
+    expected = Signal.list.include?("QUIT") ? [false, true, false, nil] : [true, false, false, true]
+
+    with_tmpchdir do
+      write_file("foo", "Process.kill(:KILL, $$); exit(42)")
+      system(RUBY, "foo")
+      s = $?
+      assert_equal(expected,
+                   [s.exited?, s.signaled?, s.stopped?, s.success?],
+                   "[s.exited?, s.signaled?, s.stopped?, s.success?]")
+    end
+  end
+
+  def test_status_quit
+    return unless Process.respond_to?(:kill)
     return unless Signal.list.include?("QUIT")
 
     with_tmpchdir do
@@ -1196,16 +1231,14 @@ class TestProcess < Test::Unit::TestCase
       end
       t = Time.now
       s = $?
-      assert_equal([false, true, false],
-                   [s.exited?, s.signaled?, s.stopped?],
-                   "[s.exited?, s.signaled?, s.stopped?]")
+      assert_equal([false, true, false, nil],
+                   [s.exited?, s.signaled?, s.stopped?, s.success?],
+                   "[s.exited?, s.signaled?, s.stopped?, s.success?]")
       assert_send(
         [["#<Process::Status: pid #{ s.pid } SIGQUIT (signal #{ s.termsig })>",
           "#<Process::Status: pid #{ s.pid } SIGQUIT (signal #{ s.termsig }) (core dumped)>"],
          :include?,
          s.inspect])
-      assert_equal(false, s.exited?)
-      assert_equal(nil, s.success?)
       EnvUtil.diagnostic_reports("QUIT", RUBY, pid, t)
     end
   end

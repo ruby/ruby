@@ -31,7 +31,7 @@
 VALUE rb_cRational;
 
 static ID id_abs, id_cmp, id_convert, id_eqeq_p, id_expt, id_fdiv,
-    id_floor, id_idiv, id_integer_p, id_negate, id_to_f,
+    id_idiv, id_integer_p, id_negate, id_to_f,
     id_to_i, id_truncate, id_i_num, id_i_den;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
@@ -92,14 +92,6 @@ f_div(VALUE x, VALUE y)
 }
 
 inline static VALUE
-f_gt_p(VALUE x, VALUE y)
-{
-    if (FIXNUM_P(x) && FIXNUM_P(y))
-	return f_boolcast(FIX2LONG(x) > FIX2LONG(y));
-    return rb_funcall(x, '>', 1, y);
-}
-
-inline static VALUE
 f_lt_p(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y))
@@ -142,7 +134,6 @@ f_sub(VALUE x, VALUE y)
 }
 
 fun1(abs)
-fun1(floor)
 fun1(integer_p)
 fun1(negate)
 
@@ -160,8 +151,6 @@ f_to_f(VALUE x)
 	return DBL2NUM(rb_str_to_dbl(x, 0));
     return rb_funcall(x, id_to_f, 0);
 }
-
-fun1(truncate)
 
 inline static VALUE
 f_eqeq_p(VALUE x, VALUE y)
@@ -284,7 +273,7 @@ k_rational_p(VALUE x)
 VALUE
 rb_gcd_gmp(VALUE x, VALUE y)
 {
-    const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGITS)*CHAR_BIT;
+    const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGIT)*CHAR_BIT;
     mpz_t mx, my, mz;
     size_t count;
     VALUE z;
@@ -298,7 +287,7 @@ rb_gcd_gmp(VALUE x, VALUE y)
 
     mpz_gcd(mz, mx, my);
 
-    zn = (mpz_sizeinbase(mz, 16) + SIZEOF_BDIGITS*2 - 1) / (SIZEOF_BDIGITS*2);
+    zn = (mpz_sizeinbase(mz, 16) + SIZEOF_BDIGIT*2 - 1) / (SIZEOF_BDIGIT*2);
     z = rb_big_new(zn, 1);
     mpz_export(BIGNUM_DIGITS(z), &count, -1, sizeof(BDIGIT), 0, nails, mz);
 
@@ -374,8 +363,8 @@ f_gcd(VALUE x, VALUE y)
 {
 #ifdef USE_GMP
     if (RB_TYPE_P(x, T_BIGNUM) && RB_TYPE_P(y, T_BIGNUM)) {
-        long xn = BIGNUM_LEN(x);
-        long yn = BIGNUM_LEN(y);
+        size_t xn = BIGNUM_LEN(x);
+        size_t yn = BIGNUM_LEN(y);
         if (GMP_GCD_DIGITS <= xn || GMP_GCD_DIGITS <= yn)
             return rb_gcd_gmp(x, y);
     }
@@ -472,14 +461,6 @@ inline static VALUE
 f_rational_new_bang1(VALUE klass, VALUE x)
 {
     return nurat_s_new_internal(klass, x, ONE);
-}
-
-inline static VALUE
-f_rational_new_bang2(VALUE klass, VALUE x, VALUE y)
-{
-    assert(f_positive_p(y));
-    assert(f_nonzero_p(y));
-    return nurat_s_new_internal(klass, x, y);
 }
 
 #ifdef CANONICALIZATION_FOR_MATHN
@@ -580,25 +561,11 @@ nurat_s_new(int argc, VALUE *argv, VALUE klass)
 }
 
 inline static VALUE
-f_rational_new1(VALUE klass, VALUE x)
-{
-    assert(!k_rational_p(x));
-    return nurat_s_canonicalize_internal(klass, x, ONE);
-}
-
-inline static VALUE
 f_rational_new2(VALUE klass, VALUE x, VALUE y)
 {
     assert(!k_rational_p(x));
     assert(!k_rational_p(y));
     return nurat_s_canonicalize_internal(klass, x, y);
-}
-
-inline static VALUE
-f_rational_new_no_reduce1(VALUE klass, VALUE x)
-{
-    assert(!k_rational_p(x));
-    return nurat_s_canonicalize_internal_no_reduce(klass, x, ONE);
 }
 
 inline static VALUE
@@ -617,6 +584,8 @@ f_rational_new_no_reduce2(VALUE klass, VALUE x, VALUE y)
  *
  *    Rational(1, 2)   #=> (1/2)
  *    Rational('1/2')  #=> (1/2)
+ *    Rational(nil)    #=> TypeError
+ *    Rational(1, nil) #=> TypeError
  *
  * Syntax of string form:
  *
@@ -2167,13 +2136,14 @@ read_digits(const char **s, int strict,
 {
     char *b, *bb;
     int us = 1, ret = 1;
+    VALUE tmp;
 
     if (!isdecimal(**s)) {
 	*num = ZERO;
 	return 0;
     }
 
-    bb = b = ALLOCA_N(char, strlen(*s) + 1);
+    bb = b = ALLOCV_N(char, tmp, strlen(*s) + 1);
 
     while (isdecimal(**s) || **s == '_') {
 	if (**s == '_') {
@@ -2200,6 +2170,7 @@ read_digits(const char **s, int strict,
   conv:
     *b = '\0';
     *num = rb_cstr_to_inum(bb, 10, 0);
+    ALLOCV_END(tmp);
     return ret;
 }
 
@@ -2530,7 +2501,6 @@ Init_Rational(void)
     id_eqeq_p = rb_intern("==");
     id_expt = rb_intern("**");
     id_fdiv = rb_intern("fdiv");
-    id_floor = rb_intern("floor");
     id_idiv = rb_intern("div");
     id_integer_p = rb_intern("integer?");
     id_negate = rb_intern("-@");

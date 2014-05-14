@@ -11,6 +11,10 @@
 
 **********************************************************************/
 
+struct local_var_list {
+    VALUE tbl;
+};
+
 static inline VALUE method_missing(VALUE obj, ID id, int argc, const VALUE *argv, int call_status);
 static inline VALUE vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const NODE *cref);
 static inline VALUE vm_yield(rb_thread_t *th, int argc, const VALUE *argv);
@@ -18,7 +22,7 @@ static inline VALUE vm_yield_with_block(rb_thread_t *th, int argc, const VALUE *
 static NODE *vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr);
 static VALUE vm_exec(rb_thread_t *th);
 static void vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref, rb_block_t *base_block);
-static int vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, VALUE ary);
+static int vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, const struct local_var_list *vars);
 
 /* vm_backtrace.c */
 VALUE rb_vm_backtrace_str_ary(rb_thread_t *th, int lev, int n);
@@ -210,10 +214,12 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 	{
 	    VALUE new_args = rb_ary_new4(ci->argc, argv);
 
-	    RB_GC_GUARD(new_args);
 	    rb_ary_unshift(new_args, ID2SYM(ci->mid));
 	    th->passed_block = ci->blockptr;
-	    return rb_funcall2(ci->recv, idMethodMissing, ci->argc+1, RARRAY_PTR(new_args));
+	    ret = rb_funcall2(ci->recv, idMethodMissing, ci->argc+1,
+	                      RARRAY_CONST_PTR(new_args));
+	    RB_GC_GUARD(new_args);
+	    return ret;
 	}
       case VM_METHOD_TYPE_OPTIMIZED:
 	switch (ci->me->def->body.optimize_type) {
@@ -338,11 +344,13 @@ static VALUE
 check_funcall_exec(struct rescue_funcall_args *args)
 {
     VALUE new_args = rb_ary_new4(args->argc, args->argv);
+    VALUE ret;
 
-    RB_GC_GUARD(new_args);
     rb_ary_unshift(new_args, args->sym);
-    return rb_funcall2(args->recv, idMethodMissing,
-		       args->argc+1, RARRAY_PTR(new_args));
+    ret = rb_funcall2(args->recv, idMethodMissing,
+		       args->argc+1, RARRAY_CONST_PTR(new_args));
+    RB_GC_GUARD(new_args);
+    return ret;
 }
 
 static VALUE
@@ -747,7 +755,7 @@ rb_apply(VALUE recv, ID mid, VALUE args)
 	args = rb_ary_subseq(args, 0, argc);
 	RBASIC_CLEAR_CLASS(args);
 	OBJ_FREEZE(args);
-	ret = rb_call(recv, mid, argc, RARRAY_PTR(args), CALL_FCALL);
+	ret = rb_call(recv, mid, argc, RARRAY_CONST_PTR(args), CALL_FCALL);
 	RB_GC_GUARD(args);
 	return ret;
     }
@@ -1056,6 +1064,8 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
     TH_PUSH_TAG(th);
     state = TH_EXEC_TAG();
     if (state == 0) {
+	VAR_INITIALIZED(th);
+	VAR_INITIALIZED(node);
       iter_retry:
 	{
 	    rb_block_t *blockptr;
@@ -1211,14 +1221,15 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *const cref_arg, 
 	VALUE absolute_path = Qnil;
 	VALUE fname;
 
+	if (file != Qundef) {
+	    absolute_path = file;
+	}
+
 	if (scope != Qnil) {
 	    bind = Check_TypedStruct(scope, &ruby_binding_data_type);
 	    {
 		envval = bind->env;
-		if (file != Qundef) {
-		    absolute_path = file;
-		}
-		else if (!NIL_P(bind->path)) {
+		if (NIL_P(absolute_path) && !NIL_P(bind->path)) {
 		    file = bind->path;
 		    line = bind->first_lineno;
 		    absolute_path = rb_current_realfilepath();
@@ -1478,7 +1489,7 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
 	rb_set_safe_level_force(level);
 	if ((state = EXEC_TAG()) == 0) {
 	    val = rb_funcall2(cmd, rb_intern("call"), RARRAY_LENINT(arg),
-			      RARRAY_PTR(arg));
+			      RARRAY_CONST_PTR(arg));
 	}
 	POP_TAG();
 
@@ -1863,6 +1874,25 @@ rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, int *stateptr)
     return val;
 }
 
+static int
+local_var_list_update(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
+{
+    if (existing) return ST_STOP;
+    *value = (st_data_t)Qtrue;	/* INT2FIX(arg) */
+    return ST_CONTINUE;
+}
+
+static void
+local_var_list_add(const struct local_var_list *vars, ID lid)
+{
+    if (lid && rb_id2str(lid)) {
+	/* should skip temporary variable */
+	st_table *tbl = RHASH_TBL_RAW(vars->tbl);
+	st_data_t idx = 0;	/* tbl->num_entries */
+	st_update(tbl, ID2SYM(lid), local_var_list_update, idx);
+    }
+}
+
 /*
  *  call-seq:
  *     local_variables    -> array
@@ -1879,30 +1909,27 @@ rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, int *stateptr)
 static VALUE
 rb_f_local_variables(void)
 {
-    VALUE ary = rb_ary_new();
+    struct local_var_list vars;
+    VALUE ary;
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp =
 	vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp));
     int i;
 
+    vars.tbl = rb_hash_new();
+    RHASH(vars.tbl)->ntbl = st_init_numtable(); /* compare_by_identity */
+    RBASIC_CLEAR_CLASS(vars.tbl);
     while (cfp) {
 	if (cfp->iseq) {
 	    for (i = 0; i < cfp->iseq->local_table_size; i++) {
-		ID lid = cfp->iseq->local_table[i];
-		if (lid) {
-		    const char *vname = rb_id2name(lid);
-		    /* should skip temporary variable */
-		    if (vname) {
-			rb_ary_push(ary, ID2SYM(lid));
-		    }
-		}
+		local_var_list_add(&vars, cfp->iseq->local_table[i]);
 	    }
 	}
 	if (!VM_EP_LEP_P(cfp->ep)) {
 	    /* block */
 	    VALUE *ep = VM_CF_PREV_EP(cfp);
 
-	    if (vm_collect_local_variables_in_heap(th, ep, ary)) {
+	    if (vm_collect_local_variables_in_heap(th, ep, &vars)) {
 		break;
 	    }
 	    else {
@@ -1915,6 +1942,9 @@ rb_f_local_variables(void)
 	    break;
 	}
     }
+    /* TODO: not to depend on the order of st_table */
+    ary = rb_hash_keys(vars.tbl);
+    rb_hash_clear(vars.tbl);
     return ary;
 }
 

@@ -219,4 +219,8 @@ module DL
       assert_raise(DLError) {nullpo[0] = 1}
     end
   end
+
+  def test_no_memory_leak
+    assert_no_memory_leak(%w[-W0 -rdl.so], '', '100_000.times {DL::CPtr.allocate}', rss: true)
+  end
 end

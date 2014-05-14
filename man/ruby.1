@@ -432,7 +432,7 @@ after printing its version.
 .El
 .Pp
 .Sh ENVIRONMENT
-.Bl -tag -width "RUBYLIB_PREFIX" -compact
+.Bl -tag -width "RUBYSHELL" -compact
 .It Ev RUBYLIB
 A colon-separated list of directories that are added to Ruby's
 library load path
@@ -472,9 +472,6 @@ variable is not defined, Ruby refers to
 Ruby refers to the
 .Ev PATH
 environment variable on calling Kernel#system.
-.Pp
-.It Ev RUBYLIB_PREFIX
-This variable is obsolete.
 .El
 .Pp
 And Ruby depends on some RubyGems related environment variables unless RubyGems is disabled.
@@ -493,8 +490,6 @@ The official web site.
 hosting many open source ruby projects.
 .It https://www.ruby-toolbox.com
 Comprehensive catalog of Ruby libraries.
-.It https://github.com/languages/Ruby
-Ruby projects on Github.
 .El
 .Pp
 .Sh REPORTING BUGS
@@ -514,5 +509,5 @@ Ruby is designed and implemented by
 .An Yukihiro Matsumoto Aq matz@netlab.jp .
 .Pp
 See
-.Aq Pa http://bugs.ruby-lang.org/wiki/ruby/Contributors
+.Aq Pa https://bugs.ruby-lang.org/projects/ruby/wiki/Contributors
 for contributors to Ruby.

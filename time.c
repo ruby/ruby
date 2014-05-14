@@ -34,7 +34,7 @@
 #include "timev.h"
 
 static ID id_divmod, id_mul, id_submicro, id_nano_num, id_nano_den, id_offset, id_zone;
-static ID id_eq, id_ne, id_quo, id_div, id_cmp, id_lshift;
+static ID id_eq, id_ne, id_quo, id_div, id_cmp;
 
 #define NDIV(x,y) (-(-((x)+1)/(y))-1)
 #define NMOD(x,y) ((y)-(-((x)+1)%(y))-1)
@@ -172,7 +172,6 @@ mod(VALUE x, VALUE y)
 }
 
 #define neg(x) (sub(INT2FIX(0), (x)))
-#define lshift(x,y) (rb_funcall((x), id_lshift, 1, (y)))
 
 static VALUE
 quo(VALUE x, VALUE y)
@@ -214,10 +213,8 @@ divmodv(VALUE n, VALUE d, VALUE *q, VALUE *r)
 
 #if SIZEOF_LONG == 8
 # define INT64toNUM(x) LONG2NUM(x)
-# define UINT64toNUM(x) ULONG2NUM(x)
 #elif defined(HAVE_LONG_LONG) && SIZEOF_LONG_LONG == 8
 # define INT64toNUM(x) LL2NUM(x)
-# define UINT64toNUM(x) ULL2NUM(x)
 #endif
 
 #if defined(HAVE_UINT64_T) && SIZEOF_LONG*2 <= SIZEOF_UINT64_T
@@ -1997,37 +1994,40 @@ vtm_add_offset(struct vtm *vtm, VALUE off)
       not_zero_sec:
         /* If sec + subsec == 0, don't change vtm->sec.
          * It may be 60 which is a leap second. */
-        vtm->sec += sec;
-        if (vtm->sec < 0) {
-            vtm->sec += 60;
+        sec += vtm->sec;
+        if (sec < 0) {
+            sec += 60;
             min -= 1;
         }
-        if (60 <= vtm->sec) {
-            vtm->sec -= 60;
+        if (60 <= sec) {
+            sec -= 60;
             min += 1;
         }
+        vtm->sec = sec;
     }
     if (min) {
-        vtm->min += min;
-        if (vtm->min < 0) {
-            vtm->min += 60;
+        min += vtm->min;
+        if (min < 0) {
+            min += 60;
             hour -= 1;
         }
-        if (60 <= vtm->min) {
-            vtm->min -= 60;
+        if (60 <= min) {
+            min -= 60;
             hour += 1;
         }
+        vtm->min = min;
     }
     if (hour) {
-        vtm->hour += hour;
-        if (vtm->hour < 0) {
-            vtm->hour += 24;
+        hour += vtm->hour;
+        if (hour < 0) {
+            hour += 24;
             day = -1;
         }
-        if (24 <= vtm->hour) {
-            vtm->hour -= 24;
+        if (24 <= hour) {
+            hour -= 24;
             day = 1;
         }
+        vtm->hour = hour;
     }
 
     if (day) {
@@ -2585,11 +2585,11 @@ month_arg(VALUE arg)
     int i, mon;
 
     VALUE s = rb_check_string_type(arg);
-    if (!NIL_P(s)) {
+    if (!NIL_P(s) && RSTRING_LEN(s) > 0) {
         mon = 0;
         for (i=0; i<12; i++) {
             if (RSTRING_LEN(s) == 3 &&
-                STRCASECMP(months[i], RSTRING_PTR(s)) == 0) {
+                STRNCASECMP(months[i], RSTRING_PTR(s), 3) == 0) {
                 mon = i+1;
                 break;
             }
@@ -3405,6 +3405,8 @@ time_utc_p(VALUE time)
  *   time.hash   -> fixnum
  *
  * Returns a hash code for this Time object.
+ *
+ * See also Object#hash.
  */
 
 static VALUE
@@ -4567,7 +4569,7 @@ time_strftime(VALUE time, VALUE format)
     if (len == 0) {
 	rb_warning("strftime called with empty format string");
     }
-    else if (memchr(fmt, '\0', len)) {
+    else if (fmt[len] || memchr(fmt, '\0', len)) {
 	/* Ruby string may contain \0's. */
 	const char *p = fmt, *pe = fmt + len;
 
@@ -4825,7 +4827,9 @@ end_submicro: ;
 	time_fixoff(time);
     }
     if (!NIL_P(zone)) {
-	tobj->vtm.zone = RSTRING_PTR(zone);
+	zone = rb_str_new_frozen(zone);
+	tobj->vtm.zone = StringValueCStr(zone);
+	rb_ivar_set(time, id_zone, zone);
     }
 
     return time;
@@ -4940,7 +4944,6 @@ Init_Time(void)
     id_quo = rb_intern("quo");
     id_div = rb_intern("div");
     id_cmp = rb_intern("<=>");
-    id_lshift = rb_intern("<<");
     id_divmod = rb_intern("divmod");
     id_mul = rb_intern("*");
     id_submicro = rb_intern("submicro");

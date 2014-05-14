@@ -234,6 +234,7 @@ rb_str_cat(VALUE str, const char *ptr, long len)
   Rubyの文字列strにlenバイトの文字列ptrを追加する．
 
 rb_str_cat2(VALUE str, const char* ptr)
+rb_str_cat_cstr(VALUE str, const char* ptr)
 
   Rubyの文字列strにCの文字列ptrを追加する．この関数の機能は
   rb_str_cat(str, ptr, strlen(ptr))と同等である．
@@ -726,7 +727,7 @@ Rubyは拡張ライブラリをロードする時に「Init_ライブラリ名�
   {
       /* DBMクラスを定義する */
       cDBM = rb_define_class("DBM", rb_cObject);
-      /* DBMはEnumerateモジュールをインクルードする */
+      /* DBMはEnumerableモジュールをインクルードする */
       rb_include_module(cDBM, rb_mEnumerable);
 
       /* DBMクラスのクラスメソッドopen(): 引数はCの配列で受ける */
@@ -1118,6 +1119,8 @@ Data_Get_Struct(data, type, sval) ::
   rb_integer_pack(value, words, numwords, wordsize, nails, flags), rb_integer_unpack(words, numwords, wordsize, nails, flags)
   NUM2DBL(value)
   rb_float_new(f)
+  RSTRING_LEN(str)
+  RSTRING_PTR(str)
   StringValue(value)
   StringValuePtr(value)
   StringValueCStr(value)
@@ -1416,13 +1419,16 @@ void ruby_init() ::
 
   Rubyインタプリタの初期化を行なう．
 
-void ruby_options(int argc, char **argv) ::
+void *ruby_options(int argc, char **argv) ::
 
-  Rubyインタプリタのコマンドライン引数の処理を行なう．
+  Rubyインタプリタのコマンドライン引数の処理を行ない，
+  Rubyのソースコードをコンパイルする．
+  コンパイルされたソースへのポインタ，もしくは特殊値を返す.
 
-void ruby_run() ::
+int ruby_run_node(void *n) ::
 
-  Rubyインタプリタを実行する．
+  コンパイルされたコードを実行する．
+  実行に成功した場合はEXIT_SUCCESSを，エラーが起こったときはそれ以外を返す．
 
 void ruby_script(char *name) ::
 

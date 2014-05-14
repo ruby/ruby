@@ -21,11 +21,21 @@ options:
   -archname=NAME        make the basename of snapshots NAME
   -keep_temp            keep temporary working directory
   -patch_file=PATCH     apply PATCH file after export
+  -packages=PKG[,...]   make PKG packages (#{PACKAGES.keys.join(", ")})
+  -digests=ALG[,...]    show ALG digests (#{DIGESTS.join(", ")})
 version:
   trunk, stable, branches/*, tags/*, X.Y.Z, X.Y.Z-pL
 each versions may be followed by optional @revision.
 USAGE
 end
+
+DIGESTS = %w[MD5 SHA256 SHA512]
+PACKAGES = {
+  "bzip" => %w".tar.bz2 bzip2 -c",
+  "gzip" => %w".tar.gz  gzip -c",
+  "xz"   => %w".tar.xz  xz -c",
+  "zip"  => %w".zip     zip -qr",
+}
 
 ENV["LC_ALL"] = ENV["LANG"] = "C"
 SVNURL = URI.parse("http://svn.ruby-lang.org/repos/ruby/")
@@ -58,6 +68,18 @@ class Dir
     path
   end unless respond_to?(:mktmpdir)
 end
+
+$packages &&= $packages.split(/[, ]+/).tap {|pkg|
+  pkg -= PACKAGES.keys
+  pkg.empty? or abort "#{File.basename $0}: unknown packages - #{pkg.join(", ")}"
+}
+$packages ||= PACKAGES.keys
+
+$digests &&= $digests.split(/[, ]+/).tap {|dig|
+  dig -= DIGESTS
+  dig.empty? or abort "#{File.basename $0}: unknown digests - #{dig.join(", ")}"
+}
+$digests ||= DIGESTS
 
 $patch_file &&= File.expand_path($patch_file)
 path = ENV["PATH"].split(File::PATH_SEPARATOR)
@@ -270,13 +292,33 @@ def package(rev, destdir)
     v = File.basename(v)
   end
 
-  return [["bzip tarball", ".tar.bz2", %w"tar cjf"],
-          ["gzip tarball", ".tar.gz", %w"tar czf"],
-          ["zip archive", ".zip", %w"zip -qr"]
-         ].collect do |mesg, ext, cmd|
+  tarball = nil
+  return $packages.collect do |mesg|
+    (ext, *cmd) = PACKAGES[mesg]
+    File.directory?(destdir) or FileUtils.mkpath(destdir)
     file = File.join(destdir, "#{$archname||v}#{ext}")
-    print "creating #{mesg}... #{file}"
-    if system(*(cmd + [file, v]))
+    case ext
+    when /\.tar/
+      if tarball
+        next if tarball.empty?
+      else
+        tarball = "#{$archname||v}.tar"
+        print "creating tarball... #{tarball}"
+        if system("tar", "cf", tarball, v)
+          puts " done"
+        else
+          puts " failed"
+          tarball = ""
+          next
+        end
+      end
+      print "creating #{mesg} tarball... #{file}"
+      done = system(*(cmd + [tarball]), out: file)
+    else
+      print "creating #{mesg} archive... #{file}"
+      done = system(*(cmd + [file, v]))
+    end
+    if done
       puts " done"
       file
     else
@@ -295,13 +337,11 @@ revisions.collect {|rev| package(rev, destdir)}.flatten.each do |name|
     next
   end
   str = open(name, "rb") {|f| f.read}
-  md5 = Digest::MD5.hexdigest str
-  sha = Digest::SHA256.hexdigest str
   puts "* #{name}"
   puts "  SIZE:   #{str.bytesize} bytes"
-  puts "  MD5:    #{md5}"
-  puts "  SHA256: #{sha}"
-  puts
+  $digests.each do |alg|
+    printf "  %-8s%s\n", "#{alg}:", Digest.const_get(alg).hexdigest(str)
+  end
 end
 
 exit false if !success

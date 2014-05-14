@@ -158,6 +158,8 @@ module TestStruct
     assert_equal(1, o[0])
     assert_raise(IndexError) { o[-2] }
     assert_raise(IndexError) { o[1] }
+    assert_raise_with_message(NameError, /foo/) {o["foo"]}
+    assert_raise_with_message(NameError, /foo/) {o[:foo]}
   end
 
   def test_aset
@@ -167,6 +169,8 @@ module TestStruct
     assert_equal(2, o[:a])
     assert_raise(IndexError) { o[-2] = 3 }
     assert_raise(IndexError) { o[1] = 3 }
+    assert_raise_with_message(NameError, /foo/) {o["foo"] = 3}
+    assert_raise_with_message(NameError, /foo/) {o[:foo] = 3}
   end
 
   def test_values_at

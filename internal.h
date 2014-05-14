@@ -308,28 +308,28 @@ struct method_table_wrapper {
 #ifndef BDIGIT
 # if SIZEOF_INT*2 <= SIZEOF_LONG_LONG
 #  define BDIGIT unsigned int
-#  define SIZEOF_BDIGITS SIZEOF_INT
+#  define SIZEOF_BDIGIT SIZEOF_INT
 #  define BDIGIT_DBL unsigned LONG_LONG
 #  define BDIGIT_DBL_SIGNED LONG_LONG
 #  define PRI_BDIGIT_PREFIX ""
 #  define PRI_BDIGIT_DBL_PREFIX PRI_LL_PREFIX
 # elif SIZEOF_INT*2 <= SIZEOF_LONG
 #  define BDIGIT unsigned int
-#  define SIZEOF_BDIGITS SIZEOF_INT
+#  define SIZEOF_BDIGIT SIZEOF_INT
 #  define BDIGIT_DBL unsigned long
 #  define BDIGIT_DBL_SIGNED long
 #  define PRI_BDIGIT_PREFIX ""
 #  define PRI_BDIGIT_DBL_PREFIX "l"
 # elif SIZEOF_SHORT*2 <= SIZEOF_LONG
 #  define BDIGIT unsigned short
-#  define SIZEOF_BDIGITS SIZEOF_SHORT
+#  define SIZEOF_BDIGIT SIZEOF_SHORT
 #  define BDIGIT_DBL unsigned long
 #  define BDIGIT_DBL_SIGNED long
 #  define PRI_BDIGIT_PREFIX "h"
 #  define PRI_BDIGIT_DBL_PREFIX "l"
 # else
 #  define BDIGIT unsigned short
-#  define SIZEOF_BDIGITS (SIZEOF_LONG/2)
+#  define SIZEOF_BDIGIT (SIZEOF_LONG/2)
 #  define SIZEOF_ACTUAL_BDIGIT SIZEOF_LONG
 #  define BDIGIT_DBL unsigned long
 #  define BDIGIT_DBL_SIGNED long
@@ -338,7 +338,7 @@ struct method_table_wrapper {
 # endif
 #endif
 #ifndef SIZEOF_ACTUAL_BDIGIT
-# define SIZEOF_ACTUAL_BDIGIT SIZEOF_BDIGITS
+# define SIZEOF_ACTUAL_BDIGIT SIZEOF_BDIGIT
 #endif
 
 #ifdef PRI_BDIGIT_PREFIX
@@ -372,7 +372,7 @@ struct RBignum {
     struct RBasic basic;
     union {
         struct {
-            long len;
+            size_t len;
             BDIGIT *digits;
         } heap;
         BDIGIT ary[BIGNUM_EMBED_LEN_MAX];
@@ -596,6 +596,7 @@ void rb_gc_resurrect(VALUE ptr);
 /* hash.c */
 struct st_table *rb_hash_tbl_raw(VALUE hash);
 #define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h)
+VALUE rb_hash_keys(VALUE hash);
 VALUE rb_hash_values(VALUE hash);
 #define HASH_DELETED  FL_USER1
 #define HASH_PROC_DEFAULT FL_USER2
@@ -635,7 +636,9 @@ VALUE rb_math_hypot(VALUE, VALUE);
 VALUE rb_math_log(int argc, VALUE *argv);
 VALUE rb_math_sin(VALUE);
 VALUE rb_math_sinh(VALUE);
+#if 0
 VALUE rb_math_sqrt(VALUE);
+#endif
 
 /* newline.c */
 void Init_newline(void);
@@ -715,6 +718,7 @@ rb_float_new_inline(double d)
 
 /* object.c */
 VALUE rb_obj_equal(VALUE obj1, VALUE obj2);
+VALUE rb_class_search_ancestor(VALUE klass, VALUE super);
 
 struct RBasicRaw {
     VALUE flags;
@@ -729,6 +733,9 @@ struct RBasicRaw {
 } while (0)
 
 /* parse.y */
+#ifndef USE_SYMBOL_GC
+#define USE_SYMBOL_GC 1
+#endif
 VALUE rb_parser_get_yydebug(VALUE);
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
 int rb_is_const_name(VALUE name);
@@ -742,11 +749,20 @@ int rb_is_junk_name(VALUE name);
 void rb_gc_mark_parser(void);
 void rb_gc_mark_symbols(int full_mark);
 ID rb_make_internal_id(void);
+void rb_gc_free_dsymbol(VALUE);
+VALUE rb_str_dynamic_intern(VALUE);
+ID rb_check_id_without_pindown(VALUE *);
+ID rb_sym2id_without_pindown(VALUE);
+#ifdef RUBY_ENCODING_H
+ID rb_check_id_cstr_without_pindown(const char *, long, rb_encoding *);
+#endif
+ID rb_id_attrget(ID id);
 
 /* proc.c */
 VALUE rb_proc_location(VALUE self);
 st_index_t rb_hash_proc(st_index_t hash, VALUE proc);
 int rb_block_arity(void);
+VALUE rb_block_clear_env_self(VALUE proc);
 
 /* process.c */
 #define RB_MAX_GROUPS (65536)
@@ -810,6 +826,8 @@ VALUE rb_rational_reciprocal(VALUE x);
 /* re.c */
 VALUE rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline);
 VALUE rb_reg_check_preprocess(VALUE);
+long rb_reg_search0(VALUE, VALUE, long, int, int);
+void rb_backref_set_string(VALUE string, long pos, long len);
 
 /* signal.c */
 int rb_get_next_signal(void);
@@ -874,6 +892,7 @@ rb_serial_t rb_next_class_serial(void);
 VALUE rb_obj_is_thread(VALUE obj);
 void rb_vm_mark(void *ptr);
 void Init_BareVM(void);
+void Init_vm_objects(void);
 VALUE rb_vm_top_self(void);
 void rb_thread_recycle_stack_release(VALUE *);
 void rb_vm_change_state(void);
@@ -963,9 +982,9 @@ VALUE rb_int_positive_pow(long x, unsigned long y);
 /* process.c */
 int rb_exec_async_signal_safe(const struct rb_execarg *e, char *errmsg, size_t errmsg_buflen);
 rb_pid_t rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fds, char *errmsg, size_t errmsg_buflen);
-VALUE rb_execarg_new(int argc, VALUE *argv, int accept_shell);
+VALUE rb_execarg_new(int argc, const VALUE *argv, int accept_shell);
 struct rb_execarg *rb_execarg_get(VALUE execarg_obj); /* dangerous.  needs GC guard. */
-VALUE rb_execarg_init(int argc, VALUE *argv, int accept_shell, VALUE execarg_obj);
+VALUE rb_execarg_init(int argc, const VALUE *argv, int accept_shell, VALUE execarg_obj);
 int rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val);
 void rb_execarg_fixup(VALUE execarg_obj);
 int rb_execarg_run_options(const struct rb_execarg *e, struct rb_execarg *s, char* errmsg, size_t errmsg_buflen);

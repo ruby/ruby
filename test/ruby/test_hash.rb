@@ -1088,6 +1088,17 @@ class TestHash < Test::Unit::TestCase
     assert_predicate(h.dup, :compare_by_identity?, bug8703)
   end
 
+  def test_same_key
+    bug9646 = '[ruby-dev:48047] [Bug #9646] Infinite loop at Hash#each'
+    h = @cls[a=[], 1]
+    a << 1
+    h[[]] = 2
+    a.clear
+    cnt = 0
+    r = h.each{ break nil if (cnt+=1) > 100 }
+    assert_not_nil(r,bug9646)
+  end
+
   class ObjWithHash
     def initialize(value, hash)
       @value = value
@@ -1208,6 +1219,8 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_exception_in_rehash
+    return unless @cls == Hash
+
     bug9187 = '[ruby-core:58728] [Bug #9187]'
 
     prepare = <<-EOS
@@ -1222,10 +1235,10 @@ class TestHash < Test::Unit::TestCase
         return 0
       end
     end
+    h = {Foo.new => true}
     EOS
 
     code = <<-EOS
-    h = {Foo.new => true}
     10_0000.times do
       h.rehash rescue nil
     end

@@ -992,8 +992,8 @@ class CSV
   HeaderConverters = {
     downcase: lambda { |h| h.encode(ConverterEncoding).downcase },
     symbol:   lambda { |h|
-      h.encode(ConverterEncoding).downcase.gsub(/\s+/, "_").
-                                           gsub(/\W+/, "").to_sym
+      h.encode(ConverterEncoding).downcase.strip.gsub(/\s+/, "_").
+                                                 gsub(/\W+/, "").to_sym
     }
   }
 
@@ -1396,7 +1396,7 @@ class CSV
   #                                       <tt>'</tt> as the quote character
   #                                       instead of the correct <tt>"</tt>.
   #                                       CSV will always consider a double
-  #                                       sequence this character to be an
+  #                                       sequence of this character to be an
   #                                       escaped quote. This String will be
   #                                       transcoded into the data's Encoding
   #                                       before parsing.
@@ -1507,8 +1507,7 @@ class CSV
     # if we can transcode the needed characters
     #
     @re_esc   =   "\\".encode(@encoding) rescue ""
-    @re_chars =   /#{%"[-][\\.^$?*+{}()|# \r\n\t\f\v]".encode(@encoding)}/
-    # @re_chars =   /#{%"[-][\\.^$?*+{}()|# \r\n\t\f\v]".encode(@encoding, fallback: proc{""})}/
+    @re_chars =   /#{%"[-\\]\\[\\.^$?*+{}()|# \r\n\t\f\v]".encode(@encoding)}/
 
     init_separators(options)
     init_parsers(options)
@@ -2169,6 +2168,7 @@ class CSV
 
     fields.map.with_index do |field, index|
       converters.each do |converter|
+        break if field.nil?
         field = if converter.arity == 1  # straight field converter
           converter[field]
         else                             # FieldInfo converter

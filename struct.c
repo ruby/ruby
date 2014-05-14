@@ -80,6 +80,13 @@ rb_struct_members_m(VALUE obj)
     return rb_struct_s_members_m(rb_obj_class(obj));
 }
 
+NORETURN(static void not_a_member(ID id));
+static void
+not_a_member(ID id)
+{
+    rb_name_error(id, "`%"PRIsVALUE"' is not a struct member", QUOTE_ID(id));
+}
+
 VALUE
 rb_struct_getmember(VALUE obj, ID id)
 {
@@ -94,7 +101,7 @@ rb_struct_getmember(VALUE obj, ID id)
 	    return RSTRUCT_GET(obj, i);
 	}
     }
-    rb_name_error(id, "%s is not struct member", rb_id2name(id));
+    not_a_member(id);
 
     UNREACHABLE;
 }
@@ -141,21 +148,24 @@ rb_struct_modify(VALUE s)
 static VALUE
 rb_struct_set(VALUE obj, VALUE val)
 {
-    VALUE members, slot;
+    VALUE members, slot, fsym;
     long i, len;
+    ID fid = rb_frame_this_func();
 
     members = rb_struct_members(obj);
     len = RARRAY_LEN(members);
     rb_struct_modify(obj);
+    fid = rb_id_attrget(fid);
+    if (!fid) not_a_member(rb_frame_this_func());
+    fsym = ID2SYM(fid);
     for (i=0; i<len; i++) {
 	slot = RARRAY_AREF(members, i);
-	if (rb_id_attrset(SYM2ID(slot)) == rb_frame_this_func()) {
+	if (slot == fsym) {
 	    RSTRUCT_SET(obj, i, val);
 	    return val;
 	}
     }
-    rb_name_error(rb_frame_this_func(), "`%s' is not a struct member",
-		  rb_id2name(rb_frame_this_func()));
+    not_a_member(fid);
 
     UNREACHABLE;
 }
@@ -480,7 +490,7 @@ struct_alloc(VALUE klass)
 VALUE
 rb_struct_alloc(VALUE klass, VALUE values)
 {
-    return rb_class_new_instance(RARRAY_LENINT(values), RARRAY_PTR(values), klass);
+    return rb_class_new_instance(RARRAY_LENINT(values), RARRAY_CONST_PTR(values), klass);
 }
 
 VALUE
@@ -708,17 +718,17 @@ rb_struct_init_copy(VALUE copy, VALUE s)
 }
 
 static VALUE
-rb_struct_aref_id(VALUE s, ID id)
+rb_struct_aref_sym(VALUE s, VALUE name)
 {
     VALUE members = rb_struct_members(s);
     long i, len = RARRAY_LEN(members);
 
     for (i=0; i<len; i++) {
-	if (SYM2ID(RARRAY_AREF(members, i)) == id) {
+	if (RARRAY_AREF(members, i) == name) {
 	    return RSTRUCT_GET(s, i);
 	}
     }
-    rb_name_error(id, "no member '%s' in struct", rb_id2name(id));
+    rb_name_error_str(name, "no member '% "PRIsVALUE"' in struct", name);
 
     UNREACHABLE;
 }
@@ -746,15 +756,15 @@ rb_struct_aref(VALUE s, VALUE idx)
     long i;
 
     if (RB_TYPE_P(idx, T_SYMBOL)) {
-	return rb_struct_aref_id(s, SYM2ID(idx));
+	return rb_struct_aref_sym(s, idx);
     }
     else if (RB_TYPE_P(idx, T_STRING)) {
-	ID id = rb_check_id(&idx);
+	ID id = rb_check_id_without_pindown(&idx);
 	if (!id) {
 	    rb_name_error_str(idx, "no member '%"PRIsVALUE"' in struct",
 			      QUOTE(idx));
 	}
-	return rb_struct_aref_id(s, id);
+	return rb_struct_aref_sym(s, ID2SYM(id));
     }
 
     i = NUM2LONG(idx);
@@ -769,7 +779,7 @@ rb_struct_aref(VALUE s, VALUE idx)
 }
 
 static VALUE
-rb_struct_aset_id(VALUE s, ID id, VALUE val)
+rb_struct_aset_sym(VALUE s, VALUE name, VALUE val)
 {
     VALUE members = rb_struct_members(s);
     long i, len = RARRAY_LEN(members);
@@ -780,13 +790,13 @@ rb_struct_aset_id(VALUE s, ID id, VALUE val)
     }
 
     for (i=0; i<len; i++) {
-	if (SYM2ID(RARRAY_AREF(members, i)) == id) {
+	if (RARRAY_AREF(members, i) == name) {
 	    rb_struct_modify(s);
 	    RSTRUCT_SET(s, i, val);
 	    return val;
 	}
     }
-    rb_name_error(id, "no member '%s' in struct", rb_id2name(id));
+    rb_name_error_str(name, "no member '% "PRIsVALUE"' in struct", name);
 
     UNREACHABLE;
 }
@@ -816,7 +826,7 @@ rb_struct_aset(VALUE s, VALUE idx, VALUE val)
     long i;
 
     if (RB_TYPE_P(idx, T_SYMBOL)) {
-	return rb_struct_aset_id(s, SYM2ID(idx), val);
+	return rb_struct_aset_sym(s, idx, val);
     }
     if (RB_TYPE_P(idx, T_STRING)) {
 	ID id = rb_check_id(&idx);
@@ -824,7 +834,7 @@ rb_struct_aset(VALUE s, VALUE idx, VALUE val)
 	    rb_name_error_str(idx, "no member '%"PRIsVALUE"' in struct",
 			      QUOTE(idx));
 	}
-	return rb_struct_aset_id(s, id, val);
+	return rb_struct_aset_sym(s, ID2SYM(id), val);
     }
 
     i = NUM2LONG(idx);
@@ -949,6 +959,8 @@ rb_struct_equal(VALUE s, VALUE s2)
  *   struct.hash   -> fixnum
  *
  * Returns a hash value based on this struct's contents (see Object#hash).
+ *
+ * See also Object#hash.
  */
 
 static VALUE

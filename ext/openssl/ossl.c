@@ -312,10 +312,11 @@ ossl_make_error(VALUE exc, const char *fmt, va_list args)
 	else
 	    msg = ERR_reason_error_string(e);
 	if (NIL_P(str)) {
-	    str = rb_str_new_cstr(msg);
+	    if (msg) str = rb_str_new_cstr(msg);
 	}
 	else {
-	    rb_str_cat2(rb_str_cat2(str, ": "), msg);
+	    if (RSTRING_LEN(str)) rb_str_cat2(str, ": ");
+	    rb_str_cat2(str, msg ? msg : "(null)");
 	}
     }
     if (dOSSL == Qtrue){ /* show all errors on the stack */
@@ -1081,6 +1082,11 @@ Init_openssl()
      * Version of OpenSSL the ruby OpenSSL extension was built with
      */
     rb_define_const(mOSSL, "OPENSSL_VERSION", rb_str_new2(OPENSSL_VERSION_TEXT));
+
+    /*
+     * Version of OpenSSL the ruby OpenSSL extension is running with
+     */
+    rb_define_const(mOSSL, "OPENSSL_LIBRARY_VERSION", rb_str_new2(SSLeay_version(SSLEAY_VERSION)));
 
     /*
      * Version number of OpenSSL the ruby OpenSSL extension was built with

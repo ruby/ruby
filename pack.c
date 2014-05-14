@@ -70,14 +70,6 @@ static const char endstr[] = "sSiIlLqQ";
 # define NATINT_LEN(type,len) ((int)sizeof(type))
 #endif
 
-#if SIZEOF_LONG == 8
-# define INT64toNUM(x) LONG2NUM(x)
-# define UINT64toNUM(x) ULONG2NUM(x)
-#elif defined(HAVE_LONG_LONG) && SIZEOF_LONG_LONG == 8
-# define INT64toNUM(x) LL2NUM(x)
-# define UINT64toNUM(x) ULL2NUM(x)
-#endif
-
 #define define_swapx(x, xtype)		\
 static xtype				\
 TOKEN_PASTE(swap,x)(xtype z)		\
@@ -99,38 +91,6 @@ TOKEN_PASTE(swap,x)(xtype z)		\
     xfree(zp);				\
     return r;				\
 }
-
-#if SIZEOF_SHORT == 2
-# define swaps(x)	swap16(x)
-#elif SIZEOF_SHORT == 4
-# define swaps(x)	swap32(x)
-#else
-  define_swapx(s,short)
-#endif
-
-#if SIZEOF_INT == 2
-# define swapi(x)	swap16(x)
-#elif SIZEOF_INT == 4
-# define swapi(x)	swap32(x)
-#else
-  define_swapx(i,int)
-#endif
-
-#if SIZEOF_LONG == 4
-# define swapl(x)	swap32(x)
-#elif SIZEOF_LONG == 8
-# define swapl(x)        swap64(x)
-#else
-  define_swapx(l,long)
-#endif
-
-#ifdef HAVE_LONG_LONG
-# if SIZEOF_LONG_LONG == 8
-#  define swapll(x)        swap64(x)
-# else
-   define_swapx(ll,LONG_LONG)
-# endif
-#endif
 
 #if SIZEOF_FLOAT == 4 && defined(HAVE_INT32_T)
 #   define swapf(x)	swap32(x)
@@ -1930,8 +1890,6 @@ pack_unpack(VALUE str, VALUE fmt)
 
     return ary;
 }
-
-#define BYTEWIDTH 8
 
 int
 rb_uv_to_utf8(char buf[6], unsigned long uv)

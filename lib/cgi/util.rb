@@ -90,14 +90,10 @@ module CGI::Util
   end
 
   # Synonym for CGI::escapeHTML(str)
-  def escape_html(str)
-    escapeHTML(str)
-  end
+  alias escape_html escapeHTML
 
   # Synonym for CGI::unescapeHTML(str)
-  def unescape_html(str)
-    unescapeHTML(str)
-  end
+  alias unescape_html unescapeHTML
 
   # Escape only the tags of certain HTML elements in +string+.
   #
@@ -144,14 +140,10 @@ module CGI::Util
   end
 
   # Synonym for CGI::escapeElement(str)
-  def escape_element(str)
-    escapeElement(str)
-  end
+  alias escape_element escapeElement
 
   # Synonym for CGI::unescapeElement(str)
-  def unescape_element(str)
-    unescapeElement(str)
-  end
+  alias unescape_element unescapeElement
 
   # Abbreviated day-of-week names specified by RFC 822
   RFC822_DAYS = %w[ Sun Mon Tue Wed Thu Fri Sat ]

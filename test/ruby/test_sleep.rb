@@ -9,7 +9,7 @@ class TestSleep < Test::Unit::TestCase
     bottom =
       case RUBY_PLATFORM
       when /linux/
-        4.98 if /Linux ([\d.]+)/ =~ `uname -sr` && ($1.split('.')<=>%w/2 6 18/)<1
+        4.98 if /Linux ([\d.]+)/ =~ `uname -sr` && ($1.split('.').map(&:to_i)<=>[2,6,18])<1
       when /mswin|mingw/
         4.98
       end

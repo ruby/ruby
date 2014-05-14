@@ -208,6 +208,7 @@ rb_str_cat(VALUE str, const char *ptr, long len) ::
   Appends len bytes of data from ptr to the Ruby string.
 
 rb_str_cat2(VALUE str, const char* ptr) ::
+rb_str_cat_cstr(VALUE str, const char* ptr) ::
 
   Appends C string ptr to Ruby string str.  This function is
   equivalent to rb_str_cat(str, ptr, strlen(ptr)).
@@ -650,7 +651,7 @@ Here's the example of an initializing function.
   {
       /* define DBM class */
       cDBM = rb_define_class("DBM", rb_cObject);
-      /* DBM includes Enumerate module */
+      /* DBM includes Enumerable module */
       rb_include_module(cDBM, rb_mEnumerable);
 
       /* DBM has class method open(): arguments are received as C array */
@@ -1080,6 +1081,15 @@ rb_float_new(f) ::
 
   double -> Float
 
+RSTRING_LEN(str) ::
+
+  String -> length of String data in bytes
+
+RSTRING_PTR(str) ::
+
+  String -> pointer to String data
+  Note that the result pointer may not be NUL-terminated
+
 StringValue(value) ::
 
   Object with #to_str -> String
@@ -1090,7 +1100,8 @@ StringValuePtr(value) ::
 
 StringValueCStr(value) ::
 
-  Object with #to_str -> pointer to String data without NULL bytes
+  Object with #to_str -> pointer to String data without NUL bytes
+  It is guaranteed that the result data is NUL-terminated
 
 rb_str_new2(s) ::
 
@@ -1405,13 +1416,18 @@ void ruby_init() ::
 
   Initializes the interpreter.
 
-void ruby_options(int argc, char **argv) ::
+void *ruby_options(int argc, char **argv) ::
 
   Process command line arguments for the interpreter.
+  And compiles the Ruby source to execute.
+  It returns an opaque pointer to the compiled source
+  or an internal special value.
 
-void ruby_run() ::
+int ruby_run_node(void *n) ::
 
-  Starts execution of the interpreter.
+  Runs the given compiled source and exits this process.
+  It returns EXIT_SUCCESS if successfully runs the source.
+  Otherwise, it returns other value.
 
 void ruby_script(char *name) ::
 
