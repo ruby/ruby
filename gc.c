@@ -215,7 +215,7 @@ static ruby_gc_params_t gc_params = {
  * 1: Infant gen -> Young -> Old gen
  */
 #ifndef RGENGC_AGE2_PROMOTION
-#define RGENGC_AGE2_PROMOTION 0
+#define RGENGC_AGE2_PROMOTION 1
 #endif
 
 /* RGENGC_ESTIMATE_OLDMALLOC
