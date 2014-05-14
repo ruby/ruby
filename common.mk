@@ -863,7 +863,7 @@ $(REVISION_H): $(srcdir)/version.h $(srcdir)/ChangeLog $(srcdir)/tool/file2lastr
 $(srcdir)/ext/ripper/ripper.c: parse.y
 	$(ECHO) generating $@
 	$(Q) $(CHDIR) $(@D) && $(exec) $(MAKE) -f depend $(MFLAGS) \
-		Q=$(Q) ECHO=$(ECHO) top_srcdir=../.. srcdir=. RUBY=$(BASERUBY)
+		Q=$(Q) ECHO=$(ECHO) top_srcdir=../.. srcdir=. RUBY="$(BASERUBY)"
 
 $(srcdir)/ext/json/parser/parser.c: $(srcdir)/ext/json/parser/parser.rl
 	$(ECHO) generating $@
