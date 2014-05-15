@@ -1202,7 +1202,7 @@ heap_extend_pages(rb_objspace_t *objspace)
     }
 
     return next_used_limit - used;
-    }
+}
 
 static void
 heap_set_increment(rb_objspace_t *objspace, size_t additional_pages)
