@@ -1,3 +1,16 @@
+Thu May 15 18:51:25 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (heap_extend_pages): calculate next growing heap size.
+
+	* gc.c (heap_set_increment): accept addition pages instead of
+	  minimum pages.
+
+	* gc.c (gc_after_sweep): use heap_etend_pages().
+
+	* gc.c (gc_heap_prepare_minimum_pages): add only 1 page.
+
+	* gc.c (heap_ready_to_gc): add only 1 page.
+
 Thu May 15 18:42:49 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: introduce macros to remove magic number.

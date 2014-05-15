@@ -1190,26 +1190,30 @@ heap_add_pages(rb_objspace_t *objspace, rb_heap_t *heap, size_t add)
     heap_pages_increment = 0;
 }
 
-static void
-heap_set_increment(rb_objspace_t *objspace, size_t minimum_limit)
+static size_t
+heap_extend_pages(rb_objspace_t *objspace)
 {
     size_t used = heap_pages_used - heap_tomb->page_length;
     size_t next_used_limit = (size_t)(used * gc_params.growth_factor);
+
     if (gc_params.growth_max_slots > 0) {
 	size_t max_used_limit = (size_t)(used + gc_params.growth_max_slots/HEAP_OBJ_LIMIT);
 	if (next_used_limit > max_used_limit) next_used_limit = max_used_limit;
     }
-    if (next_used_limit == heap_pages_used) next_used_limit++;
 
-    if (next_used_limit < minimum_limit) {
-	next_used_limit = minimum_limit;
+    return next_used_limit - used;
     }
+
+static void
+heap_set_increment(rb_objspace_t *objspace, size_t additional_pages)
+{
+    size_t used = heap_eden->page_length;
+    size_t next_used_limit = used + additional_pages;
+
+    if (next_used_limit == heap_pages_used) next_used_limit++;
 
     heap_pages_increment = next_used_limit - used;
     heap_pages_expand_sorted(objspace);
-
-    if (0) fprintf(stderr, "heap_set_increment: heap_pages_length: %d, heap_pages_used: %d, heap_pages_increment: %d, next_used_limit: %d\n",
-		   (int)heap_pages_length, (int)heap_pages_used, (int)heap_pages_increment, (int)next_used_limit);
 }
 
 static int
@@ -2865,7 +2869,7 @@ gc_heap_prepare_minimum_pages(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     if (!heap->free_pages) {
 	/* there is no free after page_sweep() */
-	heap_set_increment(objspace, 0);
+	heap_set_increment(objspace, 1);
 	if (!heap_increment(objspace, heap)) { /* can't allocate additional free objects */
 	    during_gc = 0;
 	    rb_memerror();
@@ -3004,7 +3008,7 @@ gc_after_sweep(rb_objspace_t *objspace)
 		  (int)heap->total_slots, (int)heap_pages_swept_slots, (int)heap_pages_min_free_slots);
 
     if (heap_pages_swept_slots < heap_pages_min_free_slots) {
-	heap_set_increment(objspace, (heap_pages_min_free_slots - heap_pages_swept_slots) / HEAP_OBJ_LIMIT);
+	heap_set_increment(objspace, heap_extend_pages(objspace));
 	heap_increment(objspace, heap);
 
 #if USE_RGENGC
@@ -5108,7 +5112,7 @@ heap_ready_to_gc(rb_objspace_t *objspace, rb_heap_t *heap)
     if (dont_gc || during_gc) {
 	if (!heap->freelist && !heap->free_pages) {
 	    if (!heap_increment(objspace, heap)) {
-		heap_set_increment(objspace, 0);
+		heap_set_increment(objspace, 1);
                 heap_increment(objspace, heap);
             }
 	}
