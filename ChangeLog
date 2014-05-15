@@ -1,3 +1,8 @@
+Thu May 15 21:18:43 2014  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* configure.in: enable SSE2 on mingw. target='i386-pc-mingw32'.
+	  [ruby-core:62095] [Bug #8358]
+
 Thu May 15 21:04:06 2014  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* lib/test/unit/parallel.rb: fix test-all parallel failure if a test
