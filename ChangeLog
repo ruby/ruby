@@ -1,3 +1,11 @@
+Thu May 15 17:32:51 2014  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* thread_win32.c (rb_w32_stack_overflow_handler): use Structured
+	  Exception Handling by Addvectoredexceptionhandler() for machine
+	  stack overflow on mingw.
+	  This would be equivalent to the handling using __try and __exept
+	  on mswin introduced by r43748.
+
 Wed May 14 19:31:03 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/openssl/depend: remove dependency from internal headers.
