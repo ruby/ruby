@@ -3124,8 +3124,6 @@ gc_sweep(rb_objspace_t *objspace, int immediate_sweep)
 	}
 	gc_heap_lazy_sweep(objspace, heap_eden);
     }
-
-    gc_heap_prepare_minimum_pages(objspace, heap_eden);
 }
 
 /* Marking - Marking stack */
@@ -5101,6 +5099,8 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
 	during_gc = 0;
     }
     gc_prof_timer_stop(objspace);
+
+    gc_heap_prepare_minimum_pages(objspace, heap_eden);
 
     if (GC_NOTIFY) fprintf(stderr, "end garbage_collect()\n");
     return TRUE;

@@ -1,3 +1,8 @@
+Thu May 15 18:57:23 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (garbage_collect_body): move gc_heap_prepare_minimum_pages()
+	  from gc_sweep().
+
 Thu May 15 18:51:25 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (heap_extend_pages): calculate next growing heap size.
