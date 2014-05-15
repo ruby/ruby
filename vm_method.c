@@ -566,8 +566,15 @@ rb_method_entry_get_without_cache(VALUE klass, ID id,
     VALUE defined_class;
     rb_method_entry_t *me = search_method(klass, id, &defined_class);
 
-    if (me && RB_TYPE_P(me->klass, T_ICLASS))
-	defined_class = me->klass;
+    if (me && me->klass) {
+	switch (BUILTIN_TYPE(me->klass)) {
+	  case T_CLASS:
+	    if (RBASIC(klass)->flags & FL_SINGLETON) break;
+	    /* fall through */
+	  case T_ICLASS:
+	    defined_class = me->klass;
+	}
+    }
 
     if (ruby_running) {
 	struct cache_entry *ent;
