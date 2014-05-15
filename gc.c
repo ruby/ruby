@@ -116,6 +116,13 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 #define GC_HEAP_OLDOBJECT_LIMIT_FACTOR 2.0
 #endif
 
+#ifndef GC_HEAP_FREE_SLOTS_MIN_RATIO
+#define GC_HEAP_FREE_SLOTS_MIN_RATIO 0.3
+#endif
+#ifndef GC_HEAP_FREE_SLOTS_MAX_RATIO
+#define GC_HEAP_FREE_SLOTS_MAX_RATIO 0.8
+#endif
+
 #ifndef GC_MALLOC_LIMIT_MIN
 #define GC_MALLOC_LIMIT_MIN (16 * 1024 * 1024 /* 16MB */)
 #endif
@@ -2902,11 +2909,11 @@ gc_before_sweep(rb_objspace_t *objspace)
     heap_pages_swept_slots = 0;
     total_limit_slot = objspace_total_slot(objspace);
 
-    heap_pages_min_free_slots = (size_t)(total_limit_slot * 0.30);
+    heap_pages_min_free_slots = (size_t)(total_limit_slot * GC_HEAP_FREE_SLOTS_MIN_RATIO);
     if (heap_pages_min_free_slots < gc_params.heap_free_slots) {
 	heap_pages_min_free_slots = gc_params.heap_free_slots;
     }
-    heap_pages_max_free_slots = (size_t)(total_limit_slot * 0.80);
+    heap_pages_max_free_slots = (size_t)(total_limit_slot * GC_HEAP_FREE_SLOTS_MAX_RATIO);
     if (heap_pages_max_free_slots < gc_params.heap_init_slots) {
 	heap_pages_max_free_slots = gc_params.heap_init_slots;
     }

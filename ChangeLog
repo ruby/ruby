@@ -1,3 +1,12 @@
+Thu May 15 18:42:49 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: introduce macros to remove magic number.
+
+	  GC_HEAP_FREE_SLOTS_MIN_RATIO = 0.3: guarantee minimum empty slots
+	                                      ratio after sweep.
+	  GC_HEAP_FREE_SLOTS_MAX_RATIO = 0.8: allow to free pages 0.2 (= 1-0.8)
+	                                      of current existing slots.
+
 Thu May 15 17:32:51 2014  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* thread_win32.c (rb_w32_stack_overflow_handler): use Structured
