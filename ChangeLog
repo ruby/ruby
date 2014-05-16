@@ -22,9 +22,9 @@ Thu May 15 21:04:06 2014  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 	* lib/test/unit/parallel.rb: fix test-all parallel failure if a test
 	  is skipped after raise.
 	  DL::TestFunc#test_sinf is skipped after raise on mingw ruby.
-	  But it causes Mashal.load failure due to undefined class/module
+	  But it causes Marshal.load failure due to undefined class/module
 	  DL::DLError when doing test-all parallel and test-all doesn't
-	  complete. We create new MiniTest::Skip object to avoid Mashal.load
+	  complete. We create new MiniTest::Skip object to avoid Marshal.load
 	  failure.
 	  [ruby-core:62133] [Bug #9767]
 
