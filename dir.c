@@ -1404,7 +1404,19 @@ glob_helper(
     if (magical || recursive) {
 	struct dirent *dp;
 	DIR *dirp;
+# if DOSISH
+	char *plainname = 0;
+# endif
 	IF_HAVE_HFS(int hfs_p);
+# if DOSISH
+	if (cur + 1 == end && (*cur)->type <= ALPHA) {
+	    plainname = join_path(path, pathlen, dirsep, (*cur)->str, strlen((*cur)->str));
+	    if (!plainname) return -1;
+	    dirp = do_opendir(plainname, flags, enc);
+	    GLOB_FREE(plainname);
+	}
+	else
+# endif
 	dirp = do_opendir(*path ? path : ".", flags, enc);
 	if (dirp == NULL) {
 # if FNM_SYSCASE || HAVE_HFS
@@ -1489,6 +1501,12 @@ glob_helper(
 		}
 		switch (p->type) {
 		  case ALPHA:
+# ifdef DOSISH
+		    if (plainname) {
+			*new_end++ = p->next;
+			break;
+		    }
+# endif
 		  case MAGICAL:
 		    if (fnmatch(p->str, enc, name, flags) == 0)
 			*new_end++ = p->next;

@@ -1,3 +1,8 @@
+Sat May 17 01:49:27 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (glob_helper): reduce matching at non-mgaical path on
+	  Windows.
+
 Sat May 17 01:49:23 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (glob_pattern_type): separate names with alphabet but no
