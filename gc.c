@@ -2910,7 +2910,8 @@ gc_before_sweep(rb_objspace_t *objspace)
 	rb_sweep_method_entry(GET_VM());
     }
 
-    heap_pages_swept_slots = 0;
+    /* sometimes heap_pages_increment is not 0 */
+    heap_pages_swept_slots = heap_pages_increment * HEAP_OBJ_LIMIT;
     total_limit_slot = objspace_total_slot(objspace);
 
     heap_pages_min_free_slots = (size_t)(total_limit_slot * GC_HEAP_FREE_SLOTS_MIN_RATIO);

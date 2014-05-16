@@ -1,3 +1,11 @@
+Fri May 16 17:26:24 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_before_sweep): heap_pages_swept_slots should contains
+	  heap_pages_increment.
+
+	  For example, GC by exceeding malloc_limit can remain
+	  heap_pages_increment.
+
 Thu May 15 21:18:43 2014  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* configure.in: enable SSE2 on mingw. target='i386-pc-mingw32'.
