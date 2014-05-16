@@ -4210,6 +4210,12 @@ gc_marks_body(rb_objspace_t *objspace, int full_mark)
     }
     else {
 	objspace->profile.major_gc_count++;
+#if RGENGC_AGE2_PROMOTION
+	/* all old objects change to young objects */
+	objspace->rgengc.young_object_count += objspace->rgengc.old_object_count;
+#endif
+	objspace->rgengc.remembered_shady_object_count = 0;
+	objspace->rgengc.old_object_count = 0;
 	rgengc_mark_and_rememberset_clear(objspace, heap_eden);
     }
 #endif
@@ -4570,9 +4576,6 @@ gc_marks(rb_objspace_t *objspace, int full_mark)
 	gc_verify_internal_consistency(Qnil);
 #endif
 	if (full_mark == TRUE) { /* major/full GC */
-	    objspace->rgengc.remembered_shady_object_count = 0;
-	    objspace->rgengc.old_object_count = 0;
-
 	    gc_marks_body(objspace, TRUE);
 	    {
 		/* See the comment about RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR */

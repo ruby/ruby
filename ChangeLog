@@ -1,3 +1,9 @@
+Fri May 16 17:38:22 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_marks, gc_marks_body): increase the counter of young objects
+	  at the major GC because AGE2Promotion changes all old objects into
+	  young objects at major GC.
+
 Fri May 16 17:26:24 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_before_sweep): heap_pages_swept_slots should contains
