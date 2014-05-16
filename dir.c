@@ -1200,7 +1200,7 @@ glob_make_pattern(const char *p, const char *e, int flags, rb_encoding *enc)
     while (p < e && *p) {
 	tmp = GLOB_ALLOC(struct glob_pattern);
 	if (!tmp) goto error;
-	if (p[0] == '*' && p[1] == '*' && p[2] == '/') {
+	if (p + 2 < e && p[0] == '*' && p[1] == '*' && p[2] == '/') {
 	    /* fold continuous RECURSIVEs (needed in glob_helper) */
 	    do { p += 3; while (*p == '/') p++; } while (p[0] == '*' && p[1] == '*' && p[2] == '/');
 	    tmp->type = RECURSIVE;
