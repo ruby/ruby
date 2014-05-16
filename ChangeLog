@@ -1,3 +1,11 @@
+Sat May 17 01:49:23 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (glob_pattern_type): separate names with alphabet but no
+	  magical from plain.
+
+	* dir.c (glob_helper): match plain names as-is to treat super-root
+	  same as the root.  [ruby-core:61552] [Bug #9648]
+
 Fri May 16 17:38:22 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_marks, gc_marks_body): increase the counter of young objects

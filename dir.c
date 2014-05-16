@@ -1086,12 +1086,16 @@ do_opendir(const char *path, int flags, rb_encoding *enc)
     return dirp;
 }
 
+/* Globing pattern */
+enum glob_pattern_type { PLAIN, ALPHA, MAGICAL, RECURSIVE, MATCH_ALL, MATCH_DIR };
+
 /* Return nonzero if S has any special globbing chars in it.  */
-static int
+static enum glob_pattern_type
 has_magic(const char *p, const char *pend, int flags, rb_encoding *enc)
 {
     const int escape = !(flags & FNM_NOESCAPE);
     const int nocase = flags & FNM_CASEFOLD;
+    int hasalpha = 0;
 
     register char c;
 
@@ -1100,22 +1104,23 @@ has_magic(const char *p, const char *pend, int flags, rb_encoding *enc)
 	  case '*':
 	  case '?':
 	  case '[':
-	    return 1;
+	    return MAGICAL;
 
 	  case '\\':
 	    if (escape && !(c = *p++))
-		return 0;
+		return PLAIN;
 	    continue;
 
 	  default:
-	    if (!FNM_SYSCASE && ISALPHA(c) && nocase)
-		return 1;
+	    if (ISALPHA(c)) {
+		if (FNM_SYSCASE || nocase) hasalpha = 1;
+	    }
 	}
 
 	p = Next(p-1, pend, enc);
     }
 
-    return 0;
+    return hasalpha ? ALPHA : PLAIN;
 }
 
 /* Find separator in globbing pattern. */
@@ -1179,9 +1184,6 @@ remove_backslashes(char *p, register const char *pend, rb_encoding *enc)
     return p;
 }
 
-/* Globing pattern */
-enum glob_pattern_type { PLAIN, MAGICAL, RECURSIVE, MATCH_ALL, MATCH_DIR };
-
 struct glob_pattern {
     char *str;
     enum glob_pattern_type type;
@@ -1210,12 +1212,13 @@ glob_make_pattern(const char *p, const char *e, int flags, rb_encoding *enc)
 	}
 	else {
 	    const char *m = find_dirsep(p, e, flags, enc);
-	    const int magic = has_magic(p, m, flags, enc);
+	    const enum glob_pattern_type magic = has_magic(p, m, flags, enc);
+	    const enum glob_pattern_type non_magic = (HAVE_HFS || FNM_SYSCASE) ? PLAIN : ALPHA;
 	    char *buf;
 
-	    if (!(FNM_SYSCASE || HAVE_HFS || magic) && !recursive && *m) {
+	    if (!(FNM_SYSCASE || magic > non_magic) && !recursive && *m) {
 		const char *m2;
-		while (!has_magic(m+1, m2 = find_dirsep(m+1, e, flags, enc), flags, enc) &&
+		while (has_magic(m+1, m2 = find_dirsep(m+1, e, flags, enc), flags, enc) <= non_magic &&
 		       *m2) {
 		    m = m2;
 		}
@@ -1227,7 +1230,7 @@ glob_make_pattern(const char *p, const char *e, int flags, rb_encoding *enc)
 	    }
 	    memcpy(buf, p, m-p);
 	    buf[m-p] = '\0';
-	    tmp->type = magic ? MAGICAL : PLAIN;
+	    tmp->type = magic > MAGICAL ? MAGICAL : magic;
 	    tmp->str = buf;
 	    if (*m) {
 		dirsep = 1;
@@ -1346,6 +1349,7 @@ glob_helper(
 	  case PLAIN:
 	    plain = 1;
 	    break;
+	  case ALPHA:
 	  case MAGICAL:
 	    magical = 1;
 	    break;
@@ -1397,7 +1401,7 @@ glob_helper(
 
     if (exist == NO || isdir == NO) return 0;
 
-    if (magical || recursive || ((FNM_SYSCASE || HAVE_HFS) && plain)) {
+    if (magical || recursive) {
 	struct dirent *dp;
 	DIR *dirp;
 	IF_HAVE_HFS(int hfs_p);
@@ -1483,9 +1487,13 @@ glob_helper(
 			*new_end++ = p; /* append recursive pattern */
 		    p = p->next; /* 0 times recursion */
 		}
-		if (p->type == PLAIN || p->type == MAGICAL) {
+		switch (p->type) {
+		  case ALPHA:
+		  case MAGICAL:
 		    if (fnmatch(p->str, enc, name, flags) == 0)
 			*new_end++ = p->next;
+		  default:
+		    break;
 		}
 	    }
 

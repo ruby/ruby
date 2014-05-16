@@ -249,6 +249,12 @@ class TestDir < Test::Unit::TestCase
     end
   end
 
+  def test_glob_super_root
+    bug9648 = '[ruby-core:61552] [Bug #9648]'
+    roots = Dir.glob("/*")
+    assert_equal(roots.map {|n| "/..#{n}"}, Dir.glob("/../*"), bug9648)
+  end
+
   def test_home
     env_home = ENV["HOME"]
     env_logdir = ENV["LOGDIR"]
