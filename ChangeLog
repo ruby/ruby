@@ -1,3 +1,11 @@
+Sat May 17 16:57:33 2014  Shota Fukumori  <her@sorah.jp>
+
+	* lib/test: Removed because ruby's test cases now independent to
+	  lib/test by r45970. [Feature #9711] [ruby-core:62620]
+
+	  I'm still considering about the future of lib/minitest, lib/test.
+	  (bundling gems?)
+
 Sat May 17 15:06:40 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/runner.rb: remove dependency test-unit and minitest
