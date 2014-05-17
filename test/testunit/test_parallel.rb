@@ -2,9 +2,8 @@ require 'test/unit'
 require 'timeout'
 
 module TestParallel
-  PARALLEL_RB = "#{File.dirname(__FILE__)}/../../lib/test/unit/parallel.rb"
+  PARALLEL_RB = "#{File.dirname(__FILE__)}/../lib/test/unit/parallel.rb"
   TESTS = "#{File.dirname(__FILE__)}/tests_for_parallel"
-
 
   class TestParallelWorker < Test::Unit::TestCase
     def setup

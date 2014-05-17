@@ -1,3 +1,11 @@
+Sat May 17 15:06:40 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/runner.rb: remove dependency test-unit and minitest
+	  from stdlib when running with test-all.
+	  [Feature #9711][ruby-core:61890]
+	* test/testunit/*.rb: ditto.
+	* test/lib: ditto.
+
 Sat May 17 11:02:49 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (glob_helper): try match PLAIN as well as ALPHA, which are
