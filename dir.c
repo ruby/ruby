@@ -1508,6 +1508,7 @@ glob_helper(
 			break;
 		    }
 # endif
+		  case PLAIN:
 		  case MAGICAL:
 		    if (fnmatch(p->str, enc, name, flags) == 0)
 			*new_end++ = p->next;
