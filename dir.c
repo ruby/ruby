@@ -1094,7 +1094,6 @@ static enum glob_pattern_type
 has_magic(const char *p, const char *pend, int flags, rb_encoding *enc)
 {
     const int escape = !(flags & FNM_NOESCAPE);
-    const int nocase = flags & FNM_CASEFOLD;
     int hasalpha = 0;
 
     register char c;
@@ -1113,7 +1112,7 @@ has_magic(const char *p, const char *pend, int flags, rb_encoding *enc)
 
 	  default:
 	    if (ISALPHA(c)) {
-		if (FNM_SYSCASE || nocase) hasalpha = 1;
+		hasalpha = 1;
 	    }
 	}
 
@@ -1350,8 +1349,10 @@ glob_helper(
 	    plain = 1;
 	    break;
 	  case ALPHA:
-	  case MAGICAL:
 	    magical = 1;
+	    break;
+	  case MAGICAL:
+	    magical = 2;
 	    break;
 	  case MATCH_ALL:
 	    match_all = 1;
@@ -1420,7 +1421,7 @@ glob_helper(
 	dirp = do_opendir(*path ? path : ".", flags, enc);
 	if (dirp == NULL) {
 # if FNM_SYSCASE || HAVE_HFS
-	    if (!(magical || recursive) && (errno == EACCES)) {
+	    if ((magical < 2) && !recursive && (errno == EACCES)) {
 		/* no read permission, fallback */
 		goto literally;
 	    }
@@ -1533,7 +1534,7 @@ glob_helper(
 	copy_beg = copy_end = GLOB_ALLOC_N(struct glob_pattern *, end - beg);
 	if (!copy_beg) return -1;
 	for (cur = beg; cur < end; ++cur)
-	    *copy_end++ = (*cur)->type == PLAIN ? *cur : 0;
+	    *copy_end++ = (*cur)->type <= ALPHA ? *cur : 0;
 
 	for (cur = copy_beg; cur < copy_end; ++cur) {
 	    if (*cur) {

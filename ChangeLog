@@ -1,3 +1,11 @@
+Sat May 17 10:05:05 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (has_magic): return ALPHA at alphabetical name regardless
+	  FNM_CASEFOLD flag.
+
+	* dir.c (glob_helper): fix conditions for ALPHA.
+	  [ruby-core:61552] [Bug #9648]
+
 Sat May 17 01:49:27 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (glob_helper): reduce matching at non-mgaical path on
