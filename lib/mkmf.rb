@@ -1848,6 +1848,7 @@ Q1 = $(V:1=)
 Q = $(Q1:0=@)
 ECHO1 = $(V:1=@#{CONFIG['NULLCMD']})
 ECHO = $(ECHO1:0=@echo)
+NULLCMD = #{CONFIG['NULLCMD']}
 
 #### Start of system configuration section. ####
 #{"top_srcdir = " + $top_srcdir.sub(%r"\A#{Regexp.quote($topdir)}/", "$(topdir)/") if $extmk}
@@ -2311,7 +2312,7 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
       end
       mfile.print "pre-install-rb#{sfx}:\n"
       if files.empty?
-        mfile.print("\t@#{CONFIG['NULLCMD']}\n")
+        mfile.print("\t@$(NULLCMD)\n")
       else
         mfile.print("\t$(ECHO) installing#{sfx.sub(/^-/, " ")} #{target} libraries\n")
       end
