@@ -1,3 +1,8 @@
+Sun May 18 08:22:25 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_setstrbuf): always check if the buffer is modifiable.
+	  [ruby-core:62643] [Bug #9847]
+
 Sun May 18 01:21:23 2014  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/ruby.h: Hide Rational internal.

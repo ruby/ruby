@@ -2839,25 +2839,24 @@ End
 
   def assert_buffer_not_raise_shared_string_error
     bug6764 = '[ruby-core:46586]'
+    bug9847 = '[ruby-core:62643] [Bug #9847]'
     size = 28
     data = [*"a".."z", *"A".."Z"].shuffle.join("")
     t = Tempfile.new("test_io")
     t.write(data)
     t.close
-    w = Tempfile.new("test_io")
+    w = []
     assert_nothing_raised(RuntimeError, bug6764) do
+      buf = ''
       File.open(t.path, "r") do |r|
-        buf = ''
         while yield(r, size, buf)
-          w << buf
+          w << buf.dup
         end
       end
     end
-    w.close
-    assert_equal(data, w.open.read, bug6764)
+    assert_equal(data, w.join(""), bug9847)
   ensure
     t.close!
-    w.close!
   end
 
   def test_read_buffer_not_raise_shared_string_error
