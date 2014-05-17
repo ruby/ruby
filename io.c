@@ -11264,7 +11264,7 @@ argf_block_call(ID mid, int argc, VALUE *argv, VALUE argf)
  *  For example, the following code prints out each line of each named file
  *  prefixed with its line number, displaying the filename once per file:
  *
- *     ARGF.lines do |line|
+ *     ARGF.each_line do |line|
  *       puts ARGF.filename if ARGF.lineno == 1
  *       puts "#{ARGF.lineno}: #{line}"
  *     end
@@ -11632,7 +11632,7 @@ opt_i_get(ID id, VALUE *var)
  *      $ ruby argf.rb file.txt
  *
  *      ARGF.inplace_mode = '.bak'
- *      ARGF.lines do |line|
+ *      ARGF.each_line do |line|
  *        print line.sub("foo","bar")
  *      end
  *
