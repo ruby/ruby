@@ -3546,7 +3546,7 @@ AC_ARG_ENABLE(install-rdoc,
       [install_rdoc=$enableval], [install_rdoc=yes])
 AC_ARG_ENABLE(install-capi,
       AS_HELP_STRING([--disable-install-capi], [do not install C API documents during install]),
-      [install_capi=$enableval], [install_capi=yes])
+      [install_capi=$enableval], [install_capi=no])
 
 if test "$install_doc" != no; then
     if test "$install_rdoc" != no; then
