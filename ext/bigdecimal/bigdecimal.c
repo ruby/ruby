@@ -87,8 +87,8 @@ static ID id_eq;
 #endif
 
 #ifndef RRATIONAL_ZERO_P
-# define RRATIONAL_ZERO_P(x) (FIXNUM_P(RRATIONAL(x)->num) && \
-			      FIX2LONG(RRATIONAL(x)->num) == 0)
+# define RRATIONAL_ZERO_P(x) (FIXNUM_P(rb_rational_num(x)) && \
+			      FIX2LONG(rb_rational_num(x)) == 0)
 #endif
 
 #ifndef RRATIONAL_NEGATIVE_P
@@ -235,11 +235,11 @@ again:
 	if (prec < 0) goto unable_to_coerce_without_prec;
 
 	if (orig == Qundef ? (orig = v, 1) : orig != v) {
-	    num = RRATIONAL(v)->num;
+	    num = rb_rational_num(v);
 	    pv = GetVpValueWithPrec(num, -1, must);
 	    if (pv == NULL) goto SomeOneMayDoIt;
 
-	    v = BigDecimal_div2(ToValue(pv), RRATIONAL(v)->den, LONG2NUM(prec));
+	    v = BigDecimal_div2(ToValue(pv), rb_rational_den(v), LONG2NUM(prec));
 	    goto again;
 	}
 
@@ -2114,7 +2114,7 @@ is_zero(VALUE x)
 	return Qfalse;
 
       case T_RATIONAL:
-	num = RRATIONAL(x)->num;
+	num = rb_rational_num(x);
 	return FIXNUM_P(num) && FIX2LONG(num) == 0;
 
       default:
@@ -2137,8 +2137,8 @@ is_one(VALUE x)
 	return Qfalse;
 
       case T_RATIONAL:
-	num = RRATIONAL(x)->num;
-	den = RRATIONAL(x)->den;
+	num = rb_rational_num(x);
+	den = rb_rational_den(x);
 	return FIXNUM_P(den) && FIX2LONG(den) == 1 &&
 	       FIXNUM_P(num) && FIX2LONG(num) == 1;
 
@@ -2244,14 +2244,14 @@ BigDecimal_power(int argc, VALUE*argv, VALUE self)
 	break;
 
       case T_RATIONAL:
-	if (is_zero(RRATIONAL(vexp)->num)) {
+	if (is_zero(rb_rational_num(vexp))) {
 	    if (is_positive(vexp)) {
 		vexp = INT2FIX(0);
 		goto retry;
 	    }
 	}
-	else if (is_one(RRATIONAL(vexp)->den)) {
-	    vexp = RRATIONAL(vexp)->num;
+	else if (is_one(rb_rational_den(vexp))) {
+	    vexp = rb_rational_num(vexp);
 	    goto retry;
 	}
 	exp = GetVpValueWithPrec(vexp, n, 1);

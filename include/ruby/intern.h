@@ -168,6 +168,8 @@ VALUE rb_rational_new(VALUE, VALUE);
 VALUE rb_Rational(VALUE, VALUE);
 #define rb_Rational1(x) rb_Rational((x), INT2FIX(1))
 #define rb_Rational2(x,y) rb_Rational((x), (y))
+VALUE rb_rational_num(VALUE rat);
+VALUE rb_rational_den(VALUE rat);
 VALUE rb_flt_rationalize_with_prec(VALUE, VALUE);
 VALUE rb_flt_rationalize(VALUE);
 /* complex.c */

@@ -404,6 +404,9 @@ f_lcm(VALUE x, VALUE y)
     adat = ((struct RRational *)(x));\
     bdat = ((struct RRational *)(y))
 
+#define RRATIONAL_SET_NUM(rat, n) RB_OBJ_WRITE((rat), &((struct RRational *)(rat))->num,(n))
+#define RRATIONAL_SET_DEN(rat, d) RB_OBJ_WRITE((rat), &((struct RRational *)(rat))->den,(d))
+
 inline static VALUE
 nurat_s_new_internal(VALUE klass, VALUE num, VALUE den)
 {
@@ -1773,6 +1776,18 @@ rb_Rational(VALUE x, VALUE y)
     a[0] = x;
     a[1] = y;
     return nurat_s_convert(2, a, rb_cRational);
+}
+
+VALUE
+rb_rational_num(VALUE rat)
+{
+    return nurat_numerator(rat);
+}
+
+VALUE
+rb_rational_den(VALUE rat)
+{
+    return nurat_denominator(rat);
 }
 
 #define id_numerator rb_intern("numerator")

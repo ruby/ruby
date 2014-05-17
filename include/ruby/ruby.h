@@ -943,15 +943,6 @@ struct RFile {
     struct rb_io_t *fptr;
 };
 
-struct RRational {
-    struct RBasic basic;
-    const VALUE num;
-    const VALUE den;
-};
-
-#define RRATIONAL_SET_NUM(rat, n) RB_OBJ_WRITE((rat), &((struct RRational *)(rat))->num,(n))
-#define RRATIONAL_SET_DEN(rat, d) RB_OBJ_WRITE((rat), &((struct RRational *)(rat))->den,(d))
-
 struct RComplex {
     struct RBasic basic;
     const VALUE real;
@@ -1101,7 +1092,6 @@ struct RStruct {
 #define RTYPEDDATA(obj)   (R_CAST(RTypedData)(obj))
 #define RSTRUCT(obj) (R_CAST(RStruct)(obj))
 #define RFILE(obj)   (R_CAST(RFile)(obj))
-#define RRATIONAL(obj) (R_CAST(RRational)(obj))
 #define RCOMPLEX(obj) (R_CAST(RComplex)(obj))
 #define RSYMBOL(obj) (R_CAST(RSymbol)(obj))
 
