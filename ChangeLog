@@ -1,3 +1,7 @@
+Sat May 17 17:04:32 2014  Shota Fukumori  <her@sorah.jp>
+
+	* NEWS: Add news about removal of lib/test/**/*.rb.
+
 Sat May 17 16:57:33 2014  Shota Fukumori  <her@sorah.jp>
 
 	* lib/test: Removed because ruby's test cases now independent to
