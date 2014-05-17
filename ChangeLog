@@ -1,4 +1,8 @@
-Sat May 17 10:05:05 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat May 17 10:40:33 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (glob_make_pattern): set PLAIN for non-magical path to
+	  skip parts which not need to glob.
+	  [ruby-core:61552] [Bug #9648]
 
 	* dir.c (has_magic): return ALPHA at alphabetical name regardless
 	  FNM_CASEFOLD flag.

@@ -1229,7 +1229,7 @@ glob_make_pattern(const char *p, const char *e, int flags, rb_encoding *enc)
 	    }
 	    memcpy(buf, p, m-p);
 	    buf[m-p] = '\0';
-	    tmp->type = magic > MAGICAL ? MAGICAL : magic;
+	    tmp->type = magic > MAGICAL ? MAGICAL : magic > non_magic ? magic : PLAIN;
 	    tmp->str = buf;
 	    if (*m) {
 		dirsep = 1;
