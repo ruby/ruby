@@ -284,7 +284,8 @@ error_handle(int ex)
 	if (rb_obj_is_kind_of(errinfo, rb_eSystemExit)) {
 	    status = sysexit_status(errinfo);
 	}
-	else if (rb_obj_is_instance_of(errinfo, rb_eSignal)) {
+	else if (rb_obj_is_instance_of(errinfo, rb_eSignal) &&
+		 rb_iv_get(errinfo, "signo") != INT2FIX(SIGSEGV)) {
 	    /* no message when exiting by signal */
 	}
 	else {
