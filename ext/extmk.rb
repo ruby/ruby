@@ -241,7 +241,7 @@ def extmake(target)
 	$0 = $PROGRAM_NAME
       end
     end
-    ok &&= File.open(makefile){|f| !f.gets[DUMMY_SIGNATURE]}
+    ok &&= File.open(makefile){|f| s = f.gets and !s[DUMMY_SIGNATURE]}
     ok = yield(ok) if block_given?
     if ok
       open(makefile, "r+b") do |f|
