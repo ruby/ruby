@@ -1,3 +1,20 @@
+Mon May 19 00:47:00 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_array.rb: remove useless `assert'.
+
+Mon May 19 00:47:00 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c (rb_ary_modify): remember shared array owner if a shared
+	  array owner is promoted and a shared array is not promoted.
+
+	  Now, shared array is WB-unprotected so that shared arrays are not
+	  promoted.  All objects referred from shared array should be marked
+	  correctly.
+
+	  [ruby-core:61919] [ruby-trunk - Bug #9718]
+
+	* test/ruby/test_array.rb: add a test for above.
+
 Mon May 19 00:26:53 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): only a newline after label should be

@@ -343,6 +343,11 @@ rb_ary_modify(VALUE ary)
             ARY_SET_CAPA(ary, len);
             ARY_SET_PTR(ary, ptr);
         }
+
+	/* TODO: age2 promotion, OBJ_PROMOTED() checks not infant. */
+	if (OBJ_PROMOTED(ary) && !OBJ_PROMOTED(shared)) {
+	    rb_gc_writebarrier_remember_promoted(ary);
+	}
     }
 }
 
