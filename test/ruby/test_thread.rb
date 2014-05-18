@@ -792,12 +792,13 @@ _eom
   end
 
   def test_main_thread_status_at_exit
-    assert_in_out_err([], <<-INPUT, %w(false), [])
+    assert_in_out_err([], <<-'INPUT', ["false false aborting"], [])
 Thread.new(Thread.current) {|mth|
   begin
     Thead.pass until mth.stop?
+    p :mth_stopped # don't run if killed by rb_thread_terminate_all
   ensure
-    p mth.alive?
+    puts "#{mth.alive?} #{mth.status} #{Thread.current.status}"
   end
 }
     INPUT
