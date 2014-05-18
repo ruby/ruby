@@ -9,6 +9,7 @@
 
 #include "ruby.h"
 #include "ruby/encoding.h"
+#include "ruby/io.h"
 
 #include <sys/types.h>
 #ifdef HAVE_UNISTD_H
@@ -22,6 +23,8 @@
 #ifdef HAVE_GETGRENT
 #include <grp.h>
 #endif
+
+#include <errno.h>
 
 #ifdef HAVE_SYS_UTSNAME_H
 #include <sys/utsname.h>
@@ -43,6 +46,8 @@ static VALUE sGroup;
 char *getenv();
 #endif
 char *getlogin();
+
+#include "constdefs.h"
 
 /* call-seq:
  *	getlogin	->  String
@@ -684,6 +689,126 @@ etc_uname(VALUE obj)
 #define etc_uname rb_f_notimplement
 #endif
 
+#ifdef HAVE_SYSCONF
+/*
+ * Returns system configuration variable using sysconf().
+ *
+ * _name_ should be a constant undef <code>Etc</code> which begins with <code>SC_</code>.
+ *
+ * The return value is an integer or nil.
+ * nil means indefinite limit.  (sysconf() returns -1 but errno is not set.)
+ *
+ *   Etc.sysconf(Etc::SC_ARG_MAX) #=> 2097152
+ *
+ *   # Number of processors.
+ *   # It is not standardized.
+ *   Etc.sysconf(Etc::SC_NPROCESSORS_ONLN) #=> 4
+ *
+ */
+static VALUE
+etc_sysconf(VALUE obj, VALUE arg)
+{
+    int name;
+    long ret;
+
+    name = NUM2INT(arg);
+
+    errno = 0;
+    ret = sysconf(name);
+    if (ret == -1) {
+        if (errno == 0) /* no limit */
+            return Qnil;
+        rb_sys_fail("sysconf");
+    }
+    return LONG2NUM(ret);
+}
+#else
+#define etc_sysconf rb_f_notimplement
+#endif
+
+#ifdef HAVE_CONFSTR
+/*
+ * Returns system configuration variable using confstr().
+ *
+ * _name_ should be a constant undef <code>Etc</code> which begins with <code>CS_</code>.
+ *
+ * The return value is a string or nil.
+ * nil means no configuration-defined value.  (confstr() returns 0 but errno is not set.)
+ *
+ *   Etc.confstr(Etc::CS_PATH) #=> "/bin:/usr/bin"
+ *
+ *   # GNU/Linux
+ *   Etc.confstr(Etc::CS_GNU_LIBC_VERSION) #=> "glibc 2.18"
+ *   Etc.confstr(Etc::CS_GNU_LIBPTHREAD_VERSION) #=> "NPTL 2.18"
+ *
+ */
+static VALUE
+etc_confstr(VALUE obj, VALUE arg)
+{
+    int name;
+    char localbuf[128], *buf = localbuf;
+    size_t bufsize = sizeof(localbuf), ret;
+    VALUE tmp;
+
+    name = NUM2INT(arg);
+
+    errno = 0;
+    ret = confstr(name, buf, bufsize);
+    if (bufsize < ret) {
+        bufsize = ret;
+        buf = ALLOCV_N(char, tmp, bufsize);
+        errno = 0;
+        ret = confstr(name, buf, bufsize);
+    }
+    if (bufsize < ret)
+        rb_bug("required buffer size for confstr() changed dynamically.");
+    if (ret == 0) {
+        if (errno == 0) /* no configuration-defined value */
+            return Qnil;
+        rb_sys_fail("confstr");
+    }
+    return rb_str_new_cstr(buf);
+}
+#else
+#define etc_confstr rb_f_notimplement
+#endif
+
+#ifdef HAVE_FPATHCONF
+/*
+ * Returns pathname configuration variable using fpathconf().
+ *
+ * _name_ should be a constant undef <code>Etc</code> which begins with <code>PC_</code>.
+ *
+ * The return value is an integer or nil.
+ * nil means indefinite limit.  (fpathconf() returns -1 but errno is not set.)
+ *
+ *   open("/") {|f| p f.pathconf(Etc::PC_NAME_MAX) } #=> 255
+ *
+ */
+static VALUE
+io_pathconf(VALUE io, VALUE arg)
+{
+    int name;
+    long ret;
+    rb_io_t *fptr;
+
+    name = NUM2INT(arg);
+
+    GetOpenFile(io, fptr);
+
+    errno = 0;
+    ret = fpathconf(fptr->fd, name);
+    if (ret == -1) {
+        if (errno == 0) /* no limit */
+            return Qnil;
+        rb_sys_fail("fpathconf");
+    }
+    return LONG2NUM(ret);
+}
+#else
+#define io_pathconf rb_f_notimplement
+#endif
+
 /*
  * The Etc module provides access to information typically stored in
  * files in the /etc directory on Unix systems.
@@ -716,6 +841,8 @@ Init_etc(void)
     VALUE mEtc;
 
     mEtc = rb_define_module("Etc");
+    init_constants(mEtc);
+
     rb_define_module_function(mEtc, "getlogin", etc_getlogin, 0);
 
     rb_define_module_function(mEtc, "getpwuid", etc_getpwuid, -1);
@@ -734,6 +861,9 @@ Init_etc(void)
     rb_define_module_function(mEtc, "sysconfdir", etc_sysconfdir, 0);
     rb_define_module_function(mEtc, "systmpdir", etc_systmpdir, 0);
     rb_define_module_function(mEtc, "uname", etc_uname, 0);
+    rb_define_module_function(mEtc, "sysconf", etc_sysconf, 1);
+    rb_define_module_function(mEtc, "confstr", etc_confstr, 1);
+    rb_define_method(rb_cIO, "pathconf", io_pathconf, 1);
 
     sPasswd =  rb_struct_define_under(mEtc, "Passwd",
 				      "name",

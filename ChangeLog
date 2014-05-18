@@ -1,3 +1,13 @@
+Sun May 18 10:46:04 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/etc/etc.c: Etc.sysconf, Etc.confstr and IO#pathconf implemented.
+
+	* ext/etc/extconf.rb: Check sysconf(), confstr() and fpathconf().
+
+	* ext/etc/mkconstants.rb: New file.
+
+	   [ruby-core:62600] [Feature #9842]
+
 Sun May 18 09:58:17 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/etc/etc.c: Etc.uname method implemented.

@@ -125,4 +125,38 @@ class TestEtc < Test::Unit::TestCase
       assert_kind_of(String, uname[sym])
     }
   end
+
+  def test_sysconf
+    begin
+      Etc.sysconf
+    rescue NotImplementedError
+      return
+    rescue ArgumentError
+    end
+    assert_kind_of(Integer, Etc.sysconf(Etc::SC_CLK_TCK))
+  end
+
+  def test_confstr
+    begin
+      Etc.confstr
+    rescue NotImplementedError
+      return
+    rescue ArgumentError
+    end
+    assert_kind_of(String, Etc.confstr(Etc::CS_PATH))
+  end
+
+  def test_pathconf
+    begin
+      Etc.confstr
+    rescue NotImplementedError
+      return
+    rescue ArgumentError
+    end
+    IO.pipe {|r, w|
+      val = r.pathconf(Etc::PC_PIPE_BUF)
+      assert(val.nil? || val.kind_of?(Integer))
+    }
+  end
+
 end

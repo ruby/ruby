@@ -110,6 +110,9 @@ y.tab.c
 /ext/dl/callback/callback-*.c
 /ext/dl/callback/callback.c
 
+# /ext/etc/
+/ext/etc/constdefs.h
+
 # /ext/rbconfig/
 /ext/rbconfig/sizeof/sizes.c
 

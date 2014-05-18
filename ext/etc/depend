@@ -1,3 +1,8 @@
-etc.o : etc.c $(HDRS) $(ruby_headers) \
+etc.o : etc.c constdefs.h $(HDRS) $(ruby_headers) \
   $(hdrdir)/ruby/encoding.h \
   $(hdrdir)/ruby/oniguruma.h
+
+constdefs.h : $(srcdir)/mkconstants.rb
+	@echo "generating constant definitions"
+	@$(RUBY) $(srcdir)/mkconstants.rb -o constdefs.h
+
