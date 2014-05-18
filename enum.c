@@ -3083,6 +3083,130 @@ enum_slice_before(int argc, VALUE *argv, VALUE enumerable)
     return enumerator;
 }
 
+
+struct sliceafter_arg {
+    VALUE pat;
+    VALUE pred;
+    VALUE prev_elts;
+    VALUE yielder;
+};
+
+static VALUE
+sliceafter_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
+{
+#define UPDATE_MEMO ((memo = MEMO_FOR(struct sliceafter_arg, _memo)), 1)
+    struct sliceafter_arg *memo;
+    int split_p;
+    UPDATE_MEMO;
+
+    ENUM_WANT_SVALUE();
+
+    if (NIL_P(memo->prev_elts)) {
+        memo->prev_elts = rb_ary_new3(1, i);
+    }
+    else {
+        rb_ary_push(memo->prev_elts, i);
+    }
+
+    if (NIL_P(memo->pred)) {
+        split_p = RTEST(rb_funcall(memo->pat, id_eqq, 1, i));
+        UPDATE_MEMO;
+    }
+    else {
+        split_p = RTEST(rb_funcall(memo->pred, id_call, 1, i));
+        UPDATE_MEMO;
+    }
+
+    if (split_p) {
+        rb_funcall(memo->yielder, id_lshift, 1, memo->prev_elts);
+        UPDATE_MEMO;
+        memo->prev_elts = Qnil;
+    }
+
+    return Qnil;
+#undef UPDATE_MEMO
+}
+
+static VALUE
+sliceafter_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
+{
+    VALUE enumerable;
+    VALUE arg;
+    struct sliceafter_arg *memo = NEW_MEMO_FOR(struct sliceafter_arg, arg);
+
+    enumerable = rb_ivar_get(enumerator, rb_intern("sliceafter_enum"));
+    memo->pat = rb_ivar_get(enumerator, rb_intern("sliceafter_pat"));
+    memo->pred = rb_attr_get(enumerator, rb_intern("sliceafter_pred"));
+    memo->prev_elts = Qnil;
+    memo->yielder = yielder;
+
+    rb_block_call(enumerable, id_each, 0, 0, sliceafter_ii, arg);
+    memo = MEMO_FOR(struct sliceafter_arg, arg);
+    if (!NIL_P(memo->prev_elts))
+        rb_funcall(memo->yielder, id_lshift, 1, memo->prev_elts);
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.slice_after(pattern)       -> an_enumerator
+ *     enum.slice_after { |elt| bool } -> an_enumerator
+ *
+ *  Creates an enumerator for each chunked elements.
+ *  The ends of chunks are defined by _pattern_ and the block.
+ *
+ *  If <code>_pattern_ === _elt_</code> returns <code>true</code> or the block
+ *  returns <code>true</code> for the element, the element is end of a
+ *  chunk.
+ *
+ *  The <code>===</code> and _block_ is called from the first element to the last
+ *  element of _enum_.
+ *
+ *  The result enumerator yields the chunked elements as an array.
+ *  So +each+ method can be called as follows:
+ *
+ *    enum.slice_after(pattern).each { |ary| ... }
+ *    enum.slice_after { |elt| bool }.each { |ary| ... }
+ *
+ *  Other methods of the Enumerator class and Enumerable module,
+ *  such as +map+, etc., are also usable.
+ *
+ *  For example, continuation lines (lines end with backslash) can be
+ *  concatenated as follows:
+ *
+ *    lines = ["foo\n", "bar\\\n", "baz\n", "\n", "qux\n"]
+ *    e = lines.slice_after(/(?<!\\)\n\z/)
+ *    p e.to_a
+ *    #=> [["foo\n"], ["bar\\\n", "baz\n"], ["\n"], ["qux\n"]]
+ *    p e.map {|ll| ll[0...-1].map {|l| l.sub(/\\\n\z/, "") }.join + ll.last }
+ *    #=>["foo\n", "barbaz\n", "\n", "qux\n"]
+ *
+ */
+
+static VALUE
+enum_slice_after(int argc, VALUE *argv, VALUE enumerable)
+{
+    VALUE enumerator;
+    VALUE pat = Qnil, pred = Qnil;
+
+    if (rb_block_given_p()) {
+        if (0 < argc)
+            rb_raise(rb_eArgError, "both pattan and block are given");
+        pred = rb_block_proc();
+    }
+    else {
+        rb_scan_args(argc, argv, "1", &pat);
+    }
+
+    enumerator = rb_obj_alloc(rb_cEnumerator);
+    rb_ivar_set(enumerator, rb_intern("sliceafter_enum"), enumerable);
+    rb_ivar_set(enumerator, rb_intern("sliceafter_pat"), pat);
+    rb_ivar_set(enumerator, rb_intern("sliceafter_pred"), pred);
+
+    rb_block_call(enumerator, idInitialize, 0, 0, sliceafter_i, enumerator);
+    return enumerator;
+}
+
 /*
  *  The <code>Enumerable</code> mixin provides collection classes with
  *  several traversal and searching methods, and with the ability to
@@ -3151,6 +3275,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "cycle", enum_cycle, -1);
     rb_define_method(rb_mEnumerable, "chunk", enum_chunk, -1);
     rb_define_method(rb_mEnumerable, "slice_before", enum_slice_before, -1);
+    rb_define_method(rb_mEnumerable, "slice_after", enum_slice_after, -1);
 
     id_next = rb_intern("next");
     id_call = rb_intern("call");

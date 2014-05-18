@@ -16,6 +16,8 @@ with all sufficient information, see the ChangeLog file.
 === Core classes updates (outstanding ones only)
 
 * Enumerable
+  * New methods:
+    * Enumerable#slice_after
   * Extended methods:
     * min, min_by, max and max_by supports optional argument to return
       multiple elements.

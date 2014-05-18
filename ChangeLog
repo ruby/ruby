@@ -1,3 +1,11 @@
+Sun May 18 09:02:17 2014  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c: Enumerable#slice_after implemented.
+
+	* enumerator.c: Enumerator::Lazy#slice_after implemented.
+
+	  Requested by Tsuyoshi Sawada.  [ruby-core:58123] [Feature #9071]
+
 Sun May 18 08:22:25 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (io_setstrbuf): always check if the buffer is modifiable.
