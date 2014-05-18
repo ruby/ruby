@@ -710,7 +710,7 @@ NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
 static void
 check_stack_overflow(const uintptr_t addr, const ucontext_t *ctx)
 {
-    const struct mcontext *mctx = ctx->uc_mcontext;
+    const mcontext_t *mctx = &ctx->uc_mcontext;
 # if defined __linux__
 #   if defined REG_RSP
     const greg_t sp = mctx->gregs[REG_RSP];
