@@ -1,3 +1,7 @@
+Sun May 18 11:09:28 2014  Tanaka Akira  <akr@fsij.org>
+
+	* win32/Makefile.sub: Add nextafter.obj to MISSING.
+
 Sun May 18 10:46:04 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/etc/etc.c: Etc.sysconf, Etc.confstr and IO#pathconf implemented.
