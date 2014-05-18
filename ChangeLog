@@ -1,3 +1,15 @@
+Mon May 19 00:26:53 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): only a newline after label should be
+	  significant.  [ruby-core:61658] [Bug #9669]
+
+Mon May 19 00:26:53 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (lex_state_e, parser_params, f_arglist, parser_yylex):
+	  separate EXPR_LABELARG from EXPR_BEG and let newline significant,
+	  so that required keyword argument can place at the end of
+	  argument list without parentheses.  [ruby-core:61658] [Bug #9669]
+
 Fri May 16 00:27:02 2014  James Edward Gray II  <james@graysoftinc.com>
 
 	* lib/csv.rb: Fixed a broken regular expression that was causing
