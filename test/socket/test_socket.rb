@@ -2,6 +2,7 @@ begin
   require "socket"
   require "tmpdir"
   require "fcntl"
+  require "etc"
   require "test/unit"
 rescue LoadError
 end
@@ -332,7 +333,7 @@ class TestSocket < Test::Unit::TestCase
         case RUBY_PLATFORM
         when /linux/
           if ai.ip_address.include?('%') and
-            (`uname -r`[/[0-9.]+/].split('.').map(&:to_i) <=> [2,6,18]) <= 0
+            (Etc.uname[:release][/[0-9.]+/].split('.').map(&:to_i) <=> [2,6,18]) <= 0
             # Cent OS 5.6 (2.6.18-238.19.1.el5xen) doesn't correctly work
             # sendmsg with pktinfo for link-local ipv6 addresses
             next true

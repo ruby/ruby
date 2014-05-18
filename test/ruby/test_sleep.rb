@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'etc'
 
 class TestSleep < Test::Unit::TestCase
   def test_sleep_5sec
@@ -9,7 +10,7 @@ class TestSleep < Test::Unit::TestCase
     bottom =
       case RUBY_PLATFORM
       when /linux/
-        4.98 if /Linux ([\d.]+)/ =~ `uname -sr` && ($1.split('.').map(&:to_i)<=>[2,6,18])<1
+        4.98 if (Etc.uname[:release].split('.').map(&:to_i)<=>[2,6,18]) <= 0
       when /mswin|mingw/
         4.98
       end
