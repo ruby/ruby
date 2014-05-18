@@ -700,17 +700,29 @@ rb_get_next_signal(void)
 
 #if defined(USE_SIGALTSTACK) || defined(_WIN32)
 NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
-#if defined(HAVE_UCONTEXT_H) && defined __linux__ && (defined __i386__ || defined __x86_64__)
+#if !(defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__))
+#elif defined __linux__
+# define USE_UCONTEXT_REG 1
+#elif defined __APPLE__
 # define USE_UCONTEXT_REG 1
 #endif
 #ifdef USE_UCONTEXT_REG
 static void
 check_stack_overflow(const uintptr_t addr, const ucontext_t *ctx)
 {
-# if defined REG_RSP
-    const greg_t sp = ctx->uc_mcontext.gregs[REG_RSP];
-# else
-    const greg_t sp = ctx->uc_mcontext.gregs[REG_ESP];
+    const struct mcontext *mctx = ctx->uc_mcontext;
+# if defined __linux__
+#   if defined REG_RSP
+    const greg_t sp = mctx->gregs[REG_RSP];
+#   else
+    const greg_t sp = mctx->gregs[REG_ESP];
+#   endif
+# elif defined __APPLE__
+#   if defined(__LP64__)
+    const uintptr_t sp = mctx->ss.rsp;
+#   else
+    const uintptr_t sp = mctx->ss.esp;
+#   endif
 # endif
     enum {pagesize = 4096};
     const uintptr_t sp_page = (uintptr_t)sp / pagesize;
