@@ -23,6 +23,10 @@
 #include <grp.h>
 #endif
 
+#ifdef HAVE_SYS_UTSNAME_H
+#include <sys/utsname.h>
+#endif
+
 static VALUE sPasswd;
 #ifdef HAVE_GETGRENT
 static VALUE sGroup;
@@ -636,6 +640,50 @@ etc_systmpdir(void)
     return tmpdir;
 }
 
+#ifdef HAVE_UNAME
+/*
+ * Returns the system information obtained by uname system call.
+ *
+ * The return value is a hash which has 5 keys at least:
+ *   :sysname, :nodename, :release, :version, :machine
+ *
+ * Example:
+ *
+ *   require 'etc'
+ *   require 'pp'
+ *
+ *   pp Etc.uname
+ *   #=> {:sysname=>"Linux",
+ *   #    :nodename=>"boron",
+ *   #    :release=>"2.6.18-6-xen-686",
+ *   #    :version=>"#1 SMP Thu Nov 5 19:54:42 UTC 2009",
+ *   #    :machine=>"i686"}
+ *
+ */
+static VALUE
+etc_uname(VALUE obj)
+{
+    struct utsname u;
+    int ret;
+    VALUE result;
+
+    ret = uname(&u);
+    if (ret == -1)
+        rb_sys_fail("uname");
+
+    result = rb_hash_new();
+    rb_hash_aset(result, ID2SYM(rb_intern("sysname")), rb_str_new_cstr(u.sysname));
+    rb_hash_aset(result, ID2SYM(rb_intern("nodename")), rb_str_new_cstr(u.nodename));
+    rb_hash_aset(result, ID2SYM(rb_intern("release")), rb_str_new_cstr(u.release));
+    rb_hash_aset(result, ID2SYM(rb_intern("version")), rb_str_new_cstr(u.version));
+    rb_hash_aset(result, ID2SYM(rb_intern("machine")), rb_str_new_cstr(u.machine));
+
+    return result;
+}
+#else
+#define etc_uname rb_f_notimplement
+#endif
+
 /*
  * The Etc module provides access to information typically stored in
  * files in the /etc directory on Unix systems.
@@ -685,6 +733,7 @@ Init_etc(void)
     rb_define_module_function(mEtc, "getgrent", etc_getgrent, 0);
     rb_define_module_function(mEtc, "sysconfdir", etc_sysconfdir, 0);
     rb_define_module_function(mEtc, "systmpdir", etc_systmpdir, 0);
+    rb_define_module_function(mEtc, "uname", etc_uname, 0);
 
     sPasswd =  rb_struct_define_under(mEtc, "Passwd",
 				      "name",

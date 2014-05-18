@@ -1,6 +1,13 @@
 require 'mkmf'
 
+headers = []
+%w[sys/utsname.h].each {|h|
+  if have_header(h, headers)
+    headers << h
+  end
+}
 have_library("sun", "getpwnam")	# NIS (== YP) interface for IRIX 4
+have_func("uname((struct utsname *)NULL)", headers)
 have_func("getlogin")
 have_func("getpwent")
 have_func("getgrent")

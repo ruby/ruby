@@ -112,4 +112,17 @@ class TestEtc < Test::Unit::TestCase
     Etc.endgrent
     assert_equal(a, b)
   end
+
+  def test_uname
+    begin
+      uname = Etc.uname
+    rescue NotImplementedError
+      return
+    end
+    assert_kind_of(Hash, uname)
+    [:sysname, :nodename, :release, :version, :machine].each {|sym|
+      assert_operator(uname, :has_key?, sym)
+      assert_kind_of(String, uname[sym])
+    }
+  end
 end

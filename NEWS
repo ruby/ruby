@@ -83,6 +83,10 @@ with all sufficient information, see the ChangeLog file.
 
 === Stdlib updates (outstanding ones only)
 
+* Etc
+  * New methods:
+    * Etc.uname
+
 * Find, Pathname
   * Extended methods:
     * find method accepts "ignore_error" keyword argument.
