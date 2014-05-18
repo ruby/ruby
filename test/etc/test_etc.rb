@@ -134,7 +134,7 @@ class TestEtc < Test::Unit::TestCase
     rescue ArgumentError
     end
     assert_kind_of(Integer, Etc.sysconf(Etc::SC_CLK_TCK))
-  end
+  end if defined?(Etc::SC_CLK_TCK)
 
   def test_confstr
     begin
@@ -144,7 +144,7 @@ class TestEtc < Test::Unit::TestCase
     rescue ArgumentError
     end
     assert_kind_of(String, Etc.confstr(Etc::CS_PATH))
-  end
+  end if defined?(Etc::CS_PATH)
 
   def test_pathconf
     begin
@@ -157,6 +157,6 @@ class TestEtc < Test::Unit::TestCase
       val = w.pathconf(Etc::PC_PIPE_BUF)
       assert(val.nil? || val.kind_of?(Integer))
     }
-  end
+  end if defined?(Etc::PC_PIPE_BUF)
 
 end
