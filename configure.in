@@ -2171,9 +2171,9 @@ main(int argc, char **argv)
 	[rb_cv_atan2_inf_c99=no],
 	[AS_CASE($target_os, [mingw*|mswin*], [rb_cv_atan2_inf_c99=no], [rb_cv_atan2_inf_c99=yes])]
 	)
-    ])
+    ], [rb_cv_atan2_inf_c99=no])
 ])
-AS_IF([test $rb_cv_atan2_inf_c99 = yes], [AC_DEFINE(ATAN2_INF_C99)])
+AS_IF([test "x$rb_cv_atan2_inf_c99" = xyes], [AC_DEFINE(ATAN2_INF_C99)])
 
 # Some platform need -lrt for clock_gettime, but the other don't.
 if test x"$ac_cv_func_clock_gettime" != xyes; then
