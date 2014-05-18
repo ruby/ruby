@@ -7214,3 +7214,7 @@ rb_w32_pow(double x, double y)
     return r;
 }
 #endif
+
+#if RUBY_MSVCRT_VERSION < 120
+#include "missing/nextafter.c"
+#endif
