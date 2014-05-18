@@ -693,7 +693,7 @@ etc_uname(VALUE obj)
 /*
  * Returns system configuration variable using sysconf().
  *
- * _name_ should be a constant undef <code>Etc</code> which begins with <code>SC_</code>.
+ * _name_ should be a constant under <code>Etc</code> which begins with <code>SC_</code>.
  *
  * The return value is an integer or nil.
  * nil means indefinite limit.  (sysconf() returns -1 but errno is not set.)
@@ -730,7 +730,7 @@ etc_sysconf(VALUE obj, VALUE arg)
 /*
  * Returns system configuration variable using confstr().
  *
- * _name_ should be a constant undef <code>Etc</code> which begins with <code>CS_</code>.
+ * _name_ should be a constant under <code>Etc</code> which begins with <code>CS_</code>.
  *
  * The return value is a string or nil.
  * nil means no configuration-defined value.  (confstr() returns 0 but errno is not set.)
@@ -777,11 +777,12 @@ etc_confstr(VALUE obj, VALUE arg)
 /*
  * Returns pathname configuration variable using fpathconf().
  *
- * _name_ should be a constant undef <code>Etc</code> which begins with <code>PC_</code>.
+ * _name_ should be a constant under <code>Etc</code> which begins with <code>PC_</code>.
  *
  * The return value is an integer or nil.
  * nil means indefinite limit.  (fpathconf() returns -1 but errno is not set.)
  *
+ *   require 'etc'
  *   IO.pipe {|r, w|
  *     p w.pathconf(Etc::PC_PIPE_BUF) #=> 4096
  *   }
