@@ -1,3 +1,5 @@
+#include "ruby/missing.h"
+
 #include <math.h>
 #include <float.h>
 
