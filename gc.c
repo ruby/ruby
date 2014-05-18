@@ -371,7 +371,7 @@ typedef struct RVALUE {
     } as;
 #if GC_DEBUG
     const char *file;
-    VALUE line;
+    int line;
 #endif
 } RVALUE;
 
@@ -7503,7 +7503,7 @@ rb_gcdebug_print_obj_condition(VALUE obj)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
-    fprintf(stderr, "created at: %s:%d\n", RSTRING_PTR(RANY(obj)->file), FIX2INT(RANY(obj)->line));
+    fprintf(stderr, "created at: %s:%d\n", RANY(obj)->file, RANY(obj)->line);
 
     if (is_pointer_to_heap(objspace, (void *)obj)) {
         fprintf(stderr, "pointer to heap?: true\n");
