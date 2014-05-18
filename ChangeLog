@@ -1,3 +1,9 @@
+Sun May 18 16:42:08 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_m17n_comb.rb (test_str_crypt): Use Etc.confstr to
+	  detect the glibc version.
+	  libc.so is not an executable on Debian GNU/kFreeBSD 7.0 (wheezy).
+
 Sun May 18 12:15:54 2014  Jonathan Mukai-Heidt  <johnnymukai@gmail.com>
 
 	* io.c (argf_each_line, argf_inplace_mode_set): [DOC] Update ARGF

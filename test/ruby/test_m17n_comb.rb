@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'etc'
 require_relative 'allpairs'
 
 class TestM17NComb < Test::Unit::TestCase
@@ -724,12 +725,11 @@ class TestM17NComb < Test::Unit::TestCase
   end
 
   def test_str_crypt
-    begin
-      # glibc 2.16 or later denies salt contained other than [0-9A-Za-z./] #7312
-      glibcpath = `ldd #{RbConfig.ruby}`[/\S+\/libc.so\S+/]
-      glibcver = `#{glibcpath}`[/\AGNU C Library.*version ([0-9.]+)/, 1].split('.').map(&:to_i)
-      strict_crypt = (glibcver <=> [2, 16]) > -1
-    rescue
+    strict_crypt = nil
+    # glibc 2.16 or later denies salt contained other than [0-9A-Za-z./] #7312
+    if defined? Etc::Etc::CS_GNU_LIBC_VERSION
+      glibcver = Etc.confstr(Etc::CS_GNU_LIBC_VERSION).scan(/\d+/).map(&:to_i)
+      strict_crypt = (glibcver <=> [2, 16]) >= 0
     end
 
     combination(STRINGS, STRINGS) {|str, salt|
