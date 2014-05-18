@@ -168,6 +168,10 @@ RUBY_EXTERN int isnan(double);
 # endif
 #endif
 
+#ifndef HAVE_NEXTAFTER
+RUBY_EXTERN double nextafter(double x, double y);
+#endif
+
 /*
 #ifndef HAVE_MEMCMP
 RUBY_EXTERN int memcmp(const void *, const void *, size_t);

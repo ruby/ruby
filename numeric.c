@@ -1480,6 +1480,119 @@ flo_is_finite_p(VALUE num)
 
 /*
  *  call-seq:
+ *     float.next_float  ->  float
+ *
+ *  Returns the next representable floating-point number.
+ *
+ *  Float::MAX.next_float and Float::INFINITY.next_float is Float::INFINITY.
+ *
+ *  Float::NAN.next_float is Float::NAN.
+ *
+ *  For example:
+ *
+ *    p 0.01.next_float  #=> 0.010000000000000002
+ *    p 1.0.next_float   #=> 1.0000000000000002
+ *    p 100.0.next_float #=> 100.00000000000001
+ *
+ *    p 0.01.next_float - 0.01   #=> 1.734723475976807e-18
+ *    p 1.0.next_float - 1.0     #=> 2.220446049250313e-16
+ *    p 100.0.next_float - 100.0 #=> 1.4210854715202004e-14
+ *
+ *    f = 0.01; 20.times { printf "%-20a %s\n", f, f.to_s; f = f.next_float }
+ *    #=> 0x1.47ae147ae147bp-7 0.01
+ *    #   0x1.47ae147ae147cp-7 0.010000000000000002
+ *    #   0x1.47ae147ae147dp-7 0.010000000000000004
+ *    #   0x1.47ae147ae147ep-7 0.010000000000000005
+ *    #   0x1.47ae147ae147fp-7 0.010000000000000007
+ *    #   0x1.47ae147ae148p-7  0.010000000000000009
+ *    #   0x1.47ae147ae1481p-7 0.01000000000000001
+ *    #   0x1.47ae147ae1482p-7 0.010000000000000012
+ *    #   0x1.47ae147ae1483p-7 0.010000000000000014
+ *    #   0x1.47ae147ae1484p-7 0.010000000000000016
+ *    #   0x1.47ae147ae1485p-7 0.010000000000000018
+ *    #   0x1.47ae147ae1486p-7 0.01000000000000002
+ *    #   0x1.47ae147ae1487p-7 0.010000000000000021
+ *    #   0x1.47ae147ae1488p-7 0.010000000000000023
+ *    #   0x1.47ae147ae1489p-7 0.010000000000000024
+ *    #   0x1.47ae147ae148ap-7 0.010000000000000026
+ *    #   0x1.47ae147ae148bp-7 0.010000000000000028
+ *    #   0x1.47ae147ae148cp-7 0.01000000000000003
+ *    #   0x1.47ae147ae148dp-7 0.010000000000000031
+ *    #   0x1.47ae147ae148ep-7 0.010000000000000033
+ *
+ *    f = 0.0
+ *    100.times { f += 0.1 }
+ *    p f                            #=> 9.99999999999998       # should be 10.0 in the ideal world.
+ *    p 10-f                         #=> 1.9539925233402755e-14 # the floating-point error.
+ *    p(10.0.next_float-10)          #=> 1.7763568394002505e-15 # 1 ulp (units in the last place).
+ *    p((10-f)/(10.0.next_float-10)) #=> 11.0                   # the error is 11 ulp.
+ *    p((10-f)/(10*Float::EPSILON))  #=> 8.8                    # approximation of the above.
+ *    p "%a" % f                     #=> "0x1.3fffffffffff5p+3" # the last hex digit is 5.  16 - 5 = 11 ulp.
+ *
+ */
+static VALUE
+flo_next_float(VALUE vx)
+{
+    double x, y;
+    x = NUM2DBL(vx);
+    y = nextafter(x, INFINITY);
+    return DBL2NUM(y);
+}
+
+/*
+ *  call-seq:
+ *     float.prev_float  ->  float
+ *
+ *  Returns the previous representable floatint-point number.
+ *
+ *  (-Float::MAX).prev_float and (-Float::INFINITY).prev_float is -Float::INFINITY.
+ *
+ *  Float::NAN.prev_float is Float::NAN.
+ *
+ *  For example:
+ *
+ *    p 0.01.prev_float  #=> 0.009999999999999998
+ *    p 1.0.prev_float   #=> 0.9999999999999999
+ *    p 100.0.prev_float #=> 99.99999999999999
+ *
+ *    p 0.01 - 0.01.prev_float   #=> 1.734723475976807e-18
+ *    p 1.0 - 1.0.prev_float     #=> 1.1102230246251565e-16
+ *    p 100.0 - 100.0.prev_float #=> 1.4210854715202004e-14
+ *
+ *    f = 0.01; 20.times { printf "%-20a %s\n", f, f.to_s; f = f.prev_float }
+ *    #=> 0x1.47ae147ae147bp-7 0.01
+ *    #   0x1.47ae147ae147ap-7 0.009999999999999998
+ *    #   0x1.47ae147ae1479p-7 0.009999999999999997
+ *    #   0x1.47ae147ae1478p-7 0.009999999999999995
+ *    #   0x1.47ae147ae1477p-7 0.009999999999999993
+ *    #   0x1.47ae147ae1476p-7 0.009999999999999992
+ *    #   0x1.47ae147ae1475p-7 0.00999999999999999
+ *    #   0x1.47ae147ae1474p-7 0.009999999999999988
+ *    #   0x1.47ae147ae1473p-7 0.009999999999999986
+ *    #   0x1.47ae147ae1472p-7 0.009999999999999985
+ *    #   0x1.47ae147ae1471p-7 0.009999999999999983
+ *    #   0x1.47ae147ae147p-7  0.009999999999999981
+ *    #   0x1.47ae147ae146fp-7 0.00999999999999998
+ *    #   0x1.47ae147ae146ep-7 0.009999999999999978
+ *    #   0x1.47ae147ae146dp-7 0.009999999999999976
+ *    #   0x1.47ae147ae146cp-7 0.009999999999999974
+ *    #   0x1.47ae147ae146bp-7 0.009999999999999972
+ *    #   0x1.47ae147ae146ap-7 0.00999999999999997
+ *    #   0x1.47ae147ae1469p-7 0.009999999999999969
+ *    #   0x1.47ae147ae1468p-7 0.009999999999999967
+ *
+ */
+static VALUE
+flo_prev_float(VALUE vx)
+{
+    double x, y;
+    x = NUM2DBL(vx);
+    y = nextafter(x, -INFINITY);
+    return DBL2NUM(y);
+}
+
+/*
+ *  call-seq:
  *     float.floor  ->  integer
  *
  *  Returns the largest integer less than or equal to +float+.
@@ -4106,6 +4219,8 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "nan?",      flo_is_nan_p, 0);
     rb_define_method(rb_cFloat, "infinite?", flo_is_infinite_p, 0);
     rb_define_method(rb_cFloat, "finite?",   flo_is_finite_p, 0);
+    rb_define_method(rb_cFloat, "next_float", flo_next_float, 0);
+    rb_define_method(rb_cFloat, "prev_float", flo_prev_float, 0);
 
     sym_to = ID2SYM(rb_intern("to"));
     sym_by = ID2SYM(rb_intern("by"));

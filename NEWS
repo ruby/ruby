@@ -25,6 +25,11 @@ with all sufficient information, see the ChangeLog file.
 * File
   * new class File::Statfs to hold filesystem information. (experimental)
 
+* Float
+  * New methods:
+    * Float#next_float
+    * Float#prev_float
+
 * IO
   * New methods
     * IO#statfs returns filesystem information as File::Statfs. (experimental)

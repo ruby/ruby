@@ -1,3 +1,15 @@
+Sun May 18 09:16:33 2014  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: Check nextafter() availability.
+
+	* include/ruby/missing.h (nextafter): New optional declaration.
+
+	* missing/nextafter.c: New file.
+
+	* numeric.c: Float#next_float and Float#prev_float implemented.
+
+	   [ruby-core:62562] [Feature #9834]
+
 Sun May 18 09:02:17 2014  Tanaka Akira  <akr@fsij.org>
 
 	* enum.c: Enumerable#slice_after implemented.
