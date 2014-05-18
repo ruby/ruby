@@ -3094,7 +3094,7 @@ struct sliceafter_arg {
 static VALUE
 sliceafter_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
 {
-#define UPDATE_MEMO ((memo = MEMO_FOR(struct sliceafter_arg, _memo)), 1)
+#define UPDATE_MEMO ((void)(memo = MEMO_FOR(struct sliceafter_arg, _memo)))
     struct sliceafter_arg *memo;
     int split_p;
     UPDATE_MEMO;
