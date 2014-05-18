@@ -235,9 +235,9 @@ LIBS = $(LIBS) iphlpapi.lib
 LIBS = $(LIBS) imagehlp.lib shlwapi.lib $(EXTLIBS)
 !endif
 !if !defined(MISSING)
-MISSING = crypt.obj ffs.obj langinfo.obj lgamma_r.obj nextafter.obj strlcat.obj strlcpy.obj win32/win32.obj win32/file.obj setproctitle.obj
+MISSING = crypt.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj win32/win32.obj win32/file.obj setproctitle.obj
 !if $(RT_VER) < 120
-MISSING = $(MISSING) acosh.obj cbrt.obj erf.obj tgamma.obj
+MISSING = $(MISSING) acosh.obj cbrt.obj erf.obj tgamma.obj nextafter.obj finite.obj isnan.obj
 !endif
 !endif
 DLNOBJ = dln.obj
@@ -651,6 +651,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_ERFC 1
 #define HAVE_ROUND 1
 #define HAVE_TGAMMA 1
+#define HAVE_NEXTAFTER 1
 !endif
 #define HAVE_ALLOCA 1
 #define HAVE_DUP2 1
