@@ -1,3 +1,9 @@
+Sun May 18 12:15:54 2014  Jonathan Mukai-Heidt  <johnnymukai@gmail.com>
+
+	* io.c (argf_each_line, argf_inplace_mode_set): [DOC] Update ARGF
+	  documentation examples.  `ARGF.lines` has been deprecated in
+	  favor of `ARGF.each_line`.  [Fixes GH-615]
+
 Sun May 18 11:59:25 2014  Tanaka Akira  <akr@fsij.org>
 
 	* missing/nextafter.c: Include ruby/missing.h.
