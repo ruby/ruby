@@ -154,7 +154,7 @@ class TestEtc < Test::Unit::TestCase
     rescue ArgumentError
     end
     IO.pipe {|r, w|
-      val = r.pathconf(Etc::PC_PIPE_BUF)
+      val = w.pathconf(Etc::PC_PIPE_BUF)
       assert(val.nil? || val.kind_of?(Integer))
     }
   end

@@ -782,7 +782,9 @@ etc_confstr(VALUE obj, VALUE arg)
  * The return value is an integer or nil.
  * nil means indefinite limit.  (fpathconf() returns -1 but errno is not set.)
  *
- *   open("/") {|f| p f.pathconf(Etc::PC_NAME_MAX) } #=> 255
+ *   IO.pipe {|r, w|
+ *     p w.pathconf(Etc::PC_PIPE_BUF) #=> 4096
+ *   }
  *
  */
 static VALUE
