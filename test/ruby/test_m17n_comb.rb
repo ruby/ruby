@@ -727,7 +727,7 @@ class TestM17NComb < Test::Unit::TestCase
   def test_str_crypt
     strict_crypt = nil
     # glibc 2.16 or later denies salt contained other than [0-9A-Za-z./] #7312
-    if defined? Etc::Etc::CS_GNU_LIBC_VERSION
+    if defined? Etc::CS_GNU_LIBC_VERSION
       glibcver = Etc.confstr(Etc::CS_GNU_LIBC_VERSION).scan(/\d+/).map(&:to_i)
       strict_crypt = (glibcver <=> [2, 16]) >= 0
     end
