@@ -1,3 +1,8 @@
+Mon May 19 14:06:18 2014  Shota Fukumori  <her@sorah.jp>
+
+	* bin/testrb: Removed. Forgot to remove in r45971.
+	  [Feature #9711] [ruby-core:62620]
+
 Sun May 18 16:42:08 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_m17n_comb.rb (test_str_crypt): Use Etc.confstr to
