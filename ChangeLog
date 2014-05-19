@@ -107,7 +107,7 @@ Sun May 18 01:21:23 2014  Tanaka Akira  <akr@fsij.org>
 	* include/ruby/intern.h (rb_rational_num): Declared.
 	  (rb_rational_den): Ditto.
 
-	*  ext/bigdecimal/bigdecimal.c: Follow the above change.
+	* ext/bigdecimal/bigdecimal.c: Follow the above change.
 
 	* ext/date/date_core.c: Ditto.
 
@@ -150,7 +150,7 @@ Sat May 17 11:02:49 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sat May 17 01:49:27 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* dir.c (glob_helper): reduce matching at non-mgaical path on
+	* dir.c (glob_helper): reduce matching at non-magical path on
 	  Windows.
 
 Sat May 17 01:49:23 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
