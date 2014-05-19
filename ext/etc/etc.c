@@ -705,7 +705,7 @@ etc_uname(VALUE obj)
 # if defined _MSC_VER && _MSC_VER < 1300
 #   define GET_COMPUTER_NAME(ptr, plen) GetComputerNameW(ptr, plen)
 # else
-#   define GET_COMPUTER_NAME(ptr, plen) GetComputerNameExW(ComputerNameDnsFullyQualified, ptr, len);
+#   define GET_COMPUTER_NAME(ptr, plen) GetComputerNameExW(ComputerNameDnsFullyQualified, ptr, plen)
 # endif
     GET_COMPUTER_NAME(NULL, &len);
     buf = ALLOCV_N(WCHAR, vbuf, len);
