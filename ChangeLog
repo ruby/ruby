@@ -1,3 +1,8 @@
+Tue May 20 04:58:54 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/extconf.rb: Don't check fields of struct tcp_info if the
+	  structure is not available.
+
 Mon May 19 23:13:33 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/option.c (inspect_tcp_info): Permit longer data.  (glibc
