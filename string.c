@@ -2572,7 +2572,7 @@ rb_str_casecmp(VALUE str1, VALUE str2)
 static long
 rb_str_index(VALUE str, VALUE sub, long offset)
 {
-    char *s, *sptr, *e;
+    const char *s, *sptr, *e;
     long pos, len, slen;
     int single_byte = single_byte_optimizable(str);
     rb_encoding *enc;
@@ -2600,7 +2600,7 @@ rb_str_index(VALUE str, VALUE sub, long offset)
     slen = RSTRING_LEN(sub);
     len = RSTRING_LEN(str) - offset;
     for (;;) {
-	char *t;
+	const char *t;
 	pos = rb_memsearch(sptr, slen, s, len, enc);
 	if (pos < 0) return pos;
 	t = rb_enc_right_char_head(s, s+pos, e, enc);
