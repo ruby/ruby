@@ -834,6 +834,9 @@ class TestString < Test::Unit::TestCase
     assert_equal Encoding::UTF_8, a.gsub(/world/, c).encoding
 
     assert_equal S("a\u{e9}apos&lt;"), S("a\u{e9}'&lt;").gsub("'", "apos")
+
+    bug9849 = '[ruby-core:62669] [Bug #9849]'
+    assert_equal S("\u{3042 3042 3042}!foo!"), S("\u{3042 3042 3042}/foo/").gsub("/", "!"), bug9849
   end
 
   def test_gsub!

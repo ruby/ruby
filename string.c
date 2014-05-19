@@ -2569,8 +2569,10 @@ rb_str_casecmp(VALUE str1, VALUE str2)
     return INT2FIX(-1);
 }
 
+#define rb_str_index(str, sub, offset) rb_strseq_index(str, sub, offset, 0)
+
 static long
-rb_str_index(VALUE str, VALUE sub, long offset)
+rb_strseq_index(VALUE str, VALUE sub, long offset, int in_byte)
 {
     const char *s, *sptr, *e;
     long pos, len, slen;
@@ -2580,8 +2582,8 @@ rb_str_index(VALUE str, VALUE sub, long offset)
     enc = rb_enc_check(str, sub);
     if (is_broken_string(sub)) return -1;
 
-    len = single_byte ? RSTRING_LEN(str) : str_strlen(str, enc); /* rb_enc_check */
-    slen = str_strlen(sub, enc); /* rb_enc_check */
+    len = (in_byte || single_byte) ? RSTRING_LEN(str) : str_strlen(str, enc); /* rb_enc_check */
+    slen = in_byte ? RSTRING_LEN(sub) : str_strlen(sub, enc); /* rb_enc_check */
     if (offset < 0) {
 	offset += len;
 	if (offset < 0) return -1;
@@ -2591,7 +2593,7 @@ rb_str_index(VALUE str, VALUE sub, long offset)
     s = RSTRING_PTR(str);
     e = RSTRING_END(str);
     if (offset) {
-	offset = str_offset(s, e, offset, enc, single_byte);
+	if (!in_byte) offset = str_offset(s, e, offset, enc, single_byte);
 	s += offset;
     }
     if (slen == 0) return offset;
@@ -3873,7 +3875,7 @@ static long
 rb_pat_search(VALUE pat, VALUE str, long pos, int set_backref_str)
 {
     if (BUILTIN_TYPE(pat) == T_STRING) {
-	pos = rb_str_index(str, pat, pos);
+	pos = rb_strseq_index(str, pat, pos, 1);
 	if (set_backref_str) {
 	    if (pos >= 0) {
 		VALUE match;

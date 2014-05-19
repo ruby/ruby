@@ -1,3 +1,8 @@
+Mon May 19 16:29:48 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_pat_search): advance by byte offset but not by char
+	  offset.  [ruby-core:62669] [Bug #9849]
+
 Mon May 19 14:06:18 2014  Shota Fukumori  <her@sorah.jp>
 
 	* bin/testrb: Removed. Forgot to remove in r45971.
