@@ -702,9 +702,10 @@ etc_uname(VALUE obj)
 			 rb_w32_conv_from_wchar(v.szCSDVersion, rb_utf8_encoding()));
     rb_hash_aset(result, ID2SYM(rb_intern("version")), version);
 
-    GetComputerNameExW(ComputerNameDnsFullyQualified, NULL, &len);
+#   define GET_COMPUTER_NAME(ptr, plen) GetComputerNameExW(ComputerNameDnsFullyQualified, ptr, len);
+    GET_COMPUTER_NAME(NULL, &len);
     buf = ALLOCV_N(WCHAR, vbuf, len);
-    if (GetComputerNameExW(ComputerNameDnsHostname, buf, &len)) {
+    if (GET_COMPUTER_NAME(buf, &len)) {
 	nodename = rb_w32_conv_from_wchar(buf, rb_utf8_encoding());
     }
     ALLOCV_END(vbuf);
