@@ -1,3 +1,9 @@
+Mon May 19 23:13:33 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/option.c (inspect_tcp_info): Permit longer data.  (glibc
+	  2.7 adds tcpi_rcv_rtt, tcpi_rcv_space and tcpi_total_retrans to
+	  struct tcp_info.)
+
 Mon May 19 20:49:07 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/option.c (inspect_tcp_info): New function to inspect

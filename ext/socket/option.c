@@ -920,7 +920,8 @@ inspect_tcpi_msec(VALUE ret, const char *prefix, u_int32_t t)
 static int
 inspect_tcp_info(int level, int optname, VALUE data, VALUE ret)
 {
-    if (RSTRING_LEN(data) == sizeof(struct tcp_info)) {
+    size_t actual_size = RSTRING_LEN(data);
+    if (sizeof(struct tcp_info) <= actual_size) {
         struct tcp_info s;
         memcpy((char*)&s, RSTRING_PTR(data), sizeof(s));
 #ifdef HAVE_STRUCT_TCP_INFO_TCPI_STATE
@@ -1063,6 +1064,8 @@ inspect_tcp_info(int level, int optname, VALUE data, VALUE ret)
 #ifdef HAVE_STRUCT_TCP_INFO_TCPI_SND_ZEROWIN
         rb_str_catf(ret, " snd_zerowin=%u", s.tcpi_snd_zerowin); /* FreeBSD */
 #endif
+        if (sizeof(struct tcp_info) < actual_size)
+            rb_str_catf(ret, " (%u bytes too long)", (unsigned)(actual_size - sizeof(struct tcp_info)));
         return 1;
     }
     else {
