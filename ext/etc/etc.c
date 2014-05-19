@@ -40,6 +40,7 @@ static VALUE sGroup;
 #ifndef CSIDL_COMMON_APPDATA
 #define CSIDL_COMMON_APPDATA 35
 #endif
+#define HAVE_UNAME 1
 #endif
 
 #ifndef _WIN32
@@ -668,6 +669,69 @@ etc_systmpdir(void)
 static VALUE
 etc_uname(VALUE obj)
 {
+#ifdef _WIN32
+    OSVERSIONINFOW v;
+    SYSTEM_INFO s;
+    const char *sysname, *mach;
+    VALUE result, release, version;
+    VALUE vbuf, nodename = Qnil;
+    DWORD len = 0;
+    WCHAR *buf;
+
+    v.dwOSVersionInfoSize = sizeof(v);
+    if (!GetVersionExW(&v))
+        rb_sys_fail("GetVersionEx");
+
+    result = rb_hash_new();
+    switch (v.dwPlatformId) {
+      case VER_PLATFORM_WIN32s:
+	sysname = "Win32s";
+	break;
+      case VER_PLATFORM_WIN32_NT:
+	sysname = "Windows_NT";
+	break;
+      case VER_PLATFORM_WIN32_WINDOWS:
+      default:
+	sysname = "Windows";
+	break;
+    }
+    rb_hash_aset(result, ID2SYM(rb_intern("sysname")), rb_str_new_cstr(sysname));
+    release = rb_sprintf("%lu.%lu.%lu", v.dwMajorVersion, v.dwMinorVersion, v.dwBuildNumber);
+    rb_hash_aset(result, ID2SYM(rb_intern("release")), release);
+    version = rb_sprintf("%s Version %"PRIsVALUE": %"PRIsVALUE, sysname, release,
+			 rb_w32_conv_from_wchar(v.szCSDVersion, rb_utf8_encoding()));
+    rb_hash_aset(result, ID2SYM(rb_intern("version")), version);
+
+    GetComputerNameExW(ComputerNameDnsFullyQualified, NULL, &len);
+    buf = ALLOCV_N(WCHAR, vbuf, len);
+    if (GetComputerNameExW(ComputerNameDnsHostname, buf, &len)) {
+	nodename = rb_w32_conv_from_wchar(buf, rb_utf8_encoding());
+    }
+    ALLOCV_END(vbuf);
+    if (NIL_P(nodename)) nodename = rb_str_new(0, 0);
+    rb_hash_aset(result, ID2SYM(rb_intern("nodename")), nodename);
+
+    GetSystemInfo(&s);
+    switch (s.wProcessorArchitecture) {
+      case PROCESSOR_ARCHITECTURE_AMD64:
+	mach = "x64";
+	break;
+      case PROCESSOR_ARCHITECTURE_ARM:
+	mach = "ARM";
+	break;
+      case PROCESSOR_ARCHITECTURE_IA64:
+	mach = "IA64";
+	break;
+      case PROCESSOR_ARCHITECTURE_INTEL:
+	mach = "x86";
+	break;
+      default:
+	mach = "unknown";
+	break;
+    }
+
+    rb_hash_aset(result, ID2SYM(rb_intern("machine")), rb_str_new_cstr(mach));
+#else
     struct utsname u;
     int ret;
     VALUE result;
@@ -682,6 +746,7 @@ etc_uname(VALUE obj)
     rb_hash_aset(result, ID2SYM(rb_intern("release")), rb_str_new_cstr(u.release));
     rb_hash_aset(result, ID2SYM(rb_intern("version")), rb_str_new_cstr(u.version));
     rb_hash_aset(result, ID2SYM(rb_intern("machine")), rb_str_new_cstr(u.machine));
+#endif
 
     return result;
 }

@@ -1,3 +1,9 @@
+Mon May 19 16:54:22 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/etc/etc.c (etc_uname): add support for Windows using
+	  GetVersionExW(), GetSystemInfo(), and GetComputerNameExW() with
+	  `ComputerNameDnsHostname`.  [Feature #9842]
+
 Mon May 19 16:29:48 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_pat_search): advance by byte offset but not by char
