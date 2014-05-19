@@ -702,7 +702,11 @@ etc_uname(VALUE obj)
 			 rb_w32_conv_from_wchar(v.szCSDVersion, rb_utf8_encoding()));
     rb_hash_aset(result, ID2SYM(rb_intern("version")), version);
 
+# if defined _MSC_VER && _MSC_VER < 1300
+#   define GET_COMPUTER_NAME(ptr, plen) GetComputerNameW(ptr, plen)
+# else
 #   define GET_COMPUTER_NAME(ptr, plen) GetComputerNameExW(ComputerNameDnsFullyQualified, ptr, len);
+# endif
     GET_COMPUTER_NAME(NULL, &len);
     buf = ALLOCV_N(WCHAR, vbuf, len);
     if (GET_COMPUTER_NAME(buf, &len)) {
@@ -712,6 +716,15 @@ etc_uname(VALUE obj)
     if (NIL_P(nodename)) nodename = rb_str_new(0, 0);
     rb_hash_aset(result, ID2SYM(rb_intern("nodename")), nodename);
 
+# ifndef PROCESSOR_ARCHITECTURE_AMD64
+#   define PROCESSOR_ARCHITECTURE_AMD64 9
+# endif
+# ifndef PROCESSOR_ARCHITECTURE_IA64
+#   define PROCESSOR_ARCHITECTURE_IA64 6
+# endif
+# ifndef PROCESSOR_ARCHITECTURE_INTEL
+#   define PROCESSOR_ARCHITECTURE_INTEL 0
+# endif
     GetSystemInfo(&s);
     switch (s.wProcessorArchitecture) {
       case PROCESSOR_ARCHITECTURE_AMD64:
