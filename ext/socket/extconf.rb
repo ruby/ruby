@@ -309,6 +309,7 @@ end
   xti.h
   netinet/in_systm.h
   netinet/tcp.h
+  netinet/tcp_fsm.h
   netinet/udp.h
   arpa/inet.h
   netpacket/packet.h
@@ -369,6 +370,61 @@ have_type("struct ipv6_mreq", headers) # RFC 3493
 have_msg_control = nil
 have_msg_control = have_struct_member('struct msghdr', 'msg_control', headers) unless $mswin or $mingw
 have_struct_member('struct msghdr', 'msg_accrights', headers)
+
+have_type("struct tcp_info", headers)
+have_const("TCP_ESTABLISHED", headers)
+have_const("TCP_SYN_SENT", headers)
+have_const("TCP_SYN_RECV", headers)
+have_const("TCP_FIN_WAIT1", headers)
+have_const("TCP_FIN_WAIT2", headers)
+have_const("TCP_TIME_WAIT", headers)
+have_const("TCP_CLOSE", headers)
+have_const("TCP_CLOSE_WAIT", headers)
+have_const("TCP_LAST_ACK", headers)
+have_const("TCP_LISTEN", headers)
+have_const("TCP_CLOSING", headers)
+have_struct_member('struct tcp_info', 'tcpi_state', headers)
+have_struct_member('struct tcp_info', 'tcpi_ca_state', headers)
+have_struct_member('struct tcp_info', 'tcpi_retransmits', headers)
+have_struct_member('struct tcp_info', 'tcpi_probes', headers)
+have_struct_member('struct tcp_info', 'tcpi_backoff', headers)
+have_struct_member('struct tcp_info', 'tcpi_options', headers)
+have_struct_member('struct tcp_info', 'tcpi_snd_wscale', headers)
+have_struct_member('struct tcp_info', 'tcpi_rcv_wscale', headers)
+have_struct_member('struct tcp_info', 'tcpi_rto', headers)
+have_struct_member('struct tcp_info', 'tcpi_ato', headers)
+have_struct_member('struct tcp_info', 'tcpi_snd_mss', headers)
+have_struct_member('struct tcp_info', 'tcpi_rcv_mss', headers)
+have_struct_member('struct tcp_info', 'tcpi_unacked', headers)
+have_struct_member('struct tcp_info', 'tcpi_sacked', headers)
+have_struct_member('struct tcp_info', 'tcpi_lost', headers)
+have_struct_member('struct tcp_info', 'tcpi_retrans', headers)
+have_struct_member('struct tcp_info', 'tcpi_fackets', headers)
+have_struct_member('struct tcp_info', 'tcpi_last_data_sent', headers)
+have_struct_member('struct tcp_info', 'tcpi_last_ack_sent', headers)
+have_struct_member('struct tcp_info', 'tcpi_last_data_recv', headers)
+have_struct_member('struct tcp_info', 'tcpi_last_ack_recv', headers)
+have_struct_member('struct tcp_info', 'tcpi_pmtu', headers)
+have_struct_member('struct tcp_info', 'tcpi_rcv_ssthresh', headers)
+have_struct_member('struct tcp_info', 'tcpi_rtt', headers)
+have_struct_member('struct tcp_info', 'tcpi_rttvar', headers)
+have_struct_member('struct tcp_info', 'tcpi_snd_ssthresh', headers)
+have_struct_member('struct tcp_info', 'tcpi_snd_cwnd', headers)
+have_struct_member('struct tcp_info', 'tcpi_advmss', headers)
+have_struct_member('struct tcp_info', 'tcpi_reordering', headers)
+have_struct_member('struct tcp_info', 'tcpi_rcv_rtt', headers)
+have_struct_member('struct tcp_info', 'tcpi_rcv_space', headers)
+have_struct_member('struct tcp_info', 'tcpi_total_retrans', headers)
+
+# FreeBSD extension
+have_struct_member('struct tcp_info', 'tcpi_snd_wnd', headers)
+have_struct_member('struct tcp_info', 'tcpi_snd_bwnd', headers)
+have_struct_member('struct tcp_info', 'tcpi_snd_nxt', headers)
+have_struct_member('struct tcp_info', 'tcpi_rcv_nxt', headers)
+have_struct_member('struct tcp_info', 'tcpi_toe_tid', headers)
+have_struct_member('struct tcp_info', 'tcpi_snd_rexmitpack', headers)
+have_struct_member('struct tcp_info', 'tcpi_rcv_ooopack', headers)
+have_struct_member('struct tcp_info', 'tcpi_snd_zerowin', headers)
 
 case RUBY_PLATFORM
 when /mswin(32|64)|mingw/

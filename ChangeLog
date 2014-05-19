@@ -1,3 +1,13 @@
+Mon May 19 20:49:07 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/option.c (inspect_tcp_info): New function to inspect
+	  struct tcp_info.
+	  (sockopt_inspect): Use inspect_tcp_info.
+
+	* ext/socket/extconf.rb: Check tcp_info related things.
+
+	* ext/socket/rubysocket.h: Include netinet/tcp_fsm.h if available.
+
 Mon May 19 19:36:39 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/dbm/test_dbm.rb: Use Etc.uname.
