@@ -14,12 +14,8 @@ if defined? GDBM
       require 'rbconfig'
       case RbConfig::CONFIG['target_os']
       when 'cygwin'
-        require 'Win32API'
-        uname = Win32API.new('cygwin1', 'uname', 'P', 'I')
-        utsname = ' ' * 100
-        raise 'cannot get system name' if uname.call(utsname) == -1
-
-        utsname.unpack('A20' * 5)[0]
+        require 'etc'
+	Etc.uname[:sysname]
       else
         RbConfig::CONFIG['target_os']
       end

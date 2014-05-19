@@ -1,3 +1,9 @@
+Mon May 19 19:36:39 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/dbm/test_dbm.rb: Use Etc.uname.
+
+	* test/gdbm/test_gdbm.rb: Ditto.
+
 Mon May 19 16:54:22 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/etc/etc.c (etc_uname): add support for Windows using
