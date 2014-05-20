@@ -1930,7 +1930,7 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
 
     if (hash1 == hash2) return Qtrue;
     if (!RB_TYPE_P(hash2, T_HASH)) {
-	if (!rb_respond_to(hash2, rb_intern("to_hash"))) {
+	if (!rb_respond_to(hash2, idTo_hash)) {
 	    return Qfalse;
 	}
 	if (eql)

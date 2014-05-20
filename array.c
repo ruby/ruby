@@ -3759,7 +3759,7 @@ rb_ary_equal(VALUE ary1, VALUE ary2)
 {
     if (ary1 == ary2) return Qtrue;
     if (!RB_TYPE_P(ary2, T_ARRAY)) {
-	if (!rb_respond_to(ary2, rb_intern("to_ary"))) {
+	if (!rb_respond_to(ary2, idTo_ary)) {
 	    return Qfalse;
 	}
 	return rb_equal(ary2, ary1);
