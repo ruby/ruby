@@ -35,6 +35,7 @@ firstline, predefined = __LINE__+1, %[\
   to_io
   to_a
   to_s
+  to_i
 
   _                                                     UScore
   "/*NULL*/"                                            NULL
