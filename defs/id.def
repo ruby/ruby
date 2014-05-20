@@ -26,6 +26,16 @@ firstline, predefined = __LINE__+1, %[\
   initialize_copy
   initialize_clone
   initialize_dup
+  to_int
+  to_ary
+  to_str
+  to_sym
+  to_hash
+  to_proc
+  to_io
+  to_a
+  to_s
+
   _                                                     UScore
   "/*NULL*/"                                            NULL
   empty?

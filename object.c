@@ -2545,20 +2545,21 @@ rb_mod_singleton_p(VALUE klass)
     return Qfalse;
 }
 
-static struct conv_method_tbl {
-    const char *method;
+static const struct conv_method_tbl {
+    const char method[8];
     ID id;
 } conv_method_names[] = {
-    {"to_int", 0},
-    {"to_ary", 0},
-    {"to_str", 0},
-    {"to_sym", 0},
-    {"to_hash", 0},
-    {"to_proc", 0},
-    {"to_io", 0},
-    {"to_a", 0},
-    {"to_s", 0},
-    {NULL, 0}
+#define M(n) {"to_"#n, idTo_##n}
+    M(int),
+    M(ary),
+    M(str),
+    M(sym),
+    M(hash),
+    M(proc),
+    M(io),
+    M(a),
+    M(s),
+#undef M
 };
 #define IMPLICIT_CONVERSIONS 7
 
@@ -2569,7 +2570,7 @@ convert_type(VALUE val, const char *tname, const char *method, int raise)
     int i;
     VALUE r;
 
-    for (i=0; conv_method_names[i].method; i++) {
+    for (i=0; i < numberof(conv_method_names); i++) {
 	if (conv_method_names[i].method[0] == method[0] &&
 	    strcmp(conv_method_names[i].method, method) == 0) {
 	    m = conv_method_names[i].id;
@@ -3225,8 +3226,6 @@ rb_f_hash(VALUE obj, VALUE arg)
 void
 Init_Object(void)
 {
-    int i;
-
     Init_class_hierarchy();
 
 #if 0
@@ -3439,8 +3438,4 @@ Init_Object(void)
      * An alias of +false+
      */
     rb_define_global_const("FALSE", Qfalse);
-
-    for (i=0; conv_method_names[i].method; i++) {
-	conv_method_names[i].id = rb_intern(conv_method_names[i].method);
-    }
 }
