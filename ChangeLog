@@ -1,3 +1,8 @@
+Tue May 20 20:57:34 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/ruby/test_dir.rb (test_glob): added testcase of double
+	  slash path.
+
 Tue May 20 04:58:54 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: Don't check fields of struct tcp_info if the
