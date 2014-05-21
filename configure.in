@@ -691,13 +691,22 @@ RUBY_WERROR_FLAG([
 	]
     )
     AC_MSG_CHECKING([whether LDFLAGS is valid])
+    {
+	mkdir tmp.$$.try_link &&
+	cd tmp.$$.try_link &&
+	cp ../confdefs.h . &&
+	echo '<?xml?><plist><dict><key>CFBundleIdentifier</key><string></string></dict></plist>' > Info.plist &&
+	:
+    } || AC_MSG_ERROR([faild to make temporary directory])
     AC_TRY_LINK([], [],
 	[AC_MSG_RESULT(yes)],
 	[
+	cd .. && rm -fr tmp.$$.try_link
 	AC_MSG_RESULT(no)
 	AC_MSG_ERROR([something wrong with LDFLAGS="$LDFLAGS"])
 	]
     )
+    cd .. && rm -fr tmp.$$.try_link
 ])
 
 AC_DEFUN(RUBY_TRY_CFLAGS, [

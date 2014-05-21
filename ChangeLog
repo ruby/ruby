@@ -1,3 +1,9 @@
+Wed May 21 11:42:31 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: workaround for Info.plist to get rid of `dsymutil`
+	  crash by wrong files in parent directories.
+	  [ruby-core:62594] [Bug #9840]
+
 Tue May 20 20:57:34 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/ruby/test_dir.rb (test_glob): added testcase of double
