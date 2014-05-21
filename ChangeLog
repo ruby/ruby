@@ -1,3 +1,8 @@
+Wed May 21 12:21:10 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/option.c: Fix complation error on Android.
+	  Bionic doesn't define TCP state constants.
+
 Wed May 21 11:42:31 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: workaround for Info.plist to get rid of `dsymutil`

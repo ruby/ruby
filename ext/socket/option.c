@@ -846,6 +846,40 @@ inspect_ipv6_mreq(int level, int optname, VALUE data, VALUE ret)
 # endif
 #endif
 
+#if defined(HAVE_CONST_TCP_ESTABLISHED) && !defined(TCP_ESTABLISHED)
+# define TCP_ESTABLISHED TCP_ESTABLISHED
+#endif
+#if defined(HAVE_CONST_TCP_SYN_SENT) && !defined(TCP_SYN_SENT)
+# define TCP_SYN_SENT TCP_SYN_SENT
+#endif
+#if defined(HAVE_CONST_TCP_SYN_RECV) && !defined(TCP_SYN_RECV)
+# define TCP_SYN_RECV TCP_SYN_RECV
+#endif
+#if defined(HAVE_CONST_TCP_FIN_WAIT1) && !defined(TCP_FIN_WAIT1)
+# define TCP_FIN_WAIT1 TCP_FIN_WAIT1
+#endif
+#if defined(HAVE_CONST_TCP_FIN_WAIT2) && !defined(TCP_FIN_WAIT2)
+# define TCP_FIN_WAIT2 TCP_FIN_WAIT2
+#endif
+#if defined(HAVE_CONST_TCP_TIME_WAIT) && !defined(TCP_TIME_WAIT)
+# define TCP_TIME_WAIT TCP_TIME_WAIT
+#endif
+#if defined(HAVE_CONST_TCP_CLOSE) && !defined(TCP_CLOSE)
+# define TCP_CLOSE TCP_CLOSE
+#endif
+#if defined(HAVE_CONST_TCP_CLOSE_WAIT) && !defined(TCP_CLOSE_WAIT)
+# define TCP_CLOSE_WAIT TCP_CLOSE_WAIT
+#endif
+#if defined(HAVE_CONST_TCP_LAST_ACK) && !defined(TCP_LAST_ACK)
+# define TCP_LAST_ACK TCP_LAST_ACK
+#endif
+#if defined(HAVE_CONST_TCP_LISTEN) && !defined(TCP_LISTEN)
+# define TCP_LISTEN TCP_LISTEN
+#endif
+#if defined(HAVE_CONST_TCP_CLOSING) && !defined(TCP_CLOSING)
+# define TCP_CLOSING TCP_CLOSING
+#endif
+
 static void
 inspect_tcpi_options(VALUE ret, u_int8_t options)
 {
@@ -926,17 +960,39 @@ inspect_tcp_info(int level, int optname, VALUE data, VALUE ret)
         memcpy((char*)&s, RSTRING_PTR(data), sizeof(s));
 #ifdef HAVE_STRUCT_TCP_INFO_TCPI_STATE
         switch (s.tcpi_state) {
+# ifdef TCP_ESTABLISHED
           case TCP_ESTABLISHED: rb_str_cat_cstr(ret, " state=ESTABLISHED"); break;
+# endif
+# ifdef TCP_SYN_SENT
           case TCP_SYN_SENT: rb_str_cat_cstr(ret, " state=SYN_SENT"); break;
+# endif
+# ifdef TCP_SYN_RECV
           case TCP_SYN_RECV: rb_str_cat_cstr(ret, " state=SYN_RECV"); break;
+# endif
+# ifdef TCP_FIN_WAIT1
           case TCP_FIN_WAIT1: rb_str_cat_cstr(ret, " state=FIN_WAIT1"); break;
+# endif
+# ifdef TCP_FIN_WAIT2
           case TCP_FIN_WAIT2: rb_str_cat_cstr(ret, " state=FIN_WAIT2"); break;
+# endif
+# ifdef TCP_TIME_WAIT
           case TCP_TIME_WAIT: rb_str_cat_cstr(ret, " state=TIME_WAIT"); break;
+# endif
+# ifdef TCP_CLOSE
           case TCP_CLOSE: rb_str_cat_cstr(ret, " state=CLOSED"); break; /* RFC 793 uses "CLOSED", not "CLOSE" */
+# endif
+# ifdef TCP_CLOSE_WAIT
           case TCP_CLOSE_WAIT: rb_str_cat_cstr(ret, " state=CLOSE_WAIT"); break;
+# endif
+# ifdef TCP_LAST_ACK
           case TCP_LAST_ACK: rb_str_cat_cstr(ret, " state=LAST_ACK"); break;
+# endif
+# ifdef TCP_LISTEN
           case TCP_LISTEN: rb_str_cat_cstr(ret, " state=LISTEN"); break;
+# endif
+# ifdef TCP_CLOSING
           case TCP_CLOSING: rb_str_cat_cstr(ret, " state=CLOSING"); break;
+# endif
           default: rb_str_catf(ret, " state=%u", s.tcpi_state); break;
         }
 #endif
