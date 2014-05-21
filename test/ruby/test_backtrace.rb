@@ -234,4 +234,11 @@ class TestBacktrace < Test::Unit::TestCase
     end
     assert_not_match(/\Acore#/, e.backtrace_locations[0].base_label)
   end
+
+  def test_core_backtrace_hash_merge
+    e = assert_raise(TypeError) do
+      {**nil}
+    end
+    assert_not_match(/\Acore#/, e.backtrace_locations[0].base_label)
+  end
 end
