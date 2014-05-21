@@ -519,6 +519,9 @@ cond = proc {|ext, *|
   }.find_all {|ext|
     with_config(ext, &cond)
   }.sort
+  if $LIBRUBYARG_SHARED.empty?
+    exts.delete_if {|d| File.fnmatch?("-*", d)}
+  end
 end
 
 if $extout
