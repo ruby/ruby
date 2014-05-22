@@ -611,22 +611,32 @@ IPX_TYPE
 
 TCP_NODELAY	nil	Don't delay sending to coalesce packets
 TCP_MAXSEG	nil	Set maximum segment size
-TCP_CORK	nil	Don't send partial frames
-TCP_DEFER_ACCEPT	nil	Don't notify a listening socket until data is ready
-TCP_INFO	nil	Retrieve information about this socket
-TCP_KEEPCNT	nil	Maximum number of keepalive probes allowed before dropping a connection
-TCP_KEEPIDLE	nil	Idle time before keepalive probes are sent
-TCP_KEEPINTVL	nil	Time between keepalive probes
-TCP_LINGER2	nil	Lifetime of orphaned FIN_WAIT2 sockets
-TCP_MD5SIG	nil	Use MD5 digests (RFC2385)
+TCP_CORK	nil	Don't send partial frames (Linux 2.2, glibc 2.2)
+TCP_DEFER_ACCEPT	nil	Don't notify a listening socket until data is ready (Linux 2.4, glibc 2.2)
+TCP_INFO	nil	Retrieve information about this socket (Linux 2.4, glibc 2.2)
+TCP_KEEPCNT	nil	Maximum number of keepalive probes allowed before dropping a connection (Linux 2.4, glibc 2.2)
+TCP_KEEPIDLE	nil	Idle time before keepalive probes are sent (Linux 2.4, glibc 2.2)
+TCP_KEEPINTVL	nil	Time between keepalive probes (Linux 2.4, glibc 2.2)
+TCP_LINGER2	nil	Lifetime of orphaned FIN_WAIT2 sockets (Linux 2.4, glibc 2.2)
+TCP_MD5SIG	nil	Use MD5 digests (RFC2385, Linux 2.6.20, glibc 2.7)
 TCP_NOOPT	nil	Don't use TCP options
 TCP_NOPUSH	nil	Don't push the last block of write
-TCP_QUICKACK	nil	Enable quickack mode
-TCP_SYNCNT	nil	Number of SYN retransmits before a connection is dropped
-TCP_WINDOW_CLAMP	nil	Clamp the size of the advertised window
-TCP_FASTOPEN nil Reduce step of the handshake process
+TCP_QUICKACK	nil	Enable quickack mode (Linux 2.4.4, glibc 2.3)
+TCP_SYNCNT	nil	Number of SYN retransmits before a connection is dropped (Linux 2.4, glibc 2.2)
+TCP_WINDOW_CLAMP	nil	Clamp the size of the advertised window (Linux 2.4, glibc 2.2)
+TCP_FASTOPEN nil Reduce step of the handshake process (Linux 3.7, glibc 2.18)
+TCP_CONGESTION  nil     TCP congestion control algorithm (Linux 2.6.13, glibc 2.6)
+TCP_COOKIE_TRANSACTIONS nil     TCP Cookie Transactions (Linux 2.6.33, glibc 2.18)
+TCP_QUEUE_SEQ   nil     Sequence of a queue for repair mode (Linux 3.5, glibc 2.18)
+TCP_REPAIR      nil     Repair mode (Linux 3.5, glibc 2.18)
+TCP_REPAIR_OPTIONS      nil     Options for repair mode (Linux 3.5, glibc 2.18)
+TCP_REPAIR_QUEUE        nil     Queue for repair mode (Linux 3.5, glibc 2.18)
+TCP_THIN_DUPACK nil     Duplicated acknowledgments handling for thin-streams (Linux 2.6.34, glibc 2.18)
+TCP_THIN_LINEAR_TIMEOUTS        nil     Linear timeouts for thin-streams (Linux 2.6.34, glibc 2.18)
+TCP_TIMESTAMP   nil     TCP timestamp (Linux 3.9, glibc 2.18)
+TCP_USER_TIMEOUT        nil     Max timeout before a TCP connection is aborted (Linux 2.6.37, glibc 2.18)
 
-UDP_CORK	nil	Don't send partial frames
+UDP_CORK	nil	Don't send partial frames (Linux 2.5.44, glibc 2.11)
 
 EAI_ADDRFAMILY	nil	Address family for hostname not supported
 EAI_AGAIN	nil	Temporary failure in name resolution

@@ -1,3 +1,8 @@
+Thu May 22 22:58:27 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb: More TCP option constants.
+	  Describe Linux and glibc versions.
+
 Thu May 22 20:38:10 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* file.c (stat_birthtime): add birthtime support [Feature #9647]
