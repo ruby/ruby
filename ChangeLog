@@ -1,3 +1,15 @@
+Thu May 22 20:38:10 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* file.c (stat_birthtime): add birthtime support [Feature #9647]
+
+	* file.c (rb_stat_birthtime): add File::Stat.birthtime
+
+	* file.c (rb_file_s_birthtime): add File.birthtime
+
+	* file.c (rb_file_birthtime): add File#birthtime
+
+	* configure.in: check struct stat.st_birthtimespec.
+
 Thu May 22 19:38:14 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* file.c: remove IO::Statfs because of reject. [Feature #9772]

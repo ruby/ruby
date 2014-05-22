@@ -311,6 +311,31 @@ class TestFile < Test::Unit::TestCase
     assert_equal(mod_time_contents, stats.mtime, bug6385)
   end
 
+  def test_stat
+    file = Tempfile.new("stat")
+    file.close
+    path = file.path
+
+    t0 = Process.clock_gettime(Process::CLOCK_REALTIME)
+    File.write(path, "foo")
+    sleep 2
+    File.write(path, "bar")
+    sleep 2
+    File.chmod(0644, path)
+    sleep 2
+    File.read(path)
+
+    delta = 1
+    stat = File.stat(path)
+    if stat.birthtime != stat.ctime
+      assert_in_delta t0,   stat.birthtime.to_f, delta
+    end
+    assert_in_delta t0+2, stat.mtime.to_f, delta
+    assert_in_delta t0+4, stat.ctime.to_f, delta
+    assert_in_delta t0+6, stat.atime.to_f, delta
+  rescue NotImplementedError
+  end
+
   def test_chmod_m17n
     bug5671 = '[ruby-dev:44898]'
     Dir.mktmpdir('test-file-chmod-m17n-') do |tmpdir|

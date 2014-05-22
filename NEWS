@@ -27,6 +27,15 @@ with all sufficient information, see the ChangeLog file.
     * Float#next_float
     * Float#prev_float
 
+* File
+  * New methods:
+    * File.birthtime
+    * File#birthtime
+
+* File::Stat
+  * New methods:
+    * File::Stat#birthtime
+
 * Process
   * Extended method:
     * Process execution methods such as Process.spawn opens the file in write
