@@ -25,7 +25,7 @@ get_fsname(VALUE self, VALUE str)
 
     FilePathValue(str);
     path = RSTRING_PTR(str);
-    fp = setmntent("/etc/mtab", "r"); 
+    fp = setmntent("/etc/mtab", "r");
     if (!fp) rb_sys_fail("setmntent(/etb/mtab)");;
 
     while (getmntent_r(fp, &mntbuf, buf, buflen)) {
