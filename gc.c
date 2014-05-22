@@ -1476,7 +1476,7 @@ free_method_entry_i(st_data_t key, st_data_t value, st_data_t data)
     return ST_CONTINUE;
 }
 
-void
+static void
 rb_free_m_tbl(st_table *tbl)
 {
     st_foreach(tbl, free_method_entry_i, 0);

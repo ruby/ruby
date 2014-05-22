@@ -1,3 +1,9 @@
+Fri May 23 03:48:08 2014  Eric Wong  <e@80x24.org>
+
+	* gc.c (rb_free_m_tbl): mark function as static
+
+	* method.h (rb_free_m_tbl): remove prototype
+
 Thu May 22 22:58:27 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: More TCP option constants.
