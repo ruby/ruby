@@ -519,7 +519,7 @@ cond = proc {|ext, *|
   }.find_all {|ext|
     with_config(ext, &cond)
   }.sort
-  if $LIBRUBYARG_SHARED.empty?
+  if $LIBRUBYARG_SHARED.empty? and CONFIG["EXTSTATIC"] == "static"
     exts.delete_if {|d| File.fnmatch?("-*", d)}
   end
 end
