@@ -63,46 +63,6 @@ int flock(int, int);
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifdef HAVE_SYS_MOUNT_H
-#include <sys/mount.h>
-#endif
-#ifdef HAVE_SYS_VFS_H
-#include <sys/vfs.h>
-#endif
-#ifdef HAVE_STRUCT_STATFS
-typedef struct statfs statfs_t;
-# define STATFS(f, s) statfs((f), (s))
-# ifdef HAVE_FSTATFS
-#  define FSTATFS(f, s) fstatfs((f), (s))
-# endif
-# ifdef HAVE_STRUCT_STATFS_F_FSTYPENAME
-#  define HAVE_STRUCT_STATFS_T_F_FSTYPENAME 1
-# endif
-# ifdef HAVE_STRUCT_STATFS_F_TYPE
-#  define HAVE_STRUCT_STATFS_T_F_TYPE 1
-# endif
-#elif defined(HAVE_STRUCT_STATVFS)
-typedef struct statvfs statfs_t;
-# define STATFS(f, s) statvfs((f), (s))
-# ifdef HAVE_FSTATVFS
-#  define FSTATFS(f, s) fstatvfs((f), (s))
-# endif
-# if defined(HAVE_STRUCT_STATVFS_F_FSTYPENAME) /* NetBSD */
-#  define HAVE_STRUCT_STATFS_T_F_FSTYPENAME 1
-# elif defined(HAVE_STRUCT_STATVFS_F_BASETYPE) /* AIX, HP-UX, Solaris */
-#  define HAVE_STRUCT_STATFS_T_F_FSTYPENAME 1
-#  define f_fstypename f_basetype
-# endif
-# ifdef HAVE_STRUCT_STATVFS_F_TYPE
-#  define HAVE_STRUCT_STATFS_T_F_TYPE 1
-# endif
-#else
-# define WITHOUT_STATFS
-#endif
-#ifndef WITHOUT_STATFS
-static VALUE rb_statfs_new(const statfs_t *st);
-#endif
-
 #if defined(__native_client__) && defined(NACL_NEWLIB)
 # include "nacl/utime.h"
 # include "nacl/stat.h"
@@ -145,9 +105,6 @@ static VALUE rb_statfs_new(const statfs_t *st);
 #define unlink(p)	rb_w32_uunlink(p)
 #undef rename
 #define rename(f, t)	rb_w32_urename((f), (t))
-#undef STATFS
-#define STATFS(f, s)	ustatfs((f), (s))
-#define HAVE_STATFS 1
 #else
 #define STAT(p, s)	stat((p), (s))
 #endif
@@ -182,7 +139,6 @@ be_fchown(int fd, uid_t owner, gid_t group)
 VALUE rb_cFile;
 VALUE rb_mFileTest;
 VALUE rb_cStat;
-VALUE rb_cStatfs;
 
 #define insecure_obj_p(obj, level) ((level) >= 4 || ((level) > 0 && OBJ_TAINTED(obj)))
 
@@ -1129,48 +1085,6 @@ rb_file_lstat(VALUE obj)
     return rb_io_stat(obj);
 #endif
 }
-
-#ifndef WITHOUT_STATFS
-/*
- *  call-seq:
- *     ios.statfs    -> statfs
- *
- *  Returns filesystem status information for <em>ios</em> as an object of type
- *  <code>File::Statfs</code>.
- *
- *     f = File.new("testfile")
- *     s = f.statfs
- *     s.mode   #=> "100644"
- *     s.bsize         #=> 512
- *     s.fstypename    #=> "zfs"
- *
- */
-
-static VALUE
-rb_io_statfs(VALUE obj)
-{
-    rb_io_t *fptr;
-    statfs_t st;
-#ifndef FSTATFS
-    VALUE path;
-#endif
-    int ret;
-
-    GetOpenFile(obj, fptr);
-#ifdef FSTATFS
-    ret = FSTATFS(fptr->fd, &st);
-#else
-    path = rb_str_encode_ospath(fptr->pathv);
-    ret = STATFS(StringValueCStr(path), &st);
-#endif
-    if (ret == -1) {
-	rb_sys_fail_path(fptr->pathv);
-    }
-    return rb_statfs_new(&st);
-}
-#else
-#define rb_io_statfs rb_f_notimplement
-#endif
 
 static int
 rb_group_member(GETGROUPS_T gid)
@@ -5348,288 +5262,6 @@ rb_stat_sticky(VALUE obj)
     return Qfalse;
 }
 
-#ifndef WITHOUT_STATFS
-/* File::Statfs */
-
-static size_t
-statfs_memsize(const void *p)
-{
-    return p ? sizeof(statfs_t) : 0;
-}
-
-static const rb_data_type_t statfs_data_type = {
-    "statfs",
-    {NULL, RUBY_TYPED_DEFAULT_FREE, statfs_memsize,},
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
-};
-
-static VALUE
-statfs_new_0(VALUE klass, const statfs_t *st)
-{
-    statfs_t *nst = 0;
-
-    if (st) {
-	nst = ALLOC(statfs_t);
-	*nst = *st;
-    }
-    return TypedData_Wrap_Struct(klass, &statfs_data_type, nst);
-}
-
-static VALUE
-rb_statfs_new(const statfs_t *st)
-{
-    return statfs_new_0(rb_cStatfs, st);
-}
-
-static statfs_t*
-get_statfs(VALUE self)
-{
-    statfs_t* st;
-    TypedData_Get_Struct(self, statfs_t, &statfs_data_type, st);
-    if (!st) rb_raise(rb_eTypeError, "uninitialized File::Statfs");
-    return st;
-}
-
-/*
- *  Document-class: File::Statfs
- *
- *  Objects of class <code>File::Statfs</code> encapsulate common status
- *  information for filesystem. The information is
- *  recorded at the moment the <code>File::Statfs</code> object is
- *  created; changes made to the filesystem after that point will not be
- *  reflected. <code>File::Statfs</code> objects are returned by
- *  <code>IO#statfs</code>.
- */
-
-static VALUE
-rb_statfs_s_alloc(VALUE klass)
-{
-    return statfs_new_0(klass, 0);
-}
-
-/*
- * call-seq:
- *
- *   File::Statfs.new(file_name)  -> statfs
- *
- * Create a File::Statfs object for the given file name (raising an
- * exception if the file doesn't exist).
- */
-
-static VALUE
-rb_statfs_init(VALUE obj, VALUE fname)
-{
-    statfs_t st, *nst;
-
-    rb_secure(2);
-    FilePathValue(fname);
-    fname = rb_str_encode_ospath(fname);
-    if (STATFS(StringValueCStr(fname), &st) == -1) {
-	rb_sys_fail_path(fname);
-    }
-    if (DATA_PTR(obj)) {
-	xfree(DATA_PTR(obj));
-	DATA_PTR(obj) = NULL;
-    }
-    nst = ALLOC(statfs_t);
-    *nst = st;
-    DATA_PTR(obj) = nst;
-
-    return Qnil;
-}
-
-/* :nodoc: */
-static VALUE
-rb_statfs_init_copy(VALUE copy, VALUE orig)
-{
-    statfs_t *nst;
-
-    if (!OBJ_INIT_COPY(copy, orig)) return copy;
-    if (DATA_PTR(copy)) {
-	xfree(DATA_PTR(copy));
-	DATA_PTR(copy) = 0;
-    }
-    if (DATA_PTR(orig)) {
-	nst = ALLOC(statfs_t);
-	*nst = *(statfs_t*)DATA_PTR(orig);
-	DATA_PTR(copy) = nst;
-    }
-
-    return copy;
-}
-
-#ifdef HAVE_STRUCT_STATFS_T_F_TYPE
-/*
- *  call-seq:
- *     st.type    -> fixnum
- *
- *  Returns type of filesystem.
- *
- *     f = File.new("testfile")
- *     s = f.statfs
- *     "%d" % s.type   #=> 17
- *
- */
-
-static VALUE
-statfs_type(VALUE self)
-{
-    return LL2NUM(get_statfs(self)->f_type);
-}
-#else
-#define statfs_type rb_f_notimplement
-#endif
-
-/*
- *  call-seq:
- *     st.bsize    -> integer
- *
- *  Returns block size in filesystem.
- *
- */
-
-static VALUE
-statfs_bsize(VALUE self)
-{
-    return LL2NUM(get_statfs(self)->f_bsize);
-}
-
-/*
- *  call-seq:
- *     st.blocks    -> integer
- *
- *  Returns total data bocks of filesystem.
- *
- */
-
-static VALUE
-statfs_blocks(VALUE self)
-{
-    return LL2NUM(get_statfs(self)->f_blocks);
-}
-
-/*
- *  call-seq:
- *     st.bfree    -> integer
- *
- *  Returns free blocks in filesystem.
- *
- */
-
-static VALUE
-statfs_bfree(VALUE self)
-{
-    return LL2NUM(get_statfs(self)->f_bfree);
-}
-
-/*
- *  call-seq:
- *     st.bavail    -> integer
- *
- *  Returns available blocks to non-super user in filesystem.
- *
- */
-
-static VALUE
-statfs_bavail(VALUE self)
-{
-    return LL2NUM(get_statfs(self)->f_bavail);
-}
-
-/*
- *  call-seq:
- *     st.files    -> integer
- *
- *  Returns total file nodes in filesystem.
- *
- */
-
-static VALUE
-statfs_files(VALUE self)
-{
-    return LL2NUM(get_statfs(self)->f_files);
-}
-
-/*
- *  call-seq:
- *     st.ffree    -> integer
- *
- *  Returns free nodes in filesystem.
- *
- */
-
-static VALUE
-statfs_ffree(VALUE self)
-{
-    return LL2NUM(get_statfs(self)->f_ffree);
-}
-
-#ifdef HAVE_STRUCT_STATFS_T_F_FSTYPENAME
-/*
- *  call-seq:
- *     st.fstypename    -> string
- *
- *  Returns name of filesystem.
- *
- *     f = File.new("testfile")
- *     s = f.statfs
- *     s.fstypename   #=> "zfs"
- *
- */
-
-static VALUE
-statfs_fstypename(VALUE self)
-{
-    return rb_str_new_cstr(get_statfs(self)->f_fstypename);
-}
-#else
-#define statfs_fstypename rb_f_notimplement
-#endif
-
-/*
- *  call-seq:
- *     st.inspect    -> string
- *
- *  Returns total file nodes in filesystem.
- *
- *     f = File.new("testfile")
- *     s = f.statfs
- *     s.inspect   #=> ""
- *       #=> "#<File::Statfs type=zfs, bsize=4096, blocks=900000/1000000/2000000, files=100000/200000>
- *
- *  +blocks+ are numbers of available/free/total blocks.
- *  +files+ are numbers of free/total files.
- */
-
-static VALUE
-statfs_inspect(VALUE self)
-{
-    statfs_t *st = get_statfs(self);
-    return rb_sprintf("#<%"PRIsVALUE" "
-#ifdef HAVE_STRUCT_STATFS_T_F_TYPE
-		      "type=%ld"
-#endif
-#ifdef HAVE_STRUCT_STATFS_T_F_FSTYPENAME
-		      "(%s)"
-#endif
-		      ", bsize=%ld"
-		      ", blocks=%"PRI_LL_PREFIX"d/%"PRI_LL_PREFIX"d/%"PRI_LL_PREFIX"d"
-		      ", files=%"PRI_LL_PREFIX"d/%"PRI_LL_PREFIX"d"
-		      ">",
-		      rb_obj_class(self),
-#ifdef HAVE_STRUCT_STATFS_T_F_TYPE
-		      (long)st->f_type,
-#endif
-#ifdef HAVE_STRUCT_STATFS_T_F_FSTYPENAME
-		      st->f_fstypename,
-#endif
-		      (long)st->f_bsize,
-		      (LONG_LONG)st->f_bavail, (LONG_LONG)st->f_bfree, (LONG_LONG)st->f_blocks,
-		      (LONG_LONG)st->f_ffree, (LONG_LONG)st->f_files);
-}
-
-#endif
-
 VALUE rb_mFConst;
 
 void
@@ -6056,7 +5688,6 @@ Init_File(void)
     rb_define_const(rb_cFile, "PATH_SEPARATOR", rb_obj_freeze(rb_str_new2(PATH_SEP)));
 
     rb_define_method(rb_cIO, "stat",  rb_io_stat, 0); /* this is IO's method */
-    rb_define_method(rb_cIO, "statfs",  rb_io_statfs, 0); /* this is IO's method */
     rb_define_method(rb_cFile, "lstat",  rb_file_lstat, 0);
 
     rb_define_method(rb_cFile, "atime", rb_file_atime, 0);
@@ -6213,20 +5844,4 @@ Init_File(void)
     rb_define_method(rb_cStat, "setuid?",  rb_stat_suid, 0);
     rb_define_method(rb_cStat, "setgid?",  rb_stat_sgid, 0);
     rb_define_method(rb_cStat, "sticky?",  rb_stat_sticky, 0);
-
-#ifndef WITHOUT_STATFS
-    rb_cStatfs = rb_define_class_under(rb_cFile, "Statfs", rb_cObject);
-    rb_define_alloc_func(rb_cStatfs,  rb_statfs_s_alloc);
-    rb_define_method(rb_cStatfs, "initialize", rb_statfs_init, 1);
-    rb_define_method(rb_cStatfs, "initialize_copy", rb_statfs_init_copy, 1);
-    rb_define_method(rb_cStatfs, "type", statfs_type, 0);
-    rb_define_method(rb_cStatfs, "bsize", statfs_bsize, 0);
-    rb_define_method(rb_cStatfs, "blocks", statfs_blocks, 0);
-    rb_define_method(rb_cStatfs, "bfree", statfs_bfree, 0);
-    rb_define_method(rb_cStatfs, "bavail", statfs_bavail, 0);
-    rb_define_method(rb_cStatfs, "files", statfs_files, 0);
-    rb_define_method(rb_cStatfs, "ffree", statfs_ffree, 0);
-    rb_define_method(rb_cStatfs, "fstypename", statfs_fstypename, 0);
-    rb_define_method(rb_cStatfs, "inspect", statfs_inspect, 0);
-#endif
 }

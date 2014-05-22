@@ -383,31 +383,4 @@ class TestFile < Test::Unit::TestCase
       assert_file.not_exist?(path)
     end
   end
-
-  def test_statfs
-    skip "not implemented" unless $stdout.respond_to?(:statfs)
-    open(__FILE__) do |f|
-      st = f.statfs
-      assert_kind_of File::Statfs, st
-      begin
-        assert_kind_of Integer, st.type
-      rescue NotImplementedError
-      end
-      assert_kind_of Integer, st.bsize
-      assert_kind_of Integer, st.blocks
-      assert_kind_of Integer, st.bfree
-      assert_kind_of Integer, st.bavail
-      assert_kind_of Integer, st.files
-      assert_kind_of Integer, st.ffree
-      begin
-        assert_kind_of String, st.fstypename
-      rescue NotImplementedError
-      end
-      s = st.inspect
-      assert_match(/\A\#<File::Statfs\b.*>\z/, s)
-      assert_match(/\bbsize=\d+\b/, s)
-      assert_match(/\bblocks=(?:\d+[,>\/])+\b/, s)
-      assert_match(/\bfiles=(?:\d+[,>\/])+\b/, s)
-    end
-  end
 end

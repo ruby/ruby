@@ -1668,24 +1668,22 @@ class TestIO < Test::Unit::TestCase
 
   def can_seek_data(f)
     if /linux/ =~ RUBY_PLATFORM
-      # include/uapi/linux/magic.h
-      case f.statfs.type
-      when 0x9123683E # BTRFS_SUPER_MAGIC
-      when 0x7461636f # OCFS2_SUPER_MAGIC
-      when 0xEF53 # EXT2_SUPER_MAGIC EXT3_SUPER_MAGIC EXT4_SUPER_MAGIC
-        return false if (Etc.uname[:release].split('.').map(&:to_i) <=> [3,8]) < 0
-        # ext3's timestamp resolution is seconds
-        s = f.stat
-        s.mtime.nsec != 0 || s.atime.nsec != 0 || s.ctime.nsec != 0
-      when 0x58465342 # XFS_SUPER_MAGIC
-        return false if (Etc.uname[:release].split('.').map(&:to_i) <=> [3,5]) < 0
-      when 0x01021994 # TMPFS_MAGIC
-        return false if (Etc.uname[:release].split('.').map(&:to_i) <=> [3,8]) < 0
-      else
-        return false
+      require "-test-/file"
+      # lseek(2)
+      case Bug::File::Fs.fsname(f.path)
+      when "btrfs"
+        return true if (Etc.uname[:release].split('.').map(&:to_i) <=> [3,1]) >= 0
+      when "ocfs"
+        return true if (Etc.uname[:release].split('.').map(&:to_i) <=> [3,2]) >= 0
+      when "xfs"
+        return true if (Etc.uname[:release].split('.').map(&:to_i) <=> [3,5]) >= 0
+      when "ext4"
+        return true if (Etc.uname[:release].split('.').map(&:to_i) <=> [3,8]) >= 0
+      when "tmpfs"
+        return true if (Etc.uname[:release].split('.').map(&:to_i) <=> [3,8]) >= 0
       end
     end
-    true
+    false
   end
 
   def test_seek
@@ -1715,9 +1713,7 @@ class TestIO < Test::Unit::TestCase
         open(t.path) { |f|
           break unless can_seek_data(f)
           assert_equal("foo\n", f.gets)
-          assert_nothing_raised(proc {"cannot SEEK_DATA on FS(0x%X)" % f.statfs.type}) do
-            f.seek(0, IO::SEEK_DATA)
-          end
+          f.seek(0, IO::SEEK_DATA)
           assert_equal("foo\nbar\nbaz\n", f.read)
         }
         open(t.path, 'r+') { |f|
@@ -1765,9 +1761,7 @@ class TestIO < Test::Unit::TestCase
         open(t.path) { |f|
           break unless can_seek_data(f)
           assert_equal("foo\n", f.gets)
-          assert_nothing_raised(proc {"cannot SEEK_DATA on FS(0x%X)" % f.statfs.type}) do
-            f.seek(0, :DATA)
-          end
+          f.seek(0, :DATA)
           assert_equal("foo\nbar\nbaz\n", f.read)
         }
         open(t.path, 'r+') { |f|
