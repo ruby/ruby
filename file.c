@@ -791,6 +791,7 @@ stat_birthtime(struct stat *st)
     return rb_time_nano_new(ts->tv_sec, ts->tv_nsec);
 }
 #elif defined(_WIN32)
+# define stat_birthtime stat_ctime
 #else
 # undef HAVE_STAT_BIRTHTIME
 #endif
