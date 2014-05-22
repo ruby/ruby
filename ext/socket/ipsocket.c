@@ -15,7 +15,7 @@ struct inetsock_arg
     VALUE sock;
     struct {
 	VALUE host, serv;
-	struct addrinfo *res;
+	struct rb_addrinfo *res;
     } remote, local;
     int type;
     int fd;
@@ -25,11 +25,11 @@ static VALUE
 inetsock_cleanup(struct inetsock_arg *arg)
 {
     if (arg->remote.res) {
-	freeaddrinfo(arg->remote.res);
+	rb_freeaddrinfo(arg->remote.res);
 	arg->remote.res = 0;
     }
     if (arg->local.res) {
-	freeaddrinfo(arg->local.res);
+	rb_freeaddrinfo(arg->local.res);
 	arg->local.res = 0;
     }
     if (arg->fd >= 0) {
@@ -57,14 +57,14 @@ init_inetsock_internal(struct inetsock_arg *arg)
     }
 
     arg->fd = fd = -1;
-    for (res = arg->remote.res; res; res = res->ai_next) {
+    for (res = arg->remote.res->ai; res; res = res->ai_next) {
 #if !defined(INET6) && defined(AF_INET6)
 	if (res->ai_family == AF_INET6)
 	    continue;
 #endif
         lres = NULL;
         if (arg->local.res) {
-            for (lres = arg->local.res; lres; lres = lres->ai_next) {
+            for (lres = arg->local.res->ai; lres; lres = lres->ai_next) {
                 if (lres->ai_family == res->ai_family)
                     break;
             }
@@ -73,7 +73,7 @@ init_inetsock_internal(struct inetsock_arg *arg)
                     continue;
                 /* Use a different family local address if no choice, this
                  * will cause EAFNOSUPPORT. */
-                lres = arg->local.res;
+                lres = arg->local.res->ai;
             }
         }
 	status = rsock_socket(res->ai_family,res->ai_socktype,res->ai_protocol);
@@ -304,13 +304,14 @@ static VALUE
 ip_s_getaddress(VALUE obj, VALUE host)
 {
     union_sockaddr addr;
-    struct addrinfo *res = rsock_addrinfo(host, Qnil, SOCK_STREAM, 0);
+    struct rb_addrinfo *res = rsock_addrinfo(host, Qnil, SOCK_STREAM, 0);
+    socklen_t len = res->ai->ai_addrlen;
 
     /* just take the first one */
-    memcpy(&addr, res->ai_addr, res->ai_addrlen);
-    freeaddrinfo(res);
+    memcpy(&addr, res->ai->ai_addr, len);
+    rb_freeaddrinfo(res);
 
-    return rsock_make_ipaddr(&addr.addr, res->ai_addrlen);
+    return rsock_make_ipaddr(&addr.addr, len);
 }
 
 void

@@ -174,21 +174,35 @@ nogvl_getaddrinfo(void *arg)
 int
 rb_getaddrinfo(const char *node, const char *service,
                const struct addrinfo *hints,
-               struct addrinfo **res)
+               struct rb_addrinfo **res)
 {
+    struct addrinfo *ai;
+    int ret;
+
 #ifdef GETADDRINFO_EMU
-    return getaddrinfo(node, service, hints, res);
+    ret = getaddrinfo(node, service, hints, &ai);
 #else
     struct getaddrinfo_arg arg;
-    int ret;
     MEMZERO(&arg, sizeof arg, 1);
     arg.node = node;
     arg.service = service;
     arg.hints = hints;
-    arg.res = res;
+    arg.res = &ai;
     ret = (int)(VALUE)rb_thread_call_without_gvl(nogvl_getaddrinfo, &arg, RUBY_UBF_IO, 0);
-    return ret;
 #endif
+
+    if (ret == 0) {
+        *res = (struct rb_addrinfo *)xmalloc(sizeof(struct rb_addrinfo));
+        (*res)->ai = ai;
+    }
+    return ret;
+}
+
+void
+rb_freeaddrinfo(struct rb_addrinfo *ai)
+{
+    freeaddrinfo(ai->ai);
+    xfree(ai);
 }
 
 #ifndef GETADDRINFO_EMU
@@ -345,10 +359,10 @@ port_str(VALUE port, char *pbuf, size_t pbuflen, int *flags_ptr)
     }
 }
 
-struct addrinfo*
+struct rb_addrinfo*
 rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack)
 {
-    struct addrinfo* res = NULL;
+    struct rb_addrinfo* res = NULL;
     char *hostp, *portp;
     int error;
     char hbuf[NI_MAXHOST], pbuf[NI_MAXSERV];
@@ -373,7 +387,7 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
     return res;
 }
 
-struct addrinfo*
+struct rb_addrinfo*
 rsock_addrinfo(VALUE host, VALUE port, int socktype, int flags)
 {
     struct addrinfo hints;
@@ -474,7 +488,7 @@ rsock_unix_sockaddr_len(VALUE path)
 
 struct hostent_arg {
     VALUE host;
-    struct addrinfo* addr;
+    struct rb_addrinfo* addr;
     VALUE (*ipaddr)(struct sockaddr*, socklen_t);
 };
 
@@ -482,7 +496,7 @@ static VALUE
 make_hostent_internal(struct hostent_arg *arg)
 {
     VALUE host = arg->host;
-    struct addrinfo* addr = arg->addr;
+    struct addrinfo* addr = arg->addr->ai;
     VALUE (*ipaddr)(struct sockaddr*, socklen_t) = arg->ipaddr;
 
     struct addrinfo *ai;
@@ -522,14 +536,15 @@ make_hostent_internal(struct hostent_arg *arg)
 }
 
 VALUE
-rsock_freeaddrinfo(struct addrinfo *addr)
+rsock_freeaddrinfo(VALUE arg)
 {
-    freeaddrinfo(addr);
+    struct rb_addrinfo *addr = (struct rb_addrinfo *)arg;
+    rb_freeaddrinfo(addr);
     return Qnil;
 }
 
 VALUE
-rsock_make_hostent(VALUE host, struct addrinfo *addr, VALUE (*ipaddr)(struct sockaddr *, socklen_t))
+rsock_make_hostent(VALUE host, struct rb_addrinfo *addr, VALUE (*ipaddr)(struct sockaddr *, socklen_t))
 {
     struct hostent_arg arg;
 
@@ -639,12 +654,13 @@ rsock_addrinfo_new(struct sockaddr *addr, socklen_t len,
     return a;
 }
 
-static struct addrinfo *
+static struct rb_addrinfo *
 call_getaddrinfo(VALUE node, VALUE service,
                  VALUE family, VALUE socktype, VALUE protocol, VALUE flags,
                  int socktype_hack)
 {
-    struct addrinfo hints, *res;
+    struct addrinfo hints;
+    struct rb_addrinfo *res;
 
     MEMZERO(&hints, struct addrinfo, 1);
     hints.ai_family = NIL_P(family) ? PF_UNSPEC : rsock_family_arg(family);
@@ -672,21 +688,21 @@ init_addrinfo_getaddrinfo(rb_addrinfo_t *rai, VALUE node, VALUE service,
                           VALUE family, VALUE socktype, VALUE protocol, VALUE flags,
                           VALUE inspectnode, VALUE inspectservice)
 {
-    struct addrinfo *res = call_getaddrinfo(node, service, family, socktype, protocol, flags, 1);
+    struct rb_addrinfo *res = call_getaddrinfo(node, service, family, socktype, protocol, flags, 1);
     VALUE canonname;
-    VALUE inspectname = rb_str_equal(node, inspectnode) ? Qnil : make_inspectname(inspectnode, inspectservice, res);
+    VALUE inspectname = rb_str_equal(node, inspectnode) ? Qnil : make_inspectname(inspectnode, inspectservice, res->ai);
 
     canonname = Qnil;
-    if (res->ai_canonname) {
-        canonname = rb_tainted_str_new_cstr(res->ai_canonname);
+    if (res->ai->ai_canonname) {
+        canonname = rb_tainted_str_new_cstr(res->ai->ai_canonname);
         OBJ_FREEZE(canonname);
     }
 
-    init_addrinfo(rai, res->ai_addr, res->ai_addrlen,
+    init_addrinfo(rai, res->ai->ai_addr, res->ai->ai_addrlen,
                   NUM2INT(family), NUM2INT(socktype), NUM2INT(protocol),
                   canonname, inspectname);
 
-    freeaddrinfo(res);
+    rb_freeaddrinfo(res);
 }
 
 static VALUE
@@ -742,21 +758,22 @@ addrinfo_firstonly_new(VALUE node, VALUE service, VALUE family, VALUE socktype, 
     VALUE canonname;
     VALUE inspectname;
 
-    struct addrinfo *res = call_getaddrinfo(node, service, family, socktype, protocol, flags, 0);
+    struct rb_addrinfo *res = call_getaddrinfo(node, service, family, socktype, protocol, flags, 0);
 
-    inspectname = make_inspectname(node, service, res);
+    inspectname = make_inspectname(node, service, res->ai);
 
     canonname = Qnil;
-    if (res->ai_canonname) {
-        canonname = rb_tainted_str_new_cstr(res->ai_canonname);
+    if (res->ai->ai_canonname) {
+        canonname = rb_tainted_str_new_cstr(res->ai->ai_canonname);
         OBJ_FREEZE(canonname);
     }
 
-    ret = rsock_addrinfo_new(res->ai_addr, res->ai_addrlen,
-                             res->ai_family, res->ai_socktype, res->ai_protocol,
+    ret = rsock_addrinfo_new(res->ai->ai_addr, res->ai->ai_addrlen,
+                             res->ai->ai_family, res->ai->ai_socktype,
+                             res->ai->ai_protocol,
                              canonname, inspectname);
 
-    freeaddrinfo(res);
+    rb_freeaddrinfo(res);
     return ret;
 }
 
@@ -767,12 +784,12 @@ addrinfo_list_new(VALUE node, VALUE service, VALUE family, VALUE socktype, VALUE
     struct addrinfo *r;
     VALUE inspectname;
 
-    struct addrinfo *res = call_getaddrinfo(node, service, family, socktype, protocol, flags, 0);
+    struct rb_addrinfo *res = call_getaddrinfo(node, service, family, socktype, protocol, flags, 0);
 
-    inspectname = make_inspectname(node, service, res);
+    inspectname = make_inspectname(node, service, res->ai);
 
     ret = rb_ary_new();
-    for (r = res; r; r = r->ai_next) {
+    for (r = res->ai; r; r = r->ai_next) {
         VALUE addr;
         VALUE canonname = Qnil;
 
@@ -788,7 +805,7 @@ addrinfo_list_new(VALUE node, VALUE service, VALUE family, VALUE socktype, VALUE
         rb_ary_push(ret, addr);
     }
 
-    freeaddrinfo(res);
+    rb_freeaddrinfo(res);
     return ret;
 }
 
@@ -1513,7 +1530,7 @@ addrinfo_mload(VALUE self, VALUE ary)
       default:
       {
         VALUE pair = rb_convert_type(v, T_ARRAY, "Array", "to_ary");
-        struct addrinfo *res;
+        struct rb_addrinfo *res;
         int flags = AI_NUMERICHOST;
 #ifdef AI_NUMERICSERV
         flags |= AI_NUMERICSERV;
@@ -1522,8 +1539,8 @@ addrinfo_mload(VALUE self, VALUE ary)
                                INT2NUM(pfamily), INT2NUM(socktype), INT2NUM(protocol),
                                INT2NUM(flags), 1);
 
-        len = res->ai_addrlen;
-        memcpy(&ss, res->ai_addr, res->ai_addrlen);
+        len = res->ai->ai_addrlen;
+        memcpy(&ss, res->ai->ai_addr, res->ai->ai_addrlen);
         break;
       }
     }
