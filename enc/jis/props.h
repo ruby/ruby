@@ -1,5 +1,5 @@
 /* C code produced by gperf version 3.0.4 */
-/* Command-line: gperf -k1,3 -7 -c -j1 -i1 -t -C -P -t --ignore-case -H onig_jis_property_hash -Q onig_jis_property_pool -N onig_jis_property --output-file=enc/jis/props.h enc/jis/props.kwd  */
+/* Command-line: gperf -k1,3 -7 -c -j1 -i1 -t -C -P -t --ignore-case -H onig_jis_property_hash -Q onig_jis_property_pool -N onig_jis_property enc/jis/props.kwd  */
 
 #if !((' ' == 32) && ('!' == 33) && ('"' == 34) && ('#' == 35) \
       && ('%' == 37) && ('&' == 38) && ('\'' == 39) && ('(' == 40) \
@@ -190,19 +190,19 @@ onig_jis_property (str, len)
     {
       {-1}, {-1}, {-1}, {-1}, {-1},
 #line 48 "enc/jis/props.kwd"
-      {(int)(long)&((struct onig_jis_property_pool_t *)0)->onig_jis_property_pool_str5,      onigenc_jis_han},
+      {(char)offsetof(struct onig_jis_property_pool_t, onig_jis_property_pool_str5),      onigenc_jis_han},
       {-1},
 #line 49 "enc/jis/props.kwd"
-      {(int)(long)&((struct onig_jis_property_pool_t *)0)->onig_jis_property_pool_str7,    onigenc_jis_latin},
+      {(char)offsetof(struct onig_jis_property_pool_t, onig_jis_property_pool_str7),    onigenc_jis_latin},
 #line 50 "enc/jis/props.kwd"
-      {(int)(long)&((struct onig_jis_property_pool_t *)0)->onig_jis_property_pool_str8,    onigenc_jis_greek},
+      {(char)offsetof(struct onig_jis_property_pool_t, onig_jis_property_pool_str8),    onigenc_jis_greek},
       {-1},
 #line 46 "enc/jis/props.kwd"
-      {(int)(long)&((struct onig_jis_property_pool_t *)0)->onig_jis_property_pool_str10, onigenc_jis_hiragana},
+      {(char)offsetof(struct onig_jis_property_pool_t, onig_jis_property_pool_str10), onigenc_jis_hiragana},
 #line 47 "enc/jis/props.kwd"
-      {(int)(long)&((struct onig_jis_property_pool_t *)0)->onig_jis_property_pool_str11, onigenc_jis_katakana},
+      {(char)offsetof(struct onig_jis_property_pool_t, onig_jis_property_pool_str11), onigenc_jis_katakana},
 #line 51 "enc/jis/props.kwd"
-      {(int)(long)&((struct onig_jis_property_pool_t *)0)->onig_jis_property_pool_str12, onigenc_jis_cyrillic}
+      {(char)offsetof(struct onig_jis_property_pool_t, onig_jis_property_pool_str12), onigenc_jis_cyrillic}
     };
 
   if (len <= MAX_WORD_LENGTH && len >= MIN_WORD_LENGTH)

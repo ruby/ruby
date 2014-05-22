@@ -335,7 +335,8 @@ enc/jis/props.h: enc/jis/props.kwd
 	  $(CP) $(?:.kwd=.h.blt) $@; \
 	else \
 	  set -x; \
-	  gperf $(JIS_PROPS_OPTIONS) --output-file=$@ $? && \
+	  gperf $(JIS_PROPS_OPTIONS) $? | \
+	  sed 's/(int)(long)&((\([a-zA-Z_0-9 ]*[a-zA-Z_0-9]\) *\*)0)->\([a-zA-Z0-9_]*\),/(char)offsetof(\1, \2),/g' > $@ && \
 	  $(CP) $? $(?:.kwd=.src) && \
 	  $(CP) $@ $(?:.kwd=.h.blt); \
 	fi
