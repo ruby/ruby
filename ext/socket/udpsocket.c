@@ -44,7 +44,7 @@ udp_init(int argc, VALUE *argv, VALUE sock)
 
 struct udp_arg
 {
-    struct addrinfo *res;
+    struct rb_addrinfo *res;
     int fd;
 };
 
@@ -54,15 +54,13 @@ udp_connect_internal(struct udp_arg *arg)
     int fd = arg->fd;
     struct addrinfo *res;
 
-    for (res = arg->res; res; res = res->ai_next) {
+    for (res = arg->res->ai; res; res = res->ai_next) {
 	if (rsock_connect(fd, res->ai_addr, res->ai_addrlen, 0) >= 0) {
 	    return Qtrue;
 	}
     }
     return Qfalse;
 }
-
-VALUE rsock_freeaddrinfo(struct addrinfo *addr);
 
 /*
  * call-seq:
@@ -113,19 +111,20 @@ static VALUE
 udp_bind(VALUE sock, VALUE host, VALUE port)
 {
     rb_io_t *fptr;
-    struct addrinfo *res0, *res;
+    struct rb_addrinfo *res0;
+    struct addrinfo *res;
 
     rb_secure(3);
     res0 = rsock_addrinfo(host, port, SOCK_DGRAM, 0);
     GetOpenFile(sock, fptr);
-    for (res = res0; res; res = res->ai_next) {
+    for (res = res0->ai; res; res = res->ai_next) {
 	if (bind(fptr->fd, res->ai_addr, res->ai_addrlen) < 0) {
 	    continue;
 	}
-	freeaddrinfo(res0);
+	rb_freeaddrinfo(res0);
 	return INT2FIX(0);
     }
-    freeaddrinfo(res0);
+    rb_freeaddrinfo(res0);
 
     rsock_sys_fail_host_port("bind(2)", host, port);
 
@@ -160,7 +159,8 @@ udp_send(int argc, VALUE *argv, VALUE sock)
     VALUE flags, host, port;
     rb_io_t *fptr;
     int n;
-    struct addrinfo *res0, *res;
+    struct rb_addrinfo *res0;
+    struct addrinfo *res;
     struct rsock_send_arg arg;
 
     if (argc == 2 || argc == 3) {
@@ -173,21 +173,21 @@ udp_send(int argc, VALUE *argv, VALUE sock)
     GetOpenFile(sock, fptr);
     arg.fd = fptr->fd;
     arg.flags = NUM2INT(flags);
-    for (res = res0; res; res = res->ai_next) {
+    for (res = res0->ai; res; res = res->ai_next) {
       retry:
 	arg.to = res->ai_addr;
 	arg.tolen = res->ai_addrlen;
 	rb_thread_fd_writable(arg.fd);
 	n = (int)BLOCKING_REGION_FD(rsock_sendto_blocking, &arg);
 	if (n >= 0) {
-	    freeaddrinfo(res0);
+	    rb_freeaddrinfo(res0);
 	    return INT2FIX(n);
 	}
 	if (rb_io_wait_writable(fptr->fd)) {
 	    goto retry;
 	}
     }
-    freeaddrinfo(res0);
+    rb_freeaddrinfo(res0);
     rsock_sys_fail_host_port("sendto(2)", host, port);
     return INT2FIX(n);
 }

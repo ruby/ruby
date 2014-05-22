@@ -1,3 +1,17 @@
+Fri May 23 00:04:13 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (sock_s_getnameinfo): Save errno for EAI_SYSTEM.
+	  Reported by Saravana kumar.  [ruby-core:61820] [Bug #9697]
+	  Fixed by Heesob Park.  [ruby-core:61868]
+
+Fri May 23 00:04:13 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket: Wrap struct addrinfo by struct rb_addrinfo.
+
+Fri May 23 00:04:13 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ipsocket.c (ip_s_getaddress): Don't access freed memory.
+
 Mon May 19 00:47:00 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_array.rb: remove useless `assert'.
