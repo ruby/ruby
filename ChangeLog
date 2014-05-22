@@ -1,3 +1,10 @@
+Thu May 22 14:02:13 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/jis/props.kwd: constify character property tables of JIS
+	  based encodings by perfect hash.
+
+	* enc/euc_jp.c, enc/shift_jis.c: use character property functions.
+
 Wed May 21 12:21:10 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/option.c: Fix compilation error on Android.

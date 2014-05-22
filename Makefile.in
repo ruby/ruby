@@ -325,6 +325,21 @@ enc/unicode/name2ctype.h: enc/unicode/name2ctype.kwd
 	  $(CP) $@ $(?:.kwd=.h.blt); \
 	fi
 
+JIS_PROPS_OPTIONS = -k1,3 -7 -c -j1 -i1 -t -C -P -t --ignore-case -H onig_jis_property_hash -Q onig_jis_property_pool -N onig_jis_property
+
+enc/jis/props.h: enc/jis/props.kwd
+	$(MAKEDIRS) $(@D)
+	@set +e; \
+	if cmp -s $(?:.kwd=.src) $?; then \
+	  set -x; \
+	  $(CP) $(?:.kwd=.h.blt) $@; \
+	else \
+	  set -x; \
+	  gperf $(JIS_PROPS_OPTIONS) --output-file=$@ $? && \
+	  $(CP) $? $(?:.kwd=.src) && \
+	  $(CP) $@ $(?:.kwd=.h.blt); \
+	fi
+
 .c.@OBJEXT@:
 	@$(ECHO) compiling $<
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $<

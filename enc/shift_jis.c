@@ -433,12 +433,6 @@ is_allowed_reverse_match(const UChar* s, const UChar* end, OnigEncoding enc ARG_
 }
 
 
-static int PropertyInited = 0;
-static const OnigCodePoint** PropertyList;
-static int PropertyListNum;
-static int PropertyListSize;
-static hash_table_type* PropertyNameTable;
-
 static const OnigCodePoint CR_Hiragana[] = {
   1,
   0x829f, 0x82f1
@@ -493,41 +487,19 @@ static const OnigCodePoint CR_Cyrillic[] = {
   0x8480, 0x8491,
 }; /* CR_Cyrillic */
 
-static int
-init_property_list(void)
-{
-  int r;
-
-  PROPERTY_LIST_ADD_PROP("hiragana", CR_Hiragana);
-  PROPERTY_LIST_ADD_PROP("katakana", CR_Katakana);
-  PROPERTY_LIST_ADD_PROP("han", CR_Han);
-  PROPERTY_LIST_ADD_PROP("latin", CR_Latin);
-  PROPERTY_LIST_ADD_PROP("greek", CR_Greek);
-  PROPERTY_LIST_ADD_PROP("cyrillic", CR_Cyrillic);
-  PropertyInited = 1;
-
- end:
-  return r;
-}
+#include "enc/jis/props.h"
 
 static int
 property_name_to_ctype(OnigEncoding enc, UChar* p, UChar* end)
 {
-  hash_data_type ctype;
-  UChar *s, *e;
+  UChar *s = p, *e = end;
+  const struct enc_property *prop = onig_jis_property((const char *)s, (unsigned int)(e-s));
 
-  PROPERTY_LIST_INIT_CHECK;
-
-  s = e = ALLOCA_N(UChar, end-p+1);
-  for (; p < end; p++) {
-    *e++ = ONIGENC_ASCII_CODE_TO_LOWER_CASE(*p);
-  }
-
-  if (onig_st_lookup_strend(PropertyNameTable, s, e, &ctype) == 0) {
+  if (!prop) {
     return onigenc_minimum_property_name_to_ctype(enc, s, e);
   }
 
-  return (int )ctype;
+  return (int)prop->ctype;
 }
 
 static int
@@ -543,8 +515,6 @@ is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
     }
   }
   else {
-    PROPERTY_LIST_INIT_CHECK;
-
     ctype -= (ONIGENC_MAX_STD_CTYPE + 1);
     if (ctype >= (unsigned int )PropertyListNum)
       return ONIGERR_TYPE_BUG;
@@ -564,8 +534,6 @@ get_ctype_code_range(OnigCtype ctype, OnigCodePoint* sb_out,
   }
   else {
     *sb_out = 0x80;
-
-    PROPERTY_LIST_INIT_CHECK;
 
     ctype -= (ONIGENC_MAX_STD_CTYPE + 1);
     if (ctype >= (OnigCtype )PropertyListNum)
