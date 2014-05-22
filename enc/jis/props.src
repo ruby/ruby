@@ -23,7 +23,7 @@ enum onigenc_jis_ctype {
 
 enum {PropertyListNum = onigenc_jis_max - onigenc_jis_min - 1};
 
-static const OnigCodePoint* PropertyList[PropertyListNum] = {
+static const OnigCodePoint* const PropertyList[PropertyListNum] = {
     CR_Hiragana,
     CR_Katakana,
     CR_Han,
