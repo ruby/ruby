@@ -1,3 +1,7 @@
+Sat May 24 05:54:06 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb: More constants
+
 Sat May 24 00:25:34 2014  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* NEWS: add information of incompatibility about Prime.prime?

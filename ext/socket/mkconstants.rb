@@ -569,6 +569,8 @@ SO_DONTROUTE	nil	Use interface addresses
 SO_BROADCAST	nil	Permit sending of broadcast messages
 SO_SNDBUF	nil	Send buffer size
 SO_RCVBUF	nil	Receive buffer size
+SO_SNDBUFFORCE  nil     Send buffer size without wmem_max limit (Linux 2.6.14)
+SO_RCVBUFFORCE  nil     Receive buffer size without rmem_max limit (Linux 2.6.14)
 SO_KEEPALIVE	nil	Keep connections alive
 SO_OOBINLINE	nil	Leave received out-of-band data in-line
 SO_NO_CHECK	nil	Disable checksums
@@ -595,6 +597,7 @@ SO_SECURITY_ENCRYPTION_NETWORK
 SO_BINDTODEVICE	nil	Only send packets from the given interface
 SO_ATTACH_FILTER	nil	Attach an accept filter
 SO_DETACH_FILTER	nil	Detach an accept filter
+SO_GET_FILTER   nil     Obtain filter set by SO_ATTACH_FILTER (Linux 3.8)
 SO_PEERNAME	nil	Name of the connecting user
 SO_TIMESTAMP	nil	Receive timestamp with datagrams (timeval)
 SO_TIMESTAMPNS	nil	Receive nanosecond timestamp with datagrams (timespec)
@@ -602,6 +605,21 @@ SO_BINTIME	nil	Receive timestamp with datagrams (bintime)
 SO_RECVUCRED	nil	Receive user credentials with datagram
 SO_MAC_EXEMPT	nil	Mandatory Access Control exemption for unlabeled peers
 SO_ALLZONES	nil	Bypass zone boundaries
+SO_PEERSEC      nil     Obtain the security credentials (Linux 2.6.2)
+SO_PASSSEC      nil     Toggle security context passing (Linux 2.6.18)
+SO_MARK         nil     Set the mark for mark-based routing (Linux 2.6.25)
+SO_TIMESTAMPING nil     Time stamping of incoming and outgoing packets (Linux 2.6.30)
+SO_PROTOCOL     nil     Protocol given for socket() (Linux 2.6.32)
+SO_DOMAIN       nil     Domain given for socket() (Linux 2.6.32)
+SO_RXQ_OVFL     nil     Toggle cmsg for number of packets dropped (Linux 2.6.33)
+SO_WIFI_STATUS  nil     Toggle cmsg for wifi status (Linux 3.3)
+SO_PEEK_OFF     nil     Set the peek offset (Linux 3.4)
+SO_NOFCS        nil     Set netns of a socket (Linux 3.4)
+SO_LOCK_FILTER  nil     Lock the filter attached to a socket (Linux 3.9)
+SO_SELECT_ERR_QUEUE     nil     Make select() detect socket error queue with errorfds (Linux 3.10)
+SO_BUSY_POLL    nil     Set the threshold in microseconds for low latency polling (Linux 3.11)
+SO_MAX_PACING_RATE      nil     Cap the rate computed by transport layer. [bytes per second] (Linux 3.13)
+SO_BPF_EXTENSIONS       nil     Query supported BPF extensions (Linux 3.14)
 
 SOPRI_INTERACTIVE	nil	Interactive socket priority
 SOPRI_NORMAL	nil	Normal socket priority
@@ -715,10 +733,12 @@ SOMAXCONN	5	Maximum connection requests that may be queued for a socket
 SCM_RIGHTS	nil	Access rights
 SCM_TIMESTAMP	nil	Timestamp (timeval)
 SCM_TIMESTAMPNS	nil	Timespec (timespec)
+SCM_TIMESTAMPING        nil     Timestamp (timespec list) (Linux 2.6.30)
 SCM_BINTIME	nil	Timestamp (bintime)
 SCM_CREDENTIALS	nil	The sender's credentials
 SCM_CREDS	nil	Process credentials
 SCM_UCRED	nil	User credentials
+SCM_WIFI_STATUS nil     Wifi status (Linux 3.3)
 
 LOCAL_PEERCRED	nil	Retrieve peer credentials
 LOCAL_CREDS	nil	Pass credentials to receiver
