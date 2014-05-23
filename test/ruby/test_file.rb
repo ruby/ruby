@@ -329,11 +329,11 @@ class TestFile < Test::Unit::TestCase
 
     delta = 1
     stat = File.stat(path)
-    if stat.birthtime != stat.ctime
-      assert_in_delta tb,   stat.birthtime.to_f, delta
-    end
+    assert_in_delta tb,   stat.birthtime.to_f, delta
     assert_in_delta t0+2, stat.mtime.to_f, delta
-    assert_in_delta t0+4, stat.ctime.to_f, delta
+    if stat.birthtime != stat.ctime
+      assert_in_delta t0+4, stat.ctime.to_f, delta
+    end
     assert_in_delta t0+6, stat.atime.to_f, delta
   rescue NotImplementedError
   end
