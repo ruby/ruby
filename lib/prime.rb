@@ -29,7 +29,7 @@ class Integer
     Prime.prime_division(self, generator)
   end
 
-  # Returns true if +self+ is a prime number, false for a composite.
+  # Returns true if +self+ is a prime number, else returns false.
   def prime?
     Prime.prime?(self)
   end
@@ -150,7 +150,7 @@ class Prime
   end
 
 
-  # Returns true if +value+ is prime, false for a composite.
+  # Returns true if +value+ is prime number, else returns false.
   #
   # == Parameters
   #

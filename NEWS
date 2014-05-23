@@ -111,6 +111,11 @@ with all sufficient information, see the ChangeLog file.
   * Removed because it conflicts to minitest 5, and it was just an wrapper
     of minitest 4. [Feature #9711]
 
+* Prime
+  * incompatible changes:
+    * Prime.prime? now returns false for negative numbers. This method
+      should not be used to know the number is composite or not. [Bug #7395]
+
 === Built-in global variables compatibility issues
 
 === C API updates

@@ -1,3 +1,8 @@
+Sat May 24 00:25:34 2014  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* NEWS: add information of incompatibility about Prime.prime?
+	* lib/prime.rb: fix docs.
+
 Fri May 23 21:36:28 2014  Josh Goebel  <dreamer3@gmail.com>
 
 	* net/protocol.rb (using_each_crlf_line): fix SMTP dot-stuffing
