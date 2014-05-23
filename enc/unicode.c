@@ -186,15 +186,18 @@ onigenc_unicode_property_name_to_ctype(OnigEncoding enc, UChar* name, UChar* end
 
 
 static int
-code2_cmp(OnigCodePoint* x, OnigCodePoint* y)
+code2_cmp(st_data_t x0, st_data_t y0)
 {
+  const OnigCodePoint *x = (const OnigCodePoint *)x0;
+  const OnigCodePoint *y = (const OnigCodePoint *)y0;
   if (x[0] == y[0] && x[1] == y[1]) return 0;
   return 1;
 }
 
 static st_index_t
-code2_hash(OnigCodePoint* x)
+code2_hash(st_data_t x0)
 {
+  const OnigCodePoint *x = (const OnigCodePoint *)x0;
   return (st_index_t )(x[0] + x[1]);
 }
 
@@ -204,15 +207,18 @@ static const struct st_hash_type type_code2_hash = {
 };
 
 static int
-code3_cmp(OnigCodePoint* x, OnigCodePoint* y)
+code3_cmp(st_data_t x0, st_data_t y0)
 {
+  const OnigCodePoint *x = (const OnigCodePoint *)x0;
+  const OnigCodePoint *y = (const OnigCodePoint *)y0;
   if (x[0] == y[0] && x[1] == y[1] && x[2] == y[2]) return 0;
   return 1;
 }
 
 static st_index_t
-code3_hash(OnigCodePoint* x)
+code3_hash(st_data_t x0)
 {
+  const OnigCodePoint *x = (const OnigCodePoint *)x0;
   return (st_index_t )(x[0] + x[1] + x[2]);
 }
 
@@ -291,7 +297,7 @@ onigenc_unicode_mbc_case_fold(OnigEncoding enc,
     OnigCaseFoldType flag ARG_UNUSED, const UChar** pp, const UChar* end,
     UChar* fold)
 {
-  CodePointList3 *to;
+  const CodePointList3 *to;
   OnigCodePoint code;
   int i, len, rlen;
   const UChar *p = *pp;
@@ -483,8 +489,8 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
 {
   int n, i, j, k, len;
   OnigCodePoint code, codes[3];
-  CodePointList3 *to, *z3;
-  CodePointList2 *z2;
+  const CodePointList3 *to, *z3;
+  const CodePointList2 *z2;
 
   if (CaseFoldInited == 0) init_case_fold_table();
 
