@@ -312,7 +312,9 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_stat
+    tb = Process.clock_gettime(Process::CLOCK_REALTIME)
     file = Tempfile.new("stat")
+    tb = (tb + Process.clock_gettime(Process::CLOCK_REALTIME)) / 2
     file.close
     path = file.path
 
@@ -328,7 +330,7 @@ class TestFile < Test::Unit::TestCase
     delta = 1
     stat = File.stat(path)
     if stat.birthtime != stat.ctime
-      assert_in_delta t0,   stat.birthtime.to_f, delta
+      assert_in_delta tb,   stat.birthtime.to_f, delta
     end
     assert_in_delta t0+2, stat.mtime.to_f, delta
     assert_in_delta t0+4, stat.ctime.to_f, delta
