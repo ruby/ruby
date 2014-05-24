@@ -1,3 +1,9 @@
+Sat May 24 14:59:12 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/minitest: Remove comments not appropriate now.
+
+	* test/minitest: Ditto.
+
 Sat May 24 14:02:04 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* NEWS: added minitest changes.
