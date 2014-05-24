@@ -1,3 +1,7 @@
+Sat May 24 18:45:30 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/benchmark/test_benchmark.rb: Use test/unit.
+
 Sat May 24 16:20:59 2014  Eric Wong  <e@80x24.org>
 
 	* process.c (proc_getgroups, proc_setgroups): use ALLOCV_N
