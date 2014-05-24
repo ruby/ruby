@@ -1,3 +1,8 @@
+Sat May 24 22:37:20 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* array.c: [DOC] Add more documents to shuffle! and shuffle.
+	  Contributed by @JuanitoFatas [ci skip][fix GH-612]
+
 Sat May 24 22:28:55 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/lib/minitest/.document: removed unused configuration.

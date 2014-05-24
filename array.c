@@ -4459,7 +4459,13 @@ static ID id_random;
  *
  *  Shuffles elements in +self+ in place.
  *
+ *     a = [ 1, 2, 3 ]           #=> [1, 2, 3]
+ *     a.shuffle!                #=> [2, 3, 1]
+ *     a                         #=> [2, 3, 1]
+ *
  *  The optional +rng+ argument will be used as the random number generator.
+ *
+ *     a.shuffle!(random: Random.new(1))  #=> [1, 3, 2]
  */
 
 static VALUE
@@ -4506,6 +4512,7 @@ rb_ary_shuffle_bang(int argc, VALUE *argv, VALUE ary)
  *
  *     a = [ 1, 2, 3 ]           #=> [1, 2, 3]
  *     a.shuffle                 #=> [2, 3, 1]
+ *     a                         #=> [1, 2, 3]
  *
  *  The optional +rng+ argument will be used as the random number generator.
  *
