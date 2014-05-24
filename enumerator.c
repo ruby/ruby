@@ -1140,7 +1140,8 @@ yielder_yield(VALUE obj, VALUE args)
 }
 
 /* :nodoc: */
-static VALUE yielder_yield_push(VALUE obj, VALUE args)
+static VALUE
+yielder_yield_push(VALUE obj, VALUE args)
 {
     yielder_yield(obj, args);
     return obj;
