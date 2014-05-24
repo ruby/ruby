@@ -150,7 +150,7 @@ class Prime
   end
 
 
-  # Returns true if +value+ is prime number, else returns false.
+  # Returns true if +value+ is a prime number, else returns false.
   #
   # == Parameters
   #
