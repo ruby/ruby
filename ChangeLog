@@ -1,3 +1,8 @@
+Sat May 24 15:05:32 2014  yui-knk  <spiketeika@gmail.com>
+
+	* enumerator.c (yielder_yield_push): Insert a break after the
+	  method return value.  [fix GH-617]
+
 Sat May 24 14:59:12 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/minitest: Remove comments not appropriate now.
