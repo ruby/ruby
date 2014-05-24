@@ -1,3 +1,7 @@
+Sun May 25 08:43:16 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/logger.rb: refactored to include Logger::Period.
+
 Sun May 25 06:50:19 2014  Zachary Scott  <e@zzak.io>
 
 	* vm_eval.c: [DOC] Improve instance_eval description when given a

@@ -530,9 +530,48 @@ private
     end
   end
 
+  module Period
+    module_function
+
+    SiD = 24 * 60 * 60
+
+    def next_rotate_time(now, shift_age)
+      case shift_age
+      when /^daily$/
+        t = Time.mktime(now.year, now.month, now.mday) + SiD
+      when /^weekly$/
+        t = Time.mktime(now.year, now.month, now.mday) + SiD * (7 - now.wday)
+      when /^monthly$/
+        t = Time.mktime(now.year, now.month, 1) + SiD * 31
+        mday = (1 if t.mday > 1)
+      else
+        return now
+      end
+      if mday or t.hour.nonzero? or t.min.nonzero? or t.sec.nonzero?
+        t = Time.mktime(t.year, t.month, mday || (t.mday + (t.hour > 12 ? 1 : 0)))
+      end
+      t
+    end
+
+    def previous_period_end(now, shift_age)
+      case shift_age
+      when /^daily$/
+        t = Time.mktime(now.year, now.month, now.mday) - SiD / 2
+      when /^weekly$/
+        t = Time.mktime(now.year, now.month, now.mday) - (SiD * (now.wday + 1) + SiD / 2)
+      when /^monthly$/
+        t = Time.mktime(now.year, now.month, 1) - SiD / 2
+      else
+        return now
+      end
+      Time.mktime(t.year, t.month, t.mday, 23, 59, 59)
+    end
+  end
 
   # Device used for logging messages.
   class LogDevice
+    include Period
+
     attr_reader :dev
     attr_reader :filename
 
@@ -699,49 +738,6 @@ private
       return true
     end
   end
-
-  module Period
-    module_function
-
-    SiD = 24 * 60 * 60
-
-    def next_rotate_time(now, shift_age)
-      case shift_age
-      when /^daily$/
-        t = Time.mktime(now.year, now.month, now.mday) + SiD
-      when /^weekly$/
-        t = Time.mktime(now.year, now.month, now.mday) + SiD * (7 - now.wday)
-      when /^monthly$/
-        t = Time.mktime(now.year, now.month, 1) + SiD * 31
-        mday = (1 if t.mday > 1)
-      else
-        return now
-      end
-      if mday or t.hour.nonzero? or t.min.nonzero? or t.sec.nonzero?
-        t = Time.mktime(t.year, t.month, mday || (t.mday + (t.hour > 12 ? 1 : 0)))
-      end
-      t
-    end
-
-    def previous_period_end(now, shift_age)
-      case shift_age
-      when /^daily$/
-        t = Time.mktime(now.year, now.month, now.mday) - SiD / 2
-      when /^weekly$/
-        t = Time.mktime(now.year, now.month, now.mday) - (SiD * (now.wday + 1) + SiD / 2)
-      when /^monthly$/
-        t = Time.mktime(now.year, now.month, 1) - SiD / 2
-      else
-        return now
-      end
-      Time.mktime(t.year, t.month, t.mday, 23, 59, 59)
-    end
-  end
-
-  class LogDevice
-    include Period
-  end
-
 
   #
   # == Description
