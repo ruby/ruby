@@ -330,6 +330,7 @@ class TestSocket < Test::Unit::TestCase
       ip_addrs.reject! {|ai|
         s = famlies[ai.afamily]
         next true unless s
+        next true if ai.ipv6_linklocal? # IPv6 link-local address is too troublesome in this test.
         case RUBY_PLATFORM
         when /linux/
           if ai.ip_address.include?('%') and
