@@ -1,3 +1,7 @@
+Sat May 24 22:28:55 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/lib/minitest/.document: removed unused configuration.
+
 Sat May 24 19:08:47 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/minitest/spec.rb: Unused file removed.
