@@ -8,8 +8,6 @@ class AnError < StandardError; include MyModule; end
 class ImmutableString < String; def inspect; super.freeze; end; end
 
 class TestMiniTestUnit < MetaMetaMetaTestCase
-  parallelize_me!
-
   pwd = Pathname.new File.expand_path Dir.pwd
   basedir = Pathname.new(File.expand_path "lib/minitest") + 'mini'
   basedir = basedir.relative_path_from(pwd).to_s
@@ -557,56 +555,6 @@ class TestMiniTestRunner < MetaMetaMetaTestCase
     def await
       @lock.synchronize { @cv.wait_while { @count > 0 } }
     end
-  end
-
-  def test_parallel_each_size
-    assert_equal 0, ParallelEach.new([]).size
-  end
-
-  def test_run_parallel
-    skip "I don't have ParallelEach debugged yet" if maglev?
-
-    test_count = 2
-    test_latch = Latch.new test_count
-    main_latch = Latch.new
-
-    thread = Thread.new {
-      Thread.current.abort_on_exception = true
-
-      # This latch waits until both test latches have been released.  Both
-      # latches can't be released unless done in separate threads because
-      # `main_latch` keeps the test method from finishing.
-      test_latch.await
-      main_latch.release
-    }
-
-    Class.new MiniTest::Unit::TestCase do
-      parallelize_me!
-
-      test_count.times do |i|
-        define_method :"test_wait_on_main_thread_#{i}" do
-          test_latch.release
-
-          # This latch blocks until the "main thread" releases it. The main
-          # thread can't release this latch until both test latches have
-          # been released.  This forces the latches to be released in separate
-          # threads.
-          main_latch.await
-          assert true
-        end
-      end
-    end
-
-    expected = clean <<-EOM
-      ..
-
-      Finished tests in 0.00
-
-      2 tests, 2 assertions, 0 failures, 0 errors, 0 skips
-    EOM
-
-    assert_report expected
-    assert thread.join
   end
 end
 
@@ -1392,7 +1340,6 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
 
   def test_capture_subprocess_io
     @assertion_count = 0
-    skip "Dunno why but the parallel run of this fails"
 
     non_verbose do
       out, err = capture_subprocess_io do
@@ -1756,8 +1703,6 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
 end
 
 class TestMiniTestGuard < MiniTest::Unit::TestCase
-  parallelize_me!
-
   def test_mri_eh
     assert self.class.mri? "ruby blah"
     assert self.mri? "ruby blah"

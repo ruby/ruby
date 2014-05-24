@@ -902,8 +902,6 @@ module MiniTest
     ##
     # Runs all the +suites+ for a given +type+.
     #
-    # NOTE: this method is redefined in parallel_each.rb, which is
-    # loaded if a test-suite calls parallelize_me!.
 
     def _run_suites suites, type
       suites.map { |suite| _run_suite suite, type }
@@ -1343,20 +1341,6 @@ module MiniTest
 
         define_method :mu_pp do |o|
           o.pretty_inspect
-        end
-      end
-
-      ##
-      # Call this at the top of your tests when you want to run your
-      # tests in parallel. In doing so, you're admitting that you rule
-      # and your tests are awesome.
-
-      def self.parallelize_me!
-        require "minitest/parallel_each"
-
-        class << self
-          undef_method :test_order if method_defined? :test_order
-          define_method :test_order do :parallel end
         end
       end
 

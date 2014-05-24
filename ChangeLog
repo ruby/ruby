@@ -1,3 +1,18 @@
+Sat May 24 15:49:39 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/minitest/unit.rb (parallelize_me!): Removed.
+	  This fixes the line-by-line structure of the test result in verbose
+	  mode.  [ruby-core:54905]
+
+	* test/lib/minitest/parallel_each.rb: Removed.
+
+	* test/minitest/test_minitest_mock.rb: Don't call parallelize_me!.
+
+	* test/minitest/test_minitest_spec.rb: Ditto.
+
+	* test/minitest/test_minitest_unit.rb: Ditto.
+	  Tests for parallel feature removed.
+
 Sat May 24 15:29:10 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/minitest/hell.rb: Unused file removed.

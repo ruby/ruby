@@ -3,8 +3,6 @@
 require 'minitest/autorun'
 
 class TestMiniTestMock < MiniTest::Unit::TestCase
-  parallelize_me!
-
   def setup
     @mock = MiniTest::Mock.new.expect(:foo, nil)
     @mock.expect(:meaning_of_life, 42)
@@ -273,8 +271,6 @@ end
 require "minitest/metametameta"
 
 class TestMiniTestStub < MiniTest::Unit::TestCase
-  parallelize_me!
-
   def setup
     super
     MiniTest::Unit::TestCase.reset

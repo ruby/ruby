@@ -593,8 +593,6 @@ class TestMetaStatic < MiniTest::Unit::TestCase
 end
 
 class TestMeta < MiniTest::Unit::TestCase
-  parallelize_me!
-
   def util_structure
     x = y = z = nil
     before_list = []
