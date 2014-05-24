@@ -1,3 +1,7 @@
+Sat May 24 14:02:04 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* NEWS: added minitest changes.
+
 Sat May 24 13:42:46 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/lib/test/unit/test-unit.gemspec: removed needless gemspec file.
