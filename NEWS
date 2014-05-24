@@ -107,6 +107,7 @@ with all sufficient information, see the ChangeLog file.
     It is happen when usual localtime doesn't preserve the offset from UTC.
   * Time.httpdate produces always UTC Time object.
   * Time.strptime raises ArgumentError when no date information.
+
 * lib/test/**/*.rb
   * Removed because it conflicts to minitest 5, and it was just an wrapper
     of minitest 4. [Feature #9711]
