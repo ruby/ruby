@@ -1,3 +1,8 @@
+Sat May 24 16:20:59 2014  Eric Wong  <e@80x24.org>
+
+	* process.c (proc_getgroups, proc_setgroups): use ALLOCV_N
+	  [Bug #9856]
+
 Sat May 24 15:49:39 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/minitest/unit.rb (parallelize_me!): Removed.
