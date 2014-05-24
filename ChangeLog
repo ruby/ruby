@@ -1,3 +1,7 @@
+Sat May 24 13:42:46 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/lib/test/unit/test-unit.gemspec: removed needless gemspec file.
+
 Sat May 24 09:39:06 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* defs/default_gems: removed mintiest entry.
