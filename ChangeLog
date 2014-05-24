@@ -1,3 +1,11 @@
+Sat May 24 19:08:47 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/minitest/spec.rb: Unused file removed.
+
+	* test/lib/minitest/autorun.rb: Don't require minitest/spec.
+
+	* test/lib/minitest/benchmark.rb: Ditto.
+
 Sat May 24 18:45:30 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/benchmark/test_benchmark.rb: Use test/unit.

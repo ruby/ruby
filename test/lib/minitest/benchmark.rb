@@ -1,7 +1,6 @@
 # encoding: utf-8
 
 require 'minitest/unit'
-require 'minitest/spec'
 
 class MiniTest::Unit # :nodoc:
   def run_benchmarks # :nodoc:
