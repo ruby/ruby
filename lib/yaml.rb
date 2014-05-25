@@ -12,40 +12,6 @@ end
 
 YAML = Psych # :nodoc:
 
-module Psych # :nodoc:
-  # For compatibility, deprecated
-  class EngineManager # :nodoc:
-    attr_reader :yamler # :nodoc:
-
-    def initialize # :nodoc:
-      @yamler = 'psych'
-    end
-
-    def syck? # :nodoc:
-      false
-    end
-
-    # Psych is always used and this method has no effect.
-    #
-    # This method is still present for compatibility.
-    #
-    # You may still use the Syck engine by installing
-    # the 'syck' gem and using the Syck constant.
-    def yamler= engine # :nodoc:
-      case engine
-      when 'syck' then warn "syck has been removed, psych is used instead"
-      when 'psych' then @yamler = 'psych'
-      else
-        raise(ArgumentError, "bad engine")
-      end
-
-      engine
-    end
-  end
-
-  ENGINE = EngineManager.new # :nodoc:
-end
-
 # YAML Ain't Markup Language
 #
 # This module provides a Ruby interface for data serialization in YAML format.

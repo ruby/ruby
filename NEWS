@@ -120,6 +120,9 @@ with all sufficient information, see the ChangeLog file.
     * Prime.prime? now returns false for negative numbers. This method
       should not be used to know the number is composite or not. [Bug #7395]
 
+* Psych
+  * Removed Psych::EngineManager [Bug #8344]
+
 === Built-in global variables compatibility issues
 
 === C API updates
