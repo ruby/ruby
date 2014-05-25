@@ -1145,6 +1145,24 @@ class TestFileUtils < Test::Unit::TestCase
       }
     end
 
+    def test_chown_dir_group_ownership_not_recursive
+      return unless @groups[1]
+
+      input_group_1 = @groups[0]
+      input_group_2 = @groups[1]
+      assert_output_lines([]) {
+        mkdir 'tmp/dir'
+        touch 'tmp/dir/a'
+        chown nil, input_group_1, ['tmp/dir', 'tmp/dir/a']
+        assert_ownership_group @groups[0], 'tmp/dir'
+        assert_ownership_group @groups[0], 'tmp/dir/a'
+        chown nil, input_group_2, 'tmp/dir'
+        assert_ownership_group @groups[1], 'tmp/dir'
+        # Make sure FileUtils.chmod does not chmod recursively
+        assert_ownership_group @groups[0], 'tmp/dir/a'
+      }
+    end
+
     if root_in_posix?
       def test_chown_with_root
         uid_1, uid_2 = distinct_uids(2)
@@ -1162,6 +1180,23 @@ class TestFileUtils < Test::Unit::TestCase
               assert_ownership_user uid, file
             }
           }
+        }
+      end
+
+      def test_chown_dir_user_ownership_not_recursive_with_root
+        uid_1, uid_2 = distinct_uids(2)
+        return unless uid_1 and uid_2
+
+        assert_output_lines([]) {
+          mkdir 'tmp/dir'
+          touch 'tmp/dir/a'
+          chown uid_1, nil, ['tmp/dir', 'tmp/dir/a']
+          assert_ownership_user uid_1, 'tmp/dir'
+          assert_ownership_user uid_1, 'tmp/dir/a'
+          chown uid_2, nil, 'tmp/dir'
+          assert_ownership_user uid_2, 'tmp/dir'
+          # Make sure FileUtils.chmod does not chmod recursively
+          assert_ownership_user uid_1, 'tmp/dir/a'
         }
       end
     else

@@ -1,3 +1,8 @@
+Sun May 25 09:57:09 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/fileutils/test_fileutils.rb: Added recursively chmod tests.
+	  [Feature #9303][ruby-core:59325]
+
 Sun May 25 09:41:56 2014  Zachary Scott  <e@zzak.io>
 
 	* class.c: [DOC] Fixed grammar and examples of instance_methods.
