@@ -1,3 +1,8 @@
+Sun May 25 10:19:34 2014  Zachary Scott  <e@zzak.io>
+
+	* enum.c: [DOC] Use #find in example to clarify alias by @rachellogie
+	  Patch submitted via documenting-ruby/ruby#34
+
 Sun May 25 10:16:43 2014  Zachary Scott  <e@zzak.io>
 
 	* cont.c: [DOC] Fix rdoc in example for Fiber#transfer by @majjoha

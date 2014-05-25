@@ -203,8 +203,8 @@ find_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
  *
  *  If no block is given, an enumerator is returned instead.
  *
- *     (1..10).detect  { |i| i % 5 == 0 and i % 7 == 0 }   #=> nil
- *     (1..100).detect { |i| i % 5 == 0 and i % 7 == 0 }   #=> 35
+ *     (1..10).detect	{ |i| i % 5 == 0 and i % 7 == 0 }   #=> nil
+ *     (1..100).find	{ |i| i % 5 == 0 and i % 7 == 0 }   #=> 35
  *
  */
 
