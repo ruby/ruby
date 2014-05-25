@@ -1,3 +1,8 @@
+Sun May 25 23:02:06 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/minitest/unit.rb (MiniTest::Assertions#diff): Remove
+	  tempfiles.
+
 Sun May 25 22:42:27 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/minitest/unit.rb: Check tempfile leak for each test class.
