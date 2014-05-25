@@ -1,3 +1,9 @@
+Sun May 25 08:54:38 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/openssl/test_partial_record_read.rb: Testing read_nonblock on
+	  a partial TLS record results in IO::WaitReadable by @mohamedhafez.
+	  [fix GH-547]
+
 Sun May 25 08:43:16 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/logger.rb: refactored to include Logger::Period.
