@@ -434,7 +434,9 @@ rb_vmdebug_thread_dump_state(VALUE self)
 #  define UNW_LOCAL_ONLY
 #  include <libunwind.h>
 #  undef backtrace
-int backtrace (void **trace, int size) {
+int
+backtrace(void **trace, int size)
+{
     unw_cursor_t cursor; unw_context_t uc;
     unw_word_t ip;
     int n = 0;
