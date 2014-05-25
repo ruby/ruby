@@ -1,3 +1,7 @@
+Sun May 25 12:32:42 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/minitest/unit.rb: Sort leaked threads and tempfiles.
+
 Sun May 25 12:15:30 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* signal.c (check_stack_overflow): fix condition to use ucontext

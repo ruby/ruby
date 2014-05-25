@@ -964,15 +964,18 @@ module MiniTest
       live2 = live_thread_and_tempfile
       thread_finished = live1[0] - live2[0]
       if !thread_finished.empty?
-        puts "Finished threads: #{inst.class}\##{inst.__name__}:#{thread_finished.map {|t| ' ' + t.inspect }.join}"
+        list = thread_finished.map {|t| ' ' + t.inspect }.sort.join
+        puts "Finished threads: #{inst.class}\##{inst.__name__}:#{list}"
       end
       thread_retained = live2[0] - live1[0]
       if !thread_retained.empty?
-        puts "Leaked threads: #{inst.class}\##{inst.__name__}:#{thread_retained.map {|t| ' ' + t.inspect }.join}"
+        list = thread_retained.map {|t| ' ' + t.inspect }.sort.join
+        puts "Leaked threads: #{inst.class}\##{inst.__name__}:#{list}"
       end
       tempfile_retained = live2[1] - live1[1]
       if !tempfile_retained.empty?
-        puts "Leaked tempfiles: #{inst.class}\##{inst.__name__}:#{tempfile_retained.map {|t| ' ' + t.inspect }.join}"
+        list = tempfile_retained.map {|t| ' ' + t.inspect }.sort.join
+        puts "Leaked tempfiles: #{inst.class}\##{inst.__name__}:#{list}"
         tempfile_retained.each {|t| t.unlink }
       end
     end
