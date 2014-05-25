@@ -240,7 +240,7 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
       ssl.close rescue nil
     end
 
-    def server_loop(ctx, ssls, server_proc)
+    def server_loop(ctx, ssls, server_proc, threads)
       loop do
         ssl = nil
         begin
@@ -249,10 +249,11 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
           retry
         end
 
-        Thread.start do
+        th = Thread.start do
           Thread.current.abort_on_exception = true
           server_proc.call(ctx, ssl)
         end
+        threads << th
       end
     rescue Errno::EBADF, IOError, Errno::EINVAL, Errno::ECONNABORTED, Errno::ENOTSOCK, Errno::ECONNRESET
     end
@@ -261,6 +262,7 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
       ctx_proc = args[:ctx_proc]
       server_proc = args[:server_proc]
       server_proc ||= method(:readwrite_loop)
+      threads = []
 
       store = OpenSSL::X509::Store.new
       store.add_cert(@ca_cert)
@@ -290,7 +292,7 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
       begin
         server = Thread.new do
           Thread.current.abort_on_exception = true
-          server_loop(ctx, ssls, server_proc)
+          server_loop(ctx, ssls, server_proc, threads)
         end
 
         $stderr.printf("%s started: pid=%d port=%d\n", SSL_SERVER, $$, port) if $DEBUG
@@ -318,6 +320,11 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
           tcps.close if (tcps)
         end
       end
+    ensure
+      threads.each {|th|
+        th.kill
+        th.join
+      }
     end
 
     def starttls(ssl)

@@ -1,3 +1,7 @@
+Sun May 25 14:22:30 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/openssl: Join threads.
+
 Sun May 25 12:46:47 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_bug_context): new function to report bug with
