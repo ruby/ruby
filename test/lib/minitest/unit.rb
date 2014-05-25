@@ -923,11 +923,11 @@ module MiniTest
         filter === m || filter === "#{suite}##{m}"
       }
 
+      live1 = live_thread_and_tempfile
+
       assertions = filtered_test_methods.map { |method|
         inst = suite.new method
         inst._assertions = 0
-
-        live1 = live_thread_and_tempfile
 
         print "#{suite}##{method} = " if @verbose
 
@@ -938,7 +938,9 @@ module MiniTest
         print result
         puts if @verbose
 
-        check_tempfile_and_thread inst, live1
+        live2 = live_thread_and_tempfile
+        check_tempfile_and_thread inst, live1, live2
+        live1 = live2
 
         inst._assertions
       }
@@ -960,8 +962,7 @@ module MiniTest
       [live_threads, live_tempfiles]
     end
 
-    def check_tempfile_and_thread(inst, live1)
-      live2 = live_thread_and_tempfile
+    def check_tempfile_and_thread(inst, live1, live2)
       thread_finished = live1[0] - live2[0]
       if !thread_finished.empty?
         list = thread_finished.map {|t| ' ' + t.inspect }.sort.join

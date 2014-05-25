@@ -1,3 +1,8 @@
+Sun May 25 17:09:13 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/minitest/unit.rb: Less ObjectSpace.each_object(Tempfile)
+	  invocation.
+
 Sun May 25 16:54:06 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/minitest/unit.rb: Use Thread.list instead of
