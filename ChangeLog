@@ -1,3 +1,7 @@
+Sun May 25 09:40:44 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/minitest/unit.rb: Show leakes threads and tempfiles.
+
 Sun May 25 08:54:38 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/openssl/test_partial_record_read.rb: Testing read_nonblock on

@@ -927,6 +927,8 @@ module MiniTest
         inst = suite.new method
         inst._assertions = 0
 
+        live1 = live_thread_and_tempfile
+
         print "#{suite}##{method} = " if @verbose
 
         start_time = Time.now if @verbose
@@ -936,10 +938,43 @@ module MiniTest
         print result
         puts if @verbose
 
+        check_tempfile_and_thread inst, live1
+
         inst._assertions
       }
 
       return assertions.size, assertions.inject(0) { |sum, n| sum + n }
+    end
+
+    def live_thread_and_tempfile
+      live_threads = ObjectSpace.each_object(Thread).find_all {|t|
+        t != Thread.current && t.alive?
+      }
+      if defined? Tempfile
+        live_tempfiles = ObjectSpace.each_object(Tempfile).find_all {|t|
+          t.path
+        }
+      else
+        live_tempfiles = []
+      end
+      [live_threads, live_tempfiles]
+    end
+
+    def check_tempfile_and_thread(inst, live1)
+      live2 = live_thread_and_tempfile
+      thread_finished = live1[0] - live2[0]
+      if !thread_finished.empty?
+        puts "Finished threads: #{inst.class}\##{inst.__name__}:#{thread_finished.map {|t| ' ' + t.inspect }.join}"
+      end
+      thread_retained = live2[0] - live1[0]
+      if !thread_retained.empty?
+        puts "Leaked threads: #{inst.class}\##{inst.__name__}:#{thread_retained.map {|t| ' ' + t.inspect }.join}"
+      end
+      tempfile_retained = live2[1] - live1[1]
+      if !tempfile_retained.empty?
+        puts "Leaked tempfiles: #{inst.class}\##{inst.__name__}:#{tempfile_retained.map {|t| ' ' + t.inspect }.join}"
+        tempfile_retained.each {|t| t.unlink }
+      end
     end
 
     ##
