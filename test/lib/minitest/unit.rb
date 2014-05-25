@@ -969,8 +969,10 @@ module MiniTest
     def check_thread_leak(inst, live1, live2)
       thread_finished = live1 - live2
       if !thread_finished.empty?
-        list = thread_finished.map {|t| ' ' + t.inspect }.sort.join
-        puts "Finished threads: #{inst.class}\##{inst.__name__}:#{list}"
+        list = thread_finished.map {|t| t.inspect }.sort
+        list.each {|str|
+          puts "Finished thread: #{inst.class}\##{inst.__name__}: #{str}"
+        }
       end
       thread_retained = live2 - live1
       if !thread_retained.empty?

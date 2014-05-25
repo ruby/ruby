@@ -1,3 +1,7 @@
+Mon May 26 07:59:34 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/minitest/unit.rb: Show Finished threads line-by-line.
+
 Mon May 26 01:39:02 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/csv.rb: Reject nil as data source for CSV.new, patch by @Peeja.
