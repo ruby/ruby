@@ -153,7 +153,7 @@ class TestResolvDNS < Test::Unit::TestCase
 
   def test_invalid_byte_comment
     bug9273 = '[ruby-core:59239] [Bug #9273]'
-    Tempfile.open('resolv_test_dns_') do |tmpfile|
+    Tempfile.create('resolv_test_dns_') do |tmpfile|
       tmpfile.print("\xff\x00\x40")
       tmpfile.close
       assert_nothing_raised(ArgumentError, bug9273) do
