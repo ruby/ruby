@@ -225,6 +225,7 @@ module Rinda
 
       @w_services.each do |thread|
         thread.kill
+        thread.join
       end
 
       @sockets.each do |socket|
@@ -232,6 +233,7 @@ module Rinda
       end
 
       @r_service.kill
+      @r_service.join
     end
 
   end

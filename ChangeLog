@@ -1,3 +1,8 @@
+Sun May 25 15:53:54 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/rinda/ring.rb (Rinda::RingServer#shutdown): Join the killed
+	  threads.
+
 Sun May 25 15:26:17 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/webrick/utils.rb: Override the inspect method of the thread
