@@ -1,3 +1,7 @@
+Mon May 26 01:02:09 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/minitest/unit.rb: Show leaked tempfiles line-by-line.
+
 Sun May 25 23:02:06 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/minitest/unit.rb (MiniTest::Assertions#diff): Remove

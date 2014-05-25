@@ -998,8 +998,10 @@ module MiniTest
       end
       tempfile_retained = live2 - live1
       if !tempfile_retained.empty?
-        list = tempfile_retained.map {|t| ' ' + t.inspect }.sort.join
-        puts "Leaked tempfiles: #{name}:#{list}"
+        list = tempfile_retained.map {|t| ' ' + t.inspect }.sort
+        list.each {|str|
+          puts "Leaked tempfile: #{name}: #{str}"
+        }
         tempfile_retained.each {|t| t.unlink }
       end
       live2
