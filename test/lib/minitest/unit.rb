@@ -974,8 +974,10 @@ module MiniTest
       end
       thread_retained = live2 - live1
       if !thread_retained.empty?
-        list = thread_retained.map {|t| ' ' + t.inspect }.sort.join
-        puts "Leaked threads: #{inst.class}\##{inst.__name__}:#{list}"
+        list = thread_retained.map {|t| t.inspect }.sort
+        list.each {|str|
+          puts "Leaked thread: #{inst.class}\##{inst.__name__}: #{str}"
+        }
       end
       live2
     end
@@ -998,7 +1000,7 @@ module MiniTest
       end
       tempfile_retained = live2 - live1
       if !tempfile_retained.empty?
-        list = tempfile_retained.map {|t| ' ' + t.inspect }.sort
+        list = tempfile_retained.map {|t| t.inspect }.sort
         list.each {|str|
           puts "Leaked tempfile: #{name}: #{str}"
         }
