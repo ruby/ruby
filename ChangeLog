@@ -47,7 +47,7 @@ Sun May 25 09:58:02 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 Sun May 25 09:57:09 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
-	* test/fileutils/test_fileutils.rb: Added recursively chmod tests.
+	* test/fileutils/test_fileutils.rb: Added recursively chown tests.
 	  [Feature #9303][ruby-core:59325]
 
 Sun May 25 09:41:56 2014  Zachary Scott  <e@zzak.io>
