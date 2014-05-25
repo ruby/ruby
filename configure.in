@@ -969,7 +969,8 @@ AS_CASE(["$target_os"],
 		    [macosx_10_5=yes], [macosx_10_5=no])
 		AC_MSG_RESULT($macosx_10_5)
 		if test $macosx_10_5 = yes; then
-		    ac_cv_header_ucontext_h=no
+		    ac_cv_func_getcontext=no
+		    ac_cv_func_setcontext=no
 		else
 		    AC_DEFINE(BROKEN_SETREUID, 1)
 		    AC_DEFINE(BROKEN_SETREGID, 1)

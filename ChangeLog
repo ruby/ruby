@@ -1,3 +1,9 @@
+Sun May 25 20:31:49 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ac_cv_func_{getcontext,setcontext}): do not
+	  disable ucontext.h entirely, but disable use of functions only.
+	  `ucontext_t` is necessary in the signal handler now.
+
 Sun May 25 20:00:23 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* signal.c (check_stack_overflow): revert part of r46100, the
