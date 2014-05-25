@@ -789,8 +789,145 @@ procstat_vm(struct procstat *procstat, struct kinfo_proc *kipp)
 }
 #endif
 
+#if defined __linux__
+# if defined __x86_64__ || defined __i386__
+#  define HAVE_PRINT_MACHINE_REGISTERS 1
+# endif
+#elif defined __APPLE__
+# if defined __x86_64__ || defined __i386__
+#  define HAVE_PRINT_MACHINE_REGISTERS 1
+# endif
+#endif
+
+#ifdef HAVE_PRINT_MACHINE_REGISTERS
+static int
+print_machine_register(size_t reg, const char *reg_name, int col_count, int max_col)
+{
+    int ret;
+    char buf[64];
+
+#ifdef __LP64__
+    ret = snprintf(buf, sizeof(buf), " %3.3s: 0x%016zx", reg_name, reg);
+#else
+    ret = snprintf(buf, sizeof(buf), " %3.3s: 0x%08zx", reg_name, reg);
+#endif
+    if (col_count + ret > max_col) {
+	fputs("\n", stderr);
+	col_count = 0;
+    }
+    col_count += ret;
+    fputs(buf, stderr);
+    return col_count;
+}
+# ifdef __linux__
+#   define dump_machine_register(reg) (col_count = print_machine_register(mctx->gregs[REG_##reg], #reg, col_count, 80))
+# elif defined __APPLE__
+#   define dump_machine_register(reg) (col_count = print_machine_register(mctx->__ss.__##reg, #reg, col_count, 80))
+# endif
+
+static void
+rb_dump_machine_register(const ucontext_t *ctx)
+{
+    int col_count = 0;
+    if (!ctx) return;
+
+    fprintf(stderr, "-- Machine register context "
+	    "------------------------------------------------\n");
+
+# if defined __linux__
+    {
+	const mcontext_t *const mctx = &ctx->uc_mcontext;
+#   if defined __x86_64__
+	dump_machine_register(RIP);
+	dump_machine_register(RBP);
+	dump_machine_register(RSP);
+	dump_machine_register(RAX);
+	dump_machine_register(RBX);
+	dump_machine_register(RCX);
+	dump_machine_register(RDX);
+	dump_machine_register(RDI);
+	dump_machine_register(RSI);
+	dump_machine_register(R8);
+	dump_machine_register(R9);
+	dump_machine_register(R10);
+	dump_machine_register(R11);
+	dump_machine_register(R12);
+	dump_machine_register(R13);
+	dump_machine_register(R14);
+	dump_machine_register(R15);
+	dump_machine_register(EFL);
+#   elif defined __i386__
+	dump_machine_register(GS);
+	dump_machine_register(FS);
+	dump_machine_register(ES);
+	dump_machine_register(DS);
+	dump_machine_register(EDI);
+	dump_machine_register(ESI);
+	dump_machine_register(EBP);
+	dump_machine_register(ESP);
+	dump_machine_register(EBX);
+	dump_machine_register(EDX);
+	dump_machine_register(ECX);
+	dump_machine_register(EAX);
+	dump_machine_register(TRAPNO);
+	dump_machine_register(ERR);
+	dump_machine_register(EIP);
+	dump_machine_register(CS);
+	dump_machine_register(EFL);
+	dump_machine_register(UESP);
+	dump_machine_register(SS);
+#   endif
+    }
+# elif defined __APPLE__
+    {
+	const mcontext_t mctx = ctx->uc_mcontext;
+#   if defined __x86_64__
+	dump_machine_register(rax);
+	dump_machine_register(rbx);
+	dump_machine_register(rcx);
+	dump_machine_register(rdx);
+	dump_machine_register(rdi);
+	dump_machine_register(rsi);
+	dump_machine_register(rbp);
+	dump_machine_register(rsp);
+	dump_machine_register(r8);
+	dump_machine_register(r9);
+	dump_machine_register(r10);
+	dump_machine_register(r11);
+	dump_machine_register(r12);
+	dump_machine_register(r13);
+	dump_machine_register(r14);
+	dump_machine_register(r15);
+	dump_machine_register(rip);
+	dump_machine_register(rflags);
+#   elif defined __i386__
+	dump_machine_register(eax);
+	dump_machine_register(ebx);
+	dump_machine_register(ecx);
+	dump_machine_register(edx);
+	dump_machine_register(edi);
+	dump_machine_register(esi);
+	dump_machine_register(ebp);
+	dump_machine_register(esp);
+	dump_machine_register(ss);
+	dump_machine_register(eflags);
+	dump_machine_register(eip);
+	dump_machine_register(cs);
+	dump_machine_register(ds);
+	dump_machine_register(es);
+	dump_machine_register(fs);
+	dump_machine_register(gs);
+#   endif
+    }
+# endif
+    fprintf(stderr, "\n\n");
+}
+#else
+# define rb_dump_machine_register(ctx) ((void)0)
+#endif /* HAVE_PRINT_MACHINE_REGISTERS */
+
 void
-rb_vm_bugreport(void)
+rb_vm_bugreport(const void *ctx)
 {
 #ifdef __linux__
 # define PROC_MAPS_NAME "/proc/self/maps"
@@ -819,6 +956,8 @@ rb_vm_bugreport(void)
 	rb_backtrace_print_as_bugreport();
 	fputs("\n", stderr);
     }
+
+    rb_dump_machine_register(ctx);
 
 #if HAVE_BACKTRACE || defined(_WIN32)
     fprintf(stderr, "-- C level backtrace information "

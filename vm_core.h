@@ -836,7 +836,8 @@ extern void rb_vmdebug_debug_print_post(rb_thread_t *th, rb_control_frame_t *cfp
 
 #define SDR() rb_vmdebug_stack_dump_raw(GET_THREAD(), GET_THREAD()->cfp)
 #define SDR2(cfp) rb_vmdebug_stack_dump_raw(GET_THREAD(), (cfp))
-void rb_vm_bugreport(void);
+void rb_vm_bugreport(const void *);
+NORETURN(void rb_bug_context(const void *, const char *fmt, ...));
 
 /* functions about thread/vm execution */
 RUBY_SYMBOL_EXPORT_BEGIN

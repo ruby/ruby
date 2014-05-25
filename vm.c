@@ -2376,7 +2376,7 @@ extern VALUE *rb_gc_register_stack_start;
 static VALUE
 sdr(void)
 {
-    rb_vm_bugreport();
+    rb_vm_bugreport(NULL);
     return Qnil;
 }
 

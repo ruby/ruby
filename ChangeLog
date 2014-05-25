@@ -1,3 +1,13 @@
+Sun May 25 12:46:47 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_bug_context): new function to report bug with
+	  context.
+
+	* vm_dump.c (rb_vm_bugreport): accepts `ucontext_t` argument to
+	  dump machine regisiters.  based on [GH-584].
+
+	* signal.c (sigbus, sigsegv): dump machine regisiters if available.
+
 Sun May 25 12:32:42 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/minitest/unit.rb: Sort leaked threads and tempfiles.

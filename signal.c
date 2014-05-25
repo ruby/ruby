@@ -507,9 +507,11 @@ typedef RETSIGTYPE (*sighandler_t)(int);
 #ifdef USE_SIGALTSTACK
 typedef void ruby_sigaction_t(int, siginfo_t*, void*);
 #define SIGINFO_ARG , siginfo_t *info, void *ctx
+#define SIGINFO_CTX ctx
 #else
 typedef RETSIGTYPE ruby_sigaction_t(int);
 #define SIGINFO_ARG
+#define SIGINFO_CTX 0
 #endif
 
 #ifdef USE_SIGALTSTACK
@@ -776,7 +778,7 @@ sigbus(int sig SIGINFO_ARG)
 #if defined __APPLE__
     CHECK_STACK_OVERFLOW();
 #endif
-    rb_bug("Bus Error" MESSAGE_FAULT_ADDRESS);
+    rb_bug_context(SIGINFO_CTX, "Bus Error" MESSAGE_FAULT_ADDRESS);
 }
 #endif
 
@@ -813,7 +815,7 @@ sigsegv(int sig SIGINFO_ARG)
 
     segv_received = 1;
     ruby_disable_gc_stress = 1;
-    rb_bug("Segmentation fault" MESSAGE_FAULT_ADDRESS);
+    rb_bug_context(SIGINFO_CTX, "Segmentation fault" MESSAGE_FAULT_ADDRESS);
 }
 #endif
 

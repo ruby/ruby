@@ -292,41 +292,78 @@ rb_bug_reporter_add(void (*func)(FILE *, void *), void *data)
     return 1;
 }
 
-static void
-report_bug(const char *file, int line, const char *fmt, va_list args)
+/* SIGSEGV handler might have a very small stack. Thus we need to use it carefully. */
+#define REPORT_BUG_BUFSIZ 256
+static FILE *
+bug_report_file(const char *file, int line)
 {
-    /* SIGSEGV handler might have a very small stack. Thus we need to use it carefully. */
-    char buf[256];
+    char buf[REPORT_BUG_BUFSIZ];
     FILE *out = stderr;
-    int len = err_position_0(buf, 256, file, line);
+    int len = err_position_0(buf, sizeof(buf), file, line);
 
     if ((ssize_t)fwrite(buf, 1, len, out) == (ssize_t)len ||
 	(ssize_t)fwrite(buf, 1, len, (out = stdout)) == (ssize_t)len) {
-
-	fputs("[BUG] ", out);
-	vsnprintf(buf, 256, fmt, args);
-	fputs(buf, out);
-	snprintf(buf, 256, "\n%s\n\n", ruby_description);
-	fputs(buf, out);
-
-	rb_vm_bugreport();
-
-	/* call additional bug reporters */
-	{
-	    int i;
-	    for (i=0; i<bug_reporters_size; i++) {
-		struct bug_reporters *reporter = &bug_reporters[i];
-		(*reporter->func)(out, reporter->data);
-	    }
-	}
-	fprintf(out, REPORTBUG_MSG);
+	return out;
     }
+    return NULL;
+}
+
+static void
+bug_report_begin(FILE *out, const char *fmt, va_list args)
+{
+    char buf[REPORT_BUG_BUFSIZ];
+
+    fputs("[BUG] ", out);
+    vsnprintf(buf, sizeof(buf), fmt, args);
+    fputs(buf, out);
+    snprintf(buf, sizeof(buf), "\n%s\n\n", ruby_description);
+    fputs(buf, out);
+}
+
+#define bug_report_begin(out, fmt) do { \
+    va_list args; \
+    va_start(args, fmt); \
+    bug_report_begin(out, fmt, args); \
+    va_end(args); \
+} while (0)
+
+static void
+bug_report_end(FILE *out)
+{
+    /* call additional bug reporters */
+    {
+	int i;
+	for (i=0; i<bug_reporters_size; i++) {
+	    struct bug_reporters *reporter = &bug_reporters[i];
+	    (*reporter->func)(out, reporter->data);
+	}
+    }
+    fprintf(out, REPORTBUG_MSG);
+}
+
+#define report_bug(file, line, fmt, ctx) do { \
+    FILE *out = bug_report_file(file, line); \
+    if (out) { \
+	bug_report_begin(out, fmt); \
+	rb_vm_bugreport(ctx); \
+	bug_report_end(out); \
+    } \
+} while (0) \
+
+NORETURN(static void die(void));
+static void
+die(void)
+{
+#if defined(_WIN32) && defined(RUBY_MSVCRT_VERSION) && RUBY_MSVCRT_VERSION >= 80
+    _set_abort_behavior( 0, _CALL_REPORTFAULT);
+#endif
+
+    abort();
 }
 
 void
 rb_bug(const char *fmt, ...)
 {
-    va_list args;
     const char *file = NULL;
     int line = 0;
 
@@ -335,16 +372,27 @@ rb_bug(const char *fmt, ...)
 	line = rb_sourceline();
     }
 
-    va_start(args, fmt);
-    report_bug(file, line, fmt, args);
-    va_end(args);
+    report_bug(file, line, fmt, NULL);
 
-#if defined(_WIN32) && defined(RUBY_MSVCRT_VERSION) && RUBY_MSVCRT_VERSION >= 80
-    _set_abort_behavior( 0, _CALL_REPORTFAULT);
-#endif
-
-    abort();
+    die();
 }
+
+void
+rb_bug_context(const void *ctx, const char *fmt, ...)
+{
+    const char *file = NULL;
+    int line = 0;
+
+    if (GET_THREAD()) {
+	file = rb_sourcefile();
+	line = rb_sourceline();
+    }
+
+    report_bug(file, line, fmt, ctx);
+
+    die();
+}
+
 
 void
 rb_bug_errno(const char *mesg, int errno_arg)
@@ -394,11 +442,7 @@ rb_async_bug_errno(const char *mesg, int errno_arg)
 void
 rb_compile_bug(const char *file, int line, const char *fmt, ...)
 {
-    va_list args;
-
-    va_start(args, fmt);
-    report_bug(file, line, fmt, args);
-    va_end(args);
+    report_bug(file, line, fmt, NULL);
 
     abort();
 }
