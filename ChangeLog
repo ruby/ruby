@@ -1,3 +1,8 @@
+Sun May 25 15:26:17 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/webrick/utils.rb: Override the inspect method of the thread
+	  used in WEBrick::Utils::TimeoutHandler.
+
 Sun May 25 14:22:30 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/openssl: Join threads.

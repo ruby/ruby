@@ -156,6 +156,9 @@ module WEBrick
       def initialize
         @timeout_info = Hash.new
         Thread.start{
+          def (Thread.current).inspect
+            super.sub(/>\z/, ' (WEBrick::Utils::TimeoutHandler)>')
+          end
           while true
             now = Time.now
             @timeout_info.keys.each{|thread|
