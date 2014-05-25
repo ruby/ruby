@@ -1343,8 +1343,8 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
 
     non_verbose do
       out, err = capture_subprocess_io do
-        system("echo 'hi'")
-        system("echo 'bye!' 1>&2")
+        system("echo", "hi")
+        system("echo", "bye!", out: :err)
       end
 
       assert_equal "hi\n", out
