@@ -1,3 +1,10 @@
+Sun May 25 11:56:33 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vsnprintf.c (BSD_vfprintf): fix string width when precision is
+	  given.  as the result of `memchr` is NULL or its offset from the
+	  start cannot exceed the size, the comparison was always false.
+	  [ruby-core:62737] [Bug #9861]
+
 Sun May 25 11:32:42 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/yaml.rb: Remove Psych::EngineManager [Bug #8344]

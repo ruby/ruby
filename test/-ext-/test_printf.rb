@@ -181,4 +181,10 @@ class Test_SPrintf < Test::Unit::TestCase
                                             zero: zr, width: width,
                                             prec: prec))
   }
+
+  def test_string_prec
+    assert_equal("a", Bug::Printf.("s", "a", prec: 3)[0])
+    assert_equal("  a", Bug::Printf.("s", "a", width: 3, prec: 3)[0])
+    assert_equal("a  ", Bug::Printf.("s", "a", minus: true, width: 3, prec: 3)[0])
+  end
 end
