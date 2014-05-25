@@ -1,3 +1,9 @@
+Sun May 25 20:00:23 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (check_stack_overflow): revert part of r46100, the
+	  previous condition was correct, and fix compilation error on
+	  other architecture linux.  [ruby-core:62746] [Bug #9862]
+
 Sun May 25 17:09:13 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/minitest/unit.rb: Less ObjectSpace.each_object(Tempfile)

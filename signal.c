@@ -702,7 +702,7 @@ rb_get_next_signal(void)
 
 #if defined(USE_SIGALTSTACK) || defined(_WIN32)
 NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
-#if (defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__))
+#if !(defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__))
 #elif defined __linux__
 # define USE_UCONTEXT_REG 1
 #elif defined __APPLE__
