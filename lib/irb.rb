@@ -138,7 +138,7 @@ STDOUT.sync = true
 # This example can be used in your +.irbrc+
 #
 #     IRB.conf[:PROMPT][:MY_PROMPT] = { # name of prompt mode
-#       :AUTO_INDENT => true            # enables auto-indent mode
+#       :AUTO_INDENT => true,           # enables auto-indent mode
 #       :PROMPT_I => nil,		# normal prompt
 #       :PROMPT_S => nil,		# prompt for continuated strings
 #       :PROMPT_C => nil,		# prompt for continuated statement

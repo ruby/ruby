@@ -1,3 +1,8 @@
+Sun May 25 10:01:11 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/irb.rb: [DOC] Fixed syntax error in example by @jasdeepsingh.
+	  Patch submitted via documenting-ruby/ruby#32
+
 Sun May 25 09:58:02 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/fileutils/test_fileutils.rb (test_chown_R): Add tests for
