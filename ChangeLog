@@ -1,3 +1,9 @@
+Sun May 25 12:15:30 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (check_stack_overflow): fix condition to use ucontext
+	  register, mcontext_t dereference, and its member names, on Mac
+	  OS X.
+
 Sun May 25 11:58:26 2014  Zachary Scott  <e@zzak.io>
 
 	* enumerator.c: [DOC] Fix example to show Enumerator#peek behavior

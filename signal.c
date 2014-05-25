@@ -700,7 +700,7 @@ rb_get_next_signal(void)
 
 #if defined(USE_SIGALTSTACK) || defined(_WIN32)
 NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
-#if !(defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__))
+#if (defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__))
 #elif defined __linux__
 # define USE_UCONTEXT_REG 1
 #elif defined __APPLE__
@@ -710,18 +710,19 @@ NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
 static void
 check_stack_overflow(const uintptr_t addr, const ucontext_t *ctx)
 {
-    const mcontext_t *mctx = &ctx->uc_mcontext;
 # if defined __linux__
+    const mcontext_t *mctx = &ctx->uc_mcontext;
 #   if defined REG_RSP
     const greg_t sp = mctx->gregs[REG_RSP];
 #   else
     const greg_t sp = mctx->gregs[REG_ESP];
 #   endif
 # elif defined __APPLE__
+    const mcontext_t mctx = ctx->uc_mcontext;
 #   if defined(__LP64__)
-    const uintptr_t sp = mctx->ss.rsp;
+    const uintptr_t sp = mctx->__ss.__rsp;
 #   else
-    const uintptr_t sp = mctx->ss.esp;
+    const uintptr_t sp = mctx->__ss.__esp;
 #   endif
 # endif
     enum {pagesize = 4096};
