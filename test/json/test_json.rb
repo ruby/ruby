@@ -491,6 +491,8 @@ EOT
     assert_equal @hash, JSON.load(stringio)
     assert_equal nil, JSON.load(nil)
     assert_equal nil, JSON.load('')
+  ensure
+    tempfile.close!
   end
 
   def test_load_with_options

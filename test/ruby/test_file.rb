@@ -336,6 +336,8 @@ class TestFile < Test::Unit::TestCase
     end
     assert_in_delta t0+6, stat.atime.to_f, delta
   rescue NotImplementedError
+  ensure
+    file.close!
   end
 
   def test_chmod_m17n
