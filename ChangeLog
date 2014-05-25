@@ -1,3 +1,8 @@
+Sun May 25 09:58:02 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/fileutils/test_fileutils.rb (test_chown_R): Add tests for
+	  chown_R. [Feature #9383][ruby-core:59641]
+
 Sun May 25 09:57:09 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/fileutils/test_fileutils.rb: Added recursively chmod tests.
