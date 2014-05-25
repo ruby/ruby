@@ -16,11 +16,6 @@ Sun May 25 11:56:33 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  start cannot exceed the size, the comparison was always false.
 	  [ruby-core:62737] [Bug #9861]
 
-Sun May 25 11:32:42 2014  Zachary Scott  <e@zzak.io>
-
-	* lib/yaml.rb: Remove Psych::EngineManager [Bug #8344]
-	* test/psych/*: ditto.
-
 Sun May 25 10:34:15 2014  Zachary Scott  <e@zzak.io>
 
 	* doc/regexp.rdoc: [DOC] Clarify whitespace matching by @allolex
