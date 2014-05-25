@@ -1158,7 +1158,7 @@ class TestFileUtils < Test::Unit::TestCase
         assert_ownership_group @groups[0], 'tmp/dir/a'
         chown nil, input_group_2, 'tmp/dir'
         assert_ownership_group @groups[1], 'tmp/dir'
-        # Make sure FileUtils.chmod does not chmod recursively
+        # Make sure FileUtils.chown does not chown recursively
         assert_ownership_group @groups[0], 'tmp/dir/a'
       }
     end
@@ -1265,7 +1265,7 @@ class TestFileUtils < Test::Unit::TestCase
           assert_ownership_user uid_1, 'tmp/dir/a'
           chown uid_2, nil, 'tmp/dir'
           assert_ownership_user uid_2, 'tmp/dir'
-          # Make sure FileUtils.chmod does not chmod recursively
+          # Make sure FileUtils.chown does not chown recursively
           assert_ownership_user uid_1, 'tmp/dir/a'
         }
       end
