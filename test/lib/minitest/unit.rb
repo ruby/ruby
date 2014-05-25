@@ -923,7 +923,8 @@ module MiniTest
         filter === m || filter === "#{suite}##{m}"
       }
 
-      live1 = live_thread_and_tempfile
+      threads = find_threads
+      tempfiles = find_tempfiles
 
       assertions = filtered_test_methods.map { |method|
         inst = suite.new method
@@ -938,47 +939,62 @@ module MiniTest
         print result
         puts if @verbose
 
-        live2 = live_thread_and_tempfile
-        check_tempfile_and_thread inst, live1, live2
-        live1 = live2
+        threads = check_thread_leak inst, threads, find_threads
+
+        # find_tempfiles is too slow to run for each test method.
+        #tempfiles = check_tempfile_leak inst, tempfiles, find_tempfiles
 
         inst._assertions
       }
 
+      tempfiles = check_tempfile_leak suite, tempfiles, find_tempfiles
+
       return assertions.size, assertions.inject(0) { |sum, n| sum + n }
     end
 
-    def live_thread_and_tempfile
-      live_threads = Thread.list.find_all {|t|
+    def find_threads
+      Thread.list.find_all {|t|
         t != Thread.current && t.alive?
       }
-      if defined? Tempfile
-        live_tempfiles = ObjectSpace.each_object(Tempfile).find_all {|t|
-          t.path
-        }
-      else
-        live_tempfiles = []
-      end
-      [live_threads, live_tempfiles]
     end
 
-    def check_tempfile_and_thread(inst, live1, live2)
-      thread_finished = live1[0] - live2[0]
+    def check_thread_leak(inst, live1, live2)
+      thread_finished = live1 - live2
       if !thread_finished.empty?
         list = thread_finished.map {|t| ' ' + t.inspect }.sort.join
         puts "Finished threads: #{inst.class}\##{inst.__name__}:#{list}"
       end
-      thread_retained = live2[0] - live1[0]
+      thread_retained = live2 - live1
       if !thread_retained.empty?
         list = thread_retained.map {|t| ' ' + t.inspect }.sort.join
         puts "Leaked threads: #{inst.class}\##{inst.__name__}:#{list}"
       end
-      tempfile_retained = live2[1] - live1[1]
+      live2
+    end
+
+    def find_tempfiles
+      if defined? Tempfile
+        ObjectSpace.each_object(Tempfile).find_all {|t|
+          t.path
+        }
+      else
+        []
+      end
+    end
+
+    def check_tempfile_leak(obj, live1, live2)
+      if obj.respond_to?(:__name__)
+        name = "#{obj.class}\##{obj.__name__}"
+      else
+        name = obj.name
+      end
+      tempfile_retained = live2 - live1
       if !tempfile_retained.empty?
         list = tempfile_retained.map {|t| ' ' + t.inspect }.sort.join
-        puts "Leaked tempfiles: #{inst.class}\##{inst.__name__}:#{list}"
+        puts "Leaked tempfiles: #{name}:#{list}"
         tempfile_retained.each {|t| t.unlink }
       end
+      live2
     end
 
     ##
