@@ -1587,7 +1587,7 @@ rb_fiber_m_resume(int argc, VALUE *argv, VALUE fib)
  *    fiber2.resume
  *    fiber3.resume
  *
- *    <em>produces</em>
+ *  <em>produces</em>
  *
  *    In fiber 2
  *    In fiber 1
