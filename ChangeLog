@@ -1,3 +1,8 @@
+Sun May 25 09:41:56 2014  Zachary Scott  <e@zzak.io>
+
+	* class.c: [DOC] Fixed grammar and examples of instance_methods.
+	  By @alex-frost via documenting-ruby/ruby#31
+
 Sun May 25 09:40:44 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/minitest/unit.rb: Show leakes threads and tempfiles.
