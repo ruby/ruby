@@ -1,3 +1,8 @@
+Mon May 26 01:39:02 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/csv.rb: Reject nil as data source for CSV.new, patch by @Peeja.
+	  [Fixes GH-580] https://github.com/ruby/ruby/pull/580
+
 Mon May 26 01:07:51 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/minitest/unit.rb: Show leaked threads and tempfiles
