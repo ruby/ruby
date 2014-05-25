@@ -947,7 +947,7 @@ module MiniTest
     end
 
     def live_thread_and_tempfile
-      live_threads = ObjectSpace.each_object(Thread).find_all {|t|
+      live_threads = Thread.list.find_all {|t|
         t != Thread.current && t.alive?
       }
       if defined? Tempfile

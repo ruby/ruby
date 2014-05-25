@@ -1,3 +1,8 @@
+Sun May 25 16:54:06 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/minitest/unit.rb: Use Thread.list instead of
+	  ObjectSpace.each_object(Thread).
+
 Sun May 25 15:53:54 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/rinda/ring.rb (Rinda::RingServer#shutdown): Join the killed
