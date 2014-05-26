@@ -212,6 +212,7 @@ class TestBacktrace < Test::Unit::TestCase
       assert_equal(bt, locs)
     ensure
       q << true
+      th.join
     end
   end
 

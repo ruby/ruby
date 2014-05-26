@@ -407,6 +407,7 @@ class TestProc < Test::Unit::TestCase
     t = Thread.new { sleep }
     assert_raise(ThreadError) { t.instance_eval { initialize { } } }
     t.kill
+    t.join
   end
 
   def test_to_proc

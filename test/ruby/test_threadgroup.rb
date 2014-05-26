@@ -5,10 +5,13 @@ require_relative 'envutil'
 class TestThreadGroup < Test::Unit::TestCase
   def test_thread_init
     thgrp = ThreadGroup.new
-    Thread.new{
+    th = Thread.new{
       thgrp.add(Thread.current)
-      assert_equal(thgrp, Thread.new{sleep 1}.group)
-    }.join
+      Thread.new{sleep 1}
+    }.value
+    assert_equal(thgrp, th.group)
+  ensure
+    th.join
   end
 
   def test_frozen_thgroup
