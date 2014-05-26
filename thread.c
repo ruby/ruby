@@ -2686,7 +2686,19 @@ rb_thread_inspect(VALUE thread)
 
     GetThreadPtr(thread, th);
     status = thread_status_name(th);
-    str = rb_sprintf("#<%"PRIsVALUE":%p %s>", cname, (void *)thread, status);
+    str = rb_sprintf("#<%"PRIsVALUE":%p", cname, (void *)thread);
+    if (!th->first_func && th->first_proc) {
+	long i;
+	VALUE v, loc = rb_proc_location(th->first_proc);
+	if (!NIL_P(loc)) {
+	    char sep = '@';
+	    for (i = 0; i < RARRAY_LEN(loc) && !NIL_P(v = RARRAY_AREF(loc, i)); ++i) {
+		rb_str_catf(str, "%c%"PRIsVALUE, sep, v);
+		sep = ':';
+	    }
+	}
+    }
+    rb_str_catf(str, " %s>", status);
     OBJ_INFECT(str, thread);
 
     return str;
