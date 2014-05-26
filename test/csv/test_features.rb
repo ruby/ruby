@@ -123,7 +123,9 @@ class TestCSV::Features < TestCSV
   end
 
   def test_unknown_options
-    assert_raise(ArgumentError) { CSV.new(String.new, unknown: :error) }
+    assert_raise_with_message(ArgumentError, /unknown/) {
+      CSV.new(@sample_data, unknown: :error)
+    }
   end
 
   def test_skip_blanks
@@ -283,13 +285,13 @@ class TestCSV::Features < TestCSV
 
   def test_accepts_comment_skip_lines_option
     assert_nothing_raised(ArgumentError) do
-      CSV.new nil, :skip_lines => /\A\s*#/
+      CSV.new(@sample_data, :skip_lines => /\A\s*#/)
     end
   end
 
   def test_accepts_comment_defaults_to_nil
-    c = CSV.new nil
-    assert_equal c.skip_lines, nil
+    c = CSV.new(@sample_data)
+    assert_nil(c.skip_lines)
   end
 
   class RegexStub
@@ -297,8 +299,8 @@ class TestCSV::Features < TestCSV
 
   def test_requires_skip_lines_to_call_match
     regex_stub = RegexStub.new
-    assert_raise(ArgumentError) do
-      CSV.new nil, :skip_lines => regex_stub
+    assert_raise_with_message(ArgumentError, /skip_lines/) do
+      CSV.new(@sample_data, :skip_lines => regex_stub)
     end
   end
 
