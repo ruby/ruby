@@ -27,6 +27,13 @@ class TestThread < Test::Unit::TestCase
     end
   end
 
+  def test_inspect
+    th = Module.new {break module_eval("class C\u{30b9 30ec 30c3 30c9} < Thread; self; end")}.start{}
+    assert_match(/::C\u{30b9 30ec 30c3 30c9}:/, th.inspect)
+  ensure
+    th.join
+  end
+
   def test_main_thread_variable_in_enumerator
     assert_equal Thread.main, Thread.current
 
