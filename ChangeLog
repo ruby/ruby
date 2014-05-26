@@ -75,9 +75,9 @@ Sun May 25 12:46:47 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  context.
 
 	* vm_dump.c (rb_vm_bugreport): accepts `ucontext_t` argument to
-	  dump machine regisiters.  based on [GH-584].
+	  dump machine registers.  based on [GH-584].
 
-	* signal.c (sigbus, sigsegv): dump machine regisiters if available.
+	* signal.c (sigbus, sigsegv): dump machine registers if available.
 
 Sun May 25 12:32:42 2014  Tanaka Akira  <akr@fsij.org>
 
@@ -138,7 +138,7 @@ Sun May 25 09:41:56 2014  Zachary Scott  <e@zzak.io>
 
 Sun May 25 09:40:44 2014  Tanaka Akira  <akr@fsij.org>
 
-	* test/lib/minitest/unit.rb: Show leakes threads and tempfiles.
+	* test/lib/minitest/unit.rb: Show leaked threads and tempfiles.
 
 Sun May 25 08:54:38 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
