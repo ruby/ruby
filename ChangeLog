@@ -1,3 +1,8 @@
+Tue May 27 00:00:21 2014  yui-knk  <spiketeika@gmail.com>
+
+	* insns.def (defineclass): fix typo in the instruction comment.
+	  [fix GH-618]
+
 Mon May 26 16:33:15 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_file.rb: skip the test of atime on Windows, because

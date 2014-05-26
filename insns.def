@@ -875,7 +875,7 @@ trace
 /**
   @c class/module
   @e
-   enter class definition scope. if super is Qfalse, and clsas
+   enter class definition scope. if super is Qfalse, and class
    "klass" is defined, it's redefine. otherwise, define "klass" class.
   @j クラス定義スコープへ移行する。
    もし super が Qfalse で klassクラスが定義されていれば再定義である。
