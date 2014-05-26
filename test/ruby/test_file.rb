@@ -313,32 +313,31 @@ class TestFile < Test::Unit::TestCase
 
   def test_stat
     tb = Process.clock_gettime(Process::CLOCK_REALTIME)
-    file = Tempfile.new("stat")
-    tb = (tb + Process.clock_gettime(Process::CLOCK_REALTIME)) / 2
-    file.close
-    path = file.path
+    Tempfile.create("stat") {|file|
+      tb = (tb + Process.clock_gettime(Process::CLOCK_REALTIME)) / 2
+      file.close
+      path = file.path
 
-    t0 = Process.clock_gettime(Process::CLOCK_REALTIME)
-    File.write(path, "foo")
-    sleep 2
-    File.write(path, "bar")
-    sleep 2
-    File.chmod(0644, path)
-    sleep 2
-    File.read(path)
+      t0 = Process.clock_gettime(Process::CLOCK_REALTIME)
+      File.write(path, "foo")
+      sleep 2
+      File.write(path, "bar")
+      sleep 2
+      File.chmod(0644, path)
+      sleep 2
+      File.read(path)
 
-    delta = 1
-    stat = File.stat(path)
-    assert_in_delta tb,   stat.birthtime.to_f, delta
-    assert_in_delta t0+2, stat.mtime.to_f, delta
-    if stat.birthtime != stat.ctime
-      assert_in_delta t0+4, stat.ctime.to_f, delta
-    end
-    skip "Windows delays updating atime" if /mswin|mingw/ =~ RUBY_PLATFORM
-    assert_in_delta t0+6, stat.atime.to_f, delta
+      delta = 1
+      stat = File.stat(path)
+      assert_in_delta tb,   stat.birthtime.to_f, delta
+      assert_in_delta t0+2, stat.mtime.to_f, delta
+      if stat.birthtime != stat.ctime
+        assert_in_delta t0+4, stat.ctime.to_f, delta
+      end
+      skip "Windows delays updating atime" if /mswin|mingw/ =~ RUBY_PLATFORM
+      assert_in_delta t0+6, stat.atime.to_f, delta
+    }
   rescue NotImplementedError
-  ensure
-    file.close!
   end
 
   def test_chmod_m17n
