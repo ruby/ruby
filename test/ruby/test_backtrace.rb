@@ -195,6 +195,7 @@ class TestBacktrace < Test::Unit::TestCase
       assert_equal(n, th.backtrace_locations(0, n + 1).size)
     ensure
       q << true
+      th.join
     end
   end
 
