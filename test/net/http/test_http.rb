@@ -397,6 +397,7 @@ module TestNetHTTP_version_1_1_methods
   def test_timeout_during_HTTP_session
     bug4246 = "expected the HTTP session to have timed out but have not. c.f. [ruby-core:34203]"
 
+    th = nil
     # listen for connections... but deliberately do not read
     TCPServer.open('localhost', 0) {|server|
       port = server.addr[1]
@@ -412,6 +413,9 @@ module TestNetHTTP_version_1_1_methods
       end
       assert th.join(10), bug4246
     }
+  ensure
+    th.kill
+    th.join
   end
 end
 
