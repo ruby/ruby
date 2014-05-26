@@ -19,6 +19,9 @@ class SyncTest < Test::Unit::TestCase
     sleep 0.1 until t.stop?
 
     assert_equal(tester.sync_waiting.uniq, tester.sync_waiting)
+  ensure
+    t.kill
+    t.join
   end
 
   def test_sync_upgrade_and_wakeup
@@ -39,6 +42,9 @@ class SyncTest < Test::Unit::TestCase
     }
     assert_equal(tester.sync_waiting.uniq, tester.sync_waiting)
     assert_equal(tester.sync_waiting, [])
+  ensure
+    t.kill
+    t.join
   end
 
   def test_sync_lock_and_raise

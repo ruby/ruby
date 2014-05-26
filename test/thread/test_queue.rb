@@ -62,6 +62,8 @@ class TestQueue < Test::Unit::TestCase
     sleep 0.01 until t1.stop?
     q.max = q.max + 1
     assert_equal before + 1, q.max
+  ensure
+    t1.join if t1
   end
 
   def test_queue_pop_interrupt
@@ -205,6 +207,13 @@ class TestQueue < Test::Unit::TestCase
     q << :s
     assert_nothing_raised(TimeoutError) do
       timeout(1) { th2.join }
+    end
+  ensure
+    [th1, th2].each do |th|
+      if th and th.alive?
+        th.wakeup
+        th.join
+      end
     end
   end
 
