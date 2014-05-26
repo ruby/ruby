@@ -10,6 +10,12 @@ class TestRDocEncoding < RDoc::TestCase
     @tempfile = Tempfile.new 'test_rdoc_encoding'
   end
 
+  def teardown
+    @tempfile.close!
+
+    super
+  end
+
   def test_class_read_file
     @tempfile.write "hi everybody"
     @tempfile.flush

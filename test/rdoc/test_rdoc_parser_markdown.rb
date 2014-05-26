@@ -19,7 +19,7 @@ class TestRDocParserMarkdown < RDoc::TestCase
   def teardown
     super
 
-    @tempfile.close
+    @tempfile.close!
   end
 
   def test_file

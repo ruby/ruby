@@ -17,7 +17,7 @@ class TestRDocParserSimple < RDoc::TestCase
   def teardown
     super
 
-    @tempfile.close
+    @tempfile.close!
   end
 
   def test_initialize_metadata
