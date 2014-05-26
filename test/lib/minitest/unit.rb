@@ -522,10 +522,10 @@ module MiniTest
 
           [captured_stdout.read, captured_stderr.read]
         ensure
-          captured_stdout.unlink
-          captured_stderr.unlink
           $stdout.reopen orig_stdout
           $stderr.reopen orig_stderr
+          captured_stdout.close!
+          captured_stderr.close!
         end
       end
     end
