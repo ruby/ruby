@@ -127,7 +127,7 @@ class IMAPTest < Test::Unit::TestCase
   def test_unexpected_eof
     server = create_tcp_server
     port = server.addr[1]
-    Thread.start do
+    ths = Thread.start do
       begin
         sock = server.accept
         begin
@@ -152,6 +152,7 @@ class IMAPTest < Test::Unit::TestCase
       end
     ensure
       server.close
+      ths.join
     end
   end
 
@@ -159,7 +160,7 @@ class IMAPTest < Test::Unit::TestCase
     server = create_tcp_server
     port = server.addr[1]
     requests = []
-    Thread.start do
+    ths = Thread.start do
       begin
         sock = server.accept
         begin
@@ -204,6 +205,7 @@ class IMAPTest < Test::Unit::TestCase
       end
     ensure
       server.close
+      ths.join
     end
   end
 
@@ -211,7 +213,7 @@ class IMAPTest < Test::Unit::TestCase
     server = create_tcp_server
     port = server.addr[1]
     requests = []
-    Thread.start do
+    ths = Thread.start do
       begin
         sock = server.accept
         begin
@@ -240,7 +242,7 @@ class IMAPTest < Test::Unit::TestCase
           in_idle = false
           exception_raised = false
           c = m.new_cond
-          Thread.start do
+          thw = Thread.start do
             m.synchronize do
               until in_idle
                 c.wait(0.1)
@@ -266,16 +268,18 @@ class IMAPTest < Test::Unit::TestCase
         imap.logout
       ensure
         imap.disconnect if imap
+        thw.join
       end
     ensure
       server.close
+      ths.join
     end
   end
 
   def test_idle_done_not_during_idle
     server = create_tcp_server
     port = server.addr[1]
-    Thread.start do
+    ths = Thread.start do
       begin
         sock = server.accept
         begin
@@ -297,13 +301,14 @@ class IMAPTest < Test::Unit::TestCase
       end
     ensure
       server.close
+      ths.join
     end
   end
 
   def test_unexpected_bye
     server = create_tcp_server
     port = server.addr[1]
-    Thread.start do
+    ths = Thread.start do
       begin
         sock = server.accept
         begin
@@ -325,13 +330,14 @@ class IMAPTest < Test::Unit::TestCase
       end
     ensure
       server.close
+      ths.join
     end
   end
 
   def test_exception_during_shutdown
     server = create_tcp_server
     port = server.addr[1]
-    Thread.start do
+    ths = Thread.start do
       begin
         sock = server.accept
         begin
@@ -363,6 +369,7 @@ class IMAPTest < Test::Unit::TestCase
       end
     ensure
       server.close
+      ths.join
     end
   end
 
@@ -371,7 +378,7 @@ class IMAPTest < Test::Unit::TestCase
     port = server.addr[1]
     requests = []
     sock = nil
-    Thread.start do
+    ths = Thread.start do
       begin
         sock = server.accept
         sock.print("* OK test server\r\n")
@@ -387,7 +394,7 @@ class IMAPTest < Test::Unit::TestCase
         in_idle = false
         exception_raised = false
         c = m.new_cond
-        Thread.start do
+        thw = Thread.start do
           m.synchronize do
             until in_idle
               c.wait(0.1)
@@ -411,19 +418,21 @@ class IMAPTest < Test::Unit::TestCase
         assert_equal("RUBY0001 IDLE\r\n", requests[0])
       ensure
         imap.disconnect if imap
+        thw.join
       end
     ensure
       server.close
       if sock && !sock.closed?
         sock.close
       end
+      ths.join
     end
   end
 
   def test_connection_closed_without_greeting
     server = create_tcp_server
     port = server.addr[1]
-    Thread.start do
+    ths = Thread.start do
       begin
         sock = server.accept
         sock.close
@@ -436,6 +445,7 @@ class IMAPTest < Test::Unit::TestCase
       end
     ensure
       server.close
+      ths.join
     end
   end
 
@@ -461,7 +471,7 @@ class IMAPTest < Test::Unit::TestCase
       OpenSSL::X509::Certificate.new(f)
     }
     ssl_server = OpenSSL::SSL::SSLServer.new(server, ctx)
-    Thread.start do
+    ths = Thread.start do
       begin
         sock = ssl_server.accept
         begin
@@ -484,13 +494,15 @@ class IMAPTest < Test::Unit::TestCase
       end
     ensure
       ssl_server.close
+      ths.kill
+      ths.join
     end
   end
 
   def starttls_test
     server = create_tcp_server
     port = server.addr[1]
-    Thread.start do
+    ths = Thread.start do
       begin
         sock = server.accept
         sock.print("* OK test server\r\n")
@@ -525,6 +537,7 @@ class IMAPTest < Test::Unit::TestCase
       end
     ensure
       server.close
+      ths.join
     end
   end
 
