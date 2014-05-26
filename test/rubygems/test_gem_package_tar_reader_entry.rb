@@ -16,6 +16,11 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
     @entry = util_entry @tar
   end
 
+  def teardown
+    @entry.instance_variable_get(:@io).close!
+    super
+  end
+
   def test_bytes_read
     assert_equal 0, @entry.bytes_read
 

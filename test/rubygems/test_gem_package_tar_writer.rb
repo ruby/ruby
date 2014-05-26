@@ -14,6 +14,7 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
 
   def teardown
     @tar_writer.close unless @tar_writer.closed?
+    @io.close!
 
     super
   end
