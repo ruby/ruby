@@ -530,7 +530,6 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
     Process.kill(signal, take)  if take
     Process.wait(write) if write && status.nil?
     Process.wait(take)  if take
-    service.stop_service
   end
 
   @server = DRb.primary_server || DRb.start_service
