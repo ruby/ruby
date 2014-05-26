@@ -621,7 +621,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_verify_corrupt
-    Tempfile.open 'corrupt' do |io|
+    Tempfile.create 'corrupt' do |io|
       data = Gem.gzip 'a' * 10
       io.write \
         tar_file_header('metadata.gz', "\000x", 0644, data.length, Time.now)
