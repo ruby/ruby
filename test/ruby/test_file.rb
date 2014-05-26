@@ -334,6 +334,7 @@ class TestFile < Test::Unit::TestCase
     if stat.birthtime != stat.ctime
       assert_in_delta t0+4, stat.ctime.to_f, delta
     end
+    skip "Windows delays updating atime" if /mswin|mingw/ =~ RUBY_PLATFORM
     assert_in_delta t0+6, stat.atime.to_f, delta
   rescue NotImplementedError
   ensure
