@@ -78,6 +78,9 @@ class TestMonitor < Test::Unit::TestCase
       ary << :main
     end
     assert_equal([:main], ary)
+  ensure
+    t1.join
+    t2.join
   end
 
   def test_try_enter
