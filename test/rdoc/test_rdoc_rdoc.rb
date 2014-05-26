@@ -252,7 +252,7 @@ class TestRDocRDoc < RDoc::TestCase
     @rdoc.options.encoding = Encoding::ISO_8859_1
     @rdoc.store = RDoc::Store.new
 
-    Tempfile.open 'test.txt' do |io|
+    Tempfile.create 'test.txt' do |io|
       io.write 'hi'
       io.rewind
 
@@ -267,7 +267,7 @@ class TestRDocRDoc < RDoc::TestCase
 
     @rdoc.store = RDoc::Store.new
 
-    Tempfile.open 'test.txt' do |io|
+    Tempfile.create 'test.txt' do |io|
       io.write 'hi'
       io.rewind
 
@@ -382,7 +382,7 @@ class TestRDocRDoc < RDoc::TestCase
   end
 
   def test_setup_output_dir_exists_file
-    Tempfile.open 'test_rdoc_rdoc' do |tempfile|
+    Tempfile.create 'test_rdoc_rdoc' do |tempfile|
       path = tempfile.path
 
       e = assert_raises RDoc::Error do

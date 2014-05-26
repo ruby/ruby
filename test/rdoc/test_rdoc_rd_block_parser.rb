@@ -153,7 +153,7 @@ class TestRDocRdBlockParser < RDoc::TestCase
         blank_line,
         blank_line)
 
-    Tempfile.open %w[parse_include .rd] do |io|
+    Tempfile.create %w[parse_include .rd] do |io|
       io.puts "=begin\ninclude ((*worked*))\n=end"
       io.flush
 
