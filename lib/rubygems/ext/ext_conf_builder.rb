@@ -38,11 +38,11 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
           run cmd, results
         ensure
           FileUtils.mv 'mkmf.log', dest_path if File.exist? 'mkmf.log'
+          siteconf.unlink
         end
 
         ENV["DESTDIR"] = nil
         ENV["RUBYOPT"] = rubyopt
-        siteconf.unlink
 
         make dest_path, results
 
