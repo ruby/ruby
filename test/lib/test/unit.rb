@@ -245,6 +245,7 @@ module Test
     module RequireFiles # :nodoc: all
       def non_options(files, options)
         return false if !super
+        errors = {}
         result = false
         files.each {|f|
           d = File.dirname(path = File.realpath(f))
@@ -255,6 +256,8 @@ module Test
             require path unless options[:parallel]
             result = true
           rescue LoadError
+            next if errors[$!.message]
+            errors[$!.message] = true
             puts "#{f}: #{$!}"
           end
         }
