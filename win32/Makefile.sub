@@ -1114,6 +1114,11 @@ enc/unicode/name2ctype.h: {$(srcdir)}enc/unicode/name2ctype.h.blt
 	$(ECHO) copying $@
 	$(Q) copy $(?:/=\) $(@:/=\) > nul
 
+enc/jis/props.h: {$(srcdir)}enc/jis/props.h.blt
+	@if not exist $(@D:/=\) md $(@D:/=\)
+	$(ECHO) copying $@
+	$(Q) copy $(?:/=\) $(@:/=\) > nul
+
 $(OBJS): {$(hdrdir)/ruby}win32.h
 
 dir.$(OBJEXT) win32/win32.$(OBJEXT): {$(srcdir)}win32/dir.h
