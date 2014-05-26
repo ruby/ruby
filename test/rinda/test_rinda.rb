@@ -449,7 +449,12 @@ class TupleSpaceTest < Test::Unit::TestCase
   end
   def teardown
     # implementation-dependent
-    @ts.instance_eval{@keeper.kill if @keeper}
+    @ts.instance_eval{
+      if th = @keeper
+        th.kill
+        th.join
+      end
+    }
   end
 end
 
@@ -463,7 +468,12 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   end
   def teardown
     # implementation-dependent
-    @ts_base.instance_eval{@keeper.kill if @keeper}
+    @ts_base.instance_eval{
+      if th = @keeper
+        th.kill
+        th.join
+      end
+    }
   end
 
   def test_remote_array_and_hash
@@ -520,6 +530,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
     Process.kill(signal, take)  if take
     Process.wait(write) if write && status.nil?
     Process.wait(take)  if take
+    service.stop_service
   end
 
   @server = DRb.primary_server || DRb.start_service
@@ -554,7 +565,12 @@ class TestRingServer < Test::Unit::TestCase
   end
   def teardown
     # implementation-dependent
-    @ts.instance_eval{@keeper.kill if @keeper}
+    @ts.instance_eval{
+      if th = @keeper
+        th.kill
+        th.join
+      end
+    }
     @rs.shutdown
   end
 
@@ -641,6 +657,7 @@ class TestRingServer < Test::Unit::TestCase
   end
 
   def test_ring_server_ipv4_multicast
+    @rs.shutdown
     @rs = Rinda::RingServer.new(@ts, [['239.0.0.1', '0.0.0.0']], @port)
     v4mc = @rs.instance_variable_get('@sockets').first
 
@@ -709,7 +726,10 @@ class TestRingServer < Test::Unit::TestCase
     end
     raise Timeout::Error, "timeout", bt
   ensure
-    th.kill if th
+    if th
+      th.kill
+      th.join
+    end
     Thread.abort_on_exception = aoe
   end
 
