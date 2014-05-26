@@ -1991,3 +1991,5 @@ end
 
 # ARGV is arguable by OptionParser
 ARGV.extend(OptionParser::Arguable)
+
+OptParse = OptionParser

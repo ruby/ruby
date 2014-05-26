@@ -1,3 +1,8 @@
+Mon May 26 12:25:36 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optionparser.rb, lib/optparse.rb (OptParse): aliases.
+	  [ruby-core:62751] [Feature #9864]
+
 Mon May 26 07:59:34 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/minitest/unit.rb: Show Finished threads line-by-line.
