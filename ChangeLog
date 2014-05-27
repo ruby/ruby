@@ -1,3 +1,9 @@
+Tue May 27 13:57:41 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils#copy_entry): update rdoc about
+	  preserve option and permissions, following r31123.
+	  [ruby-core:62065] [Bug #9748]
+
 Tue May 27 13:42:36 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (umethod_bind): use the ancestor iclass instead of new
