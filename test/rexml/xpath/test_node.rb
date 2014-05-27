@@ -4,7 +4,7 @@ require_relative "../rexml_test_utils"
 
 require "rexml/document"
 
-module REXML
+module REXMLTests
 class TestXPathNode < Test::Unit::TestCase
   def matches(xml, xpath)
     document = REXML::Document.new(xml)

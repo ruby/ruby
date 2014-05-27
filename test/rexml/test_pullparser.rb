@@ -2,7 +2,7 @@ require "test/unit/testcase"
 
 require 'rexml/parsers/pullparser'
 
-module REXML
+module REXMLTests
 class PullParserTester < Test::Unit::TestCase
   include REXML
   def test_basics

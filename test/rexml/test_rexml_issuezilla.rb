@@ -1,7 +1,7 @@
 require_relative 'rexml_test_utils'
 require 'rexml/document'
 
-module REXML
+module REXMLTests
 class TestIssuezillaParsing < Test::Unit::TestCase
   include REXMLTestUtils
   def test_rexml

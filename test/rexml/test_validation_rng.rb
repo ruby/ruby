@@ -3,7 +3,7 @@ require "test/unit/testcase"
 require "rexml/document"
 require "rexml/validation/relaxng"
 
-module REXML
+module REXMLTests
 class RNGValidation < Test::Unit::TestCase
   include REXML
 

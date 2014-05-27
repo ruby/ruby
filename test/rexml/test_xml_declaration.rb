@@ -6,7 +6,7 @@
 require "rexml/document"
 require "test/unit"
 
-module REXML
+module REXMLTests
 class TestXmlDeclaration < Test::Unit::TestCase
   def setup
     xml = <<-'END_XML'

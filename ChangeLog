@@ -1,3 +1,11 @@
+Tue May 27 21:03:03 2014  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/: Use REXMLTests as wrapping module for REXML tests.
+	  I avoid using the same module for library in test because
+	  it provides "include REXML" environment in test. Normally,
+	  users don't use REXML on "include REXML" environment. So I
+	  don't want to write tests on "include REXML" environment.
+
 Tue May 27 20:59:37 2014  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_comment.rb: Remove needless REXML module wrapping.

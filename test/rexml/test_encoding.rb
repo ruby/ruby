@@ -5,7 +5,7 @@ require_relative "rexml_test_utils"
 require 'rexml/source'
 require 'rexml/document'
 
-module REXML
+module REXMLTests
 class EncodingTester < Test::Unit::TestCase
   include REXMLTestUtils
   include REXML

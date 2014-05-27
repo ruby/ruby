@@ -1,7 +1,7 @@
 require 'test/unit/testcase'
 require 'rexml/document'
 
-module REXML
+module REXMLTests
 class AttributesTester < Test::Unit::TestCase
   include REXML
   def test_accessor

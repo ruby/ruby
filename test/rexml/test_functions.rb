@@ -2,7 +2,7 @@ require "test/unit/testcase"
 
 require "rexml/document"
 
-module REXML
+module REXMLTests
 class FunctionsTester < Test::Unit::TestCase
   include REXML
   def test_functions

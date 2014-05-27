@@ -2,7 +2,7 @@ require 'rexml/document'
 require 'test/unit'
 require 'rexml/functions'
 
-module REXML
+module REXMLTests
 class TC_Rexml_Functions_Number < Test::Unit::TestCase
 
   def test_functions_number_int

@@ -2,7 +2,7 @@ require_relative "rexml_test_utils"
 require "rexml/light/node"
 require "rexml/parsers/lightparser"
 
-module REXML
+module REXMLTests
 class LightTester < Test::Unit::TestCase
   include REXMLTestUtils
   include REXML::Light

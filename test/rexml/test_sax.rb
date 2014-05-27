@@ -3,7 +3,7 @@ require 'rexml/sax2listener'
 require 'rexml/parsers/sax2parser'
 require 'rexml/document'
 
-module REXML
+module REXMLTests
 class SAX2Tester < Test::Unit::TestCase
   include REXMLTestUtils
   include REXML

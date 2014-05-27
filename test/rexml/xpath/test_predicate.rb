@@ -3,7 +3,7 @@ require "rexml/document"
 require "rexml/xpath"
 require "rexml/parsers/xpathparser"
 
-module REXML
+module REXMLTests
 class TestXPathPredicate < Test::Unit::TestCase
   include REXML
   SRC=<<-EOL

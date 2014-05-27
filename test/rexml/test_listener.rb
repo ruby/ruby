@@ -5,7 +5,7 @@ require_relative 'rexml_test_utils'
 require 'rexml/document'
 require 'rexml/streamlistener'
 
-module REXML
+module REXMLTests
 class BaseTester < Test::Unit::TestCase
   include REXMLTestUtils
   def test_empty

@@ -1,7 +1,7 @@
 require 'test/unit'
 require 'rexml/document'
 
-module REXML
+module REXMLTests
 class TestAttributes < Test::Unit::TestCase
   def setup
     @ns_a = "urn:x-test:a"

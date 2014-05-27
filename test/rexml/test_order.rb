@@ -5,7 +5,7 @@ begin
 rescue LoadError
 end
 
-module REXML
+module REXMLTests
 class OrderTester < Test::Unit::TestCase
   include REXMLTestUtils
 

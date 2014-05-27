@@ -1,7 +1,7 @@
 require "test/unit"
 require "rexml/parsers/ultralightparser"
 
-module REXML
+module REXMLTests
 class TestUltraLightParser < Test::Unit::TestCase
   class TestDocumentTypeDeclaration < self
     def test_entity_declaration

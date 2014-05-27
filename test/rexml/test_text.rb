@@ -1,6 +1,6 @@
 require "rexml/text"
 
-module REXML
+module REXMLTests
 class TextTester < Test::Unit::TestCase
   include REXML
 

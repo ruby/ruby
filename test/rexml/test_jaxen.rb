@@ -6,7 +6,7 @@ require "rexml/xpath"
 # Harness to test REXML's capabilities against the test suite from Jaxen
 # ryan.a.cox@gmail.com
 
-module REXML
+module REXMLTests
 class JaxenTester < Test::Unit::TestCase
   include REXMLTestUtils
   include REXML

@@ -2,7 +2,7 @@
 require 'test/unit'
 require 'rexml/document'
 
-module REXML
+module REXMLTests
 # daz - for report by Dan Kohn in:
 #  http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/156328
 class XPathTesterDd < Test::Unit::TestCase

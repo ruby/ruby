@@ -9,7 +9,7 @@
 require 'test/unit'
 require 'rexml/document'
 
-module REXML
+module REXMLTests
 class Ticket80 < Test::Unit::TestCase
 
   @@xmlstr = '<?xml version="1.0"?>

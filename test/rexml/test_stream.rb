@@ -3,7 +3,7 @@ require "rexml/document"
 require 'rexml/streamlistener'
 require 'stringio'
 
-module REXML
+module REXMLTests
 class MyListener
   include REXML::StreamListener
 end

@@ -2,7 +2,7 @@ require_relative "rexml_test_utils"
 
 require "rexml/document"
 
-module REXML
+module REXMLTests
 class TestNamespace < Test::Unit::TestCase
   include REXMLTestUtils
   include REXML

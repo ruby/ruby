@@ -6,7 +6,7 @@ require "rexml/document"
 require "rexml/parseexception"
 require "rexml/formatters/default"
 
-module REXML
+module REXMLTests
 class ContribTester < Test::Unit::TestCase
   include REXMLTestUtils
   include REXML

@@ -1,7 +1,7 @@
 require "test/unit"
 require "rexml/document"
 
-module REXML
+module REXMLTests
 class TestParseDocumentTypeDeclaration < Test::Unit::TestCase
   private
   def xml(internal_subset)

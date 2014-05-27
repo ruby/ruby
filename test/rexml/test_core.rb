@@ -11,7 +11,7 @@ require "rexml/undefinednamespaceexception"
 
 require_relative "listener"
 
-module REXML
+module REXMLTests
 class Tester < Test::Unit::TestCase
   include REXMLTestUtils
   include REXML

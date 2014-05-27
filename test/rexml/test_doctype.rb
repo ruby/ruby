@@ -1,7 +1,7 @@
 require 'test/unit'
 require 'rexml/document'
 
-module REXML
+module REXMLTests
 class TestDocTypeAccessor < Test::Unit::TestCase
 
   def setup

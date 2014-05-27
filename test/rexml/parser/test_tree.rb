@@ -2,7 +2,7 @@ require "test/unit"
 require "rexml/document"
 require "rexml/parsers/treeparser"
 
-module REXML
+module REXMLTests
 class TestTreeParser < Test::Unit::TestCase
   class TestInvalid < self
     def test_unmatched_close_tag
