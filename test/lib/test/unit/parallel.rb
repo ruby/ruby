@@ -35,7 +35,8 @@ module Test
 
         th = Thread.new do
           begin
-            while buf = (self.verbose ? i.gets : i.read(5))
+            while buf = (self.verbose ? i.gets : (i.readpartial(1024) || i.read(5)))
+              buf.sub!(/\A\n?\.+(?!\z)/, '')
               _report "p", buf
             end
           rescue IOError
