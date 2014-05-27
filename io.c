@@ -1996,10 +1996,10 @@ rb_io_fdatasync(VALUE io)
 static VALUE
 rb_io_fileno(VALUE io)
 {
-    rb_io_t *fptr;
+    rb_io_t *fptr = RFILE(io)->fptr;
     int fd;
 
-    GetOpenFile(io, fptr);
+    rb_io_check_closed(fptr);
     fd = fptr->fd;
     return INT2FIX(fd);
 }
@@ -2051,7 +2051,7 @@ rb_io_inspect(VALUE obj)
     VALUE result;
     static const char closed[] = " (closed)";
 
-    fptr = RFILE(rb_io_taint_check(obj))->fptr;
+    fptr = RFILE(obj)->fptr;
     if (!fptr) return rb_any_to_s(obj);
     result = rb_str_new_cstr("#<");
     rb_str_append(result, rb_class_name(CLASS_OF(obj)));

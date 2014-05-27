@@ -1,3 +1,8 @@
+Tue May 27 11:12:56 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_fileno, rb_io_inspect): non-modification does not
+	  error on frozen IO.  [ruby-dev:48241] [Bug #9865]
+
 Tue May 27 00:00:21 2014  yui-knk  <spiketeika@gmail.com>
 
 	* insns.def (defineclass): fix typo in the instruction comment.

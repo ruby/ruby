@@ -1122,6 +1122,8 @@ class TestIO < Test::Unit::TestCase
   def test_inspect
     with_pipe do |r, w|
       assert_match(/^#<IO:fd \d+>$/, r.inspect)
+      r.freeze
+      assert_match(/^#<IO:fd \d+>$/, r.inspect)
     end
   end
 
@@ -2784,6 +2786,14 @@ End
     assert_equal(0, $stdin.fileno)
     assert_equal(1, $stdout.fileno)
     assert_equal(2, $stderr.fileno)
+  end
+
+  def test_frozen_fileno
+    bug9865 = '[ruby-dev:48241] [Bug #9865]'
+    with_pipe do |r,w|
+      fd = r.fileno
+      assert_equal(fd, r.freeze.fileno, bug9865)
+    end
   end
 
   def test_sysread_locktmp
