@@ -1,3 +1,9 @@
+Tue May 27 19:01:49 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/openssl/test_pair.rb: Modify TestSSL#test_read_and_write
+	  to handle partial sysreads. [Bug #7398][ruby-core:49563]
+	* test/openssl/test_ssl.rb: ditto.
+
 Tue May 27 18:46:23 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/openssl/test_pkcs7.rb: Add tests for PKCS7#type= and add_data.
