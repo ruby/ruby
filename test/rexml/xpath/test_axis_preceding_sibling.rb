@@ -1,6 +1,7 @@
 require "test/unit/testcase"
 require "rexml/document"
 
+module REXML
 class TestXPathAxisPredcedingSibling < Test::Unit::TestCase
   include REXML
   SOURCE = <<-EOF
@@ -35,4 +36,4 @@ class TestXPathAxisPredcedingSibling < Test::Unit::TestCase
     assert_equal "3", prev.attributes["id"]
   end
 end
-
+end

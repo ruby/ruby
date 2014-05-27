@@ -6,6 +6,7 @@ require "rexml/xpath"
 # Harness to test REXML's capabilities against the test suite from Jaxen
 # ryan.a.cox@gmail.com
 
+module REXML
 class JaxenTester < Test::Unit::TestCase
   include REXMLTestUtils
   include REXML
@@ -123,4 +124,5 @@ class JaxenTester < Test::Unit::TestCase
     namespaces[prefix] = ctx.namespaces[prefix]
   end
 
+end
 end

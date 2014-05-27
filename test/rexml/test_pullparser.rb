@@ -2,6 +2,7 @@ require "test/unit/testcase"
 
 require 'rexml/parsers/pullparser'
 
+module REXML
 class PullParserTester < Test::Unit::TestCase
   include REXML
   def test_basics
@@ -97,4 +98,5 @@ class PullParserTester < Test::Unit::TestCase
     end
     assert_equal( 0, names.length )
   end
+end
 end

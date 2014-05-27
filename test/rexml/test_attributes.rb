@@ -1,6 +1,7 @@
 require 'test/unit/testcase'
 require 'rexml/document'
 
+module REXML
 class AttributesTester < Test::Unit::TestCase
   include REXML
   def test_accessor
@@ -217,4 +218,5 @@ XML
                  ],
                  child.attributes.to_a.collect(&:to_string).sort)
   end
+end
 end

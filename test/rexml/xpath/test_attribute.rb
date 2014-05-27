@@ -1,6 +1,7 @@
 require 'test/unit'
 require 'rexml/document'
 
+module REXML
 class TestXPathAttribute < Test::Unit::TestCase
   def setup
     @xml = <<-XML
@@ -24,4 +25,5 @@ class TestXPathAttribute < Test::Unit::TestCase
     children = REXML::XPath.each(@document, "/root/child[@name='two']")
     assert_equal(["child2"], children.collect(&:text))
   end
+end
 end

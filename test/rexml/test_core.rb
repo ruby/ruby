@@ -11,6 +11,7 @@ require "rexml/undefinednamespaceexception"
 
 require_relative "listener"
 
+module REXML
 class Tester < Test::Unit::TestCase
   include REXMLTestUtils
   include REXML
@@ -1459,4 +1460,5 @@ ENDXML
   def attribute(name, value)
     REXML::Attribute.new(name, value)
   end
+end
 end

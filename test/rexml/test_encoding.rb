@@ -5,6 +5,7 @@ require_relative "rexml_test_utils"
 require 'rexml/source'
 require 'rexml/document'
 
+module REXML
 class EncodingTester < Test::Unit::TestCase
   include REXMLTestUtils
   include REXML
@@ -91,4 +92,5 @@ class EncodingTester < Test::Unit::TestCase
     assert_equal(utf16.encoding, "UTF-16")
     assert( utf16[0].kind_of?(REXML::XMLDecl))
   end
+end
 end

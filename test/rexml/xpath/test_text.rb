@@ -3,6 +3,7 @@ require 'rexml/document'
 require 'rexml/element'
 require 'rexml/xpath'
 
+module REXML
 class TestXPathText < Test::Unit::TestCase
   def setup
     @doc = REXML::Document.new
@@ -69,4 +70,5 @@ class TestXPathText < Test::Unit::TestCase
     assert_equal(2, nodes.size, "<b> has two node ancestors")
     assert nodes[1].kind_of?(REXML::Document)
   end
+end
 end

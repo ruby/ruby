@@ -6,6 +6,7 @@
 require "rexml/document"
 require "test/unit"
 
+module REXML
 class TestXmlDeclaration < Test::Unit::TestCase
   def setup
     xml = <<-'END_XML'
@@ -30,4 +31,5 @@ class TestXmlDeclaration < Test::Unit::TestCase
     assert_kind_of(REXML::XMLDecl, @root.previous_sibling.previous_sibling)
     assert_kind_of(REXML::Element, @xml_declaration.next_sibling.next_sibling)
   end
+end
 end

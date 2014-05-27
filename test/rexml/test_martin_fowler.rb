@@ -1,6 +1,7 @@
 require 'test/unit'
 require 'rexml/document'
 
+module REXML
 class OrderTester < Test::Unit::TestCase
   DOC = <<END
 <paper>
@@ -34,4 +35,5 @@ END
   def test_fig4
     assert_equal 'fig4', @figs[3].attributes['src']
   end
+end
 end

@@ -3,6 +3,7 @@ require "test/unit/testcase"
 require "rexml/document"
 require "rexml/validation/relaxng"
 
+module REXML
 class RNGValidation < Test::Unit::TestCase
   include REXML
 
@@ -787,4 +788,5 @@ class RNGValidation < Test::Unit::TestCase
     parser.add_listener( validator.reset )
     assert_nothing_raised { parser.parse }
   end
+end
 end

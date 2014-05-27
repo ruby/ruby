@@ -1,6 +1,7 @@
 require_relative 'rexml_test_utils'
 require 'rexml/document'
 
+module REXML
 class TestIssuezillaParsing < Test::Unit::TestCase
   include REXMLTestUtils
   def test_rexml
@@ -11,4 +12,5 @@ class TestIssuezillaParsing < Test::Unit::TestCase
       ctr += 1
     end
   end
+end
 end

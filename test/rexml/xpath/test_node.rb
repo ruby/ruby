@@ -4,6 +4,7 @@ require_relative "../rexml_test_utils"
 
 require "rexml/document"
 
+module REXML
 class TestXPathNode < Test::Unit::TestCase
   def matches(xml, xpath)
     document = REXML::Document.new(xml)
@@ -37,4 +38,5 @@ class TestXPathNode < Test::Unit::TestCase
                    matches(xml, "/root/non-àscii/child"))
     end
   end
+end
 end

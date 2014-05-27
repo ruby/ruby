@@ -3,6 +3,7 @@ require "rexml/document"
 require "rexml/xpath"
 require "rexml/parsers/xpathparser"
 
+module REXML
 class TestXPathPredicate < Test::Unit::TestCase
   include REXML
   SRC=<<-EOL
@@ -77,4 +78,5 @@ XML
                    REXML::Comment.new("COMMENT")],
                   m )
   end
+end
 end

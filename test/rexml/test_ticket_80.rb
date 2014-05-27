@@ -9,6 +9,7 @@
 require 'test/unit'
 require 'rexml/document'
 
+module REXML
 class Ticket80 < Test::Unit::TestCase
 
   @@xmlstr = '<?xml version="1.0"?>
@@ -49,6 +50,7 @@ class Ticket80 < Test::Unit::TestCase
     assert_equal chk, out
   end
 
+end
 end
 
 #------------------------------------------------------------------------------

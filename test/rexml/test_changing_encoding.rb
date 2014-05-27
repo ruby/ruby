@@ -2,7 +2,7 @@
 
 require 'rexml/encoding'
 
-
+module REXML
 class ChangingEncodings < Test::Unit::TestCase
   def initialize a
     @u = 'テスト ほげ ふが 美しい'
@@ -40,4 +40,5 @@ class ChangingEncodings < Test::Unit::TestCase
     #  @f.decode(@u) == @u
     #}
   end
+end
 end

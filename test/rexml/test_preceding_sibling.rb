@@ -2,6 +2,7 @@
 require 'test/unit'
 require 'rexml/document'
 
+module REXML
 # daz - for report by Dan Kohn in:
 #  http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/156328
 class XPathTesterDd < Test::Unit::TestCase
@@ -35,4 +36,5 @@ class XPathTesterDd < Test::Unit::TestCase
     end
     assert_equal( "<b x='ab01A'><c y='abc01A'>Success</c></b>", arr.join )
   end
+end
 end

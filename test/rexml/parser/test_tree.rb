@@ -2,6 +2,7 @@ require "test/unit"
 require "rexml/document"
 require "rexml/parsers/treeparser"
 
+module REXML
 class TestTreeParser < Test::Unit::TestCase
   class TestInvalid < self
     def test_unmatched_close_tag
@@ -37,4 +38,5 @@ Last 80 unconsumed characters:
       parser.parse
     end
   end
+end
 end

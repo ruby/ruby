@@ -3,6 +3,7 @@ require "rexml/document"
 require 'rexml/streamlistener'
 require 'stringio'
 
+module REXML
 class MyListener
   include REXML::StreamListener
 end
@@ -124,4 +125,5 @@ class RequestReader
   end
   def doctype_end
   end
+end
 end

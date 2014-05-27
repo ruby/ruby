@@ -2,6 +2,7 @@ require_relative "../rexml_test_utils"
 
 require "rexml/document"
 
+module REXML
 class TestXPathBase < Test::Unit::TestCase
   include REXMLTestUtils
   include REXML
@@ -1076,4 +1077,5 @@ EOF
     end
     assert_equal(["/"], hrefs, "Bug #3842 [ruby-core:32447]")
   end
+end
 end

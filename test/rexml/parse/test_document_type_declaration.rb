@@ -1,6 +1,7 @@
 require "test/unit"
 require "rexml/document"
 
+module REXML
 class TestParseDocumentTypeDeclaration < Test::Unit::TestCase
   private
   def xml(internal_subset)
@@ -44,4 +45,5 @@ class TestParseDocumentTypeDeclaration < Test::Unit::TestCase
                    doctype.children.collect(&:class))
     end
   end
+end
 end

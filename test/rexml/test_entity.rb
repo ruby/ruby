@@ -4,6 +4,7 @@ require 'rexml/document'
 require 'rexml/entity'
 require 'rexml/source'
 
+module REXML
 class EntityTester < Test::Unit::TestCase
   def test_parse_general_decl
     simple = "<!ENTITY foo 'bar'>"
@@ -184,4 +185,5 @@ XML
                                  raw,
                                  entity_filter).to_s)
   end
+end
 end

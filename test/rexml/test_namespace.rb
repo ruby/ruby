@@ -2,6 +2,7 @@ require_relative "rexml_test_utils"
 
 require "rexml/document"
 
+module REXML
 class TestNamespace < Test::Unit::TestCase
   include REXMLTestUtils
   include REXML
@@ -35,4 +36,5 @@ XML
     assert_equal("http://www.w3.org/XML/1998/namespace",
                  document.root.namespace("xml"))
   end
+end
 end

@@ -1,6 +1,7 @@
 require_relative 'rexml_test_utils'
 require 'rexml/parsers/lightparser'
 
+module REXML
 class LightParserTester < Test::Unit::TestCase
   include REXMLTestUtils
   include REXML
@@ -9,4 +10,5 @@ class LightParserTester < Test::Unit::TestCase
     parser = REXML::Parsers::LightParser.new( f )
     parser.parse
   end
+end
 end

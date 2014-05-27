@@ -2,6 +2,7 @@ require 'rexml/document'
 require 'test/unit'
 require 'rexml/functions'
 
+module REXML
 class TC_Rexml_Functions_Number < Test::Unit::TestCase
 
   def test_functions_number_int
@@ -29,4 +30,5 @@ class TC_Rexml_Functions_Number < Test::Unit::TestCase
   #  telem.text="9.13E12"
   #  assert_equal(9.13E12, REXML::Functions::number(telem))
   #end
+end
 end

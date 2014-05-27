@@ -6,6 +6,7 @@ require "rexml/document"
 require "rexml/parseexception"
 require "rexml/formatters/default"
 
+module REXML
 class ContribTester < Test::Unit::TestCase
   include REXMLTestUtils
   include REXML
@@ -578,4 +579,5 @@ EOL
    # 'namespace should still be "http://www.foo.foo" and not ""'
  end
 =end
+end
 end

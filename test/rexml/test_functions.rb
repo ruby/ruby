@@ -2,6 +2,7 @@ require "test/unit/testcase"
 
 require "rexml/document"
 
+module REXML
 class FunctionsTester < Test::Unit::TestCase
   include REXML
   def test_functions
@@ -219,4 +220,5 @@ class FunctionsTester < Test::Unit::TestCase
     m = REXML::XPath.match(doc, "//comment()[#{predicate}]")
     assert_equal( [REXML::Comment.new("COMMENT A")], m )
   end
+end
 end

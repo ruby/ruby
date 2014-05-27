@@ -1,6 +1,7 @@
 require 'test/unit'
 require 'rexml/document'
 
+module REXML
 class TestParseNotationDeclaration < Test::Unit::TestCase
   private
   def xml(internal_subset)
@@ -94,4 +95,5 @@ class TestParseNotationDeclaration < Test::Unit::TestCase
       end
     end
   end
+end
 end

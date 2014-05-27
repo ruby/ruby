@@ -1,6 +1,7 @@
 require 'test/unit'
 require 'rexml/document'
 
+module REXML
 class TestDocTypeAccessor < Test::Unit::TestCase
 
   def setup
@@ -101,4 +102,5 @@ class TestNotationDeclSystem < Test::Unit::TestCase
   def decl(id)
     REXML::NotationDecl.new(@name, "SYSTEM", id, nil)
   end
+end
 end

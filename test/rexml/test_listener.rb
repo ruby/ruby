@@ -5,6 +5,7 @@ require_relative 'rexml_test_utils'
 require 'rexml/document'
 require 'rexml/streamlistener'
 
+module REXML
 class BaseTester < Test::Unit::TestCase
   include REXMLTestUtils
   def test_empty
@@ -126,4 +127,5 @@ class REXMLTester < BaseTester
     t6 = %Q{<string>&#xd;</string>}
     assert_equal( t6.strip, REXML::Document.new(t6).to_s )
   end
+end
 end

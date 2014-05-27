@@ -5,6 +5,7 @@ begin
 rescue LoadError
 end
 
+module REXML
 class OrderTester < Test::Unit::TestCase
   include REXMLTestUtils
 
@@ -102,4 +103,5 @@ END
        count += 1
      }
    end if defined?(Zlib::GzipReader)
+end
 end

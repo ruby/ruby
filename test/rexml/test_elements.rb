@@ -1,6 +1,7 @@
 require 'test/unit/testcase'
 require 'rexml/document'
 
+module REXML
 class ElementsTester < Test::Unit::TestCase
   include REXML
   def test_accessor
@@ -113,4 +114,5 @@ class ElementsTester < Test::Unit::TestCase
     }
     assert_equal 6, r
   end
+end
 end

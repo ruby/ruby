@@ -1,5 +1,6 @@
 require "rexml/text"
 
+module REXML
 class TextTester < Test::Unit::TestCase
   include REXML
 
@@ -16,4 +17,5 @@ class TextTester < Test::Unit::TestCase
     text << "append3\r\n" << "append4\r\n"
     assert_equal("original\nappend1\nappend2\nappend3\nappend4\n", text.to_s)
   end
+end
 end
