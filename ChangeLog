@@ -1,3 +1,8 @@
+Tue May 27 16:58:12 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/test_timeout.rb (test_timeout): inverted test condition.
+	  [Bug #8523]
+
 Tue May 27 12:24:22 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/minitest/unit.rb: Show leaked file descriptors.
