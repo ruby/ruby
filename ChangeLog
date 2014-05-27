@@ -1,3 +1,8 @@
+Tue May 27 18:46:23 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/openssl/test_pkcs7.rb: Add tests for PKCS7#type= and add_data.
+	  [Feature #7399][ruby-core:49565]
+
 Tue May 27 17:45:09 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/openssl/test_hmac.rb (test_binary_update): Added Test for
