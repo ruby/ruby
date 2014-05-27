@@ -829,19 +829,6 @@ rb_ary_push(VALUE ary, VALUE item)
     return ary;
 }
 
-static VALUE
-rb_ary_push_1(VALUE ary, VALUE item)
-{
-    long idx = RARRAY_LEN(ary);
-
-    if (idx >= ARY_CAPA(ary)) {
-	ary_double_capa(ary, idx);
-    }
-    RARRAY_PTR(ary)[idx] = item;
-    ARY_SET_LEN(ary, idx + 1);
-    return ary;
-}
-
 VALUE
 rb_ary_cat(VALUE ary, const VALUE *ptr, long len)
 {
@@ -2931,7 +2918,7 @@ ary_reject(VALUE orig, VALUE result)
     for (i = 0; i < RARRAY_LEN(orig); i++) {
 	VALUE v = RARRAY_PTR(orig)[i];
 	if (!RTEST(rb_yield(v))) {
-	    rb_ary_push_1(result, v);
+	    rb_ary_push(result, v);
 	}
     }
     return result;
