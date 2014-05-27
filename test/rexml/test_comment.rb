@@ -2,7 +2,6 @@ require "test/unit/testcase"
 
 require 'rexml/document'
 
-module REXML
 module REXMLTest
   class CommentTester < Test::Unit::TestCase
     # Bug #5278
@@ -23,5 +22,4 @@ module REXMLTest
                    comments.collect(&:to_s))
     end
   end
-end
 end
