@@ -1,3 +1,7 @@
+Tue May 27 12:24:22 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/minitest/unit.rb: Show leaked file descriptors.
+
 Tue May 27 11:12:56 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_fileno, rb_io_inspect): non-modification does not

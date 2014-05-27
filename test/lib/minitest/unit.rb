@@ -932,6 +932,7 @@ module MiniTest
       }
 
       threads = find_threads
+      fds = find_fds
       tempfiles = find_tempfiles
 
       assertions = filtered_test_methods.map { |method|
@@ -948,6 +949,8 @@ module MiniTest
         puts if @verbose
 
         threads = check_thread_leak inst, threads, find_threads
+
+        fds = check_fd_leak inst, fds, find_fds
 
         # find_tempfiles is too slow to run for each test method.
         #tempfiles = check_tempfile_leak inst, tempfiles, find_tempfiles
@@ -979,6 +982,60 @@ module MiniTest
         list = thread_retained.map {|t| t.inspect }.sort
         list.each {|str|
           puts "Leaked thread: #{inst.class}\##{inst.__name__}: #{str}"
+        }
+      end
+      live2
+    end
+
+    def find_fds
+      fd_dir = "/proc/#{$$}/fd"
+      if File.directory?(fd_dir)
+        Dir.entries(fd_dir).grep(/\A\d+\z/).map(&:to_i).sort
+      else
+        []
+      end
+    end
+
+    def check_fd_leak(inst, live1, live2)
+      name = "#{inst.class}\##{inst.__name__}"
+      fd_closed = live1 - live2
+      if !fd_closed.empty?
+        fd_closed.each {|fd|
+          puts "Closed file descriptor: #{name}: #{fd}"
+        }
+      end
+      fd_leaked = live2 - live1
+      if !fd_leaked.empty?
+        h = {}
+        ObjectSpace.each_object(IO) {|io|
+          begin
+            fd = io.fileno
+          rescue IOError # closed IO object
+            next
+          end
+          (h[fd] ||= []) << io
+        }
+        fd_leaked.each {|fd|
+          str = ''
+          if h[fd]
+            str << ' :'
+            h[fd].map {|io|
+              s = ' ' + io.inspect
+              s << "(not-autoclose)" if !io.autoclose?
+              s
+            }.each {|s|
+              str << s
+            }
+          end
+          puts "Leaked file descriptor: #{name}: #{fd}#{str}"
+        }
+        h.each {|fd, ios|
+          next if ios.length <= 1
+          list = ios.map {|io| [io, io.autoclose?] }
+          if 1 < list.count {|io, autoclose| autoclose }
+            str = list.map {|io, autoclose| " #{io.inspect}" + (autoclose ? "(autoclose)" : "") }.sort.join
+            puts "Multiple autoclose IO object for a file descriptor:#{str}"
+          end
         }
       end
       live2
