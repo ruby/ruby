@@ -1,3 +1,8 @@
+Wed May 28 00:38:37 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (ary_reject): may be turned into a shared array during
+	  the given block.  [ruby-dev:48101] [Bug #9727]
+
 Wed May 28 00:29:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_buf_cat): should round up the capacity by 4KiB,
