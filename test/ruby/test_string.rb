@@ -2219,6 +2219,17 @@ class TestString < Test::Unit::TestCase
       assert_equal("foo", "" =~ //)
     RUBY
   end
+
+  def test_LSHIFT_neary_long_max
+    return unless @cls == String
+    assert_ruby_status([], <<-'end;', '[ruby-core:61886] [Bug #9709]')
+      begin
+        a = "a" * 0x4000_0000
+        a << "a" * 0x1_0000
+      rescue NoMemoryError
+      end
+    end;
+  end
 end
 
 class TestString2 < TestString
