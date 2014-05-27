@@ -1,3 +1,8 @@
+Tue May 27 20:26:06 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_io.rb (test_flush_in_finalizer1): some opened fds are
+	  remain before GC, so unlink the tempfile is failed.
+
 Tue May 27 19:07:26 2014  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_autoclose_p): Don't raise on frozen IO.

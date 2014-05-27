@@ -2351,7 +2351,7 @@ End
   def test_flush_in_finalizer1
     require 'tempfile'
     bug3910 = '[ruby-dev:42341]'
-    Tempfile.open("bug3910") {|t|
+    t = Tempfile.open("bug3910") {|t|
       path = t.path
       t.close
       fds = []
@@ -2362,10 +2362,11 @@ End
           f.print "hoge"
         }
       end
-      t.unlink
+      t
     }
   ensure
     GC.start
+    t.unlink
   end
 
   def test_flush_in_finalizer2
