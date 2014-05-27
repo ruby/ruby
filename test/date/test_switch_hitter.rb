@@ -312,6 +312,8 @@ class TestSH < Test::Unit::TestCase
     assert_equal(-1, Date.new(2001,2,3) <=> Rational('4903888/2'))
     assert_equal(0, Date.new(2001,2,3) <=> Rational('4903887/2'))
     assert_equal(1, Date.new(2001,2,3) <=> Rational('4903886/2'))
+
+    assert_equal(-1, Date.new(-4713,11,1,Date::GREGORIAN) <=> Date.new(-4713,12,1,Date::GREGORIAN))
   end
 
   def test_eqeqeq
