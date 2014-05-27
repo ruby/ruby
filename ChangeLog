@@ -1,3 +1,7 @@
+Tue May 27 11:23:02 2014  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c (d_lite_cmp): should compare with #<.
+
 Mon May  5 00:42:35 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* ext/psych/yaml/config.h: ditto.
