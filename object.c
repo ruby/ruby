@@ -524,6 +524,8 @@ class_or_module_required(VALUE c)
     return c;
 }
 
+static VALUE class_search_ancestor(VALUE cl, VALUE c);
+
 /*
  *  call-seq:
  *     obj.instance_of?(class)    -> true or false
@@ -584,15 +586,27 @@ rb_obj_is_kind_of(VALUE obj, VALUE c)
     VALUE cl = CLASS_OF(obj);
 
     c = class_or_module_required(c);
-    c = RCLASS_ORIGIN(c);
-    while (cl) {
-	if (cl == c || RCLASS_M_TBL(cl) == RCLASS_M_TBL(c))
-	    return Qtrue;
-	cl = RCLASS_SUPER(cl);
-    }
-    return Qfalse;
+    return class_search_ancestor(cl, RCLASS_ORIGIN(c)) ? Qtrue : Qfalse;
 }
 
+static VALUE
+class_search_ancestor(VALUE cl, VALUE c)
+{
+    while (cl) {
+	if (cl == c || RCLASS_M_TBL(cl) == RCLASS_M_TBL(c))
+	    return cl;
+	cl = RCLASS_SUPER(cl);
+    }
+    return 0;
+}
+
+VALUE
+rb_class_search_ancestor(VALUE cl, VALUE c)
+{
+    cl = class_or_module_required(cl);
+    c = class_or_module_required(c);
+    return class_search_ancestor(cl, RCLASS_ORIGIN(c));
+}
 
 /*
  *  call-seq:
@@ -1486,16 +1500,12 @@ rb_class_inherited_p(VALUE mod, VALUE arg)
 	rb_raise(rb_eTypeError, "compared with non class/module");
     }
     arg = RCLASS_ORIGIN(arg);
-    while (mod) {
-	if (RCLASS_M_TBL(mod) == RCLASS_M_TBL(arg))
-	    return Qtrue;
-	mod = RCLASS_SUPER(mod);
+    if (class_search_ancestor(mod, arg)) {
+	return Qtrue;
     }
     /* not mod < arg; check if mod > arg */
-    while (arg) {
-	if (RCLASS_M_TBL(arg) == RCLASS_M_TBL(start))
-	    return Qfalse;
-	arg = RCLASS_SUPER(arg);
+    if (class_search_ancestor(arg, start)) {
+	return Qfalse;
     }
     return Qnil;
 }

@@ -1550,6 +1550,7 @@ rb_method_call_with_block(int argc, VALUE *argv, VALUE method, VALUE pass_procva
     if ((state = EXEC_TAG()) == 0) {
 	rb_thread_t *th = GET_THREAD();
 	rb_block_t *block = 0;
+	VALUE defined_class;
 
 	if (!NIL_P(pass_procval)) {
 	    rb_proc_t *pass_proc;
@@ -1558,7 +1559,9 @@ rb_method_call_with_block(int argc, VALUE *argv, VALUE method, VALUE pass_procva
 	}
 
 	th->passed_block = block;
-	result = rb_vm_call(th, data->recv, data->id,  argc, argv, data->me, data->defined_class);
+	defined_class = data->defined_class;
+	if (BUILTIN_TYPE(defined_class) == T_MODULE) defined_class = data->rclass;
+	result = rb_vm_call(th, data->recv, data->id, argc, argv, data->me, defined_class);
     }
     POP_TAG();
     if (safe >= 0)
@@ -1663,18 +1666,21 @@ static VALUE
 umethod_bind(VALUE method, VALUE recv)
 {
     struct METHOD *data, *bound;
+    VALUE methclass;
+    VALUE rclass;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
 
-    if (!RB_TYPE_P(data->rclass, T_MODULE) &&
-	data->rclass != CLASS_OF(recv) && !rb_obj_is_kind_of(recv, data->rclass)) {
-	if (FL_TEST(data->rclass, FL_SINGLETON)) {
+    methclass = data->rclass;
+    if (!RB_TYPE_P(methclass, T_MODULE) &&
+	methclass != CLASS_OF(recv) && !rb_obj_is_kind_of(recv, methclass)) {
+	if (FL_TEST(methclass, FL_SINGLETON)) {
 	    rb_raise(rb_eTypeError,
 		     "singleton method called for a different object");
 	}
 	else {
 	    rb_raise(rb_eTypeError, "bind argument must be an instance of %s",
-		     rb_class2name(data->rclass));
+		     rb_class2name(methclass));
 	}
     }
 
@@ -1683,8 +1689,18 @@ umethod_bind(VALUE method, VALUE recv)
     bound->me = ALLOC(rb_method_entry_t);
     *bound->me = *data->me;
     if (bound->me->def) bound->me->def->alias_count++;
+    rclass = CLASS_OF(recv);
+    if (BUILTIN_TYPE(bound->defined_class) == T_MODULE) {
+	VALUE ic = rb_class_search_ancestor(rclass, bound->defined_class);
+	if (ic) {
+	    rclass = ic;
+	}
+	else {
+	    rclass = rb_include_class_new(methclass, rclass);
+	}
+    }
     bound->recv = recv;
-    bound->rclass = CLASS_OF(recv);
+    bound->rclass = rclass;
     data->ume = ALLOC(struct unlinked_method_entry_list_entry);
 
     return method;

@@ -454,4 +454,45 @@ class TestSuper < Test::Unit::TestCase
       m.call
     end
   end
+
+  def test_super_in_module_unbound_method
+    bug9721 = '[ruby-core:61936] [Bug #9721]'
+
+    a = Module.new do
+      def foo(result)
+        result << "A"
+      end
+    end
+
+    b = Module.new do
+      def foo(result)
+        result << "B"
+        super
+      end
+    end
+
+    um = b.instance_method(:foo)
+
+    m = um.bind(Object.new.extend(a))
+    result = []
+    assert_nothing_raised(NoMethodError, bug9721) do
+      m.call(result)
+    end
+    assert_equal(%w[B A], result, bug9721)
+
+    bug9740 = '[ruby-core:62017] [Bug #9740]'
+
+    b.module_eval do
+      define_method(:foo) do |result|
+        um.bind(self).call(result)
+      end
+    end
+
+    result.clear
+    o = Object.new.extend(a).extend(b)
+    assert_nothing_raised(NoMethodError, SystemStackError, bug9740) do
+      o.foo(result)
+    end
+    assert_equal(%w[B A], result, bug9721)
+  end
 end
