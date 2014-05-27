@@ -1,3 +1,5 @@
+# coding: UTF-8
+
 require_relative 'utils'
 
 class OpenSSL::TestHMAC < Test::Unit::TestCase
@@ -28,5 +30,12 @@ class OpenSSL::TestHMAC < Test::Unit::TestCase
     @h1.update(@data)
     h = @h1.dup
     assert_equal(@h1.digest, h.digest, "dup digest")
+  end
+
+  def test_binary_update
+    data = "Lücíllé: Bût... yøü sáîd hé wås âlrîght.\nDr. Físhmån: Yés. Hé's løst hîs léft hånd, sø hé's gøîng tø bé åll rîght"
+    hmac = OpenSSL::HMAC.new("qShkcwN92rsM9nHfdnP4ugcVU2iI7iM/trovs01ZWok", "SHA256")
+    result = hmac.update(data).hexdigest
+    assert_equal "a13984b929a07912e4e21c5720876a8e150d6f67f854437206e7f86547248396", result
   end
 end if defined?(OpenSSL)

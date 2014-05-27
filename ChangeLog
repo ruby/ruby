@@ -1,3 +1,8 @@
+Tue May 27 17:45:09 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/openssl/test_hmac.rb (test_binary_update): Added Test for
+	  HMAC signing with UTF-8 String. [Bug #7512][ruby-core:50559]
+
 Tue May 27 17:10:14 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/runner.rb: fixed randomly test failure.
