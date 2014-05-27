@@ -507,8 +507,6 @@ module XMLRPC # :nodoc:
       expected = resp["Content-Length"] || "<unknown>"
       if data.nil? or data.bytesize == 0
         raise "Wrong size. Was #{data.bytesize}, should be #{expected}"
-      elsif expected != "<unknown>" and expected.to_i != data.bytesize and resp["Transfer-Encoding"].nil?
-        raise "Wrong size. Was #{data.bytesize}, should be #{expected}"
       end
 
       parse_set_cookies(resp.get_fields("Set-Cookie"))
