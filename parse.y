@@ -5594,6 +5594,8 @@ parser_str_new(const char *p, long n, rb_encoding *enc, int func, rb_encoding *e
 #define lex_eol_p() (lex_p >= lex_pend)
 #define peek(c) peek_n((c), 0)
 #define peek_n(c,n) (lex_p+(n) < lex_pend && (c) == (unsigned char)lex_p[n])
+#define peekc() peekc_n(0)
+#define peekc_n(n) (lex_p+(n) < lex_pend ? (unsigned char)lex_p[n] : -1)
 
 static inline int
 parser_nextc(struct parser_params *parser)
@@ -6453,6 +6455,14 @@ parser_number_literal_suffix(struct parser_params *parser, int mask)
 	    return 0;
 	}
 	pushback(c);
+	if (c == '.') {
+	    c = peekc_n(1);
+	    if (ISDIGIT(c)) {
+		yyerror("unexpected fraction part after numeric literal");
+		lex_p += 2;
+		while (parser_is_identchar()) nextc();
+	    }
+	}
 	break;
     }
     return result;

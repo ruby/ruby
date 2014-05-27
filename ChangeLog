@@ -1,3 +1,8 @@
+Tue May 27 23:06:46 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_number_literal_suffix): refine error message for
+	  extra dot and digits.
+
 Tue May 27 22:44:20 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/rexml: Avoid fd leaks.

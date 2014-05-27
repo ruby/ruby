@@ -426,6 +426,15 @@ eom
     end
   end
 
+  def test_unexpected_fraction
+    msg = /unexpected fraction/
+    assert_syntax_error("0x0.0", msg)
+    assert_syntax_error("0b0.0", msg)
+    assert_syntax_error("0d0.0", msg)
+    assert_syntax_error("0o0.0", msg)
+    assert_syntax_error("0.0.0", msg)
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
