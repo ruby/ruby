@@ -292,6 +292,9 @@ ifaddr_inspect_flags(ifa_flags_t flags, VALUE result)
 #ifdef IFF_ALLMULTI
     INSPECT_BIT(IFF_ALLMULTI, "ALLMULTI")
 #endif
+#ifdef IFF_SIMPLEX
+    INSPECT_BIT(IFF_SIMPLEX, "SIMPLEX")
+#endif
 #ifdef IFF_MASTER
     INSPECT_BIT(IFF_MASTER, "MASTER")
 #endif
