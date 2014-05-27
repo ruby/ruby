@@ -183,6 +183,7 @@ VALUE rb_int_pred(VALUE num);
 
 /* object.c */
 VALUE rb_obj_equal(VALUE obj1, VALUE obj2);
+VALUE rb_class_search_ancestor(VALUE klass, VALUE super);
 
 /* parse.y */
 VALUE rb_parser_get_yydebug(VALUE);
