@@ -118,7 +118,7 @@ class CGIMultipartTest < Test::Unit::TestCase
     $stdin.close() if $stdin.is_a?(Tempfile)
     $stdin = STDIN
     @tempfiles.each {|t|
-      t.close(true)
+      t.close!
     }
   end
 
@@ -179,7 +179,7 @@ class CGIMultipartTest < Test::Unit::TestCase
       cgi.params.each {|name, vals|
         vals.each {|val|
           if val.kind_of?(Tempfile) && val.path
-            val.close(true)
+            val.close!
           end
         }
       }
@@ -330,7 +330,7 @@ class CGIMultipartTest < Test::Unit::TestCase
     cgi = RUBY_VERSION>="1.9" ? CGI.new(:accept_charset=>"UTF-8") : CGI.new
     assert_equal(cgi['foo'], 'bar')
     assert_equal(cgi['file'].read, 'b'*10134)
-    cgi['file'].close(true) if cgi['file'].kind_of? Tempfile
+    cgi['file'].close! if cgi['file'].kind_of? Tempfile
   end
 
   def test_cgi_multipart_without_tempfile
