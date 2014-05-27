@@ -1,3 +1,8 @@
+Tue May 27 23:50:07 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/cgi/core.rb: Use Tempfile#close(true) instead of Tempfile#unlink
+	  to close file descriptors.
+
 Tue May 27 23:06:46 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_number_literal_suffix): refine error message for
