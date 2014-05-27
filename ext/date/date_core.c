@@ -6306,7 +6306,7 @@ d_lite_cmp(VALUE self, VALUE other)
 		    return INT2FIX(1);
 		}
 	    }
-	    else if (a_nth < b_nth) {
+	    else if (f_lt_p(a_nth, b_nth)) {
 		return INT2FIX(-1);
 	    }
 	    else {
