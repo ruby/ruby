@@ -2796,6 +2796,13 @@ End
     end
   end
 
+  def test_frozen_autoclose
+    with_pipe do |r,w|
+      fd = r.fileno
+      assert_equal(true, r.freeze.autoclose?)
+    end
+  end
+
   def test_sysread_locktmp
     bug6099 = '[ruby-dev:45297]'
     buf = " " * 100

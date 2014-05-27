@@ -1009,19 +1009,20 @@ module MiniTest
         h = {}
         ObjectSpace.each_object(IO) {|io|
           begin
+            autoclose = io.autoclose?
             fd = io.fileno
           rescue IOError # closed IO object
             next
           end
-          (h[fd] ||= []) << io
+          (h[fd] ||= []) << [io, autoclose]
         }
         fd_leaked.each {|fd|
           str = ''
           if h[fd]
             str << ' :'
-            h[fd].map {|io|
+            h[fd].map {|io, autoclose|
               s = ' ' + io.inspect
-              s << "(not-autoclose)" if !io.autoclose?
+              s << "(not-autoclose)" if !autoclose
               s
             }.each {|s|
               str << s
@@ -1029,9 +1030,8 @@ module MiniTest
           end
           puts "Leaked file descriptor: #{name}: #{fd}#{str}"
         }
-        h.each {|fd, ios|
-          next if ios.length <= 1
-          list = ios.map {|io| [io, io.autoclose?] }
+        h.each {|fd, list|
+          next if list.length <= 1
           if 1 < list.count {|io, autoclose| autoclose }
             str = list.map {|io, autoclose| " #{io.inspect}" + (autoclose ? "(autoclose)" : "") }.sort.join
             puts "Multiple autoclose IO object for a file descriptor:#{str}"
