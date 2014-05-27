@@ -2011,6 +2011,22 @@ class TestArray < Test::Unit::TestCase
     assert_equal([1, 3], [0, 1, 2, 3].reject {|x| x % 2 == 0 })
   end
 
+  def test_reject_with_callcc
+    respond_to?(:callcc, true) or require 'continuation'
+    bug9727 = '[ruby-dev:48101] [Bug #9727]'
+    cont = nil
+    a = [*1..10].reject do |i|
+      callcc {|c| cont = c} if !cont and i == 10
+      false
+    end
+    if a.size < 1000
+      a.unshift(:x)
+      cont.call
+    end
+    assert_equal(1000, a.size, bug9727)
+    assert_equal([:x, *1..10], a.uniq, bug9727)
+  end
+
   def test_zip
     assert_equal([[1, :a, "a"], [2, :b, "b"], [3, nil, "c"]],
       [1, 2, 3].zip([:a, :b], ["a", "b", "c", "d"]))
