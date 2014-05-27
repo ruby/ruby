@@ -455,8 +455,8 @@ module FileUtils
   # Both of +src+ and +dest+ must be a path name.
   # +src+ must exist, +dest+ must not exist.
   #
-  # If +preserve+ is true, this method preserves owner, group, permissions
-  # and modified time.
+  # If +preserve+ is true, this method preserves owner, group, and
+  # modified time.  Permissions are copied regardless +preserve+.
   #
   # If +dereference_root+ is true, this method dereference tree root.
   #
