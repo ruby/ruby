@@ -157,25 +157,25 @@ class OpenSSL::TestPKCS7 < Test::Unit::TestCase
     p7.type = "signed"
     assert_equal(p7.type, :signed)
   end
-  
+
   def test_set_type_data
     p7 = OpenSSL::PKCS7.new
     p7.type = "data"
     assert_equal(p7.type, :data)
   end
-  
+
   def test_set_type_signed_and_enveloped
     p7 = OpenSSL::PKCS7.new
     p7.type = "signedAndEnveloped"
     assert_equal(p7.type, :signedAndEnveloped)
   end
-  
+
   def test_set_type_enveloped
     p7 = OpenSSL::PKCS7.new
     p7.type = "enveloped"
     assert_equal(p7.type, :enveloped)
   end
-  
+
   def test_set_type_encrypted
     p7 = OpenSSL::PKCS7.new
     p7.type = "encrypted"
@@ -213,7 +213,7 @@ END
     ca_cert = OpenSSL::X509::Certificate.new(ca_cert_pem)
     p7.add_certificate ca_cert
     p7.add_data ""
-    
+
     assert_nothing_raised do
       p7.to_pem
     end
@@ -290,7 +290,7 @@ END
     store = OpenSSL::X509::Store.new
     pki_msg.verify(nil, store, nil, OpenSSL::PKCS7::NOVERIFY)
     p7enc = OpenSSL::PKCS7.new(pki_msg.data)
-    assert_equal(p7enc.to_pem, pki_message_content_pem) 
+    assert_equal(p7enc.to_pem, pki_message_content_pem)
   end
 end
 
