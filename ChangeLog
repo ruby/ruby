@@ -1,3 +1,7 @@
+Tue May 27 22:10:30 2014  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_contrib.rb: Indent.
+
 Tue May 27 21:28:16 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/socket/ifaddr.c (ifaddr_inspect_flags): support IFF_SIMPLEX.
