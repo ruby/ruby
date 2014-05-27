@@ -1,3 +1,7 @@
+Tue May 27 20:56:49 2014  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/openssl/test_pkcs7.rb: Fix inverted expected and actual values.
+
 Tue May 27 20:26:06 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_io.rb (test_flush_in_finalizer1): some opened fds are
