@@ -317,9 +317,9 @@ class TestSocket < Test::Unit::TestCase
 
   def test_udp_server
     begin
-      ip_addrs = Socket.ip_address_list
+      ifaddrs = Socket.getifaddrs
     rescue NotImplementedError
-      skip "Socket.ip_address_list not implemented"
+      skip "Socket.getifaddrs not implemented"
     end
 
     ifconfig = nil
@@ -327,7 +327,8 @@ class TestSocket < Test::Unit::TestCase
       famlies = {}
       sockets.each {|s| famlies[s.local_address.afamily] = s }
       nd6 = {}
-      ip_addrs.reject! {|ai|
+      ifaddrs.reject! {|ifa|
+        ai = ifa.addr
         s = famlies[ai.afamily]
         next true unless s
         next true if ai.ipv6_linklocal? # IPv6 link-local address is too troublesome in this test.
@@ -340,14 +341,14 @@ class TestSocket < Test::Unit::TestCase
             next true
           end
         when /freebsd/
-          if ifr_name = ai.ip_address[/%(.*)/, 1]
+          if ifa.addr.ipv6_linklocal?
             # FreeBSD 9.0 with default setting (ipv6_activate_all_interfaces
             # is not YES) sets IFDISABLED to interfaces which don't have
             # global IPv6 address.
             # Link-local IPv6 addresses on those interfaces don't work.
             ulSIOCGIFINFO_IN6 = 3225971052
             ulND6_IFF_IFDISABLED = 8
-            in6_ondireq = ifr_name
+            in6_ondireq = ifa.name
             s.ioctl(ulSIOCGIFINFO_IN6, in6_ondireq)
             flag = in6_ondireq.unpack('A16L6').last
             next true if flag & ulND6_IFF_IFDISABLED != 0
@@ -394,14 +395,15 @@ class TestSocket < Test::Unit::TestCase
           }
         }
 
-        ip_addrs.each {|ai|
+        ifaddrs.each {|ifa|
+          ai = ifa.addr
           Addrinfo.udp(ai.ip_address, port).connect {|s|
             ping_p = false
             msg1 = "<<<#{ai.inspect}>>>"
             s.sendmsg msg1
             unless IO.select([s], nil, nil, 10)
               nd6options = nd6.key?(ai) ? "nd6=%x " % nd6[ai] : ''
-              raise "no response from #{ai.inspect} #{nd6options}ping=#{ping_p}"
+              raise "no response from #{ifa.inspect} #{nd6options}ping=#{ping_p}"
             end
             msg2, addr = s.recvmsg
             msg2, _, _ = Marshal.load(msg2)
