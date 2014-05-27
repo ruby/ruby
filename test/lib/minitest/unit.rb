@@ -1063,7 +1063,7 @@ module MiniTest
         list.each {|str|
           puts "Leaked tempfile: #{name}: #{str}"
         }
-        tempfile_retained.each {|t| t.unlink }
+        tempfile_retained.each {|t| t.close! }
       end
       live2
     end

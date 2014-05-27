@@ -550,7 +550,7 @@ class CGI
         name = $1 || $2 || ''
         if body.original_filename.empty?
           value=body.read.dup.force_encoding(@accept_charset)
-          body.close(true) if defined?(Tempfile) && body.kind_of?(Tempfile)
+          body.close! if defined?(Tempfile) && body.kind_of?(Tempfile)
           (params[name] ||= []) << value
           unless value.valid_encoding?
             if @accept_charset_error_block
@@ -578,7 +578,7 @@ class CGI
       if tempfiles
         tempfiles.each {|t|
           if t.path
-            t.close(true)
+            t.close!
           end
         }
       end

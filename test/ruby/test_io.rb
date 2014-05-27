@@ -1924,7 +1924,7 @@ class TestIO < Test::Unit::TestCase
       assert_raise(Errno::EBADF, feature2250) {t.close}
     end
   ensure
-    t.unlink
+    t.close!
   end
 
   def test_autoclose_false_closed_by_finalizer
@@ -1940,7 +1940,7 @@ class TestIO < Test::Unit::TestCase
       assert_nothing_raised(Errno::EBADF, feature2250) {t.close}
     end
   ensure
-    t.unlink
+    t.close!
   end
 
   def test_open_redirect
@@ -2366,7 +2366,7 @@ End
     }
   ensure
     GC.start
-    t.unlink
+    t.close!
   end
 
   def test_flush_in_finalizer2
@@ -2382,7 +2382,7 @@ End
       assert_nothing_raised(TypeError, bug3910) do
         GC.start
       end
-      t.unlink
+      t.close!
     }
   end
 
