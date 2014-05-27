@@ -263,7 +263,11 @@ class Tempfile < DelegateClass(File)
 
   # :stopdoc:
   def inspect
-    "#<#{self.class}:#{path}>"
+    if closed?
+      "#<#{self.class}:#{path} (closed)>"
+    else
+      "#<#{self.class}:#{path}>"
+    end
   end
 
   class Remover
