@@ -227,8 +227,9 @@ module REXMLTests
       assert_equal(correct, test)
 
       # OK, the BIG doctype test, numba wun
-      docin = File.new(fixture_path("doctype_test.xml"))
-      doc = Document.new(docin)
+      doc = File.open(fixture_path("doctype_test.xml")) do |docin|
+        Document.new(docin)
+      end
       doc.write(test="")
       assert_equal(31, doc.doctype.size)
     end
@@ -248,8 +249,7 @@ module REXMLTests
       assert_instance_of DocType, doc.doctype
       assert_equal doc.version, "1.0"
 
-      source = File.new(fixture_path("dash.xml"))
-      doc = Document.new source
+      doc = File.open(fixture_path("dash.xml")) {|source| Document.new source }
       assert_equal "content-2", doc.elements["//content-2"].name
     end
 
@@ -339,7 +339,7 @@ module REXMLTests
       assert_equal doc.root.name.to_s, "xsa"
 
       # Testing IO source
-      doc = Document.new File.new(fixture_path("project.xml"))
+      doc = File.open(fixture_path("project.xml")) {|f| Document.new f }
       assert_equal doc.root.name.to_s, "Project"
     end
 
@@ -436,7 +436,7 @@ module REXMLTests
     # enormous.
     def test_element_access
       # Testing each_element
-      doc = Document.new File.new(fixture_path("project.xml"))
+      doc = File.open(fixture_path("project.xml")) {|f| Document.new f }
 
       each_test( doc, "/", 1 ) { |child|
         assert_equal doc.name, child.name
@@ -601,22 +601,23 @@ module REXMLTests
 
 
     def test_big_documentation
-      f = File.new(fixture_path("documentation.xml"))
-      d = Document.new f
+      d = File.open(fixture_path("documentation.xml")) {|f| Document.new f }
       assert_equal "Sean Russell", d.elements["documentation/head/author"].text.tr("\n\t", " ").squeeze(" ")
       out = ""
       d.write out
     end
 
     def test_tutorial
-      doc = Document.new File.new(fixture_path("tutorial.xml"))
+      doc = File.open(fixture_path("tutorial.xml")) {|f| Document.new f }
       out = ""
       doc.write out
     end
 
     def test_stream
       c = Listener.new
-      Document.parse_stream( File.new(fixture_path("documentation.xml")), c )
+      File.open(fixture_path("documentation.xml")) do |f|
+        Document.parse_stream( f, c )
+      end
       assert(c.ts, "Stream parsing apparantly didn't parse the whole file")
       assert(c.te, "Stream parsing dropped end tag for documentation")
 
@@ -627,12 +628,15 @@ module REXMLTests
     end
 
     def test_line
-      Document.new File.new(fixture_path("bad.xml"))
+      f = File.new(fixture_path("bad.xml"))
+      Document.new f
       assert_fail "There should have been an error"
     rescue Exception
       # We should get here
       assert($!.line == 5, "Should have been an error on line 5, "+
         "but was reported as being on line #{$!.line}" )
+    ensure
+      f.close if f
     end
 
     def test_substitution
@@ -836,8 +840,7 @@ EOL
     end
 
     def test_attlist_write
-      file=File.new(fixture_path("foo.xml"))
-      doc=Document.new file
+      doc = File.open(fixture_path("foo.xml")) {|file| Document.new file }
       out = ''
       doc.write(out)
     end
@@ -1281,11 +1284,11 @@ EOL
     end
 
     def test_ticket_63
-      Document.new(File.new(fixture_path("t63-1.xml")))
+      File.open(fixture_path("t63-1.xml")) {|f| Document.new(f) }
     end
 
     def test_ticket_75
-      d = REXML::Document.new(File.new(fixture_path("t75.xml")))
+      d = File.open(fixture_path("t75.xml")) {|f| REXML::Document.new(f) }
       assert_equal("tree", d.root.name)
     end
 

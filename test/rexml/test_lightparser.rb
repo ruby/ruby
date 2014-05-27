@@ -6,9 +6,10 @@ module REXMLTests
     include REXMLTestUtils
     include REXML
     def test_parsing
-      f = File.new(fixture_path("documentation.xml"))
-      parser = REXML::Parsers::LightParser.new( f )
-      parser.parse
+      File.open(fixture_path("documentation.xml")) do |f|
+        parser = REXML::Parsers::LightParser.new( f )
+        parser.parse
+      end
     end
   end
 end

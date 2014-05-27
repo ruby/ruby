@@ -130,7 +130,9 @@ module REXMLTests
       assert_equal("b", XPath::first(c, "..").name)
       assert_equal("a", XPath::first(@@doc, "a/b/..").name)
 
-      doc = REXML::Document.new(File.new(fixture_path("project.xml")))
+      doc = File.open(fixture_path("project.xml")) do |f|
+        REXML::Document.new(f)
+      end
       c = each_test(doc.root, "./Description" ) { |child|
         assert_equal("Description",child.name)
       }
@@ -213,11 +215,11 @@ module REXMLTests
       xmlsource   = fixture_path("testsrc.xml")
       xpathtests  = fixture_path("xp.tst")
 
-      doc = REXML::Document.new(File.new(xmlsource))
+      doc = File.open(xmlsource) {|f| REXML::Document.new(f) }
       #results = ""
       results = REXML::Document.new
       results.add_element "test-results"
-      for line in File.new(xpathtests)
+      File.foreach(xpathtests) do |line|
         line.strip!
         begin
           doc.root
@@ -315,7 +317,7 @@ module REXMLTests
     end
 
     def test_lang
-      doc = Document.new(File.new(fixture_path("lang0.xml")))
+      doc = File.open(fixture_path("lang0.xml")) {|f| Document.new(f) }
       #puts IO.read( "test/lang.xml" )
 
       #puts XPath.match( doc, "//language/*" ).size
@@ -936,10 +938,14 @@ EOF
     def test_ticket_43
       #url = http://news.search.yahoo.com/news/rss?p=market&ei=UTF-8&fl=0&x=wrt
 
-      sum = Document.new(File.new(fixture_path("yahoo.xml"))).elements.to_a("//item").size
+      sum = File.open(fixture_path("yahoo.xml")) do |f|
+        Document.new(f).elements.to_a("//item").size
+      end
       assert_equal( 10, sum )
 
-      text = Document.new(File.new(fixture_path("yahoo.xml"))).elements.to_a(%Q{//title[contains(text(), "'")]}).collect{|e| e.text}.join
+      text = File.open(fixture_path("yahoo.xml")) do |f|
+        Document.new(f).elements.to_a(%Q{//title[contains(text(), "'")]}).collect{|e| e.text}.join
+      end
       assert_equal( "Broward labor market's a solid performer (Miami Herald)", text )
     end
 
@@ -997,14 +1003,16 @@ EOF
     end
 
     def test_ticket_61_text
-      file = File.open(fixture_path("ticket_61.xml"))
-      doc = REXML::Document.new file
+      doc = File.open(fixture_path("ticket_61.xml")) do |file|
+        REXML::Document.new file
+      end
       ticket_61_fixture( doc, "//div[text()='Add' and @class='ButtonText']" )
     end
 
     def test_ticket_61_contains
-      file = File.open(fixture_path("ticket_61.xml"))
-      doc = REXML::Document.new file
+      doc = File.open(fixture_path("ticket_61.xml")) do |file|
+        REXML::Document.new file
+      end
       ticket_61_fixture( doc, "//div[contains(.,'Add') and @class='ButtonText']" )
     end
 

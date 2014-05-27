@@ -1,3 +1,7 @@
+Tue May 27 22:44:20 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/rexml: Avoid fd leaks.
+
 Tue May 27 22:24:25 2014  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_document.rb: Indent.

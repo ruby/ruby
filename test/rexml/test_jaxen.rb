@@ -39,8 +39,9 @@ module REXMLTests
     def test( fname )
 #      Dir.entries( xml_dir ).each { |fname|
 #        if fname =~ /\.xml$/
-          file = File.new(fixture_path(fname+".xml"))
-          doc = Document.new( file )
+          doc = File.open(fixture_path(fname+".xml")) do |file|
+            Document.new(file)
+          end
           XPath.each( doc, "/tests/document" ) {|e| handleDocument(e)}
 #        end
 #      }

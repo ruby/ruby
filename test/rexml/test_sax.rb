@@ -32,62 +32,61 @@ module REXMLTests
     end
 
     def test_sax2
-      f = File.new(fixture_path("documentation.xml"))
-      parser = Parsers::SAX2Parser.new( f )
-      # Listen to all events on the following elements
-      count = 0
-      blok = proc { |uri,localname,qname,attributes|
-        assert %w{ bugs todo }.include?(localname),
-        "Mismatched name; we got '#{qname}'\nArgs were:\n\tURI: #{uri}\n\tLOCALNAME: #{localname}\n\tQNAME: #{qname}\n\tATTRIBUTES: #{attributes.inspect}\n\tSELF=#{blok}"
-        count += 1
-      }
+      File.open(fixture_path("documentation.xml")) do |f|
+        parser = Parsers::SAX2Parser.new( f )
+        # Listen to all events on the following elements
+        count = 0
+        blok = proc { |uri,localname,qname,attributes|
+          assert %w{ bugs todo }.include?(localname),
+          "Mismatched name; we got '#{qname}'\nArgs were:\n\tURI: #{uri}\n\tLOCALNAME: #{localname}\n\tQNAME: #{qname}\n\tATTRIBUTES: #{attributes.inspect}\n\tSELF=#{blok}"
+          count += 1
+        }
 
-      start_document = 0
-      end_document = 0
-      parser.listen( :start_document ) { start_document += 1 }
-      parser.listen( :end_document ) { end_document += 1 }
-      parser.listen( :start_element, %w{ changelog bugs todo }, &blok )
-      # Listen to all events on the following elements.  Synonymous with
-      # listen( :start_element, %w{ ... } )
-      parser.listen( %w{ changelog bugs todo }, &blok )
-      # Listen for all start element events
-      parser.listen( :start_element ) { |uri,localname,qname,attributes|
-      }
-      listener = MySAX2Listener.new
-      # Listen for all events
-      parser.listen( listener )
-      # Listen for all events on the given elements.  Does not include children
-      # events.  Regular expressions work as well!
-      parser.listen( %w{ /change/ bugs todo }, listener )
-      # Test the deafening method
-      blok = proc  { |uri,localname,qname,attributes|
-        assert_fail "This listener should have been deafened!"
-      }
-      parser.listen( %w{ changelog }, &blok )
-      parser.deafen( &blok )
+        start_document = 0
+        end_document = 0
+        parser.listen( :start_document ) { start_document += 1 }
+        parser.listen( :end_document ) { end_document += 1 }
+        parser.listen( :start_element, %w{ changelog bugs todo }, &blok )
+        # Listen to all events on the following elements.  Synonymous with
+        # listen( :start_element, %w{ ... } )
+        parser.listen( %w{ changelog bugs todo }, &blok )
+        # Listen for all start element events
+        parser.listen( :start_element ) { |uri,localname,qname,attributes|
+        }
+        listener = MySAX2Listener.new
+        # Listen for all events
+        parser.listen( listener )
+        # Listen for all events on the given elements.  Does not include children
+        # events.  Regular expressions work as well!
+        parser.listen( %w{ /change/ bugs todo }, listener )
+        # Test the deafening method
+        blok = proc  { |uri,localname,qname,attributes|
+          assert_fail "This listener should have been deafened!"
+        }
+        parser.listen( %w{ changelog }, &blok )
+        parser.deafen( &blok )
 
-      tc = 0
-      parser.listen( :characters, %w{version} ) {|text|
-        assert(text=~/@ANT_VERSION@/, "version was '#{text}'")
-        tc += 1
-      }
+        tc = 0
+        parser.listen( :characters, %w{version} ) {|text|
+          assert(text=~/@ANT_VERSION@/, "version was '#{text}'")
+          tc += 1
+        }
 
-      begin
-        parser.parse
-      rescue => exception
-        if exception.kind_of? Test::Unit::AssertionFailedError
-          raise exception
+        begin
+          parser.parse
+        rescue => exception
+          if exception.kind_of? Test::Unit::AssertionFailedError
+            raise exception
+          end
+          puts $!
+          puts exception.backtrace
         end
-        puts $!
-        puts exception.backtrace
+        assert_equal 2, count
+        assert_equal 1, tc
+        assert_equal 1, start_document
+        assert_equal 1, end_document
       end
-      assert_equal 2, count
-      assert_equal 1, tc
-      assert_equal 1, start_document
-      assert_equal 1, end_document
     end
-
-
 
     # used by test_simple_doctype_listener
     # submitted by Jeff Barczewski
@@ -223,21 +222,26 @@ module REXMLTests
     def test_socket
       require 'socket'
 
-      server = TCPServer.new('127.0.0.1', 0)
-      socket = TCPSocket.new('127.0.0.1', server.addr[1])
-
-      ok = false
-      session = server.accept
-      session << '<foo>'
-      parser = REXML::Parsers::SAX2Parser.new(socket)
-      Fiber.new do
-        parser.listen(:start_element) do
-          ok = true
-          Fiber.yield
+      TCPServer.open('127.0.0.1', 0) do |server|
+        TCPSocket.open('127.0.0.1', server.addr[1]) do |socket|
+          ok = false
+          session = server.accept
+          begin
+            session << '<foo>'
+            parser = REXML::Parsers::SAX2Parser.new(socket)
+            Fiber.new do
+              parser.listen(:start_element) do
+                ok = true
+                Fiber.yield
+              end
+              parser.parse
+            end.resume
+            assert(ok)
+          ensure
+            session.close
+          end
         end
-        parser.parse
-      end.resume
-      assert(ok)
+      end
     end
 
     def test_char_ref_sax2()
@@ -261,15 +265,17 @@ module REXMLTests
       include REXML::SAX2Listener
     end
     def test_ticket_68
-      parser = REXML::Parsers::SAX2Parser.new(File.new(fixture_path('ticket_68.xml')))
-      parser.listen( Ticket68.new )
-      begin
-        parser.parse
-      rescue
-        p parser.source.position
-        p parser.source.current_line
-        puts $!.backtrace.join("\n")
-        flunk $!.message
+      File.open(fixture_path('ticket_68.xml')) do |f|
+        parser = REXML::Parsers::SAX2Parser.new(f)
+        parser.listen( Ticket68.new )
+        begin
+          parser.parse
+        rescue
+          p parser.source.position
+          p parser.source.current_line
+          puts $!.backtrace.join("\n")
+          flunk $!.message
+        end
       end
     end
   end

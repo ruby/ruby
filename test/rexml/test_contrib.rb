@@ -276,7 +276,7 @@ EOF
       f.write( tn, Output.new(o = "", "ISO-8859-1") )
       assert_equal(expected_iso, o.strip)
 
-      doc = Document.new File.new(fixture_path('xmlfile-bug.xml'))
+      doc = File.open(fixture_path('xmlfile-bug.xml')) {|file| Document.new file }
       tn = XPath.first(doc, "//nebenspalte/text()[2]")
       assert_equal(expected_utf, tn.to_s.strip)
       f.write( tn, Output.new(o = "", "ISO-8859-1") )
@@ -310,9 +310,10 @@ EOF
 
     #  Alun ap Rhisiart
     def test_less_than_in_element_content
-      source = File.new(fixture_path('ProductionSupport.xml'))
+      doc = File.open(fixture_path('ProductionSupport.xml')) do |source|
+        REXML::Document.new source
+      end
       h = Hash.new
-      doc = REXML::Document.new source
       doc.elements.each("//CommonError") { |el|
         h[el.elements['Key'].text] = 'okay'
       }

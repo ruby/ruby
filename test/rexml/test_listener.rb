@@ -93,10 +93,9 @@ module REXMLTests
                     a.value.force_encoding('binary')
                   end
       assert_equal( "\xC3\xA9", a.value)
-      doc = REXML::Document.parse_stream(
-        File::new(fixture_path("stream_accents.xml")),
-        AccentListener::new
-        )
+      doc = File::open(fixture_path("stream_accents.xml")) do |f|
+        REXML::Document.parse_stream(f, AccentListener::new)
+      end
     end
   end
 
