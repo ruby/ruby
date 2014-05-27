@@ -5,6 +5,7 @@ $LOAD_PATH << src_testdir
 $LOAD_PATH.unshift "#{src_testdir}/lib"
 
 require 'test/unit'
+require_relative 'ruby/envutil'
 
 module Gem
 end
