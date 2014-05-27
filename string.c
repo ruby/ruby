@@ -1925,7 +1925,7 @@ str_buf_cat(VALUE str, const char *ptr, long len)
     if (capa <= total) {
 	while (total > capa) {
 	    if (capa + 1 >= LONG_MAX / 2) {
-		capa = (total + 4095) / 4096;
+		capa = (total + 4095) / 4096 * 4096;
 		break;
 	    }
 	    capa = (capa + 1) * 2;

@@ -1,3 +1,8 @@
+Tue May 27 11:48:22 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_buf_cat): should round up the capacity by 4KiB,
+	  but not number of rooms.  [ruby-core:61886] [Bug #9709]
+
 Tue May 27 11:46:03 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/xmlrpc/client.rb (do_rpc): don't check body length.
