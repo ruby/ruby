@@ -1,3 +1,7 @@
+Tue May 27 22:15:29 2014  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_document.rb: Wrap by REXMLTests module.
+
 Tue May 27 22:11:10 2014  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_encoding_2.rb: Remove a needless file.

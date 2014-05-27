@@ -3,7 +3,8 @@
 require "rexml/document"
 require "test/unit"
 
-class REXML::TestDocument < Test::Unit::TestCase
+module REXMLTests
+class TestDocument < Test::Unit::TestCase
   def test_version_attributes_to_s
     doc = REXML::Document.new(<<-eoxml)
       <?xml version="1.0" encoding="UTF-8" standalone="no"?>
@@ -316,4 +317,5 @@ EOX
       end
     end
   end
+end
 end
