@@ -596,6 +596,7 @@ rb_float_new_inline(double d)
 
 /* object.c */
 VALUE rb_obj_equal(VALUE obj1, VALUE obj2);
+VALUE rb_class_search_ancestor(VALUE klass, VALUE super);
 
 struct RBasicRaw {
     VALUE flags;
