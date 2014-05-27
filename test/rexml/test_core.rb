@@ -249,7 +249,7 @@ module REXMLTests
       assert_instance_of DocType, doc.doctype
       assert_equal doc.version, "1.0"
 
-      doc = File.open(fixture_path("dash.xml")) {|source| Document.new source }
+      doc = File.open(fixture_path("dash.xml")) {|s| Document.new s }
       assert_equal "content-2", doc.elements["//content-2"].name
     end
 
