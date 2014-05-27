@@ -1,3 +1,7 @@
+Wed May 28 00:18:29 2014  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c (d_lite_cmp): should compare with #<.
+
 Fri May 23 00:04:13 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (sock_s_getnameinfo): Save errno for EAI_SYSTEM.
