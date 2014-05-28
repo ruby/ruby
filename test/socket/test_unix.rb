@@ -67,7 +67,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
             assert(recv_io_ary[i].close_on_exec?)
           }
         ensure
-          recv_io_ary.each {|io| io.close if !io.closed? }
+          recv_io_ary.each {|io2| io2.close if !io2.closed? }
         end
       }
     }
@@ -108,7 +108,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
             assert(recv_io_ary[i].close_on_exec?)
           }
         ensure
-          recv_io_ary.each {|io| io.close if !io.closed? }
+          recv_io_ary.each {|io2| io2.close if !io2.closed? }
         end
       }
     }
