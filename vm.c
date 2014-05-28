@@ -1685,13 +1685,6 @@ rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg,
 
 /* vm */
 
-static int
-vm_mark_each_thread_func(rb_thread_t *th, void *dummy)
-{
-    rb_gc_mark(th->self);
-    return ST_CONTINUE;
-}
-
 void rb_vm_trace_mark_event_hooks(rb_hook_list_t *hooks);
 
 void
@@ -1703,7 +1696,11 @@ rb_vm_mark(void *ptr)
     RUBY_GC_INFO("-------------------------------------------------\n");
     if (ptr) {
 	rb_vm_t *vm = ptr;
-	rb_vm_living_threads_foreach(vm, vm_mark_each_thread_func, 0);
+	rb_thread_t *th;
+
+	list_for_each(&vm->living_threads, th, vmlt_node) {
+	    rb_gc_mark(th->self);
+	}
 	RUBY_MARK_UNLESS_NULL(vm->thgroup_default);
 	RUBY_MARK_UNLESS_NULL(vm->mark_object_ary);
 	RUBY_MARK_UNLESS_NULL(vm->load_path);
@@ -3018,24 +3015,3 @@ vm_collect_usage_register(int reg, int isset)
 	(*ruby_vm_collect_usage_func_register)(reg, isset);
 }
 #endif
-
-void
-rb_vm_living_threads_foreach(rb_vm_t *vm,
-			    int (*fn)(rb_thread_t *, void*), void *arg)
-{
-    rb_thread_t *cur = NULL, *next;
-    list_for_each_safe(&vm->living_threads, cur, next, vmlt_node) {
-	int rc = fn(cur, arg);
-	switch (rc) {
-	  case ST_CHECK:
-	  case ST_CONTINUE: break;
-	  case ST_STOP: return;
-	  case ST_DELETE: /* untested */
-	    rb_vm_living_threads_remove(vm, cur);
-	    xfree(cur);
-	    break;
-	  default:
-	    rb_bug("rb_vm_living_threads_foreach: unexpected: %d", rc);
-	}
-    }
-}

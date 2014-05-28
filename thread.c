@@ -368,18 +368,21 @@ rb_threadptr_trap_interrupt(rb_thread_t *th)
     rb_threadptr_interrupt_common(th, 1);
 }
 
-static int
-terminate_i(rb_thread_t *th, void *main_thread)
+static void
+terminate_all(rb_vm_t *vm, const rb_thread_t *main_thread)
 {
-    if (th != main_thread) {
-	thread_debug("terminate_i: %p\n", (void *)th);
-	rb_threadptr_pending_interrupt_enque(th, eTerminateSignal);
-	rb_threadptr_interrupt(th);
+    rb_thread_t *th;
+
+    list_for_each(&vm->living_threads, th, vmlt_node) {
+	if (th != main_thread) {
+	    thread_debug("terminate_i: %p\n", (void *)th);
+	    rb_threadptr_pending_interrupt_enque(th, eTerminateSignal);
+	    rb_threadptr_interrupt(th);
+	}
+	else {
+	    thread_debug("terminate_i: main thread (%p)\n", (void *)th);
+	}
     }
-    else {
-	thread_debug("terminate_i: main thread (%p)\n", (void *)th);
-    }
-    return ST_CONTINUE;
 }
 
 typedef struct rb_mutex_struct
@@ -430,7 +433,7 @@ rb_thread_terminate_all(void)
 
   retry:
     thread_debug("rb_thread_terminate_all (main thread: %p)\n", (void *)th);
-    rb_vm_living_threads_foreach(vm, terminate_i, th);
+    terminate_all(vm, th);
 
     while (!rb_thread_alone()) {
 	int state;
@@ -2063,22 +2066,19 @@ rb_threadptr_reset_raised(rb_thread_t *th)
     return 1;
 }
 
-static int
-thread_fd_close_i(rb_thread_t *th, void *fdp)
-{
-    int *fd = fdp;
-    if (th->waiting_fd == *fd) {
-	VALUE err = th->vm->special_exceptions[ruby_error_closed_stream];
-	rb_threadptr_pending_interrupt_enque(th, err);
-	rb_threadptr_interrupt(th);
-    }
-    return ST_CONTINUE;
-}
-
 void
 rb_thread_fd_close(int fd)
 {
-    rb_vm_living_threads_foreach(GET_THREAD()->vm, thread_fd_close_i, &fd);
+    rb_vm_t *vm = GET_THREAD()->vm;
+    rb_thread_t *th;
+
+    list_for_each(&vm->living_threads, th, vmlt_node) {
+	if (th->waiting_fd == fd) {
+	    VALUE err = th->vm->special_exceptions[ruby_error_closed_stream];
+	    rb_threadptr_pending_interrupt_enque(th, err);
+	    rb_threadptr_interrupt(th);
+	}
+    }
 }
 
 /*
@@ -2297,22 +2297,6 @@ rb_thread_stop(void)
     return Qnil;
 }
 
-static int
-thread_list_i(rb_thread_t *th, void *data)
-{
-    VALUE ary = (VALUE)data;
-
-    switch (th->status) {
-      case THREAD_RUNNABLE:
-      case THREAD_STOPPED:
-      case THREAD_STOPPED_FOREVER:
-	rb_ary_push(ary, th->self);
-      default:
-	break;
-    }
-    return ST_CONTINUE;
-}
-
 /********************************************************************/
 
 /*
@@ -2339,7 +2323,19 @@ VALUE
 rb_thread_list(void)
 {
     VALUE ary = rb_ary_new();
-    rb_vm_living_threads_foreach(GET_THREAD()->vm, thread_list_i, (void *)ary);
+    rb_vm_t *vm = GET_THREAD()->vm;
+    rb_thread_t *th;
+
+    list_for_each(&vm->living_threads, th, vmlt_node) {
+	switch (th->status) {
+	  case THREAD_RUNNABLE:
+	  case THREAD_STOPPED:
+	  case THREAD_STOPPED_FOREVER:
+	    rb_ary_push(ary, th->self);
+	  default:
+	    break;
+	}
+    }
     return ary;
 }
 
@@ -3771,29 +3767,32 @@ clear_coverage(void)
 }
 
 static void
-rb_thread_atfork_internal(int (*atfork)(rb_thread_t *, void *))
+rb_thread_atfork_internal(void (*atfork)(rb_thread_t *, const rb_thread_t *))
 {
     rb_thread_t *th = GET_THREAD();
+    rb_thread_t *i;
     rb_vm_t *vm = th->vm;
     vm->main_thread = th;
 
     gvl_atfork(th->vm);
-    rb_vm_living_threads_foreach(vm, atfork, th);
+
+    list_for_each(&vm->living_threads, i, vmlt_node) {
+	atfork(i, th);
+    }
     rb_vm_living_threads_init(vm);
     rb_vm_living_threads_insert(vm, th);
     vm->sleeper = 0;
     clear_coverage();
 }
 
-static int
-terminate_atfork_i(rb_thread_t *th, void *current_th)
+static void
+terminate_atfork_i(rb_thread_t *th, const rb_thread_t *current_th)
 {
-    if (th != (rb_thread_t *)current_th) {
+    if (th != current_th) {
 	rb_mutex_abandon_keeping_mutexes(th);
 	rb_mutex_abandon_locking_mutex(th);
 	thread_cleanup_func(th, TRUE);
     }
-    return ST_CONTINUE;
 }
 
 void
@@ -3806,13 +3805,12 @@ rb_thread_atfork(void)
     rb_reset_random_seed();
 }
 
-static int
-terminate_atfork_before_exec_i(rb_thread_t *th, void *current_th)
+static void
+terminate_atfork_before_exec_i(rb_thread_t *th, const rb_thread_t *current_th)
 {
-    if (th != (rb_thread_t *)current_th) {
+    if (th != current_th) {
 	thread_cleanup_func_before_exec(th);
     }
-    return ST_CONTINUE;
 }
 
 void
@@ -3870,25 +3868,6 @@ thgroup_s_alloc(VALUE klass)
     return group;
 }
 
-struct thgroup_list_params {
-    VALUE ary;
-    VALUE group;
-};
-
-static int
-thgroup_list_i(rb_thread_t *th, void *arg)
-{
-    struct thgroup_list_params *params = arg;
-    VALUE thread = th->self;
-    VALUE ary = params->ary;
-    VALUE group = params->group;
-
-    if (th->thgroup == group) {
-	rb_ary_push(ary, thread);
-    }
-    return ST_CONTINUE;
-}
-
 /*
  *  call-seq:
  *     thgrp.list   -> array
@@ -3902,11 +3881,14 @@ static VALUE
 thgroup_list(VALUE group)
 {
     VALUE ary = rb_ary_new();
-    struct thgroup_list_params param;
+    rb_vm_t *vm = GET_THREAD()->vm;
+    rb_thread_t *th;
 
-    param.ary = ary;
-    param.group = group;
-    rb_vm_living_threads_foreach(GET_THREAD()->vm, thgroup_list_i, &param);
+    list_for_each(&vm->living_threads, th, vmlt_node) {
+	if (th->thgroup == group) {
+	    rb_ary_push(ary, th->self);
+	}
+    }
     return ary;
 }
 
@@ -5044,66 +5026,62 @@ ruby_native_thread_p(void)
     return th != 0;
 }
 
-static int
-check_deadlock_i(rb_thread_t *th, void *arg)
+static void
+debug_deadlock_check(rb_vm_t *vm)
 {
-    int *found = arg;
-    if (th->status != THREAD_STOPPED_FOREVER || RUBY_VM_INTERRUPTED(th)) {
-	*found = 1;
-    }
-    else if (th->locking_mutex) {
-	rb_mutex_t *mutex;
-	GetMutexPtr(th->locking_mutex, mutex);
-
-	native_mutex_lock(&mutex->lock);
-	if (mutex->th == th || (!mutex->th && mutex->cond_waiting)) {
-	    *found = 1;
-	}
-	native_mutex_unlock(&mutex->lock);
-    }
-
-    return (*found) ? ST_STOP : ST_CONTINUE;
-}
-
 #ifdef DEBUG_DEADLOCK_CHECK
-static int
-debug_i(rb_thread_t *th, int *found)
-{
-    printf("th:%p %d %d", th, th->status, th->interrupt_flag);
-    if (th->locking_mutex) {
-	rb_mutex_t *mutex;
-	GetMutexPtr(th->locking_mutex, mutex);
+    rb_thread_t *th;
 
-	native_mutex_lock(&mutex->lock);
-	printf(" %p %d\n", mutex->th, mutex->cond_waiting);
-	native_mutex_unlock(&mutex->lock);
+    printf("%d %d %p %p\n", vm_living_thread_num(vm), vm->sleeper, GET_THREAD(), vm->main_thread);
+    list_for_each(&vm->living_threads, th, vmlt_node) {
+	printf("th:%p %d %d", th, th->status, th->interrupt_flag);
+	if (th->locking_mutex) {
+	    rb_mutex_t *mutex;
+	    GetMutexPtr(th->locking_mutex, mutex);
+
+	    native_mutex_lock(&mutex->lock);
+	    printf(" %p %d\n", mutex->th, mutex->cond_waiting);
+	    native_mutex_unlock(&mutex->lock);
+	}
+	else
+	    puts("");
     }
-    else
-	puts("");
-
-    return ST_CONTINUE;
-}
 #endif
+}
 
 static void
 rb_check_deadlock(rb_vm_t *vm)
 {
     int found = 0;
+    rb_thread_t *th;
 
     if (vm_living_thread_num(vm) > vm->sleeper) return;
     if (vm_living_thread_num(vm) < vm->sleeper) rb_bug("sleeper must not be more than vm_living_thread_num(vm)");
     if (patrol_thread && patrol_thread != GET_THREAD()) return;
 
-    rb_vm_living_threads_foreach(vm, check_deadlock_i, &found);
+    list_for_each(&vm->living_threads, th, vmlt_node) {
+	if (th->status != THREAD_STOPPED_FOREVER || RUBY_VM_INTERRUPTED(th)) {
+	    found = 1;
+	}
+	else if (th->locking_mutex) {
+	    rb_mutex_t *mutex;
+	    GetMutexPtr(th->locking_mutex, mutex);
+
+	    native_mutex_lock(&mutex->lock);
+	    if (mutex->th == th || (!mutex->th && mutex->cond_waiting)) {
+		found = 1;
+	    }
+	    native_mutex_unlock(&mutex->lock);
+	}
+	if (found)
+	    break;
+    }
 
     if (!found) {
 	VALUE argv[2];
 	argv[0] = rb_eFatal;
 	argv[1] = rb_str_new2("No live threads left. Deadlock?");
-#ifdef DEBUG_DEADLOCK_CHECK
-	printf("%d %d %p %p\n", vm_living_thread_num(vm), vm->sleeper, GET_THREAD(), vm->main_thread);
-	rb_vm_living_threads_foreach(vm, debug_i, 0);
-#endif
+	debug_deadlock_check(vm);
 	vm->sleeper--;
 	rb_threadptr_raise(vm->main_thread, 2, argv);
     }

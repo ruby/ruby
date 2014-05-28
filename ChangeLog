@@ -1,3 +1,30 @@
+Wed May 28 10:29:28 2014  Eric Wong  <e@80x24.org>
+
+	* vm.c (rb_vm_living_threads_foreach): remove function
+	  [ruby-core:62745]
+	* thread.c (terminate_i): remove
+	* thread.c (terminate_all): implement (inlines old terminate_i)
+	* thread.c (rb_thread_terminate_all): use terminate_all
+	* thread.c (rb_thread_fd_close_i): remove
+	* thread.c (rb_thread_fd_close): iterate inline
+	* thread.c (thread_list_i): remove
+	* thread.c (rb_thread_list): iterate inline
+	* thread.c (rb_thread_atfork_internal): iterate inline
+	* thread.c (terminate_atfork_i): update types to remove casts
+	* thread.c (terminate_atfork_before_exec_i): ditto
+	* thread.c (struct thgroup_list_params): remove definition
+	* thread.c (thgroup_list_i): remove
+	* thread.c (thgroup_list): iterate inline
+	* thread.c (check_deadlock_i): remove
+	* thread.c (debug_deadlock_check): implement (inlines check_deadlock_i)
+	* thread.c (debug_i): remove
+	* thread.c (rb_check_deadlock): iterate inline
+	* vm.c (vm_mark_each_thread_func): remove
+	* vm.c (rb_vm_mark): iterate inline
+	* vm_core.h (rb_vm_living_threads_remove): remove
+	* vm_trace.c (clear_trace_func_i): remove
+	* vm_trace.c (rb_clear_trace_func): iterate inline
+
 Wed May 28 09:30:51 2014  Eric Wong  <e@80x24.org>
 
 	* signal.c (signal_exec): ignore immediate cmd for SIG_IGN
