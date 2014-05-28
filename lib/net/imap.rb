@@ -1043,40 +1043,43 @@ module Net
       @tagno = 0
       @parser = ResponseParser.new
       @sock = TCPSocket.open(@host, @port)
-      if options[:ssl]
-        start_tls_session(options[:ssl])
-        @usessl = true
-      else
-        @usessl = false
-      end
-      @responses = Hash.new([].freeze)
-      @tagged_responses = {}
-      @response_handlers = []
-      @tagged_response_arrival = new_cond
-      @continuation_request_arrival = new_cond
-      @idle_done_cond = nil
-      @logout_command_tag = nil
-      @debug_output_bol = true
-      @exception = nil
-
-      @greeting = get_response
-      if @greeting.nil?
-        @sock.close
-        raise Error, "connection closed"
-      end
-      if @greeting.name == "BYE"
-        @sock.close
-        raise ByeResponseError, @greeting
-      end
-
-      @client_thread = Thread.current
-      @receiver_thread = Thread.start {
-        begin
-          receive_responses
-        rescue Exception
+      begin
+        if options[:ssl]
+          start_tls_session(options[:ssl])
+          @usessl = true
+        else
+          @usessl = false
         end
-      }
-      @receiver_thread_terminating = false
+        @responses = Hash.new([].freeze)
+        @tagged_responses = {}
+        @response_handlers = []
+        @tagged_response_arrival = new_cond
+        @continuation_request_arrival = new_cond
+        @idle_done_cond = nil
+        @logout_command_tag = nil
+        @debug_output_bol = true
+        @exception = nil
+
+        @greeting = get_response
+        if @greeting.nil?
+          raise Error, "connection closed"
+        end
+        if @greeting.name == "BYE"
+          raise ByeResponseError, @greeting
+        end
+
+        @client_thread = Thread.current
+        @receiver_thread = Thread.start {
+          begin
+            receive_responses
+          rescue Exception
+          end
+        }
+        @receiver_thread_terminating = false
+      rescue Exception
+        @sock.close
+        raise
+      end
     end
 
     def receive_responses

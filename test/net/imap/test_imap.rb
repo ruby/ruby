@@ -505,19 +505,20 @@ class IMAPTest < Test::Unit::TestCase
     ths = Thread.start do
       begin
         sock = server.accept
-        sock.print("* OK test server\r\n")
-        sock.gets
-        sock.print("RUBY0001 OK completed\r\n")
-        ctx = OpenSSL::SSL::SSLContext.new
-        ctx.ca_file = CA_FILE
-        ctx.key = File.open(SERVER_KEY) { |f|
-          OpenSSL::PKey::RSA.new(f)
-        }
-        ctx.cert = File.open(SERVER_CERT) { |f|
-          OpenSSL::X509::Certificate.new(f)
-        }
-        sock = OpenSSL::SSL::SSLSocket.new(sock, ctx)
         begin
+          sock.print("* OK test server\r\n")
+          sock.gets
+          sock.print("RUBY0001 OK completed\r\n")
+          ctx = OpenSSL::SSL::SSLContext.new
+          ctx.ca_file = CA_FILE
+          ctx.key = File.open(SERVER_KEY) { |f|
+            OpenSSL::PKey::RSA.new(f)
+          }
+          ctx.cert = File.open(SERVER_CERT) { |f|
+            OpenSSL::X509::Certificate.new(f)
+          }
+          sock = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+          sock.sync_close = true
           sock.accept
           sock.gets
           sock.print("* BYE terminating connection\r\n")

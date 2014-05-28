@@ -1,3 +1,10 @@
+Wed May 28 19:00:31 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/net/imap.rb (Net::IMAP#initialize): Close the opened socket when
+	  any exception occur.
+	  This fixes a fd leak by IMAPTest#test_imaps_post_connection_check
+	  which start_tls_session() raises an exception.
+
 Wed May 28 18:06:13 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_ssl_close): Fix sync_close to work
