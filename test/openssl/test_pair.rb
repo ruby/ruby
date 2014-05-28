@@ -87,6 +87,7 @@ module OpenSSL::TestEOF1M
     yield s1
   ensure
     th.join
+    s1.close
   end
 end
 
@@ -97,6 +98,7 @@ module OpenSSL::TestEOF2M
     yield s2
   ensure
     th.join
+    s2.close
   end
 end
 
