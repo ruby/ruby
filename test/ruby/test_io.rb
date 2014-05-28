@@ -2358,6 +2358,7 @@ End
       assert_nothing_raised(TypeError, bug3910) do
         500.times {
           f = File.open(path, "w")
+          f.instance_variable_set(:@test_flush_in_finalizer1, true)
           fds << f.fileno
           f.print "hoge"
         }
@@ -2365,7 +2366,11 @@ End
       t
     }
   ensure
-    GC.start
+    ObjectSpace.each_object(File) {|f|
+      if f.instance_variables.include?(:@test_flush_in_finalizer1)
+        f.close
+      end
+    }
     t.close!
   end
 

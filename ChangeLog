@@ -1,3 +1,9 @@
+Wed May 28 23:04:35 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_io.rb (test_flush_in_finalizer1): Use
+	  ObjectSpace.each_object to close files.
+	  GC.start is not reliable.
+
 Wed May 28 19:00:31 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/net/imap.rb (Net::IMAP#initialize): Close the opened socket when
