@@ -1,3 +1,10 @@
+Wed May 28 18:06:13 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_close): Fix sync_close to work
+	  when SSL is not started.
+	  This fix the fd leak by test_https_proxy_authentication in
+	  test/net/http/test_https_proxy.rb.
+
 Wed May 28 10:29:28 2014  Eric Wong  <e@80x24.org>
 
 	* vm.c (rb_vm_living_threads_foreach): remove function

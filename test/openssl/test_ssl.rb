@@ -680,6 +680,15 @@ end
     }
   end
 
+  def test_sync_close_without_connect
+    Socket.open(:INET, :STREAM) {|s|
+      ssl = OpenSSL::SSL::SSLSocket.new(s)
+      ssl.sync_close = true
+      ssl.close
+      assert(s.closed?)
+    }
+  end
+
   private
 
   def start_server_version(version, ctx_proc=nil, server_proc=nil, &blk)
