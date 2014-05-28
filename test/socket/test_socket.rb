@@ -538,6 +538,7 @@ class TestSocket < Test::Unit::TestCase
       assert_raise(IOError, bug4390) {client_thread.join}
     end
   ensure
+    serv_thread.value.close
     server.close
   end
 
