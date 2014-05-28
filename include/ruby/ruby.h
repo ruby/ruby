@@ -952,12 +952,6 @@ struct RComplex {
 #define RCOMPLEX_SET_REAL(cmp, r) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->real,(r))
 #define RCOMPLEX_SET_IMAG(cmp, i) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->imag,(i))
 
-struct RSymbol {
-    struct RBasic basic;
-    VALUE fstr;
-    ID type;
-};
-
 struct RData {
     struct RBasic basic;
     void (*dmark)(void*);
@@ -1093,7 +1087,6 @@ struct RStruct {
 #define RSTRUCT(obj) (R_CAST(RStruct)(obj))
 #define RFILE(obj)   (R_CAST(RFile)(obj))
 #define RCOMPLEX(obj) (R_CAST(RComplex)(obj))
-#define RSYMBOL(obj) (R_CAST(RSymbol)(obj))
 
 #define FL_SINGLETON FL_USER0
 #define FL_WB_PROTECTED (((VALUE)1)<<5)

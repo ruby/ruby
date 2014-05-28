@@ -412,6 +412,14 @@ struct RRational {
 
 #define RRATIONAL(obj) (R_CAST(RRational)(obj))
 
+struct RSymbol {
+    struct RBasic basic;
+    VALUE fstr;
+    ID type;
+};
+
+#define RSYMBOL(obj) (R_CAST(RSymbol)(obj))
+
 /* class.c */
 void rb_class_subclass_add(VALUE super, VALUE klass);
 void rb_class_remove_from_super_subclasses(VALUE);

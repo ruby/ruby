@@ -1,3 +1,9 @@
+Thu May 29 05:05:29 2014  Eric Wong  <e@80x24.org>
+
+	* include/ruby/ruby.h: Hide Symbol internals.
+	  (struct RSymbol): moved to internal.h
+	  (RSYMBOL): ditto
+
 Thu May 29 00:28:56 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/unixsocket.c (rsock_init_unixsock): Open a socket
