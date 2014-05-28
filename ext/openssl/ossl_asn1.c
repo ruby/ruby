@@ -1150,7 +1150,7 @@ ossl_asn1_initialize(int argc, VALUE *argv, VALUE self)
 	}
 	if(!SYMBOL_P(tag_class))
 	    ossl_raise(eASN1Error, "invalid tag class");
-	if(SYM2ID(tagging) == sIMPLICIT && NUM2INT(tag) > 31)
+	if(!NIL_P(tagging) && SYM2ID(tagging) == sIMPLICIT && NUM2INT(tag) > 31)
 	    ossl_raise(eASN1Error, "tag number for Universal too large");
     }
     else{
