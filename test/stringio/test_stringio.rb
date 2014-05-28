@@ -419,6 +419,22 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("foo123", s)
   end
 
+  def test_putc_nonascii
+    s = ""
+    f = StringIO.new(s, "w")
+    f.putc("\u{3042}")
+    f.putc(0x3044)
+    f.close
+    assert_equal("\u{3042}D", s)
+
+    s = "foo"
+    f = StringIO.new(s, "a")
+    f.putc("\u{3042}")
+    f.putc(0x3044)
+    f.close
+    assert_equal("foo\u{3042}D", s)
+  end
+
   def test_read
     f = StringIO.new("\u3042\u3044")
     assert_raise(ArgumentError) { f.read(-1) }
