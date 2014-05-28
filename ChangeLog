@@ -1,3 +1,10 @@
+Wed May 28 09:30:51 2014  Eric Wong  <e@80x24.org>
+
+	* signal.c (signal_exec): ignore immediate cmd for SIG_IGN
+	* signal.c (trap_handler): set cmd to true for SIG_IGN
+	* signal.c (trap): handle nil and true values for oldcmd
+	  [Bug #9835]
+
 Wed May 28 01:02:54 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/tempfile.rb (Tempfile#inspect): Show "(closed)" if the tempfile

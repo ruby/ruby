@@ -826,6 +826,15 @@ signal_exec(VALUE cmd, int safe, int sig)
     volatile unsigned long old_interrupt_mask = cur_th->interrupt_mask;
     int state;
 
+    /*
+     * workaround the following race:
+     * 1. signal_enque queues signal for execution
+     * 2. user calls trap(sig, "IGNORE"), setting SIG_IGN
+     * 3. rb_signal_exec runs on queued signal
+     */
+    if (IMMEDIATE_P(cmd))
+	return;
+
     cur_th->interrupt_mask |= TRAP_INTERRUPT_MASK;
     TH_PUSH_TAG(cur_th);
     if ((state = EXEC_TAG()) == 0) {
@@ -977,7 +986,7 @@ trap_handler(VALUE *cmd, int sig)
 		if (strncmp(RSTRING_PTR(command), "SIG_IGN", 7) == 0) {
 sig_ign:
                     func = SIG_IGN;
-                    *cmd = 0;
+                    *cmd = Qtrue;
 		}
 		else if (strncmp(RSTRING_PTR(command), "SIG_DFL", 7) == 0) {
 sig_dfl:
@@ -1058,10 +1067,13 @@ trap(int sig, sighandler_t func, VALUE command)
     oldcmd = vm->trap_list[sig].cmd;
     switch (oldcmd) {
       case 0:
+      case Qtrue:
 	if (oldfunc == SIG_IGN) oldcmd = rb_str_new2("IGNORE");
         else if (oldfunc == SIG_DFL) oldcmd = rb_str_new2("SYSTEM_DEFAULT");
 	else if (oldfunc == sighandler) oldcmd = rb_str_new2("DEFAULT");
 	else oldcmd = Qnil;
+	break;
+      case Qnil:
 	break;
       case Qundef:
 	oldcmd = rb_str_new2("EXIT");
