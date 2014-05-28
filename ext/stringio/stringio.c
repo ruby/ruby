@@ -1233,17 +1233,17 @@ static VALUE
 strio_putc(VALUE self, VALUE ch)
 {
     struct StringIO *ptr = writable(self);
-    int c = NUM2CHR(ch);
-    long olen;
+    VALUE str;
 
     check_modifiable(ptr);
-    olen = RSTRING_LEN(ptr->string);
-    if (ptr->flags & FMODE_APPEND) {
-	ptr->pos = olen;
+    if (RB_TYPE_P(ch, T_STRING)) {
+	str = rb_str_substr(ch, 0, 1);
     }
-    strio_extend(ptr, ptr->pos, 1);
-    RSTRING_PTR(ptr->string)[ptr->pos++] = c;
-    OBJ_INFECT(ptr->string, self);
+    else {
+	char c = NUM2CHR(ch);
+	str = rb_str_new(&c, 1);
+    }
+    strio_write(self, str);
     return ch;
 }
 

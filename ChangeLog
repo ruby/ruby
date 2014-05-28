@@ -1,3 +1,8 @@
+Wed May 28 23:37:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_putc): fix for non-ascii
+	  encoding, like as IO#putc.  [ruby-dev:48114] [Bug #9765]
+
 Wed May 28 01:05:06 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/fileutils.rb (FileUtils#copy_entry): update rdoc about
