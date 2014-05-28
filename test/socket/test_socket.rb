@@ -329,6 +329,7 @@ class TestSocket < Test::Unit::TestCase
       nd6 = {}
       ifaddrs.reject! {|ifa|
         ai = ifa.addr
+        next true unless ai
         s = famlies[ai.afamily]
         next true unless s
         next true if ai.ipv6_linklocal? # IPv6 link-local address is too troublesome in this test.
