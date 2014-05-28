@@ -373,6 +373,9 @@ eom
             bt.each do |l|
               l.sub!(/\A-:(\d+)/){"#{file}:#{line + $1.to_i}"}
             end
+            bt.concat(caller)
+          else
+            res.set_backtrace(caller)
           end
           raise res
         end
