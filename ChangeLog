@@ -382,7 +382,7 @@ Sat May 24 13:42:46 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 Sat May 24 09:39:06 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
-	* defs/default_gems: removed mintiest entry.
+	* defs/default_gems: removed minitest entry.
 
 Sat May 24 06:17:33 2014  Ryan Davis  <ryand-ruby@zenspider.com>
 
