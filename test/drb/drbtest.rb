@@ -191,6 +191,10 @@ module DRbCore
     assert_raise(TimeoutError) do
       @there.do_timeout(ten)
     end
+  ensure
+    DRbService.server.instance_variable_get(:@grp).list.each do |th|
+      th.kill.join
+    end
   end
 
   def test_07_public_private_protected_missing
