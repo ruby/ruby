@@ -494,7 +494,6 @@ class IMAPTest < Test::Unit::TestCase
       end
     ensure
       ssl_server.close
-      ths.kill
       ths.join
     end
   end
