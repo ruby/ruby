@@ -11,17 +11,11 @@ class TestTimeout < Test::Unit::TestCase
   end
 
   def test_timeout
-    flag = true
-    Thread.start {
-      sleep 1
-      flag = false
-    }
-    assert_raise(Timeout::Error, "[ruby-dev:38319]") do
+    assert_raise(Timeout::Error) do
       Timeout.timeout(0.1) {
-        Thread.pass while flag
+        nil while true
       }
     end
-    assert flag, "[ruby-dev:38319]"
   end
 
   def test_cannot_convert_into_time_interval

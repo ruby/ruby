@@ -369,6 +369,24 @@ class TestThread < Test::Unit::TestCase
     c.kill if c
   end
 
+  def test_switch_while_busy_loop
+    bug1402 = "[ruby-dev:38319] [Bug #1402]"
+    flag = true
+    th = Thread.current
+    waiter = Thread.start {
+      sleep 0.1
+      flag = false
+      sleep 1
+      th.raise(bug1402)
+    }
+    assert_nothing_raised(RuntimeError, bug1402) do
+      nil while flag
+    end
+    assert(!flag, bug1402)
+  ensure
+    waiter.kill.join
+  end
+
   def test_safe_level
     ok = false
     t = Thread.new do
