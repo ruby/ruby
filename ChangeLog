@@ -1,3 +1,9 @@
+Wed May 28 23:40:57 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl/ossl_asn1.c (ossl_asn1_initialize): SYMID on a value
+	  other than Symbol is an undefined behavior.  fix up r31699.
+	  [ruby-core:62142] [Bug #9771]
+
 Wed May 28 23:37:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_putc): fix for non-ascii
