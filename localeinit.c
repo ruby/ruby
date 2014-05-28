@@ -65,6 +65,9 @@ Init_enc_set_filesystem_encoding(void)
     if (idx < 0) idx = ENCINDEX_ASCII;
 #else
     idx = rb_enc_to_index(rb_default_external_encoding());
+# if defined __APPLE__
+    if (idx == rb_usascii_encindex()) idx = rb_utf8_encindex();
+# endif
 #endif
     return idx;
 }
