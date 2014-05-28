@@ -12,6 +12,7 @@ class TestRakeTaskWithArguments < Rake::TestCase
 
   def teardown
     Rake::TaskManager.record_task_metadata = false
+    Rake.application.thread_pool.join
 
     super
   end

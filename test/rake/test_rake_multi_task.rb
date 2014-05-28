@@ -13,6 +13,12 @@ class TestRakeMultiTask < Rake::TestCase
     @mutex = Mutex.new
   end
 
+  def teardown
+    Rake.application.thread_pool.join
+
+    super
+  end
+
   def add_run(obj)
     @mutex.synchronize do
       @runs << obj
