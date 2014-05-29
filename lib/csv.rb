@@ -1260,7 +1260,12 @@ class CSV
       file_opts = {encoding: Encoding.default_external}.merge(file_opts)
       retry
     end
-    csv = new(f, options)
+    begin
+      csv = new(f, options)
+    rescue Exception
+      f.close
+      raise
+    end
 
     # handle blocks like Ruby's open(), not like the CSV library
     if block_given?

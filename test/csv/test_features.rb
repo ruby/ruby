@@ -218,6 +218,8 @@ class TestCSV::Features < TestCSV
                )
     end
     assert_equal("\r\n", zipped.row_sep)
+  ensure
+    zipped.close
   end if defined?(Zlib::GzipReader)
 
   def test_gzip_writer_bug_fix
