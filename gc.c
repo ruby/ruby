@@ -4184,9 +4184,6 @@ gc_mark_roots(rb_objspace_t *objspace, int full_mark, const char **categoryp)
     MARK_CHECKPOINT("generic_ivars");
     rb_mark_generic_ivar_tbl();
 
-    MARK_CHECKPOINT("parser");
-    rb_gc_mark_parser();
-
     MARK_CHECKPOINT("live_method_entries");
     rb_gc_mark_unlinked_live_method_entries(th->vm);
 

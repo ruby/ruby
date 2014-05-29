@@ -10045,11 +10045,6 @@ reg_compile_gen(struct parser_params* parser, VALUE str, int options)
     return re;
 }
 
-void
-rb_gc_mark_parser(void)
-{
-}
-
 NODE*
 rb_parser_append_print(VALUE vparser, NODE *node)
 {

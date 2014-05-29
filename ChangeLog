@@ -1,3 +1,9 @@
+Fri May 30 04:48:00 2014  Eric Wong  <e@80x24.org>
+
+	* parse.y (rb_gc_mark_parser): remove, empty since r8758
+	* internal.h: ditto, not usable from extensions since 2.0.0
+	* gc.c (gc_mark_roots): remove checkpoint for parser
+
 Thu May 29 23:27:50 2014  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* signal.c (ruby_signal): should return either `old.sa_sigaction`
