@@ -1,3 +1,8 @@
+Thu May 29 19:31:10 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/lib/openssl/ssl.rb (SSLServer#accept): Close a socket
+	  if any exception occur. 
+
 Thu May 29 05:05:29 2014  Eric Wong  <e@80x24.org>
 
 	* include/ruby/ruby.h: Hide Symbol internals.

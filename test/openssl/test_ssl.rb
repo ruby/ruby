@@ -125,7 +125,12 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       assert_raise(OpenSSL::SSL::SSLError, Errno::ECONNRESET){
         sock = TCPSocket.new("127.0.0.1", port)
         ssl = OpenSSL::SSL::SSLSocket.new(sock)
-        ssl.connect
+        ssl.sync_close = true
+        begin
+          ssl.connect
+        ensure
+          ssl.close
+        end
       }
 
       ctx = OpenSSL::SSL::SSLContext.new
@@ -239,8 +244,13 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.set_params
       ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
-      assert_raise(OpenSSL::SSL::SSLError){ ssl.connect }
-      assert_equal(OpenSSL::X509::V_ERR_SELF_SIGNED_CERT_IN_CHAIN, ssl.verify_result)
+      ssl.sync_close = true
+      begin
+        assert_raise(OpenSSL::SSL::SSLError){ ssl.connect }
+        assert_equal(OpenSSL::X509::V_ERR_SELF_SIGNED_CERT_IN_CHAIN, ssl.verify_result)
+      ensure
+        ssl.close
+      end
 
       sock = TCPSocket.new("127.0.0.1", port)
       ctx = OpenSSL::SSL::SSLContext.new
@@ -251,8 +261,13 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         end
       )
       ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
-      ssl.connect
-      assert_equal(OpenSSL::X509::V_OK, ssl.verify_result)
+      ssl.sync_close = true
+      begin
+        ssl.connect
+        assert_equal(OpenSSL::X509::V_OK, ssl.verify_result)
+      ensure
+        ssl.close
+      end
 
       sock = TCPSocket.new("127.0.0.1", port)
       ctx = OpenSSL::SSL::SSLContext.new
@@ -263,8 +278,13 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         end
       )
       ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
-      assert_raise(OpenSSL::SSL::SSLError){ ssl.connect }
-      assert_equal(OpenSSL::X509::V_ERR_APPLICATION_VERIFICATION, ssl.verify_result)
+      ssl.sync_close = true
+      begin
+        assert_raise(OpenSSL::SSL::SSLError){ ssl.connect }
+        assert_equal(OpenSSL::X509::V_ERR_APPLICATION_VERIFICATION, ssl.verify_result)
+      ensure
+        ssl.close
+      end
     }
   end
 
@@ -279,12 +299,16 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         end
       )
       ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
-      OpenSSL::TestUtils.silent do
-        # SSLError, not RuntimeError
-        assert_raise(OpenSSL::SSL::SSLError) { ssl.connect }
+      ssl.sync_close = true
+      begin
+        OpenSSL::TestUtils.silent do
+          # SSLError, not RuntimeError
+          assert_raise(OpenSSL::SSL::SSLError) { ssl.connect }
+        end
+        assert_equal(OpenSSL::X509::V_ERR_CERT_REJECTED, ssl.verify_result)
+      ensure
+        ssl.close
       end
-      assert_equal(OpenSSL::X509::V_ERR_CERT_REJECTED, ssl.verify_result)
-      ssl.close
     }
   end
 
@@ -301,8 +325,13 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       assert(ciphers_names.all?{|v| /ADH/ !~ v })
       assert(ciphers_versions.all?{|v| /SSLv2/ !~ v })
       ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
-      assert_raise(OpenSSL::SSL::SSLError){ ssl.connect }
-      assert_equal(OpenSSL::X509::V_ERR_SELF_SIGNED_CERT_IN_CHAIN, ssl.verify_result)
+      ssl.sync_close = true
+      begin
+        assert_raise(OpenSSL::SSL::SSLError){ ssl.connect }
+        assert_equal(OpenSSL::X509::V_ERR_SELF_SIGNED_CERT_IN_CHAIN, ssl.verify_result)
+      ensure
+        ssl.close
+      end
     }
   end
 

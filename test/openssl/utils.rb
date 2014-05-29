@@ -311,7 +311,6 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
           if (server)
             server.join(5)
             if server.alive?
-              server.kill
               server.join
               flunk("TCPServer was closed and SSLServer is still alive") unless $!
             end
@@ -322,7 +321,6 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
       end
     ensure
       threads.each {|th|
-        th.kill
         th.join
       }
     end
