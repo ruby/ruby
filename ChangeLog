@@ -1,3 +1,10 @@
+Fri May 30 07:25:46 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/-test-/dir: Dir#fileno implemented.
+
+	* test/lib/minitest/unit.rb (find_fds): Don't return the fd used to
+	  scan /proc/$$/fd.
+
 Fri May 30 04:48:00 2014  Eric Wong  <e@80x24.org>
 
 	* parse.y (rb_gc_mark_parser): remove, empty since r8758

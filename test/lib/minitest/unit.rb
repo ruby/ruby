@@ -2,6 +2,7 @@
 
 require "optparse"
 require "rbconfig"
+require "-test-/dir"
 
 ##
 # Minimal (mostly drop-in) replacement for test-unit.
@@ -992,7 +993,17 @@ module MiniTest
     def find_fds
       fd_dir = "/proc/#{$$}/fd"
       if File.directory?(fd_dir)
-        Dir.entries(fd_dir).grep(/\A\d+\z/).map(&:to_i).sort
+        fds = Dir.open(fd_dir) {|d|
+          a = []
+          while fn = d.read
+            a << fn
+          end
+          if d.respond_to? :fileno
+            a -= [d.fileno.to_s]
+          end
+          a
+        }
+        fds.grep(/\A\d+\z/).map(&:to_i).sort
       else
         []
       end
