@@ -524,6 +524,8 @@ module MiniTest
         ensure
           $stdout.reopen orig_stdout
           $stderr.reopen orig_stderr
+          orig_stdout.close
+          orig_stderr.close
           captured_stdout.close!
           captured_stderr.close!
         end

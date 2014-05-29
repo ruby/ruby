@@ -1,3 +1,7 @@
+Thu May 29 22:18:57 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/minitest/unit.rb (capture_subprocess_io): Close fds.
+
 Thu May 29 19:47:08 2014  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_s_pipe): Close pipes if io_encoding_set() raises an
