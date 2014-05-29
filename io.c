@@ -5870,6 +5870,13 @@ popen_exec(void *pp, char *errmsg, size_t errmsg_len)
 #endif
 
 static VALUE
+rb_execarg_fixup_v(VALUE execarg_obj)
+{
+    rb_execarg_fixup(execarg_obj);
+    return Qnil;
+}
+
+static VALUE
 pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convconfig)
 {
     struct rb_execarg *eargp = NIL_P(execarg_obj) ? NULL : rb_execarg_get(execarg_obj);
@@ -5884,6 +5891,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
     char errmsg[80] = { '\0' };
 #endif
 #if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
+    int state;
     struct popen_arg arg;
     int e = 0;
 #endif
@@ -5964,7 +5972,15 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
         rb_sys_fail_str(prog);
     }
     if (!NIL_P(execarg_obj)) {
-        rb_execarg_fixup(execarg_obj);
+        rb_protect(rb_execarg_fixup_v, execarg_obj, &state);
+        if (state) {
+            if (0 <= arg.write_pair[0]) close(arg.write_pair[0]);
+            if (0 <= arg.write_pair[1]) close(arg.write_pair[1]);
+            if (0 <= arg.pair[0]) close(arg.pair[0]);
+            if (0 <= arg.pair[1]) close(arg.pair[1]);
+            rb_jump_tag(state);
+        }
+
 # if defined(HAVE_FORK)
 	pid = rb_fork_async_signal_safe(&status, popen_exec, &arg, arg.eargp->redirect_fds, errmsg, sizeof(errmsg));
 # else

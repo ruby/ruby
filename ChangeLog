@@ -1,3 +1,9 @@
+Thu May 29 23:11:20 2014  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (pipe_open): Close pipes when rb_execarg_fixup() raises
+	  an exception.
+	  (rb_execarg_fixup_v): New function.
+
 Thu May 29 22:18:57 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/minitest/unit.rb (capture_subprocess_io): Close fds.

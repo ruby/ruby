@@ -733,11 +733,14 @@ class TestProcess < Test::Unit::TestCase
     }
     with_pipe {|r, w|
       io = IO.popen([RUBY, "-e", "STDERR.reopen(STDOUT); IO.new(#{w.fileno}, 'w').puts('me')"])
-      w.close
-      errmsg = io.read
-      assert_equal("", r.read)
-      assert_not_equal("", errmsg)
-      Process.wait
+      begin
+        w.close
+        errmsg = io.read
+        assert_equal("", r.read)
+        assert_not_equal("", errmsg)
+      ensure
+        io.close
+      end
     }
     with_pipe {|r, w|
       errmsg = `#{RUBY} -e "STDERR.reopen(STDOUT); IO.new(#{w.fileno}, 'w').puts(123)"`
@@ -785,29 +788,38 @@ class TestProcess < Test::Unit::TestCase
       }
       with_pipe {|r, w|
         io = IO.popen([RUBY, "-e", "STDERR.reopen(STDOUT); IO.new(#{w.fileno}, 'w').puts('me')", :close_others=>true])
-        w.close
-        errmsg = io.read
-        assert_equal("", r.read)
-        assert_not_equal("", errmsg)
-        Process.wait
+        begin
+          w.close
+          errmsg = io.read
+          assert_equal("", r.read)
+          assert_not_equal("", errmsg)
+        ensure
+          io.close
+        end
       }
       with_pipe {|r, w|
         w.close_on_exec = false
         io = IO.popen([RUBY, "-e", "STDERR.reopen(STDOUT); IO.new(#{w.fileno}, 'w').puts('mo')", :close_others=>false])
-        w.close
-        errmsg = io.read
-        assert_equal("mo\n", r.read)
-        assert_equal("", errmsg)
-        Process.wait
+        begin
+          w.close
+          errmsg = io.read
+          assert_equal("mo\n", r.read)
+          assert_equal("", errmsg)
+        ensure
+          io.close
+        end
       }
       with_pipe {|r, w|
         w.close_on_exec = false
         io = IO.popen([RUBY, "-e", "STDERR.reopen(STDOUT); IO.new(#{w.fileno}, 'w').puts('mo')", :close_others=>nil])
-        w.close
-        errmsg = io.read
-        assert_equal("mo\n", r.read)
-        assert_equal("", errmsg)
-        Process.wait
+        begin
+          w.close
+          errmsg = io.read
+          assert_equal("mo\n", r.read)
+          assert_equal("", errmsg)
+        ensure
+          io.close
+        end
       }
 
     }
@@ -1131,8 +1143,7 @@ class TestProcess < Test::Unit::TestCase
       Process.wait spawn([RUBY, "poiu"], "-e", "exit 4")
       assert_equal(4, $?.exitstatus)
 
-      assert_equal("1", IO.popen([[RUBY, "qwerty"], "-e", "print 1"]).read)
-      Process.wait
+      assert_equal("1", IO.popen([[RUBY, "qwerty"], "-e", "print 1"]) {|f| f.read })
 
       write_file("s", <<-"End")
         exec([#{RUBY.dump}, "lkjh"], "-e", "exit 5")
