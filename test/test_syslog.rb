@@ -120,52 +120,52 @@ class TestSyslog < Test::Unit::TestCase
   end
 
   def test_log
-    stderr = IO::pipe
+    IO.pipe {|stderr|
+      pid = fork {
+        stderr[0].close
+        STDERR.reopen(stderr[1])
+        stderr[1].close
 
-    pid = fork {
-      stderr[0].close
-      STDERR.reopen(stderr[1])
+        options = Syslog::LOG_PERROR | Syslog::LOG_NDELAY
+
+        Syslog.open("syslog_test", options) { |sl|
+          sl.log(Syslog::LOG_NOTICE, "test1 - hello, %s!", "world")
+          sl.notice("test1 - hello, %s!", "world")
+        }
+
+        Syslog.open("syslog_test", options | Syslog::LOG_PID) { |sl|
+          sl.log(Syslog::LOG_CRIT, "test2 - pid")
+          sl.crit("test2 - pid")
+        }
+        exit!
+      }
+
       stderr[1].close
+      Process.waitpid(pid)
 
-      options = Syslog::LOG_PERROR | Syslog::LOG_NDELAY
+      # LOG_PERROR is not implemented on Cygwin or Solaris.  Only test
+      # these on systems that define it.
+      return unless Syslog.const_defined?(:LOG_PERROR)
 
-      Syslog.open("syslog_test", options) { |sl|
-        sl.log(Syslog::LOG_NOTICE, "test1 - hello, %s!", "world")
-        sl.notice("test1 - hello, %s!", "world")
+      2.times {
+        re = syslog_line_regex("syslog_test", "test1 - hello, world!")
+        line = stderr[0].gets
+        m = re.match(line)
+        assert_not_nil(m)
+        if m[1]
+          # pid is written regardless of LOG_PID on OS X 10.7+
+          assert_equal(pid, m[1].to_i)
+        end
       }
 
-      Syslog.open("syslog_test", options | Syslog::LOG_PID) { |sl|
-        sl.log(Syslog::LOG_CRIT, "test2 - pid")
-        sl.crit("test2 - pid")
-      }
-      exit!
-    }
-
-    stderr[1].close
-    Process.waitpid(pid)
-
-    # LOG_PERROR is not implemented on Cygwin or Solaris.  Only test
-    # these on systems that define it.
-    return unless Syslog.const_defined?(:LOG_PERROR)
-
-    2.times {
-      re = syslog_line_regex("syslog_test", "test1 - hello, world!")
-      line = stderr[0].gets
-      m = re.match(line)
-      assert_not_nil(m)
-      if m[1]
-        # pid is written regardless of LOG_PID on OS X 10.7+
+      2.times {
+        re = syslog_line_regex("syslog_test", "test2 - pid")
+        line = stderr[0].gets
+        m = re.match(line)
+        assert_not_nil(m)
+        assert_not_nil(m[1])
         assert_equal(pid, m[1].to_i)
-      end
-    }
-
-    2.times {
-      re = syslog_line_regex("syslog_test", "test2 - pid")
-      line = stderr[0].gets
-      m = re.match(line)
-      assert_not_nil(m)
-      assert_not_nil(m[1])
-      assert_equal(pid, m[1].to_i)
+      }
     }
   end
 
