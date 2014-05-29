@@ -12,19 +12,26 @@ class TestPTY < Test::Unit::TestCase
   RUBY = EnvUtil.rubybin
 
   def test_spawn_without_block
-    r, _, pid = PTY.spawn(RUBY, '-e', 'puts "a"')
+    r, w, pid = PTY.spawn(RUBY, '-e', 'puts "a"')
   rescue RuntimeError
     skip $!
   else
     assert_equal("a\r\n", r.gets)
   ensure
+    r.close if r
+    w.close if w
     Process.wait pid if pid
   end
 
   def test_spawn_with_block
     PTY.spawn(RUBY, '-e', 'puts "b"') {|r,w,pid|
-      assert_equal("b\r\n", r.gets)
-      Process.wait(pid)
+      begin
+        assert_equal("b\r\n", r.gets)
+      ensure
+        r.close
+        w.close
+        Process.wait(pid)
+      end
     }
   rescue RuntimeError
     skip $!
@@ -33,8 +40,13 @@ class TestPTY < Test::Unit::TestCase
   def test_commandline
     commandline = Shellwords.join([RUBY, '-e', 'puts "foo"'])
     PTY.spawn(commandline) {|r,w,pid|
-      assert_equal("foo\r\n", r.gets)
-      Process.wait(pid)
+      begin
+        assert_equal("foo\r\n", r.gets)
+      ensure
+        r.close
+        w.close
+        Process.wait(pid)
+      end
     }
   rescue RuntimeError
     skip $!
@@ -42,8 +54,13 @@ class TestPTY < Test::Unit::TestCase
 
   def test_argv0
     PTY.spawn([RUBY, "argv0"], '-e', 'puts "bar"') {|r,w,pid|
-      assert_equal("bar\r\n", r.gets)
-      Process.wait(pid)
+      begin
+        assert_equal("bar\r\n", r.gets)
+      ensure
+        r.close
+        w.close
+        Process.wait(pid)
+      end
     }
   rescue RuntimeError
     skip $!
@@ -209,9 +226,14 @@ class TestPTY < Test::Unit::TestCase
       assert(s.close_on_exec?)
     }
     PTY.spawn(RUBY, '-e', '') {|r, w, pid|
-      assert(r.close_on_exec?)
-      assert(w.close_on_exec?)
-      Process.wait(pid)
+      begin
+        assert(r.close_on_exec?)
+        assert(w.close_on_exec?)
+      ensure
+        r.close
+        w.close
+        Process.wait(pid)
+      end
     }
   rescue RuntimeError
     skip $!
