@@ -469,6 +469,7 @@ class TestReadline < Test::Unit::TestCase
           STDOUT.reopen(orig_stdout)
           orig_stdin.close
           orig_stdout.close
+          orig_stderr.close
         end
       }
     }
