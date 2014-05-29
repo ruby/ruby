@@ -1,3 +1,9 @@
+Thu May 29 20:57:59 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (ruby_num_interval_step_size): check signs and get rid
+	  of implementation dependent behavior of negative division.
+	  [ruby-core:61106] [Bug #9570]
+
 Wed May 28 23:47:22 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (rb_cv_func___builtin_unreachable): try with an
