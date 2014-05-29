@@ -1,3 +1,9 @@
+Thu May 29 19:47:08 2014  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_s_pipe): Close pipes if io_encoding_set() raises an
+	  exception.
+	  (io_encoding_set_v): New function.
+
 Thu May 29 19:42:49 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/csv.rb (CSV.open): Close the opened file when an exception

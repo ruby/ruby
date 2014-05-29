@@ -1087,13 +1087,17 @@ class TestIO < Test::Unit::TestCase
 
   def test_dup
     ruby do |f|
-      f2 = f.dup
-      f.puts "foo"
-      f2.puts "bar"
-      f.close_write
-      f2.close_write
-      assert_equal("foo\nbar\n", f.read)
-      assert_equal("", f2.read)
+      begin
+        f2 = f.dup
+        f.puts "foo"
+        f2.puts "bar"
+        f.close_write
+        f2.close_write
+        assert_equal("foo\nbar\n", f.read)
+        assert_equal("", f2.read)
+      ensure
+        f2.close
+      end
     end
   end
 
@@ -1396,18 +1400,22 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_pid
-    r, w = IO.pipe
-    assert_equal(nil, r.pid)
-    assert_equal(nil, w.pid)
+    IO.pipe {|r, w|
+      assert_equal(nil, r.pid)
+      assert_equal(nil, w.pid)
+    }
 
-    pipe = IO.popen(EnvUtil.rubybin, "r+")
-    pid1 = pipe.pid
-    pipe.puts "p $$"
-    pipe.close_write
-    pid2 = pipe.read.chomp.to_i
-    assert_equal(pid2, pid1)
-    assert_equal(pid2, pipe.pid)
-    pipe.close
+    begin
+      pipe = IO.popen(EnvUtil.rubybin, "r+")
+      pid1 = pipe.pid
+      pipe.puts "p $$"
+      pipe.close_write
+      pid2 = pipe.read.chomp.to_i
+      assert_equal(pid2, pid1)
+      assert_equal(pid2, pipe.pid)
+    ensure
+      pipe.close
+    end
     assert_raise(IOError) { pipe.pid }
   end
 
@@ -2382,12 +2390,19 @@ End
       t.close
       1.times do
         io = open(path,"w")
+        io.instance_variable_set(:@test_flush_in_finalizer2, true)
         io.print "hoge"
       end
       assert_nothing_raised(TypeError, bug3910) do
         GC.start
       end
       t.close!
+    }
+  ensure
+    ObjectSpace.each_object(File) {|f|
+      if f.instance_variables.include?(:@test_flush_in_finalizer2)
+        f.close
+      end
     }
   end
 
@@ -2999,41 +3014,41 @@ End
     bug8669 = '[ruby-core:56121] [Bug #8669]'
 
     str = ""
-    r, = IO.pipe
-    t = Thread.new { r.read(nil, str) }
-    sleep 0.1 until t.stop?
-    t.raise
-    sleep 0.1 while t.alive?
-    assert_nothing_raised(RuntimeError, bug8669) { str.clear }
-  ensure
-    t.kill
+    IO.pipe {|r,|
+      t = Thread.new { r.read(nil, str) }
+      sleep 0.1 until t.stop?
+      t.raise
+      sleep 0.1 while t.alive?
+      assert_nothing_raised(RuntimeError, bug8669) { str.clear }
+      assert_raise(RuntimeError) { t.join }
+    }
   end
 
   def test_readpartial_unlocktmp_ensure
     bug8669 = '[ruby-core:56121] [Bug #8669]'
 
     str = ""
-    r, = IO.pipe
-    t = Thread.new { r.readpartial(4096, str) }
-    sleep 0.1 until t.stop?
-    t.raise
-    sleep 0.1 while t.alive?
-    assert_nothing_raised(RuntimeError, bug8669) { str.clear }
-  ensure
-    t.kill
+    IO.pipe {|r, w|
+      t = Thread.new { r.readpartial(4096, str) }
+      sleep 0.1 until t.stop?
+      t.raise
+      sleep 0.1 while t.alive?
+      assert_nothing_raised(RuntimeError, bug8669) { str.clear }
+      assert_raise(RuntimeError) { t.join }
+    }
   end
 
   def test_sysread_unlocktmp_ensure
     bug8669 = '[ruby-core:56121] [Bug #8669]'
 
     str = ""
-    r, = IO.pipe
-    t = Thread.new { r.sysread(4096, str) }
-    sleep 0.1 until t.stop?
-    t.raise
-    sleep 0.1 while t.alive?
-    assert_nothing_raised(RuntimeError, bug8669) { str.clear }
-  ensure
-    t.kill
+    IO.pipe {|r, w|
+      t = Thread.new { r.sysread(4096, str) }
+      sleep 0.1 until t.stop?
+      t.raise
+      sleep 0.1 while t.alive?
+      assert_nothing_raised(RuntimeError, bug8669) { str.clear }
+      assert_raise(RuntimeError) { t.join }
+    }
   end
 end

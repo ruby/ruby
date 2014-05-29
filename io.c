@@ -9384,6 +9384,21 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
 
 }
 
+struct io_encoding_set_args {
+    rb_io_t *fptr;
+    VALUE v1;
+    VALUE v2;
+    VALUE opt;
+};
+
+static VALUE
+io_encoding_set_v(VALUE v)
+{
+    struct io_encoding_set_args *arg = (struct io_encoding_set_args *)v;
+    io_encoding_set(arg->fptr, arg->v1, arg->v2, arg->opt);
+    return Qnil;
+}
+
 static VALUE
 pipe_pair_close(VALUE rw)
 {
@@ -9458,6 +9473,7 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
     VALUE r, w, args[3], v1, v2;
     VALUE opt;
     rb_io_t *fptr, *fptr2;
+    struct io_encoding_set_args ies_args;
     int fmode = 0;
     VALUE ret;
 
@@ -9475,7 +9491,18 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
 	rb_jump_tag(state);
     }
     GetOpenFile(r, fptr);
-    io_encoding_set(fptr, v1, v2, opt);
+
+    ies_args.fptr = fptr;
+    ies_args.v1 = v1;
+    ies_args.v2 = v2;
+    ies_args.opt = opt;
+    rb_protect(io_encoding_set_v, (VALUE)&ies_args, &state);
+    if (state) {
+	close(pipes[1]);
+        io_close(r);
+	rb_jump_tag(state);
+    }
+
     args[1] = INT2NUM(pipes[1]);
     args[2] = INT2FIX(O_WRONLY);
     w = rb_protect(io_new_instance, (VALUE)args, &state);
