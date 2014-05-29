@@ -289,7 +289,8 @@ class TestLogDevice < Test::Unit::TestCase
   end
 
   def test_shifting_size_not_rotate_too_much
-    d(@filename).__send__(:add_log_header, @tempfile)
+    logdev0 = d(@filename)
+    logdev0.__send__(:add_log_header, @tempfile)
     header_size = @tempfile.size
     message = "*" * 99 + "\n"
     shift_size = header_size + message.size * 3 - 1
@@ -324,6 +325,8 @@ class TestLogDevice < Test::Unit::TestCase
         logdev2.close if logdev2
       end
     end
+  ensure
+    logdev0.close
   end unless /mswin|mingw/ =~ RUBY_PLATFORM
 
   def test_shifting_midnight
