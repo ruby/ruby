@@ -13,15 +13,16 @@ class TestFileUtils < Test::Unit::TestCase
 
   def assert_output_lines(expected, fu = self, message=nil)
     old = fu.instance_variable_get(:@fileutils_output)
-    read, write = IO.pipe
-    fu.instance_variable_set(:@fileutils_output, write)
-    th = Thread.new { read.read }
+    IO.pipe {|read, write|
+      fu.instance_variable_set(:@fileutils_output, write)
+      th = Thread.new { read.read }
 
-    yield
+      yield
 
-    write.close
-    lines = th.value.lines.map {|l| l.chomp }
-    assert_equal(expected, lines)
+      write.close
+      lines = th.value.lines.map {|l| l.chomp }
+      assert_equal(expected, lines)
+    }
   ensure
     fu.instance_variable_set(:@fileutils_output, old) if old
   end
