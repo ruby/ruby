@@ -216,7 +216,7 @@ void
 rb_clear_trace_func(void)
 {
     rb_vm_t *vm = GET_VM();
-    rb_thread_t *th;
+    rb_thread_t *th = 0;
 
     list_for_each(&vm->living_threads, th, vmlt_node) {
 	rb_threadptr_remove_event_hook(th, 0, Qundef);

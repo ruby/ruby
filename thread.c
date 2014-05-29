@@ -371,7 +371,7 @@ rb_threadptr_trap_interrupt(rb_thread_t *th)
 static void
 terminate_all(rb_vm_t *vm, const rb_thread_t *main_thread)
 {
-    rb_thread_t *th;
+    rb_thread_t *th = 0;
 
     list_for_each(&vm->living_threads, th, vmlt_node) {
 	if (th != main_thread) {
@@ -2070,7 +2070,7 @@ void
 rb_thread_fd_close(int fd)
 {
     rb_vm_t *vm = GET_THREAD()->vm;
-    rb_thread_t *th;
+    rb_thread_t *th = 0;
 
     list_for_each(&vm->living_threads, th, vmlt_node) {
 	if (th->waiting_fd == fd) {
@@ -2324,7 +2324,7 @@ rb_thread_list(void)
 {
     VALUE ary = rb_ary_new();
     rb_vm_t *vm = GET_THREAD()->vm;
-    rb_thread_t *th;
+    rb_thread_t *th = 0;
 
     list_for_each(&vm->living_threads, th, vmlt_node) {
 	switch (th->status) {
@@ -3882,7 +3882,7 @@ thgroup_list(VALUE group)
 {
     VALUE ary = rb_ary_new();
     rb_vm_t *vm = GET_THREAD()->vm;
-    rb_thread_t *th;
+    rb_thread_t *th = 0;
 
     list_for_each(&vm->living_threads, th, vmlt_node) {
 	if (th->thgroup == group) {
@@ -5030,7 +5030,7 @@ static void
 debug_deadlock_check(rb_vm_t *vm)
 {
 #ifdef DEBUG_DEADLOCK_CHECK
-    rb_thread_t *th;
+    rb_thread_t *th = 0;
 
     printf("%d %d %p %p\n", vm_living_thread_num(vm), vm->sleeper, GET_THREAD(), vm->main_thread);
     list_for_each(&vm->living_threads, th, vmlt_node) {
@@ -5053,7 +5053,7 @@ static void
 rb_check_deadlock(rb_vm_t *vm)
 {
     int found = 0;
-    rb_thread_t *th;
+    rb_thread_t *th = 0;
 
     if (vm_living_thread_num(vm) > vm->sleeper) return;
     if (vm_living_thread_num(vm) < vm->sleeper) rb_bug("sleeper must not be more than vm_living_thread_num(vm)");
