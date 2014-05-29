@@ -507,9 +507,12 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg)
 	!rb_obj_is_kind_of(e, rb_eSystemExit)) {
 	int status;
 
+	mesg = e;
 	PUSH_TAG();
 	if ((status = EXEC_TAG()) == 0) {
-	    RB_GC_GUARD(e) = rb_obj_as_string(e);
+	    th->errinfo = Qnil;
+	    e = rb_obj_as_string(mesg);
+	    th->errinfo = mesg;
 	    if (file && line) {
 		warn_printf("Exception `%s' at %s:%d - %"PRIsVALUE"\n",
 			    rb_obj_classname(th->errinfo), file, line, e);
