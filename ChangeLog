@@ -1,3 +1,10 @@
+Thu May 29 23:27:50 2014  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* signal.c (ruby_signal): should return either `old.sa_sigaction`
+	  or `old.sa_handler`, depending on whether `SA_SIGINFO` is set in
+	  `old.sa_flags`, because they may not be a union.
+	  [ruby-core:62836] [Bug #9878]
+
 Thu May 29 23:11:20 2014  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (pipe_open): Close pipes when rb_execarg_fixup() raises

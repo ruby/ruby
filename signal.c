@@ -595,7 +595,10 @@ ruby_signal(int signum, sighandler_t handler)
 	    rb_bug_errno("sigaction", errno);
 	}
     }
-    return old.sa_handler;
+    if (old.sa_flags & SA_SIGINFO)
+	return (sighandler_t)old.sa_sigaction;
+    else
+	return old.sa_handler;
 }
 
 sighandler_t
