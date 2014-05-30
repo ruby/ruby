@@ -1,3 +1,8 @@
+Fri May 30 20:58:37 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/minitest/unit.rb (check_fd_leak): Sort the inspected
+	  objects list for a FD.
+
 Fri May 30 18:06:55 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/minitest/unit.rb (check_fd_leak): Try GC to delete leaked

@@ -1034,7 +1034,7 @@ module MiniTest
               s = ' ' + io.inspect
               s << "(not-autoclose)" if !autoclose
               s
-            }.each {|s|
+            }.sort.each {|s|
               str << s
             }
           end
