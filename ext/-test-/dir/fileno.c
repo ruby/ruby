@@ -32,6 +32,7 @@ struct dir_data {
     rb_encoding *enc;
 };
 
+#ifdef HAVE_DIRFD
 static void *
 rb_check_typeddata0(VALUE obj /*, const rb_data_type_t *data_type */)
 {
@@ -71,6 +72,7 @@ dir_check(VALUE dir)
     if (!dirp->dir) dir_closed();
     return dirp;
 }
+#endif
 
 #define GetDIR(obj, dirp) ((dirp) = dir_check(obj))
 
