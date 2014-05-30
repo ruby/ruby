@@ -20,11 +20,14 @@ class CaseFolding
     end
 
     def print_table(dest, type, data)
+      dest.print("static const #{type}_Type #{type}_Table[] = {\n")
+      i = 0
       data.each do |n, d|
-        dest.print("static const #{type}_Type #{n}[] = {\n")
+        dest.print("#define #{n} (*(#{type}_Type (*)[#{d.size}])(#{type}_Table+#{i}))\n")
+        i += d.size
         print_table_1(dest, d)
-        dest.print("};\n\n")
       end
+      dest.print("};\n\n")
     end
   end
 
@@ -82,20 +85,17 @@ class CaseFolding
 
     # CaseFold + CaseFold_Locale
     name = "CaseFold_11"
-    print_table(dest, name, "CaseFold"=>fold)
-    print_table(dest, name, "CaseFold_Locale"=>fold_locale)
+    print_table(dest, name, "CaseFold"=>fold, "CaseFold_Locale"=>fold_locale)
 
     # print unfolding data
 
     # CaseUnfold_11 + CaseUnfold_11_Locale
     name = "CaseUnfold_11"
-    print_table(dest, name, name=>unfold[0])
-    print_table(dest, name, "#{name}_Locale"=>unfold_locale[0])
+    print_table(dest, name, name=>unfold[0], "#{name}_Locale"=>unfold_locale[0])
 
     # CaseUnfold_12 + CaseUnfold_12_Locale
     name = "CaseUnfold_12"
-    print_table(dest, name, name=>unfold[1])
-    print_table(dest, name, "#{name}_Locale"=>unfold_locale[1])
+    print_table(dest, name, name=>unfold[1], "#{name}_Locale"=>unfold_locale[1])
 
     # CaseUnfold_13
     name = "CaseUnfold_13"
