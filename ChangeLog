@@ -1,3 +1,8 @@
+Sat May 31 08:49:52 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/unicode/case-folding.rb: script to convert CaseFolding.txt,
+	  tranlated from CaseFolding.py.
+
 Sat May 31 08:31:41 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/minitest/unit.rb: Check Tempfile leaks for each test method
