@@ -49,7 +49,6 @@ module TestNetHTTPUtils
       :Port => 0,
       :Logger => WEBrick::Log.new(NullWriter.new),
       :AccessLog => [],
-      :ShutdownSocketWithoutClose => true,
       :ServerType => Thread,
     }
     server_config[:OutputBufferSize] = 4 if config('chunked')

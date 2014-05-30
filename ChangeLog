@@ -1,3 +1,16 @@
+Fri May 30 21:23:26 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/webrick/server.rb: Use a pipe to detect server shutdown.
+	  shutdown() or close() for listening socket is not a reliable.
+	  Actually, both doesn't work (doesn't wake up select()) on
+	  DragonFly BSD 3.6.2.
+
+	* test/webrick/utils.rb: :ShutdownSocketWithoutClose is not required
+	  now to immediate server shutdown detection.
+	  This fixes fd leaks.
+
+	* test/net/http/utils.rb: Ditto.
+
 Fri May 30 20:58:37 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/minitest/unit.rb (check_fd_leak): Sort the inspected

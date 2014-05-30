@@ -115,6 +115,7 @@ module WEBrick
           @config[:Port] = @listeners[0].addr[1]
         end
       end
+      @shutdown_pipe_w = nil
     end
 
     ##
@@ -157,6 +158,9 @@ module WEBrick
       raise ServerError, "already started." if @status != :Stop
       server_type = @config[:ServerType] || SimpleServer
 
+      shutdown_pipe_r, shutdown_pipe_w = IO.pipe
+      @shutdown_pipe_w = shutdown_pipe_w
+
       server_type.start{
         @logger.info \
           "#{self.class}#start: pid=#{$$} port=#{@config[:Port]}"
@@ -167,7 +171,10 @@ module WEBrick
         begin
           while @status == :Running
             begin
-              if svrs = IO.select(@listeners, nil, nil, 2.0)
+              if svrs = IO.select([shutdown_pipe_r, *@listeners], nil, nil, 2.0)
+                if svrs[0].include? shutdown_pipe_r
+                  return
+                end
                 svrs[0].each{|svr|
                   @tokens.pop          # blocks while no token is there.
                   if sock = accept_client(svr)
@@ -193,6 +200,14 @@ module WEBrick
           end
 
         ensure
+          shutdown_pipe_r.close
+          if !shutdown_pipe_w.closed?
+            begin
+              shutdown_pipe_w.close
+            rescue IOError # Another thread closed shutdown_pipe_w.
+            end
+          end
+          @shutdown_pipe_w = nil
           @status = :Shutdown
           @logger.info "going to shutdown ..."
           thgroup.list.each{|th| th.join if th[:WEBrickThread] }
@@ -218,6 +233,16 @@ module WEBrick
 
     def shutdown
       stop
+
+      shutdown_pipe_w = @shutdown_pipe_w
+      @shutdown_pipe_w = nil
+      if shutdown_pipe_w && !shutdown_pipe_w.closed?
+        begin
+          shutdown_pipe_w.close
+        rescue IOError # Another thread closed shutdown_pipe_w.
+        end
+      end
+
       @listeners.each{|s|
         if @logger.debug?
           addr = s.addr
