@@ -32,6 +32,9 @@ module TestParallel
           end
         end
       end
+    ensure
+      @worker_in.close
+      @worker_out.close
     end
 
     def test_run
