@@ -44,8 +44,8 @@ printf_test_call(int argc, VALUE *argv, VALUE self)
 {
     VALUE opt, type, num, result;
     char format[sizeof(int) * 6 + 8], *p = format, cnv;
-    int n;
-    const char *s;
+    int n = 0;
+    const char *s = 0;
 
     rb_scan_args(argc, argv, "2:", &type, &num, &opt);
     Check_Type(type, T_STRING);
