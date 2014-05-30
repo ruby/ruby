@@ -1,3 +1,8 @@
+Fri May 30 10:22:21 2014  Mark Lorenz  <mlorenz@covermymeds.com>
+
+	* lib/erb.rb (result): [DOC] no longer accepts a Proc, as
+	  Kernel.eval does not.  [fix GH-619]
+
 Fri May 30 07:25:46 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/-test-/dir: Dir#fileno implemented.
