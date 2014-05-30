@@ -79,6 +79,7 @@ class TestNetHTTPS < Test::Unit::TestCase
     socket = http.instance_variable_get(:@socket).io
 
     assert socket.session_reused?
+    http.finish
   rescue SystemCallError
     skip $!
   end
