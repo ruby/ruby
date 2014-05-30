@@ -219,18 +219,6 @@ onigenc_unicode_property_name_to_ctype(OnigEncoding enc, UChar* name, UChar* end
   return ctype;
 }
 
-
-static int CaseFoldInited = 0;
-
-static int init_case_fold_table(void)
-{
-  THREAD_ATOMIC_START;
-
-  CaseFoldInited = 1;
-  THREAD_ATOMIC_END;
-  return 0;
-}
-
 #define onigenc_unicode_fold_lookup onigenc_unicode_CaseFold_11_lookup
 #define onigenc_unicode_unfold1_lookup onigenc_unicode_CaseUnfold_11_lookup
 #define onigenc_unicode_unfold2_lookup onigenc_unicode_CaseUnfold_12_lookup
@@ -245,8 +233,6 @@ onigenc_unicode_mbc_case_fold(OnigEncoding enc,
   OnigCodePoint code;
   int i, len, rlen;
   const UChar *p = *pp;
-
-  if (CaseFoldInited == 0) init_case_fold_table();
 
   code = ONIGENC_MBC_TO_CODE(enc, p, end);
   len = enclen(enc, p, end);
@@ -298,8 +284,6 @@ onigenc_unicode_apply_all_case_fold(OnigCaseFoldType flag,
   const CaseUnfold_11_Type* p11;
   OnigCodePoint code;
   int i, j, k, r;
-
-  /* if (CaseFoldInited == 0) init_case_fold_table(); */
 
   for (i = 0; i < numberof(CaseUnfold_11); i++) {
     p11 = &CaseUnfold_11[i];
@@ -435,8 +419,6 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
   OnigCodePoint code, codes[3];
   const CodePointList3 *to, *z3;
   const CodePointList2 *z2;
-
-  if (CaseFoldInited == 0) init_case_fold_table();
 
   n = 0;
 
