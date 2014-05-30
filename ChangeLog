@@ -1,3 +1,8 @@
+Sat May 31 08:31:41 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/minitest/unit.rb: Check Tempfile leaks for each test method
+	  again.
+
 Sat May 31 03:50:50 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/delegate.rb: [DOC] Document raise in Delegator class
