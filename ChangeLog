@@ -1,3 +1,9 @@
+Sat May 31 06:11:08 2014  David Raynes  <rayners@gmail.com>
+
+	* lib/net/imap.rb (body_type_1part): Gmail IMAP reports a body
+	  type as "MIXED" followed immediately by params
+	  [ruby-core:62864] [Bug #9885]
+
 Fri May 30 21:23:26 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/webrick/server.rb: Use a pipe to detect server shutdown.

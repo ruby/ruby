@@ -2374,6 +2374,8 @@ module Net
           return body_type_msg
         when /\A(?:ATTACHMENT)\z/ni
           return body_type_attachment
+        when /\A(?:MIXED)\z/ni
+          return body_type_mixed
         else
           return body_type_basic
         end
@@ -2454,6 +2456,13 @@ module Net
         match(T_SPACE)
         param = body_fld_param
         return BodyTypeAttachment.new(mtype, nil, param)
+      end
+
+      def body_type_mixed
+        mtype = "MULTIPART"
+        msubtype = case_insensitive_string
+        param, disposition, language, extension = body_ext_mpart
+        return BodyTypeBasic.new(mtype, msubtype, param, nil, nil, nil, nil, nil, disposition, language, extension)
       end
 
       def body_type_mpart
