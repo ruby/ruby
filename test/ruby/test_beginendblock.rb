@@ -141,7 +141,7 @@ EOW
     assert_match(/e1/, out)
     assert_match(/e6/, out)
   ensure
-    th.kill if th.alive?
+    th.kill.join if th.alive?
   end
 
   def test_nested_at_exit
