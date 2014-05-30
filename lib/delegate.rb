@@ -62,6 +62,12 @@ class Delegator < BasicObject
   end
   # :startdoc:
 
+  ##
+  # :method: raise
+  # Use __raise__ if your Delegator does not have a object to delegate the
+  # raise method call.
+  #
+
   #
   # Pass in the _obj_ to delegate method calls to.  All methods supported by
   # _obj_ will be delegated to.
