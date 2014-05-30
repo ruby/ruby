@@ -1,4 +1,7 @@
-Sat May 31 08:49:52 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat May 31 08:54:58 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/unicode/case-folding.rb (CaseFolding): modularize, and add
+	  --output-file option.
 
 	* enc/unicode/case-folding.rb: script to convert CaseFolding.txt,
 	  tranlated from CaseFolding.py.
