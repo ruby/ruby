@@ -1,3 +1,8 @@
+Fri May 30 12:05:59 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/lib/test/unit/parallel.rb (_run_suite): orig_stdout may be nil
+	  though I don't know the reason.
+
 Fri May 30 11:33:35 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_substr): need to reset code range for shared

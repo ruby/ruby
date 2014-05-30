@@ -77,8 +77,8 @@ module Test
         return result
       ensure
         MiniTest::Unit.output = orig_stdout
-        $stdin = orig_stdin
-        $stdout = orig_stdout
+        $stdin = orig_stdin if orig_stdin
+        $stdout = orig_stdout if orig_stdout
         o.close if o && !o.closed?
         i.close if i && !i.closed?
       end
