@@ -1047,6 +1047,8 @@ module MiniTest
             puts "Multiple autoclose IO object for a file descriptor:#{str}"
           end
         }
+        h = nil
+        GC.start
       end
       live2
     end
