@@ -1,3 +1,9 @@
+Sat May 31 03:50:50 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/delegate.rb: [DOC] Document raise in Delegator class
+	  Patch by @lucasmazza. [Fixes GH-621]
+	  https://github.com/ruby/ruby/pull/621
+
 Fri May 30 21:23:26 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/webrick/server.rb: Use a pipe to detect server shutdown.
