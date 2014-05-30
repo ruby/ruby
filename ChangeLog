@@ -1,3 +1,9 @@
+Fri May 30 11:33:35 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_substr): need to reset code range for shared
+	  string too, not only copied string.
+	  [ruby-core:62842] [Bug #9882]
+
 Fri May 30 10:22:21 2014  Mark Lorenz  <mlorenz@covermymeds.com>
 
 	* lib/erb.rb (result): [DOC] no longer accepts a Proc, as

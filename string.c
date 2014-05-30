@@ -1894,10 +1894,10 @@ rb_str_substr(VALUE str, long beg, long len)
     }
     else {
 	str2 = rb_str_new_with_class(str, p, len);
-	rb_enc_cr_str_copy_for_substr(str2, str);
 	OBJ_INFECT(str2, str);
 	RB_GC_GUARD(str);
     }
+    rb_enc_cr_str_copy_for_substr(str2, str);
 
     return str2;
 }

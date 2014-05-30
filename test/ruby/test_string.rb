@@ -894,6 +894,8 @@ class TestString < Test::Unit::TestCase
     assert_not_equal(S("a").hash, S("a\0").hash, bug4104)
     bug9172 = '[ruby-core:58658] [Bug #9172]'
     assert_not_equal(S("sub-setter").hash, S("discover").hash, bug9172)
+    bug9882 = '[ruby-core:62842] [Bug #9882]'
+    assert_equal(S(bug9882).hash, S("\u{30c6 30b9 30c8 2019}#{bug9882}")[4..-1].hash, bug9882)
   end
 
   def test_hash_random
