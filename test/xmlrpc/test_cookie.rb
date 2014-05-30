@@ -79,6 +79,7 @@ class TestCookie < Test::Unit::TestCase
       setup_http_server
       do_test
     ensure
+      @s.http.finish
       stop_server
     end
   end

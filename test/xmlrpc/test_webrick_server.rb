@@ -75,12 +75,14 @@ class Test_Webrick < Test::Unit::TestCase
         silent do
           do_test
         end
+        @s.http.finish
         @s = XMLRPC::Client.new3(:host => addr.ip_address, :port => addr.ip_port, :use_ssl => use_ssl)
         @s.user = '01234567890123456789012345678901234567890123456789012345678901234567890123456789'
         @s.password = 'guest'
         silent do
           do_test
         end
+        @s.http.finish
       ensure
         stop_server
       end
