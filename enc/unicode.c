@@ -240,7 +240,6 @@ static const struct st_hash_type type_code3_hash = {
 };
 
 
-static st_table* Unfold1Table;
 static st_table* Unfold2Table;
 static st_table* Unfold3Table;
 static int CaseFoldInited = 0;
@@ -250,14 +249,6 @@ static int init_case_fold_table(void)
   int i;
 
   THREAD_ATOMIC_START;
-
-  Unfold1Table = st_init_numtable_with_size(UNFOLD1_TABLE_SIZE);
-  if (ONIG_IS_NULL(Unfold1Table)) return ONIGERR_MEMORY;
-
-  for (i = 0; i < numberof(CaseUnfold_11_Table); i++) {
-    const CaseUnfold_11_Type *p1 = &CaseUnfold_11_Table[i];
-    st_add_direct(Unfold1Table, (st_data_t )p1->from, (st_data_t )&(p1->to));
-  }
 
   Unfold2Table = st_init_table_with_size(&type_code2_hash, UNFOLD2_TABLE_SIZE);
   if (ONIG_IS_NULL(Unfold2Table)) return ONIGERR_MEMORY;
@@ -281,16 +272,7 @@ static int init_case_fold_table(void)
 }
 
 #define onigenc_unicode_fold_lookup onigenc_unicode_CaseFold_11_lookup
-
-static inline const CodePointList3 *
-onigenc_unicode_unfold1_lookup(OnigCodePoint code)
-{
-  st_data_t to;
-  if (onig_st_lookup(Unfold1Table, (st_data_t )code, &to) != 0) {
-    return (const CodePointList3 *)to;
-  }
-  return 0;
-}
+#define onigenc_unicode_unfold1_lookup onigenc_unicode_CaseUnfold_11_lookup
 
 static inline const CodePointList2 *
 onigenc_unicode_unfold2_lookup(const OnigCodePoint *code)

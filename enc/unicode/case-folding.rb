@@ -86,12 +86,13 @@ class CaseFolding
     argdecl = "const OnigCodePoint #{argname}"
     n = 7
     m = (1 << n) - 1
-    min, max = data.map {|c, *|c}.minmax
+    min, max = data.map {|c, *|c}.flatten.minmax
     src = IO.popen(gperf, "r+") {|f|
       f << "short\n%%\n"
       data.each_with_index {|(k, _), i|
-        ks = [(k >> n*2) & m, (k >> n) & m, (k) & m].map {|c| "\\x%.2x" % c}.join("")
-        f.printf "\"%s\", ::::/*0x%.4x*/ %d\n", ks, k, i
+        k = Array(k)
+        ks = k.map {|j| [(j >> n*2) & m, (j >> n) & m, (j) & m]}.flatten.map {|c| "\\x%.2x" % c}.join("")
+        f.printf "\"%s\", ::::/*%s*/ %d\n", ks, k.map {|c| "0x%.4x" % c}.join(","), i
       }
       f << "%%\n"
       f.close_write
@@ -143,7 +144,8 @@ class CaseFolding
 
     # CaseUnfold_11 + CaseUnfold_11_Locale
     name = "CaseUnfold_11"
-    print_table(dest, name, name=>unfold[0], "#{name}_Locale"=>unfold_locale[0])
+    data = print_table(dest, name, name=>unfold[0], "#{name}_Locale"=>unfold_locale[0])
+    dest.print lookup_hash(name, "CodePointList3", data)
 
     # CaseUnfold_12 + CaseUnfold_12_Locale
     name = "CaseUnfold_12"
@@ -154,8 +156,6 @@ class CaseFolding
     print_table(dest, name, name=>unfold[2])
 
     # table sizes
-    unfold1_table_size = unfold[0].size + unfold_locale[0].size
-    dest.printf("#define UNFOLD1_TABLE_SIZE\t%d\n", (unfold1_table_size * 1.2))
     unfold2_table_size = unfold[1].size + unfold_locale[1].size
     dest.printf("#define UNFOLD2_TABLE_SIZE\t%d\n", (unfold2_table_size * 1.5))
     unfold3_table_size = unfold[2].size
