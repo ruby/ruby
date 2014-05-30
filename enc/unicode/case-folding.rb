@@ -163,11 +163,8 @@ class CaseFolding
 
     # CaseUnfold_13
     name = "CaseUnfold_13"
-    print_table(dest, name, name=>unfold[2])
-
-    # table sizes
-    unfold3_table_size = unfold[2].size
-    dest.printf("#define UNFOLD3_TABLE_SIZE\t%d\n", (unfold3_table_size * 1.7))
+    data = print_table(dest, name, name=>unfold[2])
+    dest.print lookup_hash(name, "CodePointList2", data)
   end
 
   def self.load(*args)

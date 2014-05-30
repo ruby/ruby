@@ -128,6 +128,15 @@ code2_equal(const OnigCodePoint *x, const OnigCodePoint *y)
   return 1;
 }
 
+static int
+code3_equal(const OnigCodePoint *x, const OnigCodePoint *y)
+{
+  if (x[0] != y[0]) return 0;
+  if (x[1] != y[1]) return 0;
+  if (x[2] != y[2]) return 0;
+  return 1;
+}
+
 #include "enc/unicode/casefold.h"
 
 #include "enc/unicode/name2ctype.h"
@@ -211,44 +220,11 @@ onigenc_unicode_property_name_to_ctype(OnigEncoding enc, UChar* name, UChar* end
 }
 
 
-static int
-code3_cmp(st_data_t x0, st_data_t y0)
-{
-  const OnigCodePoint *x = (const OnigCodePoint *)x0;
-  const OnigCodePoint *y = (const OnigCodePoint *)y0;
-  if (x[0] == y[0] && x[1] == y[1] && x[2] == y[2]) return 0;
-  return 1;
-}
-
-static st_index_t
-code3_hash(st_data_t x0)
-{
-  const OnigCodePoint *x = (const OnigCodePoint *)x0;
-  return (st_index_t )(x[0] + x[1] + x[2]);
-}
-
-static const struct st_hash_type type_code3_hash = {
-  code3_cmp,
-  code3_hash,
-};
-
-
-static st_table* Unfold3Table;
 static int CaseFoldInited = 0;
 
 static int init_case_fold_table(void)
 {
-  int i;
-
   THREAD_ATOMIC_START;
-
-  Unfold3Table = st_init_table_with_size(&type_code3_hash, UNFOLD3_TABLE_SIZE);
-  if (ONIG_IS_NULL(Unfold3Table)) return ONIGERR_MEMORY;
-
-  for (i = 0; i < numberof(CaseUnfold_13); i++) {
-    const CaseUnfold_13_Type *p3 = &CaseUnfold_13[i];
-    st_add_direct(Unfold3Table, (st_data_t )p3->from, (st_data_t )(&p3->to));
-  }
 
   CaseFoldInited = 1;
   THREAD_ATOMIC_END;
@@ -258,17 +234,7 @@ static int init_case_fold_table(void)
 #define onigenc_unicode_fold_lookup onigenc_unicode_CaseFold_11_lookup
 #define onigenc_unicode_unfold1_lookup onigenc_unicode_CaseUnfold_11_lookup
 #define onigenc_unicode_unfold2_lookup onigenc_unicode_CaseUnfold_12_lookup
-
-
-static inline const CodePointList2 *
-onigenc_unicode_unfold3_lookup(const OnigCodePoint *code)
-{
-  st_data_t to;
-  if (onig_st_lookup(Unfold3Table, (st_data_t )code, &to) != 0) {
-    return (const CodePointList2 *)to;
-  }
-  return 0;
-}
+#define onigenc_unicode_unfold3_lookup onigenc_unicode_CaseUnfold_13_lookup
 
 extern int
 onigenc_unicode_mbc_case_fold(OnigEncoding enc,
