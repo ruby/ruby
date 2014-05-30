@@ -36,6 +36,7 @@ module Test
         th = Thread.new do
           begin
             while buf = (self.verbose ? i.gets : (i.readpartial(1024) || i.read(5)))
+              buf.force_encoding(Encoding::ASCII_8BIT)
               buf.sub!(/\A\n?\.+(?!\z)/, '')
               _report "p", buf
             end
