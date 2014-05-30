@@ -71,8 +71,6 @@ static const unsigned short EncUNICODE_ISO_8859_1_CtypeTable[256] = {
   0x30e2, 0x30e2, 0x30e2, 0x30e2, 0x30e2, 0x30e2, 0x30e2, 0x30e2
 };
 
-#include "enc/unicode/name2ctype.h"
-
 typedef struct {
   int n;
   OnigCodePoint code[3];
@@ -103,8 +101,22 @@ typedef struct {
   CodePointList2 to;
 } CaseUnfold_13_Type;
 
+static inline int
+bits_of(const OnigCodePoint c, const int n)
+{
+  return (c >> (2 - n) * 7) & 127;
+}
+
+static int
+code1_equal(const OnigCodePoint x, const OnigCodePoint y)
+{
+  if (x != y) return 0;
+  return 1;
+}
+
 #include "enc/unicode/casefold.h"
 
+#include "enc/unicode/name2ctype.h"
 
 #define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 #define CODE_RANGES_NUM numberof(CodeRanges)
@@ -228,7 +240,6 @@ static const struct st_hash_type type_code3_hash = {
 };
 
 
-static st_table* FoldTable;    /* fold-1, fold-2, fold-3 */
 static st_table* Unfold1Table;
 static st_table* Unfold2Table;
 static st_table* Unfold3Table;
@@ -239,13 +250,6 @@ static int init_case_fold_table(void)
   int i;
 
   THREAD_ATOMIC_START;
-
-  FoldTable = st_init_numtable_with_size(FOLD_TABLE_SIZE);
-  if (ONIG_IS_NULL(FoldTable)) return ONIGERR_MEMORY;
-  for (i = 0; i < numberof(CaseFold_11_Table); i++) {
-    const CaseFold_11_Type *p = &CaseFold_11_Table[i];
-    st_add_direct(FoldTable, (st_data_t )p->from, (st_data_t )&(p->to));
-  }
 
   Unfold1Table = st_init_numtable_with_size(UNFOLD1_TABLE_SIZE);
   if (ONIG_IS_NULL(Unfold1Table)) return ONIGERR_MEMORY;
@@ -276,15 +280,7 @@ static int init_case_fold_table(void)
   return 0;
 }
 
-static inline const CodePointList3 *
-onigenc_unicode_fold_lookup(OnigCodePoint code)
-{
-  st_data_t to;
-  if (onig_st_lookup(FoldTable, (st_data_t)code, &to) != 0) {
-    return (const CodePointList3 *)to;
-  }
-  return 0;
-}
+#define onigenc_unicode_fold_lookup onigenc_unicode_CaseFold_11_lookup
 
 static inline const CodePointList3 *
 onigenc_unicode_unfold1_lookup(OnigCodePoint code)

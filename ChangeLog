@@ -1,4 +1,7 @@
-Sat May 31 08:55:58 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat May 31 08:57:42 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/unicode/case-folding.rb (lookup_hash): make perfect hash to
+	  lookup case folding table.
 
 	* enc/unicode/case-folding.rb (print_table): merge non-locale and
 	  locale tables, and reduce initializing loops.
