@@ -26,9 +26,8 @@ class TestIO_Console < Test::Unit::TestCase
   end
 
   def test_raw_minchar
-    len = 0
-    th = nil
     helper {|m, s|
+      len = 0
       assert_equal([nil, 0], [s.getch(min: 0), len])
       main = Thread.current
       go = false
@@ -41,18 +40,19 @@ class TestIO_Console < Test::Unit::TestCase
         m.print("1234567890")
         m.flush
       }
-      assert_equal(["a", 1], [s.getch(min: 1), len])
-      go = true
-      assert_equal(["1", 11], [s.getch, len])
+      begin
+        assert_equal(["a", 1], [s.getch(min: 1), len])
+        go = true
+        assert_equal(["1", 11], [s.getch, len])
+      ensure
+        th.join
+      end
     }
-  ensure
-    th.kill if th and th.alive?
   end
 
   def test_raw_timeout
-    len = 0
-    th = nil
     helper {|m, s|
+      len = 0
       assert_equal([nil, 0], [s.getch(min: 0, time: 0.1), len])
       main = Thread.current
       th = Thread.start {
@@ -60,11 +60,13 @@ class TestIO_Console < Test::Unit::TestCase
         len += 2
         m.print("ab")
       }
-      assert_equal(["a", 2], [s.getch(min: 1, time: 1), len])
-      assert_equal(["b", 2], [s.getch(time: 1), len])
+      begin
+        assert_equal(["a", 2], [s.getch(min: 1, time: 1), len])
+        assert_equal(["b", 2], [s.getch(time: 1), len])
+      ensure
+        th.join
+      end
     }
-  ensure
-    th.kill if th and th.alive?
   end
 
   def test_cooked
