@@ -78,12 +78,17 @@ class CaseFolding
     self
   end
 
+  def range_check(code)
+    "#{code} <= MAX_CODE_VALUE && #{code} >= MIN_CODE_VALUE"
+  end
+
   def lookup_hash(key, type, data)
     hash = "onigenc_unicode_#{key}_hash"
     lookup = "onigenc_unicode_#{key}_lookup"
-    gperf = %W"gperf -7 -k1,2,3 -F,-1 -c -j1 -i1 -t -T -E -C -H #{hash} -N #{lookup}"
-    argname = "code"
-    argdecl = "const OnigCodePoint #{argname}"
+    arity = Array(data[0][0]).size
+    gperf = %W"gperf -7 -k#{[*1..(arity*3)].join(",")} -F,-1 -c -j1 -i1 -t -T -E -C -H #{hash} -N #{lookup}"
+    argname = arity > 1 ? "codes" : "code"
+    argdecl = "const OnigCodePoint #{arity > 1 ? "*": ""}#{argname}"
     n = 7
     m = (1 << n) - 1
     min, max = data.map {|c, *|c}.flatten.minmax
@@ -101,17 +106,21 @@ class CaseFolding
     src.sub!(/^(#{hash})\s*\(.*?\).*?\n\{\n(.*)^\}/m) {
       name = $1
       body = $2
-      body.gsub!(/\(unsigned char\)str\[(\d+)\]/, "bits_of(#{argname}, \\1)")
+      body.gsub!(/\(unsigned char\)str\[(\d+)\]/, "bits_#{arity > 1 ? 'at' : 'of'}(#{argname}, \\1)")
       "#{name}(#{argdecl})\n{\n#{body}}"
     }
     src.sub!(/const short *\*\n^(#{lookup})\s*\(.*?\).*?\n\{\n(.*)^\}/m) {
       name = $1
       body = $2
       body.sub!(/\benum\s+\{(\n[ \t]+)/, "\\&MIN_CODE_VALUE = 0x#{min.to_s(16)},\\1""MAX_CODE_VALUE = 0x#{max.to_s(16)},\\1")
-      body.gsub!(/(#{hash})\s*\(.*?\)/, '\1(code)')
+      body.gsub!(/(#{hash})\s*\(.*?\)/, "\\1(#{argname})")
       body.gsub!(/\{"",-1}/, "-1")
       body.gsub!(/\{"(?:[^"]|\\")+", *::::(.*)\}/, '\1')
-      body.sub!(/(\s+if\s)\(len\b.*\)/) {"#$1(code <= MAX_CODE_VALUE && code >= MIN_CODE_VALUE)"}
+      body.sub!(/(\s+if\s)\(len\b.*\)/) do
+        "#$1(" <<
+          (arity > 1 ? (0...arity).map {|i| range_check("#{argname}[#{i}]")}.join(" &&\n      ") : range_check(argname)) <<
+          ")"
+      end
       v = nil
       body.sub!(/(if\s*\(.*MAX_HASH_VALUE.*\)\n([ \t]*))\{(.*?)\n\2\}/m) {
         pre = $1
@@ -119,7 +128,7 @@ class CaseFolding
         s = $3
         s.sub!(/const char *\* *(\w+)( *= *wordlist\[\w+\]).\w+/, 'short \1 = wordlist[key]')
         v = $1
-        s.sub!(/\bif *\(.*\)/, "if (#{v} >= 0 && code1_equal(#{argname}, #{key}_Table[#{v}].from))")
+        s.sub!(/\bif *\(.*\)/, "if (#{v} >= 0 && code#{arity}_equal(#{argname}, #{key}_Table[#{v}].from))")
         "#{pre}{#{s}\n#{indent}}"
       }
       body.sub!(/\b(return\s+&)([^;]+);/, '\1'"#{key}_Table[#{v}].to;")
@@ -149,15 +158,14 @@ class CaseFolding
 
     # CaseUnfold_12 + CaseUnfold_12_Locale
     name = "CaseUnfold_12"
-    print_table(dest, name, name=>unfold[1], "#{name}_Locale"=>unfold_locale[1])
+    data = print_table(dest, name, name=>unfold[1], "#{name}_Locale"=>unfold_locale[1])
+    dest.print lookup_hash(name, "CodePointList2", data)
 
     # CaseUnfold_13
     name = "CaseUnfold_13"
     print_table(dest, name, name=>unfold[2])
 
     # table sizes
-    unfold2_table_size = unfold[1].size + unfold_locale[1].size
-    dest.printf("#define UNFOLD2_TABLE_SIZE\t%d\n", (unfold2_table_size * 1.5))
     unfold3_table_size = unfold[2].size
     dest.printf("#define UNFOLD3_TABLE_SIZE\t%d\n", (unfold3_table_size * 1.7))
   end

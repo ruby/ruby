@@ -107,10 +107,24 @@ bits_of(const OnigCodePoint c, const int n)
   return (c >> (2 - n) * 7) & 127;
 }
 
+static inline int
+bits_at(const OnigCodePoint *c, const int n)
+{
+  return bits_of(c[n / 3], n % 3);
+}
+
 static int
 code1_equal(const OnigCodePoint x, const OnigCodePoint y)
 {
   if (x != y) return 0;
+  return 1;
+}
+
+static int
+code2_equal(const OnigCodePoint *x, const OnigCodePoint *y)
+{
+  if (x[0] != y[0]) return 0;
+  if (x[1] != y[1]) return 0;
   return 1;
 }
 
@@ -198,27 +212,6 @@ onigenc_unicode_property_name_to_ctype(OnigEncoding enc, UChar* name, UChar* end
 
 
 static int
-code2_cmp(st_data_t x0, st_data_t y0)
-{
-  const OnigCodePoint *x = (const OnigCodePoint *)x0;
-  const OnigCodePoint *y = (const OnigCodePoint *)y0;
-  if (x[0] == y[0] && x[1] == y[1]) return 0;
-  return 1;
-}
-
-static st_index_t
-code2_hash(st_data_t x0)
-{
-  const OnigCodePoint *x = (const OnigCodePoint *)x0;
-  return (st_index_t )(x[0] + x[1]);
-}
-
-static const struct st_hash_type type_code2_hash = {
-  code2_cmp,
-  code2_hash,
-};
-
-static int
 code3_cmp(st_data_t x0, st_data_t y0)
 {
   const OnigCodePoint *x = (const OnigCodePoint *)x0;
@@ -240,7 +233,6 @@ static const struct st_hash_type type_code3_hash = {
 };
 
 
-static st_table* Unfold2Table;
 static st_table* Unfold3Table;
 static int CaseFoldInited = 0;
 
@@ -249,14 +241,6 @@ static int init_case_fold_table(void)
   int i;
 
   THREAD_ATOMIC_START;
-
-  Unfold2Table = st_init_table_with_size(&type_code2_hash, UNFOLD2_TABLE_SIZE);
-  if (ONIG_IS_NULL(Unfold2Table)) return ONIGERR_MEMORY;
-
-  for (i = 0; i < numberof(CaseUnfold_12_Table); i++) {
-    const CaseUnfold_12_Type *p2 = &CaseUnfold_12_Table[i];
-    st_add_direct(Unfold2Table, (st_data_t )p2->from, (st_data_t )(&p2->to));
-  }
 
   Unfold3Table = st_init_table_with_size(&type_code3_hash, UNFOLD3_TABLE_SIZE);
   if (ONIG_IS_NULL(Unfold3Table)) return ONIGERR_MEMORY;
@@ -273,16 +257,8 @@ static int init_case_fold_table(void)
 
 #define onigenc_unicode_fold_lookup onigenc_unicode_CaseFold_11_lookup
 #define onigenc_unicode_unfold1_lookup onigenc_unicode_CaseUnfold_11_lookup
+#define onigenc_unicode_unfold2_lookup onigenc_unicode_CaseUnfold_12_lookup
 
-static inline const CodePointList2 *
-onigenc_unicode_unfold2_lookup(const OnigCodePoint *code)
-{
-  st_data_t to;
-  if (onig_st_lookup(Unfold2Table, (st_data_t )code, &to) != 0) {
-    return (const CodePointList2 *)to;
-  }
-  return 0;
-}
 
 static inline const CodePointList2 *
 onigenc_unicode_unfold3_lookup(const OnigCodePoint *code)

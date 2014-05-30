@@ -1,4 +1,7 @@
-Sat May 31 08:57:58 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat May 31 08:58:12 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/unicode/case-folding.rb (lookup_hash): make perfect hash to
+	  lookup case unfolding table 2.
 
 	* enc/unicode/case-folding.rb (lookup_hash): make perfect hash to
 	  lookup case unfolding table 1.

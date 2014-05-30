@@ -5022,6 +5022,142 @@ static const CaseUnfold_12_Type CaseUnfold_12_Table[] = {
   {{0x0069, 0x0307}, {1, {0x0130}}},
 };
 
+/* C code produced by gperf version 3.0.4 */
+/* Command-line: gperf -7 -k1,2,3,4,5,6 -F,-1 -c -j1 -i1 -t -T -E -C -H onigenc_unicode_CaseUnfold_12_hash -N onigenc_unicode_CaseUnfold_12_lookup  */
+
+/* maximum key range = 71, duplicates = 0 */
+
+#if (defined (__STDC_VERSION__) && __STDC_VERSION__ >= 199901L) || defined(__cplusplus) || defined(__GNUC_STDC_INLINE__)
+inline
+#elif defined(__GNUC__)
+__inline
+#endif
+/*ARGSUSED*/
+static unsigned int
+onigenc_unicode_CaseUnfold_12_hash(const OnigCodePoint *codes)
+{
+  static const unsigned char asso_values[] =
+    {
+       3, 58, 54, 57, 56, 16,  8,  2, 43, 82,
+       3,  1, 23, 82, 82, 82, 82, 82, 82,  4,
+      82, 82, 82, 82, 82, 82, 82, 82, 82, 82,
+      82, 82, 52, 51, 50, 49, 48, 47, 46, 45,
+      82, 82, 82, 82, 43, 82, 42, 82, 82, 13,
+      82, 82, 82, 82, 82, 11, 82,  1, 82, 82,
+      14, 82,  1, 82, 82, 31,  3, 82, 82, 30,
+      82, 82, 82, 10, 82, 82, 82, 82, 37, 82,
+      82, 82, 82, 82, 82, 82, 82, 82, 82, 82,
+      82, 82, 82, 82, 82, 82, 37, 15, 36, 35,
+      34, 17,  1, 33, 12,  4, 23, 23, 26, 21,
+      13, 82, 27, 82, 82,  2,  5, 82, 11, 16,
+      82, 15, 82, 82, 23, 82,  8, 82
+    };
+  return asso_values[bits_at(codes, 5)] + asso_values[bits_at(codes, 4)] + asso_values[bits_at(codes, 3)] + asso_values[bits_at(codes, 2)] + asso_values[bits_at(codes, 1)] + asso_values[bits_at(codes, 0)];
+}
+
+#ifdef __GNUC__
+__inline
+#if defined __GNUC_STDC_INLINE__ || defined __GNUC_GNU_INLINE__
+__attribute__ ((__gnu_inline__))
+#endif
+#endif
+static const CodePointList2 *
+onigenc_unicode_CaseUnfold_12_lookup(const OnigCodePoint *codes)
+{
+  enum
+    {
+      MIN_CODE_VALUE = 0x61,
+      MAX_CODE_VALUE = 0x1f7c,
+      TOTAL_KEYWORDS = 59,
+      MIN_WORD_LENGTH = 6,
+      MAX_WORD_LENGTH = 6,
+      MIN_HASH_VALUE = 11,
+      MAX_HASH_VALUE = 81
+    };
+
+  static const short wordlist[] =
+    {
+      -1, -1, -1, -1, -1, -1,
+      -1, -1, -1, -1, -1,
+      /*0x1f66,0x03b9*/ 53,
+      /*0x1f07,0x03b9*/ 38,
+      /*0x1f00,0x03b9*/ 31,
+      /*0x0066,0x0066*/ 1,
+      /*0x1f74,0x03b9*/ 56,
+      /*0x0073,0x0073*/ 6,
+      /*0x0066,0x0069*/ 2,
+      /*0x1f06,0x03b9*/ 37,
+      /*0x0073,0x0074*/ 7,
+      /*0x03b9,0x0342*/ 18,
+      /*0x03c9,0x03b9*/ 23,
+      /*0x03b7,0x03b9*/ 17,
+      /*0x0069,0x0307*/ 58,
+      /*0x03b1,0x03b9*/ 15,
+      /*0x1f61,0x03b9*/ 48,
+      /*0x1f05,0x03b9*/ 36,
+      /*0x1f65,0x03b9*/ 52,
+      /*0x0574,0x0576*/ 29,
+      /*0x03c9,0x0342*/ 22,
+      /*0x03b7,0x0342*/ 16,
+      /*0x057e,0x0576*/ 30,
+      /*0x03b1,0x0342*/ 14,
+      /*0x1f7c,0x03b9*/ 57,
+      /*0x0574,0x0565*/ 26,
+      /*0x0079,0x030a*/ 10,
+      /*0x0077,0x030a*/ 9,
+      /*0x1f70,0x03b9*/ 55,
+      /*0x0574,0x056d*/ 28,
+      /*0x0066,0x006c*/ 3,
+      /*0x0574,0x056b*/ 27,
+      /*0x0061,0x02be*/ 0,
+      /*0x0068,0x0331*/ 4,
+      /*0x1f67,0x03b9*/ 54,
+      /*0x1f64,0x03b9*/ 51,
+      /*0x1f63,0x03b9*/ 50,
+      /*0x1f62,0x03b9*/ 49,
+      /*0x1f60,0x03b9*/ 47,
+      /*0x03ce,0x03b9*/ 24,
+      /*0x03c5,0x0342*/ 21,
+      /*0x03c5,0x0313*/ 20,
+      /*0x03c1,0x0313*/ 19,
+      /*0x02bc,0x006e*/ 11,
+      /*0x03ae,0x03b9*/ 13,
+      /*0x03ac,0x03b9*/ 12,
+      /*0x1f27,0x03b9*/ 46,
+      /*0x1f26,0x03b9*/ 45,
+      /*0x1f25,0x03b9*/ 44,
+      /*0x1f24,0x03b9*/ 43,
+      /*0x1f23,0x03b9*/ 42,
+      /*0x1f22,0x03b9*/ 41,
+      /*0x1f21,0x03b9*/ 40,
+      /*0x1f20,0x03b9*/ 39,
+      /*0x006a,0x030c*/ 5,
+      /*0x1f02,0x03b9*/ 33,
+      /*0x0074,0x0308*/ 8,
+      /*0x1f04,0x03b9*/ 35,
+      /*0x1f03,0x03b9*/ 34,
+      /*0x1f01,0x03b9*/ 32,
+      -1, -1, -1, -1, -1, -1,
+      -1, -1, -1, -1, -1, -1,
+      /*0x0565,0x0582*/ 25
+    };
+
+  if (codes[0] <= MAX_CODE_VALUE && codes[0] >= MIN_CODE_VALUE &&
+      codes[1] <= MAX_CODE_VALUE && codes[1] >= MIN_CODE_VALUE)
+    {
+      register int key = onigenc_unicode_CaseUnfold_12_hash(codes);
+
+      if (key <= MAX_HASH_VALUE && key >= 0)
+        {
+          register short s = wordlist[key];
+
+          if (s >= 0 && code2_equal(codes, CaseUnfold_12_Table[s].from))
+            return &CaseUnfold_12_Table[s].to;
+        }
+    }
+  return 0;
+}
+
 static const CaseUnfold_13_Type CaseUnfold_13_Table[] = {
 #define CaseUnfold_13 (*(CaseUnfold_13_Type (*)[14])(CaseUnfold_13_Table+0))
   {{0x0066, 0x0066, 0x0069}, {1, {0xfb03}}},
@@ -5040,5 +5176,4 @@ static const CaseUnfold_13_Type CaseUnfold_13_Table[] = {
   {{0x03c9, 0x0342, 0x03b9}, {1, {0x1ff7}}},
 };
 
-#define UNFOLD2_TABLE_SIZE	88
 #define UNFOLD3_TABLE_SIZE	23
