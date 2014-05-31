@@ -1,3 +1,8 @@
+Sat May 31 22:30:14 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/leakchecker.rb: Leak checker extracted from
+	  test/lib/minitest/unit.rb.
+
 Sat May 31 21:15:43 2014  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* thread.c (rb_thread_atfork_internal): My compiler complains

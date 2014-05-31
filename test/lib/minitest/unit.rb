@@ -2,6 +2,7 @@
 
 require "optparse"
 require "rbconfig"
+require "leakchecker"
 
 ##
 # Minimal (mostly drop-in) replacement for test-unit.
@@ -933,7 +934,7 @@ module MiniTest
         filter === m || filter === "#{suite}##{m}"
       }
 
-      leak_info = leak_check_init
+      leakchecker = LeakChecker.new
 
       assertions = filtered_test_methods.map { |method|
         inst = suite.new method
@@ -948,170 +949,12 @@ module MiniTest
         print result
         puts if @verbose
 
-        leak_info = leak_check(inst, leak_info)
+        leakchecker.check("#{inst.class}\##{inst.__name__}")
 
         inst._assertions
       }
 
       return assertions.size, assertions.inject(0) { |sum, n| sum + n }
-    end
-
-    def leak_check_init
-      fd_info = find_fds
-      thread_info = find_threads
-      tempfile_info = find_tempfiles
-      [fd_info, thread_info, tempfile_info]
-    end
-
-    def leak_check(inst, info)
-      fd_info, thread_info, tempfile_info = info
-      leak_p_1, fd_info = check_fd_leak(inst, fd_info)
-      leak_p_2, thread_info = check_thread_leak(inst, thread_info)
-      leak_p_3, tempfile_info = check_tempfile_leak(inst, tempfile_info)
-      GC.start if leak_p_1 || leak_p_2 || leak_p_3
-      [fd_info, thread_info, tempfile_info]
-    end
-
-    def find_threads
-      Thread.list.find_all {|t|
-        t != Thread.current && t.alive?
-      }
-    end
-
-    def check_thread_leak(inst, live1)
-      live2 = find_threads
-      thread_finished = live1 - live2
-      leak_p = false
-      if !thread_finished.empty?
-        list = thread_finished.map {|t| t.inspect }.sort
-        list.each {|str|
-          puts "Finished thread: #{inst.class}\##{inst.__name__}: #{str}"
-        }
-      end
-      thread_leaked = live2 - live1
-      if !thread_leaked.empty?
-        leak_p = true
-        list = thread_leaked.map {|t| t.inspect }.sort
-        list.each {|str|
-          puts "Leaked thread: #{inst.class}\##{inst.__name__}: #{str}"
-        }
-      end
-      return leak_p, live2
-    end
-
-    def find_fds
-      fd_dir = "/proc/self/fd"
-      if File.directory?(fd_dir)
-        require "-test-/dir"
-        fds = Dir.open(fd_dir) {|d|
-          a = d.grep(/\A\d+\z/, &:to_i)
-          if d.respond_to? :fileno
-            a -= [d.fileno]
-          end
-          a
-        }
-        fds.sort
-      else
-        []
-      end
-    end
-
-    def check_fd_leak(inst, live1)
-      leak_p = false
-      live2 = find_fds
-      name = "#{inst.class}\##{inst.__name__}"
-      fd_closed = live1 - live2
-      if !fd_closed.empty?
-        fd_closed.each {|fd|
-          puts "Closed file descriptor: #{name}: #{fd}"
-        }
-      end
-      fd_leaked = live2 - live1
-      if !fd_leaked.empty?
-        leak_p = true
-        h = {}
-        ObjectSpace.each_object(IO) {|io|
-          begin
-            autoclose = io.autoclose?
-            fd = io.fileno
-          rescue IOError # closed IO object
-            next
-          end
-          (h[fd] ||= []) << [io, autoclose]
-        }
-        fd_leaked.each {|fd|
-          str = ''
-          if h[fd]
-            str << ' :'
-            h[fd].map {|io, autoclose|
-              s = ' ' + io.inspect
-              s << "(not-autoclose)" if !autoclose
-              s
-            }.sort.each {|s|
-              str << s
-            }
-          end
-          puts "Leaked file descriptor: #{name}: #{fd}#{str}"
-        }
-        h.each {|fd, list|
-          next if list.length <= 1
-          if 1 < list.count {|io, autoclose| autoclose }
-            str = list.map {|io, autoclose| " #{io.inspect}" + (autoclose ? "(autoclose)" : "") }.sort.join
-            puts "Multiple autoclose IO object for a file descriptor:#{str}"
-          end
-        }
-      end
-      return leak_p, live2
-    end
-
-    def extend_tempfile_counter
-      return if defined? ::MiniTest::TempfileCounter
-      m = Module.new {
-        @count = 0
-        class << self
-          attr_accessor :count
-        end
-
-        def new(data)
-          MiniTest::TempfileCounter.count += 1
-          super(data)
-        end
-      }
-      MiniTest.const_set(:TempfileCounter, m)
-
-      class << Tempfile::Remover
-        prepend MiniTest::TempfileCounter
-      end
-    end
-
-    def find_tempfiles(prev_count=-1)
-      return [prev_count, []] unless defined? Tempfile
-      extend_tempfile_counter
-      count = TempfileCounter.count
-      if prev_count == count
-        [prev_count, []]
-      else
-        tempfiles = ObjectSpace.each_object(Tempfile).find_all {|t| t.path }
-        [count, tempfiles]
-      end
-    end
-
-    def check_tempfile_leak(inst, info)
-      return false, info unless defined? Tempfile
-      count1, initial_tempfiles = info
-      count2, current_tempfiles = find_tempfiles(count1)
-      leak_p = false
-      tempfiles_leaked = current_tempfiles - initial_tempfiles
-      if !tempfiles_leaked.empty?
-        name = "#{inst.class}\##{inst.__name__}"
-        leak_p = true
-        list = tempfiles_leaked.map {|t| t.inspect }.sort
-        list.each {|str|
-          puts "Leaked tempfile: #{name}: #{str}"
-        }
-        tempfiles_leaked.each {|t| t.close! }
-      end
-      return leak_p, [count2, initial_tempfiles]
     end
 
     ##
