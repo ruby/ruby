@@ -1,3 +1,9 @@
+Sun Jun  1 04:52:47 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/English.rb: [DOC] $LOADED_FEATURES moved to load.c [Fixes GH-620]
+	  Patch submitted by @leafac in https://github.com/ruby/ruby/pull/620
+	* doc/globals.rdoc: Added $LOADED_FEATURES to list
+
 Sat May 31 22:30:14 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/leakchecker.rb: Leak checker extracted from
