@@ -1,3 +1,7 @@
+Sat May 31 16:02:03 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/test_syslog.rb: remove executable.
+
 Sat May 31 08:58:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/unicode.c (init_case_fold_table): no longer need to
