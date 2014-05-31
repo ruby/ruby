@@ -1,3 +1,8 @@
+Sat May 31 16:29:21 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* ext/digest/lib/digest/hmac.rb: extracted inline tests into test dir.
+	* test/digest/test_digest_hmac.rb: ditto.
+
 Sat May 31 16:02:03 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/test_syslog.rb: remove executable.
