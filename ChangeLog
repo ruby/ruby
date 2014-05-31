@@ -1,3 +1,9 @@
+Sun Jun  1 06:55:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (intern_str): dynamic attrset ID is registered by
+	  `rb_id_attrset()` already, so no further registration is needed.
+	  [ruby-core:62861]
+
 Sun Jun  1 04:52:47 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/English.rb: [DOC] $LOADED_FEATURES moved to load.c [Fixes GH-620]

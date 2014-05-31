@@ -10657,7 +10657,9 @@ next_id(VALUE str)
 static ID
 intern_str(VALUE str)
 {
-    return register_static_symid_str(next_id(str), str);
+    ID id = next_id(str);
+    if (ID_DYNAMIC_SYM_P(id) && is_attrset_id(id)) return id;
+    return register_static_symid_str(id, str);
 }
 
 ID
