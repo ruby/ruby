@@ -1,3 +1,8 @@
+Sat May 31 16:32:50 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/ipaddr.rb: extracted inline tests into test dir.
+	* test/test_ipaddr.rb: ditto.
+
 Sat May 31 16:29:21 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* ext/digest/lib/digest/hmac.rb: extracted inline tests into test dir.
