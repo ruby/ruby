@@ -24,13 +24,11 @@ class TestOpenURI < Test::Unit::TestCase
         :Port => 0})
       _, port, _, host = srv.listeners[0].addr
       begin
-        srv.start
+        th = srv.start
         yield srv, dr, "http://#{host}:#{port}"
       ensure
         srv.shutdown
-        until srv.status == :Stop
-          sleep 0.1
-        end
+        th.join
       end
     }
   end
@@ -225,7 +223,7 @@ class TestOpenURI < Test::Unit::TestCase
       _, proxy_port, _, proxy_host = proxy.listeners[0].addr
       proxy_url = "http://#{proxy_host}:#{proxy_port}/"
       begin
-        proxy.start
+        proxy_thread = proxy.start
         srv.mount_proc("/proxy", lambda { |req, res| res.body = "proxy" } )
         open("#{url}/proxy", :proxy=>proxy_url) {|f|
           assert_equal("200", f.status[0])
@@ -256,6 +254,7 @@ class TestOpenURI < Test::Unit::TestCase
         assert_equal("", log); log.clear
       ensure
         proxy.shutdown
+        proxy_thread.join
       end
     }
   end
@@ -278,7 +277,7 @@ class TestOpenURI < Test::Unit::TestCase
       _, proxy_port, _, proxy_host = proxy.listeners[0].addr
       proxy_url = "http://#{proxy_host}:#{proxy_port}/"
       begin
-        proxy.start
+        th = proxy.start
         srv.mount_proc("/proxy", lambda { |req, res| res.body = "proxy" } )
         exc = assert_raise(OpenURI::HTTPError) { open("#{url}/proxy", :proxy=>proxy_url) {} }
         assert_equal("407", exc.io.status[0])
@@ -296,6 +295,7 @@ class TestOpenURI < Test::Unit::TestCase
         assert_equal("", log); log.clear
       ensure
         proxy.shutdown
+        th.join
       end
     }
   end

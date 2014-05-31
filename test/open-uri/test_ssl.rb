@@ -31,13 +31,11 @@ class TestOpenURISSL
         :Port => 0})
       _, port, _, host = srv.listeners[0].addr
       begin
-        srv.start
+        th = srv.start
         yield srv, dr, "https://#{host}:#{port}"
       ensure
         srv.shutdown
-        until srv.status == :Stop
-          sleep 0.1
-        end
+        th.join
       end
     }
   end
@@ -85,7 +83,7 @@ class TestOpenURISSL
         :Port => 0})
       _, p_port, _, p_host = prxy.listeners[0].addr
       begin
-        prxy.start
+        th = prxy.start
         srv.mount_proc("/proxy", lambda { |req, res| res.body = "proxy" } )
         open("#{url}/proxy", :proxy=>"http://#{p_host}:#{p_port}/", :ssl_ca_cert => cacert_filename) {|f|
           assert_equal("200", f.status[0])
@@ -101,9 +99,7 @@ class TestOpenURISSL
         sio.truncate(0); sio.rewind
       ensure
         prxy.shutdown
-        until prxy.status == :Stop
-          sleep 0.1
-        end
+        th.join
       end
     }
   end
