@@ -102,17 +102,21 @@ class TestMarshal < Test::Unit::TestCase
   def test_pipe
     o1 = C.new("a" * 10000)
 
-    o2 = IO.pipe do |r, w|
-      Thread.new {Marshal.dump(o1, w)}
-      Marshal.load(r)
-    end
-    assert_equal(o1.str, o2.str)
+    th = nil
 
     o2 = IO.pipe do |r, w|
-      Thread.new {Marshal.dump(o1, w, 2)}
+      th = Thread.new {Marshal.dump(o1, w)}
       Marshal.load(r)
     end
     assert_equal(o1.str, o2.str)
+    th.join
+
+    o2 = IO.pipe do |r, w|
+      th = Thread.new {Marshal.dump(o1, w, 2)}
+      Marshal.load(r)
+    end
+    assert_equal(o1.str, o2.str)
+    th.join
 
     assert_raise(TypeError) { Marshal.dump("foo", Object.new) }
     assert_raise(TypeError) { Marshal.load(Object.new) }
