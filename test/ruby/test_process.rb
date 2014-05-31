@@ -1237,8 +1237,9 @@ class TestProcess < Test::Unit::TestCase
       IO.pipe do |r, w|
         pid = spawn(RUBY, "foo", out: w)
         w.close
-        Thread.new { r.read(1); Process.kill(:SIGQUIT, pid) }
+        th = Thread.new { r.read(1); Process.kill(:SIGQUIT, pid) }
         Process.wait(pid)
+        th.join
       end
       t = Time.now
       s = $?

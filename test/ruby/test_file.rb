@@ -124,7 +124,7 @@ class TestFile < Test::Unit::TestCase
       q1 = Queue.new
       q2 = Queue.new
 
-      Thread.new do
+      th = Thread.new do
         data = ''
         64.times do |i|
           data << i.to_s
@@ -142,6 +142,7 @@ class TestFile < Test::Unit::TestCase
         assert_equal size, f.size
         q2.push true
       end
+      th.join
     end
   end
 
