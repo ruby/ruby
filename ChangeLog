@@ -1,3 +1,16 @@
+Sat May 31 21:15:43 2014  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* thread.c (rb_thread_atfork_internal): My compiler complains
+	  about this variable being used before initialized. I looked at
+	  the code and expanded the macro and turned out it was actually
+	  USED for pointer arithmetic, not dereferenced.  So this was
+	  never a serious bug.  But is annoying indeed to see warnings
+	  every time.  I added `=0` and all went healthy.
+
+	* configure.in: Also, I found that the problematic macro expansion
+	  only happens when we lack __typeof__ C extension, which shall
+	  not be the case of my compiler.  I added AC_CTYPEOF to kick ass.
+
 Sat May 31 16:32:50 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/ipaddr.rb: extracted inline tests into test dir.

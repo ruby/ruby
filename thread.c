@@ -3770,7 +3770,7 @@ static void
 rb_thread_atfork_internal(void (*atfork)(rb_thread_t *, const rb_thread_t *))
 {
     rb_thread_t *th = GET_THREAD();
-    rb_thread_t *i;
+    rb_thread_t *i = 0;
     rb_vm_t *vm = th->vm;
     vm->main_thread = th;
 
