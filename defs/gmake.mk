@@ -9,6 +9,19 @@ ifneq ($(filter -O0 -Od,$(optflags)),)
 override XCFLAGS := $(filter-out -D_FORTIFY_SOURCE=%,$(XCFLAGS))
 endif
 
+ifneq ($(filter universal-%,$(arch)),)
+define archcmd
+%.$(1).i: %.c
+	@$$(ECHO) preprocessing $$< with $(2)
+	$$(Q) $$(CPP) $$(warnflags) $(2) $$(XCFLAGS) $$(CPPFLAGS) $$(COUTFLAG)$$@ -E $$< > $$@
+
+%.i: %.$(1).i
+endef
+
+$(foreach $(filter -arch=%,$(subst -arch ,-arch=,$(ARCH_FLAG))),\
+	$(eval $(call archcmd,$(patsubst -arch=%,%,$(value arch)),$(patsubst -arch=%,-arch %,$(value arch)))))
+endif
+
 ifneq ($(filter check% test,$(MAKECMDGOALS)),)
 yes-test-knownbug: $(TEST_DEPENDS) yes-btest-ruby
 yes-btest-ruby: $(TEST_DEPENDS) yes-test-sample
