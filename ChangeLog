@@ -1,3 +1,9 @@
+Mon Jun  2 07:30:33 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/envutil.rb (default_warning): New method.
+
+	* test/ruby/test_autoload.rb: Use EnvUtil.default_warning.
+
 Mon Jun  2 07:05:59 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/encoding.h: constify `rb_encoding` arguments.

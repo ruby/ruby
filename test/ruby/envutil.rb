@@ -122,6 +122,14 @@ module EnvUtil
   end
   module_function :verbose_warning
 
+  def default_warning
+    verbose, $VERBOSE = $VERBOSE, false
+    yield
+  ensure
+    $VERBOSE = verbose
+  end
+  module_function :default_warning
+
   def suppress_warning
     verbose, $VERBOSE = $VERBOSE, nil
     yield

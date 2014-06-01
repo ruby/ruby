@@ -74,7 +74,7 @@ p Foo::Bar
 
   def test_threaded_accessing_constant
     # Suppress "warning: loading in progress, circular require considered harmful"
-    EnvUtil.suppress_warning {
+    EnvUtil.default_warning {
       Tempfile.create(['autoload', '.rb']) {|file|
         file.puts 'sleep 0.5; class AutoloadTest; X = 1; end'
         file.close
@@ -94,7 +94,7 @@ p Foo::Bar
 
   def test_threaded_accessing_inner_constant
     # Suppress "warning: loading in progress, circular require considered harmful"
-    EnvUtil.suppress_warning {
+    EnvUtil.default_warning {
       Tempfile.create(['autoload', '.rb']) {|file|
         file.puts 'class AutoloadTest; sleep 0.5; X = 1; end'
         file.close
