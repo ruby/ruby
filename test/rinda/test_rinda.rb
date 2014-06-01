@@ -674,6 +674,7 @@ class TestRingServer < Test::Unit::TestCase
     skip 'IPv6 not available' unless
       Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? }
 
+    @rs.shutdown
     begin
       @rs = Rinda::RingServer.new(@ts, [['ff02::1', '::1', 0]], @port)
     rescue Errno::EADDRNOTAVAIL
