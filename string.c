@@ -333,7 +333,7 @@ coderange_scan(const char *p, long len, rb_encoding *enc)
 }
 
 long
-rb_str_coderange_scan_restartable(const char *s, const char *e, rb_encoding *enc, int *cr)
+rb_str_coderange_scan_restartable(const char *s, const char *e, const rb_encoding *enc, int *cr)
 {
     const char *p = s;
 
@@ -544,7 +544,7 @@ rb_usascii_str_new(const char *ptr, long len)
 }
 
 VALUE
-rb_enc_str_new(const char *ptr, long len, rb_encoding *enc)
+rb_enc_str_new(const char *ptr, long len, const rb_encoding *enc)
 {
     VALUE str;
 
@@ -571,7 +571,7 @@ rb_usascii_str_new_cstr(const char *ptr)
 }
 
 VALUE
-rb_enc_str_new_cstr(const char *ptr, rb_encoding *enc)
+rb_enc_str_new_cstr(const char *ptr, const rb_encoding *enc)
 {
     must_not_null(ptr);
     if (rb_enc_mbminlen(enc) != 1) {
@@ -599,7 +599,7 @@ rb_tainted_str_new_cstr(const char *ptr)
 }
 
 VALUE
-rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags, VALUE ecopts)
+rb_str_conv_enc_opts(VALUE str, const rb_encoding *from, const rb_encoding *to, int ecflags, VALUE ecopts)
 {
     extern VALUE rb_cEncodingConverter;
     rb_econv_t *ec;
@@ -672,13 +672,13 @@ rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags,
 }
 
 VALUE
-rb_str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to)
+rb_str_conv_enc(VALUE str, const rb_encoding *from, const rb_encoding *to)
 {
     return rb_str_conv_enc_opts(str, from, to, 0, Qnil);
 }
 
 VALUE
-rb_external_str_new_with_enc(const char *ptr, long len, rb_encoding *eenc)
+rb_external_str_new_with_enc(const char *ptr, long len, const rb_encoding *eenc)
 {
     VALUE str;
 
@@ -687,7 +687,7 @@ rb_external_str_new_with_enc(const char *ptr, long len, rb_encoding *eenc)
 }
 
 VALUE
-rb_external_str_with_enc(VALUE str, rb_encoding *eenc)
+rb_external_str_with_enc(VALUE str, const rb_encoding *eenc)
 {
     if (eenc == rb_usascii_encoding() &&
 	rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
@@ -747,7 +747,7 @@ rb_str_export_locale(VALUE str)
 }
 
 VALUE
-rb_str_export_to_enc(VALUE str, rb_encoding *enc)
+rb_str_export_to_enc(VALUE str, const rb_encoding *enc)
 {
     return rb_str_conv_enc(str, STR_ENC_GET(str), enc);
 }
@@ -1097,7 +1097,7 @@ count_utf8_lead_bytes_with_word(const uintptr_t *s)
 #endif
 
 static inline long
-enc_strlen(const char *p, const char *e, rb_encoding *enc, int cr)
+enc_strlen(const char *p, const char *e, const rb_encoding *enc, int cr)
 {
     long c;
     const char *q;
@@ -1168,7 +1168,7 @@ enc_strlen(const char *p, const char *e, rb_encoding *enc, int cr)
 }
 
 long
-rb_enc_strlen(const char *p, const char *e, rb_encoding *enc)
+rb_enc_strlen(const char *p, const char *e, const rb_encoding *enc)
 {
     return enc_strlen(p, e, enc, ENC_CODERANGE_UNKNOWN);
 }
@@ -1635,7 +1635,7 @@ rb_str_s_try_convert(VALUE dummy, VALUE str)
 }
 
 static char*
-str_nth_len(const char *p, const char *e, long *nthp, rb_encoding *enc)
+str_nth_len(const char *p, const char *e, long *nthp, const rb_encoding *enc)
 {
     long nth = *nthp;
     if (rb_enc_mbmaxlen(enc) == 1) {
@@ -1685,7 +1685,7 @@ str_nth_len(const char *p, const char *e, long *nthp, rb_encoding *enc)
 }
 
 char*
-rb_enc_nth(const char *p, const char *e, long nth, rb_encoding *enc)
+rb_enc_nth(const char *p, const char *e, long nth, const rb_encoding *enc)
 {
     return str_nth_len(p, e, &nth, enc);
 }
@@ -2152,7 +2152,7 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
 }
 
 VALUE
-rb_enc_str_buf_cat(VALUE str, const char *ptr, long len, rb_encoding *ptr_enc)
+rb_enc_str_buf_cat(VALUE str, const char *ptr, long len, const rb_encoding *ptr_enc)
 {
     return rb_enc_cr_str_buf_cat(str, ptr, len,
         rb_enc_to_index(ptr_enc), ENC_CODERANGE_UNKNOWN, NULL);

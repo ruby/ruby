@@ -1,3 +1,9 @@
+Mon Jun  2 07:05:59 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/encoding.h: constify `rb_encoding` arguments.
+
+	* include/ruby/oniguruma.h: constify `OnigEncoding` arguments.
+
 Sun Jun  1 12:05:10 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/drb: Wrap tests definitions by DRbTests module.  This makes

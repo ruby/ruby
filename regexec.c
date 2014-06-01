@@ -4336,7 +4336,7 @@ onig_number_of_capture_histories(regex_t* reg)
 }
 
 extern void
-onig_copy_encoding(OnigEncoding to, OnigEncoding from)
+onig_copy_encoding(OnigEncodingType *to, OnigEncoding from)
 {
   *to = *from;
 }

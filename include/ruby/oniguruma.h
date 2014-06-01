@@ -156,29 +156,29 @@ typedef struct {
 typedef int (*OnigApplyAllCaseFoldFunc)(OnigCodePoint from, OnigCodePoint* to, int to_len, void* arg);
 
 typedef struct OnigEncodingTypeST {
-  int    (*precise_mbc_enc_len)(const OnigUChar* p,const OnigUChar* e, struct OnigEncodingTypeST* enc);
+  int    (*precise_mbc_enc_len)(const OnigUChar* p,const OnigUChar* e, const struct OnigEncodingTypeST* enc);
   const char*   name;
   int           max_enc_len;
   int           min_enc_len;
-  int    (*is_mbc_newline)(const OnigUChar* p, const OnigUChar* end, struct OnigEncodingTypeST* enc);
-  OnigCodePoint (*mbc_to_code)(const OnigUChar* p, const OnigUChar* end, struct OnigEncodingTypeST* enc);
-  int    (*code_to_mbclen)(OnigCodePoint code, struct OnigEncodingTypeST* enc);
-  int    (*code_to_mbc)(OnigCodePoint code, OnigUChar *buf, struct OnigEncodingTypeST* enc);
-  int    (*mbc_case_fold)(OnigCaseFoldType flag, const OnigUChar** pp, const OnigUChar* end, OnigUChar* to, struct OnigEncodingTypeST* enc);
-  int    (*apply_all_case_fold)(OnigCaseFoldType flag, OnigApplyAllCaseFoldFunc f, void* arg, struct OnigEncodingTypeST* enc);
-  int    (*get_case_fold_codes_by_str)(OnigCaseFoldType flag, const OnigUChar* p, const OnigUChar* end, OnigCaseFoldCodeItem acs[], struct OnigEncodingTypeST* enc);
-  int    (*property_name_to_ctype)(struct OnigEncodingTypeST* enc, OnigUChar* p, OnigUChar* end);
-  int    (*is_code_ctype)(OnigCodePoint code, OnigCtype ctype, struct OnigEncodingTypeST* enc);
-  int    (*get_ctype_code_range)(OnigCtype ctype, OnigCodePoint* sb_out, const OnigCodePoint* ranges[], struct OnigEncodingTypeST* enc);
-  OnigUChar* (*left_adjust_char_head)(const OnigUChar* start, const OnigUChar* p, const OnigUChar* end, struct OnigEncodingTypeST* enc);
-  int    (*is_allowed_reverse_match)(const OnigUChar* p, const OnigUChar* end, struct OnigEncodingTypeST* enc);
+  int    (*is_mbc_newline)(const OnigUChar* p, const OnigUChar* end, const struct OnigEncodingTypeST* enc);
+  OnigCodePoint (*mbc_to_code)(const OnigUChar* p, const OnigUChar* end, const struct OnigEncodingTypeST* enc);
+  int    (*code_to_mbclen)(OnigCodePoint code, const struct OnigEncodingTypeST* enc);
+  int    (*code_to_mbc)(OnigCodePoint code, OnigUChar *buf, const struct OnigEncodingTypeST* enc);
+  int    (*mbc_case_fold)(OnigCaseFoldType flag, const OnigUChar** pp, const OnigUChar* end, OnigUChar* to, const struct OnigEncodingTypeST* enc);
+  int    (*apply_all_case_fold)(OnigCaseFoldType flag, OnigApplyAllCaseFoldFunc f, void* arg, const struct OnigEncodingTypeST* enc);
+  int    (*get_case_fold_codes_by_str)(OnigCaseFoldType flag, const OnigUChar* p, const OnigUChar* end, OnigCaseFoldCodeItem acs[], const struct OnigEncodingTypeST* enc);
+  int    (*property_name_to_ctype)(const struct OnigEncodingTypeST* enc, OnigUChar* p, OnigUChar* end);
+  int    (*is_code_ctype)(OnigCodePoint code, OnigCtype ctype, const struct OnigEncodingTypeST* enc);
+  int    (*get_ctype_code_range)(OnigCtype ctype, OnigCodePoint* sb_out, const OnigCodePoint* ranges[], const struct OnigEncodingTypeST* enc);
+  OnigUChar* (*left_adjust_char_head)(const OnigUChar* start, const OnigUChar* p, const OnigUChar* end, const struct OnigEncodingTypeST* enc);
+  int    (*is_allowed_reverse_match)(const OnigUChar* p, const OnigUChar* end, const struct OnigEncodingTypeST* enc);
   int ruby_encoding_index;
   unsigned int  flags;
 } OnigEncodingType;
 
-typedef OnigEncodingType* OnigEncoding;
+typedef const OnigEncodingType* OnigEncoding;
 
-ONIG_EXTERN OnigEncodingType OnigEncodingASCII;
+ONIG_EXTERN const OnigEncodingType OnigEncodingASCII;
 
 #define ONIG_ENCODING_ASCII        (&OnigEncodingASCII)
 
@@ -256,7 +256,7 @@ ONIG_EXTERN OnigEncodingType OnigEncodingASCII;
 #define ONIGENC_PRECISE_MBC_ENC_LEN(enc,p,e)   (enc)->precise_mbc_enc_len(p,e,enc)
 
 ONIG_EXTERN
-int onigenc_mbclen_approximate P_((const OnigUChar* p,const OnigUChar* e, struct OnigEncodingTypeST* enc));
+int onigenc_mbclen_approximate P_((const OnigUChar* p,const OnigUChar* e, const struct OnigEncodingTypeST* enc));
 
 #define ONIGENC_MBC_ENC_LEN(enc,p,e)           onigenc_mbclen_approximate(p,e,enc)
 #define ONIGENC_MBC_MAXLEN(enc)               ((enc)->max_enc_len)
@@ -807,7 +807,7 @@ void onig_set_syntax_options P_((OnigSyntaxType* syntax, OnigOptionType options)
 ONIG_EXTERN
 int onig_set_meta_char P_((OnigSyntaxType* syntax, unsigned int what, OnigCodePoint code));
 ONIG_EXTERN
-void onig_copy_encoding P_((OnigEncoding to, OnigEncoding from));
+void onig_copy_encoding P_((OnigEncodingType *to, OnigEncoding from));
 ONIG_EXTERN
 OnigCaseFoldType onig_get_default_case_fold_flag P_((void));
 ONIG_EXTERN

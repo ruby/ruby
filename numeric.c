@@ -2626,7 +2626,7 @@ rb_int_pred(VALUE num)
 #define int_pred rb_int_pred
 
 VALUE
-rb_enc_uint_chr(unsigned int code, rb_encoding *enc)
+rb_enc_uint_chr(unsigned int code, const rb_encoding *enc)
 {
     int n;
     VALUE str;

@@ -22,7 +22,7 @@
 
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility push(default)
-int rb_enc_register(const char *name, rb_encoding *encoding);
+int rb_enc_register(const char *name, const rb_encoding *encoding);
 void rb_enc_set_base(const char *name, const char *orig);
 int rb_enc_set_dummy(int index);
 void rb_encdb_declare(const char *name);
@@ -99,7 +99,7 @@ rb_enc_from_encoding_index(int idx)
 }
 
 VALUE
-rb_enc_from_encoding(rb_encoding *encoding)
+rb_enc_from_encoding(const rb_encoding *encoding)
 {
     int idx;
     if (!encoding) return Qnil;
@@ -254,9 +254,10 @@ enc_table_expand(int newsize)
 }
 
 static int
-enc_register_at(int index, const char *name, rb_encoding *encoding)
+enc_register_at(int index, const char *name, const rb_encoding *base_encoding)
 {
     struct rb_encoding_entry *ent = &enc_table.list[index];
+    rb_encoding *encoding;
     VALUE list;
 
     if (!valid_encoding_name_p(name)) return -1;
@@ -269,8 +270,8 @@ enc_register_at(int index, const char *name, rb_encoding *encoding)
     if (!ent->enc) {
 	ent->enc = xmalloc(sizeof(rb_encoding));
     }
-    if (encoding) {
-	*ent->enc = *encoding;
+    if (base_encoding) {
+	*ent->enc = *base_encoding;
     }
     else {
 	memset(ent->enc, 0, sizeof(*ent->enc));
@@ -288,7 +289,7 @@ enc_register_at(int index, const char *name, rb_encoding *encoding)
 }
 
 static int
-enc_register(const char *name, rb_encoding *encoding)
+enc_register(const char *name, const rb_encoding *encoding)
 {
     int index = enc_table.count;
 
@@ -297,11 +298,11 @@ enc_register(const char *name, rb_encoding *encoding)
     return enc_register_at(index - 1, name, encoding);
 }
 
-static void set_encoding_const(const char *, rb_encoding *);
+static void set_encoding_const(const char *, const rb_encoding *);
 int rb_enc_registered(const char *name);
 
 int
-rb_enc_register(const char *name, rb_encoding *encoding)
+rb_enc_register(const char *name, const rb_encoding *encoding)
 {
     int index = rb_enc_registered(name);
 
@@ -493,7 +494,7 @@ enc_ascii_compatible_p(VALUE enc)
  * Returns 1 when the encoding is Unicode series other than UTF-7 else 0.
  */
 int
-rb_enc_unicode_p(rb_encoding *enc)
+rb_enc_unicode_p(const rb_encoding *enc)
 {
     return ONIGENC_IS_UNICODE(enc);
 }
@@ -824,7 +825,7 @@ rb_enc_associate_index(VALUE obj, int idx)
 }
 
 VALUE
-rb_enc_associate(VALUE obj, rb_encoding *enc)
+rb_enc_associate(VALUE obj, const rb_encoding *enc)
 {
     return rb_enc_associate_index(obj, rb_enc_to_index(enc));
 }
@@ -938,13 +939,13 @@ rb_obj_encoding(VALUE obj)
 }
 
 int
-rb_enc_fast_mbclen(const char *p, const char *e, rb_encoding *enc)
+rb_enc_fast_mbclen(const char *p, const char *e, const rb_encoding *enc)
 {
     return ONIGENC_MBC_ENC_LEN(enc, (UChar*)p, (UChar*)e);
 }
 
 int
-rb_enc_mbclen(const char *p, const char *e, rb_encoding *enc)
+rb_enc_mbclen(const char *p, const char *e, const rb_encoding *enc)
 {
     int n = ONIGENC_PRECISE_MBC_ENC_LEN(enc, (UChar*)p, (UChar*)e);
     if (MBCLEN_CHARFOUND_P(n) && MBCLEN_CHARFOUND_LEN(n) <= e-p)
@@ -956,7 +957,7 @@ rb_enc_mbclen(const char *p, const char *e, rb_encoding *enc)
 }
 
 int
-rb_enc_precise_mbclen(const char *p, const char *e, rb_encoding *enc)
+rb_enc_precise_mbclen(const char *p, const char *e, const rb_encoding *enc)
 {
     int n;
     if (e <= p)
@@ -968,7 +969,7 @@ rb_enc_precise_mbclen(const char *p, const char *e, rb_encoding *enc)
 }
 
 int
-rb_enc_ascget(const char *p, const char *e, int *len, rb_encoding *enc)
+rb_enc_ascget(const char *p, const char *e, int *len, const rb_encoding *enc)
 {
     unsigned int c, l;
     if (e <= p)
@@ -991,7 +992,7 @@ rb_enc_ascget(const char *p, const char *e, int *len, rb_encoding *enc)
 }
 
 unsigned int
-rb_enc_codepoint_len(const char *p, const char *e, int *len_p, rb_encoding *enc)
+rb_enc_codepoint_len(const char *p, const char *e, int *len_p, const rb_encoding *enc)
 {
     int r;
     if (e <= p)
@@ -1006,13 +1007,13 @@ rb_enc_codepoint_len(const char *p, const char *e, int *len_p, rb_encoding *enc)
 
 #undef rb_enc_codepoint
 unsigned int
-rb_enc_codepoint(const char *p, const char *e, rb_encoding *enc)
+rb_enc_codepoint(const char *p, const char *e, const rb_encoding *enc)
 {
     return rb_enc_codepoint_len(p, e, 0, enc);
 }
 
 int
-rb_enc_codelen(int c, rb_encoding *enc)
+rb_enc_codelen(int c, const rb_encoding *enc)
 {
     int n = ONIGENC_CODE_TO_MBCLEN(enc,c);
     if (n == 0) {
@@ -1023,19 +1024,19 @@ rb_enc_codelen(int c, rb_encoding *enc)
 
 #undef rb_enc_code_to_mbclen
 int
-rb_enc_code_to_mbclen(int code, rb_encoding *enc)
+rb_enc_code_to_mbclen(int code, const rb_encoding *enc)
 {
     return ONIGENC_CODE_TO_MBCLEN(enc, code);
 }
 
 int
-rb_enc_toupper(int c, rb_encoding *enc)
+rb_enc_toupper(int c, const rb_encoding *enc)
 {
     return (ONIGENC_IS_ASCII_CODE(c)?ONIGENC_ASCII_CODE_TO_UPPER_CASE(c):(c));
 }
 
 int
-rb_enc_tolower(int c, rb_encoding *enc)
+rb_enc_tolower(int c, const rb_encoding *enc)
 {
     return (ONIGENC_IS_ASCII_CODE(c)?ONIGENC_ASCII_CODE_TO_LOWER_CASE(c):(c));
 }
@@ -1543,7 +1544,7 @@ VALUE
 rb_locale_charmap(VALUE klass);
 
 static void
-set_encoding_const(const char *name, rb_encoding *enc)
+set_encoding_const(const char *name, const rb_encoding *enc)
 {
     VALUE encoding = rb_enc_from_encoding(enc);
     char *s = (char *)name;

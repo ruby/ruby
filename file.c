@@ -2953,7 +2953,7 @@ skiproot(const char *path, const char *end, rb_encoding *enc)
 
 #define nextdirsep rb_enc_path_next
 char *
-rb_enc_path_next(const char *s, const char *e, rb_encoding *enc)
+rb_enc_path_next(const char *s, const char *e, const rb_encoding *enc)
 {
     while (s < e && !isdirsep(*s)) {
 	Inc(s, e, enc);
@@ -2967,7 +2967,7 @@ rb_enc_path_next(const char *s, const char *e, rb_encoding *enc)
 #define skipprefix(path, end, enc) (path)
 #endif
 char *
-rb_enc_path_skip_prefix(const char *path, const char *end, rb_encoding *enc)
+rb_enc_path_skip_prefix(const char *path, const char *end, const rb_encoding *enc)
 {
 #if defined(DOSISH_UNC) || defined(DOSISH_DRIVE_LETTER)
 #ifdef DOSISH_UNC
@@ -3001,7 +3001,7 @@ skipprefixroot(const char *path, const char *end, rb_encoding *enc)
 
 #define strrdirsep rb_enc_path_last_separator
 char *
-rb_enc_path_last_separator(const char *path, const char *end, rb_encoding *enc)
+rb_enc_path_last_separator(const char *path, const char *end, const rb_encoding *enc)
 {
     char *last = NULL;
     while (path < end) {
@@ -3019,7 +3019,7 @@ rb_enc_path_last_separator(const char *path, const char *end, rb_encoding *enc)
 }
 
 static char *
-chompdirsep(const char *path, const char *end, rb_encoding *enc)
+chompdirsep(const char *path, const char *end, const rb_encoding *enc)
 {
     while (path < end) {
 	if (isdirsep(*path)) {
@@ -3035,7 +3035,7 @@ chompdirsep(const char *path, const char *end, rb_encoding *enc)
 }
 
 char *
-rb_enc_path_end(const char *path, const char *end, rb_encoding *enc)
+rb_enc_path_end(const char *path, const char *end, const rb_encoding *enc)
 {
     if (path < end && isdirsep(*path)) path++;
     return chompdirsep(path, end, enc);
@@ -3043,7 +3043,7 @@ rb_enc_path_end(const char *path, const char *end, rb_encoding *enc)
 
 #if USE_NTFS
 static char *
-ntfs_tail(const char *path, const char *end, rb_encoding *enc)
+ntfs_tail(const char *path, const char *end, const rb_encoding *enc)
 {
     while (path < end && *path == '.') path++;
     while (path < end && *path != ':') {
@@ -3833,7 +3833,7 @@ rb_file_s_realdirpath(int argc, VALUE *argv, VALUE klass)
 }
 
 static size_t
-rmext(const char *p, long l0, long l1, const char *e, long l2, rb_encoding *enc)
+rmext(const char *p, long l0, long l1, const char *e, long l2, const rb_encoding *enc)
 {
     int len1, len2;
     unsigned int c;
@@ -3869,7 +3869,7 @@ rmext(const char *p, long l0, long l1, const char *e, long l2, rb_encoding *enc)
 }
 
 const char *
-ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encoding *enc)
+ruby_enc_find_basename(const char *name, long *baselen, long *alllen, const rb_encoding *enc)
 {
     const char *p, *q, *e, *end;
 #if defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC
@@ -4064,7 +4064,7 @@ rb_file_dirname(VALUE fname)
  *
  */
 const char *
-ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
+ruby_enc_find_extname(const char *name, long *len, const rb_encoding *enc)
 {
     const char *p, *e, *end = name + (len ? *len : (long)strlen(name));
 

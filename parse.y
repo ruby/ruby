@@ -304,7 +304,7 @@ struct parser_params {
 #ifdef RIPPER
 #define intern_cstr_without_pindown(n,l,en) rb_intern3(n,l,en)
 #else
-static ID intern_cstr_without_pindown(const char *, long, rb_encoding *);
+static ID intern_cstr_without_pindown(const char *, long, const rb_encoding *);
 #endif
 
 #define STR_NEW(p,n) rb_enc_str_new((p),(n),current_enc)
@@ -10258,7 +10258,7 @@ id_type(ID id)
 
 #ifndef RIPPER
 static int
-is_special_global_name(const char *m, const char *e, rb_encoding *enc)
+is_special_global_name(const char *m, const char *e, const rb_encoding *enc)
 {
     int mb = 0;
 
@@ -10290,7 +10290,7 @@ rb_symname_p(const char *name)
 }
 
 int
-rb_enc_symname_p(const char *name, rb_encoding *enc)
+rb_enc_symname_p(const char *name, const rb_encoding *enc)
 {
     return rb_enc_symname2_p(name, strlen(name), enc);
 }
@@ -10299,7 +10299,7 @@ rb_enc_symname_p(const char *name, rb_encoding *enc)
 #define IDSET_ATTRSET_FOR_INTERN (~(~0U<<(1<<ID_SCOPE_SHIFT)) & ~(1U<<ID_ATTRSET))
 
 static int
-rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int allowed_attrset)
+rb_enc_symname_type(const char *name, long len, const rb_encoding *enc, unsigned int allowed_attrset)
 {
     const char *m = name;
     const char *e = m + len;
@@ -10397,7 +10397,7 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int a
 }
 
 int
-rb_enc_symname2_p(const char *name, long len, rb_encoding *enc)
+rb_enc_symname2_p(const char *name, long len, const rb_encoding *enc)
 {
     return rb_enc_symname_type(name, len, enc, IDSET_ATTRSET_FOR_SYNTAX) != -1;
 }
@@ -10507,7 +10507,7 @@ lookup_sym_id(st_data_t str, st_data_t *data)
 }
 
 static ID
-intern_cstr_without_pindown(const char *name, long len, rb_encoding *enc)
+intern_cstr_without_pindown(const char *name, long len, const rb_encoding *enc)
 {
     st_data_t data;
     struct RString fake_str;
@@ -10523,7 +10523,7 @@ intern_cstr_without_pindown(const char *name, long len, rb_encoding *enc)
 }
 
 ID
-rb_intern3(const char *name, long len, rb_encoding *enc)
+rb_intern3(const char *name, long len, const rb_encoding *enc)
 {
     ID id;
 
@@ -11013,7 +11013,7 @@ rb_check_id(volatile VALUE *namep)
 }
 
 ID
-rb_check_id_cstr(const char *ptr, long len, rb_encoding *enc)
+rb_check_id_cstr(const char *ptr, long len, const rb_encoding *enc)
 {
     ID id;
 
@@ -11080,7 +11080,7 @@ attrsetname_to_attr(VALUE name)
 }
 
 ID
-rb_check_id_cstr_without_pindown(const char *ptr, long len, rb_encoding *enc)
+rb_check_id_cstr_without_pindown(const char *ptr, long len, const rb_encoding *enc)
 {
     st_data_t id;
     struct RString fake_str;
