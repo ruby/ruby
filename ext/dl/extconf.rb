@@ -1,7 +1,12 @@
 require 'mkmf'
 
 if RbConfig::CONFIG['GCC'] == 'yes'
-  (have_macro("__clang__") ? $LDFLAGS : $CFLAGS) << " -fno-defer-pop"
+  flag = " -fno-defer-pop"
+  if have_macro("__clang__")
+    $LDFLAGS << flag if try_ldflags(flag)
+  else
+    $CFLAGS << flag
+  end
   $CFLAGS << " -fno-omit-frame-pointer"
 end
 
