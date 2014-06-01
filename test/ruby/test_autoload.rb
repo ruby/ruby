@@ -90,6 +90,9 @@ p Foo::Bar
   end
 
   def test_threaded_accessing_inner_constant
+    # Suppress "warning: loading in progress, circular require considered harmful"
+    old_verbose = $VERBOSE
+    $VERBOSE = false
     Tempfile.create(['autoload', '.rb']) {|file|
       file.puts 'class AutoloadTest; sleep 0.5; X = 1; end'
       file.close
@@ -104,6 +107,8 @@ p Foo::Bar
         remove_autoload_constant
       end
     }
+  ensure
+    $VERBOSE = old_verbose
   end
 
   def test_nameerror_when_autoload_did_not_define_the_constant
