@@ -9,7 +9,7 @@ if __FILE__ == $0
 
   DRb::DRbServer.default_argc_limit(8)
   DRb::DRbServer.default_load_limit(4096)
-  DRb.start_service('drbunix:', DRbEx.new)
+  DRb.start_service('drbunix:', DRbTests::DRbEx.new)
   es = DRb::ExtServ.new(ARGV.shift, ARGV.shift)
   DRb.thread.join
   es.stop_service if es.alive?

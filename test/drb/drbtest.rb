@@ -5,6 +5,8 @@ require 'timeout'
 require 'shellwords'
 require_relative '../ruby/envutil'
 
+module DRbTests
+
 class DRbService
   @@manager = DRb::ExtServManager.new
   @@ruby = Shellwords.escape(EnvUtil.rubybin)
@@ -138,11 +140,11 @@ module DRbCore
   def test_02_unknown
     obj = @there.unknown_class
     assert_kind_of(DRb::DRbUnknown, obj)
-    assert_equal('Unknown2', obj.name)
+    assert_equal('DRbTests::Unknown2', obj.name)
 
     obj = @there.unknown_module
     assert_kind_of(DRb::DRbUnknown, obj)
-    assert_equal('DRbEx::', obj.name)
+    assert_equal('DRbTests::DRbEx::', obj.name)
 
     assert_raise(DRb::DRbUnknownError) do
       @there.unknown_error
@@ -362,5 +364,7 @@ module DRbAry
     assert_equal(:done, result)
   end
 EOS
+
+end
 
 end

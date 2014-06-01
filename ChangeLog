@@ -1,3 +1,9 @@
+Sun Jun  1 12:05:10 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/drb: Wrap tests definitions by DRbTests module.  This makes
+	  several tests (ACLEntryTest, TestBug4409, etc.) easier to understand
+	  that they are tests for DRb.
+
 Sun Jun  1 11:36:25 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/rinda/ring.rb (RingFinger#make_socket): Close the socket on

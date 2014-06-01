@@ -5,6 +5,8 @@ begin
 rescue LoadError
 end
 
+module DRbTests
+
 if Object.const_defined?("OpenSSL")
 
 
@@ -58,5 +60,7 @@ class TestDRbSSLAry < Test::Unit::TestCase
   end
 end
 
+
+end
 
 end

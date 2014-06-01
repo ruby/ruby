@@ -5,6 +5,8 @@ begin
 rescue LoadError
 end
 
+module DRbTests
+
 if Object.const_defined?("UNIXServer")
 
 
@@ -42,5 +44,7 @@ class TestDRbUNIXAry < Test::Unit::TestCase
   end
 end
 
+
+end
 
 end

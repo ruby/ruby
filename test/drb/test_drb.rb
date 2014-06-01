@@ -1,5 +1,7 @@
 require_relative 'drbtest'
 
+module DRbTests
+
 class TestDRbCore < Test::Unit::TestCase
   include DRbCore
 
@@ -319,4 +321,6 @@ class TestBug4409 < Test::Unit::TestCase
     foo = @there.foo
     assert(@there.foo?(foo))
   end
+end
+
 end
