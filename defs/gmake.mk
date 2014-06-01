@@ -24,7 +24,7 @@ define archcmd
 %.i: %.$(1).i
 endef
 
-$(foreach $(filter -arch=%,$(subst -arch ,-arch=,$(ARCH_FLAG))),\
+$(foreach arch,$(filter -arch=%,$(subst -arch ,-arch=,$(ARCH_FLAG))),\
 	$(eval $(call archcmd,$(patsubst -arch=%,%,$(value arch)),$(patsubst -arch=%,-arch %,$(value arch)))))
 endif
 
