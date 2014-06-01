@@ -412,6 +412,11 @@ func has to take the klass as the argument and return a newly
 allocated instance.  This instance should be as empty as possible,
 without any expensive (including external) resources.
 
+If you are overriding an existing method of any ancestor of your class,
+you may rely on:
+
+  VALUE rb_call_super(int argc, const VALUE *argv)
+
 === Constant Definition
 
 We have 2 functions to define constants:
