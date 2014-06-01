@@ -175,45 +175,45 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_read_nonblock_without_session
-    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, false){|server, port|
-      sock = TCPSocket.new("127.0.0.1", port)
-      ssl = OpenSSL::SSL::SSLSocket.new(sock)
-      ssl.sync_close = true
+    OpenSSL::TestUtils.silent do
+      start_server(PORT, OpenSSL::SSL::VERIFY_NONE, false){|server, port|
+        sock = TCPSocket.new("127.0.0.1", port)
+        ssl = OpenSSL::SSL::SSLSocket.new(sock)
+        ssl.sync_close = true
 
-      OpenSSL::TestUtils.silent do
         assert_equal :wait_readable, ssl.read_nonblock(100, exception: false)
         ssl.write("abc\n")
         IO.select [ssl]
         assert_equal('a', ssl.read_nonblock(1))
         assert_equal("bc\n", ssl.read_nonblock(100))
         assert_equal :wait_readable, ssl.read_nonblock(100, exception: false)
-      end
-      ssl.close
-    }
+        ssl.close
+      }
+    end
   end
 
   def test_starttls
-    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, false){|server, port|
-      sock = TCPSocket.new("127.0.0.1", port)
-      ssl = OpenSSL::SSL::SSLSocket.new(sock)
-      ssl.sync_close = true
-      str = "x" * 1000 + "\n"
+    OpenSSL::TestUtils.silent do
+      start_server(PORT, OpenSSL::SSL::VERIFY_NONE, false){|server, port|
+        sock = TCPSocket.new("127.0.0.1", port)
+        ssl = OpenSSL::SSL::SSLSocket.new(sock)
+        ssl.sync_close = true
+        str = "x" * 1000 + "\n"
 
-      OpenSSL::TestUtils.silent do
         ITERATIONS.times{
           ssl.puts(str)
           assert_equal(str, ssl.gets)
         }
         starttls(ssl)
-      end
 
-      ITERATIONS.times{
-        ssl.puts(str)
-        assert_equal(str, ssl.gets)
+        ITERATIONS.times{
+          ssl.puts(str)
+          assert_equal(str, ssl.gets)
+        }
+
+        ssl.close
       }
-
-      ssl.close
-    }
+    end
   end
 
   def test_parallel
