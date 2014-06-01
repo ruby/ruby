@@ -74,46 +74,42 @@ p Foo::Bar
 
   def test_threaded_accessing_constant
     # Suppress "warning: loading in progress, circular require considered harmful"
-    old_verbose = $VERBOSE
-    $VERBOSE = false
-    Tempfile.create(['autoload', '.rb']) {|file|
-      file.puts 'sleep 0.5; class AutoloadTest; X = 1; end'
-      file.close
-      add_autoload(file.path)
-      begin
-        assert_nothing_raised do
-          t1 = Thread.new { ::AutoloadTest::X }
-          t2 = Thread.new { ::AutoloadTest::X }
-          [t1, t2].each(&:join)
+    EnvUtil.suppress_warning {
+      Tempfile.create(['autoload', '.rb']) {|file|
+        file.puts 'sleep 0.5; class AutoloadTest; X = 1; end'
+        file.close
+        add_autoload(file.path)
+        begin
+          assert_nothing_raised do
+            t1 = Thread.new { ::AutoloadTest::X }
+            t2 = Thread.new { ::AutoloadTest::X }
+            [t1, t2].each(&:join)
+          end
+        ensure
+          remove_autoload_constant
         end
-      ensure
-        remove_autoload_constant
-      end
+      }
     }
-  ensure
-    $VERBOSE = old_verbose
   end
 
   def test_threaded_accessing_inner_constant
     # Suppress "warning: loading in progress, circular require considered harmful"
-    old_verbose = $VERBOSE
-    $VERBOSE = false
-    Tempfile.create(['autoload', '.rb']) {|file|
-      file.puts 'class AutoloadTest; sleep 0.5; X = 1; end'
-      file.close
-      add_autoload(file.path)
-      begin
-        assert_nothing_raised do
-          t1 = Thread.new { ::AutoloadTest::X }
-          t2 = Thread.new { ::AutoloadTest::X }
-          [t1, t2].each(&:join)
+    EnvUtil.suppress_warning {
+      Tempfile.create(['autoload', '.rb']) {|file|
+        file.puts 'class AutoloadTest; sleep 0.5; X = 1; end'
+        file.close
+        add_autoload(file.path)
+        begin
+          assert_nothing_raised do
+            t1 = Thread.new { ::AutoloadTest::X }
+            t2 = Thread.new { ::AutoloadTest::X }
+            [t1, t2].each(&:join)
+          end
+        ensure
+          remove_autoload_constant
         end
-      ensure
-        remove_autoload_constant
-      end
+      }
     }
-  ensure
-    $VERBOSE = old_verbose
   end
 
   def test_nameerror_when_autoload_did_not_define_the_constant
