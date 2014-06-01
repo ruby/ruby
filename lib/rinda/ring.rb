@@ -413,21 +413,25 @@ module Rinda
       addrinfo = Addrinfo.udp(address, @port)
 
       soc = Socket.new(addrinfo.pfamily, addrinfo.socktype, addrinfo.protocol)
+      begin
+        if addrinfo.ipv4_multicast? then
+          soc.setsockopt(Socket::Option.ipv4_multicast_loop(1))
+          soc.setsockopt(Socket::Option.ipv4_multicast_ttl(@multicast_hops))
+        elsif addrinfo.ipv6_multicast? then
+          soc.setsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_LOOP, true)
+          soc.setsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_HOPS,
+                         [@multicast_hops].pack('I'))
+          soc.setsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_IF,
+                         [@multicast_interface].pack('I'))
+        else
+          soc.setsockopt(:SOL_SOCKET, :SO_BROADCAST, true)
+        end
 
-      if addrinfo.ipv4_multicast? then
-        soc.setsockopt(Socket::Option.ipv4_multicast_loop(1))
-        soc.setsockopt(Socket::Option.ipv4_multicast_ttl(@multicast_hops))
-      elsif addrinfo.ipv6_multicast? then
-        soc.setsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_LOOP, true)
-        soc.setsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_HOPS,
-                       [@multicast_hops].pack('I'))
-        soc.setsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_IF,
-                       [@multicast_interface].pack('I'))
-      else
-        soc.setsockopt(:SOL_SOCKET, :SO_BROADCAST, true)
+        soc.connect(addrinfo)
+      rescue Exception
+        soc.close
+        raise
       end
-
-      soc.connect(addrinfo)
 
       soc
     end
