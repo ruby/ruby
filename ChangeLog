@@ -1,3 +1,8 @@
+Mon Jun  2 01:57:59 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_callee_setup_arg): turn a macro into an
+	  inline function.
+
 Mon Jun  2 01:46:43 2014  Eric Wong  <e@80x24.org>
 
 	* variable.c (rb_const_set): delete existing entry on redefinition
