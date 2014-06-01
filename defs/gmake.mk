@@ -11,6 +11,12 @@ endif
 
 ifneq ($(filter universal-%,$(arch)),)
 define archcmd
+%.$(1).S: %.c
+	@$$(ECHO) translating $$< with $(2)
+	$$(Q) $$(CC) $$(CFLAGS_NO_ARCH) $(2) $$(XCFLAGS) $$(CPPFLAGS) $$(COUTFLAG)$$@ -S $$<
+
+%.S: %.$(1).S
+
 %.$(1).i: %.c
 	@$$(ECHO) preprocessing $$< with $(2)
 	$$(Q) $$(CPP) $$(warnflags) $(2) $$(XCFLAGS) $$(CPPFLAGS) $$(COUTFLAG)$$@ -E $$< > $$@
