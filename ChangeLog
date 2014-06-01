@@ -1,3 +1,9 @@
+Mon Jun  2 01:46:43 2014  Eric Wong  <e@80x24.org>
+
+	* variable.c (rb_const_set): delete existing entry on redefinition
+	  [Bug #9645]
+	* test/ruby/test_const.rb (test_redefinition): test for leak
+
 Fri May 30 00:13:19 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (setup_exception): preserve errinfo across calling #to_s
