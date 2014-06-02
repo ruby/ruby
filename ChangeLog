@@ -1,3 +1,7 @@
+Mon Jun  2 12:26:08 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* CONTRIBUTING.md: added contibuting guide for github. [fix GH-625]
+
 Mon Jun  2 07:30:33 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/envutil.rb (default_warning): New method.
