@@ -1891,7 +1891,7 @@ Init_Exception(void)
 }
 
 void
-rb_enc_raise(const rb_encoding *enc, VALUE exc, const char *fmt, ...)
+rb_enc_raise(rb_encoding *enc, VALUE exc, const char *fmt, ...)
 {
     va_list args;
     VALUE mesg;

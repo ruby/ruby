@@ -769,7 +769,7 @@ VALUE rb_str_dynamic_intern(VALUE);
 ID rb_check_id_without_pindown(VALUE *);
 ID rb_sym2id_without_pindown(VALUE);
 #ifdef RUBY_ENCODING_H
-ID rb_check_id_cstr_without_pindown(const char *, long, const rb_encoding *);
+ID rb_check_id_cstr_without_pindown(const char *, long, rb_encoding *);
 #endif
 ID rb_id_attrget(ID id);
 
@@ -867,7 +867,7 @@ VALUE rb_id_quote_unprintable(ID);
 void rb_str_fill_terminator(VALUE str, const int termlen);
 VALUE rb_str_locktmp_ensure(VALUE str, VALUE (*func)(VALUE), VALUE arg);
 #ifdef RUBY_ENCODING_H
-VALUE rb_external_str_with_enc(VALUE str, const rb_encoding *eenc);
+VALUE rb_external_str_with_enc(VALUE str, rb_encoding *eenc);
 #endif
 #define STR_NOEMBED      FL_USER1
 #define STR_SHARED       FL_USER2 /* = ELTS_SHARED */

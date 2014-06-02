@@ -1307,16 +1307,16 @@ struct glob_args {
     rb_encoding *enc;
 };
 
+#define glob_call_func(func, path, arg, enc) (*(func))((path), (arg), (void *)(enc))
+
 static VALUE
 glob_func_caller(VALUE val)
 {
     struct glob_args *args = (struct glob_args *)val;
 
-    (*args->func)(args->path, args->value, args->enc);
+    glob_call_func(args->func, args->path, args->value, args->enc);
     return Qnil;
 }
-
-#define glob_call_func(func, path, arg, enc) (*(func))((path), (arg), (enc))
 
 static int
 glob_helper(
@@ -1724,7 +1724,7 @@ ruby_brace_expand(const char *str, int flags, ruby_glob_func *func, VALUE arg,
 	GLOB_FREE(buf);
     }
     else if (!lbrace && !rbrace) {
-	status = (*func)(s, arg, enc);
+	status = glob_call_func(func, s, arg, enc);
     }
 
     return status;

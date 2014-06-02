@@ -224,7 +224,7 @@ rb_memsearch_qs_utf8(const unsigned char *xs, long m, const unsigned char *ys, l
 }
 
 long
-rb_memsearch(const void *x0, long m, const void *y0, long n, const rb_encoding *enc)
+rb_memsearch(const void *x0, long m, const void *y0, long n, rb_encoding *enc)
 {
     const unsigned char *x = x0, *y = y0;
 
@@ -333,7 +333,7 @@ rb_reg_check(VALUE re)
 
 static void
 rb_reg_expr_str(VALUE str, const char *s, long len,
-	const rb_encoding *enc, rb_encoding *resenc)
+	rb_encoding *enc, rb_encoding *resenc)
 {
     const char *p, *pend;
     int cr = ENC_CODERANGE_UNKNOWN;
@@ -636,7 +636,7 @@ rb_reg_raise(const char *s, long len, const char *err, VALUE re)
 }
 
 static VALUE
-rb_enc_reg_error_desc(const char *s, long len, const rb_encoding *enc, int options, const char *err)
+rb_enc_reg_error_desc(const char *s, long len, rb_encoding *enc, int options, const char *err)
 {
     char opts[6];
     VALUE desc = rb_str_buf_new2(err);
@@ -653,7 +653,7 @@ rb_enc_reg_error_desc(const char *s, long len, const rb_encoding *enc, int optio
 }
 
 static void
-rb_enc_reg_raise(const char *s, long len, const rb_encoding *enc, int options, const char *err)
+rb_enc_reg_raise(const char *s, long len, rb_encoding *enc, int options, const char *err)
 {
     rb_exc_raise(rb_enc_reg_error_desc(s, len, enc, options, err));
 }
@@ -826,7 +826,7 @@ onig_new_with_source(regex_t** reg, const UChar* pattern, const UChar* pattern_e
 }
 
 static Regexp*
-make_regexp(const char *s, long len, const rb_encoding *enc, int flags, onig_errmsg_buffer err,
+make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_buffer err,
 	const char *sourcefile, int sourceline)
 {
     Regexp *rp;
@@ -1288,8 +1288,8 @@ rb_reg_fixed_encoding_p(VALUE re)
 }
 
 static VALUE
-rb_reg_preprocess(const char *p, const char *end, const rb_encoding *enc,
-        const rb_encoding **fixed_enc, onig_errmsg_buffer err);
+rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
+        rb_encoding **fixed_enc, onig_errmsg_buffer err);
 
 
 static void
@@ -1301,10 +1301,10 @@ reg_enc_error(VALUE re, VALUE str)
 	     rb_enc_name(rb_enc_get(str)));
 }
 
-static const rb_encoding*
+static rb_encoding*
 rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
 {
-    const rb_encoding *enc = 0;
+    rb_encoding *enc = 0;
 
     if (rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN) {
         rb_raise(rb_eArgError,
@@ -1345,8 +1345,8 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     OnigErrorInfo einfo;
     const char *pattern;
     VALUE unescaped;
-    const rb_encoding *fixed_enc = 0;
-    const rb_encoding *enc = rb_reg_prepare_enc(re, str, 1);
+    rb_encoding *fixed_enc = 0;
+    rb_encoding *enc = rb_reg_prepare_enc(re, str, 1);
 
     if (reg->enc == enc) return reg;
 
@@ -1379,7 +1379,7 @@ long
 rb_reg_adjust_startpos(VALUE re, VALUE str, long pos, int reverse)
 {
     long range;
-    const rb_encoding *enc;
+    rb_encoding *enc;
     UChar *p, *string;
 
     enc = rb_reg_prepare_enc(re, str, 0);
@@ -2087,8 +2087,8 @@ again:
 }
 
 static int
-unescape_escaped_nonascii(const char **pp, const char *end, const rb_encoding *enc,
-        VALUE buf, const rb_encoding **encp, onig_errmsg_buffer err)
+unescape_escaped_nonascii(const char **pp, const char *end, rb_encoding *enc,
+        VALUE buf, rb_encoding **encp, onig_errmsg_buffer err)
 {
     const char *p = *pp;
     int chmaxlen = rb_enc_mbmaxlen(enc);
@@ -2151,7 +2151,7 @@ check_unicode_range(unsigned long code, onig_errmsg_buffer err)
 
 static int
 append_utf8(unsigned long uv,
-        VALUE buf, const rb_encoding **encp, onig_errmsg_buffer err)
+        VALUE buf, rb_encoding **encp, onig_errmsg_buffer err)
 {
     if (check_unicode_range(uv, err) != 0)
         return -1;
@@ -2178,7 +2178,7 @@ append_utf8(unsigned long uv,
 
 static int
 unescape_unicode_list(const char **pp, const char *end,
-        VALUE buf, const rb_encoding **encp, onig_errmsg_buffer err)
+        VALUE buf, rb_encoding **encp, onig_errmsg_buffer err)
 {
     const char *p = *pp;
     int has_unicode = 0;
@@ -2215,7 +2215,7 @@ unescape_unicode_list(const char **pp, const char *end,
 
 static int
 unescape_unicode_bmp(const char **pp, const char *end,
-        VALUE buf, const rb_encoding **encp, onig_errmsg_buffer err)
+        VALUE buf, rb_encoding **encp, onig_errmsg_buffer err)
 {
     const char *p = *pp;
     size_t len;
@@ -2237,8 +2237,8 @@ unescape_unicode_bmp(const char **pp, const char *end,
 }
 
 static int
-unescape_nonascii(const char *p, const char *end, const rb_encoding *enc,
-        VALUE buf, const rb_encoding **encp, int *has_property,
+unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
+        VALUE buf, rb_encoding **encp, int *has_property,
         onig_errmsg_buffer err)
 {
     char c;
@@ -2343,8 +2343,8 @@ escape_asis:
 }
 
 static VALUE
-rb_reg_preprocess(const char *p, const char *end, const rb_encoding *enc,
-        const rb_encoding **fixed_enc, onig_errmsg_buffer err)
+rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
+        rb_encoding **fixed_enc, onig_errmsg_buffer err)
 {
     VALUE buf;
     int has_property = 0;
@@ -2375,11 +2375,11 @@ rb_reg_preprocess(const char *p, const char *end, const rb_encoding *enc,
 VALUE
 rb_reg_check_preprocess(VALUE str)
 {
-    const rb_encoding *fixed_enc = 0;
+    rb_encoding *fixed_enc = 0;
     onig_errmsg_buffer err = "";
     VALUE buf;
     char *p, *end;
-    const rb_encoding *enc;
+    rb_encoding *enc;
 
     StringValue(str);
     p = RSTRING_PTR(str);
@@ -2398,12 +2398,12 @@ rb_reg_check_preprocess(VALUE str)
 static VALUE
 rb_reg_preprocess_dregexp(VALUE ary, int options)
 {
-    const rb_encoding *fixed_enc = 0;
-    const rb_encoding *regexp_enc = 0;
+    rb_encoding *fixed_enc = 0;
+    rb_encoding *regexp_enc = 0;
     onig_errmsg_buffer err = "";
     int i;
     VALUE result = 0;
-    const rb_encoding *ascii8bit = rb_ascii8bit_encoding();
+    rb_encoding *ascii8bit = rb_ascii8bit_encoding();
 
     if (RARRAY_LEN(ary) == 0) {
         rb_raise(rb_eArgError, "no arguments given");
@@ -2413,7 +2413,7 @@ rb_reg_preprocess_dregexp(VALUE ary, int options)
         VALUE str = RARRAY_AREF(ary, i);
         VALUE buf;
         char *p, *end;
-        const rb_encoding *src_enc;
+        rb_encoding *src_enc;
 
 	src_enc = rb_enc_get(str);
 	if (options & ARG_ENCODING_NONE &&
@@ -2454,14 +2454,14 @@ rb_reg_preprocess_dregexp(VALUE ary, int options)
 }
 
 static int
-rb_reg_initialize(VALUE obj, const char *s, long len, const rb_encoding *enc,
+rb_reg_initialize(VALUE obj, const char *s, long len, rb_encoding *enc,
 		  int options, onig_errmsg_buffer err,
 		  const char *sourcefile, int sourceline)
 {
     struct RRegexp *re = RREGEXP(obj);
     VALUE unescaped;
-    const rb_encoding *fixed_enc = 0;
-    const rb_encoding *a_enc = rb_ascii8bit_encoding();
+    rb_encoding *fixed_enc = 0;
+    rb_encoding *a_enc = rb_ascii8bit_encoding();
 
     rb_check_frozen(obj);
     if (FL_TEST(obj, REG_LITERAL))
@@ -2577,7 +2577,7 @@ rb_reg_new_ary(VALUE ary, int opt)
 }
 
 VALUE
-rb_enc_reg_new(const char *s, long len, const rb_encoding *enc, int options)
+rb_enc_reg_new(const char *s, long len, rb_encoding *enc, int options)
 {
     VALUE re = rb_reg_alloc();
     onig_errmsg_buffer err = "";

@@ -1192,7 +1192,7 @@ ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int s
 }
 
 VALUE
-rb_enc_vsprintf(const rb_encoding *enc, const char *fmt, va_list ap)
+rb_enc_vsprintf(rb_encoding *enc, const char *fmt, va_list ap)
 {
     rb_printf_buffer_extra buffer;
 #define f buffer.base
@@ -1225,7 +1225,7 @@ rb_enc_vsprintf(const rb_encoding *enc, const char *fmt, va_list ap)
 }
 
 VALUE
-rb_enc_sprintf(const rb_encoding *enc, const char *format, ...)
+rb_enc_sprintf(rb_encoding *enc, const char *format, ...)
 {
     VALUE result;
     va_list ap;
