@@ -42,7 +42,7 @@ rb_class_subclass_add(VALUE super, VALUE klass)
     rb_subclass_entry_t *entry, *head;
 
     if (super && super != Qundef) {
-	entry = malloc(sizeof(*entry));
+	entry = xmalloc(sizeof(*entry));
 	entry->klass = klass;
 	entry->next = NULL;
 
@@ -62,7 +62,7 @@ rb_module_add_to_subclasses_list(VALUE module, VALUE iclass)
 {
     rb_subclass_entry_t *entry, *head;
 
-    entry = malloc(sizeof(*entry));
+    entry = xmalloc(sizeof(*entry));
     entry->klass = iclass;
     entry->next = NULL;
 
@@ -88,7 +88,7 @@ rb_class_remove_from_super_subclasses(VALUE klass)
 	if (entry->next) {
 	    RCLASS_EXT(entry->next->klass)->parent_subclasses = RCLASS_EXT(klass)->parent_subclasses;
 	}
-	free(entry);
+	xfree(entry);
     }
 
     RCLASS_EXT(klass)->parent_subclasses = NULL;
@@ -107,7 +107,7 @@ rb_class_remove_from_module_subclasses(VALUE klass)
 	    RCLASS_EXT(entry->next->klass)->module_subclasses = RCLASS_EXT(klass)->module_subclasses;
 	}
 
-	free(entry);
+	xfree(entry);
     }
 
     RCLASS_EXT(klass)->module_subclasses = NULL;
