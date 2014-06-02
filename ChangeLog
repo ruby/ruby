@@ -1,3 +1,11 @@
+Mon Jun  2 17:14:49 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (ruby_vm_destruct): remove useless call of
+	  rb_gc_force_recycle().
+
+	  At this line, a VM object is already freed
+	  (is changed to T_NONE) by rb_gc_call_finalizer_at_exit().
+
 Mon Jun  2 15:50:24 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c (rb_using_refinement): add write-barriers for
