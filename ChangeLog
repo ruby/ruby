@@ -1,3 +1,8 @@
+Tue Jun  3 01:34:59 2014  Zachary Scott  <e@zzak.io>
+
+	* README.EXT: [DOC] Add rb_call_super when subclassing from @robin850
+	  [Fixes GH-623] https://github.com/ruby/ruby/pull/623
+
 Mon Jun  2 17:14:49 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (ruby_vm_destruct): remove useless call of
