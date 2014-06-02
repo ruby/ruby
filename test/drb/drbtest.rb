@@ -32,6 +32,9 @@ class DRbService
       manager.service(name)
     end
   end
+  def self.finish
+    @server.instance_variable_get(:@grp).list.each {|th| th.join }
+  end
 end
 
 class Onecky
@@ -192,10 +195,6 @@ module DRbCore
     end
     assert_raise(TimeoutError) do
       @there.do_timeout(ten)
-    end
-  ensure
-    DRbService.server.instance_variable_get(:@grp).list.each do |th|
-      th.kill.join
     end
   end
 

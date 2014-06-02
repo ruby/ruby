@@ -42,6 +42,11 @@ class TestDRbSSLCore < Test::Unit::TestCase
     super
   end
 
+  def teardown
+    super
+    DRbService.finish
+  end
+
   def test_02_unknown
   end
 
@@ -57,6 +62,11 @@ class TestDRbSSLAry < Test::Unit::TestCase
   def setup
     setup_service 'ut_array_drbssl.rb'
     super
+  end
+
+  def teardown
+    super
+    DRbService.finish
   end
 end
 

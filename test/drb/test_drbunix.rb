@@ -26,6 +26,11 @@ class TestDRbUNIXCore < Test::Unit::TestCase
     super
   end
 
+  def teardown
+    super
+    DRbService.finish
+  end
+
   def test_02_unknown
   end
 
@@ -41,6 +46,10 @@ class TestDRbUNIXAry < Test::Unit::TestCase
   def setup
     setup_service 'ut_array_drbunix.rb'
     super
+  end
+  def teardown
+    super
+    DRbService.finish
   end
 end
 
