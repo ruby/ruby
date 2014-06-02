@@ -2,7 +2,7 @@
 
 # Usage:
 #   $ wget http://www.unicode.org/Public/UNIDATA/CaseFolding.txt
-#   $ ruby CaseFolding.rb CaseFolding.txt > ../enc/unicode/casefold.h
+#   $ ruby case-folding.rb CaseFolding.txt -o casefold.h
 
 class CaseFolding
   module Util
