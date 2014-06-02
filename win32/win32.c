@@ -2049,7 +2049,7 @@ rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc)
 {
     VALUE src;
     long len = lstrlenW(wstr);
-    int encindex = ENC_TO_ENCINDEX(enc);
+    int encindex = rb_enc_to_index(enc);
 
     if (encindex == ENCINDEX_UTF_16LE) {
 	return rb_enc_str_new((char *)wstr, len * sizeof(WCHAR), enc);
