@@ -1,3 +1,8 @@
+Mon Jun  2 15:50:24 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c (rb_using_refinement): add write-barriers for
+	  cref->nd_refinements.
+
 Mon Jun  2 12:26:08 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* CONTRIBUTING.md: added contibuting guide for github. [fix GH-625]
