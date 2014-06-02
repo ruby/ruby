@@ -66,7 +66,7 @@ Sat May 31 21:15:43 2014  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* configure.in: Also, I found that the problematic macro expansion
 	  only happens when we lack __typeof__ C extension, which shall
-	  not be the case of my compiler.  I added AC_CTYPEOF to kick ass.
+	  not be the case of my compiler.  I added AC_C_TYPEOF to kick ass.
 
 Sat May 31 16:32:50 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
