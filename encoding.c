@@ -52,6 +52,13 @@ static struct {
     st_table *names;
 } enc_table;
 
+#define ENC_DUMMY_FLAG (1<<24)
+#define ENC_INDEX_MASK (~(~0U<<24))
+
+#define ENC_TO_ENCINDEX(enc) (int)((enc)->ruby_encoding_index & ENC_INDEX_MASK)
+#define ENC_DUMMY_P(enc) ((enc)->ruby_encoding_index & ENC_DUMMY_FLAG)
+#define ENC_SET_DUMMY(enc) ((enc)->ruby_encoding_index |= ENC_DUMMY_FLAG)
+
 void rb_enc_init(void);
 
 #define ENCODING_COUNT ENCINDEX_BUILTIN_MAX
@@ -107,6 +114,18 @@ rb_enc_from_encoding(rb_encoding *encoding)
     if (!encoding) return Qnil;
     idx = ENC_TO_ENCINDEX(encoding);
     return rb_enc_from_encoding_index(idx);
+}
+
+int
+rb_enc_to_index(rb_encoding *enc)
+{
+    return enc ? ENC_TO_ENCINDEX(enc) : 0;
+}
+
+int
+rb_enc_dummy_p(rb_encoding *enc)
+{
+    return ENC_DUMMY_P(enc) != 0;
 }
 
 static int enc_autoload(rb_encoding *);
@@ -352,7 +371,7 @@ set_base_encoding(int index, rb_encoding *base)
     rb_encoding *enc = enc_table.list[index].enc;
 
     enc_table.list[index].base = base;
-    if (rb_enc_dummy_p(base)) ENC_SET_DUMMY((rb_raw_encoding *)enc);
+    if (ENC_DUMMY_P(base)) ENC_SET_DUMMY((rb_raw_encoding *)enc);
     return enc;
 }
 

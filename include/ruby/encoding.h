@@ -74,7 +74,8 @@ int rb_char_to_option_kcode(int c, int *option, int *kcode);
 
 int rb_enc_replicate(const char *, rb_encoding *);
 int rb_define_dummy_encoding(const char *);
-#define rb_enc_to_index(enc) ((enc) ? ENC_TO_ENCINDEX(enc) : 0)
+int rb_enc_dummy_p(rb_encoding *enc);
+int rb_enc_to_index(rb_encoding *enc);
 int rb_enc_get_index(VALUE obj);
 void rb_enc_set_index(VALUE obj, int encindex);
 int rb_enc_find_index(const char *name);
@@ -233,19 +234,6 @@ const char *ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
 ID rb_check_id_cstr(const char *ptr, long len, rb_encoding *enc);
 
 RUBY_EXTERN VALUE rb_cEncoding;
-#define ENC_DUMMY_FLAG (1<<24)
-#define ENC_INDEX_MASK (~(~0U<<24))
-
-#define ENC_TO_ENCINDEX(enc) (int)((enc)->ruby_encoding_index & ENC_INDEX_MASK)
-
-#define ENC_DUMMY_P(enc) ((enc)->ruby_encoding_index & ENC_DUMMY_FLAG)
-#define ENC_SET_DUMMY(enc) ((enc)->ruby_encoding_index |= ENC_DUMMY_FLAG)
-
-static inline int
-rb_enc_dummy_p(rb_encoding *enc)
-{
-    return ENC_DUMMY_P(enc) != 0;
-}
 
 /* econv stuff */
 
