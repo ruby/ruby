@@ -251,7 +251,9 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       ensure
         ssl.close
       end
+    }
 
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|server, port|
       sock = TCPSocket.new("127.0.0.1", port)
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.set_params(
@@ -268,7 +270,9 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       ensure
         ssl.close
       end
+    }
 
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|server, port|
       sock = TCPSocket.new("127.0.0.1", port)
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.set_params(
