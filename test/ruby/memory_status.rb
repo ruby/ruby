@@ -18,6 +18,7 @@ module Memory
     begin
       require 'fiddle/import'
     rescue LoadError
+      $LOAD_PATH.unshift File.join(File.join(__dir__, '..'), 'lib')
       require_relative 'envutil'
       EnvUtil.suppress_warning do
         require 'dl/import'

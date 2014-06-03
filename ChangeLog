@@ -1,6 +1,11 @@
+Tue Jun  3 12:26:47 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/memory_status.rb: add $LOAD_PATH to load test/unit
+	  correctly for fiddle/import unavailable environments.
+
 Tue Jun  3 09:45:13 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* test/openssl/test_ssl.rb (OpenSSL::TestSSL#test_verify_result):
+o	* test/openssl/test_ssl.rb (OpenSSL::TestSSL#test_verify_result):
 	  shouldn't use same server for respective tests, because the 1st
 	  test sometimes kills the server main loop silently.
 	  [Bug #9881] [ruby-dev:48266]
