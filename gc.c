@@ -749,7 +749,7 @@ check_gen_consistency(VALUE obj)
 
 #if !RGENGC_AGE2_PROMOTION
 	    if (!old_flag) {
-		rb_bug("check_gen_consistency: %p (%s) is not infant, but is not old (on 2gen).", (void *)obj, obj_type_name(obj));
+		rb_bug("check_gen_consistency: %p (%s) is promoted, but is not old.", (void *)obj, obj_type_name(obj));
 	    }
 #endif
 
@@ -759,7 +759,7 @@ check_gen_consistency(VALUE obj)
 	}
 	else {
 	    if (old_flag) {
-		rb_bug("check_gen_consistency: %p (%s) is not infant, but is old.", (void *)obj, obj_type_name(obj));
+		rb_bug("check_gen_consistency: %p (%s) is not promoted, but is old by bitmap.", (void *)obj, obj_type_name(obj));
 	    }
 	}
     }
