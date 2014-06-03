@@ -1556,8 +1556,8 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	objspace->rgengc.young_object_count--;
     }
 #endif
-    if (MARKED_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj),obj)) {
-	CLEAR_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj),obj);
+    if (MARKED_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj), obj)) {
+	CLEAR_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj), obj);
     }
 #endif
 

@@ -1,3 +1,7 @@
+Tue Jun  3 13:03:21 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (obj_free): fix spacing.
+
 Tue Jun  3 12:59:32 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (check_gen_consistency): fix error message.
