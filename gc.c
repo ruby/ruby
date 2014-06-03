@@ -4976,7 +4976,7 @@ rb_gc_force_recycle(VALUE p)
     rb_objspace_t *objspace = &rb_objspace;
 
 #if USE_RGENGC
-    int is_old = RVALUE_OLD_P(p);
+    int is_old = RVALUE_OLD_P(p) != 0;
 
     if (is_old) {
 	objspace->rgengc.old_object_count--;

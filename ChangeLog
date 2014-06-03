@@ -1,3 +1,9 @@
+Tue Jun  3 16:33:27 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_gc_force_recycle): we only need to know the result (0/1)
+	  of RVALUE_OLD_P(). clang fails to compile it because is_old is
+	  `int' but RVALUE_OLD_P() returns VALUE.
+
 Tue Jun  3 13:14:04 2014  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (body_type_1part): Gmail IMAP reports a body
