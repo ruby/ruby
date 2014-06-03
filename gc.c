@@ -2743,7 +2743,7 @@ lazy_sweep_enable(void)
 static size_t
 objspace_live_slot(rb_objspace_t *objspace)
 {
-    return objspace->profile.total_allocated_object_num - objspace->profile.total_freed_object_num;
+    return objspace->profile.total_allocated_object_num - objspace->profile.total_freed_object_num - heap_pages_final_slots;
 }
 
 static size_t
