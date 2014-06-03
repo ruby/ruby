@@ -1,3 +1,15 @@
+Tue Jun  3 16:38:19 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: add verifying counters code in gc_verify_internal_consistency().
+	  gc_verify_internal_consistency() counts all
+	  - live objects
+	  - young objects (if age2 promotion)
+	  - old objects
+	  in all pages and compares with objspace managing counters.
+
+	* gc.c (gc_after_sweep): do gc_verify_internal_consistency()
+	  when RGENGC_CHECK_MODE >= 2.
+
 Tue Jun  3 16:33:27 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_gc_force_recycle): we only need to know the result (0/1)
