@@ -1515,57 +1515,24 @@ struct load_file_arg {
     VALUE fname;
     int script;
     struct cmdline_options *opt;
+    VALUE f;
+    int xflag;
 };
 
 static VALUE
-load_file_internal(VALUE arg)
+load_file_internal2(VALUE argp_v)
 {
-    extern VALUE rb_stdin;
-    struct load_file_arg *argp = (struct load_file_arg *)arg;
+    struct load_file_arg *argp = (struct load_file_arg *)argp_v;
     VALUE parser = argp->parser;
     VALUE orig_fname = argp->fname;
-    VALUE fname_v = rb_str_encode_ospath(orig_fname);
-    const char *fname = StringValueCStr(fname_v);
     int script = argp->script;
     struct cmdline_options *opt = argp->opt;
-    VALUE f;
+    VALUE f = argp->f;
     int line_start = 1;
     NODE *tree = 0;
     rb_encoding *enc;
     ID set_encoding;
-    int xflag = 0;
-
-    if (strcmp(fname, "-") == 0) {
-	f = rb_stdin;
-    }
-    else {
-	int fd, mode = O_RDONLY;
-#if defined DOSISH || defined __CYGWIN__
-	{
-	    const char *ext = strrchr(fname, '.');
-	    if (ext && STRCASECMP(ext, ".exe") == 0) {
-		mode |= O_BINARY;
-		xflag = 1;
-	    }
-	}
-#endif
-	if ((fd = rb_cloexec_open(fname, mode, 0)) < 0) {
-	    rb_load_fail(fname_v, strerror(errno));
-	}
-        rb_update_max_fd(fd);
-#if !defined DOSISH && !defined __CYGWIN__
-	{
-	    struct stat st;
-	    if (fstat(fd, &st) != 0)
-		rb_load_fail(fname_v, strerror(errno));
-	    if (S_ISDIR(st.st_mode)) {
-		errno = EISDIR;
-		rb_load_fail(fname_v, strerror(EISDIR));
-	    }
-	}
-#endif
-	f = rb_io_fdopen(fd, mode, fname);
-    }
+    int xflag = argp->xflag;
 
     CONST_ID(set_encoding, "set_encoding");
     if (script) {
@@ -1664,6 +1631,65 @@ load_file_internal(VALUE arg)
     rb_funcall(f, set_encoding, 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
     tree = rb_parser_compile_file_path(parser, orig_fname, f, line_start);
     rb_funcall(f, set_encoding, 1, rb_parser_encoding(parser));
+    return (VALUE)tree;
+}
+
+static VALUE
+load_file_internal(VALUE arg)
+{
+    extern VALUE rb_stdin;
+    struct load_file_arg *argp = (struct load_file_arg *)arg;
+    VALUE parser = argp->parser;
+    VALUE orig_fname = argp->fname;
+    VALUE fname_v = rb_str_encode_ospath(orig_fname);
+    const char *fname = StringValueCStr(fname_v);
+    int script = argp->script;
+    VALUE f;
+    NODE *tree;
+    int xflag = 0;
+    int state;
+
+    if (strcmp(fname, "-") == 0) {
+	f = rb_stdin;
+    }
+    else {
+	int fd, mode = O_RDONLY;
+#if defined DOSISH || defined __CYGWIN__
+	{
+	    const char *ext = strrchr(fname, '.');
+	    if (ext && STRCASECMP(ext, ".exe") == 0) {
+		mode |= O_BINARY;
+		xflag = 1;
+	    }
+	}
+#endif
+	if ((fd = rb_cloexec_open(fname, mode, 0)) < 0) {
+	    rb_load_fail(fname_v, strerror(errno));
+	}
+        rb_update_max_fd(fd);
+#if !defined DOSISH && !defined __CYGWIN__
+	{
+	    struct stat st;
+	    if (fstat(fd, &st) != 0)
+		rb_load_fail(fname_v, strerror(errno));
+	    if (S_ISDIR(st.st_mode)) {
+		errno = EISDIR;
+		rb_load_fail(fname_v, strerror(EISDIR));
+	    }
+	}
+#endif
+	f = rb_io_fdopen(fd, mode, fname);
+    }
+
+    argp->f = f;
+    argp->xflag = xflag;
+    tree = (NODE *)rb_protect(load_file_internal2, (VALUE)argp, &state);
+    if (state) {
+        if (f != rb_stdin)
+            rb_io_close(f);
+        rb_jump_tag(state);
+    }
+
     if (script && tree && rb_parser_end_seen_p(parser)) {
 	/*
 	 * DATA is a File that contains the data section of the executed file.

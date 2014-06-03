@@ -1,3 +1,9 @@
+Tue Jun  3 23:32:34 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ruby.c (load_file_internal2): Extracted from load_file_internal.
+	  (load_file_internal): Invoke load_file_internal2 using rb_protect.
+	  Close an opened FD if load_file_internal2 raises an exception.
+
 Tue Jun  3 19:11:45 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_objspace_free): should not rest_sweep() here.
