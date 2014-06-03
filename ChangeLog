@@ -1,3 +1,8 @@
+Tue Jun  3 19:11:45 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_objspace_free): should not rest_sweep() here.
+	  Some data structures are already freed.
+
 Tue Jun  3 18:43:51 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_gc.rb: allocate more objects to invoke GC by newobj.

@@ -929,8 +929,6 @@ static void heap_page_free(rb_objspace_t *objspace, struct heap_page *page);
 void
 rb_objspace_free(rb_objspace_t *objspace)
 {
-    gc_rest_sweep(objspace);
-
     if (objspace->profile.records) {
 	free(objspace->profile.records);
 	objspace->profile.records = 0;
