@@ -9,7 +9,7 @@ Tue Jun  3 13:14:04 2014  Shugo Maeda  <shugo@ruby-lang.org>
 	* lib/net/imap.rb (body_type_1part): Gmail IMAP reports a body
 	  type as "MIXED" followed immediately by params
 	  [ruby-core:62864] [Bug #9885]
-	  Patch by @rayners (David Raynes). [Fixes GH-622] 
+	  Patch by @rayners (David Raynes). [Fixes GH-622]
 	  https://github.com/ruby/ruby/pull/622
 
 Tue Jun  3 13:18:24 2014  Koichi Sasada  <ko1@atdot.net>
@@ -48,7 +48,7 @@ Tue Jun  3 12:26:47 2014  Koichi Sasada  <ko1@atdot.net>
 
 Tue Jun  3 09:45:13 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-o	* test/openssl/test_ssl.rb (OpenSSL::TestSSL#test_verify_result):
+	* test/openssl/test_ssl.rb (OpenSSL::TestSSL#test_verify_result):
 	  shouldn't use same server for respective tests, because the 1st
 	  test sometimes kills the server main loop silently.
 	  [Bug #9881] [ruby-dev:48266]
