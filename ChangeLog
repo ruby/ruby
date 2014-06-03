@@ -1,3 +1,19 @@
+Tue Jun  3 12:40:23 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: count old/young objects more correctly.
+
+	* gc.c (RVALUE_DEMOTE_FROM_OLD): decrement old object count.
+
+	* gc.c (RVALUE_DEMOTE_FROM_YOUNG): decrement young object count.
+
+	* gc.c (rb_gc_resurrect): increment old object count.
+
+	* gc.c (gc_marks_body): should not add old object count.
+	  This code is completely my misunderstanding.
+
+	* gc.c (rb_gc_force_recycle): decrement young or old object count
+	  correctly.
+
 Tue Jun  3 12:26:47 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/memory_status.rb: add $LOAD_PATH to load test/unit

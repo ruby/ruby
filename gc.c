@@ -849,7 +849,10 @@ RVALUE_PROMOTE_YOUNG(rb_objspace_t *objspace, VALUE obj)
 {
     check_gen_consistency(obj);
 
-    if (RGENGC_CHECK_MODE && !RVALUE_YOUNG_P(obj)) rb_bug("RVALUE_PROMOTE_YOUNG: %p (%s) is not young object.", (void *)obj, obj_type_name(obj));
+    if (RGENGC_CHECK_MODE && !RVALUE_YOUNG_P(obj)) {
+	rb_bug("RVALUE_PROMOTE_YOUNG: %p (%s) is not young object.", (void *)obj, obj_type_name(obj));
+    }
+
     MARK_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj), obj);
 
     objspace->rgengc.young_object_count--;
@@ -869,26 +872,30 @@ RVALUE_PROMOTE_YOUNG(rb_objspace_t *objspace, VALUE obj)
 }
 
 static inline void
-RVALUE_DEMOTE_FROM_YOUNG(VALUE obj)
+RVALUE_DEMOTE_FROM_YOUNG(rb_objspace_t *objspace, VALUE obj)
 {
-    if (RGENGC_CHECK_MODE && !RVALUE_YOUNG_P(obj))
+    if (RGENGC_CHECK_MODE && !RVALUE_YOUNG_P(obj)) {
 	rb_bug("RVALUE_DEMOTE_FROM_YOUNG: %p (%s) is not young object.", (void *)obj, obj_type_name(obj));
+    }
 
     check_gen_consistency(obj);
     FL_UNSET2(obj, FL_PROMOTED);
+    objspace->rgengc.young_object_count--;
     check_gen_consistency(obj);
 }
 #endif
 
 static inline void
-RVALUE_DEMOTE_FROM_OLD(VALUE obj)
+RVALUE_DEMOTE_FROM_OLD(rb_objspace_t *objspace, VALUE obj)
 {
-    if (RGENGC_CHECK_MODE && !RVALUE_OLD_P(obj))
+    if (RGENGC_CHECK_MODE && !RVALUE_OLD_P(obj)) {
 	rb_bug("RVALUE_DEMOTE_FROM_OLD: %p (%s) is not old object.", (void *)obj, obj_type_name(obj));
+    }
 
     check_gen_consistency(obj);
     FL_UNSET2(obj, FL_PROMOTED);
     CLEAR_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj), obj);
+    objspace->rgengc.old_object_count--;
     check_gen_consistency(obj);
 }
 
@@ -3677,6 +3684,13 @@ rb_gc_resurrect(VALUE obj)
 	!gc_marked(objspace, obj) &&
 	!is_swept_object(objspace, obj)) {
 	gc_mark_ptr(objspace, obj);
+
+	/* unmarked old objects means the last GC is major GC */
+	/* at major GC, old object count is reset.            */
+	/* So that resurrect also increment old object count  */
+	if (RVALUE_OLD_P(obj)) {
+	    objspace->rgengc.old_object_count++;
+	}
     }
 }
 
@@ -4207,10 +4221,6 @@ gc_marks_body(rb_objspace_t *objspace, int full_mark)
     }
     else {
 	objspace->profile.major_gc_count++;
-#if RGENGC_AGE2_PROMOTION
-	/* all old objects change to young objects */
-	objspace->rgengc.young_object_count += objspace->rgengc.old_object_count;
-#endif
 	objspace->rgengc.remembered_shady_object_count = 0;
 	objspace->rgengc.old_object_count = 0;
 	rgengc_mark_and_rememberset_clear(objspace, heap_eden);
@@ -4826,7 +4836,7 @@ rb_gc_writebarrier_unprotect_promoted(VALUE obj)
 		  rgengc_remembered(objspace, obj) ? " (already remembered)" : "");
 
     if (RVALUE_OLD_P(obj)) {
-	RVALUE_DEMOTE_FROM_OLD(obj);
+	RVALUE_DEMOTE_FROM_OLD(objspace, obj);
 
 	rgengc_remember(objspace, obj);
 	objspace->rgengc.remembered_shady_object_count++;
@@ -4840,7 +4850,7 @@ rb_gc_writebarrier_unprotect_promoted(VALUE obj)
     }
 #if RGENGC_AGE2_PROMOTION
     else {
-	RVALUE_DEMOTE_FROM_YOUNG(obj);
+	RVALUE_DEMOTE_FROM_YOUNG(objspace, obj);
     }
 #endif
 }
@@ -4966,14 +4976,26 @@ rb_gc_force_recycle(VALUE p)
     rb_objspace_t *objspace = &rb_objspace;
 
 #if USE_RGENGC
+    int is_old = RVALUE_OLD_P(p);
+
+    if (is_old) {
+	objspace->rgengc.old_object_count--;
+    }
+#if RGENGC_AGE2_PROMOTION
+    else if (RVALUE_YOUNG_P(p)) {
+	objspace->rgengc.young_object_count--;
+    }
+#endif
+
     CLEAR_IN_BITMAP(GET_HEAP_REMEMBERSET_BITS(p), p);
     CLEAR_IN_BITMAP(GET_HEAP_OLDGEN_BITS(p), p);
-    if (!GET_HEAP_PAGE(p)->before_sweep) {
+    if (is_old || !GET_HEAP_PAGE(p)->before_sweep) {
 	CLEAR_IN_BITMAP(GET_HEAP_MARK_BITS(p), p);
     }
 #endif
 
     objspace->profile.total_freed_object_num++;
+
     heap_page_add_freeobj(objspace, GET_HEAP_PAGE(p), p);
 
     /* Disable counting swept_slots because there are no meaning.
