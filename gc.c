@@ -801,7 +801,7 @@ RVALUE_PROMOTED_P(VALUE obj)
 }
 
 static inline void
-RVALUE_PROMOTE_INFANT(rb_objspace_t *objspace, VALUE obj)
+RVALUE_PROMOTE_INFANT(rb_objspace_t *objspace, VALUE obj, int add)
 {
     check_gen_consistency(obj);
 
@@ -810,7 +810,9 @@ RVALUE_PROMOTE_INFANT(rb_objspace_t *objspace, VALUE obj)
 
 #if RGENGC_AGE2_PROMOTION
     /* infant -> young */
-    objspace->rgengc.young_object_count++;
+    if (add) {
+	objspace->rgengc.young_object_count++;
+    }
 #else
     /* infant -> old */
     objspace->rgengc.old_object_count++;
@@ -857,7 +859,6 @@ RVALUE_PROMOTE_YOUNG(rb_objspace_t *objspace, VALUE obj)
 
     MARK_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj), obj);
 
-    objspace->rgengc.young_object_count--;
     objspace->rgengc.old_object_count++;
 
     check_gen_consistency(obj);
@@ -1553,11 +1554,6 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
     }
 
 #if USE_RGENGC
-#if RGENGC_AGE2_PROMOTION
-    if (RVALUE_YOUNG_P(obj)) {
-	objspace->rgengc.young_object_count--;
-    }
-#endif
     if (MARKED_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj), obj)) {
 	CLEAR_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj), obj);
     }
@@ -3638,7 +3634,7 @@ rgengc_check_relation(rb_objspace_t *objspace, VALUE obj)
 	    }
 	    else {
 		if (RVALUE_INFANT_P(obj)) {
-		    RVALUE_PROMOTE_INFANT(objspace, obj);
+		    RVALUE_PROMOTE_INFANT(objspace, obj, FALSE);
 		}
 	    }
 	}
@@ -3697,6 +3693,12 @@ rb_gc_resurrect(VALUE obj)
 	if (RVALUE_OLD_P(obj)) {
 	    objspace->rgengc.old_object_count++;
 	}
+#if RGENGC_AGE2_PROMOTION
+	/* similar reason of old object counts */
+	else if (RVALUE_YOUNG_P(obj)) {
+	    objspace->rgengc.young_object_count++;
+	}
+#endif
     }
 }
 
@@ -3729,7 +3731,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	if (RVALUE_WB_PROTECTED(obj)) {
 	    if (RVALUE_INFANT_P((VALUE)obj)) {
 		/* infant -> young */
-		RVALUE_PROMOTE_INFANT(objspace, (VALUE)obj);
+		RVALUE_PROMOTE_INFANT(objspace, (VALUE)obj, TRUE);
 #if RGENGC_AGE2_PROMOTION
 		objspace->rgengc.parent_object_is_old = FALSE;
 #else
@@ -4220,6 +4222,10 @@ gc_marks_body(rb_objspace_t *objspace, int full_mark)
 #if USE_RGENGC
     objspace->rgengc.parent_object_is_old = FALSE;
     objspace->rgengc.during_minor_gc = full_mark ? FALSE : TRUE;
+
+#if RGENGC_AGE2_PROMOTION
+    objspace->rgengc.young_object_count = 0;
+#endif
 
     if (objspace->rgengc.during_minor_gc) {
 	objspace->profile.minor_gc_count++;
@@ -4797,7 +4803,7 @@ rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap)
 			    rgengc_report(2, objspace, "rgengc_rememberset_mark: clear %p (%s)\n", p, obj_type_name((VALUE)p));
 #if RGENGC_AGE2_PROMOTION
 			    if (RVALUE_INFANT_P((VALUE)p)) {
-				RVALUE_PROMOTE_INFANT(objspace, (VALUE)p);
+				RVALUE_PROMOTE_INFANT(objspace, (VALUE)p, FALSE);
 				RVALUE_PROMOTE_YOUNG(objspace, (VALUE)p);
 			    }
 			    else if (RVALUE_YOUNG_P((VALUE)p)) {

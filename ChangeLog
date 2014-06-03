@@ -1,3 +1,15 @@
+Tue Jun  3 17:54:21 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: change the counting method for young objects.
+	  clear counter at the beggining of every GC and
+	  count promoted (infant->young) objects.
+
+	  Some promotions (infant->young) are transition of promoting to old
+	  objects. We should not count such promotions.
+
+	  With this technique, we don't need to check young objects
+	  at obj_free().
+
 Tue Jun  3 16:38:19 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: add verifying counters code in gc_verify_internal_consistency().
