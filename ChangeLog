@@ -1,3 +1,9 @@
+Wed Jun  4 04:08:37 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (core_hash_merge_kwd): should return the result hash, which
+	  may be converted from and differ from the given argument.
+	  [ruby-core:62921] [Bug #9898]
+
 Tue Jun  3 23:32:34 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ruby.c (load_file_internal2): Extracted from load_file_internal.
