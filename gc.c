@@ -766,21 +766,21 @@ check_gen_consistency(VALUE obj)
     return obj;
 }
 
-static inline VALUE
+static inline int
 RVALUE_INFANT_P(VALUE obj)
 {
     check_gen_consistency(obj);
     return !FL_TEST2(obj, FL_PROMOTED);
 }
 
-static inline VALUE
+static inline int
 RVALUE_OLD_BITMAP_P(VALUE obj)
 {
     check_gen_consistency(obj);
     return (RVALUE_OLDGEN_BITMAP(obj) != 0);
 }
 
-static inline VALUE
+static inline int
 RVALUE_OLD_P(VALUE obj)
 {
     check_gen_consistency(obj);
@@ -791,7 +791,7 @@ RVALUE_OLD_P(VALUE obj)
 #endif
 }
 
-static inline VALUE
+static inline int
 RVALUE_PROMOTED_P(VALUE obj)
 {
     check_gen_consistency(obj);
@@ -837,7 +837,7 @@ RVALUE_PROMOTE_INFANT(rb_objspace_t *objspace, VALUE obj)
  * Age1 promotion: Infant (0) -> Old (1 and later).
  * Age2 promotion: Infant (0) -> Young (1) -> Old (2 and later).
  */
-static inline VALUE
+static inline int
 RVALUE_YOUNG_P(VALUE obj)
 {
     check_gen_consistency(obj);
