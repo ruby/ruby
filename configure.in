@@ -1173,6 +1173,13 @@ AS_IF([test "x$with_gmp" != xno],
    with_gmp="$ac_cv_lib_gmp___gmpz_init"
    AS_IF([test -z "$with_gmp"], [with_gmp=no])])
 
+AC_ARG_WITH([jemalloc],
+  [AS_HELP_STRING([--with-jemalloc],[use jemalloc allocator])],
+  [with_jemalloc=yes], [with_jemalloc=no])
+AS_IF([test "x$with_jemalloc" = xyes],[
+  AC_CHECK_LIB([jemalloc],[malloc_conf],[LIBS="-ljemalloc $LIBS"],
+    [AC_MSG_ERROR([jemalloc requested but not found])])])
+
 dnl check for large file stuff
 mv confdefs.h confdefs1.h
 : > confdefs.h
