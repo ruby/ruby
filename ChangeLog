@@ -39,7 +39,7 @@ Tue Jun  3 18:01:27 2014  Koichi Sasada  <ko1@atdot.net>
 Tue Jun  3 17:54:21 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: change the counting method for young objects.
-	  clear counter at the beggining of every GC and
+	  clear counter at the beginning of every GC and
 	  count promoted (infant->young) objects.
 
 	  Some promotions (infant->young) are transition of promoting to old
