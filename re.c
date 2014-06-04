@@ -1733,20 +1733,16 @@ match_captures(VALUE match)
 static int
 name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name, const char* name_end)
 {
-    int num;
-
-    num = onig_name_to_backref_number(RREGEXP(regexp)->ptr,
+    return onig_name_to_backref_number(RREGEXP(regexp)->ptr,
 	(const unsigned char* )name, (const unsigned char* )name_end, regs);
-    if (num >= 1) {
-	return num;
-    }
-    else {
-	VALUE s = rb_str_new(name, (long )(name_end - name));
-	rb_raise(rb_eIndexError, "undefined group name reference: %s",
-				 StringValuePtr(s));
-    }
+}
 
-    UNREACHABLE;
+NORETURN(static void name_to_backref_error(VALUE name));
+static void
+name_to_backref_error(VALUE name)
+{
+    rb_raise(rb_eIndexError, "undefined group name reference: % "PRIsVALUE,
+	     name);
 }
 
 /*
@@ -1802,6 +1798,9 @@ match_aref(int argc, VALUE *argv, VALUE match)
 		p = StringValuePtr(idx);
 		num = name_to_backref_number(RMATCH_REGS(match),
 					     RMATCH(match)->regexp, p, p + RSTRING_LEN(idx));
+		if (num < 1) {
+		    name_to_backref_error(idx);
+		}
 		return rb_reg_nth_match(num, match);
 
 	      default:
@@ -3419,6 +3418,10 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
                 }
                 if (name_end < e) {
                     no = name_to_backref_number(regs, regexp, name, name_end);
+		    if (no < 1) {
+			VALUE n = rb_str_subseq(str, (long)(name - RSTRING_PTR(str)), (long)(name_end - name));
+			name_to_backref_error(n);
+		    }
                     p = s = name_end + clen;
                     break;
                 }
