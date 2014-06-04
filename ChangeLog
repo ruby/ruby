@@ -1,3 +1,11 @@
+Wed Jun  4 22:28:14 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: introduce RZombie to manage zombie objects.
+	  Rewrite finalizing logics with this type.
+
+	* gc.c (gc_verify_internal_consistency): verify zombie (finalizing)
+	  objects count.
+
 Wed Jun  4 22:09:53 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (match_aref, rb_reg_regsub): consider encoding of captured

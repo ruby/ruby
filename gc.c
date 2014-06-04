@@ -454,7 +454,7 @@ typedef struct rb_objspace {
 
 	/* final */
 	size_t final_slots;
-	RVALUE *deferred_final;
+	VALUE deferred_final;
     } heap_pages;
 
     struct {
@@ -652,6 +652,15 @@ VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #endif
 
 #define RANY(o) ((RVALUE*)(o))
+
+struct RZombie {
+    struct RBasic basic;
+    VALUE next;
+    void (*dfree)(void *);
+    void *data;
+};
+
+#define RZOMBIE(o) ((struct RZombie *)(o))
 
 #define nomem_error GET_VM()->special_exceptions[ruby_error_nomemory]
 
@@ -1516,20 +1525,21 @@ rb_free_const_table(st_table *tbl)
 }
 
 static inline void
-make_deferred(rb_objspace_t *objspace,RVALUE *p)
+make_zombie(rb_objspace_t *objspace, VALUE obj, void (*dfree)(void *), void *data)
 {
-    p->as.basic.flags = T_ZOMBIE;
-    p->as.free.next = heap_pages_deferred_final;
-    heap_pages_deferred_final = p;
+    struct RZombie *zombie = RZOMBIE(obj);
+    zombie->basic.flags = T_ZOMBIE;
+    zombie->dfree = dfree;
+    zombie->data = data;
+    zombie->next = heap_pages_deferred_final;
+    heap_pages_deferred_final = (VALUE)zombie;
 }
 
 static inline void
-make_io_deferred(rb_objspace_t *objspace,RVALUE *p)
+make_io_zombie(rb_objspace_t *objspace, VALUE obj)
 {
-    rb_io_t *fptr = p->as.file.fptr;
-    make_deferred(objspace, p);
-    p->as.data.dfree = (void (*)(void*))rb_io_fptr_finalize;
-    p->as.data.data = fptr;
+    rb_io_t *fptr = RANY(obj)->as.file.fptr;
+    make_zombie(objspace, obj, (void (*)(void*))rb_io_fptr_finalize, fptr);
 }
 
 static int
@@ -1612,22 +1622,30 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_DATA:
 	if (DATA_PTR(obj)) {
 	    int free_immediately = FALSE;
+	    void (*dfree)(void *);
+	    void *data = DATA_PTR(obj);
 
 	    if (RTYPEDDATA_P(obj)) {
 		free_immediately = (RANY(obj)->as.typeddata.type->flags & RUBY_TYPED_FREE_IMMEDIATELY) != 0;
-		RDATA(obj)->dfree = RANY(obj)->as.typeddata.type->function.dfree;
-		if (0 && free_immediately == 0) /* to expose non-free-immediate T_DATA */
+		dfree = RANY(obj)->as.typeddata.type->function.dfree;
+		if (0 && free_immediately == 0) {
+		    /* to expose non-free-immediate T_DATA */
 		    fprintf(stderr, "not immediate -> %s\n", RANY(obj)->as.typeddata.type->wrap_struct_name);
+		}
 	    }
-	    if (RANY(obj)->as.data.dfree == RUBY_DEFAULT_FREE) {
-		xfree(DATA_PTR(obj));
+	    else {
+		dfree = RANY(obj)->as.data.dfree;
 	    }
-	    else if (RANY(obj)->as.data.dfree) {
-		if (free_immediately) {
-		    (RDATA(obj)->dfree)(DATA_PTR(obj));
+
+	    if (dfree) {
+		if (dfree == RUBY_DEFAULT_FREE) {
+		    xfree(data);
+		}
+		else if (free_immediately) {
+		    (*dfree)(data);
 		}
 		else {
-		    make_deferred(objspace, RANY(obj));
+		    make_zombie(objspace, obj, dfree, data);
 		    return 1;
 		}
 	    }
@@ -1644,7 +1662,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
       case T_FILE:
 	if (RANY(obj)->as.file.fptr) {
-	    make_io_deferred(objspace, RANY(obj));
+	    make_io_zombie(objspace, obj);
 	    return 1;
 	}
 	break;
@@ -1707,7 +1725,13 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	       BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
     }
 
-    return 0;
+    if (FL_TEST(obj, FL_FINALIZE)) {
+	make_zombie(objspace, obj, 0, 0);
+	return 1;
+    }
+    else {
+	return 0;
+    }
 }
 
 void
@@ -2108,56 +2132,48 @@ run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
 }
 
 static void
-run_final(rb_objspace_t *objspace, VALUE obj)
+run_final(rb_objspace_t *objspace, VALUE zombie)
 {
-    RUBY_DATA_FUNC free_func = 0;
     st_data_t key, table;
 
-    heap_pages_final_slots--;
-
-    RBASIC_CLEAR_CLASS(obj);
-
-    if (RTYPEDDATA_P(obj)) {
-	free_func = RTYPEDDATA_TYPE(obj)->function.dfree;
-    }
-    else {
-	free_func = RDATA(obj)->dfree;
-    }
-    if (free_func) {
-	(*free_func)(DATA_PTR(obj));
+    if (RZOMBIE(zombie)->dfree) {
+	RZOMBIE(zombie)->dfree(RZOMBIE(zombie)->data);
     }
 
-    key = (st_data_t)obj;
+    key = (st_data_t)zombie;
     if (st_delete(finalizer_table, &key, &table)) {
-	run_finalizer(objspace, obj, (VALUE)table);
+	run_finalizer(objspace, zombie, (VALUE)table);
     }
 }
 
 static void
-finalize_list(rb_objspace_t *objspace, RVALUE *p)
+finalize_list(rb_objspace_t *objspace, VALUE zombie)
 {
-    while (p) {
-	RVALUE *tmp = p->as.free.next;
-	struct heap_page *page = GET_HEAP_PAGE(p);
+    while (zombie) {
+	VALUE next_zombie = RZOMBIE(zombie)->next;
+	struct heap_page *page = GET_HEAP_PAGE(zombie);
 
-	run_final(objspace, (VALUE)p);
+	run_final(objspace, zombie);
+
+	RZOMBIE(zombie)->basic.flags = 0;
+	heap_pages_final_slots--;
+	page->final_slots--;
+	heap_page_add_freeobj(objspace, GET_HEAP_PAGE(zombie), zombie);
+
+	heap_pages_swept_slots++;
 	objspace->profile.total_freed_object_num++;
 
-	page->final_slots--;
-	heap_page_add_freeobj(objspace, GET_HEAP_PAGE(p), (VALUE)p);
-	heap_pages_swept_slots++;
-
-	p = tmp;
+	zombie = next_zombie;
     }
 }
 
 static void
 finalize_deferred(rb_objspace_t *objspace)
 {
-    RVALUE *p;
+    VALUE zombie;
 
-    while ((p = ATOMIC_PTR_EXCHANGE(heap_pages_deferred_final, 0)) != 0) {
-	finalize_list(objspace, p);
+    while ((zombie = (VALUE)ATOMIC_PTR_EXCHANGE(heap_pages_deferred_final, 0)) != 0) {
+	finalize_list(objspace, zombie);
     }
 }
 
@@ -2261,12 +2277,12 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 		    xfree(DATA_PTR(p));
 		}
 		else if (RANY(p)->as.data.dfree) {
-		    make_deferred(objspace, RANY(p));
+		    make_zombie(objspace, (VALUE)p, RANY(p)->as.data.dfree, RANY(p)->as.data.data);
 		}
 		break;
 	      case T_FILE:
 		if (RANY(p)->as.file.fptr) {
-		    make_io_deferred(objspace, RANY(p));
+		    make_io_zombie(objspace, (VALUE)p);
 		}
 		break;
 	    }
@@ -2591,7 +2607,7 @@ obj_memsize_of(VALUE obj, int use_tdata)
 	break;
 
       case T_ZOMBIE:
-	break;
+	/* fall through */
 
       default:
 	rb_bug("objspace/memsize_of(): unknown data type 0x%x(%p)",
@@ -2804,11 +2820,6 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 			if (obj_free(objspace, (VALUE)p)) {
 			    final_slots++;
 			}
-			else if (FL_TEST(p, FL_FINALIZE)) {
-			    RDATA(p)->dfree = 0;
-			    make_deferred(objspace,p);
-			    final_slots++;
-			}
 			else {
 			    (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
 			    heap_page_add_freeobj(objspace, sweep_page, (VALUE)p);
@@ -2849,6 +2860,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 	    sweep_page->free_next = NULL;
 	}
     }
+
     heap_pages_swept_slots += freed_slots + empty_slots;
     objspace->profile.total_freed_object_num += freed_slots;
     heap_pages_final_slots += final_slots;
@@ -3053,7 +3065,7 @@ gc_after_sweep(rb_objspace_t *objspace)
 #endif
 
 #if RGENGC_CHECK_MODE >= 2
-	gc_verify_internal_consistency(Qnil);
+    gc_verify_internal_consistency(Qnil);
 #endif
 
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_END_SWEEP, 0);
@@ -4506,6 +4518,7 @@ struct verify_internal_consistency_struct {
 #if RGENGC_AGE2_PROMOTION
     size_t young_object_count;
 #endif
+    size_t zombie_object_count;
     VALUE parent;
 };
 
@@ -4546,11 +4559,16 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride, v
 		data->young_object_count++;
 	    }
 #endif
-
 	    if (RVALUE_OLD_P(v)) {
 		data->parent = v;
 		/* reachable objects from an oldgen object should be old or (young with remember) */
 		rb_objspace_reachable_objects_from(v, verify_internal_consistency_reachable_i, (void *)data);
+	    }
+	}
+	else {
+	    if (BUILTIN_TYPE(v) == T_ZOMBIE) {
+		assert(RBASIC(v)->flags == T_ZOMBIE);
+		data->zombie_object_count++;
 	    }
 	}
     }
@@ -4574,16 +4592,9 @@ static VALUE
 gc_verify_internal_consistency(VALUE self)
 {
 #if USE_RGENGC
-    struct verify_internal_consistency_struct data;
+    struct verify_internal_consistency_struct data = {0};
     rb_objspace_t *objspace = &rb_objspace;
     data.objspace = objspace;
-    data.err_count = 0;
-
-    data.live_object_count = 0;
-    data.old_object_count = 0;
-#if RGENGC_AGE2_PROMOTION
-    data.young_object_count = 0;
-#endif
 
     {
 	struct each_obj_args eo_args;
@@ -4617,6 +4628,30 @@ gc_verify_internal_consistency(VALUE self)
 	rb_bug("inconsistent young slot nubmer: expect %"PRIuSIZE", but %"PRIuSIZE".", objspace->rgengc.young_object_count, data.young_object_count);
     }
 #endif
+
+    if (!finalizing) {
+	size_t list_count = 0;
+
+	{
+	    VALUE z = heap_pages_deferred_final;
+	    while (z) {
+		list_count++;
+		z = RZOMBIE(z)->next;
+	    }
+	}
+
+	if (heap_pages_final_slots != data.zombie_object_count ||
+	    heap_pages_final_slots != list_count) {
+
+	    rb_bug("inconsistent finalizing object count:\n"
+		   "  expect %"PRIuSIZE"\n"
+		   "  but    %"PRIuSIZE" zombies\n"
+		   "  heap_pages_deferred_final list has %"PRIuSIZE" items.",
+		   heap_pages_final_slots,
+		   data.zombie_object_count,
+		   list_count);
+	}
+    }
 
     return Qnil;
 }
