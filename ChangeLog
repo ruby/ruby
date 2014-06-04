@@ -1,3 +1,8 @@
+Wed Jun  4 21:23:52 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (match_aref): should not ignore name after NUL byte.
+	  [ruby-dev:48275] [Bug #9902]
+
 Wed Jun  4 04:08:37 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (core_hash_merge_kwd): should return the result hash, which

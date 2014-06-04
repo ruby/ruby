@@ -142,6 +142,22 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("fbazo", s)
   end
 
+  def test_named_capture_with_nul
+    bug9902 = '[ruby-dev:48275] [Bug #9902]'
+
+    m = /(?<a>.*)/.match("foo")
+    assert_raise(IndexError, bug9902) {m["a\0foo"]}
+    assert_raise(IndexError, bug9902) {m["a\0foo".to_sym]}
+
+    m = Regexp.new("(?<foo\0bar>.*)").match("xxx")
+    assert_raise(IndexError, bug9902) {m["foo"]}
+    assert_raise(IndexError, bug9902) {m["foo".to_sym]}
+    assert_nothing_raised(IndexError, bug9902) {
+      assert_equal("xxx", m["foo\0bar"], bug9902)
+      assert_equal("xxx", m["foo\0bar".to_sym], bug9902)
+    }
+  end
+
   def test_assign_named_capture
     assert_equal("a", eval('/(?<foo>.)/ =~ "a"; foo'))
     assert_equal("a", eval('foo = 1; /(?<foo>.)/ =~ "a"; foo'))

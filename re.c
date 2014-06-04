@@ -1796,17 +1796,13 @@ match_aref(int argc, VALUE *argv, VALUE match)
 
 	    switch (TYPE(idx)) {
 	      case T_SYMBOL:
-		p = rb_id2name(SYM2ID(idx));
-		goto name_to_backref;
-		break;
+		idx = rb_sym2str(idx);
+		/* fall through */
 	      case T_STRING:
 		p = StringValuePtr(idx);
-
-	      name_to_backref:
 		num = name_to_backref_number(RMATCH_REGS(match),
-					     RMATCH(match)->regexp, p, p + strlen(p));
+					     RMATCH(match)->regexp, p, p + RSTRING_LEN(idx));
 		return rb_reg_nth_match(num, match);
-		break;
 
 	      default:
 		break;
