@@ -1,3 +1,9 @@
+Wed Jun  4 22:09:53 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (match_aref, rb_reg_regsub): consider encoding of captured
+	  names, encoding-incompatible should not match.
+	  [ruby-dev:48278] [Bug #9903]
+
 Wed Jun  4 21:23:52 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (match_aref): should not ignore name after NUL byte.

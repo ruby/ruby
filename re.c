@@ -1796,9 +1796,9 @@ match_aref(int argc, VALUE *argv, VALUE match)
 		/* fall through */
 	      case T_STRING:
 		p = StringValuePtr(idx);
-		num = name_to_backref_number(RMATCH_REGS(match),
-					     RMATCH(match)->regexp, p, p + RSTRING_LEN(idx));
-		if (num < 1) {
+		if (!rb_enc_compatible(RREGEXP(RMATCH(match)->regexp)->src, idx) ||
+		    (num = name_to_backref_number(RMATCH_REGS(match), RMATCH(match)->regexp,
+						  p, p + RSTRING_LEN(idx))) < 1) {
 		    name_to_backref_error(idx);
 		}
 		return rb_reg_nth_match(num, match);
@@ -3417,9 +3417,10 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
                     name_end += c == -1 ? mbclen(name_end, e, str_enc) : clen;
                 }
                 if (name_end < e) {
-                    no = name_to_backref_number(regs, regexp, name, name_end);
-		    if (no < 1) {
-			VALUE n = rb_str_subseq(str, (long)(name - RSTRING_PTR(str)), (long)(name_end - name));
+		    VALUE n = rb_str_subseq(str, (long)(name - RSTRING_PTR(str)),
+					    (long)(name_end - name));
+		    if (!rb_enc_compatible(RREGEXP(regexp)->src, n) ||
+			(no = name_to_backref_number(regs, regexp, name, name_end)) < 1) {
 			name_to_backref_error(n);
 		    }
                     p = s = name_end + clen;

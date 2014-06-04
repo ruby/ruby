@@ -158,6 +158,15 @@ class TestRegexp < Test::Unit::TestCase
     }
   end
 
+  def test_named_capture_nonascii
+    bug9903 = '[ruby-dev:48278] [Bug #9903]'
+
+    key = "\xb1\xb2".force_encoding(Encoding::EUC_JP)
+    m = /(?<#{key}>.*)/.match("xxx")
+    assert_equal("xxx", m[key])
+    assert_raise(IndexError, bug9903) {m[key.dup.force_encoding(Encoding::Shift_JIS)]}
+  end
+
   def test_assign_named_capture
     assert_equal("a", eval('/(?<foo>.)/ =~ "a"; foo'))
     assert_equal("a", eval('foo = 1; /(?<foo>.)/ =~ "a"; foo'))
