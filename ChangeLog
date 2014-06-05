@@ -1,3 +1,10 @@
+Thu Jun  5 16:08:39 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_page_sweep): refactoring.
+
+	* gc.c (gc_page_sweep): should not set, but add final_slots into
+	  sweep_page->final_slots.
+
 Thu Jun  5 14:36:24 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (jemalloc): check for the header regardless drop-in

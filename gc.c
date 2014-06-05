@@ -2810,25 +2810,33 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 	if (bitset) {
 	    p = offset  + i * BITS_BITLENGTH;
 	    do {
-		if ((bitset & 1) && BUILTIN_TYPE(p) != T_ZOMBIE) {
-		    if (p->as.basic.flags) {
-			rgengc_report(3, objspace, "page_sweep: free %p (%s)\n", p, obj_type_name((VALUE)p));
+		if (bitset & 1) {
+		    switch (BUILTIN_TYPE(p)) {
+		      default: { /* majority case */
+			  rgengc_report(3, objspace, "page_sweep: free %p (%s)\n", p, obj_type_name((VALUE)p));
 #if USE_RGENGC && RGENGC_CHECK_MODE
-			if (objspace->rgengc.during_minor_gc && RVALUE_OLD_P((VALUE)p)) rb_bug("page_sweep: %p (%s) is old while minor GC.", p, obj_type_name((VALUE)p));
-			if (rgengc_remembered(objspace, (VALUE)p)) rb_bug("page_sweep: %p (%s) is remembered.", p, obj_type_name((VALUE)p));
+			  if (objspace->rgengc.during_minor_gc && RVALUE_OLD_P((VALUE)p)) rb_bug("page_sweep: %p (%s) is old while minor GC.", p, obj_type_name((VALUE)p));
+			  if (rgengc_remembered(objspace, (VALUE)p)) rb_bug("page_sweep: %p (%s) is remembered.", p, obj_type_name((VALUE)p));
 #endif
-			if (obj_free(objspace, (VALUE)p)) {
-			    final_slots++;
-			}
-			else {
-			    (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
-			    heap_page_add_freeobj(objspace, sweep_page, (VALUE)p);
-			    rgengc_report(3, objspace, "page_sweep: %p (%s) is added to freelist\n", p, obj_type_name((VALUE)p));
-			    freed_slots++;
-			}
-		    }
-		    else {
-			empty_slots++;
+			  if (obj_free(objspace, (VALUE)p)) {
+			      final_slots++;
+			  }
+			  else {
+			      (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
+			      heap_page_add_freeobj(objspace, sweep_page, (VALUE)p);
+			      rgengc_report(3, objspace, "page_sweep: %p (%s) is added to freelist\n", p, obj_type_name((VALUE)p));
+			      freed_slots++;
+			  }
+			  break;
+		      }
+
+		      /* minor cases */
+		      case T_ZOMBIE:
+			/* already counted */
+			break;
+		      case T_NONE:
+			empty_slots++; /* already freed */
+			break;
 		    }
 		}
 		p++;
@@ -2864,7 +2872,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
     heap_pages_swept_slots += freed_slots + empty_slots;
     objspace->profile.total_freed_object_num += freed_slots;
     heap_pages_final_slots += final_slots;
-    sweep_page->final_slots = final_slots;
+    sweep_page->final_slots += final_slots;
 
     if (0) fprintf(stderr, "gc_page_sweep(%d): freed?: %d, limt: %d, freed_slots: %d, empty_slots: %d, final_slots: %d\n",
 		   (int)rb_gc_count(),
