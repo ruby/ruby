@@ -1178,12 +1178,10 @@ AC_ARG_WITH([jemalloc],
   [with_jemalloc=yes], [with_jemalloc=no])
 AS_IF([test "x$with_jemalloc" = xyes],[
   AC_CHECK_LIB([jemalloc],[malloc_conf],[], [with_jemalloc=no])
-  AS_IF([test "x$with_jemalloc" != xyes],[
-    AC_CHECK_HEADER(jemalloc/jemalloc.h, [
-      AC_DEFINE(RUBY_ALTERNATIVE_MALLOC_HEADER, [<jemalloc/jemalloc.h>])
-      AC_DEFINE(JEMALLOC_MANGLE)
-      with_jemalloc=yes
-    ])
+  AC_CHECK_HEADER(jemalloc/jemalloc.h, [
+    AC_DEFINE(RUBY_ALTERNATIVE_MALLOC_HEADER, [<jemalloc/jemalloc.h>])
+    AC_DEFINE(JEMALLOC_MANGLE)
+    with_jemalloc=yes
   ])
   AS_IF([test "x$with_jemalloc" = xyes],
     [

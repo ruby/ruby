@@ -1,4 +1,10 @@
-Thu Jun  5 14:16:41 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Jun  5 14:36:24 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (jemalloc): check for the header regardless drop-in
+	  libjemalloc is found, for `malloc_conf` declaration.
+
+	* version.c (ruby_show_version): show `malloc_conf` if set.
+	  [Feature #9113]
 
 	* configure.in (with-jemalloc): also check for header, for ABIs
 	  which JEMALLOC_MANGLE is needed, i.e., Mach-O and PE-COFF
