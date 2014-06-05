@@ -1,3 +1,7 @@
+Thu Jun  5 12:52:18 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* man/ruby.1: remove rubyforge entry.
+
 Thu Jun  5 12:45:32 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* misc/README: use github link instead of rubyforge.
