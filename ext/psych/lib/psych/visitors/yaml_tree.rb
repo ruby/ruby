@@ -378,7 +378,11 @@ module Psych
       end
 
       def visit_Symbol o
-        @emitter.scalar ":#{o}", nil, nil, true, false, Nodes::Scalar::ANY
+        if o.empty?
+          @emitter.scalar "", nil, '!ruby/symbol', false, false, Nodes::Scalar::ANY
+        else
+          @emitter.scalar ":#{o}", nil, nil, true, false, Nodes::Scalar::ANY
+        end
       end
 
       private

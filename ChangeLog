@@ -1,3 +1,9 @@
+Fri Jun  6 07:41:41 2014  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: dump empty symbols with a
+	  tag so that they can be parsed on input. [Bug #9873] [ruby-core:62825]
+	* test/psych/test_symbol.rb: test for change
+
 Thu Jun  5 16:08:39 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_page_sweep): refactoring.
