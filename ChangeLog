@@ -1,3 +1,15 @@
+Thu Jun  5 14:16:41 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (with-jemalloc): also check for header, for ABIs
+	  which JEMALLOC_MANGLE is needed, i.e., Mach-O and PE-COFF
+	  platforms.  [ruby-core:62939] [Feature #9113]
+
+	* include/ruby/missing.h: include alternative malloc header to
+	  replace memory management functions.
+
+	* dln.c, io.c, parse.y, st.c: undef malloc family before
+	  re-definition to suppress warnings.
+
 Thu Jun  5 12:52:18 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* man/ruby.1: remove rubyforge entry.

@@ -1177,8 +1177,22 @@ AC_ARG_WITH([jemalloc],
   [AS_HELP_STRING([--with-jemalloc],[use jemalloc allocator])],
   [with_jemalloc=yes], [with_jemalloc=no])
 AS_IF([test "x$with_jemalloc" = xyes],[
-  AC_CHECK_LIB([jemalloc],[malloc_conf],[LIBS="-ljemalloc $LIBS"],
-    [AC_MSG_ERROR([jemalloc requested but not found])])])
+  AC_CHECK_LIB([jemalloc],[malloc_conf],[], [with_jemalloc=no])
+  AS_IF([test "x$with_jemalloc" != xyes],[
+    AC_CHECK_HEADER(jemalloc/jemalloc.h, [
+      AC_DEFINE(RUBY_ALTERNATIVE_MALLOC_HEADER, [<jemalloc/jemalloc.h>])
+      AC_DEFINE(JEMALLOC_MANGLE)
+      with_jemalloc=yes
+    ])
+  ])
+  AS_IF([test "x$with_jemalloc" = xyes],
+    [
+      ac_cv_func_malloc_usable_size=yes
+      LIBS="-ljemalloc $LIBS"
+    ],
+    [AC_MSG_ERROR([jemalloc requested but not found])
+  ])
+])
 
 dnl check for large file stuff
 mv confdefs.h confdefs1.h

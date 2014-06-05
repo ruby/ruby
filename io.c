@@ -21,6 +21,7 @@
 #include <errno.h>
 #include "ruby_atomic.h"
 
+#undef free
 #define free(x) xfree(x)
 
 #if defined(DOSISH) || defined(__CYGWIN__)

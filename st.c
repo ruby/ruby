@@ -73,6 +73,10 @@ static const struct st_hash_type type_strcasehash = {
 static void rehash(st_table *);
 
 #ifdef RUBY
+#undef malloc
+#undef realloc
+#undef calloc
+#undef free
 #define malloc xmalloc
 #define calloc xcalloc
 #define realloc xrealloc
