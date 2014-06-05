@@ -1,3 +1,7 @@
+Thu Jun  5 12:45:32 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* misc/README: use github link instead of rubyforge.
+
 Thu Jun  5 10:03:29 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (obj_free): check also FL_PROMOTED bit by RVALUE_OLD_P().
