@@ -1,6 +1,6 @@
 # coding: US-ASCII
 require 'test/unit'
-require 'logger'
+require 'logger/application'
 require 'tempfile'
 
 class TestLoggerApplication < Test::Unit::TestCase
