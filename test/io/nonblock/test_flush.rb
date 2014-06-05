@@ -29,7 +29,7 @@ class TestIONonblock < Test::Unit::TestCase
     w << "a" * 4096
     result = ""
     timeout(10) {
-      Thread.new {
+      t0 = Thread.new {
         Thread.pass
         w.close
       }
@@ -44,6 +44,7 @@ class TestIONonblock < Test::Unit::TestCase
         # ignore [ruby-dev:35638]
       end
       assert_nothing_raised {t.join}
+      t0.join
     }
     assert_equal(4097, result.size)
     true
