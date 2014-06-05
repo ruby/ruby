@@ -1562,7 +1562,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
     }
 
 #if USE_RGENGC
-    if (MARKED_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj), obj)) {
+    if (RVALUE_OLD_P(obj)) {
 	CLEAR_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj), obj);
     }
 #endif
