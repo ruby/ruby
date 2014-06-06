@@ -1,3 +1,8 @@
+Fri Jun  6 13:39:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_setstrbuf, io_read): should not shorten the given buffer until
+	  read succeeds.  [ruby-core:55951] [Bug #8625]
+
 Fri Jun  6 07:41:41 2014  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb: dump empty symbols with a

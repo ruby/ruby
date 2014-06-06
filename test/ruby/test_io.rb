@@ -1230,6 +1230,14 @@ class TestIO < Test::Unit::TestCase
       t.value
       assert_equal("", s)
     end
+    with_pipe do |r, w|
+      s = "xxx"
+      t = Thread.new {r.read(2, s)}
+      Thread.pass until t.stop?
+      t.kill
+      t.value
+      assert_equal("xxx", s)
+    end
   end
 
   def test_write_nonblock
