@@ -1,3 +1,9 @@
+Sat Jun  7 01:17:16 2014  Tanaka Akira  <akr@fsij.org>
+
+	* signal.c (check_stack_overflow): Don't use ucontext_t if ucontext.h
+	  is not available.
+	  Fixes build on Android (x86).
+
 Tue Jun  3 00:38:33 2014  Eric Wong  <e@80x24.org>
 
 	* class.c (rb_class_subclass_add): use xmalloc
