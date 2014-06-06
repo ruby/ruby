@@ -465,8 +465,6 @@ typedef struct RNode {
 #define NEW_PRELUDE(p,b) NEW_NODE(NODE_PRELUDE,p,b,0)
 #define NEW_MEMO(a,b,c) NEW_NODE(NODE_MEMO,a,b,c)
 
-#define NODE_PRIVATE_RECV ((NODE *)1)
-
 #define roomof(x, y) ((sizeof(x) + sizeof(y) - 1) / sizeof(y))
 #define MEMO_FOR(type, value) ((type *)RARRAY_PTR(value))
 #define NEW_MEMO_FOR(type, value) \

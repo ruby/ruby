@@ -444,7 +444,6 @@ static NODE *aryset_gen(struct parser_params*,NODE*,NODE*);
 #define aryset(node1,node2) aryset_gen(parser, (node1), (node2))
 static NODE *attrset_gen(struct parser_params*,NODE*,ID);
 #define attrset(node,id) attrset_gen(parser, (node), (id))
-static inline NODE *attr_receiver(NODE *recv);
 
 static void rb_backref_error_gen(struct parser_params*,NODE*);
 #define rb_backref_error(n) rb_backref_error_gen(parser,(n))
@@ -1206,7 +1205,7 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 			else if ($5 == tANDOP) {
 			    $5 = 1;
 			}
-			$$ = NEW_OP_ASGN1(attr_receiver($1), $5, args);
+			$$ = NEW_OP_ASGN1($1, $5, args);
 			fixpos($$, $1);
 		    /*%
 			$$ = dispatch2(aref_field, $1, escape_Qundef($3));
@@ -1998,7 +1997,7 @@ arg		: lhs '=' arg
 			else if ($5 == tANDOP) {
 			    $5 = 1;
 			}
-			$$ = NEW_OP_ASGN1(attr_receiver($1), $5, args);
+			$$ = NEW_OP_ASGN1($1, $5, args);
 			fixpos($$, $1);
 		    /*%
 			$1 = dispatch2(aref_field, $1, escape_Qundef($3));
@@ -8825,7 +8824,6 @@ new_bv_gen(struct parser_params *parser, ID name)
 static NODE *
 aryset_gen(struct parser_params *parser, NODE *recv, NODE *idx)
 {
-    recv = attr_receiver(recv);
     return NEW_ATTRASGN(recv, tASET, idx);
 }
 
@@ -8895,18 +8893,9 @@ rb_id_attrget(ID id)
     return attrsetname_to_attr(rb_id2str(id));
 }
 
-static inline NODE *
-attr_receiver(NODE *recv)
-{
-    if (recv && nd_type(recv) == NODE_SELF)
-	recv = NODE_PRIVATE_RECV;
-    return recv;
-}
-
 static NODE *
 attrset_gen(struct parser_params *parser, NODE *recv, ID id)
 {
-    recv = attr_receiver(recv);
     return NEW_ATTRASGN(recv, rb_id_attrset(id), 0);
 }
 
@@ -9650,7 +9639,6 @@ new_attr_op_assign_gen(struct parser_params *parser, NODE *lhs, ID attr, ID op, 
     else if (op == tANDOP) {
 	op = 1;
     }
-    lhs = attr_receiver(lhs);
     asgn = NEW_OP_ASGN2(lhs, attr, op, rhs);
     fixpos(asgn, lhs);
     return asgn;

@@ -1,3 +1,10 @@
+Fri Jun  6 22:19:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (private_recv_p): check by node type, instead of a
+	  magic number.
+
+	* node.h (NODE_PRIVATE_RECV), parse.y (attrset_gen): remove
+
 Fri Jun  6 17:07:08 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_compile_each), parse.y (new_attr_op_assign_gen):

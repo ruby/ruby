@@ -2791,7 +2791,7 @@ compile_cpath(LINK_ANCHOR *ret, rb_iseq_t *iseq, NODE *cpath)
     }
 }
 
-#define private_recv_p(node) ((node)->nd_recv == NODE_PRIVATE_RECV)
+#define private_recv_p(node) (nd_type((node)->nd_recv) == NODE_SELF)
 
 #define defined_expr defined_expr0
 static int
