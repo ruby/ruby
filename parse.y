@@ -444,6 +444,7 @@ static NODE *aryset_gen(struct parser_params*,NODE*,NODE*);
 #define aryset(node1,node2) aryset_gen(parser, (node1), (node2))
 static NODE *attrset_gen(struct parser_params*,NODE*,ID);
 #define attrset(node,id) attrset_gen(parser, (node), (id))
+static inline NODE *attr_receiver(NODE *recv);
 
 static void rb_backref_error_gen(struct parser_params*,NODE*);
 #define rb_backref_error(n) rb_backref_error_gen(parser,(n))
@@ -8824,8 +8825,7 @@ new_bv_gen(struct parser_params *parser, ID name)
 static NODE *
 aryset_gen(struct parser_params *parser, NODE *recv, NODE *idx)
 {
-    if (recv && nd_type(recv) == NODE_SELF)
-	recv = (NODE *)1;
+    recv = attr_receiver(recv);
     return NEW_ATTRASGN(recv, tASET, idx);
 }
 
