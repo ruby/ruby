@@ -101,6 +101,29 @@ class TestAssignment < Test::Unit::TestCase
     assert_equal([1, 2, 3, [1, 2, 3]], a[:x], bug2050)
   end
 
+  def test_assign_private_self
+    o = Object.new
+    class << o
+      private
+      def foo=(a); 42; end
+      def []=(i, a); 42; end
+    end
+
+    assert_raise(NoMethodError) {
+      o.instance_eval {o.foo = 1}
+    }
+    assert_nothing_raised(NoMethodError) {
+      assert_equal(1, o.instance_eval {self.foo = 1})
+    }
+
+    assert_raise(NoMethodError) {
+      o.instance_eval {o[0] = 1}
+    }
+    assert_nothing_raised(NoMethodError) {
+      assert_equal(1, o.instance_eval {self[0] = 1})
+    }
+  end
+
   def test_yield
     def f; yield(nil); end; f {|a| assert_nil(a)}; undef f
     def f; yield(1); end; f {|a| assert_equal(1, a)}; undef f
