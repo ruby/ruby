@@ -370,9 +370,11 @@ rb_digest_instance_equal(VALUE self, VALUE other)
     if (rb_obj_is_kind_of(other, rb_mDigest_Instance) == Qtrue) {
         str1 = rb_digest_instance_digest(0, 0, self);
         str2 = rb_digest_instance_digest(0, 0, other);
-    } else {
+    } else if (!NIL_P(rb_check_string_type(other))) {
         str1 = rb_digest_instance_to_s(self);
         str2 = other;
+    } else {
+        return Qfalse;
     }
 
     /* never blindly assume that subclass methods return strings */
