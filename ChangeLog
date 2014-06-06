@@ -1,3 +1,9 @@
+Fri Jun  6 17:07:08 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each), parse.y (new_attr_op_assign_gen):
+	  allow op assign to a private attribute.
+	  [ruby-core:62949] [Bug #9907]
+
 Fri Jun  6 13:39:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (io_setstrbuf, io_read): should not shorten the given buffer until

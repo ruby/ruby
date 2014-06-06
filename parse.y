@@ -1206,7 +1206,7 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 			else if ($5 == tANDOP) {
 			    $5 = 1;
 			}
-			$$ = NEW_OP_ASGN1($1, $5, args);
+			$$ = NEW_OP_ASGN1(attr_receiver($1), $5, args);
 			fixpos($$, $1);
 		    /*%
 			$$ = dispatch2(aref_field, $1, escape_Qundef($3));
@@ -1998,7 +1998,7 @@ arg		: lhs '=' arg
 			else if ($5 == tANDOP) {
 			    $5 = 1;
 			}
-			$$ = NEW_OP_ASGN1($1, $5, args);
+			$$ = NEW_OP_ASGN1(attr_receiver($1), $5, args);
 			fixpos($$, $1);
 		    /*%
 			$1 = dispatch2(aref_field, $1, escape_Qundef($3));
@@ -9650,6 +9650,7 @@ new_attr_op_assign_gen(struct parser_params *parser, NODE *lhs, ID attr, ID op, 
     else if (op == tANDOP) {
 	op = 1;
     }
+    lhs = attr_receiver(lhs);
     asgn = NEW_OP_ASGN2(lhs, attr, op, rhs);
     fixpos(asgn, lhs);
     return asgn;

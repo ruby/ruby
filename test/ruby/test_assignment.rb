@@ -102,8 +102,12 @@ class TestAssignment < Test::Unit::TestCase
   end
 
   def test_assign_private_self
+    bug9907 = '[ruby-core:62949] [Bug #9907]'
+
     o = Object.new
     class << o
+      def foo; 42; end
+      def [](i); 42; end
       private
       def foo=(a); 42; end
       def []=(i, a); 42; end
@@ -121,6 +125,20 @@ class TestAssignment < Test::Unit::TestCase
     }
     assert_nothing_raised(NoMethodError) {
       assert_equal(1, o.instance_eval {self[0] = 1})
+    }
+
+    assert_nothing_raised(NoMethodError, bug9907) {
+      assert_equal(43, o.instance_eval {self.foo += 1})
+    }
+    assert_nothing_raised(NoMethodError, bug9907) {
+      assert_equal(1, o.instance_eval {self.foo &&= 1})
+    }
+
+    assert_nothing_raised(NoMethodError, bug9907) {
+      assert_equal(43, o.instance_eval {self[0] += 1})
+    }
+    assert_nothing_raised(NoMethodError, bug9907) {
+      assert_equal(1, o.instance_eval {self[0] &&= 1})
     }
   end
 
