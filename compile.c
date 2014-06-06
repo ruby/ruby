@@ -2786,6 +2786,8 @@ compile_cpath(LINK_ANCHOR *ret, rb_iseq_t *iseq, NODE *cpath)
     }
 }
 
+#define private_recv_p(node) ((node)->nd_recv == NODE_PRIVATE_RECV)
+
 #define defined_expr defined_expr0
 static int
 defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
@@ -2893,7 +2895,7 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 
 	switch (type) {
 	  case NODE_ATTRASGN:
-	    if (node->nd_recv == (NODE *)1) break;
+	    if (private_recv_p(node)) break;
 	  case NODE_CALL:
 	    self = FALSE;
 	    break;
@@ -4335,7 +4337,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	/* optimization shortcut
 	 *   obj["literal"] -> opt_aref_with(obj, "literal")
 	 */
-	if (node->nd_mid == idAREF && node->nd_recv != (NODE *)1 && node->nd_args &&
+	if (node->nd_mid == idAREF && !private_recv_p(node) && node->nd_args &&
 	    nd_type(node->nd_args) == NODE_ARRAY && node->nd_args->nd_alen == 1 &&
 	    nd_type(node->nd_args->nd_head) == NODE_STR)
 	{
@@ -5322,7 +5324,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	/* optimization shortcut
 	 *   obj["literal"] = value -> opt_aset_with(obj, "literal", value)
 	 */
-	if (node->nd_mid == idASET && node->nd_recv != (NODE *)1 && node->nd_args &&
+	if (node->nd_mid == idASET && !private_recv_p(node) && node->nd_args &&
 	    nd_type(node->nd_args) == NODE_ARRAY && node->nd_args->nd_alen == 2 &&
 	    nd_type(node->nd_args->nd_head) == NODE_STR)
 	{
@@ -5345,7 +5347,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	INIT_ANCHOR(args);
 	argc = setup_args(iseq, args, node->nd_args, &flag);
 
-	if (node->nd_recv == (NODE *) 1) {
+	if (private_recv_p(node)) {
 	    flag |= VM_CALL_FCALL;
 	    ADD_INSN(recv, line, putself);
 	}

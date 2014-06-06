@@ -8895,11 +8895,18 @@ rb_id_attrget(ID id)
     return attrsetname_to_attr(rb_id2str(id));
 }
 
+static inline NODE *
+attr_receiver(NODE *recv)
+{
+    if (recv && nd_type(recv) == NODE_SELF)
+	recv = NODE_PRIVATE_RECV;
+    return recv;
+}
+
 static NODE *
 attrset_gen(struct parser_params *parser, NODE *recv, ID id)
 {
-    if (recv && nd_type(recv) == NODE_SELF)
-	recv = (NODE *)1;
+    recv = attr_receiver(recv);
     return NEW_ATTRASGN(recv, rb_id_attrset(id), 0);
 }
 
