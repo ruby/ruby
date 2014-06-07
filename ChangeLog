@@ -1,3 +1,8 @@
+Sat Jun  7 12:28:53 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/digest/digest.c (rb_digest_instance_equal): no need to call
+	  `to_s` twice.  [Bug #9913]
+
 Sat Jun  7 11:35:01 2014  Tanaka Akira  <akr@fsij.org>
 
 	* object.c (rb_mod_initialize_clone): Override Kernel#initialize_clone
