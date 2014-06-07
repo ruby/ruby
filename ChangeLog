@@ -1,3 +1,15 @@
+Sat Jun  7 22:13:42 2014  Benoit Daloze  <eregontp@gmail.com>
+
+	* numeric.c (do_coerce): Add a warning when an exception is raised
+	  or an invalid value is returned in #coerce called by
+	  numeric comparison operators and the exception
+	  thrown by the caller has no information on the failure.
+	  In the next release such exception should not be rescued or
+	  should be the cause of the caller exception. nil is accepted
+	  as the "no possible coercion" return value. See #7688.
+
+	* test/ruby/test_numeric.rb: Add corresponding test.
+
 Sat Jun  7 18:15:33 2014  Benoit Daloze  <eregontp@gmail.com>
 
 	* numeric.c (bit_coerce): remove constant parameter `err'
