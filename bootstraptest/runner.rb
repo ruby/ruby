@@ -207,14 +207,17 @@ def show_progress(message = '')
   elsif @tty
     $stderr.print "#{@progress_bs}#{@progress[@count % @progress.size]}"
   end
+  t = Time.now if @verbose
   faildesc, errout = with_stderr {yield}
+  t = Time.now - t if @verbose
   if !faildesc
     if @tty
       $stderr.print "#{@progress_bs}#{@progress[@count % @progress.size]}"
+    elsif @verbose
+      $stderr.printf("%6.3f\n", t)
     else
       $stderr.print '.'
     end
-    $stderr.puts if @verbose
   else
     $stderr.print "#{@failed}F#{@reset}"
     $stderr.puts if @verbose
