@@ -1,3 +1,8 @@
+Sun Jun  8 04:52:40 2014  Jun Hiroe  <Jun.Hiroe@gmail.com>
+
+	* string.c (rb_str_slice_bang): [DOC] update return value against
+	  a fixnum, which has changed because of M17N.  [fix GH-631]
+
 Sat Jun  7 22:13:42 2014  Benoit Daloze  <eregontp@gmail.com>
 
 	* numeric.c (do_coerce): Add a warning when an exception is raised
