@@ -1,3 +1,8 @@
+Sat Jun  7 18:15:33 2014  Benoit Daloze  <eregontp@gmail.com>
+
+	* numeric.c (bit_coerce): remove constant parameter `err'
+	  (always TRUE) of bit_coerce().
+
 Sat Jun  7 16:01:57 2014  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
 
 	* cont.c (rb_fiber_struct): keep context.uc_stack.ss_sp and context.uc_stack.ss_size
