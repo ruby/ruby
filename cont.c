@@ -147,6 +147,12 @@ typedef struct rb_fiber_struct {
     void *fib_handle;
 #else
     ucontext_t context;
+    /* Because context.uc_stack.ss_sp and context.uc_stack.ss_size
+     * are not necessarily valid after makecontext() or swapcontext(),
+     * they are saved in these variables for later use.
+     */
+    void *ss_sp;
+    size_t ss_size;
 #endif
 #endif
 } rb_fiber_t;
@@ -243,11 +249,11 @@ cont_free(void *ptr)
 #else /* not WIN32 */
 	    if (GET_THREAD()->fiber != cont->self) {
                 rb_fiber_t *fib = (rb_fiber_t*)cont;
-                if (fib->context.uc_stack.ss_sp) {
+                if (fib->ss_sp) {
                     if (cont->type == ROOT_FIBER_CONTEXT) {
 			rb_bug("Illegal root fiber parameter");
                     }
-		    munmap((void*)fib->context.uc_stack.ss_sp, fib->context.uc_stack.ss_size);
+		    munmap((void*)fib->ss_sp, fib->ss_size);
 		}
 	    }
             else {
@@ -668,6 +674,8 @@ fiber_initialize_machine_stack_context(rb_fiber_t *fib, size_t size)
     context->uc_link = NULL;
     context->uc_stack.ss_sp = ptr;
     context->uc_stack.ss_size = size;
+    fib->ss_sp = ptr;
+    fib->ss_size = size;
     makecontext(context, rb_fiber_start, 0);
     sth->machine.stack_start = (VALUE*)(ptr + STACK_DIR_UPPER(0, size));
     sth->machine.stack_maxsize = size - RB_PAGE_SIZE;
@@ -1258,8 +1266,9 @@ rb_fiber_terminate(rb_fiber_t *fib)
     fib->status = TERMINATED;
 #if FIBER_USE_NATIVE && !defined(_WIN32)
     /* Ruby must not switch to other thread until storing terminated_machine_stack */
-    terminated_machine_stack.ptr = fib->context.uc_stack.ss_sp;
-    terminated_machine_stack.size = fib->context.uc_stack.ss_size / sizeof(VALUE);
+    terminated_machine_stack.ptr = fib->ss_sp;
+    terminated_machine_stack.size = fib->ss_size / sizeof(VALUE);
+    fib->ss_sp = NULL;
     fib->context.uc_stack.ss_sp = NULL;
     fib->cont.machine.stack = NULL;
     fib->cont.machine.stack_size = 0;

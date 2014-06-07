@@ -1,3 +1,8 @@
+Sat Jun  7 16:01:57 2014  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
+
+	* cont.c (rb_fiber_struct): keep context.uc_stack.ss_sp and context.uc_stack.ss_size
+	  for later use. Patch by Rei Odaira. [ruby-core:62945] [Bug #9905]
+
 Sat Jun  7 12:51:51 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (read_all): truncate the buffer before appending read data,
