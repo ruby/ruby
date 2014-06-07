@@ -3782,7 +3782,7 @@ rb_str_insert(VALUE str, VALUE idx, VALUE str2)
 
 /*
  *  call-seq:
- *     str.slice!(fixnum)           -> fixnum or nil
+ *     str.slice!(fixnum)           -> new_str or nil
  *     str.slice!(fixnum, fixnum)   -> new_str or nil
  *     str.slice!(range)            -> new_str or nil
  *     str.slice!(regexp)           -> new_str or nil
