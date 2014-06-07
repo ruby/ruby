@@ -389,9 +389,6 @@ class CGI
   # Maximum content length of post data
   ##MAX_CONTENT_LENGTH  = 2 * 1024 * 1024
 
-  # Maximum content length of multipart data
-  MAX_MULTIPART_LENGTH  = 128 * 1024 * 1024
-
   # Maximum number of request parameters when multipart
   MAX_MULTIPART_COUNT = 128
 
@@ -645,7 +642,6 @@ class CGI
     def initialize_query()
       if ("POST" == env_table['REQUEST_METHOD']) and
          %r|\Amultipart/form-data.*boundary=\"?([^\";,]+)\"?|.match(env_table['CONTENT_TYPE'])
-        raise StandardError.new("too large multipart data.") if env_table['CONTENT_LENGTH'].to_i > MAX_MULTIPART_LENGTH
         boundary = $1.dup
         @multipart = true
         @params = read_multipart(boundary, Integer(env_table['CONTENT_LENGTH']))
