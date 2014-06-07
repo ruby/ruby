@@ -1,3 +1,9 @@
+Sat Jun  7 11:35:01 2014  Tanaka Akira  <akr@fsij.org>
+
+	* object.c (rb_mod_initialize_clone): Override Kernel#initialize_clone
+	  to avoid an exception on Class.new.freeze.clone.to_s.
+	  Reported by Andrew Grimm.  [ruby-core:41858] [Bug #5828]
+
 Sat Jun  7 06:03:11 2014  Benoit Daloze  <eregontp@gmail.com>
 
 	* ext/digest/digest.c (rb_digest_instance_equal):

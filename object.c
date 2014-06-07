@@ -1701,6 +1701,16 @@ rb_mod_initialize(VALUE module)
     return Qnil;
 }
 
+static VALUE
+rb_mod_initialize_clone(VALUE clone, VALUE orig)
+{
+    VALUE ret;
+    ret = rb_obj_init_dup_clone(clone, orig);
+    if (OBJ_FROZEN(orig))
+        rb_class_name(clone);
+    return ret;
+}
+
 /*
  *  call-seq:
  *     Class.new(super_class=Object)               -> a_class
@@ -3369,6 +3379,7 @@ Init_Object(void)
 
     rb_define_alloc_func(rb_cModule, rb_module_s_alloc);
     rb_define_method(rb_cModule, "initialize", rb_mod_initialize, 0);
+    rb_define_method(rb_cModule, "initialize_clone", rb_mod_initialize_clone, 1);
     rb_define_method(rb_cModule, "instance_methods", rb_class_instance_methods, -1); /* in class.c */
     rb_define_method(rb_cModule, "public_instance_methods",
 		     rb_class_public_instance_methods, -1);    /* in class.c */

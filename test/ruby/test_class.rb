@@ -378,4 +378,10 @@ class TestClass < Test::Unit::TestCase
     assert_predicate(self.singleton_class, :singleton_class?, feature7609)
     assert_not_predicate(self.class, :singleton_class?, feature7609)
   end
+
+  def test_freeze_to_s
+    assert_nothing_raised("[ruby-core:41858] [Bug #5828]") {
+      Class.new.freeze.clone.to_s
+    }
+  end
 end
