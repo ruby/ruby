@@ -214,12 +214,14 @@ def show_progress(message = '')
     if @tty
       $stderr.print "#{@progress_bs}#{@progress[@count % @progress.size]}"
     elsif @verbose
-      $stderr.printf("%6.3f\n", t)
+      $stderr.printf(". %.3f\n", t)
     else
       $stderr.print '.'
     end
   else
-    $stderr.print "#{@failed}F#{@reset}"
+    $stderr.print "#{@failed}F"
+    $stderr.printf(" %.3f", t) if @verbose
+    $stderr.print "#{@reset}"
     $stderr.puts if @verbose
     error faildesc, message
     unless errout.empty?
