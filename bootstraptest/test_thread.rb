@@ -458,7 +458,6 @@ assert_equal 'ok', %q{
 
 assert_equal 'foo', %q{
   i = 0
-th2 = nil
   Thread.start {sleep 1; exit!}
   f = proc {|s, c| /#{c.call; s}/o }
   th2 = Thread.new {
