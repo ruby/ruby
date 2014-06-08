@@ -1200,7 +1200,18 @@ mv confdefs.h largefile.h
 mv confdefs1.h confdefs.h
 cat largefile.h >> confdefs.h
 
-AS_CASE(["$target_os"],[mingw*], [ac_cv_type_off_t=yes;ac_cv_sizeof_off_t=8])
+AS_CASE(["$target_os"],
+    [mingw*], [ac_cv_type_off_t=yes;ac_cv_sizeof_off_t=8],
+    [aix*], [
+    AS_CASE(["$target_cpu:$ac_cv_sys_large_files"],
+	[ppc64:*|powerpc64:*], [],
+	[*:no|*:unknown], []
+	[
+	    # AIX currently does not support a 32-bit call to posix_fadvise()
+	    # if _LARGE_FILES is defined.
+	    ac_cv_posix_fadvise=no
+	])
+    ])
 
 AC_C_BIGENDIAN
 AC_C_CONST

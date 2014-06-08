@@ -8591,10 +8591,7 @@ rb_io_advise(int argc, VALUE *argv, VALUE io)
     off = NIL_P(offset) ? 0 : NUM2OFFT(offset);
     l   = NIL_P(len)    ? 0 : NUM2OFFT(len);
 
-    /* AIX currently does not support a 32-bit call to posix_fadvise()
-     * if _LARGE_FILES is defined.
-     */
-#if defined(HAVE_POSIX_FADVISE) && !(defined(_AIX) && defined(_LARGE_FILES) && !defined(_ARCH_PPC64))
+#ifdef HAVE_POSIX_FADVISE
     return do_io_advise(fptr, advice, off, l);
 #else
     ((void)off, (void)l);	/* Ignore all hint */

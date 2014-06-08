@@ -1,3 +1,8 @@
+Mon Jun  9 00:04:25 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (posix_fadvise): disable use of posix_fadvise
+	  itself on 32-bit AIX.  [ruby-core:62968] [Bug #9914]
+
 Sun Jun  8 23:28:00 2014    <kanemoto@ruby-lang.org>
 
 	* io.c (rb_io_advise): AIX currently does not support a 32-bit call to
