@@ -145,12 +145,14 @@ class CGIMultipartTest < Test::Unit::TestCase
     $stdin = tmpfile
   end
 
-  def _test_multipart
+  def _test_multipart(cgi_options={})
     caller(0).find {|s| s =~ /in `test_(.*?)'/ }
     #testname = $1
     #$stderr.puts "*** debug: testname=#{testname.inspect}"
     _prepare(@data)
-    cgi = RUBY_VERSION>="1.9" ? CGI.new(:accept_charset=>"UTF-8") : CGI.new
+    options = {:accept_charset=>"UTF-8"}
+    options.merge! cgi_options
+    cgi = RUBY_VERSION>="1.9" ? CGI.new(options) : CGI.new
     expected_names = @data.collect{|hash| hash[:name] }.sort
     assert_equal(expected_names, cgi.params.keys.sort)
     threshold = 1024*10
@@ -243,16 +245,29 @@ class CGIMultipartTest < Test::Unit::TestCase
       {:name=>'image1', :value=>_read('large.png'),
        :filename=>'large.png', :content_type=>'image/png'},  # large image
     ]
-    original = _set_const(CGI, :MAX_MULTIPART_LENGTH, 2 * 1024)
     begin
       ex = assert_raise(StandardError) do
-        _test_multipart()
+        _test_multipart(:max_multipart_length=>2 * 1024) # set via simple scalar
       end
       assert_equal("too large multipart data.", ex.message)
     ensure
-      _set_const(CGI, :MAX_MULTIPART_LENGTH, original)
     end
-  end if CGI.const_defined?(:MAX_MULTIPART_LENGTH)
+  end
+
+
+  def test_cgi_multipart_maxmultipartlength_lambda
+    @data = [
+      {:name=>'image1', :value=>_read('large.png'),
+       :filename=>'large.png', :content_type=>'image/png'},  # large image
+    ]
+    begin
+      ex = assert_raise(StandardError) do
+        _test_multipart(:max_multipart_length=>lambda{2*1024}) # set via lambda
+      end
+      assert_equal("too large multipart data.", ex.message)
+    ensure
+    end
+  end
 
 
   def test_cgi_multipart_maxmultipartcount
