@@ -751,35 +751,13 @@ class CGI
 
   # @@max_multipart_length is the maximum length of multipart data.
   # The default value is 128 * 1024 * 1024 bytes
-  # If you want to change the the maximum length of multipart data
-  # when creating a new CGI instance, set this:
   #
-  #   CGI.max_multipart_length = <new size>
+  # The default can be set to something else in the CGI constructor,
+  # via the :max_multipart_length key in the option hash.
   #
-  # The new size can be an integer scalar or a lambda, that will be evaluated
-  # when the request is parsed (part of the processing in CGI.new)
-  #
-  # The current value, which may be a lambda, is available from
-  #
-  #   CGI.max_multipart_length
-  #
-  # The default can be set in the CGI constructor too, via the :max_multipart_length
-  # key in the option hash. See CGI.new documentation.
+  # See CGI.new documentation.
   #
   @@max_multipart_length= 128 * 1024 * 1024
-
-  # Return the max multipart length for all new CGI instances.
-  def self.max_multipart_length
-    @@max_multipart_length
-  end
-
-  # Set the max multipart length for all new CGI instances.
-  def self.max_multipart_length=(max_multipart_length)
-    @@max_multipart_length=max_multipart_length
-  end
-
-  # Return the max multipart length for this CGI instance.
-  attr_reader :max_multipart_length
 
   # Create a new CGI instance.
   #
