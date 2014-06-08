@@ -331,7 +331,7 @@ static void dump_disasm_list(LINK_ELEMENT *elem);
 static int insn_data_length(INSN *iobj);
 static int calc_sp_depth(int depth, INSN *iobj);
 
-static INSN *new_insn_body(rb_iseq_t *iseq, int line_no, int insn_id, int argc, ...);
+static INSN *new_insn_body(rb_iseq_t *iseq, int line_no, enum ruby_vminsn_type insn_id, int argc, ...);
 static LABEL *new_label_body(rb_iseq_t *iseq, long line);
 static ADJUST *new_adjust_body(rb_iseq_t *iseq, LABEL *label, int line);
 
@@ -930,7 +930,7 @@ new_insn_core(rb_iseq_t *iseq, int line_no,
 }
 
 static INSN *
-new_insn_body(rb_iseq_t *iseq, int line_no, int insn_id, int argc, ...)
+new_insn_body(rb_iseq_t *iseq, int line_no, enum ruby_vminsn_type insn_id, int argc, ...)
 {
     VALUE *operands = 0;
     va_list argv;
