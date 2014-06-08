@@ -1,3 +1,9 @@
+Sun Jun  8 23:28:00 2014    <kanemoto@ruby-lang.org>
+
+	* io.c (rb_io_advise): AIX currently does not support a 32-bit call to
+	  posix_fadvise() if _LARGE_FILES is defined. Patch by Rei Odaira.
+	  [ruby-core:62968] [Bug #9914]
+
 Sun Jun  8 04:52:40 2014  Jun Hiroe  <Jun.Hiroe@gmail.com>
 
 	* string.c (rb_str_slice_bang): [DOC] update return value against
