@@ -7650,7 +7650,7 @@ rb_gcdebug_print_obj_condition(VALUE obj)
 }
 
 static VALUE
-gcdebug_sential(VALUE obj, VALUE name)
+gcdebug_sentinel(VALUE obj, VALUE name)
 {
     fprintf(stderr, "WARNING: object %s(%p) is inadvertently collected\n", (char *)name, (void *)obj);
     return Qnil;
@@ -7659,7 +7659,7 @@ gcdebug_sential(VALUE obj, VALUE name)
 void
 rb_gcdebug_sentinel(VALUE obj, const char *name)
 {
-    rb_define_finalizer(obj, rb_proc_new(gcdebug_sential, (VALUE)name));
+    rb_define_finalizer(obj, rb_proc_new(gcdebug_sentinel, (VALUE)name));
 }
 #endif /* GC_DEBUG */
 
