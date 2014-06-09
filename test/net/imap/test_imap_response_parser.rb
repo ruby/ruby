@@ -251,7 +251,21 @@ EOF
 
   def test_mixed_boundry
     parser = Net::IMAP::ResponseParser.new
-    response = parser.parse("* 2688 FETCH (UID 179161 BODYSTRUCTURE ((\"TEXT\" \"PLAIN\" (\"CHARSET\" \"iso-8859-1\") NIL NIL \"QUOTED-PRINTABLE\" 200 4 NIL NIL NIL)(\"MESSAGE\" \"DELIVERY-STATUS\" NIL NIL NIL \"7BIT\" 318 NIL NIL NIL)(\"MESSAGE\" \"RFC822\" NIL NIL NIL \"7BIT\" 2177 (\"Tue, 11 May 2010 18:28:16 -0400\" \"Re: Welcome letter\" ((\"David\" NIL \"info\" \"xxxxxxxx.si\")) ((\"David\" NIL \"info\" \"xxxxxxxx.si\")) ((\"David\" NIL \"info\" \"xxxxxxxx.si\")) ((\"Doretha\" NIL \"doretha.info\" \"xxxxxxxx.si\")) NIL NIL \"<AC1D15E06EA82F47BDE18E851CC32F330717704E@localdomain>\" \"<AANLkTikKMev1I73L2E7XLjRs67IHrEkb23f7ZPmD4S_9@localdomain>\") (\"MIXED\" (\"BOUNDARY\" \"000e0cd29212e3e06a0486590ae2\") NIL NIL) 37 NIL NIL NIL) \"REPORT\" (\"BOUNDARY\" \"16DuG.4XbaNOvCi.9ggvq.8Ipnyp3\" \"REPORT-TYPE\" \"delivery-status\") NIL NIL))\r\n")
+    response = parser.parse("* 2688 FETCH (UID 179161 BODYSTRUCTURE (" \
+                            "(\"TEXT\" \"PLAIN\" (\"CHARSET\" \"iso-8859-1\") NIL NIL \"QUOTED-PRINTABLE\" 200 4 NIL NIL NIL)" \
+                            "(\"MESSAGE\" \"DELIVERY-STATUS\" NIL NIL NIL \"7BIT\" 318 NIL NIL NIL)" \
+                            "(\"MESSAGE\" \"RFC822\" NIL NIL NIL \"7BIT\" 2177" \
+                            " (\"Tue, 11 May 2010 18:28:16 -0400\" \"Re: Welcome letter\" (" \
+                              "(\"David\" NIL \"info\" \"xxxxxxxx.si\")) " \
+                              "((\"David\" NIL \"info\" \"xxxxxxxx.si\")) " \
+                              "((\"David\" NIL \"info\" \"xxxxxxxx.si\")) " \
+                              "((\"Doretha\" NIL \"doretha.info\" \"xxxxxxxx.si\")) " \
+                              "NIL NIL " \
+                              "\"<AC1D15E06EA82F47BDE18E851CC32F330717704E@localdomain>\" " \
+                              "\"<AANLkTikKMev1I73L2E7XLjRs67IHrEkb23f7ZPmD4S_9@localdomain>\")" \
+                            " (\"MIXED\" (\"BOUNDARY\" \"000e0cd29212e3e06a0486590ae2\") NIL NIL)" \
+                            " 37 NIL NIL NIL)" \
+                            " \"REPORT\" (\"BOUNDARY\" \"16DuG.4XbaNOvCi.9ggvq.8Ipnyp3\" \"REPORT-TYPE\" \"delivery-status\") NIL NIL))\r\n")
     empty_part = response.data.attr['BODYSTRUCTURE'].parts[2]
     assert_equal(empty_part.lines, 37)
     assert_equal(empty_part.body.media_type, 'MULTIPART')
