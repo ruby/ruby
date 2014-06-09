@@ -1,3 +1,8 @@
+Mon Jun  9 16:01:41 2014  Masahiro Ide  <imasahiro9@gmail.com>
+
+	* gc.c (gcdebug_sentinel): fix typo, "sentinel" not "sential".
+	  [fix GH-634]
+
 Mon Jun  9 00:04:25 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (posix_fadvise): disable use of posix_fadvise
