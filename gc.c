@@ -531,6 +531,9 @@ typedef struct rb_objspace {
 	int parent_object_is_old;
 
 	int need_major_gc;
+
+	size_t last_major_gc;
+
 	size_t remembered_shady_object_count;
 	size_t remembered_shady_object_limit;
 	size_t old_object_count;
@@ -3035,15 +3038,13 @@ gc_after_sweep(rb_objspace_t *objspace)
 		  (int)heap->total_slots, (int)heap_pages_swept_slots, (int)heap_pages_min_free_slots);
 
     if (heap_pages_swept_slots < heap_pages_min_free_slots) {
-	heap_set_increment(objspace, heap_extend_pages(objspace));
-	heap_increment(objspace, heap);
-
-#if USE_RGENGC
-	if (objspace->rgengc.remembered_shady_object_count + objspace->rgengc.old_object_count > (heap_pages_length * HEAP_OBJ_LIMIT) / 2) {
-	    /* if [old]+[remembered shady] > [all object count]/2, then do major GC */
-	    objspace->rgengc.need_major_gc = GPR_FLAG_MAJOR_BY_RESCAN;
+	if (objspace->rgengc.during_minor_gc && objspace->profile.count - objspace->rgengc.last_major_gc > 2 /* magic number */) {
+	    objspace->rgengc.need_major_gc = GPR_FLAG_MAJOR_BY_NOFREE;
 	}
-#endif
+	else {
+	    heap_set_increment(objspace, heap_extend_pages(objspace));
+	    heap_increment(objspace, heap);
+	}
     }
 
     gc_prof_set_heap_info(objspace);
@@ -4256,6 +4257,7 @@ gc_marks_body(rb_objspace_t *objspace, int full_mark)
 	objspace->profile.major_gc_count++;
 	objspace->rgengc.remembered_shady_object_count = 0;
 	objspace->rgengc.old_object_count = 0;
+	objspace->rgengc.last_major_gc = objspace->profile.count;
 	rgengc_mark_and_rememberset_clear(objspace, heap_eden);
     }
 #endif

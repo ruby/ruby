@@ -1,3 +1,15 @@
+Mon Jun  9 20:40:48 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: change full GC timing to keep lower memory usage.
+
+	  Extend heap only at
+	  (1) after major GC
+	  or
+	  (2) after several (two times, at current) minor GC
+
+	  Details in https://bugs.ruby-lang.org/issues/9607#note-9
+	  [Bug #9607]
+
 Mon Jun  9 16:01:41 2014  Masahiro Ide  <imasahiro9@gmail.com>
 
 	* gc.c (gcdebug_sentinel): fix typo, "sentinel" not "sential".
