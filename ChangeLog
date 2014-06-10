@@ -6,7 +6,7 @@ Tue Jun 10 13:20:14 2014  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 Tue Jun 10 10:57:07 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* lib/csv.rb (CSV#<<): honor explicity given encoding.  based on
+	* lib/csv.rb (CSV#<<): honor explicitly given encoding.  based on
 	  the patch by DAISUKE TANIWAKI <daisuketaniwaki AT gmail.com> at
 	  [ruby-core:62113].  [Bug #9766]
 
