@@ -139,5 +139,13 @@ module WEBrick
         assert_equal "5\r\nhello\r\n0\r\n\r\n", r.read
       }
     end
+
+    def test_head_does_not_return_body
+      res.request_method = 'HEAD'
+      res.body = 'ignored'
+      res.setup_header
+      assert_equal nil, res.header['content-length']
+      assert_equal '', res.body
+    end
   end
 end
