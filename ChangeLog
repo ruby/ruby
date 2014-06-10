@@ -1,3 +1,15 @@
+Wed Jun 11 02:43:32 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* test/objspace/test_objspace.rb (TestObjSpace#test_dump_uninitialized_file):
+	  remove dependency on json library.
+
+Wed Jun 11 02:43:32 2014  Scott Francis  <scott.francis@shopify.com>
+
+	* ext/objspace/objspace_dump.c: Check fptr before trying to dump RFILE
+	  object fd. [GH-562]
+
+	* test/objspace/test_objspace.rb: add test
+
 Wed Jun 11 02:27:55 2014  Akinori MUSHA  <knu@iDaemons.org>
 
 	* configure.in: Fix a build problem with clang and --with-opt-dir.

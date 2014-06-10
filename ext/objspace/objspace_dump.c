@@ -232,7 +232,8 @@ dump_object(VALUE obj, struct dump_config *dc)
 
       case T_FILE:
 	fptr = RFILE(obj)->fptr;
-	dump_append(dc, ", \"fd\":%d", fptr->fd);
+	if (fptr)
+	    dump_append(dc, ", \"fd\":%d", fptr->fd);
 	break;
 
       case T_ZOMBIE:

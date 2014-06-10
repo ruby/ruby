@@ -266,4 +266,14 @@ class TestObjSpace < Test::Unit::TestCase
       File.unlink(output)
     end
   end
+
+  def test_dump_uninitialized_file
+    assert_in_out_err(%[-robjspace], <<-RUBY) do |(output), (error)|
+      puts ObjectSpace.dump(File.allocate)
+    RUBY
+      assert_nil error
+      assert_match /"type":"FILE"/, output
+      assert_not_match /"fd":/, output
+    end
+  end
 end
