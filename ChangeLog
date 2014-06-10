@@ -1,3 +1,9 @@
+Tue Jun 10 13:20:14 2014  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi/core.rb: Provide a mechanism to specify the
+	  max_multipart_length of multipart data.
+	  [Feature #8370] patch by Leif Eriksen <leif.eriksen.au@gmail.com>
+
 Tue Jun 10 10:57:07 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/csv.rb (CSV#<<): honor explicity given encoding.  based on

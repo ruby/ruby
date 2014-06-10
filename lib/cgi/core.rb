@@ -389,9 +389,6 @@ class CGI
   # Maximum content length of post data
   ##MAX_CONTENT_LENGTH  = 2 * 1024 * 1024
 
-  # Maximum content length of multipart data
-  MAX_MULTIPART_LENGTH  = 128 * 1024 * 1024
-
   # Maximum number of request parameters when multipart
   MAX_MULTIPART_COUNT = 128
 
@@ -644,8 +641,9 @@ class CGI
     # Reads query parameters in the @params field, and cookies into @cookies.
     def initialize_query()
       if ("POST" == env_table['REQUEST_METHOD']) and
-         %r|\Amultipart/form-data.*boundary=\"?([^\";,]+)\"?|.match(env_table['CONTENT_TYPE'])
-        raise StandardError.new("too large multipart data.") if env_table['CONTENT_LENGTH'].to_i > MAX_MULTIPART_LENGTH
+        %r|\Amultipart/form-data.*boundary=\"?([^\";,]+)\"?|.match(env_table['CONTENT_TYPE'])
+        current_max_multipart_length = @max_multipart_length.respond_to?(:call) ? @max_multipart_length.call : @max_multipart_length
+        raise StandardError.new("too large multipart data.") if env_table['CONTENT_LENGTH'].to_i > current_max_multipart_length
         boundary = $1.dup
         @multipart = true
         @params = read_multipart(boundary, Integer(env_table['CONTENT_LENGTH']))
@@ -751,6 +749,16 @@ class CGI
   # Return the accept character set for this CGI instance.
   attr_reader :accept_charset
 
+  # @@max_multipart_length is the maximum length of multipart data.
+  # The default value is 128 * 1024 * 1024 bytes
+  #
+  # The default can be set to something else in the CGI constructor,
+  # via the :max_multipart_length key in the option hash.
+  #
+  # See CGI.new documentation.
+  #
+  @@max_multipart_length= 128 * 1024 * 1024
+
   # Create a new CGI instance.
   #
   # :call-seq:
@@ -764,7 +772,7 @@ class CGI
   #   +options_hash+ form, since it also allows you specify the charset you
   #   will accept.
   # <tt>options_hash</tt>::
-  #   A Hash that recognizes two options:
+  #   A Hash that recognizes three options:
   #
   #   <tt>:accept_charset</tt>::
   #     specifies encoding of received query string.  If omitted,
@@ -793,6 +801,18 @@ class CGI
   #     "html4Fr":: HTML 4.0 with Framesets
   #     "html5":: HTML 5
   #
+  #   <tt>:max_multipart_length</tt>::
+  #     Specifies maximum length of multipart data. Can be an Integer scalar or
+  #     a lambda, that will be evaluated when the request is parsed. This
+  #     allows more complex logic to be set when determining whether to accept
+  #     multipart data (e.g. consult a registered users upload allowance)
+  #
+  #     Default is 128 * 1024 * 1024 bytes
+  #
+  #         cgi=CGI.new(:max_multipart_length => 268435456) # simple scalar
+  #
+  #         cgi=CGI.new(:max_multipart_length => -> {check_filesystem}) # lambda
+  #
   # <tt>block</tt>::
   #   If provided, the block is called when an invalid encoding is
   #   encountered. For example:
@@ -810,7 +830,10 @@ class CGI
   # CGI locations, which varies according to the REQUEST_METHOD.
   def initialize(options = {}, &block) # :yields: name, value
     @accept_charset_error_block = block_given? ? block : nil
-    @options={:accept_charset=>@@accept_charset}
+    @options={
+      :accept_charset=>@@accept_charset,
+      :max_multipart_length=>@@max_multipart_length
+    }
     case options
     when Hash
       @options.merge!(options)
@@ -818,6 +841,7 @@ class CGI
       @options[:tag_maker]=options
     end
     @accept_charset=@options[:accept_charset]
+    @max_multipart_length=@options[:max_multipart_length]
     if defined?(MOD_RUBY) && !ENV.key?("GATEWAY_INTERFACE")
       Apache.request.setup_cgi_env
     end
@@ -855,5 +879,3 @@ class CGI
   end
 
 end   # class CGI
-
-
