@@ -3,7 +3,7 @@
 SHELL = $(COMSPEC)
 ECHO1 = $(V:1=@:)
 RUNCMD = $(COMSPEC) /c
-MKFILES = Makefile
+MKFILES = Makefile verconf.mk
 NULL = nul
 CHDIR = cd
 PATH_SEPARATOR = ;
@@ -403,6 +403,9 @@ MINIPRELUDE_C = miniprelude.c
 RBCONFIG      = ./.rbconfig.time
 
 !include $(srcdir)/common.mk
+!if exist(verconf.mk)
+! include verconf.mk
+!endif
 
 !ifdef SCRIPTPROGRAMS
 !else if [echo>scriptbin.mk SCRIPTPROGRAMS = \]
@@ -456,7 +459,10 @@ test-rubyspec-precheck:
 	@exit 1
 !endif
 
-$(MKFILES): $(win_srcdir)/Makefile.sub $(win_srcdir)/configure.bat $(win_srcdir)/setup.mak $(win_srcdir)/enc-setup.mak $(srcdir)/common.mk $(srcdir)/enc/Makefile.in
+$(MKFILES): $(srcdir)/common.mk $(srcdir)/version.h \
+	    $(win_srcdir)/Makefile.sub $(win_srcdir)/configure.bat \
+	    $(win_srcdir)/setup.mak $(win_srcdir)/enc-setup.mak \
+	    $(srcdir)/enc/Makefile.in
 	$(COMSPEC) /C $(win_srcdir:/=\)\configure.bat $(configure_args)
 	@fc Makefile Makefile.old > nul && echo Makefile unchanged || \
 	(echo $(MKFILES) was updated, re-run $(MAKE). & exit 1)

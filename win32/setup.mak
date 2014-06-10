@@ -109,7 +109,7 @@ check-psapi.h: nul
 int main(void) {return (EnumProcesses(NULL,0,NULL) ? 0 : 1);}
 <<
 
--version-: nul
+-version-: nul verconf.mk
 	@$(APPEND)
 	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(MAKEFILE)" | findstr "=" >>$(MAKEFILE)
 #define RUBY_REVISION 0
@@ -118,8 +118,14 @@ MAJOR = RUBY_API_VERSION_MAJOR
 MINOR = RUBY_API_VERSION_MINOR
 TEENY = RUBY_API_VERSION_TEENY
 RUBY_PROGRAM_VERSION = RUBY_VERSION
-RUBY_PROGRAM_RELEASE_DATE = RUBY_RELEASE_DATE
 MSC_VER = _MSC_VER
+<<
+
+verconf.mk: nul
+	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(@)" | findstr "=" >$(@)
+#define RUBY_REVISION 0
+#include "version.h"
+RUBY_PROGRAM_RELEASE_DATE = RUBY_RELEASE_DATE
 <<
 
 -program-name-:
