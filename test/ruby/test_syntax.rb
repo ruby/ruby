@@ -143,14 +143,14 @@ class TestSyntax < Test::Unit::TestCase
   def test_warn_grouped_expression
     bug5214 = '[ruby-core:39050]'
     assert_warning("", bug5214) do
-      assert_valid_syntax("foo \\\n(\n  true)", "test") {$VERBOSE = true}
+      assert_valid_syntax("foo \\\n(\n  true)", "test", verbose: true)
     end
   end
 
   def test_warn_unreachable
     assert_warning("test:3: warning: statement not reached\n") do
       code = "loop do\n" "break\n" "foo\n" "end"
-      assert_valid_syntax(code, "test") {$VERBOSE = true}
+      assert_valid_syntax(code, "test", verbose: true)
     end
   end
 
@@ -170,7 +170,7 @@ WARN
      [:%, "string literal"],
     ].each do |op, syn|
       assert_warning(warning % [op, syn]) do
-        assert_valid_syntax("puts 1 #{op}0", "test") {$VERBOSE = true}
+        assert_valid_syntax("puts 1 #{op}0", "test", verbose: true)
       end
     end
   end
