@@ -493,9 +493,21 @@ struct rb_addrinfo*
 rsock_addrinfo(VALUE host, VALUE port, int socktype, int flags)
 {
     struct addrinfo hints;
+    char *ruby_gai_env;
 
     MEMZERO(&hints, struct addrinfo, 1);
-    hints.ai_family = AF_UNSPEC;
+
+    /* The RUBY_GAI environment variable will alter the default lookup behavior
+     * of Socket.open(hostname ...) and its subclasses, include Net::HTTP. */
+    ruby_gai_env = getenv("RUBY_GAI");
+    if (ruby_gai_env && strcmp(ruby_gai_env, "INET") == 0) {
+      hints.ai_family = AF_INET;
+    } else if (ruby_gai_env && strcmp(ruby_gai_env, "INET6") == 0) {
+      hints.ai_family = AF_INET6;
+    } else {
+      hints.ai_family = AF_UNSPEC;
+    }
+
     hints.ai_socktype = socktype;
     hints.ai_flags = flags;
     return rsock_getaddrinfo(host, port, &hints, 1);
