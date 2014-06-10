@@ -202,7 +202,7 @@ module EnvUtil
           log = File.read(name) rescue next
           if /\AProcess:\s+#{cmd} \[#{pid}\]$/ =~ log
             File.unlink(name)
-            File.unlink("#{path}/.#{File.basename(name)}.plist")
+            File.unlink("#{path}/.#{File.basename(name)}.plist") rescue nil
             return log
           end
         end
