@@ -6231,6 +6231,14 @@ atomic_sub_nounderflow(size_t *var, size_t sub)
 }
 
 static void
+objspace_malloc_gc_stress(rb_objspace_t *objspace)
+{
+    if (ruby_gc_stress && !ruby_disable_gc_stress && ruby_native_thread_p()) {
+	garbage_collect_with_gvl(objspace, gc_stress_full_mark_after_malloc_p(), TRUE, GPR_FLAG_STRESS | GPR_FLAG_MALLOC);
+    }
+}
+
+static void
 objspace_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, size_t old_size, enum memop_type type)
 {
     if (new_size > old_size) {
@@ -6244,12 +6252,6 @@ objspace_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, si
 #if RGENGC_ESTIMATE_OLDMALLOC
 	atomic_sub_nounderflow(&objspace->rgengc.oldmalloc_increase, old_size - new_size);
 #endif
-    }
-
-    if (type != MEMOP_TYPE_FREE &&
-	ruby_gc_stress && !ruby_disable_gc_stress &&
-	ruby_native_thread_p()) {
-	garbage_collect_with_gvl(objspace, gc_stress_full_mark_after_malloc_p(), TRUE, GPR_FLAG_MALLOC);
     }
 
     if (type == MEMOP_TYPE_MALLOC) {
@@ -6335,6 +6337,7 @@ objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
 }
 
 #define TRY_WITH_GC(alloc) do { \
+        objspace_malloc_gc_stress(objspace); \
 	if (!(alloc) && \
 	    (!garbage_collect_with_gvl(objspace, 1, 1, GPR_FLAG_MALLOC) || /* full mark && immediate sweep */ \
 	     !(alloc))) { \

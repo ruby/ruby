@@ -1,3 +1,11 @@
+Wed Jun 11 01:53:22 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: invoke GC before memory allocation (xmalloc/xrealloc)
+	  when GC.stress = true.
+	  [Bug #9859]
+
+	* test/ruby/test_gc.rb: add a test.
+
 Tue Jun 10 13:20:14 2014  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/core.rb: Provide a mechanism to specify the

@@ -312,4 +312,22 @@ class TestGc < Test::Unit::TestCase
   def test_verify_internal_consistency
     assert_nil(GC.verify_internal_consistency)
   end
+
+  def test_gc_stress_on_realloc
+    assert_normal_exit(<<-'end;', '[Bug #9859]')
+      class C
+        def initialize
+          @a = nil
+          @b = nil
+          @c = nil
+          @d = nil
+          @e = nil
+          @f = nil
+        end
+      end
+
+      GC.stress = true
+      C.new
+    end;
+  end
 end
