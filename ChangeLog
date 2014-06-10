@@ -1,3 +1,9 @@
+Tue Jun 10 10:57:07 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/csv.rb (CSV#<<): honor explicity given encoding.  based on
+	  the patch by DAISUKE TANIWAKI <daisuketaniwaki AT gmail.com> at
+	  [ruby-core:62113].  [Bug #9766]
+
 Mon Jun  9 20:40:48 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: change full GC timing to keep lower memory usage.
