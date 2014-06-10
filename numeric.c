@@ -105,7 +105,7 @@ static VALUE fix_uminus(VALUE num);
 static VALUE fix_mul(VALUE x, VALUE y);
 static VALUE int_pow(long x, unsigned long y);
 
-static ID id_coerce, id_to_i, id_eq, id_div;
+static ID id_coerce, id_to_i, id_eq, id_div, id_cmp;
 
 VALUE rb_cNumeric;
 VALUE rb_cFloat;
@@ -1164,7 +1164,7 @@ flo_cmp(VALUE x, VALUE y)
 	    if (a > 0.0) return INT2FIX(1);
 	    return INT2FIX(-1);
 	}
-	return rb_num_coerce_cmp(x, y, rb_intern("<=>"));
+	return rb_num_coerce_cmp(x, y, id_cmp);
     }
     return rb_dbl_cmp(a, b);
 }
@@ -1754,6 +1754,9 @@ ruby_float_step_size(double beg, double end, double unit, int excl)
     if (isinf(unit)) {
 	return unit > 0 ? beg <= end : beg >= end;
     }
+    if (unit == 0) {
+	return INFINITY;
+    }
     if (err>0.5) err=0.5;
     if (excl) {
 	if (n<=0) return 0;
@@ -1783,6 +1786,11 @@ ruby_float_step(VALUE from, VALUE to, VALUE step, int excl)
 	    /* if unit is infinity, i*unit+beg is NaN */
 	    if (n) rb_yield(DBL2NUM(beg));
 	}
+	else if (unit == 0) {
+	    VALUE val = DBL2NUM(beg);
+	    for (;;)
+		rb_yield(val);
+	}
 	else {
 	    for (i=0; i<n; i++) {
 		double d = i*unit+beg;
@@ -1802,7 +1810,9 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
 	long delta, diff;
 
 	diff = FIX2LONG(step);
-	if (!diff) rb_num_zerodiv();
+	if (diff == 0) {
+	    return DBL2NUM(INFINITY);
+	}
 	delta = FIX2LONG(to) - FIX2LONG(from);
 	if (diff < 0) {
 	    diff = -diff;
@@ -1825,7 +1835,11 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
     }
     else {
 	VALUE result;
-	ID cmp = RTEST(rb_funcall(step, '>', 1, INT2FIX(0))) ? '>' : '<';
+	ID cmp = '>';
+	switch (rb_cmpint(rb_num_coerce_cmp(step, INT2FIX(0), id_cmp), step, INT2FIX(0))) {
+	    case 0: return DBL2NUM(INFINITY);
+	    case -1: cmp = '<'; break;
+	}
 	if (RTEST(rb_funcall(from, cmp, 1, to))) return INT2FIX(0);
 	result = rb_funcall(rb_funcall(to, '-', 1, from), id_div, 1, step);
 	if (!excl || RTEST(rb_funcall(rb_funcall(from, '+', 1, rb_funcall(result, '*', 1, step)), cmp, 1, to))) {
@@ -1857,14 +1871,6 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
     if (NIL_P(to)) {							\
         to = desc ? DBL2NUM(-INFINITY) : DBL2NUM(INFINITY);		\
     }									\
-} while (0)
-
-#define NUM_STEP_GET_INF(to, desc, inf) do {				\
-    if (RB_TYPE_P(to, T_FLOAT)) {					\
-	double f = RFLOAT_VALUE(to);					\
-	inf = isinf(f) && (signbit(f) ? desc : !desc);			\
-    }									\
-    else inf = 0;							\
 } while (0)
 
 static VALUE
@@ -1942,8 +1948,14 @@ num_step(int argc, VALUE *argv, VALUE from)
     RETURN_SIZED_ENUMERATOR(from, argc, argv, num_step_size);
 
     NUM_STEP_SCAN_ARGS(argc, argv, to, step, hash, desc);
-    NUM_STEP_GET_INF(to, desc, inf);
-
+    if (RTEST(rb_num_coerce_cmp(step, INT2FIX(0), id_eq))) {
+	inf = 1;
+    }
+    else if (RB_TYPE_P(to, T_FLOAT)) {
+	double f = RFLOAT_VALUE(to);
+	inf = isinf(f) && (signbit(f) ? desc : !desc);
+    }
+    else inf = 0;
 
     if (FIXNUM_P(from) && (inf || FIXNUM_P(to)) && FIXNUM_P(step)) {
 	long i = FIX2LONG(from);
@@ -3136,7 +3148,7 @@ fix_cmp(VALUE x, VALUE y)
         return rb_integer_float_cmp(x, y);
     }
     else {
-	return rb_num_coerce_cmp(x, y, rb_intern("<=>"));
+	return rb_num_coerce_cmp(x, y, id_cmp);
     }
 }
 
@@ -3832,6 +3844,7 @@ Init_Numeric(void)
     id_to_i = rb_intern("to_i");
     id_eq = rb_intern("==");
     id_div = rb_intern("div");
+    id_cmp = rb_intern("<=>");
 
     rb_eZeroDivError = rb_define_class("ZeroDivisionError", rb_eStandardError);
     rb_eFloatDomainError = rb_define_class("FloatDomainError", rb_eRangeError);
