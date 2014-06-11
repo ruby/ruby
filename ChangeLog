@@ -1,3 +1,11 @@
+Wed Jun 11 22:58:30 2014  Eric Wong  <e@80x24.org>
+
+	* gc.c (ruby_gc_set_params): simplify condition
+
+Wed Jun 11 22:58:30 2014  Eric Wong  <e@80x24.org>
+
+	* gc.c (ruby_gc_set_params): fix building without RGenGC
+
 Wed Jun 11 02:43:32 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* test/objspace/test_objspace.rb (TestObjSpace#test_dump_uninitialized_file):
