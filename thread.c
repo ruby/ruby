@@ -223,7 +223,7 @@ static void timer_thread_function(void *);
 
 #define DEBUG_OUT() \
   WaitForSingleObject(&debug_mutex, INFINITE); \
-  printf(POSITION_FORMAT"%p - %s" POSITION_ARGS, GetCurrentThreadId(), buf); \
+  printf(POSITION_FORMAT"%#lx - %s" POSITION_ARGS, GetCurrentThreadId(), buf); \
   fflush(stdout); \
   ReleaseMutex(&debug_mutex);
 
