@@ -173,6 +173,33 @@ void rb_thread_debug(const char *fmt, ...);
 #define POSITION_ARGS
 #endif
 
+# ifdef NON_SCALAR_THREAD_ID
+static const char *
+fill_thread_id_string(rb_nativethread_id_t thid, rb_thread_id_string_t buf)
+{
+    extern const char ruby_digitmap[];
+    size_t i;
+
+    buf[0] = '0';
+    buf[1] = 'x';
+    for (i = 0; i < sizeof(thid); i++) {
+# ifdef LITTLE_ENDIAN
+	size_t j = sizeof(thid) - i - 1;
+# else
+	size_t j = i;
+# endif
+	unsigned char c = (unsigned char)((char *)&thid)[j];
+	buf[2 + i * 2] = ruby_digitmap[(c >> 4) & 0xf];
+	buf[3 + i * 2] = ruby_digitmap[c & 0xf];
+    }
+    buf[sizeof(rb_thread_id_string_t)-1] = '\0';
+    return buf;
+}
+#   define fill_thread_id_str(th) fill_thread_id_string((th)->thread_id, (th)->thread_id_string)
+#   define thread_id_str(th) ((th)->thread_id_string)
+#   define PRI_THREAD_ID "s"
+# endif
+
 # if THREAD_DEBUG < 0
 static int rb_thread_debug_enabled;
 
@@ -211,6 +238,13 @@ rb_thread_s_debug_set(VALUE self, VALUE val)
 #define thread_debug if(0)printf
 #endif
 
+#ifndef fill_thread_id_str
+# define fill_thread_id_string(thid, buf) (thid)
+# define fill_thread_id_str(th) (void)0
+# define thread_id_str(th) ((void *)(th)->thread_id)
+# define PRI_THREAD_ID "p"
+#endif
+
 #ifndef __ia64
 #define thread_start_func_2(th, st, rst) thread_start_func_2(th, st)
 #endif
@@ -232,7 +266,8 @@ static void timer_thread_function(void *);
 
 #define DEBUG_OUT() \
   pthread_mutex_lock(&debug_mutex); \
-  printf(POSITION_FORMAT"%#"PRIxVALUE" - %s" POSITION_ARGS, (VALUE)pthread_self(), buf); \
+  printf(POSITION_FORMAT"%"PRI_THREAD_ID" - %s" POSITION_ARGS, \
+	 fill_thread_id_string(pthread_self(), thread_id_string), buf);	\
   fflush(stdout); \
   pthread_mutex_unlock(&debug_mutex);
 
@@ -253,6 +288,9 @@ rb_thread_debug(
 {
     va_list args;
     char buf[BUFSIZ];
+#ifdef NON_SCALAR_THREAD_ID
+    rb_thread_id_string_t thread_id_string;
+#endif
 
     if (!rb_thread_debug_enabled) return;
 
@@ -792,14 +830,14 @@ thread_join_sleep(VALUE arg)
 	else {
 	    now = timeofday();
 	    if (now > limit) {
-		thread_debug("thread_join: timeout (thid: %p)\n",
-			     (void *)target_th->thread_id);
+		thread_debug("thread_join: timeout (thid: %"PRI_THREAD_ID")\n",
+			     thread_id_str(target_th));
 		return Qfalse;
 	    }
 	    sleep_wait_for_interrupt(th, limit - now, 0);
 	}
-	thread_debug("thread_join: interrupted (thid: %p)\n",
-		     (void *)target_th->thread_id);
+	thread_debug("thread_join: interrupted (thid: %"PRI_THREAD_ID")\n",
+		     thread_id_str(target_th));
     }
     return Qtrue;
 }
@@ -822,7 +860,7 @@ thread_join(rb_thread_t *target_th, double delay)
     arg.limit = timeofday() + delay;
     arg.forever = delay == DELAY_INFTY;
 
-    thread_debug("thread_join (thid: %p)\n", (void *)target_th->thread_id);
+    thread_debug("thread_join (thid: %"PRI_THREAD_ID")\n", thread_id_str(target_th));
 
     if (target_th->status != THREAD_KILLED) {
 	rb_thread_list_t list;
@@ -835,8 +873,8 @@ thread_join(rb_thread_t *target_th, double delay)
 	}
     }
 
-    thread_debug("thread_join: success (thid: %p)\n",
-		 (void *)target_th->thread_id);
+    thread_debug("thread_join: success (thid: %"PRI_THREAD_ID")\n",
+		 thread_id_str(target_th));
 
     if (target_th->errinfo != Qnil) {
 	VALUE err = target_th->errinfo;
@@ -2145,7 +2183,7 @@ rb_thread_kill(VALUE thread)
 	rb_exit(EXIT_SUCCESS);
     }
 
-    thread_debug("rb_thread_kill: %p (%p)\n", (void *)th, (void *)th->thread_id);
+    thread_debug("rb_thread_kill: %p (%"PRI_THREAD_ID")\n", (void *)th, thread_id_str(th));
 
     if (th == GET_THREAD()) {
 	/* kill myself immediately */

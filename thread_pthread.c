@@ -454,6 +454,7 @@ Init_native_thread(void)
 
     pthread_key_create(&ruby_native_thread_key, NULL);
     th->thread_id = pthread_self();
+    fill_thread_id_str(th);
     native_thread_init(th);
 #ifdef USE_SIGNAL_THREAD_LIST
     native_mutex_initialize(&signal_thread_list_lock);
@@ -798,6 +799,7 @@ thread_start_func_1(void *th_ptr)
 	VALUE stack_start;
 #endif
 
+	fill_thread_id_str(th);
 #if defined USE_NATIVE_THREAD_INIT
 	native_thread_init_stack(th);
 #endif
@@ -958,6 +960,8 @@ native_thread_create(rb_thread_t *th)
 	native_mutex_unlock(&th->interrupt_lock);
 #endif
 	thread_debug("create: %p (%d)\n", (void *)th, err);
+	/* should be done in the created thread */
+	fill_thread_id_str(th);
 #ifdef HAVE_PTHREAD_ATTR_INIT
 	CHECK_ERR(pthread_attr_destroy(&attr));
 #endif
@@ -1157,7 +1161,7 @@ remove_signal_thread_list(rb_thread_t *th)
 static void
 ubf_select_each(rb_thread_t *th)
 {
-    thread_debug("ubf_select_each (%p)\n", (void *)th->thread_id);
+    thread_debug("ubf_select_each (%"PRI_THREAD_ID")\n", thread_id_str(th));
     if (th) {
 	pthread_kill(th->thread_id, SIGVTALRM);
     }

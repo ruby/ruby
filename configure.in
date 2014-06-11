@@ -2603,6 +2603,20 @@ if test x"$enable_pthread" = xyes; then
     else
 	AC_MSG_WARN("Don't know how to find pthread library on your system -- thread support disabled")
     fi
+    AC_CACHE_CHECK([whether pthread_t is scalar type], [rb_cv_scalar_pthread_t], [
+	AC_TRY_COMPILE([
+	    @%:@include <pthread.h>
+	    ], [
+	    pthread_t thread_id;
+	    thread_id = 0;
+	    if (!thread_id) return 0;
+	    ], [rb_cv_scalar_pthread_t=yes], [rb_cv_scalar_pthread_t=no])
+    ])
+    if test x"$rb_cv_scalar_pthread_t" = xyes; then
+	: # RUBY_CHECK_SIZEOF(pthread_t, [void* int long], [], [@%:@include <pthread.h>])
+    else
+	AC_DEFINE(NON_SCALAR_THREAD_ID)
+    fi
     AC_CHECK_FUNCS(sched_yield pthread_attr_setinheritsched \
 	pthread_getattr_np pthread_attr_get_np pthread_attr_getstack\
 	pthread_get_stackaddr_np pthread_get_stacksize_np \

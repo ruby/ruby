@@ -1,3 +1,18 @@
+Wed Jun 11 17:37:48 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rb_cv_scalar_pthread_t): pthread_t is not required
+	  to be a scalar type.
+
+	* thread.c (fill_thread_id_string, thread_id_str): dump pthread_t
+	  in hexadecimal form if it is not a scalar type, assume it can be
+	  represented in a pointer form otherwise.  based on the patch by
+	  Rei Odaira at [ruby-core:62867].  [ruby-core:62857] [Bug #9884]
+
+	* thread_pthread.c (Init_native_thread, thread_start_func_1),
+	  (native_thread_create): set thread_id_str if needed.
+
+	* vm_core.h (rb_thread_t): add thread_id_string if needed.
+
 Wed Jun 11 01:53:22 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: invoke GC before memory allocation (xmalloc/xrealloc)

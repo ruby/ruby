@@ -2131,6 +2131,9 @@ th_init(rb_thread_t *th, VALUE self)
     th->last_status = Qnil;
     th->waiting_fd = -1;
     th->root_svar = Qnil;
+#ifdef NON_SCALAR_THREAD_ID
+    th->thread_id_string[0] = '\0';
+#endif
 
 #if OPT_CALL_THREADED_CODE
     th->retval = Qundef;
