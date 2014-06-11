@@ -3725,7 +3725,7 @@ timer_thread_function(void *arg)
 void
 rb_thread_stop_timer_thread(int close_anyway)
 {
-    if (timer_thread_id && native_stop_timer_thread(close_anyway)) {
+    if (TIMER_THREAD_CREATED_P() && native_stop_timer_thread(close_anyway)) {
 	native_reset_timer_thread();
     }
 }

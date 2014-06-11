@@ -45,7 +45,11 @@ static void native_cond_wait(rb_nativethread_cond_t *cond, pthread_mutex_t *mute
 static void native_cond_initialize(rb_nativethread_cond_t *cond, int flags);
 static void native_cond_destroy(rb_nativethread_cond_t *cond);
 static void rb_thread_wakeup_timer_thread_low(void);
-static pthread_t timer_thread_id;
+static struct {
+    pthread_t id;
+    int created;
+} timer_thread;
+#define TIMER_THREAD_CREATED_P() (timer_thread.created != 0)
 
 #define RB_CONDATTR_CLOCK_MONOTONIC 1
 
@@ -1172,7 +1176,7 @@ ubf_select(void *ptr)
      * In the other hands, we shouldn't call rb_thread_wakeup_timer_thread()
      * if running on timer thread because it may make endless wakeups.
      */
-    if (!pthread_equal(pthread_self(), timer_thread_id))
+    if (!pthread_equal(pthread_self(), timer_thread.id))
 	rb_thread_wakeup_timer_thread();
     ubf_select_each(th);
 }
@@ -1477,7 +1481,7 @@ thread_timer(void *p)
 static void
 rb_thread_create_timer_thread(void)
 {
-    if (!timer_thread_id) {
+    if (!timer_thread.created) {
 	int err;
 #ifdef HAVE_PTHREAD_ATTR_INIT
 	pthread_attr_t attr;
@@ -1507,18 +1511,19 @@ rb_thread_create_timer_thread(void)
 #endif /* USE_SLEEPY_TIMER_THREAD */
 
 	/* create timer thread */
-	if (timer_thread_id) {
+	if (timer_thread.created) {
 	    rb_bug("rb_thread_create_timer_thread: Timer thread was already created\n");
 	}
 #ifdef HAVE_PTHREAD_ATTR_INIT
-	err = pthread_create(&timer_thread_id, &attr, thread_timer, &GET_VM()->gvl);
+	err = pthread_create(&timer_thread.id, &attr, thread_timer, &GET_VM()->gvl);
 #else
-	err = pthread_create(&timer_thread_id, NULL, thread_timer, &GET_VM()->gvl);
+	err = pthread_create(&timer_thread.id, NULL, thread_timer, &GET_VM()->gvl);
 #endif
 	if (err != 0) {
 	    fprintf(stderr, "[FATAL] Failed to create timer thread: %s\n", strerror(err));
 	    exit(EXIT_FAILURE);
 	}
+	timer_thread.created = 1;
 #ifdef HAVE_PTHREAD_ATTR_INIT
 	pthread_attr_destroy(&attr);
 #endif
@@ -1535,9 +1540,9 @@ native_stop_timer_thread(int close_anyway)
     if (stopped) {
 	/* join */
 	rb_thread_wakeup_timer_thread();
-	native_thread_join(timer_thread_id);
+	native_thread_join(timer_thread.id);
 	if (TT_DEBUG) fprintf(stderr, "joined timer thread\n");
-	timer_thread_id = 0;
+	timer_thread.created = 0;
 
 	/* close communication pipe */
 	if (close_anyway) {
