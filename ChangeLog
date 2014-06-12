@@ -1,3 +1,8 @@
+Thu Jun 12 20:32:28 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_resize): should consider the capacity instead
+	  of the old length, as pointed out by nagachika.
+
 Thu Jun 12 18:31:01 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/net/http/responses.rb: added Net::HTTPPermanentRedirect(308)

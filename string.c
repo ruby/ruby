@@ -1996,7 +1996,7 @@ rb_str_resize(VALUE str, long len)
 	    if (len == slen) return str;
 	    str_make_independent_expand(str, len - slen);
 	}
-	else if (slen < len || slen - len > 1024) {
+	else if (slen < len || (RSTRING(str)->as.heap.aux.capa - len) > (len < 1024 ? len : 1024)) {
 	    REALLOC_N(RSTRING(str)->as.heap.ptr, char, len + termlen);
 	}
 	else if (len == slen) return str;
