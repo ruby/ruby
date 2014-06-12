@@ -1,3 +1,8 @@
+Thu Jun 12 18:31:01 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/net/http/responses.rb: added Net::HTTPPermanentRedirect(308)
+	  Contributed by @yorkie [fix GH-638]
+
 Thu Jun 12 13:27:38 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_freeze): shrink the buffer before freezing, as
