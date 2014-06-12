@@ -1969,9 +1969,10 @@ rb_str_resize(VALUE str, long len)
     ENC_CODERANGE_CLEAR(str);
     slen = RSTRING_LEN(str);
 
-    if (len != slen) {
+    {
 	const int termlen = TERM_LEN(str);
 	if (STR_EMBED_P(str)) {
+	    if (len == slen) return str;
 	    if (len + termlen <= RSTRING_EMBED_LEN_MAX + 1) {
 		STR_SET_EMBED_LEN(str, len);
 		TERM_FILL(RSTRING(str)->as.ary + len, termlen);
@@ -1990,11 +1991,13 @@ rb_str_resize(VALUE str, long len)
 	    return str;
 	}
 	else if (!independent) {
+	    if (len == slen) return str;
 	    str_make_independent_expand(str, len - slen);
 	}
 	else if (slen < len || slen - len > 1024) {
 	    REALLOC_N(RSTRING(str)->as.heap.ptr, char, len + termlen);
 	}
+	else if (len == slen) return str;
 	RSTRING(str)->as.heap.aux.capa = len;
 	RSTRING(str)->as.heap.len = len;
 	TERM_FILL(RSTRING(str)->as.heap.ptr + len, termlen); /* sentinel */
