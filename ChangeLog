@@ -1,3 +1,8 @@
+Thu Jun 12 13:27:38 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_freeze): shrink the buffer before freezing, as
+	  pointed out by Eric Wong at [ruby-core:63119].
+
 Thu Jun 12 13:09:03 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (expand_path): shrink expanded path which no longer needs
