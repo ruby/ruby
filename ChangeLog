@@ -1,3 +1,8 @@
+Thu Jun 12 13:09:03 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (expand_path): shrink expanded path which no longer needs
+	  rooms to append.  [ruby-core:63114] [Bug #9934]
+
 Wed Jun 11 17:37:48 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (rb_cv_scalar_pthread_t): pthread_t is not required

@@ -458,6 +458,13 @@ class TestFileExhaustive < Test::Unit::TestCase
     end
   end
 
+  def test_expand_path_memsize
+    bug9934 = '[ruby-core:63114] [Bug #9934]'
+    require "objspace"
+    path = File.expand_path("/foo")
+    assert_operator(ObjectSpace.memsize_of(path), :<=, path.bytesize, bug9934)
+  end
+
   def test_expand_path_encoding
     drive = (DRIVE ? 'C:' : '')
     if Encoding.find("filesystem") == Encoding::CP1251
