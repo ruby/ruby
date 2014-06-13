@@ -4723,6 +4723,25 @@ rb_ary_cycle(int argc, VALUE *argv, VALUE ary)
 #define tmpary_discard(a) (ary_discard(a), RBASIC_SET_CLASS_RAW(a, rb_cArray))
 
 /*
+ * Build a ruby array of the corresponding values and yield it to the
+ * associated block.
+ * Return the class of +values+ for reentry check.
+ */
+static int
+yield_indexed_values(const VALUE values, const long r, const long *const p)
+{
+    const VALUE result = rb_ary_new2(r);
+    VALUE *const result_array = RARRAY_PTR(result);
+    const VALUE *const values_array = RARRAY_CONST_PTR(values);
+    long i;
+
+    for (i = 0; i < r; i++) result_array[i] = values_array[p[i]];
+    ARY_SET_LEN(result, r);
+    rb_yield(result);
+    return !RBASIC(values)->klass;
+}
+
+/*
  * Recursively compute permutations of +r+ elements of the set
  * <code>[0..n-1]</code>.
  *
@@ -4739,7 +4758,7 @@ rb_ary_cycle(int argc, VALUE *argv, VALUE ary)
 static void
 permute0(long n, long r, long *p, long index, char *used, VALUE values)
 {
-    long i,j;
+    long i;
     for (i = 0; i < n; i++) {
 	if (used[i] == 0) {
 	    p[index] = i;
@@ -4750,17 +4769,7 @@ permute0(long n, long r, long *p, long index, char *used, VALUE values)
 		used[i] = 0;               /* index unused */
 	    }
 	    else {
-		/* We have a complete permutation of array indexes */
-		/* Build a ruby array of the corresponding values */
-		/* And yield it to the associated block */
-		VALUE result = rb_ary_new2(r);
-		VALUE *result_array = RARRAY_PTR(result);
-		const VALUE *values_array = RARRAY_PTR(values);
-
-		for (j = 0; j < r; j++) result_array[j] = values_array[p[j]];
-		ARY_SET_LEN(result, r);
-		rb_yield(result);
-		if (RBASIC(values)->klass) {
+		if (!yield_indexed_values(values, r, p)) {
 		    rb_raise(rb_eRuntimeError, "permute reentered");
 		}
 	    }
@@ -4974,24 +4983,14 @@ rb_ary_combination(VALUE ary, VALUE num)
 static void
 rpermute0(long n, long r, long *p, long index, VALUE values)
 {
-    long i, j;
+    long i;
     for (i = 0; i < n; i++) {
 	p[index] = i;
 	if (index < r-1) {              /* if not done yet */
 	    rpermute0(n, r, p, index+1, values); /* recurse */
 	}
 	else {
-	    /* We have a complete permutation of array indexes */
-	    /* Build a ruby array of the corresponding values */
-	    /* And yield it to the associated block */
-	    VALUE result = rb_ary_new2(r);
-	    VALUE *result_array = RARRAY_PTR(result);
-	    const VALUE *values_array = RARRAY_PTR(values);
-
-	    for (j = 0; j < r; j++) result_array[j] = values_array[p[j]];
-	    ARY_SET_LEN(result, r);
-	    rb_yield(result);
-	    if (RBASIC(values)->klass) {
+	    if (!yield_indexed_values(values, r, p)) {
 		rb_raise(rb_eRuntimeError, "repeated permute reentered");
 	    }
 	}
@@ -5072,7 +5071,6 @@ rb_ary_repeated_permutation(VALUE ary, VALUE num)
 static void
 rcombinate0(long n, long r, long *p, long index, long rest, VALUE values)
 {
-    long j;
     if (rest > 0) {
 	for (; index < n; ++index) {
 	    p[r-rest] = index;
@@ -5080,14 +5078,7 @@ rcombinate0(long n, long r, long *p, long index, long rest, VALUE values)
 	}
     }
     else {
-	VALUE result = rb_ary_new2(r);
-	VALUE *result_array = RARRAY_PTR(result);
-	const VALUE *values_array = RARRAY_PTR(values);
-
-	for (j = 0; j < r; ++j) result_array[j] = values_array[p[j]];
-	ARY_SET_LEN(result, r);
-	rb_yield(result);
-	if (RBASIC(values)->klass) {
+	if (!yield_indexed_values(values, r, p)) {
 	    rb_raise(rb_eRuntimeError, "repeated combination reentered");
 	}
     }
