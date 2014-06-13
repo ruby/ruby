@@ -463,6 +463,8 @@ class TestFileExhaustive < Test::Unit::TestCase
     require "objspace"
     path = File.expand_path("/foo")
     assert_operator(ObjectSpace.memsize_of(path), :<=, path.bytesize, bug9934)
+    path = File.expand_path("/a"*25)
+    assert_equal(51, ObjectSpace.memsize_of(path), bug9934)
   end
 
   def test_expand_path_encoding
