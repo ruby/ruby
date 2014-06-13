@@ -4938,21 +4938,19 @@ rb_ary_combination(VALUE ary, VALUE num)
 	}
     }
     else {
-	volatile VALUE t0 = tmpbuf(n+1, sizeof(long));
-	long *stack = (long*)RSTRING_PTR(t0);
-	volatile VALUE cc = tmpary(n);
-	VALUE *chosen = RARRAY_PTR(cc);
+	VALUE ary0 = ary_make_shared_copy(ary); /* private defensive copy of ary */
+	volatile VALUE t0;
+	long *stack = ALLOCV_N(long, t0, n+1);
 	long lev = 0;
 
-	MEMZERO(stack, long, n);
+	RBASIC_CLEAR_CLASS(ary0);
+	MEMZERO(stack+1, long, n);
 	stack[0] = -1;
 	for (;;) {
-	    chosen[lev] = RARRAY_AREF(ary, stack[lev+1]);
 	    for (lev++; lev < n; lev++) {
-		chosen[lev] = RARRAY_AREF(ary, stack[lev+1] = stack[lev]+1);
+		stack[lev+1] = stack[lev]+1;
 	    }
-	    rb_yield(rb_ary_new4(n, chosen));
-	    if (RBASIC(t0)->klass) {
+	    if (!yield_indexed_values(ary0, n, stack+1)) {
 		rb_raise(rb_eRuntimeError, "combination reentered");
 	    }
 	    do {
@@ -4961,8 +4959,8 @@ rb_ary_combination(VALUE ary, VALUE num)
 	    } while (stack[lev+1]+n == len+lev+1);
 	}
     done:
-	tmpbuf_discard(t0);
-	tmpary_discard(cc);
+	ALLOCV_END(t0);
+	RBASIC_SET_CLASS_RAW(ary0, rb_cArray);
     }
     return ary;
 }

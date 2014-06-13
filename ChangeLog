@@ -1,4 +1,8 @@
-Fri Jun 13 17:32:56 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jun 13 17:33:14 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_combination): iterate on a shared copy, and use
+	  array of indexes instead of array of chosen objects.
+	  [ruby-core:63149] [Bug #9939]
 
 	* array.c (yield_indexed_values): extract from permute0(),
 	  rpermute0(), and rcombinate0().
