@@ -2738,20 +2738,23 @@ rb_thread_inspect(VALUE thread)
     return str;
 }
 
+static VALUE
+threadptr_local_aref(rb_thread_t *th, ID id)
+{
+    st_data_t val;
+
+    if (th->local_storage && st_lookup(th->local_storage, id, &val)) {
+	return (VALUE)val;
+    }
+    return Qnil;
+}
+
 VALUE
 rb_thread_local_aref(VALUE thread, ID id)
 {
     rb_thread_t *th;
-    st_data_t val;
-
     GetThreadPtr(thread, th);
-    if (!th->local_storage) {
-	return Qnil;
-    }
-    if (st_lookup(th->local_storage, id, &val)) {
-	return (VALUE)val;
-    }
-    return Qnil;
+    return threadptr_local_aref(th, id);
 }
 
 /*
@@ -2822,6 +2825,23 @@ rb_thread_aref(VALUE thread, VALUE key)
     return rb_thread_local_aref(thread, id);
 }
 
+static VALUE
+threadptr_local_aset(rb_thread_t *th, ID id, VALUE val)
+{
+    if (NIL_P(val)) {
+	if (!th->local_storage) return Qnil;
+	st_delete_wrap(th->local_storage, id);
+	return Qnil;
+    }
+    else {
+    if (!th->local_storage) {
+	th->local_storage = st_init_numtable();
+    }
+    st_insert(th->local_storage, id, val);
+    return val;
+}
+}
+
 VALUE
 rb_thread_local_aset(VALUE thread, ID id, VALUE val)
 {
@@ -2831,16 +2851,8 @@ rb_thread_local_aset(VALUE thread, ID id, VALUE val)
     if (OBJ_FROZEN(thread)) {
 	rb_error_frozen("thread locals");
     }
-    if (NIL_P(val)) {
-	if (!th->local_storage) return Qnil;
-	st_delete_wrap(th->local_storage, id);
-	return Qnil;
-    }
-    if (!th->local_storage) {
-	th->local_storage = st_init_numtable();
-    }
-    st_insert(th->local_storage, id, val);
-    return val;
+
+    return threadptr_local_aset(th, id, val);
 }
 
 /*
@@ -4672,6 +4684,20 @@ recursive_list_access(void)
 	rb_hash_aset(hash, sym, list);
     }
     return list;
+}
+
+VALUE
+rb_threadptr_reset_recursive_data(rb_thread_t *th)
+{
+    VALUE old = threadptr_local_aref(th, recursive_key);
+    threadptr_local_aset(th, recursive_key, Qnil);
+    return old;
+}
+
+void
+rb_threadptr_restore_recursive_data(rb_thread_t *th, VALUE old)
+{
+    threadptr_local_aset(th, recursive_key, old);
 }
 
 /*

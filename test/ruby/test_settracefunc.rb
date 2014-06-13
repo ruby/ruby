@@ -1188,6 +1188,18 @@ class TestSetTraceFunc < Test::Unit::TestCase
       assert_equal([['call', :foo], ['return', :foo]], events, 'Bug #9759')
     ensure
     end
+  end
 
+  def test_recursive
+    assert_ruby_status [], %q{
+      stack = []
+      TracePoint.new(:c_call){|tp|
+        p 2
+        stack << tp.method_id
+      }.enable{
+        p 1
+      }
+      raise if stack != [:p, :hash, :inspect]
+    }, '[Bug #9940]'
   end
 end

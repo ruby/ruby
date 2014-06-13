@@ -1046,6 +1046,9 @@ void rb_threadptr_exec_event_hooks_and_pop_frame(struct rb_trace_arg_struct *tra
 #define EXEC_EVENT_HOOK_AND_POP_FRAME(th_, flag_, self_, id_, klass_, data_) \
   EXEC_EVENT_HOOK_ORIG(th_, flag_, self_, id_, klass_, data_, 1)
 
+VALUE rb_threadptr_reset_recursive_data(rb_thread_t *th);
+void rb_threadptr_restore_recursive_data(rb_thread_t *th, VALUE old);
+
 RUBY_SYMBOL_EXPORT_BEGIN
 
 int rb_thread_check_trap_pending(void);
