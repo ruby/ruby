@@ -1,3 +1,14 @@
+Fri Jun 13 17:58:58 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c: add new method TracePoint.stat to debug
+	  TracePoint mechanism.
+
+	  Ruby users should not use this method. So I don't note this method
+	  in the NEWS file.
+
+	* test/runner.rb: detect zombie active TracePoints with
+	  TracePoint.stat.
+
 Fri Jun 13 17:46:31 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_trace.c: clear and restore recursive checking thread local data

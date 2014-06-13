@@ -1314,6 +1314,48 @@ tracepoint_inspect(VALUE self)
     }
 }
 
+static void
+tracepoint_stat_event_hooks(VALUE hash, VALUE key, rb_event_hook_t *hook)
+{
+    int active = 0, deleted = 0;
+
+    while (hook) {
+	if (hook->hook_flags & RUBY_EVENT_HOOK_FLAG_DELETED) {
+	    deleted++;
+	}
+	else {
+	    active++;
+	}
+	hook = hook->next;
+    }
+
+    rb_hash_aset(hash, key, rb_ary_new3(2, INT2FIX(active), INT2FIX(deleted)));
+}
+
+/*
+ * call-seq:
+ *	TracePoint.stat -> obj
+ *
+ *  Returns internal information of TracePoint.
+ *
+ *  The contents of the returned value are implementation specific.
+ *  It may be changed in future.
+ *
+ *  This method is only for debugging TracePoint itself.
+ */
+
+static VALUE
+tracepoint_stat_s(VALUE self)
+{
+    rb_vm_t *vm = GET_VM();
+    VALUE stat = rb_hash_new();
+
+    tracepoint_stat_event_hooks(stat, vm->self, vm->event_hooks.hooks);
+    /* TODO: thread local hooks */
+
+    return stat;
+}
+
 static void Init_postponed_job(void);
 
 /* This function is called from inits.c */
@@ -1406,6 +1448,8 @@ Init_vm_trace(void)
     rb_define_method(rb_cTracePoint, "self", tracepoint_attr_self, 0);
     rb_define_method(rb_cTracePoint, "return_value", tracepoint_attr_return_value, 0);
     rb_define_method(rb_cTracePoint, "raised_exception", tracepoint_attr_raised_exception, 0);
+
+    rb_define_singleton_method(rb_cTracePoint, "stat", tracepoint_stat_s, 0);
 
     /* initialized for postponed job */
 

@@ -22,6 +22,12 @@ module Test::Unit
     def after_teardown
       super
       assert_empty(Process.waitall)
+
+      # detect zombie traces.
+      TracePoint.stat.each{|key, (activated, deleted)|
+        assert_equal(0, activated, 'The number of active trace events should be zero.')
+        # puts "TracePoint - deleted: #{deleted}" if deleted > 0
+      }
     end
   end
   class TestCase
