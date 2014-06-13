@@ -615,6 +615,7 @@ void rb_backref_set(VALUE);
 VALUE rb_lastline_get(void);
 void rb_lastline_set(VALUE);
 VALUE rb_sym_all_symbols(void);
+VALUE rb_sym_count(void);
 /* process.c */
 void rb_last_status_set(int status, rb_pid_t pid);
 VALUE rb_last_status_get(void);
