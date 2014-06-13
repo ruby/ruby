@@ -4858,7 +4858,7 @@ rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
 	}
     }
     else {             /* this is the general case */
-	volatile VALUE t0 = tmpbuf(n,sizeof(long));
+	volatile VALUE t0 = tmpbuf(r,sizeof(long));
 	long *p = (long*)RSTRING_PTR(t0);
 	volatile VALUE t1 = tmpbuf(n,sizeof(char));
 	char *used = (char*)RSTRING_PTR(t1);

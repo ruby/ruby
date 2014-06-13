@@ -1,3 +1,9 @@
+Fri Jun 13 13:42:58 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_permutation): `p` is the array of size `r`, as
+	  commented at permute0().  since `n >= r` here, buffer overflow
+	  never happened, just reduce unnecessary allocation though.
+
 Thu Jun 12 20:32:28 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_resize): should consider the capacity instead
