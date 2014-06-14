@@ -24,8 +24,10 @@ module Test::Unit
       assert_empty(Process.waitall)
 
       # detect zombie traces.
+      zombie_traces = Hash.new(0)
       TracePoint.stat.each{|key, (activated, deleted)|
-        assert_equal(0, activated, "The number of active trace events (#{key}) should be zero.")
+        old, zombie_traces[key] = zombie_traces[key], activated
+        assert_equal(old, activated, "The number of active trace events (#{key}) should not increase.")
         # puts "TracePoint - deleted: #{deleted}" if deleted > 0
       }
     end
