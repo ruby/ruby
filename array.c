@@ -4981,7 +4981,7 @@ rb_ary_combination(VALUE ary, VALUE num)
 }
 
 /*
- * Recursively compute repeated permutations of +r+ elements of the set
+ * Compute repeated permutations of +r+ elements of the set
  * <code>[0..n-1]</code>.
  *
  * When we have a complete repeated permutation of array indexes, copy the
@@ -4990,23 +4990,28 @@ rb_ary_combination(VALUE ary, VALUE num)
  * n: the size of the set
  * r: the number of elements in each permutation
  * p: the array (of size r) that we're filling in
- * index: what index we're filling in now
  * values: the Ruby array that holds the actual values to permute
  */
 static void
-rpermute0(long n, long r, long *p, long index, VALUE values)
+rpermute0(const long n, const long r, long *const p, const VALUE values)
 {
-    long i;
-    for (i = 0; i < n; i++) {
-	p[index] = i;
-	if (index < r-1) {              /* if not done yet */
-	    rpermute0(n, r, p, index+1, values); /* recurse */
+    long i = 0, index = 0;
+
+    p[index] = i;
+    for (;;) {
+	if (++index < r-1) {
+	    p[index] = i = 0;
+	    continue;
 	}
-	else {
+	for (i = 0; i < n; ++i) {
+	    p[index] = i;
 	    if (!yield_indexed_values(values, r, p)) {
 		rb_raise(rb_eRuntimeError, "repeated permute reentered");
 	    }
 	}
+	do {
+	    if (index <= 0) return;
+	} while ((i = ++p[--index]) >= n);
     }
 }
 
@@ -5069,13 +5074,13 @@ rb_ary_repeated_permutation(VALUE ary, VALUE num)
 	}
     }
     else {             /* this is the general case */
-	volatile VALUE t0 = tmpbuf(r, sizeof(long));
-	long *p = (long*)RSTRING_PTR(t0);
+	volatile VALUE t0;
+	long *p = ALLOCV_N(long, t0, r * sizeof(long));
 	VALUE ary0 = ary_make_shared_copy(ary); /* private defensive copy of ary */
 	RBASIC_CLEAR_CLASS(ary0);
 
-	rpermute0(n, r, p, 0, ary0); /* compute and yield repeated permutations */
-	tmpbuf_discard(t0);
+	rpermute0(n, r, p, ary0); /* compute and yield repeated permutations */
+	ALLOCV_END(t0);
 	RBASIC_SET_CLASS_RAW(ary0, rb_cArray);
     }
     return ary;
