@@ -39,7 +39,7 @@ Fri Jun 13 17:46:31 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_settracefunc.rb: add a test.
 
-	* thread.c: adde
+	* thread.c: added
 	  * rb_threadptr_reset_recursive_data(rb_thread_t *th);
 	  * rb_threadptr_restore_recursive_data(rb_thread_t *th, VALUE old);
 
