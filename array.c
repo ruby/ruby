@@ -4884,6 +4884,27 @@ rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
     return ary;
 }
 
+static void
+combinate0(const long len, const long n, long *const stack, const VALUE values)
+{
+    long lev = 0;
+
+    MEMZERO(stack+1, long, n);
+    stack[0] = -1;
+    for (;;) {
+	for (lev++; lev < n; lev++) {
+	    stack[lev+1] = stack[lev]+1;
+	}
+	if (!yield_indexed_values(values, n, stack+1)) {
+	    rb_raise(rb_eRuntimeError, "combination reentered");
+	}
+	do {
+	    if (lev == 0) return;
+	    stack[lev--]++;
+	} while (stack[lev+1]+n == len+lev+1);
+    }
+}
+
 static VALUE
 rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
 {
@@ -4921,7 +4942,7 @@ rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
 static VALUE
 rb_ary_combination(VALUE ary, VALUE num)
 {
-    long n, i, len;
+    long i, n, len;
 
     n = NUM2LONG(num);
     RETURN_SIZED_ENUMERATOR(ary, 1, &num, rb_ary_combination_size);
@@ -4941,24 +4962,9 @@ rb_ary_combination(VALUE ary, VALUE num)
 	VALUE ary0 = ary_make_shared_copy(ary); /* private defensive copy of ary */
 	volatile VALUE t0;
 	long *stack = ALLOCV_N(long, t0, n+1);
-	long lev = 0;
 
 	RBASIC_CLEAR_CLASS(ary0);
-	MEMZERO(stack+1, long, n);
-	stack[0] = -1;
-	for (;;) {
-	    for (lev++; lev < n; lev++) {
-		stack[lev+1] = stack[lev]+1;
-	    }
-	    if (!yield_indexed_values(ary0, n, stack+1)) {
-		rb_raise(rb_eRuntimeError, "combination reentered");
-	    }
-	    do {
-		if (lev == 0) goto done;
-		stack[lev--]++;
-	    } while (stack[lev+1]+n == len+lev+1);
-	}
-    done:
+	combinate0(len, n, stack, ary0);
 	ALLOCV_END(t0);
 	RBASIC_SET_CLASS_RAW(ary0, rb_cArray);
     }
