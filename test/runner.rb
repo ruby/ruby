@@ -25,7 +25,7 @@ module Test::Unit
 
       # detect zombie traces.
       TracePoint.stat.each{|key, (activated, deleted)|
-        assert_equal(0, activated, 'The number of active trace events should be zero.')
+        assert_equal(0, activated, "The number of active trace events (#{key}) should be zero.")
         # puts "TracePoint - deleted: #{deleted}" if deleted > 0
       }
     end
