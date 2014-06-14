@@ -4742,8 +4742,7 @@ yield_indexed_values(const VALUE values, const long r, const long *const p)
 }
 
 /*
- * Recursively compute permutations of +r+ elements of the set
- * <code>[0..n-1]</code>.
+ * Compute permutations of +r+ elements of the set <code>[0..n-1]</code>.
  *
  * When we have a complete permutation of array indexes, copy the values
  * at those indexes into a new array and yield that array.
@@ -4751,28 +4750,40 @@ yield_indexed_values(const VALUE values, const long r, const long *const p)
  * n: the size of the set
  * r: the number of elements in each permutation
  * p: the array (of size r) that we're filling in
- * index: what index we're filling in now
  * used: an array of booleans: whether a given index is already used
  * values: the Ruby array that holds the actual values to permute
  */
 static void
-permute0(long n, long r, long *p, long index, char *used, VALUE values)
+permute0(const long n, const long r, long *const p, char *const used, const VALUE values)
 {
-    long i;
-    for (i = 0; i < n; i++) {
-	if (used[i] == 0) {
+    long i = 0, index = 0;
+
+    for (;;) {
+	const char *const unused = memchr(&used[i], 0, n-i);
+	if (!unused) {
+	    if (!index) break;
+	    i = p[--index];                /* pop index */
+	    used[i++] = 0;                 /* index unused */
+	}
+	else {
+	    i = unused - used;
 	    p[index] = i;
+	    used[i] = 1;                   /* mark index used */
+	    ++index;
 	    if (index < r-1) {             /* if not done yet */
-		used[i] = 1;               /* mark index used */
-		permute0(n, r, p, index+1, /* recurse */
-			 used, values);
-		used[i] = 0;               /* index unused */
+		p[index] = i = 0;
+		continue;
 	    }
-	    else {
+	    for (i = 0; i < n; ++i) {
+		if (used[i]) continue;
+		p[index] = i;
 		if (!yield_indexed_values(values, r, p)) {
 		    rb_raise(rb_eRuntimeError, "permute reentered");
 		}
 	    }
+	    i = p[--index];                /* pop index */
+	    used[i] = 0;                   /* index unused */
+	    p[index] = ++i;
 	}
     }
 }
@@ -4867,18 +4878,16 @@ rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
 	}
     }
     else {             /* this is the general case */
-	volatile VALUE t0 = tmpbuf(r,sizeof(long));
-	long *p = (long*)RSTRING_PTR(t0);
-	volatile VALUE t1 = tmpbuf(n,sizeof(char));
-	char *used = (char*)RSTRING_PTR(t1);
+	volatile VALUE t0;
+	long *p = (long*)ALLOCV(t0, r*sizeof(long)+n*sizeof(char));
+	char *used = (char*)(p + r);
 	VALUE ary0 = ary_make_shared_copy(ary); /* private defensive copy of ary */
 	RBASIC_CLEAR_CLASS(ary0);
 
 	MEMZERO(used, char, n); /* initialize array */
 
-	permute0(n, r, p, 0, used, ary0); /* compute and yield permutations */
-	tmpbuf_discard(t0);
-	tmpbuf_discard(t1);
+	permute0(n, r, p, used, ary0); /* compute and yield permutations */
+	ALLOCV_END(t0);
 	RBASIC_SET_CLASS_RAW(ary0, rb_cArray);
     }
     return ary;

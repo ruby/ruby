@@ -1,3 +1,8 @@
+Sat Jun 14 10:53:28 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (permute0): remove recursion, by looping with indexes
+	  stored in `p`.  [ruby-core:63103] [Bug #9932]
+
 Sat Jun 14 10:52:15 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_resize): update capa only when buffer get
