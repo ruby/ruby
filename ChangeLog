@@ -1,3 +1,9 @@
+Sat Jun 14 10:52:15 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_resize): update capa only when buffer get
+	  reallocated.
+	  http://d.hatena.ne.jp/nagachika/20140613/ruby_trunk_changes_46413_46420#r46413
+
 Sat Jun 14 08:28:59 2014  Zachary Scott  <e@zzak.io>
 
 	* man/rake.1: [DOC] Update links for Rake, patch by @hsbt [Bug #9904]
