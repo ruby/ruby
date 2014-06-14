@@ -5087,18 +5087,25 @@ rb_ary_repeated_permutation(VALUE ary, VALUE num)
 }
 
 static void
-rcombinate0(long n, long r, long *p, long index, long rest, VALUE values)
+rcombinate0(const long n, const long r, long *const p, const long rest, const VALUE values)
 {
-    if (rest > 0) {
-	for (; index < n; ++index) {
-	    p[r-rest] = index;
-	    rcombinate0(n, r, p, index, rest-1, values);
+    long i = 0, index = 0;
+
+    p[index] = i;
+    for (;;) {
+	if (++index < r-1) {
+	    p[index] = i;
+	    continue;
 	}
-    }
-    else {
-	if (!yield_indexed_values(values, r, p)) {
-	    rb_raise(rb_eRuntimeError, "repeated combination reentered");
+	for (; i < n; ++i) {
+	    p[index] = i;
+	    if (!yield_indexed_values(values, r, p)) {
+		rb_raise(rb_eRuntimeError, "repeated combination reentered");
+	    }
 	}
+	do {
+	    if (index <= 0) return;
+	} while ((i = ++p[--index]) >= n);
     }
 }
 
@@ -5163,13 +5170,13 @@ rb_ary_repeated_combination(VALUE ary, VALUE num)
 	/* yield nothing */
     }
     else {
-	volatile VALUE t0 = tmpbuf(n, sizeof(long));
-	long *p = (long*)RSTRING_PTR(t0);
+	volatile VALUE t0;
+	long *p = ALLOCV_N(long, t0, n);
 	VALUE ary0 = ary_make_shared_copy(ary); /* private defensive copy of ary */
 	RBASIC_CLEAR_CLASS(ary0);
 
-	rcombinate0(len, n, p, 0, n, ary0); /* compute and yield repeated combinations */
-	tmpbuf_discard(t0);
+	rcombinate0(len, n, p, n, ary0); /* compute and yield repeated combinations */
+	ALLOCV_END(t0);
 	RBASIC_SET_CLASS_RAW(ary0, rb_cArray);
     }
     return ary;

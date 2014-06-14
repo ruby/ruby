@@ -1,4 +1,7 @@
-Sat Jun 14 10:53:49 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Jun 14 10:54:08 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rcombinate0): remove recursion, by looping with indexes
+	  stored in `p`.
 
 	* array.c (rpermute0): remove recursion, by looping with indexes
 	  stored in `p`.
