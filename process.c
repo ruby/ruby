@@ -1595,7 +1595,7 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
             key = check_exec_redirect_fd(key, 1);
         if (FIXNUM_P(key) && (FIX2INT(key) == 1 || FIX2INT(key) == 2))
             flags = INT2NUM(O_WRONLY|O_CREAT|O_TRUNC);
-        else if (TYPE(key) == T_ARRAY) {
+        else if (RB_TYPE_P(key, T_ARRAY)) {
 	    int i;
 	    for (i = 0; i < RARRAY_LEN(key); i++) {
 		VALUE v = RARRAY_PTR(key)[i];
