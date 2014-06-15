@@ -261,11 +261,15 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
     }
     if (!FL_TEST(klass, FL_SINGLETON) &&
 	type != VM_METHOD_TYPE_NOTIMPLEMENTED &&
-	type != VM_METHOD_TYPE_ZSUPER &&
-	(mid == idInitialize || mid == idInitialize_copy ||
-	 mid == idInitialize_clone || mid == idInitialize_dup ||
-	 mid == idRespond_to_missing)) {
-	noex = NOEX_PRIVATE | noex;
+	type != VM_METHOD_TYPE_ZSUPER) {
+	switch (mid) {
+	  case idInitialize:
+	  case idInitialize_copy:
+	  case idInitialize_clone:
+	  case idInitialize_dup:
+	  case idRespond_to_missing:
+	    noex |= NOEX_PRIVATE;
+	}
     }
 
     rb_check_frozen(klass);
