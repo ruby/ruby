@@ -439,6 +439,19 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, 2, 1, [], {:f=>5}, 2, {}], a.new.foo(1, 2, f:5), bug8993)
   end
 
+  def test_splat_keyword_nondestructive
+    bug9776 = '[ruby-core:62161] [Bug #9776]'
+
+    h = {a: 1}
+    assert_equal({a:1, b:2}, {**h, b:2})
+    assert_equal({a:1}, h, bug9776)
+
+    pr = proc {|**opt| next opt}
+    assert_equal({a: 1}, pr.call(**h))
+    assert_equal({a: 1, b: 2}, pr.call(**h, b: 2))
+    assert_equal({a: 1}, h, bug9776)
+  end
+
   def test_gced_object_in_stack
     bug8964 = '[ruby-dev:47729] [Bug #8964]'
     assert_normal_exit %q{
