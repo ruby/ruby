@@ -126,9 +126,9 @@ class URI::TestGeneric < Test::Unit::TestCase
 
     # 8
     # reported by m_seki
-    uri = URI.parse('file:///foo/bar.txt')
+    url = URI.parse('file:///foo/bar.txt')
     assert_kind_of(URI::Generic, url)
-    uri = URI.parse('file:/foo/bar.txt')
+    url = URI.parse('file:/foo/bar.txt')
     assert_kind_of(URI::Generic, url)
 
     # 9
