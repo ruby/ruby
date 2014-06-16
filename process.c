@@ -2743,7 +2743,8 @@ run_exec_open(VALUE ary, struct rb_execarg *sargp, char *errmsg, size_t errmsg_b
         VALUE elt = RARRAY_AREF(ary, i);
         int fd = FIX2INT(RARRAY_AREF(elt, 0));
         VALUE param = RARRAY_AREF(elt, 1);
-        char *path = RSTRING_PTR(RARRAY_AREF(param, 0));
+        const VALUE vpath = RARRAY_AREF(param, 0);
+        const char *path = RSTRING_PTR(vpath);
         int flags = NUM2INT(RARRAY_AREF(param, 1));
         int perm = NUM2INT(RARRAY_AREF(param, 2));
         int need_close = 1;
