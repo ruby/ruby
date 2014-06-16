@@ -21,7 +21,7 @@ module Test::Unit
   module ZombieHunter
 
     def before_setup
-      @@tracepoint_captured_stat = TracePoint.stat.map{|k, (activated, deleted)| [k, activated]}
+      @tracepoint_captured_stat = TracePoint.stat.map{|k, (activated, deleted)| [k, activated]}
     end
 
     def after_teardown
@@ -30,7 +30,7 @@ module Test::Unit
 
       # detect zombie traces.
       assert_equal(
-        @@tracepoint_captured_stat,
+        @tracepoint_captured_stat,
         TracePoint.stat.map{|k, (activated, deleted)| [k, activated]},
         "The number of active trace events was changed"
       )
