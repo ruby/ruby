@@ -1624,7 +1624,7 @@ rb_obj_respond_to(VALUE obj, ID id, int priv)
     VALUE klass = CLASS_OF(obj);
 
     if (rb_method_basic_definition_p(klass, idRespond_to)) {
-	return basic_obj_respond_to(obj, id, !RTEST(priv));
+	return basic_obj_respond_to(obj, id, !priv);
     }
     else {
 	int argc = 1;
