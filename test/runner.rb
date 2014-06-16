@@ -29,9 +29,11 @@ module Test::Unit
       assert_empty(Process.waitall)
 
       # detect zombie traces.
-      assert_equal @@tracepoint_captured_stat, TracePoint.stat.map{|k, (activated, deleted)| [k, activated]} do
+      assert_equal(
+        @@tracepoint_captured_stat,
+        TracePoint.stat.map{|k, (activated, deleted)| [k, activated]},
         "The number of active trace events was changed"
-      end
+      )
       # puts "TracePoint - deleted: #{deleted}" if deleted > 0
     end
   end

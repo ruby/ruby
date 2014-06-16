@@ -1,3 +1,7 @@
+Mon Jun 16 19:00:11 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* test/runner.rb: failure message should be passed as an argument.
+
 Mon Jun 16 18:42:57 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* test/runner.rb: capture TracePoint stat before setup and compare
