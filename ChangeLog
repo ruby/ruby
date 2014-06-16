@@ -1,3 +1,9 @@
+Tue Jun 17 00:37:15 2014  Bugra Barin  <bugrabarin@hotmail.com>
+
+	* dln.c (dln_load): use wchar version to load a library in
+	  non-ascii path on Windows.  based on the patch by Bugra Barin
+	  <bugrabarin AT hotmail.com> in [ruby-core:61845].  [Bug #9699]
+
 Tue Jun 17 00:26:59 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (obj2uid, obj2gid): now getpwnam_r() and getgrnam_r()
