@@ -8515,7 +8515,7 @@ sym_to_proc(VALUE sym)
 static VALUE
 sym_succ(VALUE sym)
 {
-    return rb_str_dynamic_intern(rb_str_succ(rb_sym_to_s(sym)));
+    return rb_str_dynamic_intern(rb_str_succ(rb_sym2str(sym)));
 }
 
 /*
@@ -8538,7 +8538,7 @@ sym_cmp(VALUE sym, VALUE other)
     if (!SYMBOL_P(other)) {
 	return Qnil;
     }
-    return rb_str_cmp_m(rb_sym_to_s(sym), rb_sym_to_s(other));
+    return rb_str_cmp_m(rb_sym2str(sym), rb_sym2str(other));
 }
 
 /*
@@ -8555,7 +8555,7 @@ sym_casecmp(VALUE sym, VALUE other)
     if (!SYMBOL_P(other)) {
 	return Qnil;
     }
-    return rb_str_casecmp(rb_sym_to_s(sym), rb_sym_to_s(other));
+    return rb_str_casecmp(rb_sym2str(sym), rb_sym2str(other));
 }
 
 /*
@@ -8569,7 +8569,7 @@ sym_casecmp(VALUE sym, VALUE other)
 static VALUE
 sym_match(VALUE sym, VALUE other)
 {
-    return rb_str_match(rb_sym_to_s(sym), other);
+    return rb_str_match(rb_sym2str(sym), other);
 }
 
 /*
@@ -8585,7 +8585,7 @@ sym_match(VALUE sym, VALUE other)
 static VALUE
 sym_aref(int argc, VALUE *argv, VALUE sym)
 {
-    return rb_str_aref_m(argc, argv, rb_sym_to_s(sym));
+    return rb_str_aref_m(argc, argv, rb_sym2str(sym));
 }
 
 /*
