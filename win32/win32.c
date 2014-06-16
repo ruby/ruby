@@ -1197,8 +1197,8 @@ is_batch(const char *cmd)
 }
 
 static UINT filecp(void);
-static WCHAR *mbstr_to_wstr(UINT, const char *, int, long *);
-static char *wstr_to_mbstr(UINT, const WCHAR *, int, long *);
+#define mbstr_to_wstr rb_w32_mbstr_to_wstr
+#define wstr_to_mbstr rb_w32_wstr_to_mbstr
 #define acp_to_wstr(str, plen) mbstr_to_wstr(CP_ACP, str, -1, plen)
 #define wstr_to_acp(str, plen) wstr_to_mbstr(CP_ACP, str, -1, plen)
 #define filecp_to_wstr(str, plen) mbstr_to_wstr(filecp(), str, -1, plen)
@@ -1952,8 +1952,8 @@ filecp(void)
 }
 
 /* License: Ruby's */
-static char *
-wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen, long *plen)
+char *
+rb_w32_wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen, long *plen)
 {
     char *ptr;
     int len = WideCharToMultiByte(cp, 0, wstr, clen, NULL, 0, NULL, NULL);
@@ -1968,8 +1968,8 @@ wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen, long *plen)
 }
 
 /* License: Ruby's */
-static WCHAR *
-mbstr_to_wstr(UINT cp, const char *str, int clen, long *plen)
+WCHAR *
+rb_w32_mbstr_to_wstr(UINT cp, const char *str, int clen, long *plen)
 {
     WCHAR *ptr;
     int len = MultiByteToWideChar(cp, 0, str, clen, NULL, 0);

@@ -1255,20 +1255,25 @@ dln_load(const char *file)
 
 #if defined _WIN32 && !defined __CYGWIN__
     HINSTANCE handle;
-    char winfile[MAXPATHLEN];
+    WCHAR *winfile;
     char message[1024];
     void (*init_fct)();
     char *buf;
 
-    if (strlen(file) >= MAXPATHLEN) dln_loaderror("filename too long");
-
     /* Load the file as an object one */
     init_funcname(&buf, file);
 
-    strlcpy(winfile, file, sizeof(winfile));
+    /* Convert the file path to wide char */
+    winfile = rb_w32_mbstr_to_wstr(CP_UTF8, file, -1, NULL);
+    if (!winfile) {
+	dln_memerror();
+    }
 
     /* Load file */
-    if ((handle = LoadLibrary(winfile)) == NULL) {
+    handle = LoadLibraryW(winfile);
+    free(winfile);
+
+    if (!handle) {
 	error = dln_strerror();
 	goto failed;
     }

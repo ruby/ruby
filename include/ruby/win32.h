@@ -772,6 +772,8 @@ int  rb_w32_wait_events_blocking(HANDLE *events, int num, DWORD timeout);
 int  rb_w32_time_subtract(struct timeval *rest, const struct timeval *wait);
 int  rb_w32_wrap_io_handle(HANDLE, int);
 int  rb_w32_unwrap_io_handle(int);
+WCHAR *rb_w32_mbstr_to_wstr(UINT, const char *, int, long *);
+char *rb_w32_wstr_to_mbstr(UINT, const WCHAR *, int, long *);
 
 /*
 == ***CAUTION***
