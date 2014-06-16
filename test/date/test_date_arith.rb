@@ -205,7 +205,7 @@ class TestDateArith < Test::Unit::TestCase
     p = Date.new(2001,1,14)
     q = Date.new(2001,1,7)
     i = 0
-    p.downto(q) do |d|
+    p.downto(q) do
       i += 1
     end
     assert_equal(8, i)
@@ -222,7 +222,7 @@ class TestDateArith < Test::Unit::TestCase
     p = Date.new(2001,1,14)
     q = Date.new(2001,1,21)
     i = 0
-    p.upto(q) do |d|
+    p.upto(q) do
       i += 1
     end
     assert_equal(8, i)
@@ -239,13 +239,13 @@ class TestDateArith < Test::Unit::TestCase
     p = Date.new(2001,1,14)
     q = Date.new(2001,1,21)
     i = 0
-    p.step(q, 2) do |d|
+    p.step(q, 2) do
       i += 1
     end
     assert_equal(4, i)
 
     i = 0
-    p.step(q) do |d|
+    p.step(q) do
       i += 1
     end
     assert_equal(8, i)
