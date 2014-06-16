@@ -86,6 +86,12 @@
 # include <mach/mach_time.h>
 #endif
 
+/* define system APIs */
+#ifdef _WIN32
+#undef open
+#define open	rb_w32_uopen
+#endif
+
 #if defined(HAVE_TIMES) || defined(_WIN32)
 static VALUE rb_cProcessTms;
 #endif
