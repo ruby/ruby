@@ -1,3 +1,10 @@
+Tue Jun 17 00:26:59 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (obj2uid, obj2gid): now getpwnam_r() and getgrnam_r()
+	  may need larger buffers than sysconf values, so retry with
+	  expanding the buffer when ERANGE is returned.
+	  [ruby-core:61325] [Bug #9600]
+
 Wed Jun 11 22:58:30 2014  Eric Wong  <e@80x24.org>
 
 	* gc.c (ruby_gc_set_params): simplify condition

@@ -151,20 +151,36 @@ static void check_gid_switch(void);
 #if defined(HAVE_PWD_H)
 # if defined(HAVE_GETPWNAM_R) && defined(_SC_GETPW_R_SIZE_MAX)
 #  define USE_GETPWNAM_R 1
+#  define GETPW_R_SIZE_INIT sysconf(_SC_GETPW_R_SIZE_MAX)
+#  define GETPW_R_SIZE_DEFAULT 0x1000
+#  define GETPW_R_SIZE_LIMIT  0x10000
 # endif
 # ifdef USE_GETPWNAM_R
 #   define PREPARE_GETPWNAM \
-    long getpw_buf_len = sysconf(_SC_GETPW_R_SIZE_MAX); \
-    char *getpw_buf = ALLOCA_N(char, (getpw_buf_len < 0 ? (getpw_buf_len = 4096) : getpw_buf_len));
-#   define OBJ2UID(id) obj2uid((id), getpw_buf, getpw_buf_len)
-static rb_uid_t obj2uid(VALUE id, char *getpw_buf, size_t getpw_buf_len);
+    VALUE getpw_buf = 0
+#   define FINISH_GETPWNAM \
+    ALLOCV_END(getpw_buf)
+#   define OBJ2UID1(id) obj2uid((id), &getpw_buf)
+#   define OBJ2UID(id) obj2uid0(id)
+static rb_uid_t obj2uid(VALUE id, VALUE *getpw_buf);
+static inline rb_uid_t
+obj2uid0(VALUE id)
+{
+    rb_uid_t uid;
+    PREPARE_GETPWNAM;
+    uid = OBJ2UID1(id);
+    FINISH_GETPWNAM;
+    return uid;
+}
 # else
 #   define PREPARE_GETPWNAM	/* do nothing */
+#   define FINISH_GETPWNAM	/* do nothing */
 #   define OBJ2UID(id) obj2uid((id))
 static rb_uid_t obj2uid(VALUE id);
 # endif
 #else
 # define PREPARE_GETPWNAM	/* do nothing */
+# define FINISH_GETPWNAM	/* do nothing */
 # define OBJ2UID(id) NUM2UIDT(id)
 # ifdef p_uid_from_name
 #   undef p_uid_from_name
@@ -175,20 +191,37 @@ static rb_uid_t obj2uid(VALUE id);
 #if defined(HAVE_GRP_H)
 # if defined(HAVE_GETGRNAM_R) && defined(_SC_GETGR_R_SIZE_MAX)
 #  define USE_GETGRNAM_R
+#  define GETGR_R_SIZE_INIT sysconf(_SC_GETGR_R_SIZE_MAX)
+#  define GETGR_R_SIZE_DEFAULT 0x1000
+#  define GETGR_R_SIZE_LIMIT  0x10000
 # endif
 # ifdef USE_GETGRNAM_R
 #   define PREPARE_GETGRNAM \
-    long getgr_buf_len = sysconf(_SC_GETGR_R_SIZE_MAX); \
-    char *getgr_buf = ALLOCA_N(char, (getgr_buf_len < 0 ? (getgr_buf_len = 4096) : getgr_buf_len));
-#   define OBJ2GID(id) obj2gid((id), getgr_buf, getgr_buf_len)
-static rb_gid_t obj2gid(VALUE id, char *getgr_buf, size_t getgr_buf_len);
+    VALUE getgr_buf = 0
+#   define FINISH_GETGRNAM \
+    ALLOCV_END(getgr_buf)
+#   define OBJ2GID1(id) obj2gid((id), &getgr_buf)
+#   define OBJ2GID(id) obj2gid0(id)
+static rb_gid_t obj2gid(VALUE id, VALUE *getgr_buf);
+static inline rb_gid_t
+obj2gid0(VALUE id)
+{
+    rb_gid_t gid;
+    PREPARE_GETGRNAM;
+    gid = OBJ2GID1(id);
+    FINISH_GETGRNAM;
+    return gid;
+}
+static rb_gid_t obj2gid(VALUE id, VALUE *getgr_buf);
 # else
 #   define PREPARE_GETGRNAM	/* do nothing */
+#   define FINISH_GETGRNAM	/* do nothing */
 #   define OBJ2GID(id) obj2gid((id))
 static rb_gid_t obj2gid(VALUE id);
 # endif
 #else
 # define PREPARE_GETGRNAM	/* do nothing */
+# define FINISH_GETGRNAM	/* do nothing */
 # define OBJ2GID(id) NUM2GIDT(id)
 # ifdef p_gid_from_name
 #   undef p_gid_from_name
@@ -1751,7 +1784,6 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
 	    }
 	    check_uid_switch();
 	    {
-		PREPARE_GETPWNAM;
 		eargp->uid = OBJ2UID(val);
 		eargp->uid_given = 1;
 	    }
@@ -1767,7 +1799,6 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
 	    }
 	    check_gid_switch();
 	    {
-		PREPARE_GETGRNAM;
 		eargp->gid = OBJ2GID(val);
 		eargp->gid_given = 1;
 	    }
@@ -4821,7 +4852,7 @@ check_gid_switch(void)
 static rb_uid_t
 obj2uid(VALUE id
 # ifdef USE_GETPWNAM_R
-	, char *getpw_buf, size_t getpw_buf_len
+	, VALUE *getpw_tmp
 # endif
     )
 {
@@ -4836,8 +4867,28 @@ obj2uid(VALUE id
 	struct passwd *pwptr;
 #ifdef USE_GETPWNAM_R
 	struct passwd pwbuf;
-	if (getpwnam_r(usrname, &pwbuf, getpw_buf, getpw_buf_len, &pwptr))
-	    rb_sys_fail("getpwnam_r");
+	char *getpw_buf;
+	long getpw_buf_len;
+	if (!*getpw_tmp) {
+	    getpw_buf_len = GETPW_R_SIZE_INIT;
+	    if (getpw_buf_len < 0) getpw_buf_len = GETPW_R_SIZE_DEFAULT;
+	    getpw_buf = rb_alloc_tmp_buffer(getpw_tmp, getpw_buf_len);
+	}
+	else {
+	    getpw_buf = RSTRING_PTR(*getpw_tmp);
+	    getpw_buf_len = rb_str_capacity(*getpw_tmp);
+	}
+	errno = ERANGE;
+	/* gepwnam_r() on MacOS X doesn't set errno if buffer size is insufficient */
+	while (getpwnam_r(usrname, &pwbuf, getpw_buf, getpw_buf_len, &pwptr)) {
+	    if (errno != ERANGE || getpw_buf_len >= GETPW_R_SIZE_LIMIT) {
+		rb_free_tmp_buffer(getpw_tmp);
+		rb_sys_fail("getpwnam_r");
+	    }
+	    rb_str_modify_expand(*getpw_tmp, getpw_buf_len);
+	    getpw_buf = RSTRING_PTR(*getpw_tmp);
+	    getpw_buf_len = rb_str_capacity(*getpw_tmp);
+	}
 #else
 	pwptr = getpwnam(usrname);
 #endif
@@ -4870,7 +4921,6 @@ obj2uid(VALUE id
 static VALUE
 p_uid_from_name(VALUE self, VALUE id)
 {
-    PREPARE_GETPWNAM
     return UIDT2NUM(OBJ2UID(id));
 }
 # endif
@@ -4880,7 +4930,7 @@ p_uid_from_name(VALUE self, VALUE id)
 static rb_gid_t
 obj2gid(VALUE id
 # ifdef USE_GETGRNAM_R
-	, char *getgr_buf, size_t getgr_buf_len
+	, VALUE *getgr_tmp
 # endif
     )
 {
@@ -4895,8 +4945,28 @@ obj2gid(VALUE id
 	struct group *grptr;
 #ifdef USE_GETGRNAM_R
 	struct group grbuf;
-	if (getgrnam_r(grpname, &grbuf, getgr_buf, getgr_buf_len, &grptr))
-	    rb_sys_fail("getgrnam_r");
+	char *getgr_buf;
+	long getgr_buf_len;
+	if (!*getgr_tmp) {
+	    getgr_buf_len = GETGR_R_SIZE_INIT;
+	    if (getgr_buf_len < 0) getgr_buf_len = GETGR_R_SIZE_DEFAULT;
+	    getgr_buf = rb_alloc_tmp_buffer(getgr_tmp, getgr_buf_len);
+	}
+	else {
+	    getgr_buf = RSTRING_PTR(*getgr_tmp);
+	    getgr_buf_len = rb_str_capacity(*getgr_tmp);
+	}
+	errno = ERANGE;
+	/* gegrnam_r() on MacOS X doesn't set errno if buffer size is insufficient */
+	while (getgrnam_r(grpname, &grbuf, getgr_buf, getgr_buf_len, &grptr)) {
+	    if (errno != ERANGE || getgr_buf_len >= GETGR_R_SIZE_LIMIT) {
+		rb_free_tmp_buffer(getgr_tmp);
+		rb_sys_fail("getgrnam_r");
+	    }
+	    rb_str_modify_expand(*getgr_tmp, getgr_buf_len);
+	    getgr_buf = RSTRING_PTR(*getgr_tmp);
+	    getgr_buf_len = rb_str_capacity(*getgr_tmp);
+	}
 #else
 	grptr = getgrnam(grpname);
 #endif
@@ -4929,7 +4999,6 @@ obj2gid(VALUE id
 static VALUE
 p_gid_from_name(VALUE self, VALUE id)
 {
-    PREPARE_GETGRNAM;
     return GIDT2NUM(OBJ2GID(id));
 }
 # endif
@@ -4948,7 +5017,6 @@ p_gid_from_name(VALUE self, VALUE id)
 static VALUE
 p_sys_setuid(VALUE obj, VALUE id)
 {
-    PREPARE_GETPWNAM;
     check_uid_switch();
     if (setuid(OBJ2UID(id)) != 0) rb_sys_fail(0);
     return Qnil;
@@ -4971,7 +5039,6 @@ p_sys_setuid(VALUE obj, VALUE id)
 static VALUE
 p_sys_setruid(VALUE obj, VALUE id)
 {
-    PREPARE_GETPWNAM;
     check_uid_switch();
     if (setruid(OBJ2UID(id)) != 0) rb_sys_fail(0);
     return Qnil;
@@ -4994,7 +5061,6 @@ p_sys_setruid(VALUE obj, VALUE id)
 static VALUE
 p_sys_seteuid(VALUE obj, VALUE id)
 {
-    PREPARE_GETPWNAM;
     check_uid_switch();
     if (seteuid(OBJ2UID(id)) != 0) rb_sys_fail(0);
     return Qnil;
@@ -5019,9 +5085,13 @@ p_sys_seteuid(VALUE obj, VALUE id)
 static VALUE
 p_sys_setreuid(VALUE obj, VALUE rid, VALUE eid)
 {
+    rb_uid_t ruid, euid;
     PREPARE_GETPWNAM;
     check_uid_switch();
-    if (setreuid(OBJ2UID(rid), OBJ2UID(eid)) != 0) rb_sys_fail(0);
+    ruid = OBJ2UID1(rid);
+    euid = OBJ2UID1(eid);
+    FINISH_GETPWNAM;
+    if (setreuid(ruid, euid) != 0) rb_sys_fail(0);
     return Qnil;
 }
 #else
@@ -5044,9 +5114,14 @@ p_sys_setreuid(VALUE obj, VALUE rid, VALUE eid)
 static VALUE
 p_sys_setresuid(VALUE obj, VALUE rid, VALUE eid, VALUE sid)
 {
+    rb_uid_t ruid, euid, suid;
     PREPARE_GETPWNAM;
     check_uid_switch();
-    if (setresuid(OBJ2UID(rid), OBJ2UID(eid), OBJ2UID(sid)) != 0) rb_sys_fail(0);
+    ruid = OBJ2UID1(rid);
+    euid = OBJ2UID1(eid);
+    suid = OBJ2UID1(sid);
+    FINISH_GETPWNAM;
+    if (setresuid(ruid, euid, suid) != 0) rb_sys_fail(0);
     return Qnil;
 }
 #else
@@ -5086,7 +5161,6 @@ static VALUE
 proc_setuid(VALUE obj, VALUE id)
 {
     rb_uid_t uid;
-    PREPARE_GETPWNAM;
 
     check_uid_switch();
 
@@ -5158,7 +5232,6 @@ static VALUE
 p_uid_change_privilege(VALUE obj, VALUE id)
 {
     rb_uid_t uid;
-    PREPARE_GETPWNAM;
 
     check_uid_switch();
 
@@ -5328,7 +5401,6 @@ p_uid_change_privilege(VALUE obj, VALUE id)
 static VALUE
 p_sys_setgid(VALUE obj, VALUE id)
 {
-    PREPARE_GETGRNAM;
     check_gid_switch();
     if (setgid(OBJ2GID(id)) != 0) rb_sys_fail(0);
     return Qnil;
@@ -5351,7 +5423,6 @@ p_sys_setgid(VALUE obj, VALUE id)
 static VALUE
 p_sys_setrgid(VALUE obj, VALUE id)
 {
-    PREPARE_GETGRNAM;
     check_gid_switch();
     if (setrgid(OBJ2GID(id)) != 0) rb_sys_fail(0);
     return Qnil;
@@ -5374,7 +5445,6 @@ p_sys_setrgid(VALUE obj, VALUE id)
 static VALUE
 p_sys_setegid(VALUE obj, VALUE id)
 {
-    PREPARE_GETGRNAM;
     check_gid_switch();
     if (setegid(OBJ2GID(id)) != 0) rb_sys_fail(0);
     return Qnil;
@@ -5399,9 +5469,13 @@ p_sys_setegid(VALUE obj, VALUE id)
 static VALUE
 p_sys_setregid(VALUE obj, VALUE rid, VALUE eid)
 {
+    rb_gid_t rgid, egid;
     PREPARE_GETGRNAM;
     check_gid_switch();
-    if (setregid(OBJ2GID(rid), OBJ2GID(eid)) != 0) rb_sys_fail(0);
+    rgid = OBJ2GID(rid);
+    egid = OBJ2GID(eid);
+    FINISH_GETGRNAM;
+    if (setregid(rgid, egid) != 0) rb_sys_fail(0);
     return Qnil;
 }
 #else
@@ -5423,9 +5497,14 @@ p_sys_setregid(VALUE obj, VALUE rid, VALUE eid)
 static VALUE
 p_sys_setresgid(VALUE obj, VALUE rid, VALUE eid, VALUE sid)
 {
+    rb_gid_t rgid, egid, sgid;
     PREPARE_GETGRNAM;
     check_gid_switch();
-    if (setresgid(OBJ2GID(rid), OBJ2GID(eid), OBJ2GID(sid)) != 0) rb_sys_fail(0);
+    rgid = OBJ2GID(rid);
+    egid = OBJ2GID(eid);
+    sgid = OBJ2GID(sid);
+    FINISH_GETGRNAM;
+    if (setresgid(rgid, egid, sgid) != 0) rb_sys_fail(0);
     return Qnil;
 }
 #else
@@ -5493,7 +5572,6 @@ static VALUE
 proc_setgid(VALUE obj, VALUE id)
 {
     rb_gid_t gid;
-    PREPARE_GETGRNAM;
 
     check_gid_switch();
 
@@ -5641,8 +5719,9 @@ proc_setgroups(VALUE obj, VALUE ary)
     for (i = 0; i < ngroups; i++) {
 	VALUE g = RARRAY_AREF(ary, i);
 
-	groups[i] = OBJ2GID(g);
+	groups[i] = OBJ2GID1(g);
     }
+    FINISH_GETGRNAM;
 
     if (setgroups(ngroups, groups) == -1) /* ngroups <= maxgroups */
 	rb_sys_fail(0);
@@ -5675,7 +5754,6 @@ proc_setgroups(VALUE obj, VALUE ary)
 static VALUE
 proc_initgroups(VALUE obj, VALUE uname, VALUE base_grp)
 {
-    PREPARE_GETGRNAM;
     if (initgroups(StringValuePtr(uname), OBJ2GID(base_grp)) != 0) {
 	rb_sys_fail(0);
     }
@@ -5857,7 +5935,6 @@ static VALUE
 p_gid_change_privilege(VALUE obj, VALUE id)
 {
     rb_gid_t gid;
-    PREPARE_GETGRNAM;
 
     check_gid_switch();
 
@@ -6067,7 +6144,6 @@ proc_seteuid(rb_uid_t uid)
 static VALUE
 proc_seteuid_m(VALUE mod, VALUE euid)
 {
-    PREPARE_GETPWNAM;
     check_uid_switch();
     proc_seteuid(OBJ2UID(euid));
     return euid;
@@ -6133,7 +6209,6 @@ rb_seteuid_core(rb_uid_t euid)
 static VALUE
 p_uid_grant_privilege(VALUE obj, VALUE id)
 {
-    PREPARE_GETPWNAM;
     rb_seteuid_core(OBJ2UID(id));
     return id;
 }
@@ -6173,7 +6248,6 @@ proc_setegid(VALUE obj, VALUE egid)
 {
 #if defined(HAVE_SETRESGID) || defined(HAVE_SETREGID) || defined(HAVE_SETEGID) || defined(HAVE_SETGID)
     rb_gid_t gid;
-    PREPARE_GETGRNAM;
 #endif
 
     check_gid_switch();
@@ -6265,7 +6339,6 @@ rb_setegid_core(rb_gid_t egid)
 static VALUE
 p_gid_grant_privilege(VALUE obj, VALUE id)
 {
-    PREPARE_GETGRNAM;
     rb_setegid_core(OBJ2GID(id));
     return id;
 }
