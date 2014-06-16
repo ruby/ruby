@@ -19,18 +19,20 @@ require_relative 'profile_test_all' if ENV.has_key?('RUBY_TEST_ALL_PROFILE')
 
 module Test::Unit
   module ZombieHunter
-    @@zombie_traces = Hash.new(0)
+
+    def before_setup
+      @@tracepoint_captured_stat = TracePoint.stat.map{|k, (activated, deleted)| [k, activated]}
+    end
 
     def after_teardown
       super
       assert_empty(Process.waitall)
 
       # detect zombie traces.
-      TracePoint.stat.each{|key, (activated, deleted)|
-        old, @@zombie_traces[key] = @@zombie_traces[key], activated
-        assert_equal(old, activated, "The number of active trace events (#{key}) should not increase")
-        # puts "TracePoint - deleted: #{deleted}" if deleted > 0
-      }
+      assert_equal @@tracepoint_captured_stat, TracePoint.stat.map{|k, (activated, deleted)| [k, activated]} do
+        "The number of active trace events was changed"
+      end
+      # puts "TracePoint - deleted: #{deleted}" if deleted > 0
     end
   end
   class TestCase
