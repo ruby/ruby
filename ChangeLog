@@ -1,3 +1,9 @@
+Tue Jun 17 00:45:44 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (compile_array_): make copy a first hash not to modify
+	  the argument itself.  keyword splat should be non-destructive.
+	  [ruby-core:62161] [Bug #9776]
+
 Tue Jun 17 00:37:15 2014  Bugra Barin  <bugrabarin@hotmail.com>
 
 	* dln.c (dln_load): use wchar version to load a library in
