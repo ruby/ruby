@@ -1,3 +1,9 @@
+Tue Jun 17 12:35:24 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (extract_raise_opts): pass unknown options to the
+	  exception, so that exception class can receive a hash argument.
+	  [ruby-core:63203] [Feature #8257]
+
 Tue Jun 17 12:24:57 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (obj_memsize_of): memsize_of(T_ZOMBIE) returns 0, not a rb_bug.

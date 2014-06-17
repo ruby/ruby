@@ -606,12 +606,11 @@ extract_raise_opts(int argc, VALUE *argv, VALUE *opts)
     if (argc > 0) {
 	VALUE opt = argv[argc-1];
 	if (RB_TYPE_P(opt, T_HASH)) {
-	    VALUE kw = rb_extract_keywords(&opt);
-	    if (!opt) --argc;
-	    if (kw) {
+	    if (!RHASH_EMPTY_P(opt)) {
 		ID keywords[1];
 		CONST_ID(keywords[0], "cause");
-		rb_get_kwargs(kw, keywords, 0, 1, opts);
+		rb_get_kwargs(opt, keywords, 0, -1-raise_max_opt, opts);
+		if (RHASH_EMPTY_P(opt)) --argc;
 		return argc;
 	    }
 	}

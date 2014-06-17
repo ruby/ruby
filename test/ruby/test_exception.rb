@@ -596,4 +596,25 @@ end.join
       raise cause: cause
     end
   end
+
+  def test_unknown_option
+    bug = '[ruby-core:63203] [Feature #8257] should pass unknown options'
+
+    exc = Class.new(RuntimeError) do
+      attr_reader :arg
+      def initialize(msg = nil)
+        @arg = msg
+        super(msg)
+      end
+    end
+
+    e = assert_raise(exc, bug) {raise exc, "foo" => "bar", foo: "bar"}
+    assert_equal({"foo" => "bar", foo: "bar"}, e.arg, bug)
+
+    e = assert_raise(exc, bug) {raise exc, "foo" => "bar", foo: "bar", cause: "zzz"}
+    assert_equal({"foo" => "bar", foo: "bar"}, e.arg, bug)
+
+    e = assert_raise(exc, bug) {raise exc, {}}
+    assert_equal({}, e.arg, bug)
+  end
 end
