@@ -1,3 +1,10 @@
+Tue Jun 17 12:24:57 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (obj_memsize_of): memsize_of(T_ZOMBIE) returns 0, not a rb_bug.
+	  ObjectSpace.count_objects_size() uses memsize_of(T_ZOMBIE).
+
+	  This bug introduced at r46348.
+
 Mon Jun 16 19:00:11 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* test/runner.rb: failure message should be passed as an argument.

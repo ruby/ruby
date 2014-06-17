@@ -2610,7 +2610,7 @@ obj_memsize_of(VALUE obj, int use_tdata)
 	break;
 
       case T_ZOMBIE:
-	/* fall through */
+	break;
 
       default:
 	rb_bug("objspace/memsize_of(): unknown data type 0x%x(%p)",
