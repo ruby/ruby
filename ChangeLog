@@ -1,3 +1,10 @@
+Tue Jun 17 16:41:49 2014  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (gets, readline): read lines without LF properly.
+	  [ruby-core:63205] [Bug #9949]
+
+	* test/net/ftp/test_buffered_socket.rb: related test.
+
 Tue Jun 17 12:35:24 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (extract_raise_opts): pass unknown options to the
