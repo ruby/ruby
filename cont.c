@@ -938,7 +938,7 @@ rb_callcc(VALUE self)
 }
 
 static VALUE
-make_passing_arg(int argc, VALUE *argv)
+make_passing_arg(int argc, const VALUE *argv)
 {
     switch (argc) {
       case 0:
@@ -1257,7 +1257,7 @@ return_fiber(void)
     }
 }
 
-VALUE rb_fiber_transfer(VALUE fib, int argc, VALUE *argv);
+VALUE rb_fiber_transfer(VALUE fib, int argc, const VALUE *argv);
 
 static void
 rb_fiber_terminate(rb_fiber_t *fib)
@@ -1405,7 +1405,7 @@ fiber_store(rb_fiber_t *next_fib)
 }
 
 static inline VALUE
-fiber_switch(VALUE fibval, int argc, VALUE *argv, int is_resume)
+fiber_switch(VALUE fibval, int argc, const VALUE *argv, int is_resume)
 {
     VALUE value;
     rb_fiber_t *fib;
@@ -1480,13 +1480,13 @@ fiber_switch(VALUE fibval, int argc, VALUE *argv, int is_resume)
 }
 
 VALUE
-rb_fiber_transfer(VALUE fib, int argc, VALUE *argv)
+rb_fiber_transfer(VALUE fib, int argc, const VALUE *argv)
 {
     return fiber_switch(fib, argc, argv, 0);
 }
 
 VALUE
-rb_fiber_resume(VALUE fibval, int argc, VALUE *argv)
+rb_fiber_resume(VALUE fibval, int argc, const VALUE *argv)
 {
     rb_fiber_t *fib;
     GetFiberPtr(fibval, fib);
@@ -1502,7 +1502,7 @@ rb_fiber_resume(VALUE fibval, int argc, VALUE *argv)
 }
 
 VALUE
-rb_fiber_yield(int argc, VALUE *argv)
+rb_fiber_yield(int argc, const VALUE *argv)
 {
     return rb_fiber_transfer(return_fiber(), argc, argv);
 }

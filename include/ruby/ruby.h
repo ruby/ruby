@@ -1350,7 +1350,7 @@ void  rb_gvar_readonly_setter(VALUE val, ID id, void *data, struct rb_global_var
 void rb_define_variable(const char*,VALUE*);
 void rb_define_virtual_variable(const char*,VALUE(*)(ANYARGS),void(*)(ANYARGS));
 void rb_define_hooked_variable(const char*,VALUE*,VALUE(*)(ANYARGS),void(*)(ANYARGS));
-void rb_define_readonly_variable(const char*,VALUE*);
+void rb_define_readonly_variable(const char*,const VALUE*);
 void rb_define_const(VALUE,const char*,VALUE);
 void rb_define_global_const(const char*,VALUE);
 

@@ -677,7 +677,7 @@ VALUE rb_iseq_compile_on_base(VALUE src, VALUE file, VALUE line, rb_block_t *bas
 VALUE rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE line, rb_block_t *base_block, VALUE opt);
 
 VALUE rb_iseq_disasm(VALUE self);
-int rb_iseq_disasm_insn(VALUE str, VALUE *iseqval, size_t pos, rb_iseq_t *iseq, VALUE child);
+int rb_iseq_disasm_insn(VALUE str, const VALUE *iseqval, size_t pos, const rb_iseq_t *iseq, VALUE child);
 const char *ruby_node_name(int node);
 
 RUBY_EXTERN VALUE rb_cISeq;

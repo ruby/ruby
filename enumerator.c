@@ -267,7 +267,7 @@ enumerator_allocate(VALUE klass)
 }
 
 static VALUE
-enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv, rb_enumerator_size_func *size_fn, VALUE size)
+enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn, VALUE size)
 {
     struct enumerator *ptr;
 
@@ -398,16 +398,16 @@ enumerator_init_copy(VALUE obj, VALUE orig)
  * For backwards compatibility; use rb_enumeratorize_with_size
  */
 VALUE
-rb_enumeratorize(VALUE obj, VALUE meth, int argc, VALUE *argv)
+rb_enumeratorize(VALUE obj, VALUE meth, int argc, const VALUE *argv)
 {
     return rb_enumeratorize_with_size(obj, meth, argc, argv, 0);
 }
 
 static VALUE
-lazy_to_enum_i(VALUE self, VALUE meth, int argc, VALUE *argv, rb_enumerator_size_func *size_fn);
+lazy_to_enum_i(VALUE self, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn);
 
 VALUE
-rb_enumeratorize_with_size(VALUE obj, VALUE meth, int argc, VALUE *argv, rb_enumerator_size_func *size_fn)
+rb_enumeratorize_with_size(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn)
 {
     /* Similar effect as calling obj.to_enum, i.e. dispatching to either
        Kernel#to_enum vs Lazy#to_enum */
@@ -1459,7 +1459,7 @@ enumerable_lazy(VALUE obj)
 }
 
 static VALUE
-lazy_to_enum_i(VALUE obj, VALUE meth, int argc, VALUE *argv, rb_enumerator_size_func *size_fn)
+lazy_to_enum_i(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn)
 {
     return enumerator_init(enumerator_allocate(rb_cLazy),
 			   obj, meth, argc, argv, size_fn, Qnil);

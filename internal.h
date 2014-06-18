@@ -465,7 +465,7 @@ RCLASS_SET_SUPER(VALUE klass, VALUE super)
 struct vtm; /* defined by timev.h */
 
 /* array.c */
-VALUE rb_ary_last(int, VALUE *, VALUE);
+VALUE rb_ary_last(int, const VALUE *, VALUE);
 void rb_ary_set_len(VALUE, long);
 void rb_ary_delete_same(VALUE, VALUE);
 
@@ -480,10 +480,10 @@ void rb_class_foreach_subclass(VALUE klass, void(*f)(VALUE));
 void rb_class_detach_subclasses(VALUE);
 void rb_class_detach_module_subclasses(VALUE);
 void rb_class_remove_from_module_subclasses(VALUE);
-VALUE rb_obj_methods(int argc, VALUE *argv, VALUE obj);
-VALUE rb_obj_protected_methods(int argc, VALUE *argv, VALUE obj);
-VALUE rb_obj_private_methods(int argc, VALUE *argv, VALUE obj);
-VALUE rb_obj_public_methods(int argc, VALUE *argv, VALUE obj);
+VALUE rb_obj_methods(int argc, const VALUE *argv, VALUE obj);
+VALUE rb_obj_protected_methods(int argc, const VALUE *argv, VALUE obj);
+VALUE rb_obj_private_methods(int argc, const VALUE *argv, VALUE obj);
+VALUE rb_obj_public_methods(int argc, const VALUE *argv, VALUE obj);
 int rb_obj_basic_to_s_p(VALUE);
 VALUE rb_special_singleton_class(VALUE);
 VALUE rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach);
@@ -649,7 +649,7 @@ VALUE rb_math_cos(VALUE);
 VALUE rb_math_cosh(VALUE);
 VALUE rb_math_exp(VALUE);
 VALUE rb_math_hypot(VALUE, VALUE);
-VALUE rb_math_log(int argc, VALUE *argv);
+VALUE rb_math_log(int argc, const VALUE *argv);
 VALUE rb_math_sin(VALUE);
 VALUE rb_math_sinh(VALUE);
 #if 0
@@ -943,8 +943,8 @@ void Init_prelude(void);
 
 /* vm_backtrace.c */
 void Init_vm_backtrace(void);
-VALUE rb_vm_thread_backtrace(int argc, VALUE *argv, VALUE thval);
-VALUE rb_vm_thread_backtrace_locations(int argc, VALUE *argv, VALUE thval);
+VALUE rb_vm_thread_backtrace(int argc, const VALUE *argv, VALUE thval);
+VALUE rb_vm_thread_backtrace_locations(int argc, const VALUE *argv, VALUE thval);
 
 VALUE rb_make_backtrace(void);
 void rb_backtrace_print_as_bugreport(void);

@@ -729,7 +729,7 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, int call_status)
 }
 
 void
-rb_raise_method_missing(rb_thread_t *th, int argc, VALUE *argv,
+rb_raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv,
 			VALUE obj, int call_status)
 {
     th->passed_block = 0;
@@ -1352,7 +1352,7 @@ eval_string(VALUE self, VALUE src, VALUE scope, VALUE file, int line)
  */
 
 VALUE
-rb_f_eval(int argc, VALUE *argv, VALUE self)
+rb_f_eval(int argc, const VALUE *argv, VALUE self)
 {
     VALUE src, scope, vfile, vline;
     VALUE file = Qundef;
@@ -1570,7 +1570,7 @@ eval_under(VALUE under, VALUE self, VALUE src, VALUE file, int line)
 }
 
 static VALUE
-specific_eval(int argc, VALUE *argv, VALUE klass, VALUE self)
+specific_eval(int argc, const VALUE *argv, VALUE klass, VALUE self)
 {
     if (rb_block_given_p()) {
 	rb_check_arity(argc, 0, 0);
@@ -1579,16 +1579,18 @@ specific_eval(int argc, VALUE *argv, VALUE klass, VALUE self)
     else {
 	VALUE file = Qundef;
 	int line = 1;
+	VALUE code;
 
 	rb_check_arity(argc, 1, 3);
-	SafeStringValue(argv[0]);
+	code = argv[0];
+	SafeStringValue(code);
 	if (argc > 2)
 	    line = NUM2INT(argv[2]);
 	if (argc > 1) {
 	    file = argv[1];
 	    if (!NIL_P(file)) StringValue(file);
 	}
-	return eval_under(klass, self, argv[0], file, line);
+	return eval_under(klass, self, code, file, line);
     }
 }
 
@@ -1626,7 +1628,7 @@ specific_eval(int argc, VALUE *argv, VALUE klass, VALUE self)
  */
 
 VALUE
-rb_obj_instance_eval(int argc, VALUE *argv, VALUE self)
+rb_obj_instance_eval(int argc, const VALUE *argv, VALUE self)
 {
     VALUE klass;
 
@@ -1658,7 +1660,7 @@ rb_obj_instance_eval(int argc, VALUE *argv, VALUE self)
  */
 
 VALUE
-rb_obj_instance_exec(int argc, VALUE *argv, VALUE self)
+rb_obj_instance_exec(int argc, const VALUE *argv, VALUE self)
 {
     VALUE klass;
 
@@ -1697,7 +1699,7 @@ rb_obj_instance_exec(int argc, VALUE *argv, VALUE self)
  */
 
 VALUE
-rb_mod_module_eval(int argc, VALUE *argv, VALUE mod)
+rb_mod_module_eval(int argc, const VALUE *argv, VALUE mod)
 {
     return specific_eval(argc, argv, mod, mod);
 }
@@ -1725,7 +1727,7 @@ rb_mod_module_eval(int argc, VALUE *argv, VALUE mod)
  */
 
 VALUE
-rb_mod_module_exec(int argc, VALUE *argv, VALUE mod)
+rb_mod_module_exec(int argc, const VALUE *argv, VALUE mod)
 {
     return yield_under(mod, mod, rb_ary_new4(argc, argv));
 }

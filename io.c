@@ -6845,7 +6845,7 @@ rb_io_init_copy(VALUE dest, VALUE io)
  */
 
 VALUE
-rb_io_printf(int argc, VALUE *argv, VALUE out)
+rb_io_printf(int argc, const VALUE *argv, VALUE out)
 {
     rb_io_write(out, rb_f_sprintf(argc, argv));
     return Qnil;
@@ -6904,7 +6904,7 @@ rb_f_printf(int argc, VALUE *argv)
  */
 
 VALUE
-rb_io_print(int argc, VALUE *argv, VALUE out)
+rb_io_print(int argc, const VALUE *argv, VALUE out)
 {
     int i;
     VALUE line;
@@ -6952,7 +6952,7 @@ rb_io_print(int argc, VALUE *argv, VALUE out)
  */
 
 static VALUE
-rb_f_print(int argc, VALUE *argv)
+rb_f_print(int argc, const VALUE *argv)
 {
     rb_io_print(argc, argv, rb_stdout);
     return Qnil;
@@ -7069,7 +7069,7 @@ io_puts_ary(VALUE ary, VALUE out, int recur)
  */
 
 VALUE
-rb_io_puts(int argc, VALUE *argv, VALUE out)
+rb_io_puts(int argc, const VALUE *argv, VALUE out)
 {
     int i;
     VALUE line;

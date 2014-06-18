@@ -3365,7 +3365,7 @@ ruby_stack_check(void)
 
 ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS
 static void
-mark_locations_array(rb_objspace_t *objspace, register VALUE *x, register long n)
+mark_locations_array(rb_objspace_t *objspace, register const VALUE *x, register long n)
 {
     VALUE v;
     while (n--) {
@@ -3376,7 +3376,7 @@ mark_locations_array(rb_objspace_t *objspace, register VALUE *x, register long n
 }
 
 static void
-gc_mark_locations(rb_objspace_t *objspace, VALUE *start, VALUE *end)
+gc_mark_locations(rb_objspace_t *objspace, const VALUE *start, const VALUE *end)
 {
     long n;
 
@@ -3386,7 +3386,7 @@ gc_mark_locations(rb_objspace_t *objspace, VALUE *start, VALUE *end)
 }
 
 void
-rb_gc_mark_locations(VALUE *start, VALUE *end)
+rb_gc_mark_locations(const VALUE *start, const VALUE *end)
 {
     gc_mark_locations(&rb_objspace, start, end);
 }

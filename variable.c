@@ -607,9 +607,9 @@ rb_define_variable(const char *name, VALUE *var)
 }
 
 void
-rb_define_readonly_variable(const char *name, VALUE *var)
+rb_define_readonly_variable(const char *name, const VALUE *var)
 {
-    rb_define_hooked_variable(name, var, 0, readonly_setter);
+    rb_define_hooked_variable(name, (VALUE *)var, 0, readonly_setter);
 }
 
 void
@@ -653,7 +653,7 @@ rb_trace_eval(VALUE cmd, VALUE val)
  */
 
 VALUE
-rb_f_trace_var(int argc, VALUE *argv)
+rb_f_trace_var(int argc, const VALUE *argv)
 {
     VALUE var, cmd;
     struct global_entry *entry;
@@ -712,7 +712,7 @@ remove_trace(struct global_variable *var)
  */
 
 VALUE
-rb_f_untrace_var(int argc, VALUE *argv)
+rb_f_untrace_var(int argc, const VALUE *argv)
 {
     VALUE var, cmd;
     ID id;
@@ -2066,7 +2066,7 @@ rb_const_list(void *data)
  */
 
 VALUE
-rb_mod_constants(int argc, VALUE *argv, VALUE mod)
+rb_mod_constants(int argc, const VALUE *argv, VALUE mod)
 {
     VALUE inherit;
 
@@ -2240,7 +2240,7 @@ rb_define_global_const(const char *name, VALUE val)
 }
 
 static void
-set_const_visibility(VALUE mod, int argc, VALUE *argv, rb_const_flag_t flag)
+set_const_visibility(VALUE mod, int argc, const VALUE *argv, rb_const_flag_t flag)
 {
     int i;
     st_data_t v;
@@ -2286,7 +2286,7 @@ set_const_visibility(VALUE mod, int argc, VALUE *argv, rb_const_flag_t flag)
  */
 
 VALUE
-rb_mod_private_constant(int argc, VALUE *argv, VALUE obj)
+rb_mod_private_constant(int argc, const VALUE *argv, VALUE obj)
 {
     set_const_visibility(obj, argc, argv, CONST_PRIVATE);
     return obj;
@@ -2300,7 +2300,7 @@ rb_mod_private_constant(int argc, VALUE *argv, VALUE obj)
  */
 
 VALUE
-rb_mod_public_constant(int argc, VALUE *argv, VALUE obj)
+rb_mod_public_constant(int argc, const VALUE *argv, VALUE obj)
 {
     set_const_visibility(obj, argc, argv, CONST_PUBLIC);
     return obj;
@@ -2526,7 +2526,7 @@ cvar_list(void *data)
  */
 
 VALUE
-rb_mod_class_variables(int argc, VALUE *argv, VALUE mod)
+rb_mod_class_variables(int argc, const VALUE *argv, VALUE mod)
 {
     VALUE inherit;
     st_table *tbl;

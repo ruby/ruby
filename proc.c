@@ -1873,14 +1873,14 @@ method_clone(VALUE self)
  */
 
 VALUE
-rb_method_call(int argc, VALUE *argv, VALUE method)
+rb_method_call(int argc, const VALUE *argv, VALUE method)
 {
     VALUE proc = rb_block_given_p() ? rb_block_proc() : Qnil;
     return rb_method_call_with_block(argc, argv, method, proc);
 }
 
 VALUE
-rb_method_call_with_block(int argc, VALUE *argv, VALUE method, VALUE pass_procval)
+rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE pass_procval)
 {
     VALUE result = Qnil;	/* OK */
     struct METHOD *data;

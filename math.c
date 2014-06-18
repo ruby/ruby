@@ -456,7 +456,7 @@ static double math_log1(VALUE x);
  */
 
 static VALUE
-math_log(int argc, VALUE *argv, VALUE obj)
+math_log(int argc, const VALUE *argv, VALUE obj)
 {
     VALUE x, base;
     double d;
@@ -918,7 +918,7 @@ exp1(exp)
 exp2(hypot)
 
 VALUE
-rb_math_log(int argc, VALUE *argv)
+rb_math_log(int argc, const VALUE *argv)
 {
     return math_log(argc, argv, rb_mMath);
 }

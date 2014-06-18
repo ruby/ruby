@@ -1141,7 +1141,7 @@ method_entry_i(st_data_t key, st_data_t value, st_data_t data)
 }
 
 static VALUE
-class_instance_method_list(int argc, VALUE *argv, VALUE mod, int obj, int (*func) (st_data_t, st_data_t, st_data_t))
+class_instance_method_list(int argc, const VALUE *argv, VALUE mod, int obj, int (*func) (st_data_t, st_data_t, st_data_t))
 {
     VALUE ary;
     int recur, prepended = 0;
@@ -1203,7 +1203,7 @@ class_instance_method_list(int argc, VALUE *argv, VALUE mod, int obj, int (*func
  */
 
 VALUE
-rb_class_instance_methods(int argc, VALUE *argv, VALUE mod)
+rb_class_instance_methods(int argc, const VALUE *argv, VALUE mod)
 {
     return class_instance_method_list(argc, argv, mod, 0, ins_methods_i);
 }
@@ -1218,7 +1218,7 @@ rb_class_instance_methods(int argc, VALUE *argv, VALUE mod)
  */
 
 VALUE
-rb_class_protected_instance_methods(int argc, VALUE *argv, VALUE mod)
+rb_class_protected_instance_methods(int argc, const VALUE *argv, VALUE mod)
 {
     return class_instance_method_list(argc, argv, mod, 0, ins_methods_prot_i);
 }
@@ -1241,7 +1241,7 @@ rb_class_protected_instance_methods(int argc, VALUE *argv, VALUE mod)
  */
 
 VALUE
-rb_class_private_instance_methods(int argc, VALUE *argv, VALUE mod)
+rb_class_private_instance_methods(int argc, const VALUE *argv, VALUE mod)
 {
     return class_instance_method_list(argc, argv, mod, 0, ins_methods_priv_i);
 }
@@ -1256,7 +1256,7 @@ rb_class_private_instance_methods(int argc, VALUE *argv, VALUE mod)
  */
 
 VALUE
-rb_class_public_instance_methods(int argc, VALUE *argv, VALUE mod)
+rb_class_public_instance_methods(int argc, const VALUE *argv, VALUE mod)
 {
     return class_instance_method_list(argc, argv, mod, 0, ins_methods_pub_i);
 }
@@ -1292,7 +1292,7 @@ rb_class_public_instance_methods(int argc, VALUE *argv, VALUE mod)
  */
 
 VALUE
-rb_obj_methods(int argc, VALUE *argv, VALUE obj)
+rb_obj_methods(int argc, const VALUE *argv, VALUE obj)
 {
     rb_check_arity(argc, 0, 1);
     if (argc > 0 && !RTEST(argv[0])) {
@@ -1311,7 +1311,7 @@ rb_obj_methods(int argc, VALUE *argv, VALUE obj)
  */
 
 VALUE
-rb_obj_protected_methods(int argc, VALUE *argv, VALUE obj)
+rb_obj_protected_methods(int argc, const VALUE *argv, VALUE obj)
 {
     return class_instance_method_list(argc, argv, CLASS_OF(obj), 1, ins_methods_prot_i);
 }
@@ -1326,7 +1326,7 @@ rb_obj_protected_methods(int argc, VALUE *argv, VALUE obj)
  */
 
 VALUE
-rb_obj_private_methods(int argc, VALUE *argv, VALUE obj)
+rb_obj_private_methods(int argc, const VALUE *argv, VALUE obj)
 {
     return class_instance_method_list(argc, argv, CLASS_OF(obj), 1, ins_methods_priv_i);
 }
@@ -1341,7 +1341,7 @@ rb_obj_private_methods(int argc, VALUE *argv, VALUE obj)
  */
 
 VALUE
-rb_obj_public_methods(int argc, VALUE *argv, VALUE obj)
+rb_obj_public_methods(int argc, const VALUE *argv, VALUE obj)
 {
     return class_instance_method_list(argc, argv, CLASS_OF(obj), 1, ins_methods_pub_i);
 }
@@ -1380,7 +1380,7 @@ rb_obj_public_methods(int argc, VALUE *argv, VALUE obj)
  */
 
 VALUE
-rb_obj_singleton_methods(int argc, VALUE *argv, VALUE obj)
+rb_obj_singleton_methods(int argc, const VALUE *argv, VALUE obj)
 {
     VALUE recur, ary, klass, origin;
     st_table *list, *mtbl;

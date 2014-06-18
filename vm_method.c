@@ -94,7 +94,7 @@ rb_clear_method_cache_by_class(VALUE klass)
 }
 
 VALUE
-rb_f_notimplement(int argc, VALUE *argv, VALUE obj)
+rb_f_notimplement(int argc, const VALUE *argv, VALUE obj)
 {
     rb_notimplement();
 
@@ -1336,7 +1336,7 @@ rb_mod_alias_method(VALUE mod, VALUE newname, VALUE oldname)
 }
 
 static void
-set_method_visibility(VALUE self, int argc, VALUE *argv, rb_method_flag_t ex)
+set_method_visibility(VALUE self, int argc, const VALUE *argv, rb_method_flag_t ex)
 {
     int i;
 
@@ -1357,7 +1357,7 @@ set_method_visibility(VALUE self, int argc, VALUE *argv, rb_method_flag_t ex)
 }
 
 static VALUE
-set_visibility(int argc, VALUE *argv, VALUE module, rb_method_flag_t ex)
+set_visibility(int argc, const VALUE *argv, VALUE module, rb_method_flag_t ex)
 {
     if (argc == 0) {
 	SCOPE_SET(ex);

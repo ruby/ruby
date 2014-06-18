@@ -3569,7 +3569,7 @@ rb_file_expand_path_fast(VALUE fname, VALUE dname)
  */
 
 VALUE
-rb_file_s_expand_path(int argc, VALUE *argv)
+rb_file_s_expand_path(int argc, const VALUE *argv)
 {
     VALUE fname, dname;
 
@@ -3602,7 +3602,7 @@ rb_file_absolute_path(VALUE fname, VALUE dname)
  */
 
 VALUE
-rb_file_s_absolute_path(int argc, VALUE *argv)
+rb_file_s_absolute_path(int argc, const VALUE *argv)
 {
     VALUE fname, dname;
 

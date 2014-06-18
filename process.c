@@ -2435,7 +2435,7 @@ static int rb_exec_without_timer_thread(const struct rb_execarg *eargp, char *er
  */
 
 VALUE
-rb_f_exec(int argc, VALUE *argv)
+rb_f_exec(int argc, const VALUE *argv)
 {
     VALUE execarg_obj, fail_str;
     struct rb_execarg *eargp;
@@ -3585,7 +3585,7 @@ rb_exit(int status)
  */
 
 VALUE
-rb_f_exit(int argc, VALUE *argv)
+rb_f_exit(int argc, const VALUE *argv)
 {
     VALUE status;
     int istatus;
@@ -3614,8 +3614,9 @@ rb_f_exit(int argc, VALUE *argv)
  */
 
 VALUE
-rb_f_abort(int argc, VALUE *argv)
+rb_f_abort(int argc, const VALUE *argv)
 {
+    rb_check_arity(argc, 0, 1);
     if (argc == 0) {
 	if (!NIL_P(GET_THREAD()->errinfo)) {
 	    ruby_error_print();
@@ -3625,9 +3626,9 @@ rb_f_abort(int argc, VALUE *argv)
     else {
 	VALUE args[2];
 
-	rb_scan_args(argc, argv, "1", &args[1]);
-	StringValue(argv[0]);
-	rb_io_puts(argc, argv, rb_stderr);
+	args[1] = args[0] = argv[0];
+	StringValue(args[0]);
+	rb_io_puts(1, args, rb_stderr);
 	args[0] = INT2NUM(EXIT_FAILURE);
 	rb_exc_raise(rb_class_new_instance(2, args, rb_eSystemExit));
     }
@@ -3694,7 +3695,7 @@ rb_spawn_process(struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
 }
 
 static rb_pid_t
-rb_spawn_internal(int argc, VALUE *argv, char *errmsg, size_t errmsg_buflen)
+rb_spawn_internal(int argc, const VALUE *argv, char *errmsg, size_t errmsg_buflen)
 {
     VALUE execarg_obj;
     struct rb_execarg *eargp;
@@ -3709,13 +3710,13 @@ rb_spawn_internal(int argc, VALUE *argv, char *errmsg, size_t errmsg_buflen)
 }
 
 rb_pid_t
-rb_spawn_err(int argc, VALUE *argv, char *errmsg, size_t errmsg_buflen)
+rb_spawn_err(int argc, const VALUE *argv, char *errmsg, size_t errmsg_buflen)
 {
     return rb_spawn_internal(argc, argv, errmsg, errmsg_buflen);
 }
 
 rb_pid_t
-rb_spawn(int argc, VALUE *argv)
+rb_spawn(int argc, const VALUE *argv)
 {
     return rb_spawn_internal(argc, argv, NULL, 0);
 }

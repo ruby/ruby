@@ -873,7 +873,7 @@ enum ary_take_pos_flags
 };
 
 static VALUE
-ary_take_first_or_last(int argc, VALUE *argv, VALUE ary, enum ary_take_pos_flags last)
+ary_take_first_or_last(int argc, const VALUE *argv, VALUE ary, enum ary_take_pos_flags last)
 {
     VALUE nv;
     long n;
@@ -1252,7 +1252,7 @@ rb_ary_subseq(VALUE ary, long beg, long len)
  */
 
 VALUE
-rb_ary_aref(int argc, VALUE *argv, VALUE ary)
+rb_ary_aref(int argc, const VALUE *argv, VALUE ary)
 {
     VALUE arg;
     long beg, len;
@@ -1347,7 +1347,7 @@ rb_ary_first(int argc, VALUE *argv, VALUE ary)
  */
 
 VALUE
-rb_ary_last(int argc, VALUE *argv, VALUE ary)
+rb_ary_last(int argc, const VALUE *argv, VALUE ary)
 {
     if (argc == 0) {
 	long len = RARRAY_LEN(ary);
@@ -2736,7 +2736,7 @@ rb_ary_collect_bang(VALUE ary)
 }
 
 VALUE
-rb_get_values_at(VALUE obj, long olen, int argc, VALUE *argv, VALUE (*func) (VALUE, long))
+rb_get_values_at(VALUE obj, long olen, int argc, const VALUE *argv, VALUE (*func) (VALUE, long))
 {
     VALUE result = rb_ary_new2(argc);
     long beg, len, i, j;

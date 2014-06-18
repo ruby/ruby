@@ -56,7 +56,7 @@ void rb_ary_free(VALUE);
 void rb_ary_modify(VALUE);
 VALUE rb_ary_freeze(VALUE);
 VALUE rb_ary_shared_with_p(VALUE, VALUE);
-VALUE rb_ary_aref(int, VALUE*, VALUE);
+VALUE rb_ary_aref(int, const VALUE*, VALUE);
 VALUE rb_ary_subseq(VALUE, long, long);
 void rb_ary_store(VALUE, long, VALUE);
 VALUE rb_ary_dup(VALUE);
@@ -85,7 +85,7 @@ VALUE rb_ary_rassoc(VALUE, VALUE);
 VALUE rb_ary_includes(VALUE, VALUE);
 VALUE rb_ary_cmp(VALUE, VALUE);
 VALUE rb_ary_replace(VALUE copy, VALUE orig);
-VALUE rb_get_values_at(VALUE, long, int, VALUE*, VALUE(*)(VALUE,long));
+VALUE rb_get_values_at(VALUE, long, int, const VALUE*, VALUE(*)(VALUE,long));
 VALUE rb_ary_resize(VALUE ary, long len);
 #define rb_ary_new2 rb_ary_new_capa
 #define rb_ary_new3 rb_ary_new_from_args
@@ -201,11 +201,11 @@ VALUE rb_include_class_new(VALUE, VALUE);
 VALUE rb_mod_included_modules(VALUE);
 VALUE rb_mod_include_p(VALUE, VALUE);
 VALUE rb_mod_ancestors(VALUE);
-VALUE rb_class_instance_methods(int, VALUE*, VALUE);
-VALUE rb_class_public_instance_methods(int, VALUE*, VALUE);
-VALUE rb_class_protected_instance_methods(int, VALUE*, VALUE);
-VALUE rb_class_private_instance_methods(int, VALUE*, VALUE);
-VALUE rb_obj_singleton_methods(int, VALUE*, VALUE);
+VALUE rb_class_instance_methods(int, const VALUE*, VALUE);
+VALUE rb_class_public_instance_methods(int, const VALUE*, VALUE);
+VALUE rb_class_protected_instance_methods(int, const VALUE*, VALUE);
+VALUE rb_class_private_instance_methods(int, const VALUE*, VALUE);
+VALUE rb_obj_singleton_methods(int, const VALUE*, VALUE);
 void rb_define_method_id(VALUE, ID, VALUE (*)(ANYARGS), int);
 void rb_frozen_class_p(VALUE);
 void rb_undef(VALUE, ID);
@@ -218,16 +218,16 @@ int rb_cmpint(VALUE, VALUE, VALUE);
 NORETURN(void rb_cmperr(VALUE, VALUE));
 /* cont.c */
 VALUE rb_fiber_new(VALUE (*)(ANYARGS), VALUE);
-VALUE rb_fiber_resume(VALUE fib, int argc, VALUE *args);
-VALUE rb_fiber_yield(int argc, VALUE *args);
+VALUE rb_fiber_resume(VALUE fib, int argc, const VALUE *argv);
+VALUE rb_fiber_yield(int argc, const VALUE *argv);
 VALUE rb_fiber_current(void);
 VALUE rb_fiber_alive_p(VALUE);
 /* enum.c */
 VALUE rb_enum_values_pack(int, const VALUE*);
 /* enumerator.c */
-VALUE rb_enumeratorize(VALUE, VALUE, int, VALUE *);
+VALUE rb_enumeratorize(VALUE, VALUE, int, const VALUE *);
 typedef VALUE rb_enumerator_size_func(VALUE, VALUE, VALUE);
-VALUE rb_enumeratorize_with_size(VALUE, VALUE, int, VALUE *, rb_enumerator_size_func *);
+VALUE rb_enumeratorize_with_size(VALUE, VALUE, int, const VALUE *, rb_enumerator_size_func *);
 #ifndef RUBY_EXPORT
 #define rb_enumeratorize_with_size(obj, id, argc, argv, size_fn) \
     rb_enumeratorize_with_size(obj, id, argc, argv, (rb_enumerator_size_func *)(size_fn))
@@ -362,8 +362,8 @@ typedef fd_set rb_fdset_t;
 
 NORETURN(void rb_exc_raise(VALUE));
 NORETURN(void rb_exc_fatal(VALUE));
-VALUE rb_f_exit(int,VALUE*);
-VALUE rb_f_abort(int,VALUE*);
+VALUE rb_f_exit(int, const VALUE*);
+VALUE rb_f_abort(int, const VALUE*);
 void rb_remove_method(VALUE, const char*);
 void rb_remove_method_id(VALUE, ID);
 #define rb_disable_super(klass, name) ((void)0)
@@ -383,15 +383,15 @@ int rb_method_basic_definition_p(VALUE, ID);
 VALUE rb_eval_cmd(VALUE, VALUE, int);
 int rb_obj_respond_to(VALUE, ID, int);
 int rb_respond_to(VALUE, ID);
-VALUE rb_f_notimplement(int argc, VALUE *argv, VALUE obj);
+VALUE rb_f_notimplement(int argc, const VALUE *argv, VALUE obj);
 void rb_interrupt(void);
 VALUE rb_apply(VALUE, ID, VALUE);
 void rb_backtrace(void);
 ID rb_frame_this_func(void);
-VALUE rb_obj_instance_eval(int, VALUE*, VALUE);
-VALUE rb_obj_instance_exec(int, VALUE*, VALUE);
-VALUE rb_mod_module_eval(int, VALUE*, VALUE);
-VALUE rb_mod_module_exec(int, VALUE*, VALUE);
+VALUE rb_obj_instance_eval(int, const VALUE*, VALUE);
+VALUE rb_obj_instance_exec(int, const VALUE*, VALUE);
+VALUE rb_mod_module_eval(int, const VALUE*, VALUE);
+VALUE rb_mod_module_exec(int, const VALUE*, VALUE);
 void rb_load(VALUE, int);
 void rb_load_protect(VALUE, int, int*);
 NORETURN(void rb_jump_tag(int));
@@ -413,8 +413,8 @@ VALUE rb_proc_lambda_p(VALUE);
 VALUE rb_binding_new(void);
 VALUE rb_obj_method(VALUE, VALUE);
 VALUE rb_obj_is_method(VALUE);
-VALUE rb_method_call(int, VALUE*, VALUE);
-VALUE rb_method_call_with_block(int, VALUE *, VALUE, VALUE);
+VALUE rb_method_call(int, const VALUE*, VALUE);
+VALUE rb_method_call_with_block(int, const VALUE *, VALUE, VALUE);
 int rb_mod_method_arity(VALUE, ID);
 int rb_obj_method_arity(VALUE, ID);
 VALUE rb_protect(VALUE (*)(VALUE), VALUE, int*);
@@ -449,9 +449,9 @@ VALUE rb_exec_recursive_paired_outer(VALUE(*)(VALUE, VALUE, int),VALUE,VALUE,VAL
 /* dir.c */
 VALUE rb_dir_getwd(void);
 /* file.c */
-VALUE rb_file_s_expand_path(int, VALUE *);
+VALUE rb_file_s_expand_path(int, const VALUE *);
 VALUE rb_file_expand_path(VALUE, VALUE);
-VALUE rb_file_s_absolute_path(int, VALUE *);
+VALUE rb_file_s_absolute_path(int, const VALUE *);
 VALUE rb_file_absolute_path(VALUE, VALUE);
 VALUE rb_file_dirname(VALUE fname);
 int rb_find_file_ext_safe(VALUE*, const char* const*, int);
@@ -464,7 +464,7 @@ int rb_is_absolute_path(const char *);
 /* gc.c */
 NORETURN(void rb_memerror(void));
 int rb_during_gc(void);
-void rb_gc_mark_locations(VALUE*, VALUE*);
+void rb_gc_mark_locations(const VALUE*, const VALUE*);
 void rb_mark_tbl(struct st_table*);
 void rb_mark_set(struct st_table*);
 void rb_mark_hash(struct st_table*);
@@ -524,9 +524,9 @@ VALUE rb_io_eof(VALUE);
 VALUE rb_io_binmode(VALUE);
 VALUE rb_io_ascii8bit_binmode(VALUE);
 VALUE rb_io_addstr(VALUE, VALUE);
-VALUE rb_io_printf(int, VALUE*, VALUE);
-VALUE rb_io_print(int, VALUE*, VALUE);
-VALUE rb_io_puts(int, VALUE*, VALUE);
+VALUE rb_io_printf(int, const VALUE*, VALUE);
+VALUE rb_io_print(int, const VALUE*, VALUE);
+VALUE rb_io_puts(int, const VALUE*, VALUE);
 VALUE rb_io_fdopen(int, int, const char*);
 VALUE rb_io_get_io(VALUE);
 VALUE rb_file_open(const char*, const char*);
@@ -619,11 +619,11 @@ VALUE rb_sym_all_symbols(void);
 void rb_last_status_set(int status, rb_pid_t pid);
 VALUE rb_last_status_get(void);
 int rb_proc_exec(const char*);
-VALUE rb_f_exec(int,VALUE*);
+VALUE rb_f_exec(int, const VALUE*);
 rb_pid_t rb_waitpid(rb_pid_t pid, int *status, int flags);
 void rb_syswait(rb_pid_t pid);
-rb_pid_t rb_spawn(int, VALUE*);
-rb_pid_t rb_spawn_err(int, VALUE*, char*, size_t);
+rb_pid_t rb_spawn(int, const VALUE*);
+rb_pid_t rb_spawn_err(int, const VALUE*, char*, size_t);
 VALUE rb_proc_times(VALUE);
 VALUE rb_detach_process(rb_pid_t pid);
 /* range.c */
@@ -666,7 +666,7 @@ VALUE rb_get_argv(void);
 void *rb_load_file(const char*);
 void *rb_load_file_str(VALUE);
 /* signal.c */
-VALUE rb_f_kill(int, VALUE*);
+VALUE rb_f_kill(int, const VALUE*);
 #ifdef POSIX_SIGNAL
 #define posix_signal ruby_posix_signal
 RETSIGTYPE (*posix_signal(int, RETSIGTYPE (*)(int)))(int);
@@ -874,8 +874,8 @@ VALUE rb_class_name(VALUE);
 void rb_autoload(VALUE, ID, const char*);
 VALUE rb_autoload_load(VALUE, ID);
 VALUE rb_autoload_p(VALUE, ID);
-VALUE rb_f_trace_var(int, VALUE*);
-VALUE rb_f_untrace_var(int, VALUE*);
+VALUE rb_f_trace_var(int, const VALUE*);
+VALUE rb_f_untrace_var(int, const VALUE*);
 VALUE rb_f_global_variables(void);
 void rb_alias_variable(ID, ID);
 struct st_table* rb_generic_ivar_table(VALUE);
@@ -892,7 +892,7 @@ VALUE rb_obj_remove_instance_variable(VALUE, VALUE);
 void *rb_mod_const_at(VALUE, void*);
 void *rb_mod_const_of(VALUE, void*);
 VALUE rb_const_list(void*);
-VALUE rb_mod_constants(int, VALUE *, VALUE);
+VALUE rb_mod_constants(int, const VALUE *, VALUE);
 VALUE rb_mod_remove_const(VALUE, VALUE);
 int rb_const_defined(VALUE, ID);
 int rb_const_defined_at(VALUE, ID);
@@ -909,7 +909,7 @@ VALUE rb_cvar_get(VALUE, ID);
 void rb_cv_set(VALUE, const char*, VALUE);
 VALUE rb_cv_get(VALUE, const char*);
 void rb_define_class_variable(VALUE, const char*, VALUE);
-VALUE rb_mod_class_variables(int, VALUE*, VALUE);
+VALUE rb_mod_class_variables(int, const VALUE*, VALUE);
 VALUE rb_mod_remove_cvar(VALUE, VALUE);
 
 ID rb_frame_callee(void);
@@ -917,7 +917,7 @@ VALUE rb_str_succ(VALUE);
 VALUE rb_time_succ(VALUE);
 int rb_frame_method_id_and_class(ID *idp, VALUE *klassp);
 VALUE rb_make_backtrace(void);
-VALUE rb_make_exception(int, VALUE*);
+VALUE rb_make_exception(int, const VALUE*);
 
 /* deprecated */
 DEPRECATED(void rb_frame_pop(void));

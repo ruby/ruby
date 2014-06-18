@@ -388,7 +388,7 @@ static void signal_enque(int sig);
  */
 
 VALUE
-rb_f_kill(int argc, VALUE *argv)
+rb_f_kill(int argc, const VALUE *argv)
 {
 #ifndef HAVE_KILLPG
 #define killpg(pg, sig) kill(-(pg), (sig))

@@ -1152,9 +1152,9 @@ id_to_name(ID id, VALUE default_value)
 }
 
 VALUE
-rb_insn_operand_intern(rb_iseq_t *iseq,
+rb_insn_operand_intern(const rb_iseq_t *iseq,
 		       VALUE insn, int op_no, VALUE op,
-		       int len, size_t pos, VALUE *pnop, VALUE child)
+		       int len, size_t pos, const VALUE *pnop, VALUE child)
 {
     const char *types = insn_op_types(insn);
     char type = types[op_no];
@@ -1172,7 +1172,7 @@ rb_insn_operand_intern(rb_iseq_t *iseq,
       case TS_LINDEX:{
 	if (insn == BIN(getlocal) || insn == BIN(setlocal)) {
 	    if (pnop) {
-		rb_iseq_t *diseq = iseq;
+		const rb_iseq_t *diseq = iseq;
 		VALUE level = *pnop, i;
 
 		for (i = 0; i < level; i++) {
@@ -1280,8 +1280,8 @@ rb_insn_operand_intern(rb_iseq_t *iseq,
  * Iseq -> Iseq inspect object
  */
 int
-rb_iseq_disasm_insn(VALUE ret, VALUE *iseq, size_t pos,
-		    rb_iseq_t *iseqdat, VALUE child)
+rb_iseq_disasm_insn(VALUE ret, const VALUE *iseq, size_t pos,
+		    const rb_iseq_t *iseqdat, VALUE child)
 {
     VALUE insn = iseq[pos];
     int len = insn_len(insn);

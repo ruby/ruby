@@ -571,7 +571,7 @@ rb_longjmp(int tag, volatile VALUE mesg, VALUE cause)
     JUMP_TAG(tag);
 }
 
-static VALUE make_exception(int argc, VALUE *argv, int isstr);
+static VALUE make_exception(int argc, const VALUE *argv, int isstr);
 
 void
 rb_exc_raise(VALUE mesg)
@@ -668,7 +668,7 @@ rb_f_raise(int argc, VALUE *argv)
 }
 
 static VALUE
-make_exception(int argc, VALUE *argv, int isstr)
+make_exception(int argc, const VALUE *argv, int isstr)
 {
     VALUE mesg, exc;
     ID exception;
@@ -719,7 +719,7 @@ make_exception(int argc, VALUE *argv, int isstr)
 }
 
 VALUE
-rb_make_exception(int argc, VALUE *argv)
+rb_make_exception(int argc, const VALUE *argv)
 {
     return make_exception(argc, argv, TRUE);
 }
