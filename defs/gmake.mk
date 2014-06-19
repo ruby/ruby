@@ -48,5 +48,6 @@ $(word 1,$(install-targets)): $(word 0,$(install-targets))
 endif
 
 ifneq ($(filter reinstall,$(MAKECMDGOALS)),)
-install: uninstall
+install-prereq: uninstall
+uninstall sudo-precheck: all $(if $(filter all,$(INSTALLDOC)),docs)
 endif

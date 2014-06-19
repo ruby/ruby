@@ -231,80 +231,80 @@ pkgconfig-data: $(ruby_pc)
 $(ruby_pc): $(srcdir)/template/ruby.pc.in config.status
 
 install-all: docs pre-install-all do-install-all post-install-all
-pre-install-all:: pre-install-local pre-install-ext pre-install-doc
-do-install-all: all
+pre-install-all:: all pre-install-local pre-install-ext pre-install-doc
+do-install-all: pre-install-all
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=all --rdoc-output="$(RDOCOUT)"
 post-install-all:: post-install-local post-install-ext post-install-doc
 	@$(NULLCMD)
 
 install-nodoc: pre-install-nodoc do-install-nodoc post-install-nodoc
 pre-install-nodoc:: pre-install-local pre-install-ext
-do-install-nodoc: main
+do-install-nodoc: main pre-install-nodoc
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS)
 post-install-nodoc:: post-install-local post-install-ext
 
 install-local: pre-install-local do-install-local post-install-local
 pre-install-local:: pre-install-bin pre-install-lib pre-install-man
-do-install-local: $(PROGRAM)
+do-install-local: $(PROGRAM) pre-install-local
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=local
 post-install-local:: post-install-bin post-install-lib post-install-man
 
 install-ext: pre-install-ext do-install-ext post-install-ext
 pre-install-ext:: pre-install-ext-arch pre-install-ext-comm
-do-install-ext: exts
+do-install-ext: exts pre-install-ext
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=ext
 post-install-ext:: post-install-ext-arch post-install-ext-comm
 
 install-arch: pre-install-arch do-install-arch post-install-arch
 pre-install-arch:: pre-install-bin pre-install-ext-arch
-do-install-arch: main
+do-install-arch: main do-install-arch
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=arch
 post-install-arch:: post-install-bin post-install-ext-arch
 
 install-comm: pre-install-comm do-install-comm post-install-comm
 pre-install-comm:: pre-install-lib pre-install-ext-comm pre-install-man
-do-install-comm: $(PREP)
+do-install-comm: $(PREP) pre-install-comm
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=lib --install=ext-comm --install=man
 post-install-comm:: post-install-lib post-install-ext-comm post-install-man
 
 install-bin: pre-install-bin do-install-bin post-install-bin
 pre-install-bin:: install-prereq
-do-install-bin: $(PROGRAM)
+do-install-bin: $(PROGRAM) pre-install-bin
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=bin
 post-install-bin::
 	@$(NULLCMD)
 
 install-lib: pre-install-lib do-install-lib post-install-lib
 pre-install-lib:: install-prereq
-do-install-lib: $(PREP)
+do-install-lib: $(PREP) pre-install-lib
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=lib
 post-install-lib::
 	@$(NULLCMD)
 
 install-ext-comm: pre-install-ext-comm do-install-ext-comm post-install-ext-comm
 pre-install-ext-comm:: install-prereq
-do-install-ext-comm: exts
+do-install-ext-comm: exts pre-install-ext-comm
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=ext-comm
 post-install-ext-comm::
 	@$(NULLCMD)
 
 install-ext-arch: pre-install-ext-arch do-install-ext-arch post-install-ext-arch
 pre-install-ext-arch:: install-prereq
-do-install-ext-arch: exts
+do-install-ext-arch: exts pre-install-ext-arch
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=ext-arch
 post-install-ext-arch::
 	@$(NULLCMD)
 
 install-man: pre-install-man do-install-man post-install-man
 pre-install-man:: install-prereq
-do-install-man: $(PREP)
+do-install-man: $(PREP) pre-install-man
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=man
 post-install-man::
 	@$(NULLCMD)
 
 install-capi: capi pre-install-capi do-install-capi post-install-capi
 pre-install-capi:: install-prereq
-do-install-capi: $(PREP)
+do-install-capi: $(PREP) pre-install-capi
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=capi
 post-install-capi::
 	@$(NULLCMD)
@@ -319,10 +319,10 @@ dont-install-all: $(PROGRAM)
 post-no-install-all:: post-no-install-local post-no-install-ext post-no-install-doc
 	@$(NULLCMD)
 
-uninstall: $(INSTALLED_LIST)
+uninstall: $(INSTALLED_LIST) sudo-precheck
 	$(Q)$(SUDO) $(MINIRUBY) $(srcdir)/tool/rbuninstall.rb --destdir=$(DESTDIR) $(INSTALLED_LIST)
 
-reinstall: uninstall install
+reinstall: all uninstall install
 
 what-where-nodoc: no-install-nodoc
 no-install-nodoc: pre-no-install-nodoc dont-install-nodoc post-no-install-nodoc
@@ -401,14 +401,14 @@ post-no-install-man::
 
 install-doc: rdoc pre-install-doc do-install-doc post-install-doc
 pre-install-doc:: install-prereq
-do-install-doc: $(PROGRAM)
+do-install-doc: $(PROGRAM) pre-install-doc
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=rdoc --rdoc-output="$(RDOCOUT)"
 post-install-doc::
 	@$(NULLCMD)
 
 install-gem: pre-install-gem do-install-gem post-install-gem
 pre-install-gem:: pre-install-bin pre-install-lib pre-install-man
-do-install-gem: $(PROGRAM)
+do-install-gem: $(PROGRAM) pre-install-gem
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=gem
 post-install-gem::
 	@$(NULLCMD)
@@ -443,7 +443,7 @@ post-no-install-doc::
 
 CLEAR_INSTALLED_LIST = clear-installed-list
 
-install-prereq: $(CLEAR_INSTALLED_LIST) yes-fake PHONY
+install-prereq: $(CLEAR_INSTALLED_LIST) yes-fake sudo-precheck PHONY
 
 clear-installed-list: PHONY
 	@> $(INSTALLED_LIST) set MAKE="$(MAKE)"
