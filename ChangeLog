@@ -1,3 +1,14 @@
+Fri Jun 20 07:07:28 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (rb_iseq_compile_node): put start label of block after
+	  trace (b_call).
+	  [Bug #9964]
+
+	* test/ruby/test_settracefunc.rb: add a test.
+
+	  added assert_consistent_call_return() method check call/return
+	  consistency.
+
 Fri Jun 20 05:26:27 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_eval.c (rb_catch_protect): fix same problem of [Bug #9961].

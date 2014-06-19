@@ -1308,4 +1308,52 @@ class TestSetTraceFunc < Test::Unit::TestCase
       [:c_return, :===],
     [:b_return, :test_rb_rescue]], events
   end
+
+  def method_prefix event
+    case event
+    when :call, :return
+      :n
+    when :c_call, :c_return
+      :c
+    when :b_call, :b_return
+      :b
+    end
+  end
+
+  def method_label tp
+    "#{method_prefix(tp.event)}##{tp.method_id}"
+  end
+
+  def assert_consistent_call_return message='', check_events: nil
+    check_events ||= %i(a_call a_return)
+    call_events = []
+    return_events = []
+
+    TracePoint.new(*check_events){|tp|
+      next unless target_thread?
+
+      case tp.event.to_s
+      when /call/
+        call_events << method_label(tp)
+      when /return/
+        return_events << method_label(tp)
+      end
+    }.enable do
+      yield
+    end
+
+    assert_equal false, call_events.empty?
+    assert_equal false, return_events.empty?
+    assert_equal call_events, return_events.reverse, message
+  end
+
+  def test_b_call_with_redo
+    assert_consistent_call_return do
+      i = 0
+      1.times{
+        break if (i+=1) > 10
+        redo
+      }
+    end
+  end
 end
