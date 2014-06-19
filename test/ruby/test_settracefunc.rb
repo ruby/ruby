@@ -1203,112 +1203,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
     }, '[Bug #9940]'
   end
 
-  def method_test_rescue_should_not_cause_b_return
-    begin
-      raise
-    rescue
-      return
-    end
-  end
-
-  def method_test_ensure_should_not_cause_b_return
-    begin
-      raise
-    ensure
-      return
-    end
-  end
-
-  def test_rescue_and_ensure_should_not_cause_b_return
-    curr_thread = Thread.current
-    trace = TracePoint.new(:b_call, :b_return){
-      next if curr_thread != Thread.current
-      flunk("Should not reach here because there is no block.")
-    }
-
-    begin
-      trace.enable
-      method_test_rescue_should_not_cause_b_return
-      begin
-        method_test_ensure_should_not_cause_b_return
-      rescue
-        # ignore
-      end
-    ensure
-      trace.disable
-    end
-  end
-
-  define_method(:method_test_argument_error_on_bmethod){|correct_key: 1|}
-
-  def test_argument_error_on_bmethod
-    events = []
-    curr_thread = Thread.current
-    TracePoint.new(:call, :return){|tp|
-      next if curr_thread != Thread.current
-      events << [tp.event, tp.method_id]
-    }.enable do
-      begin
-        method_test_argument_error_on_bmethod(wrong_key: 2)
-      rescue => e
-        # ignore
-      end
-    end
-
-    assert_equal [], events # should be empty.
-  end
-
-  def test_rb_rescue
-    events = []
-    curr_thread = Thread.current
-    TracePoint.new(:a_call, :a_return){|tp|
-      next if curr_thread != Thread.current
-      events << [tp.event, tp.method_id]
-    }.enable do
-      begin
-        -Numeric.new
-      rescue => e
-        # ignore
-      end
-    end
-
-    assert_equal [
-    [:b_call, :test_rb_rescue],
-      [:c_call, :new],
-        [:c_call, :initialize],
-        [:c_return, :initialize],
-      [:c_return, :new],
-      [:c_call, :-@],
-        [:c_call, :coerce],
-          [:c_call, :to_s],
-          [:c_return, :to_s],
-          [:c_call, :new],
-            [:c_call, :initialize],
-            [:c_return, :initialize],
-          [:c_return, :new],
-          [:c_call, :exception],
-          [:c_return, :exception],
-          [:c_call, :backtrace],
-          [:c_return, :backtrace],
-        [:c_return, :coerce],            # don't miss it!
-        [:c_call, :to_s],
-        [:c_return, :to_s],
-        [:c_call, :to_s],
-        [:c_return, :to_s],
-        [:c_call, :new],
-          [:c_call, :initialize],
-          [:c_return, :initialize],
-        [:c_return, :new],
-        [:c_call, :exception],
-        [:c_return, :exception],
-        [:c_call, :backtrace],
-        [:c_return, :backtrace],
-      [:c_return, :-@],
-      [:c_call, :===],
-      [:c_return, :===],
-    [:b_return, :test_rb_rescue]], events
-  end
-
   def method_prefix event
     case event
     when :call, :return
@@ -1326,29 +1220,76 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def assert_consistent_call_return message='', check_events: nil
     check_events ||= %i(a_call a_return)
-    call_events = []
-    return_events = []
+    call_stack = []
 
     TracePoint.new(*check_events){|tp|
       next unless target_thread?
 
       case tp.event.to_s
       when /call/
-        call_events << method_label(tp)
+        call_stack << method_label(tp)
       when /return/
-        return_events << method_label(tp)
+        frame = call_stack.pop
+        assert_equal(frame, method_label(tp))
       end
     }.enable do
       yield
     end
 
-    assert_equal false, call_events.empty?
-    assert_equal false, return_events.empty?
-    assert_equal call_events, return_events.reverse, message
+    assert_equal true, call_stack.empty?
+  end
+
+  def method_test_rescue_should_not_cause_b_return
+    begin
+      raise
+    rescue
+      return
+    end
+  end
+
+  def method_test_ensure_should_not_cause_b_return
+    begin
+      raise
+    ensure
+      return
+    end
+  end
+
+  def test_rescue_and_ensure_should_not_cause_b_return
+    assert_consistent_call_return '[Bug #9957]' do
+      method_test_rescue_should_not_cause_b_return
+      begin
+        method_test_ensure_should_not_cause_b_return
+      rescue
+        # ignore
+      end
+    end
+  end
+
+  define_method(:method_test_argument_error_on_bmethod){|correct_key: 1|}
+
+  def test_argument_error_on_bmethod
+    assert_consistent_call_return '[Bug #9959]' do
+      begin
+        method_test_argument_error_on_bmethod(wrong_key: 2)
+      rescue => e
+        # ignore
+      end
+    end
+  end
+
+  def test_rb_rescue
+    assert_consistent_call_return '[Bug #9961]' do
+      begin
+        -Numeric.new
+      rescue => e
+        # ignore
+      end
+    end
   end
 
   def test_b_call_with_redo
-    assert_consistent_call_return do
+    assert_consistent_call_return '[Bug #9964]' do
       i = 0
       1.times{
         break if (i+=1) > 10

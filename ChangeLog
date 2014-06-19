@@ -1,3 +1,11 @@
+Fri Jun 20 07:26:44 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_settracefunc.rb: rewrite tests with 
+	  assert_consistent_call_return().
+
+	  assert_consistent_call_return() is also modified to check
+	  consistency.
+
 Fri Jun 20 07:07:28 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (rb_iseq_compile_node): put start label of block after
