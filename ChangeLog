@@ -1,3 +1,9 @@
+Fri Jun 20 05:26:27 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_eval.c (rb_catch_protect): fix same problem of [Bug #9961].
+
+	* vm_eval.c (rb_iterate): ditto.
+
 Thu Jun 19 21:41:30 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (rb_vm_rewind_cfp): add new function to rewind specified cfp

@@ -1104,10 +1104,11 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
 	    VALUE *cep = cfp->ep;
 
 	    if (cep == escape_ep) {
+		rb_vm_rewind_cfp(th, cfp);
+
 		state = 0;
 		th->state = 0;
 		th->errinfo = Qnil;
-		th->cfp = cfp;
 		goto iter_retry;
 	    }
 	}
@@ -1863,7 +1864,7 @@ rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, int *stateptr)
 	val = (*func)(tag, data, 1, (const VALUE *)&tag, Qnil);
     }
     else if (state == TAG_THROW && RNODE(th->errinfo)->u1.value == tag) {
-	th->cfp = saved_cfp;
+	rb_vm_rewind_cfp(th, saved_cfp);
 	val = th->tag->retval;
 	th->errinfo = Qnil;
 	state = 0;
