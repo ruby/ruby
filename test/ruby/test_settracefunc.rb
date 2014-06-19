@@ -383,7 +383,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
     [["c-return", 3, :set_trace_func, Kernel],
      ["line", 6, __method__, self.class],
-     ["call", 6, :foobar, FooBar],
+     ["call", 1, :foobar, FooBar],
      ["return", 6, :foobar, FooBar],
      ["line", 7, __method__, self.class],
      ["c-call", 7, :set_trace_func, Kernel]].each{|e|
@@ -1237,5 +1237,24 @@ class TestSetTraceFunc < Test::Unit::TestCase
     ensure
       trace.disable
     end
+  end
+
+  define_method(:method_test_argument_error_on_bmethod){|correct_key: 1|}
+
+  def test_argument_error_on_bmethod
+    events = []
+    curr_thread = Thread.current
+    TracePoint.new(:call, :return){|tp|
+      next if curr_thread != Thread.current
+      events << [tp.event, tp.method_id]
+    }.enable do
+      begin
+        method_test_argument_error_on_bmethod(wrong_key: 2)
+      rescue => e
+        # ignore
+      end
+    end
+
+    assert_equal [], events # should be empty.
   end
 end

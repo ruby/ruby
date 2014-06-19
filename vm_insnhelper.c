@@ -1615,16 +1615,10 @@ vm_call_bmethod_body(rb_thread_t *th, rb_call_info_t *ci, const VALUE *argv)
     rb_proc_t *proc;
     VALUE val;
 
-    RUBY_DTRACE_METHOD_ENTRY_HOOK(th, ci->me->klass, ci->me->called_id);
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_CALL, ci->recv, ci->me->called_id, ci->me->klass, Qnil);
-
     /* control block frame */
     th->passed_bmethod_me = ci->me;
     GetProcPtr(ci->me->def->body.proc, proc);
     val = vm_invoke_proc(th, proc, ci->recv, ci->defined_class, ci->argc, argv, ci->blockptr);
-
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_RETURN, ci->recv, ci->me->called_id, ci->me->klass, val);
-    RUBY_DTRACE_METHOD_RETURN_HOOK(th, ci->me->klass, ci->me->called_id);
 
     return val;
 }

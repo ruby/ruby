@@ -1,3 +1,14 @@
+Thu Jun 19 19:47:21 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (invoke_block_from_c): move call/return event timing for
+	  bmethod. It can invoke inconsistent call event if this call raises
+	  argument error.
+	  [Bug #9959]
+
+	* vm_insnhelper.c (vm_call_bmethod_body): ditto.
+
+	* test/ruby/test_settracefunc.rb: add a test.
+
 Thu Jun 19 18:14:47 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: add VM_FRAME_MAGIC_RESCUE to recognize normal block or

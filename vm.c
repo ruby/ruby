@@ -715,15 +715,17 @@ invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
 		    const rb_block_t *blockptr, const NODE *cref,
 		    VALUE defined_class, int splattable)
 {
-    if (SPECIAL_CONST_P(block->iseq))
+    if (SPECIAL_CONST_P(block->iseq)) {
 	return Qnil;
+    }
     else if (BUILTIN_TYPE(block->iseq) != T_NODE) {
+	VALUE ret;
 	const rb_iseq_t *iseq = block->iseq;
 	const rb_control_frame_t *cfp;
 	int i, opt_pc, arg_size = iseq->arg_size;
-	int type = block_proc_is_lambda(block->proc) ?
-	  VM_FRAME_MAGIC_LAMBDA : VM_FRAME_MAGIC_BLOCK;
-
+	int type = block_proc_is_lambda(block->proc) ? VM_FRAME_MAGIC_LAMBDA : VM_FRAME_MAGIC_BLOCK;
+	const rb_method_entry_t *me = th->passed_bmethod_me;
+	th->passed_bmethod_me = 0;
 	cfp = th->cfp;
 
 	for (i=0; i<argc; i++) {
@@ -733,15 +735,17 @@ invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
 	opt_pc = vm_yield_setup_args(th, iseq, argc, cfp->sp, blockptr,
 				     (type == VM_FRAME_MAGIC_LAMBDA) ? splattable+1 : 0);
 
-	if (th->passed_bmethod_me != 0) {
+	if (me != 0) {
 	    /* bmethod */
 	    vm_push_frame(th, iseq, type | VM_FRAME_FLAG_FINISH | VM_FRAME_FLAG_BMETHOD,
 			  self, defined_class,
 			  VM_ENVVAL_PREV_EP_PTR(block->ep),
 			  iseq->iseq_encoded + opt_pc,
 			  cfp->sp + arg_size, iseq->local_size - arg_size,
-			  th->passed_bmethod_me, iseq->stack_max);
-	    th->passed_bmethod_me = 0;
+			  me, iseq->stack_max);
+
+	    RUBY_DTRACE_METHOD_ENTRY_HOOK(th, me->klass, me->called_id);
+	    EXEC_EVENT_HOOK(th, RUBY_EVENT_CALL, self, me->called_id, me->klass, Qnil);
 	}
 	else {
 	    vm_push_frame(th, iseq, type | VM_FRAME_FLAG_FINISH,
@@ -756,7 +760,15 @@ invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
 	    th->cfp->ep[-1] = (VALUE)cref;
 	}
 
-	return vm_exec(th);
+	ret = vm_exec(th);
+
+	if (me) {
+	    /* bmethod */
+	    EXEC_EVENT_HOOK(th, RUBY_EVENT_RETURN, self, me->called_id, me->klass, ret);
+	    RUBY_DTRACE_METHOD_RETURN_HOOK(th, me->klass, me->called_id);
+	}
+
+	return ret;
     }
     else {
 	return vm_yield_with_cfunc(th, block, self, argc, argv, blockptr);
