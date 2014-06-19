@@ -617,15 +617,17 @@ typedef struct rb_thread_struct {
     VALUE (*first_func)(ANYARGS);
 
     /* for GC */
-    VALUE *machine_stack_start;
-    VALUE *machine_stack_end;
-    size_t machine_stack_maxsize;
+    struct {
+	VALUE *stack_start;
+	VALUE *stack_end;
+	size_t stack_maxsize;
 #ifdef __ia64
-    VALUE *machine_register_stack_start;
-    VALUE *machine_register_stack_end;
-    size_t machine_register_stack_maxsize;
+	VALUE *register_stack_start;
+	VALUE *register_stack_end;
+	size_t register_stack_maxsize;
 #endif
-    jmp_buf machine_regs;
+	jmp_buf regs;
+    } machine;
     int mark_stack_len;
 
     /* statistics data for profiler */
