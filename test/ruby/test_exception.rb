@@ -510,6 +510,17 @@ end.join
   rescue SystemStackError
   end
 
+  def test_machine_stackoverflow_by_define_method
+    bug9454 = '[ruby-core:60113] [Bug #9454]'
+    assert_separately([], <<-SRC)
+    assert_raise(SystemStackError, #{bug9454.dump}) {
+      define_method(:foo) {self.foo}
+      self.foo
+    }
+    SRC
+  rescue SystemStackError
+  end
+
   def test_cause
     msg = "[Feature #8257]"
     cause = nil
