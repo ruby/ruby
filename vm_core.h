@@ -901,6 +901,7 @@ VALUE rb_name_err_mesg_new(VALUE obj, VALUE mesg, VALUE recv, VALUE method);
 void rb_vm_stack_to_heap(rb_thread_t *th);
 void ruby_thread_init_stack(rb_thread_t *th);
 int rb_vm_control_frame_id_and_class(const rb_control_frame_t *cfp, ID *idp, VALUE *klassp);
+void rb_vm_rewind_cfp(rb_thread_t *th, rb_control_frame_t *cfp);
 
 void rb_gc_mark_machine_stack(rb_thread_t *th);
 

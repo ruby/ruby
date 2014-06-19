@@ -1257,4 +1257,55 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
     assert_equal [], events # should be empty.
   end
+
+  def test_rb_rescue
+    events = []
+    curr_thread = Thread.current
+    TracePoint.new(:a_call, :a_return){|tp|
+      next if curr_thread != Thread.current
+      events << [tp.event, tp.method_id]
+    }.enable do
+      begin
+        -Numeric.new
+      rescue => e
+        # ignore
+      end
+    end
+
+    assert_equal [
+    [:b_call, :test_rb_rescue],
+      [:c_call, :new],
+        [:c_call, :initialize],
+        [:c_return, :initialize],
+      [:c_return, :new],
+      [:c_call, :-@],
+        [:c_call, :coerce],
+          [:c_call, :to_s],
+          [:c_return, :to_s],
+          [:c_call, :new],
+            [:c_call, :initialize],
+            [:c_return, :initialize],
+          [:c_return, :new],
+          [:c_call, :exception],
+          [:c_return, :exception],
+          [:c_call, :backtrace],
+          [:c_return, :backtrace],
+        [:c_return, :coerce],            # don't miss it!
+        [:c_call, :to_s],
+        [:c_return, :to_s],
+        [:c_call, :to_s],
+        [:c_return, :to_s],
+        [:c_call, :new],
+          [:c_call, :initialize],
+          [:c_return, :initialize],
+        [:c_return, :new],
+        [:c_call, :exception],
+        [:c_return, :exception],
+        [:c_call, :backtrace],
+        [:c_return, :backtrace],
+      [:c_return, :-@],
+      [:c_call, :===],
+      [:c_return, :===],
+    [:b_return, :test_rb_rescue]], events
+  end
 end

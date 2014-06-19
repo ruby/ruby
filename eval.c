@@ -803,7 +803,7 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 	}
     }
     else {
-	th->cfp = cfp; /* restore */
+	rb_vm_rewind_cfp(th, cfp);
 
 	if (state == TAG_RAISE) {
 	    int handle = FALSE;
@@ -862,7 +862,7 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int * state)
 	SAVE_ROOT_JMPBUF(th, result = (*proc) (data));
     }
     else {
-	th->cfp = cfp;
+	rb_vm_rewind_cfp(th, cfp);
     }
     MEMCPY(&(th)->root_jmpbuf, &org_jmpbuf, rb_jmpbuf_t, 1);
     th->protect_tag = protect_tag.prev;
