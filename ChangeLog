@@ -1,3 +1,18 @@
+Thu Jun 19 18:14:47 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: add VM_FRAME_MAGIC_RESCUE to recognize normal block or
+	  rescue clause.
+
+	* vm.c (vm_exec): use VM_FRAME_MAGIC_RESCUE on at rescue/ensure.
+
+	* test/ruby/test_settracefunc.rb: should not invoke b_return at rescue
+	  clause.
+	  [Bug #9957]
+
+	* vm_dump.c (control_frame_dump): check VM_FRAME_MAGIC_RESCUE.
+
+	* vm_dump.c (vm_stack_dump_each): ditto.
+
 Thu Jun 19 13:39:11 2014  Arne Brasseur  <arne@arnebrasseur.net>
 
 	* proc.c (rb_method_curry): Implement Method#curry, which delegates

@@ -1216,6 +1216,7 @@ vm_frametype_name(const rb_control_frame_t *cfp)
       case VM_FRAME_MAGIC_IFUNC:  return "ifunc";
       case VM_FRAME_MAGIC_EVAL:   return "eval";
       case VM_FRAME_MAGIC_LAMBDA: return "lambda";
+      case VM_FRAME_MAGIC_RESCUE: return "rescue";
       default:
 	rb_bug("unknown frame");
     }
@@ -1520,7 +1521,7 @@ vm_exec(rb_thread_t *th)
 
 	    /* push block frame */
 	    cfp->sp[0] = err;
-	    vm_push_frame(th, catch_iseq, VM_FRAME_MAGIC_BLOCK,
+	    vm_push_frame(th, catch_iseq, VM_FRAME_MAGIC_RESCUE,
 			  cfp->self, cfp->klass,
 			  VM_ENVVAL_PREV_EP_PTR(cfp->ep),
 			  catch_iseq->iseq_encoded,
