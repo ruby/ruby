@@ -755,4 +755,55 @@ class TestMethod < Test::Unit::TestCase
     m = assert_nothing_raised(NameError, feature8391) {break o.singleton_method(:bar)}
     assert_equal(:bar, m.call, feature8391)
   end
+
+  Feature9783 = '[ruby-core:62212] [Feature #9783]'
+
+  def assert_curry_three_args(m)
+    curried = m.curry
+    assert_equal(6, curried.(1).(2).(3), Feature9783)
+
+    curried = m.curry(3)
+    assert_equal(6, curried.(1).(2).(3), Feature9783)
+
+    assert_raise_with_message(ArgumentError, /wrong number/) {m.curry(2)}
+  end
+
+  def test_curry_method
+    c = Class.new {
+      def three_args(a,b,c) a + b + c end
+    }
+    assert_curry_three_args(c.new.method(:three_args))
+  end
+
+  def test_curry_from_proc
+    c = Class.new {
+      define_method(:three_args) {|a,b,c| a + b + c}
+    }
+    assert_curry_three_args(c.new.method(:three_args))
+  end
+
+  def assert_curry_var_args(m)
+    curried = m.curry(3)
+    assert_equal([1, 2, 3], curried.(1).(2).(3), Feature9783)
+
+    curried = m.curry(2)
+    assert_equal([1, 2], curried.(1).(2), Feature9783)
+
+    curried = m.curry(0)
+    assert_equal([1], curried.(1), Feature9783)
+  end
+
+  def test_curry_var_args
+    c = Class.new {
+      def var_args(*args) args end
+    }
+    assert_curry_var_args(c.new.method(:var_args))
+  end
+
+  def test_curry_from_proc_var_args
+    c = Class.new {
+      define_method(:var_args) {|*args| args}
+    }
+    assert_curry_var_args(c.new.method(:var_args))
+  end
 end

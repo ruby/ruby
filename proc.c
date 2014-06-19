@@ -2584,7 +2584,7 @@ curry(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc)
   *     p b.curry[]                  #=> :foo
   */
 static VALUE
-proc_curry(int argc, VALUE *argv, VALUE self)
+proc_curry(int argc, const VALUE *argv, VALUE self)
 {
     int sarity, max_arity, min_arity = rb_proc_min_max_arity(self, &max_arity);
     VALUE arity;
@@ -2601,6 +2601,45 @@ proc_curry(int argc, VALUE *argv, VALUE self)
     }
 
     return make_curry_proc(self, rb_ary_new(), arity);
+}
+
+/*
+ *  call-seq:
+ *     meth.curry        -> proc
+ *     meth.curry(arity) -> proc
+ *
+ *  Returns a curried proc based on the method. When the proc is called with a number of
+ *  arguments that is lower than the method's arity, then another curried proc is returned.
+ *  Only when enough arguments have been supplied to satisfy the method signature, will the
+ *  method actually be called.
+ *
+ *  The optional <i>arity</i> argument should be supplied when currying methods with
+ *  variable arguments to determine how many arguments are needed before the method is
+ *  called.
+ *
+ *     def foo(a,b,c)
+ *       [a, b, c]
+ *     end
+ *
+ *     proc  = self.method(:foo).curry
+ *     proc2 = proc.call(1, 2)          #=> #<Proc>
+ *     proc2.call(3)                    #=> [1,2,3]
+ *
+ *     def vararg(*args)
+ *       args
+ *     end
+ *
+ *     proc = self.method(:vararg).curry(4)
+ *     proc2 = proc.call(:x)      #=> #<Proc>
+ *     proc3 = proc2.call(:y, :z) #=> #<Proc>
+ *     proc3.call(:a)             #=> [:x, :y, :z, :a]
+ */
+
+static VALUE
+rb_method_curry(int argc, const VALUE *argv, VALUE self)
+{
+    VALUE proc = method_proc(self);
+    return proc_curry(argc, argv, proc);
 }
 
 /*
@@ -2723,6 +2762,7 @@ Init_Proc(void)
     rb_define_method(rb_cMethod, "hash", method_hash, 0);
     rb_define_method(rb_cMethod, "clone", method_clone, 0);
     rb_define_method(rb_cMethod, "call", rb_method_call, -1);
+    rb_define_method(rb_cMethod, "curry", rb_method_curry, -1);
     rb_define_method(rb_cMethod, "[]", rb_method_call, -1);
     rb_define_method(rb_cMethod, "arity", method_arity_m, 0);
     rb_define_method(rb_cMethod, "inspect", method_inspect, 0);

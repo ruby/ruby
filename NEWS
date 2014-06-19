@@ -55,6 +55,10 @@ with all sufficient information, see the ChangeLog file.
     * Matrix#cofactor(row, column) returns the (row, column) cofactor
       which is obtained by multiplying the first minor by (-1)**(row + column).
 
+* Method
+  * New methods:
+    * Method#curry([arity]) returns a curried Proc.
+
 === Core classes compatibility issues (excluding feature bug fixes)
 
 * IO
