@@ -586,7 +586,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_predicate(m, :tainted?)
   end
 
-  def check(re, ss, fs = [], msg = nil)
+  def assert_regexp(re, ss, fs = [], msg = nil)
     re = Regexp.new(re) unless re.is_a?(Regexp)
     ss = [ss] unless ss.is_a?(Array)
     ss.each do |e, s|
@@ -598,10 +598,12 @@ class TestRegexp < Test::Unit::TestCase
     fs = [fs] unless fs.is_a?(Array)
     fs.each {|s| assert_no_match(re, s, msg) }
   end
+  alias check assert_regexp
 
-  def failcheck(re)
+  def assert_fail(re)
     assert_raise(RegexpError) { %r"#{ re }" }
   end
+  alias failcheck assert_fail
 
   def test_parse
     check(/\*\+\?\{\}\|\(\)\<\>\`\'/, "*+?{}|()<>`'")
