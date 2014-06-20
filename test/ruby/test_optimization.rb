@@ -16,28 +16,16 @@ class TestRubyOptimization < Test::Unit::TestCase
     FIXNUM_MIN = -1073741824          # -2 ** 30
   end
 
-  def redefine_method(klass, method)
-    (@redefine_method_seq ||= 0)
-    seq = (@redefine_method_seq += 1)
-    eval(<<-End, ::TOPLEVEL_BINDING)
+  def assert_redefine_method(klass, method, code, msg = nil)
+    assert_separately([], <<-"end;")#    do
       class #{klass}
-        alias redefine_method_orig_#{seq} #{method}
         undef #{method}
         def #{method}(*args)
           args[0]
         end
       end
-    End
-    begin
-      return yield
-    ensure
-      eval(<<-End, ::TOPLEVEL_BINDING)
-        class #{klass}
-          undef #{method}
-          alias #{method} redefine_method_orig_#{seq}
-        end
-      End
-    end
+      #{code}
+    end;
   end
 
   def test_fixnum_plus
@@ -47,8 +35,7 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_instance_of Bignum, FIXNUM_MAX + 1
 
     assert_equal 21, 10 + 11
-    assert_equal 11, redefine_method('Fixnum', '+') { 10 + 11 }
-    assert_equal 21, 10 + 11
+    assert_redefine_method('Fixnum', '+', 'assert_equal 11, 10 + 11')
   end
 
   def test_fixnum_minus
@@ -57,41 +44,53 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_instance_of Bignum, FIXNUM_MIN - 1
 
     assert_equal 5, 8 - 3
-    assert_equal 3, redefine_method('Fixnum', '-') { 8 - 3 }
-    assert_equal 5, 8 - 3
+    assert_redefine_method('Fixnum', '-', 'assert_equal 3, 8 - 3')
   end
 
   def test_fixnum_mul
     assert_equal 15, 3 * 5
+    assert_redefine_method('Fixnum', '*', 'assert_equal 5, 3 * 5')
   end
 
   def test_fixnum_div
     assert_equal 3, 15 / 5
-    assert_equal 6.66, redefine_method('Float', '/') { 4.2 / 6.66 }, "bug 9238"
+    assert_redefine_method('Fixnum', '/', 'assert_equal 5, 15 / 5')
   end
 
   def test_fixnum_mod
     assert_equal 1, 8 % 7
+    assert_redefine_method('Fixnum', '%', 'assert_equal 7, 8 % 7')
   end
 
   def test_float_plus
     assert_equal 4.0, 2.0 + 2.0
-    assert_equal 2.0, redefine_method('Float', '+') { 2.0 + 2.0 }
+    assert_redefine_method('Float', '+', 'assert_equal 2.0, 2.0 + 2.0')
+  end
+
+  def test_float_minus
     assert_equal 4.0, 2.0 + 2.0
+    assert_redefine_method('Float', '+', 'assert_equal 2.0, 2.0 + 2.0')
+  end
+
+  def test_float_mul
+    assert_equal 29.25, 4.5 * 6.5
+    assert_redefine_method('Float', '*', 'assert_equal 6.5, 4.5 * 6.5')
+  end
+
+  def test_float_div
+    assert_in_delta 0.63063063063063063, 4.2 / 6.66
+    assert_redefine_method('Float', '/', 'assert_equal 6.66, 4.2 / 6.66', "[Bug #9238]")
   end
 
   def test_string_length
     assert_equal 6, "string".length
-    assert_nil redefine_method('String', 'length') { "string".length }
-    assert_equal 6, "string".length
+    assert_redefine_method('String', 'length', 'assert_nil "string".length')
   end
 
   def test_string_empty?
     assert_equal true, "".empty?
     assert_equal false, "string".empty?
-    assert_nil redefine_method('String', 'empty?') { "string".empty? }
-    assert_equal true, "".empty?
-    assert_equal false, "string".empty?
+    assert_redefine_method('String', 'empty?', 'assert_nil "string".empty?')
   end
 
   def test_string_plus
@@ -99,8 +98,7 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal "x", "x" + ""
     assert_equal "x", "" + "x"
     assert_equal "ab", "a" + "b"
-    assert_equal 'b', redefine_method('String', '+') { "a" + "b" }
-    assert_equal "ab", "a" + "b"
+    assert_redefine_method('String', '+', 'assert_equal "b", "a" + "b"')
   end
 
   def test_string_succ
@@ -110,34 +108,41 @@ class TestRubyOptimization < Test::Unit::TestCase
 
   def test_string_format
     assert_equal '2', '%d' % 2
+    assert_redefine_method('String', '%', 'assert_equal 2, "%d" % 2')
   end
 
   def test_array_plus
     assert_equal [1,2], [1]+[2]
+    assert_redefine_method('Array', '+', 'assert_equal [2], [1]+[2]')
   end
 
   def test_array_minus
     assert_equal [2], [1,2] - [1]
+    assert_redefine_method('Array', '-', 'assert_equal [1], [1,2]-[1]')
   end
 
   def test_array_length
     assert_equal 0, [].length
     assert_equal 3, [1,2,3].length
+    assert_redefine_method('Array', 'length', 'assert_nil([].length); assert_nil([1,2,3].length)')
   end
 
   def test_array_empty?
     assert_equal true, [].empty?
     assert_equal false, [1,2,3].empty?
+    assert_redefine_method('Array', 'empty?', 'assert_nil([].empty?); assert_nil([1,2,3].empty?)')
   end
 
   def test_hash_length
     assert_equal 0, {}.length
     assert_equal 1, {1=>1}.length
+    assert_redefine_method('Hash', 'length', 'assert_nil({}.length); assert_nil({1=>1}.length)')
   end
 
   def test_hash_empty?
     assert_equal true, {}.empty?
     assert_equal false, {1=>1}.empty?
+    assert_redefine_method('Hash', 'empty?', 'assert_nil({}.empty?); assert_nil({1=>1}.empty?)')
   end
 
   class MyObj
