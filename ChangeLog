@@ -11,7 +11,7 @@ Fri Jun 20 17:15:43 2014  Koichi Sasada  <ko1@atdot.net>
 
 Fri Jun 20 07:26:44 2014  Koichi Sasada  <ko1@atdot.net>
 
-	* test/ruby/test_settracefunc.rb: rewrite tests with 
+	* test/ruby/test_settracefunc.rb: rewrite tests with
 	  assert_consistent_call_return().
 
 	  assert_consistent_call_return() is also modified to check
@@ -50,7 +50,7 @@ Thu Jun 19 21:41:30 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_settracefunc.rb: add a test.
 
-	* vm_core.h (rb_name_err_mesg_new): 
+	* vm_core.h (rb_name_err_mesg_new):
 
 Thu Jun 19 19:47:21 2014  Koichi Sasada  <ko1@atdot.net>
 
