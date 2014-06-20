@@ -2397,9 +2397,9 @@ vm_make_proc_with_iseq(rb_iseq_t *blockiseq)
 }
 
 static VALUE
-vm_once_exec(rb_iseq_t *iseq)
+vm_once_exec(VALUE iseq)
 {
-    VALUE proc = vm_make_proc_with_iseq(iseq);
+    VALUE proc = vm_make_proc_with_iseq((rb_iseq_t *)iseq);
     return rb_proc_call_with_block(proc, 0, 0, Qnil);
 }
 

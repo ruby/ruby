@@ -1250,7 +1250,7 @@ once
 	}
 	else if (is->once.running_thread == th) {
 	    /* recursive once */
-	    val = vm_once_exec(iseq);
+	    val = vm_once_exec((VALUE)iseq);
 	}
 	else {
 	    /* waiting for finish */
