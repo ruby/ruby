@@ -50,7 +50,7 @@ Thu Jun 19 21:41:30 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_settracefunc.rb: add a test.
 
-	* vm_core.h (rb_name_err_mesg_new):
+	* vm_core.h (rb_vm_rewind_cfp): add the prototype declaration.
 
 Thu Jun 19 19:47:21 2014  Koichi Sasada  <ko1@atdot.net>
 
