@@ -16,27 +16,16 @@ end
 ENV["GEM_SKIP"] = ENV["GEM_HOME"] = ENV["GEM_PATH"] = "".freeze
 
 require_relative 'profile_test_all' if ENV.has_key?('RUBY_TEST_ALL_PROFILE')
+require_relative 'lib/tracepointchecker'
 
 module Test::Unit
   module ZombieHunter
-
-    def before_setup
-      @tracepoint_captured_stat = TracePoint.stat.map{|k, (activated, deleted)| [k, activated]}
-    end
-
     def after_teardown
       super
       assert_empty(Process.waitall)
-
-      # detect zombie traces.
-      assert_equal(
-        @tracepoint_captured_stat,
-        TracePoint.stat.map{|k, (activated, deleted)| [k, activated]},
-        "The number of active trace events was changed"
-      )
-      # puts "TracePoint - deleted: #{deleted}" if deleted > 0
     end
   end
+
   class TestCase
     include ZombieHunter
   end
