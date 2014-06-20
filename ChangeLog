@@ -1,3 +1,8 @@
+Sat Jun 21 07:06:13 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (enc_find): [DOC] never accepted a symbol.
+	  [ruby-dev:48308] [Bug #9966]
+
 Fri Jun 20 17:15:43 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* test/lib/tracepointchecker.rb: add to check TracePoint healthiness.

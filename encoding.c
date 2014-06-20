@@ -1166,13 +1166,11 @@ enc_list(VALUE klass)
 /*
  * call-seq:
  *   Encoding.find(string) -> enc
- *   Encoding.find(symbol) -> enc
  *
  * Search the encoding with specified <i>name</i>.
- * <i>name</i> should be a string or symbol.
+ * <i>name</i> should be a string.
  *
  *   Encoding.find("US-ASCII")  #=> #<Encoding:US-ASCII>
- *   Encoding.find(:Shift_JIS)  #=> #<Encoding:Shift_JIS>
  *
  * Names which this method accept are encoding names and aliases
  * including following special aliases
