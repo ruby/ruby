@@ -163,7 +163,7 @@ End
 end
 
 def erase(e = true)
-  if e and @columns > 0
+  if e and @columns > 0 and !@verbose
     "\r#{" "*@columns}\r"
   else
     ""
