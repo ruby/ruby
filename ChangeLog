@@ -1,3 +1,9 @@
+Sat Jun 21 12:50:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/fiddle/extconf.rb: supply 0 to fill RUBY_LIBFFI_MODVERSION
+	  with 3-digit.  libffi 3.1 returns just 2-digit.
+	  [ruby-core:62920] [Bug #9897]
+
 Sat Jun 21 07:06:13 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (enc_find): [DOC] never accepted a symbol.
