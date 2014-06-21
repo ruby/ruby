@@ -405,7 +405,7 @@ end
 INDENT = 27
 
 def adjust_indent(src)
-  untabify(src).gsub(/^ {#{INDENT}}/o, '').gsub(/^/, '   ')
+  untabify(src).gsub(/^ {#{INDENT}}/o, '').gsub(/^/, '   ').sub(/\s*\z/, "\n")
 end
 
 def untabify(str)
