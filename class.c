@@ -328,12 +328,21 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
     }
     RCLASS_SET_SUPER(clone, RCLASS_SUPER(orig));
     RCLASS_EXT(clone)->allocator = RCLASS_EXT(orig)->allocator;
+    if (RCLASS_IV_TBL(clone)) {
+	st_free_table(RCLASS_IV_TBL(clone));
+	RCLASS_IV_TBL(clone) = 0;
+    }
+    if (RCLASS_CONST_TBL(clone)) {
+	rb_free_const_table(RCLASS_CONST_TBL(clone));
+	RCLASS_CONST_TBL(clone) = 0;
+    }
+    if (RCLASS_M_TBL_WRAPPER(clone)) {
+	rb_free_m_tbl_wrapper(RCLASS_M_TBL_WRAPPER(clone));
+	RCLASS_M_TBL_WRAPPER(clone) = 0;
+    }
     if (RCLASS_IV_TBL(orig)) {
 	st_data_t id;
 
-	if (RCLASS_IV_TBL(clone)) {
-	    st_free_table(RCLASS_IV_TBL(clone));
-	}
 	RCLASS_IV_TBL(clone) = rb_st_copy(clone, RCLASS_IV_TBL(orig));
 	CONST_ID(id, "__tmp_classpath__");
 	st_delete(RCLASS_IV_TBL(clone), &id, 0);
@@ -344,18 +353,13 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
     }
     if (RCLASS_CONST_TBL(orig)) {
 	struct clone_const_arg arg;
-	if (RCLASS_CONST_TBL(clone)) {
-	    rb_free_const_table(RCLASS_CONST_TBL(clone));
-	}
+
 	RCLASS_CONST_TBL(clone) = st_init_numtable();
 	arg.klass = clone;
 	arg.tbl = RCLASS_CONST_TBL(clone);
 	st_foreach(RCLASS_CONST_TBL(orig), clone_const_i, (st_data_t)&arg);
     }
     if (RCLASS_M_TBL(orig)) {
-	if (RCLASS_M_TBL_WRAPPER(clone)) {
-	    rb_free_m_tbl_wrapper(RCLASS_M_TBL_WRAPPER(clone));
-	}
 	RCLASS_M_TBL_INIT(clone);
 	st_foreach(RCLASS_M_TBL(orig), clone_method_i, (st_data_t)clone);
     }
