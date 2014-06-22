@@ -737,7 +737,8 @@ check_stack_overflow(const uintptr_t addr, const ucontext_t *ctx)
     /* SP in ucontext is not decremented yet when `push` failed, so
      * the fault page can be the next. */
     if (sp_page == fault_page || sp_page == fault_page + 1) {
-	ruby_thread_stack_overflow(GET_THREAD());
+	rb_thread_t *th = ruby_current_thread;
+	ruby_thread_stack_overflow(th);
     }
 }
 #else
@@ -745,7 +746,7 @@ static void
 check_stack_overflow(const void *addr)
 {
     int ruby_stack_overflowed_p(const rb_thread_t *, const void *);
-    rb_thread_t *th = GET_THREAD();
+    rb_thread_t *th = ruby_current_thread;
     if (ruby_stack_overflowed_p(th, addr)) {
 	ruby_thread_stack_overflow(th);
     }
