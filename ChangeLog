@@ -1,3 +1,10 @@
+Sun Jun 22 09:01:47 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/ftp.rb (initialize): argument checking flag is arg_check,
+	  but arg[-1] is fragment.
+
+	* lib/uri/ftp.rb (initialize): explicitly specify arguments.
+
 Sat Jun 21 12:50:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/fiddle/extconf.rb: supply 0 to fill RUBY_LIBFFI_MODVERSION
