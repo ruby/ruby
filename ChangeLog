@@ -1,3 +1,8 @@
+Sun Jun 22 09:10:09 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/rfc3986_parser.rb: raise exception when given a URI string
+	  has non ASCII in order to keep the regexp compiled for US-ASCII.
+
 Sun Jun 22 09:05:42 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/common.rb (URI::REGEXP): move to lib/uri/rfc2396_parser.rb.
