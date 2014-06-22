@@ -569,6 +569,9 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	thread_debug("thread end: %p\n", (void *)th);
 
 	main_th = th->vm->main_thread;
+	if (main_th == th) {
+	    ruby_stop(0);
+	}
 	if (RB_TYPE_P(errinfo, T_OBJECT)) {
 	    /* treat with normal error object */
 	    rb_threadptr_raise(main_th, 1, &errinfo);
