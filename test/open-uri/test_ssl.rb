@@ -5,6 +5,7 @@ require 'webrick'
 begin
   require 'openssl'
   require 'webrick/https'
+  require_relative '../openssl/utils'
 rescue LoadError
 end
 require 'webrick/httpproxy'
@@ -27,6 +28,7 @@ class TestOpenURISSL
         :SSLEnable => true,
         :SSLCertificate => OpenSSL::X509::Certificate.new(SERVER_CERT),
         :SSLPrivateKey => OpenSSL::PKey::RSA.new(SERVER_KEY),
+        :SSLTmpDhCallback => proc { OpenSSL::TestUtils::TEST_KEY_DH1024 },
         :BindAddress => '127.0.0.1',
         :Port => 0})
       _, port, _, host = srv.listeners[0].addr
