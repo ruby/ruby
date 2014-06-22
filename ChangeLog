@@ -1,3 +1,8 @@
+Sun Jun 22 09:11:15 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/generic.rb: remove registry.
+	  'registry' is not used and RFC3986 doesn't use it.
+
 Sun Jun 22 09:10:09 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/rfc3986_parser.rb: raise exception when given a URI string

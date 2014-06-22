@@ -55,16 +55,9 @@ module URI
       self::COMPONENT
     end
 
-    #
-    # Default to not use the registry for a URI::Generic
-    #
-    USE_REGISTRY = false
+    USE_REGISTRY = false # :nodoc:
 
-    #
-    # Returns whether a registry of naming
-    # authorities are being used.
-    #
-    def self.use_registry
+    def self.use_registry # :nodoc:
       self::USE_REGISTRY
     end
 
@@ -185,7 +178,6 @@ module URI
       @path = nil
       @query = nil
       @opaque = nil
-      @registry = nil
       @fragment = nil
       @parser = parser == DEFAULT_PARSER ? nil : parser
 
@@ -197,7 +189,6 @@ module URI
         self.path = path
         self.query = query
         self.opaque = opaque
-        self.registry = registry
         self.fragment = fragment
       else
         self.set_scheme(scheme)
@@ -207,12 +198,11 @@ module URI
         self.set_path(path)
         self.set_query(query)
         self.set_opaque(opaque)
-        self.set_registry(registry)
         self.set_fragment(fragment)
       end
-      if @registry && !self.class.use_registry
+      if registry
         raise InvalidURIError,
-          "the scheme #{@scheme} does not accept registry part: #{@registry} (or bad hostname?)"
+          "the scheme #{@scheme} does not accept registry part: #{registry} (or bad hostname?)"
       end
 
       @scheme.freeze if @scheme
@@ -257,11 +247,9 @@ module URI
     #
     attr_reader :port
 
-    # returns the registry component of the URI.
-    #
-    #  (see RFC2396 Section 3.2)
-    #
-    attr_reader :registry
+    def registry # :nodoc:
+      nil
+    end
 
     # returns the path component of the URI.
     #
@@ -401,9 +389,9 @@ module URI
     # with a user component defined.
     #
     def check_user(v)
-      if @registry || @opaque
+      if @opaque
         raise InvalidURIError,
-          "can not set user with registry or opaque"
+          "can not set user with opaque"
       end
 
       return v unless v
@@ -425,9 +413,9 @@ module URI
     # with a user component defined.
     #
     def check_password(v, user = @user)
-      if @registry || @opaque
+      if @opaque
         raise InvalidURIError,
-          "can not set password with registry or opaque"
+          "can not set password with opaque"
       end
       return v unless v
 
@@ -598,7 +586,7 @@ module URI
     def check_host(v)
       return v unless v
 
-      if @registry || @opaque
+      if @opaque
         raise InvalidURIError,
           "can not set host with registry or opaque"
       elsif parser.regexp[:HOST] !~ v
@@ -690,7 +678,7 @@ module URI
     def check_port(v)
       return v unless v
 
-      if @registry || @opaque
+      if @opaque
         raise InvalidURIError,
           "can not set port with registry or opaque"
       elsif !v.kind_of?(Fixnum) && parser.regexp[:PORT] !~ v
@@ -747,57 +735,18 @@ module URI
       port
     end
 
-    #
-    # check the registry +v+ component for RFC2396 compliance
-    # and against the URI::Parser Regexp for :REGISTRY
-    #
-    # Can not have a host, port or user component defined,
-    # with a registry component defined.
-    #
-    def check_registry(v)
-      return v unless v
-
-      # raise if both server and registry are not nil, because:
-      # authority     = server | reg_name
-      # server        = [ [ userinfo "@" ] hostport ]
-      if @host || @port || @user # userinfo = @user + ':' + @password
-        raise InvalidURIError,
-          "can not set registry with host, port, or userinfo"
-      elsif v && parser.regexp[:REGISTRY] !~ v
-        raise InvalidComponentError,
-          "bad component(expected registry component): #{v}"
-      end
-
-      return true
+    def check_registry(v) # :nodoc:
+      raise InvalidURIError, "can not set registry"
     end
     private :check_registry
 
-    # protected setter for the registry component +v+
-    #
-    # see also URI::Generic.registry=
-    #
-    def set_registry(v)
-      @registry = v
+    def set_registry(v) #:nodoc:
+      raise InvalidURIError, "can not set registry"
     end
     protected :set_registry
 
-    #
-    # == Args
-    #
-    # +v+::
-    #    String
-    #
-    # == Description
-    #
-    # public setter for the registry component +v+.
-    # (with validation)
-    #
-    # see also URI::Generic.check_registry
-    #
     def registry=(v)
-      check_registry(v)
-      set_registry(v)
-      v
+      raise InvalidURIError, "can not set registry"
     end
 
     #
@@ -1318,7 +1267,7 @@ module URI
       end
       rel = URI::Generic.new(nil, # it is relative URI
                              self.userinfo, self.host, self.port,
-                             self.registry, self.path, self.opaque,
+                             nil, self.path, self.opaque,
                              self.query, self.fragment, parser)
 
       if rel.userinfo != oth.userinfo ||
@@ -1462,23 +1411,19 @@ module URI
         str << @opaque
 
       else
-        if @registry
-          str << @registry
-        else
-          if @host
-            str << '//'
-          end
-          if self.userinfo
-            str << self.userinfo
-            str << '@'
-          end
-          if @host
-            str << @host
-          end
-          if @port && @port != self.default_port
-            str << ':'
-            str << @port.to_s
-          end
+        if @host
+          str << '//'
+        end
+        if self.userinfo
+          str << self.userinfo
+          str << '@'
+        end
+        if @host
+          str << @host
+        end
+        if @port && @port != self.default_port
+          str << ':'
+          str << @port.to_s
         end
 
         str << path_query
