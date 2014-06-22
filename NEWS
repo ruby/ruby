@@ -119,6 +119,9 @@ with all sufficient information, see the ChangeLog file.
   * Removed because it conflicts to minitest 5, and it was just an wrapper
     of minitest 4. [Feature #9711]
 
+* lib/uri
+  * support RFC 3986. [Feature #2542]
+
 * Prime
   * incompatible changes:
     * Prime.prime? now returns false for negative numbers. This method

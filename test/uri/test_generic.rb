@@ -121,8 +121,8 @@ class URI::TestGeneric < Test::Unit::TestCase
 
     # 7
     # reported by Mr. Kubota <em6t-kbt@asahi-net.or.jp>
-    assert_raise(URI::InvalidURIError) { URI.parse('http://a_b:80/') }
-    assert_raise(URI::InvalidURIError) { URI.parse('http://a_b/') }
+    assert_nothing_raised(URI::InvalidURIError) { URI.parse('http://a_b:80/') }
+    assert_nothing_raised(URI::InvalidURIError) { URI.parse('http://a_b/') }
 
     # 8
     # reported by m_seki

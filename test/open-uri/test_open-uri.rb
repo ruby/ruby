@@ -548,7 +548,7 @@ class TestOpenURI < Test::Unit::TestCase
     assert_raise(ArgumentError) { URI("ftp://127.0.0.1/a%0Ab").read }
     assert_raise(ArgumentError) { URI("ftp://127.0.0.1/a%0Db/f").read }
     assert_raise(ArgumentError) { URI("ftp://127.0.0.1/a%0Ab/f").read }
-    assert_raise(URI::InvalidComponentError) { URI("ftp://127.0.0.1/d/f;type=x") }
+    assert_nothing_raised(URI::InvalidComponentError) { URI("ftp://127.0.0.1/d/f;type=x") }
   end
 
   def test_ftp
