@@ -1,3 +1,7 @@
+Sun Jun 22 09:04:50 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/mailto.rb (initialize): as previous commit, fix arg_check
+
 Sun Jun 22 09:01:47 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/ftp.rb (initialize): argument checking flag is arg_check,

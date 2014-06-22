@@ -138,7 +138,7 @@ module URI
       @headers = []
 
       if MAILTO_REGEXP =~ @opaque
-        if arg[-1]
+        if arg[10] # arg_check
           self.to = $1
           self.headers = $2
         else
