@@ -1,3 +1,9 @@
+Mon Jun 23 02:36:04 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (thread_start_func_2): stop if forked in a sub-thread,
+	  the thread has become the main thread.
+	  [ruby-core:62070] [Bug #9751]
+
 Mon Jun 23 01:53:18 2014  Josh Goebel  <dreamer3@gmail.com>
 
 	* net/protocol.rb (using_each_crlf_line): fix SMTP dot-stuffing
