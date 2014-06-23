@@ -1,3 +1,8 @@
+Mon Jun 23 17:33:11 2014  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/net/imap.rb (Net::IMAP#fetch): [DOC] Describe how a range in
+	  +set+ is interpreted, and mention -1 which can be used for '*'.
+
 Mon Jun 23 16:22:50 2014  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* include/ruby/ruby.h (struct RHash): no longer. [Feature #9889]

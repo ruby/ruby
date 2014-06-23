@@ -774,12 +774,22 @@ module Net
     end
 
     # Sends a FETCH command to retrieve data associated with a message
-    # in the mailbox. The +set+ parameter is a number, an array of
-    # numbers, or a Range object. The number is a message sequence
-    # number.  +attr+ is a list of attributes to fetch; see the
-    # documentation for Net::IMAP::FetchData for a list of valid
-    # attributes.
-    # The return value is an array of Net::IMAP::FetchData. For example:
+    # in the mailbox.
+    #
+    # The +set+ parameter is a number or a range between two numbers,
+    # or an array of those.  The number is a message sequence number,
+    # where -1 repesents a '*' for use in range notation like 100..-1
+    # being interpreted as '100:*'.  Beware that the +exclude_end?+
+    # property of a Range object is ignored, and the contents of a
+    # range are independent of the order of the range endpoints as per
+    # the protocol specification, so 1...5, 5..1 and 5...1 are all
+    # equivalent to 1..5.
+    #
+    # +attr+ is a list of attributes to fetch; see the documentation
+    # for Net::IMAP::FetchData for a list of valid attributes.
+    #
+    # The return value is an array of Net::IMAP::FetchData. For
+    # example:
     #
     #   p imap.fetch(6..8, "UID")
     #   #=> [#<Net::IMAP::FetchData seqno=6, attr={"UID"=>98}>, \\
@@ -3769,4 +3779,3 @@ EOF
     imap.disconnect
   end
 end
-
