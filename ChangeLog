@@ -1,3 +1,8 @@
+Tue Jun 24 06:15:36 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/tcltklib.c: fix format specifiers for VALUE and
+	  Tcl_Interp*.  [ruby-core:63283] [Bug #9972]
+
 Tue Jun 24 05:40:41 2014  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* nacl/nacl-config.rb: Use File.exist? instead of executable?

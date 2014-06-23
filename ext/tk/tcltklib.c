@@ -2079,9 +2079,9 @@ eventloop_sleep(dummy)
 #endif
 #endif
 
-    DUMP2("eventloop_sleep: rb_thread_wait_for() at thread : %lx", rb_thread_current());
+    DUMP2("eventloop_sleep: rb_thread_wait_for() at thread : %"PRIxVALUE, rb_thread_current());
     rb_thread_wait_for(t);
-    DUMP2("eventloop_sleep: finish at thread : %lx", rb_thread_current());
+    DUMP2("eventloop_sleep: finish at thread : %"PRIxVALUE, rb_thread_current());
 
 #ifdef HAVE_NATIVETHREAD
 #ifndef RUBY_USE_NATIVE_THREAD
@@ -2498,8 +2498,8 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
                     }
 
                 } else {
-                    DUMP2("sleep eventloop %lx", current);
-                    DUMP2("eventloop thread is %lx", eventloop_thread);
+                    DUMP2("sleep eventloop %"PRIxVALUE, current);
+                    DUMP2("eventloop thread is %"PRIxVALUE, eventloop_thread);
                     /* rb_thread_stop(); */
                     rb_thread_sleep_forever();
                 }
@@ -2620,10 +2620,10 @@ lib_eventloop_ensure(args)
 
     Tcl_DeleteEventSource(rbtk_EventSetupProc, rbtk_EventCheckProc, (ClientData)args);
 
-    DUMP2("eventloop_ensure: current-thread : %lx", current_evloop);
-    DUMP2("eventloop_ensure: eventloop-thread : %lx", eventloop_thread);
+    DUMP2("eventloop_ensure: current-thread : %"PRIxVALUE, current_evloop);
+    DUMP2("eventloop_ensure: eventloop-thread : %"PRIxVALUE, eventloop_thread);
     if (eventloop_thread != current_evloop) {
-        DUMP2("finish eventloop %lx (NOT current eventloop)", current_evloop);
+        DUMP2("finish eventloop %"PRIxVALUE" (NOT current eventloop)", current_evloop);
 
 	rb_thread_critical = ptr->thr_crit_bup;
 
@@ -2634,12 +2634,12 @@ lib_eventloop_ensure(args)
     }
 
     while((eventloop_thread = rb_ary_pop(eventloop_stack))) {
-        DUMP2("eventloop-ensure: new eventloop-thread -> %lx",
+        DUMP2("eventloop-ensure: new eventloop-thread -> %"PRIxVALUE,
               eventloop_thread);
 
         if (eventloop_thread == current_evloop) {
             rbtk_eventloop_depth--;
-            DUMP2("eventloop %lx : back from recursive call", current_evloop);
+            DUMP2("eventloop %"PRIxVALUE" : back from recursive call", current_evloop);
             break;
         }
 
@@ -2651,7 +2651,7 @@ lib_eventloop_ensure(args)
         }
 
 	if (RTEST(rb_thread_alive_p(eventloop_thread))) {
-            DUMP2("eventloop-enshure: wake up parent %lx", eventloop_thread);
+            DUMP2("eventloop-enshure: wake up parent %"PRIxVALUE, eventloop_thread);
             rb_thread_wakeup(eventloop_thread);
 
             break;
@@ -2669,7 +2669,7 @@ lib_eventloop_ensure(args)
     xfree(ptr);
     /* ckfree((char*)ptr);*/
 
-    DUMP2("finish current eventloop %lx", current_evloop);
+    DUMP2("finish current eventloop %"PRIxVALUE, current_evloop);
     return Qnil;
 }
 
@@ -2692,14 +2692,14 @@ lib_eventloop_launcher(check_root, update_flag, check_var, interp)
 #endif
 
     if (parent_evloop == eventloop_thread) {
-        DUMP2("eventloop: recursive call on %lx", parent_evloop);
+        DUMP2("eventloop: recursive call on %"PRIxVALUE, parent_evloop);
         rbtk_eventloop_depth++;
     }
 
     if (!NIL_P(parent_evloop) && parent_evloop != eventloop_thread) {
-        DUMP2("wait for stop of parent_evloop %lx", parent_evloop);
+        DUMP2("wait for stop of parent_evloop %"PRIxVALUE, parent_evloop);
         while(!RTEST(rb_funcall(parent_evloop, ID_stop_p, 0))) {
-            DUMP2("parent_evloop %lx doesn't stop", parent_evloop);
+            DUMP2("parent_evloop %"PRIxVALUE" doesn't stop", parent_evloop);
             rb_thread_run(parent_evloop);
         }
         DUMP1("succeed to stop parent");
@@ -2707,7 +2707,7 @@ lib_eventloop_launcher(check_root, update_flag, check_var, interp)
 
     rb_ary_push(eventloop_stack, parent_evloop);
 
-    DUMP3("tcltklib: eventloop-thread : %lx -> %lx\n",
+    DUMP3("tcltklib: eventloop-thread : %"PRIxVALUE" -> %"PRIxVALUE"\n",
                 parent_evloop, eventloop_thread);
 
     args->check_root   = check_root;
@@ -2813,11 +2813,11 @@ lib_watchdog_core(check_rootwidget)
         if (NIL_P(eventloop_thread)
             || (loop_counter == prev_val && chance >= EVLOOP_WAKEUP_CHANCE)) {
             /* start new eventloop thread */
-            DUMP2("eventloop thread %lx is sleeping or dead",
+            DUMP2("eventloop thread %"PRIxVALUE" is sleeping or dead",
                   eventloop_thread);
             evloop = rb_thread_create(watchdog_evloop_launcher,
                                       (void*)&check_rootwidget);
-            DUMP2("create new eventloop thread %lx", evloop);
+            DUMP2("create new eventloop thread %"PRIxVALUE, evloop);
             loop_counter = -1;
             chance = 0;
             rb_thread_run(evloop);
@@ -3473,7 +3473,7 @@ ip_ruby_cmd_core(arg)
     thr_crit_bup = rb_thread_critical;
     rb_thread_critical = Qfalse;
     ret = rb_apply(arg->receiver, arg->method, arg->args);
-    DUMP2("rb_apply return:%lx", ret);
+    DUMP2("rb_apply return:%"PRIxVALUE, ret);
     rb_thread_critical = thr_crit_bup;
     DUMP1("finish ip_ruby_cmd_core");
 
@@ -5087,8 +5087,8 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
     if (rb_thread_alone() || eventloop_thread == current_thread) {
 #if TCL_MAJOR_VERSION >= 8
         DUMP1("call ip_rbTkWaitObjCmd");
-        DUMP2("eventloop_thread %lx", eventloop_thread);
-        DUMP2("current_thread %lx", current_thread);
+        DUMP2("eventloop_thread %"PRIxVALUE, eventloop_thread);
+        DUMP2("current_thread %"PRIxVALUE, current_thread);
         return ip_rbTkWaitObjCmd(clientData, interp, objc, objv);
 #else /* TCL_MAJOR_VERSION < 8 */
         DUMP1("call rb_VwaitCommand");
@@ -5805,7 +5805,7 @@ ip_free(ptr)
 {
     int  thr_crit_bup;
 
-    DUMP2("free Tcl Interp %lx", (unsigned long)ptr->ip);
+    DUMP2("free Tcl Interp %p", ptr->ip);
     if (ptr) {
         thr_crit_bup = rb_thread_critical;
         rb_thread_critical = Qtrue;
@@ -5814,10 +5814,10 @@ ip_free(ptr)
              && !Tcl_InterpDeleted(ptr->ip)
              && Tcl_GetMaster(ptr->ip) != (Tcl_Interp*)NULL
              && !Tcl_InterpDeleted(Tcl_GetMaster(ptr->ip)) ) {
-            DUMP2("parent IP(%lx) is not deleted",
-                  (unsigned long)Tcl_GetMaster(ptr->ip));
-            DUMP2("slave IP(%lx) should not be deleted",
-                  (unsigned long)ptr->ip);
+            DUMP2("parent IP(%p) is not deleted",
+                  Tcl_GetMaster(ptr->ip));
+            DUMP2("slave IP(%p) should not be deleted",
+                  ptr->ip);
             xfree(ptr);
             /* ckfree((char*)ptr); */
             rb_thread_critical = thr_crit_bup;
@@ -6981,8 +6981,8 @@ call_queue_handler(evPtr, flags)
     struct tcltkip *ptr;
 
     DUMP2("do_call_queue_handler : evPtr = %p", evPtr);
-    DUMP2("call_queue_handler thread : %lx", rb_thread_current());
-    DUMP2("added by thread : %lx", thread);
+    DUMP2("call_queue_handler thread : %"PRIxVALUE, rb_thread_current());
+    DUMP2("added by thread : %"PRIxVALUE, thread);
 
     if (*(q->done)) {
         DUMP1("processed by another event-loop");
@@ -7019,8 +7019,8 @@ call_queue_handler(evPtr, flags)
         rb_gc_force_recycle(q_dat);
 	q_dat = (VALUE)NULL;
     } else {
-        DUMP2("call function (for caller thread:%lx)", thread);
-        DUMP2("call function (current thread:%lx)", rb_thread_current());
+        DUMP2("call function (for caller thread:%"PRIxVALUE")", thread);
+        DUMP2("call function (current thread:%"PRIxVALUE")", rb_thread_current());
         ret = (q->func)(q->interp, q->argc, q->argv);
     }
 
@@ -7042,8 +7042,8 @@ call_queue_handler(evPtr, flags)
 
     /* back to caller */
     if (RTEST(rb_thread_alive_p(thread))) {
-      DUMP2("back to caller (caller thread:%lx)", thread);
-      DUMP2("               (current thread:%lx)", rb_thread_current());
+      DUMP2("back to caller (caller thread:%"PRIxVALUE")", thread);
+      DUMP2("               (current thread:%"PRIxVALUE")", rb_thread_current());
 #if CONTROL_BY_STATUS_OF_RB_THREAD_WAITING_FOR_VALUE
       have_rb_thread_waiting_for_value = 1;
       rb_thread_wakeup(thread);
@@ -7055,8 +7055,8 @@ call_queue_handler(evPtr, flags)
       rb_thread_schedule();
 #endif
     } else {
-      DUMP2("caller is dead (caller thread:%lx)", thread);
-      DUMP2("               (current thread:%lx)", rb_thread_current());
+      DUMP2("caller is dead (caller thread:%"PRIxVALUE")", thread);
+      DUMP2("               (current thread:%"PRIxVALUE")", rb_thread_current());
     }
 
     /* end of handler : remove it */
@@ -7106,9 +7106,9 @@ tk_funcall(func, argc, argv, obj)
 	&& (NIL_P(eventloop_thread) || current == eventloop_thread)
         ) {
         if (NIL_P(eventloop_thread)) {
-            DUMP2("tk_funcall from thread:%lx but no eventloop", current);
+            DUMP2("tk_funcall from thread:%"PRIxVALUE" but no eventloop", current);
         } else {
-            DUMP2("tk_funcall from current eventloop %lx", current);
+            DUMP2("tk_funcall from current eventloop %"PRIxVALUE, current);
         }
         result = (func)(ip_obj, argc, argv);
         if (rb_obj_is_kind_of(result, rb_eException)) {
@@ -7117,7 +7117,7 @@ tk_funcall(func, argc, argv, obj)
         return result;
     }
 
-    DUMP2("tk_funcall from thread %lx (NOT current eventloop)", current);
+    DUMP2("tk_funcall from thread %"PRIxVALUE" (NOT current eventloop)", current);
 
     thr_crit_bup = rb_thread_critical;
     rb_thread_critical = Qtrue;
@@ -7192,20 +7192,20 @@ tk_funcall(func, argc, argv, obj)
     t.tv_sec  = 0;
     t.tv_usec = (long)((EVENT_HANDLER_TIMEOUT)*1000.0);
 
-    DUMP2("callq wait for handler (current thread:%lx)", current);
+    DUMP2("callq wait for handler (current thread:%"PRIxVALUE")", current);
     while(*alloc_done >= 0) {
-      DUMP2("*** callq wait for handler (current thread:%lx)", current);
+      DUMP2("*** callq wait for handler (current thread:%"PRIxVALUE")", current);
       /* rb_thread_stop(); */
       /* rb_thread_sleep_forever(); */
       rb_thread_wait_for(t);
-      DUMP2("*** callq wakeup (current thread:%lx)", current);
-      DUMP2("***            (eventloop thread:%lx)", eventloop_thread);
+      DUMP2("*** callq wakeup (current thread:%"PRIxVALUE")", current);
+      DUMP2("***            (eventloop thread:%"PRIxVALUE")", eventloop_thread);
       if (NIL_P(eventloop_thread)) {
 	DUMP1("*** callq lost eventloop thread");
 	break;
       }
     }
-    DUMP2("back from handler (current thread:%lx)", current);
+    DUMP2("back from handler (current thread:%"PRIxVALUE")", current);
 
     /* get result & free allocated memory */
     ret = RARRAY_PTR(result)[0];
@@ -7468,8 +7468,8 @@ eval_queue_handler(evPtr, flags)
     struct tcltkip *ptr;
 
     DUMP2("do_eval_queue_handler : evPtr = %p", evPtr);
-    DUMP2("eval_queue_thread : %lx", rb_thread_current());
-    DUMP2("added by thread : %lx", thread);
+    DUMP2("eval_queue_thread : %"PRIxVALUE, rb_thread_current());
+    DUMP2("added by thread : %"PRIxVALUE, thread);
 
     if (*(q->done)) {
         DUMP1("processed by another event-loop");
@@ -7533,8 +7533,8 @@ eval_queue_handler(evPtr, flags)
 
     /* back to caller */
     if (RTEST(rb_thread_alive_p(thread))) {
-      DUMP2("back to caller (caller thread:%lx)", thread);
-      DUMP2("               (current thread:%lx)", rb_thread_current());
+      DUMP2("back to caller (caller thread:%"PRIxVALUE")", thread);
+      DUMP2("               (current thread:%"PRIxVALUE")", rb_thread_current());
 #if CONTROL_BY_STATUS_OF_RB_THREAD_WAITING_FOR_VALUE
       have_rb_thread_waiting_for_value = 1;
       rb_thread_wakeup(thread);
@@ -7546,8 +7546,8 @@ eval_queue_handler(evPtr, flags)
       rb_thread_schedule();
 #endif
     } else {
-      DUMP2("caller is dead (caller thread:%lx)", thread);
-      DUMP2("               (current thread:%lx)", rb_thread_current());
+      DUMP2("caller is dead (caller thread:%"PRIxVALUE")", thread);
+      DUMP2("               (current thread:%"PRIxVALUE")", rb_thread_current());
     }
 
     /* end of handler : remove it */
@@ -7585,7 +7585,7 @@ ip_eval(self, str)
 #else
     DUMP2("status: Tcl_GetCurrentThread %p", Tcl_GetCurrentThread());
 #endif
-    DUMP2("status: eventloopt_thread %lx", eventloop_thread);
+    DUMP2("status: eventloopt_thread %"PRIxVALUE, eventloop_thread);
 
     if (
 #ifdef RUBY_USE_NATIVE_THREAD
@@ -7595,9 +7595,9 @@ ip_eval(self, str)
 	(NIL_P(eventloop_thread) || current == eventloop_thread)
 	) {
         if (NIL_P(eventloop_thread)) {
-            DUMP2("eval from thread:%lx but no eventloop", current);
+            DUMP2("eval from thread:%"PRIxVALUE" but no eventloop", current);
         } else {
-            DUMP2("eval from current eventloop %lx", current);
+            DUMP2("eval from current eventloop %"PRIxVALUE, current);
         }
         result = ip_eval_real(self, RSTRING_PTR(str), RSTRING_LENINT(str));
         if (rb_obj_is_kind_of(result, rb_eException)) {
@@ -7606,7 +7606,7 @@ ip_eval(self, str)
         return result;
     }
 
-    DUMP2("eval from thread %lx (NOT current eventloop)", current);
+    DUMP2("eval from thread %"PRIxVALUE" (NOT current eventloop)", current);
 
     thr_crit_bup = rb_thread_critical;
     rb_thread_critical = Qtrue;
@@ -7676,20 +7676,20 @@ ip_eval(self, str)
     t.tv_sec  = 0;
     t.tv_usec = (long)((EVENT_HANDLER_TIMEOUT)*1000.0);
 
-    DUMP2("evq wait for handler (current thread:%lx)", current);
+    DUMP2("evq wait for handler (current thread:%"PRIxVALUE")", current);
     while(*alloc_done >= 0) {
-      DUMP2("*** evq wait for handler (current thread:%lx)", current);
+      DUMP2("*** evq wait for handler (current thread:%"PRIxVALUE")", current);
       /* rb_thread_stop(); */
       /* rb_thread_sleep_forever(); */
       rb_thread_wait_for(t);
-      DUMP2("*** evq wakeup (current thread:%lx)", current);
-      DUMP2("***          (eventloop thread:%lx)", eventloop_thread);
+      DUMP2("*** evq wakeup (current thread:%"PRIxVALUE")", current);
+      DUMP2("***          (eventloop thread:%"PRIxVALUE")", eventloop_thread);
       if (NIL_P(eventloop_thread)) {
 	DUMP1("*** evq lost eventloop thread");
 	break;
       }
     }
-    DUMP2("back from handler (current thread:%lx)", current);
+    DUMP2("back from handler (current thread:%"PRIxVALUE")", current);
 
     /* get result & free allocated memory */
     ret = RARRAY_PTR(result)[0];
@@ -8904,7 +8904,7 @@ ip_invoke_real(argc, argv, interp)
     char **av = (char **)NULL;
 #endif
 
-    DUMP2("invoke_real called by thread:%lx", rb_thread_current());
+    DUMP2("invoke_real called by thread:%"PRIxVALUE, rb_thread_current());
 
     /* get the data struct */
     ptr = get_ip(interp);
@@ -8953,8 +8953,8 @@ invoke_queue_handler(evPtr, flags)
     struct tcltkip *ptr;
 
     DUMP2("do_invoke_queue_handler : evPtr = %p", evPtr);
-    DUMP2("invoke queue_thread : %lx", rb_thread_current());
-    DUMP2("added by thread : %lx", thread);
+    DUMP2("invoke queue_thread : %"PRIxVALUE, rb_thread_current());
+    DUMP2("added by thread : %"PRIxVALUE, thread);
 
     if (*(q->done)) {
         DUMP1("processed by another event-loop");
@@ -8991,8 +8991,8 @@ invoke_queue_handler(evPtr, flags)
         rb_gc_force_recycle(q_dat);
 	q_dat = (VALUE)NULL;
     } else {
-        DUMP2("call invoke_real (for caller thread:%lx)", thread);
-        DUMP2("call invoke_real (current thread:%lx)", rb_thread_current());
+        DUMP2("call invoke_real (for caller thread:%"PRIxVALUE")", thread);
+        DUMP2("call invoke_real (current thread:%"PRIxVALUE")", rb_thread_current());
         ret = ip_invoke_core(q->interp, q->argc, q->argv);
     }
 
@@ -9013,8 +9013,8 @@ invoke_queue_handler(evPtr, flags)
 
     /* back to caller */
     if (RTEST(rb_thread_alive_p(thread))) {
-      DUMP2("back to caller (caller thread:%lx)", thread);
-      DUMP2("               (current thread:%lx)", rb_thread_current());
+      DUMP2("back to caller (caller thread:%"PRIxVALUE")", thread);
+      DUMP2("               (current thread:%"PRIxVALUE")", rb_thread_current());
 #if CONTROL_BY_STATUS_OF_RB_THREAD_WAITING_FOR_VALUE
       have_rb_thread_waiting_for_value = 1;
       rb_thread_wakeup(thread);
@@ -9026,8 +9026,8 @@ invoke_queue_handler(evPtr, flags)
       rb_thread_schedule();
 #endif
     } else {
-      DUMP2("caller is dead (caller thread:%lx)", thread);
-      DUMP2("               (current thread:%lx)", rb_thread_current());
+      DUMP2("caller is dead (caller thread:%"PRIxVALUE")", thread);
+      DUMP2("               (current thread:%"PRIxVALUE")", rb_thread_current());
     }
 
     /* end of handler : remove it */
@@ -9070,7 +9070,7 @@ ip_invoke_with_position(argc, argv, obj, position)
 #else
     DUMP2("status: Tcl_GetCurrentThread %p", Tcl_GetCurrentThread());
 #endif
-    DUMP2("status: eventloopt_thread %lx", eventloop_thread);
+    DUMP2("status: eventloopt_thread %"PRIxVALUE, eventloop_thread);
 
     if (
 #ifdef RUBY_USE_NATIVE_THREAD
@@ -9080,9 +9080,9 @@ ip_invoke_with_position(argc, argv, obj, position)
 	(NIL_P(eventloop_thread) || current == eventloop_thread)
 	) {
         if (NIL_P(eventloop_thread)) {
-            DUMP2("invoke from thread:%lx but no eventloop", current);
+            DUMP2("invoke from thread:%"PRIxVALUE" but no eventloop", current);
         } else {
-            DUMP2("invoke from current eventloop %lx", current);
+            DUMP2("invoke from current eventloop %"PRIxVALUE, current);
         }
         result = ip_invoke_real(argc, argv, ip_obj);
         if (rb_obj_is_kind_of(result, rb_eException)) {
@@ -9091,7 +9091,7 @@ ip_invoke_with_position(argc, argv, obj, position)
         return result;
     }
 
-    DUMP2("invoke from thread %lx (NOT current eventloop)", current);
+    DUMP2("invoke from thread %"PRIxVALUE" (NOT current eventloop)", current);
 
     thr_crit_bup = rb_thread_critical;
     rb_thread_critical = Qtrue;
@@ -9155,19 +9155,19 @@ ip_invoke_with_position(argc, argv, obj, position)
     t.tv_sec  = 0;
     t.tv_usec = (long)((EVENT_HANDLER_TIMEOUT)*1000.0);
 
-    DUMP2("ivq wait for handler (current thread:%lx)", current);
+    DUMP2("ivq wait for handler (current thread:%"PRIxVALUE")", current);
     while(*alloc_done >= 0) {
       /* rb_thread_stop(); */
       /* rb_thread_sleep_forever(); */
       rb_thread_wait_for(t);
-      DUMP2("*** ivq wakeup (current thread:%lx)", current);
-      DUMP2("***          (eventloop thread:%lx)", eventloop_thread);
+      DUMP2("*** ivq wakeup (current thread:%"PRIxVALUE")", current);
+      DUMP2("***          (eventloop thread:%"PRIxVALUE")", eventloop_thread);
       if (NIL_P(eventloop_thread)) {
 	DUMP1("*** ivq lost eventloop thread");
 	break;
       }
     }
-    DUMP2("back from handler (current thread:%lx)", current);
+    DUMP2("back from handler (current thread:%"PRIxVALUE")", current);
 
     /* get result & free allocated memory */
     ret = RARRAY_PTR(result)[0];
