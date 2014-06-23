@@ -1,3 +1,9 @@
+Mon Jun 23 11:11:16 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (check_stack_overflow): drop the last tag too close to
+	  the fault page, to get rid of stack overflow deadlock.
+	  [Bug #9971]
+
 Sun Jun 22 09:11:15 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/generic.rb: remove registry.

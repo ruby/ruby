@@ -738,6 +738,12 @@ check_stack_overflow(const uintptr_t addr, const ucontext_t *ctx)
      * the fault page can be the next. */
     if (sp_page == fault_page || sp_page == fault_page + 1) {
 	rb_thread_t *th = ruby_current_thread;
+	if ((uintptr_t)th->tag->buf / pagesize == sp_page) {
+	    /* drop the last tag if it is close to the fault,
+	     * otherwise it can cause stack overflow again at the same
+	     * place. */
+	    th->tag = th->tag->prev;
+	}
 	ruby_thread_stack_overflow(th);
     }
 }
