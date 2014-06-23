@@ -1,3 +1,21 @@
+Mon Jun 23 16:22:50 2014  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* include/ruby/ruby.h (struct RHash): no longer. [Feature #9889]
+
+	* include/ruby/ruby.h (RHASH): ditto.
+
+	* include/ruby/ruby.h (RHASH_ITER_LEV): deprecated.  Will be deleted later.
+
+	* include/ruby/ruby.h (RHASH_IFNONE): ditto.
+
+	* internal.h (struct RHash): moved here.
+
+	* internal.h (RHASH): ditto.
+
+	* hash.c (rb_hash_iter_lev): do not use this.
+
+	* hash.c (rb_hash_ifnone): ditto.
+
 Mon Jun 23 13:30:11 2014  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* include/ruby/ruby.h (struct RComplex): no longer. [Feature #9888]

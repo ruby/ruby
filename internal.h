@@ -442,6 +442,24 @@ struct RComplex {
 #define RCOMPLEX_SET_IMAG(cmp, i) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->imag,(i))
 #endif
 
+struct RHash {
+    struct RBasic basic;
+    struct st_table *ntbl;      /* possibly 0 */
+    int iter_lev;
+    const VALUE ifnone;
+};
+
+#define RHASH(obj)   (R_CAST(RHash)(obj))
+
+#ifdef RHASH_ITER_LEV
+#undef RHASH_ITER_LEV
+#undef RHASH_IFNONE
+#undef RHASH_SIZE
+#define RHASH_ITER_LEV(h) (RHASH(h)->iter_lev)
+#define RHASH_IFNONE(h) (RHASH(h)->ifnone)
+#define RHASH_SIZE(h) (RHASH(h)->ntbl ? (st_index_t)RHASH(h)->ntbl->num_entries : 0)
+#endif
+
 /* class.c */
 void rb_class_subclass_add(VALUE super, VALUE klass);
 void rb_class_remove_from_super_subclasses(VALUE);

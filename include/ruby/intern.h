@@ -508,6 +508,9 @@ struct st_table *rb_hash_tbl(VALUE);
 int rb_path_check(const char*);
 int rb_env_path_tainted(void);
 VALUE rb_env_clear(void);
+VALUE rb_hash_size(VALUE);
+DEPRECATED(int rb_hash_iter_lev(VALUE));
+DEPRECATED(VALUE rb_hash_ifnone(VALUE));
 /* io.c */
 #define rb_defout rb_stdout
 RUBY_EXTERN VALUE rb_fs;

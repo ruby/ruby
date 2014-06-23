@@ -70,6 +70,12 @@ static VALUE envtbl;
 static ID id_hash, id_yield, id_default, id_flatten_bang;
 
 VALUE
+rb_hash_ifnone(VALUE h)
+{
+    return RHASH_IFNONE(h);
+}
+
+VALUE
 rb_hash_set_ifnone(VALUE hash, VALUE ifnone)
 {
     RB_OBJ_WRITE(hash, (&RHASH(hash)->ifnone), ifnone);
@@ -154,6 +160,12 @@ rb_objid_hash(st_index_t index)
     hnum = rb_hash_uint(hnum, (st_index_t)rb_any_hash);
     hnum = rb_hash_end(hnum);
     return hnum;
+}
+
+int
+rb_hash_iter_lev(VALUE h)
+{
+    return RHASH_ITER_LEV(h);
 }
 
 static const struct st_hash_type objhash = {
@@ -1068,8 +1080,6 @@ delete_if_i(VALUE key, VALUE value, VALUE hash)
     return ST_CONTINUE;
 }
 
-static VALUE rb_hash_size(VALUE hash);
-
 static VALUE
 hash_enum_size(VALUE hash, VALUE args, VALUE eobj)
 {
@@ -1478,7 +1488,7 @@ rb_hash_replace(VALUE hash, VALUE hash2)
  *     h.length        #=> 3
  */
 
-static VALUE
+VALUE
 rb_hash_size(VALUE hash)
 {
     return INT2FIX(RHASH_SIZE(hash));
