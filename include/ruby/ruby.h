@@ -807,11 +807,6 @@ struct RClass {
 #define RMODULE_IS_REFINEMENT FL_USER3
 #define RMODULE_INCLUDED_INTO_REFINEMENT FL_USER4
 
-struct RFloat {
-    struct RBasic basic;
-    double float_value;
-};
-
 double rb_float_value(VALUE);
 VALUE rb_float_new(double);
 VALUE rb_float_new_in_heap(double);
@@ -1077,7 +1072,6 @@ struct RStruct {
 #define ROBJECT(obj) (R_CAST(RObject)(obj))
 #define RCLASS(obj)  (R_CAST(RClass)(obj))
 #define RMODULE(obj) RCLASS(obj)
-#define RFLOAT(obj)  (R_CAST(RFloat)(obj))
 #define RSTRING(obj) (R_CAST(RString)(obj))
 #define RREGEXP(obj) (R_CAST(RRegexp)(obj))
 #define RARRAY(obj)  (R_CAST(RArray)(obj))

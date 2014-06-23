@@ -1,3 +1,13 @@
+Mon Jun 23 13:10:15 2014  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* include/ruby/ruby.h (struct RFloat): no longer.  [Feature #9863]
+
+	* include/ruby/ruby.h (RFLOAT): ditto.
+
+	* internal.h (struct RFloat): moved here.
+
+	* internal.h (RFLOAT): ditto.
+
 Mon Jun 23 12:01:42 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/generic.rb (check_port): allow strings for port= as

@@ -420,6 +420,13 @@ struct RSymbol {
 
 #define RSYMBOL(obj) (R_CAST(RSymbol)(obj))
 
+struct RFloat {
+    struct RBasic basic;
+    double float_value;
+};
+
+#define RFLOAT(obj)  (R_CAST(RFloat)(obj))
+
 /* class.c */
 void rb_class_subclass_add(VALUE super, VALUE klass);
 void rb_class_remove_from_super_subclasses(VALUE);
