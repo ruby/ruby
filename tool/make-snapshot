@@ -218,11 +218,11 @@ def package(rev, destdir)
     %w[config.guess config.sub].each do |conf|
       next if File.exist?("tool/#{conf}")
       begin
-        require File.expand_path("config_files", $tooldir)
+        require File.expand_path("downloader", $tooldir)
       rescue LoadError
-        abort "Error!!! Copy 'config_files.rb' from 'tool' directory of the recent ruby repository!"
+        abort "Error!!! Copy 'downloader.rb' from 'tool' directory of the recent ruby repository!"
       end
-      ConfigFiles.download(conf, "tool")
+      Downloader.download(conf, "tool")
     end
     File.open(clean.add("cross.rb"), "w") do |f|
       f.puts "Object.__send__(:remove_const, :CROSS_COMPILING) if defined?(CROSS_COMPILING)"

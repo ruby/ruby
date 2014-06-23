@@ -1,3 +1,9 @@
+Mon Jun 23 18:44:45 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* tool/config_files.rb: rename class ConfigFiles to Downloader.
+	* tool/get-config_files: ditto.
+	* tool/make-snapshot: ditto.
+
 Mon Jun 23 18:03:13 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* tool/rbinstall.rb: support to install bundle gems.
