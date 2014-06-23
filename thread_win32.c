@@ -754,6 +754,18 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
     return rb_thread_raised_p(th, RAISED_STACKOVERFLOW);
 }
 
+#if defined(__MINGW32__)
+LONG WINAPI
+rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *exception)
+{
+    if (exception->ExceptionRecord->ExceptionCode == EXCEPTION_STACK_OVERFLOW) {
+	rb_thread_raised_set(GET_THREAD(), RAISED_STACKOVERFLOW);
+	raise(SIGSEGV);
+    }
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+#endif
+
 #ifdef RUBY_ALLOCA_CHKSTK
 void
 ruby_alloca_chkstk(size_t len, void *sp)

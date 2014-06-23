@@ -95,6 +95,15 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
 	      EXCEPTION_CONTINUE_SEARCH) { \
 	/* never reaches here */ \
     }
+#elif defined(__MINGW32__)
+LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
+#define SAVE_ROOT_JMPBUF_BEFORE_STMT \
+    do { \
+	PVOID _handler = AddVectoredExceptionHandler(1, rb_w32_stack_overflow_handler);
+
+#define SAVE_ROOT_JMPBUF_AFTER_STMT \
+	RemoveVectoredExceptionHandler(_handler); \
+    } while (0);
 #else
 #define SAVE_ROOT_JMPBUF_BEFORE_STMT
 #define SAVE_ROOT_JMPBUF_AFTER_STMT
