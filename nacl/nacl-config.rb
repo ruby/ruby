@@ -34,7 +34,7 @@ module NaClConfig
   IRT_CORE = [
     File.join(SDK_ROOT, 'toolchain', config['NACL_TOOLCHAIN'], 'bin', "irt_core_#{cpu_nick}.nexe"),
     File.join(SDK_ROOT, 'tools', "irt_core_#{cpu_nick}.nexe")
-  ].find{|path| File.executable?(path)} or raise "No irt_core found"
+  ].find{|path| File.exist?(path)} or raise "No irt_core found"
   RUNNABLE_LD = File.join(HOST_LIB, 'runnable-ld.so')
 
   module_function
