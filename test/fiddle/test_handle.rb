@@ -1,11 +1,14 @@
 begin
   require_relative 'helper'
+  require_relative '../ruby/envutil'
 rescue LoadError
 end
 
 module Fiddle
   class TestHandle < TestCase
     include Fiddle
+
+    include Test::Unit::Assertions
 
     def test_to_i
       handle = Fiddle::Handle.new(LIBC_SO)
@@ -185,5 +188,9 @@ module Fiddle
       Socket.gethostbyname("localhost")
       Fiddle.dlopen("/lib/libc.so.7").sym('strcpy')
     end if /freebsd/=~ RUBY_PLATFORM
+
+    def test_no_memory_leak
+      assert_no_memory_leak(%w[-W0 -rfiddle.so], '', '100_000.times {Fiddle::Handle.allocate}; GC.start', rss: true)
+    end
   end
 end if defined?(Fiddle)

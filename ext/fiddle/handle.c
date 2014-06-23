@@ -40,6 +40,7 @@ fiddle_handle_free(void *ptr)
     if( fiddle_handle->ptr && fiddle_handle->open && fiddle_handle->enable_close ){
 	dlclose(fiddle_handle->ptr);
     }
+    xfree(ptr);
 }
 
 static size_t
