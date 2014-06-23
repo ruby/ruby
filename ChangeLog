@@ -1,3 +1,8 @@
+Tue Jun 24 00:14:20 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/net/ftp.rb (transfercmd): Close TCP server socket even if an
+	  exception occur.
+
 Tue Jun 24 00:06:41 2014  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* thread_win32.c (rb_w32_stack_overflow_handler): use Structured
