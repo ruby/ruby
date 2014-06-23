@@ -1,3 +1,9 @@
+Mon Jun 23 18:51:43 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_mod_init_copy): always clear instance variable,
+	  constant and method tables first, regardless the source tables.
+	  [ruby-dev:48182] [Bug #9813]
+
 Mon Jun 23 18:50:13 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (thread_start_func_2): stop if forked in a sub-thread,
