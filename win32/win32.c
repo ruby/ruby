@@ -610,7 +610,6 @@ static int NtSocketsInitialized = 0;
 static st_table *socklist = NULL;
 static st_table *conlist = NULL;
 #define conlist_disabled ((st_table *)-1)
-static char *envarea;
 static char *uenvarea;
 
 /* License: Ruby's */
@@ -659,10 +658,6 @@ exit_handler(void)
 	st_foreach(conlist, free_conlist, 0);
 	st_free_table(conlist);
 	conlist = NULL;
-    }
-    if (envarea) {
-	FreeEnvironmentStrings(envarea);
-	envarea = NULL;
     }
     if (uenvarea) {
 	free(uenvarea);
@@ -4635,10 +4630,6 @@ w32_getenv(const char *name, UINT cp)
     if (uenvarea) {
 	free(uenvarea);
 	uenvarea = NULL;
-    }
-    if (envarea) {
-	FreeEnvironmentStrings(envarea);
-	envarea = NULL;
     }
     wenvarea = GetEnvironmentStringsW();
     if (!wenvarea) {
