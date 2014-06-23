@@ -1,3 +1,29 @@
+Mon Jun 23 18:16:07 2014  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* configure.in: enable SSE2 on mingw. target='i386-pc-mingw32'.
+	  [ruby-core:62095] [Bug #8358]
+
+Mon Jun 23 18:16:07 2014  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: Fix compilation error.
+	  https://bugs.ruby-lang.org/issues/8358#note-16
+
+Mon Jun 23 18:16:07 2014  Vit Ondruch  <vondruch@redhat.com>
+
+	* configure.in: add qouting brackets and append wildcard for the
+	  rest after target_cpu, to properly detect platform for SSE2
+	  instructions.  [ruby-core:60576] [Bug #8358]
+
+Mon Jun 23 18:16:07 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: use SSE2 instructions to drop unexpected precisions on
+	  other than mingw.  [ruby-core:59472] [Bug #8358]
+
+Mon Jun 23 18:16:07 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: use SSE2 instructions for drop unexpected
+	  precisions.  [ruby-core:54738] [Bug #8358]
+
 Mon Jun 23 17:29:53 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (obj2uid, obj2gid): now getpwnam_r() and getgrnam_r()
