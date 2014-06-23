@@ -1,3 +1,10 @@
+Mon Jun 23 17:29:53 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (obj2uid, obj2gid): now getpwnam_r() and getgrnam_r()
+	  may need larger buffers than sysconf values, so retry with
+	  expanding the buffer when ERANGE is returned.
+	  [ruby-core:61325] [Bug #9600]
+
 Mon Jun 23 17:20:10 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (sock_s_getnameinfo): Save errno for EAI_SYSTEM.
