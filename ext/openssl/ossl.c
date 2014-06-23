@@ -1083,6 +1083,11 @@ Init_openssl()
     rb_define_const(mOSSL, "OPENSSL_VERSION", rb_str_new2(OPENSSL_VERSION_TEXT));
 
     /*
+     * Version of OpenSSL the ruby OpenSSL extension is running with
+     */
+    rb_define_const(mOSSL, "OPENSSL_LIBRARY_VERSION", rb_str_new2(SSLeay_version(SSLEAY_VERSION)));
+
+    /*
      * Version number of OpenSSL the ruby OpenSSL extension was built with
      * (base 16)
      */
