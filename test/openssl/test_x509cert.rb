@@ -45,10 +45,10 @@ class OpenSSL::TestX509Certificate < Test::Unit::TestCase
     ].each{|pk, digest|
       cert = issue_cert(@ca, pk, 1, Time.now, Time.now+3600, exts,
                         nil, nil, digest)
-      assert_equal(cert.extensions[1].value,
+      assert_equal(cert.extensions.sort_by(&:to_s)[2].value,
                    OpenSSL::TestUtils.get_subject_key_id(cert))
       cert = OpenSSL::X509::Certificate.new(cert.to_der)
-      assert_equal(cert.extensions[1].value,
+      assert_equal(cert.extensions.sort_by(&:to_s)[2].value,
                    OpenSSL::TestUtils.get_subject_key_id(cert))
     }
   end
