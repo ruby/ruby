@@ -1,6 +1,6 @@
 require 'test/unit'
 require 'uri'
-require '../ruby/envutil'
+require_relative '../ruby/envutil'
 
 module URI
 
