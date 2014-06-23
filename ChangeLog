@@ -1,3 +1,7 @@
+Mon Jun 23 18:03:13 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* tool/rbinstall.rb: support to install bundle gems.
+
 Mon Jun 23 17:33:11 2014  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/net/imap.rb (Net::IMAP#fetch): [DOC] Describe how a range in
