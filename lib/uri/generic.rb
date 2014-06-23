@@ -683,7 +683,7 @@ module URI
           "can not set port with registry or opaque"
       elsif !v.kind_of?(Fixnum) && parser.regexp[:PORT] !~ v
         raise InvalidComponentError,
-          "bad component(expected port component): #{v}"
+          "bad component(expected port component): #{v.inspect}"
       end
 
       return true

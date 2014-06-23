@@ -697,6 +697,14 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal('http://foo:bar@baz', uri.to_s)
     assert_equal('zab', uri.host = 'zab')
     assert_equal('http://foo:bar@zab', uri.to_s)
+    uri.port = ""
+    assert_nil(uri.port)
+    uri.port = "80"
+    assert_equal(80, uri.port)
+    uri.port = "080"
+    assert_equal(80, uri.port)
+    uri.port = " 080 "
+    assert_equal(80, uri.port)
     assert_equal(8080, uri.port = 8080)
     assert_equal('http://foo:bar@zab:8080', uri.to_s)
     assert_equal('/', uri.path = '/')
