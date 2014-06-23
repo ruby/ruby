@@ -194,7 +194,7 @@ ip_addr(int argc, VALUE *argv, VALUE sock)
 	norevlookup = fptr->mode & FMODE_NOREVLOOKUP;
     if (getsockname(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getsockname(2)");
-    return rsock_ipaddr((struct sockaddr*)&addr, norevlookup);
+    return rsock_ipaddr((struct sockaddr*)&addr, len, norevlookup);
 }
 
 /*
@@ -235,7 +235,7 @@ ip_peeraddr(int argc, VALUE *argv, VALUE sock)
 	norevlookup = fptr->mode & FMODE_NOREVLOOKUP;
     if (getpeername(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getpeername(2)");
-    return rsock_ipaddr((struct sockaddr*)&addr, norevlookup);
+    return rsock_ipaddr((struct sockaddr*)&addr, len, norevlookup);
 }
 
 /*
@@ -280,12 +280,13 @@ ip_s_getaddress(VALUE obj, VALUE host)
 {
     struct sockaddr_storage addr;
     struct addrinfo *res = rsock_addrinfo(host, Qnil, SOCK_STREAM, 0);
+    socklen_t len = res->ai_addrlen;
 
     /* just take the first one */
-    memcpy(&addr, res->ai_addr, res->ai_addrlen);
+    memcpy(&addr, res->ai_addr, len);
     freeaddrinfo(res);
 
-    return rsock_make_ipaddr((struct sockaddr*)&addr);
+    return rsock_make_ipaddr((struct sockaddr*)&addr, len);
 }
 
 void

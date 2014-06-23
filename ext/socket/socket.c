@@ -937,7 +937,7 @@ make_addrinfo(struct addrinfo *res0, int norevlookup)
     }
     base = rb_ary_new();
     for (res = res0; res; res = res->ai_next) {
-	ary = rsock_ipaddr(res->ai_addr, norevlookup);
+	ary = rsock_ipaddr(res->ai_addr, res->ai_addrlen, norevlookup);
 	if (res->ai_canonname) {
 	    RARRAY_PTR(ary)[2] = rb_str_new2(res->ai_canonname);
 	}
@@ -1216,9 +1216,10 @@ sock_s_getnameinfo(int argc, VALUE *argv)
     char hbuf[1024], pbuf[1024];
     int fl;
     struct addrinfo hints, *res = NULL, *r;
-    int error;
+    int error, saved_errno;
     struct sockaddr_storage ss;
     struct sockaddr *sap;
+    socklen_t salen;
 
     sa = flags = Qnil;
     rb_scan_args(argc, argv, "11", &sa, &flags);
@@ -1238,6 +1239,7 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 	    rb_raise(rb_eTypeError, "sockaddr size differs - should not happen");
 	}
 	sap = (struct sockaddr*)&ss;
+        salen = RSTRING_LEN(sa);
 	goto call_nameinfo;
     }
     tmp = rb_check_array_type(sa);
@@ -1299,13 +1301,14 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 	error = rb_getaddrinfo(hptr, pptr, &hints, &res);
 	if (error) goto error_exit_addr;
 	sap = res->ai_addr;
+        salen = res->ai_addrlen;
     }
     else {
 	rb_raise(rb_eTypeError, "expecting String or Array");
     }
 
   call_nameinfo:
-    error = rb_getnameinfo(sap, SA_LEN(sap), hbuf, sizeof(hbuf),
+    error = rb_getnameinfo(sap, salen, hbuf, sizeof(hbuf),
 			   pbuf, sizeof(pbuf), fl);
     if (error) goto error_exit_name;
     if (res) {
@@ -1313,7 +1316,8 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 	    char hbuf2[1024], pbuf2[1024];
 
 	    sap = r->ai_addr;
-	    error = rb_getnameinfo(sap, SA_LEN(sap), hbuf2, sizeof(hbuf2),
+            salen = r->ai_addrlen;
+	    error = rb_getnameinfo(sap, salen, hbuf2, sizeof(hbuf2),
 				   pbuf2, sizeof(pbuf2), fl);
 	    if (error) goto error_exit_name;
 	    if (strcmp(hbuf, hbuf2) != 0|| strcmp(pbuf, pbuf2) != 0) {
@@ -1326,11 +1330,15 @@ sock_s_getnameinfo(int argc, VALUE *argv)
     return rb_assoc_new(rb_str_new2(hbuf), rb_str_new2(pbuf));
 
   error_exit_addr:
+    saved_errno = errno;
     if (res) freeaddrinfo(res);
+    errno = saved_errno;
     rsock_raise_socket_error("getaddrinfo", error);
 
   error_exit_name:
+    saved_errno = errno;
     if (res) freeaddrinfo(res);
+    errno = saved_errno;
     rsock_raise_socket_error("getnameinfo", error);
 
     UNREACHABLE;
@@ -1399,7 +1407,7 @@ sock_s_unpack_sockaddr_in(VALUE self, VALUE addr)
         rb_raise(rb_eArgError, "not an AF_INET sockaddr");
 #endif
     }
-    host = rsock_make_ipaddr((struct sockaddr*)sockaddr);
+    host = rsock_make_ipaddr((struct sockaddr*)sockaddr, RSTRING_LEN(addr));
     OBJ_INFECT(host, addr);
     return rb_assoc_new(INT2NUM(ntohs(sockaddr->sin_port)), host);
 }

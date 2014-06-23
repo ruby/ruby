@@ -231,8 +231,8 @@ VALUE rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len);
 
 VALUE rsock_addrinfo_new(struct sockaddr *addr, socklen_t len, int family, int socktype, int protocol, VALUE canonname, VALUE inspectname);
 
-VALUE rsock_make_ipaddr(struct sockaddr *addr);
-VALUE rsock_ipaddr(struct sockaddr *sockaddr, int norevlookup);
+VALUE rsock_make_ipaddr(struct sockaddr *addr, socklen_t addrlen);
+VALUE rsock_ipaddr(struct sockaddr *sockaddr, socklen_t sockaddrlen, int norevlookup);
 VALUE rsock_make_hostent(VALUE host, struct addrinfo *addr, VALUE (*ipaddr)(struct sockaddr *, size_t));
 
 int rsock_revlookup_flag(VALUE revlookup, int *norevlookup);

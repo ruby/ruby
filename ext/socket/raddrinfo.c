@@ -237,27 +237,27 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
 }
 
 static void
-make_ipaddr0(struct sockaddr *addr, char *buf, size_t len)
+make_ipaddr0(struct sockaddr *addr, socklen_t addrlen, char *buf, size_t buflen)
 {
     int error;
 
-    error = rb_getnameinfo(addr, SA_LEN(addr), buf, len, NULL, 0, NI_NUMERICHOST);
+    error = rb_getnameinfo(addr, addrlen, buf, buflen, NULL, 0, NI_NUMERICHOST);
     if (error) {
         rsock_raise_socket_error("getnameinfo", error);
     }
 }
 
 VALUE
-rsock_make_ipaddr(struct sockaddr *addr)
+rsock_make_ipaddr(struct sockaddr *addr, socklen_t addrlen)
 {
     char hbuf[1024];
 
-    make_ipaddr0(addr, hbuf, sizeof(hbuf));
+    make_ipaddr0(addr, addrlen, hbuf, sizeof(hbuf));
     return rb_str_new2(hbuf);
 }
 
 static void
-make_inetaddr(unsigned int host, char *buf, size_t len)
+make_inetaddr(unsigned int host, char *buf, size_t buflen)
 {
     struct sockaddr_in sin;
 
@@ -265,7 +265,7 @@ make_inetaddr(unsigned int host, char *buf, size_t len)
     sin.sin_family = AF_INET;
     SET_SIN_LEN(&sin, sizeof(sin));
     sin.sin_addr.s_addr = host;
-    make_ipaddr0((struct sockaddr*)&sin, buf, len);
+    make_ipaddr0((struct sockaddr*)&sin, sizeof(sin), buf, buflen);
 }
 
 static int
@@ -284,7 +284,7 @@ str_is_number(const char *p)
 }
 
 static char*
-host_str(VALUE host, char *hbuf, size_t len, int *flags_ptr)
+host_str(VALUE host, char *hbuf, size_t hbuflen, int *flags_ptr)
 {
     if (NIL_P(host)) {
         return NULL;
@@ -292,7 +292,7 @@ host_str(VALUE host, char *hbuf, size_t len, int *flags_ptr)
     else if (rb_obj_is_kind_of(host, rb_cInteger)) {
         unsigned int i = NUM2UINT(host);
 
-        make_inetaddr(htonl(i), hbuf, len);
+        make_inetaddr(htonl(i), hbuf, hbuflen);
         if (flags_ptr) *flags_ptr |= AI_NUMERICHOST;
         return hbuf;
     }
@@ -302,14 +302,14 @@ host_str(VALUE host, char *hbuf, size_t len, int *flags_ptr)
         SafeStringValue(host);
         name = RSTRING_PTR(host);
         if (!name || *name == 0 || (name[0] == '<' && strcmp(name, "<any>") == 0)) {
-            make_inetaddr(INADDR_ANY, hbuf, len);
+            make_inetaddr(INADDR_ANY, hbuf, hbuflen);
             if (flags_ptr) *flags_ptr |= AI_NUMERICHOST;
         }
         else if (name[0] == '<' && strcmp(name, "<broadcast>") == 0) {
-            make_inetaddr(INADDR_BROADCAST, hbuf, len);
+            make_inetaddr(INADDR_BROADCAST, hbuf, hbuflen);
             if (flags_ptr) *flags_ptr |= AI_NUMERICHOST;
         }
-        else if (strlen(name) >= len) {
+        else if (strlen(name) >= hbuflen) {
             rb_raise(rb_eArgError, "hostname too long (%"PRIuSIZE")",
                 strlen(name));
         }
@@ -321,13 +321,13 @@ host_str(VALUE host, char *hbuf, size_t len, int *flags_ptr)
 }
 
 static char*
-port_str(VALUE port, char *pbuf, size_t len, int *flags_ptr)
+port_str(VALUE port, char *pbuf, size_t pbuflen, int *flags_ptr)
 {
     if (NIL_P(port)) {
         return 0;
     }
     else if (FIXNUM_P(port)) {
-        snprintf(pbuf, len, "%ld", FIX2LONG(port));
+        snprintf(pbuf, pbuflen, "%ld", FIX2LONG(port));
 #ifdef AI_NUMERICSERV
         if (flags_ptr) *flags_ptr |= AI_NUMERICSERV;
 #endif
@@ -338,7 +338,7 @@ port_str(VALUE port, char *pbuf, size_t len, int *flags_ptr)
 
         SafeStringValue(port);
         serv = RSTRING_PTR(port);
-        if (strlen(serv) >= len) {
+        if (strlen(serv) >= pbuflen) {
             rb_raise(rb_eArgError, "service name too long (%"PRIuSIZE")",
                 strlen(serv));
         }
@@ -388,7 +388,7 @@ rsock_addrinfo(VALUE host, VALUE port, int socktype, int flags)
 }
 
 VALUE
-rsock_ipaddr(struct sockaddr *sockaddr, int norevlookup)
+rsock_ipaddr(struct sockaddr *sockaddr, socklen_t sockaddrlen, int norevlookup)
 {
     VALUE family, port, addr1, addr2;
     VALUE ary;
@@ -407,13 +407,13 @@ rsock_ipaddr(struct sockaddr *sockaddr, int norevlookup)
 
     addr1 = Qnil;
     if (!norevlookup) {
-        error = rb_getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
+        error = rb_getnameinfo(sockaddr, sockaddrlen, hbuf, sizeof(hbuf),
                                NULL, 0, 0);
         if (! error) {
             addr1 = rb_str_new2(hbuf);
         }
     }
-    error = rb_getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
+    error = rb_getnameinfo(sockaddr, sockaddrlen, hbuf, sizeof(hbuf),
                            pbuf, sizeof(pbuf), NI_NUMERICHOST | NI_NUMERICSERV);
     if (error) {
         rsock_raise_socket_error("getnameinfo", error);
