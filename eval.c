@@ -492,25 +492,13 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
     file = rb_sourcefile();
     if (file) line = rb_sourceline();
     if (file && !NIL_P(mesg)) {
-	if (mesg == sysstack_error) {
-	    ID func = rb_frame_this_func();
-	    at = rb_enc_sprintf(rb_usascii_encoding(), "%s:%d", file, line);
-	    if (func) {
-		VALUE name = rb_id2str(func);
-		if (name) rb_str_catf(at, ":in `%"PRIsVALUE"'", name);
+	if (sysstack_error_p(mesg) || NIL_P(at = get_backtrace(mesg))) {
+	    at = rb_vm_backtrace_object();
+	    if (OBJ_FROZEN(mesg)) {
+		mesg = rb_obj_dup(mesg);
 	    }
-	    at = rb_ary_new3(1, at);
-	    rb_iv_set(mesg, "bt", at);
-	}
-	else {
-	    if (sysstack_error_p(mesg) || NIL_P(at = get_backtrace(mesg))) {
-		at = rb_vm_backtrace_object();
-		if (OBJ_FROZEN(mesg)) {
-		    mesg = rb_obj_dup(mesg);
-		}
-		rb_iv_set(mesg, "bt_locations", at);
-		set_backtrace(mesg, at);
-	    }
+	    rb_iv_set(mesg, "bt_locations", at);
+	    set_backtrace(mesg, at);
 	}
     }
 
