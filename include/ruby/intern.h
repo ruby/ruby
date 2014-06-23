@@ -183,6 +183,8 @@ VALUE rb_complex_polar(VALUE, VALUE);
 VALUE rb_Complex(VALUE, VALUE);
 #define rb_Complex1(x) rb_Complex((x), INT2FIX(0))
 #define rb_Complex2(x,y) rb_Complex((x), (y))
+DEPRECATED(VALUE rb_complex_set_real(VALUE, VALUE));
+DEPRECATED(VALUE rb_complex_set_imag(VALUE, VALUE));
 /* class.c */
 VALUE rb_class_boot(VALUE);
 VALUE rb_class_new(VALUE);

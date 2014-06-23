@@ -1,3 +1,21 @@
+Mon Jun 23 13:30:11 2014  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* include/ruby/ruby.h (struct RComplex): no longer. [Feature #9888]
+
+	* include/ruby/ruby.h (RCOMPLEX): ditto.
+
+	* include/ruby/ruby.h (RCOMPLEX_SET_REAL): deprecated.  Will be deleted later.
+
+	* include/ruby/ruby.h (RCOMPLEX_SET_IMAG): ditto.
+
+	* internal.h (struct RFloat): moved here.
+
+	* internal.h (RCOMPLEX): ditto.
+
+	* complex.c (rb_complex_set_real): do not use this.
+
+	* complex.c (rb_complex_set_imag): ditto.
+
 Mon Jun 23 13:10:15 2014  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* include/ruby/ruby.h (struct RFloat): no longer.  [Feature #9863]

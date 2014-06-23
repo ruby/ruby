@@ -1342,6 +1342,20 @@ rb_Complex(VALUE x, VALUE y)
     return nucomp_s_convert(2, a, rb_cComplex);
 }
 
+VALUE
+rb_complex_set_real(VALUE cmp, VALUE r)
+{
+    RCOMPLEX_SET_REAL(cmp, r);
+    return cmp;
+}
+
+VALUE
+rb_complex_set_imag(VALUE cmp, VALUE i)
+{
+    RCOMPLEX_SET_REAL(cmp, i);
+    return cmp;
+}
+
 /*
  * call-seq:
  *    cmp.to_i  ->  integer

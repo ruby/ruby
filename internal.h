@@ -427,6 +427,21 @@ struct RFloat {
 
 #define RFLOAT(obj)  (R_CAST(RFloat)(obj))
 
+struct RComplex {
+    struct RBasic basic;
+    const VALUE real;
+    const VALUE imag;
+};
+
+#define RCOMPLEX(obj) (R_CAST(RComplex)(obj))
+
+#ifdef RCOMPLEX_SET_REAL        /* shortcut macro for internal only */
+#undef RCOMPLEX_SET_REAL
+#undef RCOMPLEX_SET_REAL
+#define RCOMPLEX_SET_REAL(cmp, r) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->real,(r))
+#define RCOMPLEX_SET_IMAG(cmp, i) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->imag,(i))
+#endif
+
 /* class.c */
 void rb_class_subclass_add(VALUE super, VALUE klass);
 void rb_class_remove_from_super_subclasses(VALUE);
