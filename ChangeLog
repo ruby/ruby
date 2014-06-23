@@ -1,4 +1,13 @@
-Mon Jun 23 11:32:59 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Jun 23 11:35:01 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (setup_exception): set backtrace in system stack error
+	  other than the pre-allocated sysstack_error.  [Feature #6216]
+
+	* proc.c (Init_Proc): freeze the pre-allocated sysstack_error.
+
+	* vm_insnhelper.c (vm_stackoverflow): raise new instance for each
+	  times without calling any methods to keep the backtrace with no
+	  further stack overflow.
 
 	* object.c (rb_obj_copy_ivar): extract function to copy instance
 	  variables only for T_OBJECT from init_copy.

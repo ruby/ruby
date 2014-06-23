@@ -27,7 +27,9 @@ static rb_control_frame_t *vm_get_ruby_level_caller_cfp(rb_thread_t *th, rb_cont
 static void
 vm_stackoverflow(void)
 {
-    rb_exc_raise(sysstack_error);
+    VALUE e = rb_obj_alloc(rb_eSysStackError);
+    rb_obj_copy_ivar(e, sysstack_error);
+    rb_exc_raise(e);
 }
 
 static inline rb_control_frame_t *

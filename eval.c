@@ -460,6 +460,12 @@ exc_setup_cause(VALUE exc, VALUE cause)
     return exc;
 }
 
+static inline int
+sysstack_error_p(VALUE exc)
+{
+    return exc == sysstack_error || (!SPECIAL_CONST_P(exc) && RBASIC_CLASS(exc) == rb_eSysStackError);
+}
+
 static void
 setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 {
@@ -497,8 +503,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 	    rb_iv_set(mesg, "bt", at);
 	}
 	else {
-	    at = get_backtrace(mesg);
-	    if (NIL_P(at)) {
+	    if (sysstack_error_p(mesg) || NIL_P(at = get_backtrace(mesg))) {
 		at = rb_vm_backtrace_object();
 		if (OBJ_FROZEN(mesg)) {
 		    mesg = rb_obj_dup(mesg);
@@ -697,7 +702,7 @@ make_exception(int argc, const VALUE *argv, int isstr)
 	exc = argv[0];
 	n = 1;
       exception_call:
-	if (exc == sysstack_error) return exc;
+	if (sysstack_error_p(exc)) return exc;
 	CONST_ID(exception, "exception");
 	mesg = rb_check_funcall(exc, exception, n, argv+1);
 	if (mesg == Qundef) {
