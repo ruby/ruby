@@ -1,3 +1,10 @@
+Tue Jun 24 10:20:35 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* tool/downloader.rb: make Downloader class to general download utility.
+	  It can be used without config.guess and configu.sub.
+	* tool/get-config_files: ditto.
+	* tool/make-snapshot: ditto.
+
 Tue Jun 24 06:17:52 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* eval.c (setup_exception): "mesg == sysstack_error" and

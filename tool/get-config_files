@@ -3,7 +3,8 @@ require File.expand_path('../downloader', __FILE__)
 ARGV.each {|n|
   STDOUT.print "Downloading #{n}..."; STDOUT.flush
   begin
-    Downloader.download(n)
+    url = "http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=%s;hb=HEAD" % n
+    Downloader.download(url, n)
     STDOUT.puts
   rescue => e
     STDOUT.puts

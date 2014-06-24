@@ -222,7 +222,8 @@ def package(rev, destdir)
       rescue LoadError
         abort "Error!!! Copy 'downloader.rb' from 'tool' directory of the recent ruby repository!"
       end
-      Downloader.download(conf, "tool")
+      url = "http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=%s;hb=HEAD" % conf
+      Downloader.download(url, conf, "tool")
     end
     File.open(clean.add("cross.rb"), "w") do |f|
       f.puts "Object.__send__(:remove_const, :CROSS_COMPILING) if defined?(CROSS_COMPILING)"
