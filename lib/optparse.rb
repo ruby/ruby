@@ -1833,7 +1833,7 @@ XXX
     end
 
     def inspect
-      "#<#{self.class.to_s}: #{args.join(' ')}>"
+      "#<#{self.class}: #{args.join(' ')}>"
     end
 
     #

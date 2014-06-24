@@ -1,3 +1,12 @@
+Tue Jun 24 14:46:17 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/gserver.rb: remove redundant use of to_s in interpolation.
+	* lib/logger.rb: ditto.
+	* lib/optparse.rb: ditto.
+	* lib/rbconfig/obsolete.rb: ditto.
+	* lib/resolv.rb: ditto.
+	* lib/webrick/httpresponse.rb: ditto.
+
 Tue Jun 24 10:50:06 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (env_path_str_new): make PATH environment variable

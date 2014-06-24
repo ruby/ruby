@@ -4,7 +4,7 @@ module ::RbConfig
   class << Obsolete
     def _warn_
       loc, = caller_locations(2, 1)
-      loc = "#{loc.to_s}: " if loc
+      loc = "#{loc}: " if loc
       warn "#{loc}Use RbConfig instead of obsolete and deprecated Config."
       self
     end

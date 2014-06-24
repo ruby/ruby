@@ -321,7 +321,7 @@ module WEBrick
     #   res.set_redirect WEBrick::HTTPStatus::TemporaryRedirect
 
     def set_redirect(status, url)
-      @body = "<HTML><A HREF=\"#{url.to_s}\">#{url.to_s}</A>.</HTML>\n"
+      @body = "<HTML><A HREF=\"#{url}\">#{url}</A>.</HTML>\n"
       @header['location'] = url.to_s
       raise status
     end

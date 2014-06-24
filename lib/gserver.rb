@@ -161,7 +161,7 @@ class GServer
   # Return true to allow this client to connect, false to prevent it.
   def connecting(client)
     addr = client.peeraddr
-    log("#{self.class.to_s} #{@host}:#{@port} client:#{addr[1]} " +
+    log("#{self.class} #{@host}:#{@port} client:#{addr[1]} " +
         "#{addr[2]}<#{addr[3]}> connect")
     true
   end
@@ -171,7 +171,7 @@ class GServer
   #
   # +clientPort+:: the port of the client that is connecting
   def disconnecting(clientPort)
-    log("#{self.class.to_s} #{@host}:#{@port} " +
+    log("#{self.class} #{@host}:#{@port} " +
       "client:#{clientPort} disconnect")
   end
 
@@ -179,12 +179,12 @@ class GServer
 
   # Called when the server is starting up, if auditing is enabled.
   def starting()
-    log("#{self.class.to_s} #{@host}:#{@port} start")
+    log("#{self.class} #{@host}:#{@port} start")
   end
 
   # Called when the server is shutting down, if auditing is enabled.
   def stopping()
-    log("#{self.class.to_s} #{@host}:#{@port} stop")
+    log("#{self.class} #{@host}:#{@port} stop")
   end
 
   protected :starting, :stopping

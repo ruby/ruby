@@ -805,7 +805,7 @@ private
       rescue
         log(FATAL, "Detected an exception. Stopping ... #{$!} (#{$!.class})\n" << $@.join("\n"))
       ensure
-        log(INFO, "End of #{ @appname }. (status: #{ status.to_s })")
+        log(INFO, "End of #{ @appname }. (status: #{ status })")
       end
       status
     end
