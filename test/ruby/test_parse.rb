@@ -828,6 +828,11 @@ x = __ENCODING__
     assert_empty(x.reject {|s| s.is_a?(Symbol) })
   end
 
+  def test_symbol_count
+    x = Symbol.count
+    assert_kind_of(Integer, x)
+  end
+
   def test_is_class_id
     c = Class.new
     assert_raise(NameError) do

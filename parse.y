@@ -10946,6 +10946,21 @@ rb_sym_all_symbols(void)
     return ary;
 }
 
+/*
+ *  call-seq:
+ *     Symbol.count    => int
+ *
+ *  Returns the number of symbols currently in Ruby's symbol table.
+ *
+ *     Symbol.count    #=> 903
+ */
+
+VALUE
+rb_sym_count(void)
+{
+    return INT2NUM(global_symbols.sym_id->num_entries);
+}
+
 int
 rb_is_const_id(ID id)
 {
