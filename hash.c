@@ -2722,9 +2722,7 @@ getenvblocksize()
 {
     return (rb_w32_osver() >= 5) ? 32767 : 5120;
 }
-#endif
 
-#if !defined(HAVE_SETENV) || !defined(HAVE_UNSETENV)
 NORETURN(static void invalid_envname(const char *name));
 
 static void
