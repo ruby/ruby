@@ -34,10 +34,6 @@ Tue Jun 24 05:40:41 2014  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 	  Patch by Shinichiro Hamaji.
 	  [Fixes GH-529] https://github.com/ruby/ruby/pull/529
 
-Tue Jun 24 03:52:35 2014  NARUSE, Yui  <naruse@ruby-lang.org>
-
-	* lib/uri/mailto.rb: support RFC6068.
-
 Mon Jun 23 18:44:45 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* tool/config_files.rb: rename class ConfigFiles to Downloader.

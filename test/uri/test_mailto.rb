@@ -100,6 +100,9 @@ class TestMailTo < Test::Unit::TestCase
     # mailto:javascript:alert()
     bad << ["javascript:alert()", []]
 
+    # '=' which is in hname or hvalue is wrong.
+    bad << ["foo@example.jp?subject=1+1=2", []]
+
     ok.each do |x|
       assert_equal(x[0],
 		   @u.build(x[1]).to_s)
@@ -108,7 +111,7 @@ class TestMailTo < Test::Unit::TestCase
     end
 
     bad.each do |x|
-      assert_raise(URI::InvalidComponentError, %[URI::MailTo.build(#{x.inspect})]) {
+      assert_raise(URI::InvalidComponentError) {
 	@u.build(x)
       }
     end
