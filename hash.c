@@ -2500,13 +2500,20 @@ extern char **environ;
 #define ENVNMATCH(s1, s2, n) (memcmp((s1), (s2), (n)) == 0)
 #endif
 
+#ifdef _WIN32
+static VALUE
+env_str_transcode(VALUE str, rb_encoding *enc)
+{
+    return rb_str_conv_enc_opts(str, rb_utf8_encoding(), enc,
+				ECONV_INVALID_REPLACE | ECONV_UNDEF_REPLACE, Qnil);
+}
+#endif
+
 static VALUE
 env_str_new(const char *ptr, long len)
 {
 #ifdef _WIN32
-    VALUE str = rb_str_conv_enc_opts(rb_str_new(ptr, len),
-				     rb_utf8_encoding(), rb_locale_encoding(),
-				     ECONV_INVALID_REPLACE | ECONV_UNDEF_REPLACE, Qnil);
+    VALUE str = env_str_transcode(rb_str_new(ptr, len), rb_locale_encoding());
 #else
     VALUE str = rb_locale_str_new(ptr, len);
 #endif
@@ -2519,9 +2526,7 @@ static VALUE
 env_path_str_new(const char *ptr)
 {
 #ifdef _WIN32
-    VALUE str = rb_str_conv_enc_opts(rb_str_new_cstr(ptr),
-				     rb_utf8_encoding(), rb_filesystem_encoding(),
-				     ECONV_INVALID_REPLACE | ECONV_UNDEF_REPLACE, Qnil);
+    VALUE str = env_str_transcode(rb_str_new_cstr(ptr), rb_filesystem_encoding());
 #else
     VALUE str = rb_filesystem_str_new_cstr(ptr);
 #endif
