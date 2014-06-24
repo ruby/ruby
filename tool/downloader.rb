@@ -6,6 +6,6 @@ class Downloader
     file = dir ? File.join(dir, name) : name
     open(file, "wb", 0755) {|f| f.write(data)}
   rescue => e
-    raise "failed to download #{name}\n#{e.message}: #{uri}"
+    raise "failed to download #{name}\n#{e.message}: #{url}"
   end
 end
