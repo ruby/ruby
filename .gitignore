@@ -131,6 +131,9 @@ y.tab.c
 # /ext/tk/
 /ext/tk/config_list
 
+# /gems
+/gems/*.gem
+
 # /spec/
 /spec/mspec
 /spec/rubyspec

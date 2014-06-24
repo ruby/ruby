@@ -277,6 +277,14 @@ def package(rev, destdir)
     else
       system("#{YACC} -o parse.c parse.y")
     end
+    if File.file?('gems/bundled_gems') && bundled_gems = File.read('gems/bundled_gems')
+      bundled_gems.split("\n").map(&:split).each do |gem, ver|
+        gem_name = "#{gem}-#{ver}.gem"
+        unless File.file?("gems/#{gem_name}")
+          Downloader.download("https://rubygems.org/downloads/#{gem_name}", gem_name, "gems")
+        end
+      end
+    end
     FileUtils.rm_rf(clean)
     unless $?.success?
       puts " failed"

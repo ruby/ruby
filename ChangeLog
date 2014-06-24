@@ -1,3 +1,9 @@
+Tue Jun 24 10:40:52 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* tool/make-snapshot: download bundle gems when package making.
+	  [Feature #9852][ruby-core:62676]
+	* gems/bundled_gems: listed bundled gems for Ruby 2.2.
+
 Tue Jun 24 10:20:35 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* tool/downloader.rb: make Downloader class to general download utility.
