@@ -183,9 +183,6 @@ with all sufficient information, see the ChangeLog file.
 * rb_sym2str() added. This is almost same as `rb_id2str(SYM2ID(sym))`
   but not pinning a dynamic symbol.
 
-* struct RSymbol added. This represents a dynamic symbol as object in
-  Ruby's heaps.
-
 * rb_str_cat_cstr() added. This is same as `rb_str_cat2()`.
 
 * `rb_str_substr()` and `rb_str_subseq()` now share middle of a string,
