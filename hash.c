@@ -2514,6 +2514,20 @@ env_str_new(const char *ptr, long len)
 }
 
 static VALUE
+env_path_str_new(const char *ptr)
+{
+#ifdef _WIN32
+    VALUE str = rb_enc_str_new_cstr(ptr, rb_utf8_encoding());
+    str = rb_str_conv_enc(str, NULL, rb_filesystem_encoding());
+#else
+    VALUE str = rb_filesystem_str_new_cstr(ptr);
+#endif
+
+    rb_obj_freeze(str);
+    return str;
+}
+
+static VALUE
 env_str_new2(const char *ptr)
 {
     if (!ptr) return Qnil;
@@ -2584,14 +2598,7 @@ rb_f_getenv(VALUE obj, VALUE name)
     env = getenv(nam);
     if (env) {
 	if (ENVMATCH(nam, PATH_ENV) && !env_path_tainted(env)) {
-#ifdef _WIN32
-	    VALUE str = rb_str_conv_enc(rb_str_new(env, strlen(env)), rb_utf8_encoding(), rb_filesystem_encoding());
-#else
-	    VALUE str = rb_filesystem_str_new_cstr(env);
-#endif
-
-	    rb_obj_freeze(str);
-	    return str;
+	    return env_path_str_new(env);
 	}
 	return env_str_new2(env);
     }
@@ -2638,11 +2645,7 @@ env_fetch(int argc, VALUE *argv)
 	return if_none;
     }
     if (ENVMATCH(nam, PATH_ENV) && !env_path_tainted(env))
-#ifdef _WIN32
-	return rb_str_conv_enc(rb_str_new(env, strlen(env)), rb_utf8_encoding(), rb_filesystem_encoding());
-#else
-	return rb_filesystem_str_new_cstr(env);
-#endif
+	return env_path_str_new(env);
     return env_str_new2(env);
 }
 

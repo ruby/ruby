@@ -408,4 +408,22 @@ class TestEnv < Test::Unit::TestCase
       keys.each {|k| ENV.delete(k)}
     end
   end
+
+  def test_frozen
+    ENV[PATH_ENV] = "/"
+    ENV.each do |k, v|
+      assert_predicate(k, :frozen?)
+      assert_predicate(v, :frozen?)
+    end
+    ENV.each_key do |k|
+      assert_predicate(k, :frozen?)
+    end
+    ENV.each_value do |v|
+      assert_predicate(v, :frozen?)
+    end
+    ENV.each_key do |k|
+      assert_predicate(ENV[k], :frozen?, "[#{k.dump}]")
+      assert_predicate(ENV.fetch(k), :frozen?, "fetch(#{k.dump})")
+    end
+  end
 end

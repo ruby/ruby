@@ -1,3 +1,8 @@
+Tue Jun 24 10:50:06 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (env_path_str_new): make PATH environment variable
+	  string, to be frozen.
+
 Tue Jun 24 10:40:52 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* tool/make-snapshot: download bundle gems when package making.
