@@ -2504,7 +2504,9 @@ static VALUE
 env_str_new(const char *ptr, long len)
 {
 #ifdef _WIN32
-    VALUE str = rb_str_conv_enc(rb_str_new(ptr, len), rb_utf8_encoding(), rb_locale_encoding());
+    VALUE str = rb_str_conv_enc_opts(rb_str_new(ptr, len),
+				     rb_utf8_encoding(), rb_locale_encoding(),
+				     ECONV_INVALID_REPLACE | ECONV_UNDEF_REPLACE, Qnil);
 #else
     VALUE str = rb_locale_str_new(ptr, len);
 #endif
@@ -2517,8 +2519,9 @@ static VALUE
 env_path_str_new(const char *ptr)
 {
 #ifdef _WIN32
-    VALUE str = rb_enc_str_new_cstr(ptr, rb_utf8_encoding());
-    str = rb_str_conv_enc(str, NULL, rb_filesystem_encoding());
+    VALUE str = rb_str_conv_enc_opts(rb_str_new_cstr(ptr),
+				     rb_utf8_encoding(), rb_filesystem_encoding(),
+				     ECONV_INVALID_REPLACE | ECONV_UNDEF_REPLACE, Qnil);
 #else
     VALUE str = rb_filesystem_str_new_cstr(ptr);
 #endif
