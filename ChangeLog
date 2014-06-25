@@ -1,3 +1,9 @@
+Wed Jun 25 10:19:59 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (env_aset, env_has_key, env_assoc, env_has_value),
+	  (env_rassoc, env_key): prohibit tainted strings if $SAFE is
+	  non-zero.  [Bug #9976]
+
 Tue Jun 24 14:46:17 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/gserver.rb: remove redundant use of to_s in interpolation.

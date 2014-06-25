@@ -426,4 +426,85 @@ class TestEnv < Test::Unit::TestCase
       assert_predicate(ENV.fetch(k), :frozen?, "fetch(#{k.dump})")
     end
   end
+
+  def test_taint_aref
+    assert_raise(SecurityError) do
+      proc do
+        $SAFE = 2
+        ENV["FOO".taint]
+      end.call
+    end
+  end
+
+  def test_taint_fetch
+    assert_raise(SecurityError) do
+      proc do
+        $SAFE = 2
+        ENV.fetch("FOO".taint)
+      end.call
+    end
+  end
+
+  def test_taint_assoc
+    assert_raise(SecurityError) do
+      proc do
+        $SAFE = 2
+        ENV.assoc("FOO".taint)
+      end.call
+    end
+  end
+
+  def test_taint_rassoc
+    assert_raise(SecurityError) do
+      proc do
+        $SAFE = 2
+        ENV.rassoc("FOO".taint)
+      end.call
+    end
+  end
+
+  def test_taint_key
+    assert_raise(SecurityError) do
+      proc do
+        $SAFE = 2
+        ENV.key("FOO".taint)
+      end.call
+    end
+  end
+
+  def test_taint_key_p
+    assert_raise(SecurityError) do
+      proc do
+        $SAFE = 2
+        ENV.key?("FOO".taint)
+      end.call
+    end
+  end
+
+  def test_taint_value_p
+    assert_raise(SecurityError) do
+      proc do
+        $SAFE = 2
+        ENV.value?("FOO".taint)
+      end.call
+    end
+  end
+
+  def test_taint_aset_value
+    assert_raise(SecurityError) do
+      proc do
+        $SAFE = 2
+        ENV["FOO"] = "BAR".taint
+      end.call
+    end
+  end
+
+  def test_taint_aset_key
+    assert_raise(SecurityError) do
+      proc do
+        $SAFE = 2
+        ENV["FOO".taint] = "BAR"
+      end.call
+    end
+  end
 end
