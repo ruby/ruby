@@ -1,3 +1,9 @@
+Wed Jun 25 22:31:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (ruby_setenv): fix memory leak on Windows, free
+	  environment strings block after check for the size.
+	  [ruby-dev:48323] [Bug #9977]
+
 Wed Jun 25 15:44:12 2014  Eric Wong  <e@80x24.org>
 
 	* ccan/container_of/container_of.h (container_off_var):

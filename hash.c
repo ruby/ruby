@@ -2750,9 +2750,12 @@ ruby_setenv(const char *name, const char *value)
     int failed = 0;
     check_envname(name);
     if (value) {
-	const char* p = GetEnvironmentStringsA();
+	char* p = GetEnvironmentStringsA();
+	size_t n;
 	if (!p) goto fail; /* never happen */
-	if (strlen(name) + 2 + strlen(value) + getenvsize(p) >= getenvblocksize()) {
+	n = strlen(name) + 2 + strlen(value) + getenvsize(p);
+	FreeEnvironmentStringsA(p);
+	if (n >= getenvblocksize()) {
 	    goto fail;  /* 2 for '=' & '\0' */
 	}
 	buf = rb_sprintf("%s=%s", name, value);
