@@ -2542,16 +2542,25 @@ env_str_new2(const char *ptr)
     return env_str_new(ptr, strlen(ptr));
 }
 
+#define get_env_ptr(var, val) \
+    (memchr((var = RSTRING_PTR(val)), '\0', RSTRING_LEN(val)) ? \
+     rb_raise(rb_eArgError, "bad environment variable " #var) : (void)0)
+
+static inline const char *
+env_name(VALUE s)
+{
+    const char *name;
+    SafeStringValue(s);
+    get_env_ptr(name, s);
+    return name;
+}
+
 static VALUE
 env_delete(VALUE obj, VALUE name)
 {
-    char *nam, *val;
+    const char *nam, *val;
 
-    SafeStringValue(name);
-    nam = RSTRING_PTR(name);
-    if (memchr(nam, '\0', RSTRING_LEN(name))) {
-	rb_raise(rb_eArgError, "bad environment variable name");
-    }
+    nam = env_name(name);
     val = getenv(nam);
     if (val) {
 	VALUE value = env_str_new2(val);
@@ -2596,13 +2605,9 @@ static int env_path_tainted(const char *);
 static VALUE
 rb_f_getenv(VALUE obj, VALUE name)
 {
-    char *nam, *env;
+    const char *nam, *env;
 
-    SafeStringValue(name);
-    nam = RSTRING_PTR(name);
-    if (memchr(nam, '\0', RSTRING_LEN(name))) {
-	rb_raise(rb_eArgError, "bad environment variable name");
-    }
+    nam = env_name(name);
     env = getenv(nam);
     if (env) {
 	if (ENVMATCH(nam, PATH_ENV) && !env_path_tainted(env)) {
@@ -2632,18 +2637,14 @@ env_fetch(int argc, VALUE *argv)
 {
     VALUE key, if_none;
     long block_given;
-    char *nam, *env;
+    const char *nam, *env;
 
     rb_scan_args(argc, argv, "11", &key, &if_none);
     block_given = rb_block_given_p();
     if (block_given && argc == 2) {
 	rb_warn("block supersedes default value argument");
     }
-    SafeStringValue(key);
-    nam = RSTRING_PTR(key);
-    if (memchr(nam, '\0', RSTRING_LEN(key))) {
-	rb_raise(rb_eArgError, "bad environment variable name");
-    }
+    nam = env_name(key);
     env = getenv(nam);
     if (!env) {
 	if (block_given) return rb_yield(key);
@@ -2873,12 +2874,10 @@ env_aset(VALUE obj, VALUE nm, VALUE val)
     }
     SafeStringValue(nm);
     SafeStringValue(val);
-    name = RSTRING_PTR(nm);
-    value = RSTRING_PTR(val);
-    if (memchr(name, '\0', RSTRING_LEN(nm)))
-	rb_raise(rb_eArgError, "bad environment variable name");
-    if (memchr(value, '\0', RSTRING_LEN(val)))
-	rb_raise(rb_eArgError, "bad environment variable value");
+    /* nm can be modified in `val.to_str`, don't get `name` before
+     * check for `val` */
+    get_env_ptr(name, nm);
+    get_env_ptr(value, val);
 
     ruby_setenv(name, value);
     if (ENVMATCH(name, PATH_ENV)) {
@@ -3367,12 +3366,9 @@ env_empty_p(void)
 static VALUE
 env_has_key(VALUE env, VALUE key)
 {
-    char *s;
+    const char *s;
 
-    SafeStringValue(key);
-    s = RSTRING_PTR(key);
-    if (memchr(s, '\0', RSTRING_LEN(key)))
-	rb_raise(rb_eArgError, "bad environment variable name");
+    s = env_name(key);
     if (getenv(s)) return Qtrue;
     return Qfalse;
 }
@@ -3387,12 +3383,9 @@ env_has_key(VALUE env, VALUE key)
 static VALUE
 env_assoc(VALUE env, VALUE key)
 {
-    char *s, *e;
+    const char *s, *e;
 
-    SafeStringValue(key);
-    s = RSTRING_PTR(key);
-    if (memchr(s, '\0', RSTRING_LEN(key)))
-	rb_raise(rb_eArgError, "bad environment variable name");
+    s = env_name(key);
     e = getenv(s);
     if (e) return rb_assoc_new(key, rb_tainted_str_new2(e));
     return Qnil;
