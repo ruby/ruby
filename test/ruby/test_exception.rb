@@ -618,4 +618,8 @@ end.join
     e = assert_raise(exc, bug) {raise exc, {}}
     assert_equal({}, e.arg, bug)
   end
+
+  def test_anonymous_message
+    assert_in_out_err([], "raise Class.new(RuntimeError), 'foo'", [], /foo\n/)
+  end
 end

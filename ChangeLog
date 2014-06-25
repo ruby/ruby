@@ -1,3 +1,8 @@
+Thu Jun 26 02:45:04 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_error.c (error_print): put a newline after an anonymous
+	  exception class name.
+
 Wed Jun 25 22:31:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (ruby_setenv): fix memory leak on Windows, free
