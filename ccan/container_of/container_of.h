@@ -100,7 +100,7 @@
 	container_off(typeof(*var), member)
 #else
 #define container_off_var(var, member)			\
-	((char *)&(var)->member - (char *)(var))
+	((const char *)&(var)->member - (const char *)(var))
 #endif
 
 #endif /* CCAN_CONTAINER_OF_H */

@@ -1,3 +1,9 @@
+Wed Jun 25 15:44:12 2014  Eric Wong  <e@80x24.org>
+
+	* ccan/container_of/container_of.h (container_off_var):
+	  avoid warning with -Wcast-qual
+	  [ccan ba5ad771af4aa9e085498de6c3c665c52694460f (Rusty Russell)]
+
 Wed Jun 25 10:19:59 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (env_aset, env_has_key, env_assoc, env_has_value),
