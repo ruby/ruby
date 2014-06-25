@@ -2547,13 +2547,15 @@ env_str_new2(const char *ptr)
      rb_raise(rb_eArgError, "bad environment variable " #var) : (void)0)
 
 static inline const char *
-env_name(VALUE s)
+env_name(volatile VALUE *s)
 {
     const char *name;
-    SafeStringValue(s);
-    get_env_ptr(name, s);
+    SafeStringValue(*s);
+    get_env_ptr(name, *s);
     return name;
 }
+
+#define env_name(s) env_name(&(s))
 
 static VALUE
 env_delete(VALUE obj, VALUE name)
