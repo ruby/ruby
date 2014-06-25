@@ -3138,23 +3138,21 @@ static VALUE
 env_select(VALUE ehash)
 {
     VALUE result;
-    char **env;
+    VALUE keys;
+    long i;
 
     RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
     result = rb_hash_new();
-    env = GET_ENVIRON(environ);
-    while (*env) {
-	char *s = strchr(*env, '=');
-	if (s) {
-	    VALUE k = env_str_new(*env, s-*env);
-	    VALUE v = env_str_new2(s+1);
-	    if (RTEST(rb_yield_values(2, k, v))) {
-		rb_hash_aset(result, k, v);
+    keys = env_keys();
+    for (i = 0; i < RARRAY_LEN(keys); ++i) {
+	VALUE key = RARRAY_AREF(keys, i);
+	VALUE val = rb_f_getenv(Qnil, key);
+	if (!NIL_P(val)) {
+	    if (RTEST(rb_yield_values(2, key, val))) {
+		rb_hash_aset(result, key, val);
 	    }
 	}
-	env++;
     }
-    FREE_ENVIRON(environ);
 
     return result;
 }

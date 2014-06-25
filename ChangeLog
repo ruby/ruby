@@ -1,3 +1,9 @@
+Thu Jun 26 08:28:01 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (env_select): fix memory leak and crash on Windows, make
+	  keys array first instead of iterating on envrion directly.
+	  [ruby-dev:48325] [Bug #9978]
+
 Thu Jun 26 02:45:04 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_error.c (error_print): put a newline after an anonymous

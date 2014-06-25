@@ -517,4 +517,20 @@ class TestEnv < Test::Unit::TestCase
       v = (ENV[k] = 'bar'*5000 rescue 'bar'*1500)
     end;
   end
+
+  def test_memory_leak_select
+    bug9978 = '[ruby-dev:48325] [Bug #9978]'
+    assert_no_memory_leak([], <<-'end;', "5_000.times {ENV.select {break}}", bug9978)
+      ENV.clear
+      k = 'FOO'
+      (ENV[k] = 'bar'*5000 rescue 'bar'*1500)
+    end;
+  end
+
+  def test_memory_crash_select
+    assert_normal_exit(<<-'end;')
+      1000.times {ENV["FOO#{i}"] = 'bar'}
+      ENV.select {ENV.clear}
+    end;
+  end
 end
