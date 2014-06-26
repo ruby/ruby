@@ -1,3 +1,8 @@
+Fri Jun 27 05:33:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (env_shift): fix memory leak on Windows, free environment
+	  strings block always.  [ruby-dev:48332] [Bug #9983]
+
 Fri Jun 27 03:41:53 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (GETASTER): should not use the numbered argument to be

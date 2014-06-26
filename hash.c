@@ -3554,6 +3554,7 @@ static VALUE
 env_shift(void)
 {
     char **env;
+    VALUE result = Qnil;
 
     env = GET_ENVIRON(environ);
     if (*env) {
@@ -3562,11 +3563,11 @@ env_shift(void)
 	    VALUE key = env_str_new(*env, s-*env);
 	    VALUE val = env_str_new2(getenv(RSTRING_PTR(key)));
 	    env_delete(Qnil, key);
-	    return rb_assoc_new(key, val);
+	    result = rb_assoc_new(key, val);
 	}
     }
     FREE_ENVIRON(environ);
-    return Qnil;
+    return result;
 }
 
 /*

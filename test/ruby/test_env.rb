@@ -533,4 +533,13 @@ class TestEnv < Test::Unit::TestCase
       ENV.select {ENV.clear}
     end;
   end
+
+  def test_memory_leak_shift
+    bug9983 = '[ruby-dev:48332] [Bug #9983]'
+    assert_no_memory_leak([], <<-'end;', "5_000.times {ENV.shift; ENV[k] = v}", bug9983)
+      ENV.clear
+      k = 'FOO'
+      v = (ENV[k] = 'bar'*5000 rescue 'bar'*1500)
+    end;
+  end
 end
