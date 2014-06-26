@@ -1,6 +1,6 @@
 Thu Jun 26 17:57:57 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
-	* lib/webrick/httpproxy.rb: remvoe useless assigned variables.
+	* lib/webrick/httpproxy.rb: remove useless assigned variables.
 	* lib/webrick/httpservlet/cgihandler.rb: ditto.
 	* lib/webrick/httpservlet/erbhandler.rb: ditto.
 	* lib/webrick/server.rb: ditto.
