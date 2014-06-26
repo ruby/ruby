@@ -203,7 +203,7 @@ module WEBrick
             ua.syswrite(buf)
           end
         end
-      rescue => ex
+      rescue
         os.close
         @logger.debug("CONNECT #{host}:#{port}: closed")
       end

@@ -288,7 +288,7 @@ module WEBrick
         Utils::set_non_blocking(sock)
         Utils::set_close_on_exec(sock)
       rescue Errno::ECONNRESET, Errno::ECONNABORTED,
-             Errno::EPROTO, Errno::EINVAL => ex
+             Errno::EPROTO, Errno::EINVAL
       rescue StandardError => ex
         msg = "#{ex.class}: #{ex.message}\n\t#{ex.backtrace[0]}"
         @logger.error msg
