@@ -203,7 +203,9 @@ def package(rev, destdir)
     tag ||= "r#{revision}"
   end
   unless v == $exported
-    if tag.empty?
+    if $archname
+      n = $archname
+    elsif tag.empty?
       n = "ruby-#{version}"
     else
       n = "ruby-#{version}-#{tag}"
