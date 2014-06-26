@@ -1,3 +1,9 @@
+Thu Jun 26 18:18:28 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/with_different_ofs.rb: move into test library directory.
+	* test/csv/base.rb: fix require path for with_different_ofs.rb.
+	* test/digest/test_digest_extend.rb: ditto.
+
 Thu Jun 26 18:06:50 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/profile_test_all.rb: move into test library directory.
