@@ -120,7 +120,7 @@ sign_bits(int base, const char *p)
 #define GETASTER(val) do { \
     t = p++; \
     n = 0; \
-    GETNUM(n, (val)); \
+    GETNUM(n, val); \
     if (*p == '$') { \
 	tmp = GETPOSARG(n); \
     } \

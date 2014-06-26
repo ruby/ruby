@@ -309,6 +309,12 @@ class TestSprintf < Test::Unit::TestCase
 
   def test_star
     assert_equal("-1 ", sprintf("%*d", -3, -1))
+    assert_raise_with_message(ArgumentError, /width too big/) {
+      sprintf("%*999999999999999999999999999999999999999999999999999999999999$d", 1)
+    }
+    assert_raise_with_message(ArgumentError, /prec too big/) {
+      sprintf("%.*999999999999999999999999999999999999999999999999999999999999$d", 1)
+    }
   end
 
   def test_escape
