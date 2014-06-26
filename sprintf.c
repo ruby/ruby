@@ -79,6 +79,9 @@ sign_bits(int base, const char *p)
 } while (0)
 
 #define GETARG() (nextvalue != Qundef ? nextvalue : \
+		  GETNEXTARG())
+
+#define GETNEXTARG() ( \
     posarg == -1 ? \
     (rb_raise(rb_eArgError, "unnumbered(%d) mixed with numbered", nextarg), 0) : \
     posarg == -2 ? \
@@ -125,7 +128,7 @@ sign_bits(int base, const char *p)
 	tmp = GETPOSARG(n); \
     } \
     else { \
-	tmp = GETARG(); \
+	tmp = GETNEXTARG(); \
 	p = t; \
     } \
     (val) = NUM2INT(tmp); \

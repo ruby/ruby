@@ -1,3 +1,9 @@
+Fri Jun 27 03:41:53 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (GETASTER): should not use the numbered argument to be
+	  formatted, raise ArgumentError instead.
+	  [ruby-dev:48330] [Bug #9982]
+
 Thu Jun 26 18:18:28 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/with_different_ofs.rb: move into test library directory.
