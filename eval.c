@@ -471,7 +471,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 {
     VALUE at;
     VALUE e;
-    const char *file;
+    const char *file = 0;
     volatile int line = 0;
     int nocause = 0;
 
