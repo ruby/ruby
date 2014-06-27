@@ -5548,7 +5548,7 @@ maxgroups(void)
 static VALUE
 proc_getgroups(VALUE obj)
 {
-    VALUE ary;
+    VALUE ary, tmp;
     int i, ngroups;
     rb_gid_t *groups;
 
@@ -5556,7 +5556,7 @@ proc_getgroups(VALUE obj)
     if (ngroups == -1)
 	rb_sys_fail(0);
 
-    groups = ALLOCA_N(rb_gid_t, ngroups);
+    groups = ALLOCV_N(rb_gid_t, tmp, ngroups);
 
     ngroups = getgroups(ngroups, groups);
     if (ngroups == -1)
@@ -5565,6 +5565,8 @@ proc_getgroups(VALUE obj)
     ary = rb_ary_new();
     for (i = 0; i < ngroups; i++)
 	rb_ary_push(ary, GIDT2NUM(groups[i]));
+
+    ALLOCV_END(tmp);
 
     return ary;
 }
@@ -5592,6 +5594,7 @@ proc_setgroups(VALUE obj, VALUE ary)
 {
     int ngroups, i;
     rb_gid_t *groups;
+    VALUE tmp;
     PREPARE_GETGRNAM;
 
     Check_Type(ary, T_ARRAY);
@@ -5600,7 +5603,7 @@ proc_setgroups(VALUE obj, VALUE ary)
     if (ngroups > maxgroups())
 	rb_raise(rb_eArgError, "too many groups, %d max", maxgroups());
 
-    groups = ALLOCA_N(rb_gid_t, ngroups);
+    groups = ALLOCV_N(rb_gid_t, tmp, ngroups);
 
     for (i = 0; i < ngroups; i++) {
 	VALUE g = RARRAY_PTR(ary)[i];
@@ -5611,6 +5614,8 @@ proc_setgroups(VALUE obj, VALUE ary)
 
     if (setgroups(ngroups, groups) == -1) /* ngroups <= maxgroups */
 	rb_sys_fail(0);
+
+    ALLOCV_END(tmp);
 
     return proc_getgroups(obj);
 }
