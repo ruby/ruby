@@ -167,8 +167,8 @@ def vars.expand(val, config = self)
   val.replace(newval) unless newval == val
   val
 end
-prefix = vars.expand(vars["prefix"])
-rubyarchdir = vars.expand(vars["rubyarchdir"])
+prefix = vars.expand(vars["prefix"] ||= "")
+rubyarchdir = vars.expand(vars["rubyarchdir"] ||= "")
 relative_archdir = rubyarchdir.rindex(prefix, 0) ? rubyarchdir[prefix.size..-1] : rubyarchdir
 print "  TOPDIR = File.dirname(__FILE__).chomp!(#{relative_archdir.dump})\n"
 print "  DESTDIR = ", (drive ? "TOPDIR && TOPDIR[/\\A[a-z]:/i] || " : ""), "'' unless defined? DESTDIR\n"
