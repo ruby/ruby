@@ -511,19 +511,23 @@ class TestEnv < Test::Unit::TestCase
 
   def test_memory_leak_aset
     bug9977 = '[ruby-dev:48323] [Bug #9977]'
-    assert_no_memory_leak([], <<-'end;', "5_000.times {ENV[k] = v}", bug9977)
+    assert_no_memory_leak([], <<-'end;', "5_000.times(&doit)", bug9977)
       ENV.clear
       k = 'FOO'
       v = (ENV[k] = 'bar'*5000 rescue 'bar'*1500)
+      doit = proc {ENV[k] = v}
+      50.times(&doit)
     end;
   end
 
   def test_memory_leak_select
     bug9978 = '[ruby-dev:48325] [Bug #9978]'
-    assert_no_memory_leak([], <<-'end;', "5_000.times {ENV.select {break}}", bug9978)
+    assert_no_memory_leak([], <<-'end;', "5_000.times(&doit)", bug9978)
       ENV.clear
       k = 'FOO'
       (ENV[k] = 'bar'*5000 rescue 'bar'*1500)
+      doit = proc {ENV.select {break}}
+      50.times(&doit)
     end;
   end
 
@@ -536,10 +540,12 @@ class TestEnv < Test::Unit::TestCase
 
   def test_memory_leak_shift
     bug9983 = '[ruby-dev:48332] [Bug #9983]'
-    assert_no_memory_leak([], <<-'end;', "5_000.times {ENV.shift; ENV[k] = v}", bug9983)
+    assert_no_memory_leak([], <<-'end;', "5_000.times(&doit)", bug9983)
       ENV.clear
       k = 'FOO'
       v = (ENV[k] = 'bar'*5000 rescue 'bar'*1500)
+      doit = proc {ENV[k] = v; ENV.shift}
+      50.times(&doit)
     end;
   end
 end
