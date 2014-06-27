@@ -1,3 +1,28 @@
+Fri Jun 27 17:02:36 2014  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* thread_win32.c (rb_w32_stack_overflow_handler): use Structured
+	  Exception Handling by AddVectoredExceptionHandler() for machine
+	  stack overflow on mingw.
+	  This would be equivalent to the handling using __try and __except
+	  on mswin introduced by r43748.
+
+Fri Jun 27 17:02:36 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* eval_intern.h (SAVE_ROOT_JMPBUF): workaround for the failure of
+	  test/ruby/test_exception.rb on Windows.
+	  wrap by __try and __exception statements on mswin to raise SIGSEGV
+	  when EXCEPTION_STACK_OVERFLOW is occurred, because MSVCRT doesn't
+	  handle the exception.
+	  however, (1) mingw-gcc doesn't support __try and __exception
+	  statements, and (2) we cannot retry SystemStackError after this
+	  change yet (maybe crashed) because SEH and longjmp() are too
+	  uncongenial.
+
+	* signal.c (check_stack_overflow, CHECK_STACK_OVERFLOW): now defined on
+	  Windows, too.
+
+	* thread_win32.c (ruby_stack_overflowed_p): ditto.
+
 Fri Jun 27 16:56:38 2014  Eric Wong  <e@80x24.org>
 
 	* signal.c (signal_exec): ignore immediate cmd for SIG_IGN
