@@ -1,3 +1,10 @@
+Fri Jun 27 17:37:12 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vsnprintf.c (BSD_vfprintf): fix string width when precision is
+	  given.  as the result of `memchr` is NULL or its offset from the
+	  start cannot exceed the size, the comparison was always false.
+	  [ruby-core:62737] [Bug #9861]
+
 Fri Jun 27 17:27:26 2014  Eric Wong  <e@80x24.org>
 
 	* process.c (proc_getgroups, proc_setgroups): use ALLOCV_N
