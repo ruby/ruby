@@ -1,3 +1,8 @@
+Fri Jun 27 15:20:12 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/rubygems/test_case.rb: rescue Gem::LoadError in Gem::TestCase.
+	  because it's effected by removing minitest from stdlib.
+
 Fri Jun 27 12:29:37 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/rubygems/specification.rb: fixed broken condition caused
