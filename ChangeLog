@@ -1,3 +1,10 @@
+Fri Jun 27 16:56:38 2014  Eric Wong  <e@80x24.org>
+
+	* signal.c (signal_exec): ignore immediate cmd for SIG_IGN
+	* signal.c (trap_handler): set cmd to true for SIG_IGN
+	* signal.c (trap): handle nil and true values for oldcmd
+	  [Bug #9835]
+
 Mon Jun 23 18:51:43 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rb_mod_init_copy): always clear instance variable,
