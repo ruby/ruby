@@ -177,7 +177,10 @@ module OpenSSL
       end
 
       def accept
-        sock = @svr.accept
+        # Socket#accept returns [socket, addrinfo].
+        # TCPServer#accept returns a socket.
+        # The following comma strips addrinfo.
+        sock, = @svr.accept
         begin
           ssl = OpenSSL::SSL::SSLSocket.new(sock, @ctx)
           ssl.sync_close = true
