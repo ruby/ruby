@@ -1,3 +1,9 @@
+Fri Jun 27 17:57:16 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_substr): need to reset code range for shared
+	  string too, not only copied string.
+	  [ruby-core:62842] [Bug #9882]
+
 Fri Jun 27 17:54:09 2014  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* signal.c (ruby_signal): should return either `old.sa_sigaction`
