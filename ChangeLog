@@ -1,3 +1,27 @@
+Sat Jun 28 04:08:22 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/mailto.rb: update to latest specs, RFC 6068 and HTML5.
+
+	* lib/uri/mailto.rb (HEADER_PATTERN): removed.
+
+	* lib/uri/mailto.rb (HEADER_REGEXP): use RFC 6068 hfields.
+
+	* lib/uri/mailto.rb (EMAIL_REGEXP): use HTML5 email regexp.
+
+	* lib/uri/mailto.rb (URI::MailTo.build): support multiple to addresses.
+
+	* lib/uri/mailto.rb (URI::MailTo#initialize): Support multiple to
+	  addresses. Don't check with regexp, only split.
+
+	* lib/uri/mailto.rb (URI::MailTo#check_to): verify by matching
+	  URI path-rootless and HTML5 email regexp with unescaped one.
+
+	* lib/uri/mailto.rb (URI::MailTo#check_headers): verify only by
+	  HEADER_REGEXP.
+
+	* lib/uri/mailto.rb (URI::MailTo#set_headers): don't check by
+	  HEADER_REGEXP, only split it.
+
 Sat Jun 28 00:35:10 2014  Lauri Tirkkonen  <lotheac@iki.fi>
 
 	* tool/mkconfig.rb: fix empty RbConfig::CONFIG["prefix"] when
