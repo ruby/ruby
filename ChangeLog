@@ -1,3 +1,9 @@
+Fri Jun 27 17:12:45 2014  Eric Wong  <e@80x24.org>
+
+	* complex.c (parse_comp): replace ALLOCA_N with ALLOCV_N/ALLOCV_END
+	  [Bug #9608]
+	* rational.c (read_digits): ditto
+
 Fri Jun 27 17:05:23 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/net/ftp.rb (transfercmd): Close TCP server socket even if an
