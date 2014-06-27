@@ -33,17 +33,19 @@ class TestCommon < Test::Unit::TestCase
   end
 
   def test_regexp
-    assert_instance_of Regexp, URI.regexp
-    assert_instance_of Regexp, URI.regexp(['http'])
-    assert_equal URI.regexp, URI.regexp
-    assert_equal 'http://', 'x http:// x'.slice(URI.regexp)
-    assert_equal 'http://', 'x http:// x'.slice(URI.regexp(['http']))
-    assert_equal 'http://', 'x http:// x ftp://'.slice(URI.regexp(['http']))
-    assert_equal nil, 'http://'.slice(URI.regexp([]))
-    assert_equal nil, ''.slice(URI.regexp)
-    assert_equal nil, 'xxxx'.slice(URI.regexp)
-    assert_equal nil, ':'.slice(URI.regexp)
-    assert_equal 'From:', 'From:'.slice(URI.regexp)
+    EnvUtil.suppress_warning do
+      assert_instance_of Regexp, URI.regexp
+      assert_instance_of Regexp, URI.regexp(['http'])
+      assert_equal URI.regexp, URI.regexp
+      assert_equal 'http://', 'x http:// x'.slice(URI.regexp)
+      assert_equal 'http://', 'x http:// x'.slice(URI.regexp(['http']))
+      assert_equal 'http://', 'x http:// x ftp://'.slice(URI.regexp(['http']))
+      assert_equal nil, 'http://'.slice(URI.regexp([]))
+      assert_equal nil, ''.slice(URI.regexp)
+      assert_equal nil, 'xxxx'.slice(URI.regexp)
+      assert_equal nil, ':'.slice(URI.regexp)
+      assert_equal 'From:', 'From:'.slice(URI.regexp)
+    end
   end
 
   def test_kernel_uri
