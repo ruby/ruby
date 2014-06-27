@@ -1,3 +1,10 @@
+Sat Jun 28 00:35:10 2014  Lauri Tirkkonen  <lotheac@iki.fi>
+
+	* tool/mkconfig.rb: fix empty RbConfig::CONFIG["prefix"] when
+	  configured --with-rubyarchprefix, remove prefix from rubyarchdir
+	  after expansion for the case it does not start with '$(prefix)'.
+	  [fix GH-643]
+
 Fri Jun 27 15:20:12 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/rubygems/test_case.rb: rescue Gem::LoadError in Gem::TestCase.
