@@ -1,3 +1,10 @@
+Fri Jun 27 17:54:09 2014  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* signal.c (ruby_signal): should return either `old.sa_sigaction`
+	  or `old.sa_handler`, depending on whether `SA_SIGINFO` is set in
+	  `old.sa_flags`, because they may not be a union.
+	  [ruby-core:62836] [Bug #9878]
+
 Fri Jun 27 17:37:12 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vsnprintf.c (BSD_vfprintf): fix string width when precision is
