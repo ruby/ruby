@@ -450,7 +450,11 @@ EOT
       def message(msg = nil, *args, &default) # :nodoc:
         if Proc === msg
           super(nil, *args) do
-            [msg.call, (default.call if default)].compact.reject(&:empty?).join(".\n")
+            ary = [msg.call, (default.call if default)].compact.reject(&:empty?)
+            if 1 < ary.length
+              ary[0...-1] = ary[0...-1].map {|str| str.sub(/(?<!\.)\z/, '.') }
+            end
+            ary.join("\n")
           end
         else
           super
