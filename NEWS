@@ -102,6 +102,8 @@ with all sufficient information, see the ChangeLog file.
 
 * Pathname
   * Pathname#/ is aliased to Pathname#+.
+  * New methods:
+    * Pathname#birthtime
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
