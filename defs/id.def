@@ -36,6 +36,8 @@ firstline, predefined = __LINE__+1, %[\
   to_a
   to_s
   to_i
+  bt
+  bt_locations
 
   _                                                     UScore
   "/*NULL*/"                                            NULL

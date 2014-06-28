@@ -469,7 +469,6 @@ sysstack_error_p(VALUE exc)
 static void
 setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 {
-    VALUE at;
     VALUE e;
     const char *file = 0;
     volatile int line = 0;
@@ -492,24 +491,22 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
     file = rb_sourcefile();
     if (file) line = rb_sourceline();
     if (file && !NIL_P(mesg)) {
-	if (mesg == sysstack_error) {
-	    /* machine stack overflow, reduce too long backtrace */
-	    ID func = rb_frame_this_func();
-	    at = rb_enc_sprintf(rb_usascii_encoding(), "%s:%d", file, line);
-	    if (func) {
-		VALUE name = rb_id2str(func);
-		if (name) rb_str_catf(at, ":in `%"PRIsVALUE"'", name);
+	VALUE at;
+	if (sysstack_error_p(mesg)) {
+	    at = rb_vm_backtrace_object();
+	    if (mesg == sysstack_error) {
+		VALUE ruby_vm_sysstack_error_copy(void);
+		mesg = ruby_vm_sysstack_error_copy();
 	    }
-	    at = rb_ary_new3(1, at);
-	    mesg = rb_obj_dup(mesg);
-	    rb_iv_set(mesg, "bt", at);
+	    rb_ivar_set(mesg, idBt, at);
+	    rb_ivar_set(mesg, idBt_locations, at);
 	}
-	else if (sysstack_error_p(mesg) || NIL_P(at = get_backtrace(mesg))) {
+	else if (NIL_P(get_backtrace(mesg))) {
 	    at = rb_vm_backtrace_object();
 	    if (OBJ_FROZEN(mesg)) {
 		mesg = rb_obj_dup(mesg);
 	    }
-	    rb_iv_set(mesg, "bt_locations", at);
+	    rb_ivar_set(mesg, idBt_locations, at);
 	    set_backtrace(mesg, at);
 	}
     }

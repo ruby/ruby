@@ -529,8 +529,10 @@ end.join
   end
 
   def test_stackoverflow
-    e = assert_raise(SystemStackError){m}
-    assert_operator(e.backtrace.size, :>, 10)
+    feature6216 = '[ruby-core:43794] [Feature #6216]'
+    e = assert_raise(SystemStackError, feature6216) {m}
+    level = e.backtrace.size
+    assert_operator(level, :>, 10, feature6216)
   end
 
   def test_machine_stackoverflow
