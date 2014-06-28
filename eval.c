@@ -493,13 +493,15 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
     if (file && !NIL_P(mesg)) {
 	VALUE at;
 	if (sysstack_error_p(mesg)) {
-	    at = rb_vm_backtrace_object();
-	    if (mesg == sysstack_error) {
-		VALUE ruby_vm_sysstack_error_copy(void);
-		mesg = ruby_vm_sysstack_error_copy();
+	    if (NIL_P(rb_attr_get(mesg, idBt))) {
+		at = rb_vm_backtrace_object();
+		if (mesg == sysstack_error) {
+		    VALUE ruby_vm_sysstack_error_copy(void);
+		    mesg = ruby_vm_sysstack_error_copy();
+		}
+		rb_ivar_set(mesg, idBt, at);
+		rb_ivar_set(mesg, idBt_locations, at);
 	    }
-	    rb_ivar_set(mesg, idBt, at);
-	    rb_ivar_set(mesg, idBt_locations, at);
 	}
 	else if (NIL_P(get_backtrace(mesg))) {
 	    at = rb_vm_backtrace_object();

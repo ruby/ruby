@@ -1,4 +1,7 @@
-Sat Jun 28 13:58:19 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Jun 28 13:58:48 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (setup_exception): should not overwrite SystemStackError
+	  backtrace if set already.  [ruby-core:63377] [Feature #6216]
 
 	* eval.c (setup_exception): get rid of method calls before raising
 	  stack overflow, not to cause stack overflow again.
