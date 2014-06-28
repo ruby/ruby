@@ -1,3 +1,7 @@
+Sat Jun 28 15:32:57 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/webrick/utils.rb (create_listeners): Close socket objects.
+
 Sat Jun 28 13:58:48 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (setup_exception): should not overwrite SystemStackError
