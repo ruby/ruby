@@ -1,3 +1,9 @@
+Sat Jun 28 20:29:03 2014  Simon Baird  <simon.baird@gmail.com>
+
+	* ext/bigdecimal/lib/bigdecimal/math.rb (BigMath#PI): change error
+	  message about zero or negative precision for clarity and
+	  consistency with other methods.  [GH-644]
+
 Sat Jun 28 15:32:57 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/webrick/utils.rb (create_listeners): Close socket objects.
