@@ -1,3 +1,9 @@
+Sat Jun 28 16:35:51 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_substr): need to reset code range for shared
+	  string too, not only copied string.
+	  [ruby-core:62842] [Bug #9882]
+
 Sat Jun 28 14:37:17 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (local_tbl_gen): remove local variables duplicated with
