@@ -1,3 +1,9 @@
+Sat Jun 28 14:37:17 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (local_tbl_gen): remove local variables duplicated with
+	  arguments.
+	  [ruby-core:60501] [Bug #9486]
+
 Tue Jun 24 00:21:58 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c (rb_using_refinement): add write-barriers for
