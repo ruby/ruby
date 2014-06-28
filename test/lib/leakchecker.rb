@@ -44,20 +44,21 @@ class LeakChecker
       leaked = true
       h = {}
       ObjectSpace.each_object(IO) {|io|
+        inspect = io.inspect
         begin
           autoclose = io.autoclose?
           fd = io.fileno
         rescue IOError # closed IO object
           next
         end
-        (h[fd] ||= []) << [io, autoclose]
+        (h[fd] ||= []) << [io, autoclose, inspect]
       }
       fd_leaked.each {|fd|
         str = ''
         if h[fd]
           str << ' :'
-          h[fd].map {|io, autoclose|
-            s = ' ' + io.inspect
+          h[fd].map {|io, autoclose, inspect|
+            s = ' ' + inspect
             s << "(not-autoclose)" if !autoclose
             s
           }.sort.each {|s|
@@ -68,8 +69,8 @@ class LeakChecker
       }
       h.each {|fd, list|
         next if list.length <= 1
-        if 1 < list.count {|io, autoclose| autoclose }
-          str = list.map {|io, autoclose| " #{io.inspect}" + (autoclose ? "(autoclose)" : "") }.sort.join
+        if 1 < list.count {|io, autoclose, inspect| autoclose }
+          str = list.map {|io, autoclose, inspect| " #{inspect}" + (autoclose ? "(autoclose)" : "") }.sort.join
           puts "Multiple autoclose IO object for a file descriptor:#{str}"
         end
       }
