@@ -1,3 +1,8 @@
+Sat Jun 28 22:57:01 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/pathname/pathname.c (path_birthtime): Windows support.
+	  see [Feature #9857] [ruby-dev:48339]
+
 Sat Jun 28 22:44:16 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_birthtime): New method,

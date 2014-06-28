@@ -449,7 +449,7 @@ path_atime(VALUE self)
  *
  * See File.birthtime.
  */
-#if defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC)
+#if defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC) || defined(_WIN32)
 static VALUE
 path_birthtime(VALUE self)
 {
