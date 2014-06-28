@@ -1,3 +1,9 @@
+Sat Jun 28 22:44:16 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_birthtime): New method,
+	  Pathname#birthtime.
+	  Proposed by Kazuhiro NISHIYAMA.  [ruby-dev:48232] [Feature #9857]
+
 Sat Jun 28 20:29:03 2014  Simon Baird  <simon.baird@gmail.com>
 
 	* ext/bigdecimal/lib/bigdecimal/math.rb (BigMath#PI): change error

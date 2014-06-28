@@ -442,6 +442,25 @@ path_atime(VALUE self)
 
 /*
  * call-seq:
+ *   pathname.birthtime	-> time
+ *
+ * Returns the birth time for the file.
+ * If the platform doesn't have birthtime, returns <i>ctime</i>.
+ *
+ * See File.birthtime.
+ */
+#if defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC)
+static VALUE
+path_birthtime(VALUE self)
+{
+    return rb_funcall(rb_cFile, rb_intern("birthtime"), 1, get_strpath(self));
+}
+#else
+# define path_birthtime rb_f_notimplement
+#endif
+
+/*
+ * call-seq:
  *   pathname.ctime	-> time
  *
  * Returns the last change time, using directory information, not the file itself.
@@ -1288,6 +1307,7 @@ path_f_pathname(VALUE self, VALUE str)
  *
  * These methods are a facade for File:
  * - #atime
+ * - #birthtime
  * - #ctime
  * - #mtime
  * - #chmod(mode)
@@ -1380,6 +1400,7 @@ Init_pathname()
     rb_define_method(rb_cPathname, "binwrite", path_binwrite, -1);
     rb_define_method(rb_cPathname, "sysopen", path_sysopen, -1);
     rb_define_method(rb_cPathname, "atime", path_atime, 0);
+    rb_define_method(rb_cPathname, "birthtime", path_birthtime, 0);
     rb_define_method(rb_cPathname, "ctime", path_ctime, 0);
     rb_define_method(rb_cPathname, "mtime", path_mtime, 0);
     rb_define_method(rb_cPathname, "chmod", path_chmod, 1);
