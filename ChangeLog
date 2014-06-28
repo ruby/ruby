@@ -1,3 +1,7 @@
+Sun Jun 29 01:34:06 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/webrick/utils.rb (create_listeners): Close socket objects.
+
 Sat Jun 28 16:35:51 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_substr): need to reset code range for shared

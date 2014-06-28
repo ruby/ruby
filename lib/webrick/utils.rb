@@ -75,7 +75,9 @@ module WEBrick
       sockets = Socket.tcp_server_sockets(address, port)
       sockets = sockets.map {|s|
         s.autoclose = false
-        TCPServer.for_fd(s.fileno)
+        ts = TCPServer.for_fd(s.fileno)
+        s.close
+        ts
       }
       return sockets
     end
