@@ -66,6 +66,7 @@ assert_equal '[1, 2]', %q{
       Process.kill(:TERM, pid)
     end
     Process.wait(pid)
+    100.times {break if a.size > 1; sleep 0.001}
     a.sort
   rescue NotImplementedError
     [1, 2]
