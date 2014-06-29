@@ -999,7 +999,7 @@ fp_begin:		_double = va_arg(ap, double);
 				 */
 				const char *p = (char *)memchr(cp, 0, prec);
 
-				if (p != NULL && (p - cp) > prec)
+				if (p != NULL && (p - cp) < prec)
 					size = (int)(p - cp);
 				else
 					size = prec;
