@@ -1,3 +1,9 @@
+Mon Jun 30 02:25:00 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SSLServer#accept):
+	  Consider Socket#accept as well as TCPServer#accept.
+	  Reported by Sam Stelfox.  [ruby-core:62064] [Bug #9750]
+
 Mon Jun 30 02:18:47 2014  Eric Wong  <e@80x24.org>
 
 	* complex.c (parse_comp): replace ALLOCA_N with ALLOCV_N/ALLOCV_END
