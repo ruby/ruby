@@ -277,6 +277,24 @@ vm_get_ruby_level_caller_cfp(rb_thread_t *th, rb_control_frame_t *cfp)
     return 0;
 }
 
+void
+rb_vm_pop_cfunc_frame(void)
+{
+    rb_thread_t *th = GET_THREAD();
+    const rb_method_entry_t *me = th->cfp->me;
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, th->cfp->self, me->called_id, me->klass, Qnil);
+    RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, me->klass, me->called_id);
+    vm_pop_frame(th);
+}
+
+/* obsolete */
+void
+rb_frame_pop(void)
+{
+    rb_thread_t *th = GET_THREAD();
+    vm_pop_frame(th);
+}
+
 /* at exit */
 
 void
