@@ -7,7 +7,8 @@ dir_config 'libffi'
 pkg_config("libffi")
 if ver = pkg_config("libffi", "modversion")
   ver = ver.gsub(/-rc\d+/, '') # If ver contains rc version, just ignored.
-  $defs.push(%{-DRUBY_LIBFFI_MODVERSION=#{ '%d%03d%03d' % ver.split('.') }})
+  ver = (ver.split('.') + [0,0])[0,3]
+  $defs.push(%{-DRUBY_LIBFFI_MODVERSION=#{ '%d%03d%03d' % ver }})
 end
 
 unless have_header('ffi.h')
