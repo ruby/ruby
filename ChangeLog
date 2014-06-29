@@ -1,3 +1,8 @@
+Mon Jun 30 02:36:08 2014  Eric Wong  <e@80x24.org>
+
+	* process.c (proc_getgroups, proc_setgroups): use ALLOCV_N
+	  [Bug #9856]
+
 Mon Jun 30 02:28:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (io_setstrbuf): always check if the buffer is modifiable.
