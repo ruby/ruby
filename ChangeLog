@@ -1,3 +1,8 @@
+Mon Jun 30 02:28:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_setstrbuf): always check if the buffer is modifiable.
+	  [ruby-core:62643] [Bug #9847]
+
 Mon Jun 30 02:25:00 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SSLServer#accept):
