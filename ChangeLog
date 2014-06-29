@@ -1,3 +1,10 @@
+Mon Jun 30 02:46:44 2014  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* signal.c (ruby_signal): should return either `old.sa_sigaction`
+	  or `old.sa_handler`, depending on whether `SA_SIGINFO` is set in
+	  `old.sa_flags`, because they may not be a union.
+	  [ruby-core:62836] [Bug #9878]
+
 Mon Jun 30 02:36:08 2014  Eric Wong  <e@80x24.org>
 
 	* process.c (proc_getgroups, proc_setgroups): use ALLOCV_N
