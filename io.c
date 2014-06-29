@@ -2290,8 +2290,8 @@ io_setstrbuf(VALUE *str, long len)
 	VALUE s = StringValue(*str);
 	long clen = RSTRING_LEN(s);
 	if (clen >= len) {
+	    rb_str_modify(s);
 	    if (clen != len) {
-		rb_str_modify(s);
 		rb_str_set_len(s, len);
 	    }
 	    return;
