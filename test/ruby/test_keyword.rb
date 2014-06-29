@@ -452,6 +452,17 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal({a: 1}, h, bug9776)
   end
 
+  def test_splat_hash_conversion
+    bug9898 = '[ruby-core:62921] [Bug #9898]'
+
+    o = Object.new
+    def o.to_hash() { a: 1 } end
+    assert_equal({a: 1}, m1(**o) {|x| break x}, bug9898)
+    o2 = Object.new
+    def o2.to_hash() { b: 2 } end
+    assert_equal({a: 1, b: 2}, m1(**o, **o2) {|x| break x}, bug9898)
+  end
+
   def test_gced_object_in_stack
     bug8964 = '[ruby-dev:47729] [Bug #8964]'
     assert_normal_exit %q{
