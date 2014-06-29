@@ -1,3 +1,9 @@
+Mon Jun 30 02:18:47 2014  Eric Wong  <e@80x24.org>
+
+	* complex.c (parse_comp): replace ALLOCA_N with ALLOCV_N/ALLOCV_END
+	  [Bug #9608]
+	* rational.c (read_digits): ditto
+
 Mon Jun 30 02:10:34 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vsnprintf.c (BSD_vfprintf): fix string width when precision is
