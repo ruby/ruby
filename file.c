@@ -4291,7 +4291,7 @@ rb_file_join(VALUE ary, VALUE sep)
 
 /*
  *  call-seq:
- *     File.join(string, ...)  ->  path
+ *     File.join(string, ...)  ->  string
  *
  *  Returns a new string formed by joining the strings using
  *  <code>File::SEPARATOR</code>.
