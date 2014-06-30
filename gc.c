@@ -3038,6 +3038,7 @@ gc_after_sweep(rb_objspace_t *objspace)
 		  (int)heap->total_slots, (int)heap_pages_swept_slots, (int)heap_pages_min_free_slots);
 
     if (heap_pages_swept_slots < heap_pages_min_free_slots) {
+#if USE_RGENGC
 	if (objspace->rgengc.during_minor_gc && objspace->profile.count - objspace->rgengc.last_major_gc > 2 /* magic number */) {
 	    objspace->rgengc.need_major_gc = GPR_FLAG_MAJOR_BY_NOFREE;
 	}
@@ -3045,6 +3046,10 @@ gc_after_sweep(rb_objspace_t *objspace)
 	    heap_set_increment(objspace, heap_extend_pages(objspace));
 	    heap_increment(objspace, heap);
 	}
+#else
+	heap_set_increment(objspace, heap_extend_pages(objspace));
+	heap_increment(objspace, heap);
+#endif
     }
 
     gc_prof_set_heap_info(objspace);
@@ -3709,6 +3714,7 @@ rb_gc_resurrect(VALUE obj)
 	!is_swept_object(objspace, obj)) {
 	gc_mark_ptr(objspace, obj);
 
+#if USE_RGENGC
 	/* unmarked old objects means the last GC is major GC */
 	/* at major GC, old object count is reset.            */
 	/* So that resurrect also increment old object count  */
@@ -3720,6 +3726,7 @@ rb_gc_resurrect(VALUE obj)
 	else if (RVALUE_YOUNG_P(obj)) {
 	    objspace->rgengc.young_object_count++;
 	}
+#endif
 #endif
     }
 }
@@ -4518,20 +4525,22 @@ gc_marks_check(rb_objspace_t *objspace, int (*checker_func)(ANYARGS), const char
 
 #endif /* RGENGC_CHECK_MODE >= 2 */
 
-#if USE_RGENGC
-
 struct verify_internal_consistency_struct {
     rb_objspace_t *objspace;
     int err_count;
     size_t live_object_count;
+    size_t zombie_object_count;
+
+#if USE_RGENGC
+    VALUE parent;
     size_t old_object_count;
 #if RGENGC_AGE2_PROMOTION
     size_t young_object_count;
 #endif
-    size_t zombie_object_count;
-    VALUE parent;
+#endif
 };
 
+#if USE_RGENGC
 static void
 verify_internal_consistency_reachable_i(VALUE child, void *ptr)
 {
@@ -4549,6 +4558,7 @@ verify_internal_consistency_reachable_i(VALUE child, void *ptr)
 	}
     }
 }
+#endif
 
 static int
 verify_internal_consistency_i(void *page_start, void *page_end, size_t stride, void *ptr)
@@ -4558,9 +4568,10 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride, v
 
     for (v = (VALUE)page_start; v != (VALUE)page_end; v += stride) {
 	if (is_live_object(data->objspace, v)) {
-
 	    /* count objects */
 	    data->live_object_count++;
+
+#if USE_RGENGC
 	    if (RVALUE_OLD_P(v)) {
 		data->old_object_count++;
 	    }
@@ -4574,6 +4585,7 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride, v
 		/* reachable objects from an oldgen object should be old or (young with remember) */
 		rb_objspace_reachable_objects_from(v, verify_internal_consistency_reachable_i, (void *)data);
 	    }
+#endif
 	}
 	else {
 	    if (BUILTIN_TYPE(v) == T_ZOMBIE) {
@@ -4585,8 +4597,6 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride, v
 
     return 0;
 }
-
-#endif /* USE_RGENGC */
 
 /*
  *  call-seq:
@@ -4601,9 +4611,8 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride, v
 static VALUE
 gc_verify_internal_consistency(VALUE self)
 {
-#if USE_RGENGC
-    struct verify_internal_consistency_struct data = {0};
     rb_objspace_t *objspace = &rb_objspace;
+    struct verify_internal_consistency_struct data = {0};
     data.objspace = objspace;
 
     {
@@ -4612,16 +4621,15 @@ gc_verify_internal_consistency(VALUE self)
 	eo_args.data = (void *)&data;
 	objspace_each_objects((VALUE)&eo_args);
     }
+
     if (data.err_count != 0) {
 #if RGENGC_CHECK_MODE >= 4
-	rb_objspace_t *objspace = &rb_objspace;
 	objspace->rgengc.error_count = data.err_count;
 	gc_marks_check(objspace, NULL, NULL);
 	allrefs_dump(objspace);
 #endif
 	rb_bug("gc_verify_internal_consistency: found internal inconsistency.");
     }
-#endif
 
     if (!is_lazy_sweeping(heap_eden) && !finalizing) {
 	if (objspace_live_slot(objspace) != data.live_object_count) {
@@ -4630,6 +4638,8 @@ gc_verify_internal_consistency(VALUE self)
 	    rb_bug("inconsistent live slot nubmer: expect %"PRIuSIZE", but %"PRIuSIZE".", objspace_live_slot(objspace), data.live_object_count);
 	}
     }
+
+#if USE_RGENGC
     if (objspace->rgengc.old_object_count != data.old_object_count) {
 	rb_bug("inconsistent old slot nubmer: expect %"PRIuSIZE", but %"PRIuSIZE".", objspace->rgengc.old_object_count, data.old_object_count);
     }
@@ -4637,6 +4647,7 @@ gc_verify_internal_consistency(VALUE self)
     if (objspace->rgengc.young_object_count != data.young_object_count) {
 	rb_bug("inconsistent young slot nubmer: expect %"PRIuSIZE", but %"PRIuSIZE".", objspace->rgengc.young_object_count, data.young_object_count);
     }
+#endif
 #endif
 
     if (!finalizing) {

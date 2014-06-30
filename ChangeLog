@@ -1,3 +1,9 @@
+Mon Jun 30 15:07:34 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: support `USE_RGENGC == 0'.
+
+	* test/ruby/test_gc.rb: ditto.
+
 Mon Jun 30 11:36:04 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* file.c: [DOC] document File.join returns a string.
