@@ -533,7 +533,7 @@ module Test
 
       def deal(io, type, result, rep, shutting_down = false)
         worker = @workers_hash[io]
-        case worker.read
+        case cmd = worker.read
         when /^okay$/
           worker.status = :running
           jobs_status
@@ -551,7 +551,12 @@ module Test
 
           jobs_status
         when /^done (.+?)$/
-          r = Marshal.load($1.unpack("m")[0])
+          begin
+            r = Marshal.load($1.unpack("m")[0])
+          rescue
+            print "unknown object: #{$1.unpack("m")[0].dump}"
+            return false
+          end
           result << r[0..1] unless r[0..1] == [nil,nil]
           rep    << {file: worker.real_file, report: r[2], result: r[3], testcase: r[5]}
           $:.push(*r[4]).uniq!
@@ -570,6 +575,8 @@ module Test
           else
             after_worker_down worker
           end
+        else
+          print "unknown command: #{cmd.dump}"
         end
         return false
       end
