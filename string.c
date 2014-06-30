@@ -225,6 +225,27 @@ rb_fstring(VALUE str)
     return fstr;
 }
 
+static VALUE
+setup_fake_str(struct RString *fake_str, const char *name, long len)
+{
+    fake_str->basic.flags = T_STRING|RSTRING_NOEMBED|ELTS_SHARED;
+    /* SHARED to be allocated by the callback */
+
+    RBASIC_SET_CLASS((VALUE)fake_str, rb_cString);
+    fake_str->as.heap.len = len;
+    fake_str->as.heap.ptr = (char *)name;
+    fake_str->as.heap.aux.capa = len;
+    return (VALUE)fake_str;
+}
+
+VALUE
+rb_fstring_new(const char *ptr, long len)
+{
+    struct RString fake_str;
+
+    return rb_fstring(setup_fake_str(&fake_str, ptr, len));
+}
+
 static int
 fstring_set_class_i(st_data_t key, st_data_t val, st_data_t arg)
 {

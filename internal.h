@@ -899,6 +899,7 @@ size_t rb_strftime(char *s, size_t maxsize, const char *format, rb_encoding *enc
 
 /* string.c */
 VALUE rb_fstring(VALUE);
+VALUE rb_fstring_new(const char *ptr, long len);
 int rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p);
 int rb_str_symname_p(VALUE);
 VALUE rb_str_quote_unprintable(VALUE);
