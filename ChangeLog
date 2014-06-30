@@ -1,3 +1,12 @@
+Mon Jun 30 16:42:52 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_stat_internal): return size_t value instead of VALUE
+	  and remove `out' parameter.
+
+	* gc.c: add braces for `if' statements.
+
+	* gc.c (gc_stat_internal): fix comment.
+
 Mon Jun 30 15:07:34 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: support `USE_RGENGC == 0'.

@@ -5555,14 +5555,15 @@ gc_latest_gc_info(int argc, VALUE *argv, VALUE self)
 	}
     }
 
-    if (arg == Qnil)
-        arg = rb_hash_new();
+    if (arg == Qnil) {
+	arg = rb_hash_new();
+    }
 
     return gc_info_decode(objspace->profile.latest_gc_info, arg);
 }
 
-static VALUE
-gc_stat_internal(VALUE hash_or_sym, size_t *out)
+size_t
+gc_stat_internal(VALUE hash_or_sym)
 {
     static VALUE sym_count;
     static VALUE sym_heap_used, sym_heap_length, sym_heap_increment;
@@ -5590,12 +5591,15 @@ gc_stat_internal(VALUE hash_or_sym, size_t *out)
     rb_objspace_t *objspace = &rb_objspace;
     VALUE hash = Qnil, key = Qnil;
 
-    if (RB_TYPE_P(hash_or_sym, T_HASH))
+    if (RB_TYPE_P(hash_or_sym, T_HASH)) {
 	hash = hash_or_sym;
-    else if (SYMBOL_P(hash_or_sym) && out)
+    }
+    else if (SYMBOL_P(hash_or_sym)) {
 	key = hash_or_sym;
-    else
+    }
+    else {
 	rb_raise(rb_eTypeError, "non-hash or symbol argument");
+    }
 
     if (sym_count == 0) {
 #define S(s) sym_##s = ID2SYM(rb_intern_const(#s))
@@ -5635,14 +5639,14 @@ gc_stat_internal(VALUE hash_or_sym, size_t *out)
 	S(promote_young_count);
 	S(remembered_normal_object_count);
 	S(remembered_shady_object_count);
-#endif /* USE_RGENGC */
 #endif /* RGENGC_PROFILE */
+#endif /* USE_RGENGC */
 #undef S
     }
 
 #define SET(name, attr) \
     if (key == sym_##name) \
-	return (*out = attr, Qnil); \
+	return attr; \
     else if (hash != Qnil) \
 	rb_hash_aset(hash, sym_##name, SIZET2NUM(attr));
 
@@ -5709,7 +5713,7 @@ gc_stat_internal(VALUE hash_or_sym, size_t *out)
     }
 #endif
 
-    return hash;
+    return 0;
 }
 
 /*
@@ -5759,8 +5763,7 @@ gc_stat(int argc, VALUE *argv, VALUE self)
 
     if (rb_scan_args(argc, argv, "01", &arg) == 1) {
 	if (SYMBOL_P(arg)) {
-	    size_t value = 0;
-	    gc_stat_internal(arg, &value);
+	    size_t value = gc_stat_internal(arg);
 	    return SIZET2NUM(value);
 	}
 	else if (!RB_TYPE_P(arg, T_HASH)) {
@@ -5771,7 +5774,7 @@ gc_stat(int argc, VALUE *argv, VALUE self)
     if (arg == Qnil) {
         arg = rb_hash_new();
     }
-    gc_stat_internal(arg, 0);
+    gc_stat_internal(arg);
     return arg;
 }
 
@@ -5779,12 +5782,11 @@ size_t
 rb_gc_stat(VALUE key)
 {
     if (SYMBOL_P(key)) {
-	size_t value = 0;
-	gc_stat_internal(key, &value);
+	size_t value = gc_stat_internal(key);
 	return value;
     }
     else {
-	gc_stat_internal(key, 0);
+	gc_stat_internal(key);
 	return 0;
     }
 }
