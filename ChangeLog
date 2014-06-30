@@ -1,3 +1,14 @@
+Tue Jul  1 03:05:22 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (read_all): truncate the buffer before appending read data,
+	  instead of truncating before reading.
+	  [ruby-core:55951] [Bug #8625]
+
+Tue Jul  1 03:05:22 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_setstrbuf, io_read): should not shorten the given buffer until
+	  read succeeds.  [ruby-core:55951] [Bug #8625]
+
 Mon Jun 30 03:15:59 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (core_hash_merge_kwd): should return the result hash, which
