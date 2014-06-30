@@ -6,7 +6,7 @@ module TracePointChecker
 
   module ZombieTraceHunter
     def before_setup
-      @tracepoint_captured_stat = TracePoint.stat.map{|k, (activated, deleted)| [k, activated]}
+      @tracepoint_captured_stat = TracePoint.stat.map{|k, (activated, _deleted)| [k, activated]}
 
       super
     end
@@ -17,7 +17,7 @@ module TracePointChecker
       # detect zombie traces.
       assert_equal(
         @tracepoint_captured_stat,
-        TracePoint.stat.map{|k, (activated, deleted)| [k, activated]},
+        TracePoint.stat.map{|k, (activated, _deleted)| [k, activated]},
         "The number of active trace events was changed"
       )
       # puts "TracePoint - deleted: #{deleted}" if deleted > 0
