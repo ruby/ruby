@@ -214,4 +214,31 @@ class TestBacktrace < Test::Unit::TestCase
       q << true
     end
   end
+
+  def test_core_backtrace_alias
+    obj = BasicObject.new
+    e = assert_raise(NameError) do
+      class << obj
+        alias foo bar
+      end
+    end
+    assert_not_match(/\Acore#/, e.backtrace_locations[0].base_label)
+  end
+
+  def test_core_backtrace_undef
+    obj = BasicObject.new
+    e = assert_raise(NameError) do
+      class << obj
+        undef foo
+      end
+    end
+    assert_not_match(/\Acore#/, e.backtrace_locations[0].base_label)
+  end
+
+  def test_core_backtrace_hash_merge
+    e = assert_raise(TypeError) do
+      {**nil}
+    end
+    assert_not_match(/\Acore#/, e.backtrace_locations[0].base_label)
+  end
 end

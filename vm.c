@@ -2262,46 +2262,62 @@ m_core_set_postexe(VALUE self)
     return Qnil;
 }
 
+static VALUE core_hash_merge_ary(VALUE hash, VALUE ary);
+static VALUE core_hash_from_ary(VALUE ary);
+static VALUE core_hash_merge_kwd(int argc, VALUE *argv);
+
+static VALUE
+core_hash_merge(VALUE hash, long argc, const VALUE *argv)
+{
+    long i;
+
+    assert(argc % 2 == 0);
+    for (i=0; i<argc; i+=2) {
+	rb_hash_aset(hash, argv[i], argv[i+1]);
+    }
+    return hash;
+}
+
 static VALUE
 m_core_hash_from_ary(VALUE self, VALUE ary)
 {
+    VALUE hash;
+    REWIND_CFP(hash = core_hash_from_ary(ary));
+    return hash;
+}
+
+static VALUE
+core_hash_from_ary(VALUE ary)
+{
     VALUE hash = rb_hash_new();
-    int i;
 
     if (RUBY_DTRACE_HASH_CREATE_ENABLED()) {
 	RUBY_DTRACE_HASH_CREATE(RARRAY_LEN(ary), rb_sourcefile(), rb_sourceline());
     }
 
-    assert(RARRAY_LEN(ary) % 2 == 0);
-    for (i=0; i<RARRAY_LEN(ary); i+=2) {
-	rb_hash_aset(hash, RARRAY_AREF(ary, i), RARRAY_AREF(ary, i+1));
-    }
-
-    return hash;
+    return core_hash_merge_ary(hash, ary);
 }
 
 static VALUE
 m_core_hash_merge_ary(VALUE self, VALUE hash, VALUE ary)
 {
-    int i;
+    REWIND_CFP(core_hash_merge_ary(hash, ary));
+    return hash;
+}
 
-    assert(RARRAY_LEN(ary) % 2 == 0);
-    for (i=0; i<RARRAY_LEN(ary); i+=2) {
-	rb_hash_aset(hash, RARRAY_AREF(ary, i), RARRAY_AREF(ary, i+1));
-    }
-
+static VALUE
+core_hash_merge_ary(VALUE hash, VALUE ary)
+{
+    core_hash_merge(hash, RARRAY_LEN(ary), RARRAY_CONST_PTR(ary));
     return hash;
 }
 
 static VALUE
 m_core_hash_merge_ptr(int argc, VALUE *argv, VALUE recv)
 {
-    int i;
     VALUE hash = argv[0];
 
-    for (i=1; i<argc; i+=2) {
-	rb_hash_aset(hash, argv[i], argv[i+1]);
-    }
+    REWIND_CFP(core_hash_merge(hash, argc-1, argv+1));
 
     return hash;
 }
@@ -2333,6 +2349,14 @@ kwcheck_i(VALUE key, VALUE value, VALUE hash)
 
 static VALUE
 m_core_hash_merge_kwd(int argc, VALUE *argv, VALUE recv)
+{
+    VALUE hash;
+    REWIND_CFP(hash = core_hash_merge_kwd(argc, argv));
+    return hash;
+}
+
+static VALUE
+core_hash_merge_kwd(int argc, VALUE *argv)
 {
     VALUE hash, kw;
     rb_check_arity(argc, 1, 2);
