@@ -7830,7 +7830,7 @@ Init_GC(void)
     {
 	VALUE opts;
 	rb_define_const(rb_mGC, "OPTS", opts = rb_ary_new());
-#define OPT(o) if (o) rb_ary_push(opts, rb_str_new2(#o))
+#define OPT(o) if (o) rb_ary_push(opts, rb_fstring_new(#o, strlen(#o)))
 	OPT(GC_DEBUG);
 	OPT(USE_RGENGC);
 	OPT(RGENGC_DEBUG);
@@ -7845,5 +7845,6 @@ Init_GC(void)
 	OPT(MALLOC_ALLOCATED_SIZE_CHECK);
 	OPT(GC_PROFILE_DETAIL_MEMORY);
 #undef OPT
+	OBJ_FREEZE(opts);
     }
 }
