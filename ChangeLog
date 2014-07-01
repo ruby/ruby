@@ -1,3 +1,8 @@
+Wed Jul  2 03:20:00 2014  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* node.c (dump_node): handle nd_value == (NODE *)-1 to mean this
+	  keyword argument is required
+
 Wed Jul  2 02:57:27 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (rb_vm_env_local_variables): returns array of local
