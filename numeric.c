@@ -122,7 +122,7 @@ VALUE rb_cFixnum;
 VALUE rb_eZeroDivError;
 VALUE rb_eFloatDomainError;
 
-static VALUE sym_to, sym_by;
+static ID id_to, id_by;
 
 void
 rb_num_zerodiv(void)
@@ -1997,8 +1997,8 @@ num_step_scan_args(int argc, const VALUE *argv, VALUE *to, VALUE *step)
     if (!NIL_P(hash)) {
 	ID keys[2];
 	VALUE values[2];
-	keys[0] = sym_to;
-	keys[1] = sym_by;
+	keys[0] = id_to;
+	keys[1] = id_by;
 	rb_get_kwargs(hash, keys, 0, 2, values);
 	if (values[0] != Qundef) {
 	    if (argc > 0) rb_raise(rb_eArgError, "to is given twice");
@@ -4235,8 +4235,8 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "next_float", flo_next_float, 0);
     rb_define_method(rb_cFloat, "prev_float", flo_prev_float, 0);
 
-    sym_to = ID2SYM(rb_intern("to"));
-    sym_by = ID2SYM(rb_intern("by"));
+    id_to = rb_intern("to");
+    id_by = rb_intern("by");
 }
 
 #undef rb_float_value
