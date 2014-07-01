@@ -108,6 +108,7 @@ gems:
   end
 
   def teardown
+    self.class.stop_servers
     super
     Gem.configuration[:http_proxy] = nil
     @proxies.each_with_index {|k, i| ENV[k] = @old_proxies[i] }
@@ -712,6 +713,21 @@ gems:
       @enable_zip = false
     end
 
+    def stop_servers
+      if @normal_server
+        @normal_server.kill.join
+        @normal_server = nil
+      end
+      if @proxy_server
+        @proxy_server.kill.join
+        @proxy_server = nil
+      end
+      if @ssl_server
+        @ssl_server.kill.join
+        @ssl_server = nil
+      end
+    end
+
     def normal_server_port
       @normal_server[:server].config[:Port]
     end
@@ -760,6 +776,7 @@ gems:
           raise
         end
       end
+      @ssl_server = t
       server
     end
 
