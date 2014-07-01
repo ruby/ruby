@@ -74,8 +74,10 @@ class TestConditionVariable < Test::Unit::TestCase
       condvar.broadcast
       result << "P2"
     end
-    nr_threads.times do |i|
-      threads[i].join
+    Timeout.timeout(5) do
+      nr_threads.times do |i|
+        threads[i].join
+      end
     end
 
     assert_equal ["C1", "C1", "C1", "P1", "P2", "C2", "C2", "C2"], result
