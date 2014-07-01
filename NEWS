@@ -15,6 +15,10 @@ with all sufficient information, see the ChangeLog file.
 
 === Core classes updates (outstanding ones only)
 
+* Binding
+  * New methods:
+    * Binding#local_variables
+
 * Enumerable
   * New methods:
     * Enumerable#slice_after

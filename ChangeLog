@@ -1,3 +1,8 @@
+Tue Jul  1 23:46:34 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* NEWS: [DOC] mention about Binding#local_variables, introduced at
+	  r44392 (see [Feature #8773]).
+
 Tue Jul  1 23:30:51 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* numeric.c (num_step_scan_args): table argument of rb_get_kwargs() is
