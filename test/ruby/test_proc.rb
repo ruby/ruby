@@ -1256,6 +1256,11 @@ class TestProc < Test::Unit::TestCase
     assert_equal(%i[if case when begin end a], b.local_variables)
   end
 
+  def test_local_variables_nested
+    b = tap {break binding}
+    assert_equal(%i[b], b.local_variables, '[ruby-dev:48351] [Bug #10001]')
+  end
+
   def local_variables_of(bind)
     this_should_not_be_in_bind = 2
     bind.local_variables

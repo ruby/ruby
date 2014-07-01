@@ -1,3 +1,8 @@
+Wed Jul  2 02:14:37 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (bind_local_variables): update env from envval for each
+	  iterations.  [ruby-dev:48351] [Bug #10001]
+
 Tue Jul  1 23:46:34 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* NEWS: [DOC] mention about Binding#local_variables, introduced at

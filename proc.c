@@ -476,12 +476,13 @@ bind_local_variables(VALUE bindval)
     GetBindingPtr(bindval, bind);
 
     envval = bind->env;
-    GetEnvPtr(envval, env);
 
     do {
 	const rb_iseq_t *iseq;
 	int i;
 	ID id;
+
+	GetEnvPtr(envval, env);
 	iseq = env->block.iseq;
 
 	for (i = 0; i < iseq->local_table_size; i++) {
