@@ -1,3 +1,9 @@
+Tue Jul  1 16:18:22 2014  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/lib/digest/hmac.rb, test/digest/test_digest_hmac.rb:
+	  Digest::HMAC is finally removed as previously noticed.
+	  [fix GH-648]
+
 Tue Jul  1 11:13:43 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* ext/date/lib/date/format.rb: removed empty file by @vipulnsward.

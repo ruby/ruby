@@ -89,6 +89,9 @@ with all sufficient information, see the ChangeLog file.
 
 === Stdlib updates (outstanding ones only)
 
+* Digest
+  * Digest::HMAC has been removed just as previously noticed.
+
 * Etc
   * New methods:
     * Etc.uname
@@ -106,6 +109,9 @@ with all sufficient information, see the ChangeLog file.
     * Pathname#birthtime
 
 === Stdlib compatibility issues (excluding feature bug fixes)
+
+* Digest
+  * Digest::HMAC has finally ceased to exist.  Use OpenSSL::HMAC or an external gem instead.
 
 * time.rb
   * Time.parse, Time.strptime, Time.rfc2822, Time.xmlschema may produce
