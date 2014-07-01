@@ -555,7 +555,7 @@ module Test
             r = Marshal.load($1.unpack("m")[0])
           rescue
             print "unknown object: #{$1.unpack("m")[0].dump}"
-            return false
+            return true
           end
           result << r[0..1] unless r[0..1] == [nil,nil]
           rep    << {file: worker.real_file, report: r[2], result: r[3], testcase: r[5]}
