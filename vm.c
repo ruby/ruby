@@ -453,8 +453,8 @@ check_env_value(VALUE envval)
 }
 
 static VALUE
-vm_make_env_each(rb_thread_t * const th, rb_control_frame_t * const cfp,
-		 VALUE *envptr, VALUE * const endptr)
+vm_make_env_each(const rb_thread_t *const th, rb_control_frame_t *const cfp,
+		 VALUE *envptr, const VALUE *const endptr)
 {
     VALUE envval, penvval = 0;
     rb_env_t *env;
@@ -532,7 +532,7 @@ vm_make_env_each(rb_thread_t * const th, rb_control_frame_t * const cfp,
 }
 
 static int
-collect_local_variables_in_iseq(rb_iseq_t *iseq, const struct local_var_list *vars)
+collect_local_variables_in_iseq(const rb_iseq_t *iseq, const struct local_var_list *vars)
 {
     int i;
     if (!iseq) return 0;
@@ -542,19 +542,18 @@ collect_local_variables_in_iseq(rb_iseq_t *iseq, const struct local_var_list *va
     return 1;
 }
 
-static int
-collect_local_variables_in_env(rb_env_t *env, const struct local_var_list *vars)
+static void
+collect_local_variables_in_env(const rb_env_t *env, const struct local_var_list *vars)
 {
 
     while (collect_local_variables_in_iseq(env->block.iseq, vars),
 	   env->prev_envval) {
 	GetEnvPtr(env->prev_envval, env);
     }
-    return 0;
 }
 
 static int
-vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *ep, const struct local_var_list *vars)
+vm_collect_local_variables_in_heap(rb_thread_t *th, const VALUE *ep, const struct local_var_list *vars)
 {
     if (ENV_IN_HEAP_P(th, ep)) {
 	rb_env_t *env;
