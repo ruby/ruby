@@ -610,7 +610,7 @@ static VALUE convert_encoding(VALUE source)
  *   (keys) in a JSON object. Otherwise strings are returned, which is also
  *   the default.
  * * *create_additions*: If set to false, the Parser doesn't create
- *   additions even if a matchin class and create_id was found. This option
+ *   additions even if a matching class and create_id was found. This option
  *   defaults to true.
  * * *object_class*: Defaults to Hash
  * * *array_class*: Defaults to Array

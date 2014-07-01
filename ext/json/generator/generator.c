@@ -1298,7 +1298,7 @@ static VALUE cState_depth_set(VALUE self, VALUE depth)
 /*
  * call-seq: buffer_initial_length
  *
- * This integer returns the current inital length of the buffer.
+ * This integer returns the current initial length of the buffer.
  */
 static VALUE cState_buffer_initial_length(VALUE self)
 {
