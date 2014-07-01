@@ -1876,6 +1876,24 @@ rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, int *stateptr)
     return val;
 }
 
+static void
+local_var_list_init(struct local_var_list *vars)
+{
+    vars->tbl = rb_hash_new();
+    RHASH(vars->tbl)->ntbl = st_init_numtable(); /* compare_by_identity */
+    RBASIC_CLEAR_CLASS(vars->tbl);
+}
+
+static VALUE
+local_var_list_finish(struct local_var_list *vars)
+{
+    /* TODO: not to depend on the order of st_table */
+    VALUE ary = rb_hash_keys(vars->tbl);
+    rb_hash_clear(vars->tbl);
+    vars->tbl = 0;
+    return ary;
+}
+
 static int
 local_var_list_update(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 {
@@ -1912,15 +1930,12 @@ static VALUE
 rb_f_local_variables(void)
 {
     struct local_var_list vars;
-    VALUE ary;
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp =
 	vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp));
     int i;
 
-    vars.tbl = rb_hash_new();
-    RHASH(vars.tbl)->ntbl = st_init_numtable(); /* compare_by_identity */
-    RBASIC_CLEAR_CLASS(vars.tbl);
+    local_var_list_init(&vars);
     while (cfp) {
 	if (cfp->iseq) {
 	    for (i = 0; i < cfp->iseq->local_table_size; i++) {
@@ -1944,10 +1959,7 @@ rb_f_local_variables(void)
 	    break;
 	}
     }
-    /* TODO: not to depend on the order of st_table */
-    ary = rb_hash_keys(vars.tbl);
-    rb_hash_clear(vars.tbl);
-    return ary;
+    return local_var_list_finish(&vars);
 }
 
 /*

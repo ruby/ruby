@@ -1253,7 +1253,9 @@ class TestProc < Test::Unit::TestCase
 
   def test_local_variables
     b = get_binding
-    assert_equal(%i[if case when begin end a], b.local_variables)
+    assert_equal(%i'if case when begin end a', b.local_variables)
+    a = tap {|;a, b| break binding.local_variables}
+    assert_equal(%i[a b], a.sort)
   end
 
   def test_local_variables_nested

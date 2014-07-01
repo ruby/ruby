@@ -566,6 +566,18 @@ vm_collect_local_variables_in_heap(rb_thread_t *th, const VALUE *ep, const struc
     }
 }
 
+VALUE
+rb_vm_env_local_variables(VALUE envval)
+{
+    struct local_var_list vars;
+    const rb_env_t *env;
+
+    GetEnvPtr(envval, env);
+    local_var_list_init(&vars);
+    collect_local_variables_in_env(env, &vars);
+    return local_var_list_finish(&vars);
+}
+
 static void vm_rewrite_ep_in_errinfo(rb_thread_t *th);
 static VALUE vm_make_proc_from_block(rb_thread_t *th, rb_block_t *block);
 static VALUE vm_make_env_object(rb_thread_t * th, rb_control_frame_t *cfp, VALUE *blockprocptr);

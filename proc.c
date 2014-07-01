@@ -467,36 +467,10 @@ check_local_id(VALUE bindval, volatile VALUE *pname)
 static VALUE
 bind_local_variables(VALUE bindval)
 {
-    VALUE ary = rb_ary_new();
-
     const rb_binding_t *bind;
-    const rb_env_t *env;
-    VALUE envval;
 
     GetBindingPtr(bindval, bind);
-
-    envval = bind->env;
-
-    do {
-	const rb_iseq_t *iseq;
-	int i;
-	ID id;
-
-	GetEnvPtr(envval, env);
-	iseq = env->block.iseq;
-
-	for (i = 0; i < iseq->local_table_size; i++) {
-	    id = iseq->local_table[i];
-	    if (id) {
-		const char *vname = rb_id2name(id);
-		if (vname) {
-		    rb_ary_push(ary, ID2SYM(id));
-		}
-	    }
-	}
-    } while ((envval = env->prev_envval) != 0);
-
-    return ary;
+    return rb_vm_env_local_variables(bind->env);
 }
 
 /*
