@@ -95,16 +95,6 @@ class TestVariable < Test::Unit::TestCase
     assert_equal([:x, :bug9486], x)
   end
 
-  def local_variables_of(bind)
-    this_should_not_be_in_bind = 2
-    bind.local_variables
-  end
-
-  def test_binding_local_variables
-    feature8773 = '[Feature #8773]'
-    assert_equal([:feature8773], local_variables_of(binding), feature8773)
-  end
-
   def test_global_variable_0
     assert_in_out_err(["-e", "$0='t'*1000;print $0"], "", /\At+\z/, [])
   end

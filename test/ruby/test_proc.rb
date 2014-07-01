@@ -1251,6 +1251,16 @@ class TestProc < Test::Unit::TestCase
     binding
   end
 
+  def local_variables_of(bind)
+    this_should_not_be_in_bind = 2
+    bind.local_variables
+  end
+
+  def test_local_variables_in_other_context
+    feature8773 = '[Feature #8773]'
+    assert_equal([:feature8773], local_variables_of(binding), feature8773)
+  end
+
   def test_local_variable_get
     b = get_binding
     assert_equal(0, b.local_variable_get(:a))
