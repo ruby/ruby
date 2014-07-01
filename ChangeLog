@@ -1,3 +1,9 @@
+Tue Jul  1 11:13:43 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* ext/date/lib/date/format.rb: removed empty file by @vipulnsward.
+	* ext/date/lib/date.rb: removed needless require.
+	  [fix GH-647]
+
 Mon Jun 30 16:42:52 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_stat_internal): return size_t value instead of VALUE
