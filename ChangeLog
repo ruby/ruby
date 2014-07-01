@@ -1,3 +1,8 @@
+Wed Jul  2 02:23:52 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (bind_receiver): new method to return the bound receiver
+	  of the binding object.  [ruby-dev:47613] [Feature #8779]
+
 Wed Jul  2 02:14:37 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (bind_local_variables): update env from envval for each

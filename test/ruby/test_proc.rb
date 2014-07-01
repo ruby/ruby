@@ -1299,4 +1299,14 @@ class TestProc < Test::Unit::TestCase
     assert_equal(true, b.local_variable_defined?(:a))
     assert_equal(false, b.local_variable_defined?(:b))
   end
+
+  def test_binding_receiver
+    feature8779 = '[ruby-dev:47613] [Feature #8779]'
+
+    assert_same(self, binding.receiver, feature8779)
+
+    obj = Object.new
+    def obj.b; binding; end
+    assert_same(obj, obj.b.receiver, feature8779)
+  end
 end

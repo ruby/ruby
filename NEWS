@@ -18,6 +18,7 @@ with all sufficient information, see the ChangeLog file.
 * Binding
   * New methods:
     * Binding#local_variables
+    * Binding#receiver
 
 * Enumerable
   * New methods:

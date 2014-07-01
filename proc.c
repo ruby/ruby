@@ -609,6 +609,23 @@ bind_local_variable_defined_p(VALUE bindval, VALUE sym)
     return get_local_variable_ptr(bind->env, lid) ? Qtrue : Qfalse;
 }
 
+/*
+ *  call-seq:
+ *     binding.receiver    -> object
+ *
+ *  Returns the bound receiver of the binding object.
+ */
+static VALUE
+bind_receiver(VALUE bindval)
+{
+    const rb_binding_t *bind;
+    const rb_env_t *env;
+
+    GetBindingPtr(bindval, bind);
+    GetEnvPtr(bind->env, env);
+    return env->block.self;
+}
+
 static VALUE
 proc_new(VALUE klass, int is_lambda)
 {
@@ -2859,6 +2876,7 @@ Init_Binding(void)
     rb_define_method(rb_cBinding, "local_variable_get", bind_local_variable_get, 1);
     rb_define_method(rb_cBinding, "local_variable_set", bind_local_variable_set, 2);
     rb_define_method(rb_cBinding, "local_variable_defined?", bind_local_variable_defined_p, 1);
+    rb_define_method(rb_cBinding, "receiver", bind_receiver, 0);
     rb_define_global_function("binding", rb_f_binding, 0);
 }
 
