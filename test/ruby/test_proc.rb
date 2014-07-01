@@ -1251,6 +1251,11 @@ class TestProc < Test::Unit::TestCase
     binding
   end
 
+  def test_local_variables
+    b = get_binding
+    assert_equal(%i[if case when begin end a], b.local_variables)
+  end
+
   def local_variables_of(bind)
     this_should_not_be_in_bind = 2
     bind.local_variables
