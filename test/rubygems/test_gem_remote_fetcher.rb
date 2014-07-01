@@ -723,8 +723,12 @@ gems:
         @proxy_server = nil
       end
       if @ssl_server
-        @ssl_server.kill.join
+        @ssl_server.stop
         @ssl_server = nil
+      end
+      if @ssl_server_thread
+        @ssl_server_thread.kill.join
+        @ssl_server_thread = nil
       end
     end
 
@@ -776,7 +780,8 @@ gems:
           raise
         end
       end
-      @ssl_server = t
+      @ssl_server = server
+      @ssl_server_thread = t
       server
     end
 
