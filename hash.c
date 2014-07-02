@@ -499,7 +499,8 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
 	FL_SET(hash, HASH_PROC_DEFAULT);
     }
     else {
-	rb_scan_args(argc, argv, "01", &ifnone);
+	rb_check_arity(argc, 0, 1);
+	ifnone = argc == 0 ? Qnil : argv[0];
 	RHASH_SET_IFNONE(hash, ifnone);
     }
 
@@ -766,11 +767,12 @@ rb_hash_lookup(VALUE hash, VALUE key)
 static VALUE
 rb_hash_fetch_m(int argc, VALUE *argv, VALUE hash)
 {
-    VALUE key, if_none;
+    VALUE key;
     st_data_t val;
     long block_given;
 
-    rb_scan_args(argc, argv, "11", &key, &if_none);
+    rb_check_arity(argc, 1, 2);
+    key = argv[0];
 
     block_given = rb_block_given_p();
     if (block_given && argc == 2) {
@@ -786,7 +788,7 @@ rb_hash_fetch_m(int argc, VALUE *argv, VALUE hash)
 	    desc = rb_str_ellipsize(desc, 65);
 	    rb_raise(rb_eKeyError, "key not found: %"PRIsVALUE, desc);
 	}
-	return if_none;
+	return argv[1];
     }
     return (VALUE)val;
 }
@@ -823,7 +825,8 @@ rb_hash_default(int argc, VALUE *argv, VALUE hash)
 {
     VALUE key, ifnone;
 
-    rb_scan_args(argc, argv, "01", &key);
+    rb_check_arity(argc, 0, 1);
+    key = argv[0];
     ifnone = RHASH_IFNONE(hash);
     if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
 	if (argc == 0) return Qnil;
@@ -2637,11 +2640,12 @@ rb_f_getenv(VALUE obj, VALUE name)
 static VALUE
 env_fetch(int argc, VALUE *argv)
 {
-    VALUE key, if_none;
+    VALUE key;
     long block_given;
     const char *nam, *env;
 
-    rb_scan_args(argc, argv, "11", &key, &if_none);
+    rb_check_arity(argc, 1, 2);
+    key = argv[0];
     block_given = rb_block_given_p();
     if (block_given && argc == 2) {
 	rb_warn("block supersedes default value argument");
@@ -2653,7 +2657,7 @@ env_fetch(int argc, VALUE *argv)
 	if (argc == 1) {
 	    rb_raise(rb_eKeyError, "key not found: \"%"PRIsVALUE"\"", key);
 	}
-	return if_none;
+	return argv[1];
     }
     if (ENVMATCH(nam, PATH_ENV) && !env_path_tainted(env))
 	return env_path_str_new(env);
