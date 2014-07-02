@@ -129,6 +129,8 @@ module WEBrick
     class TimeoutHandler
       include Singleton
 
+      class Thread < ::Thread; end
+
       ##
       # Mutex used to synchronize access across threads
       TimeoutMutex = Mutex.new # :nodoc:
@@ -158,9 +160,6 @@ module WEBrick
       def initialize
         @timeout_info = Hash.new
         Thread.start{
-          def (Thread.current).inspect
-            super.sub(/>\z/, ' (WEBrick::Utils::TimeoutHandler)>')
-          end
           while true
             now = Time.now
             @timeout_info.keys.each{|thread|
