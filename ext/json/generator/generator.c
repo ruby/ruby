@@ -646,7 +646,7 @@ static VALUE cState_to_h(VALUE self)
 /*
 * call-seq: [](name)
 *
-* Return the value returned by method +name+.
+* Returns the value returned by method +name+.
 */
 static VALUE cState_aref(VALUE self, VALUE name)
 {
@@ -661,7 +661,7 @@ static VALUE cState_aref(VALUE self, VALUE name)
 /*
 * call-seq: []=(name, value)
 *
-* Set the attribute name to value.
+* Sets the attribute name to value.
 */
 static VALUE cState_aset(VALUE self, VALUE name, VALUE value)
 {
@@ -958,7 +958,7 @@ static VALUE cState_initialize(int argc, VALUE *argv, VALUE self)
 /*
  * call-seq: initialize_copy(orig)
  *
- * Initializes this object from orig if it to be duplicated/cloned and returns
+ * Initializes this object from orig if it can be duplicated/cloned and returns
  * it.
 */
 static VALUE cState_init_copy(VALUE obj, VALUE orig)
@@ -1006,7 +1006,7 @@ static VALUE cState_from_state_s(VALUE self, VALUE opts)
 /*
  * call-seq: indent()
  *
- * This string is used to indent levels in the JSON text.
+ * Returns the string that is used to indent levels in the JSON text.
  */
 static VALUE cState_indent(VALUE self)
 {
@@ -1017,7 +1017,7 @@ static VALUE cState_indent(VALUE self)
 /*
  * call-seq: indent=(indent)
  *
- * This string is used to indent levels in the JSON text.
+ * Sets the string that is used to indent levels in the JSON text.
  */
 static VALUE cState_indent_set(VALUE self, VALUE indent)
 {
@@ -1042,7 +1042,7 @@ static VALUE cState_indent_set(VALUE self, VALUE indent)
 /*
  * call-seq: space()
  *
- * This string is used to insert a space between the tokens in a JSON
+ * Returns the string that is used to insert a space between the tokens in a JSON
  * string.
  */
 static VALUE cState_space(VALUE self)
@@ -1054,7 +1054,7 @@ static VALUE cState_space(VALUE self)
 /*
  * call-seq: space=(space)
  *
- * This string is used to insert a space between the tokens in a JSON
+ * Sets _space_ to the string that is used to insert a space between the tokens in a JSON
  * string.
  */
 static VALUE cState_space_set(VALUE self, VALUE space)
@@ -1080,7 +1080,7 @@ static VALUE cState_space_set(VALUE self, VALUE space)
 /*
  * call-seq: space_before()
  *
- * This string is used to insert a space before the ':' in JSON objects.
+ * Returns the string that is used to insert a space before the ':' in JSON objects.
  */
 static VALUE cState_space_before(VALUE self)
 {
@@ -1091,7 +1091,7 @@ static VALUE cState_space_before(VALUE self)
 /*
  * call-seq: space_before=(space_before)
  *
- * This string is used to insert a space before the ':' in JSON objects.
+ * Sets the string that is used to insert a space before the ':' in JSON objects.
  */
 static VALUE cState_space_before_set(VALUE self, VALUE space_before)
 {
