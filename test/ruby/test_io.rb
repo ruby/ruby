@@ -2853,6 +2853,7 @@ End
     bug6099 = '[ruby-dev:45297]'
     buf = " " * 100
     data = "a" * 100
+    th = nil
     with_pipe do |r,w|
       r.fcntl(Fcntl::F_SETFL, Fcntl::O_NONBLOCK)
       th = Thread.new {r.readpartial(100, buf)}
@@ -2865,6 +2866,8 @@ End
     end
     assert_equal(data, buf, bug6099)
   rescue RuntimeError # can't modify string; temporarily locked
+  ensure
+    th.join if th
   end
 
   def test_advise_pipe
