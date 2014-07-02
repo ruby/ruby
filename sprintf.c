@@ -106,19 +106,8 @@ sign_bits(int base, const char *p)
     (posarg = -2, rb_hash_lookup2(get_hash(&hash, argc, argv), (id), Qundef)))
 
 #define GETNUM(n, val) \
-    for (; p < end && rb_enc_isdigit(*p, enc); p++) {	\
-	int next_n = (n); \
-        if (MUL_OVERFLOW_INT_P(10, next_n)) \
-	    rb_raise(rb_eArgError, #val " too big"); \
-	next_n *= 10; \
-        if (INT_MAX - (*p - '0') < next_n) \
-	    rb_raise(rb_eArgError, #val " too big"); \
-	next_n += *p - '0'; \
-	(n) = next_n; \
-    } \
-    if (p >= end) { \
-	rb_raise(rb_eArgError, "malformed format string - %%*[0-9]"); \
-    }
+    (!(p = get_num(p, end, enc, &(n))) ? \
+     rb_raise(rb_eArgError, #val " too big") : (void)0)
 
 #define GETASTER(val) do { \
     t = p++; \
@@ -133,6 +122,25 @@ sign_bits(int base, const char *p)
     } \
     (val) = NUM2INT(tmp); \
 } while (0)
+
+static const char *
+get_num(const char *p, const char *end, rb_encoding *enc, int *valp)
+{
+    int next_n = *valp;
+    for (; p < end && rb_enc_isdigit(*p, enc); p++) {
+	if (MUL_OVERFLOW_INT_P(10, next_n))
+	    return NULL;
+	next_n *= 10;
+	if (INT_MAX - (*p - '0') < next_n)
+	    return NULL;
+	next_n += *p - '0';
+    }
+    if (p >= end) {
+	rb_raise(rb_eArgError, "malformed format string - %%*[0-9]");
+    }
+    *valp = next_n;
+    return p;
+}
 
 static VALUE
 get_hash(volatile VALUE *hash, int argc, const VALUE *argv)
