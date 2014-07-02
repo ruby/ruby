@@ -726,7 +726,7 @@ Rubyは拡張ライブラリをロードする時に「Init_ライブラリ名�
   {
       /* DBMクラスを定義する */
       cDBM = rb_define_class("DBM", rb_cObject);
-      /* DBMはEnumerateモジュールをインクルードする */
+      /* DBMはEnumerableモジュールをインクルードする */
       rb_include_module(cDBM, rb_mEnumerable);
 
       /* DBMクラスのクラスメソッドopen(): 引数はCの配列で受ける */
