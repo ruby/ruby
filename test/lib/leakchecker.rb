@@ -157,4 +157,8 @@ class LeakChecker
     @thread_info = live2
     return leaked
   end
+
+  def puts(*a)
+    MiniTest::Unit.output.puts(*a)
+  end
 end
