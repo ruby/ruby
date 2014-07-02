@@ -2788,7 +2788,9 @@ gc_setup_mark_bits(struct heap_page *page)
 #endif
 }
 
-static inline void
+/* TRUE : has empty slots                                             */
+/* FALSE: no empty slots (or move to tomb heap because no live slots) */
+static inline int
 gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page)
 {
     int i;
@@ -2858,20 +2860,6 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
     }
 #endif
 
-    if (final_slots + freed_slots + empty_slots == sweep_page->limit) {
-	/* there are no living objects -> move this page to tomb heap */
-	heap_unlink_page(objspace, heap, sweep_page);
-	heap_add_page(objspace, heap_tomb, sweep_page);
-    }
-    else {
-	if (freed_slots + empty_slots > 0) {
-	    heap_add_freepage(objspace, heap, sweep_page);
-	}
-	else {
-	    sweep_page->free_next = NULL;
-	}
-    }
-
     heap_pages_swept_slots += freed_slots + empty_slots;
     objspace->profile.total_freed_object_num += freed_slots;
     heap_pages_final_slots += final_slots;
@@ -2890,6 +2878,22 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
     }
 
     rgengc_report(1, objspace, "page_sweep: end.\n");
+
+    if (final_slots + freed_slots + empty_slots == sweep_page->limit) {
+	/* there are no living objects -> move this page to tomb heap */
+	heap_unlink_page(objspace, heap, sweep_page);
+	heap_add_page(objspace, heap_tomb, sweep_page);
+    }
+    else {
+	if (freed_slots + empty_slots > 0) {
+	    return TRUE; /* has empty slots */
+	}
+	else {
+	    sweep_page->free_next = NULL;
+	}
+    }
+
+    return FALSE;
 }
 
 /* allocate additional minimum page to work */
@@ -3089,7 +3093,6 @@ static int
 gc_heap_lazy_sweep(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     struct heap_page *page = heap->sweep_pages, *next;
-    int result = FALSE;
 
     if (page == NULL) return FALSE;
 
@@ -3100,23 +3103,23 @@ gc_heap_lazy_sweep(rb_objspace_t *objspace, rb_heap_t *heap)
     while (page) {
 	heap->sweep_pages = next = page->next;
 
-	gc_page_sweep(objspace, heap, page);
-
-	if (!next) gc_after_sweep(objspace);
-
-	if (heap->free_pages) {
-            result = TRUE;
+	if (gc_page_sweep(objspace, heap, page)) {
+	    heap_add_freepage(objspace, heap, page);
 	    break;
-        }
+	}
 
 	page = next;
+    }
+
+    if (heap->sweep_pages == NULL) {
+	gc_after_sweep(objspace);
     }
 
 #if GC_ENABLE_LAZY_SWEEP
     gc_prof_sweep_timer_stop(objspace);
 #endif
 
-    return result;
+    return heap->free_pages != NULL;
 }
 
 static void

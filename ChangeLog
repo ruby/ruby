@@ -1,3 +1,9 @@
+Wed Jul  2 15:45:49 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_heap_lazy_sweep): simplify logic.
+
+	* gc.c (gc_page_sweep): return TRUE if empty slots are available.
+
 Wed Jul  2 09:48:42 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* logger.rb: removed unmaintain code.
