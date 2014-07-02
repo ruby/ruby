@@ -1,3 +1,14 @@
+Thu Jul  3 01:19:50 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* numeric.c (num_step_scan_args): table argument of rb_get_kwargs() is
+	  array of IDs, not Symbols. [ruby-dev:48353] [Bug #9811]
+
+Thu Jul  3 01:19:50 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (num_step_scan_args): check keyword arguments and fail
+	  if they conflict with positional arguments.
+	  [ruby-dev:48177] [Bug #9811]
+
 Tue Jul  1 03:05:22 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (read_all): truncate the buffer before appending read data,
