@@ -85,12 +85,9 @@ sign_bits(int base, const char *p)
     check_next_arg(posarg, nextarg), \
     (posarg = nextarg++, GETNTHARG(posarg)))
 
-#define GETPOSARG(n) (posarg > 0 ? \
-    (rb_raise(rb_eArgError, "numbered(%d) after unnumbered(%d)", (n), posarg), 0) : \
-    posarg == -2 ? \
-    (rb_raise(rb_eArgError, "numbered(%d) after named", (n)), 0) : \
-    (((n) < 1) ? (rb_raise(rb_eArgError, "invalid index - %d$", (n)), 0) : \
-	       (posarg = -1, GETNTHARG(n))))
+#define GETPOSARG(n) ( \
+    check_pos_arg(posarg, (n)), \
+    (posarg = -1, GETNTHARG(n)))
 
 #define GETNTHARG(nth) \
     (((nth) >= argc) ? (rb_raise(rb_eArgError, "too few arguments"), 0) : argv[(nth)])
@@ -147,6 +144,20 @@ check_next_arg(int posarg, int nextarg)
 	rb_raise(rb_eArgError, "unnumbered(%d) mixed with numbered", nextarg);
       case -2:
 	rb_raise(rb_eArgError, "unnumbered(%d) mixed with named", nextarg);
+    }
+}
+
+static void
+check_pos_arg(int posarg, int n)
+{
+    if (posarg > 0) {
+	rb_raise(rb_eArgError, "numbered(%d) after unnumbered(%d)", n, posarg);
+    }
+    if (posarg == -2) {
+	rb_raise(rb_eArgError, "numbered(%d) after named", n);
+    }
+    if (n < 1) {
+	rb_raise(rb_eArgError, "invalid index - %d$", n);
     }
 }
 
