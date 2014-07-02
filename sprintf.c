@@ -82,10 +82,7 @@ sign_bits(int base, const char *p)
 		  GETNEXTARG())
 
 #define GETNEXTARG() ( \
-    posarg == -1 ? \
-    (rb_raise(rb_eArgError, "unnumbered(%d) mixed with numbered", nextarg), 0) : \
-    posarg == -2 ? \
-    (rb_raise(rb_eArgError, "unnumbered(%d) mixed with named", nextarg), 0) : \
+    check_next_arg(posarg, nextarg), \
     (posarg = nextarg++, GETNTHARG(posarg)))
 
 #define GETPOSARG(n) (posarg > 0 ? \
@@ -140,6 +137,17 @@ get_num(const char *p, const char *end, rb_encoding *enc, int *valp)
     }
     *valp = next_n;
     return p;
+}
+
+static void
+check_next_arg(int posarg, int nextarg)
+{
+    switch (posarg) {
+      case -1:
+	rb_raise(rb_eArgError, "unnumbered(%d) mixed with numbered", nextarg);
+      case -2:
+	rb_raise(rb_eArgError, "unnumbered(%d) mixed with named", nextarg);
+    }
 }
 
 static VALUE
