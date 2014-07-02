@@ -93,10 +93,7 @@ sign_bits(int base, const char *p)
     (((nth) >= argc) ? (rb_raise(rb_eArgError, "too few arguments"), 0) : argv[(nth)])
 
 #define GETNAMEARG(id, name, len, enc) ( \
-    posarg > 0 ? \
-    (rb_enc_raise((enc), rb_eArgError, "named%.*s after unnumbered(%d)", (len), (name), posarg), 0) : \
-    posarg == -1 ? \
-    (rb_enc_raise((enc), rb_eArgError, "named%.*s after numbered", (len), (name)), 0) :	\
+    check_name_arg(posarg, name, len, enc), \
     (posarg = -2, rb_hash_lookup2(get_hash(&hash, argc, argv), (id), Qundef)))
 
 #define GETNUM(n, val) \
@@ -158,6 +155,17 @@ check_pos_arg(int posarg, int n)
     }
     if (n < 1) {
 	rb_raise(rb_eArgError, "invalid index - %d$", n);
+    }
+}
+
+static void
+check_name_arg(int posarg, const char *name, int len, rb_encoding *enc)
+{
+    if (posarg > 0) {
+	rb_enc_raise(enc, rb_eArgError, "named%.*s after unnumbered(%d)", len, name, posarg);
+    }
+    if (posarg == -1) {
+	rb_enc_raise(enc, rb_eArgError, "named%.*s after numbered", len, name);
     }
 }
 
