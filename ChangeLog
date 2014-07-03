@@ -20,41 +20,6 @@ Thu Jul  3 15:17:22 2014  Koichi Sasada  <ko1@atdot.net>
 	  move definition of rb_frame_pop() and deprecate it.
 	  It doesn't care about `return' events.
 
-Thu Jul  3 15:00:35 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* encoding.c (enc_find): [DOC] never accepted a symbol.
-	  [ruby-dev:48308] [Bug #9966]
-
-Thu Jul  3 13:23:31 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* thread_pthread.c (ruby_init_stack, ruby_stack_overflowed_p):
-	  place get_stack above others to get stack boundary information.
-	  [ruby-core:60113] [Bug #9454]
-
-Thu Jul  3 13:23:31 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* thread_pthread.c (ruby_init_stack, ruby_stack_overflowed_p):
-	  place get_stack above others to get stack boundary information.
-	  [ruby-core:60113] [Bug #9454]
-
-Thu Jul  3 13:23:31 2014  NARUSE, Yui  <naruse@ruby-lang.org>
-
-	* thread_pthread.c: rlimit is only available on Linux.
-	  At least r44712 breaks FreeBSD.
-	  [ruby-core:60113] [Bug #9454]
-
-Thu Jul  3 13:23:31 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* thread_pthread.c: get current main thread stack size, which may
-	  be expanded than allocated size at initialization, by rlimit().
-	  [ruby-core:60113] [Bug #9454]
-
-Thu Jul  3 13:23:31 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* thread_pthread.c: get current main thread stack size, which may
-	  be expanded than allocated size at initialization, by rlimit().
-	  [ruby-core:60113] [Bug #9454]
-
 Fri Jun 27 17:57:16 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_substr): need to reset code range for shared
