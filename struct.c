@@ -86,6 +86,13 @@ rb_struct_members_m(VALUE obj)
     return rb_struct_s_members_m(rb_obj_class(obj));
 }
 
+NORETURN(static void not_a_member(ID id));
+static void
+not_a_member(ID id)
+{
+    rb_name_error(id, "`%"PRIsVALUE"' is not a struct member", QUOTE_ID(id));
+}
+
 VALUE
 rb_struct_getmember(VALUE obj, ID id)
 {
@@ -100,7 +107,7 @@ rb_struct_getmember(VALUE obj, ID id)
 	    return RSTRUCT_GET(obj, i);
 	}
     }
-    rb_name_error(id, "%s is not struct member", rb_id2name(id));
+    not_a_member(id);
 
     UNREACHABLE;
 }
@@ -149,19 +156,19 @@ rb_struct_set(VALUE obj, VALUE val)
 {
     VALUE members, slot;
     long i, len;
+    ID fid = rb_frame_this_func();
 
     members = rb_struct_members(obj);
     len = RARRAY_LEN(members);
     rb_struct_modify(obj);
     for (i=0; i<len; i++) {
 	slot = RARRAY_AREF(members, i);
-	if (rb_id_attrset(SYM2ID(slot)) == rb_frame_this_func()) {
+	if (rb_id_attrset(SYM2ID(slot)) == fid) {
 	    RSTRUCT_SET(obj, i, val);
 	    return val;
 	}
     }
-    rb_name_error(rb_frame_this_func(), "`%s' is not a struct member",
-		  rb_id2name(rb_frame_this_func()));
+    not_a_member(fid);
 
     UNREACHABLE;
 }

@@ -1,3 +1,9 @@
+Fri Jul  4 00:25:16 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* struct.c (not_a_member): extract name error and use same error
+	  messages.  based on the patch by Marcus Stollsteimer <sto.mar AT
+	  web.de> at [ruby-core:61721].  [Bug #9684]
+
 Thu Jul  3 01:19:50 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* numeric.c (num_step_scan_args): table argument of rb_get_kwargs() is
