@@ -1,3 +1,8 @@
+Fri Jul  4 04:42:05 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/htp/response.rb (Net::Inflater#inflate_adapter):
+	  prevent automatic encoding conversion.
+
 Fri Jul  4 04:39:52 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http/response.rb (Net::HTTPResponse.each_response_header):

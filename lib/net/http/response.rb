@@ -369,6 +369,11 @@ class Net::HTTPResponse
     # entire body in memory.
 
     def inflate_adapter(dest)
+      if dest.respond_to?(:set_encoding)
+        dest.set_encoding(Encoding::ASCII_8BIT)
+      elsif dest.respond_to?(:force_encoding)
+        dest.force_encoding(Encoding::ASCII_8BIT)
+      end
       block = proc do |compressed_chunk|
         @inflate.inflate(compressed_chunk) do |chunk|
           dest << chunk
