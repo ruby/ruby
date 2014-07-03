@@ -931,13 +931,6 @@ rb_frame_caller(void)
     return frame_func_id(prev_cfp);
 }
 
-void
-rb_frame_pop(void)
-{
-    rb_thread_t *th = GET_THREAD();
-    th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
-}
-
 /*
  *  call-seq:
  *     append_features(mod)   -> mod
