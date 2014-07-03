@@ -1,3 +1,8 @@
+Fri Jul  4 00:46:03 2014  Zachary Scott  <e@zzak.io>
+
+	* enumerator.c: [DOC] Fix example to show Enumerator#peek behavior
+	  Patch by Erik Hollembeak [Bug #9814]
+
 Fri Jul  4 00:44:43 2014  Zachary Scott  <e@zzak.io>
 
 	* enum.c: [DOC] Use #find in example to clarify alias by @rachellogie

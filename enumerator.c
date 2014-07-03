@@ -838,7 +838,7 @@ enumerator_peek_values_m(VALUE obj)
  *   p e.peek   #=> 2
  *   p e.next   #=> 2
  *   p e.next   #=> 3
- *   p e.next   #raises StopIteration
+ *   p e.peek   #raises StopIteration
  *
  */
 
