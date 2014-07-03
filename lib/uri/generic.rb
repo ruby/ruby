@@ -196,9 +196,9 @@ module URI
         self.set_host(host)
         self.set_port(port)
         self.set_path(path)
-        self.set_query(query)
+        self.query = query
         self.set_opaque(opaque)
-        self.set_fragment(fragment)
+        self.fragment=(fragment)
       end
       if registry
         raise InvalidURIError,
@@ -823,42 +823,6 @@ module URI
     end
 
     #
-    # check the query +v+ component for RFC2396 compliance
-    # and against the URI::Parser Regexp for :QUERY
-    #
-    # Can not have a opaque component defined,
-    # with a query component defined.
-    #
-    def check_query(v)
-      return v unless v
-
-      # raise if both hier and opaque are not nil, because:
-      # absoluteURI   = scheme ":" ( hier_part | opaque_part )
-      # hier_part     = ( net_path | abs_path ) [ "?" query ]
-      if @opaque
-        raise InvalidURIError,
-          "query conflicts with opaque"
-      end
-
-      if v && v != '' && parser.regexp[:QUERY] !~ v
-          raise InvalidComponentError,
-            "bad component(expected query component): #{v}"
-      end
-
-      return true
-    end
-    private :check_query
-
-    # protected setter for the query component +v+
-    #
-    # see also URI::Generic.query=
-    #
-    def set_query(v)
-      @query = v
-    end
-    protected :set_query
-
-    #
     # == Args
     #
     # +v+::
@@ -867,9 +831,6 @@ module URI
     # == Description
     #
     # public setter for the query component +v+.
-    # (with validation)
-    #
-    # see also URI::Generic.check_query
     #
     # == Usage
     #
@@ -882,9 +843,17 @@ module URI
     #   #=> #<URI::HTTP:0x000000008e89e8 URL:http://my.example.com/?id=1>
     #
     def query=(v)
-      check_query(v)
-      set_query(v)
-      v
+      return @query = nil unless v
+      raise InvalidURIError, "query conflicts with opaque" if @opaque
+
+      x = v.to_str
+      v = x.dup if x.equal? v
+      v.encode!(Encoding::UTF_8) rescue nil
+      v.delete!("\t\r\n")
+      v.force_encoding(Encoding::ASCII_8BIT)
+      v.gsub!(/(?!%\h\h|[!$-&(-;=?-_a-~])./n){'%%%02X' % $&.ord}
+      v.force_encoding(Encoding::US_ASCII)
+      @query = v
     end
 
     #
@@ -943,27 +912,6 @@ module URI
     #
     # check the fragment +v+ component against the URI::Parser Regexp for :FRAGMENT
     #
-    def check_fragment(v)
-      return v unless v
-
-      if v && v != '' && parser.regexp[:FRAGMENT] !~ v
-        raise InvalidComponentError,
-          "bad component(expected fragment component): #{v}"
-      end
-
-      return true
-    end
-    private :check_fragment
-
-    # protected setter for the fragment component +v+
-    #
-    # see also URI::Generic.fragment=
-    #
-    def set_fragment(v)
-      @fragment = v
-    end
-    protected :set_fragment
-
     #
     # == Args
     #
@@ -974,8 +922,6 @@ module URI
     #
     # public setter for the fragment component +v+.
     # (with validation)
-    #
-    # see also URI::Generic.check_fragment
     #
     # == Usage
     #
@@ -988,9 +934,16 @@ module URI
     #   #=> #<URI::HTTP:0x000000007a81f8 URL:http://my.example.com/?id=25#time=1305212086>
     #
     def fragment=(v)
-      check_fragment(v)
-      set_fragment(v)
-      v
+      return @fragment = nil unless v
+
+      x = v.to_str
+      v = x.dup if x.equal? v
+      v.encode!(Encoding::UTF_8) rescue nil
+      v.delete!("\t\r\n")
+      v.force_encoding(Encoding::ASCII_8BIT)
+      v.gsub!(/(?!%\h\h|[!-~])./n){'%%%02X' % $&.ord}
+      v.force_encoding(Encoding::US_ASCII)
+      @fragment = v
     end
 
     #
@@ -1160,12 +1113,12 @@ module URI
 
       # RFC2396, Section 5.2, 2)
       if (rel.path.nil? || rel.path.empty?) && !authority && !rel.query
-        base.set_fragment(rel.fragment) if rel.fragment
+        base.fragment=(rel.fragment) if rel.fragment
         return base
       end
 
-      base.set_query(nil)
-      base.set_fragment(nil)
+      base.query = nil
+      base.fragment=(nil)
 
       # RFC2396, Section 5.2, 4)
       if !authority
@@ -1179,8 +1132,8 @@ module URI
       base.set_userinfo(rel.userinfo) if rel.userinfo
       base.set_host(rel.host)         if rel.host
       base.set_port(rel.port)         if rel.port
-      base.set_query(rel.query)       if rel.query
-      base.set_fragment(rel.fragment) if rel.fragment
+      base.query = rel.query       if rel.query
+      base.fragment=(rel.fragment) if rel.fragment
 
       return base
     end # merge
@@ -1287,11 +1240,11 @@ module URI
 
       if rel.path && rel.path == oth.path
         rel.set_path('')
-        rel.set_query(nil) if rel.query == oth.query
+        rel.query = nil if rel.query == oth.query
         return rel, rel
       elsif rel.opaque && rel.opaque == oth.opaque
         rel.set_opaque('')
-        rel.set_query(nil) if rel.query == oth.query
+        rel.query = nil if rel.query == oth.query
         return rel, rel
       end
 

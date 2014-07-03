@@ -1,3 +1,18 @@
+Fri Jul  4 02:56:04 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/generic.rb (URI::Generic#query=): remove validation, just
+	  escape. [Feature #2542]
+
+	* lib/uri/generic.rb (URI::Generic#fragment=): ditto.
+
+	* lib/uri/generic.rb (URI::Generic#check_query): removed.
+
+	* lib/uri/generic.rb (URI::Generic#set_query): ditto.
+
+	* lib/uri/generic.rb (URI::Generic#check_fragment): ditto.
+
+	* lib/uri/generic.rb (URI::Generic#set_fragment): ditto.
+
 Thu Jul  3 12:40:22 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (--with-static-linked-ext): fix for extensions to
