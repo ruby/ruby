@@ -1312,7 +1312,7 @@ Init_signal(void)
 
     rb_define_method(rb_eSignal, "initialize", esignal_init, -1);
     rb_define_method(rb_eSignal, "signo", esignal_signo, 0);
-    rb_alias(rb_eSignal, rb_intern("signm"), rb_intern("message"));
+    rb_alias(rb_eSignal, rb_intern_const("signm"), rb_intern_const("message"));
     rb_define_method(rb_eInterrupt, "initialize", interrupt_init, -1);
 
     install_sighandler(SIGINT, sighandler);

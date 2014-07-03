@@ -27,13 +27,13 @@ void
 Init_var_tables(void)
 {
     rb_global_tbl = st_init_numtable();
-    CONST_ID(autoload, "__autoload__");
+    autoload = rb_intern_const("__autoload__");
     /* __classpath__: fully qualified class path */
-    CONST_ID(classpath, "__classpath__");
+    classpath = rb_intern_const("__classpath__");
     /* __tmp_classpath__: temporary class path which contains anonymous names */
-    CONST_ID(tmp_classpath, "__tmp_classpath__");
+    tmp_classpath = rb_intern_const("__tmp_classpath__");
     /* __classid__: name given to class/module under an anonymous namespace */
-    CONST_ID(classid, "__classid__");
+    classid = rb_intern_const("__classid__");
 }
 
 struct fc_result {

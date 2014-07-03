@@ -1352,7 +1352,7 @@ rb_reset_random_seed(void)
  */
 
 void
-Init_Random(void)
+InitVM_Random(void)
 {
     Init_RandomSeed2();
     rb_define_global_function("srand", rb_f_srand, -1);
@@ -1383,7 +1383,14 @@ Init_Random(void)
     rb_define_singleton_method(rb_cRandom, "new_seed", random_seed, 0);
     rb_define_private_method(CLASS_OF(rb_cRandom), "state", random_s_state, 0);
     rb_define_private_method(CLASS_OF(rb_cRandom), "left", random_s_left, 0);
+}
 
+#undef rb_intern
+void
+Init_Random(void)
+{
     id_rand = rb_intern("rand");
     id_bytes = rb_intern("bytes");
+
+    InitVM(Random);
 }

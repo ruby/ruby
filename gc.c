@@ -7749,6 +7749,7 @@ rb_gcdebug_sentinel(VALUE obj, const char *name)
 void
 Init_GC(void)
 {
+#undef rb_intern
     VALUE rb_mObjSpace;
     VALUE rb_mProfiler;
     VALUE gc_constants;

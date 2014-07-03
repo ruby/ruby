@@ -2062,6 +2062,7 @@ InitVM_Enumerator(void)
     rb_provide("enumerator.so");	/* for backward compatibility */
 }
 
+#undef rb_intern
 void
 Init_Enumerator(void)
 {

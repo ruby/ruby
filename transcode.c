@@ -4388,13 +4388,10 @@ ecerr_incomplete_input(VALUE self)
  *  correspond with a known converter.
  */
 
+#undef rb_intern
 void
 Init_transcode(void)
 {
-    rb_eUndefinedConversionError = rb_define_class_under(rb_cEncoding, "UndefinedConversionError", rb_eEncodingError);
-    rb_eInvalidByteSequenceError = rb_define_class_under(rb_cEncoding, "InvalidByteSequenceError", rb_eEncodingError);
-    rb_eConverterNotFoundError = rb_define_class_under(rb_cEncoding, "ConverterNotFoundError", rb_eEncodingError);
-
     transcoder_table = st_init_strcasetable();
 
     sym_invalid = ID2SYM(rb_intern("invalid"));
@@ -4425,6 +4422,16 @@ Init_transcode(void)
     sym_cr = ID2SYM(rb_intern("cr"));
     sym_lf = ID2SYM(rb_intern("lf"));
 #endif
+
+    InitVM(transcode);
+}
+
+void
+InitVM_transcode(void)
+{
+    rb_eUndefinedConversionError = rb_define_class_under(rb_cEncoding, "UndefinedConversionError", rb_eEncodingError);
+    rb_eInvalidByteSequenceError = rb_define_class_under(rb_cEncoding, "InvalidByteSequenceError", rb_eEncodingError);
+    rb_eConverterNotFoundError = rb_define_class_under(rb_cEncoding, "ConverterNotFoundError", rb_eEncodingError);
 
     rb_define_method(rb_cString, "encode", str_encode, -1);
     rb_define_method(rb_cString, "encode!", str_encode_bang, -1);
