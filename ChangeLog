@@ -1,3 +1,8 @@
+Thu Jul  3 15:00:35 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (enc_find): [DOC] never accepted a symbol.
+	  [ruby-dev:48308] [Bug #9966]
+
 Thu Jul  3 13:23:31 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (ruby_init_stack, ruby_stack_overflowed_p):
