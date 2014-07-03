@@ -16,7 +16,7 @@ Wed Jul  2 15:45:49 2014  Koichi Sasada  <ko1@atdot.net>
 
 Wed Jul  2 09:48:42 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
-	* logger.rb: removed unmaintain code.
+	* logger.rb: removed unmaintained code.
 	  [Feature #9860][ruby-core:62724]
 	* test/logger/test_application.rb: ditto.
 
