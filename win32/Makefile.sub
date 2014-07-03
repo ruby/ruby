@@ -360,6 +360,9 @@ COMMON_HEADERS = winsock2.h ws2tcpip.h windows.h
 !if "$(EXTSTATIC)" == "static"
 ENCOBJS = enc/encinit.$(OBJEXT) enc/libenc.lib enc/libtrans.lib
 EXTOBJS = ext/extinit.$(OBJEXT)
+! if !defined(ENCSTATIC)
+ENCSTATIC = static
+! endif
 !endif
 
 arch_hdrdir = $(EXTOUT)/include/$(arch)

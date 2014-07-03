@@ -3179,12 +3179,13 @@ EXTSTATIC=
 AC_SUBST(EXTSTATIC)dnl
 AC_ARG_WITH(static-linked-ext,
 	    AS_HELP_STRING([--with-static-linked-ext], [link external modules statically]),
-            [AS_CASE([$withval],[yes],[STATIC=;EXTSTATIC=static])])
-if test x"$EXTSTATIC" = xstatic; then
+            [AS_CASE([$withval],[yes],[STATIC=;EXTSTATIC=static],[no],[],[EXTSTATIC="$withval"])])
+AS_CASE([",$EXTSTATIC,"], [,static,|*,enc,*], [
   ENCOBJS='enc/encinit.$(OBJEXT) enc/libenc.$(LIBEXT) enc/libtrans.$(LIBEXT)'
   EXTOBJS='ext/extinit.$(OBJEXT)'
   AC_DEFINE_UNQUOTED(EXTSTATIC, 1)
-fi
+  AC_SUBST(ENCSTATIC, static)
+])
 AC_SUBST(ENCOBJS)
 AC_SUBST(EXTOBJS)
 

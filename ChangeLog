@@ -1,3 +1,13 @@
+Thu Jul  3 12:40:22 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (--with-static-linked-ext): fix for extensions to
+	  be linked statically.
+
+	* Makefile.in, common.mk: use ENCSTATIC for enc directory.
+
+	* ext/extmk.rb: supply dependencies of statically linked extension
+	  libraries.
+
 Wed Jul  2 15:45:49 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_heap_lazy_sweep): simplify logic.

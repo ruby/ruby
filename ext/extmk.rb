@@ -716,7 +716,11 @@ if $configure_only and $command_output
     mf.puts
     mf.puts "#{rubies.join(' ')}: $(extensions:/.=/#{$force_static ? 'static' : 'all'})"
     submake = "$(Q)$(MAKE) $(MFLAGS) $(SUBMAKEOPTS)"
-    mf.puts "all static:\n\t#{submake} #{rubies.join(' ')}\n"
+    mf.puts "all static: $(EXTOBJS)\n\t#{submake} #{rubies.join(' ')}\n"
+    $extobjs.each do |tgt|
+      mf.puts "#{tgt}: #{File.dirname(tgt)}/static"
+    end
+    mf.puts "#{rubies.join(' ')}: $(EXTOBJS)"
     rubies.each do |tgt|
       mf.puts "#{tgt}:\n\t#{submake} $@"
     end
