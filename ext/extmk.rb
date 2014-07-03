@@ -371,6 +371,9 @@ def parse_args()
     opts.on('--command-output=FILE', String) do |v|
       $command_output = v
     end
+    opts.on('--gnumake=yes|no', true) do |v|
+      $gnumake = v
+    end
   end
   begin
     $optparser.parse!(ARGV)
@@ -718,10 +721,16 @@ if $configure_only and $command_output
       mf.puts "#{tgt}:\n\t#{submake} $@"
     end
     mf.puts
-    exec = config_string("exec") {|str| str + " "}
+    if $gnumake == "yes"
+      submake = "$(MAKE) -C $(@D)"
+    else
+      submake = "cd $(@D) && "
+      config_string("exec") {|str| submake << str << " "}
+      submake << "$(MAKE)"
+    end
     targets.each do |tgt|
       exts.each do |d|
-        mf.puts "#{d[0..-2]}#{tgt}:\n\t$(Q)cd $(@D) && #{exec}$(MAKE) $(MFLAGS) V=$(V) $(@F)"
+        mf.puts "#{d[0..-2]}#{tgt}:\n\t$(Q)#{submake} $(MFLAGS) V=$(V) $(@F)"
       end
     end
   end
