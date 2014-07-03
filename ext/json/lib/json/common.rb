@@ -411,7 +411,7 @@ module JSON
     string
   end
 
-  # Shortuct for iconv.
+  # Shortcut for iconv.
   if ::String.method_defined?(:encode)
     # Encodes string using Ruby's _String.encode_
     def self.iconv(to, from, string)
