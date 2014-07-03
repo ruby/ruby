@@ -1064,7 +1064,7 @@ rb_struct_size(VALUE s)
  *  Symbol (<code>:name</code>).
  */
 void
-Init_Struct(void)
+InitVM_Struct(void)
 {
     rb_cStruct = rb_define_class("Struct", rb_cObject);
     rb_include_module(rb_cStruct, rb_mEnumerable);
@@ -1095,5 +1095,13 @@ Init_Struct(void)
     rb_define_method(rb_cStruct, "values_at", rb_struct_values_at, -1);
 
     rb_define_method(rb_cStruct, "members", rb_struct_members_m, 0);
+}
+
+#undef rb_intern
+void
+Init_Struct(void)
+{
     id_members = rb_intern("__members__");
+
+    InitVM(Struct);
 }
