@@ -259,7 +259,12 @@ class Net::HTTPResponse
       begin
         yield inflate_body_io
       ensure
-        inflate_body_io.finish
+        e = $!
+        begin
+          inflate_body_io.finish
+        rescue
+          raise e
+        end
       end
     when 'none', 'identity' then
       self.delete 'content-encoding'
