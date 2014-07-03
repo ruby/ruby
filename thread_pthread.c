@@ -520,6 +520,9 @@ size_t pthread_get_stacksize_np(pthread_t);
 #   define MAINSTACKADDR_AVAILABLE 0
 # endif
 #endif
+#if MAINSTACKADDR_AVAILABLE && !defined(get_main_stack)
+# define get_main_stack(addr, size) get_stack(addr, size)
+#endif
 
 #ifdef STACKADDR_AVAILABLE
 /*
@@ -892,7 +895,12 @@ native_thread_create(rb_thread_t *th)
 	thread_debug("create (use cached thread): %p\n", (void *)th);
     }
     else {
+#ifdef HAVE_PTHREAD_ATTR_INIT
 	pthread_attr_t attr;
+	pthread_attr_t *const attrp = &attr;
+#else
+	pthread_attr_t *const attrp = NULL;
+#endif
 	const size_t stack_size = th->vm->default_params.thread_machine_stack_size;
 	const size_t space = space_size(stack_size);
 
