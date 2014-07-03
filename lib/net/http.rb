@@ -1123,7 +1123,7 @@ module Net   #:nodoc:
     #       end
     #     }
     #
-    def get(path, initheader = {}, dest = nil, &block) # :yield: +body_segment+
+    def get(path, initheader = nil, dest = nil, &block) # :yield: +body_segment+
       res = nil
       request(Get.new(path, initheader)) {|r|
         r.read_body dest, &block
