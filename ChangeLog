@@ -1,3 +1,9 @@
+Fri Jul  4 10:08:24 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/rubygems/test_gem_package.rb: avoid tempfile leaks using Tempfile#close!
+	* test/rubygems/test_gem_request_set.rb: ditto.
+	* test/rubygems/test_gem_request_set_gem_dependency_api.rb: ditto.
+
 Fri Jul  4 04:42:05 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/htp/response.rb (Net::Inflater#inflate_adapter):

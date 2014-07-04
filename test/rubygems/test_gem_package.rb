@@ -621,7 +621,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_verify_corrupt
-    Tempfile.open 'corrupt' do |io|
+    tf = Tempfile.open 'corrupt' do |io|
       data = Gem.gzip 'a' * 10
       io.write \
         tar_file_header('metadata.gz', "\000x", 0644, data.length, Time.now)
@@ -636,7 +636,9 @@ class TestGemPackage < Gem::Package::TarTestCase
 
       assert_equal "tar is corrupt, name contains null byte in #{io.path}",
                    e.message
+      io
     end
+    tf.close!
   end
 
   def test_verify_empty
