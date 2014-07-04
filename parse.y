@@ -10152,7 +10152,6 @@ static struct symbols {
     st_table *sym_id;
     st_table *id_str;
     st_table *pinned_dsym;
-    VALUE op_sym[tLAST_OP_ID];
     int minor_marked;
     int pinned_dsym_minor_marked;
 } global_symbols = {tLAST_TOKEN};
@@ -10183,9 +10182,6 @@ rb_gc_mark_symbols(int full_mark)
 {
     if (full_mark || global_symbols.minor_marked == 0) {
 	rb_mark_tbl(global_symbols.id_str);
-	rb_gc_mark_locations(global_symbols.op_sym,
-			     global_symbols.op_sym + numberof(global_symbols.op_sym));
-
 	if (!full_mark) global_symbols.minor_marked = 1;
     }
 
@@ -10797,27 +10793,14 @@ rb_id2str(ID id)
 	int i = 0;
 
 	if (id < INT_MAX && rb_ispunct((int)id)) {
-	    VALUE str = global_symbols.op_sym[i = (int)id];
-	    if (!str) {
-		char name[2];
-		name[0] = (char)id;
-		name[1] = 0;
-		str = rb_fstring_new(name, 1);
-		global_symbols.op_sym[i] = str;
-		global_symbols.minor_marked = 0;
-	    }
-	    return str;
+	    char name[1];
+	    name[0] = (char)id;
+	    return rb_fstring_new(name, 1);
 	}
 	for (i = 0; i < op_tbl_count; i++) {
 	    if (op_tbl[i].token == id) {
-		VALUE str = global_symbols.op_sym[i];
-		if (!str) {
-		    const char *name = op_tbl[i].name;
-		    str = rb_fstring_new(name, op_tbl_len(i));
-		    global_symbols.op_sym[i] = str;
-		    global_symbols.minor_marked = 0;
-		}
-		return str;
+		const char *name = op_tbl[i].name;
+		return rb_fstring_new(name, op_tbl_len(i));
 	    }
 	}
     }
