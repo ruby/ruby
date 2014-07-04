@@ -295,7 +295,6 @@ BTESTRUBY = $(MINIRUBY)
 !ifndef RUBY
 RUBY = ruby
 !endif
-DEFAULT_PRELUDES = $(GEM_PRELUDE)
 
 DTRACE_EXT = dmyh
 
