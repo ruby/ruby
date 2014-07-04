@@ -1,3 +1,8 @@
+Sat Jul  5 05:05:53 2014  Vipul A M  <vipulnsward@gmail.com>
+
+	* lib/irb/locale.rb (IRB::Locale#modifier): fix wrong attr_reader
+	  `modifieer` => `modifier` from irb locale.  [fix GH-656]
+
 Fri Jul  4 20:45:26 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* parse.y: rename symbols::sym_id to symbols::str_id.
