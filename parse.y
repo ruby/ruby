@@ -10144,6 +10144,8 @@ static const struct {
 };
 
 #define op_tbl_count numberof(op_tbl)
+STATIC_ASSERT(op_tbl_name_size, sizeof(op_tbl[0].name) == 3);
+#define op_tbl_len(i) (!op_tbl[i].name[1] ? 1 : !op_tbl[i].name[2] ? 2 : 3)
 
 static struct symbols {
     ID last_id;
@@ -10800,9 +10802,7 @@ rb_id2str(ID id)
 		char name[2];
 		name[0] = (char)id;
 		name[1] = 0;
-		str = rb_usascii_str_new(name, 1);
-		OBJ_FREEZE(str);
-		str = rb_fstring(str);
+		str = rb_fstring_new(name, 1);
 		global_symbols.op_sym[i] = str;
 		global_symbols.minor_marked = 0;
 	    }
@@ -10812,9 +10812,8 @@ rb_id2str(ID id)
 	    if (op_tbl[i].token == id) {
 		VALUE str = global_symbols.op_sym[i];
 		if (!str) {
-		    str = rb_usascii_str_new2(op_tbl[i].name);
-		    OBJ_FREEZE(str);
-		    str = rb_fstring(str);
+		    const char *name = op_tbl[i].name;
+		    str = rb_fstring_new(name, op_tbl_len(i));
 		    global_symbols.op_sym[i] = str;
 		    global_symbols.minor_marked = 0;
 		}
