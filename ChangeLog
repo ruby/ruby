@@ -1,7 +1,7 @@
 Fri Jul  4 11:53:56 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* parse.y: remove unused code
-	  srounded by `#if ENABLE_SELECTOR_NAMESPACE'
+	  surrounded by `#if ENABLE_SELECTOR_NAMESPACE'
 
 Fri Jul  4 10:08:24 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
