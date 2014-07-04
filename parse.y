@@ -10414,16 +10414,23 @@ sym_check_asciionly(VALUE str)
  */
 static ID intern_str(VALUE str);
 
-static void
+static inline void
 must_be_dynamic_symbol(VALUE x)
 {
-    st_data_t data;
-    if (STATIC_SYM_P(x) && lookup_id_str(RSHIFT((unsigned long)(x),RUBY_SPECIAL_SHIFT), &data)) {
-	rb_bug("wrong argument :%s (inappropriate Symbol)", RSTRING_PTR((VALUE)data));
-    }
-    if (SPECIAL_CONST_P(x) || BUILTIN_TYPE(x) != T_SYMBOL) {
-	rb_bug("wrong argument type %s (expected Symbol)",
-	       rb_builtin_class_name(x));
+    if (UNLIKELY(DYNAMIC_SYM_P(x))) {
+	if (STATIC_SYM_P(x)) {
+	    VALUE str;
+
+	    if (lookup_id_str(RSHIFT((unsigned long)(x),RUBY_SPECIAL_SHIFT), (st_data_t *)&str)) {
+		rb_bug("wrong argument: %s (inappropriate Symbol)", RSTRING_PTR(str));
+	    }
+	    else {
+		rb_bug("wrong argument: inappropriate Symbol (%p)", (void *)x);
+	    }
+	}
+	else {
+	    rb_bug("wrong argument type %s (expected Symbol)", rb_builtin_class_name(x));
+	}
     }
 }
 
