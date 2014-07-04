@@ -10417,7 +10417,7 @@ static ID intern_str(VALUE str);
 static inline void
 must_be_dynamic_symbol(VALUE x)
 {
-    if (UNLIKELY(DYNAMIC_SYM_P(x))) {
+    if (UNLIKELY(!DYNAMIC_SYM_P(x))) {
 	if (STATIC_SYM_P(x)) {
 	    VALUE str;
 
