@@ -10445,7 +10445,7 @@ setup_fake_str(struct RString *fake_str, const char *name, long len)
     return (VALUE)fake_str;
 }
 
-ID
+static ID
 rb_pin_dynamic_symbol(VALUE sym)
 {
     must_be_dynamic_symbol(sym);
