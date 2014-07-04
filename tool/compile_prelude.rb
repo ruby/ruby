@@ -45,6 +45,7 @@ class Prelude
     lines = []
     @preludes[filename] = result = [@preludes.size, filename, lines, sub]
     File.readlines(filename).each do |line|
+      line.sub!(/(?:^|\s+)\#(?:$|\s.*)/, '')
       line.gsub!(/RbConfig::CONFIG\["(\w+)"\]/) {
         key = $1
         unless @mkconf
