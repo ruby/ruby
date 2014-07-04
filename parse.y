@@ -10119,8 +10119,8 @@ rb_parser_while_loop(VALUE vparser, NODE *node, int chop, int split)
 }
 
 static const struct {
-    ID token;
-    const char *name;
+    unsigned short token;
+    const char name[3], term;
 } op_tbl[] = {
     {tDOT2,	".."},
     {tDOT3,	"..."},
