@@ -9999,7 +9999,7 @@ reg_named_capture_assign_gen(struct parser_params* parser, VALUE regexp, NODE *m
     arg.succ_block = 0;
     arg.fail_block = 0;
     arg.num = 0;
-    onig_foreach_name(RREGEXP(regexp)->ptr, reg_named_capture_assign_iter, (void*)&arg);
+    onig_foreach_name(RREGEXP(regexp)->ptr, reg_named_capture_assign_iter, &arg);
 
     if (arg.num == 0)
         return match;
@@ -10419,10 +10419,10 @@ must_be_dynamic_symbol(VALUE x)
 {
     if (UNLIKELY(!DYNAMIC_SYM_P(x))) {
 	if (STATIC_SYM_P(x)) {
-	    VALUE str;
+	    st_data_t str;
 
-	    if (lookup_id_str(RSHIFT((unsigned long)(x),RUBY_SPECIAL_SHIFT), (st_data_t *)&str)) {
-		rb_bug("wrong argument: %s (inappropriate Symbol)", RSTRING_PTR(str));
+	    if (lookup_id_str(RSHIFT((unsigned long)(x),RUBY_SPECIAL_SHIFT), &str)) {
+		rb_bug("wrong argument: %s (inappropriate Symbol)", RSTRING_PTR((VALUE)str));
 	    }
 	    else {
 		rb_bug("wrong argument: inappropriate Symbol (%p)", (void *)x);
@@ -10475,14 +10475,14 @@ lookup_str_id(st_data_t str, st_data_t *data)
 static ID
 intern_cstr_without_pindown(const char *name, long len, rb_encoding *enc)
 {
-    ID id;
+    st_data_t id;
     struct RString fake_str;
     VALUE str = setup_fake_str(&fake_str, name, len);
     rb_enc_associate(str, enc);
     OBJ_FREEZE(str);
 
-    if (st_lookup(global_symbols.str_id, str, (st_data_t *)&id)) {
-	return id;
+    if (st_lookup(global_symbols.str_id, str, &id)) {
+	return (ID)id;
     }
 
     str = rb_enc_str_new(name, len, enc); /* make true string */
