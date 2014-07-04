@@ -10149,7 +10149,7 @@ STATIC_ASSERT(op_tbl_name_size, sizeof(op_tbl[0].name) == 3);
 
 static struct symbols {
     ID last_id;
-    st_table *sym_id;
+    st_table *str_id;
     st_table *id_str;
     st_table *pinned_dsym;
     int minor_marked;
@@ -10164,7 +10164,7 @@ static const struct st_hash_type symhash = {
 void
 Init_sym(void)
 {
-    global_symbols.sym_id = st_init_table_with_size(&symhash, 1000);
+    global_symbols.str_id = st_init_table_with_size(&symhash, 1000);
     global_symbols.id_str = st_init_numtable_with_size(1000);
     global_symbols.pinned_dsym = st_init_numtable_with_size(1000);
 
@@ -10388,7 +10388,7 @@ register_static_symid_str(ID id, VALUE str)
 	RUBY_DTRACE_SYMBOL_CREATE(RSTRING_PTR(str), rb_sourcefile(), rb_sourceline());
     }
 
-    st_add_direct(global_symbols.sym_id, (st_data_t)str, id);
+    st_add_direct(global_symbols.str_id, (st_data_t)str, id);
     st_add_direct(global_symbols.id_str, id, (st_data_t)str);
     global_symbols.minor_marked = 0;
     return id;
@@ -10458,11 +10458,11 @@ rb_pin_dynamic_symbol(VALUE sym)
 }
 
 static int
-lookup_sym_id(st_data_t str, st_data_t *data)
+lookup_str_id(st_data_t str, st_data_t *data)
 {
     ID id;
 
-    if (!st_lookup(global_symbols.sym_id, str, data)) {
+    if (!st_lookup(global_symbols.str_id, str, data)) {
 	return FALSE;
     }
     id = (ID)*data;
@@ -10475,14 +10475,15 @@ lookup_sym_id(st_data_t str, st_data_t *data)
 static ID
 intern_cstr_without_pindown(const char *name, long len, rb_encoding *enc)
 {
-    st_data_t data;
+    ID id;
     struct RString fake_str;
     VALUE str = setup_fake_str(&fake_str, name, len);
     rb_enc_associate(str, enc);
     OBJ_FREEZE(str);
 
-    if (st_lookup(global_symbols.sym_id, str, &data))
-	return (ID)data;
+    if (st_lookup(global_symbols.str_id, str, (st_data_t *)&id)) {
+	return id;
+    }
 
     str = rb_enc_str_new(name, len, enc); /* make true string */
     return intern_str(str);
@@ -10646,7 +10647,7 @@ rb_intern_str(VALUE str)
 {
     st_data_t id;
 
-    if (lookup_sym_id(str, &id))
+    if (lookup_str_id(str, &id))
 	return (ID)id;
     return intern_str(rb_str_dup(str));
 }
@@ -10656,7 +10657,7 @@ rb_gc_free_dsymbol(VALUE ptr)
 {
     st_data_t data;
     data = (st_data_t)RSYMBOL(ptr)->fstr;
-    st_delete(global_symbols.sym_id, &data, 0);
+    st_delete(global_symbols.str_id, &data, 0);
     data = (st_data_t)ptr;
     st_delete(global_symbols.id_str, &data, 0);
     RSYMBOL(ptr)->fstr = (VALUE)NULL;
@@ -10690,7 +10691,7 @@ rb_str_dynamic_intern(VALUE str)
     VALUE dsym;
     ID id, type;
 
-    if (st_lookup(global_symbols.sym_id, str, &id)) {
+    if (st_lookup(global_symbols.str_id, str, &id)) {
 	VALUE sym = ID2SYM(id);
 	if (ID_DYNAMIC_SYM_P(id)) {
 	    /* because of lazy sweep, dynamic symbol may be unmarked already and swept
@@ -10719,7 +10720,7 @@ rb_str_dynamic_intern(VALUE str)
     RSYMBOL(dsym)->fstr = str;
     RSYMBOL(dsym)->type = type;
 
-    st_add_direct(global_symbols.sym_id, (st_data_t)str, (ID)dsym);
+    st_add_direct(global_symbols.str_id, (st_data_t)str, (st_data_t)dsym);
     st_add_direct(global_symbols.id_str, (ID)dsym, (st_data_t)str);
     global_symbols.minor_marked = 0;
 
@@ -10890,9 +10891,9 @@ symbols_i(VALUE key, ID value, VALUE ary)
 VALUE
 rb_sym_all_symbols(void)
 {
-    VALUE ary = rb_ary_new2(global_symbols.sym_id->num_entries);
+    VALUE ary = rb_ary_new2(global_symbols.str_id->num_entries);
 
-    st_foreach(global_symbols.sym_id, symbols_i, ary);
+    st_foreach(global_symbols.str_id, symbols_i, ary);
     return ary;
 }
 
@@ -10998,7 +10999,7 @@ rb_check_id_without_pindown(VALUE *namep)
 
     sym_check_asciionly(name);
 
-    if (st_lookup(global_symbols.sym_id, (st_data_t)name, &id))
+    if (st_lookup(global_symbols.str_id, (st_data_t)name, &id))
 	return (ID)id;
 
     {
@@ -11020,7 +11021,7 @@ attrsetname_to_attr(VALUE name)
 	rb_enc_copy(localname, name);
 	OBJ_FREEZE(localname);
 
-	if (st_lookup(global_symbols.sym_id, (st_data_t)localname, &id)) {
+	if (st_lookup(global_symbols.str_id, (st_data_t)localname, &id)) {
 	    return (ID)id;
 	}
 	RB_GC_GUARD(name);
@@ -11039,12 +11040,12 @@ rb_check_id_cstr_without_pindown(const char *ptr, long len, rb_encoding *enc)
 
     sym_check_asciionly(name);
 
-    if (st_lookup(global_symbols.sym_id, (st_data_t)name, &id))
+    if (st_lookup(global_symbols.str_id, (st_data_t)name, &id))
 	return (ID)id;
 
     if (rb_is_attrset_name(name)) {
 	fake_str.as.heap.len = len - 1;
-	if (st_lookup(global_symbols.sym_id, (st_data_t)name, &id)) {
+	if (st_lookup(global_symbols.str_id, (st_data_t)name, &id)) {
 	    return rb_id_attrset((ID)id);
 	}
     }

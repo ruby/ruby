@@ -1,3 +1,12 @@
+Fri Jul  4 20:45:26 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* parse.y: rename symbols::sym_id to symbols::str_id.
+	  This table is not {Symbol => ID} table, but
+	  {String => ID} table.
+
+	* parse.y (lookup_sym_id): also rename lookup_sym_id() to
+	  lookup_str_id() because key is not Symbol, but String.
+
 Fri Jul  4 18:42:04 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* parse.y (must_be_dynamic_symbol): fix missed-condition.
