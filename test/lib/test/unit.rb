@@ -576,7 +576,7 @@ module Test
             after_worker_down worker
           end
         else
-          print "unknown command: #{cmd.dump}"
+          print "unknown command: #{cmd.dump}\n"
         end
         return false
       end
