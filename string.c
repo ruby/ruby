@@ -226,10 +226,12 @@ rb_fstring(VALUE str)
 }
 
 static VALUE
-setup_fake_str(struct RString *fake_str, const char *name, long len)
+setup_fake_str(struct RString *fake_str, const char *name, long len, int encidx)
 {
     fake_str->basic.flags = T_STRING|RSTRING_NOEMBED|ELTS_SHARED;
     /* SHARED to be allocated by the callback */
+
+    ENCODING_SET_INLINED((VALUE)fake_str, encidx);
 
     RBASIC_SET_CLASS((VALUE)fake_str, rb_cString);
     fake_str->as.heap.len = len;
@@ -242,8 +244,7 @@ VALUE
 rb_fstring_new(const char *ptr, long len)
 {
     struct RString fake_str;
-
-    return rb_fstring(setup_fake_str(&fake_str, ptr, len));
+    return rb_fstring(setup_fake_str(&fake_str, ptr, len, ENCINDEX_US_ASCII));
 }
 
 static int
