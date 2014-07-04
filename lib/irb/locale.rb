@@ -39,7 +39,7 @@ module IRB # :nodoc:
       @encoding ||= (Encoding.find('locale') rescue Encoding::ASCII_8BIT)
     end
 
-    attr_reader :lang, :territory, :encoding, :modifieer
+    attr_reader :lang, :territory, :encoding, :modifier
 
     def String(mes)
       mes = super(mes)
