@@ -10145,19 +10145,11 @@ static const struct {
 
 #define op_tbl_count numberof(op_tbl)
 
-#ifndef ENABLE_SELECTOR_NAMESPACE
-#define ENABLE_SELECTOR_NAMESPACE 0
-#endif
-
 static struct symbols {
     ID last_id;
     st_table *sym_id;
     st_table *id_str;
     st_table *pinned_dsym;
-#if ENABLE_SELECTOR_NAMESPACE
-    st_table *ivar2_id;
-    st_table *id_ivar2;
-#endif
     VALUE op_sym[tLAST_OP_ID];
     int minor_marked;
     int pinned_dsym_minor_marked;
@@ -10168,43 +10160,12 @@ static const struct st_hash_type symhash = {
     rb_str_hash,
 };
 
-#if ENABLE_SELECTOR_NAMESPACE
-struct ivar2_key {
-    ID id;
-    VALUE klass;
-};
-
-static int
-ivar2_cmp(struct ivar2_key *key1, struct ivar2_key *key2)
-{
-    if (key1->id == key2->id && key1->klass == key2->klass) {
-	return 0;
-    }
-    return 1;
-}
-
-static int
-ivar2_hash(struct ivar2_key *key)
-{
-    return (key->id << 8) ^ (key->klass >> 2);
-}
-
-static const struct st_hash_type ivar2_hash_type = {
-    ivar2_cmp,
-    ivar2_hash,
-};
-#endif
-
 void
 Init_sym(void)
 {
     global_symbols.sym_id = st_init_table_with_size(&symhash, 1000);
     global_symbols.id_str = st_init_numtable_with_size(1000);
     global_symbols.pinned_dsym = st_init_numtable_with_size(1000);
-#if ENABLE_SELECTOR_NAMESPACE
-    global_symbols.ivar2_id = st_init_table_with_size(&ivar2_hash_type, 1000);
-    global_symbols.id_ivar2 = st_init_numtable_with_size(1000);
-#endif
 
     (void)nodetype;
     (void)nodeline;
