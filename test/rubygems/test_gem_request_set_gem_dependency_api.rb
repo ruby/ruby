@@ -492,7 +492,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def test_load
-    Tempfile.create 'gem.deps.rb' do |io|
+    Tempfile.open 'gem.deps.rb' do |io|
       io.write <<-GEM_DEPS
 gem 'a'
 
