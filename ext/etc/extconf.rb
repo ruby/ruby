@@ -38,4 +38,6 @@ have_struct_member('struct passwd', 'pw_expire', 'pwd.h')
 have_struct_member('struct passwd', 'pw_passwd', 'pwd.h')
 have_struct_member('struct group', 'gr_passwd', 'grp.h')
 
+$distcleanfiles << "constdefs.h"
+
 create_makefile("etc")
