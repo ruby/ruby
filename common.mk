@@ -451,10 +451,15 @@ clear-installed-list: PHONY
 	@> $(INSTALLED_LIST) set MAKE="$(MAKE)"
 
 clean: clean-ext clean-local clean-enc clean-golf clean-rdoc clean-capi clean-extout clean-platform
-clean-local:: PHONY
+clean-local:: clean-runnable
 	$(Q)$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	$(Q)$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
 	$(Q)$(RM) y.tab.c y.output encdb.h transdb.h prelude.c config.log rbconfig.rb $(ruby_pc) probes.h probes.$(OBJEXT) probes.stamp ruby-glommed.$(OBJEXT)
+	$(Q)$(RM) GNUmakefile.old Makefile.old $(arch)-fake.rb
+clean-runnable:: PHONY
+	$(Q)$(CHDIR) bin && $(exec) $(RM) $(PROGRAM) $(WPROGRAM) $(GORUBY)$(EXEEXT) bin/*.$(DLEXT)
+	$(Q)$(CHDIR) lib && $(exec) $(RM) $(LIBRUBY_A) $(LIBRUBY) $(LIBRUBY_ALIASES) $(RUBY_BASE_NAME)/$(RUBY_PROGRAM_VERSION) $(RUBY_BASE_NAME)/vendor_ruby
+	$(Q)$(RMDIR) lib/$(RUBY_BASE_NAME) lib bin
 clean-ext:: PHONY
 clean-golf: PHONY
 	$(Q)$(RM) $(GORUBY)$(EXEEXT) $(GOLFOBJS)
@@ -462,6 +467,7 @@ clean-rdoc: PHONY
 clean-capi: PHONY
 clean-platform: PHONY
 clean-extout: PHONY
+	-$(Q)$(RMDIR) $(EXTOUT)/$(arch) $(EXTOUT) 2> $(NULL) || exit 0
 clean-docs: clean-rdoc clean-capi
 
 distclean: distclean-ext distclean-local distclean-enc distclean-golf distclean-extout distclean-platform
@@ -488,6 +494,7 @@ realclean-extout: distclean-extout
 clean-ext distclean-ext realclean-ext::
 	$(Q)$(RM) $(EXTS_MK)
 	$(Q)$(RM) $(EXTOUT)/.timestamp/.*.time
+	$(Q)$(RMDIR) $(EXTOUT)/.timestamp
 
 clean-enc distclean-enc realclean-enc: PHONY
 

@@ -419,7 +419,6 @@ distclean-ext realclean-ext::
 	-$(Q)$(RMDIR) ext 2> /dev/null || true
 
 clean-extout:
-	-$(Q)$(RMDIRS) $(EXTOUT) 2> /dev/null || true
 
 clean-enc distclean-enc realclean-enc:
 	@test -f "$(ENC_MK)" || exit 0; \

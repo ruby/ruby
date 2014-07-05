@@ -1029,9 +1029,6 @@ distclean-ext realclean-ext::
 		-$(Q)rmdir ext
 
 clean-extout:
-!if exist($(EXTOUT)/.)
-	-$(Q)$(RMDIRS) $(EXTOUT)
-!endif
 
 clean-enc distclean-enc realclean-enc:
 !if exist($(ENC_MK))
