@@ -1041,16 +1041,18 @@ rb_mod_include_p(VALUE mod, VALUE mod2)
  *  call-seq:
  *     mod.ancestors -> array
  *
- *  Returns a list of modules included in <i>mod</i> (including
- *  <i>mod</i> itself).
+ *  Returns a list of modules included/prepended in <i>mod</i>
+ *  (including <i>mod</i> itself).
  *
  *     module Mod
  *       include Math
  *       include Comparable
+ *       prepend Enumerable
  *     end
  *
- *     Mod.ancestors    #=> [Mod, Comparable, Math]
- *     Math.ancestors   #=> [Math]
+ *     Mod.ancestors        #=> [Enumerable, Mod, Comparable, Math]
+ *     Math.ancestors       #=> [Math]
+ *     Enumerable.ancestors #=> [Enumerable]
  */
 
 VALUE
