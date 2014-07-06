@@ -1,3 +1,12 @@
+Mon Jul  7 02:18:42 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* string.c (fstr_update_callback): do not use rb_gc_resurrect()
+	  any more.
+
+	  Make new frozen string and replace with garbage frozen string.
+
+	* common.mk: use gc.h from string.c.
+
 Mon Jul  7 00:36:13 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: rename is_dying_object() to is_garbage_object().

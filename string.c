@@ -16,6 +16,7 @@
 #include "ruby/encoding.h"
 #include "internal.h"
 #include "probes.h"
+#include "gc.h"
 #include <assert.h>
 
 #define BEG(no) (regs->beg[(no)])
@@ -191,22 +192,28 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existi
     if (existing) {
 	/* because of lazy sweep, str may be unmarked already and swept
 	 * at next time */
-	rb_gc_resurrect(*fstr = *key);
+
+	if (rb_objspace_garbage_object_p(str)) {
+	    goto create_new_fstr;
+	}
+
+	*fstr = str;
 	return ST_STOP;
     }
-
-    if (STR_SHARED_P(str)) {
-	/* str should not be shared */
-	str = rb_enc_str_new(RSTRING_PTR(str), RSTRING_LEN(str), STR_ENC_GET(str));
-	OBJ_FREEZE(str);
-    }
     else {
-	str = rb_str_new_frozen(str);
-    }
-    RBASIC(str)->flags |= RSTRING_FSTR;
+	if (STR_SHARED_P(str)) { /* str should not be shared */
+	  create_new_fstr:
+	    str = rb_enc_str_new(RSTRING_PTR(str), RSTRING_LEN(str), STR_ENC_GET(str));
+	    OBJ_FREEZE(str);
+	}
+	else {
+	    str = rb_str_new_frozen(str);
+	}
+	RBASIC(str)->flags |= RSTRING_FSTR;
 
-    *key = *value = *fstr = str;
-    return ST_CONTINUE;
+	*key = *value = *fstr = str;
+	return ST_CONTINUE;
+    }
 }
 
 VALUE
