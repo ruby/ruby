@@ -834,6 +834,7 @@ st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data
 	    existing = 1;
 	}
 	{
+	    const st_data_t old_key = key;
 	    retval = (*func)(&key, &value, arg, existing);
 	    if (!table->entries_packed) {
 		FIND_ENTRY(table, ptr, hash_val, bin_pos);
@@ -844,6 +845,14 @@ st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data
 		if (!existing) {
 		    add_packed_direct(table, key, value, hash_val);
 		    break;
+		}
+		if (old_key != PKEY(table, i)) return -1;
+		if (old_key != key) {
+		    if (do_hash(key, table) != hash_val &&
+			!EQUAL(table, key, old_key)) {
+			return -1;
+		    }
+		    PKEY(table, i) = key;
 		}
 		PVAL_SET(table, i, value);
 		break;
@@ -863,6 +872,7 @@ st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data
 	existing = 1;
     }
     {
+	const st_data_t old_key = key;
 	retval = (*func)(&key, &value, arg, existing);
       unpacked:
 	switch (retval) {
@@ -870,6 +880,14 @@ st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data
 	    if (!existing) {
 		add_direct(table, key, value, hash_val, hash_pos(hash_val, table->num_bins));
 		break;
+	    }
+	    if (old_key != ptr->key) return -1;
+	    if (old_key != key) {
+		if (do_hash(key, table) != hash_val &&
+		    !EQUAL(table, key, old_key)) {
+		    return -1;
+		}
+		ptr->key = key;
 	    }
 	    ptr->record = value;
 	    break;
