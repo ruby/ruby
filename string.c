@@ -194,6 +194,7 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existi
 	 * at next time */
 
 	if (rb_objspace_garbage_object_p(str)) {
+	    str = *fstr;
 	    goto create_new_fstr;
 	}
 
@@ -219,7 +220,6 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existi
 VALUE
 rb_fstring(VALUE str)
 {
-    VALUE fstr = Qnil;
     Check_Type(str, T_STRING);
 
     if (!frozen_strings)
@@ -228,8 +228,8 @@ rb_fstring(VALUE str)
     if (FL_TEST(str, RSTRING_FSTR))
 	return str;
 
-    st_update(frozen_strings, (st_data_t)str, fstr_update_callback, (st_data_t)&fstr);
-    return fstr;
+    st_update(frozen_strings, (st_data_t)str, fstr_update_callback, (st_data_t)&str);
+    return str;
 }
 
 static VALUE
