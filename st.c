@@ -843,6 +843,7 @@ st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data
 	    switch (retval) {
 	      case ST_CONTINUE:
 		if (!existing) {
+		    if (key != old_key) hash_val = do_hash(key, table);
 		    add_packed_direct(table, key, value, hash_val);
 		    break;
 		}
@@ -878,6 +879,7 @@ st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data
 	switch (retval) {
 	  case ST_CONTINUE:
 	    if (!existing) {
+		if (key != old_key) hash_val = do_hash(key, table);
 		add_direct(table, key, value, hash_val, hash_pos(hash_val, table->num_bins));
 		break;
 	    }
