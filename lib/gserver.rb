@@ -37,7 +37,7 @@ require "thread"
 #       super(port, *args)
 #     end
 #     def serve(io)
-#       io.puts(Time.now.to_s)
+#       io.puts(Time.now.to_i)
 #     end
 #   end
 #
@@ -144,7 +144,7 @@ class GServer
   attr_reader :port
   # Host on which to bind, as a String
   attr_reader :host
-  # Maximum number of connections to accept at at ime, as a Fixnum
+  # Maximum number of connections to accept at a time, as a Fixnum
   attr_reader :maxConnections
   # IO Device on which log messages should be written
   attr_accessor :stdlog
@@ -156,7 +156,7 @@ class GServer
 
   # Called when a client connects, if auditing is enabled.
   #
-  # +client+:: a TCPSocket instances representing the client that connected
+  # +client+:: a TCPSocket instance representing the client that connected
   #
   # Return true to allow this client to connect, false to prevent it.
   def connecting(client)
@@ -192,7 +192,7 @@ class GServer
   # Called if #debug is true whenever an unhandled exception is raised.
   # This implementation simply logs the backtrace.
   #
-  # +detail+:: The Exception that was caught
+  # +detail+:: the Exception that was caught
   def error(detail)
     log(detail.backtrace.join("\n"))
   end
@@ -212,9 +212,9 @@ class GServer
 
   # Create a new server
   #
-  # +port+:: the port, as a Fixnum, on which to listen.
+  # +port+:: the port, as a Fixnum, on which to listen
   # +host+:: the host to bind to
-  # +maxConnections+:: The maximum number of simultaneous connections to
+  # +maxConnections+:: the maximum number of simultaneous connections to
   #                    accept
   # +stdlog+:: IO device on which to log messages
   # +audit+:: if true, lifecycle callbacks will be called.  See #audit
