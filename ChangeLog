@@ -1,3 +1,15 @@
+Sun Jul  6 21:00:11 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: rename is_dead_object() to is_dying_object().
+	  This function is not opposite against is_live_object()
+	  because is_dying_object() does *not* check object type.
+
+	* gc.c (is_dying_object): change condition.
+
+	* gc.c (is_live_object): use T_NONE instead of 0.
+
+	* gc.c (rb_objspace_dying_object_p): added.
+
 Sun Jul  6 13:37:27 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_gc_register_mark_object): change data structure.

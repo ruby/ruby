@@ -2330,22 +2330,34 @@ is_swept_object(rb_objspace_t *objspace, VALUE ptr)
 }
 
 static inline int
-is_dead_object(rb_objspace_t *objspace, VALUE ptr)
+is_dying_object(rb_objspace_t *objspace, VALUE ptr)
 {
-    if (!is_lazy_sweeping(heap_eden) || MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(ptr), ptr)) return FALSE;
-    if (!is_swept_object(objspace, ptr)) return TRUE;
-    return FALSE;
+    if (!is_lazy_sweeping(heap_eden) ||
+	!is_swept_object(objspace, ptr) ||
+	MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(ptr), ptr)) {
+
+	return FALSE;
+    }
+    else {
+	return TRUE;
+    }
 }
 
 static inline int
 is_live_object(rb_objspace_t *objspace, VALUE ptr)
 {
     switch (BUILTIN_TYPE(ptr)) {
-      case 0: case T_ZOMBIE:
+      case T_NONE:
+      case T_ZOMBIE:
 	return FALSE;
     }
-    if (is_dead_object(objspace, ptr)) return FALSE;
-    return TRUE;
+
+    if (is_dying_object(objspace, ptr)) {
+	return FALSE;
+    }
+    else {
+	return TRUE;
+    }
 }
 
 static inline int
@@ -2367,6 +2379,13 @@ rb_objspace_markable_object_p(VALUE obj)
 {
     rb_objspace_t *objspace = &rb_objspace;
     return is_markable_object(objspace, obj) && is_live_object(objspace, obj);
+}
+
+int
+rb_objspace_dying_object_p(VALUE obj)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    return is_dying_object(objspace, obj);
 }
 
 /*
