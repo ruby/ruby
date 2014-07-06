@@ -35,7 +35,7 @@ opt.def_option('-H FILE', 'specify output header file') {|filename|
 opt.parse!
 
 h = {}
-COMMENTS = Hash.new { |h, name| h[name] = name }
+COMMENTS = {}
 
 DATA.each_line {|s|
   next if /\A\s*(\#|\z)/ =~ s
@@ -48,7 +48,7 @@ DATA.each_line {|s|
     next
   end
   h[name] = default_value
-  COMMENTS[name] = comment
+  COMMENTS[name] = comment if comment
 }
 DEFS = h.to_a
 
@@ -82,7 +82,9 @@ EOS
 ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_const_defs")
 % each_const {|name, default_value|
 #if defined(<%=name%>)
-    /* <%= COMMENTS[name] %> */
+%   if comment = COMMENTS[name]
+    /* <%=comment%> */
+%   end
     rb_define_const(mod, <%=c_str name.sub(/\A_*/, '')%>, INTEGER2NUM(<%=name%>));
 #endif
 % }
