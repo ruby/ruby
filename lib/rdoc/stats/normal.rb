@@ -1,3 +1,5 @@
+require 'io/console/size'
+
 ##
 # Stats printer that prints just the files being documented with a progress
 # bar
@@ -20,7 +22,7 @@ class RDoc::Stats::Normal < RDoc::Stats::Quiet
 
     # Print a progress bar, but make sure it fits on a single line. Filename
     # will be truncated if necessary.
-    terminal_width = (ENV['COLUMNS'] || 80).to_i
+    terminal_width = IO.console_size[1].to_i.nonzero? || 80
     max_filename_size = terminal_width - progress_bar.size
 
     if filename.size > max_filename_size then
