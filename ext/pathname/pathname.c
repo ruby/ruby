@@ -440,6 +440,7 @@ path_atime(VALUE self)
     return rb_funcall(rb_cFile, rb_intern("atime"), 1, get_strpath(self));
 }
 
+#if defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC) || defined(_WIN32)
 /*
  * call-seq:
  *   pathname.birthtime	-> time
@@ -449,7 +450,6 @@ path_atime(VALUE self)
  *
  * See File.birthtime.
  */
-#if defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC) || defined(_WIN32)
 static VALUE
 path_birthtime(VALUE self)
 {

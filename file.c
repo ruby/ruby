@@ -849,6 +849,7 @@ rb_stat_ctime(VALUE self)
     return stat_ctime(get_stat(self));
 }
 
+#if defined(HAVE_STAT_BIRTHTIME)
 /*
  *  call-seq:
  *     stat.birthtime  ->  aTime
@@ -870,7 +871,6 @@ rb_stat_ctime(VALUE self)
  *
  */
 
-#if defined(HAVE_STAT_BIRTHTIME)
 static VALUE
 rb_stat_birthtime(VALUE self)
 {
@@ -2131,6 +2131,7 @@ rb_file_ctime(VALUE obj)
     return stat_ctime(&st);
 }
 
+#if defined(HAVE_STAT_BIRTHTIME)
 /*
  *  call-seq:
  *     File.birthtime(file_name)  -> time
@@ -2145,7 +2146,6 @@ rb_file_ctime(VALUE obj)
  *
  */
 
-#if defined(HAVE_STAT_BIRTHTIME)
 static VALUE
 rb_file_s_birthtime(VALUE klass, VALUE fname)
 {
@@ -2161,6 +2161,7 @@ rb_file_s_birthtime(VALUE klass, VALUE fname)
 # define rb_file_s_birthtime rb_f_notimplement
 #endif
 
+#if defined(HAVE_STAT_BIRTHTIME)
 /*
  *  call-seq:
  *     file.birthtime  ->  time
@@ -2173,7 +2174,6 @@ rb_file_s_birthtime(VALUE klass, VALUE fname)
  *
  */
 
-#if defined(HAVE_STAT_BIRTHTIME)
 static VALUE
 rb_file_birthtime(VALUE obj)
 {
