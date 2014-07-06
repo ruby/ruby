@@ -2793,7 +2793,7 @@ Init_vm_objects(void)
     vm->defined_module_hash = rb_hash_new();
 
     /* initialize mark object array, hash */
-    vm->mark_object_ary = rb_ary_tmp_new(1);
+    vm->mark_object_ary = rb_ary_tmp_new(128);
 }
 
 /* top self */

@@ -1,3 +1,11 @@
+Sun Jul  6 13:37:27 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_gc_register_mark_object): change data structure.
+	  From single array, to array of arrays. Each array only has 1024
+	  entries.
+
+	* vm.c (Init_vm_objects): change default capa from 1 to 128.
+
 Sat Jul  5 05:05:53 2014  Vipul A M  <vipulnsward@gmail.com>
 
 	* lib/irb/locale.rb (IRB::Locale#modifier): fix wrong attr_reader
