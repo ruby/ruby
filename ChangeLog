@@ -1,3 +1,9 @@
+Sun Jul  6 21:30:35 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (is_dying_object): fix missed condition.
+
+	* gc.c (is_live_object): move frequent path first.
+
 Sun Jul  6 21:00:11 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: rename is_dead_object() to is_dying_object().

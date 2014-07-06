@@ -2333,7 +2333,7 @@ static inline int
 is_dying_object(rb_objspace_t *objspace, VALUE ptr)
 {
     if (!is_lazy_sweeping(heap_eden) ||
-	!is_swept_object(objspace, ptr) ||
+	is_swept_object(objspace, ptr) ||
 	MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(ptr), ptr)) {
 
 	return FALSE;
@@ -2352,11 +2352,11 @@ is_live_object(rb_objspace_t *objspace, VALUE ptr)
 	return FALSE;
     }
 
-    if (is_dying_object(objspace, ptr)) {
-	return FALSE;
+    if (!is_dying_object(objspace, ptr)) {
+	return TRUE;
     }
     else {
-	return TRUE;
+	return FALSE;
     }
 }
 
