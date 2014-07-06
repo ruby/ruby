@@ -36,7 +36,7 @@ class RDoc::Stats::Normal < RDoc::Stats::Quiet
       # Clean the line with whitespaces so that leftover output from the
       # previous line doesn't show up.
       $stdout.print("\r" << (" " * @last_width) << ("\b" * @last_width) << "\r") if @last_width && @last_width > 0
-      @last_width = 0
+      @last_width = line.size
       $stdout.print("#{line}\r")
     else
       $stdout.puts(line)
