@@ -6,6 +6,7 @@ class RDoc::Stats::Normal < RDoc::Stats::Quiet
 
   def begin_adding # :nodoc:
     puts "Parsing sources..."
+    @last_width = 0
   end
 
   ##
@@ -30,10 +31,10 @@ class RDoc::Stats::Normal < RDoc::Stats::Quiet
 
     line = "#{progress_bar}#{filename}"
     if $stdout.tty?
-      # Pad the line with whitespaces so that leftover output from the
+      # Clean the line with whitespaces so that leftover output from the
       # previous line doesn't show up.
-      padding = terminal_width - line.size
-      line << (" " * padding) if padding > 0
+      $stdout.print("\r" << (" " * @last_width) << ("\b" * @last_width) << "\r") if @last_width && @last_width > 0
+      @last_width = 0
       $stdout.print("#{line}\r")
     else
       $stdout.puts(line)
