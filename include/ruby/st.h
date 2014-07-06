@@ -115,6 +115,9 @@ int st_insert2(st_table *, st_data_t, st_data_t, st_data_t (*)(st_data_t));
 int st_lookup(st_table *, st_data_t, st_data_t *);
 int st_get_key(st_table *, st_data_t, st_data_t *);
 typedef int st_update_callback_func(st_data_t *key, st_data_t *value, st_data_t arg, int existing);
+/* *key may be altered, but must equal to the old key, i.e., the
+ * results of hash() are same and compare() returns 0, otherwise the
+ * behavior is undefined */
 int st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data_t arg);
 int st_foreach(st_table *, int (*)(ANYARGS), st_data_t);
 int st_foreach_check(st_table *, int (*)(ANYARGS), st_data_t, st_data_t);
