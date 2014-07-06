@@ -1,3 +1,9 @@
+Mon Jul  7 00:36:13 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: rename is_dying_object() to is_garbage_object().
+
+	* gc.h: rb_objspace_garbage_object_p() as an exported function.
+
 Sun Jul  6 21:30:35 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (is_dying_object): fix missed condition.

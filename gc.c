@@ -2329,8 +2329,9 @@ is_swept_object(rb_objspace_t *objspace, VALUE ptr)
     }
 }
 
+/* garbage objects will be collected soon. */
 static inline int
-is_dying_object(rb_objspace_t *objspace, VALUE ptr)
+is_garbage_object(rb_objspace_t *objspace, VALUE ptr)
 {
     if (!is_lazy_sweeping(heap_eden) ||
 	is_swept_object(objspace, ptr) ||
@@ -2352,7 +2353,7 @@ is_live_object(rb_objspace_t *objspace, VALUE ptr)
 	return FALSE;
     }
 
-    if (!is_dying_object(objspace, ptr)) {
+    if (!is_garbage_object(objspace, ptr)) {
 	return TRUE;
     }
     else {
@@ -2382,10 +2383,10 @@ rb_objspace_markable_object_p(VALUE obj)
 }
 
 int
-rb_objspace_dying_object_p(VALUE obj)
+rb_objspace_garbage_object_p(VALUE obj)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    return is_dying_object(objspace, obj);
+    return is_garbage_object(objspace, obj);
 }
 
 /*
