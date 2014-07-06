@@ -15,10 +15,11 @@ class Object
   RUBY_VERSION = "@RUBY_PROGRAM_VERSION@"
   RUBY_DESCRIPTION = "ruby #{RUBY_VERSION} (@RUBY_RELEASE_DATE@) [#{RUBY_PLATFORM}]"
 end
-if RUBY_PLATFORM =~ /mswin|bccwin|mingw/
-  class File
+class File
+  sep = ("\\" if RUBY_PLATFORM =~ /mswin|bccwin|mingw/)
+  if sep != ALT_SEPARATOR
     remove_const :ALT_SEPARATOR
-    ALT_SEPARATOR = "\\"
+    ALT_SEPARATOR = sep
   end
 end
 
