@@ -821,7 +821,7 @@ st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data
 {
     st_index_t hash_val, bin_pos;
     register st_table_entry *ptr, **last, *tmp;
-    st_data_t value = 0;
+    st_data_t value = 0, old_key;
     int retval, existing = 0;
 
     hash_val = do_hash(key, table);
@@ -834,7 +834,7 @@ st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data
 	    existing = 1;
 	}
 	{
-	    const st_data_t old_key = key;
+	    old_key = key;
 	    retval = (*func)(&key, &value, arg, existing);
 	    if (!table->entries_packed) {
 		FIND_ENTRY(table, ptr, hash_val, bin_pos);
@@ -867,7 +867,7 @@ st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data
 	existing = 1;
     }
     {
-	const st_data_t old_key = key;
+	old_key = key;
 	retval = (*func)(&key, &value, arg, existing);
       unpacked:
 	switch (retval) {
