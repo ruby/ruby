@@ -10503,7 +10503,7 @@ lookup_str_id(st_data_t str, st_data_t *data)
     }
     id = (ID)*data;
     if (ID_DYNAMIC_SYM_P(id)) {
-	rb_pin_dynamic_symbol((VALUE)id);
+	*data = (st_data_t)rb_pin_dynamic_symbol((VALUE)id);
     }
     return TRUE;
 }
@@ -10532,7 +10532,7 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
 
     id = intern_cstr_without_pindown(name, len, enc);
     if (ID_DYNAMIC_SYM_P(id)) {
-	rb_pin_dynamic_symbol((VALUE)id);
+	id = rb_pin_dynamic_symbol((VALUE)id);
     }
 
     return id;
@@ -10974,7 +10974,7 @@ rb_check_id(volatile VALUE *namep)
 
     id = rb_check_id_without_pindown((VALUE *)namep);
     if (ID_DYNAMIC_SYM_P(id)) {
-        rb_pin_dynamic_symbol((VALUE)id);
+	id = rb_pin_dynamic_symbol((VALUE)id);
     }
 
     return id;
@@ -10987,7 +10987,7 @@ rb_check_id_cstr(const char *ptr, long len, rb_encoding *enc)
 
     id = rb_check_id_cstr_without_pindown(ptr, len, enc);
     if (ID_DYNAMIC_SYM_P(id)) {
-        rb_pin_dynamic_symbol((VALUE)id);
+	id = rb_pin_dynamic_symbol((VALUE)id);
     }
 
     return id;
