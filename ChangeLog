@@ -1,3 +1,10 @@
+Mon Jul  7 10:52:03 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* parse.y: do not use rb_gc_resurrect(), but create a new dynamic
+	  symbol for garbage dynamic symbol.
+
+	* common.mk: use gc.h by parse.y.
+
 Mon Jul  7 02:18:42 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* string.c (fstr_update_callback): do not use rb_gc_resurrect()

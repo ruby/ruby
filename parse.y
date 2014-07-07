@@ -25,6 +25,7 @@
 #include "node.h"
 #include "parse.h"
 #include "id.h"
+#include "gc.h"
 #include "regenc.h"
 #include <stdio.h>
 #include <errno.h>
@@ -10445,11 +10446,46 @@ setup_fake_str(struct RString *fake_str, const char *name, long len)
     return (VALUE)fake_str;
 }
 
+static VALUE
+dsymbol_alloc(const VALUE klass, const VALUE str, rb_encoding * const enc)
+{
+    const VALUE dsym = rb_newobj_of(klass, T_SYMBOL | FL_WB_PROTECTED);
+    const ID type = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
+
+    rb_enc_associate(dsym, enc);
+    OBJ_FREEZE(dsym);
+    RB_OBJ_WRITE(dsym, &RSYMBOL(dsym)->fstr, str);
+    RSYMBOL(dsym)->type = type;
+
+    st_add_direct(global_symbols.str_id, (st_data_t)str, (st_data_t)dsym);
+    st_add_direct(global_symbols.id_str, (ID)dsym, (st_data_t)str);
+
+    if (RUBY_DTRACE_SYMBOL_CREATE_ENABLED()) {
+	RUBY_DTRACE_SYMBOL_CREATE(RSTRING_PTR(RSYMBOL(dsym)->fstr), rb_sourcefile(), rb_sourceline());
+    }
+
+    return dsym;
+}
+
+static inline VALUE
+dsymbol_check(const VALUE sym)
+{
+    if (UNLIKELY(rb_objspace_garbage_object_p(sym))) {
+	const VALUE fstr = RSYMBOL(sym)->fstr;
+	st_delete(global_symbols.str_id, (st_data_t *)&fstr, NULL);
+	st_delete(global_symbols.id_str, (st_data_t *)&sym, NULL);
+	return dsymbol_alloc(rb_cSymbol, fstr, rb_enc_get(fstr));
+    }
+    else {
+	return sym;
+    }
+}
+
 static ID
 rb_pin_dynamic_symbol(VALUE sym)
 {
     must_be_dynamic_symbol(sym);
-    rb_gc_resurrect(sym);
+    sym = dsymbol_check(sym);
     /* stick dynamic symbol */
     if (!st_insert(global_symbols.pinned_dsym, sym, (st_data_t)sym)) {
 	global_symbols.pinned_dsym_minor_marked = 0;
@@ -10688,15 +10724,14 @@ rb_str_dynamic_intern(VALUE str)
 {
 #if USE_SYMBOL_GC
     rb_encoding *enc, *ascii;
-    VALUE dsym;
-    ID id, type;
+    ID id;
 
     if (st_lookup(global_symbols.str_id, str, &id)) {
 	VALUE sym = ID2SYM(id);
 	if (ID_DYNAMIC_SYM_P(id)) {
 	    /* because of lazy sweep, dynamic symbol may be unmarked already and swept
 	     * at next time */
-	    rb_gc_resurrect(sym);
+	    sym = dsymbol_check(sym);
 	}
 	return sym;
     }
@@ -10712,24 +10747,7 @@ rb_str_dynamic_intern(VALUE str)
 	}
     }
 
-    type = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
-    str = rb_fstring(str);
-    dsym = rb_newobj_of(rb_cSymbol, T_SYMBOL);
-    rb_enc_associate(dsym, enc);
-    OBJ_FREEZE(dsym);
-    RSYMBOL(dsym)->fstr = str;
-    RSYMBOL(dsym)->type = type;
-
-    st_add_direct(global_symbols.str_id, (st_data_t)str, (st_data_t)dsym);
-    st_add_direct(global_symbols.id_str, (ID)dsym, (st_data_t)str);
-    global_symbols.minor_marked = 0;
-
-    if (RUBY_DTRACE_SYMBOL_CREATE_ENABLED()) {
-	RUBY_DTRACE_SYMBOL_CREATE(RSTRING_PTR(str), rb_sourcefile(), rb_sourceline());
-	RB_GC_GUARD(str);
-    }
-
-    return dsym;
+    return dsymbol_alloc(rb_cSymbol, rb_fstring(str), enc);
 #else
     return rb_str_intern(str);
 #endif
@@ -10739,8 +10757,7 @@ static int
 lookup_id_str(ID id, st_data_t *data)
 {
     if (ID_DYNAMIC_SYM_P(id)) {
-	rb_gc_resurrect((VALUE)id);
-	rb_gc_resurrect(RSYMBOL(id)->fstr);
+	id = (ID)dsymbol_check((VALUE)id);
 	*data = RSYMBOL(id)->fstr;
 	return TRUE;
     }
@@ -10866,7 +10883,7 @@ symbols_i(VALUE key, ID value, VALUE ary)
 {
     VALUE sym = ID2SYM(value);
     if (ID_DYNAMIC_SYM_P(value)) {
-	rb_gc_resurrect(sym);
+	sym = dsymbol_check(sym);
     }
     rb_ary_push(ary, sym);
     return ST_CONTINUE;
