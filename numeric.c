@@ -30,6 +30,14 @@
 #include <ieeefp.h>
 #endif
 
+#if !defined HAVE_ISFINITE && !defined isfinite
+#if defined HAVE_FINITE && !defined finite && !defined _WIN32
+extern int finite(double);
+# define HAVE_ISFINITE 1
+# define isfinite(x) finite(x)
+#endif
+#endif
+
 /* use IEEE 64bit values if not defined */
 #ifndef FLT_RADIX
 #define FLT_RADIX 2
@@ -1482,8 +1490,8 @@ flo_is_finite_p(VALUE num)
 {
     double value = RFLOAT_VALUE(num);
 
-#if HAVE_FINITE
-    if (!finite(value))
+#if HAVE_ISFINITE
+    if (!isfinite(value))
 	return Qfalse;
 #else
     if (isinf(value) || isnan(value))
