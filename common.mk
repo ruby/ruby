@@ -498,6 +498,18 @@ clean-ext distclean-ext realclean-ext::
 
 clean-enc distclean-enc realclean-enc: PHONY
 
+clean-rdoc distclean-rdoc realclean-rdoc:
+	@echo $(@:-rdoc=ing) rdoc
+	$(Q)$(RMALL) $(RDOCOUT)
+
+clean-capi distclean-capi realclean-capi:
+	@echo $(@:-capi=ing) capi
+	$(Q)$(RMALL) $(CAPIOUT)
+
+clean-platform:
+	$(Q) $(RM) $(PLATFORM_D)
+	-$(Q) $(RMDIR) $(PLATFORM_DIR) 2> /dev/null || exit 0
+
 check: main test test-all
 	$(ECHO) check succeeded
 check-ruby: test test-ruby

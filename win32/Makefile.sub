@@ -75,7 +75,7 @@ IFCHANGE = $(COMSPEC) /C $(srcdir:/=\)\win32\ifchange.bat
 RM = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat
 RMDIR = $(COMSPEC) /C $(srcdir:/=\)\win32\rmdirs.bat
 RMDIRS = $(COMSPEC) /C $(srcdir:/=\)\win32\rmdirs.bat
-RMALL = $(COMSPEC) /C $(srcdir:/=\)\win32\rmall.bat
+RMALL = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat -r
 MAKEDIRS = $(COMSPEC) /E:ON /C $(srcdir:/=\)\win32\makedirs.bat
 CP = copy > nul
 MV = move > nul
@@ -817,7 +817,7 @@ s,@SET_MAKE@,MFLAGS = -$$(MAKEFLAGS),;t t
 s,@RM@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rm.bat,;t t
 s,@RMDIR@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rmdirs.bat,:t t
 s,@RMDIRS@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rmdirs.bat,;t t
-s,@RMALL@,$$(COMSPEC) /C rmdir /s /q,;t t
+s,@RMALL@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rm.bat -f -r,:t t
 s,@MAKEDIRS@,$$(COMSPEC) /E:ON /C $$(top_srcdir:/=\)\win32\makedirs.bat,;t t
 s,@LIBOBJS@,$(LIBOBJS),;t t
 s,@ALLOCA@,$(ALLOCA),;t t
@@ -1001,15 +1001,6 @@ distclean-local::
 		$(Q)$(RM) ext\config.cache $(RBCONFIG:/=\) $(CONFIG_H:/=\)
 		-$(Q)$(RM) $(INSTALLED_LIST:/=\) $(arch_hdrdir:/=\)\ruby\config.h verconf.h
 		-$(Q)$(RMDIRS) $(arch_hdrdir:/=\)\ruby
-
-clean-rdoc distclean-rdoc realclean-rdoc:
-		-$(Q)$(RMALL) $(RDOCOUT:/=\)
-clean-capi distclean-capi realclean-capi:
-		-$(Q)$(RMALL) $(CAPIOUT:/=\)
-
-clean-platform:
-		$(Q)$(RM) $(PLATFORM_D:/=\)
-		-$(Q)$(RMDIR) $(PLATFORM_DIR:/=\)
 
 clean-ext distclean-ext realclean-ext::
 !if "$(EXTS)" != ""
