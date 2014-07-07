@@ -1,3 +1,9 @@
+Mon Jul  7 11:02:55 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/mkconfig.rb: remove not to require rbconfig/obsolete.rb.
+
+	* lib/rbconfig/obsolete.rb: removed.
+
 Mon Jul  7 10:52:03 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* parse.y: do not use rb_gc_resurrect(), but create a new dynamic
