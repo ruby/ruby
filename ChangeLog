@@ -1,3 +1,9 @@
+Mon Jul  7 12:46:28 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* struct.c (not_a_member): extract name error and use same error
+	  messages.  based on the patch by Marcus Stollsteimer <sto.mar AT
+	  web.de> at [ruby-core:61721].  [Bug #9684]
+
 Mon Jul  7 12:39:34 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (read_all): truncate the buffer before appending read data,
