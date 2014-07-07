@@ -162,4 +162,26 @@ class TestBacktrace < Test::Unit::TestCase
       q << true
     end
   end
+
+  def test_core_backtrace_alias
+    obj = BasicObject.new
+    e = assert_raise(NameError) do
+      class << obj
+        alias foo bar
+      end
+    end
+    /`(.*)'\z/.match e.backtrace[0]
+    assert_not_match(/\Acore#/, $1)
+  end
+
+  def test_core_backtrace_undef
+    obj = BasicObject.new
+    e = assert_raise(NameError) do
+      class << obj
+        undef foo
+      end
+    end
+    /`(.*)'\z/.match e.backtrace[0]
+    assert_not_match(/\Acore#/, $1)
+  end
 end
