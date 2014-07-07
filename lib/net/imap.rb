@@ -2372,6 +2372,8 @@ module Net
           return body_type_msg
         when /\A(?:ATTACHMENT)\z/ni
           return body_type_attachment
+        when /\A(?:MIXED)\z/ni
+          return body_type_mixed
         else
           return body_type_basic
         end
@@ -2411,27 +2413,26 @@ module Net
         match(T_SPACE)
         param, content_id, desc, enc, size = body_fields
 
-        # If this is not message/rfc822, we shouldn't apply the RFC822 spec
-        # to it.
-        # We should handle anything other than message/rfc822 using
-        # multipart extension data [rfc3501] (i.e. the data itself won't be
-        # returned, we would have to retrieve it with BODYSTRUCTURE instead
-        # of with BODY
-        if "#{mtype}/#{msubtype}" != 'MESSAGE/RFC822' then
-          return BodyTypeExtension.new(mtype, msubtype,
-                                       param, content_id,
-                                       desc, enc, size)
-        end
-
-        # Also, sometimes a message/rfc822 is included as a large
-        # attachment instead of having all of the other details
-        # (e.g. attaching a .eml file to an email)
-
         token = lookahead
-        if token.symbol == T_RPAR then
-          return BodyTypeMessage.new(mtype, msubtype, param, content_id,
-                                     desc, enc, size, nil, nil, nil, nil,
-                                     nil, nil, nil)
+        if token.symbol == T_RPAR
+          # If this is not message/rfc822, we shouldn't apply the RFC822
+          # spec to it.  We should handle anything other than
+          # message/rfc822 using multipart extension data [rfc3501] (i.e.
+          # the data itself won't be returned, we would have to retrieve it
+          # with BODYSTRUCTURE instead of with BODY
+
+          # Also, sometimes a message/rfc822 is included as a large
+          # attachment instead of having all of the other details
+          # (e.g. attaching a .eml file to an email)
+          if msubtype == "RFC822"
+            return BodyTypeMessage.new(mtype, msubtype, param, content_id,
+                                       desc, enc, size, nil, nil, nil, nil,
+                                       nil, nil, nil)
+          else
+            return BodyTypeExtension.new(mtype, msubtype,
+                                         param, content_id,
+                                         desc, enc, size)
+          end
         end
 
         match(T_SPACE)
@@ -2453,6 +2454,13 @@ module Net
         match(T_SPACE)
         param = body_fld_param
         return BodyTypeAttachment.new(mtype, nil, param)
+      end
+
+      def body_type_mixed
+        mtype = "MULTIPART"
+        msubtype = case_insensitive_string
+        param, disposition, language, extension = body_ext_mpart
+        return BodyTypeBasic.new(mtype, msubtype, param, nil, nil, nil, nil, nil, disposition, language, extension)
       end
 
       def body_type_mpart

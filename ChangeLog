@@ -1,3 +1,11 @@
+Mon Jul  7 12:05:28 2014  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (body_type_msg): should accept
+	  message/delivery-status with extra data.
+	  [ruby-core:53741] [Bug #8167]
+
+	* test/net/imap/test_imap_response_parser.rb: related test.
+
 Mon Jul  7 11:47:51 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (local_tbl_gen): remove local variables duplicated with
