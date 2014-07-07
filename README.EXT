@@ -639,7 +639,7 @@ Here's the example of an initializing function.
   {
       /* define DBM class */
       cDBM = rb_define_class("DBM", rb_cObject);
-      /* DBM includes Enumerate module */
+      /* DBM includes Enumerable module */
       rb_include_module(cDBM, rb_mEnumerable);
 
       /* DBM has class method open(): arguments are received as C array */
