@@ -1,3 +1,7 @@
+Mon Jul  7 12:45:51 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: revert miss-commit.
+
 Mon Jul  7 12:40:59 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* parse.y: need to use updated (re-created) symbols.
