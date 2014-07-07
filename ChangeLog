@@ -1,3 +1,7 @@
+Mon Jul  7 12:53:45 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/gserver.rb: [DOC] Fixed typo in example by @stomar [Bug #9543]
+
 Mon Jul  7 12:52:44 2014  Zachary Scott  <e@zzak.io>
 
 	* enumerator.c: [DOC] Fix example to show Enumerator#peek behavior
