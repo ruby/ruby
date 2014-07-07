@@ -2,6 +2,7 @@
 require "open3"
 require "timeout"
 require "test/unit"
+require_relative "find_executable"
 
 module EnvUtil
   def rubybin

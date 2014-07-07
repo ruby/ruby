@@ -458,8 +458,13 @@ class TestRubyOptions < Test::Unit::TestCase
     }
   end
 
+  if /linux|freebsd|netbsd|openbsd|darwin/ =~ RUBY_PLATFORM
+    PSCMD = EnvUtil.find_executable("ps", "-o", "command", "-p", $$.to_s) {|out| /ruby/=~out}
+    PSCMD.pop if PSCMD
+  end
+
   def test_set_program_name
-    skip "platform dependent feature" if /linux|freebsd|netbsd|openbsd|darwin/ !~ RUBY_PLATFORM
+    skip "platform dependent feature" unless defined?(PSCMD) and PSCMD
 
     with_tmpchdir do
       write_file("test-script", "$0 = 'hello world'; /test-script/ =~ Process.argv0 or $0 = 'Process.argv0 changed!'; sleep 60")
@@ -468,7 +473,7 @@ class TestRubyOptions < Test::Unit::TestCase
       ps = nil
       10.times do
         sleep 0.1
-        ps = `ps -p #{pid} -o command`
+        ps = `#{PSCMD.join(' ')} #{pid}`
         break if /hello world/ =~ ps
       end
       assert_match(/hello world/, ps)
@@ -478,7 +483,7 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_setproctitle
-    skip "platform dependent feature" if /linux|freebsd|netbsd|openbsd|darwin/ !~ RUBY_PLATFORM
+    skip "platform dependent feature" unless defined?(PSCMD) and PSCMD
 
     with_tmpchdir do
       write_file("test-script", "$_0 = $0.dup; Process.setproctitle('hello world'); $0 == $_0 or Process.setproctitle('$0 changed!'); sleep 60")
@@ -487,7 +492,7 @@ class TestRubyOptions < Test::Unit::TestCase
       ps = nil
       10.times do
         sleep 0.1
-        ps = `ps -p #{pid} -o command`
+        ps = `#{PSCMD.join(' ')} #{pid}`
         break if /hello world/ =~ ps
       end
       assert_match(/hello world/, ps)
