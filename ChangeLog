@@ -1,3 +1,7 @@
+Mon Jul  7 12:49:10 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* man/ruby.1: remove deadlink. [ruby-core:62145][Bug #9773]
+
 Mon Jul  7 12:46:28 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* struct.c (not_a_member): extract name error and use same error
