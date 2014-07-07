@@ -1,3 +1,13 @@
+Mon Jul  7 14:31:52 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* parse.y: remove global_symbols::pinned_dsym
+	  (and ::pinned_dsym_minor_marked).
+
+	  Mark pinned dsymbols by rb_gc_register_mark_object() because
+	  they are immortal.
+
+	* prase.y (rb_gc_free_dsymbol): rename parameter name `ptr' to `sym'.
+
 Mon Jul  7 12:45:51 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: revert miss-commit.

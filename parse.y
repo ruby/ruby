@@ -10152,9 +10152,7 @@ static struct symbols {
     ID last_id;
     st_table *str_id;
     st_table *id_str;
-    st_table *pinned_dsym;
     int minor_marked;
-    int pinned_dsym_minor_marked;
 } global_symbols = {tLAST_TOKEN};
 
 static const struct st_hash_type symhash = {
@@ -10167,7 +10165,6 @@ Init_sym(void)
 {
     global_symbols.str_id = st_init_table_with_size(&symhash, 1000);
     global_symbols.id_str = st_init_numtable_with_size(1000);
-    global_symbols.pinned_dsym = st_init_numtable_with_size(1000);
 
     (void)nodetype;
     (void)nodeline;
@@ -10184,11 +10181,6 @@ rb_gc_mark_symbols(int full_mark)
     if (full_mark || global_symbols.minor_marked == 0) {
 	rb_mark_tbl(global_symbols.id_str);
 	if (!full_mark) global_symbols.minor_marked = 1;
-    }
-
-    if (full_mark || global_symbols.pinned_dsym_minor_marked == 0) {
-	rb_mark_tbl(global_symbols.pinned_dsym);
-	if (!full_mark) global_symbols.pinned_dsym_minor_marked = 1;
     }
 }
 #endif /* !RIPPER */
@@ -10485,11 +10477,15 @@ static ID
 rb_pin_dynamic_symbol(VALUE sym)
 {
     must_be_dynamic_symbol(sym);
-    sym = dsymbol_check(sym);
-    /* stick dynamic symbol */
-    if (!st_insert(global_symbols.pinned_dsym, sym, (st_data_t)sym)) {
-	global_symbols.pinned_dsym_minor_marked = 0;
+
+    if (UNLIKELY(SYMBOL_PINNED_P(sym) == 0)) {
+	sym = dsymbol_check(sym);
+	FL_SET(sym, SYMBOL_PINNED);
+
+	/* make it permanent object */
+	rb_gc_register_mark_object(sym);
     }
+
     return (ID)sym;
 }
 
@@ -10689,14 +10685,14 @@ rb_intern_str(VALUE str)
 }
 
 void
-rb_gc_free_dsymbol(VALUE ptr)
+rb_gc_free_dsymbol(VALUE sym)
 {
     st_data_t data;
-    data = (st_data_t)RSYMBOL(ptr)->fstr;
+    data = (st_data_t)RSYMBOL(sym)->fstr;
     st_delete(global_symbols.str_id, &data, 0);
-    data = (st_data_t)ptr;
+    data = (st_data_t)sym;
     st_delete(global_symbols.id_str, &data, 0);
-    RSYMBOL(ptr)->fstr = (VALUE)NULL;
+    RSYMBOL(sym)->fstr = (VALUE)NULL;
 }
 
 /*
