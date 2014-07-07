@@ -1,3 +1,8 @@
+Mon Jul  7 13:05:04 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/test_timeout.rb (test_timeout): inverted test condition.
+	  [Bug #8523]
+
 Mon Jul  7 12:57:26 2014  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* st.c (st_foreach_check): change start point of search at check
