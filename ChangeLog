@@ -1,5 +1,11 @@
+Mon Jul  7 11:47:51 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (local_tbl_gen): remove local variables duplicated with
+	  arguments.
+
 Thu Jul  3 15:17:22 2014  Koichi Sasada  <ko1@atdot.net>
 
+	  [ruby-core:60501] [Bug #9486]
 	* vm.c (rb_vm_pop_cfunc_frame): added.  It cares c_return event.
 	  The patch base by drkaes (Stefan Kaes).
 	  [Bug #9321]

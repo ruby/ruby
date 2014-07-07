@@ -83,6 +83,12 @@ class TestVariable < Test::Unit::TestCase
     end.call
   end
 
+  def test_shadowing_local_variables
+    bug9486 = '[ruby-core:60501] [Bug #9486]'
+    x = tap {|x| break local_variables}
+    assert_equal([:x, :bug9486, :x], x)
+  end
+
   def test_global_variable_0
     assert_in_out_err(["-e", "$0='t'*1000;print $0"], "", /\At+\z/, [])
   end
