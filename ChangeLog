@@ -1,3 +1,8 @@
+Mon Jul  7 12:51:09 2014  Zachary Scott  <e@zzak.io>
+
+	* enum.c: [DOC] Use #find in example to clarify alias by @rachellogie
+	  Patch submitted via documenting-ruby/ruby#34
+
 Mon Jul  7 12:49:10 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* man/ruby.1: remove deadlink. [ruby-core:62145][Bug #9773]

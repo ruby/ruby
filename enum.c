@@ -203,8 +203,8 @@ find_i(VALUE i, VALUE memop, int argc, VALUE *argv)
  *
  *  If no block is given, an enumerator is returned instead.
  *
- *     (1..10).detect  { |i| i % 5 == 0 and i % 7 == 0 }   #=> nil
- *     (1..100).detect { |i| i % 5 == 0 and i % 7 == 0 }   #=> 35
+ *     (1..10).detect	{ |i| i % 5 == 0 and i % 7 == 0 }   #=> nil
+ *     (1..100).find	{ |i| i % 5 == 0 and i % 7 == 0 }   #=> 35
  *
  */
 
