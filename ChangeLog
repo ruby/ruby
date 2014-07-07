@@ -1,3 +1,8 @@
+Mon Jul  7 12:57:26 2014  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* st.c (st_foreach_check): change start point of search at check
+	  from top to current. [ruby-dev:48047] [Bug #9646]
+
 Mon Jul  7 12:53:45 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/gserver.rb: [DOC] Fixed typo in example by @stomar [Bug #9543]

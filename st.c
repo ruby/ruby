@@ -393,14 +393,19 @@ find_entry(st_table *table, st_data_t key, st_index_t hash_val, st_index_t bin_p
 }
 
 static inline st_index_t
-find_packed_index(st_table *table, st_index_t hash_val, st_data_t key)
+find_packed_index_from(st_table *table, st_index_t hash_val, st_data_t key, st_index_t i)
 {
-    st_index_t i = 0;
     while (i < table->real_entries &&
 	   (PHASH(table, i) != hash_val || !EQUAL(table, key, PKEY(table, i)))) {
 	i++;
     }
     return i;
+}
+
+static inline st_index_t
+find_packed_index(st_table *table, st_index_t hash_val, st_data_t key)
+{
+    return find_packed_index_from(table, hash_val, key, 0);
 }
 
 #define collision_check 0
@@ -934,9 +939,10 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 		if (PHASH(table, i) == 0 && PKEY(table, i) == never) {
 		    break;
 		}
-		i = find_packed_index(table, hash, key);
-		if (i == table->real_entries) {
-		    goto deleted;
+		i = find_packed_index_from(table, hash, key, i);
+		if (i >= table->real_entries) {
+		    i = find_packed_index(table, hash, key);
+		    if (i >= table->real_entries) goto deleted;
 		}
 		/* fall through */
 	      case ST_CONTINUE:
