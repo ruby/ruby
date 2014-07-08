@@ -27,8 +27,6 @@ typedef struct native_thread_data_struct {
     rb_nativethread_cond_t sleep_cond;
 } native_thread_data_t;
 
-#include <semaphore.h>
-
 #undef except
 #undef try
 #undef leave

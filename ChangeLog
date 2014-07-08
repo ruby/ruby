@@ -1,3 +1,7 @@
+Wed Jul  9 05:41:40 2014  Eric Wong  <e@80x24.org>
+
+	* thread_pthread.h: remove unneeded semaphore.h include
+
 Wed Jul  9 00:12:28 2014  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/irb/ruby-lex.rb: fix counting indent in identify_string_dvar.
