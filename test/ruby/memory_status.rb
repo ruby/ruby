@@ -82,8 +82,12 @@ module Memory
       end
     end
   else
-    PSCMD = ["ps", "-ovsz=","-orss=", "-p"]
     PAT = /^\s*(\d+)\s+(\d+)$/
+    require_relative 'find_executable'
+    if PSCMD = EnvUtil.find_executable("ps", "-ovsz=", "-orss=", "-p", $$.to_s) {|out| PAT =~ out}
+      PSCMD.pop
+    end
+    raise MiniTest::Skip, "ps command not found" unless PSCMD
 
     keys << :size << :rss
     def self.read_status

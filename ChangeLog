@@ -1,3 +1,8 @@
+Tue Jul  8 16:58:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/memory_status.rb (Memory::PSCMD): use ps command which
+	  outputs expected result.  [ruby-dev:48370] [Bug #10010]
+
 Tue Jul  8 14:45:17 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* parse.y (dsymbol_alloc): set global_symbols.minor_marked to 0.
