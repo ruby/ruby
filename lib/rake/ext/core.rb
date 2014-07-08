@@ -1,8 +1,5 @@
-######################################################################
-# Core extension library
-#
 class Module
-  # Check for an existing method in the current class before extending.  IF
+  # Check for an existing method in the current class before extending.  If
   # the method already exists, then a warning is printed and the extension is
   # not added.  Otherwise the block is yielded and any definitions in the
   # block will take effect.
@@ -17,7 +14,7 @@ class Module
   #     end
   #   end
   #
-  def rake_extension(method)
+  def rake_extension(method) # :nodoc:
     if method_defined?(method)
       $stderr.puts "WARNING: Possible conflict with Rake extension: " +
         "#{self}##{method} already exists"

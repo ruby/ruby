@@ -359,4 +359,30 @@ class TestRakeRules < Rake::TestCase
     Task[OBJFILE].invoke('arg')
   end
 
+  def test_rule_with_method_prereq
+    create_file(".foo")
+    obj = Object.new
+    def obj.find_prereq
+      ".foo"
+    end
+    rule '.o' => obj.method(:find_prereq) do |t|
+      @runs << "#{t.name} - #{t.source}"
+    end
+    Task[OBJFILE].invoke
+    assert_equal ["#{OBJFILE} - .foo"], @runs
+  end
+
+  def test_rule_with_one_arg_method_prereq
+    create_file(SRCFILE)
+    obj = Object.new
+    def obj.find_prereq(task_name)
+      task_name.ext(".c")
+    end
+    rule '.o' => obj.method(:find_prereq) do |t|
+      @runs << "#{t.name} - #{t.source}"
+    end
+    Task[OBJFILE].invoke
+    assert_equal ["#{OBJFILE} - abc.c"], @runs
+  end
+
 end

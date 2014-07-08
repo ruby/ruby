@@ -1,5 +1,5 @@
 module Rake
-  module Backtrace
+  module Backtrace # :nodoc: all
     SYS_KEYS  = RbConfig::CONFIG.keys.grep(/(prefix|libdir)/)
     SYS_PATHS = RbConfig::CONFIG.values_at(*SYS_KEYS).uniq +
       [ File.join(File.dirname(__FILE__), "..") ]
@@ -9,6 +9,9 @@ module Rake
       map { |f| File.expand_path(f) }.
       reject { |s| s.nil? || s =~ /^ *$/ }
     SUPPRESSED_PATHS_RE = SUPPRESSED_PATHS.map { |f| Regexp.quote(f) }.join("|")
+    SUPPRESSED_PATHS_RE << "|^org\\/jruby\\/\\w+\\.java" if
+      Object.const_defined?(:RUBY_ENGINE) and RUBY_ENGINE == 'jruby'
+
     SUPPRESS_PATTERN = %r!(\A(#{SUPPRESSED_PATHS_RE})|bin/rake:\d+)!i
 
     def self.collapse(backtrace)

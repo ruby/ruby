@@ -1,5 +1,5 @@
 module Rake
-  module TraceOutput
+  module TraceOutput # :nodoc: all
 
     # Write trace output to output stream +out+.
     #
