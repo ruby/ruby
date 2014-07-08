@@ -1,3 +1,13 @@
+Tue Jul  8 14:45:17 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* parse.y (dsymbol_alloc): set global_symbols.minor_marked to 0.
+
+	* parse.y (dsymbol_check): set RSYMBOL(sym)->fstr to 0
+	  because we should not touch fstr after that.
+
+	* parse.y (rb_gc_free_dsymbol): skip deleting str and sym
+	  from tables if fstr == 0.
+
 Mon Jul  7 14:31:52 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* parse.y: remove global_symbols::pinned_dsym

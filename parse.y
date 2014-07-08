@@ -10451,6 +10451,7 @@ dsymbol_alloc(const VALUE klass, const VALUE str, rb_encoding * const enc)
 
     st_add_direct(global_symbols.str_id, (st_data_t)str, (st_data_t)dsym);
     st_add_direct(global_symbols.id_str, (ID)dsym, (st_data_t)str);
+    global_symbols.minor_marked = 0;
 
     if (RUBY_DTRACE_SYMBOL_CREATE_ENABLED()) {
 	RUBY_DTRACE_SYMBOL_CREATE(RSTRING_PTR(RSYMBOL(dsym)->fstr), rb_sourcefile(), rb_sourceline());
@@ -10464,8 +10465,14 @@ dsymbol_check(const VALUE sym)
 {
     if (UNLIKELY(rb_objspace_garbage_object_p(sym))) {
 	const VALUE fstr = RSYMBOL(sym)->fstr;
-	st_delete(global_symbols.str_id, (st_data_t *)&fstr, NULL);
-	st_delete(global_symbols.id_str, (st_data_t *)&sym, NULL);
+	RSYMBOL(sym)->fstr = 0;
+
+	if (st_delete(global_symbols.str_id, (st_data_t *)&fstr, NULL) == 0) {
+	    rb_bug("can't remove fstr from str_id (%s)", RSTRING_PTR(fstr));
+	};
+	if (st_delete(global_symbols.id_str, (st_data_t *)&sym, NULL) == 0) {
+	    rb_bug("can't remove sym from id_sym (%s)", RSTRING_PTR(fstr));
+	}
 	return dsymbol_alloc(rb_cSymbol, fstr, rb_enc_get(fstr));
     }
     else {
@@ -10687,12 +10694,18 @@ rb_intern_str(VALUE str)
 void
 rb_gc_free_dsymbol(VALUE sym)
 {
-    st_data_t data;
-    data = (st_data_t)RSYMBOL(sym)->fstr;
-    st_delete(global_symbols.str_id, &data, 0);
-    data = (st_data_t)sym;
-    st_delete(global_symbols.id_str, &data, 0);
-    RSYMBOL(sym)->fstr = (VALUE)NULL;
+    st_data_t str_data = (st_data_t)RSYMBOL(sym)->fstr;
+    st_data_t sym_data = (st_data_t)sym;
+
+    if (str_data) {
+	if (st_delete(global_symbols.str_id, &str_data, 0) == 0) {
+	    rb_bug("rb_gc_free_dsymbol: %p can't remove str from str_id (%s)", (void *)sym, RSTRING_PTR(RSYMBOL(sym)->fstr));
+	}
+	if (st_delete(global_symbols.id_str, &sym_data, 0) == 0) {
+	    rb_bug("rb_gc_free_dsymbol: %p can't remove sym from id_str (%s)", (void *)sym, RSTRING_PTR(RSYMBOL(sym)->fstr));
+	}
+	RSYMBOL(sym)->fstr = (VALUE)NULL;
+    }
 }
 
 /*
