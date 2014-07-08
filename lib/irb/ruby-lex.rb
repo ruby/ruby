@@ -1128,7 +1128,7 @@ class RubyLex
 	@continue = false
 	prompt
 	tk = token
-	if @ltype or @continue or @indent > 0
+	if @ltype or @continue or @indent >= 0
 	  next
 	end
 	break if tk.kind_of?(TkRBRACE)

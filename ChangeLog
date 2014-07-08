@@ -1,3 +1,7 @@
+Wed Jul  9 00:12:28 2014  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/irb/ruby-lex.rb: fix counting indent in identify_string_dvar.
+
 Tue Jul  8 16:58:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/memory_status.rb (Memory::PSCMD): use ps command which
