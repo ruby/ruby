@@ -35,7 +35,7 @@ typedef struct native_thread_data_struct {
 typedef struct rb_global_vm_lock_struct {
     /* fast path */
     unsigned long acquired;
-    pthread_mutex_t lock;
+    rb_nativethread_lock_t lock;
 
     /* slow path */
     volatile unsigned long waiting;

@@ -1,3 +1,8 @@
+Wed Jul  9 05:49:08 2014  Eric Wong  <e@80x24.org>
+
+	* thread_pthread.h (struct rb_global_vm_lock_struct):
+	  do not expose pthread type for lock
+
 Wed Jul  9 05:41:40 2014  Eric Wong  <e@80x24.org>
 
 	* thread_pthread.h: remove unneeded semaphore.h include
