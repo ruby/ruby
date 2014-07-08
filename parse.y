@@ -63,11 +63,6 @@ static inline int id_type(ID);
 #define is_class_id(id) (id_type(id)==ID_CLASS)
 #define is_junk_id(id) (id_type(id)==ID_JUNK)
 
-#define is_asgn_or_id(id) ((is_notop_id(id)) && \
-	((id_type(id)) == ID_GLOBAL || \
-	 (id_type(id)) == ID_INSTANCE || \
-	 (id_type(id)) == ID_CLASS))
-
 enum lex_state_bits {
     EXPR_BEG_bit,		/* ignore newline, +/- is a sign. */
     EXPR_END_bit,		/* newline significant, +/- is an operator. */
@@ -9610,8 +9605,13 @@ new_op_assign_gen(struct parser_params *parser, NODE *lhs, ID op, NODE *rhs)
 	if (op == tOROP) {
 	    lhs->nd_value = rhs;
 	    asgn = NEW_OP_ASGN_OR(gettable(vid), lhs);
-	    if (is_asgn_or_id(vid)) {
-		asgn->nd_aid = vid;
+	    if (is_notop_id(vid)) {
+		switch (id_type(vid)) {
+		  case ID_GLOBAL:
+		  case ID_INSTANCE:
+		  case ID_CLASS:
+		    asgn->nd_aid = vid;
+		}
 	    }
 	}
 	else if (op == tANDOP) {
