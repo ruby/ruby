@@ -92,9 +92,9 @@ sign_bits(int base, const char *p)
 #define GETNTHARG(nth) \
     (((nth) >= argc) ? (rb_raise(rb_eArgError, "too few arguments"), 0) : argv[(nth)])
 
-#define GETNAMEARG(id, name, len, enc) ( \
+#define CHECKNAMEARG(name, len, enc) ( \
     check_name_arg(posarg, name, len, enc), \
-    (posarg = -2, rb_hash_lookup2(get_hash(&hash, argc, argv), (id), Qundef)))
+    posarg = -2)
 
 #define GETNUM(n, val) \
     (!(p = get_num(p, end, enc, &(n))) ? \
@@ -605,11 +605,12 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    rb_enc_raise(enc, rb_eArgError, "named%.*s after <%s>",
 				 len, start, rb_id2name(id));
 		}
-		nextvalue = GETNAMEARG((id = rb_check_id_cstr_without_pindown(start + 1,
-							      len - 2 /* without parenthesis */,
-							      enc),
-					ID2SYM(id)),
-				       start, len, enc);
+		CHECKNAMEARG(start, len, enc);
+		get_hash(&hash, argc, argv);
+		id = rb_check_id_cstr_without_pindown(start + 1,
+						      len - 2 /* without parenthesis */,
+						      enc);
+		if (id) nextvalue = rb_hash_lookup2(hash, ID2SYM(id), Qundef);
 		if (nextvalue == Qundef) {
 		    rb_enc_raise(enc, rb_eKeyError, "key%.*s not found", len, start);
 		}
