@@ -809,12 +809,12 @@ void rb_gc_mark_symbols(int full_mark);
 ID rb_make_internal_id(void);
 void rb_gc_free_dsymbol(VALUE);
 VALUE rb_str_dynamic_intern(VALUE);
-ID rb_check_id_without_pindown(VALUE *);
-ID rb_sym2id_without_pindown(VALUE);
-#ifdef RUBY_ENCODING_H
-ID rb_check_id_cstr_without_pindown(const char *, long, rb_encoding *);
-#endif
 ID rb_id_attrget(ID id);
+
+VALUE rb_check_symbol(volatile VALUE *namep);
+#ifdef RUBY_ENCODING_H
+VALUE rb_check_symbol_cstr(const char *ptr, long len, rb_encoding *enc);
+#endif
 
 /* proc.c */
 VALUE rb_proc_location(VALUE self);

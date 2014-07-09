@@ -2135,7 +2135,7 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 
 	if (pbeg == p) goto wrong_name;
 
-	id = rb_check_id_cstr_without_pindown(pbeg, len = p-pbeg, enc);
+	id = rb_check_id_cstr(pbeg, len = p-pbeg, enc);
 	beglen = pbeg-path;
 
 	if (p < pend && p[0] == ':') {
@@ -2277,7 +2277,7 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
 
 	if (pbeg == p) goto wrong_name;
 
-	id = rb_check_id_cstr_without_pindown(pbeg, len = p-pbeg, enc);
+	id = rb_check_id_cstr(pbeg, len = p-pbeg, enc);
 	beglen = pbeg-path;
 
 	if (p < pend && p[0] == ':') {
@@ -2348,7 +2348,7 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
 static VALUE
 rb_obj_ivar_get(VALUE obj, VALUE iv)
 {
-    ID id = rb_check_id_without_pindown(&iv);
+    ID id = rb_check_id(&iv);
 
     if (!id) {
 	if (rb_is_instance_name(iv)) {
@@ -2419,7 +2419,7 @@ rb_obj_ivar_set(VALUE obj, VALUE iv, VALUE val)
 static VALUE
 rb_obj_ivar_defined(VALUE obj, VALUE iv)
 {
-    ID id = rb_check_id_without_pindown(&iv);
+    ID id = rb_check_id(&iv);
 
     if (!id) {
 	if (rb_is_instance_name(iv)) {
@@ -2456,7 +2456,7 @@ rb_obj_ivar_defined(VALUE obj, VALUE iv)
 static VALUE
 rb_mod_cvar_get(VALUE obj, VALUE iv)
 {
-    ID id = rb_check_id_without_pindown(&iv);
+    ID id = rb_check_id(&iv);
 
     if (!id) {
 	if (rb_is_class_name(iv)) {
@@ -2522,7 +2522,7 @@ rb_mod_cvar_set(VALUE obj, VALUE iv, VALUE val)
 static VALUE
 rb_mod_cvar_defined(VALUE obj, VALUE iv)
 {
-    ID id = rb_check_id_without_pindown(&iv);
+    ID id = rb_check_id(&iv);
 
     if (!id) {
 	if (rb_is_class_name(iv)) {

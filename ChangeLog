@@ -1,3 +1,46 @@
+Wed Jul  9 14:45:39 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* parse.y: change Symbol <-> ID relationship to avoid
+	  exposing IDs from collectable symbols.
+	  [Bug #10014]
+
+	  Now, rb_check_id() returns 0 if corresponding symbol is
+	  pinned dynamic symbol.
+
+	  There is remaining intern_cstr_without_pindown(), it can return
+	  IDs from collectable symbols. We must be careful to use it
+	  (only used in parse.y).  I think it should be removed if
+	  it does not have impact for performance.
+
+	* parse.y:
+	  add:
+	  * STATIC_SYM2ID()
+	  * STATIC_ID2SYM()
+	  rename:
+	  * rb_pin_dynamic_symbol() -> dsymbol_pindown()
+
+	* internal.h:
+	  remove:
+	  * rb_check_id_without_pindown()
+	  * rb_sym2id_without_pindown()
+	  add:
+	  * rb_check_symbol()
+	  * rb_check_symbol_cstr()
+
+	* load.c: use rb_check_id() or rb_check_id_cstr().
+
+	* object.c: ditto.
+
+	* struct.c: ditto.
+
+	* thread.c: ditto.
+
+	* vm_method.c: ditto.
+
+	* string.c (sym_find): use only rb_check_symbol().
+
+	* sprintf.c (rb_str_format): use rb_check_symbol_cstr().
+
 Wed Jul  9 12:21:55 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* parse.y (symbols_i): delete garbage symbols for Symbol.all_symbols.

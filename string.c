@@ -8323,14 +8323,7 @@ str_scrub_bang(int argc, VALUE *argv, VALUE str)
 static VALUE
 sym_find(VALUE dummy, VALUE sym)
 {
-    ID id = rb_check_id(&sym);
-
-    if (id) {
-	return ID2SYM(id);
-    }
-    else {
-	return Qnil;
-    }
+    return rb_check_symbol(&sym);
 }
 
 /*

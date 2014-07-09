@@ -506,7 +506,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     for (; p < end; p++) {
 	const char *t;
 	int n;
-	ID id = 0;
+	VALUE sym = Qnil;
 
 	for (t = p; t < end && *t != '%'; t++) ;
 	PUSH(p, t - p);
@@ -601,16 +601,16 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		}
 #endif
 		len = (int)(p - start + 1); /* including parenthesis */
-		if (id) {
+		if (sym != Qnil) {
 		    rb_enc_raise(enc, rb_eArgError, "named%.*s after <%s>",
-				 len, start, rb_id2name(id));
+				 len, start, RSTRING_PTR(rb_sym2str(sym)));
 		}
 		CHECKNAMEARG(start, len, enc);
 		get_hash(&hash, argc, argv);
-		id = rb_check_id_cstr_without_pindown(start + 1,
-						      len - 2 /* without parenthesis */,
-						      enc);
-		if (id) nextvalue = rb_hash_lookup2(hash, ID2SYM(id), Qundef);
+		sym = rb_check_symbol_cstr(start + 1,
+					   len - 2 /* without parenthesis */,
+					   enc);
+		if (sym != Qnil) nextvalue = rb_hash_lookup2(hash, sym, Qundef);
 		if (nextvalue == Qundef) {
 		    rb_enc_raise(enc, rb_eKeyError, "key%.*s not found", len, start);
 		}
