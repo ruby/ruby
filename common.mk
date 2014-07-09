@@ -81,6 +81,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		strftime.$(OBJEXT) \
 		string.$(OBJEXT) \
 		struct.$(OBJEXT) \
+		symbol.$(OBJEXT) \
 		time.$(OBJEXT) \
 		transcode.$(OBJEXT) \
 		util.$(OBJEXT) \
@@ -731,7 +732,7 @@ object.$(OBJEXT): {$(VPATH)}object.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h \
 pack.$(OBJEXT): {$(VPATH)}pack.c $(RUBY_H_INCLUDES) {$(VPATH)}encoding.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}internal.h
 parse.$(OBJEXT): {$(VPATH)}parse.c $(RUBY_H_INCLUDES) {$(VPATH)}node.h \
-  $(ENCODING_H_INCLUDES) {$(VPATH)}id.h {$(VPATH)}regenc.h \
+  $(ENCODING_H_INCLUDES) {$(VPATH)}id.h {$(VPATH)}symbol.h {$(VPATH)}regenc.h \
   {$(VPATH)}regex.h {$(VPATH)}util.h {$(VPATH)}lex.c \
   {$(VPATH)}defs/keywords {$(VPATH)}id.c {$(VPATH)}parse.y \
   {$(VPATH)}parse.h {$(VPATH)}internal.h $(PROBES_H_INCLUDES) {$(VPATH)}vm_opts.h {$(VPATH)}gc.h
@@ -778,6 +779,9 @@ strftime.$(OBJEXT): {$(VPATH)}strftime.c $(RUBY_H_INCLUDES) \
 string.$(OBJEXT): {$(VPATH)}string.c $(RUBY_H_INCLUDES) {$(VPATH)}re.h {$(VPATH)}gc.h \
   {$(VPATH)}regex.h $(ENCODING_H_INCLUDES) {$(VPATH)}internal.h $(PROBES_H_INCLUDES)
 struct.$(OBJEXT): {$(VPATH)}struct.c $(RUBY_H_INCLUDES) {$(VPATH)}internal.h
+symbol.$(OBJEXT): {$(VPATH)}symbol.c $(RUBY_H_INCLUDES) $(ENCODING_H_INCLUDES) \
+  {$(VPATH)}internal.h {$(VPATH)}node.h {$(VPATH)}parse.h {$(VPATH)}id.h {$(VPATH)}symbol.h \
+  $(PROBES_H_INCLUDES)
 thread.$(OBJEXT): {$(VPATH)}thread.c {$(VPATH)}eval_intern.h \
   $(RUBY_H_INCLUDES) {$(VPATH)}gc.h $(VM_CORE_H_INCLUDES) \
   {$(VPATH)}thread_$(THREAD_MODEL).c $(ENCODING_H_INCLUDES) \

@@ -1,3 +1,8 @@
+Wed Jul  9 17:07:28 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* symbol.c, symbol.h: Symbol class implementation and internals,
+	  split from parse.y.
+
 Wed Jul  9 14:45:39 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* parse.y: change Symbol <-> ID relationship to avoid
