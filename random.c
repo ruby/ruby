@@ -474,14 +474,14 @@ fill_random_seed(uint32_t seed[DEFAULT_SEED_CNT])
 
     gettimeofday(&tv, 0);
     seed[0] ^= tv.tv_usec;
-    seed[1] ^= (unsigned int)tv.tv_sec;
+    seed[1] ^= (uint32_t)tv.tv_sec;
 #if SIZEOF_TIME_T > SIZEOF_INT
-    seed[0] ^= (unsigned int)((time_t)tv.tv_sec >> SIZEOF_INT * CHAR_BIT);
+    seed[0] ^= (uint32_t)((time_t)tv.tv_sec >> SIZEOF_INT * CHAR_BIT);
 #endif
     seed[2] ^= getpid() ^ (n++ << 16);
-    seed[3] ^= (unsigned int)(VALUE)&seed;
+    seed[3] ^= (uint32_t)(VALUE)&seed;
 #if SIZEOF_VOIDP > SIZEOF_INT
-    seed[2] ^= (unsigned int)((VALUE)&seed >> SIZEOF_INT * CHAR_BIT);
+    seed[2] ^= (uint32_t)((VALUE)&seed >> SIZEOF_INT * CHAR_BIT);
 #endif
 }
 
