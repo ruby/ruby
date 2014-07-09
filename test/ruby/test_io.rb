@@ -2442,7 +2442,7 @@ End
       %w{normal random sequential willneed dontneed noreuse}.map(&:to_sym).each do |adv|
         [[0,0], [0, 20], [400, 2]].each do |offset, len|
           open(tf.path) do |t|
-            assert_equal(t.advise(adv, offset, len), nil)
+            assert_nil(t.advise(adv, offset, len))
             assert_raise(ArgumentError, "superfluous arguments") do
               t.advise(adv, offset, len, offset)
             end
