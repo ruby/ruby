@@ -10903,9 +10903,10 @@ rb_make_internal_id(void)
 }
 
 static int
-symbols_i(VALUE key, ID value, VALUE ary)
+symbols_i(st_data_t key, st_data_t value, st_data_t arg)
 {
-    VALUE sym = ID2SYM(value);
+    VALUE ary = (VALUE)arg;
+    VALUE sym = ID2SYM((ID)value);
 
     if (DYNAMIC_SYM_P(sym) && !SYMBOL_PINNED_P(sym) && rb_objspace_garbage_object_p(sym)) {
 	st_data_t sym_data = (st_data_t)sym;
