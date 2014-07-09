@@ -1,3 +1,5 @@
+require "rbconfig"
+
 module EnvUtil
   def find_executable(cmd, *args)
     exts = RbConfig::CONFIG["EXECUTABLE_EXTS"].split | [RbConfig::CONFIG["EXEEXT"]]
