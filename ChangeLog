@@ -1,3 +1,9 @@
+Thu Jul 10 00:24:18 2014  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* common.mk (DTRACE_DEPENDENT_OBJS): fix build failure on Solaris
+	  introduced in r46768. Object files containing dtrace probes should
+	  be listed in DTRACE_DEPENDENT_OBJS.
+
 Wed Jul  9 17:07:28 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* symbol.c, symbol.h: Symbol class implementation and internals,

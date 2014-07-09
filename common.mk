@@ -884,6 +884,7 @@ DTRACE_DEPENDENT_OBJS = array.$(OBJEXT) \
 		object.$(OBJEXT) \
 		parse.$(OBJEXT) \
 		string.$(OBJEXT) \
+		symbol.$(OBJEXT) \
 		vm.$(OBJEXT)
 
 probes.$(OBJEXT): $(DTRACE_DEPENDENT_OBJS)
