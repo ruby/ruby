@@ -59,7 +59,7 @@ static struct symbols {
     ID last_id;
     st_table *str_id;
     st_table *id_str;
-    int minor_marked;
+    VALUE dsymbol_fstr_hash;
 } global_symbols = {tLAST_TOKEN};
 
 static const struct st_hash_type symhash = {
@@ -70,19 +70,15 @@ static const struct st_hash_type symhash = {
 void
 Init_sym(void)
 {
+    VALUE dsym_fstrs = rb_hash_new();
+    global_symbols.dsymbol_fstr_hash = dsym_fstrs;
+    rb_gc_register_mark_object(dsym_fstrs);
+    rb_obj_hide(dsym_fstrs);
+
     global_symbols.str_id = st_init_table_with_size(&symhash, 1000);
     global_symbols.id_str = st_init_numtable_with_size(1000);
 
     Init_id();
-}
-
-void
-rb_gc_mark_symbols(int full_mark)
-{
-    if (full_mark || global_symbols.minor_marked == 0) {
-	rb_mark_tbl(global_symbols.id_str);
-	if (!full_mark) global_symbols.minor_marked = 1;
-    }
 }
 
 static ID attrsetname_to_attr(VALUE name);
@@ -316,7 +312,8 @@ register_static_symid_str(ID id, VALUE str)
 
     st_add_direct(global_symbols.str_id, (st_data_t)str, id);
     st_add_direct(global_symbols.id_str, id, (st_data_t)str);
-    global_symbols.minor_marked = 0;
+    rb_gc_register_mark_object(str);
+
     return id;
 }
 
@@ -384,7 +381,7 @@ dsymbol_alloc(const VALUE klass, const VALUE str, rb_encoding * const enc)
 
     st_add_direct(global_symbols.str_id, (st_data_t)str, (st_data_t)dsym);
     st_add_direct(global_symbols.id_str, (ID)dsym, (st_data_t)str);
-    global_symbols.minor_marked = 0;
+    rb_hash_aset(global_symbols.dsymbol_fstr_hash, str, Qtrue);
 
     if (RUBY_DTRACE_SYMBOL_CREATE_ENABLED()) {
 	RUBY_DTRACE_SYMBOL_CREATE(RSTRING_PTR(RSYMBOL(dsym)->fstr), rb_sourcefile(), rb_sourceline());
@@ -419,11 +416,14 @@ dsymbol_pindown(VALUE sym)
     must_be_dynamic_symbol(sym);
 
     if (UNLIKELY(SYMBOL_PINNED_P(sym) == 0)) {
+	VALUE fstr = RSYMBOL(sym)->fstr;
 	sym = dsymbol_check(sym);
 	FL_SET(sym, SYMBOL_PINNED);
 
 	/* make it permanent object */
 	rb_gc_register_mark_object(sym);
+	rb_gc_register_mark_object(fstr);
+	rb_hash_delete(global_symbols.dsymbol_fstr_hash, fstr);
     }
 
     return (ID)sym;

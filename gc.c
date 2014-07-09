@@ -4230,15 +4230,6 @@ gc_mark_roots(rb_objspace_t *objspace, int full_mark, const char **categoryp)
     MARK_CHECKPOINT("machine_context");
     mark_current_machine_context(objspace, th);
 
-    MARK_CHECKPOINT("symbols");
-#if USE_RGENGC
-    objspace->rgengc.parent_object_is_old = TRUE;
-    rb_gc_mark_symbols(full_mark);
-    objspace->rgengc.parent_object_is_old = FALSE;
-#else
-    rb_gc_mark_symbols(full_mark);
-#endif
-
     MARK_CHECKPOINT("encodings");
     rb_gc_mark_encodings();
 

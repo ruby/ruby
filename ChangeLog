@@ -1,3 +1,24 @@
+Thu Jul 10 01:09:57 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* symbol.c: remove rb_gc_mark_symbols().
+
+	  fstrings refered by static symbols and pinned dynamic symbols
+	  are registerd by rb_gc_register_mark_object().
+
+	  frstring refered by dynamic symbols (not pinned symbols)
+	  are refered from global_symbols.dsymbol_fstr_hash (Hash object).
+
+	  Note that fstrings refered from dynamic symbols must live loger
+	  than symbol objects themselves because rb_gc_free_dsymbol() uses
+	  fstring to remove from symbol tables.
+	  This is why we can not mark fstrings from dynamic symbols.
+
+	  This technique reduces root objects for GC marking.
+
+	* gc.c (gc_mark_roots): ditto.
+
+	* internal.h: ditto.
+
 Thu Jul 10 00:24:18 2014  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* common.mk (DTRACE_DEPENDENT_OBJS): fix build failure on Solaris
