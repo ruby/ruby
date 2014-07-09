@@ -10891,11 +10891,18 @@ static int
 symbols_i(VALUE key, ID value, VALUE ary)
 {
     VALUE sym = ID2SYM(value);
-    if (ID_DYNAMIC_SYM_P(value)) {
-	sym = dsymbol_check(sym);
+
+    if (DYNAMIC_SYM_P(sym) && !SYMBOL_PINNED_P(sym) && rb_objspace_garbage_object_p(sym)) {
+	st_data_t sym_data = (st_data_t)sym;
+	st_delete(global_symbols.id_str, &sym_data, NULL);
+	RSYMBOL(sym)->fstr = 0;
+	return ST_DELETE;
     }
-    rb_ary_push(ary, sym);
-    return ST_CONTINUE;
+    else {
+	rb_ary_push(ary, sym);
+	return ST_CONTINUE;
+    }
+
 }
 
 /*
@@ -10918,7 +10925,6 @@ VALUE
 rb_sym_all_symbols(void)
 {
     VALUE ary = rb_ary_new2(global_symbols.str_id->num_entries);
-
     st_foreach(global_symbols.str_id, symbols_i, ary);
     return ary;
 }
