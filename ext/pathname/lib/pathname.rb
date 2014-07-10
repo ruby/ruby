@@ -490,6 +490,13 @@ class Pathname
   #
   def relative_path_from(base_directory)
     dest_directory = self.cleanpath.to_s
+    unless base_directory.kind_of?(Pathname)
+      begin
+        base_directory = Pathname.new base_directory
+      rescue
+        raise ArgumentError, "cannot convert to pathname - #{base_directory}"
+      end
+    end
     base_directory = base_directory.cleanpath.to_s
     dest_prefix = dest_directory
     dest_names = []
