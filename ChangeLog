@@ -2,13 +2,13 @@ Thu Jul 10 01:09:57 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* symbol.c: remove rb_gc_mark_symbols().
 
-	  fstrings refered by static symbols and pinned dynamic symbols
-	  are registerd by rb_gc_register_mark_object().
+	  fstrings referred by static symbols and pinned dynamic symbols
+	  are registered by rb_gc_register_mark_object().
 
-	  frstring refered by dynamic symbols (not pinned symbols)
-	  are refered from global_symbols.dsymbol_fstr_hash (Hash object).
+	  fstring referred by dynamic symbols (not pinned symbols)
+	  are referred from global_symbols.dsymbol_fstr_hash (Hash object).
 
-	  Note that fstrings refered from dynamic symbols must live loger
+	  Note that fstrings referred from dynamic symbols must live logger
 	  than symbol objects themselves because rb_gc_free_dsymbol() uses
 	  fstring to remove from symbol tables.
 	  This is why we can not mark fstrings from dynamic symbols.
