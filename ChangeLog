@@ -1,3 +1,10 @@
+Thu Jul 10 23:51:36 2014  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* hash.c (ruby_setenv): Fix TestEnv#test_aset failure on Solaris 9.
+	  When name contains '=', ruby_setenv raises Errno::EINVAL.
+	  That is the same behavior as Solaris 10.
+	  NULL check for malloc return value is also added.
+
 Thu Jul 10 15:02:55 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_callee_setup_keyword_arg): adjust VM stack
