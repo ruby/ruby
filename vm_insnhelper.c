@@ -1075,10 +1075,15 @@ vm_caller_setup_args(const rb_thread_t *th, rb_control_frame_t *cfp, rb_call_inf
 }
 
 static inline int
-vm_callee_setup_keyword_arg(const rb_iseq_t *iseq, int argc, int m, VALUE *orig_argv, VALUE *kwd)
+vm_callee_setup_keyword_arg(rb_thread_t *th, const rb_iseq_t *iseq, int argc, int m, VALUE *orig_argv, VALUE *kwd)
 {
     VALUE keyword_hash = 0, orig_hash;
     int optional = iseq->arg_keywords - iseq->arg_keyword_required;
+    VALUE *const sp = th->cfp->sp;
+    const int mark_stack_len = th->mark_stack_len;
+
+    th->cfp->sp += argc;
+    th->mark_stack_len -= argc;
 
     if (argc > m &&
 	!NIL_P(orig_hash = rb_check_hash_type(orig_argv[argc-1])) &&
@@ -1093,9 +1098,13 @@ vm_callee_setup_keyword_arg(const rb_iseq_t *iseq, int argc, int m, VALUE *orig_
     rb_get_kwargs(keyword_hash, iseq->arg_keyword_table, iseq->arg_keyword_required,
 		  (iseq->arg_keyword_check ? optional : -1-optional),
 		  NULL);
+
     if (!keyword_hash) {
 	keyword_hash = rb_hash_new();
     }
+
+    th->cfp->sp = sp;
+    th->mark_stack_len = mark_stack_len;
 
     *kwd = keyword_hash;
 
@@ -1120,7 +1129,7 @@ vm_callee_setup_arg_complex(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t
 
     /* keyword argument */
     if (iseq->arg_keyword != -1) {
-	argc = vm_callee_setup_keyword_arg(iseq, argc, min, orig_argv, &keyword_hash);
+	argc = vm_callee_setup_keyword_arg(th, iseq, argc, min, orig_argv, &keyword_hash);
     }
 
     /* mandatory */
@@ -2242,7 +2251,7 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
 
     /* keyword argument */
     if (iseq->arg_keyword != -1) {
-	argc = vm_callee_setup_keyword_arg(iseq, argc, min, argv, &keyword_hash);
+	argc = vm_callee_setup_keyword_arg(th, iseq, argc, min, argv, &keyword_hash);
     }
 
     for (i=argc; i<m; i++) {

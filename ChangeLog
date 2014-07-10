@@ -1,3 +1,9 @@
+Thu Jul 10 15:02:55 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_callee_setup_keyword_arg): adjust VM stack
+	  pointer to get rid of overwriting splat arguments by arguments
+	  for `to_hash` conversion.  [ruby-core:63593] [Bug #10016]
+
 Thu Jul 10 01:09:57 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* symbol.c: remove rb_gc_mark_symbols().
