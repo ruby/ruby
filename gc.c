@@ -637,7 +637,7 @@ VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define during_gc		objspace->flags.during_gc
 #define finalizing		objspace->flags.finalizing
 #define finalizer_table 	objspace->finalizer_table
-#define global_List		objspace->global_list
+#define global_list		objspace->global_list
 #define ruby_gc_stress		objspace->gc_stress
 #define monitor_level           objspace->rgengc.monitor_level
 #define monitored_object_table  objspace->rgengc.monitored_object_table
@@ -946,9 +946,9 @@ rb_objspace_free(rb_objspace_t *objspace)
 	objspace->profile.records = 0;
     }
 
-    if (global_List) {
+    if (global_list) {
 	struct gc_list *list, *next;
-	for (list = global_List; list; list = next) {
+	for (list = global_list; list; list = next) {
 	    next = list->next;
 	    xfree(list);
 	}
@@ -4235,7 +4235,7 @@ gc_mark_roots(rb_objspace_t *objspace, int full_mark, const char **categoryp)
 
     /* mark protected global variables */
     MARK_CHECKPOINT("global_list");
-    for (list = global_List; list; list = list->next) {
+    for (list = global_list; list; list = list->next) {
 	rb_gc_mark_maybe(*list->varptr);
     }
 
@@ -5155,19 +5155,19 @@ rb_gc_register_address(VALUE *addr)
     struct gc_list *tmp;
 
     tmp = ALLOC(struct gc_list);
-    tmp->next = global_List;
+    tmp->next = global_list;
     tmp->varptr = addr;
-    global_List = tmp;
+    global_list = tmp;
 }
 
 void
 rb_gc_unregister_address(VALUE *addr)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    struct gc_list *tmp = global_List;
+    struct gc_list *tmp = global_list;
 
     if (tmp->varptr == addr) {
-	global_List = tmp->next;
+	global_list = tmp->next;
 	xfree(tmp);
 	return;
     }
