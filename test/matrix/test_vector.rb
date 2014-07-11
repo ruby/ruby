@@ -146,4 +146,9 @@ class TestVector < Test::Unit::TestCase
     v = Vector[Rational(1,2), 0]
     assert_equal(0.5, v.norm)
   end
+
+  def test_cross_product
+    v = Vector[1, 0, 0].cross_product Vector[0, 1, 0]
+    assert_equal(Vector[0, 0, 1], v)
+  end
 end
