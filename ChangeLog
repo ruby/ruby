@@ -1,3 +1,8 @@
+Fri Jul 11 20:49:10 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: add WIN32OLE_RECORD class to support
+	  VT_RECORD OLE variables.
+
 Fri Jul 11 17:15:08 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/abbrev.rb: remove executable.

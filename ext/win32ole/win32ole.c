@@ -143,7 +143,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.5.6"
+#define WIN32OLE_VERSION "1.5.7"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -211,6 +211,7 @@ VALUE cWIN32OLE_VARIANT;
 VALUE eWIN32OLERuntimeError;
 VALUE mWIN32OLE_VARIANT;
 VALUE cWIN32OLE_PROPERTY;
+VALUE cWIN32OLE_RECORD;
 
 static VALUE ary_ole_event;
 static ID id_events;
@@ -595,6 +596,9 @@ static VALUE folevariant_ary_aset(int argc, VALUE *argv, VALUE self);
 static VALUE folevariant_value(VALUE self);
 static VALUE folevariant_vartype(VALUE self);
 static VALUE folevariant_set_value(VALUE self, VALUE val);
+static VALUE fole_record_to_h(VALUE self);
+static VALUE fole_record_typename(VALUE self);
+static VALUE fole_record_method_missing(VALUE self, VALUE member);
 static void init_enc2cp(void);
 static void free_enc2cp(void);
 
@@ -2333,6 +2337,53 @@ ole_variant2val(VARIANT *pvar)
         obj =  vtdate2rbtime(date);
         break;
     }
+
+    case VT_RECORD:
+    {
+        IRecordInfo *pri = V_RECORDINFO(pvar);
+        void *prec = V_RECORD(pvar);
+        HRESULT hr;
+        BSTR bstr;
+        BSTR *bstrs;
+        ULONG count = 0;
+        ULONG i;
+        VARIANT var;
+        void *pdata = NULL;
+        VALUE fields = Qnil;
+        VALUE val;
+        VALUE key;
+
+        obj = rb_funcall(cWIN32OLE_RECORD, rb_intern("new"), 0);
+        hr = pri->lpVtbl->GetName(pri, &bstr);
+        if (SUCCEEDED(hr)) {
+            rb_ivar_set(obj, rb_intern("typename"), WC2VSTR(bstr));
+        }
+
+        hr = pri->lpVtbl->GetFieldNames(pri, &count, NULL);
+        if (FAILED(hr) || count == 0)
+            break;
+        bstrs = ALLOCA_N(BSTR, count);
+        hr = pri->lpVtbl->GetFieldNames(pri, &count, bstrs);
+        if (FAILED(hr)) {
+            break;
+        }
+
+        fields = rb_hash_new();
+        rb_ivar_set(obj, rb_intern("fields"), fields);
+        for (i = 0; i < count; i++) {
+            pdata = NULL;
+            VariantInit(&var);
+            hr = pri->lpVtbl->GetFieldNoCopy(pri, prec, bstrs[i], &var, &pdata);
+            if (FAILED(hr)) {
+                break;
+            }
+            val = ole_variant2val(&var);
+            key = WC2VSTR(bstrs[i]);
+            rb_hash_aset(fields, key, val);
+        }
+        break;
+    }
+
     case VT_CY:
     default:
         {
@@ -9106,6 +9157,51 @@ folevariant_set_value(VALUE self, VALUE val)
     return Qnil;
 }
 
+/*
+ *  call-seq:
+ *     WIN32OLE_RECORD#to_h #=> Ruby Hash object.
+ *
+ *  Returns Ruby Hash object which represents VT_RECORD variable.
+ *  The keys of Hash object are member names of VT_RECORD OLE variable and 
+ *  the values of Hash object are values of VT_RECORD OLE variable.
+ *
+ */
+static VALUE 
+fole_record_to_h(VALUE self)
+{
+    return rb_ivar_get(self, rb_intern("fields"));
+}
+
+/*
+ *  call-seq:
+ *     WIN32OLE_RECORD#typename #=> String object
+ *
+ *  Returns the type name of VT_RECORD OLE variable.
+ */
+static VALUE 
+fole_record_typename(VALUE self)
+{
+    return rb_ivar_get(self, rb_intern("typename"));
+}
+
+/*
+ *  call-seq:
+ *     WIN32OLE_RECORD#method_missing(name)
+ *
+ *  Returns value specified by VT_RECORD OLE variable member name.
+ */
+static VALUE
+fole_record_method_missing(VALUE self, VALUE member)
+{
+    
+    VALUE fields = rb_ivar_get(self, rb_intern("fields"));
+    VALUE val = rb_hash_aref(fields, rb_to_id(member));
+    if (val != Qnil) {
+        return val;
+    }
+    return rb_call_super(0, 0);
+}
+
 static void
 init_enc2cp(void)
 {
@@ -9355,6 +9451,11 @@ Init_win32ole(void)
     rb_define_const(cWIN32OLE_VARIANT, "Empty", rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, INT2FIX(VT_EMPTY)));
     rb_define_const(cWIN32OLE_VARIANT, "Null", rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, INT2FIX(VT_NULL)));
     rb_define_const(cWIN32OLE_VARIANT, "Nothing", rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, INT2FIX(VT_DISPATCH)));
+
+    cWIN32OLE_RECORD = rb_define_class("WIN32OLE_RECORD", rb_cObject);
+    rb_define_method(cWIN32OLE_RECORD, "to_h", fole_record_to_h, 0);
+    rb_define_method(cWIN32OLE_RECORD, "typename", fole_record_typename, 0);
+    rb_define_method(cWIN32OLE_RECORD, "method_missing", fole_record_method_missing, 1);
 
     eWIN32OLERuntimeError = rb_define_class("WIN32OLERuntimeError", rb_eRuntimeError);
 
