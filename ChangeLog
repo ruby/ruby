@@ -1,3 +1,7 @@
+Fri Jul 11 17:15:08 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/abbrev.rb: remove executable.
+
 Fri Jul 11 16:45:39 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/fileutils.rb: handle ENOENT error with symlink targeted to
