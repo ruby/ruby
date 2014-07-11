@@ -1742,7 +1742,9 @@ fixnum:
  *  Inserts the given values before the element with the given +index+.
  *
  *  Negative indices count backwards from the end of the array, where +-1+ is
- *  the last element.
+ *  the last element. If a negative index is used, the given values will be
+ *  inserted after that element, so using an index of +-1+ will insert the
+ *  values at the end of the array.
  *
  *     a = %w{ a b c d }
  *     a.insert(2, 99)         #=> ["a", "b", 99, "c", "d"]

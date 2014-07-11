@@ -1,3 +1,8 @@
+Fri Jul 11 15:59:42 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* array.c: Clarify documentation for Array#insert.
+	  [ruby-core:62934] [Bug #9901]
+
 Fri Jul 11 15:39:36 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* io.c: Improve Documentation by @dapplebeforedawn.
