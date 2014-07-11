@@ -1,3 +1,11 @@
+Sat Jul 12 01:13:45 2014  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* test/ruby/envutil.rb (assert_no_memory_leak): On Solaris 9 or later,
+	  if possible, execute child ruby with environment variables
+	  LD_PRELOAD=libumem.so UMEM_OPTIONS="backend=mmap". With these
+	  variables, freed memory is immediately returned to the OS.
+	  [Bug #10020] [ruby-dev:48391]
+
 Fri Jul 11 20:49:10 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: add WIN32OLE_RECORD class to support
