@@ -9730,38 +9730,41 @@ seek_before_access(VALUE argp)
 
 /*
  *  call-seq:
- *     IO.read(name, [length [, offset]] )   -> string
- *     IO.read(name, [length [, offset]], open_args)   -> string
+ *     IO.read(name, [length [, offset]] [, opt] )   -> string
  *
  *  Opens the file, optionally seeks to the given +offset+, then returns
  *  +length+ bytes (defaulting to the rest of the file).  <code>read</code>
  *  ensures the file is closed before returning.
  *
- *  If the last argument is a hash, it specifies option for internal
- *  open().  The key would be the following.  open_args: is exclusive
- *  to others.
+ *  === Options
+ *
+ *  The options hash accepts the following keys:
  *
  *  encoding::
  *    string or encoding
  *
- *    specifies encoding of the read string.  +encoding+ will be ignored
- *    if length is specified.
+ *    Specifies the encoding of the read string.  +encoding:+ will be ignored
+ *    if +length+ is specified.  See Encoding.aliases for possible encodings.
  *
  *  mode::
  *    string
  *
- *    specifies mode argument for open().  It should start with "r"
- *    otherwise it will cause an error.
+ *    Specifies the mode argument for open().  It must start with an "r"
+ *    otherwise it will cause an error. See IO.new for the list of possible
+ *    modes.
  *
- *  open_args:: array of strings
+ *  open_args::
+ *    array of strings
  *
- *    specifies arguments for open() as an array.
+ *    Specifies arguments for open() as an array.  This key can not be used
+ *    in combination with either +encoding:+ or +mode:+.
  *
  *  Examples:
  *
- *    IO.read("testfile")           #=> "This is line one\nThis is line two\nThis is line three\nAnd so on...\n"
- *    IO.read("testfile", 20)       #=> "This is line one\nThi"
- *    IO.read("testfile", 20, 10)   #=> "ne one\nThis is line "
+ *    IO.read("testfile")              #=> "This is line one\nThis is line two\nThis is line three\nAnd so on...\n"
+ *    IO.read("testfile", 20)          #=> "This is line one\nThi"
+ *    IO.read("testfile", 20, 10)      #=> "ne one\nThis is line "
+ *    IO.read("binfile", mode: "rb")   #=> "\xF7\x00\x00\x0E\x12"
  */
 
 static VALUE
