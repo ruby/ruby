@@ -1,3 +1,7 @@
+Fri Jul 11 14:19:14 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Fix sign for cross_product [#9499]
+
 Fri Jul 11 11:11:50 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/prepare_so_k_nucleotide.rb: use require_relative.
