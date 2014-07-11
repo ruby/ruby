@@ -1,3 +1,8 @@
+Fri Jul 11 10:09:03 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* pack.c (encodes): fix buffer overrun by tail_lf.  Thanks to
+	  Mamoru Tasaka and Tomas Hoger.  [ruby-core:63604] [Bug #10019]
+
 Thu Jul 10 23:51:36 2014  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* hash.c (ruby_setenv): Fix TestEnv#test_aset failure on Solaris 9.
