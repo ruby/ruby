@@ -9162,11 +9162,11 @@ folevariant_set_value(VALUE self, VALUE val)
  *     WIN32OLE_RECORD#to_h #=> Ruby Hash object.
  *
  *  Returns Ruby Hash object which represents VT_RECORD variable.
- *  The keys of Hash object are member names of VT_RECORD OLE variable and 
+ *  The keys of Hash object are member names of VT_RECORD OLE variable and
  *  the values of Hash object are values of VT_RECORD OLE variable.
  *
  */
-static VALUE 
+static VALUE
 fole_record_to_h(VALUE self)
 {
     return rb_ivar_get(self, rb_intern("fields"));
@@ -9178,7 +9178,7 @@ fole_record_to_h(VALUE self)
  *
  *  Returns the type name of VT_RECORD OLE variable.
  */
-static VALUE 
+static VALUE
 fole_record_typename(VALUE self)
 {
     return rb_ivar_get(self, rb_intern("typename"));
@@ -9193,7 +9193,7 @@ fole_record_typename(VALUE self)
 static VALUE
 fole_record_method_missing(VALUE self, VALUE member)
 {
-    
+
     VALUE fields = rb_ivar_get(self, rb_intern("fields"));
     VALUE val = rb_hash_aref(fields, rb_to_id(member));
     if (val != Qnil) {
