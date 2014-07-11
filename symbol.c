@@ -14,7 +14,6 @@
 #include "ruby/encoding.h"
 #include "internal.h"
 #include "node.h"
-#include "parse.h"
 #include "symbol.h"
 #include "gc.h"
 #include "probes.h"
@@ -26,6 +25,24 @@ static ID register_static_symid_str(ID, VALUE);
 
 #define is_identchar(p,e,enc) (rb_enc_isalnum((unsigned char)(*(p)),(enc)) || (*(p)) == '_' || !ISASCII(*(p)))
 
+#define tUPLUS  RUBY_TOKEN(UPLUS)
+#define tUMINUS RUBY_TOKEN(UMINUS)
+#define tPOW    RUBY_TOKEN(POW)
+#define tCMP    RUBY_TOKEN(CMP)
+#define tEQ     RUBY_TOKEN(EQ)
+#define tEQQ    RUBY_TOKEN(EQQ)
+#define tNEQ    RUBY_TOKEN(NEQ)
+#define tGEQ    RUBY_TOKEN(GEQ)
+#define tLEQ    RUBY_TOKEN(LEQ)
+#define tMATCH  RUBY_TOKEN(MATCH)
+#define tNMATCH RUBY_TOKEN(NMATCH)
+#define tDOT2   RUBY_TOKEN(DOT2)
+#define tDOT3   RUBY_TOKEN(DOT3)
+#define tAREF   RUBY_TOKEN(AREF)
+#define tASET   RUBY_TOKEN(ASET)
+#define tLSHFT  RUBY_TOKEN(LSHFT)
+#define tRSHFT  RUBY_TOKEN(RSHFT)
+
 static const struct {
     unsigned short token;
     const char name[3], term;
@@ -33,7 +50,6 @@ static const struct {
     {tDOT2,	".."},
     {tDOT3,	"..."},
     {tPOW,	"**"},
-    {tDSTAR,	"**"},
     {tUPLUS,	"+@"},
     {tUMINUS,	"-@"},
     {tCMP,	"<=>"},
@@ -48,7 +64,6 @@ static const struct {
     {tASET,	"[]="},
     {tLSHFT,	"<<"},
     {tRSHFT,	">>"},
-    {tCOLON2,	"::"},
 };
 
 #define op_tbl_count numberof(op_tbl)
@@ -60,7 +75,7 @@ static struct symbols {
     st_table *str_id;
     st_table *id_str;
     VALUE dsymbol_fstr_hash;
-} global_symbols = {tLAST_TOKEN};
+} global_symbols = {tNEXT_ID-1};
 
 static const struct st_hash_type symhash = {
     rb_str_hash_cmp,
@@ -769,7 +784,7 @@ rb_id2str(ID id)
 {
     st_data_t data;
 
-    if (id < tLAST_TOKEN) {
+    if (id < tLAST_OP_ID) {
 	int i = 0;
 
 	if (id < INT_MAX && rb_ispunct((int)id)) {

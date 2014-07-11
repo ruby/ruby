@@ -98,6 +98,7 @@ enum ruby_method_ids {
 % ids.values_at(*types).flatten.each do |token|
     t<%=token%>,
 % end
+    tNEXT_ID,
 % types.each do |type|
 %   types = ids[type] or next
 %   types.empty? and next

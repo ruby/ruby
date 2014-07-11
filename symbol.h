@@ -14,7 +14,7 @@
 
 #include "id.h"
 
-#define ID_DYNAMIC_SYM_P(id) (!(id&ID_STATIC_SYM)&&id>tLAST_TOKEN)
+#define ID_DYNAMIC_SYM_P(id) (!(id&ID_STATIC_SYM)&&id>tLAST_OP_ID)
 #define STATIC_SYM2ID(sym) RSHIFT((unsigned long)(sym), RUBY_SPECIAL_SHIFT)
 #define STATIC_ID2SYM(id)  (((VALUE)(id)<<RUBY_SPECIAL_SHIFT)|SYMBOL_FLAG)
 

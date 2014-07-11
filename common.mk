@@ -780,7 +780,7 @@ string.$(OBJEXT): {$(VPATH)}string.c $(RUBY_H_INCLUDES) {$(VPATH)}re.h {$(VPATH)
   {$(VPATH)}regex.h $(ENCODING_H_INCLUDES) {$(VPATH)}internal.h $(PROBES_H_INCLUDES)
 struct.$(OBJEXT): {$(VPATH)}struct.c $(RUBY_H_INCLUDES) {$(VPATH)}internal.h
 symbol.$(OBJEXT): {$(VPATH)}symbol.c $(RUBY_H_INCLUDES) $(ENCODING_H_INCLUDES) \
-  {$(VPATH)}internal.h {$(VPATH)}node.h {$(VPATH)}parse.h {$(VPATH)}id.h {$(VPATH)}symbol.h \
+  {$(VPATH)}internal.h {$(VPATH)}node.h {$(VPATH)}id.h {$(VPATH)}symbol.h \
   $(PROBES_H_INCLUDES)
 thread.$(OBJEXT): {$(VPATH)}thread.c {$(VPATH)}eval_intern.h \
   $(RUBY_H_INCLUDES) {$(VPATH)}gc.h $(VM_CORE_H_INCLUDES) \
