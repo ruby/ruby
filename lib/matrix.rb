@@ -1764,9 +1764,9 @@ class Vector
   #
   def cross_product(v)
     Vector.Raise ErrDimensionMismatch unless size == v.size && v.size == 3
-    Vector[ v[1]*@elements[2] - v[2]*@elements[1],
-            v[2]*@elements[0] - v[0]*@elements[2],
-            v[0]*@elements[1] - v[1]*@elements[0] ]
+    Vector[ v[2]*@elements[1] - v[1]*@elements[2],
+            v[0]*@elements[2] - v[2]*@elements[0],
+            v[1]*@elements[0] - v[0]*@elements[1] ]
   end
 
   #
