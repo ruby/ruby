@@ -115,6 +115,11 @@ class TestVector < Test::Unit::TestCase
     assert_equal(1+4+9, @v1.inner_product(@v1))
   end
 
+  def test_cross_product
+    assert_equal(Vector[0, 0, 0], @v1.cross_product(@v1))
+    assert_equal(Vector[0, 0, 1], Vector[1, 0, 0].cross_product Vector[0, 1, 0])
+  end
+
   def test_r
     assert_equal(5, Vector[3, 4].r)
   end
