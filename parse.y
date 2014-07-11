@@ -10036,8 +10036,9 @@ rb_parser_while_loop(VALUE vparser, NODE *node, int chop, int split)
 }
 
 void
-Init_parser(void)
+rb_init_parse(void)
 {
+    /* just to suppress unused-function warnings */
     (void)nodetype;
     (void)nodeline;
 #if PARSER_DEBUG
