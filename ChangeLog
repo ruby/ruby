@@ -1,3 +1,10 @@
+Sat Jul 12 04:17:40 2014  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* lib/net/smtp.rb (Net::SMTP#data): enable buffering while
+	  'data' send for optimizing Net::SMTP#send_message.
+	  [ruby-dev:48329] [misc #9981]
+	  patch by Masahiro Tomita.
+
 Sat Jul 12 01:13:45 2014  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* test/ruby/envutil.rb (assert_no_memory_leak): On Solaris 9 or later,
