@@ -585,6 +585,28 @@ class TC_Set < Test::Unit::TestCase
     assert_equal 4, set.size
   end
 
+  def test_freeze_dup
+    set1 = Set[1,2,3]
+    set1.freeze
+    set2 = set1.dup
+
+    assert_equal false, set2.frozen?
+    assert_nothing_raised {
+      set2.add 4
+    }
+  end
+
+  def test_freeze_clone
+    set1 = Set[1,2,3]
+    set1.freeze
+    set2 = set1.clone
+
+    assert_equal true, set2.frozen?
+    assert_raises(RuntimeError) {
+      set2.add 5
+    }
+  end
+
   def test_inspect
     set1 = Set[1]
 
