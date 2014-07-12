@@ -2,6 +2,11 @@
 @setlocal disabledelayedexpansion
 set witharg=
 
+for %%I in (%0) do if /%%~dpI/ == /%CD%\/ (
+    echo don't run in win32 directory.
+    exit /b 999
+)
+
 echo> ~tmp~.mak ####
 echo>> ~tmp~.mak conf = %0
 echo>> ~tmp~.mak $(conf): nul
