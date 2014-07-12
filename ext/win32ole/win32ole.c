@@ -9191,11 +9191,11 @@ fole_record_typename(VALUE self)
  *  Returns value specified by VT_RECORD OLE variable member name.
  */
 static VALUE
-fole_record_method_missing(VALUE self, VALUE member)
+fole_record_method_missing(VALUE self, VALUE name)
 {
 
     VALUE fields = rb_ivar_get(self, rb_intern("fields"));
-    VALUE val = rb_hash_aref(fields, rb_to_id(member));
+    VALUE val = rb_hash_aref(fields, rb_sym_to_s(name));
     if (val != Qnil) {
         return val;
     }

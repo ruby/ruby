@@ -1,3 +1,8 @@
+Sat Jul 12 15:10:22 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (fole_record_method_missing): correct
+	  fields Hash key.
+
 Sat Jul 12 04:17:40 2014  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* lib/net/smtp.rb (Net::SMTP#data): enable buffering while
