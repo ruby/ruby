@@ -204,6 +204,7 @@ struct rb_iseq_struct {
 	ISEQ_TYPE_MAIN,
 	ISEQ_TYPE_DEFINED_GUARD
     } type;              /* instruction sequence type */
+    uint32_t stack_max; /* for stack overflow check */
 
     rb_iseq_location_t location;
 
@@ -270,8 +271,6 @@ struct rb_iseq_struct {
     int arg_keywords;
     int arg_keyword_required;
     ID *arg_keyword_table;
-
-    size_t stack_max; /* for stack overflow check */
 
     /* catch table */
     struct iseq_catch_table_entry *catch_table;
