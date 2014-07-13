@@ -2291,6 +2291,15 @@ class TestArray < Test::Unit::TestCase
     assert_equal(:called, (0..100).to_a.combination(50) { break :called }, "[ruby-core:29240] ... must be yielded even if 100C50 > signed integer")
   end
 
+  def test_combination_clear
+    bug9939 = '[ruby-core:63149] [Bug #9939]'
+    assert_separately([], <<-'end;')
+      100_000.times {Array.new(1000)}
+      a = [*0..100]
+      a.combination(3) {|*,x| a.clear}
+    end;
+  end
+
   def test_product2
     a = (0..100).to_a
     assert_raise(RangeError) do
