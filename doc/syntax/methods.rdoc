@@ -93,6 +93,7 @@ operators.
 <code><=</code>  :: less-than or equal
 <code>></code>   :: greater-than
 <code>>=</code>  :: greater-than or equal
+<code>[]</code>  :: element reference
 
 To define unary methods minus, plus, tilde and not (<code>!</code>) follow the
 operator with an <code>@</code> as in <code>+@</code> or <code>!@</code>:
