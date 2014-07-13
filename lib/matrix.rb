@@ -60,6 +60,7 @@ end
 # * #minor(*param)
 # * #first_minor(row, column)
 # * #cofactor(row, column)
+# * #adjugate
 #
 # Properties of a matrix:
 # * #diagonal?
@@ -634,6 +635,20 @@ class Matrix
 
     det_of_minor = first_minor(row, column).determinant
     det_of_minor * (-1) ** (row + column)
+  end
+
+  #
+  # Returns the adjugate of the matrix.
+  #
+  #   Matrix[ [7,6],[3,9] ].adjugate
+  #     => 9 -6
+  #        -3 7
+  #
+  def adjugate
+    Matrix.Raise ErrDimensionMismatch unless square?
+    Matrix.build(row_count, column_count) do |row, column|
+      cofactor(column, row)
+    end
   end
 
   #--

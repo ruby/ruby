@@ -273,6 +273,17 @@ class TestMatrix < Test::Unit::TestCase
     assert_raise(ExceptionForMatrix::ErrDimensionMismatch) { Matrix[[2,0,1],[0,-2,2]].cofactor(0, 0) }
   end
 
+  def test_adjugate
+    assert_equal(Matrix.empty, Matrix.empty.adjugate)
+    assert_equal(Matrix[[1]], Matrix[[5]].adjugate)
+    assert_equal(Matrix[[0,0],[0,0]], Matrix[[0,0],[0,0]].adjugate)
+    assert_equal(Matrix[[9,-6],[-3,7]], Matrix[[7,6],[3,9]].adjugate)
+    assert_equal(Matrix[[45,3,-7],[6,-1,0],[-7,0,0]], Matrix[[0,0,1],[0,7,6],[1,3,9]].adjugate)
+    m = Matrix[[2, 0, 9, 3, 9], [8, 7, 0, 1, 9], [7, 5, 6, 6, 5], [0, 7, 8, 3, 0], [7, 8, 2, 3, 1]]
+    assert_equal(Matrix.identity(5), (m.adjugate * m) / m.det)
+    assert_raise(ExceptionForMatrix::ErrDimensionMismatch) { @m1.adjugate }
+  end
+
   def test_regular?
     assert(Matrix[[1, 0], [0, 1]].regular?)
     assert(Matrix[[1, 0, 0], [0, 1, 0], [0, 0, 1]].regular?)
