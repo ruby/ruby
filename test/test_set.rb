@@ -590,7 +590,7 @@ class TC_Set < Test::Unit::TestCase
     set1.freeze
     set2 = set1.dup
 
-    assert_equal false, set2.frozen?
+    assert_not_predicate set2, :frozen?
     assert_nothing_raised {
       set2.add 4
     }
@@ -601,8 +601,8 @@ class TC_Set < Test::Unit::TestCase
     set1.freeze
     set2 = set1.clone
 
-    assert_equal true, set2.frozen?
-    assert_raises(RuntimeError) {
+    assert_predicate set2, :frozen?
+    assert_raise(RuntimeError) {
       set2.add 5
     }
   end
