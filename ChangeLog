@@ -1,3 +1,8 @@
+Sun Jul 13 22:44:05 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/thread/thread.c (undumpable): ConditionVariable and Queue
+	  are not dumpable.  [ruby-core:61677] [Bug #9674]
+
 Fri Jul 11 23:07:09 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: Fix sign for cross_product [#9499]
