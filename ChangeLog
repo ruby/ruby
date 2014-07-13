@@ -1,3 +1,8 @@
+Sun Jul 13 23:28:41 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/test_timeout.rb (test_timeout): inverted test condition.
+	  [Bug #8523]
+
 Sun Jul 13 23:18:11 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/digest/digest.c (rb_digest_instance_equal): no need to call
