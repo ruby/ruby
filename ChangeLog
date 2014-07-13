@@ -1,3 +1,8 @@
+Sun Jul 13 17:49:52 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* ext/openssl/ossl_cipher.c: Fix call to ciphers class method and
+	  spell out `encryption` by @vipulnsward [fix GH-664]
+
 Sun Jul 13 17:31:51 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* ext/gdbm/gdbm.c: fix wrong arguments in GetDBM2 macro.
