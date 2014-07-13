@@ -1520,8 +1520,13 @@ XXX
     long_options.each do |arg|
       opt, val = arg.split(':', 2)
       if val
-        result[opt] = val.empty? ? nil : val
-        define("--#{opt} VAL")
+        if val.empty?
+          result[opt] = nil
+          define("--#{opt} VAL")
+        else
+          result[opt] = val
+          define("--#{opt} VAL(=#{val})")
+        end
       else
         result[opt] = false
         define("--#{opt}")
