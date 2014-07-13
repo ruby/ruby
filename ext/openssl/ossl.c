@@ -748,27 +748,27 @@ static void Init_ossl_locks(void)
  *
  * First set up the cipher for encryption
  *
- *   encrypter = OpenSSL::Cipher.new 'AES-128-CBC'
- *   encrypter.encrypt
- *   encrypter.pkcs5_keyivgen pass_phrase, salt
+ *   encryptor = OpenSSL::Cipher.new 'AES-128-CBC'
+ *   encryptor.encrypt
+ *   encryptor.pkcs5_keyivgen pass_phrase, salt
  *
  * Then pass the data you want to encrypt through
  *
- *   encrypted = encrypter.update 'top secret document'
- *   encrypted << encrypter.final
+ *   encrypted = encryptor.update 'top secret document'
+ *   encrypted << encryptor.final
  *
  * === Decryption
  *
  * Use a new Cipher instance set up for decryption
  *
- *   decrypter = OpenSSL::Cipher.new 'AES-128-CBC'
- *   decrypter.decrypt
- *   decrypter.pkcs5_keyivgen pass_phrase, salt
+ *   decryptor = OpenSSL::Cipher.new 'AES-128-CBC'
+ *   decryptor.decrypt
+ *   decryptor.pkcs5_keyivgen pass_phrase, salt
  *
  * Then pass the data you want to decrypt through
  *
- *   plain = decrypter.update encrypted
- *   plain << decrypter.final
+ *   plain = decryptor.update encrypted
+ *   plain << decryptor.final
  *
  * == X509 Certificates
  *
