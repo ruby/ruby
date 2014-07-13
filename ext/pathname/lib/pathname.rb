@@ -494,7 +494,7 @@ class Pathname
       begin
         base_directory = Pathname.new base_directory
       rescue
-        raise ArgumentError, "cannot convert to pathname - #{base_directory}"
+        raise TypeError, "cannot convert to pathname - #{base_directory}"
       end
     end
     base_directory = base_directory.cleanpath.to_s
