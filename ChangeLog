@@ -1,3 +1,8 @@
+Sun Jul 13 10:56:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rb_cv_broken_backtrace): exit with failure
+	  normally, no needs to abort.  [ruby-core:63678] [Bug #10008]
+
 Sat Jul 12 15:10:22 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (fole_record_method_missing): correct

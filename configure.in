@@ -3050,24 +3050,25 @@ void sigsegv(int signum, siginfo_t *info, void *ctx){
     if (n > 0) {
 	/*fprintf(stdout, "backtrace:%d\n",n);*/
     } else {
-	abort();
+	_exit(EXIT_FAILURE);
     }
-    _exit(0);
+    _exit(EXIT_SUCCESS);
 }
 int
-main()
+main(void)
 {
+    volatile int *a = NULL;
     stack_t ss;
     ss.ss_sp = malloc(SIGSTKSZ);
     if (ss.ss_sp == NULL) {
 	fprintf(stderr, "cannot allocate memory for sigaltstack\n");
-	abort();
+	return EXIT_FAILURE;
     }
     ss.ss_size = SIGSTKSZ;
     ss.ss_flags = 0;
     if (sigaltstack(&ss, NULL) == -1) {
 	fprintf(stderr, "sigaltstack failed\n");
-	abort();
+	return EXIT_FAILURE;
     }
     struct sigaction sa;
     memset(&sa, 0, sizeof(struct sigaction));
@@ -3076,9 +3077,8 @@ main()
     sa.sa_flags |= SA_SIGINFO;
     sa.sa_flags |= SA_ONSTACK;
     sigaction(SIGSEGV, &sa, NULL);
-    int *a = NULL;
     a[0] = 1;
-    return 0;
+    return EXIT_SUCCESS;
 }
 ],
 	rb_cv_broken_backtrace=no,
