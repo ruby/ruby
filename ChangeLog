@@ -1,3 +1,7 @@
+Sun Jul 13 16:44:56 2014  Eric Wong  <e@80x24.org>
+
+	* vm_core.h (struct rb_call_info_struct): improve packing
+
 Sun Jul 13 15:53:25 2014  Eric Wong  <e@80x24.org>
 
 	* vm_core.h (struct rb_iseq_struct): stack_max is uint32_t

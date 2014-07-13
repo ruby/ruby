@@ -141,8 +141,10 @@ typedef struct rb_call_info_struct {
     /* fixed at compile time */
     ID mid;
     VALUE flag;
-    int orig_argc;
     rb_iseq_t *blockiseq;
+    int orig_argc;
+
+    int argc; /* temporary for method calling */
 
     /* inline cache: keys */
     rb_serial_t method_state;
@@ -154,7 +156,6 @@ typedef struct rb_call_info_struct {
     VALUE defined_class;
 
     /* temporary values for method calling */
-    int argc;
     struct rb_block_struct *blockptr;
     VALUE recv;
     union {
