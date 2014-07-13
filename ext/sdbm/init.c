@@ -83,9 +83,9 @@ closed_sdbm()
     if ((dbmp)->di_dbm == 0) closed_sdbm();\
 } while (0)
 
-#define GetDBM2(obj, data, dbm) do {\
-    GetDBM((obj), (data));\
-    (dbm) = dbmp->di_dbm;\
+#define GetDBM2(obj, dbmp, dbm) do {\
+    GetDBM((obj), (dbmp));\
+    (dbm) = (dbmp)->di_dbm;			\
 } while (0)
 
 static void

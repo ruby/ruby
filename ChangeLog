@@ -1,3 +1,8 @@
+Sun Jul 13 17:31:51 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* ext/gdbm/gdbm.c: fix wrong arguments in GetDBM2 macro.
+	* ext/sdbm/init.c: ditto.
+
 Sun Jul 13 17:25:50 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* ext/dbm/dbm.c: fix wrong arguments in GetDBM2 macro by @v2e4lisp.
