@@ -69,6 +69,9 @@ module TestDigest
 
     assert_equal(md1, md1.clone, self.class::ALGO)
 
+    bug9913 = '[ruby-core:62967] [Bug #9913]'
+    assert_not_equal(md1, nil, bug9913)
+
     md2 = self.class::ALGO.new
     md2 << "A"
 

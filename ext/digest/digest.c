@@ -372,7 +372,8 @@ rb_digest_instance_equal(VALUE self, VALUE other)
         str2 = rb_digest_instance_digest(0, 0, other);
     } else {
         str1 = rb_digest_instance_to_s(self);
-        str2 = other;
+        str2 = rb_check_string_type(other);
+        if (NIL_P(str2)) return Qfalse;
     }
 
     /* never blindly assume that subclass methods return strings */
