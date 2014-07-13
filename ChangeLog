@@ -1,3 +1,8 @@
+Sun Jul 13 22:52:43 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* pack.c (encodes): fix buffer overrun by tail_lf.  Thanks to
+	  Mamoru Tasaka and Tomas Hoger.  [ruby-core:63604] [Bug #10019]
+
 Sun Jul 13 22:44:05 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/thread/thread.c (undumpable): ConditionVariable and Queue
