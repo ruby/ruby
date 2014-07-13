@@ -108,7 +108,7 @@ closed_dbm(void)
 
 #define GetDBM2(obj, dbmp, dbm) do {\
     GetDBM((obj), (dbmp));\
-    (dbm) = (dbmp)->di_dbm;			\
+    (dbm) = (dbmp)->di_dbm;\
 } while (0)
 
 static void
