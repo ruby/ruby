@@ -1383,6 +1383,7 @@ vm_exec(rb_thread_t *th)
     else {
 	int i;
 	struct iseq_catch_table_entry *entry;
+	struct iseq_catch_table *ct;
 	unsigned long epc, cont_pc, cont_sp;
 	VALUE catch_iseqval;
 	rb_control_frame_t *cfp;
@@ -1417,8 +1418,9 @@ vm_exec(rb_thread_t *th)
 			SET_THROWOBJ_STATE(err, state = TAG_BREAK);
 		    }
 		    else {
-			for (i = 0; i < cfp->iseq->catch_table_size; i++) {
-			    entry = &cfp->iseq->catch_table[i];
+			ct = cfp->iseq->catch_table;
+			if (ct) for (i = 0; i < ct->size; i++) {
+			    entry = &ct->entries[i];
 			    if (entry->start < epc && entry->end >= epc) {
 				if (entry->type == CATCH_TYPE_ENSURE) {
 				    catch_iseqval = entry->iseq;
@@ -1458,8 +1460,9 @@ vm_exec(rb_thread_t *th)
 	}
 
 	if (state == TAG_RAISE) {
-	    for (i = 0; i < cfp->iseq->catch_table_size; i++) {
-		entry = &cfp->iseq->catch_table[i];
+	    ct = cfp->iseq->catch_table;
+	    if (ct) for (i = 0; i < ct->size; i++) {
+		entry = &ct->entries[i];
 		if (entry->start < epc && entry->end >= epc) {
 
 		    if (entry->type == CATCH_TYPE_RESCUE ||
@@ -1473,8 +1476,9 @@ vm_exec(rb_thread_t *th)
 	    }
 	}
 	else if (state == TAG_RETRY) {
-	    for (i = 0; i < cfp->iseq->catch_table_size; i++) {
-		entry = &cfp->iseq->catch_table[i];
+	    ct = cfp->iseq->catch_table;
+	    if (ct) for (i = 0; i < ct->size; i++) {
+		entry = &ct->entries[i];
 		if (entry->start < epc && entry->end >= epc) {
 
 		    if (entry->type == CATCH_TYPE_ENSURE) {
@@ -1499,8 +1503,9 @@ vm_exec(rb_thread_t *th)
 	    type = CATCH_TYPE_BREAK;
 
 	  search_restart_point:
-	    for (i = 0; i < cfp->iseq->catch_table_size; i++) {
-		entry = &cfp->iseq->catch_table[i];
+	    ct = cfp->iseq->catch_table;
+	    if (ct) for (i = 0; i < ct->size; i++) {
+		entry = &ct->entries[i];
 
 		if (entry->start < epc && entry->end >= epc) {
 		    if (entry->type == CATCH_TYPE_ENSURE) {
@@ -1536,8 +1541,9 @@ vm_exec(rb_thread_t *th)
 	    goto search_restart_point;
 	}
 	else {
-	    for (i = 0; i < cfp->iseq->catch_table_size; i++) {
-		entry = &cfp->iseq->catch_table[i];
+	    ct = cfp->iseq->catch_table;
+	    if (ct) for (i = 0; i < ct->size; i++) {
+		entry = &ct->entries[i];
 		if (entry->start < epc && entry->end >= epc) {
 
 		    if (entry->type == CATCH_TYPE_ENSURE) {

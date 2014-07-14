@@ -1681,12 +1681,15 @@ iseq_set_exception_table(rb_iseq_t *iseq)
     tlen = (int)RARRAY_LEN(iseq->compile_data->catch_table_ary);
     tptr = RARRAY_CONST_PTR(iseq->compile_data->catch_table_ary);
 
-    iseq->catch_table = tlen ? ALLOC_N(struct iseq_catch_table_entry, tlen) : 0;
-    iseq->catch_table_size = tlen;
+    iseq->catch_table = 0;
+    if (tlen > 0) {
+	iseq->catch_table = xmalloc(iseq_catch_table_bytes(tlen));
+	iseq->catch_table->size = tlen;
+    }
 
-    for (i = 0; i < tlen; i++) {
+    if (iseq->catch_table) for (i = 0; i < iseq->catch_table->size; i++) {
 	ptr = RARRAY_CONST_PTR(tptr[i]);
-	entry = &iseq->catch_table[i];
+	entry = &iseq->catch_table->entries[i];
 	entry->type = (enum catch_type)(ptr[0] & 0xffff);
 	entry->start = label_get_position((LABEL *)(ptr[1] & ~1));
 	entry->end = label_get_position((LABEL *)(ptr[2] & ~1));

@@ -274,8 +274,7 @@ struct rb_iseq_struct {
     ID *arg_keyword_table;
 
     /* catch table */
-    struct iseq_catch_table_entry *catch_table;
-    int catch_table_size;
+    struct iseq_catch_table *catch_table;
 
     /* for child iseq */
     struct rb_iseq_struct *parent_iseq;

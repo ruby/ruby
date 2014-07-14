@@ -68,6 +68,18 @@ struct iseq_catch_table_entry {
     unsigned long sp;
 };
 
+PACKED_STRUCT_UNALIGNED(struct iseq_catch_table {
+    int size;
+    struct iseq_catch_table_entry entries[1]; /* flexible array */
+});
+
+static inline int
+iseq_catch_table_bytes(int n)
+{
+    return sizeof(struct iseq_catch_table) +
+           (n - 1) * sizeof(struct iseq_catch_table_entry);
+}
+
 #define INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE (512)
 
 struct iseq_compile_data_storage {

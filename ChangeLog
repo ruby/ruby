@@ -1,3 +1,18 @@
+Mon Jul 14 16:04:41 2014  Eric Wong  <e@80x24.org>
+
+	* iseq.h (struct iseq_catch_table): new flexible array struct
+		 (iseq_catch_table_bytes): allocated size function
+	* vm_core.h (struct rb_iseq_struct): update catch_table member
+	* compile.c (iseq_set_exception_table): update for struct changes
+	* iseq.c (iseq_free): ditto
+	* iseq.c (iseq_memsize): ditto
+	* iseq.c (rb_iseq_disasm): ditto
+	* iseq.c (iseq_data_to_ary): ditto
+	* iseq.c (rb_iseq_build_for_ruby2cext): ditto (untested)
+	* vm.c (vm_exec): ditto
+	* vm_core.h (struct rb_iseq_struct): ditto
+	* vm_insnhelper.c (vm_throw): ditto
+
 Sun Jul 13 17:49:52 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* ext/openssl/ossl_cipher.c: Fix call to ciphers class method and

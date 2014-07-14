@@ -141,7 +141,9 @@ iseq_memsize(const void *ptr)
 	    size += iseq->iseq_size * sizeof(VALUE);
 	    size += iseq->line_info_size * sizeof(struct iseq_line_info_entry);
 	    size += iseq->local_table_size * sizeof(ID);
-	    size += iseq->catch_table_size * sizeof(struct iseq_catch_table_entry);
+	    if (iseq->catch_table) {
+		size += iseq_catch_table_bytes(iseq->catch_table->size);
+	    }
 	    size += iseq->arg_opts * sizeof(VALUE);
 	    size += iseq->is_size * sizeof(union iseq_inline_storage_entry);
 	    size += iseq->callinfo_size * sizeof(rb_call_info_t);
@@ -1400,11 +1402,11 @@ rb_iseq_disasm(VALUE self)
     rb_str_cat2(str, "\n");
 
     /* show catch table information */
-    if (iseqdat->catch_table_size != 0) {
+    if (iseqdat->catch_table) {
 	rb_str_cat2(str, "== catch table\n");
     }
-    for (i = 0; i < iseqdat->catch_table_size; i++) {
-	struct iseq_catch_table_entry *entry = &iseqdat->catch_table[i];
+    if (iseqdat->catch_table) for (i = 0; i < iseqdat->catch_table->size; i++) {
+	struct iseq_catch_table_entry *entry = &iseqdat->catch_table->entries[i];
 	rb_str_catf(str,
 		    "| catch type: %-6s st: %04d ed: %04d sp: %04d cont: %04d\n",
 		    catch_type((int)entry->type), (int)entry->start,
@@ -1413,7 +1415,7 @@ rb_iseq_disasm(VALUE self)
 	    rb_str_concat(str, rb_iseq_disasm(entry->iseq));
 	}
     }
-    if (iseqdat->catch_table_size != 0) {
+    if (iseqdat->catch_table) {
 	rb_str_cat2(str, "|-------------------------------------"
 		    "-----------------------------------\n");
     }
@@ -1845,9 +1847,9 @@ iseq_data_to_ary(rb_iseq_t *iseq)
     nbody = body;
 
     /* exception */
-    for (i=0; i<iseq->catch_table_size; i++) {
+    if (iseq->catch_table) for (i=0; i<iseq->catch_table->size; i++) {
 	VALUE ary = rb_ary_new();
-	struct iseq_catch_table_entry *entry = &iseq->catch_table[i];
+	struct iseq_catch_table_entry *entry = &iseq->catch_table->entries[i];
 	rb_ary_push(ary, exception_type2symbol(entry->type));
 	if (entry->iseq) {
 	    rb_iseq_t *eiseq;
@@ -2117,8 +2119,14 @@ rb_iseq_build_for_ruby2cext(
     ALLOC_AND_COPY(iseq->line_info_table, line_info_table,
 		   struct iseq_line_info_entry, iseq->line_info_size);
 
-    ALLOC_AND_COPY(iseq->catch_table, catch_table,
-		   struct iseq_catch_table_entry, iseq->catch_table_size);
+    /*
+     * FIXME: probably broken, but this function is probably unused
+     * and should be removed
+     */
+    if (iseq->catch_table) {
+	MEMCPY(&iseq->catch_table->entries, catch_table,
+	    struct iseq_catch_table_entry, iseq->catch_table->size);
+    }
 
     ALLOC_AND_COPY(iseq->arg_opt_table, arg_opt_table,
 		   VALUE, iseq->arg_opts);

@@ -646,10 +646,12 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 			if (cfp->ep == ep) {
 			    VALUE epc = cfp->pc - cfp->iseq->iseq_encoded;
 			    rb_iseq_t *iseq = cfp->iseq;
+			    struct iseq_catch_table *ct = iseq->catch_table;
+			    struct iseq_catch_table_entry *entry;
 			    int i;
 
-			    for (i=0; i<iseq->catch_table_size; i++) {
-				struct iseq_catch_table_entry *entry = &iseq->catch_table[i];
+			    for (i=0; i<ct->size; i++) {
+				entry = &ct->entries[i];
 
 				if (entry->type == CATCH_TYPE_BREAK &&
 				    entry->start < epc && entry->end >= epc) {
