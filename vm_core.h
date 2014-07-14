@@ -228,8 +228,8 @@ struct rb_iseq_struct {
     union iseq_inline_storage_entry *is_entries;
     int is_size;
 
-    rb_call_info_t *callinfo_entries;
     int callinfo_size;
+    rb_call_info_t *callinfo_entries;
 
     /**
      * argument information

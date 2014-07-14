@@ -1,3 +1,7 @@
+Mon Jul 14 16:38:45 2014  Eric Wong  <e@80x24.org>
+
+	* vm_core.h (struct rb_iseq_struct): reduce to 288 bytes on 64-bit
+
 Mon Jul 14 16:07:25 2014  Eric Wong  <e@80x24.org>
 
 	* iseq.h (struct iseq_catch_table_entry): shrink to 32 bytes
