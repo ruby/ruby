@@ -62,10 +62,10 @@ struct iseq_catch_table_entry {
 	CATCH_TYPE_NEXT   = INT2FIX(6)
     } type;
     VALUE iseq;
-    unsigned long start;
-    unsigned long end;
-    unsigned long cont;
-    unsigned long sp;
+    unsigned int start;
+    unsigned int end;
+    unsigned int cont;
+    unsigned int sp;
 };
 
 PACKED_STRUCT_UNALIGNED(struct iseq_catch_table {
