@@ -214,7 +214,7 @@ class Time
         if o != 0 then hour += o; o, hour = hour.divmod(24); off += o end
         if off != 0
           day += off
-          if month_days(year, mon) < day
+          if month_days(year, mon) && month_days(year, mon) < day
             mon += 1
             if 12 < mon
               mon = 1
