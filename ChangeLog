@@ -1,16 +1,19 @@
 Mon Jul 14 16:38:45 2014  Eric Wong  <e@80x24.org>
 
-	* vm_core.h (struct rb_iseq_struct): reduce to 288 bytes on 64-bit
+	* vm_core.h (struct rb_iseq_struct): reduce to 288 bytes
+	  on x86-64 (from 296 bytes)
 
 Mon Jul 14 16:07:25 2014  Eric Wong  <e@80x24.org>
 
 	* iseq.h (struct iseq_catch_table_entry): shrink to 32 bytes
+	  on x86-64 (from 48 bytes)
 
 Mon Jul 14 16:04:41 2014  Eric Wong  <e@80x24.org>
 
 	* iseq.h (struct iseq_catch_table): new flexible array struct
 		 (iseq_catch_table_bytes): allocated size function
 	* vm_core.h (struct rb_iseq_struct): update catch_table member
+	  This reduces the struct from 304 to 296 bytes on x86-64.
 	* compile.c (iseq_set_exception_table): update for struct changes
 	* iseq.c (iseq_free): ditto
 	* iseq.c (iseq_memsize): ditto
@@ -39,10 +42,12 @@ Sun Jul 13 17:25:50 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 Sun Jul 13 16:44:56 2014  Eric Wong  <e@80x24.org>
 
 	* vm_core.h (struct rb_call_info_struct): improve packing
+	  This reduces the struct from 112 to 104 bytes on x86-64.
 
 Sun Jul 13 15:53:25 2014  Eric Wong  <e@80x24.org>
 
 	* vm_core.h (struct rb_iseq_struct): stack_max is uint32_t
+	  This reduces the struct from 312 to 304 bytes on x86-64.
 
 Sun Jul 13 10:56:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
