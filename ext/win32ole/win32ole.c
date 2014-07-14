@@ -3139,7 +3139,7 @@ fole_s_set_code_page(VALUE self, VALUE vcp)
  *     WIN32OLE.locale -> locale id.
  *
  *  Returns current locale id (lcid). The default locale is
- *  LOCALE_SYSTEM_DEFAULT.
+ *  WIN32OLE::LOCALE_SYSTEM_DEFAULT.
  *
  *     lcid = WIN32OLE.locale
  */
@@ -3273,14 +3273,21 @@ fole_s_ole_uninitialize(VALUE self)
  *     excel.ActiveWorkbook.Close(0);
  *     excel.Quit();
  *
- *  Unfortunately, Win32OLE doesn't support the argument passed by
- *  reference directly.
- *  Instead, Win32OLE provides WIN32OLE::ARGV.
- *  If you want to get the result value of argument passed by reference,
- *  you can use WIN32OLE::ARGV.
+ *   Unfortunately, Win32OLE doesn't support the argument passed by
+ *   reference directly.
+ *   Instead, Win32OLE provides WIN32OLE::ARGV or WIN32OLE_VARIANT object.
+ *   If you want to get the result value of argument passed by reference,
+ *   you can use WIN32OLE::ARGV or WIN32OLE_VARIANT.
  *
  *     oleobj.method(arg1, arg2, refargv3)
  *     puts WIN32OLE::ARGV[2]   # the value of refargv3 after called oleobj.method
+ *
+ *   or
+ *
+ *     refargv3 = WIN32OLE_VARIANT.new(XXX,
+ *                 WIN32OLE::VARIANT::VT_BYREF|WIN32OLE::VARIANT::VT_XXX)
+ *     oleobj.method(arg1, arg2, refargv3)
+ *     p refargv3.value # the value of refargv3 after called oleobj.method.
  *
  */
 
@@ -9291,18 +9298,85 @@ Init_win32ole(void)
     rb_define_method(cWIN32OLE, "ole_query_interface", fole_query_interface, 1);
     rb_define_method(cWIN32OLE, "ole_respond_to?", fole_respond_to, 1);
 
+    /* Constants definition */
+
+    /*
+     * Version string of WIN32OLE.
+     */
     rb_define_const(cWIN32OLE, "VERSION", rb_str_new2(WIN32OLE_VERSION));
+
+    /*
+     * After invoking OLE methods with reference arguments, you can access
+     * the value of arguments by using ARGV.
+     *
+     * If the method of OLE(COM) server written by C#.NET is following:
+     *
+     *   void calcsum(int a, int b, out int c) {
+     *       c = a + b;
+     *   }
+     *
+     * then, the Ruby OLE(COM) client script to retrieve the value of
+     * argument c after invoking calcsum method is following:
+     *
+     *   a = 10
+     *   b = 20
+     *   c = 0
+     *   comserver.calcsum(a, b, c)
+     *   p c # => 0
+     *   p WIN32OLE::ARGV # => [10, 20, 30]
+     *
+     * You can use WIN32OLE_VARIANT object to retrieve the value of reference
+     * arguments instead of refering WIN32OLE::ARGV.
+     *
+     */
     rb_define_const(cWIN32OLE, "ARGV", rb_ary_new());
 
+    /*
+     * 0: ANSI code page. See WIN32OLE.codepage and WIN32OLE.codepage=.
+     */
     rb_define_const(cWIN32OLE, "CP_ACP", INT2FIX(CP_ACP));
+
+    /*
+     * 1: OEM code page. See WIN32OLE.codepage and WIN32OLE.codepage=.
+     */
     rb_define_const(cWIN32OLE, "CP_OEMCP", INT2FIX(CP_OEMCP));
+
+    /*
+     * 2
+     */
     rb_define_const(cWIN32OLE, "CP_MACCP", INT2FIX(CP_MACCP));
+
+    /*
+     * 3: current thread ANSI code page. See WIN32OLE.codepage and
+     * WIN32OLE.codepage=.
+     */
     rb_define_const(cWIN32OLE, "CP_THREAD_ACP", INT2FIX(CP_THREAD_ACP));
+
+    /*
+     * 42: symbol code page. See WIN32OLE.codepage and WIN32OLE.codepage=.
+     */
     rb_define_const(cWIN32OLE, "CP_SYMBOL", INT2FIX(CP_SYMBOL));
+
+    /*
+     * 65000: UTF-7 code page. See WIN32OLE.codepage and WIN32OLE.codepage=.
+     */
     rb_define_const(cWIN32OLE, "CP_UTF7", INT2FIX(CP_UTF7));
+
+    /*
+     * 65001: UTF-8 code page. See WIN32OLE.codepage and WIN32OLE.codepage=.
+     */
     rb_define_const(cWIN32OLE, "CP_UTF8", INT2FIX(CP_UTF8));
 
+    /*
+     * 0x0800: default locale for the operating system. See WIN32OLE.locale
+     * and WIN32OLE.locale=.
+     */
     rb_define_const(cWIN32OLE, "LOCALE_SYSTEM_DEFAULT", INT2FIX(LOCALE_SYSTEM_DEFAULT));
+
+    /*
+     * 0x0400: default locale for the user or process. See WIN32OLE.locale
+     * and WIN32OLE.locale=.
+     */
     rb_define_const(cWIN32OLE, "LOCALE_USER_DEFAULT", INT2FIX(LOCALE_USER_DEFAULT));
 
     mWIN32OLE_VARIANT = rb_define_module_under(cWIN32OLE, "VARIANT");
