@@ -228,7 +228,7 @@ EXTLIBS =
 EXTSOLIBS =
 !endif
 !if !defined(LIBS)
-LIBS = oldnames.lib user32.lib advapi32.lib shell32.lib ws2_32.lib
+LIBS = user32.lib advapi32.lib shell32.lib ws2_32.lib
 !if $(MSC_VER) >= 1400
 LIBS = $(LIBS) iphlpapi.lib
 !endif
