@@ -1,3 +1,9 @@
+Tue Jul 15 23:58:59 2014  Jared Jennings  <jared.jennings.ctr@us.af.mil>
+
+	* ext/digest/digest.c: expect digest init and finish functions to
+	  indicate success or failure; raise exception on failure.
+	  [ruby-core:61614] [Bug #9659]
+
 Tue Jul 15 20:31:40 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: modify document for WIN32OLE_RECORD.
