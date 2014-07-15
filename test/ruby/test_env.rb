@@ -509,43 +509,45 @@ class TestEnv < Test::Unit::TestCase
     end
   end
 
-  def test_memory_leak_aset
-    bug9977 = '[ruby-dev:48323] [Bug #9977]'
-    assert_no_memory_leak([], <<-'end;', "5_000.times(&doit)", bug9977, limit: 2.0)
-      ENV.clear
-      k = 'FOO'
-      v = (ENV[k] = 'bar'*5000 rescue 'bar'*1500)
-      doit = proc {ENV[k] = v}
-      500.times(&doit)
-    end;
-  end
+  if RUBY_PLATFORM =~ /bccwin|mswin|mingw/
+    def test_memory_leak_aset
+      bug9977 = '[ruby-dev:48323] [Bug #9977]'
+      assert_no_memory_leak([], <<-'end;', "5_000.times(&doit)", bug9977, limit: 2.0)
+        ENV.clear
+        k = 'FOO'
+        v = (ENV[k] = 'bar'*5000 rescue 'bar'*1500)
+        doit = proc {ENV[k] = v}
+        500.times(&doit)
+      end;
+    end
 
-  def test_memory_leak_select
-    bug9978 = '[ruby-dev:48325] [Bug #9978]'
-    assert_no_memory_leak([], <<-'end;', "5_000.times(&doit)", bug9978, limit: 2.0)
-      ENV.clear
-      k = 'FOO'
-      (ENV[k] = 'bar'*5000 rescue 'bar'*1500)
-      doit = proc {ENV.select {break}}
-      500.times(&doit)
-    end;
-  end
+    def test_memory_leak_select
+      bug9978 = '[ruby-dev:48325] [Bug #9978]'
+      assert_no_memory_leak([], <<-'end;', "5_000.times(&doit)", bug9978, limit: 2.0)
+        ENV.clear
+        k = 'FOO'
+        (ENV[k] = 'bar'*5000 rescue 'bar'*1500)
+        doit = proc {ENV.select {break}}
+        500.times(&doit)
+      end;
+    end
 
-  def test_memory_crash_select
-    assert_normal_exit(<<-'end;')
-      1000.times {ENV["FOO#{i}"] = 'bar'}
-      ENV.select {ENV.clear}
-    end;
-  end
+    def test_memory_crash_select
+      assert_normal_exit(<<-'end;')
+        1000.times {ENV["FOO#{i}"] = 'bar'}
+        ENV.select {ENV.clear}
+      end;
+    end
 
-  def test_memory_leak_shift
-    bug9983 = '[ruby-dev:48332] [Bug #9983]'
-    assert_no_memory_leak([], <<-'end;', "5_000.times(&doit)", bug9983, limit: 2.0)
-      ENV.clear
-      k = 'FOO'
-      v = (ENV[k] = 'bar'*5000 rescue 'bar'*1500)
-      doit = proc {ENV[k] = v; ENV.shift}
-      500.times(&doit)
-    end;
+    def test_memory_leak_shift
+      bug9983 = '[ruby-dev:48332] [Bug #9983]'
+      assert_no_memory_leak([], <<-'end;', "5_000.times(&doit)", bug9983, limit: 2.0)
+        ENV.clear
+        k = 'FOO'
+        v = (ENV[k] = 'bar'*5000 rescue 'bar'*1500)
+        doit = proc {ENV[k] = v; ENV.shift}
+        500.times(&doit)
+      end;
+    end
   end
 end
