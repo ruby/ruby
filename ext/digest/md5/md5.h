@@ -69,9 +69,9 @@ typedef struct md5_state_s {
 #define MD5_Finish	rb_Digest_MD5_Finish
 #endif
 
-void	MD5_Init _((MD5_CTX *pms));
+int	MD5_Init _((MD5_CTX *pms));
 void	MD5_Update _((MD5_CTX *pms, const uint8_t *data, size_t nbytes));
-void	MD5_Finish _((MD5_CTX *pms, uint8_t *digest));
+int	MD5_Finish _((MD5_CTX *pms, uint8_t *digest));
 
 #define MD5_BLOCK_LENGTH		64
 #define MD5_DIGEST_LENGTH		16

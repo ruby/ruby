@@ -1,4 +1,8 @@
-Tue Jul 15 23:58:59 2014  Jared Jennings  <jared.jennings.ctr@us.af.mil>
+Tue Jul 15 23:59:27 2014  Jared Jennings  <jared.jennings.ctr@us.af.mil>
+
+	* ext/digest: make built-in digest function implementations
+	  indicate success or failure of init and final functions.
+	  [ruby-core:61614] [Bug #9659]
 
 	* ext/digest/digest.c: expect digest init and finish functions to
 	  indicate success or failure; raise exception on failure.

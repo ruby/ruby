@@ -350,7 +350,7 @@ md5_process(MD5_CTX *pms, const uint8_t *data /*[64]*/)
     pms->state[3] += d;
 }
 
-void
+int
 MD5_Init(MD5_CTX *pms)
 {
     pms->count[0] = pms->count[1] = 0;
@@ -358,6 +358,7 @@ MD5_Init(MD5_CTX *pms)
     pms->state[1] = /*0xefcdab89*/ T_MASK ^ 0x10325476;
     pms->state[2] = /*0x98badcfe*/ T_MASK ^ 0x67452301;
     pms->state[3] = 0x10325476;
+    return 1;
 }
 
 void
@@ -398,7 +399,7 @@ MD5_Update(MD5_CTX *pms, const uint8_t *data, size_t nbytes)
 	memcpy(pms->buffer, p, left);
 }
 
-void
+int
 MD5_Finish(MD5_CTX *pms, uint8_t *digest)
 {
     static const uint8_t pad[64] = {
@@ -419,4 +420,5 @@ MD5_Finish(MD5_CTX *pms, uint8_t *digest)
     MD5_Update(pms, data, 8);
     for (i = 0; i < 16; ++i)
 	digest[i] = (uint8_t)(pms->state[i >> 2] >> ((i & 3) << 3));
+    return 1;
 }

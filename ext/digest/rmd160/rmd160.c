@@ -124,7 +124,7 @@
 
 /********************************************************************/
 
-void
+int
 RMD160_Init(RMD160_CTX *context)
 {
 
@@ -138,6 +138,7 @@ RMD160_Init(RMD160_CTX *context)
 	context->state[4] = 0xc3d2e1f0U;
 	context->length[0] = context->length[1] = 0;
 	context->buflen = 0;
+	return 1;
 }
 
 /********************************************************************/
@@ -412,7 +413,7 @@ RMD160_Update(RMD160_CTX *context, const uint8_t *data, size_t nbytes)
 
 /********************************************************************/
 
-void
+int
 RMD160_Finish(RMD160_CTX *context, uint8_t digest[20])
 {
 	uint32_t i;
@@ -456,6 +457,7 @@ RMD160_Finish(RMD160_CTX *context, uint8_t digest[20])
 			digest[i + 3] = (context->state[i>>2] >> 24);
 		}
 	}
+	return 1;
 }
 
 /************************ end of file rmd160.c **********************/
