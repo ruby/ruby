@@ -333,6 +333,17 @@ class TestRakeTask < Rake::TestCase
     assert_equal "Revision 1.2.3", t.comment
   end
 
+  def test_comments_do_not_set
+    t = task(:t, :name, :rev)
+    assert_equal nil, t.comment
+  end
+
+  def test_comments_is_nil
+    t = task(:t, :name, :rev)
+    t.comment = nil
+    assert_equal nil, t.comment
+  end
+
   def test_extended_comments
     desc %{
       This is a comment.
@@ -373,5 +384,10 @@ class TestRakeTask < Rake::TestCase
     desc "line one"
     task(:t)
     assert_equal "line one / line two", t.comment
+  end
+
+  def test_source_is_first_prerequisite
+    t = task :t => ["preqA", "preqB"]
+    assert_equal "preqA", t.source
   end
 end

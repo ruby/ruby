@@ -43,6 +43,12 @@ class TestRakeTaskArgumentParsing < Rake::TestCase
     assert_equal ["a one ana", "two"], args
   end
 
+  def test_can_handle_commas_in_args
+    name, args = @app.parse_task_string("name[one, two, three_a\\, three_b, four]")
+    assert_equal "name", name
+    assert_equal ["one", "two", "three_a, three_b", "four"], args
+  end
+
   def test_terminal_width_using_env
     app = Rake::Application.new
     app.terminal_columns = 1234

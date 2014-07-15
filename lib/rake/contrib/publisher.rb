@@ -14,8 +14,10 @@ HostInfo = Struct.new(:name, :webdir, :pkgdir)
 
 # :startdoc:
 
+# TODO: Move to contrib/sshpublisher
+#--
 # Manage several publishers as a single entity.
-class CompositePublisher
+class CompositePublisher # :nodoc:
   def initialize
     @publishers = []
   end
@@ -31,9 +33,11 @@ class CompositePublisher
   end
 end
 
+# TODO: Remove in Rake 11, duplicated
+#--
 # Publish an entire directory to an existing remote directory using
 # SSH.
-class SshDirPublisher
+class SshDirPublisher # :nodoc: all
   def initialize(host, remote_dir, local_dir)
     @host = host
     @remote_dir = remote_dir
@@ -45,8 +49,10 @@ class SshDirPublisher
   end
 end
 
+# TODO: Remove in Rake 11, duplicated
+#--
 # Publish an entire directory to a fresh remote directory using SSH.
-class SshFreshDirPublisher < SshDirPublisher
+class SshFreshDirPublisher < SshDirPublisher # :nodoc: all
   def upload
     run %{ssh #{@host} rm -rf #{@remote_dir}} rescue nil
     run %{ssh #{@host} mkdir #{@remote_dir}}
@@ -54,8 +60,10 @@ class SshFreshDirPublisher < SshDirPublisher
   end
 end
 
+# TODO: Remove in Rake 11, duplicated
+#--
 # Publish a list of files to an existing remote directory.
-class SshFilePublisher
+class SshFilePublisher # :nodoc: all
   # Create a publisher using the give host information.
   def initialize(host, remote_dir, local_dir, *files)
     @host = host

@@ -111,14 +111,23 @@ class TestRakeApplicationOptions < Rake::TestCase
   end
 
   def test_jobs
+    flags([]) do |opts|
+      assert_nil opts.thread_pool_size
+    end
+    flags(['--jobs', '0'], ['-j', '0']) do |opts|
+      assert_equal 0, opts.thread_pool_size
+    end
+    flags(['--jobs', '1'], ['-j', '1']) do |opts|
+      assert_equal 0, opts.thread_pool_size
+    end
     flags(['--jobs', '4'], ['-j', '4']) do |opts|
-      assert_equal 4, opts.thread_pool_size
+      assert_equal 3, opts.thread_pool_size
     end
     flags(['--jobs', 'asdas'], ['-j', 'asdas']) do |opts|
-      assert_equal 2, opts.thread_pool_size
+      assert_equal Rake.suggested_thread_count-1, opts.thread_pool_size
     end
     flags('--jobs', '-j') do |opts|
-      assert_equal 2, opts.thread_pool_size
+      assert opts.thread_pool_size > 1_000_000, "thread pool size should be huge (was #{opts.thread_pool_size})"
     end
   end
 
@@ -449,7 +458,7 @@ class TestRakeApplicationOptions < Rake::TestCase
     end
     @app.instance_eval do
       handle_options
-      collect_tasks
+      collect_command_line_tasks
     end
     @tasks = @app.top_level_tasks
     @app.options

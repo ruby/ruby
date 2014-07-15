@@ -9,6 +9,79 @@ class TestRakeApplication < Rake::TestCase
     @app.options.rakelib = []
   end
 
+  def setup_command_line(*options)
+    ARGV.clear
+    options.each do |option|
+      ARGV << option
+    end
+  end
+
+  def test_display_exception_details
+    begin
+      raise 'test'
+    rescue => ex
+    end
+
+    out, err = capture_io do
+      @app.display_error_message ex
+    end
+
+    assert_empty out
+
+    assert_match 'rake aborted!', err
+    assert_match __method__.to_s, err
+  end
+
+  def test_display_exception_details_cause
+    skip 'Exception#cause not implemented' unless
+      Exception.method_defined? :cause
+
+    begin
+      raise 'cause a'
+    rescue
+      begin
+        raise 'cause b'
+      rescue => ex
+      end
+    end
+
+    out, err = capture_io do
+      @app.display_error_message ex
+    end
+
+    assert_empty out
+
+    assert_match 'cause a', err
+    assert_match 'cause b', err
+  end
+
+  def test_display_exception_details_cause_loop
+    skip 'Exception#cause not implemented' unless
+      Exception.method_defined? :cause
+
+    begin
+      begin
+        raise 'cause a'
+      rescue => a
+        begin
+          raise 'cause b'
+        rescue
+          raise a
+        end
+      end
+    rescue => ex
+    end
+
+    out, err = capture_io do
+      @app.display_error_message ex
+    end
+
+    assert_empty out
+
+    assert_match 'cause a', err
+    assert_match 'cause b', err
+  end
+
   def test_display_tasks
     @app.options.show_tasks = :tasks
     @app.options.show_task_pattern = //
@@ -193,6 +266,7 @@ class TestRakeApplication < Rake::TestCase
   end
 
   def test_load_rakefile_not_found
+    ARGV.clear
     Dir.chdir @tempdir
     ENV['RAKE_SYSTEM'] = 'not_exist'
 
@@ -201,8 +275,11 @@ class TestRakeApplication < Rake::TestCase
       options.silent = true
     end
 
+
     ex = assert_raises(RuntimeError) do
-      @app.instance_eval do raw_load_rakefile end
+      @app.instance_eval do
+        raw_load_rakefile
+      end
     end
 
     assert_match(/no rakefile found/i, ex.message)
@@ -295,8 +372,7 @@ class TestRakeApplication < Rake::TestCase
     assert !@app.options.trace
 
     valid_option = '--trace'
-    ARGV.clear
-    ARGV << valid_option
+    setup_command_line(valid_option)
 
     @app.handle_options
 
@@ -305,8 +381,7 @@ class TestRakeApplication < Rake::TestCase
   end
 
   def test_handle_options_trace_default_is_stderr
-    ARGV.clear
-    ARGV << "--trace"
+    setup_command_line("--trace")
 
     @app.handle_options
 
@@ -315,8 +390,7 @@ class TestRakeApplication < Rake::TestCase
   end
 
   def test_handle_options_trace_overrides_to_stdout
-    ARGV.clear
-    ARGV << "--trace=stdout"
+    setup_command_line("--trace=stdout")
 
     @app.handle_options
 
@@ -327,8 +401,7 @@ class TestRakeApplication < Rake::TestCase
   def test_handle_options_trace_does_not_eat_following_task_names
     assert !@app.options.trace
 
-    ARGV.clear
-    ARGV << "--trace" << "sometask"
+    setup_command_line("--trace", "sometask")
 
     @app.handle_options
     assert ARGV.include?("sometask")
@@ -359,8 +432,7 @@ class TestRakeApplication < Rake::TestCase
 
   def test_display_task_run
     ran = false
-    ARGV.clear
-    ARGV << '-f' << '-s' << '--tasks' << '--rakelib=""'
+    setup_command_line('-f', '-s', '--tasks', '--rakelib=""')
     @app.last_description = "COMMENT"
     @app.define_task(Rake::Task, "default")
     out, = capture_io { @app.run }
@@ -372,8 +444,7 @@ class TestRakeApplication < Rake::TestCase
 
   def test_display_prereqs
     ran = false
-    ARGV.clear
-    ARGV << '-f' << '-s' << '--prereqs' << '--rakelib=""'
+    setup_command_line('-f', '-s', '--prereqs', '--rakelib=""')
     @app.last_description = "COMMENT"
     t = @app.define_task(Rake::Task, "default")
     t.enhance([:a, :b])
@@ -389,44 +460,99 @@ class TestRakeApplication < Rake::TestCase
 
   def test_bad_run
     @app.intern(Rake::Task, "default").enhance { fail }
-    ARGV.clear
-    ARGV << '-f' << '-s' <<  '--rakelib=""'
-    assert_raises(SystemExit) {
-      _, err = capture_io { @app.run }
-      assert_match(/see full trace/, err)
+    setup_command_line('-f', '-s',  '--rakelib=""')
+    _, err = capture_io {
+      assert_raises(SystemExit){ @app.run }
     }
+    assert_match(/see full trace/i, err)
   ensure
     ARGV.clear
   end
 
   def test_bad_run_with_trace
     @app.intern(Rake::Task, "default").enhance { fail }
-    ARGV.clear
-    ARGV << '-f' << '-s' << '-t'
-    assert_raises(SystemExit) {
-      _, err = capture_io { @app.run }
-      refute_match(/see full trace/, err)
+    setup_command_line('-f', '-s', '-t')
+    _, err = capture_io {
+      assert_raises(SystemExit) { @app.run }
     }
+    refute_match(/see full trace/i, err)
   ensure
     ARGV.clear
   end
 
   def test_bad_run_with_backtrace
     @app.intern(Rake::Task, "default").enhance { fail }
-    ARGV.clear
-    ARGV << '-f' << '-s' << '--backtrace'
-    assert_raises(SystemExit) {
-      _, err = capture_io { @app.run }
-      refute_match(/see full trace/, err)
+    setup_command_line('-f', '-s', '--backtrace')
+    _, err = capture_io {
+      assert_raises(SystemExit) {
+        @app.run
+      }
     }
+    refute_match(/see full trace/, err)
+  ensure
+    ARGV.clear
+  end
+
+  CustomError = Class.new(RuntimeError)
+
+  def test_bad_run_includes_exception_name
+    @app.intern(Rake::Task, "default").enhance {
+        raise CustomError, "intentional"
+    }
+    setup_command_line('-f', '-s')
+    _, err = capture_io {
+      assert_raises(SystemExit) {
+        @app.run
+      }
+    }
+    assert_match(/CustomError: intentional/, err)
+  end
+
+  def test_rake_error_excludes_exception_name
+    @app.intern(Rake::Task, "default").enhance {
+      fail "intentional"
+    }
+    setup_command_line('-f', '-s')
+    _, err = capture_io {
+      assert_raises(SystemExit) {
+        @app.run
+      }
+   }
+   refute_match(/RuntimeError/, err)
+   assert_match(/intentional/, err)
+  end
+
+  def cause_supported?
+    ex = StandardError.new
+    ex.respond_to?(:cause)
+  end
+
+  def test_printing_original_exception_cause
+    custom_error = Class.new(StandardError)
+    @app.intern(Rake::Task, "default").enhance {
+      begin
+        raise custom_error, "Original Error"
+      rescue custom_error
+        raise custom_error, "Secondary Error"
+      end
+    }
+    setup_command_line('-f', '-s')
+    _ ,err = capture_io {
+      assert_raises(SystemExit) {
+        @app.run
+      }
+    }
+    if cause_supported?
+      assert_match(/Original Error/, err)
+    end
+    assert_match(/Secondary Error/, err)
   ensure
     ARGV.clear
   end
 
   def test_run_with_bad_options
     @app.intern(Rake::Task, "default").enhance { fail }
-    ARGV.clear
-    ARGV << '-f' << '-s' << '--xyzzy'
+    setup_command_line('-f', '-s', '--xyzzy')
     assert_raises(SystemExit) {
       capture_io { @app.run }
     }
@@ -500,14 +626,12 @@ class TestRakeApplication < Rake::TestCase
 
     loader.instance_variable_set :@load_called, false
     def loader.load arg
-      raise 'called more than once' if @load_called
       raise ArgumentError, arg unless arg == 'x.dummy'
       @load_called = true
     end
 
     loader.instance_variable_set :@make_dummy_called, false
     def loader.make_dummy
-      raise 'called more than once' if @make_dummy_called
       @make_dummy_called = true
     end
 

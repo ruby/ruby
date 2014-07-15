@@ -14,12 +14,24 @@ module FileUtils
   OPT_TABLE['sh']  = %w(noop verbose)
   OPT_TABLE['ruby'] = %w(noop verbose)
 
-  # Run the system command +cmd+. If multiple arguments are given the command
-  # is not run with the shell (same semantics as Kernel::exec and
+  # Run the system command +cmd+.  If multiple arguments are given the command
+  # is run directly (without the shell, same semantics as Kernel::exec and
   # Kernel::system).
   #
-  # Example:
-  #   sh %{ls -ltr}
+  # It is recommended you use the multiple argument form over interpolating
+  # user input for both usability and security reasons.  With the multiple
+  # argument form you can easily process files with spaces or other shell
+  # reserved characters in them.  With the multiple argument form your rake
+  # tasks are not vulnerable to users providing an argument like
+  # <code>; rm # -rf /</code>.
+  #
+  # If a block is given, upon command completion the block is called with an
+  # OK flag (true on a zero exit status) and a Process::Status object.
+  # Without a block a RuntimeError is raised when the command exits non-zero.
+  #
+  # Examples:
+  #
+  #   sh 'ls -ltr'
   #
   #   sh 'ls', 'file with spaces'
   #

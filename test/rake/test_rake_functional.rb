@@ -268,6 +268,14 @@ class TestRakeFunctional < Rake::TestCase
     assert_match(/^FIRST$\s+^DYNAMIC$\s+^STATIC$\s+^OTHER$/, @out)
   end
 
+  def test_regenerate_imports
+    rakefile_regenerate_imports
+
+    rake
+
+    assert_match(/^INITIAL\s+^REGENERATED$/, @out)
+  end
+
   def test_rules_chaining_to_file_task
     rakefile_chains
 
@@ -368,6 +376,14 @@ class TestRakeFunctional < Rake::TestCase
     assert_match(/^PREPARE\nSCOPEDEP$/m, @out)
   end
 
+  def test_test_task_descriptions
+    rakefile_test_task
+
+    rake "-T"
+
+    assert_match(/custom test task description/, @out)
+  end
+
   def test_comment_before_task_acts_like_desc
     rakefile_comments
 
@@ -414,7 +430,7 @@ class TestRakeFunctional < Rake::TestCase
   end
 
   def can_detect_signals?
-    system "ruby -e 'Process.kill \"TERM\", $$'"
+    system RUBY, '-e', 'Process.kill "TERM", $$'
     status = $?
     if @verbose
       puts "    SIG status = #{$?.inspect}"

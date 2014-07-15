@@ -41,6 +41,16 @@ end
     ACCESS
   end
 
+  def rakefile_test_task
+    rakefile <<-RAKEFILE
+    require "rake/testtask"
+
+    Rake::TestTask.new(:unit) do |t|
+      t.description = "custom test task description"
+    end
+    RAKEFILE
+  end
+
   def rakefile_chains
     rakefile <<-DEFAULT
 task :default => "play.app"
@@ -214,6 +224,30 @@ default: other
 
     open "static_deps", "w" do |f|
       f.puts 'puts "STATIC"'
+    end
+  end
+
+  def rakefile_regenerate_imports
+    rakefile <<-REGENERATE_IMPORTS
+task :default
+
+task :regenerate do
+  open("deps", "w") do |f|
+    f << <<-CONTENT
+file "deps" => :regenerate
+puts "REGENERATED"
+    CONTENT
+  end
+end
+
+import "deps"
+    REGENERATE_IMPORTS
+
+    open "deps", "w" do |f|
+      f << <<-CONTENT
+file "deps" => :regenerate
+puts "INITIAL"
+      CONTENT
     end
   end
 

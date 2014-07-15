@@ -16,11 +16,13 @@ class TestRakeTestTask < Rake::TestCase
 
   def test_initialize_override
     tt = Rake::TestTask.new(:example) do |t|
+      t.description = "Run example tests"
       t.libs = ['src', 'ext']
       t.pattern = 'test/tc_*.rb'
       t.verbose = true
     end
     refute_nil tt
+    assert_equal "Run example tests", tt.description
     assert_equal :example, tt.name
     assert_equal ['src', 'ext'], tt.libs
     assert_equal 'test/tc_*.rb', tt.pattern
@@ -81,11 +83,31 @@ class TestRakeTestTask < Rake::TestCase
   end
 
   def test_run_code_rake
+    spec = Gem::Specification.new 'rake', 0
+    spec.loaded_from = File.join Gem::Specification.dirs.last, 'rake-0.gemspec'
+    rake, Gem.loaded_specs['rake'] = Gem.loaded_specs['rake'], spec
+
     test_task = Rake::TestTask.new do |t|
       t.loader = :rake
     end
 
-    assert_match(/-I".*?" ".*?"/, test_task.run_code)
+    assert_match(/\A-I".*?" ".*?"\Z/, test_task.run_code)
+  ensure
+    Gem.loaded_specs['rake'] = rake
+  end
+
+  def test_run_code_rake_default_gem
+    default_spec = Gem::Specification.new 'rake', 0
+    default_spec.loaded_from = File.join Gem::Specification.default_specifications_dir, 'rake-0.gemspec'
+    rake, Gem.loaded_specs['rake'] = Gem.loaded_specs['rake'], default_spec
+
+    test_task = Rake::TestTask.new do |t|
+      t.loader = :rake
+    end
+
+    assert_match(/\A ".*?"\Z/, test_task.run_code)
+  ensure
+    Gem.loaded_specs['rake'] = rake
   end
 
   def test_run_code_testrb_ruby_1_8_2
