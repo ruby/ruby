@@ -1,3 +1,7 @@
+Tue Jul 15 12:42:23 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* defs/default_gems: change version definition file of rake.
+
 Tue Jul 15 12:00:03 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/rake.rb, lib/rake/*.rb: Upgrade to rake-10.3.2
