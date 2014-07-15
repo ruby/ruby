@@ -721,10 +721,13 @@ install?(:ext, :comm, :gem) do
   directories = Gem.ensure_gem_subdirectories(gem_dir, :mode => $dir_mode)
   prepare "bundle gems", gem_dir, directories
   Dir.glob(srcdir+'/gems/*.gem').each do |gem|
-    Gem.install gem, install_dir: with_destdir(Gem.dir)
+    Gem.install gem, :install_dir => with_destdir(Gem.dir)
     gemname = Pathname(gem).basename
     puts "#{" "*30}#{gemname}"
   end
+  # fix directory permissions
+  # TODO: Gem.install should accept :dir_mode option or something
+  File.chmod($dir_mode, *Dir.glob(with_destdir(Gem.dir)+"/**/"))
 end
 
 parse_args()
