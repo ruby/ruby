@@ -1,3 +1,7 @@
+Tue Jul 15 20:31:40 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: modify document for WIN32OLE_RECORD.
+
 Tue Jul 15 12:42:23 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* defs/default_gems: change version definition file of rake.

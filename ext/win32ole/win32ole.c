@@ -9165,12 +9165,72 @@ folevariant_set_value(VALUE self, VALUE val)
 }
 
 /*
+ * Document-class: WIN32OLE_RECORD
+ *
+ *   <code>WIN32OLE_RECORD</code> objects represents VT_RECORD OLE variant.
+ *   Win32OLE returns WIN32OLE_RECORD object if the result value of invoking
+ *   OLE methods.
+ *
+ *   If COM server in VB.NET ComServer project is the following:
+ *
+ *     Imports System.Runtime.InteropServices
+ *     Public Class ComClass
+ *         Public Structure Book
+ *             <MarshalAs(UnmanagedType.BStr)> _
+ *             Public title As String
+ *             Public cost As Integer
+ *         End Structure
+ *         Public Function getBook() As Book
+ *             Dim book As New Book
+ *             book.title = "The Ruby Book"
+ *             book.cost = 20
+ *             Return book
+ *         End Function
+ *     End Class
+ *
+ *   then, you can retrieve getBook return value from the following
+ *   Ruby script:
+ *
+ *     require 'win32ole'
+ *     obj = WIN32OLE.new('ComServer.ComClass')
+ *     book = obj.getBook
+ *     book.class # => WIN32OLE_RECORD
+ *     book.title # => "The Ruby Book"
+ *     book.cost  # => 20
+ *
+ */
+
+/*
  *  call-seq:
  *     WIN32OLE_RECORD#to_h #=> Ruby Hash object.
  *
  *  Returns Ruby Hash object which represents VT_RECORD variable.
  *  The keys of Hash object are member names of VT_RECORD OLE variable and
  *  the values of Hash object are values of VT_RECORD OLE variable.
+ *
+ *  If COM server in VB.NET ComServer project is the following:
+ *
+ *     Imports System.Runtime.InteropServices
+ *     Public Class ComClass
+ *         Public Structure Book
+ *             <MarshalAs(UnmanagedType.BStr)> _
+ *             Public title As String
+ *             Public cost As Integer
+ *         End Structure
+ *         Public Function getBook() As Book
+ *             Dim book As New Book
+ *             book.title = "The Ruby Book"
+ *             book.cost = 20
+ *             Return book
+ *         End Function
+ *     End Class
+ *
+ *  then, the result of WIN32OLE_RECORD#to_h is the following:
+ *
+ *     require 'win32ole'
+ *     obj = WIN32OLE.new('ComServer.ComClass')
+ *     book = obj.getBook
+ *     book.to_h # => {"title"=>"The Ruby Book", "cost"=>20}
  *
  */
 static VALUE
@@ -9184,6 +9244,31 @@ fole_record_to_h(VALUE self)
  *     WIN32OLE_RECORD#typename #=> String object
  *
  *  Returns the type name of VT_RECORD OLE variable.
+ *
+ *  If COM server in VB.NET ComServer project is the following:
+ *
+ *     Imports System.Runtime.InteropServices
+ *     Public Class ComClass
+ *         Public Structure Book
+ *             <MarshalAs(UnmanagedType.BStr)> _
+ *             Public title As String
+ *             Public cost As Integer
+ *         End Structure
+ *         Public Function getBook() As Book
+ *             Dim book As New Book
+ *             book.title = "The Ruby Book"
+ *             book.cost = 20
+ *             Return book
+ *         End Function
+ *     End Class
+ *
+ *  then, the result of WIN32OLE_RECORD#typename is the following:
+ *
+ *     require 'win32ole'
+ *     obj = WIN32OLE.new('ComServer.ComClass')
+ *     book = obj.getBook
+ *     book.typename # => "Book"
+ *
  */
 static VALUE
 fole_record_typename(VALUE self)
