@@ -1,8 +1,4 @@
-Tue Jul 15 23:59:39 2014  Jared Jennings  <jared.jennings.ctr@us.af.mil>
-
-	* ext/digest/md5/md5ossl.c: use OpenSSL EVP API instead of MD5 API
-	  to perform MD5 hashes using OpenSSL in ext/digest.
-	  [ruby-core:61614] [Bug #9659]
+Tue Jul 15 23:59:27 2014  Jared Jennings  <jared.jennings.ctr@us.af.mil>
 
 	* ext/digest: make built-in digest function implementations
 	  indicate success or failure of init and final functions.
