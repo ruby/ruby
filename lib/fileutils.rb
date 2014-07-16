@@ -1130,7 +1130,7 @@ module FileUtils
   private_module_function :fu_get_gid
 
   #
-  # Options: noop verbose
+  # Options: noop verbose mtime nocreate
   #
   # Updates modification time (mtime) and access time (atime) of file(s) in
   # +list+.  Files are created if they don't exist.
