@@ -4222,7 +4222,8 @@ gc_mark_roots(rb_objspace_t *objspace, int full_mark, const char **categoryp)
 
     MARK_CHECKPOINT("vm");
     SET_STACK_END;
-    th->vm->self ? rb_gc_mark(th->vm->self) : rb_vm_mark(th->vm);
+    rb_vm_mark(th->vm);
+    if (th->vm->self) gc_mark_ptr(objspace, th->vm->self);
 
     MARK_CHECKPOINT("finalizers");
     mark_tbl(objspace, finalizer_table);

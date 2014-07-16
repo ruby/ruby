@@ -1790,8 +1790,6 @@ rb_vm_add_root_module(ID id, VALUE module)
     return TRUE;
 }
 
-#define vm_free 0
-
 int
 ruby_vm_destruct(rb_vm_t *vm)
 {
@@ -1844,7 +1842,7 @@ vm_memsize(const void *ptr)
 
 static const rb_data_type_t vm_data_type = {
     "VM",
-    {rb_vm_mark, vm_free, vm_memsize,},
+    {NULL, NULL, vm_memsize,},
     NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
