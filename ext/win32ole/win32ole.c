@@ -9281,7 +9281,7 @@ fole_record_typename(VALUE self)
  *     WIN32OLE_RECORD#method_missing(name)
  *
  *  Returns value specified by the member name of VT_RECORD OLE variable.
- *  If the member name is not correct, KeyError exception is raised. 
+ *  If the member name is not correct, KeyError exception is raised.
  */
 static VALUE
 fole_record_method_missing(VALUE self, VALUE name)
