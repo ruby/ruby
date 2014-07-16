@@ -1737,6 +1737,8 @@ void rb_vm_trace_mark_event_hooks(rb_hook_list_t *hooks);
 void
 rb_vm_mark(void *ptr)
 {
+    int i;
+
     RUBY_MARK_ENTER("vm");
     RUBY_GC_INFO("-------------------------------------------------\n");
     if (ptr) {
@@ -1764,6 +1766,11 @@ rb_vm_mark(void *ptr)
 	}
 
 	rb_vm_trace_mark_event_hooks(&vm->event_hooks);
+
+	for (i = 0; i < RUBY_NSIG; i++) {
+	    if (vm->trap_list[i].cmd)
+		rb_gc_mark(vm->trap_list[i].cmd);
+	}
     }
 
     RUBY_MARK_LEAVE("vm");

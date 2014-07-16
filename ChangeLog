@@ -1,16 +1,3 @@
-Wed Jul 16 18:34:47 2014  Koichi Sasada  <ko1@atdot.net>
-
-	* vm_core.h: remove rb_vm_t::trap_list[RUBY_NSIG], but add
-	  rb_vm_t::trap_list_cmds (an array) and
-	  rb_vm_t::trap_list_safes[RUBY_NSIG]
-	  (separate to two different array).
-
-	  This modification reduce root objects.
-
-	* signal.c: ditto.
-
-	* vm.c (rb_vm_mark): remove marking code for rb_vm_t::trap_list.
-
 Wed Jul 16 18:08:47 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (rb_iseq_defined_string): use rb_gc_mark_object() instead of

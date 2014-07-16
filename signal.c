@@ -861,17 +861,15 @@ signal_exec(VALUE cmd, int safe, int sig)
     }
 }
 
-#define TRAP_LIST_CMD(vm, sig) RARRAY_AREF((vm)->trap_list_cmds, (sig))
-#define TRAP_LIST_SAFE(vm, sig) ((vm)->trap_list_safes[sig])
 void
 rb_trap_exit(void)
 {
     rb_vm_t *vm = GET_VM();
-    VALUE trap_exit = TRAP_LIST_CMD(vm, 0);
+    VALUE trap_exit = vm->trap_list[0].cmd;
 
     if (trap_exit) {
-	RARRAY_ASET(vm->trap_list_cmds, 0, Qfalse);
-	signal_exec(trap_exit, TRAP_LIST_SAFE(vm, 0), 0);
+	vm->trap_list[0].cmd = 0;
+	signal_exec(trap_exit, vm->trap_list[0].safe, 0);
     }
 }
 
@@ -879,8 +877,8 @@ void
 rb_signal_exec(rb_thread_t *th, int sig)
 {
     rb_vm_t *vm = GET_VM();
-    VALUE cmd = TRAP_LIST_CMD(vm, sig);
-    int safe = TRAP_LIST_SAFE(vm, sig);
+    VALUE cmd = vm->trap_list[sig].cmd;
+    int safe = vm->trap_list[sig].safe;
 
     if (cmd == 0) {
 	switch (sig) {
@@ -1076,7 +1074,7 @@ trap(int sig, sighandler_t func, VALUE command)
      * RUBY_VM_CHECK_INTS().
      */
     oldfunc = ruby_signal(sig, func);
-    oldcmd = TRAP_LIST_CMD(vm, sig);
+    oldcmd = vm->trap_list[sig].cmd;
     switch (oldcmd) {
       case 0:
       case Qtrue:
@@ -1092,8 +1090,8 @@ trap(int sig, sighandler_t func, VALUE command)
 	break;
     }
 
-    RARRAY_ASET(vm->trap_list_cmds, sig, command);
-    vm->trap_list_safes[sig] = rb_safe_level();
+    vm->trap_list[sig].cmd = command;
+    vm->trap_list[sig].safe = rb_safe_level();
 
     return oldcmd;
 }
@@ -1242,7 +1240,7 @@ init_sigchld(int sig)
 	ruby_signal(sig, oldfunc);
     }
     else {
-	RARRAY_ASET(GET_VM()->trap_list_cmds, sig, Qfalse);
+	GET_VM()->trap_list[sig].cmd = 0;
     }
     rb_enable_interrupt();
 }
@@ -1306,13 +1304,6 @@ void
 Init_signal(void)
 {
     VALUE mSignal = rb_define_module("Signal");
-    int i;
-    VALUE cmds = GET_VM()->trap_list_cmds = rb_ary_tmp_new(RUBY_NSIG);
-
-    rb_gc_register_mark_object(cmds);
-    for (i=0; i<RUBY_NSIG; i++) {
-	RARRAY_ASET(cmds, i, Qfalse);
-    }
 
     rb_define_global_function("trap", sig_trap, -1);
     rb_define_module_function(mSignal, "trap", sig_trap, -1);
