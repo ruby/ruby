@@ -143,7 +143,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.5.7"
+#define WIN32OLE_VERSION "1.5.8"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -9280,18 +9280,14 @@ fole_record_typename(VALUE self)
  *  call-seq:
  *     WIN32OLE_RECORD#method_missing(name)
  *
- *  Returns value specified by VT_RECORD OLE variable member name.
+ *  Returns value specified by the member name of VT_RECORD OLE variable.
+ *  If the member name is not correct, KeyError exception is raised. 
  */
 static VALUE
 fole_record_method_missing(VALUE self, VALUE name)
 {
-
     VALUE fields = rb_ivar_get(self, rb_intern("fields"));
-    VALUE val = rb_hash_aref(fields, rb_sym_to_s(name));
-    if (val != Qnil) {
-        return val;
-    }
-    return rb_call_super(0, 0);
+    return rb_hash_fetch(fields, rb_sym_to_s(name));
 }
 
 static void

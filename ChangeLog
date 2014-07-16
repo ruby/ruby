@@ -1,3 +1,8 @@
+Wed Jul 16 19:32:23 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (fole_record_method_missing): call
+	  rb_hash_fetch instead of rb_hash_aref.
+
 Wed Jul 16 18:08:47 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (rb_iseq_defined_string): use rb_gc_mark_object() instead of
