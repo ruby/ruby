@@ -1,3 +1,11 @@
+Wed Jul 16 20:21:49 2014  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* vm_core.h (struct rb_iseq_struct): stack_max is changed to int
+	  because all calculations related to stack_max in compile.c
+	  (iseq_set_sequence) and vm_insnhelper.c (vm_push_frame) are
+	  conducted by using int. This partly reverts r23945.
+	* vm_insnhelper.c (vm_push_frame): ditto. This reverts r42401.
+
 Wed Jul 16 19:55:32 2014  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* vm_core.h (struct rb_iseq_struct): temporal workaround of [Bug 10037].

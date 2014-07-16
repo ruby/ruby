@@ -208,7 +208,7 @@ struct rb_iseq_struct {
 #if defined(WORDS_BIGENDIAN) && (SIZEOF_VALUE > SIZEOF_INT)
     char dummy[SIZEOF_VALUE - SIZEOF_INT]; /* [Bug #10037][ruby-core:63721] */
 #endif
-    uint32_t stack_max; /* for stack overflow check */
+    int stack_max; /* for stack overflow check */
 
     rb_iseq_location_t location;
 
