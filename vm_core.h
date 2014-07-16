@@ -364,10 +364,8 @@ typedef struct rb_vm_struct {
     struct st_table *loading_table;
 
     /* signal */
-    struct {
-	VALUE cmd;
-	int safe;
-    } trap_list[RUBY_NSIG];
+    VALUE trap_list_cmds; /* an Array object */
+    int trap_list_safes[RUBY_NSIG];
 
     /* hook */
     rb_hook_list_t event_hooks;
