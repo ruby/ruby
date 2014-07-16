@@ -1771,9 +1771,6 @@ rb_vm_mark(void *ptr)
 	    if (vm->trap_list[i].cmd)
 		rb_gc_mark(vm->trap_list[i].cmd);
 	}
-	if (vm->defined_strings) {
-	    rb_gc_mark_locations(vm->defined_strings, vm->defined_strings + DEFINED_EXPR);
-	}
     }
 
     RUBY_MARK_LEAVE("vm");

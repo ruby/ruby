@@ -2069,6 +2069,7 @@ rb_iseq_defined_string(enum defined_type type)
 	str = rb_str_new_cstr(estr);;
 	OBJ_FREEZE(str);
 	defs[type-1] = str;
+	rb_gc_register_mark_object(str);
     }
     return str;
 }

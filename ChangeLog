@@ -1,3 +1,10 @@
+Wed Jul 16 18:08:47 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (rb_iseq_defined_string): use rb_gc_mark_object() instead of
+	  marking from vm_mark().
+
+	* vm.c (rb_vm_mark): ditto.
+
 Wed Jul 16 18:03:50 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_mark_roots): call rb_vm_mark directly.
