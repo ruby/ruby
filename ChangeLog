@@ -1,3 +1,8 @@
+Wed Jul 16 19:55:32 2014  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* vm_core.h (struct rb_iseq_struct): temporal workaround of [Bug 10037].
+	  Add padding on big-endian 64-bit architecture (e.g. sparc64).
+
 Wed Jul 16 19:32:23 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (fole_record_method_missing): call

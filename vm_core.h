@@ -205,6 +205,9 @@ struct rb_iseq_struct {
 	ISEQ_TYPE_MAIN,
 	ISEQ_TYPE_DEFINED_GUARD
     } type;              /* instruction sequence type */
+#if defined(WORDS_BIGENDIAN) && (SIZEOF_VALUE > SIZEOF_INT)
+    char dummy[SIZEOF_VALUE - SIZEOF_INT]; /* [Bug #10037][ruby-core:63721] */
+#endif
     uint32_t stack_max; /* for stack overflow check */
 
     rb_iseq_location_t location;
