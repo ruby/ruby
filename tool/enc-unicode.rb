@@ -294,7 +294,9 @@ props.each do |name|
     end
   make_const(name, data[name], category)
 end
+print "\n#ifdef USE_UNICODE_AGE_PROPERTIES"
 ages = parse_age(data)
+puts "#endif /* USE_UNICODE_AGE_PROPERTIES */"
 blocks = parse_block(data)
 puts '#endif /* USE_UNICODE_PROPERTIES */'
 puts(<<'__HEREDOC')
@@ -304,7 +306,9 @@ __HEREDOC
 POSIX_NAMES.each{|name|puts"  CR_#{name},"}
 puts "#ifdef USE_UNICODE_PROPERTIES"
 props.each{|name| puts"  CR_#{name},"}
+puts "#ifdef USE_UNICODE_AGE_PROPERTIES"
 ages.each{|name|  puts"  CR_#{constantize_agename(name)},"}
+puts "#endif /* USE_UNICODE_AGE_PROPERTIES */"
 blocks.each{|name|puts"  CR_#{name},"}
 
 puts(<<'__HEREDOC')
@@ -340,12 +344,14 @@ aliases.each_pair do |k, v|
   next unless v = name_to_index[v]
   puts "%-40s %3d" % [k + ',', v]
 end
+puts "#ifdef USE_UNICODE_AGE_PROPERTIES"
 ages.each do |name|
   i += 1
   name = "age=#{name}"
   name_to_index[name] = i
   puts "%-40s %3d" % [name + ',', i]
 end
+puts "#endif /* USE_UNICODE_AGE_PROPERTIES */"
 blocks.each do |name|
   i += 1
   name = normalize_propname(name)

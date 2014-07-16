@@ -5,7 +5,7 @@
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2009  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * Copyright (c) 2011-2013  K.Takata  <kentkt AT csc DOT jp>
+ * Copyright (c) 2011-2014  K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,8 +39,8 @@ extern "C" {
 
 #define ONIGURUMA
 #define ONIGURUMA_VERSION_MAJOR   5
-#define ONIGURUMA_VERSION_MINOR   13
-#define ONIGURUMA_VERSION_TEENY   5
+#define ONIGURUMA_VERSION_MINOR   14
+#define ONIGURUMA_VERSION_TEENY   1
 
 #ifdef __cplusplus
 # ifndef  HAVE_PROTOTYPES
@@ -338,6 +338,7 @@ int onigenc_str_bytelen_null P_((OnigEncoding enc, const OnigUChar* p));
 /* config parameters */
 #define ONIG_NREGION                          10
 #define ONIG_MAX_BACKREF_NUM                1000
+#define ONIG_MAX_CAPTURE_GROUP_NUM         32767
 #define ONIG_MAX_REPEAT_NUM               100000
 #define ONIG_MAX_MULTI_BYTE_RANGES_NUM     10000
 /* constants */
@@ -369,7 +370,9 @@ typedef unsigned int        OnigOptionType;
 #define ONIG_OPTION_WORD_BOUND_ALL_RANGE    (ONIG_OPTION_POSIX_BRACKET_ALL_RANGE << 1)
 /* options (newline) */
 #define ONIG_OPTION_NEWLINE_CRLF         (ONIG_OPTION_WORD_BOUND_ALL_RANGE << 1)
-#define ONIG_OPTION_MAXBIT               ONIG_OPTION_NEWLINE_CRLF  /* limit */
+#define ONIG_OPTION_NOTBOS               (ONIG_OPTION_NEWLINE_CRLF << 1)
+#define ONIG_OPTION_NOTEOS               (ONIG_OPTION_NOTBOS << 1)
+#define ONIG_OPTION_MAXBIT               ONIG_OPTION_NOTEOS  /* limit */
 
 #define ONIG_OPTION_ON(options,regopt)      ((options) |= (regopt))
 #define ONIG_OPTION_OFF(options,regopt)     ((options) &= ~(regopt))
@@ -582,6 +585,7 @@ ONIG_EXTERN const OnigSyntaxType*   OnigDefaultSyntax;
 #define ONIGERR_NEVER_ENDING_RECURSION                       -221
 #define ONIGERR_GROUP_NUMBER_OVER_FOR_CAPTURE_HISTORY        -222
 #define ONIGERR_INVALID_CHAR_PROPERTY_NAME                   -223
+#define ONIGERR_TOO_MANY_CAPTURE_GROUPS                      -224
 #define ONIGERR_INVALID_CODE_POINT_VALUE                     -400
 #define ONIGERR_INVALID_WIDE_CHAR_VALUE                      -400
 #define ONIGERR_TOO_BIG_WIDE_CHAR_VALUE                      -401
@@ -708,7 +712,7 @@ typedef struct {
   int             num_of_elements;
   OnigEncoding    pattern_enc;
   OnigEncoding    target_enc;
-  OnigSyntaxType* syntax;
+  const OnigSyntaxType* syntax;
   OnigOptionType  option;
   OnigCaseFoldType   case_fold_flag;
 } OnigCompileInfo;

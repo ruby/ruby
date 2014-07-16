@@ -1,3 +1,8 @@
+Wed Jul 16 12:25:39 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regcomp.c: Merge Onigmo 5.14.1 25a8a69fc05ae3b56a09.
+	  this includes Support for Unicode 7.0 [Bug #9092].
+
 Tue Jul 15 23:59:27 2014  Jared Jennings  <jared.jennings.ctr@us.af.mil>
 
 	* ext/digest: make built-in digest function implementations

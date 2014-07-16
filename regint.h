@@ -5,7 +5,7 @@
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2008  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * Copyright (c) 2011-2012  K.Takata  <kentkt AT csc DOT jp>
+ * Copyright (c) 2011-2014  K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -92,8 +92,6 @@
 #  define ARG_UNUSED
 #endif
 
-/* */
-/* escape other system UChar definition */
 #ifndef RUBY_DEFINES_H
 #include "ruby/ruby.h"
 #undef xmalloc
@@ -101,23 +99,67 @@
 #undef xcalloc
 #undef xfree
 #endif
+
+/* */
+/* escape other system UChar definition */
 #ifdef ONIG_ESCAPE_UCHAR_COLLISION
 #undef ONIG_ESCAPE_UCHAR_COLLISION
 #endif
+
 #define USE_WORD_BEGIN_END          /* "\<": word-begin, "\>": word-end */
-#undef USE_MATCH_RANGE_IS_COMPLETE_RANGE
 #undef USE_CAPTURE_HISTORY
 #define USE_VARIABLE_META_CHARS
 #define USE_POSIX_API_REGION_OPTION     /* needed for POSIX API support */
 #define USE_FIND_LONGEST_SEARCH_ALL_OF_RANGE
 /* #define USE_COMBINATION_EXPLOSION_CHECK */     /* (X*)* */
 
+/* multithread config */
 /* #define USE_MULTI_THREAD_SYSTEM */
+/* #define USE_DEFAULT_MULTI_THREAD_SYSTEM */
+
+#if defined(USE_MULTI_THREAD_SYSTEM) \
+  && defined(USE_DEFAULT_MULTI_THREAD_SYSTEM)
+
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+extern CRITICAL_SECTION gOnigMutex;
+#define THREAD_SYSTEM_INIT      InitializeCriticalSection(&gOnigMutex)
+#define THREAD_SYSTEM_END       DeleteCriticalSection(&gOnigMutex)
+#define THREAD_ATOMIC_START     EnterCriticalSection(&gOnigMutex)
+#define THREAD_ATOMIC_END       LeaveCriticalSection(&gOnigMutex)
+#define THREAD_PASS             Sleep(0)
+#else /* _WIN32 */
+#include <pthread.h>
+#include <sched.h>
+extern pthread_mutex_t gOnigMutex;
+#define THREAD_SYSTEM_INIT      pthread_mutex_init(&gOnigMutex, NULL)
+#define THREAD_SYSTEM_END       pthread_mutex_destroy(&gOnigMutex)
+#define THREAD_ATOMIC_START     pthread_mutex_lock(&gOnigMutex)
+#define THREAD_ATOMIC_END       pthread_mutex_unlock(&gOnigMutex)
+#define THREAD_PASS             sched_yield()
+#endif /* _WIN32 */
+
+#else /* USE_DEFAULT_MULTI_THREAD_SYSTEM */
+
+#ifndef THREAD_SYSTEM_INIT
 #define THREAD_SYSTEM_INIT      /* depend on thread system */
+#endif
+#ifndef THREAD_SYSTEM_END
 #define THREAD_SYSTEM_END       /* depend on thread system */
+#endif
+#ifndef THREAD_ATOMIC_START
 #define THREAD_ATOMIC_START     /* depend on thread system */
+#endif
+#ifndef THREAD_ATOMIC_END
 #define THREAD_ATOMIC_END       /* depend on thread system */
+#endif
+#ifndef THREAD_PASS
 #define THREAD_PASS             /* depend on thread system */
+#endif
+
+#endif /* USE_DEFAULT_MULTI_THREAD_SYSTEM */
+
 #ifndef xmalloc
 #define xmalloc     malloc
 #define xrealloc    realloc
@@ -235,12 +277,16 @@
 # include <stdint.h>
 #endif
 
+#ifdef HAVE_INTTYPES_H
+# include <inttypes.h>
+#endif
+
 #ifdef STDC_HEADERS
 # include <stddef.h>
 #endif
 
-#ifdef __BORLANDC__
-#include <malloc.h>
+#ifdef _WIN32
+#include <malloc.h>	/* for alloca() */
 #endif
 
 #ifdef ONIG_DEBUG
@@ -259,6 +305,18 @@ typedef unsigned int uintptr_t;
 #endif
 #endif
 #endif /* _WIN32 */
+
+#ifndef PRIdPTR
+#ifdef _WIN64
+#define PRIdPTR	"I64d"
+#define PRIuPTR	"I64u"
+#define PRIxPTR	"I64x"
+#else
+#define PRIdPTR	"ld"
+#define PRIuPTR	"lu"
+#define PRIxPTR	"lx"
+#endif
+#endif
 
 #include "regenc.h"
 
@@ -366,6 +424,8 @@ typedef unsigned int  BitStatusType;
           (ONIG_OPTION_FIND_LONGEST | ONIG_OPTION_FIND_NOT_EMPTY))
 #define IS_NOTBOL(option)         ((option) & ONIG_OPTION_NOTBOL)
 #define IS_NOTEOL(option)         ((option) & ONIG_OPTION_NOTEOL)
+#define IS_NOTBOS(option)         ((option) & ONIG_OPTION_NOTBOS)
+#define IS_NOTEOS(option)         ((option) & ONIG_OPTION_NOTEOS)
 #define IS_POSIX_REGION(option)   ((option) & ONIG_OPTION_POSIX_REGION)
 #define IS_ASCII_RANGE(option)    ((option) & ONIG_OPTION_ASCII_RANGE)
 #define IS_POSIX_BRACKET_ALL_RANGE(option)  ((option) & ONIG_OPTION_POSIX_BRACKET_ALL_RANGE)
@@ -852,7 +912,9 @@ typedef struct {
 
 extern OnigOpInfoType OnigOpInfo[];
 
-/* extern void onig_print_compiled_byte_code P_((FILE* f, UChar* bp, UChar* bpend, UChar** nextp, OnigEncoding enc)); */
+#ifdef ONIG_DEBUG
+extern void onig_print_compiled_byte_code P_((FILE* f, UChar* bp, UChar* bpend, UChar** nextp, OnigEncoding enc));
+#endif
 
 #ifdef ONIG_DEBUG_STATISTICS
 extern void onig_statistics_init P_((void));

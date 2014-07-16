@@ -3,7 +3,7 @@
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2008  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * Copyright (c) 2011-2013  K.Takata  <kentkt AT csc DOT jp>
+ * Copyright (c) 2011-2014  K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -444,9 +444,26 @@ onig_region_copy(OnigRegion* to, OnigRegion* from)
 
 
 
-#define STACK_INIT(alloc_addr, ptr_num, stack_num)  do {\
-  if (msa->stack_p) {\
+#define MAX_PTR_NUM 100
+
+#define STACK_INIT(alloc_addr, heap_addr, ptr_num, stack_num)  do {\
+  if (ptr_num > MAX_PTR_NUM) {\
+    alloc_addr = (char* )xmalloc(sizeof(OnigStackIndex) * (ptr_num));\
+    heap_addr  = alloc_addr;\
+    if (msa->stack_p) {\
+      stk_alloc = (OnigStackType* )(msa->stack_p);\
+      stk_base  = stk_alloc;\
+      stk       = stk_base;\
+      stk_end   = stk_base + msa->stack_n;\
+    } else {\
+      stk_alloc = (OnigStackType* )xalloca(sizeof(OnigStackType) * (stack_num));\
+      stk_base  = stk_alloc;\
+      stk       = stk_base;\
+      stk_end   = stk_base + (stack_num);\
+    }\
+  } else if (msa->stack_p) {\
     alloc_addr = (char* )xalloca(sizeof(OnigStackIndex) * (ptr_num));\
+    heap_addr  = NULL;\
     stk_alloc  = (OnigStackType* )(msa->stack_p);\
     stk_base   = stk_alloc;\
     stk        = stk_base;\
@@ -455,6 +472,7 @@ onig_region_copy(OnigRegion* to, OnigRegion* from)
   else {\
     alloc_addr = (char* )xalloca(sizeof(OnigStackIndex) * (ptr_num)\
 		       + sizeof(OnigStackType) * (stack_num));\
+    heap_addr  = NULL;\
     stk_alloc  = (OnigStackType* )(alloc_addr + sizeof(OnigStackIndex) * (ptr_num));\
     stk_base   = stk_alloc;\
     stk        = stk_base;\
@@ -529,7 +547,11 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 #define STACK_ENSURE(n)	do {\
   if (stk_end - stk < (n)) {\
     int r = stack_double(&stk_base, &stk_end, &stk, stk_alloc, msa);\
-    if (r != 0) { STACK_SAVE; return r; } \
+    if (r != 0) {\
+      STACK_SAVE;\
+      if (xmalloc_base) xfree(xmalloc_base);\
+      return r;\
+    }\
   }\
 } while(0)
 
@@ -1299,9 +1321,6 @@ typedef struct {
   regoff_t  rm_eo;
 } posix_regmatch_t;
 
-void onig_print_compiled_byte_code(FILE* f, UChar* bp, UChar* bpend, UChar** nextp,
-                              OnigEncoding enc);
-
 /* match data(str - end) from position (sstart). */
 /* if sstart == str then set sprev to NULL. */
 static OnigPosition
@@ -1325,6 +1344,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
   UChar *p = reg->p;
   UChar *pkeep;
   char *alloca_base;
+  char *xmalloc_base = NULL;
   OnigStackType *stk_alloc, *stk_base, *stk, *stk_end;
   OnigStackType *stkp; /* used as any purpose. */
   OnigStackIndex si;
@@ -1340,7 +1360,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
   /* Stack #0 is used to store the pattern itself and used for (?R), \g<0>, etc. */
   n = reg->num_repeat + (reg->num_mem + 1) * 2;
 
-  STACK_INIT(alloca_base, n, INIT_MATCH_STACK_SIZE);
+  STACK_INIT(alloca_base, xmalloc_base, n, INIT_MATCH_STACK_SIZE);
   pop_level = reg->stack_pop_level;
   num_mem = reg->num_mem;
   repeat_stk = (OnigStackIndex* )alloca_base;
@@ -1354,7 +1374,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
   /* Stack #0 not is used. */
   n = reg->num_repeat + reg->num_mem * 2;
 
-  STACK_INIT(alloca_base, n, INIT_MATCH_STACK_SIZE);
+  STACK_INIT(alloca_base, xmalloc_base, n, INIT_MATCH_STACK_SIZE);
   pop_level = reg->stack_pop_level;
   num_mem = reg->num_mem;
   repeat_stk = (OnigStackIndex* )alloca_base;
@@ -1372,7 +1392,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 
 #ifdef ONIG_DEBUG_MATCH
   fprintf(stderr, "match_at: str: %"PRIdPTR" (%p), end: %"PRIdPTR" (%p), start: %"PRIdPTR" (%p), sprev: %"PRIdPTR" (%p)\n",
-	  (intptr_t)str, str, (intptr_t)end, end, (intptr_t)sstart, sstart, (intptr_t)sprev, sprev);
+	  (intptr_t )str, str, (intptr_t )end, end, (intptr_t )sstart, sstart, (intptr_t )sprev, sprev);
   fprintf(stderr, "size: %d, start offset: %d\n",
 	  (int )(end - str), (int )(sstart - str));
 #endif
@@ -1386,7 +1406,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
     if (s) {
       UChar *q, *bp, buf[50];
       int len;
-      fprintf(stderr, "%4d> \"", (int )(s - str));
+      fprintf(stderr, "%4d> \"", (*p == OP_FINISH) ? -1 : (int )(s - str));
       bp = buf;
       if (*p != OP_FINISH) {    /* s may not be a valid pointer if OP_FINISH. */
 	for (i = 0, q = s; i < 7 && q < end; i++) {
@@ -2150,6 +2170,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 
     case OP_BEGIN_BUF:  MOP_IN(OP_BEGIN_BUF);
       if (! ON_STR_BEGIN(s)) goto fail;
+      if (IS_NOTBOS(msa->options)) goto fail;
 
       MOP_OUT;
       continue;
@@ -2157,6 +2178,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 
     case OP_END_BUF:  MOP_IN(OP_END_BUF);
       if (! ON_STR_END(s)) goto fail;
+      if (IS_NOTEOS(msa->options)) goto fail;
 
       MOP_OUT;
       continue;
@@ -2916,20 +2938,24 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 
  finish:
   STACK_SAVE;
+  if (xmalloc_base) xfree(xmalloc_base);
   return best_len;
 
 #ifdef ONIG_DEBUG
  stack_error:
   STACK_SAVE;
+  if (xmalloc_base) xfree(xmalloc_base);
   return ONIGERR_STACK_BUG;
 #endif
 
  bytecode_error:
   STACK_SAVE;
+  if (xmalloc_base) xfree(xmalloc_base);
   return ONIGERR_UNDEFINED_BYTECODE;
 
  unexpected_bytecode_error:
   STACK_SAVE;
+  if (xmalloc_base) xfree(xmalloc_base);
   return ONIGERR_UNEXPECTED_BYTECODE;
 }
 
@@ -3159,8 +3185,8 @@ bm_search(regex_t* reg, const UChar* target, const UChar* target_end,
       p = s;
       t = tail;
 #ifdef ONIG_DEBUG_SEARCH
-  fprintf(stderr, "bm_search_loop: pos: %d %s\n",
-	  (int)(s - text), s);
+      fprintf(stderr, "bm_search_loop: pos: %"PRIdPTR" %s\n",
+	  (intptr_t )(s - text), s);
 #endif
       while (*p == *t) {
 	if (t == target) return (UChar* )p;
@@ -3294,8 +3320,8 @@ bm_search_notrev(regex_t* reg, const UChar* target, const UChar* target_end,
   OnigEncoding enc = reg->enc;
 
 #ifdef ONIG_DEBUG_SEARCH
-  fprintf(stderr, "bm_search_notrev: text: %d (%p), text_end: %d (%p), text_range: %d (%p)\n",
-	  (int )text, text, (int )text_end, text_end, (int )text_range, text_range);
+  fprintf(stderr, "bm_search_notrev: text: %"PRIdPTR" (%p), text_end: %"PRIdPTR" (%p), text_range: %"PRIdPTR" (%p)\n",
+	  (intptr_t )text, text, (intptr_t )text_end, text_end, (intptr_t )text_range, text_range);
 #endif
 
   tail = target_end - 1;
@@ -3398,8 +3424,8 @@ bm_search_notrev_ic(regex_t* reg, const UChar* target, const UChar* target_end,
   int case_fold_flag = reg->case_fold_flag;
 
 #ifdef ONIG_DEBUG_SEARCH
-  fprintf(stderr, "bm_search_notrev_ic: text: %d (%p), text_end: %d (%p), text_range: %d (%p)\n",
-	  (int )text, text, (int )text_end, text_end, (int )text_range, text_range);
+  fprintf(stderr, "bm_search_notrev_ic: text: %"PRIdPTR" (%p), text_end: %"PRIdPTR" (%p), text_range: %"PRIdPTR" (%p)\n",
+	  (intptr_t )text, text, (intptr_t )text_end, text_end, (intptr_t )text_range, text_range);
 #endif
 
   tail = target_end - 1;
@@ -3454,8 +3480,8 @@ bm_search_ic(regex_t* reg, const UChar* target, const UChar* target_end,
   int case_fold_flag = reg->case_fold_flag;
 
 #ifdef ONIG_DEBUG_SEARCH
-  fprintf(stderr, "bm_search_ic: text: %d (%p), text_end: %d (%p), text_range: %d (%p)\n",
-	  (int )text, text, (int )text_end, text_end, (int )text_range, text_range);
+  fprintf(stderr, "bm_search_ic: text: %"PRIdPTR" (%p), text_end: %"PRIdPTR" (%p), text_range: %"PRIdPTR" (%p)\n",
+	  (intptr_t )text, text, (intptr_t )text_end, text_end, (intptr_t )text_range, text_range);
 #endif
 
   tail = target_end - 1;
@@ -3641,7 +3667,7 @@ forward_search_range(regex_t* reg, const UChar* str, const UChar* end, UChar* s,
 
 #ifdef ONIG_DEBUG_SEARCH
   fprintf(stderr, "forward_search_range: str: %"PRIuPTR" (%p), end: %"PRIuPTR" (%p), s: %"PRIuPTR" (%p), range: %"PRIuPTR" (%p)\n",
-	  str, str, end, end, s, s, range, range);
+	  (intptr_t )str, str, (intptr_t )end, end, (intptr_t )s, s, (intptr_t )range, range);
 #endif
 
   p = s;
@@ -3754,8 +3780,8 @@ forward_search_range(regex_t* reg, const UChar* str, const UChar* end, UChar* s,
 
 #ifdef ONIG_DEBUG_SEARCH
     fprintf(stderr,
-    "forward_search_range success: low: %d, high: %d, dmin: %d, dmax: %d\n",
-	    (int )(*low - str), (int )(*high - str), reg->dmin, reg->dmax);
+    "forward_search_range success: low: %"PRIdPTR", high: %"PRIdPTR", dmin: %"PRIdPTR", dmax: %"PRIdPTR"\n",
+	    *low - str, *high - str, reg->dmin, reg->dmax);
 #endif
     return 1; /* success */
   }
@@ -3919,7 +3945,7 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
 #ifdef ONIG_DEBUG_SEARCH
   fprintf(stderr,
      "onig_search (entry point): str: %"PRIuPTR" (%p), end: %"PRIuPTR", start: %"PRIuPTR", range: %"PRIuPTR"\n",
-     str, str, end - str, start - str, range - str);
+     (intptr_t )str, str, end - str, start - str, range - str);
 #endif
 
   if (region
@@ -4181,11 +4207,6 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
     }
   }
   else {  /* backward search */
-#ifdef USE_MATCH_RANGE_MUST_BE_INSIDE_OF_SPECIFIED_RANGE
-    if (orig_start < end)
-      orig_start += enclen(reg->enc, orig_start, end); /* is upper range */
-#endif
-
     if (reg->optimize != ONIG_OPTIMIZE_NONE) {
       UChar *low, *high, *adjrange, *sch_start;
 
@@ -4268,7 +4289,7 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
 
 #ifdef ONIG_DEBUG
   if (r != ONIG_MISMATCH)
-    fprintf(stderr, "onig_search: error %d\n", r);
+    fprintf(stderr, "onig_search: error %"PRIdPTR"\n", r);
 #endif
   return r;
 
@@ -4278,7 +4299,7 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
   ONIG_STATE_DEC_THREAD(reg);
 #ifdef ONIG_DEBUG
   if (r != ONIG_MISMATCH)
-    fprintf(stderr, "onig_search: error %d\n", r);
+    fprintf(stderr, "onig_search: error %"PRIdPTR"\n", r);
 #endif
   return r;
 

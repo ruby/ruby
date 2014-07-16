@@ -3,7 +3,7 @@
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2008  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * Copyright (c) 2011-2013  K.Takata  <kentkt AT csc DOT jp>
+ * Copyright (c) 2011-2014  K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,6 +29,15 @@
  */
 
 #include "regparse.h"
+
+#if defined(USE_MULTI_THREAD_SYSTEM) \
+  && defined(USE_DEFAULT_MULTI_THREAD_SYSTEM)
+#ifdef _WIN32
+CRITICAL_SECTION gOnigMutex;
+#else
+pthread_mutex_t gOnigMutex;
+#endif
+#endif
 
 OnigCaseFoldType OnigDefaultCaseFoldFlag = ONIGENC_CASE_FOLD_MIN;
 
@@ -2669,22 +2678,22 @@ is_not_included(Node* x, Node* y, regex_t* reg)
 	break;
 
       case NT_CCLASS:
-	{
-	  CClassNode* cc = NCCLASS(y);
+        {
+          CClassNode* cc = NCCLASS(y);
 
-	  code = ONIGENC_MBC_TO_CODE(reg->enc, xs->s,
-				     xs->s + ONIGENC_MBC_MAXLEN(reg->enc));
-	  return (onig_is_code_in_cc(reg->enc, code, cc) != 0 ? 0 : 1);
-	}
-	break;
+          code = ONIGENC_MBC_TO_CODE(reg->enc, xs->s,
+                                     xs->s + ONIGENC_MBC_MAXLEN(reg->enc));
+          return (onig_is_code_in_cc(reg->enc, code, cc) != 0 ? 0 : 1);
+        }
+        break;
 
       case NT_STR:
-	{
-	  UChar *q;
-	  StrNode* ys = NSTR(y);
-	  len = NSTRING_LEN(x);
-	  if (len > NSTRING_LEN(y)) len = NSTRING_LEN(y);
-	  if (NSTRING_IS_AMBIG(x) || NSTRING_IS_AMBIG(y)) {
+        {
+          UChar *q;
+          StrNode* ys = NSTR(y);
+          len = NSTRING_LEN(x);
+          if (len > NSTRING_LEN(y)) len = NSTRING_LEN(y);
+          if (NSTRING_IS_AMBIG(x) || NSTRING_IS_AMBIG(y)) {
             /* tiny version */
             return 0;
 	  }
@@ -2697,7 +2706,7 @@ is_not_included(Node* x, Node* y, regex_t* reg)
 	break;
 
       default:
-	break;
+        break;
       }
     }
     break;
@@ -3442,7 +3451,7 @@ expand_case_fold_string_alt(int item_num, OnigCaseFoldCodeItem items[],
       break;
     }
     if (items[i].code_len != 1) {
-      varclen = 1;
+      varclen |= 1;
     }
   }
 
@@ -3493,29 +3502,29 @@ expand_case_fold_string_alt(int item_num, OnigCaseFoldCodeItem items[],
       UChar *q = p + items[i].byte_len;
 
       if (q < end) {
-	r = expand_case_fold_make_rem_string(&rem, q, end, reg);
-	if (r != 0) {
-	  onig_node_free(an);
-	  goto mem_err2;
-	}
+        r = expand_case_fold_make_rem_string(&rem, q, end, reg);
+        if (r != 0) {
+          onig_node_free(an);
+          goto mem_err2;
+        }
 
-	xnode = onig_node_list_add(NULL_NODE, snode);
-	if (IS_NULL(xnode)) {
-	  onig_node_free(an);
-	  onig_node_free(rem);
-	  goto mem_err2;
-	}
-	if (IS_NULL(onig_node_list_add(xnode, rem))) {
-	  onig_node_free(an);
-	  onig_node_free(xnode);
-	  onig_node_free(rem);
-	  goto mem_err;
-	}
+        xnode = onig_node_list_add(NULL_NODE, snode);
+        if (IS_NULL(xnode)) {
+          onig_node_free(an);
+          onig_node_free(rem);
+          goto mem_err2;
+        }
+        if (IS_NULL(onig_node_list_add(xnode, rem))) {
+          onig_node_free(an);
+          onig_node_free(xnode);
+          onig_node_free(rem);
+          goto mem_err;
+        }
 
-	NCAR(an) = xnode;
+        NCAR(an) = xnode;
       }
       else {
-	NCAR(an) = snode;
+        NCAR(an) = snode;
       }
 
       NCDR(var_anode) = an;
@@ -3598,7 +3607,10 @@ expand_case_fold_string(Node* node, regex_t* reg)
     }
     else {
       alt_num *= (n + 1);
-      if (alt_num > THRESHOLD_CASE_FOLD_ALT_FOR_EXPANSION) break;
+      if (alt_num > THRESHOLD_CASE_FOLD_ALT_FOR_EXPANSION) {
+	varlen = 1; /* Assume that expanded strings are variable length. */
+	break;
+      }
 
       if (IS_NULL(root) && IS_NOT_NULL(prev_node)) {
 	top_root = root = onig_node_list_add(NULL_NODE, prev_node);
@@ -5448,14 +5460,14 @@ print_distance_range(FILE* f, OnigDistance a, OnigDistance b)
   if (a == ONIG_INFINITE_DISTANCE)
     fputs("inf", f);
   else
-    fprintf(f, "(%"PRIuSIZE")", a);
+    fprintf(f, "(%"PRIuPTR")", a);
 
   fputs("-", f);
 
   if (b == ONIG_INFINITE_DISTANCE)
     fputs("inf", f);
   else
-    fprintf(f, "(%"PRIuSIZE")", b);
+    fprintf(f, "(%"PRIuPTR")", b);
 }
 
 static void
@@ -5532,7 +5544,7 @@ print_optimize_info(FILE* f, regex_t* reg)
     for (p = reg->exact; p < reg->exact_end; p++) {
       fputc(*p, f);
     }
-    fprintf(f, "]: length: %ld\n", (reg->exact_end - reg->exact));
+    fprintf(f, "]: length: %"PRIdPTR"\n", (reg->exact_end - reg->exact));
   }
   else if (reg->optimize & ONIG_OPTIMIZE_MAP) {
     int c, i, n = 0;
@@ -6394,7 +6406,7 @@ onig_print_compiled_byte_code(FILE* f, UChar* bp, UChar* bpend, UChar** nextp,
 
         GET_POINTER_INC(cc, bp);
         n = bitset_on_num(cc->bs);
-        fprintf(f, ":%"PRIuPTR":%d", (uintptr_t)cc, n);
+        fprintf(f, ":%"PRIuPTR":%d", (uintptr_t )cc, n);
       }
       break;
 
@@ -6530,9 +6542,9 @@ print_indent_tree(FILE* f, Node* node, int indent)
   case NT_LIST:
   case NT_ALT:
     if (NTYPE(node) == NT_LIST)
-      fprintf(f, "<list:%"PRIxPTR">\n", (intptr_t)node);
+      fprintf(f, "<list:%"PRIxPTR">\n", (intptr_t )node);
     else
-      fprintf(f, "<alt:%"PRIxPTR">\n", (intptr_t)node);
+      fprintf(f, "<alt:%"PRIxPTR">\n", (intptr_t )node);
 
     print_indent_tree(f, NCAR(node), indent + add);
     while (IS_NOT_NULL(node = NCDR(node))) {
@@ -6546,7 +6558,7 @@ print_indent_tree(FILE* f, Node* node, int indent)
 
   case NT_STR:
     fprintf(f, "<string%s:%"PRIxPTR">",
-	    (NSTRING_IS_RAW(node) ? "-raw" : ""), (intptr_t)node);
+	    (NSTRING_IS_RAW(node) ? "-raw" : ""), (intptr_t )node);
     for (p = NSTR(node)->s; p < NSTR(node)->end; p++) {
       if (*p >= 0x20 && *p < 0x7f)
 	fputc(*p, f);
@@ -6557,7 +6569,7 @@ print_indent_tree(FILE* f, Node* node, int indent)
     break;
 
   case NT_CCLASS:
-    fprintf(f, "<cclass:%"PRIxPTR">", (intptr_t)node);
+    fprintf(f, "<cclass:%"PRIxPTR">", (intptr_t )node);
     if (IS_NCCLASS_NOT(NCCLASS(node))) fputs(" not", f);
     if (NCCLASS(node)->mbuf) {
       BBuf* bbuf = NCCLASS(node)->mbuf;
@@ -6569,7 +6581,7 @@ print_indent_tree(FILE* f, Node* node, int indent)
     break;
 
   case NT_CTYPE:
-    fprintf(f, "<ctype:%"PRIxPTR"> ", (intptr_t)node);
+    fprintf(f, "<ctype:%"PRIxPTR"> ", (intptr_t )node);
     switch (NCTYPE(node)->ctype) {
     case ONIGENC_CTYPE_WORD:
       if (NCTYPE(node)->not != 0)
@@ -6585,11 +6597,11 @@ print_indent_tree(FILE* f, Node* node, int indent)
     break;
 
   case NT_CANY:
-    fprintf(f, "<anychar:%"PRIxPTR">", (intptr_t)node);
+    fprintf(f, "<anychar:%"PRIxPTR">", (intptr_t )node);
     break;
 
   case NT_ANCHOR:
-    fprintf(f, "<anchor:%"PRIxPTR"> ", (intptr_t)node);
+    fprintf(f, "<anchor:%"PRIxPTR"> ", (intptr_t )node);
     switch (NANCHOR(node)->type) {
     case ANCHOR_BEGIN_BUF:      fputs("begin buf",      f); break;
     case ANCHOR_END_BUF:        fputs("end buf",        f); break;
@@ -6622,7 +6634,7 @@ print_indent_tree(FILE* f, Node* node, int indent)
       int* p;
       BRefNode* br = NBREF(node);
       p = BACKREFS_P(br);
-      fprintf(f, "<backref:%"PRIxPTR">", (intptr_t)node);
+      fprintf(f, "<backref:%"PRIxPTR">", (intptr_t )node);
       for (i = 0; i < br->back_num; i++) {
 	if (i > 0) fputs(", ", f);
 	fprintf(f, "%d", p[i]);
@@ -6634,21 +6646,21 @@ print_indent_tree(FILE* f, Node* node, int indent)
   case NT_CALL:
     {
       CallNode* cn = NCALL(node);
-      fprintf(f, "<call:%"PRIxPTR">", (intptr_t)node);
+      fprintf(f, "<call:%"PRIxPTR">", (intptr_t )node);
       p_string(f, cn->name_end - cn->name, cn->name);
     }
     break;
 #endif
 
   case NT_QTFR:
-    fprintf(f, "<quantifier:%"PRIxPTR">{%d,%d}%s\n", (intptr_t)node,
+    fprintf(f, "<quantifier:%"PRIxPTR">{%d,%d}%s\n", (intptr_t )node,
 	    NQTFR(node)->lower, NQTFR(node)->upper,
 	    (NQTFR(node)->greedy ? "" : "?"));
     print_indent_tree(f, NQTFR(node)->target, indent + add);
     break;
 
   case NT_ENCLOSE:
-    fprintf(f, "<enclose:%"PRIxPTR"> ", (intptr_t)node);
+    fprintf(f, "<enclose:%"PRIxPTR"> ", (intptr_t )node);
     switch (NENCLOSE(node)->type) {
     case ENCLOSE_OPTION:
       fprintf(f, "option:%d", NENCLOSE(node)->option);

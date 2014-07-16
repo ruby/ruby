@@ -86,7 +86,7 @@ class CaseFolding
     hash = "onigenc_unicode_#{key}_hash"
     lookup = "onigenc_unicode_#{key}_lookup"
     arity = Array(data[0][0]).size
-    gperf = %W"gperf -7 -k#{[*1..(arity*3)].join(",")} -F,-1 -c -j1 -i1 -t -T -E -C -H #{hash} -N #{lookup}"
+    gperf = %W"gperf -7 -k#{[*1..(arity*3)].join(",")} -F,-1 -c -j1 -i1 -t -T -E -C -H #{hash} -N #{lookup} -n"
     argname = arity > 1 ? "codes" : "code"
     argdecl = "const OnigCodePoint #{arity > 1 ? "*": ""}#{argname}"
     n = 7
