@@ -143,7 +143,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.5.8"
+#define WIN32OLE_VERSION "1.5.9"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -2104,11 +2104,15 @@ static VALUE
 ole_variant2val(VARIANT *pvar)
 {
     VALUE obj = Qnil;
+    VARTYPE vt = V_VT(pvar);
     HRESULT hr;
-    while ( V_VT(pvar) == (VT_BYREF | VT_VARIANT) )
+    while ( vt == (VT_BYREF | VT_VARIANT) ) {
         pvar = V_VARIANTREF(pvar);
+        vt = V_VT(pvar);
+    }
 
     if(V_ISARRAY(pvar)) {
+        VARTYPE vt_base = vt & VT_TYPEMASK;
         SAFEARRAY *psa = V_ISBYREF(pvar) ? *V_ARRAYREF(pvar) : V_ARRAY(pvar);
         UINT i = 0;
         LONG *pid, *plb, *pub;
@@ -2119,9 +2123,6 @@ ole_variant2val(VARIANT *pvar)
             return obj;
         }
         dim = SafeArrayGetDim(psa);
-        VariantInit(&variant);
-        V_VT(&variant) = (V_VT(pvar) & ~VT_ARRAY) | VT_BYREF;
-
         pid = ALLOC_N(LONG, dim);
         plb = ALLOC_N(LONG, dim);
         pub = ALLOC_N(LONG, dim);
@@ -2142,9 +2143,20 @@ ole_variant2val(VARIANT *pvar)
         if (SUCCEEDED(hr)) {
             obj = rb_ary_new();
             i = 0;
+            VariantInit(&variant);
+            V_VT(&variant) = vt_base | VT_BYREF;
+            if (vt_base == VT_RECORD) {
+                hr = SafeArrayGetRecordInfo(psa, &V_RECORDINFO(&variant));
+                if (SUCCEEDED(hr)) {
+                    V_VT(&variant) = VT_RECORD;
+                }
+            }
             while (i < dim) {
                 ary_new_dim(obj, pid, plb, dim);
-                hr = SafeArrayPtrOfIndex(psa, pid, &V_BYREF(&variant));
+                if (vt_base == VT_RECORD)
+                    hr = SafeArrayPtrOfIndex(psa, pid, &V_RECORD(&variant));
+                else
+                    hr = SafeArrayPtrOfIndex(psa, pid, &V_BYREF(&variant));
                 if (SUCCEEDED(hr)) {
                     val = ole_variant2val(&variant);
                     ary_store_dim(obj, pid, plb, dim, val);
@@ -2352,7 +2364,6 @@ ole_variant2val(VARIANT *pvar)
         VALUE fields = Qnil;
         VALUE val;
         VALUE key;
-
         obj = rb_funcall(cWIN32OLE_RECORD, rb_intern("new"), 0);
         hr = pri->lpVtbl->GetName(pri, &bstr);
         if (SUCCEEDED(hr)) {
@@ -3548,7 +3559,6 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
         op.dp.rgdispidNamedArgs = ALLOCA_N( DISPID, 1 );
         op.dp.rgdispidNamedArgs[0] = DISPID_PROPERTYPUT;
     }
-
     hr = pole->pDispatch->lpVtbl->Invoke(pole->pDispatch, DispID,
                                          &IID_NULL, lcid, wFlags, &op.dp,
                                          &result, &excepinfo, &argErr);

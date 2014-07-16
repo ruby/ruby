@@ -1,3 +1,8 @@
+Wed Jul 16 23:01:43 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_variant2val): support array of
+	  VT_RECORD variant.
+
 Wed Jul 16 20:21:49 2014  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* vm_core.h (struct rb_iseq_struct): stack_max is changed to int
