@@ -443,30 +443,55 @@ rb_szqueue_max_set(VALUE self, VALUE vmax)
     return vmax;
 }
 
+static VALUE
+szqueue_push_should_block(int argc, VALUE *argv)
+{
+    VALUE should_block = Qtrue;
+    switch (argc) {
+      case 0:
+	rb_raise(rb_eArgError, "wrong number of arguments (0 for 1)");
+	break;
+      case 1:
+	break;
+      case 2:
+	should_block = RTEST(argv[1]) ? Qfalse : Qtrue;
+	break;
+      default:
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 2)", argc);
+    }
+    return should_block;
+}
+
 /*
  * Document-method: SizedQueue#push
  * call-seq:
- *   push(object)
- *   enq(object)
+ *   push(object, non_block=false)
+ *   enq(object, non_block=false)
  *   <<(object)
  *
  * Pushes +object+ to the queue.
  *
- * If there is no space left in the queue, waits until space becomes available.
+ * If there is no space left in the queue, waits until space becomes
+ * available, unless +non_block+ is true.  If +non_block+ is true, the
+ * thread isn't suspended, and an exception is raised.
  */
 
 static VALUE
-rb_szqueue_push(VALUE self, VALUE obj)
+rb_szqueue_push(int argc, VALUE *argv, VALUE self)
 {
     struct waiting_delete args;
+    VALUE should_block = szqueue_push_should_block(argc, argv);
     args.waiting = GET_SZQUEUE_WAITERS(self);
     args.th      = rb_thread_current();
 
     while (queue_length(self) >= GET_SZQUEUE_ULONGMAX(self)) {
+	if (!(int)should_block) {
+	    rb_raise(rb_eThreadError, "queue full");
+	}
 	rb_ary_push(args.waiting, args.th);
 	rb_ensure((VALUE (*)())rb_thread_sleep_deadly, (VALUE)0, queue_delete_from_waiting, (VALUE)&args);
     }
-    return queue_do_push(self, obj);
+    return queue_do_push(self, argv[0]);
 }
 
 static VALUE
@@ -609,7 +634,7 @@ Init_thread(void)
     rb_define_method(rb_cSizedQueue, "initialize", rb_szqueue_initialize, 1);
     rb_define_method(rb_cSizedQueue, "max", rb_szqueue_max_get, 0);
     rb_define_method(rb_cSizedQueue, "max=", rb_szqueue_max_set, 1);
-    rb_define_method(rb_cSizedQueue, "push", rb_szqueue_push, 1);
+    rb_define_method(rb_cSizedQueue, "push", rb_szqueue_push, -1);
     rb_define_method(rb_cSizedQueue, "pop", rb_szqueue_pop, -1);
     rb_define_method(rb_cSizedQueue, "clear", rb_szqueue_clear, 0);
     rb_define_method(rb_cSizedQueue, "num_waiting", rb_szqueue_num_waiting, 0);

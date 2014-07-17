@@ -99,6 +99,14 @@ class TestQueue < Test::Unit::TestCase
   def test_sized_queue_push_interrupt
     q = SizedQueue.new(1)
     q.push(1)
+    assert_raise_with_message(ThreadError, /full/) do
+      q.push(2, true)
+    end
+  end
+
+  def test_sized_queue_push_non_block
+    q = SizedQueue.new(1)
+    q.push(1)
     t1 = Thread.new { q.push(2) }
     sleep 0.01 until t1.stop?
     t1.kill.join
