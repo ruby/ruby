@@ -74,12 +74,26 @@ class TestQueue < Test::Unit::TestCase
     assert_equal(0, q.num_waiting)
   end
 
+  def test_queue_pop_non_block
+    q = Queue.new
+    assert_raise_with_message(ThreadError, /empty/) do
+      q.pop(true)
+    end
+  end
+
   def test_sized_queue_pop_interrupt
     q = SizedQueue.new(1)
     t1 = Thread.new { q.pop }
     sleep 0.01 until t1.stop?
     t1.kill.join
     assert_equal(0, q.num_waiting)
+  end
+
+  def test_sized_queue_pop_non_block
+    q = SizedQueue.new(1)
+    assert_raise_with_message(ThreadError, /empty/) do
+      q.pop(true)
+    end
   end
 
   def test_sized_queue_push_interrupt
