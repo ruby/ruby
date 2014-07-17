@@ -7270,6 +7270,104 @@ parse_qmark(struct parser_params *parser)
 }
 
 static int
+parse_percent(struct parser_params *parser, const int space_seen, const enum lex_state_e last_state)
+{
+    register int c;
+
+    if (IS_lex_state(EXPR_BEG_ANY)) {
+	int term;
+	int paren;
+
+	c = nextc();
+      quotation:
+	if (c == -1 || !ISALNUM(c)) {
+	    term = c;
+	    c = 'Q';
+	}
+	else {
+	    term = nextc();
+	    if (rb_enc_isalnum(term, current_enc) || !parser_isascii()) {
+		yyerror("unknown type of %string");
+		return 0;
+	    }
+	}
+	if (c == -1 || term == -1) {
+	    compile_error(PARSER_ARG "unterminated quoted string meets end of file");
+	    return 0;
+	}
+	paren = term;
+	if (term == '(') term = ')';
+	else if (term == '[') term = ']';
+	else if (term == '{') term = '}';
+	else if (term == '<') term = '>';
+	else paren = 0;
+
+	switch (c) {
+	  case 'Q':
+	    lex_strterm = NEW_STRTERM(str_dquote, term, paren);
+	    return tSTRING_BEG;
+
+	  case 'q':
+	    lex_strterm = NEW_STRTERM(str_squote, term, paren);
+	    return tSTRING_BEG;
+
+	  case 'W':
+	    lex_strterm = NEW_STRTERM(str_dword, term, paren);
+	    do {c = nextc();} while (ISSPACE(c));
+	    pushback(c);
+	    return tWORDS_BEG;
+
+	  case 'w':
+	    lex_strterm = NEW_STRTERM(str_sword, term, paren);
+	    do {c = nextc();} while (ISSPACE(c));
+	    pushback(c);
+	    return tQWORDS_BEG;
+
+	  case 'I':
+	    lex_strterm = NEW_STRTERM(str_dword, term, paren);
+	    do {c = nextc();} while (ISSPACE(c));
+	    pushback(c);
+	    return tSYMBOLS_BEG;
+
+	  case 'i':
+	    lex_strterm = NEW_STRTERM(str_sword, term, paren);
+	    do {c = nextc();} while (ISSPACE(c));
+	    pushback(c);
+	    return tQSYMBOLS_BEG;
+
+	  case 'x':
+	    lex_strterm = NEW_STRTERM(str_xquote, term, paren);
+	    return tXSTRING_BEG;
+
+	  case 'r':
+	    lex_strterm = NEW_STRTERM(str_regexp, term, paren);
+	    return tREGEXP_BEG;
+
+	  case 's':
+	    lex_strterm = NEW_STRTERM(str_ssym, term, paren);
+	    lex_state = EXPR_FNAME;
+	    return tSYMBEG;
+
+	  default:
+	    yyerror("unknown type of %string");
+	    return 0;
+	}
+    }
+    if ((c = nextc()) == '=') {
+	set_yylval_id('%');
+	lex_state = EXPR_BEG;
+	return tOP_ASGN;
+    }
+    if (IS_SPCARG(c)) {
+	goto quotation;
+    }
+    lex_state = IS_AFTER_OPERATOR() ? EXPR_ARG : EXPR_BEG;
+    pushback(c);
+    warn_balanced("%%", "string literal");
+    return '%';
+}
+
+static int
 parser_yylex(struct parser_params *parser)
 {
     register int c;
@@ -7885,97 +7983,7 @@ parser_yylex(struct parser_params *parser)
 	return '\\';
 
       case '%':
-	if (IS_lex_state(EXPR_BEG_ANY)) {
-	    int term;
-	    int paren;
-
-	    c = nextc();
-	  quotation:
-	    if (c == -1 || !ISALNUM(c)) {
-		term = c;
-		c = 'Q';
-	    }
-	    else {
-		term = nextc();
-		if (rb_enc_isalnum(term, current_enc) || !parser_isascii()) {
-		    yyerror("unknown type of %string");
-		    return 0;
-		}
-	    }
-	    if (c == -1 || term == -1) {
-		compile_error(PARSER_ARG "unterminated quoted string meets end of file");
-		return 0;
-	    }
-	    paren = term;
-	    if (term == '(') term = ')';
-	    else if (term == '[') term = ']';
-	    else if (term == '{') term = '}';
-	    else if (term == '<') term = '>';
-	    else paren = 0;
-
-	    switch (c) {
-	      case 'Q':
-		lex_strterm = NEW_STRTERM(str_dquote, term, paren);
-		return tSTRING_BEG;
-
-	      case 'q':
-		lex_strterm = NEW_STRTERM(str_squote, term, paren);
-		return tSTRING_BEG;
-
-	      case 'W':
-		lex_strterm = NEW_STRTERM(str_dword, term, paren);
-		do {c = nextc();} while (ISSPACE(c));
-		pushback(c);
-		return tWORDS_BEG;
-
-	      case 'w':
-		lex_strterm = NEW_STRTERM(str_sword, term, paren);
-		do {c = nextc();} while (ISSPACE(c));
-		pushback(c);
-		return tQWORDS_BEG;
-
-	      case 'I':
-		lex_strterm = NEW_STRTERM(str_dword, term, paren);
-		do {c = nextc();} while (ISSPACE(c));
-		pushback(c);
-		return tSYMBOLS_BEG;
-
-	      case 'i':
-		lex_strterm = NEW_STRTERM(str_sword, term, paren);
-		do {c = nextc();} while (ISSPACE(c));
-		pushback(c);
-		return tQSYMBOLS_BEG;
-
-	      case 'x':
-		lex_strterm = NEW_STRTERM(str_xquote, term, paren);
-		return tXSTRING_BEG;
-
-	      case 'r':
-		lex_strterm = NEW_STRTERM(str_regexp, term, paren);
-		return tREGEXP_BEG;
-
-	      case 's':
-		lex_strterm = NEW_STRTERM(str_ssym, term, paren);
-		lex_state = EXPR_FNAME;
-		return tSYMBEG;
-
-	      default:
-		yyerror("unknown type of %string");
-		return 0;
-	    }
-	}
-	if ((c = nextc()) == '=') {
-            set_yylval_id('%');
-	    lex_state = EXPR_BEG;
-	    return tOP_ASGN;
-	}
-	if (IS_SPCARG(c)) {
-	    goto quotation;
-	}
-	lex_state = IS_AFTER_OPERATOR() ? EXPR_ARG : EXPR_BEG;
-	pushback(c);
-	warn_balanced("%%", "string literal");
-	return '%';
+	return parse_percent(parser, space_seen, last_state);
 
       case '$':
 	lex_state = EXPR_END;
