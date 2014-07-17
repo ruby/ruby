@@ -262,14 +262,14 @@ queue_sleep(VALUE arg)
 }
 
 static VALUE
-queue_do_pop(VALUE self, VALUE should_block)
+queue_do_pop(VALUE self, int should_block)
 {
     struct waiting_delete args;
     args.waiting = GET_QUEUE_WAITERS(self);
     args.th	 = rb_thread_current();
 
     while (queue_length(self) == 0) {
-	if (!(int)should_block) {
+	if (!should_block) {
 	    rb_raise(rb_eThreadError, "queue empty");
 	}
 	rb_ary_push(args.waiting, args.th);
@@ -279,18 +279,13 @@ queue_do_pop(VALUE self, VALUE should_block)
     return rb_ary_shift(GET_QUEUE_QUE(self));
 }
 
-static VALUE
-queue_pop_should_block(int argc, VALUE *argv)
+static int
+queue_pop_should_block(int argc, const VALUE *argv)
 {
-    VALUE should_block = Qtrue;
-    switch (argc) {
-      case 0:
-	break;
-      case 1:
-	should_block = RTEST(argv[0]) ? Qfalse : Qtrue;
-	break;
-      default:
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
+    int should_block = 1;
+    rb_check_arity(argc, 0, 1);
+    if (argc > 0) {
+	should_block = !RTEST(argv[0]);
     }
     return should_block;
 }
@@ -312,7 +307,7 @@ queue_pop_should_block(int argc, VALUE *argv)
 static VALUE
 rb_queue_pop(int argc, VALUE *argv, VALUE self)
 {
-    VALUE should_block = queue_pop_should_block(argc, argv);
+    int should_block = queue_pop_should_block(argc, argv);
     return queue_do_pop(self, should_block);
 }
 
@@ -443,21 +438,13 @@ rb_szqueue_max_set(VALUE self, VALUE vmax)
     return vmax;
 }
 
-static VALUE
-szqueue_push_should_block(int argc, VALUE *argv)
+static int
+szqueue_push_should_block(int argc, const VALUE *argv)
 {
-    VALUE should_block = Qtrue;
-    switch (argc) {
-      case 0:
-	rb_raise(rb_eArgError, "wrong number of arguments (0 for 1)");
-	break;
-      case 1:
-	break;
-      case 2:
-	should_block = RTEST(argv[1]) ? Qfalse : Qtrue;
-	break;
-      default:
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 2)", argc);
+    int should_block = 1;
+    rb_check_arity(argc, 1, 2);
+    if (argc > 1) {
+	should_block = !RTEST(argv[1]);
     }
     return should_block;
 }
@@ -480,12 +467,12 @@ static VALUE
 rb_szqueue_push(int argc, VALUE *argv, VALUE self)
 {
     struct waiting_delete args;
-    VALUE should_block = szqueue_push_should_block(argc, argv);
+    int should_block = szqueue_push_should_block(argc, argv);
     args.waiting = GET_SZQUEUE_WAITERS(self);
     args.th      = rb_thread_current();
 
     while (queue_length(self) >= GET_SZQUEUE_ULONGMAX(self)) {
-	if (!(int)should_block) {
+	if (!should_block) {
 	    rb_raise(rb_eThreadError, "queue full");
 	}
 	rb_ary_push(args.waiting, args.th);
@@ -495,7 +482,7 @@ rb_szqueue_push(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-szqueue_do_pop(VALUE self, VALUE should_block)
+szqueue_do_pop(VALUE self, int should_block)
 {
     VALUE retval = queue_do_pop(self, should_block);
 
@@ -523,7 +510,7 @@ szqueue_do_pop(VALUE self, VALUE should_block)
 static VALUE
 rb_szqueue_pop(int argc, VALUE *argv, VALUE self)
 {
-    VALUE should_block = queue_pop_should_block(argc, argv);
+    int should_block = queue_pop_should_block(argc, argv);
     return szqueue_do_pop(self, should_block);
 }
 
