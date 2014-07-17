@@ -7461,6 +7461,32 @@ parse_gvar(struct parser_params *parser, const enum lex_state_e last_state)
 }
 
 static int
+parse_atmark(struct parser_params *parser, const enum lex_state_e last_state)
+{
+    int result = tIVAR;
+    register int c = nextc();
+
+    newtok();
+    tokadd('@');
+    if (c == '@') {
+	result = tCVAR;
+	tokadd('@');
+	c = nextc();
+    }
+    if (c != -1 && (ISDIGIT(c) || !parser_is_identchar())) {
+	pushback(c);
+	if (tokidx == 1) {
+	    compile_error(PARSER_ARG "`@%c' is not allowed as an instance variable name", c);
+	}
+	else {
+	    compile_error(PARSER_ARG "`@@%c' is not allowed as a class variable name", c);
+	}
+	return 0;
+    }
+    return -c;
+}
+
+static int
 parse_ident(struct parser_params *parser, int c, int cmd_state)
 {
     int result = 0;
@@ -8224,23 +8250,9 @@ parser_yylex(struct parser_params *parser)
 	break;
 
       case '@':
-	c = nextc();
-	newtok();
-	tokadd('@');
-	if (c == '@') {
-	    tokadd('@');
-	    c = nextc();
-	}
-	if (c != -1 && (ISDIGIT(c) || !parser_is_identchar())) {
-	    pushback(c);
-	    if (tokidx == 1) {
-		compile_error(PARSER_ARG "`@%c' is not allowed as an instance variable name", c);
-	    }
-	    else {
-		compile_error(PARSER_ARG "`@@%c' is not allowed as a class variable name", c);
-	    }
-	    return 0;
-	}
+	c = parse_atmark(parser, last_state);
+	if (c >= 0) return c;
+	c = -c;
 	break;
 
       case '_':
