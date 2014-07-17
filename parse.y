@@ -403,7 +403,7 @@ static NODE *new_args_gen(struct parser_params*,NODE*,NODE*,ID,NODE*,NODE*);
 static NODE *new_args_tail_gen(struct parser_params*,NODE*,ID,ID);
 #define new_args_tail(k,kr,b) new_args_tail_gen(parser, (k),(kr),(b))
 
-static NODE *negate_lit(NODE*);
+static VALUE negate_lit(VALUE);
 static NODE *ret_args_gen(struct parser_params*,NODE*);
 #define ret_args(node) ret_args_gen(parser, (node))
 static NODE *arg_blk_pass(NODE*,NODE*);
@@ -4286,7 +4286,8 @@ numeric 	: simple_numeric
 		| tUMINUS_NUM simple_numeric   %prec tLOWEST
 		    {
 		    /*%%%*/
-			$$ = negate_lit($2);
+			$$ = $2;
+			$$->nd_lit = negate_lit($$->nd_lit);
 		    /*%
 			$$ = dispatch2(unary, ripper_intern("-@"), $2);
 		    %*/
@@ -9390,35 +9391,33 @@ new_yield_gen(struct parser_params *parser, NODE *node)
     return NEW_YIELD(node);
 }
 
-static NODE*
-negate_lit(NODE *node)
+static VALUE
+negate_lit(VALUE lit)
 {
-    switch (TYPE(node->nd_lit)) {
+    int type = TYPE(lit);
+    switch (type) {
       case T_FIXNUM:
-	node->nd_lit = LONG2FIX(-FIX2LONG(node->nd_lit));
+	lit = LONG2FIX(-FIX2LONG(lit));
 	break;
       case T_BIGNUM:
       case T_RATIONAL:
       case T_COMPLEX:
-	node->nd_lit = rb_funcall(node->nd_lit,tUMINUS,0,0);
+	lit = rb_funcall(lit,tUMINUS,0,0);
 	break;
       case T_FLOAT:
 #if USE_FLONUM
-	if (FLONUM_P(node->nd_lit)) {
-	    node->nd_lit = DBL2NUM(-RFLOAT_VALUE(node->nd_lit));
+	if (FLONUM_P(lit)) {
+	    lit = DBL2NUM(-RFLOAT_VALUE(lit));
+	    break;
 	}
-	else {
-	    RFLOAT(node->nd_lit)->float_value = -RFLOAT_VALUE(node->nd_lit);
-	}
-#else
-	RFLOAT(node->nd_lit)->float_value = -RFLOAT_VALUE(node->nd_lit);
 #endif
+	RFLOAT(lit)->float_value = -RFLOAT_VALUE(lit);
 	break;
       default:
-	rb_bug("unknown literal type passed to negate_lit");
+	rb_bug("unknown literal type (%d) passed to negate_lit", type);
 	break;
     }
-    return node;
+    return lit;
 }
 
 static NODE *
