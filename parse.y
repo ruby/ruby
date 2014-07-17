@@ -6938,6 +6938,17 @@ parser_prepare(struct parser_params *parser)
      space_seen && !ISSPACE(c) && \
      (ambiguous_operator(op, syn), 0)))
 
+static VALUE
+parse_rational(struct parser_params *parser, char *str, int len, int seen_point)
+{
+    VALUE v;
+    char *point = &str[seen_point];
+    size_t fraclen = len-seen_point-1;
+    memmove(point, point+1, fraclen+1);
+    v = rb_cstr_to_inum(str, 10, FALSE);
+    return rb_rational_new(v, rb_int_positive_pow(10, fraclen));
+}
+
 static int
 parse_numeric(struct parser_params *parser, int c)
 {
@@ -7156,12 +7167,8 @@ parse_numeric(struct parser_params *parser, int c)
 
 	suffix = number_literal_suffix(seen_e ? NUM_SUFFIX_I : NUM_SUFFIX_ALL);
 	if (suffix & NUM_SUFFIX_R) {
-	    char *point = &tok()[seen_point];
-	    size_t fraclen = toklen()-seen_point-1;
 	    type = tRATIONAL;
-	    memmove(point, point+1, fraclen+1);
-	    v = rb_cstr_to_inum(tok(), 10, FALSE);
-	    v = rb_rational_new(v, rb_int_positive_pow(10, fraclen));
+	    v = parse_rational(parser, tok(), toklen(), seen_point);
 	}
 	else {
 	    double d = strtod(tok(), 0);
