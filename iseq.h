@@ -76,8 +76,12 @@ PACKED_STRUCT_UNALIGNED(struct iseq_catch_table {
 static inline int
 iseq_catch_table_bytes(int n)
 {
-    return sizeof(struct iseq_catch_table) +
-           (n - 1) * sizeof(struct iseq_catch_table_entry);
+    enum {
+	catch_table_entries_max = (INT_MAX - sizeof(struct iseq_catch_table)) / sizeof(struct iseq_catch_table_entry)
+    };
+    if (n > catch_table_entries_max) rb_fatal("too large iseq_catch_table - %d", n);
+    return (int)(sizeof(struct iseq_catch_table) +
+		 (n - 1) * sizeof(struct iseq_catch_table_entry));
 }
 
 #define INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE (512)
