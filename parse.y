@@ -7461,13 +7461,152 @@ parse_gvar(struct parser_params *parser, const enum lex_state_e last_state)
 }
 
 static int
+parse_ident(struct parser_params *parser, int c, int cmd_state)
+{
+    int result = 0;
+    int mb = ENC_CODERANGE_7BIT;
+    const enum lex_state_e last_state = lex_state;
+
+    do {
+	if (!ISASCII(c)) mb = ENC_CODERANGE_UNKNOWN;
+	if (tokadd_mbchar(c) == -1) return 0;
+	c = nextc();
+    } while (parser_is_identchar());
+    switch (tok()[0]) {
+      case '@': case '$':
+	pushback(c);
+	break;
+      default:
+	if ((c == '!' || c == '?') && !peek('=')) {
+	    tokadd(c);
+	}
+	else {
+	    pushback(c);
+	}
+    }
+    tokfix();
+
+    switch (tok()[0]) {
+      case '$':
+	lex_state = EXPR_END;
+	result = tGVAR;
+	break;
+
+      case '@':
+	lex_state = EXPR_END;
+	if (tok()[1] == '@')
+	    result = tCVAR;
+	else
+	    result = tIVAR;
+	break;
+
+      default:
+	if (toklast() == '!' || toklast() == '?') {
+	    result = tFID;
+	}
+	else {
+	    if (IS_lex_state(EXPR_FNAME)) {
+		register int c = nextc();
+		if (c == '=' && !peek('~') && !peek('>') &&
+		    (!peek('=') || (peek_n('>', 1)))) {
+		    result = tIDENTIFIER;
+		    tokadd(c);
+		    tokfix();
+		}
+		else {
+		    pushback(c);
+		}
+	    }
+	    if (result == 0 && ISUPPER(tok()[0])) {
+		result = tCONSTANT;
+	    }
+	    else {
+		result = tIDENTIFIER;
+	    }
+	}
+
+	if (IS_LABEL_POSSIBLE()) {
+	    if (IS_LABEL_SUFFIX(0)) {
+		lex_state = EXPR_LABELARG;
+		nextc();
+		set_yylval_name(TOK_INTERN());
+		return tLABEL;
+	    }
+	}
+	if (mb == ENC_CODERANGE_7BIT && !IS_lex_state(EXPR_DOT)) {
+	    const struct kwtable *kw;
+
+	    /* See if it is a reserved word.  */
+	    kw = rb_reserved_word(tok(), toklen());
+	    if (kw) {
+		enum lex_state_e state = lex_state;
+		lex_state = kw->state;
+		if (IS_lex_state_for(state, EXPR_FNAME)) {
+		    set_yylval_name(rb_intern(kw->name));
+		    return kw->id[0];
+		}
+		if (IS_lex_state(EXPR_BEG)) {
+		    command_start = TRUE;
+		}
+		if (kw->id[0] == keyword_do) {
+		    if (lpar_beg && lpar_beg == paren_nest) {
+			lpar_beg = 0;
+			--paren_nest;
+			return keyword_do_LAMBDA;
+		    }
+		    if (COND_P()) return keyword_do_cond;
+		    if (CMDARG_P() && !IS_lex_state_for(state, EXPR_CMDARG))
+			return keyword_do_block;
+		    if (IS_lex_state_for(state, (EXPR_BEG | EXPR_ENDARG)))
+			return keyword_do_block;
+		    return keyword_do;
+		}
+		if (IS_lex_state_for(state, (EXPR_BEG | EXPR_VALUE)))
+		    return kw->id[0];
+		else {
+		    if (kw->id[0] != kw->id[1])
+			lex_state = EXPR_BEG;
+		    return kw->id[1];
+		}
+	    }
+	}
+
+	if (IS_lex_state(EXPR_BEG_ANY | EXPR_ARG_ANY | EXPR_DOT)) {
+	    if (cmd_state) {
+		lex_state = EXPR_CMDARG;
+	    }
+	    else {
+		lex_state = EXPR_ARG;
+	    }
+	}
+	else if (lex_state == EXPR_FNAME) {
+	    lex_state = EXPR_ENDFN;
+	}
+	else {
+	    lex_state = EXPR_END;
+	}
+    }
+
+    {
+	ID ident = TOK_INTERN();
+
+	set_yylval_name(ident);
+	if (!IS_lex_state_for(last_state, EXPR_DOT|EXPR_FNAME) &&
+	    is_local_id(ident) && lvar_defined(ident)) {
+	    lex_state = EXPR_END;
+	}
+    }
+
+    return result;
+}
+
+static int
 parser_yylex(struct parser_params *parser)
 {
     register int c;
     int space_seen = 0;
     int cmd_state;
     enum lex_state_e last_state;
-    int mb;
 #ifdef RIPPER
     int fallthru = FALSE;
 #endif
@@ -8129,139 +8268,7 @@ parser_yylex(struct parser_params *parser)
 	break;
     }
 
-    mb = ENC_CODERANGE_7BIT;
-    do {
-	if (!ISASCII(c)) mb = ENC_CODERANGE_UNKNOWN;
-	if (tokadd_mbchar(c) == -1) return 0;
-	c = nextc();
-    } while (parser_is_identchar());
-    switch (tok()[0]) {
-      case '@': case '$':
-	pushback(c);
-	break;
-      default:
-	if ((c == '!' || c == '?') && !peek('=')) {
-	    tokadd(c);
-	}
-	else {
-	    pushback(c);
-	}
-    }
-    tokfix();
-
-    {
-	int result = 0;
-
-	last_state = lex_state;
-	switch (tok()[0]) {
-	  case '$':
-	    lex_state = EXPR_END;
-	    result = tGVAR;
-	    break;
-	  case '@':
-	    lex_state = EXPR_END;
-	    if (tok()[1] == '@')
-		result = tCVAR;
-	    else
-		result = tIVAR;
-	    break;
-
-	  default:
-	    if (toklast() == '!' || toklast() == '?') {
-		result = tFID;
-	    }
-	    else {
-		if (IS_lex_state(EXPR_FNAME)) {
-		    if ((c = nextc()) == '=' && !peek('~') && !peek('>') &&
-			(!peek('=') || (peek_n('>', 1)))) {
-			result = tIDENTIFIER;
-			tokadd(c);
-			tokfix();
-		    }
-		    else {
-			pushback(c);
-		    }
-		}
-		if (result == 0 && ISUPPER(tok()[0])) {
-		    result = tCONSTANT;
-		}
-		else {
-		    result = tIDENTIFIER;
-		}
-	    }
-
-	    if (IS_LABEL_POSSIBLE()) {
-		if (IS_LABEL_SUFFIX(0)) {
-		    lex_state = EXPR_LABELARG;
-		    nextc();
-		    set_yylval_name(TOK_INTERN());
-		    return tLABEL;
-		}
-	    }
-	    if (mb == ENC_CODERANGE_7BIT && !IS_lex_state(EXPR_DOT)) {
-		const struct kwtable *kw;
-
-		/* See if it is a reserved word.  */
-		kw = rb_reserved_word(tok(), toklen());
-		if (kw) {
-		    enum lex_state_e state = lex_state;
-		    lex_state = kw->state;
-		    if (IS_lex_state_for(state, EXPR_FNAME)) {
-			set_yylval_name(rb_intern(kw->name));
-			return kw->id[0];
-		    }
-		    if (IS_lex_state(EXPR_BEG)) {
-			command_start = TRUE;
-		    }
-		    if (kw->id[0] == keyword_do) {
-			if (lpar_beg && lpar_beg == paren_nest) {
-			    lpar_beg = 0;
-			    --paren_nest;
-			    return keyword_do_LAMBDA;
-			}
-			if (COND_P()) return keyword_do_cond;
-			if (CMDARG_P() && !IS_lex_state_for(state, EXPR_CMDARG))
-			    return keyword_do_block;
-			if (IS_lex_state_for(state, (EXPR_BEG | EXPR_ENDARG)))
-			    return keyword_do_block;
-			return keyword_do;
-		    }
-		    if (IS_lex_state_for(state, (EXPR_BEG | EXPR_VALUE)))
-			return kw->id[0];
-		    else {
-			if (kw->id[0] != kw->id[1])
-			    lex_state = EXPR_BEG;
-			return kw->id[1];
-		    }
-		}
-	    }
-
-	    if (IS_lex_state(EXPR_BEG_ANY | EXPR_ARG_ANY | EXPR_DOT)) {
-		if (cmd_state) {
-		    lex_state = EXPR_CMDARG;
-		}
-		else {
-		    lex_state = EXPR_ARG;
-		}
-	    }
-	    else if (lex_state == EXPR_FNAME) {
-		lex_state = EXPR_ENDFN;
-	    }
-	    else {
-		lex_state = EXPR_END;
-	    }
-	}
-        {
-            ID ident = TOK_INTERN();
-
-            set_yylval_name(ident);
-            if (!IS_lex_state_for(last_state, EXPR_DOT|EXPR_FNAME) &&
-		is_local_id(ident) && lvar_defined(ident)) {
-                lex_state = EXPR_END;
-            }
-        }
-	return result;
-    }
+    return parse_ident(parser, c, cmd_state);
 }
 
 #if YYPURE
