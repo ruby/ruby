@@ -689,7 +689,7 @@ encoding.$(OBJEXT): {$(VPATH)}encoding.c $(RUBY_H_INCLUDES) \
   $(ENCODING_H_INCLUDES) {$(VPATH)}regenc.h {$(VPATH)}util.h \
   {$(VPATH)}internal.h
 enum.$(OBJEXT): {$(VPATH)}enum.c $(RUBY_H_INCLUDES) {$(VPATH)}node.h \
-  {$(VPATH)}util.h {$(VPATH)}id.h {$(VPATH)}internal.h
+  {$(VPATH)}util.h {$(VPATH)}id.h {$(VPATH)}internal.h $(VM_CORE_H_INCLUDES)
 enumerator.$(OBJEXT): {$(VPATH)}enumerator.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}internal.h {$(VPATH)}node.h
 error.$(OBJEXT): {$(VPATH)}error.c {$(VPATH)}known_errors.inc \
