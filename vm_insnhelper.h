@@ -34,34 +34,6 @@
 #define VMDEBUG 3
 #endif
 
-enum {
-  BOP_PLUS,
-  BOP_MINUS,
-  BOP_MULT,
-  BOP_DIV,
-  BOP_MOD,
-  BOP_EQ,
-  BOP_EQQ,
-  BOP_LT,
-  BOP_LE,
-  BOP_LTLT,
-  BOP_AREF,
-  BOP_ASET,
-  BOP_LENGTH,
-  BOP_SIZE,
-  BOP_EMPTY_P,
-  BOP_SUCC,
-  BOP_GT,
-  BOP_GE,
-  BOP_NOT,
-  BOP_NEQ,
-  BOP_MATCH,
-  BOP_FREEZE,
-
-  BOP_LAST_
-};
-
-extern short ruby_vm_redefined_flag[BOP_LAST_];
 extern VALUE ruby_vm_const_missing_count;
 
 #if VM_COLLECT_USAGE_DETAILS
@@ -231,18 +203,6 @@ enum vm_regan_acttype {
 /**********************************************************/
 
 /* optimize insn */
-#define FIXNUM_REDEFINED_OP_FLAG (1 << 0)
-#define FLOAT_REDEFINED_OP_FLAG  (1 << 1)
-#define STRING_REDEFINED_OP_FLAG (1 << 2)
-#define ARRAY_REDEFINED_OP_FLAG  (1 << 3)
-#define HASH_REDEFINED_OP_FLAG   (1 << 4)
-#define BIGNUM_REDEFINED_OP_FLAG (1 << 5)
-#define SYMBOL_REDEFINED_OP_FLAG (1 << 6)
-#define TIME_REDEFINED_OP_FLAG   (1 << 7)
-#define REGEXP_REDEFINED_OP_FLAG (1 << 8)
-
-#define BASIC_OP_UNREDEFINED_P(op, klass) (LIKELY((ruby_vm_redefined_flag[(op)]&(klass)) == 0))
-
 #define FIXNUM_2_P(a, b) ((a) & (b) & 1)
 #if USE_FLONUM
 #define FLONUM_2_P(a, b) (((((a)^2) | ((b)^2)) & 3) == 0) /* (FLONUM_P(a) && FLONUM_P(b)) */

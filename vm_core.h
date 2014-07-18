@@ -318,6 +318,33 @@ enum ruby_special_exceptions {
     ruby_special_error_count
 };
 
+enum ruby_basic_operators {
+    BOP_PLUS,
+    BOP_MINUS,
+    BOP_MULT,
+    BOP_DIV,
+    BOP_MOD,
+    BOP_EQ,
+    BOP_EQQ,
+    BOP_LT,
+    BOP_LE,
+    BOP_LTLT,
+    BOP_AREF,
+    BOP_ASET,
+    BOP_LENGTH,
+    BOP_SIZE,
+    BOP_EMPTY_P,
+    BOP_SUCC,
+    BOP_GT,
+    BOP_GE,
+    BOP_NOT,
+    BOP_NEQ,
+    BOP_MATCH,
+    BOP_FREEZE,
+
+    BOP_LAST_
+};
+
 #define GetVMPtr(obj, ptr) \
   GetCoreDataFromValue((obj), rb_vm_t, (ptr))
 
@@ -410,6 +437,8 @@ typedef struct rb_vm_struct {
 	size_t fiber_vm_stack_size;
 	size_t fiber_machine_stack_size;
     } default_params;
+
+    short redefined_flag[BOP_LAST_];
 } rb_vm_t;
 
 /* default values */
@@ -425,6 +454,19 @@ typedef struct rb_vm_struct {
 #define RUBY_VM_FIBER_VM_STACK_SIZE_MIN       (   2 * 1024 * sizeof(VALUE)) /*    8 KB or   16 KB */
 #define RUBY_VM_FIBER_MACHINE_STACK_SIZE      (  64 * 1024 * sizeof(VALUE)) /*  256 KB or  512 KB */
 #define RUBY_VM_FIBER_MACHINE_STACK_SIZE_MIN  (  16 * 1024 * sizeof(VALUE)) /*   64 KB or  128 KB */
+
+/* optimize insn */
+#define FIXNUM_REDEFINED_OP_FLAG (1 << 0)
+#define FLOAT_REDEFINED_OP_FLAG  (1 << 1)
+#define STRING_REDEFINED_OP_FLAG (1 << 2)
+#define ARRAY_REDEFINED_OP_FLAG  (1 << 3)
+#define HASH_REDEFINED_OP_FLAG   (1 << 4)
+#define BIGNUM_REDEFINED_OP_FLAG (1 << 5)
+#define SYMBOL_REDEFINED_OP_FLAG (1 << 6)
+#define TIME_REDEFINED_OP_FLAG   (1 << 7)
+#define REGEXP_REDEFINED_OP_FLAG (1 << 8)
+
+#define BASIC_OP_UNREDEFINED_P(op, klass) (LIKELY((GET_VM()->redefined_flag[(op)]&(klass)) == 0))
 
 #ifndef VM_DEBUG_BP_CHECK
 #define VM_DEBUG_BP_CHECK 0
