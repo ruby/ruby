@@ -143,7 +143,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.5.9"
+#define WIN32OLE_VERSION "1.6.0"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -8894,7 +8894,6 @@ folevariant_initialize(VALUE self, VALUE args)
         vt = NUM2INT(vvt);
         ole_val2olevariantdata(val, vt, pvar);
     }
-    vt = V_VT(&pvar->var);
     return self;
 }
 

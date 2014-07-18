@@ -1,3 +1,8 @@
+Fri Jul 18 19:54:03 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (folevariant_initialize): remove unnecessary
+	  code.
+
 Fri Jul 18 19:11:03 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix/eigenvalue_decomposition: Style fix
