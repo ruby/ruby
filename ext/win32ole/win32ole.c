@@ -143,7 +143,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.6.1"
+#define WIN32OLE_VERSION "1.6.2"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -596,9 +596,9 @@ static VALUE folevariant_ary_aset(int argc, VALUE *argv, VALUE self);
 static VALUE folevariant_value(VALUE self);
 static VALUE folevariant_vartype(VALUE self);
 static VALUE folevariant_set_value(VALUE self, VALUE val);
-static VALUE fole_record_to_h(VALUE self);
-static VALUE fole_record_typename(VALUE self);
-static VALUE fole_record_method_missing(VALUE self, VALUE member);
+static VALUE folerecord_to_h(VALUE self);
+static VALUE folerecord_typename(VALUE self);
+static VALUE folerecord_method_missing(VALUE self, VALUE member);
 static void init_enc2cp(void);
 static void free_enc2cp(void);
 
@@ -9246,7 +9246,7 @@ folevariant_set_value(VALUE self, VALUE val)
  *
  */
 static VALUE
-fole_record_to_h(VALUE self)
+folerecord_to_h(VALUE self)
 {
     return rb_ivar_get(self, rb_intern("fields"));
 }
@@ -9283,7 +9283,7 @@ fole_record_to_h(VALUE self)
  *
  */
 static VALUE
-fole_record_typename(VALUE self)
+folerecord_typename(VALUE self)
 {
     return rb_ivar_get(self, rb_intern("typename"));
 }
@@ -9296,7 +9296,7 @@ fole_record_typename(VALUE self)
  *  If the member name is not correct, KeyError exception is raised.
  */
 static VALUE
-fole_record_method_missing(VALUE self, VALUE name)
+folerecord_method_missing(VALUE self, VALUE name)
 {
     VALUE fields = rb_ivar_get(self, rb_intern("fields"));
     return rb_hash_fetch(fields, rb_sym_to_s(name));
@@ -9620,9 +9620,9 @@ Init_win32ole(void)
     rb_define_const(cWIN32OLE_VARIANT, "Nothing", rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, INT2FIX(VT_DISPATCH)));
 
     cWIN32OLE_RECORD = rb_define_class("WIN32OLE_RECORD", rb_cObject);
-    rb_define_method(cWIN32OLE_RECORD, "to_h", fole_record_to_h, 0);
-    rb_define_method(cWIN32OLE_RECORD, "typename", fole_record_typename, 0);
-    rb_define_method(cWIN32OLE_RECORD, "method_missing", fole_record_method_missing, 1);
+    rb_define_method(cWIN32OLE_RECORD, "to_h", folerecord_to_h, 0);
+    rb_define_method(cWIN32OLE_RECORD, "typename", folerecord_typename, 0);
+    rb_define_method(cWIN32OLE_RECORD, "method_missing", folerecord_method_missing, 1);
 
     eWIN32OLERuntimeError = rb_define_class("WIN32OLERuntimeError", rb_eRuntimeError);
 

@@ -1,3 +1,7 @@
+Sat Jul 19 06:19:01 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: refactoring. 
+
 Fri Jul 18 22:34:41 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (folevariant_initialize): WIN32OLE_VARIANT
