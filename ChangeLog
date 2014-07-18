@@ -1,3 +1,8 @@
+Fri Jul 18 10:14:42 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/fileutils.rb: added missing options of FileUtils.touch by @Domon.
+	  [fix GH-669]
+
 Thu Jul 17 19:57:27 2014  Herwin  <herwin@quarantainenet.nl>
 
 	* ext/thread/thread.c (rb_szqueue_push): add optional parameter,
