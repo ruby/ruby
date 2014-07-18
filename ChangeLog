@@ -1,3 +1,8 @@
+Sat Jul 19 01:44:34 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (match_aref): should not ignore name after NUL byte.
+	  [ruby-dev:48275] [Bug #9902]
+
 Sun Jul 13 23:28:41 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/test_timeout.rb (test_timeout): inverted test condition.
