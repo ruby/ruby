@@ -894,7 +894,7 @@ class Matrix
       return apply_through_coercion(m, __method__)
     end
 
-    Matrix.Raise ErrDimensionMismatch unless row_count == m.row_count and column_count == m.column_count
+    Matrix.Raise ErrDimensionMismatch unless row_count == m.row_count && column_count == m.column_count
 
     rows = Array.new(row_count) {|i|
       Array.new(column_count) {|j|
@@ -921,7 +921,7 @@ class Matrix
       return apply_through_coercion(m, __method__)
     end
 
-    Matrix.Raise ErrDimensionMismatch unless row_count == m.row_count and column_count == m.column_count
+    Matrix.Raise ErrDimensionMismatch unless row_count == m.row_count && column_count == m.column_count
 
     rows = Array.new(row_count) {|i|
       Array.new(column_count) {|j|
