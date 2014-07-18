@@ -1,3 +1,8 @@
+Fri Jul 18 19:11:03 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix/eigenvalue_decomposition: Style fix
+	  Patch by Gogo Tanaka [#10058]
+
 Fri Jul 18 19:03:53 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: Avoid using `and`.
