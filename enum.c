@@ -14,7 +14,6 @@
 #include "node.h"
 #include "id.h"
 #include "internal.h"
-#include "vm_core.h"
 
 VALUE rb_f_send(int argc, VALUE *argv, VALUE recv);
 
@@ -1024,11 +1023,6 @@ name##_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo)) \
 static VALUE \
 enum_##name##_func(VALUE result, NODE *memo)
 
-#define ARY_OPTIMIZABLE_EACH(obj) \
-    (RBASIC_CLASS(obj) == rb_cArray && BASIC_OP_UNREDEFINED_P(BOP_EACH, ARRAY_REDEFINED_OP_FLAG))
-#define HASH_OPTIMIZABLE_EACH(obj) \
-    (RBASIC_CLASS(obj) == rb_cHash && BASIC_OP_UNREDEFINED_P(BOP_EACH, HASH_REDEFINED_OP_FLAG))
-
 DEFINE_ENUMFUNCS(all)
 {
     if (!RTEST(result)) {
@@ -1092,34 +1086,7 @@ DEFINE_ENUMFUNCS(any)
 static VALUE
 enum_any(VALUE obj)
 {
-    NODE *memo;
-
-    if (!SPECIAL_CONST_P(obj)) {
-	switch (BUILTIN_TYPE(obj)) {
-	  case T_ARRAY:
-	    if (ARY_OPTIMIZABLE_EACH(obj)) {
-		long i, len = RARRAY_LEN(obj);
-		if (!len) return Qfalse;
-		if (!rb_block_given_p()) {
-		    const VALUE *ptr = RARRAY_CONST_PTR(obj);
-		    for (i = 0; i < len; ++i) if (RTEST(ptr[i])) return Qtrue;
-		    return Qfalse;
-		}
-	    }
-	    break;
-	  case T_HASH:
-	    if (HASH_OPTIMIZABLE_EACH(obj)) {
-		if (RHASH_EMPTY_P(obj)) return Qfalse;
-		if (!rb_block_given_p()) {
-		    /* yields pairs, never false */
-		    return Qtrue;
-		}
-	    }
-	    break;
-	}
-    }
-
-    memo = NEW_MEMO(Qfalse, 0, 0);
+    NODE *memo = NEW_MEMO(Qfalse, 0, 0);
     rb_block_call(obj, id_each, 0, 0, ENUMFUNC(any), (VALUE)memo);
     return memo->u1.value;
 }
