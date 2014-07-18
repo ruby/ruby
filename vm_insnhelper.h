@@ -57,6 +57,7 @@ enum {
   BOP_NEQ,
   BOP_MATCH,
   BOP_FREEZE,
+  BOP_EACH,
 
   BOP_LAST_
 };

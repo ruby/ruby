@@ -14,6 +14,8 @@
 #include "node.h"
 #include "id.h"
 #include "internal.h"
+#include "vm_core.h"
+#include "vm_insnhelper.h"
 
 VALUE rb_f_send(int argc, VALUE *argv, VALUE recv);
 
@@ -1086,7 +1088,16 @@ DEFINE_ENUMFUNCS(any)
 static VALUE
 enum_any(VALUE obj)
 {
-    NODE *memo = NEW_MEMO(Qfalse, 0, 0);
+    NODE *memo;
+
+    if ((RBASIC_CLASS(obj) == rb_cArray && RARRAY_LEN(obj) == 0 &&
+	BASIC_OP_UNREDEFINED_P(BOP_EACH, ARRAY_REDEFINED_OP_FLAG)) ||
+	(RBASIC_CLASS(obj) == rb_cHash && RHASH_EMPTY_P(obj) &&
+	BASIC_OP_UNREDEFINED_P(BOP_EACH, HASH_REDEFINED_OP_FLAG))) {
+	return Qfalse;
+    }
+
+    memo = NEW_MEMO(Qfalse, 0, 0);
     rb_block_call(obj, id_each, 0, 0, ENUMFUNC(any), (VALUE)memo);
     return memo->u1.value;
 }
