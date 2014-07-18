@@ -546,6 +546,7 @@ rb_szqueue_num_waiting(VALUE self)
 #define UNDER_THREAD 1
 #endif
 
+/* :nodoc: */
 static VALUE
 undumpable(VALUE obj)
 {
