@@ -2463,6 +2463,52 @@ rb_hash_compare_by_id_p(VALUE hash)
     return Qfalse;
 }
 
+static int
+any_p_i(VALUE key, VALUE value, VALUE arg)
+{
+    VALUE ret = rb_yield(rb_assoc_new(key, value));
+    if (RTEST(ret)) {
+	*(VALUE *)arg = Qtrue;
+	return ST_STOP;
+    }
+    return ST_CONTINUE;
+}
+
+static int
+any_p_i_fast(VALUE key, VALUE value, VALUE arg)
+{
+    VALUE ret = rb_yield_values(2, key, value);
+    if (RTEST(ret)) {
+	*(VALUE *)arg = Qtrue;
+	return ST_STOP;
+    }
+    return ST_CONTINUE;
+}
+
+/*
+ *  call-seq:
+ *     hsh.any? [{ |(key, value)| block }]   -> true or false
+ *
+ *  See also Enumerable#any?
+ */
+
+static VALUE
+rb_hash_any_p(VALUE hash)
+{
+    VALUE ret = Qfalse;
+
+    if (RHASH_EMPTY_P(hash)) return Qfalse;
+    if (!rb_block_given_p()) {
+	/* yields pairs, never false */
+	return Qtrue;
+    }
+    if (rb_block_arity() > 1)
+	rb_hash_foreach(hash, any_p_i_fast, (VALUE)&ret);
+    else
+	rb_hash_foreach(hash, any_p_i, (VALUE)&ret);
+    return ret;
+}
+
 static int path_tainted = -1;
 
 static char **origenviron;
@@ -3860,6 +3906,8 @@ Init_Hash(void)
 
     rb_define_method(rb_cHash,"compare_by_identity", rb_hash_compare_by_id, 0);
     rb_define_method(rb_cHash,"compare_by_identity?", rb_hash_compare_by_id_p, 0);
+
+    rb_define_method(rb_cHash, "any?", rb_hash_any_p, 0);
 
     /* Document-class: ENV
      *

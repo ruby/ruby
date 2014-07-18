@@ -285,11 +285,9 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
     [["c-return", 1, :set_trace_func, Kernel],
      ["line", 4, __method__, self.class],
-     ["c-call", 4, :any?, Enumerable],
-     ["c-call", 4, :each, Array],
+     ["c-call", 4, :any?, Array],
      ["line", 4, __method__, self.class],
-     ["c-return", 4, :each, Array],
-     ["c-return", 4, :any?, Enumerable],
+     ["c-return", 4, :any?, Array],
      ["line", 5, __method__, self.class],
      ["c-call", 5, :set_trace_func, Kernel]].each{|e|
       assert_equal(e, events.shift)

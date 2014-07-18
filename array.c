@@ -5409,6 +5409,29 @@ rb_ary_drop_while(VALUE ary)
 }
 
 /*
+ *  call-seq:
+ *     ary.any? [{ |obj| block }]   -> true or false
+ *
+ *  See also Enumerable#any?
+ */
+
+static VALUE
+rb_ary_any_p(VALUE ary)
+{
+    long i, len = RARRAY_LEN(ary);
+    const VALUE *ptr = RARRAY_CONST_PTR(ary);
+
+    if (!len) return Qfalse;
+    if (!rb_block_given_p()) {
+	for (i = 0; i < len; ++i) if (RTEST(ptr[i])) return Qtrue;
+    }
+    else {
+	for (i = 0; i < len; ++i) if (RTEST(rb_yield(ptr[i]))) return Qtrue;
+    }
+    return Qfalse;
+}
+
+/*
  *  Arrays are ordered, integer-indexed collections of any object.
  *
  *  Array indexing starts at 0, as in C or Java.  A negative index is assumed
@@ -5757,6 +5780,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "drop", rb_ary_drop, 1);
     rb_define_method(rb_cArray, "drop_while", rb_ary_drop_while, 0);
     rb_define_method(rb_cArray, "bsearch", rb_ary_bsearch, 0);
+    rb_define_method(rb_cArray, "any?", rb_ary_any_p, 0);
 
     id_cmp = rb_intern("<=>");
     id_random = rb_intern("random");
