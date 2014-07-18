@@ -4185,6 +4185,11 @@ AC_ARG_WITH([ruby-pc],
 AC_SUBST(ruby_pc)
 AC_SUBST(exec, [exec])
 
+AC_ARG_WITH(destdir,
+	    AS_HELP_STRING([--with-destdir=DESTDIR], [specify default directory to install]),
+	    [DESTDIR="$withval"])
+AC_SUBST(DESTDIR)
+
 AC_CONFIG_FILES($ruby_pc:template/ruby.pc.in,
     [
     if sed ['s/\$(\([A-Za-z_][A-Za-z0-9_]*\))/${\1}/g;s/@[A-Za-z_][A-Za-z0-9_]*@//'] $ruby_pc > ruby.tmp.pc &&

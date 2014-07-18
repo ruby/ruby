@@ -184,6 +184,8 @@ MESSAGE_END = ; do echo "$$line"; done
 ECHO_BEGIN = @sep=''; for word in
 ECHO_END = ; do echo @ECHO_N@ "$$sep'$$word'@ECHO_C@"; sep=' '; done; echo
 
+DESTDIR       = @DESTDIR@
+
 configure_args = @configure_args@
 #### End of variables
 
