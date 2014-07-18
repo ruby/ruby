@@ -1,3 +1,12 @@
+Fri Jul 18 22:34:41 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (folevariant_initialize): WIN32OLE_VARIANT
+	  does not support VT_RECORD. VT_RECORD should be supported in
+	  WIN32OLE_RECORD.
+
+	* test/win32ole/test_win32ole_variant.rb (test_s_new_vt_record_exc):
+	  ditto.
+
 Fri Jul 18 19:54:03 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (folevariant_initialize): remove unnecessary
