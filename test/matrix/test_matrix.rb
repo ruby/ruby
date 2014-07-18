@@ -371,6 +371,14 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal(Matrix[[1,4],[2,5],[3,6]], @m1.transpose)
   end
 
+  def test_clockwise_rotate
+    assert_equal(Matrix[[4,1],[5,2],[6,3]], @m1.rotate)
+  end
+
+  def test_counter_clockwise_rotate
+    assert_equal(Matrix[[3,6],[2,5],[1,4]], @m1.rotate(false))
+  end
+
   def test_row_vectors
     assert_equal([Vector[1,2,3], Vector[4,5,6]], @m1.row_vectors)
   end
