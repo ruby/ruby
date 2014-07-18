@@ -1,3 +1,8 @@
+Fri Jul 18 17:41:54 2014  GoGo tanaka  <qlli.illb@gmail.com>
+
+	* test/matrix/test_matrix.rb: Add tests for Matrix class.
+	  [Feature #10057][ruby-core:63809]
+
 Fri Jul 18 11:10:53 2014  Scott Francis  <scott.francis@shopify.com>
 
 	* enum.c (enum_any): optimize object allocations for Array and
