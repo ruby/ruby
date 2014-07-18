@@ -5426,7 +5426,9 @@ rb_ary_any_p(VALUE ary)
 	for (i = 0; i < len; ++i) if (RTEST(ptr[i])) return Qtrue;
     }
     else {
-	for (i = 0; i < len; ++i) if (RTEST(rb_yield(ptr[i]))) return Qtrue;
+	for (i = 0; i < RARRAY_LEN(ary); ++i) {
+	    if (RTEST(rb_yield(RARRAY_AREF(ary, i)))) return Qtrue;
+	}
     }
     return Qfalse;
 }
