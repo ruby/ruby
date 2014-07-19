@@ -952,12 +952,12 @@ class Matrix
   end
 
   #
-  # Element-wise multiplication
-  #    Matrix[[1,2], [3,4]].element_multiplication(Matrix[[1,2], [3,2]])
+  # Hadamard product
+  #    Matrix[[1,2], [3,4]].hadamard(Matrix[[1,2], [3,2]])
   #      => 1  4
   #         9  8
   #
-  def element_multiplication(m)
+  def hadamard(m)
     case m
     when Numeric
       Matrix.Raise ErrOperationNotDefined, "element_multiplication", self.class, m.class
@@ -967,14 +967,14 @@ class Matrix
     else
       return apply_through_coercion(m, __method__)
     end
-    
-    Matrix.Raise ErrDimensionMismatch unless row_count == m.row_count and column_count == m.column_count
-    
-    rows = Array.new(row_count) {|i|
-      Array.new(column_count) {|j|
+
+    Matrix.Raise ErrDimensionMismatch unless row_count == m.row_count && column_count == m.column_count
+
+    rows = Array.new(row_count) do |i|
+      Array.new(column_count) do|j|
         self[i, j] * m[i, j]
-      }
-    }
+      end
+    end
     new_matrix rows, column_count
   end
 
