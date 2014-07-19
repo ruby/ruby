@@ -8811,8 +8811,8 @@ Init_String(void)
     rb_define_method(rb_cString, "<<", rb_str_concat, 1);
     rb_define_method(rb_cString, "prepend", rb_str_prepend, 1);
     rb_define_method(rb_cString, "crypt", rb_str_crypt, 1);
-    rb_define_method(rb_cString, "intern", rb_str_dynamic_intern, 0); /* in parse.y */
-    rb_define_method(rb_cString, "to_sym", rb_str_dynamic_intern, 0); /* in parse.y */
+    rb_define_method(rb_cString, "intern", rb_str_dynamic_intern, 0); /* in symbol.c */
+    rb_define_method(rb_cString, "to_sym", rb_str_dynamic_intern, 0); /* in symbol.c */
     rb_define_method(rb_cString, "ord", rb_str_ord, 0);
 
     rb_define_method(rb_cString, "include?", rb_str_include, 1);
@@ -8881,7 +8881,7 @@ Init_String(void)
     rb_include_module(rb_cSymbol, rb_mComparable);
     rb_undef_alloc_func(rb_cSymbol);
     rb_undef_method(CLASS_OF(rb_cSymbol), "new");
-    rb_define_singleton_method(rb_cSymbol, "all_symbols", rb_sym_all_symbols, 0); /* in parse.y */
+    rb_define_singleton_method(rb_cSymbol, "all_symbols", rb_sym_all_symbols, 0); /* in symbol.c */
     rb_define_singleton_method(rb_cSymbol, "find", sym_find, 1);
 
     rb_define_method(rb_cSymbol, "==", sym_equal, 1);
