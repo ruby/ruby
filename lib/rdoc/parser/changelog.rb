@@ -145,10 +145,14 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
           # HACK Ruby 1.8 does not raise ArgumentError for Time.parse "Other"
           entry_name = nil unless entry_name =~ /#{time.year}/
         rescue NoMethodError
+          # HACK Ruby 2.1.2 and earlier raises NoMethodError if time part is absent
           time, = entry_name.split '  ', 2
-          time = Time.parse time
         rescue ArgumentError
-          entry_name = nil
+          if /out of range/ =~ $!.message
+            time = Time.parse(entry_name.split('  ', 2)[0]) rescue entry_name = nil
+          else
+            entry_name = nil
+          end
         end
 
         entry_body = []

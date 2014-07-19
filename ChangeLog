@@ -1,3 +1,15 @@
+Sat Jul 19 11:56:36 2014  Grey Baker  <greysteil@gmail.com>
+
+	* lib/time.rb (Time#apply_offset): Guards against a `nil` return
+	  value from `Time.month_days` when offsetting date.  Out of range
+	  values are then caught when `Time.utc` is called (as usual).
+
+	  Previously a `nil` return value from `Time.month_days` would
+	  have the `<` operator called on it, and raise `NoMethodError`.
+	  [fix GH-667]
+
+	* lib/rdoc/parser/changelog.rb (RDoc#parse_entries): fix dirty hack.
+
 Sat Jul 19 06:19:01 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: refactoring. 
