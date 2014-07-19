@@ -4178,8 +4178,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	asgnflag = COMPILE_RECV(ret, "NODE_OP_ASGN2#recv", node);
 	ADD_INSN(ret, line, dup);
-	ADD_SEND(ret, line, ID2SYM(node->nd_next->nd_vid),
-		 INT2FIX(0));
+	ADD_SEND_R(ret, line, ID2SYM(node->nd_next->nd_vid),
+		   INT2FIX(0), Qfalse, INT2FIX(asgnflag));
 
 	if (atype == 0 || atype == 1) {	/* 0: OR or 1: AND */
 	    ADD_INSN(ret, line, dup);
@@ -5331,6 +5331,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	DECL_ANCHOR(args);
 	VALUE flag = 0;
 	VALUE argc;
+	int asgnflag;
 
 	/* optimization shortcut
 	 *   obj["literal"] = value -> opt_aset_with(obj, "literal", value)
@@ -5358,7 +5359,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	INIT_ANCHOR(args);
 	argc = setup_args(iseq, args, node->nd_args, &flag);
 
-	flag |= COMPILE_RECV(recv, "recv", node);
+	flag |= (asgnflag = COMPILE_RECV(recv, "recv", node));
 
 	debugp_param("argc", argc);
 	debugp_param("nd_mid", ID2SYM(node->nd_mid));
@@ -5372,7 +5373,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		ADD_INSN1(ret, line, topn, INT2FIX(1));
 		if (flag & VM_CALL_ARGS_SPLAT) {
 		    ADD_INSN1(ret, line, putobject, INT2FIX(-1));
-		    ADD_SEND(ret, line, ID2SYM(idAREF), INT2FIX(1));
+		    ADD_SEND_R(ret, line, ID2SYM(idAREF), INT2FIX(1), Qfalse, INT2FIX(asgnflag));
 		}
 		ADD_INSN1(ret, line, setn, FIXNUM_INC(argc, 3));
 		ADD_INSN (ret, line, pop);
@@ -5380,7 +5381,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    else if (flag & VM_CALL_ARGS_SPLAT) {
 		ADD_INSN(ret, line, dup);
 		ADD_INSN1(ret, line, putobject, INT2FIX(-1));
-		ADD_SEND(ret, line, ID2SYM(idAREF), INT2FIX(1));
+		ADD_SEND_R(ret, line, ID2SYM(idAREF), INT2FIX(1), Qfalse, INT2FIX(asgnflag));
 		ADD_INSN1(ret, line, setn, FIXNUM_INC(argc, 2));
 		ADD_INSN (ret, line, pop);
 	    }

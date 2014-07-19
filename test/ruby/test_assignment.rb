@@ -106,9 +106,9 @@ class TestAssignment < Test::Unit::TestCase
 
     o = Object.new
     class << o
+      private
       def foo; 42; end
       def [](i); 42; end
-      private
       def foo=(a); 42; end
       def []=(i, a); 42; end
     end

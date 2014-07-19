@@ -1,3 +1,8 @@
+Sat Jul 19 12:40:50 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): allow to access private attribute
+	  reader in op_assign.  [ruby-core:63817] [Bug #10060]
+
 Sat Jul 19 11:56:36 2014  Grey Baker  <greysteil@gmail.com>
 
 	* lib/time.rb (Time#apply_offset): Guards against a `nil` return
