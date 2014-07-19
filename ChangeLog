@@ -1,3 +1,8 @@
+Sun Jul 20 01:06:06 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* ext/openssl/ossl.c: use encryptor instead of encrypter in doc.
+	  contributed from @vipulnsward. [fix GH-663]
+
 Sun Jul 20 00:32:44 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_initialize): [DOC] fix rdoc of append mode.  it does
