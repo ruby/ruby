@@ -7390,12 +7390,12 @@ rb_io_stdio_file(rb_io_t *fptr)
  *  	"w+" Read-write, truncates existing file to zero length
  *  	     or creates a new file for reading and writing.
  *
- *  	"a"  Write-only, starts at end of file if file exists,
- *  	     otherwise creates a new file for writing.
+ *  	"a"  Write-only, each write call appends data at end of file.
+ *  	     Creates a new file for writing if file does not exist.
  *
- *  	"a+" Read-write, starts at end of file if file exists,
- *	     otherwise creates a new file for reading and
- *  	     writing.
+ *  	"a+" Read-write, each write call appends data at end of file.
+ *	     Creates a new file for reading and writing if file does
+ *	     not exist.
  *
  *  The following modes must be used separately, and along with one or more of
  *  the modes seen above.

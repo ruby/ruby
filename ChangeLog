@@ -1,3 +1,8 @@
+Sun Jul 20 00:32:44 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_initialize): [DOC] fix rdoc of append mode.  it does
+	  not move the pointer at open.  [ruby-core:63747] [Bug #10039]
+
 Sat Jul 19 12:40:50 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): allow to access private attribute
