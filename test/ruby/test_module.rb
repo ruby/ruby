@@ -1634,7 +1634,7 @@ class TestModule < Test::Unit::TestCase
 
   def test_prepend_visibility_inherited
     bug8238 = '[ruby-core:54105] [Bug #8238]'
-    assert_separately [], <<-"end;", timeout: 3
+    assert_separately [], <<-"end;", timeout: 20
       class A
         def foo() A; end
         private :foo
