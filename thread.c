@@ -1210,9 +1210,7 @@ rb_thread_schedule(void)
     rb_thread_t *cur_th = GET_THREAD();
     rb_thread_schedule_limits(0);
 
-    if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(cur_th))) {
-	rb_threadptr_execute_interrupts(cur_th, 0);
-    }
+    RUBY_VM_CHECK_INTS(cur_th);
 }
 
 /* blocking region */
