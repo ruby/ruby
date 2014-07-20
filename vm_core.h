@@ -738,7 +738,7 @@ typedef struct {
 
     VALUE envval;		/* for GC mark */
     VALUE blockprocval;
-    int8_t safe_level;		/* 0..4 */
+    int8_t safe_level;		/* 0..3 */
     int8_t is_from_method;	/* bool */
     int8_t is_lambda;		/* bool */
 } rb_proc_t;
