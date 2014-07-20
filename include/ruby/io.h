@@ -51,12 +51,12 @@ extern "C" {
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
-typedef struct {
+typedef PACKED_STRUCT(struct {
     char *ptr;                  /* off + len <= capa */
     int off;
     int len;
     int capa;
-} rb_io_buffer_t;
+}) rb_io_buffer_t;
 
 typedef struct rb_io_t {
     FILE *stdio_file;		/* stdio ptr for read/write if available */
