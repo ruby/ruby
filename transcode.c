@@ -110,21 +110,21 @@ typedef struct {
 
 struct rb_econv_t {
     int flags;
+    int started; /* bool */
+
     const char *source_encoding_name;
     const char *destination_encoding_name;
-
-    int started;
 
     const unsigned char *replacement_str;
     size_t replacement_len;
     const char *replacement_enc;
-    int replacement_allocated;
 
     unsigned char *in_buf_start;
     unsigned char *in_data_start;
     unsigned char *in_data_end;
     unsigned char *in_buf_end;
     rb_econv_elem_t *elems;
+    int replacement_allocated; /* bool */
     int num_allocated;
     int num_trans;
     int num_finished;
