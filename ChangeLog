@@ -1,3 +1,10 @@
+Sun Jul 20 12:41:53 2014  Eric Wong  <e@80x24.org>
+
+	* include/ruby/io.h (rb_io_t): shrink to 200 bytes from 216 on 64-bit
+	  This puts us within 8 bytes of being three cache lines instead of
+	  four lines on x86-64.  This breaks the ABI.
+	  [Feature #10050]
+
 Sun Jul 20 12:36:46 2014  Eric Wong  <e@80x24.org>
 
 	* include/ruby/oniguruma.h (struct re_pattern_buffer): shrink to 448
