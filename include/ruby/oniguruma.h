@@ -674,13 +674,15 @@ typedef struct re_pattern_buffer {
   unsigned int bt_mem_end;       /* need backtrack flag */
   int stack_pop_level;
   int repeat_range_alloc;
+
+  OnigOptionType    options;
+
   OnigRepeatRange* repeat_range;
 
   OnigEncoding      enc;
-  OnigOptionType    options;
   const OnigSyntaxType* syntax;
-  OnigCaseFoldType  case_fold_flag;
   void*             name_table;
+  OnigCaseFoldType  case_fold_flag;
 
   /* optimization info (string search, char-map and anchors) */
   int            optimize;          /* optimize flag */

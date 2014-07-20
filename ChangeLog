@@ -1,3 +1,9 @@
+Sun Jul 20 12:36:46 2014  Eric Wong  <e@80x24.org>
+
+	* include/ruby/oniguruma.h (struct re_pattern_buffer): shrink to 448
+	  bytes from 464 bytes on 64-bit.  This breaks the ABI.
+	  [Feature #10034]
+
 Sun Jul 20 01:06:06 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* ext/openssl/ossl.c: use encryptor instead of encrypter in doc.
