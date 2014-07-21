@@ -259,6 +259,7 @@ class TestRDocRDoc < RDoc::TestCase
       top_level = @rdoc.parse_file io.path
 
       assert_equal Encoding::ISO_8859_1, top_level.absolute_name.encoding
+      io
     end
     tf.close! if tf.respond_to? :close?
   end
@@ -287,6 +288,7 @@ class TestRDocRDoc < RDoc::TestCase
       ensure
         File.chmod 0400, io.path
       end
+      io
     end
     tf.close! if tf.respond_to? :close!
   end
@@ -393,6 +395,7 @@ class TestRDocRDoc < RDoc::TestCase
 
       assert_match(%r%#{Regexp.escape path} exists and is not a directory%,
                    e.message)
+      tempfile
     end
     tf.close! if tf.respond_to? :close!
   end

@@ -120,6 +120,7 @@ class TestRDocParser < RDoc::TestCase
       ensure
         File.chmod 0400, io.path
       end
+      io
     end
     tf.close! if tf.respond_to? :close!
   end
