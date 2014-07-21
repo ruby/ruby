@@ -17,8 +17,10 @@ class TestRakeApplication < Rake::TestCase
   end
 
   def test_display_exception_details
+    obj = Object.new
+    obj.instance_eval("def #{__method__}; raise 'test'; end", "ruby")
     begin
-      raise 'test'
+      obj.__send__(__method__)
     rescue => ex
     end
 

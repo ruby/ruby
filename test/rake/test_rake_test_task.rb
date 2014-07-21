@@ -105,7 +105,7 @@ class TestRakeTestTask < Rake::TestCase
       t.loader = :rake
     end
 
-    assert_match(/\A ".*?"\Z/, test_task.run_code)
+    assert_match(/\A(-I".*?" *)* ".*?"\Z/, test_task.run_code)
   ensure
     Gem.loaded_specs['rake'] = rake
   end
