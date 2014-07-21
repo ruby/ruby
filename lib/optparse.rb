@@ -1495,11 +1495,12 @@ XXX
   #
   # Wrapper method for getopts.rb.
   #
-  #   params = ARGV.getopts("ab:", "foo", "bar:")
+  #   params = ARGV.getopts("ab:", "foo", "bar:", "zot:Z;zot option)
   #   # params[:a] = true   # -a
   #   # params[:b] = "1"    # -b1
   #   # params[:foo] = "1"  # --foo
   #   # params[:bar] = "x"  # --bar x
+  #   # params[:zot] = "z"  # --zot Z
   #
   def getopts(*args)
     argv = Array === args.first ? args.shift : default_argv
@@ -1518,13 +1519,14 @@ XXX
     end if single_options
 
     long_options.each do |arg|
+      arg, desc = arg.split(';', 2)
       opt, val = arg.split(':', 2)
       if val
         result[opt] = val.empty? ? nil : val
-        define("--#{opt} VAL")
+        define("--#{opt}=#{result[opt] || "VAL"}", *[desc].compact)
       else
         result[opt] = false
-        define("--#{opt}")
+        define("--#{opt}", *[desc].compact)
       end
     end
 

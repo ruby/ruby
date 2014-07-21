@@ -1,3 +1,8 @@
+Mon Jul 21 15:55:42 2014  fuji70  <fujifuji70@gmail.com>
+
+	* lib/optparse.rb (getopts): print default values and descriptions
+	  in the help message.  [fix GH-676]
+
 Sun Jul 20 14:26:27 2014  Eric Wong  <e@80x24.org>
 
 	* vm_core.h (rb_proc_t): reduce to 64 bytes from 72 on 64-bit
