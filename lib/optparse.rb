@@ -1518,15 +1518,20 @@ XXX
     end if single_options
 
     long_options.each do |arg|
-      opt, val = arg.split(':', 2)
+      predesc, desc = arg.split(';', 2)
+      opt, val = predesc.split(':', 2)
+      str_val = ""
       if val
-        if val.empty?
-          result[opt] = nil
-          define("--#{opt} VAL")
-        else
-          result[opt] = val
-          define("--#{opt} VAL(=#{val})")
-        end
+        str_val << "VAL"
+        str_val << "(=#{val})" if !val.empty?
+      end
+      str_desc = ""
+      str_desc = "\t# #{desc}" if desc
+      str = "--#{opt} #{str_val}#{str_desc}"
+
+      if val
+        result[opt] = val.empty? ? nil : val
+        define(str)
       else
         result[opt] = false
         define("--#{opt}")
