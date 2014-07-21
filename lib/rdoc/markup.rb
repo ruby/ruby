@@ -84,7 +84,7 @@
 #
 #   markup.add_special(/\b([A-Z][a-z]+[A-Z]\w+)/, :WIKIWORD)
 #
-#   wh = WikiHtml.new markup
+#   wh = WikiHtml.new RDoc::Options.new, markup
 #   wh.add_tag(:STRIKE, "<strike>", "</strike>")
 #
 #   puts "<body>#{wh.convert ARGF.read}</body>"
@@ -163,7 +163,7 @@
 #
 # The header's id would be:
 #
-#   <h1 id="method-i-do_fun_things-label-Example">Example</h3>
+#   <h1 id="method-i-do_fun_things-label-Example">Example</h1>
 #
 # The label can be linked-to using <tt>SomeClass@Headers</tt>.  See
 # {Links}[RDoc::Markup@Links] for further details.

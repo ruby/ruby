@@ -153,7 +153,13 @@ class RDoc::RubygemsHook
     options = nil
 
     args = @spec.rdoc_options
-    args.concat @spec.require_paths
+
+    if @spec.respond_to? :source_paths then
+      args.concat @spec.source_paths
+    else
+      args.concat @spec.require_paths
+    end
+
     args.concat @spec.extra_rdoc_files
 
     case config_args = Gem.configuration[:rdoc]

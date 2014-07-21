@@ -67,6 +67,9 @@ class TestRDocOptions < RDoc::TestCase
       'exclude'              => [],
       'hyperlink_all'        => false,
       'line_numbers'         => false,
+      'locale'               => nil,
+      'locale_dir'           => 'locale',
+      'locale_name'          => nil,
       'main_page'            => nil,
       'markup'               => 'rdoc',
       'output_decoration'    => true,
@@ -332,6 +335,18 @@ rdoc_include:
 
     assert_equal 'invalid option: -R generator already set to darkfish',
                  e.message
+  end
+
+  def test_parse_h
+    out, = capture_io do
+      begin
+        @options.parse %w[-h]
+      rescue SystemExit
+      end
+    end
+
+    assert_equal 1, out.scan(/HTML generator options:/).length
+    assert_equal 1, out.scan(/ri generator options:/).  length
   end
 
   def test_parse_help
@@ -743,5 +758,9 @@ rdoc_include:
     assert out.include?(RDoc::VERSION)
   end
 
+  def test_visibility
+    @options.visibility = :all
+    assert_equal :private, @options.visibility
+  end
 end
 
