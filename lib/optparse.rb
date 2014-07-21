@@ -1522,12 +1522,12 @@ XXX
       opt, val = predesc.split(':', 2)
       str_val = ""
       if val
-        str_val << "VAL"
+        str_val << "\tVAL"
         str_val << "(=#{val})" if !val.empty?
       end
       str_desc = ""
       str_desc = "\t# #{desc}" if desc
-      str = "--#{opt} #{str_val}#{str_desc}"
+      str = "--#{opt}#{str_val}#{str_desc}"
 
       if val
         result[opt] = val.empty? ? nil : val
