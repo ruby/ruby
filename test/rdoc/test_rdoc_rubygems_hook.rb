@@ -138,9 +138,6 @@ class TestRDocRubygemsHook < Gem::TestCase
     @a.loaded_from =
       File.join Gem::Specification.default_specifications_dir, 'a.gemspec'
 
-    FileUtils.mkdir_p @a.doc_dir
-    FileUtils.mkdir_p File.join(@a.gem_dir, 'lib')
-
     @hook.generate
 
     refute @hook.rdoc_installed?

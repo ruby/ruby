@@ -240,7 +240,15 @@ class RDoc::AnyMethod < RDoc::MethodAttr
       return []
     end
 
-    params = params.gsub(/\s+/, '').split ','
+    if @block_params then
+      # If this method has explicit block parameters, remove any explicit
+      # &block
+      params.sub!(/,?\s*&\w+/, '')
+    else
+      params.sub!(/\&(\w+)/, '\1')
+    end
+
+    params = params.gsub(/\s+/, '').split(',').reject(&:empty?)
 
     params.map { |param| param.sub(/=.*/, '') }
   end

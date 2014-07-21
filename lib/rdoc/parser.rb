@@ -83,7 +83,7 @@ class RDoc::Parser
       mode = "r"
       s.sub!(/\A#!.*\n/, '')     # assume shebang line isn't longer than 1024.
       encoding = s[/^\s*\#\s*(?:-\*-\s*)?(?:en)?coding:\s*([^\s;]+?)(?:-\*-|[\s;])/, 1]
-      mode = "r:#{encoding}" if encoding
+      mode = "rb:#{encoding}" if encoding
       s = File.open(file, mode) {|f| f.gets(nil, 1024)}
 
       not s.valid_encoding?

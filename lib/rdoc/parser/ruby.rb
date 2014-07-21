@@ -226,6 +226,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     comment = ''
     comment.force_encoding @encoding if @encoding
     first_line = true
+    first_comment_tk_class = nil
 
     tk = get_tk
 
@@ -238,6 +239,9 @@ class RDoc::Parser::Ruby < RDoc::Parser
         skip_tkspace
         tk = get_tk
       else
+        break if first_comment_tk_class and not first_comment_tk_class === tk
+        first_comment_tk_class = tk.class
+
         first_line = false
         comment << tk.text << "\n"
         tk = get_tk
@@ -841,7 +845,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
   # true, no found constants will be added to RDoc.
 
   def parse_constant container, tk, comment, ignore_constants = false
-    prev_container = container
     offset  = tk.seek
     line_no = tk.line_no
 
@@ -864,8 +867,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
     end
 
     unless TkASSIGN === eq_tk then
-      suppress_parents container, prev_container
-
       unget_tk eq_tk
       return false
     end

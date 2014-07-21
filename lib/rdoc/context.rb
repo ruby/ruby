@@ -164,6 +164,8 @@ class RDoc::Context < RDoc::CodeObject
   # Contexts are sorted by full_name
 
   def <=>(other)
+    return nil unless RDoc::CodeObject === other
+
     full_name <=> other.full_name
   end
 
@@ -321,10 +323,11 @@ class RDoc::Context < RDoc::CodeObject
     end
 
     # fix up superclass
-    superclass = nil if full_name == 'BasicObject'
-    superclass = nil if full_name == 'Object' and defined?(::BasicObject)
-    superclass = '::BasicObject' if
-      defined?(::BasicObject) and full_name == 'Object'
+    if full_name == 'BasicObject' then
+      superclass = nil
+    elsif full_name == 'Object' then
+      superclass = defined?(::BasicObject) ? '::BasicObject' : nil
+    end
 
     # find the superclass full name
     if superclass then

@@ -334,6 +334,35 @@ method(a, b) { |c, d| ... }
     assert_equal %w[a b c d], m.param_list
   end
 
+  def test_param_list_empty_params_with_block
+    m = RDoc::AnyMethod.new nil, 'method'
+    m.parent = @c1
+
+    m.params = '()'
+    m.block_params = 'a, b'
+
+    assert_equal %w[a b], m.param_list
+  end
+
+  def test_param_list_ampersand_param_block_params
+    m = RDoc::AnyMethod.new nil, 'method'
+    m.parent = @c1
+
+    m.params = '(a, b, &block)'
+    m.block_params = 'c, d'
+
+    assert_equal %w[a b c d], m.param_list
+  end
+
+  def test_param_list_ampersand_param
+    m = RDoc::AnyMethod.new nil, 'method'
+    m.parent = @c1
+
+    m.params = '(a, b, &block)'
+
+    assert_equal %w[a b block], m.param_list
+  end
+
   def test_param_seq
     m = RDoc::AnyMethod.new nil, 'method'
     m.parent = @c1

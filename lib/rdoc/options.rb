@@ -214,6 +214,16 @@ class RDoc::Options
   attr_accessor :line_numbers
 
   ##
+  # The output locale.
+
+  attr_accessor :locale
+
+  ##
+  # The directory where locale data live.
+
+  attr_accessor :locale_dir
+
+  ##
   # Name of the file, class or module to display in the initial index page (if
   # not specified the first file we encounter is used)
 
@@ -325,7 +335,7 @@ class RDoc::Options
   # other visibilities may be overridden on a per-method basis with the :doc:
   # directive.
 
-  attr_accessor :visibility
+  attr_reader :visibility
 
   def initialize # :nodoc:
     init_ivars
@@ -343,6 +353,9 @@ class RDoc::Options
     @generators = RDoc::RDoc::GENERATORS
     @hyperlink_all = false
     @line_numbers = false
+    @locale = nil
+    @locale_name = nil
+    @locale_dir = 'locale'
     @main_page = nil
     @markup = 'rdoc'
     @coverage_report = false
@@ -388,6 +401,8 @@ class RDoc::Options
     @generator_name = map['generator_name']
     @hyperlink_all  = map['hyperlink_all']
     @line_numbers   = map['line_numbers']
+    @locale_name    = map['locale_name']
+    @locale_dir     = map['locale_dir']
     @main_page      = map['main_page']
     @markup         = map['markup']
     @op_dir         = map['op_dir']
@@ -412,6 +427,8 @@ class RDoc::Options
       @generator_name == other.generator_name and
       @hyperlink_all  == other.hyperlink_all  and
       @line_numbers   == other.line_numbers   and
+      @locale         == other.locale         and
+      @locale_dir     == other.locale_dir and
       @main_page      == other.main_page      and
       @markup         == other.markup         and
       @op_dir         == other.op_dir         and
@@ -513,6 +530,13 @@ class RDoc::Options
     unless @template then
       @template     = @generator_name
       @template_dir = template_dir_for @template
+    end
+
+    if @locale_name
+      @locale = RDoc::I18n::Locale[@locale_name]
+      @locale.load(@locale_dir)
+    else
+      @locale = nil
     end
 
     self
@@ -676,6 +700,19 @@ Usage: #{opt.program_name} [options] [names...]
 
         opt.separator nil
       end
+
+
+      opt.on("--locale=NAME",
+             "Specifies the output locale.") do |value|
+        @locale_name = value
+      end
+
+      opt.on("--locale-data-dir=DIR",
+             "Specifies the directory where locale data live.") do |value|
+        @locale_dir = value
+      end
+
+      opt.separator nil
 
       opt.on("--all", "-a",
              "Synonym for --visibility=private.") do |value|
@@ -1016,8 +1053,7 @@ Usage: #{opt.program_name} [options] [names...]
 
       opt.separator nil
 
-      opt.on("--help",
-             "Display this help") do
+      opt.on("--help", "-h", "Display this help") do
         RDoc::RDoc::GENERATORS.each_key do |generator|
           setup_generator generator
         end
@@ -1171,6 +1207,22 @@ Usage: #{opt.program_name} [options] [names...]
       out.map taguri, to_yaml_style do |map|
         encode_with map
       end
+    end
+  end
+
+  # Sets the minimum visibility of a documented method.
+  #
+  # Accepts +:public+, +:protected+, +:private+, +:nodoc+, or +:all+.
+  #
+  # When +:all+ is passed, visibility is set to +:private+, similarly to
+  # RDOCOPT="--all", see #visibility for more information.
+
+  def visibility= visibility
+    case visibility
+    when :all
+      @visibility = :private
+    else
+      @visibility = visibility
     end
   end
 

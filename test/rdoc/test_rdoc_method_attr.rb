@@ -7,7 +7,6 @@ class TestRDocMethodAttr < XrefTestCase
   end
 
   def test_block_params_equal
-
     m = RDoc::MethodAttr.new(nil, 'foo')
 
     m.block_params = ''
@@ -146,6 +145,10 @@ class TestRDocMethodAttr < XrefTestCase
     ]
 
     assert_equal expected, @c1_m.search_record
+  end
+
+  def test_spaceship
+    assert_nil @c1_m.<=>(RDoc::CodeObject.new)
   end
 
   def test_equals2

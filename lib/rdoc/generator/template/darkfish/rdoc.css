@@ -23,11 +23,21 @@ h3 span,
 h4 span,
 h5 span,
 h6 span {
+  position: relative;
+
   display: none;
   padding-left: 1em;
+  line-height: 0;
+  vertical-align: baseline;
   font-size: 10px;
-  vertical-align: super;
 }
+
+h1 span { top: -1.3em; }
+h2 span { top: -1.2em; }
+h3 span { top: -1.0em; }
+h4 span { top: -0.8em; }
+h5 span { top: -0.5em; }
+h6 span { top: -0.5em; }
 
 h1:hover span,
 h2:hover span,

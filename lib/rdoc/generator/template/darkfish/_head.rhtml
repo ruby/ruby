@@ -2,6 +2,13 @@
 
 <title><%= h @title %></title>
 
+<script type="text/javascript">
+  var rdoc_rel_prefix = "<%= rel_prefix %>/";
+</script>
+
+<script src="<%= asset_rel_prefix %>/js/jquery.js"></script>
+<script src="<%= asset_rel_prefix %>/js/darkfish.js"></script>
+
 <link href="<%= asset_rel_prefix %>/fonts.css" rel="stylesheet">
 <link href="<%= asset_rel_prefix %>/rdoc.css" rel="stylesheet">
 <% if @options.template_stylesheets.flatten.any? then %>
@@ -10,13 +17,3 @@
 <%   end %>
 <% end %>
 
-<script type="text/javascript">
-  var rdoc_rel_prefix = "<%= rel_prefix %>/";
-</script>
-
-<script src="<%= asset_rel_prefix %>/js/jquery.js"></script>
-<script src="<%= asset_rel_prefix %>/js/navigation.js"></script>
-<script src="<%= search_index_rel_prefix %>/js/search_index.js"></script>
-<script src="<%= asset_rel_prefix %>/js/search.js"></script>
-<script src="<%= asset_rel_prefix %>/js/searcher.js"></script>
-<script src="<%= asset_rel_prefix %>/js/darkfish.js"></script>

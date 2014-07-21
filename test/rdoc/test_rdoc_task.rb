@@ -46,6 +46,7 @@ class TestRDocTask < RDoc::TestCase
     assert Rake::Task[:rdoc]
     assert Rake::Task[:clobber_rdoc]
     assert Rake::Task[:rerdoc]
+    assert_equal ["html/created.rid"], Rake::Task[:rdoc].prerequisites
   end
 
   def test_tasks_creation_with_custom_name_symbol
@@ -56,12 +57,45 @@ class TestRDocTask < RDoc::TestCase
     assert_equal :rdoc_dev, rd.name
   end
 
+  def test_tasks_option_parser
+    rdoc_task = RDoc::Task.new do |rd|
+      rd.title = "Test Tasks Option Parser"
+      rd.main = "README.md"
+      rd.rdoc_files.include("README.md")
+      rd.options << "--all"
+    end
+
+    assert rdoc_task.title, "Test Tasks Option Parser"
+    assert rdoc_task.main, "README.md"
+    assert rdoc_task.rdoc_files.include?("README.md")
+    assert rdoc_task.options.include?("--all")
+
+    args = %w[--all -o html --main README.md] << "--title" << "Test Tasks Option Parser" << "README.md"
+    assert_equal args, rdoc_task.option_list + rdoc_task.rdoc_files
+  end
+
   def test_generator_option
     rdoc_task = RDoc::Task.new do |rd|
       rd.generator = "ri"
     end
 
     assert_equal %w[-o html -f ri], rdoc_task.option_list
+  end
+
+  def test_main_option
+    rdoc_task = RDoc::Task.new do |rd|
+      rd.main = "README.md"
+    end
+
+    assert_equal %w[-o html --main README.md], rdoc_task.option_list
+  end
+
+  def test_output_dir_option
+    rdoc_task = RDoc::Task.new do |rd|
+      rd.rdoc_dir = "zomg"
+    end
+
+    assert_equal %w[-o zomg], rdoc_task.option_list
   end
 
   def test_rdoc_task_description
@@ -114,6 +148,22 @@ class TestRDocTask < RDoc::TestCase
     rescue ArgumentError => e
       assert_match(/foo/, e.message)
     end
+  end
+
+  def test_template_option
+    rdoc_task = RDoc::Task.new do |rd|
+      rd.template = "foo"
+    end
+
+    assert_equal %w[-o html -T foo], rdoc_task.option_list
+  end
+
+  def test_title_option
+    rdoc_task = RDoc::Task.new do |rd|
+      rd.title = "Test Title Option"
+    end
+
+    assert_equal %w[-o html] << "--title" << "Test Title Option", rdoc_task.option_list
   end
 
 end
