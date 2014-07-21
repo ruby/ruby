@@ -120,8 +120,9 @@ class TestRDocParser < RDoc::TestCase
       ensure
         File.chmod 0400, io.path
       end
+      io
     end
-    tf.close! if tf.respond_to? :close!
+    tf.close!
   end
 
   def test_class_for_modeline
