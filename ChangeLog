@@ -1,3 +1,8 @@
+Wed Jul 23 04:04:38 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/drb/extserv.rb: remove duplicate code with sample direcotry.
+	  contributed from @vipulnsward. [fix GH-679]
+
 Tue Jul 22 12:56:24 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_count): fix wrong single-byte optimization.
