@@ -6075,13 +6075,15 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     for (i=0; i<argc; i++) {
 	VALUE tstr = argv[i];
-	unsigned char c;
+	const unsigned char *utstr;
 
 	StringValue(tstr);
 	enc = rb_enc_check(str, tstr);
 	if (argc == 1 && RSTRING_LEN(tstr) == 1 && rb_enc_asciicompat(enc) &&
-	    (c = RSTRING_PTR(tstr)[0]) < 0x80 && !is_broken_string(str)) {
+	    (utstr = (const OnigUChar *)RSTRING_PTR(tstr), ONIGENC_IS_ALLOWED_REVERSE_MATCH(enc, utstr, utstr+1)) &&
+	    !is_broken_string(str)) {
 	    int n = 0;
+	    unsigned char c = utstr[0];
 
 	    s = RSTRING_PTR(str);
 	    if (!s || RSTRING_LEN(str) == 0) return INT2FIX(0);
