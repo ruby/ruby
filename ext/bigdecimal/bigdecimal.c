@@ -2463,6 +2463,9 @@ static Real *BigDecimal_new(int argc, VALUE *argv);
  *
  * The actual number of significant digits used in computation is usually
  * larger than the specified number.
+ *
+ * When the initial value is of type Float or Rational, the digits
+ * value must be provided. Otherwise an ArgumentError is raised.
  */
 static VALUE
 BigDecimal_initialize(int argc, VALUE *argv, VALUE self)
