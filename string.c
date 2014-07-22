@@ -6067,19 +6067,19 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
 {
     char table[TR_TABLE_SIZE];
     rb_encoding *enc = 0;
-    VALUE del = 0, nodel = 0;
+    VALUE del = 0, nodel = 0, tstr;
     char *s, *send;
     int i;
     int ascompat;
 
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
-    for (i=0; i<argc; i++) {
-	VALUE tstr = argv[i];
-	const char *ptstr;
 
-	StringValue(tstr);
-	enc = rb_enc_check(str, tstr);
-	if (argc == 1 && RSTRING_LEN(tstr) == 1 && rb_enc_asciicompat(enc) &&
+    tstr = argv[0];
+    StringValue(tstr);
+    enc = rb_enc_check(str, tstr);
+    if (argc == 1) {
+	const char *ptstr;
+	if (RSTRING_LEN(tstr) == 1 && rb_enc_asciicompat(enc) &&
 	    (ptstr = RSTRING_PTR(tstr),
 	     ONIGENC_IS_ALLOWED_REVERSE_MATCH(enc, (const unsigned char *)ptstr, (const unsigned char *)ptstr+1)) &&
 	    !is_broken_string(str)) {
@@ -6095,7 +6095,14 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
 	    }
 	    return INT2NUM(n);
 	}
-	tr_setup_table(tstr, table, i==0, &del, &nodel, enc);
+    }
+
+    tr_setup_table(tstr, table, TRUE, &del, &nodel, enc);
+    for (i=1; i<argc; i++) {
+	tstr = argv[i];
+	StringValue(tstr);
+	enc = rb_enc_check(str, tstr);
+	tr_setup_table(tstr, table, FALSE, &del, &nodel, enc);
     }
 
     s = RSTRING_PTR(str);
