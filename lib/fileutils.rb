@@ -277,7 +277,7 @@ module FileUtils
             Dir.rmdir(dir)
           end
         end
-      rescue Errno::ENOTEMPTY, Errno::ENOENT
+      rescue Errno::ENOTEMPTY, Errno::EEXIST, Errno::ENOENT
       end
     end
   end
