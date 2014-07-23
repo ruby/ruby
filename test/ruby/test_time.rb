@@ -517,8 +517,15 @@ class TestTime < Test::Unit::TestCase
     assert_equal(Time.at(946684800).getlocal.to_s, Time.at(946684800).to_s)
   end
 
+  def assert_zone_encoding(time)
+    zone = time.zone
+    assert_predicate(zone, :valid_encoding?)
+    enc = Encoding.default_internal || Encoding.find('locale')
+    assert_equal(enc, zone.encoding)
+  end
+
   def test_zone
-    assert_equal(Encoding.find('locale'), Time.now.zone.encoding)
+    assert_zone_encoding Time.now
   end
 
   def test_plus_minus_succ
@@ -567,7 +574,7 @@ class TestTime < Test::Unit::TestCase
     assert_equal(1, t2000.yday)
     assert_equal(false, t2000.isdst)
     assert_equal("UTC", t2000.zone)
-    assert_equal(Encoding.find("locale"), t2000.zone.encoding)
+    assert_zone_encoding(t2000)
     assert_equal(0, t2000.gmt_offset)
     assert_not_predicate(t2000, :sunday?)
     assert_not_predicate(t2000, :monday?)
@@ -589,7 +596,7 @@ class TestTime < Test::Unit::TestCase
     assert_equal(t.yday, Time.at(946684800).yday)
     assert_equal(t.isdst, Time.at(946684800).isdst)
     assert_equal(t.zone, Time.at(946684800).zone)
-    assert_equal(Encoding.find("locale"), Time.at(946684800).zone.encoding)
+    assert_zone_encoding(Time.at(946684800))
     assert_equal(t.gmt_offset, Time.at(946684800).gmt_offset)
     assert_equal(t.sunday?, Time.at(946684800).sunday?)
     assert_equal(t.monday?, Time.at(946684800).monday?)
