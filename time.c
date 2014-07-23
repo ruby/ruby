@@ -4198,6 +4198,16 @@ time_isdst(VALUE time)
     return tobj->vtm.isdst ? Qtrue : Qfalse;
 }
 
+static VALUE
+time_zone_name(const char *zone)
+{
+    VALUE name = rb_str_new_cstr(zone);
+    if (!rb_enc_str_asciionly_p(name)) {
+	name = rb_external_str_with_enc(name, rb_locale_encoding());
+    }
+    return name;
+}
+
 /*
  *  call-seq:
  *     time.zone -> string
@@ -4220,11 +4230,12 @@ time_zone(VALUE time)
     MAKE_TM(time, tobj);
 
     if (TIME_UTC_P(tobj)) {
-	return rb_obj_untaint(rb_locale_str_new_cstr("UTC"));
+	return rb_usascii_str_new_cstr("UTC");
     }
     if (tobj->vtm.zone == NULL)
         return Qnil;
-    return rb_obj_untaint(rb_locale_str_new_cstr(tobj->vtm.zone));
+
+    return time_zone_name(tobj->vtm.zone);
 }
 
 /*
@@ -4693,7 +4704,7 @@ time_mdump(VALUE time)
 	rb_ivar_set(str, id_offset, off);
     }
     if (tobj->vtm.zone) {
-	rb_ivar_set(str, id_zone, rb_locale_str_new_cstr(tobj->vtm.zone));
+	rb_ivar_set(str, id_zone, time_zone_name(tobj->vtm.zone));
     }
     return str;
 }

@@ -520,6 +520,7 @@ class TestTime < Test::Unit::TestCase
   def assert_zone_encoding(time)
     zone = time.zone
     assert_predicate(zone, :valid_encoding?)
+    return if zone.ascii_only?
     enc = Encoding.default_internal || Encoding.find('locale')
     assert_equal(enc, zone.encoding)
   end
