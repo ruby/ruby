@@ -1,3 +1,10 @@
+Wed Jul 23 22:43:50 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb (bind_random_port): Rescue EPERM for FreeBSD which
+	  security.mac.portacl.port_high is changed.
+	  See mac_portacl(4) for details.
+	  Reported by Jakub Szafranski.  [ruby-core:60917] [Bug #9544]
+
 Wed Jul 23 22:24:26 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* test/openssl/test_x509cert.rb: split assertions into algorithms.
