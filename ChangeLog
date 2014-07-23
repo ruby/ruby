@@ -1,3 +1,8 @@
+Thu Jul 24 04:42:13 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/benchmark.rb: split executable code into sample directory.
+	* sample/benchmark.rb: ditto.
+
 Thu Jul 24 04:36:49 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/tempfile.rb: split executable code into sample directory.
