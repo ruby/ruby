@@ -125,7 +125,7 @@ class OpenSSL::TestX509Certificate < Test::Unit::TestCase
 
   end
 
-  def test_sign_and_verify
+  def test_sign_and_verify_rsa_sha1
     cert = issue_cert(@ca, @rsa2048, 1, Time.now, Time.now+3600, [],
                       nil, nil, OpenSSL::Digest::SHA1.new)
     assert_equal(false, cert.verify(@rsa1024))
@@ -134,7 +134,9 @@ class OpenSSL::TestX509Certificate < Test::Unit::TestCase
     assert_equal(false, certificate_error_returns_false { cert.verify(@dsa512) })
     cert.serial = 2
     assert_equal(false, cert.verify(@rsa2048))
+  end
 
+  def test_sign_and_verify_rsa_md5
     cert = issue_cert(@ca, @rsa2048, 1, Time.now, Time.now+3600, [],
                       nil, nil, OpenSSL::Digest::MD5.new)
     assert_equal(false, cert.verify(@rsa1024))
@@ -144,7 +146,10 @@ class OpenSSL::TestX509Certificate < Test::Unit::TestCase
     assert_equal(false, certificate_error_returns_false { cert.verify(@dsa512) })
     cert.subject = @ee1
     assert_equal(false, cert.verify(@rsa2048))
+  rescue OpenSSL::X509::CertificateError # RHEL7 disables MD5
+  end
 
+  def test_sign_and_verify_dsa
     cert = issue_cert(@ca, @dsa512, 1, Time.now, Time.now+3600, [],
                       nil, nil, OpenSSL::TestUtils::DSA_SIGNATURE_DIGEST.new)
     assert_equal(false, certificate_error_returns_false { cert.verify(@rsa1024) })
@@ -153,19 +158,21 @@ class OpenSSL::TestX509Certificate < Test::Unit::TestCase
     assert_equal(true,  cert.verify(@dsa512))
     cert.not_after = Time.now
     assert_equal(false, cert.verify(@dsa512))
+  end
 
-    begin
-      cert = issue_cert(@ca, @rsa2048, 1, Time.now, Time.now+3600, [],
-                        nil, nil, OpenSSL::Digest::DSS1.new)
-      assert_equal(false, cert.verify(@rsa1024))
-      assert_equal(true, cert.verify(@rsa2048))
-      assert_equal(false, certificate_error_returns_false { cert.verify(@dsa256) })
-      assert_equal(false, certificate_error_returns_false { cert.verify(@dsa512) })
-      cert.subject = @ee1
-      assert_equal(false, cert.verify(@rsa2048))
-    rescue OpenSSL::X509::CertificateError
-    end
+  def test_sign_and_verify_rsa_dss1
+    cert = issue_cert(@ca, @rsa2048, 1, Time.now, Time.now+3600, [],
+                      nil, nil, OpenSSL::Digest::DSS1.new)
+    assert_equal(false, cert.verify(@rsa1024))
+    assert_equal(true, cert.verify(@rsa2048))
+    assert_equal(false, certificate_error_returns_false { cert.verify(@dsa256) })
+    assert_equal(false, certificate_error_returns_false { cert.verify(@dsa512) })
+    cert.subject = @ee1
+    assert_equal(false, cert.verify(@rsa2048))
+  rescue OpenSSL::X509::CertificateError
+  end
 
+  def test_sign_and_verify_dsa_md5
     assert_raise(OpenSSL::X509::CertificateError){
       issue_cert(@ca, @dsa512, 1, Time.now, Time.now+3600, [],
                  nil, nil, OpenSSL::Digest::MD5.new)

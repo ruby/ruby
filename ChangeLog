@@ -1,3 +1,11 @@
+Wed Jul 23 22:24:26 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* test/openssl/test_x509cert.rb: split assertions into algorithms.
+	  CentOS 7 seems finish MD5 support
+	  http://chkbuild005.hsbt.org/chkbuild/ruby-trunk/log/20140722T140010Z.fail.html.gz
+
+	* test/openssl/test_x509req.rb: ditto.
+
 Sat Jul 19 01:44:34 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (match_aref): should not ignore name after NUL byte.

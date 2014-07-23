@@ -98,7 +98,7 @@ class OpenSSL::TestX509Request < Test::Unit::TestCase
     assert_equal(exts, get_ext_req(attrs[1].value))
   end
 
-  def test_sign_and_verify
+  def test_sign_and_verify_rsa_sha1
     req = issue_csr(0, @dn, @rsa1024, OpenSSL::Digest::SHA1.new)
     assert_equal(true,  req.verify(@rsa1024))
     assert_equal(false, req.verify(@rsa2048))
@@ -106,7 +106,9 @@ class OpenSSL::TestX509Request < Test::Unit::TestCase
     assert_equal(false, request_error_returns_false { req.verify(@dsa512) })
     req.version = 1
     assert_equal(false, req.verify(@rsa1024))
+  end
 
+  def test_sign_and_verify_rsa_md5
     req = issue_csr(0, @dn, @rsa2048, OpenSSL::Digest::MD5.new)
     assert_equal(false, req.verify(@rsa1024))
     assert_equal(true,  req.verify(@rsa2048))
@@ -114,7 +116,10 @@ class OpenSSL::TestX509Request < Test::Unit::TestCase
     assert_equal(false, request_error_returns_false { req.verify(@dsa512) })
     req.subject = OpenSSL::X509::Name.parse("/C=JP/CN=FooBar")
     assert_equal(false, req.verify(@rsa2048))
+  rescue OpenSSL::X509::RequestError # RHEL7 disables MD5
+  end
 
+  def test_sign_and_verify_dsa
     req = issue_csr(0, @dn, @dsa512, OpenSSL::TestUtils::DSA_SIGNATURE_DIGEST.new)
     assert_equal(false, request_error_returns_false { req.verify(@rsa1024) })
     assert_equal(false, request_error_returns_false { req.verify(@rsa2048) })
@@ -122,18 +127,21 @@ class OpenSSL::TestX509Request < Test::Unit::TestCase
     assert_equal(true,  req.verify(@dsa512))
     req.public_key = @rsa1024.public_key
     assert_equal(false, req.verify(@dsa512))
+  end
 
-    begin
-      req = issue_csr(0, @dn, @rsa1024, OpenSSL::Digest::DSS1.new)
-      assert_equal(true,  req.verify(@rsa1024))
-      assert_equal(false, req.verify(@rsa2048))
-      assert_equal(false, request_error_returns_false { req.verify(@dsa256) })
-      assert_equal(false, request_error_returns_false { req.verify(@dsa512) })
-      req.version = 1
-      assert_equal(false, req.verify(@rsa1024))
-    rescue OpenSSL::X509::RequestError
-    end
+  def test_sign_and_verify_rsa_dss1
+    req = issue_csr(0, @dn, @rsa1024, OpenSSL::Digest::DSS1.new)
+    assert_equal(true,  req.verify(@rsa1024))
+    assert_equal(false, req.verify(@rsa2048))
+    assert_equal(false, request_error_returns_false { req.verify(@dsa256) })
+    assert_equal(false, request_error_returns_false { req.verify(@dsa512) })
+    req.version = 1
+    assert_equal(false, req.verify(@rsa1024))
+  rescue OpenSSL::X509::RequestError
+    skip
+  end
 
+  def test_sign_and_verify_dsa_md5
     assert_raise(OpenSSL::X509::RequestError){
       issue_csr(0, @dn, @dsa512, OpenSSL::Digest::MD5.new) }
   end
