@@ -113,6 +113,7 @@ class Pathname
         end
       end
     end
+    pre.tr!(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
     if /#{SEPARATOR_PAT}/o =~ File.basename(pre)
       names.shift while names[0] == '..'
     end
@@ -161,6 +162,7 @@ class Pathname
       pre, base = r
       names.unshift base if base != '.'
     end
+    pre.tr!(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
     if /#{SEPARATOR_PAT}/o =~ File.basename(pre)
       names.shift while names[0] == '..'
     end
