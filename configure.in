@@ -1203,7 +1203,7 @@ AS_CASE(["$target_os"],
     [aix*], [
     AS_CASE(["$target_cpu:$ac_cv_sys_large_files"],
 	[ppc64:*|powerpc64:*], [],
-	[*:no|*:unknown], []
+	[*:no|*:unknown], [],
 	[
 	    # AIX currently does not support a 32-bit call to posix_fadvise()
 	    # if _LARGE_FILES is defined.
