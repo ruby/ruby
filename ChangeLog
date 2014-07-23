@@ -1,3 +1,8 @@
+Thu Jul 24 04:29:36 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/pstore.rb: split executable code into sample directory.
+	* sample/pstore.rb: ditto.
+
 Wed Jul 23 23:50:11 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/defines.h, siphash.c, st.c (UNALIGNED_WORD_ACCESS):
