@@ -948,6 +948,7 @@ module MiniTest
         print "%.2f s = " % (Time.now - start_time) if @verbose
         print result
         puts if @verbose
+        $stdout.flush
 
         leakchecker.check("#{inst.class}\##{inst.__name__}")
 
