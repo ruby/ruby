@@ -1,3 +1,12 @@
+Wed Jul 23 23:50:11 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/defines.h, siphash.c, st.c (UNALIGNED_WORD_ACCESS):
+	  add PowerPC64 too, which is capable to access unaligned words.
+	  patched by Gustavo Frederico Temple Pedrosa in [ruby-core:63937].
+	  [Feature #10081]
+
+	* regint.h (PLATFORM_UNALIGNED_WORD_ACCESS): ditto.
+
 Wed Jul 23 04:04:38 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/drb/extserv.rb: remove duplicate code with sample directory.
