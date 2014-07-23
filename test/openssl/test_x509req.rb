@@ -116,6 +116,7 @@ class OpenSSL::TestX509Request < Test::Unit::TestCase
     assert_equal(false, request_error_returns_false { req.verify(@dsa512) })
     req.subject = OpenSSL::X509::Name.parse("/C=JP/CN=FooBar")
     assert_equal(false, req.verify(@rsa2048))
+  rescue OpenSSL::X509::CertificateError # RHEL7 disables MD5
   end
 
   def test_sign_and_verify_dsa
