@@ -1,3 +1,18 @@
+Wed Jul 23 23:11:28 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/socket/test_socket.rb: unix socket is required by test case.
+
+Wed Jul 23 23:11:28 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/socket/test_addrinfo.rb: remove unused variables.
+	* test/socket/test_nonblock.rb: ditto.
+	* test/socket/test_socket.rb: ditto.
+	* test/socket/test_unix.rb: ditto.
+	* test/testunit/test_parallel.rb: ditto.
+	* test/webrick/test_filehandler.rb: ditto.
+	* test/xmlrpc/test_features.rb: ditto.
+	* test/zlib/test_zlib.rb: ditto.
+
 Wed Jul 23 23:05:19 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/lib/pathname.rb (cleanpath_aggressive): make all

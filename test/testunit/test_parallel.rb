@@ -90,7 +90,6 @@ module TestParallel
     def test_done
       timeout(10) do
         @worker_in.puts "run #{TESTS}/ptest_forth.rb test"
-        i = 0
         6.times { @worker_out.gets }
         buf = @worker_out.gets
         assert_match(/^done (.+?)$/, buf)

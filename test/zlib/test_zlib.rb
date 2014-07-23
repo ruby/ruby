@@ -162,7 +162,7 @@ if defined? Zlib
       assert_equal(false, z.closed?)
       z << "foo"
       assert_equal(false, z.closed?)
-      s = z.finish
+      z.finish
       assert_equal(false, z.closed?)
       z.close
       assert_equal(true, z.closed?)
@@ -308,9 +308,6 @@ if defined? Zlib
 
     def test_inflate_partial_input
       deflated = Zlib::Deflate.deflate "\0"
-
-      a = deflated[0...2]
-      b = deflated[2..-1]
 
       z = Zlib::Inflate.new
 
