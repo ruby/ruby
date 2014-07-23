@@ -140,7 +140,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     ai = Addrinfo.new(s1.getsockname)
     s2 = Socket.new(:INET, :STREAM, 0)
     s2.connect(ai)
-    s3, sender_addr = s1.accept
+    s3, _ = s1.accept
     s2.send("test-socket-connect", 0)
     assert_equal("test-socket-connect", s3.recv(100))
   ensure
@@ -166,7 +166,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
       rescue Errno::EISCONN
       end
     end
-    s3, sender_addr = s1.accept
+    s3, _ = s1.accept
     s2.send("test-socket-connect-nonblock", 0)
     assert_equal("test-socket-connect-nonblock", s3.recv(100))
   ensure

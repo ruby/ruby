@@ -53,7 +53,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
         end
         assert_equal(1, ret)
         ret = s2.recvmsg(:scm_rights=>true)
-        data, srcaddr, flags, *ctls = ret
+        _, _, _, *ctls = ret
         recv_io_ary = []
         ctls.each {|ctl|
           next if ctl.level != Socket::SOL_SOCKET || ctl.type != Socket::SCM_RIGHTS
@@ -90,7 +90,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
         end
         assert_equal(1, ret)
         ret = s2.recvmsg(:scm_rights=>true)
-        data, srcaddr, flags, *ctls = ret
+        _, _, _, *ctls = ret
         recv_io_ary = []
         ctls.each {|ctl|
           next if ctl.level != Socket::SOL_SOCKET || ctl.type != Socket::SCM_RIGHTS
@@ -422,7 +422,6 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
   end
 
   def test_unix_socket_pair_close_on_exec
-    pair = nil
     UNIXSocket.pair {|s1, s2|
       assert(s1.close_on_exec?)
       assert(s2.close_on_exec?)
@@ -465,7 +464,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     Dir.mktmpdir {|d|
       sockpath = "#{d}/sock"
       serv = Socket.unix_server_socket(sockpath)
-      c = Socket.unix(sockpath)
+      Socket.unix(sockpath)
       s, = serv.accept
       cred = s.getsockopt(:SOCKET, :PEERCRED)
       inspect = cred.inspect
@@ -481,7 +480,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     Dir.mktmpdir {|d|
       sockpath = "#{d}/sock"
       serv = Socket.unix_server_socket(sockpath)
-      c = Socket.unix(sockpath)
+      Socket.unix(sockpath)
       s, = serv.accept
       cred = s.getsockopt(0, Socket::LOCAL_PEERCRED)
       inspect = cred.inspect
@@ -499,7 +498,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       s, = serv.accept
       s.setsockopt(:SOCKET, :PASSCRED, 1)
       c.print "a"
-      msg, cliend_ai, rflags, cred = s.recvmsg
+      msg, _, _, cred = s.recvmsg
       inspect = cred.inspect
       assert_equal("a", msg)
       assert_match(/ pid=#{$$} /, inspect)
@@ -518,7 +517,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       s, = serv.accept
       s.setsockopt(0, Socket::LOCAL_CREDS, 1)
       c.print "a"
-      msg, cliend_ai, rflags, cred = s.recvmsg
+      msg, _, _, cred = s.recvmsg
       assert_equal("a", msg)
       inspect = cred.inspect
       assert_match(/ uid=#{Process.uid} /, inspect)
@@ -537,7 +536,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       c = Socket.unix(sockpath)
       s, = serv.accept
       c.sendmsg("a", 0, nil, [:SOCKET, Socket::SCM_CREDS, ""])
-      msg, cliend_ai, rflags, cred = s.recvmsg
+      msg, _, _, cred = s.recvmsg
       assert_equal("a", msg)
       inspect = cred.inspect
       assert_match(/ pid=#{$$} /, inspect)
