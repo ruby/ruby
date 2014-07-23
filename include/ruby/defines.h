@@ -261,6 +261,26 @@ void rb_ia64_flushrs(void);
     RUBY_ALIAS_FUNCTION_TYPE(VALUE, prot, name, args)
 #endif
 
+#ifndef UNALIGNED_WORD_ACCESS
+# if defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
+     defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD64) || \
+     defined(__mc68020__)
+#   define UNALIGNED_WORD_ACCESS 1
+# else
+#   define UNALIGNED_WORD_ACCESS 0
+# endif
+#endif
+#ifndef PACKED_STRUCT
+# define PACKED_STRUCT(x) x
+#endif
+#ifndef PACKED_STRUCT_UNALIGNED
+# if UNALIGNED_WORD_ACCESS
+#   define PACKED_STRUCT_UNALIGNED(x) PACKED_STRUCT(x)
+# else
+#   define PACKED_STRUCT_UNALIGNED(x) x
+# endif
+#endif
+
 RUBY_SYMBOL_EXPORT_END
 
 #if defined(__cplusplus)
