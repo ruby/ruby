@@ -548,6 +548,10 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_dyna_symbol = false
     parse(':"#{foo}"', :on_dyna_symbol) {thru_dyna_symbol = true}
     assert_equal true, thru_dyna_symbol
+
+    thru_dyna_symbol = false
+    parse('{"#{foo}": 1}', :on_dyna_symbol) {thru_dyna_symbol = true}
+    assert_equal true, thru_dyna_symbol
   end
 
   def test_else

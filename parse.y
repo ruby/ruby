@@ -746,12 +746,12 @@ static void token_info_pop(struct parser_params*, const char *token);
 	keyword__FILE__
 	keyword__ENCODING__
 
-%token <id>   tIDENTIFIER tFID tGVAR tIVAR tCONSTANT tCVAR tLABEL
+%token <id>   tIDENTIFIER tFID tGVAR tIVAR tCONSTANT tCVAR tLABEL tLABEL_END
 %token <node> tINTEGER tFLOAT tRATIONAL tIMAGINARY tSTRING_CONTENT tCHAR
 %token <node> tNTH_REF tBACK_REF
 %token <num>  tREGEXP_END
 
-%type <node> singleton strings string string1 xstring regexp
+%type <node> singleton strings string string1 xstring regexp string_body
 %type <node> string_contents xstring_contents regexp_contents string_content
 %type <node> words symbols symbol_list qwords qsymbols word_list qword_list qsym_list word
 %type <node> literal numeric simple_numeric dsym cpath
@@ -2296,14 +2296,24 @@ arg		: lhs '=' arg
 			$$ = dispatch1(defined, $4);
 		    %*/
 		    }
-		| arg '?' arg opt_nl ':' arg
+		| arg '?'
+		    {
+			$<val>$ = cond_stack;
+			cond_stack = 0;
+			COND_PUSH(1);
+		    }
+		  arg opt_nl ':'
+		    {
+			cond_stack = $<val>3;
+		    }
+		  arg
 		    {
 		    /*%%%*/
 			value_expr($1);
-			$$ = NEW_IF(cond($1), $3, $6);
+			$$ = NEW_IF(cond($1), $4, $8);
 			fixpos($$, $1);
 		    /*%
-			$$ = dispatch3(ifop, $1, $3, $6);
+			$$ = dispatch3(ifop, $1, $4, $8);
 		    %*/
 		    }
 		| primary
@@ -3834,12 +3844,18 @@ string		: tCHAR
 		    }
 		;
 
-string1		: tSTRING_BEG string_contents tSTRING_END
+string_body	: tSTRING_BEG string_contents
+		    {
+			$$ = $2;
+		    }
+		;
+
+string1		: string_body tSTRING_END
 		    {
 		    /*%%%*/
-			$$ = $2;
+			$$ = $1;
 		    /*%
-			$$ = dispatch1(string_literal, $2);
+			$$ = dispatch1(string_literal, $1);
 		    %*/
 		    }
 		;
@@ -4938,6 +4954,15 @@ assoc		: arg_value tASSOC arg_value
 			$$ = dispatch2(assoc_new, $1, $2);
 		    %*/
 		    }
+		| string_body tLABEL_END arg_value
+		    {
+		    /*%%%*/
+			$$ = list_append(NEW_LIST(dsym_node($1)), $3);
+		    /*%
+			$$ = dispatch1(dyna_symbol, $1);
+			$$ = dispatch2(assoc_new, $$, $3);
+		    %*/
+		    }
 		| tDSTAR arg_value
 		    {
 		    /*%%%*/
@@ -5543,6 +5568,7 @@ rb_parser_compile_file_path(volatile VALUE vparser, VALUE fname, VALUE file, int
 #define STR_FUNC_QWORDS 0x08
 #define STR_FUNC_SYMBOL 0x10
 #define STR_FUNC_INDENT 0x20
+#define STR_FUNC_LABEL  0x40
 
 enum string_type {
     str_squote = (0),
@@ -6167,6 +6193,8 @@ parser_tokadd_string(struct parser_params *parser,
 
 #define NEW_STRTERM(func, term, paren) \
 	rb_node_newnode(NODE_STRTERM, (func), (term) | ((paren) << (CHAR_BIT * 2)), 0)
+#define IS_LABEL_SUFFIX(n) (peek_n(':',(n)) && !peek_n(':', (n)+1))
+#define MAYBE_LABEL() ((IS_LABEL_POSSIBLE() && !COND_P()) ? STR_FUNC_LABEL : 0)
 
 #ifdef RIPPER
 static void
@@ -6263,6 +6291,10 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
 	if (func & STR_FUNC_QWORDS) {
 	    quote->nd_func = -1;
 	    return ' ';
+	}
+	if ((func & STR_FUNC_LABEL) && IS_LABEL_SUFFIX(0)) {
+	    nextc();
+	    return tLABEL_END;
 	}
 	if (!(func & STR_FUNC_REGEXP)) return tSTRING_END;
         set_yylval_num(regx_options());
@@ -6923,7 +6955,6 @@ parser_prepare(struct parser_params *parser)
 #define IS_BEG() IS_lex_state(EXPR_BEG_ANY)
 #define IS_SPCARG(c) (IS_ARG() && space_seen && !ISSPACE(c))
 #define IS_LABEL_POSSIBLE() ((IS_lex_state(EXPR_BEG | EXPR_ENDFN) && !cmd_state) || IS_ARG())
-#define IS_LABEL_SUFFIX(n) (peek_n(':',(n)) && !peek_n(':', (n)+1))
 #define IS_AFTER_OPERATOR() IS_lex_state(EXPR_FNAME | EXPR_DOT)
 
 #ifndef RIPPER
@@ -7648,10 +7679,19 @@ parser_yylex(struct parser_params *parser)
 	}
 	else {
 	    token = parse_string(lex_strterm);
-	    if (token == tSTRING_END || token == tREGEXP_END) {
+	    switch (token) {
+	      case tSTRING_END: case tREGEXP_END:
 		rb_gc_force_recycle((VALUE)lex_strterm);
 		lex_strterm = 0;
 		lex_state = EXPR_END;
+		break;
+	      case tLABEL_END:
+		rb_gc_force_recycle((VALUE)lex_strterm);
+		lex_strterm = 0;
+		lex_state = EXPR_BEG;
+		break;
+	      default:
+		break;
 	    }
 	}
 	return token;
@@ -7916,7 +7956,7 @@ parser_yylex(struct parser_params *parser)
 	return '>';
 
       case '"':
-	lex_strterm = NEW_STRTERM(str_dquote, '"', 0);
+	lex_strterm = NEW_STRTERM(str_dquote | MAYBE_LABEL(), '"', 0);
 	return tSTRING_BEG;
 
       case '`':
@@ -7935,7 +7975,7 @@ parser_yylex(struct parser_params *parser)
 	return tXSTRING_BEG;
 
       case '\'':
-	lex_strterm = NEW_STRTERM(str_squote, '\'', 0);
+	lex_strterm = NEW_STRTERM(str_squote | MAYBE_LABEL(), '\'', 0);
 	return tSTRING_BEG;
 
       case '?':
