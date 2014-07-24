@@ -1,3 +1,11 @@
+Thu Jul 24 22:40:24 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (Init_win32ole): add WIN32OLE_RECORD#initialize
+	  method.
+
+	* ext/win32ole/win32ole.c (ole_val2variant): convert WIN32OLE_RECORD
+	  object to VT_RECORD variant.
+
 Thu Jul 24 20:10:59 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: fix major GC flags.

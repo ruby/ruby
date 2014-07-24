@@ -143,7 +143,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.6.2"
+#define WIN32OLE_VERSION "1.6.3"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -297,6 +297,10 @@ struct olevariantdata {
     VARIANT var;
 };
 
+struct olerecorddata {
+    IRecordInfo *pri;
+    void *pdata;
+};
 
 static HRESULT ( STDMETHODCALLTYPE QueryInterface )(IDispatch __RPC_FAR *, REFIID riid, void __RPC_FAR *__RPC_FAR *ppvObject);
 static ULONG ( STDMETHODCALLTYPE AddRef )(IDispatch __RPC_FAR * This);
@@ -338,6 +342,8 @@ static void ole_set_safe_array(long n, SAFEARRAY *psa, LONG *pid, long *pub, VAL
 static long dimension(VALUE val);
 static long ary_len_of_dim(VALUE ary, long dim);
 static HRESULT ole_val_ary2variant_ary(VALUE val, VARIANT *var, VARTYPE vt);
+static int hash2olerec(VALUE key, VALUE val, VALUE rec);
+static void ole_rec2variant(VALUE rec, VARIANT *var);
 static void ole_val2variant(VALUE val, VARIANT *var);
 static void ole_val2variant_ex(VALUE val, VARIANT *var, VARTYPE vt);
 static void ole_val2ptr_variant(VALUE val, VARIANT *var);
@@ -596,6 +602,12 @@ static VALUE folevariant_ary_aset(int argc, VALUE *argv, VALUE self);
 static VALUE folevariant_value(VALUE self);
 static VALUE folevariant_vartype(VALUE self);
 static VALUE folevariant_set_value(VALUE self, VALUE val);
+static HRESULT typelib_from_val(VALUE obj, ITypeLib **pTypeLib);
+static HRESULT recordinfo_from_itypelib(ITypeLib *pTypeLib, VALUE name, IRecordInfo **ppri);
+static void olerecord_set_ivar(VALUE obj, IRecordInfo *pri, void *prec);
+static void olerecord_free(struct olerecorddata *pvar);
+static VALUE folerecord_s_allocate(VALUE klass);
+static VALUE folerecord_initialize(VALUE self, VALUE args);
 static VALUE folerecord_to_h(VALUE self);
 static VALUE folerecord_typename(VALUE self);
 static VALUE folerecord_method_missing(VALUE self, VALUE member);
@@ -1654,6 +1666,66 @@ ole_val_ary2variant_ary(VALUE val, VARIANT *var, VARTYPE vt)
     return hr;
 }
 
+static int
+hash2olerec(VALUE key, VALUE val, VALUE rec)
+{
+    VARIANT var;
+    OLECHAR *pbuf;
+    struct olerecorddata *prec;
+    IRecordInfo *pri;
+    HRESULT hr;
+
+    Data_Get_Struct(rec, struct olerecorddata, prec);
+    pri = prec->pri;
+
+    VariantInit(&var);
+    ole_val2variant(val, &var);
+    pbuf = ole_vstr2wc(key);
+    hr = pri->lpVtbl->PutField(pri, INVOKE_PROPERTYPUT, prec->pdata, pbuf, &var);
+    SysFreeString(pbuf);
+    VariantClear(&var);
+    if (FAILED(hr)) {
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to putfield of `%s`", StringValuePtr(key));
+    }
+    return ST_CONTINUE;
+}
+
+static void
+ole_rec2variant(VALUE rec, VARIANT *var)
+{
+    struct olerecorddata *prec;
+    ULONG size = 0;
+    IRecordInfo *pri;
+    HRESULT hr;
+    VALUE fields;
+    Data_Get_Struct(rec, struct olerecorddata, prec);
+    pri = prec->pri;
+    if (pri) {
+        hr = pri->lpVtbl->GetSize(pri, &size);
+        if (FAILED(hr)) {
+            ole_raise(hr, eWIN32OLERuntimeError, "failed to get size for allocation of VT_RECORD object");
+        }
+        if (prec->pdata) {
+            free(prec->pdata);
+        }
+        prec->pdata = ALLOC_N(char, size);
+        if (!prec->pdata) {
+            rb_raise(rb_eRuntimeError, "failed to memory allocation of %ld bytes", size);
+        }
+        hr = pri->lpVtbl->RecordInit(pri, prec->pdata);
+        if (FAILED(hr)) {
+            ole_raise(hr, eWIN32OLERuntimeError, "failed to initialize VT_RECORD object");
+        }
+        fields = folerecord_to_h(rec);
+        rb_hash_foreach(fields, hash2olerec, rec);
+        V_RECORDINFO(var) = pri;
+        V_RECORD(var) = prec->pdata;
+        V_VT(var) = VT_RECORD;
+    } else {
+        rb_raise(eWIN32OLERuntimeError, "failed to retrieve IRecordInfo interface");
+    }
+}
+
 static void
 ole_val2variant(VALUE val, VARIANT *var)
 {
@@ -1671,7 +1743,10 @@ ole_val2variant(VALUE val, VARIANT *var)
         VariantCopy(var, &(pvar->var));
         return;
     }
-
+    if (rb_obj_is_kind_of(val, cWIN32OLE_RECORD)) {
+        ole_rec2variant(val, var);
+        return;
+    }
     if (rb_obj_is_kind_of(val, rb_cTime)) {
         V_VT(var) = VT_DATE;
         V_DATE(var) = rbtime2vtdate(val);
@@ -2354,44 +2429,8 @@ ole_variant2val(VARIANT *pvar)
     {
         IRecordInfo *pri = V_RECORDINFO(pvar);
         void *prec = V_RECORD(pvar);
-        HRESULT hr;
-        BSTR bstr;
-        BSTR *bstrs;
-        ULONG count = 0;
-        ULONG i;
-        VARIANT var;
-        void *pdata = NULL;
-        VALUE fields = Qnil;
-        VALUE val;
-        VALUE key;
         obj = rb_funcall(cWIN32OLE_RECORD, rb_intern("new"), 0);
-        hr = pri->lpVtbl->GetName(pri, &bstr);
-        if (SUCCEEDED(hr)) {
-            rb_ivar_set(obj, rb_intern("typename"), WC2VSTR(bstr));
-        }
-
-        hr = pri->lpVtbl->GetFieldNames(pri, &count, NULL);
-        if (FAILED(hr) || count == 0)
-            break;
-        bstrs = ALLOCA_N(BSTR, count);
-        hr = pri->lpVtbl->GetFieldNames(pri, &count, bstrs);
-        if (FAILED(hr)) {
-            break;
-        }
-
-        fields = rb_hash_new();
-        rb_ivar_set(obj, rb_intern("fields"), fields);
-        for (i = 0; i < count; i++) {
-            pdata = NULL;
-            VariantInit(&var);
-            hr = pri->lpVtbl->GetFieldNoCopy(pri, prec, bstrs[i], &var, &pdata);
-            if (FAILED(hr)) {
-                break;
-            }
-            val = ole_variant2val(&var);
-            key = WC2VSTR(bstrs[i]);
-            rb_hash_aset(fields, key, val);
-        }
+        olerecord_set_ivar(obj, pri, prec);
         break;
     }
 
@@ -3543,6 +3582,8 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
             if (rb_obj_is_kind_of(param, cWIN32OLE_VARIANT)) {
                 Data_Get_Struct(param, struct olevariantdata, pvar);
                 VariantCopy(&op.dp.rgvarg[n], &(pvar->var));
+            } else if (rb_obj_is_kind_of(param, cWIN32OLE_RECORD)) {
+                ole_rec2variant(param, &op.dp.rgvarg[n]);
             } else {
                 ole_val2variant(param, &realargs[n]);
                 V_VT(&op.dp.rgvarg[n]) = VT_VARIANT | VT_BYREF;
@@ -9176,6 +9217,105 @@ folevariant_set_value(VALUE self, VALUE val)
     return Qnil;
 }
 
+static HRESULT
+typelib_from_val(VALUE obj, ITypeLib **pTypeLib)
+{
+    LCID lcid = cWIN32OLE_lcid;
+    HRESULT hr;
+    struct oledata *pole;
+    unsigned int index;
+    ITypeInfo *pTypeInfo;
+    OLEData_Get_Struct(obj, pole);
+    hr = pole->pDispatch->lpVtbl->GetTypeInfo(pole->pDispatch,
+                                              0, lcid, &pTypeInfo);
+    if (FAILED(hr)) {
+        return hr;
+    }
+    hr = pTypeInfo->lpVtbl->GetContainingTypeLib(pTypeInfo, pTypeLib, &index);
+    OLE_RELEASE(pTypeInfo);
+    return hr;
+}
+
+static HRESULT
+recordinfo_from_itypelib(ITypeLib *pTypeLib, VALUE name, IRecordInfo **ppri)
+{
+
+    unsigned int count;
+    unsigned int i;
+    ITypeInfo *pTypeInfo;
+    HRESULT hr = OLE_E_LAST;
+    BSTR bstr;
+
+    count = pTypeLib->lpVtbl->GetTypeInfoCount(pTypeLib);
+    for (i = 0; i < count; i++) {
+        hr = pTypeLib->lpVtbl->GetDocumentation(pTypeLib, i,
+                                                &bstr, NULL, NULL, NULL);
+        if (FAILED(hr))
+            continue;
+
+        hr = pTypeLib->lpVtbl->GetTypeInfo(pTypeLib, i, &pTypeInfo);
+        if (FAILED(hr))
+            continue;
+
+        if (rb_str_cmp(WC2VSTR(bstr), name) == 0) {
+            hr = GetRecordInfoFromTypeInfo(pTypeInfo, ppri);
+            OLE_RELEASE(pTypeInfo);
+            return hr;
+        }
+        OLE_RELEASE(pTypeInfo);
+    }
+    hr = OLE_E_LAST;
+    return hr;
+}
+
+static void
+olerecord_set_ivar(VALUE obj, IRecordInfo *pri, void *prec)
+{
+    HRESULT hr;
+    BSTR bstr;
+    BSTR *bstrs;
+    ULONG count = 0;
+    ULONG i;
+    VALUE fields;
+    VALUE val;
+    VARIANT var;
+    void *pdata = NULL;
+    struct olerecorddata *pvar;
+
+    Data_Get_Struct(obj, struct olerecorddata, pvar);
+    pvar->pri = pri;
+    OLE_ADDREF(pvar->pri);
+
+    hr = pri->lpVtbl->GetName(pri, &bstr);
+    if (SUCCEEDED(hr)) {
+        rb_ivar_set(obj, rb_intern("typename"), WC2VSTR(bstr));
+    }
+
+    hr = pri->lpVtbl->GetFieldNames(pri, &count, NULL);
+    if (FAILED(hr) || count == 0)
+        return;
+    bstrs = ALLOCA_N(BSTR, count);
+    hr = pri->lpVtbl->GetFieldNames(pri, &count, bstrs);
+    if (FAILED(hr)) {
+        return;
+    }
+
+    fields = rb_hash_new();
+    rb_ivar_set(obj, rb_intern("fields"), fields);
+    for (i = 0; i < count; i++) {
+        pdata = NULL;
+        VariantInit(&var);
+        val = Qnil;
+        if (prec) {
+            hr = pri->lpVtbl->GetFieldNoCopy(pri, prec, bstrs[i], &var, &pdata);
+            if (SUCCEEDED(hr)) {
+                val = ole_variant2val(&var);
+            }
+        }
+        rb_hash_aset(fields, WC2VSTR(bstrs[i]), val);
+    }
+}
+
 /*
  * Document-class: WIN32OLE_RECORD
  *
@@ -9211,6 +9351,69 @@ folevariant_set_value(VALUE self, VALUE val)
  *     book.cost  # => 20
  *
  */
+
+static void
+olerecord_free(struct olerecorddata *pvar) {
+    OLE_FREE(pvar->pri);
+    if (pvar->pdata) {
+        free(pvar->pdata);
+    }
+    free(pvar);
+}
+
+static VALUE
+folerecord_s_allocate(VALUE klass) {
+    VALUE obj = Qnil;
+    struct olerecorddata *pvar;
+    obj = Data_Make_Struct(klass, struct olerecorddata, 0, olerecord_free, pvar);
+    pvar->pri = NULL;
+    pvar->pdata = NULL;
+    return obj;
+}
+
+static VALUE
+folerecord_initialize(VALUE self, VALUE args) {
+    int len = 0;
+    VALUE st;
+    VALUE obj;
+    HRESULT hr;
+    ITypeLib *pTypeLib = NULL;
+    IRecordInfo *pri = NULL;
+    len = RARRAY_LEN(args);
+
+    if (len != 0 && len != 2) {
+        rb_raise(rb_eArgError, "wrong number of arguments (%d for 0 or 2)", len);
+    }
+    if (len == 0) {
+        return self;
+    }
+    st = rb_ary_entry(args, 0);
+    if (TYPE(st) != T_STRING && TYPE(st) != T_SYMBOL) {
+        rb_raise(rb_eArgError, "1st argument should be String or Symbol");
+    }
+    if (TYPE(st) == T_SYMBOL) {
+        st = rb_sym_to_s(st);
+    }
+    obj = rb_ary_entry(args, 1);
+    if(!rb_obj_is_kind_of(obj, cWIN32OLE)) {
+        rb_raise(rb_eArgError, "2nd argument should be WIN32OLE object");
+    }
+
+    hr = typelib_from_val(obj, &pTypeLib);
+    if (FAILED(hr)) {
+        ole_raise(hr, eWIN32OLERuntimeError, "fail to query ITypeLib interface");
+    }
+
+    hr = recordinfo_from_itypelib(pTypeLib, st, &pri);
+    OLE_RELEASE(pTypeLib);
+    if (FAILED(hr)) {
+        ole_raise(hr, eWIN32OLERuntimeError, "fail to query IRecordInfo interface for `%s'", RSTRING_PTR(st));
+    }
+
+    olerecord_set_ivar(self, pri, NULL);
+
+    return self;
+}
 
 /*
  *  call-seq:
@@ -9620,6 +9823,8 @@ Init_win32ole(void)
     rb_define_const(cWIN32OLE_VARIANT, "Nothing", rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, INT2FIX(VT_DISPATCH)));
 
     cWIN32OLE_RECORD = rb_define_class("WIN32OLE_RECORD", rb_cObject);
+    rb_define_alloc_func(cWIN32OLE_RECORD, folerecord_s_allocate);
+    rb_define_method(cWIN32OLE_RECORD, "initialize", folerecord_initialize, -2);
     rb_define_method(cWIN32OLE_RECORD, "to_h", folerecord_to_h, 0);
     rb_define_method(cWIN32OLE_RECORD, "typename", folerecord_typename, 0);
     rb_define_method(cWIN32OLE_RECORD, "method_missing", folerecord_method_missing, 1);
