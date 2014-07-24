@@ -2901,14 +2901,8 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
       case NODE_ATTRASGN:{
 	int self = TRUE;
 
-	switch (type) {
-	  case NODE_ATTRASGN:
-	    if (private_recv_p(node)) break;
-	  case NODE_CALL:
+	if (type == NODE_CALL || (type == NODE_ATTRASGN && !private_recv_p(node))) {
 	    self = FALSE;
-	    break;
-	  default:
-	    /* through */;
 	}
 	if (!lfinish[1]) {
 	    lfinish[1] = NEW_LABEL(nd_line(node));
