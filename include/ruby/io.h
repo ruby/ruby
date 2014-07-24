@@ -51,7 +51,7 @@ extern "C" {
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
-PACKED_STRUCT(struct rb_io_buffer_t {
+PACKED_STRUCT_UNALIGNED(struct rb_io_buffer_t {
     char *ptr;                  /* off + len <= capa */
     int off;
     int len;

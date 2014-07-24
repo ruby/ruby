@@ -1,3 +1,9 @@
+Thu Jul 24 15:55:02 2014  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* include/ruby/io.h (struct rb_io_buffer_t): PACKED_STRUCT should not
+	  be used for platform-specific optimization. PACKED_STRUCT_UNALIGNED
+	  should be used. [ruby-core:63988] [Bug #10088]
+
 Thu Jul 24 04:42:13 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/benchmark.rb: split executable code into sample directory.
