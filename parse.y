@@ -2285,11 +2285,10 @@ arg		: lhs '=' arg
 		    }
 		| keyword_defined opt_nl {in_defined = 1;} arg
 		    {
-		    /*%%%*/
 			in_defined = 0;
+		    /*%%%*/
 			$$ = new_defined($4);
 		    /*%
-			in_defined = 0;
 			$$ = dispatch1(defined, $4);
 		    %*/
 		    }
@@ -2695,11 +2694,10 @@ primary		: literal
 		    }
 		| keyword_defined opt_nl '(' {in_defined = 1;} expr rparen
 		    {
-		    /*%%%*/
 			in_defined = 0;
+		    /*%%%*/
 			$$ = new_defined($5);
 		    /*%
-			in_defined = 0;
 			$$ = dispatch1(defined, $5);
 		    %*/
 		    }
