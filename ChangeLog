@@ -1,3 +1,13 @@
+Thu Jul 24 20:10:59 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: fix major GC flags.
+	  * add GPR_FLAG_MAJOR_BY_FORCE, which indicates
+	    major GC by METHOD, CAPI and so on (see GC_BY).
+	  * remove GPR_FLAG_MAJOR_BY_RESCAN because not used.
+	  * remove GPR_FLAG_MAJOR_BY_STRESS, use FORCE instead.
+
+	* test/ruby/test_gc.rb: catch up.
+
 Thu Jul 24 15:55:02 2014  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* include/ruby/io.h (struct rb_io_buffer_t): PACKED_STRUCT should not

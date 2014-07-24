@@ -274,8 +274,7 @@ typedef enum {
     GPR_FLAG_MAJOR_BY_NOFREE    = 0x001,
     GPR_FLAG_MAJOR_BY_OLDGEN    = 0x002,
     GPR_FLAG_MAJOR_BY_SHADY     = 0x004,
-    GPR_FLAG_MAJOR_BY_RESCAN    = 0x008,
-    GPR_FLAG_MAJOR_BY_STRESS    = 0x010,
+    GPR_FLAG_MAJOR_BY_FORCE     = 0x008,
 #if RGENGC_ESTIMATE_OLDMALLOC
     GPR_FLAG_MAJOR_BY_OLDMALLOC = 0x020,
 #endif
@@ -5208,10 +5207,10 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
     if (ruby_gc_stress && !ruby_disable_gc_stress) {
 	int flag = FIXNUM_P(ruby_gc_stress) ? FIX2INT(ruby_gc_stress) : 0;
 
-	if (flag & (1<<gc_stress_no_major))
-	    reason &= ~GPR_FLAG_MAJOR_MASK;
-	else
-	    reason |= GPR_FLAG_MAJOR_BY_STRESS;
+	if ((flag & (1<<gc_stress_no_major)) == 0) {
+	    full_mark = TRUE;
+	}
+
 	immediate_sweep = !(flag & (1<<gc_stress_no_immediate_sweep));
     }
     else {
@@ -5219,24 +5218,27 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
 	    immediate_sweep = TRUE;
 	}
 #if USE_RGENGC
-	if (full_mark) {
-	    reason |= GPR_FLAG_MAJOR_BY_NOFREE;
-	}
 	if (objspace->rgengc.need_major_gc) {
 	    reason |= objspace->rgengc.need_major_gc;
 	    objspace->rgengc.need_major_gc = GPR_FLAG_NONE;
+	    full_mark = TRUE;
 	}
 	if (objspace->rgengc.remembered_shady_object_count > objspace->rgengc.remembered_shady_object_limit) {
 	    reason |= GPR_FLAG_MAJOR_BY_SHADY;
+	    full_mark = TRUE;
 	}
 	if (objspace->rgengc.old_object_count > objspace->rgengc.old_object_limit) {
 	    reason |= GPR_FLAG_MAJOR_BY_OLDGEN;
+	    full_mark = TRUE;
 	}
 #endif
     }
 
+    if (full_mark && (reason & GPR_FLAG_MAJOR_MASK) == 0) {
+	reason |= GPR_FLAG_MAJOR_BY_FORCE; /* GC by CAPI, METHOD, and so on. */
+    }
+
     if (immediate_sweep) reason |= GPR_FLAG_IMMEDIATE_SWEEP;
-    full_mark = (reason & GPR_FLAG_MAJOR_MASK) ? TRUE : FALSE;
 
     if (GC_NOTIFY)  fprintf(stderr, "start garbage_collect(%d, %d, %d)\n", full_mark, immediate_sweep, reason);
 
@@ -5479,7 +5481,7 @@ static VALUE
 gc_info_decode(int flags, VALUE hash_or_key)
 {
     static VALUE sym_major_by = Qnil, sym_gc_by, sym_immediate_sweep, sym_have_finalizer;
-    static VALUE sym_nofree, sym_oldgen, sym_shady, sym_rescan, sym_stress;
+    static VALUE sym_nofree, sym_oldgen, sym_shady, sym_force, sym_stress;
 #if RGENGC_ESTIMATE_OLDMALLOC
     static VALUE sym_oldmalloc;
 #endif
@@ -5500,11 +5502,11 @@ gc_info_decode(int flags, VALUE hash_or_key)
 	S(gc_by);
 	S(immediate_sweep);
 	S(have_finalizer);
+	S(stress);
 	S(nofree);
 	S(oldgen);
 	S(shady);
-	S(rescan);
-	S(stress);
+	S(force);
 #if RGENGC_ESTIMATE_OLDMALLOC
 	S(oldmalloc);
 #endif
@@ -5522,14 +5524,13 @@ gc_info_decode(int flags, VALUE hash_or_key)
 	rb_hash_aset(hash, sym_##name, (attr));
 
     major_by =
+      (flags & GPR_FLAG_MAJOR_BY_NOFREE) ? sym_nofree :
       (flags & GPR_FLAG_MAJOR_BY_OLDGEN) ? sym_oldgen :
       (flags & GPR_FLAG_MAJOR_BY_SHADY)  ? sym_shady :
-      (flags & GPR_FLAG_MAJOR_BY_RESCAN) ? sym_rescan :
-      (flags & GPR_FLAG_MAJOR_BY_STRESS) ? sym_stress :
+      (flags & GPR_FLAG_MAJOR_BY_FORCE)  ? sym_force :
 #if RGENGC_ESTIMATE_OLDMALLOC
       (flags & GPR_FLAG_MAJOR_BY_OLDMALLOC) ? sym_oldmalloc :
 #endif
-      (flags & GPR_FLAG_MAJOR_BY_NOFREE) ? sym_nofree :
       Qnil;
     SET(major_by, major_by);
 
