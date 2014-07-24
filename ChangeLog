@@ -1,3 +1,7 @@
+Fri Jul 25 03:53:52 2014  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/keywords.rdoc:  [DOC] Describe each keyword.
+
 Thu Jul 24 22:40:24 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (Init_win32ole): add WIN32OLE_RECORD#initialize
