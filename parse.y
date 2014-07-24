@@ -4946,8 +4946,6 @@ assoc		: arg_value tASSOC arg_value
 		    }
 		;
 
-		;
-
 operation	: tIDENTIFIER
 		| tCONSTANT
 		| tFID
