@@ -183,29 +183,48 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def test_assign_error
+    # for test_coverage
+  end
+
+  def test_assign_error_backref
     thru_assign_error = false
     parse('$` = 1', :on_assign_error) {thru_assign_error = true}
     assert_equal true, thru_assign_error
     thru_assign_error = false
     parse('$`, _ = 1', :on_assign_error) {thru_assign_error = true}
     assert_equal true, thru_assign_error
+  end
 
+  def test_assign_error_const_qualified
     thru_assign_error = false
     parse('self::X = 1', :on_assign_error) {thru_assign_error = true}
     assert_equal false, thru_assign_error
-    parse('def m\n self::X = 1\nend', :on_assign_error) {thru_assign_error = true}
+    parse("def m\n self::X = 1\nend", :on_assign_error) {thru_assign_error = true}
     assert_equal true, thru_assign_error
+    thru_assign_error = false
+    parse("def m\n self::X, a = 1, 2\nend", :on_assign_error) {thru_assign_error = true}
+    assert_equal true, thru_assign_error
+  end
 
+  def test_assign_error_const
     thru_assign_error = false
     parse('X = 1', :on_assign_error) {thru_assign_error = true}
     assert_equal false, thru_assign_error
-    parse('def m\n X = 1\nend', :on_assign_error) {thru_assign_error = true}
+    parse("def m\n X = 1\nend", :on_assign_error) {thru_assign_error = true}
     assert_equal true, thru_assign_error
+    thru_assign_error = false
+    parse("def m\n X, a = 1, 2\nend", :on_assign_error) {thru_assign_error = true}
+    assert_equal true, thru_assign_error
+  end
 
+  def test_assign_error_const_toplevel
     thru_assign_error = false
     parse('::X = 1', :on_assign_error) {thru_assign_error = true}
     assert_equal false, thru_assign_error
-    parse('def m\n ::X = 1\nend', :on_assign_error) {thru_assign_error = true}
+    parse("def m\n ::X = 1\nend", :on_assign_error) {thru_assign_error = true}
+    assert_equal true, thru_assign_error
+    thru_assign_error = false
+    parse("def m\n ::X, a = 1, 2\nend", :on_assign_error) {thru_assign_error = true}
     assert_equal true, thru_assign_error
   end
 

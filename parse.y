@@ -1672,9 +1672,10 @@ mlhs_node	: user_variable
 			    yyerror("dynamic constant assignment");
 			$$ = NEW_CDECL(0, 0, NEW_COLON2($1, $3));
 		    /*%
-			if (in_def || in_single)
-			    yyerror("dynamic constant assignment");
 			$$ = dispatch2(const_path_field, $1, $3);
+			if (in_def || in_single) {
+			    $$ = dispatch1(assign_error, $$);
+			}
 		    %*/
 		    }
 		| tCOLON3 tCONSTANT
@@ -1685,6 +1686,9 @@ mlhs_node	: user_variable
 			$$ = NEW_CDECL(0, 0, NEW_COLON3($2));
 		    /*%
 			$$ = dispatch1(top_const_field, $2);
+			if (in_def || in_single) {
+			    $$ = dispatch1(assign_error, $$);
+			}
 		    %*/
 		    }
 		| backref
