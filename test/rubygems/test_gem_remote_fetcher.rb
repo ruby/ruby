@@ -771,6 +771,8 @@ gems:
         rescue Exception => ex
           abort ex.message
           puts "ERROR during server thread: #{ex.message}"
+        ensure
+          server.shutdown
         end
       end
       while server.status != :Running
@@ -822,6 +824,8 @@ gems:
           s.start
         rescue Exception => ex
           abort "ERROR during server thread: #{ex.message}"
+        ensure
+          s.shutdown
         end
       end
       th[:server] = s
