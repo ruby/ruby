@@ -6725,8 +6725,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
     rb_io_taint_check(file);
     fptr = RFILE(file)->fptr;
     if (!fptr) {
-	fptr = RFILE(file)->fptr = ALLOC(rb_io_t);
-	MEMZERO(fptr, rb_io_t, 1);
+	fptr = RFILE(file)->fptr = ZALLOC(rb_io_t);
     }
 
     if (!NIL_P(nmode) || !NIL_P(opt)) {

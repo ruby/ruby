@@ -920,8 +920,7 @@ RVALUE_DEMOTE_FROM_OLD(rb_objspace_t *objspace, VALUE obj)
 rb_objspace_t *
 rb_objspace_alloc(void)
 {
-    rb_objspace_t *objspace = malloc(sizeof(rb_objspace_t));
-    memset(objspace, 0, sizeof(*objspace));
+    rb_objspace_t *objspace = calloc(1, sizeof(rb_objspace_t));
     ruby_gc_stress = ruby_initial_gc_stress;
 
     malloc_limit = gc_params.malloc_limit_min;
@@ -1087,13 +1086,12 @@ heap_page_allocate(rb_objspace_t *objspace)
     }
 
     /* assign heap_page entry */
-    page = (struct heap_page *)malloc(sizeof(struct heap_page));
+    page = (struct heap_page *)calloc(1, sizeof(struct heap_page));
     if (page == 0) {
 	aligned_free(page_body);
 	during_gc = 0;
 	rb_memerror();
     }
-    MEMZERO((void*)page, struct heap_page, 1);
 
     page->body = page_body;
 

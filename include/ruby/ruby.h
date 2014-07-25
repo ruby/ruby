@@ -1000,8 +1000,7 @@ void *rb_check_typeddata(VALUE, const rb_data_type_t *);
     rb_data_object_alloc((klass),(sval),(RUBY_DATA_FUNC)(mark),(RUBY_DATA_FUNC)(free))
 
 #define Data_Make_Struct(klass,type,mark,free,sval) (\
-    (sval) = ALLOC(type),\
-    memset((sval), 0, sizeof(type)),\
+    (sval) = ZALLOC(type),\
     Data_Wrap_Struct((klass),(mark),(free),(sval))\
 )
 
@@ -1009,8 +1008,7 @@ void *rb_check_typeddata(VALUE, const rb_data_type_t *);
   rb_data_typed_object_alloc((klass),(sval),(data_type))
 
 #define TypedData_Make_Struct(klass, type, data_type, sval) (\
-    (sval) = ALLOC(type),\
-    memset((sval), 0, sizeof(type)),\
+    (sval) = ZALLOC(type),\
     TypedData_Wrap_Struct((klass),(data_type),(sval))\
 )
 
@@ -1270,6 +1268,8 @@ rb_num2char_inline(VALUE x)
 
 #define ALLOC_N(type,n) ((type*)xmalloc2((n),sizeof(type)))
 #define ALLOC(type) ((type*)xmalloc(sizeof(type)))
+#define ZALLOC_N(type,n) ((type*)xcalloc((n),sizeof(type)))
+#define ZALLOC(type) (ZALLOC_N(type,1))
 #define REALLOC_N(var,type,n) ((var)=(type*)xrealloc2((char*)(var),(n),sizeof(type)))
 
 #define ALLOCA_N(type,n) ((type*)alloca(sizeof(type)*(n)))

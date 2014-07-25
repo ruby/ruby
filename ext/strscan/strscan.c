@@ -199,8 +199,7 @@ strscan_s_allocate(VALUE klass)
 {
     struct strscanner *p;
 
-    p = ALLOC(struct strscanner);
-    MEMZERO(p, struct strscanner, 1);
+    p = ZALLOC(struct strscanner);
     CLEAR_MATCH_STATUS(p);
     onig_region_init(&(p->regs));
     p->str = Qnil;

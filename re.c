@@ -872,8 +872,7 @@ match_alloc(VALUE klass)
     match->str = 0;
     match->rmatch = 0;
     match->regexp = 0;
-    match->rmatch = ALLOC(struct rmatch);
-    MEMZERO(match->rmatch, struct rmatch, 1);
+    match->rmatch = ZALLOC(struct rmatch);
 
     return (VALUE)match;
 }

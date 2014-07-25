@@ -286,8 +286,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
      * iseq->cached_special_block = 0;
      */
 
-    iseq->compile_data = ALLOC(struct iseq_compile_data);
-    MEMZERO(iseq->compile_data, struct iseq_compile_data, 1);
+    iseq->compile_data = ZALLOC(struct iseq_compile_data);
     RB_OBJ_WRITE(iseq->self, &iseq->compile_data->err_info, Qnil);
     RB_OBJ_WRITE(iseq->self, &iseq->compile_data->mark_ary, rb_ary_tmp_new(3));
 

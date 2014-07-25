@@ -9511,8 +9511,7 @@ new_args_tail_gen(struct parser_params *parser, NODE *k, ID kr, ID b)
     NODE *node;
     int check = 0;
 
-    args = ALLOC(struct rb_args_info);
-    MEMZERO(args, struct rb_args_info, 1);
+    args = ZALLOC(struct rb_args_info);
     node = NEW_NODE(NODE_ARGS, 0, 0, args);
 
     args->block_arg      = b;
@@ -10244,8 +10243,7 @@ parser_new(void)
 {
     struct parser_params *p;
 
-    p = ALLOC_N(struct parser_params, 1);
-    MEMZERO(p, struct parser_params, 1);
+    p = ZALLOC(struct parser_params);
     parser_initialize(p);
     return p;
 }
@@ -10665,8 +10663,7 @@ ripper_s_allocate(VALUE klass)
     struct parser_params *p;
     VALUE self;
 
-    p = ALLOC_N(struct parser_params, 1);
-    MEMZERO(p, struct parser_params, 1);
+    p = ZALLOC(struct parser_params);
     self = TypedData_Wrap_Struct(klass, &parser_data_type, p);
     p->value = self;
     return self;

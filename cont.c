@@ -1162,8 +1162,7 @@ fiber_t_alloc(VALUE fibval)
     }
 
     THREAD_MUST_BE_RUNNING(th);
-    fib = ALLOC(rb_fiber_t);
-    memset(fib, 0, sizeof(rb_fiber_t));
+    fib = ZALLOC(rb_fiber_t);
     fib->cont.self = fibval;
     fib->cont.type = FIBER_CONTEXT;
     cont_init(&fib->cont, th);

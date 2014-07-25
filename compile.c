@@ -1441,8 +1441,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
     /* make instruction sequence */
     generated_iseq = ALLOC_N(VALUE, pos);
     line_info_table = ALLOC_N(struct iseq_line_info_entry, k);
-    iseq->is_entries = ALLOC_N(union iseq_inline_storage_entry, iseq->is_size);
-    MEMZERO(iseq->is_entries, union iseq_inline_storage_entry, iseq->is_size);
+    iseq->is_entries = ZALLOC_N(union iseq_inline_storage_entry, iseq->is_size);
     iseq->callinfo_entries = ALLOC_N(rb_call_info_t, iseq->callinfo_size);
     /* MEMZERO(iseq->callinfo_entries, rb_call_info_t, iseq->callinfo_size); */
 

@@ -2213,8 +2213,7 @@ rb_const_set(VALUE klass, ID id, VALUE val)
     rb_clear_constant_cache();
 
 
-    ce = ALLOC(rb_const_entry_t);
-    MEMZERO(ce, rb_const_entry_t, 1);
+    ce = ZALLOC(rb_const_entry_t);
     ce->flag = visibility;
     ce->line = rb_sourceline();
     st_insert(RCLASS_CONST_TBL(klass), (st_data_t)id, (st_data_t)ce);

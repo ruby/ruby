@@ -1,3 +1,19 @@
+Sat Jul 26 05:58:35 2014  Eric Wong  <e@80x24.org>
+
+	* include/ruby/ruby.h (ZALLOC, ZALLOC_N): implement
+	  (Data_Make_Struct, TypedData_Make_Struct):
+	  ZALLOC replaces ALLOC+memset
+	* compile.c (iseq_seq_sequence): ZALLOC_N replaces ALLOC_N+MEMZERO
+	* cont.c (fiber_t_alloc): ZALLOC replaces ALLOC+MEMZERO
+	* io.c (rb_io_reopen): ditto
+	* iseq.c (prepare_iseq_build): ditto
+	* parse.y (new_args_tail_gen, parser_new, ripper_s_allocate): ditto
+	* re.c (match_alloc): ditto
+	* variable.c (rb_const_set): ditto
+	* ext/socket/raddrinfo.c (get_addrinfo): ditto
+	* ext/strscan/strscan.c (strscan_s_allocate): ditto
+	* gc.c (rb_objspace_alloc): calloc replaces malloc+MEMZERO
+
 Sat Jul 26 05:54:54 2014  Eric Wong  <e@80x24.org>
 
 	* symbol.c (dsymbol_check): remove unneeded semi-colon
