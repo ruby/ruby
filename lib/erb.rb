@@ -68,7 +68,7 @@ require "cgi/util"
 # a magic comment, however, it returns a string in the encoding specified
 # by the magic comment.
 #
-#   # -*- coding: UTF-8 -*-
+#   # -*- coding: utf-8 -*-
 #   require 'erb'
 #
 #   template = ERB.new <<EOF

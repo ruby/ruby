@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 require 'rubygems/test_case'
 require 'pathname'
 require 'stringio'
