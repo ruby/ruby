@@ -533,7 +533,11 @@ module Test
 
       def deal(io, type, result, rep, shutting_down = false)
         worker = @workers_hash[io]
-        case cmd = worker.read
+        cmd = worker.read
+        cmd.sub!(/\A\.+/, '')
+        case cmd
+        when ''
+          # just only dots, ignore
         when /^okay$/
           worker.status = :running
           jobs_status
