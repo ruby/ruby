@@ -1,3 +1,8 @@
+Fri Jul 25 13:18:00 2014  Will Farrington  <wfarrington@digitalocean.com>
+
+	* ext/socket/socket.c (sock_gethostname): Use NI_MAXHOST to support
+	  hostnames longer than 64 characters if the system supports it.
+
 Fri Jul 25 12:21:11 2014  Santiago Pastorino  <santiago@wyeworks.com>
 
 	* compile.c (defined_expr): make the condition if the receiver
