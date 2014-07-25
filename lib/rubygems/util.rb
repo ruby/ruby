@@ -88,6 +88,8 @@ module Gem::Util
       ensure
         STDOUT.reopen stdout
         STDERR.reopen stderr
+        stdout.close
+        stderr.close
       end
     end
   end
