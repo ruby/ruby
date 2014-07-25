@@ -378,7 +378,11 @@ class Gem::StreamUI
   # handlers that might have been defined.
 
   def terminate_interaction(status = 0)
+    close
     raise Gem::SystemExitException, status
+  end
+
+  def close
   end
 
   ##
@@ -681,6 +685,12 @@ class Gem::SilentUI < Gem::StreamUI
     end
 
     super reader, writer, writer, false
+  end
+
+  def close
+    super
+    @ins.close
+    @outs.close
   end
 
   def download_reporter(*args) # :nodoc:
