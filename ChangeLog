@@ -3,6 +3,7 @@ Sat Jul 26 05:58:35 2014  Eric Wong  <e@80x24.org>
 	* include/ruby/ruby.h (ZALLOC, ZALLOC_N): implement
 	  (Data_Make_Struct, TypedData_Make_Struct):
 	  ZALLOC replaces ALLOC+memset
+	  [ruby-core:63951][Feature #10082]
 	* compile.c (iseq_seq_sequence): ZALLOC_N replaces ALLOC_N+MEMZERO
 	* cont.c (fiber_t_alloc): ZALLOC replaces ALLOC+MEMZERO
 	* io.c (rb_io_reopen): ditto
