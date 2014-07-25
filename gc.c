@@ -526,13 +526,10 @@ typedef struct rb_objspace {
 
 #if USE_RGENGC
     struct {
+	VALUE parent_object;
 	int during_minor_gc;
-	int parent_object_is_old;
-
 	int need_major_gc;
-
 	size_t last_major_gc;
-
 	size_t remembered_shady_object_count;
 	size_t remembered_shady_object_limit;
 	size_t old_object_count;
@@ -3667,7 +3664,7 @@ static void
 rgengc_check_relation(rb_objspace_t *objspace, VALUE obj)
 {
 #if USE_RGENGC
-    if (objspace->rgengc.parent_object_is_old) {
+    if (objspace->rgengc.parent_object) {
 	if (!RVALUE_WB_PROTECTED(obj)) {
 	    if (rgengc_remember(objspace, obj)) {
 		objspace->rgengc.remembered_shady_object_count++;
@@ -3784,14 +3781,14 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 		/* infant -> young */
 		RVALUE_PROMOTE_INFANT(objspace, (VALUE)obj, TRUE);
 #if RGENGC_AGE2_PROMOTION
-		objspace->rgengc.parent_object_is_old = FALSE;
+		objspace->rgengc.parent_object = Qfalse;
 #else
-		objspace->rgengc.parent_object_is_old = TRUE;
+		objspace->rgengc.parent_object = (VALUE)obj;
 #endif
 		rgengc_report(3, objspace, "gc_mark_children: promote infant -> young %p (%s).\n", (void *)obj, obj_type_name((VALUE)obj));
 	    }
 	    else {
-		objspace->rgengc.parent_object_is_old = TRUE;
+		objspace->rgengc.parent_object = (VALUE)obj;
 
 #if RGENGC_AGE2_PROMOTION
 		if (RVALUE_YOUNG_P((VALUE)obj)) {
@@ -3812,7 +3809,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	}
 	else {
 	    rgengc_report(3, objspace, "gc_mark_children: do not promote non-WB-protected %p (%s).\n", (void *)obj, obj_type_name((VALUE)obj));
-	    objspace->rgengc.parent_object_is_old = FALSE;
+	    objspace->rgengc.parent_object = Qfalse;
 	}
     }
 
@@ -4263,7 +4260,6 @@ gc_marks_body(rb_objspace_t *objspace, int full_mark)
     rgengc_report(1, objspace, "gc_marks_body: start (%s)\n", full_mark ? "full" : "minor");
 
 #if USE_RGENGC
-    objspace->rgengc.parent_object_is_old = FALSE;
     objspace->rgengc.during_minor_gc = full_mark ? FALSE : TRUE;
 
 #if RGENGC_AGE2_PROMOTION
@@ -4281,6 +4277,8 @@ gc_marks_body(rb_objspace_t *objspace, int full_mark)
 	objspace->rgengc.last_major_gc = objspace->profile.count;
 	rgengc_mark_and_rememberset_clear(objspace, heap_eden);
     }
+
+    objspace->rgengc.parent_object = Qfalse; /* should clear just before gc_mark_roots() */
 #endif
 
     gc_mark_roots(objspace, full_mark, 0);

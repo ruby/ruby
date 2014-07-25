@@ -1,3 +1,13 @@
+Fri Jul 25 14:07:27 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: change objspace::rgengc::parent_object_is_old (boolean)
+	  to objspace::rgengc::parent_object (VALUE).
+	  Use Qfalse or RVALUE pointer instead of FALSE and TRUE.
+
+	* gc.c (gc_marks_body): should clear parent_object just before
+	  gc_mark_roots() because there are no parents objects
+	  for root objects.
+
 Fri Jul 25 13:45:39 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_gc_writebarrier_remember_promoted): should remember only
