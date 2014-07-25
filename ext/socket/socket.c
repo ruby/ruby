@@ -1023,10 +1023,15 @@ sock_sysaccept(VALUE sock)
 static VALUE
 sock_gethostname(VALUE obj)
 {
-#ifndef HOST_NAME_MAX
-#  define HOST_NAME_MAX 1024
+#if defined(NI_MAXHOST)
+#  define RUBY_MAX_HOST_NAME_LEN NI_MAXHOST
+#elif defined(HOST_NAME_MAX)
+#  define RUBY_MAX_HOST_NAME_LEN HOST_NAME_MAX
+#else
+#  define RUBY_MAX_HOST_NAME_LEN 1024
 #endif
-    char buf[HOST_NAME_MAX+1];
+
+    char buf[RUBY_MAX_HOST_NAME_LEN+1];
 
     rb_secure(3);
     if (gethostname(buf, (int)sizeof buf - 1) < 0)
