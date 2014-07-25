@@ -1,3 +1,8 @@
+Fri Jul 25 12:21:11 2014  Santiago Pastorino  <santiago@wyeworks.com>
+
+	* compile.c (defined_expr): make the condition if the receiver
+	  is explicit or implicit cleaner.  [fix GH-681]
+
 Fri Jul 25 03:53:52 2014  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/keywords.rdoc:  [DOC] Describe each keyword.

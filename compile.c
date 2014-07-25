@@ -2899,17 +2899,10 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
       case NODE_VCALL:
       case NODE_FCALL:
       case NODE_ATTRASGN:{
-	int self = TRUE;
+	const int explicit_receiver =
+	    (type == NODE_CALL ||
+	     (type == NODE_ATTRASGN && !private_recv_p(node)));
 
-	switch (type) {
-	  case NODE_ATTRASGN:
-	    if (private_recv_p(node)) break;
-	  case NODE_CALL:
-	    self = FALSE;
-	    break;
-	  default:
-	    /* through */;
-	}
 	if (!lfinish[1]) {
 	    lfinish[1] = NEW_LABEL(nd_line(node));
 	}
@@ -2917,7 +2910,7 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 	    defined_expr(iseq, ret, node->nd_args, lfinish, Qfalse);
 	    ADD_INSNL(ret, nd_line(node), branchunless, lfinish[1]);
 	}
-	if (!self) {
+	if (explicit_receiver) {
 	    defined_expr(iseq, ret, node->nd_recv, lfinish, Qfalse);
 	    ADD_INSNL(ret, nd_line(node), branchunless, lfinish[1]);
 	    COMPILE(ret, "defined/recv", node->nd_recv);
