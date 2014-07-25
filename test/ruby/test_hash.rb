@@ -1269,6 +1269,17 @@ class TestHash < Test::Unit::TestCase
     assert_equal(bug9381, hash[wrapper.new(5)])
   end
 
+  def test_label_syntax
+    return unless @cls == Hash
+
+    feature4935 = '[ruby-core:37553] [Feature #4935]'
+    x = 'world'
+    hash = assert_nothing_raised(SyntaxError) do
+      break eval '{foo: 1, "foo-bar": 2, "hello-#{x}": 3}'
+    end
+    assert_equal({:foo => 1, :'foo-bar' => 2, :'hello-world' => 3}, hash)
+  end
+
   class TestSubHash < TestHash
     class SubHash < Hash
       def reject(*)
