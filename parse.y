@@ -216,10 +216,9 @@ struct parser_params {
     VALUE eofp;
 
     NODE *parser_lex_strterm;
-    enum lex_state_e parser_lex_state;
     stack_type parser_cond_stack;
     stack_type parser_cmdarg_stack;
-    int is_ripper;
+    enum lex_state_e parser_lex_state;
     int parser_class_nest;
     int parser_paren_nest;
     int parser_lpar_beg;
@@ -234,6 +233,7 @@ struct parser_params {
     int parser_tokidx;
     int parser_toksiz;
     int parser_tokline;
+    int is_ripper; /* bool, seems unused */
     VALUE parser_lex_input;
     VALUE parser_lex_lastline;
     VALUE parser_lex_nextline;
@@ -249,8 +249,8 @@ struct parser_params {
     int parser_ruby__end__seen;
     int line_count;
     int has_shebang;
-    char *parser_ruby_sourcefile; /* current source file */
     int parser_ruby_sourceline;	/* current line no. */
+    char *parser_ruby_sourcefile; /* current source file */
     VALUE parser_ruby_sourcefile_string;
     rb_encoding *enc;
 

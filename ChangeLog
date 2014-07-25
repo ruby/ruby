@@ -1,3 +1,7 @@
+Sat Jul 26 06:44:43 2014  Eric Wong  <e@80x24.org>
+
+	* parse.y (struct parse_params): shrink to 320 to 304 bytes on 64-bit
+
 Sat Jul 26 05:58:35 2014  Eric Wong  <e@80x24.org>
 
 	* include/ruby/ruby.h (ZALLOC, ZALLOC_N): implement
