@@ -414,7 +414,7 @@ dsymbol_check(const VALUE sym)
 
 	if (st_delete(global_symbols.str_id, (st_data_t *)&fstr, NULL) == 0) {
 	    rb_bug("can't remove fstr from str_id (%s)", RSTRING_PTR(fstr));
-	};
+	}
 	if (st_delete(global_symbols.id_str, (st_data_t *)&sym, NULL) == 0) {
 	    rb_bug("can't remove sym from id_sym (%s)", RSTRING_PTR(fstr));
 	}

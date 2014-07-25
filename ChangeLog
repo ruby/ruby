@@ -1,3 +1,7 @@
+Sat Jul 26 05:54:54 2014  Eric Wong  <e@80x24.org>
+
+	* symbol.c (dsymbol_check): remove unneeded semi-colon
+
 Fri Jul 25 14:07:27 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: change objspace::rgengc::parent_object_is_old (boolean)
