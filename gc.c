@@ -4984,6 +4984,15 @@ void
 rb_gc_writebarrier_remember_promoted(VALUE obj)
 {
     rb_objspace_t *objspace = &rb_objspace;
+
+    if (RGENGC_CHECK_MODE) {
+	if (!RVALUE_PROMOTED_P(obj)) rb_bug("rb_gc_writebarrier_remember_promoted: called on non-promoted object");
+    }
+
+#if RGENGC_AGE2_PROMOTION
+    if (!RVALUE_OLD_P(obj)) return;
+#endif
+
     rgengc_remember(objspace, obj);
 }
 

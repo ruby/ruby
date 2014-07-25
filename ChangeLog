@@ -1,3 +1,8 @@
+Fri Jul 25 13:45:39 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_gc_writebarrier_remember_promoted): should remember only
+	  OLD objects on RGENGC_AGE2_PROMOTION.
+
 Fri Jul 25 13:42:02 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_mark_stacked_objects): fix error message.
