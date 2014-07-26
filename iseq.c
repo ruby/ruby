@@ -153,7 +153,7 @@ iseq_memsize(const void *ptr)
 
 		cur = iseq->compile_data->storage_head;
 		while (cur) {
-		    size += cur->size + sizeof(struct iseq_compile_data_storage);
+		    size += cur->size + SIZEOF_ISEQ_COMPILE_DATA_STORAGE;
 		    cur = cur->next;
 		}
 		size += sizeof(struct iseq_compile_data);
@@ -293,15 +293,13 @@ prepare_iseq_build(rb_iseq_t *iseq,
     iseq->compile_data->storage_head = iseq->compile_data->storage_current =
       (struct iseq_compile_data_storage *)
 	ALLOC_N(char, INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE +
-		sizeof(struct iseq_compile_data_storage));
+		SIZEOF_ISEQ_COMPILE_DATA_STORAGE);
 
     RB_OBJ_WRITE(iseq->self, &iseq->compile_data->catch_table_ary, rb_ary_new());
     iseq->compile_data->storage_head->pos = 0;
     iseq->compile_data->storage_head->next = 0;
     iseq->compile_data->storage_head->size =
       INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE;
-    iseq->compile_data->storage_head->buff =
-      (char *)(&iseq->compile_data->storage_head->buff + 1);
     iseq->compile_data->option = option;
     iseq->compile_data->last_coverable_line = -1;
 

@@ -604,13 +604,11 @@ compile_data_alloc(rb_iseq_t *iseq, size_t size)
 	    goto retry;
 	}
 	storage->next = (void *)ALLOC_N(char, alloc_size +
-					sizeof(struct
-					       iseq_compile_data_storage));
+					SIZEOF_ISEQ_COMPILE_DATA_STORAGE);
 	storage = iseq->compile_data->storage_current = storage->next;
 	storage->next = 0;
 	storage->pos = 0;
 	storage->size = alloc_size;
-	storage->buff = (char *)(&storage->buff + 1);
     }
 
     ptr = (void *)&storage->buff[storage->pos];

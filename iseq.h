@@ -88,10 +88,14 @@ iseq_catch_table_bytes(int n)
 
 struct iseq_compile_data_storage {
     struct iseq_compile_data_storage *next;
-    unsigned long pos;
-    unsigned long size;
-    char *buff;
+    unsigned int pos;
+    unsigned int size;
+    char buff[1]; /* flexible array */
 };
+
+/* account for flexible array */
+#define SIZEOF_ISEQ_COMPILE_DATA_STORAGE \
+    (sizeof(struct iseq_compile_data_storage) - 1)
 
 struct iseq_compile_data {
     /* GC is needed */
