@@ -595,13 +595,13 @@ compile_data_alloc(rb_iseq_t *iseq, size_t size)
     struct iseq_compile_data_storage *storage =
 	iseq->compile_data->storage_current;
 
+    if (size >= INT_MAX) rb_memerror();
     if (storage->pos + size > storage->size) {
-	unsigned long alloc_size = storage->size * 2;
+	unsigned int alloc_size = storage->size;
 
-      retry:
-	if (alloc_size < size) {
+	while (alloc_size < size) {
+	    if (alloc_size >= INT_MAX / 2) rb_memerror();
 	    alloc_size *= 2;
-	    goto retry;
 	}
 	storage->next = (void *)ALLOC_N(char, alloc_size +
 					SIZEOF_ISEQ_COMPILE_DATA_STORAGE);
