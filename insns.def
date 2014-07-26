@@ -143,7 +143,14 @@ setinstancevariable
 (VALUE val)
 ()
 {
+#if OPT_CONTEXT_THREADED_CODE
+    /* Protect stacked return addresses */
+    __asm__ __volatile__("subq $16, %%rsp" : : : "%rsp");
+#endif
     vm_setinstancevariable(GET_SELF(), id, val, ic);
+#if OPT_CONTEXT_THREADED_CODE
+    __asm__ __volatile__("addq $16, %%rsp" : : : "%rsp");
+#endif
 }
 
 /**
@@ -968,10 +975,17 @@ defineclass
     COPY_CREF(class_iseq->cref_stack, vm_cref_push(th, klass, NOEX_PUBLIC, NULL));
 
     /* enter scope */
+#if OPT_CONTEXT_THREADED_CODE
+    /* Protect stacked return addresses */
+    __asm__ __volatile__("subq $96, %%rsp" : : : "%rsp");
+#endif
     vm_push_frame(th, class_iseq, VM_FRAME_MAGIC_CLASS,
 		  klass, 0, VM_ENVVAL_BLOCK_PTR(GET_BLOCK_PTR()),
 		  class_iseq->iseq_encoded, GET_SP(),
 		  class_iseq->local_size, 0, class_iseq->stack_max);
+#if OPT_CONTEXT_THREADED_CODE
+    __asm__ __volatile__("addq $96, %%rsp" : : : "%rsp");
+#endif
     RESTORE_REGS();
     NEXT_INSN();
 }
@@ -1082,6 +1096,11 @@ leave
 (VALUE val)
 (VALUE val)
 {
+#if OPT_CONTEXT_THREADED_CODE
+    /* 16-byte align C stack pointer */
+    __asm__ __volatile__("pushq $0" : : : "%rsp");
+#endif
+
     if (OPT_CHECKED_RUN) {
 	if (reg_cfp->sp != vm_base_ptr(reg_cfp)) {
 	    rb_bug("Stack consistency error (sp: %"PRIdPTRDIFF", bp: %"PRIdPTRDIFF")",
@@ -1097,6 +1116,9 @@ leave
 #if OPT_CALL_THREADED_CODE
 	th->retval = val;
 	return 0;
+#elif OPT_CONTEXT_THREADED_CODE
+        __asm__ __volatile__("movq %0, %%rsp" : : "r" (rsp) : "%rsp");
+        return val;
 #else
 	return val;
 #endif
@@ -1104,6 +1126,18 @@ leave
     else {
 	vm_pop_frame(th);
 	RESTORE_REGS();
+#if OPT_CONTEXT_THREADED_CODE
+        {
+            register VALUE next_pc;
+            __asm__ __volatile__("popq %%rax\nmovq (%%rsp), %0" : "=r" (next_pc) : : "%rax", "%rsp");
+            if (GET_CURRENT_INSN() != next_pc + 4) {
+                CHECK_VM_STACK_OVERFLOW_FOR_INSN(REG_CFP, 1);
+                PUSH(val);
+                DEBUG_END_INSN();
+                goto *(void const *)GET_CURRENT_INSN();
+            }
+        }
+#endif
     }
 }
 

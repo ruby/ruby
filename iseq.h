@@ -17,6 +17,9 @@ RUBY_SYMBOL_EXPORT_BEGIN
 /* compile.c */
 VALUE rb_iseq_compile_node(VALUE self, NODE *node);
 int rb_iseq_translate_threaded_code(rb_iseq_t *iseq);
+#if OPT_CONTEXT_THREADED_CODE
+void rb_iseq_free_context_threading_table(void *ctt);
+#endif
 VALUE rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
 			     VALUE exception, VALUE body);
 
