@@ -82,7 +82,6 @@ class Shell
 
     def start_import
       notify "Job(%id) start imp-pipe.", @shell.debug?
-      rs = @shell.record_separator unless rs
       _eop = true
       Thread.start {
         begin

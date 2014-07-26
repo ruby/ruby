@@ -121,7 +121,7 @@ class Shell
           end
           f
         else
-          f = File.open(path, mode, perm, &b)
+          File.open(path, mode, perm, &b)
         end
       end
     end

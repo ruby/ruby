@@ -551,7 +551,7 @@ module URI
 
     # escapes 'user:password' +v+ based on RFC 1738 section 3.1
     def escape_userpass(v)
-      v = parser.escape(v, /[@:\/]/o) # RFC 1738 section 3.1 #/
+      parser.escape(v, /[@:\/]/o) # RFC 1738 section 3.1 #/
     end
     private :escape_userpass
 

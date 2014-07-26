@@ -19,7 +19,7 @@ class Dir
 
   def Dir::tmpdir
     if $SAFE > 0
-      tmp = @@systmpdir
+      @@systmpdir
     else
       tmp = nil
       for dir in [ENV['TMPDIR'], ENV['TMP'], ENV['TEMP'], @@systmpdir, '/tmp', '.']
