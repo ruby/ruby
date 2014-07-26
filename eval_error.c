@@ -208,8 +208,8 @@ ruby_error_print(void)
     error_print();
 }
 
-void
-rb_print_undef(VALUE klass, ID id, int scope)
+static const char *
+method_scope_name(int scope)
 {
     const char *v;
 
@@ -219,6 +219,13 @@ rb_print_undef(VALUE klass, ID id, int scope)
       case NOEX_PRIVATE: v = " private"; break;
       case NOEX_PROTECTED: v = " protected"; break;
     }
+    return v;
+}
+
+void
+rb_print_undef(VALUE klass, ID id, int scope)
+{
+    const char *v = method_scope_name(scope);
     rb_name_error(id, "undefined%s method `%"PRIsVALUE"' for %s `%"PRIsVALUE"'", v,
 		  QUOTE_ID(id),
 		  (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
@@ -232,6 +239,17 @@ rb_print_undef_str(VALUE klass, VALUE name)
 		      QUOTE(name),
 		      (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
 		      rb_class_name(klass));
+}
+
+void
+rb_print_inaccessible(VALUE klass, ID id, int scope)
+{
+    const char *v = method_scope_name(scope);
+    rb_name_error(id, "method `%s' for %s `% "PRIsVALUE"' is %s",
+		  rb_id2name(id),
+		  (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
+		  rb_class_name(klass),
+		  v);
 }
 
 static int

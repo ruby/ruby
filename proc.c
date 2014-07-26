@@ -1219,16 +1219,7 @@ mnew_from_me(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
     if (flag == NOEX_UNDEF) {
 	flag = me->flag;
 	if (scope && (flag & NOEX_MASK) != NOEX_PUBLIC) {
-	    const char *v = "";
-	    switch (flag & NOEX_MASK) {
-		case NOEX_PRIVATE: v = "private"; break;
-		case NOEX_PROTECTED: v = "protected"; break;
-	    }
-	    rb_name_error(id, "method `%s' for %s `% "PRIsVALUE"' is %s",
-			  rb_id2name(id),
-			  (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
-			  rb_class_name(klass),
-			  v);
+	    rb_print_inaccessible(klass, id, flag & NOEX_MASK);
 	}
     }
     if (def && def->type == VM_METHOD_TYPE_ZSUPER) {
