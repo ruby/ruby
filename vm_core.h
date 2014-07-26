@@ -214,13 +214,14 @@ struct rb_iseq_struct {
 
     VALUE *iseq;         /* iseq (insn number and operands) */
     VALUE *iseq_encoded; /* encoded iseq */
-    unsigned long iseq_size;
+    unsigned int iseq_size;
+    unsigned int line_info_size;
+
     const VALUE mark_ary;     /* Array: includes operands which should be GC marked */
     const VALUE coverage;     /* coverage array */
 
     /* insn info, must be freed */
     struct iseq_line_info_entry *line_info_table;
-    size_t line_info_size;
 
     ID *local_table;		/* must free */
     int local_table_size;

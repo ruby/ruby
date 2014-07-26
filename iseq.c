@@ -1379,7 +1379,7 @@ rb_iseq_disasm(VALUE self)
     VALUE *iseq;
     VALUE str = rb_str_new(0, 0);
     VALUE child = rb_ary_new();
-    unsigned long size;
+    unsigned int size;
     int i;
     long l;
     ID *tbl;
@@ -2144,7 +2144,8 @@ int
 rb_iseq_line_trace_each(VALUE iseqval, int (*func)(int line, rb_event_flag_t *events_ptr, void *d), void *data)
 {
     int trace_num = 0;
-    size_t pos, insn;
+    unsigned int pos;
+    size_t insn;
     rb_iseq_t *iseq;
     int cont = 1;
     GetISeqPtr(iseqval, iseq);
