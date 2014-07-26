@@ -1,3 +1,8 @@
+Sun Jul 27 02:06:55 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/delegate.rb: split executable code into sample directory.
+	* sample/delegate.rb: ditto.
+
 Sun Jul 27 01:46:34 2014  Zachary Scott  <e@zzak.io>
 
 	* proc.c (method_super_method): [DOC] Method#super_method
