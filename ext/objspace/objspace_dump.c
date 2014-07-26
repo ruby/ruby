@@ -43,7 +43,6 @@ dump_append(struct dump_config *dc, const char *format, ...)
 
     if (dc->stream) {
 	vfprintf(dc->stream, format, vl);
-	fflush(dc->stream);
     }
     else if (dc->string)
 	rb_str_vcatf(dc->string, format, vl);
