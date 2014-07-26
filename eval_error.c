@@ -226,7 +226,7 @@ void
 rb_print_undef(VALUE klass, ID id, int scope)
 {
     const char *v = method_scope_name(scope);
-    rb_name_error(id, "undefined%s method `%"PRIsVALUE"' for %s `%"PRIsVALUE"'", v,
+    rb_name_error(id, "undefined%s method `%"PRIsVALUE"' for %s `% "PRIsVALUE"'", v,
 		  QUOTE_ID(id),
 		  (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
 		  rb_class_name(klass));
@@ -235,7 +235,7 @@ rb_print_undef(VALUE klass, ID id, int scope)
 void
 rb_print_undef_str(VALUE klass, VALUE name)
 {
-    rb_name_error_str(name, "undefined method `%"PRIsVALUE"' for %s `%"PRIsVALUE"'",
+    rb_name_error_str(name, "undefined method `%"PRIsVALUE"' for %s `% "PRIsVALUE"'",
 		      QUOTE(name),
 		      (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
 		      rb_class_name(klass));
@@ -245,8 +245,8 @@ void
 rb_print_inaccessible(VALUE klass, ID id, int scope)
 {
     const char *v = method_scope_name(scope);
-    rb_name_error(id, "method `%s' for %s `% "PRIsVALUE"' is %s",
-		  rb_id2name(id),
+    rb_name_error(id, "method `%"PRIsVALUE"' for %s `% "PRIsVALUE"' is %s",
+		  QUOTE_ID(id),
 		  (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
 		  rb_class_name(klass),
 		  v);
