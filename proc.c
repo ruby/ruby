@@ -2422,6 +2422,9 @@ method_proc(VALUE method)
     return procval;
 }
 
+/*
+ * Returns a Method of superclass, which would be called when super is used.
+ */
 static VALUE
 method_super_method(VALUE method)
 {

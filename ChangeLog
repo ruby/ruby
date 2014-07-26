@@ -1,3 +1,7 @@
+Sun Jul 27 01:46:34 2014  Zachary Scott  <e@zzak.io>
+
+	* proc.c (method_super_method): [DOC] Method#super_method
+
 Sun Jul 27 01:22:39 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (method_super_method): new method Method#super_method,
