@@ -1,3 +1,8 @@
+Sun Jul 27 02:08:31 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/weakref.rb: split executable code into sample directory.
+	* sample/weakref.rb: ditto.
+
 Sun Jul 27 02:06:55 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/delegate.rb: split executable code into sample directory.
