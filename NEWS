@@ -63,6 +63,8 @@ with all sufficient information, see the ChangeLog file.
 * Method
   * New methods:
     * Method#curry([arity]) returns a curried Proc.
+    * Method#super_method returns a Method of superclass, which would be called
+      when super is used.
 
 === Core classes compatibility issues (excluding feature bug fixes)
 

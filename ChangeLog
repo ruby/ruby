@@ -1,3 +1,10 @@
+Sun Jul 27 01:22:39 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (method_super_method): new method Method#super_method,
+	  which returns a method object of the method to be called by
+	  `super` in the receiver method object.
+	  [ruby-core:62202] [Feature #9781]
+
 Sat Jul 26 17:22:14 2014  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* ext/objspace/objspace_dump.c (dump_append): avoid fflush.

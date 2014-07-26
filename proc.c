@@ -1190,8 +1190,8 @@ rb_obj_is_method(VALUE m)
 }
 
 static VALUE
-mnew_from_me(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
-	     VALUE obj, ID id, VALUE mclass, int scope)
+mnew_internal(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
+	      VALUE obj, ID id, VALUE mclass, int scope, int error)
 {
     VALUE method;
     VALUE rclass = klass;
@@ -1213,12 +1213,14 @@ mnew_from_me(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
 		goto gen_method;
 	    }
 	}
+	if (!error) return Qnil;
 	rb_print_undef(klass, id, 0);
     }
     def = me->def;
     if (flag == NOEX_UNDEF) {
 	flag = me->flag;
 	if (scope && (flag & NOEX_MASK) != NOEX_PUBLIC) {
+	    if (!error) return Qnil;
 	    rb_print_inaccessible(klass, id, flag & NOEX_MASK);
 	}
     }
@@ -1269,6 +1271,13 @@ mnew_from_me(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
     OBJ_INFECT(method, klass);
 
     return method;
+}
+
+static VALUE
+mnew_from_me(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
+	     VALUE obj, ID id, VALUE mclass, int scope)
+{
+    return mnew_internal(me, defined_class, klass, obj, id, mclass, scope, TRUE);
 }
 
 static VALUE
@@ -2413,6 +2422,25 @@ method_proc(VALUE method)
     return procval;
 }
 
+static VALUE
+method_super_method(VALUE method)
+{
+    struct METHOD *data;
+    VALUE defined_class, super_class;
+    rb_method_entry_t *me;
+
+    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
+    defined_class = data->defined_class;
+    if (BUILTIN_TYPE(defined_class) == T_MODULE) defined_class = data->rclass;
+    super_class = RCLASS_SUPER(defined_class);
+    if (!super_class) return Qnil;
+    me = rb_method_entry_without_refinements(super_class, data->id, &defined_class);
+    if (!me) return Qnil;
+    return mnew_internal(me, defined_class,
+			 super_class, data->recv, data->id,
+			 rb_obj_class(method), FALSE, FALSE);
+}
+
 /*
  * call-seq:
  *   local_jump_error.exit_value  -> obj
@@ -2759,6 +2787,7 @@ Init_Proc(void)
     rb_define_method(rb_cMethod, "unbind", method_unbind, 0);
     rb_define_method(rb_cMethod, "source_location", rb_method_location, 0);
     rb_define_method(rb_cMethod, "parameters", rb_method_parameters, 0);
+    rb_define_method(rb_cMethod, "super_method", method_super_method, 0);
     rb_define_method(rb_mKernel, "method", rb_obj_method, 1);
     rb_define_method(rb_mKernel, "public_method", rb_obj_public_method, 1);
     rb_define_method(rb_mKernel, "singleton_method", rb_obj_singleton_method, 1);
@@ -2780,6 +2809,7 @@ Init_Proc(void)
     rb_define_method(rb_cUnboundMethod, "bind", umethod_bind, 1);
     rb_define_method(rb_cUnboundMethod, "source_location", rb_method_location, 0);
     rb_define_method(rb_cUnboundMethod, "parameters", rb_method_parameters, 0);
+    rb_define_method(rb_cUnboundMethod, "super_method", method_super_method, 0);
 
     /* Module#*_method */
     rb_define_method(rb_cModule, "instance_method", rb_mod_instance_method, 1);
