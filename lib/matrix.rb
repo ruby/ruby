@@ -958,6 +958,33 @@ class Matrix
   end
 
   #
+  # Element-wise division
+  #    Matrix[[1,2], [3,4]].element_division(Matrix[[1,2], [3,2]])
+  #      => 1  1
+  #         1  2
+  #
+  def element_division(m)
+    case m
+    when Numeric
+      return self./ m
+    when Vector
+      m = self.class.column_vector(m)
+    when Matrix
+    else
+      return apply_through_coercion(m, __method__)
+    end
+
+    Matrix.Raise ErrDimensionMismatch unless row_count == m.row_count && column_count == m.column_count
+
+    rows = Array.new(row_count) do |i|
+      Array.new(column_count) do|j|
+        self[i, j] / m[i, j]
+      end
+    end
+    new_matrix rows, column_count
+  end
+
+  #
   # Returns the inverse of the matrix.
   #   Matrix[[-1, -1], [0, -1]].inverse
   #     => -1  1
