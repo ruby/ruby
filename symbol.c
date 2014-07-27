@@ -308,6 +308,38 @@ rb_str_symname_type(VALUE name, unsigned int allowed_attrset)
     return type;
 }
 
+static void
+register_symid_direct(VALUE str, ID id)
+{
+    st_add_direct(global_symbols.str_id, (st_data_t)str, (st_data_t)id);
+    st_add_direct(global_symbols.id_str, (st_data_t)id, (st_data_t)str);
+}
+
+static int
+unregister_sym_str(VALUE str)
+{
+    st_data_t str_data = (st_data_t)str;
+    return st_delete(global_symbols.str_id, &str_data, NULL);
+}
+
+static int
+unregister_sym_id(VALUE sym)
+{
+    st_data_t sym_data = (st_data_t)sym;
+    return st_delete(global_symbols.id_str, &sym_data, NULL);
+}
+
+static void
+unregister_sym(VALUE str, VALUE sym)
+{
+    if (!unregister_sym_str(str)) {
+	rb_bug("%p can't remove str from str_id (%s)", (void *)sym, RSTRING_PTR(str));
+    }
+    if (!unregister_sym_id(sym)) {
+	rb_bug("%p can't remove sym from id_str (%s)", (void *)sym, RSTRING_PTR(str));
+    }
+}
+
 static ID
 register_static_symid(ID id, const char *name, long len, rb_encoding *enc)
 {
@@ -325,8 +357,7 @@ register_static_symid_str(ID id, VALUE str)
 	RUBY_DTRACE_SYMBOL_CREATE(RSTRING_PTR(str), rb_sourcefile(), rb_sourceline());
     }
 
-    st_add_direct(global_symbols.str_id, (st_data_t)str, (st_data_t)id);
-    st_add_direct(global_symbols.id_str, (st_data_t)id, (st_data_t)str);
+    register_symid_direct(str, id);
     rb_gc_register_mark_object(str);
 
     return id;
@@ -394,8 +425,7 @@ dsymbol_alloc(const VALUE klass, const VALUE str, rb_encoding * const enc)
     RB_OBJ_WRITE(dsym, &RSYMBOL(dsym)->fstr, str);
     RSYMBOL(dsym)->type = type;
 
-    st_add_direct(global_symbols.str_id, (st_data_t)str, (st_data_t)dsym);
-    st_add_direct(global_symbols.id_str, (st_data_t)dsym, (st_data_t)str);
+    register_symid_direct(str, (ID)dsym);
     rb_hash_aset(global_symbols.dsymbol_fstr_hash, str, Qtrue);
 
     if (RUBY_DTRACE_SYMBOL_CREATE_ENABLED()) {
@@ -412,12 +442,7 @@ dsymbol_check(const VALUE sym)
 	const VALUE fstr = RSYMBOL(sym)->fstr;
 	RSYMBOL(sym)->fstr = 0;
 
-	if (st_delete(global_symbols.str_id, (st_data_t *)&fstr, NULL) == 0) {
-	    rb_bug("can't remove fstr from str_id (%s)", RSTRING_PTR(fstr));
-	}
-	if (st_delete(global_symbols.id_str, (st_data_t *)&sym, NULL) == 0) {
-	    rb_bug("can't remove sym from id_sym (%s)", RSTRING_PTR(fstr));
-	}
+	unregister_sym(fstr, sym);
 	return dsymbol_alloc(rb_cSymbol, fstr, rb_enc_get(fstr));
     }
     else {
@@ -675,17 +700,11 @@ rb_intern_str(VALUE str)
 void
 rb_gc_free_dsymbol(VALUE sym)
 {
-    st_data_t str_data = (st_data_t)RSYMBOL(sym)->fstr;
-    st_data_t sym_data = (st_data_t)sym;
+    VALUE str = RSYMBOL(sym)->fstr;
 
-    if (str_data) {
-	if (st_delete(global_symbols.str_id, &str_data, 0) == 0) {
-	    rb_bug("rb_gc_free_dsymbol: %p can't remove str from str_id (%s)", (void *)sym, RSTRING_PTR(RSYMBOL(sym)->fstr));
-	}
-	if (st_delete(global_symbols.id_str, &sym_data, 0) == 0) {
-	    rb_bug("rb_gc_free_dsymbol: %p can't remove sym from id_str (%s)", (void *)sym, RSTRING_PTR(RSYMBOL(sym)->fstr));
-	}
-	RSYMBOL(sym)->fstr = (VALUE)NULL;
+    if (str) {
+	RSYMBOL(sym)->fstr = 0;
+	unregister_sym(str, sym);
     }
 }
 
@@ -847,9 +866,8 @@ symbols_i(st_data_t key, st_data_t value, st_data_t arg)
     VALUE sym = ID2SYM((ID)value);
 
     if (DYNAMIC_SYM_P(sym) && !SYMBOL_PINNED_P(sym) && rb_objspace_garbage_object_p(sym)) {
-	st_data_t sym_data = (st_data_t)sym;
-	st_delete(global_symbols.id_str, &sym_data, NULL);
 	RSYMBOL(sym)->fstr = 0;
+	unregister_sym_id(sym);
 	return ST_DELETE;
     }
     else {
