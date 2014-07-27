@@ -4399,7 +4399,7 @@ strftimev(const char *fmt, VALUE time, rb_encoding *enc)
  *  Format directives:
  *
  *    Date (Year, Month, Day):
- *      %Y - Year with century (can be negative, 4 digits at least)
+ *      %Y - Year with century if provided, will pad result at least 4 digits.
  *              -0001, 0000, 1995, 2009, 14292, etc.
  *      %C - year / 100 (rounded down such as 20 in 2009)
  *      %y - year % 100 (00..99)

@@ -417,7 +417,7 @@ class Time
     # %x :: Preferred representation for the date alone, no time
     # %X :: Preferred representation for the time alone, no date
     # %y :: Year without a century (00..99)
-    # %Y :: Year with century
+    # %Y :: Year which may include century, if provided
     # %z :: Time zone as  hour offset from UTC (e.g. +0900)
     # %Z :: Time zone name
     # %% :: Literal "%" character
