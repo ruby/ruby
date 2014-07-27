@@ -1710,7 +1710,7 @@ ole_rec2variant(VALUE rec, VARIANT *var)
         }
         prec->pdata = ALLOC_N(char, size);
         if (!prec->pdata) {
-            rb_raise(rb_eRuntimeError, "failed to memory allocation of %ld bytes", size);
+            rb_raise(rb_eRuntimeError, "failed to memory allocation of %lu bytes", (unsigned long)size);
         }
         hr = pri->lpVtbl->RecordInit(pri, prec->pdata);
         if (FAILED(hr)) {
