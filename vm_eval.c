@@ -1782,30 +1782,27 @@ catch_i(VALUE tag, VALUE data)
  *  call-seq:
  *     catch([tag]) {|tag| block }  -> obj
  *
- *  +catch+ executes its block. If +throw+ is not called,
- *  the block executes normally, and +catch+ returns the
- *  value of the last expression evaluated.
+ *  +catch+ executes its block. If +throw+ is not called, the block executes
+ *  normally, and +catch+ returns the value of the last expression evaluated.
  *
  *     catch(1) { 123 }            # => 123
  *
- *  If +throw(tag2, val)+ is called, Ruby searches up its
- *  stack for a +catch+ block whose _tag_ has the same
- *  +object_id+ as _tag2_. If found, the block stops
- *  executing and returns _val_ (or +nil+ if no second
- *  argument was given to +throw+).
+ *  If +throw(tag2, val)+ is called, Ruby searches up its stack for a +catch+
+ *  block whose +tag+ has the same +object_id+ as _tag2_. When found, the block
+ *  stops executing and returns _val_ (or +nil+ if no second argument was given
+ *  to +throw+).
  *
  *     catch(1) { throw(1, 456) }  # => 456
  *     catch(1) { throw(1) }       # => nil
  *
- *  When _tag_ is passed as the first argument, +catch+
- *  yields it as the parameter of the block.
+ *  When +tag+ is passed as the first argument, +catch+ yields it as the
+ *  parameter of the block.
  *
  *     catch(1) {|x| x + 2 }       # => 3
  *
- *  When no _tag_ is given, +catch+ yields a new unique
- *  object (as from +Object.new+) as the block parameter.
- *  This object can then be used as the argument to
- *  +throw+, and will match the correct +catch+ block.
+ *  When no +tag+ is given, +catch+ yields a new unique object (as from
+ *  +Object.new+) as the block parameter. This object can then be used as the
+ *  argument to +throw+, and will match the correct +catch+ block.
  *
  *     catch do |obj_A|
  *       catch do |obj_B|

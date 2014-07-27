@@ -1,3 +1,7 @@
+Mon Jul 28 06:37:19 2014  Zachary Scott  <e@zzak.io>
+
+	* vm_eval.c: [DOC] Fix rdoc formatting of patch from [Bug #9551]
+
 Mon Jul 28 06:34:43 2014  Zachary Scott  <e@zzak.io>
 
 	* vm_eval.c: [DOC] [Bug #9551] Improve clarity of Kernel::catch
