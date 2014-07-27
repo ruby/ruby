@@ -1463,13 +1463,15 @@ rb_deflate_s_allocate(VALUE klass)
  * the default value of that argument is used.
  *
  * The +level+ sets the compression level for the deflate stream between 0 (no
- * compression) and 9 (best compression. The following constants have been
+ * compression) and 9 (best compression). The following constants have been
  * defined to make code more readable:
  *
- * * Zlib::NO_COMPRESSION = 0
- * * Zlib::BEST_SPEED = 1
- * * Zlib::DEFAULT_COMPRESSION = 6
- * * Zlib::BEST_COMPRESSION = 9
+ * * Zlib::DEFAULT_COMPRESSION
+ * * Zlib::NO_COMPRESSION
+ * * Zlib::BEST_SPEED
+ * * Zlib::BEST_COMPRESSION
+ *
+ * See http://www.zlib.net/manual.html#Constants for further information.
  *
  * The +window_bits+ sets the size of the history buffer and should be between
  * 8 and 15.  Larger values of this parameter result in better compression at
@@ -1591,7 +1593,7 @@ deflate_run(VALUE args)
  *
  * Compresses the given +string+. Valid values of level are
  * Zlib::NO_COMPRESSION, Zlib::BEST_SPEED, Zlib::BEST_COMPRESSION,
- * Zlib::DEFAULT_COMPRESSION, or an integer from 0 to 9 (the default is 6).
+ * Zlib::DEFAULT_COMPRESSION, or an integer from 0 to 9.
  *
  * This method is almost equivalent to the following code:
  *

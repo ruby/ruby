@@ -1,3 +1,9 @@
+Mon Jul 28 04:39:58 2014  Zachary Scott  <e@zzak.io>
+
+	* ext/zlib/zlib.c: [DOC] Remove default value of Zlib constants, as
+	  they may change in the implementation without notice. Patched by
+	  @robin850 [Fixes GH-682] https://github.com/ruby/ruby/pull/682
+
 Mon Jul 28 04:35:35 2014  Zachary Scott  <e@zzak.io>
 
 	* ext/openssl/ossl_hmac.c: Fix NO_HMAC warning [Fixes GH-665]
