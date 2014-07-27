@@ -1,3 +1,9 @@
+Mon Jul 28 05:21:41 2014  Zachary Scott  <e@zzak.io>
+
+	* file.c: [DOC] Clarify how File.file? handles symbolic links. Also
+	  cleaned up the rdoc style for this method, more to follow.
+	  Originally reported by Michael Renner [Bug #10067]
+
 Mon Jul 28 05:12:22 2014  Zachary Scott  <e@zzak.io>
 
 	* time.c: [DOC] Remove dead link and old bug report, which hasn't been

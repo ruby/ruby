@@ -1645,12 +1645,14 @@ rb_file_executable_real_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.file?(file_name)   -> true or false
+ *    File.file?(file) -> true or false
  *
- * Returns <code>true</code> if the named file exists and is a
- * regular file.
+ * Returns +true+ if the named +file+ exists and is a regular file.
  *
- * _file_name_ can be an IO object.
+ * +file+ can be an IO object.
+ *
+ * If the +file+ argument is a symbolic link, it will resolve the symbolic link
+ * and use the file referenced by the link.
  */
 
 static VALUE
