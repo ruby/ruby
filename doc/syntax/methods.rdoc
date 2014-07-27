@@ -93,7 +93,6 @@ operators.
 <code><=</code>  :: less-than or equal
 <code>></code>   :: greater-than
 <code>>=</code>  :: greater-than or equal
-<code>[]</code>  :: element reference
 
 To define unary methods minus, plus, tilde and not (<code>!</code>) follow the
 operator with an <code>@</code> as in <code>+@</code> or <code>!@</code>:
@@ -109,6 +108,25 @@ operator with an <code>@</code> as in <code>+@</code> or <code>!@</code>:
   -obj # prints "you inverted this object"
 
 Unary methods accept zero arguments.
+
+Additionally, methods for element reference and assignment may be defined: 
+<code>[]</code> and <code>[]=</code> respectively. Both can take one or more 
+arguments, and element reference can take none.
+
+  class C
+    def [](a, b)
+      puts a + b
+    end
+    
+    def []=(a, b, c)
+      puts a * b + c
+    end
+  end
+  
+  obj = C.new
+  
+  obj[2, 3]     # prints "5"
+  obj[2, 3] = 4 # prints "10"
 
 == Return Values
 
