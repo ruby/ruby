@@ -2,7 +2,7 @@ Mon Jul 28 05:55:56 2014  Zachary Scott  <e@zzak.io>
 
 	* time.c: [DOC] Clarify %Y in strftime, which can accept any digits
 	  and will output at least 4 digits as the year. Reported by Yury
-	  Trofimenko [Bug #8941]
+	  Trofimenko [Bug #10049]
 
 	* lib/time.rb: ditto
 
