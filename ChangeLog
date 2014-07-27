@@ -1,3 +1,9 @@
+Mon Jul 28 06:24:54 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/uri/common.rb: [DOC] [Bug #9563] Recommend using URI.escape
+	  before parsing a uri to avoid invalid characters. Reported by
+	  Evgeniy Serykh.
+
 Mon Jul 28 05:55:56 2014  Zachary Scott  <e@zzak.io>
 
 	* time.c: [DOC] Clarify %Y in strftime, which can accept any digits

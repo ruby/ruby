@@ -219,6 +219,9 @@ module URI
   #   p uri.host
   #   # => "www.ruby-lang.org"
   #
+  # It's recommended to first ::escape the provided +uri_str+ if there are any
+  # invalid URI characters.
+  #
   def self.parse(uri)
     RFC3986_PARSER.parse(uri)
   end
