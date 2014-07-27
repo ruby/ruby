@@ -350,6 +350,8 @@ class TestMatrix < Test::Unit::TestCase
   def test_element_div
     assert_equal(Matrix[[0,1,1],[2,2,3]], @m1.element_division(2))
     assert_equal(Matrix[[1, 1, 1], [1, 1, 1]], @m1.element_division(@m1))
+    assert_equal(Matrix[[2, 1, 2]], Matrix[[2, 4, 6]].element_division(Matrix[[1, 4, 3]]))
+    assert_equal(Matrix[[2], [1], [2]], Matrix[[2], [4], [6]].element_division(Vector[1, 4, 3]))
     assert_equal(Matrix[[2, 1, 2], [2, 2, 1]], Matrix[[2, 4, 6], [8, 10, 12]].element_division(Matrix[[1, 4, 3], [4, 5, 12]]))
     assert_raise(Matrix::ErrDimensionMismatch) { @m1.element_division(Vector[[1, 2, 3]]) }
     assert_raise(Matrix::ErrDimensionMismatch) { @m1.element_division(Matrix[[1,2], [4,5]]) }
