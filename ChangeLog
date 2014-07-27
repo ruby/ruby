@@ -1,3 +1,8 @@
+Mon Jul 28 06:34:43 2014  Zachary Scott  <e@zzak.io>
+
+	* vm_eval.c: [DOC] [Bug #9551] Improve clarity of Kernel::catch
+	  documentation, patch by Jesse Sielaff.
+
 Mon Jul 28 06:24:54 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/uri/common.rb: [DOC] [Bug #9563] Recommend using URI.escape

@@ -1780,39 +1780,56 @@ catch_i(VALUE tag, VALUE data)
 
 /*
  *  call-seq:
- *     catch([arg]) {|tag| block }  -> obj
+ *     catch([tag]) {|tag| block }  -> obj
  *
- *  +catch+ executes its block. If a +throw+ is
- *  executed, Ruby searches up its stack for a +catch+ block
- *  with a tag corresponding to the +throw+'s
- *  _tag_. If found, that block is terminated, and
- *  +catch+ returns the value given to +throw+. If
- *  +throw+ is not called, the block terminates normally, and
- *  the value of +catch+ is the value of the last expression
- *  evaluated. +catch+ expressions may be nested, and the
- *  +throw+ call need not be in lexical scope.
+ *  +catch+ executes its block. If +throw+ is not called,
+ *  the block executes normally, and +catch+ returns the
+ *  value of the last expression evaluated.
  *
- *     def routine(n)
- *       puts n
- *       throw :done if n <= 0
- *       routine(n-1)
+ *     catch(1) { 123 }            # => 123
+ *
+ *  If +throw(tag2, val)+ is called, Ruby searches up its
+ *  stack for a +catch+ block whose _tag_ has the same
+ *  +object_id+ as _tag2_. If found, the block stops
+ *  executing and returns _val_ (or +nil+ if no second
+ *  argument was given to +throw+).
+ *
+ *     catch(1) { throw(1, 456) }  # => 456
+ *     catch(1) { throw(1) }       # => nil
+ *
+ *  When _tag_ is passed as the first argument, +catch+
+ *  yields it as the parameter of the block.
+ *
+ *     catch(1) {|x| x + 2 }       # => 3
+ *
+ *  When no _tag_ is given, +catch+ yields a new unique
+ *  object (as from +Object.new+) as the block parameter.
+ *  This object can then be used as the argument to
+ *  +throw+, and will match the correct +catch+ block.
+ *
+ *     catch do |obj_A|
+ *       catch do |obj_B|
+ *         throw(obj_B, 123)
+ *         puts "This puts is not reached"
+ *       end
+ *
+ *       puts "This puts is displayed"
+ *       456
  *     end
  *
+ *     # => 456
  *
- *     catch(:done) { routine(3) }
+ *     catch do |obj_A|
+ *       catch do |obj_B|
+ *         throw(obj_A, 123)
+ *         puts "This puts is still not reached"
+ *       end
  *
- *  <em>produces:</em>
+ *       puts "Now this puts is also not reached"
+ *       456
+ *     end
  *
- *     3
- *     2
- *     1
- *     0
- *
- *  when _arg_ is given, +catch+ yields it as is, or when no
- *  _arg_ is given, +catch+ assigns a new unique object to
- *  +throw+.  this is useful for nested +catch+.  _arg_ can
- *  be an arbitrary object, not only Symbol.
- *
+ *     # => 123
  */
 
 static VALUE
