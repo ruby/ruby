@@ -717,7 +717,7 @@ class ERB
         comment = $1 if comment[/-\*-\s*(.*?)\s*-*-$/]
         if %r"coding\s*[=:]\s*([[:alnum:]\-_]+)" =~ comment
           enc = $1.sub(/-(?:mac|dos|unix)/i, '')
-          enc = Encoding.find(enc)
+          Encoding.find(enc)
         end
       end
     end

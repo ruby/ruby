@@ -667,7 +667,6 @@ SRC
         return nil
       end
       upper = 1
-      lower = 0
       until try_static_assert("#{const} <= #{upper}", headers, opt)
         lower = upper
         upper <<= 1
@@ -2253,7 +2252,7 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
       fseprepl = proc {|s|
         s = s.gsub("/", fsep)
         s = s.gsub(/(\$\(\w+)(\))/) {$1+sep+$2}
-        s = s.gsub(/(\$\{\w+)(\})/) {$1+sep+$2}
+        s.gsub(/(\$\{\w+)(\})/) {$1+sep+$2}
       }
       rsep = ":#{fsep}=/"
     else

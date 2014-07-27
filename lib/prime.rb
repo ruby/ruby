@@ -180,7 +180,7 @@ class Prime
   #   Prime.int_from_prime_division([[2,2], [3,1]])  #=> 12
   def int_from_prime_division(pd)
     pd.inject(1){|value, (prime, index)|
-      value *= prime**index
+      value * prime**index
     }
   end
 

@@ -306,7 +306,6 @@ class Net::HTTPResponse
   # See RFC 2616 section 3.6.1 for definitions
 
   def read_chunked(dest, chunk_data_io) # :nodoc:
-    len = nil
     total = 0
     while true
       line = @socket.readline

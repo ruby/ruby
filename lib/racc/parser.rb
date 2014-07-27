@@ -380,7 +380,6 @@ module Racc
       _,   _, _, _,
       _,   _, _, shift_n,  reduce_n,
       _,   _, * = arg
-      nerr = 0   # tmp
 
       if act > 0 and act < shift_n
         #
@@ -431,7 +430,6 @@ module Racc
         case @racc_error_status
         when 0
           unless arg[21]    # user_yyerror
-            nerr += 1
             on_error @racc_t, @racc_val, @racc_vstack
           end
         when 3

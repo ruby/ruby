@@ -479,7 +479,6 @@ class CGI
       @files = {}
       boundary_rexp = /--#{Regexp.quote(boundary)}(#{EOL}|--)/
       boundary_size = "#{EOL}--#{boundary}#{EOL}".bytesize
-      boundary_end  = nil
       buf = ''
       bufsize = 10 * 1024
       max_count = MAX_MULTIPART_COUNT

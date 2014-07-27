@@ -1,3 +1,18 @@
+Sun Jul 27 19:49:36 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/cgi/core.rb: remove unused variables.
+	* lib/erb.rb: ditto.
+	* lib/mkmf.rb: ditto.
+	* lib/net/http/response.rb: ditto.
+	* lib/optparse/version.rb: ditto.
+	* lib/prime.rb: ditto.
+	* lib/racc/parser.rb: ditto.
+	* lib/rexml/document.rb: ditto.
+	* lib/rexml/dtd/dtd.rb: ditto.
+	* lib/rexml/element.rb: ditto.
+	* lib/rexml/functions.rb: ditto.
+	* lib/rexml/parsers/xpathparser.rb: ditto.
+
 Sun Jul 27 05:11:21 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/irb.rb: [DOC] PROMPT_I cannot be nil, patch by @hgillane
