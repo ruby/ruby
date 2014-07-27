@@ -1,3 +1,8 @@
+Mon Jul 28 05:32:06 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/uri/common.rb: [DOC] [Bug #10075] Clarify how URI.join arguments
+	  are handled by RFC3986, originall reported by John Feminella.
+
 Mon Jul 28 05:21:41 2014  Zachary Scott  <e@zzak.io>
 
 	* file.c: [DOC] Clarify how File.file? handles symbolic links. Also

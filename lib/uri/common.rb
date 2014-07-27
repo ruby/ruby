@@ -231,7 +231,7 @@ module URI
   # == Args
   #
   # +str+::
-  #   String(s) to work with
+  #   String(s) to work with, will be converted to RFC3986 URIs before merging.
   #
   # == Description
   #
