@@ -886,7 +886,10 @@ class Matrix
   def +(m)
     case m
     when Numeric
-      Matrix.Raise ErrOperationNotDefined, "+", self.class, m.class
+      rows = @rows.collect {|row|
+        row.collect {|e| e + m }
+      }
+      return new_matrix rows, column_count
     when Vector
       m = self.class.column_vector(m)
     when Matrix
@@ -913,7 +916,10 @@ class Matrix
   def -(m)
     case m
     when Numeric
-      Matrix.Raise ErrOperationNotDefined, "-", self.class, m.class
+      rows = @rows.collect {|row|
+        row.collect {|e| e - m }
+      }
+      return new_matrix rows, column_count
     when Vector
       m = self.class.column_vector(m)
     when Matrix
