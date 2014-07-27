@@ -1,3 +1,8 @@
+Mon Jul 28 04:35:35 2014  Zachary Scott  <e@zzak.io>
+
+	* ext/openssl/ossl_hmac.c: Fix NO_HMAC warning [Fixes GH-665]
+	  Patched by @vipulnsward https://github.com/ruby/ruby/pull/665
+
 Sun Jul 27 19:49:36 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/cgi/core.rb: remove unused variables.
