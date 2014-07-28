@@ -1315,7 +1315,8 @@ r_symreal(struct load_arg *arg, int ivar)
     if (ivar) {
 	long num = r_long(arg);
 	while (num-- > 0) {
-	    idx = sym2encidx(r_symbol(arg), r_object(arg));
+	    sym = r_symbol(arg);
+	    idx = sym2encidx(sym, r_object(arg));
 	}
     }
     if (idx > 0) rb_enc_associate_index(s, idx);
