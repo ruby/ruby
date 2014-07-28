@@ -509,7 +509,7 @@ clean-capi distclean-capi realclean-capi:
 
 clean-platform:
 	$(Q) $(RM) $(PLATFORM_D)
-	-$(Q) $(RMDIR) $(PLATFORM_DIR) 2> /dev/null || exit 0
+	-$(Q) $(RMDIR) $(PLATFORM_DIR) 2> $(NULL) || exit 0
 
 check: main test test-all
 	$(ECHO) check succeeded
