@@ -475,17 +475,29 @@ rb_iseq_new_with_bopt(NODE *node, VALUE name, VALUE path, VALUE absolute_path, V
 static inline VALUE CHECK_INTEGER(VALUE v) {(void)NUM2LONG(v); return v;}
 
 static enum iseq_type
-iseq_type_from_id(const ID typeid)
+iseq_type_from_sym(VALUE type)
 {
-    if (typeid == rb_intern("top")) return ISEQ_TYPE_TOP;
-    if (typeid == rb_intern("method")) return ISEQ_TYPE_METHOD;
-    if (typeid == rb_intern("block")) return ISEQ_TYPE_BLOCK;
-    if (typeid == rb_intern("class")) return ISEQ_TYPE_CLASS;
-    if (typeid == rb_intern("rescue")) return ISEQ_TYPE_RESCUE;
-    if (typeid == rb_intern("ensure")) return ISEQ_TYPE_ENSURE;
-    if (typeid == rb_intern("eval")) return ISEQ_TYPE_EVAL;
-    if (typeid == rb_intern("main")) return ISEQ_TYPE_MAIN;
-    if (typeid == rb_intern("defined_guard")) return ISEQ_TYPE_DEFINED_GUARD;
+    const ID id_top = rb_intern("top");
+    const ID id_method = rb_intern("method");
+    const ID id_block = rb_intern("block");
+    const ID id_class = rb_intern("class");
+    const ID id_rescue = rb_intern("rescue");
+    const ID id_ensure = rb_intern("ensure");
+    const ID id_eval = rb_intern("eval");
+    const ID id_main = rb_intern("main");
+    const ID id_defined_guard = rb_intern("defined_guard");
+    /* ensure all symbols are static or pinned down before
+     * conversion */
+    const ID typeid = rb_check_id(&type);
+    if (typeid == id_top) return ISEQ_TYPE_TOP;
+    if (typeid == id_method) return ISEQ_TYPE_METHOD;
+    if (typeid == id_block) return ISEQ_TYPE_BLOCK;
+    if (typeid == id_class) return ISEQ_TYPE_CLASS;
+    if (typeid == id_rescue) return ISEQ_TYPE_RESCUE;
+    if (typeid == id_ensure) return ISEQ_TYPE_ENSURE;
+    if (typeid == id_eval) return ISEQ_TYPE_EVAL;
+    if (typeid == id_main) return ISEQ_TYPE_MAIN;
+    if (typeid == id_defined_guard) return ISEQ_TYPE_DEFINED_GUARD;
     return (enum iseq_type)-1;
 }
 
@@ -499,7 +511,6 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
     VALUE type, body, locals, args, exception;
 
     st_data_t iseq_type;
-    ID typeid;
     rb_iseq_t *iseq;
     rb_compile_option_t option;
     int i = 0;
@@ -539,14 +550,9 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
     iseq->self = iseqval;
     iseq->local_iseq = iseq;
 
-    typeid = SYM2ID(type);
-    iseq_type = iseq_type_from_id(typeid);
+    iseq_type = iseq_type_from_sym(type);
     if (iseq_type == (enum iseq_type)-1) {
-	VALUE typename = rb_id2str(typeid);
-	if (typename)
-	    rb_raise(rb_eTypeError, "unsupport type: :%"PRIsVALUE, typename);
-	else
-	    rb_raise(rb_eTypeError, "unsupport type: %p", (void *)typeid);
+	rb_raise(rb_eTypeError, "unsupport type: :%"PRIsVALUE, rb_sym2str(type));
     }
 
     if (parent == Qnil) {
@@ -1615,11 +1621,7 @@ ruby_node_name(int node)
 static VALUE
 register_label(struct st_table *table, unsigned long idx)
 {
-    VALUE sym;
-    char buff[7 + DECIMAL_SIZE_OF_BITS(sizeof(idx) * CHAR_BIT)];
-
-    snprintf(buff, sizeof(buff), "label_%lu", idx);
-    sym = ID2SYM(rb_intern(buff));
+    VALUE sym = rb_str_dynamic_intern(rb_sprintf("label_%lu", idx));
     st_insert(table, idx, sym);
     return sym;
 }

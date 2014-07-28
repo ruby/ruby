@@ -169,6 +169,7 @@ mark_dump_arg(void *ptr)
     struct dump_arg *p = ptr;
     if (!p->symbols)
         return;
+    rb_mark_set(p->symbols);
     rb_mark_set(p->data);
     rb_mark_hash(p->compat_tbl);
     rb_gc_mark(p->str);
@@ -411,20 +412,19 @@ w_float(double d, struct dump_arg *arg)
 }
 
 static void
-w_symbol(ID id, struct dump_arg *arg)
+w_symbol(VALUE sym, struct dump_arg *arg)
 {
-    VALUE sym;
     st_data_t num;
     VALUE encname;
 
-    if (st_lookup(arg->symbols, id, &num)) {
+    if (st_lookup(arg->symbols, sym, &num)) {
 	w_byte(TYPE_SYMLINK, arg);
 	w_long((long)num, arg);
     }
     else {
-	sym = rb_id2str(id);
+	sym = rb_sym2str(sym);
 	if (!sym) {
-	    rb_raise(rb_eTypeError, "can't dump anonymous ID %"PRIdVALUE, id);
+	    rb_raise(rb_eTypeError, "can't dump anonymous ID %"PRIdVALUE, sym);
 	}
 	encname = encoding_name(sym, arg);
 	if (NIL_P(encname) ||
@@ -436,7 +436,7 @@ w_symbol(ID id, struct dump_arg *arg)
 	}
 	w_byte(TYPE_SYMBOL, arg);
 	w_bytes(RSTRING_PTR(sym), RSTRING_LEN(sym), arg);
-	st_add_direct(arg->symbols, id, arg->symbols->num_entries);
+	st_add_direct(arg->symbols, sym, arg->symbols->num_entries);
 	if (!NIL_P(encname)) {
 	    struct dump_call_arg c_arg;
 	    c_arg.limit = 1;
@@ -451,7 +451,7 @@ static void
 w_unique(VALUE s, struct dump_arg *arg)
 {
     must_not_be_anonymous("class", s);
-    w_symbol(rb_intern_str(s), arg);
+    w_symbol(rb_str_dynamic_intern(s), arg);
 }
 
 static void w_object(VALUE,struct dump_arg*,int);
@@ -527,7 +527,7 @@ w_obj_each(st_data_t key, st_data_t val, st_data_t a)
     struct dump_call_arg *arg = (struct dump_call_arg *)a;
 
     if (to_be_skipped_id(id)) return ST_CONTINUE;
-    w_symbol(id, arg->arg);
+    w_symbol(ID2SYM(id), arg->arg);
     w_object(value, arg->arg, arg->limit);
     return ST_CONTINUE;
 }
@@ -574,12 +574,12 @@ w_encoding(VALUE encname, struct dump_call_arg *arg)
     switch (encname) {
       case Qfalse:
       case Qtrue:
-	w_symbol(rb_intern("E"), arg->arg);
+	w_symbol(ID2SYM(rb_intern("E")), arg->arg);
 	w_object(encname, arg->arg, arg->limit + 1);
       case Qnil:
 	return;
     }
-    w_symbol(rb_id_encoding(), arg->arg);
+    w_symbol(ID2SYM(rb_id_encoding()), arg->arg);
     w_object(encname, arg->arg, arg->limit + 1);
 }
 
@@ -671,7 +671,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 #endif
     }
     else if (SYMBOL_P(obj)) {
-	w_symbol(SYM2ID(obj), arg);
+	w_symbol(obj, arg);
     }
     else if (FLONUM_P(obj)) {
 	st_add_direct(arg->data, obj, arg->data->num_entries);
@@ -863,7 +863,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 		w_long(len, arg);
 		mem = rb_struct_members(obj);
 		for (i=0; i<len; i++) {
-		    w_symbol(SYM2ID(RARRAY_AREF(mem, i)), arg);
+		    w_symbol(RARRAY_AREF(mem, i), arg);
 		    w_object(RSTRUCT_GET(obj, i), arg, limit);
 		}
 	    }
@@ -1044,6 +1044,7 @@ mark_load_arg(void *ptr)
     struct load_arg *p = ptr;
     if (!p->symbols)
         return;
+    rb_mark_tbl(p->symbols);
     rb_mark_tbl(p->data);
     rb_mark_hash(p->compat_tbl);
 }
@@ -1070,7 +1071,7 @@ static const rb_data_type_t load_arg_data = {
 #define r_entry(v, arg) r_entry0((v), (arg)->data->num_entries, (arg))
 static VALUE r_entry0(VALUE v, st_index_t num, struct load_arg *arg);
 static VALUE r_object(struct load_arg *arg);
-static ID r_symbol(struct load_arg *arg);
+static VALUE r_symbol(struct load_arg *arg);
 static VALUE path2class(VALUE path);
 
 NORETURN(static void too_short(void));
@@ -1276,13 +1277,13 @@ r_bytes0(long len, struct load_arg *arg)
 }
 
 static int
-id2encidx(ID id, VALUE val)
+sym2encidx(VALUE sym, VALUE val)
 {
-    if (id == rb_id_encoding()) {
+    if (sym == ID2SYM(rb_id_encoding())) {
 	int idx = rb_enc_find_index(StringValueCStr(val));
 	return idx;
     }
-    else if (id == rb_intern("E")) {
+    else if (sym == ID2SYM(rb_intern("E"))) {
 	if (val == Qfalse) return rb_usascii_encindex();
 	else if (val == Qtrue) return rb_utf8_encindex();
 	/* bogus ignore */
@@ -1290,23 +1291,23 @@ id2encidx(ID id, VALUE val)
     return -1;
 }
 
-static ID
+static VALUE
 r_symlink(struct load_arg *arg)
 {
-    st_data_t id;
+    st_data_t sym;
     long num = r_long(arg);
 
-    if (!st_lookup(arg->symbols, num, &id)) {
+    if (!st_lookup(arg->symbols, num, &sym)) {
 	rb_raise(rb_eArgError, "bad symbol");
     }
-    return (ID)id;
+    return (VALUE)sym;
 }
 
-static ID
+static VALUE
 r_symreal(struct load_arg *arg, int ivar)
 {
     VALUE s = r_bytes(arg);
-    ID id;
+    VALUE sym;
     int idx = -1;
     st_index_t n = arg->symbols->num_entries;
 
@@ -1314,18 +1315,17 @@ r_symreal(struct load_arg *arg, int ivar)
     if (ivar) {
 	long num = r_long(arg);
 	while (num-- > 0) {
-	    id = r_symbol(arg);
-	    idx = id2encidx(id, r_object(arg));
+	    idx = sym2encidx(r_symbol(arg), r_object(arg));
 	}
     }
     if (idx > 0) rb_enc_associate_index(s, idx);
-    id = rb_intern_str(s);
-    st_insert(arg->symbols, (st_data_t)n, (st_data_t)id);
+    sym = rb_str_dynamic_intern(s);
+    st_insert(arg->symbols, (st_data_t)n, (st_data_t)sym);
 
-    return id;
+    return sym;
 }
 
-static ID
+static VALUE
 r_symbol(struct load_arg *arg)
 {
     int type, ivar = 0;
@@ -1350,7 +1350,7 @@ r_symbol(struct load_arg *arg)
 static VALUE
 r_unique(struct load_arg *arg)
 {
-    return rb_id2str(r_symbol(arg));
+    return rb_sym2str(r_symbol(arg));
 }
 
 static VALUE
@@ -1440,15 +1440,15 @@ r_ivar(VALUE obj, int *has_encoding, struct load_arg *arg)
     len = r_long(arg);
     if (len > 0) {
 	do {
-	    ID id = r_symbol(arg);
+	    VALUE sym = r_symbol(arg);
 	    VALUE val = r_object(arg);
-	    int idx = id2encidx(id, val);
+	    int idx = sym2encidx(sym, val);
 	    if (idx >= 0) {
 		rb_enc_associate_index(obj, idx);
 		if (has_encoding) *has_encoding = TRUE;
 	    }
 	    else {
-		rb_ivar_set(obj, id, val);
+		rb_ivar_set(obj, SYM2ID(sym), val);
 	    }
 	} while (--len > 0);
     }
@@ -1750,19 +1750,19 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	{
 	    VALUE mem, values;
 	    long i;
-	    ID slot;
+	    VALUE slot;
 	    st_index_t idx = r_prepare(arg);
 	    VALUE klass = path2class(r_unique(arg));
 	    long len = r_long(arg);
 
             v = rb_obj_alloc(klass);
 	    if (!RB_TYPE_P(v, T_STRUCT)) {
-		rb_raise(rb_eTypeError, "class %s not a struct", rb_class2name(klass));
+		rb_raise(rb_eTypeError, "class %"PRIsVALUE" not a struct", rb_class_name(klass));
 	    }
 	    mem = rb_struct_s_members(klass);
             if (RARRAY_LEN(mem) != len) {
-                rb_raise(rb_eTypeError, "struct %s not compatible (struct size differs)",
-                         rb_class2name(klass));
+                rb_raise(rb_eTypeError, "struct %"PRIsVALUE" not compatible (struct size differs)",
+                         rb_class_name(klass));
             }
 
 	    arg->readable += (len - 1) * 2;
@@ -1771,11 +1771,11 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    for (i=0; i<len; i++) {
 		slot = r_symbol(arg);
 
-		if (RARRAY_AREF(mem, i) != ID2SYM(slot)) {
-		    rb_raise(rb_eTypeError, "struct %s not compatible (:%s for :%s)",
-			     rb_class2name(klass),
-			     rb_id2name(slot),
-			     rb_id2name(SYM2ID(RARRAY_AREF(mem, i))));
+		if (RARRAY_AREF(mem, i) != slot) {
+		    rb_raise(rb_eTypeError, "struct %"PRIsVALUE" not compatible (:%"PRIsVALUE" for :%"PRIsVALUE")",
+			     rb_class_name(klass),
+			     rb_sym2str(slot),
+			     rb_sym2str(RARRAY_AREF(mem, i)));
 		}
                 rb_ary_push(values, r_object(arg));
 		arg->readable -= 2;
@@ -1907,17 +1907,17 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
       case TYPE_SYMBOL:
 	if (ivp) {
-	    v = ID2SYM(r_symreal(arg, *ivp));
+	    v = r_symreal(arg, *ivp);
 	    *ivp = FALSE;
 	}
 	else {
-	    v = ID2SYM(r_symreal(arg, 0));
+	    v = r_symreal(arg, 0);
 	}
 	v = r_leave(v, arg);
 	break;
 
       case TYPE_SYMLINK:
-	v = ID2SYM(r_symlink(arg));
+	v = r_symlink(arg);
 	break;
 
       default:

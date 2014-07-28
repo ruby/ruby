@@ -2679,7 +2679,7 @@ static VALUE
 chunk_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _argp))
 {
     struct chunk_arg *argp = MEMO_FOR(struct chunk_arg, _argp);
-    VALUE v;
+    VALUE v, s;
     VALUE alone = ID2SYM(rb_intern("_alone"));
     VALUE separator = ID2SYM(rb_intern("_separator"));
 
@@ -2703,7 +2703,7 @@ chunk_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _argp))
             argp->prev_value = argp->prev_elts = Qnil;
         }
     }
-    else if (SYMBOL_P(v) && rb_id2name(SYM2ID(v))[0] == '_') {
+    else if (SYMBOL_P(v) && (s = rb_sym2str(v), RSTRING_PTR(s)[0] == '_')) {
 	rb_raise(rb_eRuntimeError, "symbols beginning with an underscore are reserved");
     }
     else {

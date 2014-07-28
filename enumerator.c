@@ -975,13 +975,15 @@ append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args)
 
     method = rb_attr_get(obj, id_method);
     if (method != Qfalse) {
-	ID mid = default_method;
 	if (!NIL_P(method)) {
 	    Check_Type(method, T_SYMBOL);
-	    mid = SYM2ID(method);
+	    method = rb_sym2str(method);
+	}
+	else {
+	    method = rb_id2str(default_method);
 	}
 	rb_str_buf_cat2(str, ":");
-	rb_str_buf_append(str, rb_id2str(mid));
+	rb_str_buf_append(str, method);
     }
 
     eargs = rb_attr_get(obj, id_arguments);

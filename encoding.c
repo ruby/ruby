@@ -767,7 +767,7 @@ rb_enc_get_index(VALUE obj)
 
     if (SPECIAL_CONST_P(obj)) {
 	if (!SYMBOL_P(obj)) return -1;
-	obj = rb_id2str(SYM2ID(obj));
+	obj = rb_sym2str(obj);
     }
     switch (BUILTIN_TYPE(obj)) {
       as_default:
