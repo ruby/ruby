@@ -324,6 +324,46 @@ ossl_hmac_s_hexdigest(VALUE klass, VALUE digest, VALUE key, VALUE data)
 }
 
 /*
+ *  call-seq:
+ *     hmac.verify(bytes) -> aBoolean
+ *
+ * Compares the receiver's digest to another digest in a timing-safe way.
+ * +bytes+ must be a binary string containing a digest, for example by calling +#digest+ on another
+ * instance of +OpenSSL::Digest+.
+ */
+VALUE
+ossl_hmac_verify(VALUE self, VALUE other)
+{
+  HMAC_CTX *ctx;
+  unsigned char *buf;
+  unsigned int buf_len;
+  unsigned char result;
+  unsigned int cur_idx;
+  unsigned char *other_buf;
+
+  if (!RB_TYPE_P(other, T_STRING))
+    rb_raise(rb_eArgError, "digest value must be a string");
+
+  GetHMAC(self, ctx);
+  hmac_final(ctx, &buf, &buf_len);
+
+  if (!buf_len || buf_len != RSTRING_LEN(other))
+    return Qfalse;
+
+  other_buf = (unsigned char *)RSTRING_PTR(other);
+
+  result = 0;
+  for (cur_idx = 0; cur_idx < buf_len; cur_idx++) {
+    result |= buf[cur_idx] ^ other_buf[cur_idx];
+  }
+
+  if (result == 0)
+    return Qtrue;
+
+  return Qfalse;
+}
+
+/*
  * INIT
  */
 void
@@ -352,6 +392,7 @@ Init_ossl_hmac()
     rb_define_method(cHMAC, "hexdigest", ossl_hmac_hexdigest, 0);
     rb_define_alias(cHMAC, "inspect", "hexdigest");
     rb_define_alias(cHMAC, "to_s", "hexdigest");
+    rb_define_method(cHMAC, "verify", ossl_hmac_verify, 1);
 }
 
 #else /* NO_HMAC */

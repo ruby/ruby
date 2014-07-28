@@ -24,6 +24,12 @@ class OpenSSL::TestHMAC < Test::Unit::TestCase
 
     assert_equal(OpenSSL::HMAC.digest("MD5", @key, @data), @h2.digest, "digest")
     assert_equal(OpenSSL::HMAC.hexdigest("MD5", @key, @data), @h2.hexdigest, "hexdigest")
+
+    assert_same(false, @h1.verify("\x9EPYl\x0F\xA1\x19\x7F\x85\x87D:\x94-\x8A\xFD"))
+    assert_same(true, @h1.verify("\x9EPYl\x0F\xA1\x19\x7F\x85\x87D:\x94-\x8A\xFC"))
+  end
+
+  def test_hmac_verify
   end
 
   def test_dup
