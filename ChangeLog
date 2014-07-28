@@ -1,3 +1,8 @@
+Mon Jul 28 20:20:08 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win23ole.c (folerecord_method_missing): support
+	  setter of member of WIN32OLE_RECORD object.
+
 Mon Jul 28 06:37:19 2014  Zachary Scott  <e@zzak.io>
 
 	* vm_eval.c: [DOC] Fix rdoc formatting of patch from [Bug #9551]
