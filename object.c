@@ -1707,6 +1707,7 @@ rb_mod_initialize(VALUE module)
     return Qnil;
 }
 
+/* :nodoc: */
 static VALUE
 rb_mod_initialize_clone(VALUE clone, VALUE orig)
 {

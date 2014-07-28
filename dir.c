@@ -2316,5 +2316,11 @@ Init_Dir(void)
      *  Allows file globbing through "{a,b}" in File.fnmatch patterns.
      */
     rb_file_const("FNM_EXTGLOB", INT2FIX(FNM_EXTGLOB));
+
+    /*  Document-const: File::Constants::FNM_SYSCASE
+     *
+     *  System default case insensitiveness, equals to FNM_CASEFOLD or
+     *  0.
+     */
     rb_file_const("FNM_SYSCASE", INT2FIX(FNM_SYSCASE));
 }

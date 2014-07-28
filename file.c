@@ -1429,7 +1429,6 @@ rb_file_chardev_p(VALUE obj, VALUE fname)
 /*
  * call-seq:
  *    File.exist?(file_name)    ->  true or false
- *    File.exists?(file_name)   ->  true or false
  *
  * Return <code>true</code> if the named file exists.
  *
@@ -1447,6 +1446,12 @@ rb_file_exist_p(VALUE obj, VALUE fname)
     return Qtrue;
 }
 
+/*
+ * call-seq:
+ *    File.exists?(file_name)   ->  true or false
+ *
+ * Deprecated method. Don't use.
+ */
 static VALUE
 rb_file_exists_p(VALUE obj, VALUE fname)
 {
