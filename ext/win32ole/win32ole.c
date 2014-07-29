@@ -143,7 +143,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.6.5"
+#define WIN32OLE_VERSION "1.6.6"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -1677,17 +1677,18 @@ hash2olerec(VALUE key, VALUE val, VALUE rec)
     IRecordInfo *pri;
     HRESULT hr;
 
-    Data_Get_Struct(rec, struct olerecorddata, prec);
-    pri = prec->pri;
-
-    VariantInit(&var);
-    ole_val2variant(val, &var);
-    pbuf = ole_vstr2wc(key);
-    hr = pri->lpVtbl->PutField(pri, INVOKE_PROPERTYPUT, prec->pdata, pbuf, &var);
-    SysFreeString(pbuf);
-    VariantClear(&var);
-    if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLERuntimeError, "failed to putfield of `%s`", StringValuePtr(key));
+    if (val != Qnil) {
+        Data_Get_Struct(rec, struct olerecorddata, prec);
+        pri = prec->pri;
+        VariantInit(&var);
+        ole_val2variant(val, &var);
+        pbuf = ole_vstr2wc(key);
+        hr = pri->lpVtbl->PutField(pri, INVOKE_PROPERTYPUT, prec->pdata, pbuf, &var);
+        SysFreeString(pbuf);
+        VariantClear(&var);
+        if (FAILED(hr)) {
+            ole_raise(hr, eWIN32OLERuntimeError, "failed to putfield of `%s`", StringValuePtr(key));
+        }
     }
     return ST_CONTINUE;
 }

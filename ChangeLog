@@ -1,3 +1,8 @@
+Tue Jul 29 22:21:37 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (hash2olerec): ignore WIN32OLE_RECORD
+	  instance variable if the variable is nil.
+
 Tue Jul 29 19:43:27 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (folerecord_method_missing): refactoring.
