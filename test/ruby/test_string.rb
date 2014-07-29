@@ -1,5 +1,6 @@
 require 'test/unit'
 require_relative 'envutil'
+require 'benchmark'
 
 # use of $= is deprecated after 1.7.1
 def pre_1_7_1
@@ -302,6 +303,33 @@ class TestString < Test::Unit::TestCase
 
     casetest(S("CAT"), S('cat'), true) # Reverse the test - we don't want to
     casetest(S("CaT"), S('cAt'), true) # find these in the case.
+  end
+
+  def test_consttime_bytes_eq # 'consttime_bytes_eq?'
+    assert_equal(true, S("foo").consttime_bytes_eq?(S("foo")))
+    assert_equal(false, S("foo").consttime_bytes_eq?(S("foO")))
+    assert_equal(true, S("f\x00oo").consttime_bytes_eq?(S("f\x00oo")))
+    assert_equal(false, S("f\x00oo").consttime_bytes_eq?(S("f\x00oO")))
+  end
+
+  def test_consttime_bytes_eq_timing
+    # ensure using consttime_bytes_eq? takes almost exactly the same amount of time to compare two
+    # different strings.
+    # NOTE: this test may be susceptible to noise if the system running the tests is otherwise under
+    # load.
+    a = "x"*1024_000
+    b = a+"y"
+    c = "y"+a
+    a << "x"
+
+    def measure(&block)
+      Benchmark.measure(&block).real
+    end
+
+    n = 10_000
+    a_b_time = measure { n.times { a.consttime_bytes_eq?(b) } }
+    a_c_time = measure { n.times { a.consttime_bytes_eq?(c) } }
+    assert_in_delta(a_b_time, a_c_time, 0.25, "consttime_bytes_eq? timing test failed")
   end
 
   def test_capitalize

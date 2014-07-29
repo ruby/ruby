@@ -2490,6 +2490,54 @@ rb_str_eql(VALUE str1, VALUE str2)
     return str_eql(str1, str2);
 }
 
+static inline int
+rb_consttime_memequal(const char *buf1, const char *buf2, long len)
+{
+#if defined(HAVE_TIMINGSAFE_MEMCMP)
+    return (timingsafe_memcmp(buf1, buf2, len) == 0);
+#elif defined(HAVE_CONSTTIME_MEMEQUAL)
+    return (consttime_memequal(buf1, buf2, len) != 0);
+#else
+    VALUE result;
+    long idx;
+
+    result = 0;
+    idx = 0;
+    if (UNALIGNED_WORD_ACCESS || !((VALUE)buf1 % sizeof(VALUE)) && !((VALUE)buf2 % sizeof(VALUE))) {
+        for (; idx < len; idx += sizeof(VALUE)) {
+            result |= *(const VALUE *)(buf1+idx) ^ *(const VALUE *)(buf2+idx);
+        }
+    }
+
+    for (; idx < len; idx++) {
+        result |= buf1[idx] ^ buf2[idx];
+    }
+
+    return (result == 0);
+#endif
+}
+
+/*
+ * call-seq:
+ *   str.consttime_bytes_eq?(other)   -> true or false
+ *
+ * Ignoring encoding, compares each byte of +str+ against +other+ in constant time.
+ */
+
+static VALUE
+rb_str_consttime_bytes_eq(VALUE str1, VALUE str2)
+{
+    long len;
+
+    str2 = StringValue(str2);
+    len = RSTRING_LEN(str1);
+
+    if (RSTRING_LEN(str2) != len) return Qfalse;
+    if (rb_consttime_memequal(RSTRING_PTR(str1), RSTRING_PTR(str2), len) != 0) return Qtrue;
+
+    return Qfalse;
+}
+
 /*
  *  call-seq:
  *     string <=> other_string   -> -1, 0, +1 or nil
@@ -8761,6 +8809,7 @@ Init_String(void)
     rb_define_method(rb_cString, "==", rb_str_equal, 1);
     rb_define_method(rb_cString, "===", rb_str_equal, 1);
     rb_define_method(rb_cString, "eql?", rb_str_eql, 1);
+    rb_define_method(rb_cString, "consttime_bytes_eq?", rb_str_consttime_bytes_eq, 1);
     rb_define_method(rb_cString, "hash", rb_str_hash_m, 0);
     rb_define_method(rb_cString, "casecmp", rb_str_casecmp, 1);
     rb_define_method(rb_cString, "+", rb_str_plus, 1);
