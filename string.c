@@ -2884,6 +2884,41 @@ rb_str_eql(VALUE str1, VALUE str2)
 }
 
 /*
+ * call-seq:
+ *   str.tsafe_eql?(other)   -> true or false
+ *
+ * Compares each byte of +str+ against +other+, similarly to String#eql?, but
+ * performs the comparison in constant-time.
+ *
+ * This method is timing-safe if both strings are of equal length.
+ */
+
+static VALUE
+rb_str_tsafe_eql(VALUE str1, VALUE str2)
+{
+    long len, idx;
+    char result;
+    const char *buf1, *buf2;
+
+    str2 = StringValue(str2);
+    len = RSTRING_LEN(str1);
+
+    if (RSTRING_LEN(str2) != len) return Qfalse;
+
+    buf1 = RSTRING_PTR(str1);
+    buf2 = RSTRING_PTR(str2);
+
+    result = 0;
+    for (idx = 0; idx < len; idx++) {
+	result |= buf1[idx] ^ buf2[idx];
+    }
+
+    if (result == 0) return Qtrue;
+
+    return Qfalse;
+}
+
+/*
  *  call-seq:
  *     string <=> other_string   -> -1, 0, +1 or nil
  *
@@ -9550,6 +9585,7 @@ Init_String(void)
     rb_define_method(rb_cString, "==", rb_str_equal, 1);
     rb_define_method(rb_cString, "===", rb_str_equal, 1);
     rb_define_method(rb_cString, "eql?", rb_str_eql, 1);
+    rb_define_method(rb_cString, "tsafe_eql?", rb_str_tsafe_eql, 1);
     rb_define_method(rb_cString, "hash", rb_str_hash_m, 0);
     rb_define_method(rb_cString, "casecmp", rb_str_casecmp, 1);
     rb_define_method(rb_cString, "+", rb_str_plus, 1);

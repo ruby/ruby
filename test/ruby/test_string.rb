@@ -287,6 +287,13 @@ class TestString < Test::Unit::TestCase
     casetest(S("CaT"), S('cAt'), true) # find these in the case.
   end
 
+  def test_TIMING_SAFE_EQUAL # 'tsafe_eql?'
+    assert_equal(true, S("foo").tsafe_eql?(S("foo")))
+    assert_equal(false, S("foo").tsafe_eql?(S("foO")))
+    assert_equal(true, S("f\x00oo").tsafe_eql?(S("f\x00oo")))
+    assert_equal(false, S("f\x00oo").tsafe_eql?(S("f\x00oO")))
+  end
+
   def test_capitalize
     assert_equal(S("Hello"),  S("hello").capitalize)
     assert_equal(S("Hello"),  S("hELLO").capitalize)
