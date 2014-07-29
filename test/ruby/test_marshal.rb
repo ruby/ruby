@@ -248,6 +248,10 @@ class TestMarshal < Test::Unit::TestCase
     assert_equal(ary, Marshal.load(Marshal.dump(ary)), bug2548)
   end
 
+  def test_symlink
+    assert_include(Marshal.dump([:a, :a]), ';')
+  end
+
   ClassUTF8 = eval("class R\u{e9}sum\u{e9}; self; end")
 
   iso_8859_1 = Encoding::ISO_8859_1

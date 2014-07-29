@@ -422,6 +422,7 @@ w_symbol(VALUE sym, struct dump_arg *arg)
 	w_long((long)num, arg);
     }
     else {
+	const VALUE orig_sym = sym;
 	sym = rb_sym2str(sym);
 	if (!sym) {
 	    rb_raise(rb_eTypeError, "can't dump anonymous ID %"PRIdVALUE, sym);
@@ -436,7 +437,7 @@ w_symbol(VALUE sym, struct dump_arg *arg)
 	}
 	w_byte(TYPE_SYMBOL, arg);
 	w_bytes(RSTRING_PTR(sym), RSTRING_LEN(sym), arg);
-	st_add_direct(arg->symbols, sym, arg->symbols->num_entries);
+	st_add_direct(arg->symbols, orig_sym, arg->symbols->num_entries);
 	if (!NIL_P(encname)) {
 	    struct dump_call_arg c_arg;
 	    c_arg.limit = 1;
