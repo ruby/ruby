@@ -612,7 +612,7 @@ compile_data_alloc(rb_iseq_t *iseq, size_t size)
     }
 
     ptr = (void *)&storage->buff[storage->pos];
-    storage->pos += size;
+    storage->pos += (int)size;
     return ptr;
 }
 
