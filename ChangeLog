@@ -1,3 +1,9 @@
+Tue Jul 29 19:43:27 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (folerecord_method_missing): refactoring.
+	  divide functionality of folerecord_method_missing into
+	  olerecord_ivar_set and olerecord_ivar_get.
+
 Mon Jul 28 20:20:08 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win23ole.c (folerecord_method_missing): support
