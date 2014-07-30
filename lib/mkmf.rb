@@ -1092,11 +1092,11 @@ SRC
     checking_for fw do
       src = cpp_include("#{fw}/#{header}") << "\n" "int main(void){return 0;}"
       opt = " -framework #{fw}"
-      if try_link(src, "-ObjC#{opt}", &b)
+      if try_link(src, opt, &b) or (objc = try_link(src, "-ObjC#{opt}", &b))
         $defs.push(format("-DHAVE_FRAMEWORK_%s", fw.tr_cpp))
         # TODO: non-worse way than this hack, to get rid of separating
         # option and its argument.
-        $LDFLAGS << " -ObjC" unless /(\A|\s)-ObjC(\s|\z)/ =~ $LDFLAGS
+        $LDFLAGS << " -ObjC" if objc and /(\A|\s)-ObjC(\s|\z)/ !~ $LDFLAGS
         $LIBS << opt
         true
       else

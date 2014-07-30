@@ -26,7 +26,9 @@ class TestMkmf
 
     def test_multi_frameworks
       assert(have_framework("CoreFoundation"), mkmflog("try as Objective-C"))
-      assert(have_framework("Cocoa"), mkmflog("try as Objective-C"))
+      create_framework("MkmfTest") do |fw|
+        assert(have_framework(fw), MKMFLOG)
+      end
     end
 
     def test_empty_framework
