@@ -2466,19 +2466,16 @@ static Real *BigDecimal_new(int argc, VALUE *argv);
  *
  * ==== Exceptions
  *
- * TypeError:: If the initial value type is neither Fixnum, Bignum, Float,
+ * TypeError:: If the +initial+ type is neither Fixnum, Bignum, Float,
  *             Rational, nor BigDecimal, this exception is raised.
  *
- * TypeError:: If the digits value is not a Fixnum,
- *             this exception is raised.
+ * TypeError:: If the +digits+ is not a Fixnum, this exception is raised.
  *
- * ArgumentError:: If the initial value is a Float,
- *                 and the digits value is larger than Float::DIG + 1,
- *                 this exception is raised.
+ * ArgumentError:: If +initial+ is a Float, and the +digits+ is larger than
+ *                 Float::DIG + 1, this exception is raised.
  *
- * ArgumentError:: If the initial value is a Float or Rational,
- *                 and the digits value is omitted,
- *                 this exception is raised.
+ * ArgumentError:: If the +initial+ is a Float or Rational, and the +digits+
+ *                 value is omitted, this exception is raised.
  */
 static VALUE
 BigDecimal_initialize(int argc, VALUE *argv, VALUE self)
