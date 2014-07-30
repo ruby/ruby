@@ -143,7 +143,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.6.6"
+#define WIN32OLE_VERSION "1.6.7"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -3460,7 +3460,9 @@ set_argv(VARIANTARG* realargs, unsigned int beg, unsigned int end)
     rb_ary_clear(argv);
     while (end-- > beg) {
         rb_ary_push(argv, ole_variant2val(&realargs[end]));
-        VariantClear(&realargs[end]);
+        if (V_VT(&realargs[end]) != VT_RECORD) {
+            VariantClear(&realargs[end]);
+        }
     }
     return argv;
 }
@@ -3585,8 +3587,6 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
             if (rb_obj_is_kind_of(param, cWIN32OLE_VARIANT)) {
                 Data_Get_Struct(param, struct olevariantdata, pvar);
                 VariantCopy(&op.dp.rgvarg[n], &(pvar->var));
-            } else if (rb_obj_is_kind_of(param, cWIN32OLE_RECORD)) {
-                ole_rec2variant(param, &op.dp.rgvarg[n]);
             } else {
                 ole_val2variant(param, &realargs[n]);
                 V_VT(&op.dp.rgvarg[n]) = VT_VARIANT | VT_BYREF;
@@ -3642,7 +3642,9 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
             }
             for(i = cNamedArgs; i < op.dp.cArgs; i++) {
                 n = op.dp.cArgs - i + cNamedArgs - 1;
-                VariantClear(&op.dp.rgvarg[n]);
+                if (V_VT(&op.dp.rgvarg[n]) != VT_RECORD) {
+                    VariantClear(&op.dp.rgvarg[n]);
+                }
             }
         }
 
@@ -3678,6 +3680,9 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
             param = rb_ary_entry(paramS, i-cNamedArgs);
             if (rb_obj_is_kind_of(param, cWIN32OLE_VARIANT)) {
                 ole_val2variant(param, &realargs[n]);
+            } else if ( rb_obj_is_kind_of(param, cWIN32OLE_RECORD) &&
+                        V_VT(&realargs[n]) == VT_RECORD ) {
+                olerecord_set_ivar(param, V_RECORDINFO(&realargs[n]), V_RECORD(&realargs[n]));
             }
         }
         set_argv(realargs, cNamedArgs, op.dp.cArgs);
@@ -9286,8 +9291,9 @@ olerecord_set_ivar(VALUE obj, IRecordInfo *pri, void *prec)
     struct olerecorddata *pvar;
 
     Data_Get_Struct(obj, struct olerecorddata, pvar);
+    OLE_ADDREF(pri);
+    OLE_RELEASE(pvar->pri);
     pvar->pri = pri;
-    OLE_ADDREF(pvar->pri);
 
     hr = pri->lpVtbl->GetName(pri, &bstr);
     if (SUCCEEDED(hr)) {
