@@ -1,3 +1,17 @@
+Thu Jul 31 00:44:34 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c: clear and restore recursive checking thread local data
+	  to avoid unexpected throw from TracePoint.
+	  [Bug #9940]
+
+	* test/ruby/test_settracefunc.rb: add a test.
+
+	* thread.c: added
+	  * rb_threadptr_reset_recursive_data(rb_thread_t *th);
+	  * rb_threadptr_restore_recursive_data(rb_thread_t *th, VALUE old);
+
+	* vm_core.h: ditto.
+
 Wed Jul 23 23:49:59 2014  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* lib/test/unit/parallel.rb: fix test-all parallel failure if a test
