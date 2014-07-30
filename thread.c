@@ -2831,13 +2831,11 @@ threadptr_local_aset(rb_thread_t *th, ID id, VALUE val)
 	st_delete_wrap(th->local_storage, id);
 	return Qnil;
     }
-    else {
     if (!th->local_storage) {
 	th->local_storage = st_init_numtable();
     }
     st_insert(th->local_storage, id, val);
     return val;
-}
 }
 
 VALUE
