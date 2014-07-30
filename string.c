@@ -8713,23 +8713,38 @@ sym_encoding(VALUE sym)
     return rb_obj_encoding(rb_sym2str(sym));
 }
 
-ID
-rb_to_id(VALUE name)
+static VALUE
+string_for_symbol(VALUE name)
 {
-    VALUE tmp;
-
-    if (SYMBOL_P(name)) {
-	return SYM2ID(name);
-    }
     if (!RB_TYPE_P(name, T_STRING)) {
-	tmp = rb_check_string_type(name);
+	VALUE tmp = rb_check_string_type(name);
 	if (NIL_P(tmp)) {
 	    rb_raise(rb_eTypeError, "%+"PRIsVALUE" is not a symbol",
 		     name);
 	}
 	name = tmp;
     }
+    return name;
+}
+
+ID
+rb_to_id(VALUE name)
+{
+    if (SYMBOL_P(name)) {
+	return SYM2ID(name);
+    }
+    name = string_for_symbol(name);
     return rb_intern_str(name);
+}
+
+VALUE
+rb_to_symbol(VALUE name)
+{
+    if (SYMBOL_P(name)) {
+	return name;
+    }
+    name = string_for_symbol(name);
+    return rb_str_dynamic_intern(name);
 }
 
 /*
