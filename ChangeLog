@@ -1,3 +1,16 @@
+Wed Jul 30 22:10:29 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* process.c (rlimit_resource_type, rlimit_resource_value):
+	  get rid of inadvertent dynamic symbol pin-down.
+
+	* re.c (match_backref_number): ditto.
+
+	* signal.c (esignal_init, rb_f_kill, trap_signm): ditto.
+
+	* transcode.c (econv_opts): ditto.
+
+	* vm_trace.c (symbol2event_flag): ditto.
+
 Wed Jul 30 21:29:39 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_invoke): pass WIN32OLE_RECORD variant

@@ -1082,7 +1082,7 @@ match_backref_number(VALUE match, VALUE backref)
         return NUM2INT(backref);
 
       case T_SYMBOL:
-        name = rb_id2name(SYM2ID(backref));
+        name = RSTRING_PTR(rb_sym2str(backref));
         break;
 
       case T_STRING:

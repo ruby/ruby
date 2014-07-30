@@ -700,7 +700,7 @@ symbol2event_flag(VALUE v)
 #undef C
     CONST_ID(id, "a_call"); if (sym == ID2SYM(id)) return RUBY_EVENT_CALL | RUBY_EVENT_B_CALL | RUBY_EVENT_C_CALL;
     CONST_ID(id, "a_return"); if (sym == ID2SYM(id)) return RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN | RUBY_EVENT_C_RETURN;
-    rb_raise(rb_eArgError, "unknown event: %s", rb_id2name(SYM2ID(sym)));
+    rb_raise(rb_eArgError, "unknown event: %"PRIsVALUE, rb_sym2str(sym));
 }
 
 static rb_tp_t *

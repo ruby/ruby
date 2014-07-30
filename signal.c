@@ -301,7 +301,7 @@ esignal_init(int argc, VALUE *argv, VALUE self)
     }
     else {
 	int len = sizeof(signame_prefix);
-	signm = SYMBOL_P(sig) ? rb_id2name(SYM2ID(sig)) : StringValuePtr(sig);
+	signm = SYMBOL_P(sig) ? RSTRING_PTR(rb_sym2str(sig)) : StringValuePtr(sig);
 	if (strncmp(signm, signame_prefix, len) == 0) {
 	    signm += len;
 	    len = 0;
@@ -408,7 +408,7 @@ rb_f_kill(int argc, const VALUE *argv)
 	break;
 
       case T_SYMBOL:
-	s = rb_id2name(SYM2ID(argv[0]));
+	s = RSTRING_PTR(rb_sym2str(argv[0]));
 	if (!s) rb_raise(rb_eArgError, "bad signal");
 	goto str_signal;
 
@@ -1044,7 +1044,7 @@ trap_signm(VALUE vsig)
 	break;
 
       case T_SYMBOL:
-	s = rb_id2name(SYM2ID(vsig));
+	s = RSTRING_PTR(rb_sym2str(vsig));
 	if (!s) rb_raise(rb_eArgError, "bad signal");
 	goto str_signal;
 

@@ -2463,7 +2463,7 @@ econv_opts(VALUE opt, int ecflags)
             ecflags |= ECONV_XML_ATTR_CONTENT_DECORATOR|ECONV_XML_ATTR_QUOTE_DECORATOR|ECONV_UNDEF_HEX_CHARREF;
         }
         else if (RB_TYPE_P(v, T_SYMBOL)) {
-            rb_raise(rb_eArgError, "unexpected value for xml option: %s", rb_id2name(SYM2ID(v)));
+            rb_raise(rb_eArgError, "unexpected value for xml option: %"PRIsVALUE, rb_sym2str(v));
         }
         else {
             rb_raise(rb_eArgError, "unexpected value for xml option");
