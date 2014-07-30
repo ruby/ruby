@@ -1694,7 +1694,7 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
     if (!(id = rb_check_id(&mid))) {
 	if (!rb_method_basic_definition_p(CLASS_OF(obj), idRespond_to_missing)) {
 	    VALUE args[2];
-	    args[0] = ID2SYM(rb_to_id(mid));
+	    args[0] = rb_to_symbol(mid);
 	    args[1] = priv;
 	    return rb_funcall2(obj, idRespond_to_missing, 2, args);
 	}

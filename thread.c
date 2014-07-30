@@ -2928,7 +2928,7 @@ rb_thread_variable_set(VALUE thread, VALUE id, VALUE val)
     }
 
     locals = rb_ivar_get(thread, id_locals);
-    return rb_hash_aset(locals, ID2SYM(rb_to_id(id)), val);
+    return rb_hash_aset(locals, rb_to_symbol(id), val);
 }
 
 /*
