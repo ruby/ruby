@@ -1,3 +1,7 @@
+Wed Jul 30 13:17:35 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: remove unused macros.
+
 Tue Jul 29 22:21:37 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (hash2olerec): ignore WIN32OLE_RECORD

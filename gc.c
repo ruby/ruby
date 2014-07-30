@@ -635,8 +635,6 @@ VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define finalizer_table 	objspace->finalizer_table
 #define global_list		objspace->global_list
 #define ruby_gc_stress		objspace->gc_stress
-#define monitor_level           objspace->rgengc.monitor_level
-#define monitored_object_table  objspace->rgengc.monitored_object_table
 
 #define is_lazy_sweeping(heap) ((heap)->sweep_pages != 0)
 #if SIZEOF_LONG == SIZEOF_VOIDP
