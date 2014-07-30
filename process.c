@@ -4529,7 +4529,8 @@ rlimit_resource_type(VALUE rtype)
 
     switch (TYPE(rtype)) {
       case T_SYMBOL:
-        name = RSTRING_PTR(rb_sym2str(rtype));
+	v = rb_sym2str(rtype);
+	name = RSTRING_PTR(v);
         break;
 
       default:
@@ -4564,7 +4565,8 @@ rlimit_resource_value(VALUE rval)
 
     switch (TYPE(rval)) {
       case T_SYMBOL:
-        name = RSTRING_PTR(rb_sym2str(rval));
+	v = rb_sym2str(rval);
+	name = RSTRING_PTR(v);
         break;
 
       default:

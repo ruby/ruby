@@ -1082,8 +1082,8 @@ match_backref_number(VALUE match, VALUE backref)
         return NUM2INT(backref);
 
       case T_SYMBOL:
-        name = RSTRING_PTR(rb_sym2str(backref));
-        break;
+	backref = rb_sym2str(backref);
+	/* fall through */
 
       case T_STRING:
         name = StringValueCStr(backref);
