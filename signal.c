@@ -397,7 +397,7 @@ rb_f_kill(int argc, const VALUE *argv)
     int negative = 0;
     int sig;
     int i;
-    volatile VALUE str;
+    VALUE str;
     const char *s;
 
     rb_secure(2);
@@ -410,21 +410,23 @@ rb_f_kill(int argc, const VALUE *argv)
 
       case T_SYMBOL:
 	str = rb_sym2str(argv[0]);
-	s = RSTRING_PTR(str);
-	if (!s) rb_raise(rb_eArgError, "bad signal");
 	goto str_signal;
 
       case T_STRING:
-	s = RSTRING_PTR(argv[0]);
+	str = argv[0];
       str_signal:
+	s = RSTRING_PTR(str);
 	if (s[0] == '-') {
 	    negative++;
 	    s++;
 	}
 	if (strncmp(signame_prefix, s, sizeof(signame_prefix)) == 0)
 	    s += 3;
-	if ((sig = signm2signo(s)) == 0)
-	    rb_raise(rb_eArgError, "unsupported name `SIG%s'", s);
+	if ((sig = signm2signo(s)) == 0) {
+	    long ofs = s - RSTRING_PTR(str);
+	    if (ofs) str = rb_str_subseq(str, ofs, RSTRING_LEN(str)-ofs);
+	    rb_raise(rb_eArgError, "unsupported name `SIG%"PRIsVALUE"'", str);
+	}
 
 	if (negative)
 	    sig = -sig;
@@ -433,7 +435,6 @@ rb_f_kill(int argc, const VALUE *argv)
       default:
 	str = rb_check_string_type(argv[0]);
 	if (!NIL_P(str)) {
-	    s = RSTRING_PTR(str);
 	    goto str_signal;
 	}
 	rb_raise(rb_eArgError, "bad signal type %s",
@@ -1048,7 +1049,6 @@ trap_signm(VALUE vsig)
       case T_SYMBOL:
 	vsig = rb_sym2str(vsig);
 	s = RSTRING_PTR(vsig);
-	if (!s) rb_raise(rb_eArgError, "bad signal");
 	goto str_signal;
 
       default:
@@ -1058,8 +1058,11 @@ trap_signm(VALUE vsig)
 	if (strncmp(signame_prefix, s, sizeof(signame_prefix)) == 0)
 	    s += 3;
 	sig = signm2signo(s);
-	if (sig == 0 && strcmp(s, "EXIT") != 0)
-	    rb_raise(rb_eArgError, "unsupported signal SIG%s", s);
+	if (sig == 0 && strcmp(s, "EXIT") != 0) {
+	    long ofs = s - RSTRING_PTR(vsig);
+	    if (ofs) vsig = rb_str_subseq(vsig, ofs, RSTRING_LEN(vsig)-ofs);
+	    rb_raise(rb_eArgError, "unsupported signal SIG%"PRIsVALUE"", vsig);
+	}
     }
     return sig;
 }

@@ -73,6 +73,7 @@ class TestSignal < Test::Unit::TestCase
 
   def test_invalid_signal_name
     assert_raise(ArgumentError) { Process.kill(:XXXXXXXXXX, $$) }
+    assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) { Process.kill("\u{30eb 30d3 30fc}", $$) }
   end if Process.respond_to?(:kill)
 
   def test_signal_exception
@@ -162,6 +163,7 @@ class TestSignal < Test::Unit::TestCase
 
       assert_raise(ArgumentError) { Signal.trap("XXXXXXXXXX", "SIG_DFL") }
 
+      assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) { Signal.trap("\u{30eb 30d3 30fc}", "SIG_DFL") }
     ensure
       Signal.trap(:INT, oldtrap) if oldtrap
     end
