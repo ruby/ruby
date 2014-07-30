@@ -1,3 +1,8 @@
+Wed Jul 30 23:28:10 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* sprintf.c (rb_str_format): like r47006, get rid of
+	  function calls in RSTRING_PTR().
+
 Wed Jul 30 22:10:29 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* process.c (rlimit_resource_type, rlimit_resource_value):

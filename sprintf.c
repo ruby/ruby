@@ -602,8 +602,8 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 #endif
 		len = (int)(p - start + 1); /* including parenthesis */
 		if (sym != Qnil) {
-		    rb_enc_raise(enc, rb_eArgError, "named%.*s after <%s>",
-				 len, start, RSTRING_PTR(rb_sym2str(sym)));
+		    rb_enc_raise(enc, rb_eArgError, "named%.*s after <%"PRIsVALUE">",
+				 len, start, rb_sym2str(sym));
 		}
 		CHECKNAMEARG(start, len, enc);
 		get_hash(&hash, argc, argv);
