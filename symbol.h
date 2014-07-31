@@ -14,6 +14,10 @@
 
 #include "id.h"
 
+#define RSYMBOL(obj) (R_CAST(RSymbol)(obj))
+#define SYMBOL_PINNED        FL_USER1
+#define SYMBOL_PINNED_P(sym) FL_TEST((sym), SYMBOL_PINNED)
+
 #define ID_DYNAMIC_SYM_P(id) (!(id&ID_STATIC_SYM)&&id>tLAST_OP_ID)
 #define STATIC_SYM2ID(sym) RSHIFT((unsigned long)(sym), RUBY_SPECIAL_SHIFT)
 #define STATIC_ID2SYM(id)  (((VALUE)(id)<<RUBY_SPECIAL_SHIFT)|SYMBOL_FLAG)

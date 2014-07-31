@@ -418,10 +418,6 @@ struct RSymbol {
     ID type;
 };
 
-#define RSYMBOL(obj) (R_CAST(RSymbol)(obj))
-#define SYMBOL_PINNED        FL_USER1
-#define SYMBOL_PINNED_P(sym) FL_TEST((sym), SYMBOL_PINNED)
-
 struct RFloat {
     struct RBasic basic;
     double float_value;
