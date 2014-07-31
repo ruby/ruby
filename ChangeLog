@@ -1,3 +1,7 @@
+Thu Jul 31 22:20:12 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: add WIN32OLE_RECORD#inspect.
+
 Thu Jul 31 20:35:32 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: add

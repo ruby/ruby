@@ -143,7 +143,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.6.8"
+#define WIN32OLE_VERSION "1.6.9"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -615,6 +615,7 @@ static VALUE olerecord_ivar_set(VALUE self, VALUE name, VALUE val);
 static VALUE folerecord_method_missing(int argc, VALUE *argv, VALUE self);
 static VALUE folerecord_ole_instance_variable_get(VALUE self, VALUE name);
 static VALUE folerecord_ole_instance_variable_set(VALUE self, VALUE name, VALUE val);
+static VALUE folerecord_inspect(VALUE self);
 static void init_enc2cp(void);
 static void free_enc2cp(void);
 
@@ -9651,6 +9652,21 @@ folerecord_ole_instance_variable_set(VALUE self, VALUE name, VALUE val)
     return olerecord_ivar_set(self, sname, val);
 }
 
+static VALUE
+folerecord_inspect(VALUE self)
+{
+    VALUE tname;
+    VALUE field;
+    tname = folerecord_typename(self);
+    if (tname == Qnil) {
+        tname = rb_inspect(tname);
+    }
+    field = rb_inspect(folerecord_to_h(self));
+    return rb_sprintf("#<WIN32OLE_RECORD(%s) %s>",
+                      StringValuePtr(tname),
+                      StringValuePtr(field));
+}
+
 static void
 init_enc2cp(void)
 {
@@ -9976,6 +9992,7 @@ Init_win32ole(void)
     rb_define_method(cWIN32OLE_RECORD, "method_missing", folerecord_method_missing, -1);
     rb_define_method(cWIN32OLE_RECORD, "ole_instance_variable_get", folerecord_ole_instance_variable_get, 1);
     rb_define_method(cWIN32OLE_RECORD, "ole_instance_variable_set", folerecord_ole_instance_variable_set, 2);
+    rb_define_method(cWIN32OLE_RECORD, "inspect", folerecord_inspect, 0);
 
     eWIN32OLERuntimeError = rb_define_class("WIN32OLERuntimeError", rb_eRuntimeError);
 
