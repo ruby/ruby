@@ -1,3 +1,9 @@
+Thu Jul 31 20:35:32 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: add
+	  WIN32OLE_RECORD#ole_instance_variable_set and
+	  WIN32OLE_RECORD#ole_instance_variable_get
+
 Wed Jul 30 23:28:10 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* sprintf.c (rb_str_format): like r47006, get rid of

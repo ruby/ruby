@@ -143,7 +143,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.6.7"
+#define WIN32OLE_VERSION "1.6.8"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -613,6 +613,8 @@ static VALUE folerecord_typename(VALUE self);
 static VALUE olerecord_ivar_get(VALUE self, VALUE name);
 static VALUE olerecord_ivar_set(VALUE self, VALUE name, VALUE val);
 static VALUE folerecord_method_missing(int argc, VALUE *argv, VALUE self);
+static VALUE folerecord_ole_instance_variable_get(VALUE self, VALUE name);
+static VALUE folerecord_ole_instance_variable_set(VALUE self, VALUE name, VALUE val);
 static void init_enc2cp(void);
 static void free_enc2cp(void);
 
@@ -9519,13 +9521,11 @@ olerecord_ivar_set(VALUE self, VALUE name, VALUE val)
     ch = rb_str_subseq(name, len-1, 1);
     p = RSTRING_PTR(ch);
     if (*p == '=') {
-        fields = rb_ivar_get(self, rb_intern("fields"));
         name = rb_str_subseq(name, 0, len-1);
-        rb_hash_fetch(fields, name);
-        return rb_hash_aset(fields, name, val);
-    } else {
-        rb_raise(rb_eRuntimeError, "unknown member name:`%s`", RSTRING_PTR(name));
     }
+    fields = rb_ivar_get(self, rb_intern("fields"));
+    rb_hash_fetch(fields, name);
+    return rb_hash_aset(fields, name, val);
 }
 
 /*
@@ -9566,6 +9566,89 @@ folerecord_method_missing(int argc, VALUE *argv, VALUE self)
         return olerecord_ivar_set(self, name, argv[1]);
     }
     return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     WIN32OLE_RECORD#ole_instance_variable_get(name)
+ *
+ *  Returns value specified by the member name of VT_RECORD OLE object.
+ *  If the member name is not correct, KeyError exception is raised.
+ *  If you can't access member variable of VT_RECORD OLE object directly,
+ *  use this method.
+ *
+ *  If COM server in VB.NET ComServer project is the following:
+ *
+ *     Imports System.Runtime.InteropServices
+ *     Public Class ComClass
+ *         Public Structure ComObject
+ *             Public object_id As Ineger
+ *         End Structure
+ *     End Class
+ *
+ *  and Ruby Object class has title attribute:
+ *
+ *  then accessing object_id of ComObject from Ruby is as the following:
+ *
+ *     srver = WIN32OLE.new('ComServer.ComClass')
+ *     obj = WIN32OLE_RECORD.new('ComObject', server)
+ *     # obj.object_id returns Ruby Object#object_id
+ *     obj.ole_instance_variable_get(:object_id) # => nil
+ *
+ */
+static VALUE
+folerecord_ole_instance_variable_get(VALUE self, VALUE name)
+{
+    VALUE sname;
+    if(TYPE(name) != T_STRING && TYPE(name) != T_SYMBOL) {
+        rb_raise(rb_eTypeError, "wrong argument type (expected String or Symbol)");
+    }
+    sname = name;
+    if (TYPE(name) == T_SYMBOL) {
+        sname = rb_sym_to_s(name);
+    }
+    return olerecord_ivar_get(self, sname);
+}
+
+/*
+ *  call-seq:
+ *     WIN32OLE_RECORD#ole_instance_variable_set(name, val)
+ *
+ *  Sets value specified by the member name of VT_RECORD OLE object.
+ *  If the member name is not correct, KeyError exception is raised.
+ *  If you can't set value of member of VT_RECORD OLE object directly,
+ *  use this method.
+ *
+ *  If COM server in VB.NET ComServer project is the following:
+ *
+ *     Imports System.Runtime.InteropServices
+ *     Public Class ComClass
+ *         <MarshalAs(UnmanagedType.BStr)> _
+ *         Public title As String
+ *         Public cost As Integer
+ *     End Class
+ *
+ *  and Ruby Object class has title attribute:
+ *
+ *  then accessing object_id of ComObject from Ruby is as the following:
+ *
+ *     srver = WIN32OLE.new('ComServer.ComClass')
+ *     obj = WIN32OLE_RECORD.new('Book', server)
+ *     obj.ole_instance_variable_set(:title, "The Ruby Book")
+ *
+ */
+static VALUE
+folerecord_ole_instance_variable_set(VALUE self, VALUE name, VALUE val)
+{
+    VALUE sname;
+    if(TYPE(name) != T_STRING && TYPE(name) != T_SYMBOL) {
+        rb_raise(rb_eTypeError, "wrong argument type (expected String or Symbol)");
+    }
+    sname = name;
+    if (TYPE(name) == T_SYMBOL) {
+        sname = rb_sym_to_s(name);
+    }
+    return olerecord_ivar_set(self, sname, val);
 }
 
 static void
@@ -9891,6 +9974,8 @@ Init_win32ole(void)
     rb_define_method(cWIN32OLE_RECORD, "to_h", folerecord_to_h, 0);
     rb_define_method(cWIN32OLE_RECORD, "typename", folerecord_typename, 0);
     rb_define_method(cWIN32OLE_RECORD, "method_missing", folerecord_method_missing, -1);
+    rb_define_method(cWIN32OLE_RECORD, "ole_instance_variable_get", folerecord_ole_instance_variable_get, 1);
+    rb_define_method(cWIN32OLE_RECORD, "ole_instance_variable_set", folerecord_ole_instance_variable_set, 2);
 
     eWIN32OLERuntimeError = rb_define_class("WIN32OLERuntimeError", rb_eRuntimeError);
 
