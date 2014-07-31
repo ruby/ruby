@@ -1,3 +1,10 @@
+Thu Aug 01 07:28:12 2014  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c: [DOC] Add description of
+	  `BigDecimal.new` exceptions.  Patched by @joker1007 and
+	  @prathamesh-sonpatki [Fixes GH-690]
+	  https://github.com/ruby/ruby/pull/690
+
 Thu Jul 31 22:20:12 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: add WIN32OLE_RECORD#inspect.
