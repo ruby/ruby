@@ -168,6 +168,8 @@ class TestFloat < Test::Unit::TestCase
     assert_equal([-3, -0.5], 11.5.divmod(-4))
     assert_equal([-3, 0.5], (-11.5).divmod(4))
     assert_equal([2, -3.5], (-11.5).divmod(-4))
+    assert_raise(FloatDomainError) { Float::NAN.divmod(2) }
+    assert_raise(FloatDomainError) { Float::INFINITY.divmod(2) }
   end
 
   def test_div
@@ -175,6 +177,9 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(-3, 11.5.div(-4))
     assert_equal(-3, (-11.5).div(4))
     assert_equal(2, (-11.5).div(-4))
+    assert_raise(FloatDomainError) { 11.5.div(Float::NAN).nan? }
+    assert_raise(FloatDomainError) { Float::NAN.div(2).nan? }
+    assert_raise(FloatDomainError) { Float::NAN.div(11.5).nan? }
   end
 
   def test_modulo
@@ -189,6 +194,8 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(3.5, 11.5.remainder(-4))
     assert_equal(-3.5, (-11.5).remainder(4))
     assert_equal(-3.5, (-11.5).remainder(-4))
+    assert(Float::NAN.remainder(4).nan?)
+    assert(4.remainder(Float::NAN).nan?)
   end
 
   def test_to_s
@@ -215,6 +222,8 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(4.0, 2.0.send(:+, 2))
     assert_equal(4.0, 2.0.send(:+, (2**32).coerce(2).first))
     assert_equal(4.0, 2.0.send(:+, 2.0))
+    assert_equal(Float::INFINITY, 2.0.send(:+, Float::INFINITY))
+    assert(2.0.send(:+, Float::NAN).nan?)
     assert_raise(TypeError) { 2.0.send(:+, nil) }
   end
 
@@ -222,6 +231,8 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(0.0, 2.0.send(:-, 2))
     assert_equal(0.0, 2.0.send(:-, (2**32).coerce(2).first))
     assert_equal(0.0, 2.0.send(:-, 2.0))
+    assert_equal(-Float::INFINITY, 2.0.send(:-, Float::INFINITY))
+    assert(2.0.send(:-, Float::NAN).nan?)
     assert_raise(TypeError) { 2.0.send(:-, nil) }
   end
 
@@ -229,6 +240,7 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(4.0, 2.0.send(:*, 2))
     assert_equal(4.0, 2.0.send(:*, (2**32).coerce(2).first))
     assert_equal(4.0, 2.0.send(:*, 2.0))
+    assert_equal(Float::INFINITY, 2.0.send(:*, Float::INFINITY))
     assert_raise(TypeError) { 2.0.send(:*, nil) }
   end
 
@@ -236,6 +248,7 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(1.0, 2.0.send(:/, 2))
     assert_equal(1.0, 2.0.send(:/, (2**32).coerce(2).first))
     assert_equal(1.0, 2.0.send(:/, 2.0))
+    assert_equal(0.0, 2.0.send(:/, Float::INFINITY))
     assert_raise(TypeError) { 2.0.send(:/, nil) }
   end
 
@@ -256,6 +269,12 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(ZeroDivisionError, bug6048) { 4.2 % 0.0 }
     assert_raise(ZeroDivisionError, bug6048) { 42.send(:%, 0) }
     assert_raise(ZeroDivisionError, bug6048) { 42 % 0 }
+  end
+
+  def test_modulo4
+    assert((0.0).modulo(Float::NAN).nan?)
+    assert((1.0).modulo(Float::NAN).nan?)
+    assert(Float::INFINITY.modulo(1).nan?)
   end
 
   def test_divmod2

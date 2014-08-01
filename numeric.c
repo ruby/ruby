@@ -903,10 +903,17 @@ flodivmod(double x, double y, double *divp, double *modp)
 	mod = x - z * y;
 #endif
     }
-    if (isinf(x) && !isinf(y) && !isnan(y))
+    if (isinf(x) && !isinf(y) && !isnan(y)) {
 	div = x;
-    else
+    } else {
+        if (isnan(y)) {
+            // y is NaN so all results are NaN
+            if (modp) *modp = y;
+            if (divp) *divp = y;
+            return;
+        }
 	div = (x - mod) / y;
+    }
     if (y*mod < 0) {
 	mod += y;
 	div -= 1.0;
