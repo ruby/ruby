@@ -1,3 +1,8 @@
+Fri Aug  1 16:35:32 2014  Evan Miller  <evan@squareup.com>
+
+	* numeric.c (flodivmod): all results are NaN if divisor is NaN.
+	  [fix GH-692]
+
 Thu Aug 01 07:28:12 2014  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c: [DOC] Add description of

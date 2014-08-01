@@ -271,6 +271,12 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(ZeroDivisionError, bug6048) { 42 % 0 }
   end
 
+  def test_modulo4
+    assert_predicate((0.0).modulo(Float::NAN), :nan?)
+    assert_predicate((1.0).modulo(Float::NAN), :nan?)
+    assert_predicate(Float::INFINITY.modulo(1), :nan?)
+  end
+
   def test_divmod2
     assert_equal([1.0, 0.0], 2.0.divmod(2))
     assert_equal([1.0, 0.0], 2.0.divmod((2**32).coerce(2).first))

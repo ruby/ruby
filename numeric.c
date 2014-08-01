@@ -890,6 +890,12 @@ flodivmod(double x, double y, double *divp, double *modp)
 {
     double div, mod;
 
+    if (isnan(y)) {
+	/* y is NaN so all results are NaN */
+	if (modp) *modp = y;
+	if (divp) *divp = y;
+	return;
+    }
     if (y == 0.0) rb_num_zerodiv();
     if ((x == 0.0) || (isinf(y) && !isinf(x)))
         mod = x;
@@ -903,7 +909,7 @@ flodivmod(double x, double y, double *divp, double *modp)
 	mod = x - z * y;
 #endif
     }
-    if (isinf(x) && !isinf(y) && !isnan(y))
+    if (isinf(x) && !isinf(y))
 	div = x;
     else
 	div = (x - mod) / y;
