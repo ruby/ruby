@@ -1,3 +1,8 @@
+Fri Aug  1 20:17:33 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_variant2val): call
+	  folerecord_s_allocate instead of WIN32OLE_RECORD.new.
+
 Fri Aug  1 18:39:57 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/date/test_date.rb: remove commented-out code.
