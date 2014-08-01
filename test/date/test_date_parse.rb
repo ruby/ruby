@@ -37,7 +37,6 @@ class TestDateParse < Test::Unit::TestCase
      [['Sat Aug 28 02:29:34 Mountain Standard Time 2000',false],[2000,8,28,2,29,34,'Mountain Standard Time',-7*3600,6], __LINE__],
      [['Sat Aug 28 02:29:34 Mountain Daylight Time 2000',false],[2000,8,28,2,29,34,'Mountain Daylight Time',-6*3600,6], __LINE__],
      [['Sat Aug 28 02:29:34 Mexico Standard Time 2000',false],[2000,8,28,2,29,34,'Mexico Standard Time',-6*3600,6], __LINE__],
-#     [['Sat Aug 28 02:29:34 Mexico Standard Time 2 2000',false],[2000,8,28,2,29,34,'Mexico Standard Time 2',-7*3600,6], __LINE__], # cp
      [['Sat Aug 28 02:29:34 E. Australia Standard Time 2000',false],[2000,8,28,2,29,34,'E. Australia Standard Time',10*3600,6], __LINE__],
 
      # part of iso 8601
@@ -109,7 +108,6 @@ class TestDateParse < Test::Unit::TestCase
      [["23-05-'99",true],[1999,5,23,nil,nil,nil,nil,nil,nil], __LINE__],
 
      # broken iso 8601 (?)
-#     [['1999-05-23T235521Z',false],[1999,5,23,23,55,21,'Z',0,nil], __LINE__], # cp
      [['19990523T23:55:21Z',false],[1999,5,23,23,55,21,'Z',0,nil], __LINE__],
      [['19990523235521.1234-100',true],[1999,5,23,23,55,21,'-100',-1*3600,nil], __LINE__],
      [['19990523235521.1234-10',true],[1999,5,23,23,55,21,'-10',-10*3600,nil], __LINE__],
@@ -134,7 +132,6 @@ class TestDateParse < Test::Unit::TestCase
      [['19990523235521.123[-5:EST]',false],[1999,5,23,23,55,21,'EST',-5*3600,nil], __LINE__],
      [['19990523235521.123[+9:JST]',false],[1999,5,23,23,55,21,'JST',9*3600,nil], __LINE__],
      [['19990523235521.123[+12:XXX YYY ZZZ]',false],[1999,5,23,23,55,21,'XXX YYY ZZZ',12*3600,nil], __LINE__],
-#     [['235521',false],[nil,nil,nil,23,55,21,nil,nil,nil], __LINE__], # cp
      [['235521.123',false],[nil,nil,nil,23,55,21,nil,nil,nil], __LINE__],
      [['235521.123[-9]',false],[nil,nil,nil,23,55,21,'-9',-9*3600,nil], __LINE__],
      [['235521.123[+9]',false],[nil,nil,nil,23,55,21,'+9',+9*3600,nil], __LINE__],
@@ -147,8 +144,6 @@ class TestDateParse < Test::Unit::TestCase
      [['Sun, 22 Aug 1999 00:45:29 +9959',false],[1999,8,22,0,45,29,'+9959',+(99*3600+59*60),0], __LINE__],
      [['Sun, 22 Aug 05 00:45:29 -0400',true],[2005,8,22,0,45,29,'-0400',-4*3600,0], __LINE__],
      [['Sun, 22 Aug 49 00:45:29 -0400',true],[2049,8,22,0,45,29,'-0400',-4*3600,0], __LINE__],
-#     [['Sun, 22 Aug 50 00:45:29 -0400',true],[1950,8,22,0,45,29,'-0400',-4*3600,0], __LINE__],
-#     [['Sun, 22 Aug 111 00:45:29 -0400',true],[2011,8,22,0,45,29,'-0400',-4*3600,0], __LINE__],
      [['Sun, 22 Aug 1999 00:45:29 GMT',false],[1999,8,22,0,45,29,'GMT',0,0], __LINE__],
      [["Sun,\00022\r\nAug\r\n1999\r\n00:45:29\r\nGMT",false],[1999,8,22,0,45,29,'GMT',0,0], __LINE__],
      [['Sun, 22 Aug 1999 00:45 GMT',false],[1999,8,22,0,45,nil,'GMT',0,0], __LINE__],
@@ -181,8 +176,6 @@ class TestDateParse < Test::Unit::TestCase
      [['1999.5.2',false],[1999,5,2,nil,nil,nil,nil,nil,nil], __LINE__],
      [['1999.05.02',false],[1999,5,2,nil,nil,nil,nil,nil,nil], __LINE__],
      [['-1999.05.02',false],[-1999,5,2,nil,nil,nil,nil,nil,nil], __LINE__],
-#     [['05.02',false],[nil,5,2,nil,nil,nil,nil,nil,nil], __LINE__], # not support
-#     [[' 5. 2',false],[nil,5,2,nil,nil,nil,nil,nil,nil], __LINE__], # not support
 
      [['0099.5.2',false],[99,5,2,nil,nil,nil,nil,nil,nil], __LINE__],
      [['0099.5.2',true],[99,5,2,nil,nil,nil,nil,nil,nil], __LINE__],
@@ -310,8 +303,6 @@ class TestDateParse < Test::Unit::TestCase
      [['Sat Aug 28 02:29:34 GMT 2000 B.C.E.',false],[-1999,8,28,2,29,34,'GMT',0,6], __LINE__],
 
      # collection
-#     [['le ler juillet 1982',false],[1982,7,1,nil,nil,nil,nil,nil,nil], __LINE__], # bih 1982
-#     [['30 June 1982 , 23h 59m 59s',false],[1982,6,30,23,59,59,nil,nil,nil], __LINE__], # bih 1982
      [['Tuesday, May 18, 1999 Published at 13:36 GMT 14:36 UK',false],[1999,5,18,13,36,nil,'GMT',0,2], __LINE__], # bbc.co.uk
      [['July 20, 2000 Web posted at: 3:37 p.m. EDT (1937 GMT)',false],[2000,7,20,15,37,nil,'EDT',-4*3600,nil], __LINE__], # cnn.com
      [['12:54 p.m. EDT, September 11, 2006',false],[2006,9,11,12,54,nil,'EDT',-4*3600,nil], __LINE__], # cnn.com
@@ -323,11 +314,9 @@ class TestDateParse < Test::Unit::TestCase
      [['8:00 pm lt',false],[nil,nil,nil,20,0,nil,'lt',nil,nil], __LINE__],
      [['4:00 AM, Jan. 12, 1990',false],[1990,1,12,4,0,nil,nil,nil,nil], __LINE__],
      [['Jan. 12 4:00 AM 1990',false],[1990,1,12,4,0,nil,nil,nil,nil], __LINE__],
-#     [['Jan. 12 4:00 -1990',false],[-1990,1,12,4,0,nil,nil,nil,nil], __LINE__], # cp
      [['1990-01-12 04:00:00+00',false],[1990,1,12,4,0,0,'+00',0,nil], __LINE__],
      [['1990-01-11 20:00:00-08',false],[1990,1,11,20,0,0,'-08',-8*3600,nil], __LINE__],
      [['1990/01/12 04:00:00',false],[1990,1,12,4,0,0,nil,nil,nil], __LINE__],
-#     [['Thu Jan 11 20:00:00 1990 LT',false], [1990,1,11,20,0,0,'LT',nil,4], __LINE__], # cp
      [['Thu Jan 11 20:00:00 PST 1990',false],[1990,1,11,20,0,0,'PST',-8*3600,4], __LINE__],
      [['Fri Jan 12 04:00:00 GMT 1990',false],[1990,1,12,4,0,0,'GMT',0,5], __LINE__],
      [['Thu, 11 Jan 1990 20:00:00 -0800',false],[1990,1,11,20,0,0,'-0800',-8*3600,4], __LINE__],
@@ -353,8 +342,6 @@ class TestDateParse < Test::Unit::TestCase
      [['sat.',false],[nil,nil,nil,nil,nil,nil,nil,nil,6], __LINE__],
      [['SAT.',false],[nil,nil,nil,nil,nil,nil,nil,nil,6], __LINE__],
      [['sAt.',false],[nil,nil,nil,nil,nil,nil,nil,nil,6], __LINE__],
-#     [['su',false],[nil,nil,nil,nil,nil,nil,nil,nil,0], __LINE__],
-#     [['mo',false],[nil,nil,nil,nil,nil,nil,nil,nil,1], __LINE__],
 
      # time
      [['09:55',false],[nil,nil,nil,9,55,nil,nil,nil,nil], __LINE__],

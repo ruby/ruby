@@ -1,3 +1,10 @@
+Fri Aug  1 18:39:57 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/date/test_date.rb: remove commented-out code.
+	* test/date/test_date_arith.rb: ditto.
+	* test/date/test_date_attr.rb: ditto.
+	* test/date/test_date_parse.rb: ditto.
+
 Fri Aug  1 16:35:32 2014  Evan Miller  <evan@squareup.com>
 
 	* numeric.c (flodivmod): all results are NaN if divisor is NaN.

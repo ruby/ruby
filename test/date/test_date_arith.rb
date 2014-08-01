@@ -261,26 +261,4 @@ class TestDateArith < Test::Unit::TestCase
     assert_equal(8, e.to_a.size)
   end
 
-=begin
-  def test_step__inf
-    p = Date.new(2001,1,14)
-    q = Date.new(2001,1,21)
-    inf = 1.0/0
-
-    if inf.infinite?
-      [p, q].each do |a|
-	[p, q].each do |b|
-	  [inf, -inf].each do |c|
-	    i = 0
-	    a.step(b, c) do |d|
-	      i += 1
-	    end
-	    assert_equal(0, i)
-	  end
-	end
-      end
-    end
-  end
-=end
-
 end
