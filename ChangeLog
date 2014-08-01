@@ -1,3 +1,9 @@
+Fri Aug  1 22:30:40 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (folerecord_inititalize): accept
+	  only 2 arguments. The 2nd argument should be WIN32OLE object or
+	  WIN32OLE_RECORD object.
+
 Fri Aug  1 20:17:33 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_variant2val): call

@@ -143,7 +143,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.7.0"
+#define WIN32OLE_VERSION "1.7.1"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -607,7 +607,7 @@ static HRESULT recordinfo_from_itypelib(ITypeLib *pTypeLib, VALUE name, IRecordI
 static void olerecord_set_ivar(VALUE obj, IRecordInfo *pri, void *prec);
 static void olerecord_free(struct olerecorddata *pvar);
 static VALUE folerecord_s_allocate(VALUE klass);
-static VALUE folerecord_initialize(VALUE self, VALUE args);
+static VALUE folerecord_initialize(VALUE self, VALUE typename, VALUE oleobj);
 static VALUE folerecord_to_h(VALUE self);
 static VALUE folerecord_typename(VALUE self);
 static VALUE olerecord_ivar_get(VALUE self, VALUE name);
@@ -9384,42 +9384,41 @@ folerecord_s_allocate(VALUE klass) {
 }
 
 static VALUE
-folerecord_initialize(VALUE self, VALUE args) {
-    int len = 0;
-    VALUE st;
-    VALUE obj;
+folerecord_initialize(VALUE self, VALUE typename, VALUE oleobj) {
     HRESULT hr;
     ITypeLib *pTypeLib = NULL;
     IRecordInfo *pri = NULL;
-    len = RARRAY_LEN(args);
 
-    if (len != 0 && len != 2) {
-        rb_raise(rb_eArgError, "wrong number of arguments (%d for 0 or 2)", len);
-    }
-    if (len == 0) {
-        return self;
-    }
-    st = rb_ary_entry(args, 0);
-    if (TYPE(st) != T_STRING && TYPE(st) != T_SYMBOL) {
+    if (TYPE(typename) != T_STRING && TYPE(typename) != T_SYMBOL) {
         rb_raise(rb_eArgError, "1st argument should be String or Symbol");
     }
-    if (TYPE(st) == T_SYMBOL) {
-        st = rb_sym_to_s(st);
-    }
-    obj = rb_ary_entry(args, 1);
-    if(!rb_obj_is_kind_of(obj, cWIN32OLE)) {
-        rb_raise(rb_eArgError, "2nd argument should be WIN32OLE object");
+    if (TYPE(typename) == T_SYMBOL) {
+        typename = rb_sym_to_s(typename);
     }
 
-    hr = typelib_from_val(obj, &pTypeLib);
+    hr = S_OK;
+    if(rb_obj_is_kind_of(oleobj, cWIN32OLE)) {
+        hr = typelib_from_val(oleobj, &pTypeLib);
+    } else if (rb_obj_is_kind_of(oleobj, cWIN32OLE_TYPELIB)) {
+        pTypeLib = oletypelib_get_typelib(oleobj);
+        OLE_ADDREF(pTypeLib);
+        if (pTypeLib) {
+            hr = S_OK;
+        } else {
+            hr = E_FAIL;
+        }
+    } else {
+        rb_raise(rb_eArgError, "2nd argument should be WIN32OLE object or WIN32OLE_TYPELIB object");
+    }
+
     if (FAILED(hr)) {
         ole_raise(hr, eWIN32OLERuntimeError, "fail to query ITypeLib interface");
     }
 
-    hr = recordinfo_from_itypelib(pTypeLib, st, &pri);
+    hr = recordinfo_from_itypelib(pTypeLib, typename, &pri);
     OLE_RELEASE(pTypeLib);
     if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLERuntimeError, "fail to query IRecordInfo interface for `%s'", RSTRING_PTR(st));
+        ole_raise(hr, eWIN32OLERuntimeError, "fail to query IRecordInfo interface for `%s'", StringValuePtr(typename));
     }
 
     olerecord_set_ivar(self, pri, NULL);
@@ -9986,7 +9985,7 @@ Init_win32ole(void)
 
     cWIN32OLE_RECORD = rb_define_class("WIN32OLE_RECORD", rb_cObject);
     rb_define_alloc_func(cWIN32OLE_RECORD, folerecord_s_allocate);
-    rb_define_method(cWIN32OLE_RECORD, "initialize", folerecord_initialize, -2);
+    rb_define_method(cWIN32OLE_RECORD, "initialize", folerecord_initialize, 2);
     rb_define_method(cWIN32OLE_RECORD, "to_h", folerecord_to_h, 0);
     rb_define_method(cWIN32OLE_RECORD, "typename", folerecord_typename, 0);
     rb_define_method(cWIN32OLE_RECORD, "method_missing", folerecord_method_missing, -1);
