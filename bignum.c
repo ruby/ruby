@@ -218,7 +218,7 @@ end
 
  */
 
-#ifdef HAVE_UINT16_T
+#if SIZEOF_BDIGIT_DBL == 2
 static const int maxpow16_exp[35] = {
     15, 10, 7, 6, 6, 5, 5, 5, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3,
     3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
@@ -234,8 +234,7 @@ static const uint16_t maxpow16_num[35] = {
     U16(0x00006978), U16(0x0000745f), U16(0x00008000), U16(0x00008c61),
     U16(0x00009988), U16(0x0000a77b), U16(0x0000b640),
 };
-#endif
-#ifdef HAVE_UINT32_T
+#elif SIZEOF_BDIGIT_DBL == 4
 static const int maxpow32_exp[35] = {
     31, 20, 15, 13, 12, 11, 10, 10, 9, 9, 8, 8, 8, 8, 7, 7, 7, 7, 7, 7,
     7, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
@@ -251,8 +250,7 @@ static const uint32_t maxpow32_num[35] = {
     U32(0x2b73a840), U32(0x34e63b41), U32(0x40000000), U32(0x4cfa3cc1),
     U32(0x5c13d840), U32(0x6d91b519), U32(0x81bf1000),
 };
-#endif
-#ifdef HAVE_UINT64_T
+#elif SIZEOF_BDIGIT_DBL == 8 && defined HAVE_UINT64_T
 static const int maxpow64_exp[35] = {
     63, 40, 31, 27, 24, 22, 21, 20, 19, 18, 17, 17, 16, 16, 15, 15, 15,
     15, 14, 14, 14, 14, 13, 13, 13, 13, 13, 13, 13, 12, 12, 12, 12, 12,
@@ -278,8 +276,7 @@ static const uint64_t maxpow64_num[35] = {
     U64(0x211e44f7,0xd02c1000), U64(0x2ee56725,0xf06e5c71),
     U64(0x41c21cb8,0xe1000000),
 };
-#endif
-#ifdef HAVE_UINT128_T
+#elif SIZEOF_BDIGIT_DBL == 16 && defined HAVE_UINT128_T
 static const int maxpow128_exp[35] = {
     127, 80, 63, 55, 49, 45, 42, 40, 38, 37, 35, 34, 33, 32, 31, 31, 30,
     30, 29, 29, 28, 28, 27, 27, 27, 26, 26, 26, 26, 25, 25, 25, 25, 24,
