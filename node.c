@@ -300,7 +300,12 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	asgn:
 	F_ID(nd_vid, "variable");
 	LAST_NODE;
-	F_NODE(nd_value, "rvalue");
+	if (node->nd_value == (NODE *)-1) {
+	    F_MSG(nd_value, "rvalue", "(required keyword argument)");
+	}
+	else {
+	    F_NODE(nd_value, "rvalue");
+	}
 	break;
 
       case NODE_GASGN:
