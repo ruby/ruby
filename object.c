@@ -402,6 +402,23 @@ rb_obj_dup(VALUE obj)
     return dup;
 }
 
+/*
+ *  call-seq:
+ *     obj.itself -> an_object
+ *
+ *  Returns <i>obj</i>.
+ *
+ *	string = 'my string' #=> "my string"
+ *	string.itself.object_id == string.object_id #=> true
+ *
+ */
+
+static VALUE
+rb_obj_itself(VALUE obj)
+{
+    return obj;
+}
+
 /* :nodoc: */
 VALUE
 rb_obj_init_copy(VALUE obj, VALUE orig)
@@ -3302,6 +3319,7 @@ Init_Object(void)
     rb_define_method(rb_mKernel, "singleton_class", rb_obj_singleton_class, 0);
     rb_define_method(rb_mKernel, "clone", rb_obj_clone, 0);
     rb_define_method(rb_mKernel, "dup", rb_obj_dup, 0);
+    rb_define_method(rb_mKernel, "itself", rb_obj_itself, 0);
     rb_define_method(rb_mKernel, "initialize_copy", rb_obj_init_copy, 1);
     rb_define_method(rb_mKernel, "initialize_dup", rb_obj_init_dup_clone, 1);
     rb_define_method(rb_mKernel, "initialize_clone", rb_obj_init_dup_clone, 1);

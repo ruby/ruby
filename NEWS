@@ -41,6 +41,10 @@ with all sufficient information, see the ChangeLog file.
   * New methods:
     * File::Stat#birthtime
 
+* Kernel
+  * New methods:
+    * Kernel#itself
+
 * Process
   * Extended method:
     * Process execution methods such as Process.spawn opens the file in write
