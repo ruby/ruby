@@ -4,7 +4,7 @@ Sat Aug  2 14:34:58 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 Sat Aug  2 10:26:57 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* object.c (rb_obj_itself): new method Object#itsef.  based on the
+	* object.c (rb_obj_itself): new method Object#itself.  based on the
 	  patch by Rafael Franca in [ruby-core:64156].
 	  [EXPERIMENTAL] this method may be renamed due to compatibilities.
 	  [ruby-core:44704] [Feature #6373]
