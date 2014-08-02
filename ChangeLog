@@ -1,3 +1,7 @@
+Sat Aug  2 14:34:58 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: add coments for rdoc.
+
 Sat Aug  2 10:26:57 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_obj_itself): new method Object#itsef.  based on the

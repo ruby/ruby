@@ -143,7 +143,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.7.1"
+#define WIN32OLE_VERSION "1.7.0"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -7448,6 +7448,19 @@ static VALUE oleparam_ole_param(VALUE self, VALUE olemethod, int n)
     return oleparam_ole_param_from_index(self, pmethod->pTypeInfo, pmethod->index, n);
 }
 
+/*
+ * call-seq:
+ *    WIN32OLE_PARAM.new(method, n) -> WIN32OLE_PARAM object
+ *
+ * Returns WIN32OLE_PARAM object which represents OLE parameter information.
+ * 1st argument should be WIN32OLE_METHOD object.
+ * 2nd argument `n' is n-th parameter of the method specified by 1st argument.
+ *
+ *    tobj = WIN32OLE_TYPE.new('Microsoft Scripting Runtime', 'IFileSystem')
+ *    method = WIN32OLE_METHOD.new(tobj, 'CreateTextFile')
+ *    param = WIN32OLE_PARAM.new(method, 2) # => #<WIN32OLE_PARAM:Overwrite=true>
+ *
+ */
 static VALUE foleparam_initialize(VALUE self, VALUE olemethod, VALUE n)
 {
     int idx;
@@ -9383,6 +9396,33 @@ folerecord_s_allocate(VALUE klass) {
     return obj;
 }
 
+/*
+ * call-seq:
+ *    WIN32OLE_RECORD.new(typename, obj) -> WIN32OLE_RECORD object
+ *
+ * Returns WIN32OLE_RECORD object. The first argument is struct name (String
+ * or Symbol).
+ * The second parameter obj should be WIN32OLE object or WIN32OLE_TYPELIB object.
+ * If COM server in VB.NET ComServer project is the following:
+ *
+ *   Imports System.Runtime.InteropServices
+ *   Public Class ComClass
+ *       Public Structure Book
+ *           <MarshalAs(UnmanagedType.BStr)> _
+ *           Public title As String
+ *           Public cost As Integer
+ *       End Structure
+ *   End Class
+ *
+ * then, you can create WIN32OLE_RECORD object is as following:
+ *
+ *   require 'win32ole'
+ *   obj = WIN32OLE.new('ComServer.ComClass')
+ *   book1 = WIN32OLE_RECORD.new('Book', obj) # => WIN32OLE_RECORD object
+ *   tlib = obj.ole_typelib
+ *   book2 = WIN32OLE_RECORD.new('Book', tlib) # => WIN32OLE_RECORD object
+ *
+ */
 static VALUE
 folerecord_initialize(VALUE self, VALUE typename, VALUE oleobj) {
     HRESULT hr;
@@ -9628,9 +9668,7 @@ folerecord_ole_instance_variable_get(VALUE self, VALUE name)
  *         Public cost As Integer
  *     End Class
  *
- *  and Ruby Object class has title attribute:
- *
- *  then accessing object_id of ComObject from Ruby is as the following:
+ *  then setting value of the `title' member is as following:
  *
  *     srver = WIN32OLE.new('ComServer.ComClass')
  *     obj = WIN32OLE_RECORD.new('Book', server)
@@ -9651,6 +9689,28 @@ folerecord_ole_instance_variable_set(VALUE self, VALUE name, VALUE val)
     return olerecord_ivar_set(self, sname, val);
 }
 
+/*
+ *  call-seq:
+ *     WIN32OLE_RECORD#inspect -> String
+ *
+ *  Returns the OLE struct name and member name and the value of member
+ *
+ *  If COM server in VB.NET ComServer project is the following:
+ *
+ *     Imports System.Runtime.InteropServices
+ *     Public Class ComClass
+ *         <MarshalAs(UnmanagedType.BStr)> _
+ *         Public title As String
+ *         Public cost As Integer
+ *     End Class
+ *
+ *  then
+ *
+ *     srver = WIN32OLE.new('ComServer.ComClass')
+ *     obj = WIN32OLE_RECORD.new('Book', server)
+ *     obj.inspect # => <WIN32OLE_RECORD(ComClass) {"title" => nil, "cost" => nil}>
+ *
+ */
 static VALUE
 folerecord_inspect(VALUE self)
 {
@@ -9836,34 +9896,148 @@ Init_win32ole(void)
      */
     rb_define_const(cWIN32OLE, "LOCALE_USER_DEFAULT", INT2FIX(LOCALE_USER_DEFAULT));
 
+    /*
+     * Document-module: WIN32OLE::VARIANT
+     *
+     * The WIN32OLE::VARIANT module includes constants of VARIANT type constants.
+     * The constants is used when creating WIN32OLE_VARIANT object.
+     *
+     *   obj = WIN32OLE_VARIANT.new("2e3", WIN32OLE::VARIANT::VT_R4)
+     *   obj.value # => 2000.0
+     *
+     */
     mWIN32OLE_VARIANT = rb_define_module_under(cWIN32OLE, "VARIANT");
+
+    /*
+     * represents VT_EMPTY type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_EMPTY", INT2FIX(VT_EMPTY));
+
+    /*
+     * represents VT_NULL type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_NULL", INT2FIX(VT_NULL));
+
+    /*
+     * represents VT_I2 type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_I2", INT2FIX(VT_I2));
+
+    /*
+     * represents VT_I4 type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_I4", INT2FIX(VT_I4));
+
+    /*
+     * represents VT_R4 type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_R4", INT2FIX(VT_R4));
+
+    /*
+     * represents VT_R8 type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_R8", INT2FIX(VT_R8));
+
+    /*
+     * represents VT_CY type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_CY", INT2FIX(VT_CY));
+
+    /*
+     * represents VT_DATE type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_DATE", INT2FIX(VT_DATE));
+
+    /*
+     * represents VT_BSTR type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_BSTR", INT2FIX(VT_BSTR));
+
+    /*
+     * represents VT_USERDEFINED type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_USERDEFINED", INT2FIX(VT_USERDEFINED));
+
+    /*
+     * represents VT_PTR type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_PTR", INT2FIX(VT_PTR));
+
+    /*
+     * represents VT_DISPATCH type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_DISPATCH", INT2FIX(VT_DISPATCH));
+
+    /*
+     * represents VT_ERROR type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_ERROR", INT2FIX(VT_ERROR));
+
+    /*
+     * represents VT_BOOL type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_BOOL", INT2FIX(VT_BOOL));
+
+    /*
+     * represents VT_VARIANT type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_VARIANT", INT2FIX(VT_VARIANT));
+
+    /*
+     * represents VT_UNKNOWN type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_UNKNOWN", INT2FIX(VT_UNKNOWN));
+
+    /*
+     * represents VT_I1 type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_I1", INT2FIX(VT_I1));
+
+    /*
+     * represents VT_UI1 type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_UI1", INT2FIX(VT_UI1));
+
+    /*
+     * represents VT_UI2 type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_UI2", INT2FIX(VT_UI2));
+
+    /*
+     * represents VT_UI4 type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_UI4", INT2FIX(VT_UI4));
+
 #if (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__)
+    /*
+     * represents VT_I8 type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_I8", INT2FIX(VT_I8));
+
+    /*
+     * represents VT_UI8 type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_UI8", INT2FIX(VT_UI8));
 #endif
+
+    /*
+     * represents VT_INT type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_INT", INT2FIX(VT_INT));
+
+    /*
+     * represents VT_UINT type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_UINT", INT2FIX(VT_UINT));
+
+    /*
+     * represents VT_ARRAY type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_ARRAY", INT2FIX(VT_ARRAY));
+
+    /*
+     * represents VT_BYREF type constant.
+     */
     rb_define_const(mWIN32OLE_VARIANT, "VT_BYREF", INT2FIX(VT_BYREF));
 
     cWIN32OLE_TYPELIB = rb_define_class("WIN32OLE_TYPELIB", rb_cObject);
@@ -9979,8 +10153,20 @@ Init_win32ole(void)
     rb_define_method(cWIN32OLE_VARIANT, "vartype", folevariant_vartype, 0);
     rb_define_method(cWIN32OLE_VARIANT, "[]", folevariant_ary_aref, -1);
     rb_define_method(cWIN32OLE_VARIANT, "[]=", folevariant_ary_aset, -1);
+
+    /*
+     * represents VT_EMPTY OLE object.
+     */
     rb_define_const(cWIN32OLE_VARIANT, "Empty", rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, INT2FIX(VT_EMPTY)));
+
+    /*
+     * represents VT_NULL OLE object.
+     */
     rb_define_const(cWIN32OLE_VARIANT, "Null", rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, INT2FIX(VT_NULL)));
+
+    /*
+     * represents Nothing of VB.NET or VB.
+     */
     rb_define_const(cWIN32OLE_VARIANT, "Nothing", rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, INT2FIX(VT_DISPATCH)));
 
     cWIN32OLE_RECORD = rb_define_class("WIN32OLE_RECORD", rb_cObject);
@@ -9993,6 +10179,22 @@ Init_win32ole(void)
     rb_define_method(cWIN32OLE_RECORD, "ole_instance_variable_set", folerecord_ole_instance_variable_set, 2);
     rb_define_method(cWIN32OLE_RECORD, "inspect", folerecord_inspect, 0);
 
+    /*
+     * Document-class: WIN32OLERuntimeError
+     *
+     * Raised when OLE processing failed.
+     *
+     * EX:
+     *
+     *   obj = WIN32OLE.new("NonExistProgID")
+     *
+     * raises the exception:
+     *
+     *   WIN32OLERuntimeError: unknown OLE server: `NonExistProgID'
+     *       HRESULT error code:0x800401f3
+     *         Invalid class string
+     *
+     */
     eWIN32OLERuntimeError = rb_define_class("WIN32OLERuntimeError", rb_eRuntimeError);
 
     init_enc2cp();
