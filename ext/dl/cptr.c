@@ -389,7 +389,6 @@ static VALUE
 rb_dlptr_inspect(VALUE self)
 {
     struct ptr_data *data;
-    char str[1024];
 
     TypedData_Get_Struct(self, struct ptr_data, &dlptr_data_type, data);
     return rb_sprintf("#<%"PRIsVALUE":%p ptr=%p size=%ld free=%p>",
