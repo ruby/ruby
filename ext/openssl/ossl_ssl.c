@@ -108,7 +108,7 @@ static VALUE sym_exception;
 /*
  * SSLContext class
  */
-struct {
+static const struct {
     const char *name;
     SSL_METHOD *(*func)(void);
 } ossl_ssl_method_tab[] = {
