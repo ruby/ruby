@@ -1032,7 +1032,8 @@ strscan_aref(VALUE self, VALUE idx)
 
     switch (TYPE(idx)) {
         case T_SYMBOL:
-            name = rb_id2name(SYM2ID(idx));
+            idx = rb_sym2str(idx);
+            name = RSTRING_PTR(idx);
             goto name_to_backref;
             break;
         case T_STRING:

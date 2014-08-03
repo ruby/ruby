@@ -831,15 +831,15 @@ get_eval_string_core(obj, enc_flag, self)
         if (RTEST(enc_flag)) {
             if (rb_obj_respond_to(self, ID_toUTF8, Qtrue)) {
                 return rb_funcall(self, ID_toUTF8, 1,
-                                  rb_str_new2(rb_id2name(SYM2ID(obj))));
+                                  rb_str_dup(rb_sym2str(obj)));
             } else {
-                return fromDefaultEnc_toUTF8(rb_str_new2(rb_id2name(SYM2ID(obj))), self);
+                return fromDefaultEnc_toUTF8(rb_sym2str(obj), self);
             }
         } else {
 #ifdef HAVE_RB_SYM_TO_S
             return rb_sym_to_s(obj);
 #else
-            return rb_str_new2(rb_id2name(SYM2ID(obj)));
+            return rb_sym2str(obj);
 #endif
         }
 
@@ -1312,9 +1312,9 @@ cbsubst_sym_to_subst(self, sym)
                     struct cbsubst_info, inf);
 
     if (!NIL_P(ret = rb_hash_aref(inf->aliases, sym))) {
-	str = rb_id2str(SYM2ID(ret));
+	str = rb_sym2str(ret);
     } else {
-	str = rb_id2str(SYM2ID(sym));
+	str = rb_sym2str(sym);
     }
 
     id = rb_intern_str(rb_sprintf("@%"PRIsVALUE, str));
@@ -1370,26 +1370,30 @@ cbsubst_get_subst_arg(argc, argv, self)
         switch(TYPE(argv[i])) {
         case T_STRING:
             str = argv[i];
-            arg_sym = ID2SYM(rb_intern_str(argv[i]));
+            arg_sym = rb_check_symbol(&str);
+            if (NIL_P(arg_sym)) goto not_found;
             break;
         case T_SYMBOL:
             arg_sym = argv[i];
-            str = rb_id2str(SYM2ID(arg_sym));
+            str = rb_sym2str(arg_sym);
             break;
         default:
             rb_raise(rb_eArgError, "arg #%d is not a String or a Symbol", i);
         }
 
         if (!NIL_P(ret = rb_hash_aref(inf->aliases, arg_sym))) {
-            str = rb_id2str(SYM2ID(ret));
+            str = rb_sym2str(ret);
         }
 
-        id = rb_intern_str(rb_sprintf("@%"PRIsVALUE, str));
+	ret = rb_sprintf("@%"PRIsVALUE, str);
+	id = rb_check_id(&ret);
+	if (!id) goto not_found;
 
 	for(idx = 0; idx < CBSUBST_TBL_MAX; idx++) {
 	  if (inf->ivar[idx] == id) break;
 	}
         if (idx >= CBSUBST_TBL_MAX) {
+	  not_found:
             rb_raise(rb_eArgError, "cannot find attribute :%"PRIsVALUE, str);
         }
 

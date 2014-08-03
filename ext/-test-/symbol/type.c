@@ -38,7 +38,7 @@ bug_sym_attrset(VALUE self, VALUE name)
 static VALUE
 bug_id2str(VALUE self, VALUE sym)
 {
-    return rb_id2str(SYM2ID(sym));
+    return rb_sym2str(sym);
 }
 
 static VALUE

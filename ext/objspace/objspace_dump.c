@@ -244,8 +244,10 @@ dump_object(VALUE obj, struct dump_config *dc)
 
     if ((ainfo = objspace_lookup_allocation_info(obj))) {
 	dump_append(dc, ", \"file\":\"%s\", \"line\":%lu", ainfo->path, ainfo->line);
-	if (RTEST(ainfo->mid))
-	    dump_append(dc, ", \"method\":\"%s\"", rb_id2name(SYM2ID(ainfo->mid)));
+	if (RTEST(ainfo->mid)) {
+	    VALUE m = rb_sym2str(ainfo->mid);
+	    dump_append(dc, ", \"method\":\"%s\"", RSTRING_PTR(m));
+	}
 	dump_append(dc, ", \"generation\":%"PRIuSIZE, ainfo->generation);
     }
 
