@@ -1,3 +1,9 @@
+Mon Aug  4 01:24:09 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (ruby_setenv): fix memory leak on Windows, free
+	  environment strings block after check for the size.
+	  [ruby-dev:48323] [Bug #9977]
+
 Mon Aug  4 01:11:07 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (match_aref, rb_reg_regsub): consider encoding of captured
