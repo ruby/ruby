@@ -482,6 +482,16 @@ After this function returned a non-zero value, *name is always a
 Symbol or a String, otherwise it is a String if the result is 0.
 The third function takes NUL-terminated C string, not Ruby VALUE.
 
+You can retrieve Symbol from Ruby object (Symbol or String) given as
+an argument by using
+
+  rb_to_symbol(VALUE name)
+  rb_check_symbol(volatile VALUE *namep)
+  rb_check_symbol_cstr(const char *ptr, long len, rb_encoding *enc)
+
+These functions are similar to above functions except that these
+return a Symbol instead of an ID.
+
 You can convert C ID to Ruby Symbol by using
 
   VALUE ID2SYM(ID id)

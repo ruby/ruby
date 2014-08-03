@@ -1,3 +1,7 @@
+Sun Aug  3 10:55:07 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/encoding.h (rb_check_symbol_cstr): ditto.
+
 Sun Aug  3 10:43:08 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_call_method): unusable super class should cause

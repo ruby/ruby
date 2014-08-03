@@ -1356,6 +1356,8 @@ ID rb_check_id(volatile VALUE *);
 ID rb_to_id(VALUE);
 VALUE rb_id2str(ID);
 VALUE rb_sym2str(VALUE);
+VALUE rb_to_symbol(VALUE name);
+VALUE rb_check_symbol(volatile VALUE *namep);
 
 #define CONST_ID_CACHE(result, str)			\
     {							\

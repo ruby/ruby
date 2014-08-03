@@ -806,12 +806,6 @@ void rb_gc_free_dsymbol(VALUE);
 VALUE rb_str_dynamic_intern(VALUE);
 ID rb_id_attrget(ID id);
 
-VALUE rb_to_symbol(VALUE name);
-VALUE rb_check_symbol(volatile VALUE *namep);
-#ifdef RUBY_ENCODING_H
-VALUE rb_check_symbol_cstr(const char *ptr, long len, rb_encoding *enc);
-#endif
-
 /* proc.c */
 VALUE rb_proc_location(VALUE self);
 st_index_t rb_hash_proc(st_index_t hash, VALUE proc);

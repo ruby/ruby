@@ -524,6 +524,16 @@ IDとは変数名，メソッド名を表す整数です．Rubyの中では
 返した場合は常に文字列です．第三の関数はRubyの文字列ではなく
 NUL終端されたCの文字列を使います．
 
+Rubyから引数として与えられたシンボル(または文字列)をシンボル
+に変換するには以下の関数を使います．
+
+  rb_to_symbol(VALUE name)
+  rb_check_symbol(volatile VALUE *namep)
+  rb_check_symbol_cstr(const char *ptr, long len, rb_encoding *enc)
+
+これらの関数は，IDの代わりにシンボルを返すことを除けば上記の
+関数と同じです．
+
 === CからRubyのメソッドを呼び出す
 
 Cから文字列を経由せずにRubyのメソッドを呼び出すためには以下
