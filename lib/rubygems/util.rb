@@ -80,7 +80,7 @@ module Gem::Util
       cmds = command.dup
     end
     return system(*(cmds << opt))
-  rescue TypeError => e
+  rescue TypeError
     require 'thread'
 
     @silent_mutex ||= Mutex.new
