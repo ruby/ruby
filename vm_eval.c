@@ -1089,18 +1089,7 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
 		th->errinfo = Qnil;
 		retval = GET_THROWOBJ_VAL(err);
 
-		/* check skipped frame */
-		while (th->cfp != cfp) {
-#if VMDEBUG
-		    printf("skipped frame: %s\n", vm_frametype_name(th->cfp));
-#endif
-		    if (VM_FRAME_TYPE(th->cfp) != VM_FRAME_MAGIC_CFUNC) {
-			vm_pop_frame(th);
-		    }
-		    else { /* unlikely path */
-			rb_vm_pop_cfunc_frame();
-		    }
-		}
+		rb_vm_rewind_cfp(th, cfp);
 	    }
 	    else{
 		/* SDR(); printf("%p, %p\n", cdfp, escape_dfp); */
@@ -1111,10 +1100,11 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
 	    VALUE *cep = cfp->ep;
 
 	    if (cep == escape_ep) {
+		rb_vm_rewind_cfp(th, cfp);
+
 		state = 0;
 		th->state = 0;
 		th->errinfo = Qnil;
-		th->cfp = cfp;
 		goto iter_retry;
 	    }
 	}
@@ -1858,7 +1848,7 @@ rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, int *stateptr)
 	val = (*func)(tag, data, 1, (const VALUE *)&tag, Qnil);
     }
     else if (state == TAG_THROW && RNODE(th->errinfo)->u1.value == tag) {
-	th->cfp = saved_cfp;
+	rb_vm_rewind_cfp(th, saved_cfp);
 	val = th->tag->retval;
 	th->errinfo = Qnil;
 	state = 0;
