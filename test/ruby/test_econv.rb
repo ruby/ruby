@@ -908,6 +908,9 @@ class TestEncodingConverter < Test::Unit::TestCase
     ec1 = Encoding::Converter.new("", "", universal_newline: true)
     ec2 = Encoding::Converter.new("", "", newline: :universal)
     assert_equal(ec1, ec2)
+    assert_raise_with_message(ArgumentError, /\u{3042}/) {
+      Encoding::Converter.new("", "", newline: "\u{3042}".to_sym)
+    }
   end
 
   def test_default_external

@@ -2487,8 +2487,8 @@ econv_opts(VALUE opt, int ecflags)
 	    /* ecflags |= ECONV_LF_NEWLINE_DECORATOR; */
 	}
 	else if (SYMBOL_P(v)) {
-	    rb_raise(rb_eArgError, "unexpected value for newline option: %s",
-		     rb_id2name(SYM2ID(v)));
+	    rb_raise(rb_eArgError, "unexpected value for newline option: %"PRIsVALUE,
+		     rb_sym2str(v));
 	}
 	else {
 	    rb_raise(rb_eArgError, "unexpected value for newline option");
