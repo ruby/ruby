@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestEnv < Test::Unit::TestCase
   IGNORE_CASE = /bccwin|mswin|mingw/ =~ RUBY_PLATFORM
@@ -407,5 +408,14 @@ class TestEnv < Test::Unit::TestCase
     ensure
       keys.each {|k| ENV.delete(k)}
     end
+  end
+
+  def test_memory_leak_aset
+    bug9977 = '[ruby-dev:48323] [Bug #9977]'
+    assert_no_memory_leak([], <<-'end;', "5_000.times {ENV[k] = v}", bug9977)
+      ENV.clear
+      k = 'FOO'
+      v = (ENV[k] = 'bar'*5000 rescue 'bar'*1500)
+    end;
   end
 end
