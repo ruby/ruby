@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestNumeric < Test::Unit::TestCase
   class DummyNumeric < Numeric
@@ -14,6 +15,19 @@ class TestNumeric < Test::Unit::TestCase
     assert_equal(Float, b.class)
 
     assert_raise(TypeError) { -Numeric.new }
+
+    EnvUtil.with_default_external(Encoding::UTF_8) do
+      assert_raise_with_message(TypeError, /:\u{3042}/) {1+:"\u{3042}"}
+      assert_raise_with_message(TypeError, /:\u{3042}/) {1&:"\u{3042}"}
+      assert_raise_with_message(TypeError, /:\u{3042}/) {1|:"\u{3042}"}
+      assert_raise_with_message(TypeError, /:\u{3042}/) {1^:"\u{3042}"}
+    end
+    EnvUtil.with_default_external(Encoding::US_ASCII) do
+      assert_raise_with_message(TypeError, /:"\\u3042"/) {1+:"\u{3042}"}
+      assert_raise_with_message(TypeError, /:"\\u3042"/) {1&:"\u{3042}"}
+      assert_raise_with_message(TypeError, /:"\\u3042"/) {1|:"\u{3042}"}
+      assert_raise_with_message(TypeError, /:"\\u3042"/) {1^:"\u{3042}"}
+    end
   end
 
   def test_dummynumeric
