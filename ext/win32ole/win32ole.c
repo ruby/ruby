@@ -1363,7 +1363,7 @@ ole_ary_m_entry(VALUE val, LONG *pid)
     VALUE obj = Qnil;
     int i = 0;
     obj = val;
-    while(TYPE(obj) == T_ARRAY) {
+    while(RB_TYPE_P(obj, T_ARRAY)) {
         obj = rb_ary_entry(obj, pid[i]);
         i++;
     }
@@ -1489,7 +1489,7 @@ dimension(VALUE val) {
     long dim1 = 0;
     long len = 0;
     long i = 0;
-    if (TYPE(val) == T_ARRAY) {
+    if (RB_TYPE_P(val, T_ARRAY)) {
         len = RARRAY_LEN(val);
         for (i = 0; i < len; i++) {
             dim1 = dimension(rb_ary_entry(val, i));
@@ -1510,11 +1510,11 @@ ary_len_of_dim(VALUE ary, long dim) {
     long i = 0;
     VALUE val;
     if (dim == 0) {
-        if (TYPE(ary) == T_ARRAY) {
+        if (RB_TYPE_P(ary, T_ARRAY)) {
             ary_len = RARRAY_LEN(ary);
         }
     } else {
-        if (TYPE(ary) == T_ARRAY) {
+        if (RB_TYPE_P(ary, T_ARRAY)) {
             len = RARRAY_LEN(ary);
             for (i = 0; i < len; i++) {
                 val = rb_ary_entry(ary, i);
@@ -1915,7 +1915,7 @@ ole_val2olevariantdata(VALUE val, VARTYPE vt, struct olevariantdata *pvar)
 {
     HRESULT hr = S_OK;
 
-    if (((vt & ~VT_BYREF) ==  (VT_ARRAY | VT_UI1)) && TYPE(val) == T_STRING) {
+    if (((vt & ~VT_BYREF) ==  (VT_ARRAY | VT_UI1)) && RB_TYPE_P(val, T_STRING)) {
         long len = RSTRING_LEN(val);
         void *pdest = NULL;
         SAFEARRAY *p = NULL;
@@ -2859,9 +2859,9 @@ fole_s_const_load(int argc, VALUE *argv, VALUE self)
     LCID    lcid = cWIN32OLE_lcid;
 
     rb_scan_args(argc, argv, "11", &ole, &klass);
-    if (TYPE(klass) != T_CLASS &&
-        TYPE(klass) != T_MODULE &&
-        TYPE(klass) != T_NIL) {
+    if (!RB_TYPE_P(klass, T_CLASS) &&
+        !RB_TYPE_P(klass, T_MODULE) &&
+        !RB_TYPE_P(klass, T_NIL)) {
         rb_raise(rb_eTypeError, "2nd parameter must be Class or Module");
     }
     if (rb_obj_is_kind_of(ole, cWIN32OLE)) {
@@ -2877,7 +2877,7 @@ fole_s_const_load(int argc, VALUE *argv, VALUE self)
             ole_raise(hr, rb_eRuntimeError, "failed to GetContainingTypeLib");
         }
         OLE_RELEASE(pTypeInfo);
-        if(TYPE(klass) != T_NIL) {
+        if(!RB_TYPE_P(klass, T_NIL)) {
             ole_const_load(pTypeLib, klass, self);
         }
         else {
@@ -2885,7 +2885,7 @@ fole_s_const_load(int argc, VALUE *argv, VALUE self)
         }
         OLE_RELEASE(pTypeLib);
     }
-    else if(TYPE(ole) == T_STRING) {
+    else if(RB_TYPE_P(ole, T_STRING)) {
         file = typelib_file(ole);
         if (file == Qnil) {
             file = ole;
@@ -2895,7 +2895,7 @@ fole_s_const_load(int argc, VALUE *argv, VALUE self)
         SysFreeString(pBuf);
         if (FAILED(hr))
           ole_raise(hr, eWIN32OLERuntimeError, "failed to LoadTypeLibEx");
-        if(TYPE(klass) != T_NIL) {
+        if(!RB_TYPE_P(klass, T_NIL)) {
             ole_const_load(pTypeLib, klass, self);
         }
         else {
@@ -3043,7 +3043,7 @@ fole_s_show_help(int argc, VALUE *argv, VALUE self)
     } else {
         helpfile = target;
     }
-    if (TYPE(helpfile) != T_STRING) {
+    if (!RB_TYPE_P(helpfile, T_STRING)) {
         rb_raise(rb_eTypeError, "1st parameter must be (String|WIN32OLE_TYPE|WIN32OLE_METHOD)");
     }
     hwnd = ole_show_help(helpfile, helpcontext);
@@ -3346,7 +3346,7 @@ hash2named_arg(RB_BLOCK_CALL_FUNC_ARGLIST(pair, op))
       the data-type of key must be String or Symbol
     -----------------------------------------------*/
     key = rb_ary_entry(pair, 0);
-    if(TYPE(key) != T_STRING && TYPE(key) != T_SYMBOL) {
+    if(!RB_TYPE_P(key, T_STRING) && !RB_TYPE_P(key, T_SYMBOL)) {
         /* clear name of dispatch parameters */
         for(i = 1; i < index + 1; i++) {
             SysFreeString(pOp->pNamedArgs[i]);
@@ -3358,7 +3358,7 @@ hash2named_arg(RB_BLOCK_CALL_FUNC_ARGLIST(pair, op))
         /* raise an exception */
         rb_raise(rb_eTypeError, "wrong argument type (expected String or Symbol)");
     }
-    if (TYPE(key) == T_SYMBOL) {
+    if (RB_TYPE_P(key, T_SYMBOL)) {
 	key = rb_sym_to_s(key);
     }
 
@@ -3424,10 +3424,10 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
     op.dp.cArgs = 0;
 
     rb_scan_args(argc, argv, "1*", &cmd, &paramS);
-    if(TYPE(cmd) != T_STRING && TYPE(cmd) != T_SYMBOL && !is_bracket) {
+    if(!RB_TYPE_P(cmd, T_STRING) && !RB_TYPE_P(cmd, T_SYMBOL) && !is_bracket) {
 	rb_raise(rb_eTypeError, "method is wrong type (expected String or Symbol)");
     }
-    if (TYPE(cmd) == T_SYMBOL) {
+    if (RB_TYPE_P(cmd, T_SYMBOL)) {
 	cmd = rb_sym_to_s(cmd);
     }
     OLEData_Get_Struct(self, pole);
@@ -3456,7 +3456,7 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
     op.dp.cNamedArgs = 0;
 
     /* if last arg is hash object */
-    if(TYPE(param) == T_HASH) {
+    if(RB_TYPE_P(param, T_HASH)) {
         /*------------------------------------------
           hash object ==> named dispatch parameters
         --------------------------------------------*/
@@ -4591,10 +4591,10 @@ fole_respond_to(VALUE self, VALUE method)
     BSTR wcmdname;
     DISPID DispID;
     HRESULT hr;
-    if(TYPE(method) != T_STRING && TYPE(method) != T_SYMBOL) {
+    if(!RB_TYPE_P(method, T_STRING) && !RB_TYPE_P(method, T_SYMBOL)) {
 	rb_raise(rb_eTypeError, "wrong argument type (expected String or Symbol)");
     }
-    if (TYPE(method) == T_SYMBOL) {
+    if (RB_TYPE_P(method, T_SYMBOL)) {
 	method = rb_sym_to_s(method);
     }
     OLEData_Get_Struct(self, pole);
@@ -7750,8 +7750,8 @@ ole_search_event_at(VALUE ary, VALUE ev)
             ret = i;
             break;
         }
-        else if (TYPE(ev) == T_STRING &&
-                 TYPE(event_name) == T_STRING &&
+        else if (RB_TYPE_P(ev, T_STRING) &&
+                 RB_TYPE_P(event_name, T_STRING) &&
                  rb_str_cmp(ev, event_name) == 0) {
             ret = i;
             break;
@@ -7926,7 +7926,7 @@ STDMETHODIMP EVENTSINK_Invoke(
     }
 
     ary = rb_ivar_get(obj, id_events);
-    if (NIL_P(ary) || TYPE(ary) != T_ARRAY) {
+    if (NIL_P(ary) || !RB_TYPE_P(ary, T_ARRAY)) {
         return NOERROR;
     }
     hr = pTypeInfo->lpVtbl->GetNames(pTypeInfo, dispid,
@@ -7936,7 +7936,7 @@ STDMETHODIMP EVENTSINK_Invoke(
     }
     ev = WC2VSTR(bstr);
     event = ole_search_event(ary, ev, &is_default_handler);
-    if (TYPE(event) == T_ARRAY) {
+    if (RB_TYPE_P(event, T_ARRAY)) {
 	handler = rb_ary_entry(event, 0);
 	mid = rb_intern("call");
 	is_outarg = rb_ary_entry(event, 3);
@@ -7981,10 +7981,10 @@ STDMETHODIMP EVENTSINK_Invoke(
     if (state != 0) {
 	rescue_callback(Qnil);
     }
-    if(TYPE(result) == T_HASH) {
+    if(RB_TYPE_P(result, T_HASH)) {
 	hash2ptr_dispparams(result, pTypeInfo, dispid, pdispparams);
 	result = hash2result(result);
-    }else if (is_outarg == Qtrue && TYPE(outargv) == T_ARRAY) {
+    }else if (is_outarg == Qtrue && RB_TYPE_P(outargv, T_ARRAY)) {
 	ary2ptr_dispparams(outargv, pdispparams);
     }
 
@@ -8384,7 +8384,7 @@ ev_advise(int argc, VALUE *argv, VALUE self)
         rb_raise(rb_eTypeError, "1st parameter must be WIN32OLE object");
     }
 
-    if(TYPE(itf) != T_NIL) {
+    if(!RB_TYPE_P(itf, T_NIL)) {
         if (rb_safe_level() > 0 && OBJ_TAINTED(itf)) {
             rb_raise(rb_eSecurityError, "Insecure Event Creation - %s",
                      StringValuePtr(itf));
@@ -8478,7 +8478,7 @@ static void
 add_event_call_back(VALUE obj, VALUE event, VALUE data)
 {
     VALUE events = rb_ivar_get(obj, id_events);
-    if (NIL_P(events) || TYPE(events) != T_ARRAY) {
+    if (NIL_P(events) || !RB_TYPE_P(events, T_ARRAY)) {
         events = rb_ary_new();
         rb_ivar_set(obj, id_events, events);
     }
@@ -8497,10 +8497,10 @@ ev_on_event(int argc, VALUE *argv, VALUE self, VALUE is_ary_arg)
     }
     rb_scan_args(argc, argv, "01*", &event, &args);
     if(!NIL_P(event)) {
-	if(TYPE(event) != T_STRING && TYPE(event) != T_SYMBOL) {
+	if(!RB_TYPE_P(event, T_STRING) && !RB_TYPE_P(event, T_SYMBOL)) {
 	    rb_raise(rb_eTypeError, "wrong argument type (expected String or Symbol)");
 	}
-	if (TYPE(event) == T_SYMBOL) {
+	if (RB_TYPE_P(event, T_SYMBOL)) {
 	    event = rb_sym_to_s(event);
 	}
     }
@@ -8587,10 +8587,10 @@ fev_off_event(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "01", &event);
     if(!NIL_P(event)) {
-	if(TYPE(event) != T_STRING && TYPE(event) != T_SYMBOL) {
+	if(!RB_TYPE_P(event, T_STRING) && !RB_TYPE_P(event, T_SYMBOL)) {
 	    rb_raise(rb_eTypeError, "wrong argument type (expected String or Symbol)");
 	}
-	if (TYPE(event) == T_SYMBOL) {
+	if (RB_TYPE_P(event, T_SYMBOL)) {
 	    event = rb_sym_to_s(event);
 	}
     }
@@ -9152,7 +9152,7 @@ folevariant_set_value(VALUE self, VALUE val)
     VARTYPE vt;
     Data_Get_Struct(self, struct olevariantdata, pvar);
     vt = V_VT(&(pvar->var));
-    if (V_ISARRAY(&(pvar->var)) && ((vt & ~VT_BYREF) != (VT_UI1|VT_ARRAY) || TYPE(val) != T_STRING)) {
+    if (V_ISARRAY(&(pvar->var)) && ((vt & ~VT_BYREF) != (VT_UI1|VT_ARRAY) || !RB_TYPE_P(val, T_STRING))) {
         rb_raise(eWIN32OLERuntimeError,
                  "`value=' is not available for this variant type object");
     }
@@ -9348,10 +9348,10 @@ folerecord_initialize(VALUE self, VALUE typename, VALUE oleobj) {
     ITypeLib *pTypeLib = NULL;
     IRecordInfo *pri = NULL;
 
-    if (TYPE(typename) != T_STRING && TYPE(typename) != T_SYMBOL) {
+    if (!RB_TYPE_P(typename, T_STRING) && !RB_TYPE_P(typename, T_SYMBOL)) {
         rb_raise(rb_eArgError, "1st argument should be String or Symbol");
     }
-    if (TYPE(typename) == T_SYMBOL) {
+    if (RB_TYPE_P(typename, T_SYMBOL)) {
         typename = rb_sym_to_s(typename);
     }
 
@@ -9559,11 +9559,11 @@ static VALUE
 folerecord_ole_instance_variable_get(VALUE self, VALUE name)
 {
     VALUE sname;
-    if(TYPE(name) != T_STRING && TYPE(name) != T_SYMBOL) {
+    if(!RB_TYPE_P(name, T_STRING) && !RB_TYPE_P(name, T_SYMBOL)) {
         rb_raise(rb_eTypeError, "wrong argument type (expected String or Symbol)");
     }
     sname = name;
-    if (TYPE(name) == T_SYMBOL) {
+    if (RB_TYPE_P(name, T_SYMBOL)) {
         sname = rb_sym_to_s(name);
     }
     return olerecord_ivar_get(self, sname);
@@ -9598,11 +9598,11 @@ static VALUE
 folerecord_ole_instance_variable_set(VALUE self, VALUE name, VALUE val)
 {
     VALUE sname;
-    if(TYPE(name) != T_STRING && TYPE(name) != T_SYMBOL) {
+    if(!RB_TYPE_P(name, T_STRING) && !RB_TYPE_P(name, T_SYMBOL)) {
         rb_raise(rb_eTypeError, "wrong argument type (expected String or Symbol)");
     }
     sname = name;
-    if (TYPE(name) == T_SYMBOL) {
+    if (RB_TYPE_P(name, T_SYMBOL)) {
         sname = rb_sym_to_s(name);
     }
     return olerecord_ivar_set(self, sname, val);

@@ -304,7 +304,7 @@ union DateData {
 inline static VALUE
 canon(VALUE x)
 {
-    if (TYPE(x) == T_RATIONAL) {
+    if (RB_TYPE_P(x, T_RATIONAL)) {
 	VALUE den = rb_rational_den(x);
 	if (FIXNUM_P(den) && FIX2LONG(den) == 1)
 	    return rb_rational_num(x);
@@ -5843,7 +5843,7 @@ minus_dd(VALUE self, VALUE other)
 	if (f_nonzero_p(sf))
 	    r = f_add(r, ns_to_day(sf));
 
-	if (TYPE(r) == T_RATIONAL)
+	if (RB_TYPE_P(r, T_RATIONAL))
 	    return r;
 	return rb_rational_new1(r);
     }
@@ -7048,7 +7048,7 @@ d_lite_marshal_load(VALUE self, VALUE a)
     rb_check_frozen(self);
     rb_check_trusted(self);
 
-    if (TYPE(a) != T_ARRAY)
+    if (!RB_TYPE_P(a, T_ARRAY))
 	rb_raise(rb_eTypeError, "expected an array");
 
     switch (RARRAY_LEN(a)) {

@@ -3110,7 +3110,7 @@ ip_set_exc_message(interp, exc)
     }
     if (NIL_P(enc)) {
         encoding = (Tcl_Encoding)NULL;
-    } else if (TYPE(enc) == T_STRING) {
+    } else if (RB_TYPE_P(enc, T_STRING)) {
         /* encoding = Tcl_GetEncoding(interp, RSTRING_PTR(enc)); */
         encoding = Tcl_GetEncoding((Tcl_Interp*)NULL, RSTRING_PTR(enc));
     } else {
@@ -3320,7 +3320,7 @@ tcl_protect_core(interp, proc, data) /* should not raise exception */
         if (rb_obj_is_kind_of(exc, eLocalJumpError)) {
             VALUE reason = rb_ivar_get(exc, ID_at_reason);
 
-            if (TYPE(reason) == T_SYMBOL) {
+            if (RB_TYPE_P(reason, T_SYMBOL)) {
                 if (SYM2ID(reason) == ID_return)
                     return TCL_RETURN;
 
@@ -7949,7 +7949,7 @@ lib_toUTF8_core(ip_obj, src, encodename)
     rb_thread_critical = Qtrue;
 
     if (NIL_P(encodename)) {
-        if (TYPE(str) == T_STRING) {
+        if (RB_TYPE_P(str, T_STRING)) {
             volatile VALUE enc;
 
 #ifdef HAVE_RUBY_ENCODING_H
@@ -8127,7 +8127,7 @@ lib_fromUTF8_core(ip_obj, src, encodename)
     if (NIL_P(encodename)) {
         volatile VALUE enc;
 
-        if (TYPE(str) == T_STRING) {
+        if (RB_TYPE_P(str, T_STRING)) {
             enc = rb_attr_get(str, ID_at_enc);
             if (!NIL_P(enc)) {
                 StringValue(enc);

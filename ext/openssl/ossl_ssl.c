@@ -190,7 +190,7 @@ ossl_sslctx_set_ssl_version(VALUE self, VALUE ssl_method)
     int i;
 
     SSL_CTX *ctx;
-    if(TYPE(ssl_method) == T_SYMBOL)
+    if (RB_TYPE_P(ssl_method, T_SYMBOL))
 	s = rb_id2name(SYM2ID(ssl_method));
     else
 	s =  StringValuePtr(ssl_method);
@@ -716,7 +716,7 @@ ossl_sslctx_setup(VALUE self)
 
     val = ossl_sslctx_get_client_ca(self);
     if(!NIL_P(val)){
-	if(TYPE(val) == T_ARRAY){
+	if (RB_TYPE_P(val, T_ARRAY)) {
 	    for(i = 0; i < RARRAY_LEN(val); i++){
 		client_ca = GetX509CertPtr(RARRAY_PTR(val)[i]);
         	if (!SSL_CTX_add_client_CA(ctx, client_ca)){
@@ -882,11 +882,11 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
     rb_check_frozen(self);
     if (NIL_P(v))
 	return v;
-    else if (TYPE(v) == T_ARRAY) {
+    else if (RB_TYPE_P(v, T_ARRAY)) {
         str = rb_str_new(0, 0);
         for (i = 0; i < RARRAY_LEN(v); i++) {
             elem = rb_ary_entry(v, i);
-            if (TYPE(elem) == T_ARRAY) elem = rb_ary_entry(elem, 0);
+            if (RB_TYPE_P(elem, T_ARRAY)) elem = rb_ary_entry(elem, 0);
             elem = rb_String(elem);
             rb_str_append(str, elem);
             if (i < RARRAY_LEN(v)-1) rb_str_cat2(str, ":");

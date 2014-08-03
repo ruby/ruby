@@ -38,7 +38,7 @@ GetDigestPtr(VALUE obj)
     const EVP_MD *md;
     ASN1_OBJECT *oid = NULL;
 
-    if (TYPE(obj) == T_STRING) {
+    if (RB_TYPE_P(obj, T_STRING)) {
     	const char *name = StringValueCStr(obj);
 
 	md = EVP_get_digestbyname(name);

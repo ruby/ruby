@@ -376,7 +376,7 @@ ossl_pkcs7_sym2typeid(VALUE sym)
         { NULL,                 0 },
     };
 
-    if(TYPE(sym) == T_SYMBOL) s = rb_id2name(SYM2ID(sym));
+    if (RB_TYPE_P(sym, T_SYMBOL)) s = rb_id2name(SYM2ID(sym));
     else s = StringValuePtr(sym);
     for(i = 0; i < numberof(p7_type_tab); i++){
 	if(p7_type_tab[i].name == NULL)
