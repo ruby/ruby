@@ -362,6 +362,7 @@ ossl_pkcs7_sym2typeid(VALUE sym)
 {
     int i, ret = Qnil;
     const char *s;
+    size_t l;
 
     static struct {
         const char *name;
@@ -376,14 +377,13 @@ ossl_pkcs7_sym2typeid(VALUE sym)
         { NULL,                 0 },
     };
 
-    if (RB_TYPE_P(sym, T_SYMBOL)) {
-	sym = rb_sym2str(sym);
-	s = RSTRING_PTR(sym);
-    }
-    else s = StringValuePtr(sym);
+    if (RB_TYPE_P(sym, T_SYMBOL)) sym = rb_sym2str(sym);
+    else StringValue(sym);
+    RSTRING_GETMEM(sym, s, l);
     for(i = 0; i < numberof(p7_type_tab); i++){
 	if(p7_type_tab[i].name == NULL)
 	    ossl_raise(ePKCS7Error, "unknown type \"%s\"", s);
+	if(strlen(p7_type_tab[i].name) != l) continue;
 	if(strcmp(p7_type_tab[i].name, s) == 0){
 	    ret = p7_type_tab[i].nid;
 	    break;
