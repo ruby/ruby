@@ -1151,6 +1151,21 @@ class TestRefinement < Test::Unit::TestCase
     INPUT
   end
 
+  def test_refine_basic_object
+    assert_separately([], <<-"end;")
+    bug10106 = '[ruby-core:64166] [Bug #10106]'
+    module RefinementBug
+      refine BasicObject do
+        def foo
+          1
+        end
+      end
+    end
+
+    assert_raise(NoMethodError, bug10106) {Object.new.foo}
+    end;
+  end
+
   private
 
   def eval_using(mod, s)

@@ -1823,6 +1823,10 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		klass = RCLASS_ORIGIN(klass);
 	      zsuper_method_dispatch:
 		klass = RCLASS_SUPER(klass);
+		if (!klass) {
+		    ci->me = 0;
+		    goto start_method_dispatch;
+		}
 		ci_temp = *ci;
 		ci = &ci_temp;
 

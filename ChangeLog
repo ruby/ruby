@@ -1,3 +1,9 @@
+Sun Aug  3 10:43:08 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_call_method): unusable super class should cause
+	  method missing when BasicObject is refined but not been using.
+	  [ruby-core:64166] [Bug #10106]
+
 Sat Aug  2 23:47:45 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: separate WIN32OLE::VARIANT src file
