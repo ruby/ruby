@@ -1,3 +1,9 @@
+Mon Aug  4 01:11:07 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (match_aref, rb_reg_regsub): consider encoding of captured
+	  names, encoding-incompatible should not match.
+	  [ruby-dev:48278] [Bug #9903]
+
 Mon Aug  4 00:52:42 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_eval.c (rb_catch_protect): fix same problem of [Bug #9961].
