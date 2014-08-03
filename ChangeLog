@@ -20,7 +20,7 @@ Sat Aug  2 23:47:45 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 Sat Aug  2 14:34:58 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c: add coments for rdoc.
+	* ext/win32ole/win32ole.c: add comments for rdoc.
 
 Sat Aug  2 10:26:57 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -31,7 +31,7 @@ Sat Aug  2 10:26:57 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Aug  1 22:30:40 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c (folerecord_inititalize): accept
+	* ext/win32ole/win32ole.c (folerecord_initialize): accept
 	  only 2 arguments. The 2nd argument should be WIN32OLE object or
 	  WIN32OLE_RECORD object.
 
