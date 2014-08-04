@@ -1,3 +1,11 @@
+2014年08月04日 19時44分36秒  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_invoke): call rb_hash_foreach instead
+	  of rb_block_call.
+
+	* ext/win32ole/win32ole.c: add comment for rdoc of WIN32OLE_VARIANT
+	  class.
+
 Mon Aug  4 09:12:47 2014  Eric Wong  <e@80x24.org>
 
 	* variable.c: cleanup to use rb_const_lookup

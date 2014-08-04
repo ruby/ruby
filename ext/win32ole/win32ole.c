@@ -63,7 +63,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.7.1"
+#define WIN32OLE_VERSION "1.7.2"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -309,7 +309,7 @@ static VALUE fole_s_create_guid(VALUE self);
 static VALUE fole_s_ole_initialize(VALUE self);
 static VALUE fole_s_ole_uninitialize(VALUE self);
 static VALUE fole_initialize(int argc, VALUE *argv, VALUE self);
-static VALUE hash2named_arg(RB_BLOCK_CALL_FUNC_ARGLIST(pair, op));
+static int hash2named_arg(VALUE key, VALUE val, VALUE pop);
 static VALUE set_argv(VARIANTARG* realargs, unsigned int beg, unsigned int end);
 static VALUE ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket);
 static VALUE fole_invoke(int argc, VALUE *argv, VALUE self);
@@ -3334,18 +3334,15 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
-static VALUE
-hash2named_arg(RB_BLOCK_CALL_FUNC_ARGLIST(pair, op))
+static int
+hash2named_arg(VALUE key, VALUE val, VALUE pop)
 {
-    struct oleparam* pOp = (struct oleparam *)op;
+    struct oleparam* pOp = (struct oleparam *)pop;
     unsigned int index, i;
-    VALUE key, value;
     index = pOp->dp.cNamedArgs;
-
     /*---------------------------------------------
       the data-type of key must be String or Symbol
     -----------------------------------------------*/
-    key = rb_ary_entry(pair, 0);
     if(!RB_TYPE_P(key, T_STRING) && !RB_TYPE_P(key, T_SYMBOL)) {
         /* clear name of dispatch parameters */
         for(i = 1; i < index + 1; i++) {
@@ -3365,12 +3362,11 @@ hash2named_arg(RB_BLOCK_CALL_FUNC_ARGLIST(pair, op))
     /* pNamedArgs[0] is <method name>, so "index + 1" */
     pOp->pNamedArgs[index + 1] = ole_vstr2wc(key);
 
-    value = rb_ary_entry(pair, 1);
     VariantInit(&(pOp->dp.rgvarg[index]));
-    ole_val2variant(value, &(pOp->dp.rgvarg[index]));
+    ole_val2variant(val, &(pOp->dp.rgvarg[index]));
 
     pOp->dp.cNamedArgs += 1;
-    return Qnil;
+    return ST_CONTINUE;
 }
 
 static VALUE
@@ -3464,7 +3460,8 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
         op.dp.cArgs = cNamedArgs + argc - 2;
         op.pNamedArgs = ALLOCA_N(OLECHAR*, cNamedArgs + 1);
         op.dp.rgvarg = ALLOCA_N(VARIANTARG, op.dp.cArgs);
-        rb_block_call(param, rb_intern("each"), 0, 0, hash2named_arg, (VALUE)&op);
+
+        rb_hash_foreach(param, hash2named_arg, (VALUE)&op);
 
         pDispID = ALLOCA_N(DISPID, cNamedArgs + 1);
         op.pNamedArgs[0] = ole_vstr2wc(cmd);
@@ -8832,6 +8829,23 @@ check_type_val2variant(VALUE val)
 	}
     }
 }
+
+/*
+ * Document-class: WIN32OLE_VARIANT
+ *
+ *   <code>WIN32OLE_VARIANT</code> objects represents OLE variant.
+ *
+ *   Win32OLE converts Ruby object into OLE variant automatically when
+ *   invoking OLE methods. If OLE method requires the argument which is
+ *   different from the variant by automatic conversion of Win32OLE, you
+ *   can convert the specfied variant type by using WIN32OLE_VARIANT class.
+ *
+ *     param = WIN32OLE_VARIANT.new(10, WIN32OLE::VARIANT::VT_R4)
+ *     oleobj.method(param)
+ *
+ *   WIN32OLE_VARIANT does not support VT_RECORD variant. Use WIN32OLE_RECORD
+ *   class instead of WIN32OLE_VARIANT if the VT_RECORD variant is needed.
+ */
 
 /*
  *  call-seq:
