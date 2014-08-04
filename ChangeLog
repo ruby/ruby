@@ -1,4 +1,4 @@
-2014年08月04日 19時44分36秒  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+Mon Aug  4 19:49:34 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_invoke): call rb_hash_foreach instead
 	  of rb_block_call.
