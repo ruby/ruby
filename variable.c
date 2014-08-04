@@ -1611,6 +1611,7 @@ rb_autoload(VALUE mod, ID id, const char *file)
     VALUE ad, fn;
     struct st_table *tbl;
     struct autoload_data_i *ele;
+    rb_const_entry_t *ce;
 
     if (!rb_is_const_id(id)) {
 	rb_raise(rb_eNameError, "autoload must be constant name: %"PRIsVALUE"",
@@ -1620,8 +1621,10 @@ rb_autoload(VALUE mod, ID id, const char *file)
 	rb_raise(rb_eArgError, "empty file name");
     }
 
-    if ((tbl = RCLASS_CONST_TBL(mod)) && st_lookup(tbl, (st_data_t)id, &av) && ((rb_const_entry_t*)av)->value != Qundef)
+    ce = rb_const_lookup(mod, id);
+    if (ce && ce->value != Qundef) {
 	return;
+    }
 
     rb_const_set(mod, id, Qundef);
     tbl = RCLASS_IV_TBL(mod);
@@ -1735,10 +1738,9 @@ rb_autoloading_value(VALUE mod, ID id, VALUE* value)
 static int
 autoload_defined_p(VALUE mod, ID id)
 {
-    struct st_table *tbl = RCLASS_CONST_TBL(mod);
-    st_data_t val;
+    rb_const_entry_t *ce = rb_const_lookup(mod, id);
 
-    if (!tbl || !st_lookup(tbl, (st_data_t)id, &val) || ((rb_const_entry_t*)val)->value != Qundef) {
+    if (!ce || ce->value != Qundef) {
 	return 0;
     }
     return !rb_autoloading_value(mod, id, NULL);
@@ -1836,9 +1838,9 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
   retry:
     while (RTEST(tmp)) {
 	VALUE am = 0;
-	st_data_t data;
-	while (RCLASS_CONST_TBL(tmp) && st_lookup(RCLASS_CONST_TBL(tmp), (st_data_t)id, &data)) {
-	    rb_const_entry_t *ce = (rb_const_entry_t *)data;
+	rb_const_entry_t *ce;
+
+	while ((ce = rb_const_lookup(tmp, id))) {
 	    if (visibility && ce->flag == CONST_PRIVATE) {
 		rb_name_error(id, "private constant %"PRIsVALUE"::%"PRIsVALUE" referenced",
 			      rb_class_name(klass), QUOTE_ID(id));
@@ -2088,15 +2090,14 @@ rb_mod_constants(int argc, const VALUE *argv, VALUE mod)
 static int
 rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 {
-    st_data_t value;
     VALUE tmp;
     int mod_retry = 0;
+    rb_const_entry_t *ce;
 
     tmp = klass;
   retry:
     while (tmp) {
-	if (RCLASS_CONST_TBL(tmp) && st_lookup(RCLASS_CONST_TBL(tmp), (st_data_t)id, &value)) {
-	    rb_const_entry_t *ce = (rb_const_entry_t *)value;
+	if ((ce = rb_const_lookup(tmp, id))) {
 	    if (visibility && ce->flag == CONST_PRIVATE) {
 		return (int)Qfalse;
 	    }
@@ -2173,10 +2174,8 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 	RCLASS_CONST_TBL(klass) = st_init_numtable();
     }
     else {
-	st_data_t value;
-
-	if (st_lookup(RCLASS_CONST_TBL(klass), (st_data_t)id, &value)) {
-	    rb_const_entry_t *ce = (rb_const_entry_t*)value;
+	ce = rb_const_lookup(klass, id);
+	if (ce) {
 	    if (ce->value == Qundef) {
 		VALUE load;
 		struct autoload_data_i *ele;
@@ -2242,7 +2241,7 @@ static void
 set_const_visibility(VALUE mod, int argc, const VALUE *argv, rb_const_flag_t flag)
 {
     int i;
-    st_data_t v;
+    rb_const_entry_t *ce;
     ID id;
 
     if (argc == 0) {
@@ -2262,9 +2261,8 @@ set_const_visibility(VALUE mod, int argc, const VALUE *argv, rb_const_flag_t fla
 	    rb_name_error_str(val, "constant %"PRIsVALUE"::%"PRIsVALUE" not defined",
 			      rb_class_name(mod), QUOTE(val));
 	}
-	if (RCLASS_CONST_TBL(mod) &&
-	    st_lookup(RCLASS_CONST_TBL(mod), (st_data_t)id, &v)) {
-	    ((rb_const_entry_t*)v)->flag = flag;
+	if ((ce = rb_const_lookup(mod, id))) {
+	    ce->flag = flag;
 	}
 	else {
 	    if (i > 0) {
@@ -2635,4 +2633,16 @@ rb_st_copy(VALUE obj, struct st_table *orig_tbl)
     st_table *new_tbl = st_copy(orig_tbl);
     st_foreach(new_tbl, tbl_copy_i, (st_data_t)obj);
     return new_tbl;
+}
+
+rb_const_entry_t *
+rb_const_lookup(VALUE klass, ID id)
+{
+    st_table *tbl = RCLASS_CONST_TBL(klass);
+    st_data_t val;
+
+    if (tbl && st_lookup(tbl, (st_data_t)id, &val)) {
+	return (rb_const_entry_t *)val;
+    }
+    return 0;
 }

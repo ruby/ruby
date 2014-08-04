@@ -394,11 +394,10 @@ vm_get_ev_const(rb_thread_t *th, const rb_iseq_t *iseq,
 
 	    if (!NIL_P(klass)) {
 		VALUE av, am = 0;
-		st_data_t data;
+		rb_const_entry_t *ce;
 	      search_continue:
-		if (RCLASS_CONST_TBL(klass) &&
-		    st_lookup(RCLASS_CONST_TBL(klass), id, &data)) {
-		    val = ((rb_const_entry_t*)data)->value;
+		if ((ce = rb_const_lookup(klass, id))) {
+		    val = ce->value;
 		    if (val == Qundef) {
 			if (am == klass) break;
 			am = klass;
