@@ -519,7 +519,7 @@ module Tk::Tcllib::Plotchart
   class Histogram < XYPlot
     TkCommandNames = [
       'canvas'.freeze,
-      '::Plotchart::createHistgram'.freeze
+      '::Plotchart::createHistogram'.freeze
     ].freeze
   end
 
