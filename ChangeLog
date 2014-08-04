@@ -16,7 +16,7 @@ Mon Aug  4 09:12:47 2014  Eric Wong  <e@80x24.org>
 	* variable.c: cleanup to use rb_const_lookup
 	  [Feature #10107]
 
-	* vm_insnshelper.c: ditto
+	* vm_insnhelper.c: ditto
 
 Sun Aug  3 10:55:07 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
