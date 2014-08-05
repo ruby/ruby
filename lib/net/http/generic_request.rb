@@ -14,18 +14,17 @@ class Net::HTTPGenericRequest
 
     if URI === uri_or_path then
       @uri = uri_or_path.dup
-      host = @uri.hostname
-      host += ":#{@uri.port}" if @uri.port != @uri.class::DEFAULT_PORT
-      path = uri_or_path.request_uri
+      host = @uri.hostname.dup
+      host << ":".freeze << @uri.port.to_s if @uri.port != @uri.default_port
+      @path = uri_or_path.request_uri
+      raise ArgumentError, "no HTTP request path given" unless @path
     else
       @uri = nil
       host = nil
-      path = uri_or_path
+      raise ArgumentError, "no HTTP request path given" unless uri_or_path
+      raise ArgumentError, "HTTP request path is empty" if uri_or_path.empty?
+      @path = uri_or_path.dup
     end
-
-    raise ArgumentError, "no HTTP request path given" unless path
-    raise ArgumentError, "HTTP request path is empty" if path.empty?
-    @path = path
 
     @decode_content = false
 
@@ -44,7 +43,7 @@ class Net::HTTPGenericRequest
     initialize_http_header initheader
     self['Accept'] ||= '*/*'
     self['User-Agent'] ||= 'Ruby'
-    self['Host'] ||= host
+    self['Host'] ||= host if host
     @body = nil
     @body_stream = nil
     @body_data = nil

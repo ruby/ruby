@@ -1,3 +1,9 @@
+Wed Aug  6 02:16:43 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http/generic_request.rb
+	  (Net::HTTP::GenericRequest#initialize):
+	  optimize object allocation.
+
 Wed Aug  6 01:16:47 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/generic.rb (URI::Generic#path_query): remove a private method.
