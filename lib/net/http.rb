@@ -1026,7 +1026,9 @@ module Net   #:nodoc:
 
     # The proxy URI determined from the environment for this connection.
     def proxy_uri # :nodoc:
-      @proxy_uri ||= URI("http://#{address}:#{port}").find_proxy
+      @proxy_uri ||= URI::HTTP.new(
+        "http".freeze, nil, address, port, nil, nil, nil, nil, nil
+      ).find_proxy
     end
 
     # The address of the proxy server, if one is configured.

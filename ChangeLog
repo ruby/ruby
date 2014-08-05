@@ -1,3 +1,8 @@
+Wed Aug  6 04:33:58 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb (Net::HTTP.proxy_uri): use initializer instead
+	  of parser to handle IPv6 address. [Bug #9129]
+
 Wed Aug  6 04:16:05 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http/requests.rb (Net::HTTP::Options::RESPONSE_HAS_BODY):
