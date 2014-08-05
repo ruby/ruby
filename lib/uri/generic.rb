@@ -1340,12 +1340,6 @@ module URI
       end
     end
 
-    # returns the assemble String with path and query components
-    def path_query
-      @query ? "#@path?#@query" : @path
-    end
-    private :path_query
-
     #
     # Constructs String from URI
     #

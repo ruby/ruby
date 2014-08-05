@@ -1,3 +1,7 @@
+Wed Aug  6 01:16:47 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/generic.rb (URI::Generic#path_query): remove a private method.
+
 Wed Aug  6 01:15:47 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/generic.rb (URI::Generic#normalize!): use String#empty?
