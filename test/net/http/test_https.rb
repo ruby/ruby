@@ -51,7 +51,7 @@ class TestNetHTTPS < Test::Unit::TestCase
       store_ctx.current_cert.to_der == config('ssl_certificate').to_der
     end
     data = config('ssl_private_key').to_der
-    http.request_post("/", data) {|res|
+    http.request_post("/", data, {'content-type' => 'application/x-www-form-urlencoded'}) {|res|
       assert_equal(data, res.body)
     }
   rescue SystemCallError
