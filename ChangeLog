@@ -1,3 +1,9 @@
+Wed Aug  6 03:41:21 2014  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: backwards compatibility for
+	  hashes emitted by Syck. Github #198
+	* test/psych/test_hash.rb: test for change.
+
 Tue Aug  5 19:27:59 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_invoke): skip VariantClear when

@@ -201,6 +201,8 @@ module Psych
             class_loader.rational
             h = Hash[*o.children.map { |c| accept c }]
             register o, Rational(h['numerator'], h['denominator'])
+          elsif name == 'Hash'
+            revive_hash(register(o, {}), o)
           else
             obj = revive((resolve_class(name) || class_loader.object), o)
             obj
