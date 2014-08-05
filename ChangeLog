@@ -1,3 +1,11 @@
+Wed Aug  6 01:15:47 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/generic.rb (URI::Generic#normalize!): use String#empty?
+
+	* lib/uri/generic.rb (URI::Generic#path_query): optimized.
+
+	* lib/uri/generic.rb (URI::Generic#to_s): optimized.
+
 Wed Aug  6 00:15:10 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/http.rb (URI::HTTP#request_uri): optimized.

@@ -1329,7 +1329,7 @@ module URI
     # Destructive version of #normalize
     #
     def normalize!
-      if path && path == ''
+      if path && path.empty?
         set_path('/')
       end
       if scheme && scheme != scheme.downcase
@@ -1342,11 +1342,7 @@ module URI
 
     # returns the assemble String with path and query components
     def path_query
-      str = @path
-      if @query
-        str += '?' + @query
-      end
-      str
+      @query ? "#@path?#@query" : @path
     end
     private :path_query
 
@@ -1357,36 +1353,36 @@ module URI
       str = ''
       if @scheme
         str << @scheme
-        str << ':'
+        str << ':'.freeze
       end
 
       if @opaque
         str << @opaque
-
       else
         if @host
-          str << '//'
+          str << '//'.freeze
         end
         if self.userinfo
           str << self.userinfo
-          str << '@'
+          str << '@'.freeze
         end
         if @host
           str << @host
         end
         if @port && @port != self.default_port
-          str << ':'
+          str << ':'.freeze
           str << @port.to_s
         end
-
-        str << path_query
+        str << @path
+        if @query
+          str << '?'.freeze
+          str << @query
+        end
       end
-
       if @fragment
-        str << '#'
+        str << '#'.freeze
         str << @fragment
       end
-
       str
     end
 
