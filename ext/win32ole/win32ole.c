@@ -63,7 +63,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.7.2"
+#define WIN32OLE_VERSION "1.7.3"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -3586,7 +3586,9 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
                         &excepinfo, &argErr);
                 for(i = cNamedArgs; i < op.dp.cArgs; i++) {
                     n = op.dp.cArgs - i + cNamedArgs - 1;
-                    VariantClear(&op.dp.rgvarg[n]);
+                    if (V_VT(&op.dp.rgvarg[n]) != VT_RECORD) {
+                        VariantClear(&op.dp.rgvarg[n]);
+                    }
                 }
             }
         }

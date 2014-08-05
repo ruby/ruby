@@ -1,3 +1,8 @@
+Tue Aug  5 19:27:59 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_invoke): skip VariantClear when
+	  argument is VT_RECORD variant.
+
 Tue Aug  5 15:52:51 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* gems/bundled_gems: Upgrade to test-unit-3.0.0 and minitest-5.4.0.
