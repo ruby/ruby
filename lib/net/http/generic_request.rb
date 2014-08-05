@@ -136,21 +136,34 @@ class Net::HTTPGenericRequest
     end
   end
 
-  def update_uri(host, port, ssl) # :nodoc: internal use only
+  def update_uri(addr, port, ssl) # :nodoc: internal use only
+    # reflect the connection and @path to @uri
     return unless @uri
 
-    @uri.host ||= host
-    @uri.port = port
-
-    scheme = ssl ? 'https' : 'http'
-
-    # convert the class of the URI
-    unless scheme == @uri.scheme then
-      new_uri = @uri.to_s.sub(/^https?/, scheme)
-      @uri = URI new_uri
+    if ssl
+      scheme = 'https'.freeze
+      klass = URI::HTTPS
+    else
+      scheme = 'http'.freeze
+      klass = URI::HTTP
     end
 
-    @uri
+    if host = @uri.host
+    elsif host = self['host']
+      host.sub!(/:.*/s, ''.freeze)
+    else
+     host = addr
+    end
+    # convert the class of the URI
+    if @uri.is_a?(klass)
+      @uri.host = host
+      @uri.port = port
+    else
+      @uri = klass.new(
+        scheme, @uri.userinfo,
+        host, port, nil,
+        @uri.path, nil, @uri.query, nil)
+    end
   end
 
   private

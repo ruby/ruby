@@ -1455,10 +1455,7 @@ module Net   #:nodoc:
         req['connection'] ||= 'close'
       end
 
-      host = req['host'] || address
-      host = $1 if host =~ /(.*):\d+$/
-      req.update_uri host, port, use_ssl?
-
+      req.update_uri address, port, use_ssl?
       req['host'] ||= addr_port()
     end
 
