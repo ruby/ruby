@@ -1,3 +1,14 @@
+Wed Aug  6 03:18:04 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http/generic_request.rb (Net::HTTP::GenericRequest#exec):
+	  handle req['host'] in update_uri.
+
+	* lib/net/http/generic_request.rb
+	  (Net::HTTP::GenericRequest#update_uri):
+	  use req['host'] if it is explicitly set. Even if URI is given,
+	  it is already used for the initial value of req['host'].
+	  Therefore overwritten value should be respected. [Bug #10054]
+
 Wed Aug  6 03:17:34 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http/generic_request.rb

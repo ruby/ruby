@@ -563,10 +563,10 @@ module TestNetHTTP_version_1_2_methods
   end
 
   def _test_request__uri_host(http)
-    uri = URI 'http://example/'
+    uri = URI 'http://other.example/'
 
     req = Net::HTTP::Get.new(uri)
-    req['host'] = 'other.example'
+    req['host'] = 'example'
 
     res = http.request(req)
 

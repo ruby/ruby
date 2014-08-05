@@ -116,15 +116,6 @@ class Net::HTTPGenericRequest
   #
 
   def exec(sock, ver, path)   #:nodoc: internal use only
-    if @uri
-      if @uri.port == @uri.default_port
-        # [Bug #7650] Amazon ECS API and GFE/1.3 disallow extra default port number
-        self['host'] = @uri.host
-      else
-        self['host'] = "#{@uri.host}:#{@uri.port}"
-      end
-    end
-
     if @body
       send_request_with_body sock, ver, path, @body
     elsif @body_stream
@@ -148,9 +139,9 @@ class Net::HTTPGenericRequest
       klass = URI::HTTP
     end
 
-    if host = @uri.host
-    elsif host = self['host']
+    if host = self['host']
       host.sub!(/:.*/s, ''.freeze)
+    elsif host = @uri.host
     else
      host = addr
     end
