@@ -60,7 +60,7 @@ ole_raise(HRESULT hr, VALUE ecs, const char *fmt, ...)
     rb_exc_raise(rb_exc_new_str(ecs, msg));
 }
 
-void 
+void
 Init_win32ole_error() {
     /*
      * Document-class: WIN32OLERuntimeError
