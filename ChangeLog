@@ -1,3 +1,8 @@
+Thu Aug  7 06:04:49 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yyerror): preserve source code encoding in
+	  syntax error messages.  [ruby-core:64228] [Bug #10114]
+
 Wed Aug  6 20:56:02 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: separate src of WIN32OLE_TYPELIB from

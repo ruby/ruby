@@ -5261,7 +5261,7 @@ parser_yyerror(struct parser_params *parser, const char *msg)
 	buf = ALLOCA_N(char, len+2);
 	MEMCPY(buf, p, char, len);
 	buf[len] = '\0';
-	rb_compile_error_append("%s%s%s", pre, buf, post);
+	rb_compile_error_with_enc(NULL, 0, (void *)current_enc, "%s%s%s", pre, buf, post);
 
 	i = (int)(lex_p - p);
 	p2 = buf; pe = buf + len;
