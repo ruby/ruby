@@ -1,3 +1,10 @@
+Wed Aug  6 19:09:27 2014  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb (Set): Implement Set#clone by splitting
+	  initialize_copy into initialize_dup and initialize_clone.
+	  Submitted by yui-knk. [Fixes GH-661]
+	  https://github.com/ruby/ruby/pull/661
+
 Wed Aug  6 18:42:58 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: separate src of WIN32OLERuntimeError

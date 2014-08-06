@@ -100,9 +100,16 @@ class Set
   end
   private :do_with_enum
 
-  # Copy internal hash.
-  def initialize_copy(orig)
+  # Dup internal hash.
+  def initialize_dup(orig)
+    super
     @hash = orig.instance_variable_get(:@hash).dup
+  end
+
+  # Clone internal hash.
+  def initialize_clone(orig)
+    super
+    @hash = orig.instance_variable_get(:@hash).clone
   end
 
   def freeze    # :nodoc:
