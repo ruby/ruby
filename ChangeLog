@@ -1,6 +1,6 @@
 Wed Aug  6 20:44:07 2014  Akinori MUSHA  <knu@iDaemons.org>
 
-	* enum.c (enum_one): Move enum.one? documentation before the
+	* enum.c (enum_one): [DOC] Move enum.one? documentation before the
 	  relevant method.  Submitted by @vipulnsward. [Fixes GH-687]
 	  https://github.com/ruby/ruby/pull/687
 
