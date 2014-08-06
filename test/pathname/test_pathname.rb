@@ -431,7 +431,9 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def descend(path)
-    Pathname.new(path).enum_for(:descend).map {|v| v.to_s }
+    result = []
+    Pathname.new(path).descend {|v| result << v.to_s }
+    result
   end
 
   defassert(:descend, %w[/ /a /a/b /a/b/c], "/a/b/c")
@@ -439,14 +441,25 @@ class TestPathname < Test::Unit::TestCase
   defassert(:descend, %w[. ./a ./a/b ./a/b/c], "./a/b/c")
   defassert(:descend, %w[a/], "a/")
 
+  def test_descend_enum
+    assert_equal(%w[/ /a /a/b /a/b/c], Pathname.new('/a/b/c').descend.to_a.map {|v| v.to_s })
+  end
+
   def ascend(path)
-    Pathname.new(path).enum_for(:ascend).map {|v| v.to_s }
+    result = []
+    Pathname.new(path).ascend {|v| result << v.to_s }
+    result
   end
 
   defassert(:ascend, %w[/a/b/c /a/b /a /], "/a/b/c")
   defassert(:ascend, %w[a/b/c a/b a], "a/b/c")
   defassert(:ascend, %w[./a/b/c ./a/b ./a .], "./a/b/c")
   defassert(:ascend, %w[a/], "a/")
+
+  def test_ascend_enum
+    assert_equal(%w[/a/b/c /a/b /a /], Pathname.new('/a/b/c').ascend.to_a.map {|v| v.to_s })
+  end
+
 
   def test_initialize
     p1 = Pathname.new('a')

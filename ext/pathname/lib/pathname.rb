@@ -285,6 +285,7 @@ class Pathname
   # It doesn't access the filesystem.
   #
   def descend
+    return to_enum(__method__) unless block_given?
     vs = []
     ascend {|v| vs << v }
     vs.reverse_each {|v| yield v }
@@ -310,6 +311,7 @@ class Pathname
   # It doesn't access the filesystem.
   #
   def ascend
+    return to_enum(__method__) unless block_given?
     path = @path
     yield self
     while r = chop_basename(path)
