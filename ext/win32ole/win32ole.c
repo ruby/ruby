@@ -63,7 +63,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.7.3"
+#define WIN32OLE_VERSION "1.7.4"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -9428,12 +9428,10 @@ olerecord_ivar_set(VALUE self, VALUE name, VALUE val)
 {
     long len;
     char *p;
-    VALUE ch;
     VALUE fields;
     len  = RSTRING_LEN(name);
-    ch = rb_str_subseq(name, len-1, 1);
-    p = RSTRING_PTR(ch);
-    if (*p == '=') {
+    p = RSTRING_PTR(name);
+    if (p[len-1] == '=') {
         name = rb_str_subseq(name, 0, len-1);
     }
     fields = rb_ivar_get(self, rb_intern("fields"));
