@@ -150,8 +150,14 @@ class Set
     if enum.instance_of?(self.class)
       @hash.replace(enum.instance_variable_get(:@hash))
     else
-      clear
-      merge(enum)
+      _hash = @hash.dup
+      begin
+        clear
+        merge(enum)
+      rescue
+        @hash.update(_hash)
+        raise
+      end
     end
 
     self
