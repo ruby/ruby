@@ -128,7 +128,6 @@ VALUE cWIN32OLE_METHOD;
 VALUE cWIN32OLE_PARAM;
 VALUE cWIN32OLE_EVENT;
 VALUE cWIN32OLE_VARIANT;
-VALUE eWIN32OLERuntimeError;
 VALUE cWIN32OLE_PROPERTY;
 VALUE cWIN32OLE_RECORD;
 
@@ -153,7 +152,6 @@ static FNCOCREATEINSTANCEEX *gCoCreateInstanceEx = NULL;
 static VALUE com_hash;
 static IDispatchVtbl com_vtbl;
 static UINT cWIN32OLE_cp = CP_ACP;
-static LCID cWIN32OLE_lcid = LOCALE_SYSTEM_DEFAULT;
 static rb_encoding *cWIN32OLE_enc;
 static UINT g_cp_to_check = CP_ACP;
 static char g_lcid_to_check[8 + 1];
@@ -239,10 +237,8 @@ static void load_conv_function51932(void);
 #endif
 static UINT ole_init_cp(void);
 static char *ole_wc2mb(LPWSTR pw);
-static VALUE ole_hresult2msg(HRESULT hr);
 static void ole_freeexceptinfo(EXCEPINFO *pExInfo);
 static VALUE ole_excepinfo2msg(EXCEPINFO *pExInfo);
-static void ole_raise(HRESULT hr, VALUE ecs, const char *fmt, ...);
 static void ole_initialize(void);
 static void ole_msg_loop(void);
 static void ole_free(struct oledata *pole);
@@ -1055,46 +1051,6 @@ ole_wc2mb(LPWSTR pw)
     return ole_wc2mb_alloc(pw, ole_alloc_str, NULL);
 }
 
-static VALUE
-ole_hresult2msg(HRESULT hr)
-{
-    VALUE msg = Qnil;
-    char *p_msg = NULL;
-    char *term = NULL;
-    DWORD dwCount;
-
-    char strhr[100];
-    sprintf(strhr, "    HRESULT error code:0x%08x\n      ", (unsigned)hr);
-    msg = rb_str_new2(strhr);
-    dwCount = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                            FORMAT_MESSAGE_FROM_SYSTEM |
-                            FORMAT_MESSAGE_IGNORE_INSERTS,
-                            NULL, hr,
-                            MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
-                            (LPTSTR)&p_msg, 0, NULL);
-    if (dwCount == 0) {
-        dwCount = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                                FORMAT_MESSAGE_FROM_SYSTEM |
-                                FORMAT_MESSAGE_IGNORE_INSERTS,
-                                NULL, hr, cWIN32OLE_lcid,
-                                (LPTSTR)&p_msg, 0, NULL);
-    }
-    if (dwCount > 0) {
-	term = p_msg + strlen(p_msg);
-	while (p_msg < term) {
-	    term--;
-	    if (*term == '\r' || *term == '\n')
-	        *term = '\0';
-	    else break;
-	}
-        if (p_msg[0] != '\0') {
-            rb_str_cat2(msg, p_msg);
-        }
-    }
-    LocalFree(p_msg);
-    return msg;
-}
-
 static void
 ole_freeexceptinfo(EXCEPINFO *pExInfo)
 {
@@ -1143,24 +1099,6 @@ ole_excepinfo2msg(EXCEPINFO *pExInfo)
     if(pDescription) free(pDescription);
     ole_freeexceptinfo(pExInfo);
     return error_msg;
-}
-
-static void
-ole_raise(HRESULT hr, VALUE ecs, const char *fmt, ...)
-{
-    va_list args;
-    VALUE msg;
-    VALUE err_msg;
-    va_init_list(args, fmt);
-    msg = rb_vsprintf(fmt, args);
-    va_end(args);
-
-    err_msg = ole_hresult2msg(hr);
-    if(err_msg != Qnil) {
-	rb_str_cat2(msg, "\n");
-	rb_str_append(msg, err_msg);
-    }
-    rb_exc_raise(rb_exc_new_str(ecs, msg));
 }
 
 void
@@ -9676,6 +9614,7 @@ free_enc2cp(void)
 void
 Init_win32ole(void)
 {
+    cWIN32OLE_lcid = LOCALE_SYSTEM_DEFAULT;
     g_ole_initialized_init();
     ary_ole_event = rb_ary_new();
     rb_gc_register_mark_object(ary_ole_event);
@@ -9972,23 +9911,7 @@ Init_win32ole(void)
     rb_define_method(cWIN32OLE_RECORD, "ole_instance_variable_set", folerecord_ole_instance_variable_set, 2);
     rb_define_method(cWIN32OLE_RECORD, "inspect", folerecord_inspect, 0);
 
-    /*
-     * Document-class: WIN32OLERuntimeError
-     *
-     * Raised when OLE processing failed.
-     *
-     * EX:
-     *
-     *   obj = WIN32OLE.new("NonExistProgID")
-     *
-     * raises the exception:
-     *
-     *   WIN32OLERuntimeError: unknown OLE server: `NonExistProgID'
-     *       HRESULT error code:0x800401f3
-     *         Invalid class string
-     *
-     */
-    eWIN32OLERuntimeError = rb_define_class("WIN32OLERuntimeError", rb_eRuntimeError);
+    Init_win32ole_error();
 
     init_enc2cp();
     atexit((void (*)(void))free_enc2cp);

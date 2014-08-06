@@ -1,3 +1,13 @@
+Wed Aug  6 18:42:58 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: separate src of WIN32OLERuntimeError
+	  from win32ole.c.
+
+	* ext/win32ole/win32ole.h: ditto
+	* ext/win32ole/depend: ditto.
+	* ext/win32ole/win32ole_error.c: ditto.
+	* ext/win32ole/win32ole_error.h: ditto.
+
 Wed Aug  6 04:33:58 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTP.proxy_uri): use initializer instead

@@ -35,11 +35,11 @@
 #endif
 #include <objidl.h>
 
-#define DOUT fprintf(stderr,"[%d]\n",__LINE__)
-#define DOUTS(x) fprintf(stderr,"[%d]:" #x "=%s\n",__LINE__,x)
-#define DOUTMSG(x) fprintf(stderr, "[%d]:" #x "\n",__LINE__)
-#define DOUTI(x) fprintf(stderr, "[%ld]:" #x "=%d\n",__LINE__,x)
-#define DOUTD(x) fprintf(stderr, "[%d]:" #x "=%f\n",__LINE__,x)
+#define DOUT fprintf(stderr,"%s(%d)\n", __FILE__, __LINE__)
+#define DOUTS(x) fprintf(stderr,"%s(%d):" #x "=%s\n",__FILE__, __LINE__,x)
+#define DOUTMSG(x) fprintf(stderr, "%s(%d):" #x "\n",__FILE__, __LINE__)
+#define DOUTI(x) fprintf(stderr, "%s(%d):" #x "=%d\n",__FILE__, __LINE__,x)
+#define DOUTD(x) fprintf(stderr, "%s(%d):" #x "=%f\n",__FILE__, __LINE__,x)
 
 #if (defined(__GNUC__)) && (GNUC_OLDER_3_4_4)
 #define V_UNION1(X, Y) ((X)->u.Y)
@@ -85,6 +85,9 @@
 
 VALUE cWIN32OLE;
 
+LCID cWIN32OLE_lcid;
+
 #include "win32ole_variant_m.h"
+#include "win32ole_error.h"
 
 #endif
