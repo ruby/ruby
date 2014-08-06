@@ -1,3 +1,9 @@
+Wed Aug  6 20:25:47 2014  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb (Set#replace): Check if an object given is enumerable
+	  before clearing self.  Reported by yui-knk. [GH-675]
+	  https://github.com/ruby/ruby/pull/675
+
 Wed Aug  6 20:07:26 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (olerecord_ivar_set): remove rb_str_subseq.
