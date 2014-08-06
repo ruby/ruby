@@ -82,12 +82,38 @@
 #define V_UINTREF(X) V_UNION(X, puintVal)
 #endif
 
+#define OLE_RELEASE(X) (X) ? ((X)->lpVtbl->Release(X)) : 0
+#define OLE_FREE(x) {\
+    if(ole_initialized() == TRUE) {\
+        if(x) {\
+            OLE_RELEASE(x);\
+            (x) = 0;\
+        }\
+    }\
+}
 
 VALUE cWIN32OLE;
-
+VALUE cWIN32OLE_TYPE;
 LCID cWIN32OLE_lcid;
 
+LPWSTR ole_vstr2wc(VALUE vstr);
+LONG reg_open_key(HKEY hkey, const char *name, HKEY *phkey);
+LONG reg_open_vkey(HKEY hkey, VALUE key, HKEY *phkey);
+VALUE reg_enum_key(HKEY hkey, DWORD i);
+VALUE reg_get_val(HKEY hkey, const char *subkey);
+VALUE reg_get_val2(HKEY hkey, const char *subkey);
+void ole_initialize(void);
+VALUE default_inspect(VALUE self, const char *class_name);
+VALUE ole_wc2vstr(LPWSTR pw, BOOL isfree);
+
+
+#define WC2VSTR(x) ole_wc2vstr((x), TRUE)
+
+BOOL ole_initialized();
+VALUE create_win32ole_type(ITypeInfo *pTypeInfo, VALUE name);
+
 #include "win32ole_variant_m.h"
+#include "win32ole_typelib.h"
 #include "win32ole_error.h"
 
 #endif
