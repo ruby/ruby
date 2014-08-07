@@ -1,3 +1,9 @@
+Fri Jul 22 21:18:20 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/generic.rb (WFKV_): unroll the loop of regexp.
+
+	* lib/uri/generic.rb (URI.decode_www_form_component): ditto.
+
 Fri Nov 22 12:43:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (ruby_strtod): ignore too long fraction part, which does not
