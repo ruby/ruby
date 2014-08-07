@@ -1,3 +1,9 @@
+Fri Aug  8 01:07:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): fix invalid char in eval, should raise
+	  an syntax error too, as well as directly coded.
+	  [ruby-core:64243] [Bug #10117]
+
 Thu Aug  7 23:25:29 2014  Masaki Matsushita <glass.saga@gmail.com>
 
 	* lib/open3.rb: avoid unnecessary write if stdin_data is empty.
