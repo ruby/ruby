@@ -1,3 +1,7 @@
+Thu Aug  7 15:13:13 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/cgi.rb: remove needless condition for old ruby version.
+
 Thu Aug  7 06:04:49 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yyerror): preserve source code encoding in
