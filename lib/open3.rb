@@ -296,16 +296,18 @@ module Open3
   #   End
   #   image, s = Open3.capture2("gnuplot", :stdin_data=>gnuplot_commands, :binmode=>true)
   #
-  def capture2(*cmd, stdin_data: '', binmode: false, **opts)
+  def capture2(*cmd, stdin_data: nil, binmode: false, **opts)
     popen2(*cmd, opts) {|i, o, t|
       if binmode
         i.binmode
         o.binmode
       end
       out_reader = Thread.new { o.read }
-      begin
-        i.write stdin_data
-      rescue Errno::EPIPE
+      if stdin_data
+        begin
+          i.write stdin_data
+        rescue Errno::EPIPE
+        end
       end
       i.close
       [out_reader.value, t.value]
@@ -329,16 +331,18 @@ module Open3
   #   # capture make log
   #   make_log, s = Open3.capture2e("make")
   #
-  def capture2e(*cmd, stdin_data: '', binmode: false, **opts)
+  def capture2e(*cmd, stdin_data: nil, binmode: false, **opts)
     popen2e(*cmd, opts) {|i, oe, t|
       if binmode
         i.binmode
         oe.binmode
       end
       outerr_reader = Thread.new { oe.read }
-      begin
-        i.write stdin_data
-      rescue Errno::EPIPE
+      if stdin_data
+        begin
+          i.write stdin_data
+        rescue Errno::EPIPE
+        end
       end
       i.close
       [outerr_reader.value, t.value]
