@@ -299,34 +299,34 @@ oletypelib_search_registry2(VALUE self, VALUE args)
         RegCloseKey(hversion);
     } else {
         fver = 0.0;
-	    for(j = 0; ;j++) {
-	        ver = reg_enum_key(hguid, j);
-	        if (ver == Qnil)
-	            break;
-	        err = reg_open_vkey(hguid, ver, &hversion);
-	        if (err != ERROR_SUCCESS)
-	            continue;
-	        tlib = reg_get_val(hversion, NULL);
-	        if (tlib == Qnil) {
-	             RegCloseKey(hversion);
-	             continue;
-	        }
-	        if (fver < atof(StringValuePtr(ver))) {
-	            fver = atof(StringValuePtr(ver));
-	            version = ver;
-	            typelib = tlib;
-	        }
-	        RegCloseKey(hversion);
-	    }
+        for(j = 0; ;j++) {
+            ver = reg_enum_key(hguid, j);
+            if (ver == Qnil)
+                break;
+            err = reg_open_vkey(hguid, ver, &hversion);
+            if (err != ERROR_SUCCESS)
+                continue;
+            tlib = reg_get_val(hversion, NULL);
+            if (tlib == Qnil) {
+                RegCloseKey(hversion);
+                continue;
+            }
+            if (fver < atof(StringValuePtr(ver))) {
+                fver = atof(StringValuePtr(ver));
+                version = ver;
+                typelib = tlib;
+            }
+            RegCloseKey(hversion);
+        }
     }
     RegCloseKey(hguid);
     RegCloseKey(htypelib);
     if (typelib != Qnil) {
-	hr = oletypelib_from_guid(guid, version, &pTypeLib);
-	if (SUCCEEDED(hr)) {
-	    found = Qtrue;
-	    oletypelib_set_member(self, pTypeLib);
-	}
+        hr = oletypelib_from_guid(guid, version, &pTypeLib);
+        if (SUCCEEDED(hr)) {
+            found = Qtrue;
+            oletypelib_set_member(self, pTypeLib);
+        }
     }
     return found;
 }
@@ -472,27 +472,25 @@ make_version_str(VALUE major, VALUE minor)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPELIB#version -> The type library version.
+ *     WIN32OLE_TYPELIB#version -> The type library version String object.
  *
  *  Returns the type library version.
  *
  *     tlib = WIN32OLE_TYPELIB.new('Microsoft Excel 9.0 Object Library')
- *     puts tlib.version #-> 1.3
+ *     puts tlib.version #-> "1.3"
  */
 static VALUE
 foletypelib_version(VALUE self)
 {
     TLIBATTR *pTLibAttr;
-    VALUE major;
-    VALUE minor;
     ITypeLib *pTypeLib;
+    VALUE version;
 
     pTypeLib = itypelib(self);
     oletypelib_get_libattr(pTypeLib, &pTLibAttr);
-    major = INT2NUM(pTLibAttr->wMajorVerNum);
-    minor = INT2NUM(pTLibAttr->wMinorVerNum);
+    version = rb_sprintf("%d.%d", pTLibAttr->wMajorVerNum, pTLibAttr->wMinorVerNum);
     pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
-    return rb_Float(make_version_str(major, minor));
+    return version;
 }
 
 /*

@@ -1,3 +1,10 @@
+Thu Aug  7 21:42:49 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole_typelib.c (foletypelib_version): return
+	  version string.
+
+	* test/win32ole/test_win32ole_typelib.rb (test_version): ditto.
+
 Thu Aug  7 15:13:13 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/cgi.rb: remove needless condition for old ruby version.
