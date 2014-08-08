@@ -401,9 +401,7 @@ class TestOpenURI < Test::Unit::TestCase
   end
 
   def test_userinfo
-    if "1.9.0" <= RUBY_VERSION
-      assert_raise(ArgumentError) { open("http://user:pass@127.0.0.1/") {} }
-    end
+    assert_raise(ArgumentError) { open("http://user:pass@127.0.0.1/") {} }
   end
 
   def test_progress
