@@ -1,3 +1,7 @@
+Fri Aug  8 16:40:59 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/irb/init.rb: removed unreachable code.
+
 Fri Aug  8 16:34:22 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/drb/drb.rb: removed unreachable code.
