@@ -19,16 +19,16 @@ module IRB
     space_line = false
     IRB::MagicFile.open(path){|f|
       f.each_line do |l|
-	if /^\s*$/ =~ l
-	  lc.puts l unless space_line
-	  space_line = true
-	  next
-	end
-	space_line = false
+        if /^\s*$/ =~ l
+          lc.puts l unless space_line
+          space_line = true
+          next
+        end
+        space_line = false
 
-	l.sub!(/#.*$/, "")
-	  next if /^\s*$/ =~ l
-	lc.puts l
+        l.sub!(/#.*$/, "")
+        next if /^\s*$/ =~ l
+        lc.puts l
       end
     }
   end
