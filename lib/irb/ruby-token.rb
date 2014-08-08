@@ -78,23 +78,23 @@ module RubyToken
     case token
     when String
       if (tk = TkReading2Token[token]).nil?
-	IRB.fail TkReading2TokenNoKey, token
+        IRB.fail TkReading2TokenNoKey, token
       end
       tk = Token(tk[0], value)
       if tk.kind_of?(TkOp)
-	tk.name = token
+        tk.name = token
       end
       return tk
     when Symbol
       if (tk = TkSymbol2Token[token]).nil?
-	IRB.fail TkSymbol2TokenNoKey, token
+        IRB.fail TkSymbol2TokenNoKey, token
       end
       return Token(tk[0], value)
     else
       if (token.ancestors & [TkId, TkVal, TkOPASGN, TkUnknownChar]).empty?
-	token.new(@prev_seek, @prev_line_no, @prev_char_no)
+        token.new(@prev_seek, @prev_line_no, @prev_char_no)
       else
-	token.new(@prev_seek, @prev_line_no, @prev_char_no, value)
+        token.new(@prev_seek, @prev_line_no, @prev_char_no, value)
       end
     end
   end
@@ -249,12 +249,12 @@ module RubyToken
 
     if reading
       if TkReading2Token[reading]
-	IRB.fail TkReading2TokenDuplicateError, token_n, reading
+        IRB.fail TkReading2TokenDuplicateError, token_n, reading
       end
       if opts.empty?
-	TkReading2Token[reading] = [token_c]
+        TkReading2Token[reading] = [token_c]
       else
-	TkReading2Token[reading] = [token_c].concat(opts)
+        TkReading2Token[reading] = [token_c].concat(opts)
       end
     end
     TkSymbol2Token[token_n.intern] = token_c
