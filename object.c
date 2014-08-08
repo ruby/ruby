@@ -419,7 +419,7 @@ rb_obj_dup(VALUE obj)
 static VALUE
 rb_obj_itself(VALUE obj)
 {
-	if (rb_block_given_p()) return rb_yield(obj);
+    if (rb_block_given_p()) return rb_yield(obj);
     return obj;
 }
 
