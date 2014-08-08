@@ -25,12 +25,12 @@ module IRB
     def initialize(irb, workspace = nil, input_method = nil, output_method = nil)
       @irb = irb
       if workspace
-	@workspace = workspace
+        @workspace = workspace
       else
-	@workspace = WorkSpace.new
+        @workspace = WorkSpace.new
       end
       @thread = Thread.current if defined? Thread
-#      @irb_level = 0
+      #      @irb_level = 0
 
       # copy of default configuration
       @ap_name = IRB.conf[:AP_NAME]
@@ -55,50 +55,50 @@ module IRB
       self.prompt_mode = IRB.conf[:PROMPT_MODE]
 
       if IRB.conf[:SINGLE_IRB] or !defined?(IRB::JobManager)
-	@irb_name = IRB.conf[:IRB_NAME]
+        @irb_name = IRB.conf[:IRB_NAME]
       else
-	@irb_name = IRB.conf[:IRB_NAME]+"#"+IRB.JobManager.n_jobs.to_s
+        @irb_name = IRB.conf[:IRB_NAME]+"#"+IRB.JobManager.n_jobs.to_s
       end
       @irb_path = "(" + @irb_name + ")"
 
       case input_method
       when nil
-	case use_readline?
-	when nil
-	  if (defined?(ReadlineInputMethod) && STDIN.tty? &&
-	      IRB.conf[:PROMPT_MODE] != :INF_RUBY)
-	    @io = ReadlineInputMethod.new
-	  else
-	    @io = StdioInputMethod.new
-	  end
-	when false
-	  @io = StdioInputMethod.new
-	when true
-	  if defined?(ReadlineInputMethod)
-	    @io = ReadlineInputMethod.new
-	  else
-	    @io = StdioInputMethod.new
-	  end
-	end
+        case use_readline?
+        when nil
+          if (defined?(ReadlineInputMethod) && STDIN.tty? &&
+              IRB.conf[:PROMPT_MODE] != :INF_RUBY)
+            @io = ReadlineInputMethod.new
+          else
+            @io = StdioInputMethod.new
+          end
+        when false
+          @io = StdioInputMethod.new
+        when true
+          if defined?(ReadlineInputMethod)
+            @io = ReadlineInputMethod.new
+          else
+            @io = StdioInputMethod.new
+          end
+        end
 
       when String
-	@io = FileInputMethod.new(input_method)
-	@irb_name = File.basename(input_method)
-	@irb_path = input_method
+        @io = FileInputMethod.new(input_method)
+        @irb_name = File.basename(input_method)
+        @irb_path = input_method
       else
-	@io = input_method
+        @io = input_method
       end
       self.save_history = IRB.conf[:SAVE_HISTORY] if IRB.conf[:SAVE_HISTORY]
 
       if output_method
-	@output_method = output_method
+        @output_method = output_method
       else
-	@output_method = StdioOutputMethod.new
+        @output_method = StdioOutputMethod.new
       end
 
       @echo = IRB.conf[:ECHO]
       if @echo.nil?
-	@echo = true
+        @echo = true
       end
       self.debug_level = IRB.conf[:DEBUG_LEVEL]
     end
@@ -235,15 +235,15 @@ module IRB
     # Returns whether messages are displayed or not.
     def verbose?
       if @verbose.nil?
-	if defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)
-	  false
-	elsif !STDIN.tty? or @io.kind_of?(FileInputMethod)
-	  true
-	else
-	  false
-	end
+        if defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)
+          false
+        elsif !STDIN.tty? or @io.kind_of?(FileInputMethod)
+          true
+        else
+          false
+        end
       else
-	@verbose
+        @verbose
       end
     end
 
@@ -251,7 +251,7 @@ module IRB
     # StdioInputMethod or ReadlineInputMethod, see #io for more information.
     def prompting?
       verbose? || (STDIN.tty? && @io.kind_of?(StdioInputMethod) ||
-		(defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)))
+                   (defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)))
     end
 
     # The return value of the last statement evaluated.
@@ -276,9 +276,9 @@ module IRB
       @prompt_n = pconf[:PROMPT_N]
       @return_format = pconf[:RETURN]
       if ai = pconf.include?(:AUTO_INDENT)
-	@auto_indent_mode = ai
+        @auto_indent_mode = ai
       else
-	@auto_indent_mode = IRB.conf[:AUTO_INDENT]
+        @auto_indent_mode = IRB.conf[:AUTO_INDENT]
       end
     end
 
@@ -309,41 +309,41 @@ module IRB
     def inspect_mode=(opt)
 
       if i = Inspector::INSPECTORS[opt]
-	@inspect_mode = opt
-	@inspect_method = i
-	i.init
+        @inspect_mode = opt
+        @inspect_method = i
+        i.init
       else
-	case opt
-	when nil
-	  if Inspector.keys_with_inspector(Inspector::INSPECTORS[true]).include?(@inspect_mode)
-	    self.inspect_mode = false
-	  elsif Inspector.keys_with_inspector(Inspector::INSPECTORS[false]).include?(@inspect_mode)
-	    self.inspect_mode = true
-	  else
-	    puts "Can't switch inspect mode."
-	    return
-	  end
-	when /^\s*\{.*\}\s*$/
-	  begin
-	    inspector = eval "proc#{opt}"
-	  rescue Exception
-	    puts "Can't switch inspect mode(#{opt})."
-	    return
-	  end
-	  self.inspect_mode = inspector
-	when Proc
-	  self.inspect_mode = IRB::Inspector(opt)
-	when Inspector
-	  prefix = "usr%d"
-	  i = 1
-	  while Inspector::INSPECTORS[format(prefix, i)]; i += 1; end
-	  @inspect_mode = format(prefix, i)
-	  @inspect_method = opt
-	  Inspector.def_inspector(format(prefix, i), @inspect_method)
-	else
-	  puts "Can't switch inspect mode(#{opt})."
-	  return
-	end
+        case opt
+        when nil
+          if Inspector.keys_with_inspector(Inspector::INSPECTORS[true]).include?(@inspect_mode)
+            self.inspect_mode = false
+          elsif Inspector.keys_with_inspector(Inspector::INSPECTORS[false]).include?(@inspect_mode)
+            self.inspect_mode = true
+          else
+            puts "Can't switch inspect mode."
+            return
+          end
+        when /^\s*\{.*\}\s*$/
+          begin
+            inspector = eval "proc#{opt}"
+          rescue Exception
+            puts "Can't switch inspect mode(#{opt})."
+            return
+          end
+          self.inspect_mode = inspector
+        when Proc
+          self.inspect_mode = IRB::Inspector(opt)
+        when Inspector
+          prefix = "usr%d"
+          i = 1
+          while Inspector::INSPECTORS[format(prefix, i)]; i += 1; end
+          @inspect_mode = format(prefix, i)
+          @inspect_method = opt
+          Inspector.def_inspector(format(prefix, i), @inspect_method)
+        else
+          puts "Can't switch inspect mode(#{opt})."
+          return
+        end
       end
       print "Switch to#{unless @inspect_mode; ' non';end} inspect mode.\n" if verbose?
       @inspect_mode
@@ -378,8 +378,8 @@ module IRB
     def evaluate(line, line_no) # :nodoc:
       @line_no = line_no
       set_last_value(@workspace.evaluate(self, line, irb_path, line_no))
-#      @workspace.evaluate("_ = IRB.conf[:MAIN_CONTEXT]._")
-#      @_ = @workspace.evaluate(line, irb_path, line_no)
+      #      @workspace.evaluate("_ = IRB.conf[:MAIN_CONTEXT]._")
+      #      @_ = @workspace.evaluate(line, irb_path, line_no)
     end
 
     def inspect_last_value # :nodoc:
@@ -400,19 +400,19 @@ module IRB
     def inspect # :nodoc:
       array = []
       for ivar in instance_variables.sort{|e1, e2| e1 <=> e2}
-	ivar = ivar.to_s
-	name = ivar.sub(/^@(.*)$/, '\1')
-	val = instance_eval(ivar)
-	case ivar
-	when *NOPRINTING_IVARS
-	  array.push format("conf.%s=%s", name, "...")
-	when *NO_INSPECTING_IVARS
-	  array.push format("conf.%s=%s", name, val.to_s)
-	when *IDNAME_IVARS
-	  array.push format("conf.%s=:%s", name, val.id2name)
-	else
-	  array.push format("conf.%s=%s", name, val.inspect)
-	end
+        ivar = ivar.to_s
+        name = ivar.sub(/^@(.*)$/, '\1')
+        val = instance_eval(ivar)
+        case ivar
+        when *NOPRINTING_IVARS
+          array.push format("conf.%s=%s", name, "...")
+        when *NO_INSPECTING_IVARS
+          array.push format("conf.%s=%s", name, val.to_s)
+        when *IDNAME_IVARS
+          array.push format("conf.%s=:%s", name, val.id2name)
+        else
+          array.push format("conf.%s=%s", name, val.inspect)
+        end
       end
       array.join("\n")
     end
