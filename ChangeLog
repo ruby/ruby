@@ -1,3 +1,9 @@
+Fri Aug  8 23:36:01 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_write): use rb_str_append to
+	  reuse coderange bits other than ASCII-8BIT, and keep
+	  taintedness.  [ruby-dev:48118] [Bug #9769]
+
 Mon Aug  4 01:29:57 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (env_shift): fix memory leak on Windows, free environment
