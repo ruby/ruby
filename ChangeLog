@@ -1,3 +1,11 @@
+Sat Aug  9 00:34:37 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: separate WIN32OLE_TYPE src from win32ole.c.
+	* ext/win32ole/win32ole.h: ditto.
+	* ext/win32ole/win32ole_type.c: ditto.
+	* ext/win32ole/win32ole_type.h: ditto.
+	* ext/win32ole/depend: ditto.
+
 Fri Aug  8 01:53:37 2014  Masaki Matsushita <glass.saga@gmail.com>
 
 	* lib/securerandom.rb: use OpenSSL::BN for performance improvement.

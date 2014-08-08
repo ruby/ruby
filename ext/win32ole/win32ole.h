@@ -82,6 +82,7 @@
 #define V_UINTREF(X) V_UNION(X, puintVal)
 #endif
 
+#define OLE_ADDREF(X) (X) ? ((X)->lpVtbl->AddRef(X)) : 0
 #define OLE_RELEASE(X) (X) ? ((X)->lpVtbl->Release(X)) : 0
 #define OLE_FREE(x) {\
     if(ole_initialized() == TRUE) {\
@@ -92,9 +93,13 @@
     }\
 }
 
+#define OLE_GET_TYPEATTR(X, Y) ((X)->lpVtbl->GetTypeAttr((X), (Y)))
+#define OLE_RELEASE_TYPEATTR(X, Y) ((X)->lpVtbl->ReleaseTypeAttr((X), (Y)))
+
 VALUE cWIN32OLE;
-VALUE cWIN32OLE_TYPE;
+VALUE cWIN32OLE_VARIABLE;
 LCID cWIN32OLE_lcid;
+
 
 LPWSTR ole_vstr2wc(VALUE vstr);
 LONG reg_open_key(HKEY hkey, const char *name, HKEY *phkey);
@@ -106,14 +111,20 @@ void ole_initialize(void);
 VALUE default_inspect(VALUE self, const char *class_name);
 VALUE ole_wc2vstr(LPWSTR pw, BOOL isfree);
 
-
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
 BOOL ole_initialized();
-VALUE create_win32ole_type(ITypeInfo *pTypeInfo, VALUE name);
+VALUE ole_methods_from_typeinfo(ITypeInfo *pTypeInfo, int mask);
+HRESULT ole_docinfo_from_type(ITypeInfo *pTypeInfo, BSTR *name, BSTR *helpstr, DWORD *helpcontext, BSTR *helpfile);
+VALUE ole_typedesc2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails);
+VALUE ole_typelib_from_itypeinfo(ITypeInfo *pTypeInfo);
+VALUE ole_type_from_itypeinfo(ITypeInfo *pTypeInfo);
+
+VALUE create_win32ole_variable(ITypeInfo *pTypeInfo, UINT index, VALUE name);
 
 #include "win32ole_variant_m.h"
 #include "win32ole_typelib.h"
+#include "win32ole_type.h"
 #include "win32ole_error.h"
 
 #endif

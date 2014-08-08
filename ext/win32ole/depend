@@ -1,5 +1,6 @@
 WIN32OLE_HEADERS = $(HDRS) $(ruby_headers)
 win32ole.o : win32ole.c $(WIN32OLE_HEADERS)
 win32ole_variant_m.o : win32ole_variant_m.c $(WIN32OLE_HEADERS)
-win32ole_error.o : win32ole_error.c $(WIN32OLE_HEADERS)
 win32ole_typelib.o : win32ole_typelib.c $(WIN32OLE_HEADERS)
+win32ole_type.o : win32ole_type.c $(WIN32OLE_HEADERS)
+win32ole_error.o : win32ole_error.c $(WIN32OLE_HEADERS)
