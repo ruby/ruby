@@ -12,8 +12,6 @@
 require "webrick/httpserver"
 require "net/http"
 
-Net::HTTP::version_1_2 if RUBY_VERSION < "1.7"
-
 module WEBrick
 
   NullReader = Object.new # :nodoc:
