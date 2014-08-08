@@ -26,15 +26,15 @@ module IRB # :nodoc:
       @lang = @territory = @encoding_name = @modifier = nil
       @locale = locale || ENV["IRB_LANG"] || ENV["LC_MESSAGES"] || ENV["LC_ALL"] || ENV["LANG"] || "C"
       if m = LOCALE_NAME_RE.match(@locale)
-	@lang, @territory, @encoding_name, @modifier = m[:language], m[:territory], m[:codeset], m[:modifier]
+        @lang, @territory, @encoding_name, @modifier = m[:language], m[:territory], m[:codeset], m[:modifier]
 
-	if @encoding_name
-	  begin load 'irb/encoding_aliases.rb'; rescue LoadError; end
-	  if @encoding = @@legacy_encoding_alias_map[@encoding_name]
-	    warn "%s is obsolete. use %s" % ["#{@lang}_#{@territory}.#{@encoding_name}", "#{@lang}_#{@territory}.#{@encoding.name}"]
-	  end
-	  @encoding = Encoding.find(@encoding_name) rescue nil
-	end
+        if @encoding_name
+          begin load 'irb/encoding_aliases.rb'; rescue LoadError; end
+          if @encoding = @@legacy_encoding_alias_map[@encoding_name]
+            warn "%s is obsolete. use %s" % ["#{@lang}_#{@territory}.#{@encoding_name}", "#{@lang}_#{@territory}.#{@encoding.name}"]
+          end
+          @encoding = Encoding.find(@encoding_name) rescue nil
+        end
       end
       @encoding ||= (Encoding.find('locale') rescue Encoding::ASCII_8BIT)
     end
@@ -44,9 +44,9 @@ module IRB # :nodoc:
     def String(mes)
       mes = super(mes)
       if @encoding
-	mes.encode(@encoding, undef: :replace)
+        mes.encode(@encoding, undef: :replace)
       else
-	mes
+        mes
       end
     end
 
@@ -83,22 +83,22 @@ module IRB # :nodoc:
 
       case file
       when /\.rb$/
-	begin
-	  load(file, priv)
-	  $".push file
-	  return true
-	rescue LoadError
-	end
+        begin
+          load(file, priv)
+          $".push file
+          return true
+        rescue LoadError
+        end
       when /\.(so|o|sl)$/
-	return super
+        return super
       end
 
       begin
-	load(f = file + ".rb")
-	$".push f  #"
-	return true
+        load(f = file + ".rb")
+        $".push f  #"
+        return true
       rescue LoadError
-	return ruby_require(file)
+        return ruby_require(file)
       end
     end
 
@@ -129,9 +129,9 @@ module IRB # :nodoc:
     def real_load(path, priv)
       src = MagicFile.open(path){|f| f.read}
       if priv
-	eval("self", TOPLEVEL_BINDING).extend(Module.new {eval(src, nil, path)})
+        eval("self", TOPLEVEL_BINDING).extend(Module.new {eval(src, nil, path)})
       else
-	eval(src, TOPLEVEL_BINDING, path)
+        eval(src, TOPLEVEL_BINDING, path)
       end
     end
 
@@ -161,20 +161,20 @@ module IRB # :nodoc:
 
     def each_sublocale
       if @lang
-	if @territory
-	  if @encoding_name
-	    yield "#{@lang}_#{@territory}.#{@encoding_name}@#{@modifier}" if @modifier
-	    yield "#{@lang}_#{@territory}.#{@encoding_name}"
-	  end
-	  yield "#{@lang}_#{@territory}@#{@modifier}" if @modifier
-	  yield "#{@lang}_#{@territory}"
-	end
+        if @territory
+          if @encoding_name
+            yield "#{@lang}_#{@territory}.#{@encoding_name}@#{@modifier}" if @modifier
+            yield "#{@lang}_#{@territory}.#{@encoding_name}"
+          end
+          yield "#{@lang}_#{@territory}@#{@modifier}" if @modifier
+          yield "#{@lang}_#{@territory}"
+        end
         if @encoding_name
           yield "#{@lang}.#{@encoding_name}@#{@modifier}" if @modifier
           yield "#{@lang}.#{@encoding_name}"
         end
-	yield "#{@lang}@#{@modifier}" if @modifier
-	yield "#{@lang}"
+        yield "#{@lang}@#{@modifier}" if @modifier
+        yield "#{@lang}"
       end
       yield nil
     end
