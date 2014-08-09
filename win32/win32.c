@@ -1195,7 +1195,8 @@ is_batch(const char *cmd)
     return 0;
 }
 
-static UINT filecp(void);
+UINT rb_w32_filecp(void);
+#define filecp rb_w32_filecp
 #define mbstr_to_wstr rb_w32_mbstr_to_wstr
 #define wstr_to_mbstr rb_w32_wstr_to_mbstr
 #define acp_to_wstr(str, plen) mbstr_to_wstr(CP_ACP, str, -1, plen)
@@ -1943,7 +1944,7 @@ opendir_internal(WCHAR *wpath, const char *filename)
 }
 
 /* License: Ruby's */
-static inline UINT
+UINT
 filecp(void)
 {
     UINT cp = AreFileApisANSI() ? CP_ACP : CP_OEMCP;

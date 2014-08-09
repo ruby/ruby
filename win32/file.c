@@ -24,6 +24,14 @@ static struct code_page_table {
 
 #define insecure_obj_p(obj, level) ((level) >= 4 || ((level) > 0 && OBJ_TAINTED(obj)))
 
+/* defined in win32/win32.c */
+#define system_code_page rb_w32_filecp
+#define mbstr_to_wstr rb_w32_mbstr_to_wstr
+#define wstr_to_mbstr rb_w32_wstr_to_mbstr
+UINT rb_w32_filecp(void);
+WCHAR *rb_w32_mbstr_to_wstr(UINT, const char *, int, long *);
+char *rb_w32_wstr_to_mbstr(UINT, const WCHAR *, int, long *);
+
 static inline void
 replace_wchar(wchar_t *s, int find, int replace)
 {
@@ -32,32 +40,6 @@ replace_wchar(wchar_t *s, int find, int replace)
 	    *s = replace;
 	s++;
     }
-}
-
-/* Convert str from multibyte char to wchar with specified code page */
-static inline void
-convert_mb_to_wchar(const char *str, wchar_t **wstr, size_t *wstr_len, UINT code_page)
-{
-    size_t len;
-
-    len = MultiByteToWideChar(code_page, 0, str, -1, NULL, 0) + 1;
-    *wstr = (wchar_t *)xmalloc(len * sizeof(wchar_t));
-
-    MultiByteToWideChar(code_page, 0, str, -1, *wstr, len);
-    *wstr_len = len - 2;
-}
-
-static inline void
-convert_wchar_to_mb(const wchar_t *wstr, char **str, size_t *str_len, UINT code_page)
-{
-    size_t len;
-
-    len = WideCharToMultiByte(code_page, 0, wstr, -1, NULL, 0, NULL, NULL);
-    *str = (char *)xmalloc(len * sizeof(char));
-    WideCharToMultiByte(code_page, 0, wstr, -1, *str, len, NULL, NULL);
-
-    /* do not count terminator as part of the string length */
-    *str_len = len - 1;
 }
 
 /*
@@ -162,13 +144,6 @@ remove_invalid_alternative_data(wchar_t *wfullpath, size_t size)
 	}
     }
     return size;
-}
-
-/* Return system code page. */
-static inline UINT
-system_code_page(void)
-{
-    return AreFileApisANSI() ? CP_ACP : CP_OEMCP;
 }
 
 void rb_enc_foreach_name(int (*func)(st_data_t name, st_data_t idx, st_data_t arg), st_data_t arg);
@@ -294,19 +269,17 @@ replace_to_long_name(wchar_t **wfullpath, size_t size, int heap)
 }
 
 static inline VALUE
-get_user_from_path(wchar_t **wpath, int offset, UINT cp, UINT path_cp, rb_encoding *path_encoding)
+get_user_from_path(const wchar_t *wuser, UINT cp, UINT path_cp, rb_encoding *path_encoding)
 {
     VALUE result, tmp;
-    wchar_t *wuser = *wpath + offset;
-    wchar_t *pos = wuser;
+    const wchar_t *pos = wuser;
     char *user;
-    size_t size;
+    long size;
 
     while (!IS_DIR_SEPARATOR_P(*pos) && *pos != '\0')
 	pos++;
 
-    *pos = '\0';
-    convert_wchar_to_mb(wuser, &user, &size, cp);
+    user = wstr_to_mbstr(cp, wuser, (int)(pos - wuser), &size);
 
     /* convert to VALUE and set the path encoding */
     if (path_cp == INVALID_CODE_PAGE) {
@@ -327,8 +300,9 @@ get_user_from_path(wchar_t **wpath, int offset, UINT cp, UINT path_cp, rb_encodi
 VALUE
 rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_name, VALUE result)
 {
-    size_t size = 0, wpath_len = 0, wdir_len = 0, whome_len = 0;
+    size_t size = 0, whome_len = 0;
     size_t buffer_len = 0;
+    long wpath_len = 0, wdir_len = 0;
     char *fullpath = NULL;
     wchar_t *wfullpath = NULL, *wpath = NULL, *wpath_pos = NULL;
     wchar_t *wdir = NULL, *wdir_pos = NULL;
@@ -364,7 +338,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
     /* convert char * to wchar_t */
     if (!NIL_P(path)) {
-	convert_mb_to_wchar(RSTRING_PTR(path), &wpath, &wpath_len, cp);
+	wpath = mbstr_to_wstr(cp, RSTRING_PTR(path), (int)RSTRING_LEN(path), &wpath_len);
 	wpath_pos = wpath;
     }
 
@@ -418,7 +392,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	}
     }
     else if (abs_mode == 0 && wpath_len >= 2 && wpath_pos[0] == L'~') {
-	result = get_user_from_path(&wpath_pos, 1, cp, path_cp, path_encoding);
+	result = get_user_from_path(wpath_pos + 1, cp, path_cp, path_encoding);
 
 	if (wpath)
 	    xfree(wpath);
@@ -435,7 +409,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
 	/* convert char * to wchar_t */
 	if (!NIL_P(dir)) {
-	    convert_mb_to_wchar(RSTRING_PTR(dir), &wdir, &wdir_len, cp);
+	    wdir = mbstr_to_wstr(cp, RSTRING_PTR(dir), (int)RSTRING_LEN(dir), &wdir_len);
 	    wdir_pos = wdir;
 	}
 
@@ -446,15 +420,15 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
 	    whome = home_dir();
 	    if (whome == NULL) {
-		xfree(wpath);
-		xfree(wdir);
+		free(wpath);
+		free(wdir);
 		rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
 	    }
 	    whome_len = wcslen(whome);
 
 	    if (PathIsRelativeW(whome) && !(whome_len >= 2 && IS_DIR_UNC_P(whome))) {
-		xfree(wpath);
-		xfree(wdir);
+		free(wpath);
+		free(wdir);
 		xfree(whome);
 		rb_raise(rb_eArgError, "non-absolute home");
 	    }
@@ -479,8 +453,8 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	    /* UNC path */
 	    if (wpath_len && IS_DIR_SEPARATOR_P(wpath_pos[0])) {
 		/* cut the UNC path tail to '//host/share' */
-		size_t separators = 0;
-		size_t pos = 2;
+		long separators = 0;
+		long pos = 2;
 		while (pos < wdir_len && separators < 2) {
 		    if (IS_DIR_SEPARATOR_P(wdir[pos])) {
 			separators++;
@@ -492,12 +466,12 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	    }
 	}
 	else if (abs_mode == 0 && wdir_len >= 2 && wdir_pos[0] == L'~') {
-	    result = get_user_from_path(&wdir_pos, 1, cp, path_cp, path_encoding);
+	    result = get_user_from_path(wdir_pos + 1, cp, path_cp, path_encoding);
 	    if (wpath)
-		xfree(wpath);
+		free(wpath);
 
 	    if (wdir)
-		xfree(wdir);
+		free(wdir);
 
 	    rb_raise(rb_eArgError, "can't find user %s", StringValuePtr(result));
 	}
@@ -651,10 +625,10 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	xfree(buffer);
 
     if (wpath)
-	xfree(wpath);
+	free(wpath);
 
     if (wdir)
-	xfree(wdir);
+	free(wdir);
 
     if (whome)
 	xfree(whome);
@@ -673,10 +647,11 @@ rb_file_load_ok(const char *path)
 {
     DWORD attr;
     int ret = 1;
-    size_t len;
+    long len;
     wchar_t* wpath;
 
-    convert_mb_to_wchar(path, &wpath, &len, CP_UTF8);
+    wpath = mbstr_to_wstr(CP_UTF8, path, -1, &len);
+    if (!wpath) return 0;
 
     attr = GetFileAttributesW(wpath);
     if (attr == INVALID_FILE_ATTRIBUTES ||
@@ -694,7 +669,7 @@ rb_file_load_ok(const char *path)
 	    ret = 0;
 	}
     }
-    xfree(wpath);
+    free(wpath);
     return ret;
 }
 
