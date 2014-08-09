@@ -258,22 +258,22 @@ module IRB
   class Irb
     def signal_handle
       unless @context.ignore_sigint?
-	print "\nabort!!\n" if @context.verbose?
-	exit
+        print "\nabort!!\n" if @context.verbose?
+        exit
       end
 
       case @signal_status
       when :IN_INPUT
-	print "^C\n"
-	IRB.JobManager.thread(self).raise RubyLex::TerminateLineInput
+        print "^C\n"
+        IRB.JobManager.thread(self).raise RubyLex::TerminateLineInput
       when :IN_EVAL
-	IRB.irb_abort(self)
+        IRB.irb_abort(self)
       when :IN_LOAD
-	IRB.irb_abort(self, LoadAbort)
+        IRB.irb_abort(self, LoadAbort)
       when :IN_IRB
-	# ignore
+        # ignore
       else
-	# ignore other cases as well
+        # ignore other cases as well
       end
     end
   end

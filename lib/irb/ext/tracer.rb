@@ -18,7 +18,7 @@ module IRB
     Tracer.add_filter {
       |event, file, line, id, binding, *rests|
       /^#{Regexp.quote(@CONF[:IRB_LIB_PATH])}/ !~ file and
-	File::basename(file) != "irb.rb"
+        File::basename(file) != "irb.rb"
     }
   end
 
@@ -35,12 +35,12 @@ module IRB
     # See +lib/tracer.rb+ for more information.
     def use_tracer=(opt)
       if opt
-	Tracer.set_get_line_procs(@irb_path) {
-	  |line_no, *rests|
-	  @io.line(line_no)
-	}
+        Tracer.set_get_line_procs(@irb_path) {
+          |line_no, *rests|
+          @io.line(line_no)
+        }
       elsif !opt && @use_tracer
-	Tracer.off
+        Tracer.off
       end
       @use_tracer=opt
     end
@@ -54,14 +54,14 @@ module IRB
     # See +lib/tracer.rb+ for more information.
     def evaluate(context, statements, file = nil, line = nil)
       if context.use_tracer? && file != nil && line != nil
-	Tracer.on
-	begin
-	  __evaluate__(context, statements, file, line)
-	ensure
-	  Tracer.off
-	end
+        Tracer.on
+        begin
+          __evaluate__(context, statements, file, line)
+        ensure
+          Tracer.off
+        end
       else
-	__evaluate__(context, statements, file || __FILE__, line || __LINE__)
+        __evaluate__(context, statements, file || __FILE__, line || __LINE__)
       end
     end
   end

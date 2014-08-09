@@ -59,48 +59,48 @@ module IRB # :nodoc:
 
     @CONF[:PROMPT] = {
       :NULL => {
-	:PROMPT_I => nil,
-	:PROMPT_N => nil,
-	:PROMPT_S => nil,
-	:PROMPT_C => nil,
-	:RETURN => "%s\n"
+        :PROMPT_I => nil,
+        :PROMPT_N => nil,
+        :PROMPT_S => nil,
+        :PROMPT_C => nil,
+        :RETURN => "%s\n"
       },
       :DEFAULT => {
-	:PROMPT_I => "%N(%m):%03n:%i> ",
-	:PROMPT_N => "%N(%m):%03n:%i> ",
-	:PROMPT_S => "%N(%m):%03n:%i%l ",
-	:PROMPT_C => "%N(%m):%03n:%i* ",
-	:RETURN => "=> %s\n"
+        :PROMPT_I => "%N(%m):%03n:%i> ",
+        :PROMPT_N => "%N(%m):%03n:%i> ",
+        :PROMPT_S => "%N(%m):%03n:%i%l ",
+        :PROMPT_C => "%N(%m):%03n:%i* ",
+        :RETURN => "=> %s\n"
       },
       :CLASSIC => {
-	:PROMPT_I => "%N(%m):%03n:%i> ",
-	:PROMPT_N => "%N(%m):%03n:%i> ",
-	:PROMPT_S => "%N(%m):%03n:%i%l ",
-	:PROMPT_C => "%N(%m):%03n:%i* ",
-	:RETURN => "%s\n"
+        :PROMPT_I => "%N(%m):%03n:%i> ",
+        :PROMPT_N => "%N(%m):%03n:%i> ",
+        :PROMPT_S => "%N(%m):%03n:%i%l ",
+        :PROMPT_C => "%N(%m):%03n:%i* ",
+        :RETURN => "%s\n"
       },
       :SIMPLE => {
-	:PROMPT_I => ">> ",
-	:PROMPT_N => ">> ",
-	:PROMPT_S => nil,
-	:PROMPT_C => "?> ",
-	:RETURN => "=> %s\n"
+        :PROMPT_I => ">> ",
+        :PROMPT_N => ">> ",
+        :PROMPT_S => nil,
+        :PROMPT_C => "?> ",
+        :RETURN => "=> %s\n"
       },
       :INF_RUBY => {
-	:PROMPT_I => "%N(%m):%03n:%i> ",
-#	:PROMPT_N => "%N(%m):%03n:%i> ",
-	:PROMPT_N => nil,
-	:PROMPT_S => nil,
-	:PROMPT_C => nil,
-	:RETURN => "%s\n",
-	:AUTO_INDENT => true
+        :PROMPT_I => "%N(%m):%03n:%i> ",
+        #	:PROMPT_N => "%N(%m):%03n:%i> ",
+        :PROMPT_N => nil,
+        :PROMPT_S => nil,
+        :PROMPT_C => nil,
+        :RETURN => "%s\n",
+        :AUTO_INDENT => true
       },
       :XMP => {
-	:PROMPT_I => nil,
-	:PROMPT_N => nil,
-	:PROMPT_S => nil,
-	:PROMPT_C => nil,
-	:RETURN => "    ==>%s\n"
+        :PROMPT_I => nil,
+        :PROMPT_N => nil,
+        :PROMPT_S => nil,
+        :PROMPT_C => nil,
+        :RETURN => "    ==>%s\n"
       }
     }
 
@@ -128,94 +128,94 @@ module IRB # :nodoc:
     while opt = ARGV.shift
       case opt
       when "-f"
-	@CONF[:RC] = false
+        @CONF[:RC] = false
       when "-m"
-	@CONF[:MATH_MODE] = true
+        @CONF[:MATH_MODE] = true
       when "-d"
-	$DEBUG = true
-	$VERBOSE = true
+        $DEBUG = true
+        $VERBOSE = true
       when "-w"
-	$VERBOSE = true
+        $VERBOSE = true
       when /^-W(.+)?/
-	opt = $1 || ARGV.shift
-	case opt
-	when "0"
-	  $VERBOSE = nil
-	when "1"
-	  $VERBOSE = false
-	else
-	  $VERBOSE = true
-	end
+        opt = $1 || ARGV.shift
+        case opt
+        when "0"
+          $VERBOSE = nil
+        when "1"
+          $VERBOSE = false
+        else
+          $VERBOSE = true
+        end
       when /^-r(.+)?/
-	opt = $1 || ARGV.shift
-	@CONF[:LOAD_MODULES].push opt if opt
+        opt = $1 || ARGV.shift
+        @CONF[:LOAD_MODULES].push opt if opt
       when /^-I(.+)?/
         opt = $1 || ARGV.shift
-	load_path.concat(opt.split(File::PATH_SEPARATOR)) if opt
+        load_path.concat(opt.split(File::PATH_SEPARATOR)) if opt
       when '-U'
-	set_encoding("UTF-8", "UTF-8")
+        set_encoding("UTF-8", "UTF-8")
       when /^-E(.+)?/, /^--encoding(?:=(.+))?/
-	opt = $1 || ARGV.shift
-	set_encoding(*opt.split(':', 2))
+        opt = $1 || ARGV.shift
+        set_encoding(*opt.split(':', 2))
       when "--inspect"
-	if /^-/ !~ ARGV.first
-	  @CONF[:INSPECT_MODE] = ARGV.shift
-	else
-	  @CONF[:INSPECT_MODE] = true
-	end
+        if /^-/ !~ ARGV.first
+          @CONF[:INSPECT_MODE] = ARGV.shift
+        else
+          @CONF[:INSPECT_MODE] = true
+        end
       when "--noinspect"
-	@CONF[:INSPECT_MODE] = false
+        @CONF[:INSPECT_MODE] = false
       when "--readline"
-	@CONF[:USE_READLINE] = true
+        @CONF[:USE_READLINE] = true
       when "--noreadline"
-	@CONF[:USE_READLINE] = false
+        @CONF[:USE_READLINE] = false
       when "--echo"
-	@CONF[:ECHO] = true
+        @CONF[:ECHO] = true
       when "--noecho"
-	@CONF[:ECHO] = false
+        @CONF[:ECHO] = false
       when "--verbose"
-	@CONF[:VERBOSE] = true
+        @CONF[:VERBOSE] = true
       when "--noverbose"
-	@CONF[:VERBOSE] = false
+        @CONF[:VERBOSE] = false
       when /^--prompt-mode(?:=(.+))?/, /^--prompt(?:=(.+))?/
-	opt = $1 || ARGV.shift
-	prompt_mode = opt.upcase.tr("-", "_").intern
-	@CONF[:PROMPT_MODE] = prompt_mode
+        opt = $1 || ARGV.shift
+        prompt_mode = opt.upcase.tr("-", "_").intern
+        @CONF[:PROMPT_MODE] = prompt_mode
       when "--noprompt"
-	@CONF[:PROMPT_MODE] = :NULL
+        @CONF[:PROMPT_MODE] = :NULL
       when "--inf-ruby-mode"
-	@CONF[:PROMPT_MODE] = :INF_RUBY
+        @CONF[:PROMPT_MODE] = :INF_RUBY
       when "--sample-book-mode", "--simple-prompt"
-	@CONF[:PROMPT_MODE] = :SIMPLE
+        @CONF[:PROMPT_MODE] = :SIMPLE
       when "--tracer"
-	@CONF[:USE_TRACER] = true
+        @CONF[:USE_TRACER] = true
       when /^--back-trace-limit(?:=(.+))?/
-	@CONF[:BACK_TRACE_LIMIT] = ($1 || ARGV.shift).to_i
+        @CONF[:BACK_TRACE_LIMIT] = ($1 || ARGV.shift).to_i
       when /^--context-mode(?:=(.+))?/
-	@CONF[:CONTEXT_MODE] = ($1 || ARGV.shift).to_i
+        @CONF[:CONTEXT_MODE] = ($1 || ARGV.shift).to_i
       when "--single-irb"
-	@CONF[:SINGLE_IRB] = true
+        @CONF[:SINGLE_IRB] = true
       when /^--irb_debug(?:=(.+))?/
-	@CONF[:DEBUG_LEVEL] = ($1 || ARGV.shift).to_i
+        @CONF[:DEBUG_LEVEL] = ($1 || ARGV.shift).to_i
       when "-v", "--version"
-	print IRB.version, "\n"
-	exit 0
+        print IRB.version, "\n"
+        exit 0
       when "-h", "--help"
-	require "irb/help"
-	IRB.print_usage
-	exit 0
+        require "irb/help"
+        IRB.print_usage
+        exit 0
       when "--"
-	if opt = ARGV.shift
-	  @CONF[:SCRIPT] = opt
-	  $0 = opt
-	end
+        if opt = ARGV.shift
+          @CONF[:SCRIPT] = opt
+          $0 = opt
+        end
         break
       when /^-/
-	IRB.fail UnrecognizedSwitch, opt
+        IRB.fail UnrecognizedSwitch, opt
       else
-	@CONF[:SCRIPT] = opt
-	$0 = opt
-	break
+        @CONF[:SCRIPT] = opt
+        $0 = opt
+        break
       end
     end
     load_path.collect! do |path|
@@ -229,14 +229,14 @@ module IRB # :nodoc:
   def IRB.run_config
     if @CONF[:RC]
       begin
-	load rc_file
+        load rc_file
       rescue LoadError, Errno::ENOENT
       rescue # StandardError, ScriptError
-	print "load error: #{rc_file}\n"
-	print $!.class, ": ", $!, "\n"
-	for err in $@[0, $@.size - 2]
-	  print "\t", err, "\n"
-	end
+        print "load error: #{rc_file}\n"
+        print $!.class, ": ", $!, "\n"
+        for err in $@[0, $@.size - 2]
+          print "\t", err, "\n"
+        end
       end
     end
   end
@@ -245,11 +245,11 @@ module IRB # :nodoc:
   def IRB.rc_file(ext = IRBRC_EXT)
     if !@CONF[:RC_NAME_GENERATOR]
       rc_file_generators do |rcgen|
-	@CONF[:RC_NAME_GENERATOR] ||= rcgen
-	if File.exist?(rcgen.call(IRBRC_EXT))
-	  @CONF[:RC_NAME_GENERATOR] = rcgen
-	  break
-	end
+        @CONF[:RC_NAME_GENERATOR] ||= rcgen
+        if File.exist?(rcgen.call(IRBRC_EXT))
+          @CONF[:RC_NAME_GENERATOR] = rcgen
+          break
+        end
       end
     end
     case rc_file = @CONF[:RC_NAME_GENERATOR].call(ext)
@@ -279,9 +279,9 @@ module IRB # :nodoc:
   def IRB.load_modules
     for m in @CONF[:LOAD_MODULES]
       begin
-	require m
+        require m
       rescue LoadError => err
-	warn err.backtrace[0] << ":#{err.class}: #{err}"
+        warn err.backtrace[0] << ":#{err.class}: #{err}"
       end
     end
   end
@@ -296,7 +296,7 @@ module IRB # :nodoc:
       Encoding.default_internal = intern unless intern.nil? || intern.empty?
       @CONF[:ENCODINGS] = IRB::DefaultEncodings.new(extern, intern)
       [$stdin, $stdout, $stderr].each do |io|
-	io.set_encoding(extern, intern)
+        io.set_encoding(extern, intern)
       end
       @CONF[:LC_MESSAGES].instance_variable_set(:@encoding, extern)
     ensure

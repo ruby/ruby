@@ -133,14 +133,14 @@ module IRB
       include Readline
       # Creates a new input method object using Readline
       def initialize
-	super
+        super
 
-	@line_no = 0
-	@line = []
-	@eof = false
+        @line_no = 0
+        @line = []
+        @eof = false
 
-	@stdin = IO.open(STDIN.to_i, :external_encoding => IRB.conf[:LC_MESSAGES].encoding, :internal_encoding => "-")
-	@stdout = IO.open(STDOUT.to_i, 'w', :external_encoding => IRB.conf[:LC_MESSAGES].encoding, :internal_encoding => "-")
+        @stdin = IO.open(STDIN.to_i, :external_encoding => IRB.conf[:LC_MESSAGES].encoding, :internal_encoding => "-")
+        @stdout = IO.open(STDOUT.to_i, 'w', :external_encoding => IRB.conf[:LC_MESSAGES].encoding, :internal_encoding => "-")
       end
 
       # Reads the next line from this input method.
@@ -149,13 +149,13 @@ module IRB
       def gets
         Readline.input = @stdin
         Readline.output = @stdout
-	if l = readline(@prompt, false)
-	  HISTORY.push(l) if !l.empty?
-	  @line[@line_no += 1] = l + "\n"
-	else
-	  @eof = true
-	  l
-	end
+        if l = readline(@prompt, false)
+          HISTORY.push(l) if !l.empty?
+          @line[@line_no += 1] = l + "\n"
+        else
+          @eof = true
+          l
+        end
       end
 
       # Whether the end of this input method has been reached, returns +true+
@@ -163,7 +163,7 @@ module IRB
       #
       # See IO#eof? for more information.
       def eof?
-	@eof
+        @eof
       end
 
       # Whether this input method is still readable when there is no more data to
@@ -171,7 +171,7 @@ module IRB
       #
       # See IO#eof for more information.
       def readable_after_eof?
-	true
+        true
       end
 
       # Returns the current line number for #io.
@@ -180,12 +180,12 @@ module IRB
       #
       # See IO#lineno for more information.
       def line(line_no)
-	@line[line_no]
+        @line[line_no]
       end
 
       # The external encoding for standard input.
       def encoding
-	@stdin.external_encoding
+        @stdin.external_encoding
       end
     end
   rescue LoadError

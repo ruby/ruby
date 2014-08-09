@@ -33,14 +33,14 @@ module IRB # :nodoc:
 
     def search_file_from_ruby_path(fn) # :nodoc:
       if /^#{Regexp.quote(File::Separator)}/ =~ fn
-	return fn if File.exist?(fn)
-	return nil
+        return fn if File.exist?(fn)
+        return nil
       end
 
       for path in $:
-	if File.exist?(f = File.join(path, fn))
-	  return f
-	end
+        if File.exist?(f = File.join(path, fn))
+          return f
+        end
       end
       return nil
     end
@@ -50,20 +50,20 @@ module IRB # :nodoc:
     # See Irb#suspend_input_method for more information.
     def source_file(path)
       irb.suspend_name(path, File.basename(path)) do
-	irb.suspend_input_method(FileInputMethod.new(path)) do
-	  |back_io|
-	  irb.signal_status(:IN_LOAD) do
-	    if back_io.kind_of?(FileInputMethod)
-	      irb.eval_input
-	    else
-	      begin
-		irb.eval_input
-	      rescue LoadAbort
-		print "load abort!!\n"
-	      end
-	    end
-	  end
-	end
+        irb.suspend_input_method(FileInputMethod.new(path)) do
+          |back_io|
+          irb.signal_status(:IN_LOAD) do
+            if back_io.kind_of?(FileInputMethod)
+              irb.eval_input
+            else
+              begin
+                irb.eval_input
+              rescue LoadAbort
+                print "load abort!!\n"
+              end
+            end
+          end
+        end
       end
     end
 
@@ -73,28 +73,28 @@ module IRB # :nodoc:
     def load_file(path, priv = nil)
       irb.suspend_name(path, File.basename(path)) do
 
-	if priv
-	  ws = WorkSpace.new(Module.new)
-	else
-	  ws = WorkSpace.new
-	end
-	irb.suspend_workspace(ws) do
-	  irb.suspend_input_method(FileInputMethod.new(path)) do
-	    |back_io|
-	    irb.signal_status(:IN_LOAD) do
-#	      p irb.conf
-	      if back_io.kind_of?(FileInputMethod)
-		irb.eval_input
-	      else
-		begin
-		  irb.eval_input
-		rescue LoadAbort
-		  print "load abort!!\n"
-		end
-	      end
-	    end
-	  end
-	end
+        if priv
+          ws = WorkSpace.new(Module.new)
+        else
+          ws = WorkSpace.new
+        end
+        irb.suspend_workspace(ws) do
+          irb.suspend_input_method(FileInputMethod.new(path)) do
+            |back_io|
+            irb.signal_status(:IN_LOAD) do
+              #	      p irb.conf
+              if back_io.kind_of?(FileInputMethod)
+                irb.eval_input
+              else
+                begin
+                  irb.eval_input
+                rescue LoadAbort
+                  print "load abort!!\n"
+                end
+              end
+            end
+          end
+        end
       end
     end
 
@@ -104,25 +104,25 @@ module IRB # :nodoc:
       back_name = @irb_name
       back_scanner = @irb.scanner
       begin
- 	@io = FileInputMethod.new(path)
- 	@irb_name = File.basename(path)
-	@irb_path = path
-	@irb.signal_status(:IN_LOAD) do
-	  if back_io.kind_of?(FileInputMethod)
-	    @irb.eval_input
-	  else
-	    begin
-	      @irb.eval_input
-	    rescue LoadAbort
-	      print "load abort!!\n"
-	    end
-	  end
-	end
+        @io = FileInputMethod.new(path)
+        @irb_name = File.basename(path)
+        @irb_path = path
+        @irb.signal_status(:IN_LOAD) do
+          if back_io.kind_of?(FileInputMethod)
+            @irb.eval_input
+          else
+            begin
+              @irb.eval_input
+            rescue LoadAbort
+              print "load abort!!\n"
+            end
+          end
+        end
       ensure
- 	@io = back_io
- 	@irb_name = back_name
- 	@irb_path = back_path
-	@irb.scanner = back_scanner
+        @io = back_io
+        @irb_name = back_name
+        @irb_path = back_path
+        @irb.scanner = back_scanner
       end
     end
   end

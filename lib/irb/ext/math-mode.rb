@@ -28,14 +28,14 @@ module IRB
     # more information.
     def math_mode=(opt)
       if @math_mode == true && !opt
-	IRB.fail CantReturnToNormalMode
-	return
+        IRB.fail CantReturnToNormalMode
+        return
       end
 
       @math_mode = opt
       if math_mode
-	main.extend Math
-	print "start math mode\n" if verbose?
+        main.extend Math
+        print "start math mode\n" if verbose?
       end
     end
 
