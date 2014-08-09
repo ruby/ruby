@@ -37,7 +37,8 @@ class TestSyntax < Test::Unit::TestCase
       make_tmpsrc(f, "# -*- coding: #{enc.name} -*-")
       assert_raise(ArgumentError, enc.name) {load(f.path)}
     end
-    f.close!
+  ensure
+    f.close! if f
   end
 
   def test_script_lines
@@ -53,7 +54,8 @@ class TestSyntax < Test::Unit::TestCase
         assert_equal([enc, enc], debug_lines[f.path].map(&:encoding), bug4361)
       end
     end
-    f.close!
+  ensure
+    f.close! if f
   end
 
   def test_newline_in_block_parameters
