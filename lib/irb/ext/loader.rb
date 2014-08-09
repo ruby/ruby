@@ -82,7 +82,6 @@ module IRB # :nodoc:
           irb.suspend_input_method(FileInputMethod.new(path)) do
             |back_io|
             irb.signal_status(:IN_LOAD) do
-              #	      p irb.conf
               if back_io.kind_of?(FileInputMethod)
                 irb.eval_input
               else

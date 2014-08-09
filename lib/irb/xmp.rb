@@ -54,8 +54,6 @@ class XMP
   # full detail.
   def initialize(bind = nil)
     IRB.init_config(nil)
-    #IRB.parse_opts
-    #IRB.load_modules
 
     IRB.conf[:PROMPT_MODE] = :XMP
 
@@ -65,7 +63,6 @@ class XMP
     @irb = IRB::Irb.new(ws, @io)
     @irb.context.ignore_sigint = false
 
-#    IRB.conf[:IRB_RC].call(@irb.context) if IRB.conf[:IRB_RC]
     IRB.conf[:MAIN_CONTEXT] = @irb.context
   end
 

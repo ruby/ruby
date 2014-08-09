@@ -13,7 +13,6 @@ require "e2mmap"
 require "irb/init"
 require "irb/context"
 require "irb/extend-command"
-#require "irb/workspace"
 
 require "irb/ruby-lex"
 require "irb/input-method"
@@ -399,7 +398,6 @@ module IRB
     ensure
       irb_at_exit
     end
-#    print "\n"
   end
 
   # Calls each event hook of IRB.conf[:AT_EXIT] when the current session quits.

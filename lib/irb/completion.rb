@@ -38,8 +38,6 @@ module IRB
     CompletionProc = proc { |input|
       bind = IRB.conf[:MAIN_CONTEXT].workspace.binding
 
-      #      puts "input: #{input}"
-
       case input
       when /^((["'`]).*\2)\.([^.]*)$/
         # String
@@ -90,7 +88,6 @@ module IRB
         candidates = Object.constants.collect{|m| m.to_s}
         candidates.grep(/^#{receiver}/).collect{|e| "::" + e}
 
-        #      when /^(((::)?[A-Z][^:.\(]*)+)::?([^:.]*)$/
       when /^([A-Z].*)::([^:.]*)$/
         # Constant or class methods
         receiver = $1
@@ -143,9 +140,6 @@ module IRB
         regmessage = Regexp.new(Regexp.quote($1))
         candidates = global_variables.collect{|m| m.to_s}.grep(regmessage)
 
-        #      when /^(\$?(\.?[^.]+)+)\.([^.]*)$/
-        #      when /^((\.?[^.]+)+)\.([^.]*)$/
-        #      when /^([^."].*)\.([^.]*)$/
       when /^([^."].*)(\.|::)([^.]*)$/
         # variable.func or func.func
         receiver = $1
@@ -228,7 +222,6 @@ module IRB
 end
 
 if Readline.respond_to?("basic_word_break_characters=")
-  #  Readline.basic_word_break_characters= " \t\n\"\\'`><=;|&{("
   Readline.basic_word_break_characters= " \t\n`><=;|&{("
 end
 Readline.completion_append_character = nil

@@ -101,7 +101,6 @@ class RubyLex
 
   def getc
     while @rests.empty?
-#      return nil unless buf_input
       @rests.push nil unless buf_input
     end
     c = @rests.shift
@@ -266,12 +265,8 @@ class RubyLex
     until (((tk = token).kind_of?(TkNL) || tk.kind_of?(TkEND_OF_SCRIPT)) &&
         !@continue or
         tk.nil?)
-      #p tk
-      #p @lex_state
-      #p self
     end
     line = get_readed
-    #      print self.inspect
     if line == "" and tk.kind_of?(TkEND_OF_SCRIPT) || tk.nil?
       nil
     else
@@ -280,8 +275,6 @@ class RubyLex
   end
 
   def token
-    #      require "tracer"
-    #      Tracer.on
     @prev_seek = @seek
     @prev_line_no = @line_no
     @prev_char_no = @char_no
@@ -299,15 +292,14 @@ class RubyLex
     if @readed_auto_clean_up
       get_readed
     end
-    #      Tracer.off
     tk
   end
 
   ENINDENT_CLAUSE = [
     "case", "class", "def", "do", "for", "if",
-    "module", "unless", "until", "while", "begin" #, "when"
+    "module", "unless", "until", "while", "begin"
   ]
-  DEINDENT_CLAUSE = ["end" #, "when"
+  DEINDENT_CLAUSE = ["end"
   ]
 
   PERCENT_LTYPE = {
@@ -554,7 +546,6 @@ class RubyLex
 
     @OP.def_rule("::") do
        |op, io|
-#      p @lex_state.id2name, @space_seen
       if @lex_state == EXPR_BEG or @lex_state == EXPR_ARG && @space_seen
         @lex_state = EXPR_BEG
         Token(TkCOLON3)
@@ -585,11 +576,6 @@ class RubyLex
       @lex_state = EXPR_BEG
       Token("^")
     end
-
-    #       @OP.def_rules("^=") do
-    # 	@lex_state = EXPR_BEG
-    # 	Token(OP_ASGN, :^)
-    #       end
 
     @OP.def_rules(",") do
       |op, io|
@@ -720,16 +706,6 @@ class RubyLex
       end
     end
 
-    #       @OP.def_rule("def", proc{|op, io| /\s/ =~ io.peek(0)}) do
-    # 	|op, io|
-    # 	@indent += 1
-    # 	@lex_state = EXPR_FNAME
-    # #	@lex_state = EXPR_END
-    # #	until @rests[0] == "\n" or @rests[0] == ";"
-    # #	  rests.shift
-    # #	end
-    #       end
-
     @OP.def_rule("") do
       |op, io|
       printf "MATCH: start %s: %s\n", op, io.inspect if RubyLex.debug?
@@ -842,7 +818,6 @@ class RubyLex
                   @indent += 1
                   @indent_stack.push token_c
                 end
-                #		p @indent_stack
               end
 
             elsif DEINDENT_CLAUSE.include?(token)
@@ -880,7 +855,6 @@ class RubyLex
 
   def identify_here_document
     ch = getc
-#    if lt = PERCENT_LTYPE[ch]
     if ch == "-"
       ch = getc
       indent = true
@@ -912,12 +886,6 @@ class RubyLex
     end
 
     @here_header = false
-#     while l = gets
-#       l = l.sub(/(:?\r)?\n\z/, '')
-#       if (indent ? l.strip : l) == quoted
-#  	break
-#       end
-#     end
 
     line = ""
     while ch = getc
@@ -954,11 +922,6 @@ class RubyLex
     else
       RubyLex.fail SyntaxError, "unknown type of %string"
     end
-#     if ch !~ /\W/
-#       ungetc
-#       next
-#     end
-    #@ltype = lt
     @quoted = ch unless @quoted = PERCENT_PAREN[ch]
     identify_string(lt, @quoted)
   end
@@ -1147,9 +1110,6 @@ class RubyLex
     @ltype = "#"
 
     while ch = getc
-#      if ch == "\\" #"
-#	read_escape
-#      end
       if ch == "\n"
         @ltype = nil
         ungetc

@@ -117,7 +117,6 @@ module IRB
     def gets
       print @prompt
       l = @io.gets
-#      print @prompt, l
       l
     end
 

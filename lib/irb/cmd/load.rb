@@ -19,7 +19,6 @@ module IRB
       include IrbLoader
 
       def execute(file_name, priv = nil)
-        #	return ruby_load(file_name) unless IRB.conf[:USE_LOADER]
         return irb_load(file_name, priv)
       end
     end
@@ -28,7 +27,6 @@ module IRB
       include IrbLoader
 
       def execute(file_name)
-        #	return ruby_require(file_name) unless IRB.conf[:USE_LOADER]
 
         rex = Regexp.new("#{Regexp.quote(file_name)}(\.o|\.rb)?")
         return false if $".find{|f| f =~ rex}

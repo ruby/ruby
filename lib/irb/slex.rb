@@ -247,7 +247,6 @@ end
 # :startdoc:
 
 if $0 == __FILE__
-  #    Tracer.on
   case $1
   when "1"
     tr = SLex.new
@@ -281,4 +280,3 @@ if $0 == __FILE__
   end
   exit
 end
-

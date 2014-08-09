@@ -61,20 +61,6 @@ module IRB # :nodoc:
     #     Inspector.def_inspector(key, inspector)
     #     Inspector.def_inspector([key1,...], inspector)
     def self.def_inspector(key, arg=nil, &block)
-  #     if !block_given?
-  #       case arg
-  #       when nil, Proc
-  # 	inspector = IRB::Inspector(init_p)
-  #       when Inspector
-  # 	inspector = init_p
-  #       else
-  # 	IRB.Raise IllegalParameter, init_p
-  #       end
-  #       init_p = nil
-  #     else
-  #       inspector = IRB::Inspector(block, init_p)
-  #     end
-
       if block_given?
         inspector = IRB::Inspector(block, arg)
       else

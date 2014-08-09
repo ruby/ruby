@@ -88,7 +88,6 @@ module IRB # :nodoc:
       },
       :INF_RUBY => {
         :PROMPT_I => "%N(%m):%03n:%i> ",
-        #	:PROMPT_N => "%N(%m):%03n:%i> ",
         :PROMPT_N => nil,
         :PROMPT_S => nil,
         :PROMPT_C => nil,
@@ -110,7 +109,6 @@ module IRB # :nodoc:
     @CONF[:CONTEXT_MODE] = 3 # use binding in function on TOPLEVEL_BINDING
     @CONF[:SINGLE_IRB] = false
 
-#    @CONF[:LC_MESSAGES] = "en"
     @CONF[:LC_MESSAGES] = Locale.new
 
     @CONF[:AT_EXIT] = []

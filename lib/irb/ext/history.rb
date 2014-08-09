@@ -21,8 +21,7 @@ module IRB # :nodoc:
     def set_last_value(value)
       _set_last_value(value)
 
-      #      @workspace.evaluate self, "_ = IRB.CurrentContext.last_value"
-      if @eval_history #and !@eval_history_values.equal?(llv)
+      if @eval_history
         @eval_history_values.push @line_no, @last_value
         @workspace.evaluate self, "__ = IRB.CurrentContext.instance_eval{@eval_history_values}"
       end

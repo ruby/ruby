@@ -186,7 +186,6 @@ module RubyToken
     [:TkRSHFT,      TkOp,   ">>"],
     [:TkCOLON2,     TkOp],
     [:TkCOLON3,     TkOp],
-#   [:OPASGN,	    TkOp],               # +=, -=  etc. #
     [:TkASSOC,      TkOp,   "=>"],
     [:TkQUESTION,   TkOp,   "?"],	 #?
     [:TkCOLON,      TkOp,   ":"],        #:

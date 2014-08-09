@@ -17,7 +17,6 @@ module IRB
 
     # Creates a new JobManager object
     def initialize
-      # @jobs = [[thread, irb],...]
       @jobs = []
       @current_job = nil
     end

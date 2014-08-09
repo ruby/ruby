@@ -30,7 +30,6 @@ module IRB
         @workspace = WorkSpace.new
       end
       @thread = Thread.current if defined? Thread
-      #      @irb_level = 0
 
       # copy of default configuration
       @ap_name = IRB.conf[:AP_NAME]
@@ -378,8 +377,6 @@ module IRB
     def evaluate(line, line_no) # :nodoc:
       @line_no = line_no
       set_last_value(@workspace.evaluate(self, line, irb_path, line_no))
-      #      @workspace.evaluate("_ = IRB.conf[:MAIN_CONTEXT]._")
-      #      @_ = @workspace.evaluate(line, irb_path, line_no)
     end
 
     def inspect_last_value # :nodoc:

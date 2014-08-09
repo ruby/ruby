@@ -1,3 +1,8 @@
+Sat Aug  9 11:02:07 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/irb.rb: removed commented-out code.
+	* lib/irb/**/*.rb: ditto.
+
 Sat Aug  9 10:35:30 2014  Laurent Arnoud  <laurent@spkdev.net>
 
 	* lib/cmath.rb: fixed indent. [fix GH-696]

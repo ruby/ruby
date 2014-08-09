@@ -40,30 +40,6 @@ module IRB # :nodoc:
         main.extend ExtendCommandBundle
       end
     end
-
-#     def change_binding(*_main)
-#       back = @workspace
-#       @workspace = WorkSpace.new(*_main)
-#       unless _main.empty?
-# 	begin
-# 	  main.extend ExtendCommandBundle
-# 	rescue
-# 	  print "can't change binding to: ", main.inspect, "\n"
-# 	  @workspace = back
-# 	  return nil
-# 	end
-#       end
-#       @irb_level += 1
-#       begin
-# 	catch(:SU_EXIT) do
-# 	  @irb.eval_input
-# 	end
-#       ensure
-# 	@irb_level -= 1
-#  	@workspace = back
-#       end
-#     end
-#     alias change_workspace change_binding
   end
 end
 
