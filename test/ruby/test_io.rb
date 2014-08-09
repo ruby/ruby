@@ -2396,21 +2396,23 @@ End
     Tempfile.open("bug3910") {|t|
       path = t.path
       t.close
-      1.times do
-        io = open(path,"w")
-        io.instance_variable_set(:@test_flush_in_finalizer2, true)
-        io.print "hoge"
-      end
-      assert_nothing_raised(TypeError, bug3910) do
-        GC.start
+      begin
+        1.times do
+          io = open(path,"w")
+          io.instance_variable_set(:@test_flush_in_finalizer2, true)
+          io.print "hoge"
+        end
+        assert_nothing_raised(TypeError, bug3910) do
+          GC.start
+        end
+      ensure
+        ObjectSpace.each_object(File) {|f|
+          if f.instance_variables.include?(:@test_flush_in_finalizer2)
+            f.close
+          end
+        }
       end
       t.close!
-    }
-  ensure
-    ObjectSpace.each_object(File) {|f|
-      if f.instance_variables.include?(:@test_flush_in_finalizer2)
-        f.close
-      end
     }
   end
 
