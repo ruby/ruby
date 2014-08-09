@@ -1,6 +1,6 @@
 Sat Aug  9 10:35:30 2014  Laurent Arnoud  <laurent@spkdev.net>
 
-	* lib/cmath.rb: fixed indent.
+	* lib/cmath.rb: fixed indent. [fix GH-696]
 	* lib/drb/ssl.rb: ditto.
 	* lib/irb/**/*.rb: ditto.
 
