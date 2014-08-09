@@ -152,24 +152,20 @@ class CGIMultipartTest < Test::Unit::TestCase
     _prepare(@data)
     options = {:accept_charset=>"UTF-8"}
     options.merge! cgi_options
-    cgi = RUBY_VERSION>="1.9" ? CGI.new(options) : CGI.new
+    cgi = CGI.new(options)
     expected_names = @data.collect{|hash| hash[:name] }.sort
     assert_equal(expected_names, cgi.params.keys.sort)
     threshold = 1024*10
     @data.each do |hash|
       name = hash[:name]
       expected = hash[:value]
-      if RUBY_VERSION>="1.9"
-        if hash[:filename] #if file
-          expected_class = @expected_class || (hash[:value].length < threshold ? StringIO : Tempfile)
-          assert(cgi.files.keys.member?(hash[:name]))
-        else
-          expected_class = String
-          assert_equal(expected, cgi[name])
-          assert_equal(false,cgi.files.keys.member?(hash[:name]))
-        end
-      else
+      if hash[:filename] #if file
         expected_class = @expected_class || (hash[:value].length < threshold ? StringIO : Tempfile)
+        assert(cgi.files.keys.member?(hash[:name]))
+      else
+        expected_class = String
+        assert_equal(expected, cgi[name])
+        assert_equal(false,cgi.files.keys.member?(hash[:name]))
       end
       assert_kind_of(expected_class, cgi[name])
       assert_equal(expected, cgi[name].read())
@@ -301,7 +297,7 @@ class CGIMultipartTest < Test::Unit::TestCase
       input2
     end
     ex = assert_raise(EOFError) do
-      RUBY_VERSION>="1.9" ? CGI.new(:accept_charset=>"UTF-8") : CGI.new
+      CGI.new(:accept_charset=>"UTF-8")
     end
     assert_equal("bad content body", ex.message)
     #
@@ -312,7 +308,7 @@ class CGIMultipartTest < Test::Unit::TestCase
       input2
     end
     ex = assert_raise(EOFError) do
-      RUBY_VERSION>="1.9" ? CGI.new(:accept_charset=>"UTF-8") : CGI.new
+      CGI.new(:accept_charset=>"UTF-8")
     end
     assert_equal("bad content body", ex.message)
   end
@@ -328,9 +324,9 @@ class CGIMultipartTest < Test::Unit::TestCase
       {:name=>'image1',  :value=>_read('small.png'),
        :filename=>'small.png',  :content_type=>'image/png'},  # small image
     ]
-    @data[1][:value].force_encoding("UTF-8") if RUBY_VERSION>="1.9"
+    @data[1][:value].force_encoding("UTF-8")
     _prepare(@data)
-    cgi = RUBY_VERSION>="1.9" ? CGI.new(:accept_charset=>"UTF-8") : CGI.new
+    cgi = CGI.new(:accept_charset=>"UTF-8")
     assert_equal('file1.html', cgi['file1'].original_filename)
   end
 
@@ -342,7 +338,7 @@ class CGIMultipartTest < Test::Unit::TestCase
       {:name=>'foo',  :value=>"bar"},
     ]
     _prepare(@data)
-    cgi = RUBY_VERSION>="1.9" ? CGI.new(:accept_charset=>"UTF-8") : CGI.new
+    cgi = CGI.new(:accept_charset=>"UTF-8")
     assert_equal(cgi['foo'], 'bar')
     assert_equal(cgi['file'].read, 'b'*10134)
     cgi['file'].close! if cgi['file'].kind_of? Tempfile

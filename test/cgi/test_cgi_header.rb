@@ -71,12 +71,8 @@ class CGIHeaderTest < Test::Unit::TestCase
 
   def test_cgi_http_header_argerr
     cgi = CGI.new
-    #expected = NoMethodError  # must be ArgumentError
-    if RUBY_VERSION>="1.9.0"
-      expected = ArgumentError   # for CGIAlt
-    else
-      expected = NoMethodError   # for Ruby1.8
-    end
+    expected = ArgumentError
+
     assert_raise(expected) do
       cgi.http_header(nil)
     end
