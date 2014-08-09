@@ -1,3 +1,9 @@
+Sat Aug  9 10:28:03 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/minitest/test_minitest_unit.rb: removed obsoleted condition
+	  for Ruby 1.8.
+	* test/ruby/test_time_tz.rb: ditto.
+
 Sat Aug  9 10:18:00 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/cgi/test_cgi_core.rb: removed obsoleted condition for Ruby 1.8.

@@ -72,14 +72,8 @@ class TestTimeTZ < Test::Unit::TestCase
   include Util
   extend Util
 
-  if RUBY_VERSION < "1.9"
-    def time_to_s(t)
-      t.strftime("%Y-%m-%d %H:%M:%S ") + format_gmtoff(t.gmtoff)
-    end
-  else
-    def time_to_s(t)
-      t.to_s
-    end
+  def time_to_s(t)
+    t.to_s
   end
 
 
