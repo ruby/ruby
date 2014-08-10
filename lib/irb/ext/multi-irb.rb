@@ -231,25 +231,6 @@ module IRB
     @JobManager.current_job = @JobManager.irb(Thread.current)
   end
 
-#   class Context
-#     def set_last_value(value)
-#       @last_value = value
-#       @workspace.evaluate "_ = IRB.JobManager.irb(Thread.current).context.last_value"
-#       if @eval_history #and !@__.equal?(@last_value)
-# 	@eval_history_values.push @line_no, @last_value
-# 	@workspace.evaluate "__ = IRB.JobManager.irb(Thread.current).context.instance_eval{@eval_history_values}"
-#       end
-#       @last_value
-#     end
-#   end
-
-#  module ExtendCommand
-#     def irb_context
-#       IRB.JobManager.irb(Thread.current).context
-#     end
-# #    alias conf irb_context
-#   end
-
   @CONF[:SINGLE_IRB_MODE] = false
   @JobManager.insert(@CONF[:MAIN_CONTEXT].irb)
   @JobManager.current_job = @CONF[:MAIN_CONTEXT].irb

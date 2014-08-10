@@ -1,3 +1,7 @@
+Sun Aug 10 10:03:24 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/irb/ext/multi-irb.rb: removed commented-out code.
+
 Sat Aug  9 11:02:07 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/irb.rb: removed commented-out code.
