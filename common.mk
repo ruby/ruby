@@ -495,7 +495,7 @@ realclean-extout: distclean-extout
 clean-ext distclean-ext realclean-ext::
 	$(Q)$(RM) $(EXTS_MK)
 	$(Q)$(RM) $(EXTOUT)/.timestamp/.*.time
-	$(Q)$(RMDIR) $(EXTOUT)/.timestamp
+	$(Q)$(RMDIR) $(EXTOUT)/.timestamp 2> $(NULL) || exit 0
 
 clean-enc distclean-enc realclean-enc: PHONY
 
