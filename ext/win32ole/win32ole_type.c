@@ -315,9 +315,8 @@ ole_ole_type(ITypeInfo *pTypeInfo)
 static VALUE
 foletype_ole_type(VALUE self)
 {
-    struct oletypedata *ptype;
-    Data_Get_Struct(self, struct oletypedata, ptype);
-    return ole_ole_type(ptype->pTypeInfo);
+    ITypeInfo *pTypeInfo = itypeinfo(self);
+    return ole_ole_type(pTypeInfo);
 }
 
 static VALUE
@@ -350,9 +349,8 @@ ole_type_guid(ITypeInfo *pTypeInfo)
 static VALUE
 foletype_guid(VALUE self)
 {
-    struct oletypedata *ptype;
-    Data_Get_Struct(self, struct oletypedata, ptype);
-    return ole_type_guid(ptype->pTypeInfo);
+    ITypeInfo *pTypeInfo = itypeinfo(self);
+    return ole_type_guid(pTypeInfo);
 }
 
 static VALUE
@@ -385,9 +383,8 @@ ole_type_progid(ITypeInfo *pTypeInfo)
 static VALUE
 foletype_progid(VALUE self)
 {
-    struct oletypedata *ptype;
-    Data_Get_Struct(self, struct oletypedata, ptype);
-    return ole_type_progid(ptype->pTypeInfo);
+    ITypeInfo *pTypeInfo = itypeinfo(self);
+    return ole_type_progid(pTypeInfo);
 }
 
 
@@ -420,9 +417,8 @@ ole_type_visible(ITypeInfo *pTypeInfo)
 static VALUE
 foletype_visible(VALUE self)
 {
-    struct oletypedata *ptype;
-    Data_Get_Struct(self, struct oletypedata, ptype);
-    return ole_type_visible(ptype->pTypeInfo);
+    ITypeInfo *pTypeInfo = itypeinfo(self);
+    return ole_type_visible(pTypeInfo);
 }
 
 static VALUE
@@ -450,9 +446,8 @@ ole_type_major_version(ITypeInfo *pTypeInfo)
 static VALUE
 foletype_major_version(VALUE self)
 {
-    struct oletypedata *ptype;
-    Data_Get_Struct(self, struct oletypedata, ptype);
-    return ole_type_major_version(ptype->pTypeInfo);
+    ITypeInfo *pTypeInfo = itypeinfo(self);
+    return ole_type_major_version(pTypeInfo);
 }
 
 static VALUE
@@ -480,9 +475,8 @@ ole_type_minor_version(ITypeInfo *pTypeInfo)
 static VALUE
 foletype_minor_version(VALUE self)
 {
-    struct oletypedata *ptype;
-    Data_Get_Struct(self, struct oletypedata, ptype);
-    return ole_type_minor_version(ptype->pTypeInfo);
+    ITypeInfo *pTypeInfo = itypeinfo(self);
+    return ole_type_minor_version(pTypeInfo);
 }
 
 static VALUE
@@ -511,9 +505,8 @@ ole_type_typekind(ITypeInfo *pTypeInfo)
 static VALUE
 foletype_typekind(VALUE self)
 {
-    struct oletypedata *ptype;
-    Data_Get_Struct(self, struct oletypedata, ptype);
-    return ole_type_typekind(ptype->pTypeInfo);
+    ITypeInfo *pTypeInfo = itypeinfo(self);
+    return ole_type_typekind(pTypeInfo);
 }
 
 static VALUE
@@ -539,9 +532,8 @@ ole_type_helpstring(ITypeInfo *pTypeInfo)
 static VALUE
 foletype_helpstring(VALUE self)
 {
-    struct oletypedata *ptype;
-    Data_Get_Struct(self, struct oletypedata, ptype);
-    return ole_type_helpstring(ptype->pTypeInfo);
+    ITypeInfo *pTypeInfo = itypeinfo(self);
+    return ole_type_helpstring(pTypeInfo);
 }
 
 static VALUE
@@ -574,9 +566,8 @@ ole_type_src_type(ITypeInfo *pTypeInfo)
 static VALUE
 foletype_src_type(VALUE self)
 {
-    struct oletypedata *ptype;
-    Data_Get_Struct(self, struct oletypedata, ptype);
-    return ole_type_src_type(ptype->pTypeInfo);
+    ITypeInfo *pTypeInfo = itypeinfo(self);
+    return ole_type_src_type(pTypeInfo);
 }
 
 static VALUE
@@ -603,9 +594,8 @@ ole_type_helpfile(ITypeInfo *pTypeInfo)
 static VALUE
 foletype_helpfile(VALUE self)
 {
-    struct oletypedata *ptype;
-    Data_Get_Struct(self, struct oletypedata, ptype);
-    return ole_type_helpfile(ptype->pTypeInfo);
+    ITypeInfo *pTypeInfo = itypeinfo(self);
+    return ole_type_helpfile(pTypeInfo);
 }
 
 static VALUE
@@ -631,9 +621,8 @@ ole_type_helpcontext(ITypeInfo *pTypeInfo)
 static VALUE
 foletype_helpcontext(VALUE self)
 {
-    struct oletypedata *ptype;
-    Data_Get_Struct(self, struct oletypedata, ptype);
-    return ole_type_helpcontext(ptype->pTypeInfo);
+    ITypeInfo *pTypeInfo = itypeinfo(self);
+    return ole_type_helpcontext(pTypeInfo);
 }
 
 static VALUE
@@ -695,9 +684,8 @@ ole_variables(ITypeInfo *pTypeInfo)
 static VALUE
 foletype_variables(VALUE self)
 {
-    struct oletypedata *ptype;
-    Data_Get_Struct(self, struct oletypedata, ptype);
-    return ole_variables(ptype->pTypeInfo);
+    ITypeInfo *pTypeInfo = itypeinfo(self);
+    return ole_variables(pTypeInfo);
 }
 
 /*
@@ -715,9 +703,8 @@ foletype_variables(VALUE self)
 static VALUE
 foletype_methods(VALUE self)
 {
-    struct oletypedata *ptype;
-    Data_Get_Struct(self, struct oletypedata, ptype);
-    return ole_methods_from_typeinfo(ptype->pTypeInfo, INVOKE_FUNC | INVOKE_PROPERTYGET | INVOKE_PROPERTYPUT | INVOKE_PROPERTYPUTREF);
+    ITypeInfo *pTypeInfo = itypeinfo(self);
+    return ole_methods_from_typeinfo(pTypeInfo, INVOKE_FUNC | INVOKE_PROPERTYGET | INVOKE_PROPERTYPUT | INVOKE_PROPERTYPUTREF);
 }
 
 /*
@@ -732,9 +719,8 @@ foletype_methods(VALUE self)
 static VALUE
 foletype_ole_typelib(VALUE self)
 {
-    struct oletypedata *ptype;
-    Data_Get_Struct(self, struct oletypedata, ptype);
-    return ole_typelib_from_itypeinfo(ptype->pTypeInfo);
+    ITypeInfo *pTypeInfo = itypeinfo(self);
+    return ole_typelib_from_itypeinfo(pTypeInfo);
 }
 
 static VALUE
@@ -790,9 +776,8 @@ ole_type_impl_ole_types(ITypeInfo *pTypeInfo, int implflags)
 static VALUE
 foletype_impl_ole_types(VALUE self)
 {
-    struct oletypedata *ptype;
-    Data_Get_Struct(self, struct oletypedata, ptype);
-    return ole_type_impl_ole_types(ptype->pTypeInfo, 0);
+    ITypeInfo *pTypeInfo = itypeinfo(self);
+    return ole_type_impl_ole_types(pTypeInfo, 0);
 }
 
 /*
@@ -808,9 +793,8 @@ foletype_impl_ole_types(VALUE self)
 static VALUE
 foletype_source_ole_types(VALUE self)
 {
-    struct oletypedata *ptype;
-    Data_Get_Struct(self, struct oletypedata, ptype);
-    return ole_type_impl_ole_types(ptype->pTypeInfo, IMPLTYPEFLAG_FSOURCE);
+    ITypeInfo *pTypeInfo = itypeinfo(self);
+    return ole_type_impl_ole_types(pTypeInfo, IMPLTYPEFLAG_FSOURCE);
 }
 
 /*
@@ -825,9 +809,8 @@ foletype_source_ole_types(VALUE self)
 static VALUE
 foletype_default_event_sources(VALUE self)
 {
-    struct oletypedata *ptype;
-    Data_Get_Struct(self, struct oletypedata, ptype);
-    return ole_type_impl_ole_types(ptype->pTypeInfo, IMPLTYPEFLAG_FSOURCE|IMPLTYPEFLAG_FDEFAULT);
+    ITypeInfo *pTypeInfo = itypeinfo(self);
+    return ole_type_impl_ole_types(pTypeInfo, IMPLTYPEFLAG_FSOURCE|IMPLTYPEFLAG_FDEFAULT);
 }
 
 /*
@@ -843,9 +826,8 @@ foletype_default_event_sources(VALUE self)
 static VALUE
 foletype_default_ole_types(VALUE self)
 {
-    struct oletypedata *ptype;
-    Data_Get_Struct(self, struct oletypedata, ptype);
-    return ole_type_impl_ole_types(ptype->pTypeInfo, IMPLTYPEFLAG_FDEFAULT);
+    ITypeInfo *pTypeInfo = itypeinfo(self);
+    return ole_type_impl_ole_types(pTypeInfo, IMPLTYPEFLAG_FDEFAULT);
 }
 
 /*

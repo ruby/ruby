@@ -1,3 +1,7 @@
+Sun Aug 10 12:22:43 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole_type.c: refactoring.
+
 Sun Aug 10 10:34:00 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/cgi/session/pstore.rb: separated sample code.
