@@ -1,3 +1,8 @@
+Sun Aug 10 10:34:00 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/cgi/session/pstore.rb: separated sample code.
+	* lib/open3.rb: ditto.
+
 Sun Aug 10 10:03:24 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/irb/ext/multi-irb.rb: removed commented-out code.
