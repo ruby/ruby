@@ -1184,7 +1184,6 @@ AS_IF([test "x$with_jemalloc" = xyes],[
   AS_IF([test "x$with_jemalloc" = xyes],
     [
       ac_cv_func_malloc_usable_size=yes
-      LIBS="-ljemalloc $LIBS"
     ],
     [AC_MSG_ERROR([jemalloc requested but not found])
   ])
