@@ -1,7 +1,7 @@
 require 'cgi'
 require 'cgi/session/pstore'
 
-STDIN.reopen("/dev/null")
+STDIN.reopen(IO::NULL)
 cgi = CGI.new
 session = CGI::Session.new(cgi, 'database_manager' => CGI::Session::PStore)
 session['key'] = {'k' => 'v'}
