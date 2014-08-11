@@ -97,7 +97,6 @@
 #define OLE_RELEASE_TYPEATTR(X, Y) ((X)->lpVtbl->ReleaseTypeAttr((X), (Y)))
 
 VALUE cWIN32OLE;
-VALUE cWIN32OLE_VARIABLE;
 LCID cWIN32OLE_lcid;
 
 
@@ -119,12 +118,13 @@ HRESULT ole_docinfo_from_type(ITypeInfo *pTypeInfo, BSTR *name, BSTR *helpstr, D
 VALUE ole_typedesc2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails);
 VALUE ole_typelib_from_itypeinfo(ITypeInfo *pTypeInfo);
 VALUE ole_type_from_itypeinfo(ITypeInfo *pTypeInfo);
-
-VALUE create_win32ole_variable(ITypeInfo *pTypeInfo, UINT index, VALUE name);
+VALUE make_inspect(const char *class_name, VALUE detail);
+VALUE ole_variant2val(VARIANT *pvar);
 
 #include "win32ole_variant_m.h"
 #include "win32ole_typelib.h"
 #include "win32ole_type.h"
+#include "win32ole_variable.h"
 #include "win32ole_error.h"
 
 #endif
