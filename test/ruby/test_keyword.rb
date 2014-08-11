@@ -463,6 +463,16 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal({a: 1, b: 2}, m1(**o, **o2) {|x| break x}, bug9898)
   end
 
+  def test_implicit_hash_conversion
+    bug10016 = '[ruby-core:63593] [Bug #10016]'
+
+    o = Object.new
+    def o.to_hash() { k: 9 } end
+    assert_equal([1, 42, [], o, :key, {}, nil], f9(1, o))
+    assert_equal([1, 9], m1(1, o) {|a, k: 0| break [a, k]}, bug10016)
+    assert_equal([1, 9], m1(1, o, &->(a, k: 0) {break [a, k]}), bug10016)
+  end
+
   def test_gced_object_in_stack
     bug8964 = '[ruby-dev:47729] [Bug #8964]'
     assert_normal_exit %q{
