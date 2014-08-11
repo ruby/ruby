@@ -1,3 +1,12 @@
+Tue Aug 12 06:16:09 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: seperate WIN32OLE_METHOD src from
+	  win32ole.c.
+	* ext/win32ole/win32ole.h: ditto.
+	* ext/win32ole/win32ole_method.c: ditto.
+	* ext/win32ole/win32ole_method.h: ditto.
+	* ext/win32ole/depend: ditto.
+
 Mon Aug 11 22:19:15 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole_variable.c (folevariable_inspect): refactoring.

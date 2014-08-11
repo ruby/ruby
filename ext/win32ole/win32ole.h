@@ -96,9 +96,9 @@
 #define OLE_GET_TYPEATTR(X, Y) ((X)->lpVtbl->GetTypeAttr((X), (Y)))
 #define OLE_RELEASE_TYPEATTR(X, Y) ((X)->lpVtbl->ReleaseTypeAttr((X), (Y)))
 
+
 VALUE cWIN32OLE;
 LCID cWIN32OLE_lcid;
-
 
 LPWSTR ole_vstr2wc(VALUE vstr);
 LONG reg_open_key(HKEY hkey, const char *name, HKEY *phkey);
@@ -113,18 +113,19 @@ VALUE ole_wc2vstr(LPWSTR pw, BOOL isfree);
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
 BOOL ole_initialized();
-VALUE ole_methods_from_typeinfo(ITypeInfo *pTypeInfo, int mask);
 HRESULT ole_docinfo_from_type(ITypeInfo *pTypeInfo, BSTR *name, BSTR *helpstr, DWORD *helpcontext, BSTR *helpfile);
 VALUE ole_typedesc2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails);
 VALUE ole_typelib_from_itypeinfo(ITypeInfo *pTypeInfo);
 VALUE ole_type_from_itypeinfo(ITypeInfo *pTypeInfo);
 VALUE make_inspect(const char *class_name, VALUE detail);
 VALUE ole_variant2val(VARIANT *pvar);
-
+VALUE ole_methods_from_typeinfo(ITypeInfo *pTypeInfo, int mask);
+VALUE create_win32ole_param(ITypeInfo *pTypeInfo, UINT method_index, UINT index, VALUE name);
 #include "win32ole_variant_m.h"
 #include "win32ole_typelib.h"
 #include "win32ole_type.h"
 #include "win32ole_variable.h"
+#include "win32ole_method.h"
 #include "win32ole_error.h"
 
 #endif
