@@ -1159,11 +1159,26 @@ AC_ARG_WITH([jemalloc],
   [AS_HELP_STRING([--with-jemalloc],[use jemalloc allocator])],
   [with_jemalloc=yes], [with_jemalloc=no])
 AS_IF([test "x$with_jemalloc" = xyes],[
-  AC_CHECK_LIB([jemalloc],[malloc_conf],[], [with_jemalloc=no])
+  AC_CHECK_LIB([jemalloc], [malloc_conf], [], [with_jemalloc=no])
   AC_CHECK_HEADER(jemalloc/jemalloc.h, [
     AC_DEFINE(RUBY_ALTERNATIVE_MALLOC_HEADER, [<jemalloc/jemalloc.h>])
+  ])
+  AS_IF([test "x$with_jemalloc" = xno], [
+    AC_CACHE_CHECK([for jemalloc with JEMALLOC_MANGLE], rb_cv_jemalloc_demangle,
+      [AC_LINK_IFELSE([AC_LANG_PROGRAM([@%:@define JEMALLOC_MANGLE 1
+      @%:@ifdef RUBY_ALTERNATIVE_MALLOC_HEADER
+      @%:@include RUBY_ALTERNATIVE_MALLOC_HEADER
+      @%:@else
+      @%:@include <jemalloc.h>
+      @%:@endif], [return !&malloc_conf])],
+      [rb_cv_jemalloc_demangle=yes],
+      [rb_cv_jemalloc_demangle=no])
+    ])
+  ])
+  AS_IF([test "x$rb_cv_jemalloc_demangle" = xyes], [
     AC_DEFINE(JEMALLOC_MANGLE)
     with_jemalloc=yes
+    LIBS="-ljemalloc $LIBS"
   ])
   AS_IF([test "x$with_jemalloc" = xyes],
     [
