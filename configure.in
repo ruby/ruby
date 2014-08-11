@@ -833,7 +833,7 @@ if test "$GCC" = yes; then
 	for ansi_options in -std=iso9899:1999 "-ansi -std=iso9899:199409"; do
 	    RUBY_TRY_CFLAGS(${ansi_options}, [
 		RUBY_APPEND_OPTIONS(warnflags, ${ansi_options})
-	  	RUBY_APPEND_OPTIONS(strict_warnflags, ${ansi_options})
+		RUBY_APPEND_OPTIONS(strict_warnflags, ${ansi_options})
 	    ], [ansi_options=])
 	    test "x${ansi_options}" = x || break
 	done
@@ -1054,7 +1054,7 @@ main()
 		{ test "$target_cpu" = x64 && ac_cv_func___builtin_setjmp=no; }
 		AC_CHECK_TYPE([NET_LUID], [], [],
 			      [@%:@include <windows.h>
-		  	      @%:@include <iphlpapi.h>])
+			      @%:@include <iphlpapi.h>])
 		if test x"$ac_cv_type_NET_LUID" = xyes; then
 		    AC_DEFINE(HAVE_TYPE_NET_LUID, 1)
 		fi
@@ -2807,7 +2807,7 @@ if test "$with_dln_a_out" != yes; then
 			    RPATHFLAG=' +b %1$-s'
 			fi
 			rb_cv_dlopen=yes],
-	[solaris*], [ 	if test "$GCC" = yes; then
+	[solaris*], [	if test "$GCC" = yes; then
 			    : ${LDSHARED='$(CC) -shared'}
 			    if test "$rb_cv_prog_gnu_ld" = yes; then
 				LDFLAGS="$LDFLAGS -Wl,-E"
@@ -2922,7 +2922,7 @@ if test "$with_dln_a_out" != yes; then
 	[os2-emx*], [	LDFLAGS="$LDFLAGS -Zomf"
 			],
         [nacl], [ LDSHARED='$(CC) -shared' ],
-	[ 	: ${LDSHARED='$(LD)'}])
+	[	: ${LDSHARED='$(LD)'}])
   AC_MSG_RESULT($rb_cv_dlopen)
 
   if test "$rb_cv_dlopen" = yes; then
