@@ -295,9 +295,10 @@ class Tempfile < DelegateClass(File)
       STDERR.print "done\n" if $DEBUG
     end
   end
-  # :startdoc:
 
   class << self
+    # :startdoc:
+
     # Creates a new Tempfile.
     #
     # If no block is given, this is a synonym for Tempfile.new.
