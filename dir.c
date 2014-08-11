@@ -2211,7 +2211,6 @@ dir_s_home(int argc, VALUE *argv, VALUE obj)
 /*
  * call-seq:
  *   Dir.exist?(file_name)   ->  true or false
- *   Dir.exists?(file_name)   ->  true or false
  *
  * Returns <code>true</code> if the named file is a directory,
  * <code>false</code> otherwise.
@@ -2223,6 +2222,12 @@ rb_file_directory_p()
 }
 #endif
 
+/*
+ * call-seq:
+ *   Dir.exists?(file_name)  ->  true or false
+ *
+ * Deprecated method. Don't use.
+ */
 static VALUE
 rb_dir_exists_p(VALUE obj, VALUE fname)
 {

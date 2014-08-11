@@ -1,3 +1,8 @@
+Mon Aug 11 16:17:21 2014  Tony Miller  <mcfiredrill@gmail.com>
+
+	* dir.c (rb_dir_exists_p): [DOC] Document that Dir.exists? is
+	  deprecated.  [ruby-core:64135] [Bug #10102]
+
 Mon Aug 11 11:26:33 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/tempfile.rb: start rdoc parsing inside singleton class
