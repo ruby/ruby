@@ -296,43 +296,42 @@ class Tempfile < DelegateClass(File)
     end
   end
   # :startdoc:
+end
 
-  class << self
-    # Creates a new Tempfile.
-    #
-    # If no block is given, this is a synonym for Tempfile.new.
-    #
-    # If a block is given, then a Tempfile object will be constructed,
-    # and the block is run with said object as argument. The Tempfile
-    # object will be automatically closed after the block terminates.
-    # The call returns the value of the block.
-    #
-    # In any case, all arguments (+*args+) will be passed to Tempfile.new.
-    #
-    #   Tempfile.open('foo', '/home/temp') do |f|
-    #      ... do something with f ...
-    #   end
-    #
-    #   # Equivalent:
-    #   f = Tempfile.open('foo', '/home/temp')
-    #   begin
-    #      ... do something with f ...
-    #   ensure
-    #      f.close
-    #   end
-    def open(*args)
-      tempfile = new(*args)
 
-      if block_given?
-        begin
-          yield(tempfile)
-        ensure
-          tempfile.close
-        end
-      else
-        tempfile
-      end
+# Creates a new Tempfile.
+#
+# If no block is given, this is a synonym for Tempfile.new.
+#
+# If a block is given, then a Tempfile object will be constructed,
+# and the block is run with said object as argument. The Tempfile
+# object will be automatically closed after the block terminates.
+# The call returns the value of the block.
+#
+# In any case, all arguments (+*args+) will be passed to Tempfile.new.
+#
+#   Tempfile.open('foo', '/home/temp') do |f|
+#      ... do something with f ...
+#   end
+#
+#   # Equivalent:
+#   f = Tempfile.open('foo', '/home/temp')
+#   begin
+#      ... do something with f ...
+#   ensure
+#      f.close
+#   end
+def Tempfile.open(*args)
+  tempfile = new(*args)
+
+  if block_given?
+    begin
+      yield(tempfile)
+    ensure
+      tempfile.close
     end
+  else
+    tempfile
   end
 end
 
