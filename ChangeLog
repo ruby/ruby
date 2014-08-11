@@ -1,3 +1,12 @@
+Mon Aug 11 23:38:20 2014  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_autoclose_p): Don't raise on frozen IO.
+
+Mon Aug 11 23:38:20 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_fileno, rb_io_inspect): non-modification does not
+	  error on frozen IO.  [ruby-dev:48241] [Bug #9865]
+
 Mon Aug 11 22:34:47 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (posix_fadvise): disable use of posix_fadvise
