@@ -837,7 +837,7 @@ class ERB
   # the results of that code.  (See ERB::new for details on how this process
   # can be affected by _safe_level_.)
   #
-  # _b_ accepts a Binding or Proc object which is used to set the context of
+  # _b_ accepts a Binding object which is used to set the context of
   # code evaluation.
   #
   def result(b=new_toplevel)
