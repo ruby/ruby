@@ -41,6 +41,7 @@ tddwpBAEDjcwMzA5NTYzMTU1MzAwpQMCARM=
   end
 
   def test_session
+    timeout(5) do
     start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true) do |server, port|
       sock = TCPSocket.new("127.0.0.1", port)
       ctx = OpenSSL::SSL::SSLContext.new("TLSv1")
@@ -67,6 +68,7 @@ tddwpBAEDjcwMzA5NTYzMTU1MzAwpQMCARM=
       assert_equal(session.to_der, pem.unpack('m*')[0])
       assert_not_nil(session.to_text)
       ssl.close
+    end
     end
   end
 
