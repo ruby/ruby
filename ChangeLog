@@ -1,3 +1,7 @@
+Mon Aug 11 22:19:15 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole_variable.c(folevariable_inspect): refactoring.
+
 Mon Aug 11 20:47:27 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: seperate WIN32OLE_VARIABLE src from

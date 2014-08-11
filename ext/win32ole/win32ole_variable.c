@@ -345,9 +345,9 @@ folevariable_varkind(VALUE self)
 static VALUE
 folevariable_inspect(VALUE self)
 {
-    VALUE detail = rb_funcall(self, rb_intern("to_s"), 0);
-    rb_str_cat2(detail, "=");
-    rb_str_concat(detail, rb_funcall(rb_funcall(self, rb_intern("value"), 0), rb_intern("inspect"), 0));
+    VALUE v = rb_funcall(folevariable_value(self), rb_intern("inspect"), 0);
+    VALUE n = folevariable_name(self);
+    VALUE detail = rb_sprintf("%s=%s", StringValueCStr(n), StringValueCStr(v));
     return make_inspect("WIN32OLE_VARIABLE", detail);
 }
 
