@@ -1,3 +1,8 @@
+Tue Aug 12 14:22:58 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* configure.in: ignored working directory same as prefix value.
+	  [ruby-core:54999] [Bug #8409]
+
 Tue Aug 12 13:34:25 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/fileutils.rb: enable to remove with non-owner directory.
