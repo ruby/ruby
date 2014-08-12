@@ -1,6 +1,6 @@
 Wed Aug 13 00:07:01 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c: seperate WIN32OLE_PARAM src from win32ole.c
+	* ext/win32ole/win32ole.c: separate WIN32OLE_PARAM src from win32ole.c
 	* ext/win32ole/win32ole.h: ditto.
 	* ext/win32ole/win32ole_param.c: ditto.
 	* ext/win32ole/win32ole_param.h: ditto.
@@ -57,7 +57,7 @@ Tue Aug 12 10:10:42 2014  Eric Wong  <e@80x24.org>
 
 Tue Aug 12 06:16:09 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c: seperate WIN32OLE_METHOD src from
+	* ext/win32ole/win32ole.c: separate WIN32OLE_METHOD src from
 	  win32ole.c.
 	* ext/win32ole/win32ole.h: ditto.
 	* ext/win32ole/win32ole_method.c: ditto.
