@@ -187,7 +187,7 @@ ole_methods_sub(ITypeInfo *pOwnerTypeInfo, ITypeInfo *pTypeInfo, VALUE methods, 
 VALUE
 create_win32ole_method(ITypeInfo *pTypeInfo, VALUE name)
 {
-    
+
     VALUE method = folemethod_s_allocate(cWIN32OLE_METHOD);
     VALUE obj = olemethod_from_typeinfo(method, pTypeInfo, name);
     return obj;
