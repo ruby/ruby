@@ -1358,7 +1358,7 @@ module FileUtils
       when file?
         copy_file dest
       when directory?
-        if !File.exist?(dest) and descendant_diretory?(dest, path)
+        if !File.exist?(dest) and descendant_directory?(dest, path)
           raise ArgumentError, "cannot copy directory %s to itself %s" % [path, dest]
         end
         begin
@@ -1553,7 +1553,7 @@ module FileUtils
     end
     SYSCASE = File::FNM_SYSCASE.nonzero? ? "-i" : ""
 
-    def descendant_diretory?(descendant, ascendant)
+    def descendant_directory?(descendant, ascendant)
       /\A(?#{SYSCASE}:#{Regexp.quote(ascendant)})#{DIRECTORY_TERM}/ =~ File.dirname(descendant)
     end
   end   # class Entry_

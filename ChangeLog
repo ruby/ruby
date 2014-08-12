@@ -1,3 +1,8 @@
+Tue Aug 12 12:14:52 2014  Akira Matsuda <ronnie@dio.jp>
+
+	* lib/fileutils.rb: fix typo.
+	  [ruby-dev:47831] [Bug #9180]
+
 Tue Aug 12 10:10:42 2014  Eric Wong  <e@80x24.org>
 
 	* vm_method.c (release_method_definition): use rb_free_method_entry
