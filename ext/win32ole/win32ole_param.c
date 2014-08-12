@@ -55,7 +55,7 @@ create_win32ole_param(ITypeInfo *pTypeInfo, UINT method_index, UINT index, VALUE
  *   <code>WIN32OLE_PARAM</code> objects represent param information of
  *   the OLE method.
  */
-static VALUE 
+static VALUE
 foleparam_s_allocate(VALUE klass)
 {
     struct oleparamdata *pparam;
