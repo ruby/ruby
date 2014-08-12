@@ -229,9 +229,8 @@ test -z "$CXX" || ac_cv_prog_CXX="$CXX"
 if test "$program_prefix" = NONE; then
   program_prefix=
 fi
-if test "$prefix" = `pwd`; then
-  echo "--prefix cannot be the current working directory."
-  exit 1;
+if test "$prefix" -ef .; then
+  AC_MSG_ERROR(--prefix cannot be the current working directory.)
 fi
 RUBY_BASE_NAME=`echo ruby | sed "$program_transform_name"`
 RUBYW_BASE_NAME=`echo rubyw | sed "$program_transform_name"`
