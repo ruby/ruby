@@ -24,6 +24,9 @@ static void vm_analysis_insn(int insn);
 #elif defined(__GNUC__) && defined(__i386__)
 #define DECL_SC_REG(type, r, reg) register type reg_##r __asm__("e" reg)
 
+#elif defined(__GNUC__) && defined(__powerpc64__)
+#define DECL_SC_REG(type, r, reg) register type reg_##r __asm__("r" reg)
+
 #else
 #define DECL_SC_REG(type, r, reg) register type reg_##r
 #endif
@@ -68,6 +71,11 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 # else
     DECL_SC_REG(rb_control_frame_t *, cfp, "15");
 # endif
+#define USE_MACHINE_REGS 1
+
+#elif defined(__GNUC__) && defined(__powerpc64__)
+    DECL_SC_REG(VALUE *, pc, "14");
+    DECL_SC_REG(rb_control_frame_t *, cfp, "15");
 #define USE_MACHINE_REGS 1
 
 #else
