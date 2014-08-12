@@ -1,3 +1,11 @@
+Tue Aug 12 22:59:48 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: refactoring. move
+	  ole_typelib_from_itypeinfo into win32ole_typelib.c.
+	* ext/win32ole/win32ole.h: ditto.
+	* ext/win32ole/win32ole_typelib.h: ditto.
+	* ext/win32ole/win32ole_typelib.h: ditto.
+
 Tue Aug 12 21:49:40 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_create_dcom): use the converted

@@ -3962,22 +3962,6 @@ fole_type(VALUE self)
     return type;
 }
 
-VALUE
-ole_typelib_from_itypeinfo(ITypeInfo *pTypeInfo)
-{
-    HRESULT hr;
-    ITypeLib *pTypeLib;
-    unsigned int index;
-    VALUE retval = Qnil;
-
-    hr = pTypeInfo->lpVtbl->GetContainingTypeLib(pTypeInfo, &pTypeLib, &index);
-    if(FAILED(hr)) {
-        return Qnil;
-    }
-    retval = create_win32ole_typelib(pTypeLib);
-    return retval;
-}
-
 /*
  *  call-seq:
  *     WIN32OLE#ole_typelib -> The WIN32OLE_TYPELIB object

@@ -103,6 +103,22 @@ itypelib(VALUE self)
     return ptlib->pTypeLib;
 }
 
+VALUE
+ole_typelib_from_itypeinfo(ITypeInfo *pTypeInfo)
+{
+    HRESULT hr;
+    ITypeLib *pTypeLib;
+    unsigned int index;
+    VALUE retval = Qnil;
+
+    hr = pTypeInfo->lpVtbl->GetContainingTypeLib(pTypeInfo, &pTypeLib, &index);
+    if(FAILED(hr)) {
+        return Qnil;
+    }
+    retval = create_win32ole_typelib(pTypeLib);
+    return retval;
+}
+
 /*
  * Document-class: WIN32OLE_TYPELIB
  *

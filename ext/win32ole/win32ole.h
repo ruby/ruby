@@ -115,7 +115,6 @@ VALUE ole_wc2vstr(LPWSTR pw, BOOL isfree);
 BOOL ole_initialized();
 HRESULT ole_docinfo_from_type(ITypeInfo *pTypeInfo, BSTR *name, BSTR *helpstr, DWORD *helpcontext, BSTR *helpfile);
 VALUE ole_typedesc2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails);
-VALUE ole_typelib_from_itypeinfo(ITypeInfo *pTypeInfo);
 VALUE ole_type_from_itypeinfo(ITypeInfo *pTypeInfo);
 VALUE make_inspect(const char *class_name, VALUE detail);
 VALUE ole_variant2val(VARIANT *pvar);
