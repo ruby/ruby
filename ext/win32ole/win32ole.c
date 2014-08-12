@@ -45,7 +45,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 #define NUM2UI8 NUM2UINT
 #endif
 
-#define WIN32OLE_VERSION "1.7.6"
+#define WIN32OLE_VERSION "1.7.7"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -226,7 +226,7 @@ static VALUE ary_new_dim(VALUE myary, LONG *pid, LONG *plb, LONG dim);
 static void ary_store_dim(VALUE myary, LONG *pid, LONG *plb, LONG dim, VALUE val);
 static void ole_const_load(ITypeLib *pTypeLib, VALUE klass, VALUE self);
 static HRESULT clsid_from_remote(VALUE host, VALUE com, CLSID *pclsid);
-static VALUE ole_create_dcom(int argc, VALUE *argv, VALUE self);
+static VALUE ole_create_dcom(VALUE self, VALUE ole, VALUE host, VALUE others);
 static VALUE ole_bind_obj(VALUE moniker, int argc, VALUE *argv, VALUE self);
 static VALUE fole_s_connect(int argc, VALUE *argv, VALUE self);
 static VALUE fole_s_const_load(int argc, VALUE *argv, VALUE self);
@@ -2288,9 +2288,8 @@ clsid_from_remote(VALUE host, VALUE com, CLSID *pclsid)
 }
 
 static VALUE
-ole_create_dcom(int argc, VALUE *argv, VALUE self)
+ole_create_dcom(VALUE self, VALUE ole, VALUE host, VALUE others)
 {
-    VALUE ole, host, others;
     HRESULT hr;
     CLSID   clsid;
     OLECHAR *pbuf;
@@ -2308,7 +2307,6 @@ ole_create_dcom(int argc, VALUE *argv, VALUE self)
             GetProcAddress(gole32, "CoCreateInstanceEx");
     if (!gCoCreateInstanceEx)
         rb_raise(rb_eRuntimeError, "CoCreateInstanceEx is not supported in this environment");
-    rb_scan_args(argc, argv, "2*", &ole, &host, &others);
 
     pbuf  = ole_vstr2wc(ole);
     hr = CLSIDFromProgID(pbuf, &clsid);
@@ -2898,7 +2896,7 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
             rb_raise(rb_eSecurityError, "Insecure Object Creation - %s",
                      StringValuePtr(svr_name));
         }
-        return ole_create_dcom(argc, argv, self);
+        return ole_create_dcom(self, svr_name, host, others);
     }
 
     /* get CLSID from OLE server name */

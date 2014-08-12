@@ -1,3 +1,9 @@
+Tue Aug 12 21:49:40 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_create_dcom): use the converted
+	  result if the argument can be converted to a string, to get rid
+	  of invalid access. Thanks to nobu. [ruby-dev:48467] [Bug #10127]
+
 Tue Aug 12 14:22:58 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* configure.in: ignored working directory same as prefix value.
