@@ -176,8 +176,7 @@ release_method_definition(rb_method_definition_t *def)
     if (def->alias_count == 0) {
 	if (def->type == VM_METHOD_TYPE_REFINED &&
 	    def->body.orig_me) {
-	    release_method_definition(def->body.orig_me->def);
-	    xfree(def->body.orig_me);
+	    rb_free_method_entry(def->body.orig_me);
 	}
 	xfree(def);
     }

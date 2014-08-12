@@ -1,3 +1,7 @@
+Tue Aug 12 10:10:42 2014  Eric Wong  <e@80x24.org>
+
+	* vm_method.c (release_method_definition): use rb_free_method_entry
+
 Tue Aug 12 06:16:09 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: seperate WIN32OLE_METHOD src from
