@@ -117,13 +117,13 @@ HRESULT ole_docinfo_from_type(ITypeInfo *pTypeInfo, BSTR *name, BSTR *helpstr, D
 VALUE ole_typedesc2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails);
 VALUE make_inspect(const char *class_name, VALUE detail);
 VALUE ole_variant2val(VARIANT *pvar);
-VALUE create_win32ole_param(ITypeInfo *pTypeInfo, UINT method_index, UINT index, VALUE name);
 
 #include "win32ole_variant_m.h"
 #include "win32ole_typelib.h"
 #include "win32ole_type.h"
 #include "win32ole_variable.h"
 #include "win32ole_method.h"
+#include "win32ole_param.h"
 #include "win32ole_error.h"
 
 #endif
