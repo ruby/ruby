@@ -9,7 +9,7 @@ struct olemethoddata {
 
 VALUE cWIN32OLE_METHOD;
 VALUE folemethod_s_allocate(VALUE klass);
-VALUE olemethod_from_typeinfo(VALUE self, ITypeInfo *pTypeInfo, VALUE name);
-VALUE ole_methods_sub(ITypeInfo *pOwnerTypeInfo, ITypeInfo *pTypeInfo, VALUE methods, int mask);
+VALUE ole_methods_from_typeinfo(ITypeInfo *pTypeInfo, int mask);
+VALUE create_win32ole_method(ITypeInfo *pTypeInfo, VALUE name);
 void Init_win32ole_method();
 #endif

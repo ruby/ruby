@@ -1,6 +1,8 @@
 #include "win32ole.h"
 
 static VALUE ole_method_sub(VALUE self, ITypeInfo *pOwnerTypeInfo, ITypeInfo *pTypeInfo, VALUE name);
+static VALUE olemethod_from_typeinfo(VALUE self, ITypeInfo *pTypeInfo, VALUE name);
+static VALUE ole_methods_sub(ITypeInfo *pOwnerTypeInfo, ITypeInfo *pTypeInfo, VALUE methods, int mask);
 static void olemethod_free(struct olemethoddata *polemethod);
 static VALUE olemethod_set_member(VALUE self, ITypeInfo *pTypeInfo, ITypeInfo *pOwnerTypeInfo, int index, VALUE name);
 static VALUE folemethod_initialize(VALUE self, VALUE oletype, VALUE method);
@@ -85,6 +87,35 @@ ole_method_sub(VALUE self, ITypeInfo *pOwnerTypeInfo, ITypeInfo *pTypeInfo, VALU
 }
 
 VALUE
+ole_methods_from_typeinfo(ITypeInfo *pTypeInfo, int mask)
+{
+    HRESULT hr;
+    TYPEATTR *pTypeAttr;
+    WORD i;
+    HREFTYPE href;
+    ITypeInfo *pRefTypeInfo;
+    VALUE methods = rb_ary_new();
+    hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
+    if (FAILED(hr)) {
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetTypeAttr");
+    }
+
+    ole_methods_sub(0, pTypeInfo, methods, mask);
+    for(i=0; i < pTypeAttr->cImplTypes; i++){
+       hr = pTypeInfo->lpVtbl->GetRefTypeOfImplType(pTypeInfo, i, &href);
+       if(FAILED(hr))
+           continue;
+       hr = pTypeInfo->lpVtbl->GetRefTypeInfo(pTypeInfo, href, &pRefTypeInfo);
+       if (FAILED(hr))
+           continue;
+       ole_methods_sub(pTypeInfo, pRefTypeInfo, methods, mask);
+       OLE_RELEASE(pRefTypeInfo);
+    }
+    OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
+    return methods;
+}
+
+static VALUE
 olemethod_from_typeinfo(VALUE self, ITypeInfo *pTypeInfo, VALUE name)
 {
     HRESULT hr;
@@ -115,7 +146,7 @@ olemethod_from_typeinfo(VALUE self, ITypeInfo *pTypeInfo, VALUE name)
     return method;
 }
 
-VALUE
+static VALUE
 ole_methods_sub(ITypeInfo *pOwnerTypeInfo, ITypeInfo *pTypeInfo, VALUE methods, int mask)
 {
     HRESULT hr;
@@ -151,6 +182,15 @@ ole_methods_sub(ITypeInfo *pOwnerTypeInfo, ITypeInfo *pTypeInfo, VALUE methods, 
     OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
 
     return methods;
+}
+
+VALUE
+create_win32ole_method(ITypeInfo *pTypeInfo, VALUE name)
+{
+    
+    VALUE method = folemethod_s_allocate(cWIN32OLE_METHOD);
+    VALUE obj = olemethod_from_typeinfo(method, pTypeInfo, name);
+    return obj;
 }
 
 /*

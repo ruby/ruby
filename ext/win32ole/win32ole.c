@@ -103,7 +103,6 @@ typedef struct tagIEVENTSINKOBJ {
 }IEVENTSINKOBJ, *PIEVENTSINKOBJ;
 
 VALUE cWIN32OLE;
-VALUE cWIN32OLE_METHOD;
 VALUE cWIN32OLE_PARAM;
 VALUE cWIN32OLE_EVENT;
 VALUE cWIN32OLE_VARIANT;
@@ -3752,35 +3751,6 @@ fole_missing(int argc, VALUE *argv, VALUE self)
     }
 }
 
-VALUE
-ole_methods_from_typeinfo(ITypeInfo *pTypeInfo, int mask)
-{
-    HRESULT hr;
-    TYPEATTR *pTypeAttr;
-    WORD i;
-    HREFTYPE href;
-    ITypeInfo *pRefTypeInfo;
-    VALUE methods = rb_ary_new();
-    hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
-    if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetTypeAttr");
-    }
-
-    ole_methods_sub(0, pTypeInfo, methods, mask);
-    for(i=0; i < pTypeAttr->cImplTypes; i++){
-       hr = pTypeInfo->lpVtbl->GetRefTypeOfImplType(pTypeInfo, i, &href);
-       if(FAILED(hr))
-           continue;
-       hr = pTypeInfo->lpVtbl->GetRefTypeInfo(pTypeInfo, href, &pRefTypeInfo);
-       if (FAILED(hr))
-           continue;
-       ole_methods_sub(pTypeInfo, pRefTypeInfo, methods, mask);
-       OLE_RELEASE(pRefTypeInfo);
-    }
-    OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
-    return methods;
-}
-
 static HRESULT
 typeinfo_from_ole(struct oledata *pole, ITypeInfo **ppti)
 {
@@ -3905,29 +3875,6 @@ static VALUE
 fole_func_methods(VALUE self)
 {
     return ole_methods( self, INVOKE_FUNC);
-}
-
-VALUE
-ole_type_from_itypeinfo(ITypeInfo *pTypeInfo)
-{
-    ITypeLib *pTypeLib;
-    VALUE type = Qnil;
-    HRESULT hr;
-    unsigned int index;
-    BSTR bstr;
-
-    hr = pTypeInfo->lpVtbl->GetContainingTypeLib( pTypeInfo, &pTypeLib, &index );
-    if(FAILED(hr)) {
-        return Qnil;
-    }
-    hr = pTypeLib->lpVtbl->GetDocumentation( pTypeLib, index,
-                                             &bstr, NULL, NULL, NULL);
-    OLE_RELEASE(pTypeLib);
-    if (FAILED(hr)) {
-        return Qnil;
-    }
-    type = create_win32ole_type(pTypeInfo, WC2VSTR(bstr));
-    return type;
 }
 
 /*
@@ -4268,7 +4215,7 @@ fole_method_help(VALUE self, VALUE cmdname)
     ITypeInfo *pTypeInfo;
     HRESULT hr;
     struct oledata *pole;
-    VALUE method, obj;
+    VALUE obj;
 
     SafeStringValue(cmdname);
     OLEData_Get_Struct(self, pole);
@@ -4276,8 +4223,7 @@ fole_method_help(VALUE self, VALUE cmdname)
     if(FAILED(hr))
         ole_raise(hr, rb_eRuntimeError, "failed to get ITypeInfo");
 
-    method = folemethod_s_allocate(cWIN32OLE_METHOD);
-    obj = olemethod_from_typeinfo(method, pTypeInfo, cmdname);
+    obj = create_win32ole_method(pTypeInfo, cmdname);
 
     OLE_RELEASE(pTypeInfo);
     if (obj == Qnil)

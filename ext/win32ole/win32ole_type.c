@@ -66,6 +66,30 @@ ITypeInfo *itypeinfo(VALUE self)
     return ptype->pTypeInfo;
 }
 
+VALUE
+ole_type_from_itypeinfo(ITypeInfo *pTypeInfo)
+{
+    ITypeLib *pTypeLib;
+    VALUE type = Qnil;
+    HRESULT hr;
+    unsigned int index;
+    BSTR bstr;
+
+    hr = pTypeInfo->lpVtbl->GetContainingTypeLib( pTypeInfo, &pTypeLib, &index );
+    if(FAILED(hr)) {
+        return Qnil;
+    }
+    hr = pTypeLib->lpVtbl->GetDocumentation( pTypeLib, index,
+                                             &bstr, NULL, NULL, NULL);
+    OLE_RELEASE(pTypeLib);
+    if (FAILED(hr)) {
+        return Qnil;
+    }
+    type = create_win32ole_type(pTypeInfo, WC2VSTR(bstr));
+    return type;
+}
+
+
 /*
  *   call-seq:
  *      WIN32OLE_TYPE.ole_classes(typelib)
