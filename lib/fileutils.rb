@@ -1489,6 +1489,7 @@ module FileUtils
           end
         end
       end
+    ensure
       yield self
     end
 

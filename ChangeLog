@@ -1,3 +1,9 @@
+Tue Aug 12 13:34:25 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/fileutils.rb: enable to remove with non-owner directory.
+	  [ruby-dev:45976] [Bug #6756]
+	* test/fileutils/test_fileutils.rb: add testcase for #6756.
+
 Tue Aug 12 12:57:28 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* vm_exec.c: improve performance in ppc64 arch.
