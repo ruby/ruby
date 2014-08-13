@@ -1,3 +1,8 @@
+Wed Aug 13 11:54:41 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/irb/completion.rb: reverted r47163.
+	  because another case can't be show completion target.
+
 Wed Aug 13 11:17:00 2014  Shimpei Makimoto  <github@makimoto.org>
 
 	* lib/irb.rb: Prevent irb from crashing when exception with
