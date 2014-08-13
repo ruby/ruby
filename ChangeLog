@@ -1,3 +1,7 @@
+Wed Aug 13 20:09:37 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: remove unused variable.
+
 Wed Aug 13 19:31:27 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c(ole_search_handler_method, rescue_callback,
