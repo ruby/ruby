@@ -1203,7 +1203,7 @@ rb_ary_subseq(VALUE ary, long beg, long len)
     VALUE klass;
     long alen = RARRAY_LEN(ary);
 
-    if (beg > alen) return Qnil;
+    if (beg > alen - 1) return Qnil;
     if (beg < 0 || len < 0) return Qnil;
 
     if (alen < len || alen < beg + len) {
@@ -1246,7 +1246,7 @@ rb_ary_subseq(VALUE ary, long beg, long len)
  *     # special cases
  *     a[5]                   #=> nil
  *     a[6, 1]                #=> nil
- *     a[5, 1]                #=> []
+ *     a[5, 1]                #=> nil
  *     a[5..10]               #=> []
  *
  */
