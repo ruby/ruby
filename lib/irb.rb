@@ -497,7 +497,7 @@ module IRB
           end
           if exc
             print exc.class, ": ", exc, "\n"
-            if exc.backtrace[0] =~ /irb(2)?(\/.*|-.*|\.rb)?:/ && exc.class.to_s !~ /^IRB/ &&
+            if exc.backtrace && exc.backtrace[0] =~ /irb(2)?(\/.*|-.*|\.rb)?:/ && exc.class.to_s !~ /^IRB/ &&
                 !(SyntaxError === exc)
               irb_bug = true
             else
@@ -507,16 +507,18 @@ module IRB
             messages = []
             lasts = []
             levels = 0
-            for m in exc.backtrace
-              m = @context.workspace.filter_backtrace(m) unless irb_bug
-              if m
-                if messages.size < @context.back_trace_limit
-                  messages.push "\tfrom "+m
-                else
-                  lasts.push "\tfrom "+m
-                  if lasts.size > @context.back_trace_limit
-                    lasts.shift
-                    levels += 1
+            if exc.backtrace
+              for m in exc.backtrace
+                m = @context.workspace.filter_backtrace(m) unless irb_bug
+                if m
+                  if messages.size < @context.back_trace_limit
+                    messages.push "\tfrom "+m
+                  else
+                    lasts.push "\tfrom "+m
+                    if lasts.size > @context.back_trace_limit
+                      lasts.shift
+                      levels += 1
+                    end
                   end
                 end
               end

@@ -1,3 +1,10 @@
+Wed Aug 13 11:17:00 2014  Shimpei Makimoto  <github@makimoto.org>
+
+	* lib/irb.rb: Prevent irb from crashing when exception with
+	  nil backtrace is raised.
+	  [fix GH-434][ruby-core:58078][Bug #9063]
+	* test/irb/test_raise_no_backtrace_exception.rb: ditto.
+
 Wed Aug 13 11:08:55 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/irb/completion.rb: fixed broken completion list with
