@@ -400,7 +400,7 @@ eom
 
       def assert_warning(pat, msg = nil)
         stderr = EnvUtil.verbose_warning { yield }
-        msg = message(msg) {diff stderr, pat}
+        msg = message(msg) {diff pat, stderr}
         assert(pat === stderr, msg)
       end
 
