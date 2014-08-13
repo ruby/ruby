@@ -165,7 +165,7 @@ vtable_add(struct vtable *tbl, ID id)
     if (!POINTER_P(tbl)) {
         rb_bug("vtable_add: vtable is not allocated (%p)", (void *)tbl);
     }
-    if (VTBL_DEBUG) printf("vtable_add: %p, %s\n", (void *)tbl, rb_id2name(id));
+    if (VTBL_DEBUG) printf("vtable_add: %p, %"PRIsVALUE"\n", (void *)tbl, rb_id2str(id));
 
     if (tbl->pos == tbl->capa) {
         tbl->capa = tbl->capa * 2;
@@ -8660,7 +8660,7 @@ gettable_gen(struct parser_params *parser, ID id)
       case ID_CLASS:
 	return NEW_CVAR(id);
     }
-    compile_error(PARSER_ARG "identifier %s is not valid to get", rb_id2name(id));
+    compile_error(PARSER_ARG "identifier %"PRIsVALUE" is not valid to get", rb_id2str(id));
     return 0;
 }
 #else  /* !RIPPER */
@@ -8678,7 +8678,7 @@ id_is_var_gen(struct parser_params *parser, ID id)
 	    return 0;
 	}
     }
-    compile_error(PARSER_ARG "identifier %s is not valid to get", rb_id2name(id));
+    compile_error(PARSER_ARG "identifier %s is not valid to get", rb_id2str(id));
     return 0;
 }
 #endif /* !RIPPER */
@@ -8774,7 +8774,7 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val)
       case ID_CLASS:
 	return assignable_result(NEW_CVASGN(id, val));
       default:
-	compile_error(PARSER_ARG "identifier %s is not valid to set", rb_id2name(id));
+	compile_error(PARSER_ARG "identifier %"PRIsVALUE" is not valid to set", rb_id2str(id));
     }
   error:
     return assignable_result(0);
@@ -8804,7 +8804,7 @@ shadowing_lvar_0(struct parser_params *parser, ID name)
 	    yyerror("duplicated argument name");
 	}
 	else if (dvar_defined_get(name) || local_id(name)) {
-	    rb_warningS("shadowing outer local variable - %s", rb_id2name(name));
+	    rb_warningS("shadowing outer local variable - %"PRIsVALUE, rb_id2str(name));
 	    vtable_add(lvtbl->vars, name);
 	    if (lvtbl->used) {
 		vtable_add(lvtbl->used, (ID)ruby_sourceline | LVAR_USED);
@@ -8832,8 +8832,8 @@ new_bv_gen(struct parser_params *parser, ID name)
 {
     if (!name) return;
     if (!is_local_id(name)) {
-	compile_error(PARSER_ARG "invalid local variable - %s",
-		      rb_id2name(name));
+	compile_error(PARSER_ARG "invalid local variable - %"PRIsVALUE,
+		      rb_id2str(name));
 	return;
     }
     if (!shadowing_lvar_0(parser, name)) return;
@@ -9659,7 +9659,7 @@ warn_unused_var(struct parser_params *parser, struct local_vars *local)
     for (i = 0; i < cnt; ++i) {
 	if (!v[i] || (u[i] & LVAR_USED)) continue;
 	if (is_private_local_id(v[i])) continue;
-	rb_warn4S(ruby_sourcefile, (int)u[i], "assigned but unused variable - %s", rb_id2name(v[i]));
+	rb_warn4S(ruby_sourcefile, (int)u[i], "assigned but unused variable - %"PRIsVALUE, rb_id2str(v[i]));
     }
 }
 
@@ -9938,8 +9938,8 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
     }
     var = intern_cstr_without_pindown(s, len, enc);
     if (dvar_defined(var) || local_id(var)) {
-        rb_warningS("named capture conflicts a local variable - %s",
-                    rb_id2name(var));
+        rb_warningS("named capture conflicts a local variable - %"PRIsVALUE,
+                    rb_id2str(var));
     }
     arg->succ_block = block_append(arg->succ_block,
         newline_node(node_assign(assignable(var,0),
@@ -10576,8 +10576,7 @@ ripper_id2sym(ID id)
         name = "&&";
         break;
       default:
-        name = rb_id2name(id);
-        if (!name) {
+        if (!rb_id2str(id)) {
             rb_bug("cannot convert ID to string: %ld", (unsigned long)id);
         }
         return ID2SYM(id);
