@@ -1,3 +1,8 @@
+Wed Aug 13 11:08:55 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/irb/completion.rb: fixed broken completion list with
+	  String including spaces. Contributed from @dunric. [fix GH-465]
+
 Wed Aug 13 00:07:01 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: separate WIN32OLE_PARAM src from win32ole.c
