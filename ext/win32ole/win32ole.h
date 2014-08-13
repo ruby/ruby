@@ -108,7 +108,6 @@
 #define OLE_GET_TYPEATTR(X, Y) ((X)->lpVtbl->GetTypeAttr((X), (Y)))
 #define OLE_RELEASE_TYPEATTR(X, Y) ((X)->lpVtbl->ReleaseTypeAttr((X), (Y)))
 
-
 VALUE cWIN32OLE;
 LCID cWIN32OLE_lcid;
 
@@ -134,6 +133,7 @@ void ole_val2variant_ex(VALUE val, VARIANT *var, VARTYPE vt);
 VALUE ole_variant2val(VARIANT *pvar);
 HRESULT ole_val_ary2variant_ary(VALUE val, VARIANT *var, VARTYPE vt);
 VOID *val2variant_ptr(VALUE val, VARIANT *var, VARTYPE vt);
+HRESULT typelib_from_val(VALUE obj, ITypeLib **pTypeLib);
 
 #include "win32ole_variant_m.h"
 #include "win32ole_typelib.h"
@@ -142,6 +142,7 @@ VOID *val2variant_ptr(VALUE val, VARIANT *var, VARTYPE vt);
 #include "win32ole_method.h"
 #include "win32ole_param.h"
 #include "win32ole_variant.h"
+#include "win32ole_record.h"
 #include "win32ole_error.h"
 
 #endif
