@@ -394,7 +394,7 @@ foleparam_inspect(VALUE self)
     VALUE defval = foleparam_default(self);
     if (defval != Qnil) {
         rb_str_cat2(detail, "=");
-        rb_str_concat(detail, rb_funcall(defval, rb_intern("inspect"), 0));
+        rb_str_concat(detail, rb_inspect(defval));
     }
     return make_inspect("WIN32OLE_PARAM", detail);
 }

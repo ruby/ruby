@@ -4389,7 +4389,7 @@ ole_search_handler_method(VALUE handler, VALUE ev, BOOL *is_default_handler)
     VALUE mid;
 
     *is_default_handler = FALSE;
-    mid = rb_to_id(rb_sprintf("on%s", StringValuePtr(ev)));
+    mid = rb_to_id(rb_sprintf("on%"PRIsVALUE, ev));
     if (rb_respond_to(handler, mid)) {
 	return mid;
     }
@@ -4482,7 +4482,7 @@ rescue_callback(VALUE arg)
     VALUE bt = rb_funcall(e, rb_intern("backtrace"), 0);
     VALUE msg = rb_funcall(e, rb_intern("message"), 0);
     bt = rb_ary_entry(bt, 0);
-    error = rb_sprintf("%s: %s (%s)\n", StringValuePtr(bt), StringValuePtr(msg), rb_obj_classname(e));
+    error = rb_sprintf("%"PRIsVALUE": %"PRIsVALUE" (%s)\n", bt, msg, rb_obj_classname(e));
     rb_write_error(StringValuePtr(error));
     rb_backtrace();
     ruby_finalize();
@@ -6264,9 +6264,9 @@ folerecord_inspect(VALUE self)
         tname = rb_inspect(tname);
     }
     field = rb_inspect(folerecord_to_h(self));
-    return rb_sprintf("#<WIN32OLE_RECORD(%s) %s>",
-                      StringValuePtr(tname),
-                      StringValuePtr(field));
+    return rb_sprintf("#<WIN32OLE_RECORD(%"PRIsVALUE") %"PRIsVALUE">",
+                      tname,
+                      field);
 }
 
 static void
