@@ -1,3 +1,7 @@
+Fri Aug 15 08:10:29 2014  Eric Wong  <e@80x24.org>
+
+	* cont.c (cont_mark): fix typo in unused path [ci skip]
+
 Fri Aug 15 06:00:56 2014  Eric Wong  <e@80x24.org>
 
 	* vm.c (rb_thread_mark): update comment about marking `me'

@@ -191,7 +191,7 @@ cont_mark(void *ptr)
 	    rb_gc_mark_locations(cont->vm_stack,
 				 cont->vm_stack + cont->vm_stack_slen + cont->vm_stack_clen);
 #else
-	    rb_gc_mark_localtion(cont->vm_stack,
+	    rb_gc_mark_locations(cont->vm_stack,
 				 cont->vm_stack, cont->saved_thread.stack_size);
 #endif
 	}
