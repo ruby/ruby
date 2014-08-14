@@ -2862,9 +2862,10 @@ End
       Thread.pass until th.stop?
       buf.replace("")
       assert_empty(buf, bug6099)
+      th.join rescue ($@.concat(caller); raise) unless th.alive?
       w.write(data)
       Thread.pass while th.alive?
-      th.join
+      th.join rescue ($@.concat(caller); raise)
     end
     assert_equal(data, buf, bug6099)
   rescue RuntimeError # can't modify string; temporarily locked
