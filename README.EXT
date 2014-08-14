@@ -1622,6 +1622,56 @@ available in in include/ruby/ruby.h. An example is available in iseq.c.
 For a complete guide for RGenGC and write barriers, please refer to
 <https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/RGenGC>.
 
+= Appendix E. RB_GC_GUARD to protect from premature GC
+
+C Ruby currently uses conservative garbage collection, thus VALUE
+variables must remain visible on the stack or registers to ensure any
+associated data remains usable.  Optimizing C compilers are not designed
+with conservative garbage collection in mind, so they may optimize away
+the original VALUE even if the code depends on data associated with that
+VALUE.
+
+The following example illustrates the use of RB_GC_GUARD to ensure
+the contents of sptr remain valid while the second invocation of
+rb_str_new_cstr is running.
+
+  VALUE s, w;
+  const char *sptr;
+
+  s = rb_str_new_cstr("hello world!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+  sptr = RSTRING_PTR(s);
+  w = rb_str_new_cstr(sptr + 6); /* Possible GC invocation */
+
+  RB_GC_GUARD(s); /* ensure s (and thus sptr) do not get GC-ed */
+
+In the above example, RB_GC_GUARD must be placed _after_ the last use of
+sptr.  Placing RB_GC_GUARD before dereferencing sptr would be of no use.
+RB_GC_GUARD is only effective on the VALUE data type, not converted C
+data types.
+
+RB_GC_GUARD would not be necessary at all in the above example if
+non-inlined function calls are made on the `s' VALUE after sptr is
+dereferenced.  Thus, in the above example, calling any un-inlined
+function on `s' such as:
+
+  rb_str_modify(s);
+
+Will ensure `s' stays on the stack or register to prevent a
+GC invocation from prematurely freeing it.
+
+Using the RB_GC_GUARD macro is preferable to using the "volatile"
+keyword in C.  RB_GC_GUARD has the following advantages:
+
+1) the intent of the macro use is clear
+
+2) RB_GC_GUARD only affects its call site, "volatile" generates some
+   extra code every time the variable is used, hurting optimization.
+
+3) "volatile" implementations may be buggy/inconsistent in some
+   compilers and architectures. RB_GC_GUARD is customizable for broken
+   systems/compilers without those without negatively affecting other
+   systems.
+
 /*
  * Local variables:
  * fill-column: 70

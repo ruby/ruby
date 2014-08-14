@@ -1,3 +1,8 @@
+Fri Aug 15 05:53:59 2014  Eric Wong  <e@80x24.org>
+
+	* README.EXT: preliminary documentation for RB_GC_GUARD
+	  [Bug #10100] [ruby-core:60741]
+
 Thu Aug 14 00:26:19 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: separate WIN32OLE_RECORD src from
