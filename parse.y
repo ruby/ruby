@@ -632,20 +632,29 @@ new_args_tail_gen(struct parser_params *parser, VALUE k, VALUE kr, VALUE b)
 # define rb_warnI(fmt,a)  rb_compile_warn(ruby_sourcefile, ruby_sourceline, (fmt), (a))
 # define rb_warnS(fmt,a)  rb_compile_warn(ruby_sourcefile, ruby_sourceline, (fmt), (a))
 # define rb_warn4S(file,line,fmt,a)  rb_compile_warn((file), (line), (fmt), (a))
+# define rb_warn4V(file,line,fmt,a)  rb_compile_warn((file), (line), (fmt), (a))
 # define rb_warning0(fmt) rb_compile_warning(ruby_sourcefile, ruby_sourceline, (fmt))
 # define rb_warningS(fmt,a) rb_compile_warning(ruby_sourcefile, ruby_sourceline, (fmt), (a))
+# define rb_warningV(fmt,a) rb_compile_warning(ruby_sourcefile, ruby_sourceline, (fmt), (a))
 #else
 # define rb_warn0(fmt)    ripper_warn0(parser, (fmt))
 # define rb_warnI(fmt,a)  ripper_warnI(parser, (fmt), (a))
 # define rb_warnS(fmt,a)  ripper_warnS(parser, (fmt), (a))
+# define rb_warnV(fmt,a)  ripper_warnV(parser, (fmt), (a))
 # define rb_warn4S(file,line,fmt,a)  ripper_warnS(parser, (fmt), (a))
+# define rb_warn4V(file,line,fmt,a)  ripper_warnV(parser, (fmt), (a))
 # define rb_warning0(fmt) ripper_warning0(parser, (fmt))
 # define rb_warningS(fmt,a) ripper_warningS(parser, (fmt), (a))
+# define rb_warningV(fmt,a) ripper_warningV(parser, (fmt), (a))
 static void ripper_warn0(struct parser_params*, const char*);
 static void ripper_warnI(struct parser_params*, const char*, int);
+#if 0				/* not in use right now */
 static void ripper_warnS(struct parser_params*, const char*, const char*);
+#endif
+static void ripper_warnV(struct parser_params*, const char*, VALUE);
 static void ripper_warning0(struct parser_params*, const char*);
 static void ripper_warningS(struct parser_params*, const char*, const char*);
+static void ripper_warningV(struct parser_params*, const char*, VALUE);
 #endif
 
 #ifdef RIPPER
@@ -8804,7 +8813,7 @@ shadowing_lvar_0(struct parser_params *parser, ID name)
 	    yyerror("duplicated argument name");
 	}
 	else if (dvar_defined_get(name) || local_id(name)) {
-	    rb_warningS("shadowing outer local variable - %"PRIsVALUE, rb_id2str(name));
+	    rb_warningV("shadowing outer local variable - %"PRIsVALUE, rb_id2str(name));
 	    vtable_add(lvtbl->vars, name);
 	    if (lvtbl->used) {
 		vtable_add(lvtbl->used, (ID)ruby_sourceline | LVAR_USED);
@@ -9659,7 +9668,7 @@ warn_unused_var(struct parser_params *parser, struct local_vars *local)
     for (i = 0; i < cnt; ++i) {
 	if (!v[i] || (u[i] & LVAR_USED)) continue;
 	if (is_private_local_id(v[i])) continue;
-	rb_warn4S(ruby_sourcefile, (int)u[i], "assigned but unused variable - %"PRIsVALUE, rb_id2str(v[i]));
+	rb_warn4V(ruby_sourcefile, (int)u[i], "assigned but unused variable - %"PRIsVALUE, rb_id2str(v[i]));
     }
 }
 
@@ -9938,7 +9947,7 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
     }
     var = intern_cstr_without_pindown(s, len, enc);
     if (dvar_defined(var) || local_id(var)) {
-        rb_warningS("named capture conflicts a local variable - %"PRIsVALUE,
+        rb_warningV("named capture conflicts a local variable - %"PRIsVALUE,
                     rb_id2str(var));
     }
     arg->succ_block = block_append(arg->succ_block,
@@ -10630,11 +10639,20 @@ ripper_warnI(struct parser_params *parser, const char *fmt, int a)
                STR_NEW2(fmt), INT2NUM(a));
 }
 
+#if 0				/* not in use right now */
 static void
 ripper_warnS(struct parser_params *parser, const char *fmt, const char *str)
 {
     rb_funcall(parser->value, rb_intern("warn"), 2,
                STR_NEW2(fmt), STR_NEW2(str));
+}
+#endif
+
+static void
+ripper_warnV(struct parser_params *parser, const char *fmt, VALUE v)
+{
+    rb_funcall(parser->value, rb_intern("warn"), 2,
+               STR_NEW2(fmt), v);
 }
 
 static void
@@ -10648,6 +10666,13 @@ ripper_warningS(struct parser_params *parser, const char *fmt, const char *str)
 {
     rb_funcall(parser->value, rb_intern("warning"), 2,
                STR_NEW2(fmt), STR_NEW2(str));
+}
+
+static void
+ripper_warningV(struct parser_params *parser, const char *fmt, VALUE v)
+{
+    rb_funcall(parser->value, rb_intern("warning"), 2,
+               STR_NEW2(fmt), v);
 }
 
 static VALUE
