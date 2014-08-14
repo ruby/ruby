@@ -2008,7 +2008,8 @@ rb_thread_mark(void *ptr)
 		    rb_gc_mark(RUBY_VM_NORMAL_ISEQ_P(iseq) ? iseq->self : (VALUE)iseq);
 		}
 		if (cfp->me) {
-		    /* TODO: marking `me' can be more sophisticated way */
+		    /* bitmap marking `me' does not seem worth the trouble:
+		     * [ruby-core:64340] [ruby-core:64341] */
 		    ((rb_method_entry_t *)cfp->me)->mark = 1;
 		    rb_mark_method_entry(cfp->me);
 		}

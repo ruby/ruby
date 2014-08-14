@@ -1,3 +1,8 @@
+Fri Aug 15 06:00:56 2014  Eric Wong  <e@80x24.org>
+
+	* vm.c (rb_thread_mark): update comment about marking `me'
+	  [ruby-core:64340] [ruby-core:64341]
+
 Fri Aug 15 05:53:59 2014  Eric Wong  <e@80x24.org>
 
 	* README.EXT: preliminary documentation for RB_GC_GUARD
