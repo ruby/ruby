@@ -550,6 +550,15 @@ rb_ary_tmp_new(long capa)
     return ary_new(0, capa);
 }
 
+VALUE
+rb_ary_tmp_new_fill(long capa)
+{
+    VALUE ary = ary_new(0, capa);
+    ary_memfill(ary, 0, capa, Qnil);
+    ARY_SET_LEN(ary, capa);
+    return ary;
+}
+
 void
 rb_ary_free(VALUE ary)
 {

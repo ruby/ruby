@@ -1,3 +1,15 @@
+Fri Aug 15 19:27:25 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c (rb_ary_tmp_new): added.
+	  This function creates internal use only array (which is completely
+	  hided by ObjectSpace.each_object) with filling nil.
+
+	  Otherwise, it can be incldues strange VALUEs.
+
+	* internal.h: added.
+
+	* node.h: use rb_ary_tmp_new_fill() for MEMO.
+
 Fri Aug 15 10:13:37 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/gserver.rb: removed unmaintained code.

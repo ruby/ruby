@@ -468,9 +468,7 @@ typedef struct RNode {
 #define roomof(x, y) ((sizeof(x) + sizeof(y) - 1) / sizeof(y))
 #define MEMO_FOR(type, value) ((type *)RARRAY_PTR(value))
 #define NEW_MEMO_FOR(type, value) \
-    (rb_ary_set_len(((value) = rb_ary_tmp_new(roomof(type, VALUE))), \
-		    roomof(type, VALUE)), \
-     MEMO_FOR(type, value))
+  ((value) = rb_ary_tmp_new_fill(roomof(type, VALUE)), MEMO_FOR(type, value))
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
