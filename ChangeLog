@@ -1,3 +1,12 @@
+Fri Aug 15 20:34:17 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: seperate WIN32OLE_EVENT src from
+	  win32ole.c.
+	* ext/win32ole/win32ole.h: ditto.
+	* ext/win32ole/win32ole_event.c: ditto.
+	* ext/win32ole/win32ole_event.h: ditto.
+	* ext/win32ole/depend: ditto.
+
 Fri Aug 15 19:38:00 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (rb_iseq_clone): Should not insert write barrier from

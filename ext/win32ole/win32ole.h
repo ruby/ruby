@@ -108,6 +108,17 @@
 #define OLE_GET_TYPEATTR(X, Y) ((X)->lpVtbl->GetTypeAttr((X), (Y)))
 #define OLE_RELEASE_TYPEATTR(X, Y) ((X)->lpVtbl->ReleaseTypeAttr((X), (Y)))
 
+struct oledata {
+    IDispatch *pDispatch;
+};
+
+#define OLEData_Get_Struct(obj, pole) {\
+    Data_Get_Struct(obj, struct oledata, pole);\
+    if(!pole->pDispatch) {\
+        rb_raise(rb_eRuntimeError, "failed to get Dispatch Interface");\
+    }\
+}
+
 VALUE cWIN32OLE;
 LCID cWIN32OLE_lcid;
 
@@ -119,6 +130,7 @@ VALUE reg_get_val(HKEY hkey, const char *subkey);
 VALUE reg_get_val2(HKEY hkey, const char *subkey);
 void ole_initialize(void);
 VALUE default_inspect(VALUE self, const char *class_name);
+char *ole_wc2mb(LPWSTR pw);
 VALUE ole_wc2vstr(LPWSTR pw, BOOL isfree);
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
@@ -141,6 +153,7 @@ HRESULT typelib_from_val(VALUE obj, ITypeLib **pTypeLib);
 #include "win32ole_variable.h"
 #include "win32ole_method.h"
 #include "win32ole_param.h"
+#include "win32ole_event.h"
 #include "win32ole_variant.h"
 #include "win32ole_record.h"
 #include "win32ole_error.h"
