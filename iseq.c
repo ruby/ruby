@@ -1941,7 +1941,7 @@ rb_iseq_clone(VALUE iseqval, VALUE newcbase)
 	if (iseq0->cref_stack->nd_next) {
 	    RB_OBJ_WRITE(iseq1->cref_stack, &iseq1->cref_stack->nd_next, iseq0->cref_stack->nd_next);
 	}
-	RB_OBJ_WRITE(iseq1, &iseq1->klass, newcbase);
+	RB_OBJ_WRITE(iseq1->self, &iseq1->klass, newcbase);
     }
 
     return newiseq;

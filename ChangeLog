@@ -1,3 +1,10 @@
+Fri Aug 15 19:38:00 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (rb_iseq_clone): Should not insert write barrier from
+	  non-RVALUE data (to non-RVALUE data, of course).
+
+	  Ruby 2.1 also has a same problem.
+
 Fri Aug 15 19:34:33 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* string.c (setup_fake_str): fake strings should not set class by
