@@ -2601,18 +2601,24 @@ obj_memsize_of(VALUE obj, int use_tdata)
 	    size += BIGNUM_LEN(obj) * sizeof(BDIGIT);
 	}
 	break;
+
       case T_NODE:
 	switch (nd_type(obj)) {
 	  case NODE_SCOPE:
-	    if (RNODE(obj)->u1.tbl) {
-		/* TODO: xfree(RANY(obj)->as.node.u1.tbl); */
+	    if (RNODE(obj)->nd_tbl) {
+		size += (RNODE(obj)->nd_tbl[0]+1) * sizeof(*RNODE(obj)->nd_tbl);
+	    }
+	    break;
+	  case NODE_ARGS:
+	    if (RNODE(obj)->nd_ainfo) {
+		size += sizeof(*RNODE(obj)->nd_ainfo);
 	    }
 	    break;
 	  case NODE_ALLOCA:
-	    /* TODO: xfree(RANY(obj)->as.node.u1.node); */
-	    ;
+	    size += RNODE(obj)->nd_cnt * sizeof(VALUE);
+	    break;
 	}
-	break;			/* no need to free iv_tbl */
+	break;
 
       case T_STRUCT:
 	if ((RBASIC(obj)->flags & RSTRUCT_EMBED_LEN_MASK) == 0 &&
