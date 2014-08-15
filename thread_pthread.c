@@ -34,14 +34,14 @@
 #include <sys/time.h>
 #endif
 
-static void native_mutex_lock(pthread_mutex_t *lock);
-static void native_mutex_unlock(pthread_mutex_t *lock);
-static int native_mutex_trylock(pthread_mutex_t *lock);
-static void native_mutex_initialize(pthread_mutex_t *lock);
-static void native_mutex_destroy(pthread_mutex_t *lock);
+static void native_mutex_lock(rb_nativethread_lock_t *lock);
+static void native_mutex_unlock(rb_nativethread_lock_t *lock);
+static int native_mutex_trylock(rb_nativethread_lock_t *lock);
+static void native_mutex_initialize(rb_nativethread_lock_t *lock);
+static void native_mutex_destroy(rb_nativethread_lock_t *lock);
 static void native_cond_signal(rb_nativethread_cond_t *cond);
 static void native_cond_broadcast(rb_nativethread_cond_t *cond);
-static void native_cond_wait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex);
+static void native_cond_wait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex);
 static void native_cond_initialize(rb_nativethread_cond_t *cond, int flags);
 static void native_cond_destroy(rb_nativethread_cond_t *cond);
 static void rb_thread_wakeup_timer_thread_low(void);
@@ -188,14 +188,14 @@ gvl_atfork(rb_vm_t *vm)
 #define NATIVE_MUTEX_LOCK_DEBUG 0
 
 static void
-mutex_debug(const char *msg, pthread_mutex_t *lock)
+mutex_debug(const char *msg, void *lock)
 {
     if (NATIVE_MUTEX_LOCK_DEBUG) {
 	int r;
 	static pthread_mutex_t dbglock = PTHREAD_MUTEX_INITIALIZER;
 
 	if ((r = pthread_mutex_lock(&dbglock)) != 0) {exit(EXIT_FAILURE);}
-	fprintf(stdout, "%s: %p\n", msg, (void *)lock);
+	fprintf(stdout, "%s: %p\n", msg, lock);
 	if ((r = pthread_mutex_unlock(&dbglock)) != 0) {exit(EXIT_FAILURE);}
     }
 }
@@ -833,13 +833,13 @@ struct cached_thread_entry {
 
 
 #if USE_THREAD_CACHE
-static pthread_mutex_t thread_cache_lock = PTHREAD_MUTEX_INITIALIZER;
+static rb_nativethread_lock_t thread_cache_lock = RB_NATIVETHREAD_LOCK_INIT;
 struct cached_thread_entry *cached_thread_root;
 
 static rb_thread_t *
 register_cached_thread_and_wait(void)
 {
-    rb_nativethread_cond_t cond = { PTHREAD_COND_INITIALIZER, };
+    rb_nativethread_cond_t cond = RB_NATIVETHREAD_COND_INIT;
     volatile rb_thread_t *th_area = 0;
     struct timeval tv;
     struct timespec ts;
@@ -854,7 +854,7 @@ register_cached_thread_and_wait(void)
     ts.tv_sec = tv.tv_sec + 60;
     ts.tv_nsec = tv.tv_usec * 1000;
 
-    pthread_mutex_lock(&thread_cache_lock);
+    native_mutex_lock(&thread_cache_lock);
     {
 	entry->th_area = &th_area;
 	entry->cond = &cond;
@@ -878,7 +878,7 @@ register_cached_thread_and_wait(void)
 	free(entry); /* ok */
 	native_cond_destroy(&cond);
     }
-    pthread_mutex_unlock(&thread_cache_lock);
+    native_mutex_unlock(&thread_cache_lock);
 
     return (rb_thread_t *)th_area;
 }
@@ -892,7 +892,7 @@ use_cached_thread(rb_thread_t *th)
     struct cached_thread_entry *entry;
 
     if (cached_thread_root) {
-	pthread_mutex_lock(&thread_cache_lock);
+	native_mutex_lock(&thread_cache_lock);
 	entry = cached_thread_root;
 	{
 	    if (cached_thread_root) {
@@ -904,7 +904,7 @@ use_cached_thread(rb_thread_t *th)
 	if (result) {
 	    native_cond_signal(entry->cond);
 	}
-	pthread_mutex_unlock(&thread_cache_lock);
+	native_mutex_unlock(&thread_cache_lock);
     }
 #endif
     return result;
@@ -1027,7 +1027,7 @@ static void
 native_sleep(rb_thread_t *th, struct timeval *timeout_tv)
 {
     struct timespec timeout;
-    pthread_mutex_t *lock = &th->interrupt_lock;
+    rb_nativethread_lock_t *lock = &th->interrupt_lock;
     rb_nativethread_cond_t *cond = &th->native_thread_data.sleep_cond;
 
     if (timeout_tv) {
@@ -1054,7 +1054,7 @@ native_sleep(rb_thread_t *th, struct timeval *timeout_tv)
 
     GVL_UNLOCK_BEGIN();
     {
-	pthread_mutex_lock(lock);
+	native_mutex_lock(lock);
 	th->unblock.func = ubf_pthread_cond_signal;
 	th->unblock.arg = th;
 
@@ -1071,7 +1071,7 @@ native_sleep(rb_thread_t *th, struct timeval *timeout_tv)
 	th->unblock.func = 0;
 	th->unblock.arg = 0;
 
-	pthread_mutex_unlock(lock);
+	native_mutex_unlock(lock);
     }
     GVL_UNLOCK_END();
 
@@ -1425,7 +1425,7 @@ timer_thread_sleep(rb_global_vm_lock_t* gvl)
 void rb_thread_wakeup_timer_thread(void) {}
 static void rb_thread_wakeup_timer_thread_low(void) {}
 
-static pthread_mutex_t timer_thread_lock;
+static rb_nativethread_lock_t timer_thread_lock;
 static rb_nativethread_cond_t timer_thread_cond;
 
 static inline void

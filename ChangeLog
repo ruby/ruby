@@ -1,3 +1,30 @@
+Fri Aug 15 09:06:31 2014  Eric Wong  <e@80x24.org>
+
+	* thread_pthread.h: define RB_NATIVETHREAD_LOCK_INIT and
+	  RB_NATIVETHREAD_COND_INIT macros
+
+	* thread_pthread.c (native_mutex_lock, native_mutex_unlock,
+	  native_mutex_trylock, native_mutex_initialize,
+	  native_mutex_destroy, native_cond_wait):
+	  use rb_nativethread_lock_t instead of pthread_mutex_t
+	  [Feature #10134]
+
+	* thread_pthread.c (native_mutex_debug): make argument type-agnostic
+	  to avoid later cast.
+
+	* thread_pthread.c (register_cached_thread_and_wait):
+	  replace PTHREAD_COND_INITIALIZER with RB_NATIVETHREAD_COND_INIT,
+	  use native_mutex_{lock,unlock}
+
+	* thread_pthread.c (use_cached_thread):
+	  use native_mutex_{lock,unlock}
+
+	* thread_pthread.c (native_sleep):
+	  use rb_nativethread_lock_t to match th->interrupt_lock,
+	  use native_mutex_{lock,unlock}
+
+	* thread_pthread.c (timer_thread_lock): use rb_nativethread_lock_t type
+
 Fri Aug 15 08:10:29 2014  Eric Wong  <e@80x24.org>
 
 	* cont.c (cont_mark): fix typo in unused path [ci skip]
