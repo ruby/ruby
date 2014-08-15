@@ -1,3 +1,15 @@
+Fri Aug 15 19:34:33 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* string.c (setup_fake_str): fake strings should not set class by
+	  RBASIC_SET_CLASS() because it insert write barriers to fake
+	  (non-RVALUE) structure.
+
+	  It can cause unexpected behaviour.
+
+	  Ruby 2.1 also have a same problem (setup_fake_str() in parse.y).
+
+	* symbol.c (setup_fake_str): ditto.
+
 Fri Aug 15 19:27:25 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c (rb_ary_tmp_new): added.

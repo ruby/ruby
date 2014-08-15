@@ -414,7 +414,7 @@ static VALUE
 setup_fake_str(struct RString *fake_str, const char *name, long len)
 {
     fake_str->basic.flags = T_STRING|RSTRING_NOEMBED;
-    RBASIC_SET_CLASS((VALUE)fake_str, rb_cString);
+    RBASIC_SET_CLASS_RAW((VALUE)fake_str, rb_cString);
     fake_str->as.heap.len = len;
     fake_str->as.heap.ptr = (char *)name;
     fake_str->as.heap.aux.capa = len;

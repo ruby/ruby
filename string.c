@@ -240,7 +240,7 @@ setup_fake_str(struct RString *fake_str, const char *name, long len, int encidx)
 
     ENCODING_SET_INLINED((VALUE)fake_str, encidx);
 
-    RBASIC_SET_CLASS((VALUE)fake_str, rb_cString);
+    RBASIC_SET_CLASS_RAW((VALUE)fake_str, rb_cString);
     fake_str->as.heap.len = len;
     fake_str->as.heap.ptr = (char *)name;
     fake_str->as.heap.aux.capa = len;
