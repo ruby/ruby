@@ -1,3 +1,12 @@
+Fri Aug 15 09:22:12 2014  Eric Wong  <e@80x24.org>
+
+	* vm_core.h (rb_thread_struct): reorder to pack
+	* cont.c (rb_context_struct, rb_fiber_struct): ditto
+	  On x86-64, these changes reduces:
+	  rb_thread_struct to 1000 bytes (from 1016)
+	  rb_context_struct to 1288 bytes (from 1312)
+	  rb_fiber_struct to 2272 bytes (from 2304)
+
 Fri Aug 15 09:06:31 2014  Eric Wong  <e@80x24.org>
 
 	* thread_pthread.h: define RB_NATIVETHREAD_LOCK_INIT and

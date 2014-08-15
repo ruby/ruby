@@ -599,6 +599,7 @@ typedef struct rb_thread_struct {
     enum rb_thread_status status;
     int to_kill;
     int priority;
+    int mark_stack_len;
 
     native_thread_data_t native_thread_data;
     void *blocking_region_buffer;
@@ -616,8 +617,8 @@ typedef struct rb_thread_struct {
 
     /* async errinfo queue */
     VALUE pending_interrupt_queue;
-    int pending_interrupt_queue_checked;
     VALUE pending_interrupt_mask_stack;
+    int pending_interrupt_queue_checked;
 
     rb_atomic_t interrupt_flag;
     unsigned long interrupt_mask;
@@ -665,7 +666,6 @@ typedef struct rb_thread_struct {
 #endif
 	jmp_buf regs;
     } machine;
-    int mark_stack_len;
 
     /* statistics data for profiler */
     VALUE stat_insn_usage;
