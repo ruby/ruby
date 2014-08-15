@@ -3168,29 +3168,29 @@ time_s_mktime(int argc, VALUE *argv, VALUE klass)
 static VALUE
 time_s_monotonic(VALUE klass) {
 #ifdef WIN32 
-  LARGE_INTEGER ts, freq;
-  QueryPerformanceFrequency(&freq);
-  QueryPerformanceCounter(&ts);
-  return INT64toNUM((ts.QuadPart * 1000000000LL) / freq.QuadPart);
+    LARGE_INTEGER ts, freq;
+    QueryPerformanceFrequency(&freq);
+    QueryPerformanceCounter(&ts);
+    return INT64toNUM((ts.QuadPart * 1000000000LL) / freq.QuadPart);
 #elif defined OSX
-  uint64_t abs,ts;
-  abs =  mach_absolute_time();
-  absolutetime_to_nanoseconds(abs, &ts);
-  return INT64toNUM(ts);
+    uint64_t abs,ts;
+    abs =  mach_absolute_time();
+    absolutetime_to_nanoseconds(abs, &ts);
+    return INT64toNUM(ts);
 #else
 #ifdef HAVE_CLOCK_GETTIME
-  struct timespec ts;
+    struct timespec ts;
 #ifdef CLOCK_MONOTONIC_RAW
-  if (!clock_gettime(CLOCK_MONOTONIC_RAW, &ts)) 
-    return INT64toNUM(((long long unsigned) ts.tv_sec*1000000000) + (long long unsigned) ts.tv_nsec);
+    if (!clock_gettime(CLOCK_MONOTONIC_RAW, &ts)) 
+	return INT64toNUM(((long long unsigned) ts.tv_sec*1000000000) + (long long unsigned) ts.tv_nsec);
 #elif defined CLOCK_MONOTONIC
-  if (!clock_gettime(CLOCK_MONOTONIC, &ts))
-    return INT64toNUM(((long long unsigned) ts.tv_sec*1000000000) + (long long unsigned) ts.tv_nsec);
-  rb_raise(rb_eRuntimeError, "clock_gettime() failed");
+    if (!clock_gettime(CLOCK_MONOTONIC, &ts))
+	return INT64toNUM(((long long unsigned) ts.tv_sec*1000000000) + (long long unsigned) ts.tv_nsec);
+    rb_raise(rb_eRuntimeError, "clock_gettime() failed");
 #endif
 #endif
 #endif
-  rb_raise(rb_eNotImpError, "No monotonic clock found");
+    rb_raise(rb_eNotImpError, "No monotonic clock found");
 }
 
 /*
