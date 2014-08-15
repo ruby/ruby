@@ -3152,6 +3152,14 @@ time_s_mktime(int argc, VALUE *argv, VALUE klass)
     return time_utc_or_local(argc, argv, FALSE, klass);
 }
 
+/* call-seq:
+ *   Time.monotonic
+ *
+ * Returns monotonic counter if available on system. Will throw exception if fails.
+ * Currently supports Windows (from 2000), OS/X and any *nix with clock_gettime.
+ *
+ *    Time.monotonic   #=> 15898248961398385
+ */
 static VALUE
 time_s_monotonic(VALUE klass) {
 #ifdef WIN32 
