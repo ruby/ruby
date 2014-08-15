@@ -144,6 +144,9 @@ with all sufficient information, see the ChangeLog file.
 * lib/uri
   * support RFC 3986. [Feature #2542]
 
+* GServer
+  * GServer is extracted to gserver gem. It's unmaintain code.
+
 * Logger
   * Logger::Application is extracted to logger-application gem. It's unmaintain code.
 

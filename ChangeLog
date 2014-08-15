@@ -1,3 +1,9 @@
+Fri Aug 15 10:13:37 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/gserver.rb: removed unmaintained code.
+	  [ruby-core:40313][Feature #5480]
+	* lib/xmlrpc/httpserver.rb: ditto.
+
 Fri Aug 15 09:22:12 2014  Eric Wong  <e@80x24.org>
 
 	* vm_core.h (rb_thread_struct): reorder to pack
