@@ -16,6 +16,10 @@
 #include "ruby/encoding.h"
 #include "internal.h"
 
+#ifdef OSX
+#include <kern/clock.h>
+#endif
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -3155,20 +3159,23 @@ time_s_mktime(int argc, VALUE *argv, VALUE klass)
 /* call-seq:
  *   Time.monotonic
  *
- * Returns monotonic counter if available on system. Will throw exception if fails.
- * Currently supports Windows (from 2000), OS/X and any *nix with clock_gettime.
+ * Returns monotonic counter if available on system. Will throw exception 
+ * if fails. Currently supports Windows (from 2000), OS/X and any *nix with 
+ * clock_gettime. Time is returned in nanoseconds. 
  *
  *    Time.monotonic   #=> 15898248961398385
  */
 static VALUE
 time_s_monotonic(VALUE klass) {
 #ifdef WIN32 
-  ULONGLONG ts;
-  ts = GetTicKCount64();
-  return INT64toNUM(ts);
+  LARGE_INTEGER ts, freq;
+  QueryPerformanceFrequency(&freq);
+  QueryPerformanceCounter(&ts);
+  return INT64toNUM((ts.QuadPart * 1000000000LL) / freq.QuadPart);
 #elif defined OSX
-  uint64_t ts;
-  ts =  mach_absolute_time();
+  uint64_t abs,ts;
+  abs =  mach_absolute_time();
+  absolutetime_to_nanoseconds(abs, &ts);
   return INT64toNUM(ts);
 #else
 #ifdef HAVE_CLOCK_GETTIME
