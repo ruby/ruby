@@ -3152,6 +3152,32 @@ time_s_mktime(int argc, VALUE *argv, VALUE klass)
     return time_utc_or_local(argc, argv, FALSE, klass);
 }
 
+static VALUE
+time_s_monotonic(VALUE klass) {
+#ifdef WIN32 
+  ULONGLONG ts;
+  ts = GetTicKCount64();
+  return INT64toNUM(ts);
+#elif defined OSX
+  uint64_t ts;
+  ts =  mach_absolute_time();
+  return INT64toNUM(ts);
+#else
+#ifdef HAVE_CLOCK_GETTIME
+  struct timespec ts;
+#ifdef CLOCK_MONOTONIC_RAW
+  if (!clock_gettime(CLOCK_MONOTONIC_RAW, &ts)) 
+    return INT64toNUM(((long long unsigned) ts.tv_sec*1000000000) + (long long unsigned) ts.tv_nsec);
+#elif defined CLOCK_MONOTONIC
+  if (!clock_gettime(CLOCK_MONOTONIC, &ts))
+    return INT64toNUM(((long long unsigned) ts.tv_sec*1000000000) + (long long unsigned) ts.tv_nsec);
+  rb_raise(rb_eRuntimeError, "clock_gettime() failed");
+#endif
+#endif
+#endif
+  rb_raise(rb_eNotImpError, "No monotonic clock found");
+}
+
 /*
  *  call-seq:
  *     time.to_i   -> int
@@ -4973,6 +4999,7 @@ Init_Time(void)
     rb_define_singleton_method(rb_cTime, "gm", time_s_mkutc, -1);
     rb_define_singleton_method(rb_cTime, "local", time_s_mktime, -1);
     rb_define_singleton_method(rb_cTime, "mktime", time_s_mktime, -1);
+    rb_define_singleton_method(rb_cTime, "monotonic", time_s_monotonic, -1);
 
     rb_define_method(rb_cTime, "to_i", time_to_i, 0);
     rb_define_method(rb_cTime, "to_f", time_to_f, 0);
