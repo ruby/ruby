@@ -51,7 +51,7 @@ typedef struct tagIEVENTSINKOBJ {
     IEventSinkVtbl *lpVtbl;
     DWORD m_cRef;
     IID m_iid;
-    int m_event_id;
+    long  m_event_id;
     ITypeInfo *pTypeInfo;
 }IEVENTSINKOBJ, *PIEVENTSINKOBJ;
 
@@ -102,7 +102,7 @@ static VALUE fev_get_handler(VALUE self);
 static VALUE evs_push(VALUE ev);
 static VALUE evs_delete(long i);
 static VALUE evs_entry(long i);
-static VALUE evs_length(void);
+static long  evs_length(void);
 
 STDMETHODIMP EVENTSINK_Invoke(
     PEVENTSINK pEventSink,
@@ -942,8 +942,7 @@ ev_advise(int argc, VALUE *argv, VALUE self)
     }
 
     Data_Get_Struct(self, struct oleeventdata, poleev);
-    pIEV->m_event_id
-        = NUM2INT(evs_length());
+    pIEV->m_event_id = evs_length();
     pIEV->pTypeInfo = pTypeInfo;
     poleev->dwCookie = dwCookie;
     poleev->pConnectionPoint = pConnectionPoint;
@@ -1171,10 +1170,10 @@ evs_entry(long i)
     return rb_ary_entry(ary_ole_event, i);
 }
 
-static VALUE
+static long
 evs_length(void)
 {
-    return rb_funcall(ary_ole_event, rb_intern("length"), 0);
+    return RARRAY_LEN(ary_ole_event);
 }
 
 /*
