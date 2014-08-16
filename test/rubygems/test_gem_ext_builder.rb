@@ -234,7 +234,7 @@ install:
     refute_path_exists @spec.gem_build_complete_path
 
     skip "Gem.ruby is not the name of the binary being run in the end" \
-      unless File.read(gem_make_out).include? "#{Regexp.escape Gem.ruby}:"
+      unless File.read(gem_make_out).include? "#{Gem.ruby}:"
 
     assert_match %r%#{Regexp.escape Gem.ruby}: No such file%,
                  File.read(gem_make_out)
