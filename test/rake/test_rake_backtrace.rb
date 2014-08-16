@@ -42,7 +42,7 @@ class TestRakeBacktrace < Rake::TestCase
     super
 
     skip 'tmpdir is suppressed in backtrace' if
-      Dir.pwd =~ Rake::Backtrace::SUPPRESS_PATTERN
+      Rake::Backtrace::SUPPRESS_PATTERN =~ Dir.pwd
   end
 
   def invoke(*args)

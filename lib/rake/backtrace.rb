@@ -1,6 +1,6 @@
 module Rake
   module Backtrace # :nodoc: all
-    SYS_KEYS  = RbConfig::CONFIG.keys.grep(/(?:prefix|libdir)\z/)
+    SYS_KEYS  = RbConfig::CONFIG.keys.grep(/(?:[a-z]prefix|libdir)\z/)
     SYS_PATHS = RbConfig::CONFIG.values_at(*SYS_KEYS).uniq +
       [ File.join(File.dirname(__FILE__), "..") ]
 
