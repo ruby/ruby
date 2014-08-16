@@ -902,3 +902,184 @@ rb_parser_dump_tree(NODE *node, int comment)
     dump_node(buf, rb_str_new_cstr("# "), comment, node);
     return buf;
 }
+
+void
+rb_gc_free_node(VALUE obj)
+{
+    switch (nd_type(obj)) {
+      case NODE_SCOPE:
+	if (RNODE(obj)->nd_tbl) {
+	    xfree(RNODE(obj)->nd_tbl);
+	}
+	break;
+      case NODE_ARGS:
+	if (RNODE(obj)->nd_ainfo) {
+	    xfree(RNODE(obj)->nd_ainfo);
+	}
+	break;
+      case NODE_ALLOCA:
+	xfree(RNODE(obj)->u1.node);
+	break;
+    }
+}
+
+size_t
+rb_node_memsize(VALUE obj)
+{
+    size_t size = 0;
+    switch (nd_type(obj)) {
+      case NODE_SCOPE:
+	if (RNODE(obj)->nd_tbl) {
+	    size += (RNODE(obj)->nd_tbl[0]+1) * sizeof(*RNODE(obj)->nd_tbl);
+	}
+	break;
+      case NODE_ARGS:
+	if (RNODE(obj)->nd_ainfo) {
+	    size += sizeof(*RNODE(obj)->nd_ainfo);
+	}
+	break;
+      case NODE_ALLOCA:
+	size += RNODE(obj)->nd_cnt * sizeof(VALUE);
+	break;
+    }
+    return size;
+}
+
+VALUE
+rb_gc_mark_node(NODE *obj)
+{
+    switch (nd_type(obj)) {
+      case NODE_IF:		/* 1,2,3 */
+      case NODE_FOR:
+      case NODE_ITER:
+      case NODE_WHEN:
+      case NODE_MASGN:
+      case NODE_RESCUE:
+      case NODE_RESBODY:
+      case NODE_CLASS:
+      case NODE_BLOCK_PASS:
+	rb_gc_mark(RNODE(obj)->u2.value);
+	/* fall through */
+      case NODE_BLOCK:	/* 1,3 */
+      case NODE_ARRAY:
+      case NODE_DSTR:
+      case NODE_DXSTR:
+      case NODE_DREGX:
+      case NODE_DREGX_ONCE:
+      case NODE_ENSURE:
+      case NODE_CALL:
+      case NODE_DEFS:
+      case NODE_OP_ASGN1:
+	rb_gc_mark(RNODE(obj)->u1.value);
+	/* fall through */
+      case NODE_SUPER:	/* 3 */
+      case NODE_FCALL:
+      case NODE_DEFN:
+      case NODE_ARGS_AUX:
+	return RNODE(obj)->u3.value;
+
+      case NODE_WHILE:	/* 1,2 */
+      case NODE_UNTIL:
+      case NODE_AND:
+      case NODE_OR:
+      case NODE_CASE:
+      case NODE_SCLASS:
+      case NODE_DOT2:
+      case NODE_DOT3:
+      case NODE_FLIP2:
+      case NODE_FLIP3:
+      case NODE_MATCH2:
+      case NODE_MATCH3:
+      case NODE_OP_ASGN_OR:
+      case NODE_OP_ASGN_AND:
+      case NODE_MODULE:
+      case NODE_ALIAS:
+      case NODE_VALIAS:
+      case NODE_ARGSCAT:
+	rb_gc_mark(RNODE(obj)->u1.value);
+	/* fall through */
+      case NODE_GASGN:	/* 2 */
+      case NODE_LASGN:
+      case NODE_DASGN:
+      case NODE_DASGN_CURR:
+      case NODE_IASGN:
+      case NODE_IASGN2:
+      case NODE_CVASGN:
+      case NODE_COLON3:
+      case NODE_OPT_N:
+      case NODE_EVSTR:
+      case NODE_UNDEF:
+      case NODE_POSTEXE:
+	return RNODE(obj)->u2.value;
+
+      case NODE_HASH:	/* 1 */
+      case NODE_LIT:
+      case NODE_STR:
+      case NODE_XSTR:
+      case NODE_DEFINED:
+      case NODE_MATCH:
+      case NODE_RETURN:
+      case NODE_BREAK:
+      case NODE_NEXT:
+      case NODE_YIELD:
+      case NODE_COLON2:
+      case NODE_SPLAT:
+      case NODE_TO_ARY:
+	return RNODE(obj)->u1.value;
+
+      case NODE_SCOPE:	/* 2,3 */
+      case NODE_CDECL:
+      case NODE_OPT_ARG:
+	rb_gc_mark(RNODE(obj)->u3.value);
+	return RNODE(obj)->u2.value;
+
+      case NODE_ARGS:	/* custom */
+	{
+	    struct rb_args_info *args = obj->u3.args;
+	    if (args) {
+		if (args->pre_init)    rb_gc_mark((VALUE)args->pre_init);
+		if (args->post_init)   rb_gc_mark((VALUE)args->post_init);
+		if (args->opt_args)    rb_gc_mark((VALUE)args->opt_args);
+		if (args->kw_args)     rb_gc_mark((VALUE)args->kw_args);
+		if (args->kw_rest_arg) rb_gc_mark((VALUE)args->kw_rest_arg);
+	    }
+	}
+	return RNODE(obj)->u2.value;
+
+      case NODE_ZARRAY:	/* - */
+      case NODE_ZSUPER:
+      case NODE_VCALL:
+      case NODE_GVAR:
+      case NODE_LVAR:
+      case NODE_DVAR:
+      case NODE_IVAR:
+      case NODE_CVAR:
+      case NODE_NTH_REF:
+      case NODE_BACK_REF:
+      case NODE_REDO:
+      case NODE_RETRY:
+      case NODE_SELF:
+      case NODE_NIL:
+      case NODE_TRUE:
+      case NODE_FALSE:
+      case NODE_ERRINFO:
+      case NODE_BLOCK_ARG:
+	break;
+      case NODE_ALLOCA:
+	rb_gc_mark_locations((VALUE*)RNODE(obj)->u1.value,
+			     (VALUE*)RNODE(obj)->u1.value + RNODE(obj)->u3.cnt);
+	rb_gc_mark(RNODE(obj)->u2.value);
+	break;
+
+      case NODE_CREF:
+	rb_gc_mark(obj->nd_refinements);
+	rb_gc_mark(RNODE(obj)->nd_clss);
+	return (VALUE)RNODE(obj)->nd_next;
+
+      default:		/* unlisted NODE */
+	rb_gc_mark_maybe(RNODE(obj)->u1.value);
+	rb_gc_mark_maybe(RNODE(obj)->u2.value);
+	rb_gc_mark_maybe(RNODE(obj)->u3.value);
+    }
+    return 0;
+}

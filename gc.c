@@ -1684,22 +1684,9 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	    xfree(BIGNUM_DIGITS(obj));
 	}
 	break;
+
       case T_NODE:
-	switch (nd_type(obj)) {
-	  case NODE_SCOPE:
-	    if (RANY(obj)->as.node.u1.tbl) {
-		xfree(RANY(obj)->as.node.u1.tbl);
-	    }
-	    break;
-	  case NODE_ARGS:
-	    if (RANY(obj)->as.node.u3.args) {
-		xfree(RANY(obj)->as.node.u3.args);
-	    }
-	    break;
-	  case NODE_ALLOCA:
-	    xfree(RANY(obj)->as.node.u1.node);
-	    break;
-	}
+	rb_gc_free_node(obj);
 	break;			/* no need to free iv_tbl */
 
       case T_STRUCT:
@@ -2603,21 +2590,7 @@ obj_memsize_of(VALUE obj, int use_tdata)
 	break;
 
       case T_NODE:
-	switch (nd_type(obj)) {
-	  case NODE_SCOPE:
-	    if (RNODE(obj)->nd_tbl) {
-		size += (RNODE(obj)->nd_tbl[0]+1) * sizeof(*RNODE(obj)->nd_tbl);
-	    }
-	    break;
-	  case NODE_ARGS:
-	    if (RNODE(obj)->nd_ainfo) {
-		size += sizeof(*RNODE(obj)->nd_ainfo);
-	    }
-	    break;
-	  case NODE_ALLOCA:
-	    size += RNODE(obj)->nd_cnt * sizeof(VALUE);
-	    break;
-	}
+	size += rb_node_memsize(obj);
 	break;
 
       case T_STRUCT:
@@ -3829,146 +3802,8 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	break;
 
       case T_NODE:
-	switch (nd_type(obj)) {
-	  case NODE_IF:		/* 1,2,3 */
-	  case NODE_FOR:
-	  case NODE_ITER:
-	  case NODE_WHEN:
-	  case NODE_MASGN:
-	  case NODE_RESCUE:
-	  case NODE_RESBODY:
-	  case NODE_CLASS:
-	  case NODE_BLOCK_PASS:
-	    gc_mark(objspace, (VALUE)obj->as.node.u2.node);
-	    /* fall through */
-	  case NODE_BLOCK:	/* 1,3 */
-	  case NODE_ARRAY:
-	  case NODE_DSTR:
-	  case NODE_DXSTR:
-	  case NODE_DREGX:
-	  case NODE_DREGX_ONCE:
-	  case NODE_ENSURE:
-	  case NODE_CALL:
-	  case NODE_DEFS:
-	  case NODE_OP_ASGN1:
-	    gc_mark(objspace, (VALUE)obj->as.node.u1.node);
-	    /* fall through */
-	  case NODE_SUPER:	/* 3 */
-	  case NODE_FCALL:
-	  case NODE_DEFN:
-	  case NODE_ARGS_AUX:
-	    ptr = (VALUE)obj->as.node.u3.node;
-	    goto again;
-
-	  case NODE_WHILE:	/* 1,2 */
-	  case NODE_UNTIL:
-	  case NODE_AND:
-	  case NODE_OR:
-	  case NODE_CASE:
-	  case NODE_SCLASS:
-	  case NODE_DOT2:
-	  case NODE_DOT3:
-	  case NODE_FLIP2:
-	  case NODE_FLIP3:
-	  case NODE_MATCH2:
-	  case NODE_MATCH3:
-	  case NODE_OP_ASGN_OR:
-	  case NODE_OP_ASGN_AND:
-	  case NODE_MODULE:
-	  case NODE_ALIAS:
-	  case NODE_VALIAS:
-	  case NODE_ARGSCAT:
-	    gc_mark(objspace, (VALUE)obj->as.node.u1.node);
-	    /* fall through */
-	  case NODE_GASGN:	/* 2 */
-	  case NODE_LASGN:
-	  case NODE_DASGN:
-	  case NODE_DASGN_CURR:
-	  case NODE_IASGN:
-	  case NODE_IASGN2:
-	  case NODE_CVASGN:
-	  case NODE_COLON3:
-	  case NODE_OPT_N:
-	  case NODE_EVSTR:
-	  case NODE_UNDEF:
-	  case NODE_POSTEXE:
-	    ptr = (VALUE)obj->as.node.u2.node;
-	    goto again;
-
-	  case NODE_HASH:	/* 1 */
-	  case NODE_LIT:
-	  case NODE_STR:
-	  case NODE_XSTR:
-	  case NODE_DEFINED:
-	  case NODE_MATCH:
-	  case NODE_RETURN:
-	  case NODE_BREAK:
-	  case NODE_NEXT:
-	  case NODE_YIELD:
-	  case NODE_COLON2:
-	  case NODE_SPLAT:
-	  case NODE_TO_ARY:
-	    ptr = (VALUE)obj->as.node.u1.node;
-	    goto again;
-
-	  case NODE_SCOPE:	/* 2,3 */
-	  case NODE_CDECL:
-	  case NODE_OPT_ARG:
-	    gc_mark(objspace, (VALUE)obj->as.node.u3.node);
-	    ptr = (VALUE)obj->as.node.u2.node;
-	    goto again;
-
-	  case NODE_ARGS:	/* custom */
-	    {
-		struct rb_args_info *args = obj->as.node.u3.args;
-		if (args) {
-		    if (args->pre_init)    gc_mark(objspace, (VALUE)args->pre_init);
-		    if (args->post_init)   gc_mark(objspace, (VALUE)args->post_init);
-		    if (args->opt_args)    gc_mark(objspace, (VALUE)args->opt_args);
-		    if (args->kw_args)     gc_mark(objspace, (VALUE)args->kw_args);
-		    if (args->kw_rest_arg) gc_mark(objspace, (VALUE)args->kw_rest_arg);
-		}
-	    }
-	    ptr = (VALUE)obj->as.node.u2.node;
-	    goto again;
-
-	  case NODE_ZARRAY:	/* - */
-	  case NODE_ZSUPER:
-	  case NODE_VCALL:
-	  case NODE_GVAR:
-	  case NODE_LVAR:
-	  case NODE_DVAR:
-	  case NODE_IVAR:
-	  case NODE_CVAR:
-	  case NODE_NTH_REF:
-	  case NODE_BACK_REF:
-	  case NODE_REDO:
-	  case NODE_RETRY:
-	  case NODE_SELF:
-	  case NODE_NIL:
-	  case NODE_TRUE:
-	  case NODE_FALSE:
-	  case NODE_ERRINFO:
-	  case NODE_BLOCK_ARG:
-	    break;
-	  case NODE_ALLOCA:
-	    mark_locations_array(objspace,
-				 (VALUE*)obj->as.node.u1.value,
-				 obj->as.node.u3.cnt);
-	    gc_mark(objspace, (VALUE)obj->as.node.u2.node);
-	    break;
-
-	  case NODE_CREF:
-	    gc_mark(objspace, obj->as.node.nd_refinements);
-	    gc_mark(objspace, (VALUE)obj->as.node.nd_clss);
-	    ptr = (VALUE)obj->as.node.nd_next;
-	    goto again;
-
-	  default:		/* unlisted NODE */
-	    gc_mark_maybe(objspace, (VALUE)obj->as.node.u1.node);
-	    gc_mark_maybe(objspace, (VALUE)obj->as.node.u2.node);
-	    gc_mark_maybe(objspace, (VALUE)obj->as.node.u3.node);
-	}
+	ptr = rb_gc_mark_node(&obj->as.node);
+	if (ptr) goto again;
 	return;			/* no need to mark class. */
     }
 

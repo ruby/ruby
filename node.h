@@ -493,6 +493,9 @@ NODE *rb_compile_file(const char*, VALUE, int);
 
 NODE *rb_node_newnode(enum node_type,VALUE,VALUE,VALUE);
 NODE *rb_node_newnode_longlife(enum node_type,VALUE,VALUE,VALUE);
+void rb_gc_free_node(VALUE obj);
+size_t rb_node_memsize(VALUE obj);
+VALUE rb_gc_mark_node(NODE *obj);
 
 struct rb_global_entry {
     struct rb_global_variable *var;
