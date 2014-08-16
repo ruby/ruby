@@ -411,17 +411,6 @@ must_be_dynamic_symbol(VALUE x)
 }
 
 static VALUE
-setup_fake_str(struct RString *fake_str, const char *name, long len)
-{
-    fake_str->basic.flags = T_STRING|RSTRING_NOEMBED;
-    RBASIC_SET_CLASS_RAW((VALUE)fake_str, rb_cString);
-    fake_str->as.heap.len = len;
-    fake_str->as.heap.ptr = (char *)name;
-    fake_str->as.heap.aux.capa = len;
-    return (VALUE)fake_str;
-}
-
-static VALUE
 dsymbol_alloc(const VALUE klass, const VALUE str, rb_encoding * const enc)
 {
     const VALUE dsym = rb_newobj_of(klass, T_SYMBOL | FL_WB_PROTECTED);
@@ -527,8 +516,7 @@ rb_intern_cstr_without_pindown(const char *name, long len, rb_encoding *enc)
 {
     st_data_t id;
     struct RString fake_str;
-    VALUE str = setup_fake_str(&fake_str, name, len);
-    rb_enc_associate(str, enc);
+    VALUE str = rb_setup_fake_str(&fake_str, name, len, enc);
     OBJ_FREEZE(str);
 
     if (st_lookup(global_symbols.str_id, str, &id)) {
@@ -1045,8 +1033,7 @@ rb_check_id_cstr(const char *ptr, long len, rb_encoding *enc)
 {
     ID id;
     struct RString fake_str;
-    const VALUE name = setup_fake_str(&fake_str, ptr, len);
-    rb_enc_associate(name, enc);
+    const VALUE name = rb_setup_fake_str(&fake_str, ptr, len, enc);
 
     sym_check_asciionly(name);
 
@@ -1069,8 +1056,7 @@ rb_check_symbol_cstr(const char *ptr, long len, rb_encoding *enc)
 {
     VALUE sym;
     struct RString fake_str;
-    const VALUE name = setup_fake_str(&fake_str, ptr, len);
-    rb_enc_associate(name, enc);
+    const VALUE name = rb_setup_fake_str(&fake_str, ptr, len, enc);
 
     sym_check_asciionly(name);
 
@@ -1095,8 +1081,9 @@ attrsetname_to_attr(VALUE name)
 	ID id;
 	struct RString fake_str;
 	/* make local name by chopping '=' */
-	const VALUE localname = setup_fake_str(&fake_str, RSTRING_PTR(name), RSTRING_LEN(name) - 1);
-	rb_enc_copy(localname, name);
+	const VALUE localname = rb_setup_fake_str(&fake_str,
+						  RSTRING_PTR(name), RSTRING_LEN(name) - 1,
+						  rb_enc_get(name));
 	OBJ_FREEZE(localname);
 
 	if ((id = lookup_str_id(localname)) != 0) {
