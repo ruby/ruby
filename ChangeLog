@@ -1,3 +1,8 @@
+Sat Aug 16 10:20:17 2014  Eric Wong  <e@80x24.org>
+
+	* time.c (time_timespec): fix tv_nsec overflow
+	  [Bug #10144]
+
 Fri Aug 15 20:34:17 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: seperate WIN32OLE_EVENT src from
