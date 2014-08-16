@@ -34,8 +34,9 @@ class TestRubyMode
     output = IO.popen([*EMACS, tmp.path, *exprs, err:[:child, :out]], "r") {|e| e.read}
     tmp.open
     result = tmp.read
-    tmp.close!
     return result, output
+  ensure
+    tmp.close!
   end
 
   class TestIndent < self
@@ -49,7 +50,7 @@ class TestRubyMode
       end
       result, output = run_emacs(source, EXPR_INDENT, EXPR_SAVE)
       assert_match(/^Wrote /, output)
-      assert_equal(expected, result, *message)
+      assert_equal(expected, result, message(*message) {diff expected, result})
     end
 
     def test_simple
