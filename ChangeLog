@@ -10,7 +10,7 @@ Sat Aug 16 10:20:17 2014  Eric Wong  <e@80x24.org>
 
 Fri Aug 15 20:34:17 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c: seperate WIN32OLE_EVENT src from
+	* ext/win32ole/win32ole.c: separate WIN32OLE_EVENT src from
 	  win32ole.c.
 	* ext/win32ole/win32ole.h: ditto.
 	* ext/win32ole/win32ole_event.c: ditto.
@@ -42,7 +42,7 @@ Fri Aug 15 19:27:25 2014  Koichi Sasada  <ko1@atdot.net>
 	  This function creates internal use only array (which is completely
 	  hided by ObjectSpace.each_object) with filling nil.
 
-	  Otherwise, it can be incldues strange VALUEs.
+	  Otherwise, it can be includes strange VALUEs.
 
 	* internal.h: added.
 
