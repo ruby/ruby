@@ -1,3 +1,7 @@
+Mon Aug 18 08:03:46 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* spec/default.mspec: use 2.2 definition.
+
 Sun Aug 17 19:41:40 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* gc.c (obj_memsize_of): don't calculate memsize of T_NODE
