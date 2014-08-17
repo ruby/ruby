@@ -1,3 +1,9 @@
+Sun Aug 17 19:41:40 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* gc.c (obj_memsize_of): don't calculate memsize of T_NODE
+	  when called from check_gen_consistency. It fixes segmentation
+	  fault on RGENGC_CHECK_MODE >= 1 introduced by r47188.
+
 Sun Aug 17 17:08:12 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_invoke): use RHASH_SIZE instead of

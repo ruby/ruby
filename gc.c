@@ -690,7 +690,7 @@ static void gc_mark(rb_objspace_t *objspace, VALUE ptr);
 static void gc_mark_maybe(rb_objspace_t *objspace, VALUE ptr);
 static void gc_mark_children(rb_objspace_t *objspace, VALUE ptr);
 
-static size_t obj_memsize_of(VALUE obj, int use_tdata);
+static size_t obj_memsize_of(VALUE obj, int use_all_types);
 static VALUE gc_verify_internal_consistency(VALUE self);
 
 static double getrusage_time(void);
@@ -2497,7 +2497,7 @@ size_t rb_generic_ivar_memsize(VALUE);
 #include "regint.h"
 
 static size_t
-obj_memsize_of(VALUE obj, int use_tdata)
+obj_memsize_of(VALUE obj, int use_all_types)
 {
     size_t size = 0;
 
@@ -2557,7 +2557,7 @@ obj_memsize_of(VALUE obj, int use_tdata)
 	}
 	break;
       case T_DATA:
-	if (use_tdata) size += rb_objspace_data_type_memsize(obj);
+	if (use_all_types) size += rb_objspace_data_type_memsize(obj);
 	break;
       case T_MATCH:
 	if (RMATCH(obj)->rmatch) {
@@ -2590,7 +2590,7 @@ obj_memsize_of(VALUE obj, int use_tdata)
 	break;
 
       case T_NODE:
-	size += rb_node_memsize(obj);
+	if (use_all_types) size += rb_node_memsize(obj);
 	break;
 
       case T_STRUCT:
