@@ -2,7 +2,7 @@ load File.dirname(__FILE__) + '/rubyspec/ruby.2.2.mspec'
 class MSpecScript
   builddir = Dir.pwd
   srcdir = ENV['SRCDIR']
-  if !srcdir and File.exist?("#{builddir}/Makefile") then 
+  if !srcdir and File.exist?("#{builddir}/Makefile") then
     File.open("#{builddir}/Makefile", "r:US-ASCII") {|f|
       f.read[/^\s*srcdir\s*=\s*(.+)/i] and srcdir = $1
     }
