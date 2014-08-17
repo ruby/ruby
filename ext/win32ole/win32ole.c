@@ -2553,7 +2553,7 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
         /*------------------------------------------
           hash object ==> named dispatch parameters
         --------------------------------------------*/
-        cNamedArgs = NUM2INT(rb_funcall(param, rb_intern("length"), 0));
+        cNamedArgs = RHASH_SIZE(param);
         op.dp.cArgs = cNamedArgs + argc - 2;
         op.pNamedArgs = ALLOCA_N(OLECHAR*, cNamedArgs + 1);
         op.dp.rgvarg = ALLOCA_N(VARIANTARG, op.dp.cArgs);
