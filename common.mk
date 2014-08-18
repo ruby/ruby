@@ -771,7 +771,7 @@ ruby.$(OBJEXT): {$(VPATH)}ruby.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h \
 safe.$(OBJEXT): {$(VPATH)}safe.c $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES) {$(VPATH)}vm_opts.h {$(VPATH)}internal.h
 signal.$(OBJEXT): {$(VPATH)}signal.c $(RUBY_H_INCLUDES) \
   $(VM_CORE_H_INCLUDES) {$(VPATH)}vm_opts.h {$(VPATH)}internal.h {$(VPATH)}ruby_atomic.h {$(VPATH)}eval_intern.h
-sprintf.$(OBJEXT): {$(VPATH)}sprintf.c $(RUBY_H_INCLUDES) {$(VPATH)}re.h \
+sprintf.$(OBJEXT): {$(VPATH)}sprintf.c $(RUBY_H_INCLUDES) {$(VPATH)}re.h {$(VPATH)}id.h \
   {$(VPATH)}regex.h {$(VPATH)}vsnprintf.c $(ENCODING_H_INCLUDES) {$(VPATH)}internal.h
 st.$(OBJEXT): {$(VPATH)}st.c $(RUBY_H_INCLUDES)
 strftime.$(OBJEXT): {$(VPATH)}strftime.c $(RUBY_H_INCLUDES) \

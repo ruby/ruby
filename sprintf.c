@@ -15,6 +15,7 @@
 #include "ruby/re.h"
 #include "ruby/encoding.h"
 #include "internal.h"
+#include "id.h"
 #include <math.h>
 #include <stdarg.h>
 
@@ -1022,12 +1023,78 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    break;
 
 	  case 'f':
+	    {
+		VALUE val = GETARG(), num, den;
+		int sign = (flags&FPLUS) ? 1 : 0, zero = 0;
+		long len;
+		if (!RB_TYPE_P(val, T_RATIONAL)) {
+		    nextvalue = val;
+		    goto float_value;
+		}
+		if (!(flags&FPREC)) prec = default_float_precision;
+		den = rb_rational_den(val);
+		num = rb_rational_num(val);
+		if (FIXNUM_P(num)) {
+		    if ((SIGNED_VALUE)num < 0) {
+			long n = -FIX2LONG(num);
+			num = LONG2FIX(n);
+			sign = -1;
+		    }
+		}
+		else if (rb_num_negative_p(num)) {
+		    sign = -1;
+		    num = rb_funcallv(num, idUMinus, 0, 0);
+		}
+		if (den != INT2FIX(1) && prec > 1) {
+		    const ID idDiv = rb_intern("div");
+		    VALUE p10 = rb_int_positive_pow(10, prec);
+		    VALUE den_2 = rb_funcall(den, idDiv, 1, INT2FIX(2));
+		    num = rb_funcallv(num, '*', 1, &p10);
+		    num = rb_funcallv(num, '+', 1, &den_2);
+		    num = rb_funcallv(num, idDiv, 1, &den);
+		}
+		else if (prec >= 0) {
+		    zero = prec;
+		}
+		val = rb_obj_as_string(num);
+		len = RSTRING_LEN(val) + zero;
+		if (prec >= len) ++len; /* integer part 0 */
+		if (sign || (flags&FSPACE)) ++len;
+		if (prec > 0) ++len; /* period */
+		CHECK(len > width ? len : width);
+		if (width > len) {
+		    width -= (int)len;
+		    if (!(flags&FMINUS)) {
+			FILL(' ', width);
+			width = 0;
+		    }
+		}
+		if (sign || (flags&FSPACE)) buf[blen++] = sign > 0 ? '+' : sign < 0 ? '-' : ' ';
+		len = RSTRING_LEN(val) + zero;
+		t = RSTRING_PTR(val);
+		if (len > prec)
+		    memcpy(&buf[blen], t, len - prec);
+		else
+		    buf[blen++] = '0';
+		blen += len - prec;
+		if (prec > 0) buf[blen++] = '.';
+		if (zero) FILL('0', zero);
+		else if (prec > 0) {
+		    memcpy(&buf[blen], t + len - prec, prec);
+		    blen += prec;
+		}
+		if (width > 0) FILL(' ', width);
+		RB_GC_GUARD(val);
+		break;
+	    }
 	  case 'g':
 	  case 'G':
 	  case 'e':
 	  case 'E':
+	    /* TODO: rational support */
 	  case 'a':
 	  case 'A':
+	  float_value:
 	    {
 		VALUE val = GETARG();
 		double fval;

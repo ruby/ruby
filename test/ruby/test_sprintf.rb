@@ -148,6 +148,11 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal(" Inf", sprintf("% e", inf), '[ruby-dev:34002]')
   end
 
+  def test_rational
+    assert_match(/\A0\.10+\z/, sprintf("%.60f", 0.1r))
+    assert_match(/\A0\.3+\z/, sprintf("%.60f", 1/3r))
+  end
+
   def test_hash
     options = {:capture=>/\d+/}
     assert_equal("with options {:capture=>/\\d+/}", sprintf("with options %p" % options))
