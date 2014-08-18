@@ -1,3 +1,19 @@
+Mon Aug 18 23:22:03 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_resize): update capa only when buffer get
+	  reallocated.
+	  http://d.hatena.ne.jp/nagachika/20140613/ruby_trunk_changes_46413_46420#r46413
+
+Mon Aug 18 23:22:03 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_resize): should consider the capacity instead
+	  of the old length, as pointed out by nagachika.
+
+Mon Aug 18 23:22:03 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (expand_path): shrink expanded path which no longer needs
+	  rooms to append.  [ruby-core:63114] [Bug #9934]
+
 Mon Aug 11 23:55:32 2014  Mark Lorenz  <mlorenz@covermymeds.com>
 
 	* lib/erb.rb (result): [DOC] no longer accepts a Proc, as
