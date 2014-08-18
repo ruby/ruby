@@ -455,6 +455,7 @@ rb_f_sprintf(int argc, const VALUE *argv)
 VALUE
 rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 {
+    enum {default_float_precision = 6};
     rb_encoding *enc;
     const char *p, *end;
     char *buf;
@@ -1030,7 +1031,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    {
 		VALUE val = GETARG();
 		double fval;
-		int i, need = 6;
+		int i, need;
 		char fbuf[32];
 
 		fval = RFLOAT_VALUE(rb_Float(val));
@@ -1082,7 +1083,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    if (i > 0)
 			need = BIT_DIGITS(i);
 		}
-		need += (flags&FPREC) ? prec : 6;
+		need += (flags&FPREC) ? prec : default_float_precision;
 		if ((flags&FWIDTH) && need < width)
 		    need = width;
 		need += 20;
