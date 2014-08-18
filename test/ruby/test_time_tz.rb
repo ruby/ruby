@@ -2,12 +2,15 @@ require 'test/unit'
 
 class TestTimeTZ < Test::Unit::TestCase
   has_right_tz = true
+  has_lisbon_tz = true
   force_tz_test = ENV["RUBY_FORCE_TIME_TZ_TEST"] == "yes"
   case RUBY_PLATFORM
   when /linux/
+    # has_right_tz = false
     force_tz_test = true
   when /darwin|freebsd/
     has_right_tz = false
+    has_lisbon_tz = false
     force_tz_test = true
   end
 
@@ -147,7 +150,7 @@ class TestTimeTZ < Test::Unit::TestCase
     with_tz("Europe/Lisbon") {
       assert_equal("LMT", Time.new(-0x1_0000_0000_0000_0000).zone)
     }
-  end if has_right_tz
+  end if has_lisbon_tz
 
   def test_europe_moscow
     with_tz(tz="Europe/Moscow") {
@@ -342,6 +345,8 @@ right/America/Los_Angeles  Wed Dec 31 23:59:60 2008 UTC = Wed Dec 31 15:59:60 20
 #right/Asia/Tokyo  Sat Dec 31 23:59:60 2005 UTC = Sun Jan  1 08:59:60 2006 JST isdst=0 gmtoff=32400
 right/Europe/Paris  Fri Jun 30 23:59:60 1972 UTC = Sat Jul  1 00:59:60 1972 CET isdst=0 gmtoff=3600
 right/Europe/Paris  Wed Dec 31 23:59:60 2008 UTC = Thu Jan  1 00:59:60 2009 CET isdst=0 gmtoff=3600
+End
+  gen_zdump_test <<'End' if has_lisbon_tz
 Europe/Lisbon  Mon Jan  1 00:36:31 1912 UTC = Sun Dec 31 23:59:59 1911 LMT isdst=0 gmtoff=-2192
 End
 end
