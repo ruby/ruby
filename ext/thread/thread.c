@@ -11,13 +11,23 @@ enum {
     SZQUEUE_MAX     = 3
 };
 
-#define GET_CONDVAR_WAITERS(cv) RSTRUCT_GET((cv), CONDVAR_WAITERS)
+#define GET_CONDVAR_WAITERS(cv) get_array((cv), CONDVAR_WAITERS)
 
-#define GET_QUEUE_QUE(q)        RSTRUCT_GET((q), QUEUE_QUE)
-#define GET_QUEUE_WAITERS(q)    RSTRUCT_GET((q), QUEUE_WAITERS)
-#define GET_SZQUEUE_WAITERS(q)  RSTRUCT_GET((q), SZQUEUE_WAITERS)
+#define GET_QUEUE_QUE(q)        get_array((q), QUEUE_QUE)
+#define GET_QUEUE_WAITERS(q)    get_array((q), QUEUE_WAITERS)
+#define GET_SZQUEUE_WAITERS(q)  get_array((q), SZQUEUE_WAITERS)
 #define GET_SZQUEUE_MAX(q)      RSTRUCT_GET((q), SZQUEUE_MAX)
 #define GET_SZQUEUE_ULONGMAX(q) NUM2ULONG(GET_SZQUEUE_MAX(q))
+
+static VALUE
+get_array(VALUE obj, int idx)
+{
+    VALUE ary = RSTRUCT_GET(obj, idx);
+    if (!RB_TYPE_P(ary, T_ARRAY)) {
+	rb_raise(rb_eTypeError, "%+"PRIsVALUE" not initialized", obj);
+    }
+    return ary;
+}
 
 static VALUE
 ary_buf_new(void)

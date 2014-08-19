@@ -4,6 +4,12 @@ require 'tmpdir'
 require_relative '../ruby/envutil'
 
 class TestConditionVariable < Test::Unit::TestCase
+  def test_initialized
+    assert_raise(TypeError) {
+      ConditionVariable.allocate.wait(nil)
+    }
+  end
+
   def test_condvar_signal_and_wait
     mutex = Mutex.new
     condvar = ConditionVariable.new
