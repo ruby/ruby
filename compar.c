@@ -18,17 +18,16 @@ static ID cmp;
 void
 rb_cmperr(VALUE x, VALUE y)
 {
-    const char *classname;
+    VALUE classname;
 
     if (SPECIAL_CONST_P(y)) {
-	y = rb_inspect(y);
-	classname = StringValuePtr(y);
+	classname = rb_inspect(y);
     }
     else {
-	classname = rb_obj_classname(y);
+	classname = rb_class_path(rb_obj_class(y));
     }
-    rb_raise(rb_eArgError, "comparison of %s with %s failed",
-	     rb_obj_classname(x), classname);
+    rb_raise(rb_eArgError, "comparison of %"PRIsVALUE" with %"PRIsVALUE" failed",
+	     rb_class_path(rb_obj_class(x)), classname);
 }
 
 static VALUE
