@@ -1,3 +1,8 @@
+Tue Aug 19 22:28:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): fix condition to round.
+	  [ruby-core:64454] [Bug #10151]
+
 Tue Aug 19 22:22:45 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/trans/euckr-tbl.rb (EUCKR_TO_UCS_TBL): add missing euro and

@@ -151,6 +151,7 @@ class TestSprintf < Test::Unit::TestCase
   def test_rational
     assert_match(/\A0\.10+\z/, sprintf("%.60f", 0.1r))
     assert_match(/\A0\.3+\z/, sprintf("%.60f", 1/3r))
+    assert_match(/\A1\.20+\z/, sprintf("%.60f", 1.2r))
   end
 
   def test_hash

@@ -1045,7 +1045,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    sign = -1;
 		    num = rb_funcallv(num, idUMinus, 0, 0);
 		}
-		if (den != INT2FIX(1) && prec > 1) {
+		if (den != INT2FIX(1) || prec > 1) {
 		    const ID idDiv = rb_intern("div");
 		    VALUE p10 = rb_int_positive_pow(10, prec);
 		    VALUE den_2 = rb_funcall(den, idDiv, 1, INT2FIX(2));
