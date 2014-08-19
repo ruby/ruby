@@ -1,3 +1,8 @@
+Tue Aug 19 22:22:45 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/trans/euckr-tbl.rb (EUCKR_TO_UCS_TBL): add missing euro and
+	  registered signs.  [ruby-core:64452] [Bug #10149]
+
 Tue Aug 19 13:59:43 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compar.c (rb_cmperr): preserve encodings of arguments in the
