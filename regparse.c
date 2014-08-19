@@ -978,6 +978,8 @@ scan_env_add_mem_entry(ScanEnv* env)
   Node** p;
 
   need = env->num_mem + 1;
+  if (need > ONIG_MAX_CAPTURE_GROUP_NUM)
+    return ONIGERR_TOO_MANY_CAPTURE_GROUPS;
   if (need >= SCANENV_MEMNODES_SIZE) {
     if (env->mem_alloc <= need) {
       if (IS_NULL(env->mem_nodes_dynamic)) {

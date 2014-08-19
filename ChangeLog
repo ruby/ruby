@@ -1,3 +1,23 @@
+Tue Aug 19 23:31:48 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	merge r46831 partially. extracted commits are as follows.
+	https://github.com/k-takata/Onigmo/commit/b9fba1dc63ccb42a86e934011b468e6022fabb74
+	https://github.com/k-takata/Onigmo/commit/c1fc76b9bd463948ffc5058bc352bf93732f0314
+	https://github.com/k-takata/Onigmo/commit/a0efc0a200f7108ca3d5ac3039c8f952e0051619
+	https://github.com/k-takata/Onigmo/commit/c7cda4ed5676167b0d01bb5555724f6164fbdb13
+	[Bug #8716]
+
+	* include/ruby/oniguruma.h (ONIG_MAX_CAPTURE_GROUP_NUM,
+	  ONIGERR_TOO_MANY_CAPTURE_GROUPS): add cheking the number of capture
+	  groups.
+
+	* regerror.c (onig_error_code_to_format): ditto.
+
+	* regparse.c (scan_env_add_mem_entry): ditto.
+
+	* regexec.c (onig_region_copy, match_at): fix: segmation fault occurs
+	  when many groups are used.
+
 Mon Aug 18 23:38:21 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (enc_find): [DOC] never accepted a symbol.
