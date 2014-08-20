@@ -99,7 +99,7 @@ class TestCommon < Test::Unit::TestCase
     assert_equal("\xE3\x81\x82\xE3\x81\x82".force_encoding("UTF-8"),
                  URI.decode_www_form_component("\xE3\x81\x82%E3%81%82".force_encoding("UTF-8")))
 
-    assert_raise(ArgumentError){URI.decode_www_form_component("%")}
+    assert_raise(InvalidPercentEncoding){URI.decode_www_form_component("%")}
   end
 
   def test_encode_www_form
