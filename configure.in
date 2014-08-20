@@ -710,7 +710,7 @@ RUBY_WERROR_FLAG([
     cd .. && rm -fr tmp.$$.try_link
 ])
 
-AC_DEFUN(RUBY_TRY_CFLAGS, [
+AC_DEFUN([RUBY_TRY_CFLAGS], [
     AC_MSG_CHECKING([whether ]$1[ is accepted as CFLAGS])
     RUBY_WERROR_FLAG([
     CFLAGS="[$]CFLAGS $1"
@@ -722,7 +722,7 @@ AC_DEFUN(RUBY_TRY_CFLAGS, [
     ])
 ])
 
-AC_DEFUN(RUBY_TRY_LDFLAGS, [
+AC_DEFUN([RUBY_TRY_LDFLAGS], [
     save_LDFLAGS="$LDFLAGS"
     LDFLAGS="[$]LDFLAGS $1"
     AC_MSG_CHECKING([whether $1 is accepted as LDFLAGS])
@@ -2201,7 +2201,7 @@ AC_CACHE_CHECK(for sigsetjmp as a macro or function, ac_cv_func_sigsetjmp,
 	ac_cv_func_sigsetjmp=yes,
 	ac_cv_func_sigsetjmp=no)])
 
-AC_DEFUN(RUBY_CHECK_BUILTIN_SETJMP, [
+AC_DEFUN([RUBY_CHECK_BUILTIN_SETJMP], [
 if test x"${ac_cv_func___builtin_setjmp}" = xyes; then
    unset ac_cv_func___builtin_setjmp
 fi
@@ -2228,7 +2228,7 @@ AC_CACHE_CHECK(for __builtin_setjmp, ac_cv_func___builtin_setjmp,
 # we don't use _setjmp if _longjmp doesn't exist.
 test x$ac_cv_func__longjmp = xno && ac_cv_func__setjmp=no
 
-AC_DEFUN(RUBY_SETJMP_TYPE, [
+AC_DEFUN([RUBY_SETJMP_TYPE], [
 RUBY_CHECK_BUILTIN_SETJMP
 AC_MSG_CHECKING(for setjmp type)
 setjmp_suffix=
@@ -2519,7 +2519,7 @@ if test "$ac_cv_func_sysconf" = yes; then
   RUBY_CHECK_SYSCONF(CLK_TCK)
 fi
 
-AC_DEFUN(RUBY_STACK_GROW_DIRECTION, [
+AC_DEFUN([RUBY_STACK_GROW_DIRECTION], [
     AS_VAR_PUSHDEF([stack_grow_dir], [rb_cv_stack_grow_dir_$1])
     AC_CACHE_CHECK(stack growing direction on $1, stack_grow_dir, [
 AS_CASE(["$1"],

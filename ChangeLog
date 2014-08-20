@@ -1,3 +1,10 @@
+Wed Aug 20 17:27:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_TRY_CFLAGS, RUBY_TRY_LDFLAGS),
+	  (RUBY_CHECK_BUILTIN_SETJMP, RUBY_SETJMP_TYPE),
+	  (RUBY_STACK_GROW_DIRECTION): quote defun names, for some
+	  versions of autoconf possibly.  [ruby-core:64473] [Bug #10156]
+
 Tue Aug 19 22:28:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): fix condition to round.
