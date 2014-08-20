@@ -820,6 +820,7 @@ _eom
     assert_in_out_err([], <<-'INPUT', ["false false aborting"], [])
 Thread.new(Thread.current) {|mth|
   begin
+    mth.run
     Thead.pass until mth.stop?
     p :mth_stopped # don't run if killed by rb_thread_terminate_all
   ensure
