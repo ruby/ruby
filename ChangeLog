@@ -1,3 +1,15 @@
+Thu Aug 21 01:41:09 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb (Time.parse): [DOC] Fix an example in the documentation
+	  to use EST.
+	  Reported by Marcus Stollsteimer.
+	  [ruby-core:60778] [Bug #9521] and [ruby-core:61718] [Bug #9682]
+
+Thu Aug 21 01:41:09 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/time.rb: [DOC] Fix timezone in example of Time.parse [Bug #9521]
+	  Based on patch by @stomar
+
 Tue Aug 19 23:31:48 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	merge r46831 partially. extracted commits are as follows.
