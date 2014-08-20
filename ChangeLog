@@ -1,3 +1,9 @@
+Thu Aug 21 01:44:46 2014  Tanaka Akira  <akr@fsij.org>
+
+	* gc.c (mark_current_machine_context): Call SET_STACK_END.
+	  This reverts a hunk of r40703 by ko1.
+	  This fixes [ruby-dev:48098] [Bug #9717].
+
 Thu Aug 21 01:41:09 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/time.rb (Time.parse): [DOC] Fix an example in the documentation
