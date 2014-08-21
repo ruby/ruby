@@ -1,3 +1,7 @@
+Thu Aug 21 14:45:41 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/e2mmap.rb: removed commented-out code.
+
 Thu Aug 21 13:23:34 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/rinda/ring.rb: split executable code into sample directory.

@@ -142,8 +142,6 @@ module Exception2MessageMapper
   def E2MM.Raise(klass = E2MM, err = nil, *rest)
     if form = e2mm_message(klass, err)
       b = $@.nil? ? caller(1) : $@
-      #p $@
-      #p __FILE__
       b.shift if b[0] =~ /^#{Regexp.quote(__FILE__)}:/
       raise err, sprintf(form, *rest), b
     else
@@ -157,7 +155,6 @@ module Exception2MessageMapper
   def E2MM.e2mm_message(klass, exp)
     for c in klass.ancestors
       if mes = @MessageMap[[c,exp]]
-        #p mes
         m = klass.instance_eval('"' + mes + '"')
         return m
       end
