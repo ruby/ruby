@@ -73,7 +73,7 @@ class TestComparable < Test::Unit::TestCase
   def test_err
     assert_raise(ArgumentError) { 1.0 < nil }
     assert_raise(ArgumentError) { 1.0 < Object.new }
-    e = Module.new {break module_eval("class E\u{30a8 30e9 30fc}; self; end")}
+    e = EnvUtil.labeled_class("E\u{30a8 30e9 30fc}")
     assert_raise_with_message(ArgumentError, /E\u{30a8 30e9 30fc}/) {
       1.0 < e.new
     }
