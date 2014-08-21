@@ -1,3 +1,8 @@
+Thu Aug 21 12:55:35 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* .gitignore: ignored temporary file for Changelog.
+	  http://mkosaki.blog46.fc2.com/blog-entry-1284.html
+
 Thu Aug 21 12:40:22 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/net/imap.rb: split executable code into sample directory.
