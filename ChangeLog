@@ -1,3 +1,8 @@
+Thu Aug 21 12:40:22 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/net/imap.rb: split executable code into sample directory.
+	* sample/net-imap.rb: ditto.
+
 Thu Aug 21 12:23:56 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/net/imap.rb: removed commented-out code.
