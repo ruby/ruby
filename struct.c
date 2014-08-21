@@ -601,7 +601,7 @@ rb_struct_each_pair(VALUE s)
 static VALUE
 inspect_struct(VALUE s, VALUE dummy, int recur)
 {
-    VALUE cname = rb_class_name(rb_obj_class(s));
+    VALUE cname = rb_class_path(rb_obj_class(s));
     VALUE members, str = rb_str_new2("#<struct ");
     long i, len;
     char first = RSTRING_PTR(cname)[0];
