@@ -3082,39 +3082,6 @@ module Net
         return Address.new(name, route, mailbox, host)
       end
 
-#        def flag_list
-#       result = []
-#       match(T_LPAR)
-#       while true
-#         token = lookahead
-#         case token.symbol
-#         when T_RPAR
-#           shift_token
-#           break
-#         when T_SPACE
-#           shift_token
-#         end
-#         result.push(flag)
-#       end
-#       return result
-#        end
-
-#        def flag
-#       token = lookahead
-#       if token.symbol == T_BSLASH
-#         shift_token
-#         token = lookahead
-#         if token.symbol == T_STAR
-#           shift_token
-#           return token.value.intern
-#         else
-#           return atom.intern
-#         end
-#       else
-#         return atom
-#       end
-#        end
-
       FLAG_REGEXP = /\
 (?# FLAG        )\\([^\x80-\xff(){ \x00-\x1f\x7f%"\\]+)|\
 (?# ATOM        )([^\x80-\xff(){ \x00-\x1f\x7f%*"\\]+)/n

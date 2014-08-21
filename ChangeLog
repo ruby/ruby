@@ -1,3 +1,7 @@
+Thu Aug 21 12:23:56 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/net/imap.rb: removed commented-out code.
+
 Wed Aug 20 17:27:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_TRY_CFLAGS, RUBY_TRY_LDFLAGS),
