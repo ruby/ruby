@@ -18,6 +18,17 @@ console_info(VALUE io)
 			 INT2FIX(csbi.wAttributes));
 }
 
+static VALUE
+console_set_attribute(VALUE io, VALUE attr)
+{
+    int fd = NUM2INT(rb_funcallv(io, rb_intern("fileno"), 0, 0));
+    HANDLE h = (HANDLE)rb_w32_get_osfhandle(fd);
+
+    if (h == (HANDLE)-1) rb_raise(rb_eIOError, "invalid io");
+    SetConsoleTextAttribute(h, NUM2INT(attr));
+    return Qnil;
+}
+
 #define FOREGROUND_MASK (FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_INTENSITY)
 #define BACKGROUND_MASK (BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED | BACKGROUND_INTENSITY)
 
@@ -29,6 +40,7 @@ Init_attribute(VALUE m)
 							 "cur_x", "cur_y",
 							 "attr", NULL);
     rb_define_method(rb_cIO, "console_info", console_info, 0);
+    rb_define_method(rb_cIO, "console_attribute", console_set_attribute, 1);
 
     rb_define_const(m, "FOREGROUND_MASK", INT2FIX(FOREGROUND_MASK));
     rb_define_const(m, "FOREGROUND_BLUE", INT2FIX(FOREGROUND_BLUE));

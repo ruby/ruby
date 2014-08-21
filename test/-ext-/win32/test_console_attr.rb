@@ -4,13 +4,12 @@ if /mswin|mingw/ =~ RUBY_PLATFORM and STDOUT.tty?
   require 'test/unit'
 
   class Test_Win32Console < Test::Unit::TestCase
-    def setup
-      print "\e[m!"
+    def reset
+      STDOUT.console_attribute(7)
     end
 
-    def teardown
-      print "\e[m!"
-    end
+    alias setup reset
+    alias teardown reset
 
     def test_default
       info = STDOUT.console_info
