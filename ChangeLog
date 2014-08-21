@@ -1,3 +1,9 @@
+Thu Aug 21 17:10:31 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (constat_attr): manage reverse video internally
+	  since Windows console window does not manage it.  based on the
+	  patch by white leaf in [ruby-dev:48483].  [Bug #10158]
+
 Thu Aug 21 14:45:41 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/e2mmap.rb: removed commented-out code.

@@ -615,7 +615,7 @@ static char *uenvarea;
 /* License: Ruby's */
 struct constat {
     struct {
-	int state, seq[16];
+	int state, seq[16], reverse;
 	WORD attr;
 	COORD saved;
     } vt100;
@@ -5901,6 +5901,7 @@ constat_handle(HANDLE h)
 	p = ALLOC(struct constat);
 	p->vt100.state = constat_init;
 	p->vt100.attr = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED;
+	p->vt100.reverse = 0;
 	p->vt100.saved.X = p->vt100.saved.Y = 0;
 	if (GetConsoleScreenBufferInfo(h, &csbi)) {
 	    p->vt100.attr = csbi.wAttributes;
@@ -5922,16 +5923,26 @@ constat_reset(HANDLE h)
     p->vt100.state = constat_init;
 }
 
+#define FOREGROUND_MASK (FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_INTENSITY)
+#define BACKGROUND_MASK (BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED | BACKGROUND_INTENSITY)
+
+#define constat_attr_color_reverse(attr) \
+    (attr) & ~(FOREGROUND_MASK | BACKGROUND_MASK) | \
+	   (((attr) & FOREGROUND_MASK) << 4) | \
+	   (((attr) & BACKGROUND_MASK) >> 4);
+
 /* License: Ruby's */
 static WORD
-constat_attr(int count, const int *seq, WORD attr, WORD default_attr)
+constat_attr(int count, const int *seq, WORD attr, WORD default_attr, int *reverse)
 {
-#define FOREGROUND_MASK (FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED)
-#define BACKGROUND_MASK (BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED)
-    WORD bold = attr & (FOREGROUND_INTENSITY | BACKGROUND_INTENSITY);
-    int rev = 0;
+    int rev = *reverse;
+    WORD bold;
 
     if (!count) return attr;
+    if (rev) attr = constat_attr_color_reverse(attr);
+    bold = attr & FOREGROUND_INTENSITY;
+    attr &= ~(FOREGROUND_INTENSITY | BACKGROUND_INTENSITY);
+
     while (count-- > 0) {
 	switch (*seq++) {
 	  case 0:
@@ -5940,7 +5951,7 @@ constat_attr(int count, const int *seq, WORD attr, WORD default_attr)
 	    bold = 0;
 	    break;
 	  case 1:
-	    bold |= rev ? BACKGROUND_INTENSITY : FOREGROUND_INTENSITY;
+	    bold = FOREGROUND_INTENSITY;
 	    break;
 	  case 4:
 #ifndef COMMON_LVB_UNDERSCORE
@@ -6010,12 +6021,10 @@ constat_attr(int count, const int *seq, WORD attr, WORD default_attr)
 	    break;
 	}
     }
-    if (rev) {
-	attr = attr & ~(FOREGROUND_MASK | BACKGROUND_MASK) |
-	    ((attr & FOREGROUND_MASK) << 4) |
-	    ((attr & BACKGROUND_MASK) >> 4);
-    }
-    return attr | bold;
+    attr |= bold;
+    if (rev) attr = constat_attr_color_reverse(attr);
+    *reverse = rev;
+    return attr;
 }
 
 /* License: Ruby's */
@@ -6033,7 +6042,7 @@ constat_apply(HANDLE handle, struct constat *s, WCHAR w)
     if (count > 0 && seq[0] > 0) arg1 = seq[0];
     switch (w) {
       case L'm':
-	SetConsoleTextAttribute(handle, constat_attr(count, seq, csbi.wAttributes, s->vt100.attr));
+	SetConsoleTextAttribute(handle, constat_attr(count, seq, csbi.wAttributes, s->vt100.attr, &s->vt100.reverse));
 	break;
       case L'F':
 	csbi.dwCursorPosition.X = 0;
