@@ -1,3 +1,8 @@
+Thu Aug 21 13:23:34 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/rinda/ring.rb: split executable code into sample directory.
+	* sample/rinda-ring.rb: ditto.
+
 Thu Aug 21 13:21:45 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/drb/acl.rb: split executable code into sample directory.
