@@ -2614,6 +2614,8 @@ Init_Rational(void)
     rb_define_method(rb_cString, "to_r", string_to_r, 0);
 
     rb_define_private_method(CLASS_OF(rb_cRational), "convert", nurat_s_convert, -1);
+
+    rb_provide("rational.so");	/* for backward compatibility */
 }
 
 /*
