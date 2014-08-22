@@ -1,3 +1,7 @@
+Fri Aug 22 20:23:54 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* string.c (rb_fstring): fix condition (easy to cause infinite loop!).
+
 Fri Aug 22 20:07:43 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* string.c (rb_fstring, fstr_update_callback): simply delete garbage
@@ -17,7 +21,7 @@ Fri Aug 22 19:30:39 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 Fri Aug 22 19:25:28 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
-	* test/ruby/test_complex.rb: fixed broken tests. Math is not
+	* test/ruby/test_complex.rb: fixed broken tests. Math is nota
 	  compatible CMath now.
 
 Fri Aug 22 15:36:09 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>

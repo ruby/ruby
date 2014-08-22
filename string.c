@@ -232,7 +232,7 @@ rb_fstring(VALUE str)
     do {
 	ret = str;
 	st_update(frozen_strings, (st_data_t)str, fstr_update_callback, (st_data_t)&ret);
-    } while (ret != Qundef);
+    } while (ret == Qundef);
 
     return ret;
 }
