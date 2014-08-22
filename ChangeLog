@@ -1,3 +1,7 @@
+Fri Aug 22 19:30:39 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/ruby/test_complex.rb: removed commented-out code.
+
 Fri Aug 22 19:25:28 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/ruby/test_complex.rb: fixed broken tests. Math is not

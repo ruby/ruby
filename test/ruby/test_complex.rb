@@ -211,42 +211,10 @@ class Complex_Test < Test::Unit::TestCase
     c = Complex(1)
 
     if @unify
-=begin
-      assert_equal(true, c.finite?)
-      assert_equal(false, c.infinite?)
-      assert_equal(false, c.nan?)
-      assert_equal(true, c.integer?)
-      assert_equal(false, c.float?)
-      assert_equal(true, c.rational?)
-=end
       assert_equal(true, c.real?)
-=begin
-      assert_equal(false, c.complex?)
-      assert_equal(true, c.exact?)
-      assert_equal(false, c.inexact?)
-=end
     else
-=begin
-      assert_equal(true, c.finite?)
-      assert_equal(false, c.infinite?)
-      assert_equal(false, c.nan?)
-      assert_equal(false, c.integer?)
-      assert_equal(false, c.float?)
-      assert_equal(false, c.rational?)
-=end
       assert_equal(false, c.real?)
-=begin
-      assert_equal(true, c.complex?)
-      assert_equal(true, c.exact?)
-      assert_equal(false, c.inexact?)
-=end
     end
-
-=begin
-    assert_equal(0, Complex(0).sign)
-    assert_equal(1, Complex(2).sign)
-    assert_equal(-1, Complex(-2).sign)
-=end
 
     assert_equal(true, Complex(0).zero?)
     assert_equal(true, Complex(0,0).zero?)
@@ -306,12 +274,6 @@ class Complex_Test < Test::Unit::TestCase
       assert_equal('0.0', c.real.to_s)
       assert_equal('0.0', c.imag.to_s)
     end
-
-=begin
-    assert_equal(0, Complex(0).negate)
-    assert_equal(-2, Complex(2).negate)
-    assert_equal(2, Complex(-2).negate)
-=end
   end
 
   def test_add
@@ -478,10 +440,8 @@ class Complex_Test < Test::Unit::TestCase
 
     if @rational && !@keiju
       assert_equal(Complex(-3,4), c ** Rational(2))
-#=begin
       assert_equal(Complex(Rational(-3,25),Rational(-4,25)),
 		   c ** Rational(-2)) # why failed?
-#=end
 
       r = c ** Rational(2,3)
       assert_in_delta(1.264, r.real, 0.001)
@@ -547,9 +507,7 @@ class Complex_Test < Test::Unit::TestCase
       assert_instance_of(Fixnum, Complex(1,2) - Complex(1,2))
       assert_instance_of(Fixnum, Complex(1,2) * 0)
       assert_instance_of(Fixnum, Complex(1,2) / Complex(1,2))
-#      assert_instance_of(Fixnum, Complex(1,2).div(Complex(1,2)))
       assert_instance_of(Fixnum, Complex(1,2).quo(Complex(1,2)))
-#      assert_instance_of(Fixnum, Complex(1,2) ** 0) # mathn's bug
     end
   end
 
@@ -574,8 +532,6 @@ class Complex_Test < Test::Unit::TestCase
     assert_in_delta(1.107, r[1], 0.001)
     assert_equal(Complex(1,-2), c.conjugate)
     assert_equal(Complex(1,-2), c.conj)
-#    assert_equal(Complex(1,-2), ~c)
-#    assert_equal(5, c * ~c)
 
     assert_equal(Complex(1,2), c.numerator)
     assert_equal(1, c.denominator)
@@ -878,7 +834,6 @@ class Complex_Test < Test::Unit::TestCase
 
     assert_equal(false, c.respond_to?(:positive?))
     assert_equal(false, c.respond_to?(:negative?))
-#    assert_equal(false, c.respond_to?(:sign))
 
     assert_equal(false, c.respond_to?(:quotient))
     assert_equal(false, c.respond_to?(:quot))
@@ -908,7 +863,6 @@ class Complex_Test < Test::Unit::TestCase
       assert_equal(Rational(3), Complex(3).to_r)
       assert_equal(Rational(3), Rational(Complex(3)))
       assert_raise(RangeError){Complex(3,2).to_r}
-#      assert_raise(RangeError){Rational(Complex(3,2))}
     end
   end
 
@@ -1018,12 +972,6 @@ class Complex_Test < Test::Unit::TestCase
       assert_equal(Complex(0.5,1.0), Complex(1,2).quo(2))
     end
 
-=begin
-    if @rational && !@keiju
-      assert_equal(Complex(Rational(1,2),Rational(1)), Complex(1,2).quo(2))
-    end
-=end
-
     assert_equal(0.5, 1.fdiv(2))
     assert_equal(5000000000.0, 10000000000.fdiv(2))
     assert_equal(0.5, 1.0.fdiv(2))
@@ -1034,21 +982,15 @@ class Complex_Test < Test::Unit::TestCase
 
     unless $".grep(/(?:\A|(?<!add)\/)complex/).empty?
       assert_equal(Complex(0,2), CMath.sqrt(-4.0))
-#      assert_equal(true, Math.sqrt(-4.0).inexact?)
       assert_equal(Complex(0,2), CMath.sqrt(-4))
-#      assert_equal(true, Math.sqrt(-4).exact?)
       if @rational
 	assert_equal(Complex(0,2), CMath.sqrt(Rational(-4)))
-#	assert_equal(true, Math.sqrt(Rational(-4)).exact?)
       end
 
       assert_equal(Complex(0,3), CMath.sqrt(-9.0))
-#      assert_equal(true, Math.sqrt(-9.0).inexact?)
       assert_equal(Complex(0,3), CMath.sqrt(-9))
-#      assert_equal(true, Math.sqrt(-9).exact?)
       if @rational
 	assert_equal(Complex(0,3), CMath.sqrt(Rational(-9)))
-#	assert_equal(true, Math.sqrt(Rational(-9)).exact?)
       end
 
       c = CMath.sqrt(Complex(1, 2))
