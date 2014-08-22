@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'cmath'
 
 class ComplexSub < Complex; end
 
@@ -1032,109 +1033,109 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal(Complex(0.5,1.0), Complex(1,2).quo(2))
 
     unless $".grep(/(?:\A|(?<!add)\/)complex/).empty?
-      assert_equal(Complex(0,2), Math.sqrt(-4.0))
+      assert_equal(Complex(0,2), CMath.sqrt(-4.0))
 #      assert_equal(true, Math.sqrt(-4.0).inexact?)
-      assert_equal(Complex(0,2), Math.sqrt(-4))
+      assert_equal(Complex(0,2), CMath.sqrt(-4))
 #      assert_equal(true, Math.sqrt(-4).exact?)
       if @rational
-	assert_equal(Complex(0,2), Math.sqrt(Rational(-4)))
+	assert_equal(Complex(0,2), CMath.sqrt(Rational(-4)))
 #	assert_equal(true, Math.sqrt(Rational(-4)).exact?)
       end
 
-      assert_equal(Complex(0,3), Math.sqrt(-9.0))
+      assert_equal(Complex(0,3), CMath.sqrt(-9.0))
 #      assert_equal(true, Math.sqrt(-9.0).inexact?)
-      assert_equal(Complex(0,3), Math.sqrt(-9))
+      assert_equal(Complex(0,3), CMath.sqrt(-9))
 #      assert_equal(true, Math.sqrt(-9).exact?)
       if @rational
-	assert_equal(Complex(0,3), Math.sqrt(Rational(-9)))
+	assert_equal(Complex(0,3), CMath.sqrt(Rational(-9)))
 #	assert_equal(true, Math.sqrt(Rational(-9)).exact?)
       end
 
-      c = Math.sqrt(Complex(1, 2))
+      c = CMath.sqrt(Complex(1, 2))
       assert_in_delta(1.272, c.real, 0.001)
       assert_in_delta(0.786, c.imag, 0.001)
 
-      c = Math.sqrt(-9)
+      c = CMath.sqrt(-9)
       assert_in_delta(0.0, c.real, 0.001)
       assert_in_delta(3.0, c.imag, 0.001)
 
-      c = Math.exp(Complex(1, 2))
+      c = CMath.exp(Complex(1, 2))
       assert_in_delta(-1.131, c.real, 0.001)
       assert_in_delta(2.471, c.imag, 0.001)
 
-      c = Math.sin(Complex(1, 2))
+      c = CMath.sin(Complex(1, 2))
       assert_in_delta(3.165, c.real, 0.001)
       assert_in_delta(1.959, c.imag, 0.001)
 
-      c = Math.cos(Complex(1, 2))
+      c = CMath.cos(Complex(1, 2))
       assert_in_delta(2.032, c.real, 0.001)
       assert_in_delta(-3.051, c.imag, 0.001)
 
-      c = Math.tan(Complex(1, 2))
+      c = CMath.tan(Complex(1, 2))
       assert_in_delta(0.033, c.real, 0.001)
       assert_in_delta(1.014, c.imag, 0.001)
 
-      c = Math.sinh(Complex(1, 2))
+      c = CMath.sinh(Complex(1, 2))
       assert_in_delta(-0.489, c.real, 0.001)
       assert_in_delta(1.403, c.imag, 0.001)
 
-      c = Math.cosh(Complex(1, 2))
+      c = CMath.cosh(Complex(1, 2))
       assert_in_delta(-0.642, c.real, 0.001)
       assert_in_delta(1.068, c.imag, 0.001)
 
-      c = Math.tanh(Complex(1, 2))
+      c = CMath.tanh(Complex(1, 2))
       assert_in_delta(1.166, c.real, 0.001)
       assert_in_delta(-0.243, c.imag, 0.001)
 
-      c = Math.log(Complex(1, 2))
+      c = CMath.log(Complex(1, 2))
       assert_in_delta(0.804, c.real, 0.001)
       assert_in_delta(1.107, c.imag, 0.001)
 
-      c = Math.log(Complex(1, 2), Math::E)
+      c = CMath.log(Complex(1, 2), Math::E)
       assert_in_delta(0.804, c.real, 0.001)
       assert_in_delta(1.107, c.imag, 0.001)
 
-      c = Math.log(-1)
+      c = CMath.log(-1)
       assert_in_delta(0.0, c.real, 0.001)
       assert_in_delta(Math::PI, c.imag, 0.001)
 
-      c = Math.log(8, 2)
+      c = CMath.log(8, 2)
       assert_in_delta(3.0, c.real, 0.001)
       assert_in_delta(0.0, c.imag, 0.001)
 
-      c = Math.log(-8, -2)
+      c = CMath.log(-8, -2)
       assert_in_delta(1.092, c.real, 0.001)
       assert_in_delta(-0.420, c.imag, 0.001)
 
-      c = Math.log10(Complex(1, 2))
+      c = CMath.log10(Complex(1, 2))
       assert_in_delta(0.349, c.real, 0.001)
       assert_in_delta(0.480, c.imag, 0.001)
 
-      c = Math.asin(Complex(1, 2))
+      c = CMath.asin(Complex(1, 2))
       assert_in_delta(0.427, c.real, 0.001)
       assert_in_delta(1.528, c.imag, 0.001)
 
-      c = Math.acos(Complex(1, 2))
+      c = CMath.acos(Complex(1, 2))
       assert_in_delta(1.143, c.real, 0.001)
       assert_in_delta(-1.528, c.imag, 0.001)
 
-      c = Math.atan(Complex(1, 2))
+      c = CMath.atan(Complex(1, 2))
       assert_in_delta(1.338, c.real, 0.001)
       assert_in_delta(0.402, c.imag, 0.001)
 
-      c = Math.atan2(Complex(1, 2), 1)
+      c = CMath.atan2(Complex(1, 2), 1)
       assert_in_delta(1.338, c.real, 0.001)
       assert_in_delta(0.402, c.imag, 0.001)
 
-      c = Math.asinh(Complex(1, 2))
+      c = CMath.asinh(Complex(1, 2))
       assert_in_delta(1.469, c.real, 0.001)
       assert_in_delta(1.063, c.imag, 0.001)
 
-      c = Math.acosh(Complex(1, 2))
+      c = CMath.acosh(Complex(1, 2))
       assert_in_delta(1.528, c.real, 0.001)
       assert_in_delta(1.143, c.imag, 0.001)
 
-      c = Math.atanh(Complex(1, 2))
+      c = CMath.atanh(Complex(1, 2))
       assert_in_delta(0.173, c.real, 0.001)
       assert_in_delta(1.178, c.imag, 0.001)
     end
