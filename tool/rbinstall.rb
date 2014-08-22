@@ -19,16 +19,9 @@ require 'optparse'
 require 'optparse/shellwords'
 require 'ostruct'
 require 'rubygems'
-require_relative 'vcs'
 
 STDOUT.sync = true
 File.umask(0)
-
-begin
-  $vcs = VCS.detect(File.expand_path('../..', __FILE__))
-rescue VCS::NotFoundError
-  $vcs = nil
-end
 
 def parse_args(argv = ARGV)
   $mantype = 'doc'
