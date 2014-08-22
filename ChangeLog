@@ -1,3 +1,8 @@
+Fri Aug 22 11:38:49 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/prettyprint.rb: removed PrettyPrint#first?
+	  because it is obsoleted method since Ruby 1.8.2
+
 Thu Aug 21 17:10:31 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (constat_attr): manage reverse video internally

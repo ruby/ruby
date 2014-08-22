@@ -154,28 +154,6 @@ class PrettyPrint
     @group_stack.last
   end
 
-  # first? is a predicate to test the call is a first call to first? with
-  # current group.
-  #
-  # It is useful to format comma separated values as:
-  #
-  #   q.group(1, '[', ']') {
-  #     xxx.each {|yyy|
-  #       unless q.first?
-  #         q.text ','
-  #         q.breakable
-  #       end
-  #       ... pretty printing yyy ...
-  #     }
-  #   }
-  #
-  # first? is obsoleted in 1.8.2.
-  #
-  def first?
-    warn "PrettyPrint#first? is obsoleted at 1.8.2."
-    current_group.first?
-  end
-
   # Breaks the buffer into lines that are shorter than #maxwidth
   def break_outmost_groups
     while @maxwidth < @output_width + @buffer_width

@@ -134,6 +134,9 @@ with all sufficient information, see the ChangeLog file.
   * Time.httpdate produces always UTC Time object.
   * Time.strptime raises ArgumentError when no date information.
 
+* lib/prettyprint.rb
+  * Removed PrettyPrint#first?
+
 * lib/minitest/*.rb
   * Removed because it conflicts to minitest 5. [Feature #9711]
 
