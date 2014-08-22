@@ -1,3 +1,16 @@
+Fri Aug 22 20:07:43 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* string.c (rb_fstring, fstr_update_callback): simply delete garbage
+	  key first.
+
+	  Garbage keys can be swept by lazy sweeping invoked by creating new
+	  fstring.  So that simply do:
+	  (1) delete garbage key and return `fstr_update_callback' immediately
+	  (2) try again `fstr_update_callback()' to create a new fstr.
+
+	  This bug can be cause memory corruption, reported by
+	  http://u64.rubyci.org/~chkbuild/ruby-trunk/log/20140821T220302Z.fail.html.gz
+
 Fri Aug 22 19:30:39 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/ruby/test_complex.rb: removed commented-out code.
