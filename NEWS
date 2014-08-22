@@ -134,6 +134,12 @@ with all sufficient information, see the ChangeLog file.
   * Time.httpdate produces always UTC Time object.
   * Time.strptime raises ArgumentError when no date information.
 
+* lib/rational.rb
+  * Removed because it is deprecated from 2009.
+
+* lib/complex.rb
+  * Removed because it is deprecated from 2009.
+
 * lib/prettyprint.rb
   * Removed PrettyPrint#first?
 
