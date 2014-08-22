@@ -1,3 +1,9 @@
+Sat Aug 23 02:22:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_count): fix wrong single-byte optimization.
+	  7bit ascii can be a trailing byte in Shift_JIS.
+	  [ruby-dev:48442] [Bug #10078]
+
 Thu Aug 21 01:44:46 2014  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c (mark_current_machine_context): Call SET_STACK_END.
