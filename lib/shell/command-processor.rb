@@ -24,7 +24,6 @@ class Shell
   # Alternatively, you can execute any command via
   # Shell::CommandProcessor#system even if it is not defined.
   class CommandProcessor
-#    include Error
 
     #
     # initialize of Shell and related classes.
@@ -125,7 +124,6 @@ class Shell
         end
       end
     end
-    #  public :open
 
     # call-seq:
     #   unlink(path)
@@ -650,7 +648,6 @@ class Shell
         ["mtime", ["FILENAME"]],
         ["readlink", ["FILENAME"]],
         ["rename", ["FILENAME_FROM", "FILENAME_TO"]],
-        #      ["size", ["FILENAME"]],
         ["split", ["pathname"]],
         ["stat", ["FILENAME"]],
         ["symlink", ["FILENAME_O", "FILENAME_N"]],

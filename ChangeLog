@@ -1,3 +1,9 @@
+Fri Aug 22 12:32:15 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/shell.rb: removed commented-out code.
+	* lib/shell/builtin-command.rb: ditto.
+	* lib/shell/command-processor.rb: ditto.
+
 Fri Aug 22 12:21:46 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/complex.rb: removed deprecated library.
