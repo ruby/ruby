@@ -1381,8 +1381,9 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	long i;
 	VALUE load_path = GET_VM()->load_path;
 	for (i = 0; i < RARRAY_LEN(load_path); ++i) {
-	    RARRAY_ASET(load_path, i,
-			rb_enc_associate(rb_str_dup(RARRAY_AREF(load_path, i)), lenc));
+	    VALUE path = RARRAY_AREF(load_path, i);
+	    path = rb_enc_associate(rb_str_dup(path), lenc);
+	    RARRAY_ASET(load_path, i, path);
 	}
     }
     Init_ext();		/* load statically linked extensions before rubygems */
