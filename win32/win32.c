@@ -1485,7 +1485,6 @@ static NtCmdLineElement **
 cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail, UINT cp)
 {
     char buffer[MAXPATHLEN], *buf = buffer;
-    char *p;
     NtCmdLineElement **last = tail;
     int status;
 
@@ -1494,9 +1493,7 @@ cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail, UINT cp)
 
     strlcpy(buf, patt->str, patt->len + 1);
     buf[patt->len] = '\0';
-    for (p = buf; *p; p = CharNextExA(cp, p, 0))
-	if (*p == '\\')
-	    *p = '/';
+    translate_char(buf, '\\', '/', cp);
     status = ruby_brace_glob(buf, 0, insert, (VALUE)&tail);
     if (buf != buffer)
 	free(buf);
