@@ -1,3 +1,7 @@
+Sun Aug 24 11:09:29 2014  Eric Wong  <e@80x24.org>
+
+	* lib/benchmark.rb (measure): reduce allocations as in r47260
+
 Sun Aug 24 10:35:54 2014  Pete Higgins  <pete@peterhiggins.org>
 
 	* lib/benchmark.rb (module Benchmark): define BENCHMARK_CLOCK
