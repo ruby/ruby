@@ -1,3 +1,11 @@
+Sun Aug 24 10:35:54 2014  Pete Higgins  <pete@peterhiggins.org>
+
+	* lib/benchmark.rb (module Benchmark): define BENCHMARK_CLOCK
+	  (realtime): use Process.clock_gettime(BENCHMARK_CLOCK)
+	  Reduces allocations to improve performance [Feature #10165]
+
+	* test/benchmark/test_benchmark.rb (test_realtime_output): new test
+
 Fri Aug 22 20:23:54 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* string.c (rb_fstring): fix condition (easy to cause infinite loop!).

@@ -286,13 +286,21 @@ module Benchmark
                        label)
   end
 
+  # :stopdoc:
+  if defined?(Process::CLOCK_MONOTONIC)
+    BENCHMARK_CLOCK = Process::CLOCK_MONOTONIC
+  else
+    BENCHMARK_CLOCK = Process::CLOCK_REALTIME
+  end
+  # :startdoc:
+
   #
   # Returns the elapsed real time used to execute the given block.
   #
   def realtime # :yield:
-    r0 = Time.now
+    r0 = Process.clock_gettime(BENCHMARK_CLOCK)
     yield
-    Time.now - r0
+    Process.clock_gettime(BENCHMARK_CLOCK) - r0
   end
 
   module_function :benchmark, :measure, :realtime, :bm, :bmbm

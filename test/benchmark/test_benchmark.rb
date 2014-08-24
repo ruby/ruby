@@ -152,4 +152,9 @@ BENCH
     t.add! { sleep 0.1 }
     assert_not_equal(0, t.real)
   end
+
+  def test_realtime_output
+    realtime = Benchmark.realtime { sleep 0.001 }
+    assert_in_delta 0.001, realtime
+  end
 end
