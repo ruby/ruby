@@ -1,3 +1,7 @@
+Sun Aug 24 11:44:11 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/ruby/test_rational.rb: remove commented-out code.
+
 Sun Aug 24 11:09:29 2014  Eric Wong  <e@80x24.org>
 
 	* lib/benchmark.rb (measure): reduce allocations as in r47260
