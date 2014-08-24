@@ -52,7 +52,6 @@
 #
 #
 module Exception2MessageMapper
-  @RCS_ID='-$Id: e2mmap.rb,v 1.10 1999/02/17 12:33:17 keiju Exp keiju $-'
 
   E2MM = Exception2MessageMapper # :nodoc:
 

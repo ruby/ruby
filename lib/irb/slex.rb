@@ -15,7 +15,6 @@ require "irb/notifier"
 # :stopdoc:
 module IRB
   class SLex
-    @RCS_ID='-$Id$-'
 
     extend Exception2MessageMapper
     def_exception :ErrNodeNothing, "node nothing"

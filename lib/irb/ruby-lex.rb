@@ -15,7 +15,6 @@ require "irb/ruby-token"
 
 # :stopdoc:
 class RubyLex
-  @RCS_ID='-$Id$-'
 
   extend Exception2MessageMapper
   def_exception(:AlreadyDefinedToken, "Already defined token(%s)")

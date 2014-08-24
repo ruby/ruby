@@ -1,3 +1,10 @@
+Sun Aug 24 16:14:46 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/e2mmap.rb: remove needless instance variables.
+	* lib/irb.rb: ditto.
+	* lib/irb/**/*.rb: ditto.
+	* lib/shell.rb: ditto.
+
 Sun Aug 24 12:44:26 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/ruby/test_complex.rb: removed needless conditions.

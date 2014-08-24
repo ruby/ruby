@@ -336,7 +336,6 @@ STDOUT.sync = true
 #   # quit irb
 #   irb(main):010:0> exit
 module IRB
-  @RCS_ID='-$Id$-'
 
   # An exception raised by IRB.irb_abort
   class Abort < Exception;end

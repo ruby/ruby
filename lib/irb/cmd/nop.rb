@@ -13,7 +13,6 @@ module IRB
   module ExtendCommand
     class Nop
 
-      @RCS_ID='-$Id$-'
 
       def self.execute(conf, *opts)
         command = new(conf)

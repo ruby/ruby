@@ -13,7 +13,6 @@ require "thread"
 
 module IRB
   class JobManager
-    @RCS_ID='-$Id$-'
 
     # Creates a new JobManager object
     def initialize

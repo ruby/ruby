@@ -11,7 +11,6 @@ require "readline"
 module IRB
   module InputCompletor # :nodoc:
 
-    @RCS_ID='-$Id$-'
 
     # Set of reserved words used by Ruby, you should not use these for
     # constants or variables

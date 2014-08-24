@@ -43,7 +43,6 @@ require "irb/frame"
 #     ctx.eval 'today # is what?'
 #     #=> "a good day"
 class XMP
-  @RCS_ID='-$Id$-'
 
   # Creates a new XMP object.
   #

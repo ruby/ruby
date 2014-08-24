@@ -58,7 +58,6 @@ module IRB # :nodoc:
   end
 
   class History # :nodoc:
-    @RCS_ID='-$Id$-'
 
     def initialize(size = 16)
       @size = size

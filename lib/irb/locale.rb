@@ -10,7 +10,6 @@
 #
 module IRB # :nodoc:
   class Locale
-    @RCS_ID='-$Id$-'
 
     LOCALE_NAME_RE = %r[
       (?<language>[[:alpha:]]{2,3})

@@ -14,7 +14,6 @@ require 'irb/magic-file'
 module IRB
   STDIN_FILE_NAME = "(line)" # :nodoc:
   class InputMethod
-    @RCS_ID='-$Id$-'
 
     # Creates a new input method object
     def initialize(file = STDIN_FILE_NAME)

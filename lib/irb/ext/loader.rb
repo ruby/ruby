@@ -18,7 +18,6 @@ module IRB # :nodoc:
   #
   # See ExtendCommandBundle for more information.
   module IrbLoader
-    @RCS_ID='-$Id$-'
 
     alias ruby_load load
     alias ruby_require require

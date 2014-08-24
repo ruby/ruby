@@ -12,7 +12,6 @@ require "readline"
 
 module IRB
   module HistorySavingAbility # :nodoc:
-    @RCS_ID='-$Id$-'
   end
 
   class Context

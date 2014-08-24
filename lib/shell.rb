@@ -87,7 +87,6 @@ require "shell/process-controller"
 #   (sh.cat < "/etc/printcap") | sh.tee("tee11") >> "tee12"
 #
 class Shell
-  @RCS_ID='-$Id: shell.rb,v 1.9 2002/03/04 12:01:10 keiju Exp keiju $-'
 
   include Error
   extend Exception2MessageMapper

@@ -9,7 +9,6 @@
 #
 #
 
-@RCS_ID='-$Id$-'
 
 # :stopdoc:
 module IRB
