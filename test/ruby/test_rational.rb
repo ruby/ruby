@@ -5,10 +5,6 @@ class RationalSub < Rational; end
 class Rational_Test < Test::Unit::TestCase
 
   def setup
-    @complex = defined?(Complex)
-    if @complex
-      @keiju = Complex.instance_variables.include?(:@RCS_ID)
-    end
     seps = [File::SEPARATOR, File::ALT_SEPARATOR].compact.map{|x| Regexp.escape(x)}.join("|")
     @unify = $".grep(/(?:^|#{seps})mathn(?:\.(?:rb|so))?/).size != 0
   end
@@ -111,16 +107,14 @@ class Rational_Test < Test::Unit::TestCase
     c = Rational(Rational(1,2),Rational(1,2))
     assert_equal(Rational(1), c)
 
-    if @complex && !@keiju
-      c = Rational(Complex(1,2),2)
-      assert_equal(Complex(Rational(1,2),1), c)
+    c = Rational(Complex(1,2),2)
+    assert_equal(Complex(Rational(1,2),1), c)
 
-      c = Rational(2,Complex(1,2))
-      assert_equal(Complex(Rational(2,5),Rational(-4,5)), c)
+    c = Rational(2,Complex(1,2))
+    assert_equal(Complex(Rational(2,5),Rational(-4,5)), c)
 
-      c = Rational(Complex(1,2),Complex(1,2))
-      assert_equal(Rational(1), c)
-    end
+    c = Rational(Complex(1,2),Complex(1,2))
+    assert_equal(Rational(1), c)
 
     assert_equal(Rational(3),Rational(3))
     assert_equal(Rational(1),Rational(3,3))
@@ -643,10 +637,8 @@ class Rational_Test < Test::Unit::TestCase
   def test_math
     assert_equal(Rational(1,2), Rational(1,2).abs)
     assert_equal(Rational(1,2), Rational(-1,2).abs)
-    if @complex && !@keiju
-      assert_equal(Rational(1,2), Rational(1,2).magnitude)
-      assert_equal(Rational(1,2), Rational(-1,2).magnitude)
-    end
+    assert_equal(Rational(1,2), Rational(1,2).magnitude)
+    assert_equal(Rational(1,2), Rational(-1,2).magnitude)
 
     assert_equal(1, Rational(1,2).numerator)
     assert_equal(2, Rational(1,2).denominator)
@@ -831,14 +823,12 @@ class Rational_Test < Test::Unit::TestCase
   end
 
   def test_to_c
-    if @complex && !@keiju
-      if @unify
-        assert_equal(Rational(3,2), Rational(3,2).to_c)
-        assert_equal(Rational(3,2), Complex(Rational(3,2)))
-      else
-        assert_equal(Complex(Rational(3,2)), Rational(3,2).to_c)
-        assert_equal(Complex(Rational(3,2)), Complex(Rational(3,2)))
-      end
+    if @unify
+      assert_equal(Rational(3,2), Rational(3,2).to_c)
+      assert_equal(Rational(3,2), Complex(Rational(3,2)))
+    else
+      assert_equal(Complex(Rational(3,2)), Rational(3,2).to_c)
+      assert_equal(Complex(Rational(3,2)), Complex(Rational(3,2)))
     end
   end
 
@@ -859,13 +849,7 @@ class Rational_Test < Test::Unit::TestCase
     c = Rational(1,2).to_r
     assert_equal([1,2], [c.numerator, c.denominator])
 
-    if @complex
-      if @keiju
-        assert_raise(NoMethodError){Complex(1,2).to_r}
-      else
-        assert_raise(RangeError){Complex(1,2).to_r}
-      end
-    end
+    assert_raise(RangeError){Complex(1,2).to_r}
 
     if (0.0/0).nan?
       assert_raise(FloatDomainError){(0.0/0).to_r}
@@ -915,12 +899,7 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(r.rationalize(Rational(1,10)), Rational(-1,3))
     assert_equal(r.rationalize(Rational(-1,10)), Rational(-1,3))
 
-    if @complex
-      if @keiju
-      else
-	assert_raise(RangeError){Complex(1,2).rationalize}
-      end
-    end
+    assert_raise(RangeError){Complex(1,2).rationalize}
 
     if (0.0/0).nan?
       assert_raise(FloatDomainError){(0.0/0).rationalize}

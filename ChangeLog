@@ -1,3 +1,8 @@
+Sun Aug 24 12:44:26 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/ruby/test_complex.rb: removed needless conditions.
+	* test/ruby/test_rational.rb: ditto.
+
 Sun Aug 24 11:47:39 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/ruby/test_rational.rb: fixed indent.
