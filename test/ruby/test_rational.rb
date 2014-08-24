@@ -833,11 +833,11 @@ class Rational_Test < Test::Unit::TestCase
   def test_to_c
     if @complex && !@keiju
       if @unify
-	assert_equal(Rational(3,2), Rational(3,2).to_c)
-	assert_equal(Rational(3,2), Complex(Rational(3,2)))
+        assert_equal(Rational(3,2), Rational(3,2).to_c)
+        assert_equal(Rational(3,2), Complex(Rational(3,2)))
       else
-	assert_equal(Complex(Rational(3,2)), Rational(3,2).to_c)
-	assert_equal(Complex(Rational(3,2)), Complex(Rational(3,2)))
+        assert_equal(Complex(Rational(3,2)), Rational(3,2).to_c)
+        assert_equal(Complex(Rational(3,2)), Complex(Rational(3,2)))
       end
     end
   end
@@ -861,9 +861,9 @@ class Rational_Test < Test::Unit::TestCase
 
     if @complex
       if @keiju
-	assert_raise(NoMethodError){Complex(1,2).to_r}
+        assert_raise(NoMethodError){Complex(1,2).to_r}
       else
-	assert_raise(RangeError){Complex(1,2).to_r}
+        assert_raise(RangeError){Complex(1,2).to_r}
       end
     end
 
