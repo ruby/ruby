@@ -1,3 +1,9 @@
+Tue Aug 26 00:08:40 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_SETJMP_TYPE): check for setjmp type after
+	  CCDLFLAGS is appended to CFLAGS, since __builtin_setjmp can be
+	  affected.  [ruby-core:62469] [Bug #9818]
+
 Tue Aug 26 00:07:20 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: get rid of __builtin_setjmp/__builtin_longjmp on
