@@ -1,3 +1,8 @@
+Mon Aug 25 12:56:54 2014  Ivan Korunkov  <ivankorunkov@ya.ru>
+
+	* lib/logger.rb (format_datetime): use "%6N" to show microsecond.
+	  [Fix GH-704]
+
 Mon Aug 25 11:02:07 2014  Eric Wong  <e@80x24.org>
 
 	* vm_core.h (rb_iseq_location_t): change first_lineno type to VALUE
