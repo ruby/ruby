@@ -1,3 +1,9 @@
+Tue Aug 26 00:07:20 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: get rid of __builtin_setjmp/__builtin_longjmp on
+	  x64-mingw, which causes SEGV with callcc.
+	  [ruby-core:61887] [Bug #9710]
+
 Tue Aug 26 00:06:05 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (ac_cv_func___builtin_setjmp): should not skip
