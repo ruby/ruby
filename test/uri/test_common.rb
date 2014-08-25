@@ -100,6 +100,9 @@ class TestCommon < Test::Unit::TestCase
                  URI.decode_www_form_component("\xE3\x81\x82%E3%81%82".force_encoding("UTF-8")))
 
     assert_raise(ArgumentError){URI.decode_www_form_component("%")}
+    assert_raise(ArgumentError){URI.decode_www_form_component("%a")}
+    assert_raise(ArgumentError){URI.decode_www_form_component("x%a_")}
+    assert_nothing_raised(ArgumentError){URI.decode_www_form_component("x"*(1024*1024))}
   end
 
   def test_encode_www_form
