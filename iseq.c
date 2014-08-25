@@ -183,7 +183,7 @@ iseq_alloc(VALUE klass)
 }
 
 static rb_iseq_location_t *
-iseq_location_setup(rb_iseq_t *iseq, VALUE path, VALUE absolute_path, VALUE name, size_t first_lineno)
+iseq_location_setup(rb_iseq_t *iseq, VALUE path, VALUE absolute_path, VALUE name, VALUE first_lineno)
 {
     rb_iseq_location_t *loc = &iseq->location;
     RB_OBJ_WRITE(iseq->self, &loc->path, path);
@@ -2096,7 +2096,7 @@ rb_iseq_build_for_ruby2cext(
     MEMCPY(iseq, iseq_template, rb_iseq_t, 1); /* TODO: write barrier, *iseq = *iseq_template; */
     RB_OBJ_WRITE(iseq->self, &iseq->location.label, rb_str_new2(name));
     RB_OBJ_WRITE(iseq->self, &iseq->location.path, rb_str_new2(path));
-    iseq->location.first_lineno = first_lineno;
+    iseq->location.first_lineno = UINT2NUM(first_lineno);
     RB_OBJ_WRITE(iseq->self, &iseq->mark_ary, 0);
     iseq->self = iseqval;
 

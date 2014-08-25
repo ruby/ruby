@@ -184,7 +184,7 @@ typedef struct rb_iseq_location_struct {
     const VALUE absolute_path;
     const VALUE base_label;
     const VALUE label;
-    size_t first_lineno;
+    VALUE first_lineno; /* TODO: may be unsigned short */
 } rb_iseq_location_t;
 
 struct rb_iseq_struct;
