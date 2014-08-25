@@ -26,7 +26,7 @@
 const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 0xC0, 0x4F, 0x8F, 0x5D, 0x9A}};
 #endif
 
-#define WIN32OLE_VERSION "1.7.7"
+#define WIN32OLE_VERSION "1.7.8"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -1907,10 +1907,10 @@ fole_s_connect(int argc, VALUE *argv, VALUE self)
     ole_initialize();
 
     rb_scan_args(argc, argv, "1*", &svr_name, &others);
-    SafeStringValue(svr_name);
+    StringValue(svr_name);
     if (rb_safe_level() > 0 && OBJ_TAINTED(svr_name)) {
-        rb_raise(rb_eSecurityError, "Insecure Object Connection - %s",
-		 StringValuePtr(svr_name));
+        rb_raise(rb_eSecurityError, "insecure connection - `%s'",
+		StringValuePtr(svr_name));
     }
 
     /* get CLSID from OLE server name */
@@ -2390,16 +2390,16 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
     rb_call_super(0, 0);
     rb_scan_args(argc, argv, "11*", &svr_name, &host, &others);
 
-    SafeStringValue(svr_name);
+    StringValue(svr_name);
     if (rb_safe_level() > 0 && OBJ_TAINTED(svr_name)) {
-        rb_raise(rb_eSecurityError, "Insecure Object Creation - %s",
+        rb_raise(rb_eSecurityError, "insecure object creation - `%s'",
                  StringValuePtr(svr_name));
     }
     if (!NIL_P(host)) {
-	SafeStringValue(host);
+        StringValue(host);
         if (rb_safe_level() > 0 && OBJ_TAINTED(host)) {
-            rb_raise(rb_eSecurityError, "Insecure Object Creation - %s",
-                     StringValuePtr(svr_name));
+            rb_raise(rb_eSecurityError, "insecure object creation - `%s'",
+                     StringValuePtr(host));
         }
         return ole_create_dcom(self, svr_name, host, others);
     }

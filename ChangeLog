@@ -1,3 +1,12 @@
+Mon Aug 25 20:15:50 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c(fole_s_connect, fole_initialize): raise a
+	  security error with the tainted string object.
+	* ext/win32ole/win32ole_event.c(ev_advise): ditto.
+	* test/win32ole/test_win32ole.rb(test_s_new_exc_svr_tainted,
+	  test_s_new_exc_host_tainted): ditto.
+	* test/win32ole/test_win32ole_event.rb(test_s_new_exc_tainted): ditto.
+
 Mon Aug 25 12:56:54 2014  Ivan Korunkov  <ivankorunkov@ya.ru>
 
 	* lib/logger.rb (format_datetime): use "%6N" to show microsecond.

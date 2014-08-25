@@ -329,6 +329,19 @@ if defined?(WIN32OLE_EVENT)
         message_loop
         assert(h2.ev != "")
       end
+
+      def test_s_new_exc_tainted
+        th = Thread.new {
+          $SAFE=1
+          str = 'ConnectionEvents'
+          str.taint
+          ev = WIN32OLE_EVENT.new(@db, str)
+        }
+        exc = assert_raise(SecurityError) {
+          th.join
+        }
+        assert_match(/insecure event creation - `ConnectionEvents'/, exc.message)
+      end
     end
   end
 end
