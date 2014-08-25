@@ -510,11 +510,7 @@ private
   private
 
     def format_datetime(time)
-      if @datetime_format.nil?
-        time.strftime("%Y-%m-%dT%H:%M:%S.%6N ")
-      else
-        time.strftime(@datetime_format)
-      end
+      time.strftime(@datetime_format || "%Y-%m-%dT%H:%M:%S.%6N ".freeze)
     end
 
     def msg2str(msg)
