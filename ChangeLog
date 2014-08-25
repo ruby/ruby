@@ -1,3 +1,15 @@
+Tue Aug 26 00:02:51 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ac_cv_func___builtin_setjmp): __builtin_longjmp()
+	  in Apple LLVM 5.1 (LLVM 3.4svn) uses `void**`, not `jmp_buf`.
+	  [Bug #9692]
+
+Tue Aug 26 00:02:51 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ac_cv_func___builtin_setjmp): gcc 4.9 disallows a
+	  variable as the second argument of __builtin_longjmp().
+	  [ruby-core:61800] [Bug #9692]
+
 Mon Aug 25 00:36:56 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): fix invalid char in eval, should raise
