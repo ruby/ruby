@@ -1,3 +1,7 @@
+Tue Aug 26 13:43:50 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/ruby/test_range.rb: added workaround for VERBOSE message.
+
 Tue Aug 26 12:38:02 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/test_mathn.rb: added workaround for VERBOSE messages.
