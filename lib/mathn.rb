@@ -226,14 +226,8 @@ module Math
   def sqrt(a)
     if a.kind_of?(Complex)
       abs = sqrt(a.real*a.real + a.imag*a.imag)
-#      if not abs.kind_of?(Rational)
-#        return a**Rational(1,2)
-#      end
       x = sqrt((a.real + abs)/Rational(2))
       y = sqrt((-a.real + abs)/Rational(2))
-#      if !(x.kind_of?(Rational) and y.kind_of?(Rational))
-#        return a**Rational(1,2)
-#      end
       if a.imag >= 0
         Complex(x, y)
       else

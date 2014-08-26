@@ -1,3 +1,7 @@
+Tue Aug 26 09:25:03 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/mathn.rb: removed commented-out code.
+
 Mon Aug 25 20:15:50 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c(fole_s_connect, fole_initialize): raise a
