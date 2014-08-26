@@ -1,3 +1,7 @@
+Tue Aug 26 11:44:04 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/shell/process-controller.rb: removed commented-out code.
+
 Tue Aug 26 11:39:01 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/thwait.rb (ThreadsWait): removed needless constant.
