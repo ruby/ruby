@@ -173,8 +173,10 @@ class Rational_Test < Test::Unit::TestCase
     c = Rational(1)
 
     if @unify
+      assert_equal(true, c.integer?)
       assert_equal(true, c.real?)
     else
+      assert_equal(false, c.integer?)
       assert_equal(true, c.real?)
     end
 

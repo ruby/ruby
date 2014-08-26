@@ -205,8 +205,10 @@ class Complex_Test < Test::Unit::TestCase
     c = Complex(1)
 
     if @unify
+      assert_equal(true, c.integer?)
       assert_equal(true, c.real?)
     else
+      assert_equal(false, c.integer?)
       assert_equal(false, c.real?)
     end
 
@@ -463,7 +465,9 @@ class Complex_Test < Test::Unit::TestCase
       assert_instance_of(Fixnum, Complex(1,2) - Complex(1,2))
       assert_instance_of(Fixnum, Complex(1,2) * 0)
       assert_instance_of(Fixnum, Complex(1,2) / Complex(1,2))
+      assert_instance_of(Fixnum, Complex(1,2).div(Complex(1,2)))
       assert_instance_of(Fixnum, Complex(1,2).quo(Complex(1,2)))
+      assert_instance_of(Fixnum, Complex(1,2) ** 0) # mathn's bug
     end
   end
 
@@ -786,6 +790,7 @@ class Complex_Test < Test::Unit::TestCase
 
     assert_equal(false, c.respond_to?(:positive?))
     assert_equal(false, c.respond_to?(:negative?))
+    assert_equal(false, c.respond_to?(:sign))
 
     assert_equal(false, c.respond_to?(:quotient))
     assert_equal(false, c.respond_to?(:quot))
@@ -814,6 +819,7 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal(Rational(3), Complex(3).to_r)
     assert_equal(Rational(3), Rational(Complex(3)))
     assert_raise(RangeError){Complex(3,2).to_r}
+    assert_raise(RangeError){Rational(Complex(3,2))}
   end
 
   def test_to_c
