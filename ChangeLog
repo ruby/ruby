@@ -1,3 +1,7 @@
+Tue Aug 26 12:38:02 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/test_mathn.rb: added workaround for VERBOSE messages.
+
 Tue Aug 26 11:44:04 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/shell/process-controller.rb: removed commented-out code.
