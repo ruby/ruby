@@ -25,6 +25,9 @@ i.step(180, 10) do |rot|
 end
 # Done, bye
 
+print "Now quit Excel... Please enter."
+gets
+
 excel.ActiveWorkbook.Close(0);
 excel.Quit();
 
