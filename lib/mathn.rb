@@ -5,9 +5,8 @@
 ##
 # = mathn
 #
-# mathn is a library for changing the way Ruby does math.  If you need
-# more precise rounding with multiple division or exponentiation
-# operations, then mathn is the right tool.
+# mathn serves to make mathematical operations more precise in Ruby
+# and to integrate other mathematical standard libraries.
 #
 # Without mathn:
 #
@@ -17,7 +16,7 @@
 #
 #   3 / 2 => 3/2 # Rational
 #
-# mathn features late rounding and lacks truncation of intermediate results:
+# mathn keeps value in exact terms.
 #
 # Without mathn:
 #
@@ -55,7 +54,7 @@ unless defined?(Math.exp!)
 end
 
 ##
-# When mathn is required, Fixnum's division and exponentiation are enhanced to
+# When mathn is required, Fixnum's division is enhanced to
 # return more precise values from mathematical expressions.
 #
 #   2/3*3  # => 0
@@ -71,25 +70,13 @@ class Fixnum
   #   1/3  # => (1/3)
 
   alias / quo
-
-  alias power! ** unless method_defined? :power!
-
-  ##
-  # Exponentiate by +other+
-
-  def ** (other)
-    if self < 0 && other.round != other
-      Complex(self, 0.0) ** other
-    else
-      power!(other)
-    end
-  end
-
 end
 
 ##
-# When mathn is required Bignum's division and exponentiation are enhanced to
+# When mathn is required Bignum's division is enhanced to
 # return more precise values from mathematical expressions.
+#
+#   (2**72) / ((2**70) * 3)  # => 4/3
 
 class Bignum
   remove_method :/
@@ -100,103 +87,6 @@ class Bignum
   #   (2**72) / ((2**70) * 3)  # => 4/3
 
   alias / quo
-
-  alias power! ** unless method_defined? :power!
-
-  ##
-  # Exponentiate by +other+
-
-  def ** (other)
-    if self < 0 && other.round != other
-      Complex(self, 0.0) ** other
-    else
-      power!(other)
-    end
-  end
-
-end
-
-##
-# When mathn is required Rational is changed to simplify the use of Rational
-# operations.
-#
-# Normal behaviour:
-#
-#   Rational.new!(1,3) ** 2 # => Rational(1, 9)
-#   (1 / 3) ** 2            # => 0
-#
-# require 'mathn' behaviour:
-#
-#   (1 / 3) ** 2            # => 1/9
-
-class Rational
-  remove_method :**
-
-  ##
-  # Exponentiate by +other+
-  #
-  #   (1/3) ** 2 # => 1/9
-
-  def ** (other)
-    if other.kind_of?(Rational)
-      other2 = other
-      if self < 0
-        return Complex(self, 0.0) ** other
-      elsif other == 0
-        return Rational(1,1)
-      elsif self == 0
-        return Rational(0,1)
-      elsif self == 1
-        return Rational(1,1)
-      end
-
-      npd = numerator.prime_division
-      dpd = denominator.prime_division
-      if other < 0
-        other = -other
-        npd, dpd = dpd, npd
-      end
-
-      for elm in npd
-        elm[1] = elm[1] * other
-        if !elm[1].kind_of?(Integer) and elm[1].denominator != 1
-          return Float(self) ** other2
-        end
-        elm[1] = elm[1].to_i
-      end
-
-      for elm in dpd
-        elm[1] = elm[1] * other
-        if !elm[1].kind_of?(Integer) and elm[1].denominator != 1
-          return Float(self) ** other2
-        end
-        elm[1] = elm[1].to_i
-      end
-
-      num = Integer.from_prime_division(npd)
-      den = Integer.from_prime_division(dpd)
-
-      Rational(num,den)
-
-    elsif other.kind_of?(Integer)
-      if other > 0
-        num = numerator ** other
-        den = denominator ** other
-      elsif other < 0
-        num = denominator ** -other
-        den = numerator ** -other
-      elsif other == 0
-        num = 1
-        den = 1
-      end
-      Rational(num, den)
-    elsif other.kind_of?(Float)
-      Float(self) ** other
-    else
-      x , y = other.coerce(self)
-      x ** y
-    end
-  end
 end
 
 ##
@@ -298,23 +188,4 @@ module Math
   end
   module_function :sqrt
   module_function :rsqrt
-end
-
-##
-# When mathn is required, Float is changed to handle Complex numbers.
-
-class Float
-  alias power! **
-
-  ##
-  # Exponentiate by +other+
-
-  def ** (other)
-    if self < 0 && other.round != other
-      Complex(self, 0.0) ** other
-    else
-      power!(other)
-    end
-  end
-
 end

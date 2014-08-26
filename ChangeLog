@@ -1,3 +1,8 @@
+Tue Aug 26 21:07:56 2014  gogo tanaka  <mail@tanakakazuki.com>
+
+	* lib/mathn.rb (Fixnum#**, Bignum#**, Float#**, Rational#**):
+	  remove as these are now built-in.  [ruby-core:63973] [Bug #10086]
+
 Tue Aug 26 20:46:55 2014  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (rb_time_unmagnify_to_float): Avoid double rounding.
