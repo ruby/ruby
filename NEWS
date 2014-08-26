@@ -121,6 +121,9 @@ with all sufficient information, see the ChangeLog file.
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
+* lib/mathn.rb
+  * Show deprecated warning [Feature #10169]
+
 * ext/date/lib/date/format.rb
   * Removed because it's empty file.
 

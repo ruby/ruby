@@ -38,6 +38,8 @@
 # class Numeric follows to make this documentation findable in a reasonable
 # location
 
+warn('lib/mathn.rb is deprecated') if $VERBOSE
+
 class Numeric; end
 
 require "cmath.rb"
