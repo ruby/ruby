@@ -697,7 +697,10 @@ rb_time_unmagnify_to_float(wideval_t w)
     }
 #endif
     v = w2v(w);
-    return quo(v, DBL2NUM(TIME_SCALE));
+    if (RB_TYPE_P(v, T_RATIONAL))
+        return rb_Float(quo(v, INT2FIX(TIME_SCALE)));
+    else
+        return quo(v, DBL2NUM(TIME_SCALE));
 }
 
 static void

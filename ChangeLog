@@ -1,3 +1,9 @@
+Tue Aug 26 20:46:55 2014  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (rb_time_unmagnify_to_float): Avoid double rounding.
+	  Reported by Tsuyoshi Sawada.
+	  https://bugs.ruby-lang.org/issues/10135#note-1
+
 Tue Aug 26 17:12:47 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (io_close): ignore only "closed stream" IOError and

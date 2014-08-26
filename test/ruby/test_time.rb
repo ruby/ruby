@@ -423,6 +423,12 @@ class TestTime < Test::Unit::TestCase
     assert_equal(946684800.0, t2000.to_f)
   end
 
+  def test_to_f_accuracy
+    # https://bugs.ruby-lang.org/issues/10135#note-1
+    f = 1381089302.195
+    assert_equal(f, Time.at(f).to_f, "[ruby-core:64373] [Bug #10135] note-1")
+  end
+
   def test_cmp
     t2000 = get_t2000
     assert_equal(-1, t2000 <=> Time.gm(2001))
