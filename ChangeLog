@@ -1,3 +1,9 @@
+Tue Aug 26 17:12:47 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_close): ignore only "closed stream" IOError and
+	  NoMethodError, do not swallow other exceptions at the end of
+	  block.  [ruby-core:64463] [Bug #10153]
+
 Tue Aug 26 13:46:33 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* template/fake.rb.in: fix failed to make install when srcdir !=

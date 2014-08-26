@@ -3065,4 +3065,13 @@ End
       assert_raise(RuntimeError) { t.join }
     }
   end
+
+  def test_exception_at_close
+    bug10153 = '[ruby-core:64463] [Bug #10153] exception in close at the end of block'
+    assert_raise(Errno::EBADF, bug10153) do
+      IO.pipe do |r, w|
+        assert_nothing_raised {IO.open(w.fileno) {}}
+      end
+    end
+  end
 end
