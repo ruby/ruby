@@ -1649,7 +1649,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
     iseq->iseq_size = pos;
     iseq->stack_max = stack_max;
 
-    line_info_table = ruby_xrealloc(line_info_table, k * sizeof(struct iseq_line_info_entry));
+    line_info_table = REALLOC_N(line_info_table, struct iseq_line_info_entry, k);
     iseq->line_info_table = line_info_table;
     iseq->line_info_size = k;
 
