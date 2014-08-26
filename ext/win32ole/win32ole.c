@@ -2300,7 +2300,7 @@ fole_s_create_guid(VALUE self)
  * You must not use these method.
  */
 
-/* :nodoc */
+/* :nodoc: */
 static VALUE
 fole_s_ole_initialize(VALUE self)
 {
@@ -2308,7 +2308,7 @@ fole_s_ole_initialize(VALUE self)
     return Qnil;
 }
 
-/* :nodoc */
+/* :nodoc: */
 static VALUE
 fole_s_ole_uninitialize(VALUE self)
 {
