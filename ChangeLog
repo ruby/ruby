@@ -1,3 +1,8 @@
+Tue Aug 26 13:46:33 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* template/fake.rb.in: fix failed to make install when srcdir !=
+	  builddir.
+
 Tue Aug 26 13:43:50 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/ruby/test_range.rb: added workaround for VERBOSE message.
