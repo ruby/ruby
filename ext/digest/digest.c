@@ -372,7 +372,8 @@ rb_digest_instance_equal(VALUE self, VALUE other)
         str2 = rb_digest_instance_digest(0, 0, other);
     } else {
         str1 = rb_digest_instance_to_s(self);
-        str2 = other;
+        str2 = rb_check_string_type(other);
+        if (NIL_P(str2)) return Qfalse;
     }
 
     /* never blindly assume that subclass methods return strings */
@@ -520,7 +521,7 @@ get_digest_base_metadata(VALUE klass)
     Data_Get_Struct(obj, rb_digest_metadata_t, algo);
 
     switch (algo->api_version) {
-      case 2:
+      case 3:
         break;
 
       /*
@@ -532,6 +533,14 @@ get_digest_base_metadata(VALUE klass)
     }
 
     return algo;
+}
+
+static inline void
+algo_init(const rb_digest_metadata_t *algo, void *pctx)
+{
+    if (algo->init_func(pctx) != 1) {
+	rb_raise(rb_eRuntimeError, "Digest initialization failed.");
+    }
 }
 
 static VALUE
@@ -548,7 +557,7 @@ rb_digest_base_alloc(VALUE klass)
     algo = get_digest_base_metadata(klass);
 
     pctx = xmalloc(algo->ctx_size);
-    algo->init_func(pctx);
+    algo_init(algo, pctx);
 
     obj = Data_Wrap_Struct(klass, 0, xfree, pctx);
 
@@ -586,7 +595,7 @@ rb_digest_base_reset(VALUE self)
 
     Data_Get_Struct(self, void, pctx);
 
-    algo->init_func(pctx);
+    algo_init(algo, pctx);
 
     return self;
 }
@@ -624,7 +633,7 @@ rb_digest_base_finish(VALUE self)
     algo->finish_func(pctx, (unsigned char *)RSTRING_PTR(str));
 
     /* avoid potential coredump caused by use of a finished context */
-    algo->init_func(pctx);
+    algo_init(algo, pctx);
 
     return str;
 }

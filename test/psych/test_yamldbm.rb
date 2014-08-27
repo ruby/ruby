@@ -1,5 +1,3 @@
-# -*- coding: UTF-8 -*-
-
 require_relative 'helper'
 require 'tmpdir'
 
@@ -13,7 +11,6 @@ module Psych
 
   class YAMLDBMTest < TestCase
     def setup
-      @engine, YAML::ENGINE.yamler = YAML::ENGINE.yamler, 'psych'
       @dir = Dir.mktmpdir("rubytest-file")
       File.chown(-1, Process.gid, @dir)
       @yamldbm_file = make_tmp_filename("yamldbm")
@@ -21,7 +18,6 @@ module Psych
     end
 
     def teardown
-      YAML::ENGINE.yamler = @engine
       @yamldbm.clear
       @yamldbm.close
       FileUtils.remove_entry_secure @dir

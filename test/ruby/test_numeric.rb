@@ -59,6 +59,23 @@ class TestNumeric < Test::Unit::TestCase
     end
     assert_equal(-1, -a)
 
+    bug7688 = '[ruby-core:51389] [Bug #7688]'
+    DummyNumeric.class_eval do
+      remove_method :coerce
+      def coerce(x); raise StandardError; end
+    end
+    assert_raise_with_message(TypeError, /can't be coerced into /) { 1 + a }
+    warn = /will no more rescue exceptions of #coerce.+ in the next release/m
+    assert_warn(warn, bug7688) { assert_raise(ArgumentError) { 1 < a } }
+
+    DummyNumeric.class_eval do
+      remove_method :coerce
+      def coerce(x); :bad_return_value; end
+    end
+    assert_raise_with_message(TypeError, "coerce must return [x, y]") { 1 + a }
+    warn = /Bad return value for #coerce.+next release will raise an error/m
+    assert_warn(warn, bug7688) { assert_raise(ArgumentError) { 1 < a } }
+
   ensure
     DummyNumeric.class_eval do
       remove_method :coerce

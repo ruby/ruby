@@ -51,7 +51,7 @@ class << OptionParser
       raise NameError, path unless Module === klass
       klass.constants.grep(/#{name}/i) do |c|
         klass.const_defined?(c) or next
-        c = klass.const_get(c)
+        klass.const_get(c)
       end
     end
   end

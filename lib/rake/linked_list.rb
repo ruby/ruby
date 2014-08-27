@@ -13,7 +13,7 @@ module Rake
     end
 
     # Polymorphically add a new element to the head of a list. The
-    # type of head node will be the same list type has the tail.
+    # type of head node will be the same list type as the tail.
     def conj(item)
       self.class.cons(item, self)
     end

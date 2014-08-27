@@ -12,7 +12,7 @@ class TestRDocParserChangeLog < RDoc::TestCase
   end
 
   def teardown
-    @tempfile.close
+    @tempfile.close!
   end
 
   def test_class_can_parse

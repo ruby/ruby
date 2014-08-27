@@ -8,6 +8,7 @@ class TestMatrix < Test::Unit::TestCase
     @m3 = @m1.clone
     @m4 = Matrix[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]
     @n1 = Matrix[[2,3,4], [5,6,7]]
+    @c1 = Matrix[[Complex(1,2), Complex(0,1), 0], [1, 2, 3]]
   end
 
   def test_matrix
@@ -369,6 +370,40 @@ class TestMatrix < Test::Unit::TestCase
 
   def test_transpose
     assert_equal(Matrix[[1,4],[2,5],[3,6]], @m1.transpose)
+  end
+
+  def test_conjugate
+    assert_equal(Matrix[[Complex(1,-2), Complex(0,-1), 0], [1, 2, 3]], @c1.conjugate)
+  end
+
+  def test_eigensystem
+    m = Matrix[[1, 2], [3, 4]]
+    v, d, v_inv = m.eigensystem
+    assert(d.diagonal?)
+    assert_equal(v.inv, v_inv)
+    assert_equal((v * d * v_inv).round(5), m)
+  end
+
+  def test_imaginary
+    assert_equal(Matrix[[2, 1, 0], [0, 0, 0]], @c1.imaginary)
+  end
+
+  def test_lup
+    m = Matrix[[1, 2], [3, 4]]
+    l, u, p = m.lup
+    assert(l.lower_triangular?)
+    assert(u.upper_triangular?)
+    assert(p.permutation?)
+    assert(l * u == p * m)
+    assert_equal(m.lup.solve([2, 5]), Vector[1, Rational(1,2)])
+  end
+
+  def test_real
+    assert_equal(Matrix[[1, 0, 0], [1, 2, 3]], @c1.real)
+  end
+
+  def test_rect
+    assert_equal([Matrix[[1, 0, 0], [1, 2, 3]], Matrix[[2, 1, 0], [0, 0, 0]]], @c1.rect)
   end
 
   def test_row_vectors

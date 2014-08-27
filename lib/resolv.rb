@@ -1175,7 +1175,7 @@ class Resolv
         end
 
         def inspect
-          return "#<#{self.class} #{self.to_s}>"
+          return "#<#{self.class} #{self}>"
         end
 
         def ==(other)
@@ -1220,7 +1220,7 @@ class Resolv
       end
 
       def inspect # :nodoc:
-        "#<#{self.class}: #{self.to_s}#{@absolute ? '.' : ''}>"
+        "#<#{self.class}: #{self}#{@absolute ? '.' : ''}>"
       end
 
       ##
@@ -2346,7 +2346,7 @@ class Resolv
     end
 
     def inspect # :nodoc:
-      return "#<#{self.class} #{self.to_s}>"
+      return "#<#{self.class} #{self}>"
     end
 
     ##
@@ -2489,7 +2489,7 @@ class Resolv
     end
 
     def inspect # :nodoc:
-      return "#<#{self.class} #{self.to_s}>"
+      return "#<#{self.class} #{self}>"
     end
 
     ##
@@ -2639,7 +2639,7 @@ class Resolv
       end
 
       def inspect # :nodoc:
-        return "#<#{self.class} #{self.to_s}>"
+        return "#<#{self.class} #{self}>"
       end
 
       def ==(other) # :nodoc:
@@ -2728,7 +2728,7 @@ class Resolv
       end
 
       def inspect # :nodoc:
-        return "#<#{self.class} #{self.to_s}>"
+        return "#<#{self.class} #{self}>"
       end
 
       def ==(other) # :nodoc:
@@ -2790,7 +2790,7 @@ class Resolv
       end
 
       def inspect # :nodoc:
-        return "#<#{self.class} #{self.to_s}>"
+        return "#<#{self.class} #{self}>"
       end
 
       def ==(other) # :nodoc:

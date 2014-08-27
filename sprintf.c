@@ -15,6 +15,7 @@
 #include "ruby/re.h"
 #include "ruby/encoding.h"
 #include "internal.h"
+#include "id.h"
 #include <math.h>
 #include <stdarg.h>
 
@@ -79,57 +80,95 @@ sign_bits(int base, const char *p)
 } while (0)
 
 #define GETARG() (nextvalue != Qundef ? nextvalue : \
-    posarg == -1 ? \
-    (rb_raise(rb_eArgError, "unnumbered(%d) mixed with numbered", nextarg), 0) : \
-    posarg == -2 ? \
-    (rb_raise(rb_eArgError, "unnumbered(%d) mixed with named", nextarg), 0) : \
+		  GETNEXTARG())
+
+#define GETNEXTARG() ( \
+    check_next_arg(posarg, nextarg), \
     (posarg = nextarg++, GETNTHARG(posarg)))
 
-#define GETPOSARG(n) (posarg > 0 ? \
-    (rb_raise(rb_eArgError, "numbered(%d) after unnumbered(%d)", (n), posarg), 0) : \
-    posarg == -2 ? \
-    (rb_raise(rb_eArgError, "numbered(%d) after named", (n)), 0) : \
-    (((n) < 1) ? (rb_raise(rb_eArgError, "invalid index - %d$", (n)), 0) : \
-	       (posarg = -1, GETNTHARG(n))))
+#define GETPOSARG(n) ( \
+    check_pos_arg(posarg, (n)), \
+    (posarg = -1, GETNTHARG(n)))
 
 #define GETNTHARG(nth) \
     (((nth) >= argc) ? (rb_raise(rb_eArgError, "too few arguments"), 0) : argv[(nth)])
 
-#define GETNAMEARG(id, name, len, enc) ( \
-    posarg > 0 ? \
-    (rb_enc_raise((enc), rb_eArgError, "named%.*s after unnumbered(%d)", (len), (name), posarg), 0) : \
-    posarg == -1 ? \
-    (rb_enc_raise((enc), rb_eArgError, "named%.*s after numbered", (len), (name)), 0) :	\
-    (posarg = -2, rb_hash_lookup2(get_hash(&hash, argc, argv), (id), Qundef)))
+#define CHECKNAMEARG(name, len, enc) ( \
+    check_name_arg(posarg, name, len, enc), \
+    posarg = -2)
 
 #define GETNUM(n, val) \
-    for (; p < end && rb_enc_isdigit(*p, enc); p++) {	\
-	int next_n = (n); \
-        if (MUL_OVERFLOW_INT_P(10, next_n)) \
-	    rb_raise(rb_eArgError, #val " too big"); \
-	next_n *= 10; \
-        if (INT_MAX - (*p - '0') < next_n) \
-	    rb_raise(rb_eArgError, #val " too big"); \
-	next_n += *p - '0'; \
-	(n) = next_n; \
-    } \
-    if (p >= end) { \
-	rb_raise(rb_eArgError, "malformed format string - %%*[0-9]"); \
-    }
+    (!(p = get_num(p, end, enc, &(n))) ? \
+     rb_raise(rb_eArgError, #val " too big") : (void)0)
 
 #define GETASTER(val) do { \
     t = p++; \
     n = 0; \
-    GETNUM(n, (val)); \
+    GETNUM(n, val); \
     if (*p == '$') { \
 	tmp = GETPOSARG(n); \
     } \
     else { \
-	tmp = GETARG(); \
+	tmp = GETNEXTARG(); \
 	p = t; \
     } \
     (val) = NUM2INT(tmp); \
 } while (0)
+
+static const char *
+get_num(const char *p, const char *end, rb_encoding *enc, int *valp)
+{
+    int next_n = *valp;
+    for (; p < end && rb_enc_isdigit(*p, enc); p++) {
+	if (MUL_OVERFLOW_INT_P(10, next_n))
+	    return NULL;
+	next_n *= 10;
+	if (INT_MAX - (*p - '0') < next_n)
+	    return NULL;
+	next_n += *p - '0';
+    }
+    if (p >= end) {
+	rb_raise(rb_eArgError, "malformed format string - %%*[0-9]");
+    }
+    *valp = next_n;
+    return p;
+}
+
+static void
+check_next_arg(int posarg, int nextarg)
+{
+    switch (posarg) {
+      case -1:
+	rb_raise(rb_eArgError, "unnumbered(%d) mixed with numbered", nextarg);
+      case -2:
+	rb_raise(rb_eArgError, "unnumbered(%d) mixed with named", nextarg);
+    }
+}
+
+static void
+check_pos_arg(int posarg, int n)
+{
+    if (posarg > 0) {
+	rb_raise(rb_eArgError, "numbered(%d) after unnumbered(%d)", n, posarg);
+    }
+    if (posarg == -2) {
+	rb_raise(rb_eArgError, "numbered(%d) after named", n);
+    }
+    if (n < 1) {
+	rb_raise(rb_eArgError, "invalid index - %d$", n);
+    }
+}
+
+static void
+check_name_arg(int posarg, const char *name, int len, rb_encoding *enc)
+{
+    if (posarg > 0) {
+	rb_enc_raise(enc, rb_eArgError, "named%.*s after unnumbered(%d)", len, name, posarg);
+    }
+    if (posarg == -1) {
+	rb_enc_raise(enc, rb_eArgError, "named%.*s after numbered", len, name);
+    }
+}
 
 static VALUE
 get_hash(volatile VALUE *hash, int argc, const VALUE *argv)
@@ -417,6 +456,7 @@ rb_f_sprintf(int argc, const VALUE *argv)
 VALUE
 rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 {
+    enum {default_float_precision = 6};
     rb_encoding *enc;
     const char *p, *end;
     char *buf;
@@ -468,7 +508,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     for (; p < end; p++) {
 	const char *t;
 	int n;
-	ID id = 0;
+	VALUE sym = Qnil;
 
 	for (t = p; t < end && *t != '%'; t++) ;
 	PUSH(p, t - p);
@@ -563,15 +603,16 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		}
 #endif
 		len = (int)(p - start + 1); /* including parenthesis */
-		if (id) {
-		    rb_enc_raise(enc, rb_eArgError, "named%.*s after <%s>",
-				 len, start, rb_id2name(id));
+		if (sym != Qnil) {
+		    rb_enc_raise(enc, rb_eArgError, "named%.*s after <%"PRIsVALUE">",
+				 len, start, rb_sym2str(sym));
 		}
-		nextvalue = GETNAMEARG((id = rb_check_id_cstr_without_pindown(start + 1,
-							      len - 2 /* without parenthesis */,
-							      enc),
-					ID2SYM(id)),
-				       start, len, enc);
+		CHECKNAMEARG(start, len, enc);
+		get_hash(&hash, argc, argv);
+		sym = rb_check_symbol_cstr(start + 1,
+					   len - 2 /* without parenthesis */,
+					   enc);
+		if (sym != Qnil) nextvalue = rb_hash_lookup2(hash, sym, Qundef);
 		if (nextvalue == Qundef) {
 		    rb_enc_raise(enc, rb_eKeyError, "key%.*s not found", len, start);
 		}
@@ -982,16 +1023,82 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    break;
 
 	  case 'f':
+	    {
+		VALUE val = GETARG(), num, den;
+		int sign = (flags&FPLUS) ? 1 : 0, zero = 0;
+		long len;
+		if (!RB_TYPE_P(val, T_RATIONAL)) {
+		    nextvalue = val;
+		    goto float_value;
+		}
+		if (!(flags&FPREC)) prec = default_float_precision;
+		den = rb_rational_den(val);
+		num = rb_rational_num(val);
+		if (FIXNUM_P(num)) {
+		    if ((SIGNED_VALUE)num < 0) {
+			long n = -FIX2LONG(num);
+			num = LONG2FIX(n);
+			sign = -1;
+		    }
+		}
+		else if (rb_num_negative_p(num)) {
+		    sign = -1;
+		    num = rb_funcallv(num, idUMinus, 0, 0);
+		}
+		if (den != INT2FIX(1) || prec > 1) {
+		    const ID idDiv = rb_intern("div");
+		    VALUE p10 = rb_int_positive_pow(10, prec);
+		    VALUE den_2 = rb_funcall(den, idDiv, 1, INT2FIX(2));
+		    num = rb_funcallv(num, '*', 1, &p10);
+		    num = rb_funcallv(num, '+', 1, &den_2);
+		    num = rb_funcallv(num, idDiv, 1, &den);
+		}
+		else if (prec >= 0) {
+		    zero = prec;
+		}
+		val = rb_obj_as_string(num);
+		len = RSTRING_LEN(val) + zero;
+		if (prec >= len) ++len; /* integer part 0 */
+		if (sign || (flags&FSPACE)) ++len;
+		if (prec > 0) ++len; /* period */
+		CHECK(len > width ? len : width);
+		if (width > len) {
+		    width -= (int)len;
+		    if (!(flags&FMINUS)) {
+			FILL(' ', width);
+			width = 0;
+		    }
+		}
+		if (sign || (flags&FSPACE)) buf[blen++] = sign > 0 ? '+' : sign < 0 ? '-' : ' ';
+		len = RSTRING_LEN(val) + zero;
+		t = RSTRING_PTR(val);
+		if (len > prec)
+		    memcpy(&buf[blen], t, len - prec);
+		else
+		    buf[blen++] = '0';
+		blen += len - prec;
+		if (prec > 0) buf[blen++] = '.';
+		if (zero) FILL('0', zero);
+		else if (prec > 0) {
+		    memcpy(&buf[blen], t + len - prec, prec);
+		    blen += prec;
+		}
+		if (width > 0) FILL(' ', width);
+		RB_GC_GUARD(val);
+		break;
+	    }
 	  case 'g':
 	  case 'G':
 	  case 'e':
 	  case 'E':
+	    /* TODO: rational support */
 	  case 'a':
 	  case 'A':
+	  float_value:
 	    {
 		VALUE val = GETARG();
 		double fval;
-		int i, need = 6;
+		int i, need;
 		char fbuf[32];
 
 		fval = RFLOAT_VALUE(rb_Float(val));
@@ -1043,7 +1150,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    if (i > 0)
 			need = BIT_DIGITS(i);
 		}
-		need += (flags&FPREC) ? prec : 6;
+		need += (flags&FPREC) ? prec : default_float_precision;
 		if ((flags&FWIDTH) && need < width)
 		    need = width;
 		need += 20;

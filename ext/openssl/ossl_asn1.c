@@ -495,7 +495,7 @@ typedef struct {
     VALUE *klass;
 } ossl_asn1_info_t;
 
-static ossl_asn1_info_t ossl_asn1_info[] = {
+static const ossl_asn1_info_t ossl_asn1_info[] = {
     { "EOC",               &cASN1EndOfContent,    },  /*  0 */
     { "BOOLEAN",           &cASN1Boolean,         },  /*  1 */
     { "INTEGER",           &cASN1Integer,         },  /*  2 */
@@ -529,7 +529,7 @@ static ossl_asn1_info_t ossl_asn1_info[] = {
     { "BMPSTRING",         &cASN1BMPString,       },  /* 30 */
 };
 
-int ossl_asn1_info_size = (sizeof(ossl_asn1_info)/sizeof(ossl_asn1_info[0]));
+enum {ossl_asn1_info_size = (sizeof(ossl_asn1_info)/sizeof(ossl_asn1_info[0]))};
 
 static VALUE class_tag_map;
 

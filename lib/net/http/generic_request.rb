@@ -14,18 +14,17 @@ class Net::HTTPGenericRequest
 
     if URI === uri_or_path then
       @uri = uri_or_path.dup
-      host = @uri.hostname
-      host += ":#{@uri.port}" if @uri.port != @uri.class::DEFAULT_PORT
-      path = uri_or_path.request_uri
+      host = @uri.hostname.dup
+      host << ":".freeze << @uri.port.to_s if @uri.port != @uri.default_port
+      @path = uri_or_path.request_uri
+      raise ArgumentError, "no HTTP request path given" unless @path
     else
       @uri = nil
       host = nil
-      path = uri_or_path
+      raise ArgumentError, "no HTTP request path given" unless uri_or_path
+      raise ArgumentError, "HTTP request path is empty" if uri_or_path.empty?
+      @path = uri_or_path.dup
     end
-
-    raise ArgumentError, "no HTTP request path given" unless path
-    raise ArgumentError, "HTTP request path is empty" if path.empty?
-    @path = path
 
     @decode_content = false
 
@@ -44,7 +43,7 @@ class Net::HTTPGenericRequest
     initialize_http_header initheader
     self['Accept'] ||= '*/*'
     self['User-Agent'] ||= 'Ruby'
-    self['Host'] ||= host
+    self['Host'] ||= host if host
     @body = nil
     @body_stream = nil
     @body_data = nil
@@ -117,15 +116,6 @@ class Net::HTTPGenericRequest
   #
 
   def exec(sock, ver, path)   #:nodoc: internal use only
-    if @uri
-      if @uri.port == @uri.default_port
-        # [Bug #7650] Amazon ECS API and GFE/1.3 disallow extra default port number
-        self['host'] = @uri.host
-      else
-        self['host'] = "#{@uri.host}:#{@uri.port}"
-      end
-    end
-
     if @body
       send_request_with_body sock, ver, path, @body
     elsif @body_stream
@@ -137,21 +127,34 @@ class Net::HTTPGenericRequest
     end
   end
 
-  def update_uri(host, port, ssl) # :nodoc: internal use only
+  def update_uri(addr, port, ssl) # :nodoc: internal use only
+    # reflect the connection and @path to @uri
     return unless @uri
 
-    @uri.host ||= host
-    @uri.port = port
-
-    scheme = ssl ? 'https' : 'http'
-
-    # convert the class of the URI
-    unless scheme == @uri.scheme then
-      new_uri = @uri.to_s.sub(/^https?/, scheme)
-      @uri = URI new_uri
+    if ssl
+      scheme = 'https'.freeze
+      klass = URI::HTTPS
+    else
+      scheme = 'http'.freeze
+      klass = URI::HTTP
     end
 
-    @uri
+    if host = self['host']
+      host.sub!(/:.*/s, ''.freeze)
+    elsif host = @uri.host
+    else
+     host = addr
+    end
+    # convert the class of the URI
+    if @uri.is_a?(klass)
+      @uri.host = host
+      @uri.port = port
+    else
+      @uri = klass.new(
+        scheme, @uri.userinfo,
+        host, port, nil,
+        @uri.path, nil, @uri.query, nil)
+    end
   end
 
   private

@@ -24,10 +24,18 @@
 
 static rb_control_frame_t *vm_get_ruby_level_caller_cfp(rb_thread_t *th, rb_control_frame_t *cfp);
 
+VALUE
+ruby_vm_sysstack_error_copy(void)
+{
+    VALUE e = rb_obj_alloc(rb_eSysStackError);
+    rb_obj_copy_ivar(e, sysstack_error);
+    return e;
+}
+
 static void
 vm_stackoverflow(void)
 {
-    rb_exc_raise(sysstack_error);
+    rb_exc_raise(ruby_vm_sysstack_error_copy());
 }
 
 static inline rb_control_frame_t *
@@ -41,13 +49,13 @@ vm_push_frame(rb_thread_t *th,
 	      VALUE *sp,
 	      int local_size,
 	      const rb_method_entry_t *me,
-	      size_t stack_max)
+	      int stack_max)
 {
     rb_control_frame_t *const cfp = th->cfp - 1;
     int i;
 
     /* check stack overflow */
-    CHECK_VM_STACK_OVERFLOW0(cfp, sp, local_size + (int)stack_max);
+    CHECK_VM_STACK_OVERFLOW0(cfp, sp, local_size + stack_max);
 
     th->cfp = cfp;
 
@@ -386,11 +394,10 @@ vm_get_ev_const(rb_thread_t *th, const rb_iseq_t *iseq,
 
 	    if (!NIL_P(klass)) {
 		VALUE av, am = 0;
-		st_data_t data;
+		rb_const_entry_t *ce;
 	      search_continue:
-		if (RCLASS_CONST_TBL(klass) &&
-		    st_lookup(RCLASS_CONST_TBL(klass), id, &data)) {
-		    val = ((rb_const_entry_t*)data)->value;
+		if ((ce = rb_const_lookup(klass, id))) {
+		    val = ce->value;
 		    if (val == Qundef) {
 			if (am == klass) break;
 			am = klass;
@@ -638,10 +645,12 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 			if (cfp->ep == ep) {
 			    VALUE epc = cfp->pc - cfp->iseq->iseq_encoded;
 			    rb_iseq_t *iseq = cfp->iseq;
+			    struct iseq_catch_table *ct = iseq->catch_table;
+			    struct iseq_catch_table_entry *entry;
 			    int i;
 
-			    for (i=0; i<iseq->catch_table_size; i++) {
-				struct iseq_catch_table_entry *entry = &iseq->catch_table[i];
+			    for (i=0; i<ct->size; i++) {
+				entry = &ct->entries[i];
 
 				if (entry->type == CATCH_TYPE_BREAK &&
 				    entry->start < epc && entry->end >= epc) {
@@ -1067,10 +1076,15 @@ vm_caller_setup_args(const rb_thread_t *th, rb_control_frame_t *cfp, rb_call_inf
 }
 
 static inline int
-vm_callee_setup_keyword_arg(const rb_iseq_t *iseq, int argc, int m, VALUE *orig_argv, VALUE *kwd)
+vm_callee_setup_keyword_arg(rb_thread_t *th, const rb_iseq_t *iseq, int argc, int m, VALUE *orig_argv, VALUE *kwd)
 {
     VALUE keyword_hash = 0, orig_hash;
     int optional = iseq->arg_keywords - iseq->arg_keyword_required;
+    VALUE *const sp = th->cfp->sp;
+    const int mark_stack_len = th->mark_stack_len;
+
+    th->cfp->sp += argc;
+    th->mark_stack_len -= argc;
 
     if (argc > m &&
 	!NIL_P(orig_hash = rb_check_hash_type(orig_argv[argc-1])) &&
@@ -1085,9 +1099,13 @@ vm_callee_setup_keyword_arg(const rb_iseq_t *iseq, int argc, int m, VALUE *orig_
     rb_get_kwargs(keyword_hash, iseq->arg_keyword_table, iseq->arg_keyword_required,
 		  (iseq->arg_keyword_check ? optional : -1-optional),
 		  NULL);
+
     if (!keyword_hash) {
 	keyword_hash = rb_hash_new();
     }
+
+    th->cfp->sp = sp;
+    th->mark_stack_len = mark_stack_len;
 
     *kwd = keyword_hash;
 
@@ -1112,7 +1130,7 @@ vm_callee_setup_arg_complex(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t
 
     /* keyword argument */
     if (iseq->arg_keyword != -1) {
-	argc = vm_callee_setup_keyword_arg(iseq, argc, min, orig_argv, &keyword_hash);
+	argc = vm_callee_setup_keyword_arg(th, iseq, argc, min, orig_argv, &keyword_hash);
     }
 
     /* mandatory */
@@ -1615,16 +1633,10 @@ vm_call_bmethod_body(rb_thread_t *th, rb_call_info_t *ci, const VALUE *argv)
     rb_proc_t *proc;
     VALUE val;
 
-    RUBY_DTRACE_METHOD_ENTRY_HOOK(th, ci->me->klass, ci->me->called_id);
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_CALL, ci->recv, ci->me->called_id, ci->me->klass, Qnil);
-
     /* control block frame */
     th->passed_bmethod_me = ci->me;
     GetProcPtr(ci->me->def->body.proc, proc);
     val = vm_invoke_proc(th, proc, ci->recv, ci->defined_class, ci->argc, argv, ci->blockptr);
-
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_RETURN, ci->recv, ci->me->called_id, ci->me->klass, val);
-    RUBY_DTRACE_METHOD_RETURN_HOOK(th, ci->me->klass, ci->me->called_id);
 
     return val;
 }
@@ -1810,6 +1822,10 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		klass = RCLASS_ORIGIN(klass);
 	      zsuper_method_dispatch:
 		klass = RCLASS_SUPER(klass);
+		if (!klass) {
+		    ci->me = 0;
+		    goto start_method_dispatch;
+		}
 		ci_temp = *ci;
 		ci = &ci_temp;
 
@@ -2240,7 +2256,7 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
 
     /* keyword argument */
     if (iseq->arg_keyword != -1) {
-	argc = vm_callee_setup_keyword_arg(iseq, argc, min, argv, &keyword_hash);
+	argc = vm_callee_setup_keyword_arg(th, iseq, argc, min, argv, &keyword_hash);
     }
 
     for (i=argc; i<m; i++) {
@@ -2403,9 +2419,9 @@ vm_make_proc_with_iseq(rb_iseq_t *blockiseq)
 }
 
 static VALUE
-vm_once_exec(rb_iseq_t *iseq)
+vm_once_exec(VALUE iseq)
 {
-    VALUE proc = vm_make_proc_with_iseq(iseq);
+    VALUE proc = vm_make_proc_with_iseq((rb_iseq_t *)iseq);
     return rb_proc_call_with_block(proc, 0, 0, Qnil);
 }
 

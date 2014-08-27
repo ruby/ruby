@@ -601,7 +601,7 @@ rb_struct_each_pair(VALUE s)
 static VALUE
 inspect_struct(VALUE s, VALUE dummy, int recur)
 {
-    VALUE cname = rb_class_name(rb_obj_class(s));
+    VALUE cname = rb_class_path(rb_obj_class(s));
     VALUE members, str = rb_str_new2("#<struct ");
     long i, len;
     char first = RSTRING_PTR(cname)[0];
@@ -759,7 +759,7 @@ rb_struct_aref(VALUE s, VALUE idx)
 	return rb_struct_aref_sym(s, idx);
     }
     else if (RB_TYPE_P(idx, T_STRING)) {
-	ID id = rb_check_id_without_pindown(&idx);
+	ID id = rb_check_id(&idx);
 	if (!id) {
 	    rb_name_error_str(idx, "no member '%"PRIsVALUE"' in struct",
 			      QUOTE(idx));
@@ -1064,7 +1064,7 @@ rb_struct_size(VALUE s)
  *  Symbol (<code>:name</code>).
  */
 void
-Init_Struct(void)
+InitVM_Struct(void)
 {
     rb_cStruct = rb_define_class("Struct", rb_cObject);
     rb_include_module(rb_cStruct, rb_mEnumerable);
@@ -1095,5 +1095,13 @@ Init_Struct(void)
     rb_define_method(rb_cStruct, "values_at", rb_struct_values_at, -1);
 
     rb_define_method(rb_cStruct, "members", rb_struct_members_m, 0);
+}
+
+#undef rb_intern
+void
+Init_Struct(void)
+{
     id_members = rb_intern("__members__");
+
+    InitVM(Struct);
 }

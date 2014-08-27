@@ -28,6 +28,12 @@ class Gem::Request
     @env_no_proxy = get_no_proxy_from_env
   end
 
+  def close
+    @connections.each_value do |conn|
+      conn.finish
+    end
+  end
+
   def add_rubygems_trusted_certs(store)
     pattern = File.expand_path("./ssl_certs/*.pem", File.dirname(__FILE__))
     Dir.glob(pattern).each do |ssl_cert_file|

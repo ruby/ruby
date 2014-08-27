@@ -755,4 +755,105 @@ class TestMethod < Test::Unit::TestCase
     m = assert_nothing_raised(NameError, feature8391) {break o.singleton_method(:bar)}
     assert_equal(:bar, m.call, feature8391)
   end
+
+  Feature9783 = '[ruby-core:62212] [Feature #9783]'
+
+  def assert_curry_three_args(m)
+    curried = m.curry
+    assert_equal(6, curried.(1).(2).(3), Feature9783)
+
+    curried = m.curry(3)
+    assert_equal(6, curried.(1).(2).(3), Feature9783)
+
+    assert_raise_with_message(ArgumentError, /wrong number/) {m.curry(2)}
+  end
+
+  def test_curry_method
+    c = Class.new {
+      def three_args(a,b,c) a + b + c end
+    }
+    assert_curry_three_args(c.new.method(:three_args))
+  end
+
+  def test_curry_from_proc
+    c = Class.new {
+      define_method(:three_args) {|a,b,c| a + b + c}
+    }
+    assert_curry_three_args(c.new.method(:three_args))
+  end
+
+  def assert_curry_var_args(m)
+    curried = m.curry(3)
+    assert_equal([1, 2, 3], curried.(1).(2).(3), Feature9783)
+
+    curried = m.curry(2)
+    assert_equal([1, 2], curried.(1).(2), Feature9783)
+
+    curried = m.curry(0)
+    assert_equal([1], curried.(1), Feature9783)
+  end
+
+  def test_curry_var_args
+    c = Class.new {
+      def var_args(*args) args end
+    }
+    assert_curry_var_args(c.new.method(:var_args))
+  end
+
+  def test_curry_from_proc_var_args
+    c = Class.new {
+      define_method(:var_args) {|*args| args}
+    }
+    assert_curry_var_args(c.new.method(:var_args))
+  end
+
+  Feature9781 = '[ruby-core:62202] [Feature #9781]'
+
+  def test_super_method
+    o = Derived.new
+    m = o.method(:foo).super_method
+    assert_equal(Base, m.owner, Feature9781)
+    assert_same(o, m.receiver, Feature9781)
+    assert_equal(:foo, m.name, Feature9781)
+    m = assert_nothing_raised(NameError, Feature9781) {break m.super_method}
+    assert_nil(m, Feature9781)
+  end
+
+  def test_super_method_unbound
+    m = Derived.instance_method(:foo)
+    m = m.super_method
+    assert_equal(Base.instance_method(:foo), m, Feature9781)
+    m = assert_nothing_raised(NameError, Feature9781) {break m.super_method}
+    assert_nil(m, Feature9781)
+  end
+
+  def test_super_method_module
+    m1 = Module.new {def foo; end}
+    c1 = Class.new(Derived) {include m1; def foo; end}
+    m = c1.instance_method(:foo)
+    assert_equal(c1, m.owner, Feature9781)
+    m = m.super_method
+    assert_equal(m1, m.owner, Feature9781)
+    m = m.super_method
+    assert_equal(Derived, m.owner, Feature9781)
+    m = m.super_method
+    assert_equal(Base, m.owner, Feature9781)
+    m2 = Module.new {def foo; end}
+    o = c1.new.extend(m2)
+    m = o.method(:foo)
+    assert_equal(m2, m.owner, Feature9781)
+    m = m.super_method
+    assert_equal(c1, m.owner, Feature9781)
+    assert_same(o, m.receiver, Feature9781)
+  end
+
+  def test_super_method_removed
+    c1 = Class.new {private def foo; end}
+    c2 = Class.new(c1) {public :foo}
+    c3 = Class.new(c2) {def foo; end}
+    c1.class_eval {undef foo}
+    m = c3.instance_method(:foo)
+    m = assert_nothing_raised(NameError, Feature9781) {break m.super_method}
+    assert_nil(m, Feature9781)
+  end
 end

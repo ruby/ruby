@@ -15,17 +15,35 @@ with all sufficient information, see the ChangeLog file.
 
 === Core classes updates (outstanding ones only)
 
+* Binding
+  * New methods:
+    * Binding#local_variables
+    * Binding#receiver
+
 * Enumerable
+  * New methods:
+    * Enumerable#slice_after
   * Extended methods:
     * min, min_by, max and max_by supports optional argument to return
       multiple elements.
 
-* File
-  * new class File::Statfs to hold filesystem information. (experimental)
+* Float
+  * New methods:
+    * Float#next_float
+    * Float#prev_float
 
-* IO
-  * New methods
-    * IO#statfs returns filesystem information as File::Statfs. (experimental)
+* File
+  * New methods:
+    * File.birthtime
+    * File#birthtime
+
+* File::Stat
+  * New methods:
+    * File::Stat#birthtime
+
+* Kernel
+  * New methods:
+    * Kernel#itself
 
 * Process
   * Extended method:
@@ -45,6 +63,12 @@ with all sufficient information, see the ChangeLog file.
       by deleting the specified row and column.
     * Matrix#cofactor(row, column) returns the (row, column) cofactor
       which is obtained by multiplying the first minor by (-1)**(row + column).
+
+* Method
+  * New methods:
+    * Method#curry([arity]) returns a curried Proc.
+    * Method#super_method returns a Method of superclass, which would be called
+      when super is used.
 
 === Core classes compatibility issues (excluding feature bug fixes)
 
@@ -76,14 +100,35 @@ with all sufficient information, see the ChangeLog file.
 
 === Stdlib updates (outstanding ones only)
 
+* Digest
+  * Digest::HMAC has been removed just as previously noticed.
+
+* Etc
+  * New methods:
+    * Etc.uname
+    * Etc.sysconf
+    * Etc.confstr
+    * IO#pathconf
+
 * Find, Pathname
   * Extended methods:
     * find method accepts "ignore_error" keyword argument.
 
 * Pathname
   * Pathname#/ is aliased to Pathname#+.
+  * New methods:
+    * Pathname#birthtime
 
 === Stdlib compatibility issues (excluding feature bug fixes)
+
+* lib/mathn.rb
+  * Show deprecated warning [Feature #10169]
+
+* ext/date/lib/date/format.rb
+  * Removed because it's empty file.
+
+* Digest
+  * Digest::HMAC has finally ceased to exist.  Use OpenSSL::HMAC or an external gem instead.
 
 * time.rb
   * Time.parse, Time.strptime, Time.rfc2822, Time.xmlschema may produce
@@ -91,6 +136,39 @@ with all sufficient information, see the ChangeLog file.
     It is happen when usual localtime doesn't preserve the offset from UTC.
   * Time.httpdate produces always UTC Time object.
   * Time.strptime raises ArgumentError when no date information.
+
+* lib/rational.rb
+  * Removed because it is deprecated from 2009.
+
+* lib/complex.rb
+  * Removed because it is deprecated from 2009.
+
+* lib/prettyprint.rb
+  * Removed PrettyPrint#first?
+
+* lib/minitest/*.rb
+  * Removed because it conflicts to minitest 5. [Feature #9711]
+
+* lib/test/**/*.rb
+  * Removed because it conflicts to minitest 5, and it was just an wrapper
+    of minitest 4. [Feature #9711]
+
+* lib/uri
+  * support RFC 3986. [Feature #2542]
+
+* GServer
+  * GServer is extracted to gserver gem. It's unmaintain code.
+
+* Logger
+  * Logger::Application is extracted to logger-application gem. It's unmaintain code.
+
+* Prime
+  * incompatible changes:
+    * Prime.prime? now returns false for negative numbers. This method
+      should not be used to know the number is composite or not. [Bug #7395]
+
+* Psych
+  * Removed Psych::EngineManager [Bug #8344]
 
 === Built-in global variables compatibility issues
 
@@ -130,6 +208,9 @@ with all sufficient information, see the ChangeLog file.
 * struct RBignum is hidden.  [Feature #6083]
   Use rb_integer_pack and rb_integer_unpack instead.
 
+* struct RRational is hidden.  [Feature #9513]
+  Use rb_rational_num and rb_rational_den instead.
+
 * rb_big_new and rb_big_resize takes a size_t instead of long.
 
 * rb_num2long returns a long instead of SIGNED_VALUE.
@@ -144,9 +225,6 @@ with all sufficient information, see the ChangeLog file.
 
 * rb_sym2str() added. This is almost same as `rb_id2str(SYM2ID(sym))`
   but not pinning a dynamic symbol.
-
-* struct RSymbol added. This represents a dynamic symbol as object in
-  Ruby's heaps.
 
 * rb_str_cat_cstr() added. This is same as `rb_str_cat2()`.
 

@@ -29,8 +29,8 @@ class TestRDocParserRuby < RDoc::TestCase
   def teardown
     super
 
-    @tempfile.close
-    @tempfile2.close
+    @tempfile.close!
+    @tempfile2.close!
   end
 
   def test_collect_first_comment

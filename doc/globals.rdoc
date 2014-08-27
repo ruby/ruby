@@ -31,6 +31,7 @@ $DEBUG::     The debug flag, which is set by the -d switch.  Enabling debug
              backtrace).  Setting this to a true value enables debug output as
              if -d were given on the command line.  Setting this to a false
              value disables debug output.
+$LOADED_FEATURES:: The alias to the $".
 $FILENAME::  Current input file from $<. Same as $<.filename.
 $LOAD_PATH:: The alias to the $:.
 $stderr::    The current standard error output.

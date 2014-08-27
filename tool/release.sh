@@ -30,9 +30,9 @@ do
   for ext in $EXTS
   do
     cp $r$ext $dir/$r$ext
-    ln -s $xy/$r$ext ${RUBYDIR}/$r$ext
+    ln -sf $xy/$r$ext ${RUBYDIR}/$r$ext
     if [ x$preview = x ];then
-      ln -s $xy/$r$ext ${RUBYDIR}/ruby-$xy-stable$ext
+      ln -sf $xy/$r$ext ${RUBYDIR}/ruby-$xy-stable$ext
     fi
   done
 done

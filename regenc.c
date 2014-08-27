@@ -52,7 +52,7 @@ onigenc_set_default_encoding(OnigEncoding enc)
 }
 
 extern int
-onigenc_mbclen_approximate(const OnigUChar* p,const OnigUChar* e, struct OnigEncodingTypeST* enc)
+onigenc_mbclen_approximate(const OnigUChar* p,const OnigUChar* e, OnigEncoding enc)
 {
   int ret = ONIGENC_PRECISE_MBC_ENC_LEN(enc,p,e);
   if (ONIGENC_MBCLEN_CHARFOUND_P(ret))

@@ -41,33 +41,3 @@ module DRb
     end
   end
 end
-
-# :stopdoc:
-
-if __FILE__ == $0
-  class Foo
-    include DRbUndumped
-
-    def initialize(str)
-      @str = str
-    end
-
-    def hello(it)
-      "#{it}: #{self}"
-    end
-
-    def to_s
-      @str
-    end
-  end
-
-  cmd = ARGV.shift
-  case cmd
-  when 'itest1', 'itest2'
-    front = Foo.new(cmd)
-    manager = DRb::DRbServer.new(nil, front)
-    es = DRb::ExtServ.new(ARGV.shift, ARGV.shift, manager)
-    es.server.thread.join
-  end
-end
-

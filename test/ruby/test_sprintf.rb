@@ -148,6 +148,12 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal(" Inf", sprintf("% e", inf), '[ruby-dev:34002]')
   end
 
+  def test_rational
+    assert_match(/\A0\.10+\z/, sprintf("%.60f", 0.1r))
+    assert_match(/\A0\.3+\z/, sprintf("%.60f", 1/3r))
+    assert_match(/\A1\.20+\z/, sprintf("%.60f", 1.2r))
+  end
+
   def test_hash
     options = {:capture=>/\d+/}
     assert_equal("with options {:capture=>/\\d+/}", sprintf("with options %p" % options))
@@ -184,6 +190,10 @@ class TestSprintf < Test::Unit::TestCase
     assert_raise(ArgumentError) { sprintf("%!", 1) }
     assert_raise(ArgumentError) { sprintf("%1$1$d", 1) }
     assert_raise(ArgumentError) { sprintf("%0%") }
+
+    assert_raise_with_message(ArgumentError, /unnumbered\(1\) mixed with numbered/) { sprintf("%1$*d", 3) }
+    assert_raise_with_message(ArgumentError, /unnumbered\(1\) mixed with numbered/) { sprintf("%1$.*d", 3) }
+
     verbose, $VERBOSE = $VERBOSE, nil
     assert_nothing_raised { sprintf("", 1) }
   ensure
@@ -309,6 +319,12 @@ class TestSprintf < Test::Unit::TestCase
 
   def test_star
     assert_equal("-1 ", sprintf("%*d", -3, -1))
+    assert_raise_with_message(ArgumentError, /width too big/) {
+      sprintf("%*999999999999999999999999999999999999999999999999999999999999$d", 1)
+    }
+    assert_raise_with_message(ArgumentError, /prec too big/) {
+      sprintf("%.*999999999999999999999999999999999999999999999999999999999999$d", 1)
+    }
   end
 
   def test_escape

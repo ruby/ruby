@@ -1,5 +1,5 @@
 module Rake
-  class Scope < LinkedList
+  class Scope < LinkedList # :nodoc: all
 
     # Path for the scope.
     def path

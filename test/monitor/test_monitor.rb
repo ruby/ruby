@@ -78,12 +78,15 @@ class TestMonitor < Test::Unit::TestCase
       ary << :main
     end
     assert_equal([:main], ary)
+  ensure
+    t1.join
+    t2.join
   end
 
   def test_try_enter
     queue1 = Queue.new
     queue2 = Queue.new
-    Thread.start {
+    th = Thread.start {
       queue1.deq
       @monitor.enter
       queue2.enq(nil)
@@ -99,6 +102,7 @@ class TestMonitor < Test::Unit::TestCase
     queue1.enq(nil)
     queue2.deq
     assert_equal(true, @monitor.try_enter)
+    th.join
   end
 
   def test_cond
@@ -106,7 +110,7 @@ class TestMonitor < Test::Unit::TestCase
 
     a = "foo"
     queue1 = Queue.new
-    Thread.start do
+    th = Thread.start do
       queue1.deq
       @monitor.synchronize do
         a = "bar"
@@ -120,13 +124,14 @@ class TestMonitor < Test::Unit::TestCase
       assert_equal(true, result1)
       assert_equal("bar", a)
     end
+    th.join
   end
 
   def test_timedwait
     cond = @monitor.new_cond
     b = "foo"
     queue2 = Queue.new
-    Thread.start do
+    th = Thread.start do
       queue2.deq
       @monitor.synchronize do
         b = "bar"
@@ -140,10 +145,11 @@ class TestMonitor < Test::Unit::TestCase
       assert_equal(true, result2)
       assert_equal("bar", b)
     end
+    th.join
 
     c = "foo"
     queue3 = Queue.new
-    Thread.start do
+    th = Thread.start do
       queue3.deq
       @monitor.synchronize do
         c = "bar"
@@ -160,6 +166,7 @@ class TestMonitor < Test::Unit::TestCase
       assert_equal(true, result4)
       assert_equal("bar", c)
     end
+    th.join
 
 #     d = "foo"
 #     cumber_thread = Thread.start {

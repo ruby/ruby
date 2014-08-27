@@ -529,12 +529,19 @@ end.join
   end
 
   def test_stackoverflow
-    assert_raise(SystemStackError){m}
+    feature6216 = '[ruby-core:43794] [Feature #6216]'
+    e = assert_raise(SystemStackError, feature6216) {m}
+    level = e.backtrace.size
+    assert_operator(level, :>, 10, feature6216)
+
+    feature6216 = '[ruby-core:63377] [Feature #6216]'
+    e = assert_raise(SystemStackError, feature6216) {raise e}
+    assert_equal(level, e.backtrace.size, feature6216)
   end
 
   def test_machine_stackoverflow
     bug9109 = '[ruby-dev:47804] [Bug #9109]'
-    assert_separately([], <<-SRC)
+    assert_separately(%w[--disable-gem], <<-SRC)
     assert_raise(SystemStackError, #{bug9109.dump}) {
       h = {a: ->{h[:a].call}}
       h[:a].call
@@ -545,7 +552,7 @@ end.join
 
   def test_machine_stackoverflow_by_define_method
     bug9454 = '[ruby-core:60113] [Bug #9454]'
-    assert_separately([], <<-SRC)
+    assert_separately(%w[--disable-gem], <<-SRC)
     assert_raise(SystemStackError, #{bug9454.dump}) {
       define_method(:foo) {self.foo}
       self.foo
@@ -595,5 +602,30 @@ end.join
     assert_raise_with_message(ArgumentError, /with no arguments/) do
       raise cause: cause
     end
+  end
+
+  def test_unknown_option
+    bug = '[ruby-core:63203] [Feature #8257] should pass unknown options'
+
+    exc = Class.new(RuntimeError) do
+      attr_reader :arg
+      def initialize(msg = nil)
+        @arg = msg
+        super(msg)
+      end
+    end
+
+    e = assert_raise(exc, bug) {raise exc, "foo" => "bar", foo: "bar"}
+    assert_equal({"foo" => "bar", foo: "bar"}, e.arg, bug)
+
+    e = assert_raise(exc, bug) {raise exc, "foo" => "bar", foo: "bar", cause: "zzz"}
+    assert_equal({"foo" => "bar", foo: "bar"}, e.arg, bug)
+
+    e = assert_raise(exc, bug) {raise exc, {}}
+    assert_equal({}, e.arg, bug)
+  end
+
+  def test_anonymous_message
+    assert_in_out_err([], "raise Class.new(RuntimeError), 'foo'", [], /foo\n/)
   end
 end

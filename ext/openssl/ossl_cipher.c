@@ -158,7 +158,7 @@ add_cipher_name_to_ary(const OBJ_NAME *name, VALUE ary)
 #ifdef HAVE_OBJ_NAME_DO_ALL_SORTED
 /*
  *  call-seq:
- *     Cipher.ciphers -> array[string...]
+ *     OpenSSL::Cipher.ciphers -> array[string...]
  *
  *  Returns the names of all available ciphers in an array.
  */
@@ -183,7 +183,7 @@ ossl_s_ciphers(VALUE self)
  *     cipher.reset -> self
  *
  *  Fully resets the internal state of the Cipher. By using this, the same
- *  Cipher instance may be used several times for en- or decryption tasks.
+ *  Cipher instance may be used several times for encryption or decryption tasks.
  *
  *  Internally calls EVP_CipherInit_ex(ctx, NULL, NULL, NULL, NULL, -1).
  */

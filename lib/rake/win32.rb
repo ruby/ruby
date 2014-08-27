@@ -4,7 +4,7 @@ module Rake
 
   # Win 32 interface methods for Rake. Windows specific functionality
   # will be placed here to collect that knowledge in one spot.
-  module Win32
+  module Win32 # :nodoc: all
 
     # Error indicating a problem in locating the home directory on a
     # Win32 system.

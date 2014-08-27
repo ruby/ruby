@@ -13,7 +13,6 @@ require "e2mmap"
 require "irb/init"
 require "irb/context"
 require "irb/extend-command"
-#require "irb/workspace"
 
 require "irb/ruby-lex"
 require "irb/input-method"
@@ -138,8 +137,8 @@ STDOUT.sync = true
 # This example can be used in your +.irbrc+
 #
 #     IRB.conf[:PROMPT][:MY_PROMPT] = { # name of prompt mode
-#       :AUTO_INDENT => true            # enables auto-indent mode
-#       :PROMPT_I => nil,		# normal prompt
+#       :AUTO_INDENT => true,           # enables auto-indent mode
+#       :PROMPT_I =>  ">> ",		# simple prompt
 #       :PROMPT_S => nil,		# prompt for continuated strings
 #       :PROMPT_C => nil,		# prompt for continuated statement
 #       :RETURN => "    ==>%s\n"	# format to return value
@@ -337,7 +336,6 @@ STDOUT.sync = true
 #   # quit irb
 #   irb(main):010:0> exit
 module IRB
-  @RCS_ID='-$Id$-'
 
   # An exception raised by IRB.irb_abort
   class Abort < Exception;end
@@ -399,7 +397,6 @@ module IRB
     ensure
       irb_at_exit
     end
-#    print "\n"
   end
 
   # Calls each event hook of IRB.conf[:AT_EXIT] when the current session quits.
@@ -499,7 +496,7 @@ module IRB
           end
           if exc
             print exc.class, ": ", exc, "\n"
-            if exc.backtrace[0] =~ /irb(2)?(\/.*|-.*|\.rb)?:/ && exc.class.to_s !~ /^IRB/ &&
+            if exc.backtrace && exc.backtrace[0] =~ /irb(2)?(\/.*|-.*|\.rb)?:/ && exc.class.to_s !~ /^IRB/ &&
                 !(SyntaxError === exc)
               irb_bug = true
             else
@@ -509,16 +506,18 @@ module IRB
             messages = []
             lasts = []
             levels = 0
-            for m in exc.backtrace
-              m = @context.workspace.filter_backtrace(m) unless irb_bug
-              if m
-                if messages.size < @context.back_trace_limit
-                  messages.push "\tfrom "+m
-                else
-                  lasts.push "\tfrom "+m
-                  if lasts.size > @context.back_trace_limit
-                    lasts.shift
-                    levels += 1
+            if exc.backtrace
+              for m in exc.backtrace
+                m = @context.workspace.filter_backtrace(m) unless irb_bug
+                if m
+                  if messages.size < @context.back_trace_limit
+                    messages.push "\tfrom "+m
+                  else
+                    lasts.push "\tfrom "+m
+                    if lasts.size > @context.back_trace_limit
+                      lasts.shift
+                      levels += 1
+                    end
                   end
                 end
               end

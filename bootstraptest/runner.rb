@@ -140,9 +140,8 @@ End
     @passed = "\e[#{colors["pass"] || "32"}m"
     @failed = "\e[#{colors["fail"] || "31"}m"
     @reset = "\e[m"
-    @erase = "\r\e[2K\r"
   else
-    @passed = @failed = @reset = @erase = ""
+    @passed = @failed = @reset = ""
   end
   unless quiet
     puts Time.now
@@ -163,28 +162,44 @@ End
   }
 end
 
+def erase(e = true)
+  if e and @columns > 0 and !@verbose
+    "\r#{" "*@columns}\r"
+  else
+    ""
+  end
+end
+
 def exec_test(pathes)
   @count = 0
   @error = 0
   @errbuf = []
   @location = nil
+  @columns = 0
+  @width = pathes.map {|path| File.basename(path).size}.max + 2
   pathes.each do |path|
     @basename = File.basename(path)
-    $stderr.print @basename, " "
+    $stderr.printf("%s%-*s ", erase(@quiet), @width, @basename)
+    $stderr.flush
+    @columns = @width + 1
     $stderr.puts if @verbose
     count = @count
     error = @error
     load File.expand_path(path)
     if @tty
       if @error == error
-        $stderr.print "#{@progress_bs}#{@passed}PASS #{@count-count}#{@reset}"
-        $stderr.print @erase if @quiet
+        msg = "PASS #{@count-count}"
+        @columns += msg.size - 1
+        $stderr.print "#{@progress_bs}#{@passed}#{msg}#{@reset}"
       else
-        $stderr.print "#{@progress_bs}#{@failed}FAIL #{@error-error}/#{@count-count}#{@reset}"
+        msg = "FAIL #{@error-error}/#{@count-count}"
+        $stderr.print "#{@progress_bs}#{@failed}#{msg}#{@reset}"
+        @columns = 0
       end
     end
-    $stderr.puts unless @quiet and @tty
+    $stderr.puts unless @quiet and @tty and @error == error
   end
+  $stderr.print(erase) if @quiet
   if @error == 0
     if @count == 0
       $stderr.puts "No tests, no problem"
@@ -207,23 +222,28 @@ def show_progress(message = '')
   elsif @tty
     $stderr.print "#{@progress_bs}#{@progress[@count % @progress.size]}"
   end
+  t = Time.now if @verbose
   faildesc, errout = with_stderr {yield}
+  t = Time.now - t if @verbose
   if !faildesc
     if @tty
       $stderr.print "#{@progress_bs}#{@progress[@count % @progress.size]}"
+    elsif @verbose
+      $stderr.printf(". %.3f\n", t)
     else
       $stderr.print '.'
     end
-    $stderr.puts if @verbose
   else
-    $stderr.print "#{@failed}F#{@reset}"
+    $stderr.print "#{@failed}F"
+    $stderr.printf(" %.3f", t) if @verbose
+    $stderr.print "#{@reset}"
     $stderr.puts if @verbose
     error faildesc, message
     unless errout.empty?
       $stderr.print "#{@failed}stderr output is not empty#{@reset}\n", adjust_indent(errout)
     end
     if @tty and !@verbose
-      $stderr.print @basename, " ", @progress[@count % @progress.size]
+      $stderr.printf("%-*s%s", @width, @basename, @progress[@count % @progress.size])
     end
   end
 rescue Interrupt
@@ -385,7 +405,7 @@ end
 INDENT = 27
 
 def adjust_indent(src)
-  untabify(src).gsub(/^ {#{INDENT}}/o, '').gsub(/^/, '   ')
+  untabify(src).gsub(/^ {#{INDENT}}/o, '').gsub(/^/, '   ').sub(/\s*\z/, "\n")
 end
 
 def untabify(str)
@@ -445,7 +465,7 @@ end
 def error(msg, additional_message)
   msg = "#{@failed}\##{@count} #{@location}#{@reset}: #{msg}  #{additional_message}"
   if @tty
-    $stderr.puts "#{@erase}#{msg}"
+    $stderr.puts "#{erase}#{msg}"
   else
     @errbuf.push msg
   end

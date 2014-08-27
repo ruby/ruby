@@ -7,9 +7,14 @@ end
 
 class TestIONonblock < Test::Unit::TestCase
   def test_flush
-    flush_test(*IO.pipe) or
-      (require 'socket'; flush_test(*Socket.pair(:INET, :STREAM))) or
-      skip "nonblocking IO did not work"
+    IO.pipe {|r, w|
+      return if flush_test(r, w)
+    }
+    require 'socket';
+    Socket.pair(:INET, :STREAM) {|s1, s2|
+      return if flush_test(s1, s2)
+    }
+    skip "nonblocking IO did not work"
   end
 
   def flush_test(r, w)
@@ -24,7 +29,7 @@ class TestIONonblock < Test::Unit::TestCase
     w << "a" * 4096
     result = ""
     timeout(10) {
-      Thread.new {
+      t0 = Thread.new {
         Thread.pass
         w.close
       }
@@ -39,6 +44,7 @@ class TestIONonblock < Test::Unit::TestCase
         # ignore [ruby-dev:35638]
       end
       assert_nothing_raised {t.join}
+      t0.join
     }
     assert_equal(4097, result.size)
     true

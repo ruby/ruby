@@ -31,6 +31,8 @@ class TestGemPackageTarHeader < Gem::Package::TarTestCase
     new_header = Gem::Package::TarHeader.from io
 
     assert_headers_equal @tar_header, new_header
+  ensure
+    io.close!
   end
 
   def test_initialize

@@ -563,7 +563,7 @@ class TestRange < Test::Unit::TestCase
         x >= 42
       }
       assert_equal(42, answer, msg)
-    }
+    }, ignore_stderr: true
   end
 
   def test_each_no_blockarg

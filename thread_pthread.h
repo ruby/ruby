@@ -11,12 +11,12 @@
 #ifndef RUBY_THREAD_PTHREAD_H
 #define RUBY_THREAD_PTHREAD_H
 
-#include <pthread.h>
 #ifdef HAVE_PTHREAD_NP_H
 #include <pthread_np.h>
 #endif
-typedef pthread_t rb_nativethread_id_t;
-typedef pthread_mutex_t rb_nativethread_lock_t;
+
+#define RB_NATIVETHREAD_LOCK_INIT PTHREAD_MUTEX_INITIALIZER
+#define RB_NATIVETHREAD_COND_INIT { PTHREAD_COND_INITIALIZER, }
 
 typedef struct rb_thread_cond_struct {
     pthread_cond_t cond;
@@ -30,8 +30,6 @@ typedef struct native_thread_data_struct {
     rb_nativethread_cond_t sleep_cond;
 } native_thread_data_t;
 
-#include <semaphore.h>
-
 #undef except
 #undef try
 #undef leave
@@ -40,7 +38,7 @@ typedef struct native_thread_data_struct {
 typedef struct rb_global_vm_lock_struct {
     /* fast path */
     unsigned long acquired;
-    pthread_mutex_t lock;
+    rb_nativethread_lock_t lock;
 
     /* slow path */
     volatile unsigned long waiting;

@@ -93,12 +93,12 @@ module URI
     # Otherwise, the path is simply URI#path.
     #
     def request_uri
-      r = path_query
-      if r && r[0] != ?/
-        r = '/' + r
+      return nil unless @path
+      if @path.start_with?(?/.freeze)
+        @query ? "#@path?#@query" : @path.dup
+      else
+        @query ? "/#@path?#@query" : "/#@path"
       end
-
-      r
     end
   end
 

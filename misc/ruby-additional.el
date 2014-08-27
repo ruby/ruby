@@ -106,11 +106,12 @@ Emacs to Ruby."
                      (t (when ruby-insert-encoding-magic-comment
                           (insert "# -*- coding: " coding-system " -*-\n"))))))))
 
-     (define-key ruby-mode-map "\C-c\C-u" 'ruby-encode-unicode)
+     (define-key ruby-mode-map "\C-cU" 'ruby-encode-unicode)
 
      (defun ruby-encode-unicode (beg end)
        "Convert non-ascii string in the given region to \\u{} form."
        (interactive "r")
+       (setq end (set-marker (make-marker) end))
        (goto-char beg)
        (while (and (< (point) end)
 		   (re-search-forward "\\Ca+" end t))

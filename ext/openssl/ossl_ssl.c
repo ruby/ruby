@@ -108,7 +108,7 @@ static VALUE sym_exception;
 /*
  * SSLContext class
  */
-struct {
+static const struct {
     const char *name;
     SSL_METHOD *(*func)(void);
 } ossl_ssl_method_tab[] = {
@@ -190,7 +190,7 @@ ossl_sslctx_set_ssl_version(VALUE self, VALUE ssl_method)
     int i;
 
     SSL_CTX *ctx;
-    if(TYPE(ssl_method) == T_SYMBOL)
+    if (RB_TYPE_P(ssl_method, T_SYMBOL))
 	s = rb_id2name(SYM2ID(ssl_method));
     else
 	s =  StringValuePtr(ssl_method);
@@ -716,7 +716,7 @@ ossl_sslctx_setup(VALUE self)
 
     val = ossl_sslctx_get_client_ca(self);
     if(!NIL_P(val)){
-	if(TYPE(val) == T_ARRAY){
+	if (RB_TYPE_P(val, T_ARRAY)) {
 	    for(i = 0; i < RARRAY_LEN(val); i++){
 		client_ca = GetX509CertPtr(RARRAY_PTR(val)[i]);
         	if (!SSL_CTX_add_client_CA(ctx, client_ca)){
@@ -882,11 +882,11 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
     rb_check_frozen(self);
     if (NIL_P(v))
 	return v;
-    else if (TYPE(v) == T_ARRAY) {
+    else if (RB_TYPE_P(v, T_ARRAY)) {
         str = rb_str_new(0, 0);
         for (i = 0; i < RARRAY_LEN(v); i++) {
             elem = rb_ary_entry(v, i);
-            if (TYPE(elem) == T_ARRAY) elem = rb_ary_entry(elem, 0);
+            if (RB_TYPE_P(elem, T_ARRAY)) elem = rb_ary_entry(elem, 0);
             elem = rb_String(elem);
             rb_str_append(str, elem);
             if (i < RARRAY_LEN(v)-1) rb_str_cat2(str, ":");
@@ -1566,18 +1566,22 @@ static VALUE
 ossl_ssl_close(VALUE self)
 {
     SSL *ssl;
+    VALUE io;
 
-    ossl_ssl_data_get_struct(self, ssl);
+    /* ossl_ssl_data_get_struct() is not usable here because it may return
+     * from this function; */
 
-    if (ssl) {
-	VALUE io = ossl_ssl_get_io(self);
-	if (!RTEST(rb_funcall(io, rb_intern("closed?"), 0))) {
-	    ossl_ssl_shutdown(ssl);
-	    SSL_free(ssl);
-	    DATA_PTR(self) = NULL;
-	    if (RTEST(ossl_ssl_get_sync_close(self)))
-		rb_funcall(io, rb_intern("close"), 0);
-	}
+    Data_Get_Struct(self, SSL, ssl);
+
+    io = ossl_ssl_get_io(self);
+    if (!RTEST(rb_funcall(io, rb_intern("closed?"), 0))) {
+        if (ssl) {
+            ossl_ssl_shutdown(ssl);
+            SSL_free(ssl);
+        }
+        DATA_PTR(self) = NULL;
+        if (RTEST(ossl_ssl_get_sync_close(self)))
+            rb_funcall(io, rb_intern("close"), 0);
     }
 
     return Qnil;

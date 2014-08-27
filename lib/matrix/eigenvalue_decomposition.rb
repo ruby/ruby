@@ -40,14 +40,14 @@ class Matrix
     # Returns the eigenvector matrix +V+
     #
     def eigenvector_matrix
-      Matrix.send :new, build_eigenvectors.transpose
+      Matrix.send(:new, build_eigenvectors.transpose)
     end
     alias v eigenvector_matrix
 
     # Returns the inverse of the eigenvector matrix +V+
     #
     def eigenvector_matrix_inv
-      r = Matrix.send :new, build_eigenvectors
+      r = Matrix.send(:new, build_eigenvectors)
       r = r.transpose.inverse unless @symmetric
       r
     end
@@ -64,7 +64,7 @@ class Matrix
     # Returns an array of the eigenvectors
     #
     def eigenvectors
-      build_eigenvectors.map{|ev| Vector.send :new, ev}
+      build_eigenvectors.map{|ev| Vector.send(:new, ev)}
     end
 
     # Returns the block diagonal eigenvalue matrix +D+

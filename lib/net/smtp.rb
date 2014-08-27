@@ -901,10 +901,17 @@ module Net
       end
       res = critical {
         check_continue get_response('DATA')
-        if msgstr
-          @socket.write_message msgstr
-        else
-          @socket.write_message_by_block(&block)
+        socket_sync_bak = @socket.io.sync
+        begin
+          @socket.io.sync = false
+          if msgstr
+            @socket.write_message msgstr
+          else
+            @socket.write_message_by_block(&block)
+          end
+        ensure
+          @socket.io.flush
+          @socket.io.sync = socket_sync_bak
         end
         recv_response()
       }

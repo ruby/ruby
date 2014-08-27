@@ -156,8 +156,8 @@ class TestRakePathMap < Rake::TestCase
       "src/org/onstepback/proj/A.java".pathmap("%{src,bin}d/%n.class"))
     assert_equal(
       "src_work/bin/org/onstepback/proj/A.class",
-      "src_work/src/org/onstepback/proj/A.java"
-        .pathmap('%{\bsrc\b,bin}X.class'))
+      "src_work/src/org/onstepback/proj/A.java".
+        pathmap('%{\bsrc\b,bin}X.class'))
     assert_equal(
       ".depends.bak",
       ".depends".pathmap("%X.bak"))

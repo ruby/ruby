@@ -62,13 +62,17 @@ class TestIOWait < Test::Unit::TestCase
   end
 
   def test_wait_forever
-    Thread.new { sleep 0.01; @w.syswrite "." }
+    th = Thread.new { sleep 0.01; @w.syswrite "." }
     assert_equal @r, @r.wait
+  ensure
+    th.join
   end
 
   def test_wait_eof
-    Thread.new { sleep 0.01; @w.close }
+    th = Thread.new { sleep 0.01; @w.close }
     assert_nil @r.wait
+  ensure
+    th.join
   end
 
   def test_wait_writable

@@ -470,6 +470,7 @@ EOS
     bug7507 = '[ruby-core:51510]'
     {
       slice_before: //,
+      slice_after: //,
       with_index: nil,
       cycle: nil,
       each_with_object: 42,

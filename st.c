@@ -73,6 +73,10 @@ static const struct st_hash_type type_strcasehash = {
 static void rehash(st_table *);
 
 #ifdef RUBY
+#undef malloc
+#undef realloc
+#undef calloc
+#undef free
 #define malloc xmalloc
 #define calloc xcalloc
 #define realloc xrealloc
@@ -817,7 +821,7 @@ st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data
 {
     st_index_t hash_val, bin_pos;
     register st_table_entry *ptr, **last, *tmp;
-    st_data_t value = 0;
+    st_data_t value = 0, old_key;
     int retval, existing = 0;
 
     hash_val = do_hash(key, table);
@@ -830,6 +834,7 @@ st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data
 	    existing = 1;
 	}
 	{
+	    old_key = key;
 	    retval = (*func)(&key, &value, arg, existing);
 	    if (!table->entries_packed) {
 		FIND_ENTRY(table, ptr, hash_val, bin_pos);
@@ -840,6 +845,9 @@ st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data
 		if (!existing) {
 		    add_packed_direct(table, key, value, hash_val);
 		    break;
+		}
+		if (old_key != key) {
+		    PKEY(table, i) = key;
 		}
 		PVAL_SET(table, i, value);
 		break;
@@ -859,6 +867,7 @@ st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data
 	existing = 1;
     }
     {
+	old_key = key;
 	retval = (*func)(&key, &value, arg, existing);
       unpacked:
 	switch (retval) {
@@ -866,6 +875,9 @@ st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data
 	    if (!existing) {
 		add_direct(table, key, value, hash_val, hash_pos(hash_val, table->num_bins));
 		break;
+	    }
+	    if (old_key != key) {
+		ptr->key = key;
 	    }
 	    ptr->record = value;
 	    break;
@@ -1308,6 +1320,7 @@ strhash(st_data_t arg)
 #ifndef UNALIGNED_WORD_ACCESS
 # if defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
      defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD64) || \
+     defined(__powerpc64__) || \
      defined(__mc68020__)
 #   define UNALIGNED_WORD_ACCESS 1
 # endif

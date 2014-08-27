@@ -14,10 +14,15 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
   end
 
   def get_res_body(res)
-    if defined? res.body.read
-      res.body.read
+    body = res.body
+    if defined? body.read
+      begin
+        body.read
+      ensure
+        body.close
+      end
     else
-      res.body
+      body
     end
   end
 

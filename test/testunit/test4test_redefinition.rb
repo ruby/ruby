@@ -1,3 +1,5 @@
+$LOAD_PATH.unshift "#{File.dirname(__FILE__)}/../lib"
+
 require 'test/unit'
 
 class TestForTestRedefinition < Test::Unit::TestCase

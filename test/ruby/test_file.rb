@@ -124,7 +124,7 @@ class TestFile < Test::Unit::TestCase
       q1 = Queue.new
       q2 = Queue.new
 
-      Thread.new do
+      th = Thread.new do
         data = ''
         64.times do |i|
           data << i.to_s
@@ -142,6 +142,7 @@ class TestFile < Test::Unit::TestCase
         assert_equal size, f.size
         q2.push true
       end
+      th.join
     end
   end
 
@@ -311,6 +312,35 @@ class TestFile < Test::Unit::TestCase
     assert_equal(mod_time_contents, stats.mtime, bug6385)
   end
 
+  def test_stat
+    tb = Process.clock_gettime(Process::CLOCK_REALTIME)
+    Tempfile.create("stat") {|file|
+      tb = (tb + Process.clock_gettime(Process::CLOCK_REALTIME)) / 2
+      file.close
+      path = file.path
+
+      t0 = Process.clock_gettime(Process::CLOCK_REALTIME)
+      File.write(path, "foo")
+      sleep 2
+      File.write(path, "bar")
+      sleep 2
+      File.chmod(0644, path)
+      sleep 2
+      File.read(path)
+
+      delta = 1
+      stat = File.stat(path)
+      assert_in_delta tb,   stat.birthtime.to_f, delta
+      assert_in_delta t0+2, stat.mtime.to_f, delta
+      if stat.birthtime != stat.ctime
+        assert_in_delta t0+4, stat.ctime.to_f, delta
+      end
+      skip "Windows delays updating atime" if /mswin|mingw/ =~ RUBY_PLATFORM
+      assert_in_delta t0+6, stat.atime.to_f, delta
+    }
+  rescue NotImplementedError
+  end
+
   def test_chmod_m17n
     bug5671 = '[ruby-dev:44898]'
     Dir.mktmpdir('test-file-chmod-m17n-') do |tmpdir|
@@ -381,33 +411,6 @@ class TestFile < Test::Unit::TestCase
         open(path + "\0bar", "w") {}
       end
       assert_file.not_exist?(path)
-    end
-  end
-
-  def test_statfs
-    skip "not implemented" unless $stdout.respond_to?(:statfs)
-    open(__FILE__) do |f|
-      st = f.statfs
-      assert_kind_of File::Statfs, st
-      begin
-        assert_kind_of Integer, st.type
-      rescue NotImplementedError
-      end
-      assert_kind_of Integer, st.bsize
-      assert_kind_of Integer, st.blocks
-      assert_kind_of Integer, st.bfree
-      assert_kind_of Integer, st.bavail
-      assert_kind_of Integer, st.files
-      assert_kind_of Integer, st.ffree
-      begin
-        assert_kind_of String, st.fstypename
-      rescue NotImplementedError
-      end
-      s = st.inspect
-      assert_match(/\A\#<File::Statfs\b.*>\z/, s)
-      assert_match(/\bbsize=\d+\b/, s)
-      assert_match(/\bblocks=(?:\d+[,>\/])+\b/, s)
-      assert_match(/\bfiles=(?:\d+[,>\/])+\b/, s)
     end
   end
 end

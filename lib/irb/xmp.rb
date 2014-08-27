@@ -43,7 +43,6 @@ require "irb/frame"
 #     ctx.eval 'today # is what?'
 #     #=> "a good day"
 class XMP
-  @RCS_ID='-$Id$-'
 
   # Creates a new XMP object.
   #
@@ -54,8 +53,6 @@ class XMP
   # full detail.
   def initialize(bind = nil)
     IRB.init_config(nil)
-    #IRB.parse_opts
-    #IRB.load_modules
 
     IRB.conf[:PROMPT_MODE] = :XMP
 
@@ -65,7 +62,6 @@ class XMP
     @irb = IRB::Irb.new(ws, @io)
     @irb.context.ignore_sigint = false
 
-#    IRB.conf[:IRB_RC].call(@irb.context) if IRB.conf[:IRB_RC]
     IRB.conf[:MAIN_CONTEXT] = @irb.context
   end
 
@@ -85,16 +81,16 @@ class XMP
 
     if @irb.context.ignore_sigint
       begin
-	trap_proc_b = trap("SIGINT"){@irb.signal_handle}
-	catch(:IRB_EXIT) do
-	  @irb.eval_input
-	end
+        trap_proc_b = trap("SIGINT"){@irb.signal_handle}
+        catch(:IRB_EXIT) do
+          @irb.eval_input
+        end
       ensure
-	trap("SIGINT", trap_proc_b)
+        trap("SIGINT", trap_proc_b)
       end
     else
       catch(:IRB_EXIT) do
-	@irb.eval_input
+        @irb.eval_input
       end
     end
   end
@@ -117,10 +113,10 @@ class XMP
     # See IO#gets for more information.
     def gets
       while l = @exps.shift
-	next if /^\s+$/ =~ l
-	l.concat "\n"
-	print @prompt, l
-	break
+        next if /^\s+$/ =~ l
+        l.concat "\n"
+        print @prompt, l
+        break
       end
       l
     end
@@ -131,14 +127,14 @@ class XMP
     # doesn't match the previous expression evaluated.
     def puts(exps)
       if @encoding and exps.encoding != @encoding
-	enc = Encoding.compatible?(@exps.join("\n"), exps)
-	if enc.nil?
-	  raise Encoding::CompatibilityError, "Encoding in which the passed expression is encoded is not compatible to the preceding's one"
-	else
-	  @encoding = enc
-	end
+        enc = Encoding.compatible?(@exps.join("\n"), exps)
+        if enc.nil?
+          raise Encoding::CompatibilityError, "Encoding in which the passed expression is encoded is not compatible to the preceding's one"
+        else
+          @encoding = enc
+        end
       else
-	@encoding = exps.encoding
+        @encoding = exps.encoding
       end
       @exps.concat exps.split(/\n/)
     end

@@ -35,6 +35,10 @@ class TestGc < Test::Unit::TestCase
     GC.stress = prev_stress
   end
 
+  def use_rgengc?
+    GC::OPTS.include? 'USE_RGENGC'.freeze
+  end
+
   def test_enable_disable
     GC.enable
     assert_equal(false, GC.enable)
@@ -49,6 +53,8 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_start_full_mark
+    return unless use_rgengc?
+
     GC.start(full_mark: false)
     assert_nil GC.latest_gc_info(:major_by)
 
@@ -107,16 +113,17 @@ class TestGc < Test::Unit::TestCase
 
   def test_latest_gc_info
     GC.start
-    GC.stat(:heap_free_slot).times{ "a" + "b" }
+    count = GC.stat(:heap_free_slot) + GC.stat(:heap_increment) * GC::INTERNAL_CONSTANTS[:HEAP_OBJ_LIMIT]
+    count.times{ "a" + "b" }
     assert_equal :newobj, GC.latest_gc_info[:gc_by]
 
     GC.start
-    assert_equal :nofree, GC.latest_gc_info[:major_by]
+    assert_equal :force, GC.latest_gc_info[:major_by] if use_rgengc?
     assert_equal :method, GC.latest_gc_info[:gc_by]
     assert_equal true, GC.latest_gc_info[:immediate_sweep]
 
     GC.stress = true
-    assert_equal :stress, GC.latest_gc_info[:major_by]
+    assert_equal :force, GC.latest_gc_info[:major_by]
   ensure
     GC.stress = false
   end
@@ -189,8 +196,9 @@ class TestGc < Test::Unit::TestCase
     }
     assert_normal_exit("exit", "", :child_env => env)
     assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR=0\.9/, "")
+
     # always full GC when RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR < 1.0
-    assert_in_out_err([env, "-e", "1000_000.times{Object.new}; p(GC.stat[:minor_gc_count] < GC.stat[:major_gc_count])"], "", ['true'], //, "")
+    assert_in_out_err([env, "-e", "1000_000.times{Object.new}; p(GC.stat[:minor_gc_count] < GC.stat[:major_gc_count])"], "", ['true'], //, "") if use_rgengc?
 
     # check obsolete
     assert_in_out_err([{'RUBY_FREE_MIN' => '100'}, '-w', '-eexit'], '', [],
@@ -208,15 +216,17 @@ class TestGc < Test::Unit::TestCase
     assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_MALLOC_LIMIT_MAX=16000000/, "")
     assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR=2.0/, "")
 
-    env = {
-      "RUBY_GC_OLDMALLOC_LIMIT"               => "60000000",
-      "RUBY_GC_OLDMALLOC_LIMIT_MAX"           => "160000000",
-      "RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR" => "2.0"
-    }
-    assert_normal_exit("exit", "", :child_env => env)
-    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_OLDMALLOC_LIMIT=6000000/, "")
-    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_OLDMALLOC_LIMIT_MAX=16000000/, "")
-    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR=2.0/, "")
+    if use_rgengc?
+      env = {
+        "RUBY_GC_OLDMALLOC_LIMIT"               => "60000000",
+        "RUBY_GC_OLDMALLOC_LIMIT_MAX"           => "160000000",
+        "RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR" => "2.0"
+      }
+      assert_normal_exit("exit", "", :child_env => env)
+      assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_OLDMALLOC_LIMIT=6000000/, "")
+      assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_OLDMALLOC_LIMIT_MAX=16000000/, "")
+      assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR=2.0/, "")
+    end
   end
 
   def test_profiler_enabled
@@ -310,5 +320,23 @@ class TestGc < Test::Unit::TestCase
 
   def test_verify_internal_consistency
     assert_nil(GC.verify_internal_consistency)
+  end
+
+  def test_gc_stress_on_realloc
+    assert_normal_exit(<<-'end;', '[Bug #9859]')
+      class C
+        def initialize
+          @a = nil
+          @b = nil
+          @c = nil
+          @d = nil
+          @e = nil
+          @f = nil
+        end
+      end
+
+      GC.stress = true
+      C.new
+    end;
   end
 end

@@ -98,6 +98,12 @@ class TC_Set < Test::Unit::TestCase
 
     assert_same(set, ret)
     assert_equal(Set['a','b','c'], set)
+
+    set = Set[1,2]
+    assert_raise(ArgumentError) {
+      set.replace(3)
+    }
+    assert_equal(Set[1,2], set)
   end
 
   def test_to_a
@@ -583,6 +589,28 @@ class TC_Set < Test::Unit::TestCase
       set << 5
     }
     assert_equal 4, set.size
+  end
+
+  def test_freeze_dup
+    set1 = Set[1,2,3]
+    set1.freeze
+    set2 = set1.dup
+
+    assert_not_predicate set2, :frozen?
+    assert_nothing_raised {
+      set2.add 4
+    }
+  end
+
+  def test_freeze_clone
+    set1 = Set[1,2,3]
+    set1.freeze
+    set2 = set1.clone
+
+    assert_predicate set2, :frozen?
+    assert_raise(RuntimeError) {
+      set2.add 5
+    }
   end
 
   def test_inspect

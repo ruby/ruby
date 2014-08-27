@@ -41,9 +41,6 @@ module WEBrick
       # :stopdoc:
 
       def do_GET(req, res)
-        data = nil
-        status = -1
-
         cgi_in = IO::popen(@cgicmd, "wb")
         cgi_out = Tempfile.new("webrick.cgiout.", @tempdir, mode: IO::BINARY)
         cgi_out.set_encoding("ASCII-8BIT")

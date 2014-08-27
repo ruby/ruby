@@ -51,16 +51,17 @@ extern "C" {
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
-typedef struct {
+PACKED_STRUCT_UNALIGNED(struct rb_io_buffer_t {
     char *ptr;                  /* off + len <= capa */
     int off;
     int len;
     int capa;
-} rb_io_buffer_t;
+});
+typedef struct rb_io_buffer_t rb_io_buffer_t;
 
 typedef struct rb_io_t {
-    int fd;                     /* file descriptor */
     FILE *stdio_file;		/* stdio ptr for read/write if available */
+    int fd;                     /* file descriptor */
     int mode;			/* mode flags: FMODE_XXXs */
     rb_pid_t pid;		/* child's pid (for pipes) */
     int lineno;			/* number of lines read */
@@ -89,9 +90,9 @@ typedef struct rb_io_t {
 
     rb_econv_t *writeconv;
     VALUE writeconv_asciicompat;
+    int writeconv_initialized;
     int writeconv_pre_ecflags;
     VALUE writeconv_pre_ecopts;
-    int writeconv_initialized;
 
     VALUE write_lock;
 } rb_io_t;

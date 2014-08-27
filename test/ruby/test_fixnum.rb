@@ -74,6 +74,7 @@ class TestFixnum < Test::Unit::TestCase
     assert_equal(-0x4000000000000001, 0xc000000000000003/(-3))
     assert_equal(0x40000000, (-0x40000000)/(-1), "[ruby-dev:31210]")
     assert_equal(0x4000000000000000, (-0x4000000000000000)/(-1))
+    assert_raise(FloatDomainError) { 2.div(Float::NAN).nan? }
   end
 
   def test_mod
@@ -101,6 +102,7 @@ class TestFixnum < Test::Unit::TestCase
         assert_equal(r, a.modulo(b))
       }
     }
+    assert_raise(FloatDomainError) { 2.divmod(Float::NAN) }
   end
 
   def test_not
@@ -304,5 +306,10 @@ class TestFixnum < Test::Unit::TestCase
     big = 1 << 66
     assert_raise(ZeroDivisionError, bug5713) { 0 ** -big }
     assert_raise(ZeroDivisionError, bug5713) { 0 ** Rational(-2,3) }
+  end
+
+  def test_remainder
+    assert_equal(1, 5.remainder(4))
+    assert_predicate(4.remainder(Float::NAN), :nan?)
   end
 end

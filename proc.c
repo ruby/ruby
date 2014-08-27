@@ -467,35 +467,10 @@ check_local_id(VALUE bindval, volatile VALUE *pname)
 static VALUE
 bind_local_variables(VALUE bindval)
 {
-    VALUE ary = rb_ary_new();
-
     const rb_binding_t *bind;
-    const rb_env_t *env;
-    VALUE envval;
 
     GetBindingPtr(bindval, bind);
-
-    envval = bind->env;
-    GetEnvPtr(envval, env);
-
-    do {
-	const rb_iseq_t *iseq;
-	int i;
-	ID id;
-	iseq = env->block.iseq;
-
-	for (i = 0; i < iseq->local_table_size; i++) {
-	    id = iseq->local_table[i];
-	    if (id) {
-		const char *vname = rb_id2name(id);
-		if (vname) {
-		    rb_ary_push(ary, ID2SYM(id));
-		}
-	    }
-	}
-    } while ((envval = env->prev_envval) != 0);
-
-    return ary;
+    return rb_vm_env_local_variables(bind->env);
 }
 
 /*
@@ -606,6 +581,23 @@ bind_local_variable_defined_p(VALUE bindval, VALUE sym)
 
     GetBindingPtr(bindval, bind);
     return get_local_variable_ptr(bind->env, lid) ? Qtrue : Qfalse;
+}
+
+/*
+ *  call-seq:
+ *     binding.receiver    -> object
+ *
+ *  Returns the bound receiver of the binding object.
+ */
+static VALUE
+bind_receiver(VALUE bindval)
+{
+    const rb_binding_t *bind;
+    const rb_env_t *env;
+
+    GetBindingPtr(bindval, bind);
+    GetEnvPtr(bind->env, env);
+    return env->block.self;
 }
 
 static VALUE
@@ -1198,8 +1190,8 @@ rb_obj_is_method(VALUE m)
 }
 
 static VALUE
-mnew_from_me(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
-	     VALUE obj, ID id, VALUE mclass, int scope)
+mnew_internal(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
+	      VALUE obj, ID id, VALUE mclass, int scope, int error)
 {
     VALUE method;
     VALUE rclass = klass;
@@ -1221,22 +1213,15 @@ mnew_from_me(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
 		goto gen_method;
 	    }
 	}
+	if (!error) return Qnil;
 	rb_print_undef(klass, id, 0);
     }
     def = me->def;
     if (flag == NOEX_UNDEF) {
 	flag = me->flag;
 	if (scope && (flag & NOEX_MASK) != NOEX_PUBLIC) {
-	    const char *v = "";
-	    switch (flag & NOEX_MASK) {
-		case NOEX_PRIVATE: v = "private"; break;
-		case NOEX_PROTECTED: v = "protected"; break;
-	    }
-	    rb_name_error(id, "method `%s' for %s `% "PRIsVALUE"' is %s",
-			  rb_id2name(id),
-			  (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
-			  rb_class_name(klass),
-			  v);
+	    if (!error) return Qnil;
+	    rb_print_inaccessible(klass, id, flag & NOEX_MASK);
 	}
     }
     if (def && def->type == VM_METHOD_TYPE_ZSUPER) {
@@ -1286,6 +1271,13 @@ mnew_from_me(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
     OBJ_INFECT(method, klass);
 
     return method;
+}
+
+static VALUE
+mnew_from_me(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
+	     VALUE obj, ID id, VALUE mclass, int scope)
+{
+    return mnew_internal(me, defined_class, klass, obj, id, mclass, scope, TRUE);
 }
 
 static VALUE
@@ -1873,14 +1865,14 @@ method_clone(VALUE self)
  */
 
 VALUE
-rb_method_call(int argc, VALUE *argv, VALUE method)
+rb_method_call(int argc, const VALUE *argv, VALUE method)
 {
     VALUE proc = rb_block_given_p() ? rb_block_proc() : Qnil;
     return rb_method_call_with_block(argc, argv, method, proc);
 }
 
 VALUE
-rb_method_call_with_block(int argc, VALUE *argv, VALUE method, VALUE pass_procval)
+rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE pass_procval)
 {
     VALUE result = Qnil;	/* OK */
     struct METHOD *data;
@@ -2431,6 +2423,28 @@ method_proc(VALUE method)
 }
 
 /*
+ * Returns a Method of superclass, which would be called when super is used.
+ */
+static VALUE
+method_super_method(VALUE method)
+{
+    struct METHOD *data;
+    VALUE defined_class, super_class;
+    rb_method_entry_t *me;
+
+    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
+    defined_class = data->defined_class;
+    if (BUILTIN_TYPE(defined_class) == T_MODULE) defined_class = data->rclass;
+    super_class = RCLASS_SUPER(defined_class);
+    if (!super_class) return Qnil;
+    me = rb_method_entry_without_refinements(super_class, data->id, &defined_class);
+    if (!me) return Qnil;
+    return mnew_internal(me, defined_class,
+			 super_class, data->recv, data->id,
+			 rb_obj_class(method), FALSE, FALSE);
+}
+
+/*
  * call-seq:
  *   local_jump_error.exit_value  -> obj
  *
@@ -2584,7 +2598,7 @@ curry(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc)
   *     p b.curry[]                  #=> :foo
   */
 static VALUE
-proc_curry(int argc, VALUE *argv, VALUE self)
+proc_curry(int argc, const VALUE *argv, VALUE self)
 {
     int sarity, max_arity, min_arity = rb_proc_min_max_arity(self, &max_arity);
     VALUE arity;
@@ -2601,6 +2615,45 @@ proc_curry(int argc, VALUE *argv, VALUE self)
     }
 
     return make_curry_proc(self, rb_ary_new(), arity);
+}
+
+/*
+ *  call-seq:
+ *     meth.curry        -> proc
+ *     meth.curry(arity) -> proc
+ *
+ *  Returns a curried proc based on the method. When the proc is called with a number of
+ *  arguments that is lower than the method's arity, then another curried proc is returned.
+ *  Only when enough arguments have been supplied to satisfy the method signature, will the
+ *  method actually be called.
+ *
+ *  The optional <i>arity</i> argument should be supplied when currying methods with
+ *  variable arguments to determine how many arguments are needed before the method is
+ *  called.
+ *
+ *     def foo(a,b,c)
+ *       [a, b, c]
+ *     end
+ *
+ *     proc  = self.method(:foo).curry
+ *     proc2 = proc.call(1, 2)          #=> #<Proc>
+ *     proc2.call(3)                    #=> [1,2,3]
+ *
+ *     def vararg(*args)
+ *       args
+ *     end
+ *
+ *     proc = self.method(:vararg).curry(4)
+ *     proc2 = proc.call(:x)      #=> #<Proc>
+ *     proc3 = proc2.call(:y, :z) #=> #<Proc>
+ *     proc3.call(:a)             #=> [:x, :y, :z, :a]
+ */
+
+static VALUE
+rb_method_curry(int argc, const VALUE *argv, VALUE self)
+{
+    VALUE proc = method_proc(self);
+    return proc_curry(argc, argv, proc);
 }
 
 /*
@@ -2709,6 +2762,7 @@ Init_Proc(void)
     sysstack_error = rb_exc_new3(rb_eSysStackError,
 				 rb_obj_freeze(rb_str_new2("stack level too deep")));
     OBJ_TAINT(sysstack_error);
+    OBJ_FREEZE(sysstack_error);
 
     /* utility functions */
     rb_define_global_function("proc", rb_block_proc, 0);
@@ -2723,6 +2777,7 @@ Init_Proc(void)
     rb_define_method(rb_cMethod, "hash", method_hash, 0);
     rb_define_method(rb_cMethod, "clone", method_clone, 0);
     rb_define_method(rb_cMethod, "call", rb_method_call, -1);
+    rb_define_method(rb_cMethod, "curry", rb_method_curry, -1);
     rb_define_method(rb_cMethod, "[]", rb_method_call, -1);
     rb_define_method(rb_cMethod, "arity", method_arity_m, 0);
     rb_define_method(rb_cMethod, "inspect", method_inspect, 0);
@@ -2735,6 +2790,7 @@ Init_Proc(void)
     rb_define_method(rb_cMethod, "unbind", method_unbind, 0);
     rb_define_method(rb_cMethod, "source_location", rb_method_location, 0);
     rb_define_method(rb_cMethod, "parameters", rb_method_parameters, 0);
+    rb_define_method(rb_cMethod, "super_method", method_super_method, 0);
     rb_define_method(rb_mKernel, "method", rb_obj_method, 1);
     rb_define_method(rb_mKernel, "public_method", rb_obj_public_method, 1);
     rb_define_method(rb_mKernel, "singleton_method", rb_obj_singleton_method, 1);
@@ -2756,6 +2812,7 @@ Init_Proc(void)
     rb_define_method(rb_cUnboundMethod, "bind", umethod_bind, 1);
     rb_define_method(rb_cUnboundMethod, "source_location", rb_method_location, 0);
     rb_define_method(rb_cUnboundMethod, "parameters", rb_method_parameters, 0);
+    rb_define_method(rb_cUnboundMethod, "super_method", method_super_method, 0);
 
     /* Module#*_method */
     rb_define_method(rb_cModule, "instance_method", rb_mod_instance_method, 1);
@@ -2817,6 +2874,7 @@ Init_Binding(void)
     rb_define_method(rb_cBinding, "local_variable_get", bind_local_variable_get, 1);
     rb_define_method(rb_cBinding, "local_variable_set", bind_local_variable_set, 2);
     rb_define_method(rb_cBinding, "local_variable_defined?", bind_local_variable_defined_p, 1);
+    rb_define_method(rb_cBinding, "receiver", bind_receiver, 0);
     rb_define_global_function("binding", rb_f_binding, 0);
 }
 

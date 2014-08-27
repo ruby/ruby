@@ -199,8 +199,7 @@ strscan_s_allocate(VALUE klass)
 {
     struct strscanner *p;
 
-    p = ALLOC(struct strscanner);
-    MEMZERO(p, struct strscanner, 1);
+    p = ZALLOC(struct strscanner);
     CLEAR_MATCH_STATUS(p);
     onig_region_init(&(p->regs));
     p->str = Qnil;
@@ -977,7 +976,7 @@ strscan_matched_size(VALUE self)
 }
 
 static int
-name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name, const char* name_end)
+name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name, const char* name_end, rb_encoding *enc)
 {
     int num;
 
@@ -987,9 +986,8 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
 	return num;
     }
     else {
-	VALUE s = rb_str_new(name, (long )(name_end - name));
-	rb_raise(rb_eIndexError, "undefined group name reference: %s",
-				 StringValuePtr(s));
+	rb_enc_raise(enc, rb_eIndexError, "undefined group name reference: %.*s",
+					  rb_long2int(name_end - name), name);
     }
 
     UNREACHABLE;
@@ -1033,13 +1031,11 @@ strscan_aref(VALUE self, VALUE idx)
 
     switch (TYPE(idx)) {
         case T_SYMBOL:
-            name = rb_id2name(SYM2ID(idx));
-            goto name_to_backref;
-            break;
+            idx = rb_sym2str(idx);
+            /* fall through */
         case T_STRING:
-            name = StringValuePtr(idx);
-        name_to_backref:
-	    i = name_to_backref_number(&(p->regs), p->regex, name, name + strlen(name));
+            RSTRING_GETMEM(idx, name, i);
+            i = name_to_backref_number(&(p->regs), p->regex, name, name + i, rb_enc_get(idx));
             break;
         default:
             i = NUM2LONG(idx);

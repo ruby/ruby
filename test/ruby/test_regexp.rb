@@ -142,6 +142,31 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("fbazo", s)
   end
 
+  def test_named_capture_with_nul
+    bug9902 = '[ruby-dev:48275] [Bug #9902]'
+
+    m = /(?<a>.*)/.match("foo")
+    assert_raise(IndexError, bug9902) {m["a\0foo"]}
+    assert_raise(IndexError, bug9902) {m["a\0foo".to_sym]}
+
+    m = Regexp.new("(?<foo\0bar>.*)").match("xxx")
+    assert_raise(IndexError, bug9902) {m["foo"]}
+    assert_raise(IndexError, bug9902) {m["foo".to_sym]}
+    assert_nothing_raised(IndexError, bug9902) {
+      assert_equal("xxx", m["foo\0bar"], bug9902)
+      assert_equal("xxx", m["foo\0bar".to_sym], bug9902)
+    }
+  end
+
+  def test_named_capture_nonascii
+    bug9903 = '[ruby-dev:48278] [Bug #9903]'
+
+    key = "\xb1\xb2".force_encoding(Encoding::EUC_JP)
+    m = /(?<#{key}>.*)/.match("xxx")
+    assert_equal("xxx", m[key])
+    assert_raise(IndexError, bug9903) {m[key.dup.force_encoding(Encoding::Shift_JIS)]}
+  end
+
   def test_assign_named_capture
     assert_equal("a", eval('/(?<foo>.)/ =~ "a"; foo'))
     assert_equal("a", eval('foo = 1; /(?<foo>.)/ =~ "a"; foo'))
@@ -561,7 +586,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_predicate(m, :tainted?)
   end
 
-  def check(re, ss, fs = [], msg = nil)
+  def assert_regexp(re, ss, fs = [], msg = nil)
     re = Regexp.new(re) unless re.is_a?(Regexp)
     ss = [ss] unless ss.is_a?(Array)
     ss.each do |e, s|
@@ -573,10 +598,12 @@ class TestRegexp < Test::Unit::TestCase
     fs = [fs] unless fs.is_a?(Array)
     fs.each {|s| assert_no_match(re, s, msg) }
   end
+  alias check assert_regexp
 
-  def failcheck(re)
+  def assert_fail(re)
     assert_raise(RegexpError) { %r"#{ re }" }
   end
+  alias failcheck assert_fail
 
   def test_parse
     check(/\*\+\?\{\}\|\(\)\<\>\`\'/, "*+?{}|()<>`'")
@@ -981,8 +1008,9 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(/0/, pr1.call(0))
     assert_equal(/0/, pr1.call(1))
     assert_equal(/0/, pr1.call(2))
+  end
 
-    # recursive
+  def test_once_recursive
     pr2 = proc{|i|
       if i > 0
         /#{pr2.call(i-1).to_s}#{i}/
@@ -991,8 +1019,9 @@ class TestRegexp < Test::Unit::TestCase
       end
     }
     assert_equal(/(?-mix:(?-mix:(?-mix:)1)2)3/, pr2.call(3))
+  end
 
-    # multi-thread
+  def test_once_multithread
     m = Mutex.new
     pr3 = proc{|i|
       /#{m.unlock; sleep 0.5; i}/o
@@ -1003,8 +1032,9 @@ class TestRegexp < Test::Unit::TestCase
     th2 = Thread.new{m.lock; ary << pr3.call(n+=1)}
     th1.join; th2.join
     assert_equal([/1/, /1/], ary)
+  end
 
-    # escape
+  def test_once_escape
     pr4 = proc{|i|
       catch(:xyzzy){
         /#{throw :xyzzy, i}/o =~ ""

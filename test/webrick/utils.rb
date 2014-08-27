@@ -37,7 +37,6 @@ module TestWEBrick
     log = proc { "webrick log start:\n" + log_string.gsub(/^/, "  ").chomp + "\nwebrick log end" }
     server = klass.new({
       :BindAddress => "127.0.0.1", :Port => 0,
-      :ShutdownSocketWithoutClose =>true,
       :ServerType => Thread,
       :Logger => WEBrick::Log.new(logger),
       :AccessLog => [[logger, ""]]

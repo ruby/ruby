@@ -139,6 +139,7 @@ class TestDir < Test::Unit::TestCase
 
     assert_equal((?a..?z).step(2).map {|f| File.join(File.join(@root, f), "") }.sort,
                  Dir.glob(File.join(@root, "*/")).sort)
+    assert_equal([File.join(@root, '//a')], Dir.glob(@root + '//a'))
 
     FileUtils.touch(File.join(@root, "{}"))
     assert_equal(%w({} a).map{|f| File.join(@root, f) },
@@ -247,6 +248,12 @@ class TestDir < Test::Unit::TestCase
         File.chmod(mode, ".")
       end
     end
+  end
+
+  def test_glob_super_root
+    bug9648 = '[ruby-core:61552] [Bug #9648]'
+    roots = Dir.glob("/*")
+    assert_equal(roots.map {|n| "/..#{n}"}, Dir.glob("/../*"), bug9648)
   end
 
   def test_home

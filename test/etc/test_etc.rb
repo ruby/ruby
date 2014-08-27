@@ -112,4 +112,51 @@ class TestEtc < Test::Unit::TestCase
     Etc.endgrent
     assert_equal(a, b)
   end
+
+  def test_uname
+    begin
+      uname = Etc.uname
+    rescue NotImplementedError
+      return
+    end
+    assert_kind_of(Hash, uname)
+    [:sysname, :nodename, :release, :version, :machine].each {|sym|
+      assert_operator(uname, :has_key?, sym)
+      assert_kind_of(String, uname[sym])
+    }
+  end
+
+  def test_sysconf
+    begin
+      Etc.sysconf
+    rescue NotImplementedError
+      return
+    rescue ArgumentError
+    end
+    assert_kind_of(Integer, Etc.sysconf(Etc::SC_CLK_TCK))
+  end if defined?(Etc::SC_CLK_TCK)
+
+  def test_confstr
+    begin
+      Etc.confstr
+    rescue NotImplementedError
+      return
+    rescue ArgumentError
+    end
+    assert_kind_of(String, Etc.confstr(Etc::CS_PATH))
+  end if defined?(Etc::CS_PATH)
+
+  def test_pathconf
+    begin
+      Etc.confstr
+    rescue NotImplementedError
+      return
+    rescue ArgumentError
+    end
+    IO.pipe {|r, w|
+      val = w.pathconf(Etc::PC_PIPE_BUF)
+      assert(val.nil? || val.kind_of?(Integer))
+    }
+  end if defined?(Etc::PC_PIPE_BUF)
+
 end

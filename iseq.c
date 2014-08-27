@@ -147,7 +147,9 @@ iseq_memsize(const void *ptr)
 	    size += iseq->iseq_size * sizeof(VALUE);
 	    size += iseq->line_info_size * sizeof(struct iseq_line_info_entry);
 	    size += iseq->local_table_size * sizeof(ID);
-	    size += iseq->catch_table_size * sizeof(struct iseq_catch_table_entry);
+	    if (iseq->catch_table) {
+		size += iseq_catch_table_bytes(iseq->catch_table->size);
+	    }
 	    size += iseq->arg_opts * sizeof(VALUE);
 	    size += iseq->is_size * sizeof(union iseq_inline_storage_entry);
 	    size += iseq->callinfo_size * sizeof(rb_call_info_t);
@@ -157,7 +159,7 @@ iseq_memsize(const void *ptr)
 
 		cur = iseq->compile_data->storage_head;
 		while (cur) {
-		    size += cur->size + sizeof(struct iseq_compile_data_storage);
+		    size += cur->size + SIZEOF_ISEQ_COMPILE_DATA_STORAGE;
 		    cur = cur->next;
 		}
 		size += sizeof(struct iseq_compile_data);
@@ -187,7 +189,7 @@ iseq_alloc(VALUE klass)
 }
 
 static rb_iseq_location_t *
-iseq_location_setup(rb_iseq_t *iseq, VALUE path, VALUE absolute_path, VALUE name, size_t first_lineno)
+iseq_location_setup(rb_iseq_t *iseq, VALUE path, VALUE absolute_path, VALUE name, VALUE first_lineno)
 {
     rb_iseq_location_t *loc = &iseq->location;
     RB_OBJ_WRITE(iseq->self, &loc->path, path);
@@ -290,23 +292,20 @@ prepare_iseq_build(rb_iseq_t *iseq,
      * iseq->cached_special_block = 0;
      */
 
-    iseq->compile_data = ALLOC(struct iseq_compile_data);
-    MEMZERO(iseq->compile_data, struct iseq_compile_data, 1);
+    iseq->compile_data = ZALLOC(struct iseq_compile_data);
     RB_OBJ_WRITE(iseq->self, &iseq->compile_data->err_info, Qnil);
     RB_OBJ_WRITE(iseq->self, &iseq->compile_data->mark_ary, rb_ary_tmp_new(3));
 
     iseq->compile_data->storage_head = iseq->compile_data->storage_current =
       (struct iseq_compile_data_storage *)
 	ALLOC_N(char, INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE +
-		sizeof(struct iseq_compile_data_storage));
+		SIZEOF_ISEQ_COMPILE_DATA_STORAGE);
 
     RB_OBJ_WRITE(iseq->self, &iseq->compile_data->catch_table_ary, rb_ary_new());
     iseq->compile_data->storage_head->pos = 0;
     iseq->compile_data->storage_head->next = 0;
     iseq->compile_data->storage_head->size =
       INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE;
-    iseq->compile_data->storage_head->buff =
-      (char *)(&iseq->compile_data->storage_head->buff + 1);
     iseq->compile_data->option = option;
     iseq->compile_data->last_coverable_line = -1;
 
@@ -494,17 +493,29 @@ rb_iseq_new_with_bopt(NODE *node, VALUE name, VALUE path, VALUE absolute_path, V
 static inline VALUE CHECK_INTEGER(VALUE v) {(void)NUM2LONG(v); return v;}
 
 static enum iseq_type
-iseq_type_from_id(const ID typeid)
+iseq_type_from_sym(VALUE type)
 {
-    if (typeid == rb_intern("top")) return ISEQ_TYPE_TOP;
-    if (typeid == rb_intern("method")) return ISEQ_TYPE_METHOD;
-    if (typeid == rb_intern("block")) return ISEQ_TYPE_BLOCK;
-    if (typeid == rb_intern("class")) return ISEQ_TYPE_CLASS;
-    if (typeid == rb_intern("rescue")) return ISEQ_TYPE_RESCUE;
-    if (typeid == rb_intern("ensure")) return ISEQ_TYPE_ENSURE;
-    if (typeid == rb_intern("eval")) return ISEQ_TYPE_EVAL;
-    if (typeid == rb_intern("main")) return ISEQ_TYPE_MAIN;
-    if (typeid == rb_intern("defined_guard")) return ISEQ_TYPE_DEFINED_GUARD;
+    const ID id_top = rb_intern("top");
+    const ID id_method = rb_intern("method");
+    const ID id_block = rb_intern("block");
+    const ID id_class = rb_intern("class");
+    const ID id_rescue = rb_intern("rescue");
+    const ID id_ensure = rb_intern("ensure");
+    const ID id_eval = rb_intern("eval");
+    const ID id_main = rb_intern("main");
+    const ID id_defined_guard = rb_intern("defined_guard");
+    /* ensure all symbols are static or pinned down before
+     * conversion */
+    const ID typeid = rb_check_id(&type);
+    if (typeid == id_top) return ISEQ_TYPE_TOP;
+    if (typeid == id_method) return ISEQ_TYPE_METHOD;
+    if (typeid == id_block) return ISEQ_TYPE_BLOCK;
+    if (typeid == id_class) return ISEQ_TYPE_CLASS;
+    if (typeid == id_rescue) return ISEQ_TYPE_RESCUE;
+    if (typeid == id_ensure) return ISEQ_TYPE_ENSURE;
+    if (typeid == id_eval) return ISEQ_TYPE_EVAL;
+    if (typeid == id_main) return ISEQ_TYPE_MAIN;
+    if (typeid == id_defined_guard) return ISEQ_TYPE_DEFINED_GUARD;
     return (enum iseq_type)-1;
 }
 
@@ -518,7 +529,6 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
     VALUE type, body, locals, args, exception;
 
     st_data_t iseq_type;
-    ID typeid;
     rb_iseq_t *iseq;
     rb_compile_option_t option;
     int i = 0;
@@ -558,14 +568,9 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
     iseq->self = iseqval;
     iseq->local_iseq = iseq;
 
-    typeid = SYM2ID(type);
-    iseq_type = iseq_type_from_id(typeid);
+    iseq_type = iseq_type_from_sym(type);
     if (iseq_type == (enum iseq_type)-1) {
-	VALUE typename = rb_id2str(typeid);
-	if (typename)
-	    rb_raise(rb_eTypeError, "unsupport type: :%"PRIsVALUE, typename);
-	else
-	    rb_raise(rb_eTypeError, "unsupport type: %p", (void *)typeid);
+	rb_raise(rb_eTypeError, "unsupport type: :%"PRIsVALUE, rb_sym2str(type));
     }
 
     if (parent == Qnil) {
@@ -1170,9 +1175,9 @@ id_to_name(ID id, VALUE default_value)
 }
 
 VALUE
-rb_insn_operand_intern(rb_iseq_t *iseq,
+rb_insn_operand_intern(const rb_iseq_t *iseq,
 		       VALUE insn, int op_no, VALUE op,
-		       int len, size_t pos, VALUE *pnop, VALUE child)
+		       int len, size_t pos, const VALUE *pnop, VALUE child)
 {
     const char *types = insn_op_types(insn);
     char type = types[op_no];
@@ -1190,7 +1195,7 @@ rb_insn_operand_intern(rb_iseq_t *iseq,
       case TS_LINDEX:{
 	if (insn == BIN(getlocal) || insn == BIN(setlocal)) {
 	    if (pnop) {
-		rb_iseq_t *diseq = iseq;
+		const rb_iseq_t *diseq = iseq;
 		VALUE level = *pnop, i;
 
 		for (i = 0; i < level; i++) {
@@ -1298,8 +1303,8 @@ rb_insn_operand_intern(rb_iseq_t *iseq,
  * Iseq -> Iseq inspect object
  */
 int
-rb_iseq_disasm_insn(VALUE ret, VALUE *iseq, size_t pos,
-		    rb_iseq_t *iseqdat, VALUE child)
+rb_iseq_disasm_insn(VALUE ret, const VALUE *iseq, size_t pos,
+		    const rb_iseq_t *iseqdat, VALUE child)
 {
     VALUE insn = iseq[pos];
     int len = insn_len(insn);
@@ -1396,7 +1401,7 @@ rb_iseq_disasm(VALUE self)
     VALUE *iseq;
     VALUE str = rb_str_new(0, 0);
     VALUE child = rb_ary_new();
-    unsigned long size;
+    unsigned int size;
     int i;
     long l;
     ID *tbl;
@@ -1418,11 +1423,11 @@ rb_iseq_disasm(VALUE self)
     rb_str_cat2(str, "\n");
 
     /* show catch table information */
-    if (iseqdat->catch_table_size != 0) {
+    if (iseqdat->catch_table) {
 	rb_str_cat2(str, "== catch table\n");
     }
-    for (i = 0; i < iseqdat->catch_table_size; i++) {
-	struct iseq_catch_table_entry *entry = &iseqdat->catch_table[i];
+    if (iseqdat->catch_table) for (i = 0; i < iseqdat->catch_table->size; i++) {
+	struct iseq_catch_table_entry *entry = &iseqdat->catch_table->entries[i];
 	rb_str_catf(str,
 		    "| catch type: %-6s st: %04d ed: %04d sp: %04d cont: %04d\n",
 		    catch_type((int)entry->type), (int)entry->start,
@@ -1431,7 +1436,7 @@ rb_iseq_disasm(VALUE self)
 	    rb_str_concat(str, rb_iseq_disasm(entry->iseq));
 	}
     }
-    if (iseqdat->catch_table_size != 0) {
+    if (iseqdat->catch_table) {
 	rb_str_cat2(str, "|-------------------------------------"
 		    "-----------------------------------\n");
     }
@@ -1634,11 +1639,7 @@ ruby_node_name(int node)
 static VALUE
 register_label(struct st_table *table, unsigned long idx)
 {
-    VALUE sym;
-    char buff[7 + DECIMAL_SIZE_OF_BITS(sizeof(idx) * CHAR_BIT)];
-
-    snprintf(buff, sizeof(buff), "label_%lu", idx);
-    sym = ID2SYM(rb_intern(buff));
+    VALUE sym = rb_str_dynamic_intern(rb_sprintf("label_%lu", idx));
     st_insert(table, idx, sym);
     return sym;
 }
@@ -1863,9 +1864,9 @@ iseq_data_to_ary(rb_iseq_t *iseq)
     nbody = body;
 
     /* exception */
-    for (i=0; i<iseq->catch_table_size; i++) {
+    if (iseq->catch_table) for (i=0; i<iseq->catch_table->size; i++) {
 	VALUE ary = rb_ary_new();
-	struct iseq_catch_table_entry *entry = &iseq->catch_table[i];
+	struct iseq_catch_table_entry *entry = &iseq->catch_table->entries[i];
 	rb_ary_push(ary, exception_type2symbol(entry->type));
 	if (entry->iseq) {
 	    rb_iseq_t *eiseq;
@@ -1958,7 +1959,7 @@ rb_iseq_clone(VALUE iseqval, VALUE newcbase)
 	if (iseq0->cref_stack->nd_next) {
 	    RB_OBJ_WRITE(iseq1->cref_stack, &iseq1->cref_stack->nd_next, iseq0->cref_stack->nd_next);
 	}
-	RB_OBJ_WRITE(iseq1, &iseq1->klass, newcbase);
+	RB_OBJ_WRITE(iseq1->self, &iseq1->klass, newcbase);
     }
 
     return newiseq;
@@ -2085,6 +2086,7 @@ rb_iseq_defined_string(enum defined_type type)
 	str = rb_str_new_cstr(estr);;
 	OBJ_FREEZE(str);
 	defs[type-1] = str;
+	rb_gc_register_mark_object(str);
     }
     return str;
 }
@@ -2112,7 +2114,7 @@ rb_iseq_build_for_ruby2cext(
     MEMCPY(iseq, iseq_template, rb_iseq_t, 1); /* TODO: write barrier, *iseq = *iseq_template; */
     RB_OBJ_WRITE(iseq->self, &iseq->location.label, rb_str_new2(name));
     RB_OBJ_WRITE(iseq->self, &iseq->location.path, rb_str_new2(path));
-    iseq->location.first_lineno = first_lineno;
+    iseq->location.first_lineno = UINT2NUM(first_lineno);
     RB_OBJ_WRITE(iseq->self, &iseq->mark_ary, 0);
     iseq->self = iseqval;
 
@@ -2135,8 +2137,14 @@ rb_iseq_build_for_ruby2cext(
     ALLOC_AND_COPY(iseq->line_info_table, line_info_table,
 		   struct iseq_line_info_entry, iseq->line_info_size);
 
-    ALLOC_AND_COPY(iseq->catch_table, catch_table,
-		   struct iseq_catch_table_entry, iseq->catch_table_size);
+    /*
+     * FIXME: probably broken, but this function is probably unused
+     * and should be removed
+     */
+    if (iseq->catch_table) {
+	MEMCPY(&iseq->catch_table->entries, catch_table,
+	    struct iseq_catch_table_entry, iseq->catch_table->size);
+    }
 
     ALLOC_AND_COPY(iseq->arg_opt_table, arg_opt_table,
 		   VALUE, iseq->arg_opts);
@@ -2154,7 +2162,8 @@ int
 rb_iseq_line_trace_each(VALUE iseqval, int (*func)(int line, rb_event_flag_t *events_ptr, void *d), void *data)
 {
     int trace_num = 0;
-    size_t pos, insn;
+    unsigned int pos;
+    size_t insn;
     rb_iseq_t *iseq;
     int cont = 1;
     GetISeqPtr(iseqval, iseq);

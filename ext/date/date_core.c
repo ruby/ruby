@@ -114,7 +114,7 @@ f_zero_p(VALUE x)
 	return Qfalse;
       case T_RATIONAL:
 	{
-	    VALUE num = RRATIONAL(x)->num;
+	    VALUE num = rb_rational_num(x);
 	    return f_boolcast(FIXNUM_P(num) && FIX2LONG(num) == 0);
 	}
     }
@@ -304,10 +304,10 @@ union DateData {
 inline static VALUE
 canon(VALUE x)
 {
-    if (TYPE(x) == T_RATIONAL) {
-	VALUE den = RRATIONAL(x)->den;
+    if (RB_TYPE_P(x, T_RATIONAL)) {
+	VALUE den = rb_rational_den(x);
 	if (FIXNUM_P(den) && FIX2LONG(den) == 1)
-	    return RRATIONAL(x)->num;
+	    return rb_rational_num(x);
     }
     return x;
 }
@@ -2373,8 +2373,8 @@ offset_to_sec(VALUE vof, int *rof)
 		return 1;
 	    }
 #endif
-	    vn = RRATIONAL(vs)->num;
-	    vd = RRATIONAL(vs)->den;
+	    vn = rb_rational_num(vs);
+	    vd = rb_rational_den(vs);
 
 	    if (FIXNUM_P(vn) && FIXNUM_P(vd) && (FIX2LONG(vd) == 1))
 		n = FIX2LONG(vn);
@@ -3097,7 +3097,7 @@ wholenum_p(VALUE x)
 	break;
       case T_RATIONAL:
 	{
-	    VALUE den = RRATIONAL(x)->den;
+	    VALUE den = rb_rational_den(x);
 	    return FIXNUM_P(den) && FIX2LONG(den) == 1;
 	}
 	break;
@@ -5707,7 +5707,7 @@ d_lite_plus(VALUE self, VALUE other)
 	    int jd, df, s;
 
 	    if (wholenum_p(other))
-		return d_lite_plus(self, RRATIONAL(other)->num);
+		return d_lite_plus(self, rb_rational_num(other));
 
 	    if (f_positive_p(other))
 		s = +1;
@@ -5843,7 +5843,7 @@ minus_dd(VALUE self, VALUE other)
 	if (f_nonzero_p(sf))
 	    r = f_add(r, ns_to_day(sf));
 
-	if (TYPE(r) == T_RATIONAL)
+	if (RB_TYPE_P(r, T_RATIONAL))
 	    return r;
 	return rb_rational_new1(r);
     }
@@ -7048,7 +7048,7 @@ d_lite_marshal_load(VALUE self, VALUE a)
     rb_check_frozen(self);
     rb_check_trusted(self);
 
-    if (TYPE(a) != T_ARRAY)
+    if (!RB_TYPE_P(a, T_ARRAY))
 	rb_raise(rb_eTypeError, "expected an array");
 
     switch (RARRAY_LEN(a)) {

@@ -362,9 +362,10 @@ ossl_pkcs7_sym2typeid(VALUE sym)
 {
     int i, ret = Qnil;
     const char *s;
+    size_t l;
 
-    static struct {
-        const char *name;
+    static const struct {
+        char name[20];
         int nid;
     } p7_type_tab[] = {
         { "signed",             NID_pkcs7_signed },
@@ -373,14 +374,15 @@ ossl_pkcs7_sym2typeid(VALUE sym)
         { "enveloped",          NID_pkcs7_enveloped },
         { "encrypted",          NID_pkcs7_encrypted },
         { "digest",             NID_pkcs7_digest },
-        { NULL,                 0 },
     };
 
-    if(TYPE(sym) == T_SYMBOL) s = rb_id2name(SYM2ID(sym));
-    else s = StringValuePtr(sym);
-    for(i = 0; i < numberof(p7_type_tab); i++){
-	if(p7_type_tab[i].name == NULL)
+    if (RB_TYPE_P(sym, T_SYMBOL)) sym = rb_sym2str(sym);
+    else StringValue(sym);
+    RSTRING_GETMEM(sym, s, l);
+    for(i = 0; ; i++){
+	if(i == numberof(p7_type_tab))
 	    ossl_raise(ePKCS7Error, "unknown type \"%s\"", s);
+	if(strlen(p7_type_tab[i].name) != l) continue;
 	if(strcmp(p7_type_tab[i].name, s) == 0){
 	    ret = p7_type_tab[i].nid;
 	    break;

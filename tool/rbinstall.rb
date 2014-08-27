@@ -19,16 +19,9 @@ require 'optparse'
 require 'optparse/shellwords'
 require 'ostruct'
 require 'rubygems'
-require_relative 'vcs'
 
 STDOUT.sync = true
 File.umask(0)
-
-begin
-  $vcs = VCS.detect(File.expand_path('../..', __FILE__))
-rescue VCS::NotFoundError
-  $vcs = nil
-end
 
 def parse_args(argv = ARGV)
   $mantype = 'doc'
@@ -556,65 +549,6 @@ install?(:local, :comm, :man) do
   end
 end
 
-# :stopdoc:
-module Gem
-  if defined?(Specification)
-    remove_const(:Specification)
-  end
-
-  class Specification < OpenStruct
-    def initialize(*)
-      super
-      yield(self) if defined?(yield)
-      self.executables ||= []
-    end
-
-    def self.load(path)
-      src = File.open(path, "rb") {|f| f.read}
-      src.sub!(/\A#.*/, '')
-      spec = eval(src, nil, path)
-      spec.date ||= last_date(path) || RUBY_RELEASE_DATE
-      spec
-    end
-
-    def self.last_date(path)
-      return unless $vcs
-      time = $vcs.get_revisions(path)[2] rescue return
-      return unless time
-      time.strftime("%Y-%m-%d")
-    end
-
-    def to_ruby
-      <<-GEMSPEC
-Gem::Specification.new do |s|
-  s.name = #{name.dump}
-  s.version = #{version.dump}
-  s.date = #{date.dump}
-  s.summary = #{summary.dump}
-  s.description = #{description.dump}
-  s.homepage = #{homepage.dump}
-  s.authors = #{authors.inspect}
-  s.email = #{email.inspect}
-  s.files = #{files.inspect}
-end
-      GEMSPEC
-    end
-
-    def add_dependency(*)
-    end
-
-    def add_development_dependency(*)
-    end
-
-    def add_runtime_dependency(*)
-    end
-
-    def self.unresolved_deps
-      []
-    end
-  end
-end
-
 module RbInstall
   module Specs
     class FileCollector
@@ -772,6 +706,21 @@ install?(:ext, :comm, :gem) do
       install(execs, bin_dir, :mode => $prog_mode)
     end
   end
+end
+
+install?(:ext, :comm, :gem) do
+  require 'pathname'
+  gem_dir = Gem.default_dir
+  directories = Gem.ensure_gem_subdirectories(gem_dir, :mode => $dir_mode)
+  prepare "bundle gems", gem_dir, directories
+  Dir.glob(srcdir+'/gems/*.gem').each do |gem|
+    Gem.install gem, :install_dir => with_destdir(Gem.dir)
+    gemname = Pathname(gem).basename
+    puts "#{" "*30}#{gemname}"
+  end
+  # fix directory permissions
+  # TODO: Gem.install should accept :dir_mode option or something
+  File.chmod($dir_mode, *Dir.glob(with_destdir(Gem.dir)+"/**/"))
 end
 
 parse_args()

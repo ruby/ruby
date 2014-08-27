@@ -94,7 +94,7 @@ rb_clear_method_cache_by_class(VALUE klass)
 }
 
 VALUE
-rb_f_notimplement(int argc, VALUE *argv, VALUE obj)
+rb_f_notimplement(int argc, const VALUE *argv, VALUE obj)
 {
     rb_notimplement();
 
@@ -176,8 +176,7 @@ release_method_definition(rb_method_definition_t *def)
     if (def->alias_count == 0) {
 	if (def->type == VM_METHOD_TYPE_REFINED &&
 	    def->body.orig_me) {
-	    release_method_definition(def->body.orig_me->def);
-	    xfree(def->body.orig_me);
+	    rb_free_method_entry(def->body.orig_me);
 	}
 	xfree(def);
     }
@@ -261,11 +260,15 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
     }
     if (!FL_TEST(klass, FL_SINGLETON) &&
 	type != VM_METHOD_TYPE_NOTIMPLEMENTED &&
-	type != VM_METHOD_TYPE_ZSUPER &&
-	(mid == idInitialize || mid == idInitialize_copy ||
-	 mid == idInitialize_clone || mid == idInitialize_dup ||
-	 mid == idRespond_to_missing)) {
-	noex = NOEX_PRIVATE | noex;
+	type != VM_METHOD_TYPE_ZSUPER) {
+	switch (mid) {
+	  case idInitialize:
+	  case idInitialize_copy:
+	  case idInitialize_clone:
+	  case idInitialize_dup:
+	  case idRespond_to_missing:
+	    noex |= NOEX_PRIVATE;
+	}
     }
 
     rb_check_frozen(klass);
@@ -793,7 +796,7 @@ rb_mod_remove_method(int argc, VALUE *argv, VALUE mod)
 
     for (i = 0; i < argc; i++) {
 	VALUE v = argv[i];
-	ID id = rb_check_id_without_pindown(&v);
+	ID id = rb_check_id(&v);
 	if (!id) {
 	    rb_name_error_str(v, "method `%s' not defined in %s",
 			      RSTRING_PTR(v), rb_class2name(mod));
@@ -1004,7 +1007,7 @@ rb_mod_undef_method(int argc, VALUE *argv, VALUE mod)
     int i;
     for (i = 0; i < argc; i++) {
 	VALUE v = argv[i];
-	ID id = rb_check_id_without_pindown(&v);
+	ID id = rb_check_id(&v);
 	if (!id) {
 	    rb_method_name_error(mod, v);
 	}
@@ -1044,7 +1047,7 @@ rb_mod_undef_method(int argc, VALUE *argv, VALUE mod)
 static VALUE
 rb_mod_method_defined(VALUE mod, VALUE mid)
 {
-    ID id = rb_check_id_without_pindown(&mid);
+    ID id = rb_check_id(&mid);
     if (!id || !rb_method_boundp(mod, id, 1)) {
 	return Qfalse;
     }
@@ -1058,7 +1061,7 @@ static VALUE
 check_definition(VALUE mod, VALUE mid, rb_method_flag_t noex)
 {
     const rb_method_entry_t *me;
-    ID id = rb_check_id_without_pindown(&mid);
+    ID id = rb_check_id(&mid);
     if (!id) return Qfalse;
     me = rb_method_entry(mod, id, 0);
     if (me) {
@@ -1332,7 +1335,7 @@ rb_mod_alias_method(VALUE mod, VALUE newname, VALUE oldname)
 }
 
 static void
-set_method_visibility(VALUE self, int argc, VALUE *argv, rb_method_flag_t ex)
+set_method_visibility(VALUE self, int argc, const VALUE *argv, rb_method_flag_t ex)
 {
     int i;
 
@@ -1353,7 +1356,7 @@ set_method_visibility(VALUE self, int argc, VALUE *argv, rb_method_flag_t ex)
 }
 
 static VALUE
-set_visibility(int argc, VALUE *argv, VALUE module, rb_method_flag_t ex)
+set_visibility(int argc, const VALUE *argv, VALUE module, rb_method_flag_t ex)
 {
     if (argc == 0) {
 	SCOPE_SET(ex);
@@ -1620,7 +1623,7 @@ rb_obj_respond_to(VALUE obj, ID id, int priv)
     VALUE klass = CLASS_OF(obj);
 
     if (rb_method_basic_definition_p(klass, idRespond_to)) {
-	return basic_obj_respond_to(obj, id, !RTEST(priv));
+	return basic_obj_respond_to(obj, id, !priv);
     }
     else {
 	int argc = 1;
@@ -1687,10 +1690,10 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
     ID id;
 
     rb_scan_args(argc, argv, "11", &mid, &priv);
-    if (!(id = rb_check_id_without_pindown(&mid))) {
+    if (!(id = rb_check_id(&mid))) {
 	if (!rb_method_basic_definition_p(CLASS_OF(obj), idRespond_to_missing)) {
 	    VALUE args[2];
-	    args[0] = ID2SYM(rb_to_id(mid));
+	    args[0] = rb_to_symbol(mid);
 	    args[1] = priv;
 	    return rb_funcall2(obj, idRespond_to_missing, 2, args);
 	}

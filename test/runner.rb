@@ -1,9 +1,12 @@
 require 'rbconfig'
 
-require 'test/unit'
-
 src_testdir = File.dirname(File.realpath(__FILE__))
 $LOAD_PATH << src_testdir
+$LOAD_PATH.unshift "#{src_testdir}/lib"
+
+require 'test/unit'
+require_relative 'ruby/envutil'
+
 module Gem
 end
 class Gem::TestCase < MiniTest::Unit::TestCase
@@ -12,7 +15,8 @@ end
 
 ENV["GEM_SKIP"] = ENV["GEM_HOME"] = ENV["GEM_PATH"] = "".freeze
 
-require_relative 'profile_test_all' if ENV.has_key?('RUBY_TEST_ALL_PROFILE')
+require_relative 'lib/profile_test_all' if ENV.has_key?('RUBY_TEST_ALL_PROFILE')
+require_relative 'lib/tracepointchecker'
 
 module Test::Unit
   module ZombieHunter
@@ -21,6 +25,7 @@ module Test::Unit
       assert_empty(Process.waitall)
     end
   end
+
   class TestCase
     include ZombieHunter
   end

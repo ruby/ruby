@@ -2,9 +2,8 @@ require 'test/unit'
 require 'timeout'
 
 module TestParallel
-  PARALLEL_RB = "#{File.dirname(__FILE__)}/../../lib/test/unit/parallel.rb"
+  PARALLEL_RB = "#{File.dirname(__FILE__)}/../lib/test/unit/parallel.rb"
   TESTS = "#{File.dirname(__FILE__)}/tests_for_parallel"
-
 
   class TestParallelWorker < Test::Unit::TestCase
     def setup
@@ -33,6 +32,9 @@ module TestParallel
           end
         end
       end
+    ensure
+      @worker_in.close
+      @worker_out.close
     end
 
     def test_run
@@ -90,7 +92,7 @@ module TestParallel
     def test_done
       timeout(10) do
         @worker_in.puts "run #{TESTS}/ptest_forth.rb test"
-        6.times { @worker_out.gets }
+        7.times { @worker_out.gets }
         buf = @worker_out.gets
         assert_match(/^done (.+?)$/, buf)
 
@@ -98,7 +100,7 @@ module TestParallel
 
         result = Marshal.load($1.chomp.unpack("m")[0])
 
-        assert_equal(4, result[0])
+        assert_equal(5, result[0])
         assert_equal(2, result[1])
         assert_kind_of(Array,result[2])
         assert_kind_of(Array,result[3])
@@ -106,7 +108,8 @@ module TestParallel
         assert_kind_of(Array,result[2][1])
         assert_kind_of(MiniTest::Assertion,result[2][0][2])
         assert_kind_of(MiniTest::Skip,result[2][1][2])
-        assert_kind_of(Exception, result[2][2][2])
+        assert_kind_of(MiniTest::Skip,result[2][2][2])
+        assert_kind_of(Exception, result[2][3][2])
         assert_equal(result[5], "TestE")
       end
     end
@@ -156,7 +159,7 @@ module TestParallel
     def test_should_run_all_without_any_leaks
       spawn_runner
       buf = timeout(10){@test_out.read}
-      assert_match(/^[SFE\.]{8}$/,buf)
+      assert_match(/^[SFE\.]{9}$/,buf)
     end
 
     def test_should_retry_failed_on_workers

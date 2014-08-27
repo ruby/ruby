@@ -87,12 +87,10 @@ require "shell/process-controller"
 #   (sh.cat < "/etc/printcap") | sh.tee("tee11") >> "tee12"
 #
 class Shell
-  @RCS_ID='-$Id: shell.rb,v 1.9 2002/03/04 12:01:10 keiju Exp keiju $-'
 
   include Error
   extend Exception2MessageMapper
 
-#  @cascade = true
   # debug: true -> normal debug
   # debug: 1    -> eval definition debug
   # debug: 2    -> detail inspect debug
@@ -108,7 +106,6 @@ class Shell
 
     attr_accessor :cascade, :debug, :verbose
 
-#    alias cascade? cascade
     alias debug? debug
     alias verbose? verbose
     @verbose = true
@@ -448,7 +445,6 @@ class Shell
         yield mes if iterator?
         if _head
           _head = false
-#         "shell" " + mes
           prefix + mes
         else
           " "* prefix.size + mes

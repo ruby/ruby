@@ -1,6 +1,8 @@
 require 'drb/drb'
 require 'drb/extserv'
 
+module DRbTests
+
 class EvalAttack
   def initialize
     @four = DRb::DRbServer.new('druby://localhost:0', self, {:safe_level => 4})
@@ -15,6 +17,8 @@ class EvalAttack
   end
 end
 
+end
+
 
 if __FILE__ == $0
   def ARGV.shift
@@ -25,7 +29,7 @@ if __FILE__ == $0
 
   $SAFE = 1
 
-  DRb.start_service('druby://localhost:0', EvalAttack.new, {:safe_level => 2})
+  DRb.start_service('druby://localhost:0', DRbTests::EvalAttack.new, {:safe_level => 2})
   es = DRb::ExtServ.new(ARGV.shift, ARGV.shift)
   DRb.thread.join
   es.stop_service if es.alive?

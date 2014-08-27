@@ -8,4 +8,4 @@ $(OBJS): $(HDRS) $(ruby_headers) \
   $(top_srcdir)/ruby_atomic.h \
   $(top_srcdir)/thread_pthread.h \
   $(top_srcdir)/internal.h \
-  $(top_srcdir)/thread_native.h
+  $(top_srcdir)/include/ruby/thread_native.h

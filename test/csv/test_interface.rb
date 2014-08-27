@@ -130,6 +130,12 @@ class TestCSV::Interface < TestCSV
     end
   end
 
+  def test_nil_is_not_acceptable
+    assert_raise_with_message ArgumentError, "Cannot parse nil as CSV" do
+      CSV.new(nil)
+    end
+  end
+
   ### Test Write Interface ###
 
   def test_generate

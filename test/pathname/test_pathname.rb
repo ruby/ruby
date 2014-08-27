@@ -771,6 +771,14 @@ class TestPathname < Test::Unit::TestCase
     assert_kind_of(Time, Pathname(__FILE__).atime)
   end
 
+  def test_birthtime
+    assert_kind_of(Time, Pathname(__FILE__).birthtime)
+  rescue NotImplementedError
+    assert_raise(NotImplementedError) do
+      File.birthtime(__FILE__)
+    end
+  end
+
   def test_ctime
     assert_kind_of(Time, Pathname(__FILE__).ctime)
   end

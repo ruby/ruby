@@ -667,7 +667,6 @@ SRC
         return nil
       end
       upper = 1
-      lower = 0
       until try_static_assert("#{const} <= #{upper}", headers, opt)
         lower = upper
         upper <<= 1
@@ -1093,11 +1092,11 @@ SRC
     checking_for fw do
       src = cpp_include("#{fw}/#{header}") << "\n" "int main(void){return 0;}"
       opt = " -framework #{fw}"
-      if try_link(src, "-ObjC#{opt}", &b)
+      if try_link(src, opt, &b) or (objc = try_link(src, "-ObjC#{opt}", &b))
         $defs.push(format("-DHAVE_FRAMEWORK_%s", fw.tr_cpp))
         # TODO: non-worse way than this hack, to get rid of separating
         # option and its argument.
-        $LDFLAGS << " -ObjC" unless /(\A|\s)-ObjC(\s|\z)/ =~ $LDFLAGS
+        $LDFLAGS << " -ObjC" if objc and /(\A|\s)-ObjC(\s|\z)/ !~ $LDFLAGS
         $LIBS << opt
         true
       else
@@ -1848,6 +1847,7 @@ Q1 = $(V:1=)
 Q = $(Q1:0=@)
 ECHO1 = $(V:1=@#{CONFIG['NULLCMD']})
 ECHO = $(ECHO1:0=@echo)
+NULLCMD = #{CONFIG['NULLCMD']}
 
 #### Start of system configuration section. ####
 #{"top_srcdir = " + $top_srcdir.sub(%r"\A#{Regexp.quote($topdir)}/", "$(topdir)/") if $extmk}
@@ -2252,7 +2252,7 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
       fseprepl = proc {|s|
         s = s.gsub("/", fsep)
         s = s.gsub(/(\$\(\w+)(\))/) {$1+sep+$2}
-        s = s.gsub(/(\$\{\w+)(\})/) {$1+sep+$2}
+        s.gsub(/(\$\{\w+)(\})/) {$1+sep+$2}
       }
       rsep = ":#{fsep}=/"
     else
@@ -2311,7 +2311,7 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
       end
       mfile.print "pre-install-rb#{sfx}:\n"
       if files.empty?
-        mfile.print("\t@#{CONFIG['NULLCMD']}\n")
+        mfile.print("\t@$(NULLCMD)\n")
       else
         mfile.print("\t$(ECHO) installing#{sfx.sub(/^-/, " ")} #{target} libraries\n")
       end

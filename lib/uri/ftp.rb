@@ -129,17 +129,24 @@ module URI
     # Arguments are +scheme+, +userinfo+, +host+, +port+, +registry+, +path+,
     # +opaque+, +query+ and +fragment+, in that order.
     #
-    def initialize(*arg)
-      raise InvalidURIError unless arg[5]
-      arg[5] = arg[5].sub(/^\//,'').sub(/^%2F/,'/')
-      super(*arg)
+    def initialize(scheme,
+                   userinfo, host, port, registry,
+                   path, opaque,
+                   query,
+                   fragment,
+                   parser = nil,
+                   arg_check = false)
+      raise InvalidURIError unless path
+      path = path.sub(/^\//,'')
+      path.sub!(/^%2F/,'/')
+      super(scheme, userinfo, host, port, registry, path, opaque,
+            query, fragment, parser, arg_check)
       @typecode = nil
-      tmp = @path.index(TYPECODE_PREFIX)
-      if tmp
+      if tmp = @path.index(TYPECODE_PREFIX)
         typecode = @path[tmp + TYPECODE_PREFIX.size..-1]
         @path = @path[0..tmp - 1]
 
-        if arg[-1]
+        if arg_check
           self.typecode = typecode
         else
           self.set_typecode(typecode)

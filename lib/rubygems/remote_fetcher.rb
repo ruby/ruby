@@ -337,6 +337,8 @@ class Gem::RemoteFetcher
     request.fetch do |req|
       yield req if block_given?
     end
+  ensure
+    request.close if request
   end
 
   def https?(uri)

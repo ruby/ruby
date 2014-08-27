@@ -1,4 +1,3 @@
-#!/usr/bin/env ruby
 #--
 # Copyright (c) 2001,2003 Akinori MUSHA <knu@iDaemons.org>
 #
@@ -128,15 +127,5 @@ class Array
   # See also Abbrev.abbrev
   def abbrev(pattern = nil)
     Abbrev::abbrev(self, pattern)
-  end
-end
-
-if $0 == __FILE__
-  while line = gets
-    hash = line.split.abbrev
-
-    hash.sort.each do |k, v|
-      puts "#{k} => #{v}"
-    end
   end
 end

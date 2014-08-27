@@ -102,17 +102,19 @@ class TestMarshal < Test::Unit::TestCase
   def test_pipe
     o1 = C.new("a" * 10000)
 
-    o2 = IO.pipe do |r, w|
-      Thread.new {Marshal.dump(o1, w)}
-      Marshal.load(r)
+    IO.pipe do |r, w|
+      th = Thread.new {Marshal.dump(o1, w)}
+      o2 = Marshal.load(r)
+      th.join
+      assert_equal(o1.str, o2.str)
     end
-    assert_equal(o1.str, o2.str)
 
-    o2 = IO.pipe do |r, w|
-      Thread.new {Marshal.dump(o1, w, 2)}
-      Marshal.load(r)
+    IO.pipe do |r, w|
+      th = Thread.new {Marshal.dump(o1, w, 2)}
+      o2 = Marshal.load(r)
+      th.join
+      assert_equal(o1.str, o2.str)
     end
-    assert_equal(o1.str, o2.str)
 
     assert_raise(TypeError) { Marshal.dump("foo", Object.new) }
     assert_raise(TypeError) { Marshal.load(Object.new) }
@@ -244,6 +246,10 @@ class TestMarshal < Test::Unit::TestCase
     bug2548 = '[ruby-core:27375]'
     ary = [:$1, nil]
     assert_equal(ary, Marshal.load(Marshal.dump(ary)), bug2548)
+  end
+
+  def test_symlink
+    assert_include(Marshal.dump([:a, :a]), ';')
   end
 
   ClassUTF8 = eval("class R\u{e9}sum\u{e9}; self; end")

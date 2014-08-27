@@ -95,6 +95,15 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
 	      EXCEPTION_CONTINUE_SEARCH) { \
 	/* never reaches here */ \
     }
+#elif defined(__MINGW32__)
+LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
+#define SAVE_ROOT_JMPBUF_BEFORE_STMT \
+    do { \
+	PVOID _handler = AddVectoredExceptionHandler(1, rb_w32_stack_overflow_handler);
+
+#define SAVE_ROOT_JMPBUF_AFTER_STMT \
+	RemoveVectoredExceptionHandler(_handler); \
+    } while (0);
 #else
 #define SAVE_ROOT_JMPBUF_BEFORE_STMT
 #define SAVE_ROOT_JMPBUF_AFTER_STMT
@@ -128,7 +137,7 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
 #define PUSH_TAG() TH_PUSH_TAG(GET_THREAD())
 #define POP_TAG()      TH_POP_TAG()
 
-#if defined __GNUC__ && __GNUC__ == 4 && (__GNUC_MINOR__ == 7 || __GNUC_MINOR__ == 8)
+#if defined __GNUC__ && __GNUC__ == 4 && (__GNUC_MINOR__ >= 6 && __GNUC_MINOR__ <= 8)
 # define VAR_FROM_MEMORY(var) __extension__(*(__typeof__(var) volatile *)&(var))
 # define VAR_INITIALIZED(var) ((var) = VAR_FROM_MEMORY(var))
 #else
@@ -220,8 +229,8 @@ int rb_threadptr_reset_raised(rb_thread_t *th);
 #define rb_thread_raised_p(th, f)     (((th)->raised_flag & (f)) != 0)
 #define rb_thread_raised_clear(th)    ((th)->raised_flag = 0)
 
-VALUE rb_f_eval(int argc, VALUE *argv, VALUE self);
-VALUE rb_make_exception(int argc, VALUE *argv);
+VALUE rb_f_eval(int argc, const VALUE *argv, VALUE self);
+VALUE rb_make_exception(int argc, const VALUE *argv);
 
 NORETURN(void rb_method_name_error(VALUE, VALUE));
 
@@ -229,9 +238,10 @@ NORETURN(void rb_fiber_start(void));
 
 NORETURN(void rb_print_undef(VALUE, ID, int));
 NORETURN(void rb_print_undef_str(VALUE, VALUE));
+NORETURN(void rb_print_inaccessible(VALUE, ID, int));
 NORETURN(void rb_vm_localjump_error(const char *,VALUE, int));
 NORETURN(void rb_vm_jump_tag_but_local_jump(int));
-NORETURN(void rb_raise_method_missing(rb_thread_t *th, int argc, VALUE *argv,
+NORETURN(void rb_raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv,
 				      VALUE obj, int call_status));
 
 VALUE rb_vm_make_jump_tag_but_local_jump(int state, VALUE val);

@@ -807,11 +807,6 @@ struct RClass {
 #define RMODULE_IS_REFINEMENT FL_USER3
 #define RMODULE_INCLUDED_INTO_REFINEMENT FL_USER4
 
-struct RFloat {
-    struct RBasic basic;
-    double float_value;
-};
-
 double rb_float_value(VALUE);
 VALUE rb_float_new(double);
 VALUE rb_float_new_in_heap(double);
@@ -924,17 +919,11 @@ struct RRegexp {
 #define RREGEXP_SRC_LEN(r) RSTRING_LEN(RREGEXP(r)->src)
 #define RREGEXP_SRC_END(r) RSTRING_END(RREGEXP(r)->src)
 
-struct RHash {
-    struct RBasic basic;
-    struct st_table *ntbl;      /* possibly 0 */
-    int iter_lev;
-    const VALUE ifnone;
-};
 /* RHASH_TBL allocates st_table if not available. */
 #define RHASH_TBL(h) rb_hash_tbl(h)
-#define RHASH_ITER_LEV(h) (RHASH(h)->iter_lev)
-#define RHASH_IFNONE(h) (RHASH(h)->ifnone)
-#define RHASH_SIZE(h) (RHASH(h)->ntbl ? (st_index_t)RHASH(h)->ntbl->num_entries : 0)
+#define RHASH_ITER_LEV(h) rb_hash_iter_lev(h)
+#define RHASH_IFNONE(h) rb_hash_ifnone(h)
+#define RHASH_SIZE(h) NUM2SIZET(rb_hash_size(h))
 #define RHASH_EMPTY_P(h) (RHASH_SIZE(h) == 0)
 #define RHASH_SET_IFNONE(h, ifnone) rb_hash_set_ifnone((VALUE)h, ifnone)
 
@@ -943,29 +932,8 @@ struct RFile {
     struct rb_io_t *fptr;
 };
 
-struct RRational {
-    struct RBasic basic;
-    const VALUE num;
-    const VALUE den;
-};
-
-#define RRATIONAL_SET_NUM(rat, n) RB_OBJ_WRITE((rat), &((struct RRational *)(rat))->num,(n))
-#define RRATIONAL_SET_DEN(rat, d) RB_OBJ_WRITE((rat), &((struct RRational *)(rat))->den,(d))
-
-struct RComplex {
-    struct RBasic basic;
-    const VALUE real;
-    const VALUE imag;
-};
-
 #define RCOMPLEX_SET_REAL(cmp, r) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->real,(r))
 #define RCOMPLEX_SET_IMAG(cmp, i) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->imag,(i))
-
-struct RSymbol {
-    struct RBasic basic;
-    VALUE fstr;
-    ID type;
-};
 
 struct RData {
     struct RBasic basic;
@@ -1032,8 +1000,7 @@ void *rb_check_typeddata(VALUE, const rb_data_type_t *);
     rb_data_object_alloc((klass),(sval),(RUBY_DATA_FUNC)(mark),(RUBY_DATA_FUNC)(free))
 
 #define Data_Make_Struct(klass,type,mark,free,sval) (\
-    (sval) = ALLOC(type),\
-    memset((sval), 0, sizeof(type)),\
+    (sval) = ZALLOC(type),\
     Data_Wrap_Struct((klass),(mark),(free),(sval))\
 )
 
@@ -1041,8 +1008,7 @@ void *rb_check_typeddata(VALUE, const rb_data_type_t *);
   rb_data_typed_object_alloc((klass),(sval),(data_type))
 
 #define TypedData_Make_Struct(klass, type, data_type, sval) (\
-    (sval) = ALLOC(type),\
-    memset((sval), 0, sizeof(type)),\
+    (sval) = ZALLOC(type),\
     TypedData_Wrap_Struct((klass),(data_type),(sval))\
 )
 
@@ -1092,18 +1058,13 @@ struct RStruct {
 #define ROBJECT(obj) (R_CAST(RObject)(obj))
 #define RCLASS(obj)  (R_CAST(RClass)(obj))
 #define RMODULE(obj) RCLASS(obj)
-#define RFLOAT(obj)  (R_CAST(RFloat)(obj))
 #define RSTRING(obj) (R_CAST(RString)(obj))
 #define RREGEXP(obj) (R_CAST(RRegexp)(obj))
 #define RARRAY(obj)  (R_CAST(RArray)(obj))
-#define RHASH(obj)   (R_CAST(RHash)(obj))
 #define RDATA(obj)   (R_CAST(RData)(obj))
 #define RTYPEDDATA(obj)   (R_CAST(RTypedData)(obj))
 #define RSTRUCT(obj) (R_CAST(RStruct)(obj))
 #define RFILE(obj)   (R_CAST(RFile)(obj))
-#define RRATIONAL(obj) (R_CAST(RRational)(obj))
-#define RCOMPLEX(obj) (R_CAST(RComplex)(obj))
-#define RSYMBOL(obj) (R_CAST(RSymbol)(obj))
 
 #define FL_SINGLETON FL_USER0
 #define FL_WB_PROTECTED (((VALUE)1)<<5)
@@ -1307,6 +1268,8 @@ rb_num2char_inline(VALUE x)
 
 #define ALLOC_N(type,n) ((type*)xmalloc2((n),sizeof(type)))
 #define ALLOC(type) ((type*)xmalloc(sizeof(type)))
+#define ZALLOC_N(type,n) ((type*)xcalloc((n),sizeof(type)))
+#define ZALLOC(type) (ZALLOC_N(type,1))
 #define REALLOC_N(var,type,n) ((var)=(type*)xrealloc2((char*)(var),(n),sizeof(type)))
 
 #define ALLOCA_N(type,n) ((type*)alloca(sizeof(type)*(n)))
@@ -1367,7 +1330,7 @@ void  rb_gvar_readonly_setter(VALUE val, ID id, void *data, struct rb_global_var
 void rb_define_variable(const char*,VALUE*);
 void rb_define_virtual_variable(const char*,VALUE(*)(ANYARGS),void(*)(ANYARGS));
 void rb_define_hooked_variable(const char*,VALUE*,VALUE(*)(ANYARGS),void(*)(ANYARGS));
-void rb_define_readonly_variable(const char*,VALUE*);
+void rb_define_readonly_variable(const char*,const VALUE*);
 void rb_define_const(VALUE,const char*,VALUE);
 void rb_define_global_const(const char*,VALUE);
 
@@ -1393,6 +1356,8 @@ ID rb_check_id(volatile VALUE *);
 ID rb_to_id(VALUE);
 VALUE rb_id2str(ID);
 VALUE rb_sym2str(VALUE);
+VALUE rb_to_symbol(VALUE name);
+VALUE rb_check_symbol(volatile VALUE *namep);
 
 #define CONST_ID_CACHE(result, str)			\
     {							\

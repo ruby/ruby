@@ -68,7 +68,7 @@ require "cgi/util"
 # a magic comment, however, it returns a string in the encoding specified
 # by the magic comment.
 #
-#   # -*- coding: UTF-8 -*-
+#   # -*- coding: utf-8 -*-
 #   require 'erb'
 #
 #   template = ERB.new <<EOF
@@ -717,7 +717,7 @@ class ERB
         comment = $1 if comment[/-\*-\s*(.*?)\s*-*-$/]
         if %r"coding\s*[=:]\s*([[:alnum:]\-_]+)" =~ comment
           enc = $1.sub(/-(?:mac|dos|unix)/i, '')
-          enc = Encoding.find(enc)
+          Encoding.find(enc)
         end
       end
     end
@@ -837,7 +837,7 @@ class ERB
   # the results of that code.  (See ERB::new for details on how this process
   # can be affected by _safe_level_.)
   #
-  # _b_ accepts a Binding or Proc object which is used to set the context of
+  # _b_ accepts a Binding object which is used to set the context of
   # code evaluation.
   #
   def result(b=new_toplevel)

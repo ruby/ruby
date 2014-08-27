@@ -40,6 +40,7 @@ install: "sudo apt-get -qq build-dep ruby1.9.1 2>/dev/null"
 before_script:
   - "uname -a"
   - "uname -r"
+  - "rm -fr .ext autom4te.cache"
   - "make -f common.mk BASERUBY=ruby srcdir=. update-config_files"
   - "autoconf"
   - "mkdir config_1st config_2nd"

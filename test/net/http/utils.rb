@@ -34,9 +34,7 @@ module TestNetHTTPUtils
   def teardown
     if @server
       @server.shutdown
-      until @server.status == :Stop
-        sleep 0.1
-      end
+      @server_thread.join
     end
     # resume global state
     Net::HTTP.version_1_2
@@ -49,7 +47,6 @@ module TestNetHTTPUtils
       :Port => 0,
       :Logger => WEBrick::Log.new(NullWriter.new),
       :AccessLog => [],
-      :ShutdownSocketWithoutClose => true,
       :ServerType => Thread,
     }
     server_config[:OutputBufferSize] = 4 if config('chunked')
@@ -64,7 +61,7 @@ module TestNetHTTPUtils
     end
     @server = WEBrick::HTTPServer.new(server_config)
     @server.mount('/', Servlet, config('chunked'))
-    @server.start
+    @server_thread = @server.start
     @config['port'] = @server[:Port]
     n_try_max = 5
     begin

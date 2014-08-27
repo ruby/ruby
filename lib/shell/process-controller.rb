@@ -157,19 +157,16 @@ class Shell
           @waiting_jobs.delete command
         else
           command = @waiting_jobs.shift
-#         command.notify "job(%id) pre-start.", @shell.debug?
 
           return unless command
         end
         @active_jobs.push command
         command.start
-#       command.notify "job(%id) post-start.", @shell.debug?
 
         # start all jobs that input from the job
         for job in @waiting_jobs.dup
           start_job(job) if job.input == command
         end
-#       command.notify "job(%id) post2-start.", @shell.debug?
       end
     end
 
@@ -254,7 +251,6 @@ class Shell
 
           pid = fork {
             Thread.list.each do |th|
-#             th.kill unless [Thread.main, Thread.current].include?(th)
               th.kill unless Thread.current == th
             end
 
@@ -283,8 +279,6 @@ class Shell
         rescue Errno::ECHILD
           command.notify "warn: job(%id) was done already waitpid."
           _pid = true
-          #     rescue
-          #       STDERR.puts $!
         ensure
           command.notify("Job(%id): Wait to finish when Process finished.", @shell.debug?)
           # when the process ends, wait until the command terminates
@@ -296,11 +290,8 @@ class Shell
             redo
           end
 
-#         command.notify "job(%id) pre-pre-finish.", @shell.debug?
           @job_monitor.synchronize do
-#           command.notify "job(%id) pre-finish.", @shell.debug?
             terminate_job(command)
-#           command.notify "job(%id) pre-finish2.", @shell.debug?
             @job_condition.signal
             command.notify "job(%id) finish.", @shell.debug?
           end

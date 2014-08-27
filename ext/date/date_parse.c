@@ -70,7 +70,7 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 {
     VALUE c = Qnil;
 
-    if (TYPE(m) != T_STRING)
+    if (!RB_TYPE_P(m, T_STRING))
 	m = f_to_s(m);
 
     if (!NIL_P(y) && !NIL_P(m) && NIL_P(d)) {
@@ -585,12 +585,12 @@ date_zone_to_diff(VALUE str)
 		if (NIL_P(hour))
 		    offset = INT2FIX(0);
 		else {
-		    if (TYPE(hour) == T_STRING)
+		    if (RB_TYPE_P(hour, T_STRING))
 			hour = str2num(hour);
 		    offset = f_mul(hour, INT2FIX(3600));
 		}
 		if (!NIL_P(min)) {
-		    if (TYPE(min) == T_STRING)
+		    if (RB_TYPE_P(min, T_STRING))
 			min = str2num(min);
 		    offset = f_add(offset, f_mul(min, INT2FIX(60)));
 		}

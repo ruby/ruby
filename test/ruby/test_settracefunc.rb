@@ -285,11 +285,9 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
     [["c-return", 1, :set_trace_func, Kernel],
      ["line", 4, __method__, self.class],
-     ["c-call", 4, :any?, Enumerable],
-     ["c-call", 4, :each, Array],
+     ["c-call", 4, :any?, Array],
      ["line", 4, __method__, self.class],
-     ["c-return", 4, :each, Array],
-     ["c-return", 4, :any?, Enumerable],
+     ["c-return", 4, :any?, Array],
      ["line", 5, __method__, self.class],
      ["c-call", 5, :set_trace_func, Kernel]].each{|e|
       assert_equal(e, events.shift)
@@ -383,7 +381,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
     [["c-return", 3, :set_trace_func, Kernel],
      ["line", 6, __method__, self.class],
-     ["call", 6, :foobar, FooBar],
+     ["call", 1, :foobar, FooBar],
      ["return", 6, :foobar, FooBar],
      ["line", 7, __method__, self.class],
      ["c-call", 7, :set_trace_func, Kernel]].each{|e|
@@ -1188,6 +1186,113 @@ class TestSetTraceFunc < Test::Unit::TestCase
       assert_equal([['call', :foo], ['return', :foo]], events, 'Bug #9759')
     ensure
     end
+  end
 
+  def test_recursive
+    assert_ruby_status [], %q{
+      stack = []
+      TracePoint.new(:c_call){|tp|
+        p 2
+        stack << tp.method_id
+      }.enable{
+        p 1
+      }
+      raise if stack != [:p, :hash, :inspect]
+    }, '[Bug #9940]'
+  end
+
+  def method_prefix event
+    case event
+    when :call, :return
+      :n
+    when :c_call, :c_return
+      :c
+    when :b_call, :b_return
+      :b
+    end
+  end
+
+  def method_label tp
+    "#{method_prefix(tp.event)}##{tp.method_id}"
+  end
+
+  def assert_consistent_call_return message='', check_events: nil
+    check_events ||= %i(a_call a_return)
+    call_stack = []
+
+    TracePoint.new(*check_events){|tp|
+      next unless target_thread?
+
+      case tp.event.to_s
+      when /call/
+        call_stack << method_label(tp)
+      when /return/
+        frame = call_stack.pop
+        assert_equal(frame, method_label(tp))
+      end
+    }.enable do
+      yield
+    end
+
+    assert_equal true, call_stack.empty?
+  end
+
+  def method_test_rescue_should_not_cause_b_return
+    begin
+      raise
+    rescue
+      return
+    end
+  end
+
+  def method_test_ensure_should_not_cause_b_return
+    begin
+      raise
+    ensure
+      return
+    end
+  end
+
+  def test_rescue_and_ensure_should_not_cause_b_return
+    assert_consistent_call_return '[Bug #9957]' do
+      method_test_rescue_should_not_cause_b_return
+      begin
+        method_test_ensure_should_not_cause_b_return
+      rescue
+        # ignore
+      end
+    end
+  end
+
+  define_method(:method_test_argument_error_on_bmethod){|correct_key: 1|}
+
+  def test_argument_error_on_bmethod
+    assert_consistent_call_return '[Bug #9959]' do
+      begin
+        method_test_argument_error_on_bmethod(wrong_key: 2)
+      rescue => e
+        # ignore
+      end
+    end
+  end
+
+  def test_rb_rescue
+    assert_consistent_call_return '[Bug #9961]' do
+      begin
+        -Numeric.new
+      rescue => e
+        # ignore
+      end
+    end
+  end
+
+  def test_b_call_with_redo
+    assert_consistent_call_return '[Bug #9964]' do
+      i = 0
+      1.times{
+        break if (i+=1) > 10
+        redo
+      }
+    end
   end
 end

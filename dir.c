@@ -1086,12 +1086,15 @@ do_opendir(const char *path, int flags, rb_encoding *enc)
     return dirp;
 }
 
+/* Globing pattern */
+enum glob_pattern_type { PLAIN, ALPHA, MAGICAL, RECURSIVE, MATCH_ALL, MATCH_DIR };
+
 /* Return nonzero if S has any special globbing chars in it.  */
-static int
+static enum glob_pattern_type
 has_magic(const char *p, const char *pend, int flags, rb_encoding *enc)
 {
     const int escape = !(flags & FNM_NOESCAPE);
-    const int nocase = flags & FNM_CASEFOLD;
+    int hasalpha = 0;
 
     register char c;
 
@@ -1100,22 +1103,23 @@ has_magic(const char *p, const char *pend, int flags, rb_encoding *enc)
 	  case '*':
 	  case '?':
 	  case '[':
-	    return 1;
+	    return MAGICAL;
 
 	  case '\\':
 	    if (escape && !(c = *p++))
-		return 0;
+		return PLAIN;
 	    continue;
 
 	  default:
-	    if (!FNM_SYSCASE && ISALPHA(c) && nocase)
-		return 1;
+	    if (ISALPHA(c)) {
+		hasalpha = 1;
+	    }
 	}
 
 	p = Next(p-1, pend, enc);
     }
 
-    return 0;
+    return hasalpha ? ALPHA : PLAIN;
 }
 
 /* Find separator in globbing pattern. */
@@ -1179,9 +1183,6 @@ remove_backslashes(char *p, register const char *pend, rb_encoding *enc)
     return p;
 }
 
-/* Globing pattern */
-enum glob_pattern_type { PLAIN, MAGICAL, RECURSIVE, MATCH_ALL, MATCH_DIR };
-
 struct glob_pattern {
     char *str;
     enum glob_pattern_type type;
@@ -1200,7 +1201,7 @@ glob_make_pattern(const char *p, const char *e, int flags, rb_encoding *enc)
     while (p < e && *p) {
 	tmp = GLOB_ALLOC(struct glob_pattern);
 	if (!tmp) goto error;
-	if (p[0] == '*' && p[1] == '*' && p[2] == '/') {
+	if (p + 2 < e && p[0] == '*' && p[1] == '*' && p[2] == '/') {
 	    /* fold continuous RECURSIVEs (needed in glob_helper) */
 	    do { p += 3; while (*p == '/') p++; } while (p[0] == '*' && p[1] == '*' && p[2] == '/');
 	    tmp->type = RECURSIVE;
@@ -1210,12 +1211,13 @@ glob_make_pattern(const char *p, const char *e, int flags, rb_encoding *enc)
 	}
 	else {
 	    const char *m = find_dirsep(p, e, flags, enc);
-	    const int magic = has_magic(p, m, flags, enc);
+	    const enum glob_pattern_type magic = has_magic(p, m, flags, enc);
+	    const enum glob_pattern_type non_magic = (HAVE_HFS || FNM_SYSCASE) ? PLAIN : ALPHA;
 	    char *buf;
 
-	    if (!(FNM_SYSCASE || HAVE_HFS || magic) && !recursive && *m) {
+	    if (!(FNM_SYSCASE || magic > non_magic) && !recursive && *m) {
 		const char *m2;
-		while (!has_magic(m+1, m2 = find_dirsep(m+1, e, flags, enc), flags, enc) &&
+		while (has_magic(m+1, m2 = find_dirsep(m+1, e, flags, enc), flags, enc) <= non_magic &&
 		       *m2) {
 		    m = m2;
 		}
@@ -1227,7 +1229,7 @@ glob_make_pattern(const char *p, const char *e, int flags, rb_encoding *enc)
 	    }
 	    memcpy(buf, p, m-p);
 	    buf[m-p] = '\0';
-	    tmp->type = magic ? MAGICAL : PLAIN;
+	    tmp->type = magic > MAGICAL ? MAGICAL : magic > non_magic ? magic : PLAIN;
 	    tmp->str = buf;
 	    if (*m) {
 		dirsep = 1;
@@ -1305,16 +1307,16 @@ struct glob_args {
     rb_encoding *enc;
 };
 
+#define glob_call_func(func, path, arg, enc) (*(func))((path), (arg), (void *)(enc))
+
 static VALUE
 glob_func_caller(VALUE val)
 {
     struct glob_args *args = (struct glob_args *)val;
 
-    (*args->func)(args->path, args->value, args->enc);
+    glob_call_func(args->func, args->path, args->value, args->enc);
     return Qnil;
 }
-
-#define glob_call_func(func, path, arg, enc) (*(func))((path), (arg), (enc))
 
 static int
 glob_helper(
@@ -1346,8 +1348,11 @@ glob_helper(
 	  case PLAIN:
 	    plain = 1;
 	    break;
-	  case MAGICAL:
+	  case ALPHA:
 	    magical = 1;
+	    break;
+	  case MAGICAL:
+	    magical = 2;
 	    break;
 	  case MATCH_ALL:
 	    match_all = 1;
@@ -1397,14 +1402,26 @@ glob_helper(
 
     if (exist == NO || isdir == NO) return 0;
 
-    if (magical || recursive || ((FNM_SYSCASE || HAVE_HFS) && plain)) {
+    if (magical || recursive) {
 	struct dirent *dp;
 	DIR *dirp;
+# if DOSISH
+	char *plainname = 0;
+# endif
 	IF_HAVE_HFS(int hfs_p);
+# if DOSISH
+	if (cur + 1 == end && (*cur)->type <= ALPHA) {
+	    plainname = join_path(path, pathlen, dirsep, (*cur)->str, strlen((*cur)->str));
+	    if (!plainname) return -1;
+	    dirp = do_opendir(plainname, flags, enc);
+	    GLOB_FREE(plainname);
+	}
+	else
+# endif
 	dirp = do_opendir(*path ? path : ".", flags, enc);
 	if (dirp == NULL) {
 # if FNM_SYSCASE || HAVE_HFS
-	    if (!(magical || recursive) && (errno == EACCES)) {
+	    if ((magical < 2) && !recursive && (errno == EACCES)) {
 		/* no read permission, fallback */
 		goto literally;
 	    }
@@ -1483,9 +1500,20 @@ glob_helper(
 			*new_end++ = p; /* append recursive pattern */
 		    p = p->next; /* 0 times recursion */
 		}
-		if (p->type == PLAIN || p->type == MAGICAL) {
+		switch (p->type) {
+		  case ALPHA:
+# ifdef DOSISH
+		    if (plainname) {
+			*new_end++ = p->next;
+			break;
+		    }
+# endif
+		  case PLAIN:
+		  case MAGICAL:
 		    if (fnmatch(p->str, enc, name, flags) == 0)
 			*new_end++ = p->next;
+		  default:
+		    break;
 		}
 	    }
 
@@ -1507,7 +1535,7 @@ glob_helper(
 	copy_beg = copy_end = GLOB_ALLOC_N(struct glob_pattern *, end - beg);
 	if (!copy_beg) return -1;
 	for (cur = beg; cur < end; ++cur)
-	    *copy_end++ = (*cur)->type == PLAIN ? *cur : 0;
+	    *copy_end++ = (*cur)->type <= ALPHA ? *cur : 0;
 
 	for (cur = copy_beg; cur < copy_end; ++cur) {
 	    if (*cur) {
@@ -1696,7 +1724,7 @@ ruby_brace_expand(const char *str, int flags, ruby_glob_func *func, VALUE arg,
 	GLOB_FREE(buf);
     }
     else if (!lbrace && !rbrace) {
-	status = (*func)(s, arg, enc);
+	status = glob_call_func(func, s, arg, enc);
     }
 
     return status;
@@ -2183,7 +2211,6 @@ dir_s_home(int argc, VALUE *argv, VALUE obj)
 /*
  * call-seq:
  *   Dir.exist?(file_name)   ->  true or false
- *   Dir.exists?(file_name)   ->  true or false
  *
  * Returns <code>true</code> if the named file is a directory,
  * <code>false</code> otherwise.
@@ -2195,6 +2222,12 @@ rb_file_directory_p()
 }
 #endif
 
+/*
+ * call-seq:
+ *   Dir.exists?(file_name)  ->  true or false
+ *
+ * Deprecated method. Don't use.
+ */
 static VALUE
 rb_dir_exists_p(VALUE obj, VALUE fname)
 {
@@ -2288,5 +2321,11 @@ Init_Dir(void)
      *  Allows file globbing through "{a,b}" in File.fnmatch patterns.
      */
     rb_file_const("FNM_EXTGLOB", INT2FIX(FNM_EXTGLOB));
+
+    /*  Document-const: File::Constants::FNM_SYSCASE
+     *
+     *  System default case insensitiveness, equals to FNM_CASEFOLD or
+     *  0.
+     */
     rb_file_const("FNM_SYSCASE", INT2FIX(FNM_SYSCASE));
 }

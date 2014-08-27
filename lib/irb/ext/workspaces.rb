@@ -20,9 +20,9 @@ module IRB # :nodoc:
     # WorkSpaces in the current stack
     def workspaces
       if defined? @workspaces
-	@workspaces
+        @workspaces
       else
-	@workspaces = []
+        @workspaces = []
       end
     end
 
@@ -33,20 +33,20 @@ module IRB # :nodoc:
     # information.
     def push_workspace(*_main)
       if _main.empty?
-	if workspaces.empty?
-	  print "No other workspace\n"
-	  return nil
-	end
-	ws = workspaces.pop
-	workspaces.push @workspace
-	@workspace = ws
-	return workspaces
+        if workspaces.empty?
+          print "No other workspace\n"
+          return nil
+        end
+        ws = workspaces.pop
+        workspaces.push @workspace
+        @workspace = ws
+        return workspaces
       end
 
       workspaces.push @workspace
       @workspace = WorkSpace.new(@workspace.binding, _main[0])
       if !(class<<main;ancestors;end).include?(ExtendCommandBundle)
-	main.extend ExtendCommandBundle
+        main.extend ExtendCommandBundle
       end
     end
 
@@ -56,8 +56,8 @@ module IRB # :nodoc:
     # Also, see #push_workspace.
     def pop_workspace
       if workspaces.empty?
-	print "workspace stack empty\n"
-	return
+        print "workspace stack empty\n"
+        return
       end
       @workspace = workspaces.pop
     end

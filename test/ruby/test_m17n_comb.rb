@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'etc'
 require_relative 'allpairs'
 
 class TestM17NComb < Test::Unit::TestCase
@@ -87,7 +88,7 @@ class TestM17NComb < Test::Unit::TestCase
     r
   end
 
-  def assert_enccall(recv, meth, *args, &block)
+  def encdumpcall(recv, meth, *args, &block)
     desc = ''
     if String === recv
       desc << encdump(recv)
@@ -110,6 +111,11 @@ class TestM17NComb < Test::Unit::TestCase
     if block
       desc << ' {}'
     end
+    desc
+  end
+
+  def assert_enccall(recv, meth, *args, &block)
+    desc = encdumpcall(recv, meth, *args, &block)
     result = nil
     assert_nothing_raised(desc) {
       result = recv.send(meth, *args, &block)
@@ -709,12 +715,13 @@ class TestM17NComb < Test::Unit::TestCase
 
   def test_str_count
     combination(STRINGS, STRINGS) {|s1, s2|
+      desc = proc {encdumpcall(s1, :count, s2)}
       if !s1.valid_encoding? || !s2.valid_encoding?
-        assert_raise(ArgumentError, Encoding::CompatibilityError) { s1.count(s2) }
+        assert_raise(ArgumentError, Encoding::CompatibilityError, desc) { s1.count(s2) }
         next
       end
       if !s1.ascii_only? && !s2.ascii_only? && s1.encoding != s2.encoding
-        assert_raise(Encoding::CompatibilityError) { s1.count(s2) }
+        assert_raise(Encoding::CompatibilityError, desc) { s1.count(s2) }
         next
       end
       n = enccall(s1, :count, s2)
@@ -724,12 +731,11 @@ class TestM17NComb < Test::Unit::TestCase
   end
 
   def test_str_crypt
-    begin
-      # glibc 2.16 or later denies salt contained other than [0-9A-Za-z./] #7312
-      glibcpath = `ldd #{RbConfig.ruby}`[/\S+\/libc.so\S+/]
-      glibcver = `#{glibcpath}`[/\AGNU C Library.*version ([0-9.]+)/, 1].split('.').map(&:to_i)
-      strict_crypt = (glibcver <=> [2, 16]) > -1
-    rescue
+    strict_crypt = nil
+    # glibc 2.16 or later denies salt contained other than [0-9A-Za-z./] #7312
+    if defined? Etc::CS_GNU_LIBC_VERSION
+      glibcver = Etc.confstr(Etc::CS_GNU_LIBC_VERSION).scan(/\d+/).map(&:to_i)
+      strict_crypt = (glibcver <=> [2, 16]) >= 0
     end
 
     combination(STRINGS, STRINGS) {|str, salt|

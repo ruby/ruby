@@ -6,7 +6,7 @@
 #
 #      $\ = ' -- '
 #      "waterbuffalo" =~ /buff/
-#      print $", $', $$, "\n"
+#      print $', $$, "\n"
 #
 #  With English:
 #
@@ -14,7 +14,7 @@
 #
 #      $OUTPUT_FIELD_SEPARATOR = ' -- '
 #      "waterbuffalo" =~ /buff/
-#      print $LOADED_FEATURES, $POSTMATCH, $PID, "\n"
+#      print $POSTMATCH, $PID, "\n"
 #
 #  Below is a full list of descriptive aliases and their associated global
 #  variable:

@@ -48,64 +48,66 @@ module WEBrick
     end
 
     def test_send_body_io
-      body_r, body_w = IO.pipe
+      IO.pipe {|body_r, body_w|
+        body_w.write 'hello'
+        body_w.close
 
-      body_w.write 'hello'
-      body_w.close
+        @res.body = body_r
 
-      @res.body = body_r
+        IO.pipe {|r, w|
 
-      r, w = IO.pipe
+          @res.send_body w
 
-      @res.send_body w
+          w.close
 
-      w.close
-
-      assert_equal 'hello', r.read
+          assert_equal 'hello', r.read
+        }
+      }
     end
 
     def test_send_body_string
       @res.body = 'hello'
 
-      r, w = IO.pipe
+      IO.pipe {|r, w|
+        @res.send_body w
 
-      @res.send_body w
+        w.close
 
-      w.close
-
-      assert_equal 'hello', r.read
+        assert_equal 'hello', r.read
+      }
     end
 
     def test_send_body_string_io
       @res.body = StringIO.new 'hello'
 
-      r, w = IO.pipe
+      IO.pipe {|r, w|
+        @res.send_body w
 
-      @res.send_body w
+        w.close
 
-      w.close
-
-      assert_equal 'hello', r.read
+        assert_equal 'hello', r.read
+      }
     end
 
     def test_send_body_io_chunked
       @res.chunked = true
 
-      body_r, body_w = IO.pipe
+      IO.pipe {|body_r, body_w|
 
-      body_w.write 'hello'
-      body_w.close
+        body_w.write 'hello'
+        body_w.close
 
-      @res.body = body_r
+        @res.body = body_r
 
-      r, w = IO.pipe
+        IO.pipe {|r, w|
+          @res.send_body w
 
-      @res.send_body w
+          w.close
 
-      w.close
-
-      r.binmode
-      assert_equal "5\r\nhello\r\n0\r\n\r\n", r.read
+          r.binmode
+          assert_equal "5\r\nhello\r\n0\r\n\r\n", r.read
+        }
+      }
     end
 
     def test_send_body_string_chunked
@@ -113,14 +115,14 @@ module WEBrick
 
       @res.body = 'hello'
 
-      r, w = IO.pipe
+      IO.pipe {|r, w|
+        @res.send_body w
 
-      @res.send_body w
+        w.close
 
-      w.close
-
-      r.binmode
-      assert_equal "5\r\nhello\r\n0\r\n\r\n", r.read
+        r.binmode
+        assert_equal "5\r\nhello\r\n0\r\n\r\n", r.read
+      }
     end
 
     def test_send_body_string_io_chunked
@@ -128,14 +130,14 @@ module WEBrick
 
       @res.body = StringIO.new 'hello'
 
-      r, w = IO.pipe
+      IO.pipe {|r, w|
+        @res.send_body w
 
-      @res.send_body w
+        w.close
 
-      w.close
-
-      r.binmode
-      assert_equal "5\r\nhello\r\n0\r\n\r\n", r.read
+        r.binmode
+        assert_equal "5\r\nhello\r\n0\r\n\r\n", r.read
+      }
     end
   end
 end

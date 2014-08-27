@@ -108,6 +108,7 @@ gems:
   end
 
   def teardown
+    self.class.stop_servers
     super
     Gem.configuration[:http_proxy] = nil
     @proxies.each_with_index {|k, i| ENV[k] = @old_proxies[i] }
@@ -712,6 +713,25 @@ gems:
       @enable_zip = false
     end
 
+    def stop_servers
+      if @normal_server
+        @normal_server.kill.join
+        @normal_server = nil
+      end
+      if @proxy_server
+        @proxy_server.kill.join
+        @proxy_server = nil
+      end
+      if @ssl_server
+        @ssl_server.stop
+        @ssl_server = nil
+      end
+      if @ssl_server_thread
+        @ssl_server_thread.kill.join
+        @ssl_server_thread = nil
+      end
+    end
+
     def normal_server_port
       @normal_server[:server].config[:Port]
     end
@@ -751,6 +771,8 @@ gems:
         rescue Exception => ex
           abort ex.message
           puts "ERROR during server thread: #{ex.message}"
+        ensure
+          server.shutdown
         end
       end
       while server.status != :Running
@@ -760,6 +782,8 @@ gems:
           raise
         end
       end
+      @ssl_server = server
+      @ssl_server_thread = t
       server
     end
 
@@ -800,6 +824,8 @@ gems:
           s.start
         rescue Exception => ex
           abort "ERROR during server thread: #{ex.message}"
+        ensure
+          s.shutdown
         end
       end
       th[:server] = s

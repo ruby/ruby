@@ -531,6 +531,49 @@ class TestEnumerable < Test::Unit::TestCase
     assert_not_warn{ss.slice_before(/\A...\z/).to_a}
   end
 
+  def test_slice_after0
+    assert_raise(ArgumentError) { [].slice_after }
+  end
+
+  def test_slice_after1
+    e = [].slice_after {|a| flunk "should not be called" }
+    assert_equal([], e.to_a)
+
+    e = [1,2].slice_after(1)
+    assert_equal([[1], [2]], e.to_a)
+
+    e = [1,2].slice_after(3)
+    assert_equal([[1, 2]], e.to_a)
+
+    [true, false].each {|b|
+      block_results = [true, b]
+      e = [1,2].slice_after {|a| block_results.shift }
+      assert_equal([[1], [2]], e.to_a)
+      assert_equal([], block_results)
+
+      block_results = [false, b]
+      e = [1,2].slice_after {|a| block_results.shift }
+      assert_equal([[1, 2]], e.to_a)
+      assert_equal([], block_results)
+    }
+  end
+
+  def test_slice_after_both_pattern_and_block
+    assert_raise(ArgumentError) { [].slice_after(1) {|a| true } }
+  end
+
+  def test_slice_after_continuation_lines
+    lines = ["foo\n", "bar\\\n", "baz\n", "\n", "qux\n"]
+    e = lines.slice_after(/[^\\]\n\z/)
+    assert_equal([["foo\n"], ["bar\\\n", "baz\n"], ["\n", "qux\n"]], e.to_a)
+  end
+
+  def test_slice_before_empty_line
+    lines = ["foo", "", "bar"]
+    e = lines.slice_after(/\A\s*\z/)
+    assert_equal([["foo", ""], ["bar"]], e.to_a)
+  end
+
   def test_detect
     @obj = ('a'..'z')
     assert_equal('c', @obj.detect {|x| x == 'c' })

@@ -460,12 +460,17 @@ exc_setup_cause(VALUE exc, VALUE cause)
     return exc;
 }
 
+static inline int
+sysstack_error_p(VALUE exc)
+{
+    return exc == sysstack_error || (!SPECIAL_CONST_P(exc) && RBASIC_CLASS(exc) == rb_eSysStackError);
+}
+
 static void
 setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 {
-    VALUE at;
     VALUE e;
-    const char *file;
+    const char *file = 0;
     volatile int line = 0;
     int nocause = 0;
 
@@ -486,26 +491,25 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
     file = rb_sourcefile();
     if (file) line = rb_sourceline();
     if (file && !NIL_P(mesg)) {
-	if (mesg == sysstack_error) {
-	    ID func = rb_frame_this_func();
-	    at = rb_enc_sprintf(rb_usascii_encoding(), "%s:%d", file, line);
-	    if (func) {
-		VALUE name = rb_id2str(func);
-		if (name) rb_str_catf(at, ":in `%"PRIsVALUE"'", name);
-	    }
-	    at = rb_ary_new3(1, at);
-	    rb_iv_set(mesg, "bt", at);
-	}
-	else {
-	    at = get_backtrace(mesg);
-	    if (NIL_P(at)) {
+	VALUE at;
+	if (sysstack_error_p(mesg)) {
+	    if (NIL_P(rb_attr_get(mesg, idBt))) {
 		at = rb_vm_backtrace_object();
-		if (OBJ_FROZEN(mesg)) {
-		    mesg = rb_obj_dup(mesg);
+		if (mesg == sysstack_error) {
+		    VALUE ruby_vm_sysstack_error_copy(void);
+		    mesg = ruby_vm_sysstack_error_copy();
 		}
-		rb_iv_set(mesg, "bt_locations", at);
-		set_backtrace(mesg, at);
+		rb_ivar_set(mesg, idBt, at);
+		rb_ivar_set(mesg, idBt_locations, at);
 	    }
+	}
+	else if (NIL_P(get_backtrace(mesg))) {
+	    at = rb_vm_backtrace_object();
+	    if (OBJ_FROZEN(mesg)) {
+		mesg = rb_obj_dup(mesg);
+	    }
+	    rb_ivar_set(mesg, idBt_locations, at);
+	    set_backtrace(mesg, at);
 	}
     }
 
@@ -571,7 +575,7 @@ rb_longjmp(int tag, volatile VALUE mesg, VALUE cause)
     JUMP_TAG(tag);
 }
 
-static VALUE make_exception(int argc, VALUE *argv, int isstr);
+static VALUE make_exception(int argc, const VALUE *argv, int isstr);
 
 void
 rb_exc_raise(VALUE mesg)
@@ -606,12 +610,11 @@ extract_raise_opts(int argc, VALUE *argv, VALUE *opts)
     if (argc > 0) {
 	VALUE opt = argv[argc-1];
 	if (RB_TYPE_P(opt, T_HASH)) {
-	    VALUE kw = rb_extract_keywords(&opt);
-	    if (!opt) --argc;
-	    if (kw) {
+	    if (!RHASH_EMPTY_P(opt)) {
 		ID keywords[1];
 		CONST_ID(keywords[0], "cause");
-		rb_get_kwargs(kw, keywords, 0, 1, opts);
+		rb_get_kwargs(opt, keywords, 0, -1-raise_max_opt, opts);
+		if (RHASH_EMPTY_P(opt)) --argc;
 		return argc;
 	    }
 	}
@@ -669,7 +672,7 @@ rb_f_raise(int argc, VALUE *argv)
 }
 
 static VALUE
-make_exception(int argc, VALUE *argv, int isstr)
+make_exception(int argc, const VALUE *argv, int isstr)
 {
     VALUE mesg, exc;
     ID exception;
@@ -698,7 +701,7 @@ make_exception(int argc, VALUE *argv, int isstr)
 	exc = argv[0];
 	n = 1;
       exception_call:
-	if (exc == sysstack_error) return exc;
+	if (sysstack_error_p(exc)) return exc;
 	CONST_ID(exception, "exception");
 	mesg = rb_check_funcall(exc, exception, n, argv+1);
 	if (mesg == Qundef) {
@@ -720,7 +723,7 @@ make_exception(int argc, VALUE *argv, int isstr)
 }
 
 VALUE
-rb_make_exception(int argc, VALUE *argv)
+rb_make_exception(int argc, const VALUE *argv)
 {
     return make_exception(argc, argv, TRUE);
 }
@@ -804,7 +807,7 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 	}
     }
     else {
-	th->cfp = cfp; /* restore */
+	rb_vm_rewind_cfp(th, cfp);
 
 	if (state == TAG_RAISE) {
 	    int handle = FALSE;
@@ -863,7 +866,7 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int * state)
 	SAVE_ROOT_JMPBUF(th, result = (*proc) (data));
     }
     else {
-	th->cfp = cfp;
+	rb_vm_rewind_cfp(th, cfp);
     }
     MEMCPY(&(th)->root_jmpbuf, &org_jmpbuf, rb_jmpbuf_t, 1);
     th->protect_tag = protect_tag.prev;
@@ -1132,11 +1135,11 @@ rb_using_refinement(NODE *cref, VALUE klass, VALUE module)
     Check_Type(klass, T_CLASS);
     Check_Type(module, T_MODULE);
     if (NIL_P(cref->nd_refinements)) {
-	cref->nd_refinements = hidden_identity_hash_new();
+	RB_OBJ_WRITE(cref, &cref->nd_refinements, hidden_identity_hash_new());
     }
     else {
 	if (cref->flags & NODE_FL_CREF_OMOD_SHARED) {
-	    cref->nd_refinements = rb_hash_dup(cref->nd_refinements);
+	    RB_OBJ_WRITE(cref, &cref->nd_refinements, rb_hash_dup(cref->nd_refinements));
 	    cref->flags &= ~NODE_FL_CREF_OMOD_SHARED;
 	}
 	if (!NIL_P(c = rb_hash_lookup(cref->nd_refinements, klass))) {

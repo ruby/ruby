@@ -309,6 +309,13 @@ if defined?(WIN32OLE_VARIANT)
       assert_equal(ar, ar2.value)
     end
 
+    def test_s_new_vt_record_exc
+      # VT_RECORD (= 36) should not be allowed in WIN32OLE_VARIANT#new
+      assert_raise(ArgumentError) {
+        WIN32OLE_VARIANT.new(nil, 36)
+      }
+    end
+
     def test_s_array
       obj = WIN32OLE_VARIANT.array([2,3], WIN32OLE::VARIANT::VT_I4)
       assert_instance_of(WIN32OLE_VARIANT, obj)

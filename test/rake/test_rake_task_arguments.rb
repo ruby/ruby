@@ -19,6 +19,12 @@ class TestRakeTaskArguments < Rake::TestCase
     assert_equal({:a => :one, :b => :two, :c => :three}, ta.to_hash)
   end
 
+  def test_has_key
+    ta = Rake::TaskArguments.new([:a], [:one])
+    assert(ta.has_key?(:a))
+    refute(ta.has_key?(:b))
+  end
+
   def test_to_s
     ta = Rake::TaskArguments.new([:a, :b, :c], [1, 2, 3])
     assert_equal ta.to_hash.inspect, ta.to_s

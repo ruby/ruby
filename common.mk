@@ -81,6 +81,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		strftime.$(OBJEXT) \
 		string.$(OBJEXT) \
 		struct.$(OBJEXT) \
+		symbol.$(OBJEXT) \
 		time.$(OBJEXT) \
 		transcode.$(OBJEXT) \
 		util.$(OBJEXT) \
@@ -109,6 +110,7 @@ ALLOBJS       = $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT)
 
 GOLFOBJS      = goruby.$(OBJEXT) golf_prelude.$(OBJEXT)
 
+DEFAULT_PRELUDES = $(GEM_PRELUDE)
 PRELUDE_SCRIPTS = $(srcdir)/prelude.rb $(srcdir)/enc/prelude.rb $(DEFAULT_PRELUDES)
 GEM_PRELUDE = $(srcdir)/gem_prelude.rb
 PRELUDES      = prelude.c miniprelude.c
@@ -119,7 +121,8 @@ SCRIPT_ARGS   =	--dest-dir="$(DESTDIR)" \
 		--mflags="$(MFLAGS)" \
 		--make-flags="$(MAKEFLAGS)"
 EXTMK_ARGS    =	$(SCRIPT_ARGS) --extension $(EXTS) --extstatic $(EXTSTATIC) \
-		--make-flags="V=$(V) MINIRUBY='$(MINIRUBY)'" --
+		--make-flags="V=$(V) MINIRUBY='$(MINIRUBY)'" --gnumake=$(gnumake) \
+		--
 INSTRUBY      =	$(SUDO) $(RUNRUBY) -r./$(arch)-fake $(srcdir)/tool/rbinstall.rb
 INSTRUBY_ARGS =	$(SCRIPT_ARGS) \
 		--data-mode=$(INSTALL_DATA_MODE) \
@@ -143,7 +146,7 @@ COMPILE_PRELUDE = $(MINIRUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb
 
 all: showflags main docs
 
-main: showflags $(EXTSTATIC:static=lib)encs exts
+main: showflags $(ENCSTATIC:static=lib)encs exts
 	@$(NULLCMD)
 
 .PHONY: showflags
@@ -177,7 +180,7 @@ $(EXTS_MK): $(MKFILES) all-incs $(PREP) $(RBCONFIG) $(LIBRUBY)
 configure-ext: $(EXTS_MK)
 
 build-ext: $(EXTS_MK)
-	$(Q)$(MAKE) -f $(EXTS_MK) $(MFLAGS) $(EXTSTATIC) LIBRUBY_EXTS=$(LIBRUBY_EXTS) ENCOBJS="$(ENCOBJS)"
+	$(Q)$(MAKE) -f $(EXTS_MK) $(MFLAGS) libdir="$(libdir)" LIBRUBY_EXTS=$(LIBRUBY_EXTS) ENCOBJS="$(ENCOBJS)"
 
 prog: program wprogram
 
@@ -201,7 +204,7 @@ $(CAPIOUT)/.timestamp: Doxyfile $(PREP)
 Doxyfile: $(srcdir)/template/Doxyfile.tmpl $(PREP) $(srcdir)/tool/generic_erb.rb $(RBCONFIG)
 	$(ECHO) generating $@
 	$(Q) $(MINIRUBY) $(srcdir)/tool/generic_erb.rb -o $@ $(srcdir)/template/Doxyfile.tmpl \
-	--srcdir="$(srcdir)" --miniruby="$(BASERUBY)"
+	--srcdir="$(srcdir)" --miniruby="$(MINIRUBY)"
 
 program: showflags $(PROGRAM)
 wprogram: showflags $(WPROGRAM)
@@ -231,80 +234,80 @@ pkgconfig-data: $(ruby_pc)
 $(ruby_pc): $(srcdir)/template/ruby.pc.in config.status
 
 install-all: docs pre-install-all do-install-all post-install-all
-pre-install-all:: pre-install-local pre-install-ext pre-install-doc
-do-install-all: all
+pre-install-all:: all pre-install-local pre-install-ext pre-install-doc
+do-install-all: pre-install-all
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=all --rdoc-output="$(RDOCOUT)"
 post-install-all:: post-install-local post-install-ext post-install-doc
 	@$(NULLCMD)
 
 install-nodoc: pre-install-nodoc do-install-nodoc post-install-nodoc
 pre-install-nodoc:: pre-install-local pre-install-ext
-do-install-nodoc: main
+do-install-nodoc: main pre-install-nodoc
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS)
 post-install-nodoc:: post-install-local post-install-ext
 
 install-local: pre-install-local do-install-local post-install-local
 pre-install-local:: pre-install-bin pre-install-lib pre-install-man
-do-install-local: $(PROGRAM)
+do-install-local: $(PROGRAM) pre-install-local
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=local
 post-install-local:: post-install-bin post-install-lib post-install-man
 
 install-ext: pre-install-ext do-install-ext post-install-ext
 pre-install-ext:: pre-install-ext-arch pre-install-ext-comm
-do-install-ext: exts
+do-install-ext: exts pre-install-ext
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=ext
 post-install-ext:: post-install-ext-arch post-install-ext-comm
 
 install-arch: pre-install-arch do-install-arch post-install-arch
 pre-install-arch:: pre-install-bin pre-install-ext-arch
-do-install-arch: main
+do-install-arch: main do-install-arch
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=arch
 post-install-arch:: post-install-bin post-install-ext-arch
 
 install-comm: pre-install-comm do-install-comm post-install-comm
 pre-install-comm:: pre-install-lib pre-install-ext-comm pre-install-man
-do-install-comm: $(PREP)
+do-install-comm: $(PREP) pre-install-comm
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=lib --install=ext-comm --install=man
 post-install-comm:: post-install-lib post-install-ext-comm post-install-man
 
 install-bin: pre-install-bin do-install-bin post-install-bin
 pre-install-bin:: install-prereq
-do-install-bin: $(PROGRAM)
+do-install-bin: $(PROGRAM) pre-install-bin
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=bin
 post-install-bin::
 	@$(NULLCMD)
 
 install-lib: pre-install-lib do-install-lib post-install-lib
 pre-install-lib:: install-prereq
-do-install-lib: $(PREP)
+do-install-lib: $(PREP) pre-install-lib
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=lib
 post-install-lib::
 	@$(NULLCMD)
 
 install-ext-comm: pre-install-ext-comm do-install-ext-comm post-install-ext-comm
 pre-install-ext-comm:: install-prereq
-do-install-ext-comm: exts
+do-install-ext-comm: exts pre-install-ext-comm
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=ext-comm
 post-install-ext-comm::
 	@$(NULLCMD)
 
 install-ext-arch: pre-install-ext-arch do-install-ext-arch post-install-ext-arch
 pre-install-ext-arch:: install-prereq
-do-install-ext-arch: exts
+do-install-ext-arch: exts pre-install-ext-arch
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=ext-arch
 post-install-ext-arch::
 	@$(NULLCMD)
 
 install-man: pre-install-man do-install-man post-install-man
 pre-install-man:: install-prereq
-do-install-man: $(PREP)
+do-install-man: $(PREP) pre-install-man
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=man
 post-install-man::
 	@$(NULLCMD)
 
 install-capi: capi pre-install-capi do-install-capi post-install-capi
 pre-install-capi:: install-prereq
-do-install-capi: $(PREP)
+do-install-capi: $(PREP) pre-install-capi
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=capi
 post-install-capi::
 	@$(NULLCMD)
@@ -319,10 +322,10 @@ dont-install-all: $(PROGRAM)
 post-no-install-all:: post-no-install-local post-no-install-ext post-no-install-doc
 	@$(NULLCMD)
 
-uninstall: $(INSTALLED_LIST)
+uninstall: $(INSTALLED_LIST) sudo-precheck
 	$(Q)$(SUDO) $(MINIRUBY) $(srcdir)/tool/rbuninstall.rb --destdir=$(DESTDIR) $(INSTALLED_LIST)
 
-reinstall: uninstall install
+reinstall: all uninstall install
 
 what-where-nodoc: no-install-nodoc
 no-install-nodoc: pre-no-install-nodoc dont-install-nodoc post-no-install-nodoc
@@ -401,14 +404,14 @@ post-no-install-man::
 
 install-doc: rdoc pre-install-doc do-install-doc post-install-doc
 pre-install-doc:: install-prereq
-do-install-doc: $(PROGRAM)
+do-install-doc: $(PROGRAM) pre-install-doc
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=rdoc --rdoc-output="$(RDOCOUT)"
 post-install-doc::
 	@$(NULLCMD)
 
 install-gem: pre-install-gem do-install-gem post-install-gem
 pre-install-gem:: pre-install-bin pre-install-lib pre-install-man
-do-install-gem: $(PROGRAM)
+do-install-gem: $(PROGRAM) pre-install-gem
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=gem
 post-install-gem::
 	@$(NULLCMD)
@@ -443,16 +446,21 @@ post-no-install-doc::
 
 CLEAR_INSTALLED_LIST = clear-installed-list
 
-install-prereq: $(CLEAR_INSTALLED_LIST) yes-fake PHONY
+install-prereq: $(CLEAR_INSTALLED_LIST) yes-fake sudo-precheck PHONY
 
 clear-installed-list: PHONY
 	@> $(INSTALLED_LIST) set MAKE="$(MAKE)"
 
 clean: clean-ext clean-local clean-enc clean-golf clean-rdoc clean-capi clean-extout clean-platform
-clean-local:: PHONY
+clean-local:: clean-runnable
 	$(Q)$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	$(Q)$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
 	$(Q)$(RM) y.tab.c y.output encdb.h transdb.h prelude.c config.log rbconfig.rb $(ruby_pc) probes.h probes.$(OBJEXT) probes.stamp ruby-glommed.$(OBJEXT)
+	$(Q)$(RM) GNUmakefile.old Makefile.old $(arch)-fake.rb
+clean-runnable:: PHONY
+	$(Q)$(CHDIR) bin 2>$(NULL) && $(RM) $(PROGRAM) $(WPROGRAM) $(GORUBY)$(EXEEXT) bin/*.$(DLEXT) 2>$(NULL) || exit 0
+	$(Q)$(CHDIR) lib 2>$(NULL) && $(RM) $(LIBRUBY_A) $(LIBRUBY) $(LIBRUBY_ALIASES) $(RUBY_BASE_NAME)/$(RUBY_PROGRAM_VERSION) $(RUBY_BASE_NAME)/vendor_ruby 2>$(NULL) || exit 0
+	$(Q)$(RMDIR) lib/$(RUBY_BASE_NAME) lib bin 2>$(NULL) || exit 0
 clean-ext:: PHONY
 clean-golf: PHONY
 	$(Q)$(RM) $(GORUBY)$(EXEEXT) $(GOLFOBJS)
@@ -460,6 +468,7 @@ clean-rdoc: PHONY
 clean-capi: PHONY
 clean-platform: PHONY
 clean-extout: PHONY
+	-$(Q)$(RMDIR) $(EXTOUT)/$(arch) $(EXTOUT) 2> $(NULL) || exit 0
 clean-docs: clean-rdoc clean-capi
 
 distclean: distclean-ext distclean-local distclean-enc distclean-golf distclean-extout distclean-platform
@@ -486,8 +495,21 @@ realclean-extout: distclean-extout
 clean-ext distclean-ext realclean-ext::
 	$(Q)$(RM) $(EXTS_MK)
 	$(Q)$(RM) $(EXTOUT)/.timestamp/.*.time
+	$(Q)$(RMDIR) $(EXTOUT)/.timestamp 2> $(NULL) || exit 0
 
 clean-enc distclean-enc realclean-enc: PHONY
+
+clean-rdoc distclean-rdoc realclean-rdoc:
+	@echo $(@:-rdoc=ing) rdoc
+	$(Q)$(RMALL) $(RDOCOUT)
+
+clean-capi distclean-capi realclean-capi:
+	@echo $(@:-capi=ing) capi
+	$(Q)$(RMALL) $(CAPIOUT)
+
+clean-platform:
+	$(Q) $(RM) $(PLATFORM_D)
+	-$(Q) $(RMDIR) $(PLATFORM_DIR) 2> $(NULL) || exit 0
 
 check: main test test-all
 	$(ECHO) check succeeded
@@ -566,7 +588,7 @@ libtrans trans: {$(VPATH)}transdb.h
 $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc/depend \
 	$(srcdir)/enc/encinit.c.erb $(srcdir)/lib/mkmf.rb $(RBCONFIG)
 	$(ECHO) generating $@
-	$(Q) $(MINIRUBY) $(srcdir)/enc/make_encmake.rb --builtin-encs="$(BUILTIN_ENCOBJS)" --builtin-transes="$(BUILTIN_TRANSOBJS)" --module$(EXTSTATIC) $@ $(ENCS)
+	$(Q) $(MINIRUBY) $(srcdir)/enc/make_encmake.rb --builtin-encs="$(BUILTIN_ENCOBJS)" --builtin-transes="$(BUILTIN_TRANSOBJS)" --module$(ENCSTATIC) $@ $(ENCS)
 
 .PRECIOUS: $(MKFILES)
 
@@ -710,10 +732,10 @@ object.$(OBJEXT): {$(VPATH)}object.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h \
 pack.$(OBJEXT): {$(VPATH)}pack.c $(RUBY_H_INCLUDES) {$(VPATH)}encoding.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}internal.h
 parse.$(OBJEXT): {$(VPATH)}parse.c $(RUBY_H_INCLUDES) {$(VPATH)}node.h \
-  $(ENCODING_H_INCLUDES) {$(VPATH)}id.h {$(VPATH)}regenc.h \
+  $(ENCODING_H_INCLUDES) {$(VPATH)}id.h {$(VPATH)}symbol.h {$(VPATH)}regenc.h \
   {$(VPATH)}regex.h {$(VPATH)}util.h {$(VPATH)}lex.c \
   {$(VPATH)}defs/keywords {$(VPATH)}id.c {$(VPATH)}parse.y \
-  {$(VPATH)}parse.h {$(VPATH)}internal.h $(PROBES_H_INCLUDES) {$(VPATH)}vm_opts.h
+  {$(VPATH)}parse.h {$(VPATH)}internal.h $(PROBES_H_INCLUDES) {$(VPATH)}vm_opts.h {$(VPATH)}gc.h
 proc.$(OBJEXT): {$(VPATH)}proc.c {$(VPATH)}eval_intern.h \
   $(RUBY_H_INCLUDES) {$(VPATH)}gc.h $(VM_CORE_H_INCLUDES) \
   {$(VPATH)}internal.h {$(VPATH)}iseq.h {$(VPATH)}vm_opts.h
@@ -749,14 +771,17 @@ ruby.$(OBJEXT): {$(VPATH)}ruby.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h \
 safe.$(OBJEXT): {$(VPATH)}safe.c $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES) {$(VPATH)}vm_opts.h {$(VPATH)}internal.h
 signal.$(OBJEXT): {$(VPATH)}signal.c $(RUBY_H_INCLUDES) \
   $(VM_CORE_H_INCLUDES) {$(VPATH)}vm_opts.h {$(VPATH)}internal.h {$(VPATH)}ruby_atomic.h {$(VPATH)}eval_intern.h
-sprintf.$(OBJEXT): {$(VPATH)}sprintf.c $(RUBY_H_INCLUDES) {$(VPATH)}re.h \
+sprintf.$(OBJEXT): {$(VPATH)}sprintf.c $(RUBY_H_INCLUDES) {$(VPATH)}re.h {$(VPATH)}id.h \
   {$(VPATH)}regex.h {$(VPATH)}vsnprintf.c $(ENCODING_H_INCLUDES) {$(VPATH)}internal.h
 st.$(OBJEXT): {$(VPATH)}st.c $(RUBY_H_INCLUDES)
 strftime.$(OBJEXT): {$(VPATH)}strftime.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}timev.h $(ENCODING_H_INCLUDES)
-string.$(OBJEXT): {$(VPATH)}string.c $(RUBY_H_INCLUDES) {$(VPATH)}re.h \
+string.$(OBJEXT): {$(VPATH)}string.c $(RUBY_H_INCLUDES) {$(VPATH)}re.h {$(VPATH)}gc.h \
   {$(VPATH)}regex.h $(ENCODING_H_INCLUDES) {$(VPATH)}internal.h $(PROBES_H_INCLUDES)
 struct.$(OBJEXT): {$(VPATH)}struct.c $(RUBY_H_INCLUDES) {$(VPATH)}internal.h
+symbol.$(OBJEXT): {$(VPATH)}symbol.c $(RUBY_H_INCLUDES) $(ENCODING_H_INCLUDES) \
+  {$(VPATH)}internal.h {$(VPATH)}node.h {$(VPATH)}id.h {$(VPATH)}symbol.h \
+  $(PROBES_H_INCLUDES)
 thread.$(OBJEXT): {$(VPATH)}thread.c {$(VPATH)}eval_intern.h \
   $(RUBY_H_INCLUDES) {$(VPATH)}gc.h $(VM_CORE_H_INCLUDES) \
   {$(VPATH)}thread_$(THREAD_MODEL).c $(ENCODING_H_INCLUDES) \
@@ -823,8 +848,6 @@ golf_prelude.$(OBJEXT): {$(VPATH)}golf_prelude.c $(RUBY_H_INCLUDES) \
 goruby.$(OBJEXT): {$(VPATH)}goruby.c {$(VPATH)}main.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}vm_debug.h {$(VPATH)}node.h $(hdrdir)/ruby.h
 
-sizes.$(OBJEXT): {$(VPATH)}sizes.c $(RUBY_H_INCLUDES)
-
 ascii.$(OBJEXT): {$(VPATH)}ascii.c {$(VPATH)}regenc.h {$(VPATH)}config.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}missing.h $(RUBY_H_INCLUDES)
 us_ascii.$(OBJEXT): {$(VPATH)}us_ascii.c {$(VPATH)}regenc.h \
@@ -861,6 +884,7 @@ DTRACE_DEPENDENT_OBJS = array.$(OBJEXT) \
 		object.$(OBJEXT) \
 		parse.$(OBJEXT) \
 		string.$(OBJEXT) \
+		symbol.$(OBJEXT) \
 		vm.$(OBJEXT)
 
 probes.$(OBJEXT): $(DTRACE_DEPENDENT_OBJS)
@@ -899,7 +923,8 @@ srcs-enc: $(ENC_MK)
 
 all-incs: incs
 incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}transdb.h {$(VPATH)}known_errors.inc \
-      $(srcdir)/revision.h $(REVISION_H) enc/unicode/name2ctype.h {$(VPATH)}id.h {$(VPATH)}probes.dmyh
+      $(srcdir)/revision.h $(REVISION_H) enc/unicode/name2ctype.h enc/jis/props.h \
+      {$(VPATH)}id.h {$(VPATH)}probes.dmyh
 
 insns: $(INSNS)
 

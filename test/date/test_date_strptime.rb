@@ -313,7 +313,6 @@ class TestDateStrptime < Test::Unit::TestCase
   end
 
   def test_strptime__2
-    n = 10**9
     (Date.new(2006,6,1)..Date.new(2007,6,1)).each do |d|
       [
        '%Y %m %d',

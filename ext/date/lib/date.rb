@@ -1,7 +1,6 @@
 # date.rb: Written by Tadayoshi Funaba 1998-2011
 
 require 'date_core'
-require 'date/format'
 
 class Date
 

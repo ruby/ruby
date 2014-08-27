@@ -35,7 +35,7 @@ module IRB
     # #parse_printf_format
     def printf(format, *opts)
       if /(%*)%I/ =~ format
-	format, opts = parse_printf_format(format, opts)
+        format, opts = parse_printf_format(format, opts)
       end
       print sprintf(format, *opts)
     end
@@ -58,8 +58,8 @@ module IRB
     # character.
     def puts(*objs)
       for obj in objs
-	print(*obj)
-	print "\n"
+        print(*obj)
+        print "\n"
       end
     end
 

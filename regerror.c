@@ -3,7 +3,7 @@
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2007  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * Copyright (c) 2011       K.Takata  <kentkt AT csc DOT jp>
+ * Copyright (c) 2011-2014  K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -53,8 +53,6 @@ onig_error_code_to_format(OnigPosition code)
     p = "no support in this configuration"; break;
   case ONIGERR_MEMORY:
     p = "failed to allocate memory"; break;
-  case ONIGERR_MATCH_STACK_LIMIT_OVER:
-    p = "match-stack limit over"; break;
   case ONIGERR_TYPE_BUG:
     p = "undefined type (bug)"; break;
   case ONIGERR_PARSER_BUG:
@@ -65,6 +63,8 @@ onig_error_code_to_format(OnigPosition code)
     p = "undefined bytecode (bug)"; break;
   case ONIGERR_UNEXPECTED_BYTECODE:
     p = "unexpected bytecode (bug)"; break;
+  case ONIGERR_MATCH_STACK_LIMIT_OVER:
+    p = "match-stack limit over"; break;
   case ONIGERR_DEFAULT_ENCODING_IS_NOT_SET:
     p = "default multibyte-encoding is not set"; break;
   case ONIGERR_SPECIFIED_ENCODING_CANT_CONVERT_TO_WIDE_CHAR:
@@ -141,14 +141,10 @@ onig_error_code_to_format(OnigPosition code)
 #endif
   case ONIGERR_NUMBERED_BACKREF_OR_CALL_NOT_ALLOWED:
     p = "numbered backref/call is not allowed. (use name)"; break;
-  case ONIGERR_TOO_BIG_WIDE_CHAR_VALUE:
-    p = "too big wide-char value"; break;
   case ONIGERR_TOO_SHORT_DIGITS:
     p = "too short digits"; break;
   case ONIGERR_TOO_LONG_WIDE_CHAR_VALUE:
     p = "too long wide-char value"; break;
-  case ONIGERR_INVALID_CODE_POINT_VALUE:
-    p = "invalid code point value"; break;
   case ONIGERR_EMPTY_GROUP_NAME:
     p = "group name is empty"; break;
   case ONIGERR_INVALID_GROUP_NAME:
@@ -173,6 +169,12 @@ onig_error_code_to_format(OnigPosition code)
     p = "group number is too big for capture history"; break;
   case ONIGERR_INVALID_CHAR_PROPERTY_NAME:
     p = "invalid character property name {%n}"; break;
+  case ONIGERR_TOO_MANY_CAPTURE_GROUPS:
+    p = "too many capture groups are specified"; break;
+  case ONIGERR_INVALID_CODE_POINT_VALUE:
+    p = "invalid code point value"; break;
+  case ONIGERR_TOO_BIG_WIDE_CHAR_VALUE:
+    p = "too big wide-char value"; break;
   case ONIGERR_NOT_SUPPORTED_ENCODING_COMBINATION:
     p = "not supported encoding combination"; break;
   case ONIGERR_INVALID_COMBINATION_OF_OPTIONS:
@@ -307,8 +309,12 @@ onig_error_code_to_str(s, code, va_alist)
 
   default:
     q = onig_error_code_to_format(code);
-    len = onigenc_str_bytelen_null(ONIG_ENCODING_ASCII, q);
-    xmemcpy(s, q, len);
+    if (q) {
+      len = onigenc_str_bytelen_null(ONIG_ENCODING_ASCII, q);
+      xmemcpy(s, q, len);
+    } else {
+      len = 0;
+    }
     s[len] = '\0';
     break;
   }

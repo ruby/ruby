@@ -449,7 +449,12 @@ class TupleSpaceTest < Test::Unit::TestCase
   end
   def teardown
     # implementation-dependent
-    @ts.instance_eval{@keeper.kill if @keeper}
+    @ts.instance_eval{
+      if th = @keeper
+        th.kill
+        th.join
+      end
+    }
   end
 end
 
@@ -463,7 +468,12 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   end
   def teardown
     # implementation-dependent
-    @ts_base.instance_eval{@keeper.kill if @keeper}
+    @ts_base.instance_eval{
+      if th = @keeper
+        th.kill
+        th.join
+      end
+    }
   end
 
   def test_remote_array_and_hash
@@ -515,6 +525,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
     assert_equal([[:test_take, 42]], @ts_base.read_all([:test_take, nil]),
                  '[bug:8215] tuple lost')
   ensure
+    service.stop_service if service
     signal = /mswin|mingw/ =~ RUBY_PLATFORM ? "KILL" : "TERM"
     Process.kill(signal, write) if write && status.nil?
     Process.kill(signal, take)  if take
@@ -554,7 +565,12 @@ class TestRingServer < Test::Unit::TestCase
   end
   def teardown
     # implementation-dependent
-    @ts.instance_eval{@keeper.kill if @keeper}
+    @ts.instance_eval{
+      if th = @keeper
+        th.kill
+        th.join
+      end
+    }
     @rs.shutdown
   end
 
@@ -641,6 +657,7 @@ class TestRingServer < Test::Unit::TestCase
   end
 
   def test_ring_server_ipv4_multicast
+    @rs.shutdown
     @rs = Rinda::RingServer.new(@ts, [['239.0.0.1', '0.0.0.0']], @port)
     v4mc = @rs.instance_variable_get('@sockets').first
 
@@ -658,6 +675,7 @@ class TestRingServer < Test::Unit::TestCase
     skip 'IPv6 not available' unless
       Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? }
 
+    @rs.shutdown
     begin
       @rs = Rinda::RingServer.new(@ts, [['ff02::1', '::1', 0]], @port)
     rescue Errno::EADDRNOTAVAIL
@@ -709,7 +727,10 @@ class TestRingServer < Test::Unit::TestCase
     end
     raise Timeout::Error, "timeout", bt
   ensure
-    th.kill if th
+    if th
+      th.kill
+      th.join
+    end
     Thread.abort_on_exception = aoe
   end
 
@@ -735,6 +756,8 @@ class TestRingFinger < Test::Unit::TestCase
     v4 = @rf.make_socket('127.0.0.1')
 
     assert(v4.getsockopt(:SOL_SOCKET, :SO_BROADCAST).bool)
+  ensure
+    v4.close if v4
   end
 
   def test_make_socket_ipv4_multicast
@@ -742,6 +765,8 @@ class TestRingFinger < Test::Unit::TestCase
 
     assert_equal(1, v4mc.getsockopt(:IPPROTO_IP, :IP_MULTICAST_LOOP).ipv4_multicast_loop)
     assert_equal(1, v4mc.getsockopt(:IPPROTO_IP, :IP_MULTICAST_TTL).ipv4_multicast_ttl)
+  ensure
+    v4mc.close if v4mc
   end
 
   def test_make_socket_ipv6_multicast
@@ -755,12 +780,16 @@ class TestRingFinger < Test::Unit::TestCase
 
     assert_equal(1, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_LOOP).int)
     assert_equal(1, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_HOPS).int)
+  ensure
+    v6mc.close if v6mc
   end
 
   def test_make_socket_ipv4_multicast_hops
     @rf.multicast_hops = 2
     v4mc = @rf.make_socket('239.0.0.1')
     assert_equal(2, v4mc.getsockopt(:IPPROTO_IP, :IP_MULTICAST_TTL).ipv4_multicast_ttl)
+  ensure
+    v4mc.close if v4mc
   end
 
   def test_make_socket_ipv6_multicast_hops
@@ -773,6 +802,8 @@ class TestRingFinger < Test::Unit::TestCase
       v6mc = @rf.make_socket("ff02::1%#{ifaddr.name}")
     end
     assert_equal(2, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_HOPS).int)
+  ensure
+    v6mc.close if v6mc
   end
 
 end

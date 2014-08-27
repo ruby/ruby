@@ -774,12 +774,22 @@ module Net
     end
 
     # Sends a FETCH command to retrieve data associated with a message
-    # in the mailbox. The +set+ parameter is a number, an array of
-    # numbers, or a Range object. The number is a message sequence
-    # number.  +attr+ is a list of attributes to fetch; see the
-    # documentation for Net::IMAP::FetchData for a list of valid
-    # attributes.
-    # The return value is an array of Net::IMAP::FetchData. For example:
+    # in the mailbox.
+    #
+    # The +set+ parameter is a number or a range between two numbers,
+    # or an array of those.  The number is a message sequence number,
+    # where -1 repesents a '*' for use in range notation like 100..-1
+    # being interpreted as '100:*'.  Beware that the +exclude_end?+
+    # property of a Range object is ignored, and the contents of a
+    # range are independent of the order of the range endpoints as per
+    # the protocol specification, so 1...5, 5..1 and 5...1 are all
+    # equivalent to 1..5.
+    #
+    # +attr+ is a list of attributes to fetch; see the documentation
+    # for Net::IMAP::FetchData for a list of valid attributes.
+    #
+    # The return value is an array of Net::IMAP::FetchData. For
+    # example:
     #
     #   p imap.fetch(6..8, "UID")
     #   #=> [#<Net::IMAP::FetchData seqno=6, attr={"UID"=>98}>, \\
@@ -1043,40 +1053,43 @@ module Net
       @tagno = 0
       @parser = ResponseParser.new
       @sock = TCPSocket.open(@host, @port)
-      if options[:ssl]
-        start_tls_session(options[:ssl])
-        @usessl = true
-      else
-        @usessl = false
-      end
-      @responses = Hash.new([].freeze)
-      @tagged_responses = {}
-      @response_handlers = []
-      @tagged_response_arrival = new_cond
-      @continuation_request_arrival = new_cond
-      @idle_done_cond = nil
-      @logout_command_tag = nil
-      @debug_output_bol = true
-      @exception = nil
-
-      @greeting = get_response
-      if @greeting.nil?
-        @sock.close
-        raise Error, "connection closed"
-      end
-      if @greeting.name == "BYE"
-        @sock.close
-        raise ByeResponseError, @greeting
-      end
-
-      @client_thread = Thread.current
-      @receiver_thread = Thread.start {
-        begin
-          receive_responses
-        rescue Exception
+      begin
+        if options[:ssl]
+          start_tls_session(options[:ssl])
+          @usessl = true
+        else
+          @usessl = false
         end
-      }
-      @receiver_thread_terminating = false
+        @responses = Hash.new([].freeze)
+        @tagged_responses = {}
+        @response_handlers = []
+        @tagged_response_arrival = new_cond
+        @continuation_request_arrival = new_cond
+        @idle_done_cond = nil
+        @logout_command_tag = nil
+        @debug_output_bol = true
+        @exception = nil
+
+        @greeting = get_response
+        if @greeting.nil?
+          raise Error, "connection closed"
+        end
+        if @greeting.name == "BYE"
+          raise ByeResponseError, @greeting
+        end
+
+        @client_thread = Thread.current
+        @receiver_thread = Thread.start {
+          begin
+            receive_responses
+          rescue Exception
+          end
+        }
+        @receiver_thread_terminating = false
+      rescue Exception
+        @sock.close
+        raise
+      end
     end
 
     def receive_responses
@@ -2371,6 +2384,8 @@ module Net
           return body_type_msg
         when /\A(?:ATTACHMENT)\z/ni
           return body_type_attachment
+        when /\A(?:MIXED)\z/ni
+          return body_type_mixed
         else
           return body_type_basic
         end
@@ -2451,6 +2466,13 @@ module Net
         match(T_SPACE)
         param = body_fld_param
         return BodyTypeAttachment.new(mtype, nil, param)
+      end
+
+      def body_type_mixed
+        mtype = "MULTIPART"
+        msubtype = case_insensitive_string
+        param, disposition, language, extension = body_ext_mpart
+        return BodyTypeBasic.new(mtype, msubtype, param, nil, nil, nil, nil, nil, disposition, language, extension)
       end
 
       def body_type_mpart
@@ -3060,39 +3082,6 @@ module Net
         return Address.new(name, route, mailbox, host)
       end
 
-#        def flag_list
-#       result = []
-#       match(T_LPAR)
-#       while true
-#         token = lookahead
-#         case token.symbol
-#         when T_RPAR
-#           shift_token
-#           break
-#         when T_SPACE
-#           shift_token
-#         end
-#         result.push(flag)
-#       end
-#       return result
-#        end
-
-#        def flag
-#       token = lookahead
-#       if token.symbol == T_BSLASH
-#         shift_token
-#         token = lookahead
-#         if token.symbol == T_STAR
-#           shift_token
-#           return token.value.intern
-#         else
-#           return atom.intern
-#         end
-#       else
-#         return atom
-#       end
-#        end
-
       FLAG_REGEXP = /\
 (?# FLAG        )\\([^\x80-\xff(){ \x00-\x1f\x7f%"\\]+)|\
 (?# ATOM        )([^\x80-\xff(){ \x00-\x1f\x7f%*"\\]+)/n
@@ -3587,174 +3576,3 @@ module Net
     end
   end
 end
-
-if __FILE__ == $0
-  # :enddoc:
-  require "getoptlong"
-
-  $stdout.sync = true
-  $port = nil
-  $user = ENV["USER"] || ENV["LOGNAME"]
-  $auth = "login"
-  $ssl = false
-  $starttls = false
-
-  def usage
-    <<EOF
-usage: #{$0} [options] <host>
-
-  --help                        print this message
-  --port=PORT                   specifies port
-  --user=USER                   specifies user
-  --auth=AUTH                   specifies auth type
-  --starttls                    use starttls
-  --ssl                         use ssl
-EOF
-  end
-
-  begin
-    require 'io/console'
-  rescue LoadError
-    def _noecho(&block)
-      system("stty", "-echo")
-      begin
-        yield STDIN
-      ensure
-        system("stty", "echo")
-      end
-    end
-  else
-    def _noecho(&block)
-      STDIN.noecho(&block)
-    end
-  end
-
-  def get_password
-    print "password: "
-    begin
-      return _noecho(&:gets).chomp
-    ensure
-      puts
-    end
-  end
-
-  def get_command
-    printf("%s@%s> ", $user, $host)
-    if line = gets
-      return line.strip.split(/\s+/)
-    else
-      return nil
-    end
-  end
-
-  parser = GetoptLong.new
-  parser.set_options(['--debug', GetoptLong::NO_ARGUMENT],
-                     ['--help', GetoptLong::NO_ARGUMENT],
-                     ['--port', GetoptLong::REQUIRED_ARGUMENT],
-                     ['--user', GetoptLong::REQUIRED_ARGUMENT],
-                     ['--auth', GetoptLong::REQUIRED_ARGUMENT],
-                     ['--starttls', GetoptLong::NO_ARGUMENT],
-                     ['--ssl', GetoptLong::NO_ARGUMENT])
-  begin
-    parser.each_option do |name, arg|
-      case name
-      when "--port"
-        $port = arg
-      when "--user"
-        $user = arg
-      when "--auth"
-        $auth = arg
-      when "--ssl"
-        $ssl = true
-      when "--starttls"
-        $starttls = true
-      when "--debug"
-        Net::IMAP.debug = true
-      when "--help"
-        usage
-        exit
-      end
-    end
-  rescue
-    abort usage
-  end
-
-  $host = ARGV.shift
-  unless $host
-    abort usage
-  end
-
-  imap = Net::IMAP.new($host, :port => $port, :ssl => $ssl)
-  begin
-    imap.starttls if $starttls
-    class << password = method(:get_password)
-      alias to_str call
-    end
-    imap.authenticate($auth, $user, password)
-    while true
-      cmd, *args = get_command
-      break unless cmd
-      begin
-        case cmd
-        when "list"
-          for mbox in imap.list("", args[0] || "*")
-            if mbox.attr.include?(Net::IMAP::NOSELECT)
-              prefix = "!"
-            elsif mbox.attr.include?(Net::IMAP::MARKED)
-              prefix = "*"
-            else
-              prefix = " "
-            end
-            print prefix, mbox.name, "\n"
-          end
-        when "select"
-          imap.select(args[0] || "inbox")
-          print "ok\n"
-        when "close"
-          imap.close
-          print "ok\n"
-        when "summary"
-          unless messages = imap.responses["EXISTS"][-1]
-            puts "not selected"
-            next
-          end
-          if messages > 0
-            for data in imap.fetch(1..-1, ["ENVELOPE"])
-              print data.seqno, ": ", data.attr["ENVELOPE"].subject, "\n"
-            end
-          else
-            puts "no message"
-          end
-        when "fetch"
-          if args[0]
-            data = imap.fetch(args[0].to_i, ["RFC822.HEADER", "RFC822.TEXT"])[0]
-            puts data.attr["RFC822.HEADER"]
-            puts data.attr["RFC822.TEXT"]
-          else
-            puts "missing argument"
-          end
-        when "logout", "exit", "quit"
-          break
-        when "help", "?"
-          print <<EOF
-list [pattern]                  list mailboxes
-select [mailbox]                select mailbox
-close                           close mailbox
-summary                         display summary
-fetch [msgno]                   display message
-logout                          logout
-help, ?                         display help message
-EOF
-        else
-          print "unknown command: ", cmd, "\n"
-        end
-      rescue Net::IMAP::Error
-        puts $!
-      end
-    end
-  ensure
-    imap.logout
-    imap.disconnect
-  end
-end
-

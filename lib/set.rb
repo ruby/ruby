@@ -91,18 +91,25 @@ class Set
 
   def do_with_enum(enum, &block) # :nodoc:
     if enum.respond_to?(:each_entry)
-      enum.each_entry(&block)
+      enum.each_entry(&block) if block
     elsif enum.respond_to?(:each)
-      enum.each(&block)
+      enum.each(&block) if block
     else
       raise ArgumentError, "value must be enumerable"
     end
   end
   private :do_with_enum
 
-  # Copy internal hash.
-  def initialize_copy(orig)
+  # Dup internal hash.
+  def initialize_dup(orig)
+    super
     @hash = orig.instance_variable_get(:@hash).dup
+  end
+
+  # Clone internal hash.
+  def initialize_clone(orig)
+    super
+    @hash = orig.instance_variable_get(:@hash).clone
   end
 
   def freeze    # :nodoc:
@@ -142,12 +149,12 @@ class Set
   def replace(enum)
     if enum.instance_of?(self.class)
       @hash.replace(enum.instance_variable_get(:@hash))
+      self
     else
+      do_with_enum(enum)
       clear
       merge(enum)
     end
-
-    self
   end
 
   # Converts the set to an array.  The order of elements is uncertain.

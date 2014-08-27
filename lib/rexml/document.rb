@@ -123,7 +123,7 @@ module REXML
     def xml_decl
       rv = @children[0]
       return rv if rv.kind_of? XMLDecl
-      rv = @children.unshift(XMLDecl.default)[0]
+      @children.unshift(XMLDecl.default)[0]
     end
 
     # @return the XMLDecl version of this document as a String.

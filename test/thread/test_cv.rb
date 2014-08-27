@@ -4,6 +4,12 @@ require 'tmpdir'
 require_relative '../ruby/envutil'
 
 class TestConditionVariable < Test::Unit::TestCase
+  def test_initialized
+    assert_raise(TypeError) {
+      ConditionVariable.allocate.wait(nil)
+    }
+  end
+
   def test_condvar_signal_and_wait
     mutex = Mutex.new
     condvar = ConditionVariable.new
@@ -74,8 +80,10 @@ class TestConditionVariable < Test::Unit::TestCase
       condvar.broadcast
       result << "P2"
     end
-    nr_threads.times do |i|
-      threads[i].join
+    Timeout.timeout(5) do
+      nr_threads.times do |i|
+        threads[i].join
+      end
     end
 
     assert_equal ["C1", "C1", "C1", "P1", "P2", "C2", "C2", "C2"], result

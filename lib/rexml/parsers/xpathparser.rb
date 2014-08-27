@@ -21,7 +21,7 @@ module REXML
         path.gsub!(/([\(\[])\s+/, '\1') # Strip ignorable spaces
         path.gsub!( /\s+([\]\)])/, '\1')
         parsed = []
-        path = OrExpr(path, parsed)
+        OrExpr(path, parsed)
         parsed
       end
 

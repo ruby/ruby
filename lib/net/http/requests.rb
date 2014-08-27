@@ -46,7 +46,7 @@ end
 class Net::HTTP::Options < Net::HTTPRequest
   METHOD = 'OPTIONS'
   REQUEST_HAS_BODY = false
-  RESPONSE_HAS_BODY = false
+  RESPONSE_HAS_BODY = true
 end
 
 # See Net::HTTPGenericRequest for attributes and methods.

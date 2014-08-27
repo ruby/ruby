@@ -15,11 +15,11 @@
 
 #include "ruby.h"
 
-#define RUBY_DIGEST_API_VERSION	2
+#define RUBY_DIGEST_API_VERSION	3
 
-typedef void (*rb_digest_hash_init_func_t)(void *);
+typedef int (*rb_digest_hash_init_func_t)(void *);
 typedef void (*rb_digest_hash_update_func_t)(void *, unsigned char *, size_t);
-typedef void (*rb_digest_hash_finish_func_t)(void *, unsigned char *);
+typedef int (*rb_digest_hash_finish_func_t)(void *, unsigned char *);
 
 typedef struct {
     int api_version;

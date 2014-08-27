@@ -57,7 +57,8 @@ CC_VERSION = @CC_VERSION@
 OUTFLAG = @OUTFLAG@$(empty)
 COUTFLAG = @COUTFLAG@$(empty)
 ARCH_FLAG = @ARCH_FLAG@
-CFLAGS = @CFLAGS@ $(ARCH_FLAG)
+CFLAGS_NO_ARCH = @CFLAGS@
+CFLAGS = $(CFLAGS_NO_ARCH) $(ARCH_FLAG)
 cflags = @cflags@
 optflags = @optflags@
 debugflags = @debugflags@
@@ -89,7 +90,6 @@ RUBY_BASE_NAME=@RUBY_BASE_NAME@
 RUBY_PROGRAM_VERSION=@RUBY_PROGRAM_VERSION@
 RUBY_INSTALL_NAME=@RUBY_INSTALL_NAME@
 RUBY_SO_NAME=@RUBY_SO_NAME@
-RUBY_RELEASE_DATE=@RUBY_RELEASE_DATE@
 EXEEXT = @EXEEXT@
 LIBEXT = @LIBEXT@
 PROGRAM=$(RUBY_INSTALL_NAME)$(EXEEXT)
@@ -113,8 +113,6 @@ XRUBY_LIBDIR = @XRUBY_LIBDIR@
 XRUBY_RUBYLIBDIR = @XRUBY_RUBYLIBDIR@
 XRUBY_RUBYHDRDIR = @XRUBY_RUBYHDRDIR@
 
-DEFAULT_PRELUDES = $(GEM_PRELUDE)
-
 #### End of system configuration section. ####
 
 MAJOR=	@MAJOR@
@@ -137,6 +135,7 @@ PREP          = @PREP@
 ARCHFILE      = @ARCHFILE@
 SETUP         =
 EXTSTATIC     = @EXTSTATIC@
+ENCSTATIC     = @ENCSTATIC@
 SET_LC_MESSAGES = env LC_MESSAGES=C
 
 MAKEDIRS      = @MKDIR_P@
@@ -184,6 +183,8 @@ MESSAGE_BEGIN = @for line in
 MESSAGE_END = ; do echo "$$line"; done
 ECHO_BEGIN = @sep=''; for word in
 ECHO_END = ; do echo @ECHO_N@ "$$sep'$$word'@ECHO_C@"; sep=' '; done; echo
+
+DESTDIR       = @DESTDIR@
 
 configure_args = @configure_args@
 #### End of variables
@@ -254,7 +255,7 @@ install-cross: $(arch)-fake.rb $(RBCONFIG) rbconfig.rb $(arch_hdrdir)/ruby/confi
 
 Makefile:	$(srcdir)/Makefile.in $(srcdir)/enc/Makefile.in
 
-$(MKFILES): config.status
+$(MKFILES): config.status $(srcdir)/version.h
 		@[ -f $@ ] && mv $@ $@.old
 		MAKE=$(MAKE) $(SHELL) ./config.status $@
 		@cmp $@ $@.old > /dev/null 2>&1 && echo $@ unchanged && exit 0; \
@@ -321,6 +322,22 @@ enc/unicode/name2ctype.h: enc/unicode/name2ctype.kwd
 	  sed '/^#ifdef USE_UNICODE_PROPERTIES/d;/^#endif/d' $? | gperf $(NAME2CTYPE_OPTIONS) > $@-2.h && \
 	  diff -DUSE_UNICODE_PROPERTIES $@-1.h $@-2.h > $@.tmp || :; \
 	  $(MV) $@.tmp $@ && \
+	  $(CP) $? $(?:.kwd=.src) && \
+	  $(CP) $@ $(?:.kwd=.h.blt); \
+	fi
+
+JIS_PROPS_OPTIONS = -k1,3 -7 -c -j1 -i1 -t -C -P -t --ignore-case -H onig_jis_property_hash -Q onig_jis_property_pool -N onig_jis_property
+
+enc/jis/props.h: enc/jis/props.kwd
+	$(MAKEDIRS) $(@D)
+	@set +e; \
+	if cmp -s $(?:.kwd=.src) $?; then \
+	  set -x; \
+	  $(CP) $(?:.kwd=.h.blt) $@; \
+	else \
+	  set -x; \
+	  gperf $(JIS_PROPS_OPTIONS) $? | \
+	  sed 's/(int)(long)&((\([a-zA-Z_0-9 ]*[a-zA-Z_0-9]\) *\*)0)->\([a-zA-Z0-9_]*\),/(char)offsetof(\1, \2),/g' > $@ && \
 	  $(CP) $? $(?:.kwd=.src) && \
 	  $(CP) $@ $(?:.kwd=.h.blt); \
 	fi
@@ -404,23 +421,11 @@ distclean-ext realclean-ext::
 	-$(Q)$(RMDIR) ext 2> /dev/null || true
 
 clean-extout:
-	-$(Q)$(RMDIRS) $(EXTOUT) 2> /dev/null || true
 
 clean-enc distclean-enc realclean-enc:
 	@test -f "$(ENC_MK)" || exit 0; \
 	echo $(@:-enc=ing) encodings; \
 	exec $(MAKE) -f $(ENC_MK) $(MFLAGS) $(@:-enc=)
-
-clean-rdoc distclean-rdoc realclean-rdoc:
-	@echo $(@:-rdoc=ing) rdoc
-	$(Q)$(RMALL) $(RDOCOUT)
-clean-capi distclean-capi realclean-capi:
-	@echo $(@:-capi=ing) capi
-	$(Q)$(RMALL) $(CAPIOUT)
-
-clean-platform:
-	@$(RM) $(PLATFORM_D)
-	-$(Q) $(RMDIR) $(PLATFORM_DIR) 2> /dev/null || true
 
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 	$(ECHO) compiling $@

@@ -12,6 +12,9 @@ class TestBacktraceSuppression < Rake::TestCase
 
   def test_system_dir_suppressed
     path = RbConfig::CONFIG['rubylibprefix']
+    skip if path.nil?
+    path = File.expand_path path
+
     paths = [path + ":12"]
 
     actual = Rake::Backtrace.collapse(paths)
@@ -21,6 +24,9 @@ class TestBacktraceSuppression < Rake::TestCase
 
   def test_near_system_dir_isnt_suppressed
     path = RbConfig::CONFIG['rubylibprefix']
+    skip if path.nil?
+    path = File.expand_path path
+
     paths = [" " + path + ":12"]
 
     actual = Rake::Backtrace.collapse(paths)
@@ -36,7 +42,7 @@ class TestRakeBacktrace < Rake::TestCase
     super
 
     skip 'tmpdir is suppressed in backtrace' if
-      Dir.pwd =~ Rake::Backtrace::SUPPRESS_PATTERN
+      Rake::Backtrace::SUPPRESS_PATTERN =~ Dir.pwd
   end
 
   def invoke(*args)

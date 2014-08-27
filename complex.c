@@ -1342,6 +1342,20 @@ rb_Complex(VALUE x, VALUE y)
     return nucomp_s_convert(2, a, rb_cComplex);
 }
 
+VALUE
+rb_complex_set_real(VALUE cmp, VALUE r)
+{
+    RCOMPLEX_SET_REAL(cmp, r);
+    return cmp;
+}
+
+VALUE
+rb_complex_set_imag(VALUE cmp, VALUE i)
+{
+    RCOMPLEX_SET_REAL(cmp, i);
+    return cmp;
+}
+
 /*
  * call-seq:
  *    cmp.to_i  ->  integer
@@ -2153,7 +2167,7 @@ Init_Complex(void)
     rb_define_method(rb_cComplex, "inspect", nucomp_inspect, 0);
 
     rb_define_private_method(rb_cComplex, "marshal_dump", nucomp_marshal_dump, 0);
-    compat = rb_define_class_under(rb_cComplex, "compatible", rb_cObject);
+    compat = rb_define_class_under(rb_cComplex, "compatible", rb_cObject); /* :nodoc: */
     rb_define_private_method(compat, "marshal_load", nucomp_marshal_load, 1);
     rb_marshal_define_compat(rb_cComplex, compat, nucomp_dumper, nucomp_loader);
 
@@ -2195,6 +2209,8 @@ Init_Complex(void)
      */
     rb_define_const(rb_cComplex, "I",
 		    f_complex_new_bang2(rb_cComplex, ZERO, ONE));
+
+    rb_provide("complex.so");	/* for backward compatibility */
 }
 
 /*

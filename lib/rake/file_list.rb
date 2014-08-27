@@ -2,10 +2,10 @@ require 'rake/cloneable'
 require 'rake/file_utils_ext'
 require 'rake/pathmap'
 
-######################################################################
+
 module Rake
 
-  # #########################################################################
+  ##
   # A FileList is essentially an array with a few helper methods defined to
   # make file manipulation a bit easier.
   #
@@ -156,7 +156,6 @@ module Rake
       self
     end
 
-
     # Clear all the exclude patterns so that we exclude nothing.
     def clear_exclude
       @exclude_patterns = []
@@ -164,7 +163,7 @@ module Rake
       self
     end
 
-    # Define equality.
+    # A FileList is equal through array equality.
     def ==(array)
       to_ary == array
     end
@@ -208,7 +207,7 @@ module Rake
       self
     end
 
-    def resolve_add(fn)
+    def resolve_add(fn) # :nodoc:
       case fn
       when %r{[*?\[\{]}
         add_matching(fn)
@@ -218,7 +217,7 @@ module Rake
     end
     private :resolve_add
 
-    def resolve_exclude
+    def resolve_exclude # :nodoc:
       reject! { |fn| excluded_from_list?(fn) }
       self
     end
@@ -275,7 +274,6 @@ module Rake
     def ext(newext='')
       collect { |fn| fn.ext(newext) }
     end
-
 
     # Grep each of the files in the filelist using the given pattern. If a
     # block is given, call the block on each matching line, passing the file
@@ -377,7 +375,7 @@ module Rake
       proc { |fn| fn =~ /(^|[\/\\])core$/ && ! File.directory?(fn) }
     ]
 
-    def import(array)
+    def import(array) # :nodoc:
       @items = array
       self
     end

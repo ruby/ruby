@@ -197,8 +197,6 @@ AC_SUBST(MINOR)
 AC_SUBST(TEENY)
 RUBY_PROGRAM_VERSION=`sed -n 's/^#define RUBY_VERSION "\(.*\)"/\1/p' $srcdir/version.h`
 AC_SUBST(RUBY_PROGRAM_VERSION)
-RUBY_RELEASE_DATE=`sed -n 's/^#define RUBY_RELEASE_DATE "\(.*\)"/\1/p' $srcdir/version.h`
-AC_SUBST(RUBY_RELEASE_DATE)
 RUBY_PATCHLEVEL=`sed -n 's/^#define RUBY_PATCHLEVEL //p' $srcdir/version.h`
 AC_DEFINE(CANONICALIZATION_FOR_MATHN)
 dnl checks for alternative programs
@@ -230,6 +228,9 @@ test -z "$CXX" || ac_cv_prog_CXX="$CXX"
 
 if test "$program_prefix" = NONE; then
   program_prefix=
+fi
+if test "$prefix" -ef .; then
+  AC_MSG_ERROR(--prefix cannot be the current working directory.)
 fi
 RUBY_BASE_NAME=`echo ruby | sed "$program_transform_name"`
 RUBYW_BASE_NAME=`echo rubyw | sed "$program_transform_name"`
@@ -691,16 +692,25 @@ RUBY_WERROR_FLAG([
 	]
     )
     AC_MSG_CHECKING([whether LDFLAGS is valid])
+    {
+	mkdir tmp.$$.try_link &&
+	cd tmp.$$.try_link &&
+	cp ../confdefs.h . &&
+	echo '<?xml?><plist><dict><key>CFBundleIdentifier</key><string></string></dict></plist>' > Info.plist &&
+	:
+    } || AC_MSG_ERROR([faild to make temporary directory])
     AC_TRY_LINK([], [],
 	[AC_MSG_RESULT(yes)],
 	[
+	cd .. && rm -fr tmp.$$.try_link
 	AC_MSG_RESULT(no)
 	AC_MSG_ERROR([something wrong with LDFLAGS="$LDFLAGS"])
 	]
     )
+    cd .. && rm -fr tmp.$$.try_link
 ])
 
-AC_DEFUN(RUBY_TRY_CFLAGS, [
+AC_DEFUN([RUBY_TRY_CFLAGS], [
     AC_MSG_CHECKING([whether ]$1[ is accepted as CFLAGS])
     RUBY_WERROR_FLAG([
     CFLAGS="[$]CFLAGS $1"
@@ -712,7 +722,7 @@ AC_DEFUN(RUBY_TRY_CFLAGS, [
     ])
 ])
 
-AC_DEFUN(RUBY_TRY_LDFLAGS, [
+AC_DEFUN([RUBY_TRY_LDFLAGS], [
     save_LDFLAGS="$LDFLAGS"
     LDFLAGS="[$]LDFLAGS $1"
     AC_MSG_CHECKING([whether $1 is accepted as LDFLAGS])
@@ -826,7 +836,7 @@ if test "$GCC" = yes; then
 	for ansi_options in -std=iso9899:1999 "-ansi -std=iso9899:199409"; do
 	    RUBY_TRY_CFLAGS(${ansi_options}, [
 		RUBY_APPEND_OPTIONS(warnflags, ${ansi_options})
-	  	RUBY_APPEND_OPTIONS(strict_warnflags, ${ansi_options})
+		RUBY_APPEND_OPTIONS(strict_warnflags, ${ansi_options})
 	    ], [ansi_options=])
 	    test "x${ansi_options}" = x || break
 	done
@@ -870,22 +880,6 @@ if test "$GCC" = yes; then
     for oflag in -fno-fast-math; do
 	RUBY_TRY_CFLAGS($oflag, [RUBY_APPEND_OPTION(optflags, $oflag)])
     done
-    AS_CASE(["$target"],
-	[*-darwin*], [
-	    # doesn't seem necessary on Mac OS X
-	],
-	[[i[4-6]86*]], [
-	    RUBY_TRY_CFLAGS(-msse2 -mfpmath=sse, [
-		RUBY_APPEND_OPTION(XCFLAGS, -msse2 -mfpmath=sse)
-	    ])
-            AS_CASE(["$XCFLAGS"],
-                [[*-msse2*]], [
-                    RUBY_TRY_CFLAGS(-mstackrealign, [
-                        RUBY_APPEND_OPTION(XCFLAGS, -mstackrealign)
-                    ])
-                ])
-	]
-    )
 fi
 
 AC_ARG_WITH(opt-dir,
@@ -960,7 +954,8 @@ AS_CASE(["$target_os"],
 		    [macosx_10_5=yes], [macosx_10_5=no])
 		AC_MSG_RESULT($macosx_10_5)
 		if test $macosx_10_5 = yes; then
-		    ac_cv_header_ucontext_h=no
+		    ac_cv_func_getcontext=no
+		    ac_cv_func_setcontext=no
 		else
 		    AC_DEFINE(BROKEN_SETREUID, 1)
 		    AC_DEFINE(BROKEN_SETREGID, 1)
@@ -1059,12 +1054,10 @@ main()
                 ac_cv_func_clock_gettime=yes
                 ac_cv_func_clock_getres=yes
 		ac_cv_func_malloc_usable_size=no
-		ac_cv_type_struct_statfs=yes
-		ac_cv_member_struct_statfs_f_fstypename=yes
 		{ test "$target_cpu" = x64 && ac_cv_func___builtin_setjmp=no; }
 		AC_CHECK_TYPE([NET_LUID], [], [],
 			      [@%:@include <windows.h>
-		  	      @%:@include <iphlpapi.h>])
+			      @%:@include <iphlpapi.h>])
 		if test x"$ac_cv_type_NET_LUID" = xyes; then
 		    AC_DEFINE(HAVE_TYPE_NET_LUID, 1)
 		fi
@@ -1084,7 +1077,6 @@ main()
 		ac_cv_func_close=no
 		],
 [netbsd*], [	LIBS="-lm $LIBS"
-		ac_cv_func_fstatfs=no
 		],
 [dragonfly*], [	LIBS="-lm $LIBS"
 		# isinf() and isnan() are macros on DragonFly.
@@ -1121,11 +1113,10 @@ AC_CHECK_HEADERS( \
   sys/syscall.h \
   fcntl.h \
   sys/fcntl.h \
+  sys/param.h \
   sys/select.h \
   sys/time.h \
   sys/times.h \
-  sys/param.h \
-  sys/vfs.h \
   syscall.h \
   pwd.h \
   grp.h \
@@ -1154,9 +1145,6 @@ AC_CHECK_HEADERS( \
   malloc/malloc.h \
   setjmpex.h
 )
-AC_CHECK_HEADERS(sys/mount.h, [], [], [@%:@ifdef HAVE_SYS_PARAM_H
-@%:@ include <sys/param.h>
-@%:@endif])
 
 AC_ARG_WITH([gmp],
   [AS_HELP_STRING([--without-gmp],
@@ -1170,6 +1158,39 @@ AS_IF([test "x$with_gmp" != xno],
    with_gmp="$ac_cv_lib_gmp___gmpz_init"
    AS_IF([test -z "$with_gmp"], [with_gmp=no])])
 
+AC_ARG_WITH([jemalloc],
+  [AS_HELP_STRING([--with-jemalloc],[use jemalloc allocator])],
+  [with_jemalloc=yes], [with_jemalloc=no])
+AS_IF([test "x$with_jemalloc" = xyes],[
+  AC_CHECK_LIB([jemalloc], [malloc_conf], [], [with_jemalloc=no])
+  AC_CHECK_HEADER(jemalloc/jemalloc.h, [
+    AC_DEFINE(RUBY_ALTERNATIVE_MALLOC_HEADER, [<jemalloc/jemalloc.h>])
+  ])
+  AS_IF([test "x$with_jemalloc" = xno], [
+    AC_CACHE_CHECK([for jemalloc with JEMALLOC_MANGLE], rb_cv_jemalloc_demangle,
+      [AC_LINK_IFELSE([AC_LANG_PROGRAM([@%:@define JEMALLOC_MANGLE 1
+      @%:@ifdef RUBY_ALTERNATIVE_MALLOC_HEADER
+      @%:@include RUBY_ALTERNATIVE_MALLOC_HEADER
+      @%:@else
+      @%:@include <jemalloc.h>
+      @%:@endif], [return !&malloc_conf])],
+      [rb_cv_jemalloc_demangle=yes],
+      [rb_cv_jemalloc_demangle=no])
+    ])
+  ])
+  AS_IF([test "x$rb_cv_jemalloc_demangle" = xyes], [
+    AC_DEFINE(JEMALLOC_MANGLE)
+    with_jemalloc=yes
+    LIBS="-ljemalloc $LIBS"
+  ])
+  AS_IF([test "x$with_jemalloc" = xyes],
+    [
+      ac_cv_func_malloc_usable_size=yes
+    ],
+    [AC_MSG_ERROR([jemalloc requested but not found])
+  ])
+])
+
 dnl check for large file stuff
 mv confdefs.h confdefs1.h
 : > confdefs.h
@@ -1178,13 +1199,25 @@ mv confdefs.h largefile.h
 mv confdefs1.h confdefs.h
 cat largefile.h >> confdefs.h
 
-AS_CASE(["$target_os"],[mingw*], [ac_cv_type_off_t=yes;ac_cv_sizeof_off_t=8])
+AS_CASE(["$target_os"],
+    [mingw*], [ac_cv_type_off_t=yes;ac_cv_sizeof_off_t=8],
+    [aix*], [
+    AS_CASE(["$target_cpu:$ac_cv_sys_large_files"],
+	[ppc64:*|powerpc64:*], [],
+	[*:no|*:unknown], [],
+	[
+	    # AIX currently does not support a 32-bit call to posix_fadvise()
+	    # if _LARGE_FILES is defined.
+	    ac_cv_posix_fadvise=no
+	])
+    ])
 
 AC_C_BIGENDIAN
 AC_C_CONST
 AC_C_CHAR_UNSIGNED
 AC_C_INLINE
 AC_C_VOLATILE
+AC_C_TYPEOF
 
 AS_CASE(":$ac_cv_c_const:$ac_cv_c_volatile:",
     [*:no:*], [AC_MSG_ERROR(ANSI C-conforming const and volatile are mandatory)])
@@ -1304,8 +1337,6 @@ AC_CACHE_CHECK(packed struct attribute, rb_cv_packed_struct,
 packed_struct_unaligned=x
 if test "$rb_cv_packed_struct" != no; then
     AC_DEFINE_UNQUOTED([PACKED_STRUCT(x)], [$rb_cv_packed_struct])
-    AS_CASE(["$target_cpu"],
-	    [x86*|i?86|x64], [packed_struct_unaligned='PACKED_STRUCT(x)'])
 else
     AC_DEFINE_UNQUOTED([PACKED_STRUCT(x)], x)
 fi
@@ -1505,12 +1536,6 @@ EOH
 ])dnl
 ])dnl
 
-AC_CACHE_CHECK(for typeof, rb_cv_typeof,
-  [AC_TRY_COMPILE([int i; typeof(i) j;], [], [rb_cv_typeof=yes], [rb_cv_typeof=no])])
-if test "$rb_cv_typeof" = yes; then
-  AC_DEFINE(HAVE_TYPEOF)
-fi
-
 dnl RUBY_FUNC_ATTRIBUTE(attrib, macroname, cachevar, condition)
 AC_DEFUN([RUBY_FUNC_ATTRIBUTE], [dnl
 m4_ifval([$2], dnl
@@ -1523,7 +1548,7 @@ m4_ifval([$3], dnl
 )dnl
 m4_pushdef([attrib_code],[m4_bpatsubst([$1],["],[\\"])])
 m4_ifval([$4], [rbcv_cond=["$4"]; test "$rbcv_cond" || unset rbcv_cond])
-AC_CACHE_CHECK(for [$2] function attribute, rbcv,
+AC_CACHE_CHECK(for m4_ifval([$2],[$2],[$1]) function attribute, rbcv,
 [rbcv=x
 RUBY_WERROR_FLAG([
 for mac in \
@@ -1694,6 +1719,7 @@ AC_CHECK_MEMBERS([struct stat.st_mtimensec])
 AC_CHECK_MEMBERS([struct stat.st_ctim])
 AC_CHECK_MEMBERS([struct stat.st_ctimespec])
 AC_CHECK_MEMBERS([struct stat.st_ctimensec])
+AC_CHECK_MEMBERS([struct stat.st_birthtimespec])
 
 AC_CHECK_TYPES([struct timeval], [], [], [@%:@ifdef HAVE_TIME_H
 @%:@include <time.h>
@@ -1733,33 +1759,6 @@ AC_CHECK_TYPES([struct timezone], [], [], [@%:@ifdef HAVE_TIME_H
 @%:@ifdef HAVE_SYS_TIME_H
 @%:@ include <sys/time.h>
 @%:@endif])
-
-AC_CHECK_TYPES([struct statfs], [], [], [@%:@ifdef HAVE_SYS_PARAM_H
-@%:@ include <sys/param.h>
-@%:@endif
-@%:@ifdef HAVE_SYS_MOUNT_H
-@%:@ include <sys/mount.h>
-@%:@endif
-@%:@ifdef HAVE_SYS_VFS_H
-@%:@ include <sys/vfs.h>
-@%:@endif])
-AS_IF([test "$ac_cv_type_struct_statfs" = yes], [
-AC_CHECK_MEMBERS([struct statfs.f_type, struct statfs.f_fstypename], [], [], [@%:@ifdef HAVE_SYS_PARAM_H
-@%:@ include <sys/param.h>
-@%:@endif
-@%:@ifdef HAVE_SYS_MOUNT_H
-@%:@ include <sys/mount.h>
-@%:@endif
-@%:@ifdef HAVE_SYS_VFS_H
-@%:@ include <sys/vfs.h>
-@%:@endif])
-])
-# AIX, HP-UX, NetBSD, Solaris
-AC_CHECK_TYPES([struct statvfs], [], [], [@%:@ include <sys/statvfs.h>])
-# NetBSD
-AC_CHECK_MEMBERS([struct statvfs.f_fstypename], [], [], [@%:@ include <sys/statvfs.h>])
-# AIX, HP-UX, Solaris
-AC_CHECK_MEMBERS([struct statvfs.f_basetype], [], [], [@%:@ include <sys/statvfs.h>])
 
 AC_CHECK_TYPES([clockid_t], [], [], [@%:@ifdef HAVE_TIME_H
 @%:@ include <time.h>
@@ -1934,6 +1933,7 @@ AC_REPLACE_FUNCS(isinf)
 AC_REPLACE_FUNCS(isnan)
 AC_REPLACE_FUNCS(lgamma_r)
 AC_REPLACE_FUNCS(memmove)
+AC_REPLACE_FUNCS(nextafter)
 AC_REPLACE_FUNCS(setproctitle)
 AC_REPLACE_FUNCS(strchr)
 AC_REPLACE_FUNCS(strerror)
@@ -1985,8 +1985,6 @@ AC_CHECK_FUNCS(fcntl)
 AC_CHECK_FUNCS(fdatasync)
 AC_CHECK_FUNCS(fmod)
 AC_CHECK_FUNCS(fork)
-AC_CHECK_FUNCS(fstatfs)
-AC_CHECK_FUNCS(fstatvfs)
 AC_CHECK_FUNCS(fsync)
 AC_CHECK_FUNCS(ftruncate)
 AC_CHECK_FUNCS(ftruncate64)		# used for Win32 platform
@@ -2170,9 +2168,9 @@ main(int argc, char **argv)
 	[rb_cv_atan2_inf_c99=no],
 	[AS_CASE($target_os, [mingw*|mswin*], [rb_cv_atan2_inf_c99=no], [rb_cv_atan2_inf_c99=yes])]
 	)
-    ])
+    ], [rb_cv_atan2_inf_c99=no])
 ])
-AS_IF([test $rb_cv_atan2_inf_c99 = yes], [AC_DEFINE(ATAN2_INF_C99)])
+AS_IF([test "x$rb_cv_atan2_inf_c99" = xyes], [AC_DEFINE(ATAN2_INF_C99)])
 
 # Some platform need -lrt for clock_gettime, but the other don't.
 if test x"$ac_cv_func_clock_gettime" != xyes; then
@@ -2203,7 +2201,7 @@ AC_CACHE_CHECK(for sigsetjmp as a macro or function, ac_cv_func_sigsetjmp,
 	ac_cv_func_sigsetjmp=yes,
 	ac_cv_func_sigsetjmp=no)])
 
-AC_DEFUN(RUBY_CHECK_BUILTIN_SETJMP, [
+AC_DEFUN([RUBY_CHECK_BUILTIN_SETJMP], [
 if test x"${ac_cv_func___builtin_setjmp}" = xyes; then
    unset ac_cv_func___builtin_setjmp
 fi
@@ -2230,7 +2228,7 @@ AC_CACHE_CHECK(for __builtin_setjmp, ac_cv_func___builtin_setjmp,
 # we don't use _setjmp if _longjmp doesn't exist.
 test x$ac_cv_func__longjmp = xno && ac_cv_func__setjmp=no
 
-AC_DEFUN(RUBY_SETJMP_TYPE, [
+AC_DEFUN([RUBY_SETJMP_TYPE], [
 RUBY_CHECK_BUILTIN_SETJMP
 AC_MSG_CHECKING(for setjmp type)
 setjmp_suffix=
@@ -2521,7 +2519,7 @@ if test "$ac_cv_func_sysconf" = yes; then
   RUBY_CHECK_SYSCONF(CLK_TCK)
 fi
 
-AC_DEFUN(RUBY_STACK_GROW_DIRECTION, [
+AC_DEFUN([RUBY_STACK_GROW_DIRECTION], [
     AS_VAR_PUSHDEF([stack_grow_dir], [rb_cv_stack_grow_dir_$1])
     AC_CACHE_CHECK(stack growing direction on $1, stack_grow_dir, [
 AS_CASE(["$1"],
@@ -2601,6 +2599,20 @@ if test x"$enable_pthread" = xyes; then
 		    [LIBS="-l$pthread_lib $LIBS"])])
     else
 	AC_MSG_WARN("Don't know how to find pthread library on your system -- thread support disabled")
+    fi
+    AC_CACHE_CHECK([whether pthread_t is scalar type], [rb_cv_scalar_pthread_t], [
+	AC_TRY_COMPILE([
+	    @%:@include <pthread.h>
+	    ], [
+	    pthread_t thread_id;
+	    thread_id = 0;
+	    if (!thread_id) return 0;
+	    ], [rb_cv_scalar_pthread_t=yes], [rb_cv_scalar_pthread_t=no])
+    ])
+    if test x"$rb_cv_scalar_pthread_t" = xyes; then
+	: # RUBY_CHECK_SIZEOF(pthread_t, [void* int long], [], [@%:@include <pthread.h>])
+    else
+	AC_DEFINE(NON_SCALAR_THREAD_ID)
     fi
     AC_CHECK_FUNCS(sched_yield pthread_attr_setinheritsched \
 	pthread_getattr_np pthread_attr_get_np pthread_attr_getstack\
@@ -2813,7 +2825,7 @@ if test "$with_dln_a_out" != yes; then
 			    RPATHFLAG=' +b %1$-s'
 			fi
 			rb_cv_dlopen=yes],
-	[solaris*], [ 	if test "$GCC" = yes; then
+	[solaris*], [	if test "$GCC" = yes; then
 			    : ${LDSHARED='$(CC) -shared'}
 			    if test "$rb_cv_prog_gnu_ld" = yes; then
 				LDFLAGS="$LDFLAGS -Wl,-E"
@@ -2928,7 +2940,7 @@ if test "$with_dln_a_out" != yes; then
 	[os2-emx*], [	LDFLAGS="$LDFLAGS -Zomf"
 			],
         [nacl], [ LDSHARED='$(CC) -shared' ],
-	[ 	: ${LDSHARED='$(LD)'}])
+	[	: ${LDSHARED='$(LD)'}])
   AC_MSG_RESULT($rb_cv_dlopen)
 
   if test "$rb_cv_dlopen" = yes; then
@@ -3037,24 +3049,25 @@ void sigsegv(int signum, siginfo_t *info, void *ctx){
     if (n > 0) {
 	/*fprintf(stdout, "backtrace:%d\n",n);*/
     } else {
-	abort();
+	_exit(EXIT_FAILURE);
     }
-    _exit(0);
+    _exit(EXIT_SUCCESS);
 }
 int
-main()
+main(void)
 {
+    volatile int *a = NULL;
     stack_t ss;
     ss.ss_sp = malloc(SIGSTKSZ);
     if (ss.ss_sp == NULL) {
 	fprintf(stderr, "cannot allocate memory for sigaltstack\n");
-	abort();
+	return EXIT_FAILURE;
     }
     ss.ss_size = SIGSTKSZ;
     ss.ss_flags = 0;
     if (sigaltstack(&ss, NULL) == -1) {
 	fprintf(stderr, "sigaltstack failed\n");
-	abort();
+	return EXIT_FAILURE;
     }
     struct sigaction sa;
     memset(&sa, 0, sizeof(struct sigaction));
@@ -3063,9 +3076,8 @@ main()
     sa.sa_flags |= SA_SIGINFO;
     sa.sa_flags |= SA_ONSTACK;
     sigaction(SIGSEGV, &sa, NULL);
-    int *a = NULL;
     a[0] = 1;
-    return 0;
+    return EXIT_SUCCESS;
 }
 ],
 	rb_cv_broken_backtrace=no,
@@ -3166,12 +3178,13 @@ EXTSTATIC=
 AC_SUBST(EXTSTATIC)dnl
 AC_ARG_WITH(static-linked-ext,
 	    AS_HELP_STRING([--with-static-linked-ext], [link external modules statically]),
-            [AS_CASE([$withval],[yes],[STATIC=;EXTSTATIC=static])])
-if test x"$EXTSTATIC" = xstatic; then
+            [AS_CASE([$withval],[yes],[STATIC=;EXTSTATIC=static],[no],[],[EXTSTATIC="$withval"])])
+AS_CASE([",$EXTSTATIC,"], [,static,|*,enc,*], [
   ENCOBJS='enc/encinit.$(OBJEXT) enc/libenc.$(LIBEXT) enc/libtrans.$(LIBEXT)'
   EXTOBJS='ext/extinit.$(OBJEXT)'
   AC_DEFINE_UNQUOTED(EXTSTATIC, 1)
-fi
+  AC_SUBST(ENCSTATIC, static)
+])
 AC_SUBST(ENCOBJS)
 AC_SUBST(EXTOBJS)
 
@@ -3546,7 +3559,7 @@ AC_ARG_ENABLE(install-rdoc,
       [install_rdoc=$enableval], [install_rdoc=yes])
 AC_ARG_ENABLE(install-capi,
       AS_HELP_STRING([--disable-install-capi], [do not install C API documents during install]),
-      [install_capi=$enableval], [install_capi=yes])
+      [install_capi=$enableval], [install_capi=no])
 
 if test "$install_doc" != no; then
     if test "$install_rdoc" != no; then
@@ -4139,6 +4152,7 @@ AC_CONFIG_FILES(Makefile, [
 		["git svn"], [VCSUP='$(VCS) rebase $(GITSVNREBASEOPTIONS)'],
 		[git],       [VCSUP='$(VCS) pull $(GITPULLOPTIONS)'],
 		[VCSUP='$(VCS)'])
+	sed -n 's/^@%:@define \(RUBY_RELEASE_DATE\) "\(.*\)"/\1 = \2/p' "$srcdir/version.h"
 	sed '/^MISSING/s/\$U\././g;/^VCS *=/s#@VCS@#'"$VCS"'#;/^VCSUP *=/s#@VCSUP@#'"$VCSUP"'#' Makefile
 	echo; test x"$EXEEXT" = x || echo 'miniruby: miniruby$(EXEEXT)'
 	if test "$gnumake" != yes; then
@@ -4169,6 +4183,11 @@ AC_ARG_WITH([ruby-pc],
 	    [ruby_pc="${RUBY_BASE_NAME}-${MAJOR}.${MINOR}.pc"])
 AC_SUBST(ruby_pc)
 AC_SUBST(exec, [exec])
+
+AC_ARG_WITH(destdir,
+	    AS_HELP_STRING([--with-destdir=DESTDIR], [specify default directory to install]),
+	    [DESTDIR="$withval"])
+AC_SUBST(DESTDIR)
 
 AC_CONFIG_FILES($ruby_pc:template/ruby.pc.in,
     [

@@ -1,6 +1,5 @@
 module Rake
 
-  ####################################################################
   # InvocationChain tracks the chain of task invocations to detect
   # circular dependencies.
   class InvocationChain < LinkedList

@@ -71,8 +71,6 @@ static const unsigned short EncUNICODE_ISO_8859_1_CtypeTable[256] = {
   0x30e2, 0x30e2, 0x30e2, 0x30e2, 0x30e2, 0x30e2, 0x30e2, 0x30e2
 };
 
-#include "enc/unicode/name2ctype.h"
-
 typedef struct {
   int n;
   OnigCodePoint code[3];
@@ -103,8 +101,45 @@ typedef struct {
   CodePointList2 to;
 } CaseUnfold_13_Type;
 
+static inline int
+bits_of(const OnigCodePoint c, const int n)
+{
+  return (c >> (2 - n) * 7) & 127;
+}
+
+static inline int
+bits_at(const OnigCodePoint *c, const int n)
+{
+  return bits_of(c[n / 3], n % 3);
+}
+
+static int
+code1_equal(const OnigCodePoint x, const OnigCodePoint y)
+{
+  if (x != y) return 0;
+  return 1;
+}
+
+static int
+code2_equal(const OnigCodePoint *x, const OnigCodePoint *y)
+{
+  if (x[0] != y[0]) return 0;
+  if (x[1] != y[1]) return 0;
+  return 1;
+}
+
+static int
+code3_equal(const OnigCodePoint *x, const OnigCodePoint *y)
+{
+  if (x[0] != y[0]) return 0;
+  if (x[1] != y[1]) return 0;
+  if (x[2] != y[2]) return 0;
+  return 1;
+}
+
 #include "enc/unicode/casefold.h"
 
+#include "enc/unicode/name2ctype.h"
 
 #define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 #define CODE_RANGES_NUM numberof(CodeRanges)
@@ -143,7 +178,7 @@ onigenc_unicode_ctype_code_range(int ctype, const OnigCodePoint* ranges[])
 extern int
 onigenc_utf16_32_get_ctype_code_range(OnigCtype ctype, OnigCodePoint* sb_out,
                                       const OnigCodePoint* ranges[],
-				      struct OnigEncodingTypeST* enc ARG_UNUSED)
+				      OnigEncoding enc ARG_UNUSED)
 {
   *sb_out = 0x00;
   return onigenc_unicode_ctype_code_range(ctype, ranges);
@@ -184,119 +219,20 @@ onigenc_unicode_property_name_to_ctype(OnigEncoding enc, UChar* name, UChar* end
   return ctype;
 }
 
-
-static int
-code2_cmp(OnigCodePoint* x, OnigCodePoint* y)
-{
-  if (x[0] == y[0] && x[1] == y[1]) return 0;
-  return 1;
-}
-
-static st_index_t
-code2_hash(OnigCodePoint* x)
-{
-  return (st_index_t )(x[0] + x[1]);
-}
-
-static const struct st_hash_type type_code2_hash = {
-  code2_cmp,
-  code2_hash,
-};
-
-static int
-code3_cmp(OnigCodePoint* x, OnigCodePoint* y)
-{
-  if (x[0] == y[0] && x[1] == y[1] && x[2] == y[2]) return 0;
-  return 1;
-}
-
-static st_index_t
-code3_hash(OnigCodePoint* x)
-{
-  return (st_index_t )(x[0] + x[1] + x[2]);
-}
-
-static const struct st_hash_type type_code3_hash = {
-  code3_cmp,
-  code3_hash,
-};
-
-
-static st_table* FoldTable;    /* fold-1, fold-2, fold-3 */
-static st_table* Unfold1Table;
-static st_table* Unfold2Table;
-static st_table* Unfold3Table;
-static int CaseFoldInited = 0;
-
-static int init_case_fold_table(void)
-{
-  const CaseFold_11_Type   *p;
-  const CaseUnfold_11_Type *p1;
-  const CaseUnfold_12_Type *p2;
-  const CaseUnfold_13_Type *p3;
-  int i;
-
-  THREAD_ATOMIC_START;
-
-  FoldTable = st_init_numtable_with_size(FOLD_TABLE_SIZE);
-  if (ONIG_IS_NULL(FoldTable)) return ONIGERR_MEMORY;
-  for (i = 0; i < numberof(CaseFold); i++) {
-    p = &CaseFold[i];
-    st_add_direct(FoldTable, (st_data_t )p->from, (st_data_t )&(p->to));
-  }
-  for (i = 0; i < numberof(CaseFold_Locale); i++) {
-    p = &CaseFold_Locale[i];
-    st_add_direct(FoldTable, (st_data_t )p->from, (st_data_t )&(p->to));
-  }
-
-  Unfold1Table = st_init_numtable_with_size(UNFOLD1_TABLE_SIZE);
-  if (ONIG_IS_NULL(Unfold1Table)) return ONIGERR_MEMORY;
-
-  for (i = 0; i < numberof(CaseUnfold_11); i++) {
-    p1 = &CaseUnfold_11[i];
-    st_add_direct(Unfold1Table, (st_data_t )p1->from, (st_data_t )&(p1->to));
-  }
-  for (i = 0; i < numberof(CaseUnfold_11_Locale); i++) {
-    p1 = &CaseUnfold_11_Locale[i];
-    st_add_direct(Unfold1Table, (st_data_t )p1->from, (st_data_t )&(p1->to));
-  }
-
-  Unfold2Table = st_init_table_with_size(&type_code2_hash, UNFOLD2_TABLE_SIZE);
-  if (ONIG_IS_NULL(Unfold2Table)) return ONIGERR_MEMORY;
-
-  for (i = 0; i < numberof(CaseUnfold_12); i++) {
-    p2 = &CaseUnfold_12[i];
-    st_add_direct(Unfold2Table, (st_data_t )p2->from, (st_data_t )(&p2->to));
-  }
-  for (i = 0; i < numberof(CaseUnfold_12_Locale); i++) {
-    p2 = &CaseUnfold_12_Locale[i];
-    st_add_direct(Unfold2Table, (st_data_t )p2->from, (st_data_t )(&p2->to));
-  }
-
-  Unfold3Table = st_init_table_with_size(&type_code3_hash, UNFOLD3_TABLE_SIZE);
-  if (ONIG_IS_NULL(Unfold3Table)) return ONIGERR_MEMORY;
-
-  for (i = 0; i < numberof(CaseUnfold_13); i++) {
-    p3 = &CaseUnfold_13[i];
-    st_add_direct(Unfold3Table, (st_data_t )p3->from, (st_data_t )(&p3->to));
-  }
-
-  CaseFoldInited = 1;
-  THREAD_ATOMIC_END;
-  return 0;
-}
+#define onigenc_unicode_fold_lookup onigenc_unicode_CaseFold_11_lookup
+#define onigenc_unicode_unfold1_lookup onigenc_unicode_CaseUnfold_11_lookup
+#define onigenc_unicode_unfold2_lookup onigenc_unicode_CaseUnfold_12_lookup
+#define onigenc_unicode_unfold3_lookup onigenc_unicode_CaseUnfold_13_lookup
 
 extern int
 onigenc_unicode_mbc_case_fold(OnigEncoding enc,
     OnigCaseFoldType flag ARG_UNUSED, const UChar** pp, const UChar* end,
     UChar* fold)
 {
-  CodePointList3 *to;
+  const CodePointList3 *to;
   OnigCodePoint code;
   int i, len, rlen;
   const UChar *p = *pp;
-
-  if (CaseFoldInited == 0) init_case_fold_table();
 
   code = ONIGENC_MBC_TO_CODE(enc, p, end);
   len = enclen(enc, p, end);
@@ -313,7 +249,7 @@ onigenc_unicode_mbc_case_fold(OnigEncoding enc,
   }
 #endif
 
-  if (onig_st_lookup(FoldTable, (st_data_t )code, (void* )&to) != 0) {
+  if ((to = onigenc_unicode_fold_lookup(code)) != 0) {
     if (to->n == 1) {
       return ONIGENC_CODE_TO_MBC(enc, to->code[0], fold);
     }
@@ -348,8 +284,6 @@ onigenc_unicode_apply_all_case_fold(OnigCaseFoldType flag,
   const CaseUnfold_11_Type* p11;
   OnigCodePoint code;
   int i, j, k, r;
-
-  /* if (CaseFoldInited == 0) init_case_fold_table(); */
 
   for (i = 0; i < numberof(CaseUnfold_11); i++) {
     p11 = &CaseUnfold_11[i];
@@ -483,10 +417,8 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
 {
   int n, i, j, k, len;
   OnigCodePoint code, codes[3];
-  CodePointList3 *to, *z3;
-  CodePointList2 *z2;
-
-  if (CaseFoldInited == 0) init_case_fold_table();
+  const CodePointList3 *to, *z3;
+  const CodePointList2 *z2;
 
   n = 0;
 
@@ -522,7 +454,7 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
   }
 #endif
 
-  if (onig_st_lookup(FoldTable, (st_data_t )code, (void* )&to) != 0) {
+  if ((to = onigenc_unicode_fold_lookup(code)) != 0) {
     if (to->n == 1) {
       OnigCodePoint orig_code = code;
 
@@ -532,7 +464,7 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
       n++;
 
       code = to->code[0];
-      if (onig_st_lookup(Unfold1Table, (st_data_t )code, (void* )&to) != 0) {
+      if ((to = onigenc_unicode_unfold1_lookup(code)) != 0) {
 	for (i = 0; i < to->n; i++) {
 	  if (to->code[i] != orig_code) {
 	    items[n].byte_len = len;
@@ -549,8 +481,7 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
 
       for (fn = 0; fn < to->n; fn++) {
 	cs[fn][0] = to->code[fn];
-	if (onig_st_lookup(Unfold1Table, (st_data_t )cs[fn][0],
-			   (void* )&z3) != 0) {
+	if ((z3 = onigenc_unicode_unfold1_lookup(cs[fn][0])) != 0) {
 	  for (i = 0; i < z3->n; i++) {
 	    cs[fn][i+1] = z3->code[i];
 	  }
@@ -571,8 +502,7 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
 	  }
 	}
 
-	if (onig_st_lookup(Unfold2Table, (st_data_t )to->code,
-			   (void* )&z2) != 0) {
+	if ((z2 = onigenc_unicode_unfold2_lookup(to->code)) != 0) {
 	  for (i = 0; i < z2->n; i++) {
 	    if (z2->code[i] == code) continue;
 
@@ -597,8 +527,7 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
 	  }
 	}
 
-	if (onig_st_lookup(Unfold3Table, (st_data_t )to->code,
-			   (void* )&z2) != 0) {
+	if ((z2 = onigenc_unicode_unfold3_lookup(to->code)) != 0) {
 	  for (i = 0; i < z2->n; i++) {
 	    if (z2->code[i] == code) continue;
 
@@ -615,7 +544,7 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
     }
   }
   else {
-    if (onig_st_lookup(Unfold1Table, (st_data_t )code, (void* )&to) != 0) {
+    if ((to = onigenc_unicode_unfold1_lookup(code)) != 0) {
       for (i = 0; i < to->n; i++) {
 	items[n].byte_len = len;
 	items[n].code_len = 1;
@@ -633,7 +562,7 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
 
       codes[0] = code;
       code = ONIGENC_MBC_TO_CODE(enc, p, end);
-      if (onig_st_lookup(FoldTable, (st_data_t )code, (void* )&to) != 0
+      if ((to = onigenc_unicode_fold_lookup(code)) != 0
 	  && to->n == 1) {
 	codes[1] = to->code[0];
       }
@@ -642,7 +571,7 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
 
       clen = enclen(enc, p, end);
       len += clen;
-      if (onig_st_lookup(Unfold2Table, (st_data_t )codes, (void* )&z2) != 0) {
+      if ((z2 = onigenc_unicode_unfold2_lookup(codes)) != 0) {
 	for (i = 0; i < z2->n; i++) {
 	  items[n].byte_len = len;
 	  items[n].code_len = 1;
@@ -654,7 +583,7 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
       p += clen;
       if (p < end) {
 	code = ONIGENC_MBC_TO_CODE(enc, p, end);
-	if (onig_st_lookup(FoldTable, (st_data_t )code, (void* )&to) != 0
+	if ((to = onigenc_unicode_fold_lookup(code)) != 0
 	    && to->n == 1) {
 	  codes[2] = to->code[0];
 	}
@@ -663,8 +592,7 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
 
 	clen = enclen(enc, p, end);
 	len += clen;
-	if (onig_st_lookup(Unfold3Table, (st_data_t )codes,
-			   (void* )&z2) != 0) {
+	if ((z2 = onigenc_unicode_unfold3_lookup(codes)) != 0) {
 	  for (i = 0; i < z2->n; i++) {
 	    items[n].byte_len = len;
 	    items[n].code_len = 1;

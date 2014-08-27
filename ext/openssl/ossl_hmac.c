@@ -359,6 +359,6 @@ Init_ossl_hmac()
 void
 Init_ossl_hmac()
 {
-    rb_warning("HMAC will NOT be avaible: OpenSSL is compiled without HMAC.");
+    rb_warning("HMAC is not available: OpenSSL is compiled without HMAC.");
 }
 #endif /* NO_HMAC */

@@ -89,8 +89,8 @@ enum context_type {
 
 typedef struct rb_context_struct {
     enum context_type type;
-    VALUE self;
     int argc;
+    VALUE self;
     VALUE value;
     VALUE *vm_stack;
 #ifdef CAPTURE_JUST_VALID_VM_STACK
@@ -134,19 +134,25 @@ typedef struct rb_fiber_struct {
     rb_context_t cont;
     VALUE prev;
     enum fiber_status status;
-    struct rb_fiber_struct *prev_fiber;
-    struct rb_fiber_struct *next_fiber;
     /* If a fiber invokes "transfer",
      * then this fiber can't "resume" any more after that.
      * You shouldn't mix "transfer" and "resume".
      */
     int transfered;
 
+    struct rb_fiber_struct *prev_fiber;
+    struct rb_fiber_struct *next_fiber;
 #if FIBER_USE_NATIVE
 #ifdef _WIN32
     void *fib_handle;
 #else
     ucontext_t context;
+    /* Because context.uc_stack.ss_sp and context.uc_stack.ss_size
+     * are not necessarily valid after makecontext() or swapcontext(),
+     * they are saved in these variables for later use.
+     */
+    void *ss_sp;
+    size_t ss_size;
 #endif
 #endif
 } rb_fiber_t;
@@ -185,7 +191,7 @@ cont_mark(void *ptr)
 	    rb_gc_mark_locations(cont->vm_stack,
 				 cont->vm_stack + cont->vm_stack_slen + cont->vm_stack_clen);
 #else
-	    rb_gc_mark_localtion(cont->vm_stack,
+	    rb_gc_mark_locations(cont->vm_stack,
 				 cont->vm_stack, cont->saved_thread.stack_size);
 #endif
 	}
@@ -243,11 +249,11 @@ cont_free(void *ptr)
 #else /* not WIN32 */
 	    if (GET_THREAD()->fiber != cont->self) {
                 rb_fiber_t *fib = (rb_fiber_t*)cont;
-                if (fib->context.uc_stack.ss_sp) {
+                if (fib->ss_sp) {
                     if (cont->type == ROOT_FIBER_CONTEXT) {
 			rb_bug("Illegal root fiber parameter");
                     }
-		    munmap((void*)fib->context.uc_stack.ss_sp, fib->context.uc_stack.ss_size);
+		    munmap((void*)fib->ss_sp, fib->ss_size);
 		}
 	    }
             else {
@@ -668,6 +674,8 @@ fiber_initialize_machine_stack_context(rb_fiber_t *fib, size_t size)
     context->uc_link = NULL;
     context->uc_stack.ss_sp = ptr;
     context->uc_stack.ss_size = size;
+    fib->ss_sp = ptr;
+    fib->ss_size = size;
     makecontext(context, rb_fiber_start, 0);
     sth->machine.stack_start = (VALUE*)(ptr + STACK_DIR_UPPER(0, size));
     sth->machine.stack_maxsize = size - RB_PAGE_SIZE;
@@ -930,7 +938,7 @@ rb_callcc(VALUE self)
 }
 
 static VALUE
-make_passing_arg(int argc, VALUE *argv)
+make_passing_arg(int argc, const VALUE *argv)
 {
     switch (argc) {
       case 0:
@@ -1154,8 +1162,7 @@ fiber_t_alloc(VALUE fibval)
     }
 
     THREAD_MUST_BE_RUNNING(th);
-    fib = ALLOC(rb_fiber_t);
-    memset(fib, 0, sizeof(rb_fiber_t));
+    fib = ZALLOC(rb_fiber_t);
     fib->cont.self = fibval;
     fib->cont.type = FIBER_CONTEXT;
     cont_init(&fib->cont, th);
@@ -1249,7 +1256,7 @@ return_fiber(void)
     }
 }
 
-VALUE rb_fiber_transfer(VALUE fib, int argc, VALUE *argv);
+VALUE rb_fiber_transfer(VALUE fib, int argc, const VALUE *argv);
 
 static void
 rb_fiber_terminate(rb_fiber_t *fib)
@@ -1258,8 +1265,9 @@ rb_fiber_terminate(rb_fiber_t *fib)
     fib->status = TERMINATED;
 #if FIBER_USE_NATIVE && !defined(_WIN32)
     /* Ruby must not switch to other thread until storing terminated_machine_stack */
-    terminated_machine_stack.ptr = fib->context.uc_stack.ss_sp;
-    terminated_machine_stack.size = fib->context.uc_stack.ss_size / sizeof(VALUE);
+    terminated_machine_stack.ptr = fib->ss_sp;
+    terminated_machine_stack.size = fib->ss_size / sizeof(VALUE);
+    fib->ss_sp = NULL;
     fib->context.uc_stack.ss_sp = NULL;
     fib->cont.machine.stack = NULL;
     fib->cont.machine.stack_size = 0;
@@ -1396,7 +1404,7 @@ fiber_store(rb_fiber_t *next_fib)
 }
 
 static inline VALUE
-fiber_switch(VALUE fibval, int argc, VALUE *argv, int is_resume)
+fiber_switch(VALUE fibval, int argc, const VALUE *argv, int is_resume)
 {
     VALUE value;
     rb_fiber_t *fib;
@@ -1471,13 +1479,13 @@ fiber_switch(VALUE fibval, int argc, VALUE *argv, int is_resume)
 }
 
 VALUE
-rb_fiber_transfer(VALUE fib, int argc, VALUE *argv)
+rb_fiber_transfer(VALUE fib, int argc, const VALUE *argv)
 {
     return fiber_switch(fib, argc, argv, 0);
 }
 
 VALUE
-rb_fiber_resume(VALUE fibval, int argc, VALUE *argv)
+rb_fiber_resume(VALUE fibval, int argc, const VALUE *argv)
 {
     rb_fiber_t *fib;
     GetFiberPtr(fibval, fib);
@@ -1493,7 +1501,7 @@ rb_fiber_resume(VALUE fibval, int argc, VALUE *argv)
 }
 
 VALUE
-rb_fiber_yield(int argc, VALUE *argv)
+rb_fiber_yield(int argc, const VALUE *argv)
 {
     return rb_fiber_transfer(return_fiber(), argc, argv);
 }
@@ -1587,7 +1595,7 @@ rb_fiber_m_resume(int argc, VALUE *argv, VALUE fib)
  *    fiber2.resume
  *    fiber3.resume
  *
- *    <em>produces</em>
+ *  <em>produces</em>
  *
  *    In fiber 2
  *    In fiber 1

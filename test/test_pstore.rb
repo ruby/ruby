@@ -77,28 +77,36 @@ class PStoreTest < Test::Unit::TestCase
   def test_thread_safe
     assert_raise(PStore::Error) do
       flag = false
-      Thread.new do
+      th = Thread.new do
         @pstore.transaction do
           @pstore[:foo] = "bar"
           flag = true
           sleep 1
         end
       end
-      sleep 0.1 until flag
-      @pstore.transaction {}
+      begin
+        sleep 0.1 until flag
+        @pstore.transaction {}
+      ensure
+        th.join
+      end
     end
     begin
       pstore = PStore.new(second_file, true)
       flag = false
-      Thread.new do
+      th = Thread.new do
         pstore.transaction do
           pstore[:foo] = "bar"
           flag = true
           sleep 1
         end
       end
-      sleep 0.1 until flag
-      assert_equal("bar", pstore.transaction { pstore[:foo] })
+      begin
+        sleep 0.1 until flag
+        assert_equal("bar", pstore.transaction { pstore[:foo] })
+      ensure
+        th.join
+      end
     end
   ensure
     File.unlink(second_file) rescue nil

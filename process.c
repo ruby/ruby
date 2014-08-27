@@ -86,6 +86,12 @@
 # include <mach/mach_time.h>
 #endif
 
+/* define system APIs */
+#ifdef _WIN32
+#undef open
+#define open	rb_w32_uopen
+#endif
+
 #if defined(HAVE_TIMES) || defined(_WIN32)
 static VALUE rb_cProcessTms;
 #endif
@@ -1595,7 +1601,7 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
             key = check_exec_redirect_fd(key, 1);
         if (FIXNUM_P(key) && (FIX2INT(key) == 1 || FIX2INT(key) == 2))
             flags = INT2NUM(O_WRONLY|O_CREAT|O_TRUNC);
-        else if (TYPE(key) == T_ARRAY) {
+        else if (RB_TYPE_P(key, T_ARRAY)) {
 	    int i;
 	    for (i = 0; i < RARRAY_LEN(key); i++) {
 		VALUE v = RARRAY_PTR(key)[i];
@@ -2429,7 +2435,7 @@ static int rb_exec_without_timer_thread(const struct rb_execarg *eargp, char *er
  */
 
 VALUE
-rb_f_exec(int argc, VALUE *argv)
+rb_f_exec(int argc, const VALUE *argv)
 {
     VALUE execarg_obj, fail_str;
     struct rb_execarg *eargp;
@@ -2743,7 +2749,8 @@ run_exec_open(VALUE ary, struct rb_execarg *sargp, char *errmsg, size_t errmsg_b
         VALUE elt = RARRAY_AREF(ary, i);
         int fd = FIX2INT(RARRAY_AREF(elt, 0));
         VALUE param = RARRAY_AREF(elt, 1);
-        char *path = RSTRING_PTR(RARRAY_AREF(param, 0));
+        const VALUE vpath = RARRAY_AREF(param, 0);
+        const char *path = RSTRING_PTR(vpath);
         int flags = NUM2INT(RARRAY_AREF(param, 1));
         int perm = NUM2INT(RARRAY_AREF(param, 2));
         int need_close = 1;
@@ -3578,7 +3585,7 @@ rb_exit(int status)
  */
 
 VALUE
-rb_f_exit(int argc, VALUE *argv)
+rb_f_exit(int argc, const VALUE *argv)
 {
     VALUE status;
     int istatus;
@@ -3607,8 +3614,9 @@ rb_f_exit(int argc, VALUE *argv)
  */
 
 VALUE
-rb_f_abort(int argc, VALUE *argv)
+rb_f_abort(int argc, const VALUE *argv)
 {
+    rb_check_arity(argc, 0, 1);
     if (argc == 0) {
 	if (!NIL_P(GET_THREAD()->errinfo)) {
 	    ruby_error_print();
@@ -3618,9 +3626,9 @@ rb_f_abort(int argc, VALUE *argv)
     else {
 	VALUE args[2];
 
-	rb_scan_args(argc, argv, "1", &args[1]);
-	StringValue(argv[0]);
-	rb_io_puts(argc, argv, rb_stderr);
+	args[1] = args[0] = argv[0];
+	StringValue(args[0]);
+	rb_io_puts(1, args, rb_stderr);
 	args[0] = INT2NUM(EXIT_FAILURE);
 	rb_exc_raise(rb_class_new_instance(2, args, rb_eSystemExit));
     }
@@ -3687,7 +3695,7 @@ rb_spawn_process(struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
 }
 
 static rb_pid_t
-rb_spawn_internal(int argc, VALUE *argv, char *errmsg, size_t errmsg_buflen)
+rb_spawn_internal(int argc, const VALUE *argv, char *errmsg, size_t errmsg_buflen)
 {
     VALUE execarg_obj;
     struct rb_execarg *eargp;
@@ -3702,13 +3710,13 @@ rb_spawn_internal(int argc, VALUE *argv, char *errmsg, size_t errmsg_buflen)
 }
 
 rb_pid_t
-rb_spawn_err(int argc, VALUE *argv, char *errmsg, size_t errmsg_buflen)
+rb_spawn_err(int argc, const VALUE *argv, char *errmsg, size_t errmsg_buflen)
 {
     return rb_spawn_internal(argc, argv, errmsg, errmsg_buflen);
 }
 
 rb_pid_t
-rb_spawn(int argc, VALUE *argv)
+rb_spawn(int argc, const VALUE *argv)
 {
     return rb_spawn_internal(argc, argv, NULL, 0);
 }
@@ -4521,7 +4529,8 @@ rlimit_resource_type(VALUE rtype)
 
     switch (TYPE(rtype)) {
       case T_SYMBOL:
-        name = rb_id2name(SYM2ID(rtype));
+	v = rb_sym2str(rtype);
+	name = RSTRING_PTR(v);
         break;
 
       default:
@@ -4556,7 +4565,8 @@ rlimit_resource_value(VALUE rval)
 
     switch (TYPE(rval)) {
       case T_SYMBOL:
-        name = rb_id2name(SYM2ID(rval));
+	v = rb_sym2str(rval);
+	name = RSTRING_PTR(v);
         break;
 
       default:
@@ -5547,7 +5557,7 @@ maxgroups(void)
 static VALUE
 proc_getgroups(VALUE obj)
 {
-    VALUE ary;
+    VALUE ary, tmp;
     int i, ngroups;
     rb_gid_t *groups;
 
@@ -5555,7 +5565,7 @@ proc_getgroups(VALUE obj)
     if (ngroups == -1)
 	rb_sys_fail(0);
 
-    groups = ALLOCA_N(rb_gid_t, ngroups);
+    groups = ALLOCV_N(rb_gid_t, tmp, ngroups);
 
     ngroups = getgroups(ngroups, groups);
     if (ngroups == -1)
@@ -5564,6 +5574,8 @@ proc_getgroups(VALUE obj)
     ary = rb_ary_new();
     for (i = 0; i < ngroups; i++)
 	rb_ary_push(ary, GIDT2NUM(groups[i]));
+
+    ALLOCV_END(tmp);
 
     return ary;
 }
@@ -5591,6 +5603,7 @@ proc_setgroups(VALUE obj, VALUE ary)
 {
     int ngroups, i;
     rb_gid_t *groups;
+    VALUE tmp;
     PREPARE_GETGRNAM;
 
     Check_Type(ary, T_ARRAY);
@@ -5599,7 +5612,7 @@ proc_setgroups(VALUE obj, VALUE ary)
     if (ngroups > maxgroups())
 	rb_raise(rb_eArgError, "too many groups, %d max", maxgroups());
 
-    groups = ALLOCA_N(rb_gid_t, ngroups);
+    groups = ALLOCV_N(rb_gid_t, tmp, ngroups);
 
     for (i = 0; i < ngroups; i++) {
 	VALUE g = RARRAY_AREF(ary, i);
@@ -5610,6 +5623,8 @@ proc_setgroups(VALUE obj, VALUE ary)
 
     if (setgroups(ngroups, groups) == -1) /* ngroups <= maxgroups */
 	rb_sys_fail(0);
+
+    ALLOCV_END(tmp);
 
     return proc_getgroups(obj);
 }

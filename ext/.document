@@ -99,5 +99,5 @@ syslog/syslog.c
 syslog/lib
 thread/thread.c
 win32ole/lib
-win32ole/win32ole.c
+win32ole/*.c
 zlib/zlib.c

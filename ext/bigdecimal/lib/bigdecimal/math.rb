@@ -180,7 +180,7 @@ module BigMath
   #   #=> "0.3141592653589793238462643388813853786957412E1"
   #
   def PI(prec)
-    raise ArgumentError, "Zero or negative argument for PI" if prec <= 0
+    raise ArgumentError, "Zero or negative precision for PI" if prec <= 0
     n      = prec + BigDecimal.double_fig
     zero   = BigDecimal("0")
     one    = BigDecimal("1")

@@ -66,7 +66,7 @@ if defined?(WIN32OLE_TYPELIB)
 
     def test_version
       tlib = WIN32OLE_TYPELIB.new("Microsoft Shell Controls And Automation")
-      assert_equal(1.0, tlib.version)
+      assert_equal("1.0", tlib.version)
     end
 
     def test_major_version

@@ -9,6 +9,7 @@
 
 #include "ruby.h"
 #include "ruby/encoding.h"
+#include "ruby/io.h"
 
 #include <sys/types.h>
 #ifdef HAVE_UNISTD_H
@@ -23,6 +24,12 @@
 #include <grp.h>
 #endif
 
+#include <errno.h>
+
+#ifdef HAVE_SYS_UTSNAME_H
+#include <sys/utsname.h>
+#endif
+
 static VALUE sPasswd;
 #ifdef HAVE_GETGRENT
 static VALUE sGroup;
@@ -33,12 +40,15 @@ static VALUE sGroup;
 #ifndef CSIDL_COMMON_APPDATA
 #define CSIDL_COMMON_APPDATA 35
 #endif
+#define HAVE_UNAME 1
 #endif
 
 #ifndef _WIN32
 char *getenv();
 #endif
 char *getlogin();
+
+#include "constdefs.h"
 
 /* call-seq:
  *	getlogin	->  String
@@ -636,6 +646,251 @@ etc_systmpdir(void)
     return tmpdir;
 }
 
+#ifdef HAVE_UNAME
+/*
+ * Returns the system information obtained by uname system call.
+ *
+ * The return value is a hash which has 5 keys at least:
+ *   :sysname, :nodename, :release, :version, :machine
+ *
+ * Example:
+ *
+ *   require 'etc'
+ *   require 'pp'
+ *
+ *   pp Etc.uname
+ *   #=> {:sysname=>"Linux",
+ *   #    :nodename=>"boron",
+ *   #    :release=>"2.6.18-6-xen-686",
+ *   #    :version=>"#1 SMP Thu Nov 5 19:54:42 UTC 2009",
+ *   #    :machine=>"i686"}
+ *
+ */
+static VALUE
+etc_uname(VALUE obj)
+{
+#ifdef _WIN32
+    OSVERSIONINFOW v;
+    SYSTEM_INFO s;
+    const char *sysname, *mach;
+    VALUE result, release, version;
+    VALUE vbuf, nodename = Qnil;
+    DWORD len = 0;
+    WCHAR *buf;
+
+    v.dwOSVersionInfoSize = sizeof(v);
+    if (!GetVersionExW(&v))
+        rb_sys_fail("GetVersionEx");
+
+    result = rb_hash_new();
+    switch (v.dwPlatformId) {
+      case VER_PLATFORM_WIN32s:
+	sysname = "Win32s";
+	break;
+      case VER_PLATFORM_WIN32_NT:
+	sysname = "Windows_NT";
+	break;
+      case VER_PLATFORM_WIN32_WINDOWS:
+      default:
+	sysname = "Windows";
+	break;
+    }
+    rb_hash_aset(result, ID2SYM(rb_intern("sysname")), rb_str_new_cstr(sysname));
+    release = rb_sprintf("%lu.%lu.%lu", v.dwMajorVersion, v.dwMinorVersion, v.dwBuildNumber);
+    rb_hash_aset(result, ID2SYM(rb_intern("release")), release);
+    version = rb_sprintf("%s Version %"PRIsVALUE": %"PRIsVALUE, sysname, release,
+			 rb_w32_conv_from_wchar(v.szCSDVersion, rb_utf8_encoding()));
+    rb_hash_aset(result, ID2SYM(rb_intern("version")), version);
+
+# if defined _MSC_VER && _MSC_VER < 1300
+#   define GET_COMPUTER_NAME(ptr, plen) GetComputerNameW(ptr, plen)
+# else
+#   define GET_COMPUTER_NAME(ptr, plen) GetComputerNameExW(ComputerNameDnsFullyQualified, ptr, plen)
+# endif
+    GET_COMPUTER_NAME(NULL, &len);
+    buf = ALLOCV_N(WCHAR, vbuf, len);
+    if (GET_COMPUTER_NAME(buf, &len)) {
+	nodename = rb_w32_conv_from_wchar(buf, rb_utf8_encoding());
+    }
+    ALLOCV_END(vbuf);
+    if (NIL_P(nodename)) nodename = rb_str_new(0, 0);
+    rb_hash_aset(result, ID2SYM(rb_intern("nodename")), nodename);
+
+# ifndef PROCESSOR_ARCHITECTURE_AMD64
+#   define PROCESSOR_ARCHITECTURE_AMD64 9
+# endif
+# ifndef PROCESSOR_ARCHITECTURE_IA64
+#   define PROCESSOR_ARCHITECTURE_IA64 6
+# endif
+# ifndef PROCESSOR_ARCHITECTURE_INTEL
+#   define PROCESSOR_ARCHITECTURE_INTEL 0
+# endif
+    GetSystemInfo(&s);
+    switch (s.wProcessorArchitecture) {
+      case PROCESSOR_ARCHITECTURE_AMD64:
+	mach = "x64";
+	break;
+      case PROCESSOR_ARCHITECTURE_ARM:
+	mach = "ARM";
+	break;
+      case PROCESSOR_ARCHITECTURE_IA64:
+	mach = "IA64";
+	break;
+      case PROCESSOR_ARCHITECTURE_INTEL:
+	mach = "x86";
+	break;
+      default:
+	mach = "unknown";
+	break;
+    }
+
+    rb_hash_aset(result, ID2SYM(rb_intern("machine")), rb_str_new_cstr(mach));
+#else
+    struct utsname u;
+    int ret;
+    VALUE result;
+
+    ret = uname(&u);
+    if (ret == -1)
+        rb_sys_fail("uname");
+
+    result = rb_hash_new();
+    rb_hash_aset(result, ID2SYM(rb_intern("sysname")), rb_str_new_cstr(u.sysname));
+    rb_hash_aset(result, ID2SYM(rb_intern("nodename")), rb_str_new_cstr(u.nodename));
+    rb_hash_aset(result, ID2SYM(rb_intern("release")), rb_str_new_cstr(u.release));
+    rb_hash_aset(result, ID2SYM(rb_intern("version")), rb_str_new_cstr(u.version));
+    rb_hash_aset(result, ID2SYM(rb_intern("machine")), rb_str_new_cstr(u.machine));
+#endif
+
+    return result;
+}
+#else
+#define etc_uname rb_f_notimplement
+#endif
+
+#ifdef HAVE_SYSCONF
+/*
+ * Returns system configuration variable using sysconf().
+ *
+ * _name_ should be a constant under <code>Etc</code> which begins with <code>SC_</code>.
+ *
+ * The return value is an integer or nil.
+ * nil means indefinite limit.  (sysconf() returns -1 but errno is not set.)
+ *
+ *   Etc.sysconf(Etc::SC_ARG_MAX) #=> 2097152
+ *
+ *   # Number of processors.
+ *   # It is not standardized.
+ *   Etc.sysconf(Etc::SC_NPROCESSORS_ONLN) #=> 4
+ *
+ */
+static VALUE
+etc_sysconf(VALUE obj, VALUE arg)
+{
+    int name;
+    long ret;
+
+    name = NUM2INT(arg);
+
+    errno = 0;
+    ret = sysconf(name);
+    if (ret == -1) {
+        if (errno == 0) /* no limit */
+            return Qnil;
+        rb_sys_fail("sysconf");
+    }
+    return LONG2NUM(ret);
+}
+#else
+#define etc_sysconf rb_f_notimplement
+#endif
+
+#ifdef HAVE_CONFSTR
+/*
+ * Returns system configuration variable using confstr().
+ *
+ * _name_ should be a constant under <code>Etc</code> which begins with <code>CS_</code>.
+ *
+ * The return value is a string or nil.
+ * nil means no configuration-defined value.  (confstr() returns 0 but errno is not set.)
+ *
+ *   Etc.confstr(Etc::CS_PATH) #=> "/bin:/usr/bin"
+ *
+ *   # GNU/Linux
+ *   Etc.confstr(Etc::CS_GNU_LIBC_VERSION) #=> "glibc 2.18"
+ *   Etc.confstr(Etc::CS_GNU_LIBPTHREAD_VERSION) #=> "NPTL 2.18"
+ *
+ */
+static VALUE
+etc_confstr(VALUE obj, VALUE arg)
+{
+    int name;
+    char localbuf[128], *buf = localbuf;
+    size_t bufsize = sizeof(localbuf), ret;
+    VALUE tmp;
+
+    name = NUM2INT(arg);
+
+    errno = 0;
+    ret = confstr(name, buf, bufsize);
+    if (bufsize < ret) {
+        bufsize = ret;
+        buf = ALLOCV_N(char, tmp, bufsize);
+        errno = 0;
+        ret = confstr(name, buf, bufsize);
+    }
+    if (bufsize < ret)
+        rb_bug("required buffer size for confstr() changed dynamically.");
+    if (ret == 0) {
+        if (errno == 0) /* no configuration-defined value */
+            return Qnil;
+        rb_sys_fail("confstr");
+    }
+    return rb_str_new_cstr(buf);
+}
+#else
+#define etc_confstr rb_f_notimplement
+#endif
+
+#ifdef HAVE_FPATHCONF
+/*
+ * Returns pathname configuration variable using fpathconf().
+ *
+ * _name_ should be a constant under <code>Etc</code> which begins with <code>PC_</code>.
+ *
+ * The return value is an integer or nil.
+ * nil means indefinite limit.  (fpathconf() returns -1 but errno is not set.)
+ *
+ *   require 'etc'
+ *   IO.pipe {|r, w|
+ *     p w.pathconf(Etc::PC_PIPE_BUF) #=> 4096
+ *   }
+ *
+ */
+static VALUE
+io_pathconf(VALUE io, VALUE arg)
+{
+    int name;
+    long ret;
+    rb_io_t *fptr;
+
+    name = NUM2INT(arg);
+
+    GetOpenFile(io, fptr);
+
+    errno = 0;
+    ret = fpathconf(fptr->fd, name);
+    if (ret == -1) {
+        if (errno == 0) /* no limit */
+            return Qnil;
+        rb_sys_fail("fpathconf");
+    }
+    return LONG2NUM(ret);
+}
+#else
+#define io_pathconf rb_f_notimplement
+#endif
+
 /*
  * The Etc module provides access to information typically stored in
  * files in the /etc directory on Unix systems.
@@ -668,6 +923,8 @@ Init_etc(void)
     VALUE mEtc;
 
     mEtc = rb_define_module("Etc");
+    init_constants(mEtc);
+
     rb_define_module_function(mEtc, "getlogin", etc_getlogin, 0);
 
     rb_define_module_function(mEtc, "getpwuid", etc_getpwuid, -1);
@@ -685,6 +942,10 @@ Init_etc(void)
     rb_define_module_function(mEtc, "getgrent", etc_getgrent, 0);
     rb_define_module_function(mEtc, "sysconfdir", etc_sysconfdir, 0);
     rb_define_module_function(mEtc, "systmpdir", etc_systmpdir, 0);
+    rb_define_module_function(mEtc, "uname", etc_uname, 0);
+    rb_define_module_function(mEtc, "sysconf", etc_sysconf, 1);
+    rb_define_module_function(mEtc, "confstr", etc_confstr, 1);
+    rb_define_method(rb_cIO, "pathconf", io_pathconf, 1);
 
     sPasswd =  rb_struct_define_under(mEtc, "Passwd",
 				      "name",

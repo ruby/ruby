@@ -40,8 +40,8 @@ module IRB
     class AbstractNotifier
       # Creates a new Notifier object
       def initialize(prefix, base_notifier)
-	@prefix = prefix
-	@base_notifier = base_notifier
+        @prefix = prefix
+        @base_notifier = base_notifier
       end
 
       # The +prefix+ for this Notifier, which is appended to all objects being
@@ -52,38 +52,38 @@ module IRB
       #
       # Defaults to +true+.
       def notify?
-	true
+        true
       end
 
       # See OutputMethod#print for more detail.
       def print(*opts)
-	@base_notifier.print prefix, *opts if notify?
+        @base_notifier.print prefix, *opts if notify?
       end
 
       # See OutputMethod#printn for more detail.
       def printn(*opts)
-	@base_notifier.printn prefix, *opts if notify?
+        @base_notifier.printn prefix, *opts if notify?
       end
 
       # See OutputMethod#printf for more detail.
       def printf(format, *opts)
-	@base_notifier.printf(prefix + format, *opts) if notify?
+        @base_notifier.printf(prefix + format, *opts) if notify?
       end
 
       # See OutputMethod#puts for more detail.
       def puts(*objs)
-	if notify?
-	  @base_notifier.puts(*objs.collect{|obj| prefix + obj.to_s})
-	end
+        if notify?
+          @base_notifier.puts(*objs.collect{|obj| prefix + obj.to_s})
+        end
       end
 
       # Same as #ppx, except it uses the #prefix given during object
       # initialization.
       # See OutputMethod#ppx for more detail.
       def pp(*objs)
-	if notify?
-	  @base_notifier.ppx @prefix, *objs
-	end
+        if notify?
+          @base_notifier.ppx @prefix, *objs
+        end
       end
 
       # Same as #pp, except it concatenates the given +prefix+ with the #prefix
@@ -91,14 +91,14 @@ module IRB
       #
       # See OutputMethod#ppx for more detail.
       def ppx(prefix, *objs)
-	if notify?
-	  @base_notifier.ppx @prefix+prefix, *objs
-	end
+        if notify?
+          @base_notifier.ppx @prefix+prefix, *objs
+        end
       end
 
       # Execute the given block if notifications are enabled.
       def exec_if
-	yield(@base_notifier) if notify?
+        yield(@base_notifier) if notify?
       end
     end
 
@@ -116,10 +116,10 @@ module IRB
       # Create a new composite notifier object with the given +prefix+, and
       # +base_notifier+ to use for output.
       def initialize(prefix, base_notifier)
-	super
+        super
 
-	@notifiers = [D_NOMSG]
-	@level_notifier = D_NOMSG
+        @notifiers = [D_NOMSG]
+        @level_notifier = D_NOMSG
       end
 
       # List of notifiers in the group
@@ -132,9 +132,9 @@ module IRB
       #
       # This method returns the newly created instance.
       def def_notifier(level, prefix = "")
-	notifier = LeveledNotifier.new(self, level, prefix)
-	@notifiers[level] = notifier
-	notifier
+        notifier = LeveledNotifier.new(self, level, prefix)
+        @notifiers[level] = notifier
+        notifier
       end
 
       # Returns the leveled notifier for this object
@@ -156,16 +156,16 @@ module IRB
       # found in the existing #notifiers Array, or an instance of
       # AbstractNotifier
       def level_notifier=(value)
-	case value
-	when AbstractNotifier
-	  @level_notifier = value
-	when Integer
-	  l = @notifiers[value]
-	  Notifier.Raise ErrUndefinedNotifier, value unless l
-	  @level_notifier = l
-	else
-	  Notifier.Raise ErrUnrecognizedLevel, value unless l
-	end
+        case value
+        when AbstractNotifier
+          @level_notifier = value
+        when Integer
+          l = @notifiers[value]
+          Notifier.Raise ErrUndefinedNotifier, value unless l
+          @level_notifier = l
+        else
+          Notifier.Raise ErrUnrecognizedLevel, value unless l
+        end
       end
 
       alias level= level_notifier=
@@ -183,9 +183,9 @@ module IRB
       # CompositeNotifier group to determine whether or not to output
       # notifications.
       def initialize(base, level, prefix)
-	super(prefix, base)
+        super(prefix, base)
 
-	@level = level
+        @level = level
       end
 
       # The current level of this notifier object
@@ -196,13 +196,13 @@ module IRB
       #
       # See the Comparable module for more information.
       def <=>(other)
-	@level <=> other.level
+        @level <=> other.level
       end
 
       # Whether to output messages to the output method, depending on the level
       # of this notifier object.
       def notify?
-	@base_notifier.level >= self
+        @base_notifier.level >= self
       end
     end
 
@@ -214,15 +214,15 @@ module IRB
     class NoMsgNotifier<LeveledNotifier
       # Creates a new notifier that should not be used to output messages.
       def initialize
-	@base_notifier = nil
-	@level = 0
-	@prefix = ""
+        @base_notifier = nil
+        @level = 0
+        @prefix = ""
       end
 
       # Ensures notifications are ignored, see AbstractNotifier#notify? for
       # more information.
       def notify?
-	false
+        false
       end
     end
 

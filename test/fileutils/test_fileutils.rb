@@ -13,15 +13,16 @@ class TestFileUtils < Test::Unit::TestCase
 
   def assert_output_lines(expected, fu = self, message=nil)
     old = fu.instance_variable_get(:@fileutils_output)
-    read, write = IO.pipe
-    fu.instance_variable_set(:@fileutils_output, write)
-    th = Thread.new { read.read }
+    IO.pipe {|read, write|
+      fu.instance_variable_set(:@fileutils_output, write)
+      th = Thread.new { read.read }
 
-    yield
+      yield
 
-    write.close
-    lines = th.value.lines.map {|l| l.chomp }
-    assert_equal(expected, lines)
+      write.close
+      lines = th.value.lines.map {|l| l.chomp }
+      assert_equal(expected, lines)
+    }
   ensure
     fu.instance_variable_set(:@fileutils_output, old) if old
   end
@@ -444,6 +445,12 @@ class TestFileUtils < Test::Unit::TestCase
     assert_raise(Errno::ELOOP) {
       mv 'tmp/symlink', 'tmp/symlink'
     }
+    # unexist symlink
+    File.symlink 'xxx', 'tmp/src'
+    assert_nothing_raised {
+      mv 'tmp/src', 'tmp/dest'
+    }
+    assert_equal true, File.symlink?('tmp/dest')
   end if have_symlink?
 
   def test_mv_pathname
@@ -1145,6 +1152,94 @@ class TestFileUtils < Test::Unit::TestCase
       }
     end
 
+    def test_chown_dir_group_ownership_not_recursive
+      return unless @groups[1]
+
+      input_group_1 = @groups[0]
+      input_group_2 = @groups[1]
+      assert_output_lines([]) {
+        mkdir 'tmp/dir'
+        touch 'tmp/dir/a'
+        chown nil, input_group_1, ['tmp/dir', 'tmp/dir/a']
+        assert_ownership_group @groups[0], 'tmp/dir'
+        assert_ownership_group @groups[0], 'tmp/dir/a'
+        chown nil, input_group_2, 'tmp/dir'
+        assert_ownership_group @groups[1], 'tmp/dir'
+        # Make sure FileUtils.chown does not chown recursively
+        assert_ownership_group @groups[0], 'tmp/dir/a'
+      }
+    end
+
+    def test_chown_R
+      check_singleton :chown_R
+
+      return unless @groups[1]
+
+      input_group_1 = @groups[0]
+      input_group_2 = @groups[1]
+      assert_output_lines([]) {
+        list = ['tmp/dir', 'tmp/dir/a', 'tmp/dir/a/b', 'tmp/dir/a/b/c']
+        mkdir_p 'tmp/dir/a/b/c'
+        touch 'tmp/d'
+        # string input
+        chown_R nil, input_group_1, 'tmp/dir'
+        list.each {|dir|
+          assert_ownership_group @groups[0], dir
+        }
+        chown_R nil, input_group_1, 'tmp/d'
+        assert_ownership_group @groups[0], 'tmp/d'
+        # list input
+        chown_R nil, input_group_2, ['tmp/dir', 'tmp/d']
+        list += ['tmp/d']
+        list.each {|dir|
+          assert_ownership_group @groups[1], dir
+        }
+      }
+    end
+
+    def test_chown_R_verbose
+      assert_output_lines(["chown -R :#{@groups[0]} tmp/dir tmp/d"]) {
+        list = ['tmp/dir', 'tmp/dir/a', 'tmp/dir/a/b', 'tmp/dir/a/b/c']
+        mkdir_p 'tmp/dir/a/b/c'
+        touch 'tmp/d'
+        chown_R nil, @groups[0], ['tmp/dir', 'tmp/d'], :verbose => true
+        list.each {|dir|
+          assert_ownership_group @groups[0], dir
+        }
+      }
+    end
+
+    def test_chown_R_noop
+      return unless @groups[1]
+
+      assert_output_lines([]) {
+        list = ['tmp/dir', 'tmp/dir/a', 'tmp/dir/a/b', 'tmp/dir/a/b/c']
+        mkdir_p 'tmp/dir/a/b/c'
+        chown_R nil, @groups[0], 'tmp/dir', :noop => false
+        list.each {|dir|
+          assert_ownership_group @groups[0], dir
+        }
+        chown_R nil, @groups[1], 'tmp/dir', :noop => true
+        list.each {|dir|
+          assert_ownership_group @groups[0], dir
+        }
+      }
+    end
+
+    def test_chown_R_force
+      assert_output_lines([]) {
+        list = ['tmp/dir', 'tmp/dir/a', 'tmp/dir/a/b', 'tmp/dir/a/b/c']
+        mkdir_p 'tmp/dir/a/b/c'
+        assert_raise_with_message(Errno::ENOENT, /No such file or directory/) {
+            chown_R nil, @groups[0], ['tmp/dir', 'invalid'], :force => false
+        }
+        chown_R nil, @groups[0], ['tmp/dir', 'invalid'], :force => true
+        list.each {|dir|
+          assert_ownership_group @groups[0], dir
+        }
+      }
+    end
+
     if root_in_posix?
       def test_chown_with_root
         uid_1, uid_2 = distinct_uids(2)
@@ -1164,6 +1259,47 @@ class TestFileUtils < Test::Unit::TestCase
           }
         }
       end
+
+      def test_chown_dir_user_ownership_not_recursive_with_root
+        uid_1, uid_2 = distinct_uids(2)
+        return unless uid_1 and uid_2
+
+        assert_output_lines([]) {
+          mkdir 'tmp/dir'
+          touch 'tmp/dir/a'
+          chown uid_1, nil, ['tmp/dir', 'tmp/dir/a']
+          assert_ownership_user uid_1, 'tmp/dir'
+          assert_ownership_user uid_1, 'tmp/dir/a'
+          chown uid_2, nil, 'tmp/dir'
+          assert_ownership_user uid_2, 'tmp/dir'
+          # Make sure FileUtils.chown does not chown recursively
+          assert_ownership_user uid_1, 'tmp/dir/a'
+        }
+      end
+
+      def test_chown_R_with_root
+        uid_1, uid_2 = distinct_uids(2)
+        return unless uid_1 and uid_2
+
+        assert_output_lines([]) {
+          list = ['tmp/dir', 'tmp/dir/a', 'tmp/dir/a/b', 'tmp/dir/a/b/c']
+          mkdir_p 'tmp/dir/a/b/c'
+          touch 'tmp/d'
+          # string input
+          chown_R uid_1, nil, 'tmp/dir'
+          list.each {|dir|
+            assert_ownership_user uid_1, dir
+          }
+          chown_R uid_1, nil, 'tmp/d'
+          assert_ownership_user uid_1, 'tmp/d'
+          # list input
+          chown_R uid_2, nil, ['tmp/dir', 'tmp/d']
+          list += ['tmp/d']
+          list.each {|dir|
+            assert_ownership_user uid_2, dir
+          }
+        }
+      end
     else
       def test_chown_without_permission
         uid_1, uid_2 = distinct_uids(2)
@@ -1175,13 +1311,19 @@ class TestFileUtils < Test::Unit::TestCase
           chown uid_2, nil, 'tmp/a'
         }
       end
+
+      def test_chown_R_without_permission
+        uid_1, uid_2 = distinct_uids(2)
+        return unless uid_1 and uid_2
+
+        touch 'tmp/a'
+        exception = assert_raise(Errno::EPERM) {
+          chown_R uid_1, nil, 'tmp/a'
+          chown_R uid_2, nil, 'tmp/a'
+        }
+      end
     end
   end
-
-  # FIXME: How can I test this method?
-  def test_chown_R
-    check_singleton :chown_R
-  end if have_file_perm?
 
   def test_copy_entry
     check_singleton :copy_entry
@@ -1357,6 +1499,14 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_rm_rf
     check_singleton :rm_rf
+
+    return if /mswin|mingw/ =~ RUBY_PLATFORM
+
+    mkdir 'tmpdatadir'
+    chmod 700, 'tmpdatadir'
+    rm_rf 'tmpdatadir'
+
+    assert_file_not_exist 'tmpdatadir'
   end
 
   def test_rmdir

@@ -539,7 +539,7 @@ Init_class_hierarchy(void)
     rb_cModule = boot_defclass("Module", rb_cObject);
     rb_cClass =  boot_defclass("Class",  rb_cModule);
 
-    rb_const_set(rb_cObject, rb_intern("BasicObject"), rb_cBasicObject);
+    rb_const_set(rb_cObject, rb_intern_const("BasicObject"), rb_cBasicObject);
     RBASIC_SET_CLASS(rb_cClass, rb_cClass);
     RBASIC_SET_CLASS(rb_cModule, rb_cClass);
     RBASIC_SET_CLASS(rb_cObject, rb_cClass);
@@ -1041,16 +1041,18 @@ rb_mod_include_p(VALUE mod, VALUE mod2)
  *  call-seq:
  *     mod.ancestors -> array
  *
- *  Returns a list of modules included in <i>mod</i> (including
- *  <i>mod</i> itself).
+ *  Returns a list of modules included/prepended in <i>mod</i>
+ *  (including <i>mod</i> itself).
  *
  *     module Mod
  *       include Math
  *       include Comparable
+ *       prepend Enumerable
  *     end
  *
- *     Mod.ancestors    #=> [Mod, Comparable, Math]
- *     Math.ancestors   #=> [Math]
+ *     Mod.ancestors        #=> [Enumerable, Mod, Comparable, Math]
+ *     Math.ancestors       #=> [Math]
+ *     Enumerable.ancestors #=> [Enumerable]
  */
 
 VALUE
@@ -1141,7 +1143,7 @@ method_entry_i(st_data_t key, st_data_t value, st_data_t data)
 }
 
 static VALUE
-class_instance_method_list(int argc, VALUE *argv, VALUE mod, int obj, int (*func) (st_data_t, st_data_t, st_data_t))
+class_instance_method_list(int argc, const VALUE *argv, VALUE mod, int obj, int (*func) (st_data_t, st_data_t, st_data_t))
 {
     VALUE ary;
     int recur, prepended = 0;
@@ -1181,29 +1183,29 @@ class_instance_method_list(int argc, VALUE *argv, VALUE mod, int obj, int (*func
  *
  *  Returns an array containing the names of the public and protected instance
  *  methods in the receiver. For a module, these are the public and protected methods;
- *  for a class, they are the instance (not singleton) methods. With no
- *  argument, or with an argument that is <code>false</code>, the
- *  instance methods in <i>mod</i> are returned, otherwise the methods
- *  in <i>mod</i> and <i>mod</i>'s superclasses are returned.
+ *  for a class, they are the instance (not singleton) methods. If the optional
+ *  parameter is <code>false</code>, the methods of any ancestors are not included.
  *
  *     module A
  *       def method1()  end
  *     end
  *     class B
+ *       include A
  *       def method2()  end
  *     end
  *     class C < B
  *       def method3()  end
  *     end
  *
- *     A.instance_methods                #=> [:method1]
- *     B.instance_methods(false)         #=> [:method2]
- *     C.instance_methods(false)         #=> [:method3]
- *     C.instance_methods(true).length   #=> 43
+ *     A.instance_methods(false)                   #=> [:method1]
+ *     B.instance_methods(false)                   #=> [:method2]
+ *     B.instance_methods(true).include?(:method1) #=> true
+ *     C.instance_methods(false)                   #=> [:method3]
+ *     C.instance_methods.include?(:method2)       #=> true
  */
 
 VALUE
-rb_class_instance_methods(int argc, VALUE *argv, VALUE mod)
+rb_class_instance_methods(int argc, const VALUE *argv, VALUE mod)
 {
     return class_instance_method_list(argc, argv, mod, 0, ins_methods_i);
 }
@@ -1213,12 +1215,12 @@ rb_class_instance_methods(int argc, VALUE *argv, VALUE mod)
  *     mod.protected_instance_methods(include_super=true)   -> array
  *
  *  Returns a list of the protected instance methods defined in
- *  <i>mod</i>. If the optional parameter is not <code>false</code>, the
- *  methods of any ancestors are included.
+ *  <i>mod</i>. If the optional parameter is <code>false</code>, the
+ *  methods of any ancestors are not included.
  */
 
 VALUE
-rb_class_protected_instance_methods(int argc, VALUE *argv, VALUE mod)
+rb_class_protected_instance_methods(int argc, const VALUE *argv, VALUE mod)
 {
     return class_instance_method_list(argc, argv, mod, 0, ins_methods_prot_i);
 }
@@ -1228,8 +1230,8 @@ rb_class_protected_instance_methods(int argc, VALUE *argv, VALUE mod)
  *     mod.private_instance_methods(include_super=true)    -> array
  *
  *  Returns a list of the private instance methods defined in
- *  <i>mod</i>. If the optional parameter is not <code>false</code>, the
- *  methods of any ancestors are included.
+ *  <i>mod</i>. If the optional parameter is <code>false</code>, the
+ *  methods of any ancestors are not included.
  *
  *     module Mod
  *       def method1()  end
@@ -1241,7 +1243,7 @@ rb_class_protected_instance_methods(int argc, VALUE *argv, VALUE mod)
  */
 
 VALUE
-rb_class_private_instance_methods(int argc, VALUE *argv, VALUE mod)
+rb_class_private_instance_methods(int argc, const VALUE *argv, VALUE mod)
 {
     return class_instance_method_list(argc, argv, mod, 0, ins_methods_priv_i);
 }
@@ -1251,12 +1253,12 @@ rb_class_private_instance_methods(int argc, VALUE *argv, VALUE mod)
  *     mod.public_instance_methods(include_super=true)   -> array
  *
  *  Returns a list of the public instance methods defined in <i>mod</i>.
- *  If the optional parameter is not <code>false</code>, the methods of
- *  any ancestors are included.
+ *  If the optional parameter is <code>false</code>, the methods of
+ *  any ancestors are not included.
  */
 
 VALUE
-rb_class_public_instance_methods(int argc, VALUE *argv, VALUE mod)
+rb_class_public_instance_methods(int argc, const VALUE *argv, VALUE mod)
 {
     return class_instance_method_list(argc, argv, mod, 0, ins_methods_pub_i);
 }
@@ -1268,8 +1270,8 @@ rb_class_public_instance_methods(int argc, VALUE *argv, VALUE mod)
  *  Returns a list of the names of public and protected methods of
  *  <i>obj</i>. This will include all the methods accessible in
  *  <i>obj</i>'s ancestors.
- *  If the <i>regular</i> parameter is set to <code>false</code>,
- *  Returns an array of obj's public and protected singleton methods,
+ *  If the optional parameter is <code>false</code>, it
+ *  returns an array of <i>obj<i>'s public and protected singleton methods,
  *  the array will not include methods in modules included in <i>obj</i>.
  *
  *     class Klass
@@ -1280,7 +1282,7 @@ rb_class_public_instance_methods(int argc, VALUE *argv, VALUE mod)
  *     k.methods[0..9]    #=> [:klass_method, :nil?, :===,
  *                        #    :==~, :!, :eql?
  *                        #    :hash, :<=>, :class, :singleton_class]
- *     k.methods.length   #=> 57
+ *     k.methods.length   #=> 56
  *
  *     k.methods(false)   #=> []
  *     def k.singleton_method; end
@@ -1292,7 +1294,7 @@ rb_class_public_instance_methods(int argc, VALUE *argv, VALUE mod)
  */
 
 VALUE
-rb_obj_methods(int argc, VALUE *argv, VALUE obj)
+rb_obj_methods(int argc, const VALUE *argv, VALUE obj)
 {
     rb_check_arity(argc, 0, 1);
     if (argc > 0 && !RTEST(argv[0])) {
@@ -1311,7 +1313,7 @@ rb_obj_methods(int argc, VALUE *argv, VALUE obj)
  */
 
 VALUE
-rb_obj_protected_methods(int argc, VALUE *argv, VALUE obj)
+rb_obj_protected_methods(int argc, const VALUE *argv, VALUE obj)
 {
     return class_instance_method_list(argc, argv, CLASS_OF(obj), 1, ins_methods_prot_i);
 }
@@ -1326,7 +1328,7 @@ rb_obj_protected_methods(int argc, VALUE *argv, VALUE obj)
  */
 
 VALUE
-rb_obj_private_methods(int argc, VALUE *argv, VALUE obj)
+rb_obj_private_methods(int argc, const VALUE *argv, VALUE obj)
 {
     return class_instance_method_list(argc, argv, CLASS_OF(obj), 1, ins_methods_priv_i);
 }
@@ -1341,7 +1343,7 @@ rb_obj_private_methods(int argc, VALUE *argv, VALUE obj)
  */
 
 VALUE
-rb_obj_public_methods(int argc, VALUE *argv, VALUE obj)
+rb_obj_public_methods(int argc, const VALUE *argv, VALUE obj)
 {
     return class_instance_method_list(argc, argv, CLASS_OF(obj), 1, ins_methods_pub_i);
 }
@@ -1380,7 +1382,7 @@ rb_obj_public_methods(int argc, VALUE *argv, VALUE obj)
  */
 
 VALUE
-rb_obj_singleton_methods(int argc, VALUE *argv, VALUE obj)
+rb_obj_singleton_methods(int argc, const VALUE *argv, VALUE obj)
 {
     VALUE recur, ary, klass, origin;
     st_table *list, *mtbl;

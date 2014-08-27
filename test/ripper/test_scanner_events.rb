@@ -874,15 +874,23 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
   end
 
   def test_label
+    assert_equal %w(foo:),
+                 scan('label', '{foo: 1}')
   end
 
   def test_tlambda
+    assert_equal %w(->),
+                 scan('tlambda', '->{}')
   end
 
   def test_tlambeg
+    assert_equal %w({),
+                 scan('tlambeg', '-> {}')
   end
 
   def test_tlambda_arg
+    assert_equal %w(),
+                 scan('tlambda_arg', '-> {}')
   end
 
 end if ripper_test

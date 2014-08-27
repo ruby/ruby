@@ -203,7 +203,9 @@ def package(rev, destdir)
     tag ||= "r#{revision}"
   end
   unless v == $exported
-    if tag.empty?
+    if $archname
+      n = $archname
+    elsif tag.empty?
       n = "ruby-#{version}"
     else
       n = "ruby-#{version}-#{tag}"
@@ -218,11 +220,12 @@ def package(rev, destdir)
     %w[config.guess config.sub].each do |conf|
       next if File.exist?("tool/#{conf}")
       begin
-        require File.expand_path("config_files", $tooldir)
+        require File.expand_path("downloader", $tooldir)
       rescue LoadError
-        abort "Error!!! Copy 'config_files.rb' from 'tool' directory of the recent ruby repository!"
+        abort "Error!!! Copy 'downloader.rb' from 'tool' directory of the recent ruby repository!"
       end
-      ConfigFiles.download(conf, "tool")
+      url = "http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=%s;hb=HEAD" % conf
+      Downloader.download(url, conf, "tool")
     end
     File.open(clean.add("cross.rb"), "w") do |f|
       f.puts "Object.__send__(:remove_const, :CROSS_COMPILING) if defined?(CROSS_COMPILING)"
@@ -275,6 +278,14 @@ def package(rev, destdir)
       print "prerequisites"
     else
       system("#{YACC} -o parse.c parse.y")
+    end
+    if File.file?('gems/bundled_gems') && bundled_gems = File.read('gems/bundled_gems')
+      bundled_gems.split("\n").map(&:split).each do |gem, ver|
+        gem_name = "#{gem}-#{ver}.gem"
+        unless File.file?("gems/#{gem_name}")
+          Downloader.download("https://rubygems.org/downloads/#{gem_name}", gem_name, "gems")
+        end
+      end
     end
     FileUtils.rm_rf(clean)
     unless $?.success?

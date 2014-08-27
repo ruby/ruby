@@ -7,7 +7,6 @@ module Psych
 
   class YAMLStoreTest < TestCase
     def setup
-      @engine, YAML::ENGINE.yamler = YAML::ENGINE.yamler, 'psych'
       @dir = Dir.mktmpdir("rubytest-file")
       File.chown(-1, Process.gid, @dir)
       @yamlstore_file = make_tmp_filename("yamlstore")
@@ -15,7 +14,6 @@ module Psych
     end
 
     def teardown
-      YAML::ENGINE.yamler = @engine
       FileUtils.remove_entry_secure @dir
     end
 

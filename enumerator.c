@@ -267,7 +267,7 @@ enumerator_allocate(VALUE klass)
 }
 
 static VALUE
-enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv, rb_enumerator_size_func *size_fn, VALUE size)
+enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn, VALUE size)
 {
     struct enumerator *ptr;
 
@@ -398,16 +398,16 @@ enumerator_init_copy(VALUE obj, VALUE orig)
  * For backwards compatibility; use rb_enumeratorize_with_size
  */
 VALUE
-rb_enumeratorize(VALUE obj, VALUE meth, int argc, VALUE *argv)
+rb_enumeratorize(VALUE obj, VALUE meth, int argc, const VALUE *argv)
 {
     return rb_enumeratorize_with_size(obj, meth, argc, argv, 0);
 }
 
 static VALUE
-lazy_to_enum_i(VALUE self, VALUE meth, int argc, VALUE *argv, rb_enumerator_size_func *size_fn);
+lazy_to_enum_i(VALUE self, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn);
 
 VALUE
-rb_enumeratorize_with_size(VALUE obj, VALUE meth, int argc, VALUE *argv, rb_enumerator_size_func *size_fn)
+rb_enumeratorize_with_size(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn)
 {
     /* Similar effect as calling obj.to_enum, i.e. dispatching to either
        Kernel#to_enum vs Lazy#to_enum */
@@ -838,7 +838,7 @@ enumerator_peek_values_m(VALUE obj)
  *   p e.peek   #=> 2
  *   p e.next   #=> 2
  *   p e.next   #=> 3
- *   p e.next   #raises StopIteration
+ *   p e.peek   #raises StopIteration
  *
  */
 
@@ -975,13 +975,15 @@ append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args)
 
     method = rb_attr_get(obj, id_method);
     if (method != Qfalse) {
-	ID mid = default_method;
 	if (!NIL_P(method)) {
 	    Check_Type(method, T_SYMBOL);
-	    mid = SYM2ID(method);
+	    method = rb_sym2str(method);
+	}
+	else {
+	    method = rb_id2str(default_method);
 	}
 	rb_str_buf_cat2(str, ":");
-	rb_str_buf_append(str, rb_id2str(mid));
+	rb_str_buf_append(str, method);
     }
 
     eargs = rb_attr_get(obj, id_arguments);
@@ -1140,7 +1142,8 @@ yielder_yield(VALUE obj, VALUE args)
 }
 
 /* :nodoc: */
-static VALUE yielder_yield_push(VALUE obj, VALUE args)
+static VALUE
+yielder_yield_push(VALUE obj, VALUE args)
 {
     yielder_yield(obj, args);
     return obj;
@@ -1458,7 +1461,7 @@ enumerable_lazy(VALUE obj)
 }
 
 static VALUE
-lazy_to_enum_i(VALUE obj, VALUE meth, int argc, VALUE *argv, rb_enumerator_size_func *size_fn)
+lazy_to_enum_i(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn)
 {
     return enumerator_init(enumerator_allocate(rb_cLazy),
 			   obj, meth, argc, argv, size_fn, Qnil);
@@ -2036,6 +2039,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "lazy", lazy_lazy, 0);
     rb_define_method(rb_cLazy, "chunk", lazy_super, -1);
     rb_define_method(rb_cLazy, "slice_before", lazy_super, -1);
+    rb_define_method(rb_cLazy, "slice_after", lazy_super, -1);
 
     rb_define_alias(rb_cLazy, "force", "to_a");
 
@@ -2060,6 +2064,7 @@ InitVM_Enumerator(void)
     rb_provide("enumerator.so");	/* for backward compatibility */
 }
 
+#undef rb_intern
 void
 Init_Enumerator(void)
 {

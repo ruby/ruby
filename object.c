@@ -255,6 +255,30 @@ rb_obj_singleton_class(VALUE obj)
     return rb_singleton_class(obj);
 }
 
+void
+rb_obj_copy_ivar(VALUE dest, VALUE obj)
+{
+    if (!(RBASIC(dest)->flags & ROBJECT_EMBED) && ROBJECT_IVPTR(dest)) {
+	xfree(ROBJECT_IVPTR(dest));
+	ROBJECT(dest)->as.heap.ivptr = 0;
+	ROBJECT(dest)->as.heap.numiv = 0;
+	ROBJECT(dest)->as.heap.iv_index_tbl = 0;
+    }
+    if (RBASIC(obj)->flags & ROBJECT_EMBED) {
+	MEMCPY(ROBJECT(dest)->as.ary, ROBJECT(obj)->as.ary, VALUE, ROBJECT_EMBED_LEN_MAX);
+	RBASIC(dest)->flags |= ROBJECT_EMBED;
+    }
+    else {
+	long len = ROBJECT(obj)->as.heap.numiv;
+	VALUE *ptr = ALLOC_N(VALUE, len);
+	MEMCPY(ptr, ROBJECT(obj)->as.heap.ivptr, VALUE, len);
+	ROBJECT(dest)->as.heap.ivptr = ptr;
+	ROBJECT(dest)->as.heap.numiv = len;
+	ROBJECT(dest)->as.heap.iv_index_tbl = ROBJECT(obj)->as.heap.iv_index_tbl;
+	RBASIC(dest)->flags &= ~ROBJECT_EMBED;
+    }
+}
+
 static void
 init_copy(VALUE dest, VALUE obj)
 {
@@ -266,25 +290,7 @@ init_copy(VALUE dest, VALUE obj)
     rb_copy_generic_ivar(dest, obj);
     rb_gc_copy_finalizer(dest, obj);
     if (RB_TYPE_P(obj, T_OBJECT)) {
-        if (!(RBASIC(dest)->flags & ROBJECT_EMBED) && ROBJECT_IVPTR(dest)) {
-            xfree(ROBJECT_IVPTR(dest));
-            ROBJECT(dest)->as.heap.ivptr = 0;
-            ROBJECT(dest)->as.heap.numiv = 0;
-            ROBJECT(dest)->as.heap.iv_index_tbl = 0;
-        }
-        if (RBASIC(obj)->flags & ROBJECT_EMBED) {
-            MEMCPY(ROBJECT(dest)->as.ary, ROBJECT(obj)->as.ary, VALUE, ROBJECT_EMBED_LEN_MAX);
-            RBASIC(dest)->flags |= ROBJECT_EMBED;
-        }
-        else {
-            long len = ROBJECT(obj)->as.heap.numiv;
-            VALUE *ptr = ALLOC_N(VALUE, len);
-            MEMCPY(ptr, ROBJECT(obj)->as.heap.ivptr, VALUE, len);
-            ROBJECT(dest)->as.heap.ivptr = ptr;
-            ROBJECT(dest)->as.heap.numiv = len;
-            ROBJECT(dest)->as.heap.iv_index_tbl = ROBJECT(obj)->as.heap.iv_index_tbl;
-            RBASIC(dest)->flags &= ~ROBJECT_EMBED;
-        }
+	rb_obj_copy_ivar(dest, obj);
     }
 }
 
@@ -394,6 +400,23 @@ rb_obj_dup(VALUE obj)
     rb_funcall(dup, id_init_dup, 1, obj);
 
     return dup;
+}
+
+/*
+ *  call-seq:
+ *     obj.itself -> an_object
+ *
+ *  Returns <i>obj</i>.
+ *
+ *	string = 'my string' #=> "my string"
+ *	string.itself.object_id == string.object_id #=> true
+ *
+ */
+
+static VALUE
+rb_obj_itself(VALUE obj)
+{
+    return obj;
 }
 
 /* :nodoc: */
@@ -1701,6 +1724,17 @@ rb_mod_initialize(VALUE module)
     return Qnil;
 }
 
+/* :nodoc: */
+static VALUE
+rb_mod_initialize_clone(VALUE clone, VALUE orig)
+{
+    VALUE ret;
+    ret = rb_obj_init_dup_clone(clone, orig);
+    if (OBJ_FROZEN(orig))
+        rb_class_name(clone);
+    return ret;
+}
+
 /*
  *  call-seq:
  *     Class.new(super_class=Object)               -> a_class
@@ -2119,7 +2153,7 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 
 	if (pbeg == p) goto wrong_name;
 
-	id = rb_check_id_cstr_without_pindown(pbeg, len = p-pbeg, enc);
+	id = rb_check_id_cstr(pbeg, len = p-pbeg, enc);
 	beglen = pbeg-path;
 
 	if (p < pend && p[0] == ':') {
@@ -2261,7 +2295,7 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
 
 	if (pbeg == p) goto wrong_name;
 
-	id = rb_check_id_cstr_without_pindown(pbeg, len = p-pbeg, enc);
+	id = rb_check_id_cstr(pbeg, len = p-pbeg, enc);
 	beglen = pbeg-path;
 
 	if (p < pend && p[0] == ':') {
@@ -2332,7 +2366,7 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
 static VALUE
 rb_obj_ivar_get(VALUE obj, VALUE iv)
 {
-    ID id = rb_check_id_without_pindown(&iv);
+    ID id = rb_check_id(&iv);
 
     if (!id) {
 	if (rb_is_instance_name(iv)) {
@@ -2403,7 +2437,7 @@ rb_obj_ivar_set(VALUE obj, VALUE iv, VALUE val)
 static VALUE
 rb_obj_ivar_defined(VALUE obj, VALUE iv)
 {
-    ID id = rb_check_id_without_pindown(&iv);
+    ID id = rb_check_id(&iv);
 
     if (!id) {
 	if (rb_is_instance_name(iv)) {
@@ -2440,7 +2474,7 @@ rb_obj_ivar_defined(VALUE obj, VALUE iv)
 static VALUE
 rb_mod_cvar_get(VALUE obj, VALUE iv)
 {
-    ID id = rb_check_id_without_pindown(&iv);
+    ID id = rb_check_id(&iv);
 
     if (!id) {
 	if (rb_is_class_name(iv)) {
@@ -2506,7 +2540,7 @@ rb_mod_cvar_set(VALUE obj, VALUE iv, VALUE val)
 static VALUE
 rb_mod_cvar_defined(VALUE obj, VALUE iv)
 {
-    ID id = rb_check_id_without_pindown(&iv);
+    ID id = rb_check_id(&iv);
 
     if (!id) {
 	if (rb_is_class_name(iv)) {
@@ -2545,20 +2579,22 @@ rb_mod_singleton_p(VALUE klass)
     return Qfalse;
 }
 
-static struct conv_method_tbl {
-    const char *method;
+static const struct conv_method_tbl {
+    const char method[8];
     ID id;
 } conv_method_names[] = {
-    {"to_int", 0},
-    {"to_ary", 0},
-    {"to_str", 0},
-    {"to_sym", 0},
-    {"to_hash", 0},
-    {"to_proc", 0},
-    {"to_io", 0},
-    {"to_a", 0},
-    {"to_s", 0},
-    {NULL, 0}
+#define M(n) {"to_"#n, idTo_##n}
+    M(int),
+    M(ary),
+    M(str),
+    M(sym),
+    M(hash),
+    M(proc),
+    M(io),
+    M(a),
+    M(s),
+    M(i),
+#undef M
 };
 #define IMPLICIT_CONVERSIONS 7
 
@@ -2569,7 +2605,7 @@ convert_type(VALUE val, const char *tname, const char *method, int raise)
     int i;
     VALUE r;
 
-    for (i=0; conv_method_names[i].method; i++) {
+    for (i=0; i < numberof(conv_method_names); i++) {
 	if (conv_method_names[i].method[0] == method[0] &&
 	    strcmp(conv_method_names[i].method, method) == 0) {
 	    m = conv_method_names[i].id;
@@ -3225,8 +3261,6 @@ rb_f_hash(VALUE obj, VALUE arg)
 void
 Init_Object(void)
 {
-    int i;
-
     Init_class_hierarchy();
 
 #if 0
@@ -3285,6 +3319,7 @@ Init_Object(void)
     rb_define_method(rb_mKernel, "singleton_class", rb_obj_singleton_class, 0);
     rb_define_method(rb_mKernel, "clone", rb_obj_clone, 0);
     rb_define_method(rb_mKernel, "dup", rb_obj_dup, 0);
+    rb_define_method(rb_mKernel, "itself", rb_obj_itself, 0);
     rb_define_method(rb_mKernel, "initialize_copy", rb_obj_init_copy, 1);
     rb_define_method(rb_mKernel, "initialize_dup", rb_obj_init_dup_clone, 1);
     rb_define_method(rb_mKernel, "initialize_clone", rb_obj_init_dup_clone, 1);
@@ -3369,6 +3404,7 @@ Init_Object(void)
 
     rb_define_alloc_func(rb_cModule, rb_module_s_alloc);
     rb_define_method(rb_cModule, "initialize", rb_mod_initialize, 0);
+    rb_define_method(rb_cModule, "initialize_clone", rb_mod_initialize_clone, 1);
     rb_define_method(rb_cModule, "instance_methods", rb_class_instance_methods, -1); /* in class.c */
     rb_define_method(rb_cModule, "public_instance_methods",
 		     rb_class_public_instance_methods, -1);    /* in class.c */
@@ -3439,8 +3475,4 @@ Init_Object(void)
      * An alias of +false+
      */
     rb_define_global_const("FALSE", Qfalse);
-
-    for (i=0; conv_method_names[i].method; i++) {
-	conv_method_names[i].id = rb_intern(conv_method_names[i].method);
-    }
 }

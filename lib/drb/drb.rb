@@ -1594,16 +1594,9 @@ module DRb
 
     end
 
-    if RUBY_VERSION >= '1.8'
-      require 'drb/invokemethod'
-      class InvokeMethod
-        include InvokeMethod18Mixin
-      end
-    else
-      require 'drb/invokemethod16'
-      class InvokeMethod
-        include InvokeMethod16Mixin
-      end
+    require 'drb/invokemethod'
+    class InvokeMethod
+      include InvokeMethod18Mixin
     end
 
     # The main loop performed by a DRbServer's internal thread.

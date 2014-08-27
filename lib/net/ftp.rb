@@ -420,23 +420,26 @@ module Net
         end
       else
         sock = makeport
-        if @resume and rest_offset
-          resp = sendcmd("REST " + rest_offset.to_s)
-          if resp[0] != ?3
+        begin
+          if @resume and rest_offset
+            resp = sendcmd("REST " + rest_offset.to_s)
+            if resp[0] != ?3
+              raise FTPReplyError, resp
+            end
+          end
+          resp = sendcmd(cmd)
+          # skip 2XX for some ftp servers
+          resp = getresp if resp[0] == ?2
+          if resp[0] != ?1
             raise FTPReplyError, resp
           end
+          conn = BufferedSocket.new(sock.accept)
+          conn.read_timeout = @read_timeout
+          sock.shutdown(Socket::SHUT_WR) rescue nil
+          sock.read rescue nil
+        ensure
+          sock.close
         end
-        resp = sendcmd(cmd)
-        # skip 2XX for some ftp servers
-        resp = getresp if resp[0] == ?2
-        if resp[0] != ?1
-          raise FTPReplyError, resp
-        end
-        conn = BufferedSocket.new(sock.accept)
-        conn.read_timeout = @read_timeout
-        sock.shutdown(Socket::SHUT_WR) rescue nil
-        sock.read rescue nil
-        sock.close
       end
       return conn
     end
@@ -1102,13 +1105,16 @@ module Net
       end
 
       def gets
-        return readuntil("\n")
-      rescue EOFError
-        return nil
+        line = readuntil("\n", true)
+        return line.empty? ? nil : line
       end
 
       def readline
-        return readuntil("\n")
+        line = gets
+        if line.nil?
+          raise EOFError, "end of file reached"
+        end
+        return line
       end
     end
     # :startdoc:

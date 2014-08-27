@@ -6,19 +6,19 @@
   end
 
   transcode_tblgen("", "amp_escape", [
-    ["{00-25,27-FF}", :nomap], 
+    ["{00-25,27-FF}", :nomap],
     ["26", hexstr("&amp;")]
   ], nil)
 
   transcode_tblgen("", "xml_text_escape", [
-    ["{00-25,27-3B,3D,3F-FF}", :nomap], 
+    ["{00-25,27-3B,3D,3F-FF}", :nomap],
     ["26", hexstr("&amp;")],
     ["3C", hexstr("&lt;")],
     ["3E", hexstr("&gt;")]
   ], nil)
 
   transcode_tblgen("", "xml_attr_content_escape", [
-    ["{00-21,23-25,27-3B,3D,3F-FF}", :nomap], 
+    ["{00-21,23-25,27-3B,3D,3F-FF}", :nomap],
     ["22", hexstr("&quot;")],
     ["26", hexstr("&amp;")],
     ["3C", hexstr("&lt;")],

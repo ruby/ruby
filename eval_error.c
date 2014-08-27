@@ -170,8 +170,8 @@ error_print(void)
 	    }
 	    if (tail) {
 		warn_print2(tail, elen - len - 1);
-		if (einfo[elen-1] != '\n') warn_print2("\n", 1);
 	    }
+	    if (tail ? einfo[elen-1] != '\n' : !epath) warn_print2("\n", 1);
 	}
     }
 
@@ -208,8 +208,8 @@ ruby_error_print(void)
     error_print();
 }
 
-void
-rb_print_undef(VALUE klass, ID id, int scope)
+static const char *
+method_scope_name(int scope)
 {
     const char *v;
 
@@ -219,7 +219,14 @@ rb_print_undef(VALUE klass, ID id, int scope)
       case NOEX_PRIVATE: v = " private"; break;
       case NOEX_PROTECTED: v = " protected"; break;
     }
-    rb_name_error(id, "undefined%s method `%"PRIsVALUE"' for %s `%"PRIsVALUE"'", v,
+    return v;
+}
+
+void
+rb_print_undef(VALUE klass, ID id, int scope)
+{
+    const char *v = method_scope_name(scope);
+    rb_name_error(id, "undefined%s method `%"PRIsVALUE"' for %s `% "PRIsVALUE"'", v,
 		  QUOTE_ID(id),
 		  (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
 		  rb_class_name(klass));
@@ -228,10 +235,21 @@ rb_print_undef(VALUE klass, ID id, int scope)
 void
 rb_print_undef_str(VALUE klass, VALUE name)
 {
-    rb_name_error_str(name, "undefined method `%"PRIsVALUE"' for %s `%"PRIsVALUE"'",
+    rb_name_error_str(name, "undefined method `%"PRIsVALUE"' for %s `% "PRIsVALUE"'",
 		      QUOTE(name),
 		      (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
 		      rb_class_name(klass));
+}
+
+void
+rb_print_inaccessible(VALUE klass, ID id, int scope)
+{
+    const char *v = method_scope_name(scope);
+    rb_name_error(id, "method `%"PRIsVALUE"' for %s `% "PRIsVALUE"' is %s",
+		  QUOTE_ID(id),
+		  (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
+		  rb_class_name(klass),
+		  v);
 }
 
 static int
@@ -284,7 +302,8 @@ error_handle(int ex)
 	if (rb_obj_is_kind_of(errinfo, rb_eSystemExit)) {
 	    status = sysexit_status(errinfo);
 	}
-	else if (rb_obj_is_instance_of(errinfo, rb_eSignal)) {
+	else if (rb_obj_is_instance_of(errinfo, rb_eSignal) &&
+		 rb_iv_get(errinfo, "signo") != INT2FIX(SIGSEGV)) {
 	    /* no message when exiting by signal */
 	}
 	else {

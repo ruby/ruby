@@ -307,6 +307,9 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_raise(ArgumentError) { Time.rfc2822("=?iso-8859-1?Q?(=C5=DA),?= 10   2 2001 23:32:26 +0900 (JST)") }
     assert_raise(ArgumentError) { Time.rfc2822("\307\341\314\343\332\311, 30 \344\346\335\343\310\321 2001 10:01:06") }
     assert_raise(ArgumentError) { Time.rfc2822("=?iso-8859-1?Q?(=BF=E5),?= 12  =?iso-8859-1?Q?9=B7=EE?= 2001 14:52:41\n+0900 (JST)") }
+
+    # Out of range arguments
+    assert_raise(ArgumentError) { Time.parse("2014-13-13T18:00:00-0900") }
   end
 
   def test_zone_0000

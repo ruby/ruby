@@ -205,7 +205,7 @@ class TestDateArith < Test::Unit::TestCase
     p = Date.new(2001,1,14)
     q = Date.new(2001,1,7)
     i = 0
-    p.downto(q) do |d|
+    p.downto(q) do
       i += 1
     end
     assert_equal(8, i)
@@ -222,7 +222,7 @@ class TestDateArith < Test::Unit::TestCase
     p = Date.new(2001,1,14)
     q = Date.new(2001,1,21)
     i = 0
-    p.upto(q) do |d|
+    p.upto(q) do
       i += 1
     end
     assert_equal(8, i)
@@ -239,13 +239,13 @@ class TestDateArith < Test::Unit::TestCase
     p = Date.new(2001,1,14)
     q = Date.new(2001,1,21)
     i = 0
-    p.step(q, 2) do |d|
+    p.step(q, 2) do
       i += 1
     end
     assert_equal(4, i)
 
     i = 0
-    p.step(q) do |d|
+    p.step(q) do
       i += 1
     end
     assert_equal(8, i)
@@ -260,27 +260,5 @@ class TestDateArith < Test::Unit::TestCase
     e = p.step(q)
     assert_equal(8, e.to_a.size)
   end
-
-=begin
-  def test_step__inf
-    p = Date.new(2001,1,14)
-    q = Date.new(2001,1,21)
-    inf = 1.0/0
-
-    if inf.infinite?
-      [p, q].each do |a|
-	[p, q].each do |b|
-	  [inf, -inf].each do |c|
-	    i = 0
-	    a.step(b, c) do |d|
-	      i += 1
-	    end
-	    assert_equal(0, i)
-	  end
-	end
-      end
-    end
-  end
-=end
 
 end

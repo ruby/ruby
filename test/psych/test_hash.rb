@@ -10,6 +10,11 @@ module Psych
       @hash = { :a => 'b' }
     end
 
+    def test_load_with_class_syck_compatibility
+      hash = Psych.load "--- !ruby/object:Hash\n:user_id: 7\n:username: Lucas\n"
+      assert_equal({ user_id: 7, username: 'Lucas'}, hash)
+    end
+
     def test_empty_subclass
       assert_match "!ruby/hash:#{X}", Psych.dump(X.new)
       x = Psych.load Psych.dump X.new

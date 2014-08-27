@@ -312,7 +312,7 @@ ary2list(ary, enc_flag, self)
     if (NIL_P(enc_flag)) {
         dst_enc = sys_enc;
         req_chk_flag = 1;
-    } else if (TYPE(enc_flag) == T_TRUE || TYPE(enc_flag) == T_FALSE) {
+    } else if (enc_flag == Qtrue || enc_flag == Qfalse) {
         dst_enc = enc_flag;
         req_chk_flag = 0;
     } else {
@@ -323,7 +323,7 @@ ary2list(ary, enc_flag, self)
     /* size = RARRAY_LEN(ary); */
     size = 0;
     for(idx = 0; idx < RARRAY_LEN(ary); idx++) {
-        if (TYPE(RARRAY_PTR(ary)[idx]) == T_HASH) {
+        if (RB_TYPE_P(RARRAY_PTR(ary)[idx], T_HASH)) {
             size += 2 * RHASH_SIZE(RARRAY_PTR(ary)[idx]);
         } else {
             size++;
@@ -433,7 +433,7 @@ ary2list(ary, enc_flag, self)
             RARRAY_PTR(dst)[idx] = str_val;
         }
         val = rb_apply(cTclTkLib, ID_merge_tklist, dst);
-        if (TYPE(dst_enc) == T_STRING) {
+        if (RB_TYPE_P(dst_enc, T_STRING)) {
             val = rb_funcall(cTclTkLib, ID_fromUTF8, 2, val, dst_enc);
             rb_ivar_set(val, ID_at_enc, dst_enc);
         } else {
@@ -466,7 +466,7 @@ ary2list2(ary, enc_flag, self)
     if (NIL_P(enc_flag)) {
         dst_enc = sys_enc;
         req_chk_flag = 1;
-    } else if (TYPE(enc_flag) == T_TRUE || TYPE(enc_flag) == T_FALSE) {
+    } else if (enc_flag == Qtrue || enc_flag == Qfalse) {
         dst_enc = enc_flag;
         req_chk_flag = 0;
     } else {
@@ -527,7 +527,7 @@ ary2list2(ary, enc_flag, self)
             RARRAY_PTR(dst)[idx] = str_val;
         }
         val = rb_apply(cTclTkLib, ID_merge_tklist, dst);
-        if (TYPE(dst_enc) == T_STRING) {
+        if (RB_TYPE_P(dst_enc, T_STRING)) {
             val = rb_funcall(cTclTkLib, ID_fromUTF8, 2, val, dst_enc);
             rb_ivar_set(val, ID_at_enc, dst_enc);
         } else {
@@ -561,7 +561,7 @@ assoc2kv(assoc, ary, self)
 
     for(i = 0; i < len; i++) {
         pair = RARRAY_PTR(assoc)[i];
-        if (TYPE(pair) != T_ARRAY) {
+        if (!RB_TYPE_P(pair, T_ARRAY)) {
             rb_ary_push(dst, key2keyname(pair));
             continue;
         }
@@ -609,7 +609,7 @@ assoc2kv_enc(assoc, ary, self)
 
     for(i = 0; i < len; i++) {
         pair = RARRAY_PTR(assoc)[i];
-        if (TYPE(pair) != T_ARRAY) {
+        if (!RB_TYPE_P(pair, T_ARRAY)) {
             rb_ary_push(dst, key2keyname(pair));
             continue;
         }
@@ -831,15 +831,15 @@ get_eval_string_core(obj, enc_flag, self)
         if (RTEST(enc_flag)) {
             if (rb_obj_respond_to(self, ID_toUTF8, Qtrue)) {
                 return rb_funcall(self, ID_toUTF8, 1,
-                                  rb_str_new2(rb_id2name(SYM2ID(obj))));
+                                  rb_str_dup(rb_sym2str(obj)));
             } else {
-                return fromDefaultEnc_toUTF8(rb_str_new2(rb_id2name(SYM2ID(obj))), self);
+                return fromDefaultEnc_toUTF8(rb_sym2str(obj), self);
             }
         } else {
 #ifdef HAVE_RB_SYM_TO_S
             return rb_sym_to_s(obj);
 #else
-            return rb_str_new2(rb_id2name(SYM2ID(obj)));
+            return rb_sym2str(obj);
 #endif
         }
 
@@ -950,7 +950,7 @@ tk_conv_args(argc, argv, self)
     old_gc = rb_gc_disable();
 
     for(size = 0, idx = 2; idx < argc; idx++) {
-        if (TYPE(argv[idx]) == T_HASH) {
+        if (RB_TYPE_P(argv[idx], T_HASH)) {
             size += 2 * RHASH_SIZE(argv[idx]);
         } else {
             size++;
@@ -959,7 +959,7 @@ tk_conv_args(argc, argv, self)
     /* dst = rb_ary_new2(argc - 2); */
     dst = rb_ary_new2(size);
     for(idx = 2; idx < argc; idx++) {
-        if (TYPE(argv[idx]) == T_HASH) {
+        if (RB_TYPE_P(argv[idx], T_HASH)) {
             if (RTEST(argv[1])) {
                 hash2kv_enc(argv[idx], dst, self);
             } else {
@@ -984,7 +984,7 @@ tcl2rb_bool(self, value)
     VALUE self;
     VALUE value;
 {
-    if (TYPE(value) == T_FIXNUM) {
+    if (RB_TYPE_P(value, T_FIXNUM)) {
         if (NUM2INT(value) == 0) {
             return Qfalse;
         } else {
@@ -992,7 +992,7 @@ tcl2rb_bool(self, value)
         }
     }
 
-    if (TYPE(value) == T_TRUE || TYPE(value) == T_FALSE) {
+    if (value == Qtrue || value == Qfalse) {
         return value;
     }
 
@@ -1281,7 +1281,7 @@ cbsubst_def_attr_aliases(self, tbl)
 {
     struct cbsubst_info *inf;
 
-    if (TYPE(tbl) != T_HASH) {
+    if (!RB_TYPE_P(tbl, T_HASH)) {
         rb_raise(rb_eArgError, "expected a Hash");
     }
 
@@ -1306,15 +1306,15 @@ cbsubst_sym_to_subst(self, sym)
     ID id;
     volatile VALUE ret;
 
-    if (TYPE(sym) != T_SYMBOL) return sym;
+    if (!RB_TYPE_P(sym, T_SYMBOL)) return sym;
 
     Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO),
                     struct cbsubst_info, inf);
 
     if (!NIL_P(ret = rb_hash_aref(inf->aliases, sym))) {
-	str = rb_id2str(SYM2ID(ret));
+	str = rb_sym2str(ret);
     } else {
-	str = rb_id2str(SYM2ID(sym));
+	str = rb_sym2str(sym);
     }
 
     id = rb_intern_str(rb_sprintf("@%"PRIsVALUE, str));
@@ -1370,26 +1370,30 @@ cbsubst_get_subst_arg(argc, argv, self)
         switch(TYPE(argv[i])) {
         case T_STRING:
             str = argv[i];
-            arg_sym = ID2SYM(rb_intern_str(argv[i]));
+            arg_sym = rb_check_symbol(&str);
+            if (NIL_P(arg_sym)) goto not_found;
             break;
         case T_SYMBOL:
             arg_sym = argv[i];
-            str = rb_id2str(SYM2ID(arg_sym));
+            str = rb_sym2str(arg_sym);
             break;
         default:
             rb_raise(rb_eArgError, "arg #%d is not a String or a Symbol", i);
         }
 
         if (!NIL_P(ret = rb_hash_aref(inf->aliases, arg_sym))) {
-            str = rb_id2str(SYM2ID(ret));
+            str = rb_sym2str(ret);
         }
 
-        id = rb_intern_str(rb_sprintf("@%"PRIsVALUE, str));
+	ret = rb_sprintf("@%"PRIsVALUE, str);
+	id = rb_check_id(&ret);
+	if (!id) goto not_found;
 
 	for(idx = 0; idx < CBSUBST_TBL_MAX; idx++) {
 	  if (inf->ivar[idx] == id) break;
 	}
         if (idx >= CBSUBST_TBL_MAX) {
+	  not_found:
             rb_raise(rb_eArgError, "cannot find attribute :%"PRIsVALUE, str);
         }
 
@@ -1556,14 +1560,14 @@ cbsubst_table_setup(argc, argv, self)
   len = RARRAY_LEN(key_inf);
   for(idx = 0; idx < len; idx++) {
     inf = RARRAY_PTR(key_inf)[idx];
-    if (TYPE(inf) != T_ARRAY) continue;
+    if (!RB_TYPE_P(inf, T_ARRAY)) continue;
 
-    if (TYPE(RARRAY_PTR(inf)[0]) == T_STRING) {
+    if (RB_TYPE_P(RARRAY_PTR(inf)[0], T_STRING)) {
       chr = *(RSTRING_PTR(RARRAY_PTR(inf)[0]));
     } else {
       chr = NUM2CHR(RARRAY_PTR(inf)[0]);
     }
-    if (TYPE(RARRAY_PTR(inf)[1]) == T_STRING) {
+    if (RB_TYPE_P(RARRAY_PTR(inf)[1], T_STRING)) {
       subst_inf->type[chr] = *(RSTRING_PTR(RARRAY_PTR(inf)[1]));
     } else {
       subst_inf->type[chr] = NUM2CHR(RARRAY_PTR(inf)[1]);
@@ -1587,7 +1591,7 @@ cbsubst_table_setup(argc, argv, self)
   len = RARRAY_LEN(longkey_inf);
   for(idx = 0; idx < len; idx++) {
     inf = RARRAY_PTR(longkey_inf)[idx];
-    if (TYPE(inf) != T_ARRAY) continue;
+    if (!RB_TYPE_P(inf, T_ARRAY)) continue;
 
     chr = (unsigned char)(0x80 + idx);
     subst_inf->keylen[chr] = RSTRING_LEN(RARRAY_PTR(inf)[0]);
@@ -1602,7 +1606,7 @@ cbsubst_table_setup(argc, argv, self)
       subst_inf->key[chr][RSTRING_LEN(RARRAY_PTR(inf)[0])] = '\0';
     }
 #endif
-    if (TYPE(RARRAY_PTR(inf)[1]) == T_STRING) {
+    if (RB_TYPE_P(RARRAY_PTR(inf)[1], T_STRING)) {
       subst_inf->type[chr] = *(RSTRING_PTR(RARRAY_PTR(inf)[1]));
     } else {
       subst_inf->type[chr] = NUM2CHR(RARRAY_PTR(inf)[1]);
@@ -1624,9 +1628,9 @@ cbsubst_table_setup(argc, argv, self)
   len = RARRAY_LEN(proc_inf);
   for(idx = 0; idx < len; idx++) {
     inf = RARRAY_PTR(proc_inf)[idx];
-    if (TYPE(inf) != T_ARRAY) continue;
+    if (!RB_TYPE_P(inf, T_ARRAY)) continue;
     rb_hash_aset(subst_inf->proc,
-		 ((TYPE(RARRAY_PTR(inf)[0]) == T_STRING)?
+		 (RB_TYPE_P(RARRAY_PTR(inf)[0], T_STRING)?
 		  INT2FIX(*(RSTRING_PTR(RARRAY_PTR(inf)[0]))) :
 		  RARRAY_PTR(inf)[0]),
 		 RARRAY_PTR(inf)[1]);

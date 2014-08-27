@@ -62,20 +62,40 @@ struct iseq_catch_table_entry {
 	CATCH_TYPE_NEXT   = INT2FIX(6)
     } type;
     VALUE iseq;
-    unsigned long start;
-    unsigned long end;
-    unsigned long cont;
-    unsigned long sp;
+    unsigned int start;
+    unsigned int end;
+    unsigned int cont;
+    unsigned int sp;
 };
+
+PACKED_STRUCT_UNALIGNED(struct iseq_catch_table {
+    int size;
+    struct iseq_catch_table_entry entries[1]; /* flexible array */
+});
+
+static inline int
+iseq_catch_table_bytes(int n)
+{
+    enum {
+	catch_table_entries_max = (INT_MAX - sizeof(struct iseq_catch_table)) / sizeof(struct iseq_catch_table_entry)
+    };
+    if (n > catch_table_entries_max) rb_fatal("too large iseq_catch_table - %d", n);
+    return (int)(sizeof(struct iseq_catch_table) +
+		 (n - 1) * sizeof(struct iseq_catch_table_entry));
+}
 
 #define INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE (512)
 
 struct iseq_compile_data_storage {
     struct iseq_compile_data_storage *next;
-    unsigned long pos;
-    unsigned long size;
-    char *buff;
+    unsigned int pos;
+    unsigned int size;
+    char buff[1]; /* flexible array */
 };
+
+/* account for flexible array */
+#define SIZEOF_ISEQ_COMPILE_DATA_STORAGE \
+    (sizeof(struct iseq_compile_data_storage) - 1)
 
 struct iseq_compile_data {
     /* GC is needed */

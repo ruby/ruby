@@ -27,6 +27,13 @@ class TestThread < Test::Unit::TestCase
     end
   end
 
+  def test_inspect
+    th = Module.new {break module_eval("class C\u{30b9 30ec 30c3 30c9} < Thread; self; end")}.start{}
+    assert_match(/::C\u{30b9 30ec 30c3 30c9}:/, th.inspect)
+  ensure
+    th.join
+  end
+
   def test_main_thread_variable_in_enumerator
     assert_equal Thread.main, Thread.current
 
@@ -360,6 +367,24 @@ class TestThread < Test::Unit::TestCase
     a.kill if a
     b.kill if b
     c.kill if c
+  end
+
+  def test_switch_while_busy_loop
+    bug1402 = "[ruby-dev:38319] [Bug #1402]"
+    flag = true
+    th = Thread.current
+    waiter = Thread.start {
+      sleep 0.1
+      flag = false
+      sleep 1
+      th.raise(bug1402)
+    }
+    assert_nothing_raised(RuntimeError, bug1402) do
+      nil while flag
+    end
+    assert(!flag, bug1402)
+  ensure
+    waiter.kill.join
   end
 
   def test_safe_level
@@ -792,12 +817,14 @@ _eom
   end
 
   def test_main_thread_status_at_exit
-    assert_in_out_err([], <<-INPUT, %w(false), [])
+    assert_in_out_err([], <<-'INPUT', ["false false aborting"], [])
 Thread.new(Thread.current) {|mth|
   begin
+    mth.run
     Thead.pass until mth.stop?
+    p :mth_stopped # don't run if killed by rb_thread_terminate_all
   ensure
-    p mth.alive?
+    puts "#{mth.alive?} #{mth.status} #{Thread.current.status}"
   end
 }
     INPUT

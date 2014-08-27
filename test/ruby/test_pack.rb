@@ -550,6 +550,14 @@ EXPECTED
     assert_equal(["\0"], "AA\n".unpack("m"))
     assert_equal(["\0"], "AA=\n".unpack("m"))
     assert_equal(["\0\0"], "AAA\n".unpack("m"))
+
+    bug10019 = '[ruby-core:63604] [Bug #10019]'
+    size = ((4096-4)/4*3+1)
+    assert_separately(%W[- #{size} #{bug10019}], <<-'end;')
+      size = ARGV.shift.to_i
+      bug = ARGV.shift
+      assert_equal(size, ["a"*size].pack("m#{size+2}").unpack("m")[0].size, bug)
+    end;
   end
 
   def test_pack_unpack_m0

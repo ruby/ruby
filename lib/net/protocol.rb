@@ -267,7 +267,7 @@ module Net # :nodoc:
     def write_message_0(src)
       prev = @written_bytes
       each_crlf_line(src) do |line|
-        write0 line.sub(/\A\./, '..')
+        write0 dot_stuff(line)
       end
       @written_bytes - prev
     end
@@ -308,11 +308,15 @@ module Net # :nodoc:
 
     private
 
+    def dot_stuff(s)
+      s.sub(/\A\./, '..')
+    end
+
     def using_each_crlf_line
       @wbuf = ''
       yield
       if not @wbuf.empty?   # unterminated last line
-        write0 @wbuf.chomp + "\r\n"
+        write0 dot_stuff(@wbuf.chomp) + "\r\n"
       elsif @written_bytes == 0   # empty src
         write0 "\r\n"
       end

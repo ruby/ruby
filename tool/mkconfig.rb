@@ -167,10 +167,10 @@ def vars.expand(val, config = self)
   val.replace(newval) unless newval == val
   val
 end
-vars["prefix"] = ""
-vars["exec_prefix"] = ""
-prefix = vars.expand(vars["rubyarchdir"])
-print "  TOPDIR = File.dirname(__FILE__).chomp!(#{prefix.dump})\n"
+prefix = vars.expand(vars["prefix"] ||= "")
+rubyarchdir = vars.expand(vars["rubyarchdir"] ||= "")
+relative_archdir = rubyarchdir.rindex(prefix, 0) ? rubyarchdir[prefix.size..-1] : rubyarchdir
+print "  TOPDIR = File.dirname(__FILE__).chomp!(#{relative_archdir.dump})\n"
 print "  DESTDIR = ", (drive ? "TOPDIR && TOPDIR[/\\A[a-z]:/i] || " : ""), "'' unless defined? DESTDIR\n"
 print <<'ARCH' if universal
   arch_flag = ENV['ARCHFLAGS'] || ((e = ENV['RC_ARCHS']) && e.split.uniq.map {|a| "-arch #{a}"}.join(' '))
@@ -267,7 +267,6 @@ print <<EOS
     )
   end
 end
-autoload :Config, "rbconfig/obsolete.rb" # compatibility for ruby-1.8.4 and older.
 CROSS_COMPILING = nil unless defined? CROSS_COMPILING
 EOS
 

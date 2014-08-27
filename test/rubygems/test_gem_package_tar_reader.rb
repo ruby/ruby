@@ -20,6 +20,8 @@ class TestGemPackageTarReader < Gem::Package::TarTestCase
     end
 
     assert_equal 2, entries
+  ensure
+    io.close!
   end
 
   def test_rewind
@@ -30,7 +32,9 @@ class TestGemPackageTarReader < Gem::Package::TarTestCase
         content + "\0" * (512 - content.size)
     str << "\0" * 1024
 
-    Gem::Package::TarReader.new(TempIO.new(str)) do |tar_reader|
+    io = TempIO.new(str)
+
+    Gem::Package::TarReader.new(io) do |tar_reader|
       3.times do
         tar_reader.rewind
         i = 0
@@ -41,6 +45,8 @@ class TestGemPackageTarReader < Gem::Package::TarTestCase
         assert_equal(1, i)
       end
     end
+  ensure
+    io.close!
   end
 
   def test_seek
@@ -58,6 +64,8 @@ class TestGemPackageTarReader < Gem::Package::TarTestCase
 
       assert_equal 0, io.pos
     end
+  ensure
+    io.close!
   end
 
   def test_seek_missing
@@ -73,6 +81,8 @@ class TestGemPackageTarReader < Gem::Package::TarTestCase
 
       assert_equal 0, io.pos
     end
+  ensure
+    io.close!
   end
 
 end

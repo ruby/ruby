@@ -820,7 +820,7 @@ rb_make_backtrace(void)
 }
 
 static VALUE
-vm_backtrace_to_ary(rb_thread_t *th, int argc, VALUE *argv, int lev_default, int lev_plus, int to_str)
+vm_backtrace_to_ary(rb_thread_t *th, int argc, const VALUE *argv, int lev_default, int lev_plus, int to_str)
 {
     VALUE level, vn;
     long lev, n;
@@ -891,7 +891,7 @@ vm_backtrace_to_ary(rb_thread_t *th, int argc, VALUE *argv, int lev_default, int
 }
 
 static VALUE
-thread_backtrace_to_ary(int argc, VALUE *argv, VALUE thval, int to_str)
+thread_backtrace_to_ary(int argc, const VALUE *argv, VALUE thval, int to_str)
 {
     rb_thread_t *th;
     GetThreadPtr(thval, th);
@@ -903,13 +903,13 @@ thread_backtrace_to_ary(int argc, VALUE *argv, VALUE thval, int to_str)
 }
 
 VALUE
-rb_vm_thread_backtrace(int argc, VALUE *argv, VALUE thval)
+rb_vm_thread_backtrace(int argc, const VALUE *argv, VALUE thval)
 {
     return thread_backtrace_to_ary(argc, argv, thval, 1);
 }
 
 VALUE
-rb_vm_thread_backtrace_locations(int argc, VALUE *argv, VALUE thval)
+rb_vm_thread_backtrace_locations(int argc, const VALUE *argv, VALUE thval)
 {
     return thread_backtrace_to_ary(argc, argv, thval, 0);
 }

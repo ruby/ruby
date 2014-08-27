@@ -245,7 +245,7 @@ module XMLRPC # :nodoc:
     # * Date, Time, XMLRPC::DateTime
     # * XMLRPC::Base64
     # * A Ruby object which class includes XMLRPC::Marshallable
-    #   (only if Config::ENABLE_MARSHALLABLE is +true+).
+    #   (only if Config::ENABLE_MARSHALLING is +true+).
     #   That object is converted into a hash, with one additional key/value
     #   pair <code>___class___</code> which contains the class name
     #   for restoring that object later.

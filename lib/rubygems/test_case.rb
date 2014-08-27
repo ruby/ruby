@@ -2,7 +2,7 @@
 
 begin
   gem 'minitest', '~> 4.0'
-rescue NoMethodError
+rescue NoMethodError, Gem::LoadError
   # for ruby tests
 end
 

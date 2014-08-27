@@ -234,8 +234,12 @@ module OpenSSL
           ssl.sync_close = true
           ssl.accept if @start_immediately
           ssl
-        rescue SSLError => ex
-          sock.close
+        rescue Exception => ex
+          if ssl
+            ssl.close
+          else
+            sock.close
+          end
           raise ex
         end
       end

@@ -18,6 +18,7 @@ class RakeIntegration < MiniTest::Unit::TestCase
       filename = File.join dir, 'testing.rb'
       File.open(filename, 'wb') do |f|
         f.write <<-eotest
+$LOAD_PATH.unshift "#{File.dirname(__FILE__)}/../lib"
 require 'test/unit'
 raise 'loaded twice' if defined?(FooTest)
 class FooTest; end

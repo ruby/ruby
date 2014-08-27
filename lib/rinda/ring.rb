@@ -225,6 +225,7 @@ module Rinda
 
       @w_services.each do |thread|
         thread.kill
+        thread.join
       end
 
       @sockets.each do |socket|
@@ -232,6 +233,7 @@ module Rinda
       end
 
       @r_service.kill
+      @r_service.join
     end
 
   end
@@ -411,21 +413,25 @@ module Rinda
       addrinfo = Addrinfo.udp(address, @port)
 
       soc = Socket.new(addrinfo.pfamily, addrinfo.socktype, addrinfo.protocol)
+      begin
+        if addrinfo.ipv4_multicast? then
+          soc.setsockopt(Socket::Option.ipv4_multicast_loop(1))
+          soc.setsockopt(Socket::Option.ipv4_multicast_ttl(@multicast_hops))
+        elsif addrinfo.ipv6_multicast? then
+          soc.setsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_LOOP, true)
+          soc.setsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_HOPS,
+                         [@multicast_hops].pack('I'))
+          soc.setsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_IF,
+                         [@multicast_interface].pack('I'))
+        else
+          soc.setsockopt(:SOL_SOCKET, :SO_BROADCAST, true)
+        end
 
-      if addrinfo.ipv4_multicast? then
-        soc.setsockopt(Socket::Option.ipv4_multicast_loop(1))
-        soc.setsockopt(Socket::Option.ipv4_multicast_ttl(@multicast_hops))
-      elsif addrinfo.ipv6_multicast? then
-        soc.setsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_LOOP, true)
-        soc.setsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_HOPS,
-                       [@multicast_hops].pack('I'))
-        soc.setsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_IF,
-                       [@multicast_interface].pack('I'))
-      else
-        soc.setsockopt(:SOL_SOCKET, :SO_BROADCAST, true)
+        soc.connect(addrinfo)
+      rescue Exception
+        soc.close
+        raise
       end
-
-      soc.connect(addrinfo)
 
       soc
     end
@@ -472,27 +478,3 @@ module Rinda
   end
 
 end
-
-if __FILE__ == $0
-  DRb.start_service
-  case ARGV.shift
-  when 's'
-    require 'rinda/tuplespace'
-    ts = Rinda::TupleSpace.new
-    Rinda::RingServer.new(ts)
-    $stdin.gets
-  when 'w'
-    finger = Rinda::RingFinger.new(nil)
-    finger.lookup_ring do |ts2|
-      p ts2
-      ts2.write([:hello, :world])
-    end
-  when 'r'
-    finger = Rinda::RingFinger.new(nil)
-    finger.lookup_ring do |ts2|
-      p ts2
-      p ts2.take([nil, nil])
-    end
-  end
-end
-

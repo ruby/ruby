@@ -255,5 +255,5 @@ else
     puts 'commit failed; try again.'
   end
 
-  f.close
+  f.close(true)
 end

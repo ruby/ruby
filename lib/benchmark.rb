@@ -270,14 +270,22 @@ module Benchmark
     STDOUT.sync = sync unless sync.nil?
   end
 
+  # :stopdoc:
+  if defined?(Process::CLOCK_MONOTONIC)
+    BENCHMARK_CLOCK = Process::CLOCK_MONOTONIC
+  else
+    BENCHMARK_CLOCK = Process::CLOCK_REALTIME
+  end
+  # :startdoc:
+
   #
   # Returns the time used to execute the given block as a
   # Benchmark::Tms object.
   #
   def measure(label = "") # :yield:
-    t0, r0 = Process.times, Time.now
+    t0, r0 = Process.times, Process.clock_gettime(BENCHMARK_CLOCK)
     yield
-    t1, r1 = Process.times, Time.now
+    t1, r1 = Process.times, Process.clock_gettime(BENCHMARK_CLOCK)
     Benchmark::Tms.new(t1.utime  - t0.utime,
                        t1.stime  - t0.stime,
                        t1.cutime - t0.cutime,
@@ -290,9 +298,9 @@ module Benchmark
   # Returns the elapsed real time used to execute the given block.
   #
   def realtime # :yield:
-    r0 = Time.now
+    r0 = Process.clock_gettime(BENCHMARK_CLOCK)
     yield
-    Time.now - r0
+    Process.clock_gettime(BENCHMARK_CLOCK) - r0
   end
 
   module_function :benchmark, :measure, :realtime, :bm, :bmbm
@@ -545,24 +553,4 @@ module Benchmark
 
   # The default format string used to display times.  See also Benchmark::Tms#format.
   FORMAT = Benchmark::Tms::FORMAT
-end
-
-if __FILE__ == $0
-  include Benchmark
-
-  n = ARGV[0].to_i.nonzero? || 50000
-  puts %Q([#{n} times iterations of `a = "1"'])
-  benchmark(CAPTION, 7, FORMAT) do |x|
-    x.report("for:")   {for _ in 1..n; _ = "1"; end} # Benchmark.measure
-    x.report("times:") {n.times do   ; _ = "1"; end}
-    x.report("upto:")  {1.upto(n) do ; _ = "1"; end}
-  end
-
-  benchmark do
-    [
-      measure{for _ in 1..n; _ = "1"; end},  # Benchmark.measure
-      measure{n.times do   ; _ = "1"; end},
-      measure{1.upto(n) do ; _ = "1"; end}
-    ]
-  end
 end

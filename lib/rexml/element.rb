@@ -1181,9 +1181,8 @@ module REXML
         prefix = '' unless prefix
       end
       old = fetch(name, nil)
-      attr = nil
       if old.kind_of? Hash # the supplied attribute is one of many
-        attr = old.delete(prefix)
+        old.delete(prefix)
         if old.size == 1
           repl = nil
           old.each_value{|v| repl = v}
@@ -1192,7 +1191,6 @@ module REXML
       elsif old.nil?
         return @element
       else # the supplied attribute is a top-level one
-        attr = old
         super(name)
       end
       @element

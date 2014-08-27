@@ -12,6 +12,12 @@ class TestObject < Test::Unit::TestCase
     $VERBOSE = @verbose
   end
 
+  def test_itself
+    feature6373 = '[ruby-core:44704] [Feature #6373]'
+    object = Object.new
+    assert_same(object, object.itself, feature6373)
+  end
+
   def test_dup
     assert_raise(TypeError) { 1.dup }
     assert_raise(TypeError) { true.dup }

@@ -85,7 +85,9 @@ end
 class Net::HTTPTemporaryRedirect < Net::HTTPRedirection  # 307
   HAS_BODY = true
 end
-# 308 Permanent Redirect - in draft
+class Net::HTTPPermanentRedirect < Net::HTTPRedirection  # 308
+  HAS_BODY = true
+end
 
 class Net::HTTPBadRequest < Net::HTTPClientError                    # 400
   HAS_BODY = true

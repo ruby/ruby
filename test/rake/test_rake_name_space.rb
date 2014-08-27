@@ -40,4 +40,18 @@ class TestRakeNameSpace < Rake::TestCase
       ns.tasks.map { |tsk| tsk.name }
     assert_equal ["n:nn:z"], nns.tasks.map { |t| t.name }
   end
+
+  def test_scope
+    mgr = TM.new
+
+    scope = Rake::LinkedList.new 'b'
+    scope = scope.conj 'a'
+
+    ns = Rake::NameSpace.new mgr, scope
+
+    assert_equal scope, ns.scope
+
+    refute_same scope, ns.scope
+  end
+
 end

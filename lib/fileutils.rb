@@ -856,7 +856,8 @@ module FileUtils
     fu_check_options options, OPT_TABLE['install']
     fu_output_message "install -c#{options[:preserve] && ' -p'}#{options[:mode] ? (' -m 0%o' % options[:mode]) : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
     return if options[:noop]
-    fu_each_src_dest(src, dest) do |s, d, st|
+    fu_each_src_dest(src, dest) do |s, d|
+      st = File.stat(s)
       unless File.exist?(d) and compare_file(s, d)
         remove_file d, true
         copy_file s, d
@@ -1129,7 +1130,7 @@ module FileUtils
   private_module_function :fu_get_gid
 
   #
-  # Options: noop verbose
+  # Options: noop verbose mtime nocreate
   #
   # Updates modification time (mtime) and access time (atime) of file(s) in
   # +list+.  Files are created if they don't exist.
@@ -1242,7 +1243,12 @@ module FileUtils
     end
 
     def exist?
-      lstat! ? true : false
+      begin
+        lstat
+        true
+      rescue Errno::ENOENT
+        false
+      end
     end
 
     def file?
@@ -1352,7 +1358,7 @@ module FileUtils
       when file?
         copy_file dest
       when directory?
-        if !File.exist?(dest) and descendant_diretory?(dest, path)
+        if !File.exist?(dest) and descendant_directory?(dest, path)
           raise ArgumentError, "cannot copy directory %s to itself %s" % [path, dest]
         end
         begin
@@ -1483,6 +1489,7 @@ module FileUtils
           end
         end
       end
+    ensure
       yield self
     end
 
@@ -1547,7 +1554,7 @@ module FileUtils
     end
     SYSCASE = File::FNM_SYSCASE.nonzero? ? "-i" : ""
 
-    def descendant_diretory?(descendant, ascendant)
+    def descendant_directory?(descendant, ascendant)
       /\A(?#{SYSCASE}:#{Regexp.quote(ascendant)})#{DIRECTORY_TERM}/ =~ File.dirname(descendant)
     end
   end   # class Entry_
@@ -1560,7 +1567,7 @@ module FileUtils
   def fu_each_src_dest(src, dest)   #:nodoc:
     fu_each_src_dest0(src, dest) do |s, d|
       raise ArgumentError, "same file: #{s} and #{d}" if fu_same?(s, d)
-      yield s, d, File.stat(s)
+      yield s, d
     end
   end
   private_module_function :fu_each_src_dest

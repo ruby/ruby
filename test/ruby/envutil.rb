@@ -2,6 +2,7 @@
 require "open3"
 require "timeout"
 require "test/unit"
+require_relative "find_executable"
 
 module EnvUtil
   def rubybin
@@ -122,6 +123,14 @@ module EnvUtil
   end
   module_function :verbose_warning
 
+  def default_warning
+    verbose, $VERBOSE = $VERBOSE, false
+    yield
+  ensure
+    $VERBOSE = verbose
+  end
+  module_function :default_warning
+
   def suppress_warning
     verbose, $VERBOSE = $VERBOSE, nil
     yield
@@ -194,7 +203,7 @@ module EnvUtil
           log = File.read(name) rescue next
           if /\AProcess:\s+#{cmd} \[#{pid}\]$/ =~ log
             File.unlink(name)
-            File.unlink("#{path}/.#{File.basename(name)}.plist")
+            File.unlink("#{path}/.#{File.basename(name)}.plist") rescue nil
             return log
           end
         end
@@ -211,13 +220,13 @@ module Test
   module Unit
     module Assertions
       public
-      def assert_valid_syntax(code, fname = caller_locations(1, 1)[0], mesg = fname.to_s)
+      def assert_valid_syntax(code, fname = caller_locations(1, 1)[0], mesg = fname.to_s, verbose: nil)
         code = code.dup.force_encoding("ascii-8bit")
         code.sub!(/\A(?:\xef\xbb\xbf)?(\s*\#.*$)*(\n)?/n) {
           "#$&#{"\n" if $1 && !$2}BEGIN{throw tag, :ok}\n"
         }
         code.force_encoding(Encoding::UTF_8)
-        verbose, $VERBOSE = $VERBOSE, nil
+        verbose, $VERBOSE = $VERBOSE, verbose
         yield if defined?(yield)
         case
         when Array === fname
@@ -361,7 +370,7 @@ eom
         args.insert((Hash === args.first ? 1 : 0), "--disable=gems", *$:.map {|l| "-I#{l}"})
         stdout, stderr, status = EnvUtil.invoke_ruby(args, src, true, true, **opt)
         abort = status.coredump? || (status.signaled? && ABORT_SIGNALS.include?(status.termsig))
-        assert(!abort, FailDesc[status, stderr])
+        assert(!abort, FailDesc[status, nil, stderr])
         self._assertions += stdout[/^assertions=(\d+)/, 1].to_i
         begin
           res = Marshal.load(stdout.unpack("m")[0])
@@ -373,6 +382,9 @@ eom
             bt.each do |l|
               l.sub!(/\A-:(\d+)/){"#{file}:#{line + $1.to_i}"}
             end
+            bt.concat(caller)
+          else
+            res.set_backtrace(caller)
           end
           raise res
         end
@@ -388,13 +400,36 @@ eom
 
       def assert_warning(pat, msg = nil)
         stderr = EnvUtil.verbose_warning { yield }
-        msg = message(msg) {diff stderr, pat}
+        msg = message(msg) {diff pat, stderr}
         assert(pat === stderr, msg)
       end
 
       def assert_warn(*args)
         assert_warning(*args) {$VERBOSE = false; yield}
       end
+
+      case RUBY_PLATFORM
+      when /solaris2\.(?:9|[1-9][0-9])/i # Solaris 9, 10, 11,...
+        bits = [nil].pack('p').size == 8 ? 64 : 32
+        if ENV['LD_PRELOAD'].to_s.empty? &&
+            ENV["LD_PRELOAD_#{bits}"].to_s.empty? &&
+            (ENV['UMEM_OPTIONS'].to_s.empty? ||
+             ENV['UMEM_OPTIONS'] == 'backend=mmap') then
+          envs = {
+            'LD_PRELOAD' => 'libumem.so',
+            'UMEM_OPTIONS' => 'backend=mmap'
+          }
+          args = [
+            envs,
+            "--disable=gems",
+            "-v", "-",
+          ]
+          _, err, status = EnvUtil.invoke_ruby(args, "exit(0)", true, true)
+          if status.exitstatus == 0 && err.to_s.empty? then
+            NO_MEMORY_LEAK_ENVS = envs
+          end
+        end
+      end #case RUBY_PLATFORM
 
       def assert_no_memory_leak(args, prepare, code, message=nil, limit: 1.5, rss: false, **opt)
         require_relative 'memory_status'
@@ -408,6 +443,11 @@ eom
           *args,
           "-v", "-",
         ]
+        if defined? NO_MEMORY_LEAK_ENVS then
+          envs ||= {}
+          newenvs = envs.merge(NO_MEMORY_LEAK_ENVS) { |_, _, _| break }
+          envs = newenvs if newenvs
+        end
         args.unshift(envs) if envs
         cmd = [
           'END {STDERR.puts '"#{token_dump}"'"FINAL=#{Memory::Status.new}"}',

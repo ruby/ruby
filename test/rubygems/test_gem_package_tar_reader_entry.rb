@@ -16,6 +16,15 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
     @entry = util_entry @tar
   end
 
+  def teardown
+    close_util_entry(@entry)
+    super
+  end
+
+  def close_util_entry(entry)
+    entry.instance_variable_get(:@io).close!
+  end
+
   def test_bytes_read
     assert_equal 0, @entry.bytes_read
 
@@ -77,12 +86,18 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
 
   def test_directory_eh
     assert_equal false, @entry.directory?
-    assert_equal true, util_dir_entry.directory?
+    dir_ent = util_dir_entry
+    assert_equal true, dir_ent.directory?
+  ensure
+    close_util_entry(dir_ent) if dir_ent
   end
 
   def test_file_eh
     assert_equal true, @entry.file?
-    assert_equal false, util_dir_entry.file?
+    dir_ent = util_dir_entry
+    assert_equal false, dir_ent.file?
+  ensure
+    close_util_entry(dir_ent) if dir_ent
   end
 
   def test_pos

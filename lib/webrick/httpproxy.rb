@@ -12,8 +12,6 @@
 require "webrick/httpserver"
 require "net/http"
 
-Net::HTTP::version_1_2 if RUBY_VERSION < "1.7"
-
 module WEBrick
 
   NullReader = Object.new # :nodoc:
@@ -203,7 +201,7 @@ module WEBrick
             ua.syswrite(buf)
           end
         end
-      rescue => ex
+      rescue
         os.close
         @logger.debug("CONNECT #{host}:#{port}: closed")
       end

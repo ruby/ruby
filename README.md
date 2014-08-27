@@ -87,7 +87,7 @@ This is what you need to do to compile and install Ruby:
     module names if not present), if you want to link modules statically.
 
     If you don't want to compile non static extension modules (probably on
-    architectures which does not allow dynamic loading), remove comment mark
+    architectures which do not allow dynamic loading), remove comment mark
     from the line "`#option nodynamic`" in `ext/Setup`.
 
     Usually this step will not be needed.

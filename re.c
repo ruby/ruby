@@ -872,8 +872,7 @@ match_alloc(VALUE klass)
     match->str = 0;
     match->rmatch = 0;
     match->regexp = 0;
-    match->rmatch = ALLOC(struct rmatch);
-    MEMZERO(match->rmatch, struct rmatch, 1);
+    match->rmatch = ZALLOC(struct rmatch);
 
     return (VALUE)match;
 }
@@ -1083,8 +1082,8 @@ match_backref_number(VALUE match, VALUE backref)
         return NUM2INT(backref);
 
       case T_SYMBOL:
-        name = rb_id2name(SYM2ID(backref));
-        break;
+	backref = rb_sym2str(backref);
+	/* fall through */
 
       case T_STRING:
         name = StringValueCStr(backref);
@@ -1733,20 +1732,16 @@ match_captures(VALUE match)
 static int
 name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name, const char* name_end)
 {
-    int num;
-
-    num = onig_name_to_backref_number(RREGEXP(regexp)->ptr,
+    return onig_name_to_backref_number(RREGEXP(regexp)->ptr,
 	(const unsigned char* )name, (const unsigned char* )name_end, regs);
-    if (num >= 1) {
-	return num;
-    }
-    else {
-	VALUE s = rb_str_new(name, (long )(name_end - name));
-	rb_raise(rb_eIndexError, "undefined group name reference: %s",
-				 StringValuePtr(s));
-    }
+}
 
-    UNREACHABLE;
+NORETURN(static void name_to_backref_error(VALUE name));
+static void
+name_to_backref_error(VALUE name)
+{
+    rb_raise(rb_eIndexError, "undefined group name reference: % "PRIsVALUE,
+	     name);
 }
 
 /*
@@ -1796,17 +1791,16 @@ match_aref(int argc, VALUE *argv, VALUE match)
 
 	    switch (TYPE(idx)) {
 	      case T_SYMBOL:
-		p = rb_id2name(SYM2ID(idx));
-		goto name_to_backref;
-		break;
+		idx = rb_sym2str(idx);
+		/* fall through */
 	      case T_STRING:
 		p = StringValuePtr(idx);
-
-	      name_to_backref:
-		num = name_to_backref_number(RMATCH_REGS(match),
-					     RMATCH(match)->regexp, p, p + strlen(p));
+		if (!rb_enc_compatible(RREGEXP(RMATCH(match)->regexp)->src, idx) ||
+		    (num = name_to_backref_number(RMATCH_REGS(match), RMATCH(match)->regexp,
+						  p, p + RSTRING_LEN(idx))) < 1) {
+		    name_to_backref_error(idx);
+		}
 		return rb_reg_nth_match(num, match);
-		break;
 
 	      default:
 		break;
@@ -3422,7 +3416,12 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
                     name_end += c == -1 ? mbclen(name_end, e, str_enc) : clen;
                 }
                 if (name_end < e) {
-                    no = name_to_backref_number(regs, regexp, name, name_end);
+		    VALUE n = rb_str_subseq(str, (long)(name - RSTRING_PTR(str)),
+					    (long)(name_end - name));
+		    if (!rb_enc_compatible(RREGEXP(regexp)->src, n) ||
+			(no = name_to_backref_number(regs, regexp, name, name_end)) < 1) {
+			name_to_backref_error(n);
+		    }
                     p = s = name_end + clen;
                     break;
                 }

@@ -1748,6 +1748,13 @@ class TestArray < Test::Unit::TestCase
 
     bug3708 = '[ruby-dev:42067]'
     assert_equal(b, @cls[0, 1, 2, 3, 4][1, 4].permutation.to_a, bug3708)
+
+    bug9932 = '[ruby-core:63103] [Bug #9932]'
+    assert_separately([], <<-"end;") #    do
+      assert_nothing_raised(SystemStackError, "#{bug9932}") do
+        assert_equal(:ok, Array.new(100_000, nil).permutation {break :ok})
+      end
+    end;
   end
 
   def test_repeated_permutation
@@ -1773,6 +1780,12 @@ class TestArray < Test::Unit::TestCase
 
     a = @cls[0, 1, 2, 3, 4][1, 4].repeated_permutation(2)
     assert_empty(a.reject {|x| !x.include?(0)})
+
+    assert_separately([], <<-"end;") #    do
+      assert_nothing_raised(SystemStackError) do
+        assert_equal(:ok, Array.new(100_000, nil).repeated_permutation(500_000) {break :ok})
+      end
+    end;
   end
 
   def test_repeated_combination
@@ -1802,6 +1815,12 @@ class TestArray < Test::Unit::TestCase
 
     a = @cls[0, 1, 2, 3, 4][1, 4].repeated_combination(2)
     assert_empty(a.reject {|x| !x.include?(0)})
+
+    assert_separately([], <<-"end;") #    do
+      assert_nothing_raised(SystemStackError) do
+        assert_equal(:ok, Array.new(100_000, nil).repeated_combination(500_000) {break :ok})
+      end
+    end;
   end
 
   def test_take
@@ -2289,6 +2308,15 @@ class TestArray < Test::Unit::TestCase
 
   def test_combination2
     assert_equal(:called, (0..100).to_a.combination(50) { break :called }, "[ruby-core:29240] ... must be yielded even if 100C50 > signed integer")
+  end
+
+  def test_combination_clear
+    bug9939 = '[ruby-core:63149] [Bug #9939]'
+    assert_separately([], <<-'end;')
+      100_000.times {Array.new(1000)}
+      a = [*0..100]
+      a.combination(3) {|*,x| a.clear}
+    end;
   end
 
   def test_product2

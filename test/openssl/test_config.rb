@@ -17,7 +17,7 @@ __EOD__
   end
 
   def teardown
-    @tmpfile.unlink
+    @tmpfile.close!
   end
 
   def test_constants

@@ -3,7 +3,7 @@
 
 require 'rake/early_time'
 
-class Time
+class Time # :nodoc: all
   alias rake_original_time_compare :<=>
   def <=>(other)
     if Rake::EarlyTime === other

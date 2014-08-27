@@ -22,7 +22,7 @@ static inline VALUE vm_yield_with_block(rb_thread_t *th, int argc, const VALUE *
 static NODE *vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr);
 static VALUE vm_exec(rb_thread_t *th);
 static void vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref, rb_block_t *base_block);
-static int vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, const struct local_var_list *vars);
+static int vm_collect_local_variables_in_heap(rb_thread_t *th, const VALUE *dfp, const struct local_var_list *vars);
 
 /* vm_backtrace.c */
 VALUE rb_vm_backtrace_str_ary(rb_thread_t *th, int lev, int n);
@@ -729,7 +729,7 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, int call_status)
 }
 
 void
-rb_raise_method_missing(rb_thread_t *th, int argc, VALUE *argv,
+rb_raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv,
 			VALUE obj, int call_status)
 {
     th->passed_block = 0;
@@ -1093,18 +1093,7 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
 		th->errinfo = Qnil;
 		retval = GET_THROWOBJ_VAL(err);
 
-		/* check skipped frame */
-		while (th->cfp != cfp) {
-#if VMDEBUG
-		    printf("skipped frame: %s\n", vm_frametype_name(th->cfp));
-#endif
-		    if (VM_FRAME_TYPE(th->cfp) != VM_FRAME_MAGIC_CFUNC) {
-			vm_pop_frame(th);
-		    }
-		    else { /* unlikely path */
-			rb_vm_pop_cfunc_frame();
-		    }
-		}
+		rb_vm_rewind_cfp(th, cfp);
 	    }
 	    else{
 		/* SDR(); printf("%p, %p\n", cdfp, escape_dfp); */
@@ -1115,10 +1104,11 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
 	    VALUE *cep = cfp->ep;
 
 	    if (cep == escape_ep) {
+		rb_vm_rewind_cfp(th, cfp);
+
 		state = 0;
 		th->state = 0;
 		th->errinfo = Qnil;
-		th->cfp = cfp;
 		goto iter_retry;
 	    }
 	}
@@ -1352,7 +1342,7 @@ eval_string(VALUE self, VALUE src, VALUE scope, VALUE file, int line)
  */
 
 VALUE
-rb_f_eval(int argc, VALUE *argv, VALUE self)
+rb_f_eval(int argc, const VALUE *argv, VALUE self)
 {
     VALUE src, scope, vfile, vline;
     VALUE file = Qundef;
@@ -1570,7 +1560,7 @@ eval_under(VALUE under, VALUE self, VALUE src, VALUE file, int line)
 }
 
 static VALUE
-specific_eval(int argc, VALUE *argv, VALUE klass, VALUE self)
+specific_eval(int argc, const VALUE *argv, VALUE klass, VALUE self)
 {
     if (rb_block_given_p()) {
 	rb_check_arity(argc, 0, 0);
@@ -1579,44 +1569,56 @@ specific_eval(int argc, VALUE *argv, VALUE klass, VALUE self)
     else {
 	VALUE file = Qundef;
 	int line = 1;
+	VALUE code;
 
 	rb_check_arity(argc, 1, 3);
-	SafeStringValue(argv[0]);
+	code = argv[0];
+	SafeStringValue(code);
 	if (argc > 2)
 	    line = NUM2INT(argv[2]);
 	if (argc > 1) {
 	    file = argv[1];
 	    if (!NIL_P(file)) StringValue(file);
 	}
-	return eval_under(klass, self, argv[0], file, line);
+	return eval_under(klass, self, code, file, line);
     }
 }
 
 /*
  *  call-seq:
  *     obj.instance_eval(string [, filename [, lineno]] )   -> obj
- *     obj.instance_eval {| | block }                       -> obj
+ *     obj.instance_eval {|obj| block }                     -> obj
  *
  *  Evaluates a string containing Ruby source code, or the given block,
  *  within the context of the receiver (_obj_). In order to set the
  *  context, the variable +self+ is set to _obj_ while
  *  the code is executing, giving the code access to _obj_'s
- *  instance variables. In the version of <code>instance_eval</code>
- *  that takes a +String+, the optional second and third
- *  parameters supply a filename and starting line number that are used
- *  when reporting compilation errors.
+ *  instance variables and private methods.
+ *
+ *  When <code>instance_eval</code> is given a block, _obj_ is also
+ *  passed in as the block's only argument.
+ *
+ *  When <code>instance_eval</code> is given a +String+, the optional
+ *  second and third parameters supply a filename and starting line number
+ *  that are used when reporting compilation errors.
  *
  *     class KlassWithSecret
  *       def initialize
  *         @secret = 99
  *       end
+ *       private
+ *       def the_secret
+ *         "Ssssh! The secret is #{@secret}."
+ *       end
  *     end
  *     k = KlassWithSecret.new
- *     k.instance_eval { @secret }   #=> 99
+ *     k.instance_eval { @secret }          #=> 99
+ *     k.instance_eval { the_secret }       #=> "Ssssh! The secret is 99."
+ *     k.instance_eval {|obj| obj == self } #=> true
  */
 
 VALUE
-rb_obj_instance_eval(int argc, VALUE *argv, VALUE self)
+rb_obj_instance_eval(int argc, const VALUE *argv, VALUE self)
 {
     VALUE klass;
 
@@ -1648,7 +1650,7 @@ rb_obj_instance_eval(int argc, VALUE *argv, VALUE self)
  */
 
 VALUE
-rb_obj_instance_exec(int argc, VALUE *argv, VALUE self)
+rb_obj_instance_exec(int argc, const VALUE *argv, VALUE self)
 {
     VALUE klass;
 
@@ -1687,7 +1689,7 @@ rb_obj_instance_exec(int argc, VALUE *argv, VALUE self)
  */
 
 VALUE
-rb_mod_module_eval(int argc, VALUE *argv, VALUE mod)
+rb_mod_module_eval(int argc, const VALUE *argv, VALUE mod)
 {
     return specific_eval(argc, argv, mod, mod);
 }
@@ -1715,7 +1717,7 @@ rb_mod_module_eval(int argc, VALUE *argv, VALUE mod)
  */
 
 VALUE
-rb_mod_module_exec(int argc, VALUE *argv, VALUE mod)
+rb_mod_module_exec(int argc, const VALUE *argv, VALUE mod)
 {
     return yield_under(mod, mod, rb_ary_new4(argc, argv));
 }
@@ -1778,39 +1780,53 @@ catch_i(VALUE tag, VALUE data)
 
 /*
  *  call-seq:
- *     catch([arg]) {|tag| block }  -> obj
+ *     catch([tag]) {|tag| block }  -> obj
  *
- *  +catch+ executes its block. If a +throw+ is
- *  executed, Ruby searches up its stack for a +catch+ block
- *  with a tag corresponding to the +throw+'s
- *  _tag_. If found, that block is terminated, and
- *  +catch+ returns the value given to +throw+. If
- *  +throw+ is not called, the block terminates normally, and
- *  the value of +catch+ is the value of the last expression
- *  evaluated. +catch+ expressions may be nested, and the
- *  +throw+ call need not be in lexical scope.
+ *  +catch+ executes its block. If +throw+ is not called, the block executes
+ *  normally, and +catch+ returns the value of the last expression evaluated.
  *
- *     def routine(n)
- *       puts n
- *       throw :done if n <= 0
- *       routine(n-1)
+ *     catch(1) { 123 }            # => 123
+ *
+ *  If +throw(tag2, val)+ is called, Ruby searches up its stack for a +catch+
+ *  block whose +tag+ has the same +object_id+ as _tag2_. When found, the block
+ *  stops executing and returns _val_ (or +nil+ if no second argument was given
+ *  to +throw+).
+ *
+ *     catch(1) { throw(1, 456) }  # => 456
+ *     catch(1) { throw(1) }       # => nil
+ *
+ *  When +tag+ is passed as the first argument, +catch+ yields it as the
+ *  parameter of the block.
+ *
+ *     catch(1) {|x| x + 2 }       # => 3
+ *
+ *  When no +tag+ is given, +catch+ yields a new unique object (as from
+ *  +Object.new+) as the block parameter. This object can then be used as the
+ *  argument to +throw+, and will match the correct +catch+ block.
+ *
+ *     catch do |obj_A|
+ *       catch do |obj_B|
+ *         throw(obj_B, 123)
+ *         puts "This puts is not reached"
+ *       end
+ *
+ *       puts "This puts is displayed"
+ *       456
  *     end
  *
+ *     # => 456
  *
- *     catch(:done) { routine(3) }
+ *     catch do |obj_A|
+ *       catch do |obj_B|
+ *         throw(obj_A, 123)
+ *         puts "This puts is still not reached"
+ *       end
  *
- *  <em>produces:</em>
+ *       puts "Now this puts is also not reached"
+ *       456
+ *     end
  *
- *     3
- *     2
- *     1
- *     0
- *
- *  when _arg_ is given, +catch+ yields it as is, or when no
- *  _arg_ is given, +catch+ assigns a new unique object to
- *  +throw+.  this is useful for nested +catch+.  _arg_ can
- *  be an arbitrary object, not only Symbol.
- *
+ *     # => 123
  */
 
 static VALUE
@@ -1862,7 +1878,7 @@ rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, int *stateptr)
 	val = (*func)(tag, data, 1, (const VALUE *)&tag, Qnil);
     }
     else if (state == TAG_THROW && RNODE(th->errinfo)->u1.value == tag) {
-	th->cfp = saved_cfp;
+	rb_vm_rewind_cfp(th, saved_cfp);
 	val = th->tag->retval;
 	th->errinfo = Qnil;
 	state = 0;
@@ -1872,6 +1888,24 @@ rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, int *stateptr)
 	*stateptr = state;
 
     return val;
+}
+
+static void
+local_var_list_init(struct local_var_list *vars)
+{
+    vars->tbl = rb_hash_new();
+    RHASH(vars->tbl)->ntbl = st_init_numtable(); /* compare_by_identity */
+    RBASIC_CLEAR_CLASS(vars->tbl);
+}
+
+static VALUE
+local_var_list_finish(struct local_var_list *vars)
+{
+    /* TODO: not to depend on the order of st_table */
+    VALUE ary = rb_hash_keys(vars->tbl);
+    rb_hash_clear(vars->tbl);
+    vars->tbl = 0;
+    return ary;
 }
 
 static int
@@ -1910,15 +1944,12 @@ static VALUE
 rb_f_local_variables(void)
 {
     struct local_var_list vars;
-    VALUE ary;
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp =
 	vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp));
     int i;
 
-    vars.tbl = rb_hash_new();
-    RHASH(vars.tbl)->ntbl = st_init_numtable(); /* compare_by_identity */
-    RBASIC_CLEAR_CLASS(vars.tbl);
+    local_var_list_init(&vars);
     while (cfp) {
 	if (cfp->iseq) {
 	    for (i = 0; i < cfp->iseq->local_table_size; i++) {
@@ -1942,10 +1973,7 @@ rb_f_local_variables(void)
 	    break;
 	}
     }
-    /* TODO: not to depend on the order of st_table */
-    ary = rb_hash_keys(vars.tbl);
-    rb_hash_clear(vars.tbl);
-    return ary;
+    return local_var_list_finish(&vars);
 }
 
 /*

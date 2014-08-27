@@ -9,6 +9,11 @@ class TestGemSilentUI < Gem::TestCase
     @sui = Gem::SilentUI.new
   end
 
+  def teardown
+    @sui.close
+    super
+  end
+
   def test_ask
     value = nil
     out, err = capture_io do

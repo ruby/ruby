@@ -7,6 +7,8 @@
 require 'test/unit'
 require 'drb/acl'
 
+module DRbTests
+
 class SampleHosts
   def initialize
     list = %w(127.0.0.1 localhost
@@ -192,4 +194,4 @@ class ACLTest < Test::Unit::TestCase
   end
 end
 
-
+end

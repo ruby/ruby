@@ -9,9 +9,7 @@ require 'rake/file_list'
 
 module Rake # :nodoc:
 
-  ####################################################################
-  # <b>Note:</b> <em> Not released for general use.</em>
-  class FtpFile
+  class FtpFile # :nodoc: all
     attr_reader :name, :size, :owner, :group, :time
 
     def self.date
@@ -68,9 +66,9 @@ module Rake # :nodoc:
     end
   end
 
-  ####################################################################
+  ##
   # Manage the uploading of files to an FTP account.
-  class FtpUploader
+  class FtpUploader # :nodoc:
 
     # Log uploads to standard output when true.
     attr_accessor :verbose

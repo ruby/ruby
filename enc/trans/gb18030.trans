@@ -2,9 +2,9 @@
 
 <%
   require "gb18030-tbl"
-  
+
   def linear(code)
-    bytes = [code].pack('H8').unpack 'C4' 
+    bytes = [code].pack('H8').unpack 'C4'
     ((bytes[0]*10+bytes[1])*126+bytes[2])*10+bytes[3]
   end
 
@@ -31,7 +31,7 @@
       code
     end
   end
-  
+
   def calculate_differences_utf_gb(table)
     table_rev = table.map{|a,b| [b,a]}
     table_rev.collect do |code|
@@ -123,7 +123,7 @@ fun_sio_to_gb18030(void *statep, const unsigned char *s, size_t l, VALUE info, u
 {
     unsigned int diff = (unsigned int)(info >> 8);
     unsigned int u;    /* Unicode Scalar Value */
-    
+
     u = ((s[0]&0x0F)<<12) | ((s[1]&0x3F)<<6) | (s[2]&0x3F);
 
     if (diff & 0x20000) { /* GB18030 4 bytes */

@@ -1,11 +1,18 @@
 require_relative 'drbtest'
 
+module DRbTests
+
 class TestDRbCore < Test::Unit::TestCase
   include DRbCore
 
   def setup
     setup_service 'ut_drb.rb'
     super
+  end
+
+  def teardown
+    super
+    DRbService.finish
   end
 end
 
@@ -15,6 +22,11 @@ class TestDRbYield < Test::Unit::TestCase
   def setup
     setup_service 'ut_drb.rb'
     super
+  end
+
+  def teardown
+    super
+    DRbService.finish
   end
 
   def test_01_one
@@ -185,6 +197,11 @@ class TestDRbAry < Test::Unit::TestCase
     setup_service 'ut_array.rb'
     super
   end
+
+  def teardown
+    super
+    DRbService.finish
+  end
 end
 
 class TestDRbMServer < Test::Unit::TestCase
@@ -203,6 +220,7 @@ class TestDRbMServer < Test::Unit::TestCase
       s.stop_service
     end
     super
+    DRbService.finish
   end
 
   def test_01
@@ -213,6 +231,11 @@ end
 class TestDRbSafe1 < TestDRbAry
   def setup
     setup_service 'ut_safe1.rb'
+  end
+
+  def teardown
+    super
+    DRbService.finish
   end
 end
 
@@ -273,6 +296,11 @@ class TestDRbLarge < Test::Unit::TestCase
     super
   end
 
+  def teardown
+    super
+    DRbService.finish
+  end
+
   def test_01_large_ary
     ary = [2] * 10240
     assert_equal(10240, @there.size(ary))
@@ -315,8 +343,15 @@ class TestBug4409 < Test::Unit::TestCase
     super
   end
 
+  def teardown
+    super
+    DRbService.finish
+  end
+
   def test_bug4409
     foo = @there.foo
     assert(@there.foo?(foo))
   end
+end
+
 end

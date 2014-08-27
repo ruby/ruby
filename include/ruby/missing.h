@@ -21,6 +21,9 @@ extern "C" {
 #include "ruby/config.h"
 #include <stddef.h>
 #include <math.h> /* for INFINITY and NAN */
+#ifdef RUBY_ALTERNATIVE_MALLOC_HEADER
+# include RUBY_ALTERNATIVE_MALLOC_HEADER
+#endif
 #ifdef RUBY_EXTCONF_H
 #include RUBY_EXTCONF_H
 #endif
@@ -166,6 +169,10 @@ RUBY_EXTERN int isinf(double);
 # ifndef HAVE_ISNAN
 RUBY_EXTERN int isnan(double);
 # endif
+#endif
+
+#ifndef HAVE_NEXTAFTER
+RUBY_EXTERN double nextafter(double x, double y);
 #endif
 
 /*

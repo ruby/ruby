@@ -1431,11 +1431,13 @@ class Gem::Specification < Gem::BasicSpecification
       require 'rubygems/ext'
       require 'rubygems/user_interaction'
 
-      Gem::DefaultUserInteraction.use_ui Gem::SilentUI.new do
+      ui = Gem::SilentUI.new
+      Gem::DefaultUserInteraction.use_ui ui do
         builder = Gem::Ext::Builder.new self
         builder.build_extensions
       end
     ensure
+      ui.close if ui
       Gem::Specification.unresolved_deps.replace unresolved_deps
     end
   end
@@ -2359,7 +2361,8 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   def to_yaml(opts = {}) # :nodoc:
-    if YAML.const_defined?(:ENGINE) && !YAML::ENGINE.syck? then
+    if (YAML.const_defined?(:ENGINE) && !YAML::ENGINE.syck?) ||
+        (defined?(Psych) && YAML == Psych) then
       # Because the user can switch the YAML engine behind our
       # back, we have to check again here to make sure that our
       # psych code was properly loaded, and load it if not.

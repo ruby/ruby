@@ -2,9 +2,8 @@ assert_finish 5, %q{
   r, w = IO.pipe
   t1 = Thread.new { r.sysread(1) }
   t2 = Thread.new { r.sysread(1) }
-  sleep 0.1
+  sleep 0.01 until t1.stop? and t2.stop?
   w.write "a"
-  sleep 0.1
   w.write "a"
 }, '[ruby-dev:31866]'
 
@@ -34,9 +33,9 @@ assert_finish 10, %q{
 assert_finish 1, %q{
   r, w = IO.pipe
   Thread.new {
-  w << "ab"
-  sleep 0.1
-  w << "ab"
+    w << "ab"
+    sleep 0.01
+    w << "ab"
   }
   r.gets("abab")
 }
@@ -91,7 +90,8 @@ assert_normal_exit %q{
     megacontent = "abc" * 12345678
     #File.open("megasrc", "w") {|f| f << megacontent }
 
-    Thread.new { sleep rand*0.2; Process.kill(:INT, $$) }
+    t0 = Thread.main
+    Thread.new { sleep 0.001 until t0.stop?; Process.kill(:INT, $$) }
 
     r1, w1 = IO.pipe
     r2, w2 = IO.pipe

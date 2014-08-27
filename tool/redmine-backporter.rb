@@ -336,7 +336,7 @@ eom
       h = data["issue"]["custom_fields"].find{|x|x["id"]==5}
       if h and val = h["value"]
         case val[/(?:\A|, )#{Regexp.quote TARGET_VERSION}: ([^,]+)/, 1]
-        when 'REQUIRED', 'UNKNOWN', 'DONTNEED', 'REJECTED'
+        when 'REQUIRED', 'UNKNOWN', 'DONTNEED', 'WONTFIX'
           val[*$~.offset(1)] = 'DONE'
         when 'DONE' # , /\A\d+\z/
           puts 'already backport is done'

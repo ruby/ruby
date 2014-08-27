@@ -73,36 +73,42 @@ p Foo::Bar
   end
 
   def test_threaded_accessing_constant
-    Tempfile.create(['autoload', '.rb']) {|file|
-      file.puts 'sleep 0.5; class AutoloadTest; X = 1; end'
-      file.close
-      add_autoload(file.path)
-      begin
-        assert_nothing_raised do
-          t1 = Thread.new { ::AutoloadTest::X }
-          t2 = Thread.new { ::AutoloadTest::X }
-          [t1, t2].each(&:join)
+    # Suppress "warning: loading in progress, circular require considered harmful"
+    EnvUtil.default_warning {
+      Tempfile.create(['autoload', '.rb']) {|file|
+        file.puts 'sleep 0.5; class AutoloadTest; X = 1; end'
+        file.close
+        add_autoload(file.path)
+        begin
+          assert_nothing_raised do
+            t1 = Thread.new { ::AutoloadTest::X }
+            t2 = Thread.new { ::AutoloadTest::X }
+            [t1, t2].each(&:join)
+          end
+        ensure
+          remove_autoload_constant
         end
-      ensure
-        remove_autoload_constant
-      end
+      }
     }
   end
 
   def test_threaded_accessing_inner_constant
-    Tempfile.create(['autoload', '.rb']) {|file|
-      file.puts 'class AutoloadTest; sleep 0.5; X = 1; end'
-      file.close
-      add_autoload(file.path)
-      begin
-        assert_nothing_raised do
-          t1 = Thread.new { ::AutoloadTest::X }
-          t2 = Thread.new { ::AutoloadTest::X }
-          [t1, t2].each(&:join)
+    # Suppress "warning: loading in progress, circular require considered harmful"
+    EnvUtil.default_warning {
+      Tempfile.create(['autoload', '.rb']) {|file|
+        file.puts 'class AutoloadTest; sleep 0.5; X = 1; end'
+        file.close
+        add_autoload(file.path)
+        begin
+          assert_nothing_raised do
+            t1 = Thread.new { ::AutoloadTest::X }
+            t2 = Thread.new { ::AutoloadTest::X }
+            [t1, t2].each(&:join)
+          end
+        ensure
+          remove_autoload_constant
         end
-      ensure
-        remove_autoload_constant
-      end
+      }
     }
   end
 

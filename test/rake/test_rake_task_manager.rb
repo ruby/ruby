@@ -40,6 +40,23 @@ class TestRakeTaskManager < Rake::TestCase
     assert_equal ["x:t"], @tm.tasks.map { |t| t.name }
   end
 
+  def test_define_namespaced_task
+    t = @tm.define_task(Rake::Task, 'n:a:m:e:t')
+    assert_equal Rake::Scope.make("e", "m", "a", "n"), t.scope
+    assert_equal "n:a:m:e:t", t.name
+    assert_equal @tm, t.application
+  end
+
+  def test_define_namespace_in_namespace
+    t = nil
+    @tm.in_namespace("n") do
+      t = @tm.define_task(Rake::Task, 'a:m:e:t')
+    end
+    assert_equal Rake::Scope.make("e", "m", "a", "n"), t.scope
+    assert_equal "n:a:m:e:t", t.name
+    assert_equal @tm, t.application
+  end
+
   def test_anonymous_namespace
     anon_ns = @tm.in_namespace(nil) do
       t = @tm.define_task(Rake::Task, :t)
@@ -89,6 +106,7 @@ class TestRakeTaskManager < Rake::TestCase
     @tm.in_namespace("a") do
       aa = @tm.define_task(Rake::Task, :aa)
       mid_z = @tm.define_task(Rake::Task, :z)
+      ns_d = @tm.define_task(Rake::Task, "n:t")
       @tm.in_namespace("b") do
         bb = @tm.define_task(Rake::Task, :bb)
         bot_z = @tm.define_task(Rake::Task, :z)
@@ -116,6 +134,8 @@ class TestRakeTaskManager < Rake::TestCase
       assert_equal top_z, @tm["^z"]
       assert_equal top_z, @tm["^^z"] # Over the top
       assert_equal top_z, @tm["rake:z"]
+      assert_equal ns_d, @tm["n:t"]
+      assert_equal ns_d, @tm["a:n:t"]
     end
 
     assert_equal Rake::Scope.make, @tm.current_scope

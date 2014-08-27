@@ -404,6 +404,60 @@ struct RBignum {
 
 #define RBIGNUM(obj) (R_CAST(RBignum)(obj))
 
+struct RRational {
+    struct RBasic basic;
+    const VALUE num;
+    const VALUE den;
+};
+
+#define RRATIONAL(obj) (R_CAST(RRational)(obj))
+
+struct RSymbol {
+    struct RBasic basic;
+    VALUE fstr;
+    ID type;
+};
+
+struct RFloat {
+    struct RBasic basic;
+    double float_value;
+};
+
+#define RFLOAT(obj)  (R_CAST(RFloat)(obj))
+
+struct RComplex {
+    struct RBasic basic;
+    const VALUE real;
+    const VALUE imag;
+};
+
+#define RCOMPLEX(obj) (R_CAST(RComplex)(obj))
+
+#ifdef RCOMPLEX_SET_REAL        /* shortcut macro for internal only */
+#undef RCOMPLEX_SET_REAL
+#undef RCOMPLEX_SET_REAL
+#define RCOMPLEX_SET_REAL(cmp, r) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->real,(r))
+#define RCOMPLEX_SET_IMAG(cmp, i) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->imag,(i))
+#endif
+
+struct RHash {
+    struct RBasic basic;
+    struct st_table *ntbl;      /* possibly 0 */
+    int iter_lev;
+    const VALUE ifnone;
+};
+
+#define RHASH(obj)   (R_CAST(RHash)(obj))
+
+#ifdef RHASH_ITER_LEV
+#undef RHASH_ITER_LEV
+#undef RHASH_IFNONE
+#undef RHASH_SIZE
+#define RHASH_ITER_LEV(h) (RHASH(h)->iter_lev)
+#define RHASH_IFNONE(h) (RHASH(h)->ifnone)
+#define RHASH_SIZE(h) (RHASH(h)->ntbl ? (st_index_t)RHASH(h)->ntbl->num_entries : 0)
+#endif
+
 /* class.c */
 void rb_class_subclass_add(VALUE super, VALUE klass);
 void rb_class_remove_from_super_subclasses(VALUE);
@@ -449,9 +503,10 @@ RCLASS_SET_SUPER(VALUE klass, VALUE super)
 struct vtm; /* defined by timev.h */
 
 /* array.c */
-VALUE rb_ary_last(int, VALUE *, VALUE);
+VALUE rb_ary_last(int, const VALUE *, VALUE);
 void rb_ary_set_len(VALUE, long);
 void rb_ary_delete_same(VALUE, VALUE);
+VALUE rb_ary_tmp_new_fill(long capa);
 
 /* bignum.c */
 VALUE rb_big_fdiv(VALUE x, VALUE y);
@@ -464,10 +519,10 @@ void rb_class_foreach_subclass(VALUE klass, void(*f)(VALUE));
 void rb_class_detach_subclasses(VALUE);
 void rb_class_detach_module_subclasses(VALUE);
 void rb_class_remove_from_module_subclasses(VALUE);
-VALUE rb_obj_methods(int argc, VALUE *argv, VALUE obj);
-VALUE rb_obj_protected_methods(int argc, VALUE *argv, VALUE obj);
-VALUE rb_obj_private_methods(int argc, VALUE *argv, VALUE obj);
-VALUE rb_obj_public_methods(int argc, VALUE *argv, VALUE obj);
+VALUE rb_obj_methods(int argc, const VALUE *argv, VALUE obj);
+VALUE rb_obj_protected_methods(int argc, const VALUE *argv, VALUE obj);
+VALUE rb_obj_private_methods(int argc, const VALUE *argv, VALUE obj);
+VALUE rb_obj_public_methods(int argc, const VALUE *argv, VALUE obj);
 int rb_obj_basic_to_s_p(VALUE);
 VALUE rb_special_singleton_class(VALUE);
 VALUE rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach);
@@ -633,7 +688,7 @@ VALUE rb_math_cos(VALUE);
 VALUE rb_math_cosh(VALUE);
 VALUE rb_math_exp(VALUE);
 VALUE rb_math_hypot(VALUE, VALUE);
-VALUE rb_math_log(int argc, VALUE *argv);
+VALUE rb_math_log(int argc, const VALUE *argv);
 VALUE rb_math_sin(VALUE);
 VALUE rb_math_sinh(VALUE);
 #if 0
@@ -717,6 +772,7 @@ rb_float_new_inline(double d)
 #define rb_float_new(d)   rb_float_new_inline(d)
 
 /* object.c */
+void rb_obj_copy_ivar(VALUE dest, VALUE obj);
 VALUE rb_obj_equal(VALUE obj1, VALUE obj2);
 VALUE rb_class_search_ancestor(VALUE klass, VALUE super);
 
@@ -746,16 +802,9 @@ int rb_is_attrset_name(VALUE name);
 int rb_is_local_name(VALUE name);
 int rb_is_method_name(VALUE name);
 int rb_is_junk_name(VALUE name);
-void rb_gc_mark_parser(void);
-void rb_gc_mark_symbols(int full_mark);
 ID rb_make_internal_id(void);
 void rb_gc_free_dsymbol(VALUE);
 VALUE rb_str_dynamic_intern(VALUE);
-ID rb_check_id_without_pindown(VALUE *);
-ID rb_sym2id_without_pindown(VALUE);
-#ifdef RUBY_ENCODING_H
-ID rb_check_id_cstr_without_pindown(const char *, long, rb_encoding *);
-#endif
 ID rb_id_attrget(ID id);
 
 /* proc.c */
@@ -843,6 +892,10 @@ size_t rb_strftime(char *s, size_t maxsize, const char *format, rb_encoding *enc
 
 /* string.c */
 VALUE rb_fstring(VALUE);
+VALUE rb_fstring_new(const char *ptr, long len);
+#ifdef RUBY_ENCODING_H
+VALUE rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encoding *enc);
+#endif
 int rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p);
 int rb_str_symname_p(VALUE);
 VALUE rb_str_quote_unprintable(VALUE);
@@ -903,7 +956,6 @@ VALUE rb_sourcefilename(void);
 void rb_vm_pop_cfunc_frame(void);
 
 /* vm_dump.c */
-void rb_vm_bugreport(void);
 void rb_print_backtrace(void);
 
 /* vm_eval.c */
@@ -929,8 +981,8 @@ void Init_prelude(void);
 
 /* vm_backtrace.c */
 void Init_vm_backtrace(void);
-VALUE rb_vm_thread_backtrace(int argc, VALUE *argv, VALUE thval);
-VALUE rb_vm_thread_backtrace_locations(int argc, VALUE *argv, VALUE thval);
+VALUE rb_vm_thread_backtrace(int argc, const VALUE *argv, VALUE thval);
+VALUE rb_vm_thread_backtrace_locations(int argc, const VALUE *argv, VALUE thval);
 
 VALUE rb_make_backtrace(void);
 void rb_backtrace_print_as_bugreport(void);

@@ -214,7 +214,8 @@ class Time
         if o != 0 then hour += o; o, hour = hour.divmod(24); off += o end
         if off != 0
           day += off
-          if month_days(year, mon) < day
+          days = month_days(year, mon)
+          if days and days < day
             mon += 1
             if 12 < mon
               mon = 1
@@ -416,7 +417,7 @@ class Time
     # %x :: Preferred representation for the date alone, no time
     # %X :: Preferred representation for the time alone, no date
     # %y :: Year without a century (00..99)
-    # %Y :: Year with century
+    # %Y :: Year which may include century, if provided
     # %z :: Time zone as  hour offset from UTC (e.g. +0900)
     # %Z :: Time zone name
     # %% :: Literal "%" character

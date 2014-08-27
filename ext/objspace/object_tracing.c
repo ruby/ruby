@@ -287,7 +287,10 @@ object_allocations_reporter_i(st_data_t key, st_data_t val, st_data_t ptr)
     if (info->class_path) fprintf(out, "C: %s", info->class_path);
     else                  fprintf(out, "C: %p", (void *)info->klass);
     fprintf(out, "@%s:%lu", info->path ? info->path : "", info->line);
-    if (!NIL_P(info->mid)) fprintf(out, " (%s)", rb_id2name(SYM2ID(info->mid)));
+    if (!NIL_P(info->mid)) {
+	VALUE m = rb_sym2str(info->mid);
+	fprintf(out, " (%s)", RSTRING_PTR(m));
+    }
     fprintf(out, ")\n");
 
     return ST_CONTINUE;

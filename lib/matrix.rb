@@ -894,7 +894,7 @@ class Matrix
       return apply_through_coercion(m, __method__)
     end
 
-    Matrix.Raise ErrDimensionMismatch unless row_count == m.row_count and column_count == m.column_count
+    Matrix.Raise ErrDimensionMismatch unless row_count == m.row_count && column_count == m.column_count
 
     rows = Array.new(row_count) {|i|
       Array.new(column_count) {|j|
@@ -921,7 +921,7 @@ class Matrix
       return apply_through_coercion(m, __method__)
     end
 
-    Matrix.Raise ErrDimensionMismatch unless row_count == m.row_count and column_count == m.column_count
+    Matrix.Raise ErrDimensionMismatch unless row_count == m.row_count && column_count == m.column_count
 
     rows = Array.new(row_count) {|i|
       Array.new(column_count) {|j|
@@ -1811,9 +1811,9 @@ class Vector
   #
   def cross_product(v)
     Vector.Raise ErrDimensionMismatch unless size == v.size && v.size == 3
-    Vector[ v[1]*@elements[2] - v[2]*@elements[1],
-            v[2]*@elements[0] - v[0]*@elements[2],
-            v[0]*@elements[1] - v[1]*@elements[0] ]
+    Vector[ v[2]*@elements[1] - v[1]*@elements[2],
+            v[0]*@elements[2] - v[2]*@elements[0],
+            v[1]*@elements[0] - v[0]*@elements[1] ]
   end
 
   #

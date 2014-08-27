@@ -544,9 +544,9 @@ module Gem
   #   Fetching: minitest-3.0.1.gem (100%)
   #   => [#<Gem::Specification:0x1013b4528 @name="minitest", ...>]
 
-  def self.install name, version = Gem::Requirement.default
+  def self.install name, version = Gem::Requirement.default, **options
     require "rubygems/dependency_installer"
-    inst = Gem::DependencyInstaller.new
+    inst = Gem::DependencyInstaller.new(**options)
     inst.install name, version
     inst.installed_gems
   end

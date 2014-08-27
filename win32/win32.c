@@ -610,13 +610,12 @@ static int NtSocketsInitialized = 0;
 static st_table *socklist = NULL;
 static st_table *conlist = NULL;
 #define conlist_disabled ((st_table *)-1)
-static char *envarea;
 static char *uenvarea;
 
 /* License: Ruby's */
 struct constat {
     struct {
-	int state, seq[16];
+	int state, seq[16], reverse;
 	WORD attr;
 	COORD saved;
     } vt100;
@@ -659,10 +658,6 @@ exit_handler(void)
 	st_foreach(conlist, free_conlist, 0);
 	st_free_table(conlist);
 	conlist = NULL;
-    }
-    if (envarea) {
-	FreeEnvironmentStrings(envarea);
-	envarea = NULL;
     }
     if (uenvarea) {
 	free(uenvarea);
@@ -1200,7 +1195,8 @@ is_batch(const char *cmd)
     return 0;
 }
 
-static UINT filecp(void);
+UINT rb_w32_filecp(void);
+#define filecp rb_w32_filecp
 #define mbstr_to_wstr rb_w32_mbstr_to_wstr
 #define wstr_to_mbstr rb_w32_wstr_to_mbstr
 #define acp_to_wstr(str, plen) mbstr_to_wstr(CP_ACP, str, -1, plen)
@@ -1489,7 +1485,6 @@ static NtCmdLineElement **
 cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail, UINT cp)
 {
     char buffer[MAXPATHLEN], *buf = buffer;
-    char *p;
     NtCmdLineElement **last = tail;
     int status;
 
@@ -1498,9 +1493,7 @@ cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail, UINT cp)
 
     strlcpy(buf, patt->str, patt->len + 1);
     buf[patt->len] = '\0';
-    for (p = buf; *p; p = CharNextExA(cp, p, 0))
-	if (*p == '\\')
-	    *p = '/';
+    translate_char(buf, '\\', '/', cp);
     status = ruby_brace_glob(buf, 0, insert, (VALUE)&tail);
     if (buf != buffer)
 	free(buf);
@@ -1948,7 +1941,7 @@ opendir_internal(WCHAR *wpath, const char *filename)
 }
 
 /* License: Ruby's */
-static inline UINT
+UINT
 filecp(void)
 {
     UINT cp = AreFileApisANSI() ? CP_ACP : CP_OEMCP;
@@ -2049,7 +2042,7 @@ rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc)
 {
     VALUE src;
     long len = lstrlenW(wstr);
-    int encindex = ENC_TO_ENCINDEX(enc);
+    int encindex = rb_enc_to_index(enc);
 
     if (encindex == ENCINDEX_UTF_16LE) {
 	return rb_enc_str_new((char *)wstr, len * sizeof(WCHAR), enc);
@@ -4636,10 +4629,6 @@ w32_getenv(const char *name, UINT cp)
 	free(uenvarea);
 	uenvarea = NULL;
     }
-    if (envarea) {
-	FreeEnvironmentStrings(envarea);
-	envarea = NULL;
-    }
     wenvarea = GetEnvironmentStringsW();
     if (!wenvarea) {
 	map_errno(GetLastError());
@@ -5865,55 +5854,6 @@ rb_w32_pipe(int fds[2])
 }
 
 /* License: Ruby's */
-int
-ustatfs(const char *path, struct statfs *buf)
-{
-    WCHAR *wpath = utf8_to_wstr(path, NULL);
-    WCHAR root[MAX_PATH], system[8];
-    DWORD serial, spc, bps, unused, total;
-    char *tmp;
-    WINBASEAPI BOOL WINAPI GetVolumePathNameW(LPCWSTR, LPWSTR, DWORD);
-
-    if (!wpath) {
-	return -1;
-    }
-
-    if (!GetVolumePathNameW(wpath, root, sizeof(root) / sizeof(WCHAR))) {
-	free(wpath);
-	errno = map_errno(GetLastError());
-	return -1;
-    }
-    free(wpath);
-
-    if (!GetVolumeInformationW(root, NULL, 0, &serial, NULL, NULL,
-			       system, sizeof(system) / sizeof(WCHAR))) {
-	errno = map_errno(GetLastError());
-	return -1;
-    }
-
-    if (!GetDiskFreeSpaceW(root, &spc, &bps, &unused, &total)) {
-	errno = map_errno(GetLastError());
-	return -1;
-    }
-
-    tmp = wstr_to_filecp(system, NULL);
-    if (!tmp) {
-	return -1;
-    }
-    strlcpy(buf->f_fstypename, tmp, sizeof(buf->f_fstypename));
-    free(tmp);
-
-    buf->f_type = 0;
-    buf->f_bsize = (uint64_t)spc * bps;
-    buf->f_blocks = total;
-    buf->f_bfree = buf->f_bavail = unused;
-    buf->f_files = buf->f_ffree = 0;
-    buf->f_fsid = serial;
-
-    return 0;
-}
-
-/* License: Ruby's */
 static int
 console_emulator_p(void)
 {
@@ -5958,6 +5898,7 @@ constat_handle(HANDLE h)
 	p = ALLOC(struct constat);
 	p->vt100.state = constat_init;
 	p->vt100.attr = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED;
+	p->vt100.reverse = 0;
 	p->vt100.saved.X = p->vt100.saved.Y = 0;
 	if (GetConsoleScreenBufferInfo(h, &csbi)) {
 	    p->vt100.attr = csbi.wAttributes;
@@ -5979,16 +5920,26 @@ constat_reset(HANDLE h)
     p->vt100.state = constat_init;
 }
 
+#define FOREGROUND_MASK (FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_INTENSITY)
+#define BACKGROUND_MASK (BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED | BACKGROUND_INTENSITY)
+
+#define constat_attr_color_reverse(attr) \
+    (attr) & ~(FOREGROUND_MASK | BACKGROUND_MASK) | \
+	   (((attr) & FOREGROUND_MASK) << 4) | \
+	   (((attr) & BACKGROUND_MASK) >> 4);
+
 /* License: Ruby's */
 static WORD
-constat_attr(int count, const int *seq, WORD attr, WORD default_attr)
+constat_attr(int count, const int *seq, WORD attr, WORD default_attr, int *reverse)
 {
-#define FOREGROUND_MASK (FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED)
-#define BACKGROUND_MASK (BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED)
-    WORD bold = attr & (FOREGROUND_INTENSITY | BACKGROUND_INTENSITY);
-    int rev = 0;
+    int rev = *reverse;
+    WORD bold;
 
     if (!count) return attr;
+    if (rev) attr = constat_attr_color_reverse(attr);
+    bold = attr & FOREGROUND_INTENSITY;
+    attr &= ~(FOREGROUND_INTENSITY | BACKGROUND_INTENSITY);
+
     while (count-- > 0) {
 	switch (*seq++) {
 	  case 0:
@@ -5997,7 +5948,7 @@ constat_attr(int count, const int *seq, WORD attr, WORD default_attr)
 	    bold = 0;
 	    break;
 	  case 1:
-	    bold |= rev ? BACKGROUND_INTENSITY : FOREGROUND_INTENSITY;
+	    bold = FOREGROUND_INTENSITY;
 	    break;
 	  case 4:
 #ifndef COMMON_LVB_UNDERSCORE
@@ -6067,12 +6018,10 @@ constat_attr(int count, const int *seq, WORD attr, WORD default_attr)
 	    break;
 	}
     }
-    if (rev) {
-	attr = attr & ~(FOREGROUND_MASK | BACKGROUND_MASK) |
-	    ((attr & FOREGROUND_MASK) << 4) |
-	    ((attr & BACKGROUND_MASK) >> 4);
-    }
-    return attr | bold;
+    attr |= bold;
+    if (rev) attr = constat_attr_color_reverse(attr);
+    *reverse = rev;
+    return attr;
 }
 
 /* License: Ruby's */
@@ -6090,7 +6039,7 @@ constat_apply(HANDLE handle, struct constat *s, WCHAR w)
     if (count > 0 && seq[0] > 0) arg1 = seq[0];
     switch (w) {
       case L'm':
-	SetConsoleTextAttribute(handle, constat_attr(count, seq, csbi.wAttributes, s->vt100.attr));
+	SetConsoleTextAttribute(handle, constat_attr(count, seq, csbi.wAttributes, s->vt100.attr, &s->vt100.reverse));
 	break;
       case L'F':
 	csbi.dwCursorPosition.X = 0;
@@ -7213,4 +7162,8 @@ rb_w32_pow(double x, double y)
     _controlfp(default_control, _MCW_PC);
     return r;
 }
+#endif
+
+#if RUBY_MSVCRT_VERSION < 120
+#include "missing/nextafter.c"
 #endif
