@@ -6,13 +6,18 @@ class TestCoverage < Test::Unit::TestCase
   def test_result_without_start
     assert_raise(RuntimeError) {Coverage.result}
   end
+
   def test_result_with_nothing
     Coverage.start
     result = Coverage.result
     assert_kind_of(Hash, result)
+    assert(! result.empty?)
     result.each do |key, val|
       assert_kind_of(String, key)
-      assert_kind_of(Array, val)
+      assert_kind_of(Hash, val)
+      assert_kind_of(Array, val[:lines])
+      assert_kind_of(Hash, val[:methods])
+      assert_kind_of(Hash, val[:decisions])
     end
   end
 
@@ -31,10 +36,10 @@ class TestCoverage < Test::Unit::TestCase
 
         Coverage.start
         require tmp + '/test.rb'
-        assert_equal 3, Coverage.result[tmp + '/test.rb'].size
+        assert_equal 3, Coverage.result[tmp + '/test.rb'][:lines].size
         Coverage.start
         coverage_test_method
-        assert_equal 0, Coverage.result[tmp + '/test.rb'].size
+        assert_equal 0, Coverage.result[tmp + '/test.rb'][:lines].size
       }
     }
   ensure
@@ -55,7 +60,7 @@ class TestCoverage < Test::Unit::TestCase
 
         Coverage.start
         require tmp + '/test.rb'
-        assert_equal 10003, Coverage.result[tmp + '/test.rb'].size
+        assert_equal 10003, Coverage.result[tmp + '/test.rb'][:lines].size
       }
     }
   ensure

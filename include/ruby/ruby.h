@@ -1653,6 +1653,9 @@ int ruby_native_thread_p(void);
 #define RUBY_EVENT_C_CALL    0x0020
 #define RUBY_EVENT_C_RETURN  0x0040
 #define RUBY_EVENT_RAISE     0x0080
+#define RUBY_EVENT_DEFN      0x0090
+#define RUBY_EVENT_DECISION_TRUE  0x00a0
+#define RUBY_EVENT_DECISION_FALSE 0x00b0
 #define RUBY_EVENT_ALL       0x00ff
 
 /* for TracePoint extended events */
@@ -1665,6 +1668,9 @@ int ruby_native_thread_p(void);
 /* special events */
 #define RUBY_EVENT_SPECIFIED_LINE         0x010000
 #define RUBY_EVENT_COVERAGE               0x020000
+#define RUBY_EVENT_MCOVERAGE              0x080000
+#define RUBY_EVENT_DCOVERAGE_TRUE        0x2000000
+#define RUBY_EVENT_DCOVERAGE_FALSE       0x4000000
 
 /* internal events */
 #define RUBY_INTERNAL_EVENT_SWITCH          0x040000

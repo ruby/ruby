@@ -3793,7 +3793,7 @@ static int
 clear_coverage_i(st_data_t key, st_data_t val, st_data_t dummy)
 {
     int i;
-    VALUE lines = (VALUE)val;
+    VALUE lines = rb_hash_lookup(val, ID2SYM(rb_intern("lines")));
 
     for (i = 0; i < RARRAY_LEN(lines); i++) {
 	if (RARRAY_AREF(lines, i) != Qnil) {
@@ -5150,7 +5150,7 @@ rb_check_deadlock(rb_vm_t *vm)
 static void
 update_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klass)
 {
-    VALUE coverage = GET_THREAD()->cfp->iseq->coverage;
+    VALUE coverage = GET_THREAD()->cfp->iseq->coverage->lines;
     if (coverage && RBASIC(coverage)->klass == 0) {
 	long line = rb_sourceline() - 1;
 	long count;
@@ -5160,6 +5160,51 @@ update_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
 	count = FIX2LONG(RARRAY_AREF(coverage, line)) + 1;
 	if (POSFIXABLE(count)) {
 	    RARRAY_ASET(coverage, line, LONG2FIX(count));
+	}
+    }
+}
+
+static void
+update_method_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klass)
+{
+    struct rb_coverage_struct *coverages = GET_THREAD()->cfp->iseq->coverage;
+
+    if (coverages && coverages->methods) {
+	VALUE coverage = coverages->methods;
+	VALUE line = LONG2FIX(rb_sourceline());
+	VALUE count = rb_hash_lookup(coverage, line);
+
+	if (count == Qnil) {
+	    return;
+	}
+
+	rb_hash_aset(coverage, line, LONG2FIX(FIX2LONG(count) + 1));
+    }
+
+}
+
+static void
+update_decision_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klass)
+{
+    struct rb_coverage_struct *coverages = GET_THREAD()->cfp->iseq->coverage;
+
+    if (coverages && coverages->decisions) {
+	VALUE coverage = coverages->decisions;
+	VALUE line = LONG2FIX(rb_sourceline());
+	VALUE counts = rb_hash_lookup(coverage, line); /* [true counts, false counts] */
+	VALUE count;
+
+	if (counts == Qnil) {
+	    return;
+	}
+
+	if (event == RUBY_EVENT_DCOVERAGE_TRUE) {
+	    count = FIX2LONG(RARRAY_AREF(counts, 0)) + 1;
+	    RARRAY_ASET(counts, 0, LONG2FIX(count));
+	}
+	else {
+	    count = FIX2LONG(RARRAY_AREF(counts, 1)) + 1;
+	    RARRAY_ASET(counts, 1, LONG2FIX(count));
 	}
     }
 }
@@ -5175,6 +5220,9 @@ rb_set_coverages(VALUE coverages)
 {
     GET_VM()->coverages = coverages;
     rb_add_event_hook(update_coverage, RUBY_EVENT_COVERAGE, Qnil);
+    rb_add_event_hook(update_method_coverage, RUBY_EVENT_MCOVERAGE, Qnil);
+    rb_add_event_hook(update_decision_coverage, RUBY_EVENT_DCOVERAGE_TRUE, Qnil);
+    rb_add_event_hook(update_decision_coverage, RUBY_EVENT_DCOVERAGE_FALSE, Qnil);
 }
 
 void
@@ -5182,6 +5230,8 @@ rb_reset_coverages(void)
 {
     GET_VM()->coverages = Qfalse;
     rb_remove_event_hook(update_coverage);
+    rb_remove_event_hook(update_method_coverage);
+    rb_remove_event_hook(update_decision_coverage);
 }
 
 VALUE

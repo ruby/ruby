@@ -38,8 +38,29 @@ coverage_result_i(st_data_t key, st_data_t val, st_data_t h)
     VALUE path = (VALUE)key;
     VALUE coverage = (VALUE)val;
     VALUE coverages = (VALUE)h;
-    coverage = rb_ary_dup(coverage);
-    rb_ary_clear((VALUE)val);
+
+    VALUE line_coverage = rb_hash_lookup(coverage, ID2SYM(rb_intern("lines")));
+    VALUE method_coverage = rb_hash_lookup(coverage, ID2SYM(rb_intern("methods")));
+    VALUE decision_coverage = rb_hash_lookup(coverage, ID2SYM(rb_intern("decisions")));
+
+    line_coverage = rb_ary_dup(line_coverage);
+    method_coverage = rb_hash_dup(method_coverage);
+    decision_coverage = rb_hash_dup(decision_coverage);
+
+    rb_ary_clear(rb_hash_lookup(coverage, ID2SYM(rb_intern("lines"))));
+    rb_hash_clear(rb_hash_lookup(coverage, ID2SYM(rb_intern("methods"))));
+    rb_hash_clear(rb_hash_lookup(coverage, ID2SYM(rb_intern("decisions"))));
+
+    coverage = rb_hash_dup(coverage);
+
+    rb_ary_freeze(line_coverage);
+    rb_hash_freeze(method_coverage);
+    rb_hash_freeze(decision_coverage);
+
+    rb_hash_aset(coverage, ID2SYM(rb_intern("lines")), line_coverage);
+    rb_hash_aset(coverage, ID2SYM(rb_intern("methods")), method_coverage);
+    rb_hash_aset(coverage, ID2SYM(rb_intern("decisions")), decision_coverage);
+
     rb_ary_freeze(coverage);
     rb_hash_aset(coverages, path, coverage);
     return ST_CONTINUE;

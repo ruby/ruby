@@ -5314,11 +5314,17 @@ coverage(VALUE fname, int n)
     VALUE coverages = rb_get_coverages();
     if (RTEST(coverages) && RBASIC(coverages)->klass == 0) {
 	VALUE lines = rb_ary_new2(n);
+	VALUE rb_file_coverage = rb_hash_new();
+	VALUE methods = rb_hash_new();
+	VALUE decisions = rb_hash_new();
 	int i;
 	RBASIC_CLEAR_CLASS(lines);
 	for (i = 0; i < n; i++) RARRAY_ASET(lines, i, Qnil);
 	RARRAY(lines)->as.heap.len = n;
-	rb_hash_aset(coverages, fname, lines);
+	rb_hash_aset(rb_file_coverage, ID2SYM(rb_intern("lines")), lines);
+	rb_hash_aset(rb_file_coverage, ID2SYM(rb_intern("methods")), methods);
+	rb_hash_aset(rb_file_coverage, ID2SYM(rb_intern("decisions")), decisions);
+	rb_hash_aset(coverages, fname, rb_file_coverage);
 	return lines;
     }
     return 0;

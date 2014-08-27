@@ -187,6 +187,12 @@ typedef struct rb_iseq_location_struct {
     VALUE first_lineno; /* TODO: may be unsigned short */
 } rb_iseq_location_t;
 
+struct rb_coverage_struct {
+    const VALUE lines;
+    const VALUE methods;
+    const VALUE decisions;
+};
+
 struct rb_iseq_struct;
 
 struct rb_iseq_struct {
@@ -218,7 +224,7 @@ struct rb_iseq_struct {
     unsigned int line_info_size;
 
     const VALUE mark_ary;     /* Array: includes operands which should be GC marked */
-    const VALUE coverage;     /* coverage array */
+    struct rb_coverage_struct *coverage;
 
     /* insn info, must be freed */
     struct iseq_line_info_entry *line_info_table;
