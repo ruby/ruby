@@ -941,6 +941,14 @@ class TestFileExhaustive < Test::Unit::TestCase
   rescue NotImplementedError
   end
 
+  def test_openat
+    d = File.new(File.dirname(__FILE__))
+    f = d.openat(File.basename(__FILE__))
+    assert_equal(f.stat, File.stat(__FILE__))
+    f.close
+    d.close
+  end
+
   def test_test
     sleep(@time - Time.now + 1.1)
     make_file("foo", @file + "2")

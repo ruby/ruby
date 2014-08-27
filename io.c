@@ -257,7 +257,7 @@ rb_fix_detect_o_cloexec(int fd)
 }
 
 int
-rb_cloexec_open(const char *pathname, int flags, mode_t mode)
+rb_cloexec_open2(int dirfd, const char *pathname, int flags, mode_t mode)
 {
     int ret;
     static int o_cloexec_state = -1; /* <0: unknown, 0: ignored, >0: working */
@@ -268,7 +268,11 @@ rb_cloexec_open(const char *pathname, int flags, mode_t mode)
 #elif defined O_NOINHERIT
     flags |= O_NOINHERIT;
 #endif
-    ret = open(pathname, flags, mode);
+    if (dirfd == -1) {
+        ret = open(pathname, flags, mode);
+    } else {
+        ret = openat(dirfd, pathname, flags, mode);
+    }
     if (ret == -1) return -1;
     if (ret <= 2 || o_cloexec_state == 0) {
 	rb_maygvl_fd_fix_cloexec(ret);
@@ -280,6 +284,12 @@ rb_cloexec_open(const char *pathname, int flags, mode_t mode)
 	o_cloexec_state = rb_fix_detect_o_cloexec(ret);
     }
     return ret;
+}
+
+int
+rb_cloexec_open(const char *pathname, int flags, mode_t mode)
+{
+    return rb_cloexec_open2(-1, pathname, flags, mode);
 }
 
 int
@@ -5425,6 +5435,7 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
 }
 
 struct sysopen_struct {
+    int dirfd;
     VALUE fname;
     int oflags;
     mode_t perm;
@@ -5435,7 +5446,7 @@ sysopen_func(void *ptr)
 {
     const struct sysopen_struct *data = ptr;
     const char *fname = RSTRING_PTR(data->fname);
-    return (void *)(VALUE)rb_cloexec_open(fname, data->oflags, data->perm);
+    return (void *)(VALUE)rb_cloexec_open2(data->dirfd, fname, data->oflags, data->perm);
 }
 
 static inline int
@@ -5449,11 +5460,12 @@ rb_sysopen_internal(struct sysopen_struct *data)
 }
 
 static int
-rb_sysopen(VALUE fname, int oflags, mode_t perm)
+rb_sysopen(int dirfd, VALUE fname, int oflags, mode_t perm)
 {
     int fd;
     struct sysopen_struct data;
 
+    data.dirfd = dirfd;
     data.fname = rb_str_encode_ospath(fname);
     data.oflags = oflags;
     data.perm = perm;
@@ -5600,7 +5612,7 @@ io_set_encoding_by_bom(VALUE io)
 }
 
 static VALUE
-rb_file_open_generic(VALUE io, VALUE filename, int oflags, int fmode, convconfig_t *convconfig, mode_t perm)
+rb_file_open_generic(VALUE io, int dirfd, VALUE filename, int oflags, int fmode, convconfig_t *convconfig, mode_t perm)
 {
     rb_io_t *fptr;
     convconfig_t cc;
@@ -5618,7 +5630,7 @@ rb_file_open_generic(VALUE io, VALUE filename, int oflags, int fmode, convconfig
     fptr->mode = fmode;
     fptr->encs = *convconfig;
     fptr->pathv = rb_str_new_frozen(filename);
-    fptr->fd = rb_sysopen(fptr->pathv, oflags, perm);
+    fptr->fd = rb_sysopen(dirfd, fptr->pathv, oflags, perm);
     io_check_tty(fptr);
     if (fmode & FMODE_SETENC_BY_BOM) io_set_encoding_by_bom(io);
 
@@ -5645,7 +5657,7 @@ rb_file_open_internal(VALUE io, VALUE filename, const char *modestr)
         convconfig.ecopts = Qnil;
     }
 
-    return rb_file_open_generic(io, filename,
+    return rb_file_open_generic(io, -1, filename,
             rb_io_fmode_oflags(fmode),
             fmode,
             &convconfig,
@@ -6353,7 +6365,7 @@ rb_open_file(int argc, const VALUE *argv, VALUE io)
     mode_t perm;
 
     rb_scan_open_args(argc, argv, &fname, &oflags, &fmode, &convconfig, &perm);
-    rb_file_open_generic(io, fname, oflags, fmode, &convconfig, perm);
+    rb_file_open_generic(io, -1, fname, oflags, fmode, &convconfig, perm);
 
     return io;
 }
@@ -6440,7 +6452,7 @@ rb_io_s_sysopen(int argc, VALUE *argv)
     else              perm = NUM2MODET(vperm);
 
     RB_GC_GUARD(fname) = rb_str_new4(fname);
-    fd = rb_sysopen(fname, oflags, perm);
+    fd = rb_sysopen(-1, fname, oflags, perm);
     return INT2NUM(fd);
 }
 
@@ -6610,7 +6622,7 @@ rb_io_open(VALUE filename, VALUE vmode, VALUE vperm, VALUE opt)
 	return pipe_open_s(cmd, rb_io_oflags_modestr(oflags), fmode, &convconfig);
     }
     else {
-        return rb_file_open_generic(io_alloc(rb_cFile), filename,
+        return rb_file_open_generic(io_alloc(rb_cFile), -1, filename,
                 oflags, fmode, &convconfig, perm);
     }
 }
@@ -6770,7 +6782,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
 
     fptr->pathv = rb_str_new_frozen(fname);
     if (fptr->fd < 0) {
-        fptr->fd = rb_sysopen(fptr->pathv, oflags, 0666);
+        fptr->fd = rb_sysopen(-1, fptr->pathv, oflags, 0666);
 	fptr->stdio_file = 0;
 	return file;
     }
@@ -6801,7 +6813,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
         }
     }
     else {
-	int tmpfd = rb_sysopen(fptr->pathv, oflags, 0666);
+	int tmpfd = rb_sysopen(-1, fptr->pathv, oflags, 0666);
 	int err = 0;
 	if (rb_cloexec_dup2(tmpfd, fptr->fd) < 0)
 	    err = errno;
@@ -7613,6 +7625,43 @@ rb_file_initialize(int argc, VALUE *argv, VALUE io)
     return io;
 }
 
+/*
+ *  call-seq:
+ *     dir.openat(filename, mode="r" [, opt])            -> file
+ *     dir.openat(filename [, mode [, perm]] [, opt])    -> file
+ *
+ *  Opens the file named by +filename+ relative to +dir+ according to the given +mode+ and
+ *  returns a new File object.
+ *
+ *  See IO.new for a description of +mode+ and +opt+.
+ *
+ *  If a file is being created, permission bits may be given in +perm+.  These
+ *  mode and permission bits are platform dependent; on Unix systems, see
+ *  open(2) and chmod(2) man pages for details.
+ *
+ *  === Examples
+ *
+ *    f = File.new("testfile", "r")
+ *    f = File.new("newfile",  "w+")
+ *    f = File.new("newfile", File::CREAT|File::TRUNC|File::RDWR, 0644)
+ */
+static VALUE
+rb_io_openat(int argc, VALUE *argv, VALUE io)
+{
+    rb_io_t *fptr;
+    VALUE path;
+    int oflags, fmode;
+    convconfig_t convconfig;
+    mode_t perm;
+
+    rb_scan_open_args(argc, argv, &path, &oflags, &fmode, &convconfig, &perm);
+
+    GetOpenFile(io, fptr);
+
+    return rb_file_open_generic(io_alloc(rb_cFile), fptr->fd, path, 
+        rb_io_fmode_oflags(fmode), fmode, &convconfig, perm);
+}
+
 /* :nodoc: */
 static VALUE
 rb_io_s_new(int argc, VALUE *argv, VALUE klass)
@@ -7889,7 +7938,7 @@ argf_next_argv(VALUE argf)
 	    }
 	    else {
 		VALUE write_io = Qnil;
-		int fr = rb_sysopen(ARGF.filename, O_RDONLY, 0);
+		int fr = rb_sysopen(-1, ARGF.filename, O_RDONLY, 0);
 
 		if (ARGF.inplace) {
 		    struct stat st;
@@ -7916,7 +7965,7 @@ argf_next_argv(VALUE argf)
 				    ARGF.filename, str, strerror(errno));
 			    goto retry;
 			}
-			fr = rb_sysopen(str, O_RDONLY, 0);
+			fr = rb_sysopen(-1, str, O_RDONLY, 0);
 #else
 			if (rename(fn, RSTRING_PTR(str)) < 0) {
 			    rb_warn("Can't rename %"PRIsVALUE" to %"PRIsVALUE": %s, skipping file",
@@ -7938,7 +7987,7 @@ argf_next_argv(VALUE argf)
 			}
 #endif
 		    }
-		    fw = rb_sysopen(ARGF.filename, O_WRONLY|O_CREAT|O_TRUNC, 0666);
+		    fw = rb_sysopen(-1, ARGF.filename, O_WRONLY|O_CREAT|O_TRUNC, 0666);
 #ifndef NO_SAFE_RENAME
 		    fstat(fw, &st2);
 #ifdef HAVE_FCHMOD
@@ -12230,6 +12279,8 @@ Init_IO(void)
 
     rb_define_method(rb_cIO, "autoclose?", rb_io_autoclose_p, 0);
     rb_define_method(rb_cIO, "autoclose=", rb_io_set_autoclose, 1);
+
+    rb_define_method(rb_cIO, "openat", rb_io_openat, -1);
 
     rb_define_variable("$stdin", &rb_stdin);
     rb_stdin = prep_stdio(stdin, FMODE_READABLE, rb_cIO, "<STDIN>");
