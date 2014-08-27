@@ -55,7 +55,7 @@ class ThreadsWait
   end
 
   # Returns the array of threads that have not terminated yet.
-  attr :threads
+  attr_reader :threads
 
   #
   # Returns +true+ if there are no threads in the pool still running.

@@ -24,14 +24,14 @@ module RubyToken
       @line_no = line_no
       @char_no = char_no
     end
-    attr :seek, :line_no, :char_no
+    attr_reader :seek, :line_no, :char_no
   end
 
   class TkNode < Token
     def initialize(seek, line_no, char_no)
       super
     end
-    attr :node
+    attr_reader :node
   end
 
   class TkId < Token
@@ -39,7 +39,7 @@ module RubyToken
       super(seek, line_no, char_no)
       @name = name
     end
-    attr :name
+    attr_reader :name
   end
 
   class TkVal < Token
@@ -47,7 +47,7 @@ module RubyToken
       super(seek, line_no, char_no)
       @value = value
     end
-    attr :value
+    attr_reader :value
   end
 
   class TkOp < Token
@@ -60,7 +60,7 @@ module RubyToken
       op = TkReading2Token[op][0] unless op.kind_of?(Symbol)
       @op = op
     end
-    attr :op
+    attr_reader :op
   end
 
   class TkUnknownChar < Token
@@ -68,7 +68,7 @@ module RubyToken
       super(seek, line_no, char_no)
       @name = name
     end
-    attr :name
+    attr_reader :name
   end
 
   class TkError < Token

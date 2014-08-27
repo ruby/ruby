@@ -371,7 +371,7 @@ module Net
     # The socket the Telnet object is using.  Note that this object becomes
     # a delegate of the Telnet object, so normally you invoke its methods
     # directly on the Telnet object.
-    attr :sock
+    attr_reader :sock
 
     # Set telnet command interpretation on (+mode+ == true) or off
     # (+mode+ == false), or return the current value (+mode+ not

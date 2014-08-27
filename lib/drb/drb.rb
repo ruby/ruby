@@ -995,7 +995,7 @@ module DRb
     def initialize(option)
       @option = option.to_s
     end
-    attr :option
+    attr_reader :option
     def to_s; @option; end
 
     def ==(other)

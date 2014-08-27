@@ -1,3 +1,12 @@
+Wed Aug 27 21:08:20 2014  gogo tanaka  <mail@tanakakazuki.com>
+
+	* lib/drb/drb.rb: use attr_reader instead of Module#attr.
+	  [Feature #10172][ruby-core:64582]
+	* lib/irb/ruby-token.rb: ditto.
+	* lib/net/telnet.rb: ditto.
+	* lib/rdoc/ruby_token.rb: ditto.
+	* lib/thwait.rb: ditto.
+
 Wed Aug 27 19:52:33 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (vtdate2rbtime): try to convert millisecond
