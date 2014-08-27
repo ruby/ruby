@@ -12,6 +12,7 @@ at_exit do
   Dir.chdir(pwd) do
     Coverage.result.each do |sfile, covs|
       cfile = sfile + ext
+      line_covs = covs[:lines]
 
       writable = proc do |f|
         File.writable?(f) || File.writable?(File.dirname(f))
@@ -43,14 +44,14 @@ at_exit do
             break []
           end
         end
-        unless pcovs.empty? || pcovs.size == covs.size
+        unless pcovs.empty? || pcovs.size == line_covs.size
           warn("coverage file changed, ignoring: `#{ cfile }'")
           pcovs = []
         end
       end
 
       open(cfile, "w") do |out|
-        covs.zip(sources, pcovs).each_with_index do |(cov, line, pcov), idx|
+        line_covs.zip(sources, pcovs).each_with_index do |(cov, line, pcov), idx|
           cov += pcov || 0 if cov
           cov = (cov ? (cov == 0 ? "#####" : cov.to_s) : "-").rjust(9)
           out.puts("%s:% 5d:%s" % [cov, idx + 1, line])

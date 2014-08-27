@@ -218,6 +218,10 @@ r_value(VALUE value)
            new_insn_send(iseq, (line), \
                          (VALUE)(id), (VALUE)(argc), (VALUE)(block), (VALUE)(flag)))
 
+#define RUBY_EVENT_DEFN           0x0090
+#define RUBY_EVENT_DECISION_TRUE  0x00a0
+#define RUBY_EVENT_DECISION_FALSE 0x00b0
+
 #define ADD_TRACE(seq, line, event) \
   do { \
       if ((event) == RUBY_EVENT_LINE && \
@@ -232,7 +236,7 @@ r_value(VALUE value)
       } \
   } while (0)
 
-#define ADD_METHOD_COVERAGE_TRACE(seq, line, event, end_line) \
+#define ADD_METHOD_COVERAGE_TRACE(seq, line, event) \
   do { \
       if ((event) == RUBY_EVENT_DEFN && \
 	  iseq->coverage && iseq->coverage->methods) { \
@@ -529,7 +533,7 @@ rb_iseq_compile_node(VALUE self, NODE *node)
 	  case ISEQ_TYPE_METHOD:
 	    {
 		ADD_TRACE(ret, FIX2INT(iseq->location.first_lineno), RUBY_EVENT_CALL);
-		ADD_METHOD_COVERAGE_TRACE(ret, FIX2INT(iseq->location.first_lineno), RUBY_EVENT_CALL, nd_line(node));
+		ADD_METHOD_COVERAGE_TRACE(ret, FIX2INT(iseq->location.first_lineno), RUBY_EVENT_CALL);
 		COMPILE(ret, "scoped node", node->nd_body);
 		ADD_TRACE(ret, nd_line(node), RUBY_EVENT_RETURN);
 		break;
@@ -4984,7 +4988,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	debugp_param("defn/iseq", iseqval);
 
-	ADD_METHOD_COVERAGE_TRACE(ret, nd_line(node), RUBY_EVENT_DEFN, nd_line(node->nd_defn));
+	ADD_METHOD_COVERAGE_TRACE(ret, nd_line(node), RUBY_EVENT_DEFN);
 	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
 	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
 	ADD_INSN1(ret, line, putobject, ID2SYM(node->nd_mid));
@@ -5005,7 +5009,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	debugp_param("defs/iseq", iseqval);
 
-	ADD_METHOD_COVERAGE_TRACE(ret, nd_line(node), RUBY_EVENT_DEFN, nd_line(node->nd_defn));
+	ADD_METHOD_COVERAGE_TRACE(ret, nd_line(node), RUBY_EVENT_DEFN);
 	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
 	COMPILE(ret, "defs: recv", node->nd_recv);
 	ADD_INSN1(ret, line, putobject, ID2SYM(node->nd_mid));

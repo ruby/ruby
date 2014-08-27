@@ -3793,6 +3793,8 @@ static int
 clear_coverage_i(st_data_t key, st_data_t val, st_data_t dummy)
 {
     int i;
+    rb_hash_clear(rb_hash_lookup(val, ID2SYM(rb_intern("methods"))));
+    rb_hash_clear(rb_hash_lookup(val, ID2SYM(rb_intern("decisions"))));
     VALUE lines = rb_hash_lookup(val, ID2SYM(rb_intern("lines")));
 
     for (i = 0; i < RARRAY_LEN(lines); i++) {
