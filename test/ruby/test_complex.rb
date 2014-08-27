@@ -5,11 +5,6 @@ class ComplexSub < Complex; end
 
 class Complex_Test < Test::Unit::TestCase
 
-  def setup
-    seps = [File::SEPARATOR, File::ALT_SEPARATOR].compact.map{|x| Regexp.escape(x)}.join("|")
-    @unify = $".grep(/(?:^|#{seps})mathn(?:\.(?:rb|so))?/).size != 0
-  end
-
   def test_rationalize
     assert_equal(1.quo(3), Complex(1/3.0, 0).rationalize, '[ruby-core:38885]')
     assert_equal(1.quo(5), Complex(0.2, 0).rationalize, '[ruby-core:38885]')
@@ -21,24 +16,20 @@ class Complex_Test < Test::Unit::TestCase
 
     assert_kind_of(Numeric, c)
 
-    if @unify
-      assert_instance_of(Fixnum, c)
-    else
-      assert_instance_of(ComplexSub, c)
+    assert_instance_of(ComplexSub, c)
 
-      c2 = c + 1
-      assert_instance_of(ComplexSub, c2)
-      c2 = c - 1
-      assert_instance_of(ComplexSub, c2)
+    c2 = c + 1
+    assert_instance_of(ComplexSub, c2)
+    c2 = c - 1
+    assert_instance_of(ComplexSub, c2)
 
-      c3 = c - c2
-      assert_instance_of(ComplexSub, c3)
+    c3 = c - c2
+    assert_instance_of(ComplexSub, c3)
 
-      s = Marshal.dump(c)
-      c5 = Marshal.load(s)
-      assert_equal(c, c5)
-      assert_instance_of(ComplexSub, c5)
-    end
+    s = Marshal.dump(c)
+    c5 = Marshal.load(s)
+    assert_equal(c, c5)
+    assert_instance_of(ComplexSub, c5)
 
     c1 = Complex(1)
     assert_equal(c1.hash, c.hash, '[ruby-dev:38850]')
@@ -53,11 +44,7 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal(true, c.eql?(c2))
     assert_equal(false, c.eql?(c3))
 
-    if @unify
-      assert_equal(true, c.eql?(0))
-    else
-      assert_equal(false, c.eql?(0))
-    end
+    assert_equal(false, c.eql?(0))
   end
 
   def test_hash
@@ -89,9 +76,7 @@ class Complex_Test < Test::Unit::TestCase
   def test_freeze
     c = Complex(1)
     c.freeze
-    unless @unify
-      assert_equal(true, c.frozen?)
-    end
+    assert_equal(true, c.frozen?)
     assert_instance_of(String, c.to_s)
   end
 
@@ -204,13 +189,8 @@ class Complex_Test < Test::Unit::TestCase
   def test_attr2
     c = Complex(1)
 
-    if @unify
-      assert_equal(true, c.integer?)
-      assert_equal(true, c.real?)
-    else
-      assert_equal(false, c.integer?)
-      assert_equal(false, c.real?)
-    end
+    assert_equal(false, c.integer?)
+    assert_equal(false, c.real?)
 
     assert_equal(true, Complex(0).zero?)
     assert_equal(true, Complex(0,0).zero?)
@@ -459,18 +439,6 @@ class Complex_Test < Test::Unit::TestCase
     end
   end
 
-  def test_unify
-    if @unify
-      assert_instance_of(Fixnum, Complex(1,2) + Complex(-1,-2))
-      assert_instance_of(Fixnum, Complex(1,2) - Complex(1,2))
-      assert_instance_of(Fixnum, Complex(1,2) * 0)
-      assert_instance_of(Fixnum, Complex(1,2) / Complex(1,2))
-      assert_instance_of(Fixnum, Complex(1,2).div(Complex(1,2)))
-      assert_instance_of(Fixnum, Complex(1,2).quo(Complex(1,2)))
-      assert_instance_of(Fixnum, Complex(1,2) ** 0) # mathn's bug
-    end
-  end
-
   def test_math
     c = Complex(1,2)
 
@@ -519,23 +487,21 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal('1.0-2.0i', Complex(1.0,-2.0).to_s)
     assert_equal('-1.0-2.0i', Complex(-1.0,-2.0).to_s)
 
-    if !@unify
-      assert_equal('0+2/1i', Complex(0,Rational(2)).to_s)
-      assert_equal('0-2/1i', Complex(0,Rational(-2)).to_s)
-      assert_equal('1+2/1i', Complex(1,Rational(2)).to_s)
-      assert_equal('-1+2/1i', Complex(-1,Rational(2)).to_s)
-      assert_equal('-1-2/1i', Complex(-1,Rational(-2)).to_s)
-      assert_equal('1-2/1i', Complex(1,Rational(-2)).to_s)
-      assert_equal('-1-2/1i', Complex(-1,Rational(-2)).to_s)
+    assert_equal('0+2/1i', Complex(0,Rational(2)).to_s)
+    assert_equal('0-2/1i', Complex(0,Rational(-2)).to_s)
+    assert_equal('1+2/1i', Complex(1,Rational(2)).to_s)
+    assert_equal('-1+2/1i', Complex(-1,Rational(2)).to_s)
+    assert_equal('-1-2/1i', Complex(-1,Rational(-2)).to_s)
+    assert_equal('1-2/1i', Complex(1,Rational(-2)).to_s)
+    assert_equal('-1-2/1i', Complex(-1,Rational(-2)).to_s)
 
-      assert_equal('0+2/3i', Complex(0,Rational(2,3)).to_s)
-      assert_equal('0-2/3i', Complex(0,Rational(-2,3)).to_s)
-      assert_equal('1+2/3i', Complex(1,Rational(2,3)).to_s)
-      assert_equal('-1+2/3i', Complex(-1,Rational(2,3)).to_s)
-      assert_equal('-1-2/3i', Complex(-1,Rational(-2,3)).to_s)
-      assert_equal('1-2/3i', Complex(1,Rational(-2,3)).to_s)
-      assert_equal('-1-2/3i', Complex(-1,Rational(-2,3)).to_s)
-    end
+    assert_equal('0+2/3i', Complex(0,Rational(2,3)).to_s)
+    assert_equal('0-2/3i', Complex(0,Rational(-2,3)).to_s)
+    assert_equal('1+2/3i', Complex(1,Rational(2,3)).to_s)
+    assert_equal('-1+2/3i', Complex(-1,Rational(2,3)).to_s)
+    assert_equal('-1-2/3i', Complex(-1,Rational(-2,3)).to_s)
+    assert_equal('1-2/3i', Complex(1,Rational(-2,3)).to_s)
+    assert_equal('-1-2/3i', Complex(-1,Rational(-2,3)).to_s)
 
     nan = 0.0 / 0
     inf = 1.0 / 0

@@ -1,3 +1,8 @@
+Wed Aug 27 09:57:29 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/ruby/test_complex.rb: removed unreachable code.
+	* test/ruby/test_rational.rb: ditto.
+
 Wed Aug 27 07:59:17 2014  Eric Wong  <e@80x24.org>
 
 	* compile.c (iseq_set_sequence): check for multiplication overflow

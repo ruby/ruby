@@ -4,34 +4,25 @@ class RationalSub < Rational; end
 
 class Rational_Test < Test::Unit::TestCase
 
-  def setup
-    seps = [File::SEPARATOR, File::ALT_SEPARATOR].compact.map{|x| Regexp.escape(x)}.join("|")
-    @unify = $".grep(/(?:^|#{seps})mathn(?:\.(?:rb|so))?/).size != 0
-  end
-
   def test_ratsub
     c = RationalSub.__send__(:convert, 1)
 
     assert_kind_of(Numeric, c)
 
-    if @unify
-      assert_instance_of(Fixnum, c)
-    else
-      assert_instance_of(RationalSub, c)
+    assert_instance_of(RationalSub, c)
 
-      c2 = c + 1
-      assert_instance_of(RationalSub, c2)
-      c2 = c - 1
-      assert_instance_of(RationalSub, c2)
+    c2 = c + 1
+    assert_instance_of(RationalSub, c2)
+    c2 = c - 1
+    assert_instance_of(RationalSub, c2)
 
-      c3 = c - c2
-      assert_instance_of(RationalSub, c3)
+    c3 = c - c2
+    assert_instance_of(RationalSub, c3)
 
-      s = Marshal.dump(c)
-      c5 = Marshal.load(s)
-      assert_equal(c, c5)
-      assert_instance_of(RationalSub, c5)
-    end
+    s = Marshal.dump(c)
+    c5 = Marshal.load(s)
+    assert_equal(c, c5)
+    assert_instance_of(RationalSub, c5)
 
     c1 = Rational(1)
     assert_equal(c1.hash, c.hash, '[ruby-dev:38850]')
@@ -46,11 +37,7 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(true, c.eql?(c2))
     assert_equal(false, c.eql?(c3))
 
-    if @unify
-      assert_equal(true, c.eql?(0))
-    else
-      assert_equal(false, c.eql?(0))
-    end
+    assert_equal(false, c.eql?(0))
   end
 
   def test_hash
@@ -72,9 +59,7 @@ class Rational_Test < Test::Unit::TestCase
   def test_freeze
     c = Rational(1)
     c.freeze
-    unless @unify
-      assert_equal(true, c.frozen?)
-    end
+    assert_equal(true, c.frozen?)
     assert_instance_of(String, c.to_s)
   end
 
@@ -172,13 +157,8 @@ class Rational_Test < Test::Unit::TestCase
   def test_attr2
     c = Rational(1)
 
-    if @unify
-      assert_equal(true, c.integer?)
-      assert_equal(true, c.real?)
-    else
-      assert_equal(false, c.integer?)
-      assert_equal(true, c.real?)
-    end
+    assert_equal(false, c.integer?)
+    assert_equal(true, c.real?)
 
     assert_equal(true, Rational(0).zero?)
     assert_equal(true, Rational(0,1).zero?)
@@ -292,15 +272,13 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(-2, (-c).div(c2))
     assert_equal(1, (-c).div(-c2))
 
-    unless @unify
-      c = Rational(11)
-      c2 = Rational(3)
+    c = Rational(11)
+    c2 = Rational(3)
 
-      assert_equal(3, c.div(c2))
-      assert_equal(-4, c.div(-c2))
-      assert_equal(-4, (-c).div(c2))
-      assert_equal(3, (-c).div(-c2))
-    end
+    assert_equal(3, c.div(c2))
+    assert_equal(-4, c.div(-c2))
+    assert_equal(-4, (-c).div(c2))
+    assert_equal(3, (-c).div(-c2))
   end
 
   def test_modulo
@@ -327,15 +305,13 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(Rational(99,100), (-c).modulo(c2))
     assert_equal(Rational(-101,100), (-c).modulo(-c2))
 
-    unless @unify
-      c = Rational(11)
-      c2 = Rational(3)
+    c = Rational(11)
+    c2 = Rational(3)
 
-      assert_equal(2, c.modulo(c2))
-      assert_equal(-1, c.modulo(-c2))
-      assert_equal(1, (-c).modulo(c2))
-      assert_equal(-2, (-c).modulo(-c2))
-    end
+    assert_equal(2, c.modulo(c2))
+    assert_equal(-1, c.modulo(-c2))
+    assert_equal(1, (-c).modulo(c2))
+    assert_equal(-2, (-c).modulo(-c2))
   end
 
   def test_divmod
@@ -362,15 +338,13 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal([-2, Rational(99,100)], (-c).divmod(c2))
     assert_equal([1, Rational(-101,100)], (-c).divmod(-c2))
 
-    unless @unify
-      c = Rational(11)
-      c2 = Rational(3)
+    c = Rational(11)
+    c2 = Rational(3)
 
-      assert_equal([3,2], c.divmod(c2))
-      assert_equal([-4,-1], c.divmod(-c2))
-      assert_equal([-4,1], (-c).divmod(c2))
-      assert_equal([3,-2], (-c).divmod(-c2))
-    end
+    assert_equal([3,2], c.divmod(c2))
+    assert_equal([-4,-1], c.divmod(-c2))
+    assert_equal([-4,1], (-c).divmod(c2))
+    assert_equal([3,-2], (-c).divmod(-c2))
   end
 
   def test_remainder
@@ -397,15 +371,13 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(Rational(-101,100), (-c).remainder(c2))
     assert_equal(Rational(-101,100), (-c).remainder(-c2))
 
-    unless @unify
-      c = Rational(11)
-      c2 = Rational(3)
+    c = Rational(11)
+    c2 = Rational(3)
 
-      assert_equal(2, c.remainder(c2))
-      assert_equal(2, c.remainder(-c2))
-      assert_equal(-2, (-c).remainder(c2))
-      assert_equal(-2, (-c).remainder(-c2))
-    end
+    assert_equal(2, c.remainder(c2))
+    assert_equal(2, c.remainder(-c2))
+    assert_equal(-2, (-c).remainder(c2))
+    assert_equal(-2, (-c).remainder(-c2))
   end
 
   def test_quo
@@ -455,50 +427,38 @@ class Rational_Test < Test::Unit::TestCase
     # p ** p
     x = 2 ** Rational(2)
     assert_equal(Rational(4), x)
-    unless @unify
-      assert_instance_of(Rational, x)
-    end
+    assert_instance_of(Rational, x)
     assert_equal(4, x.numerator)
     assert_equal(1, x.denominator)
 
     x = Rational(2) ** 2
     assert_equal(Rational(4), x)
-    unless @unify
-      assert_instance_of(Rational, x)
-    end
+    assert_instance_of(Rational, x)
     assert_equal(4, x.numerator)
     assert_equal(1, x.denominator)
 
     x = Rational(2) ** Rational(2)
     assert_equal(Rational(4), x)
-    unless @unify
-      assert_instance_of(Rational, x)
-    end
+    assert_instance_of(Rational, x)
     assert_equal(4, x.numerator)
     assert_equal(1, x.denominator)
 
     # -p ** p
     x = (-2) ** Rational(2)
     assert_equal(Rational(4), x)
-    unless @unify
-      assert_instance_of(Rational, x)
-    end
+    assert_instance_of(Rational, x)
     assert_equal(4, x.numerator)
     assert_equal(1, x.denominator)
 
     x = Rational(-2) ** 2
     assert_equal(Rational(4), x)
-    unless @unify
-      assert_instance_of(Rational, x)
-    end
+    assert_instance_of(Rational, x)
     assert_equal(4, x.numerator)
     assert_equal(1, x.denominator)
 
     x = Rational(-2) ** Rational(2)
     assert_equal(Rational(4), x)
-    unless @unify
-      assert_instance_of(Rational, x)
-    end
+    assert_instance_of(Rational, x)
     assert_equal(4, x.numerator)
     assert_equal(1, x.denominator)
 
@@ -540,9 +500,7 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(1, x.numerator)
     assert_equal(4, x.denominator)
 
-    unless @unify # maybe bug mathn
-      assert_raise(ZeroDivisionError){0 ** -1}
-    end
+    assert_raise(ZeroDivisionError){0 ** -1}
   end
 
   def test_cmp
@@ -624,18 +582,6 @@ class Rational_Test < Test::Unit::TestCase
     end
   end
 
-  def test_unify
-    if @unify
-      assert_instance_of(Fixnum, Rational(1,2) + Rational(1,2))
-      assert_instance_of(Fixnum, Rational(1,2) - Rational(1,2))
-      assert_instance_of(Fixnum, Rational(1,2) * 2)
-      assert_instance_of(Fixnum, Rational(1,2) / Rational(1,2))
-      assert_instance_of(Fixnum, Rational(1,2).div(Rational(1,2)))
-      assert_instance_of(Fixnum, Rational(1,2).quo(Rational(1,2)))
-      assert_instance_of(Fixnum, Rational(1,2) ** -2)
-    end
-  end
-
   def test_math
     assert_equal(Rational(1,2), Rational(1,2).abs)
     assert_equal(Rational(1,2), Rational(-1,2).abs)
@@ -667,13 +613,8 @@ class Rational_Test < Test::Unit::TestCase
     assert_instance_of(String, c.to_s)
     assert_equal('1/2', c.to_s)
 
-    if @unify
-      assert_equal('0', Rational(0,2).to_s)
-      assert_equal('0', Rational(0,-2).to_s)
-    else
-      assert_equal('0/1', Rational(0,2).to_s)
-      assert_equal('0/1', Rational(0,-2).to_s)
-    end
+    assert_equal('0/1', Rational(0,2).to_s)
+    assert_equal('0/1', Rational(0,-2).to_s)
     assert_equal('1/2', Rational(1,2).to_s)
     assert_equal('-1/2', Rational(-1,2).to_s)
     assert_equal('1/2', Rational(-1,-2).to_s)
@@ -825,13 +766,8 @@ class Rational_Test < Test::Unit::TestCase
   end
 
   def test_to_c
-    if @unify
-      assert_equal(Rational(3,2), Rational(3,2).to_c)
-      assert_equal(Rational(3,2), Complex(Rational(3,2)))
-    else
-      assert_equal(Complex(Rational(3,2)), Rational(3,2).to_c)
-      assert_equal(Complex(Rational(3,2)), Complex(Rational(3,2)))
-    end
+    assert_equal(Complex(Rational(3,2)), Rational(3,2).to_c)
+    assert_equal(Complex(Rational(3,2)), Complex(Rational(3,2)))
   end
 
   def test_to_r
@@ -961,10 +897,6 @@ class Rational_Test < Test::Unit::TestCase
   end
 
   def test_fixed_bug
-    if @unify
-      assert_instance_of(Fixnum, Rational(1,2) ** 0) # mathn's bug
-    end
-
     n = Float::MAX.to_i * 2
     assert_equal(1.0, Rational(n + 2, n + 1).to_f, '[ruby-dev:33852]')
   end
