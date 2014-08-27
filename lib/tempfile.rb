@@ -6,7 +6,6 @@
 
 require 'delegate'
 require 'tmpdir'
-require 'thread'
 
 # A utility class for managing temporary files. When you create a Tempfile
 # object, it will create a temporary file with a unique filename. A Tempfile
