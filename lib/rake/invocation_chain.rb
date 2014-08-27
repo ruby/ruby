@@ -31,7 +31,7 @@ module Rake
     private
 
     def prefix
-      "#{tail.to_s} => "
+      "#{tail} => "
     end
 
     # Null object for an empty chain.

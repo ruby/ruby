@@ -548,7 +548,7 @@ class ERB
       def initialize(compiler, enc=nil)
         @compiler = compiler
         @line = []
-        @script = enc ? "#coding:#{enc.to_s}\n" : ""
+        @script = enc ? "#coding:#{enc}\n" : ""
         @compiler.pre_cmd.each do |x|
           push(x)
         end

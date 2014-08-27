@@ -223,7 +223,7 @@ class ACL
       when 'deny'
         @deny.add(domain)
       else
-        raise "Invalid ACL entry #{list.to_s}"
+        raise "Invalid ACL entry #{list}"
       end
       i += 2
     end

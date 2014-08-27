@@ -1,3 +1,14 @@
+Wed Aug 27 21:19:40 2014  gogo tanaka  <mail@tanakakazuki.com>
+
+	* lib/drb/acl.rb: Removed meaningless #to_s methods in interpolation.
+	  [Feature #10174][ruby-core:64584]
+	* lib/erb.rb: ditto.
+	* lib/observer.rb: ditto.
+	* lib/rake/invocation_chain.rb: ditto.
+	* lib/rubygems/command_manager.rb: ditto.
+	* lib/rubygems/config_file.rb: ditto.
+	* lib/uri/common.rb: ditto.
+
 Wed Aug 27 21:08:20 2014  gogo tanaka  <mail@tanakakazuki.com>
 
 	* lib/drb/drb.rb: use attr_reader instead of Module#attr.
