@@ -212,6 +212,13 @@ class TestArgf < Test::Unit::TestCase
       assert_equal([], r)
       assert_equal("foo\nbar\nbaz\n", File.read(t.path))
     end
+
+    base = "argf-\u{30c6 30b9 30c8}"
+    name = "#{@tmpdir}/#{base}"
+    File.write(name, "foo")
+    argf = ARGF.class.new(name)
+    argf.inplace_mode = '/\\:'
+    assert_warning(/#{base}/) {argf.gets}
   end
 
   def test_inplace_no_backup

@@ -7878,7 +7878,7 @@ argf_next_argv(VALUE argf)
     if (ARGF.next_p == 1) {
       retry:
 	if (RARRAY_LEN(ARGF.argv) > 0) {
-	    ARGF.filename = rb_ary_shift(ARGF.argv);
+	    ARGF.filename = rb_str_encode_ospath(rb_ary_shift(ARGF.argv));
 	    fn = StringValueCStr(ARGF.filename);
 	    if (strlen(fn) == 1 && fn[0] == '-') {
 		ARGF.current_file = rb_stdin;
@@ -7904,21 +7904,22 @@ argf_next_argv(VALUE argf)
 		    }
 		    fstat(fr, &st);
 		    if (*ARGF.inplace) {
-			str = rb_str_new2(fn);
+			str = rb_str_dup(ARGF.filename);
 			rb_str_cat2(str, ARGF.inplace);
+			/* TODO: encoding of ARGF.inplace */
 #ifdef NO_SAFE_RENAME
 			(void)close(fr);
 			(void)unlink(RSTRING_PTR(str));
 			if (rename(fn, RSTRING_PTR(str)) < 0) {
-			    rb_warn("Can't rename %s to %s: %s, skipping file",
-				    fn, RSTRING_PTR(str), strerror(errno));
+			    rb_warn("Can't rename %"PRIsVALUE" to %"PRIsVALUE": %s, skipping file",
+				    ARGF.filename, str, strerror(errno));
 			    goto retry;
 			}
 			fr = rb_sysopen(str, O_RDONLY, 0);
 #else
 			if (rename(fn, RSTRING_PTR(str)) < 0) {
-			    rb_warn("Can't rename %s to %s: %s, skipping file",
-				    fn, RSTRING_PTR(str), strerror(errno));
+			    rb_warn("Can't rename %"PRIsVALUE" to %"PRIsVALUE": %s, skipping file",
+				    ARGF.filename, str, strerror(errno));
 			    close(fr);
 			    goto retry;
 			}
@@ -7929,8 +7930,8 @@ argf_next_argv(VALUE argf)
 			rb_fatal("Can't do inplace edit without backup");
 #else
 			if (unlink(fn) < 0) {
-			    rb_warn("Can't remove %s: %s, skipping file",
-				    fn, strerror(errno));
+			    rb_warn("Can't remove %"PRIsVALUE": %s, skipping file",
+				    ARGF.filename, strerror(errno));
 			    close(fr);
 			    goto retry;
 			}
@@ -7953,8 +7954,8 @@ argf_next_argv(VALUE argf)
 #endif
 			if (err && getuid() == 0 && st2.st_uid == 0) {
 			    const char *wkfn = RSTRING_PTR(ARGF.filename);
-			    rb_warn("Can't set owner/group of %s to same as %s: %s, skipping file",
-				    wkfn, fn, strerror(errno));
+			    rb_warn("Can't set owner/group of %"PRIsVALUE" to same as %"PRIsVALUE": %s, skipping file",
+				    ARGF.filename, str, strerror(errno));
 			    (void)close(fr);
 			    (void)close(fw);
 			    (void)unlink(wkfn);
