@@ -316,10 +316,10 @@ EOT
     enc = "\u{30a8 30f3 30b3 30fc 30c7 30a3 30f3 30b0}"
     pattern = /#{enc}/
     assert_warning(pattern) {
-      open(IO::NULL, external_encoding: "us-ascii", encoding: enc)
+      open(IO::NULL, external_encoding: "us-ascii", encoding: enc) {}
     }
     assert_warning(pattern) {
-      open(IO::NULL, internal_encoding: "us-ascii", encoding: enc)
+      open(IO::NULL, internal_encoding: "us-ascii", encoding: enc) {}
     }
   end
 
