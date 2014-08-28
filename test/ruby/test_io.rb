@@ -2479,7 +2479,7 @@ End
       %W{Normal rand glark will_need zzzzzzzzzzzz \u2609}.map(&:to_sym).each do |adv|
         [[0,0], [0, 20], [400, 2]].each do |offset, len|
           open(tf.path) do |t|
-            assert_raise_with_message(NotImplementedError, /#{adv.inspect}/, feature4204) { t.advise(adv, offset, len) }
+            assert_raise_with_message(NotImplementedError, /#{Regexp.quote(adv.inspect)}/, feature4204) { t.advise(adv, offset, len) }
           end
         end
       end
