@@ -7618,9 +7618,9 @@ static VALUE
 rb_io_s_new(int argc, VALUE *argv, VALUE klass)
 {
     if (rb_block_given_p()) {
-	const char *cname = rb_class2name(klass);
+	VALUE cname = rb_obj_as_string(klass);
 
-	rb_warn("%s::new() does not take block; use %s::open() instead",
+	rb_warn("%"PRIsVALUE"::new() does not take block; use %"PRIsVALUE"::open() instead",
 		cname, cname);
     }
     return rb_class_new_instance(argc, argv, klass);

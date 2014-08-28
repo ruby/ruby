@@ -2282,7 +2282,12 @@ End
   end
 
   def test_new_with_block
-    assert_in_out_err([], "r, w = IO.pipe; IO.new(r) {}", [], /^.+$/)
+    assert_in_out_err([], "r, w = IO.pipe; IO.new(r.fileno) {}", [], /^.+$/)
+    n = "IO\u{5165 51fa 529b}"
+    c = eval("class #{n} < IO; self; end")
+    IO.pipe do |r, w|
+      assert_warning(/#{n}/) {c.new(r.fileno) {}}
+    end
   end
 
   def test_readline2
