@@ -312,6 +312,17 @@ EOT
     }
   end
 
+  def test_ignored_encoding_option
+    enc = "\u{30a8 30f3 30b3 30fc 30c7 30a3 30f3 30b0}"
+    pattern = /#{enc}/
+    assert_warning(pattern) {
+      open(IO::NULL, external_encoding: "us-ascii", encoding: enc)
+    }
+    assert_warning(pattern) {
+      open(IO::NULL, internal_encoding: "us-ascii", encoding: enc)
+    }
+  end
+
   def test_io_new_enc
     with_tmpdir {
       generate_file("tmp", "\xa1")
