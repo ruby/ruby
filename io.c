@@ -7903,8 +7903,9 @@ argf_next_argv(VALUE argf)
 			rb_io_close(rb_stdout);
 		    }
 		    fstat(fr, &st);
+		    str = ARGF.filename;
 		    if (*ARGF.inplace) {
-			str = rb_str_dup(ARGF.filename);
+			str = rb_str_dup(str);
 			rb_str_cat2(str, ARGF.inplace);
 			/* TODO: encoding of ARGF.inplace */
 #ifdef NO_SAFE_RENAME
