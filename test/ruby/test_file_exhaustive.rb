@@ -942,11 +942,20 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_openat
-    d = File.new(File.dirname(__FILE__))
-    f = d.openat(File.basename(__FILE__))
-    assert_equal(f.stat, File.stat(__FILE__))
-    f.close
-    d.close
+    File.open(File.dirname(__FILE__)) do |d|
+      if d.respond_to?(:openat)
+        basename = File.basename(__FILE__)
+        stat = File.stat(__FILE__)
+
+        f = d.openat(basename)
+        assert_equal(f.stat, stat)
+        f.close
+
+        d.openat(basename) do |f|
+          assert_equal(f.stat, stat)
+        end
+      end
+    end
   end
 
   def test_test

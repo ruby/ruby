@@ -271,7 +271,11 @@ rb_cloexec_open2(int dirfd, const char *pathname, int flags, mode_t mode)
     if (dirfd == -1) {
         ret = open(pathname, flags, mode);
     } else {
+#ifdef HAVE_OPENAT
         ret = openat(dirfd, pathname, flags, mode);
+#else
+        rb_notimplement();
+#endif
     }
     if (ret == -1) return -1;
     if (ret <= 2 || o_cloexec_state == 0) {
@@ -7625,10 +7629,12 @@ rb_file_initialize(int argc, VALUE *argv, VALUE io)
     return io;
 }
 
+#ifdef HAVE_OPENAT
 /*
  *  call-seq:
  *     dir.openat(filename, mode="r" [, opt])            -> file
  *     dir.openat(filename [, mode [, perm]] [, opt])    -> file
+ *     dir.openat(filename, ...) { |file| block }             -> obj
  *
  *  Opens the file named by +filename+ relative to +dir+ according to the given +mode+ and
  *  returns a new File object.
@@ -7641,26 +7647,34 @@ rb_file_initialize(int argc, VALUE *argv, VALUE io)
  *
  *  === Examples
  *
- *    f = File.new("testfile", "r")
- *    f = File.new("newfile",  "w+")
- *    f = File.new("newfile", File::CREAT|File::TRUNC|File::RDWR, 0644)
+ *    dir = File.new('.')
+ *    f = dir.openat("testfile", "r")
+ *    f = dir.openat("newfile",  "w+")
+ *    f = dir.openat("newfile", File::CREAT|File::TRUNC|File::RDWR, 0644)
  */
 static VALUE
-rb_io_openat(int argc, VALUE *argv, VALUE io)
+rb_io_openat(int argc, VALUE *argv, VALUE self)
 {
     rb_io_t *fptr;
-    VALUE path;
+    VALUE io, path;
     int oflags, fmode;
     convconfig_t convconfig;
     mode_t perm;
 
     rb_scan_open_args(argc, argv, &path, &oflags, &fmode, &convconfig, &perm);
 
-    GetOpenFile(io, fptr);
+    GetOpenFile(self, fptr);
 
-    return rb_file_open_generic(io_alloc(rb_cFile), fptr->fd, path, 
+    io = rb_file_open_generic(io_alloc(rb_cFile), fptr->fd, path, 
         rb_io_fmode_oflags(fmode), fmode, &convconfig, perm);
+
+    if (rb_block_given_p()) {
+	return rb_ensure(rb_yield, io, io_close, io);
+    }
+
+    return io;
 }
+#endif
 
 /* :nodoc: */
 static VALUE
@@ -12280,7 +12294,9 @@ Init_IO(void)
     rb_define_method(rb_cIO, "autoclose?", rb_io_autoclose_p, 0);
     rb_define_method(rb_cIO, "autoclose=", rb_io_set_autoclose, 1);
 
+#ifdef HAVE_OPENAT
     rb_define_method(rb_cIO, "openat", rb_io_openat, -1);
+#endif
 
     rb_define_variable("$stdin", &rb_stdin);
     rb_stdin = prep_stdio(stdin, FMODE_READABLE, rb_cIO, "<STDIN>");
