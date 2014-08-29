@@ -305,7 +305,7 @@ module Psych
           key = accept(k)
           val = accept(v)
 
-          if key == '<<'
+          if key == '<<' && k.tag != "tag:yaml.org,2002:str"
             case v
             when Nodes::Alias
               begin

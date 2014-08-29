@@ -6,6 +6,26 @@ module Psych
       attr_reader :bar
     end
 
+    def test_roundtrip_with_chevron_key
+      h = {}
+      v = { 'a' => h, '<<' => h }
+      assert_cycle v
+    end
+
+    def test_explicit_string
+      doc = Psych.load <<-eoyml
+a: &me { hello: world }
+b: { !!str '<<': *me }
+eoyml
+      expected = {
+        "a" => { "hello" => "world" },
+        "b" => {
+          "<<" => { "hello" => "world" }
+        }
+      }
+      assert_equal expected, doc
+    end
+
     def test_mergekey_with_object
       s = <<-eoyml
 foo: &foo

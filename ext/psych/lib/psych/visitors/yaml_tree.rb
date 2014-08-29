@@ -16,10 +16,12 @@ module Psych
         def initialize
           @obj_to_id   = {}
           @obj_to_node = {}
+          @targets     = []
           @counter     = 0
         end
 
         def register target, node
+          @targets << target
           @obj_to_node[target.object_id] = node
         end
 
@@ -289,6 +291,11 @@ module Psych
           quote = false
         elsif o =~ /\n/
           style = Nodes::Scalar::LITERAL
+        elsif o == '<<'
+          style = Nodes::Scalar::SINGLE_QUOTED
+          tag   = 'tag:yaml.org,2002:str'
+          plain = false
+          quote = false
         elsif o =~ /^\W[^"]*$/
           style = Nodes::Scalar::DOUBLE_QUOTED
         else
