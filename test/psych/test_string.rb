@@ -15,6 +15,10 @@ module Psych
       end
     end
 
+    def test_string_with_newline
+      assert_equal "1\n2", Psych.load("--- ! '1\n\n  2'\n")
+    end
+
     def test_no_doublequotes_with_special_characters
       assert_equal 2, Psych.dump(%Q{<%= ENV["PATH"] %>}).count('"')
     end
