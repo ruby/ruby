@@ -1,3 +1,16 @@
+Fri Aug 29 15:17:13 2014  Eric Wong  <e@80x24.org>
+
+	* string.c: remove static frozen_strings
+	* string.c (Init_frozen_strings): new function
+	* string.c (rb_fstring): remove check for frozen strings,
+	  use per-VM table
+	* string.c (rb_str_free): use per-VM table
+	* string.c (Init_String): use per-VM table
+	* vm_core.h (rb_vm_t): add frozen_strings table
+	* internal.h (Init_frozen_strings): new function prototype
+	* eval.c (ruby_setup): call Init_frozen_strings
+	  [Feature #10182]
+
 Wed Aug 27 23:10:24 2014  Masaki Matsushita <glass.saga@gmail.com>
 
 	* lib/tempfile.rb: remove "require 'thread'". its features are no

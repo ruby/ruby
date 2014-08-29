@@ -52,6 +52,7 @@ ruby_setup(void)
     Init_BareVM();
     Init_heap();
     Init_vm_objects();
+    Init_frozen_strings();
 
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {

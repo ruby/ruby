@@ -430,6 +430,7 @@ typedef struct rb_vm_struct {
     struct RArray at_exit;
 
     VALUE *defined_strings;
+    st_table *frozen_strings;
 
     /* params */
     struct { /* size in byte */

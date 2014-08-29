@@ -891,6 +891,7 @@ size_t rb_strftime(char *s, size_t maxsize, const char *format, rb_encoding *enc
 #endif
 
 /* string.c */
+void Init_frozen_strings(void);
 VALUE rb_fstring(VALUE);
 VALUE rb_fstring_new(const char *ptr, long len);
 #ifdef RUBY_ENCODING_H
