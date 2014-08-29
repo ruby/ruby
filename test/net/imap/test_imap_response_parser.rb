@@ -111,10 +111,6 @@ EOF
 * 1 FETCH (UID 92285 )
 EOF
     assert_equal 92285, response.data.attr["UID"]
-
-    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
-* 1 FETCH (UID 92285  )
-EOF
   end
 
   def test_msg_att_parse_error

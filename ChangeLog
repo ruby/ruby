@@ -1,3 +1,7 @@
+Fri Aug 29 17:56:44 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/net/imap/test_imap_response_parser.rb: removed needless code.
+
 Fri Aug 29 17:36:58 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/rinda/test_rinda.rb: removed useless assignment variables.
