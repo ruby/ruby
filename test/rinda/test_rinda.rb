@@ -37,7 +37,6 @@ class MockClock
   def _forward(n=nil)
     now ,= @ts.take([nil, :now])
     @now = now + n
-    n = @reso if n.nil?
     @ts.write([@now, :now])
   end
 

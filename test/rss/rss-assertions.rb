@@ -1070,7 +1070,7 @@ EOA
             target.uri = "http://example.com/~me/"
             target.email = "me@example.com"
 
-            target = targets.new_child
+            targets.new_child
           end
         end
       end

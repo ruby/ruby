@@ -1,3 +1,9 @@
+Fri Aug 29 17:36:58 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/rinda/test_rinda.rb: removed useless assignment variables.
+	* test/rss/rss-assertions.rb: ditto.
+	* test/rss/test_maker_itunes.rb: ditto.
+
 Fri Aug 29 16:18:26 2014  Eric Wong  <e@80x24.org>
 
 	* string.c: revert part of r47311, add rb_vm_fstring_table(),

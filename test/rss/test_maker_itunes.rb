@@ -85,9 +85,7 @@ module RSS
       end
       target = chain_reader(rss20, feed_readers)
       if [true, false].include?(value)
-        feed_expected_value = value = value ? "yes" : "no"
-      else
-        feed_expected_value = value
+        value = value ? "yes" : "no"
       end
       assert_equal(value, target.itunes_block)
       assert_equal(boolean_value, target.itunes_block?)
