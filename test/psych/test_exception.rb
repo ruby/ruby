@@ -16,6 +16,12 @@ module Psych
       @wups = Wups.new
     end
 
+    def test_naming_exception
+      err     = String.xxx rescue $!
+      new_err = Psych.load(Psych.dump(err))
+      assert_equal err.message, new_err.message
+    end
+
     def test_load_takes_file
       ex = assert_raises(Psych::SyntaxError) do
         Psych.load '--- `'

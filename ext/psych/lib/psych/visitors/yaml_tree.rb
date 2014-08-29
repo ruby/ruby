@@ -211,6 +211,25 @@ module Psych
         @emitter.end_mapping
       end
 
+      def visit_NameError o
+        tag = ['!ruby/exception', o.class.name].join ':'
+
+        @emitter.start_mapping nil, tag, false, Nodes::Mapping::BLOCK
+
+        {
+          'message'   => o.message.to_s,
+          'backtrace' => private_iv_get(o, 'backtrace'),
+        }.each do |k,v|
+          next unless v
+          @emitter.scalar k, nil, nil, true, false, Nodes::Scalar::ANY
+          accept v
+        end
+
+        dump_ivars o
+
+        @emitter.end_mapping
+      end
+
       def visit_Regexp o
         register o, @emitter.scalar(o.inspect, nil, '!ruby/regexp', false, false, Nodes::Scalar::ANY)
       end

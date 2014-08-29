@@ -1,3 +1,9 @@
+Sat Aug 30 06:39:48 2014  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: fix NameError dumping and
+	  loading. Fixes GH #85. Thanks @brentdax for the patch!
+	* test/psych/test_exception.rb: test for fix
+
 Sat Aug 30 06:23:40 2014  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/scalar_scanner.rb: fix loading strings that
