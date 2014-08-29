@@ -778,7 +778,7 @@ strftime.$(OBJEXT): {$(VPATH)}strftime.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}timev.h $(ENCODING_H_INCLUDES)
 string.$(OBJEXT): {$(VPATH)}string.c $(RUBY_H_INCLUDES) {$(VPATH)}re.h {$(VPATH)}gc.h \
   {$(VPATH)}regex.h $(ENCODING_H_INCLUDES) {$(VPATH)}internal.h \
-  $(PROBES_H_INCLUDES) $(VM_CORE_H_INCLUDES)
+  $(PROBES_H_INCLUDES)
 struct.$(OBJEXT): {$(VPATH)}struct.c $(RUBY_H_INCLUDES) {$(VPATH)}internal.h
 symbol.$(OBJEXT): {$(VPATH)}symbol.c $(RUBY_H_INCLUDES) $(ENCODING_H_INCLUDES) \
   {$(VPATH)}internal.h {$(VPATH)}node.h {$(VPATH)}id.h {$(VPATH)}symbol.h \

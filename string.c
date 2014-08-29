@@ -17,7 +17,6 @@
 #include "internal.h"
 #include "probes.h"
 #include "gc.h"
-#include "vm_core.h"
 #include <assert.h>
 
 #define BEG(no) (regs->beg[(no)])
@@ -177,6 +176,15 @@ mustnot_broken(VALUE str)
 
 static int fstring_cmp(VALUE a, VALUE b);
 
+/* in case we restart MVM development, this needs to be per-VM */
+static st_table* frozen_strings;
+
+static inline st_table*
+rb_vm_fstring_table(void)
+{
+    return frozen_strings;
+}
+
 static const struct st_hash_type fstring_hash_type = {
     fstring_cmp,
     rb_str_hash,
@@ -227,7 +235,7 @@ rb_fstring(VALUE str)
 
     do {
 	ret = str;
-	st_update(GET_VM()->frozen_strings, (st_data_t)str,
+	st_update(rb_vm_fstring_table(), (st_data_t)str,
 		    fstr_update_callback, (st_data_t)&ret);
     } while (ret == Qundef);
 
@@ -949,7 +957,7 @@ rb_str_free(VALUE str)
 {
     if (FL_TEST(str, RSTRING_FSTR)) {
 	st_data_t fstr = (st_data_t)str;
-	st_delete(GET_VM()->frozen_strings, &fstr, NULL);
+	st_delete(rb_vm_fstring_table(), &fstr, NULL);
     }
 
     if (!STR_EMBED_P(str) && !FL_TEST(str, STR_SHARED)) {
@@ -8947,13 +8955,13 @@ Init_String(void)
 
     rb_define_method(rb_cSymbol, "encoding", sym_encoding, 0);
 
-    assert(GET_VM()->frozen_strings);
-    st_foreach(GET_VM()->frozen_strings, fstring_set_class_i, rb_cString);
+    assert(rb_vm_fstring_table());
+    st_foreach(rb_vm_fstring_table(), fstring_set_class_i, rb_cString);
 }
 
 void
 Init_frozen_strings(void)
 {
-    assert(!GET_VM()->frozen_strings);
-    GET_VM()->frozen_strings = st_init_table(&fstring_hash_type);
+    assert(!frozen_strings);
+    frozen_strings = st_init_table(&fstring_hash_type);
 }
