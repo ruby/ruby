@@ -6,6 +6,16 @@ module Psych
       attr_reader :bar
     end
 
+    def test_merge_key_with_bare_hash
+      doc = Psych.load <<-eodoc
+map:
+  <<:
+    hello: world
+      eodoc
+      hash = { "map" => { "hello" => "world" } }
+      assert_equal hash, doc
+    end
+
     def test_roundtrip_with_chevron_key
       h = {}
       v = { 'a' => h, '<<' => h }

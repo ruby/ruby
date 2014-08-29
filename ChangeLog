@@ -1,3 +1,9 @@
+Sat Aug 30 06:10:39 2014  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: merge keys with a hash
+	  should merge the hash in to the parent.
+	* test/psych/test_merge_keys.rb: test for change. Fixes GH #202
+
 Sat Aug 30 06:00:26 2014  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/to_ruby.rb: quoted "<<" strings

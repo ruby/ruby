@@ -307,7 +307,7 @@ module Psych
 
           if key == '<<' && k.tag != "tag:yaml.org,2002:str"
             case v
-            when Nodes::Alias
+            when Nodes::Alias, Nodes::Mapping
               begin
                 hash.merge! val
               rescue TypeError
