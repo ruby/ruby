@@ -1,5 +1,4 @@
 require 'fileutils'
-require 'docile'
 require 'simplecov/formatter/multi_formatter'
 #
 # Bundles the configuration options used for SimpleCov. All methods
@@ -123,22 +122,6 @@ module SimpleCov::Configuration
   def adapters
     warn "method adapters is deprecated. use profiles instead"
     profiles
-  end
-
-  #
-  # Allows you to configure simplecov in a block instead of prepending SimpleCov to all config methods
-  # you're calling.
-  #
-  # SimpleCov.configure do
-  #   add_filter 'foobar'
-  # end
-  #
-  # This is equivalent to SimpleCov.add_filter 'foobar' and thus makes it easier to set a bunch of configure
-  # options at once.
-  #
-  def configure(&block)
-    return false unless SimpleCov.usable?
-    Docile.dsl_eval(self, &block)
   end
 
   #
