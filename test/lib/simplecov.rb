@@ -23,6 +23,7 @@ module SimpleCov
     # Please check out the RDoc for SimpleCov::Configuration to find about available config options
     #
     def start(profile=nil, &block)
+      require 'coverage'
       formatter SimpleCov::Formatter::HTMLFormatter
       add_filter '/test/'
       add_filter do |src|
