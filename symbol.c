@@ -103,8 +103,13 @@ Init_sym(void)
     Init_id();
 }
 
-static ID attrsetname_to_attr(VALUE name);
-static VALUE lookup_id_str(ID id);
+WARN_UNUSED_RESULT(static VALUE dsymbol_alloc(const VALUE klass, const VALUE str, rb_encoding *const enc));
+WARN_UNUSED_RESULT(static VALUE dsymbol_check(const VALUE sym));
+WARN_UNUSED_RESULT(static ID dsymbol_pindown(VALUE sym));
+WARN_UNUSED_RESULT(static ID lookup_str_id(VALUE str));
+WARN_UNUSED_RESULT(static VALUE lookup_str_sym(const VALUE str));
+WARN_UNUSED_RESULT(static VALUE lookup_id_str(ID id));
+WARN_UNUSED_RESULT(static ID attrsetname_to_attr(VALUE name));
 
 ID
 rb_id_attrset(ID id)
