@@ -1,3 +1,15 @@
+Sun Aug 31 01:13:21 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: change full GC timing to keep lower memory usage.
+
+	  Extend heap only at
+	  (1) after major GC
+	  or
+	  (2) after several (two times, at current) minor GC
+
+	  Details in https://bugs.ruby-lang.org/issues/9607#note-9
+	  [Bug #9607]
+
 Sun Aug 31 01:07:05 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_create_dcom): use the converted

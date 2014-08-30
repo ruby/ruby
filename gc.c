@@ -519,6 +519,9 @@ typedef struct rb_objspace {
 	int parent_object_is_old;
 
 	int need_major_gc;
+
+	size_t last_major_gc;
+
 	size_t remembered_shady_object_count;
 	size_t remembered_shady_object_limit;
 	size_t old_object_count;
@@ -2954,14 +2957,17 @@ gc_after_sweep(rb_objspace_t *objspace)
 		  (int)heap->total_slots, (int)heap_pages_swept_slots, (int)heap_pages_min_free_slots);
 
     if (heap_pages_swept_slots < heap_pages_min_free_slots) {
+#if USE_RGENGC
+	if (objspace->rgengc.during_minor_gc && objspace->profile.count - objspace->rgengc.last_major_gc > 2 /* magic number */) {
+	    objspace->rgengc.need_major_gc = GPR_FLAG_MAJOR_BY_NOFREE;
+	}
+	else {
+	    heap_set_increment(objspace, (heap_pages_min_free_slots - heap_pages_swept_slots) / HEAP_OBJ_LIMIT);
+	    heap_increment(objspace, heap);
+	}
+#else
 	heap_set_increment(objspace, (heap_pages_min_free_slots - heap_pages_swept_slots) / HEAP_OBJ_LIMIT);
 	heap_increment(objspace, heap);
-
-#if USE_RGENGC
-	if (objspace->rgengc.remembered_shady_object_count + objspace->rgengc.old_object_count > (heap_pages_length * HEAP_OBJ_LIMIT) / 2) {
-	    /* if [old]+[remembered shady] > [all object count]/2, then do major GC */
-	    objspace->rgengc.need_major_gc = GPR_FLAG_MAJOR_BY_RESCAN;
-	}
 #endif
     }
 
