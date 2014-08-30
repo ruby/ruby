@@ -1,27 +1,13 @@
-require 'multi_json'
+require 'json'
 
 module SimpleCov::JSON
   class << self
     def parse(json)
-      # Detect and use available MultiJson API - it changed in v1.3
-      if MultiJson.respond_to?(:adapter)
-        MultiJson.load(json)
-      else
-        MultiJson.decode(json)
-      end
+      ::JSON.parse(json)
     end
 
     def dump(string)
-      if defined? ::JSON
-        ::JSON.pretty_generate(string)
-      else
-        # Detect and use available MultiJson API - it changed in v1.3
-        if MultiJson.respond_to?(:adapter)
-          MultiJson.dump(string)
-        else
-          MultiJson.encode(string)
-        end
-      end
+      ::JSON.pretty_generate(string)
     end
   end
 end
