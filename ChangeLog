@@ -1,3 +1,10 @@
+Sun Aug 31 08:46:44 2014  Eric Wong  <e@80x24.org>
+
+	* ext/zlib/zlib.c (gzfile_reset): preserve ZSTREAM_FLAG_GZFILE
+	  [Bug #10101]
+
+	* test/zlib/test_zlib.rb (test_rewind): test each_byte
+
 Sat Aug 30 19:22:47 2014  Eric Wong  <e@80x24.org>
 
 	* symbol.c (rb_sym2id): do not return garbage object

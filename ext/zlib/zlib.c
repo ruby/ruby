@@ -2293,6 +2293,7 @@ static void
 gzfile_reset(struct gzfile *gz)
 {
     zstream_reset(&gz->z);
+    gz->z.flags |= ZSTREAM_FLAG_GZFILE;
     gz->crc = crc32(0, Z_NULL, 0);
     gz->lineno = 0;
     gz->ungetc = 0;
