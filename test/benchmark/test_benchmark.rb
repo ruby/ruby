@@ -154,7 +154,8 @@ BENCH
   end
 
   def test_realtime_output
-    realtime = Benchmark.realtime { sleep 0.001 }
-    assert_in_delta 0.001, realtime
+    sleeptime = 1.0
+    realtime = Benchmark.realtime { sleep sleeptime }
+    assert_in_delta sleeptime, realtime
   end
 end
