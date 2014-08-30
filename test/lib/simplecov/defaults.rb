@@ -1,41 +1,6 @@
 # Load default formatter gem
 require 'simplecov-html'
 
-SimpleCov.profiles.define 'root_filter' do
-  # Exclude all files outside of simplecov root
-  add_filter do |src|
-    !(src.filename =~ /^#{Regexp.escape(SimpleCov.root)}/i)
-  end
-end
-
-SimpleCov.profiles.define 'test_frameworks' do
-  add_filter '/test/'
-  add_filter '/features/'
-  add_filter '/spec/'
-  add_filter '/autotest/'
-end
-
-SimpleCov.profiles.define 'rails' do
-  load_profile 'test_frameworks'
-
-  add_filter '/config/'
-  add_filter '/db/'
-  add_filter '/vendor/bundle/'
-
-  add_group 'Controllers', 'app/controllers'
-  add_group 'Models', 'app/models'
-  add_group 'Mailers', 'app/mailers'
-  add_group 'Helpers', 'app/helpers'
-  add_group 'Libraries', 'lib'
-end
-
-# Default configuration
-SimpleCov.configure do
-  formatter SimpleCov::Formatter::HTMLFormatter
-  # Exclude files outside of SimpleCov.root
-  load_profile 'root_filter'
-end
-
 # Gotta stash this a-s-a-p, see the CommandGuesser class and i.e. #110 for further info
 SimpleCov::CommandGuesser.original_run_command = "#{$0} #{ARGV.join(" ")}"
 

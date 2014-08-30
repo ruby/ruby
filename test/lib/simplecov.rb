@@ -23,8 +23,11 @@ module SimpleCov
     # Please check out the RDoc for SimpleCov::Configuration to find about available config options
     #
     def start(profile=nil, &block)
-      load_profile(profile) if profile
-      configure(&block) if block_given?
+      formatter SimpleCov::Formatter::HTMLFormatter
+      add_filter '/test/'
+      add_filter do |src|
+        !(src.filename =~ /^#{Regexp.escape(SimpleCov.root)}/i)
+      end
       @result = nil
       self.running = true
       Coverage.start
