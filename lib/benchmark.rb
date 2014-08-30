@@ -271,7 +271,10 @@ module Benchmark
   end
 
   # :stopdoc:
-  if defined?(Process::CLOCK_MONOTONIC)
+  case
+  when defined?(Process::CLOCK_MONOTONIC_RAW)
+    BENCHMARK_CLOCK = Process::CLOCK_MONOTONIC_RAW
+  when defined?(Process::CLOCK_MONOTONIC)
     BENCHMARK_CLOCK = Process::CLOCK_MONOTONIC
   else
     BENCHMARK_CLOCK = Process::CLOCK_REALTIME
