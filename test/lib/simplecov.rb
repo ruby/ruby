@@ -94,7 +94,6 @@ require 'simplecov/configuration'
 SimpleCov.send :extend, SimpleCov::Configuration
 require 'simplecov/exit_codes'
 require 'simplecov/json'
-require 'simplecov/profiles'
 require 'simplecov/source_file'
 require 'simplecov/file_list'
 require 'simplecov/result'
