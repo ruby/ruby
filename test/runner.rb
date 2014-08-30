@@ -33,7 +33,9 @@ end
 
 begin
   require 'simplecov'
-  SimpleCov.start
+  SimpleCov.start do
+    add_filter "/test/"
+  end
   exit Test::Unit::AutoRunner.run(true, src_testdir)
 rescue NoMemoryError
   system("cat /proc/meminfo") if File.exist?("/proc/meminfo")
