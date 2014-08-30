@@ -3245,7 +3245,25 @@ end
     c_b = c.find_method_named 'b'
 
     assert_equal :private, c_b.visibility
-    refute c_b.singleton
+    assert c_b.singleton
+  end
+
+  def test_singleton_method_via_eigenclass
+    util_parser <<-RUBY
+class C
+   class << self
+     def a() end
+   end
+end
+    RUBY
+
+    @parser.scan
+
+    c   = @store.find_class_named 'C'
+    c_a = c.find_method_named 'a'
+
+    assert_equal :public, c_a.visibility
+    assert c_a.singleton
   end
 
   def test_stopdoc_after_comment

@@ -1186,7 +1186,6 @@ class RDoc::Parser::C < RDoc::Parser
 
     if hash then
       args << "p#{position} = {}"
-      position += 1
     end
 
     args << '&block' if block

@@ -187,15 +187,16 @@ class RDoc::Parser::Ruby < RDoc::Parser
   end
 
   ##
-  # Extracts the visibility information for the visibility token +tk+.
+  # Extracts the visibility information for the visibility token +tk+
+  # and +single+ class type identifier.
   #
   # Returns the visibility type (a string), the visibility (a symbol) and
   # +singleton+ if the methods following should be converted to singleton
   # methods.
 
-  def get_visibility_information tk # :nodoc:
+  def get_visibility_information tk, single # :nodoc:
     vis_type  = tk.name
-    singleton = false
+    singleton = single == SINGLE
 
     vis =
       case vis_type
@@ -890,7 +891,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     read_documentation_modifiers con, RDoc::CONSTANT_MODIFIERS
 
     @stats.add_constant con
-    con = container.add_constant con
+    container.add_constant con
 
     true
   end
@@ -1306,7 +1307,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     return unless name
 
     meth = RDoc::AnyMethod.new get_tkread, name
-    meth.singleton = singleton
+    meth.singleton = single == SINGLE ? true : singleton
 
     record_location meth
     meth.offset = offset
@@ -1876,9 +1877,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
   # Determines the visibility in +container+ from +tk+
 
   def parse_visibility(container, single, tk)
-    singleton = (single == SINGLE)
-
-    vis_type, vis, singleton = get_visibility_information tk
+    vis_type, vis, singleton = get_visibility_information tk, single
 
     skip_tkspace_comment false
 
@@ -2079,7 +2078,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
   def skip_for_variable
     skip_tkspace false
-    tk = get_tk
+    get_tk
     skip_tkspace false
     tk = get_tk
     unget_tk(tk) unless TkIN === tk

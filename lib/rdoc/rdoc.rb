@@ -414,8 +414,6 @@ The internal error was:
 
     return [] if file_list.empty?
 
-    file_info = []
-
     @stats.begin_adding
 
     file_info = file_list.map do |filename|
