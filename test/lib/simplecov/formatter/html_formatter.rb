@@ -6,7 +6,7 @@ require 'time'
 
 class SimpleCov::Formatter::HTMLFormatter
   def format(result)
-    Dir[File.join(File.dirname(__FILE__), 'simplecov-html/public/*')].each do |path|
+    Dir[File.join(File.dirname(__FILE__), 'html_formatter/public/*')].each do |path|
       FileUtils.cp_r(path, asset_output_path)
     end
 
@@ -24,7 +24,7 @@ class SimpleCov::Formatter::HTMLFormatter
 
   # Returns the an erb instance for the template of given name
   def template(name)
-    ERB.new(File.read(File.join(File.dirname(__FILE__), 'simplecov-html/views/', "#{name}.erb")))
+    ERB.new(File.read(File.join(File.dirname(__FILE__), 'html_formatter/views/', "#{name}.erb")))
   end
 
   def output_path
@@ -93,4 +93,4 @@ class SimpleCov::Formatter::HTMLFormatter
 end
 
 $LOAD_PATH.unshift(File.join(File.dirname(__FILE__)))
-require 'simplecov-html/version'
+require 'html_formatter/version'

@@ -1,6 +1,3 @@
-# Load default formatter gem
-require 'simplecov-html'
-
 # Gotta stash this a-s-a-p, see the CommandGuesser class and i.e. #110 for further info
 SimpleCov::CommandGuesser.original_run_command = "#{$0} #{ARGV.join(" ")}"
 
