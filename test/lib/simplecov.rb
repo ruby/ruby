@@ -116,6 +116,3 @@ require 'simplecov/version'
 
 # Load default config
 require 'simplecov/defaults' unless ENV['SIMPLECOV_NO_DEFAULTS']
-
-# Load Rails integration (only for Rails 3, see #113)
-require 'simplecov/railtie' if defined? Rails::Railtie
