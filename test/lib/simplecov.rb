@@ -86,18 +86,6 @@ module SimpleCov
       end
       grouped
     end
-
-    #
-    # Applies the profile of given name on SimpleCov configuration
-    #
-    def load_profile(name)
-      profiles.load(name)
-    end
-
-    def load_adapter(name)
-      warn "method load_adapter is deprecated. use load_profile instead"
-      load_profile(name)
-    end
   end
 end
 
