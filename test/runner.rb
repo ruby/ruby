@@ -31,11 +31,14 @@ module Test::Unit
   end
 end
 
-begin
+if ENV['COVERAGE']
   require 'simplecov'
   SimpleCov.start do
     add_filter "/test/"
   end
+end
+
+begin
   exit Test::Unit::AutoRunner.run(true, src_testdir)
 rescue NoMemoryError
   system("cat /proc/meminfo") if File.exist?("/proc/meminfo")
