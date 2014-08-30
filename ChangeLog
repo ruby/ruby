@@ -1,3 +1,7 @@
+Sat Aug 30 19:22:47 2014  Eric Wong  <e@80x24.org>
+
+	* symbol.c (rb_sym2id): do not return garbage object
+
 Sat Aug 30 06:39:48 2014  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb: fix NameError dumping and

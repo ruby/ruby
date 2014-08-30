@@ -759,7 +759,7 @@ rb_sym2id(VALUE sym)
     }
     else {
 	if (!SYMBOL_PINNED_P(sym)) {
-	    dsymbol_pindown(sym);
+	    return dsymbol_pindown(sym);
 	}
 	return (ID)sym;
     }
