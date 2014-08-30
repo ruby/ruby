@@ -1,3 +1,8 @@
+Sun Aug 31 00:54:47 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (open): use UTF-8 version function to support
+	  non-ascii path properly.  [ruby-core:63185] [Bug #9946]
+
 Tue Aug 26 00:08:40 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_SETJMP_TYPE): check for setjmp type after
