@@ -1104,4 +1104,40 @@ class TestSetTraceFunc < Test::Unit::TestCase
     ], events, bug59398)
   end
 
+
+  def method_test_rescue_should_not_cause_b_return
+    begin
+      raise
+    rescue
+      return
+    end
+  end
+
+  def method_test_ensure_should_not_cause_b_return
+    begin
+      raise
+    ensure
+      return
+    end
+  end
+
+  def test_rescue_and_ensure_should_not_cause_b_return
+    curr_thread = Thread.current
+    trace = TracePoint.new(:b_call, :b_return){
+      next if curr_thread != Thread.current
+      flunk("Should not reach here because there is no block.")
+    }
+
+    begin
+      trace.enable
+      method_test_rescue_should_not_cause_b_return
+      begin
+        method_test_ensure_should_not_cause_b_return
+      rescue
+        # ignore
+      end
+    ensure
+      trace.disable
+    end
+  end
 end

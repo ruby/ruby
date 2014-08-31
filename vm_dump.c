@@ -73,6 +73,9 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
       case VM_FRAME_MAGIC_EVAL:
 	magic = "EVAL";
 	break;
+      case VM_FRAME_MAGIC_RESCUE:
+	magic = "RESCUE";
+	break;
       case 0:
 	magic = "------";
 	break;
@@ -268,15 +271,17 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 
     /* stack trace header */
 
-    if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_METHOD ||
-	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_TOP ||
+    if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_METHOD||
+	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_TOP   ||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_BLOCK ||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_CLASS ||
-	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_PROC ||
-	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_LAMBDA ||
+	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_PROC  ||
+	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_LAMBDA||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_CFUNC ||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_IFUNC ||
-	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_EVAL) {
+	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_EVAL  ||
+	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_RESCUE)
+      {
 
 	VALUE *ptr = ep - local_size;
 

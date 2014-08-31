@@ -1,3 +1,18 @@
+Sun Aug 31 16:38:26 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: add VM_FRAME_MAGIC_RESCUE to recognize normal block or
+	  rescue clause.
+
+	* vm.c (vm_exec): use VM_FRAME_MAGIC_RESCUE on at rescue/ensure.
+
+	* test/ruby/test_settracefunc.rb: should not invoke b_return at rescue
+	  clause.
+	  [Bug #9957]
+
+	* vm_dump.c (control_frame_dump): check VM_FRAME_MAGIC_RESCUE.
+
+	* vm_dump.c (vm_stack_dump_each): ditto.
+
 Sun Aug 31 16:32:10 2014  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* lib/test/unit/parallel.rb: fix test-all parallel failure if a test
