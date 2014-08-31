@@ -1,3 +1,10 @@
+Sun Aug 31 16:20:14 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb (bind_random_port): Rescue EPERM for FreeBSD which
+	  security.mac.portacl.port_high is changed.
+	  See mac_portacl(4) for details.
+	  Reported by Jakub Szafranski.  [ruby-core:60917] [Bug #9544]
+
 Sun Aug 31 16:16:24 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (match_aref): should not ignore name after NUL byte.
