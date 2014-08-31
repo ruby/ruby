@@ -155,6 +155,11 @@ module Test
       end
 
       def puke(klass, meth, e)
+        if e.is_a?(MiniTest::Skip)
+          new_e = MiniTest::Skip.new(e.message)
+          new_e.set_backtrace(e.backtrace)
+          e = new_e
+        end
         @partial_report << [klass.name, meth, e.is_a?(MiniTest::Assertion) ? e : ProxyError.new(e)]
         super
       end

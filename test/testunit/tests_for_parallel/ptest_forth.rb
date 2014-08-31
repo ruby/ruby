@@ -15,6 +15,14 @@ class TestE < Test::Unit::TestCase
     assert_equal(0,1)
   end
 
+  def test_skip_after_unknown_error
+    begin
+      raise UnknownError, "unknown error"
+    rescue
+      skip "after raise"
+    end
+  end
+
   def test_unknown_error
     raise UnknownError, "unknown error"
   end
