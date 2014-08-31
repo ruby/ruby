@@ -1,3 +1,8 @@
+Sun Aug 31 16:16:24 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (match_aref): should not ignore name after NUL byte.
+	  [ruby-dev:48275] [Bug #9902]
+
 Sun Aug 31 16:10:30 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/digest/digest.c (rb_digest_instance_equal): no need to call
