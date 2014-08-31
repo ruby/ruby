@@ -1,3 +1,7 @@
+Sun Aug 31 16:58:49 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/benchmark.rb: Fix a syntax error.
+
 Sun Aug 31 08:46:44 2014  Eric Wong  <e@80x24.org>
 
 	* ext/zlib/zlib.c (gzfile_reset): preserve ZSTREAM_FLAG_GZFILE
