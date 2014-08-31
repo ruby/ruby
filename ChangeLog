@@ -1,3 +1,8 @@
+Sun Aug 31 15:46:23 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (yield_indexed_values): extract from permute0(),
+	  rpermute0(), and rcombinate0().
+
 Sun Aug 31 15:23:25 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_permutation): `p` is the array of size `r`, as
