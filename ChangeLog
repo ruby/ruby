@@ -1,3 +1,12 @@
+Sun Aug 31 16:24:54 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/lib/pathname.rb (cleanpath_aggressive): make all
+	  separators File::SEPARATOR from File::ALT_SEPARATOR.
+	  Reported by Daniel Rikowski.
+	  Fixed by Nobuyoshi Nakada.  [Bug #9618]
+
+	* ext/pathname/lib/pathname.rb (cleanpath_conservative): ditto.
+
 Sun Aug 31 16:23:41 2014  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* lib/fileutils.rb (rmdir): rescue Errno::EEXIST in addition to
