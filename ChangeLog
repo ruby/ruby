@@ -1,3 +1,9 @@
+Sun Aug 31 15:23:25 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_permutation): `p` is the array of size `r`, as
+	  commented at permute0().  since `n >= r` here, buffer overflow
+	  never happened, just reduce unnecessary allocation though.
+
 Mon Jul  7 13:05:04 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/test_timeout.rb (test_timeout): inverted test condition.
