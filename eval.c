@@ -714,7 +714,7 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 	result = (*b_proc) (data1);
     }
     else {
-	th->cfp = cfp; /* restore */
+	rb_vm_rewind_cfp(th, cfp);
 
 	if (state == TAG_RAISE) {
 	    int handle = FALSE;
@@ -793,7 +793,7 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int * state)
 	*state = status;
     }
     if (status != 0) {
-	th->cfp = cfp;
+	rb_vm_rewind_cfp(th, cfp);
 	return Qnil;
     }
 

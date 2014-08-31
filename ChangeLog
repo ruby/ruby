@@ -1,3 +1,27 @@
+Sun Aug 31 16:59:45 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_eval.c (rb_catch_protect): fix same problem of [Bug #9961].
+
+	* vm_eval.c (rb_iterate): ditto.
+
+Sun Aug 31 16:59:45 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (rb_vm_rewind_cfp): add new function to rewind specified cfp
+	  with invoking RUBY_EVENT_C_RETURN.
+	  [Bug #9961]
+
+	* vm_core.h: ditto.
+
+	* eval.c (rb_protect): use it.
+
+	* eval.c (rb_rescue2): ditto.
+
+	* vm_eval.c (rb_iterate): ditto.
+
+	* test/ruby/test_settracefunc.rb: add a test.
+
+	* vm_core.h (rb_name_err_mesg_new): 
+
 Sun Aug 31 16:50:06 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (rb_iseq_compile_node): put start label of block after
