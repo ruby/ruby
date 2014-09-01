@@ -26,7 +26,7 @@
 const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 0xC0, 0x4F, 0x8F, 0x5D, 0x9A}};
 #endif
 
-#define WIN32OLE_VERSION "1.7.9"
+#define WIN32OLE_VERSION "1.8.0"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -406,6 +406,8 @@ rbtime2vtdate(VALUE tmobj)
 {
     SYSTEMTIME st;
     double t;
+    double nsec;
+
     memset(&st, 0, sizeof(SYSTEMTIME));
     st.wYear = FIX2INT(rb_funcall(tmobj, rb_intern("year"), 0));
     st.wMonth = FIX2INT(rb_funcall(tmobj, rb_intern("month"), 0));
@@ -415,7 +417,17 @@ rbtime2vtdate(VALUE tmobj)
     st.wSecond = FIX2INT(rb_funcall(tmobj, rb_intern("sec"), 0));
     st.wMilliseconds = FIX2INT(rb_funcall(tmobj, rb_intern("nsec"), 0)) / 1000000;
     SystemTimeToVariantTime(&st, &t);
-    return t;
+
+    /*
+     * Unfortunately SystemTimeToVariantTime function always ignores the
+     * wMilliseconds of SYSTEMTIME struct.
+     * So, we need to calculate milliseconds by ourselves.
+     */
+    nsec =  FIX2INT(rb_funcall(tmobj, rb_intern("nsec"), 0));
+    nsec /= 1000000.0;
+    nsec /= (24.0 * 3600.0);
+    nsec /= 1000;
+    return t + nsec;
 }
 
 static VALUE
