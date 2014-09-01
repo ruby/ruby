@@ -32,6 +32,7 @@ module Test::Unit
 end
 
 if ENV['COVERAGE']
+  $LOAD_PATH.unshift "#{src_testdir}/../coverage/simplecov/lib"
   require 'simplecov'
   SimpleCov.start
 end
