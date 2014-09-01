@@ -1,3 +1,8 @@
+Tue Sep  2 02:08:12 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (rb_f_kill): directly enqueue an ignored signal to self,
+	  except for SIGSEGV and SIGBUS.  [ruby-dev:48203] [Bug #9820]
+
 Sun Aug 31 01:13:21 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: change full GC timing to keep lower memory usage.
