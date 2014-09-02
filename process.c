@@ -3173,6 +3173,43 @@ chfunc_protect(VALUE arg)
 #define O_BINARY 0
 #endif
 
+static int
+handle_fork_error(int *status, int *ep, int *state_p, int *try_gc_p)
+{
+    switch (errno) {
+      case ENOMEM:
+        if ((*try_gc_p)-- > 0 && !rb_during_gc()) {
+            rb_gc();
+            return 0;
+        }
+        break;
+      case EAGAIN:
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+      case EWOULDBLOCK:
+#endif
+        if (!status && !ep) {
+            rb_thread_sleep(1);
+            return 0;
+        }
+        else {
+            rb_protect((VALUE (*)())rb_thread_sleep, 1, state_p);
+            if (status) *status = *state_p;
+            if (!*state_p) return 0;
+        }
+        break;
+    }
+    if (ep) {
+        preserving_errno((close(ep[0]), close(ep[1])));
+    }
+    if (*state_p && !status) rb_jump_tag(*state_p);
+    return -1;
+}
+
+#define prefork() (		\
+	rb_io_flush(rb_stdout), \
+	rb_io_flush(rb_stderr)	\
+	)
+
 /*
  * Forks child process, and returns the process ID in the parent
  * process.
@@ -3206,11 +3243,6 @@ retry_fork(int *status, int *ep, int chfunc_is_async_signal_safe)
     int state = 0;
     int try_gc = 1;
 
-#define prefork() (		\
-	rb_io_flush(rb_stdout), \
-	rb_io_flush(rb_stderr)	\
-	)
-
     while (1) {
         prefork();
         if (!chfunc_is_async_signal_safe)
@@ -3223,33 +3255,8 @@ retry_fork(int *status, int *ep, int chfunc_is_async_signal_safe)
         if (0 < pid) /* fork succeed, parent process */
             return pid;
         /* fork failed */
-	switch (errno) {
-	  case ENOMEM:
-	    if (try_gc-- > 0 && !rb_during_gc()) {
-		rb_gc();
-		continue;
-	    }
-	    break;
-	  case EAGAIN:
-#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
-	  case EWOULDBLOCK:
-#endif
-	    if (!status && !ep) {
-		rb_thread_sleep(1);
-		continue;
-	    }
-	    else {
-		rb_protect((VALUE (*)())rb_thread_sleep, 1, &state);
-		if (status) *status = state;
-		if (!state) continue;
-	    }
-	    break;
-	}
-	if (ep) {
-	    preserving_errno((close(ep[0]), close(ep[1])));
-	}
-	if (state && !status) rb_jump_tag(state);
-	return -1;
+        if (handle_fork_error(status, ep, &state, &try_gc))
+            return -1;
     }
 }
 
