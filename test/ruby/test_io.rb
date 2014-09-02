@@ -2867,15 +2867,19 @@ End
       Thread.pass until th.stop?
       buf.replace("")
       assert_empty(buf, bug6099)
-      th.join rescue ($@.concat(caller); raise) unless th.alive?
+      assert_predicate(th, :alive?)
       w.write(data)
       Thread.pass while th.alive?
-      th.join rescue ($@.concat(caller); raise)
     end
     assert_equal(data, buf, bug6099)
   rescue RuntimeError # can't modify string; temporarily locked
   ensure
-    th.join if th
+    if th
+      begin
+        th.join
+      rescue IOError
+      end
+    end
   end
 
   def test_advise_pipe
