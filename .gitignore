@@ -55,6 +55,7 @@ y.tab.c
 /config.status
 /config.status.lineno
 /configure
+/coverage
 /doc/capi
 /enc.mk
 /encdb.h
