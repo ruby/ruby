@@ -1962,6 +1962,8 @@ else
   AC_LIBOBJ([signbit])
 fi
 
+AC_FUNC_FORK
+
 AC_CHECK_FUNCS(__syscall)
 AC_CHECK_FUNCS(_longjmp)		# used for AC_ARG_WITH(setjmp-type)
 AC_CHECK_FUNCS(_setjmp)			# used for AC_ARG_WITH(setjmp-type)
@@ -1984,7 +1986,6 @@ AC_CHECK_FUNCS(fchown)
 AC_CHECK_FUNCS(fcntl)
 AC_CHECK_FUNCS(fdatasync)
 AC_CHECK_FUNCS(fmod)
-AC_CHECK_FUNCS(fork)
 AC_CHECK_FUNCS(fsync)
 AC_CHECK_FUNCS(ftruncate)
 AC_CHECK_FUNCS(ftruncate64)		# used for Win32 platform
@@ -2662,7 +2663,7 @@ if test x"$ac_cv_header_ucontext_h" = xyes; then
     fi
 fi
 
-if test "$ac_cv_func_fork" = "yes" -a "$rb_with_pthread" = "yes"; then
+if test "$ac_cv_func_fork_works" = "yes" -a "$rb_with_pthread" = "yes"; then
     AC_CACHE_CHECK([if fork works with pthread], rb_cv_fork_with_pthread,
 	[AC_TRY_RUN([
 #include <stdlib.h>

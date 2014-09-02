@@ -1,3 +1,11 @@
+Wed Sep  3 07:50:15 2014  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: Use AC_FUNC_FORK.
+
+	* io.c: Use HAVE_WORKING_FORK instead of HAVE_FORK.
+
+	* process.c: Ditto.
+
 Wed Sep  3 00:12:44 2014  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (retry_fork_async_signal_safe): Don't return on in child

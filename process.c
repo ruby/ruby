@@ -1181,7 +1181,7 @@ security(const char *str)
     }
 }
 
-#if defined(HAVE_FORK) && !defined(__native_client__)
+#if defined(HAVE_WORKING_FORK) && !defined(__native_client__)
 
 /* try_with_sh and exec_with_sh should be async-signal-safe. Actually it is.*/
 #define try_with_sh(prog, argv, envp) ((saved_errno == ENOEXEC) ? exec_with_sh((prog), (argv), (envp)) : (void)0)
@@ -1382,7 +1382,7 @@ export_dup(VALUE str)
 # define EXPORT_DUP(str) rb_str_dup(str)
 #endif
 
-#if !defined(HAVE_FORK) && defined(HAVE_SPAWNV)
+#if !defined(HAVE_WORKING_FORK) && defined(HAVE_SPAWNV)
 # define USE_SPAWNV 1
 #else
 # define USE_SPAWNV 0
@@ -2883,7 +2883,7 @@ run_exec_rlimit(VALUE ary, struct rb_execarg *sargp, char *errmsg, size_t errmsg
 }
 #endif
 
-#if !defined(HAVE_FORK)
+#if !defined(HAVE_WORKING_FORK)
 static VALUE
 save_env_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
@@ -2937,7 +2937,7 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
     }
 #endif
 
-#if !defined(HAVE_FORK)
+#if !defined(HAVE_WORKING_FORK)
     if (eargp->unsetenv_others_given && eargp->unsetenv_others_do) {
         save_env(sargp);
         rb_env_clear();
@@ -2984,7 +2984,7 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
         }
     }
 
-#ifdef HAVE_FORK
+#ifdef HAVE_WORKING_FORK
     if (!eargp->close_others_given || eargp->close_others_do) {
         rb_close_before_exec(3, eargp->close_others_maxhint, eargp->redirect_fds); /* async-signal-safe */
     }
@@ -3049,7 +3049,7 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
 int
 rb_exec_async_signal_safe(const struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
 {
-#if !defined(HAVE_FORK)
+#if !defined(HAVE_WORKING_FORK)
     struct rb_execarg sarg, *const sargp = &sarg;
 #else
     struct rb_execarg *const sargp = NULL;
@@ -3070,7 +3070,7 @@ rb_exec_async_signal_safe(const struct rb_execarg *eargp, char *errmsg, size_t e
 	    abspath = RSTRING_PTR(eargp->invoke.cmd.command_abspath);
 	proc_exec_cmd(abspath, eargp->invoke.cmd.argv_str, eargp->envp_str); /* async-signal-safe */
     }
-#if !defined(HAVE_FORK)
+#if !defined(HAVE_WORKING_FORK)
     preserving_errno(rb_execarg_run_options(sargp, NULL, errmsg, errmsg_buflen));
 #endif
 
@@ -3091,7 +3091,7 @@ rb_exec_without_timer_thread(const struct rb_execarg *eargp, char *errmsg, size_
 }
 #endif
 
-#ifdef HAVE_FORK
+#ifdef HAVE_WORKING_FORK
 /* This function should be async-signal-safe.  Hopefully it is. */
 static int
 rb_exec_atfork(void* arg, char *errmsg, size_t errmsg_buflen)
@@ -3100,7 +3100,7 @@ rb_exec_atfork(void* arg, char *errmsg, size_t errmsg_buflen)
 }
 #endif
 
-#ifdef HAVE_FORK
+#ifdef HAVE_WORKING_FORK
 #if SIZEOF_INT == SIZEOF_LONG
 #define proc_syswait (VALUE (*)(VALUE))rb_syswait
 #else
@@ -3387,7 +3387,7 @@ rb_fork_ruby(int *status)
 
 #endif
 
-#if defined(HAVE_FORK) && !defined(CANNOT_FORK_WITH_PTHREAD)
+#if defined(HAVE_WORKING_FORK) && !defined(CANNOT_FORK_WITH_PTHREAD)
 /*
  *  call-seq:
  *     Kernel.fork  [{ block }]   -> fixnum or nil
@@ -3617,12 +3617,12 @@ rb_spawn_process(struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
 #if !USE_SPAWNV
     int status;
 #endif
-#if !defined HAVE_FORK || USE_SPAWNV
+#if !defined HAVE_WORKING_FORK || USE_SPAWNV
     VALUE prog;
     struct rb_execarg sarg;
 #endif
 
-#if defined HAVE_FORK && !USE_SPAWNV
+#if defined HAVE_WORKING_FORK && !USE_SPAWNV
     pid = rb_fork_async_signal_safe(&status, rb_exec_atfork, eargp, eargp->redirect_fds, errmsg, errmsg_buflen);
 #else
     prog = eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name;
@@ -3737,7 +3737,7 @@ rb_f_system(int argc, VALUE *argv)
     chfunc = signal(SIGCHLD, SIG_DFL);
 #endif
     pid = rb_spawn_internal(argc, argv, NULL, 0);
-#if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
+#if defined(HAVE_WORKING_FORK) || defined(HAVE_SPAWNV)
     if (pid > 0) {
         int ret, status;
         ret = rb_waitpid(pid, &status, 0);
@@ -4045,7 +4045,7 @@ rb_f_spawn(int argc, VALUE *argv)
 	}
 	rb_sys_fail(prog);
     }
-#if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
+#if defined(HAVE_WORKING_FORK) || defined(HAVE_SPAWNV)
     return PIDT2NUM(pid);
 #else
     return Qnil;
@@ -5681,7 +5681,7 @@ proc_setmaxgroups(VALUE obj, VALUE val)
 #define proc_setmaxgroups rb_f_notimplement
 #endif
 
-#if defined(HAVE_DAEMON) || (defined(HAVE_FORK) && defined(HAVE_SETSID))
+#if defined(HAVE_DAEMON) || (defined(HAVE_WORKING_FORK) && defined(HAVE_SETSID))
 static int rb_daemon(int nochdir, int noclose);
 
 /*

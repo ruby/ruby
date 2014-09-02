@@ -5665,7 +5665,7 @@ rb_file_open(const char *fname, const char *modestr)
     return rb_file_open_internal(io_alloc(rb_cFile), rb_str_new_cstr(fname), modestr);
 }
 
-#if defined(__CYGWIN__) || !defined(HAVE_FORK)
+#if defined(__CYGWIN__) || !defined(HAVE_WORKING_FORK)
 static struct pipe_list {
     rb_io_t *fptr;
     struct pipe_list *next;
@@ -5721,7 +5721,7 @@ pipe_atexit(void)
 static void
 pipe_finalize(rb_io_t *fptr, int noraise)
 {
-#if !defined(HAVE_FORK) && !defined(_WIN32)
+#if !defined(HAVE_WORKING_FORK) && !defined(_WIN32)
     int status = 0;
     if (fptr->stdio_file) {
 	status = pclose(fptr->stdio_file);
@@ -5773,7 +5773,7 @@ rb_pipe(int *pipes)
 #define spawn(mode, cmd) rb_w32_uspawn((mode), (cmd), 0)
 #endif
 
-#if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
+#if defined(HAVE_WORKING_FORK) || defined(HAVE_SPAWNV)
 struct popen_arg {
     VALUE execarg_obj;
     struct rb_execarg *eargp;
@@ -5783,7 +5783,7 @@ struct popen_arg {
 };
 #endif
 
-#ifdef HAVE_FORK
+#ifdef HAVE_WORKING_FORK
 static void
 popen_redirect(struct popen_arg *p)
 {
@@ -5918,11 +5918,11 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
     VALUE port;
     rb_io_t *write_fptr;
     VALUE write_port;
-#if defined(HAVE_FORK)
+#if defined(HAVE_WORKING_FORK)
     int status;
     char errmsg[80] = { '\0' };
 #endif
-#if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
+#if defined(HAVE_WORKING_FORK) || defined(HAVE_SPAWNV)
     int state;
     struct popen_arg arg;
     int e = 0;
@@ -5937,20 +5937,20 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
 				      spawnv(P_NOWAIT, (cmd), (args)) : \
 				      spawn(P_NOWAIT, (cmd)))
 # endif
-# if !defined(HAVE_FORK)
+# if !defined(HAVE_WORKING_FORK)
     char **args = NULL;
 #   if defined(HAVE_SPAWNVE)
     char **envp = NULL;
 #   endif
 # endif
 #endif
-#if !defined(HAVE_FORK)
+#if !defined(HAVE_WORKING_FORK)
     struct rb_execarg sarg, *sargp = &sarg;
 #endif
     FILE *fp = 0;
     int fd = -1;
     int write_fd = -1;
-#if !defined(HAVE_FORK)
+#if !defined(HAVE_WORKING_FORK)
     const char *cmd = 0;
 #if !defined(HAVE_SPAWNV)
     int argc;
@@ -5961,13 +5961,13 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
         cmd = StringValueCStr(prog);
 #endif
 
-#if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
+#if defined(HAVE_WORKING_FORK) || defined(HAVE_SPAWNV)
     arg.execarg_obj = execarg_obj;
     arg.eargp = eargp;
     arg.modef = fmode;
     arg.pair[0] = arg.pair[1] = -1;
     arg.write_pair[0] = arg.write_pair[1] = -1;
-# if !defined(HAVE_FORK)
+# if !defined(HAVE_WORKING_FORK)
     if (eargp && !eargp->use_shell) {
         args = ARGVSTR2ARGV(eargp->invoke.cmd.argv_str);
     }
@@ -6013,7 +6013,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
             rb_jump_tag(state);
         }
 
-# if defined(HAVE_FORK)
+# if defined(HAVE_WORKING_FORK)
 	pid = rb_fork_async_signal_safe(&status, popen_exec, &arg, arg.eargp->redirect_fds, errmsg, sizeof(errmsg));
 # else
 	rb_execarg_run_options(eargp, sargp, NULL, 0);
@@ -6037,7 +6037,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
 # endif
     }
     else {
-# if defined(HAVE_FORK)
+# if defined(HAVE_WORKING_FORK)
 	pid = rb_fork_ruby(&status);
 	if (pid == 0) {		/* child */
 	    rb_thread_atfork();
@@ -6053,7 +6053,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
 
     /* parent */
     if (pid == -1) {
-# if defined(HAVE_FORK)
+# if defined(HAVE_WORKING_FORK)
 	e = errno;
 # endif
 	close(arg.pair[0]);
@@ -6063,7 +6063,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
             close(arg.write_pair[1]);
         }
 	errno = e;
-# if defined(HAVE_FORK)
+# if defined(HAVE_WORKING_FORK)
         if (errmsg[0])
             rb_sys_fail(errmsg);
 # endif
@@ -6134,7 +6134,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
         rb_ivar_set(port, rb_intern("@tied_io_for_writing"), write_port);
     }
 
-#if defined (__CYGWIN__) || !defined(HAVE_FORK)
+#if defined (__CYGWIN__) || !defined(HAVE_WORKING_FORK)
     fptr->finalize = pipe_finalize;
     pipe_add_fptr(fptr);
 #endif
@@ -6145,7 +6145,7 @@ static int
 is_popen_fork(VALUE prog)
 {
     if (RSTRING_LEN(prog) == 1 && RSTRING_PTR(prog)[0] == '-') {
-#if !defined(HAVE_FORK)
+#if !defined(HAVE_WORKING_FORK)
 	rb_raise(rb_eNotImpError,
 		 "fork() function is unimplemented on this machine");
 #else
@@ -6669,7 +6669,7 @@ io_reopen(VALUE io, VALUE nfile)
     if (RTEST(orig->pathv)) fptr->pathv = orig->pathv;
     else if (!IS_PREP_STDIO(fptr)) fptr->pathv = Qnil;
     fptr->finalize = orig->finalize;
-#if defined (__CYGWIN__) || !defined(HAVE_FORK)
+#if defined (__CYGWIN__) || !defined(HAVE_WORKING_FORK)
     if (fptr->finalize == pipe_finalize)
 	pipe_add_fptr(fptr);
 #endif
@@ -6837,7 +6837,7 @@ rb_io_init_copy(VALUE dest, VALUE io)
     fptr->lineno = orig->lineno;
     if (!NIL_P(orig->pathv)) fptr->pathv = orig->pathv;
     fptr->finalize = orig->finalize;
-#if defined (__CYGWIN__) || !defined(HAVE_FORK)
+#if defined (__CYGWIN__) || !defined(HAVE_WORKING_FORK)
     if (fptr->finalize == pipe_finalize)
 	pipe_add_fptr(fptr);
 #endif
