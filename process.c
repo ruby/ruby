@@ -2819,8 +2819,8 @@ static int
 run_exec_pgroup(const struct rb_execarg *eargp, struct rb_execarg *sargp, char *errmsg, size_t errmsg_buflen)
 {
     /*
-     * If FD_CLOEXEC is available, rb_fork_internal waits the child's execve.
-     * So setpgid is done in the child when rb_fork_internal is returned in
+     * If FD_CLOEXEC is available, rb_fork_async_signal_safe waits the child's execve.
+     * So setpgid is done in the child when rb_fork_async_signal_safe is returned in
      * the parent.
      * No race condition, even without setpgid from the parent.
      * (Is there an environment which has setpgid but no FD_CLOEXEC?)
@@ -3154,21 +3154,6 @@ pipe_nocrash(int filedes[2], VALUE fds)
     return ret;
 }
 
-struct chfunc_protect_t {
-    int (*chfunc)(void*, char *, size_t);
-    void *arg;
-    char *errmsg;
-    size_t buflen;
-};
-
-static VALUE
-chfunc_protect(VALUE arg)
-{
-    struct chfunc_protect_t *p = (struct chfunc_protect_t *)arg;
-
-    return (VALUE)(*p->chfunc)(p->arg, p->errmsg, p->buflen);
-}
-
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
@@ -3345,9 +3330,8 @@ recv_child_error(int fd, int *statep, VALUE *excp, int *errp, char *errmsg, size
     return size != 0;
 }
 
-static rb_pid_t
-rb_fork_internal(int *status, int (*chfunc)(void*, char *, size_t), void *charg,
-        int chfunc_is_async_signal_safe, VALUE fds,
+rb_pid_t
+rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fds,
         char *errmsg, size_t errmsg_buflen)
 {
     rb_pid_t pid;
@@ -3355,75 +3339,59 @@ rb_fork_internal(int *status, int (*chfunc)(void*, char *, size_t), void *charg,
     int ep[2];
     VALUE exc = Qnil;
     int error_occurred;
+    int chfunc_is_async_signal_safe = TRUE;
 
     if (status) *status = 0;
 
-    if (!chfunc) {
-        pid = retry_fork(status, NULL, FALSE);
-        if (pid < 0)
-            return pid;
-        if (!pid) {
-            forked_child = 1;
-            after_fork();
-        }
+    if (pipe_nocrash(ep, fds)) return -1;
+    pid = retry_fork(status, ep, chfunc_is_async_signal_safe);
+    if (pid < 0)
         return pid;
-    }
-    else {
-	if (pipe_nocrash(ep, fds)) return -1;
-        pid = retry_fork(status, ep, chfunc_is_async_signal_safe);
-        if (pid < 0)
-            return pid;
-        if (!pid) {
-            int ret;
-            forked_child = 1;
-            close(ep[0]);
-            if (chfunc_is_async_signal_safe)
-                ret = chfunc(charg, errmsg, errmsg_buflen);
-            else {
-                struct chfunc_protect_t arg;
-                arg.chfunc = chfunc;
-                arg.arg = charg;
-                arg.errmsg = errmsg;
-                arg.buflen = errmsg_buflen;
-                ret = (int)rb_protect(chfunc_protect, (VALUE)&arg, &state);
-            }
-            if (!ret) _exit(EXIT_SUCCESS);
-            send_child_error(ep[1], state, errmsg, errmsg_buflen, chfunc_is_async_signal_safe);
+    if (!pid) {
+        int ret;
+        forked_child = 1;
+        close(ep[0]);
+        ret = chfunc(charg, errmsg, errmsg_buflen);
+        if (!ret) _exit(EXIT_SUCCESS);
+        send_child_error(ep[1], state, errmsg, errmsg_buflen, chfunc_is_async_signal_safe);
 #if EXIT_SUCCESS == 127
-            _exit(EXIT_FAILURE);
+        _exit(EXIT_FAILURE);
 #else
-            _exit(127);
+        _exit(127);
 #endif
-        }
-        close(ep[1]);
-        error_occurred = recv_child_error(ep[0], &state, &exc, &err, errmsg, errmsg_buflen, chfunc_is_async_signal_safe);
-        if (state || error_occurred) {
-            if (status) {
-                rb_protect(proc_syswait, (VALUE)pid, status);
-                if (state) *status = state;
-            }
-            else {
-                rb_syswait(pid);
-                if (state) rb_exc_raise(exc);
-            }
-            errno = err;
-            return -1;
-        }
-        return pid;
     }
-}
-
-rb_pid_t
-rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fds,
-        char *errmsg, size_t errmsg_buflen)
-{
-    return rb_fork_internal(status, chfunc, charg, TRUE, fds, errmsg, errmsg_buflen);
+    close(ep[1]);
+    error_occurred = recv_child_error(ep[0], &state, &exc, &err, errmsg, errmsg_buflen, chfunc_is_async_signal_safe);
+    if (state || error_occurred) {
+        if (status) {
+            rb_protect(proc_syswait, (VALUE)pid, status);
+            if (state) *status = state;
+        }
+        else {
+            rb_syswait(pid);
+            if (state) rb_exc_raise(exc);
+        }
+        errno = err;
+        return -1;
+    }
+    return pid;
 }
 
 rb_pid_t
 rb_fork_ruby(int *status)
 {
-    return rb_fork_internal(status, NULL, NULL, FALSE, Qnil, NULL, 0);
+    rb_pid_t pid;
+
+    if (status) *status = 0;
+
+    pid = retry_fork(status, NULL, FALSE);
+    if (pid < 0)
+        return pid;
+    if (!pid) {
+        forked_child = 1;
+        after_fork();
+    }
+    return pid;
 }
 
 #endif

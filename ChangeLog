@@ -1,3 +1,10 @@
+Tue Sep  2 22:56:25 2014  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_fork_async_signal_safe): Inline rb_fork_internal.
+	  (rb_fork_ruby): Ditto.
+	  (rb_fork_internal): Removed.
+	  (chfunc_protect): Removed.
+
 Tue Sep  2 22:43:52 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_io.rb (test_new_with_block): Set autoclose to avoid
