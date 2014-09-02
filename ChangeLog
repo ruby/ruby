@@ -1,3 +1,11 @@
+Tue Sep  2 16:58:03 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/runner.rb: reporting test coverage for test-all with COVERAGE env.
+	  [Feature #10189][ruby-core:64681]
+	* Makefile.in: added task for coverage report.
+	* common.mk: added definition of forked simplecov url.
+	* .gitignore: ignored coverage directory.
+
 Mon Sep  1 20:11:02 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (rbtime2vtdate): try to convert millisecond

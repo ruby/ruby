@@ -31,6 +31,12 @@ module Test::Unit
   end
 end
 
+if ENV['COVERAGE']
+  $LOAD_PATH.unshift "#{src_testdir}/../coverage/simplecov/lib"
+  require 'simplecov'
+  SimpleCov.start
+end
+
 begin
   exit Test::Unit::AutoRunner.run(true, src_testdir)
 rescue NoMemoryError
