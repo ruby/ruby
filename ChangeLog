@@ -6,7 +6,7 @@ Tue Sep  2 17:02:53 2014  Vit Ondruch  <v.ondruch@tiscali.cz>
 Tue Sep  2 16:58:03 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/runner.rb: reporting test coverage for test-all with COVERAGE env.
-	  [Feature #10189][ruby-core:64681]
+	  [Feature #10189][ruby-core:64681][fix GH-708]
 	* Makefile.in: added task for coverage report.
 	* common.mk: added definition of forked simplecov url.
 	* .gitignore: ignored coverage directory.
