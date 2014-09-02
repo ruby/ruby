@@ -714,7 +714,7 @@ install?(:ext, :comm, :gem) do
   directories = Gem.ensure_gem_subdirectories(gem_dir, :mode => $dir_mode)
   prepare "bundle gems", gem_dir, directories
   Dir.glob(srcdir+'/gems/*.gem').each do |gem|
-    Gem.install gem, :install_dir => with_destdir(Gem.dir)
+    Gem.install gem, :install_dir => with_destdir(Gem.dir), :domain => :local, :ignore_dependencies => true
     gemname = Pathname(gem).basename
     puts "#{" "*30}#{gemname}"
   end

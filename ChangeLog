@@ -1,3 +1,8 @@
+Tue Sep  2 17:02:53 2014  Vit Ondruch  <v.ondruch@tiscali.cz>
+
+	* tool/rbinstall.rb: fixed error of local installation.
+	  [Bug #10192][ruby-core:64702]
+
 Tue Sep  2 16:58:03 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/runner.rb: reporting test coverage for test-all with COVERAGE env.
