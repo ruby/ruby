@@ -1,3 +1,8 @@
+Tue Sep  2 22:43:52 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_io.rb (test_new_with_block): Set autoclose to avoid
+	  EBADF.
+
 Tue Sep  2 22:01:51 2014  Kouhei Sutou  <kou@cozmixng.org>
 
 	* Makefile.in (update-coverage): Remove a never executed line.
