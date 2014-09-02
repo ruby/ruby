@@ -3270,19 +3270,10 @@ read_retry(int fd, void *buf, size_t len)
 }
 
 static void
-send_child_error(int fd, int state, char *errmsg, size_t errmsg_buflen, int chfunc_is_async_signal_safe)
+send_child_error(int fd, char *errmsg, size_t errmsg_buflen)
 {
-    VALUE io = Qnil;
     int err;
 
-    if (!chfunc_is_async_signal_safe) {
-        if (write_retry(fd, &state, sizeof(state)) == sizeof(state) && state) {
-            VALUE errinfo = rb_errinfo();
-            io = rb_io_fdopen(fd, O_WRONLY|O_BINARY, NULL);
-            rb_marshal_dump(errinfo, io);
-            rb_io_flush(io);
-        }
-    }
     err = errno;
     if (write_retry(fd, &err, sizeof(err)) < 0) err = errno;
     if (errmsg && 0 < errmsg_buflen) {
@@ -3291,42 +3282,25 @@ send_child_error(int fd, int state, char *errmsg, size_t errmsg_buflen, int chfu
         if (errmsg_buflen > 0 && write_retry(fd, errmsg, errmsg_buflen) < 0)
             err = errno;
     }
-    if (!NIL_P(io)) rb_io_close(io);
 }
 
 static int
-recv_child_error(int fd, int *statep, VALUE *excp, int *errp, char *errmsg, size_t errmsg_buflen, int chfunc_is_async_signal_safe)
+recv_child_error(int fd, int *errp, char *errmsg, size_t errmsg_buflen)
 {
-    int err, state = 0;
-    VALUE io = Qnil;
+    int err;
     ssize_t size;
-    VALUE exc = Qnil;
-    if (!chfunc_is_async_signal_safe) {
-        if ((read_retry(fd, &state, sizeof(state))) == sizeof(state) && state) {
-            io = rb_io_fdopen(fd, O_RDONLY|O_BINARY, NULL);
-            exc = rb_marshal_load(io);
-            rb_set_errinfo(exc);
-        }
-        if (!*statep && state) *statep = state;
-        *excp = exc;
-    }
-#define READ_FROM_CHILD(ptr, len) \
-    (NIL_P(io) ? read_retry(fd, (ptr), (len)) : rb_io_bufread(io, (ptr), (len)))
-    if ((size = READ_FROM_CHILD(&err, sizeof(err))) < 0) {
+    if ((size = read_retry(fd, &err, sizeof(err))) < 0) {
         err = errno;
     }
     *errp = err;
     if (size == sizeof(err) &&
         errmsg && 0 < errmsg_buflen) {
-        ssize_t ret = READ_FROM_CHILD(errmsg, errmsg_buflen-1);
+        ssize_t ret = read_retry(fd, errmsg, errmsg_buflen-1);
         if (0 <= ret) {
             errmsg[ret] = '\0';
         }
     }
-    if (NIL_P(io))
-        close(fd);
-    else
-        rb_io_close(io);
+    close(fd);
     return size != 0;
 }
 
@@ -3353,7 +3327,7 @@ rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), voi
         close(ep[0]);
         ret = chfunc(charg, errmsg, errmsg_buflen);
         if (!ret) _exit(EXIT_SUCCESS);
-        send_child_error(ep[1], state, errmsg, errmsg_buflen, chfunc_is_async_signal_safe);
+        send_child_error(ep[1], errmsg, errmsg_buflen);
 #if EXIT_SUCCESS == 127
         _exit(EXIT_FAILURE);
 #else
@@ -3361,7 +3335,7 @@ rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), voi
 #endif
     }
     close(ep[1]);
-    error_occurred = recv_child_error(ep[0], &state, &exc, &err, errmsg, errmsg_buflen, chfunc_is_async_signal_safe);
+    error_occurred = recv_child_error(ep[0], &err, errmsg, errmsg_buflen);
     if (state || error_occurred) {
         if (status) {
             rb_protect(proc_syswait, (VALUE)pid, status);

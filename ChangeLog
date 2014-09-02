@@ -1,3 +1,8 @@
+Tue Sep  2 23:26:26 2014  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (send_child_error): Simplified.
+	  (recv_child_error): Ditto.
+
 Tue Sep  2 22:56:25 2014  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_fork_async_signal_safe): Inline rb_fork_internal.
