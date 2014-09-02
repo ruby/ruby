@@ -3281,7 +3281,9 @@ recv_child_error(int fd, int *errp, char *errmsg, size_t errmsg_buflen)
 }
 
 static rb_pid_t
-retry_fork_async_signal_safe(int *status, int *ep)
+retry_fork_async_signal_safe(int *status, int *ep,
+        int (*chfunc)(void*, char *, size_t), void *charg,
+        char *errmsg, size_t errmsg_buflen)
 {
     rb_pid_t pid;
     int state = 0;
@@ -3290,8 +3292,19 @@ retry_fork_async_signal_safe(int *status, int *ep)
     while (1) {
         prefork();
         pid = fork();
-        if (pid == 0) /* fork succeed, child process */
-            return pid;
+        if (pid == 0) {/* fork succeed, child process */
+            int ret;
+            forked_child = 1;
+            close(ep[0]);
+            ret = chfunc(charg, errmsg, errmsg_buflen);
+            if (!ret) _exit(EXIT_SUCCESS);
+            send_child_error(ep[1], errmsg, errmsg_buflen);
+#if EXIT_SUCCESS == 127
+            _exit(EXIT_FAILURE);
+#else
+            _exit(127);
+#endif
+        }
         if (0 < pid) /* fork succeed, parent process */
             return pid;
         /* fork failed */
@@ -3313,22 +3326,9 @@ rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), voi
     if (status) *status = 0;
 
     if (pipe_nocrash(ep, fds)) return -1;
-    pid = retry_fork_async_signal_safe(status, ep);
+    pid = retry_fork_async_signal_safe(status, ep, chfunc, charg, errmsg, errmsg_buflen);
     if (pid < 0)
         return pid;
-    if (!pid) {
-        int ret;
-        forked_child = 1;
-        close(ep[0]);
-        ret = chfunc(charg, errmsg, errmsg_buflen);
-        if (!ret) _exit(EXIT_SUCCESS);
-        send_child_error(ep[1], errmsg, errmsg_buflen);
-#if EXIT_SUCCESS == 127
-        _exit(EXIT_FAILURE);
-#else
-        _exit(127);
-#endif
-    }
     close(ep[1]);
     error_occurred = recv_child_error(ep[0], &err, errmsg, errmsg_buflen);
     if (state || error_occurred) {

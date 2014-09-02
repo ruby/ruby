@@ -1,3 +1,8 @@
+Wed Sep  3 00:12:44 2014  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (retry_fork_async_signal_safe): Don't return on in child
+	  process.
+
 Tue Sep  2 23:47:35 2014  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (retry_fork_async_signal_safe): Specialized version of
