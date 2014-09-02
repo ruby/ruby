@@ -3221,30 +3221,6 @@ handle_fork_error(int *status, int *ep, int *state_p, int *try_gc_p)
  * +chfunc+ must not raise any exceptions.
  */
 
-static rb_pid_t
-retry_fork(int *status, int *ep, int chfunc_is_async_signal_safe)
-{
-    rb_pid_t pid;
-    int state = 0;
-    int try_gc = 1;
-
-    while (1) {
-        prefork();
-        if (!chfunc_is_async_signal_safe)
-            before_fork();
-        pid = fork();
-        if (pid == 0) /* fork succeed, child process */
-            return pid;
-        if (!chfunc_is_async_signal_safe)
-            preserving_errno(after_fork());
-        if (0 < pid) /* fork succeed, parent process */
-            return pid;
-        /* fork failed */
-        if (handle_fork_error(status, ep, &state, &try_gc))
-            return -1;
-    }
-}
-
 static ssize_t
 write_retry(int fd, const void *buf, size_t len)
 {
@@ -3304,6 +3280,26 @@ recv_child_error(int fd, int *errp, char *errmsg, size_t errmsg_buflen)
     return size != 0;
 }
 
+static rb_pid_t
+retry_fork_async_signal_safe(int *status, int *ep)
+{
+    rb_pid_t pid;
+    int state = 0;
+    int try_gc = 1;
+
+    while (1) {
+        prefork();
+        pid = fork();
+        if (pid == 0) /* fork succeed, child process */
+            return pid;
+        if (0 < pid) /* fork succeed, parent process */
+            return pid;
+        /* fork failed */
+        if (handle_fork_error(status, ep, &state, &try_gc))
+            return -1;
+    }
+}
+
 rb_pid_t
 rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fds,
         char *errmsg, size_t errmsg_buflen)
@@ -3313,12 +3309,11 @@ rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), voi
     int ep[2];
     VALUE exc = Qnil;
     int error_occurred;
-    int chfunc_is_async_signal_safe = TRUE;
 
     if (status) *status = 0;
 
     if (pipe_nocrash(ep, fds)) return -1;
-    pid = retry_fork(status, ep, chfunc_is_async_signal_safe);
+    pid = retry_fork_async_signal_safe(status, ep);
     if (pid < 0)
         return pid;
     if (!pid) {
@@ -3351,6 +3346,28 @@ rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), voi
     return pid;
 }
 
+static rb_pid_t
+retry_fork_ruby(int *status)
+{
+    rb_pid_t pid;
+    int state = 0;
+    int try_gc = 1;
+
+    while (1) {
+        prefork();
+        before_fork();
+        pid = fork();
+        if (pid == 0) /* fork succeed, child process */
+            return pid;
+        preserving_errno(after_fork());
+        if (0 < pid) /* fork succeed, parent process */
+            return pid;
+        /* fork failed */
+        if (handle_fork_error(status, NULL, &state, &try_gc))
+            return -1;
+    }
+}
+
 rb_pid_t
 rb_fork_ruby(int *status)
 {
@@ -3358,7 +3375,7 @@ rb_fork_ruby(int *status)
 
     if (status) *status = 0;
 
-    pid = retry_fork(status, NULL, FALSE);
+    pid = retry_fork_ruby(status);
     if (pid < 0)
         return pid;
     if (!pid) {

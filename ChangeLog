@@ -1,3 +1,11 @@
+Tue Sep  2 23:47:35 2014  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (retry_fork_async_signal_safe): Specialized version of
+	  retry_fork respect to rb_fork_async_signal_safe.
+	  (retry_fork_ruby): Specialized version of retry_fork respect to
+	  rb_fork_ruby.
+	  (rb_fork_ruby): Removed.
+
 Tue Sep  2 23:26:26 2014  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (send_child_error): Simplified.
