@@ -475,7 +475,6 @@ update-coverage:
 	else \
 	  echo retrieving simplecov ...; \
 	  exec git clone $(SIMPLECOV_GIT_URL) coverage/simplecov; \
-	  cd coverage/simplecov; \
 	fi
 
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \

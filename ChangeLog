@@ -1,3 +1,7 @@
+Tue Sep  2 22:01:51 2014  Kouhei Sutou  <kou@cozmixng.org>
+
+	* Makefile.in (update-coverage): Remove a never executed line.
+
 Tue Sep  2 19:48:26 2014  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (handle_fork_error): Extracted from retry_fork.
