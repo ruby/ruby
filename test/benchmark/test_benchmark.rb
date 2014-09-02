@@ -156,6 +156,6 @@ BENCH
   def test_realtime_output
     sleeptime = 1.0
     realtime = Benchmark.realtime { sleep sleeptime }
-    assert_in_epsilon sleeptime, realtime
+    assert_operator sleeptime, :<, realtime
   end
 end
