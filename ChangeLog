@@ -1,3 +1,7 @@
+Wed Sep  3 18:56:05 2014  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (forked_child): Removed.
+
 Wed Sep  3 16:56:07 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_obj_copy_ivar): allocate no memory for empty

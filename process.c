@@ -1094,8 +1094,6 @@ proc_detach(VALUE obj, VALUE pid)
     return rb_detach_process(NUM2PIDT(pid));
 }
 
-static int forked_child = 0;
-
 #ifdef SIGPIPE
 static RETSIGTYPE (*saved_sigpipe_handler)(int) = 0;
 #endif
@@ -1123,22 +1121,20 @@ before_exec_async_signal_safe(void)
 }
 
 static void
-before_exec_non_async_signal_safe(void)
+before_exec_non_async_signal_safe()
 {
-    if (!forked_child) {
-	/*
-	 * On Mac OS X 10.5.x (Leopard) or earlier, exec() may return ENOTSUP
-	 * if the process have multiple threads. Therefore we have to kill
-	 * internal threads temporary. [ruby-core:10583]
-	 * This is also true on Haiku. It returns Errno::EPERM against exec()
-	 * in multiple threads.
-	 */
-	rb_thread_stop_timer_thread(0);
-    }
+    /*
+     * On Mac OS X 10.5.x (Leopard) or earlier, exec() may return ENOTSUP
+     * if the process have multiple threads. Therefore we have to kill
+     * internal threads temporary. [ruby-core:10583]
+     * This is also true on Haiku. It returns Errno::EPERM against exec()
+     * in multiple threads.
+     */
+    rb_thread_stop_timer_thread(0);
 }
 
 static void
-before_exec(void)
+before_exec()
 {
     before_exec_non_async_signal_safe();
     before_exec_async_signal_safe();
@@ -1158,8 +1154,6 @@ after_exec_non_async_signal_safe(void)
 {
     rb_thread_reset_timer_thread();
     rb_thread_start_timer_thread();
-
-    forked_child = 0;
 }
 
 static void
@@ -3087,7 +3081,7 @@ static int
 rb_exec_without_timer_thread(const struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
 {
     int ret;
-    before_exec_non_async_signal_safe(); /* async-signal-safe if forked_child is true */
+    before_exec_non_async_signal_safe(); /* not async-signal-safe because it calls rb_thread_stop_timer_thread.  */
     ret = rb_exec_async_signal_safe(eargp, errmsg, errmsg_buflen); /* hopefully async-signal-safe */
     preserving_errno(after_exec_non_async_signal_safe()); /* not async-signal-safe because it calls rb_thread_start_timer_thread.  */
     return ret;
@@ -3301,7 +3295,6 @@ retry_fork_async_signal_safe(int *status, int *ep,
 #endif
         if (pid == 0) {/* fork succeed, child process */
             int ret;
-            forked_child = 1;
             close(ep[0]);
             ret = chfunc(charg, errmsg, errmsg_buflen);
             if (!ret) _exit(EXIT_SUCCESS);
@@ -3312,7 +3305,6 @@ retry_fork_async_signal_safe(int *status, int *ep,
             _exit(127);
 #endif
         }
-        forked_child = 0; /* for vfork(). */
         if (0 < pid) /* fork succeed, parent process */
             return pid;
         /* fork failed */
@@ -3387,7 +3379,6 @@ rb_fork_ruby(int *status)
     if (pid < 0)
         return pid;
     if (!pid) {
-        forked_child = 1;
         after_fork();
     }
     return pid;
