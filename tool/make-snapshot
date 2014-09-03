@@ -24,7 +24,7 @@ options:
   -packages=PKG[,...]   make PKG packages (#{PACKAGES.keys.join(", ")})
   -digests=ALG[,...]    show ALG digests (#{DIGESTS.join(", ")})
 version:
-  trunk, stable, branches/*, tags/*, X.Y.Z, X.Y.Z-pL
+  trunk, stable, branches/*, tags/*, X.Y, X.Y.Z, X.Y.Z-pL
 each versions may be followed by optional @revision.
 USAGE
 end
