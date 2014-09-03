@@ -811,4 +811,14 @@ class TestObject < Test::Unit::TestCase
     assert_raise_with_message(TypeError, "can't convert Array into Integer") {Integer([42])}
     assert_raise_with_message(TypeError, 'no implicit conversion of Array into Integer') {[].first([42])}
   end
+
+  def test_copied_ivar_memory_leak
+    bug10191 = '[ruby-core:64700] [Bug #10191]'
+    assert_no_memory_leak([], <<-"end;", <<-"end;", bug10191, rss: true)
+      def (a = Object.new).set; @v = nil; end
+      num = 500_000
+    end;
+      num.times {a.clone.set}
+    end;
+  end
 end

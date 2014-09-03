@@ -1,3 +1,8 @@
+Wed Sep  3 16:56:07 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_obj_copy_ivar): allocate no memory for empty
+	  instance variables.  [ruby-core:64700] [Bug #10191]
+
 Wed Sep  3 12:05:17 2014  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (retry_fork_async_signal_safe): Use vfork() if available.

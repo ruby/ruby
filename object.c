@@ -270,8 +270,11 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     }
     else {
 	long len = ROBJECT(obj)->as.heap.numiv;
-	VALUE *ptr = ALLOC_N(VALUE, len);
-	MEMCPY(ptr, ROBJECT(obj)->as.heap.ivptr, VALUE, len);
+	VALUE *ptr = 0;
+	if (len > 0) {
+	    ptr = ALLOC_N(VALUE, len);
+	    MEMCPY(ptr, ROBJECT(obj)->as.heap.ivptr, VALUE, len);
+	}
 	ROBJECT(dest)->as.heap.ivptr = ptr;
 	ROBJECT(dest)->as.heap.numiv = len;
 	ROBJECT(dest)->as.heap.iv_index_tbl = ROBJECT(obj)->as.heap.iv_index_tbl;
