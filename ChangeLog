@@ -1,3 +1,8 @@
+Wed Sep  3 13:42:24 2014  Mark Lorenz  <mlorenz@covermymeds.com>
+
+	* lib/erb.rb (result): [DOC] no longer accepts a Proc, as
+	  Kernel.eval does not.  [fix GH-619]
+
 Wed Sep  3 13:23:29 2014  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_autoclose_p): Don't raise on frozen IO.
