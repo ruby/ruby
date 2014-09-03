@@ -1,3 +1,8 @@
+Thu Sep  4 00:31:23 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/thread/thread.c (get_array): check instance variables are
+	  initialized properly.  [ruby-core:63826][Bug #10062]
+
 Thu Sep  4 00:29:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_initialize): [DOC] fix rdoc of append mode.  it does
