@@ -1,3 +1,9 @@
+Thu Sep  4 00:21:05 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/openssl/test_pkey_rsa.rb (OpenSSL#test_sign_verify_memory_leak):
+	  added timeout into testcase for low performance environment.
+	  [Bug #9984][ruby-core:63367]
+
 Tue Sep  2 02:21:58 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (env_aset, env_has_key, env_assoc, env_has_value),
