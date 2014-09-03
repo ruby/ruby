@@ -1,3 +1,14 @@
+Wed Sep  3 12:05:17 2014  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (retry_fork_async_signal_safe): Use vfork() if available.
+	  vfork() is still faster than fork() especially when the parent
+	  process uses big memory.
+
+	  ruby -rbenchmark -e 'a = "a" * 1_000_000_000; puts Benchmark.measure { system("true") }'
+	  fork:   0.000000   0.010000   0.010000 (  0.014968)
+	  vfork:  0.000000   0.000000   0.000000 (  0.000912)
+	  on Debian sid.
+
 Wed Sep  3 11:33:08 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/openssl/test_pkey_rsa.rb (OpenSSL#test_sign_verify_memory_leak):

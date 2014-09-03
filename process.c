@@ -50,6 +50,9 @@
 #ifdef HAVE_SYS_RESOURCE_H
 # include <sys/resource.h>
 #endif
+#ifdef HAVE_VFORK_H
+# include <vfork.h>
+#endif
 #ifdef HAVE_SYS_PARAM_H
 # include <sys/param.h>
 #endif
@@ -3291,7 +3294,11 @@ retry_fork_async_signal_safe(int *status, int *ep,
 
     while (1) {
         prefork();
+#ifdef HAVE_WORKING_VFORK
+        pid = vfork();
+#else
         pid = fork();
+#endif
         if (pid == 0) {/* fork succeed, child process */
             int ret;
             forked_child = 1;
@@ -3305,6 +3312,7 @@ retry_fork_async_signal_safe(int *status, int *ep,
             _exit(127);
 #endif
         }
+        forked_child = 0; /* for vfork(). */
         if (0 < pid) /* fork succeed, parent process */
             return pid;
         /* fork failed */
