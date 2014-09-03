@@ -1,3 +1,8 @@
+Wed Sep  3 19:10:28 2014  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (before_fork_ruby): Renamed from before_fork.
+	  (after_fork_ruby): Renamed from after_fork.
+
 Wed Sep  3 18:56:05 2014  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (forked_child): Removed.

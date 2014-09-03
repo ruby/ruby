@@ -1163,8 +1163,8 @@ after_exec(void)
     after_exec_non_async_signal_safe();
 }
 
-#define before_fork() before_exec()
-#define after_fork() (rb_threadptr_pending_interrupt_clear(GET_THREAD()), after_exec())
+#define before_fork_ruby() before_exec()
+#define after_fork_ruby() (rb_threadptr_pending_interrupt_clear(GET_THREAD()), after_exec())
 
 #include "dln.h"
 
@@ -3355,11 +3355,11 @@ retry_fork_ruby(int *status)
 
     while (1) {
         prefork();
-        before_fork();
+        before_fork_ruby();
         pid = fork();
         if (pid == 0) /* fork succeed, child process */
             return pid;
-        preserving_errno(after_fork());
+        preserving_errno(after_fork_ruby());
         if (0 < pid) /* fork succeed, parent process */
             return pid;
         /* fork failed */
@@ -3379,7 +3379,7 @@ rb_fork_ruby(int *status)
     if (pid < 0)
         return pid;
     if (!pid) {
-        after_fork();
+        after_fork_ruby();
     }
     return pid;
 }
@@ -5717,9 +5717,9 @@ rb_daemon(int nochdir, int noclose)
 {
     int err = 0;
 #ifdef HAVE_DAEMON
-    before_fork();
+    before_fork_ruby();
     err = daemon(nochdir, noclose);
-    after_fork();
+    after_fork_ruby();
     rb_thread_atfork();
 #else
     int n;
