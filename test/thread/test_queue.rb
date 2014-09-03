@@ -5,6 +5,18 @@ require 'timeout'
 require_relative '../ruby/envutil'
 
 class TestQueue < Test::Unit::TestCase
+  def test_queue_initialized
+    assert_raise(TypeError) {
+      Queue.allocate.push(nil)
+    }
+  end
+
+  def test_sized_queue_initialized
+    assert_raise(TypeError) {
+      SizedQueue.allocate.push(nil)
+    }
+  end
+
   def test_queue
     grind(5, 1000, 15, Queue)
   end
