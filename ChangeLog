@@ -1,3 +1,14 @@
+Wed Sep  3 13:23:29 2014  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_autoclose_p): Don't raise on frozen IO.
+
+	* test/lib/minitest/unit.rb: IO#autoclose? may raise IOError.
+
+Wed Sep  3 13:23:29 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_fileno, rb_io_inspect): non-modification does not
+	  error on frozen IO.  [ruby-dev:48241] [Bug #9865]
+
 Wed Sep  3 13:17:38 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (posix_fadvise): disable use of posix_fadvise

@@ -583,12 +583,18 @@ rb_eof_error(void)
     rb_raise(rb_eEOFError, "end of file reached");
 }
 
-VALUE
-rb_io_taint_check(VALUE io)
+static VALUE
+taint_check(VALUE io)
 {
     if (!OBJ_UNTRUSTED(io) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: operation on trusted IO");
-    rb_check_frozen(io);
+    return io;
+}
+
+VALUE
+rb_io_taint_check(VALUE io)
+{
+    rb_check_frozen(taint_check(io));
     return io;
 }
 
@@ -1877,10 +1883,10 @@ rb_io_fdatasync(VALUE io)
 static VALUE
 rb_io_fileno(VALUE io)
 {
-    rb_io_t *fptr;
+    rb_io_t *fptr = RFILE(io)->fptr;
     int fd;
 
-    GetOpenFile(io, fptr);
+    rb_io_check_closed(fptr);
     fd = fptr->fd;
     return INT2FIX(fd);
 }
@@ -1932,7 +1938,7 @@ rb_io_inspect(VALUE obj)
     VALUE result;
     static const char closed[] = " (closed)";
 
-    fptr = RFILE(rb_io_taint_check(obj))->fptr;
+    fptr = RFILE(taint_check(obj))->fptr;
     if (!fptr) return rb_any_to_s(obj);
     result = rb_str_new_cstr("#<");
     rb_str_append(result, rb_class_name(CLASS_OF(obj)));
@@ -7452,9 +7458,9 @@ rb_io_s_for_fd(int argc, VALUE *argv, VALUE klass)
 static VALUE
 rb_io_autoclose_p(VALUE io)
 {
-    rb_io_t *fptr;
+    rb_io_t *fptr = RFILE(io)->fptr;
     rb_secure(4);
-    GetOpenFile(io, fptr);
+    rb_io_check_closed(fptr);
     return (fptr->mode & FMODE_PREP) ? Qfalse : Qtrue;
 }
 
