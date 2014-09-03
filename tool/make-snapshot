@@ -140,8 +140,8 @@ def package(rev, destdir)
     patchlevel = true
     tag = "p#{$4}"
     url = SVNURL + "tags/v#{$1}_#{$2}_#{$3}_#{$4}"
-  when /\A(\d+)\.(\d+)\.(\d+)\z/
-    if $1 > "2" || $1 == "2" && $2 >= "1"
+  when /\A(\d+)\.(\d+)(?:\.(\d+))?\z/
+    if $3 && ($1 > "2" || $1 == "2" && $2 >= "1")
       patchlevel = true
       tag = ""
       url = SVNURL + "tags/v#{$1}_#{$2}_#{$3}"
