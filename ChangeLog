@@ -1,3 +1,14 @@
+Wed Sep  3 13:17:38 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (posix_fadvise): disable use of posix_fadvise
+	  itself on 32-bit AIX.  [ruby-core:62968] [Bug #9914]
+
+Wed Sep  3 13:17:38 2014    <kanemoto@ruby-lang.org>
+
+	* io.c (rb_io_advise): AIX currently does not support a 32-bit call to
+	  posix_fadvise() if _LARGE_FILES is defined. Patch by Rei Odaira.
+	  [ruby-core:62968] [Bug #9914]
+
 Wed Sep  3 12:48:14 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_write): use rb_str_append to
