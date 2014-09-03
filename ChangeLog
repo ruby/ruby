@@ -1,3 +1,7 @@
+Thu Sep  4 03:57:46 2014  Eric Wong  <e@80x24.org>
+
+	* man/ruby.1: spelling fix ("bellow" => "below") [ci-skip]
+
 Thu Sep  4 03:52:16 2014  Eric Wong  <e@80x24.org>
 
 	* man/ruby.1: add trailing slash to URLs [ci-skip]
