@@ -1,3 +1,9 @@
+Thu Sep  4 00:23:15 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (GETASTER): should not use the numbered argument to be
+	  formatted, raise ArgumentError instead.
+	  [ruby-dev:48330] [Bug #9982]
+
 Thu Sep  4 00:21:05 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/openssl/test_pkey_rsa.rb (OpenSSL#test_sign_verify_memory_leak):
