@@ -2416,9 +2416,12 @@ ruby_setenv(const char *name, const char *value)
 	rb_sys_fail("ruby_setenv");
     }
     if (value) {
-	const char* p = GetEnvironmentStringsA();
+	char* p = GetEnvironmentStringsA();
+	size_t n;
 	if (!p) goto fail; /* never happen */
-	if (strlen(name) + 2 + strlen(value) + getenvsize(p) >= getenvblocksize()) {
+	n = strlen(name) + 2 + strlen(value) + getenvsize(p);
+	FreeEnvironmentStringsA(p);
+	if (n >= getenvblocksize()) {
 	    goto fail;  /* 2 for '=' & '\0' */
 	}
 	buf = rb_sprintf("%s=%s", name, value);
@@ -2806,24 +2809,22 @@ static VALUE
 env_select(VALUE ehash)
 {
     VALUE result;
-    char **env;
+    VALUE keys;
+    long i;
 
     RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
     rb_secure(4);
     result = rb_hash_new();
-    env = GET_ENVIRON(environ);
-    while (*env) {
-	char *s = strchr(*env, '=');
-	if (s) {
-	    VALUE k = env_str_new(*env, s-*env);
-	    VALUE v = env_str_new2(s+1);
-	    if (RTEST(rb_yield_values(2, k, v))) {
-		rb_hash_aset(result, k, v);
+    keys = env_keys();
+    for (i = 0; i < RARRAY_LEN(keys); ++i) {
+	VALUE key = RARRAY_PTR(keys)[i];
+	VALUE val = rb_f_getenv(Qnil, key);
+	if (!NIL_P(val)) {
+	    if (RTEST(rb_yield_values(2, key, val))) {
+		rb_hash_aset(result, key, val);
 	    }
 	}
-	env++;
     }
-    FREE_ENVIRON(environ);
 
     return result;
 }
@@ -3237,6 +3238,7 @@ static VALUE
 env_shift(void)
 {
     char **env;
+    VALUE result = Qnil;
 
     rb_secure(4);
     env = GET_ENVIRON(environ);
@@ -3246,11 +3248,11 @@ env_shift(void)
 	    VALUE key = env_str_new(*env, s-*env);
 	    VALUE val = env_str_new2(getenv(RSTRING_PTR(key)));
 	    env_delete(Qnil, key);
-	    return rb_assoc_new(key, val);
+	    result = rb_assoc_new(key, val);
 	}
     }
     FREE_ENVIRON(environ);
-    return Qnil;
+    return result;
 }
 
 /*
