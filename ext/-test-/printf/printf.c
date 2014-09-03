@@ -106,4 +106,5 @@ Init_printf(void)
     rb_define_singleton_method(m, "s", printf_test_s, 1);
     rb_define_singleton_method(m, "v", printf_test_v, 1);
     rb_define_singleton_method(m, "call", printf_test_call, -1);
+    rb_define_singleton_method(m, "q", printf_test_q, 1);
 }
