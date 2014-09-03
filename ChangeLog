@@ -1,3 +1,9 @@
+Wed Sep  3 11:33:08 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/openssl/test_pkey_rsa.rb (OpenSSL#test_sign_verify_memory_leak):
+	  added timeout into testcase for low performance environment.
+	  [Bug #9984][ruby-core:63367]
+
 Wed Sep  3 07:50:15 2014  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: Use AC_FUNC_FORK.
