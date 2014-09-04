@@ -195,6 +195,14 @@ class TestCSV::Table < TestCSV
     assert_raise(TypeError) { @table["Extra"] = nil }
   end
 
+  def test_set_by_col_with_header_row
+    r  = [ CSV::Row.new(%w{X Y Z}, [97, 98, 99], true) ]
+    t = CSV::Table.new(r)
+    t.by_col!
+    t['A'] = [42]
+    assert_equal(['A'], t['A'])
+  end
+
   def test_each
     ######################
     ### Mixed/Row Mode ###
