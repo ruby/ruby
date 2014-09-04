@@ -53,6 +53,8 @@ with all sufficient information, see the ChangeLog file.
   * Extended method:
     * Process execution methods such as Process.spawn opens the file in write
       mode for redirect from [:out, :err].
+  * Process creation methods, such as spawn(), uses vfork() system call.
+    vfork() is faster than fork() when the parent process uses huge memory.
 
 * Symbol
   * New methods
