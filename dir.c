@@ -539,6 +539,37 @@ dir_inspect(VALUE dir)
     return rb_funcall(dir, rb_intern("to_s"), 0, 0);
 }
 
+#ifdef HAVE_DIRFD
+/*
+ *  call-seq:
+ *     dir.fileno -> integer
+ *
+ *  Returns the file descriptor used in <em>dir</em>.
+ *
+ *     d = Dir.new("..")
+ *     d.fileno   #=> 8
+ *
+ *  This method uses dirfd() function defined by POSIX 2008.
+ *  NotImplementedError is raised on other platforms, such as Windows,
+ *  which doesn't provide the function.
+ *
+ */
+static VALUE
+dir_fileno(VALUE dir)
+{
+    struct dir_data *dirp;
+    int fd;
+
+    GetDIR(dir, dirp);
+    fd = dirfd(dirp->dir);
+    if (fd == -1)
+	rb_sys_fail("dirfd");
+    return INT2NUM(fd);
+}
+#else
+#define dir_fileno rb_f_notimplement
+#endif
+
 /*
  *  call-seq:
  *     dir.path -> string or nil
@@ -2259,6 +2290,7 @@ Init_Dir(void)
     rb_define_singleton_method(rb_cDir, "entries", dir_entries, -1);
 
     rb_define_method(rb_cDir,"initialize", dir_initialize, -1);
+    rb_define_method(rb_cDir,"fileno", dir_fileno, 0);
     rb_define_method(rb_cDir,"path", dir_path, 0);
     rb_define_method(rb_cDir,"to_path", dir_path, 0);
     rb_define_method(rb_cDir,"inspect", dir_inspect, 0);

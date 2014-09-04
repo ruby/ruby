@@ -1,3 +1,10 @@
+Fri Sep  5 00:29:08 2014  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in (dirfd): Check function.
+
+	* dir.c (dir_fileno): New method.
+	  [ruby-dev:48265] [Feature #9880]
+
 Thu Sep  4 23:39:52 2014  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (has_privilege): New function.

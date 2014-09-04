@@ -20,6 +20,10 @@ with all sufficient information, see the ChangeLog file.
     * Binding#local_variables
     * Binding#receiver
 
+* Dir
+  * New methods:
+    * Dir#fileno
+
 * Enumerable
   * New methods:
     * Enumerable#slice_after

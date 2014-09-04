@@ -294,4 +294,14 @@ class TestDir < Test::Unit::TestCase
       end
     end
   end
+
+  def test_fileno
+    Dir.open(".") {|d|
+      if d.respond_to? :fileno
+        assert_kind_of(Integer, d.fileno)
+      else
+        assert_raise(NotImplementedError) { d.fileno }
+      end
+    }
+  end
 end

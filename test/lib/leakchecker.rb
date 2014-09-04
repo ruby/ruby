@@ -15,7 +15,6 @@ class LeakChecker
   def find_fds
     fd_dir = "/proc/self/fd"
     if File.directory?(fd_dir)
-      require "-test-/dir"
       fds = Dir.open(fd_dir) {|d|
         a = d.grep(/\A\d+\z/, &:to_i)
         if d.respond_to? :fileno
