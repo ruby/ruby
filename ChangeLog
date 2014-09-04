@@ -1,3 +1,12 @@
+Thu Sep  4 23:39:52 2014  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (has_privilege): New function.
+	  (retry_fork_async_signal_safe): Don't use vfork() for privileged
+	  process.
+
+	* configure.in (getresuid): Check function.
+	  (getresgid): Ditto.
+
 Thu Sep  4 20:22:14 2014  Laurent Arnoud  <laurent@spkdev.net>
 
 	* test/pathname/test_pathname.rb: added testcase for Pathname#mountpoint.

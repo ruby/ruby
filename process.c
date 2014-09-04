@@ -3277,6 +3277,72 @@ recv_child_error(int fd, int *errp, char *errmsg, size_t errmsg_buflen)
     return size != 0;
 }
 
+static int
+has_privilege(void)
+{
+    /*
+     * has_privilege() is used to choose vfork() or fork().
+     *
+     * If the process has privilege, the parent process or
+     * the child process can change UID/GID.
+     * If vfork() is used to create the child process and
+     * the parent or child process change effective UID/GID,
+     * different privileged processes shares memory.
+     * It is a bad situation.
+     * So, fork() should be used.
+     */
+
+    rb_uid_t ruid, euid;
+    rb_gid_t rgid, egid;
+
+#if defined HAVE_ISSETUGID
+    if (issetugid())
+	return 1;
+#endif
+
+#ifdef HAVE_GETRESUID
+    {
+        int ret;
+        rb_uid_t suid;
+        ret = getresuid(&ruid, &euid, &suid);
+        if (ret == -1)
+            rb_sys_fail("getresuid(2)");
+        if (ruid != suid)
+            return 1;
+    }
+#else
+    {
+        rb_uid_t ruid = getuid();
+        rb_uid_t euid = geteuid();
+    }
+#endif
+
+    if (ruid == 0 || ruid != euid)
+        return 1;
+
+#ifdef HAVE_GETRESGID
+    {
+        int ret;
+        rb_gid_t sgid;
+        ret = getresgid(&rgid, &egid, &sgid);
+        if (ret == -1)
+            rb_sys_fail("getresgid(2)");
+        if (rgid != sgid)
+            return 0;
+    }
+#else
+    {
+        rb_gid_t rgid = getgid();
+        rb_gid_t egid = getegid();
+    }
+#endif
+
+    if (rgid == 0 || rgid != egid)
+        return 1;
+
+    return 0;
+}
+
 static rb_pid_t
 retry_fork_async_signal_safe(int *status, int *ep,
         int (*chfunc)(void*, char *, size_t), void *charg,
@@ -3289,7 +3355,10 @@ retry_fork_async_signal_safe(int *status, int *ep,
     while (1) {
         prefork();
 #ifdef HAVE_WORKING_VFORK
-        pid = vfork();
+        if (!has_privilege())
+            pid = vfork();
+        else
+            pid = fork();
 #else
         pid = fork();
 #endif
