@@ -1347,11 +1347,6 @@ dln_load(const char *file)
 	strcpy(file, orig);
 	free(orig);
 #endif
-#if defined __SYMBIAN32__
-	if (init_fct == NULL) {
-	    init_fct = (void(*)())dlsym(handle, "1"); /* Some Symbian versions do not support symbol table in DLL, ordinal numbers only */
-	}
-#endif
 	if (init_fct == NULL) {
 	    error = DLN_ERROR();
 	    dlclose(handle);

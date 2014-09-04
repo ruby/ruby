@@ -416,7 +416,7 @@ native_cond_timeout(rb_nativethread_cond_t *cond, struct timespec timeout_rel)
 #define native_thread_yield() ((void)0)
 #endif
 
-#if defined(SIGVTALRM) && !defined(__CYGWIN__) && !defined(__SYMBIAN32__)
+#if defined(SIGVTALRM) && !defined(__CYGWIN__)
 #define USE_SIGNAL_THREAD_LIST 1
 #endif
 #ifdef USE_SIGNAL_THREAD_LIST

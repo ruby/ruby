@@ -1883,10 +1883,6 @@ check_machine_stack_size(size_t *sizep)
     size_t size = *sizep;
 #endif
 
-#ifdef __SYMBIAN32__
-    *sizep = 64 * 1024; /* 64KB: Let's be slightly more frugal on mobile platform */
-#endif
-
 #ifdef PTHREAD_STACK_MIN
     if (size < PTHREAD_STACK_MIN) {
 	*sizep = PTHREAD_STACK_MIN * 2;
