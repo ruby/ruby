@@ -559,6 +559,11 @@ class TestPathname < Test::Unit::TestCase
     assert_include([true, false], r)
   end
 
+  def test_mountpoint_enoent
+    r = Pathname("/nonexistent").mountpoint?
+    assert_equal false, r
+  end
+
   def test_destructive_update
     path = Pathname.new("a")
     path.to_s.replace "b"

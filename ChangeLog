@@ -1,3 +1,8 @@
+Thu Sep  4 20:22:14 2014  Laurent Arnoud  <laurent@spkdev.net>
+
+	* test/pathname/test_pathname.rb: added testcase for Pathname#mountpoint.
+	  [fix GH-709]
+
 Thu Sep  4 20:09:21 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* symbian/*: removed Symbian support.
