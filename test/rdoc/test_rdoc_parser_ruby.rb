@@ -63,6 +63,21 @@ class C; end
     assert_equal Encoding::CP852, comment.text.encoding
   end
 
+  def test_collect_first_comment_rd_hash
+    parser = util_parser <<-CONTENT
+=begin
+first
+=end
+
+# second
+class C; end
+    CONTENT
+
+    comment = parser.collect_first_comment
+
+    assert_equal RDoc::Comment.new("first\n\n", @top_level), comment
+  end
+
   def test_get_class_or_module
     ctxt = RDoc::Context.new
     ctxt.store = @store
@@ -773,7 +788,7 @@ end
     assert_equal 2, foo.method_list.length
   end
 
-  def test_parse_const_fail_w_meta_method
+  def test_parse_const_fail_w_meta
     util_parser <<-CLASS
 class ConstFailMeta
   ##
@@ -793,27 +808,6 @@ end
     assert_equal 'ConstFailMeta', const_fail_meta.full_name
 
     assert_equal 1, const_fail_meta.attributes.length
-  end
-
-  def test_parse_const_third_party
-    util_parser <<-CLASS
-class A
-  true if B::C
-  true if D::E::F
-end
-    CLASS
-
-    tk = @parser.get_tk
-
-    @parser.parse_class @top_level, RDoc::Parser::Ruby::NORMAL, tk, @comment
-
-    a = @top_level.classes.first
-    assert_equal 'A', a.full_name
-
-    visible = @store.all_modules.reject { |mod| mod.suppressed? }
-    visible = visible.map { |mod| mod.full_name }
-
-    assert_empty visible
   end
 
   def test_parse_class_nested_superclass
@@ -3251,7 +3245,25 @@ end
     c_b = c.find_method_named 'b'
 
     assert_equal :private, c_b.visibility
-    refute c_b.singleton
+    assert c_b.singleton
+  end
+
+  def test_singleton_method_via_eigenclass
+    util_parser <<-RUBY
+class C
+   class << self
+     def a() end
+   end
+end
+    RUBY
+
+    @parser.scan
+
+    c   = @store.find_class_named 'C'
+    c_a = c.find_method_named 'a'
+
+    assert_equal :public, c_a.visibility
+    assert c_a.singleton
   end
 
   def test_stopdoc_after_comment

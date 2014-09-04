@@ -15,6 +15,19 @@ class TestRDocParser < RDoc::TestCase
     @options = RDoc::Options.new
   end
 
+  def test_class_binary_eh_ISO_2022_JP
+    iso_2022_jp = File.join Dir.tmpdir, "test_rdoc_parser_#{$$}.rd"
+
+    open iso_2022_jp, 'wb' do |io|
+      io.write "# coding: ISO-2022-JP\n"
+      io.write ":\e$B%3%^%s%I\e(B:\n"
+    end
+
+    refute @RP.binary? iso_2022_jp
+  ensure
+    File.unlink iso_2022_jp
+  end
+
   def test_class_binary_eh_marshal
     marshal = File.join Dir.tmpdir, "test_rdoc_parser_#{$$}.marshal"
     open marshal, 'wb' do |io|
@@ -96,7 +109,7 @@ class TestRDocParser < RDoc::TestCase
   def test_class_for_forbidden
     skip 'chmod not supported' if Gem.win_platform?
 
-    Tempfile.create 'forbidden' do |io|
+    tf = Tempfile.open 'forbidden' do |io|
       begin
         File.chmod 0000, io.path
         forbidden = @store.add_file io.path
@@ -107,7 +120,9 @@ class TestRDocParser < RDoc::TestCase
       ensure
         File.chmod 0400, io.path
       end
+      io
     end
+    tf.close! if tf.respond_to? :close!
   end
 
   def test_class_for_modeline

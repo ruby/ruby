@@ -736,6 +736,47 @@ rb_define_alias(C, "[]", "index");
     assert_equal "/*\n * comment\n */\n\n", comment.text
   end
 
+  def test_find_attr_comment_document_attr
+    parser= util_parser <<-C
+/*
+ * Document-attr: y
+ * comment
+ */
+    C
+
+    comment = parser.find_attr_comment nil, 'y'
+
+    assert_equal "/*\n * \n * comment\n */", comment.text
+  end
+
+  def test_find_attr_comment_document_attr_oneline
+    parser= util_parser <<-C
+/* Document-attr: y
+ * comment
+ */
+    C
+
+    comment = parser.find_attr_comment nil, 'y'
+
+    assert_equal "/* \n * comment\n */", comment.text
+  end
+
+  def test_find_attr_comment_document_attr_overlap
+    parser= util_parser <<-C
+/* Document-attr: x
+ * comment
+ */
+
+/* Document-attr: y
+ * comment
+ */
+    C
+
+    comment = parser.find_attr_comment nil, 'y'
+
+    assert_equal "/* \n * comment\n */", comment.text
+  end
+
   def test_find_class_comment
     @options.rdoc_include << File.dirname(__FILE__)
 
@@ -1203,6 +1244,36 @@ Init_Foo(void) {
     bar = methods.last
     assert_equal 'Foo#bar', bar.full_name
     assert_equal "a comment for Foo#bar", bar.comment.text
+  end
+
+  def test_find_body_macro
+    content = <<-EOF
+/*
+ * a comment for other_function
+ */
+DLL_LOCAL VALUE
+other_function() {
+}
+
+void
+Init_Foo(void) {
+    VALUE foo = rb_define_class("Foo", rb_cObject);
+
+    rb_define_method(foo, "my_method", other_function, 0);
+}
+    EOF
+
+    klass = util_get_class content, 'foo'
+    other_function = klass.method_list.first
+
+    assert_equal 'my_method', other_function.name
+    assert_equal "a comment for other_function",
+                 other_function.comment.text
+    assert_equal '()', other_function.params
+
+    code = other_function.token_stream.first.text
+
+    assert_equal "DLL_LOCAL VALUE\nother_function() {\n}", code
   end
 
   def test_find_modifiers_call_seq

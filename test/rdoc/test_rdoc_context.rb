@@ -621,6 +621,8 @@ class TestRDocContext < XrefTestCase
 
     assert_equal 1,  @c2_c3.<=>(@c2)
     assert_equal(-1, @c2_c3.<=>(@c3))
+
+    assert_nil @c2.<=>(Gem.loaded_specs.values.first)
   end
 
   def test_methods_by_type

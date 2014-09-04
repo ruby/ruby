@@ -146,10 +146,10 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
           entry_name = nil unless entry_name =~ /#{time.year}/
         rescue NoMethodError
           # HACK Ruby 2.1.2 and earlier raises NoMethodError if time part is absent
-          time, = entry_name.split '  ', 2
+          entry_name.split '  ', 2
         rescue ArgumentError
           if /out of range/ =~ $!.message
-            time = Time.parse(entry_name.split('  ', 2)[0]) rescue entry_name = nil
+            Time.parse(entry_name.split('  ', 2)[0]) rescue entry_name = nil
           else
             entry_name = nil
           end
