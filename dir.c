@@ -1405,11 +1405,11 @@ glob_helper(
     if (magical || recursive) {
 	struct dirent *dp;
 	DIR *dirp;
-# if DOSISH
+# ifdef DOSISH
 	char *plainname = 0;
 # endif
 	IF_HAVE_HFS(int hfs_p);
-# if DOSISH
+# ifdef DOSISH
 	if (cur + 1 == end && (*cur)->type <= ALPHA) {
 	    plainname = join_path(path, pathlen, dirsep, (*cur)->str, strlen((*cur)->str));
 	    if (!plainname) return -1;

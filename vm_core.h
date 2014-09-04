@@ -474,6 +474,10 @@ typedef struct rb_vm_struct {
 #define VM_DEBUG_BP_CHECK 0
 #endif
 
+#ifndef VM_DEBUG_VERIFY_METHOD_CACHE
+#define VM_DEBUG_VERIFY_METHOD_CACHE 0
+#endif
+
 typedef struct rb_control_frame_struct {
     VALUE *pc;			/* cfp[0] */
     VALUE *sp;			/* cfp[1] */

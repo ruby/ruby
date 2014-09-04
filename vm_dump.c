@@ -432,7 +432,7 @@ rb_vmdebug_thread_dump_state(VALUE self)
 }
 
 #if defined(HAVE_BACKTRACE)
-# if HAVE_LIBUNWIND
+# ifdef HAVE_LIBUNWIND
 #  undef backtrace
 #  define backtrace unw_backtrace
 # elif defined(__APPLE__) && defined(__x86_64__)

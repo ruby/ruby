@@ -1488,7 +1488,7 @@ flo_is_finite_p(VALUE num)
 {
     double value = RFLOAT_VALUE(num);
 
-#if HAVE_ISFINITE
+#ifdef HAVE_ISFINITE
     if (!isfinite(value))
 	return Qfalse;
 #else
