@@ -54,6 +54,11 @@ class TestCSV::Table < TestCSV
     assert_equal(@rows.first.headers, @table.headers)
   end
 
+  def test_headers_empty
+    t = CSV::Table.new([])
+    assert_equal Array.new, t.headers
+  end
+
   def test_index
     ##################
     ### Mixed Mode ###
