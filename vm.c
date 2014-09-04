@@ -1967,16 +1967,6 @@ rb_thread_recycle_stack_release(VALUE *stack)
     ruby_xfree(stack);
 }
 
-#ifdef USE_THREAD_RECYCLE
-static rb_thread_t *
-thread_recycle_struct(void)
-{
-    void *p = ALLOC_N(rb_thread_t, 1);
-    memset(p, 0, sizeof(rb_thread_t));
-    return p;
-}
-#endif
-
 void
 rb_thread_mark(void *ptr)
 {
@@ -2134,13 +2124,9 @@ static VALUE
 thread_alloc(VALUE klass)
 {
     VALUE volatile obj;
-#ifdef USE_THREAD_RECYCLE
-    rb_thread_t *th = thread_recycle_struct();
-    obj = TypedData_Wrap_Struct(klass, &thread_data_type, th);
-#else
     rb_thread_t *th;
     obj = TypedData_Make_Struct(klass, rb_thread_t, &thread_data_type, th);
-#endif
+
     return obj;
 }
 

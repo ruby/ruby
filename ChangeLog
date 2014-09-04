@@ -1,3 +1,7 @@
+Fri Sep  5 06:04:22 2014  Eric Wong  <e@80x24.org>
+
+	* vm.c: remove unused USE_THREAD_RECYCLE [misc #10198]
+
 Fri Sep  5 00:29:08 2014  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in (dirfd): Check function.
