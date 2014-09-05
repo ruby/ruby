@@ -3367,7 +3367,7 @@ has_privilege(void)
         if (ret == -1)
             rb_sys_fail("getresgid(2)");
         if (egid != sgid)
-            return 0;
+            return 1;
     }
 #else
     {

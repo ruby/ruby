@@ -1,3 +1,7 @@
+Fri Sep  5 20:35:52 2014  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (has_privilege): Fix a return value.
+
 Fri Sep  5 19:00:40 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/shellwords.rb: proofreading documentation.
