@@ -1,3 +1,8 @@
+Fri Sep  5 14:00:33 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (open): use UTF-8 version function to support
+	  non-ascii path properly.  [ruby-core:63185] [Bug #9946]
+
 Fri Sep  5 13:53:41 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): fix invalid char in eval, should raise

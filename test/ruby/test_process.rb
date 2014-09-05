@@ -602,6 +602,16 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_execopts_redirect_nonascii_path
+    bug9946 = '[ruby-core:63185] [Bug #9946]'
+    with_tmpchdir {|d|
+      path = "t-\u{30c6 30b9 30c8 f6}.txt"
+      system(*ECHO["a"], out: path)
+      assert_file.for(bug9946).exist?(path)
+      assert_equal("a\n", File.read(path), bug9946)
+    }
+  end
+
   def test_execopts_redirect_dup2_child
     with_tmpchdir {|d|
       Process.wait spawn(RUBY, "-e", "STDERR.print 'err'; STDOUT.print 'out'",
