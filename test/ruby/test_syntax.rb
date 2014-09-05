@@ -352,6 +352,12 @@ eom
     assert_constant_reassignment_toplevel("11",    "+",  %w[53], already)
   end
 
+  def test_error_message_encoding
+    bug10114 = '[ruby-core:64228] [Bug #10114]'
+    code = "# -*- coding: utf-8 -*-\n" "def n \"\u{2208}\"; end"
+    assert_syntax_error(code, /def n "\u{2208}"; end/, bug10114)
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end

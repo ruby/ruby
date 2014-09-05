@@ -1,3 +1,8 @@
+Fri Sep  5 13:51:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yyerror): preserve source code encoding in
+	  syntax error messages.  [ruby-core:64228] [Bug #10114]
+
 Fri Sep  5 13:44:53 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_count): fix wrong single-byte optimization.
