@@ -1,3 +1,9 @@
+Fri Sep  5 11:10:13 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/rdoc/generator/pot/po.rb: fixed broken tests for trailing whitespace.
+	* test/rdoc/test_rdoc_generator_pot.rb: ditto.
+	* test/rdoc/test_rdoc_generator_pot_po.rb: ditto.
+
 Fri Sep  5 10:41:07 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/rdoc/test_rdoc_rdoc.rb (TestRDocRDoc#test_parse_file_encoding):
