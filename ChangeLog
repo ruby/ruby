@@ -1,3 +1,9 @@
+Fri Sep  5 13:53:41 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): fix invalid char in eval, should raise
+	  an syntax error too, as well as directly coded.
+	  [ruby-core:64243] [Bug #10117]
+
 Fri Sep  5 13:51:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yyerror): preserve source code encoding in
