@@ -29,6 +29,12 @@
 # define SET_SIN_LEN(sa, len) SET_SA_LEN((struct sockaddr *)(sa), (len))
 #endif
 
+#ifdef HAVE_STRUCT_SOCKADDR_IN6_SIN6_LEN
+# define SET_SIN6_LEN(sa, len) (void)((sa)->sin6_len = (len))
+#else
+# define SET_SIN6_LEN(sa, len) SET_SA_LEN((struct sockaddr *)(sa), (len))
+#endif
+
 #define INIT_SOCKADDR(addr, family, len) \
   do { \
     struct sockaddr *init_sockaddr_ptr = (addr); \
@@ -45,6 +51,15 @@
     memset(init_sockaddr_ptr, 0, init_sockaddr_len); \
     init_sockaddr_ptr->sin_family = AF_INET; \
     SET_SIN_LEN(init_sockaddr_ptr, init_sockaddr_len); \
+  } while (0)
+
+#define INIT_SOCKADDR_IN6(addr, len) \
+  do { \
+    struct sockaddr_in6 *init_sockaddr_ptr = (addr); \
+    socklen_t init_sockaddr_len = (len); \
+    memset(init_sockaddr_ptr, 0, init_sockaddr_len); \
+    init_sockaddr_ptr->sin6_family = AF_INET6; \
+    SET_SIN6_LEN(init_sockaddr_ptr, init_sockaddr_len); \
   } while (0)
 
 

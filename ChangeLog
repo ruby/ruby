@@ -1,3 +1,42 @@
+Sat Sep  6 00:05:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/win32.h, win32/win32.c (rb_w32_inet_pton): add a
+	  wrapper function for inet_pton minimum supported client is
+	  Vista, as well as inet_ntop.
+
+Sat Sep  6 00:05:02 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* ext/socket/raddrinfo.c (rb_getaddrinfo): second argument of
+	  MEMZERO is type.  Coverity Scan found this bug.
+
+Sat Sep  6 00:05:02 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/raddrinfo.c (numeric_getaddrinfo): Use xcalloc.
+	  Suggested by Eric Wong.
+	  https://bugs.ruby-lang.org/issues/9525#note-14
+
+Sat Sep  6 00:05:02 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket: Bypass getaddrinfo() if node and serv are numeric.
+	  Reporeted by Naotoshi Seo.  [ruby-core:60801] [Bug #9525]
+
+	* ext/socket/extconf.rb: Detect struct sockaddr_in6.sin6_len.
+
+	* ext/socket/sockport.h (SET_SIN6_LEN): New macro.
+	  (INIT_SOCKADDR_IN6): Ditto.
+
+	* ext/socket/rubysocket.h (struct rb_addrinfo): Add
+	  allocated_by_malloc field.
+
+	* ext/socket/raddrinfo.c (numeric_getaddrinfo): New function.
+	  (rb_getaddrinfo): Call numeric_getaddrinfo at first.
+	  (rb_freeaddrinfo): Free struct addrinfo properly when it is
+	  allocated by numeric_getaddrinfo.
+
+Sat Sep  6 00:05:02 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket: Wrap struct addrinfo by struct rb_addrinfo.
+
 Thu Sep  4 00:31:23 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/thread/thread.c (get_array): check instance variables are
