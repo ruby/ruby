@@ -1,3 +1,8 @@
+Sat Sep  6 08:10:44 2014  Eric Wong  <e@80x24.org>
+
+	* test/ruby/test_io.rb (test_readpartial_locktmp): use IO#nonblock=
+	  Old fcntl invocation may drop necessary flags on some platforms.
+
 Sat Sep  6 07:46:51 2014  Eric Wong  <e@80x24.org>
 
 	* test/ruby/test_io.rb (test_readpartial_locktmp): avoid EBADF

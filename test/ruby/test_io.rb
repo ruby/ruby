@@ -2867,7 +2867,7 @@ End
     th = nil
     with_pipe do |r,w|
       begin
-        r.fcntl(Fcntl::F_SETFL, Fcntl::O_NONBLOCK)
+        r.nonblock = true
         th = Thread.new {r.readpartial(100, buf)}
 
         Thread.pass until th.stop?
