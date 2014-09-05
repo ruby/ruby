@@ -1,3 +1,8 @@
+Sat Sep  6 07:46:51 2014  Eric Wong  <e@80x24.org>
+
+	* test/ruby/test_io.rb (test_readpartial_locktmp): avoid EBADF
+	  [ruby-core:64773] [ruby-core:64775]
+
 Sat Sep  6 01:34:31 2014  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_f_exec): Call before_exec_async_signal_safe and

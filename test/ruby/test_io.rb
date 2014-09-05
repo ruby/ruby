@@ -2866,24 +2866,29 @@ End
     data = "a" * 100
     th = nil
     with_pipe do |r,w|
-      r.fcntl(Fcntl::F_SETFL, Fcntl::O_NONBLOCK)
-      th = Thread.new {r.readpartial(100, buf)}
-      Thread.pass until th.stop?
-      buf.replace("")
-      assert_empty(buf, bug6099)
-      assert_predicate(th, :alive?)
-      w.write(data)
-      Thread.pass while th.alive?
-    end
-    assert_equal(data, buf, bug6099)
-  rescue RuntimeError # can't modify string; temporarily locked
-  ensure
-    if th
       begin
+        r.fcntl(Fcntl::F_SETFL, Fcntl::O_NONBLOCK)
+        th = Thread.new {r.readpartial(100, buf)}
+
+        Thread.pass until th.stop?
+
+        assert_equal 100, buf.bytesize
+
+        begin
+          buf.replace("")
+        rescue RuntimeError => e
+          assert_match(/can't modify string; temporarily locked/, e.message)
+          Thread.pass
+        end until buf.empty?
+
+        assert_empty(buf, bug6099)
+        assert_predicate(th, :alive?)
+        w.write(data)
+        Thread.pass while th.alive?
         th.join
-      rescue IOError
       end
     end
+    assert_equal(data, buf, bug6099)
   end
 
   def test_advise_pipe
