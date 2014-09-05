@@ -77,8 +77,8 @@ Nonexistent paragraph.
     raw = <<-RAW
 Paragraph 1.
 
-  
-	
+
+
 
 Paragraph 2.
     RAW
@@ -86,8 +86,8 @@ Paragraph 2.
     expected = <<-TRANSLATED
 Paragraphe 1.
 
-  
-	
+
+
 
 Paragraphe 2.
     TRANSLATED

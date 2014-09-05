@@ -51,11 +51,11 @@ FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 
     content = <<-CONTENT
 Project-Id-Version: PACKAGE VERSEION
-Report-Msgid-Bugs-To: 
+Report-Msgid-Bugs-To:
 PO-Revision-Date: YEAR-MO_DA HO:MI+ZONE
 Last-Translator: FULL NAME <EMAIL@ADDRESS>
 Language-Team: LANGUAGE <LL@li.org>
-Language: 
+Language:
 MIME-Version: 1.0
 Content-Type: text/plain; charset=CHARSET
 Content-Transfer-Encoding: 8bit
