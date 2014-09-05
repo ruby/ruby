@@ -569,8 +569,14 @@ ruby_signal(int signum, sighandler_t handler)
 
     sigemptyset(&sigact.sa_mask);
 #ifdef USE_SIGALTSTACK
-    sigact.sa_sigaction = (ruby_sigaction_t*)handler;
-    sigact.sa_flags = SA_SIGINFO;
+    if (handler == SIG_IGN || handler == SIG_DFL) {
+        sigact.sa_handler = handler;
+        sigact.sa_flags = 0;
+    }
+    else {
+        sigact.sa_sigaction = (ruby_sigaction_t*)handler;
+        sigact.sa_flags = SA_SIGINFO;
+    }
 #else
     sigact.sa_handler = handler;
     sigact.sa_flags = 0;
