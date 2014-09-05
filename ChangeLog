@@ -1,3 +1,11 @@
+Fri Sep  5 21:45:33 2014  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (disable_child_handler_before_fork): New function.
+	  (disable_child_handler_fork_parent): Ditto.
+	  (disable_child_handler_fork_child): Ditto.
+	  (retry_fork_async_signal_safe): Call above functions to disable
+	  signal handlers in child process.
+
 Fri Sep  5 21:02:54 2014  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (handle_fork_error): Make try_gc_p argument volatile to
