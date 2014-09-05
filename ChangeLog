@@ -1,3 +1,8 @@
+Sat Sep  6 00:47:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rb_cv_broken_backtrace): exit with failure
+	  normally, no needs to abort.  [ruby-core:63678] [Bug #10008]
+
 Sat Sep  6 00:05:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/win32.h, win32/win32.c (rb_w32_inet_pton): add a
