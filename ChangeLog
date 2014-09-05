@@ -1,3 +1,8 @@
+Fri Sep  5 19:00:40 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/shellwords.rb: proofreading documentation.
+	  [Bug #10155][ruby-core:64471]
+
 Fri Sep  5 18:34:33 2014  Laurent Arnoud  <laurent@spkdev.net>
 
 	* test/csv/test_row.rb: Added some missing tests in CSV.

@@ -9,7 +9,7 @@
 #
 # === Usage
 #
-# You can use shellwords to parse a string into a Bourne shell friendly Array.
+# You can use Shellwords to parse a string into a Bourne shell friendly Array.
 #
 #   require 'shellwords'
 #
@@ -27,7 +27,7 @@
 #   argv = "they all ran after the farmer's wife".shellsplit
 #        #=> ArgumentError: Unmatched double quote: ...
 #
-# In this case, you might want to use Shellwords.escape, or it's alias
+# In this case, you might want to use Shellwords.escape, or its alias
 # String#shellescape.
 #
 # This method will escape the String for you to safely use with a Bourne shell.
@@ -42,7 +42,7 @@
 #   system(argv.shelljoin)
 #
 # You can use this method to create an escaped string out of an array of tokens
-# separated by a space. In this example we'll use the literal shortcut for
+# separated by a space. In this example we used the literal shortcut for
 # Array.new.
 #
 # === Authors
@@ -117,7 +117,7 @@ module Shellwords
   # It is the caller's responsibility to encode the string in the right
   # encoding for the shell environment where this string is used.
   #
-  # Multibyte characters are treated as multibyte characters, not bytes.
+  # Multibyte characters are treated as multibyte characters, not as bytes.
   #
   # Returns an empty quoted String if +str+ has a length of zero.
   def shellescape(str)
@@ -128,13 +128,13 @@ module Shellwords
 
     str = str.dup
 
-    # Treat multibyte characters as is.  It is caller's responsibility
+    # Treat multibyte characters as is.  It is the caller's responsibility
     # to encode the string in the right encoding for the shell
     # environment.
     str.gsub!(/([^A-Za-z0-9_\-.,:\/@\n])/, "\\\\\\1")
 
     # A LF cannot be escaped with a backslash because a backslash + LF
-    # combo is regarded as line continuation and simply ignored.
+    # combo is regarded as a line continuation and simply ignored.
     str.gsub!(/\n/, "'\n'")
 
     return str
@@ -149,8 +149,8 @@ module Shellwords
   # Builds a command line string from an argument list, +array+.
   #
   # All elements are joined into a single string with fields separated by a
-  # space, where each element is escaped for Bourne shell and stringified using
-  # +to_s+.
+  # space, where each element is escaped for the Bourne shell and stringified
+  # using +to_s+.
   #
   #   ary = ["There's", "a", "time", "and", "place", "for", "everything"]
   #   argv = Shellwords.join(ary)
@@ -206,7 +206,7 @@ class Array
   #   array.shelljoin => string
   #
   # Builds a command line string from an argument list +array+ joining
-  # all elements escaped for Bourne shell and separated by a space.
+  # all elements escaped for the Bourne shell and separated by a space.
   #
   # See Shellwords.shelljoin for details.
   def shelljoin
