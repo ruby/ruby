@@ -978,6 +978,8 @@ scan_env_add_mem_entry(ScanEnv* env)
   Node** p;
 
   need = env->num_mem + 1;
+  if (need > ONIG_MAX_CAPTURE_GROUP_NUM)
+    return ONIGERR_TOO_MANY_CAPTURE_GROUPS;
   if (need >= SCANENV_MEMNODES_SIZE) {
     if (env->mem_alloc <= need) {
       if (IS_NULL(env->mem_nodes_dynamic)) {
@@ -4960,14 +4962,9 @@ parse_enclose(Node** np, OnigToken* tok, int term, UChar** src, UChar* end,
 	*np = node_new_enclose_memory(env->option, 0);
 	CHECK_NULL_RETURN_MEMERR(*np);
 	num = scan_env_add_mem_entry(env);
-	if (num < 0) {
-	  onig_node_free(*np);
-	  return num;
-	}
-	else if (num >= (int )BIT_STATUS_BITS_NUM) {
-	  onig_node_free(*np);
+	if (num < 0) return num;
+	if (num >= (int )BIT_STATUS_BITS_NUM)
 	  return ONIGERR_GROUP_NUMBER_OVER_FOR_CAPTURE_HISTORY;
-	}
 	NENCLOSE(*np)->regnum = num;
 	BIT_STATUS_ON_AT_SIMPLE(env->capture_history, num);
       }

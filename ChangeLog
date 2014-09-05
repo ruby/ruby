@@ -1,3 +1,20 @@
+Fri Sep  5 13:36:12 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	merge r46831 partially.  these changes are from:
+	https://github.com/k-takata/Onigmo/commit/7abd7b29481f98eb92be786e3d33611fc7d000a0
+	[Bug #8716]
+
+	* include/ruby/oniguruma.h (ONIG_MAX_CAPTURE_GROUP_NUM,
+	  ONIGERR_TOO_MANY_CAPTURE_GROUPS): add cheking the number of capture
+	  groups.
+
+	* regerror.c (onig_error_code_to_format): ditto.
+
+	* regparse.c (scan_env_add_mem_entry): ditto.
+
+	* regexec.c (onig_region_copy, match_at): fix: segmation fault occurs
+	  when many groups are used.
+
 Fri Sep  5 13:06:53 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_resize): update capa only when buffer get

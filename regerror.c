@@ -133,6 +133,8 @@ onig_error_code_to_format(OnigPosition code)
     p = "too short multibyte code string"; break;
   case ONIGERR_TOO_BIG_BACKREF_NUMBER:
     p = "too big backref number"; break;
+  case ONIGERR_TOO_MANY_CAPTURE_GROUPS:
+    p = "too many capture groups are specified"; break;
   case ONIGERR_INVALID_BACKREF:
 #ifdef USE_NAMED_GROUP
     p = "invalid backref number/name"; break;
