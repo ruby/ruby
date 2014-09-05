@@ -44,7 +44,7 @@ Fri Sep  5 12:40:55 2014  Tanaka Akira  <akr@fsij.org>
 
 Fri Sep  5 12:28:21 2014  Tanaka Akira  <akr@fsij.org>
 
-	* process.c (has_privilege): Fix assignements.
+	* process.c (has_privilege): Fix assignments.
 
 Fri Sep  5 11:10:13 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
@@ -83,7 +83,7 @@ Thu Sep  4 23:39:52 2014  Tanaka Akira  <akr@fsij.org>
 
 Thu Sep  4 20:22:14 2014  Laurent Arnoud  <laurent@spkdev.net>
 
-	* test/pathname/test_pathname.rb: added testcase for Pathname#mountpoint.
+	* test/pathname/test_pathname.rb: added testcase for Pathname#mountpoint?.
 	  [fix GH-709]
 
 Thu Sep  4 20:09:21 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
