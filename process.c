@@ -3159,8 +3159,10 @@ pipe_nocrash(int filedes[2], VALUE fds)
 #endif
 
 static int
-handle_fork_error(int *status, int *ep, int *state_p, int *try_gc_p)
+handle_fork_error(int *status, int *ep, int *try_gc_p)
 {
+    int state = 0;
+
     switch (errno) {
       case ENOMEM:
         if ((*try_gc_p)-- > 0 && !rb_during_gc()) {
@@ -3177,16 +3179,16 @@ handle_fork_error(int *status, int *ep, int *state_p, int *try_gc_p)
             return 0;
         }
         else {
-            rb_protect((VALUE (*)())rb_thread_sleep, 1, state_p);
-            if (status) *status = *state_p;
-            if (!*state_p) return 0;
+            rb_protect((VALUE (*)())rb_thread_sleep, 1, &state);
+            if (status) *status = state;
+            if (!state) return 0;
         }
         break;
     }
     if (ep) {
         preserving_errno((close(ep[0]), close(ep[1])));
     }
-    if (*state_p && !status) rb_jump_tag(*state_p);
+    if (state && !status) rb_jump_tag(state);
     return -1;
 }
 
@@ -3388,7 +3390,6 @@ retry_fork_async_signal_safe(int *status, int *ep,
         char *errmsg, size_t errmsg_buflen)
 {
     rb_pid_t pid;
-    int state = 0;
     int try_gc = 1;
 
     while (1) {
@@ -3416,7 +3417,7 @@ retry_fork_async_signal_safe(int *status, int *ep,
         if (0 < pid) /* fork succeed, parent process */
             return pid;
         /* fork failed */
-        if (handle_fork_error(status, ep, &state, &try_gc))
+        if (handle_fork_error(status, ep, &try_gc))
             return -1;
     }
 }
@@ -3458,7 +3459,6 @@ static rb_pid_t
 retry_fork_ruby(int *status)
 {
     rb_pid_t pid;
-    int state = 0;
     int try_gc = 1;
 
     while (1) {
@@ -3471,7 +3471,7 @@ retry_fork_ruby(int *status)
         if (0 < pid) /* fork succeed, parent process */
             return pid;
         /* fork failed */
-        if (handle_fork_error(status, NULL, &state, &try_gc))
+        if (handle_fork_error(status, NULL, &try_gc))
             return -1;
     }
 }

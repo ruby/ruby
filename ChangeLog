@@ -1,3 +1,7 @@
+Fri Sep  5 20:48:06 2014  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (handle_fork_error): Don't need state_p argument.
+
 Fri Sep  5 20:35:52 2014  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (has_privilege): Fix a return value.
