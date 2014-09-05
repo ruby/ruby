@@ -84,6 +84,9 @@
 #ifdef HAVE_GRP_H
 #include <grp.h>
 #endif
+#ifdef HAVE_SYS_ID_H
+#include <sys/id.h>
+#endif
 
 #ifdef __APPLE__
 # include <mach/mach_time.h>
@@ -3276,6 +3279,42 @@ recv_child_error(int fd, int *errp, char *errmsg, size_t errmsg_buflen)
     close(fd);
     return size != 0;
 }
+
+#if !defined(HAVE_GETRESUID) && defined(HAVE_GETUIDX)
+/* AIX 7.1 */
+static int
+getresuid(rb_uid_t *ruid, rb_uid_t *euid, rb_uid_t *suid)
+{
+    rb_uid_t ret;
+
+    *ruid = getuid();
+    *euid = geteuid();
+    ret = getuidx(ID_SAVED);
+    if (ret == (rb_uid_t)-1)
+	return -1;
+    *suid = ret;
+    return 0;
+}
+#define HAVE_GETRESUID
+#endif
+
+#if !defined(HAVE_GETRESGID) && defined(HAVE_GETGIDX)
+/* AIX 7.1 */
+static int
+getresgid(rb_gid_t *rgid, rb_gid_t *egid, rb_gid_t *sgid)
+{
+    rb_gid_t ret;
+
+    *rgid = getgid();
+    *egid = getegid();
+    ret = getgidx(ID_SAVED);
+    if (ret == (rb_gid_t)-1)
+	return -1;
+    *sgid = ret;
+    return 0;
+}
+#define HAVE_GETRESGID
+#endif
 
 static int
 has_privilege(void)

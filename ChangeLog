@@ -1,3 +1,11 @@
+Fri Sep  5 12:40:55 2014  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: Check sys/id.h, getuidx and getgidx for AIX.
+
+	* process.c (getresuid): Defined for AIX.
+	  (getresgid): Ditto
+	  AIX don't have getresuid/getresgid but getuidx/getgidx.
+
 Fri Sep  5 12:28:21 2014  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (has_privilege): Fix assignements.
