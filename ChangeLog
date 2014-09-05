@@ -1,3 +1,8 @@
+Fri Sep  5 10:41:07 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/rdoc/test_rdoc_rdoc.rb (TestRDocRDoc#test_parse_file_encoding):
+	  typofix.
+
 Fri Sep  5 10:39:14 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/rdoc.rb, lib/rdoc, test/rdoc: Update to RDoc 4.2.0.alpha(313287)

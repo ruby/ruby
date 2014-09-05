@@ -261,7 +261,7 @@ class TestRDocRDoc < RDoc::TestCase
       assert_equal Encoding::ISO_8859_1, top_level.absolute_name.encoding
       io
     end
-    tf.close! if tf.respond_to? :close?
+    tf.close! if tf.respond_to? :close!
   end
 
   def test_parse_file_forbidden
