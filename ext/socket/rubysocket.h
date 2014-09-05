@@ -280,6 +280,7 @@ int rsock_getfamily(int sockfd);
 
 struct rb_addrinfo {
   struct addrinfo *ai;
+  int allocated_by_malloc;
 };
 int rb_getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct rb_addrinfo **res);
 void rb_freeaddrinfo(struct rb_addrinfo *ai);

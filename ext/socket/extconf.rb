@@ -332,6 +332,7 @@ end
 
 have_struct_member("struct sockaddr", "sa_len", headers) # 4.4BSD
 have_struct_member("struct sockaddr_in", "sin_len", headers) # 4.4BSD
+have_struct_member("struct sockaddr_in6", "sin6_len", headers) # 4.4BSD
 
 if have_type("struct sockaddr_un", headers) # POSIX
   have_struct_member("struct sockaddr_un", "sun_len", headers) # 4.4BSD
