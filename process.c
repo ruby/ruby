@@ -3312,8 +3312,8 @@ has_privilege(void)
     }
 #else
     {
-        rb_uid_t ruid = getuid();
-        rb_uid_t euid = geteuid();
+        ruid = getuid();
+        euid = geteuid();
     }
 #endif
 
@@ -3332,8 +3332,8 @@ has_privilege(void)
     }
 #else
     {
-        rb_gid_t rgid = getgid();
-        rb_gid_t egid = getegid();
+        rgid = getgid();
+        egid = getegid();
     }
 #endif
 

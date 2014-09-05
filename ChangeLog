@@ -1,3 +1,7 @@
+Fri Sep  5 12:28:21 2014  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (has_privilege): Fix assignements.
+
 Fri Sep  5 11:10:13 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/rdoc/generator/pot/po.rb: fixed broken tests for trailing whitespace.
