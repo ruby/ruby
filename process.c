@@ -3083,7 +3083,7 @@ static int
 rb_exec_without_timer_thread(const struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
 {
     int ret;
-    before_exec()
+    before_exec();
     ret = rb_exec_async_signal_safe(eargp, errmsg, errmsg_buflen); /* hopefully async-signal-safe */
     preserving_errno(after_exec()); /* not async-signal-safe because it calls rb_thread_start_timer_thread.  */
     return ret;
