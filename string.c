@@ -838,7 +838,7 @@ RUBY_FUNC_EXPORTED size_t
 rb_str_memsize(VALUE str)
 {
     if (!STR_EMBED_P(str) && !STR_SHARED_P(str)) {
-	return RSTRING(str)->as.heap.aux.capa;
+	return RSTRING(str)->as.heap.aux.capa + 1; /* termlen */
     }
     else {
 	return 0;
@@ -1863,9 +1863,11 @@ rb_str_resize(VALUE str, long len)
     independent = str_independent(str);
     ENC_CODERANGE_CLEAR(str);
     slen = RSTRING_LEN(str);
-    if (len != slen) {
+    {
+	long capa;
 	if (STR_EMBED_P(str)) {
-	    if (len <= RSTRING_EMBED_LEN_MAX) {
+	    if (len == slen) return str;
+	    if (len + 1 <= RSTRING_EMBED_LEN_MAX + 1) {
 		STR_SET_EMBED_LEN(str, len);
 		RSTRING(str)->as.ary[len] = '\0';
 		return str;
@@ -1884,14 +1886,15 @@ rb_str_resize(VALUE str, long len)
 	    return str;
 	}
 	else if (!independent) {
+	    if (len == slen) return str;
 	    str_make_independent_expand(str, len - slen);
 	}
-	else if (slen < len || slen - len > 1024) {
+	else if ((capa = RSTRING(str)->as.heap.aux.capa) < len ||
+		 (capa - len) > (len < 1024 ? len : 1024)) {
 	    REALLOC_N(RSTRING(str)->as.heap.ptr, char, len+1);
-	}
-	if (!STR_NOCAPA_P(str)) {
 	    RSTRING(str)->as.heap.aux.capa = len;
 	}
+	else if (len == slen) return str;
 	RSTRING(str)->as.heap.len = len;
 	RSTRING(str)->as.heap.ptr[len] = '\0';	/* sentinel */
     }
