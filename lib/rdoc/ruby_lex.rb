@@ -434,7 +434,7 @@ class RDoc::RubyLex
       |op, io|
       @ltype = "="
       res = ''
-      nil until (ch = getc) == "\n"
+      nil until getc == "\n"
 
       until ( peek_equal?("=end") && peek(4) =~ /\s/ ) do
         (ch = getc)

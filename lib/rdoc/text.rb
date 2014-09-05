@@ -103,6 +103,15 @@ module RDoc::Text
   # Requires the including class to implement #formatter
 
   def markup text
+    if @store.rdoc.options
+      locale = @store.rdoc.options.locale
+    else
+      locale = nil
+    end
+    if locale
+      i18n_text = RDoc::I18n::Text.new(text)
+      text = i18n_text.translate(locale)
+    end
     parse(text).accept formatter
   end
 

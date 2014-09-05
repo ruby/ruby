@@ -64,7 +64,7 @@ module RDoc
   ##
   # RDoc version you are using
 
-  VERSION = '4.1.0'
+  VERSION = '4.2.0.alpha'
 
   ##
   # Method visibilities
@@ -150,6 +150,8 @@ module RDoc
   autoload :TokenStream,    'rdoc/token_stream'
 
   autoload :Comment,        'rdoc/comment'
+
+  autoload :I18n,           'rdoc/i18n'
 
   # code objects
   #

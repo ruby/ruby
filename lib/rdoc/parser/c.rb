@@ -594,9 +594,10 @@ class RDoc::Parser::C < RDoc::Parser
                                             \s*#{attr_name}\s*,
                                             #{rw},.*?\)\s*;%xm then
                 $1
-              elsif @content =~ %r%Document-attr:\s#{attr_name}\s*?\n
-                                   ((?>.*?\*/))%xm then
-                $1
+              elsif @content =~ %r%(/\*.*?(?:\s*\*\s*)?)
+                                   Document-attr:\s#{attr_name}\s*?\n
+                                   ((?>(.|\n)*?\*/))%x then
+                "#{$1}\n#{$2}"
               else
                 ''
               end
@@ -610,7 +611,7 @@ class RDoc::Parser::C < RDoc::Parser
   def find_body class_name, meth_name, meth_obj, file_content, quiet = false
     case file_content
     when %r%((?>/\*.*?\*/\s*)?)
-            ((?:(?:static|SWIGINTERN)\s+)?
+            ((?:(?:\w+)\s+)?
              (?:intern\s+)?VALUE\s+#{meth_name}
              \s*(\([^)]*\))([^;]|$))%xm then
       comment = RDoc::Comment.new $1, @top_level
@@ -1185,7 +1186,6 @@ class RDoc::Parser::C < RDoc::Parser
 
     if hash then
       args << "p#{position} = {}"
-      position += 1
     end
 
     args << '&block' if block

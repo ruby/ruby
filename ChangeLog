@@ -1,3 +1,7 @@
+Fri Sep  5 10:39:14 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/rdoc.rb, lib/rdoc, test/rdoc: Update to RDoc 4.2.0.alpha(313287)
+
 Fri Sep  5 06:04:22 2014  Eric Wong  <e@80x24.org>
 
 	* vm.c: remove unused USE_THREAD_RECYCLE [misc #10198]
