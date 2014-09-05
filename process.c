@@ -3159,7 +3159,7 @@ pipe_nocrash(int filedes[2], VALUE fds)
 #endif
 
 static int
-handle_fork_error(int *status, int *ep, int *try_gc_p)
+handle_fork_error(int *status, int *ep, volatile int *try_gc_p)
 {
     int state = 0;
 
@@ -3390,7 +3390,7 @@ retry_fork_async_signal_safe(int *status, int *ep,
         char *errmsg, size_t errmsg_buflen)
 {
     rb_pid_t pid;
-    int try_gc = 1;
+    volatile int try_gc = 1;
 
     while (1) {
         prefork();
