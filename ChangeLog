@@ -1,3 +1,10 @@
+Sat Sep  6 00:57:07 2014  Eric Wong  <e@80x24.org>
+
+	* ext/zlib/zlib.c (gzfile_reset): preserve ZSTREAM_FLAG_GZFILE
+	  [Bug #10101]
+
+	* test/zlib/test_zlib.rb (test_rewind): test each_byte
+
 Sat Sep  6 00:47:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (rb_cv_broken_backtrace): exit with failure
