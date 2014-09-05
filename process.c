@@ -3352,10 +3352,8 @@ has_privilege(void)
             return 1;
     }
 #else
-    {
-        ruid = getuid();
-        euid = geteuid();
-    }
+    ruid = getuid();
+    euid = geteuid();
 #endif
 
     if (euid == 0 || euid != ruid)
@@ -3372,10 +3370,8 @@ has_privilege(void)
             return 1;
     }
 #else
-    {
-        rgid = getgid();
-        egid = getegid();
-    }
+    rgid = getgid();
+    egid = getegid();
 #endif
 
     if (egid == 0 || egid != rgid)
