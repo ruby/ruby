@@ -2450,7 +2450,9 @@ rb_f_exec(int argc, const VALUE *argv)
 #if defined(__APPLE__) || defined(__HAIKU__)
     rb_exec_without_timer_thread(eargp, errmsg, sizeof(errmsg));
 #else
+    before_exec_async_signal_safe(); /* async-signal-safe */
     rb_exec_async_signal_safe(eargp, errmsg, sizeof(errmsg));
+    preserving_errno(after_exec_async_signal_safe()); /* async-signal-safe */
 #endif
     RB_GC_GUARD(execarg_obj);
     if (errmsg[0])
@@ -3055,8 +3057,6 @@ rb_exec_async_signal_safe(const struct rb_execarg *eargp, char *errmsg, size_t e
     struct rb_execarg *const sargp = NULL;
 #endif
 
-    before_exec_async_signal_safe(); /* async-signal-safe */
-
     if (rb_execarg_run_options(eargp, sargp, errmsg, errmsg_buflen) < 0) { /* hopefully async-signal-safe */
         goto failure;
     }
@@ -3075,7 +3075,6 @@ rb_exec_async_signal_safe(const struct rb_execarg *eargp, char *errmsg, size_t e
 #endif
 
 failure:
-    preserving_errno(after_exec_async_signal_safe()); /* async-signal-safe */
     return -1;
 }
 
@@ -3084,9 +3083,9 @@ static int
 rb_exec_without_timer_thread(const struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
 {
     int ret;
-    before_exec_non_async_signal_safe(); /* not async-signal-safe because it calls rb_thread_stop_timer_thread.  */
+    before_exec()
     ret = rb_exec_async_signal_safe(eargp, errmsg, errmsg_buflen); /* hopefully async-signal-safe */
-    preserving_errno(after_exec_non_async_signal_safe()); /* not async-signal-safe because it calls rb_thread_start_timer_thread.  */
+    preserving_errno(after_exec()); /* not async-signal-safe because it calls rb_thread_start_timer_thread.  */
     return ret;
 }
 #endif
@@ -3426,15 +3425,24 @@ disable_child_handler_fork_child(sigset_t *oldset, char *errmsg, size_t errmsg_b
     }
 
     for (sig = 1; sig < NSIG; sig++) {
-        ret = sigaction(sig, NULL, &oact); /* async-signal-safe */
-        if (ret == -1 && errno == EINVAL) {
-            continue; /* Ignore invalid signal number. */
+        int reset = 0;
+#ifdef SIGPIPE
+        if (sig == SIGPIPE)
+            reset = 1;
+#endif
+        if (!reset) {
+            ret = sigaction(sig, NULL, &oact); /* async-signal-safe */
+            if (ret == -1 && errno == EINVAL) {
+                continue; /* Ignore invalid signal number. */
+            }
+            if (ret == -1) {
+                ERRMSG("sigaction to obtain old action");
+                return -1;
+            }
+            reset = (oact.sa_flags & SA_SIGINFO) ||
+                    (oact.sa_handler != SIG_IGN && oact.sa_handler != SIG_DFL);
         }
-        if (ret == -1) {
-            ERRMSG("sigaction to obtain old action");
-            return -1;
-        }
-        if ((oact.sa_flags & SA_SIGINFO) || (oact.sa_handler != SIG_IGN && oact.sa_handler != SIG_DFL)) {
+        if (reset) {
             ret = sigaction(sig, &act, NULL); /* async-signal-safe */
             if (ret == -1) {
                 ERRMSG("sigaction to set default action");

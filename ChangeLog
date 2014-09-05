@@ -1,3 +1,13 @@
+Sat Sep  6 01:34:31 2014  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_f_exec): Call before_exec_async_signal_safe and
+	  after_exec_async_signal_safe around rb_exec_async_signal_safe.
+	  (rb_exec_async_signal_safe): Don't call
+	  before_exec_async_signal_safe and after_exec_async_signal_safe.
+	  (rb_exec_without_timer_thread): Call before_exec and
+	  after_exec.
+	  (disable_child_handler_fork_child): Make SIGPIPE handler SIG_DFL.
+
 Sat Sep  6 00:49:41 2014  Tanaka Akira  <akr@fsij.org>
 
 	* signal.c (ruby_signal): Don't set SA_SIGINFO for SIG_IGN and
