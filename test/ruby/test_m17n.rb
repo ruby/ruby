@@ -1026,6 +1026,11 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(Encoding::CompatibilityError){s.count(a("\xa3\xb0"))}
   end
 
+  def test_count_sjis_trailing_byte
+    bug10078 = '[ruby-dev:48442] [Bug #10078]'
+    assert_equal(0, s("\x98\x61").count("a"), bug10078)
+  end
+
   def test_delete
     assert_equal(1, e("\xa1\xa2").delete("z").length)
     s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
