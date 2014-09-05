@@ -1,3 +1,8 @@
+Fri Sep  5 18:34:33 2014  Laurent Arnoud  <laurent@spkdev.net>
+
+	* test/csv/test_row.rb: Added some missing tests in CSV.
+	* test/csv/test_table.rb: ditto.
+
 Fri Sep  5 12:57:52 2014  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (has_privilege): Refine uid/gid check.

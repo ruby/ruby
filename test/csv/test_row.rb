@@ -347,4 +347,9 @@ class TestCSV::Row < TestCSV
   def test_can_be_compared_with_other_classes
     assert_not_nil(CSV::Row.new([ ], [ ]), "The row was nil")
   end
+
+  def test_can_be_compared_when_not_a_row
+    r = @row == []
+    assert_equal false, r
+  end
 end
