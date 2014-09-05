@@ -3346,7 +3346,7 @@ has_privilege(void)
         ret = getresuid(&ruid, &euid, &suid);
         if (ret == -1)
             rb_sys_fail("getresuid(2)");
-        if (ruid != suid)
+        if (euid != suid)
             return 1;
     }
 #else
@@ -3356,7 +3356,7 @@ has_privilege(void)
     }
 #endif
 
-    if (ruid == 0 || ruid != euid)
+    if (euid == 0 || euid != ruid)
         return 1;
 
 #ifdef HAVE_GETRESGID
@@ -3366,7 +3366,7 @@ has_privilege(void)
         ret = getresgid(&rgid, &egid, &sgid);
         if (ret == -1)
             rb_sys_fail("getresgid(2)");
-        if (rgid != sgid)
+        if (egid != sgid)
             return 0;
     }
 #else
@@ -3376,7 +3376,7 @@ has_privilege(void)
     }
 #endif
 
-    if (rgid == 0 || rgid != egid)
+    if (egid == 0 || egid != rgid)
         return 1;
 
     return 0;

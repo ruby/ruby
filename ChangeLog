@@ -1,3 +1,7 @@
+Fri Sep  5 12:57:52 2014  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (has_privilege): Refine uid/gid check.
+
 Fri Sep  5 12:40:55 2014  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: Check sys/id.h, getuidx and getgidx for AIX.
