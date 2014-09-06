@@ -1,3 +1,9 @@
+Sat Sep  6 11:08:52 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (arg_ambiguous_gen): fix warning message, "even" does
+	  not mean the number of spaces here.  state the place to put a
+	  space and the operator.  [ruby-core:64790] [Bug #10204]
+
 Sat Sep  6 08:44:40 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/rdoc/generator/template/darkfish/js/jquery.js: Backport

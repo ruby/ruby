@@ -6588,15 +6588,15 @@ parser_here_document(struct parser_params *parser, NODE *here)
 #include "lex.c"
 
 static void
-arg_ambiguous_gen(struct parser_params *parser)
+arg_ambiguous_gen(struct parser_params *parser, char c)
 {
 #ifndef RIPPER
-    rb_warning0("ambiguous first argument; put parentheses or even spaces");
+    rb_warningS("ambiguous first argument; put parentheses or a space even after `%c' operator", c);
 #else
-    dispatch0(arg_ambiguous);
+    dispatch1(arg_ambiguous, rb_usascii_str_new(&c, 1));
 #endif
 }
-#define arg_ambiguous() (arg_ambiguous_gen(parser), 1)
+#define arg_ambiguous(c) (arg_ambiguous_gen(parser, (c)), 1)
 
 static ID
 formal_argument_gen(struct parser_params *parser, ID lhs)
@@ -8012,7 +8012,7 @@ parser_yylex(struct parser_params *parser)
 	    lex_state = EXPR_BEG;
 	    return tOP_ASGN;
 	}
-	if (IS_BEG() || (IS_SPCARG(c) && arg_ambiguous())) {
+	if (IS_BEG() || (IS_SPCARG(c) && arg_ambiguous('+'))) {
 	    lex_state = EXPR_BEG;
 	    pushback(c);
 	    if (c != -1 && ISDIGIT(c)) {
@@ -8044,7 +8044,7 @@ parser_yylex(struct parser_params *parser)
 	    lex_state = EXPR_ENDFN;
 	    return tLAMBDA;
 	}
-	if (IS_BEG() || (IS_SPCARG(c) && arg_ambiguous())) {
+	if (IS_BEG() || (IS_SPCARG(c) && arg_ambiguous('-'))) {
 	    lex_state = EXPR_BEG;
 	    pushback(c);
 	    if (c != -1 && ISDIGIT(c)) {
@@ -8134,7 +8134,7 @@ parser_yylex(struct parser_params *parser)
 	}
 	pushback(c);
 	if (IS_SPCARG(c)) {
-	    (void)arg_ambiguous();
+	    (void)arg_ambiguous('/');
 	    lex_strterm = NEW_STRTERM(str_regexp, '/', 0);
 	    return tREGEXP_BEG;
 	}
