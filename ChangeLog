@@ -1,3 +1,7 @@
+Sat Sep  6 18:31:32 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/rake.rb, lib/rake/*, test/rake/*: Update latest rake master(e47d023)
+
 Sat Sep  6 16:38:08 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole_variant.c (ole_val2variant_err,

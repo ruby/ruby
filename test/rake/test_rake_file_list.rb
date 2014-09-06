@@ -1,4 +1,5 @@
 require File.expand_path('../helper', __FILE__)
+require 'pathname'
 
 class TestRakeFileList < Rake::TestCase
   FileList = Rake::FileList
@@ -46,6 +47,12 @@ class TestRakeFileList < Rake::TestCase
       fl.sort
   end
 
+  def test_create_with_pathname
+    fl = FileList.new(Pathname.new("*.c"))
+    assert_equal ["abc.c", "x.c", "xyz.c"].sort,
+                 fl.sort
+  end
+
   def test_create_with_block
     fl = FileList.new { |f| f.include("x") }
     assert_equal ["x"], fl.resolve
@@ -74,10 +81,22 @@ class TestRakeFileList < Rake::TestCase
       fl.sort
   end
 
+  def test_include_with_pathname
+    fl = FileList.new.include(Pathname.new("*.c"))
+    assert_equal ["abc.c", "x.c", "xyz.c"].sort,
+      fl.sort
+  end
+
   def test_append
     fl = FileList.new
     fl << "a.rb" << "b.rb"
     assert_equal ['a.rb', 'b.rb'], fl
+  end
+
+  def test_append_pathname
+    fl = FileList.new
+    fl << Pathname.new("a.rb")
+    assert_equal ['a.rb'], fl
   end
 
   def test_add_many
@@ -161,6 +180,15 @@ class TestRakeFileList < Rake::TestCase
     fl.exclude('existing')
 
     assert_equal [], fl
+  end
+
+  def test_exclude_pathname
+    fl = FileList['x.c', 'abc.c', 'other']
+    fl.each { |fn| touch fn, :verbose => false }
+
+    fl.exclude(Pathname.new('*.c'))
+
+    assert_equal ['other'], fl
   end
 
   def test_excluding_via_block

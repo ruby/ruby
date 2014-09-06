@@ -1,5 +1,6 @@
 require File.expand_path('../helper', __FILE__)
 require 'fileutils'
+require 'pathname'
 
 class TestRakeDirectoryTask < Rake::TestCase
   include Rake
@@ -58,6 +59,18 @@ class TestRakeDirectoryTask < Rake::TestCase
     assert_equal Task["a/b/c"], t1
     assert_equal FileCreationTask, Task["a/b/c"].class
     assert_equal ["t2", "a/b/c"], runlist
+    assert File.directory?("a/b/c")
+  end
+
+  def test_can_use_pathname
+    directory Pathname.new "a/b/c"
+
+    assert_equal FileCreationTask, Task["a/b/c"].class
+
+    verbose(false) {
+      Task['a/b/c'].invoke
+    }
+
     assert File.directory?("a/b/c")
   end
 end

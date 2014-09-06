@@ -98,6 +98,7 @@ module Rake
     def directory(*args, &block) # :doc:
       result = file_create(*args, &block)
       dir, _ = *Rake.application.resolve_args(args)
+      dir = Rake.from_pathname(dir)
       Rake.each_dir_parent(dir) do |d|
         file_create d do |t|
           mkdir_p t.name unless File.exist?(t.name)

@@ -1,5 +1,6 @@
 require File.expand_path('../helper', __FILE__)
 require 'fileutils'
+require 'pathname'
 
 class TestRakeFileTask < Rake::TestCase
   include Rake
@@ -160,6 +161,20 @@ class TestRakeFileTask < Rake::TestCase
   def test_sources_is_all_prerequisites
     t = file :f => ["preqA", "preqB"]
     assert_equal ["preqA", "preqB"], t.sources
+  end
+
+  def test_task_can_be_pathname
+      name = "dummy"
+      file Pathname.new name
+
+      ftask = Task[name]
+
+      assert_equal name.to_s, ftask.name
+  end
+
+  def test_prerequisite_can_be_pathname
+    t = file :f => Pathname.new("preq")
+    assert_equal "preq", t.source
   end
 
   # I have currently disabled this test.  I'm not convinced that

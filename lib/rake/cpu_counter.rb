@@ -38,7 +38,8 @@ module Rake
           count_via_win32 ||
             count_via_sysctl ||
             count_via_hwprefs_thread_count ||
-            count_via_hwprefs_cpu_count
+            count_via_hwprefs_cpu_count ||
+            count_via_cpuinfo
         end
       end
     end

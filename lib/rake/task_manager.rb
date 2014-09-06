@@ -35,7 +35,7 @@ module Rake
 
       task_name = task_class.scope_name(@scope, task_name)
       deps = [deps] unless deps.respond_to?(:to_ary)
-      deps = deps.map { |d| d.to_s }
+      deps = deps.map { |d| Rake.from_pathname(d).to_s }
       task = intern(task_class, task_name)
       task.set_arg_names(arg_names) unless arg_names.empty?
       if Rake::TaskManager.record_task_metadata
