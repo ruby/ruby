@@ -3379,8 +3379,13 @@ has_privilege(void)
     return 0;
 }
 
+struct child_handler_disabler_state
+{
+    sigset_t sigmask;
+};
+
 static void
-disable_child_handler_before_fork(sigset_t *oldset)
+disable_child_handler_before_fork(struct child_handler_disabler_state *old)
 {
     int ret;
     sigset_t all;
@@ -3389,7 +3394,7 @@ disable_child_handler_before_fork(sigset_t *oldset)
     if (ret == -1)
         rb_sys_fail("sigfillset");
 
-    ret = pthread_sigmask(SIG_SETMASK, &all, oldset); /* not async-signal-safe */
+    ret = pthread_sigmask(SIG_SETMASK, &all, &old->sigmask); /* not async-signal-safe */
     if (ret != 0) {
         errno = ret;
         rb_sys_fail("pthread_sigmask");
@@ -3397,11 +3402,11 @@ disable_child_handler_before_fork(sigset_t *oldset)
 }
 
 static void
-disable_child_handler_fork_parent(sigset_t *oldset)
+disable_child_handler_fork_parent(struct child_handler_disabler_state *old)
 {
     int ret;
 
-    ret = pthread_sigmask(SIG_SETMASK, oldset, NULL); /* not async-signal-safe */
+    ret = pthread_sigmask(SIG_SETMASK, &old->sigmask, NULL); /* not async-signal-safe */
     if (ret != 0) {
         errno = ret;
         rb_sys_fail("pthread_sigmask");
@@ -3410,7 +3415,7 @@ disable_child_handler_fork_parent(sigset_t *oldset)
 
 /* This function should be async-signal-safe.  Actually it is. */
 static int
-disable_child_handler_fork_child(sigset_t *oldset, char *errmsg, size_t errmsg_buflen)
+disable_child_handler_fork_child(struct child_handler_disabler_state *old, char *errmsg, size_t errmsg_buflen)
 {
     int sig;
     int ret;
@@ -3451,7 +3456,7 @@ disable_child_handler_fork_child(sigset_t *oldset, char *errmsg, size_t errmsg_b
         }
     }
 
-    ret = sigprocmask(SIG_SETMASK, oldset, NULL); /* async-signal-safe */
+    ret = sigprocmask(SIG_SETMASK, &old->sigmask, NULL); /* async-signal-safe */
     if (ret != 0) {
         ERRMSG("sigprocmask");
         return -1;
@@ -3466,11 +3471,11 @@ retry_fork_async_signal_safe(int *status, int *ep,
 {
     rb_pid_t pid;
     volatile int try_gc = 1;
-    sigset_t oldsigmask;
+    struct child_handler_disabler_state old;
 
     while (1) {
         prefork();
-        disable_child_handler_before_fork(&oldsigmask);
+        disable_child_handler_before_fork(&old);
 #ifdef HAVE_WORKING_VFORK
         if (!has_privilege())
             pid = vfork();
@@ -3482,7 +3487,7 @@ retry_fork_async_signal_safe(int *status, int *ep,
         if (pid == 0) {/* fork succeed, child process */
             int ret;
             close(ep[0]);
-            ret = disable_child_handler_fork_child(&oldsigmask, errmsg, errmsg_buflen); /* async-signal-safe */
+            ret = disable_child_handler_fork_child(&old, errmsg, errmsg_buflen); /* async-signal-safe */
             if (ret == 0) {
                 ret = chfunc(charg, errmsg, errmsg_buflen);
                 if (!ret) _exit(EXIT_SUCCESS);
@@ -3494,7 +3499,7 @@ retry_fork_async_signal_safe(int *status, int *ep,
             _exit(127);
 #endif
         }
-        preserving_errno(disable_child_handler_fork_parent(&oldsigmask));
+        preserving_errno(disable_child_handler_fork_parent(&old));
         if (0 < pid) /* fork succeed, parent process */
             return pid;
         /* fork failed */
