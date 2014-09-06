@@ -1,3 +1,8 @@
+Sat Sep  6 09:10:45 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/rdoc/generator/template/darkfish/js/jquery.js: Backport
+	  rdoc/rdoc@74f60fcb04fee1778fe2694d1a0ea6513f8e67b7
+
 Fri Sep  5 14:08:00 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_create_dcom): use the converted
