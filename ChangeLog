@@ -1,3 +1,8 @@
+Fri Sep  5 17:01:38 2014  Zachary Scott  <e@zzak.io>
+
+	* lib/rdoc/generator/template/darkfish/js/jquery.js: Backport
+	  rdoc/rdoc@74f60fcb04fee1778fe2694d1a0ea6513f8e67b7
+
 Sat Sep  6 00:57:07 2014  Eric Wong  <e@80x24.org>
 
 	* ext/zlib/zlib.c (gzfile_reset): preserve ZSTREAM_FLAG_GZFILE
