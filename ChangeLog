@@ -1,3 +1,12 @@
+Sat Sep  6 16:38:08 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole_variant.c (ole_val2variant_err,
+	  ole_val2variantdata, Init_win32ole_variant): support VT_ERROR
+	  variant with error code. add WIN32OLE_VARIANT::NoParam.
+	* test/win32ole/test_win32ole_variant.rb(test_c_noparam,
+	  test_vt_error_noparam): ditto.
+	* ext/win32ole/win32ole.c: ditto.
+
 Sat Sep  6 11:08:52 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (arg_ambiguous_gen): fix warning message, "even" does

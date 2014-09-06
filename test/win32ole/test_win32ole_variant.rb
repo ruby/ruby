@@ -679,6 +679,34 @@ if defined?(WIN32OLE_VARIANT)
       assert_nil(WIN32OLE_VARIANT::Null.value)
     end
 
+    def test_c_noparam
+      # DISP_E_PARAMNOTFOUND
+      assert_equal(-2147352572, WIN32OLE_VARIANT::NoParam.value)
+    end
+
+    def test_vt_error_noparam
+      v = WIN32OLE_VARIANT.new(-1, WIN32OLE::VARIANT::VT_ERROR)
+      assert_equal(-1, v.value)
+      fso = WIN32OLE.new("Scripting.FileSystemObject")
+      exc = assert_raise(WIN32OLERuntimeError) {
+        fso.openTextFile("NonExistingFile", v, false)
+      }
+      assert_match(/Type mismatch/i, exc.message)
+      exc = assert_raise(WIN32OLERuntimeError) {
+        fso.openTextFile("NonExistingFile", WIN32OLE_VARIANT::NoParam, false)
+      }
+      # 800A0035 is 'file not found' error.
+      assert_match(/800A0035/, exc.message)
+
+      # -2147352572 is DISP_E_PARAMNOTFOUND
+      v = WIN32OLE_VARIANT.new(-2147352572, WIN32OLE::VARIANT::VT_ERROR)
+      exc = assert_raise(WIN32OLERuntimeError) {
+        fso.openTextFile("NonExistingFile", WIN32OLE_VARIANT::NoParam, false)
+      }
+      # 800A0035 is 'file not found' error code.
+      assert_match(/800A0035/, exc.message)
+    end
+
   end
 end
 

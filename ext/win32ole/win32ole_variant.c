@@ -2,6 +2,7 @@
 
 static void  olevariant_free(struct olevariantdata *pvar);
 static void ole_val2olevariantdata(VALUE val, VARTYPE vt, struct olevariantdata *pvar);
+static void ole_val2variant_err(VALUE val, VARIANT *var);
 static void ole_set_byref(VARIANT *realvar, VARIANT *var,  VARTYPE vt);
 static VALUE folevariant_s_allocate(VALUE klass);
 static VALUE folevariant_s_array(VALUE klass, VALUE dims, VALUE vvt);
@@ -83,6 +84,13 @@ ole_val2olevariantdata(VALUE val, VARTYPE vt, struct olevariantdata *pvar)
             ole_set_byref(&(pvar->realvar), &(pvar->var), vt);
         }
 #endif
+    } else if ( (vt & ~VT_BYREF) == VT_ERROR) {
+        ole_val2variant_err(val, &(pvar->realvar));
+        if (vt & VT_BYREF) {
+            ole_set_byref(&(pvar->realvar), &(pvar->var), vt);
+        } else {
+            hr = VariantCopy(&(pvar->var), &(pvar->realvar));
+        }
     } else {
         if (val == Qnil) {
             V_VT(&(pvar->var)) = vt;
@@ -118,6 +126,24 @@ ole_val2olevariantdata(VALUE val, VARTYPE vt, struct olevariantdata *pvar)
     }
     if (FAILED(hr)) {
         ole_raise(hr, eWIN32OLERuntimeError, "failed to change type");
+    }
+}
+
+static void
+ole_val2variant_err(VALUE val, VARIANT *var)
+{
+    VALUE v = val;
+    if (rb_obj_is_kind_of(v, cWIN32OLE_VARIANT)) {
+        v = folevariant_value(v);
+    }
+    if (TYPE(v) != T_FIXNUM && TYPE(v) != T_BIGNUM && v != Qnil) {
+        rb_raise(eWIN32OLERuntimeError, "failed to convert VT_ERROR VARIANT:`%"PRIsVALUE"'", rb_inspect(v));
+    }
+    V_VT(var) = VT_ERROR;
+    if (v != Qnil) {
+        V_ERROR(var) = NUM2LONG(val);
+    } else {
+        V_ERROR(var) = 0;
     }
 }
 
@@ -654,15 +680,28 @@ Init_win32ole_variant()
     /*
      * represents VT_EMPTY OLE object.
      */
-    rb_define_const(cWIN32OLE_VARIANT, "Empty", rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, INT2FIX(VT_EMPTY)));
+    rb_define_const(cWIN32OLE_VARIANT, "Empty",
+            rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, INT2FIX(VT_EMPTY)));
 
     /*
      * represents VT_NULL OLE object.
      */
-    rb_define_const(cWIN32OLE_VARIANT, "Null", rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, INT2FIX(VT_NULL)));
+    rb_define_const(cWIN32OLE_VARIANT, "Null",
+            rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, INT2FIX(VT_NULL)));
 
     /*
      * represents Nothing of VB.NET or VB.
      */
-    rb_define_const(cWIN32OLE_VARIANT, "Nothing", rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, INT2FIX(VT_DISPATCH)));
+    rb_define_const(cWIN32OLE_VARIANT, "Nothing",
+            rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, INT2FIX(VT_DISPATCH)));
+
+    /*
+     * represents VT_ERROR variant with DISP_E_PARAMNOTFOUND.
+     * This constants is used for not specified parameter.
+     *
+     *  fso = WIN32OLE.new("Scripting.FileSystemObject")
+     *  fso.openTextFile(filename, WIN32OLE_VARIANT::NoParam, false)
+     */
+    rb_define_const(cWIN32OLE_VARIANT, "NoParam",
+            rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, INT2NUM(DISP_E_PARAMNOTFOUND), INT2FIX(VT_ERROR)));
 }
