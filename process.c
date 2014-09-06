@@ -3382,6 +3382,7 @@ has_privilege(void)
 struct child_handler_disabler_state
 {
     sigset_t sigmask;
+    int cancelstate;
 };
 
 static void
@@ -3399,12 +3400,24 @@ disable_child_handler_before_fork(struct child_handler_disabler_state *old)
         errno = ret;
         rb_sys_fail("pthread_sigmask");
     }
+
+    ret = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old->cancelstate);
+    if (ret != 0) {
+        errno = ret;
+        rb_sys_fail("pthread_setcancelstate");
+    }
 }
 
 static void
 disable_child_handler_fork_parent(struct child_handler_disabler_state *old)
 {
     int ret;
+
+    ret = pthread_setcancelstate(old->cancelstate, NULL);
+    if (ret != 0) {
+        errno = ret;
+        rb_sys_fail("pthread_setcancelstate");
+    }
 
     ret = pthread_sigmask(SIG_SETMASK, &old->sigmask, NULL); /* not async-signal-safe */
     if (ret != 0) {
