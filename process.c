@@ -3373,7 +3373,7 @@ has_privilege(void)
     egid = getegid();
 #endif
 
-    if (egid == 0 || egid != rgid)
+    if (egid != rgid)
         return 1;
 
     return 0;

@@ -1,3 +1,7 @@
+Sat Sep  6 20:59:06 2014  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (has_privilege): The gid zero is not a privilege.
+
 Sat Sep  6 20:19:16 2014  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (struct child_handler_disabler_state): cancelstate field
