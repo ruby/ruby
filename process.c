@@ -3403,11 +3403,13 @@ disable_child_handler_before_fork(struct child_handler_disabler_state *old)
         rb_sys_fail("pthread_sigmask");
     }
 
+#ifdef PTHREAD_CANCEL_DISABLE
     ret = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old->cancelstate);
     if (ret != 0) {
         errno = ret;
         rb_sys_fail("pthread_setcancelstate");
     }
+#endif
 }
 
 static void
@@ -3415,11 +3417,13 @@ disable_child_handler_fork_parent(struct child_handler_disabler_state *old)
 {
     int ret;
 
+#ifdef PTHREAD_CANCEL_DISABLE
     ret = pthread_setcancelstate(old->cancelstate, NULL);
     if (ret != 0) {
         errno = ret;
         rb_sys_fail("pthread_setcancelstate");
     }
+#endif
 
     ret = pthread_sigmask(SIG_SETMASK, &old->sigmask, NULL); /* not async-signal-safe */
     if (ret != 0) {

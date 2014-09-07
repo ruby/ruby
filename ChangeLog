@@ -1,3 +1,7 @@
+Sun Sep  7 12:47:06 2014  Tanaka Akira  <akr@fsij.org>
+
+	* process.c: PTHREAD_CANCEL_DISABLE is not defined on Android.
+
 Sat Sep  6 20:59:06 2014  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (has_privilege): The gid zero is not a privilege.
