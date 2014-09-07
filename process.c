@@ -3281,6 +3281,7 @@ recv_child_error(int fd, int *errp, char *errmsg, size_t errmsg_buflen)
     return size != 0;
 }
 
+#if defined(HAVE_WORKING_VFORK) && !defined(CANNOT_VFORK_WITH_PTHREAD)
 #if !defined(HAVE_GETRESUID) && defined(HAVE_GETUIDX)
 /* AIX 7.1 */
 static int
@@ -3378,6 +3379,7 @@ has_privilege(void)
 
     return 0;
 }
+#endif
 
 struct child_handler_disabler_state
 {
@@ -3489,7 +3491,7 @@ retry_fork_async_signal_safe(int *status, int *ep,
     while (1) {
         prefork();
         disable_child_handler_before_fork(&old);
-#ifdef HAVE_WORKING_VFORK
+#if defined(HAVE_WORKING_VFORK) && !defined(CANNOT_VFORK_WITH_PTHREAD)
         if (!has_privilege())
             pid = vfork();
         else

@@ -2669,9 +2669,11 @@ if test x"$ac_cv_header_ucontext_h" = xyes; then
     fi
 fi
 
-if test "$ac_cv_func_fork_works" = "yes" -a "$rb_with_pthread" = "yes"; then
-    AC_CACHE_CHECK([if fork works with pthread], rb_cv_fork_with_pthread,
-	[AC_TRY_RUN([
+if test "$rb_with_pthread" = "yes"; then
+    for f in fork vfork; do
+	if eval 'test "$ac_cv_func_'$f'_works" = "yes"'; then
+	    AC_CACHE_CHECK([if $f works with pthread], rb_cv_${f}_with_pthread,
+		[AC_TRY_RUN([
 #include <stdlib.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -2710,7 +2712,7 @@ main(int argc, char *argv[])
 {
     pid_t pid;
     if (use_threads()) return EXIT_FAILURE;
-    pid = fork();
+    pid = $f();
 
     if (pid) {
 	int loc;
@@ -2728,10 +2730,14 @@ main(int argc, char *argv[])
 
     return EXIT_SUCCESS;
 }],
-	rb_cv_fork_with_pthread=yes,
-	rb_cv_fork_with_pthread=no,
-	rb_cv_fork_with_pthread=yes)])
+		work=yes,
+		work=no,
+		work=yes)]
+	    eval rb_cv_${f}_with_pthread=$work)
+	fi
+    done
     test x$rb_cv_fork_with_pthread = xyes || AC_DEFINE(CANNOT_FORK_WITH_PTHREAD)
+    test x$rb_cv_vfork_with_pthread = xyes || AC_DEFINE(CANNOT_VFORK_WITH_PTHREAD)
 fi
 
 
