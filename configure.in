@@ -963,6 +963,7 @@ AS_CASE(["$target_os"],
 		ac_cv_type_getgroups=gid_t # getgroups() on Rosetta fills garbage
 		ac_cv_lib_crypt_crypt=no
 		ac_cv_func_fdatasync=no # Mac OS X wrongly reports it has fdatasync()
+		ac_cv_func_vfork_works=no
                 AC_CACHE_CHECK(for broken crypt with 8bit chars, rb_cv_broken_crypt,
                     [AC_TRY_RUN([
 #include <stdio.h>
@@ -2669,11 +2670,9 @@ if test x"$ac_cv_header_ucontext_h" = xyes; then
     fi
 fi
 
-if test "$rb_with_pthread" = "yes"; then
-    for f in fork vfork; do
-	if eval 'test "$ac_cv_func_'$f'_works" = "yes"'; then
-	    AC_CACHE_CHECK([if $f works with pthread], rb_cv_${f}_with_pthread,
-		[AC_TRY_RUN([
+if test "$ac_cv_func_fork_works" = "yes" -a "$rb_with_pthread" = "yes"; then
+    AC_CACHE_CHECK([if fork works with pthread], rb_cv_fork_with_pthread,
+	[AC_TRY_RUN([
 #include <stdlib.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -2712,7 +2711,7 @@ main(int argc, char *argv[])
 {
     pid_t pid;
     if (use_threads()) return EXIT_FAILURE;
-    pid = $f();
+    pid = fork();
 
     if (pid) {
 	int loc;
@@ -2730,14 +2729,10 @@ main(int argc, char *argv[])
 
     return EXIT_SUCCESS;
 }],
-		work=yes,
-		work=no,
-		work=yes)]
-	    eval rb_cv_${f}_with_pthread=$work)
-	fi
-    done
+	rb_cv_fork_with_pthread=yes,
+	rb_cv_fork_with_pthread=no,
+	rb_cv_fork_with_pthread=yes)])
     test x$rb_cv_fork_with_pthread = xyes || AC_DEFINE(CANNOT_FORK_WITH_PTHREAD)
-    test x$rb_cv_vfork_with_pthread = xyes || AC_DEFINE(CANNOT_VFORK_WITH_PTHREAD)
 fi
 
 
