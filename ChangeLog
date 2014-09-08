@@ -1,3 +1,13 @@
+Mon Sep  8 13:18:37 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_app_lc_fizzbuzz.rb: added.
+
+	  This program is described closely in "Understanding Computation"
+	  chapter 6 by Tom Stuart. <http://computationbook.com/>
+
+	  Japanese translation will be published soon.
+	  <http://www.oreilly.co.jp/books/9784873116976/>
+
 Mon Sep  8 12:01:39 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: add incremental GC algorithm. [Feature #10137]
