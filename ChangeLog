@@ -1,3 +1,8 @@
+Tue Sep  9 07:03:22 2014  Eric Wong  <e@80x24.org>
+
+	* compile.c: remove needless SYM2ID <-> ID2SYM conversions
+	  [misc #10207]
+
 Tue Sep  9 05:48:42 2014  Eric Wong  <e@80x24.org>
 
 	* symbol.c (rb_intern_cstr_without_pindown): check dsymbol on return
