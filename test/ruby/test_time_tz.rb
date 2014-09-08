@@ -35,7 +35,7 @@ class TestTimeTZ < Test::Unit::TestCase
   end
 
   module Util
-    def have_tz_offset(tz)
+    def have_tz_offset?(tz)
       with_tz(tz) {!Time.now.utc_offset.zero?}
     end
 
@@ -81,8 +81,8 @@ class TestTimeTZ < Test::Unit::TestCase
   include Util
   extend Util
 
-  has_right_tz &&= have_tz_offset("right/America/Los_Angeles")
-  has_lisbon_tz &&= have_tz_offset("Europe/Lisbon")
+  has_right_tz &&= have_tz_offset?("right/America/Los_Angeles")
+  has_lisbon_tz &&= have_tz_offset?("Europe/Lisbon")
 
   def time_to_s(t)
     t.to_s
