@@ -1,3 +1,53 @@
+Mon Sep  8 12:01:39 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: add incremental GC algorithm. [Feature #10137]
+
+	  Please refer this ticket for details.
+
+	  This change also introduces the following changes.
+
+	  * Remove RGENGC_AGE2_PROMOTION and introduce object age (0 to 3).
+	    Age can be count with FL_PROMOTE0 and FL_PROMOTE1 flags in
+	    RBasic::flags (2 bit). Age == 3 objects become old objects.
+	  * WB_PROTECTED flag in RBasic to WB_UNPROTECTED bitmap.
+	  * LONG_LIVED bitmap to represent living objects while minor GCs
+	    It specifies (1) Old objects and (2) remembered shady objects.
+	  * Introduce rb_objspace_t::marked_objects which counts marked
+	    objects in current marking phase. marking count is needed to
+	    introduce incremental marking.
+	  * rename mark related function and sweep related function to
+	    gc_(marks|sweep)_(start|finish|step|rest|continue).
+	  * rename rgengc_report() to gc_report().
+	  * Add obj_info() function to get cstr of object details.
+	  * Add MEASURE_LINE() macro to measure execution time of specific line.
+	  * and many small fixes.
+
+	* include/ruby/ruby.h: add flag USE_RINCGC.
+	  Now USE_RINCGC can be set only with USE_RGENGC.
+
+	* include/ruby/ruby.h: introduce FL_PROMOTED0 and add FL_PROMOTED1
+	  to count object age.
+
+	* include/ruby/ruby.h: rewrite write barriers for incremental marking.
+
+	* debug.c: catch up flag name changes.
+
+	* internal.h: add rb_gc_writebarrier_remember() instead of
+	  rb_gc_writebarrier_remember_promoted().
+
+	* array.c (ary_memcpy0): use rb_gc_writebarrier_remember().
+
+	* array.c (rb_ary_modify): ditto.
+
+	* hash.c (rb_hash_keys): ditto.
+
+	* hash.c (rb_hash_values): ditto.
+
+	* object.c (init_copy): use rb_copy_wb_protected_attribute() because
+	  FL_WB_PROTECTED is moved from RBasic::flags.
+
+	* test/objspace/test_objspace.rb: catch up ObjectSpace.dump() changes.
+
 Sun Sep  7 12:47:06 2014  Tanaka Akira  <akr@fsij.org>
 
 	* process.c: PTHREAD_CANCEL_DISABLE is not defined on Android.

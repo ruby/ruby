@@ -172,25 +172,18 @@ ary_memcpy0(VALUE ary, long beg, long argc, const VALUE *argv, VALUE buff_owner_
 #if 1
     assert(!ARY_SHARED_P(buff_owner_ary));
 
-    if (OBJ_PROMOTED(buff_owner_ary)) {
-	if (argc > (int)(128/sizeof(VALUE)) /* is magic number (cache line size) */) {
-	    rb_gc_writebarrier_remember_promoted(buff_owner_ary);
-	    RARRAY_PTR_USE(ary, ptr, {
-		MEMCPY(ptr+beg, argv, VALUE, argc);
-	    });
-	}
-	else {
-	    int i;
-	    RARRAY_PTR_USE(ary, ptr, {
-		for (i=0; i<argc; i++) {
-		    RB_OBJ_WRITE(buff_owner_ary, &ptr[i+beg], argv[i]);
-		}
-	    });
-	}
-    }
-    else {
+    if (argc > (int)(128/sizeof(VALUE)) /* is magic number (cache line size) */) {
+	rb_gc_writebarrier_remember(buff_owner_ary);
 	RARRAY_PTR_USE(ary, ptr, {
 	    MEMCPY(ptr+beg, argv, VALUE, argc);
+	});
+    }
+    else {
+	int i;
+	RARRAY_PTR_USE(ary, ptr, {
+	    for (i=0; i<argc; i++) {
+		RB_OBJ_WRITE(buff_owner_ary, &ptr[i+beg], argv[i]);
+	    }
 	});
     }
 #else
@@ -355,10 +348,7 @@ rb_ary_modify(VALUE ary)
             ARY_SET_PTR(ary, ptr);
         }
 
-	/* TODO: age2 promotion, OBJ_PROMOTED() checks not infant. */
-	if (OBJ_PROMOTED(ary) && !OBJ_PROMOTED(shared)) {
-	    rb_gc_writebarrier_remember_promoted(ary);
-	}
+	rb_gc_writebarrier_remember(ary);
     }
 }
 

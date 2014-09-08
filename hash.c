@@ -1781,7 +1781,7 @@ rb_hash_keys(VALUE hash)
     if (ST_DATA_COMPATIBLE_P(VALUE)) {
 	st_table *table = RHASH(hash)->ntbl;
 
-	if (OBJ_PROMOTED(keys)) rb_gc_writebarrier_remember_promoted(keys);
+	rb_gc_writebarrier_remember(keys);
 	RARRAY_PTR_USE(keys, ptr, {
 	    size = st_keys_check(table, ptr, size, Qundef);
 	});
@@ -1825,7 +1825,7 @@ rb_hash_values(VALUE hash)
     if (ST_DATA_COMPATIBLE_P(VALUE)) {
 	st_table *table = RHASH(hash)->ntbl;
 
-	if (OBJ_PROMOTED(values)) rb_gc_writebarrier_remember_promoted(values);
+	rb_gc_writebarrier_remember(values);
 	RARRAY_PTR_USE(values, ptr, {
 	    size = st_values_check(table, ptr, size, Qundef);
 	});

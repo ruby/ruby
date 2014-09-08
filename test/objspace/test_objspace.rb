@@ -196,7 +196,7 @@ class TestObjSpace < Test::Unit::TestCase
 
   def test_dump_flags
     info = ObjectSpace.dump("foo".freeze)
-    assert_match /"wb_protected":true, "old":true, "marked":true/, info
+    assert_match /"wb_protected":true, "old":true, "long_lived":true, "marked":true/, info
     assert_match /"fstring":true/, info
   end
 

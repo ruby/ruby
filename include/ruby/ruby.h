@@ -710,6 +710,13 @@ VALUE rb_obj_setup(VALUE obj, VALUE klass, VALUE type);
 
 #ifndef USE_RGENGC
 #define USE_RGENGC 1
+#ifndef USE_RINCGC
+#define USE_RINCGC 1
+#endif
+#endif
+
+#if USE_RGENGC == 0
+#define USE_RINCGC 0
 #endif
 
 #ifndef RGENGC_WB_PROTECTED_ARRAY
@@ -1068,7 +1075,8 @@ struct RStruct {
 
 #define FL_SINGLETON FL_USER0
 #define FL_WB_PROTECTED (((VALUE)1)<<5)
-#define FL_PROMOTED  (((VALUE)1)<<6)
+#define FL_PROMOTED0 (((VALUE)1)<<5)
+#define FL_PROMOTED1 (((VALUE)1)<<6)
 #define FL_FINALIZE  (((VALUE)1)<<7)
 #define FL_TAINT     (((VALUE)1)<<8)
 #define FL_UNTRUSTED FL_TAINT
@@ -1122,16 +1130,20 @@ struct RStruct {
 #define OBJ_FREEZE(x) FL_SET((x), FL_FREEZE)
 
 #if USE_RGENGC
-#define OBJ_PROMOTED(x)             (SPECIAL_CONST_P(x) ? 0 : FL_TEST_RAW((x), FL_PROMOTED))
-#define OBJ_WB_PROTECTED(x)         (SPECIAL_CONST_P(x) ? 1 : FL_TEST_RAW((x), FL_WB_PROTECTED))
+#define OBJ_PROMOTED_RAW(x)         ((RBASIC(x)->flags & (FL_PROMOTED0|FL_PROMOTED1)) == (FL_PROMOTED0|FL_PROMOTED1))
+#define OBJ_PROMOTED(x)             (SPECIAL_CONST_P(x) ? 0 : OBJ_PROMOTED_RAW(x))
 #define OBJ_WB_UNPROTECT(x)         rb_obj_wb_unprotect(x, __FILE__, __LINE__)
 
-void rb_gc_writebarrier(VALUE a, VALUE b);
-void rb_gc_writebarrier_unprotect_promoted(VALUE obj);
+#if USE_RINCGC
+int rb_gc_writebarrier_incremental(VALUE a, VALUE b);
+#else
+#define rb_gc_writebarrier_incremental(a, b) 0
+#endif
+void rb_gc_writebarrier_generational(VALUE a, VALUE b);
+void rb_gc_writebarrier_unprotect(VALUE obj);
 
 #else /* USE_RGENGC */
 #define OBJ_PROMOTED(x)             0
-#define OBJ_WB_PROTECTED(x)         0
 #define OBJ_WB_UNPROTECT(x)         rb_obj_wb_unprotect(x, __FILE__, __LINE__)
 #endif
 
@@ -1164,15 +1176,8 @@ rb_obj_wb_unprotect(VALUE x, RB_UNUSED_VAR(const char *filename), RB_UNUSED_VAR(
 #ifdef RGENGC_LOGGING_WB_UNPROTECT
     RGENGC_LOGGING_WB_UNPROTECT((void *)x, filename, line);
 #endif
-
 #if USE_RGENGC
-    /* `x' should be an RVALUE object */
-    if (FL_TEST_RAW((x), FL_WB_PROTECTED)) {
-	if (FL_TEST_RAW((x), FL_PROMOTED)) {
-	    rb_gc_writebarrier_unprotect_promoted(x);
-	}
-	RBASIC(x)->flags &= ~FL_WB_PROTECTED;
-    }
+    rb_gc_writebarrier_unprotect(x);
 #endif
     return x;
 }
@@ -1185,9 +1190,12 @@ rb_obj_written(VALUE a, RB_UNUSED_VAR(VALUE oldv), VALUE b, RB_UNUSED_VAR(const 
 #endif
 
 #if USE_RGENGC
-    /* `a' should be an RVALUE object */
-    if (FL_TEST_RAW((a), FL_PROMOTED) && !SPECIAL_CONST_P(b)) {
-	rb_gc_writebarrier(a, b);
+    if (!SPECIAL_CONST_P(b)) {
+	if (rb_gc_writebarrier_incremental(a, b) == 0) {
+	    if (OBJ_PROMOTED_RAW(a) && !OBJ_PROMOTED_RAW(b)) {
+		rb_gc_writebarrier_generational(a, b);
+	    }
+	}
     }
 #endif
 

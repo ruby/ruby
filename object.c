@@ -282,6 +282,8 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     }
 }
 
+void rb_copy_wb_protected_attribute(VALUE dest, VALUE obj);
+
 static void
 init_copy(VALUE dest, VALUE obj)
 {
@@ -290,6 +292,7 @@ init_copy(VALUE dest, VALUE obj)
     }
     RBASIC(dest)->flags &= ~(T_MASK|FL_EXIVAR);
     RBASIC(dest)->flags |= RBASIC(obj)->flags & (T_MASK|FL_EXIVAR|FL_TAINT);
+    rb_copy_wb_protected_attribute(dest, obj);
     rb_copy_generic_ivar(dest, obj);
     rb_gc_copy_finalizer(dest, obj);
     if (RB_TYPE_P(obj, T_OBJECT)) {
@@ -331,8 +334,8 @@ rb_obj_clone(VALUE obj)
         rb_raise(rb_eTypeError, "can't clone %s", rb_obj_classname(obj));
     }
     clone = rb_obj_alloc(rb_obj_class(obj));
-    RBASIC(clone)->flags &= (FL_TAINT|FL_PROMOTED|FL_WB_PROTECTED);
-    RBASIC(clone)->flags |= RBASIC(obj)->flags & ~(FL_PROMOTED|FL_FREEZE|FL_FINALIZE|FL_WB_PROTECTED);
+    RBASIC(clone)->flags &= (FL_TAINT);
+    RBASIC(clone)->flags |= RBASIC(obj)->flags & ~(FL_PROMOTED0|FL_PROMOTED1|FL_FREEZE|FL_FINALIZE);
 
     singleton = rb_singleton_class_clone_and_attach(obj, clone);
     RBASIC_SET_CLASS(clone, singleton);
