@@ -49,4 +49,4 @@ answer = to_array(solution).map do |p|
 end
 
 answer_ary = answer.to_a
-puts answer_ary
+# puts answer_ary
