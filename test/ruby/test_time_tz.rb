@@ -6,33 +6,39 @@ class TestTimeTZ < Test::Unit::TestCase
   force_tz_test = ENV["RUBY_FORCE_TIME_TZ_TEST"] == "yes"
   case RUBY_PLATFORM
   when /linux/
-    # has_right_tz = false
     force_tz_test = true
   when /darwin|freebsd/
-    has_right_tz = false
     has_lisbon_tz = false
     force_tz_test = true
   end
 
   if force_tz_test
-    def with_tz(tz)
-      old = ENV["TZ"]
-      begin
-        ENV["TZ"] = tz
-        yield
-      ensure
-        ENV["TZ"] = old
+    module Util
+      def with_tz(tz)
+        old = ENV["TZ"]
+        begin
+          ENV["TZ"] = tz
+          yield
+        ensure
+          ENV["TZ"] = old
+        end
       end
     end
   else
-    def with_tz(tz)
-      if ENV["TZ"] == tz
-        yield
+    module Util
+      def with_tz(tz)
+        if ENV["TZ"] == tz
+          yield
+        end
       end
     end
   end
 
   module Util
+    def have_tz_offset(tz)
+      with_tz(tz) {!Time.now.utc_offset.zero?}
+    end
+
     def format_gmtoff(gmtoff, colon=false)
       if gmtoff < 0
         expected = "-"
@@ -74,6 +80,9 @@ class TestTimeTZ < Test::Unit::TestCase
 
   include Util
   extend Util
+
+  has_right_tz &&= have_tz_offset("right/America/Los_Angeles")
+  has_lisbon_tz &&= have_tz_offset("Europe/Lisbon")
 
   def time_to_s(t)
     t.to_s
