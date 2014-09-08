@@ -1,3 +1,9 @@
+Tue Sep  9 05:48:42 2014  Eric Wong  <e@80x24.org>
+
+	* symbol.c (rb_intern_cstr_without_pindown): check dsymbol on return
+	  This is not a complete fix for bug 10206, but seems to reduce
+	  that crash and also looks correct.
+
 Tue Sep  9 04:36:24 2014  Eric Wong  <e@80x24.org>
 
 	* vm_core.h (rb_env_t): use flexible array

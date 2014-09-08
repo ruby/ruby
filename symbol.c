@@ -525,6 +525,9 @@ rb_intern_cstr_without_pindown(const char *name, long len, rb_encoding *enc)
     OBJ_FREEZE(str);
 
     if (st_lookup(global_symbols.str_id, str, &id)) {
+	if (ID_DYNAMIC_SYM_P((ID)id)) {
+	    return (ID)dsymbol_check((VALUE)id);
+	}
 	return (ID)id;
     }
 
