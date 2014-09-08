@@ -1,3 +1,8 @@
+Mon Sep  8 16:04:02 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_app_lc_fizzbuzz.rb: `answer.to_a' does not return
+	  a string, but an array.
+
 Mon Sep  8 13:18:37 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_app_lc_fizzbuzz.rb: added.
