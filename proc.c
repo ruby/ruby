@@ -401,7 +401,7 @@ bind_eval(int argc, VALUE *argv, VALUE bindval)
 static VALUE *
 get_local_variable_ptr(VALUE envval, ID lid)
 {
-    const rb_env_t *env;
+    rb_env_t *env;
 
     do {
 	const rb_iseq_t *iseq;

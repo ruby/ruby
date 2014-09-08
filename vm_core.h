@@ -753,11 +753,11 @@ typedef struct {
   GetCoreDataFromValue((obj), rb_env_t, (ptr))
 
 typedef struct {
-    VALUE *env;
     int env_size;
     int local_size;
     VALUE prev_envval;		/* for GC mark */
     rb_block_t block;
+    VALUE env[1];               /* flexible array */
 } rb_env_t;
 
 extern const rb_data_type_t ruby_binding_data_type;

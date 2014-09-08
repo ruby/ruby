@@ -354,11 +354,9 @@ env_mark(void * const ptr)
     if (ptr) {
 	const rb_env_t * const env = ptr;
 
-	if (env->env) {
-	    /* TODO: should mark more restricted range */
-	    RUBY_GC_INFO("env->env\n");
-	    rb_gc_mark_locations(env->env, env->env + env->env_size);
-	}
+	/* TODO: should mark more restricted range */
+	RUBY_GC_INFO("env->env\n");
+	rb_gc_mark_locations(env->env, env->env + env->env_size);
 
 	RUBY_GC_INFO("env->prev_envval\n");
 	RUBY_MARK_UNLESS_NULL(env->prev_envval);
@@ -382,8 +380,6 @@ env_free(void * const ptr)
 {
     RUBY_FREE_ENTER("env");
     if (ptr) {
-	rb_env_t *const env = ptr;
-	RUBY_FREE_UNLESS_NULL(env->env);
 	ruby_xfree(ptr);
     }
     RUBY_FREE_LEAVE("env");
@@ -395,9 +391,8 @@ env_memsize(const void *ptr)
     if (ptr) {
 	const rb_env_t * const env = ptr;
 	size_t size = sizeof(rb_env_t);
-	if (env->env) {
-	    size += env->env_size * sizeof(VALUE);
-	}
+
+	size += (env->env_size - 1) * sizeof(VALUE);
 	return size;
     }
     return 0;
@@ -410,15 +405,15 @@ static const rb_data_type_t env_data_type = {
 };
 
 static VALUE
-env_alloc(void)
+env_alloc(int local_size)
 {
-    VALUE obj;
     rb_env_t *env;
-    obj = TypedData_Make_Struct(rb_cEnv, rb_env_t, &env_data_type, env);
-    env->env = 0;
-    env->prev_envval = 0;
-    env->block.iseq = 0;
-    return obj;
+
+    env = xcalloc(1, sizeof(rb_env_t) + ((local_size + 1) * sizeof(VALUE)));
+    env->env_size = local_size + 1 + 1;
+    env->local_size = local_size;
+
+    return TypedData_Wrap_Struct(rb_cEnv, &env_data_type, env);
 }
 
 static VALUE check_env_value(VALUE envval);
@@ -485,10 +480,6 @@ vm_make_env_each(const rb_thread_t *const th, rb_control_frame_t *const cfp,
 	}
     }
 
-    /* allocate env */
-    envval = env_alloc();
-    GetEnvPtr(envval, env);
-
     if (!RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
 	local_size = 2;
     }
@@ -496,9 +487,10 @@ vm_make_env_each(const rb_thread_t *const th, rb_control_frame_t *const cfp,
 	local_size = cfp->iseq->local_size;
     }
 
-    env->env_size = local_size + 1 + 1;
-    env->local_size = local_size;
-    env->env = ALLOC_N(VALUE, env->env_size);
+    /* allocate env */
+    envval = env_alloc(local_size);
+    GetEnvPtr(envval, env);
+
     env->prev_envval = penvval;
 
     for (i = 0; i <= local_size; i++) {

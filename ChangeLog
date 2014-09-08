@@ -1,3 +1,13 @@
+Tue Sep  9 04:36:24 2014  Eric Wong  <e@80x24.org>
+
+	* vm_core.h (rb_env_t): use flexible array
+	  This reduces allocations and speeds up the lambda calculus
+	  fizzbuzz (bm_app_lc_fizzbuzz.rb) benchmark [ruby-core:64858]
+	* proc.c (get_local_variable_ptr): deconst to adjust for flex array
+	* vm.c (env_mark, env_free, env_memsize): remove check for env->env
+	* vm.c (env_alloc): single allocation for flex array
+	* vm.c (vm_make_env_each): adjust env_alloc call
+
 Mon Sep  8 16:08:22 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_app_lc_fizzbuzz.rb: should skip output on benchmark.
