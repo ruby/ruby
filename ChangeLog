@@ -63,7 +63,7 @@ Tue Sep  9 14:56:03 2014  Koichi Sasada  <ko1@atdot.net>
 
 Tue Sep  9 14:21:50 2014  Koichi Sasada  <ko1@atdot.net>
 
-	* gc.c: fix layout of rb_objsapce_t to improve cache locality.
+	* gc.c: fix layout of rb_objspace_t to improve cache locality.
 
 	  newobj_of() accesses:
 	  (1) rb_objspace_t::flags
@@ -73,7 +73,7 @@ Tue Sep  9 14:21:50 2014  Koichi Sasada  <ko1@atdot.net>
 Tue Sep  9 14:09:36 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: move rb_objspace_t::flags::gc_stressfull after during_gc
-	  to make accesssing both parameters easy.
+	  to make accessing both parameters easy.
 
 	* gc.c (heap_get_freeobj): add LIKELY() hint.
 
@@ -98,7 +98,7 @@ Tue Sep  9 13:51:32 2014  Koichi Sasada  <ko1@atdot.net>
 
 Tue Sep  9 13:05:50 2014  Koichi Sasada  <ko1@atdot.net>
 
-	* gc.c: remvoe ruby_disable_gc_stress and add ruby_disable_gc
+	* gc.c: remove ruby_disable_gc_stress and add ruby_disable_gc
 	  to speed-up newobj_of().
 
 	* gc.c (ready_to_gc): check ruby_disable_gc.
