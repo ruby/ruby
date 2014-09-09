@@ -3171,12 +3171,12 @@ gc_heap_prepare_minimum_pages(rb_objspace_t *objspace, rb_heap_t *heap)
 static void
 gc_stat_transition(rb_objspace_t *objspace, enum gc_stat stat)
 {
-#if RGEGNC_CHECK_MODE
+#if RGENGC_CHECK_MODE
     enum gc_stat prev_stat = objspace->flags.stat;
     switch (prev_stat) {
       case gc_stat_none: assert(stat == gc_stat_marking); break;
-      case gc_stat_mark: assert(stat == gc_stat_sweeping); break;
-      case gc_stat_sweep: assert(stat == gc_stat_none); break;
+      case gc_stat_marking: assert(stat == gc_stat_sweeping); break;
+      case gc_stat_sweeping: assert(stat == gc_stat_none); break;
     }
 #endif
     objspace->flags.stat = stat;
