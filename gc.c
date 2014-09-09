@@ -479,7 +479,7 @@ typedef struct rb_objspace {
     } flags;
 
     rb_event_flag_t hook_events;
-    size_t total_allocated_object_num;
+    size_t total_allocated_objects;
 
     rb_heap_t eden_heap;
     rb_heap_t tomb_heap; /* heap for zombies and ghosts */
@@ -551,12 +551,12 @@ typedef struct rb_objspace {
 
 	/* temporary profiling space */
 	double gc_sweep_start_time;
-	size_t total_allocated_object_num_at_gc_start;
+	size_t total_allocated_objects_at_gc_start;
 	size_t heap_used_at_gc_start;
 
 	/* basic statistics */
 	size_t count;
-	size_t total_freed_object_num;
+	size_t total_freed_objects;
     } profile;
     struct gc_list *global_list;
 
@@ -1662,7 +1662,7 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
     if (rgengc_remembered(objspace, (VALUE)obj)) rb_bug("newobj: %s is remembered.", obj_info(obj));
 #endif
 
-    objspace->total_allocated_object_num++;
+    objspace->total_allocated_objects++;
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj);
 
     return obj;
@@ -2437,7 +2437,7 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
 	heap_page_add_freeobj(objspace, GET_HEAP_PAGE(zombie), zombie);
 
 	heap_pages_swept_slots++;
-	objspace->profile.total_freed_object_num++;
+	objspace->profile.total_freed_objects++;
 
 	zombie = next_zombie;
     }
@@ -3033,7 +3033,7 @@ count_objects(int argc, VALUE *argv, VALUE os)
 static size_t
 objspace_live_slot(rb_objspace_t *objspace)
 {
-    return objspace->total_allocated_object_num - objspace->profile.total_freed_object_num - heap_pages_final_slots;
+    return objspace->total_allocated_objects - objspace->profile.total_freed_objects - heap_pages_final_slots;
 }
 
 static size_t
@@ -3139,7 +3139,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 		   freed_slots, empty_slots, final_slots);
 
     heap_pages_swept_slots += sweep_page->free_slots = freed_slots + empty_slots;
-    objspace->profile.total_freed_object_num += freed_slots;
+    objspace->profile.total_freed_objects += freed_slots;
     heap_pages_final_slots += final_slots;
     sweep_page->final_slots += final_slots;
 
@@ -4786,8 +4786,8 @@ gc_verify_internal_consistency(VALUE self)
 
     if (!is_lazy_sweeping(heap_eden) && !finalizing) {
 	if (objspace_live_slot(objspace) != data.live_object_count) {
-	    fprintf(stderr, "heap_pages_final_slots: %d, objspace->profile.total_freed_object_num: %d\n",
-		    (int)heap_pages_final_slots, (int)objspace->profile.total_freed_object_num);
+	    fprintf(stderr, "heap_pages_final_slots: %d, objspace->profile.total_freed_objects: %d\n",
+		    (int)heap_pages_final_slots, (int)objspace->profile.total_freed_objects);
 	    rb_bug("inconsistent live slot nubmer: expect %"PRIuSIZE", but %"PRIuSIZE".", objspace_live_slot(objspace), data.live_object_count);
 	}
     }
@@ -5590,7 +5590,7 @@ rb_gc_force_recycle(VALUE obj)
 #endif
 #endif
 
-    objspace->profile.total_freed_object_num++;
+    objspace->profile.total_freed_objects++;
 
     heap_page_add_freeobj(objspace, GET_HEAP_PAGE(obj), obj);
 
@@ -5846,7 +5846,7 @@ gc_start(rb_objspace_t *objspace, const int full_mark, const int immediate_mark,
 
     objspace->profile.count++;
     objspace->profile.latest_gc_info = reason;
-    objspace->profile.total_allocated_object_num_at_gc_start = objspace->total_allocated_object_num;
+    objspace->profile.total_allocated_objects_at_gc_start = objspace->total_allocated_objects;
     objspace->profile.heap_used_at_gc_start = heap_allocated_pages;
     gc_prof_setup_new_record(objspace, reason);
     gc_reset_malloc_info(objspace);
@@ -6271,7 +6271,7 @@ gc_stat_internal(VALUE hash_or_sym)
     static VALUE sym_heap_used, sym_heap_sorted_length, sym_heap_allocatable_pages;
     static VALUE sym_heap_live_slot, sym_heap_free_slot, sym_heap_final_slots, sym_heap_swept_slots;
     static VALUE sym_heap_eden_pages, sym_heap_tomb_pages;
-    static VALUE sym_total_allocated_object, sym_total_freed_object;
+    static VALUE sym_total_allocated_objects, sym_total_freed_objects;
     static VALUE sym_malloc_increase, sym_malloc_limit;
 #if USE_RGENGC
     static VALUE sym_minor_gc_count, sym_major_gc_count;
@@ -6312,8 +6312,8 @@ gc_stat_internal(VALUE hash_or_sym)
 	S(heap_swept_slots);
 	S(heap_eden_pages);
 	S(heap_tomb_pages);
-	S(total_allocated_object);
-	S(total_freed_object);
+	S(total_allocated_objects);
+	S(total_freed_objects);
 	S(malloc_increase);
 	S(malloc_limit);
 #if USE_RGENGC
@@ -6358,8 +6358,8 @@ gc_stat_internal(VALUE hash_or_sym)
     SET(heap_swept_slots, heap_pages_swept_slots);
     SET(heap_eden_pages, heap_eden->page_length);
     SET(heap_tomb_pages, heap_tomb->page_length);
-    SET(total_allocated_object, objspace->total_allocated_object_num);
-    SET(total_freed_object, objspace->profile.total_freed_object_num);
+    SET(total_allocated_objects, objspace->total_allocated_objects);
+    SET(total_freed_objects, objspace->profile.total_freed_objects);
     SET(malloc_increase, malloc_increase);
     SET(malloc_limit, malloc_limit);
 #if USE_RGENGC
@@ -6422,8 +6422,8 @@ gc_stat_internal(VALUE hash_or_sym)
  *          :heap_free_slot=>519,
  *          :heap_final_slots=>0,
  *          :heap_swept_slots=>818,
- *          :total_allocated_object=>7674,
- *          :total_freed_object=>838,
+ *          :total_allocated_objects=>7674,
+ *          :total_freed_objects=>838,
  *          :malloc_increase=>181034,
  *          :malloc_limit=>16777216,
  *          :minor_gc_count=>2,
@@ -7894,7 +7894,7 @@ gc_prof_set_heap_info(rb_objspace_t *objspace)
 {
     if (gc_prof_enabled(objspace)) {
 	gc_profile_record *record = gc_prof_record(objspace);
-	size_t live = objspace->profile.total_allocated_object_num_at_gc_start - objspace->profile.total_freed_object_num;
+	size_t live = objspace->profile.total_allocated_objects_at_gc_start - objspace->profile.total_freed_objects;
 	size_t total = objspace->profile.heap_used_at_gc_start * HEAP_OBJ_LIMIT;
 
 #if GC_PROFILE_MORE_DETAIL
