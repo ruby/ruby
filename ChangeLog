@@ -1,3 +1,7 @@
+Tue Sep  9 11:11:05 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_object.rb: extend timeout.
+
 Tue Sep  9 09:02:07 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (MakeMakefile#pkg_config): append --cflags to also
