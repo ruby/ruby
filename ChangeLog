@@ -31,7 +31,7 @@ Tue Sep  9 18:18:07 2014  Koichi Sasada  <ko1@atdot.net>
 	  * used -> allocated_pages
 	  * increment -> allocatable_pages
 	  * length -> sorted_length
-	  And remove unused `limt' field.
+	  And remove unused `limit' field.
 
 	* gc.c: rename macros:
 	  * heap_pages_used -> heap_allocated_pages
