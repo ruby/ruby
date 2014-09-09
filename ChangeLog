@@ -1,3 +1,9 @@
+Wed Sep 10 03:12:12 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* gc.c (init_mark_stack): MEMZERO() receive type as 2nd argument instead
+	  of size.
+	  Coverity Scan found this bug.
+
 Tue Sep  9 21:55:39 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/sample/excel2.rb: remove some commented-out code.

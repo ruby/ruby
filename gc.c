@@ -3544,7 +3544,7 @@ init_mark_stack(mark_stack_t *stack)
 {
     int i;
 
-    MEMZERO(stack, sizeof(mark_stack_t), 1);
+    MEMZERO(stack, mark_stack_t, 1);
     stack->index = stack->limit = STACK_CHUNK_SIZE;
     stack->cache_size = 0;
 
