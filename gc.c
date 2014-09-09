@@ -168,9 +168,7 @@ typedef struct {
     size_t oldmalloc_limit_min;
     size_t oldmalloc_limit_max;
     double oldmalloc_limit_growth_factor;
-#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     VALUE gc_stress;
-#endif
 } ruby_gc_params_t;
 
 static ruby_gc_params_t gc_params = {
@@ -466,6 +464,7 @@ typedef struct rb_objspace {
 
     struct {
 	enum gc_stat stat : 2;
+	unsigned int  gc_stressfull: 1;
 	unsigned int immediate_sweep : 1;
 	unsigned int dont_gc : 1;
 	unsigned int dont_incremental : 1;
@@ -554,12 +553,13 @@ typedef struct rb_objspace {
     } profile;
     struct gc_list *global_list;
     rb_event_flag_t hook_events; /* this place may be affinity with memory cache */
-    VALUE gc_stress;
 
     struct mark_func_data_struct {
 	void *data;
 	void (*mark_func)(VALUE v, void *data);
     } *mark_func_data;
+
+    VALUE gc_stress_mode;
 
 #if USE_RGENGC
     struct {
@@ -657,12 +657,12 @@ struct heap_page {
 /* Aliases */
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 #define rb_objspace (*GET_VM()->objspace)
-#define ruby_initial_gc_stress	gc_params.gc_stress
-VALUE *ruby_initial_gc_stress_ptr = &ruby_initial_gc_stress;
 #else
 static rb_objspace_t rb_objspace = {{GC_MALLOC_LIMIT_MIN}};
-VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #endif
+
+#define ruby_initial_gc_stress	gc_params.gc_stress
+VALUE *ruby_initial_gc_stress_ptr = &ruby_initial_gc_stress;
 
 #define malloc_limit		objspace->malloc_params.limit
 #define malloc_increase 	objspace->malloc_params.increase
@@ -685,7 +685,8 @@ VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define finalizing		objspace->atomic_flags.finalizing
 #define finalizer_table 	objspace->finalizer_table
 #define global_list		objspace->global_list
-#define ruby_gc_stress		objspace->gc_stress
+#define ruby_gc_stressfull	objspace->flags.gc_stressfull
+#define ruby_gc_stress_mode     objspace->gc_stress_mode
 
 #define is_marking(objspace)             ((objspace)->flags.stat == gc_stat_marking)
 #define is_sweeping(objspace)            ((objspace)->flags.stat == gc_stat_sweeping)
@@ -783,6 +784,8 @@ static size_t obj_memsize_of(VALUE obj, int use_all_types);
 static VALUE gc_verify_internal_consistency(VALUE self);
 static int gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj);
 static int gc_verify_heap_pages(rb_objspace_t *objspace);
+
+static void gc_stress_set(rb_objspace_t *objspace, VALUE flag);
 
 static double getrusage_time(void);
 static inline void gc_prof_setup_new_record(rb_objspace_t *objspace, int reason);
@@ -1176,8 +1179,6 @@ rb_objspace_t *
 rb_objspace_alloc(void)
 {
     rb_objspace_t *objspace = calloc(1, sizeof(rb_objspace_t));
-    ruby_gc_stress = ruby_initial_gc_stress;
-
     malloc_limit = gc_params.malloc_limit_min;
 
     return objspace;
@@ -1599,7 +1600,7 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
 	rb_bug("object allocation during garbage collection phase");
     }
 
-    if (UNLIKELY(ruby_gc_stress)) {
+    if (UNLIKELY(ruby_gc_stressfull)) {
 	if (!garbage_collect(objspace, FALSE, FALSE, FALSE, GPR_FLAG_NEWOBJ)) {
 	    rb_memerror();
 	}
@@ -1999,6 +2000,8 @@ void
 Init_heap(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
+
+    gc_stress_set(objspace, ruby_initial_gc_stress);
 
 #if RGENGC_ESTIMATE_OLDMALLOC
     objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
@@ -5664,7 +5667,7 @@ enum {
 };
 
 #define gc_stress_full_mark_after_malloc_p() \
-    (FIXNUM_P(ruby_gc_stress) && (FIX2LONG(ruby_gc_stress) & (1<<gc_stress_full_mark_after_malloc)))
+    (FIXNUM_P(ruby_gc_stress_mode) && (FIX2LONG(ruby_gc_stress_mode) & (1<<gc_stress_full_mark_after_malloc)))
 
 static void
 heap_ready_to_gc(rb_objspace_t *objspace, rb_heap_t *heap)
@@ -5794,8 +5797,8 @@ gc_start(rb_objspace_t *objspace, const int full_mark, const int immediate_mark,
 
     gc_enter(objspace, "gc_start");
 
-    if (ruby_gc_stress) {
-	int flag = FIXNUM_P(ruby_gc_stress) ? FIX2INT(ruby_gc_stress) : 0;
+    if (ruby_gc_stressfull) {
+	int flag = FIXNUM_P(ruby_gc_stress_mode) ? FIX2INT(ruby_gc_stress_mode) : 0;
 
 	if ((flag & (1<<gc_stress_no_major)) == 0) {
 	    do_full_mark = TRUE;
@@ -6483,7 +6486,14 @@ static VALUE
 gc_stress_get(VALUE self)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    return ruby_gc_stress;
+    return ruby_gc_stress_mode;
+}
+
+static void
+gc_stress_set(rb_objspace_t *objspace, VALUE flag)
+{
+    objspace->flags.gc_stressfull = RTEST(flag);
+    objspace->gc_stress_mode = flag;
 }
 
 /*
@@ -6504,11 +6514,11 @@ gc_stress_get(VALUE self)
  */
 
 static VALUE
-gc_stress_set(VALUE self, VALUE flag)
+gc_stress_set_m(VALUE self, VALUE flag)
 {
     rb_objspace_t *objspace = &rb_objspace;
     rb_secure(2);
-    ruby_gc_stress = FIXNUM_P(flag) ? flag : (RTEST(flag) ? Qtrue : Qfalse);
+    gc_stress_set(objspace, flag);
     return flag;
 }
 
@@ -6929,7 +6939,7 @@ atomic_sub_nounderflow(size_t *var, size_t sub)
 static void
 objspace_malloc_gc_stress(rb_objspace_t *objspace)
 {
-    if (ruby_gc_stress && ruby_native_thread_p()) {
+    if (ruby_gc_stressfull && ruby_native_thread_p()) {
 	garbage_collect_with_gvl(objspace, gc_stress_full_mark_after_malloc_p(), TRUE, TRUE, GPR_FLAG_STRESS | GPR_FLAG_MALLOC);
     }
 }
@@ -7740,7 +7750,7 @@ gc_prof_setup_new_record(rb_objspace_t *objspace, int reason)
 	MEMZERO(record, gc_profile_record, 1);
 
 	/* setup before-GC parameter */
-	record->flags = reason | (ruby_gc_stress ? GPR_FLAG_STRESS : 0);
+	record->flags = reason | (ruby_gc_stressfull ? GPR_FLAG_STRESS : 0);
 #if MALLOC_ALLOCATED_SIZE
 	record->allocated_size = malloc_allocated_size;
 #endif
@@ -8519,7 +8529,7 @@ Init_GC(void)
     rb_define_singleton_method(rb_mGC, "enable", rb_gc_enable, 0);
     rb_define_singleton_method(rb_mGC, "disable", rb_gc_disable, 0);
     rb_define_singleton_method(rb_mGC, "stress", gc_stress_get, 0);
-    rb_define_singleton_method(rb_mGC, "stress=", gc_stress_set, 1);
+    rb_define_singleton_method(rb_mGC, "stress=", gc_stress_set_m, 1);
     rb_define_singleton_method(rb_mGC, "count", gc_count, 0);
     rb_define_singleton_method(rb_mGC, "stat", gc_stat, -1);
     rb_define_singleton_method(rb_mGC, "latest_gc_info", gc_latest_gc_info, -1);

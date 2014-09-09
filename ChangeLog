@@ -1,3 +1,17 @@
+Tue Sep  9 13:51:32 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: add rb_objspace_t::flags::gc_stressfull and
+	  ruby_gc_stressfull macro.
+	  Rename objspace->gc_stress to objspace->gc_stress_mode.
+
+	  If objspace->gc_stress_mode is true (!nil and !false) then
+	  ruby_gc_stressfull becomes TRUE.
+
+	  ruby_gc_stressfull will speedup newobj_of() slightly.
+
+	* gc.c: initialize ruby_gc_stress(full|_mode) by gc_params.gc_stress
+	  even if ENABLE_VM_OBJSPACE is false.
+
 Tue Sep  9 13:05:50 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: remvoe ruby_disable_gc_stress and add ruby_disable_gc
