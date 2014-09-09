@@ -1,3 +1,9 @@
+Tue Sep  9 09:02:07 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MakeMakefile#pkg_config): append --cflags to also
+	  $CXXFLAGS, as they are often used by C++ compiler.
+	  [ruby-core:54532] [Bug #8315]
+
 Tue Sep  9 07:03:22 2014  Eric Wong  <e@80x24.org>
 
 	* compile.c: remove needless SYM2ID <-> ID2SYM conversions

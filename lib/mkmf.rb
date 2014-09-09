@@ -1778,6 +1778,7 @@ SRC
       libs = get['libs-only-l']
       ldflags = (Shellwords.shellwords(ldflags) - Shellwords.shellwords(libs)).quote.join(" ")
       $CFLAGS += " " << cflags
+      $CXXFLAGS += " " << cflags
       $LDFLAGS = [orig_ldflags, ldflags].join(' ')
       $libs += " " << libs
       Logging::message "package configuration for %s\n", pkg
