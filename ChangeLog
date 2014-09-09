@@ -1,3 +1,23 @@
+Tue Sep  9 18:18:07 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_objspace_t::heap_pages): rename field names:
+	  * used -> allocated_pages
+	  * increment -> allocatable_pages
+	  * length -> sorted_length
+	  And remove unused `limt' field.
+
+	* gc.c: rename macros:
+	  * heap_pages_used -> heap_allocated_pages
+	  * heap_pages_length -> heap_pages_sorted_length
+	  * heap_pages_increment -> heap_allocatable_pages
+
+	* gc.c (gc_stat_internal): fix symbol names
+	  ref: [Feature #9924]
+	  https://docs.google.com/spreadsheets/d/11Ua4uBr6o0k-nORrZLEIIUkHJ9JRzRR0NyZfrhEEnc8/edit?usp=sharing
+	  Yellow color fields in this table are changed.
+
+	* test/ruby/test_gc.rb: catch up this change.
+
 Tue Sep  9 14:56:03 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: continue layout changing.

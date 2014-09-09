@@ -113,7 +113,7 @@ class TestGc < Test::Unit::TestCase
 
   def test_latest_gc_info
     GC.start
-    count = GC.stat(:heap_free_slot) + GC.stat(:heap_increment) * GC::INTERNAL_CONSTANTS[:HEAP_OBJ_LIMIT]
+    count = GC.stat(:heap_free_slot) + GC.stat(:heap_allocatable_pages) * GC::INTERNAL_CONSTANTS[:HEAP_OBJ_LIMIT]
     count.times{ "a" + "b" }
     assert_equal :newobj, GC.latest_gc_info[:gc_by]
 
@@ -273,16 +273,16 @@ class TestGc < Test::Unit::TestCase
   def test_expand_heap
     assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom'
     GC.start
-    base_length = GC.stat[:heap_eden_page_length]
+    base_length = GC.stat[:heap_eden_pages]
     (base_length * 500).times{ 'a' }
     GC.start
-    assert_in_delta base_length, (v = GC.stat[:heap_eden_page_length]), 1,
-           "invalid heap expanding (base_length: #{base_length}, GC.stat[:heap_eden_page_length]: #{v})"
+    assert_in_delta base_length, (v = GC.stat[:heap_eden_pages]), 1,
+           "invalid heap expanding (base_length: #{base_length}, GC.stat[:heap_eden_pages]: #{v})"
 
     a = []
     (base_length * 500).times{ a << 'a'; nil }
     GC.start
-    assert_operator base_length, :<, GC.stat[:heap_eden_page_length] + 1
+    assert_operator base_length, :<, GC.stat[:heap_eden_pages] + 1
     eom
   end
 
