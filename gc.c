@@ -464,10 +464,25 @@ typedef struct rb_objspace {
 #endif
     } malloc_params;
 
-    enum gc_stat stat;
-    size_t marked_objects;
+    struct {
+	enum gc_stat stat : 2;
+	unsigned int immediate_sweep : 1;
+	unsigned int dont_gc : 1;
+	unsigned int dont_incremental : 1;
+	unsigned int during_gc : 1;
+#if USE_RGENGC
+	unsigned int during_minor_gc : 1;
+#endif
+#if GC_ENABLE_INCREMENTAL_MARK
+	unsigned int during_incremental_marking : 1;
+#endif
+    } flags;
 
-    int immediate_sweep;
+    struct {
+	rb_atomic_t finalizing;
+    } atomic_flags;
+
+    size_t marked_objects;
 
     rb_heap_t eden_heap;
     rb_heap_t tomb_heap; /* heap for zombies and ghosts */
@@ -490,12 +505,6 @@ typedef struct rb_objspace {
 	VALUE deferred_final;
     } heap_pages;
 
-    struct {
-	int dont_gc;
-	int dont_incremental;
-	int during_gc;
-	rb_atomic_t finalizing;
-    } flags;
     st_table *finalizer_table;
     mark_stack_t mark_stack;
     struct {
@@ -555,7 +564,6 @@ typedef struct rb_objspace {
 #if USE_RGENGC
     struct {
 	VALUE parent_object;
-	int during_minor_gc;
 	int need_major_gc;
 	size_t last_major_gc;
 	size_t remembered_shady_object_count;
@@ -575,12 +583,6 @@ typedef struct rb_objspace {
 #endif
     } rgengc;
 #endif /* USE_RGENGC */
-
-#if USE_RINCGC
-    struct {
-	int during_incremental_marking;
-    } rincgc;
-#endif
 } rb_objspace_t;
 
 
@@ -680,16 +682,16 @@ VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define heap_tomb               (&objspace->tomb_heap)
 #define dont_gc 		objspace->flags.dont_gc
 #define during_gc		objspace->flags.during_gc
-#define finalizing		objspace->flags.finalizing
+#define finalizing		objspace->atomic_flags.finalizing
 #define finalizer_table 	objspace->finalizer_table
 #define global_list		objspace->global_list
 #define ruby_gc_stress		objspace->gc_stress
 
-#define is_marking(objspace)             ((objspace)->stat == marking)
-#define is_sweeping(objspace)            ((objspace)->stat == sweeping)
-#define is_full_marking(objspace)        ((objspace)->rgengc.during_minor_gc == FALSE)
+#define is_marking(objspace)             ((objspace)->flags.stat == marking)
+#define is_sweeping(objspace)            ((objspace)->flags.stat == sweeping)
+#define is_full_marking(objspace)        ((objspace)->flags.during_minor_gc == FALSE)
 #if GC_ENABLE_INCREMENTAL_MARK
-#define is_incremental_marking(objspace) ((objspace)->rincgc.during_incremental_marking != FALSE)
+#define is_incremental_marking(objspace) ((objspace)->flags.during_incremental_marking != FALSE)
 #else
 #define is_incremental_marking(objspace) 0
 #endif
@@ -743,7 +745,7 @@ static int ready_to_gc(rb_objspace_t *objspace);
 
 static int garbage_collect(rb_objspace_t *, int full_mark, int immediate_mark, int immediate_sweep, int reason);
 
-static int  gc_start(rb_objspace_t *objspace, const int full_mark, const int immediate_mark, const int immediate_sweep, int reason);
+static int  gc_start(rb_objspace_t *objspace, const int full_mark, const int immediate_mark, const unsigned int immediate_sweep, int reason);
 static void gc_rest(rb_objspace_t *objspace);
 static inline void gc_enter(rb_objspace_t *objspace, const char *event);
 static inline void gc_exit(rb_objspace_t *objspace, const char *event);
@@ -3185,7 +3187,7 @@ gc_sweep_start(rb_objspace_t *objspace)
     rb_heap_t *heap;
     size_t total_limit_slot;
 
-    objspace->stat = sweeping;
+    objspace->flags.stat = sweeping;
 
     /* sweep unlinked method entries */
     if (GET_VM()->unlinked_method_entry_list) {
@@ -3240,7 +3242,7 @@ gc_sweep_finish(rb_objspace_t *objspace)
     }
 #endif
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_END_SWEEP, 0);
-    objspace->stat = none;
+    objspace->flags.stat = none;
 
 #if RGENGC_CHECK_MODE >= 2
     gc_verify_internal_consistency(Qnil);
@@ -3332,7 +3334,7 @@ gc_sweep_continue(rb_objspace_t *objspace, rb_heap_t *heap)
 static void
 gc_sweep(rb_objspace_t *objspace)
 {
-    const int immediate_sweep = objspace->immediate_sweep;
+    const unsigned int immediate_sweep = objspace->flags.immediate_sweep;
 
     gc_report(1, objspace, "gc_sweep: immediate: %d\n", immediate_sweep);
 
@@ -4818,13 +4820,13 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
 {
     /* start marking */
     gc_report(1, objspace, "gc_marks_start: (%s)\n", full_mark ? "full" : "minor");
-    objspace->stat = marking;
+    objspace->flags.stat = marking;
 
 #if USE_RGENGC
     objspace->rgengc.old_object_count_at_gc_start = objspace->rgengc.old_object_count;
 
     if (full_mark) {
-	objspace->rgengc.during_minor_gc = FALSE;
+	objspace->flags.during_minor_gc = FALSE;
 	objspace->marked_objects = 0;
 	objspace->profile.major_gc_count++;
 	objspace->rgengc.remembered_shady_object_count = 0;
@@ -4833,7 +4835,7 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
 	rgengc_mark_and_rememberset_clear(objspace, heap_eden);
     }
     else {
-	objspace->rgengc.during_minor_gc = TRUE;
+	objspace->flags.during_minor_gc = TRUE;
 	objspace->marked_objects = objspace->rgengc.old_object_count; /* OLD objects are already marked */
 	objspace->profile.minor_gc_count++;
 	rgengc_rememberset_mark(objspace, heap_eden);
@@ -4928,7 +4930,7 @@ gc_marks_finish(rb_objspace_t *objspace)
 	}
 #endif
 
-	objspace->rincgc.during_incremental_marking = FALSE;
+	objspace->flags.during_incremental_marking = FALSE;
 	/* check children of all marked wb-unprotected objects */
 	gc_marks_wb_unprotected_objects(objspace);
     }
@@ -5758,16 +5760,16 @@ garbage_collect(rb_objspace_t *objspace, int full_mark, int immediate_mark, int 
 }
 
 static int
-gc_start(rb_objspace_t *objspace, const int full_mark, const int immediate_mark, const int immediate_sweep, int reason)
+gc_start(rb_objspace_t *objspace, const int full_mark, const int immediate_mark, const unsigned int immediate_sweep, int reason)
 {
     int do_full_mark = full_mark;
-    objspace->immediate_sweep = immediate_sweep;
+    objspace->flags.immediate_sweep = immediate_sweep;
 
     if (!heap_pages_used) return FALSE;      /* heap is not ready */
     if (!ready_to_gc(objspace)) return TRUE; /* GC is not allowed */
 
     if (RGENGC_CHECK_MODE) {
-	assert(objspace->stat == none);
+	assert(objspace->flags.stat == none);
 	assert(!is_lazy_sweeping(heap_eden));
 	assert(!is_incremental_marking(objspace));
 #if RGENGC_CHECK_MODE >= 2
@@ -5784,7 +5786,7 @@ gc_start(rb_objspace_t *objspace, const int full_mark, const int immediate_mark,
 	    do_full_mark = TRUE;
 	}
 
-	objspace->immediate_sweep = !(flag & (1<<gc_stress_no_immediate_sweep));
+	objspace->flags.immediate_sweep = !(flag & (1<<gc_stress_no_immediate_sweep));
     }
     else {
 #if USE_RGENGC
@@ -5804,22 +5806,22 @@ gc_start(rb_objspace_t *objspace, const int full_mark, const int immediate_mark,
 
 #if GC_ENABLE_INCREMENTAL_MARK
     if (!GC_ENABLE_INCREMENTAL_MARK || objspace->flags.dont_incremental || immediate_mark) {
-	objspace->rincgc.during_incremental_marking = FALSE;
+	objspace->flags.during_incremental_marking = FALSE;
     }
     else {
-	objspace->rincgc.during_incremental_marking = do_full_mark;
+	objspace->flags.during_incremental_marking = do_full_mark;
     }
 #endif
 
     if (!GC_ENABLE_LAZY_SWEEP || objspace->flags.dont_incremental) {
-	objspace->immediate_sweep = TRUE;
+	objspace->flags.immediate_sweep = TRUE;
     }
 
-    if (objspace->immediate_sweep) reason |= GPR_FLAG_IMMEDIATE_SWEEP;
+    if (objspace->flags.immediate_sweep) reason |= GPR_FLAG_IMMEDIATE_SWEEP;
 
     gc_report(1, objspace, "gc_start(%d, %d, %d, reason: %d) => %d, %d, %d\n",
 	      full_mark, immediate_mark, immediate_sweep, reason,
-	      do_full_mark, !is_incremental_marking(objspace), objspace->immediate_sweep);
+	      do_full_mark, !is_incremental_marking(objspace), objspace->flags.immediate_sweep);
 
     objspace->profile.count++;
     objspace->profile.latest_gc_info = reason;

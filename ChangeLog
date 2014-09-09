@@ -1,3 +1,8 @@
+Tue Sep  9 11:39:41 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: pack boolean values into rb_objspace_t::flags with bit fields
+	  to improve cache locality.
+
 Tue Sep  9 11:11:05 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_object.rb: extend timeout.
