@@ -217,9 +217,9 @@ class TestHash < Test::Unit::TestCase
 
   def test_AREF_fstring_key
     h = {"abc" => 1}
-    before = GC.stat(:total_allocated_object)
+    before = GC.stat(:total_allocated_objects)
     5.times{ h["abc"] }
-    assert_equal before, GC.stat(:total_allocated_object)
+    assert_equal before, GC.stat(:total_allocated_objects)
   end
 
   def test_ASET_fstring_key
