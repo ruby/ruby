@@ -478,6 +478,9 @@ typedef struct rb_objspace {
 #endif
     } flags;
 
+    rb_event_flag_t hook_events;
+    size_t total_allocated_object_num;
+
     rb_heap_t eden_heap;
     rb_heap_t tomb_heap; /* heap for zombies and ghosts */
 
@@ -485,6 +488,12 @@ typedef struct rb_objspace {
 	rb_atomic_t finalizing;
     } atomic_flags;
 
+    struct mark_func_data_struct {
+	void *data;
+	void (*mark_func)(VALUE v, void *data);
+    } *mark_func_data;
+
+    mark_stack_t mark_stack;
     size_t marked_objects;
 
     struct {
@@ -506,7 +515,7 @@ typedef struct rb_objspace {
     } heap_pages;
 
     st_table *finalizer_table;
-    mark_stack_t mark_stack;
+
     struct {
 	int run;
 	int latest_gc_info;
@@ -549,16 +558,9 @@ typedef struct rb_objspace {
 
 	/* basic statistics */
 	size_t count;
-	size_t total_allocated_object_num;
 	size_t total_freed_object_num;
     } profile;
     struct gc_list *global_list;
-    rb_event_flag_t hook_events; /* this place may be affinity with memory cache */
-
-    struct mark_func_data_struct {
-	void *data;
-	void (*mark_func)(VALUE v, void *data);
-    } *mark_func_data;
 
     VALUE gc_stress_mode;
 
@@ -1662,7 +1664,7 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
     if (rgengc_remembered(objspace, (VALUE)obj)) rb_bug("newobj: %s is remembered.", obj_info(obj));
 #endif
 
-    objspace->profile.total_allocated_object_num++;
+    objspace->total_allocated_object_num++;
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj);
 
     return obj;
@@ -3033,7 +3035,7 @@ count_objects(int argc, VALUE *argv, VALUE os)
 static size_t
 objspace_live_slot(rb_objspace_t *objspace)
 {
-    return objspace->profile.total_allocated_object_num - objspace->profile.total_freed_object_num - heap_pages_final_slots;
+    return objspace->total_allocated_object_num - objspace->profile.total_freed_object_num - heap_pages_final_slots;
 }
 
 static size_t
@@ -5846,7 +5848,7 @@ gc_start(rb_objspace_t *objspace, const int full_mark, const int immediate_mark,
 
     objspace->profile.count++;
     objspace->profile.latest_gc_info = reason;
-    objspace->profile.total_allocated_object_num_at_gc_start = objspace->profile.total_allocated_object_num;
+    objspace->profile.total_allocated_object_num_at_gc_start = objspace->total_allocated_object_num;
     objspace->profile.heap_used_at_gc_start = heap_pages_used;
     gc_prof_setup_new_record(objspace, reason);
     gc_reset_malloc_info(objspace);
@@ -6358,7 +6360,7 @@ gc_stat_internal(VALUE hash_or_sym)
     SET(heap_swept_slot, heap_pages_swept_slots);
     SET(heap_eden_page_length, heap_eden->page_length);
     SET(heap_tomb_page_length, heap_tomb->page_length);
-    SET(total_allocated_object, objspace->profile.total_allocated_object_num);
+    SET(total_allocated_object, objspace->total_allocated_object_num);
     SET(total_freed_object, objspace->profile.total_freed_object_num);
     SET(malloc_increase, malloc_increase);
     SET(malloc_limit, malloc_limit);

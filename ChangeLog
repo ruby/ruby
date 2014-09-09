@@ -1,3 +1,13 @@
+Tue Sep  9 14:56:03 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: continue layout changing.
+
+	  newobj_of() also touch:
+	  (4) increment total_allocated_object_num
+	  (5) check hook_events
+
+	  And gather fields related to marking phase.
+
 Tue Sep  9 14:21:50 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: fix layout of rb_objsapce_t to improve cache locality.
