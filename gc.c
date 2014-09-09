@@ -435,13 +435,14 @@ typedef struct mark_stack {
 } mark_stack_t;
 
 typedef struct rb_heap_struct {
-    struct heap_page *pages;
+    RVALUE *freelist;
+
     struct heap_page *free_pages;
     struct heap_page *using_page;
+    struct heap_page *pages;
     struct heap_page *sweep_pages;
     struct heap_page *pooled_pages;
 
-    RVALUE *freelist;
     size_t page_length;      /* total page count in a heap */
     size_t total_slots;      /* total slot count (page_length * HEAP_OBJ_LIMIT) */
 } rb_heap_t;
@@ -477,14 +478,14 @@ typedef struct rb_objspace {
 #endif
     } flags;
 
+    rb_heap_t eden_heap;
+    rb_heap_t tomb_heap; /* heap for zombies and ghosts */
+
     struct {
 	rb_atomic_t finalizing;
     } atomic_flags;
 
     size_t marked_objects;
-
-    rb_heap_t eden_heap;
-    rb_heap_t tomb_heap; /* heap for zombies and ghosts */
 
     struct {
 	struct heap_page **sorted;

@@ -1,3 +1,12 @@
+Tue Sep  9 14:21:50 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: fix layout of rb_objsapce_t to improve cache locality.
+
+	  newobj_of() accesses:
+	  (1) rb_objspace_t::flags
+	  (2) rb_objspace_t::eden_heap::freelist
+	  (3) and rb_objspace_t::eden_heap::free_pages if freelist is NULL.
+
 Tue Sep  9 14:09:36 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: move rb_objspace_t::flags::gc_stressfull after during_gc
