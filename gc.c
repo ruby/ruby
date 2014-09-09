@@ -3309,7 +3309,6 @@ gc_sweep_rest(rb_objspace_t *objspace)
     rb_heap_t *heap = heap_eden; /* lazy sweep only for eden */
 
     if (is_lazy_sweeping(heap)) {
-	during_gc++;
 	while (is_lazy_sweeping(heap)) {
 	    gc_sweep_step(objspace, heap);
 	}
