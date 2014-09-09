@@ -18,7 +18,7 @@ class Object
   RUBY_DESCRIPTION = "ruby #{RUBY_VERSION} (#{RUBY_RELEASE_DATE}) [#{RUBY_PLATFORM}]"
 end
 builddir = File.dirname(__FILE__)
-top_srcdir = File.expand_path("@srcdir@", builddir)
+top_srcdir = "@abs_top_srcdir@"
 $:.unshift(File.expand_path(builddir))
 fake = File.join(top_srcdir, "tool/fake.rb")
 eval(File.read(fake), nil, fake)
