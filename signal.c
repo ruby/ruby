@@ -817,7 +817,7 @@ ruby_abort(void)
 }
 
 static int segv_received = 0;
-extern int ruby_disable_gc_stress;
+extern int ruby_disable_gc;
 
 static RETSIGTYPE
 sigsegv(int sig SIGINFO_ARG)
@@ -833,7 +833,7 @@ sigsegv(int sig SIGINFO_ARG)
     CHECK_STACK_OVERFLOW();
 
     segv_received = 1;
-    ruby_disable_gc_stress = 1;
+    ruby_disable_gc = 1;
     rb_bug_context(SIGINFO_CTX, "Segmentation fault" MESSAGE_FAULT_ADDRESS);
 }
 #endif

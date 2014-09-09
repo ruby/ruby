@@ -728,7 +728,7 @@ struct RZombie {
 
 int ruby_gc_debug_indent = 0;
 VALUE rb_mGC;
-int ruby_disable_gc_stress = 0;
+int ruby_disable_gc = 0;
 
 void rb_gcdebug_print_obj_condition(VALUE obj);
 
@@ -1599,7 +1599,7 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
 	rb_bug("object allocation during garbage collection phase");
     }
 
-    if (UNLIKELY(ruby_gc_stress && !ruby_disable_gc_stress)) {
+    if (UNLIKELY(ruby_gc_stress)) {
 	if (!garbage_collect(objspace, FALSE, FALSE, FALSE, GPR_FLAG_NEWOBJ)) {
 	    rb_memerror();
 	}
@@ -5666,25 +5666,27 @@ enum {
 #define gc_stress_full_mark_after_malloc_p() \
     (FIXNUM_P(ruby_gc_stress) && (FIX2LONG(ruby_gc_stress) & (1<<gc_stress_full_mark_after_malloc)))
 
-static int
+static void
 heap_ready_to_gc(rb_objspace_t *objspace, rb_heap_t *heap)
 {
-    if (dont_gc || during_gc) {
-	if (!heap->freelist && !heap->free_pages) {
-	    if (!heap_increment(objspace, heap)) {
-		heap_set_increment(objspace, 1);
-                heap_increment(objspace, heap);
-            }
+    if (!heap->freelist && !heap->free_pages) {
+	if (!heap_increment(objspace, heap)) {
+	    heap_set_increment(objspace, 1);
+	    heap_increment(objspace, heap);
 	}
-	return FALSE;
     }
-    return TRUE;
 }
 
 static int
 ready_to_gc(rb_objspace_t *objspace)
 {
-    return heap_ready_to_gc(objspace, heap_eden);
+    if (dont_gc || during_gc || ruby_disable_gc) {
+	heap_ready_to_gc(objspace, heap_eden);
+	return FALSE;
+    }
+    else {
+	return TRUE;
+    }
 }
 
 static void
@@ -5792,7 +5794,7 @@ gc_start(rb_objspace_t *objspace, const int full_mark, const int immediate_mark,
 
     gc_enter(objspace, "gc_start");
 
-    if (ruby_gc_stress && !ruby_disable_gc_stress) {
+    if (ruby_gc_stress) {
 	int flag = FIXNUM_P(ruby_gc_stress) ? FIX2INT(ruby_gc_stress) : 0;
 
 	if ((flag & (1<<gc_stress_no_major)) == 0) {
@@ -6927,7 +6929,7 @@ atomic_sub_nounderflow(size_t *var, size_t sub)
 static void
 objspace_malloc_gc_stress(rb_objspace_t *objspace)
 {
-    if (ruby_gc_stress && !ruby_disable_gc_stress && ruby_native_thread_p()) {
+    if (ruby_gc_stress && ruby_native_thread_p()) {
 	garbage_collect_with_gvl(objspace, gc_stress_full_mark_after_malloc_p(), TRUE, TRUE, GPR_FLAG_STRESS | GPR_FLAG_MALLOC);
     }
 }
@@ -7738,7 +7740,7 @@ gc_prof_setup_new_record(rb_objspace_t *objspace, int reason)
 	MEMZERO(record, gc_profile_record, 1);
 
 	/* setup before-GC parameter */
-	record->flags = reason | ((ruby_gc_stress && !ruby_disable_gc_stress) ? GPR_FLAG_STRESS : 0);
+	record->flags = reason | (ruby_gc_stress ? GPR_FLAG_STRESS : 0);
 #if MALLOC_ALLOCATED_SIZE
 	record->allocated_size = malloc_allocated_size;
 #endif

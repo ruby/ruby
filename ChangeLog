@@ -1,3 +1,12 @@
+Tue Sep  9 13:05:50 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: remvoe ruby_disable_gc_stress and add ruby_disable_gc
+	  to speed-up newobj_of().
+
+	* gc.c (ready_to_gc): check ruby_disable_gc.
+
+	* signal.c: use ruby_disable_gc.
+
 Tue Sep  9 12:11:41 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: rename gc_stat entries and check stat transition.
