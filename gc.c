@@ -531,18 +531,18 @@ typedef struct rb_objspace {
 	size_t minor_gc_count;
 	size_t major_gc_count;
 #if RGENGC_PROFILE > 0
-	size_t generated_normal_object_count;
-	size_t generated_shady_object_count;
-	size_t shade_operation_count;
-	size_t promote_infant_count;
-	size_t remembered_normal_object_count;
-	size_t remembered_shady_object_count;
+	size_t total_generated_normal_object_count;
+	size_t total_generated_shady_object_count;
+	size_t total_shade_operation_count;
+	size_t total_promoted_count;
+	size_t total_remembered_normal_object_count;
+	size_t total_remembered_shady_object_count;
 
 #if RGENGC_PROFILE >= 2
 	size_t generated_normal_object_count_types[RUBY_T_MASK];
 	size_t generated_shady_object_count_types[RUBY_T_MASK];
 	size_t shade_operation_count_types[RUBY_T_MASK];
-	size_t promote_infant_types[RUBY_T_MASK];
+	size_t promoted_types[RUBY_T_MASK];
 	size_t remembered_normal_object_count_types[RUBY_T_MASK];
 	size_t remembered_shady_object_count_types[RUBY_T_MASK];
 #endif
@@ -1052,14 +1052,9 @@ RVALUE_PROMOTE_RAW(rb_objspace_t *objspace, VALUE obj)
     MARK_IN_BITMAP(GET_HEAP_LONG_LIVED_BITS(obj), obj);
     objspace->rgengc.old_object_count++;
 
-#if RGENGC_PROFILE >= 1
-    {
-	rb_objspace_t *objspace = &rb_objspace;
-	objspace->profile.promoted_count++;
 #if RGENGC_PROFILE >= 2
-	objspace->profile.promoted_types[BUILTIN_TYPE(obj)]++;
-#endif
-    }
+    objspace->profile.total_promoted_count++;
+    objspace->profile.promoted_types[BUILTIN_TYPE(obj)]++;
 #endif
 }
 
@@ -1626,11 +1621,28 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
     assert(RVALUE_MARKING(obj) == FALSE);
     assert(RVALUE_OLD_P(obj) == FALSE);
     assert(RVALUE_WB_UNPROTECTED(obj) == FALSE);
+    if (RVALUE_AGE(obj) > 0) rb_bug("newobj: %s of age (%d) > 0.", obj_info(obj), RVALUE_AGE(obj));
+    if (rgengc_remembered(objspace, (VALUE)obj)) rb_bug("newobj: %s is remembered.", obj_info(obj));
 #endif
 
 #if USE_RGENGC
     if ((flags & FL_WB_PROTECTED) == 0) {
 	MARK_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
+    }
+#endif
+
+#if RGENGC_PROFILE
+    if (flags & FL_WB_PROTECTED) {
+	objspace->profile.total_generated_normal_object_count++;
+#if RGENGC_PROFILE >= 2
+	objspace->profile.generated_normal_object_count_types[BUILTIN_TYPE(obj)]++;
+#endif
+    }
+    else {
+	objspace->profile.total_generated_shady_object_count++;
+#if RGENGC_PROFILE >= 2
+	objspace->profile.generated_shady_object_count_types[BUILTIN_TYPE(obj)]++;
+#endif
     }
 #endif
 
@@ -1640,31 +1652,9 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
     assert(!SPECIAL_CONST_P(obj)); /* check alignment */
 #endif
 
-#if RGENGC_PROFILE
-    if (flags & FL_WB_PROTECTED) {
-	objspace->profile.generated_normal_object_count++;
-#if RGENGC_PROFILE >= 2
-	objspace->profile.generated_normal_object_count_types[BUILTIN_TYPE(obj)]++;
-#endif
-    }
-    else {
-	objspace->profile.generated_shady_object_count++;
-#if RGENGC_PROFILE >= 2
-	objspace->profile.generated_shady_object_count_types[BUILTIN_TYPE(obj)]++;
-#endif
-    }
-#endif
-
-    gc_report(5, objspace, "newobj: %s\n", obj_info(obj));
-
-#if USE_RGENGC && RGENGC_CHECK_MODE
-    if (RVALUE_AGE(obj) > 0) rb_bug("newobj: %s of age (%d) > 0.", obj_info(obj), RVALUE_AGE(obj));
-    if (rgengc_remembered(objspace, (VALUE)obj)) rb_bug("newobj: %s is remembered.", obj_info(obj));
-#endif
-
     objspace->total_allocated_objects++;
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj);
-
+    gc_report(5, objspace, "newobj: %s\n", obj_info(obj));
     return obj;
 }
 
@@ -3250,17 +3240,6 @@ gc_sweep_finish(rb_objspace_t *objspace)
 	heap_allocatable_pages = heap_tomb->page_length;
     }
 
-#if RGENGC_PROFILE > 0
-    if (0) {
-	fprintf(stderr, "%d\t%d\t%d\t%d\t%d\t%d\n",
-		(int)rb_gc_count(),
-		(int)objspace->profile.major_gc_count,
-		(int)objspace->profile.minor_gc_count,
-		(int)objspace->profile.promote_infant_count,
-		(int)objspace->profile.remembered_normal_object_count,
-		(int)objspace->rgengc.remembered_shady_object_count);
-    }
-#endif
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_END_SWEEP, 0);
     gc_stat_transition(objspace, gc_stat_none);
 
@@ -3901,6 +3880,13 @@ gc_remember_unprotected(rb_objspace_t *objspace, VALUE obj)
 	page->flags.has_long_lived_shady_objects = TRUE;
 	MARK_IN_BITMAP(bits, obj);
 	objspace->rgengc.remembered_shady_object_count++;
+
+#if RGENGC_PROFILE > 0
+	objspace->profile.total_remembered_shady_object_count++;
+#if RGENGC_PROFILE >= 2
+	objspace->profile.remembered_shady_object_count_types[BUILTIN_TYPE(obj)]++;
+#endif
+#endif
 	return TRUE;
     }
     else {
@@ -5198,28 +5184,20 @@ rgengc_remember(rb_objspace_t *objspace, VALUE obj)
 
     check_rvalue_consistency(obj);
 
-    if (RGENGC_PROFILE) {
-	if (!rgengc_remembered(objspace, obj)) {
-#if RGENGC_PROFILE > 0
-	    if (RVALUE_WB_UNPROTECTED(obj) == 0) {
-		objspace->profile.remembered_normal_object_count++;
-#if RGENGC_PROFILE >= 2
-		objspace->profile.remembered_normal_object_count_types[BUILTIN_TYPE(obj)]++;
-#endif
-	    }
-	    else {
-		objspace->profile.remembered_shady_object_count++;
-#if RGENGC_PROFILE >= 2
-		objspace->profile.remembered_shady_object_count_types[BUILTIN_TYPE(obj)]++;
-#endif
-	    }
-#endif /* RGENGC_PROFILE > 0 */
-	}
-    }
-
     if (RGENGC_CHECK_MODE) {
 	if (RVALUE_WB_UNPROTECTED(obj)) rb_bug("rgengc_remember: %s is not wb protected.", obj_info(obj));
     }
+
+#if RGENGC_PROFILE > 0
+    if (!rgengc_remembered(objspace, obj)) {
+	if (RVALUE_WB_UNPROTECTED(obj) == 0) {
+	    objspace->profile.total_remembered_normal_object_count++;
+#if RGENGC_PROFILE >= 2
+	    objspace->profile.remembered_normal_object_count_types[BUILTIN_TYPE(obj)]++;
+#endif
+	}
+    }
+#endif /* RGENGC_PROFILE > 0 */
 
     return rgengc_remembersetbits_set(objspace, obj);
 }
@@ -5414,7 +5392,7 @@ rb_gc_writebarrier_unprotect(VALUE obj)
 	    gc_remember_unprotected(objspace, obj);
 
 #if RGENGC_PROFILE
-	    objspace->profile.shade_operation_count++;
+	    objspace->profile.total_shade_operation_count++;
 #if RGENGC_PROFILE >= 2
 	    objspace->profile.shade_operation_count_types[BUILTIN_TYPE(obj)]++;
 #endif /* RGENGC_PROFILE >= 2 */
@@ -6285,9 +6263,9 @@ gc_stat_internal(VALUE hash_or_sym)
     static VALUE sym_oldmalloc_increase, sym_oldmalloc_limit;
 #endif
 #if RGENGC_PROFILE
-    static VALUE sym_generated_normal_object_count, sym_generated_shady_object_count;
-    static VALUE sym_shade_operation_count, sym_promote_infant_count, sym_promote_young_count;
-    static VALUE sym_remembered_normal_object_count, sym_remembered_shady_object_count;
+    static VALUE sym_total_generated_normal_object_count, sym_total_generated_shady_object_count;
+    static VALUE sym_total_shade_operation_count, sym_total_promoted_count;
+    static VALUE sym_total_remembered_normal_object_count, sym_total_remembered_shady_object_count;
 #endif /* RGENGC_PROFILE */
 #endif /* USE_RGENGC */
 
@@ -6333,13 +6311,12 @@ gc_stat_internal(VALUE hash_or_sym)
 	S(oldmalloc_limit);
 #endif
 #if RGENGC_PROFILE
-	S(generated_normal_object_count);
-	S(generated_shady_object_count);
-	S(shade_operation_count);
-	S(promote_infant_count);
-	S(promote_young_count);
-	S(remembered_normal_object_count);
-	S(remembered_shady_object_count);
+	S(total_generated_normal_object_count);
+	S(total_generated_shady_object_count);
+	S(total_shade_operation_count);
+	S(total_promoted_count);
+	S(total_remembered_normal_object_count);
+	S(total_remembered_shady_object_count);
 #endif /* RGENGC_PROFILE */
 #endif /* USE_RGENGC */
 #undef S
@@ -6381,12 +6358,12 @@ gc_stat_internal(VALUE hash_or_sym)
 #endif
 
 #if RGENGC_PROFILE
-    SET(generated_normal_object_count, objspace->profile.generated_normal_object_count);
-    SET(generated_shady_object_count, objspace->profile.generated_shady_object_count);
-    SET(shade_operation_count, objspace->profile.shade_operation_count);
-    SET(promote_infant_count, objspace->profile.promote_infant_count);
-    SET(remembered_normal_object_count, objspace->profile.remembered_normal_object_count);
-    SET(remembered_shady_object_count, objspace->profile.remembered_shady_object_count);
+    SET(total_generated_normal_object_count, objspace->profile.total_generated_normal_object_count);
+    SET(total_generated_shady_object_count, objspace->profile.total_generated_shady_object_count);
+    SET(total_shade_operation_count, objspace->profile.total_shade_operation_count);
+    SET(total_promoted_count, objspace->profile.total_promoted_count);
+    SET(total_remembered_normal_object_count, objspace->profile.total_remembered_normal_object_count);
+    SET(total_remembered_shady_object_count, objspace->profile.total_remembered_shady_object_count);
 #endif /* RGENGC_PROFILE */
 #endif /* USE_RGENGC */
 #undef SET
@@ -6400,7 +6377,7 @@ gc_stat_internal(VALUE hash_or_sym)
 	gc_count_add_each_types(hash, "generated_normal_object_count_types", objspace->profile.generated_normal_object_count_types);
 	gc_count_add_each_types(hash, "generated_shady_object_count_types", objspace->profile.generated_shady_object_count_types);
 	gc_count_add_each_types(hash, "shade_operation_count_types", objspace->profile.shade_operation_count_types);
-	gc_count_add_each_types(hash, "promote_infant_types", objspace->profile.promote_infant_types);
+	gc_count_add_each_types(hash, "promoted_types", objspace->profile.promoted_types);
 	gc_count_add_each_types(hash, "remembered_normal_object_count_types", objspace->profile.remembered_normal_object_count_types);
 	gc_count_add_each_types(hash, "remembered_shady_object_count_types", objspace->profile.remembered_shady_object_count_types);
     }

@@ -1,3 +1,13 @@
+Wed Sep 10 07:22:53 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: refactoring for RGENGC_PROFILE > 0.
+
+	  * rename rb_objspace_t::profile::..._count
+	    to rb_objspace_t::profile::total_..._count
+	  * rename promote_infant_types to promote_types
+
+	* gc.c (gc_remember_unprotected): count remembered shady objects here.
+
 Wed Sep 10 03:12:12 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* gc.c (init_mark_stack): MEMZERO() receive type as 2nd argument instead
