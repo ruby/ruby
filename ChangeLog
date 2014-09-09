@@ -1,3 +1,7 @@
+Tue Sep  9 12:11:41 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: rename gc_stat entries and check stat transition.
+
 Tue Sep  9 12:06:03 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_sweep_rest): remove wrong modification of during_gc flag.
