@@ -6269,7 +6269,7 @@ gc_stat_internal(VALUE hash_or_sym)
 {
     static VALUE sym_count;
     static VALUE sym_heap_used, sym_heap_sorted_length, sym_heap_allocatable_pages;
-    static VALUE sym_heap_live_slot, sym_heap_free_slot, sym_heap_final_slot, sym_heap_swept_slot;
+    static VALUE sym_heap_live_slot, sym_heap_free_slot, sym_heap_final_slots, sym_heap_swept_slots;
     static VALUE sym_heap_eden_pages, sym_heap_tomb_pages;
     static VALUE sym_total_allocated_object, sym_total_freed_object;
     static VALUE sym_malloc_increase, sym_malloc_limit;
@@ -6308,8 +6308,8 @@ gc_stat_internal(VALUE hash_or_sym)
 	S(heap_allocatable_pages);
 	S(heap_live_slot);
 	S(heap_free_slot);
-	S(heap_final_slot);
-	S(heap_swept_slot);
+	S(heap_final_slots);
+	S(heap_swept_slots);
 	S(heap_eden_pages);
 	S(heap_tomb_pages);
 	S(total_allocated_object);
@@ -6354,8 +6354,8 @@ gc_stat_internal(VALUE hash_or_sym)
     SET(heap_allocatable_pages, heap_allocatable_pages);
     SET(heap_live_slot, objspace_live_slot(objspace));
     SET(heap_free_slot, objspace_free_slot(objspace));
-    SET(heap_final_slot, heap_pages_final_slots);
-    SET(heap_swept_slot, heap_pages_swept_slots);
+    SET(heap_final_slots, heap_pages_final_slots);
+    SET(heap_swept_slots, heap_pages_swept_slots);
     SET(heap_eden_pages, heap_eden->page_length);
     SET(heap_tomb_pages, heap_tomb->page_length);
     SET(total_allocated_object, objspace->total_allocated_object_num);
@@ -6420,8 +6420,8 @@ gc_stat_internal(VALUE hash_or_sym)
  *          :heap_allocatable_pages=>2,
  *          :heap_live_slot=>6836,
  *          :heap_free_slot=>519,
- *          :heap_final_slot=>0,
- *          :heap_swept_slot=>818,
+ *          :heap_final_slots=>0,
+ *          :heap_swept_slots=>818,
  *          :total_allocated_object=>7674,
  *          :total_freed_object=>838,
  *          :malloc_increase=>181034,

@@ -1,3 +1,9 @@
+Tue Sep  9 18:51:36 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_stat_internal): fix symbol names
+	  * heap_final_slot -> heap_final_slots
+	  * heap_swept_slot -> heap_swept_slots
+
 Tue Sep  9 18:18:07 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_objspace_t::heap_pages): rename field names:
@@ -12,6 +18,12 @@ Tue Sep  9 18:18:07 2014  Koichi Sasada  <ko1@atdot.net>
 	  * heap_pages_increment -> heap_allocatable_pages
 
 	* gc.c (gc_stat_internal): fix symbol names
+	  * heap_used -> heap_allocated_pages
+	  * heap_eden_page_length -> heap_eden_pages
+	  * heap_tomb_page_length -> heap_tomb_pages
+	  * heap_increment -> heap_allocatable_pages
+	  * heap_length -> heap_sorted_length
+
 	  ref: [Feature #9924]
 	  https://docs.google.com/spreadsheets/d/11Ua4uBr6o0k-nORrZLEIIUkHJ9JRzRR0NyZfrhEEnc8/edit?usp=sharing
 	  Yellow color fields in this table are changed.
