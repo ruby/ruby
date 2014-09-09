@@ -1,3 +1,15 @@
+Tue Sep  9 14:09:36 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: move rb_objspace_t::flags::gc_stressfull after during_gc
+	  to make accesssing both parameters easy.
+
+	* gc.c (heap_get_freeobj): add LIKELY() hint.
+
+	* gc.c (heap_get_freeobj_from_next_freepage): ditto.
+
+	* gc.c (newobj_of): check both parameters at once for exceptional
+	  case.
+
 Tue Sep  9 13:51:32 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: add rb_objspace_t::flags::gc_stressfull and

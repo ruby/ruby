@@ -464,11 +464,11 @@ typedef struct rb_objspace {
 
     struct {
 	enum gc_stat stat : 2;
-	unsigned int  gc_stressfull: 1;
 	unsigned int immediate_sweep : 1;
 	unsigned int dont_gc : 1;
 	unsigned int dont_incremental : 1;
 	unsigned int during_gc : 1;
+	unsigned int gc_stressfull: 1;
 #if USE_RGENGC
 	unsigned int during_minor_gc : 1;
 #endif
@@ -1538,7 +1538,7 @@ heap_get_freeobj_from_next_freepage(rb_objspace_t *objspace, rb_heap_t *heap)
     struct heap_page *page;
     RVALUE *p;
 
-    while (heap->free_pages == NULL) {
+    while (UNLIKELY(heap->free_pages == NULL)) {
 	heap_prepare(objspace, heap);
     }
     page = heap->free_pages;
@@ -1558,7 +1558,7 @@ heap_get_freeobj(rb_objspace_t *objspace, rb_heap_t *heap)
     RVALUE *p = heap->freelist;
 
     while (1) {
-	if (p) {
+	if (LIKELY(p != NULL)) {
 	    heap->freelist = p->as.free.next;
 	    return (VALUE)p;
 	}
@@ -1594,15 +1594,17 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
     rb_objspace_t *objspace = &rb_objspace;
     VALUE obj;
 
-    if (UNLIKELY(during_gc)) {
-	dont_gc = 1;
-	during_gc = 0;
-	rb_bug("object allocation during garbage collection phase");
-    }
+    if (UNLIKELY(during_gc || ruby_gc_stressfull)) {
+	if (during_gc) {
+	    dont_gc = 1;
+	    during_gc = 0;
+	    rb_bug("object allocation during garbage collection phase");
+	}
 
-    if (UNLIKELY(ruby_gc_stressfull)) {
-	if (!garbage_collect(objspace, FALSE, FALSE, FALSE, GPR_FLAG_NEWOBJ)) {
-	    rb_memerror();
+	if (ruby_gc_stressfull) {
+	    if (!garbage_collect(objspace, FALSE, FALSE, FALSE, GPR_FLAG_NEWOBJ)) {
+		rb_memerror();
+	    }
 	}
     }
 
