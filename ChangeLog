@@ -1,3 +1,8 @@
+Tue Sep  9 21:55:39 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/sample/excel2.rb: remove some commented-out code.
+	  rotate graph more slowly to see graph clearly.
+
 Tue Sep  9 19:52:33 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: rename rb_objspace_t::marked_objects to marked_slots.
