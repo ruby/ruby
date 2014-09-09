@@ -494,7 +494,7 @@ typedef struct rb_objspace {
     } *mark_func_data;
 
     mark_stack_t mark_stack;
-    size_t marked_objects;
+    size_t marked_slots;
 
     struct {
 	struct heap_page **sorted;
@@ -3975,8 +3975,6 @@ gc_aging(rb_objspace_t *objspace, VALUE obj)
     assert(RVALUE_MARKING(obj) == FALSE);
 #endif
 
-    objspace->marked_objects++;
-
     check_rvalue_consistency(obj);
 
     if (RVALUE_PAGE_WB_UNPROTECTED(page, obj) == 0) {
@@ -3992,6 +3990,8 @@ gc_aging(rb_objspace_t *objspace, VALUE obj)
     }
     check_rvalue_consistency(obj);
 #endif /* USE_RGENGC */
+
+    objspace->marked_slots++;
 }
 
 static void
@@ -4188,7 +4188,7 @@ gc_mark_stacked_objects(rb_objspace_t *objspace, int incremental, size_t count)
     mark_stack_t *mstack = &objspace->mark_stack;
     VALUE obj;
 #if GC_ENABLE_INCREMENTAL_MARK
-    size_t marked_objects_at_the_beggining = objspace->marked_objects;
+    size_t marked_slots_at_the_beggining = objspace->marked_slots;
 #endif
 
     while (pop_mark_stack(mstack, &obj)) {
@@ -4206,7 +4206,7 @@ gc_mark_stacked_objects(rb_objspace_t *objspace, int incremental, size_t count)
 	    }
 	    CLEAR_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj);
 
-	    if (objspace->marked_objects - marked_objects_at_the_beggining > count) {
+	    if (objspace->marked_slots - marked_slots_at_the_beggining > count) {
 		break;
 	    }
 	}
@@ -4841,12 +4841,13 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
     gc_report(1, objspace, "gc_marks_start: (%s)\n", full_mark ? "full" : "minor");
     gc_stat_transition(objspace, gc_stat_marking);
 
+    objspace->marked_slots = 0;
+
 #if USE_RGENGC
     objspace->rgengc.old_object_count_at_gc_start = objspace->rgengc.old_object_count;
 
     if (full_mark) {
 	objspace->flags.during_minor_gc = FALSE;
-	objspace->marked_objects = 0;
 	objspace->profile.major_gc_count++;
 	objspace->rgengc.remembered_shady_object_count = 0;
 	objspace->rgengc.old_object_count = 0;
@@ -4855,7 +4856,9 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
     }
     else {
 	objspace->flags.during_minor_gc = TRUE;
-	objspace->marked_objects = objspace->rgengc.old_object_count; /* OLD objects are already marked */
+	objspace->marked_slots =
+	  objspace->rgengc.old_object_count +
+	  objspace->rgengc.remembered_shady_object_count; /* long lived objects are marked already */
 	objspace->profile.minor_gc_count++;
 	rgengc_rememberset_mark(objspace, heap_eden);
     }
@@ -4975,11 +4978,11 @@ gc_marks_finish(rb_objspace_t *objspace)
     {   /* decide full GC is needed or not */
 	rb_heap_t *heap = heap_eden;
 	size_t sweep_slots =
-	  (heap_allocatable_pages * HEAP_OBJ_LIMIT) +       /* allocatable slots in empty pages */
-	  (heap->total_slots - objspace->marked_objects); /* will be sweep slots */
+	  (heap_allocatable_pages * HEAP_OBJ_LIMIT) +   /* allocatable slots in empty pages */
+	  (heap->total_slots - objspace->marked_slots); /* will be sweep slots */
 
 #if RGENGC_CHECK_MODE
-	assert(heap->total_slots >= objspace->marked_objects);
+	assert(heap->total_slots >= objspace->marked_slots);
 #endif
 
 	if (sweep_slots < heap_pages_min_free_slots) {
@@ -5009,7 +5012,7 @@ gc_marks_finish(rb_objspace_t *objspace)
 	}
 
 	gc_report(1, objspace, "gc_marks_finish (marks %d objects, old %d objects, total %d slots, sweep %d slots, increment: %d, next GC: %s)\n",
-		  (int)objspace->marked_objects, (int)objspace->rgengc.old_object_count, (int)heap->total_slots, (int)sweep_slots, (int)heap_allocatable_pages,
+		  (int)objspace->marked_slots, (int)objspace->rgengc.old_object_count, (int)heap->total_slots, (int)sweep_slots, (int)heap_allocatable_pages,
 		  objspace->rgengc.need_major_gc ? "major" : "minor");
 #endif
     }
@@ -6269,7 +6272,8 @@ gc_stat_internal(VALUE hash_or_sym)
 {
     static VALUE sym_count;
     static VALUE sym_heap_used, sym_heap_sorted_length, sym_heap_allocatable_pages;
-    static VALUE sym_heap_live_slot, sym_heap_free_slot, sym_heap_final_slots, sym_heap_swept_slots;
+    static VALUE sym_heap_live_slot, sym_heap_free_slot, sym_heap_final_slots;
+    static VALUE sym_heap_marked_slots, sym_heap_swept_slots;
     static VALUE sym_heap_eden_pages, sym_heap_tomb_pages;
     static VALUE sym_total_allocated_objects, sym_total_freed_objects;
     static VALUE sym_malloc_increase, sym_malloc_limit;
@@ -6309,6 +6313,7 @@ gc_stat_internal(VALUE hash_or_sym)
 	S(heap_live_slot);
 	S(heap_free_slot);
 	S(heap_final_slots);
+	S(heap_marked_slots);
 	S(heap_swept_slots);
 	S(heap_eden_pages);
 	S(heap_tomb_pages);
@@ -6355,6 +6360,7 @@ gc_stat_internal(VALUE hash_or_sym)
     SET(heap_live_slot, objspace_live_slot(objspace));
     SET(heap_free_slot, objspace_free_slot(objspace));
     SET(heap_final_slots, heap_pages_final_slots);
+    SET(heap_marked_slots, objspace->marked_slots);
     SET(heap_swept_slots, heap_pages_swept_slots);
     SET(heap_eden_pages, heap_eden->page_length);
     SET(heap_tomb_pages, heap_tomb->page_length);

@@ -1,3 +1,13 @@
+Tue Sep  9 19:52:33 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: rename rb_objspace_t::marked_objects to marked_slots.
+
+	* gc.c (gc_marks_start): should be clear first.
+
+	* gc.c (gc_marks_start): remembered shady objects are also marked.
+
+	* gc.c (gc_stat_internal): add heap_marked_slots.
+
 Tue Sep  9 18:58:48 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: rename
