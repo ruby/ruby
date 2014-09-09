@@ -509,6 +509,7 @@ typedef struct rb_objspace {
     mark_stack_t mark_stack;
     struct {
 	int run;
+	int latest_gc_info;
 	gc_profile_record *records;
 	gc_profile_record *current_record;
 	size_t next_index;
@@ -550,7 +551,6 @@ typedef struct rb_objspace {
 	size_t count;
 	size_t total_allocated_object_num;
 	size_t total_freed_object_num;
-	int latest_gc_info;
     } profile;
     struct gc_list *global_list;
     rb_event_flag_t hook_events; /* this place may be affinity with memory cache */
