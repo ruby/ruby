@@ -1,3 +1,11 @@
+Wed Sep 10 02:33:08 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* parse.y (setup_fake_str): fake strings should not set class by
+	  RBASIC_SET_CLASS() because it insert write barriers to fake
+	  (non-RVALUE) structure.
+
+	  It can cause unexpected behaviour.
+
 Fri Sep  5 17:01:38 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/rdoc/generator/template/darkfish/js/jquery.js: Backport
