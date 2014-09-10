@@ -104,7 +104,7 @@ Tue Sep  9 18:58:48 2014  Koichi Sasada  <ko1@atdot.net>
 	  * total_allocated_object_num_at_gc_start -> total_allocated_objects_at_gc_start
 	  * total_freed_object_num -> total_freed_objects
 
-	* gc.c (gc_stat_internal): 
+	* gc.c (gc_stat_internal):
 	  * rename total_allocated_object -> total_allocated_objects
 	  * rename total_freed_object -> total_freed_objects
 
