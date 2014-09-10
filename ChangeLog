@@ -1,3 +1,8 @@
+Wed Sep 10 12:06:27 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_initialize): [DOC] fix rdoc of append mode.  it does
+	  not move the pointer at open.  [ruby-core:63747] [Bug #10039]
+
 Wed Sep 10 11:50:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (GETASTER): should not use the numbered argument to be
