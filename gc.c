@@ -6408,28 +6408,34 @@ gc_stat_internal(VALUE hash_or_sym)
  *
  *  The hash includes information about internal statistics about GC such as:
  *
- *	{
- *          :count=>2,
- *          :heap_used=>9,
- *          :heap_sorted_length=>11,
- *          :heap_allocatable_pages=>2,
- *          :heap_live_slot=>6836,
- *          :heap_free_slot=>519,
+ *      {
+ *          :count=>0,
+ *          :heap_allocated_pages=>24,
+ *          :heap_sorted_length=>24,
+ *          :heap_allocatable_pages=>0,
+ *          :heap_available_slots=>9783,
+ *          :heap_live_slots=>7713,
+ *          :heap_free_slots=>2070,
  *          :heap_final_slots=>0,
- *          :heap_swept_slots=>818,
- *          :total_allocated_objects=>7674,
- *          :total_freed_objects=>838,
- *          :malloc_increase=>181034,
- *          :malloc_limit=>16777216,
- *          :minor_gc_count=>2,
+ *          :heap_marked_slots=>0,
+ *          :heap_swept_slots=>0,
+ *          :heap_eden_pages=>24,
+ *          :heap_tomb_pages=>0,
+ *          :total_allocated_pages=>24,
+ *          :total_freed_pages=>0,
+ *          :total_allocated_objects=>7796,
+ *          :total_freed_objects=>83,
+ *          :malloc_increase_bytes=>2389312,
+ *          :malloc_increase_bytes_limit=>16777216,
+ *          :minor_gc_count=>0,
  *          :major_gc_count=>0,
- *          :remembered_shady_object=>55,
- *          :remembered_shady_object_limit=>0,
- *          :old_object=>2422,
- *          :old_object_limit=>0,
- *          :oldmalloc_increase=>277386,
- *          :oldmalloc_limit=>16777216
- *	}
+ *          :remembered_wb_unprotected_objects=>0,
+ *          :remembered_wb_unprotected_objects_limit=>0,
+ *          :old_objects=>0,
+ *          :old_objects_limit=>0,
+ *          :oldmalloc_increase_bytes=>2389760,
+ *          :oldmalloc_increase_bytes_limit=>16777216
+ *      }
  *
  *  The contents of the hash are implementation specific and may be changed in
  *  the future.
