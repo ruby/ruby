@@ -870,12 +870,12 @@ pack_pack(VALUE ary, VALUE fmt)
 		}
 		else {
 		    t = StringValuePtr(from);
+		    rb_obj_taint(from);
 		}
 		if (!associates) {
 		    associates = rb_ary_new();
 		}
 		rb_ary_push(associates, from);
-		rb_obj_taint(from);
 		rb_str_buf_cat(res, (char*)&t, sizeof(char*));
 	    }
 	    break;
