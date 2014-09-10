@@ -577,7 +577,7 @@ yes-runnable: PHONY
 
 encs: enc trans
 libencs: libenc libtrans
-encs enc trans libencs libenc libtrans: showflags $(ENC_MK) $(LIBRUBY) $(PREP)
+encs enc trans libencs libenc libtrans: showflags $(ENC_MK) $(LIBRUBY) $(PREP) PHONY
 	$(ECHO) making $@
 	$(Q) $(MAKE) -f $(ENC_MK) V="$(V)" \
 		RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" \
