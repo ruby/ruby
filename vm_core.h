@@ -140,11 +140,9 @@ struct rb_control_frame_struct;
 typedef struct rb_call_info_struct {
     /* fixed at compile time */
     ID mid;
-    VALUE flag;
-    rb_iseq_t *blockiseq;
+    unsigned int flag;
     int orig_argc;
-
-    int argc; /* temporary for method calling */
+    rb_iseq_t *blockiseq;
 
     /* inline cache: keys */
     rb_serial_t method_state;
@@ -158,9 +156,10 @@ typedef struct rb_call_info_struct {
     /* temporary values for method calling */
     struct rb_block_struct *blockptr;
     VALUE recv;
+    int argc;
     union {
 	int opt_pc; /* used by iseq */
-	long index; /* used by ivar */
+	int index; /* used by ivar */
 	int missing_reason; /* used by method_missing */
 	int inc_sp; /* used by cfunc */
     } aux;

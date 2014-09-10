@@ -1,3 +1,16 @@
+Wed Sep 10 15:29:46 2014  Eric Wong  <e@80x24.org>
+
+	* vm_core.h (rb_call_info_t): ci->flag becomes 32-bit unsigned int
+	  ci->index becomes a 32-bit signed int (from signed long).
+	  Reorder for better packing on 64-bit, giving an 8 byte reduction
+	  from 104 to 96 bytes for each ci.
+	  [Feature #10187]
+
+	* compile.c (new_callinfo, setup_args, iseq_compile_each,
+	  iseq_build_from_ary_body): adjust for type changes
+
+	* vm_insnhelper.c (vm_getivar): ditto
+
 Wed Sep 10 15:07:35 2014  Eric Wong  <e@80x24.org>
 
 	* compile.c (rb_iseq_translate_threaded_code):

@@ -1173,6 +1173,10 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
                     iv_index_tbl->num_entries < (st_index_t)newsize) {
                     newsize = iv_index_tbl->num_entries;
                 }
+
+                /* never happens in practice: */
+                if (newsize > INT_MAX) rb_memerror();
+
                 if (RBASIC(obj)->flags & ROBJECT_EMBED) {
                     newptr = ALLOC_N(VALUE, newsize);
                     MEMCPY(newptr, ptr, VALUE, len);

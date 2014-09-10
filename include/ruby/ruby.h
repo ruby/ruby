@@ -775,7 +775,7 @@ struct RObject {
     struct RBasic basic;
     union {
 	struct {
-	    long numiv;
+	    long numiv; /* only uses 32-bits */
 	    VALUE *ivptr;
             struct st_table *iv_index_tbl; /* shortcut for RCLASS_IV_INDEX_TBL(rb_obj_class(obj)) */
 	} heap;

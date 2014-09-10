@@ -981,7 +981,7 @@ new_insn_body(rb_iseq_t *iseq, int line_no, enum ruby_vminsn_type insn_id, int a
 }
 
 static rb_call_info_t *
-new_callinfo(rb_iseq_t *iseq, ID mid, int argc, VALUE block, unsigned long flag)
+new_callinfo(rb_iseq_t *iseq, ID mid, int argc, VALUE block, unsigned int flag)
 {
     rb_call_info_t *ci = (rb_call_info_t *)compile_data_alloc(iseq, sizeof(rb_call_info_t));
     ci->mid = mid;
@@ -3119,7 +3119,7 @@ add_ensure_iseq(LINK_ANCHOR *ret, rb_iseq_t *iseq, int is_return)
 }
 
 static VALUE
-setup_args(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *argn, VALUE *flag)
+setup_args(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *argn, unsigned int *flag)
 {
     VALUE argc = INT2FIX(0);
     int nsplat = 0;
@@ -4015,7 +4015,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_OP_ASGN1: {
 	DECL_ANCHOR(args);
 	VALUE argc;
-	VALUE flag = 0;
+	unsigned int flag = 0;
 	VALUE asgnflag = 0;
 	ID id = node->nd_mid;
 	int boff = 0;
@@ -4060,7 +4060,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 	ADD_INSN1(ret, line, dupn, FIXNUM_INC(argc, 1 + boff));
 	flag |= asgnflag;
-	ADD_SEND_R(ret, line, idAREF, argc, Qfalse, LONG2FIX(flag));
+	ADD_SEND_R(ret, line, idAREF, argc, Qfalse, INT2FIX(flag));
 
 	if (id == 0 || id == 1) {
 	    /* 0: or, 1: and
@@ -4104,13 +4104,13 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    ADD_INSN(ret, line, pop);
 		}
 		ADD_SEND_R(ret, line, idASET,
-			   argc, Qfalse, LONG2FIX(flag));
+			   argc, Qfalse, INT2FIX(flag));
 	    }
 	    else {
 		if (boff > 0)
 		    ADD_INSN(ret, line, swap);
 		ADD_SEND_R(ret, line, idASET,
-			   FIXNUM_INC(argc, 1), Qfalse, LONG2FIX(flag));
+			   FIXNUM_INC(argc, 1), Qfalse, INT2FIX(flag));
 	    }
 	    ADD_INSN(ret, line, pop);
 	    ADD_INSNL(ret, line, jump, lfin);
@@ -4141,13 +4141,13 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    ADD_INSN(ret, line, pop);
 		}
 		ADD_SEND_R(ret, line, idASET,
-			   argc, Qfalse, LONG2FIX(flag));
+			   argc, Qfalse, INT2FIX(flag));
 	    }
 	    else {
 		if (boff > 0)
 		    ADD_INSN(ret, line, swap);
 		ADD_SEND_R(ret, line, idASET,
-			   FIXNUM_INC(argc, 1), Qfalse, LONG2FIX(flag));
+			   FIXNUM_INC(argc, 1), Qfalse, INT2FIX(flag));
 	    }
 	    ADD_INSN(ret, line, pop);
 	}
@@ -4398,7 +4398,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	DECL_ANCHOR(args);
 	ID mid = node->nd_mid;
 	VALUE argc;
-	VALUE flag = 0;
+	unsigned int flag = 0;
 	VALUE parent_block = iseq->compile_data->current_block;
 	iseq->compile_data->current_block = Qfalse;
 
@@ -4499,7 +4499,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 
 	ADD_SEND_R(ret, line, mid,
-		   argc, parent_block, LONG2FIX(flag));
+		   argc, parent_block, INT2FIX(flag));
 
 	if (poped) {
 	    ADD_INSN(ret, line, pop);
@@ -4510,7 +4510,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_ZSUPER:{
 	DECL_ANCHOR(args);
 	int argc;
-	VALUE flag = 0;
+	unsigned int flag = 0;
 	VALUE parent_block = iseq->compile_data->current_block;
 
 	INIT_ANCHOR(args);
@@ -4699,7 +4699,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_YIELD:{
 	DECL_ANCHOR(args);
 	VALUE argc;
-	VALUE flag = 0;
+	unsigned int flag = 0;
 
 	INIT_ANCHOR(args);
 	if (iseq->type == ISEQ_TYPE_TOP) {
@@ -5354,7 +5354,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_ATTRASGN:{
 	DECL_ANCHOR(recv);
 	DECL_ANCHOR(args);
-	VALUE flag = 0;
+	unsigned int flag = 0;
 	VALUE argc;
 	int asgnflag;
 
@@ -5418,7 +5418,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    ADD_SEQ(ret, recv);
 	    ADD_SEQ(ret, args);
 	}
-	ADD_SEND_R(ret, line, node->nd_mid, argc, 0, LONG2FIX(flag));
+	ADD_SEND_R(ret, line, node->nd_mid, argc, 0, INT2FIX(flag));
 	ADD_INSN(ret, line, pop);
 
 	break;
@@ -5834,7 +5834,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 			    ID mid = 0;
 			    int orig_argc = 0;
 			    VALUE block = 0;
-			    unsigned long flag = 0;
+			    unsigned int flag = 0;
 
 			    if (!NIL_P(op)) {
 				VALUE vmid = rb_hash_aref(op, ID2SYM(rb_intern("mid")));
@@ -5843,7 +5843,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 				VALUE vblock = rb_hash_aref(op, ID2SYM(rb_intern("blockptr")));
 
 				if (!NIL_P(vmid)) mid = SYM2ID(vmid);
-				if (!NIL_P(vflag)) flag = NUM2ULONG(vflag);
+				if (!NIL_P(vflag)) flag = NUM2UINT(vflag);
 				if (!NIL_P(vorig_argc)) orig_argc = FIX2INT(vorig_argc);
 				if (!NIL_P(vblock)) block = iseq_build_load_iseq(iseq, vblock);
 			    }
