@@ -423,6 +423,26 @@ eom
           clone.tap {|a| a.message = message}
         end
       end
+
+      # derived from MiniTest 2.1.0
+      def assert_raise_with_message(exception, expected, msg = nil, &block)
+        case expected
+        when String
+          assert = :assert_equal
+        when Regexp
+          assert = :assert_match
+        else
+          raise TypeError, "Expected #{expected.inspect} to be a kind of String or Regexp, not #{expected.class}"
+        end
+
+        ex = assert_raise(exception, *msg) { yield }
+        if assert == :assert_equal
+          assert_equal(expected, ex.message, msg || "Expected exception(#{exception}) was raised, but the message doesn't match")
+        else
+          assert(expected =~ ex.message, msg || "Expected #{expected} to match #{ex.message}")
+          block.binding.eval("proc{|_|$~=_}").call($~)
+        end
+      end
     end
   end
 end

@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestSprintf < Test::Unit::TestCase
   def test_positional
@@ -179,6 +180,10 @@ class TestSprintf < Test::Unit::TestCase
     assert_raise(ArgumentError) { sprintf("%!", 1) }
     assert_raise(ArgumentError) { sprintf("%1$1$d", 1) }
     assert_raise(ArgumentError) { sprintf("%0%") }
+
+    assert_raise_with_message(ArgumentError, /unnumbered\(1\) mixed with numbered/) { sprintf("%1$*d", 3) }
+    assert_raise_with_message(ArgumentError, /unnumbered\(1\) mixed with numbered/) { sprintf("%1$.*d", 3) }
+
     verbose, $VERBOSE = $VERBOSE, nil
     assert_nothing_raised { sprintf("", 1) }
   ensure
