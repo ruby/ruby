@@ -2435,6 +2435,10 @@ time_timespec(VALUE num, int interval)
 	    d = modf(RFLOAT_VALUE(num), &f);
 	    if (d >= 0) {
 		t.tv_nsec = (int)(d*1e9+0.5);
+		if (t.tv_nsec >= 1000000000) {
+		    t.tv_nsec -= 1000000000;
+		    f += 1;
+		}
 	    }
 	    else if ((t.tv_nsec = (int)(-d*1e9+0.5)) > 0) {
 		t.tv_nsec = 1000000000 - t.tv_nsec;

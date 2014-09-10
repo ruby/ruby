@@ -1,3 +1,8 @@
+Wed Sep 10 12:25:24 2014  Eric Wong  <e@80x24.org>
+
+	* time.c (time_timespec): fix tv_nsec overflow
+	  [Bug #10144]
+
 Wed Sep 10 12:21:51 2014  Eric Wong  <e@80x24.org>
 
 	* ext/zlib/zlib.c (gzfile_reset): preserve ZSTREAM_FLAG_GZFILE
