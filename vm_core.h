@@ -212,8 +212,7 @@ struct rb_iseq_struct {
 
     rb_iseq_location_t location;
 
-    VALUE *iseq;         /* iseq (insn number and operands) */
-    VALUE *iseq_encoded; /* encoded iseq */
+    VALUE *iseq_encoded; /* encoded iseq (insn addr and operands) */
     unsigned int iseq_size;
     unsigned int line_info_size;
 
@@ -309,6 +308,10 @@ struct rb_iseq_struct {
 
     /* used at compile time */
     struct iseq_compile_data *compile_data;
+
+    /* original iseq, before encoding
+     * used for debug/dump (TODO: union with compile_data) */
+    VALUE *iseq;
 };
 
 enum ruby_special_exceptions {

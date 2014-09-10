@@ -569,19 +569,54 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
     const void * const *table = rb_vm_get_insns_address_table();
     unsigned int i;
 
-    iseq->iseq_encoded = ALLOC_N(VALUE, iseq->iseq_size);
-    MEMCPY(iseq->iseq_encoded, iseq->iseq, VALUE, iseq->iseq_size);
-
     for (i = 0; i < iseq->iseq_size; /* */ ) {
 	int insn = (int)iseq->iseq_encoded[i];
 	int len = insn_len(insn);
 	iseq->iseq_encoded[i] = (VALUE)table[insn];
 	i += len;
     }
-#else
-    iseq->iseq_encoded = iseq->iseq;
 #endif
     return COMPILE_OK;
+}
+
+#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
+static int
+rb_vm_addr2insn(const void *addr) /* cold path */
+{
+    int insn;
+    const void * const *table = rb_vm_get_insns_address_table();
+
+    for (insn = 0; insn < VM_INSTRUCTION_SIZE; insn++) {
+	if (table[insn] == addr)
+	    return insn;
+    }
+    rb_bug("rb_vm_addr2insn: invalid insn address: %p", addr);
+}
+#endif
+
+VALUE *
+rb_iseq_original_iseq(rb_iseq_t *iseq) /* cold path */
+{
+    if (iseq->iseq) return iseq->iseq;
+
+    iseq->iseq = ALLOC_N(VALUE, iseq->iseq_size);
+
+    MEMCPY(iseq->iseq, iseq->iseq_encoded, VALUE, iseq->iseq_size);
+
+#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
+    {
+	unsigned int i;
+
+	for (i = 0; i < iseq->iseq_size; /* */ ) {
+	    const void *addr = (const void *)iseq->iseq[i];
+	    int insn = (VALUE)rb_vm_addr2insn(addr);
+
+	    iseq->iseq[i] = insn;
+	    i += insn_len(insn);
+	}
+    }
+#endif
+    return iseq->iseq;
 }
 
 /*********************************************/
@@ -1645,7 +1680,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
     }
 #endif
 
-    iseq->iseq = (void *)generated_iseq;
+    iseq->iseq_encoded = (void *)generated_iseq;
     iseq->iseq_size = pos;
     iseq->stack_max = stack_max;
 

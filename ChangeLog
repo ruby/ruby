@@ -1,3 +1,22 @@
+Wed Sep 10 15:07:35 2014  Eric Wong  <e@80x24.org>
+
+	* compile.c (rb_iseq_translate_threaded_code):
+	  modify in-place w/o copy
+	  (rb_vm_addr2insn): new function for debug
+	  (rb_iseq_original_iseq): ditto
+	  (iseq_set_sequence): assign iseq_encoded directly
+	  [Feature #10185]
+
+	* vm_core (rb_iseq_t): move original ->iseq to bottom
+
+	* iseq.c (iseq_free, iseq_free): adjust for new layout
+	  (rb_iseq_disasm): use original iseq for dump
+	  (iseq_data_to_ary): ditto
+	  (rb_iseq_line_trace_each): ditto
+	  (rb_iseq_build_for_ruby2cext): use iseq_encoded directly
+
+	* vm_dump.c (rb_vmdebug_debug_print_pre): use original iseq
+
 Wed Sep 10 15:00:11 2014  Eric Wong  <e@80x24.org>
 
 	* time.c (time_mark): remove NULL check

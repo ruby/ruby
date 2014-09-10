@@ -75,11 +75,7 @@ iseq_free(void *ptr)
 					  RSTRING_PTR(iseq->location.path));
 	    }
 
-	    if (iseq->iseq != iseq->iseq_encoded) {
-		RUBY_FREE_UNLESS_NULL(iseq->iseq_encoded);
-	    }
-
-	    RUBY_FREE_UNLESS_NULL(iseq->iseq);
+	    RUBY_FREE_UNLESS_NULL(iseq->iseq_encoded);
 	    RUBY_FREE_UNLESS_NULL(iseq->line_info_table);
 	    RUBY_FREE_UNLESS_NULL(iseq->local_table);
 	    RUBY_FREE_UNLESS_NULL(iseq->is_entries);
@@ -88,6 +84,7 @@ iseq_free(void *ptr)
 	    RUBY_FREE_UNLESS_NULL(iseq->arg_opt_table);
 	    RUBY_FREE_UNLESS_NULL(iseq->arg_keyword_table);
 	    compile_data_free(iseq->compile_data);
+	    RUBY_FREE_UNLESS_NULL(iseq->iseq);
 	}
 	ruby_xfree(ptr);
     }
@@ -134,10 +131,6 @@ iseq_memsize(const void *ptr)
     if (ptr) {
 	iseq = ptr;
 	if (!iseq->orig) {
-	    if (iseq->iseq != iseq->iseq_encoded) {
-		size += iseq->iseq_size * sizeof(VALUE);
-	    }
-
 	    size += iseq->iseq_size * sizeof(VALUE);
 	    size += iseq->line_info_size * sizeof(struct iseq_line_info_entry);
 	    size += iseq->local_table_size * sizeof(ID);
@@ -157,6 +150,9 @@ iseq_memsize(const void *ptr)
 		    cur = cur->next;
 		}
 		size += sizeof(struct iseq_compile_data);
+	    }
+	    if (iseq->iseq) {
+		size += iseq->iseq_size * sizeof(VALUE);
 	    }
 	}
     }
@@ -1392,7 +1388,6 @@ rb_iseq_disasm(VALUE self)
 
     rb_secure(1);
 
-    iseq = iseqdat->iseq;
     size = iseqdat->iseq_size;
 
     rb_str_cat2(str, "== disasm: ");
@@ -1472,6 +1467,7 @@ rb_iseq_disasm(VALUE self)
     }
 
     /* show each line */
+    iseq = rb_iseq_original_iseq(iseqdat);
     for (n = 0; n < size;) {
 	n += rb_iseq_disasm_insn(str, iseq, n, iseqdat, child);
     }
@@ -1658,7 +1654,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
     size_t ti;
     unsigned int pos;
     unsigned int line = 0;
-    VALUE *seq;
+    VALUE *seq, *iseq_original;
 
     VALUE val = rb_ary_new();
     VALUE type; /* Symbol */
@@ -1759,7 +1755,9 @@ iseq_data_to_ary(rb_iseq_t *iseq)
     }
 
     /* body */
-    for (seq = iseq->iseq; seq < iseq->iseq + iseq->iseq_size; ) {
+    iseq_original = rb_iseq_original_iseq(iseq);
+
+    for (seq = iseq_original; seq < iseq_original + iseq->iseq_size; ) {
 	VALUE insn = *seq++;
 	int j, len = insn_len(insn);
 	VALUE *nseq = seq + len - 1;
@@ -1769,7 +1767,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 	for (j=0; j<len-1; j++, seq++) {
 	    switch (insn_op_type(insn, j)) {
 	      case TS_OFFSET: {
-		unsigned long idx = nseq - iseq->iseq + *seq;
+		unsigned long idx = nseq - iseq_original + *seq;
 		rb_ary_push(ary, register_label(labels_table, idx));
 		break;
 	      }
@@ -1828,7 +1826,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 
 		    for (i=0; i<RARRAY_LEN(val); i+=2) {
 			VALUE pos = FIX2INT(rb_ary_entry(val, i+1));
-			unsigned long idx = nseq - iseq->iseq + pos;
+			unsigned long idx = nseq - iseq_original + pos;
 
 			rb_ary_store(val, i+1,
 				     register_label(labels_table, idx));
@@ -2100,11 +2098,11 @@ rb_iseq_build_for_ruby2cext(
     RB_OBJ_WRITE(iseq->self, &iseq->mark_ary, 0);
     iseq->self = iseqval;
 
-    iseq->iseq = ALLOC_N(VALUE, iseq->iseq_size);
+    iseq->iseq_encoded = ALLOC_N(VALUE, iseq->iseq_size);
 
     for (i=0; i<iseq->iseq_size; i+=2) {
-	iseq->iseq[i] = BIN(opt_call_c_function);
-	iseq->iseq[i+1] = (VALUE)func;
+	iseq->iseq_encoded[i] = BIN(opt_call_c_function);
+	iseq->iseq_encoded[i+1] = (VALUE)func;
     }
 
     rb_iseq_translate_threaded_code(iseq);
@@ -2148,13 +2146,15 @@ rb_iseq_line_trace_each(VALUE iseqval, int (*func)(int line, rb_event_flag_t *ev
     size_t insn;
     rb_iseq_t *iseq;
     int cont = 1;
+    VALUE *iseq_original;
     GetISeqPtr(iseqval, iseq);
 
+    iseq_original = rb_iseq_original_iseq(iseq);
     for (pos = 0; cont && pos < iseq->iseq_size; pos += insn_len(insn)) {
-	insn = iseq->iseq[pos];
+	insn = iseq_original[pos];
 
 	if (insn == BIN(trace)) {
-	    rb_event_flag_t current_events = (VALUE)iseq->iseq[pos+1];
+	    rb_event_flag_t current_events = (VALUE)iseq_original[pos+1];
 
 	    if (current_events & RUBY_EVENT_LINE) {
 		rb_event_flag_t events = current_events & RUBY_EVENT_SPECIFIED_LINE;
@@ -2165,7 +2165,7 @@ rb_iseq_line_trace_each(VALUE iseqval, int (*func)(int line, rb_event_flag_t *ev
 		    /* printf("line: %d\n", line); */
 		    cont = (*func)(line, &events, data);
 		    if (current_events != events) {
-			iseq->iseq[pos+1] = iseq->iseq_encoded[pos+1] =
+			iseq_original[pos+1] = iseq->iseq_encoded[pos+1] =
 			  (VALUE)(current_events | (events & RUBY_EVENT_SPECIFIED_LINE));
 		    }
 		}
