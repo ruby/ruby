@@ -1,3 +1,9 @@
+Wed Sep 10 11:39:54 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (env_aset, env_has_key, env_assoc, env_has_value),
+	  (env_rassoc, env_key): prohibit tainted strings if $SAFE is
+	  non-zero.  [Bug #9976]
+
 Sat Sep  6 09:10:45 2014  Zachary Scott  <e@zzak.io>
 
 	* lib/rdoc/generator/template/darkfish/js/jquery.js: Backport

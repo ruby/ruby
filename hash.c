@@ -2547,8 +2547,8 @@ env_aset(VALUE obj, VALUE nm, VALUE val)
 	env_delete(obj, nm);
 	return Qnil;
     }
-    StringValue(nm);
-    StringValue(val);
+    SafeStringValue(nm);
+    SafeStringValue(val);
     name = RSTRING_PTR(nm);
     value = RSTRING_PTR(val);
     if (memchr(name, '\0', RSTRING_LEN(nm)))
@@ -3048,7 +3048,8 @@ env_has_key(VALUE env, VALUE key)
     char *s;
 
     rb_secure(4);
-    s = StringValuePtr(key);
+    SafeStringValue(key);
+    s = RSTRING_PTR(key);
     if (memchr(s, '\0', RSTRING_LEN(key)))
 	rb_raise(rb_eArgError, "bad environment variable name");
     if (getenv(s)) return Qtrue;
@@ -3068,7 +3069,8 @@ env_assoc(VALUE env, VALUE key)
     char *s, *e;
 
     rb_secure(4);
-    s = StringValuePtr(key);
+    SafeStringValue(key);
+    s = RSTRING_PTR(key);
     if (memchr(s, '\0', RSTRING_LEN(key)))
 	rb_raise(rb_eArgError, "bad environment variable name");
     e = getenv(s);
@@ -3091,6 +3093,7 @@ env_has_value(VALUE dmy, VALUE obj)
     rb_secure(4);
     obj = rb_check_string_type(obj);
     if (NIL_P(obj)) return Qnil;
+    rb_check_safe_obj(obj);
     env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=');
@@ -3122,6 +3125,7 @@ env_rassoc(VALUE dmy, VALUE obj)
     rb_secure(4);
     obj = rb_check_string_type(obj);
     if (NIL_P(obj)) return Qnil;
+    rb_check_safe_obj(obj);
     env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=');
@@ -3153,7 +3157,7 @@ env_key(VALUE dmy, VALUE value)
     VALUE str;
 
     rb_secure(4);
-    StringValue(value);
+    SafeStringValue(value);
     env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=');
