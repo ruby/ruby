@@ -20,7 +20,6 @@ class TestDate < Test::Unit::TestCase
     assert_equal(7, Date::ABBR_DAYNAMES.size)
 
     assert(Date::MONTHNAMES.frozen?)
-    assert(!Date::MONTHNAMES[0].frozen?)
     assert(Date::MONTHNAMES[1].frozen?)
     assert(Date::DAYNAMES.frozen?)
     assert(Date::DAYNAMES[0].frozen?)
