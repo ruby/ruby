@@ -581,16 +581,17 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
 
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
 static int
-rb_vm_addr2insn(const void *addr) /* cold path */
+rb_vm_insn_addr2insn(const void *addr) /* cold path */
 {
     int insn;
     const void * const *table = rb_vm_get_insns_address_table();
 
     for (insn = 0; insn < VM_INSTRUCTION_SIZE; insn++) {
-	if (table[insn] == addr)
+	if (table[insn] == addr) {
 	    return insn;
+	}
     }
-    rb_bug("rb_vm_addr2insn: invalid insn address: %p", addr);
+    rb_bug("rb_vm_insn_addr2insn: invalid insn address: %p", addr);
 }
 #endif
 
@@ -609,7 +610,7 @@ rb_iseq_original_iseq(rb_iseq_t *iseq) /* cold path */
 
 	for (i = 0; i < iseq->iseq_size; /* */ ) {
 	    const void *addr = (const void *)iseq->iseq[i];
-	    int insn = rb_vm_addr2insn(addr);
+	    const int insn = rb_vm_insn_addr2insn(addr);
 
 	    iseq->iseq[i] = insn;
 	    i += insn_len(insn);
