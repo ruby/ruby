@@ -609,7 +609,7 @@ rb_iseq_original_iseq(rb_iseq_t *iseq) /* cold path */
 
 	for (i = 0; i < iseq->iseq_size; /* */ ) {
 	    const void *addr = (const void *)iseq->iseq[i];
-	    int insn = (VALUE)rb_vm_addr2insn(addr);
+	    int insn = rb_vm_addr2insn(addr);
 
 	    iseq->iseq[i] = insn;
 	    i += insn_len(insn);
