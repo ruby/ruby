@@ -502,7 +502,8 @@ class TestRubyOptions < Test::Unit::TestCase
       \[NOTE\]\n
       You\smay\shave\sencountered\sa\sbug\sin\sthe\sRuby\sinterpreter\sor\sextension\slibraries.\n
       Bug\sreports\sare\swelcome.\n
-      For\sdetails:\shttp:\/\/www.ruby-lang.org/bugreport.html\n
+      (?:.*\n)?
+      For\sdetails:\shttp:\/\/.*\.ruby-lang\.org/.*\n
       \n
       (?:#{additional})
       \z

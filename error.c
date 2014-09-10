@@ -41,12 +41,17 @@
 
 extern const char ruby_description[];
 
-#define REPORTBUG_MSG \
+static const char REPORTBUG_MSG[] =
 	"[NOTE]\n" \
 	"You may have encountered a bug in the Ruby interpreter" \
 	" or extension libraries.\n" \
 	"Bug reports are welcome.\n" \
+	""
+#if defined __APPLE__
+	"Don't forget to include the above Crash Report log file.\n"
+#endif
 	"For details: http://www.ruby-lang.org/bugreport.html\n\n" \
+    ;
 
 static const char *
 rb_strerrno(int err)
