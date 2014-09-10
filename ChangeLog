@@ -1,3 +1,18 @@
+Wed Sep 10 10:36:08 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (objspace_total_slot): rename objspace_available_slots.
+
+	* gc.c (objspace_live_slot, objspace_free_slot): rename
+	  ..._slot() to ..._slots().
+
+	* gc.c (objspace_free_slot): should subtract heap_pages_final_slots.
+
+	* gc.c (gc_stat_internal):
+	  * add `heap_available_slots' field
+	  * rename heap_live_slot to heap_live_slots
+	  * rename heap_free_slot to heap_free_slots
+	  ref: [Feature #9924]
+
 Wed Sep 10 07:22:53 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: refactoring for RGENGC_PROFILE > 0.

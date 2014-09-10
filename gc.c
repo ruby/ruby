@@ -3021,21 +3021,21 @@ count_objects(int argc, VALUE *argv, VALUE os)
 /* Sweeping */
 
 static size_t
-objspace_live_slot(rb_objspace_t *objspace)
-{
-    return objspace->total_allocated_objects - objspace->profile.total_freed_objects - heap_pages_final_slots;
-}
-
-static size_t
-objspace_total_slot(rb_objspace_t *objspace)
+objspace_available_slots(rb_objspace_t *objspace)
 {
     return heap_eden->total_slots + heap_tomb->total_slots;
 }
 
 static size_t
-objspace_free_slot(rb_objspace_t *objspace)
+objspace_live_slots(rb_objspace_t *objspace)
 {
-    return objspace_total_slot(objspace) - (objspace_live_slot(objspace) - heap_pages_final_slots);
+    return (objspace->total_allocated_objects - objspace->profile.total_freed_objects) - heap_pages_final_slots;
+}
+
+static size_t
+objspace_free_slots(rb_objspace_t *objspace)
+{
+    return objspace_available_slots(objspace) - objspace_live_slots(objspace) - heap_pages_final_slots;
 }
 
 static void
@@ -3206,7 +3206,7 @@ gc_sweep_start(rb_objspace_t *objspace)
 
     /* sometimes heap_allocatable_pages is not 0 */
     heap_pages_swept_slots = heap_allocatable_pages * HEAP_OBJ_LIMIT;
-    total_limit_slot = objspace_total_slot(objspace);
+    total_limit_slot = objspace_available_slots(objspace);
 
     heap_pages_min_free_slots = (size_t)(total_limit_slot * GC_HEAP_FREE_SLOTS_MIN_RATIO);
     if (heap_pages_min_free_slots < gc_params.heap_free_slots) {
@@ -4771,10 +4771,10 @@ gc_verify_internal_consistency(VALUE self)
     /* check counters */
 
     if (!is_lazy_sweeping(heap_eden) && !finalizing) {
-	if (objspace_live_slot(objspace) != data.live_object_count) {
+	if (objspace_live_slots(objspace) != data.live_object_count) {
 	    fprintf(stderr, "heap_pages_final_slots: %d, objspace->profile.total_freed_objects: %d\n",
 		    (int)heap_pages_final_slots, (int)objspace->profile.total_freed_objects);
-	    rb_bug("inconsistent live slot nubmer: expect %"PRIuSIZE", but %"PRIuSIZE".", objspace_live_slot(objspace), data.live_object_count);
+	    rb_bug("inconsistent live slot nubmer: expect %"PRIuSIZE", but %"PRIuSIZE".", objspace_live_slots(objspace), data.live_object_count);
 	}
     }
 
@@ -6250,7 +6250,7 @@ gc_stat_internal(VALUE hash_or_sym)
 {
     static VALUE sym_count;
     static VALUE sym_heap_used, sym_heap_sorted_length, sym_heap_allocatable_pages;
-    static VALUE sym_heap_live_slot, sym_heap_free_slot, sym_heap_final_slots;
+    static VALUE sym_heap_available_slots, sym_heap_live_slots, sym_heap_free_slots, sym_heap_final_slots;
     static VALUE sym_heap_marked_slots, sym_heap_swept_slots;
     static VALUE sym_heap_eden_pages, sym_heap_tomb_pages;
     static VALUE sym_total_allocated_objects, sym_total_freed_objects;
@@ -6288,8 +6288,9 @@ gc_stat_internal(VALUE hash_or_sym)
 	S(heap_used);
 	S(heap_sorted_length);
 	S(heap_allocatable_pages);
-	S(heap_live_slot);
-	S(heap_free_slot);
+	S(heap_available_slots);
+	S(heap_live_slots);
+	S(heap_free_slots);
 	S(heap_final_slots);
 	S(heap_marked_slots);
 	S(heap_swept_slots);
@@ -6334,8 +6335,9 @@ gc_stat_internal(VALUE hash_or_sym)
     SET(heap_used, heap_allocated_pages);
     SET(heap_sorted_length, heap_pages_sorted_length);
     SET(heap_allocatable_pages, heap_allocatable_pages);
-    SET(heap_live_slot, objspace_live_slot(objspace));
-    SET(heap_free_slot, objspace_free_slot(objspace));
+    SET(heap_available_slots, objspace_available_slots(objspace));
+    SET(heap_live_slots, objspace_live_slots(objspace));
+    SET(heap_free_slots, objspace_free_slots(objspace));
     SET(heap_final_slots, heap_pages_final_slots);
     SET(heap_marked_slots, objspace->marked_slots);
     SET(heap_swept_slots, heap_pages_swept_slots);
