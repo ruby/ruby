@@ -331,4 +331,13 @@ class TestDir < Test::Unit::TestCase
       end
     }
   end
+
+  def test_empty?
+    assert_not_send([Dir, :empty?, @root])
+    assert_send([Dir, :empty?, File.join(@root, "a")])
+    open(File.join(@root, "a", "..."), "w") {}
+    assert_not_send([Dir, :empty?, File.join(@root, "a")])
+    assert_raise(Errno::ENOENT) {Dir.empty?(@nodir)}
+    assert_not_send([Dir, :empty?, File.join(@root, "b")])
+  end
 end

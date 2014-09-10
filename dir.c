@@ -21,6 +21,7 @@
 #include <unistd.h>
 #endif
 
+#undef HAVE_D_NAMLEN
 #if defined HAVE_DIRENT_H && !defined _WIN32
 # include <dirent.h>
 # define NAMLEN(dirent) strlen((dirent)->d_name)
@@ -30,6 +31,7 @@
 #else
 # define dirent direct
 # define NAMLEN(dirent) (dirent)->d_namlen
+# define HAVE_D_NAMLEN 1
 # if HAVE_SYS_NDIR_H
 #  include <sys/ndir.h>
 # endif
@@ -2611,6 +2613,65 @@ rb_dir_exists_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * call-seq:
+ *   Dir.empty?(path_name)  ->  true or false
+ *
+ * Returns <code>true</code> if the named file is an empty directory,
+ * <code>false</code> if it is not a directory or non-empty.
+ */
+static VALUE
+rb_dir_s_empty_p(VALUE obj, VALUE dirname)
+{
+    DIR *dir;
+    struct dirent *dp;
+    VALUE result = Qtrue, orig;
+    const char *path;
+    enum {false_on_notdir = 1};
+
+    GlobPathValue(dirname, FALSE);
+    orig = rb_str_dup_frozen(dirname);
+    dirname = rb_str_encode_ospath(dirname);
+    dirname = rb_str_dup_frozen(dirname);
+    path = RSTRING_PTR(dirname);
+
+    dir = opendir(path);
+    if (!dir) {
+	int e = errno;
+	switch (e) {
+	  case EMFILE: case ENFILE:
+	    rb_gc();
+	    dir = opendir(path);
+	    if (dir) break;
+	    e = errno;
+	    /* fall through */
+	  default:
+	    if (false_on_notdir && e == ENOTDIR) return Qfalse;
+	    rb_syserr_fail_path(e, orig);
+	}
+    }
+    errno = 0;
+    while (result && (dp = READDIR(dir, NULL)) != NULL) {
+	if (dp->d_name[0] != '.') {
+	    result = Qfalse;
+	    break;
+	}
+#ifdef HAVE_D_NAMLEN
+	switch (NAMLEN(dp)) {
+	  case 1: continue;
+	  case 2:
+	    if (dp->d_name[1] == '.') continue;
+	}
+#else
+	if (!dp->d_name[1]) continue;
+	if (dp->d_name[1] == '.' && !dp->d_name[2]) continue;
+#endif
+	result = Qfalse;
+    }
+    closedir(dir);
+    return result;
+}
+
+/*
  *  Objects of class <code>Dir</code> are directory streams representing
  *  directories in the underlying file system. They provide a variety of
  *  ways to list directories and their contents. See also
@@ -2661,6 +2722,7 @@ Init_Dir(void)
     rb_define_singleton_method(rb_cDir,"[]", dir_s_aref, -1);
     rb_define_singleton_method(rb_cDir,"exist?", rb_file_directory_p, 1);
     rb_define_singleton_method(rb_cDir,"exists?", rb_dir_exists_p, 1);
+    rb_define_singleton_method(rb_cDir,"empty?", rb_dir_s_empty_p, 1);
 
     rb_define_singleton_method(rb_cFile,"fnmatch", file_s_fnmatch, -1);
     rb_define_singleton_method(rb_cFile,"fnmatch?", file_s_fnmatch, -1);
