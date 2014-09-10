@@ -701,6 +701,11 @@ if defined? Zlib
         assert_equal("foo", f.read)
         f.rewind
         assert_equal("foo", f.read)
+
+        f.rewind
+        bytes = []
+        f.each_byte { |b| bytes << b }
+        assert_equal "foo".bytes.to_a, bytes, '[Bug #10101]'
       end
       open(t.path, "rb") do |f|
         gz = Zlib::GzipReader.new(f)
