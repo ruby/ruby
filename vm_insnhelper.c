@@ -570,8 +570,11 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic, rb_call_info_t *ci, int is_attr)
 		    ic->ic_value.index = index;
 		    ic->ic_serial = RCLASS_SERIAL(klass);
 		}
+		else if (index >= INT_MAX) {
+		    rb_raise(rb_eArgError, "too many instance variables");
+		}
 		else {
-		    ci->aux.index = index + 1;
+		    ci->aux.index = (int)(index + 1);
 		}
 	    }
 	    /* fall through */

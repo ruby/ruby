@@ -1153,6 +1153,7 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
         ivar_extended = 0;
         if (!st_lookup(iv_index_tbl, (st_data_t)id, &index)) {
             index = iv_index_tbl->num_entries;
+	    if (index >= INT_MAX) rb_raise(rb_eArgError, "too many instance variables");
             st_add_direct(iv_index_tbl, (st_data_t)id, index);
             ivar_extended = 1;
         }
