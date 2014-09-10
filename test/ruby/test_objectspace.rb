@@ -78,6 +78,11 @@ End
     end
     assert_in_out_err([], code[""], ["finalized"])
     assert_in_out_err([], code["private "], ["finalized"])
+    c = EnvUtil.labeled_class("C\u{3042}").new
+    o = Object.new
+    assert_raise_with_message(ArgumentError, /C\u{3042}/) {
+      ObjectSpace.define_finalizer(o, c)
+    }
   end
 
   def test_each_object
