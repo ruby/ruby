@@ -557,6 +557,8 @@ typedef struct rb_objspace {
 	/* basic statistics */
 	size_t count;
 	size_t total_freed_objects;
+	size_t total_allocated_pages;
+	size_t total_freed_pages;
     } profile;
     struct gc_list *global_list;
 
@@ -1299,6 +1301,7 @@ static void
 heap_page_free(rb_objspace_t *objspace, struct heap_page *page)
 {
     heap_allocated_pages--;
+    objspace->profile.total_freed_pages++;
     aligned_free(page->body);
     free(page);
 }
@@ -1383,6 +1386,8 @@ heap_page_allocate(rb_objspace_t *objspace)
     heap_pages_sorted[hi] = page;
 
     heap_allocated_pages++;
+    objspace->profile.total_allocated_pages++;
+
     if (RGENGC_CHECK_MODE) assert(heap_allocated_pages <= heap_pages_sorted_length);
 
     /* adjust obj_limit (object number available in this page) */
@@ -6253,6 +6258,7 @@ gc_stat_internal(VALUE hash_or_sym)
     static VALUE sym_heap_available_slots, sym_heap_live_slots, sym_heap_free_slots, sym_heap_final_slots;
     static VALUE sym_heap_marked_slots, sym_heap_swept_slots;
     static VALUE sym_heap_eden_pages, sym_heap_tomb_pages;
+    static VALUE sym_total_allocated_pages, sym_total_freed_pages;
     static VALUE sym_total_allocated_objects, sym_total_freed_objects;
     static VALUE sym_malloc_increase, sym_malloc_limit;
 #if USE_RGENGC
@@ -6296,6 +6302,8 @@ gc_stat_internal(VALUE hash_or_sym)
 	S(heap_swept_slots);
 	S(heap_eden_pages);
 	S(heap_tomb_pages);
+	S(total_allocated_pages);
+	S(total_freed_pages);
 	S(total_allocated_objects);
 	S(total_freed_objects);
 	S(malloc_increase);
@@ -6343,6 +6351,8 @@ gc_stat_internal(VALUE hash_or_sym)
     SET(heap_swept_slots, heap_pages_swept_slots);
     SET(heap_eden_pages, heap_eden->page_length);
     SET(heap_tomb_pages, heap_tomb->page_length);
+    SET(total_allocated_pages, objspace->profile.total_allocated_pages);
+    SET(total_freed_pages, objspace->profile.total_freed_pages);
     SET(total_allocated_objects, objspace->total_allocated_objects);
     SET(total_freed_objects, objspace->profile.total_freed_objects);
     SET(malloc_increase, malloc_increase);
