@@ -77,7 +77,7 @@ class OpenSSL::TestPKeyRSA < Test::Unit::TestCase
 
   def test_sign_verify_memory_leak
     bug9743 = '[ruby-core:62038] [Bug #9743]'
-    assert_no_memory_leak(%w[-ropenssl], <<-PREP, <<-CODE, bug9743, rss: true)
+    assert_no_memory_leak(%w[-ropenssl], <<-PREP, <<-CODE, bug9743, rss: true, timeout: 30)
     data = 'Sign me!'
     digest = OpenSSL::Digest::SHA512.new
     pkey = OpenSSL::PKey::RSA.new(2048)
@@ -89,7 +89,7 @@ class OpenSSL::TestPKeyRSA < Test::Unit::TestCase
     }
     CODE
 
-    assert_no_memory_leak(%w[-ropenssl], <<-PREP, <<-CODE, bug9743, rss: true)
+    assert_no_memory_leak(%w[-ropenssl], <<-PREP, <<-CODE, bug9743, rss: true, timeout: 30)
     data = 'Sign me!'
     digest = OpenSSL::Digest::SHA512.new
     pkey = OpenSSL::PKey::RSA.new(2048)

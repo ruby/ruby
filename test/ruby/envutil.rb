@@ -340,7 +340,7 @@ eom
         assert_warning(*args) {$VERBOSE = false; yield}
       end
 
-      def assert_no_memory_leak(args, prepare, code, message=nil, limit: 1.52, rss: false)
+      def assert_no_memory_leak(args, prepare, code, message=nil, limit: 1.52, rss: false, timeout: 10)
         require_relative 'memory_status'
         token = "\e[7;1m#{$$.to_s}:#{Time.now.strftime('%s.%L')}:#{rand(0x10000).to_s(16)}:\e[m"
         token_dump = token.dump
@@ -359,7 +359,7 @@ eom
           code,
           'GC.start',
         ].join("\n")
-        _, err, status = EnvUtil.invoke_ruby(args, cmd, true, true)
+        _, err, status = EnvUtil.invoke_ruby(args, cmd, true, true, timeout: timeout)
         before = err.sub!(/^#{token_re}START=(\{.*\})\n/, '') && Memory::Status.parse($1)
         after = err.sub!(/^#{token_re}FINAL=(\{.*\})\n/, '') && Memory::Status.parse($1)
         assert_equal([true, ""], [status.success?, err], message)
