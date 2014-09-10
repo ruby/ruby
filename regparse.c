@@ -5293,30 +5293,23 @@ set_quantifier(Node* qnode, Node* target, int group, ScanEnv* env)
 #ifdef USE_WARNING_REDUNDANT_NESTED_REPEAT_OPERATOR
       if (!IS_QUANTIFIER_BY_NUMBER(qn) && !IS_QUANTIFIER_BY_NUMBER(qnt) &&
 	  IS_SYNTAX_BV(env->syntax, ONIG_SYN_WARN_REDUNDANT_NESTED_REPEAT)) {
-        UChar buf[WARN_BUFSIZE];
-
         switch (ReduceTypeTable[targetq_num][nestq_num]) {
         case RQ_ASIS:
           break;
 
         case RQ_DEL:
-          if (onig_verb_warn != onig_null_warn) {
-            onig_snprintf_with_pattern(buf, WARN_BUFSIZE, env->enc,
-                                 env->pattern, env->pattern_end,
-                                 (UChar* )"redundant nested repeat operator");
-            (*onig_verb_warn)((char* )buf);
+          if (onig_warn != onig_null_warn) {
+              onig_syntax_warn(env, "regular expression has redundant nested repeat operator '%s'",
+                               PopularQStr[targetq_num]);
           }
           goto warn_exit;
           break;
 
         default:
-          if (onig_verb_warn != onig_null_warn) {
-            onig_snprintf_with_pattern(buf, WARN_BUFSIZE, env->enc,
-                                       env->pattern, env->pattern_end,
-            (UChar* )"nested repeat operator %s and %s was replaced with '%s'",
-            PopularQStr[targetq_num], PopularQStr[nestq_num],
-            ReduceQStr[ReduceTypeTable[targetq_num][nestq_num]]);
-            (*onig_verb_warn)((char* )buf);
+          if (onig_warn != onig_null_warn) {
+              onig_syntax_warn(env, "nested repeat operator '%s' and '%s' was replaced with '%s' in regular expression",
+                               PopularQStr[targetq_num], PopularQStr[nestq_num],
+                               ReduceQStr[ReduceTypeTable[targetq_num][nestq_num]]);
           }
           goto warn_exit;
           break;

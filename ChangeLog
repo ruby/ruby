@@ -1,3 +1,11 @@
+Wed Sep 10 23:14:42 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	merge r46831 partially. extracted commits are as follows. [Bug #9344]
+	https://github.com/k-takata/Onigmo/commit/bdfc1997aa15b6baddaf9a482c6610b32504bd86
+
+	* regcomp.c: Merge Onigmo 5.14.1 25a8a69fc05ae3b56a09.
+	  this includes Support for Unicode 7.0 [Bug #9092].
+
 Wed Sep 10 22:58:25 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (Doxyfile): revert r43888, not to require preinstalled
