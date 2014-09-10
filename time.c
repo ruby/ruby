@@ -1782,7 +1782,6 @@ static void
 time_mark(void *ptr)
 {
     struct time_object *tobj = ptr;
-    if (!tobj) return;
     if (!FIXWV_P(tobj->timew))
         rb_gc_mark(w2v(tobj->timew));
     rb_gc_mark(tobj->vtm.year);
@@ -1790,21 +1789,15 @@ time_mark(void *ptr)
     rb_gc_mark(tobj->vtm.utc_offset);
 }
 
-static void
-time_free(void *tobj)
-{
-    if (tobj) xfree(tobj);
-}
-
 static size_t
 time_memsize(const void *tobj)
 {
-    return tobj ? sizeof(struct time_object) : 0;
+    return sizeof(struct time_object);
 }
 
 static const rb_data_type_t time_data_type = {
     "time",
-    {time_mark, time_free, time_memsize,},
+    {time_mark, RUBY_TYPED_DEFAULT_FREE, time_memsize,},
     NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
