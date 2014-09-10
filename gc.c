@@ -6260,13 +6260,13 @@ gc_stat_internal(VALUE hash_or_sym)
     static VALUE sym_heap_eden_pages, sym_heap_tomb_pages;
     static VALUE sym_total_allocated_pages, sym_total_freed_pages;
     static VALUE sym_total_allocated_objects, sym_total_freed_objects;
-    static VALUE sym_malloc_increase, sym_malloc_limit;
+    static VALUE sym_malloc_increase_bytes, sym_malloc_increase_bytes_limit;
 #if USE_RGENGC
     static VALUE sym_minor_gc_count, sym_major_gc_count;
     static VALUE sym_remembered_wb_unprotected_objects, sym_remembered_wb_unprotected_objects_limit;
     static VALUE sym_old_objects, sym_old_objects_limit;
 #if RGENGC_ESTIMATE_OLDMALLOC
-    static VALUE sym_oldmalloc_increase, sym_oldmalloc_limit;
+    static VALUE sym_oldmalloc_increase_bytes, sym_oldmalloc_increase_bytes_limit;
 #endif
 #if RGENGC_PROFILE
     static VALUE sym_total_generated_normal_object_count, sym_total_generated_shady_object_count;
@@ -6306,8 +6306,8 @@ gc_stat_internal(VALUE hash_or_sym)
 	S(total_freed_pages);
 	S(total_allocated_objects);
 	S(total_freed_objects);
-	S(malloc_increase);
-	S(malloc_limit);
+	S(malloc_increase_bytes);
+	S(malloc_increase_bytes_limit);
 #if USE_RGENGC
 	S(minor_gc_count);
 	S(major_gc_count);
@@ -6316,8 +6316,8 @@ gc_stat_internal(VALUE hash_or_sym)
 	S(old_objects);
 	S(old_objects_limit);
 #if RGENGC_ESTIMATE_OLDMALLOC
-	S(oldmalloc_increase);
-	S(oldmalloc_limit);
+	S(oldmalloc_increase_bytes);
+	S(oldmalloc_increase_bytes_limit);
 #endif
 #if RGENGC_PROFILE
 	S(total_generated_normal_object_count);
@@ -6355,8 +6355,8 @@ gc_stat_internal(VALUE hash_or_sym)
     SET(total_freed_pages, objspace->profile.total_freed_pages);
     SET(total_allocated_objects, objspace->total_allocated_objects);
     SET(total_freed_objects, objspace->profile.total_freed_objects);
-    SET(malloc_increase, malloc_increase);
-    SET(malloc_limit, malloc_limit);
+    SET(malloc_increase_bytes, malloc_increase);
+    SET(malloc_increase_bytes_limit, malloc_limit);
 #if USE_RGENGC
     SET(minor_gc_count, objspace->profile.minor_gc_count);
     SET(major_gc_count, objspace->profile.major_gc_count);
@@ -6365,8 +6365,8 @@ gc_stat_internal(VALUE hash_or_sym)
     SET(old_objects, objspace->rgengc.old_objects);
     SET(old_objects_limit, objspace->rgengc.old_objects_limit);
 #if RGENGC_ESTIMATE_OLDMALLOC
-    SET(oldmalloc_increase, objspace->rgengc.oldmalloc_increase);
-    SET(oldmalloc_limit, objspace->rgengc.oldmalloc_increase_limit);
+    SET(oldmalloc_increase_bytes, objspace->rgengc.oldmalloc_increase);
+    SET(oldmalloc_increase_bytes_limit, objspace->rgengc.oldmalloc_increase_limit);
 #endif
 
 #if RGENGC_PROFILE
