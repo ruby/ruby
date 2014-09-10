@@ -91,14 +91,14 @@ class TestGc < Test::Unit::TestCase
     GC.start
     GC.stat(stat)
     ObjectSpace.count_objects(count)
-    assert_equal(count[:TOTAL]-count[:FREE], stat[:heap_live_slot])
-    assert_equal(count[:FREE], stat[:heap_free_slot])
+    assert_equal(count[:TOTAL]-count[:FREE], stat[:heap_live_slots])
+    assert_equal(count[:FREE], stat[:heap_free_slots])
 
     # measure again without GC.start
     1000.times{ "a" + "b" }
     GC.stat(stat)
     ObjectSpace.count_objects(count)
-    assert_equal(count[:FREE], stat[:heap_free_slot])
+    assert_equal(count[:FREE], stat[:heap_free_slots])
   end
 
   def test_stat_argument
@@ -113,7 +113,7 @@ class TestGc < Test::Unit::TestCase
 
   def test_latest_gc_info
     GC.start
-    count = GC.stat(:heap_free_slot) + GC.stat(:heap_allocatable_pages) * GC::INTERNAL_CONSTANTS[:HEAP_OBJ_LIMIT]
+    count = GC.stat(:heap_free_slots) + GC.stat(:heap_allocatable_pages) * GC::INTERNAL_CONSTANTS[:HEAP_OBJ_LIMIT]
     count.times{ "a" + "b" }
     assert_equal :newobj, GC.latest_gc_info[:gc_by]
 
