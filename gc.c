@@ -6254,7 +6254,7 @@ size_t
 gc_stat_internal(VALUE hash_or_sym)
 {
     static VALUE sym_count;
-    static VALUE sym_heap_used, sym_heap_sorted_length, sym_heap_allocatable_pages;
+    static VALUE sym_heap_allocated_pages, sym_heap_sorted_length, sym_heap_allocatable_pages;
     static VALUE sym_heap_available_slots, sym_heap_live_slots, sym_heap_free_slots, sym_heap_final_slots;
     static VALUE sym_heap_marked_slots, sym_heap_swept_slots;
     static VALUE sym_heap_eden_pages, sym_heap_tomb_pages;
@@ -6291,7 +6291,7 @@ gc_stat_internal(VALUE hash_or_sym)
     if (sym_count == 0) {
 #define S(s) sym_##s = ID2SYM(rb_intern_const(#s))
 	S(count);
-	S(heap_used);
+	S(heap_allocated_pages);
 	S(heap_sorted_length);
 	S(heap_allocatable_pages);
 	S(heap_available_slots);
@@ -6340,7 +6340,7 @@ gc_stat_internal(VALUE hash_or_sym)
     SET(count, objspace->profile.count);
 
     /* implementation dependent counters */
-    SET(heap_used, heap_allocated_pages);
+    SET(heap_allocated_pages, heap_allocated_pages);
     SET(heap_sorted_length, heap_pages_sorted_length);
     SET(heap_allocatable_pages, heap_allocatable_pages);
     SET(heap_available_slots, objspace_available_slots(objspace));

@@ -111,6 +111,19 @@ class TestGc < Test::Unit::TestCase
     assert_raise(ArgumentError){ GC.stat(:invalid) }
   end
 
+  def test_stat_constraints
+    stat = GC.stat
+    assert_equal stat[:total_allocated_pages], stat[:heap_allocated_pages] + stat[:total_freed_pages]
+    assert_operator stat[:heap_sorted_length], :>=, stat[:heap_allocated_pages] + stat[:heap_allocatable_pages]
+    assert_equal stat[:heap_available_slots], stat[:heap_live_slots] + stat[:heap_free_slots] + stat[:heap_final_slots]
+    assert_equal stat[:heap_live_slots], stat[:total_allocated_objects] - stat[:total_freed_objects] - stat[:heap_final_slots]
+
+    if use_rgengc?
+      assert_equal stat[:count], stat[:major_gc_count] + stat[:minor_gc_count]
+      assert_equal stat[:heap_allocated_pages], stat[:heap_eden_pages] + stat[:heap_tomb_pages]
+    end
+  end
+
   def test_latest_gc_info
     GC.start
     count = GC.stat(:heap_free_slots) + GC.stat(:heap_allocatable_pages) * GC::INTERNAL_CONSTANTS[:HEAP_OBJ_LIMIT]
