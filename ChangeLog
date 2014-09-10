@@ -1,3 +1,7 @@
+Wed Sep 10 16:22:26 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_gc.rb: fix condition.
+
 Wed Sep 10 15:29:46 2014  Eric Wong  <e@80x24.org>
 
 	* vm_core.h (rb_call_info_t): ci->flag becomes 32-bit unsigned int
