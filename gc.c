@@ -569,11 +569,11 @@ typedef struct rb_objspace {
 	VALUE parent_object;
 	int need_major_gc;
 	size_t last_major_gc;
-	size_t remembered_shady_object_count;
-	size_t remembered_shady_object_limit;
-	size_t old_object_count;
-	size_t old_object_limit;
-	size_t old_object_count_at_gc_start;
+	size_t remembered_wb_unprotected_objects;
+	size_t remembered_wb_unprotected_objects_limit;
+	size_t old_objects;
+	size_t old_objects_limit;
+	size_t old_objects_at_gc_start;
 
 #if RGENGC_ESTIMATE_OLDMALLOC
 	size_t oldmalloc_increase;
@@ -1052,7 +1052,7 @@ static inline void
 RVALUE_PROMOTE_RAW(rb_objspace_t *objspace, VALUE obj)
 {
     MARK_IN_BITMAP(GET_HEAP_LONG_LIVED_BITS(obj), obj);
-    objspace->rgengc.old_object_count++;
+    objspace->rgengc.old_objects++;
 
 #if RGENGC_PROFILE >= 2
     objspace->profile.total_promoted_count++;
@@ -1129,7 +1129,7 @@ RVALUE_DEMOTE(rb_objspace_t *objspace, VALUE obj)
     RVALUE_DEMOTE_RAW(objspace, obj);
 
     if (RVALUE_MARKED(obj)) {
-	objspace->rgengc.old_object_count--;
+	objspace->rgengc.old_objects--;
     }
 
     check_rvalue_consistency(obj);
@@ -3884,7 +3884,7 @@ gc_remember_unprotected(rb_objspace_t *objspace, VALUE obj)
     if (!MARKED_IN_BITMAP(bits, obj)) {
 	page->flags.has_long_lived_shady_objects = TRUE;
 	MARK_IN_BITMAP(bits, obj);
-	objspace->rgengc.remembered_shady_object_count++;
+	objspace->rgengc.remembered_wb_unprotected_objects++;
 
 #if RGENGC_PROFILE > 0
 	objspace->profile.total_remembered_shady_object_count++;
@@ -3976,7 +3976,7 @@ gc_aging(rb_objspace_t *objspace, VALUE obj)
 	else if (is_full_marking(objspace)) {
 	    if (RGENGC_CHECK_MODE) assert(RVALUE_PAGE_LONG_LIVED(page, obj) == FALSE);
 	    MARK_IN_BITMAP(page->long_lived_bits, obj);
-	    objspace->rgengc.old_object_count++;
+	    objspace->rgengc.old_objects++;
 	}
     }
     check_rvalue_consistency(obj);
@@ -4785,11 +4785,11 @@ gc_verify_internal_consistency(VALUE self)
 
 #if USE_RGENGC
     if (!is_marking(objspace)) {
-	if (objspace->rgengc.old_object_count != data.old_object_count) {
-	    rb_bug("inconsistent old slot nubmer: expect %"PRIuSIZE", but %"PRIuSIZE".", objspace->rgengc.old_object_count, data.old_object_count);
+	if (objspace->rgengc.old_objects != data.old_object_count) {
+	    rb_bug("inconsistent old slot nubmer: expect %"PRIuSIZE", but %"PRIuSIZE".", objspace->rgengc.old_objects, data.old_object_count);
 	}
-	if (objspace->rgengc.remembered_shady_object_count != data.remembered_shady_count) {
-	    rb_bug("inconsistent old slot nubmer: expect %"PRIuSIZE", but %"PRIuSIZE".", objspace->rgengc.remembered_shady_object_count, data.remembered_shady_count);
+	if (objspace->rgengc.remembered_wb_unprotected_objects != data.remembered_shady_count) {
+	    rb_bug("inconsistent old slot nubmer: expect %"PRIuSIZE", but %"PRIuSIZE".", objspace->rgengc.remembered_wb_unprotected_objects, data.remembered_shady_count);
 	}
     }
 #endif
@@ -4835,21 +4835,21 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
     objspace->marked_slots = 0;
 
 #if USE_RGENGC
-    objspace->rgengc.old_object_count_at_gc_start = objspace->rgengc.old_object_count;
+    objspace->rgengc.old_objects_at_gc_start = objspace->rgengc.old_objects;
 
     if (full_mark) {
 	objspace->flags.during_minor_gc = FALSE;
 	objspace->profile.major_gc_count++;
-	objspace->rgengc.remembered_shady_object_count = 0;
-	objspace->rgengc.old_object_count = 0;
+	objspace->rgengc.remembered_wb_unprotected_objects = 0;
+	objspace->rgengc.old_objects = 0;
 	objspace->rgengc.last_major_gc = objspace->profile.count;
 	rgengc_mark_and_rememberset_clear(objspace, heap_eden);
     }
     else {
 	objspace->flags.during_minor_gc = TRUE;
 	objspace->marked_slots =
-	  objspace->rgengc.old_object_count +
-	  objspace->rgengc.remembered_shady_object_count; /* long lived objects are marked already */
+	  objspace->rgengc.old_objects +
+	  objspace->rgengc.remembered_wb_unprotected_objects; /* long lived objects are marked already */
 	objspace->profile.minor_gc_count++;
 	rgengc_rememberset_mark(objspace, heap_eden);
     }
@@ -4957,8 +4957,8 @@ gc_marks_finish(rb_objspace_t *objspace)
     if (is_full_marking(objspace)) {
 	/* See the comment about RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR */
 	const double r = gc_params.oldobject_limit_factor;
-	objspace->rgengc.remembered_shady_object_limit = (size_t)(objspace->rgengc.remembered_shady_object_count * r);
-	objspace->rgengc.old_object_limit = (size_t)(objspace->rgengc.old_object_count * r);
+	objspace->rgengc.remembered_wb_unprotected_objects_limit = (size_t)(objspace->rgengc.remembered_wb_unprotected_objects * r);
+	objspace->rgengc.old_objects_limit = (size_t)(objspace->rgengc.old_objects * r);
     }
 #endif
 
@@ -4995,15 +4995,15 @@ gc_marks_finish(rb_objspace_t *objspace)
 	}
 
 #if USE_RGENGC
-	if (objspace->rgengc.remembered_shady_object_count > objspace->rgengc.remembered_shady_object_limit) {
+	if (objspace->rgengc.remembered_wb_unprotected_objects > objspace->rgengc.remembered_wb_unprotected_objects_limit) {
 	    objspace->rgengc.need_major_gc |= GPR_FLAG_MAJOR_BY_SHADY;
 	}
-	if (objspace->rgengc.old_object_count > objspace->rgengc.old_object_limit) {
+	if (objspace->rgengc.old_objects > objspace->rgengc.old_objects_limit) {
 	    objspace->rgengc.need_major_gc |= GPR_FLAG_MAJOR_BY_OLDGEN;
 	}
 
 	gc_report(1, objspace, "gc_marks_finish (marks %d objects, old %d objects, total %d slots, sweep %d slots, increment: %d, next GC: %s)\n",
-		  (int)objspace->marked_slots, (int)objspace->rgengc.old_object_count, (int)heap->total_slots, (int)sweep_slots, (int)heap_allocatable_pages,
+		  (int)objspace->marked_slots, (int)objspace->rgengc.old_objects, (int)heap->total_slots, (int)sweep_slots, (int)heap_allocatable_pages,
 		  objspace->rgengc.need_major_gc ? "major" : "minor");
 #endif
     }
@@ -5103,7 +5103,7 @@ gc_marks(rb_objspace_t *objspace, int full_mark)
 #if RGENGC_PROFILE > 0
 	if (gc_prof_record(objspace)) {
 	    gc_profile_record *record = gc_prof_record(objspace);
-	    record->old_objects = objspace->rgengc.old_object_count;
+	    record->old_objects = objspace->rgengc.old_objects;
 	}
 #endif
 
@@ -5551,7 +5551,7 @@ rb_gc_force_recycle(VALUE obj)
 
     if (is_old) {
 	if (RVALUE_MARKED(obj)) {
-	    objspace->rgengc.old_object_count--;
+	    objspace->rgengc.old_objects--;
 	}
     }
     CLEAR_IN_BITMAP(GET_HEAP_LONG_LIVED_BITS(obj), obj);
@@ -6263,8 +6263,8 @@ gc_stat_internal(VALUE hash_or_sym)
     static VALUE sym_malloc_increase, sym_malloc_limit;
 #if USE_RGENGC
     static VALUE sym_minor_gc_count, sym_major_gc_count;
-    static VALUE sym_remembered_shady_object, sym_remembered_shady_object_limit;
-    static VALUE sym_old_object, sym_old_object_limit;
+    static VALUE sym_remembered_wb_unprotected_objects, sym_remembered_wb_unprotected_objects_limit;
+    static VALUE sym_old_objects, sym_old_objects_limit;
 #if RGENGC_ESTIMATE_OLDMALLOC
     static VALUE sym_oldmalloc_increase, sym_oldmalloc_limit;
 #endif
@@ -6311,10 +6311,10 @@ gc_stat_internal(VALUE hash_or_sym)
 #if USE_RGENGC
 	S(minor_gc_count);
 	S(major_gc_count);
-	S(remembered_shady_object);
-	S(remembered_shady_object_limit);
-	S(old_object);
-	S(old_object_limit);
+	S(remembered_wb_unprotected_objects);
+	S(remembered_wb_unprotected_objects_limit);
+	S(old_objects);
+	S(old_objects_limit);
 #if RGENGC_ESTIMATE_OLDMALLOC
 	S(oldmalloc_increase);
 	S(oldmalloc_limit);
@@ -6360,10 +6360,10 @@ gc_stat_internal(VALUE hash_or_sym)
 #if USE_RGENGC
     SET(minor_gc_count, objspace->profile.minor_gc_count);
     SET(major_gc_count, objspace->profile.major_gc_count);
-    SET(remembered_shady_object, objspace->rgengc.remembered_shady_object_count);
-    SET(remembered_shady_object_limit, objspace->rgengc.remembered_shady_object_limit);
-    SET(old_object, objspace->rgengc.old_object_count);
-    SET(old_object_limit, objspace->rgengc.old_object_limit);
+    SET(remembered_wb_unprotected_objects, objspace->rgengc.remembered_wb_unprotected_objects);
+    SET(remembered_wb_unprotected_objects_limit, objspace->rgengc.remembered_wb_unprotected_objects_limit);
+    SET(old_objects, objspace->rgengc.old_objects);
+    SET(old_objects_limit, objspace->rgengc.old_objects_limit);
 #if RGENGC_ESTIMATE_OLDMALLOC
     SET(oldmalloc_increase, objspace->rgengc.oldmalloc_increase);
     SET(oldmalloc_limit, objspace->rgengc.oldmalloc_increase_limit);

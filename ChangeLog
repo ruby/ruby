@@ -1,3 +1,12 @@
+Wed Sep 10 11:31:16 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_stat_internal): rename:
+	  * remembered_shady_object -> remembered_wb_unprotected_objects
+	  * remembered_shady_object_limit -> remembered_wb_unprotected_objects_limit
+	  * old_object -> old_objects
+	  * old_object_limit -> old_objects_limit
+	  ref: [Feature #9924]
+
 Wed Sep 10 11:12:25 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_stat_internal): support:
