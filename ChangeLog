@@ -1,3 +1,8 @@
+Wed Sep 10 12:27:08 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/trans/euckr-tbl.rb (EUCKR_TO_UCS_TBL): add missing euro and
+	  registered signs.  [ruby-core:64452] [Bug #10149]
+
 Wed Sep 10 12:25:24 2014  Eric Wong  <e@80x24.org>
 
 	* time.c (time_timespec): fix tv_nsec overflow

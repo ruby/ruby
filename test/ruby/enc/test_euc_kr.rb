@@ -25,4 +25,12 @@ class TestEucKr < Test::Unit::TestCase
   def test_left_adjust_char_head
     assert_equal(s("\xa1\xa1"), s("\xa1\xa1\xa1\xa1").chop)
   end
+
+  def test_euro_sign
+    assert_equal("\u{20ac}", s("\xa2\xe6").encode("utf-8"))
+  end
+
+  def test_registered_mark
+    assert_equal("\u{00ae}", s("\xa2\xe7").encode("utf-8"))
+  end
 end
