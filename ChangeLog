@@ -1,3 +1,11 @@
+Thu Sep 11 19:16:39 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_mark_ptr): rename to gc_mark_set.
+
+	* gc.c (gc_mark): add gc_mark_ptr() to skip is_markable_object()
+	  check. gc_mark_maybe() can use gc_mark_ptr() directly because
+	  passed pointer is checked by is_pointer_to_heap().
+
 Thu Sep 11 18:40:16 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* .gitignore: ignored temporary files and coverage results.

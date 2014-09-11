@@ -769,6 +769,7 @@ static void gc_sweep_rest(rb_objspace_t *objspace);
 static void gc_sweep_continue(rb_objspace_t *objspace, rb_heap_t *heap);
 
 static void gc_mark(rb_objspace_t *objspace, VALUE ptr);
+static void gc_mark_ptr(rb_objspace_t *objspace, VALUE ptr);
 static void gc_mark_maybe(rb_objspace_t *objspace, VALUE ptr);
 static void gc_mark_children(rb_objspace_t *objspace, VALUE ptr);
 
@@ -3855,7 +3856,7 @@ gc_mark_maybe(rb_objspace_t *objspace, VALUE obj)
     if (is_pointer_to_heap(objspace, (void *)obj)) {
 	int type = BUILTIN_TYPE(obj);
 	if (type != T_ZOMBIE && type != T_NONE) {
-	    gc_mark(objspace, obj);
+	    gc_mark_ptr(objspace, obj);
 	}
     }
 }
@@ -3867,7 +3868,7 @@ rb_gc_mark_maybe(VALUE obj)
 }
 
 static inline int
-gc_mark_ptr(rb_objspace_t *objspace, VALUE obj)
+gc_mark_set(rb_objspace_t *objspace, VALUE obj)
 {
     if (RVALUE_MARKED(obj)) return 0;
     MARK_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj);
@@ -3986,19 +3987,24 @@ gc_aging(rb_objspace_t *objspace, VALUE obj)
 }
 
 static void
-gc_mark(rb_objspace_t *objspace, VALUE obj)
+gc_mark_ptr(rb_objspace_t *objspace, VALUE obj)
 {
-    if (!is_markable_object(objspace, obj)) return;
-
     if (LIKELY(objspace->mark_func_data == NULL)) {
 	rgengc_check_relation(objspace, obj);
-	if (!gc_mark_ptr(objspace, obj)) return; /* already marked */
+	if (!gc_mark_set(objspace, obj)) return; /* already marked */
 	gc_aging(objspace, obj);
 	gc_grey(objspace, obj);
     }
     else {
 	objspace->mark_func_data->mark_func(obj, objspace->mark_func_data->data);
     }
+}
+
+static void
+gc_mark(rb_objspace_t *objspace, VALUE obj)
+{
+    if (!is_markable_object(objspace, obj)) return;
+    gc_mark_ptr(objspace, obj);
 }
 
 void
@@ -4299,7 +4305,7 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
     MARK_CHECKPOINT("vm");
     SET_STACK_END;
     rb_vm_mark(th->vm);
-    if (th->vm->self) gc_mark_ptr(objspace, th->vm->self);
+    if (th->vm->self) gc_mark_set(objspace, th->vm->self);
 
     MARK_CHECKPOINT("finalizers");
     mark_tbl(objspace, finalizer_table);
@@ -5329,7 +5335,7 @@ gc_mark_from(rb_objspace_t *objspace, VALUE obj, VALUE parent)
 {
     gc_mark_set_parent(objspace, parent);
     rgengc_check_relation(objspace, obj);
-    if (gc_mark_ptr(objspace, obj) == FALSE) return;
+    if (gc_mark_set(objspace, obj) == FALSE) return;
     gc_aging(objspace, obj);
     gc_grey(objspace, obj);
 }
@@ -5393,7 +5399,7 @@ rb_gc_writebarrier_unprotect(VALUE obj)
 	if (RVALUE_OLD_P(obj)) {
 	    gc_report(1, objspace, "rb_gc_writebarrier_unprotect: %s\n", obj_info(obj));
 	    RVALUE_DEMOTE(objspace, obj);
-	    gc_mark_ptr(objspace, obj);
+	    gc_mark_set(objspace, obj);
 	    gc_remember_unprotected(objspace, obj);
 
 #if RGENGC_PROFILE
