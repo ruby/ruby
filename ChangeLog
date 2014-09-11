@@ -1,3 +1,8 @@
+Thu Sep 11 18:15:30 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* .gitignore: ignored only simplecov.
+	* coverage/README: Added coverage docs.
+
 Thu Sep 11 17:25:31 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h, gc.c: add new internal events
