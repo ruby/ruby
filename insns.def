@@ -1239,28 +1239,27 @@ once
 {
     union iseq_inline_storage_entry *is = (union iseq_inline_storage_entry *)ic;
 
+#define RUNNING_THREAD_ONCE_DONE ((rb_thread_t *)(0x1))
   retry:
-    if (is->once.done == Qfalse) {
-	if (is->once.running_thread == NULL) {
-	    is->once.running_thread = th;
-	    val = is->once.value = rb_ensure(vm_once_exec, (VALUE)iseq, vm_once_clear, (VALUE)is);
-	    /* is->once.running_thread is cleared by vm_once_clear() */
-	    is->once.done = Qtrue;
-	    rb_iseq_add_mark_object(GET_ISEQ(), val);
-	}
-	else if (is->once.running_thread == th) {
-	    /* recursive once */
-	    val = vm_once_exec((VALUE)iseq);
-	}
-	else {
-	    /* waiting for finish */
-	    RUBY_VM_CHECK_INTS(th);
-	    rb_thread_schedule();
-	    goto retry;
-	}
+    if (is->once.running_thread == RUNNING_THREAD_ONCE_DONE) {
+	val = is->once.value;
+    }
+    else if (is->once.running_thread == NULL) {
+	is->once.running_thread = th;
+	val = is->once.value = rb_ensure(vm_once_exec, (VALUE)iseq, vm_once_clear, (VALUE)is);
+	/* is->once.running_thread is cleared by vm_once_clear() */
+	is->once.running_thread = RUNNING_THREAD_ONCE_DONE; /* success */
+	rb_iseq_add_mark_object(GET_ISEQ(), val);
+    }
+    else if (is->once.running_thread == th) {
+	/* recursive once */
+	val = vm_once_exec((VALUE)iseq);
     }
     else {
-	val = is->once.value;
+	/* waiting for finish */
+	RUBY_VM_CHECK_INTS(th);
+	rb_thread_schedule();
+	goto retry;
     }
 }
 

@@ -127,7 +127,6 @@ union iseq_inline_storage_entry {
     struct {
 	struct rb_thread_struct *running_thread;
 	VALUE value;
-	VALUE done;
     } once;
     struct iseq_inline_cache_entry cache;
 };

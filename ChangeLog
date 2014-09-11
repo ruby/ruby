@@ -1,3 +1,12 @@
+Fri Sep 12 04:24:03 2014  Eric Wong  <e@80x24.org>
+
+	* insns.def (once): define and use fake RUNNING_THREAD_ONCE_DONE
+	  pointer to indicate is->once.running_thread is done.
+
+	* vm_core.h (iseq_inline_storage_entry): remove done field,
+	  allowing the union to be reduced from 24=>16 bytes on 64-bit
+	  [Feature #10187]
+
 Thu Sep 11 20:10:00 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (rb_thread_mark): use rb_gc_mark_values() to mark VM stack.
