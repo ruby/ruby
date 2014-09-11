@@ -1,3 +1,62 @@
+Thu Sep 11 17:25:31 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h, gc.c: add new internal events
+	  RUBY_INTERNAL_EVENT_GC_ENTER and
+	  RUBY_INTERNAL_EVENT_GC_EXIT.
+
+	  When invoking GC process, GC_ENTER event is called.
+	  When exiting from GC process, GC_EXIT event is called.
+
+	  Incremental GC (incremental marking and lazy sweep) can call
+	  these events many times.
+
+	  For example (minor marking):
+	  (1) GC_ENTER
+	  - (2) GC_START (minor GC)
+	    (minor marking)
+	  - (3) GC_END_MARK
+	    (start lazy sweep)
+	  (4) GC_EXIT
+	    (ruby process)
+	  (5) GC_ENTER
+	    (lazy sweep)
+	  (6) GC_EXIT
+	    (ruby process)
+	    (... repeat (5), (6))
+	  (7) GC_ENTER
+	      (finish lazy sweep)
+	    - (8) GC_END_SWEEP
+	  (9) GC_EXIT
+
+	  2nd example (incremental major marking):
+	  (1) GC_ENTER
+	  - (2) GC_START (minor GC)
+	    (start incremental marking)
+	  (3) GC_EXIT
+	    (ruby process)
+	  (4) GC_ENTER
+	    (incremental marking)
+	  (5) GC_EXIT
+	     (ruby process)
+	     (... repeat (4), (5))
+	  (6) GC_ENTER
+	    (finish incremental marking)
+	  - (7) GC_END_MARK
+	    (start lazy sweep)
+	  (8) GC_EXIT
+	    (ruby process)
+	  (9) GC_ENTER
+	    (lazy sweep)
+	  (10) GC_EXIT
+	    (ruby process)
+	    (... repeat (9), (10))
+	  (11) GC_ENTER
+	    (finish lazy marking)
+	  - (12) GC_STOP_SWEEP
+	  (13) GC_EXIT
+
+	  Thease internal events enable to measure GC pause time completely.
+
 Thu Sep 11 17:04:54 2014  Eric Wong  <e@80x24.org>
 
 	* lib/benchmark.rb: remove CLOCK_MONOTONIC_RAW support

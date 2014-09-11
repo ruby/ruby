@@ -5966,6 +5966,7 @@ gc_enter(rb_objspace_t *objspace, const char *event)
     during_gc = TRUE;
     gc_report(1, objspace, "gc_entr: %s [%s]\n", event, gc_current_status(objspace));
     gc_record(objspace, 0, event);
+    gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_ENTER, 0); /* TODO: which parameter should be passed? */
 }
 
 static inline void
@@ -5973,6 +5974,7 @@ gc_exit(rb_objspace_t *objspace, const char *event)
 {
     if (RGENGC_CHECK_MODE) assert(during_gc != 0);
 
+    gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_EXIT, 0); /* TODO: which parameter should be passsed? */
     gc_record(objspace, 1, event);
     gc_report(1, objspace, "gc_exit: %s [%s]\n", event, gc_current_status(objspace));
     during_gc = FALSE;
