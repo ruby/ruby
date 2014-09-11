@@ -1,3 +1,7 @@
+Fri Sep 12 06:55:40 2014  Eric Wong  <e@80x24.org>
+
+	* string.c (Init_frozen_strings): use st_init_table_with_size
+
 Fri Sep 12 06:15:37 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (sym_find): remove Symbol.find because we have Symbol GC now.
