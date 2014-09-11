@@ -130,7 +130,7 @@ class TestEval < Test::Unit::TestCase
   def forall_TYPE
     objects = [Object.new, [], nil, true, false] # TODO: check
     objects.each do |obj|
-      obj.instance_variable_set :@ivar, 12
+      obj.instance_variable_set :@ivar, 12 unless obj.frozen?
       yield obj
     end
   end
@@ -145,7 +145,7 @@ class TestEval < Test::Unit::TestCase
       assert_equal :sym,  o.instance_eval(":sym")
 
       assert_equal 11,    o.instance_eval("11")
-      assert_equal 12,    o.instance_eval("@ivar")
+      assert_equal 12,    o.instance_eval("@ivar") unless o.frozen?
       assert_equal 13,    o.instance_eval("@@cvar")
       assert_equal 14,    o.instance_eval("$gvar__eval")
       assert_equal 15,    o.instance_eval("Const")
@@ -155,7 +155,7 @@ class TestEval < Test::Unit::TestCase
       assert_equal "19",  o.instance_eval(%q("1#{9}"))
 
       1.times {
-        assert_equal 12,  o.instance_eval("@ivar")
+        assert_equal 12,  o.instance_eval("@ivar") unless o.frozen?
         assert_equal 13,  o.instance_eval("@@cvar")
         assert_equal 14,  o.instance_eval("$gvar__eval")
         assert_equal 15,  o.instance_eval("Const")
@@ -173,7 +173,7 @@ class TestEval < Test::Unit::TestCase
       assert_equal :sym,  o.instance_eval { :sym }
 
       assert_equal 11,    o.instance_eval { 11 }
-      assert_equal 12,    o.instance_eval { @ivar }
+      assert_equal 12,    o.instance_eval { @ivar } unless o.frozen?
       assert_equal 13,    o.instance_eval { @@cvar }
       assert_equal 14,    o.instance_eval { $gvar__eval }
       assert_equal 15,    o.instance_eval { Const }
@@ -183,7 +183,7 @@ class TestEval < Test::Unit::TestCase
       assert_equal "19",  o.instance_eval { "1#{9}" }
 
       1.times {
-        assert_equal 12,  o.instance_eval { @ivar }
+        assert_equal 12,  o.instance_eval { @ivar } unless o.frozen?
         assert_equal 13,  o.instance_eval { @@cvar }
         assert_equal 14,  o.instance_eval { $gvar__eval }
         assert_equal 15,  o.instance_eval { Const }

@@ -980,7 +980,7 @@ rb_obj_tainted(VALUE obj)
 VALUE
 rb_obj_taint(VALUE obj)
 {
-    if (!OBJ_TAINTED(obj)) {
+    if (!OBJ_TAINTED(obj) && OBJ_TAINTABLE(obj)) {
 	rb_check_frozen(obj);
 	OBJ_TAINT(obj);
     }
@@ -1057,8 +1057,6 @@ rb_obj_infect(VALUE obj1, VALUE obj2)
     OBJ_INFECT(obj1, obj2);
 }
 
-static st_table *immediate_frozen_tbl = 0;
-
 /*
  *  call-seq:
  *     obj.freeze    -> obj
@@ -1089,10 +1087,7 @@ rb_obj_freeze(VALUE obj)
     if (!OBJ_FROZEN(obj)) {
 	OBJ_FREEZE(obj);
 	if (SPECIAL_CONST_P(obj)) {
-	    if (!immediate_frozen_tbl) {
-		immediate_frozen_tbl = st_init_numtable();
-	    }
-	    st_insert(immediate_frozen_tbl, obj, (st_data_t)Qtrue);
+	    rb_bug("special consts should be frozen.");
 	}
     }
     return obj;
@@ -1112,12 +1107,7 @@ rb_obj_freeze(VALUE obj)
 VALUE
 rb_obj_frozen_p(VALUE obj)
 {
-    if (OBJ_FROZEN(obj)) return Qtrue;
-    if (SPECIAL_CONST_P(obj)) {
-	if (!immediate_frozen_tbl) return Qfalse;
-	if (st_lookup(immediate_frozen_tbl, obj, 0)) return Qtrue;
-    }
-    return Qfalse;
+    return OBJ_FROZEN(obj) ? Qtrue : Qfalse;
 }
 
 

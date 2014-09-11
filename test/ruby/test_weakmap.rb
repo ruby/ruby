@@ -19,13 +19,13 @@ class TestWeakMap < Test::Unit::TestCase
     assert_raise(ArgumentError) {@wm[true] = x}
     assert_raise(ArgumentError) {@wm[false] = x}
     assert_raise(ArgumentError) {@wm[nil] = x}
-    assert_raise(RuntimeError) {@wm[42] = x}
-    assert_raise(RuntimeError) {@wm[:foo] = x}
+    assert_raise(ArgumentError) {@wm[42] = x}
+    assert_raise(ArgumentError) {@wm[:foo] = x}
     assert_raise(ArgumentError) {@wm[x] = true}
     assert_raise(ArgumentError) {@wm[x] = false}
     assert_raise(ArgumentError) {@wm[x] = nil}
-    assert_raise(RuntimeError) {@wm[x] = 42}
-    assert_raise(RuntimeError) {@wm[x] = :foo}
+    assert_raise(ArgumentError) {@wm[x] = 42}
+    assert_raise(ArgumentError) {@wm[x] = :foo}
   end
 
   def test_include?

@@ -1126,7 +1126,7 @@ struct RStruct {
     (OBJ_TAINTABLE(x) && FL_ABLE(s)) ? \
     RBASIC(x)->flags |= RBASIC(s)->flags & FL_TAINT : 0)
 
-#define OBJ_FROZEN(x) (!!(FL_ABLE(x)?(RBASIC(x)->flags&(FL_FREEZE)):(FIXNUM_P(x)||FLONUM_P(x)||STATIC_SYM_P(x))))
+#define OBJ_FROZEN(x) (FL_ABLE(x) ? !!(RBASIC(x)->flags&FL_FREEZE) : 1)
 #define OBJ_FREEZE(x) FL_SET((x), FL_FREEZE)
 
 #if USE_RGENGC

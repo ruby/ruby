@@ -1,3 +1,23 @@
+Thu Sep 11 14:31:57 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h: freeze nil/true/false.
+
+	* gc.c (should_be_finalizable): check frozen after checkin FL_ABLE.
+
+	* object.c (rb_obj_taint): check
+	  OBJ_TAINTABLE(obj).
+
+	* object.c (rb_obj_freeze): remove immediate_frozen_tbl
+	   because all of immediate values are frozen. YAY!
+
+	* object.c (rb_obj_frozen_p): ditto.
+
+	* test/ruby/test_eval.rb: skip instance_variable_set for
+	  frozen objects.
+
+	* test/ruby/test_weakmap.rb: check ArgumentError instead of
+	  RuntimeError.
+
 Thu Sep 11 10:03:16 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/rdoc.rb, lib/rdoc, test/rdoc: Update to RDoc 4.2.0.alpha(21b241a)

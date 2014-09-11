@@ -2286,11 +2286,11 @@ should_be_callable(VALUE block)
 static void
 should_be_finalizable(VALUE obj)
 {
-    rb_check_frozen(obj);
     if (!FL_ABLE(obj)) {
 	rb_raise(rb_eArgError, "cannot define finalizer for %s",
 		 rb_obj_classname(obj));
     }
+    rb_check_frozen(obj);
 }
 
 /*
