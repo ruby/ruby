@@ -56,6 +56,10 @@ y.tab.c
 /config.status.lineno
 /configure
 /coverage/simplecov
+/coverage/.last_run.json
+/coverage/.resultset.json*
+/coverage/assets
+/coverage/index.html
 /doc/capi
 /enc.mk
 /encdb.h

@@ -1,3 +1,7 @@
+Thu Sep 11 18:40:16 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* .gitignore: ignored temporary files and coverage results.
+
 Thu Sep 11 18:15:30 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* .gitignore: ignored only simplecov.
