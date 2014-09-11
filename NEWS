@@ -13,6 +13,9 @@ with all sufficient information, see the ChangeLog file.
 
 === Language changes
 
+* nil/true/false
+  * nil/true/false objects are frozen. [Feature #8923]
+
 === Core classes updates (outstanding ones only)
 
 * Binding
