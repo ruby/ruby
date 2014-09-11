@@ -361,7 +361,12 @@ class RDoc::MethodAttr < RDoc::CodeObject
   end
 
   def pretty_print q # :nodoc:
-    alias_for = @is_alias_for ? "alias for #{@is_alias_for.name}" : nil
+    alias_for =
+      if @is_alias_for.respond_to? :name then
+        "alias for #{@is_alias_for.name}"
+      elsif Array === @is_alias_for then
+        "alias for #{@is_alias_for.last}"
+      end
 
     q.group 2, "[#{self.class.name} #{full_name} #{visibility}", "]" do
       if alias_for then

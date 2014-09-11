@@ -1,3 +1,7 @@
+Thu Sep 11 10:03:16 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/rdoc.rb, lib/rdoc, test/rdoc: Update to RDoc 4.2.0.alpha(21b241a)
+
 Wed Sep 10 17:52:25 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (rb_vm_addr2insn): rename to rb_vm_insn_addr2insn
