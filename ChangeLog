@@ -1,7 +1,7 @@
 Thu Sep 11 17:04:54 2014  Eric Wong  <e@80x24.org>
 
 	* lib/benchmark.rb: remove CLOCK_MONOTONIC_RAW support
-	  Thanks to Vít Ondruch for reporting the issue on ARM.
+	  Thanks to Vit Ondruch for reporting the issue on ARM.
 	  [Bug #10202]
 
 Thu Sep 11 14:31:57 2014  Koichi Sasada  <ko1@atdot.net>
