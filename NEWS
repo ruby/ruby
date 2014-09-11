@@ -254,3 +254,4 @@ with all sufficient information, see the ChangeLog file.
 * rb_tracepoint_new() supports new internal events accessible only from C:
   * RUBY_INTERNAL_EVENT_GC_ENTER
   * RUBY_INTERNAL_EVENT_GC_EXIT
+    r47528
