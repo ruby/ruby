@@ -953,7 +953,7 @@ rb_prepend_module(VALUE klass, VALUE module)
     origin = RCLASS_ORIGIN(klass);
     if (origin == klass) {
 	origin = class_alloc(T_ICLASS, klass);
-	OBJ_WB_UNPROTECT(origin); /* TODO: conservertive shading. Need more survery. */
+	OBJ_WB_UNPROTECT(origin); /* TODO: conservative shading. Need more survey. */
 	RCLASS_SET_SUPER(origin, RCLASS_SUPER(klass));
 	RCLASS_SET_SUPER(klass, origin);
 	RCLASS_ORIGIN(klass) = origin;
