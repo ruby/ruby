@@ -1,6 +1,7 @@
 Thu Sep 11 14:31:57 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h: freeze nil/true/false.
+	  [Feature #8923]
 
 	* gc.c (should_be_finalizable): check frozen after checkin FL_ABLE.
 
