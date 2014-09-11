@@ -22,7 +22,7 @@ Thu Sep 11 19:32:30 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_gc_mark_values): added.
 	  This function is similar to rb_gc_mark_locations(), but not
-	  conservertive.
+	  conservative.
 
 	* internal.h: ditto.
 
