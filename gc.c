@@ -8585,10 +8585,7 @@ Init_GC(void)
 
     rb_define_module_function(rb_mObjSpace, "_id2ref", id2ref, 1);
 
-    nomem_error = rb_exc_new3(rb_eNoMemError,
-			      rb_obj_freeze(rb_str_new2("failed to allocate memory")));
-    OBJ_TAINT(nomem_error);
-    OBJ_FREEZE(nomem_error);
+    rb_vm_register_special_exception(ruby_error_nomemory, rb_eNoMemError, "failed to allocate memory");
 
     rb_define_method(rb_cBasicObject, "__id__", rb_obj_id, 0);
     rb_define_method(rb_mKernel, "object_id", rb_obj_id, 0);

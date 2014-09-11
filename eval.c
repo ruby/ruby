@@ -1691,8 +1691,5 @@ Init_eval(void)
     rb_define_global_function("trace_var", rb_f_trace_var, -1);	/* in variable.c */
     rb_define_global_function("untrace_var", rb_f_untrace_var, -1);	/* in variable.c */
 
-    exception_error = rb_exc_new3(rb_eFatal,
-				  rb_obj_freeze(rb_str_new2("exception reentered")));
-    OBJ_TAINT(exception_error);
-    OBJ_FREEZE(exception_error);
+    rb_vm_register_special_exception(ruby_error_reenter, rb_eFatal, "exception reentered");
 }

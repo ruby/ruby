@@ -1751,7 +1751,6 @@ rb_vm_mark(void *ptr)
 	RUBY_MARK_UNLESS_NULL(vm->top_self);
 	RUBY_MARK_UNLESS_NULL(vm->coverages);
 	RUBY_MARK_UNLESS_NULL(vm->defined_module_hash);
-	rb_gc_mark_locations(vm->special_exceptions, vm->special_exceptions + ruby_special_error_count);
 
 	if (vm->loading_table) {
 	    rb_mark_tbl(vm->loading_table);
@@ -1768,6 +1767,16 @@ rb_vm_mark(void *ptr)
     RUBY_MARK_LEAVE("vm");
 }
 
+void
+rb_vm_register_special_exception(enum ruby_special_exceptions sp, VALUE cls, const char *mesg)
+{
+    rb_vm_t *vm = GET_VM();
+    VALUE exc = rb_exc_new3(cls, rb_obj_freeze(rb_str_new2(mesg)));
+    OBJ_TAINT(exc);
+    OBJ_FREEZE(exc);
+    ((VALUE *)vm->special_exceptions)[sp] = exc;
+    rb_gc_register_mark_object(exc);
+}
 
 int
 rb_vm_add_root_module(ID id, VALUE module)

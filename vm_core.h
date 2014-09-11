@@ -383,7 +383,7 @@ typedef struct rb_vm_struct {
     /* object management */
     VALUE mark_object_ary;
 
-    VALUE special_exceptions[ruby_special_error_count];
+    const VALUE special_exceptions[ruby_special_error_count];
 
     /* load */
     VALUE top_self;
@@ -955,6 +955,8 @@ void rb_vm_stack_to_heap(rb_thread_t *th);
 void ruby_thread_init_stack(rb_thread_t *th);
 int rb_vm_control_frame_id_and_class(const rb_control_frame_t *cfp, ID *idp, VALUE *klassp);
 void rb_vm_rewind_cfp(rb_thread_t *th, rb_control_frame_t *cfp);
+
+void rb_vm_register_special_exception(enum ruby_special_exceptions sp, VALUE exception_class, const char *mesg);
 
 void rb_gc_mark_machine_stack(rb_thread_t *th);
 

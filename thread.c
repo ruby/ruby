@@ -5022,9 +5022,7 @@ Init_Thread(void)
 
     rb_define_method(rb_cThread, "inspect", rb_thread_inspect, 0);
 
-    closed_stream_error = rb_exc_new2(rb_eIOError, "stream closed");
-    OBJ_TAINT(closed_stream_error);
-    OBJ_FREEZE(closed_stream_error);
+    rb_vm_register_special_exception(ruby_error_closed_stream, rb_eIOError, "stream closed");
 
     cThGroup = rb_define_class("ThreadGroup", rb_cObject);
     rb_define_alloc_func(cThGroup, thgroup_s_alloc);

@@ -1,3 +1,19 @@
+Thu Sep 11 19:50:57 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (rb_vm_register_special_exception): make new function to
+	  make and register special exceptions.
+
+	* vm.c (rb_vm_mark): do not need to mark special exceptions
+	  because they are registerd by rb_gc_register_mark_object().
+
+	* eval.c (Init_eval): use rb_vm_register_special_exception().
+
+	* gc.c (Init_GC): ditto.
+
+	* proc.c (Init_Proc): ditto.
+
+	* thread.c (Init_Thread): ditto.
+
 Thu Sep 11 19:32:30 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_gc_mark_values): added.
