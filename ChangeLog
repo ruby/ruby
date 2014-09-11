@@ -1,3 +1,14 @@
+Thu Sep 11 19:32:30 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_gc_mark_values): added.
+	  This function is similar to rb_gc_mark_locations(), but not
+	  conservertive.
+
+	* internal.h: ditto.
+
+	* vm.c (env_mark): use rb_gc_mark_values() because env values should
+	  be Ruby VALUEs.
+
 Thu Sep 11 19:16:39 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_mark_ptr): rename to gc_mark_set.

@@ -3639,6 +3639,17 @@ rb_gc_mark_locations(const VALUE *start, const VALUE *end)
     gc_mark_locations(&rb_objspace, start, end);
 }
 
+void
+rb_gc_mark_values(long n, const VALUE *values)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    long i;
+
+    for (i=0; i<n; i++) {
+	gc_mark(objspace, values[i]);
+    }
+}
+
 #define rb_gc_mark_locations(start, end) gc_mark_locations(objspace, (start), (end))
 
 struct mark_tbl_arg {

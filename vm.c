@@ -356,7 +356,7 @@ env_mark(void * const ptr)
 
 	/* TODO: should mark more restricted range */
 	RUBY_GC_INFO("env->env\n");
-	rb_gc_mark_locations(env->env, env->env + env->env_size);
+	rb_gc_mark_values((long)env->env_size, env->env);
 
 	RUBY_GC_INFO("env->prev_envval\n");
 	RUBY_MARK_UNLESS_NULL(env->prev_envval);
