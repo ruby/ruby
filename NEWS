@@ -64,8 +64,6 @@ with all sufficient information, see the ChangeLog file.
     vfork() is faster than fork() when the parent process uses huge memory.
 
 * Symbol
-  * New methods
-    * Symbol.find(str) returns whether given string is defined as symbol or not.
   * Improvements
     * Most symbols which are returned by String#to_sym and
       String#intern are GC-able.

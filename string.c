@@ -8341,20 +8341,6 @@ str_scrub_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     Symbol.find(str)   -> symbol or nil
- *
- *  Return the related symbol if the symbol already exists.
- *  Return nil if not.
- */
-
-static VALUE
-sym_find(VALUE dummy, VALUE sym)
-{
-    return rb_check_symbol(&sym);
-}
-
-/*
- *  call-seq:
  *     sym == obj   -> true or false
  *
  *  Equality---If <i>sym</i> and <i>obj</i> are exactly the same
@@ -8924,7 +8910,6 @@ Init_String(void)
     rb_undef_alloc_func(rb_cSymbol);
     rb_undef_method(CLASS_OF(rb_cSymbol), "new");
     rb_define_singleton_method(rb_cSymbol, "all_symbols", rb_sym_all_symbols, 0); /* in symbol.c */
-    rb_define_singleton_method(rb_cSymbol, "find", sym_find, 1);
 
     rb_define_method(rb_cSymbol, "==", sym_equal, 1);
     rb_define_method(rb_cSymbol, "===", sym_equal, 1);

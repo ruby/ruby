@@ -1,3 +1,12 @@
+Fri Sep 12 06:15:37 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (sym_find): remove Symbol.find because we have Symbol GC now.
+	  https://bugs.ruby-lang.org/projects/ruby/wiki/DevelopersMeeting20140904Japan
+	  If you still want this, request again on Redmine. [Feature #7854]
+	  https://bugs.ruby-lang.org/issues/7854
+
+	* ext/-test-/symbol/init.c (sym_find): moved from string.c for tests.
+
 Fri Sep 12 04:24:03 2014  Eric Wong  <e@80x24.org>
 
 	* insns.def (once): define and use fake RUNNING_THREAD_ONCE_DONE

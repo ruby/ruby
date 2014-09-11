@@ -1,5 +1,4 @@
 require 'test/unit'
-require_relative 'envutil'
 
 class TestSymbol < Test::Unit::TestCase
   # [ruby-core:3573]
@@ -208,20 +207,6 @@ class TestSymbol < Test::Unit::TestCase
     assert_equal(true, :foo.to_sym.frozen?)
   end
 
-  def test_sym_find
-    assert_separately(%w[--disable=gems], <<-"end;")
-      assert_equal :intern, Symbol.find("intern")
-      assert_raise(TypeError){ Symbol.find(true) }
-
-      str = "__noexistent__"
-      assert_equal nil, Symbol.find(str)
-      assert_equal nil, Symbol.find(str)
-      sym = str.intern
-      assert_equal str, sym.to_s
-      assert_equal sym, Symbol.find(str)
-    end;
-  end
-
   def test_symbol_gc_1
     assert_normal_exit('".".intern;GC.start(immediate_sweep:false);eval %[GC.start;".".intern]',
                        '',
@@ -236,25 +221,5 @@ class TestSymbol < Test::Unit::TestCase
                        'eval %[syms=Symbol.all_symbols;GC.start;syms.each(&:to_sym)]',
                        '',
                        child_env: '--disable-gems')
-  end
-
-  def test_gc_attrset
-    assert_separately(['-', '[ruby-core:62226] [Bug #9787]'], <<-'end;') #    begin
-      bug = ARGV.shift
-      def noninterned_name(prefix = "")
-        prefix += "_#{Thread.current.object_id.to_s(36).tr('-', '_')}"
-        begin
-          name = "#{prefix}_#{rand(0x1000).to_s(16)}_#{Time.now.usec}"
-        end while Symbol.find(name) or Symbol.find(name + "=")
-        name
-      end
-      names = Array.new(1000) {noninterned_name("gc")}
-      names.each {|n| n.to_sym}
-      GC.start(immediate_sweep: false)
-      names.each do |n|
-        eval(":#{n}=")
-        assert_nothing_raised(TypeError, bug) {eval("proc{self.#{n} = nil}")}
-      end
-    end;
   end
 end

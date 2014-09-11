@@ -7,7 +7,7 @@ module Test_Symbol
       prefix += "_#{Thread.current.object_id.to_s(36).tr('-', '_')}"
       begin
         name = "#{prefix}_#{rand(0x1000).to_s(16)}_#{Time.now.usec}"
-      end while ::Symbol.find(name)
+      end while Bug::Symbol.find(name)
       name
     end
 
@@ -16,7 +16,7 @@ module Test_Symbol
     end
 
     def assert_not_interned(name, msg = nil)
-      assert_not_send([::Symbol, :find, name], msg)
+      assert_not_send([Bug::Symbol, :find, name], msg)
     end
 
     def assert_not_interned_error(obj, meth, name, msg = nil)
@@ -261,6 +261,26 @@ module Test_Symbol
       mod = Module.new
       assert_raise(NameError) {mod.module_eval {attr_accessor(name)}}
       assert_not_interned(name)
+    end
+
+    def test_gc_attrset
+      assert_separately(['-r-test-/symbol', '-', '[ruby-core:62226] [Bug #9787]'], <<-'end;') #    begin
+      bug = ARGV.shift
+      def noninterned_name(prefix = "")
+        prefix += "_#{Thread.current.object_id.to_s(36).tr('-', '_')}"
+        begin
+          name = "#{prefix}_#{rand(0x1000).to_s(16)}_#{Time.now.usec}"
+        end while Bug::Symbol.find(name) or Bug::Symbol.find(name + "=")
+        name
+      end
+      names = Array.new(1000) {noninterned_name("gc")}
+      names.each {|n| n.to_sym}
+      GC.start(immediate_sweep: false)
+      names.each do |n|
+        eval(":#{n}=")
+        assert_nothing_raised(TypeError, bug) {eval("proc{self.#{n} = nil}")}
+      end
+      end;
     end
   end
 end
