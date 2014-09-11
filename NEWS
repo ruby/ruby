@@ -45,6 +45,10 @@ with all sufficient information, see the ChangeLog file.
   * New methods:
     * File::Stat#birthtime
 
+* GC
+  * Improvements
+    * Introduce incremental marking for major GC. [Feature #10137]
+
 * Kernel
   * New methods:
     * Kernel#itself
@@ -77,6 +81,11 @@ with all sufficient information, see the ChangeLog file.
       when super is used.
 
 === Core classes compatibility issues (excluding feature bug fixes)
+
+* GC
+  * incompatible changes:
+    * Rename GC.stat entries. [Feature #9924]
+      See https://docs.google.com/spreadsheets/d/11Ua4uBr6o0k-nORrZLEIIUkHJ9JRzRR0NyZfrhEEnc8/edit?usp=sharing
 
 * IO
   * incompatible changes:
@@ -238,3 +247,7 @@ with all sufficient information, see the ChangeLog file.
   but not only the end of a string.  Therefore, result strings may not
   be NUL-terminated, `StringValueCStr()` is needed calling to obtain a
   NUL-terminated C string.
+
+* rb_tracepoint_new() supports new internal events accessible only from C:
+  * RUBY_INTERNAL_EVENT_GC_ENTER
+  * RUBY_INTERNAL_EVENT_GC_EXIT
