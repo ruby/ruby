@@ -1981,10 +1981,8 @@ rb_thread_mark(void *ptr)
 	    rb_control_frame_t *cfp = th->cfp;
 	    rb_control_frame_t *limit_cfp = (void *)(th->stack + th->stack_size);
 
-	    while (p < sp) {
-		rb_gc_mark(*p++);
-	    }
-	    rb_gc_mark_locations(p, p + th->mark_stack_len);
+	    rb_gc_mark_values((long)(sp - p), p);
+	    rb_gc_mark_locations(sp, sp + th->mark_stack_len);
 
 	    while (cfp != limit_cfp) {
 		rb_iseq_t *iseq = cfp->iseq;
