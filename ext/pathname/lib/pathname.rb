@@ -22,7 +22,8 @@ class Pathname
   end
 
   SAME_PATHS = if File::FNM_SYSCASE.nonzero?
-    proc {|a, b| a.casecmp(b).zero?}
+    # Avoid #zero? here because #casecmp can return nil.
+    proc {|a, b| a.casecmp(b) == 0}
   else
     proc {|a, b| a == b}
   end
