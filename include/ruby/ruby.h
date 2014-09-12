@@ -376,54 +376,32 @@ VALUE rb_id2sym(ID);
 /* Module#methods, #singleton_methods and so on return Symbols */
 #define USE_SYMBOL_AS_METHOD_NAME 1
 
-/*
-!USE_FLONUM
--------------------------
-...xxxx xxx1 Fixnum
-...0000 1110 Symbol
-...0000 0000 Qfalse
-...0000 0010 Qtrue
-...0000 0100 Qnil
-...0000 0110 Qundef
-
-USE_FLONUM
--------------------------
-...xxxx xxx1 Fixnum
-...xxxx xx10 Flonum
-...0000 1100 Symbol
-...0000 0000 Qfalse  0x00 =  0
-...0000 1000 Qnil    0x08 =  8
-...0001 0100 Qtrue   0x14 = 20
-...0011 0100 Qundef  0x34 = 52
- */
-
 /* special constants - i.e. non-zero and non-fixnum constants */
 enum ruby_special_consts {
 #if USE_FLONUM
-    RUBY_Qfalse = 0x00,
-    RUBY_Qtrue  = 0x14,
-    RUBY_Qnil   = 0x08,
-    RUBY_Qundef = 0x34,
+    RUBY_Qfalse = 0x00,		/* ...0000 0000 */
+    RUBY_Qtrue  = 0x14,		/* ...0001 0100 */
+    RUBY_Qnil   = 0x08,		/* ...0000 1000 */
+    RUBY_Qundef = 0x34,		/* ...0011 0100 */
 
     RUBY_IMMEDIATE_MASK = 0x07,
-    RUBY_FIXNUM_FLAG    = 0x01,
+    RUBY_FIXNUM_FLAG    = 0x01,	/* ...xxxx xxx1 */
     RUBY_FLONUM_MASK    = 0x03,
-    RUBY_FLONUM_FLAG    = 0x02,
-    RUBY_SYMBOL_FLAG    = 0x0c,
-    RUBY_SPECIAL_SHIFT  = 8
+    RUBY_FLONUM_FLAG    = 0x02,	/* ...xxxx xx10 */
+    RUBY_SYMBOL_FLAG    = 0x0c,	/* ...0000 1100 */
 #else
-    RUBY_Qfalse = 0,
-    RUBY_Qtrue  = 2,
-    RUBY_Qnil   = 4,
-    RUBY_Qundef = 6,
+    RUBY_Qfalse = 0,		/* ...0000 0000 */
+    RUBY_Qtrue  = 2,		/* ...0000 0010 */
+    RUBY_Qnil   = 4,		/* ...0000 0100 */
+    RUBY_Qundef = 6,		/* ...0000 0110 */
 
     RUBY_IMMEDIATE_MASK = 0x03,
-    RUBY_FIXNUM_FLAG    = 0x01,
+    RUBY_FIXNUM_FLAG    = 0x01,	/* ...xxxx xxx1 */
     RUBY_FLONUM_MASK    = 0x00,	/* any values ANDed with FLONUM_MASK cannot be FLONUM_FLAG */
     RUBY_FLONUM_FLAG    = 0x02,
-    RUBY_SYMBOL_FLAG    = 0x0e,
-    RUBY_SPECIAL_SHIFT  = 8
+    RUBY_SYMBOL_FLAG    = 0x0e,	/* ...0000 1110 */
 #endif
+    RUBY_SPECIAL_SHIFT  = 8
 };
 
 #define Qfalse ((VALUE)RUBY_Qfalse)
