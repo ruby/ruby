@@ -651,11 +651,35 @@ vm_make_proc_from_block(rb_thread_t *th, rb_block_t *block)
     return block->proc;
 }
 
+static inline VALUE
+rb_proc_alloc(VALUE klass, const rb_block_t *block,
+		VALUE envval, VALUE blockprocval,
+		int8_t safe_level, int8_t is_from_method, int8_t is_lambda)
+{
+    VALUE procval;
+    rb_proc_t *proc = ALLOC(rb_proc_t);
+
+    proc->block = *block;
+    proc->safe_level = safe_level;
+    proc->is_from_method = is_from_method;
+    proc->is_lambda = is_lambda;
+
+    procval = rb_proc_wrap(klass, proc);
+
+    /*
+     * ensure VALUEs are markable here as rb_proc_wrap may trigger allocation
+     * and clobber envval + blockprocval
+     */
+    proc->envval = envval;
+    proc->blockprocval = blockprocval;
+
+    return procval;
+}
+
 VALUE
 rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass)
 {
     VALUE procval, envval, blockprocval = 0;
-    rb_proc_t *proc;
     rb_control_frame_t *cfp = RUBY_VM_GET_CFP_FROM_BLOCK_PTR(block);
 
     if (block->proc) {
@@ -667,16 +691,9 @@ rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass)
     if (PROCDEBUG) {
 	check_env_value(envval);
     }
-    procval = rb_proc_alloc(klass);
-    GetProcPtr(procval, proc);
-    proc->blockprocval = blockprocval;
-    proc->block.self = block->self;
-    proc->block.klass = block->klass;
-    proc->block.ep = block->ep;
-    proc->block.iseq = block->iseq;
-    proc->block.proc = procval;
-    proc->envval = envval;
-    proc->safe_level = th->safe_level;
+
+    procval = rb_proc_alloc(klass, block, envval, blockprocval,
+			    th->safe_level, 0, 0);
 
     if (VMDEBUG) {
 	if (th->stack < block->ep && block->ep < th->stack + th->stack_size) {

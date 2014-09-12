@@ -1,3 +1,17 @@
+Sat Sep 13 05:52:15 2014  Eric Wong  <e@80x24.org>
+
+	* proc.c (rb_proc_alloc): inline and move to vm.c
+	  (rb_proc_wrap): new wrapper function used by rb_proc_alloc
+	  (proc_dup): simplify alloc + copy + wrap operation
+	  [ruby-core:64994]
+
+	* vm.c (rb_proc_alloc): new inline function
+	  (rb_vm_make_proc): call rb_proc_alloc
+
+	* vm_core.h: remove rb_proc_alloc, add rb_proc_wrap
+
+	* benchmark/bm_vm2_newlambda.rb: short test to show difference
+
 Sat Sep 13 04:40:04 2014  Eric Wong  <e@80x24.org>
 
 	* process.c (Init_process): subclass Thread as Process::Waiter
