@@ -40,29 +40,16 @@ static int method_min_max_arity(VALUE, int *max);
 #define IS_METHOD_PROC_NODE(node) (nd_type(node) == NODE_IFUNC && (node)->nd_cfnc == bmcall)
 
 static void
-proc_free(void *ptr)
-{
-    RUBY_FREE_ENTER("proc");
-    if (ptr) {
-	ruby_xfree(ptr);
-    }
-    RUBY_FREE_LEAVE("proc");
-}
-
-static void
 proc_mark(void *ptr)
 {
-    rb_proc_t *proc;
+    rb_proc_t *proc = ptr;
     RUBY_MARK_ENTER("proc");
-    if (ptr) {
-	proc = ptr;
-	RUBY_MARK_UNLESS_NULL(proc->envval);
-	RUBY_MARK_UNLESS_NULL(proc->blockprocval);
-	RUBY_MARK_UNLESS_NULL(proc->block.proc);
-	RUBY_MARK_UNLESS_NULL(proc->block.self);
-	if (proc->block.iseq && RUBY_VM_IFUNC_P(proc->block.iseq)) {
-	    RUBY_MARK_UNLESS_NULL((VALUE)(proc->block.iseq));
-	}
+    RUBY_MARK_UNLESS_NULL(proc->envval);
+    RUBY_MARK_UNLESS_NULL(proc->blockprocval);
+    RUBY_MARK_UNLESS_NULL(proc->block.proc);
+    RUBY_MARK_UNLESS_NULL(proc->block.self);
+    if (proc->block.iseq && RUBY_VM_IFUNC_P(proc->block.iseq)) {
+	RUBY_MARK_UNLESS_NULL((VALUE)(proc->block.iseq));
     }
     RUBY_MARK_LEAVE("proc");
 }
@@ -70,14 +57,14 @@ proc_mark(void *ptr)
 static size_t
 proc_memsize(const void *ptr)
 {
-    return ptr ? sizeof(rb_proc_t) : 0;
+    return sizeof(rb_proc_t);
 }
 
 static const rb_data_type_t proc_data_type = {
     "proc",
     {
 	proc_mark,
-	proc_free,
+	RUBY_TYPED_DEFAULT_FREE,
 	proc_memsize,
     },
     NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY

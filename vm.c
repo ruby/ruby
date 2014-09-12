@@ -350,57 +350,41 @@ ruby_vm_run_at_exit_hooks(rb_vm_t *vm)
 static void
 env_mark(void * const ptr)
 {
-    RUBY_MARK_ENTER("env");
-    if (ptr) {
-	const rb_env_t * const env = ptr;
+    const rb_env_t * const env = ptr;
 
-	/* TODO: should mark more restricted range */
-	RUBY_GC_INFO("env->env\n");
-	rb_gc_mark_values((long)env->env_size, env->env);
+    /* TODO: should mark more restricted range */
+    RUBY_GC_INFO("env->env\n");
+    rb_gc_mark_values((long)env->env_size, env->env);
 
-	RUBY_GC_INFO("env->prev_envval\n");
-	RUBY_MARK_UNLESS_NULL(env->prev_envval);
-	RUBY_MARK_UNLESS_NULL(env->block.self);
-	RUBY_MARK_UNLESS_NULL(env->block.proc);
+    RUBY_GC_INFO("env->prev_envval\n");
+    RUBY_MARK_UNLESS_NULL(env->prev_envval);
+    RUBY_MARK_UNLESS_NULL(env->block.self);
+    RUBY_MARK_UNLESS_NULL(env->block.proc);
 
-	if (env->block.iseq) {
-	    if (BUILTIN_TYPE(env->block.iseq) == T_NODE) {
-		RUBY_MARK_UNLESS_NULL((VALUE)env->block.iseq);
-	    }
-	    else {
-		RUBY_MARK_UNLESS_NULL(env->block.iseq->self);
-	    }
+    if (env->block.iseq) {
+	if (BUILTIN_TYPE(env->block.iseq) == T_NODE) {
+	    RUBY_MARK_UNLESS_NULL((VALUE)env->block.iseq);
+	}
+	else {
+	    RUBY_MARK_UNLESS_NULL(env->block.iseq->self);
 	}
     }
     RUBY_MARK_LEAVE("env");
 }
 
-static void
-env_free(void * const ptr)
-{
-    RUBY_FREE_ENTER("env");
-    if (ptr) {
-	ruby_xfree(ptr);
-    }
-    RUBY_FREE_LEAVE("env");
-}
-
 static size_t
 env_memsize(const void *ptr)
 {
-    if (ptr) {
-	const rb_env_t * const env = ptr;
-	size_t size = sizeof(rb_env_t);
+    const rb_env_t * const env = ptr;
+    size_t size = sizeof(rb_env_t);
 
-	size += (env->env_size - 1) * sizeof(VALUE);
-	return size;
-    }
-    return 0;
+    size += (env->env_size - 1) * sizeof(VALUE);
+    return size;
 }
 
 static const rb_data_type_t env_data_type = {
     "VM/env",
-    {env_mark, env_free, env_memsize,},
+    {env_mark, RUBY_TYPED_DEFAULT_FREE, env_memsize,},
     NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
