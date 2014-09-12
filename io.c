@@ -6628,10 +6628,14 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
         }
     }
     else {
-        if (close(fptr->fd) < 0)
-            rb_sys_fail_path(fptr->pathv);
-        fptr->fd = -1;
-        fptr->fd = rb_sysopen(fptr->pathv, oflags, 0666);
+	int tmpfd = rb_sysopen(fptr->pathv, oflags, 0666);
+	int err = 0;
+	if (rb_cloexec_dup2(tmpfd, fptr->fd) < 0)
+	    err = errno;
+	(void)close(tmpfd);
+	if (err) {
+	    rb_sys_fail_path(fptr->pathv);
+	}
     }
 
     return file;
