@@ -43,7 +43,7 @@ Thu Sep 11 19:50:57 2014  Koichi Sasada  <ko1@atdot.net>
 	  make and register special exceptions.
 
 	* vm.c (rb_vm_mark): do not need to mark special exceptions
-	  because they are registerd by rb_gc_register_mark_object().
+	  because they are registered by rb_gc_register_mark_object().
 
 	* eval.c (Init_eval): use rb_vm_register_special_exception().
 
@@ -138,7 +138,7 @@ Thu Sep 11 17:25:31 2014  Koichi Sasada  <ko1@atdot.net>
 	  - (12) GC_STOP_SWEEP
 	  (13) GC_EXIT
 
-	  Thease internal events enable to measure GC pause time completely.
+	  These internal events enable to measure GC pause time completely.
 
 Thu Sep 11 17:04:54 2014  Eric Wong  <e@80x24.org>
 
@@ -157,7 +157,7 @@ Thu Sep 11 14:31:57 2014  Koichi Sasada  <ko1@atdot.net>
 	  OBJ_TAINTABLE(obj).
 
 	* object.c (rb_obj_freeze): remove immediate_frozen_tbl
-	   because all of immediate values are frozen. YAY!
+	  because all of immediate values are frozen. YAY!
 
 	* object.c (rb_obj_frozen_p): ditto.
 
