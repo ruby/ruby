@@ -1078,13 +1078,10 @@ iseq_to_a(VALUE self)
     return iseq_data_to_ary(iseq);
 }
 
-/* TODO: search algorithm is brute force.
-         this should be binary search or so. */
-
 static struct iseq_line_info_entry *
 get_line_info(const rb_iseq_t *iseq, size_t pos)
 {
-    size_t i = 0, size = iseq->line_info_size;
+    size_t i = 0, size = iseq->line_info_size, l, r;
     struct iseq_line_info_entry *table = iseq->line_info_table;
     const int debug = 0;
 
@@ -1101,19 +1098,28 @@ get_line_info(const rb_iseq_t *iseq, size_t pos)
 	return &table[0];
     }
     else {
-	for (i=1; i<size; i++) {
+	l = 0, r = size-1;
+	while(l < r) {
+	    i = (l+r)/2;
+
 	    if (debug) printf("table[%"PRIdSIZE"]: position: %d, line: %d, pos: %"PRIdSIZE"\n",
 			      i, table[i].position, table[i].line_no, pos);
 
-	    if (table[i].position == pos) {
-		return &table[i];
+	    if (table[i].position < pos) {
+		l = i+1;
+	    } else {
+		r = i;
 	    }
-	    if (table[i].position > pos) {
-		return &table[i-1];
+	}
+	if (table[l].position >= pos) {
+	    if (l == 0) {
+		return &table[l];
+	    } else {
+		return &table[l-1];
 	    }
 	}
     }
-    return &table[i-1];
+    return &table[size-1];
 }
 
 static unsigned int
