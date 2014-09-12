@@ -409,6 +409,10 @@ rb_frozen_class_p(VALUE klass)
       noclass:
 	Check_Type(klass, T_CLASS);
     }
+    if (FL_TEST(klass, FL_SINGLETON)) {
+	VALUE obj = rb_ivar_get(klass, id__attached__);
+	if (OBJ_FROZEN(obj)) OBJ_FREEZE(klass);
+    }
     if (OBJ_FROZEN(klass)) {
 	const char *desc;
 

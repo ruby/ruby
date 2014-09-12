@@ -271,7 +271,7 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 	}
     }
 
-    rb_check_frozen(klass);
+    rb_frozen_class_p(klass);
 #if NOEX_NOREDEF
     rklass = klass;
 #endif
@@ -746,7 +746,7 @@ remove_method(VALUE klass, ID mid)
     VALUE self = klass;
 
     klass = RCLASS_ORIGIN(klass);
-    rb_check_frozen(klass);
+    rb_frozen_class_p(klass);
     if (mid == object_id || mid == id__send__ || mid == idInitialize) {
 	rb_warn("removing `%s' may cause serious problems", rb_id2name(mid));
     }

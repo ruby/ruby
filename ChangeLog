@@ -1,3 +1,7 @@
+Fri Sep 12 17:13:29 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_method_entry_make, remove_method): ditto.
+
 Fri Sep 12 14:39:55 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* gems/bundled_gems: Upgraded to test-unit-3.0.1 and minitest-5.4.1

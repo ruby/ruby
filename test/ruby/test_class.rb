@@ -384,4 +384,13 @@ class TestClass < Test::Unit::TestCase
       Class.new.freeze.clone.to_s
     }
   end
+
+  def test_singleton_class_of_frozen_object
+    obj = Object.new
+    c = obj.singleton_class
+    obj.freeze
+    assert_raise(RuntimeError, /frozen object/) {
+      c.class_eval {def f; end}
+    }
+  end
 end
