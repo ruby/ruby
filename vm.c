@@ -2121,7 +2121,7 @@ rb_obj_is_thread(VALUE obj)
 static VALUE
 thread_alloc(VALUE klass)
 {
-    VALUE volatile obj;
+    VALUE obj;
     rb_thread_t *th;
     obj = TypedData_Make_Struct(klass, rb_thread_t, &thread_data_type, th);
 

@@ -1,3 +1,7 @@
+Sat Sep 13 06:31:23 2014  Eric Wong  <e@80x24.org>
+
+	* vm.c (thread_alloc): remove needless volatile
+
 Sat Sep 13 06:13:55 2014  Eric Wong  <e@80x24.org>
 
 	* proc.c (proc_free): remove, use RUBY_TYPED_DEFAULT_FREE
