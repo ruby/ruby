@@ -1,3 +1,17 @@
+Fri Sep 12 11:34:39 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_object.rb: extend timeout.
+
+Fri Sep 12 11:34:39 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_obj_copy_ivar): allocate no memory for empty
+	  instance variables.  [ruby-core:64700] [Bug #10191]
+
+Fri Sep 12 11:34:39 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_obj_copy_ivar): extract function to copy instance
+	  variables only for T_OBJECT from init_copy.
+
 Fri Sep 12 11:30:50 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* regcomp.c: Merge Onigmo 988517a4f16f14acbd7cc9d5b51a096d5153992c.

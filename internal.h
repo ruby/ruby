@@ -182,6 +182,7 @@ VALUE rb_int_succ(VALUE num);
 VALUE rb_int_pred(VALUE num);
 
 /* object.c */
+void rb_obj_copy_ivar(VALUE dest, VALUE obj);
 VALUE rb_obj_equal(VALUE obj1, VALUE obj2);
 VALUE rb_class_search_ancestor(VALUE klass, VALUE super);
 
