@@ -1,7 +1,5 @@
 # vcs
 
-require 'time'
-
 ENV.delete('PWD')
 
 unless File.respond_to? :realpath
@@ -45,7 +43,11 @@ class VCS
     last, changed, modified, *rest = Dir.chdir(@srcdir) {self.class.get_revisions(path)}
     last or raise "last revision not found"
     changed or raise "changed revision not found"
-    modified &&= Time.parse(modified)
+    if modified
+      /\A(\d+)-(\d+)-(\d+)\D(\d+):(\d+):(\d+(?:\.\d+)?)\s*(?:Z|([-+]\d\d)(\d\d))\z/ =~ modified or
+        raise "unknown time format - #{modified}"
+      modified = Time.mktime(*($~[1..6] + [$7 ? "#{$7}:#{$8}" : "+00:00"]))
+    end
     return last, changed, modified, *rest
   end
 
@@ -96,16 +98,16 @@ class VCS
     register(".git")
 
     def self.get_revisions(path)
-      logcmd = %Q[git log -n1 --grep="^ *git-svn-id: .*@[0-9][0-9]* "]
+      logcmd = %Q[git log -n1 --date=iso --grep="^ *git-svn-id: .*@[0-9][0-9]* "]
       idpat = /git-svn-id: .*?@(\d+) \S+\Z/
       last = `#{logcmd}`[idpat, 1]
       if path
         log = `#{logcmd} "#{path}"`
         changed = log[idpat, 1]
-        modified = `git log --format=%ai -- #{path}`
       else
         changed = last
       end
+      modified = log[/^Date:\s+(.*)/, 1]
       [last, changed, modified]
     end
   end

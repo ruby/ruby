@@ -31,6 +31,9 @@ parser = OptionParser.new {|opts|
   opts.on("--doxygen", "Doxygen format") do
     self.output = :doxygen
   end
+  opts.on("--modified", "modified time") do
+    self.output = :modified
+  end
   opts.on("-q", "--suppress_not_found") do
     @suppress_not_found = true
   end
@@ -44,7 +47,7 @@ rescue VCS::NotFoundError => e
   abort "#{File.basename(Program)}: #{e.message}" unless @suppress_not_found
 else
   begin
-    last, changed = vcs.get_revisions(ARGV.shift)
+    last, changed, modified = vcs.get_revisions(ARGV.shift)
   rescue => e
     abort "#{File.basename(Program)}: #{e.message}" unless @suppress_not_found
     exit false
@@ -58,6 +61,8 @@ when :revision_h
   puts "#define RUBY_REVISION #{changed.to_i}"
 when :doxygen
   puts "r#{changed}/r#{last}"
+when :modified
+  puts modified.strftime('%Y-%m-%dT%H:%M:%S%z')
 else
   raise "unknown output format `#{@output}'"
 end
