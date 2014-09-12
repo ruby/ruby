@@ -906,9 +906,6 @@ size_t rb_strftime(char *s, size_t maxsize, const char *format, rb_encoding *enc
 void Init_frozen_strings(void);
 VALUE rb_fstring(VALUE);
 VALUE rb_fstring_new(const char *ptr, long len);
-#ifdef RUBY_ENCODING_H
-VALUE rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encoding *enc);
-#endif
 int rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p);
 int rb_str_symname_p(VALUE);
 VALUE rb_str_quote_unprintable(VALUE);
@@ -1060,6 +1057,12 @@ void rb_execarg_setenv(VALUE execarg_obj, VALUE env);
 VALUE rb_gcd_normal(VALUE self, VALUE other);
 #if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
 VALUE rb_gcd_gmp(VALUE x, VALUE y);
+#endif
+
+/* string.c */
+#ifdef RUBY_ENCODING_H
+/* internal use */
+VALUE rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encoding *enc);
 #endif
 
 /* util.c */

@@ -36,6 +36,7 @@
 #include "ruby/ruby.h"
 #include "ruby/io.h"
 #include "ruby/thread.h"
+#include "internal.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -688,12 +689,7 @@ readline_s_delete_text(int argc, VALUE *argv, VALUE self)
         char *p, *ptr = rl_line_buffer;
         long beg = 0, len = strlen(rl_line_buffer);
         struct RString fakestr;
-        VALUE str = (VALUE)&fakestr;
-
-        fakestr.basic.flags = T_STRING | RSTRING_NOEMBED;
-        fakestr.as.heap.ptr = ptr;
-        fakestr.as.heap.len = len;
-        rb_enc_associate(str, rb_locale_encoding());
+        VALUE str = rb_setup_fake_str(&fakestr, ptr, len, rb_locale_encoding());
         OBJ_FREEZE(str);
         if (argc == 2) {
             beg = NUM2LONG(argv[0]);

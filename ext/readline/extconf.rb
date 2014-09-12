@@ -105,4 +105,5 @@ unless readline.have_type("rl_hook_func_t*")
   $defs << "-Drl_hook_func_t=Function"
 end
 
+$INCFLAGS << " -I$(top_srcdir)"
 create_makefile("readline")
