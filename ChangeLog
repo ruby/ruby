@@ -1,3 +1,14 @@
+Sat Sep 13 04:40:04 2014  Eric Wong  <e@80x24.org>
+
+	* process.c (Init_process): subclass Thread as Process::Waiter
+	  (rb_detach_process): use Process::Waiter instead of singleton class
+	  Thanks to headius and nobu. [Bug #10231]
+
+	* test/ruby/test_process.rb (test_process_detach): new test
+
+	* inits.c (rb_call_inits): call Init_Thread before Init_process to
+	  ensure Process::Waiter may be a subclass of Thread
+
 Fri Sep 12 18:14:28 2014  Eric Wong  <e@80x24.org>
 
 	* vm.c (env_alloc): inline to avoid extra zeroing

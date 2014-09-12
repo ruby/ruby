@@ -1965,4 +1965,12 @@ EOS
       runner.close
     end
   end if defined?(fork)
+
+  def test_process_detach
+    pid = fork {}
+    th = Process.detach(pid)
+    assert_equal pid, th.pid
+    status = th.value
+    assert status.success?, status.inspect
+  end if defined?(fork)
 end

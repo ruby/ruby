@@ -1007,6 +1007,8 @@ proc_waitall(void)
     return result;
 }
 
+static VALUE rb_cWaiter;
+
 static inline ID
 id_pid(void)
 {
@@ -1038,7 +1040,7 @@ rb_detach_process(rb_pid_t pid)
 {
     VALUE watcher = rb_thread_create(detach_process_watcher, (void*)(VALUE)pid);
     rb_thread_local_aset(watcher, id_pid(), PIDT2NUM(pid));
-    rb_define_singleton_method(watcher, "pid", detach_process_pid, 0);
+    RBASIC_SET_CLASS(watcher, rb_cWaiter);
     return watcher;
 }
 
@@ -7515,6 +7517,11 @@ Init_process(void)
     rb_define_module_function(rb_mProcess, "waitpid2", proc_wait2, -1);
     rb_define_module_function(rb_mProcess, "waitall", proc_waitall, 0);
     rb_define_module_function(rb_mProcess, "detach", proc_detach, 1);
+
+    rb_cWaiter = rb_define_class_under(rb_mProcess, "Waiter", rb_cThread);
+    rb_undef_alloc_func(rb_cWaiter);
+    rb_undef_method(CLASS_OF(rb_cWaiter), "new");
+    rb_define_method(rb_cWaiter, "pid", detach_process_pid, 0);
 
     rb_cProcessStatus = rb_define_class_under(rb_mProcess, "Status", rb_cObject);
     rb_undef_method(CLASS_OF(rb_cProcessStatus), "new");

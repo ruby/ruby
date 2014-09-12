@@ -46,7 +46,6 @@ rb_call_inits(void)
     CALL(Time);
     CALL(Random);
     CALL(signal);
-    CALL(process);
     CALL(load);
     CALL(Proc);
     CALL(Binding);
@@ -56,6 +55,7 @@ rb_call_inits(void)
     CALL(VM);
     CALL(ISeq);
     CALL(Thread);
+    CALL(process);
     CALL(Cont);
     CALL(Rational);
     CALL(Complex);
