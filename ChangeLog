@@ -1,3 +1,8 @@
+Fri Sep 12 18:14:28 2014  Eric Wong  <e@80x24.org>
+
+	* vm.c (env_alloc): inline to avoid extra zeroing
+	  tiny speedup [ruby-core:64980]
+
 Fri Sep 12 17:13:29 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_method.c (rb_method_entry_make, remove_method): ditto.

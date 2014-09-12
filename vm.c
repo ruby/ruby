@@ -404,18 +404,6 @@ static const rb_data_type_t env_data_type = {
     NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-static VALUE
-env_alloc(int local_size)
-{
-    rb_env_t *env;
-
-    env = xcalloc(1, sizeof(rb_env_t) + ((local_size + 1) * sizeof(VALUE)));
-    env->env_size = local_size + 1 + 1;
-    env->local_size = local_size;
-
-    return TypedData_Wrap_Struct(rb_cEnv, &env_data_type, env);
-}
-
 static VALUE check_env_value(VALUE envval);
 
 static int
@@ -488,10 +476,9 @@ vm_make_env_each(const rb_thread_t *const th, rb_control_frame_t *const cfp,
     }
 
     /* allocate env */
-    envval = env_alloc(local_size);
-    GetEnvPtr(envval, env);
-
-    env->prev_envval = penvval;
+    env = xmalloc(sizeof(rb_env_t) + ((local_size + 1) * sizeof(VALUE)));
+    env->env_size = local_size + 1 + 1;
+    env->local_size = local_size;
 
     for (i = 0; i <= local_size; i++) {
 	env->env[i] = envptr[-local_size + i];
@@ -504,6 +491,15 @@ vm_make_env_each(const rb_thread_t *const th, rb_control_frame_t *const cfp,
 #endif
     }
 
+    /* be careful not to trigger GC after this */
+    envval = TypedData_Wrap_Struct(rb_cEnv, &env_data_type, env);
+
+   /*
+    * must happen after TypedData_Wrap_Struct to ensure penvval is markable
+    * in case object allocation triggers GC and clobbers penvval.
+    */
+    env->prev_envval = penvval;
+
     *envptr = envval;		/* GC mark */
     nenvptr = &env->env[i - 1];
     nenvptr[1] = envval;	/* frame self */
@@ -513,8 +509,10 @@ vm_make_env_each(const rb_thread_t *const th, rb_control_frame_t *const cfp,
 
     /* as Binding */
     env->block.self = cfp->self;
+    env->block.klass = 0;
     env->block.ep = cfp->ep;
     env->block.iseq = cfp->iseq;
+    env->block.proc = 0;
 
     if (!RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
 	/* TODO */
