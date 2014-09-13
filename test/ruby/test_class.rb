@@ -392,6 +392,9 @@ class TestClass < Test::Unit::TestCase
     assert_raise_with_message(RuntimeError, /frozen object/) {
       c.class_eval {def f; end}
     }
+  end
+
+  def test_singleton_class_message
     c = Class.new.freeze
     assert_raise_with_message(RuntimeError, /frozen Class/) {
       def c.f; end

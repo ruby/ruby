@@ -1105,6 +1105,7 @@ struct RStruct {
     RBASIC(x)->flags |= RBASIC(s)->flags & FL_TAINT : 0)
 
 #define OBJ_FROZEN(x) (FL_ABLE(x) ? !!(RBASIC(x)->flags&FL_FREEZE) : 1)
+#define OBJ_FREEZE_RAW(x) (RBASIC(x)->flags |= FL_FREEZE)
 #define OBJ_FREEZE(x) rb_obj_freeze_inline((VALUE)x)
 
 static inline void
@@ -1112,9 +1113,9 @@ rb_obj_freeze_inline(VALUE x)
 {
     if (FL_ABLE(x)) {
 	VALUE klass = RBASIC_CLASS(x);
-	RBASIC(x)->flags |= FL_FREEZE;
+	OBJ_FREEZE_RAW(x);
 	if (FL_TEST(klass, (FL_SINGLETON|FL_FREEZE)) == FL_SINGLETON) {
-	    RBASIC(klass)->flags |= FL_FREEZE;
+	    OBJ_FREEZE_RAW(klass);
 	}
     }
 }
