@@ -1561,12 +1561,10 @@ singleton_class_of(VALUE obj)
 	}
     }
 
-    if (FL_TEST(RBASIC(obj)->klass, FL_SINGLETON) &&
-	rb_ivar_get(RBASIC(obj)->klass, id_attached) == obj) {
-	klass = RBASIC(obj)->klass;
-    }
-    else {
-	klass = rb_make_metaclass(obj, RBASIC(obj)->klass);
+    klass = RBASIC(obj)->klass;
+    if (!(FL_TEST(klass, FL_SINGLETON) &&
+	  rb_ivar_get(klass, id_attached) == obj)) {
+	klass = rb_make_metaclass(obj, klass);
     }
 
     if (OBJ_TAINTED(obj)) {
