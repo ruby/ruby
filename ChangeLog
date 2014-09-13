@@ -1,3 +1,7 @@
+Sat Sep 13 15:16:31 2014  Eric Wong  <e@80x24.org>
+
+	* class.c: use ALLOC(rb_subclass_entry_t)
+
 Sat Sep 13 14:14:00 2014  Eric Wong  <e@80x24.org>
 
 	* process.c (free_exec_arg): remove

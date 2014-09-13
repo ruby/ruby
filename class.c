@@ -42,7 +42,7 @@ rb_class_subclass_add(VALUE super, VALUE klass)
     rb_subclass_entry_t *entry, *head;
 
     if (super && super != Qundef) {
-	entry = xmalloc(sizeof(*entry));
+	entry = ALLOC(rb_subclass_entry_t);
 	entry->klass = klass;
 	entry->next = NULL;
 
@@ -62,7 +62,7 @@ rb_module_add_to_subclasses_list(VALUE module, VALUE iclass)
 {
     rb_subclass_entry_t *entry, *head;
 
-    entry = xmalloc(sizeof(*entry));
+    entry = ALLOC(rb_subclass_entry_t);
     entry->klass = iclass;
     entry->next = NULL;
 
