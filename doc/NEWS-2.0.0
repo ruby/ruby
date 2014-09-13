@@ -168,7 +168,7 @@ with all sufficient information, see the ChangeLog file.
     * RUBY_FIBER_VM_STACK_SIZE: vm stack size used at fiber creation.
       default: 64KB or 128KB.
     * RUBY_FIBER_MACHINE_STACK_SIZE: machine stack size used at fiber
-      creation. default: 256KB or 256KB.
+      creation. default: 256KB or 512KB.
     These variables are checked only at launched time.
   * added constant DEFAULT_PARAMS to get above default parameters.
 

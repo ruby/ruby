@@ -1,3 +1,8 @@
+Sat Sep 13 13:43:07 2014  Eric Wong  <e@80x24.org>
+
+	* doc/NEWS-2.0.0: fix typo for default RUBY_FIBER_MACHINE_STACK_SIZE
+	  [ci skip]
+
 Sat Sep 13 11:16:58 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole_event.c(ev_advise, ole_event_free,
