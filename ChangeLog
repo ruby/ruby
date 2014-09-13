@@ -1,3 +1,9 @@
+Sun Sep 14 08:41:44 2014  Eric Wong  <e@80x24.org>
+
+	* ccan/list/list.h (list_del_init, list_node_init): new functions
+	  for multiple list_del() calls
+	  [ccan ec8654d94d3c5c47aa5f82698f7e8048c79765b1] (Rusty Russell)
+
 Sat Sep 13 22:19:26 2014  Bernard Potocki  <bernard.potocki@imanel.org>
 
 	* hash.c (rb_hash_aset): fix misleading example which may suggest

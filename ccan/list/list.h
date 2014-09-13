@@ -92,6 +92,18 @@ static inline void list_head_init(struct list_head *h)
 }
 
 /**
+ * list_node_init - initialize a list_node
+ * @n: the list_node to link to itself.
+ *
+ * You don't need to use this normally!  But it lets you list_del(@n)
+ * safely.
+ */
+static inline void list_node_init(struct list_node *n)
+{
+	n->next = n->prev = n;
+}
+
+/**
  * list_add - add an entry at the start of a linked list.
  * @h: the list_head to add the node to
  * @n: the list_node to add to the list.
@@ -183,7 +195,7 @@ static inline int list_empty_nodebug(const struct list_head *h)
  * another list, but not deleted again.
  *
  * See also:
- *	list_del_from()
+ *	list_del_from(), list_del_init()
  *
  * Example:
  *	list_del(&child->list);
@@ -199,6 +211,27 @@ static inline void list_del_(struct list_node *n, const char* abortstr)
 	/* Catch use-after-del. */
 	n->next = n->prev = NULL;
 #endif
+}
+
+/**
+ * list_del_init - delete a node, and reset it so it can be deleted again.
+ * @n: the list_node to be deleted.
+ *
+ * list_del(@n) or list_del_init() again after this will be safe,
+ * which can be useful in some cases.
+ *
+ * See also:
+ *	list_del_from(), list_del()
+ *
+ * Example:
+ *	list_del_init(&child->list);
+ *	parent->num_children--;
+ */
+#define list_del_init(n) list_del_init_(n, LIST_LOC)
+static inline void list_del_init_(struct list_node *n, const char *abortstr)
+{
+	list_del_(n, abortstr);
+	list_node_init(n);
 }
 
 /**
