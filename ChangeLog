@@ -1,3 +1,8 @@
+Sun Sep 14 08:43:37 2014  Eric Wong  <e@80x24.org>
+
+	* ccan/container_of/container_of.h (container_of_or_null): added
+	  [ccan 7ec5b8e06b2fd5fa98b1fcde1158c286d2d429d8] (David Gibson)
+
 Sun Sep 14 08:41:44 2014  Eric Wong  <e@80x24.org>
 
 	* ccan/list/list.h (list_del_init, list_node_init): new functions

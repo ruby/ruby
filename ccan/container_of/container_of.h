@@ -33,6 +33,42 @@
 	   - container_off(containing_type, member))			\
 	  + check_types_match(*(member_ptr), ((containing_type *)0)->member))
 
+
+/**
+ * container_of_or_null - get pointer to enclosing structure, or NULL
+ * @member_ptr: pointer to the structure member
+ * @containing_type: the type this member is within
+ * @member: the name of this member within the structure.
+ *
+ * Given a pointer to a member of a structure, this macro does pointer
+ * subtraction to return the pointer to the enclosing type, unless it
+ * is given NULL, in which case it also returns NULL.
+ *
+ * Example:
+ *	struct foo {
+ *		int fielda, fieldb;
+ *		// ...
+ *	};
+ *	struct info {
+ *		int some_other_field;
+ *		struct foo my_foo;
+ *	};
+ *
+ *	static struct info *foo_to_info_allowing_null(struct foo *foo)
+ *	{
+ *		return container_of_or_null(foo, struct info, my_foo);
+ *	}
+ */
+static inline char *container_of_or_null_(void *member_ptr, size_t offset)
+{
+	return member_ptr ? (char *)member_ptr - offset : NULL;
+}
+#define container_of_or_null(member_ptr, containing_type, member)	\
+	((containing_type *)						\
+	 container_of_or_null_(member_ptr,				\
+			       container_off(containing_type, member))	\
+	 + check_types_match(*(member_ptr), ((containing_type *)0)->member))
+
 /**
  * container_off - get offset to enclosing structure
  * @containing_type: the type this member is within
