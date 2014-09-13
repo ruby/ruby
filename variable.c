@@ -1543,7 +1543,7 @@ static size_t
 autoload_memsize(const void *ptr)
 {
     const st_table *tbl = ptr;
-    return tbl ? st_memsize(tbl) : 0;
+    return st_memsize(tbl);
 }
 
 static const rb_data_type_t autoload_data_type = {
@@ -1584,13 +1584,6 @@ autoload_i_mark(void *ptr)
     rb_gc_mark(p->value);
 }
 
-static void
-autoload_i_free(void *ptr)
-{
-    struct autoload_data_i *p = ptr;
-    xfree(p);
-}
-
 static size_t
 autoload_i_memsize(const void *ptr)
 {
@@ -1599,7 +1592,7 @@ autoload_i_memsize(const void *ptr)
 
 static const rb_data_type_t autoload_data_i_type = {
     "autoload_i",
-    {autoload_i_mark, autoload_i_free, autoload_i_memsize,},
+    {autoload_i_mark, RUBY_TYPED_DEFAULT_FREE, autoload_i_memsize,},
     NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 

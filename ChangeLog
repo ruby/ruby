@@ -1,3 +1,19 @@
+Sat Sep 13 14:14:00 2014  Eric Wong  <e@80x24.org>
+
+	* process.c (free_exec_arg): remove
+	  (memsize_exec_arg): ptr is never NULL
+	  (exec_arg_data_type): use RUBY_TYPED_DEFAULT_FREE
+
+	* variable.c (autoload_i_free): remove
+	  (autoload_data_i_type): use RUBY_TYPED_DEFAULT_FREE
+	  (autoload_memsize): ptr is never NULL
+
+	* vm_backtrace.c (location_free): remove
+	  (location_mark): ptr is never NULL
+	  (location_data_type): use RUBY_TYPED_DEFAULT_FREE
+	  (backtrace_mark): ditto
+	  (backtrace_free): ditto
+
 Sat Sep 13 13:43:07 2014  Eric Wong  <e@80x24.org>
 
 	* doc/NEWS-2.0.0: fix typo for default RUBY_FIBER_MACHINE_STACK_SIZE

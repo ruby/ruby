@@ -1348,21 +1348,15 @@ mark_exec_arg(void *ptr)
     rb_gc_mark(eargp->chdir_dir);
 }
 
-static void
-free_exec_arg(void *ptr)
-{
-    xfree(ptr);
-}
-
 static size_t
 memsize_exec_arg(const void *ptr)
 {
-    return ptr ? sizeof(struct rb_execarg) : 0;
+    return sizeof(struct rb_execarg);
 }
 
 static const rb_data_type_t exec_arg_data_type = {
     "exec_arg",
-    {mark_exec_arg, free_exec_arg, memsize_exec_arg},
+    {mark_exec_arg, RUBY_TYPED_DEFAULT_FREE, memsize_exec_arg},
     NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
