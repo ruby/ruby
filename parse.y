@@ -283,16 +283,16 @@ struct parser_params {
 };
 
 #ifdef RIPPER
-#define intern_cstr_without_pindown(n,l,en) rb_intern3(n,l,en)
+#define intern_cstr(n,l,en) rb_intern3(n,l,en)
 #else
-#define intern_cstr_without_pindown(n,l,en) rb_intern_cstr_without_pindown(n,l,en)
+#define intern_cstr(n,l,en) rb_intern3(n,l,en)
 #endif
 
 #define STR_NEW(p,n) rb_enc_str_new((p),(n),current_enc)
 #define STR_NEW0() rb_enc_str_new(0,0,current_enc)
 #define STR_NEW2(p) rb_enc_str_new((p),strlen(p),current_enc)
 #define STR_NEW3(p,n,e,func) parser_str_new((p),(n),(e),(func),current_enc)
-#define TOK_INTERN() intern_cstr_without_pindown(tok(), toklen(), current_enc)
+#define TOK_INTERN() intern_cstr(tok(), toklen(), current_enc)
 
 static int parser_yyerror(struct parser_params*, const char*);
 #define yyerror(msg) parser_yyerror(parser, (msg))
@@ -7447,7 +7447,7 @@ parse_gvar(struct parser_params *parser, const enum lex_state_e last_state)
 	    return '$';
 	}
       gvar:
-	set_yylval_name(intern_cstr_without_pindown(tok(), tokidx, current_enc));
+	set_yylval_name(intern_cstr(tok(), tokidx, current_enc));
 	return tGVAR;
 
       case '&':		/* $&: last match */
@@ -9941,7 +9941,7 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
 	!rb_enc_symname2_p(s, len, enc)) {
         return ST_CONTINUE;
     }
-    var = intern_cstr_without_pindown(s, len, enc);
+    var = intern_cstr(s, len, enc);
     if (dvar_defined(var) || local_id(var)) {
         rb_warningV("named capture conflicts a local variable - %"PRIsVALUE,
                     rb_id2str(var));
