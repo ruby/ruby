@@ -49,6 +49,12 @@
 # include "nacl/stat.h"
 #endif
 
+#if defined(HAVE_FCNTL_H) || defined(_WIN32)
+#include <fcntl.h>
+#elif defined(HAVE_SYS_FCNTL_H)
+#include <sys/fcntl.h>
+#endif
+
 #include <errno.h>
 
 #ifndef HAVE_STDLIB_H
@@ -408,22 +414,12 @@ dir_s_alloc(VALUE klass)
     return obj;
 }
 
-/*
- *  call-seq:
- *     Dir.new( string ) -> aDir
- *     Dir.new( string, encoding: enc ) -> aDir
- *
- *  Returns a new directory object for the named directory.
- *
- *  The optional <i>enc</i> argument specifies the encoding of the directory.
- *  If not specified, the filesystem encoding is used.
- */
 static VALUE
-dir_initialize(int argc, VALUE *argv, VALUE dir)
+dir_initialize_internal(int pdirfd, VALUE dir, VALUE dirname, VALUE opt)
 {
     struct dir_data *dp;
     rb_encoding  *fsenc;
-    VALUE dirname, opt, orig;
+    VALUE orig;
     static ID keyword_ids[1];
 
     if (!keyword_ids[0]) {
@@ -431,8 +427,6 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
     }
 
     fsenc = rb_filesystem_encoding();
-
-    rb_scan_args(argc, argv, "1:", &dirname, &opt);
 
     if (!NIL_P(opt)) {
 	VALUE enc;
@@ -452,19 +446,61 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
     dp->dir = NULL;
     dp->path = Qnil;
     dp->enc = fsenc;
-    dp->dir = opendir(RSTRING_PTR(dirname));
-    if (dp->dir == NULL) {
-	if (errno == EMFILE || errno == ENFILE) {
-	    rb_gc();
-	    dp->dir = opendir(RSTRING_PTR(dirname));
-	}
-	if (dp->dir == NULL) {
-	    rb_sys_fail_path(orig);
-	}
+    if (pdirfd >= 0) {
+#ifdef HAVE_OPENAT
+        int fd = openat(pdirfd, RSTRING_PTR(dirname), O_RDONLY);
+        if (fd == -1) {
+            if (errno == EMFILE || errno == ENFILE) {
+                rb_gc();
+                fd = openat(pdirfd, RSTRING_PTR(dirname), O_RDONLY);
+            }
+            if (fd == -1) {
+                rb_sys_fail_path(orig);
+            }
+        }
+        dp->dir = fdopendir(fd);
+        if (dp->dir == NULL) {
+            close(fd);
+            rb_sys_fail("fdopendir");
+        }
+#else
+        rb_notimplement();
+#endif
+    } else {
+        dp->dir = opendir(RSTRING_PTR(dirname));
+        if (dp->dir == NULL) {
+            if (errno == EMFILE || errno == ENFILE) {
+                rb_gc();
+                dp->dir = opendir(RSTRING_PTR(dirname));
+            }
+            if (dp->dir == NULL) {
+                rb_sys_fail_path(orig);
+            }
+        }
     }
     dp->path = orig;
 
     return dir;
+}
+
+/*
+ *  call-seq:
+ *     Dir.new( string ) -> aDir
+ *     Dir.new( string, encoding: enc ) -> aDir
+ *
+ *  Returns a new directory object for the named directory.
+ *
+ *  The optional <i>enc</i> argument specifies the encoding of the directory.
+ *  If not specified, the filesystem encoding is used.
+ */
+static VALUE
+dir_initialize(int argc, VALUE *argv, VALUE dir)
+{
+    VALUE dirname, opt;
+
+    rb_scan_args(argc, argv, "1:", &dirname, &opt);
+
+    return dir_initialize_internal(-1, dir, dirname, opt);
 }
 
 /*
@@ -776,6 +812,66 @@ dir_rewind(VALUE dir)
     rewinddir(dirp->dir);
     return dir;
 }
+
+
+#if defined(HAVE_OPENAT) && defined(HAVE_DIRFD)
+/*
+ *  call-seq:
+ *     dir.open("subdir") => dir2
+ *
+ *  Requires openat()
+ *
+ *     d = Dir.new("testdir")
+ *     d.open("subdir") => dir2
+ */
+static VALUE
+dir_open(int argc, VALUE *argv, VALUE self)
+{
+    VALUE dirname, opt;
+    VALUE dir = rb_obj_alloc(rb_cDir);
+    struct dir_data *dirp;
+
+    rb_scan_args(argc, argv, "1:", &dirname, &opt);
+
+    GetDIR(self, dirp);
+
+    return dir_initialize_internal(dirfd(dirp->dir), dir, dirname, opt);
+}
+
+extern VALUE rb_io_openat(VALUE fd, VALUE argc, VALUE *argv);
+
+/*
+ *  call-seq:
+ *     dir.open_file(filename, mode="r" [, opt])            -> file
+ *     dir.open_file(filename [, mode [, perm]] [, opt])    -> file
+ *     dir.open_file(filename, ...) { |file| block }        -> obj
+ *
+ *  Opens the file named by +filename+ relative to +dir+ according to the given +mode+ and
+ *  returns a new File object.
+ *
+ *  See IO.new for a description of +mode+ and +opt+.
+ *
+ *  If a file is being created, permission bits may be given in +perm+.  These
+ *  mode and permission bits are platform dependent; on Unix systems, see
+ *  openat(2) and chmod(2) man pages for details.
+ *
+ *  === Examples
+ *
+ *    dir = Dir.new('.')
+ *    f = dir.open_file("testfile", "r")
+ *    f = dir.open_file("newfile",  "w+")
+ *    f = dir.open_file("newfile", File::CREAT|File::TRUNC|File::RDWR, 0644)
+ */
+static VALUE
+dir_open_file(int argc, VALUE *argv, VALUE self)
+{
+    struct dir_data *dirp;
+
+    GetDIR(self, dirp);
+
+    return rb_io_openat(dirfd(dirp->dir), argc, argv);
+}
+#endif
 
 /*
  *  call-seq:
@@ -2301,6 +2397,10 @@ Init_Dir(void)
     rb_define_method(rb_cDir,"seek", dir_seek, 1);
     rb_define_method(rb_cDir,"pos", dir_tell, 0);
     rb_define_method(rb_cDir,"pos=", dir_set_pos, 1);
+#if defined(HAVE_OPENAT) && defined(HAVE_DIRFD)
+    rb_define_method(rb_cDir,"open", dir_open, -1);
+    rb_define_method(rb_cDir,"open_file", dir_open_file, -1);
+#endif
     rb_define_method(rb_cDir,"close", dir_close, 0);
 
     rb_define_singleton_method(rb_cDir,"chdir", dir_s_chdir, -1);

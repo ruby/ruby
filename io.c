@@ -256,8 +256,8 @@ rb_fix_detect_o_cloexec(int fd)
     return 0;
 }
 
-int
-rb_cloexec_open2(int dirfd, const char *pathname, int flags, mode_t mode)
+static int
+rb_cloexec_open_internal(int dirfd, const char *pathname, int flags, mode_t mode)
 {
     int ret;
     static int o_cloexec_state = -1; /* <0: unknown, 0: ignored, >0: working */
@@ -293,7 +293,7 @@ rb_cloexec_open2(int dirfd, const char *pathname, int flags, mode_t mode)
 int
 rb_cloexec_open(const char *pathname, int flags, mode_t mode)
 {
-    return rb_cloexec_open2(-1, pathname, flags, mode);
+    return rb_cloexec_open_internal(-1, pathname, flags, mode);
 }
 
 int
@@ -5450,7 +5450,7 @@ sysopen_func(void *ptr)
 {
     const struct sysopen_struct *data = ptr;
     const char *fname = RSTRING_PTR(data->fname);
-    return (void *)(VALUE)rb_cloexec_open2(data->dirfd, fname, data->oflags, data->perm);
+    return (void *)(VALUE)rb_cloexec_open_internal(data->dirfd, fname, data->oflags, data->perm);
 }
 
 static inline int
@@ -7630,32 +7630,10 @@ rb_file_initialize(int argc, VALUE *argv, VALUE io)
 }
 
 #ifdef HAVE_OPENAT
-/*
- *  call-seq:
- *     dir.openat(filename, mode="r" [, opt])            -> file
- *     dir.openat(filename [, mode [, perm]] [, opt])    -> file
- *     dir.openat(filename, ...) { |file| block }             -> obj
- *
- *  Opens the file named by +filename+ relative to +dir+ according to the given +mode+ and
- *  returns a new File object.
- *
- *  See IO.new for a description of +mode+ and +opt+.
- *
- *  If a file is being created, permission bits may be given in +perm+.  These
- *  mode and permission bits are platform dependent; on Unix systems, see
- *  open(2) and chmod(2) man pages for details.
- *
- *  === Examples
- *
- *    dir = File.new('.')
- *    f = dir.openat("testfile", "r")
- *    f = dir.openat("newfile",  "w+")
- *    f = dir.openat("newfile", File::CREAT|File::TRUNC|File::RDWR, 0644)
- */
-static VALUE
-rb_io_openat(int argc, VALUE *argv, VALUE self)
+/* :nodoc: */
+VALUE
+rb_io_openat(VALUE fd, VALUE argc, VALUE *argv)
 {
-    rb_io_t *fptr;
     VALUE io, path;
     int oflags, fmode;
     convconfig_t convconfig;
@@ -7663,9 +7641,7 @@ rb_io_openat(int argc, VALUE *argv, VALUE self)
 
     rb_scan_open_args(argc, argv, &path, &oflags, &fmode, &convconfig, &perm);
 
-    GetOpenFile(self, fptr);
-
-    io = rb_file_open_generic(io_alloc(rb_cFile), fptr->fd, path, 
+    io = rb_file_open_generic(io_alloc(rb_cFile), fd, path, 
         rb_io_fmode_oflags(fmode), fmode, &convconfig, perm);
 
     if (rb_block_given_p()) {
@@ -12293,10 +12269,6 @@ Init_IO(void)
 
     rb_define_method(rb_cIO, "autoclose?", rb_io_autoclose_p, 0);
     rb_define_method(rb_cIO, "autoclose=", rb_io_set_autoclose, 1);
-
-#ifdef HAVE_OPENAT
-    rb_define_method(rb_cIO, "openat", rb_io_openat, -1);
-#endif
 
     rb_define_variable("$stdin", &rb_stdin);
     rb_stdin = prep_stdio(stdin, FMODE_READABLE, rb_cIO, "<STDIN>");
