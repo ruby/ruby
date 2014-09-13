@@ -1,3 +1,7 @@
+Sat Sep 13 09:47:44 2014  Eric Wong  <e@80x24.org>
+
+	* man/ruby.1: use https for *.ruby-lang.org links
+
 Sat Sep 13 06:31:23 2014  Eric Wong  <e@80x24.org>
 
 	* vm.c (thread_alloc): remove needless volatile
