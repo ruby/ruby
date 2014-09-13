@@ -412,8 +412,21 @@ rb_frozen_class_p(VALUE klass)
     if (OBJ_FROZEN(klass)) {
 	const char *desc;
 
-	if (FL_TEST(klass, FL_SINGLETON))
+	if (FL_TEST(klass, FL_SINGLETON)) {
 	    desc = "object";
+	    klass = rb_ivar_get(klass, id__attached__);
+	    if (!SPECIAL_CONST_P(klass)) {
+		switch (BUILTIN_TYPE(klass)) {
+		  case T_MODULE:
+		  case T_ICLASS:
+		    desc = "Module";
+		    break;
+		  case T_CLASS:
+		    desc = "Class";
+		    break;
+		}
+	    }
+	}
 	else {
 	    switch (BUILTIN_TYPE(klass)) {
 	      case T_MODULE:
