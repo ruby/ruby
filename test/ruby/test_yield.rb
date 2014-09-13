@@ -66,7 +66,7 @@ class TestRubyYield < Test::Unit::TestCase
   end
 
   def test_with_enum
-    obj = Object
+    obj = Object.new
     def obj.each
       yield(*[])
     end
