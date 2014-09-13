@@ -58,6 +58,7 @@ typedef struct tagIEVENTSINKOBJ {
 struct oleeventdata {
     DWORD dwCookie;
     IConnectionPoint *pConnectionPoint;
+    IDispatch *pDispatch;
     long event_id;
 };
 
@@ -857,6 +858,7 @@ ole_event_free(struct oleeventdata *poleev)
         OLE_RELEASE(poleev->pConnectionPoint);
         poleev->pConnectionPoint = NULL;
     }
+    OLE_RELEASE(poleev->pDispatch);
     free(poleev);
 }
 
@@ -869,6 +871,7 @@ fev_s_allocate(VALUE klass)
     poleev->dwCookie = 0;
     poleev->pConnectionPoint = NULL;
     poleev->event_id = 0;
+    poleev->pDispatch = NULL;
     return obj;
 }
 
@@ -946,6 +949,8 @@ ev_advise(int argc, VALUE *argv, VALUE self)
     poleev->dwCookie = dwCookie;
     poleev->pConnectionPoint = pConnectionPoint;
     poleev->event_id = pIEV->m_event_id;
+    poleev->pDispatch = pDispatch;
+    OLE_ADDREF(pDispatch);
 
     return self;
 }
@@ -1147,6 +1152,7 @@ fev_unadvise(VALUE self)
         OLE_RELEASE(poleev->pConnectionPoint);
         poleev->pConnectionPoint = NULL;
     }
+    OLE_FREE(poleev->pDispatch);
     return Qnil;
 }
 

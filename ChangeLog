@@ -1,3 +1,10 @@
+Sat Sep 13 11:16:58 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole_event.c(ev_advise, ole_event_free,
+	  fev_s_allocate, fev_unadvise): avoid segmentation fault when COM
+	  server freed before calling Unadvise from WIN32OLE_EVENT object.
+	* ext/win32ole/win32ole.c: ditto.
+
 Sat Sep 13 09:47:44 2014  Eric Wong  <e@80x24.org>
 
 	* man/ruby.1: use https for *.ruby-lang.org links
