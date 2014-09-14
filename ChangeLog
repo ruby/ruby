@@ -1,3 +1,7 @@
+Sun Sep 14 12:29:52 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/test_tracer.rb: fixed testcase for rubygems update.
+
 Sun Sep 14 12:29:02 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/rubygems:  Update to RubyGems 2.4.1 master(713ab65)

@@ -11,7 +11,7 @@ class TestTracer < Test::Unit::TestCase
       when 1
         # do nothing
       else
-        assert_match(%r{rubygems/core_ext/kernel_require\.rb:\d+:Kernel:-:}, lines[0])
+        assert_match(%r{rubygems/core_ext/kernel_require\.rb:\d+:Kernel:<:}, lines[0])
       end
       assert_equal "#0:-e:1::-: 1", lines.last
     end
