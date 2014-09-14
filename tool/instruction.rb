@@ -309,7 +309,7 @@ class RubyVM
       opes = insn.opes
 
       if opes.size != opts.size
-        raise "operand size mismatcvh for #{insn.name} (opes: #{opes.size}, opts: #{opts.size})"
+        raise "operand size mismatch for #{insn.name} (opes: #{opes.size}, opts: #{opts.size})"
       end
 
       ninsn = insn.name + '_OP_' + opts.map{|e| label_escape(e)}.join('_')
