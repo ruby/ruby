@@ -1,3 +1,9 @@
+Mon Sep 15 01:06:35 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MakeMakefile#pkg_config): append --cflags to also
+	  $CXXFLAGS, as they are often used by C++ compiler.
+	  [ruby-core:54532] [Bug #8315]
+
 Mon Sep 15 00:02:20 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/csv.rb (CSV#<<): honor explicitly given encoding.  based on
