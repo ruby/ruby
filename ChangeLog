@@ -1,3 +1,8 @@
+Sun Sep 14 11:03:24 2014  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: update version
+	* ext/psych/psych.gemspec: ditto
+
 Sun Sep 14 08:43:37 2014  Eric Wong  <e@80x24.org>
 
 	* ccan/container_of/container_of.h (container_of_or_null): added
