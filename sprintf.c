@@ -1027,6 +1027,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		VALUE val = GETARG(), num, den;
 		int sign = (flags&FPLUS) ? 1 : 0, zero = 0;
 		long len;
+		int i, done = 0, prefix = 0;
 		if (!RB_TYPE_P(val, T_RATIONAL)) {
 		    nextvalue = val;
 		    goto float_value;
@@ -1062,28 +1063,53 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		if (sign || (flags&FSPACE)) ++len;
 		if (prec > 0) ++len; /* period */
 		CHECK(len > width ? len : width);
-		if (width > len) {
-		    width -= (int)len;
-		    if (!(flags&FMINUS)) {
-			FILL(' ', width);
-			width = 0;
-		    }
+		if (sign || (flags&FSPACE)) {
+		    buf[blen++] = sign > 0 ? '+' : sign < 0 ? '-' : ' ';
+		    prefix++;
+		    done++;
 		}
-		if (sign || (flags&FSPACE)) buf[blen++] = sign > 0 ? '+' : sign < 0 ? '-' : ' ';
 		len = RSTRING_LEN(val) + zero;
 		t = RSTRING_PTR(val);
-		if (len > prec)
+		if (len > prec) {
 		    memcpy(&buf[blen], t, len - prec);
-		else
+		    blen += len - prec;
+		    done += len - prec;
+		}
+		else {
 		    buf[blen++] = '0';
-		blen += len - prec;
-		if (prec > 0) buf[blen++] = '.';
-		if (zero) FILL('0', zero);
+		    done++;
+		}
+		if (prec > 0) {
+		    buf[blen++] = '.';
+		    done++;
+		}
+		if (zero) {
+		    FILL('0', zero);
+		    done += zero;
+		}
+		else if (prec > len) {
+		    FILL('0', prec - len);
+		    memcpy(&buf[blen], t, len);
+		    blen += len;
+		    done += prec;
+		}
 		else if (prec > 0) {
 		    memcpy(&buf[blen], t + len - prec, prec);
 		    blen += prec;
+		    done += prec;
 		}
-		if (width > 0) FILL(' ', width);
+		if ((flags & FWIDTH) && width > done) {
+		    if (!(flags&FMINUS)) {
+			int shifting = (flags&FZERO) ? done - prefix : done;
+			for (i = 1; i <= shifting; i++)
+			    buf[width - i] = buf[done - i];
+			blen -= shifting;
+			FILL((flags&FZERO) ? '0' : ' ', width - done);
+			blen += shifting;
+		    } else {
+			FILL(' ', width - done);
+		    }
+		}
 		RB_GC_GUARD(val);
 		break;
 	    }

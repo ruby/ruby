@@ -1,3 +1,8 @@
+Mon Sep 15 08:13:40 2014  Matthew Draper  <matthew@trebex.net>
+
+	* sprintf.c (rb_str_format): rational 'f' format works for more
+	  values.  [fix GH-717]
+
 Sun Sep 14 16:57:27 2014  Eric Wong  <e@80x24.org>
 
 	* template/vm.inc.tmpl: "insns.c" => "insns.def"
