@@ -257,6 +257,14 @@ class TestCSV::Encodings < TestCSV
     assert_equal("UTF-8",      data.to_csv.encoding.name)
   end
 
+  def test_explicit_encoding
+    bug9766 = '[ruby-core:62113] [Bug #9766]'
+    s = CSV.generate(encoding: "Windows-31J") do |csv|
+      csv << ["foo".force_encoding("ISO-8859-1"), "\u3042"]
+    end
+    assert_equal(["foo,\u3042\n".encode(Encoding::Windows_31J), Encoding::Windows_31J], [s, s.encoding], bug9766)
+  end
+
   private
 
   def assert_parses(fields, encoding, options = { })
