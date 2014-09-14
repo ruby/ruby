@@ -14,7 +14,7 @@ class Gem::Resolver::InstalledSpecification < Gem::Resolver::SpecSpecification
   # This is a null install as this specification is already installed.
   # +options+ are ignored.
 
-  def install options
+  def install options = {}
     yield nil
   end
 
@@ -27,6 +27,24 @@ class Gem::Resolver::InstalledSpecification < Gem::Resolver::SpecSpecification
     return true if @source.kind_of? Gem::Source::SpecificFile
 
     super
+  end
+
+  def pretty_print q # :nodoc:
+    q.group 2, '[InstalledSpecification', ']' do
+      q.breakable
+      q.text "name: #{name}"
+
+      q.breakable
+      q.text "version: #{version}"
+
+      q.breakable
+      q.text "platform: #{platform}"
+
+      q.breakable
+      q.text 'dependencies:'
+      q.breakable
+      q.pp spec.dependencies
+    end
   end
 
   ##

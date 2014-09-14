@@ -263,7 +263,7 @@ class Gem::RDoc # :nodoc: all
       Gem::Requirement.new('>= 2.4.0') =~ self.class.rdoc_version
 
     r = new_rdoc
-    say "rdoc #{args.join ' '}" if Gem.configuration.really_verbose
+    verbose { "rdoc #{args.join ' '}" }
 
     Dir.chdir @spec.full_gem_path do
       begin
@@ -279,7 +279,6 @@ class Gem::RDoc # :nodoc: all
         ui.errs.puts "... RDOC args: #{args.join(' ')}"
         ui.backtrace ex
         ui.errs.puts "(continuing with the rest of the installation)"
-      ensure
       end
     end
   end

@@ -28,8 +28,9 @@ The RubyGems environment can be controlled through command line arguments,
 gemrc files, environment variables and built-in defaults.
 
 Command line argument defaults and some RubyGems defaults can be set in a
-~/.gemrc file for individual users and a /etc/gemrc for all users. These
-files are YAML files with the following YAML keys:
+~/.gemrc file for individual users and a gemrc in the SYSTEM CONFIGURATION
+DIRECTORY for all users. These files are YAML files with the following YAML
+keys:
 
   :sources: A YAML array of remote gem repositories to install gems from
   :verbose: Verbosity of the gem command. false, true, and :really are the
@@ -119,6 +120,8 @@ lib/rubygems/defaults/operating_system.rb
     out << "  - EXECUTABLE DIRECTORY: #{Gem.bindir}\n"
 
     out << "  - SPEC CACHE DIRECTORY: #{Gem.spec_cache_dir}\n"
+
+    out << "  - SYSTEM CONFIGURATION DIRECTORY: #{Gem::ConfigFile::SYSTEM_CONFIG_PATH}\n"
 
     out << "  - RUBYGEMS PLATFORMS:\n"
     Gem.platforms.each do |platform|

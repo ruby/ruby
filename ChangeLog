@@ -1,3 +1,11 @@
+Sun Sep 14 12:29:02 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/rubygems:  Update to RubyGems 2.4.1 master(713ab65)
+	  Complete history at:
+	  https://github.com/rubygems/rubygems/blob/master/History.txt#L3-L216
+
+	* test/rubygems:  ditto.
+
 Sun Sep 14 11:03:24 2014  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: update version

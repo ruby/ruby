@@ -22,6 +22,13 @@ class TestGemCommandsHelpCommand < Gem::TestCase
     end
   end
 
+  def test_gem_help_gem_dependencies
+    util_gem 'gem_dependencies' do |out, err|
+      assert_match 'gem.deps.rb', out
+      assert_equal '', err
+    end
+  end
+
   def test_gem_help_platforms
     util_gem 'platforms' do |out, err|
       assert_match(/x86-freebsd/, out)

@@ -8,7 +8,8 @@ class Gem::Commands::ContentsCommand < Gem::Command
 
   def initialize
     super 'contents', 'Display the contents of the installed gems',
-          :specdirs => [], :lib_only => false, :prefix => true
+          :specdirs => [], :lib_only => false, :prefix => true,
+          :show_install_dir => false
 
     add_version_option
 
@@ -30,6 +31,11 @@ class Gem::Commands::ContentsCommand < Gem::Command
     add_option(      '--[no-]prefix',
                "Don't include installed path prefix") do |prefix, options|
       options[:prefix] = prefix
+    end
+
+    add_option(      '--[no-]show-install-dir',
+               'Show only the gem install dir') do |show, options|
+      options[:show_install_dir] = show
     end
 
     @path_kind = nil
@@ -65,7 +71,12 @@ prefix or only the files that are requireable.
     names = gem_names
 
     names.each do |name|
-      found = gem_contents name
+      found =
+        if options[:show_install_dir] then
+          gem_install_dir name
+        else
+          gem_contents name
+        end
 
       terminate_interaction 1 unless found or names.length > 1
     end
@@ -111,6 +122,16 @@ prefix or only the files that are requireable.
     files = files_in spec
 
     show_files files
+
+    true
+  end
+
+  def gem_install_dir name
+    spec = spec_for name
+
+    return false unless spec
+
+    say spec.gem_dir
 
     true
   end

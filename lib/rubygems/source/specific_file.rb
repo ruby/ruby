@@ -5,6 +5,11 @@
 class Gem::Source::SpecificFile < Gem::Source
 
   ##
+  # The path to the gem for this specific file.
+
+  attr_reader :path
+
+  ##
   # Creates a new SpecificFile for the gem in +file+
 
   def initialize(file)
@@ -37,7 +42,7 @@ class Gem::Source::SpecificFile < Gem::Source
   end
 
   def pretty_print q # :nodoc:
-    q.group 2, '[Local:', ']' do
+    q.group 2, '[SpecificFile:', ']' do
       q.breakable
       q.text @path
     end

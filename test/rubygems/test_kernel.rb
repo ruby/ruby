@@ -33,6 +33,12 @@ class TestKernel < Gem::TestCase
     assert_equal 1, $:.select { |p| %r{a-1/lib} =~ p }.size
   end
 
+  def test_gem_prerelease
+    quick_gem 'd', '1.1.a'
+    refute gem('d', '>= 1'),   'release requirement must not load prerelease'
+    assert gem('d', '>= 1.a'), 'prerelease requirement may load prerelease'
+  end
+
   def test_gem_conflicting
     assert gem('a', '= 1'), "Should load"
 

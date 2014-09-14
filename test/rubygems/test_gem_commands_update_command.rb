@@ -52,6 +52,30 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     assert_empty out
   end
 
+  def test_execute_multiple
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a',  2
+      fetcher.gem 'ab', 2
+
+      fetcher.clear
+
+      fetcher.spec 'a',  1
+      fetcher.spec 'ab', 1
+    end
+
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+    assert_equal "Updating installed gems", out.shift
+    assert_equal "Updating a", out.shift
+    assert_equal "Gems updated: a", out.shift
+    assert_empty out
+  end
+
   def test_execute_system
     spec_fetcher do |fetcher|
       fetcher.gem 'rubygems-update', 9 do |s| s.files = %w[setup.rb] end
@@ -266,6 +290,30 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     assert_empty out
   end
 
+  def test_execute_named_some_up_to_date
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+      fetcher.clear
+      fetcher.spec 'a', 1
+
+      fetcher.spec 'b', 2
+    end
+
+    @cmd.options[:args] = %w[a b]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+    assert_equal "Updating installed gems",    out.shift
+    assert_equal "Updating a",                 out.shift
+    assert_equal "Gems updated: a",            out.shift
+    assert_equal "Gems already up-to-date: b", out.shift
+
+    assert_empty out
+  end
+
   def test_execute_named_up_to_date
     spec_fetcher do |fetcher|
       fetcher.spec 'a', 2
@@ -435,6 +483,21 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     }
 
     assert_equal expected, @cmd.options
+  end
+
+  def test_update_gem_unresolved_dependency
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 1
+      fetcher.gem  'a', 2 do |s|
+        s.add_dependency 'b', '>= 2'
+      end
+
+      fetcher.spec 'b', 1
+    end
+
+    @cmd.update_gem 'a'
+
+    assert_empty @cmd.updated
   end
 
   def test_update_rubygems_arguments

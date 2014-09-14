@@ -21,6 +21,8 @@ class Gem::Commands::InstallCommand < Gem::Command
   def initialize
     defaults = Gem::DependencyInstaller::DEFAULT_OPTIONS.merge({
       :format_executable => false,
+      :lock              => true,
+      :suggest_alternate => true,
       :version           => Gem::Requirement.default,
       :without_groups    => [],
     })
@@ -69,6 +71,16 @@ class Gem::Commands::InstallCommand < Gem::Command
       o[:explain] = v
     end
 
+    add_option(:"Install/Update", '--[no-]lock',
+               'Create a lock file (when used with -g/--file)') do |v,o|
+      o[:lock] = v
+    end
+
+    add_option(:"Install/Update", '--[no-]suggestions',
+               'Suggest alternates when gems are not found') do |v,o|
+      o[:suggest_alternate] = v
+    end
+
     @installed_specs = []
   end
 
@@ -78,7 +90,7 @@ class Gem::Commands::InstallCommand < Gem::Command
 
   def defaults_str # :nodoc:
     "--both --version '#{Gem::Requirement.default}' --document --no-force\n" +
-    "--install-dir #{Gem.dir}"
+    "--install-dir #{Gem.dir} --lock"
   end
 
   def description # :nodoc:
@@ -91,6 +103,25 @@ The wrapper allows you to choose among alternate gem versions using _version_.
 
 For example `rake _0.7.3_ --version` will run rake version 0.7.3 if a newer
 version is also installed.
+
+Gem Dependency Files
+====================
+
+RubyGems can install a consistent set of gems across multiple environments
+using `gem install -g` when a gem dependencies file (gem.deps.rb, Gemfile or
+Isolate) is present.  If no explicit file is given RubyGems attempts to find
+one in the current directory.
+
+When the RUBYGEMS_GEMDEPS environment variable is set to a gem dependencies
+file the gems from that file will be activated at startup time.  Set it to a
+specific filename or to "-" to have RubyGems automatically discover the gem
+dependencies file by walking up from the current directory.
+
+NOTE: Enabling automatic discovery on multiuser systems can lead to
+execution of arbitrary code when used from directories outside your control.
+
+Extension Install Failures
+==========================
 
 If an extension fails to compile during gem installation the gem
 specification is not written out, but the gem remains unpacked in the
@@ -204,22 +235,19 @@ to write the specification by hand.  For example:
       install_gem_without_dependencies name, req
     else
       inst = Gem::DependencyInstaller.new options
+      request_set = inst.resolve_dependencies name, req
 
       if options[:explain]
-        request_set = inst.resolve_dependencies name, req
-
         puts "Gems to install:"
 
-        request_set.specs.map { |s| s.full_name }.sort.each do |s|
-          puts "  #{s}"
+        request_set.sorted_requests.each do |s|
+          puts "  #{s.full_name}"
         end
 
         return
       else
-        inst.install name, req
+        @installed_specs.concat request_set.install options
       end
-
-      @installed_specs.push(*inst.installed_gems)
 
       show_install_errors inst.errors
     end
@@ -250,6 +278,14 @@ to write the specification by hand.  For example:
     inst = Gem::Installer.new gem, options
     inst.install
 
+    require 'rubygems/dependency_installer'
+    dinst = Gem::DependencyInstaller.new options
+    dinst.installed_gems.replace [inst.spec]
+
+    Gem.done_installing_hooks.each do |hook|
+      hook.call dinst, [inst.spec]
+    end unless Gem.done_installing_hooks.empty?
+
     @installed_specs.push(inst.spec)
   end
 
@@ -264,8 +300,10 @@ to write the specification by hand.  For example:
       rescue Gem::InstallError => e
         alert_error "Error installing #{gem_name}:\n\t#{e.message}"
         exit_code |= 1
-      rescue Gem::GemNotFoundException => e
-        show_lookup_failure e.name, e.version, e.errors, options[:domain]
+      rescue Gem::GemNotFoundException, Gem::UnsatisfiableDependencyError => e
+        domain = options[:domain]
+        domain = :local unless options[:suggest_alternate]
+        show_lookup_failure e.name, e.version, e.errors, domain
 
         exit_code |= 2
       end

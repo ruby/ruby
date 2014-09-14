@@ -73,13 +73,13 @@ class TestGemResolverAPISet < Gem::TestCase
 
     set.prefetch [a_dep]
 
-    @fetcher.data.delete "#{@dep_uri}?gems=a"
-
     expected = [
       @DR::APISpecification.new(set, data.first)
     ]
 
     assert_equal expected, set.find_all(a_dep)
+
+    @fetcher.data.delete "#{@dep_uri}?gems=a"
   end
 
   def test_find_all_local

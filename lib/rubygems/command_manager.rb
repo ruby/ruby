@@ -48,6 +48,7 @@ class Gem::CommandManager
     :list,
     :lock,
     :mirror,
+    :open,
     :outdated,
     :owner,
     :pristine,

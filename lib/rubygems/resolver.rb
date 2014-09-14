@@ -1,4 +1,3 @@
-require 'rubygems'
 require 'rubygems/dependency'
 require 'rubygems/exceptions'
 require 'rubygems/util/list'
@@ -21,15 +20,22 @@ class Gem::Resolver
 
   DEBUG_RESOLVER = !ENV['DEBUG_RESOLVER'].nil?
 
+  require 'pp' if DEBUG_RESOLVER
+
   ##
   # Contains all the conflicts encountered while doing resolution
 
   attr_reader :conflicts
 
   ##
-  # Set to true if development dependencies should be considered.
+  # Set to true if all development dependencies should be considered.
 
   attr_accessor :development
+
+  ##
+  # Set to true if immediate development dependencies should be considered.
+
+  attr_accessor :development_shallow
 
   ##
   # When true, no dependencies are looked up for requested gems.
@@ -42,6 +48,12 @@ class Gem::Resolver
   attr_reader :missing
 
   attr_reader :stats
+
+  ##
+  # Hash of gems to skip resolution.  Keyed by gem name, with arrays of
+  # gem specifications as values.
+
+  attr_accessor :skip_gems
 
   ##
   # When a missing dependency, don't stop. Just go on and record what was
@@ -100,26 +112,27 @@ class Gem::Resolver
 
     @conflicts           = []
     @development         = false
+    @development_shallow = false
     @ignore_dependencies = false
     @missing             = []
+    @skip_gems           = {}
     @soft_missing        = false
     @stats               = Gem::Resolver::Stats.new
   end
 
   def explain stage, *data # :nodoc:
-    if DEBUG_RESOLVER
-      d = data.map { |x| x.inspect }.join(", ")
-      STDOUT.printf "%20s %s\n", stage.to_s.upcase, d
-    end
+    return unless DEBUG_RESOLVER
+
+    d = data.map { |x| x.pretty_inspect }.join(", ")
+    $stderr.printf "%10s %s\n", stage.to_s.upcase, d
   end
 
-  def explain_list stage, data # :nodoc:
-    if DEBUG_RESOLVER
-      STDOUT.printf "%20s (%d entries)\n", stage.to_s.upcase, data.size
-      data.each do |d|
-        STDOUT.printf "%20s %s\n", "", d
-      end
-    end
+  def explain_list stage # :nodoc:
+    return unless DEBUG_RESOLVER
+
+    data = yield
+    $stderr.printf "%10s (%d entries)\n", stage.to_s.upcase, data.size
+    PP.pp data, $stderr unless data.empty?
   end
 
   ##
@@ -132,6 +145,7 @@ class Gem::Resolver
     spec = possible.pop
 
     explain :activate, [spec.full_name, possible.size]
+    explain :possible, possible
 
     activation_request =
       Gem::Resolver::ActivationRequest.new spec, dep, possible
@@ -142,8 +156,15 @@ class Gem::Resolver
   def requests s, act, reqs=nil # :nodoc:
     return reqs if @ignore_dependencies
 
+    s.fetch_development_dependencies if @development
+
     s.dependencies.reverse_each do |d|
       next if d.type == :development and not @development
+      next if d.type == :development and @development_shallow and
+              act.development?
+      next if d.type == :development and @development_shallow and
+              act.parent
+
       reqs.add Gem::Resolver::DependencyRequest.new(d, act)
       @stats.requirement!
     end
@@ -186,6 +207,15 @@ class Gem::Resolver
 
   def find_possible dependency # :nodoc:
     all = @set.find_all dependency
+
+    if (skip_dep_gems = skip_gems[dependency.name]) && !skip_dep_gems.empty?
+      matching = all.select do |api_spec|
+        skip_dep_gems.any? { |s| api_spec.version == s.version }
+      end
+
+      all = matching unless matching.empty?
+    end
+
     matching_platform = select_local_platforms all
 
     return matching_platform, all
@@ -270,8 +300,8 @@ class Gem::Resolver
 
       dep = needed.remove
       explain :try, [dep, dep.requester ? dep.requester.request : :toplevel]
-      explain_list :next5, needed.next5
-      explain_list :specs, Array(specs).map { |x| x.full_name }.sort
+      explain_list(:next5) { needed.next5 }
+      explain_list(:specs) { Array(specs).map { |x| x.full_name }.sort }
 
       # If there is already a spec activated for the requested name...
       if specs && existing = specs.find { |s| dep.name == s.name }
@@ -403,7 +433,10 @@ class Gem::Resolver
     @missing << dep
 
     unless @soft_missing
-      raise Gem::UnsatisfiableDependencyError.new(dep, platform_mismatch)
+      exc = Gem::UnsatisfiableDependencyError.new dep, platform_mismatch
+      exc.errors = @set.errors
+
+      raise exc
     end
   end
 

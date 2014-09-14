@@ -347,7 +347,7 @@ class TestGemSecurityPolicy < Gem::TestCase
     assert_match "WARNING:  some_gem is not signed\n", @ui.error
 
     assert_raises Gem::Security::Exception do
-      @almost_no.verify [PUBLIC_CERT], nil, digests, {}
+      @high.verify [PUBLIC_CERT], nil, digests, {}
     end
   end
 
@@ -513,7 +513,7 @@ class TestGemSecurityPolicy < Gem::TestCase
     digests['SHA1']['data.tar.gz'] = OpenSSL::Digest.new 'SHA1', 'hello'
 
     assert_raises Gem::Security::Exception do
-      @almost_no.verify_signatures @spec, digests, {}
+      @high.verify_signatures @spec, digests, {}
     end
   end
 

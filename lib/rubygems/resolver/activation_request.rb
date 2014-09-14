@@ -39,6 +39,13 @@ class Gem::Resolver::ActivationRequest
   end
 
   ##
+  # Is this activation request for a development dependency?
+
+  def development?
+    @request.development?
+  end
+
+  ##
   # Downloads a gem at +path+ and returns the file path.
 
   def download path

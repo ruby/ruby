@@ -89,11 +89,11 @@ module Gem
   # Default gem load path
 
   def self.default_path
-    if Gem.user_home && File.exist?(Gem.user_home) then
-      [user_dir, default_dir]
-    else
-      [default_dir]
-    end
+    path = []
+    path << user_dir if user_home && File.exist?(user_home)
+    path << default_dir
+    path << vendor_dir if vendor_dir and File.directory? vendor_dir
+    path
   end
 
   ##
@@ -158,6 +158,20 @@ module Gem
 
   def self.install_extension_in_lib # :nodoc:
     true
+  end
+
+  ##
+  # Directory where vendor gems are installed.
+
+  def self.vendor_dir # :nodoc:
+    if vendor_dir = ENV['GEM_VENDOR'] then
+      return vendor_dir.dup
+    end
+
+    return nil unless RbConfig::CONFIG.key? 'vendordir'
+
+    File.join RbConfig::CONFIG['vendordir'], 'gems',
+              RbConfig::CONFIG['ruby_version']
   end
 
 end

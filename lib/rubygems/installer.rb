@@ -39,13 +39,17 @@ class Gem::Installer
 
   include Gem::UserInteraction
 
-  # DOC: Missing docs or :nodoc:.
+  ##
+  # Filename of the gem being installed.
+
   attr_reader :gem
 
   ##
   # The directory a gem's executables will be installed into
 
   attr_reader :bin_dir
+
+  attr_reader :build_root # :nodoc:
 
   ##
   # The gem repository the gem will be installed into
@@ -64,6 +68,8 @@ class Gem::Installer
 
   @path_warning = false
 
+  @install_lock = Mutex.new
+
   class << self
 
     ##
@@ -71,7 +77,19 @@ class Gem::Installer
 
     attr_accessor :path_warning
 
-    # DOC: Missing docs or :nodoc:.
+    ##
+    # Certain aspects of the install process are not thread-safe. This lock is
+    # used to allow multiple threads to install Gems at the same time.
+
+    attr_reader :install_lock
+
+    ##
+    # Overrides the executable format.
+    #
+    # This is a sprintf format with a "%s" which will be replaced with the
+    # executable name.  It is based off the ruby executable name's difference
+    # from "ruby".
+
     attr_writer :exec_format
 
     # Defaults to use Ruby's program prefix and suffix.
@@ -240,7 +258,7 @@ class Gem::Installer
 
     say spec.post_install_message unless spec.post_install_message.nil?
 
-    Gem::Specification.add_spec spec unless Gem::Specification.include? spec
+    Gem::Installer.install_lock.synchronize { Gem::Specification.add_spec spec }
 
     run_post_install_hooks
 
@@ -318,6 +336,7 @@ class Gem::Installer
   # True if the gems in the system satisfy +dependency+.
 
   def installation_satisfies_dependency?(dependency)
+    return true if @options[:development] and dependency.type == :development
     return true if installed_specs.detect { |s| dependency.matches_spec? s }
     return false if @only_install_dir
     not dependency.matching_specs.empty?
@@ -382,12 +401,11 @@ class Gem::Installer
         file.puts windows_stub_script(bindir, filename)
       end
 
-      say script_path if Gem.configuration.really_verbose
+      verbose script_path
     end
   end
 
-  # DOC: Missing docs or :nodoc:.
-  def generate_bin
+  def generate_bin # :nodoc:
     return if spec.executables.nil? or spec.executables.empty?
 
     Dir.mkdir @bin_dir unless File.exist? @bin_dir
@@ -433,7 +451,7 @@ class Gem::Installer
       file.print app_script_text(filename)
     end
 
-    say bin_script_path if Gem.configuration.really_verbose
+    verbose bin_script_path
 
     generate_windows_script filename, bindir
   end
@@ -536,8 +554,7 @@ class Gem::Installer
     end
   end
 
-  # DOC: Missing docs or :nodoc:.
-  def ensure_required_ruby_version_met
+  def ensure_required_ruby_version_met # :nodoc:
     if rrv = spec.required_ruby_version then
       unless rrv.satisfied_by? Gem.ruby_version then
         raise Gem::InstallError, "#{spec.name} requires Ruby version #{rrv}."
@@ -545,8 +562,7 @@ class Gem::Installer
     end
   end
 
-  # DOC: Missing docs or :nodoc:.
-  def ensure_required_rubygems_version_met
+  def ensure_required_rubygems_version_met # :nodoc:
     if rrgv = spec.required_rubygems_version then
       unless rrgv.satisfied_by? Gem.rubygems_version then
         raise Gem::InstallError,
@@ -556,8 +572,7 @@ class Gem::Installer
     end
   end
 
-  # DOC: Missing docs or :nodoc:.
-  def ensure_dependencies_met
+  def ensure_dependencies_met # :nodoc:
     deps = spec.runtime_dependencies
     deps |= spec.development_dependencies if @development
 
@@ -566,8 +581,7 @@ class Gem::Installer
     end
   end
 
-  # DOC: Missing docs or :nodoc:.
-  def process_options
+  def process_options # :nodoc:
     @options = {
       :bin_dir      => nil,
       :env_shebang  => false,
@@ -590,12 +604,20 @@ class Gem::Installer
     # (or use) a new bin dir under the gem_home.
     @bin_dir             = options[:bin_dir] || Gem.bindir(gem_home)
     @development         = options[:development]
+    @build_root          = options[:build_root]
 
     @build_args          = options[:build_args] || Gem::Command.build_args
+
+    unless @build_root.nil?
+      require 'pathname'
+      @build_root = Pathname.new(@build_root).expand_path
+      @bin_dir = File.join(@build_root, options[:bin_dir] || Gem.bindir(@gem_home))
+      @gem_home = File.join(@build_root, @gem_home)
+      alert_warning "You build with buildroot.\n  Build root: #{@build_root}\n  Bin dir: #{@bin_dir}\n  Gem home: #{@gem_home}"
+    end
   end
 
-  # DOC: Missing docs or :nodoc:.
-  def check_that_user_bin_dir_is_in_path
+  def check_that_user_bin_dir_is_in_path # :nodoc:
     user_bin_dir = @bin_dir || Gem.bindir(gem_home)
     user_bin_dir = user_bin_dir.gsub(File::SEPARATOR, File::ALT_SEPARATOR) if
       File::ALT_SEPARATOR
@@ -606,16 +628,19 @@ class Gem::Installer
       user_bin_dir = user_bin_dir.downcase
     end
 
-    unless path.split(File::PATH_SEPARATOR).include? user_bin_dir then
-      unless self.class.path_warning then
-        alert_warning "You don't have #{user_bin_dir} in your PATH,\n\t  gem executables will not run."
-        self.class.path_warning = true
+    path = path.split(File::PATH_SEPARATOR)
+
+    unless path.include? user_bin_dir then
+      unless !Gem.win_platform? && (path.include? user_bin_dir.sub(ENV['HOME'], '~'))
+        unless self.class.path_warning then
+          alert_warning "You don't have #{user_bin_dir} in your PATH,\n\t  gem executables will not run."
+          self.class.path_warning = true
+        end
       end
     end
   end
 
-  # DOC: Missing docs or :nodoc:.
-  def verify_gem_home(unpack = false)
+  def verify_gem_home(unpack = false) # :nodoc:
     FileUtils.mkdir_p gem_home
     raise Gem::FilePermissionError, gem_home unless
       unpack or File.writable?(gem_home)
@@ -660,10 +685,10 @@ TEXT
     return <<-TEXT
 @ECHO OFF
 IF NOT "%~f0" == "~f0" GOTO :WinNT
-@"#{ruby}" "#{File.join(bindir, bin_file_name)}" %1 %2 %3 %4 %5 %6 %7 %8 %9
+@"#{bindir.tr(File::SEPARATOR, File::ALT_SEPARATOR)}\\#{ruby}" "#{File.join(bindir, bin_file_name)}" %1 %2 %3 %4 %5 %6 %7 %8 %9
 GOTO :EOF
 :WinNT
-@"#{ruby}" "%~dpn0" %*
+@"%~dp0#{ruby}" "%~dpn0" %*
 TEXT
   end
 

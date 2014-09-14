@@ -186,7 +186,7 @@ class Gem::SpecFetcher
   def suggest_gems_from_name gem_name
     gem_name        = gem_name.downcase.tr('_-', '')
     max             = gem_name.size / 2
-    names           = available_specs(:complete).first.values.flatten(1)
+    names           = available_specs(:latest).first.values.flatten(1)
 
     matches = names.map { |n|
       next unless n.match_platform?
@@ -258,18 +258,11 @@ class Gem::SpecFetcher
   # etc.).  If +gracefully_ignore+ is true, errors are ignored.
 
   def tuples_for(source, type, gracefully_ignore=false) # :nodoc:
-    cache = @caches[type]
-
-    tuples =
-      begin
-        cache[source.uri] ||=
-          source.load_specs(type).sort_by { |tup| tup.name }
-      rescue Gem::RemoteFetcher::FetchError
-        raise unless gracefully_ignore
-        []
-      end
-
-    tuples
+    @caches[type][source.uri] ||=
+      source.load_specs(type).sort_by { |tup| tup.name }
+  rescue Gem::RemoteFetcher::FetchError
+    raise unless gracefully_ignore
+    []
   end
 
 end

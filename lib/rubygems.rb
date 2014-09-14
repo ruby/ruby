@@ -6,9 +6,10 @@
 #++
 
 require 'rbconfig'
+require 'thread'
 
 module Gem
-  VERSION = '2.2.2'
+  VERSION = '2.4.1'
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -56,8 +57,8 @@ require 'rubygems/errors'
 # RubyGems defaults are stored in rubygems/defaults.rb.  If you're packaging
 # RubyGems or implementing Ruby you can change RubyGems' defaults.
 #
-# For RubyGems packagers, provide lib/rubygems/operating_system.rb and
-# override any defaults from lib/rubygems/defaults.rb.
+# For RubyGems packagers, provide lib/rubygems/defaults/operating_system.rb
+# and override any defaults from lib/rubygems/defaults.rb.
 #
 # For Ruby implementers, provide lib/rubygems/defaults/#{RUBY_ENGINE}.rb and
 # override any defaults from lib/rubygems/defaults.rb.
@@ -83,7 +84,7 @@ require 'rubygems/errors'
 # * Chad Fowler  -- chad(at)chadfowler.com
 # * David Black  -- dblack(at)wobblini.net
 # * Paul Brannan -- paul(at)atdesk.com
-# * Jim Weirich  -- jim(at)weirichhouse.org
+# * Jim Weirich   -- jim(at)weirichhouse.org
 #
 # Contributors:
 #
@@ -156,6 +157,7 @@ module Gem
 
   @configuration = nil
   @loaded_specs = {}
+  LOADED_SPECS_MUTEX = Mutex.new
   @path_to_default_spec_map = {}
   @platforms = []
   @ruby = nil
@@ -298,7 +300,7 @@ module Gem
   end
 
   ##
-  # The path the the data directory specified by the gem name.  If the
+  # The path to the data directory specified by the gem name.  If the
   # package is not available as a gem, return nil.
 
   def self.datadir(gem_name)
@@ -544,9 +546,9 @@ module Gem
   #   Fetching: minitest-3.0.1.gem (100%)
   #   => [#<Gem::Specification:0x1013b4528 @name="minitest", ...>]
 
-  def self.install name, version = Gem::Requirement.default, **options
+  def self.install name, version = Gem::Requirement.default, *options
     require "rubygems/dependency_installer"
-    inst = Gem::DependencyInstaller.new(**options)
+    inst = Gem::DependencyInstaller.new(*options)
     inst.install name, version
     inst.installed_gems
   end
@@ -995,19 +997,31 @@ module Gem
   end
 
   ##
-  # Looks for gem dependency files (gem.deps.rb, Gemfile, Isolate) from the
-  # current directory up and activates the gems in the first file found.
+  # Looks for a gem dependency file at +path+ and activates the gems in the
+  # file if found.  If the file is not found an ArgumentError is raised.
+  #
+  # If +path+ is not given the RUBYGEMS_GEMDEPS environment variable is used,
+  # but if no file is found no exception is raised.
+  #
+  # If '-' is given for +path+ RubyGems searches up from the current working
+  # directory for gem dependency files (gem.deps.rb, Gemfile, Isolate) and
+  # activates the gems in the first one found.
   #
   # You can run this automatically when rubygems starts.  To enable, set
   # the <code>RUBYGEMS_GEMDEPS</code> environment variable to either the path
-  # of your Gemfile or "-" to auto-discover in parent directories.
+  # of your gem dependencies file or "-" to auto-discover in parent
+  # directories.
   #
   # NOTE: Enabling automatic discovery on multiuser systems can lead to
   # execution of arbitrary code when used from directories outside your
   # control.
 
-  def self.use_gemdeps
-    return unless path = ENV['RUBYGEMS_GEMDEPS']
+  def self.use_gemdeps path = nil
+    raise_exception = path
+
+    path ||= ENV['RUBYGEMS_GEMDEPS']
+    return unless path
+
     path = path.dup
 
     if path == "-" then
@@ -1025,7 +1039,11 @@ module Gem
 
     path.untaint
 
-    return unless File.file? path
+    unless File.file? path then
+      return unless raise_exception
+
+      raise ArgumentError, "Unable to find gem dependencies file at #{path}"
+    end
 
     rs = Gem::RequestSet.new
     rs.load_gemdeps path
@@ -1035,6 +1053,10 @@ module Gem
       sp.activate
       sp
     end
+  rescue Gem::LoadError, Gem::UnsatisfiableDependencyError => e
+    warn e.message
+    warn "You may need to `gem install -g` to install missing gems"
+    warn ""
   end
 
   class << self

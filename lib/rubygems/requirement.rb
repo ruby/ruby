@@ -8,6 +8,9 @@ Gem.load_yaml if defined? ::YAML
 ##
 # A Requirement is a set of one or more version restrictions. It supports a
 # few (<tt>=, !=, >, <, >=, <=, ~></tt>) different restriction operators.
+#
+# See Gem::Version for a description on how versions and requirements work
+# together in RubyGems.
 
 class Gem::Requirement
   OPS = { #:nodoc:

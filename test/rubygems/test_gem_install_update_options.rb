@@ -17,6 +17,7 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
   def test_add_install_update_options
     args = %w[
       --document
+      --build-root build_root
       --format-exec
       --ignore-dependencies
       --rdoc
@@ -25,11 +26,18 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
       -f
       -i /install_to
       -w
+      --vendor
     ]
 
     args.concat %w[-P HighSecurity] if defined?(OpenSSL::SSL)
 
     assert @cmd.handles?(args)
+  end
+
+  def test_build_root
+    @cmd.handle_options %w[--build-root build_root]
+
+    assert_equal File.expand_path('build_root'), @cmd.options[:build_root]
   end
 
   def test_doc
@@ -147,4 +155,30 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
   ensure
     FileUtils.chmod 0755, @gemhome
   end
+
+  def test_vendor
+    @cmd.handle_options %w[--vendor]
+
+    assert @cmd.options[:vendor]
+    assert_equal Gem.vendor_dir, @cmd.options[:install_dir]
+  end
+
+  def test_vendor_missing
+    orig_vendordir = RbConfig::CONFIG['vendordir']
+    RbConfig::CONFIG.delete 'vendordir'
+
+    e = assert_raises OptionParser::InvalidOption do
+      @cmd.handle_options %w[--vendor]
+    end
+
+    assert_equal 'invalid option: --vendor your platform is not supported',
+                 e.message
+
+    refute @cmd.options[:vendor]
+    refute @cmd.options[:install_dir]
+
+  ensure
+    RbConfig::CONFIG['vendordir'] = orig_vendordir
+  end
+
 end

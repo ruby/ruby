@@ -32,6 +32,18 @@ class TestGemResolverGitSpecification < Gem::TestCase
     refute_equal g_spec_a, i_spec
   end
 
+  def test_add_dependency
+    git_gem 'a', 1
+
+    git_spec = Gem::Resolver::GitSpecification.new @set, @spec
+
+    b_dep = dep 'b'
+
+    git_spec.add_dependency b_dep
+
+    assert_equal [b_dep], git_spec.dependencies
+  end
+
   def test_install
     git_gem 'a', 1
 

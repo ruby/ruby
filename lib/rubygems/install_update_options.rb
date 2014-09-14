@@ -59,6 +59,23 @@ module Gem::InstallUpdateOptions
                            end
     end
 
+    add_option(:"Install/Update", '--build-root DIR',
+               'Temporary installation root. Useful for building',
+               'packages. Do not use this when installing remote gems.') do |value, options|
+      options[:build_root] = File.expand_path(value)
+    end
+
+    add_option(:"Install/Update", '--vendor',
+               'Install gem into the vendor directory.',
+               'Only for use by gem repackagers.') do |value, options|
+      unless Gem.vendor_dir then
+        raise OptionParser::InvalidOption.new 'your platform is not supported'
+      end
+
+      options[:vendor] = true
+      options[:install_dir] = Gem.vendor_dir
+    end
+
     add_option(:"Install/Update", '-N', '--no-document',
                'Disable documentation generation') do |value, options|
       options[:document] = []

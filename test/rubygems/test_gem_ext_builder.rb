@@ -132,6 +132,17 @@ install:
     assert_path_exists File.join @spec.gem_dir, 'lib', 'a', 'b.rb'
   end
 
+  def test_build_extensions_with_gemhome_with_space
+    new_gemhome = File.join @tempdir, 'gem home'
+    File.rename(@gemhome, new_gemhome)
+    @gemhome = new_gemhome
+    Gem.use_paths(@gemhome)
+    @spec = util_spec 'a'
+    @builder = Gem::Ext::Builder.new @spec, ''
+
+    test_build_extensions
+  end
+
   def test_build_extensions_install_ext_only
     class << Gem
       alias orig_install_extension_in_lib install_extension_in_lib
@@ -226,7 +237,7 @@ install:
 
     gem_make_out = File.join @spec.extension_dir, 'gem_make.out'
 
-    assert_match %r%#{Regexp.escape Gem.ruby} extconf\.rb%,
+    assert_match %r%#{Regexp.escape Gem.ruby}.* extconf\.rb%,
                  File.read(gem_make_out)
     assert_match %r%: No such file%,
                  File.read(gem_make_out)

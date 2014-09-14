@@ -16,7 +16,7 @@ class Gem::Resolver::VendorSpecification < Gem::Resolver::SpecSpecification
   # This is a null install as this gem was unpacked into a directory.
   # +options+ are ignored.
 
-  def install options
+  def install options = {}
     yield nil
   end
 

@@ -37,7 +37,7 @@ class Gem::Package::Old < Gem::Package
 
     return @contents if @contents
 
-    open @gem, 'rb' do |io|
+    @gem.with_read_io do |io|
       read_until_dashes io # spec
       header = file_list io
 
@@ -53,7 +53,7 @@ class Gem::Package::Old < Gem::Package
 
     errstr = "Error reading files from gem"
 
-    open @gem, 'rb' do |io|
+    @gem.with_read_io do |io|
       read_until_dashes io # spec
       header = file_list io
       raise Gem::Exception, errstr unless header
@@ -83,7 +83,7 @@ class Gem::Package::Old < Gem::Package
           out.write file_data
         end
 
-        say destination if Gem.configuration.really_verbose
+        verbose destination
       end
     end
   rescue Zlib::DataError
@@ -136,7 +136,7 @@ class Gem::Package::Old < Gem::Package
 
     yaml = ''
 
-    open @gem, 'rb' do |io|
+    @gem.with_read_io do |io|
       skip_ruby io
       read_until_dashes io do |line|
         yaml << line

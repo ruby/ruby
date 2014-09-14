@@ -22,6 +22,8 @@ class TestGemResolverIndexSet < Gem::TestCase
     fetcher = set.instance_variable_get :@f
 
     refute_same Gem::SpecFetcher.fetcher, fetcher
+
+    refute_empty set.errors
   end
 
   def test_find_all
@@ -31,7 +33,7 @@ class TestGemResolverIndexSet < Gem::TestCase
       fetcher.spec 'b', 1
     end
 
-    set = @DR::BestSet.new
+    set = @DR::IndexSet.new
 
     dependency = dep 'a', '~> 1'
 
@@ -49,7 +51,7 @@ class TestGemResolverIndexSet < Gem::TestCase
       fetcher.spec 'b', 1
     end
 
-    set = @DR::BestSet.new
+    set = @DR::IndexSet.new
     set.remote = false
 
     dependency = dep 'a', '~> 1'
@@ -57,6 +59,30 @@ class TestGemResolverIndexSet < Gem::TestCase
     req = @DR::DependencyRequest.new dependency, nil
 
     assert_empty set.find_all req
+  end
+
+  def test_find_all_prerelease
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', '1.a'
+    end
+
+    set = @DR::IndexSet.new
+
+    dependency = dep 'a'
+
+    req = @DR::DependencyRequest.new dependency, nil
+
+    found = set.find_all req
+
+    assert_empty found
+
+    dependency.prerelease = true
+
+    req = @DR::DependencyRequest.new dependency, nil
+
+    found = set.find_all req
+
+    assert_equal %w[a-1.a], found.map { |s| s.full_name }
   end
 
 end

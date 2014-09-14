@@ -27,6 +27,21 @@ class TestGemSourceGit < Gem::TestCase
     assert_path_exists File.join @source.install_dir, 'a.gemspec'
   end
 
+  def test_checkout_master
+    Dir.chdir @repository do
+      system @git, 'checkout', '-q', '-b', 'other'
+      system @git, 'mv',             'a.gemspec', 'b.gemspec'
+      system @git, 'commit',   '-q', '-a', '-m', 'rename gemspec'
+      system @git, 'checkout', '-q', 'master'
+    end
+
+    @source = Gem::Source::Git.new @name, @repository, 'other', false
+
+    @source.checkout
+
+    assert_path_exists File.join @source.install_dir, 'b.gemspec'
+  end
+
   def test_checkout_local
     @source.remote = false
 
@@ -179,14 +194,18 @@ class TestGemSourceGit < Gem::TestCase
     git       = Gem::Source::Git.new 'a', 'git/a', 'master', false
     remote    = Gem::Source.new @gem_repo
     installed = Gem::Source::Installed.new
+    vendor    = Gem::Source::Vendor.new 'vendor/foo'
 
     assert_equal( 0, git.      <=>(git),       'git    <=> git')
 
     assert_equal( 1, git.      <=>(remote),    'git    <=> remote')
     assert_equal(-1, remote.   <=>(git),       'remote <=> git')
 
-    assert_equal( 1, installed.<=>(git),       'installed <=> git')
-    assert_equal(-1, git.      <=>(installed), 'git       <=> installed')
+    assert_equal( 1, git.      <=>(installed), 'git       <=> installed')
+    assert_equal(-1, installed.<=>(git),       'installed <=> git')
+
+    assert_equal(-1, git.      <=>(vendor),    'git       <=> vendor')
+    assert_equal( 1, vendor.   <=>(git),       'vendor    <=> git')
   end
 
   def test_specs
@@ -252,6 +271,10 @@ class TestGemSourceGit < Gem::TestCase
     capture_io do
       assert_empty source.specs
     end
+  end
+
+  def test_uri
+    assert_equal URI(@repository), @source.uri
   end
 
   def test_uri_hash

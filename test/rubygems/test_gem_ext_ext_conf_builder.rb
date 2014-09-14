@@ -33,7 +33,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
       assert_same result, output
     end
 
-    assert_match(/^#{Gem.ruby} extconf.rb/, output[0])
+    assert_match(/^#{Gem.ruby}.* extconf.rb/, output[0])
     assert_equal "creating Makefile\n", output[1]
     assert_contains_make_command 'clean', output[2]
     assert_contains_make_command '', output[4]
@@ -106,7 +106,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
 
     assert_equal 'extconf failed, exit code 1', error.message
 
-    assert_equal("#{Gem.ruby} extconf.rb", output[0])
+    assert_match(/^#{Gem.ruby}.* extconf.rb/, output[0])
     assert_path_exists File.join @dest_path, 'mkmf.log'
   end
 

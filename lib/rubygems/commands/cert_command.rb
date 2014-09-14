@@ -129,23 +129,21 @@ class Gem::Commands::CertCommand < Gem::Command
   end
 
   def build_key # :nodoc:
-    if options[:key] then
-      options[:key]
-    else
-      passphrase = ask_for_password 'Passphrase for your Private Key:'
-      say "\n"
+    return options[:key] if options[:key]
 
-      passphrase_confirmation = ask_for_password 'Please repeat the passphrase for your Private Key:'
-      say "\n"
+    passphrase = ask_for_password 'Passphrase for your Private Key:'
+    say "\n"
 
-      raise Gem::CommandLineError,
-            "Passphrase and passphrase confirmation don't match" unless passphrase == passphrase_confirmation
+    passphrase_confirmation = ask_for_password 'Please repeat the passphrase for your Private Key:'
+    say "\n"
 
-      key      = Gem::Security.create_key
-      key_path = Gem::Security.write key, "gem-private_key.pem", 0600, passphrase
+    raise Gem::CommandLineError,
+          "Passphrase and passphrase confirmation don't match" unless passphrase == passphrase_confirmation
 
-      return key, key_path
-    end
+    key      = Gem::Security.create_key
+    key_path = Gem::Security.write key, "gem-private_key.pem", 0600, passphrase
+
+    return key, key_path
   end
 
   def certificates_matching filter

@@ -179,6 +179,7 @@ Added '/CN=alternate/DC=example'
     assert_empty @ui.error
 
     assert_path_exists File.join(@tempdir, 'gem-public_cert.pem')
+    refute_path_exists File.join(@tempdir, 'gem-private_key.pem')
   end
 
   def test_execute_build_encrypted_key

@@ -239,6 +239,42 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     assert_equal nil,                      @cmd.options[:install_dir]
     assert_equal true,                     @cmd.options[:user_install]
     assert_equal Gem::Requirement.default, @cmd.options[:version]
+    assert_equal false,                    @cmd.options[:vendor]
+  end
+
+  def test_handle_options_vendor
+    use_ui @ui do
+      @cmd.handle_options %w[--vendor]
+    end
+
+    assert @cmd.options[:vendor]
+    assert_equal Gem.vendor_dir, @cmd.options[:install_dir]
+
+    assert_empty @ui.output
+
+    expected = <<-EXPECTED
+WARNING:  Use your OS package manager to uninstall vendor gems
+    EXPECTED
+
+    assert_match expected, @ui.error
+  end
+
+  def test_handle_options_vendor_missing
+    orig_vendordir = RbConfig::CONFIG['vendordir']
+    RbConfig::CONFIG.delete 'vendordir'
+
+    e = assert_raises OptionParser::InvalidOption do
+      @cmd.handle_options %w[--vendor]
+    end
+
+    assert_equal 'invalid option: --vendor your platform is not supported',
+                 e.message
+
+    refute @cmd.options[:vendor]
+    refute @cmd.options[:install_dir]
+
+  ensure
+    RbConfig::CONFIG['vendordir'] = orig_vendordir
   end
 
 end

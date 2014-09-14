@@ -17,7 +17,7 @@ class Gem::Platform
 
   def self.local
     arch = RbConfig::CONFIG['arch']
-    arch = "#{arch}_60" if arch =~ /mswin32$/
+    arch = "#{arch}_60" if arch =~ /mswin(?:32|64)$/
     @local ||= new(arch)
   end
 
@@ -173,6 +173,7 @@ class Gem::Platform
               when /^dalvik(\d+)?$/       then [nil,         'dalvik',  $1    ]
               when /dotnet(\-(\d+\.\d+))?/ then ['universal','dotnet',  $2    ]
               when /mswin32(\_(\d+))?/    then ['x86',       'mswin32', $2    ]
+              when /mswin64(\_(\d+))?/    then ['x64',       'mswin64', $2    ]
               when 'powerpc-darwin'       then ['powerpc',   'darwin',  nil   ]
               when /powerpc-darwin(\d)/   then ['powerpc',   'darwin',  $1    ]
               when /sparc-solaris2.8/     then ['sparc',     'solaris', '2.8' ]

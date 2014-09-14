@@ -161,7 +161,7 @@ EOF
           results = builder.build(extension, @gem_dir, dest_path,
                                   results, @build_args, lib_dir)
 
-          say results.join("\n") if Gem.configuration.really_verbose
+          verbose { results.join("\n") }
         end
       end
 

@@ -218,6 +218,7 @@ class Gem::Security::Policy
         # against
       else
         alert_warning "#{full_name} is not signed"
+        return
       end
     end
 

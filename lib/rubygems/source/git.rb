@@ -51,7 +51,7 @@ class Gem::Source::Git < Gem::Source
   # will be checked out when the gem is installed.
 
   def initialize name, repository, reference, submodules = false
-    super(nil)
+    super repository
 
     @name            = name
     @repository      = repository
@@ -67,7 +67,7 @@ class Gem::Source::Git < Gem::Source
     case other
     when Gem::Source::Git then
       0
-    when Gem::Source::Installed,
+    when Gem::Source::Vendor,
          Gem::Source::Lock then
       -1
     when Gem::Source then
@@ -101,7 +101,7 @@ class Gem::Source::Git < Gem::Source
     Dir.chdir install_dir do
       system @git, 'fetch', '--quiet', '--force', '--tags', install_dir
 
-      success = system @git, 'reset', '--quiet', '--hard', @reference
+      success = system @git, 'reset', '--quiet', '--hard', rev_parse
 
       success &&=
         Gem::Util.silent_system @git, 'submodule', 'update',

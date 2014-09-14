@@ -31,7 +31,7 @@ class Gem::Commands::DependencyCommand < Gem::Command
   end
 
   def arguments # :nodoc:
-    "GEMNAME       name of gem to show dependencies for"
+    "REGEXP        show dependencies for gems whose names start with REGEXP"
   end
 
   def defaults_str # :nodoc:
@@ -50,7 +50,7 @@ use with other commands.
   end
 
   def usage # :nodoc:
-    "#{program_name} GEMNAME"
+    "#{program_name} REGEXP"
   end
 
   def fetch_remote_specs dependency # :nodoc:

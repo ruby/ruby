@@ -2,6 +2,26 @@ require 'rubygems/test_case'
 require 'rubygems'
 
 class TestGemRequire < Gem::TestCase
+  class Latch
+    def initialize count = 1
+      @count = count
+      @lock  = Monitor.new
+      @cv    = @lock.new_cond
+    end
+
+    def release
+      @lock.synchronize do
+        @count -= 1 if @count > 0
+        @cv.broadcast if @count.zero?
+      end
+    end
+
+    def await
+      @lock.synchronize do
+        @cv.wait_while { @count > 0 }
+      end
+    end
+  end
 
   def setup
     super
@@ -15,6 +35,46 @@ class TestGemRequire < Gem::TestCase
 
   def assert_require(path)
     assert require(path), "'#{path}' was already required"
+  end
+
+  def append_latch spec
+    dir = spec.gem_dir
+    Dir.chdir dir do
+      spec.files.each do |file|
+        File.open file, 'a' do |fp|
+          fp.puts "FILE_ENTERED_LATCH.release"
+          fp.puts "FILE_EXIT_LATCH.await"
+        end
+      end
+    end
+  end
+
+  def test_concurrent_require
+    Object.const_set :FILE_ENTERED_LATCH, Latch.new(2)
+    Object.const_set :FILE_EXIT_LATCH, Latch.new(1)
+
+    a1 = new_spec "a", "1", nil, "lib/a.rb"
+    b1 = new_spec "b", "1", nil, "lib/b.rb"
+
+    install_specs a1, b1
+
+    append_latch a1
+    append_latch b1
+
+    t1 = Thread.new { assert_require 'a' }
+    t2 = Thread.new { assert_require 'b' }
+
+    # wait until both files are waiting on the exit latch
+    FILE_ENTERED_LATCH.await
+
+    # now let them finish
+    FILE_EXIT_LATCH.release
+
+    assert t1.join, "thread 1 should exit"
+    assert t2.join, "thread 2 should exit"
+  ensure
+    Object.send :remove_const, :FILE_ENTERED_LATCH
+    Object.send :remove_const, :FILE_EXIT_LATCH
   end
 
   def test_require_is_not_lazy_with_exact_req

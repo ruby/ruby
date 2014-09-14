@@ -148,6 +148,15 @@ class TestGemGemcutterUtilities < Gem::TestCase
     assert_equal "", @sign_in_ui.output
   end
 
+  def test_sign_in_skips_with_key_override
+    api_key     = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
+    Gem.configuration.api_keys[:KEY]  = 'other'
+    @cmd.options[:key] = :KEY
+    util_sign_in [api_key, 200, 'OK']
+
+    assert_equal "", @sign_in_ui.output
+  end
+
   def test_sign_in_with_other_credentials_doesnt_overwrite_other_keys
     api_key       = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
     other_api_key = 'f46dbb18bb6a9c97cdc61b5b85c186a17403cdcbf'

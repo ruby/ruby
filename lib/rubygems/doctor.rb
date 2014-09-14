@@ -105,7 +105,7 @@ class Gem::Doctor
       next if ent == "." || ent == ".."
 
       child = File.join(directory, ent)
-      next unless File.exists?(child)
+      next unless File.exist?(child)
 
       basename = File.basename(child, extension)
       next if installed_specs.include? basename

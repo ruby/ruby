@@ -9,6 +9,10 @@ class TestGemSourceSpecificFile < Gem::TestCase
     @sf = Gem::Source::SpecificFile.new(@a_gem)
   end
 
+  def test_path
+    assert_equal @a_gem, @sf.path
+  end
+
   def test_spec
     assert_equal @a, @sf.spec
   end

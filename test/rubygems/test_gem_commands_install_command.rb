@@ -24,6 +24,7 @@ class TestGemCommandsInstallCommand < Gem::TestCase
 
     Gem::Command.build_args = @orig_args
     File.unlink @gemdeps if File.file? @gemdeps
+    File.unlink "#{@gemdeps}.lock" if File.file? "#{@gemdeps}.lock"
   end
 
   def test_execute_exclude_prerelease
@@ -194,6 +195,32 @@ class TestGemCommandsInstallCommand < Gem::TestCase
     assert_match(%r!Unable to download data from http://not-there.nothing!, errs.shift)
   end
 
+  def test_execute_nonexistent_hint_disabled
+    misspelled = "nonexistent_with_hint"
+    correctly_spelled = "non_existent_with_hint"
+
+    spec_fetcher do |fetcher|
+      fetcher.spec correctly_spelled, 2
+    end
+
+    @cmd.options[:args] = [misspelled]
+    @cmd.options[:suggest_alternate] = false
+
+    use_ui @ui do
+      e = assert_raises Gem::MockGemUi::TermError do
+        @cmd.execute
+      end
+
+      assert_equal 2, e.exit_code
+    end
+
+    expected = <<-EXPECTED
+ERROR:  Could not find a valid gem 'nonexistent_with_hint' (>= 0) in any repository
+    EXPECTED
+
+    assert_equal expected, @ui.error
+  end
+
   def test_execute_nonexistent_with_hint
     misspelled = "nonexistent_with_hint"
     correctly_spelled = "non_existent_with_hint"
@@ -238,7 +265,10 @@ ERROR:  Possible alternatives: non_existent_with_hint
       assert_equal 2, e.exit_code
     end
 
-    expected = ["ERROR:  Could not find a valid gem 'non-existent_with-hint' (>= 0) in any repository", "ERROR:  Possible alternatives: nonexistent-with_hint"]
+    expected = [
+      "ERROR:  Could not find a valid gem 'non-existent_with-hint' (>= 0) in any repository",
+      "ERROR:  Possible alternatives: nonexistent-with_hint"
+    ]
 
     output = @ui.error.split "\n"
 
@@ -535,6 +565,11 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_install_gem_ignore_dependencies_both
+    done_installing = false
+    Gem.done_installing do
+      done_installing = true
+    end
+
     spec = quick_spec 'a', 2
 
     util_build_gem spec
@@ -546,6 +581,8 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.install_gem 'a', '>= 0'
 
     assert_equal %w[a-2], @cmd.installed_specs.map { |s| s.full_name }
+
+    assert done_installing, 'documentation was not generated'
   end
 
   def test_install_gem_ignore_dependencies_remote
@@ -622,8 +659,8 @@ ERROR:  Possible alternatives: non_existent_with_hint
     end
 
     assert_equal 2, e.exit_code
-    assert_match %r!Could not find a valid gem 'blah' \(>= 0\)!, @ui.error
-    assert_match %r!Unable to download data from http://not-there\.nothing!, @ui.error
+
+    assert_match 'Unable to download data', @ui.error
   end
 
   def test_show_source_problems_even_on_success
@@ -648,7 +685,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     e = @ui.error
 
-    x = "WARNING:  Unable to pull data from 'http://nonexistent.example': no data for http://nonexistent.example/latest_specs.4.8.gz (http://nonexistent.example/latest_specs.4.8.gz)\n"
+    x = "WARNING:  Unable to pull data from 'http://nonexistent.example': no data for http://nonexistent.example/specs.4.8.gz (http://nonexistent.example/specs.4.8.gz)\n"
     assert_equal x, e
   end
 
@@ -672,6 +709,56 @@ ERROR:  Possible alternatives: non_existent_with_hint
     assert_equal %w[], @cmd.installed_specs.map { |spec| spec.full_name }
 
     assert_match "Using a (2)", @ui.output
+    assert File.exist?("#{@gemdeps}.lock")
+  end
+
+  def test_execute_uses_from_a_gemdeps_with_no_lock
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+    end
+
+    File.open @gemdeps, "w" do |f|
+      f << "gem 'a'"
+    end
+
+    @cmd.handle_options %w[--no-lock]
+    @cmd.options[:gemdeps] = @gemdeps
+
+    use_ui @ui do
+      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    assert_equal %w[], @cmd.installed_specs.map { |spec| spec.full_name }
+
+    assert_match "Using a (2)", @ui.output
+    assert !File.exist?("#{@gemdeps}.lock")
+  end
+
+  def test_execute_installs_from_a_gemdeps_with_conservative
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+      fetcher.clear
+      fetcher.gem 'a', 1
+    end
+
+    File.open @gemdeps, "w" do |f|
+      f << "gem 'a'"
+    end
+
+    @cmd.handle_options %w[--conservative]
+    @cmd.options[:gemdeps] = @gemdeps
+
+    use_ui @ui do
+      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    assert_equal %w[], @cmd.installed_specs.map { |spec| spec.full_name }
+
+    assert_match "Using a (1)", @ui.output
   end
 
   def test_execute_installs_from_a_gemdeps
@@ -883,6 +970,18 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.handle_options %w[-g]
 
     assert_equal 'gem.deps.rb', @cmd.options[:gemdeps]
+  end
+
+  def test_handle_options_suggest
+    assert @cmd.options[:suggest_alternate]
+
+    @cmd.handle_options %w[--no-suggestions]
+
+    refute @cmd.options[:suggest_alternate]
+
+    @cmd.handle_options %w[--suggestions]
+
+    assert @cmd.options[:suggest_alternate]
   end
 
   def test_handle_options_without

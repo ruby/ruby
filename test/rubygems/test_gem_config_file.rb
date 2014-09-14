@@ -234,16 +234,19 @@ if you believe they were disclosed to a third party.
   end
 
   def test_handle_arguments_debug
-    old_dollar_DEBUG = $DEBUG
     assert_equal false, $DEBUG
 
     args = %w[--debug]
 
-    @cfg.handle_arguments args
+    _, err = capture_io do
+      @cfg.handle_arguments args
+    end
+
+    assert_match 'NOTE', err
 
     assert_equal true, $DEBUG
   ensure
-    $DEBUG = old_dollar_DEBUG
+    $DEBUG = false
   end
 
   def test_handle_arguments_override
@@ -377,6 +380,9 @@ if you believe they were disclosed to a third party.
       fp.puts ":verbose: false"
       fp.puts ":sources:"
       fp.puts "  - http://more-gems.example.com"
+      fp.puts ":ssl_verify_mode: 2"
+      fp.puts ":ssl_ca_cert: /nonexistent/ca_cert.pem"
+      fp.puts ":ssl_client_cert: /nonexistent/client_cert.pem"
       fp.puts "install: --wrappers"
     end
 
@@ -399,6 +405,10 @@ if you believe they were disclosed to a third party.
     assert_equal false, @cfg.update_sources, 'update_sources'
     assert_equal false, @cfg.verbose,        'verbose'
 
+    assert_equal 2,                              @cfg.ssl_verify_mode
+    assert_equal '/nonexistent/ca_cert.pem',     @cfg.ssl_ca_cert
+    assert_equal '/nonexistent/client_cert.pem', @cfg.ssl_client_cert
+
     assert_equal '--wrappers --no-rdoc', @cfg[:install], 'install'
 
     assert_equal %w[http://even-more-gems.example.com], Gem.sources
@@ -409,11 +419,13 @@ if you believe they were disclosed to a third party.
       fp.puts "some-non-yaml-hash-string"
     end
 
-    # Avoid writing stuff to output when running tests
-    Gem::ConfigFile.class_eval { def warn(args); end }
+    begin
+      verbose, $VERBOSE = $VERBOSE, nil
 
-    # This should not raise exception
-    util_config_file
+      util_config_file
+    ensure
+      $VERBOSE = verbose
+    end
   end
 
   def test_load_ssl_verify_mode_from_config

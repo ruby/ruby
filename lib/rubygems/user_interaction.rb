@@ -157,6 +157,14 @@ module Gem::UserInteraction
   def terminate_interaction exit_code = 0
     ui.terminate_interaction exit_code
   end
+
+  ##
+  # Calls +say+ with +msg+ or the results of the block if really_verbose
+  # is true.
+
+  def verbose msg = nil
+    say(msg || yield) if Gem.configuration.really_verbose
+  end
 end
 
 ##

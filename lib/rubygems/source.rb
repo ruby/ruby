@@ -78,15 +78,21 @@ class Gem::Source
   # Returns a Set that can fetch specifications from this source.
 
   def dependency_resolver_set # :nodoc:
+    return Gem::Resolver::IndexSet.new self if 'file' == api_uri.scheme
+
     bundler_api_uri = api_uri + './api/v1/dependencies'
 
     begin
       fetcher = Gem::RemoteFetcher.fetcher
-      fetcher.fetch_path bundler_api_uri, nil, true
+      response = fetcher.fetch_path bundler_api_uri, nil, true
     rescue Gem::RemoteFetcher::FetchError
       Gem::Resolver::IndexSet.new self
     else
-      Gem::Resolver::APISet.new bundler_api_uri
+      if response.respond_to? :uri then
+        Gem::Resolver::APISet.new response.uri
+      else
+        Gem::Resolver::APISet.new bundler_api_uri
+      end
     end
   end
 
@@ -100,6 +106,8 @@ class Gem::Source
   def cache_dir(uri)
     # Correct for windows paths
     escaped_path = uri.path.sub(/^\/([a-z]):\//i, '/\\1-/')
+    escaped_path.untaint
+
     File.join Gem.spec_cache_dir, "#{uri.host}%#{uri.port}", File.dirname(escaped_path)
   end
 

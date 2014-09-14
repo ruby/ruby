@@ -86,7 +86,9 @@ permission to.
           request.add_field "Authorization", api_key
         end
 
-        with_response response, "Removing #{owner}"
+        action = method == :delete ? "Removing" : "Adding"
+
+        with_response response, "#{action} #{owner}"
       rescue
         # ignore
       end

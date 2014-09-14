@@ -19,6 +19,16 @@ class TestGemResolverActivationRequest < Gem::TestCase
     @req = @DR::ActivationRequest.new @a3, @dep, [@a1, @a2]
   end
 
+  def test_development_eh
+    refute @req.development?
+
+    dep_req = @DR::DependencyRequest.new dep('a', '>= 0', :development), nil
+
+    act_req = @DR::ActivationRequest.new @a3, dep_req, [@a1, @a2]
+
+    assert act_req.development?
+  end
+
   def test_inspect
     assert_match 'a-3',                         @req.inspect
     assert_match 'from a (>= 0)',               @req.inspect

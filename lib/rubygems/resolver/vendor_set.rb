@@ -43,6 +43,8 @@ class Gem::Resolver::VendorSet < Gem::Resolver::Set
 
     @specs[spec.name]  = spec
     @directories[spec] = directory
+
+    spec
   end
 
   ##
@@ -51,7 +53,7 @@ class Gem::Resolver::VendorSet < Gem::Resolver::Set
 
   def find_all req
     @specs.values.select do |spec|
-      req.matches_spec? spec
+      req.match? spec
     end.map do |spec|
       source = Gem::Source::Vendor.new @directories[spec]
       Gem::Resolver::VendorSpecification.new self, spec, source

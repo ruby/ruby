@@ -225,7 +225,7 @@ end
             util_spec 'b', '2.0'
     c,  _ = util_spec 'c', '1.0', 'b' => '= 2.0'
 
-    e = assert_raises Gem::LoadError do
+    e = assert_raises Gem::ConflictError do
       assert_activate nil, a, c, "b"
     end
 
@@ -1135,6 +1135,24 @@ dependencies: []
     assert_equal %w[lib/code.rb], @a2.files
   end
 
+  def test_build_args
+    ext_spec
+
+    assert_empty @ext.build_args
+
+    open @ext.build_info_file, 'w' do |io|
+      io.puts
+    end
+
+    assert_empty @ext.build_args
+
+    open @ext.build_info_file, 'w' do |io|
+      io.puts '--with-foo-dir=wherever'
+    end
+
+    assert_equal %w[--with-foo-dir=wherever], @ext.build_args
+  end
+
   def test_build_extensions
     ext_spec
 
@@ -1231,11 +1249,10 @@ dependencies: []
     FileUtils.chmod 0555, @ext.base_dir
     FileUtils.chmod 0555, File.join(@ext.base_dir, 'extensions')
 
-    assert_raises Errno::EACCES do
-      @ext.build_extensions
-    end
+    @ext.build_extensions
+    refute_path_exists @ext.extension_dir
   ensure
-    unless Gem.win_platform? then
+    unless ($DEBUG or win_platform?) then
       FileUtils.chmod 0755, File.join(@ext.base_dir, 'extensions')
       FileUtils.chmod 0755, @ext.base_dir
     end
@@ -1331,22 +1348,14 @@ dependencies: []
   def test_contains_requirable_file_eh_extension
     ext_spec
 
-    extconf_rb = File.join @ext.gem_dir, @ext.extensions.first
-    FileUtils.mkdir_p File.dirname extconf_rb
-
-    open extconf_rb, 'w' do |f|
-      f.write <<-'RUBY'
-        open 'Makefile', 'w' do |f|
-          f.puts "clean:\n\techo cleaned"
-          f.puts "default:\n\techo built"
-          f.puts "install:\n\techo installed"
-        end
-      RUBY
+    _, err = capture_io do
+      refute @ext.contains_requirable_file? 'nonexistent'
     end
 
-    refute @ext.contains_requirable_file? 'nonexistent'
+    expected = "Ignoring ext-1 because its extensions are not built.  " +
+               "Try: gem pristine ext-1\n"
 
-    assert_path_exists @ext.extension_dir
+    assert_equal expected, err
   end
 
   def test_date
@@ -1791,13 +1800,33 @@ dependencies: []
     enable_shared 'no' do
       ext_spec
 
-      @ext.require_path = 'lib'
+      @ext.require_paths = 'lib'
 
-      ext_install_dir = Pathname(@ext.extension_dir)
-      full_gem_path = Pathname(@ext.full_gem_path)
-      relative_install_dir = ext_install_dir.relative_path_from full_gem_path
+      assert_equal [@ext.extension_dir, 'lib'], @ext.require_paths
+    end
+  end
 
-      assert_equal [relative_install_dir.to_s, 'lib'], @ext.require_paths
+  def test_require_paths_default_ext_dir_for
+    class << Gem
+      send :alias_method, :orig_default_ext_dir_for, :default_ext_dir_for
+    end
+
+    def Gem.default_ext_dir_for base_dir
+      '/foo'
+    end
+
+    enable_shared 'no' do
+      ext_spec
+
+      @ext.require_paths = 'lib'
+
+      assert_equal ['/foo/ext-1', 'lib'], @ext.require_paths
+    end
+  ensure
+    class << Gem
+      send :remove_method, :default_ext_dir_for
+      send :alias_method,  :default_ext_dir_for, :orig_default_ext_dir_for
+      send :remove_method, :orig_default_ext_dir_for
     end
   end
 
@@ -1824,7 +1853,7 @@ dependencies: []
   def test_full_require_paths
     ext_spec
 
-    @ext.require_path = 'lib'
+    @ext.require_paths = 'lib'
 
     expected = [
       @ext.extension_dir,
@@ -2268,6 +2297,7 @@ end
       @a1.add_runtime_dependency     'k', '> 1.2'
       @a1.add_runtime_dependency     'l', '> 1.2.3'
       @a1.add_runtime_dependency     'm', '~> 2.1.0'
+      @a1.add_runtime_dependency     'n', '~> 0.1.0'
 
       use_ui @ui do
         @a1.validate
@@ -2874,14 +2904,76 @@ end
     assert_equal @m1.to_ruby, valid_ruby_spec
   end
 
-  def test_find_by_name
-    util_make_gems
-    assert(Gem::Specification.find_by_name("a"))
-    assert(Gem::Specification.find_by_name("a", "1"))
-    assert(Gem::Specification.find_by_name("a", ">1"))
-    assert_raises(Gem::LoadError) do
-      Gem::Specification.find_by_name("monkeys")
+  def test_missing_extensions_eh
+    ext_spec
+
+    assert @ext.missing_extensions?
+
+    extconf_rb = File.join @ext.gem_dir, @ext.extensions.first
+    FileUtils.mkdir_p File.dirname extconf_rb
+
+    open extconf_rb, 'w' do |f|
+      f.write <<-'RUBY'
+        open 'Makefile', 'w' do |f|
+          f.puts "clean:\n\techo clean"
+          f.puts "default:\n\techo built"
+          f.puts "install:\n\techo installed"
+        end
+      RUBY
     end
+
+    @ext.build_extensions
+
+    refute @ext.missing_extensions?
+  end
+
+  def test_missing_extensions_eh_default_gem
+    spec = new_default_spec 'default', 1
+    spec.extensions << 'extconf.rb'
+
+    refute spec.missing_extensions?
+  end
+
+  def test_missing_extensions_eh_legacy
+    ext_spec
+
+    @ext.installed_by_version = v '2.2.0.preview.2'
+
+    assert @ext.missing_extensions?
+
+    @ext.installed_by_version = v '2.2.0.preview.1'
+
+    refute @ext.missing_extensions?
+  end
+
+  def test_missing_extensions_eh_none
+    refute @a1.missing_extensions?
+  end
+
+  def test_find_by_name
+    util_spec "a"
+
+    assert Gem::Specification.find_by_name "a"
+    assert Gem::Specification.find_by_name "a", "1"
+    assert Gem::Specification.find_by_name "a", ">1"
+
+    assert_raises Gem::LoadError do
+      Gem::Specification.find_by_name "monkeys"
+    end
+  end
+
+  def test_find_by_name_prerelease
+    b = util_spec "b", "2.a"
+
+    b.activate
+
+    assert Gem::Specification.find_by_name "b"
+
+    assert_raises Gem::LoadError do
+      Gem::Specification.find_by_name "b", "1"
+    end
+
+    assert Gem::Specification.find_by_name "b", ">1"
   end
 
   def test_find_by_path

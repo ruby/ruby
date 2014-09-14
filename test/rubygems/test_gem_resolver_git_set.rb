@@ -85,6 +85,32 @@ class TestGemResolverGitSet < Gem::TestCase
     assert_empty @set.find_all dependency
   end
 
+  def test_find_all_prerelease
+    name, _, repository, = git_gem 'a', '1.a'
+
+    @set.add_git_gem name, repository, 'master', false
+
+    dependency = dep 'a', '>= 0'
+    req = Gem::Resolver::DependencyRequest.new dependency, nil
+    @reqs.add req
+
+    @set.prefetch @reqs
+
+    found = @set.find_all dependency
+
+    assert_empty found
+
+    dependency = dep 'a', '>= 0.a'
+    req = Gem::Resolver::DependencyRequest.new dependency, nil
+    @reqs.add req
+
+    @set.prefetch @reqs
+
+    found = @set.find_all dependency
+
+    refute_empty found
+  end
+
   def test_root_dir
     assert_equal Gem.dir, @set.root_dir
 

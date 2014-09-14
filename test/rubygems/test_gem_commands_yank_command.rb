@@ -18,7 +18,7 @@ class TestGemCommandsYankCommand < Gem::TestCase
     @cmd.handle_options %w[a --version 1.0 --platform x86-darwin -k KEY]
 
     assert_equal %w[a],        @cmd.options[:args]
-    assert_equal 'KEY',        @cmd.options[:key]
+    assert_equal :KEY,         @cmd.options[:key]
     assert_nil                 @cmd.options[:platform]
     assert_equal req('= 1.0'), @cmd.options[:version]
   end
@@ -61,7 +61,7 @@ class TestGemCommandsYankCommand < Gem::TestCase
 
     @cmd.options[:args]    = %w[a]
     @cmd.options[:version] = req('= 1.0')
-    @cmd.options[:key]     = 'KEY'
+    @cmd.options[:key]     = :KEY
 
     use_ui @ui do
       @cmd.execute

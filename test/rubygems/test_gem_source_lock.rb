@@ -43,8 +43,8 @@ class TestGemSourceLock < Gem::TestCase
     assert_equal( 0, i_lock.<=>(i_lock), 'i_lock <=> i_lock')
     assert_equal( 0, v_lock.<=>(v_lock), 'v_lock <=> v_lock')
 
-    assert_equal(-1, g_lock.<=>(i_lock), 'g_lock <=> i_lock')
-    assert_equal( 1, i_lock.<=>(g_lock), 'i_lock <=> g_lock')
+    assert_equal( 1, g_lock.<=>(i_lock), 'g_lock <=> i_lock')
+    assert_equal(-1, i_lock.<=>(g_lock), 'i_lock <=> g_lock')
 
     assert_equal(-1, g_lock.<=>(v_lock), 'g_lock <=> v_lock')
     assert_equal( 1, v_lock.<=>(g_lock), 'v_lock <=> g_lock')

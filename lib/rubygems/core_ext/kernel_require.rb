@@ -50,12 +50,8 @@ module Kernel
     # normal require handle loading a gem from the rescue below.
 
     if Gem::Specification.unresolved_deps.empty? then
-      begin
-        RUBYGEMS_ACTIVATION_MONITOR.exit
-        return gem_original_require(path)
-      ensure
-        RUBYGEMS_ACTIVATION_MONITOR.enter
-      end
+      RUBYGEMS_ACTIVATION_MONITOR.exit
+      return gem_original_require(path)
     end
 
     # If +path+ is for a gem that has already been loaded, don't
@@ -71,8 +67,6 @@ module Kernel
     begin
       RUBYGEMS_ACTIVATION_MONITOR.exit
       return gem_original_require(path)
-    ensure
-      RUBYGEMS_ACTIVATION_MONITOR.enter
     end if spec
 
     # Attempt to find +path+ in any unresolved gems...
@@ -105,6 +99,7 @@ module Kernel
       names = found_specs.map(&:name).uniq
 
       if names.size > 1 then
+        RUBYGEMS_ACTIVATION_MONITOR.exit
         raise Gem::LoadError, "#{path} found in multiple gems: #{names.join ', '}"
       end
 
@@ -115,32 +110,27 @@ module Kernel
       unless valid then
         le = Gem::LoadError.new "unable to find a version of '#{names.first}' to activate"
         le.name = names.first
+        RUBYGEMS_ACTIVATION_MONITOR.exit
         raise le
       end
 
       valid.activate
     end
 
-    begin
-      RUBYGEMS_ACTIVATION_MONITOR.exit
-      return gem_original_require(path)
-    ensure
-      RUBYGEMS_ACTIVATION_MONITOR.enter
-    end
+    RUBYGEMS_ACTIVATION_MONITOR.exit
+    return gem_original_require(path)
   rescue LoadError => load_error
+    RUBYGEMS_ACTIVATION_MONITOR.enter
+
     if load_error.message.start_with?("Could not find") or
         (load_error.message.end_with?(path) and Gem.try_activate(path)) then
-      begin
-        RUBYGEMS_ACTIVATION_MONITOR.exit
-        return gem_original_require(path)
-      ensure
-        RUBYGEMS_ACTIVATION_MONITOR.enter
-      end
+      RUBYGEMS_ACTIVATION_MONITOR.exit
+      return gem_original_require(path)
+    else
+      RUBYGEMS_ACTIVATION_MONITOR.exit
     end
 
     raise load_error
-  ensure
-    RUBYGEMS_ACTIVATION_MONITOR.exit
   end
 
   private :require

@@ -19,6 +19,36 @@ module Gem
     attr_accessor :requirement
   end
 
+  # Raised when there are conflicting gem specs loaded
+
+  class ConflictError < LoadError
+
+    ##
+    # A Hash mapping conflicting specifications to the dependencies that
+    # caused the conflict
+
+    attr_reader :conflicts
+
+    ##
+    # The specification that had the conflict
+
+    attr_reader :target
+
+    def initialize target, conflicts
+      @target    = target
+      @conflicts = conflicts
+      @name      = target.name
+
+      reason = conflicts.map { |act, dependencies|
+        "#{act.full_name} conflicts with #{dependencies.join(", ")}"
+      }.join ", "
+
+      # TODO: improve message by saying who activated `con`
+
+      super("Unable to activate #{target.full_name}, because #{reason}")
+    end
+  end
+
   class ErrorReason; end
 
   # Generated when trying to lookup a gem to indicate that the gem

@@ -22,12 +22,28 @@ class Gem::Resolver::ComposedSet < Gem::Resolver::Set
   end
 
   ##
+  # When +allow_prerelease+ is set to +true+ prereleases gems are allowed to
+  # match dependencies.
+
+  def prerelease= allow_prerelease
+    super
+
+    sets.each do |set|
+      set.prerelease = allow_prerelease
+    end
+  end
+
+  ##
   # Sets the remote network access for all composed sets.
 
   def remote= remote
     super
 
     @sets.each { |set| set.remote = remote }
+  end
+
+  def errors
+    @errors + @sets.map { |set| set.errors }.flatten
   end
 
   ##

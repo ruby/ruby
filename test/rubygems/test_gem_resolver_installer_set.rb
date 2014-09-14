@@ -2,6 +2,101 @@ require 'rubygems/test_case'
 
 class TestGemResolverInstallerSet < Gem::TestCase
 
+  def test_add_always_install
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 1
+      fetcher.spec 'a', 2
+      fetcher.clear
+    end
+
+    util_gem 'a', 1
+
+    set = Gem::Resolver::InstallerSet.new :both
+
+    set.add_always_install dep('a')
+
+    assert_equal %w[a-2], set.always_install.map { |s| s.full_name }
+
+    e = assert_raises Gem::UnsatisfiableDependencyError do
+      set.add_always_install dep('b')
+    end
+
+    assert_equal dep('b'), e.dependency.dependency
+  end
+
+  def test_add_always_install_errors
+    @fetcher = Gem::FakeFetcher.new
+    Gem::RemoteFetcher.fetcher = @fetcher
+
+    set = Gem::Resolver::InstallerSet.new :both
+
+    e = assert_raises Gem::UnsatisfiableDependencyError do
+      set.add_always_install dep 'a'
+    end
+
+    refute_empty e.errors
+  end
+
+  def test_add_always_install_platform
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 1
+      fetcher.spec 'a', 2 do |s|
+        s.platform = Gem::Platform.new 'x86-freebsd-9'
+      end
+      fetcher.clear
+    end
+
+    set = Gem::Resolver::InstallerSet.new :both
+
+    set.add_always_install dep('a')
+
+    assert_equal %w[a-1], set.always_install.map { |s| s.full_name }
+  end
+
+  def test_add_always_install_prerelease
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 1
+      fetcher.gem 'a', '3.a'
+    end
+
+    set = Gem::Resolver::InstallerSet.new :both
+
+    set.add_always_install dep('a')
+
+    assert_equal %w[a-1], set.always_install.map { |s| s.full_name }
+  end
+
+  def test_add_always_install_prerelease_only
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', '3.a'
+    end
+
+    set = Gem::Resolver::InstallerSet.new :both
+
+    assert_raises Gem::UnsatisfiableDependencyError do
+      set.add_always_install dep('a')
+    end
+  end
+
+  def test_add_local
+    a_1, a_1_gem = util_gem 'a', 1
+
+    a_1_source = Gem::Source::SpecificFile.new a_1_gem
+
+    set = Gem::Resolver::InstallerSet.new :both
+
+    set.add_local File.basename(a_1_gem), a_1, a_1_source
+
+    assert set.local? File.basename(a_1_gem)
+
+    FileUtils.rm a_1_gem
+    util_clear_gems
+
+    req = Gem::Resolver::DependencyRequest.new dep('a'), nil
+
+    assert_equal %w[a-1], set.find_all(req).map { |spec| spec.full_name }
+  end
+
   def test_consider_local_eh
     set = Gem::Resolver::InstallerSet.new :remote
 
@@ -30,6 +125,54 @@ class TestGemResolverInstallerSet < Gem::TestCase
     refute set.consider_remote?
   end
 
+  def test_errors
+    set = Gem::Resolver::InstallerSet.new :both
+
+    set.instance_variable_get(:@errors) << :a
+
+    req = Gem::Resolver::DependencyRequest.new dep('a'), nil
+
+    set.find_all req
+
+    assert_equal [:a, set.remote_set.errors.first], set.errors
+  end
+
+  def test_find_all_always_install
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 2
+      fetcher.clear
+    end
+
+    util_gem 'a', 1
+
+    set = Gem::Resolver::InstallerSet.new :both
+
+    set.add_always_install dep 'a'
+
+    req = Gem::Resolver::DependencyRequest.new dep('a'), nil
+
+    assert_equal %w[a-2], set.find_all(req).map { |spec| spec.full_name }
+  end
+
+  def test_find_all_prerelease
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', '1'
+      fetcher.spec 'a', '1.a'
+      fetcher.clear
+    end
+
+    set = Gem::Resolver::InstallerSet.new :both
+
+    req = Gem::Resolver::DependencyRequest.new dep('a'), nil
+
+    assert_equal %w[a-1], set.find_all(req).map { |spec| spec.full_name }
+
+    req = Gem::Resolver::DependencyRequest.new dep('a', '>= 0.a'), nil
+
+    assert_equal %w[a-1 a-1.a],
+                 set.find_all(req).map { |spec| spec.full_name }.sort
+  end
+
   def test_load_spec
     specs = spec_fetcher do |fetcher|
       fetcher.spec 'a', 2
@@ -44,6 +187,18 @@ class TestGemResolverInstallerSet < Gem::TestCase
     spec = set.load_spec 'a', version, Gem::Platform.local, source
 
     assert_equal specs["a-2-#{Gem::Platform.local}"].full_name, spec.full_name
+  end
+
+  def test_prerelease_equals
+    set = Gem::Resolver::InstallerSet.new :remote
+
+    refute set.prerelease
+    refute set.remote_set.prerelease
+
+    set.prerelease = true
+
+    assert set.prerelease
+    assert set.remote_set.prerelease
   end
 
   def test_remote_equals_both

@@ -26,6 +26,11 @@ module Kernel
   # Kernel#gem should be called *before* any require statements (otherwise
   # RubyGems may load a conflicting library version).
   #
+  # Kernel#gem only loads prerelease versions when prerelease +requirements+
+  # are given:
+  #
+  #   gem 'rake', '>= 1.1.a', '< 2'
+  #
   # In older RubyGems versions, the environment variable GEM_SKIP could be
   # used to skip activation of specified gems, for example to test out changes
   # that haven't been installed yet.  Now RubyGems defers to -I and the
@@ -51,7 +56,9 @@ module Kernel
     end
 
     spec = Gem::Dependency.new(gem_name, *requirements).to_spec
-    spec.activate if spec
+    Gem::LOADED_SPECS_MUTEX.synchronize {
+      spec.activate
+    } if spec
   end
 
   private :gem

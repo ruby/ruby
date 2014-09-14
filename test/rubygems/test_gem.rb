@@ -75,6 +75,21 @@ class TestGem < Gem::TestCase
     end
   end
 
+  def test_self_install
+    spec_fetcher do |f|
+      f.gem  'a', 1
+      f.spec 'a', 2
+    end
+
+    gemhome2 = "#{@gemhome}2"
+
+    installed = Gem.install 'a', '= 1', :install_dir => gemhome2
+
+    assert_equal %w[a-1], installed.map { |spec| spec.full_name }
+
+    assert_path_exists File.join(gemhome2, 'gems', 'a-1')
+  end
+
   def test_require_missing
     save_loaded_features do
       assert_raises ::LoadError do
@@ -214,6 +229,58 @@ class TestGem < Gem::TestCase
     ruby_install_name 'jruby' do
       assert_equal 'j%s', Gem.default_exec_format
     end
+  end
+
+  def test_default_path
+    orig_vendordir = RbConfig::CONFIG['vendordir']
+    RbConfig::CONFIG['vendordir'] = File.join @tempdir, 'vendor'
+
+    FileUtils.rm_rf Gem.user_home
+
+    expected = [Gem.default_dir]
+
+    assert_equal expected, Gem.default_path
+  ensure
+    RbConfig::CONFIG['vendordir'] = orig_vendordir
+  end
+
+  def test_default_path_missing_vendor
+    orig_vendordir = RbConfig::CONFIG['vendordir']
+    RbConfig::CONFIG.delete 'vendordir'
+
+    FileUtils.rm_rf Gem.user_home
+
+    expected = [Gem.default_dir]
+
+    assert_equal expected, Gem.default_path
+  ensure
+    RbConfig::CONFIG['vendordir'] = orig_vendordir
+  end
+
+  def test_default_path_user_home
+    orig_vendordir = RbConfig::CONFIG['vendordir']
+    RbConfig::CONFIG['vendordir'] = File.join @tempdir, 'vendor'
+
+    expected = [Gem.user_dir, Gem.default_dir]
+
+    assert_equal expected, Gem.default_path
+  ensure
+    RbConfig::CONFIG['vendordir'] = orig_vendordir
+  end
+
+  def test_default_path_vendor_dir
+    orig_vendordir = RbConfig::CONFIG['vendordir']
+    RbConfig::CONFIG['vendordir'] = File.join @tempdir, 'vendor'
+
+    FileUtils.mkdir_p Gem.vendor_dir
+
+    FileUtils.rm_rf Gem.user_home
+
+    expected = [Gem.default_dir, Gem.vendor_dir]
+
+    assert_equal expected, Gem.default_path
+  ensure
+    RbConfig::CONFIG['vendordir'] = orig_vendordir
   end
 
   def test_self_default_sources
@@ -816,6 +883,23 @@ class TestGem < Gem::TestCase
     assert_match %r%Could not find 'b' %, e.message
   end
 
+  def test_self_try_activate_missing_extensions
+    util_spec 'ext', '1' do |s|
+      s.extensions = %w[ext/extconf.rb]
+      s.mark_version
+      s.installed_by_version = v('2.2')
+    end
+
+    _, err = capture_io do
+      refute Gem.try_activate 'nonexistent'
+    end
+
+    expected = "Ignoring ext-1 because its extensions are not built.  " +
+               "Try: gem pristine ext-1\n"
+
+    assert_equal expected, err
+  end
+
   def test_self_use_paths
     util_ensure_gem_dirs
 
@@ -949,6 +1033,30 @@ class TestGem < Gem::TestCase
       ENV['HOMEDRIVE'] = orig_home_drive
       ENV['HOMEPATH'] = orig_home_path
     end
+  end
+
+  def test_self_vendor_dir
+    expected =
+      File.join RbConfig::CONFIG['vendordir'], 'gems',
+                RbConfig::CONFIG['ruby_version']
+
+    assert_equal expected, Gem.vendor_dir
+  end
+
+  def test_self_vendor_dir_ENV_GEM_VENDOR
+    ENV['GEM_VENDOR'] = File.join @tempdir, 'vendor', 'gems'
+
+    assert_equal ENV['GEM_VENDOR'], Gem.vendor_dir
+    refute Gem.vendor_dir.frozen?
+  end
+
+  def test_self_vendor_dir_missing
+    orig_vendordir = RbConfig::CONFIG['vendordir']
+    RbConfig::CONFIG.delete 'vendordir'
+
+    assert_nil Gem.vendor_dir
+  ensure
+    RbConfig::CONFIG['vendordir'] = orig_vendordir
   end
 
   def test_load_plugins
@@ -1251,19 +1359,57 @@ class TestGem < Gem::TestCase
   end
 
   def test_use_gemdeps
+    gem_deps_file = 'gem.deps.rb'.untaint
+    spec = util_spec 'a', 1
+
+    refute spec.activated?
+
+    open gem_deps_file, 'w' do |io|
+      io.write 'gem "a"'
+    end
+
+    Gem.use_gemdeps gem_deps_file
+
+    assert spec.activated?
+  end
+
+  def test_use_gemdeps_ENV
     rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], nil
 
     spec = util_spec 'a', 1
 
     refute spec.activated?
 
-    open 'Gemfile', 'w' do |io|
+    open 'gem.deps.rb', 'w' do |io|
       io.write 'gem "a"'
     end
 
     Gem.use_gemdeps
 
     refute spec.activated?
+  ensure
+    ENV['RUBYGEMS_GEMDEPS'] = rubygems_gemdeps
+  end
+
+  def test_use_gemdeps_argument_missing
+    e = assert_raises ArgumentError do
+      Gem.use_gemdeps 'gem.deps.rb'
+    end
+
+    assert_equal 'Unable to find gem dependencies file at gem.deps.rb',
+                 e.message
+  end
+
+  def test_use_gemdeps_argument_missing_match_ENV
+    rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] =
+      ENV['RUBYGEMS_GEMDEPS'], 'gem.deps.rb'
+
+    e = assert_raises ArgumentError do
+      Gem.use_gemdeps 'gem.deps.rb'
+    end
+
+    assert_equal 'Unable to find gem dependencies file at gem.deps.rb',
+                 e.message
   ensure
     ENV['RUBYGEMS_GEMDEPS'] = rubygems_gemdeps
   end
@@ -1287,6 +1433,17 @@ class TestGem < Gem::TestCase
     ENV['RUBYGEMS_GEMDEPS'] = rubygems_gemdeps
   end
 
+  def test_use_gemdeps_automatic_missing
+    skip 'Insecure operation - chdir' if RUBY_VERSION <= "1.8.7"
+    rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], '-'
+
+    Gem.use_gemdeps
+
+    assert true # count
+  ensure
+    ENV['RUBYGEMS_GEMDEPS'] = rubygems_gemdeps
+  end
+
   def test_use_gemdeps_disabled
     rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], ''
 
@@ -1294,13 +1451,34 @@ class TestGem < Gem::TestCase
 
     refute spec.activated?
 
-    open 'Gemfile', 'w' do |io|
+    open 'gem.deps.rb', 'w' do |io|
       io.write 'gem "a"'
     end
 
     Gem.use_gemdeps
 
     refute spec.activated?
+  ensure
+    ENV['RUBYGEMS_GEMDEPS'] = rubygems_gemdeps
+  end
+
+  def test_use_gemdeps_missing_gem
+    skip 'Insecure operation - read' if RUBY_VERSION <= "1.8.7"
+    rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], 'x'
+
+    open 'x', 'w' do |io|
+      io.write 'gem "a"'
+    end
+
+    expected = <<-EXPECTED
+Unable to resolve dependency: user requested 'a (>= 0)'
+You may need to `gem install -g` to install missing gems
+
+    EXPECTED
+
+    assert_output nil, expected do
+      Gem.use_gemdeps
+    end
   ensure
     ENV['RUBYGEMS_GEMDEPS'] = rubygems_gemdeps
   end

@@ -244,6 +244,36 @@ gems:
     assert File.exist?(a1_cache_gem)
   end
 
+  def test_download_with_auth
+    a1_data = nil
+    File.open @a1_gem, 'rb' do |fp|
+      a1_data = fp.read
+    end
+
+    fetcher = util_fuck_with_fetcher a1_data
+
+    a1_cache_gem = @a1.cache_file
+    assert_equal a1_cache_gem, fetcher.download(@a1, 'http://user:password@gems.example.com')
+    assert_equal("http://user:password@gems.example.com/gems/a-1.gem",
+                 fetcher.instance_variable_get(:@test_arg).to_s)
+    assert File.exist?(a1_cache_gem)
+  end
+
+  def test_download_with_encoded_auth
+    a1_data = nil
+    File.open @a1_gem, 'rb' do |fp|
+      a1_data = fp.read
+    end
+
+    fetcher = util_fuck_with_fetcher a1_data
+
+    a1_cache_gem = @a1.cache_file
+    assert_equal a1_cache_gem, fetcher.download(@a1, 'http://user:%25pas%25sword@gems.example.com')
+    assert_equal("http://user:%25pas%25sword@gems.example.com/gems/a-1.gem",
+                 fetcher.instance_variable_get(:@test_arg).to_s)
+    assert File.exist?(a1_cache_gem)
+  end
+
   def test_download_cached
     FileUtils.mv @a1_gem, @cache_dir
 
@@ -557,6 +587,40 @@ gems:
     assert_equal "too many redirects (#{url})", e.message
   end
 
+  def test_fetch_s3
+    fetcher = Gem::RemoteFetcher.new nil
+    url = 's3://testuser:testpass@my-bucket/gems/specs.4.8.gz'
+    $fetched_uri = nil
+
+    def fetcher.request(uri, request_class, last_modified = nil)
+      $fetched_uri = uri
+      res = Net::HTTPOK.new nil, 200, nil
+      def res.body() 'success' end
+      res
+    end
+
+    def fetcher.s3_expiration
+      1395098371
+    end
+
+    data = fetcher.fetch_s3 URI.parse(url)
+
+    assert_equal 'https://my-bucket.s3.amazonaws.com/gems/specs.4.8.gz?AWSAccessKeyId=testuser&Expires=1395098371&Signature=eUTr7NkpZEet%2BJySE%2BfH6qukroI%3D', $fetched_uri.to_s
+    assert_equal 'success', data
+  ensure
+    $fetched_uri = nil
+  end
+
+  def test_fetch_s3_no_creds
+    fetcher = Gem::RemoteFetcher.new nil
+    url = 's3://my-bucket/gems/specs.4.8.gz'
+    e = assert_raises Gem::RemoteFetcher::FetchError do
+      fetcher.fetch_s3 URI.parse(url)
+    end
+
+    assert_match "credentials needed", e.message
+  end
+
   def test_observe_no_proxy_env_single_host
     use_ui @ui do
       ENV["http_proxy"] = @proxy_uri
@@ -711,6 +775,8 @@ gems:
       @proxy_server  ||= start_server(PROXY_DATA)
       @enable_yaml = true
       @enable_zip = false
+      @ssl_server = nil
+      @ssl_server_thread = nil
     end
 
     def stop_servers

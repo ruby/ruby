@@ -126,6 +126,27 @@ class TestGemDependencyInstaller < Gem::TestCase
     assert_equal [p1a], inst.installed_gems
   end
 
+  def test_install_prerelease_bug_990
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', '1.b' do |s|
+        s.add_dependency 'b', '~> 1.a'
+      end
+
+      fetcher.gem 'b', '1.b' do |s|
+        s.add_dependency 'c', '>= 1'
+      end
+
+      fetcher.gem 'c', '1.1.b'
+    end
+
+    dep = Gem::Dependency.new 'a'
+
+    inst = Gem::DependencyInstaller.new :prerelease => true
+    inst.install dep
+
+    assert_equal %w[a-1.b b-1.b c-1.1.b], Gem::Specification.map(&:full_name)
+  end
+
   def test_install_when_only_prerelease
     p1a, gem = util_gem 'p', '1.a'
 
@@ -138,7 +159,9 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     dep = Gem::Dependency.new "p"
     inst = Gem::DependencyInstaller.new
-    inst.install dep
+    assert_raises Gem::UnsatisfiableDependencyError do
+      inst.install dep
+    end
 
     assert_equal %w[], Gem::Specification.map(&:full_name)
     assert_equal [], inst.installed_gems
@@ -291,7 +314,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     Gem.done_installing do |installer, specs|
       done_installing_ran = true
-      assert_equal inst, installer
+      refute_nil installer
       assert_equal [@a1, @b1], specs
     end
 
@@ -455,6 +478,20 @@ class TestGemDependencyInstaller < Gem::TestCase
     assert_equal %w[a-1], inst.installed_gems.map { |s| s.full_name }
   end
 
+  def test_install_local_prerelease
+    util_setup_gems
+
+    FileUtils.mv @a1_pre_gem, @tempdir
+    inst = nil
+
+    Dir.chdir @tempdir do
+      inst = Gem::DependencyInstaller.new :domain => :local
+      inst.install 'a-1.a.gem'
+    end
+
+    assert_equal %w[a-1.a], inst.installed_gems.map { |s| s.full_name }
+  end
+
   def test_install_local_dependency
     util_setup_gems
 
@@ -536,6 +573,23 @@ class TestGemDependencyInstaller < Gem::TestCase
     end
 
     assert_equal %w[a-1 e-1], inst.installed_gems.map { |s| s.full_name }
+  end
+
+  def test_install_no_document
+    util_setup_gems
+
+    done_installing_called = false
+
+    Gem.done_installing do |dep_installer, specs|
+      done_installing_called = true
+      assert_empty dep_installer.document
+    end
+
+    inst = Gem::DependencyInstaller.new :domain => :local, :document => []
+
+    inst.install @a1_gem
+
+    assert done_installing_called
   end
 
   def test_install_env_shebang
@@ -682,7 +736,7 @@ class TestGemDependencyInstaller < Gem::TestCase
         inst.install 'b'
       end
 
-      expected = "Unable to resolve dependency: 'b (= 1)' requires 'a (>= 0)'"
+      expected = "Unable to resolve dependency: 'b (>= 0)' requires 'a (>= 0)'"
       assert_equal expected, e.message
     end
 
@@ -796,9 +850,9 @@ class TestGemDependencyInstaller < Gem::TestCase
       s.platform = Gem::Platform.new %w[cpu other_platform 1]
     end
 
-    util_clear_gems
-
     si = util_setup_spec_fetcher @a1, a2_o
+
+    util_clear_gems
 
     @fetcher.data['http://gems.example.com/gems/yaml'] = si.to_yaml
 
@@ -1043,165 +1097,6 @@ class TestGemDependencyInstaller < Gem::TestCase
     assert_kind_of Gem::SourceFetchProblem, installer.errors.first
   end
 
-  def assert_resolve expected, *specs
-    util_clear_gems
-    util_setup_spec_fetcher(*specs)
-    Gem::Specification.reset
-
-    inst = Gem::DependencyInstaller.new
-    inst.find_spec_by_name_and_version specs.first.name
-    inst.gather_dependencies
-
-    actual = inst.gems_to_install.map { |s| s.full_name }
-    assert_equal expected, actual
-  end
-
-  def assert_resolve_pre expected, *specs
-    util_clear_gems
-
-    util_setup_spec_fetcher(*specs)
-    Gem::Specification.reset
-
-    spec = specs.first
-
-    inst = Gem::DependencyInstaller.new :prerelease => true
-    inst.find_spec_by_name_and_version spec.name, spec.version
-    inst.gather_dependencies
-
-    actual = inst.gems_to_install.map { |s| s.full_name }
-    assert_equal expected, actual
-  end
-
-  def test_gather_dependencies
-    util_setup_gems
-    util_reset_gems
-
-    inst = Gem::DependencyInstaller.new
-    inst.find_spec_by_name_and_version 'b'
-    inst.gather_dependencies
-
-    assert_equal %w[a-1 b-1], inst.gems_to_install.map { |s| s.full_name }
-  end
-
-  ##
-  # [A1] depends on
-  #    [B] > 0 (satisfied by 2.0)
-  # [B1] depends on
-  #    [C] > 0 (satisfied by 1.0)
-  # [B2] depends on nothing!
-  # [C1] depends on nothing
-
-  def test_gather_dependencies_dropped
-    a1, = util_spec 'a', '1', 'b' => nil
-    b1, = util_spec 'b', '1', 'c' => nil
-    b2, = util_spec 'b', '2'
-    c1, = util_spec 'c', '1'
-
-    assert_resolve %w[b-2 a-1], a1, b1, b2, c1
-  end
-
-  ##
-  # [A] depends on
-  #     [B] >= 1.0 (satisfied by 1.1) depends on
-  #         [Z]
-  #     [C] >= 1.0 depends on
-  #         [B] = 1.0
-  #
-  # and should backtrack to resolve using b-1.0, pruning Z from the
-  # resolve.
-
-  def test_gather_dependencies_raggi_the_edgecase_generator
-    a,  _ = util_spec 'a', '1.0', 'b' => '>= 1.0', 'c' => '>= 1.0'
-    b1, _ = util_spec 'b', '1.0'
-    b2, _ = util_spec 'b', '1.1', 'z' => '>= 1.0'
-    c,  _ = util_spec 'c', '1.0', 'b' => '= 1.0'
-
-    assert_resolve %w[b-1.0 c-1.0 a-1.0], a, b1, b2, c
-  end
-
-  ##
-  # [A] depends on
-  #     [B] >= 1.0 (satisfied by 2.0)
-  #     [C]  = 1.0 depends on
-  #         [B] ~> 1.0
-  #
-  # and should resolve using b-1.0
-
-  def test_gather_dependencies_over
-    a, _  = util_spec 'a', '1.0', 'b' => '>= 1.0', 'c' => '= 1.0'
-    b1, _ = util_spec 'b', '1.0'
-    b2, _ = util_spec 'b', '2.0'
-    c,  _ = util_spec 'c', '1.0', 'b' => '~> 1.0'
-
-    assert_resolve %w[b-1.0 c-1.0 a-1.0], a, b1, b2, c
-  end
-
-  ##
-  # [A] depends on
-  #     [B] ~> 1.0 (satisfied by 1.1)
-  #     [C]  = 1.0 depends on
-  #         [B] = 1.0
-  #
-  # and should resolve using b-1.0
-  #
-  # TODO: this is not under, but over... under would require depth
-  # first resolve through a dependency that is later pruned.
-
-  def test_gather_dependencies_under
-    a,   _ = util_spec 'a', '1.0', 'b' => '~> 1.0', 'c' => '= 1.0'
-    b10, _ = util_spec 'b', '1.0'
-    b11, _ = util_spec 'b', '1.1'
-    c,   _ = util_spec 'c', '1.0', 'b' => '= 1.0'
-
-    assert_resolve %w[b-1.0 c-1.0 a-1.0], a, b10, b11, c
-  end
-
-  # under
-  #
-  # [A] depends on
-  #     [B] ~> 1.0 (satisfied by 1.0)
-  #     [C]  = 1.0 depends on
-  #         [B] = 2.0
-
-  def test_gather_dependencies_divergent
-    a, _  = util_spec 'a', '1.0', 'b' => '~> 1.0', 'c' => '= 1.0'
-    b1, _ = util_spec 'b', '1.0'
-    b2, _ = util_spec 'b', '2.0'
-    c,  _ = util_spec 'c', '1.0', 'b' => '= 2.0'
-
-    assert_raises Gem::DependencyError do
-      assert_resolve :ignored, a, b1, b2, c
-    end
-  end
-
-  def test_gather_dependencies_platform_alternate
-    util_setup_wxyz
-    util_set_arch 'cpu-my_platform1'
-
-    assert_resolve %w[x-1-cpu-my_platform-1 w-1], @w1, @x1_m
-  end
-
-  def test_gather_dependencies_platform_bump
-    util_setup_wxyz
-
-    assert_resolve %w[y-1 z-1], @z1, @y1
-  end
-
-  def test_gather_dependencies_prerelease
-    util_setup_gems
-    util_setup_c1_pre
-
-    assert_resolve_pre %w[a-1.a b-1 c-1.a], @c1_pre, @a1_pre, @b1
-  end
-
-  def test_gather_dependencies_old_required
-    util_setup_d
-    e1, = util_spec 'e', '1', 'd' => '= 1'
-    util_clear_gems
-
-    assert_resolve %w[d-1 e-1], e1, @d1, @d2
-  end
-
   def test_resolve_dependencies
     util_setup_gems
 
@@ -1230,6 +1125,21 @@ class TestGemDependencyInstaller < Gem::TestCase
     assert request_set.ignore_dependencies
 
     assert_equal %w[b-1], requests
+  end
+
+  def test_resolve_dependencies_local
+    util_setup_gems
+
+    @a2, @a2_gem = util_gem 'a', '2'
+    FileUtils.mv @a1_gem, @tempdir
+    FileUtils.mv @a2_gem, @tempdir
+
+    inst = Gem::DependencyInstaller.new
+    request_set = inst.resolve_dependencies 'a-1.gem', req('>= 0')
+
+    requests = request_set.sorted_requests.map { |req| req.full_name }
+
+    assert_equal %w[a-1], requests
   end
 
   def util_write_a1_bin

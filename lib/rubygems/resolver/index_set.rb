@@ -18,7 +18,9 @@ class Gem::Resolver::IndexSet < Gem::Resolver::Set
 
     @all = Hash.new { |h,k| h[k] = [] }
 
-    list, = @f.available_specs :released
+    list, errors = @f.available_specs :complete
+
+    @errors.concat errors
 
     list.each do |uri, specs|
       specs.each do |n|
@@ -41,7 +43,7 @@ class Gem::Resolver::IndexSet < Gem::Resolver::Set
     name = req.dependency.name
 
     @all[name].each do |uri, n|
-      if req.dependency.match? n then
+      if req.match? n, @prerelease then
         res << Gem::Resolver::IndexSpecification.new(
           self, n.name, n.version, uri, n.platform)
       end

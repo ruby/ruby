@@ -28,6 +28,46 @@ class TestGemResolverAPISpecification < Gem::TestCase
     assert_equal expected, spec.dependencies
   end
 
+  def test_fetch_development_dependencies
+    specs = spec_fetcher do |fetcher|
+      fetcher.spec 'rails', '3.0.3' do |s|
+        s.add_runtime_dependency 'bundler',  '~> 1.0'
+        s.add_runtime_dependency 'railties', '= 3.0.3'
+        s.add_development_dependency 'a',    '= 1'
+      end
+    end
+
+    rails = specs['rails-3.0.3']
+
+    repo = @gem_repo + 'api/v1/dependencies'
+
+    set = Gem::Resolver::APISet.new repo
+
+    data = {
+      :name     => 'rails',
+      :number   => '3.0.3',
+      :platform => 'ruby',
+      :dependencies => [
+        ['bundler',  '~> 1.0'],
+        ['railties', '= 3.0.3'],
+      ],
+    }
+
+    util_setup_spec_fetcher rails
+
+    spec = Gem::Resolver::APISpecification.new set, data
+
+    spec.fetch_development_dependencies
+
+    expected = [
+      Gem::Dependency.new('bundler',  '~> 1.0'),
+      Gem::Dependency.new('railties', '= 3.0.3'),
+      Gem::Dependency.new('a',        '= 1', :development),
+    ]
+
+    assert_equal expected, spec.dependencies
+  end
+
   def test_installable_platform_eh
     set = Gem::Resolver::APISet.new
     data = {

@@ -638,7 +638,7 @@ class TestGemPackage < Gem::Package::TarTestCase
                    e.message
       io
     end
-    tf.close!
+    tf.close! if tf.respond_to? :close!
   end
 
   def test_verify_empty
@@ -778,6 +778,23 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new @gem
 
     assert_equal @spec, package.spec
+  end
+
+  def test_spec_from_io
+    # This functionality is used by rubygems.org to extract spec data from an
+    # uploaded gem before it is written to storage.
+    io = StringIO.new Gem.read_binary @gem
+    package = Gem::Package.new io
+
+    assert_equal @spec, package.spec
+  end
+
+  def test_spec_from_io_raises_gem_error_for_io_not_at_start
+    io = StringIO.new Gem.read_binary @gem
+    io.read(1)
+    assert_raises(Gem::Package::Error) do
+      Gem::Package.new io
+    end
   end
 
   def util_tar

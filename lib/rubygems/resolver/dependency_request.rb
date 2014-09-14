@@ -35,7 +35,26 @@ class Gem::Resolver::DependencyRequest
   end
 
   ##
-  # Does this dependency request match +spec+
+  # Is this dependency a development dependency?
+
+  def development?
+    @dependency.type == :development
+  end
+
+  ##
+  # Does this dependency request match +spec+?
+  #
+  # NOTE:  #match? only matches prerelease versions when #dependency is a
+  # prerelease dependency.
+
+  def match? spec, allow_prerelease = false
+    @dependency.match? spec, nil, allow_prerelease
+  end
+
+  ##
+  # Does this dependency request match +spec+?
+  #
+  # NOTE:  #matches_spec? matches prerelease versions.  See also #match?
 
   def matches_spec?(spec)
     @dependency.matches_spec? spec

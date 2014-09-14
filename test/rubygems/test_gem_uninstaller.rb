@@ -325,6 +325,29 @@ create_makefile '#{@spec.name}'
     assert_equal expected, e.message
   end
 
+  def test_uninstall_selection
+    util_make_gems
+
+    list = Gem::Specification.find_all_by_name 'a'
+
+    uninstaller = Gem::Uninstaller.new 'a'
+
+    ui = Gem::MockGemUi.new "1\ny\n"
+
+    use_ui ui do
+      uninstaller.uninstall
+    end
+
+    updated_list = Gem::Specification.find_all_by_name('a')
+    assert_equal list.length - 1, updated_list.length
+
+    assert_match ' 1. a-1',          ui.output
+    assert_match ' 2. a-2',          ui.output
+    assert_match ' 3. a-3.a',        ui.output
+    assert_match ' 4. All versions', ui.output
+    assert_match 'uninstalled a-1',  ui.output
+  end
+
   def test_uninstall_selection_greater_than_one
     util_make_gems
 

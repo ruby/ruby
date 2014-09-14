@@ -1,5 +1,33 @@
 ##
-# A semi-compatible DSL for the Bundler Gemfile and Isolate formats.
+# A semi-compatible DSL for the Bundler Gemfile and Isolate gem dependencies
+# files.
+#
+# To work with both the Bundler Gemfile and Isolate formats this
+# implementation takes some liberties to allow compatibility with each, most
+# notably in #source.
+#
+# A basic gem dependencies file will look like the following:
+#
+#   source 'https://rubygems.org'
+#
+#   gem 'rails', '3.2.14a
+#   gem 'devise', '~> 2.1', '>= 2.1.3'
+#   gem 'cancan'
+#   gem 'airbrake'
+#   gem 'pg'
+#
+# RubyGems recommends saving this as gem.deps.rb over Gemfile or Isolate.
+#
+# To install the gems in this Gemfile use `gem install -g` to install it and
+# create a lockfile.  The lockfile will ensure that when you make changes to
+# your gem dependencies file a minimum amount of change is made to the
+# dependencies of your gems.
+#
+# RubyGems can activate all the gems in your dependencies file at startup
+# using the RUBYGEMS_GEMDEPS environment variable or through Gem.use_gemdeps.
+# See Gem.use_gemdeps for details and warnings.
+#
+# See `gem help install` and `gem help gem_dependencies` for further details.
 
 class Gem::RequestSet::GemDependencyAPI
 
@@ -21,6 +49,8 @@ class Gem::RequestSet::GemDependencyAPI
     :ruby_21      => %w[ruby rbx maglev],
   }
 
+  mswin     = Gem::Platform.new 'x86-mswin32'
+  mswin64   = Gem::Platform.new 'x64-mswin64'
   x86_mingw = Gem::Platform.new 'x86-mingw32'
   x64_mingw = Gem::Platform.new 'x64-mingw32'
 
@@ -39,7 +69,15 @@ class Gem::RequestSet::GemDependencyAPI
     :mri_19       => Gem::Platform::RUBY,
     :mri_20       => Gem::Platform::RUBY,
     :mri_21       => Gem::Platform::RUBY,
-    :mswin        => Gem::Platform::RUBY,
+    :mswin        => mswin,
+    :mswin_18     => mswin,
+    :mswin_19     => mswin,
+    :mswin_20     => mswin,
+    :mswin_21     => mswin,
+    :mswin64      => mswin64,
+    :mswin64_19   => mswin64,
+    :mswin64_20   => mswin64,
+    :mswin64_21   => mswin64,
     :rbx          => Gem::Platform::RUBY,
     :ruby         => Gem::Platform::RUBY,
     :ruby_18      => Gem::Platform::RUBY,
@@ -73,6 +111,14 @@ class Gem::RequestSet::GemDependencyAPI
     :mri_20       => tilde_gt_2_0_0,
     :mri_21       => tilde_gt_2_1_0,
     :mswin        => gt_eq_0,
+    :mswin_18     => tilde_gt_1_8_0,
+    :mswin_19     => tilde_gt_1_9_0,
+    :mswin_20     => tilde_gt_2_0_0,
+    :mswin_21     => tilde_gt_2_1_0,
+    :mswin64      => gt_eq_0,
+    :mswin64_19   => tilde_gt_1_9_0,
+    :mswin64_20   => tilde_gt_2_0_0,
+    :mswin64_21   => tilde_gt_2_1_0,
     :rbx          => gt_eq_0,
     :ruby         => gt_eq_0,
     :ruby_18      => tilde_gt_1_8_0,
@@ -96,6 +142,14 @@ class Gem::RequestSet::GemDependencyAPI
     :mri_20       => :never,
     :mri_21       => :never,
     :mswin        => :only,
+    :mswin_18     => :only,
+    :mswin_19     => :only,
+    :mswin_20     => :only,
+    :mswin_21     => :only,
+    :mswin64      => :only,
+    :mswin64_19   => :only,
+    :mswin64_20   => :only,
+    :mswin64_21   => :only,
     :rbx          => :never,
     :ruby         => :never,
     :ruby_18      => :never,
@@ -106,6 +160,11 @@ class Gem::RequestSet::GemDependencyAPI
     :x64_mingw_20 => :only,
     :x64_mingw_21 => :only,
   }
+
+  ##
+  # The gems required by #gem statements in the gem.deps.rb file
+
+  attr_reader :dependencies
 
   ##
   # A set of gems that are loaded via the +:git+ option to #gem
@@ -136,14 +195,31 @@ class Gem::RequestSet::GemDependencyAPI
     @path = path
 
     @current_groups     = nil
-    @current_platform   = nil
+    @current_platforms  = nil
     @current_repository = nil
+    @dependencies       = {}
     @default_sources    = true
     @git_set            = @set.git_set
+    @git_sources        = {}
+    @installing         = false
     @requires           = Hash.new { |h, name| h[name] = [] }
     @vendor_set         = @set.vendor_set
     @gem_sources        = {}
     @without_groups     = []
+
+    git_source :github do |repo_name|
+      repo_name = "#{repo_name}/#{repo_name}" unless repo_name.include? "/"
+
+      "git://github.com/#{repo_name}.git"
+    end
+
+    git_source :bitbucket do |repo_name|
+      repo_name = "#{repo_name}/#{repo_name}" unless repo_name.include? "/"
+
+      user, = repo_name.split "/", 2
+
+      "https://#{user}@bitbucket.org/#{repo_name}.git"
+    end
   end
 
   ##
@@ -187,14 +263,26 @@ class Gem::RequestSet::GemDependencyAPI
   end
 
   ##
-  # Loads the gem dependency file
+  # Changes the behavior of gem dependency file loading to installing mode.
+  # In installing mode certain restrictions are ignored such as ruby version
+  # mismatch checks.
+
+  def installing= installing # :nodoc:
+    @installing = installing
+  end
+
+  ##
+  # Loads the gem dependency file and returns self.
 
   def load
     instance_eval File.read(@path).untaint, @path, 1
+
+    self
   end
 
   ##
   # :category: Gem Dependencies DSL
+  #
   # :call-seq:
   #   gem(name)
   #   gem(name, *requirements)
@@ -202,6 +290,66 @@ class Gem::RequestSet::GemDependencyAPI
   #
   # Specifies a gem dependency with the given +name+ and +requirements+.  You
   # may also supply +options+ following the +requirements+
+  #
+  # +options+ include:
+  #
+  # require: ::
+  #   RubyGems does not provide any autorequire features so requires in a gem
+  #   dependencies file are recorded but ignored.
+  #
+  #   In bundler the require: option overrides the file to require during
+  #   Bundler.require.  By default the name of the dependency is required in
+  #   Bundler.  A single file or an Array of files may be given.
+  #
+  #   To disable requiring any file give +false+:
+  #
+  #     gem 'rake', require: false
+  #
+  # group: ::
+  #   Place the dependencies in the given dependency group.  A single group or
+  #   an Array of groups may be given.
+  #
+  #   See also #group
+  #
+  # platform: ::
+  #   Only install the dependency on the given platform.  A single platform or
+  #   an Array of platforms may be given.
+  #
+  #   See #platform for a list of platforms available.
+  #
+  # path: ::
+  #   Install this dependency from an unpacked gem in the given directory.
+  #
+  #     gem 'modified_gem', path: 'vendor/modified_gem'
+  #
+  # git: ::
+  #   Install this dependency from a git repository:
+  #
+  #     gem 'private_gem', git: git@my.company.example:private_gem.git'
+  #
+  # gist: ::
+  #   Install this dependency from the gist ID:
+  #
+  #     gem 'bang', gist: '1232884'
+  #
+  # github: ::
+  #   Install this dependency from a github git repository:
+  #
+  #     gem 'private_gem', github: 'my_company/private_gem'
+  #
+  # submodules: ::
+  #   Set to +true+ to include submodules when fetching the git repository for
+  #   git:, gist: and github: dependencies.
+  #
+  # ref: ::
+  #   Use the given commit name or SHA for git:, gist: and github:
+  #   dependencies.
+  #
+  # branch: ::
+  #   Use the given branch for git:, gist: and github: dependencies.
+  #
+  # tag: ::
+  #   Use the given tag for git:, gist: and github: dependencies.
 
   def gem name, *requirements
     options = requirements.pop if requirements.last.kind_of?(Hash)
@@ -211,9 +359,20 @@ class Gem::RequestSet::GemDependencyAPI
 
     source_set = false
 
-    source_set ||= gem_path   name, options
-    source_set ||= gem_git    name, options
-    source_set ||= gem_github name, options
+    source_set ||= gem_path       name, options
+    source_set ||= gem_git        name, options
+    source_set ||= gem_git_source name, options
+
+    duplicate = @dependencies.include? name
+
+    @dependencies[name] =
+      if requirements.empty? and not source_set then
+        nil
+      elsif source_set then
+        '!'
+      else
+        requirements
+      end
 
     return unless gem_platforms options
 
@@ -224,6 +383,12 @@ class Gem::RequestSet::GemDependencyAPI
     pin_gem_source name, :default unless source_set
 
     gem_requires name, options
+
+    if duplicate then
+      warn <<-WARNING
+Gem dependencies file #{@path} requires #{name} more than once.
+      WARNING
+    end
 
     @set.gem name, *requirements
   end
@@ -258,21 +423,27 @@ class Gem::RequestSet::GemDependencyAPI
   private :gem_git
 
   ##
-  # Handles the github: option from +options+ for gem +name+.
+  # Handles a git gem option from +options+ for gem +name+ for a git source
+  # registered through git_source.
   #
-  # Returns +true+ if the path option was handled.
+  # Returns +true+ if the custom source option was handled.
 
-  def gem_github name, options # :nodoc:
-    return unless path = options.delete(:github)
+  def gem_git_source name, options # :nodoc:
+    return unless git_source = (@git_sources.keys & options.keys).last
 
-    options[:git] = "git://github.com/#{path}.git"
+    source_callback = @git_sources[git_source]
+    source_param = options.delete git_source
+
+    git_url = source_callback.call source_param
+
+    options[:git] = git_url
 
     gem_git name, options
 
     true
   end
 
-  private :gem_github
+  private :gem_git_source
 
   ##
   # Handles the :group and :groups +options+ for the gem with the given
@@ -314,8 +485,9 @@ class Gem::RequestSet::GemDependencyAPI
   # platform matches the current platform.
 
   def gem_platforms options # :nodoc:
-    platform_names = Array(options.delete :platforms)
-    platform_names << @current_platform if @current_platform
+    platform_names = Array(options.delete :platform)
+    platform_names.concat Array(options.delete :platforms)
+    platform_names.concat @current_platforms if @current_platforms
 
     return true if platform_names.empty?
 
@@ -343,7 +515,7 @@ class Gem::RequestSet::GemDependencyAPI
   private :gem_platforms
 
   ##
-  # Handles the require: option from +options+ and adds those files, or the
+  # Records the require: option from +options+ and adds those files, or the
   # default file to the require list for +name+.
 
   def gem_requires name, options # :nodoc:
@@ -362,6 +534,11 @@ class Gem::RequestSet::GemDependencyAPI
   # :category: Gem Dependencies DSL
   #
   # Block form for specifying gems from a git +repository+.
+  #
+  #   git 'https://github.com/rails/rails.git' do
+  #     gem 'activesupport'
+  #     gem 'activerecord'
+  #   end
 
   def git repository
     @current_repository = repository
@@ -370,6 +547,15 @@ class Gem::RequestSet::GemDependencyAPI
 
   ensure
     @current_repository = nil
+  end
+
+  ##
+  # Defines a custom git source that uses +name+ to expand git repositories
+  # for use in gems built from git repositories.  You must provide a block
+  # that accepts a git repository name for expansion.
+
+  def git_source name, &callback
+    @git_sources[name] = callback
   end
 
   ##
@@ -383,6 +569,23 @@ class Gem::RequestSet::GemDependencyAPI
   # :category: Gem Dependencies DSL
   #
   # Loads dependencies from a gemspec file.
+  #
+  # +options+ include:
+  #
+  # name: ::
+  #   The name portion of the gemspec file.  Defaults to searching for any
+  #   gemspec file in the current directory.
+  #
+  #     gemspec name: 'my_gem'
+  #
+  # path: ::
+  #   The path the gemspec lives in.  Defaults to the current directory:
+  #
+  #     gemspec 'my_gem', path: 'gemspecs', name: 'my_gem'
+  #
+  # development_group: ::
+  #   The group to add development dependencies to.  By default this is
+  #   :development.  Only one group may be specified.
 
   def gemspec options = {}
     name              = options.delete(:name) || '{,*}'
@@ -404,7 +607,20 @@ class Gem::RequestSet::GemDependencyAPI
 
   ##
   # :category: Gem Dependencies DSL
+  #
   # Block form for placing a dependency in the given +groups+.
+  #
+  #   group :development do
+  #     gem 'debugger'
+  #   end
+  #
+  #   group :development, :test do
+  #     gem 'minitest'
+  #   end
+  #
+  # Groups can be excluded at install time using `gem install -g --without
+  # development`.  See `gem help install` and `gem help gem_dependencies` for
+  # further details.
 
   def group *groups
     @current_groups = groups
@@ -440,28 +656,72 @@ class Gem::RequestSet::GemDependencyAPI
   ##
   # :category: Gem Dependencies DSL
   #
-  # Block form for restricting gems to a particular platform.
+  # Block form for restricting gems to a set of platforms.
+  #
+  # The gem dependencies platform is different from Gem::Platform.  A platform
+  # gem.deps.rb platform matches on the ruby engine, the ruby version and
+  # whether or not windows is allowed.
+  #
+  # :ruby, :ruby_XY ::
+  #   Matches non-windows, non-jruby implementations where X and Y can be used
+  #   to match releases in the 1.8, 1.9, 2.0 or 2.1 series.
+  #
+  # :mri, :mri_XY ::
+  #   Matches non-windows C Ruby (Matz Ruby) or only the 1.8, 1.9, 2.0 or
+  #   2.1 series.
+  #
+  # :mingw, :mingw_XY ::
+  #   Matches 32 bit C Ruby on MinGW or only the 1.8, 1.9, 2.0 or 2.1 series.
+  #
+  # :x64_mingw, :x64_mingw_XY ::
+  #   Matches 64 bit C Ruby on MinGW or only the 1.8, 1.9, 2.0 or 2.1 series.
+  #
+  # :mswin, :mswin_XY ::
+  #   Matches 32 bit C Ruby on Microsoft Windows or only the 1.8, 1.9, 2.0 or
+  #   2.1 series.
+  #
+  # :mswin64, :mswin64_XY ::
+  #   Matches 64 bit C Ruby on Microsoft Windows or only the 1.8, 1.9, 2.0 or
+  #   2.1 series.
+  #
+  # :jruby, :jruby_XY ::
+  #   Matches JRuby or JRuby in 1.8 or 1.9 mode.
+  #
+  # :maglev ::
+  #   Matches Maglev
+  #
+  # :rbx ::
+  #   Matches non-windows Rubinius
+  #
+  # NOTE:  There is inconsistency in what environment a platform matches.  You
+  # may need to read the source to know the exact details.
 
-  def platform what
-    @current_platform = what
+  def platform *platforms
+    @current_platforms = platforms
 
     yield
 
   ensure
-    @current_platform = nil
+    @current_platforms = nil
   end
 
   ##
   # :category: Gem Dependencies DSL
   #
-  # Block form for restricting gems to a particular platform.
+  # Block form for restricting gems to a particular set of platforms.  See
+  # #platform.
 
   alias :platforms :platform
 
   ##
   # :category: Gem Dependencies DSL
-  # Restricts this gem dependencies file to the given ruby +version+.  The
-  # +:engine+ options from Bundler are currently ignored.
+  #
+  # Restricts this gem dependencies file to the given ruby +version+.
+  #
+  # You may also provide +engine:+ and +engine_version:+ options to restrict
+  # this gem dependencies file to a particular ruby engine and its engine
+  # version.  This matching is performed by using the RUBY_ENGINE and
+  # engine_specific VERSION constants.  (For JRuby, JRUBY_VERSION).
 
   def ruby version, options = {}
     engine         = options[:engine]
@@ -470,6 +730,8 @@ class Gem::RequestSet::GemDependencyAPI
     raise ArgumentError,
           'you must specify engine_version along with the ruby engine' if
             engine and not engine_version
+
+    return true if @installing
 
     unless RUBY_VERSION == version then
       message = "Your Ruby version is #{RUBY_VERSION}, " +
@@ -503,7 +765,16 @@ class Gem::RequestSet::GemDependencyAPI
   ##
   # :category: Gem Dependencies DSL
   #
-  # Sets +url+ as a source for gems for this dependency API.
+  # Sets +url+ as a source for gems for this dependency API.  RubyGems uses
+  # the default configured sources if no source was given.  If a source is set
+  # only that source is used.
+  #
+  # This method differs in behavior from Bundler:
+  #
+  # * The +:gemcutter+, # +:rubygems+ and +:rubyforge+ sources are not
+  #   supported as they are deprecated in bundler.
+  # * The +prepend:+ option is not supported.  If you wish to order sources
+  #   then list them in your preferred order.
 
   def source url
     Gem.sources.clear if @default_sources

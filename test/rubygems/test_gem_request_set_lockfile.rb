@@ -38,6 +38,127 @@ class TestGemRequestSetLockfile < Gem::TestCase
     end
   end
 
+  def test_add_DEPENDENCIES
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 2 do |s|
+        s.add_development_dependency 'b'
+      end
+    end
+
+    @set.gem 'a'
+    @set.resolve
+    @lockfile.instance_variable_set :@requests, @set.sorted_requests
+
+    out = []
+
+    @lockfile.add_DEPENDENCIES out
+
+    expected = [
+      'DEPENDENCIES',
+      '  a',
+      nil
+    ]
+
+    assert_equal expected, out
+  end
+
+  def test_add_DEPENDENCIES_from_gem_deps
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 2 do |s|
+        s.add_development_dependency 'b'
+      end
+    end
+
+    dependencies = { 'a' => '~> 2.0' }
+
+    @set.gem 'a'
+    @set.resolve
+    @lockfile =
+      Gem::RequestSet::Lockfile.new @set, @gem_deps_file, dependencies
+    @lockfile.instance_variable_set :@requests, @set.sorted_requests
+
+    out = []
+
+    @lockfile.add_DEPENDENCIES out
+
+    expected = [
+      'DEPENDENCIES',
+      '  a (~> 2.0)',
+      nil
+    ]
+
+    assert_equal expected, out
+  end
+
+  def test_add_GEM
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 2 do |s|
+        s.add_dependency 'b'
+        s.add_development_dependency 'c'
+      end
+
+      fetcher.spec 'b', 2
+
+      fetcher.spec 'bundler', 1
+    end
+
+    @set.gem 'a'
+    @set.gem 'bundler'
+    @set.resolve
+    @lockfile.instance_variable_set :@requests, @set.sorted_requests
+
+    spec_groups = @set.sorted_requests.group_by do |request|
+      request.spec.class
+    end
+    @lockfile.instance_variable_set :@spec_groups, spec_groups
+
+
+    out = []
+
+    @lockfile.add_GEM out
+
+    expected = [
+      'GEM',
+      '  remote: http://gems.example.com/',
+      '  specs:',
+      '    a (2)',
+      '      b',
+      '    b (2)',
+      nil
+    ]
+
+    assert_equal expected, out
+  end
+
+  def test_add_PLATFORMS
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 2 do |s|
+        s.add_dependency 'b'
+      end
+
+      fetcher.spec 'b', 2 do |s|
+        s.platform = Gem::Platform::CURRENT
+      end
+    end
+
+    @set.gem 'a'
+    @set.resolve
+    @lockfile.instance_variable_set :@requests, @set.sorted_requests
+
+    out = []
+
+    @lockfile.add_PLATFORMS out
+
+    expected = [
+      'PLATFORMS',
+      '  ruby',
+      '  x86-darwin-8',
+      nil
+    ]
+
+    assert_equal expected, out
+  end
+
   def test_get
     @lockfile.instance_variable_set :@tokens, [:token]
 
@@ -142,11 +263,154 @@ DEPENDENCIES
     assert_equal %w[a-2], lockfile_set.specs.map { |tuple| tuple.full_name }
   end
 
+  def test_parse_DEPENDENCIES_git
+    write_lockfile <<-LOCKFILE
+GIT
+  remote: git://git.example/josevalim/rails-footnotes.git
+  revision: 3a6ac1971e91d822f057650cc5916ebfcbd6ee37
+  specs:
+    rails-footnotes (3.7.9)
+      rails (>= 3.0.0)
+
+GIT
+  remote: git://git.example/svenfuchs/i18n-active_record.git
+  revision: 55507cf59f8f2173d38e07e18df0e90d25b1f0f6
+  specs:
+    i18n-active_record (0.0.2)
+      i18n (>= 0.5.0)
+
+GEM
+  remote: http://gems.example/
+  specs:
+    i18n (0.6.9)
+    rails (4.0.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  i18n-active_record!
+  rails-footnotes!
+    LOCKFILE
+
+    @lockfile.parse
+
+    expected = [
+      dep('i18n-active_record', '= 0.0.2'),
+      dep('rails-footnotes',    '= 3.7.9'),
+    ]
+
+    assert_equal expected, @set.dependencies
+  end
+
+  def test_parse_GEM
+    write_lockfile <<-LOCKFILE
+GEM
+  specs:
+    a (2)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  a
+    LOCKFILE
+
+    @lockfile.parse
+
+    assert_equal [dep('a', '>= 0')], @set.dependencies
+
+    lockfile_set = @set.sets.find do |set|
+      Gem::Resolver::LockSet === set
+    end
+
+    assert lockfile_set, 'found a LockSet'
+
+    assert_equal %w[a-2], lockfile_set.specs.map { |s| s.full_name }
+  end
+
+  def test_parse_GEM_remote_multiple
+    write_lockfile <<-LOCKFILE
+GEM
+  remote: https://gems.example/
+  remote: https://other.example/
+  specs:
+    a (2)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  a
+    LOCKFILE
+
+    @lockfile.parse
+
+    assert_equal [dep('a', '>= 0')], @set.dependencies
+
+    lockfile_set = @set.sets.find do |set|
+      Gem::Resolver::LockSet === set
+    end
+
+    assert lockfile_set, 'found a LockSet'
+
+    assert_equal %w[a-2 a-2], lockfile_set.specs.map { |s| s.full_name }
+
+    assert_equal %w[https://gems.example/ https://other.example/],
+                 lockfile_set.specs.map { |s| s.source.uri.to_s }
+  end
+
   def test_parse_GIT
+    @set.instance_variable_set :@install_dir, 'install_dir'
+
     write_lockfile <<-LOCKFILE
 GIT
   remote: git://example/a.git
   revision: master
+  specs:
+    a (2)
+      b (>= 3)
+      c
+
+DEPENDENCIES
+  a!
+    LOCKFILE
+
+    @lockfile.parse
+
+    assert_equal [dep('a', '= 2')], @set.dependencies
+
+    lockfile_set = @set.sets.find do |set|
+      Gem::Resolver::LockSet === set
+    end
+
+    refute lockfile_set, 'fount a LockSet'
+
+    git_set = @set.sets.find do |set|
+      Gem::Resolver::GitSet === set
+    end
+
+    assert git_set, 'could not find a GitSet'
+
+    assert_equal %w[a-2], git_set.specs.values.map { |s| s.full_name }
+
+    assert_equal [dep('b', '>= 3'), dep('c')],
+                 git_set.specs.values.first.dependencies
+
+    expected = {
+      'a' => %w[git://example/a.git master],
+    }
+
+    assert_equal expected, git_set.repositories
+    assert_equal 'install_dir', git_set.root_dir
+  end
+
+  def test_parse_GIT_branch
+    write_lockfile <<-LOCKFILE
+GIT
+  remote: git://example/a.git
+  revision: 1234abc
+  branch: 0-9-12-stable
   specs:
     a (2)
       b (>= 3)
@@ -171,9 +435,85 @@ DEPENDENCIES
 
     assert git_set, 'could not find a GitSet'
 
-    assert_equal %w[a-2], git_set.specs.values.map { |s| s.full_name }
+    expected = {
+      'a' => %w[git://example/a.git 1234abc],
+    }
 
-    assert_equal [dep('b', '>= 3')], git_set.specs.values.first.dependencies
+    assert_equal expected, git_set.repositories
+  end
+
+  def test_parse_GIT_ref
+    write_lockfile <<-LOCKFILE
+GIT
+  remote: git://example/a.git
+  revision: 1234abc
+  ref: 1234abc
+  specs:
+    a (2)
+      b (>= 3)
+
+DEPENDENCIES
+  a!
+    LOCKFILE
+
+    @lockfile.parse
+
+    assert_equal [dep('a', '= 2')], @set.dependencies
+
+    lockfile_set = @set.sets.find do |set|
+      Gem::Resolver::LockSet === set
+    end
+
+    refute lockfile_set, 'fount a LockSet'
+
+    git_set = @set.sets.find do |set|
+      Gem::Resolver::GitSet === set
+    end
+
+    assert git_set, 'could not find a GitSet'
+
+    expected = {
+      'a' => %w[git://example/a.git 1234abc],
+    }
+
+    assert_equal expected, git_set.repositories
+  end
+
+  def test_parse_GIT_tag
+    write_lockfile <<-LOCKFILE
+GIT
+  remote: git://example/a.git
+  revision: 1234abc
+  tag: v0.9.12
+  specs:
+    a (2)
+      b (>= 3)
+
+DEPENDENCIES
+  a!
+    LOCKFILE
+
+    @lockfile.parse
+
+    assert_equal [dep('a', '= 2')], @set.dependencies
+
+    lockfile_set = @set.sets.find do |set|
+      Gem::Resolver::LockSet === set
+    end
+
+    refute lockfile_set, 'fount a LockSet'
+
+    git_set = @set.sets.find do |set|
+      Gem::Resolver::GitSet === set
+    end
+
+    assert git_set, 'could not find a GitSet'
+
+    expected = {
+      'a' => %w[git://example/a.git 1234abc],
+    }
+
+    assert_equal expected, git_set.repositories
   end
 
   def test_parse_PATH
@@ -184,6 +524,7 @@ PATH
   remote: #{directory}
   specs:
     a (1)
+      b (2)
 
 DEPENDENCIES
   a!
@@ -206,6 +547,28 @@ DEPENDENCIES
     assert vendor_set, 'could not find a VendorSet'
 
     assert_equal %w[a-1], vendor_set.specs.values.map { |s| s.full_name }
+
+    spec = vendor_set.load_spec 'a', nil, nil, nil
+
+    assert_equal [dep('b', '= 2')], spec.dependencies
+  end
+
+  def test_parse_dependency
+    write_lockfile ' 1)'
+
+    @lockfile.tokenize
+
+    parsed = @lockfile.parse_dependency 'a', '='
+
+    assert_equal dep('a', '= 1'), parsed
+
+    write_lockfile ')'
+
+    @lockfile.tokenize
+
+    parsed = @lockfile.parse_dependency 'a', '2'
+
+    assert_equal dep('a', '= 2'), parsed
   end
 
   def test_parse_gem_specs_dependency
@@ -851,6 +1214,24 @@ DEPENDENCIES
     assert_path_exists gem_deps_lock_file
 
     refute_empty File.read gem_deps_lock_file
+  end
+
+  def test_write_error
+    @set.gem 'nonexistent'
+
+    gem_deps_lock_file = "#{@gem_deps_file}.lock"
+
+    open gem_deps_lock_file, 'w' do |io|
+      io.write 'hello'
+    end
+
+    assert_raises Gem::UnsatisfiableDependencyError do
+      @lockfile.write
+    end
+
+    assert_path_exists gem_deps_lock_file
+
+    assert_equal 'hello', File.read(gem_deps_lock_file)
   end
 
 end

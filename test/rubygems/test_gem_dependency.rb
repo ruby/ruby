@@ -2,6 +2,7 @@ require 'rubygems/test_case'
 require 'rubygems/dependency'
 
 class TestGemDependency < Gem::TestCase
+
   def test_initialize
     d = dep "pkg", "> 1.0"
 
@@ -26,6 +27,16 @@ class TestGemDependency < Gem::TestCase
   def test_initialize_empty
     d = dep "pkg"
     assert_equal req(">= 0"), d.requirement
+  end
+
+  def test_initialize_prerelease
+    d = dep 'd', '1.a'
+
+    assert d.prerelease?
+
+    d = dep 'd', '= 1.a'
+
+    assert d.prerelease?
   end
 
   def test_initialize_type
@@ -115,6 +126,106 @@ class TestGemDependency < Gem::TestCase
     refute_equal dep("pkg", :development), dep("pkg", :runtime), "type"
   end
 
+  def test_match_eh_name_tuple
+    a_dep = dep 'a'
+
+    a_tup = Gem::NameTuple.new 'a', 1
+    b_tup = Gem::NameTuple.new 'b', 2
+    c_tup = Gem::NameTuple.new 'c', '2.a'
+
+    assert a_dep.match? a_tup
+    refute a_dep.match? b_tup
+
+    b_dep = dep 'b', '>= 3'
+
+    refute b_dep.match? b_tup
+
+    c_dep = dep 'c', '>= 1'
+
+    refute c_dep.match? c_tup
+
+    c_dep = dep 'c'
+
+    refute c_dep.match? c_tup
+
+    c_dep = dep 'c', '2.a'
+
+    assert c_dep.match? c_tup
+  end
+
+  def test_match_eh_allow_prerelease
+    a_dep = dep 'a'
+
+    a_tup = Gem::NameTuple.new 'a', 1
+    b_tup = Gem::NameTuple.new 'b', 2
+    c_tup = Gem::NameTuple.new 'c', '2.a'
+
+    assert a_dep.match? a_tup, nil, true
+    refute a_dep.match? b_tup, nil, true
+
+    b_dep = dep 'b', '>= 3'
+
+    refute b_dep.match? b_tup, nil, true
+
+    c_dep = dep 'c', '>= 1'
+
+    assert c_dep.match? c_tup, nil, true
+
+    c_dep = dep 'c'
+
+    assert c_dep.match? c_tup, nil, true
+
+    c_dep = dep 'c', '2.a'
+
+    assert c_dep.match? c_tup, nil, true
+  end
+
+  def test_match_eh_specification
+    a_dep = dep 'a'
+
+    a_spec = util_spec 'a', 1
+    b_spec = util_spec 'b', 2
+    c_spec = util_spec 'c', '2.a'
+
+    assert a_dep.match? a_spec
+    refute a_dep.match? b_spec
+
+    b_dep = dep 'b', '>= 3'
+
+    refute b_dep.match? b_spec
+
+    c_dep = dep 'c', '>= 1'
+
+    refute c_dep.match? c_spec
+
+    c_dep = dep 'c'
+
+    refute c_dep.match? c_spec
+
+    c_dep = dep 'c', '2.a'
+
+    assert c_dep.match? c_spec
+  end
+
+  def test_matches_spec_eh
+    spec = util_spec 'b', 2
+
+    refute dep('a')        .matches_spec?(spec), 'name mismatch'
+    assert dep('b')        .matches_spec?(spec), 'name match'
+    refute dep('b', '= 1') .matches_spec?(spec), 'requirement mismatch'
+    assert dep('b', '~> 2').matches_spec?(spec), 'requirement match'
+  end
+
+  def test_matches_spec_eh_prerelease
+    spec = util_spec 'b', '2.1.a'
+
+    refute dep('a')          .matches_spec?(spec), 'name mismatch'
+    assert dep('b')          .matches_spec?(spec), 'name match'
+    refute dep('b', '= 1')   .matches_spec?(spec), 'requirement mismatch'
+    assert dep('b', '~> 2')  .matches_spec?(spec), 'requirement match'
+    assert dep('b', '~> 2.a').matches_spec?(spec), 'prerelease requirement'
+  end
+
   def test_merge
     a1 = dep 'a', '~> 1.0'
     a2 = dep 'a', '= 1.0'
@@ -182,6 +293,29 @@ class TestGemDependency < Gem::TestCase
     assert dep('a', '= 1').specific?
   end
 
+  def test_to_spec
+          util_spec 'a', '1'
+    a_2 = util_spec 'a', '2'
+
+    a_dep = dep 'a', '>= 0'
+
+    assert_equal a_2, a_dep.to_spec
+  end
+
+  def test_to_spec_prerelease
+    a_1     = util_spec 'a', '1'
+    a_1_1_a = util_spec 'a', '1.1.a'
+
+    a_dep = dep 'a', '>= 0'
+
+    assert_equal a_1, a_dep.to_spec
+
+    a_pre_dep = dep 'a', '>= 0'
+    a_pre_dep.prerelease = true
+
+    assert_equal a_1_1_a, a_pre_dep.to_spec
+  end
+
   def test_to_specs_suggests_other_versions
     a = util_spec 'a', '1.0', 'b' => '>= 1.0'
 
@@ -197,7 +331,7 @@ class TestGemDependency < Gem::TestCase
       dep.to_specs
     end
 
-    assert_equal "Could not find 'a' (= 2.0) - did find: [a-1.0]", e.message
+    assert_match "Could not find 'a' (= 2.0) - did find: [a-1.0]", e.message
   end
 
   def test_to_specs_indicates_total_gem_set_size
@@ -215,7 +349,7 @@ class TestGemDependency < Gem::TestCase
       dep.to_specs
     end
 
-    assert_equal "Could not find 'b' (= 2.0) among 1 total gem(s)", e.message
+    assert_match "Could not find 'b' (= 2.0) among 1 total gem(s)", e.message
   end
 
 
