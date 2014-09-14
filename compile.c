@@ -4017,7 +4017,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	DECL_ANCHOR(args);
 	VALUE argc;
 	unsigned int flag = 0;
-	VALUE asgnflag = 0;
+	unsigned int asgnflag = 0;
 	ID id = node->nd_mid;
 	int boff = 0;
 

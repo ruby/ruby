@@ -935,7 +935,7 @@ static void rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap);
 static inline int
 RVALUE_FLAGS_AGE(VALUE flags)
 {
-    return (flags & (FL_PROMOTED0 | FL_PROMOTED1)) >> RVALUE_AGE_SHIFT;
+    return (int)((flags & (FL_PROMOTED0 | FL_PROMOTED1)) >> RVALUE_AGE_SHIFT);
 }
 
 #endif /* USE_RGENGC */
@@ -1396,7 +1396,7 @@ heap_page_allocate(rb_objspace_t *objspace)
     if ((VALUE)start % sizeof(RVALUE) != 0) {
 	int delta = (int)(sizeof(RVALUE) - ((VALUE)start % sizeof(RVALUE)));
 	start = (RVALUE*)((VALUE)start + delta);
-	limit = (HEAP_SIZE - (int)((VALUE)start - (VALUE)page_body))/sizeof(RVALUE);
+	limit = (HEAP_SIZE - (int)((VALUE)start - (VALUE)page_body))/(int)sizeof(RVALUE);
     }
     end = start + limit;
 
