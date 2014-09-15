@@ -29,8 +29,6 @@
 
 #include "regenc.h"
 
-#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
-
 #define ENC_IS_ISO_8859_1_CTYPE(code,ctype) \
   ((EncISO_8859_1_CtypeTable[code] & CTYPE_TO_BIT(ctype)) != 0)
 

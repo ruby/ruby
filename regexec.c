@@ -1397,7 +1397,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	  (int )(end - str), (int )(sstart - str));
 #endif
 
-  STACK_PUSH_ENSURED(STK_ALT, (UChar *)FinishCode);  /* bottom stack */
+  STACK_PUSH_ENSURED(STK_ALT, (UChar* )FinishCode);  /* bottom stack */
   best_len = ONIG_MISMATCH;
   s = (UChar* )sstart;
   pkeep = (UChar* )sstart;
@@ -1406,7 +1406,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
     if (s) {
       UChar *q, *bp, buf[50];
       int len;
-      fprintf(stderr, "%4d> \"", (*p == OP_FINISH) ? -1 : (int )(s - str));
+      fprintf(stderr, "%4"PRIdPTR"> \"", (*p == OP_FINISH) ? (ptrdiff_t )-1 : s - str);
       bp = buf;
       if (*p != OP_FINISH) {    /* s may not be a valid pointer if OP_FINISH. */
 	for (i = 0, q = s; i < 7 && q < end; i++) {
@@ -1419,6 +1419,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       *bp = 0;
       fputs((char* )buf, stderr);
       for (i = 0; i < 20 - (bp - buf); i++) fputc(' ', stderr);
+      fprintf(stderr, "%4"PRIdPTR":", (p == FinishCode) ? (ptrdiff_t )-1 : p - reg->p);
       onig_print_compiled_byte_code(stderr, p, p + strlen((char *)p), NULL, encode);
       fprintf(stderr, "\n");
     }
@@ -4183,7 +4184,7 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
             prev = s;
             s += enclen(reg->enc, s, end);
 
-            if ((reg->anchor & ANCHOR_LOOK_BEHIND) == 0) {
+            if ((reg->anchor & (ANCHOR_LOOK_BEHIND | ANCHOR_PREC_READ_NOT)) == 0) {
               while (!ONIGENC_IS_MBC_NEWLINE_EX(reg->enc, prev, str, end, reg->options, 0)
                      && s < range) {
                 prev = s;

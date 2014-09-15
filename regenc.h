@@ -29,15 +29,18 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+
 #ifndef REGINT_H
 #ifndef RUBY_EXTERN
 #include "ruby/config.h"
 #include "ruby/defines.h"
 #endif
+#endif
+
 #ifdef ONIG_ESCAPE_UCHAR_COLLISION
 #undef ONIG_ESCAPE_UCHAR_COLLISION
 #endif
-#endif
+
 #include "ruby/oniguruma.h"
 
 RUBY_SYMBOL_EXPORT_BEGIN
@@ -104,7 +107,13 @@ typedef struct {
   short int len;
 } PosixBracketEntryType;
 
-#define PosixBracketEntryInit(name, ctype) {(const UChar *)name, ctype, (short int)(sizeof(name) - 1)}
+#define POSIX_BRACKET_ENTRY_INIT(name, ctype) \
+  {(const UChar* )(name), (ctype), (short int )(sizeof(name) - 1)}
+
+#ifndef numberof
+#define numberof(array) (int )(sizeof(array) / sizeof((array)[0]))
+#endif
+
 
 #define USE_CRNL_AS_LINE_TERMINATOR
 #define USE_UNICODE_PROPERTIES
@@ -159,6 +168,7 @@ ONIG_EXTERN int onigenc_unicode_apply_all_case_fold P_((OnigCaseFoldType flag, O
 
 #define UTF16_IS_SURROGATE_FIRST(c)    (((c) & 0xfc) == 0xd8)
 #define UTF16_IS_SURROGATE_SECOND(c)   (((c) & 0xfc) == 0xdc)
+#define UTF16_IS_SURROGATE(c)          (((c) & 0xf8) == 0xd8)
 
 #define ONIGENC_ISO_8859_1_TO_LOWER_CASE(c) \
   OnigEncISO_8859_1_ToLowerCaseTable[c]

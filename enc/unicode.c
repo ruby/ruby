@@ -141,7 +141,6 @@ code3_equal(const OnigCodePoint *x, const OnigCodePoint *y)
 
 #include "enc/unicode/name2ctype.h"
 
-#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 #define CODE_RANGES_NUM numberof(CodeRanges)
 
 extern int

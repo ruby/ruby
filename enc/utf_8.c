@@ -367,7 +367,7 @@ code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc ARG_UNUSED)
 
 static int
 mbc_case_fold(OnigCaseFoldType flag, const UChar** pp,
-		   const UChar* end, UChar* fold, OnigEncoding enc)
+	      const UChar* end, UChar* fold, OnigEncoding enc)
 {
   const UChar* p = *pp;
 
@@ -395,7 +395,7 @@ mbc_case_fold(OnigCaseFoldType flag, const UChar** pp,
 
 static int
 get_ctype_code_range(OnigCtype ctype, OnigCodePoint *sb_out,
-			  const OnigCodePoint* ranges[], OnigEncoding enc ARG_UNUSED)
+		     const OnigCodePoint* ranges[], OnigEncoding enc ARG_UNUSED)
 {
   *sb_out = 0x80;
   return onigenc_unicode_ctype_code_range(ctype, ranges);

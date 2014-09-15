@@ -29,10 +29,6 @@
 
 #include "regenc.h"
 
-#define UTF16_IS_SURROGATE_FIRST(c)    (((c) & 0xfc) == 0xd8)
-#define UTF16_IS_SURROGATE_SECOND(c)   (((c) & 0xfc) == 0xdc)
-#define UTF16_IS_SURROGATE(c)          (((c) & 0xf8) == 0xd8)
-
 #if 0
 static const int EncLen_UTF16[] = {
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,

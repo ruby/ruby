@@ -193,8 +193,8 @@ typedef struct {
   int type;
   int regnum;
   OnigOptionType option;
-  struct _Node*  target;
   AbsAddrType    call_addr;
+  struct _Node*  target;
   /* for multiple call reference */
   OnigDistance min_len; /* min length (byte) */
   OnigDistance max_len; /* max length (byte) */
@@ -296,10 +296,10 @@ typedef struct {
   UChar*           error;
   UChar*           error_end;
   regex_t*         reg;       /* for reg->names only */
-  int              num_call;
 #ifdef USE_SUBEXP_CALL
   UnsetAddrList*   unset_addr_list;
 #endif
+  int              num_call;
   int              num_mem;
 #ifdef USE_NAMED_GROUP
   int              num_named;

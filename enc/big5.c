@@ -167,19 +167,19 @@ big5_mbc_enc_len0(const UChar* p, const UChar* e, int tridx, const int tbl[])
 static int
 big5_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc ARG_UNUSED)
 {
-    return big5_mbc_enc_len0(p, e, 0, EncLen_BIG5);
+  return big5_mbc_enc_len0(p, e, 0, EncLen_BIG5);
 }
 
 static int
 big5_hkscs_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc ARG_UNUSED)
 {
-    return big5_mbc_enc_len0(p, e, 2, EncLen_BIG5_HKSCS);
+  return big5_mbc_enc_len0(p, e, 2, EncLen_BIG5_HKSCS);
 }
 
 static int
 big5_uao_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc ARG_UNUSED)
 {
-    return big5_mbc_enc_len0(p, e, 2, EncLen_BIG5_UAO);
+  return big5_mbc_enc_len0(p, e, 2, EncLen_BIG5_UAO);
 }
 
 static OnigCodePoint

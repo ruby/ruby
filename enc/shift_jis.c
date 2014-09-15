@@ -278,7 +278,7 @@ apply_all_case_fold(OnigCaseFoldType flag,
 		    OnigApplyAllCaseFoldFunc f, void* arg, OnigEncoding enc)
 {
   return onigenc_apply_all_case_fold_with_map(
-            sizeof(CaseFoldMap)/sizeof(OnigPairCaseFoldCodes), CaseFoldMap, 0,
+            numberof(CaseFoldMap), CaseFoldMap, 0,
             flag, f, arg);
 }
 
@@ -493,13 +493,14 @@ static int
 property_name_to_ctype(OnigEncoding enc, UChar* p, UChar* end)
 {
   UChar *s = p, *e = end;
-  const struct enc_property *prop = onig_jis_property((const char *)s, (unsigned int)(e-s));
+  const struct enc_property *prop =
+    onig_jis_property((const char* )s, (unsigned int )(e - s));
 
   if (!prop) {
     return onigenc_minimum_property_name_to_ctype(enc, s, e);
   }
 
-  return (int)prop->ctype;
+  return (int )prop->ctype;
 }
 
 static int
