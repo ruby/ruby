@@ -1,3 +1,9 @@
+Mon Sep 15 16:21:10 2014  Eric Wong  <e@80x24.org>
+
+	* io.c (struct io_advise_struct): 32 => 24 bytes on 64-bit
+	* io.c (struct io_internal_writev_struct): 24 => 16 bytes on 64-bit
+	* process.c (struct waitpid_arg): ditto
+
 Mon Sep 15 10:29:25 2014  Natalie Weizenbaum  <nweiz@google.com>
 
 	* ext/pathname/lib/pathname.rb (SAME_PATHS):

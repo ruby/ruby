@@ -740,8 +740,8 @@ waitall_each(rb_pid_t pid, int status, VALUE ary)
 #else
 struct waitpid_arg {
     rb_pid_t pid;
-    int *st;
     int flags;
+    int *st;
 };
 #endif
 

@@ -941,8 +941,8 @@ struct io_internal_write_struct {
 #ifdef HAVE_WRITEV
 struct io_internal_writev_struct {
     int fd;
-    const struct iovec *iov;
     int iovcnt;
+    const struct iovec *iov;
 };
 #endif
 
@@ -8462,9 +8462,9 @@ static VALUE sym_normal,   sym_sequential, sym_random,
 #ifdef HAVE_POSIX_FADVISE
 struct io_advise_struct {
     int fd;
+    int advice;
     off_t offset;
     off_t len;
-    int advice;
 };
 
 static VALUE
