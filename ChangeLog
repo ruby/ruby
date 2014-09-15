@@ -1,3 +1,9 @@
+Mon Sep 15 23:12:47 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (check_stack_overflow): drop the last tag too close to
+	  the fault page, to get rid of stack overflow deadlock.
+	  [Bug #9971]
+
 Mon Sep 15 22:34:39 2014  Natalie Weizenbaum  <nweiz@google.com>
 
 	* ext/pathname/lib/pathname.rb (SAME_PATHS):
