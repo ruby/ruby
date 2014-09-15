@@ -1,3 +1,8 @@
+Mon Sep 15 22:31:33 2014  Sho Hashimoto  <sho.hsmt@gmail.com>
+
+	* ext/fiddle/lib/fiddle/import.rb (Fiddle::Importer#sizeof): fix typo,
+	  SIZEOF_LONG_LON.  [Fix GH-714]
+
 Mon Sep 15 11:08:23 2014  Shota Fukumori  <her@sorah.jp>
 
 	* lib/mkmf.rb (configuration): Make CXXFLAGS customizable.
