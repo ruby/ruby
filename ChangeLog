@@ -1,3 +1,8 @@
+Mon Sep 15 09:43:18 2014  Sho Hashimoto  <sho.hsmt@gmail.com>
+
+	* ext/fiddle/lib/fiddle/import.rb (Fiddle::Importer#sizeof): fix typo,
+	  SIZEOF_LONG_LON.  [Fix GH-714]
+
 Mon Sep 15 08:13:40 2014  Matthew Draper  <matthew@trebex.net>
 
 	* sprintf.c (rb_str_format): rational 'f' format works for more

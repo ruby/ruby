@@ -112,7 +112,7 @@ module Fiddle
         when TYPE_LONG
           return SIZEOF_LONG
         when TYPE_LONG_LONG
-          return SIZEOF_LONG_LON
+          return SIZEOF_LONG_LONG
         when TYPE_FLOAT
           return SIZEOF_FLOAT
         when TYPE_DOUBLE
