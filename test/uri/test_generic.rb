@@ -730,6 +730,11 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_raise(URI::InvalidURIError) { uri.port = 'bar' }
     assert_raise(URI::InvalidURIError) { uri.path = 'bar' }
     assert_raise(URI::InvalidURIError) { uri.query = 'bar' }
+
+    uri = URI.parse('foo:bar')
+    assert_raise(URI::InvalidComponentError) { uri.opaque = '/baz' }
+    uri.opaque = 'xyzzy'
+    assert_equal('foo:xyzzy', uri.to_s)
   end
 
   def test_set_scheme
