@@ -1,3 +1,11 @@
+Mon Sep 15 10:29:25 2014  Natalie Weizenbaum  <nweiz@google.com>
+
+	* ext/pathname/lib/pathname.rb (SAME_PATHS):
+	  Pathname#relative_path_from uses String#casecmp to compare strings
+	  on case-insensitive filesystem platforms (e.g., Windows). This can
+	  return nil for strings with different encodings, and the code
+	  previously assumed that it always returned a Fixnum.  [Fix GH-713]
+
 Mon Sep 15 09:43:18 2014  Sho Hashimoto  <sho.hsmt@gmail.com>
 
 	* ext/fiddle/lib/fiddle/import.rb (Fiddle::Importer#sizeof): fix typo,

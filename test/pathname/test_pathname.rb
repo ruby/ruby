@@ -1374,4 +1374,17 @@ class TestPathname < Test::Unit::TestCase
       assert_equal("foo/bar", File.join(Pathname.new("foo"), Pathname.new("bar").taint))
     }.call
   end
+
+  def test_relative_path_from_casefold
+    assert_separately([], <<-'end;') #    do
+      module File::Constants
+        remove_const :FNM_SYSCASE
+        FNM_SYSCASE = FNM_CASEFOLD
+      end
+      require 'pathname'
+      foo = Pathname.new("fo\u{f6}")
+      bar = Pathname.new("b\u{e4}r".encode("ISO-8859-1"))
+      assert_instance_of(Pathname, foo.relative_path_from(bar))
+    end;
+  end
 end
