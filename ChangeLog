@@ -1,3 +1,8 @@
+Mon Sep 15 11:08:23 2014  Shota Fukumori  <her@sorah.jp>
+
+	* lib/mkmf.rb (configuration): Make CXXFLAGS customizable.
+	  Patch by Kohei Suzuki (eagletmt). [Fixes GH-492]
+
 Mon Sep 15 01:06:35 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (MakeMakefile#pkg_config): append --cflags to also
