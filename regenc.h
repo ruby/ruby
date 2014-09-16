@@ -102,13 +102,13 @@ typedef struct {
 
 
 typedef struct {
-  const UChar *name;
-  int       ctype;
   short int len;
+  const UChar name[6];
+  int       ctype;
 } PosixBracketEntryType;
 
 #define POSIX_BRACKET_ENTRY_INIT(name, ctype) \
-  {(const UChar* )(name), (ctype), (short int )(sizeof(name) - 1)}
+  {(short int )(sizeof(name) - 1), (name), (ctype)}
 
 #ifndef numberof
 #define numberof(array) (int )(sizeof(array) / sizeof((array)[0]))
