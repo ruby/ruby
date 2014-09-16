@@ -13,6 +13,7 @@
 
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
+#include "ruby/io.h"
 #include "internal.h"
 
 #include <sys/types.h>
@@ -838,7 +839,7 @@ dir_open(int argc, VALUE *argv, VALUE self)
     return dir_initialize_internal(dirfd(dirp->dir), dir, dirname, opt);
 }
 
-extern VALUE rb_io_openat(VALUE fd, VALUE argc, VALUE *argv);
+extern VALUE rb_io_openat(int fd, VALUE argc, VALUE *argv);
 
 /*
  *  call-seq:
@@ -870,6 +871,37 @@ dir_open_file(int argc, VALUE *argv, VALUE self)
     GetDIR(self, dirp);
 
     return rb_io_openat(dirfd(dirp->dir), argc, argv);
+}
+
+static VALUE
+dir_fstatat(int argc, VALUE *argv, VALUE self)
+{
+    VALUE path, opt;
+    struct dir_data *dirp;
+    struct stat st;
+    int flag = 0;
+    static ID keyword_ids[1];
+
+    rb_scan_args(argc, argv, "1:", &path, &opt);
+
+    if (!keyword_ids[0]) {
+	keyword_ids[0] = rb_intern("symlink_nofollow");
+    }
+
+    if (!NIL_P(opt)) {
+	VALUE symlink_nofollow;
+	rb_get_kwargs(opt, keyword_ids, 0, 1, &symlink_nofollow);
+	if (symlink_nofollow == Qtrue) {
+	    flag = AT_SYMLINK_NOFOLLOW;
+	}
+    }
+
+    GetDIR(self, dirp);
+
+    if (fstatat(dirfd(dirp->dir), StringValueCStr(path), &st, flag) != 0)
+        rb_sys_fail("fstatat");
+
+    return rb_stat_new(&st);
 }
 #endif
 
@@ -2400,6 +2432,7 @@ Init_Dir(void)
 #if defined(HAVE_OPENAT) && defined(HAVE_DIRFD)
     rb_define_method(rb_cDir,"open", dir_open, -1);
     rb_define_method(rb_cDir,"open_file", dir_open_file, -1);
+    rb_define_method(rb_cDir,"fstatat", dir_fstatat, -1);
 #endif
     rb_define_method(rb_cDir,"close", dir_close, 0);
 

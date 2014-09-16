@@ -7632,7 +7632,7 @@ rb_file_initialize(int argc, VALUE *argv, VALUE io)
 #ifdef HAVE_OPENAT
 /* :nodoc: */
 VALUE
-rb_io_openat(VALUE fd, VALUE argc, VALUE *argv)
+rb_io_openat(int fd, int argc, const VALUE *argv)
 {
     VALUE io, path;
     int oflags, fmode;
