@@ -1,3 +1,8 @@
+Tue Sep 16 19:19:00 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* benchmark/bm_app_aobench.rb: update outdated links to the
+	  original program.  [ruby-dev:48550] [Feature #10247]
+
 Tue Sep 16 01:06:40 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* reg*.c: Merge Onigmo 5.15.0 38a870960aa7370051a3544
