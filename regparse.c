@@ -4160,7 +4160,6 @@ add_ctype_to_cc(CClassNode* cc, int ctype, int not, int ascii_range, ScanEnv* en
   const OnigCodePoint *ranges;
   OnigCodePoint sb_out;
   OnigEncoding enc = env->enc;
-  OnigOptionType option = env->option;
 
   r = ONIGENC_GET_CTYPE_CODE_RANGE(enc, ctype, &sb_out, &ranges);
   if (r == 0) {
