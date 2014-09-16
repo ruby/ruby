@@ -1026,8 +1026,8 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    {
 		VALUE val = GETARG(), num, den;
 		int sign = (flags&FPLUS) ? 1 : 0, zero = 0;
-		long len;
-		int i, done = 0, prefix = 0;
+		long len, done = 0;
+		int prefix = 0;
 		if (!RB_TYPE_P(val, T_RATIONAL)) {
 		    nextvalue = val;
 		    goto float_value;
@@ -1100,7 +1100,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		}
 		if ((flags & FWIDTH) && width > done) {
 		    if (!(flags&FMINUS)) {
-			int shifting = (flags&FZERO) ? done - prefix : done;
+			long i, shifting = (flags&FZERO) ? done - prefix : done;
 			for (i = 1; i <= shifting; i++)
 			    buf[width - i] = buf[done - i];
 			blen -= shifting;
