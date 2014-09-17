@@ -63,9 +63,9 @@ module REXML
       def write_element( node, output )
         output << "<#{node.expanded_name}"
 
-        node.attributes.to_a.map { |a|
+        node.attributes.to_a.flat_map { |a|
           Hash === a ? a.values : a
-        }.flatten.sort_by {|attr| attr.name}.each do |attr|
+        }.sort_by {|attr| attr.name}.each do |attr|
           output << " "
           attr.write( output )
         end unless node.attributes.empty?

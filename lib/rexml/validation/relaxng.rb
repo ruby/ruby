@@ -412,13 +412,13 @@ module REXML
         #puts "IN CHOICE EXPECTED"
         #puts "EVENTS = #{@events.inspect}"
         return [@events[@current]] if @events.size > 0
-        return @choices.collect do |x|
+        return @choices.flat_map do |x|
           if x[0].kind_of? State
             x[0].expected
           else
             x[0]
           end
-        end.flatten
+        end
       end
 
       def inspect
@@ -530,13 +530,13 @@ module REXML
         #puts "IN CHOICE EXPECTED"
         #puts "EVENTS = #{@events.inspect}"
         return [@events[@current]] if @events[@current]
-        return @choices[@choice..-1].collect do |x|
+        return @choices[@choice..-1].flat_map do |x|
           if x[0].kind_of? State
             x[0].expected
           else
             x[0]
           end
-        end.flatten
+        end
       end
 
       def inspect
