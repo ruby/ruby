@@ -1,3 +1,10 @@
+Wed Sep 17 23:12:36 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/rfc3986_parser.rb: specify a regexp for :OPAQUE; generic.rb
+	  assumes it is present, and will refuse all values otherwise.
+	  by Matthew Draper <matthew@trebex.net>
+	  https://github.com/ruby/ruby/pull/718 fix GH-718
+
 Wed Sep 17 16:22:58 2014  Eric Wong  <e@80x24.org>
 
 	* ext/zlib/zlib.c (zlib_mem_alloc): check overflow
