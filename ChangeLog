@@ -1,3 +1,8 @@
+Wed Sep 17 11:09:21 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* tool/rbinstall.rb: fixed invalid options with latest rubygems.
+	  https://github.com/rubygems/rubygems/issues/1013
+
 Tue Sep 16 19:19:00 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* benchmark/bm_app_aobench.rb: update outdated links to the
