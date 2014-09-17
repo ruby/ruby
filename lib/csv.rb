@@ -1146,9 +1146,9 @@ class CSV
       io.seek(0, IO::SEEK_END)
       args.unshift(io)
     else
-      encoding = (args[-1] = args[-1].dup).delete(:encoding) if args.last.is_a?(Hash)
+      encoding = args[-1][:encoding] if args.last.is_a?(Hash)
       str      = ""
-      str.encode!(encoding) if encoding
+      str.force_encoding(encoding) if encoding
       args.unshift(str)
     end
     csv = new(*args)  # wrap
@@ -1512,7 +1512,7 @@ class CSV
     init_headers(options)
     init_comments(options)
 
-    options.delete(:encoding)
+    @force_encoding = !!(encoding || options.delete(:encoding))
     options.delete(:internal_encoding)
     options.delete(:external_encoding)
     unless options.empty?
@@ -1652,10 +1652,13 @@ class CSV
 
     output = row.map(&@quote).join(@col_sep) + @row_sep  # quote and separate
     if @io.is_a?(StringIO)             and
-       output.encoding != raw_encoding and
-       (compatible_encoding = Encoding.compatible?(@io.string, output))
-      @io = StringIO.new(@io.string.force_encoding(compatible_encoding))
-      @io.seek(0, IO::SEEK_END)
+       output.encoding != (encoding = raw_encoding)
+      if @force_encoding
+        output = output.encode(encoding)
+      elsif (compatible_encoding = Encoding.compatible?(@io.string, output))
+        @io.set_encoding(compatible_encoding)
+        @io.seek(0, IO::SEEK_END)
+      end
     end
     @io << output
 

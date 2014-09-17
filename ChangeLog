@@ -1,3 +1,9 @@
+Wed Sep 17 14:52:38 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/csv.rb (CSV#<<): honor explicitly given encoding.  based on
+	  the patch by DAISUKE TANIWAKI <daisuketaniwaki AT gmail.com> at
+	  [ruby-core:62113].  [Bug #9766]
+
 Fri Sep 12 11:34:39 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_object.rb: extend timeout.
