@@ -1,3 +1,8 @@
+Wed Sep 17 11:33:35 2014  Laurent Arnoud  <laurent@spkdev.net>
+
+	* test/fiddle/test_import.rb (Fiddle::TestImport#test_sizeof):
+	  added test for long long [fix GH-716]
+
 Wed Sep 17 11:09:21 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* tool/rbinstall.rb: fixed invalid options with latest rubygems.
