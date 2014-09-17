@@ -442,7 +442,7 @@ module Net::HTTPHeader
 
   def tokens(vals)
     return [] unless vals
-    vals.map {|v| v.split(',') }.flatten\
+    vals.flat_map {|v| v.split(',') }\
         .reject {|str| str.strip.empty? }\
         .map {|tok| tok.strip.downcase }
   end
