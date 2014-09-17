@@ -1,3 +1,8 @@
+Thu Sep 18 07:03:36 2014  Eric Wong  <e@80x24.org>
+
+	* test/-ext-/string/test_modify_expand.rb: increase limit
+	  for {je,tc}malloc [Bug #10236]
+
 Thu Sep 18 06:41:18 2014  Eric Wong  <e@80x24.org>
 
 	* ext/zlib/zlib.c (struct gzfile): pack (288 => 272 bytes) on 64-bit
