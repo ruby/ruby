@@ -1,3 +1,7 @@
+Wed Sep 17 16:22:58 2014  Eric Wong  <e@80x24.org>
+
+	* ext/zlib/zlib.c (zlib_mem_alloc): check overflow
+
 Wed Sep 17 11:33:35 2014  Laurent Arnoud  <laurent@spkdev.net>
 
 	* test/fiddle/test_import.rb (Fiddle::TestImport#test_sizeof):

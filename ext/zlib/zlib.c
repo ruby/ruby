@@ -584,7 +584,7 @@ struct zstream_run_args {
 static voidpf
 zlib_mem_alloc(voidpf opaque, uInt items, uInt size)
 {
-    voidpf p = xmalloc(items * size);
+    voidpf p = xmalloc2(items, size);
     /* zlib FAQ: Valgrind (or some similar memory access checker) says that
        deflate is performing a conditional jump that depends on an
        uninitialized value.  Isn't that a bug?
