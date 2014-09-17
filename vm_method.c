@@ -18,7 +18,7 @@
 #define GLOBAL_METHOD_CACHE_KEY(c,m) ((((c)>>3)^(m))&GLOBAL_METHOD_CACHE_MASK)
 #define GLOBAL_METHOD_CACHE(c,m) (global_method_cache + GLOBAL_METHOD_CACHE_KEY(c,m))
 #else
-#define GLOBAL_METHOD_CACHE(c,m) 0,rb_bug("global method cache disabled improperly")
+#define GLOBAL_METHOD_CACHE(c,m) (rb_bug("global method cache disabled improperly"), NULL)
 #endif
 #include "method.h"
 
