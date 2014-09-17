@@ -1,3 +1,7 @@
+Thu Sep 18 06:41:18 2014  Eric Wong  <e@80x24.org>
+
+	* ext/zlib/zlib.c (struct gzfile): pack (288 => 272 bytes) on 64-bit
+
 Thu Sep 18 05:44:05 2014  Eric Wong  <e@80x24.org>
 
 	* ext/socket/init.c (rsock_connect): refactor for blocking

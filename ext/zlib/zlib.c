@@ -2197,18 +2197,18 @@ struct gzfile {
     struct zstream z;
     VALUE io;
     int level;
-    time_t mtime;       /* for header */
     int os_code;        /* for header */
+    time_t mtime;       /* for header */
     VALUE orig_name;    /* for header; must be a String */
     VALUE comment;      /* for header; must be a String */
     unsigned long crc;
+    int ecflags;
     int lineno;
     long ungetc;
     void (*end)(struct gzfile *);
     rb_encoding *enc;
     rb_encoding *enc2;
     rb_econv_t *ec;
-    int ecflags;
     VALUE ecopts;
     char *cbuf;
     VALUE path;
