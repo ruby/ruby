@@ -1739,7 +1739,6 @@ void
 Init_Method()
 {
 #if OPT_GLOBAL_METHOD_CACHE
-    size_t cache_bytes;
     char *ptr = getenv("RUBY_GLOBAL_METHOD_CACHE_SIZE");
     int val;
 
@@ -1752,13 +1751,11 @@ Init_Method()
 	}
     }
 
-    cache_bytes = sizeof(struct cache_entry) * method_params.cache_size;
-    global_method_cache = (struct cache_entry *) malloc(cache_bytes);
+    global_method_cache = (struct cache_entry *) calloc(method_params.cache_size, sizeof(struct cache_entry));
     if (global_method_cache == NULL) {
 	fprintf(stderr, "[FATAL] failed to allocate memory\n");
 	exit(EXIT_FAILURE);
     }
-    memset(global_method_cache, 0, cache_bytes);
 #endif
 }
 
