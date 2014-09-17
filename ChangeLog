@@ -1,3 +1,8 @@
+Wed Sep 17 15:07:35 2014  Sho Hashimoto  <sho.hsmt@gmail.com>
+
+	* ext/fiddle/lib/fiddle/import.rb (Fiddle::Importer#sizeof): fix typo,
+	  SIZEOF_LONG_LON.  [Fix GH-714]
+
 Wed Sep 17 14:58:50 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (MakeMakefile#pkg_config): append --cflags to also
