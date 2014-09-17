@@ -1727,6 +1727,7 @@ SRC
       libs = get['libs-only-l']
       ldflags = (Shellwords.shellwords(ldflags) - Shellwords.shellwords(libs)).quote.join(" ")
       $CFLAGS += " " << cflags
+      $CXXFLAGS += " " << cflags
       $LDFLAGS = [orig_ldflags, ldflags].join(' ')
       $libs += " " << libs
       Logging::message "package configuration for %s\n", pkg
@@ -1859,7 +1860,7 @@ CFLAGS   = $(CCDLFLAGS) #$CFLAGS $(ARCH_FLAG)
 INCFLAGS = -I. #$INCFLAGS
 DEFS     = #{CONFIG['DEFS']}
 CPPFLAGS = #{extconf_h}#{$CPPFLAGS}
-CXXFLAGS = $(CCDLFLAGS) #{CONFIG['CXXFLAGS']} $(ARCH_FLAG)
+CXXFLAGS = $(CCDLFLAGS) #$CXXFLAGS $(ARCH_FLAG)
 ldflags  = #{$LDFLAGS}
 dldflags = #{$DLDFLAGS} #{CONFIG['EXTDLDFLAGS']}
 ARCH_FLAG = #{$ARCH_FLAG}
@@ -2339,6 +2340,7 @@ site-install-rb: install-rb
       $warnflags = config['warnflags'] unless $extmk
     end
     $CFLAGS = with_config("cflags", arg_config("CFLAGS", config["CFLAGS"])).dup
+    $CXXFLAGS = (with_config("cxxflags", arg_config("CXXFLAGS", config["CXXFLAGS"]))||'').dup
     $ARCH_FLAG = with_config("arch_flag", arg_config("ARCH_FLAG", config["ARCH_FLAG"])).dup
     $CPPFLAGS = with_config("cppflags", arg_config("CPPFLAGS", config["CPPFLAGS"])).dup
     $LDFLAGS = with_config("ldflags", arg_config("LDFLAGS", config["LDFLAGS"])).dup
