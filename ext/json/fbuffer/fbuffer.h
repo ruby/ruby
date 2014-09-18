@@ -181,7 +181,7 @@ static FBuffer *fbuffer_dup(FBuffer *fb)
 
 static VALUE fbuffer_to_s(FBuffer *fb)
 {
-    VALUE result = rb_str_new(FBUFFER_PAIR(fb));
+    VALUE result = rb_str_new(FBUFFER_PTR(fb), FBUFFER_LEN(fb));
     fbuffer_free(fb);
     FORCE_UTF8(result);
     return result;
