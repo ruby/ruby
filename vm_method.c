@@ -15,8 +15,8 @@
 #define GLOBAL_METHOD_CACHE_MASK (GLOBAL_METHOD_CACHE_SIZE-1)
 #endif
 
-#define GLOBAL_METHOD_CACHE_KEY(c,m) ((((c)>>3)^(m))&GLOBAL_METHOD_CACHE_MASK)
-#define GLOBAL_METHOD_CACHE(c,m) (global_method_cache + GLOBAL_METHOD_CACHE_KEY(c,m))
+#define GLOBAL_METHOD_CACHE_KEY(c,m) ((((c)>>3)^(m))&(global_method_cache.mask))
+#define GLOBAL_METHOD_CACHE(c,m) (global_method_cache.entries + GLOBAL_METHOD_CACHE_KEY(c,m))
 #else
 #define GLOBAL_METHOD_CACHE(c,m) (rb_bug("global method cache disabled improperly"), NULL)
 #endif
@@ -47,7 +47,14 @@ struct cache_entry {
 };
 
 #if OPT_GLOBAL_METHOD_CACHE
-static struct cache_entry global_method_cache[GLOBAL_METHOD_CACHE_SIZE];
+static struct {
+    unsigned int size;
+    unsigned int mask;
+    struct cache_entry *entries;
+} global_method_cache = {
+    GLOBAL_METHOD_CACHE_SIZE,
+    GLOBAL_METHOD_CACHE_MASK,
+};
 #endif
 
 #define ruby_running (GET_VM()->running)
@@ -1723,6 +1730,31 @@ static VALUE
 obj_respond_to_missing(VALUE obj, VALUE mid, VALUE priv)
 {
     return Qfalse;
+}
+
+void
+Init_Method(void)
+{
+#if OPT_GLOBAL_METHOD_CACHE
+    char *ptr = getenv("RUBY_GLOBAL_METHOD_CACHE_SIZE");
+    int val;
+
+    if (ptr != NULL && (val = atoi(ptr)) > 0) {
+	if ((val & (val - 1)) == 0) { /* ensure val is a power of 2 */
+	    global_method_cache.size = val;
+	    global_method_cache.mask = val - 1;
+	}
+	else {
+	   fprintf(stderr, "RUBY_GLOBAL_METHOD_CACHE_SIZE was set to %d but ignored because the value is not a power of 2.\n", val);
+	}
+    }
+
+    global_method_cache.entries = (struct cache_entry *)calloc(global_method_cache.size, sizeof(struct cache_entry));
+    if (global_method_cache.entries == NULL) {
+	fprintf(stderr, "[FATAL] failed to allocate memory\n");
+	exit(EXIT_FAILURE);
+    }
+#endif
 }
 
 void

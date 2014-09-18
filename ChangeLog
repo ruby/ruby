@@ -1,3 +1,9 @@
+Thu Sep 18 09:36:37 2014  Scott Francis  <scott.francis@shopify.com>
+
+	* vm_method.c (Init_Method): make global method cache size
+	  configurable by environment variable
+	  "RUBY_GLOBAL_METHOD_CACHE_SIZE"  [Fix GH-719]
+
 Thu Sep 18 07:03:36 2014  Eric Wong  <e@80x24.org>
 
 	* test/-ext-/string/test_modify_expand.rb: increase limit
