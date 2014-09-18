@@ -1820,7 +1820,7 @@ dependencies: []
 
       @ext.require_paths = 'lib'
 
-      assert_equal ['/foo/ext-1', 'lib'], @ext.require_paths
+      assert_equal [File.expand_path('/foo/ext-1'), 'lib'], @ext.require_paths
     end
   ensure
     class << Gem
