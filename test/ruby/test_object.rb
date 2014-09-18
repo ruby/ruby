@@ -828,7 +828,7 @@ class TestObject < Test::Unit::TestCase
 
   def test_copied_ivar_memory_leak
     bug10191 = '[ruby-core:64700] [Bug #10191]'
-    assert_no_memory_leak([], <<-"end;", <<-"end;", bug10191, rss: true, timeout: 60)
+    assert_no_memory_leak([], <<-"end;", <<-"end;", bug10191, rss: true, timeout: 60, limit: 1.8)
       def (a = Object.new).set; @v = nil; end
       num = 500_000
     end;
