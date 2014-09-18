@@ -253,3 +253,9 @@ with all sufficient information, see the ChangeLog file.
   * RUBY_INTERNAL_EVENT_GC_ENTER
   * RUBY_INTERNAL_EVENT_GC_EXIT
     r47528
+
+=== Build system updates
+
+* jemalloc is optionally supported via `./configure --with-jemalloc`
+  jemalloc may be suitable when system malloc is slow or prone
+  to fragmentation.  [Feature #9113]
