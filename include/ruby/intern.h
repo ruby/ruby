@@ -707,6 +707,8 @@ VALUE rb_str_buf_new2(const char*);
 VALUE rb_str_tmp_new(long);
 VALUE rb_usascii_str_new(const char*, long);
 VALUE rb_usascii_str_new_cstr(const char*);
+VALUE rb_utf8_str_new(const char*, long);
+VALUE rb_utf8_str_new_cstr(const char*);
 void rb_str_free(VALUE);
 void rb_str_shared_replace(VALUE, VALUE);
 VALUE rb_str_buf_append(VALUE, VALUE);
@@ -786,6 +788,12 @@ VALUE rb_str_scrub(VALUE, VALUE);
     (__builtin_constant_p(str)) ?	       \
 	rb_usascii_str_new((str), (long)strlen(str)) : \
 	rb_usascii_str_new_cstr(str);	       \
+})
+#define rb_utf8_str_new_cstr(str) __extension__ ( \
+{						\
+    (__builtin_constant_p(str)) ?		\
+	rb_utf8_str_new((str), (long)strlen(str)) : \
+	rb_utf8_str_new_cstr(str);		\
 })
 #define rb_external_str_new_cstr(str) __extension__ ( \
 {						\

@@ -34,6 +34,7 @@
 #undef rb_str_new_cstr
 #undef rb_tainted_str_new_cstr
 #undef rb_usascii_str_new_cstr
+#undef rb_utf8_str_new_cstr
 #undef rb_enc_str_new_cstr
 #undef rb_external_str_new_cstr
 #undef rb_locale_str_new_cstr
@@ -589,6 +590,14 @@ rb_usascii_str_new(const char *ptr, long len)
 }
 
 VALUE
+rb_utf8_str_new(const char *ptr, long len)
+{
+    VALUE str = str_new(rb_cString, ptr, len);
+    rb_enc_associate_index(str, rb_utf8_encindex());
+    return str;
+}
+
+VALUE
 rb_enc_str_new(const char *ptr, long len, rb_encoding *enc)
 {
     VALUE str;
@@ -612,6 +621,14 @@ rb_usascii_str_new_cstr(const char *ptr)
 {
     VALUE str = rb_str_new_cstr(ptr);
     ENCODING_CODERANGE_SET(str, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
+    return str;
+}
+
+VALUE
+rb_utf8_str_new_cstr(const char *ptr)
+{
+    VALUE str = rb_str_new_cstr(ptr);
+    rb_enc_associate_index(str, rb_utf8_encindex());
     return str;
 }
 
