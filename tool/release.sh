@@ -1,7 +1,7 @@
 #!/bin/sh
 
 RUBYDIR=/home/ftp/pub/ruby
-EXTS='.tar.gz .tar.bz2 .zip'
+EXTS='.tar.gz .tar.bz2 .tar.xz .zip'
 
 releases=`ls ruby-*|grep -o 'ruby-[0-9]\.[0-9]\.[0-9]\(-\(preview\|rc\|p\)[0-9]\{1,4\}\)\?'|uniq`
 
