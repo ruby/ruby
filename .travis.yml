@@ -25,14 +25,19 @@ compiler:
   - gcc
   - clang
 
+os:
+  - linux
+  - osx
+
 # Dependencies.  Some  header files are missing  in a Travis' worker  VM, so we
 # have  to install  them.  The  "1.9.1" here  is OK.   It is  the  most adopted
 # version string  for Debian/Ubuntu, and  no dependencies have been  changed so
 # far since the 1.9.1 release.
 before_install:
-  - "sudo apt-get -qq update"
-  - "sudo apt-get -qq install $CC" # upgrade if any
-install: "sudo apt-get -qq build-dep ruby1.9.1 2>/dev/null"
+  - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq update; fi"
+  - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq install $CC; fi" # upgrade if any
+  - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then brew install autoconf; fi"
+install: "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq build-dep ruby1.9.1 2>/dev/null; fi"
 
 # Script is where the test runs.  Note  we just do "make test", not other tests
 # like  test-all, test-rubyspec.   This is  because  they take  too much  time,
@@ -63,6 +68,7 @@ branches:
     - ruby_2_0_0
     - ruby_2_1
     - ruby_2_2
+    - /feature/
 
 # We want to be notified when something happens.
 notifications:
@@ -70,8 +76,8 @@ notifications:
     channels:
       - "irc.freenode.org#ruby-core"
       - "irc.freenode.org#ruby-ja"
-    on_success: change # [always|never|change] # default: always
-    on_failure: change # [always|never|change] # default: always
+    on_success: never # [always|never|change] # default: always
+    on_failure: never # [always|never|change] # default: always
     template:
       - "%{message} by @%{author}: See %{build_url}"
 
@@ -79,7 +85,7 @@ notifications:
   webhooks:
     urls:
       - "https://rubies.travis-ci.org/rebuild/ruby-head"
-    on_success: always
+    on_success: never
     on_failure: never
 
 # Local Variables:
