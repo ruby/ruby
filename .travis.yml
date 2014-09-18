@@ -41,6 +41,7 @@ before_install:
   - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq update; fi"
   - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq install $CC; fi" # upgrade if any
   - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then brew install autoconf; fi"
+  - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then JOBS=5; fi"
 install: "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq build-dep ruby1.9.1 2>/dev/null; fi"
 
 # Script is where the test runs.  Note  we just do "make test", not other tests
@@ -58,8 +59,8 @@ before_script:
   - "make reconfig"
   - "cp -pr config.status .ext/include config_2nd"
   - "diff -ru config_1st config_2nd || true"
-  - "make -sj encs"
-  - "make -sj exts"
+  - "make -sj$JOBS encs"
+  - "make -sj$JOBS exts"
 script:
   - "make test OPTS=-v"
   - "make test-all TESTS='-qv -j2'"
