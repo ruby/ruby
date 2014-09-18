@@ -29,6 +29,10 @@ os:
   - linux
   - osx
 
+matrix:
+  allow_failures:
+    - os: osx
+
 # Dependencies.  Some  header files are missing  in a Travis' worker  VM, so we
 # have  to install  them.  The  "1.9.1" here  is OK.   It is  the  most adopted
 # version string  for Debian/Ubuntu, and  no dependencies have been  changed so
