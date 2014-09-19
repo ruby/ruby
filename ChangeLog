@@ -1,3 +1,11 @@
+Sat Sep 20 07:55:57 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (eval_string_with_cref): fix super from eval with
+	  scope.  set klass in the current control frame to the class of
+	  the receiver in the context to be evaluated, this class/module
+	  must match the actual receiver to call super.
+	  [ruby-core:65122] [Bug #10263]
+
 Fri Sep 19 20:06:00 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* symbol.c (rb_str_dynamic_intern): check if the stem ID of

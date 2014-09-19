@@ -493,4 +493,19 @@ class TestSuper < Test::Unit::TestCase
     end
     assert_equal(%w[B A], result, bug9721)
   end
+
+  def test_from_eval
+    bug10263 = '[ruby-core:65122] [Bug #10263a]'
+    a = Class.new do
+      def foo
+        "A"
+      end
+    end
+    b = Class.new(a) do
+      def foo
+        binding.eval("super")
+      end
+    end
+    assert_equal("A", b.new.foo, bug10263)
+  end
 end
