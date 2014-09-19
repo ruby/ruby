@@ -209,6 +209,10 @@ rb_str_new_cstr(const char *ptr)
   Cの文字列からRubyの文字列を生成する．この関数の機能は
   rb_str_new(ptr, strlen(ptr))と同等である．
 
+rb_str_new_literal(const char *ptr)
+
+  Cのリテラル文字列からRubyの文字列を生成する．
+
 rb_tainted_str_new(const char *ptr, long len)
 
   汚染マークが付加された新しいRubyの文字列を生成する．外部
@@ -252,15 +256,27 @@ rb_enc_str_new_cstr(const char *ptr, rb_encoding *enc)
 
   指定されたエンコーディングでRubyの文字列を生成する.
 
+rb_enc_str_new_literal(const char *ptr)
+
+  Cのリテラル文字列から指定されたエンコーディングでRubyの文字列を生成する．
+
 rb_usascii_str_new(const char *ptr, long len)
 rb_usascii_str_new_cstr(const char *ptr)
 
   エンコーディングがUS-ASCIIのRubyの文字列を生成する.
 
+rb_usascii_str_new_literal(const char *ptr)
+
+  Cのリテラル文字列からエンコーディングがUS-ASCIIのRubyの文字列を生成する．
+
 rb_utf8_str_new(const char *ptr, long len)
 rb_utf8_str_new_cstr(const char *ptr)
 
   エンコーディングがUTF-8のRubyの文字列を生成する.
+
+rb_usascii_str_new_literal(const char *ptr)
+
+  Cのリテラル文字列からエンコーディングがUTF-8のRubyの文字列を生成する．
 
 rb_str_resize(VALUE str, long len)
 

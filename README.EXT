@@ -184,6 +184,10 @@ rb_str_new_cstr(const char *ptr) ::
   Creates a new Ruby string from a C string.  This is equivalent to
   rb_str_new(ptr, strlen(ptr)).
 
+rb_str_new_literal(const char *ptr) ::
+
+  Creates a new Ruby string from a C string literal.
+
 rb_tainted_str_new(const char *ptr, long len) ::
 
   Creates a new tainted Ruby string.  Strings from external data
@@ -226,15 +230,30 @@ rb_enc_str_new_cstr(const char *ptr, rb_encoding *enc) ::
 
   Creates a new Ruby string with the specified encoding.
 
+rb_enc_str_new_literal(const char *ptr) ::
+
+  Creates a new Ruby string from a C string literal with the specified
+  encoding.
+
 rb_usascii_str_new(const char *ptr, long len) ::
 rb_usascii_str_new_cstr(const char *ptr) ::
 
   Creates a new Ruby string with encoding US-ASCII.
 
+rb_usascii_str_new_literal(const char *ptr) ::
+
+  Creates a new Ruby string from a C string literal with encoding
+  US-ASCII.
+
 rb_utf8_str_new(const char *ptr, long len) ::
 rb_utf8_str_new_cstr(const char *ptr) ::
 
   Creates a new Ruby string with encoding UTF-8.
+
+rb_utf8_str_new_literal(const char *ptr) ::
+
+  Creates a new Ruby string from a C string literal with encoding
+  UTF-8.
 
 rb_str_resize(VALUE str, long len) ::
 
