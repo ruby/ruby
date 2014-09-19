@@ -914,24 +914,33 @@ class TestModule < Test::Unit::TestCase
     assert_include(c.constants(false), :Foo, bug9413)
   end
 
-  def test_frozen_class
+  def test_frozen_module
     m = Module.new
     m.freeze
     assert_raise(RuntimeError) do
       m.instance_eval { undef_method(:foo) }
     end
+  end
 
+  def test_frozen_class
     c = Class.new
     c.freeze
     assert_raise(RuntimeError) do
       c.instance_eval { undef_method(:foo) }
     end
+  end
 
-    o = Object.new
+  def test_frozen_singleton_class
+    klass = Class.new
+    o = klass.new
     c = class << o; self; end
     c.freeze
-    assert_raise(RuntimeError) do
+    assert_raise_with_message(RuntimeError, /frozen/) do
       c.instance_eval { undef_method(:foo) }
+    end
+    klass.class_eval do
+      def self.foo
+      end
     end
   end
 

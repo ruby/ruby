@@ -1578,6 +1578,19 @@ singleton_class_of(VALUE obj)
     return klass;
 }
 
+void
+rb_freeze_singleton_class(VALUE x)
+{
+    /* should not propagate to meta-meta-class, and so on */
+    if (!(RBASIC(x)->flags & FL_SINGLETON)) {
+	VALUE klass = RBASIC_CLASS(x);
+	klass = RCLASS_ORIGIN(klass);
+	if (FL_TEST(klass, (FL_SINGLETON|FL_FREEZE)) == FL_SINGLETON) {
+	    OBJ_FREEZE_RAW(klass);
+	}
+    }
+}
+
 /*!
  * Returns the singleton class of \a obj, or nil if obj is not a
  * singleton object.
