@@ -43,9 +43,9 @@ matrix:
 before_install:
   - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq update; fi"
   - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq install $CC; fi" # upgrade if any
+  - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then JOBS='-j'; fi"
   - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then brew install autoconf openssl; fi"
   - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then OPENSSL_FLAG=\"--with-openssl-dir=`brew --prefix openssl`\"; fi"
-  - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then JOBS=' -j'; fi"
 install: "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq build-dep ruby1.9.1 2>/dev/null; fi"
 
 # Script is where the test runs.  Note  we just do "make test", not other tests
@@ -63,8 +63,8 @@ before_script:
   - "make reconfig"
   - "cp -pr config.status .ext/include config_2nd"
   - "diff -ru config_1st config_2nd || true"
-  - "make -s$JOBS encs"
-  - "make -s$JOBS exts"
+  - "make -s $JOBS encs"
+  - "make -s $JOBS exts"
 script:
   - "make test OPTS=-v"
   - "make test-all TESTS='-qv -j2'"
