@@ -103,13 +103,14 @@ Init_sym(void)
     Init_id();
 }
 
-WARN_UNUSED_RESULT(static VALUE dsymbol_alloc(const VALUE klass, const VALUE str, rb_encoding *const enc));
+WARN_UNUSED_RESULT(static VALUE dsymbol_alloc(const VALUE klass, const VALUE str, rb_encoding *const enc, const ID type));
 WARN_UNUSED_RESULT(static VALUE dsymbol_check(const VALUE sym));
 WARN_UNUSED_RESULT(static ID dsymbol_pindown(VALUE sym));
 WARN_UNUSED_RESULT(static ID lookup_str_id(VALUE str));
 WARN_UNUSED_RESULT(static VALUE lookup_str_sym(const VALUE str));
 WARN_UNUSED_RESULT(static VALUE lookup_id_str(ID id));
 WARN_UNUSED_RESULT(static ID attrsetname_to_attr(VALUE name));
+WARN_UNUSED_RESULT(static ID attrsetname_to_attr_id(VALUE name));
 
 ID
 rb_id_attrset(ID id)
@@ -416,10 +417,9 @@ must_be_dynamic_symbol(VALUE x)
 }
 
 static VALUE
-dsymbol_alloc(const VALUE klass, const VALUE str, rb_encoding * const enc)
+dsymbol_alloc(const VALUE klass, const VALUE str, rb_encoding * const enc, const ID type)
 {
     const VALUE dsym = rb_newobj_of(klass, T_SYMBOL | FL_WB_PROTECTED);
-    const ID type = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
 
     rb_enc_associate(dsym, enc);
     OBJ_FREEZE(dsym);
@@ -441,10 +441,11 @@ dsymbol_check(const VALUE sym)
 {
     if (UNLIKELY(rb_objspace_garbage_object_p(sym))) {
 	const VALUE fstr = RSYMBOL(sym)->fstr;
+	const ID type = RSYMBOL(sym)->type;
 	RSYMBOL(sym)->fstr = 0;
 
 	unregister_sym(fstr, sym);
-	return dsymbol_alloc(rb_cSymbol, fstr, rb_enc_get(fstr));
+	return dsymbol_alloc(rb_cSymbol, fstr, rb_enc_get(fstr), type);
     }
     else {
 	return sym;
@@ -737,6 +738,7 @@ rb_str_dynamic_intern(VALUE str)
 #if USE_SYMBOL_GC
     rb_encoding *enc, *ascii;
     VALUE sym = lookup_str_sym(str);
+    ID type;
 
     if (sym) {
 	return sym;
@@ -753,7 +755,16 @@ rb_str_dynamic_intern(VALUE str)
 	}
     }
 
-    return dsymbol_alloc(rb_cSymbol, rb_fstring(str), enc);
+    type = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
+    if (type == ID_ATTRSET) {
+	ID attr_id = attrsetname_to_attr_id(str);
+	if (attr_id && !ID_DYNAMIC_SYM_P(attr_id)) {
+	    attr_id = rb_id_attrset(attr_id);
+	    return ID2SYM(attr_id);
+	}
+    }
+
+    return dsymbol_alloc(rb_cSymbol, rb_fstring(str), enc, type);
 #else
     return rb_str_intern(str);
 #endif
@@ -1083,21 +1094,28 @@ rb_check_symbol_cstr(const char *ptr, long len, rb_encoding *enc)
 }
 
 static ID
+attrsetname_to_attr_id(VALUE name)
+{
+    ID id;
+    struct RString fake_str;
+    /* make local name by chopping '=' */
+    const VALUE localname = rb_setup_fake_str(&fake_str,
+					      RSTRING_PTR(name), RSTRING_LEN(name) - 1,
+					      rb_enc_get(name));
+    OBJ_FREEZE(localname);
+
+    if ((id = lookup_str_id(localname)) != 0) {
+	return id;
+    }
+    RB_GC_GUARD(name);
+    return (ID)0;
+}
+
+static ID
 attrsetname_to_attr(VALUE name)
 {
     if (rb_is_attrset_name(name)) {
-	ID id;
-	struct RString fake_str;
-	/* make local name by chopping '=' */
-	const VALUE localname = rb_setup_fake_str(&fake_str,
-						  RSTRING_PTR(name), RSTRING_LEN(name) - 1,
-						  rb_enc_get(name));
-	OBJ_FREEZE(localname);
-
-	if ((id = lookup_str_id(localname)) != 0) {
-	    return id;
-	}
-	RB_GC_GUARD(name);
+	return attrsetname_to_attr_id(name);
     }
 
     return (ID)0;

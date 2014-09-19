@@ -222,4 +222,12 @@ class TestSymbol < Test::Unit::TestCase
                        '',
                        child_env: '--disable-gems')
   end
+
+  def test_dynamic_attrset_id
+    bug10259 = '[ruby-dev:48559] [Bug #10259]'
+    class << (obj = Object.new)
+      attr_writer :unagi
+    end
+    assert_nothing_raised(NoMethodError, bug10259) {obj.send("unagi=".intern, 1)}
+  end
 end

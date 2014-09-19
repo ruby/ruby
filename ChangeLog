@@ -1,3 +1,9 @@
+Fri Sep 19 20:06:00 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* symbol.c (rb_str_dynamic_intern): check if the stem ID of
+	  attrset ID is already registered as a static ID.
+	  [ruby-dev:48559] [Bug #10259]
+
 Fri Sep 19 15:48:09 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (VCSUP): nothing to do if this worktree is not under
