@@ -231,6 +231,11 @@ rb_usascii_str_new_cstr(const char *ptr) ::
 
   Creates a new Ruby string with encoding US-ASCII.
 
+rb_utf8_str_new(const char *ptr, long len) ::
+rb_utf8_str_new_cstr(const char *ptr) ::
+
+  Creates a new Ruby string with encoding UTF-8.
+
 rb_str_resize(VALUE str, long len) ::
 
   Resizes Ruby string to len bytes.  If str is not modifiable, this

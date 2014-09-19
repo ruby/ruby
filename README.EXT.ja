@@ -257,6 +257,11 @@ rb_usascii_str_new_cstr(const char *ptr)
 
   エンコーディングがUS-ASCIIのRubyの文字列を生成する.
 
+rb_utf8_str_new(const char *ptr, long len)
+rb_utf8_str_new_cstr(const char *ptr)
+
+  エンコーディングがUTF-8のRubyの文字列を生成する.
+
 rb_str_resize(VALUE str, long len)
 
   Rubyの文字列のサイズをlenバイトに変更する．strの長さは前
