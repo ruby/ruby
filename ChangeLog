@@ -1,3 +1,8 @@
+Fri Sep 19 15:48:09 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (VCSUP): nothing to do if this worktree is not under
+	  any VCS (it means that the worktree may be from the release package).
+
 Fri Sep 19 10:47:03 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_math.rb (TestMath#assert_infinity): Float#finite?
