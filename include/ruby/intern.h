@@ -255,13 +255,14 @@ PRINTF_ARGS(void rb_compile_error(const char*, int, const char*, ...), 3, 4);
 PRINTF_ARGS(void rb_compile_error_with_enc(const char*, int, void *, const char*, ...), 4, 5);
 PRINTF_ARGS(void rb_compile_error_append(const char*, ...), 1, 2);
 NORETURN(void rb_error_frozen(const char*));
+NORETURN(void rb_error_frozen_object(VALUE));
 void rb_error_untrusted(VALUE);
 void rb_check_frozen(VALUE);
 void rb_check_trusted(VALUE);
 #define rb_check_frozen_internal(obj) do { \
 	VALUE frozen_obj = (obj); \
 	if (OBJ_FROZEN(frozen_obj)) { \
-	    rb_error_frozen(rb_obj_classname(frozen_obj)); \
+	    rb_error_frozen_object(frozen_obj); \
 	} \
     } while (0)
 #define rb_check_trusted_internal(obj) ((void) 0)

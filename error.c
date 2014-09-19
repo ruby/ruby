@@ -2129,6 +2129,13 @@ rb_error_frozen(const char *what)
     rb_raise(rb_eRuntimeError, "can't modify frozen %s", what);
 }
 
+void
+rb_error_frozen_object(VALUE frozen_obj)
+{
+    rb_raise(rb_eRuntimeError, "can't modify frozen %"PRIsVALUE,
+	     CLASS_OF(frozen_obj));
+}
+
 #undef rb_check_frozen
 void
 rb_check_frozen(VALUE obj)

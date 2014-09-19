@@ -68,6 +68,17 @@ class TestObject < Test::Unit::TestCase
     assert_equal(true, nil.frozen?)
   end
 
+  def test_frozen_error_message
+    name = "C\u{30c6 30b9 30c8}"
+    klass = EnvUtil.labeled_class(name) {
+      attr_accessor :foo
+    }
+    obj = klass.new.freeze
+    assert_raise_with_message(RuntimeError, /#{name}/) {
+      obj.foo = 1
+    }
+  end
+
   def test_nil_to_f
     assert_equal(0.0, nil.to_f)
   end
