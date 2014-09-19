@@ -1122,7 +1122,7 @@ rb_obj_freeze_inline(VALUE x)
 {
     if (FL_ABLE(x)) {
 	OBJ_FREEZE_RAW(x);
-	if (!(RBASIC(x)->flags & FL_SINGLETON)) {
+	if (RBASIC_CLASS(x) && !(RBASIC(x)->flags & FL_SINGLETON)) {
 	    rb_freeze_singleton_class(x);
 	}
     }

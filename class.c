@@ -1584,8 +1584,8 @@ rb_freeze_singleton_class(VALUE x)
     /* should not propagate to meta-meta-class, and so on */
     if (!(RBASIC(x)->flags & FL_SINGLETON)) {
 	VALUE klass = RBASIC_CLASS(x);
-	klass = RCLASS_ORIGIN(klass);
-	if (FL_TEST(klass, (FL_SINGLETON|FL_FREEZE)) == FL_SINGLETON) {
+	if (klass && (klass = RCLASS_ORIGIN(klass)) != 0 &&
+	    FL_TEST(klass, (FL_SINGLETON|FL_FREEZE)) == FL_SINGLETON) {
 	    OBJ_FREEZE_RAW(klass);
 	}
     }
