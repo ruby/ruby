@@ -77,7 +77,6 @@ branches:
     - ruby_2_0_0
     - ruby_2_1
     - ruby_2_2
-    - /feature/
 
 # We want to be notified when something happens.
 notifications:
@@ -85,8 +84,8 @@ notifications:
     channels:
       - "irc.freenode.org#ruby-core"
       - "irc.freenode.org#ruby-ja"
-    on_success: never # [always|never|change] # default: always
-    on_failure: never # [always|never|change] # default: always
+    on_success: change # [always|never|change] # default: always
+    on_failure: change # [always|never|change] # default: always
     template:
       - "%{message} by @%{author}: See %{build_url}"
 
@@ -94,7 +93,7 @@ notifications:
   webhooks:
     urls:
       - "https://rubies.travis-ci.org/rebuild/ruby-head"
-    on_success: never
+    on_success: always
     on_failure: never
 
 # Local Variables:
