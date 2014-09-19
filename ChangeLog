@@ -1,3 +1,9 @@
+Fri Sep 19 10:47:03 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_math.rb (TestMath#assert_infinity): Float#finite?
+	  returns true also for NaN, so use Float#infinite? instead.
+	  [ruby-core:65117] [Feature #10261]
+
 Fri Sep 19 05:36:16 2014  Eric Wong  <e@80x24.org>
 
 	* NEWS: note --with-jemalloc option [ci skip]

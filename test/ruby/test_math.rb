@@ -3,7 +3,7 @@ require 'test/unit'
 class TestMath < Test::Unit::TestCase
   def assert_infinity(a, *rest)
     rest = ["not infinity: #{a.inspect}"] if rest.empty?
-    assert_not_predicate(a, :finite?, *rest)
+    assert_predicate(a, :infinite?, *rest)
   end
 
   def assert_nan(a, *rest)
