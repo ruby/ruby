@@ -91,6 +91,7 @@ void rb_enc_copy(VALUE dst, VALUE src);
 
 VALUE rb_enc_str_new(const char*, long, rb_encoding*);
 VALUE rb_enc_str_new_cstr(const char*, rb_encoding*);
+VALUE rb_enc_str_new_static(const char*, long, rb_encoding*);
 VALUE rb_enc_reg_new(const char*, long, rb_encoding*, int);
 PRINTF_ARGS(VALUE rb_enc_sprintf(rb_encoding *, const char*, ...), 2, 3);
 VALUE rb_enc_vsprintf(rb_encoding *, const char*, va_list);
@@ -106,10 +107,16 @@ VALUE rb_str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to);
 VALUE rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags, VALUE ecopts);
 
 #if defined(__GNUC__) && !defined(__PCC__)
+#define rb_enc_str_new(str, len, enc) __extension__ ( \
+{					       \
+    (__builtin_constant_p(str) && __builtin_constant_p(len)) ? \
+	rb_enc_str_new_static((str), (len), (enc)) : \
+	rb_enc_str_new((str), (len), (enc)); \
+})
 #define rb_enc_str_new_cstr(str, enc) __extension__ (	\
 {					       \
     (__builtin_constant_p(str)) ?	       \
-	rb_enc_str_new((str), (long)strlen(str), (enc)) : \
+	rb_enc_str_new_static((str), (long)strlen(str), (enc)) : \
 	rb_enc_str_new_cstr((str), (enc)); \
 })
 #endif

@@ -710,6 +710,9 @@ VALUE rb_usascii_str_new(const char*, long);
 VALUE rb_usascii_str_new_cstr(const char*);
 VALUE rb_utf8_str_new(const char*, long);
 VALUE rb_utf8_str_new_cstr(const char*);
+VALUE rb_str_new_static(const char *, long);
+VALUE rb_usascii_str_new_static(const char *, long);
+VALUE rb_utf8_str_new_static(const char *, long);
 void rb_str_free(VALUE);
 void rb_str_shared_replace(VALUE, VALUE);
 VALUE rb_str_buf_append(VALUE, VALUE);
@@ -771,12 +774,31 @@ long rb_str_offset(VALUE, long);
 size_t rb_str_capacity(VALUE);
 VALUE rb_str_ellipsize(VALUE, long);
 VALUE rb_str_scrub(VALUE, VALUE);
+
 #if defined(__GNUC__) && !defined(__PCC__)
+#define rb_str_new(str, len) __extension__ (	\
+{						\
+    (__builtin_constant_p(str) && __builtin_constant_p(len)) ? \
+	rb_str_new_static((str), (len)) : \
+	rb_str_new((str), (len));	  \
+})
 #define rb_str_new_cstr(str) __extension__ (	\
 {						\
     (__builtin_constant_p(str)) ?		\
-	rb_str_new((str), (long)strlen(str)) :	\
+	rb_str_new_static((str), (long)strlen(str)) : \
 	rb_str_new_cstr(str);			\
+})
+#define rb_usascii_str_new(str, len) __extension__ ( \
+{						\
+    (__builtin_constant_p(str) && __builtin_constant_p(len)) ? \
+	rb_usascii_str_new_static((str), (len)) : \
+	rb_usascii_str_new((str), (len));	  \
+})
+#define rb_utf8_str_new(str, len) __extension__ ( \
+{						\
+    (__builtin_constant_p(str) && __builtin_constant_p(len)) ? \
+	rb_utf8_str_new_static((str), (len)) : \
+	rb_utf8_str_new((str), (len));	  \
 })
 #define rb_tainted_str_new_cstr(str) __extension__ ( \
 {					       \
@@ -787,13 +809,13 @@ VALUE rb_str_scrub(VALUE, VALUE);
 #define rb_usascii_str_new_cstr(str) __extension__ ( \
 {					       \
     (__builtin_constant_p(str)) ?	       \
-	rb_usascii_str_new((str), (long)strlen(str)) : \
+	rb_usascii_str_new_static((str), (long)strlen(str)) : \
 	rb_usascii_str_new_cstr(str);	       \
 })
 #define rb_utf8_str_new_cstr(str) __extension__ ( \
 {						\
     (__builtin_constant_p(str)) ?		\
-	rb_utf8_str_new((str), (long)strlen(str)) : \
+	rb_utf8_str_new_static((str), (long)strlen(str)) : \
 	rb_utf8_str_new_cstr(str);		\
 })
 #define rb_external_str_new_cstr(str) __extension__ ( \

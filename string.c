@@ -31,6 +31,10 @@
 
 #define STRING_ENUMERATORS_WANTARRAY 0 /* next major */
 
+#undef rb_str_new
+#undef rb_usascii_str_new
+#undef rb_utf8_str_new
+#undef rb_enc_str_new
 #undef rb_str_new_cstr
 #undef rb_tainted_str_new_cstr
 #undef rb_usascii_str_new_cstr
@@ -52,6 +56,7 @@ VALUE rb_cSymbol;
 
 #define RUBY_MAX_CHAR_LEN 16
 #define STR_TMPLOCK FL_USER7
+#define STR_NOFREE FL_USER18
 
 #define STR_SET_NOEMBED(str) do {\
     FL_SET((str), STR_NOEMBED);\
@@ -507,7 +512,7 @@ rb_str_capacity(VALUE str)
     if (STR_EMBED_P(str)) {
 	return RSTRING_EMBED_LEN_MAX;
     }
-    else if (FL_TEST(str, STR_SHARED)) {
+    else if (FL_TEST(str, STR_SHARED|STR_NOFREE)) {
 	return RSTRING(str)->as.heap.len;
     }
     else {
@@ -640,6 +645,57 @@ rb_enc_str_new_cstr(const char *ptr, rb_encoding *enc)
 	rb_raise(rb_eArgError, "wchar encoding given");
     }
     return rb_enc_str_new(ptr, strlen(ptr), enc);
+}
+
+static VALUE
+str_new_static(VALUE klass, const char *ptr, long len, int encindex)
+{
+    VALUE str;
+
+    if (len < 0) {
+	rb_raise(rb_eArgError, "negative string size (or size too big)");
+    }
+
+    if (!ptr) {
+	str = str_new(klass, ptr, len);
+    }
+    else {
+	if (RUBY_DTRACE_STRING_CREATE_ENABLED()) {
+	    RUBY_DTRACE_STRING_CREATE(len, rb_sourcefile(), rb_sourceline());
+	}
+	str = str_alloc(klass);
+	RSTRING(str)->as.heap.len = len;
+	RSTRING(str)->as.heap.ptr = (char *)ptr;
+	RSTRING(str)->as.heap.aux.capa = len;
+	STR_SET_NOEMBED(str);
+	RBASIC(str)->flags |= STR_NOFREE;
+    }
+    rb_enc_associate_index(str, encindex);
+    return str;
+}
+
+VALUE
+rb_str_new_static(const char *ptr, long len)
+{
+    return str_new_static(rb_cString, ptr, len, 0);
+}
+
+VALUE
+rb_usascii_str_new_static(const char *ptr, long len)
+{
+    return str_new_static(rb_cString, ptr, len, ENCINDEX_US_ASCII);
+}
+
+VALUE
+rb_utf8_str_new_static(const char *ptr, long len)
+{
+    return str_new_static(rb_cString, ptr, len, ENCINDEX_UTF_8);
+}
+
+VALUE
+rb_enc_str_new_static(const char *ptr, long len, rb_encoding *enc)
+{
+    return str_new_static(rb_cString, ptr, len, rb_enc_to_index(enc));
 }
 
 VALUE
@@ -892,6 +948,8 @@ rb_str_new_frozen(VALUE orig)
 	    RSTRING(str)->as.heap.len = RSTRING_LEN(orig);
 	    RSTRING(str)->as.heap.ptr = RSTRING_PTR(orig);
 	    RSTRING(str)->as.heap.aux.capa = RSTRING(orig)->as.heap.aux.capa;
+	    RBASIC(str)->flags |= RBASIC(orig)->flags & STR_NOFREE;
+	    RBASIC(orig)->flags &= ~STR_NOFREE;
 	    STR_SET_SHARED(orig, str);
 	}
     }
@@ -977,7 +1035,7 @@ rb_str_free(VALUE str)
 	st_delete(rb_vm_fstring_table(), &fstr, NULL);
     }
 
-    if (!STR_EMBED_P(str) && !FL_TEST(str, STR_SHARED)) {
+    if (!STR_EMBED_P(str) && !FL_TEST(str, STR_SHARED|STR_NOFREE)) {
 	ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
     }
 }
@@ -985,7 +1043,7 @@ rb_str_free(VALUE str)
 RUBY_FUNC_EXPORTED size_t
 rb_str_memsize(VALUE str)
 {
-    if (FL_TEST(str, STR_NOEMBED|STR_SHARED) == STR_NOEMBED) {
+    if (FL_TEST(str, STR_NOEMBED|STR_SHARED|STR_NOFREE) == STR_NOEMBED) {
 	return STR_HEAP_SIZE(str);
     }
     else {
@@ -1488,7 +1546,7 @@ static inline int
 str_independent(VALUE str)
 {
     str_modifiable(str);
-    if (STR_EMBED_P(str) || !FL_TEST(str, STR_SHARED)) {
+    if (STR_EMBED_P(str) || !FL_TEST(str, STR_SHARED|STR_NOFREE)) {
 	return 1;
     }
     else {
@@ -1505,6 +1563,15 @@ str_make_independent_expand(VALUE str, long expand)
     long capa = len + expand;
 
     if (len > capa) len = capa;
+
+    if (capa <= RSTRING_EMBED_LEN_MAX && !STR_EMBED_P(str)) {
+	ptr = RSTRING(str)->as.heap.ptr;
+	STR_SET_EMBED(str);
+	memcpy(RSTRING(str)->as.ary, ptr, len);
+	STR_SET_EMBED_LEN(str, len);
+	return;
+    }
+
     ptr = ALLOC_N(char, capa + termlen);
     if (RSTRING_PTR(str)) {
 	memcpy(ptr, RSTRING_PTR(str), len);
@@ -3600,7 +3667,7 @@ rb_str_drop_bytes(VALUE str, long len)
     nlen = olen - len;
     if (nlen <= RSTRING_EMBED_LEN_MAX) {
 	char *oldptr = ptr;
-	int fl = (int)(RBASIC(str)->flags & (STR_NOEMBED|STR_SHARED));
+	int fl = (int)(RBASIC(str)->flags & (STR_NOEMBED|STR_SHARED|STR_NOFREE));
 	STR_SET_EMBED(str);
 	STR_SET_EMBED_LEN(str, nlen);
 	ptr = RSTRING(str)->as.ary;
