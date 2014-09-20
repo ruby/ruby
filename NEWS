@@ -87,6 +87,10 @@ with all sufficient information, see the ChangeLog file.
 
 === Core classes compatibility issues (excluding feature bug fixes)
 
+* Enumerable
+  * Enumerable#slice_before's state management deprecated.
+  * Enumerable#chunk's state management deprecated.
+
 * GC
   * incompatible changes:
     * Rename GC.stat entries. [Feature #9924]

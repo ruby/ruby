@@ -2751,7 +2751,7 @@ chunk_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
 /*
  *  call-seq:
  *     enum.chunk { |elt| ... }                       -> an_enumerator
- *     enum.chunk(initial_state) { |elt, state| ... } -> an_enumerator
+ *     enum.chunk(initial_state) { |elt, state| ... } -> an_enumerator (deprecated)
  *
  *  Enumerates over the items, chunking them together based on the return
  *  value of the block.
@@ -2847,10 +2847,13 @@ enum_chunk(int argc, VALUE *argv, VALUE enumerable)
 {
     VALUE initial_state;
     VALUE enumerator;
+    int n;
 
     if (!rb_block_given_p())
 	rb_raise(rb_eArgError, "no block given");
-    rb_scan_args(argc, argv, "01", &initial_state);
+    n = rb_scan_args(argc, argv, "01", &initial_state);
+    if (n != 0)
+        rb_warn("initial_state given for chunk.  (Use Enumerator.new with lexical scope variables.)");
 
     enumerator = rb_obj_alloc(rb_cEnumerator);
     rb_ivar_set(enumerator, rb_intern("chunk_enumerable"), enumerable);
@@ -2926,7 +2929,7 @@ slicebefore_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *  call-seq:
  *     enum.slice_before(pattern)                             -> an_enumerator
  *     enum.slice_before { |elt| bool }                       -> an_enumerator
- *     enum.slice_before(initial_state) { |elt, state| bool } -> an_enumerator
+ *     enum.slice_before(initial_state) { |elt, state| bool } -> an_enumerator (deprecated)
  *
  *  Creates an enumerator for each chunked elements.
  *  The beginnings of chunks are defined by _pattern_ and the block.
@@ -3066,7 +3069,10 @@ enum_slice_before(int argc, VALUE *argv, VALUE enumerable)
 
     if (rb_block_given_p()) {
         VALUE initial_state;
-        rb_scan_args(argc, argv, "01", &initial_state);
+        int n;
+        n = rb_scan_args(argc, argv, "01", &initial_state);
+        if (n != 0)
+	    rb_warn("initial_state given for slice_before.  (Use Enumerator.new with lexical scope variables.)");
         enumerator = rb_obj_alloc(rb_cEnumerator);
         rb_ivar_set(enumerator, rb_intern("slicebefore_sep_pred"), rb_block_proc());
         rb_ivar_set(enumerator, rb_intern("slicebefore_initial_state"), initial_state);

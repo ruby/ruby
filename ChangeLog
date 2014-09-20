@@ -1,3 +1,8 @@
+Sat Sep 20 23:58:21 2014  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c (enum_chunk): Deprecate the state management.
+	  (enum_slice_before): Ditto.
+
 Sat Sep 20 15:39:11 2014  Tanaka Akira  <akr@fsij.org>
 
 	* enum.c (enum_slice_when): New method: Enumerable#slice_when.
