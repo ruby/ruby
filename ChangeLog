@@ -1,3 +1,10 @@
+Sat Sep 20 03:00:26 2014  Masaki Matsushita <glass.saga@gmail.com>
+
+	* lib/tempfile.rb: define parameters appropriately and some
+	                   refactoring.
+
+	* lib/tmpdir.rb:   ditto.
+
 Sat Sep 20 23:58:21 2014  Tanaka Akira  <akr@fsij.org>
 
 	* enum.c (enum_chunk): Deprecate the state management.
