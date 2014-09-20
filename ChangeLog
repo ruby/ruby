@@ -1,3 +1,9 @@
+Sat Sep 20 11:55:19 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* .travis.yml: added new configurations for osx on travis ci.
+	  [fix GH-723]
+	* test/ruby/test_object.rb: tweaked to memory leak limit for osx build.
+
 Sat Sep 20 10:48:41 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (assoc): allow quoted ID as a key of a hash literal.
