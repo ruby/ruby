@@ -57,6 +57,11 @@ class TestTempfile < Test::Unit::TestCase
     assert_match(/^foo/, File.basename(t.path))
   end
 
+  def test_default_basename
+    t = tempfile
+    assert File.exist?(t.path)
+  end
+
   def test_basename_with_suffix
     t = tempfile(["foo", ".txt"])
     assert_match(/^foo/, File.basename(t.path))
