@@ -1,3 +1,14 @@
+Sat Sep 20 15:39:11 2014  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c (enum_slice_when): New method: Enumerable#slice_when.
+	  (slicewhen_i): New function.
+	  (slicewhen_ii): New function.
+
+	* enumerator.c (InitVM_Enumerator): New method:
+	  Enumerator::Lazy#slice_when.
+
+	  [ruby-core:62499] [Feature #9826]
+
 Sat Sep 20 11:55:19 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* .travis.yml: added new configurations for osx on travis ci.

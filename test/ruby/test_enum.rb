@@ -574,6 +574,61 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([["foo", ""], ["bar"]], e.to_a)
   end
 
+  def test_slice_when_0
+    e = [].slice_when {|a, b| flunk "should not be called" }
+    assert_equal([], e.to_a)
+  end
+
+  def test_slice_when_1
+    e = [1].slice_when {|a, b| flunk "should not be called" }
+    assert_equal([[1]], e.to_a)
+  end
+
+  def test_slice_when_2
+    e = [1,2].slice_when {|a,b|
+      assert_equal(1, a)
+      assert_equal(2, b)
+      true
+    }
+    assert_equal([[1], [2]], e.to_a)
+
+    e = [1,2].slice_when {|a,b|
+      assert_equal(1, a)
+      assert_equal(2, b)
+      false
+    }
+    assert_equal([[1, 2]], e.to_a)
+  end
+
+  def test_slice_when_3
+    block_invocations = [
+      lambda {|a, b|
+        assert_equal(1, a)
+        assert_equal(2, b)
+        true
+      },
+      lambda {|a, b|
+        assert_equal(2, a)
+        assert_equal(3, b)
+        false
+      }
+    ]
+    e = [1,2,3].slice_when {|a,b|
+      block_invocations.shift.call(a, b)
+    }
+    assert_equal([[1], [2, 3]], e.to_a)
+    assert_equal([], block_invocations)
+  end
+
+  def test_slice_when_noblock
+    assert_raise(ArgumentError) { [].slice_when }
+  end
+
+  def test_slice_when_contiguously_increasing_integers
+    e = [1,4,9,10,11,12,15,16,19,20,21].slice_when {|i, j| i+1 != j }
+    assert_equal([[1], [4], [9,10,11,12], [15,16], [19,20,21]], e.to_a)
+  end
+
   def test_detect
     @obj = ('a'..'z')
     assert_equal('c', @obj.detect {|x| x == 'c' })

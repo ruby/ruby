@@ -33,6 +33,7 @@ with all sufficient information, see the ChangeLog file.
 * Enumerable
   * New methods:
     * Enumerable#slice_after
+    * Enumerable#slice_when
   * Extended methods:
     * min, min_by, max and max_by supports optional argument to return
       multiple elements.
