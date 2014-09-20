@@ -1,3 +1,8 @@
+Sat Sep 20 10:48:41 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (assoc): allow quoted ID as a key of a hash literal.
+	  [ruby-core:34453] [Feature #4276]
+
 Sat Sep 20 10:23:00 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_set_arguments): store local variable IDs in

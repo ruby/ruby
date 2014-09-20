@@ -46,6 +46,7 @@ static ID ripper_id_rational;
 static ID ripper_id_regexp_beg;
 static ID ripper_id_regexp_end;
 static ID ripper_id_label;
+static ID ripper_id_label_end;
 static ID ripper_id_tlambda;
 static ID ripper_id_tlambeg;
 
@@ -103,6 +104,7 @@ ripper_init_eventids2(void)
     ripper_id_regexp_beg = rb_intern_const("on_regexp_beg");
     ripper_id_regexp_end = rb_intern_const("on_regexp_end");
     ripper_id_label = rb_intern_const("on_label");
+    ripper_id_label_end = rb_intern_const("on_label_end");
     ripper_id_tlambda = rb_intern_const("on_tlambda");
     ripper_id_tlambeg = rb_intern_const("on_tlambeg");
 
@@ -259,6 +261,7 @@ static const struct token_assoc {
     {tWORDS_BEG,	&ripper_id_words_beg},
     {tXSTRING_BEG,	&ripper_id_backtick},
     {tLABEL,		&ripper_id_label},
+    {tLABEL_END,	&ripper_id_label_end},
     {tLAMBDA,		&ripper_id_tlambda},
     {tLAMBEG,		&ripper_id_tlambeg},
 

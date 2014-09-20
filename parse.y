@@ -823,7 +823,7 @@ static void token_info_pop(struct parser_params*, const char *token);
 %token tAMPER		"&"
 %token tLAMBDA		"->"
 %token tSYMBEG tSTRING_BEG tXSTRING_BEG tREGEXP_BEG tWORDS_BEG tQWORDS_BEG tSYMBOLS_BEG tQSYMBOLS_BEG
-%token tSTRING_DBEG tSTRING_DEND tSTRING_DVAR tSTRING_END tLAMBEG
+%token tSTRING_DBEG tSTRING_DEND tSTRING_DVAR tSTRING_END tLAMBEG tLABEL_END
 
 /*
  *	precedence table
@@ -2305,14 +2305,24 @@ arg		: lhs '=' arg
 			$$ = dispatch1(defined, $4);
 		    %*/
 		    }
-		| arg '?' arg opt_nl ':' arg
+		| arg '?'
+		    {
+			$<val>$ = cond_stack;
+			cond_stack = 0;
+			COND_PUSH(1);
+		    }
+		  arg opt_nl ':'
+		    {
+			cond_stack = $<val>3;
+		    }
+		  arg
 		    {
 		    /*%%%*/
 			value_expr($1);
-			$$ = NEW_IF(cond($1), $3, $6);
+			$$ = NEW_IF(cond($1), $4, $8);
 			fixpos($$, $1);
 		    /*%
-			$$ = dispatch3(ifop, $1, $3, $6);
+			$$ = dispatch3(ifop, $1, $4, $8);
 		    %*/
 		    }
 		| primary
@@ -4217,6 +4227,9 @@ string_content	: tSTRING_CONTENT
 		    {
 			$<node>$ = lex_strterm;
 			lex_strterm = 0;
+		    }
+		    {
+			$<num>$ = lex_state;
 			lex_state = EXPR_BEG;
 		    }
 		    {
@@ -4228,12 +4241,13 @@ string_content	: tSTRING_CONTENT
 			cond_stack = $<val>1;
 			cmdarg_stack = $<val>2;
 			lex_strterm = $<node>3;
-			brace_nest = $<num>4;
+			lex_state = $<num>4;
+			brace_nest = $<num>5;
 		    /*%%%*/
-			if ($5) $5->flags &= ~NODE_FL_NEWLINE;
-			$$ = new_evstr($5);
+			if ($6) $6->flags &= ~NODE_FL_NEWLINE;
+			$$ = new_evstr($6);
 		    /*%
-			$$ = dispatch1(string_embexpr, $5);
+			$$ = dispatch1(string_embexpr, $6);
 		    %*/
 		    }
 		;
@@ -4945,6 +4959,14 @@ assoc		: arg_value tASSOC arg_value
 			$$ = list_append(NEW_LIST(NEW_LIT(ID2SYM($1))), $2);
 		    /*%
 			$$ = dispatch2(assoc_new, $1, $2);
+		    %*/
+		    }
+		| tSTRING_BEG string_contents tLABEL_END arg_value
+		    {
+		    /*%%%*/
+			$$ = list_append(NEW_LIST(dsym_node($2)), $4);
+		    /*%
+			$$ = dispatch2(assoc_new, dispatch1(dyna_symbol, $2), $4);
 		    %*/
 		    }
 		| tDSTAR arg_value
@@ -7653,7 +7675,14 @@ parser_yylex(struct parser_params *parser)
 	}
 	else {
 	    token = parse_string(lex_strterm);
-	    if (token == tSTRING_END || token == tREGEXP_END) {
+	    if (token == tSTRING_END && (peek_n('\'', -1) || peek_n('"', -1))) {
+		if (((IS_lex_state(EXPR_BEG | EXPR_ENDFN) && !COND_P()) || IS_ARG()) &&
+		    IS_LABEL_SUFFIX(0)) {
+		    nextc();
+		    token = tLABEL_END;
+		}
+	    }
+	    if (token == tSTRING_END || token == tREGEXP_END || token == tLABEL_END) {
 		rb_gc_force_recycle((VALUE)lex_strterm);
 		lex_strterm = 0;
 		lex_state = EXPR_END;

@@ -878,6 +878,11 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('label', '{foo: 1}')
   end
 
+  def test_label_end
+    assert_equal %w(":),
+                 scan('label_end', '{"foo-bar": 1}')
+  end
+
   def test_tlambda
     assert_equal %w(->),
                  scan('tlambda', '->{}')
