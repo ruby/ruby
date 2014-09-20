@@ -16,6 +16,9 @@ with all sufficient information, see the ChangeLog file.
 * nil/true/false
   * nil/true/false objects are frozen. [Feature #8923]
 
+* Hash literal
+  * Symbol key followed by a colon can be quoted. [Feature #4276]
+
 === Core classes updates (outstanding ones only)
 
 * Binding
