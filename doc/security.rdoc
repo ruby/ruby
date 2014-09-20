@@ -66,12 +66,15 @@ method, variable and constant names. The reason for this is that symbols are
 simply integers with names attached to them, so they are faster to look up in
 hashtables.
 
-Once a symbol is created, the memory used by it is never freed. If you convert
-user input to symbols with +to_sym+ or +intern+, it is possible for an attacker
-to mount a denial of service attack against your application by flooding it
-with unique strings. Because each string is kept in memory until the Ruby
-process exits, this will cause memory consumption to grow and grow until Ruby
-runs out of memory and crashes.
+Prior to Ruby 2.2, all symbols are immortal and the memory used by it is never
+freed. Starting with Ruby 2.2, symbols can be freed but it is still possible
+to create immortal symbols.
+
+If you convert user input to symbols with +to_sym+ or +intern+, it is possible
+for an attacker to mount a denial of service attack against your application by
+flooding it with unique strings. Because each string could be kept in memory
+until the Ruby process exits, this will cause memory consumption to grow and
+grow until Ruby runs out of memory and crashes.
 
 Be careful with passing user input to methods such as +send+,
 +instance_variable_get+ or +_set+, +const_get+ or +_set+, etc. as these methods
