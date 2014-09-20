@@ -1237,7 +1237,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 		    if (!required) required = rb_ary_tmp_new(1);
 		    list = required;
 		}
-		rb_ary_push(list, INT2FIX(node->nd_body->nd_vid));
+		rb_ary_push(list, ID2SYM(node->nd_body->nd_vid));
 		COMPILE_POPED(optargs, "kwarg", node); /* nd_type(node) == NODE_KW_ARG */
 		node = node->nd_next;
 		i += 1;
@@ -1251,7 +1251,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 		keywords = required;
 	    }
 	    for (j = 0; j < i; j++) {
-		iseq->arg_keyword_table[j] = FIX2INT(RARRAY_AREF(keywords, j));
+		iseq->arg_keyword_table[j] = SYM2ID(RARRAY_AREF(keywords, j));
 	    }
 	    ADD_INSN(optargs, nd_line(args->kw_args), pop);
 	}

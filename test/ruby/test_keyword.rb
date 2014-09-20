@@ -491,4 +491,13 @@ class TestKeywordArguments < Test::Unit::TestCase
       tap { prc.call }
     }, bug8964
   end
+
+  def test_dynamic_symbol_keyword
+    bug10266 = '[ruby-dev:48564] [Bug #10266]'
+    assert_separately(['-', bug10266], <<-'end;') #    do
+      bug = ARGV.shift
+      "hoge".to_sym
+      assert_nothing_raised(bug) {eval("def a(hoge:); end")}
+    end;
+  end
 end

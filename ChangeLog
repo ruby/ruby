@@ -1,3 +1,11 @@
+Sat Sep 20 10:23:00 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_set_arguments): store local variable IDs in
+	  temporary list as Symbols.  previously these are stored as
+	  Fixnums to prevent from GC, but IDs of dynamic symbols can
+	  exceed Fixnum range and cause RangeError at inverting from
+	  Fixnum.  [ruby-dev:48564] [Bug #10266]
+
 Sat Sep 20 10:02:51 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/lib/openssl/x509.rb (OpenSSL::X509::Name#pretty_print):
