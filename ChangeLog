@@ -1,3 +1,11 @@
+Sat Sep 20 10:02:51 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/lib/openssl/x509.rb (OpenSSL::X509::Name#pretty_print):
+	  New method.
+	  (OpenSSL::X509::Certificate#pretty_print): Ditto.
+
+	* ext/openssl/lib/openssl/bn.rb (OpenSSL::BN#pretty_print): Ditto.
+
 Sat Sep 20 07:55:57 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (eval_string_with_cref): fix super from eval with

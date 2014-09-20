@@ -151,11 +151,31 @@ module OpenSSL
 
         alias parse parse_openssl
       end
+
+      def pretty_print(q)
+        q.object_group(self) {
+          q.text ' '
+          q.text to_s(OpenSSL::X509::Name::RFC2253)
+        }
+      end
     end
 
     class StoreContext
       def cleanup
         warn "(#{caller.first}) OpenSSL::X509::StoreContext#cleanup is deprecated with no replacement" if $VERBOSE
+      end
+    end
+
+    class Certificate
+      def pretty_print(q)
+        q.object_group(self) {
+          q.breakable
+          q.text 'subject='; q.pp self.subject; q.text ','; q.breakable
+          q.text 'issuer='; q.pp self.issuer; q.text ','; q.breakable
+          q.text 'serial='; q.pp self.serial; q.text ','; q.breakable
+          q.text 'not_before='; q.pp self.not_before; q.text ','; q.breakable
+          q.text 'not_after='; q.pp self.not_after
+        }
       end
     end
   end
