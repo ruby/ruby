@@ -98,10 +98,12 @@ module DRb
       @socket.close
       File.unlink(path) if @server_mode
       @socket = nil
+      close_shutdown_pipe
     end
 
     def accept
-      s = @socket.accept
+      s = accept_or_shutdown
+      return nil unless s
       self.class.new(nil, s, @config)
     end
 

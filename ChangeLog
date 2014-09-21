@@ -1,3 +1,20 @@
+Mon Sep 22 02:04:25 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/drb/drb.rb: Support graceful shutdown.
+	  (DRbTCPSocket#initialize): Create a pipe for shutdown notification.
+	  (DRbTCPSocket#close): Invoke close_shutdown_pipe.
+	  (DRbTCPSocket#close_shutdown_pipe): New private method.
+	  (DRbTCPSocket#accept): Use accept_or_shutdown.
+	  (DRbTCPSocket#accept_or_shutdown): New private method which returns
+	  nil on shutdown.
+	  (DRbServer#stop_service): Use shutdown instead of Thread#kill.
+	  (DRbServer#run): Break infinite loop when main_loop returns nil.
+	  (DRbServer#main_loop): @protocol.accept may return nil.
+
+	* lib/drb/ssl.rb: Follow above change.
+
+	* lib/drb/unix.rb: Ditto.
+
 Sun Sep 21 13:54:36 2014  Masaki Matsushita <glass.saga@gmail.com>
 
 	* time.c: raise exception when minutes of utc_offset is out of 00-59.

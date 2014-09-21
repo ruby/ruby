@@ -322,7 +322,8 @@ module DRb
     def accept # :nodoc:
       begin
       while true
-        soc = @socket.accept
+        soc = accept_or_shutdown
+        return nil unless soc
         break if (@acl ? @acl.allow_socket?(soc) : true)
         soc.close
       end
