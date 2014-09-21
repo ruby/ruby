@@ -29,7 +29,7 @@ Sun Sep 21 12:10:18 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 Sat Sep 20 03:46:58 2014  Masaki Matsushita <glass.saga@gmail.com>
 
 	* array.c: use rb_equal_opt() for performance improvement.
-          [ruby-core:64954] [Feature #10227]
+	  [ruby-core:64954] [Feature #10227]
 
 Sun Sep 21 11:16:56 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
@@ -38,8 +38,8 @@ Sun Sep 21 11:16:56 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_win32ole_variant.rb
 	  (test_conversion_dbl2date_with_msec,
-	   test_conversion_time2date_with_msec): use assert_in_delta instead
-	   of assert_equal to treat an acceptable error range.
+	  test_conversion_time2date_with_msec): use assert_in_delta instead
+	  of assert_equal to treat an acceptable error range.
 
 Sun Sep 21 11:03:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -52,7 +52,7 @@ Sat Sep 20 03:00:26 2014  Masaki Matsushita <glass.saga@gmail.com>
 	* lib/tempfile.rb: define parameters appropriately and some
 	  refactoring.
 
-	* lib/tmpdir.rb:   ditto.
+	* lib/tmpdir.rb: ditto.
 
 Sat Sep 20 23:58:21 2014  Tanaka Akira  <akr@fsij.org>
 
