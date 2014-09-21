@@ -87,7 +87,6 @@ static void rehash(st_table *);
 
 #define do_hash(key,table) (st_index_t)(*(table)->type->hash)((key))
 #define hash_pos(h,n) ((h) & (n - 1))
-#define do_hash_bin(key,table) hash_pos(do_hash((key), (table)), (table)->num_bins)
 
 /* preparation for possible allocation improvements */
 #define st_alloc_entry() (st_table_entry *)malloc(sizeof(st_table_entry))

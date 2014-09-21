@@ -1,3 +1,7 @@
+Sun Sep 21 19:04:08 2014  Narihiro Nakamura <authornari@gmail.com>
+
+	* st.c (do_hash_bin): unused macro.
+
 Sun Sep 21 18:45:01 2014  Narihiro Nakamura <authornari@gmail.com>
 
 	* parse.y (parser_class_nest): unused variable after YARV
