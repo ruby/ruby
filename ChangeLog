@@ -1,3 +1,13 @@
+Sun Sep 21 14:11:23 2014  Tanaka Akira  <akr@fsij.org>
+
+	* thread_pthread.c (native_set_thread_name): New function to
+	  set thread name visible with ps command on GNU/Linux.
+	  Ex. ps -o %c -L
+
+	* thread.c (thread_start_func_2): Call native_set_thread_name at
+	  beginning.
+	  (rb_thread_inspect_msg): Extract from rb_thread_inspect.
+
 Sun Sep 21 12:49:11 2014  Eric Wong  <e@80x24.org>
 
 	* iseq.c (rb_iseq_defined_string): trim redundant semi-colon

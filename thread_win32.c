@@ -794,4 +794,9 @@ rb_nativethread_self(void)
     return GetCurrentThread();
 }
 
+static void
+native_set_thread_name(rb_thread_t *th)
+{
+}
+
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

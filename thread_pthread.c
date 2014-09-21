@@ -1447,6 +1447,39 @@ timer_thread_sleep(rb_global_vm_lock_t* unused)
 # define SET_THREAD_NAME(name) (void)0
 #endif
 
+static VALUE rb_thread_inspect_msg(VALUE thread, int show_enclosure, int show_location, int show_status);
+
+static void
+native_set_thread_name(rb_thread_t *th)
+{
+#if defined(__linux__) && defined(PR_SET_NAME)
+    VALUE str;
+    char *name, *p;
+    char buf[16];
+    size_t len;
+
+    str = rb_thread_inspect_msg(th->self, 0, 1, 0);
+    name = StringValueCStr(str);
+    if (*name == '@')
+        name++;
+    p = strrchr(name, '/'); /* show only the basename of the path. */
+    if (p && p[1])
+        name = p + 1;
+
+    len = strlen(name);
+    if (len < sizeof(buf)) {
+        memcpy(buf, name, len);
+        buf[len] = '\0';
+    }
+    else {
+        memcpy(buf, name, sizeof(buf)-2);
+        buf[sizeof(buf)-2] = '*';
+        buf[sizeof(buf)-1] = '\0';
+    }
+    SET_THREAD_NAME(buf);
+#endif
+}
+
 static void *
 thread_timer(void *p)
 {

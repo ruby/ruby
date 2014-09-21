@@ -571,6 +571,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	TH_PUSH_TAG(th);
 	if ((state = EXEC_TAG()) == 0) {
 	    SAVE_ROOT_JMPBUF(th, {
+                native_set_thread_name(th);
 		if (!th->first_func) {
 		    GetProcPtr(th->first_proc, proc);
 		    th->errinfo = Qnil;
@@ -2701,15 +2702,8 @@ rb_thread_safe_level(VALUE thread)
     return INT2NUM(th->safe_level);
 }
 
-/*
- * call-seq:
- *   thr.inspect   -> string
- *
- * Dump the name, id, and status of _thr_ to a string.
- */
-
 static VALUE
-rb_thread_inspect(VALUE thread)
+rb_thread_inspect_msg(VALUE thread, int show_enclosure, int show_location, int show_status)
 {
     VALUE cname = rb_class_path(rb_obj_class(thread));
     rb_thread_t *th;
@@ -2718,8 +2712,11 @@ rb_thread_inspect(VALUE thread)
 
     GetThreadPtr(thread, th);
     status = thread_status_name(th);
-    str = rb_sprintf("#<%"PRIsVALUE":%p", cname, (void *)thread);
-    if (!th->first_func && th->first_proc) {
+    if (show_enclosure)
+        str = rb_sprintf("#<%"PRIsVALUE":%p", cname, (void *)thread);
+    else
+        str = rb_str_new(NULL, 0);
+    if (show_location && !th->first_func && th->first_proc) {
 	long i;
 	VALUE v, loc = rb_proc_location(th->first_proc);
 	if (!NIL_P(loc)) {
@@ -2730,10 +2727,26 @@ rb_thread_inspect(VALUE thread)
 	    }
 	}
     }
-    rb_str_catf(str, " %s>", status);
+    if (show_status || show_enclosure)
+        rb_str_catf(str, " %s%s",
+                show_status ? status : "",
+                show_enclosure ? ">" : "");
     OBJ_INFECT(str, thread);
 
     return str;
+}
+
+/*
+ * call-seq:
+ *   thr.inspect   -> string
+ *
+ * Dump the name, id, and status of _thr_ to a string.
+ */
+
+static VALUE
+rb_thread_inspect(VALUE thread)
+{
+    return rb_thread_inspect_msg(thread, 1, 1, 1);
 }
 
 static VALUE
