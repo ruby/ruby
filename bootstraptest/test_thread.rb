@@ -85,7 +85,7 @@ assert_equal %q{ok}, %q{
       ans = :ok
     end
   }
-  Thread.pass
+  Thread.pass until t.stop?
   t.kill
   t.join
   ans
