@@ -26,7 +26,7 @@
 const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 0xC0, 0x4F, 0x8F, 0x5D, 0x9A}};
 #endif
 
-#define WIN32OLE_VERSION "1.8.2"
+#define WIN32OLE_VERSION "1.8.3"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -408,14 +408,13 @@ rbtime2vtdate(VALUE tmobj)
     double t;
     double nsec;
 
-    memset(&st, 0, sizeof(SYSTEMTIME));
     st.wYear = FIX2INT(rb_funcall(tmobj, rb_intern("year"), 0));
     st.wMonth = FIX2INT(rb_funcall(tmobj, rb_intern("month"), 0));
     st.wDay = FIX2INT(rb_funcall(tmobj, rb_intern("mday"), 0));
     st.wHour = FIX2INT(rb_funcall(tmobj, rb_intern("hour"), 0));
     st.wMinute = FIX2INT(rb_funcall(tmobj, rb_intern("min"), 0));
     st.wSecond = FIX2INT(rb_funcall(tmobj, rb_intern("sec"), 0));
-    st.wMilliseconds = FIX2INT(rb_funcall(tmobj, rb_intern("nsec"), 0)) / 1000000;
+    st.wMilliseconds = 0;
     SystemTimeToVariantTime(&st, &t);
 
     /*
@@ -436,6 +435,7 @@ vtdate2rbtime(double date)
     SYSTEMTIME st;
     VALUE v;
     double msec;
+    double sec;
     VariantTimeToSystemTime(date, &st);
     v = rb_funcall(rb_cTime, rb_intern("new"), 6,
 		      INT2FIX(st.wYear),
@@ -444,19 +444,26 @@ vtdate2rbtime(double date)
 		      INT2FIX(st.wHour),
 		      INT2FIX(st.wMinute),
 		      INT2FIX(st.wSecond));
+    st.wYear = FIX2INT(rb_funcall(v, rb_intern("year"), 0));
+    st.wMonth = FIX2INT(rb_funcall(v, rb_intern("month"), 0));
+    st.wDay = FIX2INT(rb_funcall(v, rb_intern("mday"), 0));
+    st.wHour = FIX2INT(rb_funcall(v, rb_intern("hour"), 0));
+    st.wMinute = FIX2INT(rb_funcall(v, rb_intern("min"), 0));
+    st.wSecond = FIX2INT(rb_funcall(v, rb_intern("sec"), 0));
+    st.wMilliseconds = 0;
+    SystemTimeToVariantTime(&st, &sec);
     /*
      * Unfortunately VariantTimeToSystemTime always ignores the
      * wMilliseconds of SYSTEMTIME struct(The wMilliseconds is 0).
      * So, we need to calculate milliseconds by ourselves.
      */
-    msec = fabs(date);
-    msec -= floor(date);
+    msec = date - sec;
     msec *= 24 * 60;
     msec -= floor(msec);
     msec *= 60;
-    msec -= st.wSecond;
-    msec = round(msec * 1000);
-    msec /= 1000;
+    if (msec >= 59) {
+        msec -= 60;
+    }
     if (msec != 0) {
         return rb_funcall(v, rb_intern("+"), 1, rb_float_new(msec));
     }
