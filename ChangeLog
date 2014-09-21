@@ -1,3 +1,12 @@
+Sun Sep 21 13:54:36 2014  Masaki Matsushita <glass.saga@gmail.com>
+
+	* time.c: raise exception when minutes of utc_offset is out of 00-59.
+	  patch is from Kenichi Kamiya.
+	  [ruby-dev:47539] [Bug #8679]
+
+	* test/ruby/test_time.rb: test for above.
+	  patch is from Kenichi Kamiya.
+
 Sun Sep 21 19:04:08 2014  Narihiro Nakamura <authornari@gmail.com>
 
 	* st.c (do_hash_bin): unused macro.

@@ -46,6 +46,7 @@ class TestTime < Test::Unit::TestCase
     tm = [2001,2,28,23,59,30]
     t = Time.new(*tm, "-12:00")
     assert_equal([2001,2,28,23,59,30,-43200], [t.year, t.month, t.mday, t.hour, t.min, t.sec, t.gmt_offset], bug4090)
+    assert_raise(ArgumentError) { Time.new(2000,1,1, 0,0,0, "+01:60") }
   end
 
   def test_time_add()

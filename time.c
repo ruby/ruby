@@ -2092,6 +2092,7 @@ utc_offset_arg(VALUE arg)
 	    if (!ISDIGIT(s[1]) || !ISDIGIT(s[2])) goto invalid_utc_offset;
 	    if (s[3] != ':') goto invalid_utc_offset;
 	    if (!ISDIGIT(s[4]) || !ISDIGIT(s[5])) goto invalid_utc_offset;
+	    if (s[4] > '5') goto invalid_utc_offset;
 	    break;
 	  default:
 	    goto invalid_utc_offset;
