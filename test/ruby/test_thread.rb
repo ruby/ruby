@@ -818,8 +818,10 @@ _eom
 
   def test_main_thread_status_at_exit
     assert_in_out_err([], <<-'INPUT', ["false false aborting"], [])
+q = Queue.new
 Thread.new(Thread.current) {|mth|
   begin
+    q.push nil
     mth.run
     Thead.pass until mth.stop?
     p :mth_stopped # don't run if killed by rb_thread_terminate_all
@@ -827,6 +829,7 @@ Thread.new(Thread.current) {|mth|
     puts "#{mth.alive?} #{mth.status} #{Thread.current.status}"
   end
 }
+q.pop
     INPUT
   end
 
