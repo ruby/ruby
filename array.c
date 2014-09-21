@@ -3846,9 +3846,15 @@ VALUE
 rb_ary_includes(VALUE ary, VALUE item)
 {
     long i;
+    VALUE e;
 
     for (i=0; i<RARRAY_LEN(ary); i++) {
-	if (rb_equal(RARRAY_AREF(ary, i), item)) {
+	e = RARRAY_AREF(ary, i);
+	switch (rb_equal_opt(e, item)) {
+	  case Qundef:
+	    if (rb_equal(e, item)) return Qtrue;
+	    break;
+	  case Qtrue:
 	    return Qtrue;
 	}
     }
