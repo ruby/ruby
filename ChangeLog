@@ -1,3 +1,7 @@
+Sun Sep 21 12:49:11 2014  Eric Wong  <e@80x24.org>
+
+	* iseq.c (rb_iseq_defined_string): trim redundant semi-colon
+
 Sun Sep 21 12:19:29 2014  Eric Wong  <e@80x24.org>
 
 	* file.c (rb_find_file_ext_safe): clear tmp buffer on failure

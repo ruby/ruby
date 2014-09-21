@@ -2063,7 +2063,7 @@ rb_iseq_defined_string(enum defined_type type)
     }
     str = defs[type-1];
     if (!str) {
-	str = rb_str_new_cstr(estr);;
+	str = rb_str_new_cstr(estr);
 	OBJ_FREEZE(str);
 	defs[type-1] = str;
 	rb_gc_register_mark_object(str);
