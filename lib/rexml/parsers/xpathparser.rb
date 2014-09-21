@@ -184,7 +184,6 @@ module REXML
       #  | '/' RelativeLocationPath?
       #  | '//' RelativeLocationPath
       def LocationPath path, parsed
-        #puts "LocationPath '#{path}'"
         path = path.strip
         if path[0] == ?/
           parsed << :document
@@ -196,7 +195,6 @@ module REXML
             path = path[1..-1]
           end
         end
-        #puts parsed.inspect
         return RelativeLocationPath( path, parsed ) if path.size > 0
       end
 
@@ -210,7 +208,6 @@ module REXML
       #  | RelativeLocationPath '//' Step
       AXIS = /^(ancestor|ancestor-or-self|attribute|child|descendant|descendant-or-self|following|following-sibling|namespace|parent|preceding|preceding-sibling|self)::/
       def RelativeLocationPath path, parsed
-        #puts "RelativeLocationPath #{path}"
         while path.size > 0
           # (axis or @ or <child::>) nodetest predicate  >
           # OR                                          >  / Step
@@ -227,7 +224,6 @@ module REXML
             end
           else
             if path[0] == ?@
-              #puts "ATTRIBUTE"
               parsed << :attribute
               path = path[1..-1]
               # Goto Nodetest
@@ -239,10 +235,8 @@ module REXML
               parsed << :child
             end
 
-            #puts "NODETESTING '#{path}'"
             n = []
             path = NodeTest( path, n)
-            #puts "NODETEST RETURNED '#{path}'"
 
             if path[0] == ?[
               path = Predicate( path, n )
@@ -282,7 +276,6 @@ module REXML
       NODE_TYPE  = /^(comment|text|node)\(\s*\)/m
       PI        = /^processing-instruction\(/
       def NodeTest path, parsed
-        #puts "NodeTest with #{path}"
         case path
         when /^\*/
           path = $'
@@ -304,13 +297,11 @@ module REXML
           parsed << :processing_instruction
           parsed << (literal || '')
         when NCNAMETEST
-          #puts "NCNAMETEST"
           prefix = $1
           path = $'
           parsed << :namespace
           parsed << prefix
         when QNAME
-          #puts "QNAME"
           prefix = $1
           name = $2
           path = $'
@@ -324,22 +315,18 @@ module REXML
 
       # Filters the supplied nodeset on the predicate(s)
       def Predicate path, parsed
-        #puts "PREDICATE with #{path}"
         return nil unless path[0] == ?[
         predicates = []
         while path[0] == ?[
           path, expr = get_group(path)
           predicates << expr[1..-2] if expr
         end
-        #puts "PREDICATES = #{predicates.inspect}"
         predicates.each{ |pred|
-          #puts "ORING #{pred}"
           preds = []
           parsed << :predicate
           parsed << preds
           OrExpr(pred, preds)
         }
-        #puts "PREDICATES = #{predicates.inspect}"
         path
       end
 
@@ -350,10 +337,8 @@ module REXML
       #| OrExpr S 'or' S AndExpr
       #| AndExpr
       def OrExpr path, parsed
-        #puts "OR >>> #{path}"
         n = []
         rest = AndExpr( path, n )
-        #puts "OR <<< #{rest}"
         if rest != path
           while rest =~ /^\s*( or )/
             n = [ :or, n, [] ]
@@ -371,16 +356,12 @@ module REXML
       #| AndExpr S 'and' S EqualityExpr
       #| EqualityExpr
       def AndExpr path, parsed
-        #puts "AND >>> #{path}"
         n = []
         rest = EqualityExpr( path, n )
-        #puts "AND <<< #{rest}"
         if rest != path
           while rest =~ /^\s*( and )/
             n = [ :and, n, [] ]
-            #puts "AND >>> #{rest}"
             rest = EqualityExpr( $', n[-1] )
-            #puts "AND <<< #{rest}"
           end
         end
         if parsed.size == 0 and n.size != 0
@@ -394,10 +375,8 @@ module REXML
       #| EqualityExpr ('=' | '!=')  RelationalExpr
       #| RelationalExpr
       def EqualityExpr path, parsed
-        #puts "EQUALITY >>> #{path}"
         n = []
         rest = RelationalExpr( path, n )
-        #puts "EQUALITY <<< #{rest}"
         if rest != path
           while rest =~ /^\s*(!?=)\s*/
             if $1[0] == ?!
@@ -419,10 +398,8 @@ module REXML
       #| RelationalExpr ('<' | '>' | '<=' | '>=') AdditiveExpr
       #| AdditiveExpr
       def RelationalExpr path, parsed
-        #puts "RELATION >>> #{path}"
         n = []
         rest = AdditiveExpr( path, n )
-        #puts "RELATION <<< #{rest}"
         if rest != path
           while rest =~ /^\s*([<>]=?)\s*/
             if $1[0] == ?<
@@ -446,10 +423,8 @@ module REXML
       #| AdditiveExpr ('+' | S '-') MultiplicativeExpr
       #| MultiplicativeExpr
       def AdditiveExpr path, parsed
-        #puts "ADDITIVE >>> #{path}"
         n = []
         rest = MultiplicativeExpr( path, n )
-        #puts "ADDITIVE <<< #{rest}"
         if rest != path
           while rest =~ /^\s*(\+| -)\s*/
             if $1[0] == ?+
@@ -471,10 +446,8 @@ module REXML
       #| MultiplicativeExpr ('*' | S ('div' | 'mod') S) UnaryExpr
       #| UnaryExpr
       def MultiplicativeExpr path, parsed
-        #puts "MULT >>> #{path}"
         n = []
         rest = UnaryExpr( path, n )
-        #puts "MULT <<< #{rest}"
         if rest != path
           while rest =~ /^\s*(\*| div | mod )\s*/
             if $1[0] == ?*
@@ -507,10 +480,8 @@ module REXML
         end
         parsed << :neg if mult < 0
 
-        #puts "UNARY >>> #{path}"
         n = []
         path = UnionExpr( path, n )
-        #puts "UNARY <<< #{path}"
         parsed.concat( n )
         path
       end
@@ -518,10 +489,8 @@ module REXML
       #| UnionExpr '|' PathExpr
       #| PathExpr
       def UnionExpr path, parsed
-        #puts "UNION >>> #{path}"
         n = []
         rest = PathExpr( path, n )
-        #puts "UNION <<< #{rest}"
         if rest != path
           while rest =~ /^\s*(\|)\s*/
             n = [ :union, n, [] ]
@@ -541,16 +510,13 @@ module REXML
       def PathExpr path, parsed
         path =~ /^\s*/
         path = $'
-        #puts "PATH >>> #{path}"
         n = []
         rest = FilterExpr( path, n )
-        #puts "PATH <<< '#{rest}'"
         if rest != path
           if rest and rest[0] == ?/
             return RelativeLocationPath(rest, n)
           end
         end
-        #puts "BEFORE WITH '#{rest}'"
         rest = LocationPath(rest, n) if rest =~ /\A[\/\.\@\[\w*]/
         parsed.concat(n)
         return rest
@@ -559,12 +525,9 @@ module REXML
       #| FilterExpr Predicate
       #| PrimaryExpr
       def FilterExpr path, parsed
-        #puts "FILTER >>> #{path}"
         n = []
         path = PrimaryExpr( path, n )
-        #puts "FILTER <<< #{path}"
         path = Predicate(path, n) if path and path[0] == ?[
-        #puts "FILTER <<< #{path}"
         parsed.concat(n)
         path
       end
@@ -586,23 +549,19 @@ module REXML
           parsed << varname
           #arry << @variables[ varname ]
         when /^(\w[-\w]*)(?:\()/
-          #puts "PrimaryExpr :: Function >>> #$1 -- '#$''"
           fname = $1
           tmp = $'
-          #puts "#{fname} =~ #{NT.inspect}"
           return path if fname =~ NT
           path = tmp
           parsed << :function
           parsed << fname
           path = FunctionCall(path, parsed)
         when NUMBER
-          #puts "LITERAL or NUMBER: #$1"
           varname = $1.nil? ? $2 : $1
           path = $'
           parsed << :literal
           parsed << (varname.include?('.') ? varname.to_f : varname.to_i)
         when LITERAL
-          #puts "LITERAL or NUMBER: #$1"
           varname = $1.nil? ? $2 : $1
           path = $'
           parsed << :literal

@@ -63,18 +63,12 @@ module REXML
     end
 
     def parse path, nodeset
-      #puts "#"*40
       path_stack = @parser.parse( path )
-      #puts "PARSE: #{path} => #{path_stack.inspect}"
-      #puts "PARSE: nodeset = #{nodeset.inspect}"
       match( path_stack, nodeset )
     end
 
     def get_first path, nodeset
-      #puts "#"*40
       path_stack = @parser.parse( path )
-      #puts "PARSE: #{path} => #{path_stack.inspect}"
-      #puts "PARSE: nodeset = #{nodeset.inspect}"
       first( path_stack, nodeset )
     end
 
@@ -93,7 +87,6 @@ module REXML
     #
     # FIXME: This method is incomplete!
     def first( path_stack, node )
-      #puts "#{depth}) Entering match( #{path.inspect}, #{tree.inspect} )"
       return nil if path.size == 0
 
       case path[0]
@@ -102,16 +95,12 @@ module REXML
         return first( path[1..-1], node )
       when :child
         for c in node.children
-          #puts "#{depth}) CHILD checking #{name(c)}"
           r = first( path[1..-1], c )
-          #puts "#{depth}) RETURNING #{r.inspect}" if r
           return r if r
         end
       when :qname
         name = path[2]
-        #puts "#{depth}) QNAME #{name(tree)} == #{name} (path => #{path.size})"
         if node.name == name
-          #puts "#{depth}) RETURNING #{tree.inspect}" if path.size == 3
           return node if path.size == 3
           return first( path[3..-1], node )
         else
@@ -134,10 +123,7 @@ module REXML
 
 
     def match( path_stack, nodeset )
-      #puts "MATCH: path_stack = #{path_stack.inspect}"
-      #puts "MATCH: nodeset = #{nodeset.inspect}"
       r = expr( path_stack, nodeset )
-      #puts "MAIN EXPR => #{r.inspect}"
       r
     end
 
@@ -164,15 +150,9 @@ module REXML
     ALL = [ :attribute, :element, :text, :processing_instruction, :comment ]
     ELEMENTS = [ :element ]
     def expr( path_stack, nodeset, context=nil )
-      #puts "#"*15
-      #puts "In expr with #{path_stack.inspect}"
-      #puts "Returning" if path_stack.length == 0 || nodeset.length == 0
       node_types = ELEMENTS
       return nodeset if path_stack.length == 0 || nodeset.length == 0
       while path_stack.length > 0
-        #puts "#"*5
-        #puts "Path stack = #{path_stack.inspect}"
-        #puts "Nodeset is #{nodeset.inspect}"
         if nodeset.length == 0
           path_stack.clear
           return []
@@ -180,21 +160,15 @@ module REXML
         case (op = path_stack.shift)
         when :document
           nodeset = [ nodeset[0].root_node ]
-          #puts ":document, nodeset = #{nodeset.inspect}"
 
         when :qname
-          #puts "IN QNAME"
           prefix = path_stack.shift
           name = path_stack.shift
           nodeset.delete_if do |node|
             # FIXME: This DOUBLES the time XPath searches take
             ns = get_namespace( node, prefix )
-            #puts "NS = #{ns.inspect}"
-            #puts "node.node_type == :element => #{node.node_type == :element}"
             if node.node_type == :element
-              #puts "node.name == #{name} => #{node.name == name}"
               if node.name == name
-                #puts "node.namespace == #{ns.inspect} => #{node.namespace == ns}"
               end
             end
             !(node.node_type == :element and
@@ -204,10 +178,7 @@ module REXML
           node_types = ELEMENTS
 
         when :any
-          #puts "ANY 1: nodeset = #{nodeset.inspect}"
-          #puts "ANY 1: node_types = #{node_types.inspect}"
           nodeset.delete_if { |node| !node_types.include?(node.node_type) }
-          #puts "ANY 2: nodeset = #{nodeset.inspect}"
 
         when :self
           # This space left intentionally blank
@@ -250,15 +221,11 @@ module REXML
             name = path_stack.shift
             for element in nodeset
               if element.node_type == :element
-                #puts "Element name = #{element.name}"
-                #puts "get_namespace( #{element.inspect}, #{prefix} ) = #{get_namespace(element, prefix)}"
                 attrib = element.attribute( name, get_namespace(element, prefix) )
-                #puts "attrib = #{attrib.inspect}"
                 new_nodeset << attrib if attrib
               end
             end
           when :any
-            #puts "ANY"
             for element in nodeset
               if element.node_type == :element
                 new_nodeset += element.attributes.to_a
@@ -268,10 +235,8 @@ module REXML
           nodeset = new_nodeset
 
         when :parent
-          #puts "PARENT 1: nodeset = #{nodeset}"
           nodeset = nodeset.collect{|n| n.parent}.compact
           #nodeset = expr(path_stack.dclone, nodeset.collect{|n| n.parent}.compact)
-          #puts "PARENT 2: nodeset = #{nodeset.inspect}"
           node_types = ELEMENTS
 
         when :ancestor
@@ -305,41 +270,30 @@ module REXML
           pred = path_stack.shift
           nodeset.each_with_index { |node, index|
             subcontext[ :node ] = node
-            #puts "PREDICATE SETTING CONTEXT INDEX TO #{index+1}"
             subcontext[ :index ] = index+1
             pc = pred.dclone
-            #puts "#{node.hash}) Recursing with #{pred.inspect} and [#{node.inspect}]"
             result = expr( pc, [node], subcontext )
             result = result[0] if result.kind_of? Array and result.length == 1
-            #puts "#{node.hash}) Result = #{result.inspect} (#{result.class.name})"
             if result.kind_of? Numeric
-              #puts "Adding node #{node.inspect}" if result == (index+1)
               new_nodeset << node if result == (index+1)
             elsif result.instance_of? Array
               if result.size > 0 and result.inject(false) {|k,s| s or k}
-                #puts "Adding node #{node.inspect}" if result.size > 0
                 new_nodeset << node if result.size > 0
               end
             else
-              #puts "Adding node #{node.inspect}" if result
               new_nodeset << node if result
             end
           }
-          #puts "New nodeset = #{new_nodeset.inspect}"
-          #puts "Path_stack  = #{path_stack.inspect}"
           nodeset = new_nodeset
 =begin
           predicate = path_stack.shift
           ns = nodeset.clone
           result = expr( predicate, ns )
-          #puts "Result = #{result.inspect} (#{result.class.name})"
-          #puts "nodeset = #{nodeset.inspect}"
           if result.kind_of? Array
             nodeset = result.zip(ns).collect{|m,n| n if m}.compact
           else
             nodeset = result ? nodeset : []
           end
-          #puts "Outgoing NS = #{nodeset.inspect}"
 =end
 
         when :descendant_or_self
@@ -360,7 +314,6 @@ module REXML
           node_types = ELEMENTS
 
         when :following_sibling
-          #puts "FOLLOWING_SIBLING 1: nodeset = #{nodeset}"
           results = []
           nodeset.each do |node|
             next if node.parent.nil?
@@ -369,7 +322,6 @@ module REXML
             following_siblings = all_siblings[ current_index+1 .. -1 ]
             results += expr( path_stack.dclone, following_siblings )
           end
-          #puts "FOLLOWING_SIBLING 2: nodeset = #{nodeset}"
           nodeset = results
 
         when :preceding_sibling
@@ -389,7 +341,6 @@ module REXML
           nodeset.each do |node|
             new_nodeset += preceding( node )
           end
-          #puts "NEW NODESET => #{new_nodeset.inspect}"
           nodeset = new_nodeset
           node_types = ELEMENTS
 
@@ -402,7 +353,6 @@ module REXML
           node_types = ELEMENTS
 
         when :namespace
-          #puts "In :namespace"
           new_nodeset = []
           prefix = path_stack.shift
           nodeset.each do |node|
@@ -414,9 +364,6 @@ module REXML
               else
                 namespaces = node.element.namesapces
               end
-              #puts "Namespaces = #{namespaces.inspect}"
-              #puts "Prefix = #{prefix.inspect}"
-              #puts "Node.namespace = #{node.namespace}"
               if (node.namespace == namespaces[prefix])
                 new_nodeset << node
               end
@@ -434,24 +381,18 @@ module REXML
         # :or and false for :and).
         when :eq, :neq, :lt, :lteq, :gt, :gteq, :or
           left = expr( path_stack.shift, nodeset.dup, context )
-          #puts "LEFT => #{left.inspect} (#{left.class.name})"
           right = expr( path_stack.shift, nodeset.dup, context )
-          #puts "RIGHT => #{right.inspect} (#{right.class.name})"
           res = equality_relational_compare( left, op, right )
-          #puts "RES => #{res.inspect}"
           return res
 
         when :and
           left = expr( path_stack.shift, nodeset.dup, context )
-          #puts "LEFT => #{left.inspect} (#{left.class.name})"
           return [] unless left
           if left.respond_to?(:inject) and !left.inject(false) {|a,b| a | b}
             return []
           end
           right = expr( path_stack.shift, nodeset.dup, context )
-          #puts "RIGHT => #{right.inspect} (#{right.class.name})"
           res = equality_relational_compare( left, op, right )
-          #puts "RES => #{res.inspect}"
           return res
 
         when :div
@@ -492,7 +433,6 @@ module REXML
         when :function
           func_name = path_stack.shift.tr('-','_')
           arguments = path_stack.shift
-          #puts "FUNCTION 0: #{func_name}(#{arguments.collect{|a|a.inspect}.join(', ')})"
           subcontext = context ? nil : { :size => nodeset.size }
 
           res = []
@@ -505,19 +445,15 @@ module REXML
             end
             arg_clone = arguments.dclone
             args = arg_clone.collect { |arg|
-              #puts "FUNCTION 1: Calling expr( #{arg.inspect}, [#{n.inspect}] )"
               expr( arg, [n], cont )
             }
-            #puts "FUNCTION 2: #{func_name}(#{args.collect{|a|a.inspect}.join(', ')})"
             Functions.context = cont
             res << Functions.send( func_name, *args )
-            #puts "FUNCTION 3: #{res[-1].inspect}"
           }
           return res
 
         end
       end # while
-      #puts "EXPR returning #{nodeset.inspect}"
       return nodeset
     end
 
@@ -532,21 +468,15 @@ module REXML
 
     def descendant_or_self( path_stack, nodeset )
       rs = []
-      #puts "#"*80
-      #puts "PATH_STACK = #{path_stack.inspect}"
-      #puts "NODESET = #{nodeset.collect{|n|n.inspect}.inspect}"
       d_o_s( path_stack, nodeset, rs )
-      #puts "RS = #{rs.collect{|n|n.inspect}.inspect}"
       document_order(rs.flatten.compact)
       #rs.flatten.compact
     end
 
     def d_o_s( p, ns, r )
-      #puts "IN DOS with #{ns.inspect}; ALREADY HAVE #{r.inspect}"
       nt = nil
       ns.each_index do |i|
         n = ns[i]
-        #puts "P => #{p.inspect}"
         x = expr( p.dclone, [ n ] )
         nt = n.node_type
         d_o_s( p, n.children, x ) if nt == :element or nt == :document and n.children.size > 0
@@ -574,7 +504,6 @@ module REXML
         end
         new_arry << [ node_idx.reverse, node ]
       }
-      #puts "new_arry = #{new_arry.inspect}"
       new_arry.sort{ |s1, s2| s1[0] <=> s2[0] }.collect{ |s| s[1] }
     end
 
@@ -593,7 +522,6 @@ module REXML
     # preceding:: includes every element in the document that precedes this node,
     # except for ancestors
     def preceding( node )
-      #puts "IN PRECEDING"
       ancestors = []
       p = node.parent
       while p
@@ -603,7 +531,6 @@ module REXML
 
       acc = []
       p = preceding_node_of( node )
-      #puts "P = #{p.inspect}"
       while p
         if ancestors.include? p
           ancestors.delete(p)
@@ -611,15 +538,11 @@ module REXML
           acc << p
         end
         p = preceding_node_of( p )
-        #puts "P = #{p.inspect}"
       end
       acc
     end
 
     def preceding_node_of( node )
-     #puts "NODE: #{node.inspect}"
-     #puts "PREVIOUS NODE: #{node.previous_sibling_node.inspect}"
-     #puts "PARENT NODE: #{node.parent}"
       psn = node.previous_sibling_node
       if psn.nil?
         if node.parent.nil? or node.parent.class == Document
@@ -635,22 +558,16 @@ module REXML
     end
 
     def following( node )
-      #puts "IN PRECEDING"
       acc = []
       p = next_sibling_node( node )
-      #puts "P = #{p.inspect}"
       while p
         acc << p
         p = following_node_of( p )
-        #puts "P = #{p.inspect}"
       end
       acc
     end
 
     def following_node_of( node )
-      #puts "NODE: #{node.inspect}"
-      #puts "PREVIOUS NODE: #{node.previous_sibling_node.inspect}"
-      #puts "PARENT NODE: #{node.parent}"
       if node.kind_of? Element and node.children.size > 0
         return node.children[0]
       end
@@ -665,7 +582,6 @@ module REXML
         end
         node = node.parent
         psn = node.next_sibling_node
-        #puts "psn = #{psn.inspect}"
       end
       return psn
     end
@@ -684,22 +600,17 @@ module REXML
     end
 
     def equality_relational_compare( set1, op, set2 )
-      #puts "EQ_REL_COMP(#{set1.inspect} #{op.inspect} #{set2.inspect})"
       if set1.kind_of? Array and set2.kind_of? Array
-        #puts "#{set1.size} & #{set2.size}"
         if set1.size == 1 and set2.size == 1
           set1 = set1[0]
           set2 = set2[0]
         elsif set1.size == 0 or set2.size == 0
           nd = set1.size==0 ? set2 : set1
           rv = nd.collect { |il| compare( il, op, nil ) }
-          #puts "RV = #{rv.inspect}"
           return rv
         else
           res = []
           SyncEnumerator.new( set1, set2 ).each { |i1, i2|
-            #puts "i1 = #{i1.inspect} (#{i1.class.name})"
-            #puts "i2 = #{i2.inspect} (#{i2.class.name})"
             i1 = norm( i1 )
             i2 = norm( i2 )
             res << compare( i1, op, i2 )
@@ -707,8 +618,6 @@ module REXML
           return res
         end
       end
-      #puts "EQ_REL_COMP: #{set1.inspect} (#{set1.class.name}), #{op}, #{set2.inspect} (#{set2.class.name})"
-      #puts "COMPARING VALUES"
       # If one is nodeset and other is number, compare number to each item
       # in nodeset s.t. number op number(string(item))
       # If one is nodeset and other is string, compare string to each item
@@ -716,7 +625,6 @@ module REXML
       # If one is nodeset and other is boolean, compare boolean to each item
       # in nodeset s.t. boolean op boolean(item)
       if set1.kind_of? Array or set2.kind_of? Array
-        #puts "ISA ARRAY"
         if set1.kind_of? Array
           a = set1
           b = set2
@@ -732,10 +640,8 @@ module REXML
           return a.collect {|v| compare( Functions::number(v), op, b )}
         when /^\d+(\.\d+)?$/
           b = Functions::number( b )
-          #puts "B = #{b.inspect}"
           return a.collect {|v| compare( Functions::number(v), op, b )}
         else
-          #puts "Functions::string( #{b}(#{b.class.name}) ) = #{Functions::string(b)}"
           b = Functions::string( b )
           return a.collect { |v| compare( Functions::string(v), op, b ) }
         end
@@ -749,10 +655,7 @@ module REXML
         #     Convert both to numbers and compare
         s1 = set1.to_s
         s2 = set2.to_s
-        #puts "EQ_REL_COMP: #{set1}=>#{s1}, #{set2}=>#{s2}"
         if s1 == 'true' or s1 == 'false' or s2 == 'true' or s2 == 'false'
-          #puts "Functions::boolean(#{set1})=>#{Functions::boolean(set1)}"
-          #puts "Functions::boolean(#{set2})=>#{Functions::boolean(set2)}"
           set1 = Functions::boolean( set1 )
           set2 = Functions::boolean( set2 )
         else
@@ -769,15 +672,12 @@ module REXML
             set2 = Functions::number( set2 )
           end
         end
-        #puts "EQ_REL_COMP: #{set1} #{op} #{set2}"
-        #puts ">>> #{compare( set1, op, set2 )}"
         return compare( set1, op, set2 )
       end
       return false
     end
 
     def compare a, op, b
-      #puts "COMPARE #{a.inspect}(#{a.class.name}) #{op} #{b.inspect}(#{b.class.name})"
       case op
       when :eq
         a == b

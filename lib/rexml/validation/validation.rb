@@ -15,8 +15,6 @@ module REXML
         puts @root.inspect
       end
       def validate( event )
-        #puts "Current: #@current"
-        #puts "Event: #{event.inspect}"
         @attr_stack = [] unless defined? @attr_stack
         match = @current.next(event)
         raise ValidationException.new( "Validation error.  Expected: "+
@@ -27,7 +25,6 @@ module REXML
         # Check for attributes
         case event[0]
         when :start_element
-          #puts "Checking attributes"
           @attr_stack << event[2]
           begin
             sattr = [:start_attribute, nil]
@@ -35,22 +32,14 @@ module REXML
             text = [:text, nil]
             k, = event[2].find { |key,value|
               sattr[1] = key
-              #puts "Looking for #{sattr.inspect}"
               m = @current.next( sattr )
-              #puts "Got #{m.inspect}"
               if m
                 # If the state has text children...
-                #puts "Looking for #{eattr.inspect}"
-                #puts "Expect #{m.expected}"
                 if m.matches?( eattr )
-                  #puts "Got end"
                   @current = m
                 else
-                  #puts "Didn't get end"
                   text[1] = value
-                  #puts "Looking for #{text.inspect}"
                   m = m.next( text )
-                  #puts "Got #{m.inspect}"
                   text[1] = nil
                   return false unless m
                   @current = m if m
@@ -94,7 +83,6 @@ module REXML
       end
 
       def matches?( event )
-        #puts "#@event_type =? #{event[0]} && #@event_arg =? #{event[1]} "
         return false unless event[0] == @event_type
         case event[0]
         when nil

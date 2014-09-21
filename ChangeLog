@@ -1,3 +1,7 @@
+Sun Sep 21 12:10:18 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/rexml/**/*.rb: removed commented-out code.
+
 Sat Sep 20 03:46:58 2014  Masaki Matsushita <glass.saga@gmail.com>
 
 	* array.c: use rb_equal_opt() for performance improvement.

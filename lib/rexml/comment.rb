@@ -21,7 +21,6 @@ module REXML
     # should be nil, not supplied, or a Parent to be set as the parent
     # of this object
     def initialize( first, second = nil )
-      #puts "IN COMMENT CONSTRUCTOR; SECOND IS #{second.type}"
       super(second)
       if first.kind_of? String
         @string = first
