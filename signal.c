@@ -1089,8 +1089,13 @@ trap(int sig, sighandler_t func, VALUE command)
      * atomically. In current implementation, we only need to don't call
      * RUBY_VM_CHECK_INTS().
      */
-    oldfunc = ruby_signal(sig, func);
-    if (oldfunc == SIG_ERR) rb_sys_fail_str(rb_signo2signm(sig));
+    if (sig == 0) {
+	oldfunc = SIG_ERR;
+    }
+    else {
+	oldfunc = ruby_signal(sig, func);
+	if (oldfunc == SIG_ERR) rb_sys_fail_str(rb_signo2signm(sig));
+    }
     oldcmd = vm->trap_list[sig].cmd;
     switch (oldcmd) {
       case 0:

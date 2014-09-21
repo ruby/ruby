@@ -177,6 +177,14 @@ class TestSignal < Test::Unit::TestCase
     end
   end
 
+  def test_sigexit
+    assert_in_out_err([], 'Signal.trap(:EXIT) {print "OK"}', ["OK"])
+    assert_in_out_err([], 'Signal.trap("EXIT") {print "OK"}', ["OK"])
+    assert_in_out_err([], 'Signal.trap(:SIGEXIT) {print "OK"}', ["OK"])
+    assert_in_out_err([], 'Signal.trap("SIGEXIT") {print "OK"}', ["OK"])
+    assert_in_out_err([], 'Signal.trap(0) {print "OK"}', ["OK"])
+  end
+
   def test_kill_immediately_before_termination
     Signal.list[sig = "USR1"] or sig = "INT"
     assert_in_out_err(["-e", <<-"end;"], "", %w"foo")
