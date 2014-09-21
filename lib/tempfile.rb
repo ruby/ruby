@@ -122,7 +122,7 @@ class Tempfile < DelegateClass(File)
   #
   # If Tempfile.new cannot find a unique filename within a limited
   # number of tries, then it will raise an exception.
-  def initialize(basename, tmpdir=nil, mode: 0, **opts)
+  def initialize(basename, tmpdir=nil, mode: 0, **options)
     if block_given?
       warn "Tempfile.new doesn't call the given block."
     end
@@ -130,7 +130,7 @@ class Tempfile < DelegateClass(File)
     @clean_proc = Remover.new(@data)
     ObjectSpace.define_finalizer(self, @clean_proc)
 
-    ::Dir::Tmpname.create(basename, tmpdir, opts) do |tmpname, n, opts|
+    ::Dir::Tmpname.create(basename, tmpdir, options) do |tmpname, n, opts|
       mode |= File::RDWR|File::CREAT|File::EXCL
       opts[:perm] = 0600
       @data[1] = @tmpfile = File.open(tmpname, mode, opts)
@@ -347,9 +347,9 @@ end
 #      ... do something with f ...
 #   end
 #
-def Tempfile.create(basename, tmpdir=nil, mode: 0, **opts)
+def Tempfile.create(basename, tmpdir=nil, mode: 0, **options)
   tmpfile = nil
-  Dir::Tmpname.create(basename, tmpdir, opts) do |tmpname, n, opts|
+  Dir::Tmpname.create(basename, tmpdir, options) do |tmpname, n, opts|
     mode |= File::RDWR|File::CREAT|File::EXCL
     opts[:perm] = 0600
     tmpfile = File.open(tmpname, mode, opts)
