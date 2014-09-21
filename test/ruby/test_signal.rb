@@ -192,31 +192,6 @@ class TestSignal < Test::Unit::TestCase
     End
   end if Signal.list.key?('QUIT')
 
-  def test_signal_requiring
-    t = Tempfile.new(%w"require_ensure_test .rb")
-    t.puts "sleep"
-    t.close
-    error = IO.popen([EnvUtil.rubybin, "-e", <<EOS, t.path, :err => File::NULL]) do |child|
-trap(:INT, "DEFAULT")
-th = Thread.new do
-  begin
-    require ARGV[0]
-  ensure
-    err = $! ? [$!, $!.backtrace] : $!
-    Marshal.dump(err, STDOUT)
-    STDOUT.flush
-  end
-end
-Thread.pass while th.running?
-Process.kill(:INT, $$)
-th.join
-EOS
-      Marshal.load(child)
-    end
-    t.close!
-    assert_nil(error)
-  end if Process.respond_to?(:kill)
-
   def test_reserved_signal
     assert_raise(ArgumentError) {
       Signal.trap(:SEGV) {}
