@@ -258,6 +258,18 @@ ruby_signal_name(int no)
     return signo2signm(no);
 }
 
+static VALUE
+rb_signo2signm(int signo)
+{
+    const char *const signm = signo2signm(signo);
+    if (signm) {
+	return rb_sprintf("SIG%s", signm);
+    }
+    else {
+	return rb_sprintf("SIG%u", signo);
+    }
+}
+
 /*
  * call-seq:
  *    SignalException.new(sig_name)              ->  signal_exception
@@ -290,13 +302,7 @@ esignal_init(int argc, VALUE *argv, VALUE self)
 	    sig = argv[1];
 	}
 	else {
-	    signm = signo2signm(signo);
-	    if (signm) {
-		sig = rb_sprintf("SIG%s", signm);
-	    }
-	    else {
-		sig = rb_sprintf("SIG%u", signo);
-	    }
+	    sig = rb_signo2signm(signo);
 	}
     }
     else {
@@ -600,8 +606,12 @@ ruby_signal(int signum, sighandler_t handler)
     }
     (void)VALGRIND_MAKE_MEM_DEFINED(&old, sizeof(old));
     if (sigaction(signum, &sigact, &old) < 0) {
-	if (errno != 0 && errno != EINVAL) {
-	    rb_bug_errno("sigaction", errno);
+	int e = errno;
+	if (e == EINVAL) {
+	    rb_syserr_fail_str(e, rb_signo2signm(signum));
+	}
+	else if (e != 0) {
+	    rb_bug_errno("sigaction", e);
 	}
     }
     if (old.sa_flags & SA_SIGINFO)

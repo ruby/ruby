@@ -169,6 +169,14 @@ class TestSignal < Test::Unit::TestCase
     end
   end if Process.respond_to?(:kill)
 
+  %w"KILL STOP".each do |sig|
+    if Signal.list.key?(sig)
+      define_method("test_trap_uncatchable_#{sig}") do
+        assert_raise(Errno::EINVAL, "SIG#{sig} is not allowed to be caught") { Signal.trap(sig) {} }
+      end
+    end
+  end
+
   def test_kill_immediately_before_termination
     Signal.list[sig = "USR1"] or sig = "INT"
     assert_in_out_err(["-e", <<-"end;"], "", %w"foo")

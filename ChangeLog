@@ -1,3 +1,9 @@
+Sun Sep 21 11:03:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (ruby_signal): although "EINVAL from sigaction(2) is
+	  not a bug", but even it is a failure.  pointed at toRuby/guRuby
+	  in RubyHiroba.
+
 Sat Sep 20 03:00:26 2014  Masaki Matsushita <glass.saga@gmail.com>
 
 	* lib/tempfile.rb: define parameters appropriately and some
