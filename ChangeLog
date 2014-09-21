@@ -1,3 +1,8 @@
+Sun Sep 21 18:45:01 2014  Narihiro Nakamura <authornari@gmail.com>
+
+	* parse.y (parser_class_nest): unused variable after YARV
+	  merged (r11439).
+
 Sun Sep 21 18:14:03 2014  Narihiro Nakamura <authornari@gmail.com>
 
 	* st.c (numberof): unused. internal.h has same macro.

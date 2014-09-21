@@ -219,7 +219,6 @@ struct parser_params {
     stack_type parser_cond_stack;
     stack_type parser_cmdarg_stack;
     enum lex_state_e parser_lex_state;
-    int parser_class_nest;
     int parser_paren_nest;
     int parser_lpar_beg;
     int parser_in_single;
@@ -301,7 +300,6 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define lex_state		(parser->parser_lex_state)
 #define cond_stack		(parser->parser_cond_stack)
 #define cmdarg_stack		(parser->parser_cmdarg_stack)
-#define class_nest		(parser->parser_class_nest)
 #define paren_nest		(parser->parser_paren_nest)
 #define lpar_beg		(parser->parser_lpar_beg)
 #define brace_nest		(parser->parser_brace_nest)
@@ -10144,7 +10142,6 @@ parser_initialize(struct parser_params *parser)
     parser->parser_lex_strterm = 0;
     parser->parser_cond_stack = 0;
     parser->parser_cmdarg_stack = 0;
-    parser->parser_class_nest = 0;
     parser->parser_paren_nest = 0;
     parser->parser_lpar_beg = 0;
     parser->parser_brace_nest = 0;
