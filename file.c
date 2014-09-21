@@ -5609,6 +5609,7 @@ rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int safe_level)
 	}
 	rb_str_set_len(fname, fnlen);
     }
+    rb_str_resize(tmp, 0);
     RB_GC_GUARD(load_path);
     return 0;
 }
@@ -5661,6 +5662,7 @@ rb_find_file_safe(VALUE path, int safe_level)
 		if (rb_file_load_ok(f)) goto found;
 	    }
 	}
+	rb_str_resize(tmp, 0);
 	return 0;
     }
     else {
