@@ -606,13 +606,7 @@ ruby_signal(int signum, sighandler_t handler)
     }
     (void)VALGRIND_MAKE_MEM_DEFINED(&old, sizeof(old));
     if (sigaction(signum, &sigact, &old) < 0) {
-	int e = errno;
-	if (e == EINVAL) {
-	    rb_syserr_fail_str(e, rb_signo2signm(signum));
-	}
-	else if (e != 0) {
-	    rb_bug_errno("sigaction", e);
-	}
+	return SIG_ERR;
     }
     if (old.sa_flags & SA_SIGINFO)
 	return (sighandler_t)old.sa_sigaction;
@@ -1096,6 +1090,7 @@ trap(int sig, sighandler_t func, VALUE command)
      * RUBY_VM_CHECK_INTS().
      */
     oldfunc = ruby_signal(sig, func);
+    if (oldfunc == SIG_ERR) rb_sys_fail_str(rb_signo2signm(sig));
     oldcmd = vm->trap_list[sig].cmd;
     switch (oldcmd) {
       case 0:
@@ -1235,7 +1230,7 @@ sig_list(void)
     return h;
 }
 
-static void
+static int
 install_sighandler(int signum, sighandler_t handler)
 {
     sighandler_t old;
@@ -1243,21 +1238,25 @@ install_sighandler(int signum, sighandler_t handler)
     /* At this time, there is no subthread. Then sigmask guarantee atomics. */
     rb_disable_interrupt();
     old = ruby_signal(signum, handler);
+    if (old == SIG_ERR) return -1;
     /* signal handler should be inherited during exec. */
     if (old != SIG_DFL) {
 	ruby_signal(signum, old);
     }
     rb_enable_interrupt();
+    return 0;
 }
+#define install_sighandler(signum, handler) (install_sighandler(signum, handler) ? rb_bug(#signum) : (void)0)
 
 #if defined(SIGCLD) || defined(SIGCHLD)
-static void
+static int
 init_sigchld(int sig)
 {
     sighandler_t oldfunc;
 
     rb_disable_interrupt();
     oldfunc = ruby_signal(sig, SIG_DFL);
+    if (oldfunc == SIG_ERR) return -1;
     if (oldfunc != SIG_DFL && oldfunc != SIG_IGN) {
 	ruby_signal(sig, oldfunc);
     }
@@ -1265,7 +1264,9 @@ init_sigchld(int sig)
 	GET_VM()->trap_list[sig].cmd = 0;
     }
     rb_enable_interrupt();
+    return 0;
 }
+#define init_sigchld(signum) (init_sigchld(signum) ? rb_bug(#signum) : (void)0)
 #endif
 
 void
