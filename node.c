@@ -49,9 +49,6 @@
 #define F_LIT(name, ann)	    SIMPLE_FIELD(#name, #name " (" ann ")", A_LIT(node->name))
 #define F_MSG(name, ann, desc)	    SIMPLE_FIELD(#name, #name " (" ann ")", A(desc))
 
-#define F_CUSTOM2(name, ann, block) \
-    COMPOUND_FIELD(#name, #name " (" ann ")", block)
-
 #define F_NODE(name, ann) \
     COMPOUND_FIELD(#name, #name " (" ann ")", dump_node(buf, indent, comment, node->name))
 

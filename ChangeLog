@@ -1,3 +1,9 @@
+Sun Sep 21 18:14:03 2014  Narihiro Nakamura <authornari@gmail.com>
+
+	* st.c (numberof): unused. internal.h has same macro.
+
+	* node.c (F_CUSTOM2): unused.
+
 Sun Sep 21 14:11:23 2014  Tanaka Akira  <akr@fsij.org>
 
 	* thread_pthread.c (native_set_thread_name): New function to

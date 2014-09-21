@@ -83,8 +83,6 @@ static void rehash(st_table *);
 #define free(x) xfree(x)
 #endif
 
-#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
-
 #define EQUAL(table,x,y) ((x)==(y) || (*(table)->type->compare)((x),(y)) == 0)
 
 #define do_hash(key,table) (st_index_t)(*(table)->type->hash)((key))
