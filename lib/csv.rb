@@ -238,10 +238,10 @@ class CSV
       headers.each { |h| h.freeze if h.is_a? String }
 
       # handle extra headers or fields
-      @row = if headers.size > fields.size
+      @row = if headers.size >= fields.size
         headers.zip(fields)
       else
-        fields.zip(headers).map { |pair| pair.reverse }
+        fields.zip(headers).map { |pair| pair.reverse! }
       end
     end
 

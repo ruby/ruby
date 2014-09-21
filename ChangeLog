@@ -1,3 +1,8 @@
+Sat Sep 20 04:42:18 2014  Masaki Matsushita <glass.saga@gmail.com>
+
+	* lib/csv.rb: avoid unnecessary object allocations.
+	  patch is from Andrew Vit. [ruby-core:63215] [Feature #9952]
+
 Sun Sep 21 12:10:18 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/rexml/**/*.rb: removed commented-out code.
