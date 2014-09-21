@@ -131,7 +131,7 @@ Thu Sep 18 16:26:27 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/rubygems/test_gem_commands_setup_command.rb: @ui uses StringIO
 	  as its streams, and Encoding.default_external does not effect to
-	  stringIOs already exist.  so, we need to set external_encoding of
+	  StringIOs already exist.  so, we need to set external_encoding of
 	  @ui.outs directly.  this problem (test failure) does not appear in
 	  the environments default_external is us-ascii or utf-8.
 
