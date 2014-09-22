@@ -818,6 +818,7 @@ _eom
 
   def test_main_thread_status_at_exit
     assert_in_out_err([], <<-'INPUT', ["false false aborting"], [])
+require 'thread'
 q = Queue.new
 Thread.new(Thread.current) {|mth|
   begin
