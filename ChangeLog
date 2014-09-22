@@ -1,3 +1,10 @@
+Mon Sep 22 20:00:29 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_win32ole_variant.rb
+	  (test_conversion_time2date_with_msec): test by using only
+	  assert_in_delta  to avoid to fail when converting Time object with
+	  999999999 nanoseconds into VT_DATE Variant.
+
 Mon Sep 22 19:49:12 2014  Zachary Scott  <e@zzak.io>
 
 	* doc/syntax/methods.rdoc: [DOC] [] and []= methods by @process

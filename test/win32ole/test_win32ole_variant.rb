@@ -400,13 +400,26 @@ if defined?(WIN32OLE_VARIANT)
       t0 = Time.new(2014, 8, 27, 12, 34, 56)
       t0 += 0.789
       t1 = WIN32OLE_VARIANT.new(t0).value
-      assert_equal("2014-08-27 12:34:56", t1.strftime('%Y-%m-%d %H:%M:%S'))
-      assert_in_delta(0.789, t1.nsec / 1000000000.0, 0.001)
+
+      # The t0.nsec is 789000000 and t1.nsec is 789000465
+      # because of error range by conversion Time between VT_DATE Variant.
+      # So check t1 and t0 are in error by less than one millisecond.
+      msg = "Expected:#{t0.strftime('%Y-%m-%dT%H:%M:%S.%N')} but was:#{t1.strftime('%Y-%m-%dT%H:%M:%S.%N')}"
+      assert_in_delta(t0, t1, 0.001, msg)
+
+      t0 = Time.new(2014, 8, 27, 12, 34, 56)
+      t0 += 0.999999999
+      t1 = WIN32OLE_VARIANT.new(t0).value
+      msg = "Expected:#{t0.strftime('%Y-%m-%dT%H:%M:%S.%N')} but was:#{t1.strftime('%Y-%m-%dT%H:%M:%S.%N')}"
+
+      # The t0 is "2014/08/27 12:34.56.999999999" and
+      # the t1 is "2014/08/27 12:34:57.000000628"
+      assert_in_delta(t0, t1, 0.001, msg)
 
       t0 = Time.now
       t1 = WIN32OLE_VARIANT.new(t0).value
-      assert_equal(t0.strftime('%Y-%m-%d %H:%M:%S'), t1.strftime('%Y-%m-%d %H:%M:%S'))
-      assert_in_delta(t0.nsec/1000000000.0, t1.nsec / 1000000000.0, 0.001)
+      msg = "Expected:#{t0.strftime('%Y-%m-%dT%H:%M:%S.%N')} but was:#{t1.strftime('%Y-%m-%dT%H:%M:%S.%N')}"
+      assert_in_delta(t0, t1, 0.001, msg)
     end
 
     # this test failed because of VariantTimeToSystemTime
