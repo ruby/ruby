@@ -31,7 +31,7 @@ os:
 
 matrix:
   allow_failures:
-    - os: osx
+    - os: linux
   exclude:
     - os: osx
       compiler: gcc

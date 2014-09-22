@@ -1,3 +1,8 @@
+Mon Sep 22 18:21:35 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* .travis.yml: Only osx build is enabled. linux builds is random failure
+	  and test results of major linux is covered by rubyci.
+
 Mon Sep 22 12:10:29 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_time_tz.rb: Fix test error with tzdata-2014g.
