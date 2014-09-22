@@ -1,3 +1,8 @@
+Mon Sep 22 12:10:29 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_time_tz.rb: Fix test error with tzdata-2014g.
+	  [ruby-core:65058] [Bug #10245] Reported by Vit Ondruch.
+
 Mon Sep 22 09:28:43 2014  Eric Wong  <e@80x24.org>
 
 	* ext/socket/ancdata.c ({send,recv}msg_args_struct): 24 => 16 bytes
