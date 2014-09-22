@@ -824,7 +824,7 @@ Thread.new(Thread.current) {|mth|
   begin
     q.push nil
     mth.run
-    Thead.pass until mth.stop?
+    Thread.pass until mth.stop?
     p :mth_stopped # don't run if killed by rb_thread_terminate_all
   ensure
     puts "#{mth.alive?} #{mth.status} #{Thread.current.status}"
