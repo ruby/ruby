@@ -400,8 +400,8 @@ wait_connectable(int fd)
 
 struct connect_arg {
     int fd;
-    const struct sockaddr *sockaddr;
     socklen_t len;
+    const struct sockaddr *sockaddr;
 };
 
 static VALUE

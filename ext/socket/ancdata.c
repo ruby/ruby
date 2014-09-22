@@ -1105,8 +1105,8 @@ ancillary_cmsg_is_p(VALUE self, VALUE vlevel, VALUE vtype)
 #if defined(HAVE_SENDMSG)
 struct sendmsg_args_struct {
     int fd;
-    const struct msghdr *msg;
     int flags;
+    const struct msghdr *msg;
 };
 
 static void *
@@ -1358,8 +1358,8 @@ rsock_bsock_sendmsg_nonblock(int argc, VALUE *argv, VALUE sock)
 #if defined(HAVE_RECVMSG)
 struct recvmsg_args_struct {
     int fd;
-    struct msghdr *msg;
     int flags;
+    struct msghdr *msg;
 };
 
 ssize_t
