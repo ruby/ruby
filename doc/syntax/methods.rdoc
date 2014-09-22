@@ -109,6 +109,25 @@ operator with an <code>@</code> as in <code>+@</code> or <code>!@</code>:
 
 Unary methods accept zero arguments.
 
+Additionally, methods for element reference and assignment may be defined: 
+<code>[]</code> and <code>[]=</code> respectively. Both can take one or more 
+arguments, and element reference can take none.
+
+  class C
+    def [](a, b)
+      puts a + b
+    end
+    
+    def []=(a, b, c)
+      puts a * b + c
+    end
+  end
+  
+  obj = C.new
+  
+  obj[2, 3]     # prints "5"
+  obj[2, 3] = 4 # prints "10"
+
 == Return Values
 
 By default, a method returns the last expression that was evaluated in the body

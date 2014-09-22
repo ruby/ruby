@@ -1,3 +1,8 @@
+Mon Sep 22 19:49:12 2014  Zachary Scott  <e@zzak.io>
+
+	* doc/syntax/methods.rdoc: [DOC] [] and []= methods by @process
+	  [Fixes GH-662] https://github.com/ruby/ruby/pull/662
+
 Mon Sep 22 18:21:35 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* .travis.yml: Only osx build is enabled. linux builds is random failure
