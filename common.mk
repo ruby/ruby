@@ -1081,6 +1081,14 @@ $(srcdir)/tool/config.guess:
 $(srcdir)/tool/config.sub:
 	$(Q) $(BASERUBY) -C $(@D) get-config_files $(@F)
 
+update-gems: PHONY
+	$(Q) $(RUNRUBY) -I$(srcdir)/tool -rdownloader -ans \
+	    -e 'gem, ver = *$$F' \
+	    -e 'gem = "#{gem}-#{ver}.gem"' \
+	    -e 'puts "updating #{gem}"' \
+	    -e 'Downloader.download(:rubygems, gem, $$gemdir)' \
+	    -- -gemdir=$(srcdir)/gems $(srcdir)/gems/bundled_gems
+
 info: info-program info-libruby_a info-libruby_so info-arch
 info-program:
 	@echo PROGRAM=$(PROGRAM)
