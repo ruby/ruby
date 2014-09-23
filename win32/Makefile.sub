@@ -377,6 +377,8 @@ VCSUP = $(VCS) rebase $(GITSVNREBASEOPTIONS)
 !else if exist($(srcdir)/.git)
 VCS = git
 VCSUP = $(VCS) pull $(GITPULLOPTIONS)
+!else
+VCSUP = rem
 !endif
 ruby_pc = $(RUBY_BASE_NAME)-$(MAJOR).$(MINOR).pc
 
