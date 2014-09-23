@@ -1,3 +1,7 @@
+Tue Sep 23 11:55:09 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* .travis.yml: added rubyspec into travis tasks and eliminate to stdout.
+
 Mon Sep 22 20:00:29 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_win32ole_variant.rb
