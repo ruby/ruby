@@ -641,7 +641,7 @@ class Matrix
   #++
 
   #
-  # Returns +true+ is this is a diagonal matrix.
+  # Returns +true+ if this is a diagonal matrix.
   # Raises an error if matrix is not square.
   #
   def diagonal?
@@ -658,7 +658,7 @@ class Matrix
   end
 
   #
-  # Returns +true+ is this is an hermitian matrix.
+  # Returns +true+ if this is an hermitian matrix.
   # Raises an error if matrix is not square.
   #
   def hermitian?
@@ -669,14 +669,14 @@ class Matrix
   end
 
   #
-  # Returns +true+ is this is a lower triangular matrix.
+  # Returns +true+ if this is a lower triangular matrix.
   #
   def lower_triangular?
     each(:strict_upper).all?(&:zero?)
   end
 
   #
-  # Returns +true+ is this is a normal matrix.
+  # Returns +true+ if this is a normal matrix.
   # Raises an error if matrix is not square.
   #
   def normal?
@@ -694,7 +694,7 @@ class Matrix
   end
 
   #
-  # Returns +true+ is this is an orthogonal matrix
+  # Returns +true+ if this is an orthogonal matrix
   # Raises an error if matrix is not square.
   #
   def orthogonal?
@@ -712,7 +712,7 @@ class Matrix
   end
 
   #
-  # Returns +true+ is this is a permutation matrix
+  # Returns +true+ if this is a permutation matrix
   # Raises an error if matrix is not square.
   #
   def permutation?
@@ -748,21 +748,21 @@ class Matrix
   end
 
   #
-  # Returns +true+ is this is a singular matrix.
+  # Returns +true+ if this is a singular matrix.
   #
   def singular?
     determinant == 0
   end
 
   #
-  # Returns +true+ is this is a square matrix.
+  # Returns +true+ if this is a square matrix.
   #
   def square?
     column_count == row_count
   end
 
   #
-  # Returns +true+ is this is a symmetric matrix.
+  # Returns +true+ if this is a symmetric matrix.
   # Raises an error if matrix is not square.
   #
   def symmetric?
@@ -774,7 +774,7 @@ class Matrix
   end
 
   #
-  # Returns +true+ is this is a unitary matrix
+  # Returns +true+ if this is a unitary matrix
   # Raises an error if matrix is not square.
   #
   def unitary?
@@ -792,14 +792,14 @@ class Matrix
   end
 
   #
-  # Returns +true+ is this is an upper triangular matrix.
+  # Returns +true+ if this is an upper triangular matrix.
   #
   def upper_triangular?
     each(:strict_lower).all?(&:zero?)
   end
 
   #
-  # Returns +true+ is this is a matrix with only zero elements
+  # Returns +true+ if this is a matrix with only zero elements
   #
   def zero?
     all?(&:zero?)
