@@ -1,8 +1,3 @@
-Tue Sep 23 22:00:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* parse.y (parse_ident): just after a label, new expression should
-	  start, cannot be a modifier.  [ruby-core:65211] [Bug #10279]
-
 Tue Sep 23 22:00:20 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parse_ident): just after a label, new expression should
