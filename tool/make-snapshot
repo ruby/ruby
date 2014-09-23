@@ -224,8 +224,7 @@ def package(rev, destdir)
       rescue LoadError
         abort "Error!!! Copy 'downloader.rb' from 'tool' directory of the recent ruby repository!"
       end
-      url = "http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=%s;hb=HEAD" % conf
-      Downloader.download(url, conf, "tool")
+      Downloader.download(:gnu, conf, "tool")
     end
     File.open(clean.add("cross.rb"), "w") do |f|
       f.puts "Object.__send__(:remove_const, :CROSS_COMPILING) if defined?(CROSS_COMPILING)"
@@ -283,7 +282,7 @@ def package(rev, destdir)
       bundled_gems.split("\n").map(&:split).each do |gem, ver|
         gem_name = "#{gem}-#{ver}.gem"
         unless File.file?("gems/#{gem_name}")
-          Downloader.download("https://rubygems.org/downloads/#{gem_name}", gem_name, "gems")
+          Downloader.download(:rubygems, gem_name, "gems")
         end
       end
     end

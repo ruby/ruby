@@ -1,6 +1,29 @@
 require 'open-uri'
 
 class Downloader
+  def self.gnu(name)
+    "http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=#{name};hb=HEAD"
+  end
+
+  def self.rubygems(name)
+    "https://rubygems.org/downloads/#{name}"
+  end
+
+  def self.uri_to_download(url, name)
+    from, url = url
+    case from
+    when :gnu
+      url = gnu(url || name)
+    when :rubygems, :gems
+      url = rubygems(url || name)
+    when Symbol
+      raise ArgumentError, "unkonwn site - #{from}"
+    else
+      url = from
+    end
+    URI(url)
+  end
+
   def self.mode_for(data)
     data.start_with?("#!") ? 0755 : 0644
   end
@@ -34,7 +57,7 @@ class Downloader
   #           'enc/unicode/data/UnicodeData.txt'
   def self.download(url, name, dir = nil, ims = true)
     file = dir ? File.join(dir, name) : name
-    url = URI(url)
+    url = uri_to_download(url, name)
     begin
       data = url.read(http_options(file, ims))
     rescue OpenURI::HTTPError => http_error
@@ -53,7 +76,7 @@ class Downloader
     end
     true
   rescue => e
-    raise "failed to download #{name}\n#{e.message}: #{url}"
+    raise e.class, "failed to download #{name}\n#{e.message}: #{url}", e.backtrace
   end
 
   def self.download_if_modified_since(url, name, dir = nil)
