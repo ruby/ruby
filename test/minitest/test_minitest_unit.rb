@@ -197,11 +197,7 @@ class TestMiniTestUnit < MetaMetaMetaTestCase
   end
 
   def util_expand_bt bt
-    if RUBY_VERSION >= '1.9.0' then
-      bt.map { |f| (f =~ /^\./) ? File.expand_path(f) : f }
-    else
-      bt
-    end
+    bt.map { |f| (f =~ /^\./) ? File.expand_path(f) : f }
   end
 end
 
