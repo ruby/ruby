@@ -8195,7 +8195,7 @@ parser_yylex(struct parser_params *parser)
 			    return keyword_do_block;
 			return keyword_do;
 		    }
-		    if (IS_lex_state_for(state, (EXPR_BEG | EXPR_VALUE)))
+		    if (IS_lex_state_for(state, (EXPR_BEG | EXPR_VALUE | EXPR_LABELARG)))
 			return kw->id[0];
 		    else {
 			if (kw->id[0] != kw->id[1])
