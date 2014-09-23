@@ -9,8 +9,8 @@
 
 == 使い方
 
-クラスに対してextendして使います. 
-  
+クラスに対してextendして使います.
+
   class Foo
     extend Forwardable
 
@@ -50,7 +50,7 @@
 
 == 使い方
 
-オブジェクトに対して((|extend|))して使います. 
+オブジェクトに対して((|extend|))して使います.
 
   g = Goo.new
   g.extend SingleForwardable
