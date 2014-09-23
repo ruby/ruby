@@ -2,34 +2,43 @@ require 'test/unit'
 
 class TestTimeTZ < Test::Unit::TestCase
   has_right_tz = true
+  has_lisbon_tz = true
   force_tz_test = ENV["RUBY_FORCE_TIME_TZ_TEST"] == "yes"
   case RUBY_PLATFORM
   when /linux/
     force_tz_test = true
   when /darwin|freebsd/
-    has_right_tz = false
+    has_lisbon_tz = false
     force_tz_test = true
   end
 
   if force_tz_test
-    def with_tz(tz)
-      old = ENV["TZ"]
-      begin
-        ENV["TZ"] = tz
-        yield
-      ensure
-        ENV["TZ"] = old
+    module Util
+      def with_tz(tz)
+        old = ENV["TZ"]
+        begin
+          ENV["TZ"] = tz
+          yield
+        ensure
+          ENV["TZ"] = old
+        end
       end
     end
   else
-    def with_tz(tz)
-      if ENV["TZ"] == tz
-        yield
+    module Util
+      def with_tz(tz)
+        if ENV["TZ"] == tz
+          yield
+        end
       end
     end
   end
 
   module Util
+    def have_tz_offset?(tz)
+      with_tz(tz) {!Time.now.utc_offset.zero?}
+    end
+
     def format_gmtoff(gmtoff, colon=false)
       if gmtoff < 0
         expected = "-"
@@ -72,14 +81,11 @@ class TestTimeTZ < Test::Unit::TestCase
   include Util
   extend Util
 
-  if RUBY_VERSION < "1.9"
-    def time_to_s(t)
-      t.strftime("%Y-%m-%d %H:%M:%S ") + format_gmtoff(t.gmtoff)
-    end
-  else
-    def time_to_s(t)
-      t.to_s
-    end
+  has_right_tz &&= have_tz_offset?("right/America/Los_Angeles")
+  has_lisbon_tz &&= have_tz_offset?("Europe/Lisbon")
+
+  def time_to_s(t)
+    t.to_s
   end
 
 
@@ -153,7 +159,7 @@ class TestTimeTZ < Test::Unit::TestCase
     with_tz(tz="Europe/Lisbon") {
       assert_equal("LMT", Time.new(-0x1_0000_0000_0000_0000).zone)
     }
-  end if has_right_tz
+  end if has_lisbon_tz
 
   def test_europe_moscow
     with_tz(tz="Europe/Moscow") {
@@ -200,35 +206,42 @@ class TestTimeTZ < Test::Unit::TestCase
     s.sub(/gen_/) { "gen" + "_#{hint}_".gsub(/[^0-9A-Za-z]+/, '_') }
   end
 
+  def self.parse_zdump_line(line)
+    return nil if /\A\#/ =~ line || /\A\s*\z/ =~ line
+    if /\A(\S+)\s+
+        \S+\s+(\S+)\s+(\d+)\s+(\d\d):(\d\d):(\d\d)\s+(\d+)\s+UTC?
+        \s+=\s+
+        \S+\s+(\S+)\s+(\d+)\s+(\d\d):(\d\d):(\d\d)\s+(\d+)\s+\S+
+        \s+isdst=\d+\s+gmtoff=(-?\d+)\n
+        \z/x !~ line
+      raise "unexpected zdump line: #{line.inspect}"
+    end
+    tz, u_mon, u_day, u_hour, u_min, u_sec, u_year,
+      l_mon, l_day, l_hour, l_min, l_sec, l_year, gmtoff = $~.captures
+    u_year = u_year.to_i
+    u_mon = MON2NUM[u_mon]
+    u_day = u_day.to_i
+    u_hour = u_hour.to_i
+    u_min = u_min.to_i
+    u_sec = u_sec.to_i
+    l_year = l_year.to_i
+    l_mon = MON2NUM[l_mon]
+    l_day = l_day.to_i
+    l_hour = l_hour.to_i
+    l_min = l_min.to_i
+    l_sec = l_sec.to_i
+    gmtoff = gmtoff.to_i
+    [tz,
+     [u_year, u_mon, u_day, u_hour, u_min, u_sec],
+     [l_year, l_mon, l_day, l_hour, l_min, l_sec],
+     gmtoff]
+  end
+
   def self.gen_zdump_test(data)
     sample = []
     data.each_line {|line|
-      next if /\A\#/ =~ line || /\A\s*\z/ =~ line
-      /\A(\S+)\s+
-       \S+\s+(\S+)\s+(\d+)\s+(\d\d):(\d\d):(\d\d)\s+(\d+)\s+UTC
-       \s+=\s+
-       \S+\s+(\S+)\s+(\d+)\s+(\d\d):(\d\d):(\d\d)\s+(\d+)\s+\S+
-       \s+isdst=\d+\s+gmtoff=(-?\d+)\n
-       \z/x =~ line
-       tz, u_mon, u_day, u_hour, u_min, u_sec, u_year,
-         l_mon, l_day, l_hour, l_min, l_sec, l_year, gmtoff = $~.captures
-      u_year = u_year.to_i
-      u_mon = MON2NUM[u_mon]
-      u_day = u_day.to_i
-      u_hour = u_hour.to_i
-      u_min = u_min.to_i
-      u_sec = u_sec.to_i
-      l_year = l_year.to_i
-      l_mon = MON2NUM[l_mon]
-      l_day = l_day.to_i
-      l_hour = l_hour.to_i
-      l_min = l_min.to_i
-      l_sec = l_sec.to_i
-      gmtoff = gmtoff.to_i
-      sample << [tz,
-                 [u_year, u_mon, u_day, u_hour, u_min, u_sec],
-                 [l_year, l_mon, l_day, l_hour, l_min, l_sec],
-                 gmtoff]
+      s = parse_zdump_line(line)
+      sample << s if s
     }
     sample.each {|tz, u, l, gmtoff|
       expected_utc = "%04d-%02d-%02d %02d:%02d:%02d UTC" % u
@@ -249,6 +262,7 @@ class TestTimeTZ < Test::Unit::TestCase
         }
       }
     }
+
     group_by(sample) {|tz, _, _, _| tz }.each {|tz, a|
       a.each_with_index {|(_, u, l, gmtoff), i|
         expected = "%04d-%02d-%02d %02d:%02d:%02d %s" % (l+[format_gmtoff(gmtoff)])
@@ -348,6 +362,45 @@ right/America/Los_Angeles  Wed Dec 31 23:59:60 2008 UTC = Wed Dec 31 15:59:60 20
 #right/Asia/Tokyo  Sat Dec 31 23:59:60 2005 UTC = Sun Jan  1 08:59:60 2006 JST isdst=0 gmtoff=32400
 right/Europe/Paris  Fri Jun 30 23:59:60 1972 UTC = Sat Jul  1 00:59:60 1972 CET isdst=0 gmtoff=3600
 right/Europe/Paris  Wed Dec 31 23:59:60 2008 UTC = Thu Jan  1 00:59:60 2009 CET isdst=0 gmtoff=3600
+End
+
+  def self.gen_variational_zdump_test(hint, data)
+    sample = []
+    data.each_line {|line|
+      s = parse_zdump_line(line)
+      sample << s if s
+    }
+
+    define_method(gen_test_name(hint)) {
+      results = []
+      sample.each {|tz, u, l, gmtoff|
+        expected_utc = "%04d-%02d-%02d %02d:%02d:%02d UTC" % u
+        expected = "%04d-%02d-%02d %02d:%02d:%02d %s" % (l+[format_gmtoff(gmtoff)])
+        mesg_utc = "TZ=#{tz} Time.utc(#{u.map {|arg| arg.inspect }.join(', ')})"
+        mesg = "#{mesg_utc}.localtime"
+        with_tz(tz) {
+          t = nil
+          assert_nothing_raised(mesg) { t = Time.utc(*u) }
+          assert_equal(expected_utc, time_to_s(t), mesg_utc)
+          assert_nothing_raised(mesg) { t.localtime }
+
+          results << [
+            expected == time_to_s(t),
+            gmtoff == t.gmtoff,
+            format_gmtoff(gmtoff) == t.strftime("%z"),
+            format_gmtoff(gmtoff, true) == t.strftime("%:z"),
+            format_gmtoff2(gmtoff) == t.strftime("%::z")
+          ]
+        }
+      }
+      assert_includes(results, [true, true, true, true, true])
+    }
+  end
+
+  # tzdata-2014g fixed the offset for lisbon from -0:36:32 to -0:36:45.
+  # [ruby-core:65058] [Bug #10245]
+  gen_variational_zdump_test "lisbon", <<'End' if has_lisbon_tz
 Europe/Lisbon  Mon Jan  1 00:36:31 1912 UTC = Sun Dec 31 23:59:59 1911 LMT isdst=0 gmtoff=-2192
+Europe/Lisbon  Mon Jan  1 00:36:44 1912 UT = Sun Dec 31 23:59:59 1911 LMT isdst=0 gmtoff=-2205
 End
 end
