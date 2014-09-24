@@ -1,3 +1,7 @@
+Thu Sep 25 07:51:07 2014  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* lib/matrix.rb: Fix docs. Patched by Ben Woodall. [GH-726]
+
 Wed Sep 24 19:04:04 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode/data: New directory for downloaded Unicode
