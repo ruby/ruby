@@ -49,7 +49,7 @@ class Downloader
   # Update a file from url if newer version is available.
   # Creates the file if the file doesn't yet exist; however, the
   # directory where the file is being created has to exist already.
-  # If +ims+ is false, already download url regardless its last
+  # If +ims+ is false, always download url regardless of its last
   # modified time.
   #
   # Example usage:

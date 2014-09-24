@@ -1,3 +1,7 @@
+Tue Sep 24 10:45:45 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* tool/downloader.rb: Small fix to documentation comment.
+
 Tue Sep 23 22:00:20 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parse_ident): just after a label, new expression should
