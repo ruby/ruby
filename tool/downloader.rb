@@ -9,6 +9,10 @@ class Downloader
     "https://rubygems.org/downloads/#{name}"
   end
 
+  def self.unicode(name)
+    "http://www.unicode.org/Public/UCD/latest/ucd/#{name}"
+  end
+
   def self.uri_to_download(url, name)
     from, url = url
     case from
@@ -16,6 +20,8 @@ class Downloader
       url = gnu(url || name)
     when :rubygems, :gems
       url = rubygems(url || name)
+    when :unicode
+      url = unicode(url || name)
     when Symbol
       raise ArgumentError, "unkonwn site - #{from}"
     else

@@ -1,3 +1,8 @@
+Tue Sep 24 17:55:55 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* tool/downloader.rb: Made Unicode data file location available
+	  via :unicode Symbol.
+
 Tue Sep 24 10:45:45 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* tool/downloader.rb: Small fix to documentation comment.
