@@ -1,19 +1,24 @@
-Tue Sep 24 18:06:06 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+Wed Sep 24 18:59:59 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* tool/downloader.rb: Adjusting example for
+	  Downloader.download to implementation changes in r47693.
+
+Wed Sep 24 18:06:06 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* tool/downloader.rb: Removing unused method
 	  Downloader.download_if_modified_since.
 	  (if ever used, just replace with Downloader.download)
 
-Tue Sep 24 17:59:59 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+Wed Sep 24 17:59:59 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* tool/downloader.rb: Fixing raise after return.
 
-Tue Sep 24 17:55:55 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+Wed Sep 24 17:55:55 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* tool/downloader.rb: Made Unicode data file location available
 	  via :unicode Symbol.
 
-Tue Sep 24 10:45:45 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+Wed Sep 24 10:45:45 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* tool/downloader.rb: Small fix to documentation comment.
 

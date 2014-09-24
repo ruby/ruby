@@ -59,8 +59,7 @@ class Downloader
   # modified time.
   #
   # Example usage:
-  #   download 'http://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt',
-  #           'enc/unicode/data/UnicodeData.txt'
+  #   download :unicode, 'UnicodeData.txt', 'enc/unicode/data'
   def self.download(url, name, dir = nil, ims = true)
     file = dir ? File.join(dir, name) : name
     url = uri_to_download(url, name)
