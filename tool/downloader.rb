@@ -67,7 +67,7 @@ class Downloader
     begin
       data = url.read(http_options(file, ims))
     rescue OpenURI::HTTPError => http_error
-      return http_error.message =~ /^304 / # 304 Not Modified
+      return true if http_error.message =~ /^304 / # 304 Not Modified
       raise
     end
     mtime = nil

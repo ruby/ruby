@@ -1,3 +1,7 @@
+Tue Sep 24 17:59:59 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* tool/downloader.rb: Fixing raise after return.
+
 Tue Sep 24 17:55:55 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* tool/downloader.rb: Made Unicode data file location available
