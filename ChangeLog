@@ -1,3 +1,8 @@
+Wed Sep 24 19:04:04 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/data: New directory for downloaded Unicode
+	  data files.
+
 Wed Sep 24 18:59:59 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* tool/downloader.rb: Adjusting example for
