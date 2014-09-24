@@ -84,8 +84,4 @@ class Downloader
   rescue => e
     raise e.class, "failed to download #{name}\n#{e.message}: #{url}", e.backtrace
   end
-
-  def self.download_if_modified_since(url, name, dir = nil)
-    download(url, name, dir)
-  end
 end
