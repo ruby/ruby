@@ -4326,16 +4326,22 @@ rb_io_fptr_cleanup(rb_io_t *fptr, int noraise)
 }
 
 static void
+free_io_buffer(rb_io_buffer_t *buf)
+{
+    if (buf->ptr) {
+        ruby_sized_xfree(buf->ptr, (size_t)buf->capa);
+        buf->ptr = NULL;
+    }
+}
+
+static void
 clear_readconv(rb_io_t *fptr)
 {
     if (fptr->readconv) {
         rb_econv_close(fptr->readconv);
         fptr->readconv = NULL;
     }
-    if (fptr->cbuf.ptr) {
-        free(fptr->cbuf.ptr);
-        fptr->cbuf.ptr = NULL;
-    }
+    free_io_buffer(&fptr->cbuf);
 }
 
 static void
@@ -4363,14 +4369,8 @@ rb_io_fptr_finalize(rb_io_t *fptr)
     if (0 <= fptr->fd)
 	rb_io_fptr_cleanup(fptr, TRUE);
     fptr->write_lock = 0;
-    if (fptr->rbuf.ptr) {
-        free(fptr->rbuf.ptr);
-        fptr->rbuf.ptr = 0;
-    }
-    if (fptr->wbuf.ptr) {
-        free(fptr->wbuf.ptr);
-        fptr->wbuf.ptr = 0;
-    }
+    free_io_buffer(&fptr->rbuf);
+    free_io_buffer(&fptr->wbuf);
     clear_codeconv(fptr);
     free(fptr);
     return 1;
