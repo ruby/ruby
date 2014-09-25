@@ -1971,6 +1971,30 @@ class TestModule < Test::Unit::TestCase
     }
   end
 
+  def test_inspect_segfault
+    bug_10282 = '[ruby-core:65214] [Bug #10282]'
+    assert_separately [], <<-RUBY
+      module ShallowInspect
+        def shallow_inspect
+          "foo"
+        end
+      end
+
+      module InspectIsShallow
+        include ShallowInspect
+        alias_method :inspect, :shallow_inspect
+      end
+
+      class A
+      end
+
+      A.prepend InspectIsShallow
+
+      expect = "#<Method: A(Object)#inspect(shallow_inspect)>"
+      assert_equal expect, A.new.method(:inspect).inspect, "#{bug_10282}"
+    RUBY
+  end
+
   private
 
   def assert_top_method_is_private(method)
