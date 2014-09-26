@@ -1,3 +1,9 @@
+Fri Sep 26 12:52:36 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_write): ASCII-8BIT StringIO
+	  should be writable any encoding strings, without conversion.
+	  [ruby-core:65240] [Bug #10285]
+
 Fri Sep 26 05:21:01 2014  Eric Wong  <e@80x24.org>
 
 	* object.c (rb_class_real): do not dereference 0 VALUE
