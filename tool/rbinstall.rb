@@ -378,7 +378,7 @@ install?(:ext, :arch, :'ext-arch') do
   prepare "extension objects", sitearchlibdir
   prepare "extension objects", vendorarchlibdir
 end
-install?(:ext, :arch, :'ext-arch') do
+install?(:ext, :arch, :hdr, :'arch-hdr') do
   prepare "extension headers", archhdrdir
   install_recursive("#{$extout}/include/#{CONFIG['arch']}", archhdrdir, :glob => "*.h", :mode => $data_mode)
 end
@@ -388,7 +388,7 @@ install?(:ext, :comm, :'ext-comm') do
   prepare "extension scripts", sitelibdir
   prepare "extension scripts", vendorlibdir
 end
-install?(:ext, :comm, :'ext-comm') do
+install?(:ext, :comm, :hdr, :'comm-hdr') do
   hdrdir = rubyhdrdir + "/ruby"
   prepare "extension headers", hdrdir
   install_recursive("#{$extout}/include/ruby", hdrdir, :glob => "*.h", :mode => $data_mode)
@@ -508,7 +508,7 @@ install?(:local, :comm, :lib) do
   install_recursive(File.join(srcdir, "lib"), rubylibdir, :no_install => noinst, :mode => $data_mode)
 end
 
-install?(:local, :arch, :lib) do
+install?(:local, :comm, :hdr, :'comm-hdr') do
   prepare "common headers", rubyhdrdir
 
   noinst = []
