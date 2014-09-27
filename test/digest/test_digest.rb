@@ -198,4 +198,16 @@ module TestDigest
       assert_raise(NotImplementedError, bug3810) {Digest::Base.new}
     end
   end
+
+  class TestInitCopy < Test::Unit::TestCase
+    if defined?(Digest::MD5) and defined?(Digest::RMD160)
+      def test_initialize_copy_md5_rmd160
+        assert_separately(%w[-rdigest], <<-'end;')
+          md5 = Digest::MD5.allocate
+          rmd160 = Digest::RMD160.allocate
+          assert_raise(TypeError) {md5.__send__(:initialize_copy, rmd160)}
+        end;
+      end
+    end
+  end
 end

@@ -535,6 +535,13 @@ get_digest_base_metadata(VALUE klass)
     return algo;
 }
 
+static const rb_data_type_t digest_type = {
+    "digest",
+    {0, RUBY_TYPED_DEFAULT_FREE, 0,},
+    NULL, NULL,
+    (RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED),
+};
+
 static inline void
 algo_init(const rb_digest_metadata_t *algo, void *pctx)
 {
@@ -559,7 +566,7 @@ rb_digest_base_alloc(VALUE klass)
     pctx = xmalloc(algo->ctx_size);
     algo_init(algo, pctx);
 
-    obj = Data_Wrap_Struct(klass, 0, xfree, pctx);
+    obj = TypedData_Wrap_Struct(klass, &digest_type, pctx);
 
     return obj;
 }
@@ -576,9 +583,11 @@ rb_digest_base_copy(VALUE copy, VALUE obj)
     rb_check_frozen(copy);
 
     algo = get_digest_base_metadata(rb_obj_class(copy));
+    if (algo != get_digest_base_metadata(rb_obj_class(obj)))
+	rb_raise(rb_eTypeError, "different algorithms");
 
-    Data_Get_Struct(obj, void, pctx1);
-    Data_Get_Struct(copy, void, pctx2);
+    TypedData_Get_Struct(obj, void, &digest_type, pctx1);
+    TypedData_Get_Struct(copy, void, &digest_type, pctx2);
     memcpy(pctx2, pctx1, algo->ctx_size);
 
     return copy;
@@ -593,7 +602,7 @@ rb_digest_base_reset(VALUE self)
 
     algo = get_digest_base_metadata(rb_obj_class(self));
 
-    Data_Get_Struct(self, void, pctx);
+    TypedData_Get_Struct(self, void, &digest_type, pctx);
 
     algo_init(algo, pctx);
 
@@ -609,7 +618,7 @@ rb_digest_base_update(VALUE self, VALUE str)
 
     algo = get_digest_base_metadata(rb_obj_class(self));
 
-    Data_Get_Struct(self, void, pctx);
+    TypedData_Get_Struct(self, void, &digest_type, pctx);
 
     StringValue(str);
     algo->update_func(pctx, (unsigned char *)RSTRING_PTR(str), RSTRING_LEN(str));
@@ -627,7 +636,7 @@ rb_digest_base_finish(VALUE self)
 
     algo = get_digest_base_metadata(rb_obj_class(self));
 
-    Data_Get_Struct(self, void, pctx);
+    TypedData_Get_Struct(self, void, &digest_type, pctx);
 
     str = rb_str_new(0, algo->digest_len);
     algo->finish_func(pctx, (unsigned char *)RSTRING_PTR(str));
