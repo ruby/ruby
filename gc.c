@@ -31,6 +31,8 @@
 #include <sys/types.h>
 #include <assert.h>
 
+#undef rb_data_object_alloc
+
 #ifndef __has_feature
 # define __has_feature(x) 0
 #endif

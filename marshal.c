@@ -28,6 +28,8 @@
 #include <ieeefp.h>
 #endif
 
+#undef rb_data_object_alloc
+
 #define BITSPERSHORT (2*CHAR_BIT)
 #define SHORTMASK ((1<<BITSPERSHORT)-1)
 #define SHORTDN(x) RSHIFT((x),BITSPERSHORT)

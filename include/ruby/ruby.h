@@ -973,7 +973,23 @@ struct RTypedData {
 */
 typedef void (*RUBY_DATA_FUNC)(void*);
 
+#ifndef RUBY_DEPRECATE_DATA_WRAP_STRUCT
+# ifdef RUBY_EXPORT
+#   define RUBY_DEPRECATE_DATA_WRAP_STRUCT 1
+# else
+#   define RUBY_DEPRECATE_DATA_WRAP_STRUCT 0
+# endif
+#endif
 VALUE rb_data_object_alloc(VALUE,void*,RUBY_DATA_FUNC,RUBY_DATA_FUNC);
+#if RUBY_DEPRECATE_DATA_WRAP_STRUCT
+DEPRECATED(static inline VALUE rb_data_object_alloc_deprecated(VALUE,void*,RUBY_DATA_FUNC,RUBY_DATA_FUNC));
+static inline VALUE
+rb_data_object_alloc_deprecated(VALUE klass, void *ptr, RUBY_DATA_FUNC mark, RUBY_DATA_FUNC free)
+{
+    return rb_data_object_alloc(klass, ptr, mark, free);
+}
+#define rb_data_object_alloc rb_data_object_alloc_deprecated
+#endif
 VALUE rb_data_typed_object_alloc(VALUE klass, void *datap, const rb_data_type_t *);
 int rb_typeddata_inherited_p(const rb_data_type_t *child, const rb_data_type_t *parent);
 int rb_typeddata_is_kind_of(VALUE, const rb_data_type_t *);
