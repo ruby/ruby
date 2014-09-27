@@ -1,3 +1,7 @@
+Sat Sep 27 10:31:48 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* gems/bundled_gems: upgraded to power_assert 0.1.4.
+
 Fri Sep 26 12:52:36 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_write): ASCII-8BIT StringIO
