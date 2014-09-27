@@ -1,3 +1,10 @@
+Fri Sep 26 15:03:19 2014  Masaki Matsushita <glass.saga@gmail.com>
+
+	* lib/uri/rfc3986_parser.rb: raise URI::InvalidURIError when
+	  uri doesn't respond to #to_str. [ruby-core:64453] [Bug #10150]
+
+	* test/uri/test_parser.rb: test for above.
+
 Sat Sep 27 10:31:48 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* gems/bundled_gems: upgraded to power_assert 0.1.4.
