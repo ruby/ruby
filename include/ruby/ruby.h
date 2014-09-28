@@ -49,6 +49,8 @@ extern "C" {
 #define PRINTF_ARGS(decl, string_index, first_to_check) decl
 #endif
 
+#define RUBY_MACRO_SELECT(base, n) TOKEN_PASTE(base, n)
+
 #ifdef HAVE_INTRINSICS_H
 # include <intrinsics.h>
 #endif
@@ -973,23 +975,14 @@ struct RTypedData {
 */
 typedef void (*RUBY_DATA_FUNC)(void*);
 
-#ifndef RUBY_DEPRECATE_DATA_WRAP_STRUCT
-# ifdef RUBY_EXPORT
-#   define RUBY_DEPRECATE_DATA_WRAP_STRUCT 1
+#ifndef RUBY_UNTYPED_DATA_WARNING
+# if defined RUBY_EXPORT
+#   define RUBY_UNTYPED_DATA_WARNING 1
 # else
-#   define RUBY_DEPRECATE_DATA_WRAP_STRUCT 0
+#   define RUBY_UNTYPED_DATA_WARNING 0
 # endif
 #endif
 VALUE rb_data_object_alloc(VALUE,void*,RUBY_DATA_FUNC,RUBY_DATA_FUNC);
-#if RUBY_DEPRECATE_DATA_WRAP_STRUCT
-DEPRECATED(static inline VALUE rb_data_object_alloc_deprecated(VALUE,void*,RUBY_DATA_FUNC,RUBY_DATA_FUNC));
-static inline VALUE
-rb_data_object_alloc_deprecated(VALUE klass, void *ptr, RUBY_DATA_FUNC mark, RUBY_DATA_FUNC free)
-{
-    return rb_data_object_alloc(klass, ptr, mark, free);
-}
-#define rb_data_object_alloc rb_data_object_alloc_deprecated
-#endif
 VALUE rb_data_typed_object_alloc(VALUE klass, void *datap, const rb_data_type_t *);
 int rb_typeddata_inherited_p(const rb_data_type_t *child, const rb_data_type_t *parent);
 int rb_typeddata_is_kind_of(VALUE, const rb_data_type_t *);
@@ -1020,14 +1013,11 @@ void *rb_check_typeddata(VALUE, const rb_data_type_t *);
     TypedData_Wrap_Struct((klass),(data_type),(sval))\
 )
 
-#define Data_Get_Struct(obj,type,sval) do {\
-    Check_Type((obj), T_DATA); \
-    (sval) = (type*)DATA_PTR(obj);\
-} while (0)
+#define Data_Get_Struct(obj,type,sval) \
+    ((sval) = (type*)rb_data_object_get(obj))
 
-#define TypedData_Get_Struct(obj,type,data_type,sval) do {\
-    (sval) = (type*)rb_check_typeddata((obj), (data_type)); \
-} while (0)
+#define TypedData_Get_Struct(obj,type,data_type,sval) \
+    ((sval) = (type*)rb_check_typeddata((obj), (data_type)))
 
 #define RSTRUCT_EMBED_LEN_MAX 3
 struct RStruct {
@@ -1143,6 +1133,41 @@ rb_obj_freeze_inline(VALUE x)
 	}
     }
 }
+
+#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4))
+# define RUBY_UNTYPED_DATA_FUNC(func) func __attribute__((warning("untyped Data is unsafe; use TypedData instead")))
+#else
+# define RUBY_UNTYPED_DATA_FUNC(func) DEPRECATED(func)
+#endif
+
+RUBY_UNTYPED_DATA_FUNC(static inline VALUE rb_data_object_alloc_warning(VALUE,void*,RUBY_DATA_FUNC,RUBY_DATA_FUNC));
+RUBY_UNTYPED_DATA_FUNC(static inline void *rb_data_object_get_warning(VALUE));
+
+static inline VALUE
+rb_data_object_alloc_warning(VALUE klass, void *ptr, RUBY_DATA_FUNC mark, RUBY_DATA_FUNC free)
+{
+    return rb_data_object_alloc(klass, ptr, mark, free);
+}
+
+static inline void *
+rb_data_object_get(VALUE obj)
+{
+    Check_Type(obj, T_DATA);
+    return ((struct RData *)obj)->data;
+}
+
+static inline void *
+rb_data_object_get_warning(VALUE obj)
+{
+    return rb_data_object_get(obj);
+}
+
+#define rb_data_object_alloc_0 rb_data_object_alloc
+#define rb_data_object_alloc_1 rb_data_object_alloc_warning
+#define rb_data_object_alloc  RUBY_MACRO_SELECT(rb_data_object_alloc_, RUBY_UNTYPED_DATA_WARNING)
+#define rb_data_object_get_0 rb_data_object_get
+#define rb_data_object_get_1 rb_data_object_get_warning
+#define rb_data_object_get  RUBY_MACRO_SELECT(rb_data_object_get_, RUBY_UNTYPED_DATA_WARNING)
 
 #if USE_RGENGC
 #define OBJ_PROMOTED_RAW(x)         ((RBASIC(x)->flags & (FL_PROMOTED0|FL_PROMOTED1)) == (FL_PROMOTED0|FL_PROMOTED1))

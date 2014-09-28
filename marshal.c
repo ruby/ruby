@@ -28,8 +28,6 @@
 #include <ieeefp.h>
 #endif
 
-#undef rb_data_object_alloc
-
 #define BITSPERSHORT (2*CHAR_BIT)
 #define SHORTMASK ((1<<BITSPERSHORT)-1)
 #define SHORTDN(x) RSHIFT((x),BITSPERSHORT)
@@ -2171,6 +2169,8 @@ Init_marshal(void)
     rb_define_const(rb_mMarshal, "MINOR_VERSION", INT2FIX(MARSHAL_MINOR));
 
     compat_allocator_tbl = st_init_numtable();
+#undef RUBY_UNTYPED_DATA_WARNING
+#define RUBY_UNTYPED_DATA_WARNING 0
     compat_allocator_tbl_wrapper =
 	Data_Wrap_Struct(rb_cData, mark_marshal_compat_t, 0, compat_allocator_tbl);
     rb_gc_register_mark_object(compat_allocator_tbl_wrapper);
