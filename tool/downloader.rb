@@ -119,6 +119,6 @@ if $0 == __FILE__
     end
   else
     abort "usage: #{$0} url name" unless ARGV.size == 2
-    Downloader.download(*ARGV, destdir, ims)
+    Downloader.download(ARGV[0], ARGV[1], destdir, ims)
   end
 end
