@@ -22,7 +22,7 @@ class Downloader
   end
 
   def self.mode_for(data)
-    data.start_with?("#!") ? 0755 : 0644
+    /\A#!/ =~ data ? 0755 : 0644
   end
 
   def self.http_options(file, since)
@@ -97,15 +97,15 @@ if $0 == __FILE__
     case ARGV[0]
     when '-d'
       destdir = ARGV[1]
-      ARGV.shift(2)
+      ARGV.shift
     when '-e'
       ims = nil
-      ARGV.shift
     when /\A-/
       abort "#{$0}: unknown option #{ARGV[0]}"
     else
       break
     end
+    ARGV.shift
   end
   dl = Downloader.constants.find do |name|
     ARGV[0].casecmp(name.to_s) == 0
