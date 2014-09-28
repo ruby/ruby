@@ -53,6 +53,7 @@ class Downloader
   #   download :unicode, 'UnicodeData.txt', 'enc/unicode/data'
   def self.download(url, name, dir = nil, ims = true)
     file = dir ? File.join(dir, name) : name
+    return true if ims.nil? and File.exist?(file)
     url = URI(url)
     if $VERBOSE
       $stdout.print "downloading #{name} ... "
@@ -87,5 +88,37 @@ class Downloader
     true
   rescue => e
     raise e.class, "failed to download #{name}\n#{e.message}: #{url}", e.backtrace
+  end
+end
+
+if $0 == __FILE__
+  ims = true
+  until ARGV.empty?
+    case ARGV[0]
+    when '-d'
+      destdir = ARGV[1]
+      ARGV.shift(2)
+    when '-e'
+      ims = nil
+      ARGV.shift
+    when /\A-/
+      abort "#{$0}: unknown option #{ARGV[0]}"
+    else
+      break
+    end
+  end
+  dl = Downloader.constants.find do |name|
+    ARGV[0].casecmp(name.to_s) == 0
+  end
+  $VERBOSE = true
+  if dl
+    dl = Downloader.const_get(dl)
+    ARGV.shift
+    ARGV.each do |name|
+      dl.download(name, destdir, ims)
+    end
+  else
+    abort "usage: #{$0} url name" unless ARGV.size == 2
+    Downloader.download(*ARGV, destdir, ims)
   end
 end

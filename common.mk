@@ -1092,9 +1092,8 @@ update-gems: PHONY
 
 update-unicode:
 	$(ECHO) Downloading Unicode data files...
-	$(Q) $(BASERUBY) -I$(srcdir)/tool -rdownloader -w \
-	    -C "$(srcdir)/enc/unicode/data" \
-	    -e 'ARGV.each{|f|Downloader::Unicode.download(f)}' \
+	$(Q) $(BASERUBY) -C "$(srcdir)/enc/unicode/data" \
+	    ../../../tool/downloader.rb unicode \
 	    UnicodeData.txt CompositionExclusions.txt NormalizationTest.txt
 
 info: info-program info-libruby_a info-libruby_so info-arch
