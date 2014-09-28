@@ -1,3 +1,8 @@
+Sun Sep 28 23:59:17 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* gc.c (rb_gcdebug_print_obj_condition): use RVALUE_REMEMBERED
+	  because GET_HEAP_REMEMBERSET_BITS is obsoleted.
+
 Sun Sep 28 11:14:14 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* common.mk: Created new target update-unicode to download

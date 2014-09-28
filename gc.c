@@ -8452,7 +8452,7 @@ rb_gcdebug_print_obj_condition(VALUE obj)
     fprintf(stderr, "age?         : %d\n", RVALUE_AGE(obj));
     fprintf(stderr, "old?         : %s\n", RVALUE_OLD_P(obj) ? "true" : "false");
     fprintf(stderr, "WB-protected?: %s\n", RVALUE_WB_UNPROTECTED(obj) ? "false" : "true");
-    fprintf(stderr, "remembered?  : %s\n", MARKED_IN_BITMAP(GET_HEAP_REMEMBERSET_BITS(obj), obj) ? "true" : "false");
+    fprintf(stderr, "remembered?  : %s\n", RVALUE_REMEMBERED(obj) ? "true" : "false");
 #endif
 
     if (is_lazy_sweeping(heap_eden)) {
