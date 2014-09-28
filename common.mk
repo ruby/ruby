@@ -1089,6 +1089,13 @@ update-gems: PHONY
 	    -e 'Downloader.download(:rubygems, gem, $$gemdir)' \
 	    -- -gemdir=$(srcdir)/gems $(srcdir)/gems/bundled_gems
 
+update-unicode:
+	$(Q) $(BASERUBY) -I$(srcdir)/tool -rdownloader \
+	    -e 'puts "Downloading Unicode data files..."' \
+	    -e 'Downloader.download(:unicode, "UnicodeData.txt", "$(srcdir)/enc/unicode/data")' \
+	    -e 'Downloader.download(:unicode, "CompositionExclusions.txt", "$(srcdir)/enc/unicode/data")' \
+	    -e 'Downloader.download(:unicode, "NormalizationTest.txt", "$(srcdir)/enc/unicode/data")'
+
 info: info-program info-libruby_a info-libruby_so info-arch
 info-program:
 	@echo PROGRAM=$(PROGRAM)

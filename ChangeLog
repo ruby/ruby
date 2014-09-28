@@ -1,3 +1,8 @@
+Sun Sep 28 11:14:14 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* common.mk: Created new target update-unicode to download
+	  some Unicode data files.
+
 Fri Sep 26 15:03:19 2014  Masaki Matsushita <glass.saga@gmail.com>
 
 	* lib/uri/rfc3986_parser.rb: raise URI::InvalidURIError when
