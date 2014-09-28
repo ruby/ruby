@@ -1082,19 +1082,20 @@ $(srcdir)/tool/config.sub:
 	$(Q) $(BASERUBY) -C $(@D) get-config_files $(@F)
 
 update-gems: PHONY
-	$(Q) $(RUNRUBY) -I$(srcdir)/tool -rdownloader -ans \
+	$(ECHO) Downloading bundled gem files...
+	$(Q) $(RUNRUBY) -I$(srcdir)/tool -rdownloader -answ \
+	    -C "$(srcdir)/gems" \
 	    -e 'gem, ver = *$$F' \
 	    -e 'gem = "#{gem}-#{ver}.gem"' \
-	    -e 'puts "updating #{gem}"' \
-	    -e 'Downloader.download(:rubygems, gem, $$gemdir)' \
-	    -- -gemdir=$(srcdir)/gems $(srcdir)/gems/bundled_gems
+	    -e 'Downloader::RubyGems.download(gem)' \
+	    bundled_gems
 
 update-unicode:
-	$(Q) $(BASERUBY) -I$(srcdir)/tool -rdownloader \
-	    -e 'puts "Downloading Unicode data files..."' \
-	    -e 'Downloader.download(:unicode, "UnicodeData.txt", "$(srcdir)/enc/unicode/data")' \
-	    -e 'Downloader.download(:unicode, "CompositionExclusions.txt", "$(srcdir)/enc/unicode/data")' \
-	    -e 'Downloader.download(:unicode, "NormalizationTest.txt", "$(srcdir)/enc/unicode/data")'
+	$(ECHO) Downloading Unicode data files...
+	$(Q) $(BASERUBY) -I$(srcdir)/tool -rdownloader -w \
+	    -C "$(srcdir)/enc/unicode/data" \
+	    -e 'ARGV.each{|f|Downloader::Unicode.download(f)}' \
+	    UnicodeData.txt CompositionExclusions.txt NormalizationTest.txt
 
 info: info-program info-libruby_a info-libruby_so info-arch
 info-program:

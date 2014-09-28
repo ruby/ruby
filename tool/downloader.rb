@@ -1,33 +1,24 @@
 require 'open-uri'
 
 class Downloader
-  def self.gnu(name)
-    "http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=#{name};hb=HEAD"
-  end
-
-  def self.rubygems(name)
-    "https://rubygems.org/downloads/#{name}"
-  end
-
-  def self.unicode(name)
-    "http://www.unicode.org/Public/UCD/latest/ucd/#{name}"
-  end
-
-  def self.uri_to_download(url, name)
-    from, url = url
-    case from
-    when :gnu
-      url = gnu(url || name)
-    when :rubygems, :gems
-      url = rubygems(url || name)
-    when :unicode
-      url = unicode(url || name)
-    when Symbol
-      raise ArgumentError, "unkonwn site - #{from}"
-    else
-      url = from
+  class GNU < self
+    def self.download(name, *rest)
+      super("http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=#{name};hb=HEAD", name, *rest)
     end
-    URI(url)
+  end
+
+  class RubyGems < self
+    def self.download(name, *rest)
+      super("https://rubygems.org/downloads/#{name}", name, *rest)
+    end
+  end
+
+  Gems = RubyGems
+
+  class Unicode < self
+    def self.download(name, *rest)
+      super("http://www.unicode.org/Public/UCD/latest/ucd/#{name}", name, *rest)
+    end
   end
 
   def self.mode_for(data)
@@ -62,11 +53,21 @@ class Downloader
   #   download :unicode, 'UnicodeData.txt', 'enc/unicode/data'
   def self.download(url, name, dir = nil, ims = true)
     file = dir ? File.join(dir, name) : name
-    url = uri_to_download(url, name)
+    url = URI(url)
+    if $VERBOSE
+      $stdout.print "downloading #{name} ... "
+      $stdout.flush
+    end
     begin
       data = url.read(http_options(file, ims))
     rescue OpenURI::HTTPError => http_error
-      return true if http_error.message =~ /^304 / # 304 Not Modified
+      if http_error.message =~ /^304 / # 304 Not Modified
+        if $VERBOSE
+          $stdout.puts "not modified"
+          $stdout.flush
+        end
+        return true
+      end
       raise
     end
     mtime = nil
@@ -78,6 +79,10 @@ class Downloader
     if mtime
       mtime = Time.httpdate(mtime)
       File.utime(mtime, mtime, file)
+    end
+    if $VERBOSE
+      $stdout.puts "done"
+      $stdout.flush
     end
     true
   rescue => e
