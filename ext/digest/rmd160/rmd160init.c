@@ -38,8 +38,6 @@ Init_rmd160()
 
     cDigest_RMD160 = rb_define_class_under(mDigest, "RMD160", cDigest_Base);
 
-#undef RUBY_UNTYPED_DATA_WARNING
-#define RUBY_UNTYPED_DATA_WARNING 0
     rb_ivar_set(cDigest_RMD160, rb_intern("metadata"),
-      Data_Wrap_Struct(rb_cObject, 0, 0, (void *)&rmd160));
+      TypedData_Wrap_Struct(rb_cObject, &rb_digest_data_type, (void *)&rmd160));
 }
