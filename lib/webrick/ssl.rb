@@ -189,6 +189,8 @@ module WEBrick
       ctx.verify_callback = config[:SSLVerifyCallback]
       ctx.timeout = config[:SSLTimeout]
       ctx.options = config[:SSLOptions]
+      ctx.ciphers = config[:SSLCiphers]
+      ctx.ssl_version = config[:SSLVersion]
       ctx
     end
   end
