@@ -286,20 +286,20 @@ union DateData {
 
 #define get_d1(x)\
     union DateData *dat;\
-    Data_Get_Struct(x, union DateData, dat);
+    TypedData_Get_Struct(x, union DateData, &d_lite_type, dat);
 
 #define get_d1a(x)\
     union DateData *adat;\
-    Data_Get_Struct(x, union DateData, adat);
+    TypedData_Get_Struct(x, union DateData, &d_lite_type, adat);
 
 #define get_d1b(x)\
     union DateData *bdat;\
-    Data_Get_Struct(x, union DateData, bdat);
+    TypedData_Get_Struct(x, union DateData, &d_lite_type, bdat);
 
 #define get_d2(x,y)\
     union DateData *adat, *bdat;\
-    Data_Get_Struct(x, union DateData, adat);\
-    Data_Get_Struct(y, union DateData, bdat);
+    TypedData_Get_Struct(x, union DateData, &d_lite_type, adat);\
+    TypedData_Get_Struct(y, union DateData, &d_lite_type, bdat);
 
 inline static VALUE
 canon(VALUE x)
@@ -2922,16 +2922,30 @@ date_s_gregorian_leap_p(VALUE klass, VALUE y)
 }
 
 static void
-d_lite_gc_mark(union DateData *dat)
+d_lite_gc_mark(void *ptr)
 {
+    union DateData *dat = ptr;
     if (simple_dat_p(dat))
 	rb_gc_mark(dat->s.nth);
     else {
 	rb_gc_mark(dat->c.nth);
 	rb_gc_mark(dat->c.sf);
-
     }
 }
+
+static size_t
+d_lite_memsize(const void *ptr)
+{
+    const union DateData *dat = ptr;
+    return complex_dat_p(dat) ? sizeof(struct ComplexDateData) : sizeof(struct SimpleDateData);
+}
+
+static const rb_data_type_t d_lite_type = {
+    "Date",
+    {d_lite_gc_mark, RUBY_TYPED_DEFAULT_FREE, d_lite_memsize,},
+    NULL, NULL,
+    RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 inline static VALUE
 d_simple_new_internal(VALUE klass,
@@ -2943,8 +2957,8 @@ d_simple_new_internal(VALUE klass,
     struct SimpleDateData *dat;
     VALUE obj;
 
-    obj = Data_Make_Struct(klass, struct SimpleDateData,
-			   d_lite_gc_mark, -1, dat);
+    obj = TypedData_Make_Struct(klass, struct SimpleDateData,
+				&d_lite_type, dat);
     set_to_simple(dat, nth, jd, sg, y, m, d, flags & ~COMPLEX_DAT);
 
     assert(have_jd_p(dat) || have_civil_p(dat));
@@ -2964,8 +2978,8 @@ d_complex_new_internal(VALUE klass,
     struct ComplexDateData *dat;
     VALUE obj;
 
-    obj = Data_Make_Struct(klass, struct ComplexDateData,
-			   d_lite_gc_mark, -1, dat);
+    obj = TypedData_Make_Struct(klass, struct ComplexDateData,
+				&d_lite_type, dat);
     set_to_complex(dat, nth, jd, df, sf, of, sg,
 		   y, m, d, h, min, s, flags | COMPLEX_DAT);
 
