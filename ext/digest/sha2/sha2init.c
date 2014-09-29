@@ -52,5 +52,7 @@ Init_sha2()
     rb_ivar_set(cDigest_SHA##bitlen, id_metadata, \
       Data_Wrap_Struct(rb_cObject, 0, 0, (void *)&sha##bitlen));
 
+#undef RUBY_UNTYPED_DATA_WARNING
+#define RUBY_UNTYPED_DATA_WARNING 0
     FOREACH_BITLEN(DEFINE_ALGO_CLASS)
 }
