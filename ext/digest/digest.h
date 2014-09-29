@@ -30,3 +30,5 @@ typedef struct {
     rb_digest_hash_update_func_t update_func;
     rb_digest_hash_finish_func_t finish_func;
 } rb_digest_metadata_t;
+
+extern rb_data_type_t rb_digest_data_type;
