@@ -235,7 +235,7 @@ f_negative_p(VALUE x)
 struct SimpleDateData
 {
     unsigned flags;
-    VALUE nth;	/* not always canonicalized */
+    const VALUE nth;	/* not always canonicalized */
     int jd;	/* as utc */
     /* df is zero */
     /* sf is zero */
@@ -258,10 +258,10 @@ struct SimpleDateData
 struct ComplexDateData
 {
     unsigned flags;
-    VALUE nth;	/* not always canonicalized */
+    const VALUE nth;	/* not always canonicalized */
     int jd; 	/* as utc */
     int df;	/* as utc, in secs */
-    VALUE sf;	/* in nano secs */
+    const VALUE sf;	/* in nano secs */
     int of;	/* in secs */
     date_sg_t sg;  /* 2298874..2426355 or -/+oo -- at most 22 bits */
     /* decoded as local */
@@ -392,7 +392,7 @@ _year, _mon, _mday, _hour, _min, _sec, _flags) \
     RB_OBJ_WRITE((obj), &(x)->nth, (y)->nth);\
     (x)->jd = (y)->jd;\
     (x)->df = 0;\
-    (x)->sf = INT2FIX(0);\
+    RB_OBJ_WRITE((obj), &(x)->sf, INT2FIX(0));\
     (x)->of = 0;\
     (x)->sg = (date_sg_t)((y)->sg);\
     (x)->year = (y)->year;\
@@ -1120,11 +1120,13 @@ m_virtual_sg(union DateData *x)
 }
 
 inline static void
-canonicalize_s_jd(union DateData *x)
+canonicalize_s_jd(VALUE obj, union DateData *x)
 {
     int j = x->s.jd;
+    VALUE nth = x->s.nth;
     assert(have_jd_p(x));
-    canonicalize_jd(x->s.nth, x->s.jd);
+    canonicalize_jd(nth, x->s.jd);
+    RB_OBJ_WRITE(obj, &x->s.nth, nth);
     if (x->s.jd != j)
 	x->flags &= ~HAVE_CIVIL;
 }
@@ -1214,11 +1216,13 @@ get_c_time(union DateData *x)
 }
 
 inline static void
-canonicalize_c_jd(union DateData *x)
+canonicalize_c_jd(VALUE obj, union DateData *x)
 {
     int j = x->c.jd;
+    VALUE nth = x->c.nth;
     assert(have_jd_p(x));
-    canonicalize_jd(x->c.nth, x->c.jd);
+    canonicalize_jd(nth, x->c.jd);
+    RB_OBJ_WRITE(obj, &x->c.nth, nth);
     if (x->c.jd != j)
 	x->flags &= ~HAVE_CIVIL;
 }
@@ -1397,15 +1401,15 @@ guess_style(VALUE y, double sg) /* -/+oo or zero */
 }
 
 inline static void
-m_canonicalize_jd(union DateData *x)
+m_canonicalize_jd(VALUE obj, union DateData *x)
 {
     if (simple_dat_p(x)) {
 	get_s_jd(x);
-	canonicalize_s_jd(x);
+	canonicalize_s_jd(obj, x);
     }
     else {
 	get_c_jd(x);
-	canonicalize_c_jd(x);
+	canonicalize_c_jd(obj, x);
     }
 }
 
@@ -6209,8 +6213,8 @@ cmp_dd(VALUE self, VALUE other)
 	int a_jd, b_jd,
 	    a_df, b_df;
 
-	m_canonicalize_jd(adat);
-	m_canonicalize_jd(bdat);
+	m_canonicalize_jd(self, adat);
+	m_canonicalize_jd(other, bdat);
 	a_nth = m_nth(adat);
 	b_nth = m_nth(bdat);
 	if (f_eqeq_p(a_nth, b_nth)) {
@@ -6288,8 +6292,8 @@ d_lite_cmp(VALUE self, VALUE other)
 	    VALUE a_nth, b_nth;
 	    int a_jd, b_jd;
 
-	    m_canonicalize_jd(adat);
-	    m_canonicalize_jd(bdat);
+	    m_canonicalize_jd(self, adat);
+	    m_canonicalize_jd(other, bdat);
 	    a_nth = m_nth(adat);
 	    b_nth = m_nth(bdat);
 	    if (f_eqeq_p(a_nth, b_nth)) {
@@ -6360,8 +6364,8 @@ d_lite_equal(VALUE self, VALUE other)
 	    VALUE a_nth, b_nth;
 	    int a_jd, b_jd;
 
-	    m_canonicalize_jd(adat);
-	    m_canonicalize_jd(bdat);
+	    m_canonicalize_jd(self, adat);
+	    m_canonicalize_jd(other, bdat);
 	    a_nth = m_nth(adat);
 	    b_nth = m_nth(bdat);
 	    a_jd = m_local_jd(adat);
@@ -8553,7 +8557,7 @@ date_to_datetime(VALUE self)
 	    get_d1b(new);
 	    bdat->c = adat->c;
 	    bdat->c.df = 0;
-	    bdat->c.sf = INT2FIX(0);
+	    RB_OBJ_WRITE(new, &bdat->c.sf, INT2FIX(0));
 #ifndef USE_PACK
 	    bdat->c.hour = 0;
 	    bdat->c.min = 0;
