@@ -1,3 +1,9 @@
+Mon Sep 29 22:54:39 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_make_independent_expand): drop NOFREE flag after
+	  reallocation, static buffer is not pointed anymore.
+	  [ruby-core:65317] [Bug #10304]
+
 Sun Sep 28 23:59:17 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* gc.c (rb_gcdebug_print_obj_condition): use RVALUE_REMEMBERED

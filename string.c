@@ -1577,7 +1577,7 @@ str_make_independent_expand(VALUE str, long expand)
 	memcpy(ptr, RSTRING_PTR(str), len);
     }
     STR_SET_NOEMBED(str);
-    FL_UNSET(str, STR_SHARED);
+    FL_UNSET(str, STR_SHARED|STR_NOFREE);
     TERM_FILL(ptr + len, termlen);
     RSTRING(str)->as.heap.ptr = ptr;
     RSTRING(str)->as.heap.len = len;
