@@ -272,14 +272,14 @@ replace_to_long_name(wchar_t **wfullpath, size_t size, int heap)
 }
 
 static inline size_t
-user_length_in_path(const wchar_t *wuser)
+user_length_in_path(const wchar_t *wuser, size_t len)
 {
-    const wchar_t *pos = wuser;
+    size_t i;
 
-    while (!IS_DIR_SEPARATOR_P(*pos) && *pos != '\0')
-	pos++;
+    for (i = 0; i < len && !IS_DIR_SEPARATOR_P(wuser[i]); i++)
+	;
 
-    return pos - wuser;
+    return i;
 }
 
 static VALUE
@@ -293,7 +293,7 @@ append_wstr(VALUE dst, const wchar_t *ws, size_t len, UINT cp, UINT path_cp, rb_
 	rb_str_modify_expand(dst, nlen);
 	WideCharToMultiByte(cp, 0, ws, len, RSTRING_PTR(dst) + olen, nlen, NULL, NULL);
 	rb_enc_associate(dst, path_encoding);
-	rb_str_set_len(dst, nlen);
+	rb_str_set_len(dst, olen + nlen);
     }
     else {
 	const int replaceflags = ECONV_UNDEF_REPLACE|ECONV_INVALID_REPLACE;
@@ -402,7 +402,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     }
     else if (abs_mode == 0 && wpath_len >= 2 && wpath_pos[0] == L'~') {
 	result = rb_str_new_cstr("can't find user ");
-	result = append_wstr(result, wpath_pos + 1, user_length_in_path(wpath_pos + 1),
+	result = append_wstr(result, wpath_pos + 1, user_length_in_path(wpath_pos + 1, wpath_len - 1),
 			     cp, path_cp, path_encoding);
 
 	if (wpath)
@@ -478,7 +478,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	}
 	else if (abs_mode == 0 && wdir_len >= 2 && wdir_pos[0] == L'~') {
 	    result = rb_str_new_cstr("can't find user ");
-	    result = append_wstr(result, wdir_pos + 1, user_length_in_path(wdir_pos + 1),
+	    result = append_wstr(result, wdir_pos + 1, user_length_in_path(wdir_pos + 1, wdir_len - 1),
 				 cp, path_cp, path_encoding);
 	    if (wpath)
 		free(wpath);

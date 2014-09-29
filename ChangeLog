@@ -1,4 +1,8 @@
-Mon Sep 29 22:54:39 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Sep 29 22:54:51 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/file.c (append_wstr): set expanded length, not length of
+	  appended string.  fix "probable buffer overflow" bug.
+	  [ruby-core:65317] [Bug #10304]
 
 	* string.c (str_make_independent_expand): drop NOFREE flag after
 	  reallocation, static buffer is not pointed anymore.
