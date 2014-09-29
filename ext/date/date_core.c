@@ -313,9 +313,9 @@ canon(VALUE x)
 }
 
 #ifndef USE_PACK
-#define set_to_simple(x, _nth, _jd ,_sg, _year, _mon, _mday, _flags) \
+#define set_to_simple(obj, x, _nth, _jd ,_sg, _year, _mon, _mday, _flags) \
 {\
-    (x)->nth = canon(_nth);\
+    RB_OBJ_WRITE((obj), &(x)->nth, canon(_nth)); \
     (x)->jd = _jd;\
     (x)->sg = (date_sg_t)(_sg);\
     (x)->year = _year;\
@@ -324,9 +324,9 @@ canon(VALUE x)
     (x)->flags = _flags;\
 }
 #else
-#define set_to_simple(x, _nth, _jd ,_sg, _year, _mon, _mday, _flags) \
+#define set_to_simple(obj, x, _nth, _jd ,_sg, _year, _mon, _mday, _flags) \
 {\
-    (x)->nth = canon(_nth);\
+    RB_OBJ_WRITE((obj), &(x)->nth, canon(_nth)); \
     (x)->jd = _jd;\
     (x)->sg = (date_sg_t)(_sg);\
     (x)->year = _year;\
@@ -336,13 +336,13 @@ canon(VALUE x)
 #endif
 
 #ifndef USE_PACK
-#define set_to_complex(x, _nth, _jd ,_df, _sf, _of, _sg,\
+#define set_to_complex(obj, x, _nth, _jd ,_df, _sf, _of, _sg,\
 _year, _mon, _mday, _hour, _min, _sec, _flags) \
 {\
-    (x)->nth = canon(_nth);\
+    RB_OBJ_WRITE((obj), &(x)->nth, canon(_nth));\
     (x)->jd = _jd;\
     (x)->df = _df;\
-    (x)->sf = canon(_sf);\
+    RB_OBJ_WRITE((obj), &(x)->sf, canon(_sf));\
     (x)->of = _of;\
     (x)->sg = (date_sg_t)(_sg);\
     (x)->year = _year;\
@@ -354,13 +354,13 @@ _year, _mon, _mday, _hour, _min, _sec, _flags) \
     (x)->flags = _flags;\
 }
 #else
-#define set_to_complex(x, _nth, _jd ,_df, _sf, _of, _sg,\
+#define set_to_complex(obj, x, _nth, _jd ,_df, _sf, _of, _sg,\
 _year, _mon, _mday, _hour, _min, _sec, _flags) \
 {\
-    (x)->nth = canon(_nth);\
+    RB_OBJ_WRITE((obj), &(x)->nth, canon(_nth));\
     (x)->jd = _jd;\
     (x)->df = _df;\
-    (x)->sf = canon(_sf);\
+    RB_OBJ_WRITE((obj), &(x)->sf, canon(_sf));\
     (x)->of = _of;\
     (x)->sg = (date_sg_t)(_sg);\
     (x)->year = _year;\
@@ -370,9 +370,9 @@ _year, _mon, _mday, _hour, _min, _sec, _flags) \
 #endif
 
 #ifndef USE_PACK
-#define copy_simple_to_complex(x, y) \
+#define copy_simple_to_complex(obj, x, y) \
 {\
-    (x)->nth = (y)->nth;\
+    RB_OBJ_WRITE((obj), &(x)->nth, (y)->nth);\
     (x)->jd = (y)->jd;\
     (x)->df = 0;\
     (x)->sf = INT2FIX(0);\
@@ -387,9 +387,9 @@ _year, _mon, _mday, _hour, _min, _sec, _flags) \
     (x)->flags = (y)->flags;\
 }
 #else
-#define copy_simple_to_complex(x, y) \
+#define copy_simple_to_complex(obj, x, y) \
 {\
-    (x)->nth = (y)->nth;\
+    RB_OBJ_WRITE((obj), &(x)->nth, (y)->nth);\
     (x)->jd = (y)->jd;\
     (x)->df = 0;\
     (x)->sf = INT2FIX(0);\
@@ -402,9 +402,9 @@ _year, _mon, _mday, _hour, _min, _sec, _flags) \
 #endif
 
 #ifndef USE_PACK
-#define copy_complex_to_simple(x, y) \
+#define copy_complex_to_simple(obj, x, y) \
 {\
-    (x)->nth = (y)->nth;\
+    RB_OBJ_WRITE((obj), &(x)->nth, (y)->nth);\
     (x)->jd = (y)->jd;\
     (x)->sg = (date_sg_t)((y)->sg);\
     (x)->year = (y)->year;\
@@ -413,9 +413,9 @@ _year, _mon, _mday, _hour, _min, _sec, _flags) \
     (x)->flags = (y)->flags;\
 }
 #else
-#define copy_complex_to_simple(x, y) \
+#define copy_complex_to_simple(obj, x, y) \
 {\
-    (x)->nth = (y)->nth;\
+    RB_OBJ_WRITE((obj), &(x)->nth, (y)->nth);\
     (x)->jd = (y)->jd;\
     (x)->sg = (date_sg_t)((y)->sg);\
     (x)->year = (y)->year;\
@@ -2944,7 +2944,7 @@ static const rb_data_type_t d_lite_type = {
     "Date",
     {d_lite_gc_mark, RUBY_TYPED_DEFAULT_FREE, d_lite_memsize,},
     NULL, NULL,
-    RUBY_TYPED_FREE_IMMEDIATELY,
+    RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED,
 };
 
 inline static VALUE
@@ -2959,7 +2959,7 @@ d_simple_new_internal(VALUE klass,
 
     obj = TypedData_Make_Struct(klass, struct SimpleDateData,
 				&d_lite_type, dat);
-    set_to_simple(dat, nth, jd, sg, y, m, d, flags & ~COMPLEX_DAT);
+    set_to_simple(obj, dat, nth, jd, sg, y, m, d, flags & ~COMPLEX_DAT);
 
     assert(have_jd_p(dat) || have_civil_p(dat));
 
@@ -2980,7 +2980,7 @@ d_complex_new_internal(VALUE klass,
 
     obj = TypedData_Make_Struct(klass, struct ComplexDateData,
 				&d_lite_type, dat);
-    set_to_complex(dat, nth, jd, df, sf, of, sg,
+    set_to_complex(obj, dat, nth, jd, df, sf, of, sg,
 		   y, m, d, h, min, s, flags | COMPLEX_DAT);
 
     assert(have_jd_p(dat) || have_civil_p(dat));
@@ -4638,6 +4638,7 @@ dup_obj(VALUE self)
 	{
 	    get_d1b(new);
 	    bdat->s = adat->s;
+	    RB_OBJ_WRITTEN(new, Qundef, bdat->s.nth);
 	    return new;
 	}
     }
@@ -4646,6 +4647,8 @@ dup_obj(VALUE self)
 	{
 	    get_d1b(new);
 	    bdat->c = adat->c;
+	    RB_OBJ_WRITTEN(new, Qundef, bdat->c.nth);
+	    RB_OBJ_WRITTEN(new, Qundef, bdat->c.sf);
 	    return new;
 	}
     }
@@ -4660,7 +4663,7 @@ dup_obj_as_complex(VALUE self)
 	VALUE new = d_lite_s_alloc_complex(rb_obj_class(self));
 	{
 	    get_d1b(new);
-	    copy_simple_to_complex(&bdat->c, &adat->s);
+	    copy_simple_to_complex(new, &bdat->c, &adat->s);
 	    bdat->c.flags |= HAVE_DF | COMPLEX_DAT;
 	    return new;
 	}
@@ -4670,6 +4673,8 @@ dup_obj_as_complex(VALUE self)
 	{
 	    get_d1b(new);
 	    bdat->c = adat->c;
+	    RB_OBJ_WRITTEN(new, Qundef, bdat->c.nth);
+	    RB_OBJ_WRITTEN(new, Qundef, bdat->c.sf);
 	    return new;
 	}
     }
@@ -4728,7 +4733,7 @@ d_lite_initialize(int argc, VALUE *argv, VALUE self)
 
 	decode_jd(jd, &nth, &rjd);
 	if (!df && f_zero_p(sf) && !of) {
-	    set_to_simple(&dat->s, nth, rjd, sg, 0, 0, 0, HAVE_JD);
+	    set_to_simple(self, &dat->s, nth, rjd, sg, 0, 0, 0, HAVE_JD);
 	}
 	else {
 	    if (!complex_dat_p(dat))
@@ -7091,13 +7096,13 @@ d_lite_marshal_load(VALUE self, VALUE a)
 		       &nth, &jd, &df, &sf, &rof, &rsg);
 
 	    if (!df && f_zero_p(sf) && !rof) {
-		set_to_simple(&dat->s, nth, jd, rsg, 0, 0, 0, HAVE_JD);
+		set_to_simple(self, &dat->s, nth, jd, rsg, 0, 0, 0, HAVE_JD);
 	    } else {
 		if (!complex_dat_p(dat))
 		    rb_raise(rb_eArgError,
 			     "cannot load complex into simple");
 
-		set_to_complex(&dat->c, nth, jd, df, sf, rof, rsg,
+		set_to_complex(self, &dat->c, nth, jd, df, sf, rof, rsg,
 			       0, 0, 0, 0, 0, 0,
 			       HAVE_JD | HAVE_DF | COMPLEX_DAT);
 	    }
@@ -7116,13 +7121,13 @@ d_lite_marshal_load(VALUE self, VALUE a)
 	    of = NUM2INT(RARRAY_PTR(a)[4]);
 	    sg = NUM2DBL(RARRAY_PTR(a)[5]);
 	    if (!df && f_zero_p(sf) && !of) {
-		set_to_simple(&dat->s, nth, jd, sg, 0, 0, 0, HAVE_JD);
+		set_to_simple(self, &dat->s, nth, jd, sg, 0, 0, 0, HAVE_JD);
 	    } else {
 		if (!complex_dat_p(dat))
 		    rb_raise(rb_eArgError,
 			     "cannot load complex into simple");
 
-		set_to_complex(&dat->c, nth, jd, df, sf, of, sg,
+		set_to_complex(self, &dat->c, nth, jd, df, sf, of, sg,
 			       0, 0, 0, 0, 0, 0,
 			       HAVE_JD | HAVE_DF | COMPLEX_DAT);
 	    }
@@ -8614,7 +8619,7 @@ datetime_to_date(VALUE self)
 	VALUE new = d_lite_s_alloc_simple(cDate);
 	{
 	    get_d1b(new);
-	    copy_complex_to_simple(&bdat->s, &adat->c)
+	    copy_complex_to_simple(new, &bdat->s, &adat->c)
 	    bdat->s.jd = m_local_jd(adat);
 	    bdat->s.flags &= ~(HAVE_DF | HAVE_TIME | COMPLEX_DAT);
 	    return new;
