@@ -217,6 +217,9 @@ static VALUE reduce0 _((VALUE block_args, VALUE data, VALUE self));
 # define D_printf(fmt,arg)
 #endif
 
+#undef RUBY_UNTYPED_DATA_WARNING
+#define RUBY_UNTYPED_DATA_WARNING 0
+
 static VALUE
 racc_cparse(VALUE parser, VALUE arg, VALUE sysdebug)
 {
@@ -813,6 +816,9 @@ Init_cparse(void)
         rb_str_new2("$originalId: cparse.c,v 1.8 2006/07/06 11:39:46 aamine Exp $"));
 
     CparseParams = rb_define_class_under(Racc, "CparseParams", rb_cObject);
+    rb_undef_alloc_func(CparseParams);
+    rb_undef_method(CparseParams, "initialize");
+    rb_undef_method(CparseParams, "initialize_copy");
 
     RaccBug = rb_eRuntimeError;
 
