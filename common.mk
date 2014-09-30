@@ -1075,11 +1075,10 @@ dist:
 up::
 	-$(Q)$(MAKE) $(MFLAGS) REVISION_FORCE=PHONY "$(REVISION_H)"
 
-update-config_files: $(srcdir)/tool/config.guess $(srcdir)/tool/config.sub
-$(srcdir)/tool/config.guess:
-	$(Q) $(BASERUBY) -C $(@D) get-config_files $(@F)
-$(srcdir)/tool/config.sub:
-	$(Q) $(BASERUBY) -C $(@D) get-config_files $(@F)
+update-config_files:
+	$(Q) $(BASERUBY) -C "$(srcdir)/tool" \
+	    ../tool/downloader.rb gnu \
+	    config.guess config.sub
 
 update-gems: PHONY
 	$(ECHO) Downloading bundled gem files...

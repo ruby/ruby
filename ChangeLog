@@ -1,3 +1,7 @@
+Tue Sep 30 09:51:46 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* common.mk: fixed broken reference of update-config_files task
+
 Mon Sep 29 22:54:51 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/file.c (append_wstr): set expanded length, not length of
