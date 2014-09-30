@@ -1,3 +1,8 @@
+Tue Sep 30 22:25:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_data_type): separate ripper data type for from
+	  parser.
+
 Tue Sep 30 18:46:31 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole_typelib.c: use typed data.

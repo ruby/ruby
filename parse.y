@@ -5465,11 +5465,9 @@ lex_getline(struct parser_params *parser)
     return line;
 }
 
-#ifdef RIPPER
-static rb_data_type_t parser_data_type;
-#else
 static const rb_data_type_t parser_data_type;
 
+#ifndef RIPPER
 static NODE*
 parser_compile_string(volatile VALUE vparser, VALUE fname, VALUE s, int line)
 {
@@ -10246,12 +10244,12 @@ parser_memsize(const void *ptr)
     return size;
 }
 
-static
+static const rb_data_type_t parser_data_type = {
 #ifndef RIPPER
-const
-#endif
-rb_data_type_t parser_data_type = {
     "parser",
+#else
+    "ripper",
+#endif
     {
 	parser_mark,
 	parser_free,
@@ -10286,6 +10284,18 @@ rb_parser_new(void)
 
     return TypedData_Wrap_Struct(0, &parser_data_type, p);
 }
+#endif
+
+#ifdef RIPPER
+#define rb_parser_end_seen_p ripper_parser_end_seen_p
+#define rb_parser_encoding ripper_parser_encoding
+#define rb_parser_get_yydebug ripper_parser_get_yydebug
+#define rb_parser_set_yydebug ripper_parser_set_yydebug
+static VALUE ripper_parser_end_seen_p(VALUE vparser);
+static VALUE ripper_parser_encoding(VALUE vparser);
+static VALUE ripper_parser_get_yydebug(VALUE self);
+static VALUE ripper_parser_set_yydebug(VALUE self, VALUE flag);
+#endif
 
 /*
  *  call-seq:
@@ -10348,6 +10358,7 @@ rb_parser_set_yydebug(VALUE self, VALUE flag)
     return flag;
 }
 
+#ifndef RIPPER
 #ifdef YYMALLOC
 #define HEAPCNT(n, size) ((n) * (size) / sizeof(YYSTYPE))
 #define NEWHEAP() rb_node_newnode(NODE_ALLOCA, 0, (VALUE)parser->heap, 0)
@@ -10899,8 +10910,6 @@ ripper_value(VALUE self, VALUE obj)
 void
 Init_ripper(void)
 {
-    parser_data_type.parent = RTYPEDDATA_TYPE(rb_parser_new());
-
     ripper_init_eventids1();
     ripper_init_eventids2();
     /* ensure existing in symbol table */

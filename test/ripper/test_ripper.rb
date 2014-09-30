@@ -18,10 +18,17 @@ class TestRipper::Ripper < Test::Unit::TestCase
 
   def test_encoding
     assert_equal Encoding::UTF_8, @ripper.encoding
+    ripper = Ripper.new('# coding: iso-8859-15')
+    ripper.parse
+    assert_equal Encoding::ISO_8859_15, ripper.encoding
   end
 
   def test_end_seen_eh
-    refute @ripper.end_seen?
+    @ripper.parse
+    assert_not_predicate @ripper, :end_seen?
+    ripper = Ripper.new('__END__')
+    ripper.parse
+    assert_predicate ripper, :end_seen?
   end
 
   def test_filename
@@ -37,17 +44,17 @@ class TestRipper::Ripper < Test::Unit::TestCase
   end
 
   def test_parse
-    refute @ripper.parse
+    assert_nil @ripper.parse
   end
 
   def test_yydebug
-    refute @ripper.yydebug
+    assert_not_predicate @ripper, :yydebug
   end
 
   def test_yydebug_equals
     @ripper.yydebug = true
 
-    assert @ripper.yydebug
+    assert_predicate @ripper, :yydebug
   end
 
 end if ripper_test
