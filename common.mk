@@ -1075,7 +1075,7 @@ dist:
 up::
 	-$(Q)$(MAKE) $(MFLAGS) REVISION_FORCE=PHONY "$(REVISION_H)"
 
-update-config_files:
+update-config_files: PHONY
 	$(Q) $(BASERUBY) -C "$(srcdir)/tool" \
 	    ../tool/downloader.rb -e gnu \
 	    config.guess config.sub
@@ -1089,20 +1089,20 @@ update-gems: PHONY
 	    -e 'Downloader::RubyGems.download(gem)' \
 	    bundled_gems
 
-update-unicode:
+update-unicode: PHONY
 	$(ECHO) Downloading Unicode data files...
 	$(Q) $(BASERUBY) -C "$(srcdir)/enc/unicode/data" \
 	    ../../../tool/downloader.rb unicode \
 	    UnicodeData.txt CompositionExclusions.txt NormalizationTest.txt
 
 info: info-program info-libruby_a info-libruby_so info-arch
-info-program:
+info-program: PHONY
 	@echo PROGRAM=$(PROGRAM)
-info-libruby_a:
+info-libruby_a: PHONY
 	@echo LIBRUBY_A=$(LIBRUBY_A)
-info-libruby_so:
+info-libruby_so: PHONY
 	@echo LIBRUBY_SO=$(LIBRUBY_SO)
-info-arch:
+info-arch: PHONY
 	@echo arch=$(arch)
 
 change: PHONY
@@ -1113,7 +1113,7 @@ love: sudo-precheck up all test install test-all
 
 yes-test-all: sudo-precheck
 
-sudo-precheck:
+sudo-precheck: PHONY
 	@$(SUDO) echo > $(NULL)
 
 help: PHONY
