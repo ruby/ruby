@@ -9,7 +9,8 @@ static VALUE oletypelib_path(VALUE guid, VALUE version);
 static HRESULT oletypelib_from_guid(VALUE guid, VALUE version, ITypeLib **ppTypeLib);
 static VALUE foletypelib_s_typelibs(VALUE self);
 static VALUE oletypelib_set_member(VALUE self, ITypeLib *pTypeLib);
-static void oletypelib_free(struct oletypelibdata *poletypelib);
+static void oletypelib_free(void *ptr);
+static size_t oletypelib_size(const void *ptr);
 static VALUE foletypelib_s_allocate(VALUE klass);
 static VALUE oletypelib_search_registry(VALUE self, VALUE typelib);
 static void oletypelib_get_libattr(ITypeLib *pTypeLib, TLIBATTR **ppTLibAttr);
@@ -29,6 +30,12 @@ static VALUE typelib_file_from_typelib(VALUE ole);
 static VALUE typelib_file_from_clsid(VALUE ole);
 static VALUE foletypelib_ole_types(VALUE self);
 static VALUE foletypelib_inspect(VALUE self);
+
+static const rb_data_type_t oletypelib_datatype = {
+    "win32ole_typelib",
+    {NULL, oletypelib_free, oletypelib_size,},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+};
 
 static VALUE
 reg_get_typelib_file_path(HKEY hkey)
@@ -99,7 +106,7 @@ ITypeLib *
 itypelib(VALUE self)
 {
     struct oletypelibdata *ptlib;
-    Data_Get_Struct(self, struct oletypelibdata, ptlib);
+    TypedData_Get_Struct(self, struct oletypelibdata, &oletypelib_datatype, ptlib);
     return ptlib->pTypeLib;
 }
 
@@ -182,16 +189,23 @@ static VALUE
 oletypelib_set_member(VALUE self, ITypeLib *pTypeLib)
 {
     struct oletypelibdata *ptlib;
-    Data_Get_Struct(self, struct oletypelibdata, ptlib);
+    TypedData_Get_Struct(self, struct oletypelibdata, &oletypelib_datatype, ptlib);
     ptlib->pTypeLib = pTypeLib;
     return self;
 }
 
 static void
-oletypelib_free(struct oletypelibdata *poletypelib)
+oletypelib_free(void *ptr)
 {
+    struct oletypelibdata *poletypelib = ptr;
     OLE_FREE(poletypelib->pTypeLib);
     free(poletypelib);
+}
+
+static size_t
+oletypelib_size(const void *ptr)
+{
+    return ptr ? sizeof(struct oletypelibdata) : 0;
 }
 
 static VALUE
@@ -200,7 +214,7 @@ foletypelib_s_allocate(VALUE klass)
     struct oletypelibdata *poletypelib;
     VALUE obj;
     ole_initialize();
-    obj = Data_Make_Struct(klass, struct oletypelibdata, 0, oletypelib_free, poletypelib);
+    obj = TypedData_Make_Struct(klass, struct oletypelibdata, &oletypelib_datatype, poletypelib);
     poletypelib->pTypeLib = NULL;
     return obj;
 }
