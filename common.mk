@@ -1077,7 +1077,7 @@ up::
 
 update-config_files:
 	$(Q) $(BASERUBY) -C "$(srcdir)/tool" \
-	    ../tool/downloader.rb gnu \
+	    ../tool/downloader.rb -e gnu \
 	    config.guess config.sub
 
 update-gems: PHONY
