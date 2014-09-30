@@ -179,7 +179,7 @@ ossl_rand_status(VALUE self)
  * INIT
  */
 void
-Init_ossl_rand()
+Init_ossl_rand(void)
 {
 #if 0
     mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */

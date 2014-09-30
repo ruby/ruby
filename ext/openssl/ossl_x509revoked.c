@@ -209,7 +209,7 @@ ossl_x509revoked_add_extension(VALUE self, VALUE ext)
  * INIT
  */
 void
-Init_ossl_x509revoked()
+Init_ossl_x509revoked(void)
 {
     eX509RevError = rb_define_class_under(mX509, "RevokedError", eOSSLError);
 

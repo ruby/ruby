@@ -1159,7 +1159,7 @@ rb_f_autoload_p(VALUE obj, VALUE sym)
 }
 
 void
-Init_load()
+Init_load(void)
 {
 #undef rb_intern
 #define rb_intern(str) rb_intern2((str), strlen(str))

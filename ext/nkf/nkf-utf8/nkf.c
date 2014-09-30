@@ -774,7 +774,7 @@ nkf_enc_find(const char *name)
 
 #ifdef DEFAULT_CODE_LOCALE
 static const char*
-nkf_locale_charmap()
+nkf_locale_charmap(void)
 {
 #ifdef HAVE_LANGINFO_H
     return nl_langinfo(CODESET);
@@ -802,7 +802,7 @@ nkf_locale_charmap()
 }
 
 static nkf_encoding*
-nkf_locale_encoding()
+nkf_locale_encoding(void)
 {
     nkf_encoding *enc = 0;
     const char *encname = nkf_locale_charmap();
@@ -813,13 +813,13 @@ nkf_locale_encoding()
 #endif /* DEFAULT_CODE_LOCALE */
 
 static nkf_encoding*
-nkf_utf8_encoding()
+nkf_utf8_encoding(void)
 {
     return &nkf_encoding_table[UTF_8];
 }
 
 static nkf_encoding*
-nkf_default_encoding()
+nkf_default_encoding(void)
 {
     nkf_encoding *enc = 0;
 #ifdef DEFAULT_CODE_LOCALE

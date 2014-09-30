@@ -1472,7 +1472,7 @@ OSSL_ASN1_IMPL_FACTORY_METHOD(Set)
 OSSL_ASN1_IMPL_FACTORY_METHOD(EndOfContent)
 
 void
-Init_ossl_asn1()
+Init_ossl_asn1(void)
 {
     VALUE ary;
     int i;

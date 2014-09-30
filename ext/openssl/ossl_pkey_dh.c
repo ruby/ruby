@@ -588,7 +588,7 @@ ossl_create_dh(unsigned char *p, size_t plen, unsigned char *g, size_t glen)
  * INIT
  */
 void
-Init_ossl_dh()
+Init_ossl_dh(void)
 {
 #if 0
     mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL and mPKey */
@@ -660,7 +660,7 @@ Init_ossl_dh()
 
 #else /* defined NO_DH */
 void
-Init_ossl_dh()
+Init_ossl_dh(void)
 {
 }
 #endif /* NO_DH */

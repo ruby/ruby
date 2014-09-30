@@ -2025,7 +2025,7 @@ socket_s_ip_address_list(VALUE self)
 #endif
 
 void
-Init_socket()
+Init_socket(void)
 {
     rsock_init_basicsocket();
 

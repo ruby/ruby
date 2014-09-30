@@ -1512,7 +1512,7 @@ strio_set_encoding(int argc, VALUE *argv, VALUE self)
  *   io.string #=> "Hello World"
  */
 void
-Init_stringio()
+Init_stringio(void)
 {
     VALUE StringIO = rb_define_class("StringIO", rb_cData);
 

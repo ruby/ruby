@@ -4200,7 +4200,7 @@ rb_gzreader_readlines(int argc, VALUE *argv, VALUE obj)
 #endif /* GZIP_SUPPORT */
 
 void
-Init_zlib()
+Init_zlib(void)
 {
     VALUE mZlib, cZStream, cDeflate, cInflate;
 #if GZIP_SUPPORT

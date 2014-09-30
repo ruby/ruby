@@ -773,7 +773,7 @@ ossl_bn_is_prime_fasttest(int argc, VALUE *argv, VALUE self)
  * (NOTE: ordering of methods is the same as in 'man bn')
  */
 void
-Init_ossl_bn()
+Init_ossl_bn(void)
 {
 #if 0
     mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */

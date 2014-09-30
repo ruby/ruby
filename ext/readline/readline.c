@@ -1786,7 +1786,7 @@ username_completion_proc_call(VALUE self, VALUE str)
 }
 
 void
-Init_readline()
+Init_readline(void)
 {
     VALUE history, fcomp, ucomp, version;
 

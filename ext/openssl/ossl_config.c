@@ -69,7 +69,7 @@ GetConfigPtr(VALUE obj)
  * INIT
  */
 void
-Init_ossl_config()
+Init_ossl_config(void)
 {
     char *default_config_file;
     eConfigError = rb_define_class_under(mOSSL, "ConfigError", eOSSLError);

@@ -2248,7 +2248,7 @@ dir_s_home(int argc, VALUE *argv, VALUE obj)
  *
  */
 VALUE
-rb_file_directory_p()
+rb_file_directory_p(void)
 {
 }
 #endif

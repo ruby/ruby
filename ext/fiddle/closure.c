@@ -260,7 +260,7 @@ to_i(VALUE self)
 }
 
 void
-Init_fiddle_closure()
+Init_fiddle_closure(void)
 {
 #if 0
     mFiddle = rb_define_module("Fiddle"); /* let rdoc know about mFiddle */

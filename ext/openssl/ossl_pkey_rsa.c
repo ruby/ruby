@@ -626,7 +626,7 @@ OSSL_PKEY_BN(rsa, iqmp)
 #define DefRSAConst(x) rb_define_const(cRSA, #x,INT2FIX(RSA_##x))
 
 void
-Init_ossl_rsa()
+Init_ossl_rsa(void)
 {
 #if 0
     mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL and mPKey */
@@ -694,7 +694,7 @@ Init_ossl_rsa()
 
 #else /* defined NO_RSA */
 void
-Init_ossl_rsa()
+Init_ossl_rsa(void)
 {
 }
 #endif /* NO_RSA */

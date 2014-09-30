@@ -87,7 +87,7 @@ ossl_pkcs5_pbkdf2_hmac_sha1(VALUE self, VALUE pass, VALUE salt, VALUE iter, VALU
 #endif
 
 void
-Init_ossl_pkcs5()
+Init_ossl_pkcs5(void)
 {
     /*
      * Password-based Encryption

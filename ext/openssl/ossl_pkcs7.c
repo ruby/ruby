@@ -980,7 +980,7 @@ ossl_pkcs7ri_get_enc_key(VALUE self)
  * INIT
  */
 void
-Init_ossl_pkcs7()
+Init_ossl_pkcs7(void)
 {
     cPKCS7 = rb_define_class_under(mOSSL, "PKCS7", rb_cObject);
     ePKCS7Error = rb_define_class_under(cPKCS7, "PKCS7Error", eOSSLError);

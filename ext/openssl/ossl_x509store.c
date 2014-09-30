@@ -593,7 +593,7 @@ ossl_x509stctx_set_time(VALUE self, VALUE time)
  * INIT
  */
 void
-Init_ossl_x509store()
+Init_ossl_x509store(void)
 {
     VALUE x509stctx;
 

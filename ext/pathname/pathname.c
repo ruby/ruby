@@ -1370,7 +1370,7 @@ path_f_pathname(VALUE self, VALUE str)
  * information.  In some cases, a brief description will follow.
  */
 void
-Init_pathname()
+Init_pathname(void)
 {
     id_at_path = rb_intern("@path");
     id_to_path = rb_intern("to_path");

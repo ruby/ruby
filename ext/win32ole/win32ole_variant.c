@@ -665,7 +665,7 @@ folevariant_set_value(VALUE self, VALUE val)
 }
 
 void
-Init_win32ole_variant()
+Init_win32ole_variant(void)
 {
     cWIN32OLE_VARIANT = rb_define_class("WIN32OLE_VARIANT", rb_cObject);
     rb_define_alloc_func(cWIN32OLE_VARIANT, folevariant_s_allocate);

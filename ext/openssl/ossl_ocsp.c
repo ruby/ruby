@@ -900,7 +900,7 @@ ossl_ocspcid_get_serial(VALUE self)
 }
 
 void
-Init_ossl_ocsp()
+Init_ossl_ocsp(void)
 {
     /*
      * OpenSSL::OCSP implements Online Certificate Status Protocol requests
@@ -1182,7 +1182,7 @@ Init_ossl_ocsp()
 
 #else /* ! OSSL_OCSP_ENABLED */
 void
-Init_ossl_ocsp()
+Init_ossl_ocsp(void)
 {
 }
 #endif

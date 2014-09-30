@@ -114,7 +114,7 @@ static struct {
 } tcltk_version = {0, 0, 0, 0};
 
 static void
-set_tcltk_version()
+set_tcltk_version(void)
 {
     if (tcltk_version.major) return;
 
@@ -1057,7 +1057,7 @@ set_rubytk_kitpath(const char *kitpath)
 #endif
 
 static void
-check_tclkit_std_channels()
+check_tclkit_std_channels(void)
 {
     Tcl_Channel chan;
 
@@ -1141,7 +1141,7 @@ rubytk_kitpath_init(Tcl_Interp *interp)
 /*--------------------------------------------------------*/
 
 static void
-init_static_tcltk_packages()
+init_static_tcltk_packages(void)
 {
     /*
      * Ensure that std channels exist (creating them if necessary)
@@ -1228,7 +1228,7 @@ void rbtk_win32_SetHINSTANCE(const char *module_name)
 /*--------------------------------------------------------*/
 
 static void
-setup_rubytkkit()
+setup_rubytkkit(void)
 {
   init_static_tcltk_packages();
 
@@ -1281,7 +1281,7 @@ setup_rubytkkit()
 
 /* stub status */
 static void
-tcl_stubs_check()
+tcl_stubs_check(void)
 {
     if (!tcl_stubs_init_p()) {
         int st = ruby_tcl_stubs_init();
@@ -1382,7 +1382,7 @@ static int rbtk_internal_eventloop_handler = 0;
 
 
 static int
-pending_exception_check0()
+pending_exception_check0(void)
 {
     volatile VALUE exc = rbtk_pending_exception;
 
@@ -1645,7 +1645,7 @@ _timer_for_tcl(clientData)
 #ifdef RUBY_USE_NATIVE_THREAD
 #if USE_TOGGLE_WINDOW_MODE_FOR_IDLE
 static int
-toggle_eventloop_window_mode_for_idle()
+toggle_eventloop_window_mode_for_idle(void)
 {
   if (window_event_mode & TCL_IDLE_EVENTS) {
     /* idle -> event */
@@ -2099,7 +2099,7 @@ eventloop_sleep(dummy)
 
 #if USE_EVLOOP_THREAD_ALONE_CHECK_FLAG
 static int
-get_thread_alone_check_flag()
+get_thread_alone_check_flag(void)
 {
 #ifdef RUBY_USE_NATIVE_THREAD
   return 0;
@@ -2168,7 +2168,7 @@ trap_check(int *check_var)
 }
 
 static int
-check_eventloop_interp()
+check_eventloop_interp(void)
 {
   DUMP1("check eventloop_interp");
   if (eventloop_interp != (Tcl_Interp*)NULL
@@ -9975,7 +9975,7 @@ lib_get_reltype_name(self)
 
 
 static VALUE
-tcltklib_compile_info()
+tcltklib_compile_info(void)
 {
     volatile VALUE ret;
     size_t size;
@@ -10714,7 +10714,7 @@ ip_make_menu_embeddable(interp, menu_path)
 
 /*---- initialization ----*/
 void
-Init_tcltklib()
+Init_tcltklib(void)
 {
     int  ret;
 

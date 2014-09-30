@@ -436,7 +436,7 @@ ossl_x509ext_to_der(VALUE obj)
  * INIT
  */
 void
-Init_ossl_x509ext()
+Init_ossl_x509ext(void)
 {
     eX509ExtError = rb_define_class_under(mX509, "ExtensionError", eOSSLError);
 

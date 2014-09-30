@@ -811,7 +811,7 @@ foletypelib_inspect(VALUE self)
 }
 
 void
-Init_win32ole_typelib()
+Init_win32ole_typelib(void)
 {
     cWIN32OLE_TYPELIB = rb_define_class("WIN32OLE_TYPELIB", rb_cObject);
     rb_define_singleton_method(cWIN32OLE_TYPELIB, "typelibs", foletypelib_s_typelibs, 0);

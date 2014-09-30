@@ -478,7 +478,7 @@ rb_nkf_guess(VALUE obj, VALUE src)
  */
 
 void
-Init_nkf()
+Init_nkf(void)
 {
     VALUE mNKF = rb_define_module("NKF");
 

@@ -24,7 +24,7 @@
 static int call_macinit = 0;
 
 static void
-_macinit()
+_macinit(void)
 {
     if (!call_macinit) {
         tcl_macQdPtr = &qd; /* setup QuickDraw globals */
@@ -157,7 +157,7 @@ ruby_open_tcl_dll(appname)
 }
 
 int
-ruby_open_tk_dll()
+ruby_open_tk_dll(void)
 {
     int n;
     char *ruby_tk_dll = 0;
@@ -202,13 +202,13 @@ ruby_open_tcltk_dll(appname)
 }
 
 int
-tcl_stubs_init_p()
+tcl_stubs_init_p(void)
 {
     return(tclStubsPtr != (TclStubs*)NULL);
 }
 
 int
-tk_stubs_init_p()
+tk_stubs_init_p(void)
 {
     return(tkStubsPtr != (TkStubs*)NULL);
 }
@@ -285,7 +285,7 @@ ruby_tcl_create_ip_and_stubs_init(st)
 }
 
 int
-ruby_tcl_stubs_init()
+ruby_tcl_stubs_init(void)
 {
     int st;
     Tcl_Interp *tcl_ip;
@@ -397,7 +397,7 @@ ruby_tk_stubs_safeinit(tcl_ip)
 }
 
 int
-ruby_tcltk_stubs()
+ruby_tcltk_stubs(void)
 {
     int st;
     Tcl_Interp *tcl_ip;
@@ -467,7 +467,7 @@ ruby_open_tcl_dll(appname)
 }
 
 int
-ruby_open_tk_dll()
+ruby_open_tk_dll(void)
 {
     if (!open_tcl_dll) {
         /* ruby_open_tcl_dll(RSTRING_PTR(rb_argv0)); */
@@ -489,13 +489,13 @@ ruby_open_tcltk_dll(appname)
 }
 
 int
-tcl_stubs_init_p()
+tcl_stubs_init_p(void)
 {
     return 1;
 }
 
 int
-tk_stubs_init_p()
+tk_stubs_init_p(void)
 {
     return call_tk_stubs_init;
 }
@@ -528,7 +528,7 @@ ruby_tcl_create_ip_and_stubs_init(st)
 }
 
 int
-ruby_tcl_stubs_init()
+ruby_tcl_stubs_init(void)
 {
     return TCLTK_STUBS_OK;
 }
@@ -582,7 +582,7 @@ ruby_tk_stubs_safeinit(tcl_ip)
 }
 
 int
-ruby_tcltk_stubs()
+ruby_tcltk_stubs(void)
 {
     /* Tcl_FindExecutable(RSTRING_PTR(rb_argv0)); */
     Tcl_FindExecutable(rb_argv0 ? RSTRING_PTR(rb_argv0) : 0);

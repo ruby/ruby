@@ -563,7 +563,7 @@ OSSL_PKEY_BN(dsa, priv_key)
  * INIT
  */
 void
-Init_ossl_dsa()
+Init_ossl_dsa(void)
 {
 #if 0
     mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL and mPKey */
@@ -617,7 +617,7 @@ Init_ossl_dsa()
 
 #else /* defined NO_DSA */
 void
-Init_ossl_dsa()
+Init_ossl_dsa(void)
 {
 }
 #endif /* NO_DSA */

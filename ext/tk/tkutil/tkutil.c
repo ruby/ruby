@@ -1198,7 +1198,7 @@ allocate_cbsubst_info(struct cbsubst_info **inf_ptr)
 }
 
 static void
-cbsubst_init()
+cbsubst_init(void)
 {
   rb_const_set(cCB_SUBST, ID_SUBST_INFO,
 	       allocate_cbsubst_info((struct cbsubst_info **)NULL));
@@ -1738,7 +1738,7 @@ tkobj_path(self)
 const char tkutil_release_date[] = TKUTIL_RELEASE_DATE;
 
 void
-Init_tkutil()
+Init_tkutil(void)
 {
     VALUE cTK = rb_define_class("TkKernel", rb_cObject);
     VALUE mTK = rb_define_module("TkUtil");

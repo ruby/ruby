@@ -361,7 +361,7 @@ ossl_exc_new(VALUE exc, const char *fmt, ...)
  * Any errors you see here are probably due to a bug in ruby's OpenSSL implementation.
  */
 VALUE
-ossl_get_errors()
+ossl_get_errors(void)
 {
     VALUE ary;
     long e;
@@ -1034,7 +1034,7 @@ static void Init_ossl_locks(void)
  *
  */
 void
-Init_openssl()
+Init_openssl(void)
 {
     /*
      * Init timezone info

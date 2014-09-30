@@ -676,7 +676,7 @@ PPP_GetInterface(const char* interface_name)
  * Called before the plugin module is unloaded.
  */
 PP_EXPORT void
-PPP_ShutdownModule()
+PPP_ShutdownModule(void)
 {
   ruby_cleanup(0);
 }

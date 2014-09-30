@@ -1126,7 +1126,7 @@ before_exec_async_signal_safe(void)
 }
 
 static void
-before_exec_non_async_signal_safe()
+before_exec_non_async_signal_safe(void)
 {
     /*
      * On Mac OS X 10.5.x (Leopard) or earlier, exec() may return ENOTSUP
@@ -1139,7 +1139,7 @@ before_exec_non_async_signal_safe()
 }
 
 static void
-before_exec()
+before_exec(void)
 {
     before_exec_non_async_signal_safe();
     before_exec_async_signal_safe();

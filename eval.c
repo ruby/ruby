@@ -1132,7 +1132,7 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
 }
 
 static VALUE
-hidden_identity_hash_new()
+hidden_identity_hash_new(void)
 {
     VALUE hash = rb_hash_new();
 

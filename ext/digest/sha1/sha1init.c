@@ -24,7 +24,7 @@ static const rb_digest_metadata_t sha1 = {
  * Technology), described in FIPS PUB 180-1.
  */
 void
-Init_sha1()
+Init_sha1(void)
 {
     VALUE mDigest, cDigest_Base, cDigest_SHA1;
 

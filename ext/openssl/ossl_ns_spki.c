@@ -360,7 +360,7 @@ ossl_spki_verify(VALUE self, VALUE key)
  */
 
 void
-Init_ossl_ns_spki()
+Init_ossl_ns_spki(void)
 {
 #if 0
     mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */

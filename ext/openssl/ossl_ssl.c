@@ -1858,7 +1858,7 @@ ossl_ssl_npn_protocol(VALUE self)
 #endif /* !defined(OPENSSL_NO_SOCK) */
 
 void
-Init_ossl_ssl()
+Init_ossl_ssl(void)
 {
     int i;
     VALUE ary;

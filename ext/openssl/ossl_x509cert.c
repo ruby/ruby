@@ -708,7 +708,7 @@ ossl_x509_inspect(VALUE self)
  * INIT
  */
 void
-Init_ossl_x509cert()
+Init_ossl_x509cert(void)
 {
 
 #if 0

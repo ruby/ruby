@@ -260,7 +260,7 @@ ossl_x509attr_to_der(VALUE self)
  * X509_ATTRIBUTE init
  */
 void
-Init_ossl_x509attr()
+Init_ossl_x509attr(void)
 {
     eX509AttrError = rb_define_class_under(mX509, "AttributeError", eOSSLError);
 

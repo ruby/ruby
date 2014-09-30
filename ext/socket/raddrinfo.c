@@ -716,7 +716,7 @@ get_addrinfo(VALUE self)
 
 
 static rb_addrinfo_t *
-alloc_addrinfo()
+alloc_addrinfo(void)
 {
     rb_addrinfo_t *rai = ZALLOC(rb_addrinfo_t);
     rai->inspectname = Qnil;

@@ -24,7 +24,7 @@ static const rb_digest_metadata_t rmd160 = {
  * Bosselaers, and Bart Preneel.
  */
 void
-Init_rmd160()
+Init_rmd160(void)
 {
     VALUE mDigest, cDigest_Base, cDigest_RMD160;
 

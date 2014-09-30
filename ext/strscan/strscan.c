@@ -1323,7 +1323,7 @@ inspect2(struct strscanner *p)
  * There are aliases to several of the methods.
  */
 void
-Init_strscan()
+Init_strscan(void)
 {
     ID id_scanerr = rb_intern("ScanError");
     VALUE tmp;

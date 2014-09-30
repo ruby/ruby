@@ -502,7 +502,7 @@ ossl_x509crl_add_extension(VALUE self, VALUE extension)
  * INIT
  */
 void
-Init_ossl_x509crl()
+Init_ossl_x509crl(void)
 {
     eX509CRLError = rb_define_class_under(mX509, "CRLError", eOSSLError);
 

@@ -192,7 +192,7 @@ ossl_pkcs12_to_der(VALUE self)
 }
 
 void
-Init_ossl_pkcs12()
+Init_ossl_pkcs12(void)
 {
     /*
      * Defines a file format commonly used to store private keys with

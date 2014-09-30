@@ -375,7 +375,7 @@ static /* [local] */ HRESULT ( STDMETHODCALLTYPE Invoke )(
 }
 
 BOOL
-ole_initialized()
+ole_initialized(void)
 {
     return g_ole_initialized;
 }

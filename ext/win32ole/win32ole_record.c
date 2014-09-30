@@ -563,7 +563,7 @@ folerecord_inspect(VALUE self)
 }
 
 void
-Init_win32ole_record()
+Init_win32ole_record(void)
 {
     cWIN32OLE_RECORD = rb_define_class("WIN32OLE_RECORD", rb_cObject);
     rb_define_alloc_func(cWIN32OLE_RECORD, folerecord_s_allocate);

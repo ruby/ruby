@@ -745,7 +745,7 @@ static VALUE cPTY;
  */
 
 void
-Init_pty()
+Init_pty(void)
 {
     cPTY = rb_define_module("PTY");
     /* :nodoc */

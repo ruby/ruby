@@ -533,7 +533,7 @@ ossl_engine_inspect(VALUE self)
 #define DefEngineConst(x) rb_define_const(cEngine, #x, INT2NUM(ENGINE_##x))
 
 void
-Init_ossl_engine()
+Init_ossl_engine(void)
 {
     cEngine = rb_define_class_under(mOSSL, "Engine", rb_cObject);
     eEngineError = rb_define_class_under(cEngine, "EngineError", eOSSLError);
@@ -578,7 +578,7 @@ Init_ossl_engine()
 }
 #else
 void
-Init_ossl_engine()
+Init_ossl_engine(void)
 {
 }
 #endif

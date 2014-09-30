@@ -2772,7 +2772,7 @@ getenvsize(const char* p)
     return p - porg + 1;
 }
 static size_t
-getenvblocksize()
+getenvblocksize(void)
 {
     return (rb_w32_osver() >= 5) ? 32767 : 5120;
 }

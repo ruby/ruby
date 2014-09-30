@@ -400,7 +400,7 @@ foleparam_inspect(VALUE self)
 }
 
 void
-Init_win32ole_param()
+Init_win32ole_param(void)
 {
     cWIN32OLE_PARAM = rb_define_class("WIN32OLE_PARAM", rb_cObject);
     rb_define_alloc_func(cWIN32OLE_PARAM, foleparam_s_allocate);

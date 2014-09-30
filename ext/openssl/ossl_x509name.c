@@ -426,7 +426,7 @@ ossl_x509name_to_der(VALUE self)
  */
 
 void
-Init_ossl_x509name()
+Init_ossl_x509name(void)
 {
     VALUE utf8str, ptrstr, ia5str, hash;
 

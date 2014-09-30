@@ -62,7 +62,7 @@ pack up your own arguments to pass as args for locking functions, etc.
  *
  */
 void
-Init_fcntl()
+Init_fcntl(void)
 {
     VALUE mFcntl = rb_define_module("Fcntl");
 #ifdef F_DUPFD

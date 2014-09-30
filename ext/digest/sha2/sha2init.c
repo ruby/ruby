@@ -29,7 +29,7 @@ FOREACH_BITLEN(DEFINE_ALGO_METADATA)
  * Standards and Technology), described in FIPS PUB 180-2.
  */
 void
-Init_sha2()
+Init_sha2(void)
 {
     VALUE mDigest, cDigest_Base;
     ID id_metadata;

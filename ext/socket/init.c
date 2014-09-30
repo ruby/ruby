@@ -594,7 +594,7 @@ rsock_getfamily(int sockfd)
 }
 
 void
-rsock_init_socket_init()
+rsock_init_socket_init(void)
 {
     /*
      * SocketError is the error class for socket.

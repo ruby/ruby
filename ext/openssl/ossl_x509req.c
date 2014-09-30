@@ -438,7 +438,7 @@ ossl_x509req_add_attribute(VALUE self, VALUE attr)
  * X509_REQUEST init
  */
 void
-Init_ossl_x509req()
+Init_ossl_x509req(void)
 {
     eX509ReqError = rb_define_class_under(mX509, "RequestError", eOSSLError);
 

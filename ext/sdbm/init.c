@@ -72,7 +72,7 @@ struct dbmdata {
 };
 
 static void
-closed_sdbm()
+closed_sdbm(void)
 {
     rb_raise(rb_eDBMError, "closed SDBM file");
 }
@@ -991,7 +991,7 @@ fsdbm_reject(VALUE obj)
 }
 
 void
-Init_sdbm()
+Init_sdbm(void)
 {
     rb_cDBM = rb_define_class("SDBM", rb_cObject);
     rb_eDBMError = rb_define_class("SDBMError", rb_eStandardError);

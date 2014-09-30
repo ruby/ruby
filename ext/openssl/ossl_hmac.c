@@ -327,7 +327,7 @@ ossl_hmac_s_hexdigest(VALUE klass, VALUE digest, VALUE key, VALUE data)
  * INIT
  */
 void
-Init_ossl_hmac()
+Init_ossl_hmac(void)
 {
 #if 0
     /* :nodoc: */
@@ -357,7 +357,7 @@ Init_ossl_hmac()
 #else /* NO_HMAC */
 #  warning >>> OpenSSL is compiled without HMAC support <<<
 void
-Init_ossl_hmac()
+Init_ossl_hmac(void)
 {
     rb_warning("HMAC is not available: OpenSSL is compiled without HMAC.");
 }

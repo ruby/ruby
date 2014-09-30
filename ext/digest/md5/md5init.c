@@ -24,7 +24,7 @@ static const rb_digest_metadata_t md5 = {
  * RFC1321.
  */
 void
-Init_md5()
+Init_md5(void)
 {
     VALUE mDigest, cDigest_Base, cDigest_MD5;
 

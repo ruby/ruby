@@ -123,10 +123,15 @@ end
 def gencallback(ty, calltype, proc_entry, argc, n)
   dltype = DLTYPE[ty]
   ret = dltype[:conv]
+  if argc == 0
+    args = "void"
+  else
+    args = (0...argc).collect{|i| "DLSTACK_TYPE stack#{i}"}.join(", ")
+  end
   src = <<-EOS
 #{calltype == STDCALL ? "\n#ifdef FUNC_STDCALL" : ""}
 static #{dltype[:type]}
-FUNC_#{calltype.upcase}(#{func_name(ty,argc,n,calltype)})(#{(0...argc).collect{|i| "DLSTACK_TYPE stack#{i}"}.join(", ")})
+FUNC_#{calltype.upcase}(#{func_name(ty,argc,n,calltype)})(#{args})
 {
     VALUE #{ret ? "ret, " : ""}cb#{argc > 0 ? ", args[#{argc}]" : ""};
 #{
@@ -177,7 +182,7 @@ extern ID   rb_dl_cb_call;
   yield body
   body << <<-EOS
 void
-#{initname}()
+#{initname}(void)
 {
 #{gen_push_proc_ary(ty, "rb_DLCdeclCallbackProcs")}
 #{gen_push_addr_ary(ty, "rb_DLCdeclCallbackAddrs", CDECL)}
@@ -201,7 +206,7 @@ for ty in 0...MAX_DLTYPE
       end
     end
   }
-  $out << "void #{initname}();\n"
+  $out << "void #{initname}(void);\n"
   callbacks << [filename, body]
 end
 

@@ -294,7 +294,7 @@ ossl_digest_block_length(VALUE self)
  * INIT
  */
 void
-Init_ossl_digest()
+Init_ossl_digest(void)
 {
     rb_require("digest");
 

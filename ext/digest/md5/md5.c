@@ -61,7 +61,7 @@
  */
 #include <string.h>
 int
-main()
+main(void)
 {
     static const char *const test[7*2] = {
 	"", "d41d8cd98f00b204e9800998ecf8427e",
@@ -102,7 +102,7 @@ main()
 #ifdef COMPUTE_T_VALUES
 #include <math.h>
 int
-main()
+main(void)
 {
     int i;
     for (i = 1; i <= 64; ++i) {

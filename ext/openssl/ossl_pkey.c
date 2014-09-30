@@ -342,7 +342,7 @@ ossl_pkey_verify(VALUE self, VALUE digest, VALUE sig, VALUE data)
  * INIT
  */
 void
-Init_ossl_pkey()
+Init_ossl_pkey(void)
 {
 #if 0
     mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
