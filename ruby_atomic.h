@@ -95,8 +95,8 @@ rb_w32_atomic_cas(volatile rb_atomic_t *var, rb_atomic_t oldval, rb_atomic_t new
 typedef unsigned int rb_atomic_t;
 
 # define ATOMIC_SET(var, val) (void)atomic_swap_uint(&(var), (val))
-# define ATOMIC_INC(var) atomic_inc_uint(&(var))
-# define ATOMIC_DEC(var) atomic_dec_uint(&(var))
+# define ATOMIC_INC(var) atomic_inc_uint_nv(&(var))
+# define ATOMIC_DEC(var) atomic_dec_uint_nv(&(var))
 # define ATOMIC_OR(var, val) atomic_or_uint(&(var), (val))
 # define ATOMIC_EXCHANGE(var, val) atomic_swap_uint(&(var), (val))
 # define ATOMIC_CAS(var, oldval, newval) atomic_cas_uint(&(var), (oldval), (newval))
