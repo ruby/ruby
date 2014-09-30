@@ -5,8 +5,8 @@
 #elif defined HAVE_GCC_ATOMIC_BUILTINS
 typedef unsigned int rb_atomic_t;
 # define ATOMIC_SET(var, val)  (void)__atomic_exchange_n(&(var), (val), __ATOMIC_SEQ_CST)
-# define ATOMIC_INC(var) __atomic_fetch_add(&(var), 1, __ATOMIC_SEQ_CST)
-# define ATOMIC_DEC(var) __atomic_fetch_sub(&(var), 1, __ATOMIC_SEQ_CST)
+# define ATOMIC_INC(var) __atomic_add_fetch(&(var), 1, __ATOMIC_SEQ_CST)
+# define ATOMIC_DEC(var) __atomic_sub_fetch(&(var), 1, __ATOMIC_SEQ_CST)
 # define ATOMIC_OR(var, val) __atomic_or_fetch(&(var), (val), __ATOMIC_SEQ_CST)
 # define ATOMIC_EXCHANGE(var, val) __atomic_exchange_n(&(var), (val), __ATOMIC_SEQ_CST)
 # define ATOMIC_CAS(var, oldval, newval) \
@@ -26,8 +26,8 @@ typedef unsigned int rb_atomic_t;
 
 typedef unsigned int rb_atomic_t; /* Anything OK */
 # define ATOMIC_SET(var, val)  (void)__sync_lock_test_and_set(&(var), (val))
-# define ATOMIC_INC(var) __sync_fetch_and_add(&(var), 1)
-# define ATOMIC_DEC(var) __sync_fetch_and_sub(&(var), 1)
+# define ATOMIC_INC(var) __sync_add_and_fetch(&(var), 1)
+# define ATOMIC_DEC(var) __sync_sub_and_fetch(&(var), 1)
 # define ATOMIC_OR(var, val) __sync_or_and_fetch(&(var), (val))
 # define ATOMIC_EXCHANGE(var, val) __sync_lock_test_and_set(&(var), (val))
 # define ATOMIC_CAS(var, oldval, newval) __sync_val_compare_and_swap(&(var), (oldval), (newval))
