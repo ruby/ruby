@@ -495,7 +495,8 @@ w_class(char type, VALUE obj, struct dump_arg *arg, int check)
     st_data_t real_obj;
     VALUE klass;
 
-    if (st_lookup(arg->compat_tbl, (st_data_t)obj, &real_obj)) {
+    if (arg->compat_tbl &&
+		st_lookup(arg->compat_tbl, (st_data_t)obj, &real_obj)) {
         obj = (VALUE)real_obj;
     }
     klass = CLASS_OF(obj);
@@ -738,6 +739,9 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
                 marshal_compat_t *compat = (marshal_compat_t*)compat_data;
                 VALUE real_obj = obj;
                 obj = compat->dumper(real_obj);
+                if (!arg->compat_tbl) {
+                    arg->compat_tbl = st_init_numtable();
+                }
                 st_insert(arg->compat_tbl, (st_data_t)obj, (st_data_t)real_obj);
 		if (obj != real_obj && !ivtbl) hasiv = 0;
             }
@@ -911,8 +915,10 @@ clear_dump_arg(struct dump_arg *arg)
     arg->symbols = 0;
     st_free_table(arg->data);
     arg->data = 0;
-    st_free_table(arg->compat_tbl);
-    arg->compat_tbl = 0;
+    if (arg->compat_tbl) {
+	st_free_table(arg->compat_tbl);
+	arg->compat_tbl = 0;
+    }
     if (arg->encodings) {
 	st_free_table(arg->encodings);
 	arg->encodings = 0;
@@ -985,7 +991,7 @@ marshal_dump(int argc, VALUE *argv)
     arg->symbols = st_init_numtable();
     arg->data    = st_init_numtable();
     arg->infection = 0;
-    arg->compat_tbl = st_init_numtable();
+    arg->compat_tbl = 0;
     arg->encodings = 0;
     arg->str = rb_str_buf_new(0);
     if (!NIL_P(port)) {
@@ -1365,7 +1371,7 @@ static VALUE
 r_entry0(VALUE v, st_index_t num, struct load_arg *arg)
 {
     st_data_t real_obj = (VALUE)Qundef;
-    if (st_lookup(arg->compat_tbl, v, &real_obj)) {
+    if (arg->compat_tbl && st_lookup(arg->compat_tbl, v, &real_obj)) {
         st_insert(arg->data, num, (st_data_t)real_obj);
     }
     else {
@@ -1384,7 +1390,7 @@ static VALUE
 r_fixup_compat(VALUE v, struct load_arg *arg)
 {
     st_data_t data;
-    if (st_lookup(arg->compat_tbl, v, &data)) {
+    if (arg->compat_tbl && st_lookup(arg->compat_tbl, v, &data)) {
         VALUE real_obj = (VALUE)data;
         rb_alloc_func_t allocator = rb_get_alloc_func(CLASS_OF(real_obj));
         st_data_t key = v;
@@ -1490,6 +1496,10 @@ obj_alloc_by_klass(VALUE klass, struct load_arg *arg, VALUE *oldclass)
         VALUE real_obj = rb_obj_alloc(klass);
         VALUE obj = rb_obj_alloc(compat->oldclass);
 	if (oldclass) *oldclass = compat->oldclass;
+
+        if (!arg->compat_tbl) {
+            arg->compat_tbl = st_init_numtable();
+        }
         st_insert(arg->compat_tbl, (st_data_t)obj, (st_data_t)real_obj);
         return obj;
     }
@@ -1950,8 +1960,10 @@ clear_load_arg(struct load_arg *arg)
     arg->symbols = 0;
     st_free_table(arg->data);
     arg->data = 0;
-    st_free_table(arg->compat_tbl);
-    arg->compat_tbl = 0;
+    if (arg->compat_tbl) {
+	st_free_table(arg->compat_tbl);
+	arg->compat_tbl = 0;
+    }
 }
 
 /*
@@ -1996,7 +2008,7 @@ marshal_load(int argc, VALUE *argv)
     arg->offset = 0;
     arg->symbols = st_init_numtable();
     arg->data    = st_init_numtable();
-    arg->compat_tbl = st_init_numtable();
+    arg->compat_tbl = 0;
     arg->proc = 0;
     arg->readable = 0;
 

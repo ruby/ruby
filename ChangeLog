@@ -1,3 +1,16 @@
+Thu Oct  2 05:27:24 2014  Eric Wong  <e@80x24.org>
+
+	* marshal.c (w_class): check dump_arg->compat_tbl before lookup
+	  (w_object): lazy init ->compat_tbl before insert
+	  (obj_alloc_by_class): ditto
+	  (clear_dump_arg): free only non-NULL ->compat_tbl
+	  (clear_load_arg): ditto for ->compat_tbl
+	  (marshal_dump): ->compat_tbl defaults to zero
+	  (marshal_load): ditto for ->compat_tbl
+	  (r_entry0): check l->compat_tbl before lookup
+	  (r_fixup_compat): ditto
+	  [ruby-core:65305] [Feature #10302]
+
 Wed Oct  1 21:14:34 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole_type.c: use typed data.
