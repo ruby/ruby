@@ -284,6 +284,48 @@ class Gem::RequestSet
     gf.load
   end
 
+  def pretty_print q # :nodoc:
+    q.group 2, '[RequestSet:', ']' do
+      q.breakable
+
+      if @remote then
+        q.text 'remote'
+        q.breakable
+      end
+
+      if @prerelease then
+        q.text 'prerelease'
+        q.breakable
+      end
+
+      if @development_shallow then
+        q.text 'shallow development'
+        q.breakable
+      elsif @development then
+        q.text 'development'
+        q.breakable
+      end
+
+      if @soft_missing then
+        q.text 'soft missing'
+      end
+
+      q.group 2, '[dependencies:', ']' do
+        q.breakable
+        @dependencies.map do |dep|
+          q.text dep.to_s
+          q.breakable
+        end
+      end
+
+      q.breakable
+      q.text 'sets:'
+
+      q.breakable
+      q.pp @sets.map { |set| set.class }
+    end
+  end
+
   ##
   # Resolve the requested dependencies and return an Array of Specification
   # objects to be activated.

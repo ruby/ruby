@@ -643,6 +643,16 @@ DEPENDENCIES
     assert_equal [:EOF], @lockfile.peek
   end
 
+  def test_relative_path_from
+    path = @lockfile.relative_path_from '/foo', '/foo/bar'
+
+    assert_equal '/foo', path
+
+    path = @lockfile.relative_path_from '/foo', '/foo'
+
+    assert_equal '.', path
+  end
+
   def test_skip
     tokens = [[:token]]
 

@@ -180,6 +180,17 @@ class TestGemSourceGit < Gem::TestCase
     source.cache
 
     refute_equal master_head, source.rev_parse
+
+    source = Gem::Source::Git.new @name, @repository, 'nonexistent', false
+
+    source.cache
+
+    e = assert_raises Gem::Exception do
+      source.rev_parse
+    end
+
+    assert_equal "unable to find reference nonexistent in #{@repository}",
+                   e.message
   end
 
   def test_root_dir
