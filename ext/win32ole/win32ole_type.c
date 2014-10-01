@@ -4,7 +4,8 @@ struct oletypedata {
     ITypeInfo *pTypeInfo;
 };
 
-static void oletype_free(struct oletypedata *poletype);
+static void oletype_free(void *ptr);
+static size_t oletype_size(const void *ptr);
 static VALUE foletype_s_ole_classes(VALUE self, VALUE typelib);
 static VALUE foletype_s_typelibs(VALUE self);
 static VALUE foletype_s_progids(VALUE self);
@@ -46,6 +47,12 @@ static VALUE foletype_default_event_sources(VALUE self);
 static VALUE foletype_default_ole_types(VALUE self);
 static VALUE foletype_inspect(VALUE self);
 
+static const rb_data_type_t oletype_datatype = {
+    "win32ole_type",
+    {NULL, oletype_free, oletype_size,},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
 /*
  * Document-class: WIN32OLE_TYPE
  *
@@ -53,16 +60,23 @@ static VALUE foletype_inspect(VALUE self);
  */
 
 static void
-oletype_free(struct oletypedata *poletype)
+oletype_free(void *ptr)
 {
+    struct oletypedata *poletype = ptr;
     OLE_FREE(poletype->pTypeInfo);
     free(poletype);
+}
+
+static size_t
+oletype_size(const void *ptr)
+{
+    return ptr ? sizeof(struct oletypedata) : 0; 
 }
 
 ITypeInfo *itypeinfo(VALUE self)
 {
     struct oletypedata *ptype;
-    Data_Get_Struct(self, struct oletypedata, ptype);
+    TypedData_Get_Struct(self, struct oletypedata, &oletype_datatype, ptype);
     return ptype->pTypeInfo;
 }
 
@@ -171,7 +185,7 @@ static VALUE
 oletype_set_member(VALUE self, ITypeInfo *pTypeInfo, VALUE name)
 {
     struct oletypedata *ptype;
-    Data_Get_Struct(self, struct oletypedata, ptype);
+    TypedData_Get_Struct(self, struct oletypedata, &oletype_datatype, ptype);
     rb_ivar_set(self, rb_intern("name"), name);
     ptype->pTypeInfo = pTypeInfo;
     if(pTypeInfo) OLE_ADDREF(pTypeInfo);
@@ -184,7 +198,7 @@ foletype_s_allocate(VALUE klass)
     struct oletypedata *poletype;
     VALUE obj;
     ole_initialize();
-    obj = Data_Make_Struct(klass,struct oletypedata,0,oletype_free,poletype);
+    obj = TypedData_Make_Struct(klass,struct oletypedata, &oletype_datatype, poletype);
     poletype->pTypeInfo = NULL;
     return obj;
 }
