@@ -70,7 +70,7 @@ oletype_free(void *ptr)
 static size_t
 oletype_size(const void *ptr)
 {
-    return ptr ? sizeof(struct oletypedata) : 0; 
+    return ptr ? sizeof(struct oletypedata) : 0;
 }
 
 ITypeInfo *itypeinfo(VALUE self)
