@@ -1,3 +1,8 @@
+Wed Oct  1 17:38:53 2014  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/fileutils/test_fileutils.rb: AIX does not allow
+	  a sticky bit on a regular file.
+
 Wed Oct  1 17:31:41 2014  Eric Hodel  <drbrain@segment7.net>
 
 	* NEWS:  Add RubyGems update.

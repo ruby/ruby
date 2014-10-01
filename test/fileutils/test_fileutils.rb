@@ -996,8 +996,8 @@ class TestFileUtils < Test::Unit::TestCase
     # FreeBSD ufs and tmpfs don't allow to change sticky bit against
     # regular file. It's slightly strange. Anyway it's no effect bit.
     # see /usr/src/sys/ufs/ufs/ufs_chmod()
-    # NetBSD, OpenBSD and Solaris also denies it.
-    if /freebsd|netbsd|openbsd|solaris/ !~ RUBY_PLATFORM
+    # NetBSD, OpenBSD, Solaris, and AIX also deny it.
+    if /freebsd|netbsd|openbsd|solaris|aix/ !~ RUBY_PLATFORM
       chmod "u+t,o+t", 'tmp/a'
       assert_filemode 07500, 'tmp/a'
       chmod "a-t,a-s", 'tmp/a'
