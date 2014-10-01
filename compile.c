@@ -321,9 +321,6 @@ r_value(VALUE value)
 
 #if CPDEBUG
 #define gl_node_level iseq->compile_data->node_level
-#if 0
-static void debug_list(ISEQ_ARG_DECLARE LINK_ANCHOR *anchor);
-#endif
 #endif
 
 static void dump_disasm_list(LINK_ELEMENT *elem);
@@ -684,22 +681,6 @@ INSERT_ELEM_NEXT(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
     }
 }
 
-#if 0 /* unused */
-/*
- * elemX, elem1 => elemX, elem2, elem1
- */
-static void
-INSERT_ELEM_PREV(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
-{
-    elem2->prev = elem1->prev;
-    elem2->next = elem1;
-    elem1->prev = elem2;
-    if (elem2->prev) {
-	elem2->prev->next = elem2;
-    }
-}
-#endif
-
 /*
  * elemX, elem1, elemY => elemX, elem2, elemY
  */
@@ -731,14 +712,6 @@ FIRST_ELEMENT(LINK_ANCHOR *anchor)
     return anchor->anchor.next;
 }
 
-#if 0 /* unused */
-static LINK_ELEMENT *
-LAST_ELEMENT(LINK_ANCHOR *anchor)
-{
-  return anchor->last;
-}
-#endif
-
 static LINK_ELEMENT *
 POP_ELEMENT(ISEQ_ARG_DECLARE LINK_ANCHOR *anchor)
 {
@@ -750,32 +723,6 @@ POP_ELEMENT(ISEQ_ARG_DECLARE LINK_ANCHOR *anchor)
 }
 #if CPDEBUG < 0
 #define POP_ELEMENT(anchor) POP_ELEMENT(iseq, (anchor))
-#endif
-
-#if 0 /* unused */
-static LINK_ELEMENT *
-SHIFT_ELEMENT(LINK_ANCHOR *anchor)
-{
-    LINK_ELEMENT *elem = anchor->anchor.next;
-    if (elem) {
-	anchor->anchor.next = elem->next;
-    }
-    return elem;
-}
-#endif
-
-#if 0 /* unused */
-static int
-LIST_SIZE(LINK_ANCHOR *anchor)
-{
-    LINK_ELEMENT *elem = anchor->anchor.next;
-    int size = 0;
-    while (elem) {
-	size += 1;
-	elem = elem->next;
-    }
-    return size;
-}
 #endif
 
 static int
@@ -837,65 +784,6 @@ INSERT_LIST(ISEQ_ARG_DECLARE LINK_ANCHOR *anc1, LINK_ANCHOR *anc2)
 }
 #if CPDEBUG < 0
 #define INSERT_LIST(anc1, anc2) INSERT_LIST(iseq, (anc1), (anc2))
-#endif
-
-#if 0 /* unused */
-/*
- * anc1: e1, e2, e3
- * anc2: e4, e5
- *#=>
- * anc1: e4, e5
- * anc2: e1, e2, e3
- */
-static void
-SWAP_LIST(ISEQ_ARG_DECLARE LINK_ANCHOR *anc1, LINK_ANCHOR *anc2)
-{
-    LINK_ANCHOR tmp = *anc2;
-
-    /* it has bug */
-    *anc2 = *anc1;
-    *anc1 = tmp;
-
-    verify_list("swap1", anc1);
-    verify_list("swap2", anc2);
-}
-#if CPDEBUG < 0
-#define SWAP_LIST(anc1, anc2) SWAP_LIST(iseq, (anc1), (anc2))
-#endif
-
-static LINK_ANCHOR *
-REVERSE_LIST(ISEQ_ARG_DECLARE LINK_ANCHOR *anc)
-{
-    LINK_ELEMENT *first, *last, *elem, *e;
-    first = &anc->anchor;
-    elem = first->next;
-    last = anc->last;
-
-    if (elem != 0) {
-	anc->anchor.next = last;
-	anc->last = elem;
-    }
-    else {
-	/* null list */
-	return anc;
-    }
-    while (elem) {
-	e = elem->next;
-	elem->next = elem->prev;
-	elem->prev = e;
-	elem = e;
-    }
-
-    first->next = last;
-    last->prev = first;
-    anc->last->next = 0;
-
-    verify_list("reverse", anc);
-    return anc;
-}
-#if CPDEBUG < 0
-#define REVERSE_LIST(anc) REVERSE_LIST(iseq, (anc))
-#endif
 #endif
 
 #if CPDEBUG && 0
@@ -1673,13 +1561,6 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 	}
 	list = list->next;
     }
-
-#if 0 /* XXX */
-    /* this check need dead code elimination */
-    if (sp != 1) {
-	rb_bug("SP is not 0 on %s (%d)\n", RSTRING_PTR(iseq->name), sp);
-    }
-#endif
 
     iseq->iseq_encoded = (void *)generated_iseq;
     iseq->iseq_size = pos;

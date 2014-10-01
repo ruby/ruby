@@ -1,3 +1,7 @@
+Wed Oct  1 18:15:42 2014  Nolan Evans  <nolane@gmail.com>
+
+	* compile.c: remove commented out code.
+
 Wed Oct  1 17:38:53 2014  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* test/fileutils/test_fileutils.rb: AIX does not allow
