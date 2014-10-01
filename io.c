@@ -4251,6 +4251,9 @@ maygvl_fclose(FILE *file, int keepgvl)
     return (int)(intptr_t)rb_thread_call_without_gvl(nogvl_fclose, file, RUBY_UBF_IO, 0);
 }
 
+static void free_io_buffer(rb_io_buffer_t *buf);
+static void clear_codeconv(rb_io_t *fptr);
+
 static void
 fptr_finalize(rb_io_t *fptr, int noraise)
 {
@@ -4312,6 +4315,9 @@ fptr_finalize(rb_io_t *fptr, int noraise)
             rb_exc_raise(err);
         }
     }
+    free_io_buffer(&fptr->rbuf);
+    free_io_buffer(&fptr->wbuf);
+    clear_codeconv(fptr);
 }
 
 static void

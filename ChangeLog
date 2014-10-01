@@ -1,3 +1,8 @@
+Thu Oct  2 05:32:17 2014  Eric Wong  <e@80x24.org>
+
+	* io.c (fptr_finalize): free memory before GC sweep
+	  [ruby-core:65269] [Feature #10295]
+
 Thu Oct  2 05:27:24 2014  Eric Wong  <e@80x24.org>
 
 	* marshal.c (w_class): check dump_arg->compat_tbl before lookup
