@@ -1,3 +1,7 @@
+Wed Oct  1 17:31:41 2014  Eric Hodel  <drbrain@segment7.net>
+
+	* NEWS:  Add RubyGems update.
+
 Wed Oct  1 17:28:58 2014 Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems 2.4.2.
