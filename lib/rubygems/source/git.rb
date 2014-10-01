@@ -178,9 +178,17 @@ class Gem::Source::Git < Gem::Source
   # Converts the git reference for the repository into a commit hash.
 
   def rev_parse # :nodoc:
+    hash = nil
+
     Dir.chdir repo_cache_dir do
-      Gem::Util.popen(@git, 'rev-parse', @reference).strip
+      hash = Gem::Util.popen(@git, 'rev-parse', @reference).strip
     end
+
+    raise Gem::Exception,
+          "unable to find reference #{@reference} in #{@repository}" unless
+            $?.success?
+
+    hash
   end
 
   ##

@@ -1,3 +1,8 @@
+Wed Oct  1 17:28:58 2014 Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems 2.4.2.
+	* test/rubygems:  ditto.
+
 Tue Sep 30 22:25:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_data_type): separate ripper data type for from

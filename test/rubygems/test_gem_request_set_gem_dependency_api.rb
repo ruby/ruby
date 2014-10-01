@@ -460,9 +460,18 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
     @gda.gemspec
 
-    assert_equal [dep('b', '= 2'), dep('c', '=3')], @set.dependencies
+    assert_equal [dep('a', '= 1'), dep('b', '= 2'), dep('c', '=3')],
+                 @set.dependencies
 
     assert_equal %w[a], @gda.requires['a']
+
+    expected = {
+      'a' => '!',
+      'b' => req('= 2'),
+      'c' => req('= 3'),
+    }
+
+    assert_equal expected, @gda.dependencies
   end
 
   def test_gemspec_bad
@@ -489,7 +498,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
     @gda.gemspec :development_group => :other
 
-    assert_equal [dep('b', '= 2')], @set.dependencies
+    assert_equal [dep('a', '= 1'), dep('b', '= 2')], @set.dependencies
 
     assert_equal %w[a], @gda.requires['a']
   end
@@ -525,7 +534,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
     @gda.gemspec :name => 'b'
 
-    assert_equal [dep('c', '= 3')], @set.dependencies
+    assert_equal [dep('b', '= 2'), dep('c', '= 3')], @set.dependencies
   end
 
   def test_gemspec_named
@@ -537,7 +546,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
     @gda.gemspec
 
-    assert_equal [dep('b', '= 2')], @set.dependencies
+    assert_equal [dep('a', '= 1'), dep('b', '= 2')], @set.dependencies
   end
 
   def test_gemspec_none
@@ -559,7 +568,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
     @gda.gemspec :path => 'other'
 
-    assert_equal [dep('b', '= 2')], @set.dependencies
+    assert_equal [dep('a', '= 1'), dep('b', '= 2')], @set.dependencies
   end
 
   def test_git

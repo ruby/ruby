@@ -485,6 +485,19 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     assert_equal expected, @cmd.options
   end
 
+  def test_update_gem_prerelease
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', '1.a'
+      fetcher.gem  'a', '1.b'
+    end
+
+    @cmd.update_gem 'a', Gem::Requirement.new('= 1.b')
+
+    refute_empty @cmd.updated
+
+    assert @cmd.installer.instance_variable_get :@prerelease
+  end
+
   def test_update_gem_unresolved_dependency
     spec_fetcher do |fetcher|
       fetcher.spec 'a', 1
