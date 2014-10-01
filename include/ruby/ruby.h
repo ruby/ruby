@@ -1728,7 +1728,7 @@ int ruby_native_thread_p(void);
 #define RUBY_INTERNAL_EVENT_OBJSPACE_MASK  0x7f00000
 #define RUBY_INTERNAL_EVENT_MASK          0xfffe0000
 
-typedef unsigned long rb_event_flag_t;
+typedef uint32_t rb_event_flag_t;
 typedef void (*rb_event_hook_func_t)(rb_event_flag_t evflag, VALUE data, VALUE self, ID mid, VALUE klass);
 
 #define RB_EVENT_HOOKS_HAVE_CALLBACK_DATA 1

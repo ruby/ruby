@@ -1,3 +1,8 @@
+Thu Oct  2 05:40:05 2014  Eric Wong  <e@80x24.org>
+
+	* ruby.h: set rb_event_flag_t to uint32_t
+	  [ruby-core:65315] [misc #10249]
+
 Thu Oct  2 05:32:17 2014  Eric Wong  <e@80x24.org>
 
 	* io.c (fptr_finalize): free memory before GC sweep
