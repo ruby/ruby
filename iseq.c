@@ -2154,7 +2154,9 @@ rb_iseq_line_trace_each(VALUE iseqval, int (*func)(int line, rb_event_flag_t *ev
 	insn = iseq_original[pos];
 
 	if (insn == BIN(trace)) {
-	    rb_event_flag_t current_events = (VALUE)iseq_original[pos+1];
+	    rb_event_flag_t current_events;
+
+	    current_events = (rb_event_flag_t)iseq_original[pos+1];
 
 	    if (current_events & RUBY_EVENT_LINE) {
 		rb_event_flag_t events = current_events & RUBY_EVENT_SPECIFIED_LINE;

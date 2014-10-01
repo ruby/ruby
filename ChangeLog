@@ -1,3 +1,8 @@
+Thu Oct  2 07:56:49 2014  Eric Wong  <e@80x24.org>
+
+	* iseq.c (rb_iseq_line_trace_each): explicit cast
+	  Fix https://travis-ci.org/ruby/ruby/jobs/36814282
+
 Thu Oct  2 05:40:05 2014  Eric Wong  <e@80x24.org>
 
 	* ruby.h: set rb_event_flag_t to uint32_t
