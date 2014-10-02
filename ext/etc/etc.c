@@ -891,7 +891,7 @@ io_pathconf(VALUE io, VALUE arg)
 #define io_pathconf rb_f_notimplement
 #endif
 
-#if defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_ONLN)
+#if (defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_ONLN)) || defined(_WIN32)
 /*
  * Returns the number of online processors.
  *
@@ -912,11 +912,17 @@ etc_nprocessors(VALUE obj)
 {
     long ret;
 
+#if !defined(_WIN32)
     errno = 0;
     ret = sysconf(_SC_NPROCESSORS_ONLN);
     if (ret == -1) {
         rb_sys_fail("sysconf(_SC_NPROCESSORS_ONLN)");
     }
+#else
+    SYSTEM_INFO si;
+    GetSystemInfo(&si);
+    ret = (long)si.dwNumberOfProcessors;
+#endif
     return LONG2NUM(ret);
 }
 #else

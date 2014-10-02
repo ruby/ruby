@@ -1,3 +1,8 @@
+Thu Oct  2 18:41:45 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/etc/etc.c (etc_nprocessors): Windows support.
+	  see [Feature #10267]
+
 Thu Oct  2 12:21:52 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/etc/etc.c (etc_nprocessors): New method.
