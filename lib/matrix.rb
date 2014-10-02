@@ -296,6 +296,42 @@ class Matrix
   end
 
   #
+  # Create a matrix by vertically merge two existing matrix
+  #
+  #   x = Matrix[[1, 2], [3, 4]]
+  #   y = Matrix[[5, 6], [7, 8]]
+  #   Matrix.vstack(x, y)
+  #   => Matrix[[1, 2], [3, 4], [5, 6], [7, 8]]
+  #
+  def Matrix.vstack(m1, m2)
+      if  m1.column_size != m2.column_size
+	raise ArgumentError,
+	  "The two input matrices have different number of columns"
+      end
+      Matrix[*m1, *m2]
+  end
+  #
+  #
+  # Create a matrix by horizontally merge two existing matrix
+  #
+  #   x = Matrix[[1, 2], [3, 4]]
+  #   y = Matrix[[5, 6], [7, 8]]
+  #   Matrix.hstack(x, y)
+  #   => Matrix[[1, 2, 5, 6], [3, 4, 7, 8]]
+  #
+  def Matrix.hstack(m1, m2)
+      if  m1.row_size != m2.row_size
+	raise ArgumentError, 
+	  "The two input matrices have different number of rows"
+      end
+      result = []
+      m1.row_size.times do |i|
+	  result << m1.row(i).to_a+m2.row(i).to_a
+      end
+      Matrix[*result]
+  end
+
+  #
   # Matrix.new is private; use Matrix.rows, columns, [], etc... to create.
   #
   def initialize(rows, column_count = rows[0].size)
