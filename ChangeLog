@@ -1,3 +1,9 @@
+Thu Oct  2 12:21:52 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/etc/etc.c (etc_nprocessors): New method.
+	  Accepted by matz at RubyKaigi 2014.
+	  [ruby-core:65142] [Feature #10267]
+
 Thu Oct  2 07:56:49 2014  Eric Wong  <e@80x24.org>
 
 	* iseq.c (rb_iseq_line_trace_each): explicit cast

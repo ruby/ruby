@@ -159,4 +159,9 @@ class TestEtc < Test::Unit::TestCase
     }
   end if defined?(Etc::PC_PIPE_BUF)
 
+  def test_nprocessors
+    n = Etc.nprocessors
+    assert_operator(1, :<=, n)
+  end
+
 end
