@@ -2447,13 +2447,48 @@ End
     }
   end
 
+  def os_and_fs(path)
+    uname = Etc.uname
+    os = "#{uname[:sysname]} #{uname[:release]}"
+
+    fs = nil
+    if uname[:sysname] == 'Linux'
+      # [ruby-dev:45703] Old Linux's fadvice() doesn't work on tmpfs.
+      mount = `mount`
+      mountpoints = []
+      mount.scan(/ on (\S+) type (\S+) /) {
+        mountpoints << [$1, $2]
+      }
+      mountpoints.sort_by {|mountpoint, fstype| mountpoint.length }.reverse_each {|mountpoint, fstype|
+        if path == mountpoint
+          fs = fstype
+          break
+        end
+        mountpoint += "/" if %r{/\z} !~ mountpoint
+        if path.start_with?(mountpoint)
+          fs = fstype
+          break
+        end
+      }
+    end
+
+    if fs
+      "#{fs} on #{os}"
+    else
+      os
+    end
+  end
+
   def test_advise
     make_tempfile {|tf|
       assert_raise(ArgumentError, "no arguments") { tf.advise }
       %w{normal random sequential willneed dontneed noreuse}.map(&:to_sym).each do |adv|
         [[0,0], [0, 20], [400, 2]].each do |offset, len|
           open(tf.path) do |t|
-            assert_nil(t.advise(adv, offset, len))
+            ret = assert_nothing_raised(lambda { os_and_fs(tf.path) }) {
+              t.advise(adv, offset, len)
+            }
+            assert_nil(ret)
             assert_raise(ArgumentError, "superfluous arguments") do
               t.advise(adv, offset, len, offset)
             end
