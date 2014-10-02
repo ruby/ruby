@@ -1,3 +1,8 @@
+Fri Oct  3 06:06:28 2014  Eric Wong  <e@80x24.org>
+
+	* st.c (next_pow2): new function (from old bignum.c)
+	  (new_size): use next_pow2 function
+
 Fri Oct  3 05:58:58 2014  Eric Wong  <e@80x24.org>
 
 	* vm_trace.c (rb_tp_t): pack 56 => 48 bytes on 64-bit
