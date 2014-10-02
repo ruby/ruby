@@ -640,11 +640,11 @@ static VALUE rb_cTracePoint;
 
 typedef struct rb_tp_struct {
     rb_event_flag_t events;
+    int tracing; /* bool */
     rb_thread_t *target_th;
     void (*func)(VALUE tpval, void *data);
     void *data;
     VALUE proc;
-    int tracing;
     VALUE self;
 } rb_tp_t;
 
