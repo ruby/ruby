@@ -1,3 +1,7 @@
+Fri Oct  3 19:26:01 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* .travis.yml: enabled test results of linux.
+
 Fri Oct  3 18:52:16 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/ruby/test_io.rb (TestIO#test_advise): added workaround of fadvise(2)

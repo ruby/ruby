@@ -30,8 +30,6 @@ os:
   - osx
 
 matrix:
-  allow_failures:
-    - os: linux
   exclude:
     - os: osx
       compiler: gcc
