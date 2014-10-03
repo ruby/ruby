@@ -19,6 +19,10 @@ class Object
 end
 builddir = File.dirname(__FILE__)
 top_srcdir = "@abs_top_srcdir@"
+if /mingw/ =~ RUBY_PLATFORM
+  # convert MSYS path to Windows path
+  top_srcdir.sub!(/\A\/([a-z])\//, '\\1:/')
+end
 $:.unshift(File.expand_path(builddir))
 fake = File.join(top_srcdir, "tool/fake.rb")
 eval(File.read(fake), nil, fake)

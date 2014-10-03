@@ -19,6 +19,10 @@ with all sufficient information, see the ChangeLog file.
 * Hash literal
   * Symbol key followed by a colon can be quoted. [Feature #4276]
 
+* default argument
+  fixed a very longstanding bug that an optional argument was not
+  accessible in its default value expression.  [Bug #9593]
+
 === Core classes updates (outstanding ones only)
 
 * Binding
@@ -78,6 +82,8 @@ with all sufficient information, see the ChangeLog file.
       by deleting the specified row and column.
     * Matrix#cofactor(row, column) returns the (row, column) cofactor
       which is obtained by multiplying the first minor by (-1)**(row + column).
+    * hstack and vstack are new instance and class methods to stack matrices
+      horizontally and vertically.
 
 * Method
   * New methods:
@@ -133,6 +139,7 @@ with all sufficient information, see the ChangeLog file.
     * Etc.sysconf
     * Etc.confstr
     * IO#pathconf
+    * Etc.nprocessors
 
 * Find, Pathname
   * Extended methods:

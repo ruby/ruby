@@ -1,3 +1,70 @@
+Sat Oct  4 00:25:04 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* .travis.yml: removed needless preparation for gcc.
+
+Fri Oct  3 23:41:20 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* .travis.yml: enabled gcc build with osx on travis.
+
+Fri Oct  3 23:22:23 2014  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* template/fake.rb.in: fix make install failure due to MSYS path
+	  with mingw on MSYS environment.
+	  [ruby-core:64965] [Bug #10230]
+
+Fri Oct  3 21:02:32 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/ruby/test_io.rb (TestIO#test_advise): avoid to infinite loop.
+
+Fri Oct  3 19:26:01 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* .travis.yml: enabled test results of linux.
+
+Fri Oct  3 18:52:16 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/ruby/test_io.rb (TestIO#test_advise): added workaround of fadvise(2)
+	  with tmpfs and old linux kernel. [ruby-core:65355][Bug #10313]
+
+Fri Oct  3 18:22:45 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* .travis.yml: Disabled to generate document on travis.
+	  Reduce test running time.
+
+Fri Oct  3 12:42:15 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Add hstack & vstack methods.
+	  Based on a patch by creasywuqiong. [Fix GH-344]
+
+Fri Oct  3 12:37:48 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Fix Matrix.rows copy bug.
+	  Patch by Arron Mabrey. [Fix GH-707]
+
+Fri Oct  3 06:06:28 2014  Eric Wong  <e@80x24.org>
+
+	* st.c (next_pow2): new function (from old bignum.c)
+	  (new_size): use next_pow2 function
+
+Fri Oct  3 05:58:58 2014  Eric Wong  <e@80x24.org>
+
+	* vm_trace.c (rb_tp_t): pack 56 => 48 bytes on 64-bit
+
+Thu Oct  2 18:41:45 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/etc/etc.c (etc_nprocessors): Windows support.
+	  see [Feature #10267]
+
+Thu Oct  2 12:21:52 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/etc/etc.c (etc_nprocessors): New method.
+	  Accepted by matz at RubyKaigi 2014.
+	  [ruby-core:65142] [Feature #10267]
+
+Thu Oct  2 07:56:49 2014  Eric Wong  <e@80x24.org>
+
+	* iseq.c (rb_iseq_line_trace_each): explicit cast
+	  Fix https://travis-ci.org/ruby/ruby/jobs/36814282
+
 Thu Oct  2 05:40:05 2014  Eric Wong  <e@80x24.org>
 
 	* ruby.h: set rb_event_flag_t to uint32_t

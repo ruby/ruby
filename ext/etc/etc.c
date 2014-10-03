@@ -891,6 +891,44 @@ io_pathconf(VALUE io, VALUE arg)
 #define io_pathconf rb_f_notimplement
 #endif
 
+#if (defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_ONLN)) || defined(_WIN32)
+/*
+ * Returns the number of online processors.
+ *
+ * The result is intended as the number of processes to
+ * use all available processors.
+ *
+ * This method is implemented as:
+ * - sysconf(_SC_NPROCESSORS_ONLN): GNU/Linux, NetBSD, FreeBSD, OpenBSD, DragonFly BSD, OpenIndiana, Mac OS X, AIX
+ *
+ * Example:
+ *
+ *   require 'etc'
+ *   p Etc.nprocessors #=> 4
+ *
+ */
+static VALUE
+etc_nprocessors(VALUE obj)
+{
+    long ret;
+
+#if !defined(_WIN32)
+    errno = 0;
+    ret = sysconf(_SC_NPROCESSORS_ONLN);
+    if (ret == -1) {
+        rb_sys_fail("sysconf(_SC_NPROCESSORS_ONLN)");
+    }
+#else
+    SYSTEM_INFO si;
+    GetSystemInfo(&si);
+    ret = (long)si.dwNumberOfProcessors;
+#endif
+    return LONG2NUM(ret);
+}
+#else
+#define etc_nprocessors rb_f_notimplement
+#endif
+
 /*
  * The Etc module provides access to information typically stored in
  * files in the /etc directory on Unix systems.
@@ -946,6 +984,7 @@ Init_etc(void)
     rb_define_module_function(mEtc, "sysconf", etc_sysconf, 1);
     rb_define_module_function(mEtc, "confstr", etc_confstr, 1);
     rb_define_method(rb_cIO, "pathconf", io_pathconf, 1);
+    rb_define_module_function(mEtc, "nprocessors", etc_nprocessors, 0);
 
     sPasswd =  rb_struct_define_under(mEtc, "Passwd",
 				      "name",

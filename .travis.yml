@@ -29,13 +29,6 @@ os:
   - linux
   - osx
 
-matrix:
-  allow_failures:
-    - os: linux
-  exclude:
-    - os: osx
-      compiler: gcc
-
 # Dependencies.  Some  header files are missing  in a Travis' worker  VM, so we
 # have  to install  them.  The  "1.9.1" here  is OK.   It is  the  most adopted
 # version string  for Debian/Ubuntu, and  no dependencies have been  changed so
@@ -46,6 +39,7 @@ before_install:
   - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then JOBS='-j'; fi"
   - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then brew install autoconf openssl; fi"
   - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then OPENSSL_FLAG=\"--with-openssl-dir=`brew --prefix openssl`\"; fi"
+  - "if [[ $TRAVIS_OS_NAME = 'osx' && $CC = 'gcc' ]]; then CC='gcc-4.9'; fi"
 install: "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq build-dep ruby1.9.1 2>/dev/null; fi"
 
 # Script is where the test runs.  Note  we just do "make test", not other tests
@@ -58,7 +52,7 @@ before_script:
   - "make -f common.mk BASERUBY=ruby srcdir=. update-config_files"
   - "autoconf"
   - "mkdir config_1st config_2nd"
-  - "./configure -C --with-gcc=$CC $OPENSSL_FLAG"
+  - "./configure -C --disable-install-doc --disable-install-rdoc --with-gcc=$CC $OPENSSL_FLAG"
   - "cp -pr config.status .ext/include config_1st"
   - "make reconfig"
   - "cp -pr config.status .ext/include config_2nd"

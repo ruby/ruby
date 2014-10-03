@@ -141,13 +141,30 @@ remove_safe_packed_entry(st_table *table, st_index_t i, st_data_t never)
 }
 
 static st_index_t
+next_pow2(st_index_t x)
+{
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+#if SIZEOF_ST_INDEX_T == 8
+    x |= x >> 32;
+#endif
+    return x + 1;
+}
+
+static st_index_t
 new_size(st_index_t size)
 {
-    st_index_t i;
+    st_index_t n;
 
-    for (i=3; i<31; i++) {
-	if ((st_index_t)(1<<i) > size) return 1<<i;
-    }
+    if (size && (size & ~(size - 1)) == size) /* already a power-of-two? */
+	return size;
+
+    n = next_pow2(size);
+    if (n > size)
+	return n;
 #ifndef NOT_RUBY
     rb_raise(rb_eRuntimeError, "st_table too big");
 #endif
