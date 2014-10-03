@@ -1,3 +1,8 @@
+Sat Oct  4 08:49:34 2014  Zachary Scott  <e@zzak.io>
+
+	* ext/openssl/ossl_rand.c: [DOC] Add rdoc for method descriptions
+	  By @vipulnsward [Fixes GH-657] https://github.com/ruby/ruby/pull/657
+
 Sat Oct  4 08:23:48 2014  Zachary Scott  <e@zzak.io>
 
 	* ext/openssl/ossl_rand.c: Use rb_define_module_function instead of
