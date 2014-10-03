@@ -1,3 +1,9 @@
+Fri Oct  3 23:22:23 2014  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* template/fake.rb.in: fix make install failure due to MSYS path
+	  with mingw on MSYS environment.
+	  [ruby-core:64965] [Bug #10230]
+
 Fri Oct  3 21:02:32 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/ruby/test_io.rb (TestIO#test_advise): avoid to infinite loop.
