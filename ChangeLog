@@ -1,3 +1,8 @@
+Fri Oct  3 18:52:16 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/ruby/test_io.rb (TestIO#test_advise): added workaround of fadvise(2)
+	  with tmpfs and old linux kernel. [ruby-core:65355][Bug #10313]
+
 Fri Oct  3 18:22:45 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* .travis.yml: Disabled to generate document on travis.
