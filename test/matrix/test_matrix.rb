@@ -177,6 +177,20 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal(@m1, Matrix.rows([[1, 2, 3], [4, 5, 6]]))
   end
 
+  def test_rows_copy
+    rows1 = [[1], [1]]
+    rows2 = [[1], [1]]
+
+    m1 = Matrix.rows(rows1, copy = false)
+    m2 = Matrix.rows(rows2, copy = true)
+
+    rows1.uniq!
+    rows2.uniq!
+
+    assert_equal([[1]],      m1.to_a)
+    assert_equal([[1], [1]], m2.to_a)
+  end
+
   def test_columns
     assert_equal(@m1, Matrix.columns([[1, 4], [2, 5], [3, 6]]))
   end

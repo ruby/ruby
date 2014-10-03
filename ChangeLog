@@ -1,3 +1,8 @@
+Fri Oct  3 12:37:48 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Fix Matrix.rows copy bug.
+	  Patch by Arron Mabrey. [Fix GH-707]
+
 Fri Oct  3 06:06:28 2014  Eric Wong  <e@80x24.org>
 
 	* st.c (next_pow2): new function (from old bignum.c)

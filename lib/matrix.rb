@@ -152,7 +152,7 @@ class Matrix
   #          -1 66
   #
   def Matrix.rows(rows, copy = true)
-    rows = convert_to_array(rows)
+    rows = convert_to_array(rows, copy)
     rows.map! do |row|
       convert_to_array(row, copy)
     end
