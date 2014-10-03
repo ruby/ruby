@@ -1,3 +1,7 @@
+Sat Oct  4 00:25:04 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* .travis.yml: removed needless preparation for gcc.
+
 Fri Oct  3 23:41:20 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* .travis.yml: enabled gcc build with osx on travis.
