@@ -1,3 +1,8 @@
+Fri Oct  3 18:22:45 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* .travis.yml: Disabled to generate document on travis.
+	  Reduce test running time.
+
 Fri Oct  3 12:42:15 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: Add hstack & vstack methods.

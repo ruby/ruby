@@ -58,7 +58,7 @@ before_script:
   - "make -f common.mk BASERUBY=ruby srcdir=. update-config_files"
   - "autoconf"
   - "mkdir config_1st config_2nd"
-  - "./configure -C --with-gcc=$CC $OPENSSL_FLAG"
+  - "./configure -C --disable-install-doc --disable-install-rdoc --with-gcc=$CC $OPENSSL_FLAG"
   - "cp -pr config.status .ext/include config_1st"
   - "make reconfig"
   - "cp -pr config.status .ext/include config_2nd"
