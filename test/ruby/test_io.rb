@@ -2488,11 +2488,11 @@ End
             ret = assert_nothing_raised(lambda { os_and_fs(tf.path) }) {
               begin
                 t.advise(adv, offset, len)
-              rescue Errno::EINVAL
+              rescue Errno::EINVAL => e
                 if /linux/ =~ RUBY_PLATFORM && (Etc.uname[:release].split('.').map(&:to_i) <=> [3,6]) < 0
                   next # [ruby-core:65355] tmpfs is not supported
                 else
-                  retry
+                  raise e
                 end
               end
             }
