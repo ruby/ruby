@@ -1,3 +1,8 @@
+Fri Oct  3 12:42:15 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Add hstack & vstack methods.
+	  Based on a patch by creasywuqiong. [Fix GH-344]
+
 Fri Oct  3 12:37:48 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: Fix Matrix.rows copy bug.

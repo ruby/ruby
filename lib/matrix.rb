@@ -45,6 +45,8 @@ end
 # * Matrix.zero(n)
 # * Matrix.row_vector(row)
 # * Matrix.column_vector(column)
+# * Matrix.hstack(*matrices)
+# * Matrix.vstack(*matrices)
 #
 # To access Matrix elements/columns/rows/submatrices/properties:
 # * #[](i, j)
@@ -90,12 +92,14 @@ end
 # Matrix functions:
 # * #determinant
 # * #det
+# * #hstack(*matrices)
 # * #rank
 # * #round
 # * #trace
 # * #tr
 # * #transpose
 # * #t
+# * #vstack(*matrices)
 #
 # Matrix decompositions:
 # * #eigen
@@ -293,6 +297,51 @@ class Matrix
     raise ArgumentError, "Negative size" if column_count < 0 || row_count < 0
 
     new([[]]*row_count, column_count)
+  end
+
+  #
+  # Create a matrix by stacking matrices vertically
+  #
+  #   x = Matrix[[1, 2], [3, 4]]
+  #   y = Matrix[[5, 6], [7, 8]]
+  #   Matrix.vstack(x, y) # => Matrix[[1, 2], [3, 4], [5, 6], [7, 8]]
+  #
+  def Matrix.vstack(x, *matrices)
+    raise TypeError, "Expected a Matrix, got a #{x.class}" unless x.is_a?(Matrix)
+    result = x.send(:rows).map(&:dup)
+    matrices.each do |m|
+      raise TypeError, "Expected a Matrix, got a #{m.class}" unless m.is_a?(Matrix)
+      if m.column_count != x.column_count
+        raise ErrDimensionMismatch, "The given matrices must have #{x.column_count} columns, but one has #{m.column_count}"
+      end
+      result.concat(m.send(:rows))
+    end
+    new result, x.column_count
+  end
+
+
+  #
+  # Create a matrix by stacking matrices horizontally
+  #
+  #   x = Matrix[[1, 2], [3, 4]]
+  #   y = Matrix[[5, 6], [7, 8]]
+  #   Matrix.hstack(x, y) # => Matrix[[1, 2, 5, 6], [3, 4, 7, 8]]
+  #
+  def Matrix.hstack(x, *matrices)
+    raise TypeError, "Expected a Matrix, got a #{x.class}" unless x.is_a?(Matrix)
+    result = x.send(:rows).map(&:dup)
+    total_column_count = x.column_count
+    matrices.each do |m|
+      raise TypeError, "Expected a Matrix, got a #{m.class}" unless m.is_a?(Matrix)
+      if m.row_count != x.row_count
+        raise ErrDimensionMismatch, "The given matrices must have #{x.row_count} rows, but one has #{m.row_count}"
+      end
+      result.each_with_index do |row, i|
+        row.concat m.send(:rows)[i]
+      end
+      total_column_count += m.column_count
+    end
+    new result, total_column_count
   end
 
   #
@@ -1143,6 +1192,18 @@ class Matrix
   alias det_e determinant_e
 
   #
+  # Returns a new matrix resulting by stacking horizontally
+  # the receiver with the given matrices
+  #
+  #   x = Matrix[[1, 2], [3, 4]]
+  #   y = Matrix[[5, 6], [7, 8]]
+  #   x.hstack(y) # => Matrix[[1, 2, 5, 6], [3, 4, 7, 8]]
+  #
+  def hstack(*matrices)
+    self.class.hstack(self, *matrices)
+  end
+
+  #
   # Returns the rank of the matrix.
   # Beware that using Float values can yield erroneous results
   # because of their lack of precision.
@@ -1222,6 +1283,18 @@ class Matrix
     new_matrix @rows.transpose, row_count
   end
   alias t transpose
+
+  #
+  # Returns a new matrix resulting by stacking vertically
+  # the receiver with the given matrices
+  #
+  #   x = Matrix[[1, 2], [3, 4]]
+  #   y = Matrix[[5, 6], [7, 8]]
+  #   x.vstack(y) # => Matrix[[1, 2], [3, 4], [5, 6], [7, 8]]
+  #
+  def vstack(*matrices)
+    self.class.vstack(self, *matrices)
+  end
 
   #--
   # DECOMPOSITIONS -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=

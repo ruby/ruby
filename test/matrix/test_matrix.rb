@@ -1,6 +1,9 @@
 require 'test/unit'
 require 'matrix'
 
+class SubMatrix < Matrix
+end
+
 class TestMatrix < Test::Unit::TestCase
   def setup
     @m1 = Matrix[[1,2,3], [4,5,6]]
@@ -9,6 +12,8 @@ class TestMatrix < Test::Unit::TestCase
     @m4 = Matrix[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]
     @n1 = Matrix[[2,3,4], [5,6,7]]
     @c1 = Matrix[[Complex(1,2), Complex(0,1), 0], [1, 2, 3]]
+    @e1 = Matrix.empty(2,0)
+    @e2 = Matrix.empty(0,3)
   end
 
   def test_matrix
@@ -498,5 +503,35 @@ class TestMatrix < Test::Unit::TestCase
       [1, 1]
     end
     assert_equal(1, s1 ** o)
+  end
+
+  def test_hstack
+    assert_equal Matrix[[1,2,3,2,3,4,1,2,3], [4,5,6,5,6,7,4,5,6]],
+      @m1.hstack(@n1, @m1)
+    # Error checking:
+    assert_raise(TypeError) { @m1.hstack(42) }
+    assert_raise(TypeError) { Matrix.hstack(42, @m1) }
+    assert_raise(Matrix::ErrDimensionMismatch) { @m1.hstack(Matrix.identity(3)) }
+    assert_raise(Matrix::ErrDimensionMismatch) { @e1.hstack(@e2) }
+    # Corner cases:
+    assert_equal @m1, @m1.hstack
+    assert_equal @e1, @e1.hstack(@e1)
+    assert_equal Matrix.empty(0,6), @e2.hstack(@e2)
+    assert_equal SubMatrix, SubMatrix.hstack(@e1).class
+  end
+
+  def test_vstack
+    assert_equal Matrix[[1,2,3], [4,5,6], [2,3,4], [5,6,7], [1,2,3], [4,5,6]],
+      @m1.vstack(@n1, @m1)
+    # Error checking:
+    assert_raise(TypeError) { @m1.vstack(42) }
+    assert_raise(TypeError) { Matrix.vstack(42, @m1) }
+    assert_raise(Matrix::ErrDimensionMismatch) { @m1.vstack(Matrix.identity(2)) }
+    assert_raise(Matrix::ErrDimensionMismatch) { @e1.vstack(@e2) }
+    # Corner cases:
+    assert_equal @m1, @m1.vstack
+    assert_equal Matrix.empty(4,0), @e1.vstack(@e1)
+    assert_equal @e2, @e2.vstack(@e2)
+    assert_equal SubMatrix, SubMatrix.vstack(@e1).class
   end
 end
