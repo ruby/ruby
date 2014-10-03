@@ -207,7 +207,7 @@ olemethod_set_member(VALUE self, ITypeInfo *pTypeInfo, ITypeInfo *pOwnerTypeInfo
     pmethod->pTypeInfo = pTypeInfo;
     OLE_ADDREF(pTypeInfo);
     pmethod->pOwnerTypeInfo = pOwnerTypeInfo;
-    if(pOwnerTypeInfo) OLE_ADDREF(pOwnerTypeInfo);
+    OLE_ADDREF(pOwnerTypeInfo);
     pmethod->index = index;
     rb_ivar_set(self, rb_intern("name"), name);
     return self;

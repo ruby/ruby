@@ -1,3 +1,9 @@
+Sat Oct  4 06:04:56 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole_method.c(olemethod_set_member): remove
+	  redundant NULL check.
+	* ext/win32ole/win32ole_type.c(oletype_set_member): ditto.
+
 Sat Oct  4 00:25:04 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* .travis.yml: removed needless preparation for gcc.

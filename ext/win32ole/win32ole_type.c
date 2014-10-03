@@ -188,7 +188,7 @@ oletype_set_member(VALUE self, ITypeInfo *pTypeInfo, VALUE name)
     TypedData_Get_Struct(self, struct oletypedata, &oletype_datatype, ptype);
     rb_ivar_set(self, rb_intern("name"), name);
     ptype->pTypeInfo = pTypeInfo;
-    if(pTypeInfo) OLE_ADDREF(pTypeInfo);
+    OLE_ADDREF(pTypeInfo);
     return self;
 }
 
