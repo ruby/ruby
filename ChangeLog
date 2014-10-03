@@ -1,3 +1,7 @@
+Fri Oct  3 23:41:20 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* .travis.yml: enabled gcc build with osx on travis.
+
 Fri Oct  3 23:22:23 2014  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* template/fake.rb.in: fix make install failure due to MSYS path
