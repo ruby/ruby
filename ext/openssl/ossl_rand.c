@@ -171,10 +171,6 @@ ossl_rand_status(VALUE self)
     return RAND_status() ? Qtrue : Qfalse;
 }
 
-#define DEFMETH(class, name, func, argc) \
-	rb_define_method((class), (name), (func), (argc)); \
-	rb_define_singleton_method((class), (name), (func), (argc));
-
 /*
  * INIT
  */
@@ -189,14 +185,14 @@ Init_ossl_rand(void)
 
     eRandomError = rb_define_class_under(mRandom, "RandomError", eOSSLError);
 
-    DEFMETH(mRandom, "seed", ossl_rand_seed, 1);
-    DEFMETH(mRandom, "random_add", ossl_rand_add, 2);
-    DEFMETH(mRandom, "load_random_file", ossl_rand_load_file, 1);
-    DEFMETH(mRandom, "write_random_file", ossl_rand_write_file, 1);
-    DEFMETH(mRandom, "random_bytes", ossl_rand_bytes, 1);
-    DEFMETH(mRandom, "pseudo_bytes", ossl_rand_pseudo_bytes, 1);
-    DEFMETH(mRandom, "egd", ossl_rand_egd, 1);
-    DEFMETH(mRandom, "egd_bytes", ossl_rand_egd_bytes, 2);
-    DEFMETH(mRandom, "status?", ossl_rand_status, 0)
+    rb_define_module_function(mRandom, "seed", ossl_rand_seed, 1);
+    rb_define_module_function(mRandom, "random_add", ossl_rand_add, 2);
+    rb_define_module_function(mRandom, "load_random_file", ossl_rand_load_file, 1);
+    rb_define_module_function(mRandom, "write_random_file", ossl_rand_write_file, 1);
+    rb_define_module_function(mRandom, "random_bytes", ossl_rand_bytes, 1);
+    rb_define_module_function(mRandom, "pseudo_bytes", ossl_rand_pseudo_bytes, 1);
+    rb_define_module_function(mRandom, "egd", ossl_rand_egd, 1);
+    rb_define_module_function(mRandom, "egd_bytes", ossl_rand_egd_bytes, 2);
+    rb_define_module_function(mRandom, "status?", ossl_rand_status, 0);
 }
 

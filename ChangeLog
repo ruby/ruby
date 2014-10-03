@@ -1,3 +1,8 @@
+Sat Oct  4 08:23:48 2014  Zachary Scott  <e@zzak.io>
+
+	* ext/openssl/ossl_rand.c: Use rb_define_module_function instead of
+	  macro. [Fixes GH-686] https://github.com/ruby/ruby/pull/686
+
 Sat Oct  4 06:04:56 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole_method.c(olemethod_set_member): remove
