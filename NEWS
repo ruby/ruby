@@ -19,6 +19,10 @@ with all sufficient information, see the ChangeLog file.
 * Hash literal
   * Symbol key followed by a colon can be quoted. [Feature #4276]
 
+* default argument
+  fixed a very longstanding bug that an optional argument was not
+  accessible in its default value expression.  [Bug #9593]
+
 === Core classes updates (outstanding ones only)
 
 * Binding
