@@ -815,7 +815,7 @@ static VALUE cParser_parse(VALUE self)
 }
 
 
-static JSON_Parser *JSON_allocate()
+static JSON_Parser *JSON_allocate(void)
 {
     JSON_Parser *json = ALLOC(JSON_Parser);
     MEMZERO(json, JSON_Parser, 1);
@@ -823,8 +823,9 @@ static JSON_Parser *JSON_allocate()
     return json;
 }
 
-static void JSON_mark(JSON_Parser *json)
+static void JSON_mark(void *ptr)
 {
+    JSON_Parser *json = ptr;
     rb_gc_mark_maybe(json->Vsource);
     rb_gc_mark_maybe(json->create_id);
     rb_gc_mark_maybe(json->object_class);
@@ -832,16 +833,30 @@ static void JSON_mark(JSON_Parser *json)
     rb_gc_mark_maybe(json->match_string);
 }
 
-static void JSON_free(JSON_Parser *json)
+static void JSON_free(void *ptr)
 {
+    JSON_Parser *json = ptr;
     fbuffer_free(json->fbuffer);
     ruby_xfree(json);
 }
 
+static size_t JSON_memsize(const void *ptr)
+{
+    const JSON_Parser *json = ptr;
+    return sizeof(*json) + FBUFFER_CAPA(json->fbuffer);
+}
+
+static const rb_data_type_t JSON_Parser_type = {
+    "JSON/Parser",
+    {JSON_mark, JSON_free, JSON_memsize,},
+    NULL, NULL,
+    RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 static VALUE cJSON_parser_s_allocate(VALUE klass)
 {
     JSON_Parser *json = JSON_allocate();
-    return Data_Wrap_Struct(klass, JSON_mark, JSON_free, json);
+    return TypedData_Wrap_Struct(klass, &JSON_Parser_type, json);
 }
 
 /*
