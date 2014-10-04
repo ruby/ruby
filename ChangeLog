@@ -1,3 +1,9 @@
+Sat Oct  4 09:12:03 2014  Zachary Scott  <e@zzak.io>
+
+	* ext/win32ole/sample/example*.rb: Add wait input to quit for examples
+	  with patch provided by @windwiny [Fixes GH-705]
+	  https://github.com/ruby/ruby/pull/705
+
 Sat Oct  4 09:08:18 2014  Zachary Scott  <e@zzak.io>
 
 	* ext/win32ole/win32ole.c: [DOC] Fix typo in :nodoc: reported by
