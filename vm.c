@@ -2343,20 +2343,10 @@ m_core_hash_merge_ptr(int argc, VALUE *argv, VALUE recv)
 }
 
 static int
-kwmerge_ii(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
-{
-    if (existing) return ST_STOP;
-    *value = arg;
-    return ST_CONTINUE;
-}
-
-static int
 kwmerge_i(VALUE key, VALUE value, VALUE hash)
 {
     if (!SYMBOL_P(key)) Check_Type(key, T_SYMBOL);
-    if (st_update(RHASH_TBL_RAW(hash), key, kwmerge_ii, (st_data_t)value) == 0) { /* !existing */
-	RB_OBJ_WRITTEN(hash, Qundef, value);
-    }
+    rb_hash_aset(hash, key, value);
     return ST_CONTINUE;
 }
 
