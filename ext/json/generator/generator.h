@@ -109,7 +109,7 @@ static VALUE mFalseClass_to_json(int argc, VALUE *argv, VALUE self);
 static VALUE mNilClass_to_json(int argc, VALUE *argv, VALUE self);
 static VALUE mObject_to_json(int argc, VALUE *argv, VALUE self);
 static void State_free(JSON_Generator_State *state);
-static JSON_Generator_State *State_allocate();
+static JSON_Generator_State *State_allocate(void);
 static VALUE cState_s_allocate(VALUE klass);
 static VALUE cState_configure(VALUE self, VALUE opts);
 static VALUE cState_to_h(VALUE self);

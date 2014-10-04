@@ -135,7 +135,7 @@ VALUE ole_wc2vstr(LPWSTR pw, BOOL isfree);
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-BOOL ole_initialized();
+BOOL ole_initialized(void);
 HRESULT ole_docinfo_from_type(ITypeInfo *pTypeInfo, BSTR *name, BSTR *helpstr, DWORD *helpcontext, BSTR *helpfile);
 VALUE ole_typedesc2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails);
 VALUE make_inspect(const char *class_name, VALUE detail);

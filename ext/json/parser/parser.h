@@ -68,7 +68,7 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
 static VALUE convert_encoding(VALUE source);
 static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self);
 static VALUE cParser_parse(VALUE self);
-static JSON_Parser *JSON_allocate();
+static JSON_Parser *JSON_allocate(void);
 static void JSON_mark(JSON_Parser *json);
 static void JSON_free(JSON_Parser *json);
 static VALUE cJSON_parser_s_allocate(VALUE klass);

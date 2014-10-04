@@ -21,7 +21,7 @@
 
 #ifdef HAVE_RB_THREAD_CHECK_TRAP_PENDING
 static int rb_thread_critical; /* dummy */
-int rb_thread_check_trap_pending();
+int rb_thread_check_trap_pending(void);
 #else
 /* use rb_thread_critical on Ruby 1.8.x */
 #include "rubysig.h"

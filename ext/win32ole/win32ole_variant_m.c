@@ -1,6 +1,7 @@
 #include "win32ole.h"
 
-void Init_win32ole_variant_m() {
+void Init_win32ole_variant_m(void)
+{
     /*
      * Document-module: WIN32OLE::VARIANT
      *
