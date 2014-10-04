@@ -883,7 +883,7 @@ foletype_inspect(VALUE self)
     return default_inspect(self, "WIN32OLE_TYPE");
 }
 
-void Init_win32ole_type()
+void Init_win32ole_type(void)
 {
     cWIN32OLE_TYPE = rb_define_class("WIN32OLE_TYPE", rb_cObject);
     rb_define_singleton_method(cWIN32OLE_TYPE, "ole_classes", foletype_s_ole_classes, 1);

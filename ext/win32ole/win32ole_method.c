@@ -901,7 +901,7 @@ folemethod_inspect(VALUE self)
     return default_inspect(self, "WIN32OLE_METHOD");
 }
 
-void Init_win32ole_method()
+void Init_win32ole_method(void)
 {
     cWIN32OLE_METHOD = rb_define_class("WIN32OLE_METHOD", rb_cObject);
     rb_define_alloc_func(cWIN32OLE_METHOD, folemethod_s_allocate);

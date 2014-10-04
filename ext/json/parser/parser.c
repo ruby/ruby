@@ -2092,7 +2092,7 @@ static VALUE cParser_parse(VALUE self)
 }
 
 
-static JSON_Parser *JSON_allocate()
+static JSON_Parser *JSON_allocate(void)
 {
     JSON_Parser *json = ALLOC(JSON_Parser);
     MEMZERO(json, JSON_Parser, 1);
@@ -2145,7 +2145,7 @@ static VALUE cParser_quirks_mode_p(VALUE self)
 }
 
 
-void Init_parser()
+void Init_parser(void)
 {
     rb_require("json/common");
     mJSON = rb_define_module("JSON");

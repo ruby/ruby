@@ -499,7 +499,7 @@ static void State_free(JSON_Generator_State *state)
     ruby_xfree(state);
 }
 
-static JSON_Generator_State *State_allocate()
+static JSON_Generator_State *State_allocate(void)
 {
     JSON_Generator_State *state = ALLOC(JSON_Generator_State);
     MEMZERO(state, JSON_Generator_State, 1);
@@ -1327,7 +1327,7 @@ static VALUE cState_buffer_initial_length_set(VALUE self, VALUE buffer_initial_l
 /*
  *
  */
-void Init_generator()
+void Init_generator(void)
 {
     rb_require("json/common");
 

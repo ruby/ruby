@@ -504,7 +504,7 @@ static VALUE set_line_width(VALUE self, VALUE width)
     return width;
 }
 
-void Init_psych_emitter()
+void Init_psych_emitter(void)
 {
     VALUE psych     = rb_define_module("Psych");
     VALUE handler   = rb_define_class_under(psych, "Handler", rb_cObject);

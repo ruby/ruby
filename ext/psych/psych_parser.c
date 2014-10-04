@@ -535,7 +535,7 @@ static VALUE mark(VALUE self)
     return rb_class_new_instance(3, args, mark_klass);
 }
 
-void Init_psych_parser()
+void Init_psych_parser(void)
 {
 #if 0
     mPsych = rb_define_module("Psych");
