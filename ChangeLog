@@ -1,3 +1,9 @@
+Sat Oct  4 16:05:49 2014  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/socket/test_unix.rb (TestSocket_UNIXSocket#test_too_long_path):
+	  sockaddr_un.sun_path in AIX is defined as char[1024],
+	  so "a" * 300 is not too long. "a" * 3000 would be enough.
+
 Sat Oct  4 09:12:03 2014  Zachary Scott  <e@zzak.io>
 
 	* ext/win32ole/sample/example*.rb: Add wait input to quit for examples

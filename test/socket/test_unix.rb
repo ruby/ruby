@@ -356,8 +356,8 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
   end
 
   def test_too_long_path
-    assert_raise(ArgumentError) { Socket.sockaddr_un("a" * 300) }
-    assert_raise(ArgumentError) { UNIXServer.new("a" * 300) }
+    assert_raise(ArgumentError) { Socket.sockaddr_un("a" * 3000) }
+    assert_raise(ArgumentError) { UNIXServer.new("a" * 3000) }
   end
 
   def test_abstract_namespace
