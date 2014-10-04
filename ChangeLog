@@ -1,3 +1,9 @@
+Sat Oct  4 08:59:45 2014  Zachary Scott  <e@zzak.io>
+
+	* ext/openssl/ossl_rand.c: [DOC] Add call signature for pseudo_bytes
+	  and random_bytes, wrap lines at 80 chars, and remove useless
+	  comments.
+
 Sat Oct  4 08:49:34 2014  Zachary Scott  <e@zzak.io>
 
 	* ext/openssl/ossl_rand.c: [DOC] Add rdoc for method descriptions
