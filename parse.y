@@ -430,6 +430,9 @@ static NODE *new_attr_op_assign_gen(struct parser_params *parser, NODE *lhs, ID 
 static NODE *new_const_op_assign_gen(struct parser_params *parser, NODE *lhs, ID op, NODE *rhs);
 #define new_const_op_assign(lhs, op, rhs) new_const_op_assign_gen(parser, (lhs), (op), (rhs))
 
+static NODE *new_hash_gen(struct parser_params *parser, NODE *hash);
+#define new_hash(hash) new_hash_gen(parser, (hash))
+
 #define new_defined(expr) NEW_DEFINED(remove_begin_all(expr))
 
 static NODE *match_op_gen(struct parser_params*,NODE*,NODE*);
@@ -2348,7 +2351,7 @@ aref_args	: none
 		| args ',' assocs trailer
 		    {
 		    /*%%%*/
-			$$ = arg_append($1, NEW_HASH($3));
+			$$ = arg_append($1, new_hash($3));
 		    /*%
 			$$ = arg_add_assocs($1, $3);
 		    %*/
@@ -2356,7 +2359,7 @@ aref_args	: none
 		| assocs trailer
 		    {
 		    /*%%%*/
-			$$ = NEW_LIST(NEW_HASH($1));
+			$$ = NEW_LIST(new_hash($1));
 		    /*%
 			$$ = arg_add_assocs(arg_new(), $1);
 		    %*/
@@ -2386,7 +2389,7 @@ opt_call_args	: none
 		| args ',' assocs ','
 		    {
 		    /*%%%*/
-			$$ = arg_append($1, NEW_HASH($3));
+			$$ = arg_append($1, new_hash($3));
 		    /*%
 			$$ = arg_add_assocs($1, $3);
 		    %*/
@@ -2394,7 +2397,7 @@ opt_call_args	: none
 		| assocs ','
 		    {
 		    /*%%%*/
-			$$ = NEW_LIST(NEW_HASH($1));
+			$$ = NEW_LIST(new_hash($1));
 		    /*%
 			$$ = arg_add_assocs(arg_new(), $1);
 		    %*/
@@ -2421,7 +2424,7 @@ call_args	: command
 		| assocs opt_block_arg
 		    {
 		    /*%%%*/
-			$$ = NEW_LIST(NEW_HASH($1));
+			$$ = NEW_LIST(new_hash($1));
 			$$ = arg_blk_pass($$, $2);
 		    /*%
 			$$ = arg_add_assocs(arg_new(), $1);
@@ -2431,7 +2434,7 @@ call_args	: command
 		| args ',' assocs opt_block_arg
 		    {
 		    /*%%%*/
-			$$ = arg_append($1, NEW_HASH($3));
+			$$ = arg_append($1, new_hash($3));
 			$$ = arg_blk_pass($$, $4);
 		    /*%
 			$$ = arg_add_optblock(arg_add_assocs($1, $3), $4);
@@ -2675,7 +2678,7 @@ primary		: literal
 		| tLBRACE assoc_list '}'
 		    {
 		    /*%%%*/
-			$$ = NEW_HASH($2);
+			$$ = new_hash($2);
 		    /*%
 			$$ = dispatch1(hash, escape_Qundef($2));
 		    %*/
@@ -9591,6 +9594,60 @@ dsym_node_gen(struct parser_params *parser, NODE *node)
 	break;
     }
     return node;
+}
+
+static int
+append_literal_keys(st_data_t k, st_data_t v, st_data_t h)
+{
+    NODE *node = (NODE *)v;
+    NODE **result = (NODE **)h;
+    node->nd_alen = 2;
+    node->nd_next->nd_end = node->nd_next;
+    node->nd_next->nd_next = 0;
+    if (*result)
+	list_concat(*result, node);
+    else
+	*result = node;
+    return ST_CONTINUE;
+}
+
+static NODE *
+remove_duplicate_keys(struct parser_params *parser, NODE *hash)
+{
+    st_table *literal_keys = st_init_numtable_with_size(hash->nd_alen / 2);
+    NODE *result = 0;
+    while (hash && hash->nd_head && hash->nd_next) {
+	NODE *head = hash->nd_head;
+	VALUE key = 0;
+	st_data_t data;
+	if (nd_type(head) == NODE_LIT) {
+	    key = head->nd_lit;
+	    if (st_lookup(literal_keys, key, &data)) {
+		rb_compile_warn(ruby_sourcefile, nd_line((NODE *)data),
+				"duplicated key at line %d ignored: %+"PRIsVALUE,
+				nd_line(head), head->nd_lit);
+	    }
+	}
+	else {
+	    key = (VALUE)head;
+	}
+	st_insert(literal_keys, (st_data_t)key, (st_data_t)hash);
+	hash = hash->nd_next->nd_next;
+    }
+    st_foreach(literal_keys, append_literal_keys, (st_data_t)&result);
+    st_free_table(literal_keys);
+    if (hash) {
+	if (!result) result = hash;
+	else list_concat(result, hash);
+    }
+    return result;
+}
+
+static NODE *
+new_hash_gen(struct parser_params *parser, NODE *hash)
+{
+    if (hash) hash = remove_duplicate_keys(parser, hash);
+    return NEW_HASH(hash);
 }
 #endif /* !RIPPER */
 
