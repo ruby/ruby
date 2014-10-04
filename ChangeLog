@@ -1,3 +1,10 @@
+Sat Oct  4 09:08:18 2014  Zachary Scott  <e@zzak.io>
+
+	* ext/win32ole/win32ole.c: [DOC] Fix typo in :nodoc: reported by
+	  @windwiny to [Fix GH-705] https://github.com/ruby/ruby/pull/705
+
+	* ext/pty/pty.c: ditto
+
 Sat Oct  4 08:59:45 2014  Zachary Scott  <e@zzak.io>
 
 	* ext/openssl/ossl_rand.c: [DOC] Add call signature for pseudo_bytes
