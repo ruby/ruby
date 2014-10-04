@@ -376,8 +376,7 @@ static NODE *block_append_gen(struct parser_params*,NODE*,NODE*);
 #define block_append(h,t) block_append_gen(parser,(h),(t))
 static NODE *list_append_gen(struct parser_params*,NODE*,NODE*);
 #define list_append(l,i) list_append_gen(parser,(l),(i))
-static NODE *list_concat_gen(struct parser_params*,NODE*,NODE*);
-#define list_concat(h,t) list_concat_gen(parser,(h),(t))
+static NODE *list_concat(NODE*,NODE*);
 static NODE *arg_append_gen(struct parser_params*,NODE*,NODE*);
 #define arg_append(h,t) arg_append_gen(parser,(h),(t))
 static NODE *arg_concat_gen(struct parser_params*,NODE*,NODE*);
@@ -8463,7 +8462,7 @@ list_append_gen(struct parser_params *parser, NODE *list, NODE *item)
 
 /* concat two lists */
 static NODE*
-list_concat_gen(struct parser_params *parser, NODE *head, NODE *tail)
+list_concat(NODE *head, NODE *tail)
 {
     NODE *last;
 
