@@ -15,11 +15,11 @@
   if (!(bn)) { \
     ossl_raise(rb_eRuntimeError, "BN wasn't initialized!"); \
   } \
-  (obj) = Data_Wrap_Struct((klass), 0, BN_clear_free, (bn)); \
+  (obj) = TypedData_Wrap_Struct((klass), &ossl_bn_type, (bn)); \
 } while (0)
 
 #define GetBN(obj, bn) do { \
-  Data_Get_Struct((obj), BIGNUM, (bn)); \
+  TypedData_Get_Struct((obj), BIGNUM, &ossl_bn_type, (bn)); \
   if (!(bn)) { \
     ossl_raise(rb_eRuntimeError, "BN wasn't initialized!"); \
   } \
@@ -29,6 +29,25 @@
   OSSL_Check_Kind((obj), cBN); \
   GetBN((obj), (bn)); \
 } while (0)
+
+static void
+ossl_bn_free(void *ptr)
+{
+    BN_clear_free(ptr);
+}
+
+static size_t
+ossl_bn_size(const void *ptr)
+{
+    return sizeof(BIGNUM);
+}
+
+static const rb_data_type_t ossl_bn_type = {
+    "OpenSSL/BN",
+    {0, ossl_bn_free, ossl_bn_size,},
+    NULL, NULL,
+    RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 /*
  * Classes
