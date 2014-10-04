@@ -267,6 +267,23 @@ if dblib.any? {|db| headers.fetch(db, ["ndbm.h"]).any? {|hdr| headers.db_check(d
   have_func("dbm_pagfno((DBM *)0)", headers.found, headers.defs)
   have_func("dbm_dirfno((DBM *)0)", headers.found, headers.defs)
   convertible_int("datum.dsize", headers.found, headers.defs)
+  checking_for("sizeof(DBM) is available") {
+    if try_compile(<<SRC)
+#ifdef HAVE_CDEFS_H
+# include <cdefs.h>
+#endif
+#ifdef HAVE_SYS_CDEFS_H
+# include <sys/cdefs.h>
+#endif
+#include DBM_HDR
+
+const int sizeof_DBM = (int)sizeof(DBM);
+SRC
+      $defs << '-DDBM_SIZEOF_DBM=sizeof(DBM)'
+    else
+      $defs << '-DDBM_SIZEOF_DBM=0'
+    end
+  }
   create_makefile("dbm")
 end
 # :startdoc:

@@ -46,7 +46,7 @@ closed_dbm(void)
 }
 
 #define GetDBM(obj, dbmp) do {\
-    Data_Get_Struct((obj), struct dbmdata, (dbmp));\
+    TypedData_Get_Struct((obj), struct dbmdata, &dbm_type, (dbmp));\
     if ((dbmp) == 0) closed_dbm();\
     if ((dbmp)->di_dbm == 0) closed_dbm();\
 } while (0)
@@ -57,13 +57,33 @@ closed_dbm(void)
 } while (0)
 
 static void
-free_dbm(struct dbmdata *dbmp)
+free_dbm(void *ptr)
 {
+    struct dbmdata *dbmp = ptr;
     if (dbmp) {
 	if (dbmp->di_dbm) dbm_close(dbmp->di_dbm);
 	xfree(dbmp);
     }
 }
+
+static size_t
+memsize_dbm(const void *ptr)
+{
+    size_t size = 0;
+    const struct dbmdata *dbmp = ptr;
+    if (dbmp) {
+	size += sizeof(*dbmp);
+	if (dbmp->di_dbm) size += DBM_SIZEOF_DBM;
+    }
+    return size;
+}
+
+static const rb_data_type_t dbm_type = {
+    "dbm",
+    {0, free_dbm, memsize_dbm,},
+    NULL, NULL,
+    RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 /*
  * call-seq:
@@ -94,7 +114,7 @@ fdbm_closed(VALUE obj)
 {
     struct dbmdata *dbmp;
 
-    Data_Get_Struct(obj, struct dbmdata, dbmp);
+    TypedData_Get_Struct(obj, struct dbmdata, &dbm_type, dbmp);
     if (dbmp == 0)
 	return Qtrue;
     if (dbmp->di_dbm == 0)
@@ -106,7 +126,7 @@ fdbm_closed(VALUE obj)
 static VALUE
 fdbm_alloc(VALUE klass)
 {
-    return Data_Wrap_Struct(klass, 0, free_dbm, 0);
+    return TypedData_Wrap_Struct(klass, &dbm_type, 0);
 }
 
 /*
@@ -228,7 +248,7 @@ fdbm_initialize(int argc, VALUE *argv, VALUE obj)
 static VALUE
 fdbm_s_open(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE obj = Data_Wrap_Struct(klass, 0, free_dbm, 0);
+    VALUE obj = fdbm_alloc(klass);
 
     if (NIL_P(fdbm_initialize(argc, argv, obj))) {
 	return Qnil;
