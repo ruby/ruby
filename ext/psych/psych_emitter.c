@@ -29,6 +29,22 @@ static void dealloc(void * ptr)
     xfree(emitter);
 }
 
+#if 0
+static size_t memsize(const void *ptr)
+{
+    const yaml_emitter_t *emitter = ptr;
+    /* TODO: calculate emitter's size */
+    return 0;
+}
+#endif
+
+static const rb_data_type_t psych_emitter_type = {
+    "Psych/emitter",
+    {0, dealloc, 0,},
+    NULL, NULL,
+    RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 static VALUE allocate(VALUE klass)
 {
     yaml_emitter_t * emitter;
@@ -39,7 +55,7 @@ static VALUE allocate(VALUE klass)
     yaml_emitter_set_unicode(emitter, 1);
     yaml_emitter_set_indent(emitter, 2);
 
-    return Data_Wrap_Struct(klass, 0, dealloc, emitter);
+    return TypedData_Wrap_Struct(klass, &psych_emitter_type, emitter);
 }
 
 /* call-seq: Psych::Emitter.new(io, options = Psych::Emitter::OPTIONS)
@@ -54,7 +70,7 @@ static VALUE initialize(int argc, VALUE *argv, VALUE self)
     VALUE indent;
     VALUE canonical;
 
-    Data_Get_Struct(self, yaml_emitter_t, emitter);
+    TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
 
     if (rb_scan_args(argc, argv, "11", &io, &options) == 2) {
 	line_width = rb_funcall(options, id_line_width, 0);
@@ -81,7 +97,7 @@ static VALUE start_stream(VALUE self, VALUE encoding)
 {
     yaml_emitter_t * emitter;
     yaml_event_t event;
-    Data_Get_Struct(self, yaml_emitter_t, emitter);
+    TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
     Check_Type(encoding, T_FIXNUM);
 
     yaml_stream_start_event_initialize(&event, (yaml_encoding_t)NUM2INT(encoding));
@@ -101,7 +117,7 @@ static VALUE end_stream(VALUE self)
 {
     yaml_emitter_t * emitter;
     yaml_event_t event;
-    Data_Get_Struct(self, yaml_emitter_t, emitter);
+    TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
 
     yaml_stream_end_event_initialize(&event);
 
@@ -124,7 +140,7 @@ static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
     yaml_tag_directive_t * tail = NULL;
     yaml_event_t event;
     yaml_version_directive_t version_directive;
-    Data_Get_Struct(self, yaml_emitter_t, emitter);
+    TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
 
 
     Check_Type(version, T_ARRAY);
@@ -198,7 +214,7 @@ static VALUE end_document(VALUE self, VALUE imp)
 {
     yaml_emitter_t * emitter;
     yaml_event_t event;
-    Data_Get_Struct(self, yaml_emitter_t, emitter);
+    TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
 
     yaml_document_end_event_initialize(&event, imp ? 1 : 0);
 
@@ -228,7 +244,7 @@ static VALUE scalar(
 #ifdef HAVE_RUBY_ENCODING_H
     rb_encoding *encoding;
 #endif
-    Data_Get_Struct(self, yaml_emitter_t, emitter);
+    TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
 
     Check_Type(value, T_STRING);
 
@@ -295,7 +311,7 @@ static VALUE start_sequence(
     }
 #endif
 
-    Data_Get_Struct(self, yaml_emitter_t, emitter);
+    TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
 
     yaml_sequence_start_event_initialize(
 	    &event,
@@ -320,7 +336,7 @@ static VALUE end_sequence(VALUE self)
 {
     yaml_emitter_t * emitter;
     yaml_event_t event;
-    Data_Get_Struct(self, yaml_emitter_t, emitter);
+    TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
 
     yaml_sequence_end_event_initialize(&event);
 
@@ -348,7 +364,7 @@ static VALUE start_mapping(
 #ifdef HAVE_RUBY_ENCODING_H
     rb_encoding *encoding;
 #endif
-    Data_Get_Struct(self, yaml_emitter_t, emitter);
+    TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
 
 #ifdef HAVE_RUBY_ENCODING_H
     encoding = rb_utf8_encoding();
@@ -387,7 +403,7 @@ static VALUE end_mapping(VALUE self)
 {
     yaml_emitter_t * emitter;
     yaml_event_t event;
-    Data_Get_Struct(self, yaml_emitter_t, emitter);
+    TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
 
     yaml_mapping_end_event_initialize(&event);
 
@@ -406,7 +422,7 @@ static VALUE alias(VALUE self, VALUE anchor)
 {
     yaml_emitter_t * emitter;
     yaml_event_t event;
-    Data_Get_Struct(self, yaml_emitter_t, emitter);
+    TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
 
 #ifdef HAVE_RUBY_ENCODING_H
     if(!NIL_P(anchor)) {
@@ -432,7 +448,7 @@ static VALUE alias(VALUE self, VALUE anchor)
 static VALUE set_canonical(VALUE self, VALUE style)
 {
     yaml_emitter_t * emitter;
-    Data_Get_Struct(self, yaml_emitter_t, emitter);
+    TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
 
     yaml_emitter_set_canonical(emitter, Qtrue == style ? 1 : 0);
 
@@ -446,7 +462,7 @@ static VALUE set_canonical(VALUE self, VALUE style)
 static VALUE canonical(VALUE self)
 {
     yaml_emitter_t * emitter;
-    Data_Get_Struct(self, yaml_emitter_t, emitter);
+    TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
 
     return (emitter->canonical == 0) ? Qfalse : Qtrue;
 }
@@ -459,7 +475,7 @@ static VALUE canonical(VALUE self)
 static VALUE set_indentation(VALUE self, VALUE level)
 {
     yaml_emitter_t * emitter;
-    Data_Get_Struct(self, yaml_emitter_t, emitter);
+    TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
 
     yaml_emitter_set_indent(emitter, NUM2INT(level));
 
@@ -473,7 +489,7 @@ static VALUE set_indentation(VALUE self, VALUE level)
 static VALUE indentation(VALUE self)
 {
     yaml_emitter_t * emitter;
-    Data_Get_Struct(self, yaml_emitter_t, emitter);
+    TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
 
     return INT2NUM(emitter->best_indent);
 }
@@ -485,7 +501,7 @@ static VALUE indentation(VALUE self)
 static VALUE line_width(VALUE self)
 {
     yaml_emitter_t * emitter;
-    Data_Get_Struct(self, yaml_emitter_t, emitter);
+    TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
 
     return INT2NUM(emitter->best_width);
 }
@@ -497,7 +513,7 @@ static VALUE line_width(VALUE self)
 static VALUE set_line_width(VALUE self, VALUE width)
 {
     yaml_emitter_t * emitter;
-    Data_Get_Struct(self, yaml_emitter_t, emitter);
+    TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
 
     yaml_emitter_set_width(emitter, NUM2INT(width));
 
