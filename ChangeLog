@@ -1,3 +1,9 @@
+Sat Oct  4 16:24:41 2014  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/test_syslog.rb (TestSyslog#test_log): In AIX, each output
+	  line of LOG_PERROR to stderr has an additional empty line appended,
+	  so skip that line.
+
 Sat Oct  4 16:05:49 2014  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* test/socket/test_unix.rb (TestSocket_UNIXSocket#test_too_long_path):
