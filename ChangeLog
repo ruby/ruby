@@ -1,3 +1,29 @@
+Sun Oct  5 05:46:00 2014  Eric Wong  <e@80x24.org>
+
+	* ext/zlib/zlib.c (zstream_mark, zstream_free): update signature
+	  (gzfile_mark, gzfile_free): ditto
+	  (zstream_memsize): new function for rb_data_type->dsize
+	  (gzfile_memsize): ditto
+	  (zstream_data_type, gzfile_data_type): new data types
+	  (zstream_new): Data_Make_Struct => TypedData_Make_Struct
+	  (gzfile_new): ditto
+	  (get_zstream, get_gzfile): Data_Get_Struct => TypedData_Get_Struct
+	  (rb_zstream_flush_next_in): ditto
+	  (rb_zstream_flush_next_out): ditto
+	  (rb_zstream_avail_out): ditto
+	  (rb_zstream_avail_in): ditto
+	  (rb_zstream_closed_p): ditto
+	  (rb_deflate_initialize): ditto
+	  (rb_deflate_init_copy): ditto
+	  (rb_inflate_initialize): ditto
+	  (gzfile_ensure_close): ditto
+	  (rb_gzfile_closed_p): ditto
+	  (rb_gzfile_path): ditto
+	  (rb_gzwriter_initialize): ditto
+	  (rb_gzreader_initialize): ditto
+	  (rb_gzreader_unused): ditto
+	  [ruby-core:65377] [Feature #10319]
+
 Sat Oct  4 16:24:41 2014  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* test/test_syslog.rb (TestSyslog#test_log): In AIX, each output
