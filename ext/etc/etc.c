@@ -778,10 +778,7 @@ etc_uname(VALUE obj)
  * nil means indefinite limit.  (sysconf() returns -1 but errno is not set.)
  *
  *   Etc.sysconf(Etc::SC_ARG_MAX) #=> 2097152
- *
- *   # Number of processors.
- *   # It is not standardized.
- *   Etc.sysconf(Etc::SC_NPROCESSORS_ONLN) #=> 4
+ *   Etc.sysconf(Etc::SC_LOGIN_NAME_MAX) #=> 256
  *
  */
 static VALUE
