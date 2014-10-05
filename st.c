@@ -1156,52 +1156,68 @@ st_values_check(st_table *table, st_data_t *values, st_index_t size, st_data_t n
 
 #if 0  /* unused right now */
 int
-st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
+st_reverse_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t never)
 {
     st_table_entry *ptr, **last, *tmp;
     enum st_retval retval;
-    int i;
+    st_index_t i;
 
     if (table->entries_packed) {
-        for (i = table->num_entries-1; 0 <= i; i--) {
-            int j;
-            st_data_t key, val;
-            key = PKEY(table, i);
-            val = PVAL(table, i);
-            retval = (*func)(key, val, arg, 0);
-            switch (retval) {
+	for (i = table->real_entries; 0 < i;) {
+	    st_data_t key, val;
+	    st_index_t hash;
+	    --i;
+	    key = PKEY(table, i);
+	    val = PVAL(table, i);
+	    hash = PHASH(table, i);
+	    if (key == never) continue;
+	    retval = (*func)(key, val, arg, 0);
+	    if (!table->entries_packed) {
+		FIND_ENTRY(table, ptr, hash, i);
+		if (retval == ST_CHECK) {
+		    if (!ptr) goto deleted;
+		    goto unpacked_continue;
+		}
+		goto unpacked;
+	    }
+	    switch (retval) {
 	      case ST_CHECK:	/* check if hash is modified during iteration */
-                for (j = 0; j < table->num_entries; j++) {
-                    if (PKEY(table, j) == key)
-                        break;
-                }
-                if (j == table->num_entries) {
-                    /* call func with error notice */
-                    retval = (*func)(0, 0, arg, 1);
-                    return 1;
-                }
+		if (PHASH(table, i) == 0 && PKEY(table, i) == never) {
+		    break;
+		}
+		i = find_packed_index_from(table, hash, key, i);
+		if (i >= table->real_entries) {
+		    i = find_packed_index(table, hash, key);
+		    if (i >= table->real_entries) goto deleted;
+		}
 		/* fall through */
 	      case ST_CONTINUE:
 		break;
 	      case ST_STOP:
 		return 0;
 	      case ST_DELETE:
-		remove_packed_entry(table, i);
-                break;
-            }
-        }
-        return 0;
+		remove_safe_packed_entry(table, i, never);
+		break;
+	    }
+	}
+	return 0;
+    }
+    else {
+	ptr = table->tail;
     }
 
-    if ((ptr = table->head) != 0) {
-	ptr = ptr->back;
+    if (ptr != 0) {
 	do {
+	    if (ptr->key == never)
+		goto unpacked_continue;
+	    i = hash_pos(ptr->hash, table->num_bins);
 	    retval = (*func)(ptr->key, ptr->record, arg, 0);
+	  unpacked:
 	    switch (retval) {
 	      case ST_CHECK:	/* check if hash is modified during iteration */
-		i = hash_pos(ptr->hash, table->num_bins);
 		for (tmp = table->bins[i]; tmp != ptr; tmp = tmp->next) {
 		    if (!tmp) {
+		      deleted:
 			/* call func with error notice */
 			retval = (*func)(0, 0, arg, 1);
 			return 1;
@@ -1209,8 +1225,77 @@ st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 		}
 		/* fall through */
 	      case ST_CONTINUE:
+	      unpacked_continue:
 		ptr = ptr->back;
 		break;
+	      case ST_STOP:
+		return 0;
+	      case ST_DELETE:
+		last = &table->bins[hash_pos(ptr->hash, table->num_bins)];
+		for (; (tmp = *last) != 0; last = &tmp->next) {
+		    if (ptr == tmp) {
+			tmp = ptr->back;
+			remove_entry(table, ptr);
+			ptr->key = ptr->record = never;
+			ptr->hash = 0;
+			ptr = tmp;
+			break;
+		    }
+		}
+	    }
+	} while (ptr && table->head);
+    }
+    return 0;
+}
+
+int
+st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
+{
+    st_table_entry *ptr, **last, *tmp;
+    enum st_retval retval;
+    st_index_t i;
+
+    if (table->entries_packed) {
+	for (i = table->real_entries; 0 < i;) {
+	    st_data_t key, val;
+	    st_index_t hash;
+	    --i;
+	    key = PKEY(table, i);
+	    val = PVAL(table, i);
+	    hash = PHASH(table, i);
+	    retval = (*func)(key, val, arg, 0);
+	    if (!table->entries_packed) {
+		FIND_ENTRY(table, ptr, hash, i);
+		if (!ptr) return 0;
+		goto unpacked;
+	    }
+	    switch (retval) {
+	      case ST_CONTINUE:
+		break;
+	      case ST_CHECK:
+	      case ST_STOP:
+		return 0;
+	      case ST_DELETE:
+		remove_packed_entry(table, i);
+		break;
+	    }
+	}
+	return 0;
+    }
+    else {
+	ptr = table->tail;
+    }
+
+    if (ptr != 0) {
+	do {
+	    i = hash_pos(ptr->hash, table->num_bins);
+	    retval = (*func)(ptr->key, ptr->record, arg, 0);
+	  unpacked:
+	    switch (retval) {
+	      case ST_CONTINUE:
+		ptr = ptr->back;
+		break;
+	      case ST_CHECK:
 	      case ST_STOP:
 		return 0;
 	      case ST_DELETE:
@@ -1225,9 +1310,6 @@ st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 			break;
 		    }
 		}
-		ptr = ptr->next;
-		free(tmp);
-		table->num_entries--;
 	    }
 	} while (ptr && table->head);
     }

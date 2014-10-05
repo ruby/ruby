@@ -748,7 +748,7 @@ void
 Init_pty(void)
 {
     cPTY = rb_define_module("PTY");
-    /* :nodoc */
+    /* :nodoc: */
     rb_define_module_function(cPTY,"getpty",pty_getpty,-1);
     rb_define_module_function(cPTY,"spawn",pty_getpty,-1);
     rb_define_singleton_method(cPTY,"check",pty_check,-1);

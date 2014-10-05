@@ -20,7 +20,7 @@ static VALUE libyaml_version(VALUE module)
 
 VALUE mPsych;
 
-void Init_psych()
+void Init_psych(void)
 {
     mPsych = rb_define_module("Psych");
 

@@ -7,7 +7,7 @@ struct olevariantdata {
 };
 
 VALUE cWIN32OLE_VARIANT;
-void Init_win32ole_variant();
+void Init_win32ole_variant(void);
 
 #endif
 

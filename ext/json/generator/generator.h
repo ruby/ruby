@@ -78,9 +78,12 @@ typedef struct JSON_Generator_StateStruct {
     long buffer_initial_length;
 } JSON_Generator_State;
 
+#define GET_STATE_TO(self, state) \
+    TypedData_Get_Struct(self, JSON_Generator_State, &JSON_Generator_State_type, state)
+
 #define GET_STATE(self)                       \
     JSON_Generator_State *state;              \
-    Data_Get_Struct(self, JSON_Generator_State, state)
+    GET_STATE_TO(self, state)
 
 #define GENERATE_JSON(type)                                                                     \
     FBuffer *buffer;                                                                            \
@@ -89,7 +92,7 @@ typedef struct JSON_Generator_StateStruct {
                                                                                                 \
     rb_scan_args(argc, argv, "01", &Vstate);                                                    \
     Vstate = cState_from_state_s(cState, Vstate);                                               \
-    Data_Get_Struct(Vstate, JSON_Generator_State, state);                                       \
+    TypedData_Get_Struct(Vstate, JSON_Generator_State, &JSON_Generator_State_type, state);	\
     buffer = cState_prepare_buffer(Vstate);                                                     \
     generate_json_##type(buffer, Vstate, state, self);                                          \
     return fbuffer_to_s(buffer)
@@ -108,8 +111,8 @@ static VALUE mTrueClass_to_json(int argc, VALUE *argv, VALUE self);
 static VALUE mFalseClass_to_json(int argc, VALUE *argv, VALUE self);
 static VALUE mNilClass_to_json(int argc, VALUE *argv, VALUE self);
 static VALUE mObject_to_json(int argc, VALUE *argv, VALUE self);
-static void State_free(JSON_Generator_State *state);
-static JSON_Generator_State *State_allocate();
+static void State_free(void *state);
+static JSON_Generator_State *State_allocate(void);
 static VALUE cState_s_allocate(VALUE klass);
 static VALUE cState_configure(VALUE self, VALUE opts);
 static VALUE cState_to_h(VALUE self);
@@ -144,5 +147,6 @@ static VALUE cState_ascii_only_p(VALUE self);
 static VALUE cState_depth(VALUE self);
 static VALUE cState_depth_set(VALUE self, VALUE depth);
 static FBuffer *cState_prepare_buffer(VALUE self);
+static const rb_data_type_t JSON_Generator_State_type;
 
 #endif

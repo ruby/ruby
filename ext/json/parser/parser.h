@@ -51,7 +51,7 @@ typedef struct JSON_ParserStruct {
     if (!json->Vsource) rb_raise(rb_eTypeError, "uninitialized instance")
 #define GET_PARSER_INIT                     \
     JSON_Parser *json;                      \
-    Data_Get_Struct(self, JSON_Parser, json)
+    TypedData_Get_Struct(self, JSON_Parser, &JSON_Parser_type, json)
 
 #define MinusInfinity "-Infinity"
 #define EVIL 0x666
@@ -68,10 +68,11 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
 static VALUE convert_encoding(VALUE source);
 static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self);
 static VALUE cParser_parse(VALUE self);
-static JSON_Parser *JSON_allocate();
-static void JSON_mark(JSON_Parser *json);
-static void JSON_free(JSON_Parser *json);
+static JSON_Parser *JSON_allocate(void);
+static void JSON_mark(void *json);
+static void JSON_free(void *json);
 static VALUE cJSON_parser_s_allocate(VALUE klass);
 static VALUE cParser_source(VALUE self);
+static const rb_data_type_t JSON_Parser_type;
 
 #endif

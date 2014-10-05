@@ -1556,7 +1556,7 @@ static void no_copy(VALUE klass)
     rb_undef_method(klass, "initialize_copy");
 }
 
-void Init_ossl_ec()
+void Init_ossl_ec(void)
 {
 #ifdef DONT_NEED_RDOC_WORKAROUND
     mOSSL = rb_define_module("OpenSSL");
@@ -1677,7 +1677,7 @@ void Init_ossl_ec()
 }
 
 #else /* defined NO_EC */
-void Init_ossl_ec()
+void Init_ossl_ec(void)
 {
 }
 #endif /* NO_EC */

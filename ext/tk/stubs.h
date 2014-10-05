@@ -1,15 +1,15 @@
 #include <tcl.h>
 
 extern int ruby_open_tcl_dll(char *);
-extern int ruby_open_tk_dll();
+extern int ruby_open_tk_dll(void);
 extern int ruby_open_tcltk_dll(char *);
-extern int tcl_stubs_init_p();
-extern int tk_stubs_init_p();
+extern int tcl_stubs_init_p(void);
+extern int tk_stubs_init_p(void);
 extern Tcl_Interp *ruby_tcl_create_ip_and_stubs_init(int*);
-extern int ruby_tcl_stubs_init();
+extern int ruby_tcl_stubs_init(void);
 extern int ruby_tk_stubs_init(Tcl_Interp*);
 extern int ruby_tk_stubs_safeinit(Tcl_Interp*);
-extern int ruby_tcltk_stubs();
+extern int ruby_tcltk_stubs(void);
 
 /* no error */
 #define TCLTK_STUBS_OK     (0)

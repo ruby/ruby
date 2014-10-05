@@ -1,3 +1,87 @@
+Sun Oct  5 11:04:13 2014  Luiz Angelo Daros de Luca  <luizluca@gmail.com>
+
+	* ext/digest/{md5,rmd160,sha1,sha2}/extconf.rb: configure OpenSSL
+	  only if bundled libraries is not used, so that OpenSSL is not
+	  linked unnecessarily.  [ruby-core:65404] [Bug #10324]
+
+Sun Oct  5 10:39:11 2014  Luiz Angelo Daros de Luca  <luizluca@gmail.com>
+
+	* ext/digest/rmd160/extconf.rb: fix transform function name to
+	  check.  [ruby-core:65091] [Bug #10252]
+
+Sun Oct  5 05:46:00 2014  Eric Wong  <e@80x24.org>
+
+	* ext/zlib/zlib.c (zstream_mark, zstream_free): update signature
+	  (gzfile_mark, gzfile_free): ditto
+	  (zstream_memsize): new function for rb_data_type->dsize
+	  (gzfile_memsize): ditto
+	  (zstream_data_type, gzfile_data_type): new data types
+	  (zstream_new): Data_Make_Struct => TypedData_Make_Struct
+	  (gzfile_new): ditto
+	  (get_zstream, get_gzfile): Data_Get_Struct => TypedData_Get_Struct
+	  (rb_zstream_flush_next_in): ditto
+	  (rb_zstream_flush_next_out): ditto
+	  (rb_zstream_avail_out): ditto
+	  (rb_zstream_avail_in): ditto
+	  (rb_zstream_closed_p): ditto
+	  (rb_deflate_initialize): ditto
+	  (rb_deflate_init_copy): ditto
+	  (rb_inflate_initialize): ditto
+	  (gzfile_ensure_close): ditto
+	  (rb_gzfile_closed_p): ditto
+	  (rb_gzfile_path): ditto
+	  (rb_gzwriter_initialize): ditto
+	  (rb_gzreader_initialize): ditto
+	  (rb_gzreader_unused): ditto
+	  [ruby-core:65377] [Feature #10319]
+
+Sat Oct  4 16:24:41 2014  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/test_syslog.rb (TestSyslog#test_log): In AIX, each output
+	  line of LOG_PERROR to stderr has an additional empty line appended,
+	  so skip that line.
+
+Sat Oct  4 16:05:49 2014  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/socket/test_unix.rb (TestSocket_UNIXSocket#test_too_long_path):
+	  sockaddr_un.sun_path in AIX is defined as char[1024],
+	  so "a" * 300 is not too long. "a" * 3000 would be enough.
+
+Sat Oct  4 09:12:03 2014  Zachary Scott  <e@zzak.io>
+
+	* ext/win32ole/sample/example*.rb: Add wait input to quit for examples
+	  with patch provided by @windwiny [Fixes GH-705]
+	  https://github.com/ruby/ruby/pull/705
+
+Sat Oct  4 09:08:18 2014  Zachary Scott  <e@zzak.io>
+
+	* ext/win32ole/win32ole.c: [DOC] Fix typo in :nodoc: reported by
+	  @windwiny to [Fix GH-705] https://github.com/ruby/ruby/pull/705
+
+	* ext/pty/pty.c: ditto
+
+Sat Oct  4 08:59:45 2014  Zachary Scott  <e@zzak.io>
+
+	* ext/openssl/ossl_rand.c: [DOC] Add call signature for pseudo_bytes
+	  and random_bytes, wrap lines at 80 chars, and remove useless
+	  comments.
+
+Sat Oct  4 08:49:34 2014  Zachary Scott  <e@zzak.io>
+
+	* ext/openssl/ossl_rand.c: [DOC] Add rdoc for method descriptions
+	  By @vipulnsward [Fixes GH-657] https://github.com/ruby/ruby/pull/657
+
+Sat Oct  4 08:23:48 2014  Zachary Scott  <e@zzak.io>
+
+	* ext/openssl/ossl_rand.c: Use rb_define_module_function instead of
+	  macro. [Fixes GH-686] https://github.com/ruby/ruby/pull/686
+
+Sat Oct  4 06:04:56 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole_method.c(olemethod_set_member): remove
+	  redundant NULL check.
+	* ext/win32ole/win32ole_type.c(oletype_set_member): ditto.
+
 Sat Oct  4 00:25:04 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* .travis.yml: removed needless preparation for gcc.

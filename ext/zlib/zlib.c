@@ -88,8 +88,8 @@ static void zstream_reset(struct zstream*);
 static VALUE zstream_end(struct zstream*);
 static void zstream_run(struct zstream*, Bytef*, long, int);
 static VALUE zstream_sync(struct zstream*, Bytef*, long);
-static void zstream_mark(struct zstream*);
-static void zstream_free(struct zstream*);
+static void zstream_mark(void*);
+static void zstream_free(void*);
 static VALUE zstream_new(VALUE, const struct zstream_funcs*);
 static struct zstream *get_zstream(VALUE);
 static void zstream_finalize(struct zstream*);
@@ -134,8 +134,8 @@ static VALUE rb_inflate_set_dictionary(VALUE, VALUE);
 
 #if GZIP_SUPPORT
 struct gzfile;
-static void gzfile_mark(struct gzfile*);
-static void gzfile_free(struct gzfile*);
+static void gzfile_mark(void*);
+static void gzfile_free(void*);
 static VALUE gzfile_new(VALUE, const struct zstream_funcs*, void (*) _((struct gzfile*)));
 static void gzfile_reset(struct gzfile*);
 static void gzfile_close(struct gzfile*, int);
@@ -1135,8 +1135,9 @@ zstream_sync(struct zstream *z, Bytef *src, long len)
 }
 
 static void
-zstream_mark(struct zstream *z)
+zstream_mark(void *p)
 {
+    struct zstream *z = p;
     rb_gc_mark(z->buf);
     rb_gc_mark(z->input);
 }
@@ -1152,13 +1153,28 @@ zstream_finalize(struct zstream *z)
 }
 
 static void
-zstream_free(struct zstream *z)
+zstream_free(void *p)
 {
+    struct zstream *z = p;
+
     if (ZSTREAM_IS_READY(z)) {
 	zstream_finalize(z);
     }
     xfree(z);
 }
+
+static size_t
+zstream_memsize(const void *p)
+{
+    /* n.b. this does not track memory managed via zalloc/zfree callbacks */
+    return sizeof(struct zstream);
+}
+
+static const rb_data_type_t zstream_data_type = {
+    "zstream",
+    { zstream_mark, zstream_free, zstream_memsize, },
+     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+};
 
 static VALUE
 zstream_new(VALUE klass, const struct zstream_funcs *funcs)
@@ -1166,8 +1182,7 @@ zstream_new(VALUE klass, const struct zstream_funcs *funcs)
     VALUE obj;
     struct zstream *z;
 
-    obj = Data_Make_Struct(klass, struct zstream,
-			   zstream_mark, zstream_free, z);
+    obj = TypedData_Make_Struct(klass, struct zstream, &zstream_data_type, z);
     zstream_init(z, funcs);
     z->stream.opaque = (voidpf)obj;
     return obj;
@@ -1181,7 +1196,7 @@ get_zstream(VALUE obj)
 {
     struct zstream *z;
 
-    Data_Get_Struct(obj, struct zstream, z);
+    TypedData_Get_Struct(obj, struct zstream, &zstream_data_type, z);
     if (!ZSTREAM_IS_READY(z)) {
 	rb_raise(cZError, "stream is not ready");
     }
@@ -1304,7 +1319,7 @@ rb_zstream_flush_next_in(VALUE obj)
     struct zstream *z;
     VALUE dst;
 
-    Data_Get_Struct(obj, struct zstream, z);
+    TypedData_Get_Struct(obj, struct zstream, &zstream_data_type, z);
     dst = zstream_detach_input(z);
     OBJ_INFECT(dst, obj);
     return dst;
@@ -1324,7 +1339,7 @@ rb_zstream_flush_next_out(VALUE obj)
 {
     struct zstream *z;
 
-    Data_Get_Struct(obj, struct zstream, z);
+    TypedData_Get_Struct(obj, struct zstream, &zstream_data_type, z);
 
     return zstream_detach_buffer(z);
 }
@@ -1337,7 +1352,7 @@ static VALUE
 rb_zstream_avail_out(VALUE obj)
 {
     struct zstream *z;
-    Data_Get_Struct(obj, struct zstream, z);
+    TypedData_Get_Struct(obj, struct zstream, &zstream_data_type, z);
     return rb_uint2inum(z->stream.avail_out);
 }
 
@@ -1364,7 +1379,7 @@ static VALUE
 rb_zstream_avail_in(VALUE obj)
 {
     struct zstream *z;
-    Data_Get_Struct(obj, struct zstream, z);
+    TypedData_Get_Struct(obj, struct zstream, &zstream_data_type, z);
     return INT2FIX(NIL_P(z->input) ? 0 : (int)(RSTRING_LEN(z->input)));
 }
 
@@ -1422,7 +1437,7 @@ static VALUE
 rb_zstream_closed_p(VALUE obj)
 {
     struct zstream *z;
-    Data_Get_Struct(obj, struct zstream, z);
+    TypedData_Get_Struct(obj, struct zstream, &zstream_data_type, z);
     return ZSTREAM_IS_READY(z) ? Qfalse : Qtrue;
 }
 
@@ -1534,7 +1549,7 @@ rb_deflate_initialize(int argc, VALUE *argv, VALUE obj)
     int err;
 
     rb_scan_args(argc, argv, "04", &level, &wbits, &memlevel, &strategy);
-    Data_Get_Struct(obj, struct zstream, z);
+    TypedData_Get_Struct(obj, struct zstream, &zstream_data_type, z);
 
     err = deflateInit2(&z->stream, ARG_LEVEL(level), Z_DEFLATED,
 		       ARG_WBITS(wbits), ARG_MEMLEVEL(memlevel),
@@ -1558,7 +1573,7 @@ rb_deflate_init_copy(VALUE self, VALUE orig)
     struct zstream *z1, *z2;
     int err;
 
-    Data_Get_Struct(self, struct zstream, z1);
+    TypedData_Get_Struct(self, struct zstream, &zstream_data_type, z1);
     z2 = get_zstream(orig);
 
     if (z1 == z2) return self;
@@ -1877,7 +1892,7 @@ rb_inflate_initialize(int argc, VALUE *argv, VALUE obj)
     int err;
 
     rb_scan_args(argc, argv, "01", &wbits);
-    Data_Get_Struct(obj, struct zstream, z);
+    TypedData_Get_Struct(obj, struct zstream, &zstream_data_type, z);
 
     err = inflateInit2(&z->stream, ARG_WBITS(wbits));
     if (err != Z_OK) {
@@ -2226,8 +2241,10 @@ struct gzfile {
 
 
 static void
-gzfile_mark(struct gzfile *gz)
+gzfile_mark(void *p)
 {
+    struct gzfile *gz = p;
+
     rb_gc_mark(gz->io);
     rb_gc_mark(gz->orig_name);
     rb_gc_mark(gz->comment);
@@ -2237,8 +2254,9 @@ gzfile_mark(struct gzfile *gz)
 }
 
 static void
-gzfile_free(struct gzfile *gz)
+gzfile_free(void *p)
 {
+    struct gzfile *gz = p;
     struct zstream *z = &gz->z;
 
     if (ZSTREAM_IS_READY(z)) {
@@ -2253,6 +2271,24 @@ gzfile_free(struct gzfile *gz)
     xfree(gz);
 }
 
+static size_t
+gzfile_memsize(const void *p)
+{
+    const struct gzfile *gz = p;
+    size_t size = sizeof(struct gzfile);
+
+    if (gz->cbuf)
+	size += GZFILE_CBUF_CAPA;
+
+    return size;
+}
+
+static const rb_data_type_t gzfile_data_type = {
+    "gzfile",
+    { gzfile_mark, gzfile_free, gzfile_memsize, },
+     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
 static VALUE
 gzfile_new(klass, funcs, endfunc)
     VALUE klass;
@@ -2262,7 +2298,7 @@ gzfile_new(klass, funcs, endfunc)
     VALUE obj;
     struct gzfile *gz;
 
-    obj = Data_Make_Struct(klass, struct gzfile, gzfile_mark, gzfile_free, gz);
+    obj = TypedData_Make_Struct(klass, struct gzfile, &gzfile_data_type, gz);
     zstream_init(&gz->z, funcs);
     gz->z.flags |= ZSTREAM_FLAG_GZFILE;
     gz->io = Qnil;
@@ -2927,7 +2963,7 @@ get_gzfile(VALUE obj)
 {
     struct gzfile *gz;
 
-    Data_Get_Struct(obj, struct gzfile, gz);
+    TypedData_Get_Struct(obj, struct gzfile, &gzfile_data_type, gz);
     if (!ZSTREAM_IS_READY(&gz->z)) {
 	rb_raise(cGzError, "closed gzip stream");
     }
@@ -2993,7 +3029,7 @@ gzfile_ensure_close(VALUE obj)
 {
     struct gzfile *gz;
 
-    Data_Get_Struct(obj, struct gzfile, gz);
+    TypedData_Get_Struct(obj, struct gzfile, &gzfile_data_type, gz);
     if (ZSTREAM_IS_READY(&gz->z)) {
 	gzfile_close(gz, 1);
     }
@@ -3297,7 +3333,7 @@ static VALUE
 rb_gzfile_closed_p(VALUE obj)
 {
     struct gzfile *gz;
-    Data_Get_Struct(obj, struct gzfile, gz);
+    TypedData_Get_Struct(obj, struct gzfile, &gzfile_data_type, gz);
     return NIL_P(gz->io) ? Qtrue : Qfalse;
 }
 
@@ -3383,7 +3419,7 @@ static VALUE
 rb_gzfile_path(VALUE obj)
 {
     struct gzfile *gz;
-    Data_Get_Struct(obj, struct gzfile, gz);
+    TypedData_Get_Struct(obj, struct gzfile, &gzfile_data_type, gz);
     return gz->path;
 }
 
@@ -3481,7 +3517,7 @@ rb_gzwriter_initialize(int argc, VALUE *argv, VALUE obj)
     }
 
     rb_scan_args(argc, argv, "12", &io, &level, &strategy);
-    Data_Get_Struct(obj, struct gzfile, gz);
+    TypedData_Get_Struct(obj, struct gzfile, &gzfile_data_type, gz);
 
     /* this is undocumented feature of zlib */
     gz->level = ARG_LEVEL(level);
@@ -3683,7 +3719,7 @@ rb_gzreader_initialize(int argc, VALUE *argv, VALUE obj)
     struct gzfile *gz;
     int err;
 
-    Data_Get_Struct(obj, struct gzfile, gz);
+    TypedData_Get_Struct(obj, struct gzfile, &gzfile_data_type, gz);
     rb_scan_args(argc, argv, "1:", &io, &opt);
 
     /* this is undocumented feature of zlib */
@@ -3728,7 +3764,7 @@ static VALUE
 rb_gzreader_unused(VALUE obj)
 {
     struct gzfile *gz;
-    Data_Get_Struct(obj, struct gzfile, gz);
+    TypedData_Get_Struct(obj, struct gzfile, &gzfile_data_type, gz);
     return gzfile_reader_get_unused(gz);
 }
 

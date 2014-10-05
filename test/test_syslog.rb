@@ -146,6 +146,10 @@ class TestSyslog < Test::Unit::TestCase
       2.times {
         re = syslog_line_regex("syslog_test", "test1 - hello, world!")
         line = stderr[0].gets
+        # In AIX, each LOG_PERROR output line has an appended empty line.
+        if /aix/ =~ RUBY_PLATFORM && line =~ /^$/
+          line = stderr[0].gets
+        end
         m = re.match(line)
         assert_not_nil(m)
         if m[1]
@@ -157,6 +161,10 @@ class TestSyslog < Test::Unit::TestCase
       2.times {
         re = syslog_line_regex("syslog_test", "test2 - pid")
         line = stderr[0].gets
+        # In AIX, each LOG_PERROR output line has an appended empty line.
+        if /aix/ =~ RUBY_PLATFORM && line =~ /^$/
+          line = stderr[0].gets
+        end
         m = re.match(line)
         assert_not_nil(m)
         assert_not_nil(m[1])

@@ -283,7 +283,8 @@ STDMETHODIMP EVENTSINK_GetIDsOfNames(
 }
 
 PIEVENTSINKOBJ
-EVENTSINK_Constructor() {
+EVENTSINK_Constructor(void)
+{
     PIEVENTSINKOBJ pEv;
     if (!g_IsEventSinkVtblInitialized) {
         vtEventSink.QueryInterface=EVENTSINK_QueryInterface;
@@ -976,7 +977,8 @@ fev_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 static void
-ole_msg_loop() {
+ole_msg_loop(void)
+{
     MSG msg;
     while(PeekMessage(&msg,NULL,0,0,PM_REMOVE)) {
         TranslateMessage(&msg);
