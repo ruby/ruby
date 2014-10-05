@@ -1,3 +1,8 @@
+Sun Oct  5 10:39:11 2014  Luiz Angelo Daros de Luca  <luizluca@gmail.com>
+
+	* ext/digest/rmd160/extconf.rb: fix transform function name to
+	  check.  [ruby-core:65091] [Bug #10252]
+
 Sun Oct  5 05:46:00 2014  Eric Wong  <e@80x24.org>
 
 	* ext/zlib/zlib.c (zstream_mark, zstream_free): update signature
