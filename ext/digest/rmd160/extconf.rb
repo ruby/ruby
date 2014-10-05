@@ -9,12 +9,12 @@ $INCFLAGS << " -I$(srcdir)/.."
 
 $objs = [ "rmd160init.#{$OBJEXT}" ]
 
-dir_config("openssl")
-pkg_config("openssl")
-require File.expand_path('../../../openssl/deprecation', __FILE__)
-
 if !with_config("bundled-rmd160") &&
-    have_library("crypto") && OpenSSL.check_func("RIPEMD160_Transform", "openssl/ripemd.h")
+    (dir_config("openssl")
+     pkg_config("openssl")
+     require File.expand_path('../../../openssl/deprecation', __FILE__)
+     have_library("crypto")) &&
+    OpenSSL.check_func("RIPEMD160_Transform", "openssl/ripemd.h")
   $objs << "rmd160ossl.#{$OBJEXT}"
 else
   $objs << "rmd160.#{$OBJEXT}"

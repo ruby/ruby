@@ -1,3 +1,9 @@
+Sun Oct  5 11:04:13 2014  Luiz Angelo Daros de Luca  <luizluca@gmail.com>
+
+	* ext/digest/{md5,rmd160,sha1,sha2}/extconf.rb: configure OpenSSL
+	  only if bundled libraries is not used, so that OpenSSL is not
+	  linked unnecessarily.  [ruby-core:65404] [Bug #10324]
+
 Sun Oct  5 10:39:11 2014  Luiz Angelo Daros de Luca  <luizluca@gmail.com>
 
 	* ext/digest/rmd160/extconf.rb: fix transform function name to

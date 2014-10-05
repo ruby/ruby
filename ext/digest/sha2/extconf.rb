@@ -9,12 +9,11 @@ $INCFLAGS << " -I$(srcdir)/.."
 
 $objs = [ "sha2init.#{$OBJEXT}" ]
 
-dir_config("openssl")
-pkg_config("openssl")
-require File.expand_path('../../../openssl/deprecation', __FILE__)
-
 if !with_config("bundled-sha2") &&
-    have_library("crypto") &&
+    (dir_config("openssl")
+     pkg_config("openssl")
+     require File.expand_path('../../../openssl/deprecation', __FILE__)
+     have_library("crypto")) &&
     %w[SHA256 SHA512].all? {|d| OpenSSL.check_func("#{d}_Transform", "openssl/sha.h")} &&
     %w[SHA256 SHA512].all? {|d| have_type("#{d}_CTX", "openssl/sha.h")}
   $objs << "sha2ossl.#{$OBJEXT}"
