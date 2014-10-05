@@ -169,9 +169,9 @@ VALUE rb_default_rs;
 
 static VALUE argf;
 
-static ID id_write, id_read, id_getc, id_flush, id_readpartial, id_set_encoding;
+static ID id_write, id_read, id_getc, id_flush, id_readpartial, id_set_encoding, id_exception;
 static VALUE sym_mode, sym_perm, sym_extenc, sym_intenc, sym_encoding, sym_open_args;
-static VALUE sym_textmode, sym_binmode, sym_autoclose, sym_exception;
+static VALUE sym_textmode, sym_binmode, sym_autoclose;
 static VALUE sym_SET, sym_CUR, sym_END;
 #ifdef SEEK_DATA
 static VALUE sym_DATA;
@@ -2633,7 +2633,7 @@ get_kwargs_exception(VALUE opts)
     VALUE except;
 
     if (!ids[0])
-	ids[0] = sym_exception;
+	ids[0] = id_exception;
 
     rb_get_kwargs(opts, ids, 0, 1, &except);
     return except;
@@ -12379,5 +12379,5 @@ Init_IO(void)
 #ifdef SEEK_HOLE
     sym_HOLE = ID2SYM(rb_intern("HOLE"));
 #endif
-    sym_exception = ID2SYM(rb_intern("exception"));
+    id_exception = rb_intern("exception");
 }
