@@ -1,3 +1,7 @@
+Mon Oct  6 23:34:42 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole_param.c: use typed data.
+
 Mon Oct  6 22:37:09 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* symbol.h (struct RSymbol): move from internal.h.

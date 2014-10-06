@@ -8,7 +8,8 @@ struct oleparamdata {
     UINT index;
 };
 
-static void oleparam_free(struct oleparamdata *pole);
+static void oleparam_free(void *ptr);
+static size_t oleparam_size(const void *ptr);
 static VALUE foleparam_s_allocate(VALUE klass);
 static VALUE oleparam_ole_param_from_index(VALUE self, ITypeInfo *pTypeInfo, UINT method_index, int param_index);
 static VALUE oleparam_ole_param(VALUE self, VALUE olemethod, int n);
@@ -27,11 +28,24 @@ static VALUE ole_param_default(ITypeInfo *pTypeInfo, UINT method_index, UINT ind
 static VALUE foleparam_default(VALUE self);
 static VALUE foleparam_inspect(VALUE self);
 
+static const rb_data_type_t oleparam_datatype = {
+    "win32ole_param",
+    {NULL, oleparam_free, oleparam_size,},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
 static void
-oleparam_free(struct oleparamdata *pole)
+oleparam_free(void *ptr)
 {
+    struct oleparamdata *pole = ptr;
     OLE_FREE(pole->pTypeInfo);
     free(pole);
+}
+
+static size_t
+oleparam_size(const void *ptr)
+{
+    return ptr ? sizeof(struct oleparamdata) : 0;
 }
 
 VALUE
@@ -39,7 +53,7 @@ create_win32ole_param(ITypeInfo *pTypeInfo, UINT method_index, UINT index, VALUE
 {
     struct oleparamdata *pparam;
     VALUE obj = foleparam_s_allocate(cWIN32OLE_PARAM);
-    Data_Get_Struct(obj, struct oleparamdata, pparam);
+    TypedData_Get_Struct(obj, struct oleparamdata, &oleparam_datatype, pparam);
 
     pparam->pTypeInfo = pTypeInfo;
     OLE_ADDREF(pTypeInfo);
@@ -60,9 +74,9 @@ foleparam_s_allocate(VALUE klass)
 {
     struct oleparamdata *pparam;
     VALUE obj;
-    obj = Data_Make_Struct(klass,
-                           struct oleparamdata,
-                           0, oleparam_free, pparam);
+    obj = TypedData_Make_Struct(klass,
+                                struct oleparamdata,
+                                &oleparam_datatype, pparam);
     pparam->pTypeInfo = NULL;
     pparam->method_index = 0;
     pparam->index = 0;
@@ -97,7 +111,7 @@ oleparam_ole_param_from_index(VALUE self, ITypeInfo *pTypeInfo, UINT method_inde
         rb_raise(rb_eIndexError, "index of param must be in 1..%d", len);
     }
 
-    Data_Get_Struct(self, struct oleparamdata, pparam);
+    TypedData_Get_Struct(self, struct oleparamdata, &oleparam_datatype, pparam);
     pparam->pTypeInfo = pTypeInfo;
     OLE_ADDREF(pTypeInfo);
     pparam->method_index = method_index;
@@ -183,7 +197,7 @@ static VALUE
 foleparam_ole_type(VALUE self)
 {
     struct oleparamdata *pparam;
-    Data_Get_Struct(self, struct oleparamdata, pparam);
+    TypedData_Get_Struct(self, struct oleparamdata, &oleparam_datatype, pparam);
     return ole_param_ole_type(pparam->pTypeInfo, pparam->method_index,
                               pparam->index);
 }
@@ -217,7 +231,7 @@ static VALUE
 foleparam_ole_type_detail(VALUE self)
 {
     struct oleparamdata *pparam;
-    Data_Get_Struct(self, struct oleparamdata, pparam);
+    TypedData_Get_Struct(self, struct oleparamdata, &oleparam_datatype, pparam);
     return ole_param_ole_type_detail(pparam->pTypeInfo, pparam->method_index,
                                      pparam->index);
 }
@@ -250,7 +264,7 @@ ole_param_flag_mask(ITypeInfo *pTypeInfo, UINT method_index, UINT index, USHORT 
 static VALUE foleparam_input(VALUE self)
 {
     struct oleparamdata *pparam;
-    Data_Get_Struct(self, struct oleparamdata, pparam);
+    TypedData_Get_Struct(self, struct oleparamdata, &oleparam_datatype, pparam);
     return ole_param_flag_mask(pparam->pTypeInfo, pparam->method_index,
                                pparam->index, PARAMFLAG_FIN);
 }
@@ -277,7 +291,7 @@ static VALUE foleparam_input(VALUE self)
 static VALUE foleparam_output(VALUE self)
 {
     struct oleparamdata *pparam;
-    Data_Get_Struct(self, struct oleparamdata, pparam);
+    TypedData_Get_Struct(self, struct oleparamdata, &oleparam_datatype, pparam);
     return ole_param_flag_mask(pparam->pTypeInfo, pparam->method_index,
                                pparam->index, PARAMFLAG_FOUT);
 }
@@ -295,7 +309,7 @@ static VALUE foleparam_output(VALUE self)
 static VALUE foleparam_optional(VALUE self)
 {
     struct oleparamdata *pparam;
-    Data_Get_Struct(self, struct oleparamdata, pparam);
+    TypedData_Get_Struct(self, struct oleparamdata, &oleparam_datatype, pparam);
     return ole_param_flag_mask(pparam->pTypeInfo, pparam->method_index,
                                pparam->index, PARAMFLAG_FOPT);
 }
@@ -314,7 +328,7 @@ static VALUE foleparam_optional(VALUE self)
 static VALUE foleparam_retval(VALUE self)
 {
     struct oleparamdata *pparam;
-    Data_Get_Struct(self, struct oleparamdata, pparam);
+    TypedData_Get_Struct(self, struct oleparamdata, &oleparam_datatype, pparam);
     return ole_param_flag_mask(pparam->pTypeInfo, pparam->method_index,
                                pparam->index, PARAMFLAG_FRETVAL);
 }
@@ -374,7 +388,7 @@ ole_param_default(ITypeInfo *pTypeInfo, UINT method_index, UINT index)
 static VALUE foleparam_default(VALUE self)
 {
     struct oleparamdata *pparam;
-    Data_Get_Struct(self, struct oleparamdata, pparam);
+    TypedData_Get_Struct(self, struct oleparamdata, &oleparam_datatype, pparam);
     return ole_param_default(pparam->pTypeInfo, pparam->method_index,
                              pparam->index);
 }
