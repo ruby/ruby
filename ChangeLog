@@ -1,3 +1,8 @@
+Mon Oct  6 16:23:30 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (rb_f_kill): should not ignore signal unless the
+	  default handler is registered.  [ruby-dev:48592] [Bug #9820]
+
 Mon Oct  6 16:07:11 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_string.rb (test_LSHIFT_neary_long_max): enable

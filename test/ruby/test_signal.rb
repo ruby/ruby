@@ -279,5 +279,12 @@ EOS
         Process.kill(:INT, $$)
       end
     end;
+
+    if trap = Signal.list['TRAP']
+      bug9820 = '[ruby-dev:48592] [Bug #9820]'
+      status = assert_in_out_err(['-e', 'Process.kill(:TRAP, $$)'])
+      assert_predicate(status, :signaled?, bug9820)
+      assert_equal(trap, status.termsig, bug9820)
+    end
   end if Process.respond_to?(:kill)
 end

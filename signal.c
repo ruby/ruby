@@ -357,6 +357,7 @@ ruby_default_signal(int sig)
     raise(sig);
 }
 
+static RETSIGTYPE sighandler(int sig);
 static int signal_ignored(int sig);
 static void signal_enque(int sig);
 
@@ -465,6 +466,7 @@ rb_f_kill(int argc, const VALUE *argv)
 	    rb_pid_t pid = NUM2PIDT(argv[i]);
 
 	    if ((sig != 0) && (self != -1) && (pid == self)) {
+		int t;
 		/*
 		 * When target pid is self, many caller assume signal will be
 		 * delivered immediately and synchronously.
@@ -483,7 +485,11 @@ rb_f_kill(int argc, const VALUE *argv)
 		    ruby_kill(pid, sig);
 		    break;
 		  default:
-		    if (signal_ignored(sig)) break;
+		    t = signal_ignored(sig);
+		    if (t) {
+			if (t < 0) ruby_kill(pid, sig);
+			break;
+		    }
 		    signal_enque(sig);
 		    wakeup = 1;
 		}
@@ -638,16 +644,19 @@ ruby_nativethread_signal(int signum, sighandler_t handler)
 static int
 signal_ignored(int sig)
 {
+    sighandler_t func;
 #ifdef POSIX_SIGNAL
     struct sigaction old;
     (void)VALGRIND_MAKE_MEM_DEFINED(&old, sizeof(old));
     if (sigaction(sig, NULL, &old) < 0) return FALSE;
-    return old.sa_handler == SIG_IGN;
+    func = old.sa_handler;
 #else
     sighandler_t old = signal(sig, SIG_DFL);
     signal(sig, old);
-    return old == SIG_IGN;
+    func = old;
 #endif
+    if (func == SIG_IGN) return 1;
+    return func == sighandler ? 0 : -1;
 }
 
 static void
