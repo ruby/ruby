@@ -1793,14 +1793,18 @@ syserr_eqq(VALUE self, VALUE exc)
  *    * LoadError
  *    * NotImplementedError
  *    * SyntaxError
+ *  * SecurityError
  *  * SignalException
  *    * Interrupt
  *  * StandardError -- default for +rescue+
  *    * ArgumentError
- *    * IndexError
- *      * StopIteration
+ *    * EncodingError
+ *    * FiberError
  *    * IOError
  *      * EOFError
+ *    * IndexError
+ *      * KeyError
+ *      * StopIteration
  *    * LocalJumpError
  *    * NameError
  *      * NoMethodError
@@ -1808,14 +1812,13 @@ syserr_eqq(VALUE self, VALUE exc)
  *      * FloatDomainError
  *    * RegexpError
  *    * RuntimeError -- default for +raise+
- *    * SecurityError
  *    * SystemCallError
  *      * Errno::*
- *    * SystemStackError
  *    * ThreadError
  *    * TypeError
  *    * ZeroDivisionError
  *  * SystemExit
+ *  * SystemStackError
  *  * fatal -- impossible to rescue
  */
 
