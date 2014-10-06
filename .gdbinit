@@ -378,8 +378,8 @@ define rp_id
       end
     end
     printf "(%ld): ", $id
-    if global_symbols.ids.size > ($id >> RUBY_ID_SCOPE_SHIFT)
-      set $str = global_symbols.ids.ptr[$id >> RUBY_ID_SCOPE_SHIFT]->str
+    set $str = lookup_id_str($id)
+    if $str
       rp_string $str
     else
       echo undef\n
