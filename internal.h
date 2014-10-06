@@ -822,7 +822,6 @@ int rb_is_method_name(VALUE name);
 int rb_is_junk_name(VALUE name);
 ID rb_make_internal_id(void);
 void rb_gc_free_dsymbol(VALUE);
-VALUE rb_str_dynamic_intern(VALUE);
 ID rb_id_attrget(ID id);
 
 /* proc.c */

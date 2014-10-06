@@ -7548,16 +7548,6 @@ rb_str_crypt(VALUE str, VALUE salt)
 }
 
 
-VALUE
-rb_str_intern(VALUE str)
-{
-    ID id;
-
-    id = rb_intern_str(str);
-    return ID2SYM(id);
-}
-
-
 /*
  *  call-seq:
  *     str.ord   -> integer
@@ -8633,7 +8623,7 @@ sym_to_proc(VALUE sym)
 static VALUE
 sym_succ(VALUE sym)
 {
-    return rb_str_dynamic_intern(rb_str_succ(rb_sym2str(sym)));
+    return rb_str_intern(rb_str_succ(rb_sym2str(sym)));
 }
 
 /*
@@ -8743,7 +8733,7 @@ sym_empty(VALUE sym)
 static VALUE
 sym_upcase(VALUE sym)
 {
-    return rb_str_dynamic_intern(rb_str_upcase(rb_sym2str(sym)));
+    return rb_str_intern(rb_str_upcase(rb_sym2str(sym)));
 }
 
 /*
@@ -8756,7 +8746,7 @@ sym_upcase(VALUE sym)
 static VALUE
 sym_downcase(VALUE sym)
 {
-    return rb_str_dynamic_intern(rb_str_downcase(rb_sym2str(sym)));
+    return rb_str_intern(rb_str_downcase(rb_sym2str(sym)));
 }
 
 /*
@@ -8769,7 +8759,7 @@ sym_downcase(VALUE sym)
 static VALUE
 sym_capitalize(VALUE sym)
 {
-    return rb_str_dynamic_intern(rb_str_capitalize(rb_sym2str(sym)));
+    return rb_str_intern(rb_str_capitalize(rb_sym2str(sym)));
 }
 
 /*
@@ -8782,7 +8772,7 @@ sym_capitalize(VALUE sym)
 static VALUE
 sym_swapcase(VALUE sym)
 {
-    return rb_str_dynamic_intern(rb_str_swapcase(rb_sym2str(sym)));
+    return rb_str_intern(rb_str_swapcase(rb_sym2str(sym)));
 }
 
 /*
@@ -8829,7 +8819,7 @@ rb_to_symbol(VALUE name)
 	return name;
     }
     name = string_for_symbol(name);
-    return rb_str_dynamic_intern(name);
+    return rb_str_intern(name);
 }
 
 /*
@@ -8922,8 +8912,8 @@ Init_String(void)
     rb_define_method(rb_cString, "<<", rb_str_concat, 1);
     rb_define_method(rb_cString, "prepend", rb_str_prepend, 1);
     rb_define_method(rb_cString, "crypt", rb_str_crypt, 1);
-    rb_define_method(rb_cString, "intern", rb_str_dynamic_intern, 0); /* in symbol.c */
-    rb_define_method(rb_cString, "to_sym", rb_str_dynamic_intern, 0); /* in symbol.c */
+    rb_define_method(rb_cString, "intern", rb_str_intern, 0); /* in symbol.c */
+    rb_define_method(rb_cString, "to_sym", rb_str_intern, 0); /* in symbol.c */
     rb_define_method(rb_cString, "ord", rb_str_ord, 0);
 
     rb_define_method(rb_cString, "include?", rb_str_include, 1);

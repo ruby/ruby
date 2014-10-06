@@ -1617,7 +1617,7 @@ ruby_node_name(int node)
 static VALUE
 register_label(struct st_table *table, unsigned long idx)
 {
-    VALUE sym = rb_str_dynamic_intern(rb_sprintf("label_%lu", idx));
+    VALUE sym = rb_str_intern(rb_sprintf("label_%lu", idx));
     st_insert(table, idx, sym);
     return sym;
 }
