@@ -20,9 +20,9 @@ class Array
   def line_slice (new_line) # joins items, 16 items per line
     each_slice(16).collect(&:join).join new_line
   end
-  
+
   def to_UTF8()  collect(&:to_UTF8).join  end
-  
+
   def to_regexp_chars # converts an array of Integers to character ranges
     sort.inject([]) do |ranges, value|
       if ranges.last and ranges.last[1]+1>=value
@@ -64,7 +64,7 @@ CombiningClass = {}  # constant to allow use in Integer#to_UTF8
 # read the file 'UnicodeData.txt'
 IO.foreach("../data/UnicodeData.txt") do |line|
   codepoint, name, _2, char_class, _4, decomposition, *_rest = line.split(";")
-  
+
   case decomposition
   when /^[0-9A-F]/
     decomposition_table[codepoint.hex] = decomposition.split(' ').collect(&:hex)
@@ -72,7 +72,7 @@ IO.foreach("../data/UnicodeData.txt") do |line|
     kompatible_table[codepoint.hex] = decomposition.split(' ').drop(1).collect(&:hex)
   end
   CombiningClass[codepoint.hex] = char_class.to_i if char_class != "0"
-  
+
   if name=~/(First|Last)>$/ and (char_class!="0" or decomposition!="")
     warn "Unexpected: Character range with data relevant to normalization!"
   end
