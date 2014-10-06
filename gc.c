@@ -381,7 +381,6 @@ typedef struct RVALUE {
 	struct RMatch  match;
 	struct RRational rational;
 	struct RComplex complex;
-	struct RSymbol symbol;
 	struct {
 	    struct RBasic basic;
 	    VALUE v1;

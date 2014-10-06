@@ -14,6 +14,12 @@
 
 #include "id.h"
 
+struct RSymbol {
+    struct RBasic basic;
+    VALUE fstr;
+    ID type;
+};
+
 #define RSYMBOL(obj) (R_CAST(RSymbol)(obj))
 
 static inline int

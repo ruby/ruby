@@ -420,12 +420,6 @@ struct RRational {
 
 #define RRATIONAL(obj) (R_CAST(RRational)(obj))
 
-struct RSymbol {
-    struct RBasic basic;
-    VALUE fstr;
-    ID type;
-};
-
 struct RFloat {
     struct RBasic basic;
     double float_value;
