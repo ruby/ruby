@@ -23,8 +23,8 @@ class Integer
 end
 
 class Array
-  def line_slice (new_line) # joins items, 16 items per line
-    each_slice(16).collect(&:join).join new_line
+  def line_slice(new_line) # joins items, 8 items per line
+    each_slice(8).collect(&:join).join(new_line).gsub(/ +$/, '')
   end
 
   def to_UTF8()  collect(&:to_UTF8).join  end
@@ -53,7 +53,7 @@ end
 class Hash
   def to_hash_string
     collect do |key, value|
-      "\"#{key.to_UTF8}\"=>\"#{value.to_UTF8}\", "
+      "\"#{key.to_UTF8}\"=>\"#{value.to_UTF8}\".freeze, "
     end.line_slice "\n    "
   end
 end
@@ -143,7 +143,7 @@ open("#{OuputDataDir}/normalize_tables.rb", "w").print <<MAPPING_TABLE_FILE_END
 module Normalize
   accents = "" \\
     "[#{accent_array.to_regexp_chars}]" \\
-  ""
+  "".freeze
   ACCENTS = accents
   REGEXP_D_STRING = "\#{''  # composition starters and composition exclusions
     }" \\
@@ -154,7 +154,7 @@ module Normalize
     "|\#{''  # precomposed Hangul syllables
     }" \\
     "[\\u{AC00}-\\u{D7A4}]" \\
-  ""
+  "".freeze
   REGEXP_C_STRING = "\#{''  # composition exclusions
     }" \\
     "[#{composition_exclusions.to_regexp_chars}]\#{accents}*" \\
@@ -167,27 +167,27 @@ module Normalize
     "|\#{''  # decomposed Hangul syllables
     }" \\
     "[\\u1100-\\u1112][\\u1161-\\u1175][\\u11A8-\\u11C2]?" \\
-  ""
+  "".freeze
   REGEXP_K_STRING = "" \\
     "[#{kompatible_table.keys.to_regexp_chars}]" \\
-  ""
+  "".freeze
 
   class_table = {
     #{class_table_str}
   }
   class_table.default = 0
-  CLASS_TABLE = class_table
+  CLASS_TABLE = class_table.freeze
 
   DECOMPOSITION_TABLE = {
     #{decomposition_table.to_hash_string}
-  }
+  }.freeze
 
   KOMPATIBLE_TABLE = {
     #{kompatible_table.to_hash_string}
-  }
+  }.freeze
 
   COMPOSITION_TABLE = {
     #{composition_table.to_hash_string}
-  }
+  }.freeze
 end
 MAPPING_TABLE_FILE_END
