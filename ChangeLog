@@ -1,3 +1,7 @@
+Mon Oct  6 11:21:21 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* tool/unicode_norm_gen.rb: Adding/tweaking comments.
+
 Mon Oct  6 10:57:57 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* tool/unicode_norm_gen.rb: Adjusted directory paths.
