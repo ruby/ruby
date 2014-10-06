@@ -1,3 +1,8 @@
+Mon Oct  6 10:15:15 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* tool/downloader.rb: Adjust example in documentation for
+	  Downloader.download.
+
 Mon Oct  6 10:07:07 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* lib/unicode_normalize: New folder for Unicode normalization
