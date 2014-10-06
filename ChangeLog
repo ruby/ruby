@@ -1,3 +1,8 @@
+Mon Oct  6 10:27:27 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* tool/unicode_norm_gen.rb: Data generation script imported from
+	  https://github.com/duerst/eprun/blob/master/lib/generate.rb
+
 Mon Oct  6 10:15:15 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* tool/downloader.rb: Adjust example in documentation for
