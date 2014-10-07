@@ -642,7 +642,7 @@ etc_systmpdir(void)
 #else
     const char default_tmp[] = "/tmp";
     const char *tmpstr = default_tmp;
-    size_t tmplen = 0;
+    size_t tmplen = strlen(default_tmp);
 # if defined _CS_DARWIN_USER_TEMP_DIR
     #ifndef MAXPATHLEN
     #define MAXPATHLEN 1024

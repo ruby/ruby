@@ -1,3 +1,8 @@
+Wed Oct  8 05:22:42 2014  Eric Wong  <e@80x24.org>
+
+	* ext/etc/etc.c (etc_systmpdir): set default tmplen correctly
+	  Fixup r47826
+
 Wed Oct  8 05:16:32 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: Add @- and @+ for Matrix and Vector.
