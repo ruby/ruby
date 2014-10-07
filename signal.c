@@ -487,7 +487,8 @@ rb_f_kill(int argc, const VALUE *argv)
 		  default:
 		    t = signal_ignored(sig);
 		    if (t) {
-			if (t < 0) ruby_kill(pid, sig);
+			if (t < 0 && kill(pid, sig))
+			    rb_sys_fail(0);
 			break;
 		    }
 		    signal_enque(sig);

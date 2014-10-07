@@ -1,3 +1,10 @@
+Tue Oct  7 23:40:16 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (rb_f_kill): get rid of deadlock as unhandled and
+	  discarded signals do not make interrupt_cond signaled.
+	  based on the patch by Kazuki Tsujimoto at [ruby-dev:48606].
+	  [Bug #9820]
+
 Tue Oct  7 22:43:44 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole_method.c: use typed data.

@@ -286,5 +286,10 @@ EOS
       assert_predicate(status, :signaled?, bug9820)
       assert_equal(trap, status.termsig, bug9820)
     end
+
+    if Signal.list['CONT']
+      bug9820 = '[ruby-dev:48606] [Bug #9820]'
+      assert_ruby_status(['-e', 'Process.kill(:CONT, $$)'])
+    end
   end if Process.respond_to?(:kill)
 end
