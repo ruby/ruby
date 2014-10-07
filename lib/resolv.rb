@@ -158,7 +158,7 @@ class Resolv
   ##
   # Indicates a timeout resolving a name or address.
 
-  class ResolvTimeout < TimeoutError; end
+  class ResolvTimeout < Timeout::Error; end
 
   ##
   # Resolv::Hosts is a hostname resolver that uses the system hosts file.

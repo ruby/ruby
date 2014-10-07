@@ -1731,29 +1731,29 @@ handle_interrupt_arg_check_i(VALUE key, VALUE val)
  * resource allocation code. Then, the ensure block is where we can safely
  * deallocate your resources.
  *
- * ==== Guarding from TimeoutError
+ * ==== Guarding from Timeout::Error
  *
- * In the next example, we will guard from the TimeoutError exception. This
- * will help prevent from leaking resources when TimeoutError exceptions occur
+ * In the next example, we will guard from the Timeout::Error exception. This
+ * will help prevent from leaking resources when Timeout::Error exceptions occur
  * during normal ensure clause. For this example we use the help of the
  * standard library Timeout, from lib/timeout.rb
  *
  *   require 'timeout'
- *   Thread.handle_interrupt(TimeoutError => :never) {
+ *   Thread.handle_interrupt(Timeout::Error => :never) {
  *     timeout(10){
- *       # TimeoutError doesn't occur here
- *       Thread.handle_interrupt(TimeoutError => :on_blocking) {
- *         # possible to be killed by TimeoutError
+ *       # Timeout::Error doesn't occur here
+ *       Thread.handle_interrupt(Timeout::Error => :on_blocking) {
+ *         # possible to be killed by Timeout::Error
  *         # while blocking operation
  *       }
- *       # TimeoutError doesn't occur here
+ *       # Timeout::Error doesn't occur here
  *     }
  *   }
  *
- * In the first part of the +timeout+ block, we can rely on TimeoutError being
- * ignored. Then in the <code>TimeoutError => :on_blocking</code> block, any
+ * In the first part of the +timeout+ block, we can rely on Timeout::Error being
+ * ignored. Then in the <code>Timeout::Error => :on_blocking</code> block, any
  * operation that will block the calling thread is susceptible to a
- * TimeoutError exception being raised.
+ * Timeout::Error exception being raised.
  *
  * ==== Stack control settings
  *

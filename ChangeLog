@@ -1,3 +1,17 @@
+Wed Oct  8 04:58:48 2014  John Bachir  <j@jjb.cc>
+
+	* bootstraptest/test_io.rb (assert_finish):
+	  normalize rescue for Timeout::Error
+	* lib/net/ftp.rb (Net#read_timeout): ditto for doc
+	* lib/resolv.rb (Resolv::ResolvTimeout): ditto for subclass
+	* lib/webrick/httprequest.rb (_read_data): ditto for rescue
+	* sample/timeout.rb (p timeout): ditto for call
+	* test/drb/drbtest.rb (test_06_timeout): ditto
+	* test/ruby/test_readpartial.rb (test_open_pipe): ditto
+	* test/thread/test_queue.rb (test_queue_thread_raise): ditto
+	* thread.c (rb_thread_s_handle_interrupt): ditto for doc
+	  [ruby-core:65481] [misc #10339]
+
 Wed Oct  8 04:38:29 2014  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* test/ruby/test_process.rb (TestProcess#test_setsid): AIX

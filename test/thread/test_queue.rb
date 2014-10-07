@@ -239,7 +239,7 @@ class TestQueue < Test::Unit::TestCase
     th1.raise
     sleep 0.1
     q << :s
-    assert_nothing_raised(TimeoutError) do
+    assert_nothing_raised(Timeout::Error) do
       timeout(1) { th2.join }
     end
   ensure
