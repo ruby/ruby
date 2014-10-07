@@ -1,3 +1,9 @@
+Tue Oct  7 11:17:08 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/etc/etc.c (etc_systmpdir): try user temporary directory by
+	  confstr() on Mac OS X.
+	  c.f. http://www.opensource.apple.com/source/ruby/ruby-104/patches/ext_etc_etc.c.diff
+
 Tue Oct  7 10:48:17 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (struct stat.st_size): prefer off_t over int, long,

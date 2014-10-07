@@ -640,7 +640,22 @@ etc_systmpdir(void)
     if (!len) return Qnil;
     tmpdir = rb_w32_conv_from_wchar(path, rb_filesystem_encoding());
 #else
-    tmpdir = rb_filesystem_str_new_cstr("/tmp");
+    const char default_tmp[] = "/tmp";
+    const char *tmpstr = default_tmp;
+    size_t tmplen = 0;
+# if defined _CS_DARWIN_USER_TEMP_DIR
+    #ifndef MAXPATHLEN
+    #define MAXPATHLEN 1024
+    #endif
+    char path[MAXPATHLEN];
+    size_t len;
+    len = confstr(_CS_DARWIN_USER_TEMP_DIR, path, sizeof(path));
+    if (len > 0) {
+	tmpstr = path;
+	tmplen = len - 1;
+    }
+# endif
+    tmpdir = rb_filesystem_str_new(tmpstr, tmplen);
 #endif
     FL_UNSET(tmpdir, FL_TAINT);
     return tmpdir;
