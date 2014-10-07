@@ -1,3 +1,8 @@
+Wed Oct  8 04:30:29 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Add Matrix#laplace_expansion.
+	  patch by gogo tanaka [#10073]
+
 Wed Oct  8 04:29:21 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: Add Vector.basis.
