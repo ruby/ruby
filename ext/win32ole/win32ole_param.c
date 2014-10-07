@@ -124,8 +124,7 @@ oleparam_ole_param_from_index(VALUE self, ITypeInfo *pTypeInfo, UINT method_inde
 
 static VALUE oleparam_ole_param(VALUE self, VALUE olemethod, int n)
 {
-    struct olemethoddata *pmethod;
-    Data_Get_Struct(olemethod, struct olemethoddata, pmethod);
+    struct olemethoddata *pmethod = olemethod_data_get_struct(olemethod);
     return oleparam_ole_param_from_index(self, pmethod->pTypeInfo, pmethod->index, n);
 }
 

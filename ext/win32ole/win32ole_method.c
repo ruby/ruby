@@ -48,6 +48,14 @@ olemethod_free(struct olemethoddata *polemethod)
     OLE_FREE(polemethod->pOwnerTypeInfo);
     free(polemethod);
 }
+ 
+struct olemethoddata *
+olemethod_data_get_struct(VALUE obj)
+{
+    struct olemethoddata *pmethod;
+    Data_Get_Struct(obj, struct olemethoddata, pmethod);
+    return pmethod;
+}
 
 static VALUE
 ole_method_sub(VALUE self, ITypeInfo *pOwnerTypeInfo, ITypeInfo *pTypeInfo, VALUE name)
