@@ -48,7 +48,7 @@ olemethod_free(struct olemethoddata *polemethod)
     OLE_FREE(polemethod->pOwnerTypeInfo);
     free(polemethod);
 }
- 
+
 struct olemethoddata *
 olemethod_data_get_struct(VALUE obj)
 {
