@@ -1,3 +1,10 @@
+Wed Oct  8 04:33:04 2014  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_encoding):
+	  On AIX, locale_charmap is ISO-8859-1 with LANG=C.  This means
+	  the source encoding of stdin is ISO-8859-1, so "invalid
+	  multibyte char" error does not occur.
+
 Wed Oct  8 04:30:29 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: Add Matrix#laplace_expansion.
