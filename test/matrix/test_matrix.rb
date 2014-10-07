@@ -62,6 +62,15 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal @m1.hash, @m3.hash
   end
 
+  def test_uplus
+    assert_equal(@m1, +@m1)
+  end
+
+  def test_negate
+    assert_equal(Matrix[[-1, -2, -3], [-4, -5, -6]], -@m1)
+    assert_equal(@m1, -(-@m1))
+  end
+
   def test_rank
     [
       [[0]],

@@ -90,6 +90,8 @@ end
 # * #inverse
 # * #inv
 # * #**
+# * #+@
+# * #-@
 #
 # Matrix functions:
 # * #determinant
@@ -1122,6 +1124,14 @@ class Matrix
     end
   end
 
+  def +@
+    self
+  end
+
+  def -@
+    collect {|e| -e }
+  end
+
   #--
   # MATRIX FUNCTIONS -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   #++
@@ -1670,6 +1680,8 @@ end
 # * #*(x) "is matrix or number"
 # * #+(v)
 # * #-(v)
+# * #+@
+# * #-@
 #
 # Vector functions:
 # * #inner_product(v)
@@ -1905,6 +1917,14 @@ class Vector
     else
       apply_through_coercion(x, __method__)
     end
+  end
+
+  def +@
+    self
+  end
+
+  def -@
+    collect {|e| -e }
   end
 
   #--

@@ -120,6 +120,15 @@ class TestVector < Test::Unit::TestCase
     assert_equal(0, Vector[1, 2, 3] - o)
   end
 
+  def test_uplus
+    assert_equal(@v1, +@v1)
+  end
+
+  def test_negate
+    assert_equal(Vector[-1, -2, -3], -@v1)
+    assert_equal(@v1, -(-@v1))
+  end
+
   def test_inner_product
     assert_equal(1+4+9, @v1.inner_product(@v1))
   end

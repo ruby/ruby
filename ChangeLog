@@ -1,3 +1,8 @@
+Wed Oct  8 05:16:32 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Add @- and @+ for Matrix and Vector.
+	  patch by gogo tanaka [#10068] [#10069]
+
 Wed Oct  8 04:58:48 2014  John Bachir  <j@jjb.cc>
 
 	* bootstraptest/test_io.rb (assert_finish):
@@ -55,7 +60,7 @@ Tue Oct  7 21:40:17 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 	* ext/win32ole/win32ole_method.c: refactoring. add
 	  olemethod_data_get_struct to wrap Data_Get_Struct.
 	* ext/win32ole/win32ole_method.h: ditto.
-	
+
 	* ext/win32ole/win32ole_param.c (oleparam_ole_param):
 	  call olemethod_data_get_struct instead of Data_Get_Struct.
 
