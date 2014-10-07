@@ -1,9 +1,10 @@
 #include "win32ole.h"
 
+static void olemethod_free(void *ptr);
+static size_t olemethod_size(const void *ptr);
 static VALUE ole_method_sub(VALUE self, ITypeInfo *pOwnerTypeInfo, ITypeInfo *pTypeInfo, VALUE name);
 static VALUE olemethod_from_typeinfo(VALUE self, ITypeInfo *pTypeInfo, VALUE name);
 static VALUE ole_methods_sub(ITypeInfo *pOwnerTypeInfo, ITypeInfo *pTypeInfo, VALUE methods, int mask);
-static void olemethod_free(struct olemethoddata *polemethod);
 static VALUE olemethod_set_member(VALUE self, ITypeInfo *pTypeInfo, ITypeInfo *pOwnerTypeInfo, int index, VALUE name);
 static VALUE folemethod_initialize(VALUE self, VALUE oletype, VALUE method);
 static VALUE folemethod_name(VALUE self);
@@ -41,19 +42,32 @@ static VALUE ole_method_params(ITypeInfo *pTypeInfo, UINT method_index);
 static VALUE folemethod_params(VALUE self);
 static VALUE folemethod_inspect(VALUE self);
 
+static const rb_data_type_t olemethod_datatype = {
+    "win32ole_method",
+    {NULL, olemethod_free, olemethod_size,},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
 static void
-olemethod_free(struct olemethoddata *polemethod)
+olemethod_free(void *ptr)
 {
+    struct olemethoddata *polemethod = ptr;
     OLE_FREE(polemethod->pTypeInfo);
     OLE_FREE(polemethod->pOwnerTypeInfo);
     free(polemethod);
+}
+
+static size_t
+olemethod_size(const void *ptr)
+{
+    return ptr ? sizeof(struct olemethoddata) : 0;
 }
 
 struct olemethoddata *
 olemethod_data_get_struct(VALUE obj)
 {
     struct olemethoddata *pmethod;
-    Data_Get_Struct(obj, struct olemethoddata, pmethod);
+    TypedData_Get_Struct(obj, struct olemethoddata, &olemethod_datatype, pmethod);
     return pmethod;
 }
 
@@ -211,7 +225,7 @@ static VALUE
 olemethod_set_member(VALUE self, ITypeInfo *pTypeInfo, ITypeInfo *pOwnerTypeInfo, int index, VALUE name)
 {
     struct olemethoddata *pmethod;
-    Data_Get_Struct(self, struct olemethoddata, pmethod);
+    TypedData_Get_Struct(self, struct olemethoddata, &olemethod_datatype, pmethod);
     pmethod->pTypeInfo = pTypeInfo;
     OLE_ADDREF(pTypeInfo);
     pmethod->pOwnerTypeInfo = pOwnerTypeInfo;
@@ -226,9 +240,9 @@ folemethod_s_allocate(VALUE klass)
 {
     struct olemethoddata *pmethod;
     VALUE obj;
-    obj = Data_Make_Struct(klass,
-                           struct olemethoddata,
-                           0, olemethod_free, pmethod);
+    obj = TypedData_Make_Struct(klass,
+                                struct olemethoddata,
+                                &olemethod_datatype, pmethod);
     pmethod->pTypeInfo = NULL;
     pmethod->pOwnerTypeInfo = NULL;
     pmethod->index = 0;
@@ -315,7 +329,7 @@ static VALUE
 folemethod_return_type(VALUE self)
 {
     struct olemethoddata *pmethod;
-    Data_Get_Struct(self, struct olemethoddata, pmethod);
+    TypedData_Get_Struct(self, struct olemethoddata, &olemethod_datatype, pmethod);
     return ole_method_return_type(pmethod->pTypeInfo, pmethod->index);
 }
 
@@ -349,7 +363,7 @@ static VALUE
 folemethod_return_vtype(VALUE self)
 {
     struct olemethoddata *pmethod;
-    Data_Get_Struct(self, struct olemethoddata, pmethod);
+    TypedData_Get_Struct(self, struct olemethoddata, &olemethod_datatype, pmethod);
     return ole_method_return_vtype(pmethod->pTypeInfo, pmethod->index);
 }
 
@@ -383,7 +397,7 @@ static VALUE
 folemethod_return_type_detail(VALUE self)
 {
     struct olemethoddata *pmethod;
-    Data_Get_Struct(self, struct olemethoddata, pmethod);
+    TypedData_Get_Struct(self, struct olemethoddata, &olemethod_datatype, pmethod);
     return ole_method_return_type_detail(pmethod->pTypeInfo, pmethod->index);
 }
 
@@ -435,7 +449,7 @@ static VALUE
 folemethod_invkind(VALUE self)
 {
     struct olemethoddata *pmethod;
-    Data_Get_Struct(self, struct olemethoddata, pmethod);
+    TypedData_Get_Struct(self, struct olemethoddata, &olemethod_datatype, pmethod);
     return ole_method_invkind(pmethod->pTypeInfo, pmethod->index);
 }
 
@@ -454,7 +468,7 @@ static VALUE
 folemethod_invoke_kind(VALUE self)
 {
     struct olemethoddata *pmethod;
-    Data_Get_Struct(self, struct olemethoddata, pmethod);
+    TypedData_Get_Struct(self, struct olemethoddata, &olemethod_datatype, pmethod);
     return ole_method_invoke_kind(pmethod->pTypeInfo, pmethod->index);
 }
 
@@ -491,7 +505,7 @@ static VALUE
 folemethod_visible(VALUE self)
 {
     struct olemethoddata *pmethod;
-    Data_Get_Struct(self, struct olemethoddata, pmethod);
+    TypedData_Get_Struct(self, struct olemethoddata, &olemethod_datatype, pmethod);
     return ole_method_visible(pmethod->pTypeInfo, pmethod->index);
 }
 
@@ -573,7 +587,7 @@ static VALUE
 folemethod_event(VALUE self)
 {
     struct olemethoddata *pmethod;
-    Data_Get_Struct(self, struct olemethoddata, pmethod);
+    TypedData_Get_Struct(self, struct olemethoddata, &olemethod_datatype, pmethod);
     if (!pmethod->pOwnerTypeInfo)
         return Qfalse;
     return ole_method_event(pmethod->pOwnerTypeInfo,
@@ -596,7 +610,7 @@ folemethod_event_interface(VALUE self)
     BSTR name;
     struct olemethoddata *pmethod;
     HRESULT hr;
-    Data_Get_Struct(self, struct olemethoddata, pmethod);
+    TypedData_Get_Struct(self, struct olemethoddata, &olemethod_datatype, pmethod);
     if(folemethod_event(self) == Qtrue) {
         hr = ole_docinfo_from_type(pmethod->pTypeInfo, &name, NULL, NULL, NULL);
         if(SUCCEEDED(hr))
@@ -654,7 +668,7 @@ static VALUE
 folemethod_helpstring(VALUE self)
 {
     struct olemethoddata *pmethod;
-    Data_Get_Struct(self, struct olemethoddata, pmethod);
+    TypedData_Get_Struct(self, struct olemethoddata, &olemethod_datatype, pmethod);
     return ole_method_helpstring(pmethod->pTypeInfo, pmethod->index);
 }
 
@@ -684,7 +698,7 @@ static VALUE
 folemethod_helpfile(VALUE self)
 {
     struct olemethoddata *pmethod;
-    Data_Get_Struct(self, struct olemethoddata, pmethod);
+    TypedData_Get_Struct(self, struct olemethoddata, &olemethod_datatype, pmethod);
 
     return ole_method_helpfile(pmethod->pTypeInfo, pmethod->index);
 }
@@ -714,7 +728,7 @@ static VALUE
 folemethod_helpcontext(VALUE self)
 {
     struct olemethoddata *pmethod;
-    Data_Get_Struct(self, struct olemethoddata, pmethod);
+    TypedData_Get_Struct(self, struct olemethoddata, &olemethod_datatype, pmethod);
     return ole_method_helpcontext(pmethod->pTypeInfo, pmethod->index);
 }
 
@@ -745,7 +759,7 @@ static VALUE
 folemethod_dispid(VALUE self)
 {
     struct olemethoddata *pmethod;
-    Data_Get_Struct(self, struct olemethoddata, pmethod);
+    TypedData_Get_Struct(self, struct olemethoddata, &olemethod_datatype, pmethod);
     return ole_method_dispid(pmethod->pTypeInfo, pmethod->index);
 }
 
@@ -776,7 +790,7 @@ static VALUE
 folemethod_offset_vtbl(VALUE self)
 {
     struct olemethoddata *pmethod;
-    Data_Get_Struct(self, struct olemethoddata, pmethod);
+    TypedData_Get_Struct(self, struct olemethoddata, &olemethod_datatype, pmethod);
     return ole_method_offset_vtbl(pmethod->pTypeInfo, pmethod->index);
 }
 
@@ -808,7 +822,7 @@ static VALUE
 folemethod_size_params(VALUE self)
 {
     struct olemethoddata *pmethod;
-    Data_Get_Struct(self, struct olemethoddata, pmethod);
+    TypedData_Get_Struct(self, struct olemethoddata, &olemethod_datatype, pmethod);
     return ole_method_size_params(pmethod->pTypeInfo, pmethod->index);
 }
 
@@ -839,7 +853,7 @@ static VALUE
 folemethod_size_opt_params(VALUE self)
 {
     struct olemethoddata *pmethod;
-    Data_Get_Struct(self, struct olemethoddata, pmethod);
+    TypedData_Get_Struct(self, struct olemethoddata, &olemethod_datatype, pmethod);
     return ole_method_size_opt_params(pmethod->pTypeInfo, pmethod->index);
 }
 
@@ -892,7 +906,7 @@ static VALUE
 folemethod_params(VALUE self)
 {
     struct olemethoddata *pmethod;
-    Data_Get_Struct(self, struct olemethoddata, pmethod);
+    TypedData_Get_Struct(self, struct olemethoddata, &olemethod_datatype, pmethod);
     return ole_method_params(pmethod->pTypeInfo, pmethod->index);
 }
 

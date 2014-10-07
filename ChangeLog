@@ -1,3 +1,7 @@
+Tue Oct  7 22:43:44 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole_method.c: use typed data.
+
 Tue Oct  7 21:47:05 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole_param.c: refactoring.
