@@ -76,18 +76,6 @@ with all sufficient information, see the ChangeLog file.
     * Most symbols which are returned by String#to_sym and
       String#intern are GC-able.
 
-* Matrix
-  * New methods:
-    * Matrix#first_minor(row, column) returns the submatrix obtained
-      by deleting the specified row and column.
-    * Matrix#cofactor(row, column) returns the (row, column) cofactor
-      which is obtained by multiplying the first minor by (-1)**(row + column).
-    * hstack and vstack are new instance and class methods to stack matrices
-      horizontally and vertically.
-    * Matrix#laplace_expansion(row_or_column: num) returns the laplace_expansion
-      along the +num+ -th row or column.
-    * Vector.basis(size:, index:) returns the specified basis vector
-
 * Method
   * New methods:
     * Method#curry([arity]) returns a curried Proc.
@@ -147,6 +135,18 @@ with all sufficient information, see the ChangeLog file.
 * Find, Pathname
   * Extended methods:
     * find method accepts "ignore_error" keyword argument.
+
+* Matrix
+  * New methods:
+    * Matrix#first_minor(row, column) returns the submatrix obtained
+      by deleting the specified row and column.
+    * Matrix#cofactor(row, column) returns the (row, column) cofactor
+      which is obtained by multiplying the first minor by (-1)**(row + column).
+    * hstack and vstack are new instance and class methods to stack matrices
+      horizontally and vertically.
+    * Matrix#laplace_expansion(row_or_column: num) returns the laplace_expansion
+      along the +num+ -th row or column.
+    * Vector.basis(size:, index:) returns the specified basis vector
 
 * Pathname
   * Pathname#/ is aliased to Pathname#+.
