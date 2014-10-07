@@ -10,6 +10,15 @@ class TestVector < Test::Unit::TestCase
     @w1 = Vector[2,3,4]
   end
 
+  def test_basis
+    assert_equal(Vector[1, 0, 0], Vector.basis(size: 3, index: 0))
+    assert_raise(ArgumentError) { Vector.basis(size: -1, index: 2) }
+    assert_raise(ArgumentError) { Vector.basis(size: 4, index: -1) }
+    assert_raise(ArgumentError) { Vector.basis(size: 3, index: 3) }
+    assert_raise(ArgumentError) { Vector.basis(size: 3) }
+    assert_raise(ArgumentError) { Vector.basis(index: 3) }
+  end
+
   def test_identity
     assert_same @v1, @v1
     assert_not_same @v1, @v2

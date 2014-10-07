@@ -1624,6 +1624,7 @@ end
 # To create a Vector:
 # * Vector.[](*array)
 # * Vector.elements(array, copy = true)
+# * Vector.basis(size: n, index: k)
 #
 # To access elements:
 # * #[](i)
@@ -1683,6 +1684,19 @@ class Vector
   #
   def Vector.elements(array, copy = true)
     new convert_to_array(array, copy)
+  end
+
+  #
+  # Returns a standard basis +n+-vector, where k is the index.
+  #
+  #    Vector.basis(size:, index:) # => Vector[0, 1, 0]
+  #
+  def Vector.basis(size:, index:)
+    raise ArgumentError, "invalid size (#{size} for 1..)" if size < 1
+    raise ArgumentError, "invalid index (#{index} for 0...#{size})" unless 0 <= index && index < size
+    array = Array.new(size, 0)
+    array[index] = 1
+    new convert_to_array(array, false)
   end
 
   #

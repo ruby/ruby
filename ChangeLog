@@ -1,3 +1,8 @@
+Wed Oct  8 04:29:21 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Add Vector.basis.
+	  Based on patch by gogo tanaka [#10072]
+
 Tue Oct  7 23:40:16 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* signal.c (rb_f_kill): get rid of deadlock as unhandled and

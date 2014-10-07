@@ -84,6 +84,7 @@ with all sufficient information, see the ChangeLog file.
       which is obtained by multiplying the first minor by (-1)**(row + column).
     * hstack and vstack are new instance and class methods to stack matrices
       horizontally and vertically.
+    * Vector.basis(size:, index:) returns the specified basis vector
 
 * Method
   * New methods:
