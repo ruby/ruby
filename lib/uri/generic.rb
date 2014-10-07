@@ -1450,9 +1450,8 @@ module URI
       end
     end
 
-    @@to_s = Kernel.instance_method(:to_s)
     def inspect
-      @@to_s.bind(self).call.sub!(/>\z/) {" URL:#{self}>"}
+      "#<#{self.class} #{self}>"
     end
 
     #

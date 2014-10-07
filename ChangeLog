@@ -1,3 +1,8 @@
+Wed Oct  8 07:42:39 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/generic.rb (URI#inspect): remove Object id.
+	  URI is considered that it doesn't require id.
+
 Wed Oct  8 05:22:42 2014  Eric Wong  <e@80x24.org>
 
 	* ext/etc/etc.c (etc_systmpdir): set default tmplen correctly
