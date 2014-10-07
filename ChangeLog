@@ -1,3 +1,9 @@
+Wed Oct  8 04:38:29 2014  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/ruby/test_process.rb (TestProcess#test_setsid): AIX
+	  does not allow Process::getsid(pid) when pid is in a
+	  different session.
+
 Wed Oct  8 04:33:04 2014  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_encoding):

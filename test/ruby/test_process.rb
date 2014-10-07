@@ -1676,9 +1676,9 @@ class TestProcess < Test::Unit::TestCase
   def test_setsid
     return unless Process.respond_to?(:setsid)
     return unless Process.respond_to?(:getsid)
-    # OpenBSD doesn't allow Process::getsid(pid) when pid is in
+    # OpenBSD and AIX don't allow Process::getsid(pid) when pid is in
     # different session.
-    return if /openbsd/ =~ RUBY_PLATFORM
+    return if /openbsd|aix/ =~ RUBY_PLATFORM
 
     IO.popen([RUBY, "-e", <<EOS]) do|io|
 	Marshal.dump(Process.getsid, STDOUT)
