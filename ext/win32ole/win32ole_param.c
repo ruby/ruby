@@ -122,7 +122,8 @@ oleparam_ole_param_from_index(VALUE self, ITypeInfo *pTypeInfo, UINT method_inde
     return self;
 }
 
-static VALUE oleparam_ole_param(VALUE self, VALUE olemethod, int n)
+static VALUE
+oleparam_ole_param(VALUE self, VALUE olemethod, int n)
 {
     struct olemethoddata *pmethod = olemethod_data_get_struct(olemethod);
     return oleparam_ole_param_from_index(self, pmethod->pTypeInfo, pmethod->index, n);
@@ -141,7 +142,8 @@ static VALUE oleparam_ole_param(VALUE self, VALUE olemethod, int n)
  *    param = WIN32OLE_PARAM.new(method, 2) # => #<WIN32OLE_PARAM:Overwrite=true>
  *
  */
-static VALUE foleparam_initialize(VALUE self, VALUE olemethod, VALUE n)
+static VALUE
+foleparam_initialize(VALUE self, VALUE olemethod, VALUE n)
 {
     int idx;
     if (!rb_obj_is_kind_of(olemethod, cWIN32OLE_METHOD)) {
@@ -260,7 +262,8 @@ ole_param_flag_mask(ITypeInfo *pTypeInfo, UINT method_index, UINT index, USHORT 
  *     param1 = method.params[0]
  *     puts param1.input? # => true
  */
-static VALUE foleparam_input(VALUE self)
+static VALUE
+foleparam_input(VALUE self)
 {
     struct oleparamdata *pparam;
     TypedData_Get_Struct(self, struct oleparamdata, &oleparam_datatype, pparam);
@@ -287,7 +290,8 @@ static VALUE foleparam_input(VALUE self)
  *       Headers false
  *       Processed true
  */
-static VALUE foleparam_output(VALUE self)
+static VALUE
+foleparam_output(VALUE self)
 {
     struct oleparamdata *pparam;
     TypedData_Get_Struct(self, struct oleparamdata, &oleparam_datatype, pparam);
@@ -305,7 +309,8 @@ static VALUE foleparam_output(VALUE self)
  *     param1 = method.params[0]
  *     puts "#{param1.name} #{param1.optional?}" # => Filename true
  */
-static VALUE foleparam_optional(VALUE self)
+static VALUE
+foleparam_optional(VALUE self)
 {
     struct oleparamdata *pparam;
     TypedData_Get_Struct(self, struct oleparamdata, &oleparam_datatype, pparam);
@@ -324,7 +329,8 @@ static VALUE foleparam_optional(VALUE self)
  *     param = method.params[0]
  *     puts "#{param.name} #{param.retval?}"  # => name true
  */
-static VALUE foleparam_retval(VALUE self)
+static VALUE
+foleparam_retval(VALUE self)
 {
     struct oleparamdata *pparam;
     TypedData_Get_Struct(self, struct oleparamdata, &oleparam_datatype, pparam);
@@ -384,7 +390,8 @@ ole_param_default(ITypeInfo *pTypeInfo, UINT method_index, UINT index)
  *         TextCodepage
  *         TextVisualLayout
  */
-static VALUE foleparam_default(VALUE self)
+static VALUE
+foleparam_default(VALUE self)
 {
     struct oleparamdata *pparam;
     TypedData_Get_Struct(self, struct oleparamdata, &oleparam_datatype, pparam);
