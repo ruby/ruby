@@ -1,3 +1,9 @@
+Tue Oct  7 10:48:17 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (struct stat.st_size): prefer off_t over int, long,
+	  and so on.  inspired by
+	  http://www.opensource.apple.com/source/ruby/ruby-104/patches/config.h.ed
+
 Tue Oct  7 10:37:39 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_UNIVERSAL_ARCH): fix missing quoting

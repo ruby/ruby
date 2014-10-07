@@ -1705,10 +1705,11 @@ RUBY_CHECK_PRINTF_PREFIX(ptrdiff_t, t)
 AC_STRUCT_ST_BLKSIZE
 AC_STRUCT_ST_BLOCKS
 AC_STRUCT_ST_RDEV
-RUBY_CHECK_SIZEOF([struct stat.st_size], [int long "long long"], [], [@%:@include <sys/stat.h>])
+RUBY_CHECK_SIZEOF([struct stat.st_size], [off_t int long "long long"], [], [@%:@include <sys/stat.h>])
 if test "$ac_cv_member_struct_stat_st_blocks" = yes; then
-    RUBY_CHECK_SIZEOF([struct stat.st_blocks], [int long "long long"], [], [@%:@include <sys/stat.h>])
+    RUBY_CHECK_SIZEOF([struct stat.st_blocks], [off_t int long "long long"], [], [@%:@include <sys/stat.h>])
 fi
+RUBY_CHECK_SIZEOF([struct stat.st_ino], [long "long long"], [], [@%:@include <sys/stat.h>])
 AC_CHECK_MEMBERS([struct stat.st_atim])
 AC_CHECK_MEMBERS([struct stat.st_atimespec])
 AC_CHECK_MEMBERS([struct stat.st_atimensec])
@@ -2505,8 +2506,6 @@ fi
 if test x"$ac_cv_func_gettimeofday" != xyes; then
     AC_MSG_ERROR(gettimeofday() must exist)
 fi
-
-RUBY_CHECK_SIZEOF([struct stat.st_ino], [long "long long"], [], [@%:@include <sys/stat.h>])
 
 if test "$ac_cv_func_sysconf" = yes; then
   AC_DEFUN([RUBY_CHECK_SYSCONF], [dnl
