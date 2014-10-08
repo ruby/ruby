@@ -119,7 +119,6 @@ compat_init_setproctitle(int argc, char *argv[])
 			lastenvp = envp[i] + strlen(envp[i]);
 	}
 
-	argv[1] = NULL;
 	argv_start = argv[0];
 	argv_len = lastargv - argv[0];
 	argv_env_len = lastenvp - argv[0];
