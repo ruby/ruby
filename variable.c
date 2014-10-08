@@ -930,11 +930,27 @@ generic_ivar_get(VALUE obj, ID id, VALUE undef)
     return undef;
 }
 
+static int
+generic_ivar_update(st_data_t *k, st_data_t *v, st_data_t a, int existing)
+{
+    VALUE obj = (VALUE)*k;
+    st_table **tbl = (st_table **)a;
+
+    if (!existing) {
+	FL_SET(obj, FL_EXIVAR);
+	*v = (st_data_t)(*tbl = st_init_numtable());
+	return ST_CONTINUE;
+    }
+    else {
+	*tbl = (st_table *)*v;
+	return ST_STOP;
+    }
+}
+
 static void
 generic_ivar_set(VALUE obj, ID id, VALUE val)
 {
     st_table *tbl;
-    st_data_t data;
 
     if (rb_special_const_p(obj)) {
 	if (rb_obj_frozen_p(obj)) rb_error_frozen("object");
@@ -943,16 +959,14 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
     if (!generic_iv_tbl) {
 	generic_iv_tbl = st_init_numtable();
     }
-    if (!st_lookup(generic_iv_tbl, (st_data_t)obj, &data)) {
-	FL_SET(obj, FL_EXIVAR);
-	tbl = st_init_numtable();
-	st_add_direct(generic_iv_tbl, (st_data_t)obj, (st_data_t)tbl);
+    if (!st_update(generic_iv_tbl, (st_data_t)obj,
+		   generic_ivar_update, (st_data_t)&tbl)) {
 	st_add_direct(tbl, (st_data_t)id, (st_data_t)val);
-	if (FL_ABLE(obj)) RB_OBJ_WRITTEN(obj, Qundef, val);
-	return;
     }
-    st_insert((st_table *)data, (st_data_t)id, (st_data_t)val);
-    if (FL_ABLE(obj)) RB_OBJ_WRITTEN(obj, data, val);
+    else {
+	st_insert(tbl, (st_data_t)id, (st_data_t)val);
+    }
+    if (FL_ABLE(obj)) RB_OBJ_WRITTEN(obj, Qundef, val);
 }
 
 static VALUE
