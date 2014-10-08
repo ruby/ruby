@@ -1964,6 +1964,14 @@ rb_const_remove(VALUE mod, ID id)
 }
 
 static int
+cv_i_update(st_data_t *k, st_data_t *v, st_data_t a, int existing)
+{
+    if (existing) return ST_STOP;
+    *v = a;
+    return ST_CONTINUE;
+}
+
+static int
 sv_i(st_data_t k, st_data_t v, st_data_t a)
 {
     ID key = (ID)k;
@@ -1971,9 +1979,7 @@ sv_i(st_data_t k, st_data_t v, st_data_t a)
     st_table *tbl = (st_table *)a;
 
     if (rb_is_const_id(key)) {
-	if (!st_lookup(tbl, (st_data_t)key, 0)) {
-	    st_insert(tbl, (st_data_t)key, (st_data_t)ce);
-	}
+	st_update(tbl, (st_data_t)key, cv_i_update, (st_data_t)ce);
     }
     return ST_CONTINUE;
 }
@@ -2443,9 +2449,7 @@ cv_i(st_data_t k, st_data_t v, st_data_t a)
     st_table *tbl = (st_table *)a;
 
     if (rb_is_class_id(key)) {
-	if (!st_lookup(tbl, (st_data_t)key, 0)) {
-	    st_insert(tbl, (st_data_t)key, 0);
-	}
+	st_update(tbl, (st_data_t)key, cv_i_update, 0);
     }
     return ST_CONTINUE;
 }
