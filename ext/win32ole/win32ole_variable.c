@@ -5,7 +5,8 @@ struct olevariabledata {
     UINT index;
 };
 
-static void olevariable_free(struct olevariabledata *polevar);
+static void olevariable_free(void *ptr);
+static size_t olevariable_size(const void *ptr);
 static VALUE folevariable_name(VALUE self);
 static VALUE ole_variable_ole_type(ITypeInfo *pTypeInfo, UINT var_index);
 static VALUE folevariable_ole_type(VALUE self);
@@ -21,11 +22,24 @@ static VALUE ole_variable_varkind(ITypeInfo *pTypeInfo, UINT var_index);
 static VALUE folevariable_varkind(VALUE self);
 static VALUE folevariable_inspect(VALUE self);
 
+static const rb_data_type_t olevariable_datatype = {
+    "win32ole_variable",
+    {NULL, olevariable_free, olevariable_size,},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
 static void
-olevariable_free(struct olevariabledata *polevar)
+olevariable_free(void *ptr)
 {
+    struct olevariabledata *polevar = ptr;
     OLE_FREE(polevar->pTypeInfo);
     free(polevar);
+}
+
+static size_t
+olevariable_size(const void *ptr)
+{
+    return ptr ? sizeof(struct olevariabledata) : 0;
 }
 
 /*
@@ -38,8 +52,8 @@ VALUE
 create_win32ole_variable(ITypeInfo *pTypeInfo, UINT index, VALUE name)
 {
     struct olevariabledata *pvar;
-    VALUE obj = Data_Make_Struct(cWIN32OLE_VARIABLE, struct olevariabledata,
-                                 0,olevariable_free,pvar);
+    VALUE obj = TypedData_Make_Struct(cWIN32OLE_VARIABLE, struct olevariabledata,
+                                      &olevariable_datatype, pvar);
     pvar->pTypeInfo = pTypeInfo;
     OLE_ADDREF(pTypeInfo);
     pvar->index = index;
@@ -111,7 +125,7 @@ static VALUE
 folevariable_ole_type(VALUE self)
 {
     struct olevariabledata *pvar;
-    Data_Get_Struct(self, struct olevariabledata, pvar);
+    TypedData_Get_Struct(self, struct olevariabledata, &olevariable_datatype, pvar);
     return ole_variable_ole_type(pvar->pTypeInfo, pvar->index);
 }
 
@@ -145,7 +159,7 @@ static VALUE
 folevariable_ole_type_detail(VALUE self)
 {
     struct olevariabledata *pvar;
-    Data_Get_Struct(self, struct olevariabledata, pvar);
+    TypedData_Get_Struct(self, struct olevariabledata, &olevariable_datatype, pvar);
     return ole_variable_ole_type_detail(pvar->pTypeInfo, pvar->index);
 }
 
@@ -189,7 +203,7 @@ static VALUE
 folevariable_value(VALUE self)
 {
     struct olevariabledata *pvar;
-    Data_Get_Struct(self, struct olevariabledata, pvar);
+    TypedData_Get_Struct(self, struct olevariabledata, &olevariable_datatype, pvar);
     return ole_variable_value(pvar->pTypeInfo, pvar->index);
 }
 
@@ -235,7 +249,7 @@ static VALUE
 folevariable_visible(VALUE self)
 {
     struct olevariabledata *pvar;
-    Data_Get_Struct(self, struct olevariabledata, pvar);
+    TypedData_Get_Struct(self, struct olevariabledata, &olevariable_datatype, pvar);
     return ole_variable_visible(pvar->pTypeInfo, pvar->index);
 }
 
@@ -291,7 +305,7 @@ static VALUE
 folevariable_variable_kind(VALUE self)
 {
     struct olevariabledata *pvar;
-    Data_Get_Struct(self, struct olevariabledata, pvar);
+    TypedData_Get_Struct(self, struct olevariabledata, &olevariable_datatype, pvar);
     return ole_variable_kind(pvar->pTypeInfo, pvar->index);
 }
 
@@ -331,7 +345,7 @@ static VALUE
 folevariable_varkind(VALUE self)
 {
     struct olevariabledata *pvar;
-    Data_Get_Struct(self, struct olevariabledata, pvar);
+    TypedData_Get_Struct(self, struct olevariabledata, &olevariable_datatype, pvar);
     return ole_variable_varkind(pvar->pTypeInfo, pvar->index);
 }
 
