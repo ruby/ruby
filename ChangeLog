@@ -1,3 +1,10 @@
+Thu Oct  9 07:20:30 2014  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* missing/setproctitle.c: Avoid invalidating argv[1], argv[2],
+	  etc. until the first call to Process.setproctitle, because
+	  the ps command of AIX refers to the argv array.
+	  [Bug #10090]
+
 Thu Oct  9 00:53:15 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (dir_s_aref): fix rdoc.  `Dir.glob` allows an array but
