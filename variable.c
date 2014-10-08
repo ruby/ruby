@@ -1836,7 +1836,7 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 	rb_const_entry_t *ce;
 
 	while ((ce = rb_const_lookup(tmp, id))) {
-	    if (visibility && ce->flag == CONST_PRIVATE) {
+	    if (visibility && RB_CONST_PRIVATE_P(ce)) {
 		rb_name_error(id, "private constant %"PRIsVALUE"::%"PRIsVALUE" referenced",
 			      rb_class_name(klass), QUOTE_ID(id));
 	    }
@@ -2029,7 +2029,7 @@ list_i(st_data_t key, st_data_t value, VALUE ary)
 {
     ID sym = (ID)key;
     rb_const_entry_t *ce = (rb_const_entry_t *)value;
-    if (ce->flag != CONST_PRIVATE) rb_ary_push(ary, ID2SYM(sym));
+    if (RB_CONST_PUBLIC_P(ce)) rb_ary_push(ary, ID2SYM(sym));
     return ST_CONTINUE;
 }
 
@@ -2093,7 +2093,7 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
   retry:
     while (tmp) {
 	if ((ce = rb_const_lookup(tmp, id))) {
-	    if (visibility && ce->flag == CONST_PRIVATE) {
+	    if (visibility && RB_CONST_PRIVATE_P(ce)) {
 		return (int)Qfalse;
 	    }
 	    if (ce->value == Qundef && !check_autoload_required(tmp, id, 0) && !rb_autoloading_value(tmp, id, 0))
