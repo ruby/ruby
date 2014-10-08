@@ -1360,6 +1360,13 @@ class TestModule < Test::Unit::TestCase
     assert_equal("foo", c::FOO)
   end
 
+  def test_deprecate_constant
+    c = Class.new
+    c.const_set(:FOO, "foo")
+    c.deprecate_constant(:FOO)
+    assert_warn(/deprecated/) {c::FOO}
+  end
+
   def test_constants_with_private_constant
     assert_not_include(::TestModule.constants, :PrivateClass)
   end

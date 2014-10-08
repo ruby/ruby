@@ -2149,6 +2149,15 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 		rb_name_error(id, "private constant %"PRIsVALUE"::%"PRIsVALUE" referenced",
 			      rb_class_name(klass), QUOTE_ID(id));
 	    }
+	    if (RB_CONST_DEPRECATED_P(ce)) {
+		if (klass == rb_cObject) {
+		    rb_warn("constant ::%"PRIsVALUE" is deprecated", QUOTE_ID(id));
+		}
+		else {
+		    rb_warn("constant %"PRIsVALUE"::%"PRIsVALUE" is deprecated",
+			    rb_class_name(klass), QUOTE_ID(id));
+		}
+	    }
 	    value = ce->value;
 	    if (value == Qundef) {
 		if (am == tmp) break;
@@ -2576,7 +2585,7 @@ rb_define_global_const(const char *name, VALUE val)
 }
 
 static void
-set_const_visibility(VALUE mod, int argc, const VALUE *argv, rb_const_flag_t flag)
+set_const_visibility(VALUE mod, int argc, const VALUE *argv, rb_const_flag_t flag, rb_const_flag_t mask)
 {
     int i;
     rb_const_entry_t *ce;
@@ -2600,7 +2609,8 @@ set_const_visibility(VALUE mod, int argc, const VALUE *argv, rb_const_flag_t fla
 			      rb_class_name(mod), QUOTE(val));
 	}
 	if ((ce = rb_const_lookup(mod, id))) {
-	    ce->flag = flag;
+	    ce->flag &= ~mask;
+	    ce->flag |= flag;
 	}
 	else {
 	    if (i > 0) {
@@ -2623,7 +2633,7 @@ set_const_visibility(VALUE mod, int argc, const VALUE *argv, rb_const_flag_t fla
 VALUE
 rb_mod_private_constant(int argc, const VALUE *argv, VALUE obj)
 {
-    set_const_visibility(obj, argc, argv, CONST_PRIVATE);
+    set_const_visibility(obj, argc, argv, CONST_PRIVATE, CONST_VISIBILITY_MASK);
     return obj;
 }
 
@@ -2637,7 +2647,14 @@ rb_mod_private_constant(int argc, const VALUE *argv, VALUE obj)
 VALUE
 rb_mod_public_constant(int argc, const VALUE *argv, VALUE obj)
 {
-    set_const_visibility(obj, argc, argv, CONST_PUBLIC);
+    set_const_visibility(obj, argc, argv, CONST_PUBLIC, CONST_VISIBILITY_MASK);
+    return obj;
+}
+
+VALUE
+rb_mod_deprecate_constant(int argc, const VALUE *argv, VALUE obj)
+{
+    set_const_visibility(obj, argc, argv, CONST_DEPRECATED, CONST_DEPRECATED);
     return obj;
 }
 
