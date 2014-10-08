@@ -1,3 +1,8 @@
+Wed Oct  8 16:36:47 2014    <>
+
+	* test/ruby/test_syntax.rb: added syntax tests of underscore arguments.
+	  [Feature #10340][ruby-core:65496]
+
 Wed Oct  8 07:42:39 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/generic.rb (URI#inspect): remove Object id.
