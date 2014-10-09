@@ -1,3 +1,7 @@
+Thu Oct  9 12:38:28 2014  Eric Wong  <e@80x24.org>
+
+	* hash.c (rb_any_hash): remove unnecessary dsym check
+
 Thu Oct  9 07:20:30 2014  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* missing/setproctitle.c: Avoid invalidating argv[1], argv[2],
