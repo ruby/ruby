@@ -1,3 +1,7 @@
+Thu Oct  9 12:40:28 2014  Eric Wong  <e@80x24.org>
+
+	* benchmark/bm_hash_aref_sym*.rb: force static symbols
+
 Thu Oct  9 12:38:28 2014  Eric Wong  <e@80x24.org>
 
 	* hash.c (rb_any_hash): remove unnecessary dsym check
