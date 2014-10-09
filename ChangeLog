@@ -1,3 +1,10 @@
+Thu Oct  9 16:15:26 2014  Eric Wong  <e@80x24.org>
+
+	* ext/-test-/st/foreach/extconf.rb: new file
+	* ext/-test-/st/foreach/foreach.c: ditto
+	* test/-ext-/st/test_foreach.rb: ditto
+	  [Feature #10321]
+
 Thu Oct  9 12:40:28 2014  Eric Wong  <e@80x24.org>
 
 	* benchmark/bm_hash_aref_sym*.rb: force static symbols
