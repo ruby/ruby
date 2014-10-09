@@ -63,7 +63,8 @@ extern "C" {
 
 #define numberof(array) ((int)(sizeof(array) / sizeof((array)[0])))
 
-#define STATIC_ASSERT(name, expr) typedef int static_assert_##name##_check[1 - 2*!(expr)]
+#define STATIC_ASSERT_TYPE(name) static_assert_##name##_check
+#define STATIC_ASSERT(name, expr) typedef int STATIC_ASSERT_TYPE(name)[1 - 2*!(expr)]
 
 #define GCC_VERSION_SINCE(major, minor, patchlevel) \
   (defined(__GNUC__) && !defined(__INTEL_COMPILER) && \
@@ -509,6 +510,17 @@ VALUE rb_ary_last(int, const VALUE *, VALUE);
 void rb_ary_set_len(VALUE, long);
 void rb_ary_delete_same(VALUE, VALUE);
 VALUE rb_ary_tmp_new_fill(long capa);
+#ifdef __GNUC__
+#define rb_ary_new_from_args(n, ...) \
+    __extension__ ({ \
+	const VALUE args_to_new_ary[] = {__VA_ARGS__}; \
+	if (__builtin_constant_p(n)) { \
+	    STATIC_ASSERT(rb_ary_new_from_args, numberof(args_to_new_ary) == (n)); \
+	    (void)sizeof(STATIC_ASSERT_TYPE(rb_ary_new_from_args)); /* suppress warnings by gcc 4.8 or later */ \
+	} \
+	rb_ary_new_from_values(numberof(args_to_new_ary), args_to_new_ary); \
+    })
+#endif
 
 /* bignum.c */
 VALUE rb_big_fdiv(VALUE x, VALUE y);

@@ -499,7 +499,7 @@ rb_ary_new(void)
 }
 
 VALUE
-rb_ary_new_from_args(long n, ...)
+(rb_ary_new_from_args)(long n, ...)
 {
     va_list ar;
     VALUE ary;
