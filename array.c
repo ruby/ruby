@@ -474,16 +474,13 @@ ary_new(VALUE klass, long capa)
 	RUBY_DTRACE_ARRAY_CREATE(capa, rb_sourcefile(), rb_sourceline());
     }
 
+    ary = ary_alloc(klass);
     if (capa > RARRAY_EMBED_LEN_MAX) {
 	ptr = ALLOC_N(VALUE, capa);
-	ary = ary_alloc(klass);
         FL_UNSET_EMBED(ary);
         ARY_SET_PTR(ary, ptr);
         ARY_SET_CAPA(ary, capa);
         ARY_SET_HEAP_LEN(ary, 0);
-    }
-    else {
-	ary = ary_alloc(klass);
     }
 
     return ary;
