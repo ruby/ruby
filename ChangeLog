@@ -1,3 +1,10 @@
+Thu Oct  9 23:31:47 2014  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* bignum.c (absint_numwords_generic): set an array element after
+	  definition of a variable to fix compile error with older version
+	  of fcc (Fujitsu C Compiler) 5.6 on Solaris 10 on Sparc.
+	  [Bug #10350] [ruby-dev:48608]
+
 Thu Oct  9 16:15:26 2014  Eric Wong  <e@80x24.org>
 
 	* ext/-test-/st/foreach/extconf.rb: new file

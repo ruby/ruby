@@ -3294,7 +3294,7 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
     static const BDIGIT char_bit[1] = { CHAR_BIT };
     BDIGIT numbytes_bary[bdigit_roomof(sizeof(numbytes))];
     BDIGIT val_numbits_bary[bdigit_roomof(sizeof(numbytes) + 1)];
-    BDIGIT nlz_bits_in_msbyte_bary[1] = { nlz_bits_in_msbyte };
+    BDIGIT nlz_bits_in_msbyte_bary[1];
     BDIGIT word_numbits_bary[bdigit_roomof(sizeof(word_numbits))];
     BDIGIT div_bary[numberof(val_numbits_bary) + BIGDIVREM_EXTRA_WORDS];
     BDIGIT mod_bary[numberof(word_numbits_bary)];
@@ -3303,6 +3303,8 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
     size_t mod;
     int sign;
     size_t numwords;
+
+    nlz_bits_in_msbyte_bary[0] = nlz_bits_in_msbyte;
 
     /*
      * val_numbits = numbytes * CHAR_BIT - nlz_bits_in_msbyte
