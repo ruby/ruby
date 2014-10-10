@@ -7420,7 +7420,7 @@ rb_io_make_open_file(VALUE obj)
     Check_Type(obj, T_FILE);
     if (RFILE(obj)->fptr) {
 	rb_io_close(obj);
-	rb_io_fptr_finalize(RFILE(obj)->fptr);\
+	rb_io_fptr_finalize(RFILE(obj)->fptr);
 	RFILE(obj)->fptr = 0;
     }
     fp = rb_io_fptr_new();
