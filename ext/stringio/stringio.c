@@ -186,12 +186,12 @@ strio_init(int argc, VALUE *argv, struct StringIO *ptr, VALUE self)
       case 2:
 	if (FIXNUM_P(mode)) {
 	    int flags = FIX2INT(mode);
-	    ptr->flags = rb_io_modenum_flags(flags);
+	    ptr->flags = rb_io_oflags_fmode(flags);
 	    trunc = flags & O_TRUNC;
 	}
 	else {
 	    const char *m = StringValueCStr(mode);
-	    ptr->flags = rb_io_mode_flags(m);
+	    ptr->flags = rb_io_modestr_fmode(m);
 	    trunc = *m == 'w';
 	}
 	StringValue(string);

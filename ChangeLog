@@ -1,3 +1,201 @@
+Fri Oct 10 11:27:49 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/io.h (rb_io_mode_flags, rb_io_modenum_flags):
+	  deprecate old macros for compatibility for ruby 1.8 and older.
+
+Thu Oct  9 23:31:47 2014  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* bignum.c (absint_numwords_generic): set an array element after
+	  definition of a variable to fix compile error with older version
+	  of fcc (Fujitsu C Compiler) 5.6 on Solaris 10 on Sparc.
+	  [Bug #10350] [ruby-dev:48608]
+
+Thu Oct  9 16:15:26 2014  Eric Wong  <e@80x24.org>
+
+	* ext/-test-/st/foreach/extconf.rb: new file
+	* ext/-test-/st/foreach/foreach.c: ditto
+	* test/-ext-/st/test_foreach.rb: ditto
+	  [Feature #10321]
+
+Thu Oct  9 12:40:28 2014  Eric Wong  <e@80x24.org>
+
+	* benchmark/bm_hash_aref_sym*.rb: force static symbols
+
+Thu Oct  9 12:38:28 2014  Eric Wong  <e@80x24.org>
+
+	* hash.c (rb_any_hash): remove unnecessary dsym check
+
+Thu Oct  9 07:20:30 2014  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* missing/setproctitle.c: Avoid invalidating argv[1], argv[2],
+	  etc. until the first call to Process.setproctitle, because
+	  the ps command of AIX refers to the argv array.
+	  [Bug #10090]
+
+Thu Oct  9 00:53:15 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (dir_s_aref): fix rdoc.  `Dir.glob` allows an array but
+	  `Dir[]` not.  the former accepts an optional parameter `flags`,
+	  while the latter accepts arbitrary number of arguments but no
+	  `flags`.  [ruby-core:65265] [Bug #10294]
+
+Wed Oct  8 21:44:10 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole_variable.c: use typed data.
+
+Wed Oct  8 16:36:47 2014  gogo tanaka  <mail@tanakakazuki.com>
+
+	* test/ruby/test_syntax.rb: added syntax tests of underscore
+	  arguments.  [Feature #10340][ruby-core:65496]
+
+Wed Oct  8 07:42:39 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/generic.rb (URI#inspect): remove Object id.
+	  URI is considered that it doesn't require id.
+
+Wed Oct  8 05:22:42 2014  Eric Wong  <e@80x24.org>
+
+	* ext/etc/etc.c (etc_systmpdir): set default tmplen correctly
+	  Fixup r47826
+
+Wed Oct  8 05:16:32 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Add @- and @+ for Matrix and Vector.
+	  patch by gogo tanaka [#10068] [#10069]
+
+Wed Oct  8 04:58:48 2014  John Bachir  <j@jjb.cc>
+
+	* bootstraptest/test_io.rb (assert_finish):
+	  normalize rescue for Timeout::Error
+	* lib/net/ftp.rb (Net#read_timeout): ditto for doc
+	* lib/resolv.rb (Resolv::ResolvTimeout): ditto for subclass
+	* lib/webrick/httprequest.rb (_read_data): ditto for rescue
+	* sample/timeout.rb (p timeout): ditto for call
+	* test/drb/drbtest.rb (test_06_timeout): ditto
+	* test/ruby/test_readpartial.rb (test_open_pipe): ditto
+	* test/thread/test_queue.rb (test_queue_thread_raise): ditto
+	* thread.c (rb_thread_s_handle_interrupt): ditto for doc
+	  [ruby-core:65481] [misc #10339]
+
+Wed Oct  8 04:38:29 2014  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/ruby/test_process.rb (TestProcess#test_setsid): AIX
+	  does not allow Process::getsid(pid) when pid is in a
+	  different session.
+
+Wed Oct  8 04:33:04 2014  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_encoding):
+	  On AIX, locale_charmap is ISO-8859-1 with LANG=C.  This means
+	  the source encoding of stdin is ISO-8859-1, so "invalid
+	  multibyte char" error does not occur.
+
+Wed Oct  8 04:30:29 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Add Matrix#laplace_expansion.
+	  patch by gogo tanaka [#10073]
+
+Wed Oct  8 04:29:21 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Add Vector.basis.
+	  Based on patch by gogo tanaka [#10072]
+
+Tue Oct  7 23:40:16 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (rb_f_kill): get rid of deadlock as unhandled and
+	  discarded signals do not make interrupt_cond signaled.
+	  based on the patch by Kazuki Tsujimoto at [ruby-dev:48606].
+	  [Bug #9820]
+
+Tue Oct  7 22:43:44 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole_method.c: use typed data.
+
+Tue Oct  7 21:47:05 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole_param.c: refactoring.
+
+Tue Oct  7 21:40:17 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole_method.c: refactoring. add
+	  olemethod_data_get_struct to wrap Data_Get_Struct.
+	* ext/win32ole/win32ole_method.h: ditto.
+
+	* ext/win32ole/win32ole_param.c (oleparam_ole_param):
+	  call olemethod_data_get_struct instead of Data_Get_Struct.
+
+Tue Oct  7 11:17:08 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/etc/etc.c (etc_systmpdir): try user temporary directory by
+	  confstr() on Mac OS X.
+	  c.f. http://www.opensource.apple.com/source/ruby/ruby-104/patches/ext_etc_etc.c.diff
+
+Tue Oct  7 10:48:17 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (struct stat.st_size): prefer off_t over int, long,
+	  and so on.  inspired by
+	  http://www.opensource.apple.com/source/ruby/ruby-104/patches/config.h.ed
+
+Tue Oct  7 10:37:39 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_UNIVERSAL_ARCH): fix missing quoting
+	  brackets.  incorporated from
+	  http://www.opensource.apple.com/source/ruby/ruby-104/patches/configure.diff
+
+Mon Oct  6 23:34:42 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole_param.c: use typed data.
+
+Mon Oct  6 22:37:09 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* symbol.h (struct RSymbol): move from internal.h.
+
+Mon Oct  6 21:43:03 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* error.c: update exception tree. [DOC]
+	  reported by @hemge via twitter.
+
+Mon Oct  6 18:43:03 2014  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* configure.in: Fix typo. [Bug #9914]
+
+Mon Oct  6 16:23:30 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (rb_f_kill): should not ignore signal unless the
+	  default handler is registered.  [ruby-dev:48592] [Bug #9820]
+
+Mon Oct  6 16:07:11 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_string.rb (test_LSHIFT_neary_long_max): enable
+	  only on platforms where string size range is smaller than memory
+	  space.  this test does not make sense but just wastes memory and
+	  time on other platforms, as it is hardly possible that a string
+	  size becomes neary LONG_MAX if long size equals pointer size.
+	  [ruby-core:65410] [Bug #10325]
+
+Mon Oct  6 11:21:21 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* tool/unicode_norm_gen.rb: Adding/tweaking comments.
+
+Mon Oct  6 10:57:57 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* tool/unicode_norm_gen.rb: Adjusted directory paths.
+
+Mon Oct  6 10:27:27 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* tool/unicode_norm_gen.rb: Data generation script imported from
+	  https://github.com/duerst/eprun/blob/master/lib/generate.rb
+
+Mon Oct  6 10:15:15 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* tool/downloader.rb: Adjust example in documentation for
+	  Downloader.download.
+
+Mon Oct  6 10:07:07 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize: New folder for Unicode normalization
+	  functionality
+
 Sun Oct  5 11:04:13 2014  Luiz Angelo Daros de Luca  <luizluca@gmail.com>
 
 	* ext/digest/{md5,rmd160,sha1,sha2}/extconf.rb: configure OpenSSL

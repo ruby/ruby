@@ -268,7 +268,8 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int a
 	break;
 
       case '[':
-	if (*++m != ']') return -1;
+	if (m[1] != ']') goto id;
+	++m;
 	if (*++m == '=') ++m;
 	break;
 
@@ -276,15 +277,22 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int a
 	if (len == 1) return ID_JUNK;
 	switch (*++m) {
 	  case '=': case '~': ++m; break;
-	  default: return -1;
+	  default:
+	    if (allowed_attrset & (1U << ID_JUNK)) goto id;
+	    return -1;
 	}
 	break;
 
       default:
 	type = rb_enc_isupper(*m, enc) ? ID_CONST : ID_LOCAL;
       id:
-	if (m >= e || (*m != '_' && !rb_enc_isalpha(*m, enc) && ISASCII(*m)))
+	if (m >= e || (*m != '_' && !rb_enc_isalpha(*m, enc) && ISASCII(*m))) {
+	    if (len > 1 && *(e-1) == '=') {
+		type = rb_enc_symname_type(name, len-1, enc, allowed_attrset);
+		if (type != ID_ATTRSET) return ID_ATTRSET;
+	    }
 	    return -1;
+	}
 	while (m < e && is_identchar(m, e, enc)) m += rb_enc_mbclen(m, e, enc);
 	if (m >= e) break;
 	switch (*m) {

@@ -313,9 +313,11 @@ AC_MSG_RESULT([$ARCH_FLAG])
 
 AC_DEFUN([RUBY_UNIVERSAL_ARCH], [
 # RUBY_UNIVERSAL_ARCH begin
+ARCH_FLAG=`expr " $CXXFLAGS " : ['.* \(-m[0-9][0-9]*\) ']`
+test ${CXXFLAGS+set} && CXXFLAGS=`echo "$CXXFLAGS" | sed [-e 's/ *-arch  *[^ ]*//g' -e 's/ *-m32//g' -e 's/ *-m64//g']`
 ARCH_FLAG=`expr " $CFLAGS " : ['.* \(-m[0-9][0-9]*\) ']`
-test ${CFLAGS+set} && CFLAGS=`echo "$CFLAGS" | sed -e 's/ *-arch  *[^ ]*//g' -e 's/ *-m32//g' -e 's/ *-m64//g'`
-test ${LDFLAGS+set} && LDFLAGS=`echo "$LDFLAGS" | sed -e 's/ *-arch  *[^ ]*//g' -e 's/ *-m32//g' -e 's/ *-m64//g'`
+test ${CFLAGS+set} && CFLAGS=`echo "$CFLAGS" | sed [-e 's/ *-arch  *[^ ]*//g' -e 's/ *-m32//g' -e 's/ *-m64//g']`
+test ${LDFLAGS+set} && LDFLAGS=`echo "$LDFLAGS" | sed [-e 's/ *-arch  *[^ ]*//g' -e 's/ *-m32//g' -e 's/ *-m64//g']`
 unset universal_binary universal_archnames
 if test ${target_archs+set}; then
     AC_MSG_CHECKING([target architectures])
@@ -1207,7 +1209,7 @@ AS_CASE(["$target_os"],
 	[
 	    # AIX currently does not support a 32-bit call to posix_fadvise()
 	    # if _LARGE_FILES is defined.
-	    ac_cv_posix_fadvise=no
+	    ac_cv_func_posix_fadvise=no
 	])
     ])
 
@@ -1705,10 +1707,11 @@ RUBY_CHECK_PRINTF_PREFIX(ptrdiff_t, t)
 AC_STRUCT_ST_BLKSIZE
 AC_STRUCT_ST_BLOCKS
 AC_STRUCT_ST_RDEV
-RUBY_CHECK_SIZEOF([struct stat.st_size], [int long "long long"], [], [@%:@include <sys/stat.h>])
+RUBY_CHECK_SIZEOF([struct stat.st_size], [off_t int long "long long"], [], [@%:@include <sys/stat.h>])
 if test "$ac_cv_member_struct_stat_st_blocks" = yes; then
-    RUBY_CHECK_SIZEOF([struct stat.st_blocks], [int long "long long"], [], [@%:@include <sys/stat.h>])
+    RUBY_CHECK_SIZEOF([struct stat.st_blocks], [off_t int long "long long"], [], [@%:@include <sys/stat.h>])
 fi
+RUBY_CHECK_SIZEOF([struct stat.st_ino], [long "long long"], [], [@%:@include <sys/stat.h>])
 AC_CHECK_MEMBERS([struct stat.st_atim])
 AC_CHECK_MEMBERS([struct stat.st_atimespec])
 AC_CHECK_MEMBERS([struct stat.st_atimensec])
@@ -2107,7 +2110,7 @@ main(int argc, char **argv)
 AC_DEFUN([RUBY_CHECK_BUILTIN_FUNC], [dnl
 AC_CACHE_CHECK([for $1], AS_TR_SH(rb_cv_builtin_$1),
   [AC_LINK_IFELSE(
-    [AC_LANG_PROGRAM([], [$2;])],
+    [AC_LANG_PROGRAM([int foo;], [$2;])],
     [AS_TR_SH(rb_cv_builtin_$1)=yes],
     [AS_TR_SH(rb_cv_builtin_$1)=no])])
 if test "${AS_TR_SH(rb_cv_builtin_$1)}" != no; then
@@ -2120,6 +2123,7 @@ RUBY_CHECK_BUILTIN_FUNC(__builtin_clz, [__builtin_clz(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_clzl, [__builtin_clzl(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_clzll, [__builtin_clzll(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_choose_expr, [__builtin_choose_expr(0, 0, 0)])
+RUBY_CHECK_BUILTIN_FUNC(__builtin_choose_expr_constant_p, [__builtin_choose_expr(__builtin_constant_p(foo), 0, 0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_types_compatible_p, [__builtin_types_compatible_p(int, int)])
 
 if test "$ac_cv_func_qsort_r" != no; then
@@ -2506,8 +2510,6 @@ if test x"$ac_cv_func_gettimeofday" != xyes; then
     AC_MSG_ERROR(gettimeofday() must exist)
 fi
 
-RUBY_CHECK_SIZEOF([struct stat.st_ino], [long "long long"], [], [@%:@include <sys/stat.h>])
-
 if test "$ac_cv_func_sysconf" = yes; then
   AC_DEFUN([RUBY_CHECK_SYSCONF], [dnl
   AC_CACHE_CHECK([whether _SC_$1 is supported], rb_cv_have_sc_[]m4_tolower($1),
@@ -2785,6 +2787,7 @@ AC_SUBST(LDSHAREDXX)dnl
 AC_SUBST(DLEXT)dnl
 AC_SUBST(DLEXT2)dnl
 AC_SUBST(LIBEXT)dnl
+AC_SUBST(ASMEXT, S)dnl
 
 STATIC=
 : ${PATHFLAG=''}

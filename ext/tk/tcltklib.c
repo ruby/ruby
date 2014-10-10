@@ -19,6 +19,9 @@
 #define RUBY_RELEASE_DATE "unknown release-date"
 #endif
 
+#undef RUBY_UNTYPED_DATA_WARNING
+#define RUBY_UNTYPED_DATA_WARNING 0
+
 #ifdef HAVE_RB_THREAD_CHECK_TRAP_PENDING
 static int rb_thread_critical; /* dummy */
 int rb_thread_check_trap_pending(void);
@@ -182,6 +185,7 @@ static const char tcltklib_release_date[] = TCLTKLIB_RELEASE_DATE;
 static const char finalize_hook_name[] = "INTERP_FINALIZE_HOOK";
 
 static void ip_finalize _((Tcl_Interp*));
+static void ip_free _((void *p));
 
 static int at_exit = 0;
 
@@ -771,13 +775,18 @@ struct tcltkip {
     int return_value;            /* return value */
 };
 
+static const rb_data_type_t tcltkip_type = {
+    "tcltkip",
+    {0, ip_free, 0,},
+};
+
 static struct tcltkip *
 get_ip(self)
     VALUE self;
 {
     struct tcltkip *ptr;
 
-    Data_Get_Struct(self, struct tcltkip, ptr);
+    TypedData_Get_Struct(self, struct tcltkip, &tcltkip_type, ptr);
     if (ptr == 0) {
         /* rb_raise(rb_eTypeError, "uninitialized TclTkIp"); */
         return((struct tcltkip *)NULL);
@@ -5800,9 +5809,10 @@ ip_finalize(ip)
 
 /* destroy interpreter */
 static void
-ip_free(ptr)
-    struct tcltkip *ptr;
+ip_free(p)
+    void *p;
 {
+    struct tcltkip *ptr = p;
     int  thr_crit_bup;
 
     DUMP2("free Tcl Interp %p", ptr->ip);
@@ -5856,7 +5866,7 @@ static VALUE
 ip_alloc(self)
     VALUE self;
 {
-    return Data_Wrap_Struct(self, 0, ip_free, 0);
+    return TypedData_Wrap_Struct(self, &tcltkip_type, 0);
 }
 
 static void
@@ -6137,7 +6147,7 @@ ip_init(argc, argv, self)
     }
 
     /* create object */
-    Data_Get_Struct(self, struct tcltkip, ptr);
+    TypedData_Get_Struct(self, struct tcltkip, &tcltkip_type, ptr);
     ptr = ALLOC(struct tcltkip);
     /* ptr = RbTk_ALLOC_N(struct tcltkip, 1); */
     DATA_PTR(self) = ptr;
@@ -6476,7 +6486,7 @@ ip_create_slave_core(interp, argc, argv)
 
     rb_thread_critical = thr_crit_bup;
 
-    return Data_Wrap_Struct(CLASS_OF(interp), 0, ip_free, slave);
+    return TypedData_Wrap_Struct(CLASS_OF(interp), &tcltkip_type, slave);
 }
 
 static VALUE
@@ -7013,7 +7023,7 @@ call_queue_handler(evPtr, flags)
     /* check safe-level */
     if (rb_safe_level() != q->safe_level) {
         /* q_dat = Data_Wrap_Struct(rb_cData,0,-1,q); */
-        q_dat = Data_Wrap_Struct(rb_cData,call_queue_mark,-1,q);
+        q_dat = Data_Wrap_Struct(0,call_queue_mark,-1,q);
         ret = rb_funcall(rb_proc_new(callq_safelevel_handler, q_dat),
                          ID_call, 0);
         rb_gc_force_recycle(q_dat);
@@ -7507,7 +7517,7 @@ eval_queue_handler(evPtr, flags)
 #endif
 #endif
         /* q_dat = Data_Wrap_Struct(rb_cData,0,-1,q); */
-        q_dat = Data_Wrap_Struct(rb_cData,eval_queue_mark,-1,q);
+        q_dat = Data_Wrap_Struct(0,eval_queue_mark,-1,q);
         ret = rb_funcall(rb_proc_new(evq_safelevel_handler, q_dat),
                          ID_call, 0);
         rb_gc_force_recycle(q_dat);
@@ -8985,7 +8995,7 @@ invoke_queue_handler(evPtr, flags)
     /* check safe-level */
     if (rb_safe_level() != q->safe_level) {
         /* q_dat = Data_Wrap_Struct(rb_cData,0,0,q); */
-        q_dat = Data_Wrap_Struct(rb_cData,invoke_queue_mark,-1,q);
+        q_dat = Data_Wrap_Struct(0,invoke_queue_mark,-1,q);
         ret = rb_funcall(rb_proc_new(ivq_safelevel_handler, q_dat),
                          ID_call, 0);
         rb_gc_force_recycle(q_dat);

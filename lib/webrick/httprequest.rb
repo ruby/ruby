@@ -521,7 +521,7 @@ module WEBrick
         }
       rescue Errno::ECONNRESET
         return nil
-      rescue TimeoutError
+      rescue Timeout::Error
         raise HTTPStatus::RequestTimeout
       end
     end

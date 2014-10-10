@@ -2358,20 +2358,28 @@ site-install-rb: install-rb
     return unless target
 
     mfile.puts SRC_EXT.collect {|e| ".path.#{e} = $(VPATH)"} if $nmake == ?b
-    mfile.print ".SUFFIXES: .#{SRC_EXT.join(' .')} .#{$OBJEXT}\n"
+    mfile.print ".SUFFIXES: .#{(SRC_EXT + [$OBJEXT, $ASMEXT]).compact.join(' .')}\n"
     mfile.print "\n"
 
     compile_command = "\n\t$(ECHO) compiling $(<#{rsep})\n\t$(Q) %s\n\n"
+    command = compile_command % COMPILE_CXX
+    asm_command = compile_command.sub(/compiling/, 'translating') % ASSEMBLE_CXX
     CXX_EXT.each do |e|
       each_compile_rules do |rule|
         mfile.printf(rule, e, $OBJEXT)
-        mfile.printf(compile_command, COMPILE_CXX)
+        mfile.print(command)
+        mfile.printf(rule, e, $ASMEXT)
+        mfile.print(asm_command)
       end
     end
+    command = compile_command % COMPILE_C
+    asm_command = compile_command.sub(/compiling/, 'translating') % ASSEMBLE_C
     C_EXT.each do |e|
       each_compile_rules do |rule|
         mfile.printf(rule, e, $OBJEXT)
-        mfile.printf(compile_command, COMPILE_C)
+        mfile.print(command)
+        mfile.printf(rule, e, $ASMEXT)
+        mfile.print(asm_command)
       end
     end
 
@@ -2444,6 +2452,7 @@ site-install-rb: install-rb
     $LIBEXT = config['LIBEXT'].dup
     $OBJEXT = config["OBJEXT"].dup
     $EXEEXT = config["EXEEXT"].dup
+    $ASMEXT = config_string('ASMEXT', &:dup) || 'S'
     $LIBS = "#{config['LIBS']} #{config['DLDLIBS']}"
     $LIBRUBYARG = ""
     $LIBRUBYARG_STATIC = config['LIBRUBYARG_STATIC']
@@ -2590,6 +2599,16 @@ MESSAGE
   # Command which will compile C++ files in the generated Makefile
 
   COMPILE_CXX = config_string('COMPILE_CXX') || '$(CXX) $(INCFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(COUTFLAG)$@ -c $<'
+
+  ##
+  # Command which will translate C files to assembler sources in the generated Makefile
+
+  ASSEMBLE_C = config_string('ASSEMBLE_C') || COMPILE_C.sub(/(?<=\s)-c(?=\s)/, '-S')
+
+  ##
+  # Command which will translate C++ files to assembler sources in the generated Makefile
+
+  ASSEMBLE_CXX = config_string('ASSEMBLE_CXX') || COMPILE_CXX.sub(/(?<=\s)-c(?=\s)/, '-S')
 
   ##
   # Command which will compile a program in order to test linking a library

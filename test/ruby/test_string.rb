@@ -2270,7 +2270,8 @@ class TestString < Test::Unit::TestCase
       rescue NoMemoryError
       end
     end;
-  end
+  end if [0].pack("l!").bytesize < [nil].pack("p").bytesize
+  # enable only when string size range is smaller than memory space
 end
 
 class TestString2 < TestString

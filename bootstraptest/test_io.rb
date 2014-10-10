@@ -26,7 +26,7 @@ assert_finish 10, %q{
       t1.join
       t2.join
     end
-  rescue LoadError, TimeoutError, NotImplementedError
+  rescue LoadError, Timeout::Error, NotImplementedError
   end
 }, '[ruby-dev:32566]'
 

@@ -13,8 +13,14 @@
 
 typedef enum {
     CONST_PUBLIC    = 0x00,
-    CONST_PRIVATE   = 0x01
+    CONST_PRIVATE,
+    CONST_VISIBILITY_MAX
 } rb_const_flag_t;
+
+#define RB_CONST_PRIVATE_P(ce) \
+    ((ce)->flag == CONST_PRIVATE)
+#define RB_CONST_PUBLIC_P(ce) \
+    ((ce)->flag == CONST_PUBLIC)
 
 typedef struct rb_const_entry_struct {
     rb_const_flag_t flag;

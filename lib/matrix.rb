@@ -62,6 +62,8 @@ end
 # * #minor(*param)
 # * #first_minor(row, column)
 # * #cofactor(row, column)
+# * #laplace_expansion(row_or_column: num)
+# * #cofactor_expansion(row_or_column: num)
 #
 # Properties of a matrix:
 # * #diagonal?
@@ -88,6 +90,8 @@ end
 # * #inverse
 # * #inv
 # * #**
+# * #+@
+# * #-@
 #
 # Matrix functions:
 # * #determinant
@@ -685,6 +689,37 @@ class Matrix
     det_of_minor * (-1) ** (row + column)
   end
 
+  #
+  # Returns the Laplace expansion along given row or column.
+  #
+  #    Matrix[[7,6], [3,9]].laplace_expansion(column: 1)
+  #     => 45
+  #
+  #    Matrix[[Vector[1, 0], Vector[0, 1]], [2, 3]].laplace_expansion(row: 0)
+  #     => Vector[3, -2]
+  #
+  #
+  def laplace_expansion(row: nil, column: nil)
+    num = row || column
+
+    if !num || (row && column)
+      raise ArgumentError, "exactly one the row or column arguments must be specified"
+    end
+
+    Matrix.Raise ErrDimensionMismatch unless square?
+    raise RuntimeError, "laplace_expansion of empty matrix is not defined" if empty?
+
+    unless 0 <= num && num < row_count
+      raise ArgumentError, "invalid num (#{num.inspect} for 0..#{row_count - 1})"
+    end
+
+    send(row ? :row : :column, num).map.with_index { |e, k|
+      e * cofactor(*(row ? [num, k] : [k,num]))
+    }.inject(:+)
+  end
+  alias_method :cofactor_expansion, :laplace_expansion
+
+
   #--
   # TESTING -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   #++
@@ -1087,6 +1122,14 @@ class Matrix
     else
       Matrix.Raise ErrOperationNotDefined, "**", self.class, other.class
     end
+  end
+
+  def +@
+    self
+  end
+
+  def -@
+    collect {|e| -e }
   end
 
   #--
@@ -1624,6 +1667,7 @@ end
 # To create a Vector:
 # * Vector.[](*array)
 # * Vector.elements(array, copy = true)
+# * Vector.basis(size: n, index: k)
 #
 # To access elements:
 # * #[](i)
@@ -1636,6 +1680,8 @@ end
 # * #*(x) "is matrix or number"
 # * #+(v)
 # * #-(v)
+# * #+@
+# * #-@
 #
 # Vector functions:
 # * #inner_product(v)
@@ -1683,6 +1729,19 @@ class Vector
   #
   def Vector.elements(array, copy = true)
     new convert_to_array(array, copy)
+  end
+
+  #
+  # Returns a standard basis +n+-vector, where k is the index.
+  #
+  #    Vector.basis(size:, index:) # => Vector[0, 1, 0]
+  #
+  def Vector.basis(size:, index:)
+    raise ArgumentError, "invalid size (#{size} for 1..)" if size < 1
+    raise ArgumentError, "invalid index (#{index} for 0...#{size})" unless 0 <= index && index < size
+    array = Array.new(size, 0)
+    array[index] = 1
+    new convert_to_array(array, false)
   end
 
   #
@@ -1858,6 +1917,14 @@ class Vector
     else
       apply_through_coercion(x, __method__)
     end
+  end
+
+  def +@
+    self
+  end
+
+  def -@
+    collect {|e| -e }
   end
 
   #--

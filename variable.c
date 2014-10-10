@@ -930,11 +930,27 @@ generic_ivar_get(VALUE obj, ID id, VALUE undef)
     return undef;
 }
 
+static int
+generic_ivar_update(st_data_t *k, st_data_t *v, st_data_t a, int existing)
+{
+    VALUE obj = (VALUE)*k;
+    st_table **tbl = (st_table **)a;
+
+    if (!existing) {
+	FL_SET(obj, FL_EXIVAR);
+	*v = (st_data_t)(*tbl = st_init_numtable());
+	return ST_CONTINUE;
+    }
+    else {
+	*tbl = (st_table *)*v;
+	return ST_STOP;
+    }
+}
+
 static void
 generic_ivar_set(VALUE obj, ID id, VALUE val)
 {
     st_table *tbl;
-    st_data_t data;
 
     if (rb_special_const_p(obj)) {
 	if (rb_obj_frozen_p(obj)) rb_error_frozen("object");
@@ -943,16 +959,14 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
     if (!generic_iv_tbl) {
 	generic_iv_tbl = st_init_numtable();
     }
-    if (!st_lookup(generic_iv_tbl, (st_data_t)obj, &data)) {
-	FL_SET(obj, FL_EXIVAR);
-	tbl = st_init_numtable();
-	st_add_direct(generic_iv_tbl, (st_data_t)obj, (st_data_t)tbl);
+    if (!st_update(generic_iv_tbl, (st_data_t)obj,
+		   generic_ivar_update, (st_data_t)&tbl)) {
 	st_add_direct(tbl, (st_data_t)id, (st_data_t)val);
-	if (FL_ABLE(obj)) RB_OBJ_WRITTEN(obj, Qundef, val);
-	return;
     }
-    st_insert((st_table *)data, (st_data_t)id, (st_data_t)val);
-    if (FL_ABLE(obj)) RB_OBJ_WRITTEN(obj, data, val);
+    else {
+	st_insert(tbl, (st_data_t)id, (st_data_t)val);
+    }
+    if (FL_ABLE(obj)) RB_OBJ_WRITTEN(obj, Qundef, val);
 }
 
 static VALUE
@@ -1836,7 +1850,7 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 	rb_const_entry_t *ce;
 
 	while ((ce = rb_const_lookup(tmp, id))) {
-	    if (visibility && ce->flag == CONST_PRIVATE) {
+	    if (visibility && RB_CONST_PRIVATE_P(ce)) {
 		rb_name_error(id, "private constant %"PRIsVALUE"::%"PRIsVALUE" referenced",
 			      rb_class_name(klass), QUOTE_ID(id));
 	    }
@@ -1964,6 +1978,14 @@ rb_const_remove(VALUE mod, ID id)
 }
 
 static int
+cv_i_update(st_data_t *k, st_data_t *v, st_data_t a, int existing)
+{
+    if (existing) return ST_STOP;
+    *v = a;
+    return ST_CONTINUE;
+}
+
+static int
 sv_i(st_data_t k, st_data_t v, st_data_t a)
 {
     ID key = (ID)k;
@@ -1971,9 +1993,7 @@ sv_i(st_data_t k, st_data_t v, st_data_t a)
     st_table *tbl = (st_table *)a;
 
     if (rb_is_const_id(key)) {
-	if (!st_lookup(tbl, (st_data_t)key, 0)) {
-	    st_insert(tbl, (st_data_t)key, (st_data_t)ce);
-	}
+	st_update(tbl, (st_data_t)key, cv_i_update, (st_data_t)ce);
     }
     return ST_CONTINUE;
 }
@@ -2029,7 +2049,7 @@ list_i(st_data_t key, st_data_t value, VALUE ary)
 {
     ID sym = (ID)key;
     rb_const_entry_t *ce = (rb_const_entry_t *)value;
-    if (ce->flag != CONST_PRIVATE) rb_ary_push(ary, ID2SYM(sym));
+    if (RB_CONST_PUBLIC_P(ce)) rb_ary_push(ary, ID2SYM(sym));
     return ST_CONTINUE;
 }
 
@@ -2093,7 +2113,7 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
   retry:
     while (tmp) {
 	if ((ce = rb_const_lookup(tmp, id))) {
-	    if (visibility && ce->flag == CONST_PRIVATE) {
+	    if (visibility && RB_CONST_PRIVATE_P(ce)) {
 		return (int)Qfalse;
 	    }
 	    if (ce->value == Qundef && !check_autoload_required(tmp, id, 0) && !rb_autoloading_value(tmp, id, 0))
@@ -2443,9 +2463,7 @@ cv_i(st_data_t k, st_data_t v, st_data_t a)
     st_table *tbl = (st_table *)a;
 
     if (rb_is_class_id(key)) {
-	if (!st_lookup(tbl, (st_data_t)key, 0)) {
-	    st_insert(tbl, (st_data_t)key, 0);
-	}
+	st_update(tbl, (st_data_t)key, cv_i_update, 0);
     }
     return ST_CONTINUE;
 }

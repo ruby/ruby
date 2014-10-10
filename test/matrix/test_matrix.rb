@@ -62,6 +62,15 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal @m1.hash, @m3.hash
   end
 
+  def test_uplus
+    assert_equal(@m1, +@m1)
+  end
+
+  def test_negate
+    assert_equal(Matrix[[-1, -2, -3], [-4, -5, -6]], -@m1)
+    assert_equal(@m1, -(-@m1))
+  end
+
   def test_rank
     [
       [[0]],
@@ -291,6 +300,24 @@ class TestMatrix < Test::Unit::TestCase
     assert_raise(RuntimeError) { Matrix.empty(0, 0).cofactor(0, 0) }
     assert_raise(ArgumentError) { Matrix[[0,0],[0,0]].cofactor(-1, 4) }
     assert_raise(ExceptionForMatrix::ErrDimensionMismatch) { Matrix[[2,0,1],[0,-2,2]].cofactor(0, 0) }
+  end
+
+  def test_laplace_expansion
+    assert_equal(1, Matrix[[1]].laplace_expansion(row: 0))
+    assert_equal(45, Matrix[[7,6], [3,9]].laplace_expansion(row: 1))
+    assert_equal(0, Matrix[[0,0],[0,0]].laplace_expansion(column: 0))
+    assert_equal(-7, Matrix[[0,0,1],[0,7,6],[1,3,9]].laplace_expansion(column: 2))
+
+    assert_equal(Vector[3, -2], Matrix[[Vector[1, 0], Vector[0, 1]], [2, 3]].laplace_expansion(row: 0))
+
+    assert_raise(ExceptionForMatrix::ErrDimensionMismatch) { @m1.laplace_expansion(row: 1) }
+    assert_raise(ArgumentError) { Matrix[[7,6], [3,9]].laplace_expansion() }
+    assert_raise(ArgumentError) { Matrix[[7,6], [3,9]].laplace_expansion(foo: 1) }
+    assert_raise(ArgumentError) { Matrix[[7,6], [3,9]].laplace_expansion(row: 1, column: 1) }
+    assert_raise(ArgumentError) { Matrix[[7,6], [3,9]].laplace_expansion(row: 2) }
+    assert_raise(ArgumentError) { Matrix[[0,0,1],[0,7,6],[1,3,9]].laplace_expansion(column: -1) }
+
+    assert_raise(RuntimeError) { Matrix.empty(0, 0).laplace_expansion(row: 0) }
   end
 
   def test_regular?

@@ -2835,12 +2835,6 @@ chunk_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *      }
  *    }
  *
- *  If the block needs to maintain state over multiple elements,
- *  an +initial_state+ argument can be used.
- *  If a non-nil value is given,
- *  a reference to it is passed as the 2nd argument of the block for the
- *  +chunk+ method, so state-changes to it persist across block calls.
- *
  */
 static VALUE
 enum_chunk(int argc, VALUE *argv, VALUE enumerable)
@@ -2853,7 +2847,7 @@ enum_chunk(int argc, VALUE *argv, VALUE enumerable)
 	rb_raise(rb_eArgError, "no block given");
     n = rb_scan_args(argc, argv, "01", &initial_state);
     if (n != 0)
-        rb_warn("initial_state given for chunk.  (Use Enumerator.new with lexical scope variables.)");
+        rb_warn("initial_state given for chunk.  (Use local variables.)");
 
     enumerator = rb_obj_alloc(rb_cEnumerator);
     rb_ivar_set(enumerator, rb_intern("chunk_enumerable"), enumerable);
@@ -2946,7 +2940,6 @@ slicebefore_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *
  *    enum.slice_before(pattern).each { |ary| ... }
  *    enum.slice_before { |elt| bool }.each { |ary| ... }
- *    enum.slice_before(initial_state) { |elt, state| bool }.each { |ary| ... }
  *
  *  Other methods of the Enumerator class and Enumerable module,
  *  such as map, etc., are also usable.
@@ -2992,35 +2985,43 @@ slicebefore_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *    }.join(",")
  *    #=> "0,2-4,6,7,9"
  *
- *  However local variables are not appropriate to maintain state
- *  if the result enumerator is used twice or more.
- *  In such a case, the last state of the 1st +each+ is used in the 2nd +each+.
- *  The _initial_state_ argument can be used to avoid this problem.
- *  If non-nil value is given as _initial_state_,
- *  it is duplicated for each +each+ method invocation of the enumerator.
- *  The duplicated object is passed to 2nd argument of the block for
- *  +slice_before+ method.
+ *  However local variables should be used carefully
+ *  if the result enumerator is enumerated twice or more.
+ *  The local variables should be initialized for each enumeration.
+ *  Enumerator.new can be used to do it.
  *
  *    # Word wrapping.  This assumes all characters have same width.
  *    def wordwrap(words, maxwidth)
- *      # if cols is a local variable, 2nd "each" may start with non-zero cols.
- *      words.slice_before(cols: 0) { |w, h|
- *        h[:cols] += 1 if h[:cols] != 0
- *        h[:cols] += w.length
- *        if maxwidth < h[:cols]
- *          h[:cols] = w.length
- *          true
- *        else
- *          false
- *        end
+ *      Enumerator.new {|y|
+ *        # cols is initialized in Enumerator.new.
+ *        cols = 0
+ *        words.slice_before { |w|
+ *          cols += 1 if cols != 0
+ *          cols += w.length
+ *          if maxwidth < cols
+ *            cols = w.length
+ *            true
+ *          else
+ *            false
+ *          end
+ *        }.each {|ws| y.yield ws }
  *      }
  *    end
  *    text = (1..20).to_a.join(" ")
  *    enum = wordwrap(text.split(/\s+/), 10)
  *    puts "-"*10
- *    enum.each { |ws| puts ws.join(" ") }
+ *    enum.each { |ws| puts ws.join(" ") } # first enumeration.
+ *    puts "-"*10
+ *    enum.each { |ws| puts ws.join(" ") } # second enumeration generates same result as the first.
  *    puts "-"*10
  *    #=> ----------
+ *    #   1 2 3 4 5
+ *    #   6 7 8 9 10
+ *    #   11 12 13
+ *    #   14 15 16
+ *    #   17 18 19
+ *    #   20
+ *    #   ----------
  *    #   1 2 3 4 5
  *    #   6 7 8 9 10
  *    #   11 12 13
@@ -3072,7 +3073,7 @@ enum_slice_before(int argc, VALUE *argv, VALUE enumerable)
         int n;
         n = rb_scan_args(argc, argv, "01", &initial_state);
         if (n != 0)
-	    rb_warn("initial_state given for slice_before.  (Use Enumerator.new with lexical scope variables.)");
+	    rb_warn("initial_state given for slice_before.  (Use local variables.)");
         enumerator = rb_obj_alloc(rb_cEnumerator);
         rb_ivar_set(enumerator, rb_intern("slicebefore_sep_pred"), rb_block_proc());
         rb_ivar_set(enumerator, rb_intern("slicebefore_initial_state"), initial_state);
