@@ -244,6 +244,8 @@ with all sufficient information, see the ChangeLog file.
   rb_big2str0 : internal function. no replacement.
   rb_big2ulong_pack -> rb_integer_pack
   rb_gc_set_params : internal function. no replacement.
+  rb_io_mode_flags -> rb_io_modestr_fmode
+  rb_io_modenum_flags -> rb_io_oflags_fmode
 
 * struct RBignum is hidden.  [Feature #6083]
   Use rb_integer_pack and rb_integer_unpack instead.

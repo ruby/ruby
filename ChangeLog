@@ -1,3 +1,8 @@
+Fri Oct 10 11:27:49 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/io.h (rb_io_mode_flags, rb_io_modenum_flags):
+	  deprecate old macros for compatibility for ruby 1.8 and older.
+
 Thu Oct  9 23:31:47 2014  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* bignum.c (absint_numwords_generic): set an array element after

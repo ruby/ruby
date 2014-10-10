@@ -188,8 +188,8 @@ int rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **
 ssize_t rb_io_bufwrite(VALUE io, const void *buf, size_t size);
 
 /* compatibility for ruby 1.8 and older */
-#define rb_io_mode_flags(modestr) rb_io_modestr_fmode(modestr)
-#define rb_io_modenum_flags(oflags) rb_io_oflags_fmode(oflags)
+#define rb_io_mode_flags(modestr) [<"rb_io_mode_flags() is obsolete; use rb_io_modestr_fmode()">]
+#define rb_io_modenum_flags(oflags) [<"rb_io_modenum_flags() is obsolete; use rb_io_oflags_fmode()">]
 
 VALUE rb_io_taint_check(VALUE);
 NORETURN(void rb_eof_error(void));

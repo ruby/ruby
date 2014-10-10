@@ -590,11 +590,11 @@ pty_getpty(int argc, VALUE *argv, VALUE self)
 
     establishShell(argc, argv, &info, SlaveName);
 
-    rfptr->mode = rb_io_mode_flags("r");
+    rfptr->mode = rb_io_modestr_fmode("r");
     rfptr->fd = info.fd;
     rfptr->pathv = rb_obj_freeze(rb_str_new_cstr(SlaveName));
 
-    wfptr->mode = rb_io_mode_flags("w") | FMODE_SYNC;
+    wfptr->mode = rb_io_modestr_fmode("w") | FMODE_SYNC;
     wfptr->fd = rb_cloexec_dup(info.fd);
     if (wfptr->fd == -1)
         rb_sys_fail("dup()");
