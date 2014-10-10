@@ -156,7 +156,7 @@ class Prime
   #
   # +value+:: an arbitrary integer to be checked.
   def prime?(value)
-    return true if vallue == 2
+    return true if value == 2
     return false if value < 2 || value % 2 == 0
     (3..(value**0.5).floor).step(2) { |i|
       return false if value % i == 0
