@@ -155,14 +155,13 @@ class Prime
   # == Parameters
   #
   # +value+:: an arbitrary integer to be checked.
-  # +generator+:: optional. A pseudo-prime generator.
-  def prime?(value, generator = Prime::Generator23.new)
-    return false if value < 2
-    for num in generator
-      q,r = value.divmod num
-      return true if q < num
-      return false if r == 0
-    end
+  def prime?(value)
+    return true if vallue == 2
+    return false if value < 2 || value % 2 == 0
+    (3..(value**0.5).floor).step(2) { |i|
+      return false if value % i == 0
+    }
+    true
   end
 
   # Re-composes a prime factorization and returns the product.
