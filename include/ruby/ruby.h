@@ -564,11 +564,24 @@ int ruby_safe_level_4_warning(void) __attribute__((warning("$SAFE=4 is obsolete"
 # ifdef RUBY_EXPORT
 #   define ruby_safe_level_4_warning() ruby_safe_level_4_error()
 # endif
-#define RUBY_SAFE_LEVEL_INVALID_P(level) \
+#if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
+# define RUBY_SAFE_LEVEL_INVALID_P(level) \
+    __extension__(\
+	__builtin_choose_expr(\
+	    __builtin_constant_p(level), \
+	    ((level) < 0 || RUBY_SAFE_LEVEL_MAX < (level)), 0))
+# define RUBY_SAFE_LEVEL_CHECK(level, type) \
+    __extension__(__builtin_choose_expr(RUBY_SAFE_LEVEL_INVALID_P(level), ruby_safe_level_4_##type(), (level)))
+#else
+/* in gcc 4.8 or earlier, __builtin_choose_expr() does not consider
+ * __builtin_constant_p(variable) a constant expression.
+ */
+# define RUBY_SAFE_LEVEL_INVALID_P(level) \
     __extension__(__builtin_constant_p(level) && \
 		  ((level) < 0 || RUBY_SAFE_LEVEL_MAX < (level)))
-#define RUBY_SAFE_LEVEL_CHECK(level, type) \
-    __extension__(__builtin_choose_expr(RUBY_SAFE_LEVEL_INVALID_P(level), ruby_safe_level_4_##type(), (level)))
+# define RUBY_SAFE_LEVEL_CHECK(level, type) \
+    (RUBY_SAFE_LEVEL_INVALID_P(level) ? ruby_safe_level_4_##type() : (level))
+#endif
 #define rb_secure(level) rb_secure(RUBY_SAFE_LEVEL_CHECK(level, warning))
 #define rb_set_safe_level(level) rb_set_safe_level(RUBY_SAFE_LEVEL_CHECK(level, error))
 #endif

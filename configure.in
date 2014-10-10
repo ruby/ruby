@@ -2110,7 +2110,7 @@ main(int argc, char **argv)
 AC_DEFUN([RUBY_CHECK_BUILTIN_FUNC], [dnl
 AC_CACHE_CHECK([for $1], AS_TR_SH(rb_cv_builtin_$1),
   [AC_LINK_IFELSE(
-    [AC_LANG_PROGRAM([], [$2;])],
+    [AC_LANG_PROGRAM([int foo;], [$2;])],
     [AS_TR_SH(rb_cv_builtin_$1)=yes],
     [AS_TR_SH(rb_cv_builtin_$1)=no])])
 if test "${AS_TR_SH(rb_cv_builtin_$1)}" != no; then
@@ -2123,6 +2123,7 @@ RUBY_CHECK_BUILTIN_FUNC(__builtin_clz, [__builtin_clz(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_clzl, [__builtin_clzl(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_clzll, [__builtin_clzll(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_choose_expr, [__builtin_choose_expr(0, 0, 0)])
+RUBY_CHECK_BUILTIN_FUNC(__builtin_choose_expr_constant_p, [__builtin_choose_expr(__builtin_constant_p(foo), 0, 0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_types_compatible_p, [__builtin_types_compatible_p(int, int)])
 
 if test "$ac_cv_func_qsort_r" != no; then
