@@ -122,6 +122,24 @@ class TestOpenURI < Test::Unit::TestCase
     }
   end
 
+  def test_open_timeout
+    assert_raises(Net::OpenTimeout) do
+      URI("http://example.com/").read(open_timeout: 0.000001)
+    end if false # avoid external resources in tests
+
+    with_http {|srv, dr, url|
+      url += '/'
+      srv.mount_proc('/', lambda { |_, res| res.body = 'hi' })
+      begin
+        URI(url).read(open_timeout: 0.000001)
+      rescue Net::OpenTimeout
+        # not guaranteed to fire, since the kernel negotiates the
+        # TCP connection even if the server thread is sleeping
+      end
+      assert_equal 'hi', URI(url).read(open_timeout: 60), 'should not timeout'
+    }
+  end
+
   def test_invalid_option
     assert_raise(ArgumentError) { open("http://127.0.0.1/", :invalid_option=>true) {} }
   end

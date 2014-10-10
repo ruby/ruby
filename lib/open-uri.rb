@@ -102,6 +102,7 @@ module OpenURI
     :content_length_proc => true,
     :http_basic_authentication => true,
     :read_timeout => true,
+    :open_timeout => true,
     :ssl_ca_cert => nil,
     :ssl_verify_mode => nil,
     :ftp_active_mode => false,
@@ -306,6 +307,9 @@ module OpenURI
     end
     if options.include? :read_timeout
       http.read_timeout = options[:read_timeout]
+    end
+    if options.include? :open_timeout
+      http.open_timeout = options[:open_timeout]
     end
 
     resp = nil
@@ -666,6 +670,13 @@ module OpenURI
     #    :read_timeout=>10      (10 second)
     #
     #  :read_timeout option specifies a timeout of read for http connections.
+    #
+    # [:open_timeout]
+    #  Synopsis:
+    #    :open_timeout=>nil     (no timeout)
+    #    :open_timeout=>10      (10 second)
+    #
+    #  :open_timeout option specifies a timeout of open for http connections.
     #
     # [:ssl_ca_cert]
     #  Synopsis:

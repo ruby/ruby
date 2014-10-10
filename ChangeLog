@@ -1,3 +1,11 @@
+Sat Oct 11 04:14:41 2014  Kir Shatrov  <shatrov@me.com>
+
+	* lib/open-uri.rb (OpenURI::Options): add :open_timeout default
+	* (def OpenURI.open_http): check :open_timeout option
+	* (module OpenURI): rdoc for :open_timeout
+	* test/open-uri/test_open-uri.rb (test_open_timeout): new test
+	  [Feature #10361]
+
 Fri Oct 10 11:27:49 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/io.h (rb_io_mode_flags, rb_io_modenum_flags):
