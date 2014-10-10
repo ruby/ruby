@@ -7374,6 +7374,60 @@ rb_io_stdio_file(rb_io_t *fptr)
     return fptr->stdio_file;
 }
 
+static inline void
+rb_io_buffer_init(rb_io_buffer_t *buf)
+{
+    buf->ptr = NULL;
+    buf->off = 0;
+    buf->len = 0;
+    buf->capa = 0;
+}
+
+static inline rb_io_t *
+rb_io_fptr_new(void)
+{
+    rb_io_t *fp = ALLOC(rb_io_t);
+    fp->fd = -1;
+    fp->stdio_file = NULL;
+    fp->mode = 0;
+    fp->pid = 0;
+    fp->lineno = 0;
+    fp->pathv = Qnil;
+    fp->finalize = 0;
+    rb_io_buffer_init(&fp->wbuf);
+    rb_io_buffer_init(&fp->rbuf);
+    rb_io_buffer_init(&fp->cbuf);
+    fp->readconv = NULL;
+    fp->writeconv = NULL;
+    fp->writeconv_asciicompat = Qnil;
+    fp->writeconv_pre_ecflags = 0;
+    fp->writeconv_pre_ecopts = Qnil;
+    fp->writeconv_initialized = 0;
+    fp->tied_io_for_writing = 0;
+    fp->encs.enc = NULL;
+    fp->encs.enc2 = NULL;
+    fp->encs.ecflags = 0;
+    fp->encs.ecopts = Qnil;
+    fp->write_lock = 0;
+    return fp;
+}
+
+rb_io_t *
+rb_io_make_open_file(VALUE obj)
+{
+    rb_io_t *fp = 0;
+
+    Check_Type(obj, T_FILE);
+    if (RFILE(obj)->fptr) {
+	rb_io_close(obj);
+	rb_io_fptr_finalize(RFILE(obj)->fptr);\
+	RFILE(obj)->fptr = 0;
+    }
+    fp = rb_io_fptr_new();
+    RFILE(obj)->fptr = fp;
+    return fp;
+}
+
 /*
  *  call-seq:
  *     IO.new(fd [, mode] [, opt])   -> io
