@@ -145,7 +145,7 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
 } while(0)
 
 #ifdef __GNUC__
-#ifdef HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR
+#ifdef HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P
 #define only_if_constant(expr, notconst) __builtin_choose_expr(__builtin_constant_p(expr), (expr), (notconst))
 #else
 #define only_if_constant(expr, notconst) (__builtin_constant_p(expr) ? (expr) : (notconst))
