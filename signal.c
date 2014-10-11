@@ -1261,7 +1261,9 @@ install_sighandler(int signum, sighandler_t handler)
     rb_enable_interrupt();
     return 0;
 }
-#define install_sighandler(signum, handler) (install_sighandler(signum, handler) ? rb_bug(#signum) : (void)0)
+#ifndef __native_client__
+#  define install_sighandler(signum, handler) (install_sighandler(signum, handler) ? rb_bug(#signum) : (void)0)
+#endif
 
 #if defined(SIGCLD) || defined(SIGCHLD)
 static int
@@ -1281,7 +1283,9 @@ init_sigchld(int sig)
     rb_enable_interrupt();
     return 0;
 }
-#define init_sigchld(signum) (init_sigchld(signum) ? rb_bug(#signum) : (void)0)
+#  ifndef __native_client__
+#    define init_sigchld(signum) (init_sigchld(signum) ? rb_bug(#signum) : (void)0)
+#  endif
 #endif
 
 void

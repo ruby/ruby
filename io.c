@@ -204,6 +204,9 @@ rb_update_max_fd(int fd)
     }
 }
 
+#undef HAVE_FCNTL
+#undef O_CLOEXEC
+
 void
 rb_maygvl_fd_fix_cloexec(int fd)
 {
