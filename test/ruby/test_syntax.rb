@@ -109,12 +109,12 @@ class TestSyntax < Test::Unit::TestCase
     def o.kw(k1: 1, k2: 2) [k1, k2] end
     h = {k1: 11, k2: 12}
     assert_equal([11, 12], o.kw(**h))
-    assert_equal([11, 22], o.kw(k2: 22, **h))
-    assert_equal([11, 12], o.kw(**h, **{k2: 22}))
-    assert_equal([11, 22], o.kw(**{k2: 22}, **h))
+    assert_equal([11, 12], o.kw(k2: 22, **h))
+    assert_equal([11, 22], o.kw(**h, **{k2: 22}))
+    assert_equal([11, 12], o.kw(**{k2: 22}, **h))
 
     bug10315 = '[ruby-core:65368] [Bug #10315]'
-    assert_equal([22, 2], o.kw(**{k1: 22}, **{k1: 23}), bug10315)
+    assert_equal([23, 2], o.kw(**{k1: 22}, **{k1: 23}), bug10315)
 
     h = {k3: 31}
     assert_raise(ArgumentError) {o.kw(**h)}

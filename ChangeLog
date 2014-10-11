@@ -1,4 +1,7 @@
-Sat Oct 11 13:46:53 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Oct 11 13:46:58 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (kwmerge_i): override existing keys by new keys.
+	  [ruby-core:65368] [Bug #10315]
 
 	* parse.y (assocs): concatenate splatted literal hashes.  the
 	  former key has precedence even if duplicated literal keys
