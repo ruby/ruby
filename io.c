@@ -126,6 +126,10 @@
 off_t __syscall(quad_t number, ...);
 #endif
 
+#ifdef __native_client__
+#  undef F_GETFD
+#endif
+
 #define IO_RBUF_CAPA_MIN  8192
 #define IO_CBUF_CAPA_MIN  (128*1024)
 #define IO_RBUF_CAPA_FOR(fptr) (NEED_READCONV(fptr) ? IO_CBUF_CAPA_MIN : IO_RBUF_CAPA_MIN)
@@ -204,9 +208,6 @@ rb_update_max_fd(int fd)
     }
 }
 
-#undef HAVE_FCNTL
-#undef O_CLOEXEC
-
 void
 rb_maygvl_fd_fix_cloexec(int fd)
 {
@@ -241,7 +242,7 @@ rb_fd_fix_cloexec(int fd)
 static int
 rb_fix_detect_o_cloexec(int fd)
 {
-#ifdef O_CLOEXEC
+#if defined(O_CLOEXEC) && defined(F_GETFD)
     int flags = fcntl(fd, F_GETFD);
 
     if (flags == -1)

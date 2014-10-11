@@ -1,3 +1,34 @@
+Sat Oct 11 11:27:14 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* io.c: fix issues in the last two commits. don't disable cloexec for
+          platforms other than NativeClient.
+	* ChangeLog: ditto. add entries for the last two commits.
+
+Sat Oct 11 11:12:00 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* signal.c (install_signalhandler, init_sigchld): allow failure because it
+	  always fails with ENOSYS on NaCl.
+
+Sat Oct 11 11:11:53 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* configure.in (RUBY_NACL and others): merge patch from naclports. Supports PNaCl.
+	* dln.c: ditto. replace the old hacky dynamic loading over HTTP with nacl_io.
+	* file.c: ditto. tenatively use access(2) instead of eaccess.
+	  (rb_file_load_ok): weaken with attribute but not by postprocess.
+	* io.c: ditto.
+	  (socket.h): now NaCl has socket.h
+	  (flock): disable here instead of nacl/ioctl.h
+	* nacl/GNUmakefile.in: ditto.
+	  (CC, LD, NM, AR, AS, RANLIB, OBJDUMP, OBJCOPY):
+	  respect path to them if they are absolute.
+	  This helps naclports to build ruby in their source tree.
+	  (PROGRAM_NMF, .SUFFIXES): support .pnexe for PNaCl.
+	  (ruby.o, file.o): move the hack to attributes in ruby.c and file.c
+	* nacl/ioctl.h: ditto. removed. move the hack to io.c.
+	* nacl/nacl-config.rb: ditto. support arm, pnacl and others.
+	* nacl/pepper_main.c: ditto. support build in a naclports tree.
+	* ruby.c (rb_load_file): ditto. weaken with attribute but not by postprocess.
+
 Sat Oct 11 09:32:00 2014  Zachary Scott  <e@zzak.io>
 
 	* ext/socket/unixsocket.c: [DOC] Fix example to render in HTML
