@@ -1,4 +1,7 @@
-Sat Oct 11 13:46:58 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Oct 11 13:47:13 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (remove_duplicate_keys): remove duplicate literal keys,
+	  i.e., symbols and strings.  [ruby-core:65368] [Bug #10315]
 
 	* vm.c (kwmerge_i): override existing keys by new keys.
 	  [ruby-core:65368] [Bug #10315]
