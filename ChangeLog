@@ -1,3 +1,8 @@
+Sat Oct 11 22:29:40 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* file.c (HAVE_UTIMENSAT): disabled for NativeClient.
+	  Fixes build error.
+
 Sat Oct 11 22:11:58 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
 	* ext/extmk.rb: generates the rule for extinit.$(OBJEXT).

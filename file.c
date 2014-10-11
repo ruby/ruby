@@ -64,10 +64,14 @@ int flock(int, int);
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#if defined(__native_client__) && defined(NACL_NEWLIB)
-# include "nacl/utime.h"
-# include "nacl/stat.h"
-# include "nacl/unistd.h"
+#if defined(__native_client__) 
+# if defined(NACL_NEWLIB)
+#  include "nacl/utime.h"
+#  include "nacl/stat.h"
+#  include "nacl/unistd.h"
+# else
+#  undef HAVE_UTIMENSAT
+# endif
 #endif
 
 #ifdef HAVE_SYS_MKDEV_H
@@ -2538,7 +2542,7 @@ utime_internal(const char *path, VALUE pathv, void *arg)
     const struct timespec *tsp = v->tsp;
     struct timeval tvbuf[2], *tvp = NULL;
 
-#ifdef HAVE_UTIMENSAT
+#if defined(HAVE_UTIMENSAT)
     static int try_utimensat = 1;
 
     if (try_utimensat) {
