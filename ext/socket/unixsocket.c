@@ -278,6 +278,8 @@ recvmsg_blocking(void *data)
  * call-seq:
  *   unixsocket.recv_io([klass [, mode]]) => io
  *
+ * Example
+ *
  *   UNIXServer.open("/tmp/sock") {|serv|
  *     UNIXSocket.open("/tmp/sock") {|c|
  *       s = serv.accept
@@ -475,7 +477,7 @@ unix_peeraddr(VALUE sock)
  *   UNIXSocket.pair([type [, protocol]])       => [unixsocket1, unixsocket2]
  *   UNIXSocket.socketpair([type [, protocol]]) => [unixsocket1, unixsocket2]
  *
- * Creates a pair of sockets connected each other.
+ * Creates a pair of sockets connected to each other.
  *
  * _socktype_ should be a socket type such as: :STREAM, :DGRAM, :RAW, etc.
  *

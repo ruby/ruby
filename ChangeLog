@@ -1,3 +1,9 @@
+Sat Oct 11 09:32:00 2014  Zachary Scott  <e@zzak.io>
+
+	* ext/socket/unixsocket.c: [DOC] Fix example to render in HTML
+	  properly, with a patch by @eval [Fixes GH-733]
+	  https://github.com/ruby/ruby/pull/733
+
 Sat Oct 11 04:14:41 2014  Kir Shatrov  <shatrov@me.com>
 
 	* lib/open-uri.rb (OpenURI::Options): add :open_timeout default
