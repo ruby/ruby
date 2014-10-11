@@ -1,3 +1,7 @@
+Sat Oct 11 14:57:08 2014  Eric Wong  <e@80x24.org>
+
+	* string.c (rb_str_intern): remove unnecessary RB_GC_GUARD
+
 Sat Oct 11 13:47:13 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (remove_duplicate_keys): remove duplicate literal keys,

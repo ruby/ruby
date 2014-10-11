@@ -7549,9 +7549,8 @@ rb_str_crypt(VALUE str, VALUE salt)
 
 
 VALUE
-rb_str_intern(VALUE s)
+rb_str_intern(VALUE str)
 {
-    VALUE str = RB_GC_GUARD(s);
     ID id;
 
     id = rb_intern_str(str);
