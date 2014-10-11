@@ -1,3 +1,9 @@
+Sat Oct 11 13:46:53 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (assocs): concatenate splatted literal hashes.  the
+	  former key has precedence even if duplicated literal keys
+	  follow.  [ruby-core:65368] [Bug #10315]
+
 Sat Oct 11 12:27:03 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
 	* configure.in (RUBY_NACL): automatically locate pnacl-clang.

@@ -4931,7 +4931,15 @@ assocs		: assoc
 		| assocs ',' assoc
 		    {
 		    /*%%%*/
-			$$ = list_concat($1, $3);
+			NODE *assocs = $1;
+			NODE *tail = $3;
+			if (assocs->nd_head &&
+			    !tail->nd_head && nd_type(tail->nd_next) == NODE_ARRAY &&
+			    nd_type(tail->nd_next->nd_head) == NODE_HASH) {
+			    /* DSTAR */
+			    tail = tail->nd_next->nd_head->nd_head;
+			}
+			$$ = list_concat(assocs, tail);
 		    /*%
 			$$ = rb_ary_push($1, $3);
 		    %*/
