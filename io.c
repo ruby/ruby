@@ -68,6 +68,10 @@
 # define PRI_OFF_T_PREFIX ""
 #endif
 
+#ifdef HAVE_SYS_TIME_H
+# include <sys/time.h>
+#endif
+
 #include <sys/stat.h>
 
 /* EMX has sys/param.h, but.. */
@@ -127,7 +131,10 @@ off_t __syscall(quad_t number, ...);
 #endif
 
 #ifdef __native_client__
-#  undef F_GETFD
+# undef F_GETFD
+# ifdef NACL_NEWLIB
+#  undef HAVE_IOCTL
+# endif
 #endif
 
 #define IO_RBUF_CAPA_MIN  8192
@@ -5866,19 +5873,20 @@ linux_get_maxfd(void)
 void
 rb_close_before_exec(int lowfd, int maxhint, VALUE noclose_fds)
 {
+#if defined(HAVE_FCNTL) && defined(F_GETFD) && defined(F_SETFD) && defined(FD_CLOEXEC)
     int fd, ret;
     int max = (int)max_file_descriptor;
-#ifdef F_MAXFD
+# ifdef F_MAXFD
     /* F_MAXFD is available since NetBSD 2.0. */
     ret = fcntl(0, F_MAXFD); /* async-signal-safe */
     if (ret != -1)
         maxhint = max = ret;
-#elif defined(__linux__)
+# elif defined(__linux__)
     ret = linux_get_maxfd();
     if (maxhint < ret)
         maxhint = ret;
     /* maxhint = max = ret; if (ret == -1) abort(); // test */
-#endif
+# endif
     if (max < maxhint)
         max = maxhint;
     for (fd = lowfd; fd <= max; fd++) {
@@ -5889,12 +5897,13 @@ rb_close_before_exec(int lowfd, int maxhint, VALUE noclose_fds)
 	if (ret != -1 && !(ret & FD_CLOEXEC)) {
             fcntl(fd, F_SETFD, ret|FD_CLOEXEC); /* async-signal-safe */
         }
-#define CONTIGUOUS_CLOSED_FDS 20
+# define CONTIGUOUS_CLOSED_FDS 20
         if (ret != -1) {
 	    if (max < fd + CONTIGUOUS_CLOSED_FDS)
 		max = fd + CONTIGUOUS_CLOSED_FDS;
 	}
     }
+#endif
 }
 
 static int
@@ -8864,6 +8873,7 @@ rb_f_select(int argc, VALUE *argv, VALUE obj)
 # define NUM2IOCTLREQ(num) NUM2INT(num)
 #endif
 
+#ifdef HAVE_IOCTL
 struct ioctl_arg {
     int		fd;
     ioctl_req_t	cmd;
@@ -8892,6 +8902,7 @@ do_ioctl(int fd, ioctl_req_t cmd, long narg)
 
     return retval;
 }
+#endif
 
 #define DEFULT_IOCTL_NARG_LEN (256)
 
@@ -9125,6 +9136,7 @@ setup_narg(ioctl_req_t cmd, VALUE *argp, int io_p)
     return narg;
 }
 
+#ifdef HAVE_IOCTL
 static VALUE
 rb_ioctl(VALUE io, VALUE req, VALUE arg)
 {
@@ -9168,6 +9180,9 @@ rb_io_ioctl(int argc, VALUE *argv, VALUE io)
     rb_scan_args(argc, argv, "11", &req, &arg);
     return rb_ioctl(io, req, arg);
 }
+#else
+#define rb_io_ioctl rb_f_notimplement
+#endif
 
 #ifdef HAVE_FCNTL
 struct fcntl_arg {

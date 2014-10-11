@@ -1,3 +1,35 @@
+Sat Oct 11 18:46:50 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* include/ruby/intern.h (rb_fd_select): declare struct timeval, or the
+	  struct gets local to the function in C99.
+
+	* file.c (#include): add nacl/stat.h for PNaCl.
+	  (utimes): added a declaration for PNaCl.
+	  (stat_atimespec): stat::st_atimensec is long long but
+	  timespec::tv_nsec is long in PNaCl.
+	  (stat_mtimespec, stat_ctimespec): ditto.
+	  (rb_group_member): disable getgroups unless HAVE_GETGROUPS.
+	  (eaccess): unify the fallback to generic defined(USE_GETEUID).
+
+	* io.c: include sys/time.h for struct timeval.
+	  (rb_close_before_exec): nothing we can do if F_GETFD is not
+	  available.
+	  (ioctl): pnacl newlib actually doesn't have ioctl.
+
+	* process.c (maxgroups): it is used iff
+	   defined(_SC_NGROUPS_MAX) || defined(NGROUPS_MAX) but not
+	   defined(HAVE_GETGROUPS) || defined(HAVE_SETGROUPS).
+	  (obj2gid): fail unless the object is a Fixnum if getgrnam is not
+	  available.
+	  (disable_child_handler_fork_child): sigaction is not available in
+	  PNaCl newlib.
+
+	* configure.in (warnflags, strict_warnflags): avoid -ansi for strlcpy.
+	  (rb_cv_gcc_atomic_builtins): also check
+	  __atomic_or_etch because it is used in ruby_atomic.h.
+	  (rb_cv_gcc_sync_builtins): ditto.
+	  (HAVE_GETGRNAM): added.
+
 Sat Oct 11 15:32:08 2014  Eric Wong  <e@80x24.org>
 
 	* compile.c (iseq_build_from_ary_exception): move RB_GC_GUARD
@@ -28,6 +60,7 @@ Sat Oct 11 11:27:14 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
 	* io.c: fix issues in the last two commits. don't disable cloexec for
           platforms other than NativeClient.
+
 	* ChangeLog: ditto. add entries for the last two commits.
 
 Sat Oct 11 11:12:00 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
@@ -38,21 +71,29 @@ Sat Oct 11 11:12:00 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
 Sat Oct 11 11:11:53 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
 	* configure.in (RUBY_NACL and others): merge patch from naclports. Supports PNaCl.
+
 	* dln.c: ditto. replace the old hacky dynamic loading over HTTP with nacl_io.
+
 	* file.c: ditto. tenatively use access(2) instead of eaccess.
 	  (rb_file_load_ok): weaken with attribute but not by postprocess.
+
 	* io.c: ditto.
 	  (socket.h): now NaCl has socket.h
 	  (flock): disable here instead of nacl/ioctl.h
+
 	* nacl/GNUmakefile.in: ditto.
 	  (CC, LD, NM, AR, AS, RANLIB, OBJDUMP, OBJCOPY):
 	  respect path to them if they are absolute.
 	  This helps naclports to build ruby in their source tree.
 	  (PROGRAM_NMF, .SUFFIXES): support .pnexe for PNaCl.
 	  (ruby.o, file.o): move the hack to attributes in ruby.c and file.c
+
 	* nacl/ioctl.h: ditto. removed. move the hack to io.c.
+
 	* nacl/nacl-config.rb: ditto. support arm, pnacl and others.
+
 	* nacl/pepper_main.c: ditto. support build in a naclports tree.
+
 	* ruby.c (rb_load_file): ditto. weaken with attribute but not by postprocess.
 
 Sat Oct 11 09:32:00 2014  Zachary Scott  <e@zzak.io>

@@ -22,6 +22,7 @@
 #ifdef __APPLE__
 #include <CoreFoundation/CFString.h>
 #endif
+#include <sys/time.h>
 
 #include "ruby/ruby.h"
 #include "ruby/io.h"
@@ -68,7 +69,6 @@ int flock(int, int);
 # include "nacl/stat.h"
 # include "nacl/unistd.h"
 #endif
-
 
 #ifdef HAVE_SYS_MKDEV_H
 #include <sys/mkdev.h>
@@ -720,7 +720,7 @@ stat_atimespec(struct stat *st)
 #elif defined(HAVE_STRUCT_STAT_ST_ATIMESPEC)
     ts.tv_nsec = st->st_atimespec.tv_nsec;
 #elif defined(HAVE_STRUCT_STAT_ST_ATIMENSEC)
-    ts.tv_nsec = st->st_atimensec;
+    ts.tv_nsec = (long)st->st_atimensec;
 #else
     ts.tv_nsec = 0;
 #endif
@@ -744,7 +744,7 @@ stat_mtimespec(struct stat *st)
 #elif defined(HAVE_STRUCT_STAT_ST_MTIMESPEC)
     ts.tv_nsec = st->st_mtimespec.tv_nsec;
 #elif defined(HAVE_STRUCT_STAT_ST_MTIMENSEC)
-    ts.tv_nsec = st->st_mtimensec;
+    ts.tv_nsec = (long)st->st_mtimensec;
 #else
     ts.tv_nsec = 0;
 #endif
@@ -768,7 +768,7 @@ stat_ctimespec(struct stat *st)
 #elif defined(HAVE_STRUCT_STAT_ST_CTIMESPEC)
     ts.tv_nsec = st->st_ctimespec.tv_nsec;
 #elif defined(HAVE_STRUCT_STAT_ST_CTIMENSEC)
-    ts.tv_nsec = st->st_ctimensec;
+    ts.tv_nsec = (long)st->st_ctimensec;
 #else
     ts.tv_nsec = 0;
 #endif
@@ -1138,7 +1138,7 @@ rb_file_lstat(VALUE obj)
 static int
 rb_group_member(GETGROUPS_T gid)
 {
-#ifdef _WIN32
+#if defined(_WIN32) || !defined(HAVE_GETGROUPS)
     return FALSE;
 #else
     int rv = FALSE;
@@ -1195,7 +1195,8 @@ rb_group_member(GETGROUPS_T gid)
 // overridden by nacl_io.
 // TODO(sbc): Remove this once eaccess() is wired up correctly
 // in NaCl.
-#define eaccess access
+# undef HAVE_EACCESS
+# undef USE_GETEUID
 #endif
 
 #ifndef HAVE_EACCESS

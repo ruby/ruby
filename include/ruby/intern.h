@@ -316,6 +316,8 @@ void rb_fd_clr(int, rb_fdset_t *);
 int rb_fd_isset(int, const rb_fdset_t *);
 void rb_fd_copy(rb_fdset_t *, const fd_set *, int);
 void rb_fd_dup(rb_fdset_t *dst, const rb_fdset_t *src);
+
+struct timeval;
 int rb_fd_select(int, rb_fdset_t *, rb_fdset_t *, rb_fdset_t *, struct timeval *);
 
 #define rb_fd_ptr(f)	((f)->fdset)

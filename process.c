@@ -67,8 +67,11 @@
 
 #include <sys/stat.h>
 #if defined(__native_client__) && defined(NACL_NEWLIB)
+# include <sys/unistd.h>
 # include "nacl/stat.h"
 # include "nacl/unistd.h"
+# include "nacl/resource.h"
+# undef HAVE_ISSETUGID
 #endif
 
 #ifdef HAVE_SYS_TIME_H
@@ -3389,6 +3392,7 @@ disable_child_handler_before_fork(struct child_handler_disabler_state *old)
     int ret;
     sigset_t all;
 
+#ifdef HAVE_PTHREAD_SIGMASK
     ret = sigfillset(&all);
     if (ret == -1)
         rb_sys_fail("sigfillset");
@@ -3398,6 +3402,9 @@ disable_child_handler_before_fork(struct child_handler_disabler_state *old)
         errno = ret;
         rb_sys_fail("pthread_sigmask");
     }
+#else
+# pragma GCC warning "pthread_sigmask on fork is not available. potentially dangerous"
+#endif
 
 #ifdef PTHREAD_CANCEL_DISABLE
     ret = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old->cancelstate);
@@ -3421,11 +3428,15 @@ disable_child_handler_fork_parent(struct child_handler_disabler_state *old)
     }
 #endif
 
+#ifdef HAVE_PTHREAD_SIGMASK
     ret = pthread_sigmask(SIG_SETMASK, &old->sigmask, NULL); /* not async-signal-safe */
     if (ret != 0) {
         errno = ret;
         rb_sys_fail("pthread_sigmask");
     }
+#else
+# pragma GCC warning "pthread_sigmask on fork is not available. potentially dangerous"
+#endif
 }
 
 /* This function should be async-signal-safe.  Actually it is. */
@@ -3434,6 +3445,7 @@ disable_child_handler_fork_child(struct child_handler_disabler_state *old, char 
 {
     int sig;
     int ret;
+#ifdef POSIX_SIGNAL
     struct sigaction act, oact;
 
     act.sa_handler = SIG_DFL;
@@ -3443,6 +3455,9 @@ disable_child_handler_fork_child(struct child_handler_disabler_state *old, char 
         ERRMSG("sigemptyset");
         return -1;
     }
+#else
+    sig_t handler;
+#endif
 
     for (sig = 1; sig < NSIG; sig++) {
         int reset = 0;
@@ -3451,6 +3466,7 @@ disable_child_handler_fork_child(struct child_handler_disabler_state *old, char 
             reset = 1;
 #endif
         if (!reset) {
+#ifdef POSIX_SIGNAL
             ret = sigaction(sig, NULL, &oact); /* async-signal-safe */
             if (ret == -1 && errno == EINVAL) {
                 continue; /* Ignore invalid signal number. */
@@ -3461,13 +3477,32 @@ disable_child_handler_fork_child(struct child_handler_disabler_state *old, char 
             }
             reset = (oact.sa_flags & SA_SIGINFO) ||
                     (oact.sa_handler != SIG_IGN && oact.sa_handler != SIG_DFL);
+#else
+            handler = signal(sig, SIG_DFL);
+            if (handler == SIG_ERR && errno == EINVAL) {
+                continue; /* Ignore invalid signal number */
+            }
+            if (handler == SIG_ERR) {
+                ERRMSG("signal to obtain old action");
+                return -1;
+            }
+            reset = (handler != SIG_IGN && handler != SIG_DFL);
+#endif
         }
         if (reset) {
+#ifdef POSIX_SIGNAL
             ret = sigaction(sig, &act, NULL); /* async-signal-safe */
             if (ret == -1) {
                 ERRMSG("sigaction to set default action");
                 return -1;
             }
+#else
+           handler = signal(sig, handler);
+           if (handler == SIG_ERR) {
+                ERRMSG("signal to set default action");
+                return -1;
+           }
+#endif
         }
     }
 
@@ -5036,8 +5071,10 @@ obj2gid(VALUE id
 	    getgr_buf = RSTRING_PTR(*getgr_tmp);
 	    getgr_buf_len = rb_str_capacity(*getgr_tmp);
 	}
-#else
+#elif defined(HAVE_GETGRNAM)
 	grptr = getgrnam(grpname);
+#else
+	grptr = NULL;
 #endif
 	if (!grptr) {
 #if !defined(USE_GETGRNAM_R) && defined(HAVE_ENDGRENT)
@@ -5668,7 +5705,7 @@ proc_setgid(VALUE obj, VALUE id)
 #endif
 
 
-#if defined(HAVE_SETGROUPS) || defined(HAVE_GETGROUPS)
+#if defined(_SC_NGROUPS_MAX) || defined(NGROUPS_MAX)
 /*
  * Maximum supplementary groups are platform dependent.
  * FWIW, 65536 is enough big for our supported OSs.
