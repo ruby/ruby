@@ -64,7 +64,7 @@ int flock(int, int);
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#if defined(__native_client__) 
+#if defined(__native_client__)
 # if defined(NACL_NEWLIB)
 #  include "nacl/utime.h"
 #  include "nacl/stat.h"
