@@ -111,7 +111,10 @@ AC_DEFUN([RUBY_NACL],
   ac_tool_prefix="$host_cpu-nacl-"
 
   AC_MSG_CHECKING([NativeClient toolchain])
-  if test -d \
+  if test x"$nacl_cv_cpu_nick" = xpnacl; then
+    NACL_TOOLCHAIN="${nacl_cv_os_nick}_pnacl"
+    ac_tool_prefix=pnacl-
+  elif test -d \
     "${NACL_SDK_ROOT}/toolchain/${nacl_cv_os_nick}_${nacl_cv_cpu_nick}_${nacl_cv_build_variant}"; then
     NACL_TOOLCHAIN="${nacl_cv_os_nick}_${nacl_cv_cpu_nick}_${nacl_cv_build_variant}"
   elif test -d \
@@ -144,10 +147,12 @@ AC_DEFUN([RUBY_NACL],
   if ! echo -- "${PATH}" | grep -F "${NACL_SDK_ROOT}/toolchain/${NACL_TOOLCHAIN}/bin" > /dev/null; then
     PATH="${PATH}:${NACL_SDK_ROOT}/toolchain/${NACL_TOOLCHAIN}/bin"
   fi
+  AC_MSG_RESULT(${NACL_SDK_ROOT}/toolchain/${NACL_TOOLCHAIN}/bin)
 
   AC_SUBST(NACL_TOOLCHAIN)
   AC_SUBST(NACL_SDK_ROOT)
   AC_SUBST(NACL_SDK_VARIANT, nacl_cv_build_variant)
+  AC_CHECK_TOOLS(CC, [clang gcc])
 ])])
 
 AC_DEFUN([RUBY_NACL_CHECK_PEPPER_TYPES],
@@ -4024,7 +4029,8 @@ if test "${universal_binary-no}" = yes ; then
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "universal."RUBY_PLATFORM_CPU"-"RUBY_PLATFORM_OS)
 else
     arch="${target_cpu}-${target_os}"
-    AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "${arch}")
+    AS_CASE(["$arch"], [le32-nacl], [arch="pnacl"])
+    AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "$arch")]
 fi
 
 unset sitearch

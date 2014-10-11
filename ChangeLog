@@ -1,3 +1,8 @@
+Sat Oct 11 12:27:03 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* configure.in (RUBY_NACL): automatically locate pnacl-clang.
+	  (RUBY_PLATFORM): pnacl instead of le32-nacl.
+
 Sat Oct 11 11:27:14 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
 	* io.c: fix issues in the last two commits. don't disable cloexec for
