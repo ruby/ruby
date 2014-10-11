@@ -1,3 +1,7 @@
+Sun Oct 12 01:37:11 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* file.c: include sys/time.h only if HAVE_SYS_TIME_H
+
 Sat Oct 11 22:29:40 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
 	* file.c (HAVE_UTIMENSAT): disabled for NativeClient.
