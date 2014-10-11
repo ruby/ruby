@@ -27,14 +27,12 @@ module NaClConfig
   INSTALL_PROGRAM = config['INSTALL_PROGRAM']
   INSTALL_LIBRARY = config['INSTALL_DATA']
 
-  SEL_LDR = [
-    File.join(SDK_ROOT, 'toolchain', config['NACL_TOOLCHAIN'], 'bin', "sel_ldr_#{cpu_nick}"),
-    File.join(SDK_ROOT, 'tools', "sel_ldr_#{cpu_nick}")
-  ].find{|path| File.executable?(path)} or raise "No sel_ldr found"
-  IRT_CORE = [
-    File.join(SDK_ROOT, 'toolchain', config['NACL_TOOLCHAIN'], 'bin', "irt_core_#{cpu_nick}.nexe"),
-    File.join(SDK_ROOT, 'tools', "irt_core_#{cpu_nick}.nexe")
-  ].find{|path| File.exist?(path)} or raise "No irt_core found"
+  if cpu_nick == 'x86_64' or cpu_nick == 'x86_32'
+    SEL_LDR = File.join(SDK_ROOT, 'tools', "sel_ldr_#{cpu_nick}")
+    IRT_CORE = File.join(SDK_ROOT, 'tools', "irt_core_#{cpu_nick}.nexe")
+    raise "No sel_ldr found" if not File.executable?(SEL_LDR)
+    raise "No irt_core found" if not File.exists?(IRT_CORE)
+  end
   RUNNABLE_LD = File.join(HOST_LIB, 'runnable-ld.so')
 
   module_function

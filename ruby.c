@@ -1729,6 +1729,9 @@ load_file(VALUE parser, VALUE fname, int script, struct cmdline_options *opt)
     return (NODE *)rb_ensure(load_file_internal, (VALUE)&arg, restore_lineno, rb_gv_get("$."));
 }
 
+#ifdef __native_client__
+__attribute__((weak))
+#endif
 void *
 rb_load_file(const char *fname)
 {

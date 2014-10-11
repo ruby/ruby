@@ -210,7 +210,7 @@ pruby_async_return_value(void* data, VALUE value)
 static struct PP_Var
 pruby_cstr_to_var(const char* str)
 {
-#ifdef PPB_VAR_INTERFACE_1_0
+#ifndef PPB_VAR_INTERFACE_1_1
   if (var_interface != NULL)
     return var_interface->VarFromUtf8(module_id, str, strlen(str));
   return PP_MakeUndefined();
@@ -252,7 +252,7 @@ pruby_str_to_var(volatile VALUE str)
     fprintf(stderr, "[BUG] Unexpected object type: %x\n", TYPE(str));
     exit(EXIT_FAILURE);
   }
-#ifdef PPB_VAR_INTERFACE_1_0
+#ifndef PPB_VAR_INTERFACE_1_1
   if (var_interface != NULL) {
     return var_interface->VarFromUtf8(module_id, RSTRING_PTR(str), RSTRING_LEN(str));
   }
@@ -517,7 +517,7 @@ static void Instance_DidDestroy(PP_Instance instance) {
  *     the top left of the plugin's coordinate system (not the page).  If the
  *     plugin is invisible, @a clip will be (0, 0, 0, 0).
  */
-#ifdef PPP_INSTANCE_INTERFACE_1_0
+#ifndef PPP_INSTANCE_INTERFACE_1_1
 static void
 Instance_DidChangeView(PP_Instance instance,
                        const struct PP_Rect* position,

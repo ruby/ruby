@@ -32,9 +32,7 @@
 #if defined HAVE_NET_SOCKET_H
 # include <net/socket.h>
 #elif defined HAVE_SYS_SOCKET_H
-# ifndef __native_client__
-#  include <sys/socket.h>
-# endif
+# include <sys/socket.h>
 #endif
 
 #if defined(__BOW__) || defined(__CYGWIN__) || defined(_WIN32) || defined(__EMX__) || defined(__BEOS__) || defined(__HAIKU__)
@@ -52,9 +50,6 @@
 #include <sys/types.h>
 #if defined(HAVE_SYS_IOCTL_H) && !defined(_WIN32)
 #include <sys/ioctl.h>
-#endif
-#if defined(__native_client__) && defined(NACL_NEWLIB)
-# include "nacl/ioctl.h"
 #endif
 #if defined(HAVE_FCNTL_H) || defined(_WIN32)
 #include <fcntl.h>
@@ -8945,6 +8940,14 @@ typedef long fcntl_arg_t;
 #else
 /* posix */
 typedef int fcntl_arg_t;
+#endif
+
+#if defined __native_client__ && !defined __GLIBC__
+// struct flock is currently missing the NaCl newlib headers
+// TODO(sbc): remove this once it gets added.
+#undef F_GETLK
+#undef F_SETLK
+#undef F_SETLKW
 #endif
 
 static long

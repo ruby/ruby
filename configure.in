@@ -96,8 +96,11 @@ AC_DEFUN([RUBY_NACL],
                        [no], [nacl_cv_build_variant=glibc],
                        [yes], [nacl_cv_build_variant=newlib])])
 
-  AS_CASE(["$build_cpu"],
-          [x86_64|i?86], [nacl_cv_cpu_nick=x86], [nacl_cv_cpu_nick=$build_cpu])
+  AS_CASE(["$target_cpu"],
+          [x86_64|i?86], [nacl_cv_cpu_nick=x86],
+          [le32], [nacl_cv_cpu_nick=pnacl
+                   ac_cv_exeext=.pexe],
+          [nacl_cv_cpu_nick=$target_cpu])
   AS_CASE(["$build_os"],
           [linux*], [nacl_cv_os_nick=linux],
           [darwin*], [nacl_cv_os_nick=mac],
@@ -111,6 +114,9 @@ AC_DEFUN([RUBY_NACL],
   if test -d \
     "${NACL_SDK_ROOT}/toolchain/${nacl_cv_os_nick}_${nacl_cv_cpu_nick}_${nacl_cv_build_variant}"; then
     NACL_TOOLCHAIN="${nacl_cv_os_nick}_${nacl_cv_cpu_nick}_${nacl_cv_build_variant}"
+  elif test -d \
+    "${NACL_SDK_ROOT}/toolchain/${nacl_cv_os_nick}_x86_${nacl_cv_cpu_nick}/${nacl_cv_build_variant}"; then
+    NACL_TOOLCHAIN="${nacl_cv_os_nick}_x86_${nacl_cv_cpu_nick}/${nacl_cv_build_variant}"
   else
     AS_CASE(
       ["${nacl_cv_build_variant}"],
@@ -791,12 +797,16 @@ fi
 RUBY_TRY_CFLAGS(-Qunused-arguments, [RUBY_APPEND_OPTIONS(rb_cv_wsuppress_flags, -Qunused-arguments)])
 
 if test "$GCC" = yes; then
-    # -D_FORTIFY_SOURCE
-    # When defined _FORTIFY_SOURCE, glibc enables some additional sanity
-    # argument check. The performance drop is very little and Ubuntu enables
-    # _FORTIFY_SOURCE=2 by default. So, let's support it for protecting us from
-    # a mistake of silly C extensions.
-    RUBY_TRY_CFLAGS(-D_FORTIFY_SOURCE=2, [RUBY_APPEND_OPTION(XCFLAGS, -D_FORTIFY_SOURCE=2)])
+    # NaCl's glibc build generates undefined references to __memset_chk.
+    # TODO(sbc): Remove this once NaCl's glibc is fixed.
+    AS_CASE(["$target_os"], [nacl], [], [
+      # -D_FORTIFY_SOURCE
+      # When defined _FORTIFY_SOURCE, glibc enables some additional sanity
+      # argument check. The performance drop is very little and Ubuntu enables
+      # _FORTIFY_SOURCE=2 by default. So, let's support it for protecting us from
+      # a mistake of silly C extensions.
+      RUBY_TRY_CFLAGS(-D_FORTIFY_SOURCE=2, [RUBY_APPEND_OPTION(XCFLAGS, -D_FORTIFY_SOURCE=2)])
+   ])
 
     # -fstack-protector
     AS_CASE(["$target_os"],
@@ -1087,12 +1097,9 @@ main()
   LIBS="-lm $LIBS"
   if test "${nacl_cv_build_variant}" = "newlib"; then
     RUBY_APPEND_OPTION(CPPFLAGS, -DNACL_NEWLIB)
-    RUBY_APPEND_OPTION(LIBS, '-lnosys')
   else
     RUBY_APPEND_OPTION(XCFLAGS, -fPIC)
   fi
-  ac_cv_func_shutdown=no
-  ac_cv_func_fcntl=no
   ],
 [	LIBS="-lm $LIBS"])
 

@@ -1190,6 +1190,14 @@ rb_group_member(GETGROUPS_T gid)
 #define USE_GETEUID 1
 #endif
 
+#ifdef __native_client__
+// Although the NaCl toolchain contain eaccess() is it not yet
+// overridden by nacl_io.
+// TODO(sbc): Remove this once eaccess() is wired up correctly
+// in NaCl.
+#define eaccess access
+#endif
+
 #ifndef HAVE_EACCESS
 int
 eaccess(const char *path, int mode)
@@ -5503,7 +5511,7 @@ rb_path_check(const char *path)
 
 #ifndef _WIN32
 #ifdef __native_client__
-__attribute__((noinline))
+__attribute__((noinline,weak))
 #endif
 int
 rb_file_load_ok(const char *path)
