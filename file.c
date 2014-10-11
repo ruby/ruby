@@ -22,7 +22,6 @@
 #ifdef __APPLE__
 #include <CoreFoundation/CFString.h>
 #endif
-#include <sys/time.h>
 
 #include "ruby/ruby.h"
 #include "ruby/io.h"
@@ -33,6 +32,7 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#include <sys/time.h>
 
 #ifdef HAVE_SYS_FILE_H
 # include <sys/file.h>
