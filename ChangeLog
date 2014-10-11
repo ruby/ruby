@@ -1,3 +1,8 @@
+Sat Oct 11 15:32:08 2014  Eric Wong  <e@80x24.org>
+
+	* compile.c (iseq_build_from_ary_exception): move RB_GC_GUARD
+	  (iseq_build_from_ary_body): use PRIsVALUE instead of RB_GC_GUARD
+
 Sat Oct 11 14:57:08 2014  Eric Wong  <e@80x24.org>
 
 	* string.c (rb_str_intern): remove unnecessary RB_GC_GUARD
