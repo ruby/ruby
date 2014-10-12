@@ -1,3 +1,9 @@
+Mon Oct 13 03:20:23 2014  Zachary Scott  <e@zzak.io>
+
+	* ext/date/date_core.c: [DOC] Clean up whitespace, examples, and typos
+	  in date_core based on a patch by @vipulnsward [Fixes GH-724]
+	  https://github.com/ruby/ruby/pull/724
+
 Mon Oct 13 02:39:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (remove_duplicate_keys): should not simply eliminate all
