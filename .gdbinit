@@ -738,6 +738,12 @@ define nd_tval
   rp ($arg0).u2.value
 end
 
+define nd_tree
+  set $buf = (struct RString *)rb_str_buf_new(0)
+  call dump_node((VALUE)($buf), rb_str_new(0, 0), 0, ($arg0))
+  printf "%s\n", $buf->as.heap.ptr
+end
+
 define rb_p
   call rb_p($arg0)
 end
