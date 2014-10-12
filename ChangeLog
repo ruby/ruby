@@ -1,3 +1,9 @@
+Mon Oct 13 02:39:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (remove_duplicate_keys): should not simply eliminate all
+	  value nodes, which may have side effects.
+	  [ruby-core:65625] [Bug #10315]
+
 Sun Oct 12 10:39:16 2014  Zachary Scott  <e@zzak.io>
 
 	* vm.c: [DOC] fix typo by @yui-knk [Fixes GH-738]

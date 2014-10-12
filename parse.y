@@ -9601,9 +9601,6 @@ append_literal_keys(st_data_t k, st_data_t v, st_data_t h)
 {
     NODE *node = (NODE *)v;
     NODE **result = (NODE **)h;
-    node->nd_alen = 2;
-    node->nd_next->nd_end = node->nd_next;
-    node->nd_next->nd_next = 0;
     if (*result)
 	list_concat(*result, node);
     else
@@ -9618,21 +9615,25 @@ remove_duplicate_keys(struct parser_params *parser, NODE *hash)
     NODE *result = 0;
     while (hash && hash->nd_head && hash->nd_next) {
 	NODE *head = hash->nd_head;
-	VALUE key = 0;
+	NODE *value = hash->nd_next;
+	NODE *next = value->nd_next;
+	VALUE key = (VALUE)head;
 	st_data_t data;
-	if (nd_type(head) == NODE_LIT) {
-	    key = head->nd_lit;
-	    if (st_lookup(literal_keys, key, &data)) {
-		rb_compile_warn(ruby_sourcefile, nd_line((NODE *)data),
-				"duplicated key at line %d ignored: %+"PRIsVALUE,
-				nd_line(head), head->nd_lit);
-	    }
+	hash->nd_alen = 2;
+	value->nd_end = value;
+	value->nd_next = 0;
+	if (nd_type(head) == NODE_LIT &&
+	    st_lookup(literal_keys, (key = head->nd_lit), &data)) {
+	    rb_compile_warn(ruby_sourcefile, nd_line((NODE *)data),
+			    "duplicated key at line %d ignored: %+"PRIsVALUE,
+			    nd_line(head), head->nd_lit);
+	    head = ((NODE *)data)->nd_next;
+	    head->nd_head = block_append(head->nd_head, value->nd_head);
 	}
 	else {
-	    key = (VALUE)head;
+	    st_insert(literal_keys, (st_data_t)key, (st_data_t)hash);
 	}
-	st_insert(literal_keys, (st_data_t)key, (st_data_t)hash);
-	hash = hash->nd_next->nd_next;
+	hash = next;
     }
     st_foreach(literal_keys, append_literal_keys, (st_data_t)&result);
     st_free_table(literal_keys);

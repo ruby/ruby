@@ -120,6 +120,21 @@ class TestSyntax < Test::Unit::TestCase
     assert_raise(ArgumentError) {o.kw(**h)}
     h = {"k1"=>11, k2: 12}
     assert_raise(TypeError) {o.kw(**h)}
+
+    bug10315 = '[ruby-core:65625] [Bug #10315]'
+    a = []
+    def a.add(x) push(x); x; end
+    def a.f(k:) k; end
+    a.clear
+    r = nil
+    assert_warn(/duplicated/) {r = eval("a.f(k: a.add(1), k: a.add(2))")}
+    assert_equal(2, r)
+    assert_equal([1, 2], a, bug10315)
+    a.clear
+    r = nil
+    assert_warn(/duplicated/) {r = eval("a.f({k: a.add(1), k: a.add(2)})")}
+    assert_equal(2, r)
+    assert_equal([1, 2], a, bug10315)
   end
 
   def test_keyword_self_reference
