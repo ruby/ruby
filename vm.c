@@ -3024,7 +3024,7 @@ vm_collect_usage_operand(int insn, int n, VALUE op)
 }
 
 /* @param reg register id. see code of vm_analysis_register() */
-/* @param iseset 0: read, 1: write */
+/* @param isset 0: read, 1: write */
 static void
 vm_collect_usage_register(int reg, int isset)
 {
