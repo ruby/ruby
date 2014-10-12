@@ -1719,6 +1719,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	if (noex == NOEX_MODFUNC) {
 	    rb_method_entry_set(rb_singleton_class(mod), id, method->me, NOEX_PUBLIC);
 	}
+	RB_GC_GUARD(body);
     }
     else if (rb_obj_is_proc(body)) {
 	rb_proc_t *proc;
