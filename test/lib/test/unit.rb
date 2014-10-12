@@ -76,6 +76,7 @@ module Test
 
         options[:retry] = true
         options[:job_status] = nil
+        options[:hide_skip] = true
 
         opts.on '-h', '--help', 'Display this help.' do
           puts opts

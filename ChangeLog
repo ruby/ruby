@@ -1,3 +1,7 @@
+Sun Oct 12 09:24:15 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/test/unit.rb: Hide skips by default.
+
 Sun Oct 12 01:37:11 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
 	* file.c: include sys/time.h only if HAVE_SYS_TIME_H
