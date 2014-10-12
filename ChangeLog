@@ -1,3 +1,8 @@
+Sun Oct 12 10:39:16 2014  Zachary Scott  <e@zzak.io>
+
+	* vm.c: [DOC] fix typo by @yui-knk [Fixes GH-738]
+	  https://github.com/ruby/ruby/pull/738
+
 Sun Oct 12 09:24:15 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/test/unit.rb: Hide skips by default.
