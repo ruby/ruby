@@ -689,7 +689,7 @@ Here's the example of an initializing function.
   Init_dbm(void)
   {
       /* define DBM class */
-      cDBM = rb_define_class("DBM", rb_cObject);
+      VALUE cDBM = rb_define_class("DBM", rb_cObject);
       /* DBM includes Enumerable module */
       rb_include_module(cDBM, rb_mEnumerable);
 
