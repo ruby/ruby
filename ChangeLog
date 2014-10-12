@@ -1,3 +1,9 @@
+Mon Oct 13 06:52:09 2014  Eric Wong  <e@80x24.org>
+
+	* array.c (ary_recycle_hash): add RB_GC_GUARD
+	  (rb_ary_diff): remove volatile
+	  [Bug #10369]
+
 Mon Oct 13 03:20:23 2014  Zachary Scott  <e@zzak.io>
 
 	* ext/date/date_core.c: [DOC] Clean up whitespace, examples, and typos
