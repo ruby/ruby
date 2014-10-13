@@ -26,7 +26,7 @@ Mon Oct 13 08:44:06 2014  Zachary Scott  <e@zzak.io>
 	* README.EXT: [DOC] fix example missing typedef with patch by
 	  @steveklabnik [Fixes GH-739] https://github.com/ruby/ruby/pull/739
 
-	* README.EXT.jp: ditto.
+	* README.EXT.ja: ditto.
 
 Mon Oct 13 06:52:09 2014  Eric Wong  <e@80x24.org>
 
