@@ -1,3 +1,9 @@
+Mon Oct 13 20:44:49 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (update-gems): chdir to the target directory and then
+	  add the tool directory to load paths, for older BASERUBY.
+	  [Bug #10372][ruby-core:65630]
+
 Mon Oct 13 17:53:01 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/xmlrpc/parser.rb: added new parser class using libxml-ruby gem.
