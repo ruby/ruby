@@ -1284,6 +1284,9 @@ nmin_run(VALUE obj, VALUE num, int by, int rev)
 	ruby_qsort(RARRAY_PTR(result), RARRAY_LEN(result), sizeof(VALUE),
 		   data.cmpfunc, (void *)&data);
     }
+    if (rev) {
+        rb_ary_reverse(result);
+    }
     *((VALUE *)&RBASIC(result)->klass) = rb_cArray;
     return result;
 

@@ -1,3 +1,9 @@
+Tue Oct 14 01:27:54 2014  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c (nmin_run): max(n) and max_by(n) returns an array in
+	  descending order.
+	  [ruby-core:65452] Suggested by David Grayson.
+
 Mon Oct 13 20:44:49 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (update-gems): chdir to the target directory and then
