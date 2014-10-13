@@ -40,6 +40,7 @@ module Find
     fs_encoding = Encoding.find("filesystem")
 
     paths.collect!{|d| raise Errno::ENOENT unless File.exist?(d); d.dup}.each do |path|
+      path = path.to_path if path.respond_to? :to_path
       enc = path.encoding == Encoding::US_ASCII ? fs_encoding : path.encoding
       ps = [path]
       while file = ps.shift
