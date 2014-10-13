@@ -9601,6 +9601,9 @@ append_literal_keys(st_data_t k, st_data_t v, st_data_t h)
 {
     NODE *node = (NODE *)v;
     NODE **result = (NODE **)h;
+    node->nd_alen = 2;
+    node->nd_next->nd_end = node->nd_next;
+    node->nd_next->nd_next = 0;
     if (*result)
 	list_concat(*result, node);
     else
@@ -9619,9 +9622,6 @@ remove_duplicate_keys(struct parser_params *parser, NODE *hash)
 	NODE *next = value->nd_next;
 	VALUE key = (VALUE)head;
 	st_data_t data;
-	hash->nd_alen = 2;
-	value->nd_end = value;
-	value->nd_next = 0;
 	if (nd_type(head) == NODE_LIT &&
 	    st_lookup(literal_keys, (key = head->nd_lit), &data)) {
 	    rb_compile_warn(ruby_sourcefile, nd_line((NODE *)data),
