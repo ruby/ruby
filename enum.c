@@ -1499,8 +1499,8 @@ max_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *  as an array.
  *
  *     a = %w[albatross dog horse]
- *     a.max(2)                                  #=> ["dog", "horse"]
- *     a.max(2) {|a, b| a.length <=> b.length }  #=> ["horse", "albatross"]
+ *     a.max(2)                                  #=> ["horse", "dog"]
+ *     a.max(2) {|a, b| a.length <=> b.length }  #=> ["albatross", "horse"]
  */
 
 static VALUE
@@ -1778,7 +1778,7 @@ max_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *  as an array.
  *
  *     a = %w[albatross dog horse]
- *     a.max_by(2) {|x| x.length } #=> ["horse", "albatross"]
+ *     a.max_by(2) {|x| x.length } #=> ["albatross", "horse"]
  *
  *  enum.max_by(n) can be used to implement weighted random sampling.
  *  Following example implements and use Enumerable#wsample.
