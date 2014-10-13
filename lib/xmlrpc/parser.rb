@@ -814,12 +814,44 @@ module XMLRPC # :nodoc:
       end
     end
 
+    class LibXMLStreamParser < AbstractStreamParser
+      def initialize
+        require 'libxml'
+        @parser_class = LibXMLStreamListener
+      end
+
+      class LibXMLStreamListener
+        include StreamParserMixin
+
+        def on_start_element_ns(name, attributes, prefix, uri, namespaces)
+          startElement(name)
+        end
+
+        def on_end_element_ns(name, prefix, uri)
+          endElement(name)
+        end
+
+        alias :on_characters :character
+        alias :on_cdata_block :character
+
+        def method_missing(*a)
+        end
+
+        def parse(str)
+          parser = LibXML::XML::SaxParser.string(str)
+          parser.callbacks = self
+          parser.parse()
+        end
+      end
+    end
+
     XMLParser   = XMLTreeParser
     NQXMLParser = NQXMLTreeParser
 
     Classes = [XMLStreamParser, XMLTreeParser,
                NQXMLStreamParser, NQXMLTreeParser,
-               REXMLStreamParser, XMLScanStreamParser]
+               REXMLStreamParser, XMLScanStreamParser,
+               LibXMLStreamParser]
 
     # yields an instance of each installed parser
     def self.each_installed_parser
