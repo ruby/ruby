@@ -1,3 +1,8 @@
+Mon Oct 13 15:42:25 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* common.mk: use relative load path for bundled_gems directory.
+	  [Bug #10372][ruby-core:65630]
+
 Mon Oct 13 08:44:06 2014  Zachary Scott  <e@zzak.io>
 
 	* README.EXT: [DOC] fix example missing typedef with patch by
