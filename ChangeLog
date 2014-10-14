@@ -1,3 +1,10 @@
+Wed Oct 15 04:53:30 2014  Zachary Scott  <e@zzak.io>
+
+	* error.c: [DOC] Fix case of type in exception message by @tricknotes
+	  [Fixes GH-740] https://github.com/ruby/ruby/pull/740
+
+	* object.c: ditto
+
 Tue Oct 14 21:39:16 2014  Vit Ondruch  <vondruch@redhat.com>
 
 	* tool/rbinstall.rb (gem): Fix permissions of bundled gems

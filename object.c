@@ -1073,7 +1073,7 @@ rb_obj_infect(VALUE obj1, VALUE obj2)
  *
  *  <em>produces:</em>
  *
- *     prog.rb:3:in `<<': can't modify frozen array (RuntimeError)
+ *     prog.rb:3:in `<<': can't modify frozen Array (RuntimeError)
  *     	from prog.rb:3
  *
  *  Objects of the following classes are always frozen: Fixnum,
