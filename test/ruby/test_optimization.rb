@@ -111,6 +111,11 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_redefine_method('String', '%', 'assert_equal 2, "%d" % 2')
   end
 
+  def test_string_freeze
+    assert_equal "foo", "foo".freeze
+    assert_redefine_method('String', 'freeze', 'assert_nil "foo".freeze')
+  end
+
   def test_array_plus
     assert_equal [1,2], [1]+[2]
     assert_redefine_method('Array', '+', 'assert_equal [2], [1]+[2]')
@@ -143,6 +148,25 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal true, {}.empty?
     assert_equal false, {1=>1}.empty?
     assert_redefine_method('Hash', 'empty?', 'assert_nil({}.empty?); assert_nil({1=>1}.empty?)')
+  end
+
+  def test_hash_aref_with
+    h = { "foo" => 1 }
+    assert_equal 1, h["foo"]
+    assert_redefine_method('Hash', '[]', <<-end)
+      h = { "foo" => 1 }
+      assert_equal "foo", h["foo"]
+    end
+  end
+
+  def test_hash_aset_with
+    h = {}
+    assert_equal 1, h["foo"] = 1
+    assert_redefine_method('Hash', '[]=', <<-end)
+      h = {}
+      h["foo"] = 1
+      assert_nil h["foo"]
+    end
   end
 
   class MyObj

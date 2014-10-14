@@ -1,3 +1,9 @@
+Tue Oct 14 10:19:10 2014  Eric Wong  <e@80x24.org>
+
+	* test/ruby/test_optimization.rb (test_string_freeze): new test
+	  (test_hash_aref_with): ditto
+	  (test_hash_aset_with): ditto
+
 Tue Oct 14 01:27:54 2014  Tanaka Akira  <akr@fsij.org>
 
 	* enum.c (nmin_run): max(n) and max_by(n) returns an array in
