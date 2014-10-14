@@ -1,3 +1,11 @@
+Wed Oct 15 07:21:09 2014  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c: min(n) drops elements bigger than the n-th maximum element.
+	  (struct nmin_data): New field to record the n-th maximumelement, limit
+	  (nmin_filter): Update limit field.
+	  (nmin_i): Drop too big eleents.
+	  (nmin_run): Initialize limit field.
+
 Wed Oct 15 07:00:14 2014  Eric Wong  <e@80x24.org>
 
 	* test/ruby/test_optimization.rb (test_string_size): new test

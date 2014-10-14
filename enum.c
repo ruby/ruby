@@ -1110,6 +1110,7 @@ struct nmin_data {
   long bufmax;
   long curlen;
   VALUE buf;
+  VALUE limit;
   int (*cmpfunc)(const void *, const void *, void *);
   int rev; /* max if 1 */
   int by; /* min_by if 1 */
@@ -1221,17 +1222,32 @@ nmin_filter(struct nmin_data *data)
 
     data->curlen = data->n;
     rb_ary_resize(data->buf, data->n * eltsize);
+    data->limit = RARRAY_PTR(data->buf)[(data->n-1)*eltsize];
 }
 
 static VALUE
 nmin_i(VALUE i, VALUE *_data, int argc, VALUE *argv)
 {
     struct nmin_data *data = (struct nmin_data *)_data;
+    VALUE cmpv;
 
     ENUM_WANT_SVALUE();
 
     if (data->by)
-	rb_ary_push(data->buf, rb_yield(i));
+	cmpv = rb_yield(i);
+    else
+	cmpv = i;
+
+    if (data->limit != Qundef) {
+        int c = data->cmpfunc(&cmpv, &data->limit, data);
+        if (data->rev)
+            c = -c;
+        if (c > 0)
+            return Qnil;
+    }
+
+    if (data->by)
+	rb_ary_push(data->buf, cmpv);
     rb_ary_push(data->buf, i);
 
     data->curlen++;
@@ -1259,6 +1275,7 @@ nmin_run(VALUE obj, VALUE num, int by, int rev)
     data.bufmax = data.n * 4;
     data.curlen = 0;
     data.buf = rb_ary_tmp_new(data.bufmax * (by ? 2 : 1));
+    data.limit = Qundef;
     data.cmpfunc = by ? nmin_cmp :
                    rb_block_given_p() ? nmin_block_cmp :
 		   nmin_cmp;
