@@ -1,3 +1,8 @@
+Wed Oct 15 06:50:29 2014  Eric Wong  <e@80x24.org>
+
+	* test/ruby/test_optimization.rb (test_hash_aset_with):
+	  assert assignment
+
 Wed Oct 15 04:56:27 2014  Zachary Scott  <e@zzak.io>
 
 	* gc.c (rb_obj_id): [DOC] Fix typo, clean up sentence, and wrap cols

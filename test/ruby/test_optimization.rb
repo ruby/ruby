@@ -164,7 +164,7 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal 1, h["foo"] = 1
     assert_redefine_method('Hash', '[]=', <<-end)
       h = {}
-      h["foo"] = 1
+      assert_equal 1, h["foo"] = 1, "assignment always returns value set"
       assert_nil h["foo"]
     end
   end
