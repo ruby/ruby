@@ -378,9 +378,9 @@ define rp_id
       end
     end
     printf "(%ld): ", $id
-    rb_numtable_entry global_symbols.id_str $id
-    if $rb_numtable_rec
-      rp_string $rb_numtable_rec
+    if global_symbols.ids.size > ($id >> RUBY_ID_SCOPE_SHIFT)
+      set $str = global_symbols.ids.ptr[$id >> RUBY_ID_SCOPE_SHIFT]->str
+      rp_string $str
     else
       echo undef\n
     end

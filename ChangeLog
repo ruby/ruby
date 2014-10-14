@@ -1,4 +1,7 @@
-Tue Oct 14 16:22:59 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Oct 14 16:23:04 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* symbol.c (global_symbols): make IDs immortal always, instead
+	  of treating dynamic symbols as IDs.
 
 	* iseq.c, marshal.c, string.c: use rb_str_intern instead of
 	  rb_str_dynamic_intern.
