@@ -721,6 +721,8 @@ install?(:ext, :comm, :gem) do
   # fix directory permissions
   # TODO: Gem.install should accept :dir_mode option or something
   File.chmod($dir_mode, *Dir.glob(with_destdir(Gem.dir)+"/**/"))
+  # fix .gemspec permissions
+  File.chmod($data_mode, *Dir.glob(with_destdir(Gem.dir)+"/specifications/*.gemspec"))
 end
 
 parse_args()
