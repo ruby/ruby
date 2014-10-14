@@ -1,3 +1,7 @@
+Wed Oct 15 07:00:14 2014  Eric Wong  <e@80x24.org>
+
+	* test/ruby/test_optimization.rb (test_string_size): new test
+
 Wed Oct 15 06:51:13 2014  Eric Wong  <e@80x24.org>
 
 	* test/ruby/test_optimization.rb (test_string_eq_neq): new test

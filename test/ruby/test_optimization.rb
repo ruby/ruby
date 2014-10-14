@@ -87,6 +87,11 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_redefine_method('String', 'length', 'assert_nil "string".length')
   end
 
+  def test_string_size
+    assert_equal 6, "string".size
+    assert_redefine_method('String', 'size', 'assert_nil "string".size')
+  end
+
   def test_string_empty?
     assert_equal true, "".empty?
     assert_equal false, "string".empty?
