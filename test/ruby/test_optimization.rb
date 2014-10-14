@@ -116,6 +116,25 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_redefine_method('String', 'freeze', 'assert_nil "foo".freeze')
   end
 
+  def test_string_eq_neq
+    %w(== !=).each do |m|
+      assert_redefine_method('String', m, <<-end)
+        assert_equal :b, ("a" #{m} "b").to_sym
+        b = 'b'
+        assert_equal :b, ("a" #{m} b).to_sym
+        assert_equal :b, (b #{m} "b").to_sym
+      end
+    end
+  end
+
+  def test_string_ltlt
+    assert_equal "", "" << ""
+    assert_equal "x", "x" << ""
+    assert_equal "x", "" << "x"
+    assert_equal "ab", "a" << "b"
+    assert_redefine_method('String', '<<', 'assert_equal "b", "a" << "b"')
+  end
+
   def test_array_plus
     assert_equal [1,2], [1]+[2]
     assert_redefine_method('Array', '+', 'assert_equal [2], [1]+[2]')

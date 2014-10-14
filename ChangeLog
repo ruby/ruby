@@ -1,3 +1,8 @@
+Wed Oct 15 06:51:13 2014  Eric Wong  <e@80x24.org>
+
+	* test/ruby/test_optimization.rb (test_string_eq_neq): new test
+	  (test_string_ltlt): ditto
+
 Wed Oct 15 06:50:29 2014  Eric Wong  <e@80x24.org>
 
 	* test/ruby/test_optimization.rb (test_hash_aset_with):
