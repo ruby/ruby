@@ -1,3 +1,10 @@
+Tue Oct 14 16:22:59 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c, marshal.c, string.c: use rb_str_intern instead of
+	  rb_str_dynamic_intern.
+
+	* symbol.c (rb_str_intern): rename rb_str_dynamic_intern.
+
 Tue Oct 14 10:19:10 2014  Eric Wong  <e@80x24.org>
 
 	* test/ruby/test_optimization.rb (test_string_freeze): new test
