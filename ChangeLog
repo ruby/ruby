@@ -1,3 +1,7 @@
+Wed Oct 15 04:56:27 2014  Zachary Scott  <e@zzak.io>
+
+	* gc.c (rb_obj_id): [DOC] Fix typo, clean up sentence, and wrap cols
+
 Wed Oct 15 04:53:30 2014  Zachary Scott  <e@zzak.io>
 
 	* error.c: [DOC] Fix case of type in exception message by @tricknotes
