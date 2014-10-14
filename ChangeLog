@@ -1,4 +1,7 @@
-Tue Oct 14 16:23:04 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Oct 14 16:23:12 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* symbol.c (global_symbols): make ids two-dimensional array of
+	  strings and symbols, for write-barrier.
 
 	* symbol.c (global_symbols): make IDs immortal always, instead
 	  of treating dynamic symbols as IDs.

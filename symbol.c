@@ -93,19 +93,18 @@ Init_op_tbl(void)
     }
 }
 
-enum {ID_ENTRY_UNIT = 2048};
+enum {ID_ENTRY_UNIT = 512};
 
-struct id_entry {
-    VALUE str, sym;
+enum id_entry_type {
+    ID_ENTRY_STR,
+    ID_ENTRY_SYM,
+    ID_ENTRY_SIZE
 };
 
 static struct symbols {
     ID last_id;
     st_table *str_sym;
-    struct {
-	size_t size;
-	struct id_entry *ptr;
-    } ids;
+    VALUE ids;
     VALUE dsymbol_fstr_hash;
 } global_symbols = {tNEXT_ID-1};
 
@@ -123,8 +122,8 @@ Init_sym(void)
     rb_obj_hide(dsym_fstrs);
 
     global_symbols.str_sym = st_init_table_with_size(&symhash, 1000);
-    global_symbols.ids.size = ID_ENTRY_UNIT;
-    global_symbols.ids.ptr = ALLOC_N(struct id_entry, global_symbols.ids.size);
+    global_symbols.ids = rb_ary_tmp_new(0);
+    rb_gc_register_mark_object(global_symbols.ids);
 
     Init_op_tbl();
     Init_id();
@@ -371,22 +370,28 @@ rb_str_symname_type(VALUE name, unsigned int allowed_attrset)
 static void
 set_id_entry(ID num, VALUE str, VALUE sym)
 {
-    struct id_entry *entry;
-    if (num >= global_symbols.ids.size) {
-	size_t new_size = (num / ID_ENTRY_UNIT + 1) * ID_ENTRY_UNIT;
-	REALLOC_N(global_symbols.ids.ptr, struct id_entry, new_size);
-	global_symbols.ids.size = new_size;
+    size_t idx = num / ID_ENTRY_UNIT;
+    VALUE ary, ids = global_symbols.ids;
+    if (idx >= (size_t)RARRAY_LEN(ids) || NIL_P(ary = rb_ary_entry(ids, (long)idx))) {
+	ary = rb_ary_tmp_new(ID_ENTRY_UNIT * ID_ENTRY_SIZE);
+	rb_ary_store(ids, (long)idx, ary);
     }
-    entry = &global_symbols.ids.ptr[num];
-    entry->str = str;
-    entry->sym = sym;
+    idx = (num % ID_ENTRY_UNIT) * ID_ENTRY_SIZE;
+    rb_ary_store(ary, (long)idx + ID_ENTRY_STR, str);
+    rb_ary_store(ary, (long)idx + ID_ENTRY_SYM, sym);
 }
 
-static struct id_entry *
-get_id_entry(ID num)
+static VALUE
+get_id_entry(ID num, const enum id_entry_type t)
 {
     if (num && num <= global_symbols.last_id) {
-	return &global_symbols.ids.ptr[num];
+	size_t idx = num / ID_ENTRY_UNIT;
+	VALUE ids = global_symbols.ids;
+	VALUE ary;
+	if (idx < (size_t)RARRAY_LEN(ids) && !NIL_P(ary = rb_ary_entry(ids, (long)idx))) {
+	    VALUE result = rb_ary_entry(ary, (long)(num % ID_ENTRY_UNIT) * ID_ENTRY_SIZE + t);
+	    if (!NIL_P(result)) return result;
+	}
     }
     return 0;
 }
@@ -428,7 +433,6 @@ register_static_symid_str(ID id, VALUE str)
 
     register_sym(str, sym);
     set_id_entry(num, str, sym);
-    rb_gc_register_mark_object(str);
 
     return id;
 }
@@ -552,12 +556,7 @@ lookup_str_sym(const VALUE str)
 static VALUE
 lookup_id_str(ID id)
 {
-    const struct id_entry *entry;
-
-    if ((entry = get_id_entry(id_to_serial(id))) != 0) {
-	return entry->str;
-    }
-    return 0;
+    return get_id_entry(id_to_serial(id), ID_ENTRY_STR);
 }
 
 ID
@@ -717,8 +716,6 @@ rb_sym2id(VALUE sym)
 	    RSYMBOL(sym)->id = id |= num;
 	    /* make it permanent object */
 	    set_id_entry(num >>= ID_SCOPE_SHIFT, fstr, sym);
-	    rb_gc_register_mark_object(sym);
-	    rb_gc_register_mark_object(fstr);
 	    rb_hash_delete(global_symbols.dsymbol_fstr_hash, fstr);
 	}
     }
@@ -732,14 +729,8 @@ rb_sym2id(VALUE sym)
 VALUE
 rb_id2sym(ID x)
 {
-    const struct id_entry *entry;
-
     if (!DYNAMIC_ID_P(x)) return STATIC_ID2SYM(x);
-
-    if ((entry = get_id_entry(id_to_serial(x))) != 0) {
-	return entry->sym;
-    }
-    return 0;
+    return get_id_entry(id_to_serial(x), ID_ENTRY_SYM);
 }
 
 
