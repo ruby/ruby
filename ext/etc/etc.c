@@ -909,7 +909,7 @@ io_pathconf(VALUE io, VALUE arg)
 
 #if (defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_ONLN)) || defined(_WIN32)
 
-#ifdef HAVE_SCHED_GETAFFINITY
+#if defined(HAVE_SCHED_GETAFFINITY) && defined(CPU_ALLOC)
 static int
 etc_nprocessors_affin(void)
 {
@@ -987,7 +987,7 @@ etc_nprocessors(VALUE obj)
 
 #if !defined(_WIN32)
 
-#ifdef HAVE_SCHED_GETAFFINITY
+#if defined(HAVE_SCHED_GETAFFINITY) && defined(CPU_ALLOC)
     int ncpus;
 
     ncpus = etc_nprocessors_affin();

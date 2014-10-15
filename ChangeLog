@@ -1,3 +1,8 @@
+Wed Oct 15 22:08:37 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/etc/etc.c (etc_nprocessors_affin): Test CPU_ALLOC availability.
+	  CentOS 5 don't have CPU_ALLOC().
+
 Wed Oct 15 18:26:19 2014  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/etc/etc.c (etc_nprocessors_affinity): use sched_getaffinity
