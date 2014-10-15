@@ -1,3 +1,8 @@
+Thu Oct 16 08:26:08 2014  Eric Wong  <e@80x24.org>
+
+	* cont.c (fiber_store): remove references to nextfib
+	  fix build when FIBER_USE_NATIVE is 0
+
 Thu Oct 16 06:51:35 2014  Knut Franke  <Knut.Franke@gmx.de>
 
 	* vm_core.h: declare rb_fiber_t typedef
