@@ -555,8 +555,7 @@ inject_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, p))
 
     ENUM_WANT_SVALUE();
 
-    if (memo->u2.argc == 0) {
-	memo->u2.argc = 1;
+    if (memo->u1.value == Qundef) {
 	memo->u1.value = i;
     }
     else {
@@ -573,12 +572,12 @@ inject_op_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, p))
 
     ENUM_WANT_SVALUE();
 
-    if (memo->u2.argc == 0) {
-	memo->u2.argc = 1;
+    if (memo->u1.value == Qundef) {
 	memo->u1.value = i;
     }
     else if (SYMBOL_P(name = memo->u3.value)) {
-	memo->u1.value = rb_funcall(memo->u1.value, SYM2ID(name), 1, i);
+	const ID mid = SYM2ID(name);
+	memo->u1.value = rb_funcall(memo->u1.value, mid, 1, i);
     }
     else {
 	VALUE args[2];
@@ -642,6 +641,7 @@ enum_inject(int argc, VALUE *argv, VALUE obj)
 
     switch (rb_scan_args(argc, argv, "02", &init, &op)) {
       case 0:
+	init = Qundef;
 	break;
       case 1:
 	if (rb_block_given_p()) {
@@ -649,8 +649,7 @@ enum_inject(int argc, VALUE *argv, VALUE obj)
 	}
 	id = rb_check_id(&init);
 	op = id ? ID2SYM(id) : init;
-	argc = 0;
-	init = Qnil;
+	init = Qundef;
 	iter = inject_op_i;
 	break;
       case 2:
@@ -662,7 +661,7 @@ enum_inject(int argc, VALUE *argv, VALUE obj)
 	iter = inject_op_i;
 	break;
     }
-    memo = NEW_MEMO(init, argc, op);
+    memo = NEW_MEMO(init, Qnil, op);
     rb_block_call(obj, id_each, 0, 0, iter, (VALUE)memo);
     return memo->u1.value;
 }
