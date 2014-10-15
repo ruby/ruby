@@ -23,6 +23,15 @@ static VALUE rb_cBacktraceLocation;
 
 extern VALUE ruby_engine_name;
 
+static VALUE
+id2str(ID id)
+{
+    VALUE str = rb_id2str(id);
+    if (!id) return Qnil;
+    return str;
+}
+#define rb_id2str(id) id2str(id)
+
 inline static int
 calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
 {
