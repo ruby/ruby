@@ -482,7 +482,7 @@ eom
       #
       # pattern_list is anchored.
       # Use [:*, regexp, :*] for non-anchored match.
-      def assert_regexp_list(pattern_list, actual, message=nil)
+      def assert_pattern_list(pattern_list, actual, message=nil)
         rest = actual
         anchored = true
         pattern_list.each {|pattern|
@@ -495,7 +495,20 @@ eom
               match = pattern.match(rest)
             end
             unless match
-              msg = message(msg) { "Expected #{mu_pp pattern}\nto match #{mu_pp rest}" }
+              msg = message(msg) {
+                expect_msg = "Expected #{mu_pp pattern}\n"
+                if /\n[^\n]+\n/ =~ rest
+                  actual_mesg = "to match\n"
+                  prefix = "  "
+                  rest.scan(/.*\n+/) {
+                    actual_mesg << '  ' << $&.inspect << "+\n"
+                  }
+                  actual_mesg.sub!(/\+\n\z/, '')
+                else
+                  actual_mesg = "to match #{mu_pp rest}"
+                end
+                expect_msg + actual_mesg
+              }
               assert false, msg
             end
             rest = match.post_match

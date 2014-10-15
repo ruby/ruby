@@ -1,3 +1,12 @@
+Wed Oct 15 17:53:28 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/envutil.rb (assert_pattern_list) Renamed from
+	  assert_regexp_list.
+	  Show multiline string in multi lines.
+
+	* test/-ext-/bug_reporter/test_bug_reporter.rb: Use
+	  assert_pattern_list.
+
 Wed Oct 15 12:26:58 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/envutil.rb (assert_regexp_list): New assertion method.

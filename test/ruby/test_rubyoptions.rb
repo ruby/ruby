@@ -562,7 +562,7 @@ class TestRubyOptions < Test::Unit::TestCase
       EnvUtil.diagnostic_reports(Signal.signame(signo), EnvUtil.rubybin, status.pid, Time.now)
     end
 
-    assert_regexp_list(SEGVTest::ExpectedStderrList, stderr, message)
+    assert_pattern_list(SEGVTest::ExpectedStderrList, stderr, message)
 
     status
   end
