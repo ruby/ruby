@@ -1784,11 +1784,9 @@ dir_globs(long argc, const VALUE *argv, int flags)
 
 /*
  *  call-seq:
- *     Dir[ array ]                 -> array
  *     Dir[ string [, string ...] ] -> array
  *
  *  Equivalent to calling
- *  <code>Dir.glob(</code><i>array,</i><code>0)</code> and
  *  <code>Dir.glob([</code><i>string,...</i><code>],0)</code>.
  *
  */
