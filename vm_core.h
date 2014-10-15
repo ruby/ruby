@@ -560,6 +560,8 @@ typedef struct rb_ensure_list {
 
 typedef char rb_thread_id_string_t[sizeof(rb_nativethread_id_t) * 2 + 3];
 
+typedef struct rb_fiber_struct rb_fiber_t;
+
 typedef struct rb_thread_struct {
     struct list_node vmlt_node;
     VALUE self;
@@ -681,8 +683,8 @@ typedef struct rb_thread_struct {
     struct rb_trace_arg_struct *trace_arg; /* trace information */
 
     /* fiber */
-    VALUE fiber;
-    VALUE root_fiber;
+    rb_fiber_t *fiber;
+    rb_fiber_t *root_fiber;
     rb_jmpbuf_t root_jmpbuf;
 
     /* ensure & callcc */

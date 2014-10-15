@@ -1967,6 +1967,8 @@ rb_thread_recycle_stack_release(VALUE *stack)
     ruby_xfree(stack);
 }
 
+void rb_fiber_mark_self(rb_fiber_t *fib);
+
 void
 rb_thread_mark(void *ptr)
 {
@@ -2013,8 +2015,8 @@ rb_thread_mark(void *ptr)
 	RUBY_MARK_UNLESS_NULL(th->root_svar);
 	RUBY_MARK_UNLESS_NULL(th->top_self);
 	RUBY_MARK_UNLESS_NULL(th->top_wrapper);
-	RUBY_MARK_UNLESS_NULL(th->fiber);
-	RUBY_MARK_UNLESS_NULL(th->root_fiber);
+	rb_fiber_mark_self(th->fiber);
+	rb_fiber_mark_self(th->root_fiber);
 	RUBY_MARK_UNLESS_NULL(th->stat_insn_usage);
 	RUBY_MARK_UNLESS_NULL(th->last_status);
 

@@ -132,7 +132,7 @@ static machine_stack_cache_t terminated_machine_stack;
 
 typedef struct rb_fiber_struct {
     rb_context_t cont;
-    VALUE prev;
+    struct rb_fiber_struct *prev;
     enum fiber_status status;
     /* If a fiber invokes "transfer",
      * then this fiber can't "resume" any more after that.
@@ -205,7 +205,7 @@ cont_mark(void *ptr)
 		rb_thread_t *th;
                 rb_fiber_t *fib = (rb_fiber_t*)cont;
 		GetThreadPtr(cont->saved_thread.self, th);
-		if ((th->fiber != cont->self) && fib->status == RUNNING) {
+		if ((th->fiber != fib) && fib->status == RUNNING) {
 		    rb_gc_mark_locations(cont->machine.stack,
 					 cont->machine.stack + cont->machine.stack_size);
 		}
@@ -236,8 +236,9 @@ cont_free(void *ptr)
 	}
 	else {
 	    /* fiber */
+	    rb_fiber_t *fib = (rb_fiber_t*)cont;
 #ifdef _WIN32
-	    if (GET_THREAD()->fiber != cont->self && cont->type != ROOT_FIBER_CONTEXT) {
+	    if (GET_THREAD()->fiber != fib && cont->type != ROOT_FIBER_CONTEXT) {
 		/* don't delete root fiber handle */
 		rb_fiber_t *fib = (rb_fiber_t*)cont;
 		if (fib->fib_handle) {
@@ -245,7 +246,7 @@ cont_free(void *ptr)
 		}
 	    }
 #else /* not WIN32 */
-	    if (GET_THREAD()->fiber != cont->self) {
+	    if (GET_THREAD()->fiber != fib) {
                 rb_fiber_t *fib = (rb_fiber_t*)cont;
                 if (fib->ss_sp) {
                     if (cont->type == ROOT_FIBER_CONTEXT) {
@@ -304,13 +305,20 @@ cont_memsize(const void *ptr)
     return size;
 }
 
+void
+rb_fiber_mark_self(rb_fiber_t *fib)
+{
+    if (fib)
+	rb_gc_mark(fib->cont.self);
+}
+
 static void
 fiber_mark(void *ptr)
 {
     RUBY_MARK_ENTER("cont");
     if (ptr) {
 	rb_fiber_t *fib = ptr;
-	rb_gc_mark(fib->prev);
+	rb_fiber_mark_self(fib->prev);
 	cont_mark(&fib->cont);
     }
     RUBY_MARK_LEAVE("cont");
@@ -409,7 +417,7 @@ static const rb_data_type_t cont_data_type = {
     NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-static void
+static inline void
 cont_save_thread(rb_context_t *cont, rb_thread_t *th)
 {
     rb_thread_t *sth = &cont->saved_thread;
@@ -526,7 +534,7 @@ cont_capture(volatile int *stat)
     }
 }
 
-static void
+static inline void
 cont_restore_thread(rb_context_t *cont)
 {
     rb_thread_t *th = GET_THREAD(), *sth = &cont->saved_thread;
@@ -534,16 +542,14 @@ cont_restore_thread(rb_context_t *cont)
     /* restore thread context */
     if (cont->type == CONTINUATION_CONTEXT) {
 	/* continuation */
-	VALUE fib;
+	rb_fiber_t *fib;
 
 	th->fiber = sth->fiber;
 	fib = th->fiber ? th->fiber : th->root_fiber;
 
 	if (fib) {
-	    rb_fiber_t *fcont;
-	    GetFiberPtr(fib, fcont);
-	    th->stack_size = fcont->cont.saved_thread.stack_size;
-	    th->stack = fcont->cont.saved_thread.stack;
+	    th->stack_size = fib->cont.saved_thread.stack_size;
+	    th->stack = fib->cont.saved_thread.stack;
 	}
 #ifdef CAPTURE_JUST_VALID_VM_STACK
 	MEMCPY(th->stack, cont->vm_stack, VALUE, cont->vm_stack_slen);
@@ -558,7 +564,7 @@ cont_restore_thread(rb_context_t *cont)
 	th->stack = sth->stack;
 	th->stack_size = sth->stack_size;
 	th->local_storage = sth->local_storage;
-	th->fiber = cont->self;
+	th->fiber = (rb_fiber_t*)cont;
     }
 
     th->cfp = sth->cfp;
@@ -719,7 +725,7 @@ fiber_setcontext(rb_fiber_t *newfib, rb_fiber_t *oldfib)
     /* oldfib->machine.stack_end should be NULL */
     oldfib->cont.saved_thread.machine.stack_end = 0;
 #ifndef _WIN32
-    if (!newfib->context.uc_stack.ss_sp && th->root_fiber != newfib->cont.self) {
+    if (!newfib->context.uc_stack.ss_sp && th->root_fiber != newfib) {
 	rb_bug("non_root_fiber->context.uc_stac.ss_sp should not be NULL");
     }
 #endif
@@ -1051,9 +1057,6 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
 	rb_raise(rb_eRuntimeError, "continuation called across stack rewinding barrier");
     }
     if (cont->saved_thread.fiber) {
-	rb_fiber_t *fcont;
-	GetFiberPtr(cont->saved_thread.fiber, fcont);
-
 	if (th->fiber != cont->saved_thread.fiber) {
 	    rb_raise(rb_eRuntimeError, "continuation called across fiber");
 	}
@@ -1163,7 +1166,7 @@ fiber_t_alloc(VALUE fibval)
     fib->cont.self = fibval;
     fib->cont.type = FIBER_CONTEXT;
     cont_init(&fib->cont, th);
-    fib->prev = Qnil;
+    fib->prev = NULL;
     fib->status = CREATED;
 
     DATA_PTR(fibval) = fib;
@@ -1229,57 +1232,15 @@ rb_fiber_new(VALUE (*func)(ANYARGS), VALUE obj)
     return fiber_init(fiber_alloc(rb_cFiber), rb_proc_new(func, obj));
 }
 
-static VALUE
-return_fiber(void)
-{
-    rb_fiber_t *fib;
-    VALUE curr = rb_fiber_current();
-    VALUE prev;
-    GetFiberPtr(curr, fib);
-
-    prev = fib->prev;
-    if (NIL_P(prev)) {
-	const VALUE root_fiber = GET_THREAD()->root_fiber;
-
-	if (root_fiber == curr) {
-	    rb_raise(rb_eFiberError, "can't yield from root fiber");
-	}
-	return root_fiber;
-    }
-    else {
-	fib->prev = Qnil;
-	return prev;
-    }
-}
-
-VALUE rb_fiber_transfer(VALUE fib, int argc, const VALUE *argv);
-
-static void
-rb_fiber_terminate(rb_fiber_t *fib)
-{
-    VALUE value = fib->cont.value;
-    fib->status = TERMINATED;
-#if FIBER_USE_NATIVE && !defined(_WIN32)
-    /* Ruby must not switch to other thread until storing terminated_machine_stack */
-    terminated_machine_stack.ptr = fib->ss_sp;
-    terminated_machine_stack.size = fib->ss_size / sizeof(VALUE);
-    fib->ss_sp = NULL;
-    fib->context.uc_stack.ss_sp = NULL;
-    fib->cont.machine.stack = NULL;
-    fib->cont.machine.stack_size = 0;
-#endif
-    rb_fiber_transfer(return_fiber(), 1, &value);
-}
+static void rb_fiber_terminate(rb_fiber_t *fib);
 
 void
 rb_fiber_start(void)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_fiber_t *fib;
+    rb_fiber_t *fib = th->fiber;
     rb_proc_t *proc;
     int state;
-
-    GetFiberPtr(th->fiber, fib);
 
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
@@ -1331,32 +1292,57 @@ root_fiber_alloc(rb_thread_t *th)
     return fib;
 }
 
-VALUE
-rb_fiber_current(void)
+static inline rb_fiber_t*
+fiber_current(void)
 {
     rb_thread_t *th = GET_THREAD();
     if (th->fiber == 0) {
 	/* save root */
 	rb_fiber_t *fib = root_fiber_alloc(th);
-	th->root_fiber = th->fiber = fib->cont.self;
+	th->root_fiber = th->fiber = fib;
     }
     return th->fiber;
 }
 
-static VALUE
-fiber_store(rb_fiber_t *next_fib)
+static inline rb_fiber_t*
+return_fiber(void)
 {
-    rb_thread_t *th = GET_THREAD();
+    rb_fiber_t *fib = fiber_current();
+    rb_fiber_t *prev = fib->prev;
+
+    if (!prev) {
+	rb_fiber_t *root_fiber = GET_THREAD()->root_fiber;
+
+	if (root_fiber == fib) {
+	    rb_raise(rb_eFiberError, "can't yield from root fiber");
+	}
+	return root_fiber;
+    }
+    else {
+	fib->prev = NULL;
+	return prev;
+    }
+}
+
+VALUE
+rb_fiber_current(void)
+{
+    return fiber_current()->cont.self;
+}
+
+static inline VALUE
+fiber_store(rb_fiber_t *next_fib, rb_thread_t *th)
+{
     rb_fiber_t *fib;
 
     if (th->fiber) {
-	GetFiberPtr(th->fiber, fib);
+	fib = th->fiber;
 	cont_save_thread(&fib->cont, th);
     }
     else {
 	/* create current fiber */
 	fib = root_fiber_alloc(th);
-	th->root_fiber = th->fiber = fib->cont.self;
+	th->root_fiber = th->fiber = fib;
     }
 
 #if FIBER_USE_NATIVE
@@ -1380,7 +1366,7 @@ fiber_store(rb_fiber_t *next_fib)
 	terminated_machine_stack.ptr = NULL;
 	terminated_machine_stack.size = 0;
     }
-    GetFiberPtr(th->fiber, fib);
+    fib = th->fiber;
     if (fib->cont.argc == -1) rb_exc_raise(fib->cont.value);
     return fib->cont.value;
 #endif /* not _WIN32 */
@@ -1389,7 +1375,7 @@ fiber_store(rb_fiber_t *next_fib)
     cont_save_machine_stack(th, &fib->cont);
     if (ruby_setjmp(fib->cont.jmpbuf)) {
 	/* restored */
-	GetFiberPtr(th->fiber, fib);
+	fib = th->fiber;
 	if (fib->cont.argc == -1) rb_exc_raise(fib->cont.value);
 	if (nextfib->cont.value == Qundef) {
 	    cont_restore_0(nextfib->cont, &nextfib->cont.value);
@@ -1406,17 +1392,13 @@ fiber_store(rb_fiber_t *next_fib)
 }
 
 static inline VALUE
-fiber_switch(VALUE fibval, int argc, const VALUE *argv, int is_resume)
+fiber_switch(rb_fiber_t *fib, int argc, const VALUE *argv, int is_resume)
 {
     VALUE value;
-    rb_fiber_t *fib;
-    rb_context_t *cont;
+    rb_context_t *cont = &fib->cont;
     rb_thread_t *th = GET_THREAD();
 
-    GetFiberPtr(fibval, fib);
-    cont = &fib->cont;
-
-    if (th->fiber == fibval) {
+    if (th->fiber == fib) {
 	/* ignore fiber context switch
          * because destination fiber is same as current fiber
 	 */
@@ -1432,23 +1414,16 @@ fiber_switch(VALUE fibval, int argc, const VALUE *argv, int is_resume)
     else if (fib->status == TERMINATED) {
 	value = rb_exc_new2(rb_eFiberError, "dead fiber called");
 
-	GetFiberPtr(th->fiber, fib);
-	if (fib->status != TERMINATED) rb_exc_raise(value);
+	if (th->fiber->status != TERMINATED) rb_exc_raise(value);
 
 	/* th->fiber is also dead => switch to root fiber */
 	/* (this means we're being called from rb_fiber_terminate, */
 	/* and the terminated fiber's return_fiber() is already dead) */
-	GetFiberPtr(th->root_fiber, fib);
-	cont = &fib->cont;
+	cont = &th->root_fiber->cont;
 	cont->argc = -1;
 	cont->value = value;
 #if FIBER_USE_NATIVE
-	{
-	    VALUE oldfibval = th->fiber;
-	    rb_fiber_t *oldfib;
-	    GetFiberPtr(oldfibval, oldfib);
-	    fiber_setcontext(fib, oldfib);
-	}
+	fiber_setcontext(th->root_fiber, th->fiber);
 #else
 	cont_restore_0(cont, &value);
 #endif
@@ -1456,7 +1431,7 @@ fiber_switch(VALUE fibval, int argc, const VALUE *argv, int is_resume)
     }
 
     if (is_resume) {
-	fib->prev = rb_fiber_current();
+	fib->prev = fiber_current();
     }
     else {
 	/* restore `tracing' context. see [Feature #4347] */
@@ -1466,16 +1441,35 @@ fiber_switch(VALUE fibval, int argc, const VALUE *argv, int is_resume)
     cont->argc = argc;
     cont->value = make_passing_arg(argc, argv);
 
-    value = fiber_store(fib);
+    value = fiber_store(fib, th);
     RUBY_VM_CHECK_INTS(th);
 
     return value;
 }
 
 VALUE
-rb_fiber_transfer(VALUE fib, int argc, const VALUE *argv)
+rb_fiber_transfer(VALUE fibval, int argc, const VALUE *argv)
 {
+    rb_fiber_t *fib;
+    GetFiberPtr(fibval, fib);
     return fiber_switch(fib, argc, argv, 0);
+}
+
+static void
+rb_fiber_terminate(rb_fiber_t *fib)
+{
+    VALUE value = fib->cont.value;
+    fib->status = TERMINATED;
+#if FIBER_USE_NATIVE && !defined(_WIN32)
+    /* Ruby must not switch to other thread until storing terminated_machine_stack */
+    terminated_machine_stack.ptr = fib->ss_sp;
+    terminated_machine_stack.size = fib->ss_size / sizeof(VALUE);
+    fib->ss_sp = NULL;
+    fib->context.uc_stack.ss_sp = NULL;
+    fib->cont.machine.stack = NULL;
+    fib->cont.machine.stack_size = 0;
+#endif
+    fiber_switch(return_fiber(), 1, &value, 0);
 }
 
 VALUE
@@ -1484,32 +1478,30 @@ rb_fiber_resume(VALUE fibval, int argc, const VALUE *argv)
     rb_fiber_t *fib;
     GetFiberPtr(fibval, fib);
 
-    if (fib->prev != Qnil || fib->cont.type == ROOT_FIBER_CONTEXT) {
+    if (fib->prev != 0 || fib->cont.type == ROOT_FIBER_CONTEXT) {
 	rb_raise(rb_eFiberError, "double resume");
     }
     if (fib->transfered != 0) {
 	rb_raise(rb_eFiberError, "cannot resume transferred Fiber");
     }
 
-    return fiber_switch(fibval, argc, argv, 1);
+    return fiber_switch(fib, argc, argv, 1);
 }
 
 VALUE
 rb_fiber_yield(int argc, const VALUE *argv)
 {
-    return rb_fiber_transfer(return_fiber(), argc, argv);
+    return fiber_switch(return_fiber(), argc, argv, 0);
 }
 
 void
 rb_fiber_reset_root_local_storage(VALUE thval)
 {
     rb_thread_t *th;
-    rb_fiber_t	*fib;
 
     GetThreadPtr(thval, th);
     if (th->root_fiber && th->root_fiber != th->fiber) {
-	GetFiberPtr(th->root_fiber, fib);
-	th->local_storage = fib->cont.saved_thread.local_storage;
+	th->local_storage = th->root_fiber->cont.saved_thread.local_storage;
     }
 }
 
@@ -1602,7 +1594,7 @@ rb_fiber_m_transfer(int argc, VALUE *argv, VALUE fibval)
     rb_fiber_t *fib;
     GetFiberPtr(fibval, fib);
     fib->transfered = 1;
-    return rb_fiber_transfer(fibval, argc, argv);
+    return fiber_switch(fib, argc, argv, 0);
 }
 
 /*
