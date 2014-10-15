@@ -288,14 +288,18 @@ location_absolute_path_m(VALUE self)
 static VALUE
 location_format(VALUE file, int lineno, VALUE name)
 {
+    VALUE s = rb_enc_sprintf(rb_enc_compatible(file, name), "%s", RSTRING_PTR(file));
     if (lineno != 0) {
-	return rb_enc_sprintf(rb_enc_compatible(file, name), "%s:%d:in `%s'",
-			      RSTRING_PTR(file), lineno, RSTRING_PTR(name));
+	rb_str_catf(s, ":%d", lineno);
+    }
+    rb_str_cat_cstr(s, ":in ");
+    if (NIL_P(name)) {
+	rb_str_cat_cstr(s, "unknown method");
     }
     else {
-	return rb_enc_sprintf(rb_enc_compatible(file, name), "%s:in `%s'",
-			      RSTRING_PTR(file), RSTRING_PTR(name));
+	rb_str_catf(s, "`%s'", RSTRING_PTR(name));
     }
+    return s;
 }
 
 static VALUE
