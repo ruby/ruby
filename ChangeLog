@@ -1,3 +1,8 @@
+Wed Oct 15 16:05:47 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* error.c: update exception tree. [DOC]
+	  reported by @hemge via twitter.
+
 Wed Oct 15 15:57:48 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (VCSUP): nothing to do if this worktree is not
