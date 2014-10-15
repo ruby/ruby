@@ -513,40 +513,67 @@ class TestRubyOptions < Test::Unit::TestCase
     end
     ExecOptions = opts.freeze
 
-    ExpectedStderr =
-      %r(\A
-      -e:(?:1:)?\s\[BUG\]\sSegmentation\sfault.*\n
-      #{ Regexp.quote(RUBY_DESCRIPTION) }\n\n
-      (?:--\s(?:.+\n)*\n)?
-      --\sControl\sframe\sinformation\s-+\n
-      (?:c:.*\n)*
-      (?:
-      --\sRuby\slevel\sbacktrace\sinformation\s----------------------------------------\n
-      -e:1:in\s\`<main>\'\n
-      -e:1:in\s\`kill\'\n
-      )?
-      \n
-      (?:
-        --\sC\slevel\sbacktrace\sinformation\s-------------------------------------------\n
-        (?:(?:.*\s)?\[0x\h+\]\n)*\n
-      )?
-      (?m:.*)
-      \[NOTE\]\n
-      You\smay\shave\sencountered\sa\sbug\sin\sthe\sRuby\sinterpreter\sor\sextension\slibraries.\n
-      Bug\sreports\sare\swelcome.\n
-      (?:.*\n)?
-      For\sdetails:\shttp:\/\/.*\.ruby-lang\.org/.*\n
-      \n
-      (?:#{additional})
-      \z
+    ExpectedStderrList = [
+      %r(
+        -e:(?:1:)?\s\[BUG\]\sSegmentation\sfault.*\n
+      )x,
+      %r(
+        #{ Regexp.quote(RUBY_DESCRIPTION) }\n\n
+      )x,
+      %r(
+        (?:--\s(?:.+\n)*\n)?
+        --\sControl\sframe\sinformation\s-+\n
+        (?:c:.*\n)*
+      )x,
+      %r(
+        (?:
+        --\sRuby\slevel\sbacktrace\sinformation\s----------------------------------------\n
+        -e:1:in\s\`<main>\'\n
+        -e:1:in\s\`kill\'\n
+        )?
+        \n
+        (?:
+          --\sC\slevel\sbacktrace\sinformation\s-------------------------------------------\n
+          (?:(?:.*\s)?\[0x\h+\]\n)*\n
+        )?
+        (?m:.*)
+        \[NOTE\]\n
+        You\smay\shave\sencountered\sa\sbug\sin\sthe\sRuby\sinterpreter\sor\sextension\slibraries.\n
+        Bug\sreports\sare\swelcome.\n
+        (?:.*\n)?
+        For\sdetails:\shttp:\/\/.*\.ruby-lang\.org/.*\n
+        \n
+        (?:#{additional})
       )x
+    ]
+  end
+
+  def assert_segv(args, message=nil)
+    test_stdin = ""
+    opt = SEGVTest::ExecOptions.dup
+
+    _, stderr, status = EnvUtil.invoke_ruby(args, test_stdin, false, true, **opt)
+
+    if signo = status.termsig
+      sleep 0.1
+      EnvUtil.diagnostic_reports(Signal.signame(signo), EnvUtil.rubybin, status.pid, Time.now)
+    end
+
+    str = stderr
+    SEGVTest::ExpectedStderrList.each {|regexp|
+      r = /\A#{regexp}/
+      unless r =~ str
+        assert_match(r, str, message)
+      end
+      str = $'
+    }
+    assert_equal('', str)
+
+    status
   end
 
   def test_segv_test
-    opts = SEGVTest::ExecOptions.dup
-    expected_stderr = SEGVTest::ExpectedStderr
-
-    assert_in_out_err(["--disable-gems", "-e", "Process.kill :SEGV, $$"], "", [], expected_stderr, nil, opts)
+    assert_segv(["--disable-gems", "-e", "Process.kill :SEGV, $$"])
   end
 
   def test_segv_loaded_features
@@ -570,15 +597,11 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_segv_setproctitle
-    opts = SEGVTest::ExecOptions.dup
-    expected_stderr = SEGVTest::ExpectedStderr
-
     bug7597 = '[ruby-dev:46786]'
     Tempfile.create(["test_ruby_test_bug7597", ".rb"]) {|t|
       t.write "f" * 100
       t.flush
-      assert_in_out_err(["--disable-gems", "-e", "$0=ARGV[0]; Process.kill :SEGV, $$", t.path],
-                        "", [], expected_stderr, bug7597, opts)
+      assert_segv(["--disable-gems", "-e", "$0=ARGV[0]; Process.kill :SEGV, $$", t.path], bug7597)
     }
   end
 
