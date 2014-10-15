@@ -1,3 +1,8 @@
+Wed Oct 15 15:35:39 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* ext/pathname/pathname.c (path_inspect): use PRIsVALUE to preserve
+	  the result encoding.
+
 Wed Sep 17 15:09:16 2014  Natalie Weizenbaum  <nweiz@google.com>
 
 	* ext/pathname/lib/pathname.rb (SAME_PATHS):
