@@ -1337,43 +1337,50 @@ fiber_store(rb_fiber_t *next_fib)
 	th->root_fiber = th->fiber = fib->cont.self;
     }
 
-#if !FIBER_USE_NATIVE
-    cont_save_machine_stack(th, &fib->cont);
-#endif
-
-    if (FIBER_USE_NATIVE || ruby_setjmp(fib->cont.jmpbuf)) {
 #if FIBER_USE_NATIVE
-	fiber_setcontext(next_fib, fib);
+    fiber_setcontext(next_fib, fib);
+    /* restored */
 #ifndef _WIN32
-	if (terminated_machine_stack.ptr) {
-	    if (machine_stack_cache_index < MAX_MACHINE_STACK_CACHE) {
-		machine_stack_cache[machine_stack_cache_index].ptr = terminated_machine_stack.ptr;
-		machine_stack_cache[machine_stack_cache_index].size = terminated_machine_stack.size;
-		machine_stack_cache_index++;
+    if (terminated_machine_stack.ptr) {
+	if (machine_stack_cache_index < MAX_MACHINE_STACK_CACHE) {
+	    machine_stack_cache[machine_stack_cache_index].ptr = terminated_machine_stack.ptr;
+	    machine_stack_cache[machine_stack_cache_index].size = terminated_machine_stack.size;
+	    machine_stack_cache_index++;
+	}
+	else {
+	    if (terminated_machine_stack.ptr != fib->cont.machine.stack) {
+		munmap((void*)terminated_machine_stack.ptr, terminated_machine_stack.size * sizeof(VALUE));
 	    }
 	    else {
-		if (terminated_machine_stack.ptr != fib->cont.machine.stack) {
-		    munmap((void*)terminated_machine_stack.ptr, terminated_machine_stack.size * sizeof(VALUE));
-		}
-		else {
-		    rb_bug("terminated fiber resumed");
-		}
+		rb_bug("terminated fiber resumed");
 	    }
-	    terminated_machine_stack.ptr = NULL;
-	    terminated_machine_stack.size = 0;
 	}
-#endif
-#endif
+	terminated_machine_stack.ptr = NULL;
+	terminated_machine_stack.size = 0;
+    }
+    GetFiberPtr(th->fiber, fib);
+    if (fib->cont.argc == -1) rb_exc_raise(fib->cont.value);
+    return fib->cont.value;
+#endif /* not _WIN32 */
+
+#else /* FIBER_USE_NATIVE */
+    cont_save_machine_stack(th, &fib->cont);
+    if (ruby_setjmp(fib->cont.jmpbuf)) {
 	/* restored */
 	GetFiberPtr(th->fiber, fib);
 	if (fib->cont.argc == -1) rb_exc_raise(fib->cont.value);
+	if (nextfib->cont.value == Qundef) {
+	    cont_restore_0(nextfib->cont, &nextfib->cont.value);
+	    rb_bug("rb_fiber_resume: unreachable");
+	}
 	return fib->cont.value;
     }
-#if !FIBER_USE_NATIVE
     else {
-	return Qundef;
+	VALUE undef = Qundef;
+	cont_restore_0(nextfib->cont, &undef);
+	rb_bug("rb_fiber_resume: unreachable");
     }
-#endif
+#endif /* FIBER_USE_NATIVE */
 }
 
 static inline VALUE
@@ -1402,30 +1409,28 @@ fiber_switch(VALUE fibval, int argc, const VALUE *argv, int is_resume)
     }
     else if (fib->status == TERMINATED) {
 	value = rb_exc_new2(rb_eFiberError, "dead fiber called");
-	if (th->fiber != fibval) {
-	    GetFiberPtr(th->fiber, fib);
-	    if (fib->status != TERMINATED) rb_exc_raise(value);
-	    fibval = th->root_fiber;
-	}
-	else {
-	    fibval = fib->prev;
-	    if (NIL_P(fibval)) fibval = th->root_fiber;
-	}
-	GetFiberPtr(fibval, fib);
+
+	GetFiberPtr(th->fiber, fib);
+	if (fib->status != TERMINATED) rb_exc_raise(value);
+
+	/* th->fiber is also dead => switch to root fiber */
+	/* (this means we're being called from rb_fiber_terminate, */
+	/* and the terminated fiber's return_fiber() is already dead) */
+	GetFiberPtr(th->root_fiber, fib);
 	cont = &fib->cont;
 	cont->argc = -1;
 	cont->value = value;
 #if FIBER_USE_NATIVE
 	{
-	    VALUE oldfibval;
+	    VALUE oldfibval = th->fiber;
 	    rb_fiber_t *oldfib;
-	    oldfibval = rb_fiber_current();
 	    GetFiberPtr(oldfibval, oldfib);
 	    fiber_setcontext(fib, oldfib);
 	}
 #else
 	cont_restore_0(cont, &value);
 #endif
+	/* unreachable */
     }
 
     if (is_resume) {
@@ -1440,12 +1445,6 @@ fiber_switch(VALUE fibval, int argc, const VALUE *argv, int is_resume)
     cont->value = make_passing_arg(argc, argv);
 
     value = fiber_store(fib);
-#if !FIBER_USE_NATIVE
-    if (value == Qundef) {
-	cont_restore_0(cont, &value);
-	rb_bug("rb_fiber_resume: unreachable");
-    }
-#endif
     RUBY_VM_CHECK_INTS(th);
 
     return value;
