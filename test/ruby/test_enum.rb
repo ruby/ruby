@@ -151,6 +151,7 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(12, @obj.inject(:*))
     assert_equal(24, @obj.inject(2) {|z, x| z * x })
     assert_equal(24, @obj.inject(2, :*) {|z, x| z * x })
+    assert_equal(nil, @empty.inject() {9})
   end
 
   def test_partition

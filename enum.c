@@ -663,6 +663,7 @@ enum_inject(int argc, VALUE *argv, VALUE obj)
     }
     memo = NEW_MEMO(init, Qnil, op);
     rb_block_call(obj, id_each, 0, 0, iter, (VALUE)memo);
+    if (memo->u1.value == Qundef) return Qnil;
     return memo->u1.value;
 }
 
