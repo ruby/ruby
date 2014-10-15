@@ -30,6 +30,10 @@
 #include <sys/utsname.h>
 #endif
 
+#ifdef HAVE_SCHED_GETAFFINITY
+#include <sched.h>
+#endif
+
 static VALUE sPasswd;
 #ifdef HAVE_GETGRENT
 static VALUE sGroup;
@@ -904,6 +908,54 @@ io_pathconf(VALUE io, VALUE arg)
 #endif
 
 #if (defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_ONLN)) || defined(_WIN32)
+
+#ifdef HAVE_SCHED_GETAFFINITY
+static int
+etc_nprocessors_affin(void)
+{
+    cpu_set_t *cpuset;
+    size_t size;
+    int ret;
+    int ncpus;
+
+    /*
+     * XXX:
+     * man page says CPU_ALLOC takes number of cpus. But it is not accurate
+     * explanation. sched_getaffinity() returns EINVAL if cpuset bitmap is
+     * smaller than kernel internal bitmap.
+     * That said, sched_getaffinity() can fail when a kernel have sparse bitmap
+     * even if cpuset bitmap is larger than number of cpus.
+     * The precious way is to use /sys/devices/system/cpu/online. But there are
+     * two problems,
+     * - Costly calculation
+     *    It is minor issue, but possibly kill the benefit of parallel processing.
+     * - No guarantee to exist /sys/devices/system/cpu/online
+     *    This is an issue especially when using containers.
+     * So, we use hardcode number for workaround. Current linux kernel
+     * (Linux 3.17) support 8192 cpus at maximum. Then 16384 is enough large.
+     */
+    ncpus = 16384;
+
+    cpuset = CPU_ALLOC(ncpus);
+    if (!cpuset) {
+       return -1;
+    }
+    size = CPU_ALLOC_SIZE(ncpus);
+    CPU_ZERO_S(size, cpuset);
+
+    ret = sched_getaffinity(0, size, cpuset);
+    if (ret==-1) {
+       goto free;
+    }
+
+    ret = CPU_COUNT_S(size, cpuset);
+  free:
+    CPU_FREE(cpuset);
+
+    return ret;
+}
+#endif
+
 /*
  * Returns the number of online processors.
  *
@@ -912,11 +964,20 @@ io_pathconf(VALUE io, VALUE arg)
  *
  * This method is implemented as:
  * - sysconf(_SC_NPROCESSORS_ONLN): GNU/Linux, NetBSD, FreeBSD, OpenBSD, DragonFly BSD, OpenIndiana, Mac OS X, AIX
+ * - sched_getaffinity(): Linux
  *
  * Example:
  *
  *   require 'etc'
  *   p Etc.nprocessors #=> 4
+ *
+ * The result might be smaller number than physical cpus especially when ruby
+ * process is bound to specific cpus. This is intended for getting better
+ * parallel processing.
+ *
+ * Example: (Linux)
+ *
+ *   $ taskset 0x3 ./ruby -retc -e "p Etc.nprocessors"  #=> 2
  *
  */
 static VALUE
@@ -925,6 +986,17 @@ etc_nprocessors(VALUE obj)
     long ret;
 
 #if !defined(_WIN32)
+
+#ifdef HAVE_SCHED_GETAFFINITY
+    int ncpus;
+
+    ncpus = etc_nprocessors_affin();
+    if (ncpus != -1) {
+       return INT2NUM(ncpus);
+    }
+    /* fallback to _SC_NPROCESSORS_ONLN */
+#endif
+
     errno = 0;
     ret = sysconf(_SC_NPROCESSORS_ONLN);
     if (ret == -1) {

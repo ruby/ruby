@@ -1,3 +1,13 @@
+Wed Oct 15 18:26:19 2014  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/etc/etc.c (etc_nprocessors_affinity): use sched_getaffinity
+	  for getting precious number of available cpus.
+
+	* ext/etc/etc.c (etc_nprocessors): use etc_nprocessors_affinity if
+	  possible.
+
+	  [Feature #10267] etc-nprocessors-kosaki2.patch
+
 Wed Oct 15 17:53:28 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/envutil.rb (assert_pattern_list) Renamed from
