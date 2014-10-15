@@ -1,3 +1,15 @@
+Thu Oct 16 00:10:45 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (rb_f_kill): get rid of deadlock as unhandled and
+	  discarded signals do not make interrupt_cond signaled.
+	  based on the patch by Kazuki Tsujimoto at [ruby-dev:48606].
+	  [Bug #9820]
+
+Thu Oct 16 00:10:45 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (rb_f_kill): should not ignore signal unless the
+	  default handler is registered.  [ruby-dev:48592] [Bug #9820]
+
 Wed Oct 15 23:58:13 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	merge r47598 partially. extracted commits are as follows. [Bug #9728]
