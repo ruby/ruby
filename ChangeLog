@@ -1,3 +1,11 @@
+Thu Oct 16 04:28:41 2014  Knut Franke  <Knut.Franke@gmx.de>
+
+	* cont.c (rb_fiber_t): remove prev_fiber/next_fiber
+	  (fiber_link_join, fiber_link_remove): remove functions
+	  (fiber_free, fiber_init, root_fiber_alloc):
+	   remove references to removed fields and functions
+	  [ruby-core:65518] [Feature #10341]
+
 Wed Oct 15 22:08:37 2014  Tanaka Akira  <akr@fsij.org>
 
 	* ext/etc/etc.c (etc_nprocessors_affin): Test CPU_ALLOC availability.

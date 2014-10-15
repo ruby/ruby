@@ -140,8 +140,6 @@ typedef struct rb_fiber_struct {
      */
     int transfered;
 
-    struct rb_fiber_struct *prev_fiber;
-    struct rb_fiber_struct *next_fiber;
 #if FIBER_USE_NATIVE
 #ifdef _WIN32
     void *fib_handle;
@@ -319,27 +317,6 @@ fiber_mark(void *ptr)
 }
 
 static void
-fiber_link_join(rb_fiber_t *fib)
-{
-    VALUE current_fibval = rb_fiber_current();
-    rb_fiber_t *current_fib;
-    GetFiberPtr(current_fibval, current_fib);
-
-    /* join fiber link */
-    fib->next_fiber = current_fib->next_fiber;
-    fib->prev_fiber = current_fib;
-    current_fib->next_fiber->prev_fiber = fib;
-    current_fib->next_fiber = fib;
-}
-
-static void
-fiber_link_remove(rb_fiber_t *fib)
-{
-    fib->prev_fiber->next_fiber = fib->next_fiber;
-    fib->next_fiber->prev_fiber = fib->prev_fiber;
-}
-
-static void
 fiber_free(void *ptr)
 {
     RUBY_FREE_ENTER("fiber");
@@ -349,7 +326,6 @@ fiber_free(void *ptr)
 	    fib->cont.saved_thread.local_storage) {
 	    st_free_table(fib->cont.saved_thread.local_storage);
 	}
-	fiber_link_remove(fib);
 
 	cont_free(&fib->cont);
     }
@@ -1187,8 +1163,6 @@ fiber_init(VALUE fibval, VALUE proc)
     th->stack = 0;
     th->stack_size = 0;
 
-    fiber_link_join(fib);
-
     th->stack_size = th->vm->default_params.fiber_vm_stack_size / sizeof(VALUE);
     th->stack = ALLOC_N(VALUE, th->stack_size);
 
@@ -1331,7 +1305,6 @@ root_fiber_alloc(rb_thread_t *th)
 #endif
 #endif
     fib->status = RUNNING;
-    fib->prev_fiber = fib->next_fiber = fib;
 
     return fib;
 }
