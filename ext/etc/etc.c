@@ -962,9 +962,9 @@ etc_nprocessors_affin(void)
  * The result is intended as the number of processes to
  * use all available processors.
  *
- * This method is implemented as:
- * - sysconf(_SC_NPROCESSORS_ONLN): GNU/Linux, NetBSD, FreeBSD, OpenBSD, DragonFly BSD, OpenIndiana, Mac OS X, AIX
+ * This method is implemented using:
  * - sched_getaffinity(): Linux
+ * - sysconf(_SC_NPROCESSORS_ONLN): GNU/Linux, NetBSD, FreeBSD, OpenBSD, DragonFly BSD, OpenIndiana, Mac OS X, AIX
  *
  * Example:
  *
@@ -977,7 +977,7 @@ etc_nprocessors_affin(void)
  *
  * Example: (Linux)
  *
- *   $ taskset 0x3 ./ruby -retc -e "p Etc.nprocessors"  #=> 2
+ *   linux$ taskset 0x3 ./ruby -retc -e "p Etc.nprocessors"  #=> 2
  *
  */
 static VALUE
