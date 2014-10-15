@@ -450,14 +450,13 @@ static VALUE
 cont_capture(volatile int *stat)
 {
     rb_context_t *cont;
-    rb_thread_t *th = GET_THREAD(), *sth;
+    rb_thread_t *th = GET_THREAD();
     volatile VALUE contval;
 
     THREAD_MUST_BE_RUNNING(th);
     rb_vm_stack_to_heap(th);
     cont = cont_new(rb_cContinuation);
     contval = cont->self;
-    sth = &cont->saved_thread;
 
 #ifdef CAPTURE_JUST_VALID_VM_STACK
     cont->vm_stack_slen = th->cfp->sp + th->mark_stack_len - th->stack;
@@ -469,7 +468,7 @@ cont_capture(volatile int *stat)
     cont->vm_stack = ALLOC_N(VALUE, th->stack_size);
     MEMCPY(cont->vm_stack, th->stack, VALUE, th->stack_size);
 #endif
-    sth->stack = 0;
+    cont->saved_thread.stack = 0;
 
     cont_save_machine_stack(th, cont);
 
