@@ -1,3 +1,10 @@
+Wed Oct 15 16:13:28 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (dir_s_aref): fix rdoc.  `Dir.glob` allows an array but
+	  `Dir[]` not.  the former accepts an optional parameter `flags`,
+	  while the latter accepts arbitrary number of arguments but no
+	  `flags`.  [ruby-core:65265] [Bug #10294]
+
 Wed Oct 15 16:12:11 2014  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* configure.in: Fix typo. [Bug #9914]
