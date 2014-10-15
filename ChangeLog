@@ -1,3 +1,9 @@
+Wed Oct 15 23:13:43 2014  Eric Wong  <e@80x24.org>
+
+	* array.c (ary_recycle_hash): add RB_GC_GUARD
+	  (rb_ary_diff): remove volatile
+	  [Bug #10369]
+
 Wed Oct 15 23:10:07 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (dir_s_aref): fix rdoc.  `Dir.glob` allows an array but
