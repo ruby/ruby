@@ -1392,6 +1392,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	    }
 	}
 	rb_method_entry_set(mod, id, method->me, noex);
+	RB_GC_GUARD(body);
     }
     else if (rb_obj_is_proc(body)) {
 	rb_proc_t *proc;
