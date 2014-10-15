@@ -1,3 +1,11 @@
+Thu Oct 16 06:25:29 2014  Knut Franke  <Knut.Franke@gmx.de>
+
+	* cont.c (rb_context_t): comment on saved_thread
+	  (cont_save_thread): sparse copy
+	  (cont_init): copy extra fields
+	  (fiber_init): use current thread VM stack size
+	  [ruby-core:65518] [Feature #10341]
+
 Thu Oct 16 06:13:09 2014  Knut Franke  <Knut.Franke@gmx.de>
 
 	* cont.c (cont_capture): remove unnecessary variable

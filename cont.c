@@ -107,7 +107,7 @@ typedef struct rb_context_struct {
 	int register_stack_size;
 #endif
     } machine;
-    rb_thread_t saved_thread;
+    rb_thread_t saved_thread; /* selected properties of GET_THREAD() (see cont_save_thread) */
     rb_jmpbuf_t jmpbuf;
     rb_ensure_entry_t *ensure_array;
     rb_ensure_list_t *ensure_list;
@@ -412,15 +412,34 @@ static const rb_data_type_t cont_data_type = {
 static void
 cont_save_thread(rb_context_t *cont, rb_thread_t *th)
 {
+    rb_thread_t *sth = &cont->saved_thread;
+
     /* save thread context */
-    cont->saved_thread = *th;
+    sth->stack = th->stack;
+    sth->stack_size = th->stack_size;
+    sth->local_storage = th->local_storage;
+    sth->cfp = th->cfp;
+    sth->safe_level = th->safe_level;
+    sth->raised_flag = th->raised_flag;
+    sth->state = th->state;
+    sth->status = th->status;
+    sth->tag = th->tag;
+    sth->protect_tag = th->protect_tag;
+    sth->errinfo = th->errinfo;
+    sth->first_proc = th->first_proc;
+    sth->root_lep = th->root_lep;
+    sth->root_svar = th->root_svar;
+    sth->ensure_list = th->ensure_list;
+
+    sth->trace_arg = th->trace_arg;
+
     /* saved_thread->machine.stack_(start|end) should be NULL */
     /* because it may happen GC afterward */
-    cont->saved_thread.machine.stack_start = 0;
-    cont->saved_thread.machine.stack_end = 0;
+    sth->machine.stack_start = 0;
+    sth->machine.stack_end = 0;
 #ifdef __ia64
-    cont->saved_thread.machine.register_stack_start = 0;
-    cont->saved_thread.machine.register_stack_end = 0;
+    sth->machine.register_stack_start = 0;
+    sth->machine.register_stack_end = 0;
 #endif
 }
 
@@ -429,6 +448,9 @@ cont_init(rb_context_t *cont, rb_thread_t *th)
 {
     /* save thread context */
     cont_save_thread(cont, th);
+    cont->saved_thread.self = th->self;
+    cont->saved_thread.machine.stack_maxsize = th->machine.stack_maxsize;
+    cont->saved_thread.fiber = th->fiber;
     cont->saved_thread.local_storage = 0;
 }
 
@@ -1155,6 +1177,7 @@ fiber_init(VALUE fibval, VALUE proc)
     rb_fiber_t *fib = fiber_t_alloc(fibval);
     rb_context_t *cont = &fib->cont;
     rb_thread_t *th = &cont->saved_thread;
+    rb_thread_t *cth = GET_THREAD();
 
     /* initialize cont */
     cont->vm_stack = 0;
@@ -1162,7 +1185,7 @@ fiber_init(VALUE fibval, VALUE proc)
     th->stack = 0;
     th->stack_size = 0;
 
-    th->stack_size = th->vm->default_params.fiber_vm_stack_size / sizeof(VALUE);
+    th->stack_size = cth->vm->default_params.fiber_vm_stack_size / sizeof(VALUE);
     th->stack = ALLOC_N(VALUE, th->stack_size);
 
     th->cfp = (void *)(th->stack + th->stack_size);
@@ -1187,7 +1210,7 @@ fiber_init(VALUE fibval, VALUE proc)
     th->first_proc = proc;
 
 #if !FIBER_USE_NATIVE
-    MEMCPY(&cont->jmpbuf, &th->root_jmpbuf, rb_jmpbuf_t, 1);
+    MEMCPY(&cont->jmpbuf, &cth->root_jmpbuf, rb_jmpbuf_t, 1);
 #endif
 
     return fibval;
