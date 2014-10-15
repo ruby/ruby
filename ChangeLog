@@ -1,3 +1,11 @@
+Thu Oct 16 00:20:12 2014  Eric Wong  <e@80x24.org>
+
+	* object.c (rb_class_real): do not dereference 0 VALUE
+
+	* test/ruby/test_module.rb (test_inspect_segfault):
+	  Test case and bug report by Thomas Stratmann.
+	  [ruby-core:65214] [Bug #10282]
+
 Thu Oct 16 00:10:45 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* signal.c (rb_f_kill): get rid of deadlock as unhandled and
