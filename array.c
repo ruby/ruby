@@ -1471,6 +1471,7 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 	    MEMMOVE(RARRAY_PTR(ary) + beg, RARRAY_PTR(rpl), VALUE, rlen);
 	}
     }
+    RB_GC_GUARD(rpl);
 }
 
 void
