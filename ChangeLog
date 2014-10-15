@@ -1,3 +1,8 @@
+Wed Oct 15 23:50:33 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/fileutils.rb: handle ENOENT error with symlink targeted to
+	  non-exists file. [ruby-dev:45933] [Bug #6716]
+
 Wed Oct 15 23:25:24 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: NetBSD's ksh, used by configure, needs escapes.
