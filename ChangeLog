@@ -1,3 +1,9 @@
+Thu Oct 16 00:30:30 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/find.rb (Find.find): Call to_path for arguments to obtain
+	  strings.
+	  [ruby-core:63713] [Bug #10035] Reported by Herwin.
+
 Thu Oct 16 00:20:12 2014  Eric Wong  <e@80x24.org>
 
 	* object.c (rb_class_real): do not dereference 0 VALUE
