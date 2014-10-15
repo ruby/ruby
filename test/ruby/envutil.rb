@@ -499,7 +499,6 @@ eom
                 expect_msg = "Expected #{mu_pp pattern}\n"
                 if /\n[^\n]+\n/ =~ rest
                   actual_mesg = "to match\n"
-                  prefix = "  "
                   rest.scan(/.*\n+/) {
                     actual_mesg << '  ' << $&.inspect << "+\n"
                   }
