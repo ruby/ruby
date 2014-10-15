@@ -531,7 +531,8 @@ class TestRubyOptions < Test::Unit::TestCase
         -e:1:in\s\`<main>\'\n
         -e:1:in\s\`kill\'\n
         )?
-        \n
+      )x,
+      %r(
         (?:
           --\sC\slevel\sbacktrace\sinformation\s-------------------------------------------\n
           (?:(?:.*\s)?\[0x\h+\]\n)*\n
