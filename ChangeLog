@@ -1,3 +1,8 @@
+Wed Oct 15 23:58:13 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	merge r47598 partially. extracted commits are as follows. [Bug #9728]
+	https://github.com/k-takata/Onigmo/commit/15ddec6d18e27fdc1988236764e766fd5892ecf5
+
 Wed Oct 15 23:50:33 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/fileutils.rb: handle ENOENT error with symlink targeted to
