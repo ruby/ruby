@@ -1,3 +1,8 @@
+Wed Oct 15 22:46:52 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* error.c: update exception tree. [DOC]
+	  reported by @hemge via twitter.
+
 Wed Sep 24 02:30:55 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parse_ident): just after a label, new expression should
