@@ -1377,11 +1377,15 @@ fiber_store(rb_fiber_t *next_fib, rb_thread_t *th)
 	/* restored */
 	fib = th->fiber;
 	if (fib->cont.argc == -1) rb_exc_raise(fib->cont.value);
+	if (next_fib->cont.value == Qundef) {
+	    cont_restore_0(&next_fib->cont, &next_fib->cont.value);
+	    rb_bug("rb_fiber_resume: unreachable");
+	}
 	return fib->cont.value;
     }
     else {
 	VALUE undef = Qundef;
-	cont_restore_0(&fib->cont, &undef);
+	cont_restore_0(&next_fib->cont, &undef);
 	rb_bug("rb_fiber_resume: unreachable");
     }
 #endif /* FIBER_USE_NATIVE */

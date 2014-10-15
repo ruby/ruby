@@ -1,3 +1,7 @@
+Thu Oct 16 08:40:04 2014  Eric Wong  <e@80x24.org>
+
+	* cont.c (fiber_store): restore references to next_fib (fix typo)
+
 Thu Oct 16 08:26:08 2014  Eric Wong  <e@80x24.org>
 
 	* cont.c (fiber_store): remove references to nextfib
