@@ -536,7 +536,9 @@ class TestRubyOptions < Test::Unit::TestCase
           --\sC\slevel\sbacktrace\sinformation\s-------------------------------------------\n
           (?:(?:.*\s)?\[0x\h+\]\n)*\n
         )?
-        (?m:.*)
+      )x,
+      :*,
+      %r(
         \[NOTE\]\n
         You\smay\shave\sencountered\sa\sbug\sin\sthe\sRuby\sinterpreter\sor\sextension\slibraries.\n
         Bug\sreports\sare\swelcome.\n
@@ -559,15 +561,7 @@ class TestRubyOptions < Test::Unit::TestCase
       EnvUtil.diagnostic_reports(Signal.signame(signo), EnvUtil.rubybin, status.pid, Time.now)
     end
 
-    str = stderr
-    SEGVTest::ExpectedStderrList.each {|regexp|
-      r = /\A#{regexp}/
-      unless r =~ str
-        assert_match(r, str, message)
-      end
-      str = $'
-    }
-    assert_equal('', str)
+    assert_regexp_list(SEGVTest::ExpectedStderrList, stderr, message)
 
     status
   end

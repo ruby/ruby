@@ -477,6 +477,36 @@ eom
         AssertFile
       end
 
+      # pattern_list is an array which contains regexp and :*.
+      # :* means any sequence.
+      #
+      # pattern_list is anchored.
+      # Use [:*, regexp, :*] for non-anchored match.
+      def assert_regexp_list(pattern_list, actual, message=nil)
+        rest = actual
+        anchored = true
+        pattern_list.each {|pattern|
+          if pattern == :*
+            anchored = false
+          else
+            if anchored
+              match = /\A#{pattern}/.match(rest)
+            else
+              match = pattern.match(rest)
+            end
+            unless match
+              msg = message(msg) { "Expected #{mu_pp pattern}\nto match #{mu_pp rest}" }
+              assert false, msg
+            end
+            rest = match.post_match
+            anchored = true
+          end
+        }
+        if anchored
+          assert_equal("", rest)
+        end
+      end
+
       class << (AssertFile = Struct.new(:failure_message).new)
         include Assertions
         def assert_file_predicate(predicate, *args)

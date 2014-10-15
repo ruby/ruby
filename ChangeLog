@@ -1,3 +1,9 @@
+Wed Oct 15 12:26:58 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/envutil.rb (assert_regexp_list): New assertion method.
+
+	* test/ruby/test_rubyoptions.rb: Use assert_regexp_list.
+
 Wed Oct 15 07:21:09 2014  Tanaka Akira  <akr@fsij.org>
 
 	* enum.c: min(n) drops elements bigger than the n-th maximum element.
