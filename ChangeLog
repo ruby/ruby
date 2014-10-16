@@ -1,3 +1,10 @@
+Fri Oct 17 03:05:08 2014  Eric Wong  <e@80x24.org>
+
+	* test/-ext-/bug_reporter/test_bug_reporter.rb
+	  (test_bug_reporter_add): revert r47972
+	* test/ruby/test_rubyoptions.rb (test_segv_test): revert r47971
+	  [ruby-core:65764]
+
 Thu Oct 16 23:17:40 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* signal.c (rb_sigaltstack_size): double default size to get rid
