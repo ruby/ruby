@@ -130,7 +130,7 @@ static machine_stack_cache_t machine_stack_cache[MAX_MACHINE_STACK_CACHE];
 static machine_stack_cache_t terminated_machine_stack;
 #endif
 
-typedef struct rb_fiber_struct {
+struct rb_fiber_struct {
     rb_context_t cont;
     struct rb_fiber_struct *prev;
     enum fiber_status status;
