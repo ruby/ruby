@@ -1,3 +1,8 @@
+Thu Oct 16 16:23:03 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/fileutils.rb: handle ENOENT error with symlink targeted to
+	  non-exists file. [ruby-dev:45933] [Bug #6716]
+
 Wed Oct 15 16:23:22 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_time_tz.rb: Fix test error with tzdata-2014g.
