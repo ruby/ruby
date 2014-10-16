@@ -137,6 +137,18 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal(Encoding::UTF_8, s.encoding, "honor the original encoding over ASCII-8BIT")
   end
 
+  def test_set_encoding
+    bug10285 = '[ruby-core:65240] [Bug #10285]'
+    f = StringIO.new()
+    f.set_encoding(Encoding::ASCII_8BIT)
+    f.write("quz \x83 mat".b)
+    s = "foo \x97 bar".force_encoding(Encoding::WINDOWS_1252)
+    assert_nothing_raised(Encoding::CompatibilityError, bug10285) {
+      f.write(s)
+    }
+    assert_equal(Encoding::ASCII_8BIT, f.string.encoding, bug10285)
+  end
+
   def test_mode_error
     f = StringIO.new("", "r")
     assert_raise(IOError) { f.write("foo") }
