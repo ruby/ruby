@@ -1,3 +1,7 @@
+Thu Oct 16 10:09:02 2014  Eric Wong  <e@80x24.org>
+
+	* test/ruby/test_rubyoptions.rb (test_segv_test): fix race
+
 Thu Oct 16 09:17:48 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cont.c (rb_fiber_t): fix compile error caused by move to

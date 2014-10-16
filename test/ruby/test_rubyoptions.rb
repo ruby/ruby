@@ -568,7 +568,7 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_segv_test
-    assert_segv(["--disable-gems", "-e", "Process.kill :SEGV, $$"])
+    assert_segv(["--disable-gems", "-e", "Process.kill :SEGV, $$; sleep"])
   end
 
   def test_segv_loaded_features
