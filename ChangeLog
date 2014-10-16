@@ -1,3 +1,9 @@
+Thu Oct 16 22:10:11 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_write): ASCII-8BIT StringIO
+	  should be writable any encoding strings, without conversion.
+	  [ruby-core:65240] [Bug #10285]
+
 Thu Oct 16 22:06:03 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (eval_string_with_cref): fix super from eval with
