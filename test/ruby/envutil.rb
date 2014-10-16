@@ -485,7 +485,7 @@ eom
       def assert_pattern_list(pattern_list, actual, message=nil)
         rest = actual
         anchored = true
-        pattern_list.each {|pattern|
+        pattern_list.each_with_index {|pattern, i|
           if pattern == :*
             anchored = false
           else
@@ -506,6 +506,7 @@ eom
                 else
                   actual_mesg = "to match #{mu_pp rest}"
                 end
+                actual_mesg << "\nafter #{i} patterns with #{actual.length - rest.length} characters"
                 expect_msg + actual_mesg
               }
               assert false, msg

@@ -1,3 +1,8 @@
+Thu Oct 16 20:01:26 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/envutil.rb (assert_pattern_list): Show number of matched
+	  patterns and characters.
+
 Thu Oct 16 16:26:09 2014  Eric Wong  <e@80x24.org>
 
 	* cont.c (fiber_store): fix WIN32 fibers
