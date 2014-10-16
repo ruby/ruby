@@ -1,3 +1,9 @@
+Thu Oct 16 23:17:40 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (rb_sigaltstack_size): double default size to get rid
+	  of heap corruption by alternate stack overflow in SEGV handler.
+	  typically happened at fprintf() in control_frame_dump().
+
 Thu Oct 16 22:43:12 2014  Tanaka Akira  <akr@fsij.org>
 
 	* vm_backtrace.c (id2str): Fix a variable name.
