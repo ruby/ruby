@@ -1,3 +1,8 @@
+Thu Oct 16 22:43:12 2014  Tanaka Akira  <akr@fsij.org>
+
+	* vm_backtrace.c (id2str): Fix a variable name.
+	  [ruby-dev:48642] [Bug #10389]
+
 Thu Oct 16 20:01:26 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/envutil.rb (assert_pattern_list): Show number of matched

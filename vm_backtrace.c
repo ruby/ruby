@@ -27,7 +27,7 @@ static VALUE
 id2str(ID id)
 {
     VALUE str = rb_id2str(id);
-    if (!id) return Qnil;
+    if (!str) return Qnil;
     return str;
 }
 #define rb_id2str(id) id2str(id)
