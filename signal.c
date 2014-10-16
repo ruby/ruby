@@ -799,10 +799,14 @@ check_stack_overflow(const void *addr)
 #define MESSAGE_FAULT_ADDRESS
 #endif
 
+#if defined SIGSEGV || defined SIGBUS || defined SIGILL || defined SIGFPE
+static void check_reserved_signal(const char *name);
+
 #ifdef SIGBUS
 static RETSIGTYPE
 sigbus(int sig SIGINFO_ARG)
 {
+    check_reserved_signal("BUS");
 /*
  * Mac OS X makes KERN_PROTECTION_FAILURE when thread touch guard page.
  * and it's delivered as SIGBUS instead of SIGSEGV to userland. It's crazy
@@ -815,7 +819,6 @@ sigbus(int sig SIGINFO_ARG)
 }
 #endif
 
-#ifdef SIGSEGV
 static void
 ruby_abort(void)
 {
@@ -830,25 +833,49 @@ ruby_abort(void)
 
 }
 
-static int segv_received = 0;
 extern int ruby_disable_gc;
 
+#ifdef SIGSEGV
 static RETSIGTYPE
 sigsegv(int sig SIGINFO_ARG)
 {
-    if (segv_received) {
-	ssize_t RB_UNUSED_VAR(err);
-	static const char msg[] = "SEGV received in SEGV handler\n";
+    check_reserved_signal("SEGV");
+    CHECK_STACK_OVERFLOW();
+    rb_bug_context(SIGINFO_CTX, "Segmentation fault" MESSAGE_FAULT_ADDRESS);
+}
+#endif
 
-	err = write(2, msg, sizeof(msg));
+#ifdef SIGILL
+static RETSIGTYPE
+sigill(int sig SIGINFO_ARG)
+{
+    check_reserved_signal("ILL");
+#if defined __APPLE__
+    CHECK_STACK_OVERFLOW();
+#endif
+    rb_bug_context(SIGINFO_CTX, "Illegal instruction" MESSAGE_FAULT_ADDRESS);
+}
+#endif
+
+static void
+check_reserved_signal(const char *name)
+{
+    static const char *received;
+    const char *prev = ATOMIC_PTR_EXCHANGE(received, name);
+
+    if (prev) {
+	ssize_t RB_UNUSED_VAR(err);
+	static const char msg1[] = " received in ";
+	static const char msg2[] = " handler\n";
+
+	err = write(2, name, strlen(name));
+	err = write(2, msg1, sizeof(msg1));
+	err = write(2, prev, strlen(prev));
+	err = write(2, msg2, sizeof(msg2));
 	ruby_abort();
     }
 
-    CHECK_STACK_OVERFLOW();
-
-    segv_received = 1;
     ruby_disable_gc = 1;
-    rb_bug_context(SIGINFO_CTX, "Segmentation fault" MESSAGE_FAULT_ADDRESS);
 }
 #endif
 
@@ -1380,6 +1407,9 @@ Init_signal(void)
     if (!ruby_enable_coredump) {
 #ifdef SIGBUS
 	install_sighandler(SIGBUS, (sighandler_t)sigbus);
+#endif
+#ifdef SIGILL
+	install_sighandler(SIGILL, (sighandler_t)sigill);
 #endif
 #ifdef SIGSEGV
 # ifdef USE_SIGALTSTACK
