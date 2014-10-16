@@ -1,3 +1,9 @@
+Thu Oct 16 16:33:51 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* regcomp.c, regexec.c: Optimization should be disabled not only for
+	  /(?<=x).*/ but also for /(?!x).*/.
+	  (merge r47598 partially. [Bug #9728])
+
 Thu Oct 16 16:23:03 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/fileutils.rb: handle ENOENT error with symlink targeted to

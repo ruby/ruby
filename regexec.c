@@ -4157,7 +4157,7 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
             prev = s;
             s += enclen(reg->enc, s, end);
 
-            if ((reg->anchor & ANCHOR_LOOK_BEHIND) == 0) {
+            if ((reg->anchor & (ANCHOR_LOOK_BEHIND | ANCHOR_PREC_READ_NOT)) == 0) {
               while (!ONIGENC_IS_MBC_NEWLINE_EX(reg->enc, prev, str, end, reg->options, 0)
                      && s < range) {
                 prev = s;
