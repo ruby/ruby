@@ -1,3 +1,8 @@
+Thu Oct 16 08:58:11 2014  Eric Wong  <e@80x24.org>
+
+	* test/ruby/test_process.rb (test_deadlock_by_signal_at_forking):
+	  avoid killing wrong parent
+
 Thu Oct 16 08:40:04 2014  Eric Wong  <e@80x24.org>
 
 	* cont.c (fiber_store): restore references to next_fib (fix typo)
