@@ -1,3 +1,8 @@
+Thu Oct 16 10:35:33 2014  Eric Wong  <e@80x24.org>
+
+	* test/-ext-/bug_reporter/test_bug_reporter.rb
+	  (test_bug_reporter_add): fix race
+
 Thu Oct 16 10:09:02 2014  Eric Wong  <e@80x24.org>
 
 	* test/ruby/test_rubyoptions.rb (test_segv_test): fix race
