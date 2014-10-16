@@ -1,3 +1,8 @@
+Thu Oct 16 09:17:48 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cont.c (rb_fiber_t): fix compile error caused by move to
+	  vm_core.h at r47964.  [Feature #10341]
+
 Thu Oct 16 08:58:11 2014  Eric Wong  <e@80x24.org>
 
 	* test/ruby/test_process.rb (test_deadlock_by_signal_at_forking):

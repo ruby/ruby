@@ -153,7 +153,7 @@ typedef struct rb_fiber_struct {
     size_t ss_size;
 #endif
 #endif
-} rb_fiber_t;
+};
 
 static const rb_data_type_t cont_data_type, fiber_data_type;
 static VALUE rb_cContinuation;
