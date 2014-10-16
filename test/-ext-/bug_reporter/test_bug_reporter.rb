@@ -18,6 +18,7 @@ class TestBugReporter < Test::Unit::TestCase
             "-C", tmpdir]
     stdin = "register_sample_bug_reporter(12345); Process.kill :SEGV, $$; sleep"
     _, stderr, status = EnvUtil.invoke_ruby(args, stdin, false, true)
+    stderr.force_encoding("ASCII-8BIT")
     assert_pattern_list(expected_stderr, stderr)
   ensure
     FileUtils.rm_rf(tmpdir) if tmpdir
