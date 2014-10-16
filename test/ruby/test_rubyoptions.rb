@@ -556,6 +556,7 @@ class TestRubyOptions < Test::Unit::TestCase
     opt = SEGVTest::ExecOptions.dup
 
     _, stderr, status = EnvUtil.invoke_ruby(args, test_stdin, false, true, **opt)
+    stderr.force_encoding("ASCII-8BIT")
 
     if signo = status.termsig
       sleep 0.1
