@@ -6575,7 +6575,10 @@ parser_here_document(struct parser_params *parser, NODE *here)
 	    if (pend < lex_pend) rb_str_cat(str, "\n", 1);
 	    lex_goto_eol(parser);
 	    if (nextc() == -1) {
-		if (str) dispose_string(str);
+		if (str) {
+		    dispose_string(str);
+		    str = 0;
+		}
 		goto error;
 	    }
 	} while (!whole_match_p(eos, len, indent));
