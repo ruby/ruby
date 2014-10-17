@@ -683,6 +683,10 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
     assert_equal ["there\n""heredoc", "\n"],
                  scan('tstring_content', "<<""EOS\n""there\n""heredoc\#@foo\nEOS"),
                  bug7255
+    bug10392 = '[ruby-dev:48647] [Bug #10392]'
+    assert_equal [" E\n\n"],
+                 scan('tstring_content', "<<""'E'\n E\n\n"),
+                 bug10392
   end
 
   def test_heredoc_end
