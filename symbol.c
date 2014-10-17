@@ -18,6 +18,10 @@
 #include "gc.h"
 #include "probes.h"
 
+#ifndef SYMBOL_DEBUG
+# define SYMBOL_DEBUG 0
+#endif
+
 #define SYMBOL_PINNED_P(sym) (RSYMBOL(sym)->id&~ID_SCOPE_MASK)
 
 #define DYNAMIC_ID_P(id) (!(id&ID_STATIC_SYM)&&id>tLAST_OP_ID)
@@ -396,10 +400,28 @@ get_id_entry(ID num, const enum id_entry_type t)
     return 0;
 }
 
+#if SYMBOL_DEBUG
+static int
+register_sym_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
+{
+    if (existing) {
+	rb_fatal("symbol :% "PRIsVALUE" is already registered with %"PRIxVALUE,
+		 (VALUE)*key, (VALUE)*value);
+    }
+    *value = arg;
+    return ST_CONTINUE;
+}
+#endif
+
 static void
 register_sym(VALUE str, VALUE sym)
 {
+#if SYMBOL_DEBUG
+    st_update(global_symbols.str_sym, (st_data_t)str,
+	      register_sym_update_callback, (st_data_t)sym);
+#else
     st_add_direct(global_symbols.str_sym, (st_data_t)str, (st_data_t)sym);
+#endif
 }
 
 static void
