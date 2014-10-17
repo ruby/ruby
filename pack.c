@@ -943,13 +943,14 @@ static const char b64_table[] =
 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 static void
-encodes(VALUE str, const char *s, long len, int type, int tail_lf)
+encodes(VALUE str, const char *s0, long len, int type, int tail_lf)
 {
     enum {buff_size = 4096, encoded_unit = 4, input_unit = 3};
     char buff[buff_size + 1];	/* +1 for tail_lf */
     long i = 0;
     const char *const trans = type == 'u' ? uu_table : b64_table;
     char padding;
+    const unsigned char *s = (const unsigned char *)s0;
 
     if (type == 'u') {
 	buff[i++] = (char)len + ' ';
@@ -1362,7 +1363,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 7) bits <<= 1;
-		    else bits = *s++;
+		    else bits = (unsigned char)*s++;
 		    *t++ = (bits & 128) ? '1' : '0';
 		}
 	    }
@@ -1406,7 +1407,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		    if (i & 1)
 			bits <<= 4;
 		    else
-			bits = *s++;
+			bits = (unsigned char)*s++;
 		    *t++ = hexdigits[(bits >> 4) & 15];
 		}
 	    }

@@ -1,3 +1,25 @@
+Fri Oct 17 17:43:50 2014  Tanaka Akira  <akr@fsij.org>
+
+	* Avoid undefined behaviors found by gcc -fsanitize=undefined.
+	  gcc (Debian 4.9.1-16) 4.9.1
+
+	* include/ruby/ruby.h (INT2FIX): Avoid undefined behavior.
+
+	* node.h (nd_set_line): Ditto.
+
+	* pack.c (encodes): Ditto.
+	  (pack_unpack): Ditto.
+
+	* regint.h (BIT_STATUS_AT): Ditto.
+	  (BS_BIT): Ditto.
+
+	* time.c (time_mdump): Ditto.
+	  (time_mload): Ditto.
+
+	* vm_core.h (VM_FRAME_MAGIC_MASK): Ditto.
+
+	* vm_trace.c (recalc_add_ruby_vm_event_flags): Ditto.
+
 Fri Oct 17 15:06:49 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (unescape_nonascii): make dynamically compiled US-ASCII

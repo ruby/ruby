@@ -811,7 +811,7 @@ enum vm_special_object_type {
 #define VM_FRAME_MAGIC_LAMBDA 0xa1
 #define VM_FRAME_MAGIC_RESCUE 0xb1
 #define VM_FRAME_MAGIC_MASK_BITS 8
-#define VM_FRAME_MAGIC_MASK   (~(~0<<VM_FRAME_MAGIC_MASK_BITS))
+#define VM_FRAME_MAGIC_MASK   (~(~(VALUE)0<<VM_FRAME_MAGIC_MASK_BITS))
 
 #define VM_FRAME_TYPE(cfp) ((cfp)->flag & VM_FRAME_MAGIC_MASK)
 
