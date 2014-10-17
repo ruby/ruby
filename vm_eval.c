@@ -1187,7 +1187,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, volatile V
 	    absolute_path = file;
 	}
 
-	if (scope != Qnil) {
+	if (!NIL_P(scope)) {
 	    if (rb_obj_is_kind_of(scope, rb_cBinding)) {
 		GetBindingPtr(scope, bind);
 		envval = bind->env;
@@ -1231,6 +1231,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, volatile V
 	th->parse_in_eval--;
 
 	vm_set_eval_stack(th, iseqval, cref, base_block);
+	th->cfp->klass = CLASS_OF(base_block->self);
 
 	if (0) {		/* for debug */
 	    VALUE disasm = rb_iseq_disasm(iseqval);
