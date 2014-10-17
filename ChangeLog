@@ -1,3 +1,10 @@
+Fri Oct 17 17:50:10 2014  Tanaka Akira  <akr@fsij.org>
+
+	* Avoid undefined behaviors found by gcc -fsanitize=undefined.
+	  gcc (Debian 4.9.1-16) 4.9.1
+
+	* string.c (rb_str_sum): Avoid undefined behavior.
+
 Fri Oct 17 17:43:50 2014  Tanaka Akira  <akr@fsij.org>
 
 	* Avoid undefined behaviors found by gcc -fsanitize=undefined.

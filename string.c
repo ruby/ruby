@@ -7571,7 +7571,7 @@ rb_str_ord(VALUE s)
  *
  *  Returns a basic <em>n</em>-bit checksum of the characters in <i>str</i>,
  *  where <em>n</em> is the optional <code>Fixnum</code> parameter, defaulting
- *  to 16. The result is simply the sum of the binary value of each character in
+ *  to 16. The result is simply the sum of the binary value of each byte in
  *  <i>str</i> modulo <code>2**n - 1</code>. This is not a particularly good
  *  checksum.
  */
@@ -7592,6 +7592,8 @@ rb_str_sum(int argc, VALUE *argv, VALUE str)
     else {
 	rb_scan_args(argc, argv, "01", &vbits);
 	bits = NUM2INT(vbits);
+        if (bits < 0)
+            bits = 0;
     }
     ptr = p = RSTRING_PTR(str);
     len = RSTRING_LEN(str);
