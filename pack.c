@@ -1343,7 +1343,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 7) bits >>= 1;
-		    else bits = *s++;
+		    else bits = (unsigned char)*s++;
 		    *t++ = (bits & 1) ? '1' : '0';
 		}
 	    }
@@ -1385,7 +1385,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		    if (i & 1)
 			bits >>= 4;
 		    else
-			bits = *s++;
+			bits = (unsigned char)*s++;
 		    *t++ = hexdigits[bits & 15];
 		}
 	    }

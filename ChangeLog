@@ -1,3 +1,7 @@
+Fri Oct 17 21:49:52 2014  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c (pack_unpack): Add casts for char references for 'b' and 'h'.
+
 Fri Oct 17 17:50:10 2014  Tanaka Akira  <akr@fsij.org>
 
 	* Avoid undefined behaviors found by gcc -fsanitize=undefined.
