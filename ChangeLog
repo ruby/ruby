@@ -1,3 +1,10 @@
+Fri Oct 17 15:06:49 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (unescape_nonascii): make dynamically compiled US-ASCII
+	  regexps ASCII-8BIT encoding if binary (hexadecimal, control,
+	  meta) escapes are contained, as well as literal regexps.
+	  [ruby-dev:48626] [Bug #10382]
+
 Fri Oct 17 03:05:08 2014  Eric Wong  <e@80x24.org>
 
 	* test/-ext-/bug_reporter/test_bug_reporter.rb
