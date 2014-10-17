@@ -865,8 +865,9 @@ check_reserved_signal(const char *name)
 
     if (prev) {
 	ssize_t RB_UNUSED_VAR(err);
-	static const char msg1[] = " received in ";
-	static const char msg2[] = " handler\n";
+#define NOZ(name, str) name[sizeof(str)-1] = str
+	static const char NOZ(msg1, " received in ");
+	static const char NOZ(msg2, " handler\n");
 
 	err = write(2, name, strlen(name));
 	err = write(2, msg1, sizeof(msg1));
