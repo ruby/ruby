@@ -1,3 +1,8 @@
+Fri Oct 17 22:47:11 2014  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c (pack_unpack): Add casts for char references for 'u'.
+	  Fix line ending recognition algorithm.
+
 Fri Oct 17 21:49:52 2014  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c (pack_unpack): Add casts for char references for 'b' and 'h'.

@@ -1612,12 +1612,12 @@ pack_unpack(VALUE str, VALUE fmt)
 		char *ptr = RSTRING_PTR(buf);
 		long total = 0;
 
-		while (s < send && *s > ' ' && *s < 'a') {
+		while (s < send && (unsigned char)*s > ' ' && (unsigned char)*s < 'a') {
 		    long a,b,c,d;
-		    char hunk[4];
+		    char hunk[3];
 
-		    hunk[3] = '\0';
-		    len = (*s++ - ' ') & 077;
+		    len = ((unsigned char)*s++ - ' ') & 077;
+
 		    total += len;
 		    if (total > RSTRING_LEN(buf)) {
 			len -= total - RSTRING_LEN(buf);
@@ -1627,20 +1627,20 @@ pack_unpack(VALUE str, VALUE fmt)
 		    while (len > 0) {
 			long mlen = len > 3 ? 3 : len;
 
-			if (s < send && *s >= ' ')
-			    a = (*s++ - ' ') & 077;
+			if (s < send && (unsigned char)*s >= ' ' && (unsigned char)*s < 'a')
+			    a = ((unsigned char)*s++ - ' ') & 077;
 			else
 			    a = 0;
-			if (s < send && *s >= ' ')
-			    b = (*s++ - ' ') & 077;
+			if (s < send && (unsigned char)*s >= ' ' && (unsigned char)*s < 'a')
+			    b = ((unsigned char)*s++ - ' ') & 077;
 			else
 			    b = 0;
-			if (s < send && *s >= ' ')
-			    c = (*s++ - ' ') & 077;
+			if (s < send && (unsigned char)*s >= ' ' && (unsigned char)*s < 'a')
+			    c = ((unsigned char)*s++ - ' ') & 077;
 			else
 			    c = 0;
-			if (s < send && *s >= ' ')
-			    d = (*s++ - ' ') & 077;
+			if (s < send && (unsigned char)*s >= ' ' && (unsigned char)*s < 'a')
+			    d = ((unsigned char)*s++ - ' ') & 077;
 			else
 			    d = 0;
 			hunk[0] = (char)(a << 2 | b >> 4);
@@ -1650,10 +1650,10 @@ pack_unpack(VALUE str, VALUE fmt)
 			ptr += mlen;
 			len -= mlen;
 		    }
-		    if (*s == '\r') s++;
-		    if (*s == '\n') s++;
-		    else if (s < send && (s+1 == send || s[1] == '\n'))
-			s += 2;	/* possible checksum byte */
+		    if (s < send && (unsigned char)*s != '\r' && *s != '\n')
+			s++;	/* possible checksum byte */
+		    if (s < send && *s == '\r') s++;
+		    if (s < send && *s == '\n') s++;
 		}
 
 		rb_str_set_len(buf, total);
