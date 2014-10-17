@@ -22,6 +22,9 @@
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 # include <valgrind/memcheck.h>
@@ -800,7 +803,10 @@ check_stack_overflow(const void *addr)
 #endif
 
 #if defined SIGSEGV || defined SIGBUS || defined SIGILL || defined SIGFPE
-static void check_reserved_signal(const char *name);
+NOINLINE(static void check_reserved_signal_(const char *name, size_t name_len));
+/* noinine to reduce stack usage in signal handers */
+
+#define check_reserved_signal(name) check_reserved_signal_(name, sizeof(name)-1)
 
 #ifdef SIGBUS
 static RETSIGTYPE
@@ -858,7 +864,7 @@ sigill(int sig SIGINFO_ARG)
 #endif
 
 static void
-check_reserved_signal(const char *name)
+check_reserved_signal_(const char *name, size_t name_len)
 {
     static const char *received;
     const char *prev = ATOMIC_PTR_EXCHANGE(received, name);
@@ -869,10 +875,24 @@ check_reserved_signal(const char *name)
 	static const char NOZ(msg1, " received in ");
 	static const char NOZ(msg2, " handler\n");
 
+#ifdef HAVE_WRITEV
+	struct iovec iov[4];
+
+	iov[0].iov_base = (void *)name;
+	iov[0].iov_len = name_len;
+	iov[1].iov_base = (void *)msg1;
+	iov[1].iov_len = sizeof(msg1);
+	iov[2].iov_base = (void *)prev;
+	iov[2].iov_len = strlen(prev);
+	iov[3].iov_base = (void *)msg2;
+	iov[3].iov_len = sizeof(msg2);
+	err = writev(2, iov, 4);
+#else
 	err = write(2, name, strlen(name));
-	err = write(2, msg1, sizeof(msg1));
+	err = write(2, msg1, name_len);
 	err = write(2, prev, strlen(prev));
 	err = write(2, msg2, sizeof(msg2));
+#endif
 	ruby_abort();
     }
 
