@@ -11,7 +11,8 @@ class ERB
       return nil if self.empty?
       arg = self.shift
       return nil if arg == '--'
-      if arg =~ /^-(.)(.*)/
+      case arg
+      when /\A-(.)(.*)/
         if $1 == '-'
           arg, @maybe_arg = arg.split(/=/, 2)
           return arg
@@ -72,7 +73,7 @@ class ERB
             require ARGV.req_arg
           when '-S'                        # security level
             arg = ARGV.req_arg
-            raise "invalid safe_level #{arg.dump}" unless arg =~ /^[0-3]$/
+            raise "invalid safe_level #{arg.dump}" unless arg =~ /\A[0-3]\z/
             safe_level = arg.to_i
           when '-T'                        # trim mode
             arg = ARGV.req_arg
@@ -80,7 +81,7 @@ class ERB
               trim_mode = arg
               next
             end
-            raise "invalid trim mode #{arg.dump}" unless arg =~ /^[0-2]$/
+            raise "invalid trim mode #{arg.dump}" unless arg =~ /\A[0-2]\z/
             trim_mode = arg.to_i
           when '-E', '--encoding'
             arg = ARGV.req_arg
