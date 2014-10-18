@@ -1,3 +1,8 @@
+Sat Oct 18 20:40:52 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm_core.h, proc.c, vm_backtrace.c, vm_trace.c:
+	  remove rb_binding_new_with_cfp, and use rb_vm_make_binding instead.
+
 Sat Oct 18 20:38:48 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* vm_core.h, vm.c, proc.c: fix GC mark miss on bindings.

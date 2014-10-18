@@ -302,16 +302,10 @@ binding_clone(VALUE self)
 }
 
 VALUE
-rb_binding_new_with_cfp(rb_thread_t *th, const rb_control_frame_t *src_cfp)
-{
-    return rb_vm_make_binding(th, src_cfp);
-}
-
-VALUE
 rb_binding_new(void)
 {
     rb_thread_t *th = GET_THREAD();
-    return rb_binding_new_with_cfp(th, th->cfp);
+    return rb_vm_make_binding(th, th->cfp);
 }
 
 /*
