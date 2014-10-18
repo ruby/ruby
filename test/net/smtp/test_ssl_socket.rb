@@ -6,7 +6,7 @@ module Net
     class MySMTP < SMTP
       attr_accessor :fake_tcp, :fake_ssl
 
-      def tcp_socket address, port
+      def tcp_socket address, port, source_ip = nil
         fake_tcp
       end
 
