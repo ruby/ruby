@@ -247,6 +247,7 @@ binding_mark(void *ptr)
 	bind = ptr;
 	RUBY_MARK_UNLESS_NULL(bind->env);
 	RUBY_MARK_UNLESS_NULL(bind->path);
+	RUBY_MARK_UNLESS_NULL(bind->blockprocval);
     }
     RUBY_MARK_LEAVE("binding");
 }
@@ -267,8 +268,8 @@ const rb_data_type_t ruby_binding_data_type = {
     NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-static VALUE
-binding_alloc(VALUE klass)
+VALUE
+rb_binding_alloc(VALUE klass)
 {
     VALUE obj;
     rb_binding_t *bind;
@@ -280,12 +281,13 @@ binding_alloc(VALUE klass)
 static VALUE
 binding_dup(VALUE self)
 {
-    VALUE bindval = binding_alloc(rb_cBinding);
+    VALUE bindval = rb_binding_alloc(rb_cBinding);
     rb_binding_t *src, *dst;
     GetBindingPtr(self, src);
     GetBindingPtr(bindval, dst);
     dst->env = src->env;
     dst->path = src->path;
+    dst->blockprocval = src->blockprocval;
     dst->first_lineno = src->first_lineno;
     return bindval;
 }
@@ -302,30 +304,7 @@ binding_clone(VALUE self)
 VALUE
 rb_binding_new_with_cfp(rb_thread_t *th, const rb_control_frame_t *src_cfp)
 {
-    rb_control_frame_t *cfp = rb_vm_get_binding_creatable_next_cfp(th, src_cfp);
-    rb_control_frame_t *ruby_level_cfp = rb_vm_get_ruby_level_next_cfp(th, src_cfp);
-    VALUE bindval, envval;
-    rb_binding_t *bind;
-
-    if (cfp == 0 || ruby_level_cfp == 0) {
-	rb_raise(rb_eRuntimeError, "Can't create Binding Object on top of Fiber.");
-    }
-
-    while (1) {
-	envval = rb_vm_make_env_object(th, cfp);
-	if (cfp == ruby_level_cfp) {
-	    break;
-	}
-	cfp = rb_vm_get_binding_creatable_next_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
-    }
-
-    bindval = binding_alloc(rb_cBinding);
-    GetBindingPtr(bindval, bind);
-    bind->env = envval;
-    bind->path = ruby_level_cfp->iseq->location.path;
-    bind->first_lineno = rb_vm_get_sourceline(ruby_level_cfp);
-
-    return bindval;
+    return rb_vm_make_binding(th, src_cfp);
 }
 
 VALUE
@@ -2485,9 +2464,10 @@ proc_binding(VALUE self)
 	}
     }
 
-    bindval = binding_alloc(rb_cBinding);
+    bindval = rb_binding_alloc(rb_cBinding);
     GetBindingPtr(bindval, bind);
     bind->env = proc->envval;
+    bind->blockprocval = proc->blockprocval;
     if (RUBY_VM_NORMAL_ISEQ_P(proc->block.iseq)) {
 	bind->path = proc->block.iseq->location.path;
 	bind->first_lineno = FIX2INT(rb_iseq_first_lineno(proc->block.iseq->self));

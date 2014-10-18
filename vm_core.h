@@ -771,6 +771,7 @@ extern const rb_data_type_t ruby_binding_data_type;
 typedef struct {
     VALUE env;
     VALUE path;
+    VALUE blockprocval;	/* for GC mark */
     unsigned short first_lineno;
 } rb_binding_t;
 
@@ -887,6 +888,7 @@ rb_block_t *rb_vm_control_frame_block_ptr(rb_control_frame_t *cfp);
 /* VM related object allocate functions */
 VALUE rb_thread_alloc(VALUE klass);
 VALUE rb_proc_wrap(VALUE klass, rb_proc_t *); /* may use with rb_proc_alloc */
+VALUE rb_binding_alloc(VALUE klass);
 
 /* for debug */
 extern void rb_vmdebug_stack_dump_raw(rb_thread_t *, rb_control_frame_t *);
@@ -908,6 +910,7 @@ int rb_thread_method_id_and_class(rb_thread_t *th, ID *idp, VALUE *klassp);
 VALUE rb_vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc,
 			int argc, const VALUE *argv, const rb_block_t *blockptr);
 VALUE rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass);
+VALUE rb_vm_make_binding(rb_thread_t *th, const rb_control_frame_t *src_cfp);
 VALUE rb_vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp);
 VALUE rb_vm_env_local_variables(VALUE envval);
 VALUE rb_binding_new_with_cfp(rb_thread_t *th, const rb_control_frame_t *src_cfp);
