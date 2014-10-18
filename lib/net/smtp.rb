@@ -201,15 +201,16 @@ module Net
     #
     # +address+ is the hostname or ip address of your SMTP
     # server.  +port+ is the port to connect to; it defaults to
-    # port 25.
+    # port 25; +source_ip+ is the sender's ip address.
     #
     # This method does not open the TCP connection.  You can use
     # SMTP.start instead of SMTP.new if you want to do everything
     # at once.  Otherwise, follow SMTP.new with SMTP#start.
     #
-    def initialize(address, port = nil)
+    def initialize(address, port = nil, source_ip = nil)
       @address = address
       @port = (port || SMTP.default_port)
+      @source_ip = source_ip
       @esmtp = true
       @capabilities = nil
       @socket = nil
@@ -537,8 +538,8 @@ module Net
 
     private
 
-    def tcp_socket(address, port)
-      TCPSocket.open address, port
+    def tcp_socket(address, port, source_ip = nil)
+      TCPSocket.open address, port, source_ip
     end
 
     def do_start(helo_domain, user, secret, authtype)
@@ -548,7 +549,7 @@ module Net
         check_auth_args user, secret
       end
       s = Timeout.timeout(@open_timeout, Net::OpenTimeout) do
-        tcp_socket(@address, @port)
+        tcp_socket(@address, @port, @source_ip)
       end
       logging "Connection opened: #{@address}:#{@port}"
       @socket = new_internet_message_io(tls? ? tlsconnect(s) : s)
