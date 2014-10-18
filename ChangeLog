@@ -1,3 +1,10 @@
+Sun Oct 19 03:22:53 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm_core.h, vm.c, proc.c: fix GC mark miss on bindings.
+	  [ruby-dev:48616] [Bug #10368]
+
+	* test/ruby/test_eval.rb: add a test code.
+
 Sun Oct 19 03:13:38 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_here_document): do not append already appended

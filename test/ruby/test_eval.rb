@@ -484,4 +484,19 @@ class TestEval < Test::Unit::TestCase
 
     assert_same a, b
   end
+
+  def test_gced_binding_block
+    assert_normal_exit %q{
+      def m
+        binding
+      end
+      GC.stress = true
+      b = nil
+      tap do
+        b = m {}
+      end
+      0.times.to_a
+      b.eval('yield')
+    }, '[Bug #10368]'
+  end
 end
