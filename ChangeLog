@@ -1,3 +1,8 @@
+Sun Oct 19 03:13:38 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_here_document): do not append already appended
+	  and disposed code fragment.  [ruby-dev:48647] [Bug #10392]
+
 Thu Oct 16 22:10:11 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_write): ASCII-8BIT StringIO
