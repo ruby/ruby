@@ -1,3 +1,9 @@
+Sun Oct 19 11:09:09 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* tool/unicode_norm_gen.rb, lib/unicode_normalize.rb:
+	  File name change from lib/unicode_normalize/normalize_tables.rb
+	  to lib/unicode_normalize/tables.rb.
+
 Sun Oct 19 10:12:12 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* lib/unicode_normalize.rb: Changing method names, see
