@@ -1,3 +1,8 @@
+Sun Oct 19 09:38:38 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize/normalize.rb: Importing from
+	  https://github.com/duerst/eprun/blob/master/lib/normalize.rb.
+
 Sat Oct 18 20:40:52 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* vm_core.h, proc.c, vm_backtrace.c, vm_trace.c:
