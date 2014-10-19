@@ -1,3 +1,7 @@
+Sun Oct 19 09:56:56 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* tool/unicode_norm_gen.rb: Changed module name.
+
 Sun Oct 19 09:48:48 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* lib/unicode_normalize/normalize.rb: Changed module name,
