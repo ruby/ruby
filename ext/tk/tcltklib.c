@@ -6008,6 +6008,9 @@ ip_rb_replaceSlaveTkCmdsCommand(clientData, interp, objc, objv)
     return TCL_OK;
 }
 
+#ifndef ORIG_NAMESPACE_CMD
+#define ORIG_NAMESPACE_CMD "__orig_namespace_command__"
+#endif
 
 #if TCL_MAJOR_VERSION >= 8
 static int ip_rbNamespaceObjCmd _((ClientData, Tcl_Interp *, int,
@@ -6026,8 +6029,8 @@ ip_rbNamespaceObjCmd(clientData, interp, objc, objv)
     DUMP2("objc = %d", objc);
     DUMP2("objv[0] = '%s'", Tcl_GetString(objv[0]));
     DUMP2("objv[1] = '%s'", Tcl_GetString(objv[1]));
-    if (!Tcl_GetCommandInfo(interp, "__orig_namespace_command__", &(info))) {
-      DUMP1("fail to get __orig_namespace_command__");
+    if (!Tcl_GetCommandInfo(interp, ORIG_NAMESPACE_CMD, &(info))) {
+      DUMP1("fail to get "ORIG_NAMESPACE_CMD);
         Tcl_ResetResult(interp);
         Tcl_AppendResult(interp,
                          "invalid command name \"namespace\"", (char*)NULL);
@@ -6045,7 +6048,7 @@ ip_rbNamespaceObjCmd(clientData, interp, objc, objv)
         /* Tcl8.6 or later */
         int i;
         Tcl_Obj **cp_objv;
-        char org_ns_cmd_name[] = "__orig_namespace_command__";
+        char org_ns_cmd_name[] = ORIG_NAMESPACE_CMD;
 
         DUMP1("call a native-object-proc for tcl8.6 or later");
         cp_objv = RbTk_ALLOC_N(Tcl_Obj *, (objc + 1));
@@ -6056,7 +6059,8 @@ ip_rbNamespaceObjCmd(clientData, interp, objc, objv)
         }
         cp_objv[objc] = (Tcl_Obj *)NULL;
 
-        ret = Tcl_EvalObjv(interp, objc, cp_objv, TCL_EVAL_DIRECT);
+        /* ret = Tcl_EvalObjv(interp, objc, cp_objv, TCL_EVAL_DIRECT); */
+        ret = Tcl_EvalObjv(interp, objc, cp_objv, 0);
 
         ckfree((char*)cp_objv);
 #endif
@@ -6115,17 +6119,17 @@ ip_wrap_namespace_command(interp)
     }
 
     if (orig_info.isNativeObjectProc) {
-        Tcl_CreateObjCommand(interp, "__orig_namespace_command__",
+        Tcl_CreateObjCommand(interp, ORIG_NAMESPACE_CMD,
                              orig_info.objProc, orig_info.objClientData,
                              orig_info.deleteProc);
     } else {
-        Tcl_CreateCommand(interp, "__orig_namespace_command__",
+        Tcl_CreateCommand(interp, ORIG_NAMESPACE_CMD,
                           orig_info.proc, orig_info.clientData,
                           orig_info.deleteProc);
     }
 
 #else /* tcl8.6 or later */
-    Tcl_Eval(interp, "rename namespace __orig_namespace_command__");
+    Tcl_Eval(interp, "rename namespace "ORIG_NAMESPACE_CMD);
 
 #endif
 
@@ -8493,16 +8497,26 @@ invoke_tcl_proc(arg)
 #endif
 {
     struct invoke_info *inf = (struct invoke_info *)arg;
+#if TCL_MAJOR_VERSION >= 8 && TCL_MINOR_VERSION < 6
     int i, len;
-#if TCL_MAJOR_VERSION >= 8
     int argc = inf->objc;
     char **argv = (char **)NULL;
 #endif
 
     DUMP1("call invoke_tcl_proc");
 
+#if TCL_MAJOR_VERSION > 8 || (TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION >= 6)
+    /* Tcl/Tk 8.6 or later */
+
+    /* eval */
+    inf->ptr->return_value = Tcl_EvalObjv(inf->ptr->ip, inf->objc, inf->objv, TCL_EVAL_DIRECT);
+    /* inf->ptr->return_value = Tcl_EvalObjv(inf->ptr->ip, inf->objc, inf->objv, 0); */
+
+#else /* Tcl/Tk 7.x, 8.0 -- 8.5 */
+
     /* memory allocation for arguments of this command */
-#if TCL_MAJOR_VERSION >= 8
+#if TCL_MAJOR_VERSION == 8
+     /* Tcl/Tk 8.0 -- 8.5 */
     if (!inf->cmdinfo.isNativeObjectProc) {
         DUMP1("called proc is not a native-obj-proc");
         /* string interface */
@@ -8522,7 +8536,8 @@ invoke_tcl_proc(arg)
     Tcl_ResetResult(inf->ptr->ip);
 
     /* Invoke the C procedure */
-#if TCL_MAJOR_VERSION >= 8
+#if TCL_MAJOR_VERSION == 8
+    /* Tcl/Tk 8.0 -- 8.5 */
     if (inf->cmdinfo.isNativeObjectProc) {
         DUMP1("call tcl_proc as a native-obj-proc");
         inf->ptr->return_value
@@ -8532,7 +8547,8 @@ invoke_tcl_proc(arg)
     else
 #endif
     {
-#if TCL_MAJOR_VERSION >= 8
+#if TCL_MAJOR_VERSION == 8
+        /* Tcl/Tk 8.0 -- 8.5 */
         DUMP1("call tcl_proc as not a native-obj-proc");
         inf->ptr->return_value
             = (*(inf->cmdinfo.proc))(inf->cmdinfo.clientData, inf->ptr->ip,
@@ -8555,6 +8571,8 @@ invoke_tcl_proc(arg)
                                      inf->argc, inf->argv);
 #endif
     }
+
+#endif /* Tcl/Tk 8.6 or later || Tcl 7.x, 8.0 -- 8.5 */
 
     DUMP1("end of invoke_tcl_proc");
     return Qnil;
