@@ -2,8 +2,6 @@
 
 # Copyright Ayumu Nojima (野島 歩) and Martin J. Dürst (duerst@it.aoyama.ac.jp)
 
-require 'unicode_normalize/normalize.rb'
-
 # additions to class String for Unicode normalization
 class String
   # === Unicode Normalization
@@ -31,6 +29,12 @@ class String
   #                                      #=> Encoding::CompatibilityError raised
   #
   def unicode_normalize(form = :nfc)
+    require 'unicode_normalize/normalize.rb' unless defined? UnicodeNormalize
+    ## The following line can be uncommented to avoid repeated checking for
+    ## UnicodeNormalize. However, tests didn't show any noticeable speedup
+    ## when doing this. This comment also applies to the commented out lines
+    ## in String#unicode_normalize! and String#unicode_normalized?.
+    # String.send(:define_method, :normalize, ->(form = :nfc) { UnicodeNormalize.normalize(self, form) } )
     UnicodeNormalize.normalize(self, form)
   end
 
@@ -41,6 +45,8 @@ class String
   # normalization in place.
   #
   def unicode_normalize!(form = :nfc)
+    require 'unicode_normalize/normalize.rb' unless defined? UnicodeNormalize
+    # String.send(:define_method, :normalize!, ->(form = :nfc) { replace(normalize(form)) } )
     replace(self.normalize(form))
   end
 
@@ -61,9 +67,11 @@ class String
   #   "\u00E0".unicode_normalized?         #=> true
   #   "\u00E0".unicode_normalized?(:nfd)   #=> false
   #   "\xE0".force_encoding('ISO-8859-1').unicode_normalized?
-  #                                      #=> Encoding::CompatibilityError raised
+  #                                        #=> Encoding::CompatibilityError raised
   #
   def unicode_normalized?(form = :nfc)
+    require 'unicode_normalize/normalize.rb' unless defined? UnicodeNormalize
+    # String.send(:define_method, :unicode_normalized?, ->(form = :nfc) { UnicodeNormalize.normalized?(self, form) } )
     UnicodeNormalize.normalized?(self, form)
   end
 end

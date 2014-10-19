@@ -1,3 +1,8 @@
+Sun Oct 19 17:53:53 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize.rb: Changed to dynamic
+	  loading of actual normalization code and tables.
+
 Sun Oct 19 17:37:37 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* lib/unicode_normalize.rb: Small documentation fix.
