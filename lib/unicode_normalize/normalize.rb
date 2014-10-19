@@ -1,4 +1,4 @@
-﻿# coding: utf-8
+# coding: utf-8
 
 # Copyright Ayumu Nojima (野島 歩) and Martin J. Dürst (duerst@it.aoyama.ac.jp)
 
