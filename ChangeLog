@@ -1,3 +1,9 @@
+Sun Oct 19 10:04:04 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize.rb: Importing from
+	  https://github.com/duerst/eprun/blob/master/lib/string_normalize.rb.
+	  (removing trailing whitespace, fixing EOLs and adding EOL property)
+
 Sun Oct 19 09:56:56 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* tool/unicode_norm_gen.rb: Changed module name.
