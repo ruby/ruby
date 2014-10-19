@@ -920,7 +920,7 @@ EXT_SRCS = $(srcdir)/ext/ripper/ripper.c $(srcdir)/ext/json/parser/parser.c \
 
 srcs-ext: $(EXT_SRCS)
 
-srcs-enc: $(ENC_MK)
+srcs-enc: $(ENC_MK) lib/unicode_normalize/tables.rb
 	$(ECHO) making srcs under enc
 	$(Q) $(MAKE) -f $(ENC_MK) RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) srcs
 
