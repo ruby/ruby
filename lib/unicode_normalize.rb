@@ -5,15 +5,15 @@
 require 'unicode_normalize/normalize.rb'
 
 class String
-  def normalize(form = :nfc)
+  def unicode_normalize(form = :nfc)
     UnicodeNormalize.normalize(self, form)
   end
 
-  def normalize!(form = :nfc)
+  def unicode_normalize!(form = :nfc)
     replace(self.normalize(form))
   end
 
-  def normalized?(form = :nfc)
+  def unicode_normalized?(form = :nfc)
     UnicodeNormalize.normalized?(self, form)
   end
 end

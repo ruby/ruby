@@ -1,3 +1,8 @@
+Sun Oct 19 10:12:12 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize.rb: Changing method names, see
+	  https://bugs.ruby-lang.org/issues/10084#note-7
+
 Sun Oct 19 10:10:10 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* lib/unicode_normalize.rb: Changing module name.
