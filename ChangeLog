@@ -1,3 +1,8 @@
+Sun Oct 19 23:31:29 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* lib/unicode_normalize.rb: (unicode_normalize!): change method name.
+	  catch up the method name change at r48014. [Feature #10084]
+
 Sun Oct 19 20:05:58 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* ext/tk/lib/tkextlib/tile/treeview.rb: fix syntax error.
