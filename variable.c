@@ -1132,7 +1132,8 @@ rb_ivar_get(VALUE obj, ID id)
     VALUE iv = rb_ivar_lookup(obj, id, Qundef);
 
     if (iv == Qundef) {
-	rb_warning("instance variable %"PRIsVALUE" not initialized", QUOTE_ID(id));
+	if (RTEST(ruby_verbose))
+	    rb_warning("instance variable %"PRIsVALUE" not initialized", QUOTE_ID(id));
 	iv = Qnil;
     }
     return iv;

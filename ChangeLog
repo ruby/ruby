@@ -1,3 +1,10 @@
+Mon Oct 20 02:23:27 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_ivar_get), vm_insnhelper.c (vm_getivar): improve
+	  instance variable retrieval performance by checking ruby_verbose
+	  before call of rb_warning and evaluation of its argument.
+	  [ruby-core:65786] [Feature #10396]
+
 Sun Oct 19 23:31:29 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* lib/unicode_normalize.rb: (unicode_normalize!): change method name.
