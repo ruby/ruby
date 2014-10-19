@@ -6,7 +6,7 @@ require 'unicode_normalize/normalize.rb'
 
 class String
   def normalize(form = :nfc)
-    Normalize.normalize(self, form)
+    UnicodeNormalize.normalize(self, form)
   end
 
   def normalize!(form = :nfc)
@@ -14,7 +14,7 @@ class String
   end
 
   def normalized?(form = :nfc)
-    Normalize.normalized?(self, form)
+    UnicodeNormalize.normalized?(self, form)
   end
 end
 

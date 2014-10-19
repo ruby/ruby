@@ -1,3 +1,7 @@
+Sun Oct 19 10:10:10 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize.rb: Changing module name.
+
 Sun Oct 19 10:08:08 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* lib/unicode_normalize.rb: Changing require statement,
