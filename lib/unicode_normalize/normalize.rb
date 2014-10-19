@@ -8,7 +8,7 @@ require_relative 'normalize_tables'
 module UnicodeNormalize
   ## Constant for max hash capacity to avoid DoS attack
   MAX_HASH_LENGTH = 18000 # enough for all test cases, otherwise tests get slow
-  
+
   ## Regular Expressions and Hash Constants
   REGEXP_D = Regexp.compile(REGEXP_D_STRING, Regexp::EXTENDED)
   REGEXP_C = Regexp.compile(REGEXP_C_STRING, Regexp::EXTENDED)
@@ -25,7 +25,7 @@ module UnicodeNormalize
                          hash.delete hash.first[0] if hash.length>MAX_HASH_LENGTH # prevent DoS attack
                          hash[key] = UnicodeNormalize.nfkd_one(key)
                        end
-  
+
   ## Constants For Hangul
   SBASE = 0xAC00
   LBASE = 0x1100
@@ -36,11 +36,11 @@ module UnicodeNormalize
   TCOUNT = 28
   NCOUNT = VCOUNT * TCOUNT
   SCOUNT = LCOUNT * NCOUNT
-  
+
   # Unicode-based encodings (except UTF-8)
   UNICODE_ENCODINGS = [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE,
                        Encoding::GB18030, Encoding::UCS_2BE, Encoding::UCS_4BE]
-  
+
   ## Hangul Algorithm
   def UnicodeNormalize.hangul_decomp_one(target)
     sIndex = target.ord - SBASE
@@ -50,7 +50,7 @@ module UnicodeNormalize
     t = TBASE + sIndex % TCOUNT
     (t==TBASE ? [l, v] : [l, v, t]).pack('U*') + target[1..-1]
   end
-  
+
   def UnicodeNormalize.hangul_comp_one(string)
     length = string.length
     if length>1 and 0 <= (lead =string[0].ord-LBASE) and lead  < LCOUNT and
@@ -65,7 +65,7 @@ module UnicodeNormalize
       string
     end
   end
-  
+
   ## Canonical Ordering
   def UnicodeNormalize.canonical_ordering_one(string)
     sorting = string.each_char.collect { |c| [c, CLASS_TABLE[c]] }
@@ -79,7 +79,7 @@ module UnicodeNormalize
     end
     return sorting.collect(&:first).join
   end
-  
+
   ## Normalization Forms for Patterns (not whole Strings)
   def UnicodeNormalize.nfd_one(string)
     string = string.dup
@@ -90,7 +90,7 @@ module UnicodeNormalize
     end
     canonical_ordering_one(hangul_decomp_one(string))
   end
-  
+
   def UnicodeNormalize.nfkd_one(string)
     string = string.dup
     position = 0
@@ -103,7 +103,7 @@ module UnicodeNormalize
     end
     string
   end
-  
+
   def UnicodeNormalize.nfc_one (string)
     nfd_string = nfd_one string
     start = nfd_string[0]
@@ -120,7 +120,7 @@ module UnicodeNormalize
     end
     hangul_comp_one(start+accents)
   end
-  
+
   def UnicodeNormalize.normalize(string, form = :nfc)
     encoding = string.encoding
     if encoding == Encoding::UTF_8
@@ -142,7 +142,7 @@ module UnicodeNormalize
       raise Encoding::CompatibilityError, "Unicode Normalization not appropriate for #{encoding}"
     end
   end
-  
+
   def UnicodeNormalize.normalized?(string, form = :nfc)
     encoding = string.encoding
     if encoding == Encoding::UTF_8
@@ -170,5 +170,5 @@ module UnicodeNormalize
       raise Encoding::CompatibilityError, "Unicode Normalization not appropriate for #{encoding}"
     end
   end
-  
+
 end # module
