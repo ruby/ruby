@@ -1,3 +1,9 @@
+Sun Oct 19 18:13:13 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* common.mk: Added a rule to generate
+	  lib/unicode_normalize/tables.rb. This rule still
+	  needs to be integrated into the overall make process.
+
 Sun Oct 19 17:53:53 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* lib/unicode_normalize.rb: Changed to dynamic

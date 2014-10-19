@@ -1095,6 +1095,11 @@ update-unicode: PHONY
 	    ../../../tool/downloader.rb unicode \
 	    UnicodeData.txt CompositionExclusions.txt NormalizationTest.txt
 
+lib/unicode_normalize/tables.rb: tool/unicode_norm_gen.rb \
+enc/unicode/data/UnicodeData.txt \
+enc/unicode/data/CompositionExclusions.txt
+	${BASERUBY} -C "$(srcdir)/tool tool/unicode_norm_gen.rb
+
 info: info-program info-libruby_a info-libruby_so info-arch
 info-program: PHONY
 	@echo PROGRAM=$(PROGRAM)
