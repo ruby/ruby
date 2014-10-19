@@ -1,3 +1,8 @@
+Sun Oct 19 09:48:48 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize/normalize.rb: Changed module name,
+	  adjusted copyright.
+
 Sun Oct 19 09:38:38 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* lib/unicode_normalize/normalize.rb: Importing from

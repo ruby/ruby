@@ -1,13 +1,11 @@
 ﻿# coding: utf-8
 
-# Copyright 2010-2013 Ayumu Nojima (野島 歩) and Martin J. Dürst (duerst@it.aoyama.ac.jp)
-# available under the same licence as Ruby itself
-# (see http://www.ruby-lang.org/en/LICENSE.txt)
+# Copyright Ayumu Nojima (野島 歩) and Martin J. Dürst (duerst@it.aoyama.ac.jp)
 
 require_relative 'normalize_tables'
 
 
-module Normalize
+module UnicodeNormalize
   ## Constant for max hash capacity to avoid DoS attack
   MAX_HASH_LENGTH = 18000 # enough for all test cases, otherwise tests get slow
   
@@ -17,15 +15,15 @@ module Normalize
   REGEXP_K = Regexp.compile(REGEXP_K_STRING, Regexp::EXTENDED)
   NF_HASH_D = Hash.new do |hash, key|
                          hash.delete hash.first[0] if hash.length>MAX_HASH_LENGTH # prevent DoS attack
-                         hash[key] = Normalize.nfd_one(key)
+                         hash[key] = UnicodeNormalize.nfd_one(key)
                        end
   NF_HASH_C = Hash.new do |hash, key|
                          hash.delete hash.first[0] if hash.length>MAX_HASH_LENGTH # prevent DoS attack
-                         hash[key] = Normalize.nfc_one(key)
+                         hash[key] = UnicodeNormalize.nfc_one(key)
                        end
   NF_HASH_K = Hash.new do |hash, key|
                          hash.delete hash.first[0] if hash.length>MAX_HASH_LENGTH # prevent DoS attack
-                         hash[key] = Normalize.nfkd_one(key)
+                         hash[key] = UnicodeNormalize.nfkd_one(key)
                        end
   
   ## Constants For Hangul
@@ -44,7 +42,7 @@ module Normalize
                        Encoding::GB18030, Encoding::UCS_2BE, Encoding::UCS_4BE]
   
   ## Hangul Algorithm
-  def Normalize.hangul_decomp_one(target)
+  def UnicodeNormalize.hangul_decomp_one(target)
     sIndex = target.ord - SBASE
     return target if sIndex < 0 || sIndex >= SCOUNT
     l = LBASE + sIndex / NCOUNT
@@ -53,7 +51,7 @@ module Normalize
     (t==TBASE ? [l, v] : [l, v, t]).pack('U*') + target[1..-1]
   end
   
-  def Normalize.hangul_comp_one(string)
+  def UnicodeNormalize.hangul_comp_one(string)
     length = string.length
     if length>1 and 0 <= (lead =string[0].ord-LBASE) and lead  < LCOUNT and
                     0 <= (vowel=string[1].ord-VBASE) and vowel < VCOUNT
@@ -69,7 +67,7 @@ module Normalize
   end
   
   ## Canonical Ordering
-  def Normalize.canonical_ordering_one(string)
+  def UnicodeNormalize.canonical_ordering_one(string)
     sorting = string.each_char.collect { |c| [c, CLASS_TABLE[c]] }
     (sorting.length-2).downto(0) do |i| # bubble sort
       (0..i).each do |j|
@@ -83,7 +81,7 @@ module Normalize
   end
   
   ## Normalization Forms for Patterns (not whole Strings)
-  def Normalize.nfd_one(string)
+  def UnicodeNormalize.nfd_one(string)
     string = string.dup
     (0...string.length).each do |position|
       if decomposition = DECOMPOSITION_TABLE[string[position]]
@@ -93,7 +91,7 @@ module Normalize
     canonical_ordering_one(hangul_decomp_one(string))
   end
   
-  def Normalize.nfkd_one(string)
+  def UnicodeNormalize.nfkd_one(string)
     string = string.dup
     position = 0
     while position < string.length
@@ -106,7 +104,7 @@ module Normalize
     string
   end
   
-  def Normalize.nfc_one (string)
+  def UnicodeNormalize.nfc_one (string)
     nfd_string = nfd_one string
     start = nfd_string[0]
     last_class = CLASS_TABLE[start]-1
@@ -123,7 +121,7 @@ module Normalize
     hangul_comp_one(start+accents)
   end
   
-  def Normalize.normalize(string, form = :nfc)
+  def UnicodeNormalize.normalize(string, form = :nfc)
     encoding = string.encoding
     if encoding == Encoding::UTF_8
       case form
@@ -145,7 +143,7 @@ module Normalize
     end
   end
   
-  def Normalize.normalized?(string, form = :nfc)
+  def UnicodeNormalize.normalized?(string, form = :nfc)
     encoding = string.encoding
     if encoding == Encoding::UTF_8
       case form
