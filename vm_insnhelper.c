@@ -495,12 +495,11 @@ vm_getivar(VALUE obj, ID id, IC ic, rb_call_info_t *ci, int is_attr)
     if (RB_TYPE_P(obj, T_OBJECT)) {
 	VALUE val = Qundef;
 	VALUE klass = RBASIC(obj)->klass;
+	const long len = ROBJECT_NUMIV(obj);
+	const VALUE *const ptr = ROBJECT_IVPTR(obj);
 
-	if (LIKELY((!is_attr && ic->ic_serial == RCLASS_SERIAL(klass)) ||
-		   (is_attr && ci->aux.index > 0))) {
+	if (LIKELY(is_attr ? ci->aux.index > 0 : ic->ic_serial == RCLASS_SERIAL(klass))) {
 	    int index = !is_attr ? (int)ic->ic_value.index : ci->aux.index - 1;
-	    long len = ROBJECT_NUMIV(obj);
-	    VALUE *ptr = ROBJECT_IVPTR(obj);
 
 	    if (index < len) {
 		val = ptr[index];
@@ -508,8 +507,6 @@ vm_getivar(VALUE obj, ID id, IC ic, rb_call_info_t *ci, int is_attr)
 	}
 	else {
 	    st_data_t index;
-	    long len = ROBJECT_NUMIV(obj);
-	    VALUE *ptr = ROBJECT_IVPTR(obj);
 	    struct st_table *iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
 
 	    if (iv_index_tbl) {
