@@ -1,3 +1,10 @@
+Sun Oct 19 18:39:39 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* enc/prelude.rb: Added automatic loading of
+	  lib/unicode_normalize.rb. This makes sure that all
+	  the methods that are available on String are
+	  available without explicit require.
+
 Sun Oct 19 18:35:35 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* lib/unicode_normalize/normalize.rb: Added a missing

@@ -4,3 +4,4 @@
   rescue LoadError
   end
 end
+require 'unicode_normalize'
