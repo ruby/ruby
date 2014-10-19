@@ -991,11 +991,11 @@ class Tk::Tile::Treeview::Tag < TkObject
   end
 
   def add(*items)
-    @t.tag_add(@id, *items))
+    @t.tag_add(@id, *items)
   end
 
   def remove(*items)
-    @t.tag_remove(@id, *items))
+    @t.tag_remove(@id, *items)
   end
 
   def bind(seq, *args)

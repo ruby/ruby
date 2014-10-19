@@ -1,3 +1,7 @@
+Sun Oct 19 20:05:58 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* ext/tk/lib/tkextlib/tile/treeview.rb: fix syntax error.
+
 Sun Oct 19 18:39:39 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* enc/prelude.rb: Added automatic loading of
