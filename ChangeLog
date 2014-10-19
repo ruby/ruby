@@ -1,3 +1,8 @@
+Sun Oct 19 18:35:35 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize/normalize.rb: Added a missing
+	  file extension in require statement.
+
 Sun Oct 19 18:13:13 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* common.mk: Added a rule to generate

@@ -2,7 +2,7 @@
 
 # Copyright Ayumu Nojima (野島 歩) and Martin J. Dürst (duerst@it.aoyama.ac.jp)
 
-require 'unicode_normalize/tables'
+require 'unicode_normalize/tables.rb'
 
 
 module UnicodeNormalize
