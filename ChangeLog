@@ -1,3 +1,7 @@
+Sun Oct 19 17:26:26 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize.rb: Added documentation.
+
 Sun Oct 19 11:09:09 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* tool/unicode_norm_gen.rb, lib/unicode_normalize.rb:
