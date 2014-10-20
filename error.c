@@ -1290,19 +1290,19 @@ set_syserr(int n, const char *name)
 
 	/* capture nonblock errnos for WaitReadable/WaitWritable subclasses */
 	switch (n) {
-	    case EAGAIN:
-	        rb_eEAGAIN = error;
+	  case EAGAIN:
+	    rb_eEAGAIN = error;
 
-#if EAGAIN != EWOULDBLOCK
-                break;
-	    case EWOULDBLOCK:
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+	    break;
+	  case EWOULDBLOCK:
 #endif
 
-		rb_eEWOULDBLOCK = error;
-		break;
-	    case EINPROGRESS:
-		rb_eEINPROGRESS = error;
-		break;
+	    rb_eEWOULDBLOCK = error;
+	    break;
+	  case EINPROGRESS:
+	    rb_eEINPROGRESS = error;
+	    break;
 	}
 
 	rb_define_const(error, "Errno", INT2NUM(n));
