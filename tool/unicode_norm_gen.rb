@@ -59,9 +59,8 @@ class Hash
 end
 
 # read the file 'CompositionExclusions.txt'
-composition_exclusions = IO.readlines("#{InputDataDir}/CompositionExclusions.txt")
-                           .select { |line| line =~ /^[A-Z0-9]{4,5}/ }
-                           .collect { |line| line.split(' ').first.hex }
+composition_exclusions = IO.readlines("#{InputDataDir}/CompositionExclusions.txt").
+                            grep(/^[A-Z0-9]{4,5}/) {|line| line.split(' ').first.hex}
 
 decomposition_table = {}
 kompatible_table = {}
