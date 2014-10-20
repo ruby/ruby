@@ -34,7 +34,7 @@ class String
     ## UnicodeNormalize. However, tests didn't show any noticeable speedup
     ## when doing this. This comment also applies to the commented out lines
     ## in String#unicode_normalize! and String#unicode_normalized?.
-    # String.send(:define_method, :normalize, ->(form = :nfc) { UnicodeNormalize.normalize(self, form) } )
+    # String.send(:define_method, :unicode_normalize, ->(form = :nfc) { UnicodeNormalize.normalize(self, form) } )
     UnicodeNormalize.normalize(self, form)
   end
 
@@ -46,7 +46,7 @@ class String
   #
   def unicode_normalize!(form = :nfc)
     require 'unicode_normalize/normalize.rb' unless defined? UnicodeNormalize
-    # String.send(:define_method, :normalize!, ->(form = :nfc) { replace(normalize(form)) } )
+    # String.send(:define_method, :unicode_normalize!, ->(form = :nfc) { replace(unicode_normalize(form)) } )
     replace(self.unicode_normalize(form))
   end
 
