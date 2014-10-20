@@ -43,11 +43,11 @@ module UnicodeNormalize
 
   ## Hangul Algorithm
   def self.hangul_decomp_one(target)
-    sIndex = target.ord - SBASE
-    return target if sIndex < 0 || sIndex >= SCOUNT
-    l = LBASE + sIndex / NCOUNT
-    v = VBASE + (sIndex % NCOUNT) / TCOUNT
-    t = TBASE + sIndex % TCOUNT
+    syllable_index = target.ord - SBASE
+    return target if syllable_index < 0 || syllable_index >= SCOUNT
+    l = LBASE + syllable_index / NCOUNT
+    v = VBASE + (syllable_index % NCOUNT) / TCOUNT
+    t = TBASE + syllable_index % TCOUNT
     (t==TBASE ? [l, v] : [l, v, t]).pack('U*') + target[1..-1]
   end
 
