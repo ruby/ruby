@@ -641,6 +641,39 @@ rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass)
     return procval;
 }
 
+/* Binding */
+
+VALUE
+rb_vm_make_binding(rb_thread_t *th, const rb_control_frame_t *src_cfp)
+{
+    rb_control_frame_t *cfp = rb_vm_get_binding_creatable_next_cfp(th, src_cfp);
+    rb_control_frame_t *ruby_level_cfp = rb_vm_get_ruby_level_next_cfp(th, src_cfp);
+    VALUE bindval, envval;
+    rb_binding_t *bind;
+    VALUE blockprocval = 0;
+
+    if (cfp == 0 || ruby_level_cfp == 0) {
+	rb_raise(rb_eRuntimeError, "Can't create Binding Object on top of Fiber.");
+    }
+
+    while (1) {
+	envval = vm_make_env_object(th, cfp, &blockprocval);
+	if (cfp == ruby_level_cfp) {
+	    break;
+	}
+	cfp = rb_vm_get_binding_creatable_next_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
+    }
+
+    bindval = rb_binding_alloc(rb_cBinding);
+    GetBindingPtr(bindval, bind);
+    bind->env = envval;
+    bind->path = ruby_level_cfp->iseq->location.path;
+    bind->blockprocval = blockprocval;
+    bind->first_lineno = rb_vm_get_sourceline(ruby_level_cfp);
+
+    return bindval;
+}
+
 /* C -> Ruby: block */
 
 static inline VALUE
