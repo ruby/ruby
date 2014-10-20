@@ -1098,9 +1098,10 @@ update-unicode: PHONY
 enc/unicode/data/UnicodeData.txt: update-unicode
 
 lib/unicode_normalize/tables.rb: tool/unicode_norm_gen.rb \
-enc/unicode/data/UnicodeData.txt \
-enc/unicode/data/CompositionExclusions.txt
-	$(BASERUBY) -C "$(srcdir)/tool" unicode_norm_gen.rb
+				 enc/unicode/data/UnicodeData.txt \
+				 enc/unicode/data/CompositionExclusions.txt
+	$(BASERUBY) -s -C "$(srcdir)" tool/unicode_norm_gen.rb \
+		-input=enc/unicode/data -ouput=lib/unicode_normalize
 
 info: info-program info-libruby_a info-libruby_so info-arch
 info-program: PHONY

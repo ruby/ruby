@@ -6,8 +6,8 @@
 # String#unicode_normalize,...
 
 # Constants for input and ouput directory
-InputDataDir = '../enc/unicode/data'
-OuputDataDir = '../lib/unicode_normalize'
+InputDataDir = $input || 'enc/unicode/data'
+OuputDataDir = $ouput || 'lib/unicode_normalize'
 
 # convenience methods
 class Integer
