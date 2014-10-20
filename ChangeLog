@@ -1,3 +1,8 @@
+Mon Oct 20 23:18:18 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/mkmf.rb: no need to convert path separator for COPY because it's
+	  ruby -run cp and it can treat '/' on any platform.
+
 Mon Oct 20 19:54:54 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* config.mk: Added missing data files as targets for
