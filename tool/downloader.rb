@@ -113,6 +113,8 @@ if $0 == __FILE__
       ARGV.shift
     when '-e'
       ims = nil
+    when '-a'
+      ims = true
     when /\A-/
       abort "#{$0}: unknown option #{ARGV[0]}"
     else

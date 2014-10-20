@@ -1089,10 +1089,12 @@ update-gems: PHONY
 	    -e 'Downloader::RubyGems.download(gem)' \
 	    bundled_gems
 
+# ALWAYS_UPDATE_UNICODE = yes
+
 update-unicode: PHONY
 	$(ECHO) Downloading Unicode data files...
 	$(Q) $(BASERUBY) -C "$(srcdir)/enc/unicode/data" \
-	    ../../../tool/downloader.rb unicode \
+	    ../../../tool/downloader.rb -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode \
 	    UnicodeData.txt CompositionExclusions.txt NormalizationTest.txt
 
 enc/unicode/data/UnicodeData.txt \

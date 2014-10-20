@@ -1,3 +1,8 @@
+Mon Oct 20 23:58:04 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/downloader.rb: add -a option to always download regardless
+	  existing files.
+
 Mon Oct 20 23:18:18 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/mkmf.rb: no need to convert path separator for COPY because it's
