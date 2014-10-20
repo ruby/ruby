@@ -1095,7 +1095,9 @@ update-unicode: PHONY
 	    ../../../tool/downloader.rb -e unicode \
 	    UnicodeData.txt CompositionExclusions.txt NormalizationTest.txt
 
-enc/unicode/data/UnicodeData.txt: update-unicode
+enc/unicode/data/UnicodeData.txt \
+  enc/unicode/data/CompositionExclusions.txt \
+  enc/unicode/data/NormalizationTest.txt: update-unicode
 
 lib/unicode_normalize/tables.rb: tool/unicode_norm_gen.rb \
 				 enc/unicode/data/UnicodeData.txt \

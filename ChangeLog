@@ -1,9 +1,7 @@
-Mon Oct 20 19:06:06 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+Mon Oct 20 19:54:54 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
-	* tool/downloader.rb: Make sure we update to latest version
-	  if network connection is available, but we don't fail if
-	  there is no network connection but option -e is set and
-	  we already have a version of the file.
+	* config.mk: Added missing data files as targets for
+	  prerequisite update_unicode.
 
 Mon Oct 20 19:06:06 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
