@@ -24,10 +24,14 @@ end
 
 class Array
   def line_slice(new_line) # joins items, 8 items per line
-    each_slice(8).collect(&:join).join(new_line).gsub(/ +$/, '')
+    ary = []
+    0.step(size-1, 8) {|i|
+      ary << self[i, 8].join('')
+    }
+    ary.join(new_line).gsub(/ +$/, '')
   end
 
-  def to_UTF8()  collect(&:to_UTF8).join  end
+  def to_UTF8() collect {|c| c.to_UTF8}.join('') end
 
   def to_regexp_chars # converts an array of Integers to character ranges
     sort.inject([]) do |ranges, value|
@@ -59,8 +63,9 @@ class Hash
 end
 
 # read the file 'CompositionExclusions.txt'
-composition_exclusions = IO.readlines("#{InputDataDir}/CompositionExclusions.txt").
-                            grep(/^[A-Z0-9]{4,5}/) {|line| line.split(' ').first.hex}
+composition_exclusions = File.open("#{InputDataDir}/CompositionExclusions.txt") {|f|
+  f.grep(/^[A-Z0-9]{4,5}/) {|line| line.hex}
+}
 
 decomposition_table = {}
 kompatible_table = {}
@@ -72,9 +77,9 @@ IO.foreach("#{InputDataDir}/UnicodeData.txt") do |line|
 
   case decomposition
   when /^[0-9A-F]/
-    decomposition_table[codepoint.hex] = decomposition.split(' ').collect(&:hex)
+    decomposition_table[codepoint.hex] = decomposition.split(' ').collect {|w| w.hex}
   when /^</
-    kompatible_table[codepoint.hex] = decomposition.split(' ').drop(1).collect(&:hex)
+    kompatible_table[codepoint.hex] = decomposition.split(' ')[1..-1].collect {|w| w.hex}
   end
   CombiningClass[codepoint.hex] = char_class.to_i if char_class != "0"
 
@@ -94,11 +99,12 @@ end.invert
 # recalculate composition_exclusions
 composition_exclusions = decomposition_table.keys - composition_table.values
 
-accent_array = CombiningClass.keys + composition_table.keys.collect(&:last)
+accent_array = CombiningClass.keys + composition_table.keys.collect {|key| key.last}
 
-composition_starters = composition_table.keys.collect(&:first)
+composition_starters = composition_table.keys.collect {|key| key.first}
 
-hangul_no_trailing = 0xAC00.step(0xD7A3, 28).to_a
+hangul_no_trailing = []
+0xAC00.step(0xD7A3, 28) {|c| hangul_no_trailing << c}
 
 # expand decomposition table values
 decomposition_table.each do |key, value|
