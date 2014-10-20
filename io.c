@@ -10333,9 +10333,9 @@ maygvl_copy_stream_read(int has_gvl, struct copy_stream_struct *stp, char *buf, 
             goto retry_read;
 #ifdef ENOSYS
 	  case ENOSYS:
-#endif
             stp->notimp = "pread";
             return -1;
+#endif
         }
         stp->syserr = offset == (off_t)-1 ?  "read" : "pread";
         stp->error_no = errno;
