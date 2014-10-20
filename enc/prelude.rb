@@ -4,4 +4,8 @@
   rescue LoadError
   end
 end
-require 'unicode_normalize'
+
+begin
+  require 'unicode_normalize'
+rescue LoadError
+end
