@@ -1101,7 +1101,7 @@ enc/unicode/data/UnicodeData.txt \
   enc/unicode/data/CompositionExclusions.txt \
   enc/unicode/data/NormalizationTest.txt: update-unicode
 
-lib/unicode_normalize/tables.rb: tool/unicode_norm_gen.rb \
+lib/unicode_normalize/tables.rb: $(srcdir)/tool/unicode_norm_gen.rb \
 				 enc/unicode/data/UnicodeData.txt \
 				 enc/unicode/data/CompositionExclusions.txt
 	$(BASERUBY) -s -C "$(srcdir)" tool/unicode_norm_gen.rb \
