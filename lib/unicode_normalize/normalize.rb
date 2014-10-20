@@ -14,15 +14,15 @@ module UnicodeNormalize
   REGEXP_C = Regexp.compile(REGEXP_C_STRING, Regexp::EXTENDED)
   REGEXP_K = Regexp.compile(REGEXP_K_STRING, Regexp::EXTENDED)
   NF_HASH_D = Hash.new do |hash, key|
-                         hash.delete hash.first[0] if hash.length>MAX_HASH_LENGTH # prevent DoS attack
+                         hash.shift if hash.length>MAX_HASH_LENGTH # prevent DoS attack
                          hash[key] = nfd_one(key)
                        end
   NF_HASH_C = Hash.new do |hash, key|
-                         hash.delete hash.first[0] if hash.length>MAX_HASH_LENGTH # prevent DoS attack
+                         hash.shift if hash.length>MAX_HASH_LENGTH # prevent DoS attack
                          hash[key] = nfc_one(key)
                        end
   NF_HASH_K = Hash.new do |hash, key|
-                         hash.delete hash.first[0] if hash.length>MAX_HASH_LENGTH # prevent DoS attack
+                         hash.shift if hash.length>MAX_HASH_LENGTH # prevent DoS attack
                          hash[key] = nfkd_one(key)
                        end
 
