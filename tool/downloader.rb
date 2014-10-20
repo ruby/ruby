@@ -54,7 +54,7 @@ class Downloader
   #            'UnicodeData.txt', 'enc/unicode/data'
   def self.download(url, name, dir = nil, ims = true)
     file = dir ? File.join(dir, name) : name
-    # return true if ims.nil? and File.exist?(file)
+    return true if ims.nil? and File.exist?(file)
     url = URI(url)
     if $VERBOSE
       $stdout.print "downloading #{name} ... "
