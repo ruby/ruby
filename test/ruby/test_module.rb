@@ -1829,7 +1829,10 @@ class TestModule < Test::Unit::TestCase
 
     name = "@\u{5909 6570}"
     assert_warning(/instance variable #{name} not initialized/) do
-      assert_nil(a.instance_eval(name))
+      val = EnvUtil.with_default_external(Encoding::UTF_8) {
+        a.instance_eval(name)
+      }
+      assert_nil(val)
     end
   end
 
