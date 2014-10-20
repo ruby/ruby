@@ -1,6 +1,10 @@
+Mon Oct 20 12:46:46 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize.rb: removing unnecessary 'self'.
+
 Mon Oct 20 12:37:37 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
-	* lib/unicode_normalize.rb: (unicode_normalize!): change method names
+	* lib/unicode_normalize.rb: change method names
 	  in commented-out code. Followup to r48027.
 
 Mon Oct 20 02:23:27 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>

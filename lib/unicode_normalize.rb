@@ -47,7 +47,7 @@ class String
   def unicode_normalize!(form = :nfc)
     require 'unicode_normalize/normalize.rb' unless defined? UnicodeNormalize
     # String.send(:define_method, :unicode_normalize!, ->(form = :nfc) { replace(unicode_normalize(form)) } )
-    replace(self.unicode_normalize(form))
+    replace(unicode_normalize(form))
   end
 
   # :call-seq:
