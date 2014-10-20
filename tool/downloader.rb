@@ -54,20 +54,32 @@ class Downloader
   #            'UnicodeData.txt', 'enc/unicode/data'
   def self.download(url, name, dir = nil, ims = true)
     file = dir ? File.join(dir, name) : name
-    return true if ims.nil? and File.exist?(file)
+    # return true if ims.nil? and File.exist?(file)
     url = URI(url)
     if $VERBOSE
       $stdout.print "downloading #{name} ... "
       $stdout.flush
     end
     begin
-      data = url.read(http_options(file, ims))
+      data = url.read(http_options(file, ims.nil? ? true : ims))
     rescue OpenURI::HTTPError => http_error
       if http_error.message =~ /^304 / # 304 Not Modified
         if $VERBOSE
           $stdout.puts "not modified"
           $stdout.flush
         end
+        return true
+      end
+      raise
+    rescue Timeout::Error
+      if ims.nil? and File.exist?(file)
+        puts "Request for #{url} timed out, using old version."
+        return true
+      end
+      raise
+    rescue SocketError
+      if ims.nil? and File.exist?(file)
+        puts "No network connection, unable to download #{url}, using old version."
         return true
       end
       raise
