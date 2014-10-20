@@ -1,3 +1,12 @@
+Mon Oct 20 19:06:06 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize.rb: revert r48046. The s in sIndex
+	  is not hungarian notation. The variable name sIndex is
+	  directly taken from the relevant part of the Unicode
+	  Standard, where it is written SIndex and stands for
+	  'syllable index'. See pp. 144/145 of
+	  http://www.unicode.org/versions/Unicode7.0.0/ch03.pdf.
+
 Mon Oct 20 12:46:46 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* lib/unicode_normalize.rb: removing unnecessary 'self'.
