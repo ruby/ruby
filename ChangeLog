@@ -1,3 +1,8 @@
+Wed Oct 22 03:33:58 2014  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/etc/etc.c (etc_nprocessors_affin): optimize memory usege a
+	  bit. Typical rubyist never use 8k cpus machine.
+
 Wed Oct 22 00:01:09 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
 	* configure.in (XCFLAGS): Add include path for NaCl libraries.

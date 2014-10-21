@@ -916,7 +916,7 @@ etc_nprocessors_affin(void)
     cpu_set_t *cpuset;
     size_t size;
     int ret;
-    int ncpus;
+    int n;
 
     /*
      * XXX:
@@ -934,23 +934,30 @@ etc_nprocessors_affin(void)
      * So, we use hardcode number for workaround. Current linux kernel
      * (Linux 3.17) support 8192 cpus at maximum. Then 16384 is enough large.
      */
-    ncpus = 16384;
+    for (n=64; n < 16384; n *= 2) {
+	size = CPU_ALLOC_SIZE(n);
+	if (size >= 1024) {
+	    cpuset = xcalloc(1, size);
+	    if (!cpuset)
+		return -1;
+	} else {
+	    cpuset = alloca(size);
+	    CPU_ZERO_S(size, cpuset);
+	}
 
-    cpuset = CPU_ALLOC(ncpus);
-    if (!cpuset) {
-       return -1;
+	ret = sched_getaffinity(0, size, cpuset);
+	if (ret == 0) {
+	    /* On success, count number of cpus. */
+	    ret = CPU_COUNT_S(size, cpuset);
+	}
+
+	if (size >= 1024) {
+	    xfree(cpuset);
+	}
+	if (ret > 0) {
+	    return ret;
+	}
     }
-    size = CPU_ALLOC_SIZE(ncpus);
-    CPU_ZERO_S(size, cpuset);
-
-    ret = sched_getaffinity(0, size, cpuset);
-    if (ret==-1) {
-       goto free;
-    }
-
-    ret = CPU_COUNT_S(size, cpuset);
-  free:
-    CPU_FREE(cpuset);
 
     return ret;
 }
