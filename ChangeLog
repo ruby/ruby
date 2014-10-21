@@ -30,7 +30,7 @@ Mon Oct 20 23:59:38 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Mon Oct 20 23:57:58 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* common.mk (lib/unicode_normlize/table.rb): enable running (n)make
+	* common.mk (lib/unicode_normalize/tables.rb): enable running (n)make
 	  in non-srcdir.
 
 Mon Oct 20 23:58:04 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
