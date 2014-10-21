@@ -934,7 +934,7 @@ etc_nprocessors_affin(void)
      * So, we use hardcode number for a workaround. Current linux kernel
      * (Linux 3.17) support 8192 cpus at maximum. Then 16384 must be enough.
      */
-    for (n=64; n < 16384; n *= 2) {
+    for (n=64; n <= 16384; n *= 2) {
 	size = CPU_ALLOC_SIZE(n);
 	if (size >= 1024) {
 	    cpuset = xcalloc(1, size);

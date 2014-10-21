@@ -1,3 +1,7 @@
+Wed Oct 22 03:47:43 2014  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/etc/etc.c (etc_nprocessors_affin): maximum "n" should be 16384.
+
 Wed Oct 22 03:37:00 2014  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/etc/etc.c (etc_nprocessors_affin): minor spell fix.
