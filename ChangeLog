@@ -1,3 +1,9 @@
+Tue Oct 21 11:49:16 2014  Andreas Schwab  <schwab@suse.de>
+
+	* gc.c (mark_current_machine_context) [__mc68000__]: Update stack
+	  marking.
+	  (rb_gc_mark_machine_stack) [__mc68000__]: Also handle it here.
+
 Mon Oct 20 23:59:38 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* enc/prelude.rb: we sometimes run ruby without library path (especially

@@ -3838,8 +3838,8 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
     rb_gc_mark_locations(th->machine.register_stack_start, th->machine.register_stack_end);
 #endif
 #if defined(__mc68000__)
-    mark_locations_array(objspace, (VALUE*)((char*)STACK_END + 2),
-			 (STACK_START - STACK_END));
+    rb_gc_mark_locations((VALUE*)((char*)stack_start + 2),
+			 (VALUE*)((char*)stack_end - 2));
 #endif
 }
 
@@ -3853,6 +3853,10 @@ rb_gc_mark_machine_stack(rb_thread_t *th)
     rb_gc_mark_locations(stack_start, stack_end);
 #ifdef __ia64
     rb_gc_mark_locations(th->machine.register_stack_start, th->machine.register_stack_end);
+#endif
+#if defined(__mc68000__)
+    rb_gc_mark_locations((VALUE*)((char*)stack_start + 2),
+			 (VALUE*)((char*)stack_end - 2));
 #endif
 }
 
