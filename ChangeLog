@@ -1,3 +1,7 @@
+Wed Oct 22 03:37:00 2014  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/etc/etc.c (etc_nprocessors_affin): minor spell fix.
+
 Wed Oct 22 03:33:58 2014  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/etc/etc.c (etc_nprocessors_affin): optimize memory usege a

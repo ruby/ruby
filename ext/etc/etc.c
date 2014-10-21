@@ -928,11 +928,11 @@ etc_nprocessors_affin(void)
      * The precious way is to use /sys/devices/system/cpu/online. But there are
      * two problems,
      * - Costly calculation
-     *    It is minor issue, but possibly kill the benefit of parallel processing.
+     *    It is a minor issue, but possibly kill a benefit of a parallel processing.
      * - No guarantee to exist /sys/devices/system/cpu/online
-     *    This is an issue especially when using containers.
-     * So, we use hardcode number for workaround. Current linux kernel
-     * (Linux 3.17) support 8192 cpus at maximum. Then 16384 is enough large.
+     *    This is an issue especially when using Linux containers.
+     * So, we use hardcode number for a workaround. Current linux kernel
+     * (Linux 3.17) support 8192 cpus at maximum. Then 16384 must be enough.
      */
     for (n=64; n < 16384; n *= 2) {
 	size = CPU_ALLOC_SIZE(n);
