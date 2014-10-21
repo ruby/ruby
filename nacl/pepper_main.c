@@ -498,7 +498,7 @@ Instance_DidCreate(PP_Instance instance,
 
   // TODO(yugui) Mount devfs
 
-  if (mount("/lib", "/lib", "httpfs", 
+  if (mount("/lib", "/lib", "httpfs",
         0, "allow_cross_origin_requests=false")) {
     perror("mount httpfs");
     return PP_FALSE;
