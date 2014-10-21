@@ -27,6 +27,8 @@ module UnicodeNormalize
                        end
 
   ## Constants For Hangul
+  # for details such as the meaning of the identifiers below, please see
+  # http://www.unicode.org/versions/Unicode7.0.0/ch03.pdf, pp. 144/145
   SBASE = 0xAC00
   LBASE = 0x1100
   VBASE = 0x1161

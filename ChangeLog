@@ -1,3 +1,9 @@
+Tue Oct 21 15:56:56 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize/normalize.rb: Added comment to point to
+	  relevant portion of Unicode standard for Hangul (de)composition
+	  identifiers and algorithm.
+
 Tue Oct 21 11:49:16 2014  Andreas Schwab  <schwab@suse.de>
 
 	* gc.c (mark_current_machine_context) [__mc68000__]: Update stack
