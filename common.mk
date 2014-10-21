@@ -913,14 +913,19 @@ INSNS2VMOPT = --srcdir="$(srcdir)"
 
 {$(VPATH)}vm.inc: $(srcdir)/template/vm.inc.tmpl
 
-srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c {$(VPATH)}newline.c {$(VPATH)}id.c srcs-ext srcs-enc
+srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c {$(VPATH)}newline.c {$(VPATH)}id.c \
+      srcs-lib srcs-ext srcs-enc
 
 EXT_SRCS = $(srcdir)/ext/ripper/ripper.c $(srcdir)/ext/json/parser/parser.c \
 	   $(srcdir)/ext/dl/callback/callback.c  $(srcdir)/ext/rbconfig/sizeof/sizes.c
 
 srcs-ext: $(EXT_SRCS)
 
-srcs-enc: $(ENC_MK) lib/unicode_normalize/tables.rb
+LIB_SRCS = $(srcdir)/lib/unicode_normalize/tables.rb
+
+srcs-lib: $(LIB_SRCS)
+
+srcs-enc: $(ENC_MK)
 	$(ECHO) making srcs under enc
 	$(Q) $(MAKE) -f $(ENC_MK) RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) srcs
 
@@ -1075,9 +1080,7 @@ dist:
 up::
 	-$(Q)$(MAKE) $(MFLAGS) REVISION_FORCE=PHONY "$(REVISION_H)"
 
-after-update:: after-configure update-gems
-
-after-configure:: update-unicode
+after-update:: update-unicode update-gems
 
 update-config_files: PHONY
 	$(Q) $(BASERUBY) -C "$(srcdir)/tool" \
@@ -1095,16 +1098,21 @@ update-gems: PHONY
 
 # ALWAYS_UPDATE_UNICODE = yes
 
-update-unicode: PHONY
+UNICODE_FILES = $(srcdir)/enc/unicode/data/UnicodeData.txt \
+		$(srcdir)/enc/unicode/data/CompositionExclusions.txt \
+		$(srcdir)/enc/unicode/data/NormalizationTest.txt
+
+update-unicode: $(UNICODE_FILES) PHONY
+
+$(UNICODE_FILES):
 	$(ECHO) Downloading Unicode data files...
 	$(Q) $(MAKEDIRS) "$(srcdir)/enc/unicode/data"
 	$(Q) $(BASERUBY) -C "$(srcdir)/enc/unicode/data" \
 	    ../../../tool/downloader.rb -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode \
 	    UnicodeData.txt CompositionExclusions.txt NormalizationTest.txt
 
-lib/unicode_normalize/tables.rb: $(srcdir)/tool/unicode_norm_gen.rb \
-				 $(srcdir)/enc/unicode/data/UnicodeData.txt \
-				 $(srcdir)/enc/unicode/data/CompositionExclusions.txt
+$(srcdir)/lib/unicode_normalize/tables.rb: \
+		$(srcdir)/tool/unicode_norm_gen.rb $(UNICODE_FILES)
 	$(BASERUBY) -s -C "$(srcdir)" tool/unicode_norm_gen.rb \
 		-input=enc/unicode/data -ouput=lib/unicode_normalize
 

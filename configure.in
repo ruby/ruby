@@ -4231,5 +4231,4 @@ AC_CONFIG_FILES($ruby_pc:template/ruby.pc.in,
 
 AC_OUTPUT
 }
-${MAKE-make} after-configure
 }
