@@ -141,8 +141,6 @@ y.tab.c
 # /gems
 /gems/*.gem
 
-/lib/unicode_normalize/tables.rb
-
 # /spec/
 /spec/mspec
 /spec/rubyspec
