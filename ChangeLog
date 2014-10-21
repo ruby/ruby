@@ -1,4 +1,10 @@
-Tue Oct 21 15:56:56 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+Tue Oct 21 17:32:32 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* common.mk: Adding explicit creation of directory
+	  enc/unicode/data because git doesn't handle empty
+	  directories.
+
+Tue Oct 21 17:12:12 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* lib/unicode_normalize/tables.rb: Committing to make version
 	  update easier and more predictable, and reducing compilation

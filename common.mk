@@ -1097,6 +1097,7 @@ update-gems: PHONY
 
 update-unicode: PHONY
 	$(ECHO) Downloading Unicode data files...
+	$(Q) $(MAKEDIRS) "$(srcdir)/enc/unicode/data"
 	$(Q) $(BASERUBY) -C "$(srcdir)/enc/unicode/data" \
 	    ../../../tool/downloader.rb -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode \
 	    UnicodeData.txt CompositionExclusions.txt NormalizationTest.txt
