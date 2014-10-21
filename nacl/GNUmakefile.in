@@ -37,7 +37,7 @@ endif
 PYTHON=@PYTHON@
 
 PPROGRAM=pepper-$(PROGRAM)
-PEPPER_LIBS=-lppapi
+PEPPER_LIBS=-lppapi -lnacl_io
 PROGRAM_NMF=$(PROGRAM:$(EXEEXT)=.nmf)
 PPROGRAM_NMF=$(PPROGRAM:$(EXEEXT)=.nmf)
 

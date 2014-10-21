@@ -1,3 +1,22 @@
+Wed Oct 22 00:01:09 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* configure.in (XCFLAGS): Add include path for NaCl libraries.
+	  (XLDFLAGS): ditto.
+	  (NACL_LIB_PATH): new stubstitution
+
+	* nacl/nacl-config.rb: support NACL_LIB_PATH
+
+	* nacl/package.rb: ditto.
+
+	* nacl/pepper_main.c: replace old implementations with nacl_io.
+
+	* nacl/GNUmakefile.in: link nacl_io to pepper_ruby
+
+	* ruby.c (rb_load_file): remove __attribute__((weak)) because the old
+	  override hack was replaced with nacl_io.
+
+	* file.c (rb_file_load_ok): ditto.
+
 Tue Oct 21 17:32:32 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* common.mk: Adding explicit creation of directory

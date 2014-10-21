@@ -8,6 +8,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <sys/stat.h>
+#include <sys/mount.h>
 #include <fcntl.h>
 #include <pthread.h>
 #include "ppapi/c/pp_errors.h"
@@ -25,6 +26,7 @@
 #include "ppapi/c/ppp.h"
 #include "ppapi/c/ppp_instance.h"
 #include "ppapi/c/ppp_messaging.h"
+#include "nacl_io/nacl_io.h"
 
 #include "verconf.h"
 #include "ruby/ruby.h"
@@ -54,6 +56,7 @@ typedef struct PPP_Instance PPP_Instance;
 #endif
 
 static PP_Module module_id = 0;
+static PPB_GetInterface get_browser_interface = NULL;
 static PPB_Core* core_interface = NULL;
 static PPB_Messaging* messaging_interface = NULL;
 static PPB_Var* var_interface = NULL;
@@ -487,8 +490,20 @@ static PP_Bool
 Instance_DidCreate(PP_Instance instance,
                    uint32_t argc, const char* argn[], const char* argv[])
 {
+  int ret;
   struct PepperInstance* data = pruby_register_instance(instance);
   current_instance = instance;
+
+  nacl_io_init_ppapi(instance, get_browser_interface);
+
+  // TODO(yugui) Mount devfs
+
+  if (mount("/lib", "/lib", "httpfs", 
+        0, "allow_cross_origin_requests=false")) {
+    perror("mount httpfs");
+    return PP_FALSE;
+  }
+
   return init_libraries_if_necessary() ? PP_FALSE : PP_TRUE;
 }
 
@@ -618,9 +633,10 @@ Messaging_HandleMessage(PP_Instance instance, struct PP_Var var_message)
  * @return PP_OK on success, any other value on failure.
  */
 PP_EXPORT int32_t
-PPP_InitializeModule(PP_Module a_module_id, PPB_GetInterface get_browser_interface)
+PPP_InitializeModule(PP_Module a_module_id, PPB_GetInterface a_get_browser_interface)
 {
   module_id = a_module_id;
+  get_browser_interface = a_get_browser_interface;
   core_interface = (PPB_Core*)(get_browser_interface(PPB_CORE_INTERFACE));
   if (core_interface == NULL) return PP_ERROR_NOINTERFACE;
 
@@ -679,192 +695,4 @@ PP_EXPORT void
 PPP_ShutdownModule(void)
 {
   ruby_cleanup(0);
-}
-
-/******************************************************************************
- * Overwrites rb_file_load_ok
- ******************************************************************************/
-
-static void
-load_ok_internal(void* data, int32_t unused)
-{
-  /* PPAPI main thread */
-  struct PepperInstance* const instance = (struct PepperInstance*)data;
-  const char *const path = (const char*)instance->async_call_args;
-  PP_Resource req;
-  int result;
-
-  instance->url_loader = loader_interface->Create(instance->instance);
-  req = request_interface->Create(instance->instance);
-  request_interface->SetProperty(
-      req, PP_URLREQUESTPROPERTY_METHOD, pruby_cstr_to_var("HEAD"));
-  request_interface->SetProperty(
-      req, PP_URLREQUESTPROPERTY_URL, pruby_cstr_to_var(path));
-
-  result = loader_interface->Open(
-      instance->url_loader, req,
-      PP_MakeCompletionCallback(pruby_async_return_int, instance));
-  if (result != PP_OK_COMPLETIONPENDING) {
-    pruby_async_return_int(instance, result);
-  }
-}
-
-static void
-pruby_file_fetch_check_response(void* data, int32_t unused)
-{
-  /* PPAPI main thread */
-  PP_Resource res;
-  struct PepperInstance* const instance = (struct PepperInstance*)data;
-
-  res = loader_interface->GetResponseInfo(instance->url_loader);
-  if (res) {
-    struct PP_Var status =
-        response_interface->GetProperty(res, PP_URLRESPONSEPROPERTY_STATUSCODE);
-    if (status.type == PP_VARTYPE_INT32) {
-      pruby_async_return_int(instance, status.value.as_int / 100 == 2 ? PP_OK : PP_ERROR_FAILED);
-      return;
-    }
-    else {
-      messaging_interface->PostMessage(
-          instance->instance, pruby_cstr_to_var("Unexpected type: ResponseInfoInterface::GetProperty"));
-    }
-  }
-  else {
-    messaging_interface->PostMessage(
-        instance->instance, pruby_cstr_to_var("Failed to open URL: URLLoaderInterface::GetResponseInfo"));
-  }
-  pruby_async_return_int(instance, PP_ERROR_FAILED);
-}
-
-
-int
-rb_file_load_ok(const char *path)
-{
-  struct PepperInstance* const instance = GET_PEPPER_INSTANCE();
-  if (path[0] == '.' && path[1] == '/') path += 2;
-
-  instance->async_call_args = (void*)path;
-  core_interface->CallOnMainThread(
-      0, PP_MakeCompletionCallback(load_ok_internal, instance), 0);
-  if (pthread_cond_wait(&instance->cond, &instance->mutex)) {
-    perror("pepper-ruby:pthread_cond_wait");
-    return 0;
-  }
-  if (instance->async_call_result.as_int != PP_OK) {
-    fprintf(stderr, "Failed to open URL: %d: %s\n",
-            instance->async_call_result.as_int, path);
-    return 0;
-  }
-
-  core_interface->CallOnMainThread(
-      0, PP_MakeCompletionCallback(pruby_file_fetch_check_response, instance), 0);
-  if (pthread_cond_wait(&instance->cond, &instance->mutex)) {
-    perror("pepper-ruby:pthread_cond_wait");
-    return 0;
-  }
-  return instance->async_call_result.as_int == PP_OK;
-}
-
-/******************************************************************************
- * Overwrites rb_load_file
- ******************************************************************************/
-
-static void
-load_file_internal(void* data, int32_t unused)
-{
-  /* PPAPI main thread */
-  struct PepperInstance* const instance = (struct PepperInstance*)data;
-  const char *const path = (const char*)instance->async_call_args;
-  PP_Resource req;
-  int result;
-
-  instance->url_loader = loader_interface->Create(instance->instance);
-  req = request_interface->Create(instance->instance);
-  request_interface->SetProperty(
-      req, PP_URLREQUESTPROPERTY_METHOD, pruby_cstr_to_var("GET"));
-  request_interface->SetProperty(
-      req, PP_URLREQUESTPROPERTY_URL, pruby_cstr_to_var(path));
-
-  result = loader_interface->Open(
-      instance->url_loader, req,
-      PP_MakeCompletionCallback(pruby_async_return_int, instance));
-  if (result != PP_OK_COMPLETIONPENDING) {
-    pruby_async_return_int(instance, result);
-  }
-}
-
-static void
-load_file_read_contents_callback(void *data, int result)
-{
-  struct PepperInstance* const instance = (struct PepperInstance*)data;
-  if (result > 0) {
-    rb_str_buf_cat(instance->async_call_result.as_value,
-                   instance->buf, result);
-    loader_interface->ReadResponseBody(
-        instance->url_loader, instance->buf, 1000, PP_MakeCompletionCallback(load_file_read_contents_callback, instance));
-  }
-  else if (result == 0) {
-    pruby_async_return_value(data, instance->async_call_result.as_value);
-  }
-  else {
-    pruby_async_return_value(data, INT2FIX(result));
-  }
-}
-
-static void
-load_file_read_contents(void *data, int result)
-{
-  struct PepperInstance* const instance = (struct PepperInstance*)data;
-  instance->async_call_result.as_value = rb_str_new(0, 0);
-  loader_interface->ReadResponseBody(
-      instance->url_loader, instance->buf, 1000, PP_MakeCompletionCallback(load_file_read_contents_callback, instance));
-}
-
-void*
-rb_load_file(const char *path)
-{
-  const char *real_path;
-  struct PepperInstance* instance;
-  if (path[0] != '.' || path[1] != '/') path += 2;
-
-  instance = GET_PEPPER_INSTANCE();
-
-  instance->async_call_args = (void*)path;
-  core_interface->CallOnMainThread(
-      0, PP_MakeCompletionCallback(load_file_internal, instance), 0);
-  if (pthread_cond_wait(&instance->cond, &instance->mutex)) {
-    perror("pepper-ruby:pthread_cond_wait");
-    return 0;
-  }
-  if (instance->async_call_result.as_int != PP_OK) {
-    fprintf(stderr, "Failed to open URL: %d: %s\n",
-            instance->async_call_result.as_int, path);
-    return 0;
-  }
-
-  core_interface->CallOnMainThread(
-      0, PP_MakeCompletionCallback(pruby_file_fetch_check_response, instance), 0);
-  if (pthread_cond_wait(&instance->cond, &instance->mutex)) {
-    perror("pepper-ruby:pthread_cond_wait");
-    return 0;
-  }
-  if (instance->async_call_result.as_int != PP_OK) return 0;
-
-  core_interface->CallOnMainThread(
-      0, PP_MakeCompletionCallback(load_file_read_contents, instance), 0);
-  if (pthread_cond_wait(&instance->cond, &instance->mutex)) {
-    perror("pepper-ruby:pthread_cond_wait");
-    return 0;
-  }
-  if (FIXNUM_P(instance->async_call_result.as_value)) {
-    return 0;
-  }
-  else if (RB_TYPE_P(instance->async_call_result.as_value, T_STRING)) {
-    VALUE str = instance->async_call_result.as_value;
-    extern void* rb_compile_cstr(const char *f, const char *s, int len, int line);
-    return rb_compile_cstr(path, RSTRING_PTR(str), RSTRING_LEN(str), 0);
-  }
-  else {
-    return 0;
-  }
 }
