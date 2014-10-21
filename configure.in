@@ -46,9 +46,6 @@ if test "`RUBYOPT=- $BASERUBY -e 'p 42' 2>/dev/null`" = 42; then
 	BASERUBY="$BASERUBY --disable=gems"
     fi
     $BASERUBY -C "$srcdir/tool" downloader.rb -e gnu config.guess config.sub
-    $BASERUBY -C "$srcdir/enc/unicode/data" \
-	    ../../../tool/downloader.rb -e ${ALWAYS_UPDATE_UNICODE+-a} unicode \
-	    UnicodeData.txt CompositionExclusions.txt NormalizationTest.txt
 else
     BASERUBY="echo executable host ruby is required.  use --with-baseruby option.; false"
 fi
@@ -4234,4 +4231,5 @@ AC_CONFIG_FILES($ruby_pc:template/ruby.pc.in,
 
 AC_OUTPUT
 }
+${MAKE-make} after-configure
 }

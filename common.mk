@@ -1075,7 +1075,9 @@ dist:
 up::
 	-$(Q)$(MAKE) $(MFLAGS) REVISION_FORCE=PHONY "$(REVISION_H)"
 
-after-update:: update-unicode update-gems
+after-update:: after-configure update-gems
+
+after-configure:: update-unicode
 
 update-config_files: PHONY
 	$(Q) $(BASERUBY) -C "$(srcdir)/tool" \
