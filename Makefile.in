@@ -439,7 +439,7 @@ up::
 up::
 	-$(Q)$(MAKE) $(MFLAGS) after-update
 
-after-update:: update-config_files update-unicode update-gems
+after-update:: update-config_files
 
 update-mspec:
 	@$(CHDIR) $(srcdir); \

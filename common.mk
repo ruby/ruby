@@ -1075,6 +1075,8 @@ dist:
 up::
 	-$(Q)$(MAKE) $(MFLAGS) REVISION_FORCE=PHONY "$(REVISION_H)"
 
+after-update:: update-unicode update-gems
+
 update-config_files: PHONY
 	$(Q) $(BASERUBY) -C "$(srcdir)/tool" \
 	    ../tool/downloader.rb -e gnu \
