@@ -1097,7 +1097,7 @@ update-gems: PHONY
 	    bundled_gems
 
 ### set the following environment variable or uncomment the line if
-### the Unicode data files are updated every minuites.
+### the Unicode data files are updated every minute.
 # ALWAYS_UPDATE_UNICODE = yes
 
 UNICODE_FILES = $(srcdir)/enc/unicode/data/UnicodeData.txt \

@@ -1,3 +1,7 @@
+Wed Oct 22 20:33:33 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* common.mk: Fixed grammar in comment [ci skip]
+
 Wed Oct 22 19:18:18 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* tool/unicode_norm_gen.rb: Fixed escaping of backslash and
