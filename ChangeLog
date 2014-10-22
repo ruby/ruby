@@ -1,3 +1,8 @@
+Thu Oct 23 02:25:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (after-update): update files under source tree.
+	  [ruby-core:65840] [Bug #10414]
+
 Wed Oct 22 22:38:59 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* ext/openssl/lib/openssl/ssl.rb (DEFAULT_PARAMS): override
