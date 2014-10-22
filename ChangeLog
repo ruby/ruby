@@ -1,3 +1,9 @@
+Thu Oct 23 03:41:51 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (unknown_keyword_error): delete expected keywords
+	  directly from raw table, so that the given block is not called.
+	  [ruby-core:65837] [Bug #10413]
+
 Thu Oct 23 02:33:01 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (update-unicode): invert dependency to run every times.
