@@ -1,3 +1,8 @@
+Wed Oct 22 18:07:07 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* test/test-unicode_normalize.rb: Removed explicit require,
+	  changed method names, adjusted copyright.
+
 Wed Oct 22 18:00:00 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* test/test-unicode_normalize.rb: Importing from
