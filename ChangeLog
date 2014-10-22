@@ -1,3 +1,8 @@
+Wed Oct 22 08:21:09 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* nacl/pepper_main.c (Instance_DidCreate): mount devfs and rebind fd 0
+	  .. 2 so that stderr goes to the console of the browser.
+
 Wed Oct 22 03:47:43 2014  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/etc/etc.c (etc_nprocessors_affin): maximum "n" should be 16384.

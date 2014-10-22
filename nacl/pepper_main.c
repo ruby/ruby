@@ -405,6 +405,24 @@ init_libraries_if_necessary(void)
 }
 
 static int
+reopen_fd(int fd, const char* path, int flags) {
+  int fd2 = open(path, flags);
+  if (fd2 < 0) {
+    perror("open fd");
+    return -1;
+  }
+  if (dup2(fd2, fd) < 0) {
+    perror("dup2 fd");
+    return -1;
+  }
+  if (close(fd2)) {
+    perror("close old fd");
+    return -1;
+  }
+  return fd;
+}
+
+static int
 pruby_init(void)
 {
   RUBY_INIT_STACK;
@@ -490,13 +508,29 @@ static PP_Bool
 Instance_DidCreate(PP_Instance instance,
                    uint32_t argc, const char* argn[], const char* argv[])
 {
-  int ret;
   struct PepperInstance* data = pruby_register_instance(instance);
   current_instance = instance;
 
   nacl_io_init_ppapi(instance, get_browser_interface);
 
-  // TODO(yugui) Mount devfs
+  if (mount("", "/dev2", "dev", 0, "")) {
+    perror("mount dev");
+    return PP_FALSE;
+  }
+  if (reopen_fd(0, "/dev2/stdin", O_RDONLY) < 0) {
+    perror("reopen stdin");
+    return PP_FALSE;
+  }
+  if (reopen_fd(1, "/dev2/stdout", O_WRONLY) < 0) {
+    perror("reopen stdout");
+    return PP_FALSE;
+  }
+  if (reopen_fd(2, "/dev2/console1", O_WRONLY) < 0) {
+    perror("reopen stderr");
+    return PP_FALSE;
+  }
+
+  /* TODO(yugui) Unmount original /dev */
 
   if (mount("/lib", "/lib", "httpfs",
         0, "allow_cross_origin_requests=false")) {
