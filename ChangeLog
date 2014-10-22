@@ -1,3 +1,8 @@
+Wed Oct 22 21:07:32 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* common.mk (build-ext): avoid trying to build dynamic libraries
+	  if configured --with-static-linked-ext.
+
 Wed Oct 22 20:33:33 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* common.mk: Fixed grammar in comment [ci skip]
