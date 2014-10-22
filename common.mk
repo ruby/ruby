@@ -1106,9 +1106,9 @@ UNICODE_FILES = $(srcdir)/enc/unicode/data/UnicodeData.txt \
 		$(srcdir)/enc/unicode/data/CompositionExclusions.txt \
 		$(srcdir)/enc/unicode/data/NormalizationTest.txt
 
-update-unicode: $(UNICODE_FILES) PHONY
+$(UNICODE_FILES): update-unicode
 
-$(UNICODE_FILES):
+update-unicode: PHONY
 	$(ECHO) Downloading Unicode data files...
 	$(Q) $(MAKEDIRS) "$(srcdir)/enc/unicode/data"
 	$(Q) $(BASERUBY) -C "$(srcdir)/enc/unicode/data" \

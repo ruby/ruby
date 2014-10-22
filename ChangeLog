@@ -1,4 +1,7 @@
-Thu Oct 23 02:25:32 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Oct 23 02:33:01 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (update-unicode): invert dependency to run every times.
+	  [ruby-core:65842] [Bug #10415]
 
 	* common.mk (after-update): update files under source tree.
 	  [ruby-core:65840] [Bug #10414]
