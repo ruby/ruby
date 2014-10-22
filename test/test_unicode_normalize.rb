@@ -12,7 +12,7 @@ class TestNormalize < Test::Unit::TestCase
   @@debug = false # if true, generation of explicit error messages is switched on
                   # false is about two times faster than true
   def read_tests
-    IO.readlines('../enc/unicode/data/NormalizationTest.txt')
+    IO.readlines(File.expand_path('../enc/unicode/data/NormalizationTest.txt', __dir__))
     .collect.with_index { |linedata, linenumber| [linedata, linenumber]}
     .reject { |line| line[0] =~ /^[\#@]/ }
     .collect do |line|
