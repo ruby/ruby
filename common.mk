@@ -1096,6 +1096,8 @@ update-gems: PHONY
 	    -e 'Downloader::RubyGems.download(gem)' \
 	    bundled_gems
 
+### set the following environment variable or uncomment the line if
+### the Unicode data files are updated every minuites.
 # ALWAYS_UPDATE_UNICODE = yes
 
 UNICODE_FILES = $(srcdir)/enc/unicode/data/UnicodeData.txt \
