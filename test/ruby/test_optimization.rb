@@ -87,6 +87,11 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_redefine_method('String', 'length', 'assert_nil "string".length')
   end
 
+  def test_string_size
+    assert_equal 6, "string".size
+    assert_redefine_method('String', 'size', 'assert_nil "string".size')
+  end
+
   def test_string_empty?
     assert_equal true, "".empty?
     assert_equal false, "string".empty?
@@ -109,6 +114,30 @@ class TestRubyOptimization < Test::Unit::TestCase
   def test_string_format
     assert_equal '2', '%d' % 2
     assert_redefine_method('String', '%', 'assert_equal 2, "%d" % 2')
+  end
+
+  def test_string_freeze
+    assert_equal "foo", "foo".freeze
+    assert_redefine_method('String', 'freeze', 'assert_nil "foo".freeze')
+  end
+
+  def test_string_eq_neq
+    %w(== !=).each do |m|
+      assert_redefine_method('String', m, <<-end)
+        assert_equal :b, ("a" #{m} "b").to_sym
+        b = 'b'
+        assert_equal :b, ("a" #{m} b).to_sym
+        assert_equal :b, (b #{m} "b").to_sym
+      end
+    end
+  end
+
+  def test_string_ltlt
+    assert_equal "", "" << ""
+    assert_equal "x", "x" << ""
+    assert_equal "x", "" << "x"
+    assert_equal "ab", "a" << "b"
+    assert_redefine_method('String', '<<', 'assert_equal "b", "a" << "b"')
   end
 
   def test_array_plus
@@ -143,6 +172,25 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal true, {}.empty?
     assert_equal false, {1=>1}.empty?
     assert_redefine_method('Hash', 'empty?', 'assert_nil({}.empty?); assert_nil({1=>1}.empty?)')
+  end
+
+  def test_hash_aref_with
+    h = { "foo" => 1 }
+    assert_equal 1, h["foo"]
+    assert_redefine_method('Hash', '[]', <<-end)
+      h = { "foo" => 1 }
+      assert_equal "foo", h["foo"]
+    end
+  end
+
+  def test_hash_aset_with
+    h = {}
+    assert_equal 1, h["foo"] = 1
+    assert_redefine_method('Hash', '[]=', <<-end)
+      h = {}
+      assert_equal 1, h["foo"] = 1, "assignment always returns value set"
+      assert_nil h["foo"]
+    end
   end
 
   class MyObj

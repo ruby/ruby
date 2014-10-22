@@ -45,12 +45,11 @@ if test "`RUBYOPT=- $BASERUBY -e 'p 42' 2>/dev/null`" = 42; then
     if test "`RUBYOPT=- $BASERUBY --disable=gems -e 'p 42' 2>/dev/null`" = 42; then
 	BASERUBY="$BASERUBY --disable=gems"
     fi
+    $BASERUBY -C "$srcdir/tool" downloader.rb -e gnu config.guess config.sub
 else
     BASERUBY="echo executable host ruby is required.  use --with-baseruby option.; false"
 fi
 AC_SUBST(BASERUBY)
-
-$BASERUBY -C "$srcdir/tool" downloader.rb -e gnu config.guess config.sub
 
 AC_DEFUN([RUBY_MINGW32],
 [AS_CASE(["$host_os"],
@@ -96,8 +95,15 @@ AC_DEFUN([RUBY_NACL],
                        [no], [nacl_cv_build_variant=glibc],
                        [yes], [nacl_cv_build_variant=newlib])])
 
-  AS_CASE(["$build_cpu"],
-          [x86_64|i?86], [nacl_cv_cpu_nick=x86], [nacl_cv_cpu_nick=$build_cpu])
+  AS_CASE(["$target_cpu"],
+          [x86_64], [nacl_cv_cpu_nick=x86
+                     nacl_cv_cpu_nick2=x86_64],
+          [i?86], [nacl_cv_cpu_nick=x86
+                   nacl_cv_cpu_nick2=x86_32],
+          [le32], [nacl_cv_cpu_nick=pnacl
+                   nacl_cv_cpu_nick2=pnacl
+                   ac_cv_exeext=.pexe],
+          [nacl_cv_cpu_nick=$target_cpu])
   AS_CASE(["$build_os"],
           [linux*], [nacl_cv_os_nick=linux],
           [darwin*], [nacl_cv_os_nick=mac],
@@ -108,9 +114,15 @@ AC_DEFUN([RUBY_NACL],
   ac_tool_prefix="$host_cpu-nacl-"
 
   AC_MSG_CHECKING([NativeClient toolchain])
-  if test -d \
+  if test x"$nacl_cv_cpu_nick" = xpnacl; then
+    NACL_TOOLCHAIN="${nacl_cv_os_nick}_pnacl"
+    ac_tool_prefix=pnacl-
+  elif test -d \
     "${NACL_SDK_ROOT}/toolchain/${nacl_cv_os_nick}_${nacl_cv_cpu_nick}_${nacl_cv_build_variant}"; then
     NACL_TOOLCHAIN="${nacl_cv_os_nick}_${nacl_cv_cpu_nick}_${nacl_cv_build_variant}"
+  elif test -d \
+    "${NACL_SDK_ROOT}/toolchain/${nacl_cv_os_nick}_x86_${nacl_cv_cpu_nick}/${nacl_cv_build_variant}"; then
+    NACL_TOOLCHAIN="${nacl_cv_os_nick}_x86_${nacl_cv_cpu_nick}/${nacl_cv_build_variant}"
   else
     AS_CASE(
       ["${nacl_cv_build_variant}"],
@@ -138,10 +150,32 @@ AC_DEFUN([RUBY_NACL],
   if ! echo -- "${PATH}" | grep -F "${NACL_SDK_ROOT}/toolchain/${NACL_TOOLCHAIN}/bin" > /dev/null; then
     PATH="${PATH}:${NACL_SDK_ROOT}/toolchain/${NACL_TOOLCHAIN}/bin"
   fi
+  AC_MSG_RESULT(${NACL_SDK_ROOT}/toolchain/${NACL_TOOLCHAIN}/bin)
+
+  RUBY_APPEND_OPTIONS(XCFLAGS, '-I$(NACL_SDK_ROOT)/include')
+  if test x"${nacl_cv_cpu_nick}" = xpnacl; then
+    RUBY_APPEND_OPTIONS(XCFLAGS, '-isystem $(NACL_SDK_ROOT)/include/pnacl')
+  elif test x"${nacl_cv_build_variant}" = xnewlib; then
+    RUBY_APPEND_OPTIONS(XCFLAGS, '-isystem $(NACL_SDK_ROOT)/include/newlib')
+  fi
+
+  AC_MSG_CHECKING([nacl library path])
+  if test -d "${NACL_SDK_ROOT}/lib/${nacl_cv_build_variant}_${nacl_cv_cpu_nick2}/Release"; then
+    nacl_cv_libpath="${nacl_cv_build_variant}_${nacl_cv_cpu_nick2}"
+  elif test -d "${NACL_SDK_ROOT}/lib/${nacl_cv_cpu_nick2}/Release"; then
+    nacl_cv_libpath="${nacl_cv_cpu_nick2}"
+  else
+    AC_MSG_ERROR([not found])
+  fi
+  AC_MSG_RESULT([${nacl_cv_libpath}])
+  RUBY_APPEND_OPTIONS(XLDFLAGS, '-L$(NACL_SDK_ROOT)/'"lib/${nacl_cv_libpath}/Release")
 
   AC_SUBST(NACL_TOOLCHAIN)
   AC_SUBST(NACL_SDK_ROOT)
-  AC_SUBST(NACL_SDK_VARIANT, nacl_cv_build_variant)
+  AC_SUBST(NACL_SDK_VARIANT, "${nacl_cv_build_variant}")
+  AC_SUBST(NACL_LIB_PATH, "${nacl_cv_libpath}")
+  AC_CHECK_TOOLS(CC, [clang gcc])
+  AC_CHECK_TOOLS(CXX, [clang++ g++])
 ])])
 
 AC_DEFUN([RUBY_NACL_CHECK_PEPPER_TYPES],
@@ -791,12 +825,16 @@ fi
 RUBY_TRY_CFLAGS(-Qunused-arguments, [RUBY_APPEND_OPTIONS(rb_cv_wsuppress_flags, -Qunused-arguments)])
 
 if test "$GCC" = yes; then
-    # -D_FORTIFY_SOURCE
-    # When defined _FORTIFY_SOURCE, glibc enables some additional sanity
-    # argument check. The performance drop is very little and Ubuntu enables
-    # _FORTIFY_SOURCE=2 by default. So, let's support it for protecting us from
-    # a mistake of silly C extensions.
-    RUBY_TRY_CFLAGS(-D_FORTIFY_SOURCE=2, [RUBY_APPEND_OPTION(XCFLAGS, -D_FORTIFY_SOURCE=2)])
+    # NaCl's glibc build generates undefined references to __memset_chk.
+    # TODO(sbc): Remove this once NaCl's glibc is fixed.
+    AS_CASE(["$target_os"], [nacl], [], [
+      # -D_FORTIFY_SOURCE
+      # When defined _FORTIFY_SOURCE, glibc enables some additional sanity
+      # argument check. The performance drop is very little and Ubuntu enables
+      # _FORTIFY_SOURCE=2 by default. So, let's support it for protecting us from
+      # a mistake of silly C extensions.
+      RUBY_TRY_CFLAGS(-D_FORTIFY_SOURCE=2, [RUBY_APPEND_OPTION(XCFLAGS, -D_FORTIFY_SOURCE=2)])
+   ])
 
     # -fstack-protector
     AS_CASE(["$target_os"],
@@ -822,7 +860,7 @@ if test "$GCC" = yes; then
       # comments.   We  bypass  ANSI   C  mode  for  them.   Otherwise
       # extension libs cannot include those headers.
     ],
-    [cygwin*|darwin*|netbsd*], [
+    [cygwin*|darwin*|netbsd*|nacl], [
       # need lgamma_r(), finite()
     ],
     [haiku], [
@@ -1087,12 +1125,9 @@ main()
   LIBS="-lm $LIBS"
   if test "${nacl_cv_build_variant}" = "newlib"; then
     RUBY_APPEND_OPTION(CPPFLAGS, -DNACL_NEWLIB)
-    RUBY_APPEND_OPTION(LIBS, '-lnosys')
   else
     RUBY_APPEND_OPTION(XCFLAGS, -fPIC)
   fi
-  ac_cv_func_shutdown=no
-  ac_cv_func_fcntl=no
   ],
 [	LIBS="-lm $LIBS"])
 
@@ -1609,6 +1644,7 @@ if test "$GCC" = yes; then
 			__atomic_exchange_n(&atomic_var, 1, __ATOMIC_SEQ_CST);
 			__atomic_fetch_add(&atomic_var, 1, __ATOMIC_SEQ_CST);
 			__atomic_fetch_sub(&atomic_var, 1, __ATOMIC_SEQ_CST);
+			__atomic_or_fetch(&atomic_var, 1, __ATOMIC_SEQ_CST);
 		    ],
 		    [rb_cv_gcc_atomic_builtins=yes],
 		    [rb_cv_gcc_atomic_builtins=no])])
@@ -1623,6 +1659,8 @@ if test "$GCC" = yes; then
 			__sync_lock_test_and_set(&atomic_var, 1);
 			__sync_fetch_and_add(&atomic_var, 1);
 			__sync_fetch_and_sub(&atomic_var, 1);
+			__sync_or_and_fetch(&atomic_var, 1);
+			__sync_val_compare_and_swap(&atomic_var, 0, 1);
 		    ],
 		    [rb_cv_gcc_sync_builtins=yes],
 		    [rb_cv_gcc_sync_builtins=no])])
@@ -1994,6 +2032,7 @@ AC_CHECK_FUNCS(ftruncate)
 AC_CHECK_FUNCS(ftruncate64)		# used for Win32 platform
 AC_CHECK_FUNCS(getcwd)
 AC_CHECK_FUNCS(getgidx)
+AC_CHECK_FUNCS(getgrnam)
 AC_CHECK_FUNCS(getgrnam_r)
 AC_CHECK_FUNCS(getgroups)
 AC_CHECK_FUNCS(getpgid)
@@ -2036,6 +2075,7 @@ AC_CHECK_FUNCS(pread)
 AC_CHECK_FUNCS(qsort_r)
 AC_CHECK_FUNCS(readlink)
 AC_CHECK_FUNCS(round)
+AC_CHECK_FUNCS(sched_getaffinity)
 AC_CHECK_FUNCS(seekdir)
 AC_CHECK_FUNCS(select_large_fdset)
 AC_CHECK_FUNCS(sendfile)
@@ -4017,7 +4057,8 @@ if test "${universal_binary-no}" = yes ; then
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "universal."RUBY_PLATFORM_CPU"-"RUBY_PLATFORM_OS)
 else
     arch="${target_cpu}-${target_os}"
-    AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "${arch}")
+    AS_CASE(["$arch"], [le32-nacl], [arch="pnacl"])
+    AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "$arch")
 fi
 
 unset sitearch

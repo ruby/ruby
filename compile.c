@@ -5567,7 +5567,7 @@ iseq_build_from_ary_exception(rb_iseq_t *iseq, struct st_table *labels_table,
 	LABEL *lstart, *lend, *lcont;
 	int sp;
 
-	RB_GC_GUARD(v) = rb_convert_type(RARRAY_AREF(exception, i), T_ARRAY,
+	v = rb_convert_type(RARRAY_AREF(exception, i), T_ARRAY,
 					 "Array", "to_ary");
 	if (RARRAY_LEN(v) != 6) {
 	    rb_raise(rb_eSyntaxError, "wrong exception entry");
@@ -5589,6 +5589,8 @@ iseq_build_from_ary_exception(rb_iseq_t *iseq, struct st_table *labels_table,
 	(void)sp;
 
 	ADD_CATCH_ENTRY(type, lstart, lend, eiseqval, lcont);
+
+	RB_GC_GUARD(v);
     }
     return COMPILE_OK;
 }
@@ -5662,9 +5664,9 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 	    insn = (argc < 0) ? Qnil : RARRAY_AREF(obj, 0);
 	    if (st_lookup(insn_table, (st_data_t)insn, &insn_id) == 0) {
 		/* TODO: exception */
-		RB_GC_GUARD(insn) = rb_inspect(insn);
 		rb_compile_error(RSTRING_PTR(iseq->location.path), line_no,
-				 "unknown instruction: %s", RSTRING_PTR(insn));
+				 "unknown instruction: %"PRIsVALUE,
+				 rb_inspect(insn));
 	    }
 
 	    if (argc != insn_len((VALUE)insn_id)-1) {

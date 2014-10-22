@@ -392,7 +392,7 @@ typedef unsigned int  BitStatusType;
 #define BIT_STATUS_CLEAR(stats)      (stats) = 0
 #define BIT_STATUS_ON_ALL(stats)     (stats) = ~((BitStatusType )0)
 #define BIT_STATUS_AT(stats,n) \
-  ((n) < (int )BIT_STATUS_BITS_NUM  ?  ((stats) & (1 << n)) : ((stats) & 1))
+  ((n) < (int )BIT_STATUS_BITS_NUM  ?  ((stats) & ((BitStatusType)1 << n)) : ((stats) & 1))
 
 #define BIT_STATUS_ON_AT(stats,n) do {\
     if ((n) < (int )BIT_STATUS_BITS_NUM)	\
@@ -468,7 +468,7 @@ typedef Bits*          BitSetRef;
 } while (0)
 
 #define BS_ROOM(bs,pos)            (bs)[(int )(pos) / BITS_IN_ROOM]
-#define BS_BIT(pos)                (1 << ((int )(pos) % BITS_IN_ROOM))
+#define BS_BIT(pos)                (1U << ((int )(pos) % BITS_IN_ROOM))
 
 #define BITSET_AT(bs, pos)         (BS_ROOM(bs,pos) & BS_BIT(pos))
 #define BITSET_SET_BIT(bs, pos)     BS_ROOM(bs,pos) |= BS_BIT(pos)

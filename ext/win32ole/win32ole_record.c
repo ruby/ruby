@@ -7,7 +7,8 @@ struct olerecorddata {
 
 static HRESULT recordinfo_from_itypelib(ITypeLib *pTypeLib, VALUE name, IRecordInfo **ppri);
 static int hash2olerec(VALUE key, VALUE val, VALUE rec);
-static void olerecord_free(struct olerecorddata *pvar);
+static void olerecord_free(void *pvar);
+static size_t olerecord_size(const void *ptr);
 static VALUE folerecord_s_allocate(VALUE klass);
 static VALUE folerecord_initialize(VALUE self, VALUE typename, VALUE oleobj);
 static VALUE folerecord_to_h(VALUE self);
@@ -18,6 +19,12 @@ static VALUE folerecord_method_missing(int argc, VALUE *argv, VALUE self);
 static VALUE folerecord_ole_instance_variable_get(VALUE self, VALUE name);
 static VALUE folerecord_ole_instance_variable_set(VALUE self, VALUE name, VALUE val);
 static VALUE folerecord_inspect(VALUE self);
+
+static const rb_data_type_t olerecord_datatype = {
+    "win32ole_record",
+    {NULL, olerecord_free, olerecord_size,},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+};
 
 static HRESULT
 recordinfo_from_itypelib(ITypeLib *pTypeLib, VALUE name, IRecordInfo **ppri)
@@ -61,7 +68,7 @@ hash2olerec(VALUE key, VALUE val, VALUE rec)
     HRESULT hr;
 
     if (val != Qnil) {
-        Data_Get_Struct(rec, struct olerecorddata, prec);
+        TypedData_Get_Struct(rec, struct olerecorddata, &olerecord_datatype, prec);
         pri = prec->pri;
         VariantInit(&var);
         ole_val2variant(val, &var);
@@ -84,7 +91,7 @@ ole_rec2variant(VALUE rec, VARIANT *var)
     IRecordInfo *pri;
     HRESULT hr;
     VALUE fields;
-    Data_Get_Struct(rec, struct olerecorddata, prec);
+    TypedData_Get_Struct(rec, struct olerecorddata, &olerecord_datatype, prec);
     pri = prec->pri;
     if (pri) {
         hr = pri->lpVtbl->GetSize(pri, &size);
@@ -126,7 +133,7 @@ olerecord_set_ivar(VALUE obj, IRecordInfo *pri, void *prec)
     void *pdata = NULL;
     struct olerecorddata *pvar;
 
-    Data_Get_Struct(obj, struct olerecorddata, pvar);
+    TypedData_Get_Struct(obj, struct olerecorddata, &olerecord_datatype, pvar);
     OLE_ADDREF(pri);
     OLE_RELEASE(pvar->pri);
     pvar->pri = pri;
@@ -206,7 +213,8 @@ create_win32ole_record(IRecordInfo *pri, void *prec)
  */
 
 static void
-olerecord_free(struct olerecorddata *pvar) {
+olerecord_free(void *ptr) {
+    struct olerecorddata *pvar = ptr;
     OLE_FREE(pvar->pri);
     if (pvar->pdata) {
         free(pvar->pdata);
@@ -214,11 +222,30 @@ olerecord_free(struct olerecorddata *pvar) {
     free(pvar);
 }
 
+static size_t
+olerecord_size(const void *ptr)
+{
+    const struct olerecorddata *pvar = ptr;
+    size_t s = 0;
+    ULONG size = 0;
+    HRESULT hr;
+    if (ptr) {
+        s += sizeof(struct olerecorddata);
+        if (pvar->pri) {
+            hr = pvar->pri->lpVtbl->GetSize(pvar->pri, &size);
+            if (SUCCEEDED(hr)) {
+                s += size;
+            }
+        }
+    }
+    return s;
+}
+
 static VALUE
 folerecord_s_allocate(VALUE klass) {
     VALUE obj = Qnil;
     struct olerecorddata *pvar;
-    obj = Data_Make_Struct(klass, struct olerecorddata, 0, olerecord_free, pvar);
+    obj = TypedData_Make_Struct(klass, struct olerecorddata, &olerecord_datatype, pvar);
     pvar->pri = NULL;
     pvar->pdata = NULL;
     return obj;

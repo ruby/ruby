@@ -94,6 +94,8 @@ module Tk
   autoload :Y_Scrollable,     'tk/scrollable'
   autoload :Scrollable,       'tk/scrollable'
 
+  autoload :Fontchooser,      'tk/fontchooser'
+
   autoload :Wm,               'tk/wm'
   autoload :Wm_for_General,   'tk/wm'
 

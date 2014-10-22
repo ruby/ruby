@@ -23,6 +23,15 @@ static VALUE rb_cBacktraceLocation;
 
 extern VALUE ruby_engine_name;
 
+static VALUE
+id2str(ID id)
+{
+    VALUE str = rb_id2str(id);
+    if (!str) return Qnil;
+    return str;
+}
+#define rb_id2str(id) id2str(id)
+
 inline static int
 calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
 {
@@ -288,14 +297,18 @@ location_absolute_path_m(VALUE self)
 static VALUE
 location_format(VALUE file, int lineno, VALUE name)
 {
+    VALUE s = rb_enc_sprintf(rb_enc_compatible(file, name), "%s", RSTRING_PTR(file));
     if (lineno != 0) {
-	return rb_enc_sprintf(rb_enc_compatible(file, name), "%s:%d:in `%s'",
-			      RSTRING_PTR(file), lineno, RSTRING_PTR(name));
+	rb_str_catf(s, ":%d", lineno);
+    }
+    rb_str_cat_cstr(s, ":in ");
+    if (NIL_P(name)) {
+	rb_str_cat_cstr(s, "unknown method");
     }
     else {
-	return rb_enc_sprintf(rb_enc_compatible(file, name), "%s:in `%s'",
-			      RSTRING_PTR(file), RSTRING_PTR(name));
+	rb_str_catf(s, "`%s'", RSTRING_PTR(name));
     }
+    return s;
 }
 
 static VALUE
@@ -1146,7 +1159,7 @@ collect_caller_bindings(rb_thread_t *th)
 
 	if (!NIL_P(cfp_val)) {
 	    rb_control_frame_t *cfp = GC_GUARDED_PTR_REF(cfp_val);
-	    rb_ary_store(entry, CALLER_BINDING_BINDING, rb_binding_new_with_cfp(th, cfp));
+	    rb_ary_store(entry, CALLER_BINDING_BINDING, rb_vm_make_binding(th, cfp));
 	}
     }
 

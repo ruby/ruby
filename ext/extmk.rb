@@ -724,6 +724,7 @@ if $configure_only and $command_output
     rubies.each do |tgt|
       mf.puts "#{tgt}:\n\t#{submake} $@"
     end
+    mf.puts "ext/extinit.#{$OBJEXT}:\n\t$(Q)$(MAKE) $(MFLAGS) V=$(V) $@" if $static
     mf.puts
     if $gnumake == "yes"
       submake = "$(MAKE) -C $(@D)"

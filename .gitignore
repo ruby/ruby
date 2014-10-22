@@ -105,6 +105,8 @@ y.tab.c
 /benchmark/fasta.output.*
 /benchmark/wc.input
 
+/enc/unicode/data/*.txt
+
 # /enc/trans/
 /enc/trans/*.c
 
@@ -138,6 +140,8 @@ y.tab.c
 
 # /gems
 /gems/*.gem
+
+/lib/unicode_normalize/tables.rb
 
 # /spec/
 /spec/mspec

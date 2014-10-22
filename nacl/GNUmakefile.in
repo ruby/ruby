@@ -7,45 +7,58 @@ include Makefile
 NACL_SDK_ROOT=@NACL_SDK_ROOT@
 NACL_TOOLCHAIN=@NACL_TOOLCHAIN@
 NACL_TOOLCHAIN_DIR=$(NACL_SDK_ROOT)/toolchain/$(NACL_TOOLCHAIN)
+CXX=@CXX@
+
+# Don't override CC/LD/etc if they are already set to absolute
+# paths (this is the case when building in the naclports tree).
+ifeq ($(dir $(CC)),./)
 CC:=$(NACL_TOOLCHAIN_DIR)/bin/$(CC)
+endif
+ifeq ($(dir $(CXX)),./)
+CXX:=$(NACL_TOOLCHAIN_DIR)/bin/$(CXX)
+endif
+ifeq ($(dir $(LD)),./)
 LD:=$(NACL_TOOLCHAIN_DIR)/bin/$(LD)
+endif
+ifeq ($(dir $(NM)),./)
 NM:=$(NACL_TOOLCHAIN_DIR)/bin/$(NM)
+endif
+ifeq ($(dir $(AR)),./)
 AR:=$(NACL_TOOLCHAIN_DIR)/bin/$(AR)
+endif
+ifeq ($(dir $(AS)),./)
 AS:=$(NACL_TOOLCHAIN_DIR)/bin/$(AS)
+endif
+ifeq ($(dir $(RANLIB)),./)
 RANLIB:=$(NACL_TOOLCHAIN_DIR)/bin/$(RANLIB)
+endif
+ifeq ($(dir $(OBJDUMP)),./)
 OBJDUMP:=$(NACL_TOOLCHAIN_DIR)/bin/$(OBJDUMP)
+endif
+ifeq ($(dir $(OBJCOPY)),./)
 OBJCOPY:=$(NACL_TOOLCHAIN_DIR)/bin/$(OBJCOPY)
+endif
 PYTHON=@PYTHON@
 
 PPROGRAM=pepper-$(PROGRAM)
-PEPPER_LIBS=-lppapi
-PROGRAM_NMF=$(PROGRAM:.nexe=.nmf)
-PPROGRAM_NMF=$(PPROGRAM:.nexe=.nmf)
+PEPPER_LIBS=-lppapi -lnacl_io
+PROGRAM_NMF=$(PROGRAM:$(EXEEXT)=.nmf)
+PPROGRAM_NMF=$(PPROGRAM:$(EXEEXT)=.nmf)
 
 GNUmakefile: $(srcdir)/nacl/GNUmakefile.in
 $(PPROGRAM): $(PROGRAM) pepper_main.$(OBJEXT)
-	$(Q)$(MAKE) $(MFLAGS) PROGRAM=$(PPROGRAM) MAINOBJ="pepper_main.$(OBJEXT)" LIBS="$(LIBS) $(PEPPER_LIBS)" program
-$(PROGRAM_NMF) $(PPROGRAM_NMF): $(@:.nmf=.nexe) nacl/create_nmf.rb
+	$(Q)$(MAKE) $(MFLAGS) PROGRAM=$(PPROGRAM) MAINOBJ="pepper_main.$(OBJEXT)" LIBS="$(LIBS) $(PEPPER_LIBS)" CC="$(CXX)" program
+$(PROGRAM_NMF) $(PPROGRAM_NMF): $(@:.nmf=$(EXEEXT)) nacl/create_nmf.rb
 
 .PHONY: pprogram package show_naclflags
-.SUFFIXES: .nexe .nmf
-.nexe.nmf:
+.SUFFIXES: $(EXEEXT) .nmf
+$(EXEEXT).nmf:
 	$(ECHO) generating manifest $@
-	$(Q)$(MINIRUBY) $(srcdir)/nacl/create_nmf.rb --verbose=$(V) $(@:.nmf=.nexe) $@
+	$(Q)$(MINIRUBY) $(srcdir)/nacl/create_nmf.rb --verbose=$(V) $(@:.nmf=$(EXEEXT)) $@
 
 pepper_main.$(OBJEXT): $(srcdir)/nacl/pepper_main.c
 	@$(ECHO) compiling nacl/pepper_main.c
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(srcdir)/nacl/pepper_main.c
-ruby.$(OBJEXT):
-	@$(ECHO) compiling $<
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@.tmp -c $<
-	$(Q) $(OBJCOPY) --weaken-symbol=rb_load_file $@.tmp $@
-	@-$(RM) $@.tmp
-file.$(OBJEXT):
-	@$(ECHO) compiling $<
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@.tmp -c $<
-	$(Q) $(OBJCOPY) --weaken-symbol=rb_file_load_ok $@.tmp $@
-	@-$(RM) $@.tmp
 
 .rbconfig.time:
 	@$(MAKE) .rbconfig.raw.time RBCONFIG=.rbconfig.raw.time

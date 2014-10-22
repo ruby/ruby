@@ -1925,8 +1925,9 @@ EOS
       begin
         $stderr.reopen($stdout)
         trap(:QUIT) {}
+        parent = $$
         100.times do |i|
-          pid = fork {Process.kill(:QUIT, Process.ppid)}
+          pid = fork {Process.kill(:QUIT, parent)}
           IO.popen(ruby, 'r+'){}
           Process.wait(pid)
           $stdout.puts

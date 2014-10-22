@@ -9051,7 +9051,7 @@ Init_date_core(void)
      * The calendar week is a seven day period within a calendar year,
      * starting on a Monday and identified by its ordinal number within
      * the year; the first calendar week of the year is the one that
-     * includes the first Thursday of that year.  In the Gregorian
+     * includes the first Thursday of that year. In the Gregorian
      * calendar, this is equivalent to the week which includes January 4.
      *
      * In those classes, this so-called "commercial".
@@ -9062,8 +9062,8 @@ Init_date_core(void)
      * time) on January 1, 4713 BCE (in the Julian calendar).
      *
      * In this document, the astronomical Julian day number is same as the
-     * original Julian day number.  And the chronological Julian day
-     * number is a variation of the Julian day number.  Its days begin at
+     * original Julian day number. And the chronological Julian day
+     * number is a variation of the Julian day number. Its days begin at
      * midnight on local time.
      *
      * In this document, when the term "Julian day number" simply appears,
@@ -9079,9 +9079,9 @@ Init_date_core(void)
      * Gregorian calendar).
      *
      * In this document, the astronomical modified Julian day number is
-     * same as the original modified Julian day number.  And the
+     * same as the original modified Julian day number. And the
      * chronological modified Julian day number is a variation of the
-     * modified Julian day number.  Its days begin at midnight on local
+     * modified Julian day number. Its days begin at midnight on local
      * time.
      *
      * In this document, when the term "modified Julian day number" simply
@@ -9090,10 +9090,9 @@ Init_date_core(void)
      *
      * In those classes, this is so-called "mjd".
      *
-     *
      * == Date
      *
-     * A subclass of Object includes Comparable module, easily handles
+     * A subclass of Object that includes Comparable module and easily handles
      * date.
      *
      * Date object is created with Date::new, Date::jd, Date::ordinal,
@@ -9102,14 +9101,20 @@ Init_date_core(void)
      *
      *     require 'date'
      *
-     *     Date.new(2001,2,3)		#=> #<Date: 2001-02-03 ...>
-     *     Date.jd(2451944)		#=> #<Date: 2001-02-03 ...>
-     *     Date.ordinal(2001,34)	#=> #<Date: 2001-02-03 ...>
-     *     Date.commercial(2001,5,6)	#=> #<Date: 2001-02-03 ...>
-     *     Date.parse('2001-02-03')	#=> #<Date: 2001-02-03 ...>
+     *     Date.new(2001,2,3)
+     *	    #=> #<Date: 2001-02-03 ...>
+     *     Date.jd(2451944)
+     *	    #=> #<Date: 2001-02-03 ...>
+     *     Date.ordinal(2001,34)
+     *	    #=> #<Date: 2001-02-03 ...>
+     *     Date.commercial(2001,5,6)
+     *	    #=> #<Date: 2001-02-03 ...>
+     *     Date.parse('2001-02-03')
+     *	    #=> #<Date: 2001-02-03 ...>
      *     Date.strptime('03-02-2001', '%d-%m-%Y')
-     *					#=> #<Date: 2001-02-03 ...>
-     *     Time.new(2001,2,3).to_date	#=> #<Date: 2001-02-03 ...>
+     *	    #=> #<Date: 2001-02-03 ...>
+     *     Time.new(2001,2,3).to_date
+     *	    #=> #<Date: 2001-02-03 ...>
      *
      * All date objects are immutable; hence cannot modify themselves.
      *
@@ -9117,11 +9122,11 @@ Init_date_core(void)
      * of the day count, the offset and the day of calendar reform.
      *
      * The day count denotes the absolute position of a temporal
-     * dimension.  The offset is relative adjustment, which determines
-     * decoded local time with the day count.  The day of calendar
-     * reform denotes the start day of the new style.  The old style
+     * dimension. The offset is relative adjustment, which determines
+     * decoded local time with the day count. The day of calendar
+     * reform denotes the start day of the new style. The old style
      * of the West is the Julian calendar which was adopted by
-     * Caersar.  The new style is the Gregorian calendar, which is the
+     * Caesar. The new style is the Gregorian calendar, which is the
      * current civil calendar of many countries.
      *
      * The day count is virtually the astronomical Julian day number.
@@ -9162,10 +9167,10 @@ Init_date_core(void)
      *
      * == DateTime
      *
-     * A subclass of Date easily handles date, hour, minute, second and
+     * A subclass of Date that easily handles date, hour, minute, second and
      * offset.
      *
-     * DateTime does not consider any leapseconds, does not track
+     * DateTime does not consider any leap seconds, does not track
      * any summer time rules.
      *
      * DateTime object is created with DateTime::new, DateTime::jd,
@@ -9177,7 +9182,7 @@ Init_date_core(void)
      *     DateTime.new(2001,2,3,4,5,6)
      *				#=> #<DateTime: 2001-02-03T04:05:06+00:00 ...>
      *
-     * The last element of day, hour, minute or senond can be
+     * The last element of day, hour, minute or second can be
      * fractional number. The fractional number's precision is assumed
      * at most nanosecond.
      *
@@ -9185,14 +9190,15 @@ Init_date_core(void)
      *				#=> #<DateTime: 2001-02-03T12:00:00+00:00 ...>
      *
      * An optional argument the offset indicates the difference
-     * between the local time and UTC.  For example, Rational(3,24)
+     * between the local time and UTC. For example, Rational(3,24)
      * represents ahead of 3 hours of UTC, Rational(-5,24) represents
-     * behind of 5 hours of UTC.  The offset should be -1 to +1, and
-     * its precision is assumed at most second.  The default value is
-     * zero (equals to UTC).
+     * behind of 5 hours of UTC. The offset should be -1 to +1, and
+     * its precision is assumed at most second. The default value is
+     * zero(equals to UTC).
      *
      *     DateTime.new(2001,2,3,4,5,6,Rational(3,24))
      *				#=> #<DateTime: 2001-02-03T04:05:06+03:00 ...>
+     *
      * also accepts string form.
      *
      *     DateTime.new(2001,2,3,4,5,6,'+03:00')

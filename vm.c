@@ -688,6 +688,39 @@ rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass)
     return procval;
 }
 
+/* Binding */
+
+VALUE
+rb_vm_make_binding(rb_thread_t *th, const rb_control_frame_t *src_cfp)
+{
+    rb_control_frame_t *cfp = rb_vm_get_binding_creatable_next_cfp(th, src_cfp);
+    rb_control_frame_t *ruby_level_cfp = rb_vm_get_ruby_level_next_cfp(th, src_cfp);
+    VALUE bindval, envval;
+    rb_binding_t *bind;
+    VALUE blockprocval = 0;
+
+    if (cfp == 0 || ruby_level_cfp == 0) {
+	rb_raise(rb_eRuntimeError, "Can't create Binding Object on top of Fiber.");
+    }
+
+    while (1) {
+	envval = vm_make_env_object(th, cfp, &blockprocval);
+	if (cfp == ruby_level_cfp) {
+	    break;
+	}
+	cfp = rb_vm_get_binding_creatable_next_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
+    }
+
+    bindval = rb_binding_alloc(rb_cBinding);
+    GetBindingPtr(bindval, bind);
+    bind->env = envval;
+    bind->path = ruby_level_cfp->iseq->location.path;
+    bind->blockprocval = blockprocval;
+    bind->first_lineno = rb_vm_get_sourceline(ruby_level_cfp);
+
+    return bindval;
+}
+
 VALUE *
 rb_binding_add_dynavars(rb_binding_t *bind, int dyncount, const ID *dynvars)
 {
@@ -699,6 +732,7 @@ rb_binding_add_dynavars(rb_binding_t *bind, int dyncount, const ID *dynvars)
     NODE *node = 0;
     ID minibuf[4], *dyns = minibuf;
     VALUE idtmp = 0;
+    VALUE blockprocval = 0;
 
     if (dyncount < 0) return 0;
 
@@ -719,7 +753,8 @@ rb_binding_add_dynavars(rb_binding_t *bind, int dyncount, const ID *dynvars)
     ALLOCV_END(idtmp);
 
     vm_set_eval_stack(th, iseqval, 0, base_block);
-    bind->env = rb_vm_make_env_object(th, th->cfp);
+    bind->env = vm_make_env_object(th, th->cfp, &blockprocval);
+    bind->blockprocval = blockprocval;
     vm_pop_frame(th);
     GetEnvPtr(bind->env, env);
 
@@ -1967,6 +2002,8 @@ rb_thread_recycle_stack_release(VALUE *stack)
     ruby_xfree(stack);
 }
 
+void rb_fiber_mark_self(rb_fiber_t *fib);
+
 void
 rb_thread_mark(void *ptr)
 {
@@ -2013,8 +2050,8 @@ rb_thread_mark(void *ptr)
 	RUBY_MARK_UNLESS_NULL(th->root_svar);
 	RUBY_MARK_UNLESS_NULL(th->top_self);
 	RUBY_MARK_UNLESS_NULL(th->top_wrapper);
-	RUBY_MARK_UNLESS_NULL(th->fiber);
-	RUBY_MARK_UNLESS_NULL(th->root_fiber);
+	rb_fiber_mark_self(th->fiber);
+	rb_fiber_mark_self(th->root_fiber);
 	RUBY_MARK_UNLESS_NULL(th->stat_insn_usage);
 	RUBY_MARK_UNLESS_NULL(th->last_status);
 
@@ -2343,20 +2380,10 @@ m_core_hash_merge_ptr(int argc, VALUE *argv, VALUE recv)
 }
 
 static int
-kwmerge_ii(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
-{
-    if (existing) return ST_STOP;
-    *value = arg;
-    return ST_CONTINUE;
-}
-
-static int
 kwmerge_i(VALUE key, VALUE value, VALUE hash)
 {
     if (!SYMBOL_P(key)) Check_Type(key, T_SYMBOL);
-    if (st_update(RHASH_TBL_RAW(hash), key, kwmerge_ii, (st_data_t)value) == 0) { /* !existing */
-	RB_OBJ_WRITTEN(hash, Qundef, value);
-    }
+    rb_hash_aset(hash, key, value);
     return ST_CONTINUE;
 }
 
@@ -3034,7 +3061,7 @@ vm_collect_usage_operand(int insn, int n, VALUE op)
 }
 
 /* @param reg register id. see code of vm_analysis_register() */
-/* @param iseset 0: read, 1: write */
+/* @param isset 0: read, 1: write */
 static void
 vm_collect_usage_register(int reg, int isset)
 {

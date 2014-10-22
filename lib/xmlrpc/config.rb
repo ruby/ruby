@@ -18,6 +18,7 @@ module XMLRPC # :nodoc:
     # * XMLParser::XMLStreamParser (fastest)
     # * XMLParser::REXMLStreamParser
     # * XMLParser::XMLScanStreamParser
+    # * XMLParser::LibXMLStreamParser
     DEFAULT_PARSER = XMLParser::REXMLStreamParser
 
     # enable <code><nil/></code> tag

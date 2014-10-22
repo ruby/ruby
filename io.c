@@ -32,9 +32,7 @@
 #if defined HAVE_NET_SOCKET_H
 # include <net/socket.h>
 #elif defined HAVE_SYS_SOCKET_H
-# ifndef __native_client__
-#  include <sys/socket.h>
-# endif
+# include <sys/socket.h>
 #endif
 
 #if defined(__BOW__) || defined(__CYGWIN__) || defined(_WIN32) || defined(__EMX__) || defined(__BEOS__) || defined(__HAIKU__)
@@ -53,9 +51,6 @@
 #if defined(HAVE_SYS_IOCTL_H) && !defined(_WIN32)
 #include <sys/ioctl.h>
 #endif
-#if defined(__native_client__) && defined(NACL_NEWLIB)
-# include "nacl/ioctl.h"
-#endif
 #if defined(HAVE_FCNTL_H) || defined(_WIN32)
 #include <fcntl.h>
 #elif defined(HAVE_SYS_FCNTL_H)
@@ -71,6 +66,10 @@
 # define PRI_OFF_T_PREFIX "l"
 #else
 # define PRI_OFF_T_PREFIX ""
+#endif
+
+#ifdef HAVE_SYS_TIME_H
+# include <sys/time.h>
 #endif
 
 #include <sys/stat.h>
@@ -129,6 +128,13 @@
 #if defined(HAVE___SYSCALL) && (defined(__APPLE__) || defined(__OpenBSD__))
 /* Mac OS X and OpenBSD have __syscall but don't define it in headers */
 off_t __syscall(quad_t number, ...);
+#endif
+
+#ifdef __native_client__
+# undef F_GETFD
+# ifdef NACL_NEWLIB
+#  undef HAVE_IOCTL
+# endif
 #endif
 
 #define IO_RBUF_CAPA_MIN  8192
@@ -243,7 +249,7 @@ rb_fd_fix_cloexec(int fd)
 static int
 rb_fix_detect_o_cloexec(int fd)
 {
-#ifdef O_CLOEXEC
+#if defined(O_CLOEXEC) && defined(F_GETFD)
     int flags = fcntl(fd, F_GETFD);
 
     if (flags == -1)
@@ -5867,19 +5873,20 @@ linux_get_maxfd(void)
 void
 rb_close_before_exec(int lowfd, int maxhint, VALUE noclose_fds)
 {
+#if defined(HAVE_FCNTL) && defined(F_GETFD) && defined(F_SETFD) && defined(FD_CLOEXEC)
     int fd, ret;
     int max = (int)max_file_descriptor;
-#ifdef F_MAXFD
+# ifdef F_MAXFD
     /* F_MAXFD is available since NetBSD 2.0. */
     ret = fcntl(0, F_MAXFD); /* async-signal-safe */
     if (ret != -1)
         maxhint = max = ret;
-#elif defined(__linux__)
+# elif defined(__linux__)
     ret = linux_get_maxfd();
     if (maxhint < ret)
         maxhint = ret;
     /* maxhint = max = ret; if (ret == -1) abort(); // test */
-#endif
+# endif
     if (max < maxhint)
         max = maxhint;
     for (fd = lowfd; fd <= max; fd++) {
@@ -5890,12 +5897,13 @@ rb_close_before_exec(int lowfd, int maxhint, VALUE noclose_fds)
 	if (ret != -1 && !(ret & FD_CLOEXEC)) {
             fcntl(fd, F_SETFD, ret|FD_CLOEXEC); /* async-signal-safe */
         }
-#define CONTIGUOUS_CLOSED_FDS 20
+# define CONTIGUOUS_CLOSED_FDS 20
         if (ret != -1) {
 	    if (max < fd + CONTIGUOUS_CLOSED_FDS)
 		max = fd + CONTIGUOUS_CLOSED_FDS;
 	}
     }
+#endif
 }
 
 static int
@@ -8865,6 +8873,7 @@ rb_f_select(int argc, VALUE *argv, VALUE obj)
 # define NUM2IOCTLREQ(num) NUM2INT(num)
 #endif
 
+#ifdef HAVE_IOCTL
 struct ioctl_arg {
     int		fd;
     ioctl_req_t	cmd;
@@ -8893,6 +8902,7 @@ do_ioctl(int fd, ioctl_req_t cmd, long narg)
 
     return retval;
 }
+#endif
 
 #define DEFULT_IOCTL_NARG_LEN (256)
 
@@ -8945,6 +8955,14 @@ typedef long fcntl_arg_t;
 #else
 /* posix */
 typedef int fcntl_arg_t;
+#endif
+
+#if defined __native_client__ && !defined __GLIBC__
+// struct flock is currently missing the NaCl newlib headers
+// TODO(sbc): remove this once it gets added.
+#undef F_GETLK
+#undef F_SETLK
+#undef F_SETLKW
 #endif
 
 static long
@@ -9118,6 +9136,7 @@ setup_narg(ioctl_req_t cmd, VALUE *argp, int io_p)
     return narg;
 }
 
+#ifdef HAVE_IOCTL
 static VALUE
 rb_ioctl(VALUE io, VALUE req, VALUE arg)
 {
@@ -9161,6 +9180,9 @@ rb_io_ioctl(int argc, VALUE *argv, VALUE io)
     rb_scan_args(argc, argv, "11", &req, &arg);
     return rb_ioctl(io, req, arg);
 }
+#else
+#define rb_io_ioctl rb_f_notimplement
+#endif
 
 #ifdef HAVE_FCNTL
 struct fcntl_arg {
@@ -10311,9 +10333,9 @@ maygvl_copy_stream_read(int has_gvl, struct copy_stream_struct *stp, char *buf, 
             goto retry_read;
 #ifdef ENOSYS
 	  case ENOSYS:
-#endif
             stp->notimp = "pread";
             return -1;
+#endif
         }
         stp->syserr = offset == (off_t)-1 ?  "read" : "pread";
         stp->error_no = errno;

@@ -61,13 +61,25 @@ class Downloader
       $stdout.flush
     end
     begin
-      data = url.read(http_options(file, ims))
+      data = url.read(http_options(file, ims.nil? ? true : ims))
     rescue OpenURI::HTTPError => http_error
       if http_error.message =~ /^304 / # 304 Not Modified
         if $VERBOSE
           $stdout.puts "not modified"
           $stdout.flush
         end
+        return true
+      end
+      raise
+    rescue Timeout::Error
+      if ims.nil? and File.exist?(file)
+        puts "Request for #{url} timed out, using old version."
+        return true
+      end
+      raise
+    rescue SocketError
+      if ims.nil? and File.exist?(file)
+        puts "No network connection, unable to download #{url}, using old version."
         return true
       end
       raise
@@ -101,6 +113,8 @@ if $0 == __FILE__
       ARGV.shift
     when '-e'
       ims = nil
+    when '-a'
+      ims = true
     when /\A-/
       abort "#{$0}: unknown option #{ARGV[0]}"
     else

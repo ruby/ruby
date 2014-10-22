@@ -8,6 +8,10 @@ module TkFont::Chooser
   extend TkCore
 end
 
+module Tk
+  Fontchooser = TkFont::Chooser
+end
+
 class << TkFont::Chooser
   def method_missing(id, *args)
     name = id.id2name

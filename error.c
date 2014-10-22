@@ -1290,19 +1290,19 @@ set_syserr(int n, const char *name)
 
 	/* capture nonblock errnos for WaitReadable/WaitWritable subclasses */
 	switch (n) {
-	    case EAGAIN:
-	        rb_eEAGAIN = error;
+	  case EAGAIN:
+	    rb_eEAGAIN = error;
 
-#if EAGAIN != EWOULDBLOCK
-                break;
-	    case EWOULDBLOCK:
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+	    break;
+	  case EWOULDBLOCK:
 #endif
 
-		rb_eEWOULDBLOCK = error;
-		break;
-	    case EINPROGRESS:
-		rb_eEINPROGRESS = error;
-		break;
+	    rb_eEWOULDBLOCK = error;
+	    break;
+	  case EINPROGRESS:
+	    rb_eEINPROGRESS = error;
+	    break;
 	}
 
 	rb_define_const(error, "Errno", INT2NUM(n));
@@ -1669,7 +1669,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *
  *  <em>raises the exception:</em>
  *
- *     RuntimeError: can't modify frozen array
+ *     RuntimeError: can't modify frozen Array
  *
  *  Kernel.raise will raise a RuntimeError if no Exception class is
  *  specified.

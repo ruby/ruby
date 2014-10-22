@@ -3986,6 +3986,7 @@ ary_recycle_hash(VALUE hash)
 	RHASH(hash)->ntbl = 0;
 	st_free_table(tbl);
     }
+    RB_GC_GUARD(hash);
 }
 
 /*
@@ -4009,7 +4010,7 @@ static VALUE
 rb_ary_diff(VALUE ary1, VALUE ary2)
 {
     VALUE ary3;
-    volatile VALUE hash;
+    VALUE hash;
     long i;
 
     hash = ary_make_hash(to_ary(ary2));

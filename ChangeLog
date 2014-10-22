@@ -1,3 +1,723 @@
+Thu Oct 23 03:41:51 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (unknown_keyword_error): delete expected keywords
+	  directly from raw table, so that the given block is not called.
+	  [ruby-core:65837] [Bug #10413]
+
+Thu Oct 23 02:33:01 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (update-unicode): invert dependency to run every times.
+	  [ruby-core:65842] [Bug #10415]
+
+	* common.mk (after-update): update files under source tree.
+	  [ruby-core:65840] [Bug #10414]
+
+Wed Oct 22 22:38:59 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/ssl.rb (DEFAULT_PARAMS): override
+	  options even if OpenSSL::SSL::OP_NO_SSLv3 is not defined.
+	  this is pointed out by Stephen Touset. [ruby-core:65711] [Bug #9424]
+
+Wed Oct 22 21:31:56 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* common.mk (prelude.c): add dependency to LIB_SRCS because
+	  enc/prelude.rb requires lib/unicode_normalize.rb, and it's also
+	  requires lib/unicode_normalize/tables.rb (=LIB_SRCS).
+
+Wed Oct 22 21:09:51 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* configure.in (nacl_cv_cpu_nick): fix typo in PNaCl.
+	  (XCFLAGS) Add -isystem flag to pnacl and nacl-newlib
+	  (CXX): added
+
+	* nacl/GNUmakefile.in (CXX): Added
+	  (PPROGRAM): Use clang++ instead of clang because libnacl_io
+	  depends on c++ std lib.
+
+Wed Oct 22 21:07:32 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* common.mk (build-ext): avoid trying to build dynamic libraries
+	  if configured --with-static-linked-ext.
+
+Wed Oct 22 20:33:33 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* common.mk: Fixed grammar in comment [ci skip]
+
+Wed Oct 22 19:18:18 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* tool/unicode_norm_gen.rb: Fixed escaping of backslash and
+	  double quote ('\\\&' -> "\\\\\\\&"; double quoted string
+	  is needed to make \& mean last match; double double
+	  backslashes are needed because of two layers of escaping).
+
+Wed Oct 22 18:13:29 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/test-unicode_normalize.rb: as often said, ruby is sometimes built
+	  at non-srcdir.
+
+Wed Oct 22 18:12:12 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* test/test-unicode_normalize.rb: Adjusted path for test
+	  data file (now ../enc/unicode/data/NormalizationTest.txt).
+
+Wed Oct 22 18:07:07 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* test/test-unicode_normalize.rb: Removed explicit require,
+	  changed method names, adjusted copyright.
+
+Wed Oct 22 18:00:00 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* test/test-unicode_normalize.rb: Importing from
+	  https://github.com/duerst/eprun/blob/master/test/test_normalize.rb.
+	  (removing trailing whitespace, fixing EOLs and adding EOL property)
+
+Wed Oct 22 08:21:09 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* nacl/pepper_main.c (Instance_DidCreate): mount devfs and rebind fd 0
+	  .. 2 so that stderr goes to the console of the browser.
+
+Wed Oct 22 03:47:43 2014  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/etc/etc.c (etc_nprocessors_affin): maximum "n" should be 16384.
+
+Wed Oct 22 03:37:00 2014  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/etc/etc.c (etc_nprocessors_affin): minor spell fix.
+
+Wed Oct 22 03:33:58 2014  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/etc/etc.c (etc_nprocessors_affin): optimize memory usege a
+	  bit. Typical rubyist never use 8k cpus machine.
+
+Wed Oct 22 00:01:09 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* configure.in (XCFLAGS): Add include path for NaCl libraries.
+	  (XLDFLAGS): ditto.
+	  (NACL_LIB_PATH): new stubstitution
+
+	* nacl/nacl-config.rb: support NACL_LIB_PATH
+
+	* nacl/package.rb: ditto.
+
+	* nacl/pepper_main.c: replace old implementations with nacl_io.
+
+	* nacl/GNUmakefile.in: link nacl_io to pepper_ruby
+
+	* ruby.c (rb_load_file): remove __attribute__((weak)) because the old
+	  override hack was replaced with nacl_io.
+
+	* file.c (rb_file_load_ok): ditto.
+
+Tue Oct 21 17:32:32 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* common.mk: Adding explicit creation of directory
+	  enc/unicode/data because git doesn't handle empty
+	  directories. [patch by Masahiro Ide, filed with r48073]
+
+Tue Oct 21 17:12:12 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize/tables.rb: Committing to make version
+	  update easier and more predictable, and reducing compilation
+	  time.
+
+Tue Oct 21 15:56:56 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize/normalize.rb: Added comment to point to
+	  relevant portion of Unicode standard for Hangul (de)composition
+	  identifiers and algorithm.
+
+Tue Oct 21 11:49:16 2014  Andreas Schwab  <schwab@suse.de>
+
+	* gc.c (mark_current_machine_context) [__mc68000__]: Update stack
+	  marking.
+	  (rb_gc_mark_machine_stack) [__mc68000__]: Also handle it here.
+
+Mon Oct 20 23:59:38 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* enc/prelude.rb: we sometimes run ruby without library path (especially
+	  for test), so should permit to run ruby if unicode_normalize.rb is
+	  missing.
+
+Mon Oct 20 23:57:58 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* common.mk (lib/unicode_normalize/tables.rb): enable running (n)make
+	  in non-srcdir.
+
+Mon Oct 20 23:58:04 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/downloader.rb: add -a option to always download regardless
+	  existing files.
+
+Mon Oct 20 23:18:18 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/mkmf.rb: no need to convert path separator for COPY because it's
+	  ruby -run cp and it can treat '/' on any platform.
+
+Mon Oct 20 19:54:54 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* config.mk: Added missing data files as targets for
+	  prerequisite update_unicode.
+
+Mon Oct 20 19:06:06 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize.rb: revert r48046. The s in sIndex
+	  is not hungarian notation. The variable name sIndex is
+	  directly taken from the relevant part of the Unicode
+	  Standard, where it is written SIndex and stands for
+	  'syllable index'. See pp. 144/145 of
+	  http://www.unicode.org/versions/Unicode7.0.0/ch03.pdf.
+
+Mon Oct 20 12:46:46 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize.rb: removing unnecessary 'self'.
+
+Mon Oct 20 12:37:37 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize.rb: change method names
+	  in commented-out code. Followup to r48027.
+
+Mon Oct 20 02:23:27 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_ivar_get), vm_insnhelper.c (vm_getivar): improve
+	  instance variable retrieval performance by checking ruby_verbose
+	  before call of rb_warning and evaluation of its argument.
+	  [ruby-core:65786] [Feature #10396]
+
+Sun Oct 19 23:31:29 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* lib/unicode_normalize.rb: (unicode_normalize!): change method name.
+	  catch up the method name change at r48014. [Feature #10084]
+
+Sun Oct 19 20:05:58 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* ext/tk/lib/tkextlib/tile/treeview.rb: fix syntax error.
+
+Sun Oct 19 18:39:39 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* enc/prelude.rb: Added automatic loading of
+	  lib/unicode_normalize.rb. This makes sure that all
+	  the methods that are available on String are
+	  available without explicit require.
+
+Sun Oct 19 18:35:35 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize/normalize.rb: Added a missing
+	  file extension in require statement.
+
+Sun Oct 19 18:13:13 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* common.mk: Added a rule to generate
+	  lib/unicode_normalize/tables.rb. This rule still
+	  needs to be integrated into the overall make process.
+
+Sun Oct 19 17:53:53 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize.rb: Changed to dynamic
+	  loading of actual normalization code and tables.
+
+Sun Oct 19 17:37:37 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize.rb: Small documentation fix.
+
+Sun Oct 19 17:26:26 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize.rb: Added documentation.
+
+Sun Oct 19 11:09:09 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* tool/unicode_norm_gen.rb, lib/unicode_normalize.rb:
+	  File name change from lib/unicode_normalize/normalize_tables.rb
+	  to lib/unicode_normalize/tables.rb.
+
+Sun Oct 19 10:12:12 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize.rb: Changing method names, see
+	  https://bugs.ruby-lang.org/issues/10084#note-7
+
+Sun Oct 19 10:10:10 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize.rb: Changing module name.
+
+Sun Oct 19 10:08:08 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize.rb: Changing require statement,
+	  adjusting copyright.
+
+Sun Oct 19 10:04:04 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize.rb: Importing from
+	  https://github.com/duerst/eprun/blob/master/lib/string_normalize.rb.
+	  (removing trailing whitespace, fixing EOLs and adding EOL property)
+
+Sun Oct 19 09:56:56 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* tool/unicode_norm_gen.rb: Changed module name.
+
+Sun Oct 19 09:48:48 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize/normalize.rb: Changed module name,
+	  adjusted copyright.
+
+Sun Oct 19 09:38:38 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize/normalize.rb: Importing from
+	  https://github.com/duerst/eprun/blob/master/lib/normalize.rb.
+
+Sat Oct 18 20:40:52 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm_core.h, proc.c, vm_backtrace.c, vm_trace.c:
+	  remove rb_binding_new_with_cfp, and use rb_vm_make_binding instead.
+
+Sat Oct 18 20:38:48 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm_core.h, vm.c, proc.c: fix GC mark miss on bindings.
+	  [ruby-dev:48616] [Bug #10368]
+
+	* test/ruby/test_eval.rb: add a test code.
+
+Fri Oct 17 22:47:11 2014  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c (pack_unpack): Add casts for char references for 'u'.
+	  Fix line ending recognition algorithm.
+
+Fri Oct 17 21:49:52 2014  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c (pack_unpack): Add casts for char references for 'b' and 'h'.
+
+Fri Oct 17 17:50:10 2014  Tanaka Akira  <akr@fsij.org>
+
+	* Avoid undefined behaviors found by gcc -fsanitize=undefined.
+	  gcc (Debian 4.9.1-16) 4.9.1
+
+	* string.c (rb_str_sum): Avoid undefined behavior.
+
+Fri Oct 17 17:43:50 2014  Tanaka Akira  <akr@fsij.org>
+
+	* Avoid undefined behaviors found by gcc -fsanitize=undefined.
+	  gcc (Debian 4.9.1-16) 4.9.1
+
+	* include/ruby/ruby.h (INT2FIX): Avoid undefined behavior.
+
+	* node.h (nd_set_line): Ditto.
+
+	* pack.c (encodes): Ditto.
+	  (pack_unpack): Ditto.
+
+	* regint.h (BIT_STATUS_AT): Ditto.
+	  (BS_BIT): Ditto.
+
+	* time.c (time_mdump): Ditto.
+	  (time_mload): Ditto.
+
+	* vm_core.h (VM_FRAME_MAGIC_MASK): Ditto.
+
+	* vm_trace.c (recalc_add_ruby_vm_event_flags): Ditto.
+
+Fri Oct 17 15:06:49 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (unescape_nonascii): make dynamically compiled US-ASCII
+	  regexps ASCII-8BIT encoding if binary (hexadecimal, control,
+	  meta) escapes are contained, as well as literal regexps.
+	  [ruby-dev:48626] [Bug #10382]
+
+Fri Oct 17 03:05:08 2014  Eric Wong  <e@80x24.org>
+
+	* test/-ext-/bug_reporter/test_bug_reporter.rb
+	  (test_bug_reporter_add): revert r47972
+	* test/ruby/test_rubyoptions.rb (test_segv_test): revert r47971
+	  [ruby-core:65764]
+
+Thu Oct 16 23:17:40 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (rb_sigaltstack_size): double default size to get rid
+	  of heap corruption by alternate stack overflow in SEGV handler.
+	  typically happened at fprintf() in control_frame_dump().
+
+Thu Oct 16 22:43:12 2014  Tanaka Akira  <akr@fsij.org>
+
+	* vm_backtrace.c (id2str): Fix a variable name.
+	  [ruby-dev:48642] [Bug #10389]
+
+Thu Oct 16 20:01:26 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/envutil.rb (assert_pattern_list): Show number of matched
+	  patterns and characters.
+
+Thu Oct 16 16:26:09 2014  Eric Wong  <e@80x24.org>
+
+	* cont.c (fiber_store): fix WIN32 fibers
+	  [ruby-core:65745] [ruby-core:65758]
+
+Thu Oct 16 15:05:07 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_here_document): do not append already appended
+	  and disposed code fragment.  [ruby-dev:48647] [Bug #10392]
+
+Thu Oct 16 10:35:33 2014  Eric Wong  <e@80x24.org>
+
+	* test/-ext-/bug_reporter/test_bug_reporter.rb
+	  (test_bug_reporter_add): fix race
+
+Thu Oct 16 10:09:02 2014  Eric Wong  <e@80x24.org>
+
+	* test/ruby/test_rubyoptions.rb (test_segv_test): fix race
+
+Thu Oct 16 09:17:48 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cont.c (rb_fiber_t): fix compile error caused by move to
+	  vm_core.h at r47964.  [Feature #10341]
+
+Thu Oct 16 08:58:11 2014  Eric Wong  <e@80x24.org>
+
+	* test/ruby/test_process.rb (test_deadlock_by_signal_at_forking):
+	  avoid killing wrong parent
+
+Thu Oct 16 08:40:04 2014  Eric Wong  <e@80x24.org>
+
+	* cont.c (fiber_store): restore references to next_fib (fix typo)
+
+Thu Oct 16 08:26:08 2014  Eric Wong  <e@80x24.org>
+
+	* cont.c (fiber_store): remove references to nextfib
+	  fix build when FIBER_USE_NATIVE is 0
+
+Thu Oct 16 06:51:35 2014  Knut Franke  <Knut.Franke@gmx.de>
+
+	* vm_core.h: declare rb_fiber_t typedef
+	  (rb_thread_t): fiber and root_fiber become rb_fiber_t * (from VALUE)
+	* vm.c (rb_thread_mark): use rb_fiber_mark_self
+	* cont.c (rb_fiber_t): prev becomes rb_fiber_t * (from VALUE)
+	  (cont_mark, cont_free): simplify conditions
+	  (rb_fiber_mark_self): new function
+	  (fiber_mark): use rb_fiber_mark_self
+	  (cont_save_thread, cont_restore_thread): inline
+	  (cont_restore_thread): simplify
+	  (fiber_setcontext): simplify conditions
+	  (rb_cont_call): remove dereference
+	  (fiber_t_alloc): update for rb_fiber_t->prev type change
+	  (rb_fiber_start): ditto
+	  (fiber_current): extract from rb_fiber_current
+	  (return_fiber): move, simplify type checks
+	  (rb_fiber_current): use fiber_current
+	  (fiber_store): simplify type checks
+	  (fiber_switch): ditto, simplify call to fiber_setcontext,
+	   use fiber_current
+	  (rb_fiber_transfer): update for type changes
+	  (rb_fiber_terminate): move, use fiber_switch
+	  (rb_fiber_resume): update for type changes
+	  (rb_fiber_reset_root_local_storage): ditto
+	  (rb_fiber_yield): use rb_fiber_switch instead of rb_fiber_transfer
+	  (rb_fiber_m_transfer): ditto
+	  [ruby-core:65518] [Feature #10341]
+
+Thu Oct 16 06:25:29 2014  Knut Franke  <Knut.Franke@gmx.de>
+
+	* cont.c (rb_context_t): comment on saved_thread
+	  (cont_save_thread): sparse copy
+	  (cont_init): copy extra fields
+	  (fiber_init): use current thread VM stack size
+	  [ruby-core:65518] [Feature #10341]
+
+Thu Oct 16 06:13:09 2014  Knut Franke  <Knut.Franke@gmx.de>
+
+	* cont.c (cont_capture): remove unnecessary variable
+	  [ruby-core:65518] [Feature #10341]
+
+Thu Oct 16 05:02:31 2014  Knut Franke  <Knut.Franke@gmx.de>
+
+	* cont.c (fiber_store, fiber_switch): simplify
+	  [ruby-core:65518] [Feature #10341]
+
+Thu Oct 16 04:28:41 2014  Knut Franke  <Knut.Franke@gmx.de>
+
+	* cont.c (rb_fiber_t): remove prev_fiber/next_fiber
+	  (fiber_link_join, fiber_link_remove): remove functions
+	  (fiber_free, fiber_init, root_fiber_alloc):
+	   remove references to removed fields and functions
+	  [ruby-core:65518] [Feature #10341]
+
+Wed Oct 15 22:08:37 2014  Tanaka Akira  <akr@fsij.org>
+
+	* ext/etc/etc.c (etc_nprocessors_affin): Test CPU_ALLOC availability.
+	  CentOS 5 don't have CPU_ALLOC().
+
+Wed Oct 15 18:26:19 2014  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/etc/etc.c (etc_nprocessors_affinity): use sched_getaffinity
+	  for getting precious number of available cpus.
+
+	* ext/etc/etc.c (etc_nprocessors): use etc_nprocessors_affinity if
+	  possible.
+
+	  [Feature #10267] etc-nprocessors-kosaki2.patch
+
+Wed Oct 15 17:53:28 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/envutil.rb (assert_pattern_list) Renamed from
+	  assert_regexp_list.
+	  Show multiline string in multi lines.
+
+	* test/-ext-/bug_reporter/test_bug_reporter.rb: Use
+	  assert_pattern_list.
+
+Wed Oct 15 12:26:58 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/envutil.rb (assert_regexp_list): New assertion method.
+
+	* test/ruby/test_rubyoptions.rb: Use assert_regexp_list.
+
+Wed Oct 15 07:21:09 2014  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c: min(n) drops elements bigger than the n-th maximum element.
+	  (struct nmin_data): New field to record the n-th maximum element, limit
+	  (nmin_filter): Update limit field.
+	  (nmin_i): Drop too big elements.
+	  (nmin_run): Initialize limit field.
+
+Wed Oct 15 07:00:14 2014  Eric Wong  <e@80x24.org>
+
+	* test/ruby/test_optimization.rb (test_string_size): new test
+
+Wed Oct 15 06:51:13 2014  Eric Wong  <e@80x24.org>
+
+	* test/ruby/test_optimization.rb (test_string_eq_neq): new test
+	  (test_string_ltlt): ditto
+
+Wed Oct 15 06:50:29 2014  Eric Wong  <e@80x24.org>
+
+	* test/ruby/test_optimization.rb (test_hash_aset_with):
+	  assert assignment
+
+Wed Oct 15 04:56:27 2014  Zachary Scott  <e@zzak.io>
+
+	* gc.c (rb_obj_id): [DOC] Fix typo, clean up sentence, and wrap cols
+
+Wed Oct 15 04:53:30 2014  Zachary Scott  <e@zzak.io>
+
+	* error.c: [DOC] Fix case of type in exception message by @tricknotes
+	  [Fixes GH-740] https://github.com/ruby/ruby/pull/740
+
+	* object.c: ditto
+
+Tue Oct 14 21:39:16 2014  Vit Ondruch  <vondruch@redhat.com>
+
+	* tool/rbinstall.rb (gem): Fix permissions of bundled gems
+	  specification files.  [ruby-core:65700] [Bug #10383]
+
+Tue Oct 14 19:15:31 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole_record.c: use typed data.
+
+Tue Oct 14 16:23:12 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* symbol.c (global_symbols): make ids two-dimensional array of
+	  strings and symbols, for write-barrier.
+
+	* symbol.c (global_symbols): make IDs immortal always, instead
+	  of treating dynamic symbols as IDs.
+
+	* iseq.c, marshal.c, string.c: use rb_str_intern instead of
+	  rb_str_dynamic_intern.
+
+	* symbol.c (rb_str_intern): rename rb_str_dynamic_intern.
+
+Tue Oct 14 10:19:10 2014  Eric Wong  <e@80x24.org>
+
+	* test/ruby/test_optimization.rb (test_string_freeze): new test
+	  (test_hash_aref_with): ditto
+	  (test_hash_aset_with): ditto
+
+Tue Oct 14 01:27:54 2014  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c (nmin_run): max(n) and max_by(n) returns an array in
+	  descending order.
+	  [ruby-core:65452] Suggested by David Grayson.
+
+Mon Oct 13 20:44:49 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (update-gems): chdir to the target directory and then
+	  add the tool directory to load paths, for older BASERUBY.
+	  [Bug #10372][ruby-core:65630]
+
+Mon Oct 13 17:53:01 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/xmlrpc/parser.rb: added new parser class using libxml-ruby gem.
+	  [Feature #9379][ruby-core:59633]
+	* lib/xmlrpc/config.rb: ditto.
+
+Mon Oct 13 16:32:56 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/find.rb (Find.find): Call to_path for arguments to obtain
+	  strings.
+	  [ruby-core:63713] [Bug #10035] Reported by Herwin.
+
+Mon Oct 13 15:42:25 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* common.mk: use relative load path for bundled_gems directory.
+	  [Bug #10372][ruby-core:65630]
+
+Mon Oct 13 08:44:06 2014  Zachary Scott  <e@zzak.io>
+
+	* README.EXT: [DOC] fix example missing typedef with patch by
+	  @steveklabnik [Fixes GH-739] https://github.com/ruby/ruby/pull/739
+
+	* README.EXT.ja: ditto.
+
+Mon Oct 13 06:52:09 2014  Eric Wong  <e@80x24.org>
+
+	* array.c (ary_recycle_hash): add RB_GC_GUARD
+	  (rb_ary_diff): remove volatile
+	  [Bug #10369]
+
+Mon Oct 13 03:20:23 2014  Zachary Scott  <e@zzak.io>
+
+	* ext/date/date_core.c: [DOC] Clean up whitespace, examples, and typos
+	  in date_core based on a patch by @vipulnsward [Fixes GH-724]
+	  https://github.com/ruby/ruby/pull/724
+
+Mon Oct 13 02:39:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (remove_duplicate_keys): should not simply eliminate all
+	  value nodes, which may have side effects.
+	  [ruby-core:65625] [Bug #10315]
+
+Sun Oct 12 10:39:16 2014  Zachary Scott  <e@zzak.io>
+
+	* vm.c: [DOC] fix typo by @yui-knk [Fixes GH-738]
+	  https://github.com/ruby/ruby/pull/738
+
+Sun Oct 12 09:24:15 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/test/unit.rb: Hide skips by default.
+
+Sun Oct 12 01:37:11 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* file.c: include sys/time.h only if HAVE_SYS_TIME_H
+
+Sat Oct 11 22:29:40 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* file.c (HAVE_UTIMENSAT): disabled for NativeClient.
+	  Fixes build error.
+
+Sat Oct 11 22:11:58 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* ext/extmk.rb: generates the rule for extinit.$(OBJEXT).
+	  extinit.$(OBJEXT) used to be generated by the builtin rule, thus
+	  didn't accept custom $(CC) and caused linkage error for cross
+	  compiling.
+
+Sat Oct 11 18:46:50 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* include/ruby/intern.h (rb_fd_select): declare struct timeval, or the
+	  struct gets local to the function in C99.
+
+	* file.c (#include): add nacl/stat.h for PNaCl.
+	  (utimes): added a declaration for PNaCl.
+	  (stat_atimespec): stat::st_atimensec is long long but
+	  timespec::tv_nsec is long in PNaCl.
+	  (stat_mtimespec, stat_ctimespec): ditto.
+	  (rb_group_member): disable getgroups unless HAVE_GETGROUPS.
+	  (eaccess): unify the fallback to generic defined(USE_GETEUID).
+
+	* io.c: include sys/time.h for struct timeval.
+	  (rb_close_before_exec): nothing we can do if F_GETFD is not
+	  available.
+	  (ioctl): pnacl newlib actually doesn't have ioctl.
+
+	* process.c (maxgroups): it is used iff
+	   defined(_SC_NGROUPS_MAX) || defined(NGROUPS_MAX) but not
+	   defined(HAVE_GETGROUPS) || defined(HAVE_SETGROUPS).
+	  (obj2gid): fail unless the object is a Fixnum if getgrnam is not
+	  available.
+	  (disable_child_handler_fork_child): sigaction is not available in
+	  PNaCl newlib.
+
+	* configure.in (warnflags, strict_warnflags): avoid -ansi for strlcpy.
+	  (rb_cv_gcc_atomic_builtins): also check
+	  __atomic_or_etch because it is used in ruby_atomic.h.
+	  (rb_cv_gcc_sync_builtins): ditto.
+	  (HAVE_GETGRNAM): added.
+
+Sat Oct 11 15:32:08 2014  Eric Wong  <e@80x24.org>
+
+	* compile.c (iseq_build_from_ary_exception): move RB_GC_GUARD
+	  (iseq_build_from_ary_body): use PRIsVALUE instead of RB_GC_GUARD
+
+Sat Oct 11 14:57:08 2014  Eric Wong  <e@80x24.org>
+
+	* string.c (rb_str_intern): remove unnecessary RB_GC_GUARD
+
+Sat Oct 11 13:47:13 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (remove_duplicate_keys): remove duplicate literal keys,
+	  i.e., symbols and strings.  [ruby-core:65368] [Bug #10315]
+
+	* vm.c (kwmerge_i): override existing keys by new keys.
+	  [ruby-core:65368] [Bug #10315]
+
+	* parse.y (assocs): concatenate splatted literal hashes.  the
+	  former key has precedence even if duplicated literal keys
+	  follow.  [ruby-core:65368] [Bug #10315]
+
+Sat Oct 11 12:27:03 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* configure.in (RUBY_NACL): automatically locate pnacl-clang.
+	  (RUBY_PLATFORM): pnacl instead of le32-nacl.
+
+Sat Oct 11 11:27:14 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* io.c: fix issues in the last two commits. don't disable cloexec for
+	  platforms other than NativeClient.
+
+	* ChangeLog: ditto. add entries for the last two commits.
+
+Sat Oct 11 11:12:00 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* signal.c (install_signalhandler, init_sigchld): allow failure because it
+	  always fails with ENOSYS on NaCl.
+
+Sat Oct 11 11:11:53 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* configure.in (RUBY_NACL and others): merge patch from naclports. Supports PNaCl.
+
+	* dln.c: ditto. replace the old hacky dynamic loading over HTTP with nacl_io.
+
+	* file.c: ditto. tentatively use access(2) instead of eaccess.
+	  (rb_file_load_ok): weaken with attribute but not by postprocess.
+
+	* io.c: ditto.
+	  (socket.h): now NaCl has socket.h
+	  (flock): disable here instead of nacl/ioctl.h
+
+	* nacl/GNUmakefile.in: ditto.
+	  (CC, LD, NM, AR, AS, RANLIB, OBJDUMP, OBJCOPY):
+	  respect path to them if they are absolute.
+	  This helps naclports to build ruby in their source tree.
+	  (PROGRAM_NMF, .SUFFIXES): support .pnexe for PNaCl.
+	  (ruby.o, file.o): move the hack to attributes in ruby.c and file.c
+
+	* nacl/ioctl.h: ditto. removed. move the hack to io.c.
+
+	* nacl/nacl-config.rb: ditto. support arm, pnacl and others.
+
+	* nacl/pepper_main.c: ditto. support build in a naclports tree.
+
+	* ruby.c (rb_load_file): ditto. weaken with attribute but not by postprocess.
+
+Sat Oct 11 09:32:00 2014  Zachary Scott  <e@zzak.io>
+
+	* ext/socket/unixsocket.c: [DOC] Fix example to render in HTML
+	  properly, with a patch by @eval [Fixes GH-733]
+	  https://github.com/ruby/ruby/pull/733
+
+Sat Oct 11 04:14:41 2014  Kir Shatrov  <shatrov@me.com>
+
+	* lib/open-uri.rb (OpenURI::Options): add :open_timeout default
+	* (def OpenURI.open_http): check :open_timeout option
+	* (module OpenURI): rdoc for :open_timeout
+	* test/open-uri/test_open-uri.rb (test_open_timeout): new test
+	  [Feature #10361]
+
 Fri Oct 10 11:27:49 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/io.h (rb_io_mode_flags, rb_io_modenum_flags):

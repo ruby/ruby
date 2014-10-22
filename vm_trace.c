@@ -67,7 +67,7 @@ recalc_add_ruby_vm_event_flags(rb_event_flag_t events)
     ruby_vm_event_flags = 0;
 
     for (i=0; i<MAX_EVENT_NUM; i++) {
-	if (events & (1 << i)) {
+	if (events & ((rb_event_flag_t)1 << i)) {
 	    ruby_event_flag_count[i]++;
 	}
 	ruby_vm_event_flags |= ruby_event_flag_count[i] ? (1<<i) : 0;
@@ -811,7 +811,7 @@ rb_tracearg_binding(rb_trace_arg_t *trace_arg)
     cfp = rb_vm_get_binding_creatable_next_cfp(trace_arg->th, trace_arg->cfp);
 
     if (cfp) {
-	return rb_binding_new_with_cfp(trace_arg->th, cfp);
+	return rb_vm_make_binding(trace_arg->th, cfp);
     }
     else {
 	return Qnil;

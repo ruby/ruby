@@ -2284,8 +2284,15 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
               case 'C': /* \C-X, \C-\M-X */
               case 'M': /* \M-X, \M-\C-X, \M-\cX */
                 p = p-2;
-                if (unescape_escaped_nonascii(&p, end, enc, buf, encp, err) != 0)
-                    return -1;
+		if (enc == rb_usascii_encoding()) {
+		    c = read_escaped_byte(&p, end, err);
+		    if (c == -1) return -1;
+		    rb_str_buf_cat(buf, &c, 1);
+		}
+		else {
+		    if (unescape_escaped_nonascii(&p, end, enc, buf, encp, err) != 0)
+			return -1;
+		}
                 break;
 
               case 'u':

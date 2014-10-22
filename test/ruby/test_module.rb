@@ -1826,6 +1826,14 @@ class TestModule < Test::Unit::TestCase
     assert_warning '' do
       assert_equal(42, a.ivar)
     end
+
+    name = "@\u{5909 6570}"
+    assert_warning(/instance variable #{name} not initialized/) do
+      val = EnvUtil.with_default_external(Encoding::UTF_8) {
+        a.instance_eval(name)
+      }
+      assert_nil(val)
+    end
   end
 
   def test_uninitialized_attr

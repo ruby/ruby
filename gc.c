@@ -2716,13 +2716,14 @@ id2ref(VALUE obj, VALUE objid)
  *
  *  Returns an integer identifier for +obj+.
  *
- *  The same number will be returned on all calls to +object_id+ for a given object,
- *  and no two active objects will share an id.
+ *  The same number will be returned on all calls to +object_id+ for a given
+ *  object, and no two active objects will share an id.
  *
- *  Note that some objects of builtin classes are reused for optimization.
- *  This is the case for immediate values and frozen string litterals.
+ *  Note: that some objects of builtin classes are reused for optimization.
+ *  This is the case for immediate values and frozen string literals.
+ *
  *  Immediate values are not passed by reference but are passed by value:
- *  +nil+, +true+, +false+, Fixnums, Symbols. Some Floats may be immediates too.
+ *  +nil+, +true+, +false+, Fixnums, Symbols, and some Floats.
  *
  *      Object.new.object_id  == Object.new.object_id  # => false
  *      (21 * 2).object_id    == (21 * 2).object_id    # => true
@@ -3837,8 +3838,8 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
     rb_gc_mark_locations(th->machine.register_stack_start, th->machine.register_stack_end);
 #endif
 #if defined(__mc68000__)
-    mark_locations_array(objspace, (VALUE*)((char*)STACK_END + 2),
-			 (STACK_START - STACK_END));
+    rb_gc_mark_locations((VALUE*)((char*)stack_start + 2),
+			 (VALUE*)((char*)stack_end - 2));
 #endif
 }
 
@@ -3852,6 +3853,10 @@ rb_gc_mark_machine_stack(rb_thread_t *th)
     rb_gc_mark_locations(stack_start, stack_end);
 #ifdef __ia64
     rb_gc_mark_locations(th->machine.register_stack_start, th->machine.register_stack_end);
+#endif
+#if defined(__mc68000__)
+    rb_gc_mark_locations((VALUE*)((char*)stack_start + 2),
+			 (VALUE*)((char*)stack_end - 2));
 #endif
 }
 

@@ -378,9 +378,9 @@ define rp_id
       end
     end
     printf "(%ld): ", $id
-    rb_numtable_entry global_symbols.id_str $id
-    if $rb_numtable_rec
-      rp_string $rb_numtable_rec
+    set $str = lookup_id_str($id)
+    if $str
+      rp_string $str
     else
       echo undef\n
     end
@@ -736,6 +736,12 @@ end
 define nd_tval
   printf "%su2.value%s: ", $color_highlite, $color_end
   rp ($arg0).u2.value
+end
+
+define nd_tree
+  set $buf = (struct RString *)rb_str_buf_new(0)
+  call dump_node((VALUE)($buf), rb_str_new(0, 0), 0, ($arg0))
+  printf "%s\n", $buf->as.heap.ptr
 end
 
 define rb_p

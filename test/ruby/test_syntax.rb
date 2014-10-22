@@ -109,13 +109,32 @@ class TestSyntax < Test::Unit::TestCase
     def o.kw(k1: 1, k2: 2) [k1, k2] end
     h = {k1: 11, k2: 12}
     assert_equal([11, 12], o.kw(**h))
-    assert_equal([11, 22], o.kw(k2: 22, **h))
-    assert_equal([11, 12], o.kw(**h, **{k2: 22}))
-    assert_equal([11, 22], o.kw(**{k2: 22}, **h))
+    assert_equal([11, 12], o.kw(k2: 22, **h))
+    assert_equal([11, 22], o.kw(**h, **{k2: 22}))
+    assert_equal([11, 12], o.kw(**{k2: 22}, **h))
+
+    bug10315 = '[ruby-core:65368] [Bug #10315]'
+    assert_equal([23, 2], o.kw(**{k1: 22}, **{k1: 23}), bug10315)
+
     h = {k3: 31}
     assert_raise(ArgumentError) {o.kw(**h)}
     h = {"k1"=>11, k2: 12}
     assert_raise(TypeError) {o.kw(**h)}
+
+    bug10315 = '[ruby-core:65625] [Bug #10315]'
+    a = []
+    def a.add(x) push(x); x; end
+    def a.f(k:) k; end
+    a.clear
+    r = nil
+    assert_warn(/duplicated/) {r = eval("a.f(k: a.add(1), k: a.add(2))")}
+    assert_equal(2, r)
+    assert_equal([1, 2], a, bug10315)
+    a.clear
+    r = nil
+    assert_warn(/duplicated/) {r = eval("a.f({k: a.add(1), k: a.add(2)})")}
+    assert_equal(2, r)
+    assert_equal([1, 2], a, bug10315)
   end
 
   def test_keyword_self_reference

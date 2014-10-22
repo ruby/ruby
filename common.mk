@@ -182,7 +182,7 @@ $(EXTS_MK): $(MKFILES) all-incs $(PREP) $(RBCONFIG) $(LIBRUBY)
 configure-ext: $(EXTS_MK)
 
 build-ext: $(EXTS_MK)
-	$(Q)$(MAKE) -f $(EXTS_MK) $(MFLAGS) libdir="$(libdir)" LIBRUBY_EXTS=$(LIBRUBY_EXTS) ENCOBJS="$(ENCOBJS)"
+	$(Q)$(MAKE) -f $(EXTS_MK) $(MFLAGS) libdir="$(libdir)" LIBRUBY_EXTS=$(LIBRUBY_EXTS) ENCOBJS="$(ENCOBJS)" $(EXTSTATIC)
 
 prog: program wprogram
 
@@ -913,12 +913,19 @@ INSNS2VMOPT = --srcdir="$(srcdir)"
 
 {$(VPATH)}vm.inc: $(srcdir)/template/vm.inc.tmpl
 
-srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c {$(VPATH)}newline.c {$(VPATH)}id.c srcs-ext srcs-enc
+common-srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c {$(VPATH)}newline.c {$(VPATH)}id.c \
+	     srcs-lib srcs-ext
+
+srcs: common-srcs srcs-enc
 
 EXT_SRCS = $(srcdir)/ext/ripper/ripper.c $(srcdir)/ext/json/parser/parser.c \
 	   $(srcdir)/ext/dl/callback/callback.c  $(srcdir)/ext/rbconfig/sizeof/sizes.c
 
 srcs-ext: $(EXT_SRCS)
+
+LIB_SRCS = $(srcdir)/lib/unicode_normalize/tables.rb
+
+srcs-lib: $(LIB_SRCS)
 
 srcs-enc: $(ENC_MK)
 	$(ECHO) making srcs under enc
@@ -966,7 +973,7 @@ $(MINIPRELUDE_C): $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 prelude.c: $(srcdir)/tool/compile_prelude.rb $(RBCONFIG) \
 	   $(srcdir)/lib/rubygems/defaults.rb \
 	   $(srcdir)/lib/rubygems/core_ext/kernel_gem.rb \
-	   $(PRELUDE_SCRIPTS) $(PREP)
+	   $(PRELUDE_SCRIPTS) $(PREP) $(LIB_SRCS)
 	$(ECHO) generating $@
 	$(Q) $(COMPILE_PRELUDE) $(PRELUDE_SCRIPTS) $@
 
@@ -1075,6 +1082,8 @@ dist:
 up::
 	-$(Q)$(MAKE) $(MFLAGS) REVISION_FORCE=PHONY "$(REVISION_H)"
 
+after-update:: update-unicode update-gems common-srcs
+
 update-config_files: PHONY
 	$(Q) $(BASERUBY) -C "$(srcdir)/tool" \
 	    ../tool/downloader.rb -e gnu \
@@ -1082,18 +1091,34 @@ update-config_files: PHONY
 
 update-gems: PHONY
 	$(ECHO) Downloading bundled gem files...
-	$(Q) $(RUNRUBY) -I$(srcdir)/tool -rdownloader -answ \
-	    -C "$(srcdir)/gems" \
+	$(Q) $(RUNRUBY) -C "$(srcdir)/gems" \
+	    -I../tool -rdownloader -answ \
 	    -e 'gem, ver = *$$F' \
 	    -e 'gem = "#{gem}-#{ver}.gem"' \
 	    -e 'Downloader::RubyGems.download(gem)' \
 	    bundled_gems
 
+### set the following environment variable or uncomment the line if
+### the Unicode data files are updated every minute.
+# ALWAYS_UPDATE_UNICODE = yes
+
+UNICODE_FILES = $(srcdir)/enc/unicode/data/UnicodeData.txt \
+		$(srcdir)/enc/unicode/data/CompositionExclusions.txt \
+		$(srcdir)/enc/unicode/data/NormalizationTest.txt
+
+$(UNICODE_FILES): update-unicode
+
 update-unicode: PHONY
 	$(ECHO) Downloading Unicode data files...
+	$(Q) $(MAKEDIRS) "$(srcdir)/enc/unicode/data"
 	$(Q) $(BASERUBY) -C "$(srcdir)/enc/unicode/data" \
-	    ../../../tool/downloader.rb unicode \
+	    ../../../tool/downloader.rb -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode \
 	    UnicodeData.txt CompositionExclusions.txt NormalizationTest.txt
+
+$(srcdir)/lib/unicode_normalize/tables.rb: \
+		$(srcdir)/tool/unicode_norm_gen.rb $(UNICODE_FILES)
+	$(BASERUBY) -s -C "$(srcdir)" tool/unicode_norm_gen.rb \
+		-input=enc/unicode/data -ouput=lib/unicode_normalize
 
 info: info-program info-libruby_a info-libruby_so info-arch
 info-program: PHONY

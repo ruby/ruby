@@ -1584,6 +1584,8 @@ class TestString < Test::Unit::TestCase
     assert_equal(16, n.sum(17))
     n[0] = 2.chr
     assert_not_equal(15, n.sum)
+    assert_equal(17, n.sum(0))
+    assert_equal(17, n.sum(-1))
   end
 
   def check_sum(str, bits=16)
@@ -1598,7 +1600,7 @@ class TestString < Test::Unit::TestCase
     assert_equal(294, "abc".sum)
     check_sum("abc")
     check_sum("\x80")
-    0.upto(70) {|bits|
+    -3.upto(70) {|bits|
       check_sum("xyz", bits)
     }
   end

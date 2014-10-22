@@ -480,6 +480,9 @@ class TestM17N < Test::Unit::TestCase
     assert_regexp_fixed_ascii8bit(eval(a(%{/\xc2\xa1/n})))
     assert_regexp_fixed_ascii8bit(eval(a(%q{/\xc2\xa1/})))
 
+    s = '\xc2\xa1'
+    assert_regexp_fixed_ascii8bit(/#{s}/)
+
     assert_raise(SyntaxError) { eval("/\xa1\xa1/n".force_encoding("euc-jp")) }
 
     [/\xc2\xa1/n, eval(a(%{/\xc2\xa1/})), eval(a(%{/\xc2\xa1/n}))].each {|r|

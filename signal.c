@@ -22,6 +22,9 @@
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 # include <valgrind/memcheck.h>
@@ -535,7 +538,7 @@ int
 rb_sigaltstack_size(void)
 {
     /* XXX: BSD_vfprintf() uses >1500KiB stack and x86-64 need >5KiB stack. */
-    int size = 8192;
+    int size = 16*1024;
 
 #ifdef MINSIGSTKSZ
     if (size < MINSIGSTKSZ)
@@ -728,13 +731,13 @@ rb_get_next_signal(void)
 
 #if defined(USE_SIGALTSTACK) || defined(_WIN32)
 NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
-#if !(defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__))
-#elif defined __linux__
-# define USE_UCONTEXT_REG 1
-#elif defined __APPLE__
-# define USE_UCONTEXT_REG 1
-#endif
-#ifdef USE_UCONTEXT_REG
+# if !(defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__))
+# elif defined __linux__
+#   define USE_UCONTEXT_REG 1
+# elif defined __APPLE__
+#   define USE_UCONTEXT_REG 1
+# endif
+# ifdef USE_UCONTEXT_REG
 static void
 check_stack_overflow(const uintptr_t addr, const ucontext_t *ctx)
 {
@@ -770,7 +773,7 @@ check_stack_overflow(const uintptr_t addr, const ucontext_t *ctx)
 	ruby_thread_stack_overflow(th);
     }
 }
-#else
+# else
 static void
 check_stack_overflow(const void *addr)
 {
@@ -780,29 +783,36 @@ check_stack_overflow(const void *addr)
 	ruby_thread_stack_overflow(th);
     }
 }
-#endif
-#ifdef _WIN32
-#define CHECK_STACK_OVERFLOW() check_stack_overflow(0)
+# endif
+# ifdef _WIN32
+#   define CHECK_STACK_OVERFLOW() check_stack_overflow(0)
+# else
+#   define FAULT_ADDRESS info->si_addr
+#   ifdef USE_UCONTEXT_REG
+#     define CHECK_STACK_OVERFLOW() check_stack_overflow((uintptr_t)FAULT_ADDRESS, ctx)
+#   else
+#     define CHECK_STACK_OVERFLOW() check_stack_overflow(FAULT_ADDRESS)
+#   endif
+#   define MESSAGE_FAULT_ADDRESS " at %p", FAULT_ADDRESS
+# endif
 #else
-#define FAULT_ADDRESS info->si_addr
-# ifdef USE_UCONTEXT_REG
-# define CHECK_STACK_OVERFLOW() check_stack_overflow((uintptr_t)FAULT_ADDRESS, ctx)
-#else
-# define CHECK_STACK_OVERFLOW() check_stack_overflow(FAULT_ADDRESS)
-#endif
-#define MESSAGE_FAULT_ADDRESS " at %p", FAULT_ADDRESS
-#endif
-#else
-#define CHECK_STACK_OVERFLOW() (void)0
+# define CHECK_STACK_OVERFLOW() (void)0
 #endif
 #ifndef MESSAGE_FAULT_ADDRESS
-#define MESSAGE_FAULT_ADDRESS
+# define MESSAGE_FAULT_ADDRESS
 #endif
+
+#if defined SIGSEGV || defined SIGBUS || defined SIGILL || defined SIGFPE
+NOINLINE(static void check_reserved_signal_(const char *name, size_t name_len));
+/* noinine to reduce stack usage in signal handers */
+
+#define check_reserved_signal(name) check_reserved_signal_(name, sizeof(name)-1)
 
 #ifdef SIGBUS
 static RETSIGTYPE
 sigbus(int sig SIGINFO_ARG)
 {
+    check_reserved_signal("BUS");
 /*
  * Mac OS X makes KERN_PROTECTION_FAILURE when thread touch guard page.
  * and it's delivered as SIGBUS instead of SIGSEGV to userland. It's crazy
@@ -815,7 +825,6 @@ sigbus(int sig SIGINFO_ARG)
 }
 #endif
 
-#ifdef SIGSEGV
 static void
 ruby_abort(void)
 {
@@ -830,25 +839,64 @@ ruby_abort(void)
 
 }
 
-static int segv_received = 0;
 extern int ruby_disable_gc;
 
+#ifdef SIGSEGV
 static RETSIGTYPE
 sigsegv(int sig SIGINFO_ARG)
 {
-    if (segv_received) {
-	ssize_t RB_UNUSED_VAR(err);
-	static const char msg[] = "SEGV received in SEGV handler\n";
+    check_reserved_signal("SEGV");
+    CHECK_STACK_OVERFLOW();
+    rb_bug_context(SIGINFO_CTX, "Segmentation fault" MESSAGE_FAULT_ADDRESS);
+}
+#endif
 
-	err = write(2, msg, sizeof(msg));
+#ifdef SIGILL
+static RETSIGTYPE
+sigill(int sig SIGINFO_ARG)
+{
+    check_reserved_signal("ILL");
+#if defined __APPLE__
+    CHECK_STACK_OVERFLOW();
+#endif
+    rb_bug_context(SIGINFO_CTX, "Illegal instruction" MESSAGE_FAULT_ADDRESS);
+}
+#endif
+
+static void
+check_reserved_signal_(const char *name, size_t name_len)
+{
+    static const char *received;
+    const char *prev = ATOMIC_PTR_EXCHANGE(received, name);
+
+    if (prev) {
+	ssize_t RB_UNUSED_VAR(err);
+#define NOZ(name, str) name[sizeof(str)-1] = str
+	static const char NOZ(msg1, " received in ");
+	static const char NOZ(msg2, " handler\n");
+
+#ifdef HAVE_WRITEV
+	struct iovec iov[4];
+
+	iov[0].iov_base = (void *)name;
+	iov[0].iov_len = name_len;
+	iov[1].iov_base = (void *)msg1;
+	iov[1].iov_len = sizeof(msg1);
+	iov[2].iov_base = (void *)prev;
+	iov[2].iov_len = strlen(prev);
+	iov[3].iov_base = (void *)msg2;
+	iov[3].iov_len = sizeof(msg2);
+	err = writev(2, iov, 4);
+#else
+	err = write(2, name, strlen(name));
+	err = write(2, msg1, name_len);
+	err = write(2, prev, strlen(prev));
+	err = write(2, msg2, sizeof(msg2));
+#endif
 	ruby_abort();
     }
 
-    CHECK_STACK_OVERFLOW();
-
-    segv_received = 1;
     ruby_disable_gc = 1;
-    rb_bug_context(SIGINFO_CTX, "Segmentation fault" MESSAGE_FAULT_ADDRESS);
 }
 #endif
 
@@ -1261,7 +1309,9 @@ install_sighandler(int signum, sighandler_t handler)
     rb_enable_interrupt();
     return 0;
 }
-#define install_sighandler(signum, handler) (install_sighandler(signum, handler) ? rb_bug(#signum) : (void)0)
+#ifndef __native_client__
+#  define install_sighandler(signum, handler) (install_sighandler(signum, handler) ? rb_bug(#signum) : (void)0)
+#endif
 
 #if defined(SIGCLD) || defined(SIGCHLD)
 static int
@@ -1281,7 +1331,9 @@ init_sigchld(int sig)
     rb_enable_interrupt();
     return 0;
 }
-#define init_sigchld(signum) (init_sigchld(signum) ? rb_bug(#signum) : (void)0)
+#  ifndef __native_client__
+#    define init_sigchld(signum) (init_sigchld(signum) ? rb_bug(#signum) : (void)0)
+#  endif
 #endif
 
 void
@@ -1376,6 +1428,9 @@ Init_signal(void)
     if (!ruby_enable_coredump) {
 #ifdef SIGBUS
 	install_sighandler(SIGBUS, (sighandler_t)sigbus);
+#endif
+#ifdef SIGILL
+	install_sighandler(SIGILL, (sighandler_t)sigill);
 #endif
 #ifdef SIGSEGV
 # ifdef USE_SIGALTSTACK

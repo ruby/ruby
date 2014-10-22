@@ -4653,7 +4653,7 @@ time_mdump(VALUE time)
 	(vtm.mon-1)      << 10 | /*  4 */
 	vtm.mday         <<  5 | /*  5 */
 	vtm.hour;                /*  5 */
-    s = vtm.min          << 26 | /*  6 */
+    s = (unsigned long)vtm.min << 26 | /*  6 */
 	vtm.sec          << 20 | /*  6 */
 	usec;    /* 20 */
 
@@ -4766,10 +4766,10 @@ time_mload(VALUE time, VALUE str)
 
     p = s = 0;
     for (i=0; i<4; i++) {
-	p |= buf[i]<<(8*i);
+	p |= (unsigned long)buf[i]<<(8*i);
     }
     for (i=4; i<8; i++) {
-	s |= buf[i]<<(8*(i-4));
+	s |= (unsigned long)buf[i]<<(8*(i-4));
     }
 
     if ((p & (1UL<<31)) == 0) {

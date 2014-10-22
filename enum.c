@@ -555,8 +555,7 @@ inject_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, p))
 
     ENUM_WANT_SVALUE();
 
-    if (memo->u2.argc == 0) {
-	memo->u2.argc = 1;
+    if (memo->u1.value == Qundef) {
 	memo->u1.value = i;
     }
     else {
@@ -573,12 +572,12 @@ inject_op_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, p))
 
     ENUM_WANT_SVALUE();
 
-    if (memo->u2.argc == 0) {
-	memo->u2.argc = 1;
+    if (memo->u1.value == Qundef) {
 	memo->u1.value = i;
     }
     else if (SYMBOL_P(name = memo->u3.value)) {
-	memo->u1.value = rb_funcall(memo->u1.value, SYM2ID(name), 1, i);
+	const ID mid = SYM2ID(name);
+	memo->u1.value = rb_funcall(memo->u1.value, mid, 1, i);
     }
     else {
 	VALUE args[2];
@@ -642,6 +641,7 @@ enum_inject(int argc, VALUE *argv, VALUE obj)
 
     switch (rb_scan_args(argc, argv, "02", &init, &op)) {
       case 0:
+	init = Qundef;
 	break;
       case 1:
 	if (rb_block_given_p()) {
@@ -649,8 +649,7 @@ enum_inject(int argc, VALUE *argv, VALUE obj)
 	}
 	id = rb_check_id(&init);
 	op = id ? ID2SYM(id) : init;
-	argc = 0;
-	init = Qnil;
+	init = Qundef;
 	iter = inject_op_i;
 	break;
       case 2:
@@ -662,8 +661,9 @@ enum_inject(int argc, VALUE *argv, VALUE obj)
 	iter = inject_op_i;
 	break;
     }
-    memo = NEW_MEMO(init, argc, op);
+    memo = NEW_MEMO(init, Qnil, op);
     rb_block_call(obj, id_each, 0, 0, iter, (VALUE)memo);
+    if (memo->u1.value == Qundef) return Qnil;
     return memo->u1.value;
 }
 
@@ -1110,6 +1110,7 @@ struct nmin_data {
   long bufmax;
   long curlen;
   VALUE buf;
+  VALUE limit;
   int (*cmpfunc)(const void *, const void *, void *);
   int rev; /* max if 1 */
   int by; /* min_by if 1 */
@@ -1221,17 +1222,32 @@ nmin_filter(struct nmin_data *data)
 
     data->curlen = data->n;
     rb_ary_resize(data->buf, data->n * eltsize);
+    data->limit = RARRAY_PTR(data->buf)[(data->n-1)*eltsize];
 }
 
 static VALUE
 nmin_i(VALUE i, VALUE *_data, int argc, VALUE *argv)
 {
     struct nmin_data *data = (struct nmin_data *)_data;
+    VALUE cmpv;
 
     ENUM_WANT_SVALUE();
 
     if (data->by)
-	rb_ary_push(data->buf, rb_yield(i));
+	cmpv = rb_yield(i);
+    else
+	cmpv = i;
+
+    if (data->limit != Qundef) {
+        int c = data->cmpfunc(&cmpv, &data->limit, data);
+        if (data->rev)
+            c = -c;
+        if (c > 0)
+            return Qnil;
+    }
+
+    if (data->by)
+	rb_ary_push(data->buf, cmpv);
     rb_ary_push(data->buf, i);
 
     data->curlen++;
@@ -1259,6 +1275,7 @@ nmin_run(VALUE obj, VALUE num, int by, int rev)
     data.bufmax = data.n * 4;
     data.curlen = 0;
     data.buf = rb_ary_tmp_new(data.bufmax * (by ? 2 : 1));
+    data.limit = Qundef;
     data.cmpfunc = by ? nmin_cmp :
                    rb_block_given_p() ? nmin_block_cmp :
 		   nmin_cmp;
@@ -1283,6 +1300,9 @@ nmin_run(VALUE obj, VALUE num, int by, int rev)
     else {
 	ruby_qsort(RARRAY_PTR(result), RARRAY_LEN(result), sizeof(VALUE),
 		   data.cmpfunc, (void *)&data);
+    }
+    if (rev) {
+        rb_ary_reverse(result);
     }
     *((VALUE *)&RBASIC(result)->klass) = rb_cArray;
     return result;
@@ -1496,8 +1516,8 @@ max_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *  as an array.
  *
  *     a = %w[albatross dog horse]
- *     a.max(2)                                  #=> ["dog", "horse"]
- *     a.max(2) {|a, b| a.length <=> b.length }  #=> ["horse", "albatross"]
+ *     a.max(2)                                  #=> ["horse", "dog"]
+ *     a.max(2) {|a, b| a.length <=> b.length }  #=> ["albatross", "horse"]
  */
 
 static VALUE
@@ -1775,7 +1795,7 @@ max_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *  as an array.
  *
  *     a = %w[albatross dog horse]
- *     a.max_by(2) {|x| x.length } #=> ["horse", "albatross"]
+ *     a.max_by(2) {|x| x.length } #=> ["albatross", "horse"]
  *
  *  enum.max_by(n) can be used to implement weighted random sampling.
  *  Following example implements and use Enumerable#wsample.

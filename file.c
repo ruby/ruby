@@ -32,6 +32,9 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#ifdef HAVE_SYS_TIME_H
+# include <sys/time.h>
+#endif
 
 #ifdef HAVE_SYS_FILE_H
 # include <sys/file.h>
@@ -63,12 +66,15 @@ int flock(int, int);
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#if defined(__native_client__) && defined(NACL_NEWLIB)
-# include "nacl/utime.h"
-# include "nacl/stat.h"
-# include "nacl/unistd.h"
+#if defined(__native_client__)
+# if defined(NACL_NEWLIB)
+#  include "nacl/utime.h"
+#  include "nacl/stat.h"
+#  include "nacl/unistd.h"
+# else
+#  undef HAVE_UTIMENSAT
+# endif
 #endif
-
 
 #ifdef HAVE_SYS_MKDEV_H
 #include <sys/mkdev.h>
@@ -720,7 +726,7 @@ stat_atimespec(struct stat *st)
 #elif defined(HAVE_STRUCT_STAT_ST_ATIMESPEC)
     ts.tv_nsec = st->st_atimespec.tv_nsec;
 #elif defined(HAVE_STRUCT_STAT_ST_ATIMENSEC)
-    ts.tv_nsec = st->st_atimensec;
+    ts.tv_nsec = (long)st->st_atimensec;
 #else
     ts.tv_nsec = 0;
 #endif
@@ -744,7 +750,7 @@ stat_mtimespec(struct stat *st)
 #elif defined(HAVE_STRUCT_STAT_ST_MTIMESPEC)
     ts.tv_nsec = st->st_mtimespec.tv_nsec;
 #elif defined(HAVE_STRUCT_STAT_ST_MTIMENSEC)
-    ts.tv_nsec = st->st_mtimensec;
+    ts.tv_nsec = (long)st->st_mtimensec;
 #else
     ts.tv_nsec = 0;
 #endif
@@ -768,7 +774,7 @@ stat_ctimespec(struct stat *st)
 #elif defined(HAVE_STRUCT_STAT_ST_CTIMESPEC)
     ts.tv_nsec = st->st_ctimespec.tv_nsec;
 #elif defined(HAVE_STRUCT_STAT_ST_CTIMENSEC)
-    ts.tv_nsec = st->st_ctimensec;
+    ts.tv_nsec = (long)st->st_ctimensec;
 #else
     ts.tv_nsec = 0;
 #endif
@@ -1138,7 +1144,7 @@ rb_file_lstat(VALUE obj)
 static int
 rb_group_member(GETGROUPS_T gid)
 {
-#ifdef _WIN32
+#if defined(_WIN32) || !defined(HAVE_GETGROUPS)
     return FALSE;
 #else
     int rv = FALSE;
@@ -1188,6 +1194,15 @@ rb_group_member(GETGROUPS_T gid)
 
 #if defined(S_IXGRP) && !defined(_WIN32) && !defined(__CYGWIN__)
 #define USE_GETEUID 1
+#endif
+
+#ifdef __native_client__
+// Although the NaCl toolchain contain eaccess() is it not yet
+// overridden by nacl_io.
+// TODO(sbc): Remove this once eaccess() is wired up correctly
+// in NaCl.
+# undef HAVE_EACCESS
+# undef USE_GETEUID
 #endif
 
 #ifndef HAVE_EACCESS
@@ -2529,7 +2544,7 @@ utime_internal(const char *path, VALUE pathv, void *arg)
     const struct timespec *tsp = v->tsp;
     struct timeval tvbuf[2], *tvp = NULL;
 
-#ifdef HAVE_UTIMENSAT
+#if defined(HAVE_UTIMENSAT)
     static int try_utimensat = 1;
 
     if (try_utimensat) {
@@ -5502,9 +5517,6 @@ rb_path_check(const char *path)
 }
 
 #ifndef _WIN32
-#ifdef __native_client__
-__attribute__((noinline))
-#endif
 int
 rb_file_load_ok(const char *path)
 {

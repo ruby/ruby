@@ -81,8 +81,8 @@ class TestRange < Test::Unit::TestCase
     assert_equal(0, (0..0).max)
     assert_equal(nil, (0...0).max)
 
-    assert_equal([8,9,10], (0..10).max(3))
-    assert_equal([7,8,9], (0...10).max(3))
+    assert_equal([10,9,8], (0..10).max(3))
+    assert_equal([9,8,7], (0...10).max(3))
   end
 
   def test_initialize_twice
