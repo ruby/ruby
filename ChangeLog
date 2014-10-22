@@ -1,3 +1,9 @@
+Wed Oct 22 18:00:00 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* test/test-unicode_normalize.rb: Importing from
+	  https://github.com/duerst/eprun/blob/master/test/test_normalize.rb.
+	  (removing trailing whitespace, fixing EOLs and adding EOL property)
+
 Wed Oct 22 08:21:09 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
 	* nacl/pepper_main.c (Instance_DidCreate): mount devfs and rebind fd 0
@@ -39,7 +45,7 @@ Tue Oct 21 17:32:32 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* common.mk: Adding explicit creation of directory
 	  enc/unicode/data because git doesn't handle empty
-	  directories.
+	  directories. [patch by Masahiro Ide, filed with r48073]
 
 Tue Oct 21 17:12:12 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
