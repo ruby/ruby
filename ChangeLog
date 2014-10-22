@@ -1,3 +1,22 @@
+Wed Oct 22 23:02:49 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/ssl.rb (DEFAULT_PARAMS): override
+	  options even if OpenSSL::SSL::OP_NO_SSLv3 is not defined.
+	  this is pointed out by Stephen Touset. [ruby-core:65711] [Bug #9424]
+
+Wed Oct 22 23:02:49 2014  Martin Bosslet  <Martin.Bosslet@gmail.com>
+
+	* test/openssl/test_ssl.rb: Reuse TLS default options from
+	  OpenSSL::SSL::SSLContext::DEFAULT_PARAMS.
+
+Wed Oct 22 23:02:49 2014  Martin Bosslet  <Martin.Bosslet@gmail.com>
+
+	* lib/openssl/ssl.rb: Explicitly whitelist the default
+	  SSL/TLS ciphers. Forbid SSLv2 and SSLv3, disable
+	  compression by default.
+	  Reported by Jeff Hodges.
+	  [ruby-core:59829] [Bug #9424]
+
 Sun Oct 19 03:22:53 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* vm_core.h, vm.c, proc.c: fix GC mark miss on bindings.
