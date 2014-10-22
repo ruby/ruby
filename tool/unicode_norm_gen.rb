@@ -17,7 +17,7 @@ class Integer
     elsif self>0x7f
       "\\u#{to_s(16).upcase.rjust(4, '0')}"
     else
-      chr.sub(/[\\\"]/, '\\\&')
+      chr.sub(/[\\\"]/, "\\\\\\\&")
     end
   end
 end

@@ -1,3 +1,10 @@
+Wed Oct 22 19:18:18 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* tool/unicode_norm_gen.rb: Fixed escaping of backslash and
+	  double quote ('\\\&' -> "\\\\\\\&"; double quoted string
+	  is needed to make \& mean last match; double double
+	  backslashes are needed because of two layers of escaping).
+
 Wed Oct 22 18:13:29 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/test-unicode_normalize.rb: as often said, ruby is sometimes built
