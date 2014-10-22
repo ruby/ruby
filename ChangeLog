@@ -1,3 +1,9 @@
+Wed Oct 22 21:31:56 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* common.mk (prelude.c): add dependency to LIB_SRCS because
+	  enc/prelude.rb requires lib/unicode_normalize.rb, and it's also
+	  requires lib/unicode_normalize/tables.rb (=LIB_SRCS).
+
 Wed Oct 22 21:09:51 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
 	* configure.in (nacl_cv_cpu_nick): fix typo in PNaCl.
