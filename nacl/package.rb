@@ -15,7 +15,11 @@ include NaClConfig
 class Installation
   include NaClConfig
 
-  SRC_DIRS = [ Dir.pwd, HOST_LIB ]
+  SRC_DIRS = [
+    Dir.pwd,
+    HOST_LIB,
+    NACL_LIB,
+  ]
 
   def initialize(destdir)
     @destdir = destdir

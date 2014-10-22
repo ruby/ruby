@@ -218,5 +218,4 @@ $(CPU) = $(PROCESSOR_LEVEL)
 $(BANG)include $$(srcdir)/win32/Makefile.sub
 <<
 	@$(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat config.h config.status
-	@$(MAKE) -l after-configure
 	@echo "type `nmake' to make ruby."

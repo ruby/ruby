@@ -5517,9 +5517,6 @@ rb_path_check(const char *path)
 }
 
 #ifndef _WIN32
-#ifdef __native_client__
-__attribute__((noinline,weak))
-#endif
 int
 rb_file_load_ok(const char *path)
 {

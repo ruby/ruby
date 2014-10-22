@@ -24,6 +24,8 @@ module NaClConfig
   ].find{|path| File.exist?(path) } or raise "No create_nmf found"
   HOST_LIB = File.join(SDK_ROOT, 'toolchain', config['NACL_TOOLCHAIN'], HOST, "lib#{lib_suffix}")
 
+  NACL_LIB = File.join(SDK_ROOT, 'lib', config['NACL_LIB_PATH'], 'Release')
+
   INSTALL_PROGRAM = config['INSTALL_PROGRAM']
   INSTALL_LIBRARY = config['INSTALL_DATA']
 
