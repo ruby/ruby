@@ -2,8 +2,6 @@
 
 # Copyright Ayumu Nojima (野島 歩) and Martin J. Dürst (duerst@it.aoyama.ac.jp)
 
-Encoding.default_external = 'utf-8'
-Encoding.default_internal = 'utf-8'
 require 'test/unit'
 
 NormTest = Struct.new :source, :NFC, :NFD, :NFKC, :NFKD, :line
