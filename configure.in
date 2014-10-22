@@ -101,7 +101,7 @@ AC_DEFUN([RUBY_NACL],
           [i?86], [nacl_cv_cpu_nick=x86
                    nacl_cv_cpu_nick2=x86_32],
           [le32], [nacl_cv_cpu_nick=pnacl
-                   nacl_cv_cpu_nick2=pnacl,
+                   nacl_cv_cpu_nick2=pnacl
                    ac_cv_exeext=.pexe],
           [nacl_cv_cpu_nick=$target_cpu])
   AS_CASE(["$build_os"],
@@ -153,13 +153,19 @@ AC_DEFUN([RUBY_NACL],
   AC_MSG_RESULT(${NACL_SDK_ROOT}/toolchain/${NACL_TOOLCHAIN}/bin)
 
   RUBY_APPEND_OPTIONS(XCFLAGS, '-I$(NACL_SDK_ROOT)/include')
+  if test x"${nacl_cv_cpu_nick}" = xpnacl; then
+    RUBY_APPEND_OPTIONS(XCFLAGS, '-isystem $(NACL_SDK_ROOT)/include/pnacl')
+  elif test x"${nacl_cv_build_variant}" = xnewlib; then
+    RUBY_APPEND_OPTIONS(XCFLAGS, '-isystem $(NACL_SDK_ROOT)/include/newlib')
+  fi
+
   AC_MSG_CHECKING([nacl library path])
   if test -d "${NACL_SDK_ROOT}/lib/${nacl_cv_build_variant}_${nacl_cv_cpu_nick2}/Release"; then
     nacl_cv_libpath="${nacl_cv_build_variant}_${nacl_cv_cpu_nick2}"
   elif test -d "${NACL_SDK_ROOT}/lib/${nacl_cv_cpu_nick2}/Release"; then
     nacl_cv_libpath="${nacl_cv_cpu_nick2}"
   else
-    AC_MSG_ERROR("not found")
+    AC_MSG_ERROR([not found])
   fi
   AC_MSG_RESULT([${nacl_cv_libpath}])
   RUBY_APPEND_OPTIONS(XLDFLAGS, '-L$(NACL_SDK_ROOT)/'"lib/${nacl_cv_libpath}/Release")
@@ -169,6 +175,7 @@ AC_DEFUN([RUBY_NACL],
   AC_SUBST(NACL_SDK_VARIANT, "${nacl_cv_build_variant}")
   AC_SUBST(NACL_LIB_PATH, "${nacl_cv_libpath}")
   AC_CHECK_TOOLS(CC, [clang gcc])
+  AC_CHECK_TOOLS(CXX, [clang++ g++])
 ])])
 
 AC_DEFUN([RUBY_NACL_CHECK_PEPPER_TYPES],

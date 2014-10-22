@@ -7,11 +7,15 @@ include Makefile
 NACL_SDK_ROOT=@NACL_SDK_ROOT@
 NACL_TOOLCHAIN=@NACL_TOOLCHAIN@
 NACL_TOOLCHAIN_DIR=$(NACL_SDK_ROOT)/toolchain/$(NACL_TOOLCHAIN)
+CXX=@CXX@
 
 # Don't override CC/LD/etc if they are already set to absolute
 # paths (this is the case when building in the naclports tree).
 ifeq ($(dir $(CC)),./)
 CC:=$(NACL_TOOLCHAIN_DIR)/bin/$(CC)
+endif
+ifeq ($(dir $(CXX)),./)
+CXX:=$(NACL_TOOLCHAIN_DIR)/bin/$(CXX)
 endif
 ifeq ($(dir $(LD)),./)
 LD:=$(NACL_TOOLCHAIN_DIR)/bin/$(LD)
@@ -43,7 +47,7 @@ PPROGRAM_NMF=$(PPROGRAM:$(EXEEXT)=.nmf)
 
 GNUmakefile: $(srcdir)/nacl/GNUmakefile.in
 $(PPROGRAM): $(PROGRAM) pepper_main.$(OBJEXT)
-	$(Q)$(MAKE) $(MFLAGS) PROGRAM=$(PPROGRAM) MAINOBJ="pepper_main.$(OBJEXT)" LIBS="$(LIBS) $(PEPPER_LIBS)" program
+	$(Q)$(MAKE) $(MFLAGS) PROGRAM=$(PPROGRAM) MAINOBJ="pepper_main.$(OBJEXT)" LIBS="$(LIBS) $(PEPPER_LIBS)" CC="$(CXX)" program
 $(PROGRAM_NMF) $(PPROGRAM_NMF): $(@:.nmf=$(EXEEXT)) nacl/create_nmf.rb
 
 .PHONY: pprogram package show_naclflags

@@ -1,3 +1,13 @@
+Wed Oct 22 21:09:51 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* configure.in (nacl_cv_cpu_nick): fix typo in PNaCl.
+	  (XCFLAGS) Add -isystem flag to pnacl and nacl-newlib
+	  (CXX): added
+
+	* nacl/GNUmakefile.in (CXX): Added
+	  (PPROGRAM): Use clang++ instead of clang because libnacl_io
+	  depends on c++ std lib.
+
 Wed Oct 22 21:07:32 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
 	* common.mk (build-ext): avoid trying to build dynamic libraries
