@@ -71,6 +71,12 @@ with all sufficient information, see the ChangeLog file.
   * Process creation methods, such as spawn(), uses vfork() system call.
     vfork() is faster than fork() when the parent process uses huge memory.
 
+* String
+  * New methods:
+    * String#unicode_normalize
+    * String#unicode_normalize!
+    * String#unicode_normalized?
+
 * Symbol
   * Improvements
     * Most symbols which are returned by String#to_sym and

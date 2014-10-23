@@ -1,3 +1,7 @@
+Thu Oct 23 10:21:21 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* NEWS: Added String#unicode_normalize(|!|d?) [ci skip]
+
 Thu Oct 23 03:41:51 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (unknown_keyword_error): delete expected keywords
