@@ -8,10 +8,10 @@ class TestHash < Test::Unit::TestCase
       hash[1] = 2
       called = false
       assert_equal 1, hash.size
-      assert_equal true, hash.delete(1) {called = true}
+      assert_equal [2], hash.delete!(1) {called = true}
       assert_equal false, called, "block called"
       assert_equal 0, hash.size
-      assert_equal false, hash.delete(1) {called = true}
+      assert_equal nil, hash.delete!(1) {called = true}
       assert_equal false, called, "block called"
       assert_equal 0, hash.size
     end
