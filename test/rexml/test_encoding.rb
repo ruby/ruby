@@ -87,8 +87,8 @@ module REXMLTests
       REXML::Document.new doc
     end
 
-    def test_ticket_110
-      utf16 = File.open(fixture_path("ticket_110_utf16.xml")) do |f|
+    def test_parse_utf16
+      utf16 = File.open(fixture_path("utf16.xml")) do |f|
         REXML::Document.new(f)
       end
       assert_equal("UTF-16", utf16.encoding)

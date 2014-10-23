@@ -1,3 +1,14 @@
+Thu Oct 23 16:29:02 2014  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_encoding.rb
+	  (REXMLTests::EncodingTester#test_parse_utf16): Use meaningful
+	  test name. "ticket" in the old test name means the ticket in
+	  REXML's issue tracker. The REXML's issue tracker was gone. So
+	  "ticket" is meaningless.
+
+	* test/rexml/data/ticket_110_utf16.xml: Rename to ...
+	* test/rexml/data/utf16.xml: ... this.
+
 Thu Oct 23 16:18:11 2014  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_encoding.rb
