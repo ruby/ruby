@@ -1922,6 +1922,7 @@ EOS
     er, ew = IO.pipe
     unless runner = IO.popen("-")
       er.close
+      status = true
       begin
         $stderr.reopen($stdout)
         trap(:QUIT) {}
@@ -1934,10 +1935,13 @@ EOS
           $stdout.flush
         end
       ensure
-        ew.puts([Marshal.dump($!)].pack("m0")) if $!
+        if $!
+          ew.puts([Marshal.dump($!)].pack("m0"))
+          status = false
+        end
         ew.close
+        exit!(status)
       end
-      exit!(true)
     end
     ew.close
     begin

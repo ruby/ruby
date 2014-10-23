@@ -1,3 +1,8 @@
+Thu Oct 23 10:22:24 2014  Eric Wong  <e@80x24.org>
+
+	* test/ruby/test_process.rb (test_deadlock_by_signal_at_forking):
+	  ensure exit! during fork failure
+
 Thu Oct 23 10:21:21 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* NEWS: Added String#unicode_normalize(|!|d?) [ci skip]
