@@ -1,3 +1,8 @@
+Thu Oct 23 21:42:54 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_delete): now does not call the block given to
+	  the current method.  [ruby-core:65861] [Bug #10413]
+
 Thu Oct 23 19:13:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_method.c (rb_method_entry_make): warn redefinition only for

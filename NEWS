@@ -289,6 +289,8 @@ with all sufficient information, see the ChangeLog file.
   * RUBY_INTERNAL_EVENT_GC_EXIT
     r47528
 
+* rb_hash_delete() now does not call the block given to the current method.
+
 === Build system updates
 
 * jemalloc is optionally supported via `./configure --with-jemalloc`
