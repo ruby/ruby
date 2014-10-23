@@ -7,8 +7,6 @@ require 'test/unit'
 NormTest = Struct.new :source, :NFC, :NFD, :NFKC, :NFKD, :line
 
 class TestNormalize < Test::Unit::TestCase
-  @@debug = false # if true, generation of explicit error messages is switched on
-                  # false is about two times faster than true
   def read_tests
     IO.readlines(File.expand_path('../enc/unicode/data/NormalizationTest.txt', __dir__), encoding: 'utf-8')
     .collect.with_index { |linedata, linenumber| [linedata, linenumber]}
@@ -30,16 +28,14 @@ class TestNormalize < Test::Unit::TestCase
 
   def self.generate_test_normalize(target, normalization, source, prechecked)
     define_method "test_normalize_to_#{target}_from_#{source}_with_#{normalization}" do
-      @@tests.each do |test|
+      expected = actual = test = nil
+      mesg = proc {"#{to_codepoints(expected)} expected but was #{to_codepoints(actual)} on line #{test[:line]} (#{normalization})"}
+      @@tests.each do |t|
+        test = t
         if not prechecked or test[source]==test[prechecked]
           expected = test[target]
           actual = test[source].unicode_normalize(normalization)
-          if @@debug
-            assert_equal expected, actual,
-                "#{to_codepoints(expected)} expected but was #{to_codepoints(actual)} on line #{test[:line]} (#{normalization})"
-          else
-            assert_equal expected, actual
-          end
+          assert_equal expected, actual, mesg
         end
       end
     end
@@ -82,14 +78,12 @@ class TestNormalize < Test::Unit::TestCase
 
   def self.generate_test_check_true(source, normalization)
     define_method "test_check_true_#{source}_as_#{normalization}" do
-      @@tests.each do |test|
+      test = nil
+      mesg = proc {"#{to_codepoints(test[source])} should check as #{normalization} but does not on line #{test[:line]}"}
+      @@tests.each do |t|
+        test = t
         actual = test[source].unicode_normalized?(normalization)
-        if @@debug
-          assert_equal true, actual,
-              "#{to_codepoints(test[source])} should check as #{normalization} but does not on line #{test[:line]}"
-        else
-          assert_equal true, actual
-        end
+        assert_equal true, actual, mesg
       end
     end
   end
@@ -103,15 +97,13 @@ class TestNormalize < Test::Unit::TestCase
 
   def self.generate_test_check_false(source, compare, normalization)
     define_method "test_check_false_#{source}_as_#{normalization}" do
-      @@tests.each do |test|
+      test = nil
+      mesg = proc {"#{to_codepoints(test[source])} should not check as #{normalization} but does on line #{test[:line]}"}
+      @@tests.each do |t|
+        test = t
         if test[source] != test[compare]
           actual = test[source].unicode_normalized?(normalization)
-          if @@debug
-            assert_equal false, actual,
-                "#{to_codepoints(test[source])} should not check as #{normalization} but does on line #{test[:line]}"
-          else
-            assert_equal false, actual
-          end
+          assert_equal false, actual, mesg
         end
       end
     end
