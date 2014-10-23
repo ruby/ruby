@@ -182,7 +182,8 @@ $(EXTS_MK): $(MKFILES) all-incs $(PREP) $(RBCONFIG) $(LIBRUBY)
 configure-ext: $(EXTS_MK)
 
 build-ext: $(EXTS_MK)
-	$(Q)$(MAKE) -f $(EXTS_MK) $(MFLAGS) libdir="$(libdir)" LIBRUBY_EXTS=$(LIBRUBY_EXTS) ENCOBJS="$(ENCOBJS)" $(EXTSTATIC)
+	$(Q)$(MAKE) -f $(EXTS_MK) $(MFLAGS) libdir="$(libdir)" LIBRUBY_EXTS=$(LIBRUBY_EXTS) \
+	    ENCOBJS="$(ENCOBJS)" ALWAYS_UPDATE_UNICODE=no $(EXTSTATIC)
 
 prog: program wprogram
 
@@ -1106,14 +1107,18 @@ UNICODE_FILES = $(srcdir)/enc/unicode/data/UnicodeData.txt \
 		$(srcdir)/enc/unicode/data/CompositionExclusions.txt \
 		$(srcdir)/enc/unicode/data/NormalizationTest.txt
 
-$(UNICODE_FILES): update-unicode
+update-unicode: $(UNICODE_FILES) PHONY
+$(UNICODE_FILES): ./.update-unicode.time
 
-update-unicode: PHONY
+UPDATE_UNICODE_FILES_DEPS = $(ALWAYS_UPDATE_UNICODE:yes=PHONY)
+
+./.update-unicode.time: $(UPDATE_UNICODE_FILES_DEPS:no=)
 	$(ECHO) Downloading Unicode data files...
 	$(Q) $(MAKEDIRS) "$(srcdir)/enc/unicode/data"
 	$(Q) $(BASERUBY) -C "$(srcdir)/enc/unicode/data" \
 	    ../../../tool/downloader.rb -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode \
 	    UnicodeData.txt CompositionExclusions.txt NormalizationTest.txt
+	@exit > .update-unicode.time
 
 $(srcdir)/lib/unicode_normalize/tables.rb: \
 		$(srcdir)/tool/unicode_norm_gen.rb $(UNICODE_FILES)
