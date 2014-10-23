@@ -285,7 +285,7 @@ module REXML
       case @encoding
       when "UTF-16BE", "UTF-16LE"
         @source.binmode
-        @source.set_encoding(@encoding)
+        @source.set_encoding(@encoding, @encoding)
       end
       @line_break = encode(">")
       @pending_buffer, @buffer = @buffer, ""

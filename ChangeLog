@@ -1,3 +1,17 @@
+Thu Oct 23 17:19:04 2014  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/source.rb (REXML::IOSource#encoding_updated): Fix a
+	  bug that can't parse XML correctly when
+	  Encoding.default_internal is different with XML
+	  encoding. REXML::Source converts XML encoding on read. So IO
+	  should not convert XML encoding.
+	  Based on patch by NAKAMURA Usaku.
+	  [ruby-dev:48686] [Bug #10418]
+
+	* test/rexml/test_encoding.rb
+	  (REXMLTests::EncodingTester#test_parse_utf16_with_utf8_default_internal):
+	  Add the for the above case.
+
 Thu Oct 23 16:29:02 2014  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_encoding.rb
