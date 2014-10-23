@@ -1,3 +1,9 @@
+Thu Oct 23 19:13:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_method_entry_make): warn redefinition only for
+	  already defined methods, but not for undefined methods.
+	  [ruby-dev:48691] [Bug #10421]
+
 Thu Oct 23 17:19:04 2014  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/source.rb (REXML::IOSource#encoding_updated): Fix a

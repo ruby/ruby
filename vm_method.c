@@ -379,7 +379,7 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
     }
     /* check mid */
     if (mid == object_id || mid == id__send__) {
-	if (type == VM_METHOD_TYPE_ISEQ) {
+	if (type == VM_METHOD_TYPE_ISEQ && rb_method_boundp(klass, mid, 0)) {
 	    rb_warn("redefining `%s' may cause serious problems", rb_id2name(mid));
 	}
     }
