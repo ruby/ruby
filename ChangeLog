@@ -154,7 +154,7 @@ Wed Oct 22 00:01:09 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
 	* configure.in (XCFLAGS): Add include path for NaCl libraries.
 	  (XLDFLAGS): ditto.
-	  (NACL_LIB_PATH): new stubstitution
+	  (NACL_LIB_PATH): new substitution
 
 	* nacl/nacl-config.rb: support NACL_LIB_PATH
 
