@@ -91,7 +91,7 @@ module REXMLTests
       utf16 = File.open(fixture_path("ticket_110_utf16.xml")) do |f|
         REXML::Document.new(f)
       end
-      assert_equal(utf16.encoding, "UTF-16")
+      assert_equal("UTF-16", utf16.encoding)
       assert( utf16[0].kind_of?(REXML::XMLDecl))
     end
   end
