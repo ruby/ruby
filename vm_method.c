@@ -199,6 +199,7 @@ rb_free_method_entry(rb_method_entry_t *me)
     xfree(me);
 }
 
+static inline rb_method_entry_t *search_method(VALUE klass, ID id, VALUE *defined_class_ptr);
 static int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
 
 static inline rb_method_entry_t *
@@ -379,7 +380,7 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
     }
     /* check mid */
     if (mid == object_id || mid == id__send__) {
-	if (type == VM_METHOD_TYPE_ISEQ && rb_method_boundp(klass, mid, 0)) {
+	if (type == VM_METHOD_TYPE_ISEQ && search_method(klass, mid, 0)) {
 	    rb_warn("redefining `%s' may cause serious problems", rb_id2name(mid));
 	}
     }
