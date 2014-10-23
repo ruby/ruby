@@ -1,3 +1,8 @@
+Thu Oct 23 10:22:41 2014  Eric Wong  <e@80x24.org>
+
+	* test/ruby/test_process.rb (test_deadlock_by_signal_at_forking):
+	  use IO#wait_readable instead of timeout
+
 Thu Oct 23 10:22:24 2014  Eric Wong  <e@80x24.org>
 
 	* test/ruby/test_process.rb (test_deadlock_by_signal_at_forking):

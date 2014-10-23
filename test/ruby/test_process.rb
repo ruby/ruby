@@ -1,6 +1,7 @@
 require 'test/unit'
 require 'tempfile'
 require 'timeout'
+require 'io/wait'
 require_relative 'envutil'
 require 'rbconfig'
 
@@ -1946,13 +1947,12 @@ EOS
     ew.close
     begin
       loop do
-        Timeout.timeout(5) do
-          runner.readpartial(100)
-        end
+        runner.wait_readable(5)
+        runner.read_nonblock(100)
       end
     rescue EOFError => e
       _, status = Process.wait2(runner.pid)
-    rescue Timeout::Error => e
+    rescue IO::WaitReadable => e
       Process.kill(:INT, runner.pid)
       raise Marshal.load(er.read.unpack("m")[0])
     end
