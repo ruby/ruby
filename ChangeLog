@@ -1,3 +1,7 @@
+Thu Oct 23 10:47:16 2014  Eric Wong  <e@80x24.org>
+
+	* insns.def (getlocal,setlocal): add comment to def/opt_operand.def
+
 Thu Oct 23 10:22:41 2014  Eric Wong  <e@80x24.org>
 
 	* test/ruby/test_process.rb (test_deadlock_by_signal_at_forking):

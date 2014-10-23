@@ -60,6 +60,7 @@ getlocal
     int i, lev = (int)level;
     VALUE *ep = GET_EP();
 
+    /* optimized insns generated for level == (0|1) in defs/opt_operand.def */
     for (i = 0; i < lev; i++) {
 	ep = GET_PREV_EP(ep);
     }
@@ -82,6 +83,7 @@ setlocal
     int i, lev = (int)level;
     VALUE *ep = GET_EP();
 
+    /* optimized insns generated for level == (0|1) in defs/opt_operand.def */
     for (i = 0; i < lev; i++) {
 	ep = GET_PREV_EP(ep);
     }
