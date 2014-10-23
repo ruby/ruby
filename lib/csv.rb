@@ -1470,7 +1470,15 @@ class CSV
   #                                       if the data cannot be transcoded,
   #                                       leaving the header unchanged.
   # <b><tt>:skip_blanks</tt></b>::        When set to a +true+ value, CSV will
-  #                                       skip over any rows with no content.
+  #                                       skip over any empty rows. Note that
+  #                                       this setting will not skip rows that
+  #                                       contain column separators, even if
+  #                                       the rows contain no actual data. If
+  #                                       you want to skip rows that contain
+  #                                       separators but no content, consider
+  #                                       using <tt>:skip_lines</tt>, or 
+  #                                       inspecting fields.compact.empty? on
+  #                                       each row.
   # <b><tt>:force_quotes</tt></b>::       When set to a +true+ value, CSV will
   #                                       quote all CSV fields it creates.
   # <b><tt>:skip_lines</tt></b>::         When set to an object responding to
