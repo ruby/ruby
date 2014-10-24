@@ -171,7 +171,7 @@ def package(rev, destdir)
   else
     v = "ruby"
     puts "Exporting #{rev}@#{revision}"
-    IO.popen("svn export -r #{revision} #{url} #{v}") do |pipe|
+    IO.popen(%W"svn export -r #{revision} #{url} #{v}") do |pipe|
       pipe.each {|line| /^A/ =~ line or print line}
     end
     unless $?.success?
@@ -213,7 +213,7 @@ def package(rev, destdir)
     File.directory?(n) or File.rename v, n
     v = n
   end
-  system("patch -d #{v} -p0 -i #{$patch_file}") if $patch_file
+  system(*%W"patch -d #{v} -p0 -i #{$patch_file}") if $patch_file
   "take a breath, and go ahead".scan(/./) {|c|print c; sleep(c == "," ? 0.7 : 0.05)}; puts
   def (clean = []).add(n) push(n); n end
   Dir.chdir(v) do
@@ -223,7 +223,7 @@ def package(rev, destdir)
     end
     unless File.exist?("configure")
       print "creating configure..."
-      unless system(ENV["AUTOCONF"])
+      unless system([ENV["AUTOCONF"]]*2)
         puts " failed"
         return
       end
@@ -256,19 +256,25 @@ def package(rev, destdir)
       }
       FileUtils.mkpath(hdrdir = "#{extout}/include/ruby")
       File.open("#{hdrdir}/config.h", "w") {}
-      miniruby = ENV['MINIRUBY'] + " -r./cross"
+      miniruby = ENV['MINIRUBY'] + " -I. -rcross"
       mk = IO.read("Makefile.in").gsub(/^@.*\n/, '').gsub(/@([A-Za-z_]\w*)@/) {ENV[$1]}
-      mk << commonmk.gsub(/\{[^{}]*\}/, "")
-      IO.popen("make -f - #{mk[/^after-update/]} prereq"\
-               " srcdir=. CHDIR=cd PATH_SEPARATOR='#{File::PATH_SEPARATOR}'"\
-               " IFCHANGE=tool/ifchange MAKEDIRS='mkdir -p'"\
-               " 'MINIRUBY=#{miniruby}' 'RUBY=#{ENV["RUBY"]}'", "w") do |f|
+      mk << commonmk.gsub(/(?<!#)\{[^{}]*\}/, "")
+      cmd = %W[make -f -
+               srcdir=. CHDIR=cd NULLCMD=:
+               PATH_SEPARATOR=#{File::PATH_SEPARATOR}
+               IFCHANGE=tool/ifchange MAKEDIRS=mkdir\ -p
+               MINIRUBY=#{miniruby}
+               RUNRUBY=#{miniruby}
+               RUBY=#{ENV["RUBY"]}
+               prereq]
+      IO.popen(cmd, "w") do |f|
         f.puts mk
+        f.puts "after-update::", "prereq: after-update"
       end
       clean.push("rbconfig.rb", ".rbconfig.time", "enc.mk")
       print "prerequisites"
     else
-      system("#{YACC} -o parse.c parse.y")
+      system(*%W"#{YACC} -o parse.c parse.y")
     end
     FileUtils.rm_rf(clean)
     unless $?.success?
@@ -307,10 +313,10 @@ def package(rev, destdir)
         end
       end
       print "creating #{mesg} tarball... #{file}"
-      done = system(*(cmd + [tarball]), out: file)
+      done = system(*cmd, tarball, out: file)
     else
       print "creating #{mesg} archive... #{file}"
-      done = system(*(cmd + [file, v]))
+      done = system(*cmd, file, v)
     end
     if done
       puts " done"
