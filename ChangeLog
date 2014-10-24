@@ -1,3 +1,9 @@
+Fri Oct 24 22:49:42 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): dispatch newline and space at fluent
+	  interface, so that the following identifier does not include the
+	  space.  [ruby-dev:48684] [Bug #10411]
+
 Fri Oct 24 20:41:36 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* signal.c (check_reserved_signal_): fix write count since r47991.

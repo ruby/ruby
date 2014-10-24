@@ -38,6 +38,10 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  Ripper.tokenize("print( <<""EOS)\nheredoc\nEOS\n")
     assert_equal ["\#\n", "\n", "\#\n", "\n", "nil", "\n"],
                  Ripper.tokenize("\#\n\n\#\n\nnil\n")
+    assert_equal ["1", "  ", ".", "foo", "\n"],
+                 Ripper.tokenize("1  .foo\n")
+    assert_equal ["1", "\n", "  ", ".", "foo", "\n"],
+                 Ripper.tokenize("1\n  .foo\n")
   end
 
   def test_lex
