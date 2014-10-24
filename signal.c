@@ -888,8 +888,8 @@ check_reserved_signal_(const char *name, size_t name_len)
 	iov[3].iov_len = sizeof(msg2);
 	err = writev(2, iov, 4);
 #else
-	err = write(2, name, strlen(name));
-	err = write(2, msg1, name_len);
+	err = write(2, name, name_len);
+	err = write(2, msg1, sizeof(msg1));
 	err = write(2, prev, strlen(prev));
 	err = write(2, msg2, sizeof(msg2));
 #endif
