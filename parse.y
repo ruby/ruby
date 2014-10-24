@@ -7763,11 +7763,11 @@ parser_yylex(struct parser_params *parser)
 		space_seen = 1;
 		break;
 	      case '.': {
-		  if ((c = nextc()) != '.') {
-		      pushback(c);
-		      pushback('.');
-		      goto retry;
-		  }
+		if ((c = nextc()) != '.') {
+		    pushback(c);
+		    pushback('.');
+		    goto retry;
+		}
 	      }
 	      default:
 		--ruby_sourceline;
