@@ -147,7 +147,7 @@ Wed Oct 22 03:37:00 2014  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 Wed Oct 22 03:33:58 2014  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* ext/etc/etc.c (etc_nprocessors_affin): optimize memory usege a
+	* ext/etc/etc.c (etc_nprocessors_affin): optimize memory usage a
 	  bit. Typical rubyist never use 8k cpus machine.
 
 Wed Oct 22 00:01:09 2014  Yuki Yugui Sonoda  <yugui@yugui.jp>
