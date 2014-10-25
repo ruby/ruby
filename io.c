@@ -1276,6 +1276,9 @@ io_binwrite_string(VALUE arg)
 
 	r = rb_writev_internal(fptr->fd, iov, 2);
 
+        if (r == -1)
+            return -1;
+
 	if (fptr->wbuf.len <= r) {
 	    r -= fptr->wbuf.len;
 	    fptr->wbuf.off = 0;

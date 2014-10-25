@@ -1370,6 +1370,17 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_close_read_pipe_nosync
+    assert_separately([], <<-"end;")
+      r, w = IO.pipe
+      r.close
+      w.sync = false
+      assert_raise(Errno::EPIPE) {
+        loop { w.write "a" }
+      }
+    end;
+  end
+
   def test_close_read_non_readable
     with_pipe do |r, w|
       assert_raise(IOError) do
