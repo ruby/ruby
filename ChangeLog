@@ -1,3 +1,9 @@
+Sun Oct 26 03:21:30 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (unknown_keyword_error): delete expected keywords
+	  directly from raw table, so that the given block is not called.
+	  [ruby-core:65837] [Bug #10413]
+
 Wed Oct 22 23:02:49 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* ext/openssl/lib/openssl/ssl.rb (DEFAULT_PARAMS): override
