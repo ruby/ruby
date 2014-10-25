@@ -1,3 +1,8 @@
+Sat Oct 25 20:01:01 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* test/test-unicode_normalize.rb: added
+	  test_raise_exception_for_non_unicode_encoding.
+
 Sat Oct 25 19:30:30 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* test/test-unicode_normalize.rb: removed unused function.
