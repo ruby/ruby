@@ -44,6 +44,18 @@ module Rake
       end
     end
 
+    begin
+      require 'etc'
+    rescue LoadError
+    else
+      if Etc.respond_to?(:nprocessors)
+        undef count
+        def count
+          return Etc.nprocessors
+        end
+      end
+    end
+
     def count_via_java_runtime
       Java::Java.lang.Runtime.getRuntime.availableProcessors
     rescue StandardError
