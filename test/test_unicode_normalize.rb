@@ -154,4 +154,23 @@ class TestNormalize < Test::Unit::TestCase
     assert_raise(Encoding::CompatibilityError) { "abc".force_encoding('ISO-8859-1').unicode_normalize! }
     assert_raise(Encoding::CompatibilityError) { "abc".force_encoding('ISO-8859-1').unicode_normalized? }
   end
+
+  def test_us_ascii
+    ascii_string = 'abc'.encode('US-ASCII')
+
+    assert_equal ascii_string, ascii_string.unicode_normalize
+    assert_equal ascii_string, ascii_string.unicode_normalize(:nfd)
+    assert_equal ascii_string, ascii_string.unicode_normalize(:nfkc)
+    assert_equal ascii_string, ascii_string.unicode_normalize(:nfkd)
+
+    assert_equal ascii_string, ascii_string.unicode_normalize!
+    assert_equal ascii_string, ascii_string.unicode_normalize!(:nfd)
+    assert_equal ascii_string, ascii_string.unicode_normalize!(:nfkc)
+    assert_equal ascii_string, ascii_string.unicode_normalize!(:nfkd)
+
+    assert_equal true, ascii_string.unicode_normalized?
+    assert_equal true, ascii_string.unicode_normalized?(:nfd)
+    assert_equal true, ascii_string.unicode_normalized?(:nfkc)
+    assert_equal true, ascii_string.unicode_normalized?(:nfkd)
+  end
 end
