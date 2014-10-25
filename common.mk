@@ -1120,10 +1120,14 @@ UPDATE_UNICODE_FILES_DEPS = $(ALWAYS_UPDATE_UNICODE:yes=PHONY)
 	    UnicodeData.txt CompositionExclusions.txt NormalizationTest.txt
 	@exit > .update-unicode.time
 
-$(srcdir)/lib/unicode_normalize/tables.rb: \
-		$(srcdir)/tool/unicode_norm_gen.rb $(UNICODE_FILES)
-	$(BASERUBY) -s -C "$(srcdir)" tool/unicode_norm_gen.rb \
-		-input=enc/unicode/data -ouput=lib/unicode_normalize
+$(srcdir)/lib/unicode_normalize/tables.rb: ./.unicode-tables.time
+
+./.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
+		$(srcdir)/template/unicode_norm_gen.tmpl $(UNICODE_FILES)
+	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb \
+		-c -t$@ -o $(srcdir)/lib/unicode_normalize/tables.rb \
+		-I $(srcdir) \
+		$(srcdir)/template/unicode_norm_gen.tmpl enc/unicode/data lib/unicode_normalize
 
 info: info-program info-libruby_a info-libruby_so info-arch
 info-program: PHONY
