@@ -1,3 +1,7 @@
+Sat Oct 25 18:41:41 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* template/unicode_norm_gen.tmpl: Adjusted name of generating file.
+
 Fri Oct 24 22:49:42 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): dispatch newline and space at fluent
