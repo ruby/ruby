@@ -32,7 +32,7 @@ class TestNormalize < Test::Unit::TestCase
       mesg = proc {"#{to_codepoints(expected)} expected but was #{to_codepoints(actual)} on line #{test[:line]} (#{normalization})"}
       @@tests.each do |t|
         test = t
-        if not prechecked or test[source]==test[prechecked]
+        if prechecked.nil? or test[prechecked]==test[source]
           expected = test[target]
           actual = test[source].unicode_normalize(normalization)
           assert_equal expected, actual, mesg
@@ -85,13 +85,6 @@ class TestNormalize < Test::Unit::TestCase
         actual = test[source].unicode_normalized?(normalization)
         assert_equal true, actual, mesg
       end
-    end
-  end
-
-  def one_false_check_test(test, compare_column, check_column, test_form, line)
-    if test[check_column- 1] != test[compare_column- 1]
-      actual = test[check_column- 1].unicode_normalized?(test_form)
-      assert_equal false, actual, "failed on line #{line+1} (#{test_form})"
     end
   end
 
