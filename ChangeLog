@@ -1,3 +1,10 @@
+Sat Oct 25 20:09:09 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize/normalize.rb: added US_ASCII
+	  as trivially supported encoding (is always normalized,
+	  and may appear mixed in with UTF-8 or other Unicode
+	  encodings).
+
 Sat Oct 25 20:01:01 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* test/test-unicode_normalize.rb: added

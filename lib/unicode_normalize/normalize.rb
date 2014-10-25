@@ -138,6 +138,8 @@ module UnicodeNormalize
       else
         raise ArgumentError, "Invalid normalization form #{form}."
       end
+    elsif encoding == Encoding::US_ASCII
+      string
     elsif  UNICODE_ENCODINGS.include? encoding
       normalize(string.encode(Encoding::UTF_8), form).encode(encoding)
     else
@@ -166,6 +168,8 @@ module UnicodeNormalize
       else
         raise ArgumentError, "Invalid normalization form #{form}."
       end
+    elsif encoding == Encoding::US_ASCII
+      true
     elsif  UNICODE_ENCODINGS.include? encoding
       normalized? string.encode(Encoding::UTF_8), form
     else
