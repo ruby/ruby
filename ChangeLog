@@ -1,3 +1,9 @@
+Sun Oct 26 03:31:46 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_method_entry_make): warn redefinition only for
+	  already defined methods, but not for undefined methods.
+	  [ruby-dev:48691] [Bug #10421]
+
 Sun Oct 26 03:21:30 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (unknown_keyword_error): delete expected keywords
