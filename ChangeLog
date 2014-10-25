@@ -1,3 +1,13 @@
+Sun Oct 26 07:40:11 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_val2variant, ole_invoke): refactoring.
+	  use ole_variant2variant to convert WIN32OLE_VARIANT object to
+	  VARIANT object.
+
+	* ext/win32ole/win32ole_variant.c: refactoring. add
+	  ole_variant2variant.
+	* ext/win32ole/win32ole_variant.h: ditto.
+
 Sat Oct 25 22:28:17 2014  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_binwrite_string): Test writev() failure.

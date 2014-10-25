@@ -1217,7 +1217,6 @@ void
 ole_val2variant(VALUE val, VARIANT *var)
 {
     struct oledata *pole;
-    struct olevariantdata *pvar;
     if(rb_obj_is_kind_of(val, cWIN32OLE)) {
         Data_Get_Struct(val, struct oledata, pole);
         OLE_ADDREF(pole->pDispatch);
@@ -1226,8 +1225,7 @@ ole_val2variant(VALUE val, VARIANT *var)
         return;
     }
     if (rb_obj_is_kind_of(val, cWIN32OLE_VARIANT)) {
-        Data_Get_Struct(val, struct olevariantdata, pvar);
-        VariantCopy(var, &(pvar->var));
+        ole_variant2variant(val, var);
         return;
     }
     if (rb_obj_is_kind_of(val, cWIN32OLE_RECORD)) {
@@ -2538,7 +2536,6 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
     unsigned int cNamedArgs;
     int n;
     struct oleparam op;
-    struct olevariantdata *pvar;
     memset(&excepinfo, 0, sizeof(EXCEPINFO));
 
     VariantInit(&result);
@@ -2633,8 +2630,7 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
             VariantInit(&op.dp.rgvarg[n]);
             param = rb_ary_entry(paramS, i-cNamedArgs);
             if (rb_obj_is_kind_of(param, cWIN32OLE_VARIANT)) {
-                Data_Get_Struct(param, struct olevariantdata, pvar);
-                VariantCopy(&op.dp.rgvarg[n], &(pvar->var));
+                ole_variant2variant(param, &op.dp.rgvarg[n]);
             } else {
                 ole_val2variant(param, &realargs[n]);
                 V_VT(&op.dp.rgvarg[n]) = VT_VARIANT | VT_BYREF;

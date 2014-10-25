@@ -1,5 +1,10 @@
 #include "win32ole.h"
 
+struct olevariantdata {
+    VARIANT realvar;
+    VARIANT var;
+};
+
 static void  olevariant_free(struct olevariantdata *pvar);
 static void ole_val2olevariantdata(VALUE val, VARTYPE vt, struct olevariantdata *pvar);
 static void ole_val2variant_err(VALUE val, VARIANT *var);
@@ -662,6 +667,14 @@ folevariant_set_value(VALUE self, VALUE val)
     }
     ole_val2olevariantdata(val, vt, pvar);
     return Qnil;
+}
+
+void
+ole_variant2variant(VALUE val, VARIANT *var)
+{
+    struct olevariantdata *pvar;
+    Data_Get_Struct(val, struct olevariantdata, pvar);
+    VariantCopy(var, &(pvar->var));
 }
 
 void
