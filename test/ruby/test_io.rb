@@ -1370,7 +1370,7 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
-  def test_close_read_pipe_nosync
+  def test_write_epipe_nosync
     assert_separately([], <<-"end;")
       r, w = IO.pipe
       r.close
