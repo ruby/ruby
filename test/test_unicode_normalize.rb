@@ -148,7 +148,7 @@ class TestNormalize < Test::Unit::TestCase
     assert_equal "\u1100\u1161\u0323\u0300", "\uAC00\u0300\u0323".unicode_normalize(:nfd)
     assert_equal "\u1100\u1161\u0323\u0300", "\u1100\u1161\u0300\u0323".unicode_normalize(:nfd)
   end
-  
+
   def test_raise_exception_for_non_unicode_encoding
     assert_raise(Encoding::CompatibilityError) { "abc".force_encoding('ISO-8859-1').unicode_normalize }
     assert_raise(Encoding::CompatibilityError) { "abc".force_encoding('ISO-8859-1').unicode_normalize! }
