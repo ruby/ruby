@@ -1,3 +1,8 @@
+Sun Oct 26 12:24:15 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/ripper/lib/ripper/sexp.rb (Ripper.sexp, Ripper.sexp_raw):
+	  return nil on error.  [ruby-dev:48678] [Bug #10405]
+
 Sun Oct 25 11:24:24 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* string.c: improved comment.

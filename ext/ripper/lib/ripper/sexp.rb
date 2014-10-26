@@ -28,7 +28,9 @@ class Ripper
   #           [:bodystmt, [[:var_ref, [:@kw, "nil", [1, 9]]]], nil, nil, nil]]]]
   #
   def Ripper.sexp(src, filename = '-', lineno = 1)
-    SexpBuilderPP.new(src, filename, lineno).parse
+    builder = SexpBuilderPP.new(src, filename, lineno)
+    sexp = builder.parse
+    sexp unless builder.error?
   end
 
   # [EXPERIMENTAL]
@@ -52,7 +54,9 @@ class Ripper
   #             nil]]]]
   #
   def Ripper.sexp_raw(src, filename = '-', lineno = 1)
-    SexpBuilder.new(src, filename, lineno).parse
+    builder = SexpBuilder.new(src, filename, lineno)
+    sexp = builder.parse
+    sexp unless builder.error?
   end
 
   class SexpBuilderPP < ::Ripper   #:nodoc:

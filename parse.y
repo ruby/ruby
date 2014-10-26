@@ -278,6 +278,7 @@ struct parser_params {
     VALUE result;
     VALUE parsing_thread;
     int toplevel_p;
+    int error_p;
 #endif
 };
 
@@ -549,6 +550,8 @@ static VALUE ripper_dispatch3(struct parser_params*,ID,VALUE,VALUE,VALUE);
 static VALUE ripper_dispatch4(struct parser_params*,ID,VALUE,VALUE,VALUE,VALUE);
 static VALUE ripper_dispatch5(struct parser_params*,ID,VALUE,VALUE,VALUE,VALUE,VALUE);
 static VALUE ripper_dispatch7(struct parser_params*,ID,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE,VALUE);
+static void ripper_error_gen(struct parser_params *parser);
+#define ripper_error() ripper_error_gen(parser)
 
 #define dispatch0(n)            ripper_dispatch0(parser, TOKEN_PASTE(ripper_id_, n))
 #define dispatch1(n,a)          ripper_dispatch1(parser, TOKEN_PASTE(ripper_id_, n), (a))
@@ -1086,6 +1089,7 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		    /*%
 			$$ = dispatch2(var_alias, $2, $3);
 			$$ = dispatch1(alias_error, $$);
+			ripper_error();
 		    %*/
 		    }
 		| keyword_undef undef_list
@@ -1231,6 +1235,7 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		    /*%
 			$$ = dispatch2(assign, dispatch1(var_field, $1), $3);
 			$$ = dispatch1(assign_error, $$);
+			ripper_error();
 		    %*/
 		    }
 		| lhs '=' mrhs
@@ -1684,6 +1689,7 @@ mlhs_node	: user_variable
 			$$ = dispatch2(const_path_field, $1, $3);
 			if (in_def || in_single) {
 			    $$ = dispatch1(assign_error, $$);
+			    ripper_error();
 			}
 		    %*/
 		    }
@@ -1697,6 +1703,7 @@ mlhs_node	: user_variable
 			$$ = dispatch1(top_const_field, $2);
 			if (in_def || in_single) {
 			    $$ = dispatch1(assign_error, $$);
+			    ripper_error();
 			}
 		    %*/
 		    }
@@ -1708,6 +1715,7 @@ mlhs_node	: user_variable
 		    /*%
 			$$ = dispatch1(var_field, $1);
 			$$ = dispatch1(assign_error, $$);
+			ripper_error();
 		    %*/
 		    }
 		;
@@ -1772,6 +1780,7 @@ lhs		: user_variable
 			$$ = dispatch2(const_path_field, $1, $3);
 			if (in_def || in_single) {
 			    $$ = dispatch1(assign_error, $$);
+			    ripper_error();
 			}
 		    %*/
 		    }
@@ -1785,6 +1794,7 @@ lhs		: user_variable
 			$$ = dispatch1(top_const_field, $2);
 			if (in_def || in_single) {
 			    $$ = dispatch1(assign_error, $$);
+			    ripper_error();
 			}
 		    %*/
 		    }
@@ -1795,6 +1805,7 @@ lhs		: user_variable
 			$$ = NEW_BEGIN(0);
 		    /*%
 			$$ = dispatch1(assign_error, $1);
+			ripper_error();
 		    %*/
 		    }
 		;
@@ -1805,6 +1816,7 @@ cname		: tIDENTIFIER
 			yyerror("class/module name must be CONSTANT");
 		    /*%
 			$$ = dispatch1(class_name_error, $1);
+			ripper_error();
 		    %*/
 		    }
 		| tCONSTANT
@@ -2038,6 +2050,7 @@ arg		: lhs '=' arg
 			$$ = dispatch1(var_field, $1);
 			$$ = dispatch3(opassign, $$, $2, $3);
 			$$ = dispatch1(assign_error, $$);
+			ripper_error();
 		    %*/
 		    }
 		| arg tDOT2 arg
@@ -4536,6 +4549,7 @@ f_bad_arg	: tCONSTANT
 			$$ = 0;
 		    /*%
 			$$ = dispatch1(param_error, $1);
+			ripper_error();
 		    %*/
 		    }
 		| tIVAR
@@ -4545,6 +4559,7 @@ f_bad_arg	: tCONSTANT
 			$$ = 0;
 		    /*%
 			$$ = dispatch1(param_error, $1);
+			ripper_error();
 		    %*/
 		    }
 		| tGVAR
@@ -4554,6 +4569,7 @@ f_bad_arg	: tCONSTANT
 			$$ = 0;
 		    /*%
 			$$ = dispatch1(param_error, $1);
+			ripper_error();
 		    %*/
 		    }
 		| tCVAR
@@ -4563,6 +4579,7 @@ f_bad_arg	: tCONSTANT
 			$$ = 0;
 		    /*%
 			$$ = dispatch1(param_error, $1);
+			ripper_error();
 		    %*/
 		    }
 		;
@@ -5315,6 +5332,7 @@ parser_yyerror(struct parser_params *parser, const char *msg)
     }
 #else
     dispatch1(parse_error, STR_NEW2(msg));
+    ripper_error();
 #endif /* !RIPPER */
     return 0;
 }
@@ -8759,7 +8777,7 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val)
 #ifdef RIPPER
     ID id = get_id(lhs);
 # define assignable_result(x) get_value(lhs)
-# define parser_yyerror(parser, x) dispatch1(assign_error, lhs)
+# define parser_yyerror(parser, x) (dispatch1(assign_error, lhs), ripper_error())
 #else
 # define assignable_result(x) (x)
 #endif
@@ -10247,6 +10265,7 @@ parser_initialize(struct parser_params *parser)
     parser->result = Qnil;
     parser->parsing_thread = Qnil;
     parser->toplevel_p = TRUE;
+    parser->error_p = FALSE;
 #endif
 #ifdef YYMALLOC
     parser->heap = NULL;
@@ -10369,6 +10388,21 @@ static VALUE ripper_parser_end_seen_p(VALUE vparser);
 static VALUE ripper_parser_encoding(VALUE vparser);
 static VALUE ripper_parser_get_yydebug(VALUE self);
 static VALUE ripper_parser_set_yydebug(VALUE self, VALUE flag);
+
+/*
+ *  call-seq:
+ *    ripper#error?   -> Boolean
+ *
+ *  Return true if parsed source has errors.
+ */
+static VALUE
+ripper_error_p(VALUE vparser)
+{
+    struct parser_params *parser;
+
+    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, parser);
+    return parser->error_p ? Qtrue : Qfalse;
+}
 #endif
 
 /*
@@ -10722,6 +10756,12 @@ ripper_get_value(VALUE v)
 }
 
 static void
+ripper_error_gen(struct parser_params *parser)
+{
+    parser->error_p = TRUE;
+}
+
+static void
 ripper_compile_error(struct parser_params *parser, const char *fmt, ...)
 {
     VALUE str;
@@ -10731,6 +10771,7 @@ ripper_compile_error(struct parser_params *parser, const char *fmt, ...)
     str = rb_vsprintf(fmt, args);
     va_end(args);
     rb_funcall(parser->value, rb_intern("compile_error"), 1, str);
+    ripper_error_gen(parser);
 }
 
 static void
@@ -11011,6 +11052,7 @@ InitVM_ripper(void)
     rb_define_method(Ripper, "encoding", rb_parser_encoding, 0);
     rb_define_method(Ripper, "yydebug", rb_parser_get_yydebug, 0);
     rb_define_method(Ripper, "yydebug=", rb_parser_set_yydebug, 1);
+    rb_define_method(Ripper, "error?", ripper_error_p, 0);
 #ifdef RIPPER_DEBUG
     rb_define_method(rb_mKernel, "assert_Qundef", ripper_assert_Qundef, 2);
     rb_define_method(rb_mKernel, "rawVALUE", ripper_value, 1);
