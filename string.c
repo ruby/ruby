@@ -1187,26 +1187,27 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
 /*
  * UTF-8 leading bytes have either 0xxxxxxx or 11xxxxxx
  * bit representation. (see http://en.wikipedia.org/wiki/UTF-8)
- * Therefore, following pseudo code can detect UTF-8 leading byte.
+ * Therefore, the following pseudocode can detect UTF-8 leading bytes.
  *
  * if (!(byte & 0x80))
  *   byte |= 0x40;          // turn on bit6
- * return ((byte>>6) & 1);  // bit6 represent it's leading byte or not.
+ * return ((byte>>6) & 1);  // bit6 represent whether this byte is leading or not.
  *
- * This function calculate every bytes in the argument word `s'
- * using the above logic concurrently. and gather every bytes result.
+ * This function calculates whether a byte is leading or not for all bytes
+ * in the argument word by concurrently using the above logic, and then
+ * adds up the number of leading bytes in the word.
  */
 static inline uintptr_t
 count_utf8_lead_bytes_with_word(const uintptr_t *s)
 {
     uintptr_t d = *s;
 
-    /* Transform into bit0 represent UTF-8 leading or not. */
+    /* Transform so that bit0 indicates whether we have a UTF-8 leading byte or not. */
     d |= ~(d>>1);
     d >>= 6;
     d &= NONASCII_MASK >> 7;
 
-    /* Gather every bytes. */
+    /* Gather all bytes. */
     d += (d>>8);
     d += (d>>16);
 #if SIZEOF_VOIDP == 8
