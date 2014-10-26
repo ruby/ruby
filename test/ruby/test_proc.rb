@@ -202,7 +202,9 @@ class TestProc < Test::Unit::TestCase
   def test_method_to_proc
     b = block()
     assert_equal "OK", b.call
-    assert_instance_of(Binding, b.binding, '[ruby-core:25589]')
+    b = b.binding
+    assert_instance_of(Binding, b, '[ruby-core:25589]')
+    assert_same(self, b.receiver)
   end
 
   def test_block_given_method
