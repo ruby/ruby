@@ -16,7 +16,6 @@ Sat Oct 25 22:28:17 2014  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_binwrite_string): Test writev() failure.
 
->>>>>>> .r48141
 Sat Oct 25 20:19:19 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* test/test-unicode_normalize.rb: added test_us_ascii.
