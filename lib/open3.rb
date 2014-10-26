@@ -214,11 +214,11 @@ module Open3
   #   stdout_str, stderr_str, status = Open3.capture3([env,] cmd... [, opts])
   #
   # The arguments env, cmd and opts are passed to Open3.popen3 except
-  # opts[:stdin_data] and opts[:binmode].  See Process.spawn.
+  # <code>opts[:stdin_data]</code> and <code>opts[:binmode]</code>.  See Process.spawn.
   #
-  # If opts[:stdin_data] is specified, it is sent to the command's standard input.
+  # If <code>opts[:stdin_data]</code> is specified, it is sent to the command's standard input.
   #
-  # If opts[:binmode] is true, internal pipes are set to binary mode.
+  # If <code>opts[:binmode]</code> is true, internal pipes are set to binary mode.
   #
   # Examples:
   #
@@ -272,11 +272,11 @@ module Open3
   #   stdout_str, status = Open3.capture2([env,] cmd... [, opts])
   #
   # The arguments env, cmd and opts are passed to Open3.popen3 except
-  # opts[:stdin_data] and opts[:binmode].  See Process.spawn.
+  # <code>opts[:stdin_data]</code> and <code>opts[:binmode]</code>.  See Process.spawn.
   #
-  # If opts[:stdin_data] is specified, it is sent to the command's standard input.
+  # If <code>opts[:stdin_data]</code> is specified, it is sent to the command's standard input.
   #
-  # If opts[:binmode] is true, internal pipes are set to binary mode.
+  # If <code>opts[:binmode]</code> is true, internal pipes are set to binary mode.
   #
   # Example:
   #
@@ -320,11 +320,11 @@ module Open3
   #   stdout_and_stderr_str, status = Open3.capture2e([env,] cmd... [, opts])
   #
   # The arguments env, cmd and opts are passed to Open3.popen3 except
-  # opts[:stdin_data] and opts[:binmode].  See Process.spawn.
+  # <code>opts[:stdin_data]</code> and <code>opts[:binmode]</code>.  See Process.spawn.
   #
-  # If opts[:stdin_data] is specified, it is sent to the command's standard input.
+  # If <code>opts[:stdin_data]</code> is specified, it is sent to the command's standard input.
   #
-  # If opts[:binmode] is true, internal pipes are set to binary mode.
+  # If <code>opts[:binmode]</code> is true, internal pipes are set to binary mode.
   #
   # Example:
   #
