@@ -1,3 +1,8 @@
+Sun Oct 25 12:26:26 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* template/insns.inc.tmpl, insns_info.inc.tmpl, known_errors.inc.tmpl,
+	  minsns.inc.tmpl: fixed path of generating script.
+
 Sun Oct 26 12:24:15 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/ripper/lib/ripper/sexp.rb (Ripper.sexp, Ripper.sexp_raw):
