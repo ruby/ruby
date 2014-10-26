@@ -14,6 +14,15 @@
 
 #include "id.h"
 
+#define DYNAMIC_ID_P(id) (!(id&ID_STATIC_SYM)&&id>tLAST_OP_ID)
+#define STATIC_ID2SYM(id)  (((VALUE)(id)<<RUBY_SPECIAL_SHIFT)|SYMBOL_FLAG)
+
+#ifdef __GNUC__
+#define rb_id2sym(id) \
+    __extension__(__builtin_constant_p(id) && !DYNAMIC_ID_P(id) ? \
+		  STATIC_ID2SYM(id) : rb_id2sym(id))
+#endif
+
 struct RSymbol {
     struct RBasic basic;
     VALUE fstr;
