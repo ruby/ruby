@@ -50,6 +50,7 @@ static ID register_static_symid_str(ID, VALUE);
 #define tASET   RUBY_TOKEN(ASET)
 #define tLSHFT  RUBY_TOKEN(LSHFT)
 #define tRSHFT  RUBY_TOKEN(RSHFT)
+#define tCOLON2 RUBY_TOKEN(COLON2)
 
 static const struct {
     unsigned short token;
@@ -72,6 +73,7 @@ static const struct {
     {tASET,	"[]="},
     {tLSHFT,	"<<"},
     {tRSHFT,	">>"},
+    {tCOLON2,   "::"},
 };
 
 #define op_tbl_count numberof(op_tbl)

@@ -1225,7 +1225,7 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN command_call
 		    {
 			value_expr($5);
-			$$ = new_attr_op_assign($1, ripper_intern("::"), $3, $4, $5);
+			$$ = new_attr_op_assign($1, ID2SYM(idCOLON2), $3, $4, $5);
 		    }
 		| backref tOP_ASGN command_call
 		    {
@@ -1425,7 +1425,7 @@ command		: fcall command_args       %prec tLOWEST
 			$$ = NEW_CALL($1, $3, $4);
 			fixpos($$, $1);
 		    /*%
-			$$ = dispatch4(command_call, $1, ripper_intern("::"), $3, $4);
+			$$ = dispatch4(command_call, $1, ID2SYM(idCOLON2), $3, $4);
 		    %*/
 		    }
 		| primary_value tCOLON2 operation2 command_args cmd_brace_block
@@ -1436,7 +1436,7 @@ command		: fcall command_args       %prec tLOWEST
 			$$ = $5;
 			fixpos($$, $1);
 		    /*%
-			$$ = dispatch4(command_call, $1, ripper_intern("::"), $3, $4);
+			$$ = dispatch4(command_call, $1, ID2SYM(idCOLON2), $3, $4);
 			$$ = method_add_block($$, $5);
 		    %*/
 		   }
@@ -1759,7 +1759,7 @@ lhs		: user_variable
 		    /*%%%*/
 			$$ = attrset($1, $3);
 		    /*%
-			$$ = dispatch3(field, $1, ripper_intern("::"), $3);
+			$$ = dispatch3(field, $1, ID2SYM(idCOLON2), $3);
 		    %*/
 		    }
 		| primary_value '.' tCONSTANT
@@ -2019,7 +2019,7 @@ arg		: lhs '=' arg
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN arg
 		    {
 			value_expr($5);
-			$$ = new_attr_op_assign($1, ripper_intern("::"), $3, $4, $5);
+			$$ = new_attr_op_assign($1, ID2SYM(idCOLON2), $3, $4, $5);
 		    }
 		| primary_value tCOLON2 tCONSTANT tOP_ASGN arg
 		    {
@@ -2126,7 +2126,7 @@ arg		: lhs '=' arg
 		    /*%%%*/
 			$$ = call_bin_op($1, tPOW, $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ripper_intern("**"), $3);
+			$$ = dispatch3(binary, $1, ID2SYM(idPow), $3);
 		    %*/
 		    }
 		| tUMINUS_NUM simple_numeric tPOW arg
@@ -2134,8 +2134,8 @@ arg		: lhs '=' arg
 		    /*%%%*/
 			$$ = NEW_CALL(call_bin_op($2, tPOW, $4), tUMINUS, 0);
 		    /*%
-			$$ = dispatch3(binary, $2, ripper_intern("**"), $4);
-			$$ = dispatch2(unary, ripper_intern("-@"), $$);
+			$$ = dispatch3(binary, $2, ID2SYM(idPow), $4);
+			$$ = dispatch2(unary, ID2SYM(idUMinus), $$);
 		    %*/
 		    }
 		| tUPLUS arg
@@ -2143,7 +2143,7 @@ arg		: lhs '=' arg
 		    /*%%%*/
 			$$ = call_uni_op($2, tUPLUS);
 		    /*%
-			$$ = dispatch2(unary, ripper_intern("+@"), $2);
+			$$ = dispatch2(unary, ID2SYM(idUPlus), $2);
 		    %*/
 		    }
 		| tUMINUS arg
@@ -2151,7 +2151,7 @@ arg		: lhs '=' arg
 		    /*%%%*/
 			$$ = call_uni_op($2, tUMINUS);
 		    /*%
-			$$ = dispatch2(unary, ripper_intern("-@"), $2);
+			$$ = dispatch2(unary, ID2SYM(idUMinus), $2);
 		    %*/
 		    }
 		| arg '|' arg
@@ -2183,7 +2183,7 @@ arg		: lhs '=' arg
 		    /*%%%*/
 			$$ = call_bin_op($1, tCMP, $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ripper_intern("<=>"), $3);
+			$$ = dispatch3(binary, $1, ID2SYM(idCmp), $3);
 		    %*/
 		    }
 		| arg '>' arg
@@ -2199,7 +2199,7 @@ arg		: lhs '=' arg
 		    /*%%%*/
 			$$ = call_bin_op($1, tGEQ, $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ripper_intern(">="), $3);
+			$$ = dispatch3(binary, $1, ID2SYM(idGE), $3);
 		    %*/
 		    }
 		| arg '<' arg
@@ -2215,7 +2215,7 @@ arg		: lhs '=' arg
 		    /*%%%*/
 			$$ = call_bin_op($1, tLEQ, $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ripper_intern("<="), $3);
+			$$ = dispatch3(binary, $1, ID2SYM(idLE), $3);
 		    %*/
 		    }
 		| arg tEQ arg
@@ -2223,7 +2223,7 @@ arg		: lhs '=' arg
 		    /*%%%*/
 			$$ = call_bin_op($1, tEQ, $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ripper_intern("=="), $3);
+			$$ = dispatch3(binary, $1, ID2SYM(idEq), $3);
 		    %*/
 		    }
 		| arg tEQQ arg
@@ -2231,7 +2231,7 @@ arg		: lhs '=' arg
 		    /*%%%*/
 			$$ = call_bin_op($1, tEQQ, $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ripper_intern("==="), $3);
+			$$ = dispatch3(binary, $1, ID2SYM(idEqq), $3);
 		    %*/
 		    }
 		| arg tNEQ arg
@@ -2239,7 +2239,7 @@ arg		: lhs '=' arg
 		    /*%%%*/
 			$$ = call_bin_op($1, tNEQ, $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ripper_intern("!="), $3);
+			$$ = dispatch3(binary, $1, ID2SYM(idNeq), $3);
 		    %*/
 		    }
 		| arg tMATCH arg
@@ -2250,7 +2250,7 @@ arg		: lhs '=' arg
                             $$ = reg_named_capture_assign($1->nd_lit, $$);
                         }
 		    /*%
-			$$ = dispatch3(binary, $1, ripper_intern("=~"), $3);
+			$$ = dispatch3(binary, $1, ID2SYM(idEqTilde), $3);
 		    %*/
 		    }
 		| arg tNMATCH arg
@@ -2258,7 +2258,7 @@ arg		: lhs '=' arg
 		    /*%%%*/
 			$$ = call_bin_op($1, tNMATCH, $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ripper_intern("!~"), $3);
+			$$ = dispatch3(binary, $1, ID2SYM(idNeqTilde), $3);
 		    %*/
 		    }
 		| '!' arg
@@ -2282,7 +2282,7 @@ arg		: lhs '=' arg
 		    /*%%%*/
 			$$ = call_bin_op($1, tLSHFT, $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ripper_intern("<<"), $3);
+			$$ = dispatch3(binary, $1, ID2SYM(idLTLT), $3);
 		    %*/
 		    }
 		| arg tRSHFT arg
@@ -2290,7 +2290,7 @@ arg		: lhs '=' arg
 		    /*%%%*/
 			$$ = call_bin_op($1, tRSHFT, $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ripper_intern(">>"), $3);
+			$$ = dispatch3(binary, $1, ID2SYM(idGTGT), $3);
 		    %*/
 		    }
 		| arg tANDOP arg
@@ -3643,7 +3643,7 @@ method_call	: fcall paren_args
 		    /*%%%*/
 			$$ = NEW_CALL($1, $3, 0);
 		    /*%
-			$$ = dispatch3(call, $1, ripper_intern("::"), $3);
+			$$ = dispatch3(call, $1, ID2SYM(idCOLON2), $3);
 		    %*/
 		    }
 		| primary_value '.'
@@ -3655,11 +3655,11 @@ method_call	: fcall paren_args
 		  paren_args
 		    {
 		    /*%%%*/
-			$$ = NEW_CALL($1, rb_intern("call"), $4);
+			$$ = NEW_CALL($1, idCall, $4);
 			nd_set_line($$, $<num>3);
 		    /*%
 			$$ = dispatch3(call, $1, ripper_id2sym('.'),
-				       ripper_intern("call"));
+				       ID2SYM(idCall));
 			$$ = method_optarg($$, $4);
 		    %*/
 		    }
@@ -3672,11 +3672,11 @@ method_call	: fcall paren_args
 		  paren_args
 		    {
 		    /*%%%*/
-			$$ = NEW_CALL($1, rb_intern("call"), $4);
+			$$ = NEW_CALL($1, idCall, $4);
 			nd_set_line($$, $<num>3);
 		    /*%
-			$$ = dispatch3(call, $1, ripper_intern("::"),
-				       ripper_intern("call"));
+			$$ = dispatch3(call, $1, ID2SYM(idCOLON2),
+				       ID2SYM(idCall));
 			$$ = method_optarg($$, $4);
 		    %*/
 		    }
@@ -4327,7 +4327,7 @@ numeric 	: simple_numeric
 			$$ = $2;
 			$$->nd_lit = negate_lit($$->nd_lit);
 		    /*%
-			$$ = dispatch2(unary, ripper_intern("-@"), $2);
+			$$ = dispatch2(unary, ID2SYM(idUMinus), $2);
 		    %*/
 		    }
 		;
@@ -10774,16 +10774,18 @@ ripper_compile_error(struct parser_params *parser, const char *fmt, ...)
     ripper_error_gen(parser);
 }
 
+static ID id_warn, id_warning;
+
 static void
 ripper_warn0(struct parser_params *parser, const char *fmt)
 {
-    rb_funcall(parser->value, rb_intern("warn"), 1, STR_NEW2(fmt));
+    rb_funcall(parser->value, id_warn, 1, STR_NEW2(fmt));
 }
 
 static void
 ripper_warnI(struct parser_params *parser, const char *fmt, int a)
 {
-    rb_funcall(parser->value, rb_intern("warn"), 2,
+    rb_funcall(parser->value, id_warn, 2,
                STR_NEW2(fmt), INT2NUM(a));
 }
 
@@ -10791,7 +10793,7 @@ ripper_warnI(struct parser_params *parser, const char *fmt, int a)
 static void
 ripper_warnS(struct parser_params *parser, const char *fmt, const char *str)
 {
-    rb_funcall(parser->value, rb_intern("warn"), 2,
+    rb_funcall(parser->value, id_warn, 2,
                STR_NEW2(fmt), STR_NEW2(str));
 }
 #endif
@@ -10799,27 +10801,27 @@ ripper_warnS(struct parser_params *parser, const char *fmt, const char *str)
 static void
 ripper_warnV(struct parser_params *parser, const char *fmt, VALUE v)
 {
-    rb_funcall(parser->value, rb_intern("warn"), 2,
+    rb_funcall(parser->value, id_warn, 2,
                STR_NEW2(fmt), v);
 }
 
 static void
 ripper_warning0(struct parser_params *parser, const char *fmt)
 {
-    rb_funcall(parser->value, rb_intern("warning"), 1, STR_NEW2(fmt));
+    rb_funcall(parser->value, id_warning, 1, STR_NEW2(fmt));
 }
 
 static void
 ripper_warningS(struct parser_params *parser, const char *fmt, const char *str)
 {
-    rb_funcall(parser->value, rb_intern("warning"), 2,
+    rb_funcall(parser->value, id_warning, 2,
                STR_NEW2(fmt), STR_NEW2(str));
 }
 
 static void
 ripper_warningV(struct parser_params *parser, const char *fmt, VALUE v)
 {
-    rb_funcall(parser->value, rb_intern("warning"), 2,
+    rb_funcall(parser->value, id_warning, 2,
                STR_NEW2(fmt), v);
 }
 
@@ -11027,9 +11029,8 @@ Init_ripper(void)
 {
     ripper_init_eventids1();
     ripper_init_eventids2();
-    /* ensure existing in symbol table */
-    (void)rb_intern("||");
-    (void)rb_intern("&&");
+    id_warn = rb_intern_const("warn");
+    id_warning = rb_intern_const("warning");
 
     InitVM(ripper);
 }
