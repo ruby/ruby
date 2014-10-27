@@ -1,3 +1,9 @@
+Mon Oct 27 13:40:11 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (gc_sweep_rest): sweep rest pages regardless of whether
+	  lazy sweep is enabled or not.  based on the patch by Masahiro
+	  Ide at [ruby-dev:48706].  [Bug #10431]
+
 Mon Oct 27 11:18:32 2014  Eric Wong  <e@80x24.org>
 
 	* test/ruby/test_process.rb (test_deadlock_by_signal_at_forking):

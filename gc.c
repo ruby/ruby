@@ -700,7 +700,8 @@ VALUE *ruby_initial_gc_stress_ptr = &ruby_initial_gc_stress;
 #else
 #define is_incremental_marking(objspace) 0
 #endif
-#define is_lazy_sweeping(heap)           (GC_ENABLE_LAZY_SWEEP       && (heap)->sweep_pages != 0)
+#define has_sweeping_pages(heap)         ((heap)->sweep_pages != 0)
+#define is_lazy_sweeping(heap)           (GC_ENABLE_LAZY_SWEEP && has_sweeping_pages(heap))
 #if GC_ENABLE_INCREMENTAL_MARK
 #define will_be_incremental_marking(objspace) ((objspace)->rgengc.need_major_gc != GPR_FLAG_NONE)
 #else
@@ -3315,10 +3316,8 @@ gc_sweep_rest(rb_objspace_t *objspace)
 {
     rb_heap_t *heap = heap_eden; /* lazy sweep only for eden */
 
-    if (is_lazy_sweeping(heap)) {
-	while (is_lazy_sweeping(heap)) {
-	    gc_sweep_step(objspace, heap);
-	}
+    while (has_sweeping_pages(heap)) {
+	gc_sweep_step(objspace, heap);
     }
 }
 
