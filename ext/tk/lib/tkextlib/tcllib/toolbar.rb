@@ -148,7 +148,7 @@ class Tk::Tcllib::Widget::Toolbar
     Tk::Tcllib::Widget::Toolbar.new(self, *args)
   end
 
-  def itemid(item)
+  def itemid(_)
     window(tk_send('itemid'))
   end
 
