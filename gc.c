@@ -695,18 +695,10 @@ VALUE *ruby_initial_gc_stress_ptr = &ruby_initial_gc_stress;
 #define is_marking(objspace)             ((objspace)->flags.stat == gc_stat_marking)
 #define is_sweeping(objspace)            ((objspace)->flags.stat == gc_stat_sweeping)
 #define is_full_marking(objspace)        ((objspace)->flags.during_minor_gc == FALSE)
-#if GC_ENABLE_INCREMENTAL_MARK
-#define is_incremental_marking(objspace) ((objspace)->flags.during_incremental_marking != FALSE)
-#else
-#define is_incremental_marking(objspace) 0
-#endif
+#define is_incremental_marking(objspace) (GC_ENABLE_INCREMENTAL_MARK && (objspace)->flags.during_incremental_marking != FALSE)
+#define will_be_incremental_marking(objspace) (GC_ENABLE_INCREMENTAL_MARK && (objspace)->rgengc.need_major_gc != GPR_FLAG_NONE)
 #define has_sweeping_pages(heap)         ((heap)->sweep_pages != 0)
 #define is_lazy_sweeping(heap)           (GC_ENABLE_LAZY_SWEEP && has_sweeping_pages(heap))
-#if GC_ENABLE_INCREMENTAL_MARK
-#define will_be_incremental_marking(objspace) ((objspace)->rgengc.need_major_gc != GPR_FLAG_NONE)
-#else
-#define will_be_incremental_marking(objspace) 0
-#endif
 
 #if SIZEOF_LONG == SIZEOF_VOIDP
 # define nonspecial_obj_id(obj) (VALUE)((SIGNED_VALUE)(obj)|FIXNUM_FLAG)
