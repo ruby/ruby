@@ -801,8 +801,8 @@ static void token_info_pop(struct parser_params*, const char *token);
 %token tNEQ		RUBY_TOKEN(NEQ)    "!="
 %token tGEQ		RUBY_TOKEN(GEQ)    ">="
 %token tLEQ		RUBY_TOKEN(LEQ)    "<="
-%token tANDOP		"&&"
-%token tOROP		"||"
+%token tANDOP		RUBY_TOKEN(ANDOP)  "&&"
+%token tOROP		RUBY_TOKEN(OROP)   "||"
 %token tMATCH		RUBY_TOKEN(MATCH)  "=~"
 %token tNMATCH		RUBY_TOKEN(NMATCH) "!~"
 %token tDOT2		RUBY_TOKEN(DOT2)   ".."
@@ -2298,7 +2298,7 @@ arg		: lhs '=' arg
 		    /*%%%*/
 			$$ = logop(NODE_AND, $1, $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ripper_intern("&&"), $3);
+			$$ = dispatch3(binary, $1, ID2SYM(idANDOP), $3);
 		    %*/
 		    }
 		| arg tOROP arg
@@ -2306,7 +2306,7 @@ arg		: lhs '=' arg
 		    /*%%%*/
 			$$ = logop(NODE_OR, $1, $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ripper_intern("||"), $3);
+			$$ = dispatch3(binary, $1, ID2SYM(idOROP), $3);
 		    %*/
 		    }
 		| keyword_defined opt_nl {in_defined = 1;} arg
@@ -10718,20 +10718,10 @@ ripper_id2sym(ID id)
     if ((name = keyword_id_to_str(id))) {
         return ID2SYM(rb_intern(name));
     }
-    switch (id) {
-      case tOROP:
-        name = "||";
-        break;
-      case tANDOP:
-        name = "&&";
-        break;
-      default:
-        if (!rb_id2str(id)) {
-            rb_bug("cannot convert ID to string: %ld", (unsigned long)id);
-        }
-        return ID2SYM(id);
+    if (!rb_id2str(id)) {
+	rb_bug("cannot convert ID to string: %ld", (unsigned long)id);
     }
-    return ID2SYM(rb_intern(name));
+    return ID2SYM(id);
 }
 
 static ID

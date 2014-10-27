@@ -18,7 +18,7 @@ op_id_offset = 128
 token_op_ids = %w[
   tDOT2 tDOT3 tUPLUS tUMINUS tPOW tDSTAR tCMP tLSHFT tRSHFT
   tLEQ tGEQ tEQ tEQQ tNEQ tMATCH tNMATCH tAREF tASET
-  tCOLON2 tCOLON3
+  tCOLON2 tCOLON3 tANDOP tOROP
 ]
 
 defs = File.join(File.dirname(File.dirname(erb.filename)), "defs/id.def")
@@ -92,6 +92,8 @@ enum ruby_method_ids {
     idAREF = RUBY_TOKEN(AREF),
     idASET = RUBY_TOKEN(ASET),
     idCOLON2 = RUBY_TOKEN(COLON2),
+    idANDOP = RUBY_TOKEN(ANDOP),
+    idOROP = RUBY_TOKEN(OROP),
     tPRESERVED_ID_BEGIN = <%=op_id_offset + token_op_ids.size - 1%>,
 % ids[:preserved].each do |token|
     id<%=token%>,
