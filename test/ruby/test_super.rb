@@ -508,4 +508,22 @@ class TestSuper < Test::Unit::TestCase
     end
     assert_equal("A", b.new.foo, bug10263)
   end
+
+  def test_super_with_block
+    a = Class.new do
+      def foo
+        yield
+      end
+    end
+
+    b = Class.new(a) do
+      def foo
+        super{
+          "b"
+        }
+      end
+    end
+
+    assert_equal "b", b.new.foo{"c"}
+  end
 end

@@ -1,3 +1,7 @@
+Mon Oct 27 16:26:37 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_super.rb: add a test to check block passing.
+
 Mon Oct 27 15:59:26 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: is_incremental_marking(), will_be_incremental_marking():
