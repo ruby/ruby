@@ -204,7 +204,7 @@ def demoMailWasher(t)
                       if id.empty?
                       elsif id[0] == 'header'
                       else
-                        what, item, where, arg1, arg2, arg3 = id
+                        _, item, where, arg1, arg2, arg3 = id
                         if where == 'column'
                           tag = w.column_cget(arg1, :tag)
                           if tag == 'delete' || tag == 'bounce'
