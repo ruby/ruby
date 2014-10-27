@@ -138,8 +138,14 @@ module REXML
         matches = @value.scan(PEREFERENCE_RE)
         rv = @value.clone
         if @parent
+          sum = 0
           matches.each do |entity_reference|
             entity_value = @parent.entity( entity_reference[0] )
+            if sum + entity_value.bytesize > Security.entity_expansion_text_limit
+              raise "entity expansion has grown too large"
+            else
+              sum += entity_value.bytesize
+            end
             rv.gsub!( /%#{entity_reference.join};/um, entity_value )
           end
         end

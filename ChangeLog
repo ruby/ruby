@@ -1,3 +1,9 @@
+Mon Oct 27 20:13:37 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/rexml/entity.rb: keep the entity size within the limitation.
+	  reported by Willis Vandevanter <will@silentrobots.com> and
+	  patched by nahi.
+
 Mon Oct 27 17:17:24 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (method_proc): the receiver of binding from method should
