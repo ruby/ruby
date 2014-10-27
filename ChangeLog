@@ -1,3 +1,9 @@
+Mon Oct 27 13:26:46 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_method_entry_make): warn redefinition only for
+	  already defined methods, but not for undefined methods.
+	  [ruby-dev:48691] [Bug #10421]
+
 Thu Oct 23 18:56:55 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* ext/openssl/lib/openssl/ssl.rb (DEFAULT_PARAMS): override
