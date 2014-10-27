@@ -122,6 +122,22 @@ class EntityTester < Test::Unit::TestCase
     end
   end
 
+  def test_entity_string_limit_for_parameter_entity
+    template = '<!DOCTYPE bomb [ <!ENTITY % a "^" > <!ENTITY bomb "$" > ]><root/>'
+    len      = 5120 # 5k per entity
+    template.sub!(/\^/, "B" * len)
+
+    # 10k is OK
+    entities = '%a;' * 2 # 5k entity * 2 = 10k
+    REXML::Document.new(template.sub(/\$/, entities))
+
+    # above 10k explodes
+    entities = '%a;' * 3 # 5k entity * 2 = 15k
+    assert_raises(REXML::ParseException) do
+      REXML::Document.new(template.sub(/\$/, entities))
+    end
+  end
+
   def test_raw
     source = '<!DOCTYPE foo [
 <!ENTITY ent "replace">
