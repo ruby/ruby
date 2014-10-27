@@ -1919,18 +1919,21 @@ EOS
   end
 
   def test_deadlock_by_signal_at_forking
+    GC.start # reduce garbage
+    buf = ''
     ruby = EnvUtil.rubybin
     er, ew = IO.pipe
-    unless runner = IO.popen("-")
+    unless runner = IO.popen("-".freeze)
       er.close
       status = true
+      GC.disable # avoid triggering CoW after forks
       begin
         $stderr.reopen($stdout)
         trap(:QUIT) {}
         parent = $$
         100.times do |i|
           pid = fork {Process.kill(:QUIT, parent)}
-          IO.popen(ruby, 'r+'){}
+          IO.popen(ruby, 'r+'.freeze){}
           Process.wait(pid)
           $stdout.puts
           $stdout.flush
@@ -1948,7 +1951,7 @@ EOS
     begin
       loop do
         runner.wait_readable(5)
-        runner.read_nonblock(100)
+        runner.read_nonblock(100, buf)
       end
     rescue EOFError => e
       _, status = Process.wait2(runner.pid)

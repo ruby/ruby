@@ -1,3 +1,8 @@
+Mon Oct 27 11:18:32 2014  Eric Wong  <e@80x24.org>
+
+	* test/ruby/test_process.rb (test_deadlock_by_signal_at_forking):
+	  reduce garbage during forks
+
 Sun Oct 25 12:26:26 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* template/insns.inc.tmpl, insns_info.inc.tmpl, known_errors.inc.tmpl,
