@@ -540,6 +540,8 @@ static int lvar_defined_gen(struct parser_params*, ID);
 #ifdef RIPPER
 #define RIPPER_VERSION "0.1.0"
 
+static inline VALUE intern_sym(const char *name);
+
 #include "eventids1.c"
 #include "eventids2.c"
 
@@ -5130,6 +5132,13 @@ ripper_yylval_id(ID x)
 #define ripper_flush(p) ((p)->tokp = (p)->parser_lex_p)
 
 #define yylval_rval (*(RB_TYPE_P(yylval.val, T_NODE) ? &yylval.node->nd_rval : &yylval.val))
+
+static inline VALUE
+intern_sym(const char *name)
+{
+    ID id = rb_intern_const(name);
+    return ID2SYM(id);
+}
 
 static int
 ripper_has_scan_event(struct parser_params *parser)
