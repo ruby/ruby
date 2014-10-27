@@ -80,6 +80,7 @@ enum ruby_method_ids {
     idLTLT = RUBY_TOKEN(LSHFT),
     idLE = RUBY_TOKEN(LEQ),
     idGT = '>',
+    idGTGT = RUBY_TOKEN(RSHFT),
     idGE = RUBY_TOKEN(GEQ),
     idEq = RUBY_TOKEN(EQ),
     idEqq = RUBY_TOKEN(EQQ),
@@ -90,6 +91,7 @@ enum ruby_method_ids {
     idNeqTilde = RUBY_TOKEN(NMATCH),
     idAREF = RUBY_TOKEN(AREF),
     idASET = RUBY_TOKEN(ASET),
+    idCOLON2 = RUBY_TOKEN(COLON2),
     tPRESERVED_ID_BEGIN = <%=op_id_offset + token_op_ids.size - 1%>,
 % ids[:preserved].each do |token|
     id<%=token%>,
