@@ -17,7 +17,7 @@ Mon Oct 27 16:26:37 2014  Koichi Sasada  <ko1@atdot.net>
 Mon Oct 27 15:59:26 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: is_incremental_marking(), will_be_incremental_marking():
-	  use `&&' with GC_ENABLE_INCREMENTAL_MARK intead of using
+	  use `&&' with GC_ENABLE_INCREMENTAL_MARK instead of using
 	  #if/#else/#endif.
 
 Mon Oct 27 13:40:11 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
