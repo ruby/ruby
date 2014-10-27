@@ -2453,9 +2453,11 @@ proc_binding(VALUE self)
 
     GetProcPtr(self, proc);
     if (RB_TYPE_P((VALUE)proc->block.iseq, T_NODE)) {
-	if (!IS_METHOD_PROC_NODE((NODE *)proc->block.iseq)) {
-	    rb_raise(rb_eArgError, "Can't create Binding from C level Proc");
-	}
+        if (IS_METHOD_PROC_NODE((NODE *)proc->block.iseq)) {
+            return rb_f_binding(proc->block.self);
+        } else {
+            rb_raise(rb_eArgError, "Can't create Binding from C level Proc");
+        }
     }
 
     bindval = rb_binding_alloc(rb_cBinding);
