@@ -1,3 +1,12 @@
+Tue Oct 28 16:52:07 2014  Eric Wong  <e@80x24.org>
+
+	* signal.c (install_sighandler): remove rb_disable_interrupt and
+	  rb_enable_interrupt calls
+	  (init_sigchld): ditto
+	  (Init_signal): disable and enable interrupt once around all
+	  install_sighandler and init_sigchld to reduce syscalls at start
+	  [Feature #9345] [ruby-core:59480]
+
 Tue Oct 28 16:22:41 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_options, load_file_internal2): should not
