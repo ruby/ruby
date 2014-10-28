@@ -1,3 +1,9 @@
+Tue Oct 28 16:22:41 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options, load_file_internal2): should not
+	  require other files when dump option is given.
+	  [ruby-dev:48712] [Bug #10435]
+
 Tue Oct 28 14:51:38 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: remove apple-gcc4.2 from CC candidates.

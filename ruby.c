@@ -1415,8 +1415,10 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	    eenc = lenc;
 	}
 	rb_enc_associate(opt->e_script, eenc);
-        ruby_set_script_name(opt->script_name);
-	require_libraries(&opt->req_list);
+	if (!(opt->dump & ~DUMP_BIT(version_v))) {
+	    ruby_set_script_name(opt->script_name);
+	    require_libraries(&opt->req_list);
+	}
         ruby_set_script_name(progname);
 
 	PREPARE_PARSE_MAIN({
@@ -1612,8 +1614,10 @@ load_file_internal2(VALUE argp_v)
 	    if (f != rb_stdin) rb_io_close(f);
 	    f = Qnil;
 	}
-        ruby_set_script_name(opt->script_name);
-	require_libraries(&opt->req_list);	/* Why here? unnatural */
+	if (!(opt->dump & ~DUMP_BIT(version_v))) {
+	    ruby_set_script_name(opt->script_name);
+	    require_libraries(&opt->req_list);	/* Why here? unnatural */
+	}
     }
     if (opt->src.enc.index >= 0) {
 	enc = rb_enc_from_index(opt->src.enc.index);

@@ -710,4 +710,41 @@ class TestRubyOptions < Test::Unit::TestCase
     bug7157 = '[ruby-core:47967]'
     assert_in_out_err(['-p', '-e', 'sub(/t.*/){"TEST"}'], %[test], %w[TEST], [], bug7157)
   end
+
+  def assert_norun_with_rflag(opt)
+    bug10435 = "[ruby-dev:48712] [Bug #10435]: should not run with #{opt} option"
+    stderr = []
+    Tempfile.create(%w"bug10435- .rb") do |script|
+      dir, base = File.split(script.path)
+      script.puts "abort ':run'"
+      script.close
+      opts = ['-C', dir, '-r', "./#{base}", opt]
+      assert_in_out_err([*opts, '-ep']) do |_, e|
+        stderr.concat(e)
+      end
+      stderr << "---"
+      assert_in_out_err([*opts, base]) do |_, e|
+        stderr.concat(e)
+      end
+    end
+    assert_not_include(stderr, ":run", bug10435)
+  end
+
+  def test_dump_syntax_with_rflag
+    assert_norun_with_rflag('-c')
+    assert_norun_with_rflag('--dump=syntax')
+  end
+
+  def test_dump_yydebug_with_rflag
+    assert_norun_with_rflag('-y')
+    assert_norun_with_rflag('--dump=yydebug')
+  end
+
+  def test_dump_parsetree_with_rflag
+    assert_norun_with_rflag('--dump=parsetree')
+  end
+
+  def test_dump_insns_with_rflag
+    assert_norun_with_rflag('--dump=insns')
+  end
 end
