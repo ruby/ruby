@@ -149,9 +149,13 @@ def read_ids1_with_locations(path)
 end
 
 def read_ids2(path)
-  File.open(path) {|f|
-    return f.read.scan(/ID\s+ripper_id_(\w+)/).flatten.uniq.sort
-  }
+  src = File.open(path) {|f| f.read}
+  ids2 = src.scan(/ID\s+ripper_id_(\w+)/).flatten.uniq.sort
+  diff = src.scan(/set_id2\((\w+)\);/).flatten - ids2
+  unless diff.empty?
+    abort "missing scanner IDs: #{diff}"
+  end
+  return ids2
 end
 
 main

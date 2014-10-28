@@ -125,11 +125,13 @@ ripper_init_eventids2(void)
     set_id2(CHAR);
 }
 
+STATIC_ASSERT(k__END___range, k__END__ < SHRT_MAX);
+STATIC_ASSERT(ripper_scanner_ids_size, sizeof(ripper_scanner_ids) < SHRT_MAX);
 #define O(member) (int)offsetof(ripper_scanner_ids_t, ripper_id_##member)
 
 static const struct token_assoc {
-    int token;
-    int id_offset;
+    unsigned short token;
+    unsigned short id_offset;
 } token_to_eventid[] = {
     {' ',			O(words_sep)},
     {'!',			O(op)},
