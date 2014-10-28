@@ -56,8 +56,8 @@ EOF
   <!ENTITY % e "%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;">
   <!ENTITY % f "%e;%e;%e;%e;%e;%e;%e;%e;%e;%e;%e;%e;%e;%e;%e;">
   <!ENTITY % g "%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;">
- <!ENTITY test "test %g;">
-+]>
+  <!ENTITY test "test %g;">
+]>
 <cd></cd>
 EOF
 
