@@ -464,7 +464,7 @@ fi
 RUBY_NACL
 AS_CASE(["$host_os:$build_os"],
 [darwin*:darwin*], [
-    AC_CHECK_TOOLS(CC, [gcc-4.2 clang gcc cc])
+    AC_CHECK_TOOLS(CC, [clang gcc cc])
     # Following Apple deployed clang are broken
     # clang version 1.0 (http://llvm.org/svn/llvm-project/cfe/tags/Apple/clang-23 exported)
     # Apple clang version 2.0 (tags/Apple/clang-137) (based on LLVM 2.9svn)
