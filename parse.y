@@ -3409,6 +3409,7 @@ opt_block_param	: none
 
 block_param_def	: '|' opt_bv_decl '|'
 		    {
+			current_arg = 0;
 		    /*%%%*/
 			$$ = 0;
 		    /*%
@@ -3427,6 +3428,7 @@ block_param_def	: '|' opt_bv_decl '|'
 		    }
 		| '|' block_param opt_bv_decl '|'
 		    {
+			current_arg = 0;
 		    /*%%%*/
 			$$ = $2;
 		    /*%

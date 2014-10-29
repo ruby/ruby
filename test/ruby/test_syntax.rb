@@ -171,6 +171,11 @@ class TestSyntax < Test::Unit::TestCase
     assert_warn("") do
       o.instance_eval("def foo(var: def bar(var) var; end) var end")
     end
+
+    o = Object.new
+    assert_warn("") do
+      o.instance_eval("proc {|var: 1| var}")
+    end
   end
 
   def test_optional_self_reference
@@ -206,6 +211,11 @@ class TestSyntax < Test::Unit::TestCase
     o = Object.new
     assert_warn("") do
       o.instance_eval("def foo(var = def bar(var) var; end) var end")
+    end
+
+    o = Object.new
+    assert_warn("") do
+      o.instance_eval("proc {|var = 1| var}")
     end
   end
 
