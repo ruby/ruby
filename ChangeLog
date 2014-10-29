@@ -1,3 +1,7 @@
+Wed Oct 29 10:00:18 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* gems/bundled_gems: Update latest version of bundled gems.
+
 Tue Oct 28 16:52:07 2014  Eric Wong  <e@80x24.org>
 
 	* signal.c (install_sighandler): remove rb_disable_interrupt and
