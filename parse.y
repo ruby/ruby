@@ -225,7 +225,6 @@ struct parser_params {
     int parser_in_def;
     int parser_brace_nest;
     int parser_compile_for_eval;
-    VALUE parser_cur_mid;
     int parser_in_kwarg;
     int parser_in_defined;
     char *parser_tokenbuf;
@@ -307,7 +306,6 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define in_single		(parser->parser_in_single)
 #define in_def			(parser->parser_in_def)
 #define compile_for_eval	(parser->parser_compile_for_eval)
-#define cur_mid			(parser->parser_cur_mid)
 #define in_defined		(parser->parser_in_defined)
 #define tokenbuf		(parser->parser_tokenbuf)
 #define tokidx			(parser->parser_tokidx)
@@ -2979,8 +2977,6 @@ primary		: literal
 		    }
 		| k_def fname
 		    {
-			$<id>$ = cur_mid;
-			cur_mid = $2;
 			in_def++;
 			local_push(0);
 		    }
@@ -2998,7 +2994,6 @@ primary		: literal
 		    %*/
 			local_pop();
 			in_def--;
-			cur_mid = $<id>3;
 		    }
 		| k_def singleton dot_or_colon {lex_state = EXPR_FNAME;} fname
 		    {
@@ -10249,7 +10244,6 @@ parser_initialize(struct parser_params *parser)
     parser->parser_in_defined = 0;
     parser->parser_in_kwarg = 0;
     parser->parser_compile_for_eval = 0;
-    parser->parser_cur_mid = 0;
     parser->parser_tokenbuf = NULL;
     parser->parser_tokidx = 0;
     parser->parser_toksiz = 0;

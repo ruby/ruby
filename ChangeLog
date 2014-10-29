@@ -1,3 +1,8 @@
+Wed Oct 29 20:41:01 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_params): remove unused member `cur_mid`.
+	  this has been taken over by `in_def` since 1.6.
+
 Wed Oct 29 14:44:27 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (rb_f_load): path name needs to be transcoded to OS path
