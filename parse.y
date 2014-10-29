@@ -256,6 +256,8 @@ struct parser_params {
 
     int last_cr_line;
 
+    ID cur_arg;
+
 #ifndef RIPPER
     /* Ruby core only */
     NODE *parser_eval_tree_begin;
@@ -328,6 +330,7 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define ruby_sourcefile		(parser->parser_ruby_sourcefile)
 #define ruby_sourcefile_string	(parser->parser_ruby_sourcefile_string)
 #define current_enc		(parser->enc)
+#define current_arg		(parser->cur_arg)
 #define yydebug			(parser->parser_yydebug)
 #ifdef RIPPER
 #else
@@ -634,6 +637,7 @@ new_args_tail_gen(struct parser_params *parser, VALUE k, VALUE kr, VALUE b)
 # define rb_warn0(fmt)    rb_compile_warn(ruby_sourcefile, ruby_sourceline, (fmt))
 # define rb_warnI(fmt,a)  rb_compile_warn(ruby_sourcefile, ruby_sourceline, (fmt), (a))
 # define rb_warnS(fmt,a)  rb_compile_warn(ruby_sourcefile, ruby_sourceline, (fmt), (a))
+# define rb_warnV(fmt,a)  rb_compile_warn(ruby_sourcefile, ruby_sourceline, (fmt), (a))
 # define rb_warn4S(file,line,fmt,a)  rb_compile_warn((file), (line), (fmt), (a))
 # define rb_warn4V(file,line,fmt,a)  rb_compile_warn((file), (line), (fmt), (a))
 # define rb_warning0(fmt) rb_compile_warning(ruby_sourcefile, ruby_sourceline, (fmt))
@@ -2979,6 +2983,8 @@ primary		: literal
 		    {
 			in_def++;
 			local_push(0);
+			$<id>$ = current_arg;
+			current_arg = 0;
 		    }
 		  f_arglist
 		  bodystmt
@@ -4591,13 +4597,16 @@ f_norm_arg	: f_bad_arg
 
 f_arg_asgn	: f_norm_arg
 		    {
-			arg_var(get_id($1));
+			ID id = get_id($1);
+			arg_var(id);
+			current_arg = id;
 			$$ = $1;
 		    }
 		;
 
 f_arg_item	: f_arg_asgn
 		    {
+			current_arg = 0;
 		    /*%%%*/
 			$$ = NEW_ARGS_AUX($1, 1);
 		    /*%
@@ -4646,13 +4655,16 @@ f_arg		: f_arg_item
 
 f_label 	: tLABEL
 		    {
-			arg_var(formal_argument(get_id($1)));
+			ID id = get_id($1);
+			arg_var(formal_argument(id));
+			current_arg = id;
 			$$ = $1;
 		    }
 		;
 
 f_kw		: f_label arg_value
 		    {
+			current_arg = 0;
 			$$ = assignable($1, $2);
 		    /*%%%*/
 			$$ = NEW_KW_ARG(0, $$);
@@ -4662,6 +4674,7 @@ f_kw		: f_label arg_value
 		    }
 		| f_label
 		    {
+			current_arg = 0;
 			$$ = assignable($1, (NODE *)-1);
 		    /*%%%*/
 			$$ = NEW_KW_ARG(0, $$);
@@ -4757,6 +4770,7 @@ f_kwrest	: kwrest_mark tIDENTIFIER
 
 f_opt		: f_arg_asgn '=' arg_value
 		    {
+			current_arg = 0;
 			$$ = assignable($1, $3);
 		    /*%%%*/
 			$$ = NEW_OPT_ARG(0, $$);
@@ -4768,6 +4782,7 @@ f_opt		: f_arg_asgn '=' arg_value
 
 f_block_opt	: f_arg_asgn '=' primary_value
 		    {
+			current_arg = 0;
 			$$ = assignable($1, $3);
 		    /*%%%*/
 			$$ = NEW_OPT_ARG(0, $$);
@@ -8719,7 +8734,12 @@ gettable_gen(struct parser_params *parser, ID id)
     switch (id_type(id)) {
       case ID_LOCAL:
 	if (dyna_in_block() && dvar_defined(id)) return NEW_DVAR(id);
-	if (local_id(id)) return NEW_LVAR(id);
+	if (local_id(id)) {
+	    if (id == current_arg) {
+		rb_warnV("circular argument reference - %"PRIsVALUE, rb_id2str(id));
+	    }
+	    return NEW_LVAR(id);
+	}
 	/* method call without arguments */
 	return NEW_VCALL(id);
       case ID_GLOBAL:
@@ -10257,6 +10277,7 @@ parser_initialize(struct parser_params *parser)
     parser->parser_ruby__end__seen = 0;
     parser->parser_ruby_sourcefile = 0;
     parser->parser_ruby_sourcefile_string = Qnil;
+    parser->cur_arg = 0;
 #ifndef RIPPER
     parser->is_ripper = 0;
     parser->parser_eval_tree_begin = 0;

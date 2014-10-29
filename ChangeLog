@@ -1,3 +1,8 @@
+Wed Oct 29 21:13:23 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (gettable_gen): warn circular argument reference, for
+	  transition from 2.1 and earlier.  [ruby-core:65990] [Bug #10314]
+
 Wed Oct 29 20:41:01 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_params): remove unused member `cur_mid`.
