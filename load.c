@@ -683,7 +683,7 @@ rb_load_protect(VALUE fname, int wrap, int *state)
 static VALUE
 rb_f_load(int argc, VALUE *argv)
 {
-    VALUE fname, wrap, path;
+    VALUE fname, wrap, path, orig_fname;
 
     rb_scan_args(argc, argv, "11", &fname, &wrap);
 
@@ -693,10 +693,12 @@ rb_f_load(int argc, VALUE *argv)
 			       rb_sourceline());
     }
 
-    path = rb_find_file(FilePathValue(fname));
+    orig_fname = FilePathValue(fname);
+    fname = rb_str_encode_ospath(orig_fname);
+    path = rb_find_file(fname);
     if (!path) {
 	if (!rb_file_load_ok(RSTRING_PTR(fname)))
-	    load_failed(fname);
+	    load_failed(orig_fname);
 	path = fname;
     }
     rb_load_internal(path, RTEST(wrap));

@@ -308,6 +308,28 @@ class TestRequire < Test::Unit::TestCase
     }
   end
 
+  def test_load_ospath
+    bug = '[ruby-list:49994] path in ospath'
+    base = "test_load\u{3042 3044 3046 3048 304a}".encode(Encoding::Windows_31J)
+    path = nil
+    Tempfile.create([base, ".rb"]) do |t|
+      path = t.path
+
+      assert_raise_with_message(LoadError, /#{base}/) {
+        load(File.join(File.dirname(path), base))
+      }
+
+      t.puts "warn 'ok'"
+      t.close
+      assert_include(path, base)
+      assert_warn("ok\n", bug) {
+        assert_nothing_raised(LoadError, bug) {
+          load(path)
+        }
+      }
+    end
+  end
+
   def test_tainted_loadpath
     Tempfile.create(["test_ruby_test_require", ".rb"]) {|t|
       abs_dir, file = File.split(t.path)

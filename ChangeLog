@@ -1,3 +1,8 @@
+Wed Oct 29 14:44:27 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_f_load): path name needs to be transcoded to OS path
+	  encoding.  [ruby-list:49994]
+
 Wed Oct 29 11:48:23 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (__builtin_setjmp): disable with gcc/clang earlier
