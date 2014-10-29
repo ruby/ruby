@@ -169,7 +169,17 @@ class TestVector < Test::Unit::TestCase
   def test_cross_product
     v = Vector[1, 0, 0].cross_product Vector[0, 1, 0]
     assert_equal(Vector[0, 0, 1], v)
-    v = Vector[1, 0, 0].cross Vector[0, 1, 0]
-    assert_equal(Vector[0, 0, 1], v)
+    v2 = Vector[1, 2].cross_product
+    assert_equal(Vector[-2, 1], v2)
+    v3 = Vector[3, 5, 2, 1].cross(Vector[4, 3, 1, 8], Vector[2, 9, 4, 3])
+    assert_equal(Vector[16, -65, 139, -1], v3)
+    assert_equal Vector[0, 0, 0, 1],
+      Vector[1, 0, 0, 0].cross(Vector[0, 1, 0, 0], Vector[0, 0, 1, 0])
+    assert_equal Vector[0, 0, 0, 0, 1],
+      Vector[1, 0, 0, 0, 0].cross(Vector[0, 1, 0, 0, 0], Vector[0, 0, 1, 0, 0], Vector[0, 0, 0, 1, 0])
+    assert_raise(Vector::ErrDimensionMismatch) { Vector[1, 2, 3].cross_product(Vector[1, 4]) }
+    assert_raise(TypeError) { Vector[1, 2, 3].cross_product(42) }
+    assert_raise(ArgumentError) { Vector[1, 2].cross_product(Vector[2, -1]) }
+    assert_raise(Vector::ErrOperationNotDefined) { Vector[1].cross_product }
   end
 end

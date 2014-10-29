@@ -1962,14 +1962,36 @@ class Vector
   alias_method :dot, :inner_product
 
   #
-  # Returns the cross product of this vector with the other.
+  # Returns the cross product of this vector with the others.
   #   Vector[1, 0, 0].cross_product Vector[0, 1, 0]   => Vector[0, 0, 1]
   #
-  def cross_product(v)
-    Vector.Raise ErrDimensionMismatch unless size == v.size && v.size == 3
-    Vector[ v[2]*@elements[1] - v[1]*@elements[2],
-            v[0]*@elements[2] - v[2]*@elements[0],
-            v[1]*@elements[0] - v[0]*@elements[1] ]
+  # It is generalized to other dimensions to return a vector perpendicular
+  # to the arguments.
+  #   Vector[1, 2].cross_product # => Vector[-2, 1]
+  #   Vector[1, 0, 0, 0].cross_product(
+  #      Vector[0, 1, 0, 0],
+  #      Vector[0, 0, 1, 0]
+  #   )  #=> Vector[0, 0, 0, 1]
+  #
+  def cross_product(*vs)
+    raise ErrOperationNotDefined, "cross product is not defined on vectors of dimension #{size}" unless size >= 2
+    raise ArgumentError, "wrong number of arguments (#{vs.size} for #{size - 2})" unless vs.size == size - 2
+    vs.each do |v|
+      raise TypeError, "expected Vector, got #{v.class}" unless v.is_a? Vector
+      Vector.Raise ErrDimensionMismatch unless v.size == size
+    end
+    case size
+    when 2
+      Vector[-@elements[1], @elements[0]]
+    when 3
+      v = vs[0]
+      Vector[ v[2]*@elements[1] - v[1]*@elements[2],
+        v[0]*@elements[2] - v[2]*@elements[0],
+        v[1]*@elements[0] - v[0]*@elements[1] ]
+    else
+      rows = self, *vs, Array.new(size) {|i| Vector.basis(size: size, index: i) }
+      Matrix.rows(rows).laplace_expansion(row: size - 1)
+    end
   end
   alias_method :cross, :cross_product
 
