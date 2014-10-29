@@ -148,6 +148,7 @@ with all sufficient information, see the ChangeLog file.
       by deleting the specified row and column.
     * Matrix#cofactor(row, column) returns the (row, column) cofactor
       which is obtained by multiplying the first minor by (-1)**(row + column).
+    * Matrix#adjugate returns the adjugate of the matrix.
     * hstack and vstack are new instance and class methods to stack matrices
       horizontally and vertically.
     * Matrix#laplace_expansion(row_or_column: num) returns the laplace_expansion

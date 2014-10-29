@@ -14,6 +14,9 @@ class TestMatrix < Test::Unit::TestCase
     @c1 = Matrix[[Complex(1,2), Complex(0,1), 0], [1, 2, 3]]
     @e1 = Matrix.empty(2,0)
     @e2 = Matrix.empty(0,3)
+    @a3  = Matrix[[4, 1, -3], [0, 3, 7], [11, -4, 2]]
+    @a5  = Matrix[[2, 0, 9, 3, 9], [8, 7, 0, 1, 9], [7, 5, 6, 6, 5], [0, 7, 8, 3, 0], [7, 8, 2, 3, 1]]
+    @b3  = Matrix[[-7, 7, -10], [9, -3, -2], [-1, 3, 9]]
   end
 
   def test_matrix
@@ -300,6 +303,18 @@ class TestMatrix < Test::Unit::TestCase
     assert_raise(RuntimeError) { Matrix.empty(0, 0).cofactor(0, 0) }
     assert_raise(ArgumentError) { Matrix[[0,0],[0,0]].cofactor(-1, 4) }
     assert_raise(ExceptionForMatrix::ErrDimensionMismatch) { Matrix[[2,0,1],[0,-2,2]].cofactor(0, 0) }
+  end
+
+  def test_adjugate
+    assert_equal(Matrix.empty, Matrix.empty.adjugate)
+    assert_equal(Matrix[[1]], Matrix[[5]].adjugate)
+    assert_equal(Matrix[[9,-6],[-3,7]], Matrix[[7,6],[3,9]].adjugate)
+    assert_equal(Matrix[[45,3,-7],[6,-1,0],[-7,0,0]], Matrix[[0,0,1],[0,7,6],[1,3,9]].adjugate)
+    assert_equal(Matrix.identity(5), (@a5.adjugate * @a5) / @a5.det)
+    assert_equal(Matrix.I(3), Matrix.I(3).adjugate)
+    assert_equal((@a3 * @b3).adjugate, @b3.adjugate * @a3.adjugate)
+    assert_equal(4**(@a3.row_count-1) * @a3.adjugate, (4 * @a3).adjugate)
+    assert_raise(ExceptionForMatrix::ErrDimensionMismatch) { @m1.adjugate }
   end
 
   def test_laplace_expansion
