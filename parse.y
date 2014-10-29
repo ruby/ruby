@@ -8733,7 +8733,12 @@ gettable_gen(struct parser_params *parser, ID id)
     }
     switch (id_type(id)) {
       case ID_LOCAL:
-	if (dyna_in_block() && dvar_defined(id)) return NEW_DVAR(id);
+	if (dyna_in_block() && dvar_defined(id)) {
+	    if (id == current_arg) {
+		rb_warnV("circular argument reference - %"PRIsVALUE, rb_id2str(id));
+	    }
+	    return NEW_DVAR(id);
+	}
 	if (local_id(id)) {
 	    if (id == current_arg) {
 		rb_warnV("circular argument reference - %"PRIsVALUE, rb_id2str(id));
