@@ -293,7 +293,8 @@ class TestRequire < Test::Unit::TestCase
     }
   end
 
-  def test_load2  # [ruby-core:25039]
+  def test_load_scope
+    bug1982 = '[ruby-core:25039] [Bug #1982]'
     Tempfile.create(["test_ruby_test_require", ".rb"]) {|t|
       t.puts "Hello = 'hello'"
       t.puts "class Foo"
@@ -301,7 +302,7 @@ class TestRequire < Test::Unit::TestCase
       t.puts "end"
       t.close
 
-      assert_in_out_err([], <<-INPUT, %w("hello"), [])
+      assert_in_out_err([], <<-INPUT, %w("hello"), [], bug1982)
         load(#{ t.path.dump }, true)
       INPUT
     }
