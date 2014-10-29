@@ -1,3 +1,8 @@
+Wed Oct 29 11:48:23 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (__builtin_setjmp): disable with gcc/clang earlier
+	  than 4.3 on Mac OS X.  [ruby-core:65174] [Bug #10272]
+
 Wed Oct 29 11:43:43 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: Generalize Vector#cross_product to arbitrary
