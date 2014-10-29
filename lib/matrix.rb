@@ -1684,8 +1684,8 @@ end
 # * #-@
 #
 # Vector functions:
-# * #inner_product(v)
-# * #cross_product(v)
+# * #inner_product(v), dot(v)
+# * #cross_product(v), cross(v)
 # * #collect
 # * #magnitude
 # * #map
@@ -1944,6 +1944,7 @@ class Vector
     }
     p
   end
+  alias_method :dot, :inner_product
 
   #
   # Returns the cross product of this vector with the other.
@@ -1955,6 +1956,7 @@ class Vector
             v[0]*@elements[2] - v[2]*@elements[0],
             v[1]*@elements[0] - v[0]*@elements[1] ]
   end
+  alias_method :cross, :cross_product
 
   #
   # Like Array#collect.

@@ -131,6 +131,7 @@ class TestVector < Test::Unit::TestCase
 
   def test_inner_product
     assert_equal(1+4+9, @v1.inner_product(@v1))
+    assert_equal(1+4+9, @v1.dot(@v1))
   end
 
   def test_r
@@ -167,6 +168,8 @@ class TestVector < Test::Unit::TestCase
 
   def test_cross_product
     v = Vector[1, 0, 0].cross_product Vector[0, 1, 0]
+    assert_equal(Vector[0, 0, 1], v)
+    v = Vector[1, 0, 0].cross Vector[0, 1, 0]
     assert_equal(Vector[0, 0, 1], v)
   end
 end
