@@ -17,7 +17,7 @@ class Downloader
 
   class Unicode < self
     def self.download(name, *rest)
-      super("http://www.unicode.org/Public/UCD/latest/ucd/#{name}", name, *rest)
+      super("http://www.unicode.org/Public/7.0.0/ucd/#{name}", name, *rest)
     end
   end
 

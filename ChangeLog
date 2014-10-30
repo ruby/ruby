@@ -1,3 +1,8 @@
+Thu Oct 30 13:23:23 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* tool/downloader.rb: changed Unicode data download location
+	  from latest Unicode version to Unicode 7.0.0.
+
 Thu Oct 30 11:16:13 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_callee_setup_arg{_complex,}): try conversion
