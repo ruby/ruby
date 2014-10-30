@@ -1562,16 +1562,8 @@ cbsubst_table_setup(argc, argv, self)
     inf = RARRAY_PTR(key_inf)[idx];
     if (!RB_TYPE_P(inf, T_ARRAY)) continue;
 
-    if (RB_TYPE_P(RARRAY_PTR(inf)[0], T_STRING)) {
-      chr = *(RSTRING_PTR(RARRAY_PTR(inf)[0]));
-    } else {
-      chr = NUM2CHR(RARRAY_PTR(inf)[0]);
-    }
-    if (RB_TYPE_P(RARRAY_PTR(inf)[1], T_STRING)) {
-      subst_inf->type[chr] = *(RSTRING_PTR(RARRAY_PTR(inf)[1]));
-    } else {
-      subst_inf->type[chr] = NUM2CHR(RARRAY_PTR(inf)[1]);
-    }
+    chr = NUM2CHR(RARRAY_PTR(inf)[0]);
+    subst_inf->type[chr] = NUM2CHR(RARRAY_PTR(inf)[1]);
 
     subst_inf->full_subst_length += 3;
 
@@ -1606,11 +1598,7 @@ cbsubst_table_setup(argc, argv, self)
       subst_inf->key[chr][RSTRING_LEN(RARRAY_PTR(inf)[0])] = '\0';
     }
 #endif
-    if (RB_TYPE_P(RARRAY_PTR(inf)[1], T_STRING)) {
-      subst_inf->type[chr] = *(RSTRING_PTR(RARRAY_PTR(inf)[1]));
-    } else {
-      subst_inf->type[chr] = NUM2CHR(RARRAY_PTR(inf)[1]);
-    }
+    subst_inf->type[chr] = NUM2CHR(RARRAY_PTR(inf)[1]);
 
     subst_inf->full_subst_length += (subst_inf->keylen[chr] + 2);
 
