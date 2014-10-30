@@ -1120,7 +1120,7 @@ UPDATE_UNICODE_FILES_DEPS = $(ALWAYS_UPDATE_UNICODE:yes=PHONY)
 	$(Q) $(MAKEDIRS) "$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)"
 	$(Q) $(BASERUBY) -C "$(srcdir)" tool/downloader.rb \
 	    -d enc/unicode/data/$(UNICODE_VERSION) \
-	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode \
+	    -e $($(ALWAYS_UPDATE_UNICODE:yes=-a):no=) unicode \
 	    $(UNICODE_VERSION)/ucd/UnicodeData.txt \
 	    $(UNICODE_VERSION)/ucd/CompositionExclusions.txt \
 	    $(UNICODE_VERSION)/ucd/NormalizationTest.txt

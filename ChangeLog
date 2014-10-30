@@ -1,3 +1,7 @@
+Thu Oct 30 18:47:04 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk: fix for the case ALWAYS_UPDATE_UNICODE=no
+
 Thu Oct 30 13:23:23 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* tool/downloader.rb: changed Unicode data download location
