@@ -1,3 +1,9 @@
+Thu Oct 30 11:16:13 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_callee_setup_arg{_complex,}): try conversion
+	  by to_ary for a lambda, as well as a proc.
+	  [ruby-core:65887] [Bug #9605]
+
 Wed Oct 29 21:13:23 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (gettable_gen): warn circular argument reference, for

@@ -1140,7 +1140,7 @@ vm_callee_setup_arg_complex(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t
 	long len;
 	if (!splattable ||
 	    argc != 1 ||
-	    !RB_TYPE_P(arg0 = argv[0], T_ARRAY) ||
+	    NIL_P(arg0 = rb_check_array_type(argv[0])) ||
 	    (len = RARRAY_LEN(arg0)) < (long)min ||
 	    (len > (long)max && max != UNLIMITED_ARGUMENTS)) {
 	    argument_error(iseq, argc, min, max);
@@ -1238,7 +1238,7 @@ vm_callee_setup_arg(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t *iseq,
 	    long len;
 	    if (!(is_lambda > 1) ||
 		ci->argc != 1 ||
-		!RB_TYPE_P(arg0 = argv[0], T_ARRAY) ||
+		NIL_P(arg0 = rb_check_array_type(argv[0])) ||
 		(len = RARRAY_LEN(arg0)) != (long)iseq->argc) {
 		argument_error(iseq, ci->argc, iseq->argc, iseq->argc);
 	    }

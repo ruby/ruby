@@ -71,6 +71,32 @@ class TestLambdaParameters < Test::Unit::TestCase
     assert_raise(ArgumentError, bug9605) {proc(&plus).call [1,2]}
   end
 
+  def yield_1(arg)
+    yield arg
+  end
+
+  tap do |;bug9605, expected, result|
+    bug9605 = '[ruby-core:65887] [Bug #9605] arity check should be relaxed'
+    expected = [1,2,3]
+
+    [
+      ["array",  expected],
+      ["to_ary", Struct.new(:to_ary).new(expected)],
+    ].product \
+    [
+      ["proc",   proc {|a, b, c| [a, b, c]}],
+      ["lambda", lambda {|a, b, c| [a, b, c]}],
+    ] do
+      |(vtype, val), (btype, block)|
+      define_method("test_yeild_relaxed(#{vtype},&#{btype})") do
+        result = assert_nothing_raised(ArgumentError, bug9605) {
+          break yield_1(val, &block)
+        }
+        assert_equal(expected, result, bug9605)
+      end
+    end
+  end
+
   def foo
     assert_equal(nil, ->(&b){ b }.call)
   end
