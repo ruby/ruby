@@ -488,6 +488,18 @@ enum ruby_value_type {
 static inline int rb_type(VALUE obj);
 #define TYPE(x) rb_type((VALUE)(x))
 
+#define RB_FLOAT_TYPE_P(obj) (FLONUM_P(obj) || (!SPECIAL_CONST_P(obj) && BUILTIN_TYPE(obj) == T_FLOAT))
+
+#define RB_TYPE_P(obj, type) ( \
+	((type) == T_FIXNUM) ? FIXNUM_P(obj) : \
+	((type) == T_TRUE) ? ((obj) == Qtrue) : \
+	((type) == T_FALSE) ? ((obj) == Qfalse) : \
+	((type) == T_NIL) ? ((obj) == Qnil) : \
+	((type) == T_UNDEF) ? ((obj) == Qundef) : \
+	((type) == T_SYMBOL) ? SYMBOL_P(obj) : \
+	((type) == T_FLOAT) ? RB_FLOAT_TYPE_P(obj) : \
+	(!SPECIAL_CONST_P(obj) && BUILTIN_TYPE(obj) == (type)))
+
 /* RB_GC_GUARD_PTR() is an intermediate macro, and has no effect by
  * itself.  don't use it directly */
 #ifdef __GNUC__
@@ -1318,7 +1330,7 @@ rb_ulong2num_inline(unsigned long v)
 static inline char
 rb_num2char_inline(VALUE x)
 {
-    if ((TYPE(x) == T_STRING) && (RSTRING_LEN(x)>=1))
+    if (RB_TYPE_P(x, T_STRING) && (RSTRING_LEN(x)>=1))
 	return RSTRING_PTR(x)[0];
     else
 	return (char)(NUM2INT(x) & 0xff);
@@ -1660,18 +1672,6 @@ rb_type(VALUE obj)
     }
     return BUILTIN_TYPE(obj);
 }
-
-#define RB_FLOAT_TYPE_P(obj) (FLONUM_P(obj) || (!SPECIAL_CONST_P(obj) && BUILTIN_TYPE(obj) == T_FLOAT))
-
-#define RB_TYPE_P(obj, type) ( \
-	((type) == T_FIXNUM) ? FIXNUM_P(obj) : \
-	((type) == T_TRUE) ? ((obj) == Qtrue) : \
-	((type) == T_FALSE) ? ((obj) == Qfalse) : \
-	((type) == T_NIL) ? ((obj) == Qnil) : \
-	((type) == T_UNDEF) ? ((obj) == Qundef) : \
-	((type) == T_SYMBOL) ? SYMBOL_P(obj) : \
-        ((type) == T_FLOAT) ? RB_FLOAT_TYPE_P(obj) : \
-	(!SPECIAL_CONST_P(obj) && BUILTIN_TYPE(obj) == (type)))
 
 #ifdef __GNUC__
 #define rb_type_p(obj, type) \
