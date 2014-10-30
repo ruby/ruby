@@ -185,7 +185,7 @@ configure-ext: $(EXTS_MK)
 
 build-ext: $(EXTS_MK)
 	$(Q)$(MAKE) -f $(EXTS_MK) $(MFLAGS) libdir="$(libdir)" LIBRUBY_EXTS=$(LIBRUBY_EXTS) \
-	    ENCOBJS="$(ENCOBJS)" ALWAYS_UPDATE_UNICODE=no $(EXTSTATIC)
+	    ENCOBJS="$(ENCOBJS)" UPDATE_LIBRARIES=no $(EXTSTATIC)
 
 prog: program wprogram
 
@@ -1101,6 +1101,8 @@ update-gems: PHONY
 	    -e 'Downloader::RubyGems.download(gem)' \
 	    bundled_gems
 
+UPDATE_LIBRARIES = yes
+
 ### set the following environment variable or uncomment the line if
 ### the Unicode data files are updated every minute.
 # ALWAYS_UPDATE_UNICODE = yes
@@ -1114,13 +1116,13 @@ $(UNICODE_FILES): ./.unicode-$(UNICODE_VERSION).time
 
 UPDATE_UNICODE_FILES_DEPS = $(ALWAYS_UPDATE_UNICODE:yes=PHONY)
 
-./.unicode-tables.time: ./.unicode-$(UNICODE_VERSION).time
+$(UPDATE_LIBRARIES:yes=.)/.unicode-tables.time: $(UNICODE_FILES)
 ./.unicode-$(UNICODE_VERSION).time: $(UPDATE_UNICODE_FILES_DEPS:no=)
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) data files...
 	$(Q) $(MAKEDIRS) "$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)"
 	$(Q) $(BASERUBY) -C "$(srcdir)" tool/downloader.rb \
 	    -d enc/unicode/data/$(UNICODE_VERSION) \
-	    -e $($(ALWAYS_UPDATE_UNICODE:yes=-a):no=) unicode \
+	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode \
 	    $(UNICODE_VERSION)/ucd/UnicodeData.txt \
 	    $(UNICODE_VERSION)/ucd/CompositionExclusions.txt \
 	    $(UNICODE_VERSION)/ucd/NormalizationTest.txt
@@ -1129,7 +1131,7 @@ UPDATE_UNICODE_FILES_DEPS = $(ALWAYS_UPDATE_UNICODE:yes=PHONY)
 $(srcdir)/lib/unicode_normalize/tables.rb: ./.unicode-tables.time
 
 ./.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
-		$(srcdir)/template/unicode_norm_gen.tmpl $(UNICODE_FILES)
+		$(srcdir)/template/unicode_norm_gen.tmpl
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb \
 		-c -t$@ -o $(srcdir)/lib/unicode_normalize/tables.rb \
 		-I $(srcdir) \
