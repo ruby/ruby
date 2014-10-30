@@ -96,14 +96,14 @@ module SecureRandom
         crypt_acquire_context = Win32API.new("advapi32", "CryptAcquireContext", 'PPPII', 'L')
         @crypt_gen_random = Win32API.new("advapi32", "CryptGenRandom", 'VIP', 'L')
 
-        hProvStr = " " * DL::SIZEOF_VOIDP
+        hProvStr = " " * Fiddle::SIZEOF_VOIDP
         prov_rsa_full = 1
         crypt_verifycontext = 0xF0000000
 
         if crypt_acquire_context.call(hProvStr, nil, nil, prov_rsa_full, crypt_verifycontext) == 0
           raise SystemCallError, "CryptAcquireContext failed: #{lastWin32ErrorMessage}"
         end
-        type = DL::SIZEOF_VOIDP == DL::SIZEOF_LONG_LONG ? 'q' : 'l'
+        type = Fiddle::SIZEOF_VOIDP == Fiddle::SIZEOF_LONG_LONG ? 'q' : 'l'
         @hProv, = hProvStr.unpack(type)
 
         @has_win32 = true
