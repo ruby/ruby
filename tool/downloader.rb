@@ -17,7 +17,7 @@ class Downloader
 
   class Unicode < self
     def self.download(name, *rest)
-      super("http://www.unicode.org/Public/7.0.0/ucd/#{name}", name, *rest)
+      super("http://www.unicode.org/Public/#{name}", name, *rest)
     end
   end
 
@@ -53,7 +53,7 @@ class Downloader
   #   download 'http://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt',
   #            'UnicodeData.txt', 'enc/unicode/data'
   def self.download(url, name, dir = nil, ims = true)
-    file = dir ? File.join(dir, name) : name
+    file = dir ? File.join(dir, File.basename(name)) : name
     return true if ims.nil? and File.exist?(file)
     url = URI(url)
     if $VERBOSE
@@ -124,7 +124,7 @@ if $0 == __FILE__
   end
   dl = Downloader.constants.find do |name|
     ARGV[0].casecmp(name.to_s) == 0
-  end
+  end unless ARGV.empty?
   $VERBOSE = true
   if dl
     dl = Downloader.const_get(dl)

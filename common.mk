@@ -10,6 +10,8 @@ Q1 = $(V:1=)
 Q = $(Q1:0=@)
 ECHO = $(ECHO1:0=@echo)
 
+UNICODE_VERSION = 7.0.0
+
 RUBYLIB       = $(PATH_SEPARATOR)
 RUBYOPT       = -
 RUN_OPTS      = --disable-gems
@@ -1103,21 +1105,25 @@ update-gems: PHONY
 ### the Unicode data files are updated every minute.
 # ALWAYS_UPDATE_UNICODE = yes
 
-UNICODE_FILES = $(srcdir)/enc/unicode/data/UnicodeData.txt \
-		$(srcdir)/enc/unicode/data/CompositionExclusions.txt \
-		$(srcdir)/enc/unicode/data/NormalizationTest.txt
+UNICODE_FILES = $(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/UnicodeData.txt \
+		$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/CompositionExclusions.txt \
+		$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/NormalizationTest.txt
 
 update-unicode: $(UNICODE_FILES) PHONY
-$(UNICODE_FILES): ./.update-unicode.time
+$(UNICODE_FILES): ./.unicode-$(UNICODE_VERSION).time
 
 UPDATE_UNICODE_FILES_DEPS = $(ALWAYS_UPDATE_UNICODE:yes=PHONY)
 
-./.update-unicode.time: $(UPDATE_UNICODE_FILES_DEPS:no=)
-	$(ECHO) Downloading Unicode data files...
-	$(Q) $(MAKEDIRS) "$(srcdir)/enc/unicode/data"
-	$(Q) $(BASERUBY) -C "$(srcdir)/enc/unicode/data" \
-	    ../../../tool/downloader.rb -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode \
-	    UnicodeData.txt CompositionExclusions.txt NormalizationTest.txt
+./.unicode-tables.time: ./.unicode-$(UNICODE_VERSION).time
+./.unicode-$(UNICODE_VERSION).time: $(UPDATE_UNICODE_FILES_DEPS:no=)
+	$(ECHO) Downloading Unicode $(UNICODE_VERSION) data files...
+	$(Q) $(MAKEDIRS) "$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)"
+	$(Q) $(BASERUBY) -C "$(srcdir)" tool/downloader.rb \
+	    -d enc/unicode/data/$(UNICODE_VERSION) \
+	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode \
+	    $(UNICODE_VERSION)/ucd/UnicodeData.txt \
+	    $(UNICODE_VERSION)/ucd/CompositionExclusions.txt \
+	    $(UNICODE_VERSION)/ucd/NormalizationTest.txt
 	@exit > .update-unicode.time
 
 $(srcdir)/lib/unicode_normalize/tables.rb: ./.unicode-tables.time
@@ -1127,7 +1133,8 @@ $(srcdir)/lib/unicode_normalize/tables.rb: ./.unicode-tables.time
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb \
 		-c -t$@ -o $(srcdir)/lib/unicode_normalize/tables.rb \
 		-I $(srcdir) \
-		$(srcdir)/template/unicode_norm_gen.tmpl enc/unicode/data lib/unicode_normalize
+		$(srcdir)/template/unicode_norm_gen.tmpl \
+		enc/unicode/data/$(UNICODE_VERSION) lib/unicode_normalize
 
 info: info-program info-libruby_a info-libruby_so info-arch
 info-program: PHONY
