@@ -19,7 +19,6 @@ MAKE = $(MAKE) -f $(MAKEFILE)
 !else
 MAKEFILE = Makefile
 !endif
-ARCH = PROCESSOR_ARCHITECTURE
 CPU = PROCESSOR_LEVEL
 CC = cl -nologo
 CPP = $(CC) -EP
@@ -146,42 +145,28 @@ RUBY_SO_NAME = $(RUBY_SO_NAME)
 <<
 
 -generic-: nul
-!if defined($(ARCH)) || defined($(CPU))
-	@type << >>$(MAKEFILE)
-!if defined($(ARCH))
-!if "$(PROCESSOR_ARCHITECTURE)" == "AMD64"
-$(ARCH) = x64
-!elseif "$(PROCESSOR_ARCHITECTURE)" == "IA64"
-$(ARCH) = ia64
-!elseif defined(PROCESSOR_ARCHITEW6432)
-$(BANG)if "$$(TARGET_OS)" == "mswin64"
-!if "$(PROCESSOR_ARCHITECTURE)" == "IA64"
-$(ARCH) = ia64
-!else
-$(ARCH) = x64
-!endif
-$(BANG)else
-$(ARCH) = $(PROCESSOR_ARCHITECTURE)
-$(BANG)endif
-!else
-$(ARCH) = $(PROCESSOR_ARCHITECTURE)
-!endif
-!endif
-!if defined($(CPU))
-$(CPU) = $(PROCESSOR_LEVEL)
-!endif
-
+	@$(CPP) <<conftest.c 2>nul | findstr = >>$(MAKEFILE)
+#if defined _M_X64
+MACHINE = x64
+#elif defined _M_IA64
+MACHINE = ia64
+#else
+MACHINE = x86
+#endif
 <<
+!if defined($(CPU))
+	@$(APPEND) $(CPU) = $(PROCESSOR_LEVEL)
 !endif
+	@$(APPEND)
 
 -alpha-: nul
-	@echo $(ARCH) = alpha>>$(MAKEFILE)
+	@echo MACHINE = alpha>>$(MAKEFILE)
 -x64-: nul
-	@echo $(ARCH) = x64>>$(MAKEFILE)
+	@echo MACHINE = x64>>$(MAKEFILE)
 -ia64-: nul
-	@echo $(ARCH) = ia64>>$(MAKEFILE)
+	@echo MACHINE = ia64>>$(MAKEFILE)
 -ix86-: nul
-	@echo $(ARCH) = x86>>$(MAKEFILE)
+	@echo MACHINE = x86>>$(MAKEFILE)
 
 -i386-: -ix86-
 	@echo $(CPU) = 3>>$(MAKEFILE)
