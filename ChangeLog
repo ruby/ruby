@@ -1,3 +1,8 @@
+Fri Oct 31 18:58:02 2014  Charles Oliver Nutter  <headius@headius.com>
+
+	* test/psych/test_emitter.rb: Fix line_width test...initial value
+	  is impl-specific and attr assignment always returns LHS.
+
 Fri Oct 31 22:19:30 2014  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/lib/digest.rb (Digest()): This function should now be
