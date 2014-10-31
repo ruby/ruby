@@ -66,7 +66,7 @@ class Syslog::Logger
   ##
   # The version of Syslog::Logger you are using.
 
-  VERSION = '2.0'
+  VERSION = '2.1.0'
 
   ##
   # Maps Logger warning types to syslog(3) warning types.

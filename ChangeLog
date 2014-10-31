@@ -1,3 +1,8 @@
+Fri Oct 31 16:47:35 2014  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/syslog/lib/syslog/logger.rb (Syslog::Logger::VERSION): Bump
+	  the VERSION to 2.1.0. [ruby-core:64483] [Bug #10159]
+
 Fri Oct 31 16:33:46 2014  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/net/imap.rb (Net::IMAP#fetch): [DOC] Document that
