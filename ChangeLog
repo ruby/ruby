@@ -1,3 +1,10 @@
+Fri Oct 31 17:22:19 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/setup.mak: $(APPEND) with some arguments insert a space before
+	  the arguments, so it causes error if the arguments are expected to be
+	  a macro definition.  this fix resolve the build error introduced at
+	  r48210.
+
 Fri Oct 31 16:47:35 2014  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/syslog/lib/syslog/logger.rb (Syslog::Logger::VERSION): Bump

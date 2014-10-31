@@ -155,7 +155,7 @@ MACHINE = x86
 #endif
 <<
 !if defined($(CPU))
-	@$(APPEND) $(CPU) = $(PROCESSOR_LEVEL)
+	@echo>>$(MAKEFILE) $(CPU) = $(PROCESSOR_LEVEL)
 !endif
 	@$(APPEND)
 
