@@ -704,6 +704,7 @@ if $configure_only and $command_output
       submakeopts << 'EXTLIBS="$(EXTLIBS)"'
     end
     submakeopts << 'EXTLDFLAGS="$(EXTLDFLAGS)"'
+    submakeopts << 'UPDATE_LIBRARIES="$(UPDATE_LIBRARIES)"'
     mf.macro "SUBMAKEOPTS", submakeopts
     mf.puts
     targets = %w[all install static install-so install-rb clean distclean realclean]
