@@ -1,3 +1,8 @@
+Fri Oct 31 21:33:17 2014  Akinori MUSHA  <knu@iDaemons.org>
+
+	* test/digest/test_digest.rb: Drop #!.  This no longer runs
+	  stand-alone because it depends on ruby/envutil.
+
 Fri Oct 31 17:22:19 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/setup.mak: $(APPEND) with some arguments insert a space before
