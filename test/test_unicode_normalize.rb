@@ -6,9 +6,11 @@ require 'test/unit'
 
 NormTest = Struct.new :source, :NFC, :NFD, :NFKC, :NFKD, :line
 
+UNICODE_VERSION = '7.0.0'
+
 class TestNormalize < Test::Unit::TestCase
   def read_tests
-    IO.readlines(File.expand_path('../enc/unicode/data/NormalizationTest.txt', __dir__), encoding: 'utf-8')
+    IO.readlines(File.expand_path("../enc/unicode/data/#{UNICODE_VERSION}/NormalizationTest.txt", __dir__), encoding: 'utf-8')
     .collect.with_index { |linedata, linenumber| [linedata, linenumber]}
     .reject { |line| line[0] =~ /^[\#@]/ }
     .collect do |line|
