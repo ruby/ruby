@@ -5,7 +5,8 @@ struct olevariantdata {
     VARIANT var;
 };
 
-static void  olevariant_free(struct olevariantdata *pvar);
+static void  olevariant_free(void *ptr);
+static size_t  olevariant_size(const void *ptr);
 static void ole_val2olevariantdata(VALUE val, VARTYPE vt, struct olevariantdata *pvar);
 static void ole_val2variant_err(VALUE val, VARIANT *var);
 static void ole_set_byref(VARIANT *realvar, VARIANT *var,  VARTYPE vt);
@@ -22,12 +23,25 @@ static VALUE folevariant_value(VALUE self);
 static VALUE folevariant_vartype(VALUE self);
 static VALUE folevariant_set_value(VALUE self, VALUE val);
 
+static const rb_data_type_t olevariant_datatype = {
+    "win32ole_variant",
+    {NULL, olevariant_free, olevariant_size,},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
 static void
-olevariant_free(struct olevariantdata *pvar)
+olevariant_free(void *ptr)
 {
+    struct olevariantdata *pvar = ptr;
     VariantClear(&(pvar->realvar));
     VariantClear(&(pvar->var));
     free(pvar);
+}
+
+static size_t
+olevariant_size(const void *ptr)
+{
+    return ptr ? sizeof(struct olevariantdata) : 0;
 }
 
 static void
@@ -245,7 +259,7 @@ folevariant_s_allocate(VALUE klass)
     struct olevariantdata *pvar;
     VALUE obj;
     ole_initialize();
-    obj = Data_Make_Struct(klass,struct olevariantdata,0,olevariant_free,pvar);
+    obj = TypedData_Make_Struct(klass, struct olevariantdata, &olevariant_datatype, pvar);
     VariantInit(&(pvar->var));
     VariantInit(&(pvar->realvar));
     return obj;
@@ -285,7 +299,7 @@ folevariant_s_array(VALUE klass, VALUE elems, VALUE vvt)
     Check_Type(elems, T_ARRAY);
     obj = folevariant_s_allocate(klass);
 
-    Data_Get_Struct(obj, struct olevariantdata, pvar);
+    TypedData_Get_Struct(obj, struct olevariantdata, &olevariant_datatype, pvar);
     dim = RARRAY_LEN(elems);
 
     psab = ALLOC_N(SAFEARRAYBOUND, dim);
@@ -403,7 +417,7 @@ folevariant_initialize(VALUE self, VALUE args)
 
     check_type_val2variant(val);
 
-    Data_Get_Struct(self, struct olevariantdata, pvar);
+    TypedData_Get_Struct(self, struct olevariantdata, &olevariant_datatype, pvar);
     if (len == 1) {
         ole_val2variant(val, &(pvar->var));
     } else {
@@ -423,7 +437,7 @@ get_locked_safe_array(VALUE val)
     struct olevariantdata *pvar;
     SAFEARRAY *psa = NULL;
     HRESULT hr;
-    Data_Get_Struct(val, struct olevariantdata, pvar);
+    TypedData_Get_Struct(val, struct olevariantdata, &olevariant_datatype, pvar);
     if (!(V_VT(&(pvar->var)) & VT_ARRAY)) {
         rb_raise(rb_eTypeError, "variant type is not VT_ARRAY.");
     }
@@ -498,7 +512,7 @@ folevariant_ary_aref(int argc, VALUE *argv, VALUE self)
     LONG *pid;
     HRESULT hr;
 
-    Data_Get_Struct(self, struct olevariantdata, pvar);
+    TypedData_Get_Struct(self, struct olevariantdata, &olevariant_datatype, pvar);
     if (!V_ISARRAY(&(pvar->var))) {
         rb_raise(eWIN32OLERuntimeError,
                  "`[]' is not available for this variant type object");
@@ -555,7 +569,7 @@ folevariant_ary_aset(int argc, VALUE *argv, VALUE self)
     HRESULT hr;
     VOID *p = NULL;
 
-    Data_Get_Struct(self, struct olevariantdata, pvar);
+    TypedData_Get_Struct(self, struct olevariantdata, &olevariant_datatype, pvar);
     if (!V_ISARRAY(&(pvar->var))) {
         rb_raise(eWIN32OLERuntimeError,
                  "`[]' is not available for this variant type object");
@@ -601,7 +615,7 @@ folevariant_value(VALUE self)
     VARTYPE vt;
     int dim;
     SAFEARRAY *psa;
-    Data_Get_Struct(self, struct olevariantdata, pvar);
+    TypedData_Get_Struct(self, struct olevariantdata, &olevariant_datatype, pvar);
 
     val = ole_variant2val(&(pvar->var));
     vt = V_VT(&(pvar->var));
@@ -636,7 +650,7 @@ static VALUE
 folevariant_vartype(VALUE self)
 {
     struct olevariantdata *pvar;
-    Data_Get_Struct(self, struct olevariantdata, pvar);
+    TypedData_Get_Struct(self, struct olevariantdata, &olevariant_datatype, pvar);
     return INT2FIX(V_VT(&pvar->var));
 }
 
@@ -659,7 +673,7 @@ folevariant_set_value(VALUE self, VALUE val)
 {
     struct olevariantdata *pvar;
     VARTYPE vt;
-    Data_Get_Struct(self, struct olevariantdata, pvar);
+    TypedData_Get_Struct(self, struct olevariantdata, &olevariant_datatype, pvar);
     vt = V_VT(&(pvar->var));
     if (V_ISARRAY(&(pvar->var)) && ((vt & ~VT_BYREF) != (VT_UI1|VT_ARRAY) || !RB_TYPE_P(val, T_STRING))) {
         rb_raise(eWIN32OLERuntimeError,
@@ -673,7 +687,7 @@ void
 ole_variant2variant(VALUE val, VARIANT *var)
 {
     struct olevariantdata *pvar;
-    Data_Get_Struct(val, struct olevariantdata, pvar);
+    TypedData_Get_Struct(val, struct olevariantdata, &olevariant_datatype, pvar);
     VariantCopy(var, &(pvar->var));
 }
 
