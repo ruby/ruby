@@ -1,3 +1,8 @@
+Fri Oct 31 15:26:02 2014  Charles Oliver Nutter  <headius@headius.com>
+
+	* test/openssl/test_ssl.rb: Add certificate verification chain
+	  test from JRuby community.
+
 Fri Oct 31 18:58:02 2014  Charles Oliver Nutter  <headius@headius.com>
 
 	* test/psych/test_emitter.rb: Fix line_width test...initial value

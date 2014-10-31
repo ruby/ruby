@@ -19,6 +19,13 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
                  ctx.options & OpenSSL::SSL::OP_NO_COMPRESSION)
   end if defined?(OpenSSL::SSL::OP_NO_COMPRESSION)
 
+  def test_ctx_setup_with_extra_chain_cert
+    ctx = OpenSSL::SSL::SSLContext.new
+    ctx.extra_chain_cert = [@ca_cert, @cli_cert]
+    assert_equal(ctx.setup, true)
+    assert_equal(ctx.setup, nil)
+  end
+
   def test_not_started_session
     skip "non socket argument of SSLSocket.new is not supported on this platform" if /mswin|mingw/ =~ RUBY_PLATFORM
     open(__FILE__) do |f|
