@@ -1,6 +1,9 @@
 require 'digest.so'
 
 module Digest
+  # A mutex for Digest().
+  REQUIRE_MUTEX = Mutex.new
+
   def self.const_missing(name) # :nodoc:
     case name
     when :SHA256, :SHA384, :SHA512
@@ -76,15 +79,30 @@ end
 # call-seq:
 #   Digest(name) -> digest_subclass
 #
-# Returns a Digest subclass by +name+.
+# Returns a Digest subclass by +name+ in a thread-safe manner even
+# when on-demand loading is involved.
 #
 #   require 'digest'
 #
 #   Digest("MD5")
 #   # => Digest::MD5
 #
-#   Digest("Foo")
+#   Digest(:SHA256)
+#   # => Digest::SHA256
+#
+#   Digest(:Foo)
 #   # => LoadError: library not found for class Digest::Foo -- digest/foo
 def Digest(name)
-  Digest.const_get(name)
+  const = name.to_sym
+  Digest::REQUIRE_MUTEX.synchronize {
+    # Ignore autoload's because it is void when we have #const_missing
+    Digest.const_missing(const)
+  }
+rescue LoadError
+  # Constants do not necessarily rely on digest/*.
+  if Digest.const_defined?(const)
+    Digest.const_get(const)
+  else
+    raise
+  end
 end

@@ -1,3 +1,12 @@
+Fri Oct 31 22:19:30 2014  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/lib/digest.rb (Digest()): This function should now be
+	  thread-safe.  If you have a problem with regard to on-demand
+	  loading under a multi-threaded environment, preload "digest/*"
+	  modules on boot or use this method instead of directly
+	  referencing Digest::*. [Bug #9494]
+	  cf. https://github.com/aws/aws-sdk-ruby/issues/525
+
 Fri Oct 31 21:33:17 2014  Akinori MUSHA  <knu@iDaemons.org>
 
 	* test/digest/test_digest.rb: Drop #!.  This no longer runs

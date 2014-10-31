@@ -128,6 +128,11 @@ with all sufficient information, see the ChangeLog file.
 === Stdlib updates (outstanding ones only)
 
 * Digest
+
+  * Digest() should now be thread-safe.  If you have a problem with
+    regard to on-demand loading under a multi-threaded environment,
+    preload "digest/*" modules on boot or use this method instead of
+    directly referencing Digest::*.
   * Digest::HMAC has been removed just as previously noticed.
 
 * Etc
