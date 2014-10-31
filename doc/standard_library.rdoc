@@ -96,7 +96,6 @@ Date:: A subclass of Object includes Comparable module for handling dates
 DateTime:: Subclass of Date to handling dates, hours, minutes, seconds, offsets
 DBM:: Provides a wrapper for the UNIX-style Database Manager Library
 Digest:: Provides a framework for message digest libraries
-DL:: Provides a wrapper for the UNIX dlopen() library
 Etc:: Provides access to information typically stored in UNIX /etc directory
 Fcntl:: Loads constants defined in the OS fcntl.h C header file
 Fiddle:: A libffi wrapper for Ruby

@@ -224,7 +224,7 @@ Init_fiddle_function(void)
      *
      * === ABI check
      *
-     *   @libc = DL.dlopen "/lib/libc.so.6"
+     *   @libc = Fiddle.dlopen "/lib/libc.so.6"
      *	    #=> #<Fiddle::Handle:0x00000001d7a8d8>
      *   f = Fiddle::Function.new(@libc['strcpy'], [TYPE_VOIDP, TYPE_VOIDP], TYPE_VOIDP)
      *	    #=> #<Fiddle::Function:0x00000001d8ee00>

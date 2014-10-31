@@ -135,6 +135,9 @@ with all sufficient information, see the ChangeLog file.
     directly referencing Digest::*.
   * Digest::HMAC has been removed just as previously noticed.
 
+* DL
+  * DL has been removed from stdlib. Please use Fiddle instead!
+
 * Etc
   * New methods:
     * Etc.uname

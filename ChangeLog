@@ -1,3 +1,11 @@
+Fri Oct 31 13:55:28 2014  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/dl/*: remove DL as it is replaced by Fiddle.
+	  [Feature #5458] Thanks to Jonan Scheffler <jonanscheffler@gmail.com>
+	  for this patch
+
+	* test/dl/*: ditto.
+
 Fri Oct 31 15:26:02 2014  Charles Oliver Nutter  <headius@headius.com>
 
 	* test/openssl/test_ssl.rb: Add certificate verification chain
