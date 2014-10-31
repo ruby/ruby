@@ -95,7 +95,7 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal("Mon, 01 Jan 0001 00:00:00 GMT", t.httpdate)
   end
 
-  def test_rfc3339
+  def subtest_xmlschema_alias(method)
     t = Time.utc(1985, 4, 12, 23, 20, 50, 520000)
     s = "1985-04-12T23:20:50.52Z"
     assert_equal(t, Time.iso8601(s))
@@ -128,80 +128,80 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
   end
 
   # http://www.w3.org/TR/xmlschema-2/
-  def test_xmlschema
+  def subtest_xmlschema(method)
     assert_equal(Time.utc(1999, 5, 31, 13, 20, 0) + 5 * 3600,
-                 Time.xmlschema("1999-05-31T13:20:00-05:00"))
+                 Time.__send__(method, "1999-05-31T13:20:00-05:00"))
     assert_equal(Time.local(2000, 1, 20, 12, 0, 0),
-                 Time.xmlschema("2000-01-20T12:00:00"))
+                 Time.__send__(method, "2000-01-20T12:00:00"))
     assert_equal(Time.utc(2000, 1, 20, 12, 0, 0),
-                 Time.xmlschema("2000-01-20T12:00:00Z"))
+                 Time.__send__(method, "2000-01-20T12:00:00Z"))
     assert_equal(Time.utc(2000, 1, 20, 12, 0, 0) - 12 * 3600,
-                 Time.xmlschema("2000-01-20T12:00:00+12:00"))
+                 Time.__send__(method, "2000-01-20T12:00:00+12:00"))
     assert_equal(Time.utc(2000, 1, 20, 12, 0, 0) + 13 * 3600,
-                 Time.xmlschema("2000-01-20T12:00:00-13:00"))
+                 Time.__send__(method, "2000-01-20T12:00:00-13:00"))
     assert_equal(Time.utc(2000, 3, 4, 23, 0, 0) - 3 * 3600,
-                 Time.xmlschema("2000-03-04T23:00:00+03:00"))
+                 Time.__send__(method, "2000-03-04T23:00:00+03:00"))
     assert_equal(Time.utc(2000, 3, 4, 20, 0, 0),
-                 Time.xmlschema("2000-03-04T20:00:00Z"))
+                 Time.__send__(method, "2000-03-04T20:00:00Z"))
     assert_equal(Time.local(2000, 1, 15, 0, 0, 0),
-                 Time.xmlschema("2000-01-15T00:00:00"))
+                 Time.__send__(method, "2000-01-15T00:00:00"))
     assert_equal(Time.local(2000, 2, 15, 0, 0, 0),
-                 Time.xmlschema("2000-02-15T00:00:00"))
+                 Time.__send__(method, "2000-02-15T00:00:00"))
     assert_equal(Time.local(2000, 1, 15, 12, 0, 0),
-                 Time.xmlschema("2000-01-15T12:00:00"))
+                 Time.__send__(method, "2000-01-15T12:00:00"))
     assert_equal(Time.utc(2000, 1, 16, 12, 0, 0),
-                 Time.xmlschema("2000-01-16T12:00:00Z"))
+                 Time.__send__(method, "2000-01-16T12:00:00Z"))
     assert_equal(Time.local(2000, 1, 1, 12, 0, 0),
-                 Time.xmlschema("2000-01-01T12:00:00"))
+                 Time.__send__(method, "2000-01-01T12:00:00"))
     assert_equal(Time.utc(1999, 12, 31, 23, 0, 0),
-                 Time.xmlschema("1999-12-31T23:00:00Z"))
+                 Time.__send__(method, "1999-12-31T23:00:00Z"))
     assert_equal(Time.local(2000, 1, 16, 12, 0, 0),
-                 Time.xmlschema("2000-01-16T12:00:00"))
+                 Time.__send__(method, "2000-01-16T12:00:00"))
     assert_equal(Time.local(2000, 1, 16, 0, 0, 0),
-                 Time.xmlschema("2000-01-16T00:00:00"))
+                 Time.__send__(method, "2000-01-16T00:00:00"))
     assert_equal(Time.utc(2000, 1, 12, 12, 13, 14),
-                 Time.xmlschema("2000-01-12T12:13:14Z"))
+                 Time.__send__(method, "2000-01-12T12:13:14Z"))
     assert_equal(Time.utc(2001, 4, 17, 19, 23, 17, 300000),
-                 Time.xmlschema("2001-04-17T19:23:17.3Z"))
+                 Time.__send__(method, "2001-04-17T19:23:17.3Z"))
     assert_equal(Time.utc(2000, 1, 2, 0, 0, 0),
-                 Time.xmlschema("2000-01-01T24:00:00Z"))
-    assert_raise(ArgumentError) { Time.xmlschema("2000-01-01T00:00:00.+00:00") }
+                 Time.__send__(method, "2000-01-01T24:00:00Z"))
+    assert_raise(ArgumentError) { Time.__send__(method, "2000-01-01T00:00:00.+00:00") }
   end
 
-  def test_encode_xmlschema
+  def subtest_xmlschema_encode(method)
     bug6100 = '[ruby-core:42997]'
 
     t = Time.utc(2001, 4, 17, 19, 23, 17, 300000)
-    assert_equal("2001-04-17T19:23:17Z", t.xmlschema)
-    assert_equal("2001-04-17T19:23:17.3Z", t.xmlschema(1))
-    assert_equal("2001-04-17T19:23:17.300000Z", t.xmlschema(6))
-    assert_equal("2001-04-17T19:23:17.3000000Z", t.xmlschema(7))
-    assert_equal("2001-04-17T19:23:17.3Z", t.xmlschema(1.9), bug6100)
+    assert_equal("2001-04-17T19:23:17Z", t.__send__(method))
+    assert_equal("2001-04-17T19:23:17.3Z", t.__send__(method, 1))
+    assert_equal("2001-04-17T19:23:17.300000Z", t.__send__(method, 6))
+    assert_equal("2001-04-17T19:23:17.3000000Z", t.__send__(method, 7))
+    assert_equal("2001-04-17T19:23:17.3Z", t.__send__(method, 1.9), bug6100)
 
     t = Time.utc(2001, 4, 17, 19, 23, 17, 123456)
-    assert_equal("2001-04-17T19:23:17.1234560Z", t.xmlschema(7))
-    assert_equal("2001-04-17T19:23:17.123456Z", t.xmlschema(6))
-    assert_equal("2001-04-17T19:23:17.12345Z", t.xmlschema(5))
-    assert_equal("2001-04-17T19:23:17.1Z", t.xmlschema(1))
-    assert_equal("2001-04-17T19:23:17.1Z", t.xmlschema(1.9), bug6100)
+    assert_equal("2001-04-17T19:23:17.1234560Z", t.__send__(method, 7))
+    assert_equal("2001-04-17T19:23:17.123456Z", t.__send__(method, 6))
+    assert_equal("2001-04-17T19:23:17.12345Z", t.__send__(method, 5))
+    assert_equal("2001-04-17T19:23:17.1Z", t.__send__(method, 1))
+    assert_equal("2001-04-17T19:23:17.1Z", t.__send__(method, 1.9), bug6100)
 
     t = Time.at(2.quo(3)).getlocal("+09:00")
-    assert_equal("1970-01-01T09:00:00.666+09:00", t.xmlschema(3))
-    assert_equal("1970-01-01T09:00:00.6666666666+09:00", t.xmlschema(10))
-    assert_equal("1970-01-01T09:00:00.66666666666666666666+09:00", t.xmlschema(20))
-    assert_equal("1970-01-01T09:00:00.6+09:00", t.xmlschema(1.1), bug6100)
-    assert_equal("1970-01-01T09:00:00.666+09:00", t.xmlschema(3.2), bug6100)
+    assert_equal("1970-01-01T09:00:00.666+09:00", t.__send__(method, 3))
+    assert_equal("1970-01-01T09:00:00.6666666666+09:00", t.__send__(method, 10))
+    assert_equal("1970-01-01T09:00:00.66666666666666666666+09:00", t.__send__(method, 20))
+    assert_equal("1970-01-01T09:00:00.6+09:00", t.__send__(method, 1.1), bug6100)
+    assert_equal("1970-01-01T09:00:00.666+09:00", t.__send__(method, 3.2), bug6100)
 
     t = Time.at(123456789.quo(9999999999)).getlocal("+09:00")
-    assert_equal("1970-01-01T09:00:00.012+09:00", t.xmlschema(3))
-    assert_equal("1970-01-01T09:00:00.012345678+09:00", t.xmlschema(9))
-    assert_equal("1970-01-01T09:00:00.0123456789+09:00", t.xmlschema(10))
-    assert_equal("1970-01-01T09:00:00.0123456789012345678+09:00", t.xmlschema(19))
-    assert_equal("1970-01-01T09:00:00.01234567890123456789+09:00", t.xmlschema(20))
-    assert_equal("1970-01-01T09:00:00.012+09:00", t.xmlschema(3.8), bug6100)
+    assert_equal("1970-01-01T09:00:00.012+09:00", t.__send__(method, 3))
+    assert_equal("1970-01-01T09:00:00.012345678+09:00", t.__send__(method, 9))
+    assert_equal("1970-01-01T09:00:00.0123456789+09:00", t.__send__(method, 10))
+    assert_equal("1970-01-01T09:00:00.0123456789012345678+09:00", t.__send__(method, 19))
+    assert_equal("1970-01-01T09:00:00.01234567890123456789+09:00", t.__send__(method, 20))
+    assert_equal("1970-01-01T09:00:00.012+09:00", t.__send__(method, 3.8), bug6100)
 
     t = Time.utc(1)
-    assert_equal("0001-01-01T00:00:00Z", t.xmlschema)
+    assert_equal("0001-01-01T00:00:00Z", t.__send__(method))
 
     begin
       Time.at(-1)
@@ -209,19 +209,19 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
       # ignore
     else
       t = Time.utc(1960, 12, 31, 23, 0, 0, 123456)
-      assert_equal("1960-12-31T23:00:00.123456Z", t.xmlschema(6))
+      assert_equal("1960-12-31T23:00:00.123456Z", t.__send__(method, 6))
     end
 
-    assert_equal(249, Time.xmlschema("2008-06-05T23:49:23.000249+09:00").usec)
+    assert_equal(249, Time.__send__(method, "2008-06-05T23:49:23.000249+09:00").usec)
 
-    assert_equal("10000-01-01T00:00:00Z", Time.utc(10000).xmlschema)
-    assert_equal("9999-01-01T00:00:00Z", Time.utc(9999).xmlschema)
-    assert_equal("0001-01-01T00:00:00Z", Time.utc(1).xmlschema) # 1 AD
-    assert_equal("0000-01-01T00:00:00Z", Time.utc(0).xmlschema) # 1 BC
-    assert_equal("-0001-01-01T00:00:00Z", Time.utc(-1).xmlschema) # 2 BC
-    assert_equal("-0004-01-01T00:00:00Z", Time.utc(-4).xmlschema) # 5 BC
-    assert_equal("-9999-01-01T00:00:00Z", Time.utc(-9999).xmlschema)
-    assert_equal("-10000-01-01T00:00:00Z", Time.utc(-10000).xmlschema)
+    assert_equal("10000-01-01T00:00:00Z", Time.utc(10000).__send__(method))
+    assert_equal("9999-01-01T00:00:00Z", Time.utc(9999).__send__(method))
+    assert_equal("0001-01-01T00:00:00Z", Time.utc(1).__send__(method)) # 1 AD
+    assert_equal("0000-01-01T00:00:00Z", Time.utc(0).__send__(method)) # 1 BC
+    assert_equal("-0001-01-01T00:00:00Z", Time.utc(-1).__send__(method)) # 2 BC
+    assert_equal("-0004-01-01T00:00:00Z", Time.utc(-4).__send__(method)) # 5 BC
+    assert_equal("-9999-01-01T00:00:00Z", Time.utc(-9999).__send__(method))
+    assert_equal("-10000-01-01T00:00:00Z", Time.utc(-10000).__send__(method))
   end
 
   def test_completion
@@ -385,32 +385,32 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 23:00:00 -0100"))
   end
 
-  def test_xmlschema_leap_second
+  def subtest_xmlschema_leap_second(method)
     t = Time.utc(1998,12,31,23,59,59)
-    assert_equal(t, Time.xmlschema("1998-12-31T23:59:59Z"))
-    assert_equal(t, Time.xmlschema("1998-12-31T23:59:59-00:00"));t.localtime
-    assert_equal(t, Time.xmlschema("1999-01-01T08:59:59+09:00"))
-    assert_equal(t, Time.xmlschema("1999-01-01T00:59:59+01:00"))
-    assert_equal(t, Time.xmlschema("1998-12-31T23:59:59+00:00"))
-    assert_equal(t, Time.xmlschema("1998-12-31T22:59:59-01:00"));t.utc
+    assert_equal(t, Time.__send__(method, "1998-12-31T23:59:59Z"))
+    assert_equal(t, Time.__send__(method, "1998-12-31T23:59:59-00:00"));t.localtime
+    assert_equal(t, Time.__send__(method, "1999-01-01T08:59:59+09:00"))
+    assert_equal(t, Time.__send__(method, "1999-01-01T00:59:59+01:00"))
+    assert_equal(t, Time.__send__(method, "1998-12-31T23:59:59+00:00"))
+    assert_equal(t, Time.__send__(method, "1998-12-31T22:59:59-01:00"));t.utc
     t += 1
-    assert_equal(t, Time.xmlschema("1998-12-31T23:59:60Z"))
-    assert_equal(t, Time.xmlschema("1998-12-31T23:59:60-00:00"));t.localtime
-    assert_equal(t, Time.xmlschema("1999-01-01T08:59:60+09:00"))
-    assert_equal(t, Time.xmlschema("1999-01-01T00:59:60+01:00"))
-    assert_equal(t, Time.xmlschema("1998-12-31T23:59:60+00:00"))
-    assert_equal(t, Time.xmlschema("1998-12-31T22:59:60-01:00"));t.utc
+    assert_equal(t, Time.__send__(method, "1998-12-31T23:59:60Z"))
+    assert_equal(t, Time.__send__(method, "1998-12-31T23:59:60-00:00"));t.localtime
+    assert_equal(t, Time.__send__(method, "1999-01-01T08:59:60+09:00"))
+    assert_equal(t, Time.__send__(method, "1999-01-01T00:59:60+01:00"))
+    assert_equal(t, Time.__send__(method, "1998-12-31T23:59:60+00:00"))
+    assert_equal(t, Time.__send__(method, "1998-12-31T22:59:60-01:00"));t.utc
     t += 1 if t.sec == 60
-    assert_equal(t, Time.xmlschema("1999-01-01T00:00:00Z"))
-    assert_equal(t, Time.xmlschema("1999-01-01T00:00:00-00:00"));t.localtime
-    assert_equal(t, Time.xmlschema("1999-01-01T09:00:00+09:00"))
-    assert_equal(t, Time.xmlschema("1999-01-01T01:00:00+01:00"))
-    assert_equal(t, Time.xmlschema("1999-01-01T00:00:00+00:00"))
-    assert_equal(t, Time.xmlschema("1998-12-31T23:00:00-01:00"))
+    assert_equal(t, Time.__send__(method, "1999-01-01T00:00:00Z"))
+    assert_equal(t, Time.__send__(method, "1999-01-01T00:00:00-00:00"));t.localtime
+    assert_equal(t, Time.__send__(method, "1999-01-01T09:00:00+09:00"))
+    assert_equal(t, Time.__send__(method, "1999-01-01T01:00:00+01:00"))
+    assert_equal(t, Time.__send__(method, "1999-01-01T00:00:00+00:00"))
+    assert_equal(t, Time.__send__(method, "1998-12-31T23:00:00-01:00"))
   end
 
-  def test_xmlschema_fraction
-    assert_equal(500000, Time.xmlschema("2000-01-01T00:00:00.5+00:00").tv_usec)
+  def subtest_xmlschema_fraction(method)
+    assert_equal(500000, Time.__send__(method, "2000-01-01T00:00:00.5+00:00").tv_usec)
   end
 
   def test_ruby_talk_152866
@@ -470,12 +470,21 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
   end
 
   def test_nsec
-    assert_equal(123456789, Time.xmlschema("2000-01-01T00:00:00.123456789+00:00").tv_nsec)
     assert_equal(123456789, Time.parse("2000-01-01T00:00:00.123456789+00:00").tv_nsec)
+  end
+
+  def subtest_xmlschema_nsec(method)
+    assert_equal(123456789, Time.__send__(method, "2000-01-01T00:00:00.123456789+00:00").tv_nsec)
   end
 
   def test_huge_precision
     bug4456 = '[ruby-dev:43284]'
     assert_normal_exit %q{ Time.now.strftime("%1000000000F") }, bug4456
+  end
+
+  instance_methods(false).grep(/\Asub(test_xmlschema.*)/) do |sub|
+    test = $1
+    define_method(test) {__send__(sub, :xmlschema)}
+    define_method(test.sub(/xmlschema/, 'iso8601')) {__send__(sub, :iso8601)}
   end
 end
