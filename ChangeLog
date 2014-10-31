@@ -1,3 +1,7 @@
+Fri Oct 31 09:56:41 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* .gitignore: ignored unicode data with version directories.
+
 Fri Oct 31 09:35:30 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* .travis.yml: tweak build scripts for unicode_normalize.rb.
