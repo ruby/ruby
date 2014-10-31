@@ -104,11 +104,6 @@
 #include <conversions.h>
 #include <function.h>
 
-/* FIXME
- * These constants need to match up with DL. We need to refactor this to use
- * the DL header files or vice versa.
- */
-
 #define TYPE_VOID  0
 #define TYPE_VOIDP 1
 #define TYPE_CHAR  2

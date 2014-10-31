@@ -15,36 +15,13 @@ module Memory
     read_status {|k, v| keys << k; vals << v}
 
   when /mswin|mingw/ =~ RUBY_PLATFORM
-    begin
-      require 'fiddle/import'
-    rescue LoadError
-      $LOAD_PATH.unshift File.join(File.join(__dir__, '..'), 'lib')
-      require_relative 'envutil'
-      EnvUtil.suppress_warning do
-        require 'dl/import'
-      end
-    end
-    begin
-      require 'fiddle/types'
-    rescue LoadError
-      require_relative 'envutil'
-      EnvUtil.suppress_warning do
-        require 'dl/types'
-      end
-    end
+    require 'fiddle/import'
+    require 'fiddle/types'
 
     module Win32
-      begin
-        extend Fiddle::Importer
-      rescue NameError
-        extend DL::Importer
-      end
+      extend Fiddle::Importer
       dlload "kernel32.dll", "psapi.dll"
-      begin
-        include Fiddle::Win32Types
-      rescue NameError
-        include DL::Win32Types
-      end
+      include Fiddle::Win32Types
       typealias "SIZE_T", "size_t"
 
       PROCESS_MEMORY_COUNTERS = struct [

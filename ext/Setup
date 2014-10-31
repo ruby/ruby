@@ -8,7 +8,6 @@
 #digest/rmd160
 #digest/sha1
 #digest/sha2
-#dl
 #etc
 #fcntl
 #gdbm
