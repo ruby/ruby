@@ -1112,12 +1112,13 @@ UNICODE_FILES = $(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/UnicodeData.txt \
 		$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/NormalizationTest.txt
 
 update-unicode: $(UNICODE_FILES) PHONY
-$(UNICODE_FILES): ./.unicode-$(UNICODE_VERSION).time
 
-UPDATE_UNICODE_FILES_DEPS = $(ALWAYS_UPDATE_UNICODE:yes=PHONY)
+UNICODE_FILES_DEPS0 = $(UPDATE_LIBRARIES:yes=download-unicode-data)
+UNICODE_FILES_DEPS = $(UNICODE_FILES_DEPS0:no=)
+$(UNICODE_FILES): $(UNICODE_FILES_DEPS)
 
-$(UPDATE_LIBRARIES:yes=.)/.unicode-tables.time: $(UNICODE_FILES)
-./.unicode-$(UNICODE_VERSION).time: $(UPDATE_UNICODE_FILES_DEPS:no=)
+download-unicode-data: ./.unicode-$(UNICODE_VERSION).time
+./.unicode-$(UNICODE_VERSION).time: PHONY
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) data files...
 	$(Q) $(MAKEDIRS) "$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)"
 	$(Q) $(BASERUBY) -C "$(srcdir)" tool/downloader.rb \
@@ -1126,11 +1127,12 @@ $(UPDATE_LIBRARIES:yes=.)/.unicode-tables.time: $(UNICODE_FILES)
 	    $(UNICODE_VERSION)/ucd/UnicodeData.txt \
 	    $(UNICODE_VERSION)/ucd/CompositionExclusions.txt \
 	    $(UNICODE_VERSION)/ucd/NormalizationTest.txt
-	@exit > .update-unicode.time
+	@exit > $@
 
 $(srcdir)/lib/unicode_normalize/tables.rb: ./.unicode-tables.time
 
 ./.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
+		$(UNICODE_FILES) $(UNICODE_FILES_DEPS) \
 		$(srcdir)/template/unicode_norm_gen.tmpl
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb \
 		-c -t$@ -o $(srcdir)/lib/unicode_normalize/tables.rb \

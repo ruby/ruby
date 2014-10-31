@@ -1,3 +1,9 @@
+Fri Oct 31 12:54:43 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (.unicode-tables.time): needs Unicode files always,
+	  and should update after downloading these files.
+	  [ruby-core:66026] [Bug #10461]
+
 Fri Oct 31 10:16:42 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* .travis.yml: reverted r48199, it's unlated configuration.
