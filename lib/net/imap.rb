@@ -788,8 +788,10 @@ module Net
     # +attr+ is a list of attributes to fetch; see the documentation
     # for Net::IMAP::FetchData for a list of valid attributes.
     #
-    # The return value is an array of Net::IMAP::FetchData. For
-    # example:
+    # The return value is an array of Net::IMAP::FetchData or nil
+    # (instead of an empty array) if there is no matching message.
+    #
+    # For example:
     #
     #   p imap.fetch(6..8, "UID")
     #   #=> [#<Net::IMAP::FetchData seqno=6, attr={"UID"=>98}>, \\

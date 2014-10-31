@@ -1,3 +1,8 @@
+Fri Oct 31 16:33:46 2014  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/net/imap.rb (Net::IMAP#fetch): [DOC] Document that
+	  Net::IMAP#fetch will return nil instead of an emtpy array.
+
 Fri Oct 31 12:54:43 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (.unicode-tables.time): needs Unicode files always,
