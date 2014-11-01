@@ -7576,7 +7576,12 @@ parse_atmark(struct parser_params *parser, const enum lex_state_e last_state)
 	c = nextc();
     }
     if (c == -1 || ISSPACE(c)) {
-	compile_error(PARSER_ARG "unexpected @");
+	if (result == tIVAR) {
+	    compile_error(PARSER_ARG "`@' without identifiers is not allowed as an instance variable name");
+	}
+	else {
+	    compile_error(PARSER_ARG "`@@' without identifiers is not allowed as a class variable name");
+	}
 	return 0;
     }
     else if (ISDIGIT(c) || !parser_is_identchar()) {
