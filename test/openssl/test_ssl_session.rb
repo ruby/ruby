@@ -289,18 +289,22 @@ __EOS__
       # any resulting value is OK (ignored)
     }
 
-    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true) do |server, port|
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true, ignore_ssl_accept_error: false) do |server, port|
       sock = TCPSocket.new("127.0.0.1", port)
-      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
-      ssl.sync_close = true
-      ssl.connect
-      assert_equal(1, ctx.session_cache_stats[:cache_num])
-      assert_equal(1, ctx.session_cache_stats[:connect_good])
-      assert_equal([ssl, ssl.session], called[:new])
-      assert(ctx.session_remove(ssl.session))
-      assert(!ctx.session_remove(ssl.session))
-      assert_equal([ctx, ssl.session], called[:remove])
-      ssl.close
+      begin
+        ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+        ssl.sync_close = true
+        ssl.connect
+        assert_equal(1, ctx.session_cache_stats[:cache_num])
+        assert_equal(1, ctx.session_cache_stats[:connect_good])
+        assert_equal([ssl, ssl.session], called[:new])
+        assert(ctx.session_remove(ssl.session))
+        assert(!ctx.session_remove(ssl.session))
+        assert_equal([ctx, ssl.session], called[:remove])
+        ssl.close
+      ensure
+        sock.close if !sock.closed?
+      end
     end
   end
 
@@ -343,21 +347,25 @@ __EOS__
       c.session_cache_stats
       readwrite_loop(c, ssl)
     }
-    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true, :ctx_proc => ctx_proc, :server_proc => server_proc) do |server, port|
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true, ctx_proc: ctx_proc, server_proc: server_proc, ignore_ssl_accept_error: false) do |server, port|
       last_client_session = nil
       3.times do
         sock = TCPSocket.new("127.0.0.1", port)
-        ssl = OpenSSL::SSL::SSLSocket.new(sock, OpenSSL::SSL::SSLContext.new("SSLv3"))
-        ssl.sync_close = true
-        ssl.session = last_client_session if last_client_session
-        ssl.connect
-        last_client_session = ssl.session
-        ssl.close
-        timeout(5) do
-          Thread.pass until called.key?(:new)
-          assert(called.delete(:new))
-          Thread.pass until called.key?(:remove)
-          assert(called.delete(:remove))
+        begin
+          ssl = OpenSSL::SSL::SSLSocket.new(sock, OpenSSL::SSL::SSLContext.new("SSLv3"))
+          ssl.sync_close = true
+          ssl.session = last_client_session if last_client_session
+          ssl.connect
+          last_client_session = ssl.session
+          ssl.close
+          timeout(5) do
+            Thread.pass until called.key?(:new)
+            assert(called.delete(:new))
+            Thread.pass until called.key?(:remove)
+            assert(called.delete(:remove))
+          end
+        ensure
+          sock.close if !sock.closed?
         end
       end
     end

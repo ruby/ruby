@@ -1,3 +1,16 @@
+Sat Nov  1 22:06:24 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/openssl/test_ssl_session.rb (test_ctx_client_session_cb): Don't
+	  ignore errors of SSL accept.
+	  (test_ctx_server_session_cb): Ditto.
+
+	* test/openssl/utils.rb (server_loop): Add ignore_ssl_accept_error
+	  argument.
+	  (start_server): Refine threads waits.
+
+	* test/ruby/envutil.rb (assert_join_threads): Show a thread before
+	  backtrace.
+
 Sat Nov  1 20:40:18 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/openssl/utils.rb (start_server, server_loop): Use a
