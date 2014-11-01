@@ -521,7 +521,7 @@ eom
       end
 
       # threads should respond to shift method.
-      # Array and Queue can be used.
+      # Array can be used.
       def assert_join_threads(threads, message = nil)
         errs = []
         values = []
