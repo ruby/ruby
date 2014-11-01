@@ -1650,7 +1650,7 @@ bary_mul_balance_with_mulfunc(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t 
             }
             tds = zds + n;
             MEMCPY(wds, zds + n, BDIGIT, xn);
-            mulfunc(tds, tn, xds, xn, yds + n, r, wds-xn, wn-xn);
+            mulfunc(tds, tn, xds, xn, yds + n, r, wds+xn, wn-xn);
             bary_add(zds + n, tn,
                      zds + n, tn,
                      wds, xn);

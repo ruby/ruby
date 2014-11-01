@@ -1,3 +1,11 @@
+Sat Nov  1 17:09:32 2014  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_mul_balance_with_mulfunc): Fix free work area
+	  location.
+	  [ruby-dev:48723] [Bug #10464]
+	  [ruby-core:66044] [Bug #10465]
+	  Reported by Kohji Nishihama.
+
 Sat Nov  1 15:45:15 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parse_atmark): mere atmark and two atmarks without
