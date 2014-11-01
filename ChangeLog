@@ -1,3 +1,8 @@
+Sat Nov  1 20:40:18 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/openssl/utils.rb (start_server, server_loop): Use a
+	  pipe to stop server instead of shutdown/close a listening socket.
+
 Sat Nov  1 19:24:59 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/envutil.rb (assert_join_threads): New assertion to

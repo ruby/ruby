@@ -240,10 +240,14 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
       ssl.close rescue nil
     end
 
-    def server_loop(ctx, ssls, server_proc, threads)
+    def server_loop(ctx, ssls, stop_pipe_r, server_proc, threads)
       loop do
         ssl = nil
         begin
+          readable, = IO.select([ssls, stop_pipe_r])
+          if readable.include? stop_pipe_r
+            return
+          end
           ssl = ssls.accept
         rescue OpenSSL::SSL::SSLError
           retry
@@ -286,13 +290,15 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
         retry
       end
 
+      stop_pipe_r, stop_pipe_w = IO.pipe
+
       ssls = OpenSSL::SSL::SSLServer.new(tcps, ctx)
       ssls.start_immediately = start_immediately
 
       begin
         server = Thread.new do
           Thread.current.abort_on_exception = true
-          server_loop(ctx, ssls, server_proc, threads)
+          server_loop(ctx, ssls, stop_pipe_r, server_proc, threads)
         end
 
         $stderr.printf("%s started: pid=%d port=%d\n", SSL_SERVER, $$, port) if $DEBUG
@@ -300,14 +306,7 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
         block.call(server, port.to_i)
       ensure
         begin
-          begin
-            tcps.shutdown
-          rescue Errno::ENOTCONN
-            # when `Errno::ENOTCONN: Socket is not connected' on some platforms,
-            # call #close instead of #shutdown.
-            tcps.close
-            tcps = nil
-          end if (tcps)
+          stop_pipe_w.close
           if (server)
             server.join(5)
             if server.alive?
@@ -320,9 +319,9 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
         end
       end
     ensure
-      threads.each {|th|
-        th.join
-      }
+      stop_pipe_r.close if !stop_pipe_r.closed?
+      stop_pipe_w.close if !stop_pipe_w.closed?
+      assert_join_threads(threads)
     end
 
     def starttls(ssl)
