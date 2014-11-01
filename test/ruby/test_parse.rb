@@ -650,10 +650,12 @@ x = __ENCODING__
 
   def test_invalid_instance_variable
     assert_raise(SyntaxError) { eval('@#') }
+    assert_raise(SyntaxError) { eval('@') }
   end
 
   def test_invalid_class_variable
     assert_raise(SyntaxError) { eval('@@1') }
+    assert_raise(SyntaxError) { eval('@@') }
   end
 
   def test_invalid_char

@@ -7575,9 +7575,13 @@ parse_atmark(struct parser_params *parser, const enum lex_state_e last_state)
 	tokadd('@');
 	c = nextc();
     }
-    if (c != -1 && (ISDIGIT(c) || !parser_is_identchar())) {
+    if (c == -1 || ISSPACE(c)) {
+	compile_error(PARSER_ARG "unexpected @");
+	return 0;
+    }
+    else if (ISDIGIT(c) || !parser_is_identchar()) {
 	pushback(c);
-	if (tokidx == 1) {
+	if (result == tIVAR) {
 	    compile_error(PARSER_ARG "`@%c' is not allowed as an instance variable name", c);
 	}
 	else {
