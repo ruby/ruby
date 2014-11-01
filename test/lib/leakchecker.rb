@@ -66,6 +66,7 @@ class LeakChecker
         end
         puts "Leaked file descriptor: #{test_name}: #{fd}#{str}"
       }
+      #system("lsof -p #$$") if !fd_leaked.empty?
       h.each {|fd, list|
         next if list.length <= 1
         if 1 < list.count {|io, autoclose, inspect| autoclose }

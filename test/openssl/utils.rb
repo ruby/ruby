@@ -299,28 +299,31 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
           ssls = OpenSSL::SSL::SSLServer.new(tcps, ctx)
           ssls.start_immediately = start_immediately
 
-          server = Thread.new do
-            server_loop(ctx, ssls, stop_pipe_r, ignore_ssl_accept_error, server_proc, threads)
-          end
-          threads.unshift server
-
-          $stderr.printf("%s started: pid=%d port=%d\n", SSL_SERVER, $$, port) if $DEBUG
-
-          th = Thread.new do
-            begin
-              block.call(server, port.to_i)
-            ensure
-              stop_pipe_w.close
-            end
-          end
           begin
-            th.join
-          rescue Exception
-            threads.unshift th
+            server = Thread.new do
+              server_loop(ctx, ssls, stop_pipe_r, ignore_ssl_accept_error, server_proc, threads)
+            end
+            threads.unshift server
+
+            $stderr.printf("%s started: pid=%d port=%d\n", SSL_SERVER, $$, port) if $DEBUG
+
+            th = Thread.new do
+              begin
+                block.call(server, port.to_i)
+              ensure
+                stop_pipe_w.close
+              end
+            end
+            begin
+              th.join
+            rescue Exception
+              threads.unshift th
+            end
+          ensure
+            assert_join_threads(threads)
           end
         ensure
           tcps.close if tcps
-          assert_join_threads(threads)
         end
       }
     end

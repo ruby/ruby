@@ -32,11 +32,14 @@ tddwpBAEDjcwMzA5NTYzMTU1MzAwpQMCARM=
       ctx.session_id_context = self.object_id.to_s
 
       sock = TCPSocket.new '127.0.0.1', port
-      ssl = OpenSSL::SSL::SSLSocket.new sock, ctx
-      ssl.session = session
+      begin
+        ssl = OpenSSL::SSL::SSLSocket.new sock, ctx
+        ssl.session = session
 
-      assert_equal session, ssl.session
-      sock.close
+        assert_equal session, ssl.session
+      ensure
+        sock.close
+      end
     }
   end
 
