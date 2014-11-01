@@ -14,7 +14,8 @@ if defined?(OpenSSL)
             ensure
               server_ssl.close
             end
-          end
+          end,
+          :ignore_listener_error => false
       ) do |server, port|
         sock = TCPSocket.new("127.0.0.1", port)
         ssl = OpenSSL::SSL::SSLSocket.new(sock)

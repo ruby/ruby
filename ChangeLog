@@ -1,3 +1,12 @@
+Sun Nov  2 01:30:32 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/openssl/test_ssl.rb: Don't ignore errors on listener threads,
+	  as much as possible.
+
+	* test/openssl/test_ssl_session.rb: Ditto.
+
+	* test/openssl/test_partial_record_read.rb: Ditto.
+
 Sat Nov  1 23:11:05 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/openssl/utils.rb (start_server): Don't close sockets before
