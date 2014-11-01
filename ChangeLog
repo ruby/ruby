@@ -1,3 +1,8 @@
+Sat Nov  1 19:24:59 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/envutil.rb (assert_join_threads): New assertion to
+	  join multiple threads without exceptions.
+
 Sat Nov  1 17:09:32 2014  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_mul_balance_with_mulfunc): Fix free work area

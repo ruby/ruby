@@ -584,11 +584,13 @@ class TestIO < Test::Unit::TestCase
             end
             t1 = Thread.new { w1 << megacontent; w1.close }
             t2 = Thread.new { r2.read }
-            ret = IO.copy_stream(r1, w2)
-            assert_equal(megacontent.bytesize, ret)
-            w2.close
-            t1.join
-            assert_equal(megacontent, t2.value)
+            t3 = Thread.new {
+              ret = IO.copy_stream(r1, w2)
+              assert_equal(megacontent.bytesize, ret)
+              w2.close
+            }
+            _, t2_value, _ = assert_join_threads([t1, t2, t3])
+            assert_equal(megacontent, t2_value)
           }
         }
       }
@@ -601,11 +603,13 @@ class TestIO < Test::Unit::TestCase
         with_pipe {|r2, w2|
           t1 = Thread.new { w1 << megacontent; w1.close }
           t2 = Thread.new { r2.read }
-          ret = IO.copy_stream(r1, w2)
-          assert_equal(megacontent.bytesize, ret)
-          w2.close
-          t1.join
-          assert_equal(megacontent, t2.value)
+          t3 = Thread.new {
+            ret = IO.copy_stream(r1, w2)
+            assert_equal(megacontent.bytesize, ret)
+            w2.close
+          }
+          _, t2_value, _ = assert_join_threads([t1, t2, t3])
+          assert_equal(megacontent, t2_value)
         }
       }
     }
@@ -614,11 +618,14 @@ class TestIO < Test::Unit::TestCase
   def test_copy_stream_megacontent_file_to_pipe
     with_megasrc {|megasrc, megacontent|
       with_pipe {|r, w|
-        t = Thread.new { r.read }
-        ret = IO.copy_stream(megasrc, w)
-        assert_equal(megacontent.bytesize, ret)
-        w.close
-        assert_equal(megacontent, t.value)
+        t1 = Thread.new { r.read }
+        t2 = Thread.new {
+          ret = IO.copy_stream(megasrc, w)
+          assert_equal(megacontent.bytesize, ret)
+          w.close
+        }
+        t1_value, _ = assert_join_threads([t1, t2])
+        assert_equal(megacontent, t1_value)
       }
     }
   end
@@ -666,11 +673,13 @@ class TestIO < Test::Unit::TestCase
   def test_copy_stream_socket2
     with_bigsrc {|bigsrc, bigcontent|
       with_socketpair {|s1, s2|
-        t = Thread.new { s2.read }
-        ret = IO.copy_stream(bigsrc, s1)
-        assert_equal(bigcontent.bytesize, ret)
-        s1.close
-        result = t.value
+        t1 = Thread.new { s2.read }
+        t2 = Thread.new {
+          ret = IO.copy_stream(bigsrc, s1)
+          assert_equal(bigcontent.bytesize, ret)
+          s1.close
+        }
+        result, _ = assert_join_threads([t1, t2])
         assert_equal(bigcontent, result)
       }
     }
@@ -679,11 +688,13 @@ class TestIO < Test::Unit::TestCase
   def test_copy_stream_socket3
     with_bigsrc {|bigsrc, bigcontent|
       with_socketpair {|s1, s2|
-        t = Thread.new { s2.read }
-        ret = IO.copy_stream(bigsrc, s1, 10000)
-        assert_equal(10000, ret)
-        s1.close
-        result = t.value
+        t1 = Thread.new { s2.read }
+        t2 = Thread.new {
+          ret = IO.copy_stream(bigsrc, s1, 10000)
+          assert_equal(10000, ret)
+          s1.close
+        }
+        result, _ = assert_join_threads([t1, t2])
         assert_equal(bigcontent[0,10000], result)
       }
     }
@@ -694,12 +705,14 @@ class TestIO < Test::Unit::TestCase
       File.open(bigsrc) {|f|
         assert_equal(0, f.pos)
         with_socketpair {|s1, s2|
-          t = Thread.new { s2.read }
-          ret = IO.copy_stream(f, s1, nil, 100)
-          assert_equal(bigcontent.bytesize-100, ret)
-          assert_equal(0, f.pos)
-          s1.close
-          result = t.value
+          t1 = Thread.new { s2.read }
+          t2 = Thread.new {
+            ret = IO.copy_stream(f, s1, nil, 100)
+            assert_equal(bigcontent.bytesize-100, ret)
+            assert_equal(0, f.pos)
+            s1.close
+          }
+          result, _ = assert_join_threads([t1, t2])
           assert_equal(bigcontent[100..-1], result)
         }
       }
@@ -712,12 +725,14 @@ class TestIO < Test::Unit::TestCase
         assert_equal(bigcontent[0,100], f.read(100))
         assert_equal(100, f.pos)
         with_socketpair {|s1, s2|
-          t = Thread.new { s2.read }
-          ret = IO.copy_stream(f, s1)
-          assert_equal(bigcontent.bytesize-100, ret)
-          assert_equal(bigcontent.length, f.pos)
-          s1.close
-          result = t.value
+          t1 = Thread.new { s2.read }
+          t2 = Thread.new {
+            ret = IO.copy_stream(f, s1)
+            assert_equal(bigcontent.bytesize-100, ret)
+            assert_equal(bigcontent.length, f.pos)
+            s1.close
+          }
+          result, _ = assert_join_threads([t1, t2])
           assert_equal(bigcontent[100..-1], result)
         }
       }
@@ -735,11 +750,13 @@ class TestIO < Test::Unit::TestCase
         rescue Errno::EBADF
           skip "nonblocking IO for pipe is not implemented"
         end
-        t = Thread.new { s2.read }
-        ret = IO.copy_stream("megasrc", s1)
-        assert_equal(megacontent.bytesize, ret)
-        s1.close
-        result = t.value
+        t1 = Thread.new { s2.read }
+        t2 = Thread.new {
+          ret = IO.copy_stream("megasrc", s1)
+          assert_equal(megacontent.bytesize, ret)
+          s1.close
+        }
+        result, _ = assert_join_threads([t1, t2])
         assert_equal(megacontent, result)
       }
     }
@@ -967,11 +984,12 @@ class TestIO < Test::Unit::TestCase
       w.write "zz"
       src = StringIO.new("abcd")
       IO.copy_stream(src, w)
-      t = Thread.new {
+      t1 = Thread.new {
         w.close
       }
-      assert_equal("zzabcd", r.read)
-      t.join
+      t2 = Thread.new { r.read }
+      _, result = assert_join_threads([t1, t2])
+      assert_equal("zzabcd", result)
     }
   end
 
@@ -2747,7 +2765,7 @@ End
           threads << Thread.new {write_file.print(i)}
           threads << Thread.new {read_file.read}
         end
-        threads.each {|t| t.join}
+        assert_join_threads(threads)
         assert(true, "[ruby-core:37197]")
       ensure
         read_file.close
