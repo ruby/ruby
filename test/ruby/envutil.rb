@@ -533,10 +533,11 @@ eom
           end
         end
         if !errs.empty?
-          msg = errs.map {|t, err|
+          msg = "exceptions on #{errs.length} threads:\n" +
+            errs.map {|t, err|
+            "#{t.inspect}:\n" +
             err.backtrace.map.with_index {|line, i|
               if i == 0
-                "#{t.inspect}:\n" +
                 "#{line}: #{err.message} (#{err.class})"
               else
                 "\tfrom #{line}"
