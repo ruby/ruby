@@ -267,63 +267,59 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
 
     def start_server(port0, verify_mode, start_immediately, args = {}, &block)
       IO.pipe {|stop_pipe_r, stop_pipe_w|
+        ctx_proc = args[:ctx_proc]
+        server_proc = args[:server_proc]
+        ignore_ssl_accept_error = args.fetch(:ignore_ssl_accept_error, true)
+        server_proc ||= method(:readwrite_loop)
+
+        store = OpenSSL::X509::Store.new
+        store.add_cert(@ca_cert)
+        store.purpose = OpenSSL::X509::PURPOSE_SSL_CLIENT
+        ctx = OpenSSL::SSL::SSLContext.new
+        ctx.cert_store = store
+        #ctx.extra_chain_cert = [ ca_cert ]
+        ctx.cert = @svr_cert
+        ctx.key = @svr_key
+        ctx.tmp_dh_callback = proc { OpenSSL::TestUtils::TEST_KEY_DH1024 }
+        ctx.verify_mode = verify_mode
+        ctx_proc.call(ctx) if ctx_proc
+
+        Socket.do_not_reverse_lookup = true
+        tcps = nil
+        port = port0
         begin
-          ctx_proc = args[:ctx_proc]
-          server_proc = args[:server_proc]
-          ignore_ssl_accept_error = args.fetch(:ignore_ssl_accept_error, true)
-          server_proc ||= method(:readwrite_loop)
-          threads = []
+          tcps = TCPServer.new("127.0.0.1", port)
+        rescue Errno::EADDRINUSE
+          port += 1
+          retry
+        end
 
-          store = OpenSSL::X509::Store.new
-          store.add_cert(@ca_cert)
-          store.purpose = OpenSSL::X509::PURPOSE_SSL_CLIENT
-          ctx = OpenSSL::SSL::SSLContext.new
-          ctx.cert_store = store
-          #ctx.extra_chain_cert = [ ca_cert ]
-          ctx.cert = @svr_cert
-          ctx.key = @svr_key
-          ctx.tmp_dh_callback = proc { OpenSSL::TestUtils::TEST_KEY_DH1024 }
-          ctx.verify_mode = verify_mode
-          ctx_proc.call(ctx) if ctx_proc
+        ssls = OpenSSL::SSL::SSLServer.new(tcps, ctx)
+        ssls.start_immediately = start_immediately
 
-          Socket.do_not_reverse_lookup = true
-          tcps = nil
-          port = port0
-          begin
-            tcps = TCPServer.new("127.0.0.1", port)
-          rescue Errno::EADDRINUSE
-            port += 1
-            retry
-          end
-
-          ssls = OpenSSL::SSL::SSLServer.new(tcps, ctx)
-          ssls.start_immediately = start_immediately
-
-          begin
-            server = Thread.new do
-              server_loop(ctx, ssls, stop_pipe_r, ignore_ssl_accept_error, server_proc, threads)
-            end
-            threads.unshift server
-
-            $stderr.printf("%s started: pid=%d port=%d\n", SSL_SERVER, $$, port) if $DEBUG
-
-            th = Thread.new do
-              begin
-                block.call(server, port.to_i)
-              ensure
-                stop_pipe_w.close
-              end
-            end
+        threads = []
+        begin
+          server = Thread.new do
             begin
-              th.join
-            rescue Exception
-              threads.unshift th
+              server_loop(ctx, ssls, stop_pipe_r, ignore_ssl_accept_error, server_proc, threads)
+            ensure
+              tcps.close
             end
-          ensure
-            assert_join_threads(threads)
           end
+          threads.unshift server
+
+          $stderr.printf("%s started: pid=%d port=%d\n", SSL_SERVER, $$, port) if $DEBUG
+
+          client = Thread.new do
+            begin
+              block.call(server, port.to_i)
+            ensure
+              stop_pipe_w.close
+            end
+          end
+          threads.unshift client
         ensure
-          tcps.close if tcps
+          assert_join_threads(threads)
         end
       }
     end
