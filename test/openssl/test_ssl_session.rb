@@ -292,7 +292,7 @@ __EOS__
       # any resulting value is OK (ignored)
     }
 
-    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true, ignore_ssl_accept_error: false) do |server, port|
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true, ignore_listener_error: false) do |server, port|
       sock = TCPSocket.new("127.0.0.1", port)
       begin
         ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
@@ -350,7 +350,7 @@ __EOS__
       c.session_cache_stats
       readwrite_loop(c, ssl)
     }
-    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true, ctx_proc: ctx_proc, server_proc: server_proc, ignore_ssl_accept_error: false) do |server, port|
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true, ctx_proc: ctx_proc, server_proc: server_proc, ignore_listener_error: false) do |server, port|
       last_client_session = nil
       3.times do
         sock = TCPSocket.new("127.0.0.1", port)

@@ -240,7 +240,7 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
       ssl.close rescue nil
     end
 
-    def server_loop(ctx, ssls, stop_pipe_r, ignore_ssl_accept_error, server_proc, threads)
+    def server_loop(ctx, ssls, stop_pipe_r, ignore_listener_error, server_proc, threads)
       loop do
         ssl = nil
         begin
@@ -250,7 +250,7 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
           end
           ssl = ssls.accept
         rescue OpenSSL::SSL::SSLError
-          if ignore_ssl_accept_error
+          if ignore_listener_error
             retry
           else
             raise
@@ -263,13 +263,16 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
         threads << th
       end
     rescue Errno::EBADF, IOError, Errno::EINVAL, Errno::ECONNABORTED, Errno::ENOTSOCK, Errno::ECONNRESET
+      if !ignore_listener_error
+        raise
+      end
     end
 
     def start_server(port0, verify_mode, start_immediately, args = {}, &block)
       IO.pipe {|stop_pipe_r, stop_pipe_w|
         ctx_proc = args[:ctx_proc]
         server_proc = args[:server_proc]
-        ignore_ssl_accept_error = args.fetch(:ignore_ssl_accept_error, true)
+        ignore_listener_error = args.fetch(:ignore_listener_error, true)
         server_proc ||= method(:readwrite_loop)
 
         store = OpenSSL::X509::Store.new
@@ -301,7 +304,7 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
         begin
           server = Thread.new do
             begin
-              server_loop(ctx, ssls, stop_pipe_r, ignore_ssl_accept_error, server_proc, threads)
+              server_loop(ctx, ssls, stop_pipe_r, ignore_listener_error, server_proc, threads)
             ensure
               tcps.close
             end
