@@ -1,3 +1,8 @@
+Mon Nov  3 02:35:32 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* sample/simple-bench.rb: added to measure performance of simple
+	  lines.
+
 Mon Nov  3 02:33:43 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (obj_info): show T_STRING more details.
