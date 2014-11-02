@@ -1,3 +1,7 @@
+Mon Nov  3 03:39:04 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_method.rb: r48239 makes this test green.
+
 Mon Nov 03 03:02:38 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* rewrite method/block parameter fitting logic to optimize

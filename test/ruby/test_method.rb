@@ -856,4 +856,13 @@ class TestMethod < Test::Unit::TestCase
     m = assert_nothing_raised(NameError, Feature9781) {break m.super_method}
     assert_nil(m, Feature9781)
   end
+
+  def rest_parameter(*rest)
+    rest
+  end
+
+  def test_splat_long_array
+    n = 10_000_000
+    assert_equal n  , rest_parameter(*(1..n)).size, '[Feature #10440]'
+  end
 end
