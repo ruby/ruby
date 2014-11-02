@@ -381,10 +381,10 @@ static void
 args_setup_kw_parameters(VALUE* const passed_values, const int passed_keyword_len, const ID * const passed_keywords,
 			 const rb_iseq_t * const iseq, VALUE * const locals)
 {
-    const ID *acceptable_keywords = iseq->arg_keyword_table;
-    const int req_key_num = iseq->arg_keyword_required;
-    const int key_num = iseq->arg_keyword_num;
-    const VALUE * const default_values = iseq->arg_keyword_default_values;
+    const ID *acceptable_keywords = iseq->param.keyword->table;
+    const int req_key_num = iseq->param.keyword->required_num;
+    const int key_num = iseq->param.keyword->num;
+    const VALUE * const default_values = iseq->param.keyword->default_values;
     VALUE missing = 0;
     int i, di, found = 0;
     int unspecified_bits = 0;
@@ -435,7 +435,7 @@ args_setup_kw_parameters(VALUE* const passed_values, const int passed_keyword_le
 	}
     }
 
-    if (iseq->arg_keyword_rest >= 0) {
+    if (iseq->param.flags.has_kwrest) {
 	const int rest_hash_index = key_num + 1;
 	locals[rest_hash_index] = make_unused_kw_hash(passed_keywords, passed_keyword_len, passed_values, FALSE);
     }
@@ -522,13 +522,13 @@ static int
 setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, rb_call_info_t * const ci,
 			 VALUE * const locals, const enum arg_setup_type arg_setup_type)
 {
-    const int min_argc = iseq->argc + iseq->arg_post_num;
-    const int max_argc = (iseq->arg_rest == -1) ? min_argc + (iseq->arg_opts - (iseq->arg_opts > 0)) : UNLIMITED_ARGUMENTS;
+    const int min_argc = iseq->param.lead_num + iseq->param.post_num;
+    const int max_argc = (iseq->param.flags.has_rest == FALSE) ? min_argc + (iseq->param.opt_num - (iseq->param.flags.has_opt == TRUE)) : UNLIMITED_ARGUMENTS;
     int opt_pc = 0;
     int given_argc;
     struct args_info args_body, *args;
     VALUE keyword_hash = Qnil;
-    const int msl = ci->argc + iseq->arg_size;
+    const int msl = ci->argc + iseq->param.size;
 
     th->mark_stack_len = msl;
 
@@ -539,7 +539,7 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, r
     args->argv = locals;
 
     if (ci->kw_arg) {
-	if (iseq->arg_keyword_bits >= 0) {
+	if (iseq->param.flags.has_kw) {
 	    int kw_len = ci->kw_arg->keyword_len;
 	    /* copy kw_argv */
 	    args->kw_argv = ALLOCA_N(VALUE, kw_len);
@@ -571,16 +571,16 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, r
       case arg_setup_block:
 	if (given_argc == 1 &&
 	    (min_argc > 0 ||
-	     iseq->arg_opts > 2 || iseq->arg_keyword_bits >= 0 || iseq->arg_keyword_rest >= 0) && /* TODO: can be shrink with flags */
-	    !(iseq->arg_simple & 0x02) &&
+	     iseq->param.opt_num > 2 || iseq->param.flags.has_kw || iseq->param.flags.has_kwrest) && /* TODO: can be shrink with flags */
+	    !iseq->param.flags.ambiguous_param0 &&
 	    args_check_block_arg0(args, th, msl)) {
 	    given_argc = RARRAY_LEN(args->rest);
 	}
 	break;
       case arg_setup_lambda:
 	if (given_argc == 1 &&
-	    given_argc != iseq->argc &&
-	    !(iseq->arg_rest >= 0) &&
+	    given_argc != iseq->param.lead_num &&
+	    !iseq->param.flags.has_rest &&
 	    args_check_block_arg0(args, th, msl)) {
 	    given_argc = RARRAY_LEN(args->rest);
 	}
@@ -605,7 +605,7 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, r
     }
 
     if (given_argc > min_argc &&
-	(iseq->arg_keyword_bits >= 0 || iseq->arg_keyword_rest >= 0) &&
+	(iseq->param.flags.has_kw || iseq->param.flags.has_kwrest) &&
 	args->kw_argv == NULL) {
 	if (args_pop_keyword_hash(args, &keyword_hash, th, msl)) {
 	    given_argc--;
@@ -623,25 +623,25 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, r
 	}
     }
 
-    if (iseq->argc > 0) {
-	args_setup_lead_parameters(args, iseq->argc, locals + 0);
+    if (iseq->param.flags.has_lead) {
+	args_setup_lead_parameters(args, iseq->param.lead_num, locals + 0);
     }
 
-    if (iseq->arg_post_num > 0) {
-	args_setup_post_parameters(args, iseq->arg_post_num, locals + iseq->arg_post_start);
+    if (iseq->param.flags.has_post) {
+	args_setup_post_parameters(args, iseq->param.post_num, locals + iseq->param.post_start);
     }
 
-    if (iseq->arg_opts > 0) {
-	int opt = args_setup_opt_parameters(args, iseq->arg_opts - 1, locals + iseq->argc);
-	opt_pc = (int)iseq->arg_opt_table[opt];
+    if (iseq->param.flags.has_opt) {
+	int opt = args_setup_opt_parameters(args, iseq->param.opt_num - 1, locals + iseq->param.lead_num);
+	opt_pc = (int)iseq->param.opt_table[opt];
     }
 
-    if (iseq->arg_rest >= 0) {
-	args_setup_rest_parameter(args, locals + iseq->arg_rest);
+    if (iseq->param.flags.has_rest) {
+	args_setup_rest_parameter(args, locals + iseq->param.rest_start);
     }
 
-    if (iseq->arg_keyword_bits >= 0) {
-	VALUE * const klocals = locals + iseq->arg_keyword_bits - iseq->arg_keyword_num;
+    if (iseq->param.flags.has_kw) {
+	VALUE * const klocals = locals + iseq->param.keyword->bits_start - iseq->param.keyword->num;
 
 	if (args->kw_argv != NULL) {
 	    args_setup_kw_parameters(args->kw_argv, args->ci->kw_arg->keyword_len, args->ci->kw_arg->keywords, iseq, klocals);
@@ -662,18 +662,18 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, r
 	    args_setup_kw_parameters(NULL, 0, NULL, iseq, klocals);
 	}
     }
-    else if (iseq->arg_keyword_rest >= 0) {
-	args_setup_kw_rest_parameter(keyword_hash, locals + iseq->arg_keyword_rest);
+    else if (iseq->param.flags.has_kwrest) {
+	args_setup_kw_rest_parameter(keyword_hash, locals + iseq->param.keyword->rest_start);
     }
 
-    if (iseq->arg_block >= 0) {
-	args_setup_block_parameter(th, ci, locals + iseq->arg_block);
+    if (iseq->param.flags.has_block) {
+	args_setup_block_parameter(th, ci, locals + iseq->param.block_start);
     }
 
 #if 0
     {
 	int i;
-	for (i=0; i<iseq->arg_size; i++) {
+	for (i=0; i<iseq->param.size; i++) {
 	    fprintf(stderr, "local[%d] = %p\n", i, (void *)locals[i]);
 	}
     }

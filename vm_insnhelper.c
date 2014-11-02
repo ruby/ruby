@@ -1008,19 +1008,30 @@ vm_callee_setup_block_arg_arg0_splat(rb_control_frame_t *cfp, const rb_iseq_t *i
     int i;
     long len = RARRAY_LEN(ary);
 
-    CHECK_VM_STACK_OVERFLOW(cfp, iseq->argc);
+    CHECK_VM_STACK_OVERFLOW(cfp, iseq->param.lead_num);
 
-    for (i=0; i<len && i<iseq->argc; i++) {
+    for (i=0; i<len && i<iseq->param.lead_num; i++) {
 	argv[i] = RARRAY_AREF(ary, i);
     }
 
     return i;
 }
 
+static inline int
+simple_iseq_p(const rb_iseq_t *iseq)
+{
+    return iseq->param.flags.has_opt == FALSE &&
+           iseq->param.flags.has_rest == FALSE &&
+	   iseq->param.flags.has_post == FALSE &&
+	   iseq->param.flags.has_kw == FALSE &&
+	   iseq->param.flags.has_kwrest == FALSE &&
+	   iseq->param.flags.has_block == FALSE;
+}
+
 static inline void
 vm_callee_setup_block_arg(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t *iseq, VALUE *argv, const enum arg_setup_type arg_setup_type)
 {
-    if (LIKELY(iseq->arg_simple & 0x01)) {
+    if (LIKELY(simple_iseq_p(iseq))) {
 	rb_control_frame_t *cfp = th->cfp;
 	VALUE arg0;
 
@@ -1028,31 +1039,32 @@ vm_callee_setup_block_arg(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t *
 
 	if (arg_setup_type == arg_setup_block &&
 	    ci->argc == 1 &&
-	    iseq->argc > 0 && !(iseq->arg_simple & 0x02) &&
+	    iseq->param.flags.has_lead &&
+	    !iseq->param.flags.ambiguous_param0 &&
 	    !NIL_P(arg0 = vm_callee_setup_block_arg_arg0_check(argv))) {
 	    ci->argc = vm_callee_setup_block_arg_arg0_splat(cfp, iseq, argv, arg0);
 	}
 
-	if (ci->argc != iseq->argc) {
+	if (ci->argc != iseq->param.lead_num) {
 	    if (arg_setup_type == arg_setup_block) {
-		if (ci->argc < iseq->argc) {
+		if (ci->argc < iseq->param.lead_num) {
 		    int i;
-		    CHECK_VM_STACK_OVERFLOW(cfp, iseq->argc);
-		    for (i=ci->argc; i<iseq->argc; i++) argv[i] = Qnil;
-		    ci->argc = iseq->argc; /* fill rest parameters */
+		    CHECK_VM_STACK_OVERFLOW(cfp, iseq->param.lead_num);
+		    for (i=ci->argc; i<iseq->param.lead_num; i++) argv[i] = Qnil;
+		    ci->argc = iseq->param.lead_num; /* fill rest parameters */
 		}
-		else if (ci->argc > iseq->argc) {
-		    ci->argc = iseq->argc; /* simply truncate arguments */
+		else if (ci->argc > iseq->param.lead_num) {
+		    ci->argc = iseq->param.lead_num; /* simply truncate arguments */
 		}
 	    }
 	    else if (arg_setup_type == arg_setup_lambda &&
 		     ci->argc == 1 &&
 		     !NIL_P(arg0 = vm_callee_setup_block_arg_arg0_check(argv)) &&
-		     RARRAY_LEN(arg0) == iseq->argc) {
+		     RARRAY_LEN(arg0) == iseq->param.lead_num) {
 		ci->argc = vm_callee_setup_block_arg_arg0_splat(cfp, iseq, argv, arg0);
 	    }
 	    else {
-		argument_error(iseq, ci->argc, iseq->argc, iseq->argc);
+		argument_error(iseq, ci->argc, iseq->param.lead_num, iseq->param.lead_num);
 	    }
 	}
 
@@ -1066,13 +1078,13 @@ vm_callee_setup_block_arg(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t *
 static inline void
 vm_callee_setup_arg(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t *iseq, VALUE *argv)
 {
-    if (LIKELY(iseq->arg_simple & 0x01)) {
+    if (LIKELY(simple_iseq_p(iseq))) {
 	rb_control_frame_t *cfp = th->cfp;
 
 	CALLER_SETUP_ARG(cfp, ci); /* splat arg */
 
-	if (ci->argc != iseq->argc) {
-	    argument_error(iseq, ci->argc, iseq->argc, iseq->argc);
+	if (ci->argc != iseq->param.lead_num) {
+	    argument_error(iseq, ci->argc, iseq->param.lead_num, iseq->param.lead_num);
 	}
 
 	ci->aux.opt_pc = 0;
@@ -1110,10 +1122,10 @@ vm_call_iseq_setup_normal(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info
     int i, local_size;
     VALUE *argv = cfp->sp - ci->argc;
     rb_iseq_t *iseq = ci->me->def->body.iseq;
-    VALUE *sp = argv + iseq->arg_size;
+    VALUE *sp = argv + iseq->param.size;
 
     /* clear local variables (arg_size...local_size) */
-    for (i = iseq->arg_size, local_size = iseq->local_size; i < local_size; i++) {
+    for (i = iseq->param.size, local_size = iseq->local_size; i < local_size; i++) {
 	*sp++ = Qnil;
     }
 
@@ -1146,12 +1158,12 @@ vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_in
     sp++;
 
     /* copy arguments */
-    for (i=0; i < iseq->arg_size; i++) {
+    for (i=0; i < iseq->param.size; i++) {
 	*sp++ = src_argv[i];
     }
 
     /* clear local variables */
-    for (i = 0; i < iseq->local_size - iseq->arg_size; i++) {
+    for (i = 0; i < iseq->local_size - iseq->param.size; i++) {
 	*sp++ = Qnil;
     }
 
@@ -2031,7 +2043,7 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci
 
     if (BUILTIN_TYPE(iseq) != T_NODE) {
 	int opt_pc;
-	const int arg_size = iseq->arg_size;
+	const int arg_size = iseq->param.size;
 	int is_lambda = block_proc_is_lambda(block->proc);
 	VALUE * const rsp = GET_SP() - ci->argc;
 

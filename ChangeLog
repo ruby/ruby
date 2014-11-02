@@ -1,4 +1,38 @@
-Mon Nov  3 03:39:04 2014  Koichi Sasada  <ko1@atdot.net>
+Mon Nov  3 07:49:34 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: change iseq parameter data structure.
+	  https://bugs.ruby-lang.org/issues/10440#change-49694
+
+	  * change terminology `arg' to `param'.
+	  * move rb_iseq_t::arg_* to rb_iseq_t::param.
+	  * move rb_iseq_t::arg_size to rb_iseq_t::param::size.
+	  * move rb_iseq_t::argc to rb_iseq_t::param::lead_num.
+	  * move rb_iseq_t::arg_opts to rb_iseq_t::param::opt_num.
+	  * move rb_iseq_t::arg_rest to rb_iseq_t::param::rest_start.
+	  * move rb_iseq_t::arg_post_num to rb_iseq_t::param::post_num.
+	  * move rb_iseq_t::arg_post_start to rb_iseq_t::param::post_start.
+	  * move rb_iseq_t::arg_block to rb_iseq_t::param::block_start.
+	  * move rb_iseq_t::arg_keyword* to rb_iseq_t::param::keyword.
+	    rb_iseq_t::param::keyword is allocated only when keyword
+	    parameters are available.
+	  * introduce rb_iseq_t::param::flags to represent parameter
+	    availability. For example, rb_iseq_t::param::flags::has_kw
+	    represents that this iseq has keyword parameters and
+	    rb_iseq_t::param::keyword is allocated.
+	    We don't need to compare with -1 to check availability.
+	  * remove rb_iseq_t::arg_simple.
+
+	* compile.c: catch up this change.
+
+	* iseq.c: ditto.
+
+	* proc.c: ditto.
+
+	* vm.c, vm_args.c, vm_dump.c, vm_insnhelper.c: ditto.
+
+	* iseq.c (iseq_data_to_ary): support keyword argument.
+
+xMon Nov  3 03:39:04 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_method.rb: r48239 makes this test green.
 

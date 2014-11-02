@@ -776,7 +776,7 @@ invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
 	VALUE ret;
 	const rb_iseq_t *iseq = block->iseq;
 	const rb_control_frame_t *cfp;
-	int i, opt_pc, arg_size = iseq->arg_size;
+	int i, opt_pc, arg_size = iseq->param.size;
 	int type = block_proc_is_lambda(block->proc) ? VM_FRAME_MAGIC_LAMBDA : VM_FRAME_MAGIC_BLOCK;
 	const rb_method_entry_t *me = th->passed_bmethod_me;
 	th->passed_bmethod_me = 0;

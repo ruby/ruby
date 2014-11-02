@@ -735,7 +735,7 @@ proc_call(int argc, VALUE *argv, VALUE procval)
     GetProcPtr(procval, proc);
 
     iseq = proc->block.iseq;
-    if (BUILTIN_TYPE(iseq) == T_NODE || iseq->arg_block != -1) {
+    if (BUILTIN_TYPE(iseq) == T_NODE || iseq->param.flags.has_block) {
 	if (rb_block_given_p()) {
 	    rb_proc_t *passed_proc;
 	    RB_GC_GUARD(passed_procval) = rb_block_proc();
@@ -847,11 +847,13 @@ proc_arity(VALUE self)
 static inline int
 rb_iseq_min_max_arity(const rb_iseq_t *iseq, int *max)
 {
-    *max = iseq->arg_rest == -1 ?
-	iseq->argc + iseq->arg_post_num + iseq->arg_opts -
-	(iseq->arg_opts > 0) + (iseq->arg_keyword_num > 0) + (iseq->arg_keyword_rest >= 0)
+    *max = iseq->param.flags.has_rest == FALSE ?
+      iseq->param.lead_num + iseq->param.post_num +
+      iseq->param.opt_num - (iseq->param.flags.has_opt == TRUE) +
+      (iseq->param.flags.has_kw == TRUE) +
+      (iseq->param.flags.has_kwrest == TRUE)
       : UNLIMITED_ARGUMENTS;
-    return iseq->argc + iseq->arg_post_num + (iseq->arg_keyword_required > 0);
+    return iseq->param.lead_num + iseq->param.post_num + (iseq->param.flags.has_kw && iseq->param.keyword->required_num > 0);
 }
 
 static int

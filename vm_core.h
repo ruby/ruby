@@ -240,7 +240,7 @@ struct rb_iseq_struct {
     rb_call_info_t *callinfo_entries;
 
     /**
-     * argument information
+     * parameter information
      *
      *  def m(a1, a2, ..., aM,                    # mandatory
      *        b1=(...), b2=(...), ..., bN=(...),  # optional
@@ -251,36 +251,50 @@ struct rb_iseq_struct {
      *        &g)                                 # block
      * =>
      *
-     *  argc             = M                 // or  0 if no mandatory arg
-     *  arg_opts         = N+1               // or  0 if no optional arg
-     *  arg_rest         = M+N               // or -1 if no rest arg
-     *  arg_opt_table    = [ (arg_opts entries) ]
-     *  arg_post_start   = M+N+(*1)          // or 0 if no post arguments
-     *  arg_post_num     = O                 // or 0 if no post arguments
-     *  arg_keyword_num  = K                 // or 0 if no keyword arg
-     *  arg_block        = M+N+(*1)+O+K      // or -1 if no block arg
-     *  arg_keyword_bits = M+N+(*1)+O+K+(&1) // or -1 if no keyword arg/rest
-     *  arg_simple       = 0 if not simple arguments.
-     *                   = 1 if no opt, rest, post, block.
-     *                   = 2 if ambiguous block parameter ({|a|}).
-     *  arg_size         = M+N+O+(*1)+K+(&1)+(**1) argument size.
+     *  lead_num     = M
+     *  opt_num      = N+1
+     *  rest_start   = M+N
+     *  post_start   = M+N+(*1)
+     *  post_num     = O
+     *  keyword_num  = K
+     *  block_start  = M+N+(*1)+O+K
+     *  keyword_bits = M+N+(*1)+O+K+(&1)
+     *  size         = M+N+O+(*1)+K+(&1)+(**1) // parameter size.
      */
 
-    int argc;
-    int arg_simple;
-    int arg_rest;
-    int arg_block;
-    int arg_opts;
-    int arg_post_num;
-    int arg_post_start;
-    int arg_size;
-    VALUE *arg_opt_table;
-    int arg_keyword_num;
-    int arg_keyword_bits;
-    int arg_keyword_rest;
-    int arg_keyword_required;
-    ID *arg_keyword_table;
-    VALUE *arg_keyword_default_values;
+    struct {
+	struct {
+	    unsigned int has_lead   : 1;
+	    unsigned int has_opt    : 1;
+	    unsigned int has_rest   : 1;
+	    unsigned int has_post   : 1;
+	    unsigned int has_kw     : 1;
+	    unsigned int has_kwrest : 1;
+	    unsigned int has_block  : 1;
+
+	    unsigned int ambiguous_param0 : 1; /* {|a|} */
+	} flags;
+
+	int size;
+
+	int lead_num;
+	int opt_num;
+	int rest_start;
+	int post_start;
+	int post_num;
+	int block_start;
+
+	VALUE *opt_table;
+
+	struct rb_iseq_param_keyword {
+	    int num;
+	    int required_num;
+	    int bits_start;
+	    int rest_start;
+	    ID *table;
+	    VALUE *default_values;
+	} *keyword;
+    } param;
 
     /* catch table */
     struct iseq_catch_table *catch_table;

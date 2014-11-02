@@ -1076,8 +1076,9 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	}
 
 
-	iseq->argc = (int)args->pre_args_num;
-	debugs("  - argc: %d\n", iseq->argc);
+	iseq->param.lead_num = (int)args->pre_args_num;
+	if (iseq->param.lead_num > 0) iseq->param.flags.has_lead = TRUE;
+	debugs("  - argc: %d\n", iseq->param.lead_num);
 
 	rest_id = args->rest_arg;
 	if (rest_id == 1) {
@@ -1087,8 +1088,9 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	block_id = args->block_arg;
 
 	if (args->first_post_arg) {
-	    iseq->arg_post_start = get_dyna_var_idx_at_raw(iseq, args->first_post_arg);
-	    iseq->arg_post_num = args->post_args_num;
+	    iseq->param.post_start = get_dyna_var_idx_at_raw(iseq, args->first_post_arg);
+	    iseq->param.post_num = args->post_args_num;
+	    iseq->param.flags.has_post = TRUE;
 	}
 
 	if (args->opt_args) {
@@ -1112,16 +1114,15 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	    ADD_LABEL(optargs, label);
 	    i += 1;
 
-	    iseq->arg_opts = i;
-	    iseq->arg_opt_table = ALLOC_N(VALUE, i);
-	    MEMCPY(iseq->arg_opt_table, RARRAY_CONST_PTR(labels), VALUE, i);
+	    iseq->param.opt_num = i;
+	    iseq->param.opt_table = ALLOC_N(VALUE, i);
+	    MEMCPY(iseq->param.opt_table, RARRAY_CONST_PTR(labels), VALUE, i);
 	    for (j = 0; j < i; j++) {
-		iseq->arg_opt_table[j] &= ~1;
+		iseq->param.opt_table[j] &= ~1;
 	    }
 	    rb_ary_clear(labels);
-	}
-	else {
-	    iseq->arg_opts = 0;
+
+	    iseq->param.flags.has_opt = TRUE;
 	}
 
 	if (args->kw_args) {
@@ -1130,7 +1131,9 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	    const VALUE complex_mark = rb_str_tmp_new(0);
 	    int kw = 0, rkw = 0, di = 0, i;
 
-	    iseq->arg_keyword_bits = get_dyna_var_idx_at_raw(iseq, args->kw_rest_arg->nd_vid);
+	    iseq->param.flags.has_kw = TRUE;
+	    iseq->param.keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
+	    iseq->param.keyword->bits_start = get_dyna_var_idx_at_raw(iseq, args->kw_rest_arg->nd_vid);
 
 	    while (node) {
 		NODE *val_node = node->nd_body->nd_value;
@@ -1152,7 +1155,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 			dv = complex_mark;
 		    }
 
-		    iseq->arg_keyword_num = ++di;
+		    iseq->param.keyword->num = ++di;
 		    rb_ary_push(default_values, dv);
 		}
 
@@ -1160,25 +1163,26 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 		node = node->nd_next;
 	    }
 
-	    iseq->arg_keyword_num = kw;
-	    iseq->arg_keyword_rest = args->kw_rest_arg->nd_cflag != 0 ? get_dyna_var_idx_at_raw(iseq, args->kw_rest_arg->nd_cflag) : -1;
-	    iseq->arg_keyword_required = rkw;
-	    iseq->arg_keyword_table = &iseq->local_table[iseq->arg_keyword_bits - iseq->arg_keyword_num];
-	    iseq->arg_keyword_default_values = ALLOC_N(VALUE, RARRAY_LEN(default_values));
+	    iseq->param.keyword->num = kw;
+
+	    if (args->kw_rest_arg->nd_cflag != 0) {
+		iseq->param.keyword->rest_start =  get_dyna_var_idx_at_raw(iseq, args->kw_rest_arg->nd_cflag);
+		iseq->param.flags.has_kwrest = TRUE;
+	    }
+	    iseq->param.keyword->required_num = rkw;
+	    iseq->param.keyword->table = &iseq->local_table[iseq->param.keyword->bits_start - iseq->param.keyword->num];
+	    iseq->param.keyword->default_values = ALLOC_N(VALUE, RARRAY_LEN(default_values));
 
 	    for (i = 0; i < RARRAY_LEN(default_values); i++) {
 		VALUE dv = RARRAY_AREF(default_values, i);
 		if (dv == complex_mark) dv = Qundef;
-		iseq->arg_keyword_default_values[i] = dv;
+		iseq->param.keyword->default_values[i] = dv;
 	    }
 	}
 	else if (args->kw_rest_arg) {
-	    iseq->arg_keyword_bits = -1;
-	    iseq->arg_keyword_rest = get_dyna_var_idx_at_raw(iseq, args->kw_rest_arg->nd_vid);
-	}
-	else {
-	    iseq->arg_keyword_bits = -1;
-	    iseq->arg_keyword_rest = -1;
+	    iseq->param.flags.has_kwrest = TRUE;
+	    iseq->param.keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
+	    iseq->param.keyword->rest_start = get_dyna_var_idx_at_raw(iseq, args->kw_rest_arg->nd_vid);
 	}
 
 	if (args->pre_init) { /* m_init */
@@ -1189,75 +1193,66 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	}
 
 	if (rest_id) {
-	    iseq->arg_rest = get_dyna_var_idx_at_raw(iseq, rest_id);
+	    iseq->param.rest_start = get_dyna_var_idx_at_raw(iseq, rest_id);
+	    iseq->param.flags.has_rest = TRUE;
+	    assert(iseq->param.rest_start != -1);
 
-	    if (iseq->arg_rest == -1) {
-		rb_bug("arg_rest: -1");
-	    }
-
-	    if (iseq->arg_post_start == 0) {
-		iseq->arg_post_start = iseq->arg_rest + 1;
+	    if (iseq->param.post_start == 0) { /* TODO: why that? */
+		iseq->param.post_start = iseq->param.rest_start + 1;
 	    }
 	}
 
 	if (block_id) {
-	    iseq->arg_block = get_dyna_var_idx_at_raw(iseq, block_id);
+	    iseq->param.block_start = get_dyna_var_idx_at_raw(iseq, block_id);
+	    iseq->param.flags.has_block = TRUE;
 	}
 
-	if (iseq->arg_opts != 0 ||
-	    iseq->arg_post_num != 0 ||
-	    iseq->arg_rest != -1 ||
-	    iseq->arg_block != -1 ||
-	    iseq->arg_keyword_bits != -1 ||
-	    iseq->arg_keyword_rest != -1) {
-	    iseq->arg_simple = 0;
+	if (iseq->param.flags.has_opt ||
+	    iseq->param.flags.has_post ||
+	    iseq->param.flags.has_rest ||
+	    iseq->param.flags.has_block ||
+	    iseq->param.flags.has_kw ||
+	    iseq->param.flags.has_kwrest) {
 
-	    /* set arg_size: size of arguments */
-	    if (iseq->arg_block != -1) {
-		iseq->arg_size = iseq->arg_block + 1;
+	    if (iseq->param.flags.has_block) {
+		iseq->param.size = iseq->param.block_start + 1;
 	    }
-	    else if (iseq->arg_keyword_rest != -1) {
-		iseq->arg_size = iseq->arg_keyword_rest + 1;
+	    else if (iseq->param.flags.has_kwrest) {
+		iseq->param.size = iseq->param.keyword->rest_start + 1;
 	    }
-	    else if (iseq->arg_keyword_bits != -1) {
-		iseq->arg_size = iseq->arg_keyword_bits + 1;
+	    else if (iseq->param.flags.has_kw) {
+		iseq->param.size = iseq->param.keyword->bits_start + 1;
 	    }
-	    else if (iseq->arg_post_num) {
-		iseq->arg_size = iseq->arg_post_start + iseq->arg_post_num;
+	    else if (iseq->param.flags.has_post) {
+		iseq->param.size = iseq->param.post_start + iseq->param.post_num;
 	    }
-	    else if (iseq->arg_rest != -1) {
-		iseq->arg_size = iseq->arg_rest + 1;
+	    else if (iseq->param.flags.has_rest) {
+		iseq->param.size = iseq->param.rest_start + 1;
 	    }
-	    else if (iseq->arg_opts) {
-		iseq->arg_size = iseq->argc + iseq->arg_opts - 1;
+	    else if (iseq->param.flags.has_opt) {
+		iseq->param.size = iseq->param.lead_num + iseq->param.opt_num - 1;
 	    }
 	    else {
-		iseq->arg_size = iseq->argc;
+		rb_bug("unreachable");
 	    }
 	}
 	else {
-	    iseq->arg_simple = 1;
-	    iseq->arg_size = iseq->argc;
+	    iseq->param.size = iseq->param.lead_num;
 	}
 
 	if (iseq->type == ISEQ_TYPE_BLOCK) {
-	    if (iseq->arg_opts == 0 &&
-		iseq->arg_post_num == 0 &&
-		iseq->arg_rest == -1 &&
-		iseq->arg_keyword_bits == -1 &&
-		iseq->arg_keyword_rest == -1) {
+	    if (iseq->param.flags.has_opt    == FALSE &&
+		iseq->param.flags.has_post   == FALSE &&
+		iseq->param.flags.has_rest   == FALSE &&
+		iseq->param.flags.has_kw     == FALSE &&
+		iseq->param.flags.has_kwrest == FALSE) {
 
-		/* TODO: why not check block? */
-
-		if (iseq->argc == 1 && last_comma == 0) {
+		if (iseq->param.lead_num == 1 && last_comma == 0) {
 		    /* {|a|} */
-		    iseq->arg_simple |= 0x02;
+		    iseq->param.flags.ambiguous_param0 = TRUE;
 		}
 	    }
 	}
-    }
-    else {
-	iseq->arg_simple = 1;
     }
 
     return COMPILE_OK;
@@ -1691,10 +1686,9 @@ iseq_set_optargs_table(rb_iseq_t *iseq)
 {
     int i;
 
-    if (iseq->arg_opts != 0) {
-	for (i = 0; i < iseq->arg_opts; i++) {
-	    iseq->arg_opt_table[i] =
-		label_get_position((LABEL *)iseq->arg_opt_table[i]);
+    if (iseq->param.flags.has_opt) {
+	for (i = 0; i < iseq->param.opt_num; i++) {
+	    iseq->param.opt_table[i] = label_get_position((LABEL *)iseq->param.opt_table[i]);
 	}
     }
     return COMPILE_OK;
@@ -4490,95 +4484,91 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    rb_iseq_t *liseq = iseq->local_iseq;
 	    int lvar_level = get_lvar_level(iseq);
 
-	    argc = liseq->argc;
+	    argc = liseq->param.lead_num;
 
 	    /* normal arguments */
-	    for (i = 0; i < liseq->argc; i++) {
+	    for (i = 0; i < liseq->param.lead_num; i++) {
 		int idx = liseq->local_size - i;
 		ADD_INSN2(args, line, getlocal, INT2FIX(idx), INT2FIX(lvar_level));
 	    }
 
-	    if (!liseq->arg_simple) {
-		if (liseq->arg_opts) {
-		    /* optional arguments */
-		    int j;
-		    for (j = 0; j < liseq->arg_opts - 1; j++) {
-			int idx = liseq->local_size - (i + j);
-			ADD_INSN2(args, line, getlocal, INT2FIX(idx), INT2FIX(lvar_level));
-		    }
-		    i += j;
-		    argc = i;
-		}
-
-		if (liseq->arg_rest != -1) {
-		    /* rest argument */
-		    int idx = liseq->local_size - liseq->arg_rest;
+	    if (liseq->param.flags.has_opt) {
+		/* optional arguments */
+		int j;
+		for (j = 0; j < liseq->param.opt_num - 1; j++) {
+		    int idx = liseq->local_size - (i + j);
 		    ADD_INSN2(args, line, getlocal, INT2FIX(idx), INT2FIX(lvar_level));
-		    argc = liseq->arg_rest + 1;
-		    flag |= VM_CALL_ARGS_SPLAT;
 		}
+		i += j;
+		argc = i;
+	    }
+	    if (liseq->param.flags.has_rest) {
+		/* rest argument */
+		int idx = liseq->local_size - liseq->param.rest_start;
+		ADD_INSN2(args, line, getlocal, INT2FIX(idx), INT2FIX(lvar_level));
+		argc = liseq->param.rest_start + 1;
+		flag |= VM_CALL_ARGS_SPLAT;
+	    }
+	    if (liseq->param.flags.has_post) {
+		/* post arguments */
+		int post_len = liseq->param.post_num;
+		int post_start = liseq->param.post_start;
 
-		if (liseq->arg_post_num > 0) {
-		    /* post arguments */
-		    int post_len = liseq->arg_post_num;
-		    int post_start = liseq->arg_post_start;
-
-		    if (liseq->arg_rest != -1) {
-			int j;
-			for (j=0; j<post_len; j++) {
-			    int idx = liseq->local_size - (post_start + j);
-			    ADD_INSN2(args, line, getlocal, INT2FIX(idx), INT2FIX(lvar_level));
-			}
-			ADD_INSN1(args, line, newarray, INT2FIX(j));
-			ADD_INSN (args, line, concatarray);
-			/* argc is settled at above */
-		    }
-		    else {
-			int j;
-			for (j=0; j<post_len; j++) {
-			    int idx = liseq->local_size - (post_start + j);
-			    ADD_INSN2(args, line, getlocal, INT2FIX(idx), INT2FIX(lvar_level));
-			}
-			argc = post_len + post_start;
-		    }
-		}
-
-		if (liseq->arg_keyword_bits >= 0) { /* TODO: support keywords */
-		    int local_size = liseq->local_size;
-		    argc++;
-
-		    ADD_INSN1(args, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-
-		    if (liseq->arg_keyword_rest > 0) {
-			ADD_INSN2(args, line, getlocal, INT2FIX(liseq->local_size - liseq->arg_keyword_rest), INT2FIX(lvar_level));
-			ADD_SEND (args, line, rb_intern("dup"), INT2FIX(0));
-		    }
-		    else {
-			ADD_INSN1(args, line, newhash, INT2FIX(0));
-		    }
-		    for (i = 0; i < liseq->arg_keyword_num; ++i) {
-			ID id = liseq->arg_keyword_table[i];
-			int idx = local_size - get_local_var_idx(liseq, id);
-			ADD_INSN1(args, line, putobject, ID2SYM(id));
+		if (liseq->param.flags.has_rest) {
+		    int j;
+		    for (j=0; j<post_len; j++) {
+			int idx = liseq->local_size - (post_start + j);
 			ADD_INSN2(args, line, getlocal, INT2FIX(idx), INT2FIX(lvar_level));
 		    }
-		    ADD_SEND(args, line, id_core_hash_merge_ptr, INT2FIX(i * 2 + 1));
-		    if (liseq->arg_rest != -1) {
-			ADD_INSN1(args, line, newarray, INT2FIX(1));
-			ADD_INSN (args, line, concatarray);
-			--argc;
-		    }
+		    ADD_INSN1(args, line, newarray, INT2FIX(j));
+		    ADD_INSN (args, line, concatarray);
+		    /* argc is settled at above */
 		}
-		else if (liseq->arg_keyword_rest >= 0) {
-		    ADD_INSN2(args, line, getlocal, INT2FIX(liseq->local_size - liseq->arg_keyword_rest), INT2FIX(lvar_level));
+		else {
+		    int j;
+		    for (j=0; j<post_len; j++) {
+			int idx = liseq->local_size - (post_start + j);
+			ADD_INSN2(args, line, getlocal, INT2FIX(idx), INT2FIX(lvar_level));
+		    }
+		    argc = post_len + post_start;
+		}
+	    }
+
+	    if (liseq->param.flags.has_kw) { /* TODO: support keywords */
+		int local_size = liseq->local_size;
+		argc++;
+
+		ADD_INSN1(args, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+
+		if (liseq->param.flags.has_kwrest) {
+		    ADD_INSN2(args, line, getlocal, INT2FIX(liseq->local_size - liseq->param.keyword->rest_start), INT2FIX(lvar_level));
 		    ADD_SEND (args, line, rb_intern("dup"), INT2FIX(0));
-		    if (liseq->arg_rest != -1) {
-			ADD_INSN1(args, line, newarray, INT2FIX(1));
-			ADD_INSN (args, line, concatarray);
-		    }
-		    else {
-			argc++;
-		    }
+		}
+		else {
+		    ADD_INSN1(args, line, newhash, INT2FIX(0));
+		}
+		for (i = 0; i < liseq->param.keyword->num; ++i) {
+		    ID id = liseq->param.keyword->table[i];
+		    int idx = local_size - get_local_var_idx(liseq, id);
+		    ADD_INSN1(args, line, putobject, ID2SYM(id));
+		    ADD_INSN2(args, line, getlocal, INT2FIX(idx), INT2FIX(lvar_level));
+		}
+		ADD_SEND(args, line, id_core_hash_merge_ptr, INT2FIX(i * 2 + 1));
+		if (liseq->param.flags.has_rest) {
+		    ADD_INSN1(args, line, newarray, INT2FIX(1));
+		    ADD_INSN (args, line, concatarray);
+		    --argc;
+		}
+	    }
+	    else if (liseq->param.flags.has_kwrest) {
+		ADD_INSN2(args, line, getlocal, INT2FIX(liseq->local_size - liseq->param.keyword->rest_start), INT2FIX(lvar_level));
+		ADD_SEND (args, line, rb_intern("dup"), INT2FIX(0));
+		if (liseq->param.flags.has_rest) {
+		    ADD_INSN1(args, line, newarray, INT2FIX(1));
+		    ADD_INSN (args, line, concatarray);
+		}
+		else {
+		    argc++;
 		}
 	    }
 	}
@@ -5303,8 +5293,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		 *   kw = default_value
 		 * end
 		 */
-		int kw_bits_idx = iseq->local_size - iseq->arg_keyword_bits;
-		int keyword_idx = iseq->arg_keyword_num;
+		int kw_bits_idx = iseq->local_size - iseq->param.keyword->bits_start;
+		int keyword_idx = iseq->param.keyword->num;
 
 		ADD_INSN2(ret, line, checkkeyword, INT2FIX(kw_bits_idx), INT2FIX(keyword_idx));
 		ADD_INSNL(ret, line, branchif, end_label);
@@ -5889,8 +5879,8 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
 
     /* args */
     if (FIXNUM_P(args)) {
-	iseq->arg_size = iseq->argc = FIX2INT(args);
-	iseq->arg_simple = 1;
+	iseq->param.size = iseq->param.lead_num = FIX2INT(args);
+	iseq->param.flags.has_lead = TRUE;
     }
     else {
 	int i = 0;
@@ -5900,36 +5890,31 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
 	VALUE arg_post_start = CHECK_INTEGER(rb_ary_entry(args, i++));
 	VALUE arg_rest = CHECK_INTEGER(rb_ary_entry(args, i++));
 	VALUE arg_block = CHECK_INTEGER(rb_ary_entry(args, i++));
-	VALUE arg_simple = CHECK_INTEGER(rb_ary_entry(args, i++));
 
-	iseq->argc = FIX2INT(argc);
-	iseq->arg_rest = FIX2INT(arg_rest);
-	iseq->arg_post_num = FIX2INT(arg_post_num);
-	iseq->arg_post_start = FIX2INT(arg_post_start);
-	iseq->arg_block = FIX2INT(arg_block);
-	iseq->arg_opts = RARRAY_LENINT(arg_opt_labels);
-	iseq->arg_opt_table = (VALUE *)ALLOC_N(VALUE, iseq->arg_opts);
+	iseq->param.lead_num = FIX2INT(argc);
+	iseq->param.rest_start = FIX2INT(arg_rest);
+	iseq->param.post_num = FIX2INT(arg_post_num);
+	iseq->param.post_start = FIX2INT(arg_post_start);
+	iseq->param.block_start = FIX2INT(arg_block);
+	iseq->param.opt_num = RARRAY_LENINT(arg_opt_labels);
+	iseq->param.opt_table = (VALUE *)ALLOC_N(VALUE, iseq->param.opt_num);
 
-	if (iseq->arg_block != -1) {
-	    iseq->arg_size = iseq->arg_block + 1;
+	if (iseq->param.flags.has_block) {
+	    iseq->param.size = iseq->param.block_start + 1;
 	}
-	else if (iseq->arg_post_num) {
-	    iseq->arg_size = iseq->arg_post_start + iseq->arg_post_num;
+	else if (iseq->param.flags.has_post) {
+	    iseq->param.size = iseq->param.post_start + iseq->param.post_num;
 	}
-	else if (iseq->arg_rest != -1) {
-	    iseq->arg_size = iseq->arg_rest + 1;
+	else if (iseq->param.flags.has_rest) {
+	    iseq->param.size = iseq->param.rest_start + 1;
 	}
 	else {
-	    iseq->arg_size = iseq->argc + (iseq->arg_opts ? iseq->arg_opts - 1 : 0);
+	    iseq->param.size = iseq->param.lead_num + (iseq->param.opt_num - (iseq->param.flags.has_opt == TRUE));
 	}
 
 	for (i=0; i<RARRAY_LEN(arg_opt_labels); i++) {
-	    iseq->arg_opt_table[i] =
-	      (VALUE)register_label(iseq, labels_table,
-				    rb_ary_entry(arg_opt_labels, i));
+	    iseq->param.opt_table[i] = (VALUE)register_label(iseq, labels_table, rb_ary_entry(arg_opt_labels, i));
 	}
-
-	iseq->arg_simple = NUM2INT(arg_simple);
     }
 
     /* exception */
