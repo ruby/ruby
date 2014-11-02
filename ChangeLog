@@ -1,3 +1,87 @@
+Mon Nov 03 03:02:38 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* rewrite method/block parameter fitting logic to optimize
+	  keyword arguments/parameters and a splat argument.
+	  [Feature #10440] (Details are described in this ticket)
+
+	  Most of complex part is moved to vm_args.c.
+
+	  Now, ISeq#to_a does not catch up new instruction format.
+
+	* vm_core.h: change iseq data structures.
+
+	  * introduce rb_call_info_kw_arg_t to represent keyword arguments.
+	  * add rb_call_info_t::kw_arg.
+	  * rename rb_iseq_t::arg_post_len to rb_iseq_t::arg_post_num.
+	  * rename rb_iseq_t::arg_keywords to arg_keyword_num.
+	  * rename rb_iseq_t::arg_keyword to rb_iseq_t::arg_keyword_bits.
+	    to represent keyword bitmap parameter index.
+	    This bitmap parameter shows that which keyword parameters are given
+	    or not given (0 for given).
+	    It is refered by `checkkeyword' instruction described bellow.
+	  * rename rb_iseq_t::arg_keyword_check to rb_iseq_t::arg_keyword_rest
+	    to represent keyword rest parameter index.
+	  * add rb_iseq_t::arg_keyword_default_values to represent default
+	    keyword values.
+	  * rename VM_CALL_ARGS_SKIP_SETUP to VM_CALL_ARGS_SIMPLE
+	    to represent
+	      (ci->flag & (SPLAT|BLOCKARG)) &&
+	      ci->blockiseq == NULL &&
+	      ci->kw_arg == NULL.
+
+	* vm_insnhelper.c, vm_args.c: rewrite with refactoring.
+
+	  * rewrite splat argument code.
+	  * rewrite keyword arguments/parameters code.
+	  * merge method and block parameter fitting code into one code base.
+
+	* vm.c, vm_eval.c: catch up these changes.
+
+	* compile.c (new_callinfo): callinfo requires kw_arg parameter.
+
+	* compile.c (compile_array_): check the last argument Hash object or
+	  not. If Hash object and all keys are Symbol literals, they are
+	  compiled to keyword arguments.
+
+	* insns.def (checkkeyword): add new instruction.
+	  This instruction check the availability of corresponding keyword.
+
+	  For example, a method "def foo k1: 'v1'; end" is cimpiled to the
+	  following instructions.
+
+	    0000 checkkeyword     2, 0  # check k1 is given.
+	    0003 branchif         9     # if given, jump to address #9
+	    0005 putstring        "v1"
+	    0007 setlocal_OP__WC__0 3   # k1 = 'v1'
+	    0009 trace            8
+	    0011 putnil
+	    0012 trace            16
+	    0014 leave
+
+	* insns.def (opt_send_simple): removed and add new instruction
+	  "opt_send_without_block".
+
+	* parse.y (new_args_tail_gen): reorder variables.
+	  Before this patch, a method "def foo(k1: 1, kr1:, k2: 2, **krest, &b)"
+	  has parameter variables "k1, kr1, k2, &b, internal_id, krest",
+	  but this patch reorders to "kr1, k1, k2, internal_id, krest, &b".
+	  (locate a block variable at last)
+
+	* parse.y (vtable_pop): added.
+	  This function remove latest `n' variables from vtable.
+
+	* iseq.c: catch up iseq data changes.
+
+	* proc.c: ditto.
+
+	* class.c (keyword_error): export as rb_keyword_error().
+
+	* common.mk: depend vm_args.c for vm.o.
+
+	* hash.c (rb_hash_has_key): export.
+
+	* internal.h: ditto.
+
 Mon Nov  3 02:35:32 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* sample/simple-bench.rb: added to measure performance of simple

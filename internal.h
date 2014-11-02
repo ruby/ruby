@@ -668,6 +668,8 @@ void rb_gc_resurrect(VALUE ptr);
 
 /* hash.c */
 struct st_table *rb_hash_tbl_raw(VALUE hash);
+VALUE rb_hash_has_key(VALUE hash, VALUE key);
+
 #define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h)
 VALUE rb_hash_keys(VALUE hash);
 VALUE rb_hash_values(VALUE hash);

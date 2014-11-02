@@ -1862,9 +1862,9 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
     return argc;
 }
 
-NORETURN(static void keyword_error(const char *error, VALUE keys));
-static void
-keyword_error(const char *error, VALUE keys)
+NORETURN(void rb_keyword_error(const char *error, VALUE keys));
+void
+rb_keyword_error(const char *error, VALUE keys)
 {
     const char *msg = "";
     if (RARRAY_LEN(keys) == 1) {
@@ -1890,7 +1890,7 @@ unknown_keyword_error(VALUE hash, const ID *table, int keywords)
     }
     keys = rb_funcall(hash, rb_intern("keys"), 0, 0);
     if (!RB_TYPE_P(keys, T_ARRAY)) rb_raise(rb_eArgError, "unknown keyword");
-    keyword_error("unknown", keys);
+    rb_keyword_error("unknown", keys);
 }
 
 static int
@@ -1957,7 +1957,7 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
 	    rb_ary_push(missing, keyword);
 	}
 	if (!NIL_P(missing)) {
-	    keyword_error("missing", missing);
+	    rb_keyword_error("missing", missing);
 	}
     }
     j = i;

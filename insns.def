@@ -834,6 +834,30 @@ checkmatch
 
 /**
   @c setting
+  @e check keywords are specified or not.
+  @j キーワードが指定されているかどうかチェックする
+ */
+DEFINE_INSN
+checkkeyword
+(lindex_t kw_bits_index, rb_num_t keyword_index)
+()
+(VALUE ret)
+{
+    const VALUE *ep = GET_EP();
+    const VALUE kw_bits = *(ep - kw_bits_index);
+
+    if (FIXNUM_P(kw_bits)) {
+	int bits = FIX2INT(kw_bits);
+	ret = (bits & (0x01 << keyword_index)) ? Qfalse : Qtrue;
+    }
+    else {
+	assert(RB_TYPE_P(kw_bits, T_HASH));
+	ret = rb_hash_has_key(kw_bits, INT2FIX(keyword_index)) ? Qfalse : Qtrue;
+    }
+}
+
+/**
+  @c setting
   @e trace
   @j trace 用の命令。
  */
@@ -995,8 +1019,7 @@ send
 (VALUE val) // inc += - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
 {
     ci->argc = ci->orig_argc;
-    ci->blockptr = 0;
-    vm_caller_setup_args(th, reg_cfp, ci);
+    vm_caller_setup_arg_block(th, reg_cfp, ci, FALSE);
     vm_search_method(ci, ci->recv = TOPN(ci->argc));
     CALL_METHOD(ci);
 }
@@ -1017,15 +1040,16 @@ opt_str_freeze
 
 /**
   @c optimize
-  @e Invoke method without block, splat
-  @j Invoke method without block, splat
+  @e Invoke method without block
+  @j Invoke method without block
  */
 DEFINE_INSN
-opt_send_simple
+opt_send_without_block
 (CALL_INFO ci)
 (...)
 (VALUE val) // inc += -ci->orig_argc;
 {
+    ci->argc = ci->orig_argc;
     vm_search_method(ci, ci->recv = TOPN(ci->argc));
     CALL_METHOD(ci);
 }
@@ -1042,11 +1066,7 @@ invokesuper
 (VALUE val) // inc += - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
 {
     ci->argc = ci->orig_argc;
-    ci->blockptr = !(ci->flag & VM_CALL_ARGS_BLOCKARG) ? GET_BLOCK_PTR() : 0;
-
-    if (UNLIKELY(!(ci->flag & VM_CALL_ARGS_SKIP_SETUP))) {
-	vm_caller_setup_args(th, reg_cfp, ci);
-    }
+    vm_caller_setup_arg_block(th, reg_cfp, ci, TRUE);
     ci->recv = GET_SELF();
     vm_search_super_method(th, GET_CFP(), ci);
     CALL_METHOD(ci);

@@ -787,7 +787,7 @@ invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
 	}
 
 	opt_pc = vm_yield_setup_args(th, iseq, argc, cfp->sp, blockptr,
-				     (type == VM_FRAME_MAGIC_LAMBDA) ? splattable+1 : 0);
+				     (type == VM_FRAME_MAGIC_LAMBDA ? (splattable ? arg_setup_lambda : arg_setup_method) : arg_setup_block));
 
 	if (me != 0) {
 	    /* bmethod */

@@ -1854,7 +1854,7 @@ rb_hash_values(VALUE hash)
  *
  */
 
-static VALUE
+VALUE
 rb_hash_has_key(VALUE hash, VALUE key)
 {
     if (!RHASH(hash)->ntbl)

@@ -50,6 +50,7 @@ vm_call0(rb_thread_t* th, VALUE recv, ID id, int argc, const VALUE *argv,
     ci->defined_class = defined_class;
     ci->argc = argc;
     ci->me = me;
+    ci->kw_arg = NULL;
 
     return vm_call0_body(th, ci, argv);
 }
