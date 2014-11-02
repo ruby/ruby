@@ -8388,6 +8388,10 @@ obj_info(VALUE obj)
 		 C(ARY_SHARED_P(obj), "S"),
 		 (int)RARRAY_LEN(obj));
 	break;
+      case T_STRING: {
+	  snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s %s", buff, RSTRING_PTR(obj));
+	  break;
+      }
       case T_CLASS: {
 	  VALUE class_path = rb_class_path_cached(obj);
 	  if (!NIL_P(class_path)) {
