@@ -1000,7 +1000,7 @@ class RubyVM
         ot = opes.map{|type, var|
           TYPE_CHARS.fetch(op2typesig(type))
         }
-        operands_info << "\"#{ot.join}\"" << ", \n"
+        operands_info << "\"#{ot.join}\"" << ",\n"
 
         num = opes.size + 1
         operands_num_info << "  #{num},\n"
@@ -1033,7 +1033,7 @@ class RubyVM
       i=0
       insns = build_string do
         @insns.each{|insn|
-          commit "  %-30s = %d,\n" % ["BIN(#{insn.name})", i]
+          commit "  %-30s = %d," % ["BIN(#{insn.name})", i]
           i+=1
         }
       end
@@ -1161,14 +1161,14 @@ class RubyVM
           uni_insn, uni_insns = *unif
           uni_insns = uni_insns[1..-1]
           unif_insns_each << "static const int UNIFIED_#{insn.name}_#{i}[] = {" +
-                             "  BIN(#{uni_insn.name}), #{uni_insns.size + 2}, \n  " +
+                             "  BIN(#{uni_insn.name}), #{uni_insns.size + 2},\n  " +
                              uni_insns.map{|e| "BIN(#{e.name})"}.join(", ") + "};\n"
           }
         else
 
         end
         if size > 0
-          unif_insns << "static const int *const UNIFIED_#{insn.name}[] = {(int *)#{size+1}, \n"
+          unif_insns << "static const int *const UNIFIED_#{insn.name}[] = {(int *)#{size+1},\n"
           unif_insns << (0...size).map{|e| "  UNIFIED_#{insn.name}_#{e}"}.join(",\n") + "};\n"
           unif_insns_data << "  UNIFIED_#{insn.name}"
         else
