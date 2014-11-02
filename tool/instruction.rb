@@ -1049,7 +1049,7 @@ class RubyVM
       i=0
       defs = build_string do
         @insns.each{|insn|
-          commit "  rb_define_const(mYarvInsns, %-30s, INT2FIX(%d));\n" %
+          commit "  rb_define_const(mYarvInsns, %-30s, INT2FIX(%d));" %
                  ["\"I#{insn.name}\"", i]
           i+=1
         }
