@@ -24,10 +24,10 @@ force_unpack_check(struct checker *c, st_data_t key, st_data_t val)
     }
 
     if (key != c->nr) {
-	rb_bug("unexpected key: %lu (expected %lu)\n", key, c->nr);
+	rb_bug("unexpected key: %"PRIuVALUE" (expected %"PRIuVALUE")\n", (VALUE)key, (VALUE)c->nr);
     }
     if (val != c->nr) {
-	rb_bug("unexpected val: %lu (expected %lu)\n", val, c->nr);
+	rb_bug("unexpected val: %"PRIuVALUE" (expected %"PRIuVALUE")\n", (VALUE)val, (VALUE)c->nr);
     }
 
     c->nr++;
@@ -63,7 +63,7 @@ unp_fec_i(st_data_t key, st_data_t val, st_data_t args, int error)
 		rb_bug("failed to delete\n");
 	    }
 	    if (v != 0) {
-		rb_bug("unexpected value deleted: %lu (expected 0)", v);
+		rb_bug("unexpected value deleted: %"PRIuVALUE" (expected 0)", (VALUE)v);
 	    }
 	}
 	return ST_CHECK;
@@ -90,12 +90,12 @@ unp_fec(VALUE self, VALUE test)
 
     if (c.test == ID2SYM(rb_intern("delete2"))) {
 	if (c.nr != 1) {
-	    rb_bug("mismatched iteration: %lu (expected 1)\n", c.nr);
+	    rb_bug("mismatched iteration: %"PRIuVALUE" (expected 1)\n", (VALUE)c.nr);
 	}
     }
     else if (c.nr != expect_size) {
-	rb_bug("mismatched iteration: %lu (expected %lu)\n",
-		c.nr, expect_size);
+	rb_bug("mismatched iteration: %"PRIuVALUE" (expected %"PRIuVALUE")\n",
+		(VALUE)c.nr, (VALUE)expect_size);
     }
 
     if (tbl->entries_packed) rb_bug("should be unpacked\n");
@@ -123,7 +123,7 @@ unp_fe_i(st_data_t key, st_data_t val, st_data_t args, int error)
 		rb_bug("failed to delete\n");
 	    }
 	    if (v != 0) {
-		rb_bug("unexpected value deleted: %lu (expected 0)", v);
+		rb_bug("unexpected value deleted: %"PRIuVALUE" (expected 0)", (VALUE)v);
 	    }
 	    return ST_CONTINUE;
 	}
@@ -151,12 +151,12 @@ unp_fe(VALUE self, VALUE test)
 
     if (c.test == ID2SYM(rb_intern("unpack_delete"))) {
 	if (c.nr != 1) {
-	    rb_bug("mismatched iteration: %lu (expected 1)\n", c.nr);
+	    rb_bug("mismatched iteration: %"PRIuVALUE" (expected 1)\n", (VALUE)c.nr);
 	}
     }
     else if (c.nr != expect_size) {
-	rb_bug("mismatched iteration: %lu (expected %lu)\n",
-		c.nr, expect_size);
+	rb_bug("mismatched iteration: %"PRIuVALUE" (expected %"PRIuVALUE"o)\n",
+		(VALUE)c.nr, (VALUE)expect_size);
     }
 
     if (tbl->entries_packed) rb_bug("should be unpacked\n");
