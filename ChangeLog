@@ -1,3 +1,23 @@
+Mon Nov  3 13:38:28 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: change semantics of opt_num and opt_table.
+	  `opt_num' was the number of optional parameters + 1.
+	  `opt_table' has "opt_num" entries.
+
+	  Change them to:
+	  `opt_num' is the number of optional parameters.
+	  `opt_talbe' has "opt_num + 1" entries.
+
+	  This change simplify parameter fitting logics.
+
+	* compile.c: catch up this change.
+
+	* iseq.c: ditto.
+
+	* proc.c: ditto.
+
+	* vm_args.c: ditto.
+
 Mon Nov  3 11:47:44 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* NEWS: added period into Matrix section. [ci skip]

@@ -143,7 +143,7 @@ iseq_memsize(const void *ptr)
 	    if (iseq->catch_table) {
 		size += iseq_catch_table_bytes(iseq->catch_table->size);
 	    }
-	    size += iseq->param.opt_num * sizeof(VALUE);
+	    size += (iseq->param.opt_num + 1) * sizeof(VALUE);
 	    size += iseq->is_size * sizeof(union iseq_inline_storage_entry);
 	    size += iseq->callinfo_size * sizeof(rb_call_info_t);
 
@@ -1420,7 +1420,7 @@ rb_iseq_disasm(VALUE self)
 		    "[opts: %d, rest: %d, post: %d, block: %d, kw: %d@%d, kwrest: %d])\n",
 		    iseqdat->local_size,
 		    iseqdat->param.lead_num,
-		    iseqdat->param.opt_num - (iseqdat->param.flags.has_opt == TRUE),
+		    iseqdat->param.opt_num,
 		    iseqdat->param.flags.has_rest ? iseqdat->param.rest_start : -1,
 		    iseqdat->param.post_num,
 		    iseqdat->param.flags.has_block ? iseqdat->param.block_start : -1,
@@ -1437,7 +1437,7 @@ rb_iseq_disasm(VALUE self)
 	    if (iseqdat->param.flags.has_opt) {
 		int argc = iseqdat->param.lead_num;
 		int opts = iseqdat->param.opt_num;
-		if (i >= argc && i < argc + opts - 1) {
+		if (i >= argc && i < argc + opts) {
 		    snprintf(opti, sizeof(opti), "Opt=%"PRIdVALUE,
 			     iseqdat->param.opt_table[i - argc]);
 		}
@@ -1720,7 +1720,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 	VALUE arg_opt_labels = rb_ary_new();
 	int j;
 
-	for (j=0; j<iseq->param.opt_num; j++) {
+	for (j=0; j < iseq->param.opt_num; j++) {
 	    rb_ary_push(arg_opt_labels, register_label(labels_table, iseq->param.opt_table[j]));
 	}
 
@@ -1969,7 +1969,7 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
 	    rb_ary_push(args, PARAM(i, req));
 	}
     }
-    r = iseq->param.lead_num + iseq->param.opt_num - 1;
+    r = iseq->param.lead_num + iseq->param.opt_num;
     for (; i < r; i++) {
 	PARAM_TYPE(opt);
 	if (rb_id2str(PARAM_ID(i))) {
@@ -2122,8 +2122,7 @@ rb_iseq_build_for_ruby2cext(
 	    struct iseq_catch_table_entry, iseq->catch_table->size);
     }
 
-    ALLOC_AND_COPY(iseq->param.opt_table, arg_opt_table,
-		   VALUE, iseq->param.opt_num);
+    ALLOC_AND_COPY(iseq->param.opt_table, arg_opt_table, VALUE, iseq->param.opt_num + 1);
 
     set_relation(iseq, 0);
 

@@ -252,7 +252,7 @@ struct rb_iseq_struct {
      * =>
      *
      *  lead_num     = M
-     *  opt_num      = N+1
+     *  opt_num      = N
      *  rest_start   = M+N
      *  post_start   = M+N+(*1)
      *  post_num     = O
@@ -284,7 +284,20 @@ struct rb_iseq_struct {
 	int post_num;
 	int block_start;
 
-	VALUE *opt_table;
+	VALUE *opt_table; /* (opt_num + 1) entries. */
+	/* opt_num and opt_table:
+	 *
+	 * def foo o1=e1, o2=e2, ..., oN=eN
+	 * #=>
+	 *   # prologue code
+	 *   A1: e1
+	 *   A2: e2
+	 *   ...
+	 *   AN: eN
+	 *   AL: body
+	 * opt_num = N
+	 * opt_table = [A1, A2, ..., AN, AL]
+	 */
 
 	struct rb_iseq_param_keyword {
 	    int num;

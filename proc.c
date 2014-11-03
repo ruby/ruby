@@ -848,10 +848,8 @@ static inline int
 rb_iseq_min_max_arity(const rb_iseq_t *iseq, int *max)
 {
     *max = iseq->param.flags.has_rest == FALSE ?
-      iseq->param.lead_num + iseq->param.post_num +
-      iseq->param.opt_num - (iseq->param.flags.has_opt == TRUE) +
-      (iseq->param.flags.has_kw == TRUE) +
-      (iseq->param.flags.has_kwrest == TRUE)
+      iseq->param.lead_num + iseq->param.opt_num + iseq->param.post_num +
+      (iseq->param.flags.has_kw == TRUE || iseq->param.flags.has_kwrest == TRUE)
       : UNLIMITED_ARGUMENTS;
     return iseq->param.lead_num + iseq->param.post_num + (iseq->param.flags.has_kw && iseq->param.keyword->required_num > 0);
 }

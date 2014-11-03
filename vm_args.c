@@ -523,7 +523,7 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, r
 			 VALUE * const locals, const enum arg_setup_type arg_setup_type)
 {
     const int min_argc = iseq->param.lead_num + iseq->param.post_num;
-    const int max_argc = (iseq->param.flags.has_rest == FALSE) ? min_argc + (iseq->param.opt_num - (iseq->param.flags.has_opt == TRUE)) : UNLIMITED_ARGUMENTS;
+    const int max_argc = (iseq->param.flags.has_rest == FALSE) ? min_argc + iseq->param.opt_num : UNLIMITED_ARGUMENTS;
     int opt_pc = 0;
     int given_argc;
     struct args_info args_body, *args;
@@ -570,8 +570,8 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, r
 	break; /* do nothing special */
       case arg_setup_block:
 	if (given_argc == 1 &&
-	    (min_argc > 0 ||
-	     iseq->param.opt_num > 2 || iseq->param.flags.has_kw || iseq->param.flags.has_kwrest) && /* TODO: can be shrink with flags */
+	    (min_argc > 0 || iseq->param.opt_num > 1 ||
+	     iseq->param.flags.has_kw || iseq->param.flags.has_kwrest) &&
 	    !iseq->param.flags.ambiguous_param0 &&
 	    args_check_block_arg0(args, th, msl)) {
 	    given_argc = RARRAY_LENINT(args->rest);
@@ -632,7 +632,7 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, r
     }
 
     if (iseq->param.flags.has_opt) {
-	int opt = args_setup_opt_parameters(args, iseq->param.opt_num - 1, locals + iseq->param.lead_num);
+	int opt = args_setup_opt_parameters(args, iseq->param.opt_num, locals + iseq->param.lead_num);
 	opt_pc = (int)iseq->param.opt_table[opt];
     }
 

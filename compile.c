@@ -1112,12 +1112,11 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	    label = NEW_LABEL(nd_line(node_args));
 	    rb_ary_push(labels, (VALUE)label | 1);
 	    ADD_LABEL(optargs, label);
-	    i += 1;
 
 	    iseq->param.opt_num = i;
-	    iseq->param.opt_table = ALLOC_N(VALUE, i);
-	    MEMCPY(iseq->param.opt_table, RARRAY_CONST_PTR(labels), VALUE, i);
-	    for (j = 0; j < i; j++) {
+	    iseq->param.opt_table = ALLOC_N(VALUE, i+1);
+	    MEMCPY(iseq->param.opt_table, RARRAY_CONST_PTR(labels), VALUE, i+1);
+	    for (j = 0; j < i+1; j++) {
 		iseq->param.opt_table[j] &= ~1;
 	    }
 	    rb_ary_clear(labels);
@@ -1230,7 +1229,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 		iseq->param.size = iseq->param.rest_start + 1;
 	    }
 	    else if (iseq->param.flags.has_opt) {
-		iseq->param.size = iseq->param.lead_num + iseq->param.opt_num - 1;
+		iseq->param.size = iseq->param.lead_num + iseq->param.opt_num;
 	    }
 	    else {
 		rb_bug("unreachable");
@@ -1687,7 +1686,7 @@ iseq_set_optargs_table(rb_iseq_t *iseq)
     int i;
 
     if (iseq->param.flags.has_opt) {
-	for (i = 0; i < iseq->param.opt_num; i++) {
+	for (i = 0; i < iseq->param.opt_num + 1; i++) {
 	    iseq->param.opt_table[i] = label_get_position((LABEL *)iseq->param.opt_table[i]);
 	}
     }
@@ -4495,7 +4494,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    if (liseq->param.flags.has_opt) {
 		/* optional arguments */
 		int j;
-		for (j = 0; j < liseq->param.opt_num - 1; j++) {
+		for (j = 0; j < liseq->param.opt_num; j++) {
 		    int idx = liseq->local_size - (i + j);
 		    ADD_INSN2(args, line, getlocal, INT2FIX(idx), INT2FIX(lvar_level));
 		}
@@ -5896,8 +5895,8 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
 	iseq->param.post_num = FIX2INT(arg_post_num);
 	iseq->param.post_start = FIX2INT(arg_post_start);
 	iseq->param.block_start = FIX2INT(arg_block);
-	iseq->param.opt_num = RARRAY_LENINT(arg_opt_labels);
-	iseq->param.opt_table = (VALUE *)ALLOC_N(VALUE, iseq->param.opt_num);
+	iseq->param.opt_num = RARRAY_LENINT(arg_opt_labels) - 1;
+	iseq->param.opt_table = (VALUE *)ALLOC_N(VALUE, iseq->param.opt_num + 1);
 
 	if (iseq->param.flags.has_block) {
 	    iseq->param.size = iseq->param.block_start + 1;
@@ -5909,7 +5908,7 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
 	    iseq->param.size = iseq->param.rest_start + 1;
 	}
 	else {
-	    iseq->param.size = iseq->param.lead_num + (iseq->param.opt_num - (iseq->param.flags.has_opt == TRUE));
+	    iseq->param.size = iseq->param.lead_num + iseq->param.opt_num;
 	}
 
 	for (i=0; i<RARRAY_LEN(arg_opt_labels); i++) {
