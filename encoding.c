@@ -71,15 +71,9 @@ void rb_enc_init(void);
 
 static int load_encoding(const char *name);
 
-static size_t
-enc_memsize(const void *p)
-{
-    return 0;
-}
-
 static const rb_data_type_t encoding_data_type = {
     "encoding",
-    {0, 0, enc_memsize,},
+    {0, 0, 0,},
     NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 

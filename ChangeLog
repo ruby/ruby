@@ -1,3 +1,8 @@
+Tue Nov  4 08:57:37 2014  Eric Wong  <e@80x24.org>
+
+	* encoding.c (enc_memsize): remove unnecessary function
+	  [ruby-core:65304]
+
 Mon Nov  3 18:09:39 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/openssl/utils.rb: The default of :ignore_listener_error is
