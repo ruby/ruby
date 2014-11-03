@@ -1,3 +1,7 @@
+Mon Nov  3 14:42:37 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (iseq_free): resolve memory leak.
+
 Mon Nov  3 13:49:18 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (iseq_memsize): catch up recent changes.
