@@ -144,6 +144,10 @@ iseq_memsize(const void *ptr)
 		size += iseq_catch_table_bytes(iseq->catch_table->size);
 	    }
 	    size += (iseq->param.opt_num + 1) * sizeof(VALUE);
+	    if (iseq->param.keyword != NULL) {
+		size += sizeof(struct rb_iseq_param_keyword);
+		size += sizeof(VALUE) * (iseq->param.keyword->num - iseq->param.keyword->required_num);
+	    }
 	    size += iseq->is_size * sizeof(union iseq_inline_storage_entry);
 	    size += iseq->callinfo_size * sizeof(rb_call_info_t);
 
