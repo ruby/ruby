@@ -23,6 +23,9 @@ static int rb_thread_critical; /* dummy */
 #include "st.h"
 #endif
 
+#undef RUBY_UNTYPED_DATA_WARNING
+#define RUBY_UNTYPED_DATA_WARNING 0
+
 #if !defined(RHASH_TBL)
 #define RHASH_TBL(h) (RHASH(h)->tbl)
 #endif
