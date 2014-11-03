@@ -1,3 +1,10 @@
+Mon Nov  3 09:32:46 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/rfc3986_parser.rb (URI::RFC3986_Parser::RFC3986_URI):
+	  allow '[' and ']' for URI input (and escape). [Bug #10402]
+
+	* lib/uri/generic.rb (URI#query=): escape '[', '\', and ']'.
+
 Mon Nov  3 07:49:34 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: change iseq parameter data structure.
