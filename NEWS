@@ -161,10 +161,10 @@ with all sufficient information, see the ChangeLog file.
       horizontally and vertically.
     * Matrix#laplace_expansion(row_or_column: num) returns the laplace_expansion
       along the +num+ -th row or column.
-    * Vector.basis(size:, index:) returns the specified basis vector
-    * Unary - and + added for Vector and Matrix
-    * Vector#cross_product generalized to arbitrary dimensions
-    * Vector#dot and #cross are aliases for #inner_product and #cross_product
+    * Vector.basis(size:, index:) returns the specified basis vector.
+    * Unary - and + added for Vector and Matrix.
+    * Vector#cross_product generalized to arbitrary dimensions.
+    * Vector#dot and #cross are aliases for #inner_product and #cross_product.
 
 * Pathname
   * Pathname#/ is aliased to Pathname#+.

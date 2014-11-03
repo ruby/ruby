@@ -1,3 +1,8 @@
+Mon Nov  3 11:47:44 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* NEWS: added period into Matrix section. [ci skip]
+	  [misc #10446][ruby-core:65987]
+
 Mon Nov  3 09:43:30 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* vm_args.c: fixed build error with clang
