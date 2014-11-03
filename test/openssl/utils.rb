@@ -272,7 +272,7 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
       IO.pipe {|stop_pipe_r, stop_pipe_w|
         ctx_proc = args[:ctx_proc]
         server_proc = args[:server_proc]
-        ignore_listener_error = args.fetch(:ignore_listener_error, true)
+        ignore_listener_error = args.fetch(:ignore_listener_error, false)
         server_proc ||= method(:readwrite_loop)
 
         store = OpenSSL::X509::Store.new
