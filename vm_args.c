@@ -574,7 +574,7 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, r
 	     iseq->param.opt_num > 2 || iseq->param.flags.has_kw || iseq->param.flags.has_kwrest) && /* TODO: can be shrink with flags */
 	    !iseq->param.flags.ambiguous_param0 &&
 	    args_check_block_arg0(args, th, msl)) {
-	    given_argc = RARRAY_LEN(args->rest);
+	    given_argc = RARRAY_LENINT(args->rest);
 	}
 	break;
       case arg_setup_lambda:
@@ -582,7 +582,7 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, r
 	    given_argc != iseq->param.lead_num &&
 	    !iseq->param.flags.has_rest &&
 	    args_check_block_arg0(args, th, msl)) {
-	    given_argc = RARRAY_LEN(args->rest);
+	    given_argc = RARRAY_LENINT(args->rest);
 	}
     }
 
