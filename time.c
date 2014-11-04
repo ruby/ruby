@@ -1888,13 +1888,6 @@ timew2timespec_exact(wideval_t timew, struct timespec *ts)
     return ts;
 }
 
-/*
- *  Document-method: now
- *
- *  Alias for Time::new. Returns a Time object
- *  initialized to the current system time.
- */
-
 static VALUE
 time_init_0(VALUE time)
 {
@@ -2450,6 +2443,7 @@ rb_time_timespec(VALUE time)
  *     Time.now -> time
  *
  *  Creates a new Time object for the current time.
+ *  This is same as Time.new without arguments.
  *
  *     Time.now            #=> 2009-06-24 12:39:54 +0900
  */
