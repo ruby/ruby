@@ -1,3 +1,9 @@
+Tue Nov  4 16:23:57 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/rubygems/test_gem_remote_fetcher.rb (RemoteFetcherCleanup):
+	  close all pooled connections for each tests to fix leaked file
+	  descriptors.
+
 Tue Nov  4 12:51:31 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (PRIsVALUE), vsnprintf.c (BSD_vfprintf): add
