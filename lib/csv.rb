@@ -1476,7 +1476,7 @@ class CSV
   #                                       the rows contain no actual data. If
   #                                       you want to skip rows that contain
   #                                       separators but no content, consider
-  #                                       using <tt>:skip_lines</tt>, or 
+  #                                       using <tt>:skip_lines</tt>, or
   #                                       inspecting fields.compact.empty? on
   #                                       each row.
   # <b><tt>:force_quotes</tt></b>::       When set to a +true+ value, CSV will
