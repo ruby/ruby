@@ -646,7 +646,7 @@ DEPENDENCIES
   def test_relative_path_from
     path = @lockfile.relative_path_from '/foo', '/foo/bar'
 
-    assert_equal '/foo', path
+    assert_equal File.expand_path('/foo'), path
 
     path = @lockfile.relative_path_from '/foo', '/foo'
 
