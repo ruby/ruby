@@ -1,6 +1,6 @@
 # -*- ruby -*-
 # for backward compatibility
-warn "Warning:#{caller[0].sub(/:in `.*'\z/, '')}: Win32API is deprecated after Ruby 1.9.1; use dl directly instead" if $VERBOSE
+warn "Warning:#{caller[0].sub(/:in `.*'\z/, '')}: Win32API is deprecated after Ruby 1.9.1; use fiddle directly instead" if $VERBOSE
 
 require 'fiddle'
 
