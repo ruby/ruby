@@ -1,3 +1,11 @@
+Wed Nov  5 00:01:04 2014  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_mul_balance_with_mulfunc): Fix free work area
+	  location.
+	  [ruby-dev:48723] [Bug #10464]
+	  [ruby-core:66044] [Bug #10465]
+	  Reported by Kohji Nishihama.
+
 Tue Oct 28 22:30:21 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: remove apple-gcc4.2 from CC candidates.
