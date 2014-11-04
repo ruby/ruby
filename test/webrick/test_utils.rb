@@ -58,7 +58,11 @@ class TestWEBrickUtils < Test::Unit::TestCase
     do_test_timeout(WEBrick::Utils)
   end
 
-  #def test_timeout
-  #  do_test_timeout(Timeout)
-  #end
+  def test_create_listeners
+    listeners = WEBrick::Utils.create_listeners("127.0.0.1", "9999")
+    srv = listeners.first
+    assert_equal true, srv.is_a?(TCPServer)
+    assert_equal ["AF_INET", 9999, "127.0.0.1", "127.0.0.1"], srv.addr
+  end
+
 end
