@@ -1,3 +1,8 @@
+Tue Nov  4 12:09:18 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/open3.rb: fix code formatting in documentation by @JoshCheek
+	  [fix GH-747][ci skip]
+
 Tue Nov  4 08:57:37 2014  Eric Wong  <e@80x24.org>
 
 	* encoding.c (enc_memsize): remove unnecessary function
