@@ -677,7 +677,7 @@ rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass)
     }
 
     procval = rb_proc_alloc(klass, block, envval, blockprocval,
-			    th->safe_level, 0, 0);
+			    (int8_t)th->safe_level, 0, 0);
 
     if (VMDEBUG) {
 	if (th->stack < block->ep && block->ep < th->stack + th->stack_size) {

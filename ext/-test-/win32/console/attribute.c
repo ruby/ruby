@@ -25,7 +25,7 @@ console_set_attribute(VALUE io, VALUE attr)
     HANDLE h = (HANDLE)rb_w32_get_osfhandle(fd);
 
     if (h == (HANDLE)-1) rb_raise(rb_eIOError, "invalid io");
-    SetConsoleTextAttribute(h, NUM2INT(attr));
+    SetConsoleTextAttribute(h, (WORD)NUM2INT(attr));
     return Qnil;
 }
 
