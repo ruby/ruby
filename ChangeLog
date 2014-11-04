@@ -1,3 +1,8 @@
+Wed Nov  5 00:18:22 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (__builtin_setjmp): disable with gcc/clang earlier
+	  than 4.3 on Mac OS X.  [ruby-core:65174] [Bug #10272]
+
 Wed Nov  5 00:01:04 2014  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_mul_balance_with_mulfunc): Fix free work area
