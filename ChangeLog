@@ -1,3 +1,13 @@
+Tue Nov  4 21:23:22 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/win32/lib/Win32API.rb: Fiddle::Importer is defined in
+	  fiddle/import.rb and it's not loaded implicitly.
+
+	* ext/win32/lib/Win32API.rb (Win32API#initialize): `import` is a string.
+
+	* ext/win32/lib/Win32API.rb (Win32API#initialize):
+	  Fiddle::Importer::CALL_TYPE_TO_ABI is private constant.
+
 Tue Nov  4 21:20:07 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/securerandom.rb (SecureRandom.random_bytes): use fiddle directly

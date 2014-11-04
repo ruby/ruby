@@ -2,7 +2,7 @@
 # for backward compatibility
 warn "Warning:#{caller[0].sub(/:in `.*'\z/, '')}: Win32API is deprecated after Ruby 1.9.1; use fiddle directly instead" if $VERBOSE
 
-require 'fiddle'
+require 'fiddle/import'
 
 class Win32API
   DLL = {}
@@ -15,9 +15,9 @@ class Win32API
 
     @func = Fiddle::Function.new(
       handle[func],
-      import.map { |win_type| TYPEMAP[win_type.tr("VPpNnLlIi", "0SSI")] },
+      import.chars.map { |win_type| TYPEMAP[win_type.tr("VPpNnLlIi", "0SSI")] },
       TYPEMAP[export.tr("VPpNnLlIi", "0SSI")],
-      Fiddle::Importer::CALL_TYPE_TO_ABI[calltype]
+      Fiddle::Importer.const_get(:CALL_TYPE_TO_ABI)[calltype]
     )
   rescue Fiddle::DLError => e
     raise LoadError, e.message, e.backtrace
