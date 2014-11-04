@@ -91,16 +91,21 @@ module SecureRandom
 
     unless defined?(@has_win32)
       begin
-        require 'Win32API'
+        advapi32 = Module.new do
+          require "fiddle/import"
+          extend Fiddle::Importer
+          dlload "advapi32"
+          extern "int CryptAcquireContext(void*, void*, void*, unsigned long, unsigned long)"
+          extern "int CryptGenRandom(void*, unsigned long, void*)"
+        end
 
-        crypt_acquire_context = Win32API.new("advapi32", "CryptAcquireContext", 'PPPII', 'L')
-        @crypt_gen_random = Win32API.new("advapi32", "CryptGenRandom", 'VIP', 'L')
+        @crypt_gen_random = advapi32.method(:CryptGenRandom)
 
         hProvStr = " " * Fiddle::SIZEOF_VOIDP
         prov_rsa_full = 1
         crypt_verifycontext = 0xF0000000
 
-        if crypt_acquire_context.call(hProvStr, nil, nil, prov_rsa_full, crypt_verifycontext) == 0
+        if advapi32.CryptAcquireContext(hProvStr, nil, nil, prov_rsa_full, crypt_verifycontext) == 0
           raise SystemCallError, "CryptAcquireContext failed: #{lastWin32ErrorMessage}"
         end
         type = Fiddle::SIZEOF_VOIDP == Fiddle::SIZEOF_LONG_LONG ? 'q' : 'l'
