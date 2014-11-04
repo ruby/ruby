@@ -1,3 +1,8 @@
+Tue Nov  4 12:33:44 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* object.c: fix document of Kernel.Stirng by @suzukaze
+	  [fix GH-743][ci skip]
+
 Tue Nov  4 12:21:45 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/csv.rb: added documentation for skip_blanks option by @decasia

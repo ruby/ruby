@@ -3018,8 +3018,9 @@ rb_String(VALUE val)
  *  call-seq:
  *     String(arg)   -> string
  *
- *  Converts <i>arg</i> to a <code>String</code> by calling its
- *  <code>to_s</code> method.
+ *  Returns <i>arg</i> as an <code>String</code>.
+ *
+ *  First tries to call its <code>to_str</code> method, then its <code>to_s</code> method.
  *
  *     String(self)        #=> "main"
  *     String(self.class)  #=> "Object"
