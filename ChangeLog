@@ -1,3 +1,10 @@
+Wed Nov  5 18:26:49 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* vm_insnhelper.c (unknown_keyword_error): delete expected keywords
+	  directly from raw table, so that the given block is not called.
+	  derived from r48102 of trunk.
+	  [ruby-core:65837] [Bug #10413]
+
 Mon Oct 27 20:21:05 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/rexml/entity.rb: keep the entity size within the limitation.

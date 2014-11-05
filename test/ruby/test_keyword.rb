@@ -359,4 +359,19 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([{}, {}], a.new.foo({}))
     assert_equal([{}, {:bar=>"x"}], a.new.foo({}, bar: "x"))
   end
+
+  def test_unknown_keyword_with_block
+    bug10413 = '[ruby-core:65837] [Bug #10413]'
+    class << (o = Object.new)
+      def bar(k2: 'v2')
+      end
+
+      def foo
+        bar(k1: 1)
+      end
+    end
+    assert_raise_with_message(ArgumentError, /unknown keyword: k1/, bug10413) {
+      o.foo {raise "unreachable"}
+    }
+  end
 end

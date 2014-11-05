@@ -148,10 +148,12 @@ static void
 unknown_keyword_error(const rb_iseq_t *iseq, VALUE hash)
 {
     VALUE sep = rb_usascii_str_new2(", "), keys;
+    st_table *tbl = rb_hash_tbl(hash);
     const char *msg;
     int i;
     for (i = 0; i < iseq->arg_keywords; i++) {
-	rb_hash_delete(hash, ID2SYM(iseq->arg_keyword_table[i]));
+	st_data_t key = ID2SYM(iseq->arg_keyword_table[i]);
+	st_delete(tbl, &key, NULL);
     }
     keys = rb_funcall(hash, rb_intern("keys"), 0, 0);
     if (!RB_TYPE_P(keys, T_ARRAY)) rb_raise(rb_eArgError, "unknown keyword");
