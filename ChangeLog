@@ -1,3 +1,17 @@
+Wed Nov  5 23:43:24 2014  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* compile.c (compile_data_alloc): add padding when strict alignment
+	  is required for memory access. Currently, the padding is enabled
+	  only when the CPU is 32-bit SPARC and the compiler is GCC.
+	  [Bug #9681] [ruby-core:61715]
+
+	* compile.c (STRICT_ALIGNMENT): defined if strict alignment is required
+
+	* compile.c (ALIGNMENT_SIZE, ALIGNMENT_SIZE_MASK, PADDING_SIZE_MAX):
+	  new macros for alignemnt word size, bit mask, max size of padding.
+
+	* compile.c (calc_padding): new function to calculate padding size.
+
 Wed Nov  5 23:24:45 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/open-uri/test_open-uri.rb: Don't ignore webrick's log.

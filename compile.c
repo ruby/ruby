@@ -625,18 +625,72 @@ rb_iseq_original_iseq(rb_iseq_t *iseq) /* cold path */
 /* definition of data structure for compiler */
 /*********************************************/
 
+/* 
+ * On 32-bit SPARC, GCC by default generates SPARC V7 code that may require
+ * 8-byte word alignment. On the other hand, Oracle Solaris Studio seems to
+ * generate SPARCV8PLUS code with unaligned memory accesss instructions.
+ * That is why the STRICT_ALIGNMENT is defined only with GCC.
+ */
+#if defined(__sparc) && SIZEOF_VOIDP == 4 && defined(__GNUC__)
+  #define STRICT_ALIGNMENT
+#endif
+
+#ifdef STRICT_ALIGNMENT
+  #if defined(HAVE_TRUE_LONG_LONG) && SIZEOF_LONG_LONG > SIZEOF_VALUE
+    #define ALIGNMENT_SIZE SIZEOF_LONG_LONG
+  #else
+    #define ALIGNMENT_SIZE SIZEOF_VALUE
+  #endif
+  #define PADDING_SIZE_MAX    ((size_t)((ALIGNMENT_SIZE) - 1))
+  #define ALIGNMENT_SIZE_MASK PADDING_SIZE_MAX
+  /* Note: ALIGNMENT_SIZE == (2 ** N) is expected. */
+#else
+  #define PADDING_SIZE_MAX 0
+#endif /* STRICT_ALIGNMENT */
+
+#ifdef STRICT_ALIGNMENT
+/* calculate padding size for aligned memory access */
+static size_t
+calc_padding(void *ptr, size_t size)
+{
+    size_t mis;
+    size_t padding = 0;
+
+    mis = (size_t)ptr & ALIGNMENT_SIZE_MASK;
+    if (mis > 0) {
+        padding = ALIGNMENT_SIZE - mis;
+    }
+/* 
+ * On 32-bit sparc or equivalents, when a single VALUE is requested
+ * and padding == sizeof(VALUE), it is clear that no padding is needed.
+ */
+#if ALIGNMENT_SIZE > SIZEOF_VALUE
+    if (size == sizeof(VALUE) && padding == sizeof(VALUE)) {
+        padding = 0;
+    }
+#endif
+
+    return padding;
+}
+#endif /* STRICT_ALIGNMENT */
+
 static void *
 compile_data_alloc(rb_iseq_t *iseq, size_t size)
 {
     void *ptr = 0;
     struct iseq_compile_data_storage *storage =
 	iseq->compile_data->storage_current;
+#ifdef STRICT_ALIGNMENT
+    size_t padding = calc_padding((void *)&storage->buff[storage->pos], size);
+#else
+    const size_t padding = 0; /* expected to be optimized by compiler */
+#endif /* STRICT_ALIGNMENT */
 
-    if (size >= INT_MAX) rb_memerror();
-    if (storage->pos + size > storage->size) {
+    if (size >= INT_MAX - padding) rb_memerror();
+    if (storage->pos + size + padding > storage->size) {
 	unsigned int alloc_size = storage->size;
 
-	while (alloc_size < size) {
+	while (alloc_size < size + PADDING_SIZE_MAX) {
 	    if (alloc_size >= INT_MAX / 2) rb_memerror();
 	    alloc_size *= 2;
 	}
@@ -646,7 +700,14 @@ compile_data_alloc(rb_iseq_t *iseq, size_t size)
 	storage->next = 0;
 	storage->pos = 0;
 	storage->size = alloc_size;
+#ifdef STRICT_ALIGNMENT
+        padding = calc_padding((void *)&storage->buff[storage->pos], size);
+#endif /* STRICT_ALIGNMENT */
     }
+
+#ifdef STRICT_ALIGNMENT
+    storage->pos += (int)padding;
+#endif /* STRICT_ALIGNMENT */
 
     ptr = (void *)&storage->buff[storage->pos];
     storage->pos += (int)size;
