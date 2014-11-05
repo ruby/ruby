@@ -1,3 +1,8 @@
+Wed Nov  5 16:55:52 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (rb_f_lambda): remove deprecated function, which has been
+	  unavailable from extension libraries.
+
 Wed Nov  5 16:26:58 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_clear_cache): mark as deprecated, not

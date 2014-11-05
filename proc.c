@@ -670,13 +670,6 @@ rb_block_clear_env_self(VALUE proc)
     return proc;
 }
 
-VALUE
-rb_f_lambda(void)
-{
-    rb_warn("rb_f_lambda() is deprecated; use rb_block_proc() instead");
-    return rb_block_lambda();
-}
-
 /*  Document-method: ===
  *
  *  call-seq:
