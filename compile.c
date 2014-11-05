@@ -625,7 +625,7 @@ rb_iseq_original_iseq(rb_iseq_t *iseq) /* cold path */
 /* definition of data structure for compiler */
 /*********************************************/
 
-/* 
+/*
  * On 32-bit SPARC, GCC by default generates SPARC V7 code that may require
  * 8-byte word alignment. On the other hand, Oracle Solaris Studio seems to
  * generate SPARCV8PLUS code with unaligned memory accesss instructions.
@@ -660,7 +660,7 @@ calc_padding(void *ptr, size_t size)
     if (mis > 0) {
         padding = ALIGNMENT_SIZE - mis;
     }
-/* 
+/*
  * On 32-bit sparc or equivalents, when a single VALUE is requested
  * and padding == sizeof(VALUE), it is clear that no padding is needed.
  */
