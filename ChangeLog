@@ -1,3 +1,8 @@
+Wed Nov  5 16:26:58 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_clear_cache): mark as deprecated, not
+	  only warnings at runtime.
+
 Wed Nov  5 15:05:12 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_{,l,r}strip_bang): rb_str_subseq() will not
