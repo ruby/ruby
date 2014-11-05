@@ -124,7 +124,7 @@ Mon Nov  3 13:38:28 2014  Koichi Sasada  <ko1@atdot.net>
 
 	  Change them to:
 	  `opt_num' is the number of optional parameters.
-	  `opt_talbe' has "opt_num + 1" entries.
+	  `opt_table' has "opt_num + 1" entries.
 
 	  This change simplify parameter fitting logics.
 
@@ -186,7 +186,7 @@ Mon Nov  3 07:49:34 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (iseq_data_to_ary): support keyword argument.
 
-xMon Nov  3 03:39:04 2014  Koichi Sasada  <ko1@atdot.net>
+Mon Nov  3 03:39:04 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_method.rb: r48239 makes this test green.
 
@@ -210,7 +210,7 @@ Mon Nov 03 03:02:38 2014  Koichi Sasada  <ko1@atdot.net>
 	    to represent keyword bitmap parameter index.
 	    This bitmap parameter shows that which keyword parameters are given
 	    or not given (0 for given).
-	    It is refered by `checkkeyword' instruction described bellow.
+	    It is referred by `checkkeyword' instruction described bellow.
 	  * rename rb_iseq_t::arg_keyword_check to rb_iseq_t::arg_keyword_rest
 	    to represent keyword rest parameter index.
 	  * add rb_iseq_t::arg_keyword_default_values to represent default
@@ -238,7 +238,7 @@ Mon Nov 03 03:02:38 2014  Koichi Sasada  <ko1@atdot.net>
 	* insns.def (checkkeyword): add new instruction.
 	  This instruction check the availability of corresponding keyword.
 
-	  For example, a method "def foo k1: 'v1'; end" is cimpiled to the
+	  For example, a method "def foo k1: 'v1'; end" is compiled to the
 	  following instructions.
 
 	    0000 checkkeyword     2, 0  # check k1 is given.
@@ -385,7 +385,7 @@ Fri Oct 31 16:47:35 2014  Akinori MUSHA  <knu@iDaemons.org>
 Fri Oct 31 16:33:46 2014  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/net/imap.rb (Net::IMAP#fetch): [DOC] Document that
-	  Net::IMAP#fetch will return nil instead of an emtpy array.
+	  Net::IMAP#fetch will return nil instead of an empty array.
 
 Fri Oct 31 12:54:43 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
