@@ -1,3 +1,17 @@
+Wed Nov  5 12:13:54 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_lstrip, rb_str_strip): reduce memory copy by
+	  copying necessary part only.
+
+	* string.c (rb_str_strip_bang, rb_str_strip): ditto.
+
+Wed Nov  5 12:13:48 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_lstrip, rb_str_strip): reduce memory copy by
+	  copying necessary part only.
+
+	* string.c (rb_str_strip_bang, rb_str_strip): ditto.
+
 Wed Nov  5 10:54:19 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_lstrip_bang, rb_str_rstrip_bang): terminate

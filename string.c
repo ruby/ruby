@@ -7182,6 +7182,23 @@ rb_str_chomp(int argc, VALUE *argv, VALUE str)
     return str;
 }
 
+static long
+lstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc)
+{
+    const char *const start = s;
+
+    if (!s || s >= e) return 0;
+    /* remove spaces at head */
+    while (s < e) {
+	int n;
+	unsigned int cc = rb_enc_codepoint_len(s, e, &n, enc);
+
+	if (!rb_isspace(cc)) break;
+	s += n;
+    }
+    return s - start;
+}
+
 /*
  *  call-seq:
  *     str.lstrip!   -> self or nil
@@ -7198,24 +7215,16 @@ static VALUE
 rb_str_lstrip_bang(VALUE str)
 {
     rb_encoding *enc;
-    char *start, *s, *t, *e;
+    char *start, *s;
+    long olen, loffset;
 
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
-    start = s = RSTRING_PTR(str);
-    if (!s || RSTRING_LEN(str) == 0) return Qnil;
-    e = t = RSTRING_END(str);
-    /* remove spaces at head */
-    while (s < e) {
-	int n;
-	unsigned int cc = rb_enc_codepoint_len(s, e, &n, enc);
-
-	if (!rb_isspace(cc)) break;
-	s += n;
-    }
-
-    if (s > RSTRING_PTR(str)) {
-	long len = t - s;
+    RSTRING_GETMEM(str, start, olen);
+    loffset = lstrip_offset(str, start, start+olen, enc);
+    if (loffset > 0) {
+	long len = olen-loffset;
+	s = start + loffset;
 	memmove(start, s, len);
 	STR_SET_LEN(str, len);
 	TERM_FILL(start+len, rb_enc_mbminlen(enc));
@@ -7239,11 +7248,39 @@ rb_str_lstrip_bang(VALUE str)
 static VALUE
 rb_str_lstrip(VALUE str)
 {
-    str = rb_str_dup(str);
-    rb_str_lstrip_bang(str);
-    return str;
+    char *start;
+    long len, loffset;
+    RSTRING_GETMEM(str, start, len);
+    loffset = lstrip_offset(str, start, start+len, STR_ENC_GET(str));
+    if (loffset <= 0) return rb_str_dup(str);
+    return rb_str_subseq(str, loffset, len - loffset);
 }
 
+static long
+rstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc)
+{
+    const char *t;
+
+    rb_str_check_dummy_enc(enc);
+    if (!s || s >= e) return 0;
+    t = e;
+
+    /* remove trailing spaces or '\0's */
+    if (single_byte_optimizable(str)) {
+	unsigned char c;
+	while (s < t && ((c = *(t-1)) == '\0' || ascii_isspace(c))) t--;
+    }
+    else {
+	char *tp;
+
+        while ((tp = rb_enc_prev_char(s, t, e, enc)) != NULL) {
+	    unsigned int c = rb_enc_codepoint(tp, e, enc);
+	    if (c && !rb_isspace(c)) break;
+	    t = tp;
+	}
+    }
+    return e - t;
+}
 
 /*
  *  call-seq:
@@ -7261,31 +7298,15 @@ static VALUE
 rb_str_rstrip_bang(VALUE str)
 {
     rb_encoding *enc;
-    char *start, *s, *t, *e;
+    char *start;
+    long olen, roffset;
 
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
-    rb_str_check_dummy_enc(enc);
-    start = s = RSTRING_PTR(str);
-    if (!s || RSTRING_LEN(str) == 0) return Qnil;
-    t = e = RSTRING_END(str);
-
-    /* remove trailing spaces or '\0's */
-    if (single_byte_optimizable(str)) {
-	unsigned char c;
-	while (s < t && ((c = *(t-1)) == '\0' || ascii_isspace(c))) t--;
-    }
-    else {
-	char *tp;
-
-        while ((tp = rb_enc_prev_char(s, t, e, enc)) != NULL) {
-	    unsigned int c = rb_enc_codepoint(tp, e, enc);
-	    if (c && !rb_isspace(c)) break;
-	    t = tp;
-	}
-    }
-    if (t < e) {
-	long len = t-start;
+    RSTRING_GETMEM(str, start, olen);
+    roffset = rstrip_offset(str, start, start+olen, enc);
+    if (roffset > 0) {
+	long len = olen - roffset;
 
 	STR_SET_LEN(str, len);
 	TERM_FILL(start+len, rb_enc_mbminlen(enc));
@@ -7309,9 +7330,16 @@ rb_str_rstrip_bang(VALUE str)
 static VALUE
 rb_str_rstrip(VALUE str)
 {
-    str = rb_str_dup(str);
-    rb_str_rstrip_bang(str);
-    return str;
+    rb_encoding *enc;
+    char *start;
+    long olen, roffset;
+
+    enc = STR_ENC_GET(str);
+    RSTRING_GETMEM(str, start, olen);
+    roffset = rstrip_offset(str, start, start+olen, enc);
+
+    if (roffset <= 0) return rb_str_dup(str);
+    return rb_str_subseq(str, 0, olen-roffset);
 }
 
 
@@ -7326,11 +7354,27 @@ rb_str_rstrip(VALUE str)
 static VALUE
 rb_str_strip_bang(VALUE str)
 {
-    VALUE l = rb_str_lstrip_bang(str);
-    VALUE r = rb_str_rstrip_bang(str);
+    char *start;
+    long olen, loffset, roffset;
+    rb_encoding *enc;
 
-    if (NIL_P(l) && NIL_P(r)) return Qnil;
-    return str;
+    str_modify_keep_cr(str);
+    enc = STR_ENC_GET(str);
+    RSTRING_GETMEM(str, start, olen);
+    loffset = lstrip_offset(str, start, start+olen, enc);
+    roffset = rstrip_offset(str, start+loffset, start+olen, enc);
+
+    if (loffset > 0 || roffset > 0) {
+	long len = olen-roffset;
+	if (loffset > 0) {
+	    len -= loffset;
+	    memmove(start, start + loffset, len);
+	}
+	STR_SET_LEN(str, len);
+	TERM_FILL(start+len, rb_enc_mbminlen(enc));
+	return str;
+    }
+    return Qnil;
 }
 
 
@@ -7347,9 +7391,16 @@ rb_str_strip_bang(VALUE str)
 static VALUE
 rb_str_strip(VALUE str)
 {
-    str = rb_str_dup(str);
-    rb_str_strip_bang(str);
-    return str;
+    char *start;
+    long olen, loffset, roffset;
+    rb_encoding *enc = STR_ENC_GET(str);
+
+    RSTRING_GETMEM(str, start, olen);
+    loffset = lstrip_offset(str, start, start+olen, enc);
+    roffset = rstrip_offset(str, start+loffset, start+olen, enc);
+
+    if (loffset <= 0 && roffset <= 0) return rb_str_dup(str);
+    return rb_str_subseq(str, loffset, olen-loffset-roffset);
 }
 
 static VALUE
