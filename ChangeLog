@@ -1,3 +1,7 @@
+Thu Nov  6 08:49:49 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize/normalize.rb: Comment clarification.
+
 Wed Nov  5 23:43:24 2014  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* compile.c (compile_data_alloc): add padding when strict alignment

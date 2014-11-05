@@ -71,7 +71,7 @@ module UnicodeNormalize
   ## Canonical Ordering
   def self.canonical_ordering_one(string)
     sorting = string.each_char.collect { |c| [c, CLASS_TABLE[c]] }
-    (sorting.length-2).downto(0) do |i| # bubble sort
+    (sorting.length-2).downto(0) do |i| # almost, but not exactly bubble sort
       (0..i).each do |j|
         later_class = sorting[j+1].last
         if 0<later_class and later_class<sorting[j].last
