@@ -13,19 +13,26 @@ class TestOpenURI < Test::Unit::TestCase
   def NullLog.<<(arg)
   end
 
-  def with_http
+  def with_http(capture_log=false)
+    if capture_log
+      log = StringIO.new('')
+      logger = WEBrick::Log.new(log, WEBrick::BasicLog::WARN)
+    else
+      log = nil
+      logger = WEBrick::Log.new($stdout, WEBrick::BasicLog::WARN)
+    end
     Dir.mktmpdir {|dr|
       srv = WEBrick::HTTPServer.new({
         :DocumentRoot => dr,
         :ServerType => Thread,
-        :Logger => WEBrick::Log.new(NullLog),
+        :Logger => logger,
         :AccessLog => [[NullLog, ""]],
         :BindAddress => '127.0.0.1',
         :Port => 0})
       _, port, _, host = srv.listeners[0].addr
       begin
         th = srv.start
-        yield srv, dr, "http://#{host}:#{port}"
+        yield srv, dr, "http://#{host}:#{port}", log
       ensure
         srv.shutdown
         th.join
@@ -76,9 +83,10 @@ class TestOpenURI < Test::Unit::TestCase
   end
 
   def test_404
-    with_http {|srv, dr, url|
+    with_http(true) {|srv, dr, url, log|
       exc = assert_raise(OpenURI::HTTPError) { open("#{url}/not-exist") {} }
       assert_equal("404", exc.io.status[0])
+      assert_match(%r{ERROR `/not-exist' not found}, log.string)
     }
   end
 
@@ -400,7 +408,7 @@ class TestOpenURI < Test::Unit::TestCase
   end
 
   def test_redirect_auth
-    with_http {|srv, dr, url|
+    with_http(true) {|srv, dr, url, log|
       srv.mount_proc("/r1/") {|req, res| res.status = 301; res["location"] = "#{url}/r2" }
       srv.mount_proc("/r2/") {|req, res|
         if req["Authorization"] != "Basic #{['user:pass'].pack('m').chomp}"
@@ -410,11 +418,14 @@ class TestOpenURI < Test::Unit::TestCase
       }
       exc = assert_raise(OpenURI::HTTPError) { open("#{url}/r2/") {} }
       assert_equal("401", exc.io.status[0])
+      assert_match(/ERROR WEBrick::HTTPStatus::Unauthorized/, log.string)
+      log.rewind; log.truncate(0)
       open("#{url}/r2/", :http_basic_authentication=>['user', 'pass']) {|f|
         assert_equal("r2", f.read)
       }
       exc = assert_raise(OpenURI::HTTPError) { open("#{url}/r1/", :http_basic_authentication=>['user', 'pass']) {} }
       assert_equal("401", exc.io.status[0])
+      assert_match(/ERROR WEBrick::HTTPStatus::Unauthorized/, log.string)
     }
   end
 

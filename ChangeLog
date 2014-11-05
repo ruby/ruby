@@ -1,3 +1,7 @@
+Wed Nov  5 23:24:45 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/open-uri/test_open-uri.rb: Don't ignore webrick's log.
+
 Wed Nov  5 19:20:08 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/webrick/server.rb: Stop lisntner loop properly.
