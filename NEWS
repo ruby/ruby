@@ -290,10 +290,10 @@ with all sufficient information, see the ChangeLog file.
 
 * rb_str_cat_cstr() added. This is same as `rb_str_cat2()`.
 
-* `rb_str_substr()` and `rb_str_subseq()` now share middle of a string,
-  but not only the end of a string.  Therefore, result strings may not
-  be NUL-terminated, `StringValueCStr()` is needed calling to obtain a
-  NUL-terminated C string.
+* `rb_str_substr()` and `rb_str_subseq()` will share middle of a string,
+  but not only the end of a string, in the futre.  Therefore, result
+  strings may not be NUL-terminated, `StringValueCStr()` is needed
+  calling to obtain a NUL-terminated C string.
 
 * rb_tracepoint_new() supports new internal events accessible only from C:
   * RUBY_INTERNAL_EVENT_GC_ENTER

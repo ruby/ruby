@@ -128,7 +128,10 @@ VALUE rb_cSymbol;
 
 #define STR_ENC_GET(str) get_encoding(str)
 
-#if 1
+#if !defined SHARABLE_MIDDLE_SUBSTRING
+# define SHARABLE_MIDDLE_SUBSTRING 0
+#endif
+#if !SHARABLE_MIDDLE_SUBSTRING
 #define SHARABLE_SUBSTRING_P(beg, len, end) ((beg) + (len) == (end))
 #else
 #define SHARABLE_SUBSTRING_P(beg, len, end) 1
@@ -7227,7 +7230,9 @@ rb_str_lstrip_bang(VALUE str)
 	s = start + loffset;
 	memmove(start, s, len);
 	STR_SET_LEN(str, len);
+#if !SHARABLE_MIDDLE_SUBSTRING
 	TERM_FILL(start+len, rb_enc_mbminlen(enc));
+#endif
 	return str;
     }
     return Qnil;
@@ -7309,7 +7314,9 @@ rb_str_rstrip_bang(VALUE str)
 	long len = olen - roffset;
 
 	STR_SET_LEN(str, len);
+#if !SHARABLE_MIDDLE_SUBSTRING
 	TERM_FILL(start+len, rb_enc_mbminlen(enc));
+#endif
 	return str;
     }
     return Qnil;
@@ -7371,7 +7378,9 @@ rb_str_strip_bang(VALUE str)
 	    memmove(start, start + loffset, len);
 	}
 	STR_SET_LEN(str, len);
+#if !SHARABLE_MIDDLE_SUBSTRING
 	TERM_FILL(start+len, rb_enc_mbminlen(enc));
+#endif
 	return str;
     }
     return Qnil;
