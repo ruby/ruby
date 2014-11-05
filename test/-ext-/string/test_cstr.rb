@@ -39,4 +39,16 @@ class Test_StringCStr < Test::Unit::TestCase
       assert_equal(0, s.cstr_term)
     end
   end
+
+  def test_wchar_lstrip!
+    str = Bug::String.new(" a".encode(Encoding::UTF_16BE))
+    str.lstrip!
+    assert_nil(str.cstr_term_char)
+  end
+
+  def test_wchar_rstrip!
+    str = Bug::String.new("a ".encode(Encoding::UTF_16BE))
+    str.rstrip!
+    assert_nil(str.cstr_term_char)
+  end
 end

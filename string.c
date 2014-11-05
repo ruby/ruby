@@ -7198,11 +7198,11 @@ static VALUE
 rb_str_lstrip_bang(VALUE str)
 {
     rb_encoding *enc;
-    char *s, *t, *e;
+    char *start, *s, *t, *e;
 
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
-    s = RSTRING_PTR(str);
+    start = s = RSTRING_PTR(str);
     if (!s || RSTRING_LEN(str) == 0) return Qnil;
     e = t = RSTRING_END(str);
     /* remove spaces at head */
@@ -7215,9 +7215,10 @@ rb_str_lstrip_bang(VALUE str)
     }
 
     if (s > RSTRING_PTR(str)) {
-	STR_SET_LEN(str, t-s);
-	memmove(RSTRING_PTR(str), s, RSTRING_LEN(str));
-	RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
+	long len = t - s;
+	memmove(start, s, len);
+	STR_SET_LEN(str, len);
+	TERM_FILL(start+len, rb_enc_mbminlen(enc));
 	return str;
     }
     return Qnil;
@@ -7260,12 +7261,12 @@ static VALUE
 rb_str_rstrip_bang(VALUE str)
 {
     rb_encoding *enc;
-    char *s, *t, *e;
+    char *start, *s, *t, *e;
 
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
-    s = RSTRING_PTR(str);
+    start = s = RSTRING_PTR(str);
     if (!s || RSTRING_LEN(str) == 0) return Qnil;
     t = e = RSTRING_END(str);
 
@@ -7284,10 +7285,10 @@ rb_str_rstrip_bang(VALUE str)
 	}
     }
     if (t < e) {
-	long len = t-RSTRING_PTR(str);
+	long len = t-start;
 
 	STR_SET_LEN(str, len);
-	RSTRING_PTR(str)[len] = '\0';
+	TERM_FILL(start+len, rb_enc_mbminlen(enc));
 	return str;
     }
     return Qnil;
