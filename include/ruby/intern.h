@@ -371,8 +371,18 @@ VALUE rb_f_exit(int, const VALUE*);
 VALUE rb_f_abort(int, const VALUE*);
 void rb_remove_method(VALUE, const char*);
 void rb_remove_method_id(VALUE, ID);
-#define rb_disable_super(klass, name) ((void)0)
-#define rb_enable_super(klass, name) ((void)0)
+DEPRECATED(static inline void rb_disable_super(void));
+DEPRECATED(static inline void rb_enable_super(void));
+static inline void rb_disable_super(void)
+{
+    /* obsolete - no use */
+}
+static inline void rb_enable_super(void)
+{
+    rb_warning("rb_enable_super() is obsolete");
+}
+#define rb_disable_super(klass, name) rb_disable_super()
+#define rb_enable_super(klass, name) rb_enable_super()
 #define HAVE_RB_DEFINE_ALLOC_FUNC 1
 typedef VALUE (*rb_alloc_func_t)(VALUE);
 void rb_define_alloc_func(VALUE, rb_alloc_func_t);

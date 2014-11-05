@@ -814,21 +814,6 @@ rb_mod_remove_method(int argc, VALUE *argv, VALUE mod)
     return mod;
 }
 
-#undef rb_disable_super
-#undef rb_enable_super
-
-void
-rb_disable_super(VALUE klass, const char *name)
-{
-    /* obsolete - no use */
-}
-
-void
-rb_enable_super(VALUE klass, const char *name)
-{
-    rb_warning("rb_enable_super() is obsolete");
-}
-
 static void
 rb_export_method(VALUE klass, ID name, rb_method_flag_t noex)
 {

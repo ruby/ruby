@@ -1,3 +1,9 @@
+Wed Nov  5 17:20:29 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_disable_super, rb_enable_super): warn
+	  as deprecated at build time, instead of ignoring silently or
+	  warning at runtime only.
+
 Wed Nov  5 16:55:52 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (rb_f_lambda): remove deprecated function, which has been
