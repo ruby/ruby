@@ -173,7 +173,7 @@ module WEBrick
             begin
               if svrs = IO.select([shutdown_pipe_r, *@listeners], nil, nil, 2.0)
                 if svrs[0].include? shutdown_pipe_r
-                  return
+                  break
                 end
                 svrs[0].each{|svr|
                   @tokens.pop          # blocks while no token is there.

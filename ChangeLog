@@ -1,3 +1,8 @@
+Wed Nov  5 19:20:08 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/webrick/server.rb: Stop lisntner loop properly.
+	  [ruby-core:66085] [Bug #10478] Fixed by Charles Nutter.
+
 Wed Nov  5 17:20:29 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_disable_super, rb_enable_super): warn
