@@ -1,3 +1,9 @@
+Wed Nov  5 14:11:30 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (lib/unicode_normalize/tables.rb): do nothing unless
+	  BASERUBY is available.  MINIRUBY cannot load extension libraries,
+	  so cannot update Unicode data.
+
 Wed Nov  5 12:13:54 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_lstrip, rb_str_strip): reduce memory copy by
