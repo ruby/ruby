@@ -98,11 +98,11 @@ module URI
     #
     def initialize(opts = {})
       @pattern = initialize_pattern(opts)
-      @pattern.each_value {|v| v.freeze}
+      @pattern.each_value(&:freeze)
       @pattern.freeze
 
       @regexp = initialize_regexp(@pattern)
-      @regexp.each_value {|v| v.freeze}
+      @regexp.each_value(&:freeze)
       @regexp.freeze
     end
 

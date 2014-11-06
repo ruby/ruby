@@ -1,3 +1,8 @@
+Thu Nov  6 09:53:18 2014  Eric Wong  <e@80x24.org>
+
+	* lib/uri/rfc2396_parser.rb (initialize): reduce bytecode size
+	  2088 => 1332 bytes on 32-bit x86
+
 Thu Nov  6 08:49:49 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* lib/unicode_normalize/normalize.rb: Comment clarification.
