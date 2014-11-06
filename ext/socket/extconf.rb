@@ -666,12 +666,13 @@ EOS
   end
 
   hdr = "netinet6/in6.h"
-  if /darwin/ =~ RUBY_PLATFORM and !try_compile(<<"SRC", nil, :werror=>true)
+  hdr_path = "/usr/include/#{hdr}"
+  if /darwin/ =~ RUBY_PLATFORM and !try_compile(<<"SRC", nil, :werror=>true) and File.exist?(hdr_path)
 #include <netinet/in.h>
 int t(struct in6_addr *addr) {return IN6_IS_ADDR_UNSPECIFIED(addr);}
 SRC
     print "fixing apple's netinet6/in6.rb ..."; $stdout.flush
-    in6 = File.read("/usr/include/#{hdr}")
+    in6 = File.read(hdr_path)
     if in6.gsub!(/\*\(const\s+__uint32_t\s+\*\)\(const\s+void\s+\*\)\(&(\(\w+\))->s6_addr\[(\d+)\]\)/) do
         i, r = $2.to_i.divmod(4)
         if r.zero?
