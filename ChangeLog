@@ -17,7 +17,7 @@ Wed Nov  5 23:43:24 2014  Naohisa Goto  <ngotogenome@gmail.com>
 	* compile.c (STRICT_ALIGNMENT): defined if strict alignment is required
 
 	* compile.c (ALIGNMENT_SIZE, ALIGNMENT_SIZE_MASK, PADDING_SIZE_MAX):
-	  new macros for alignemnt word size, bit mask, max size of padding.
+	  new macros for alignment word size, bit mask, max size of padding.
 
 	* compile.c (calc_padding): new function to calculate padding size.
 
@@ -27,7 +27,7 @@ Wed Nov  5 23:24:45 2014  Tanaka Akira  <akr@fsij.org>
 
 Wed Nov  5 19:20:08 2014  Tanaka Akira  <akr@fsij.org>
 
-	* lib/webrick/server.rb: Stop lisntner loop properly.
+	* lib/webrick/server.rb: Stop listener loop properly.
 	  [ruby-core:66085] [Bug #10478] Fixed by Charles Nutter.
 
 Wed Nov  5 17:20:29 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
