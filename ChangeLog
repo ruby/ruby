@@ -1,3 +1,10 @@
+Thu Nov  6 22:57:43 2014  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* bignum.c (absint_numwords_generic): set an array element after
+	  definition of a variable to fix compile error with older version
+	  of fcc (Fujitsu C Compiler) 5.6 on Solaris 10 on Sparc.
+	  [Bug #10350] [ruby-dev:48608]
+
 Thu Nov  6 22:36:55 2014  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* compile.c (compile_data_alloc): add padding when strict alignment
