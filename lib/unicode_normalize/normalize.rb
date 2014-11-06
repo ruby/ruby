@@ -79,7 +79,7 @@ module UnicodeNormalize
         end
       end
     end
-    return sorting.collect(&:first).join
+    return sorting.collect(&:first).join('')
   end
 
   ## Normalization Forms for Patterns (not whole Strings)
