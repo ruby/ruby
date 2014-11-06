@@ -714,4 +714,9 @@ EXPECTED
     $VERBOSE = verbose
   end
 
+  def test_invalid_warning
+    assert_warning(/unknown pack directive ',' in ','/) {
+      [].pack(",")
+    }
+  end
 end
