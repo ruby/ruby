@@ -266,6 +266,8 @@ def package(rev, destdir)
                MINIRUBY=#{miniruby}
                RUNRUBY=#{miniruby}
                RUBY=#{ENV["RUBY"]}
+               HAVE_BASERUBY=yes
+               BASERUBY=#{ENV["BASERUBY"]}
                prereq]
       IO.popen(cmd, "w") do |f|
         f.puts mk
