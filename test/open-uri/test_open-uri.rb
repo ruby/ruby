@@ -13,14 +13,9 @@ class TestOpenURI < Test::Unit::TestCase
   def NullLog.<<(arg)
   end
 
-  def with_http(capture_log=false)
-    if capture_log
-      log = StringIO.new('')
-      logger = WEBrick::Log.new(log, WEBrick::BasicLog::WARN)
-    else
-      log = nil
-      logger = WEBrick::Log.new($stdout, WEBrick::BasicLog::WARN)
-    end
+  def with_http(log_is_empty=true)
+    log = StringIO.new('')
+    logger = WEBrick::Log.new(log, WEBrick::BasicLog::WARN)
     Dir.mktmpdir {|dr|
       srv = WEBrick::HTTPServer.new({
         :DocumentRoot => dr,
@@ -38,6 +33,9 @@ class TestOpenURI < Test::Unit::TestCase
         th.join
       end
     }
+    if log_is_empty
+      assert_equal("", log.string)
+    end
   end
 
   def with_env(h)
@@ -83,7 +81,7 @@ class TestOpenURI < Test::Unit::TestCase
   end
 
   def test_404
-    with_http(true) {|srv, dr, url, log|
+    with_http(false) {|srv, dr, url, log|
       exc = assert_raise(OpenURI::HTTPError) { open("#{url}/not-exist") {} }
       assert_equal("404", exc.io.status[0])
       assert_match(%r{ERROR `/not-exist' not found}, log.string)
@@ -408,7 +406,7 @@ class TestOpenURI < Test::Unit::TestCase
   end
 
   def test_redirect_auth
-    with_http(true) {|srv, dr, url, log|
+    with_http(false) {|srv, dr, url, log|
       srv.mount_proc("/r1/") {|req, res| res.status = 301; res["location"] = "#{url}/r2" }
       srv.mount_proc("/r2/") {|req, res|
         if req["Authorization"] != "Basic #{['user:pass'].pack('m').chomp}"
