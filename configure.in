@@ -46,10 +46,13 @@ if test "`RUBYOPT=- $BASERUBY -e 'p 42' 2>/dev/null`" = 42; then
 	BASERUBY="$BASERUBY --disable=gems"
     fi
     $BASERUBY -C "$srcdir/tool" downloader.rb -e gnu config.guess config.sub
+    HAVE_BASERUBY=yes
 else
     BASERUBY="echo executable host ruby is required.  use --with-baseruby option.; false"
+    HAVE_BASERUBY=no
 fi
 AC_SUBST(BASERUBY)
+AC_SUBST(HAVE_BASERUBY)
 
 AC_DEFUN([RUBY_MINGW32],
 [AS_CASE(["$host_os"],
