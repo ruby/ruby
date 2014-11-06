@@ -66,14 +66,7 @@ USE_RUBYGEMS = $(USE_RUBYGEMS)
 	@for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I>> $(MAKEFILE)
 	@echo !if "$$(BASERUBY)" == "">> $(MAKEFILE)
 	@echo BASERUBY = echo executable host ruby is required.  use --with-baseruby option.^& exit 1 >> $(MAKEFILE)
-	@echo HAVE_BASERUBY = no>> $(MAKEFILE)
-	@echo !else>> $(MAKEFILE)
-	@echo HAVE_BASERUBY = yes>> $(MAKEFILE)
 	@echo !endif>> $(MAKEFILE)
-!elseif [$(BASERUBY) -eexit 2> nul] == 0
-	@echo HAVE_BASERUBY = yes>> $(MAKEFILE)
-!else
-	@echo HAVE_BASERUBY = no>> $(MAKEFILE)
 !endif
 
 -system-vars-: -osname- -runtime- -headers-
