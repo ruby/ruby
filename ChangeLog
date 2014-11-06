@@ -1,3 +1,8 @@
+Thu Nov  6 23:58:40 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* pack.c (pack_pack): escape unprintable characters and preserve
+	  the encoding of warning message.
+
 Thu Nov  6 23:55:18 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (sym_printable): QUOTE() should not raise an exception

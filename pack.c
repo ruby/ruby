@@ -912,10 +912,19 @@ pack_pack(VALUE ary, VALUE fmt)
 	    }
 	    break;
 
-	  default:
-	    rb_warning("unknown pack directive '%c' in '%s'",
-		type, RSTRING_PTR(fmt));
+	  default: {
+	    char unknown[5];
+	    if (ISPRINT(type)) {
+		unknown[0] = type;
+		unknown[1] = '\0';
+	    }
+	    else {
+		snprintf(unknown, sizeof(unknown), "\\x%.2x", type & 0xff);
+	    }
+	    rb_warning("unknown pack directive '%s' in '% "PRIsVALUE"'",
+		       unknown, fmt);
 	    break;
+	  }
 	}
     }
 
