@@ -4,11 +4,12 @@
 
 require 'test/unit'
 
-NormTest = Struct.new :source, :NFC, :NFD, :NFKC, :NFKD, :line
+class TestUnicodeNormalize < Test::Unit::TestCase
 
-UNICODE_VERSION = '7.0.0'
+  UNICODE_VERSION = '7.0.0'
 
-class TestNormalize < Test::Unit::TestCase
+  NormTest = Struct.new :source, :NFC, :NFD, :NFKC, :NFKD, :line
+
   def read_tests
     IO.readlines(File.expand_path("../enc/unicode/data/#{UNICODE_VERSION}/NormalizationTest.txt", __dir__), encoding: 'utf-8')
     .collect.with_index { |linedata, linenumber| [linedata, linenumber]}

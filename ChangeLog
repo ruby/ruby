@@ -1,3 +1,9 @@
+Thu Nov  6 21:44:36 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/test_unicode_normalize.rb: Rename TestNormalize to
+	  TestUnicodeNormalize.
+	  Define constants under TestUnicodeNormalize.
+
 Thu Nov  6 21:22:59 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/open-uri/test_open-uri.rb: Check empty webrick log.
