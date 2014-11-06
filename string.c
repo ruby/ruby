@@ -8497,8 +8497,11 @@ sym_printable(const char *s, const char *send, rb_encoding *enc)
 {
     while (s < send) {
 	int n;
-	int c = rb_enc_codepoint_len(s, send, &n, enc);
+	int c = rb_enc_precise_mbclen(s, send, enc);
 
+	if (!MBCLEN_CHARFOUND_P(c)) return FALSE;
+	n = MBCLEN_CHARFOUND_LEN(c);
+	c = rb_enc_mbc_to_codepoint(s, send, enc);
 	if (!rb_enc_isprint(c, enc)) return FALSE;
 	s += n;
     }

@@ -1,3 +1,8 @@
+Thu Nov  6 23:55:18 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (sym_printable): QUOTE() should not raise an exception
+	  even on invalid byte sequence.
+
 Thu Nov  6 21:44:36 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/test_unicode_normalize.rb: Rename TestNormalize to
