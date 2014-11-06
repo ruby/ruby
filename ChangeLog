@@ -1,3 +1,11 @@
+Thu Nov  6 19:27:34 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (unescape_nonascii): cast -1 for the case char is unsigned char.
+	  If char is signed char, for example gcc for ARM or ppc64, it caused
+	  infinite loop.
+	  http://kmuto.jp/build-ruby/arm/ruby-trunk/log/20141106T013005Z.fail.html.gz
+	  http://rubyci.blob.core.windows.net/f19p8/ruby-trunk/log/20141106T090217Z.fail.html.gz
+
 Thu Nov  6 09:53:18 2014  Eric Wong  <e@80x24.org>
 
 	* lib/uri/rfc2396_parser.rb (initialize): reduce bytecode size
