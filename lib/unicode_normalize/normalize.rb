@@ -84,26 +84,12 @@ module UnicodeNormalize
 
   ## Normalization Forms for Patterns (not whole Strings)
   def self.nfd_one(string)
-    string = string.dup
-    (0...string.length).each do |position|
-      if decomposition = DECOMPOSITION_TABLE[string[position]]
-        string[position] = decomposition
-      end
-    end
+    string = string.chars.map! {|c| DECOMPOSITION_TABLE[c] || c}.join('')
     canonical_ordering_one(hangul_decomp_one(string))
   end
 
   def self.nfkd_one(string)
-    string = string.dup
-    position = 0
-    while position < string.length
-      if decomposition = KOMPATIBLE_TABLE[string[position]]
-        string[position] = decomposition
-      else
-        position += 1
-      end
-    end
-    string
+    string.chars.map! {|c| KOMPATIBLE_TABLE[c] || c}.join('')
   end
 
   def self.nfc_one(string)

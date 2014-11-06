@@ -1,3 +1,8 @@
+Fri Nov  7 00:00:12 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/unicode_norm_gen.tmpl: expand kompatible_table so that
+	  recursive expansion is not needed at runtime.
+
 Thu Nov  6 23:58:40 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* pack.c (pack_pack): escape unprintable characters and preserve

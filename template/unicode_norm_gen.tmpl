@@ -138,6 +138,12 @@ decomposition_table.each do |key, value|
   kompatible_table[key] = value if expanded
 end
 
+while kompatible_table.any? {|key, value|
+        expanded = value.map {|v| kompatible_table[v] || v}.flatten
+        kompatible_table[key] = expanded unless value == expanded
+      }
+end
+
 # generate normalization tables file
 %># coding: us-ascii
 %# >
