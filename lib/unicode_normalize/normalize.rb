@@ -106,7 +106,7 @@ module UnicodeNormalize
     string
   end
 
-  def self.nfc_one (string)
+  def self.nfc_one(string)
     nfd_string = nfd_one string
     start = nfd_string[0]
     last_class = CLASS_TABLE[start]-1
@@ -116,7 +116,7 @@ module UnicodeNormalize
       if last_class<accent_class and composite = COMPOSITION_TABLE[start+accent]
         start = composite
       else
-        accents += accent
+        accents << accent
         last_class = accent_class
       end
     end
@@ -125,7 +125,8 @@ module UnicodeNormalize
 
   def self.normalize(string, form = :nfc)
     encoding = string.encoding
-    if encoding == Encoding::UTF_8
+    case encoding
+    when Encoding::UTF_8
       case form
       when :nfc then
         string.gsub REGEXP_C, NF_HASH_C
@@ -138,9 +139,9 @@ module UnicodeNormalize
       else
         raise ArgumentError, "Invalid normalization form #{form}."
       end
-    elsif encoding == Encoding::US_ASCII
+    when Encoding::US_ASCII
       string
-    elsif  UNICODE_ENCODINGS.include? encoding
+    when *UNICODE_ENCODINGS
       normalize(string.encode(Encoding::UTF_8), form).encode(encoding)
     else
       raise Encoding::CompatibilityError, "Unicode Normalization not appropriate for #{encoding}"
