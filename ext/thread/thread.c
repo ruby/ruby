@@ -243,13 +243,15 @@ rb_queue_push(VALUE self, VALUE obj)
 static unsigned long
 queue_length(VALUE self)
 {
-    return RARRAY_LEN(GET_QUEUE_QUE(self));
+    VALUE que = GET_QUEUE_QUE(self);
+    return RARRAY_LEN(que);
 }
 
 static unsigned long
 queue_num_waiting(VALUE self)
 {
-    return RARRAY_LEN(GET_QUEUE_WAITERS(self));
+    VALUE waiters = GET_QUEUE_WAITERS(self);
+    return RARRAY_LEN(waiters);
 }
 
 struct waiting_delete {
@@ -548,7 +550,8 @@ static VALUE
 rb_szqueue_num_waiting(VALUE self)
 {
     long len = queue_num_waiting(self);
-    len += RARRAY_LEN(GET_SZQUEUE_WAITERS(self));
+    VALUE waiters = GET_SZQUEUE_WAITERS(self);
+    len += RARRAY_LEN(waiters);
     return ULONG2NUM(len);
 }
 
