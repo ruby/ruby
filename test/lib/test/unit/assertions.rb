@@ -228,7 +228,7 @@ module Test
           end
           msg = message(msg) {
             "Expected #{mu_pp(tag)} to have been thrown"\
-            "#{", not #{thrown}" if thrown}"
+            "#{%Q[, not #{thrown}] if thrown}"
           }
           assert(false, msg)
         end

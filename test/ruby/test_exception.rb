@@ -129,18 +129,42 @@ class TestException < Test::Unit::TestCase
     assert(!bad)
   end
 
+  def test_catch_no_throw
+    assert_equal(:foo, catch {:foo})
+  end
+
   def test_catch_throw
-    assert(catch(:foo) {
-             loop do
-               loop do
-                 throw :foo, true
-                 break
-               end
-               break
-               assert(false)			# should no reach here
-             end
-             false
-           })
+    result = catch(:foo) {
+      loop do
+        loop do
+          throw :foo, true
+          break
+        end
+        assert(false, "should no reach here")
+      end
+      false
+    }
+    assert(result)
+  end
+
+  def test_catch_throw_noarg
+    assert_nothing_raised(ArgumentError) {
+      result = catch {|obj|
+        throw obj, :ok
+        assert(false, "should no reach here")
+      }
+      assert_equal(:ok, result)
+    }
+  end
+
+  def test_uncaught_throw
+    assert_raise_with_message(ArgumentError, /uncaught throw/) {
+      catch("foo") {|obj|
+        throw obj.dup, :ok
+        assert(false, "should no reach here")
+      }
+      assert(false, "should no reach here")
+    }
   end
 
   def test_catch_throw_in_require
@@ -148,7 +172,7 @@ class TestException < Test::Unit::TestCase
     Tempfile.create(["dep", ".rb"]) {|t|
       t.puts("throw :extdep, 42")
       t.close
-      assert_equal(42, catch(:extdep) {require t.path}, bug7185)
+      assert_equal(42, assert_throw(:extdep, bug7185) {require t.path}, bug7185)
     }
   end
 
