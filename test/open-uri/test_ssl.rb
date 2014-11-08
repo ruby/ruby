@@ -18,12 +18,14 @@ class TestOpenURISSL
   def NullLog.<<(arg)
   end
 
-  def with_https
+  def with_https(log_is_empty=true)
+    log = StringIO.new('')
+    logger = WEBrick::Log.new(log, WEBrick::BasicLog::WARN)
     Dir.mktmpdir {|dr|
       srv = WEBrick::HTTPServer.new({
         :DocumentRoot => dr,
         :ServerType => Thread,
-        :Logger => WEBrick::Log.new(NullLog),
+        :Logger => logger,
         :AccessLog => [[NullLog, ""]],
         :SSLEnable => true,
         :SSLCertificate => OpenSSL::X509::Certificate.new(SERVER_CERT),
@@ -34,10 +36,13 @@ class TestOpenURISSL
       _, port, _, host = srv.listeners[0].addr
       begin
         th = srv.start
-        yield srv, dr, "https://#{host}:#{port}"
+        yield srv, dr, "https://#{host}:#{port}", th, log
       ensure
         srv.shutdown
         th.join
+      end
+      if log_is_empty
+        assert_equal("", log.string)
       end
     }
   end
@@ -52,57 +57,121 @@ class TestOpenURISSL
     @proxies.each_with_index {|k, i| ENV[k] = @old_proxies[i] }
   end
 
-  def test_validation
+  def setup_validation(srv, dr)
+    cacert_filename = "#{dr}/cacert.pem"
+    open(cacert_filename, "w") {|f| f << CA_CERT }
+    srv.mount_proc("/data", lambda { |req, res| res.body = "ddd" } )
+    cacert_filename
+  end
+
+  def test_validation_success
     with_https {|srv, dr, url|
-      cacert_filename = "#{dr}/cacert.pem"
-      open(cacert_filename, "w") {|f| f << CA_CERT }
-      srv.mount_proc("/data", lambda { |req, res| res.body = "ddd" } )
+      cacert_filename = setup_validation(srv, dr)
       open("#{url}/data", :ssl_ca_cert => cacert_filename) {|f|
         assert_equal("200", f.status[0])
         assert_equal("ddd", f.read)
       }
+    }
+  end
+
+  def test_validation_noverify
+    with_https {|srv, dr, url|
+      setup_validation(srv, dr)
       open("#{url}/data", :ssl_verify_mode => OpenSSL::SSL::VERIFY_NONE) {|f|
         assert_equal("200", f.status[0])
         assert_equal("ddd", f.read)
       }
-      assert_raise(OpenSSL::SSL::SSLError) { open("#{url}/data") {} }
     }
   end
 
-  def test_proxy
-    with_https {|srv, dr, url|
+  def test_validation_failure
+    with_https(false) {|srv, dr, url, server_thread, server_log|
+      client_thread = Thread.new {
+        begin
+          setup_validation(srv, dr)
+          assert_raise(OpenSSL::SSL::SSLError) { open("#{url}/data") {} }
+        ensure
+          srv.shutdown
+        end
+      }
+      server_thread2 = Thread.new {
+        server_thread.join
+        assert_match(/ERROR OpenSSL::SSL::SSLError:/, server_log.string)
+      }
+      assert_join_threads([client_thread, server_thread2])
+    }
+  end
+
+  def with_https_proxy
+    proxy_log = StringIO.new('')
+    proxy_logger = WEBrick::Log.new(proxy_log, WEBrick::BasicLog::WARN)
+    with_https {|srv, dr, url, server_thread, server_log|
+      srv.mount_proc("/proxy", lambda { |req, res| res.body = "proxy" } )
       cacert_filename = "#{dr}/cacert.pem"
       open(cacert_filename, "w") {|f| f << CA_CERT }
       cacert_directory = "#{dr}/certs"
       Dir.mkdir cacert_directory
       hashed_name = "%08x.0" % OpenSSL::X509::Certificate.new(CA_CERT).subject.hash
       open("#{cacert_directory}/#{hashed_name}", "w") {|f| f << CA_CERT }
-      prxy = WEBrick::HTTPProxyServer.new({
+      proxy = WEBrick::HTTPProxyServer.new({
         :ServerType => Thread,
-        :Logger => WEBrick::Log.new(NullLog),
-        :AccessLog => [[sio=StringIO.new, WEBrick::AccessLog::COMMON_LOG_FORMAT]],
+        :Logger => proxy_logger,
+        :AccessLog => [[proxy_access_log=StringIO.new, WEBrick::AccessLog::COMMON_LOG_FORMAT]],
         :BindAddress => '127.0.0.1',
         :Port => 0})
-      _, p_port, _, p_host = prxy.listeners[0].addr
+      _, proxy_port, _, proxy_host = proxy.listeners[0].addr
       begin
-        th = prxy.start
-        srv.mount_proc("/proxy", lambda { |req, res| res.body = "proxy" } )
-        open("#{url}/proxy", :proxy=>"http://#{p_host}:#{p_port}/", :ssl_ca_cert => cacert_filename) {|f|
-          assert_equal("200", f.status[0])
-          assert_equal("proxy", f.read)
-        }
-        assert_match(%r[CONNECT #{url.sub(%r{\Ahttps://}, '')} ], sio.string)
-        sio.truncate(0); sio.rewind
-        open("#{url}/proxy", :proxy=>"http://#{p_host}:#{p_port}/", :ssl_ca_cert => cacert_directory) {|f|
-          assert_equal("200", f.status[0])
-          assert_equal("proxy", f.read)
-        }
-        assert_match(%r[CONNECT #{url.sub(%r{\Ahttps://}, '')} ], sio.string)
-        sio.truncate(0); sio.rewind
+        proxy_thread = proxy.start
+        yield srv, dr, url, server_thread, server_log, cacert_filename, cacert_directory, proxy, proxy_host, proxy_port, proxy_thread, proxy_access_log, proxy_log
       ensure
-        prxy.shutdown
-        th.join
+        proxy.shutdown
+        proxy_thread.join
       end
+    }
+    assert_equal('', proxy_log.string)
+  end
+
+  def test_proxy_cacert_file
+    with_https_proxy {|srv, dr, url, server_thread, server_log, cacert_filename, cacert_directory, proxy, proxy_host, proxy_port, proxy_thread, proxy_access_log, proxy_log|
+      client_thread = Thread.new {
+        begin
+          open("#{url}/proxy", :proxy=>"http://#{proxy_host}:#{proxy_port}/", :ssl_ca_cert => cacert_filename) {|f|
+            assert_equal("200", f.status[0])
+            assert_equal("proxy", f.read)
+          }
+        ensure
+          proxy.shutdown
+          srv.shutdown
+        end
+      }
+      proxy_thread2 = Thread.new {
+        proxy_thread.join
+        assert_match(%r[CONNECT #{url.sub(%r{\Ahttps://}, '')} ], proxy_access_log.string)
+        assert_equal('', proxy_log.string)
+      }
+      assert_join_threads([client_thread, proxy_thread2, server_thread])
+    }
+  end
+
+  def test_proxy_cacert_dir
+    with_https_proxy {|srv, dr, url, server_thread, server_log, cacert_filename, cacert_directory, proxy, proxy_host, proxy_port, proxy_thread, proxy_access_log, proxy_log|
+      client_thread = Thread.new {
+        begin
+          open("#{url}/proxy", :proxy=>"http://#{proxy_host}:#{proxy_port}/", :ssl_ca_cert => cacert_directory) {|f|
+            assert_equal("200", f.status[0])
+            assert_equal("proxy", f.read)
+          }
+        ensure
+          proxy.shutdown
+          srv.shutdown
+        end
+      }
+      proxy_thread2 = Thread.new {
+        proxy_thread.join
+        assert_match(%r[CONNECT #{url.sub(%r{\Ahttps://}, '')} ], proxy_access_log.string)
+        assert_equal('', proxy_log.string)
+      }
+      assert_join_threads([client_thread, proxy_thread2, server_thread])
     }
   end
 
