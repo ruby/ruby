@@ -1,3 +1,8 @@
+Sun Nov  9 04:01:46 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/securerandom.rb (SecureRandom::AdvApi32): split from `initialize`.
+	  thanks @zzak to remember it.
+
 Sun Nov  9 02:05:33 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/net/http/utils.rb: Don't connect to spawned server
