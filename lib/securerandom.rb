@@ -39,37 +39,56 @@ end
 #   p SecureRandom.random_bytes(10) #=> "\016\t{\370g\310pbr\301"
 #   p SecureRandom.random_bytes(10) #=> "\323U\030TO\234\357\020\a\337"
 module SecureRandom
-  module AdvApi32 # :nodoc:
+  if /mswin|mingw/ =~ RUBY_PLATFORM
     require "fiddle/import"
-    extend Fiddle::Importer
-    dlload "advapi32"
-    extern "int CryptAcquireContext(void*, void*, void*, unsigned long, unsigned long)"
-    extern "int CryptGenRandom(void*, unsigned long, void*)"
 
-    unless defined?(@hProv)
-      hProvStr = " " * Fiddle::SIZEOF_VOIDP
-      prov_rsa_full = 1
-      crypt_verifycontext = 0xF0000000
+    module AdvApi32 # :nodoc:
+      extend Fiddle::Importer
+      dlload "advapi32"
+      extern "int CryptAcquireContext(void*, void*, void*, unsigned long, unsigned long)"
+      extern "int CryptGenRandom(void*, unsigned long, void*)"
 
-      if CryptAcquireContext(hProvStr, nil, nil, prov_rsa_full, crypt_verifycontext) == 0
-        raise SystemCallError, "CryptAcquireContext failed: #{lastWin32ErrorMessage}"
+      def self.get_provider
+        hProvStr = " " * Fiddle::SIZEOF_VOIDP
+        prov_rsa_full = 1
+        crypt_verifycontext = 0xF0000000
+
+        if CryptAcquireContext(hProvStr, nil, nil, prov_rsa_full, crypt_verifycontext) == 0
+          raise SystemCallError, "CryptAcquireContext failed: #{lastWin32ErrorMessage}"
+        end
+        type = Fiddle::SIZEOF_VOIDP == Fiddle::SIZEOF_LONG_LONG ? 'q' : 'l'
+        hProv, = hProvStr.unpack(type)
+        hProv
       end
-      type = Fiddle::SIZEOF_VOIDP == Fiddle::SIZEOF_LONG_LONG ? 'q' : 'l'
-      @hProv, = hProvStr.unpack(type)
+
+      def self.gen_random(n)
+        @hProv ||= get_provider
+        bytes = " ".force_encoding("ASCII-8BIT") * n
+        if CryptGenRandom(@hProv, bytes.size, bytes) == 0
+          raise SystemCallError, "CryptGenRandom failed: #{Kernel32.last_error_message}"
+        end
+        bytes
+      end
     end
 
-    def self.hProv
-      @hProv
-    end
-  end if /mswin|mingw/ =~ RUBY_PLATFORM
+    module Kernel32 # :nodoc:
+      extend Fiddle::Importer
+      dlload "kernel32"
+      extern "unsigned long GetLastError()"
+      extern "unsigned long FormatMessageA(unsigned long, void*, unsigned long, unsigned long, void*, unsigned long, void*)"
 
-  module Kernel32 # :nodoc:
-    require "fiddle/import"
-    extend Fiddle::Importer
-    dlload "kernel32"
-    extern "unsigned long GetLastError()"
-    extern "unsigned long FormatMessageA(unsigned long, void*, unsigned long, unsigned long, void*, unsigned long, void*)"
-  end if /mswin|mingw/ =~ RUBY_PLATFORM
+      # Following code is based on David Garamond's GUID library for Ruby.
+      def self.last_error_message
+        format_message_ignore_inserts = 0x00000200
+        format_message_from_system    = 0x00001000
+
+        code = GetLastError()
+        msg = "\0" * 1024
+        len = FormatMessageA(format_message_ignore_inserts + format_message_from_system, 0, code, 0, msg, 1024, nil)
+        msg[0, len].force_encoding("filesystem").tr("\r", '').chomp
+      end
+    end
+  end
 
   # SecureRandom.random_bytes generates a random binary string.
   #
@@ -122,11 +141,7 @@ module SecureRandom
     end
 
     if defined?(AdvApi32)
-      bytes = " ".force_encoding("ASCII-8BIT") * n
-      if AdvApi32.CryptGenRandom(AdvApi32.hProv, bytes.size, bytes) == 0
-        raise SystemCallError, "CryptGenRandom failed: #{lastWin32ErrorMessage}"
-      end
-      return bytes
+      return AdvApi32.gen_random(n)
     end
 
     raise NotImplementedError, "No random device"
@@ -269,14 +284,8 @@ module SecureRandom
     "%08x-%04x-%04x-%04x-%04x%08x" % ary
   end
 
-  # Following code is based on David Garamond's GUID library for Ruby.
   def self.lastWin32ErrorMessage # :nodoc:
-    format_message_ignore_inserts = 0x00000200
-    format_message_from_system    = 0x00001000
-
-    code = Kernel32.GetLastError()
-    msg = "\0" * 1024
-    len = Kernel32.FormatMessageA(format_message_ignore_inserts + format_message_from_system, 0, code, 0, msg, 1024, nil)
-    msg[0, len].force_encoding("filesystem").tr("\r", '').chomp
+    # for compatibility
+    Kernel32.last_error_message
   end
 end
