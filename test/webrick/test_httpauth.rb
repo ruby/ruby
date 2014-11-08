@@ -27,7 +27,7 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
   end
 
   def test_basic_auth2
-    TestWEBrick.start_httpserver{|server, addr, port, log|
+    log = TestWEBrick.start_httpserver{|server, addr, port, log|
       realm = "WEBrick's realm"
       path = "/basic_auth2"
 
@@ -61,6 +61,11 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
         http.request(g){|res| assert_not_equal("hoge", res.body, log.call)}
       }
     }
+    pat = /ERROR Basic WEBrick's realm: webrick: password unmatch\./
+    assert_match(pat, log); log.sub!(pat, '')
+    pat = /ERROR WEBrick::HTTPStatus::Unauthorized/
+    assert_match(pat, log); log.sub!(pat, '')
+    assert_not_match(/ERROR/, log)
   end
 
   def test_basic_auth3
@@ -92,7 +97,7 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
       )/x
 
   def test_digest_auth
-    TestWEBrick.start_httpserver{|server, addr, port, log|
+    log = TestWEBrick.start_httpserver{|server, addr, port, log|
       realm = "WEBrick's realm"
       path = "/digest_auth"
 
@@ -143,6 +148,15 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
         end
       }
     }
+    pat = /ERROR Digest WEBrick's realm: no credentials in the request\./
+    assert_match(pat, log); log.sub!(pat, '')
+    pat = /ERROR WEBrick::HTTPStatus::Unauthorized/
+    assert_match(pat, log); log.sub!(pat, '')
+    pat = /ERROR Digest WEBrick's realm: webrick: digest unmatch\./
+    assert_match(pat, log); log.sub!(pat, '')
+    pat = /ERROR WEBrick::HTTPStatus::Unauthorized/
+    assert_match(pat, log); log.sub!(pat, '')
+    assert_not_match(/ERROR/, log)
   end
 
   private

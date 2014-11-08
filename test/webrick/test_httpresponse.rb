@@ -63,6 +63,7 @@ module WEBrick
           assert_equal 'hello', r.read
         }
       }
+      assert_equal 0, logger.messages.length
     end
 
     def test_send_body_string
@@ -75,6 +76,7 @@ module WEBrick
 
         assert_equal 'hello', r.read
       }
+      assert_equal 0, logger.messages.length
     end
 
     def test_send_body_string_io
@@ -87,6 +89,7 @@ module WEBrick
 
         assert_equal 'hello', r.read
       }
+      assert_equal 0, logger.messages.length
     end
 
     def test_send_body_io_chunked
@@ -108,6 +111,7 @@ module WEBrick
           assert_equal "5\r\nhello\r\n0\r\n\r\n", r.read
         }
       }
+      assert_equal 0, logger.messages.length
     end
 
     def test_send_body_string_chunked
@@ -123,6 +127,7 @@ module WEBrick
         r.binmode
         assert_equal "5\r\nhello\r\n0\r\n\r\n", r.read
       }
+      assert_equal 0, logger.messages.length
     end
 
     def test_send_body_string_io_chunked
@@ -138,6 +143,7 @@ module WEBrick
         r.binmode
         assert_equal "5\r\nhello\r\n0\r\n\r\n", r.read
       }
+      assert_equal 0, logger.messages.length
     end
   end
 end

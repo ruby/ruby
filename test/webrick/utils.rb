@@ -26,6 +26,9 @@ module TestWEBrick
   RubyBin << " \"-I#{File.dirname(EnvUtil.rubybin)}/.ext/common\""
   RubyBin << " \"-I#{File.dirname(EnvUtil.rubybin)}/.ext/#{RUBY_PLATFORM}\""
 
+  include Test::Unit::Assertions
+  extend Test::Unit::Assertions
+
   module_function
 
   def start_server(klass, config={}, &block)
@@ -41,15 +44,16 @@ module TestWEBrick
       :Logger => WEBrick::Log.new(logger),
       :AccessLog => [[logger, ""]]
     }.update(config))
-    begin
-      server_thread = server.start
-      addr = server.listeners[0].addr
-      block.yield([server, addr[3], addr[1], log])
-    ensure
-      server.shutdown
-
-      server_thread.join
-    end
+    server_thread = server.start
+    addr = server.listeners[0].addr
+    client_thread = Thread.new {
+      begin
+        block.yield([server, addr[3], addr[1], log])
+      ensure
+        server.shutdown
+      end
+    }
+    assert_join_threads([client_thread, server_thread])
     log_string
   end
 

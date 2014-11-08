@@ -4,9 +4,16 @@ require "webrick"
 require_relative "utils"
 
 class TestWEBrickHTTPServer < Test::Unit::TestCase
+  empty_log = Object.new
+  def empty_log.<<(str)
+    assert_equal('', str)
+    self
+  end
+  NoLog = WEBrick::Log.new(empty_log, WEBrick::BasicLog::WARN)
+
   def test_mount
     httpd = WEBrick::HTTPServer.new(
-      :Logger => WEBrick::Log.new(TestWEBrick::NullWriter),
+      :Logger => NoLog,
       :DoNotListen=>true
     )
     httpd.mount("/", :Root)
@@ -75,7 +82,7 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
 
   def httpd(addr, port, host, ali)
     config ={
-      :Logger      => WEBrick::Log.new(TestWEBrick::NullWriter),
+      :Logger      => NoLog,
       :DoNotListen => true,
       :BindAddress => addr,
       :Port        => port,
@@ -229,7 +236,7 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
         :BindAddress => addr,
         :Port => port,
         :DoNotListen => true,
-        :Logger => WEBrick::Log.new(TestWEBrick::NullWriter),
+        :Logger => NoLog,
         :AccessLog => [],
         :RequestCallback => Proc.new{|req, res| requested1 += 1 },
       }
