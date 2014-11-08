@@ -119,6 +119,10 @@ module SecureRandom
       return OpenSSL::Random.random_bytes(n)
     end
 
+    if defined?(AdvApi32)
+      return AdvApi32.gen_random(n)
+    end
+
     if !defined?(@has_urandom) || @has_urandom
       flags = File::RDONLY
       flags |= File::NONBLOCK if defined? File::NONBLOCK
@@ -138,10 +142,6 @@ module SecureRandom
       rescue Errno::ENOENT
         @has_urandom = false
       end
-    end
-
-    if defined?(AdvApi32)
-      return AdvApi32.gen_random(n)
     end
 
     raise NotImplementedError, "No random device"
