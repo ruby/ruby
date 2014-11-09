@@ -14,7 +14,7 @@ class TestOpenURI < Test::Unit::TestCase
   end
 
   def with_http(log_is_empty=true)
-    log = StringIO.new('')
+    log = []
     logger = WEBrick::Log.new(log, WEBrick::BasicLog::WARN)
     Dir.mktmpdir {|dr|
       srv = WEBrick::HTTPServer.new({
@@ -34,7 +34,7 @@ class TestOpenURI < Test::Unit::TestCase
       end
     }
     if log_is_empty
-      assert_equal("", log.string)
+      assert_equal([], log)
     end
   end
 
@@ -92,7 +92,8 @@ class TestOpenURI < Test::Unit::TestCase
       }
       server_thread2 = Thread.new {
         server_thread.join
-        assert_match(%r{ERROR `/not-exist' not found}, server_log.string)
+        assert_equal(1, server_log.length)
+        assert_match(%r{ERROR `/not-exist' not found}, server_log[0])
       }
       assert_join_threads([client_thread, server_thread2])
     }
@@ -486,7 +487,8 @@ class TestOpenURI < Test::Unit::TestCase
       }
       server_thread2 = Thread.new {
         server_thread.join
-        assert_match(/ERROR WEBrick::HTTPStatus::Unauthorized/, server_log.string)
+        assert_equal(1, server_log.length)
+        assert_match(/ERROR WEBrick::HTTPStatus::Unauthorized/, server_log[0])
       }
       assert_join_threads([client_thread, server_thread2])
     }
@@ -505,7 +507,8 @@ class TestOpenURI < Test::Unit::TestCase
       }
       server_thread2 = Thread.new {
         server_thread.join
-        assert_match(/ERROR WEBrick::HTTPStatus::Unauthorized/, server_log.string)
+        assert_equal(1, server_log.length)
+        assert_match(/ERROR WEBrick::HTTPStatus::Unauthorized/, server_log[0])
       }
       assert_join_threads([client_thread, server_thread2])
     }

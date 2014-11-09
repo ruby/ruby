@@ -61,7 +61,6 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
         http.request(g){|res| assert_not_equal("hoge", res.body, log.call)}
       }
     }
-    log = log.lines.to_a
     log.reject! {|line| /\A\s*\z/ =~ line }
     pats = [
       /ERROR Basic WEBrick's realm: webrick: password unmatch\./,
@@ -154,7 +153,6 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
         end
       }
     }
-    log = log.lines.to_a
     log.reject! {|line| /\A\s*\z/ =~ line }
     pats = [
       /ERROR Digest WEBrick's realm: no credentials in the request\./,

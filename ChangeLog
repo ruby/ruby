@@ -1,3 +1,11 @@
+Sun Nov  9 20:29:01 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/webrick: Store log in an array.
+
+	* test/net/http: Ditto.
+
+	* test/open-uri: Ditto.
+
 Sun Nov  9 18:35:36 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/xmlrpc: Refine log test.

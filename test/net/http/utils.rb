@@ -36,14 +36,14 @@ module TestNetHTTPUtils
       @server.shutdown
       @server_thread.join
     end
-    assert_match(@log_pattern, @log.string) if @log_pattern
+    @log_tester.call(@log) if @log_tester
     # resume global state
     Net::HTTP.version_1_2
   end
 
   def spawn_server
-    @log = StringIO.new('')
-    @log_pattern = /\A\z/
+    @log = []
+    @log_tester = lambda {|log| assert_equal([], log ) }
     @config = self.class::CONFIG
     server_config = {
       :BindAddress => config('host'),

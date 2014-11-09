@@ -26,7 +26,7 @@ class TestWEBrickServer < Test::Unit::TestCase
   def test_start_exception
     stopped = 0
 
-    log = StringIO.new('')
+    log = []
     logger = WEBrick::Log.new(log, WEBrick::BasicLog::WARN)
 
     assert_raises(SignalException) do
@@ -47,7 +47,8 @@ class TestWEBrickServer < Test::Unit::TestCase
     end
 
     assert_equal(stopped, 1)
-    assert_match(/FATAL SignalException: SIGTERM/, log.string)
+    assert_equal(1, log.length)
+    assert_match(/FATAL SignalException: SIGTERM/, log[0])
   end
 
   def test_callbacks

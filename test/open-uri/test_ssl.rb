@@ -19,7 +19,7 @@ class TestOpenURISSL
   end
 
   def with_https(log_is_empty=true)
-    log = StringIO.new('')
+    log = []
     logger = WEBrick::Log.new(log, WEBrick::BasicLog::WARN)
     Dir.mktmpdir {|dr|
       srv = WEBrick::HTTPServer.new({
@@ -42,7 +42,7 @@ class TestOpenURISSL
         th.join
       end
       if log_is_empty
-        assert_equal("", log.string)
+        assert_equal([], log)
       end
     }
   end
@@ -96,14 +96,15 @@ class TestOpenURISSL
       }
       server_thread2 = Thread.new {
         server_thread.join
-        assert_match(/ERROR OpenSSL::SSL::SSLError:/, server_log.string)
+        assert_equal(1, server_log.length)
+        assert_match(/ERROR OpenSSL::SSL::SSLError:/, server_log[0])
       }
       assert_join_threads([client_thread, server_thread2])
     }
   end
 
   def with_https_proxy
-    proxy_log = StringIO.new('')
+    proxy_log = []
     proxy_logger = WEBrick::Log.new(proxy_log, WEBrick::BasicLog::WARN)
     with_https {|srv, dr, url, server_thread, server_log|
       srv.mount_proc("/proxy", lambda { |req, res| res.body = "proxy" } )
@@ -116,7 +117,7 @@ class TestOpenURISSL
       proxy = WEBrick::HTTPProxyServer.new({
         :ServerType => Thread,
         :Logger => proxy_logger,
-        :AccessLog => [[proxy_access_log=StringIO.new, WEBrick::AccessLog::COMMON_LOG_FORMAT]],
+        :AccessLog => [[proxy_access_log=[], WEBrick::AccessLog::COMMON_LOG_FORMAT]],
         :BindAddress => '127.0.0.1',
         :Port => 0})
       _, proxy_port, _, proxy_host = proxy.listeners[0].addr
@@ -128,7 +129,7 @@ class TestOpenURISSL
         proxy_thread.join
       end
     }
-    assert_equal('', proxy_log.string)
+    assert_equal([], proxy_log)
   end
 
   def test_proxy_cacert_file
@@ -146,8 +147,9 @@ class TestOpenURISSL
       }
       proxy_thread2 = Thread.new {
         proxy_thread.join
-        assert_match(%r[CONNECT #{url.sub(%r{\Ahttps://}, '')} ], proxy_access_log.string)
-        assert_equal('', proxy_log.string)
+        assert_equal(1, proxy_access_log.length)
+        assert_match(%r[CONNECT #{url.sub(%r{\Ahttps://}, '')} ], proxy_access_log[0])
+        assert_equal([], proxy_log)
       }
       assert_join_threads([client_thread, proxy_thread2, server_thread])
     }
@@ -168,8 +170,9 @@ class TestOpenURISSL
       }
       proxy_thread2 = Thread.new {
         proxy_thread.join
-        assert_match(%r[CONNECT #{url.sub(%r{\Ahttps://}, '')} ], proxy_access_log.string)
-        assert_equal('', proxy_log.string)
+        assert_equal(1, proxy_access_log.length)
+        assert_match(%r[CONNECT #{url.sub(%r{\Ahttps://}, '')} ], proxy_access_log[0])
+        assert_equal([], proxy_log)
       }
       assert_join_threads([client_thread, proxy_thread2, server_thread])
     }

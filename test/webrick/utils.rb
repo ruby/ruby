@@ -32,17 +32,13 @@ module TestWEBrick
   module_function
 
   def start_server(klass, config={}, &block)
-    log_string = ""
-    logger = Object.new
-    logger.instance_eval do
-      define_singleton_method(:<<) {|msg| log_string << msg }
-    end
-    log = proc { "webrick log start:\n" + log_string.gsub(/^/, "  ").chomp + "\nwebrick log end" }
+    log_ary = []
+    log = proc { "webrick log start:\n" + log_ary.join.gsub(/^/, "  ").chomp + "\nwebrick log end" }
     server = klass.new({
       :BindAddress => "127.0.0.1", :Port => 0,
       :ServerType => Thread,
-      :Logger => WEBrick::Log.new(logger, WEBrick::BasicLog::WARN),
-      :AccessLog => [[logger, ""]]
+      :Logger => WEBrick::Log.new(log_ary, WEBrick::BasicLog::WARN),
+      :AccessLog => [[log_ary, ""]]
     }.update(config))
     server_thread = server.start
     addr = server.listeners[0].addr
@@ -54,7 +50,7 @@ module TestWEBrick
       end
     }
     assert_join_threads([client_thread, server_thread])
-    log_string
+    log_ary
   end
 
   def start_httpserver(config={}, &block)

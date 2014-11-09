@@ -117,7 +117,10 @@ class TestNetHTTPS < Test::Unit::TestCase
       end
     }
     assert_match(/certificate verify failed/, ex.message)
-    @log_pattern = /ERROR OpenSSL::SSL::SSLError:/
+    @log_tester = lambda {|log|
+      assert_equal(1, log.length)
+      assert_match(/ERROR OpenSSL::SSL::SSLError:/, log[0])
+    }
   end
 
   def test_identity_verify_failure
