@@ -68,7 +68,7 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
       /ERROR WEBrick::HTTPStatus::Unauthorized/
     ]
     pats.each {|pat|
-      assert_operator(log, :grep, pat)
+      assert(!log.grep(pat).empty?, "webrick log doesn't have expected error: #{pat.inspect}")
       log.reject! {|line| pat =~ line }
     }
     assert_equal([], log)
@@ -162,7 +162,7 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
       /ERROR Digest WEBrick's realm: webrick: digest unmatch\./
     ]
     pats.each {|pat|
-      assert_operator(log, :grep, pat)
+      assert(!log.grep(pat).empty?, "webrick log doesn't have expected error: #{pat.inspect}")
       log.reject! {|line| pat =~ line }
     }
     assert_equal([], log)
