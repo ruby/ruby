@@ -66,6 +66,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
 
   WCHAR = Encoding::UTF_16LE
   WCHAR_NUL = "\0".encode(WCHAR).freeze
+  WCHAR_CR = "\r".encode(WCHAR).freeze
   WCHAR_SIZE = WCHAR_NUL.bytesize
   LOCALE = Encoding.find(Encoding.locale_charmap)
 
@@ -175,8 +176,10 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         @code = code
         msg = WCHAR_NUL * 1024
         len = FormatMessageW.call(0x1200, 0, code, 0, msg, 1024, 0)
-        msg = msg[0, len].encode(LOCALE)
-        super msg.tr("\r".encode(msg.encoding), '').chomp
+        msg = msg.byteslice(0, len * WCHAR_SIZE)
+        msg.delete!(WCHAR_CR)
+        msg.chomp!
+        super msg.encode(LOCALE)
       end
       attr_reader :code
     end
@@ -290,7 +293,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         name = WCHAR_NUL * Constants::MAX_KEY_LENGTH
         size = packdw(Constants::MAX_KEY_LENGTH)
         check RegEnumValueW.call(hkey, index, name, size, 0, 0, 0, 0)
-        name[0, unpackdw(size)]
+        name.byteslice(0, unpackdw(size) * WCHAR_SIZE)
       end
 
       def EnumKey(hkey, index)
@@ -298,7 +301,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         size = packdw(Constants::MAX_KEY_LENGTH)
         wtime = ' ' * 8
         check RegEnumKeyExW.call(hkey, index, name, size, 0, 0, 0, wtime)
-        [ name[0, unpackdw(size)], unpackqw(wtime) ]
+        [ name.byteslice(0, unpackdw(size) * WCHAR_SIZE), unpackqw(wtime) ]
       end
 
       def QueryValue(hkey, name)

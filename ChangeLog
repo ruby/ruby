@@ -1,3 +1,8 @@
+Sun Nov  9 12:09:38 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32/lib/win32/registry.rb (Win32::Registry::API#Enum{Value,Key):
+	  ditto.
+
 Sun Nov  9 11:48:40 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/net/http: Examine webrick log.
