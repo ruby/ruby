@@ -34,6 +34,10 @@ class TestWEBrickServer < Test::Unit::TestCase
       def listener.to_io # IO.select invokes #to_io.
         raise SignalException, 'SIGTERM' # simulate signal in main thread
       end
+      def listener.shutdown
+      end
+      def listener.close
+      end
 
       server = WEBrick::HTTPServer.new({
         :BindAddress => "127.0.0.1", :Port => 0,

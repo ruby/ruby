@@ -1,3 +1,11 @@
+Mon Nov 10 07:31:59 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/webrick/server.rb (initialize): Initialize shutdown pipe here
+	  to avoid race condition.
+	  (cleanup_shutdown_pipe): New private method.
+	  (cleanup_listener): Extracted from shutdown method.
+	  Call this method from start method to avoid race condition.
+
 Mon Nov 10 05:57:53 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/webrick/webrick.cgi: Don't use debug mode.
