@@ -1,3 +1,7 @@
+Sun Nov  9 11:45:19 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* gems/bundled_gems: upgraded to test-unit 3.0.5.
+
 Sun Nov  9 11:40:50 2014  Tanaka Akira  <akr@fsij.org>
 
 	* defs/known_errors.def: More errors for FreeBSD.
