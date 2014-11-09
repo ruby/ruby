@@ -24,50 +24,50 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
     serv, opts, script_name, path_info = httpd.search_servlet("/")
     assert_equal(:Root, serv)
     assert_equal([], opts)
-    assert_equal(script_name, "")
-    assert_equal(path_info, "/")
+    assert_equal("", script_name)
+    assert_equal("/", path_info)
 
     serv, opts, script_name, path_info = httpd.search_servlet("/sub")
     assert_equal(:Root, serv)
     assert_equal([], opts)
-    assert_equal(script_name, "")
-    assert_equal(path_info, "/sub")
+    assert_equal("", script_name)
+    assert_equal("/sub", path_info)
 
     serv, opts, script_name, path_info = httpd.search_servlet("/sub/")
     assert_equal(:Root, serv)
     assert_equal([], opts)
-    assert_equal(script_name, "")
-    assert_equal(path_info, "/sub/")
+    assert_equal("", script_name)
+    assert_equal("/sub/", path_info)
 
     serv, opts, script_name, path_info = httpd.search_servlet("/foo")
     assert_equal(:Foo, serv)
     assert_equal([], opts)
-    assert_equal(script_name, "/foo")
-    assert_equal(path_info, "")
+    assert_equal("/foo", script_name)
+    assert_equal("", path_info)
 
     serv, opts, script_name, path_info = httpd.search_servlet("/foo/")
     assert_equal(:Foo, serv)
     assert_equal([], opts)
-    assert_equal(script_name, "/foo")
-    assert_equal(path_info, "/")
+    assert_equal("/foo", script_name)
+    assert_equal("/", path_info)
 
     serv, opts, script_name, path_info = httpd.search_servlet("/foo/sub")
     assert_equal(:Foo, serv)
     assert_equal([], opts)
-    assert_equal(script_name, "/foo")
-    assert_equal(path_info, "/sub")
+    assert_equal("/foo", script_name)
+    assert_equal("/sub", path_info)
 
     serv, opts, script_name, path_info = httpd.search_servlet("/foo/bar")
     assert_equal(:Bar, serv)
     assert_equal([:bar1], opts)
-    assert_equal(script_name, "/foo/bar")
-    assert_equal(path_info, "")
+    assert_equal("/foo/bar", script_name)
+    assert_equal("", path_info)
 
     serv, opts, script_name, path_info = httpd.search_servlet("/foo/bar/baz")
     assert_equal(:Baz, serv)
     assert_equal([:baz1, :baz2], opts)
-    assert_equal(script_name, "/foo/bar/baz")
-    assert_equal(path_info, "")
+    assert_equal("/foo/bar/baz", script_name)
+    assert_equal("", path_info)
   end
 
   class Req
@@ -243,9 +243,9 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
       server.virtual_host(WEBrick::HTTPServer.new(vhost_config))
 
       Thread.pass while server.status != :Running
-      assert_equal(started, 1, log.call)
-      assert_equal(stopped, 0, log.call)
-      assert_equal(accepted, 0, log.call)
+      assert_equal(1, started, log.call)
+      assert_equal(0, stopped, log.call)
+      assert_equal(0, accepted, log.call)
 
       http = Net::HTTP.new(addr, port)
       req = Net::HTTP::Get.new("/")
@@ -371,7 +371,7 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
       http.request(req){|res| assert_equal("404", res.code, log.call)}
       assert_match(%r{:RequestHandler is deprecated, please use :RequestCallback$}, log.call, log.call)
     }
-    assert_equal(requested, 1)
+    assert_equal(1, requested)
   end
 
   def test_shutdown_with_busy_keepalive_connection

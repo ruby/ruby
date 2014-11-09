@@ -51,27 +51,27 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
 
     res = make_range_response(filename, "bytes=#{filesize-100}-")
     assert_match(%r{^text/plain}, res["content-type"])
-    assert_equal(get_res_body(res).size, 100)
+    assert_equal(100, get_res_body(res).size)
 
     res = make_range_response(filename, "bytes=-100")
     assert_match(%r{^text/plain}, res["content-type"])
-    assert_equal(get_res_body(res).size, 100)
+    assert_equal(100, get_res_body(res).size)
 
     res = make_range_response(filename, "bytes=0-99")
     assert_match(%r{^text/plain}, res["content-type"])
-    assert_equal(get_res_body(res).size, 100)
+    assert_equal(100, get_res_body(res).size)
 
     res = make_range_response(filename, "bytes=100-199")
     assert_match(%r{^text/plain}, res["content-type"])
-    assert_equal(get_res_body(res).size, 100)
+    assert_equal(100, get_res_body(res).size)
 
     res = make_range_response(filename, "bytes=0-0")
     assert_match(%r{^text/plain}, res["content-type"])
-    assert_equal(get_res_body(res).size, 1)
+    assert_equal(1, get_res_body(res).size)
 
     res = make_range_response(filename, "bytes=-1")
     assert_match(%r{^text/plain}, res["content-type"])
-    assert_equal(get_res_body(res).size, 1)
+    assert_equal(1, get_res_body(res).size)
 
     res = make_range_response(filename, "bytes=0-0, -2")
     assert_match(%r{^multipart/byteranges}, res["content-type"])

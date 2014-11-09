@@ -1,3 +1,7 @@
+Sun Nov  9 21:03:59 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/webrick: Fix the argument order of assert_equal.
+
 Sun Nov  9 20:29:01 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/webrick: Store log in an array.

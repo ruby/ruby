@@ -46,7 +46,7 @@ class TestWEBrickServer < Test::Unit::TestCase
       server.start
     end
 
-    assert_equal(stopped, 1)
+    assert_equal(1, stopped)
     assert_equal(1, log.length)
     assert_match(/FATAL SignalException: SIGTERM/, log[0])
   end
@@ -60,16 +60,16 @@ class TestWEBrickServer < Test::Unit::TestCase
     }
     TestWEBrick.start_server(Echo, config){|server, addr, port, log|
       true while server.status != :Running
-      assert_equal(started, 1, log.call)
-      assert_equal(stopped, 0, log.call)
-      assert_equal(accepted, 0, log.call)
+      assert_equal(1, started, log.call)
+      assert_equal(0, stopped, log.call)
+      assert_equal(0, accepted, log.call)
       TCPSocket.open(addr, port){|sock| (sock << "foo\n").gets }
       TCPSocket.open(addr, port){|sock| (sock << "foo\n").gets }
       TCPSocket.open(addr, port){|sock| (sock << "foo\n").gets }
-      assert_equal(accepted, 3, log.call)
+      assert_equal(3, accepted, log.call)
     }
-    assert_equal(started, 1)
-    assert_equal(stopped, 1)
+    assert_equal(1, started)
+    assert_equal(1, stopped)
   end
 
   def test_daemon
