@@ -37,14 +37,20 @@ module WEBrick_Testing
     addr
   end
 
-  def stop_server
-    return if !defined?(@__server) || !@__server
-    Timeout.timeout(5) {
-      @__server.shutdown
-      Thread.pass while @__started # wait until the server is down
-    }
-    @__server_thread.join
-    @__server = nil
+  def with_server(config, servlet)
+    addr = start_server(config) {|w| w.mount('/RPC2', create_servlet) }
+      client_thread = Thread.new {
+        begin
+          yield addr
+        ensure
+          @__server.shutdown
+        end
+      }
+      server_thread = Thread.new {
+        @__server_thread.join
+        @__server = nil
+      }
+      assert_join_threads([client_thread, server_thread])
   end
 end
 end

@@ -1,3 +1,7 @@
+Sun Nov  9 18:07:00 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/xmlrpc: Use assert_join_threads.
+
 Sun Nov  9 14:06:13 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/xmlrpc: Test webrick error log is empty.

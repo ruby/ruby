@@ -66,22 +66,20 @@ class TestCookie < Test::Unit::TestCase
     s
   end
 
-  def setup_http_server
+  def setup_http_server_option
     option = {:Port => 0}
-
-    addr = start_server(option) {|w| w.mount('/RPC2', create_servlet) }
-
-    @s = XMLRPC::Client.new3(:host => addr.ip_address, :port => addr.ip_port)
   end
 
   def test_cookie
-    begin
-      setup_http_server
-      do_test
-    ensure
-      @s.http.finish
-      stop_server
-    end
+    option = setup_http_server_option
+    with_server(option, create_servlet) {|addr|
+      begin
+        @s = XMLRPC::Client.new3(:host => addr.ip_address, :port => addr.ip_port)
+        do_test
+      ensure
+        @s.http.finish
+      end
+    }
   end
 
   def do_test

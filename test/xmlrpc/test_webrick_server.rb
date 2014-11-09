@@ -47,7 +47,7 @@ class Test_Webrick < Test::Unit::TestCase
     return s
   end
 
-  def setup_http_server(use_ssl)
+  def setup_http_server_option(use_ssl)
     option = {
       :BindAddress => "localhost",
       :Port => 0,
@@ -61,14 +61,14 @@ class Test_Webrick < Test::Unit::TestCase
       )
     end
 
-    start_server(option) {|w| w.mount('/RPC2', create_servlet) }
+    option
   end
 
   def test_client_server
     # NOTE: I don't enable SSL testing as this hangs
     [false].each do |use_ssl|
-      begin
-        addr = setup_http_server(use_ssl)
+      option = setup_http_server_option(use_ssl)
+      with_server(option, create_servlet) {|addr|
         @s = XMLRPC::Client.new3(:host => addr.ip_address, :port => addr.ip_port, :use_ssl => use_ssl)
         @s.user = 'admin'
         @s.password = 'admin'
@@ -83,9 +83,7 @@ class Test_Webrick < Test::Unit::TestCase
           do_test
         end
         @s.http.finish
-      ensure
-        stop_server
-      end
+      }
     end
   end
 
