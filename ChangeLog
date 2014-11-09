@@ -1,3 +1,7 @@
+Sun Nov  9 11:25:11 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* gems/bundled_gems: upgraded to power_assert 0.2.0.
+
 Sun Nov  9 10:31:03 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/securerandom.rb: set the script encoding to make a string
