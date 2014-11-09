@@ -1,3 +1,7 @@
+Sun Nov  9 22:28:34 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/webrick/httpstatus.rb: require webrick/accesslog for AccessLog.
+
 Sun Nov  9 21:03:59 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/webrick: Fix the argument order of assert_equal.

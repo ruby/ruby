@@ -8,6 +8,8 @@
 #
 # $IPR: httpstatus.rb,v 1.11 2003/03/24 20:18:55 gotoyuzo Exp $
 
+require 'webrick/accesslog'
+
 module WEBrick
 
   ##
