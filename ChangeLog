@@ -1,3 +1,7 @@
+Sun Nov  9 11:40:50 2014  Tanaka Akira  <akr@fsij.org>
+
+	* defs/known_errors.def: More errors for FreeBSD.
+
 Sun Nov  9 11:25:11 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* gems/bundled_gems: upgraded to power_assert 0.2.0.
