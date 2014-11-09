@@ -136,7 +136,8 @@ module UnicodeNormalize
 
   def self.normalized?(string, form = :nfc)
     encoding = string.encoding
-    if encoding == Encoding::UTF_8
+    case encoding
+    when Encoding::UTF_8
       case form
       when :nfc then
         string.scan REGEXP_C do |match|
@@ -155,9 +156,9 @@ module UnicodeNormalize
       else
         raise ArgumentError, "Invalid normalization form #{form}."
       end
-    elsif encoding == Encoding::US_ASCII
+    when Encoding::US_ASCII
       true
-    elsif  UNICODE_ENCODINGS.include? encoding
+    when **UNICODE_ENCODINGS
       normalized? string.encode(Encoding::UTF_8), form
     else
       raise Encoding::CompatibilityError, "Unicode Normalization not appropriate for #{encoding}"

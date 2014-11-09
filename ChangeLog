@@ -1,3 +1,8 @@
+Sun Nov  9 18:33:33 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize/normalize.rb: Replaced if-else by
+	  case in self.normalized? in parallel to r48309.
+
 Sun Nov  9 18:07:00 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/xmlrpc: Use assert_join_threads.
