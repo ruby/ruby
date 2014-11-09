@@ -2,10 +2,12 @@ require 'timeout'
 
 module TestXMLRPC
 module WEBrick_Testing
-  class DummyLog < WEBrick::BasicLog
-    def initialize() super(self) end
-    def <<(*args) end
+  empty_log = Object.new
+  def empty_log.<<(str)
+    assert_equal('', str)
+    self
   end
+  NoLog = WEBrick::Log.new(empty_log, WEBrick::BasicLog::WARN)
 
   def start_server(config={})
     raise "already started" if defined?(@__server) && @__server
@@ -14,7 +16,7 @@ module WEBrick_Testing
     @__server = WEBrick::HTTPServer.new(
       {
         :BindAddress => "localhost",
-        :Logger => DummyLog.new,
+        :Logger => NoLog,
         :AccessLog => [],
       }.update(config))
     yield @__server

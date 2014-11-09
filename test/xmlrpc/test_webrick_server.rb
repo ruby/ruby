@@ -14,7 +14,7 @@ class Test_Webrick < Test::Unit::TestCase
   @@basic_auth = WEBrick::HTTPAuth::BasicAuth.new(
     :Realm => 'auth',
     :UserDB => WEBrick::HTTPAuth::Htpasswd.new(File.expand_path('./htpasswd', File.dirname(__FILE__))),
-    :Logger => Logger.new(File::NULL),
+    :Logger => NoLog,
   )
 
   def create_servlet

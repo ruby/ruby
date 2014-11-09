@@ -1,3 +1,7 @@
+Sun Nov  9 14:06:13 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/xmlrpc: Test webrick error log is empty.
+
 Sun Nov  9 13:47:02 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (is_incremental_marking): use #if/#else because
