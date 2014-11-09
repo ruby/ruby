@@ -61,11 +61,17 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
         http.request(g){|res| assert_not_equal("hoge", res.body, log.call)}
       }
     }
-    pat = /ERROR Basic WEBrick's realm: webrick: password unmatch\./
-    assert_match(pat, log); log.sub!(pat, '')
-    pat = /ERROR WEBrick::HTTPStatus::Unauthorized/
-    assert_match(pat, log); log.sub!(pat, '')
-    assert_not_match(/ERROR/, log)
+    log = log.lines.to_a
+    log.reject! {|line| /\A\s*\z/ =~ line }
+    pats = [
+      /ERROR Basic WEBrick's realm: webrick: password unmatch\./,
+      /ERROR WEBrick::HTTPStatus::Unauthorized/
+    ]
+    pats.each {|pat|
+      assert_operator(log, :grep, pat)
+      log.reject! {|line| pat =~ line }
+    }
+    assert_equal([], log)
   end
 
   def test_basic_auth3
@@ -148,15 +154,18 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
         end
       }
     }
-    pat = /ERROR Digest WEBrick's realm: no credentials in the request\./
-    assert_match(pat, log); log.sub!(pat, '')
-    pat = /ERROR WEBrick::HTTPStatus::Unauthorized/
-    assert_match(pat, log); log.sub!(pat, '')
-    pat = /ERROR Digest WEBrick's realm: webrick: digest unmatch\./
-    assert_match(pat, log); log.sub!(pat, '')
-    pat = /ERROR WEBrick::HTTPStatus::Unauthorized/
-    assert_match(pat, log); log.sub!(pat, '')
-    assert_not_match(/ERROR/, log)
+    log = log.lines.to_a
+    log.reject! {|line| /\A\s*\z/ =~ line }
+    pats = [
+      /ERROR Digest WEBrick's realm: no credentials in the request\./,
+      /ERROR WEBrick::HTTPStatus::Unauthorized/,
+      /ERROR Digest WEBrick's realm: webrick: digest unmatch\./
+    ]
+    pats.each {|pat|
+      assert_operator(log, :grep, pat)
+      log.reject! {|line| pat =~ line }
+    }
+    assert_equal([], log)
   end
 
   private

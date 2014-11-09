@@ -1,3 +1,7 @@
+Sun Nov  9 09:50:22 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/webrick: Refine log tests.
+
 Sun Nov  9 08:58:05 2014  Tanaka Akira  <akr@fsij.org>
 
 	* defs/known_errors.def (EHWPOISON): New errno symbol.

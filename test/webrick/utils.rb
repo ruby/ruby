@@ -41,7 +41,7 @@ module TestWEBrick
     server = klass.new({
       :BindAddress => "127.0.0.1", :Port => 0,
       :ServerType => Thread,
-      :Logger => WEBrick::Log.new(logger),
+      :Logger => WEBrick::Log.new(logger, WEBrick::BasicLog::WARN),
       :AccessLog => [[logger, ""]]
     }.update(config))
     server_thread = server.start
