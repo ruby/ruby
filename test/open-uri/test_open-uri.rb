@@ -13,7 +13,7 @@ class TestOpenURI < Test::Unit::TestCase
   def NullLog.<<(arg)
   end
 
-  def with_http(log_is_empty=true)
+  def with_http(log_tester=lambda {|log| assert_equal([], log) })
     log = []
     logger = WEBrick::Log.new(log, WEBrick::BasicLog::WARN)
     Dir.mktmpdir {|dr|
@@ -25,17 +25,22 @@ class TestOpenURI < Test::Unit::TestCase
         :BindAddress => '127.0.0.1',
         :Port => 0})
       _, port, _, host = srv.listeners[0].addr
-      begin
-        th = srv.start
-        yield srv, dr, "http://#{host}:#{port}", th, log
-      ensure
-        srv.shutdown
-        th.join
-      end
+      server_thread = srv.start
+      server_thread2 = Thread.new {
+        server_thread.join
+        if log_tester
+          log_tester.call(log)
+        end
+      }
+      client_thread = Thread.new {
+        begin
+          yield srv, dr, "http://#{host}:#{port}", server_thread, log
+        ensure
+          srv.shutdown
+        end
+      }
+      assert_join_threads([client_thread, server_thread2])
     }
-    if log_is_empty
-      assert_equal([], log)
-    end
   end
 
   def with_env(h)
@@ -81,21 +86,13 @@ class TestOpenURI < Test::Unit::TestCase
   end
 
   def test_404
-    with_http(false) {|srv, dr, url, server_thread, server_log|
-      client_thread = Thread.new {
-        begin
-          exc = assert_raise(OpenURI::HTTPError) { open("#{url}/not-exist") {} }
-          assert_equal("404", exc.io.status[0])
-        ensure
-          srv.shutdown
-        end
-      }
-      server_thread2 = Thread.new {
-        server_thread.join
-        assert_equal(1, server_log.length)
-        assert_match(%r{ERROR `/not-exist' not found}, server_log[0])
-      }
-      assert_join_threads([client_thread, server_thread2])
+    log_tester = lambda {|server_log|
+      assert_equal(1, server_log.length)
+      assert_match(%r{ERROR `/not-exist' not found}, server_log[0])
+    }
+    with_http(log_tester) {|srv, dr, url, server_thread, server_log|
+      exc = assert_raise(OpenURI::HTTPError) { open("#{url}/not-exist") {} }
+      assert_equal("404", exc.io.status[0])
     }
   end
 
@@ -475,42 +472,26 @@ class TestOpenURI < Test::Unit::TestCase
   end
 
   def test_redirect_auth_failure_r2
-    with_http(false) {|srv, dr, url, server_thread, server_log|
+    log_tester = lambda {|server_log|
+      assert_equal(1, server_log.length)
+      assert_match(/ERROR WEBrick::HTTPStatus::Unauthorized/, server_log[0])
+    }
+    with_http(log_tester) {|srv, dr, url, server_thread, server_log|
       setup_redirect_auth(srv, url)
-      client_thread = Thread.new {
-        begin
-          exc = assert_raise(OpenURI::HTTPError) { open("#{url}/r2/") {} }
-          assert_equal("401", exc.io.status[0])
-        ensure
-          srv.shutdown
-        end
-      }
-      server_thread2 = Thread.new {
-        server_thread.join
-        assert_equal(1, server_log.length)
-        assert_match(/ERROR WEBrick::HTTPStatus::Unauthorized/, server_log[0])
-      }
-      assert_join_threads([client_thread, server_thread2])
+      exc = assert_raise(OpenURI::HTTPError) { open("#{url}/r2/") {} }
+      assert_equal("401", exc.io.status[0])
     }
   end
 
   def test_redirect_auth_failure_r1
-    with_http(false) {|srv, dr, url, server_thread, server_log|
+    log_tester = lambda {|server_log|
+      assert_equal(1, server_log.length)
+      assert_match(/ERROR WEBrick::HTTPStatus::Unauthorized/, server_log[0])
+    }
+    with_http(log_tester) {|srv, dr, url, server_thread, server_log|
       setup_redirect_auth(srv, url)
-      client_thread = Thread.new {
-        begin
-          exc = assert_raise(OpenURI::HTTPError) { open("#{url}/r1/", :http_basic_authentication=>['user', 'pass']) {} }
-          assert_equal("401", exc.io.status[0])
-        ensure
-          srv.shutdown
-        end
-      }
-      server_thread2 = Thread.new {
-        server_thread.join
-        assert_equal(1, server_log.length)
-        assert_match(/ERROR WEBrick::HTTPStatus::Unauthorized/, server_log[0])
-      }
-      assert_join_threads([client_thread, server_thread2])
+      exc = assert_raise(OpenURI::HTTPError) { open("#{url}/r1/", :http_basic_authentication=>['user', 'pass']) {} }
+      assert_equal("401", exc.io.status[0])
     }
   end
 

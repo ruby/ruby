@@ -230,7 +230,11 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
       :StopCallback => Proc.new{ stopped += 1 },
       :RequestCallback => Proc.new{|req, res| requested0 += 1 },
     }
-    TestWEBrick.start_httpserver(config){|server, addr, port, log|
+    log_tester = lambda {|log, access_log|
+      assert(log.find {|s| %r{ERROR `/' not found\.} =~ s })
+      assert_equal([], log.reject {|s| %r{ERROR `/' not found\.} =~ s })
+    }
+    TestWEBrick.start_httpserver(config, log_tester){|server, addr, port, log|
       vhost_config = {
         :ServerName => "myhostname",
         :BindAddress => addr,
@@ -333,7 +337,11 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
     config = {
       :ServerName => "localhost"
     }
-    TestWEBrick.start_httpserver(config){|server, addr, port, log|
+    log_tester = lambda {|log, access_log|
+      assert_equal(1, log.length)
+      assert_match(/WARN  Could not determine content-length of response body./, log[0])
+    }
+    TestWEBrick.start_httpserver(config, log_tester){|server, addr, port, log|
       server.mount_proc("/", lambda { |req, res|
         r,w = IO.pipe
         # Test for not setting chunked...
@@ -362,7 +370,12 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
       :ServerName => "localhost",
       :RequestHandler => Proc.new{|req, res| requested += 1 },
     }
-    TestWEBrick.start_httpserver(config){|server, addr, port, log|
+    log_tester = lambda {|log, access_log|
+      assert_equal(2, log.length)
+      assert_match(/WARN  :RequestHandler is deprecated, please use :RequestCallback/, log[0])
+      assert_match(%r{ERROR `/' not found\.}, log[1])
+    }
+    TestWEBrick.start_httpserver(config, log_tester){|server, addr, port, log|
       Thread.pass while server.status != :Running
 
       http = Net::HTTP.new(addr, port)

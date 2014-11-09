@@ -18,7 +18,7 @@ class TestOpenURISSL
   def NullLog.<<(arg)
   end
 
-  def with_https(log_is_empty=true)
+  def with_https(log_tester=lambda {|log| assert_equal([], log) })
     log = []
     logger = WEBrick::Log.new(log, WEBrick::BasicLog::WARN)
     Dir.mktmpdir {|dr|
@@ -34,16 +34,22 @@ class TestOpenURISSL
         :BindAddress => '127.0.0.1',
         :Port => 0})
       _, port, _, host = srv.listeners[0].addr
-      begin
-        th = srv.start
-        yield srv, dr, "https://#{host}:#{port}", th, log
-      ensure
-        srv.shutdown
-        th.join
-      end
-      if log_is_empty
-        assert_equal([], log)
-      end
+      threads = []
+      server_thread = srv.start
+      threads << Thread.new {
+        server_thread.join
+        if log_tester
+          log_tester.call(log)
+        end
+      }
+      threads << Thread.new {
+        begin
+          yield srv, dr, "https://#{host}:#{port}", server_thread, log, threads
+        ensure
+          srv.shutdown
+        end
+      }
+      assert_join_threads(threads)
     }
   end
 
@@ -85,28 +91,20 @@ class TestOpenURISSL
   end
 
   def test_validation_failure
-    with_https(false) {|srv, dr, url, server_thread, server_log|
-      client_thread = Thread.new {
-        begin
-          setup_validation(srv, dr)
-          assert_raise(OpenSSL::SSL::SSLError) { open("#{url}/data") {} }
-        ensure
-          srv.shutdown
-        end
-      }
-      server_thread2 = Thread.new {
-        server_thread.join
-        assert_equal(1, server_log.length)
-        assert_match(/ERROR OpenSSL::SSL::SSLError:/, server_log[0])
-      }
-      assert_join_threads([client_thread, server_thread2])
+    log_tester = lambda {|server_log|
+      assert_equal(1, server_log.length)
+      assert_match(/ERROR OpenSSL::SSL::SSLError:/, server_log[0])
+    }
+    with_https(log_tester) {|srv, dr, url, server_thread, server_log|
+      setup_validation(srv, dr)
+      assert_raise(OpenSSL::SSL::SSLError) { open("#{url}/data") {} }
     }
   end
 
-  def with_https_proxy
+  def with_https_proxy(proxy_log_tester=lambda {|proxy_log, proxy_access_log| assert_equal([], proxy_log) })
     proxy_log = []
     proxy_logger = WEBrick::Log.new(proxy_log, WEBrick::BasicLog::WARN)
-    with_https {|srv, dr, url, server_thread, server_log|
+    with_https {|srv, dr, url, server_thread, server_log, threads|
       srv.mount_proc("/proxy", lambda { |req, res| res.body = "proxy" } )
       cacert_filename = "#{dr}/cacert.pem"
       open(cacert_filename, "w") {|f| f << CA_CERT }
@@ -121,60 +119,50 @@ class TestOpenURISSL
         :BindAddress => '127.0.0.1',
         :Port => 0})
       _, proxy_port, _, proxy_host = proxy.listeners[0].addr
+      proxy_thread = proxy.start
+      threads << Thread.new {
+        proxy_thread.join
+        if proxy_log_tester
+          proxy_log_tester.call(proxy_log, proxy_access_log)
+        end
+      }
       begin
-        proxy_thread = proxy.start
-        yield srv, dr, url, server_thread, server_log, cacert_filename, cacert_directory, proxy, proxy_host, proxy_port, proxy_thread, proxy_access_log, proxy_log
+        yield srv, dr, url, cacert_filename, cacert_directory, proxy_host, proxy_port
       ensure
         proxy.shutdown
-        proxy_thread.join
       end
     }
-    assert_equal([], proxy_log)
   end
 
   def test_proxy_cacert_file
-    with_https_proxy {|srv, dr, url, server_thread, server_log, cacert_filename, cacert_directory, proxy, proxy_host, proxy_port, proxy_thread, proxy_access_log, proxy_log|
-      client_thread = Thread.new {
-        begin
-          open("#{url}/proxy", :proxy=>"http://#{proxy_host}:#{proxy_port}/", :ssl_ca_cert => cacert_filename) {|f|
-            assert_equal("200", f.status[0])
-            assert_equal("proxy", f.read)
-          }
-        ensure
-          proxy.shutdown
-          srv.shutdown
-        end
+    url = nil
+    proxy_log_tester = lambda {|proxy_log, proxy_access_log|
+      assert_equal(1, proxy_access_log.length)
+      assert_match(%r[CONNECT #{url.sub(%r{\Ahttps://}, '')} ], proxy_access_log[0])
+      assert_equal([], proxy_log)
+    }
+    with_https_proxy(proxy_log_tester) {|srv, dr, url_, cacert_filename, cacert_directory, proxy_host, proxy_port|
+      url = url_
+      open("#{url}/proxy", :proxy=>"http://#{proxy_host}:#{proxy_port}/", :ssl_ca_cert => cacert_filename) {|f|
+        assert_equal("200", f.status[0])
+        assert_equal("proxy", f.read)
       }
-      proxy_thread2 = Thread.new {
-        proxy_thread.join
-        assert_equal(1, proxy_access_log.length)
-        assert_match(%r[CONNECT #{url.sub(%r{\Ahttps://}, '')} ], proxy_access_log[0])
-        assert_equal([], proxy_log)
-      }
-      assert_join_threads([client_thread, proxy_thread2, server_thread])
     }
   end
 
   def test_proxy_cacert_dir
-    with_https_proxy {|srv, dr, url, server_thread, server_log, cacert_filename, cacert_directory, proxy, proxy_host, proxy_port, proxy_thread, proxy_access_log, proxy_log|
-      client_thread = Thread.new {
-        begin
-          open("#{url}/proxy", :proxy=>"http://#{proxy_host}:#{proxy_port}/", :ssl_ca_cert => cacert_directory) {|f|
-            assert_equal("200", f.status[0])
-            assert_equal("proxy", f.read)
-          }
-        ensure
-          proxy.shutdown
-          srv.shutdown
-        end
+    url = nil
+    proxy_log_tester = lambda {|proxy_log, proxy_access_log|
+      assert_equal(1, proxy_access_log.length)
+      assert_match(%r[CONNECT #{url.sub(%r{\Ahttps://}, '')} ], proxy_access_log[0])
+      assert_equal([], proxy_log)
+    }
+    with_https_proxy(proxy_log_tester) {|srv, dr, url_, cacert_filename, cacert_directory, proxy_host, proxy_port|
+      url = url_
+      open("#{url}/proxy", :proxy=>"http://#{proxy_host}:#{proxy_port}/", :ssl_ca_cert => cacert_directory) {|f|
+        assert_equal("200", f.status[0])
+        assert_equal("proxy", f.read)
       }
-      proxy_thread2 = Thread.new {
-        proxy_thread.join
-        assert_equal(1, proxy_access_log.length)
-        assert_match(%r[CONNECT #{url.sub(%r{\Ahttps://}, '')} ], proxy_access_log[0])
-        assert_equal([], proxy_log)
-      }
-      assert_join_threads([client_thread, proxy_thread2, server_thread])
     }
   end
 
