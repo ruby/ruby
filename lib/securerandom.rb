@@ -1,3 +1,4 @@
+# -*- coding: us-ascii -*-
 begin
   require 'openssl'
 rescue LoadError

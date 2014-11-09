@@ -1,3 +1,10 @@
+Sun Nov  9 10:31:03 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/securerandom.rb: set the script encoding to make a string
+	  literal in SecureRandom::Kernel32.last_error_message single byte
+	  encoding so msg[] works in bytes, since FormatMessage() returns
+	  the size in TCHARs, not in characters.
+
 Sun Nov  9 09:50:22 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/webrick: Refine log tests.
