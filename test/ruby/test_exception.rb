@@ -140,7 +140,7 @@ class TestException < Test::Unit::TestCase
           throw :foo, true
           break
         end
-        assert(false, "should no reach here")
+        assert(false, "should not reach here")
       end
       false
     }
@@ -151,7 +151,7 @@ class TestException < Test::Unit::TestCase
     assert_nothing_raised(ArgumentError) {
       result = catch {|obj|
         throw obj, :ok
-        assert(false, "should no reach here")
+        assert(false, "should not reach here")
       }
       assert_equal(:ok, result)
     }
@@ -161,9 +161,9 @@ class TestException < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /uncaught throw/) {
       catch("foo") {|obj|
         throw obj.dup, :ok
-        assert(false, "should no reach here")
+        assert(false, "should not reach here")
       }
-      assert(false, "should no reach here")
+      assert(false, "should not reach here")
     }
   end
 
