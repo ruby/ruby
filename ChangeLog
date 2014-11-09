@@ -1,3 +1,7 @@
+Sun Nov  9 18:35:36 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/xmlrpc: Refine log test.
+
 Sun Nov  9 18:33:33 2014  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* lib/unicode_normalize/normalize.rb: Replaced if-else by
