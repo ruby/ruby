@@ -1,12 +1,17 @@
 #include "ruby.h"
 
 static VALUE
-bug_proc_call_super(VALUE yieldarg, VALUE procarg)
+bug_proc_call_super(RB_BLOCK_CALL_FUNC_ARGLIST(yieldarg, procarg))
 {
     VALUE args[2];
+    VALUE ret;
     args[0] = yieldarg;
     args[1] = procarg;
-    return rb_call_super(2, args);
+    ret = rb_call_super(2, args);
+    if (!NIL_P(blockarg)) {
+	ret = rb_proc_call(blockarg, ret);
+    }
+    return ret;
 }
 
 static VALUE

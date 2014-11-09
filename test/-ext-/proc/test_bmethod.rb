@@ -21,4 +21,11 @@ class TestProc::TestBMethod
     obj = Bound.new
     assert_equal([1, 42], obj.foo(1))
   end
+
+  def test_block_super
+    obj = Bound.new
+    result = nil
+    obj.foo(2) {|*a| result = a}
+    assert_equal([2, 42], result)
+  end
 end
