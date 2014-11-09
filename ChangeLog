@@ -1,3 +1,9 @@
+Mon Nov 10 05:57:53 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/webrick/webrick.cgi: Don't use debug mode.
+
+	* test/webrick/webrick_long_filename.cgi: Ditto.
+
 Sun Nov  9 23:25:49 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (vm_call_super): allow bound proc method to call super
