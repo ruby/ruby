@@ -813,7 +813,7 @@ test_ok(catch(:foo) {
 	 break
        end
        break
-       test_ok(false)			# should no reach here
+       test_ok(false)			# should not reach here
      end
      false
    })
