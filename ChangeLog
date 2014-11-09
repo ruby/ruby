@@ -1,3 +1,8 @@
+Sun Nov  9 08:58:05 2014  Tanaka Akira  <akr@fsij.org>
+
+	* defs/known_errors.def (EHWPOISON): New errno symbol.
+	  It is defined by glibc-2.16.
+
 Sun Nov  9 05:00:23 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/securerandom.rb (initialize): call the special method for Win32
