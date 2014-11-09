@@ -107,8 +107,11 @@ module SecureRandom
   # NotImplementedError is raised.
   def self.random_bytes(n=nil)
     n = n ? n.to_int : 16
+    gen_random(n)
+  end
 
-    if defined? OpenSSL::Random
+  if defined? OpenSSL::Random
+    def self.gen_random(n)
       @pid = 0 unless defined?(@pid)
       pid = $$
       unless @pid == pid
@@ -119,21 +122,25 @@ module SecureRandom
       end
       return OpenSSL::Random.random_bytes(n)
     end
-
-    if defined?(AdvApi32)
+  elsif defined?(AdvApi32)
+    def self.gen_random(n)
       return AdvApi32.gen_random(n)
     end
 
-    if !defined?(@has_urandom) || @has_urandom
+    def self.lastWin32ErrorMessage # :nodoc:
+      # for compatibility
+      return Kernel32.last_error_message
+    end
+  else
+    def self.gen_random(n)
       flags = File::RDONLY
       flags |= File::NONBLOCK if defined? File::NONBLOCK
       flags |= File::NOCTTY if defined? File::NOCTTY
       begin
         File.open("/dev/urandom", flags) {|f|
           unless f.stat.chardev?
-            raise Errno::ENOENT
+            break
           end
-          @has_urandom = true
           ret = f.read(n)
           unless ret.length == n
             raise NotImplementedError, "Unexpected partial read from random device: only #{ret.length} for #{n} bytes"
@@ -141,11 +148,10 @@ module SecureRandom
           return ret
         }
       rescue Errno::ENOENT
-        @has_urandom = false
       end
-    end
 
-    raise NotImplementedError, "No random device"
+      raise NotImplementedError, "No random device"
+    end
   end
 
   # SecureRandom.hex generates a random hexadecimal string.
@@ -283,10 +289,5 @@ module SecureRandom
     ary[2] = (ary[2] & 0x0fff) | 0x4000
     ary[3] = (ary[3] & 0x3fff) | 0x8000
     "%08x-%04x-%04x-%04x-%04x%08x" % ary
-  end
-
-  def self.lastWin32ErrorMessage # :nodoc:
-    # for compatibility
-    Kernel32.last_error_message
   end
 end

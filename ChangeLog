@@ -1,3 +1,8 @@
+Sun Nov  9 12:16:22 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/securerandom.rb (SecureRandom.gen_random): separate
+	  implementation details and select at the load time.
+
 Sun Nov  9 12:09:38 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/win32/lib/win32/registry.rb (Win32::Registry::API#Enum{Value,Key):
