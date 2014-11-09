@@ -36,16 +36,19 @@ module TestNetHTTPUtils
       @server.shutdown
       @server_thread.join
     end
+    assert_match(@log_pattern, @log.string) if @log_pattern
     # resume global state
     Net::HTTP.version_1_2
   end
 
   def spawn_server
+    @log = StringIO.new('')
+    @log_pattern = /\A\z/
     @config = self.class::CONFIG
     server_config = {
       :BindAddress => config('host'),
       :Port => 0,
-      :Logger => WEBrick::Log.new(NullWriter.new),
+      :Logger => WEBrick::Log.new(@log, WEBrick::BasicLog::WARN),
       :AccessLog => [],
       :ServerType => Thread,
     }

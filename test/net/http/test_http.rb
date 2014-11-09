@@ -277,6 +277,7 @@ module TestNetHTTP_version_1_1_methods
       end
     }
     assert_equal 1, i
+    @log_pattern = nil # server may encount ECONNRESET
   end
 
   def test_get__implicit_start
