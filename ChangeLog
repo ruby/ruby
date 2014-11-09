@@ -1,3 +1,11 @@
+Sun Nov  9 13:47:02 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (is_incremental_marking): use #if/#else because
+	  rb_objspace_t::flags::during_incremental_marking is not defined
+	  when GC_ENABLE_INCREMENTAL_MARK is 0.
+
+	* gc.c (will_be_incremental_marking, is_full_marking): similar fix.
+
 Sun Nov  9 12:16:22 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/securerandom.rb (SecureRandom.gen_random): separate

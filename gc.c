@@ -694,9 +694,21 @@ VALUE *ruby_initial_gc_stress_ptr = &ruby_initial_gc_stress;
 
 #define is_marking(objspace)             ((objspace)->flags.stat == gc_stat_marking)
 #define is_sweeping(objspace)            ((objspace)->flags.stat == gc_stat_sweeping)
+#if USE_RGENGC
 #define is_full_marking(objspace)        ((objspace)->flags.during_minor_gc == FALSE)
-#define is_incremental_marking(objspace) (GC_ENABLE_INCREMENTAL_MARK && (objspace)->flags.during_incremental_marking != FALSE)
-#define will_be_incremental_marking(objspace) (GC_ENABLE_INCREMENTAL_MARK && (objspace)->rgengc.need_major_gc != GPR_FLAG_NONE)
+#else
+#define is_full_marking(objspace)        TRUE
+#endif
+#if GC_ENABLE_INCREMENTAL_MARK
+#define is_incremental_marking(objspace) ((objspace)->flags.during_incremental_marking != FALSE)
+#else
+#define is_incremental_marking(objspace) FALSE
+#endif
+#if GC_ENABLE_INCREMENTAL_MARK
+#define will_be_incremental_marking(objspace) ((objspace)->rgengc.need_major_gc != GPR_FLAG_NONE)
+#else
+#define will_be_incremental_marking(objspace) FALSE
+#endif
 #define has_sweeping_pages(heap)         ((heap)->sweep_pages != 0)
 #define is_lazy_sweeping(heap)           (GC_ENABLE_LAZY_SWEEP && has_sweeping_pages(heap))
 
