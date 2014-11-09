@@ -158,7 +158,7 @@ module UnicodeNormalize
       end
     when Encoding::US_ASCII
       true
-    when **UNICODE_ENCODINGS
+    when *UNICODE_ENCODINGS
       normalized? string.encode(Encoding::UTF_8), form
     else
       raise Encoding::CompatibilityError, "Unicode Normalization not appropriate for #{encoding}"
