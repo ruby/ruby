@@ -265,7 +265,7 @@ vm_call_super(rb_thread_t *th, int argc, const VALUE *argv)
     rb_method_entry_t *me;
     rb_control_frame_t *cfp = th->cfp;
 
-    if (cfp->iseq || NIL_P(cfp->klass)) {
+    if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq) || NIL_P(cfp->klass)) {
 	rb_bug("vm_call_super: should not be reached");
     }
 

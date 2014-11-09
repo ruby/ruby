@@ -825,7 +825,8 @@ invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
 	return ret;
     }
     else {
-	return vm_yield_with_cfunc(th, block, self, argc, argv, blockptr);
+	return vm_yield_with_cfunc(th, block, self, defined_class,
+				   argc, argv, blockptr);
     }
 }
 

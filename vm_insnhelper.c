@@ -1969,7 +1969,8 @@ block_proc_is_lambda(const VALUE procval)
 
 static inline VALUE
 vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block,
-		    VALUE self, int argc, const VALUE *argv,
+		    VALUE self, VALUE defined_class,
+		    int argc, const VALUE *argv,
 		    const rb_block_t *blockargptr)
 {
     NODE *ifunc = (NODE *) block->iseq;
@@ -1998,9 +1999,10 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block,
 	blockarg = Qnil;
     }
 
-    vm_push_frame(th, (rb_iseq_t *)ifunc, VM_FRAME_MAGIC_IFUNC, self,
-		  0, VM_ENVVAL_PREV_EP_PTR(block->ep), 0,
-		  th->cfp->sp, 1, 0, 0);
+    vm_push_frame(th, (rb_iseq_t *)ifunc, VM_FRAME_MAGIC_IFUNC,
+		  self, defined_class,
+		  VM_ENVVAL_PREV_EP_PTR(block->ep), 0,
+		  th->cfp->sp, 1, th->passed_bmethod_me, 0);
 
     val = (*ifunc->nd_cfnc) (arg, ifunc->nd_tval, argc, argv, blockarg);
 
@@ -2065,7 +2067,8 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci
     else {
 	VALUE val;
 	CALLER_SETUP_ARG(th->cfp, ci);
-	val = vm_yield_with_cfunc(th, block, block->self, ci->argc, STACK_ADDR_FROM_TOP(ci->argc), 0);
+	val = vm_yield_with_cfunc(th, block, block->self, block->klass,
+				  ci->argc, STACK_ADDR_FROM_TOP(ci->argc), 0);
 	POPN(ci->argc); /* TODO: should put before C/yield? */
 	return val;
     }

@@ -1,3 +1,12 @@
+Sun Nov  9 23:25:49 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (vm_call_super): allow bound proc method to call super
+	  method.
+
+	* vm_insnhelper.c (vm_yield_with_cfunc): push defined class and
+	  bound proc method entry to the control frame.
+
+
 Sun Nov  9 22:46:13 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/open-uri: Test server log in server thread.
