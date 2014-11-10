@@ -327,6 +327,7 @@ extern rb_pid_t rb_w32_uaspawn(int, const char *, char *const *);
 extern rb_pid_t rb_w32_uaspawn_flags(int, const char *, char *const *, DWORD);
 extern int kill(int, int);
 extern int fcntl(int, int, ...);
+extern int rb_w32_set_nonblock(int);
 extern rb_pid_t rb_w32_getpid(void);
 extern rb_pid_t rb_w32_getppid(void);
 #if !defined(__BORLANDC__)

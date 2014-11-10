@@ -4122,6 +4122,33 @@ fcntl(int fd, int cmd, ...)
     }
 }
 
+/* License: Ruby's */
+int
+rb_w32_set_nonblock(int fd)
+{
+    SOCKET sock = TO_SOCKET(fd);
+    if (is_socket(sock)) {
+	return setfl(sock, O_NONBLOCK);
+    }
+    else if (is_pipe(sock)) {
+	DWORD state;
+	if (!GetNamedPipeHandleState((HANDLE)sock, &state, NULL, NULL, NULL, NULL, 0)) {
+	    errno = map_errno(GetLastError());
+	    return -1;
+	}
+	state |= PIPE_NOWAIT;
+	if (!SetNamedPipeHandleState((HANDLE)sock, &state, NULL, NULL)) {
+	    errno = map_errno(GetLastError());
+	    return -1;
+	}
+	return 0;
+    }
+    else {
+	errno = EBADF;
+	return -1;
+    }
+}
+
 #ifndef WNOHANG
 #define WNOHANG -1
 #endif
@@ -6354,7 +6381,18 @@ rb_w32_read(int fd, void *buf, size_t size)
 
     if (!ReadFile((HANDLE)_osfhnd(fd), buf, len, &read, pol)) {
 	err = GetLastError();
-	if (err != ERROR_IO_PENDING) {
+	if (err == ERROR_NO_DATA && (_osfile(fd) & FPIPE)) {
+	    DWORD state;
+	    if (GetNamedPipeHandleState((HANDLE)_osfhnd(fd), &state, NULL, NULL, NULL, NULL, 0) && (state & PIPE_NOWAIT)) {
+		errno = EWOULDBLOCK;
+	    }
+	    else {
+		errno = map_errno(err);
+	    }
+	    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+	    return -1;
+	}
+	else if (err != ERROR_IO_PENDING) {
 	    if (pol) CloseHandle(ol.hEvent);
 	    if (err == ERROR_ACCESS_DENIED)
 		errno = EBADF;
@@ -6516,6 +6554,10 @@ rb_w32_write(int fd, const void *buf, size_t size)
 	buf = (const char *)buf + len;
 	if (size > 0)
 	    goto retry;
+    }
+    if (ret == 0) {
+	ret = -1;
+	errno = EWOULDBLOCK;
     }
 
     MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));

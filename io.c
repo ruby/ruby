@@ -2474,6 +2474,11 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
 void
 rb_io_set_nonblock(rb_io_t *fptr)
 {
+#ifdef _WIN32
+    if (rb_w32_set_nonblock(fptr->fd) != 0) {
+	rb_sys_fail_path(fptr->pathv);
+    }
+#else
     int oflags;
 #ifdef F_GETFL
     oflags = fcntl(fptr->fd, F_GETFL);
@@ -2489,6 +2494,7 @@ rb_io_set_nonblock(rb_io_t *fptr)
             rb_sys_fail_path(fptr->pathv);
         }
     }
+#endif
 }
 
 void

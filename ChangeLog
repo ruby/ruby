@@ -1,3 +1,21 @@
+Mon Nov 10 19:37:09 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c, include/win32/win32.h (rb_w32_set_nonblock): new
+	  function to support nonblock-mode of pipes.
+
+	* win32/win32.c (rb_w32_read): nonblock-mode pipe returns ERROR_NO_DATA
+	  if there is no data, but also returns it if remote-end is closed.
+
+	* win32/win32.c (rb_w32_write): if cannot to write any data, it may be
+	  blocking.
+
+	* io.c (rb_io_set_nonblock): use rb_w32_set_nonblock for Windows.
+
+	* ext/io/nonblock/nonblock.c (rb_io_nonblock_set): use ruby's API when
+	  setting nonblock-mode.
+
+	* test/ruby/test_io.rb: test nonblock pipes on Windows.
+
 Mon Nov 10 17:24:34 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/etc/etc.c (etc_getlogin): set login name encoding properly.

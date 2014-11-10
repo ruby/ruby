@@ -1259,7 +1259,6 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_write_nonblock
-    skip "IO#write_nonblock is not supported on file/pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
     pipe(proc do |w|
       w.write_nonblock(1)
       w.close
@@ -1269,7 +1268,6 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_read_nonblock_with_not_empty_buffer
-    skip "IO#read_nonblock is not supported on file/pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
     with_pipe {|r, w|
       w.write "foob"
       w.close
@@ -1279,7 +1277,6 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_write_nonblock_simple_no_exceptions
-    skip "IO#write_nonblock is not supported on file/pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
     pipe(proc do |w|
       w.write_nonblock('1', exception: false)
       w.close
@@ -1290,7 +1287,6 @@ class TestIO < Test::Unit::TestCase
 
   def test_read_nonblock_error
     return if !have_nonblock?
-    skip "IO#read_nonblock is not supported on file/pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
     with_pipe {|r, w|
       begin
         r.read_nonblock 4096
@@ -1310,7 +1306,6 @@ class TestIO < Test::Unit::TestCase
 
   def test_read_nonblock_no_exceptions
     return if !have_nonblock?
-    skip "IO#read_nonblock is not supported on file/pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
     with_pipe {|r, w|
       assert_equal :wait_readable, r.read_nonblock(4096, exception: false)
       w.puts "HI!"
@@ -1322,7 +1317,6 @@ class TestIO < Test::Unit::TestCase
 
   def test_read_nonblock_with_buffer_no_exceptions
     return if !have_nonblock?
-    skip "IO#read_nonblock is not supported on file/pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
     with_pipe {|r, w|
       assert_equal :wait_readable, r.read_nonblock(4096, "", exception: false)
       w.puts "HI!"
@@ -1337,7 +1331,6 @@ class TestIO < Test::Unit::TestCase
 
   def test_write_nonblock_error
     return if !have_nonblock?
-    skip "IO#write_nonblock is not supported on file/pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
     with_pipe {|r, w|
       begin
         loop {
@@ -1351,7 +1344,6 @@ class TestIO < Test::Unit::TestCase
 
   def test_write_nonblock_no_exceptions
     return if !have_nonblock?
-    skip "IO#write_nonblock is not supported on file/pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
     with_pipe {|r, w|
       loop {
         ret = w.write_nonblock("a"*100000, exception: false)
@@ -2643,7 +2635,6 @@ End
   end
 
   def test_cross_thread_close_fd
-    skip "cross thread close causes hung-up if pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
     with_pipe do |r,w|
       read_thread = Thread.new do
         begin
@@ -2932,7 +2923,6 @@ End
   end
 
   def test_readpartial_locktmp
-    skip "nonblocking mode is not supported for pipe on this platform" if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
     bug6099 = '[ruby-dev:45297]'
     buf = " " * 100
     data = "a" * 100
