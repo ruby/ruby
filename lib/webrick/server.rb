@@ -106,7 +106,7 @@ module WEBrick
       @logger.info("ruby #{rubyv}")
 
       @listeners = []
-      @shutdown_pipe_r = @shutdown_pipe_w = nil
+      @shutdown_pipe = nil
       unless @config[:DoNotListen]
         if @config[:Listen]
           warn(":Listen option is deprecated; use GenericServer#listen")
@@ -115,7 +115,7 @@ module WEBrick
         if @config[:Port] == 0
           @config[:Port] = @listeners[0].addr[1]
         end
-        @shutdown_pipe_r, @shutdown_pipe_w = IO.pipe
+        @shutdown_pipe = IO.pipe
       end
     end
 
@@ -164,13 +164,15 @@ module WEBrick
           "#{self.class}#start: pid=#{$$} port=#{@config[:Port]}"
         call_callback(:StartCallback)
 
+        shutdown_pipe = @shutdown_pipe
+
         thgroup = ThreadGroup.new
         @status = :Running
         begin
           while @status == :Running
             begin
-              if svrs = IO.select([@shutdown_pipe_r, *@listeners], nil, nil, 2.0)
-                if svrs[0].include? @shutdown_pipe_r
+              if svrs = IO.select([shutdown_pipe[0], *@listeners], nil, nil, 2.0)
+                if svrs[0].include? shutdown_pipe[0]
                   break
                 end
                 svrs[0].each{|svr|
@@ -197,7 +199,7 @@ module WEBrick
             end
           end
         ensure
-          cleanup_shutdown_pipe
+          cleanup_shutdown_pipe(shutdown_pipe)
           cleanup_listener
           @status = :Shutdown
           @logger.info "going to shutdown ..."
@@ -225,11 +227,13 @@ module WEBrick
     def shutdown
       stop
 
-      shutdown_pipe_w = @shutdown_pipe_w # another thread may modify @shutdown_pipe_w.
-      if shutdown_pipe_w && !shutdown_pipe_w.closed?
-        begin
-          shutdown_pipe_w.close
-        rescue IOError # closed by another thread.
+      shutdown_pipe = @shutdown_pipe # another thread may modify @shutdown_pipe.
+      if shutdown_pipe
+        if !shutdown_pipe[1].closed?
+          begin
+            shutdown_pipe[1].close
+          rescue IOError # closed by another thread.
+          end
         end
       end
     end
@@ -317,13 +321,16 @@ module WEBrick
       end
     end
 
-    def cleanup_shutdown_pipe
-      @shutdown_pipe_r.close
-      begin
-        @shutdown_pipe_w.close
-      rescue IOError # another thread closed @shutdown_pipe_w.
-      end
-      @shutdown_pipe_r = @shutdown_pipe_w = nil
+    def cleanup_shutdown_pipe(shutdown_pipe)
+      @shutdown_pipe = nil
+      shutdown_pipe.each {|io|
+        if !io.closed?
+          begin
+            io.close
+          rescue IOError # another thread closed io.
+          end
+        end
+      }
     end
 
     def cleanup_listener
