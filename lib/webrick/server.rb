@@ -226,10 +226,9 @@ module WEBrick
       stop
 
       shutdown_pipe_w = @shutdown_pipe_w # another thread may modify @shutdown_pipe_w.
-      if shutdown_pipe_w
+      if shutdown_pipe_w && !shutdown_pipe_w.closed?
         begin
-          shutdown_pipe_w.write_nonblock "a"
-        rescue IO::WaitWritable
+          shutdown_pipe_w.close
         rescue IOError # closed by another thread.
         end
       end
@@ -320,7 +319,10 @@ module WEBrick
 
     def cleanup_shutdown_pipe
       @shutdown_pipe_r.close
-      @shutdown_pipe_w.close
+      begin
+        @shutdown_pipe_w.close
+      rescue IOError # another thread closed @shutdown_pipe_w.
+      end
       @shutdown_pipe_r = @shutdown_pipe_w = nil
     end
 
