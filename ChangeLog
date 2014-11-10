@@ -1,3 +1,8 @@
+Tue Nov 11 00:21:50 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/net/imap/test_imap.rb: Don't ignore exceptions on server
+	  threads.
+
 Mon Nov 10 23:34:13 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/net/ftp/test_ftp.rb (create_ftp_server): Don't ignore
