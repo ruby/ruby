@@ -552,6 +552,9 @@ init_env(void)
 	    NTLoginName = rb_w32_wstr_to_mbstr(CP_UTF8, env, -1, NULL);
 	}
     }
+    else {
+	NTLoginName = rb_w32_wstr_to_mbstr(CP_UTF8, env, -1, NULL);
+    }
 
     if (!GetEnvironmentVariableW(TMPDIR, env, numberof(env)) &&
 	!GetEnvironmentVariableW(L"TMP", env, numberof(env)) &&
