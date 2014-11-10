@@ -1,3 +1,8 @@
+Mon Nov 10 17:24:34 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/etc/etc.c (etc_getlogin): set login name encoding properly.
+	  [ruby-core:66163] [Bug #10493]
+
 Mon Nov 10 16:20:42 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/rubygems/*.rb: Update to RubyGems master(3e36528).

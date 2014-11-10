@@ -4,7 +4,9 @@ require "etc"
 class TestEtc < Test::Unit::TestCase
   def test_getlogin
     s = Etc.getlogin
-    assert(s.is_a?(String) || s == nil, "getlogin must return a String or nil")
+    return if s == nil
+    assert(s.is_a?(String), "getlogin must return a String or nil")
+    assert_predicate(s, :valid_encoding?, "login name should be a valid string")
   end
 
   def test_passwd
