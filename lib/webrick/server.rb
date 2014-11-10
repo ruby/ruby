@@ -115,7 +115,6 @@ module WEBrick
         if @config[:Port] == 0
           @config[:Port] = @listeners[0].addr[1]
         end
-        @shutdown_pipe = IO.pipe
       end
     end
 
@@ -132,6 +131,7 @@ module WEBrick
 
     def listen(address, port)
       @listeners += Utils::create_listeners(address, port, @logger)
+      setup_shutdown_pipe
     end
 
     ##
@@ -319,6 +319,13 @@ module WEBrick
       if cb = @config[callback_name]
         cb.call(*args)
       end
+    end
+
+    def setup_shutdown_pipe
+      if !@shutdown_pipe
+        @shutdown_pipe = IO.pipe
+      end
+      @shutdown_pipe
     end
 
     def cleanup_shutdown_pipe(shutdown_pipe)

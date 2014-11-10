@@ -96,4 +96,36 @@ class TestWEBrickServer < Test::Unit::TestCase
       w.close
     end
   end
+
+  def test_restart
+    address = '127.0.0.1'
+    port = 0
+    log = []
+    config = {
+      :BindAddress => address,
+      :Port => port,
+      :Logger => WEBrick::Log.new(log, WEBrick::BasicLog::WARN),
+    }
+    server = Echo.new(config)
+    client_proc = lambda {|str|
+      begin
+        ret = server.listeners.first.connect_address.connect {|s|
+          s.write(str)
+          s.close_write
+          s.read
+        }
+        assert_equal(str, ret)
+      ensure
+        server.shutdown
+      end
+    }
+    server_thread = Thread.new { server.start }
+    client_thread = Thread.new { client_proc.call("a") }
+    assert_join_threads([client_thread, server_thread])
+    server.listen(address, port)
+    server_thread = Thread.new { server.start }
+    client_thread = Thread.new { client_proc.call("b") }
+    assert_join_threads([client_thread, server_thread])
+    assert_equal([], log)
+  end
 end

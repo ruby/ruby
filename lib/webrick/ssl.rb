@@ -162,6 +162,7 @@ module WEBrick
         }
       end
       @listeners += listeners
+      setup_shutdown_pipe
     end
 
     ##
