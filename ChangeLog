@@ -1,3 +1,8 @@
+Mon Nov 10 16:09:43 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (rb_f_kill): [DOC] mention known signal list.
+	  [ruby-core:66162] [Bug #10492]
+
 Mon Nov 10 14:17:58 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/rdoc/*.rb: Update to RDoc 4.2.0.alpha(579a11c)

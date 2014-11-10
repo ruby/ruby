@@ -374,6 +374,8 @@ static void signal_enque(int sig);
  *  a POSIX signal name (either with or without a +SIG+ prefix). If _signal_ is
  *  negative (or starts with a minus sign), kills process groups instead of
  *  processes. Not all signals are available on all platforms.
+ *  The keys and values of +Signal.list+ are known signal names and numbers,
+ *  respectively.
  *
  *     pid = fork do
  *        Signal.trap("HUP") { puts "Ouch!"; exit }
