@@ -265,13 +265,13 @@ class Gem::Specification < Gem::BasicSpecification
   #
   # Most gems contain pure Ruby code; they should simply leave the default
   # value in place.  Some gems contain C (or other) code to be compiled into a
-  # Ruby "extension".  The should leave the default value in place unless
-  # their code will only compile on a certain type of system.  Some gems
-  # consist of pre-compiled code ("binary gems").  It's especially important
-  # that they set the platform attribute appropriately.  A shortcut is to set
-  # the platform to Gem::Platform::CURRENT, which will cause the gem builder
-  # to set the platform to the appropriate value for the system on which the
-  # build is being performed.
+  # Ruby "extension".  The gem should leave the default value in place unless
+  # the code will only compile on a certain type of system.  Some gems consist
+  # of pre-compiled code ("binary gems").  It's especially important that they
+  # set the platform attribute appropriately.  A shortcut is to set the
+  # platform to Gem::Platform::CURRENT, which will cause the gem builder to set
+  # the platform to the appropriate value for the system on which the build is
+  # being performed.
   #
   # If this attribute is set to a non-default value, it will be included in
   # the filename of the gem when it is built such as:
