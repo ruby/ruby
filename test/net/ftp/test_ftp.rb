@@ -773,20 +773,16 @@ class FTPTest < Test::Unit::TestCase
   def create_ftp_server(sleep_time = nil)
     server = TCPServer.new(SERVER_ADDR, 0)
     @thread = Thread.start do
+      if sleep_time
+        sleep(sleep_time)
+      end
+      sock = server.accept
       begin
-        if sleep_time
-          sleep(sleep_time)
-        end
-        sock = server.accept
-        begin
-          yield(sock)
-          sock.shutdown(Socket::SHUT_WR)
-          sock.read_timeout = 1
-          sock.read unless sock.eof?
-        ensure
-          sock.close
-        end
-      rescue
+        yield(sock)
+        sock.shutdown(Socket::SHUT_WR)
+        sock.read unless sock.eof?
+      ensure
+        sock.close
       end
     end
     def server.port

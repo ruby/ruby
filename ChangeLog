@@ -1,3 +1,9 @@
+Mon Nov 10 23:34:13 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/net/ftp/test_ftp.rb (create_ftp_server): Don't ignore
+	  exceptions on server thread.
+	  Delete read_timeout method call to fix NoMethodError.
+
 Mon Nov 10 20:20:53 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_read): retry with reduced length if cannot to
