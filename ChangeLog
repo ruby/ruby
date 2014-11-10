@@ -1,3 +1,8 @@
+Mon Nov 10 20:20:53 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_read): retry with reduced length if cannot to
+	  write any data but no error occurs.
+
 Mon Nov 10 20:04:16 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/webrick/server.rb: Setup shutdown pipe in listen method.

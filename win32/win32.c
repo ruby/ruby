@@ -6497,6 +6497,7 @@ rb_w32_write(int fd, const void *buf, size_t size)
     /* get rid of console writing bug */
     len = (_osfile(fd) & FDEV) ? min(32 * 1024, size) : size;
     size -= len;
+  retry2:
 
     /* if have cancel_io, use Overlapped I/O */
     if (cancel_io) {
@@ -6556,6 +6557,12 @@ rb_w32_write(int fd, const void *buf, size_t size)
 	    goto retry;
     }
     if (ret == 0) {
+	size_t newlen = len / 2;
+	if (newlen > 0) {
+	    size += len - newlen;
+	    len = newlen;
+	    goto retry2;
+	}
 	ret = -1;
 	errno = EWOULDBLOCK;
     }
