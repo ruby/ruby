@@ -1,3 +1,7 @@
+Tue Nov 11 22:33:08 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/net/pop/test_pop.rb: Use assert_join_threads.
+
 Tue Nov 11 22:07:20 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/net/http/test_https_proxy.rb: Use assert_join_threads.
