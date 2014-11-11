@@ -173,6 +173,7 @@ INSTALLED_LIST= .installed.list
 
 NEWLINE_C     = newline.c
 MINIPRELUDE_C = miniprelude.c
+PRELUDE_C     = prelude.c
 RBCONFIG      = .rbconfig.time
 
 SRC_FILE      = $<

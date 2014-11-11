@@ -974,7 +974,7 @@ $(MINIPRELUDE_C): $(COMPILE_PRELUDE) {$(srcdir)}prelude.rb
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb -I$(srcdir) -o $@ \
 		$(srcdir)/template/prelude.c.tmpl prelude.rb
 
-{$(VPATH)}prelude.c: $(COMPILE_PRELUDE) $(RBCONFIG) \
+$(PRELUDE_C): $(COMPILE_PRELUDE) $(RBCONFIG) \
 	   {$(srcdir)}lib/rubygems/defaults.rb \
 	   {$(srcdir)}lib/rubygems/core_ext/kernel_gem.rb \
 	   $(PRELUDE_SCRIPTS) $(PREP) $(LIB_SRCS)
