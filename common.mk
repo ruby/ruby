@@ -1128,7 +1128,8 @@ download-unicode-data: ./.unicode-$(UNICODE_VERSION).time
 	    $(UNICODE_VERSION)/ucd/NormalizationTest.txt
 	@exit > $@
 
-$(srcdir)/$(HAVE_BASERUBY:yes=lib/unicode_normalize/tables.rb): ./.unicode-tables.time
+$(srcdir)/$(HAVE_BASERUBY:yes=lib/unicode_normalize/tables.rb): \
+	$(UNICODE_FILES_DEPS:download-unicode-data=./.unicode-tables.time)
 
 ./.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
 		$(UNICODE_FILES) $(UNICODE_FILES_DEPS) \
