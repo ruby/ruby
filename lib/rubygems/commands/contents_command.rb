@@ -102,7 +102,7 @@ prefix or only the files that are requireable.
   end
 
   def files_in_default_gem spec
-    spec.files.sort.map do |file|
+    spec.files.map do |file|
       case file
       when /\A#{spec.bindir}\//
         [RbConfig::CONFIG['bindir'], $POSTMATCH]

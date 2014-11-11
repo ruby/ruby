@@ -1,3 +1,15 @@
+Tue Nov 11 13:01:31 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/rubygems/commands/contents_command.rb (files_in_default_gem):
+	  remove useless sort. show_files will sort the result and
+	  another branch, files_in_gem, doesn't sort.
+	  it should be removed for consistency.
+
+	* test/rubygems/test_gem_commands_contents_command.rb
+	  (test_execute_default_gem): adjust the sort algorithm with
+	  Gem::Commands::ContentsCommand#show_files, which sort items
+	  as array of [prefix, basename] not strings.
+
 Tue Nov 11 10:37:09 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* string.c (sym_equal): use rb_obj_equal().

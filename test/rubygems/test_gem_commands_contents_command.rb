@@ -203,10 +203,10 @@ lib/foo.rb
     end
 
     expected = [
-      File.join(RbConfig::CONFIG['bindir'], 'default_command'),
-      File.join(RbConfig::CONFIG['rubylibdir'], 'default/gem.rb'),
-      File.join(RbConfig::CONFIG['archdir'], 'default_gem.so')
-    ].sort.join "\n"
+      [RbConfig::CONFIG['bindir'], 'default_command'],
+      [RbConfig::CONFIG['rubylibdir'], 'default/gem.rb'],
+      [RbConfig::CONFIG['archdir'].sub(/x86_64/,'armv7l'), 'default_gem.so']
+    ].sort.map{|a|File.join a}.join "\n"
 
     assert_equal expected, @ui.output.chomp
     assert_equal "", @ui.error
