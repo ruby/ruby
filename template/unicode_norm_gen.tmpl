@@ -73,7 +73,7 @@ composition_exclusions = vpath.open("#{InputDataDir}/CompositionExclusions.txt")
     abort "No file version in #{f.path}: #{line}"
   (unicode_version ||= version) == version or
     abort "Unicode version of directory (#{unicode_version}) and file (#{version}) mismatch"
-  f.grep(/^[A-Z0-9]{4,5}/, &:hex)
+  f.grep(/^[A-Z0-9]{4,5}/) {|code| code.hex}
 }
 
 decomposition_table = {}
