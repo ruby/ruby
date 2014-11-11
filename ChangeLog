@@ -1,3 +1,12 @@
+Tue Nov 11 10:37:09 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* string.c (sym_equal): use rb_obj_equal().
+	  rb_obj_equal() is specially optimized in
+	  opt_eq_func()@vm_insnhelper.c.
+
+	  This fix is made from this discussion:
+	  https://www.omniref.com/ruby/2.1.4/symbols/Symbol/%3D%3D#line=8361.
+
 Tue Nov 11 09:38:55 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/rdoc/known_classes.rb: reverted regression changes of

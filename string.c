@@ -8484,13 +8484,7 @@ str_scrub_bang(int argc, VALUE *argv, VALUE str)
  *  symbol, returns <code>true</code>.
  */
 
-static VALUE
-sym_equal(VALUE sym1, VALUE sym2)
-{
-    if (sym1 == sym2) return Qtrue;
-    return Qfalse;
-}
-
+#define sym_equal rb_obj_equal
 
 static int
 sym_printable(const char *s, const char *send, rb_encoding *enc)
