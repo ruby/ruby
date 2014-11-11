@@ -1,3 +1,7 @@
+Tue Nov 11 23:43:51 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/fileutils/test_fileutils.rb: Use assert_join_threads.
+
 Tue Nov 11 22:51:14 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/resolv/test_dns.rb: Use assert_join_threads.
