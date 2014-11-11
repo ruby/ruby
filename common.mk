@@ -1100,7 +1100,7 @@ update-gems: PHONY
 	    -e 'Downloader::RubyGems.download(gem)' \
 	    bundled_gems
 
-UPDATE_LIBRARIES = yes
+UPDATE_LIBRARIES = no
 
 ### set the following environment variable or uncomment the line if
 ### the Unicode data files are updated every minute.
