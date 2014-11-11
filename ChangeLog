@@ -1,3 +1,8 @@
+Tue Nov 11 09:38:55 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/rdoc/known_classes.rb: reverted regression changes of
+	  rdoc known class.
+
 Tue Nov 11 00:21:50 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/net/imap/test_imap.rb: Don't ignore exceptions on server
