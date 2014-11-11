@@ -591,7 +591,7 @@ class TestObject < Test::Unit::TestCase
     end
     begin
       nil.public_send(o) { x = :ng }
-    rescue
+    rescue TypeError
     end
     assert_equal(:ok, x)
   end

@@ -1,3 +1,13 @@
+Wed Nov 12 00:26:37 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_object.rb: Specify an exception class for rescue clause.
+
+	* test/dbm/test_dbm.rb: Ditto.
+
+	* test/gdbm/test_gdbm.rb: Ditto.
+
+	* test/sdbm/test_sdbm.rb: Ditto.
+
 Tue Nov 11 23:43:51 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/fileutils/test_fileutils.rb: Use assert_join_threads.
