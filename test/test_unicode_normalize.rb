@@ -21,6 +21,8 @@ class TestUnicodeNormalize < Test::Unit::TestCase
         code_string.split(/\s/).collect { |cp| cp.to_i(16) }.pack('U*')
       end + [line[1]+1])
     end
+  rescue Errno::ENOENT => e
+    skip e.message
   end
 
   def to_codepoints(string)
