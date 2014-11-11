@@ -115,8 +115,8 @@ ALLOBJS       = $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT)
 GOLFOBJS      = goruby.$(OBJEXT) golf_prelude.$(OBJEXT)
 
 DEFAULT_PRELUDES = $(GEM_PRELUDE)
-PRELUDE_SCRIPTS = $(srcdir)/prelude.rb $(srcdir)/enc/prelude.rb $(DEFAULT_PRELUDES)
-GEM_PRELUDE = $(srcdir)/gem_prelude.rb
+PRELUDE_SCRIPTS = prelude.rb enc/prelude.rb $(DEFAULT_PRELUDES)
+GEM_PRELUDE = gem_prelude.rb
 PRELUDES      = prelude.c miniprelude.c
 GOLFPRELUDES = golf_prelude.c
 
@@ -146,7 +146,7 @@ TESTRUN_SCRIPT = $(srcdir)/test.rb
 
 BOOTSTRAPRUBY = $(BASERUBY)
 
-COMPILE_PRELUDE = $(MINIRUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb
+COMPILE_PRELUDE = $(srcdir)/tool/generic_erb.rb $(srcdir)/template/prelude.c.tmpl
 
 all: showflags main docs
 
@@ -969,20 +969,23 @@ known_errors.inc: $(srcdir)/template/known_errors.inc.tmpl $(srcdir)/defs/known_
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb -c -o $@ $(srcdir)/template/known_errors.inc.tmpl $(srcdir)/defs/known_errors.def
 
-$(MINIPRELUDE_C): $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
+$(MINIPRELUDE_C): $(COMPILE_PRELUDE) prelude.rb
 	$(ECHO) generating $@
-	$(Q) $(BASERUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@
+	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb -I$(srcdir) -o $@ \
+		$(srcdir)/template/prelude.c.tmpl prelude.rb
 
-prelude.c: $(srcdir)/tool/compile_prelude.rb $(RBCONFIG) \
-	   $(srcdir)/lib/rubygems/defaults.rb \
-	   $(srcdir)/lib/rubygems/core_ext/kernel_gem.rb \
+prelude.c: $(COMPILE_PRELUDE) $(RBCONFIG) \
+	   lib/rubygems/defaults.rb \
+	   lib/rubygems/core_ext/kernel_gem.rb \
 	   $(PRELUDE_SCRIPTS) $(PREP) $(LIB_SRCS)
 	$(ECHO) generating $@
-	$(Q) $(COMPILE_PRELUDE) $(PRELUDE_SCRIPTS) $@
+	$(Q) $(MINIRUBY) $(srcdir)/tool/generic_erb.rb -I$(srcdir) -c -o $@ \
+		$(srcdir)/template/prelude.c.tmpl $(PRELUDE_SCRIPTS)
 
-golf_prelude.c: $(srcdir)/tool/compile_prelude.rb $(RBCONFIG) $(srcdir)/prelude.rb $(srcdir)/golf_prelude.rb $(PREP)
+golf_prelude.c: $(COMPILE_PRELUDE) $(RBCONFIG) golf_prelude.rb $(PREP)
 	$(ECHO) generating $@
-	$(Q) $(COMPILE_PRELUDE) $(srcdir)/golf_prelude.rb $@
+	$(Q) $(MINIRUBY) $(srcdir)/tool/generic_erb.rb -I$(srcdir) -c -o $@ \
+		$(srcdir)/template/prelude.c.tmpl golf_prelude.rb
 
 probes.dmyh: {$(srcdir)}probes.d $(srcdir)/tool/gen_dummy_probes.rb
 	$(BASERUBY) $(srcdir)/tool/gen_dummy_probes.rb $(srcdir)/probes.d > $@

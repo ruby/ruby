@@ -1,3 +1,8 @@
+Tue Nov 11 18:09:11 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/prelude.c.tmpl: move from tool/compile_prelude.rb and
+	  expand by generic_erb.rb.
+
 Tue Nov 11 13:01:31 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/rubygems/commands/contents_command.rb (files_in_default_gem):
