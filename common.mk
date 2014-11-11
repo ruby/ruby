@@ -994,6 +994,7 @@ probes.h: {$(VPATH)}probes.$(DTRACE_EXT)
 
 prereq: incs srcs preludes PHONY
 
+preludes: {$(VPATH)}prelude.c
 preludes: {$(VPATH)}miniprelude.c
 preludes: {$(srcdir)}golf_prelude.c
 
