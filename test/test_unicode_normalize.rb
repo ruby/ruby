@@ -21,8 +21,6 @@ class TestUnicodeNormalize < Test::Unit::TestCase
         code_string.split(/\s/).collect { |cp| cp.to_i(16) }.pack('U*')
       end + [line[1]+1])
     end
-  rescue Errno::ENOENT => e
-    skip e.message
   end
 
   def to_codepoints(string)
@@ -31,6 +29,9 @@ class TestUnicodeNormalize < Test::Unit::TestCase
 
   def setup
     @@tests ||= read_tests
+  rescue Errno::ENOENT => e
+    @@tests ||= []
+    skip e.message
   end
 
   def self.generate_test_normalize(target, normalization, source, prechecked)
