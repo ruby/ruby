@@ -214,7 +214,9 @@ def package(rev, destdir)
     v = n
   end
   system(*%W"patch -d #{v} -p0 -i #{$patch_file}") if $patch_file
-  "take a breath, and go ahead".scan(/./) {|c|print c; sleep(c == "," ? 0.7 : 0.05)}; puts
+  if !$exported or $patch_file
+    "take a breath, and go ahead".scan(/./) {|c|print c; sleep(c == "," ? 0.7 : 0.05)}; puts
+  end
   def (clean = []).add(n) push(n); n end
   Dir.chdir(v) do
     File.open(clean.add("cross.rb"), "w") do |f|
