@@ -115,10 +115,10 @@ ALLOBJS       = $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT)
 GOLFOBJS      = goruby.$(OBJEXT) golf_prelude.$(OBJEXT)
 
 DEFAULT_PRELUDES = $(GEM_PRELUDE)
-PRELUDE_SCRIPTS = prelude.rb enc/prelude.rb $(DEFAULT_PRELUDES)
-GEM_PRELUDE = gem_prelude.rb
-PRELUDES      = prelude.c miniprelude.c
-GOLFPRELUDES = golf_prelude.c
+PRELUDE_SCRIPTS = $(srcdir)/prelude.rb $(srcdir)/enc/prelude.rb $(DEFAULT_PRELUDES)
+GEM_PRELUDE   = $(srcdir)/gem_prelude.rb
+PRELUDES      = {$(srcdir)}prelude.c {$(srcdir)}miniprelude.c
+GOLFPRELUDES  = {$(srcdir)}golf_prelude.c
 
 SCRIPT_ARGS   =	--dest-dir="$(DESTDIR)" \
 		--extout="$(EXTOUT)" \
@@ -969,20 +969,20 @@ known_errors.inc: $(srcdir)/template/known_errors.inc.tmpl $(srcdir)/defs/known_
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb -c -o $@ $(srcdir)/template/known_errors.inc.tmpl $(srcdir)/defs/known_errors.def
 
-$(MINIPRELUDE_C): $(COMPILE_PRELUDE) prelude.rb
+$(MINIPRELUDE_C): $(COMPILE_PRELUDE) {$(srcdir)}prelude.rb
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb -I$(srcdir) -o $@ \
 		$(srcdir)/template/prelude.c.tmpl prelude.rb
 
-prelude.c: $(COMPILE_PRELUDE) $(RBCONFIG) \
-	   lib/rubygems/defaults.rb \
-	   lib/rubygems/core_ext/kernel_gem.rb \
+{$(VPATH)}prelude.c: $(COMPILE_PRELUDE) $(RBCONFIG) \
+	   {$(srcdir)}lib/rubygems/defaults.rb \
+	   {$(srcdir)}lib/rubygems/core_ext/kernel_gem.rb \
 	   $(PRELUDE_SCRIPTS) $(PREP) $(LIB_SRCS)
 	$(ECHO) generating $@
 	$(Q) $(MINIRUBY) $(srcdir)/tool/generic_erb.rb -I$(srcdir) -c -o $@ \
 		$(srcdir)/template/prelude.c.tmpl $(PRELUDE_SCRIPTS)
 
-golf_prelude.c: $(COMPILE_PRELUDE) $(RBCONFIG) golf_prelude.rb $(PREP)
+{$(VPATH)}golf_prelude.c: $(COMPILE_PRELUDE) $(RBCONFIG) {$(srcdir)}golf_prelude.rb $(PREP)
 	$(ECHO) generating $@
 	$(Q) $(MINIRUBY) $(srcdir)/tool/generic_erb.rb -I$(srcdir) -c -o $@ \
 		$(srcdir)/template/prelude.c.tmpl golf_prelude.rb
