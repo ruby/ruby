@@ -1,3 +1,7 @@
+Tue Nov 11 22:07:20 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/net/http/test_https_proxy.rb: Use assert_join_threads.
+
 Tue Nov 11 18:09:11 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* template/prelude.c.tmpl: move from tool/compile_prelude.rb and
