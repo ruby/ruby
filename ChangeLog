@@ -1,3 +1,7 @@
+Wed Nov 12 22:30:52 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/rubygems/*: Update to RubyGems 2.4.3 master (7b1f684).
+
 Wed Nov 12 00:26:37 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_object.rb: Specify an exception class for rescue clause.
