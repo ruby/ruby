@@ -1,3 +1,7 @@
+Wed Nov 12 22:50:12 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* gems/bundled_gems: Update to test-unit 3.0.6 and minitest 5.4.3.
+
 Wed Nov 12 22:30:52 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/rubygems/*: Update to RubyGems 2.4.3 master (7b1f684).
