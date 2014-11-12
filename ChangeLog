@@ -1,3 +1,8 @@
+Thu Nov 13 03:56:38 2014  Eric Wong  <e@80x24.org>
+
+	* gc.c (struct heap_page): trivial packing
+	  304 => 296 bytes on x86-64
+
 Wed Nov 12 22:50:12 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* gems/bundled_gems: Update to test-unit 3.0.6 and minitest 5.4.3.

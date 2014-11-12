@@ -613,17 +613,16 @@ struct heap_page {
     int total_slots;
     int free_slots;
     int final_slots;
-
-    struct heap_page *free_next;
-    RVALUE *start;
-    RVALUE *freelist;
-    struct heap_page *next;
-
     struct {
 	unsigned int before_sweep : 1;
 	unsigned int has_remembered_objects : 1;
 	unsigned int has_long_lived_shady_objects : 1;
     } flags;
+
+    struct heap_page *free_next;
+    RVALUE *start;
+    RVALUE *freelist;
+    struct heap_page *next;
 
 #if USE_RGENGC
     bits_t wb_unprotected_bits[HEAP_BITMAP_LIMIT];
