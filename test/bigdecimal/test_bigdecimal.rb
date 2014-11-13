@@ -694,6 +694,12 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_kind_of(BigDecimal, BigDecimal.new("3") * 1.quo(3))
   end
 
+  def test_mult_with_nil
+    assert_raise(TypeError) {
+      BigDecimal('1.1') * nil
+    }
+  end
+
   def test_div
     x = BigDecimal.new((2**100).to_s)
     assert_equal(BigDecimal.new((2**100 / 3).to_s), (x / 3).to_i)
