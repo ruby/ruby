@@ -1,3 +1,23 @@
+Fri Nov 14 04:51:18 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: Tuning RincGC parameters.
+
+	  Before this patch, gc_marks_step() marks (white -> grey) fixed
+	  number objects. However, this strategy does not fit practical
+	  cases, for example too slow to make progres.
+
+	  This patch changes this strategy how many objects the
+	  gc_marks_step() should handle.
+
+	  We can estimate how many times gc_marks_step() is called during
+	  this major marking (== C) with the free slot number in pooled
+	  pages. We also can estimate the living object number (== L)
+	  using last marked_slots value. We can solve this problem (how
+	  many objects should be process in gc_marks_step()) by L/C.
+
+	* gc.c (rb_objspace_t): add rb_objspace_t::rincgc::pooled_sltos and
+	  step_slots.
+
 Fri Nov 14 01:26:47 2014  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (search_response): parse MODSEQ in SEARCH

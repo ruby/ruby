@@ -586,6 +586,12 @@ typedef struct rb_objspace {
 	size_t error_count;
 #endif
     } rgengc;
+#if USE_RINCGC
+    struct {
+	size_t pooled_slots;
+	size_t step_slots;
+    } rincgc;
+#endif
 #endif /* USE_RGENGC */
 } rb_objspace_t;
 
@@ -1281,12 +1287,17 @@ heap_add_freepage(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *pa
     }
 }
 
-static inline void
+static inline int
 heap_add_poolpage(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
 {
     if (page->freelist) {
 	page->free_next = heap->pooled_pages;
 	heap->pooled_pages = page;
+	objspace->rincgc.pooled_slots += page->free_slots;
+	return TRUE;
+    }
+    else {
+	return FALSE;
     }
 }
 
@@ -3187,8 +3198,10 @@ gc_sweep_start_heap(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     heap->sweep_pages = heap->pages;
     heap->free_pages = NULL;
+#if GC_ENABLE_INCREMENTAL_MARK
     heap->pooled_pages = NULL;
-
+    objspace->rincgc.pooled_slots = 0;
+#endif
     if (heap->using_page) {
 	RVALUE **p = &heap->using_page->freelist;
 	while (*p) {
@@ -3288,8 +3301,9 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
 	}
 	else if (sweep_page->free_slots > 0) {
 	    if (need_pool) {
-		need_pool = FALSE;
-		heap_add_poolpage(objspace, heap, sweep_page);
+		if (heap_add_poolpage(objspace, heap, sweep_page)) {
+		    need_pool = FALSE;
+		}
 	    }
 	    else {
 		heap_add_freepage(objspace, heap, sweep_page);
@@ -4205,6 +4219,7 @@ gc_mark_stacked_objects(rb_objspace_t *objspace, int incremental, size_t count)
     VALUE obj;
 #if GC_ENABLE_INCREMENTAL_MARK
     size_t marked_slots_at_the_beggining = objspace->marked_slots;
+    size_t popped_count = 0;
 #endif
 
     while (pop_mark_stack(mstack, &obj)) {
@@ -4221,8 +4236,9 @@ gc_mark_stacked_objects(rb_objspace_t *objspace, int incremental, size_t count)
 		rb_bug("gc_mark_stacked_objects: incremental, but marking bit is 0");
 	    }
 	    CLEAR_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj);
+	    popped_count++;
 
-	    if (objspace->marked_slots - marked_slots_at_the_beggining > count) {
+	    if (popped_count + (objspace->marked_slots - marked_slots_at_the_beggining) > count) {
 		break;
 	    }
 	}
@@ -4857,17 +4873,22 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
     gc_report(1, objspace, "gc_marks_start: (%s)\n", full_mark ? "full" : "minor");
     gc_stat_transition(objspace, gc_stat_marking);
 
-    objspace->marked_slots = 0;
-
 #if USE_RGENGC
     objspace->rgengc.old_objects_at_gc_start = objspace->rgengc.old_objects;
 
     if (full_mark) {
+#if GC_ENABLE_INCREMENTAL_MARK
+	objspace->rincgc.step_slots = (objspace->marked_slots * 2) / ((objspace->rincgc.pooled_slots / HEAP_OBJ_LIMIT) + 1);
+
+	if (0) fprintf(stderr, "objspace->marked_slots: %d, objspace->rincgc.pooled_page_num: %d, objspace->rincgc.step_slots: %d, \n",
+		       (int)objspace->marked_slots, (int)objspace->rincgc.pooled_slots, (int)objspace->rincgc.step_slots);
+#endif
 	objspace->flags.during_minor_gc = FALSE;
 	objspace->profile.major_gc_count++;
 	objspace->rgengc.remembered_wb_unprotected_objects = 0;
 	objspace->rgengc.old_objects = 0;
 	objspace->rgengc.last_major_gc = objspace->profile.count;
+	objspace->marked_slots = 0;
 	rgengc_mark_and_rememberset_clear(objspace, heap_eden);
     }
     else {
@@ -4879,6 +4900,7 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
 	rgengc_rememberset_mark(objspace, heap_eden);
     }
 #endif
+
     gc_mark_roots(objspace, NULL);
 
     gc_report(1, objspace, "gc_marks_start: (%s) end, stack in %d\n", full_mark ? "full" : "minor", (int)mark_stack_size(&objspace->mark_stack));
@@ -5026,6 +5048,9 @@ gc_marks_finish(rb_objspace_t *objspace)
 	if (objspace->rgengc.old_objects > objspace->rgengc.old_objects_limit) {
 	    objspace->rgengc.need_major_gc |= GPR_FLAG_MAJOR_BY_OLDGEN;
 	}
+	if (RGENGC_FORCE_MAJOR_GC) {
+	    objspace->rgengc.need_major_gc = GPR_FLAG_MAJOR_BY_FORCE;
+	}
 
 	gc_report(1, objspace, "gc_marks_finish (marks %d objects, old %d objects, total %d slots, sweep %d slots, increment: %d, next GC: %s)\n",
 		  (int)objspace->marked_slots, (int)objspace->rgengc.old_objects, (int)heap->total_slots, (int)sweep_slots, (int)heap_allocatable_pages,
@@ -5049,6 +5074,7 @@ gc_marks_step(rb_objspace_t *objspace, int slots)
 	    gc_sweep(objspace);
 	}
     }
+    if (0) fprintf(stderr, "objspace->marked_slots: %d\n", (int)objspace->marked_slots);
 }
 
 static void
@@ -5098,7 +5124,7 @@ gc_marks_continue(rb_objspace_t *objspace, rb_heap_t *heap)
 
 	if (slots > 0) {
 	    gc_report(2, objspace, "gc_marks_continue: provide %d slots from %s.\n", slots, from);
-	    gc_marks_step(objspace, slots);
+	    gc_marks_step(objspace, objspace->rincgc.step_slots);
 	}
 	else {
 	    gc_report(2, objspace, "gc_marks_continue: no more pooled pages (stack depth: %d).\n", (int)mark_stack_size(&objspace->mark_stack));
