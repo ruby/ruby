@@ -5124,7 +5124,7 @@ gc_marks_continue(rb_objspace_t *objspace, rb_heap_t *heap)
 
 	if (slots > 0) {
 	    gc_report(2, objspace, "gc_marks_continue: provide %d slots from %s.\n", slots, from);
-	    gc_marks_step(objspace, objspace->rincgc.step_slots);
+	    gc_marks_step(objspace, (int)objspace->rincgc.step_slots);
 	}
 	else {
 	    gc_report(2, objspace, "gc_marks_continue: no more pooled pages (stack depth: %d).\n", (int)mark_stack_size(&objspace->mark_stack));

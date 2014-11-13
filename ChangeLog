@@ -1,3 +1,7 @@
+Fri Nov 14 08:12:40 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* gc.c: fix build error caused by implicit conversion with clang.
+
 Fri Nov 14 06:54:06 2014  Eric Wong  <e@80x24.org>
 
 	* insns.def (opt_succ): remove Time#succ optimization
