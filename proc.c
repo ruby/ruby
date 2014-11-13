@@ -566,10 +566,7 @@ proc_new(VALUE klass, int is_lambda)
     rb_control_frame_t *cfp = th->cfp;
     rb_block_t *block;
 
-    if ((block = rb_vm_control_frame_block_ptr(cfp)) != 0) {
-	/* block found */
-    }
-    else {
+    if (!(block = rb_vm_control_frame_block_ptr(cfp))) {
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 
 	if ((block = rb_vm_control_frame_block_ptr(cfp)) != 0) {
@@ -596,13 +593,7 @@ proc_new(VALUE klass, int is_lambda)
 	}
     }
 
-    procval = rb_vm_make_proc(th, block, klass);
-
-    if (is_lambda) {
-	rb_proc_t *proc;
-	GetProcPtr(procval, proc);
-	proc->is_lambda = TRUE;
-    }
+    procval = rb_vm_make_proc_lambda(th, block, klass, is_lambda);
     return procval;
 }
 

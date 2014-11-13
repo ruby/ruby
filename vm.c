@@ -663,6 +663,12 @@ rb_proc_alloc(VALUE klass, const rb_block_t *block,
 VALUE
 rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass)
 {
+    return rb_vm_make_proc_lambda(th, block, klass, 0);
+}
+
+VALUE
+rb_vm_make_proc_lambda(rb_thread_t *th, const rb_block_t *block, VALUE klass, int8_t is_lambda)
+{
     VALUE procval, envval, blockprocval = 0;
     rb_control_frame_t *cfp = RUBY_VM_GET_CFP_FROM_BLOCK_PTR(block);
 
@@ -677,7 +683,7 @@ rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass)
     }
 
     procval = rb_proc_alloc(klass, block, envval, blockprocval,
-			    (int8_t)th->safe_level, 0, 0);
+			    (int8_t)th->safe_level, 0, is_lambda);
 
     if (VMDEBUG) {
 	if (th->stack < block->ep && block->ep < th->stack + th->stack_size) {
