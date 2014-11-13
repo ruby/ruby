@@ -2868,7 +2868,7 @@ module Net
             when T_NUMBER
               data.push(number)
             when T_LPAR
-              # TODO: include the MODSEQ value in a response 
+              # TODO: include the MODSEQ value in a response
               shift_token
               match(T_ATOM)
               match(T_SPACE)
