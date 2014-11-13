@@ -1,3 +1,8 @@
+Thu Nov 13 21:59:58 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* lib/rexml/document.rb: add REXML::Document#document.
+	  reported by Tomas Hoger <thoger@redhat.com> and patched by nahi.
+
 Thu Nov 13 21:51:56 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/monitor/test_monitor.rb: Use assert_join_threads.

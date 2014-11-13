@@ -278,6 +278,10 @@ module REXML
       end
     end
 
+    def document
+      self
+    end
+
     private
     def build( source )
       Parsers::TreeParser.new( source, self ).parse
