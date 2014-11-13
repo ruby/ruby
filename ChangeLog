@@ -1,3 +1,7 @@
+Thu Nov 13 11:56:12 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* st.c: include "internal.h" for STATIC_ASSERT.
+
 Thu Nov 13 03:56:38 2014  Eric Wong  <e@80x24.org>
 
 	* gc.c (struct heap_page): trivial packing
