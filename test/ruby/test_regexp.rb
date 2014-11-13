@@ -1,6 +1,5 @@
 # coding: US-ASCII
 require 'test/unit'
-require_relative 'envutil'
 
 class TestRegexp < Test::Unit::TestCase
   def setup

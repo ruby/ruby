@@ -1,7 +1,6 @@
 require 'test/unit'
 require 'tempfile'
 require 'thread'
-require_relative 'envutil'
 
 class TestAutoload < Test::Unit::TestCase
   def test_autoload_so

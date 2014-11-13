@@ -2,7 +2,6 @@ require 'test/unit'
 require 'cgi'
 require 'tempfile'
 require 'stringio'
-require_relative '../ruby/envutil'
 
 
 ##

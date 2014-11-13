@@ -1,7 +1,5 @@
 require 'test/unit'
 
-require_relative "envutil"
-
 class TestGc < Test::Unit::TestCase
   class S
     def initialize(a)

@@ -1,6 +1,5 @@
 require 'test/unit'
 require 'tmpdir'
-require_relative 'ruby/envutil'
 
 class TestTracer < Test::Unit::TestCase
   include EnvUtil

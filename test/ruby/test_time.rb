@@ -2,7 +2,6 @@ require 'test/unit'
 require 'delegate'
 require 'timeout'
 require 'delegate'
-require_relative 'envutil'
 
 class TestTime < Test::Unit::TestCase
   def setup

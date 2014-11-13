@@ -1,5 +1,4 @@
 require_relative "testbase"
-require_relative "../ruby/envutil"
 require "bigdecimal/math"
 
 class TestBigMath < Test::Unit::TestCase

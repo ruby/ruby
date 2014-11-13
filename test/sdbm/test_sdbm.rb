@@ -1,6 +1,5 @@
 require 'test/unit'
 require 'tmpdir'
-require_relative '../ruby/envutil'
 
 begin
   require 'sdbm'

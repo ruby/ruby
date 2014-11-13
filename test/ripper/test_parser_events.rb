@@ -1,6 +1,5 @@
 begin
   require_relative 'dummyparser'
-  require_relative '../ruby/envutil'
   require 'test/unit'
   ripper_test = true
   module TestRipper; end

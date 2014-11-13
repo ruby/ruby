@@ -1,7 +1,6 @@
 require 'test/unit'
 require 'tempfile'
 require 'timeout'
-require_relative 'envutil'
 
 class TestBeginEndBlock < Test::Unit::TestCase
   DIR = File.dirname(File.expand_path(__FILE__))

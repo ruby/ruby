@@ -1,4 +1,3 @@
-require_relative "../ruby/envutil"
 require_relative "utils"
 
 if defined?(OpenSSL)

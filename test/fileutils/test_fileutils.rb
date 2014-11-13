@@ -6,7 +6,6 @@ require_relative 'fileasserts'
 require 'pathname'
 require 'tmpdir'
 require 'test/unit'
-require_relative '../ruby/envutil'
 
 class TestFileUtils < Test::Unit::TestCase
   TMPROOT = "#{Dir.tmpdir}/fileutils.rb.#{$$}"

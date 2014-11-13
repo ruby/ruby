@@ -1,7 +1,6 @@
 require "test/unit"
 require "fileutils"
 require "tmpdir"
-require_relative "envutil"
 
 class TestFileExhaustive < Test::Unit::TestCase
   DRIVE = Dir.pwd[%r'\A(?:[a-z]:|//[^/]+/[^/]+)'i]

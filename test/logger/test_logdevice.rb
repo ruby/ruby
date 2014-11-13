@@ -3,7 +3,6 @@ require 'test/unit'
 require 'logger'
 require 'tempfile'
 require 'tmpdir'
-require_relative '../ruby/envutil'
 
 class TestLogDevice < Test::Unit::TestCase
   class LogExcnRaiser

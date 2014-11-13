@@ -1,6 +1,5 @@
 require 'test/unit'
 require "-test-/struct"
-require_relative '../../ruby/envutil'
 
 class  Bug::Struct::Test_Member < Test::Unit::TestCase
   S = Bug::Struct.new(:a)

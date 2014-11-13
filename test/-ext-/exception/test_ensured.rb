@@ -1,5 +1,4 @@
 require 'test/unit'
-require_relative '../../ruby/envutil'
 
 module Bug
   class Bug7802 < RuntimeError

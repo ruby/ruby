@@ -1,4 +1,3 @@
-require_relative '../ruby/envutil'
 require "webrick"
 begin
   require "webrick/https"

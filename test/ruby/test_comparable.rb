@@ -1,5 +1,4 @@
 require 'test/unit'
-require_relative 'envutil'
 
 class TestComparable < Test::Unit::TestCase
   def setup

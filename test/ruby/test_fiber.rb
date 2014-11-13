@@ -2,7 +2,6 @@ require 'test/unit'
 require 'fiber'
 require 'continuation'
 require 'tmpdir'
-require_relative './envutil'
 
 class TestFiber < Test::Unit::TestCase
   def test_normal

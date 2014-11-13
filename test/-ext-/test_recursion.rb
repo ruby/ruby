@@ -1,6 +1,5 @@
 # -*- coding: us-ascii -*-
 require 'test/unit'
-require_relative '../ruby/envutil'
 
 class TestRecursion < Test::Unit::TestCase
   require '-test-/recursion'

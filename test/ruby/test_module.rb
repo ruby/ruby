@@ -1,6 +1,5 @@
 require 'test/unit'
 require 'pp'
-require_relative 'envutil'
 
 $m0 = Module.nesting
 

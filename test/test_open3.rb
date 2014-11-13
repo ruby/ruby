@@ -1,6 +1,5 @@
 require 'test/unit'
 require 'open3'
-require_relative 'ruby/envutil'
 
 class TestOpen3 < Test::Unit::TestCase
   RUBY = EnvUtil.rubybin

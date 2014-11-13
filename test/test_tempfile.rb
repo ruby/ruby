@@ -1,7 +1,6 @@
 require 'test/unit'
 require 'tempfile'
 require 'thread'
-require_relative 'ruby/envutil'
 
 class TestTempfile < Test::Unit::TestCase
   def initialize(*)

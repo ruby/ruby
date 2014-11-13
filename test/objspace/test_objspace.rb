@@ -1,6 +1,5 @@
 require "test/unit"
 require "objspace"
-require_relative "../ruby/envutil"
 
 class TestObjSpace < Test::Unit::TestCase
   def test_memsize_of

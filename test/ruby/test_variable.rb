@@ -1,5 +1,4 @@
 require 'test/unit'
-require_relative 'envutil'
 
 class TestVariable < Test::Unit::TestCase
   class Gods

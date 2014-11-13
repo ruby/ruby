@@ -1,6 +1,5 @@
 # coding: US-ASCII
 require 'test/unit'
-require_relative 'envutil'
 
 class TestM17N < Test::Unit::TestCase
   def assert_encoding(encname, actual, message=nil)

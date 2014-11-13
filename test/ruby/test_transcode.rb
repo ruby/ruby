@@ -2,7 +2,7 @@
 # some of the comments are in UTF-8
 
 require 'test/unit'
-require_relative 'envutil'
+
 class TestTranscode < Test::Unit::TestCase
   def test_errors
     assert_raise(Encoding::ConverterNotFoundError) { 'abc'.encode('foo', 'bar') }

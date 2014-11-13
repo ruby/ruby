@@ -1,6 +1,5 @@
 require 'test/unit'
 require '-test-/tracepoint'
-require_relative '../../ruby/envutil'
 
 class TestTracepointObj < Test::Unit::TestCase
   def test_not_available_from_ruby

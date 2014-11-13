@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 require 'test/unit'
-require_relative 'envutil'
 
 class TestUnicodeEscape < Test::Unit::TestCase
   def test_basic

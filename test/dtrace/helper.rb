@@ -1,7 +1,6 @@
 # -*- coding: us-ascii -*-
 require 'test/unit'
 require 'tempfile'
-require_relative '../ruby/envutil'
 
 if Process.euid == 0
   ok = true

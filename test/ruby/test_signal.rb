@@ -1,7 +1,6 @@
 require 'test/unit'
 require 'timeout'
 require 'tempfile'
-require_relative 'envutil'
 
 class TestSignal < Test::Unit::TestCase
   def test_signal

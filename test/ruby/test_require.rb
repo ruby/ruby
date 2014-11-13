@@ -1,7 +1,6 @@
 require 'test/unit'
 
 require 'tempfile'
-require_relative 'envutil'
 require 'tmpdir'
 
 class TestRequire < Test::Unit::TestCase

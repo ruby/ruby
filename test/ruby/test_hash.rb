@@ -1,7 +1,6 @@
 # -*- coding: us-ascii -*-
 require 'test/unit'
 require 'continuation'
-require_relative 'envutil'
 
 class TestHash < Test::Unit::TestCase
 

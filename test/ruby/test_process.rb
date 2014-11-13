@@ -2,7 +2,6 @@ require 'test/unit'
 require 'tempfile'
 require 'timeout'
 require 'io/wait'
-require_relative 'envutil'
 require 'rbconfig'
 
 class TestProcess < Test::Unit::TestCase

@@ -1,5 +1,4 @@
 require 'test/unit'
-require_relative 'envutil'
 
 class TestISeq < Test::Unit::TestCase
   ISeq = RubyVM::InstructionSequence

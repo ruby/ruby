@@ -1,6 +1,5 @@
 # coding: US-ASCII
 require 'test/unit'
-require_relative 'envutil'
 
 class TestArray < Test::Unit::TestCase
   def setup

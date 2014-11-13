@@ -3,7 +3,6 @@ require 'drb/drb'
 require 'drb/extservm'
 require 'timeout'
 require 'shellwords'
-require_relative '../ruby/envutil'
 
 module DRbTests
 

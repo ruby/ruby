@@ -1,7 +1,6 @@
 # -*- coding: us-ascii -*-
 require "open3"
 require "timeout"
-require "test/unit"
 require_relative "find_executable"
 
 module EnvUtil
@@ -357,7 +356,7 @@ module Test
         line -= 5 # lines until src
         src = <<eom
 # -*- coding: #{src.encoding}; -*-
-  require #{__dir__.dump}'/envutil';include Test::Unit::Assertions
+  require #{__dir__.dump}'/test/unit';include Test::Unit::Assertions
   END {
     puts [Marshal.dump($!)].pack('m'), "assertions=\#{self._assertions}"
   }

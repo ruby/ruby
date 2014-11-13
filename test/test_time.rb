@@ -1,6 +1,5 @@
 require 'time'
 require 'test/unit'
-require_relative 'ruby/envutil.rb'
 
 class TestTimeExtension < Test::Unit::TestCase # :nodoc:
   def test_rfc822

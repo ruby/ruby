@@ -2,7 +2,6 @@
 require 'test/unit'
 require 'tmpdir'
 require 'timeout'
-require_relative 'envutil'
 
 class TestIO_M17N < Test::Unit::TestCase
   ENCS = [

@@ -1,5 +1,4 @@
 require 'test/unit'
-require_relative '../ruby/envutil'
 
 module TestIRB
   class TestRaiseNoBacktraceException < Test::Unit::TestCase

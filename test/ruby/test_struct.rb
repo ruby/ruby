@@ -1,7 +1,6 @@
 # -*- coding: us-ascii -*-
 require 'test/unit'
 require 'timeout'
-require_relative 'envutil'
 
 module TestStruct
   def test_struct

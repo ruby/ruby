@@ -1,5 +1,4 @@
 require 'test/unit'
-require_relative 'envutil'
 
 class TestRand < Test::Unit::TestCase
   def assert_random_int(ws, m, init = 0)

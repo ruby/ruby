@@ -4,6 +4,7 @@ rescue Gem::LoadError
 end
 require 'minitest/unit'
 require 'test/unit/assertions'
+require_relative '../envutil'
 require 'test/unit/testcase'
 require 'optparse'
 

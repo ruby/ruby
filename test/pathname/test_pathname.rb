@@ -5,7 +5,6 @@ require 'fileutils'
 require 'tmpdir'
 require 'enumerator'
 
-require_relative '../ruby/envutil'
 
 class TestPathname < Test::Unit::TestCase
   def self.define_assertion(name, linenum, &block)

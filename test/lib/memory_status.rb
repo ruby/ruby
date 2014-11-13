@@ -60,7 +60,7 @@ module Memory
     end
   else
     PAT = /^\s*(\d+)\s+(\d+)$/
-    require_relative 'find_executable'
+    require_relative '../lib/find_executable'
     if PSCMD = EnvUtil.find_executable("ps", "-ovsz=", "-orss=", "-p", $$.to_s) {|out| PAT =~ out}
       PSCMD.pop
     end

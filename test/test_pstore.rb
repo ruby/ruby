@@ -1,7 +1,6 @@
 require 'test/unit'
 require 'pstore'
 require 'tmpdir'
-require_relative 'ruby/envutil'
 
 class PStoreTest < Test::Unit::TestCase
   def setup

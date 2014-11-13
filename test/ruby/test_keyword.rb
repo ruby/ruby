@@ -1,5 +1,4 @@
 require 'test/unit'
-require_relative 'envutil'
 
 class TestKeywordArguments < Test::Unit::TestCase
   def f1(str: "foo", num: 424242)

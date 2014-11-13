@@ -13,7 +13,6 @@ require File.expand_path('../file_creation', __FILE__)
 
 
 begin
-  require_relative '../ruby/envutil'
   require_relative 'support/ruby_runner'
   require_relative 'support/rakefile_definitions'
 rescue NoMethodError, LoadError

@@ -1,6 +1,5 @@
 # -*- coding: us-ascii -*-
 require 'test/unit'
-require_relative 'envutil'
 
 class TestRubyLiteral < Test::Unit::TestCase
 

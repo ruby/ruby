@@ -1,6 +1,5 @@
 require 'test/unit'
 require 'weakref'
-require_relative './ruby/envutil'
 
 class TestWeakRef < Test::Unit::TestCase
   def make_weakref(level = 10)

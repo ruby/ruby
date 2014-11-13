@@ -1,5 +1,4 @@
 require 'test/unit'
-require_relative 'envutil'
 
 class TestWeakMap < Test::Unit::TestCase
   def setup

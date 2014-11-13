@@ -4,7 +4,6 @@ begin
   require 'pty'
 rescue LoadError
 end
-require_relative '../../ruby/envutil'
 
 class TestIO_Console < Test::Unit::TestCase
   Bug6116 = '[ruby-dev:45309]'

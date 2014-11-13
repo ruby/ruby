@@ -215,7 +215,6 @@ EOT
   end
 
   def test_gc
-    require_relative '../ruby/envutil.rb'
     assert_in_out_err(%w[-rjson --disable-gems], <<-EOS, [], [])
       bignum_too_long_to_embed_as_string = 1234567890123456789012345
       expect = bignum_too_long_to_embed_as_string.to_s

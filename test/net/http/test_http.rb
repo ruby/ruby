@@ -3,7 +3,6 @@ require 'test/unit'
 require 'net/http'
 require 'stringio'
 require_relative 'utils'
-require_relative '../../ruby/envutil'
 
 class TestNetHTTP < Test::Unit::TestCase
 

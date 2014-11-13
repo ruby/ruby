@@ -1,6 +1,5 @@
 require 'test/unit'
 require 'tmpdir'
-require_relative "../../ruby/envutil"
 
 class TestBugReporter < Test::Unit::TestCase
   def test_bug_reporter_add

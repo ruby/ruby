@@ -1,5 +1,4 @@
 require 'test/unit'
-require_relative 'envutil'
 
 class TestObjectSpace < Test::Unit::TestCase
   def self.deftest_id2ref(obj)

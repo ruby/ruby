@@ -1,5 +1,4 @@
 require 'test/unit'
-require_relative 'envutil'
 
 class TestProc < Test::Unit::TestCase
   def setup

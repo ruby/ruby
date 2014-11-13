@@ -488,7 +488,6 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   end
 
   def test_take_bug_8215
-    require_relative '../ruby/envutil'
     service = DRb.start_service(nil, @ts_base)
 
     uri = service.uri

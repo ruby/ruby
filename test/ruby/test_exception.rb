@@ -1,6 +1,5 @@
 require 'test/unit'
 require 'tempfile'
-require_relative 'envutil'
 
 class TestException < Test::Unit::TestCase
   def test_exception_rescued

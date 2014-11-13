@@ -8,7 +8,6 @@ require 'stringio'
 require 'timeout'
 require 'tempfile'
 require 'weakref'
-require_relative 'envutil'
 
 class TestIO < Test::Unit::TestCase
   module Feature

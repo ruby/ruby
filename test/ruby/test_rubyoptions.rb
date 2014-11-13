@@ -4,8 +4,6 @@ require 'test/unit'
 require 'tmpdir'
 require 'tempfile'
 
-require_relative 'envutil'
-
 class TestRubyOptions < Test::Unit::TestCase
   def write_file(filename, content)
     File.open(filename, "w") {|f|

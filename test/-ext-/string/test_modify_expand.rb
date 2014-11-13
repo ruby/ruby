@@ -1,6 +1,5 @@
 require 'test/unit'
 require "-test-/string/string"
-require_relative '../../ruby/envutil'
 
 class Test_StringModifyExpand < Test::Unit::TestCase
   def test_modify_expand_memory_leak

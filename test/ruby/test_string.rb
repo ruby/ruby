@@ -1,5 +1,4 @@
 require 'test/unit'
-require_relative 'envutil'
 
 # use of $= is deprecated after 1.7.1
 def pre_1_7_1

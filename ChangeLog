@@ -1,3 +1,15 @@
+Fri Nov 14 01:03:17 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/envutil.rb: Moved from test/ruby/.
+
+	* test/lib/find_executable.rb: Ditto.
+
+	* test/lib/memory_status.rb: Ditto.
+
+	* test/lib/test/unit.rb: require envutil.
+
+	* test/: Don't require envutil in test files.
+
 Thu Nov 13 21:59:58 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* lib/rexml/document.rb: add REXML::Document#document.

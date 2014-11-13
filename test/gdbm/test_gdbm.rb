@@ -7,7 +7,6 @@ if defined? GDBM
   require 'test/unit'
   require 'tmpdir'
   require 'fileutils'
-  require_relative '../ruby/envutil'
 
   class TestGDBM_RDONLY < Test::Unit::TestCase
     def TestGDBM_RDONLY.uname_s

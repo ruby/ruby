@@ -1,6 +1,5 @@
 require 'test/unit'
 require 'tmpdir'
-require_relative 'envutil'
 
 class TestDir_M17N < Test::Unit::TestCase
   def with_tmpdir
