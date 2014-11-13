@@ -1,3 +1,8 @@
+Thu Nov 13 18:50:14 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_ensure): remove obsolete prot_tag comment.  patch by
+	  Jack Danger at [ruby-core:66238].  [misc #10502]
+
 Thu Nov 13 18:10:38 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (rb_vm_make_proc_lambda): similar to rb_vm_make_proc() with
