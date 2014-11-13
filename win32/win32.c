@@ -4815,6 +4815,8 @@ rb_w32_fstat(int fd, struct stat *st)
     if (ret) return ret;
 #ifdef __BORLANDC__
     st->st_mode &= ~(S_IWGRP | S_IWOTH);
+#else
+    if (GetEnvironmentVariableW(L"TZ", NULL, 0) == 0 && GetLastError() == ERROR_ENVVAR_NOT_FOUND) return ret;
 #endif
     if (GetFileInformationByHandle((HANDLE)_get_osfhandle(fd), &info)) {
 #ifdef __BORLANDC__
@@ -4835,7 +4837,12 @@ rb_w32_fstati64(int fd, struct stati64 *st)
 {
     BY_HANDLE_FILE_INFORMATION info;
     struct stat tmp;
-    int ret = fstat(fd, &tmp);
+    int ret;
+
+#ifndef __BORLANDC__
+    if (GetEnvironmentVariableW(L"TZ", NULL, 0) == 0 && GetLastError() == ERROR_ENVVAR_NOT_FOUND) return _fstati64(fd, st);
+#endif
+    ret = fstat(fd, &tmp);
 
     if (ret) return ret;
 #ifdef __BORLANDC__
