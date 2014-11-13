@@ -157,6 +157,7 @@ module REXML
 
   # This is a set of entity constants -- the ones defined in the XML
   # specification.  These are +gt+, +lt+, +amp+, +quot+ and +apos+.
+  # CAUTION: these entities does not have parent and document
   module EntityConst
     # +>+
     GT = Entity.new( 'gt', '>' )
