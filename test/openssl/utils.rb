@@ -190,7 +190,6 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
 
   class OpenSSL::SSLTestCase < Test::Unit::TestCase
     RUBY = EnvUtil.rubybin
-    PORT = 20443
     ITERATIONS = ($0 == __FILE__) ? 100 : 10
 
     def setup
@@ -267,7 +266,7 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
       end
     end
 
-    def start_server(port0, verify_mode, start_immediately, args = {}, &block)
+    def start_server(verify_mode, start_immediately, args = {}, &block)
       IO.pipe {|stop_pipe_r, stop_pipe_w|
         ctx_proc = args[:ctx_proc]
         server_proc = args[:server_proc]
@@ -288,13 +287,8 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
 
         Socket.do_not_reverse_lookup = true
         tcps = nil
-        port = port0
-        begin
-          tcps = TCPServer.new("127.0.0.1", port)
-        rescue Errno::EADDRINUSE
-          port += 1
-          retry
-        end
+        tcps = TCPServer.new("127.0.0.1", 0)
+        port = tcps.connect_address.ip_port
 
         ssls = OpenSSL::SSL::SSLServer.new(tcps, ctx)
         ssls.start_immediately = start_immediately

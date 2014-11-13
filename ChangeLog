@@ -1,3 +1,7 @@
+Thu Nov 13 21:45:13 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/openssl: Don't specify port number.
+
 Thu Nov 13 21:22:35 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/openssl/ssl_server.rb: Unused file removed.

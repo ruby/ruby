@@ -4,9 +4,7 @@ if defined?(OpenSSL)
 
   class OpenSSL::TestPartialRecordRead < OpenSSL::SSLTestCase
     def test_partial_tls_record_read_nonblock
-      port = 12345
-
-      start_server(port, OpenSSL::SSL::VERIFY_NONE, true, :server_proc =>
+      start_server(OpenSSL::SSL::VERIFY_NONE, true, :server_proc =>
           Proc.new do |server_ctx, server_ssl|
             begin
               server_ssl.io.write("\x01") # the beginning of a TLS record
