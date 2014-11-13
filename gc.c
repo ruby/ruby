@@ -586,7 +586,7 @@ typedef struct rb_objspace {
 	size_t error_count;
 #endif
     } rgengc;
-#if USE_RINCGC
+#if GC_ENABLE_INCREMENTAL_MARK
     struct {
 	size_t pooled_slots;
 	size_t step_slots;
@@ -5374,7 +5374,6 @@ rb_gc_writebarrier_generational(VALUE a, VALUE b)
 }
 
 #if GC_ENABLE_INCREMENTAL_MARK
-
 static void
 gc_mark_from(rb_objspace_t *objspace, VALUE obj, VALUE parent)
 {
@@ -5526,7 +5525,6 @@ rb_gc_unprotect_logging(void *objptr, const char *filename, int line)
 	st_insert(rgengc_unprotect_logging_table, (st_data_t)ptr, cnt);
     }
 }
-
 #endif /* USE_RGENGC */
 
 void
@@ -5852,9 +5850,12 @@ gc_start(rb_objspace_t *objspace, const int full_mark, const int immediate_mark,
 	    reason |= objspace->rgengc.need_major_gc;
 	    do_full_mark = TRUE;
 	}
+	else if (RGENGC_FORCE_MAJOR_GC) {
+	    reason = GPR_FLAG_MAJOR_BY_FORCE;
+	    do_full_mark = TRUE;
+	}
 
 	objspace->rgengc.need_major_gc = GPR_FLAG_NONE;
-	if (RGENGC_FORCE_MAJOR_GC) objspace->rgengc.need_major_gc = GPR_FLAG_MAJOR_BY_NOFREE;
 #endif
     }
 

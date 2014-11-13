@@ -1,3 +1,11 @@
+Fri Nov 14 05:29:46 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: refactoring.
+
+	* gc.c: use GC_ENABLE_INCREMENTAL_MARK instead of USE_RINCGC.
+
+	* gc.c (gc_start): check FORCE_MAJOR_GC.
+
 Fri Nov 14 04:51:18 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: Tuning RincGC parameters.
