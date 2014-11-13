@@ -1,3 +1,8 @@
+Fri Nov 14 01:26:47 2014  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (search_response): parse MODSEQ in SEARCH
+	  responses properly.  [ruby-core:64203] [Bug #10112]
+
 Fri Nov 14 01:03:17 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/envutil.rb: Moved from test/ruby/.

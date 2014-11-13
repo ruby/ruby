@@ -268,4 +268,12 @@ EOF
     assert_equal(empty_part.body.subtype, 'MIXED')
     assert_equal(empty_part.body.param['BOUNDARY'], '000e0cd29212e3e06a0486590ae2')
   end
+
+  # [Bug #10112]
+  def test_search_modseq
+    parser = Net::IMAP::ResponseParser.new
+    response = parser.parse("* SEARCH 87216 87221 (MODSEQ 7667567)\r\n")
+    assert_equal("SEARCH", response.name)
+    assert_equal([87216, 87221], response.data)
+  end
 end

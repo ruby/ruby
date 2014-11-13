@@ -2865,8 +2865,15 @@ module Net
               break
             when T_SPACE
               shift_token
-            else
+            when T_NUMBER
               data.push(number)
+            when T_LPAR
+              # TODO: include the MODSEQ value in a response 
+              shift_token
+              match(T_ATOM)
+              match(T_SPACE)
+              match(T_NUMBER)
+              match(T_RPAR)
             end
           end
         else
