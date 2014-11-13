@@ -70,7 +70,7 @@ extern "C" {
     (__GNUC__ == (major) && __GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ >= (patchlevel))))
 
 #if GCC_VERSION_SINCE(4, 6, 0)
-# STATIC_ASSERT(name, expr) _Static_assert(expr, #name ": " #expr)
+# define STATIC_ASSERT(name, expr) _Static_assert(expr, #name ": " #expr)
 #else
 # define STATIC_ASSERT(name, expr) typedef int static_assert_##name##_check[1 - 2*!(expr)]
 #endif
