@@ -20,14 +20,16 @@ class TestMonitor < Test::Unit::TestCase
       end
       @monitor.exit
     }
-    @monitor.enter
-    queue.enq(nil)
-    for i in 1 .. 5
-      ary.push(i)
-      Thread.pass
-    end
-    @monitor.exit
-    th.join
+    th2 = Thread.start {
+      @monitor.enter
+      queue.enq(nil)
+      for i in 1 .. 5
+        ary.push(i)
+        Thread.pass
+      end
+      @monitor.exit
+    }
+    assert_join_threads([th, th2])
     assert_equal((1..10).to_a, ary)
   end
 
@@ -43,14 +45,16 @@ class TestMonitor < Test::Unit::TestCase
         end
       end
     }
-    @monitor.synchronize do
-      queue.enq(nil)
-      for i in 1 .. 5
-        ary.push(i)
-        Thread.pass
+    th2 = Thread.start {
+      @monitor.synchronize do
+        queue.enq(nil)
+        for i in 1 .. 5
+          ary.push(i)
+          Thread.pass
+        end
       end
-    end
-    th.join
+    }
+    assert_join_threads([th, th2])
     assert_equal((1..10).to_a, ary)
   end
 
@@ -69,18 +73,18 @@ class TestMonitor < Test::Unit::TestCase
         ary << :t2
       }
     }
-    @monitor.synchronize do
-      queue.enq(nil)
-      queue.enq(nil)
-      assert_equal([], ary)
-      t1.kill
-      t2.kill
-      ary << :main
-    end
-    assert_equal([:main], ary)
-  ensure
-    t1.join
-    t2.join
+    t3 = Thread.start {
+      @monitor.synchronize do
+        queue.enq(nil)
+        queue.enq(nil)
+        assert_equal([], ary)
+        t1.kill
+        t2.kill
+        ary << :main
+      end
+      assert_equal([:main], ary)
+    }
+    assert_join_threads([t1, t2, t3])
   end
 
   def test_try_enter
@@ -94,15 +98,17 @@ class TestMonitor < Test::Unit::TestCase
       @monitor.exit
       queue2.enq(nil)
     }
-    assert_equal(true, @monitor.try_enter)
-    @monitor.exit
-    queue1.enq(nil)
-    queue2.deq
-    assert_equal(false, @monitor.try_enter)
-    queue1.enq(nil)
-    queue2.deq
-    assert_equal(true, @monitor.try_enter)
-    th.join
+    th2 = Thread.start {
+      assert_equal(true, @monitor.try_enter)
+      @monitor.exit
+      queue1.enq(nil)
+      queue2.deq
+      assert_equal(false, @monitor.try_enter)
+      queue1.enq(nil)
+      queue2.deq
+      assert_equal(true, @monitor.try_enter)
+    }
+    assert_join_threads([th, th2])
   end
 
   def test_cond
@@ -117,14 +123,16 @@ class TestMonitor < Test::Unit::TestCase
         cond.signal
       end
     end
-    @monitor.synchronize do
-      queue1.enq(nil)
-      assert_equal("foo", a)
-      result1 = cond.wait
-      assert_equal(true, result1)
-      assert_equal("bar", a)
+    th2 = Thread.start do
+      @monitor.synchronize do
+        queue1.enq(nil)
+        assert_equal("foo", a)
+        result1 = cond.wait
+        assert_equal(true, result1)
+        assert_equal("bar", a)
+      end
     end
-    th.join
+    assert_join_threads([th, th2])
   end
 
   def test_timedwait
@@ -138,14 +146,16 @@ class TestMonitor < Test::Unit::TestCase
         cond.signal
       end
     end
-    @monitor.synchronize do
-      queue2.enq(nil)
-      assert_equal("foo", b)
-      result2 = cond.wait(0.1)
-      assert_equal(true, result2)
-      assert_equal("bar", b)
+    th2 = Thread.start do
+      @monitor.synchronize do
+        queue2.enq(nil)
+        assert_equal("foo", b)
+        result2 = cond.wait(0.1)
+        assert_equal(true, result2)
+        assert_equal("bar", b)
+      end
     end
-    th.join
+    assert_join_threads([th, th2])
 
     c = "foo"
     queue3 = Queue.new
@@ -156,17 +166,19 @@ class TestMonitor < Test::Unit::TestCase
         cond.signal
       end
     end
-    @monitor.synchronize do
-      assert_equal("foo", c)
-      result3 = cond.wait(0.1)
-      assert_equal(true, result3) # wait always returns true in Ruby 1.9
-      assert_equal("foo", c)
-      queue3.enq(nil)
-      result4 = cond.wait
-      assert_equal(true, result4)
-      assert_equal("bar", c)
+    th2 = Thread.start do
+      @monitor.synchronize do
+        assert_equal("foo", c)
+        result3 = cond.wait(0.1)
+        assert_equal(true, result3) # wait always returns true in Ruby 1.9
+        assert_equal("foo", c)
+        queue3.enq(nil)
+        result4 = cond.wait
+        assert_equal(true, result4)
+        assert_equal("bar", c)
+      end
     end
-    th.join
+    assert_join_threads([th, th2])
 
 #     d = "foo"
 #     cumber_thread = Thread.start {
