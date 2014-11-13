@@ -1,3 +1,8 @@
+Fri Nov 14 06:54:06 2014  Eric Wong  <e@80x24.org>
+
+	* insns.def (opt_succ): remove Time#succ optimization
+	  [Feature #10501]
+
 Fri Nov 14 05:29:46 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: refactoring.

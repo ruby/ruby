@@ -2105,10 +2105,6 @@ opt_succ
 	    BASIC_OP_UNREDEFINED_P(BOP_SUCC, STRING_REDEFINED_OP_FLAG)) {
 	    val = rb_str_succ(recv);
 	}
-	else if (RBASIC_CLASS(recv) == rb_cTime &&
-		 BASIC_OP_UNREDEFINED_P(BOP_SUCC, TIME_REDEFINED_OP_FLAG)) {
-	    val = rb_time_succ(recv);
-	}
 	else
 	  {
 	    goto INSN_LABEL(normal_dispatch);
