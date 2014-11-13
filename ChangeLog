@@ -1,3 +1,8 @@
+Thu Nov 13 21:22:35 2014  Tanaka Akira  <akr@fsij.org>
+
+	* test/openssl/ssl_server.rb: Unused file removed.
+	  It is not used since r16111, Ruby 1.9.1.
+
 Thu Nov 13 18:50:14 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_ensure): remove obsolete prot_tag comment.  patch by

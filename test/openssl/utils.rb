@@ -190,7 +190,6 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
 
   class OpenSSL::SSLTestCase < Test::Unit::TestCase
     RUBY = EnvUtil.rubybin
-    SSL_SERVER = File.join(File.dirname(__FILE__), "ssl_server.rb")
     PORT = 20443
     ITERATIONS = ($0 == __FILE__) ? 100 : 10
 
@@ -311,7 +310,7 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
           end
           threads.unshift server
 
-          $stderr.printf("%s started: pid=%d port=%d\n", SSL_SERVER, $$, port) if $DEBUG
+          $stderr.printf("SSL server started: pid=%d port=%d\n", $$, port) if $DEBUG
 
           client = Thread.new do
             begin
