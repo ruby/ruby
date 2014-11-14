@@ -21,26 +21,42 @@ def read_make_deps(cwd)
   dependencies = {}
   make_p = `make -p all miniruby ruby golf 2> /dev/null`
   dirstack = [cwd]
-  make_p.scan(%r{Entering directory `(.*)'|Leaving directory `(.*)'|^([/0-9a-zA-Z._-]+):(.*)}) {
-    if $1
-      enter_dir = Pathname($1)
+  curdir = nil
+  make_p.scan(%r{Entering directory ['`](.*)'|^\# (GNU Make) |^CURDIR := (.*)|^([/0-9a-zA-Z._-]+):(.*)|^# (Finished Make data base on) |Leaving directory ['`](.*)'}) {
+    directory_enter = $1
+    data_base_start = $2
+    data_base_curdir = $3
+    rule_target = $4
+    rule_sources = $5
+    data_base_end = $6
+    directory_leave = $7
+    #p $~
+    if directory_enter
+      enter_dir = Pathname(directory_enter)
       #p [:enter, enter_dir]
       dirstack.push enter_dir
-    elsif $2
-      leave_dir = Pathname($2)
+    elsif data_base_start
+      curdir = nil
+    elsif data_base_curdir
+      curdir = Pathname(data_base_curdir)
+    elsif rule_target && rule_sources
+      target = rule_target
+      deps = rule_sources
+      deps = deps.scan(%r{[/0-9a-zA-Z._-]+})
+      next if /\.o\z/ !~ target.to_s
+      next if /\A\./ =~ target.to_s # skip rules such as ".c.o"
+      #p [curdir, target, deps]
+      dependencies[(curdir||dirstack.last) + target] ||= []
+      dependencies[(curdir||dirstack.last) + target] |= deps.map {|dep| (curdir||dirstack.last) + dep }
+    elsif data_base_end
+      curdir = nil
+    elsif directory_leave
+      leave_dir = Pathname(directory_leave)
       #p [:leave, leave_dir]
       if leave_dir != dirstack.last
         warn "unexpected leave_dir : #{dirstack.last.inspect} != #{leave_dir.inspect}"
       end
       dirstack.pop
-    else
-      target = $3
-      deps = $4
-      deps = deps.scan(%r{[/0-9a-zA-Z._-]+})
-      next if /\.o\z/ !~ target.to_s
-      next if /\A\./ =~ target.to_s # skip rules such as ".c.o"
-      dependencies[dirstack.last + target] ||= []
-      dependencies[dirstack.last + target] |= deps.map {|dep| dirstack.last + dep }
     end
   }
   dependencies
@@ -106,7 +122,10 @@ def concentrate(dependencies, cwd)
   dependencies.keys.sort.each {|target|
     sources = dependencies[target]
     target = target.relative_path_from(cwd)
-    sources = sources.map {|s| s.relative_path_from(cwd) }
+    sources = sources.map {|s|
+      rel = s.relative_path_from(cwd)
+      rel
+    }
     if %r{\A\.\.(/|\z)} =~ target.to_s
       warn "out of tree target: #{target}"
       next
@@ -146,6 +165,7 @@ end
 def main
   cwd = Pathname.pwd
   make_deps = read_make_deps(cwd)
+  #pp make_deps
   make_deps = concentrate(make_deps, cwd)
   #pp make_deps
   actual_deps = read_actual_deps(cwd)

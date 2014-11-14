@@ -1,3 +1,7 @@
+Fri Nov 14 17:36:48 2014  Tanaka Akira  <akr@fsij.org>
+
+	* tool/update-deps: Support GNU Make 4.0.
+
 Fri Nov 14 16:59:53 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (default_proc_for_compat_func): check arguments number and
