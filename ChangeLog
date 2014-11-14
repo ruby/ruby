@@ -9,8 +9,8 @@ Fri Nov 14 16:59:53 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Nov 14 16:33:06 2014  Koichi Sasada  <ko1@atdot.net>
 
-	* gc.c (gc_stat_internal): support comatible layer for
-	  GC.stat(symbol) type acess.
+	* gc.c (gc_stat_internal): support compatible layer for
+	  GC.stat(symbol) type access.
 
 Fri Nov 14 16:19:08 2014  Koichi Sasada  <ko1@atdot.net>
 
@@ -23,7 +23,7 @@ Fri Nov 14 16:19:08 2014  Koichi Sasada  <ko1@atdot.net>
 	  show a warning message like that:
 	  program: GC.stat[:total_allocated_object]
 	  warning message: "warning: GC.stat keys were changed from Ruby
-	  2.1. In this case,  you refer to obsolete `total_allocated_object'
+	  2.1. In this case, you refer to obsolete `total_allocated_object'
 	  (new key is `total_allocated_objects').
 	  Please check <https://bugs.ruby-lang.org/issues/9924>
 	  for more information."
