@@ -134,10 +134,10 @@ Thu Nov 13 18:10:38 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Thu Nov 13 12:11:18 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* rb_w32_fstat{,i64}: speed up.  adjusting timestamps in this function
-	  is to get rid of the side effect of ENV["TZ"].  then, if ENV["TZ"] is
-	  not set, no need to adjust.  this change makes File#stat about 60%
-	  faster.
+	* win32/win32.c (rb_w32_fstat{,i64}): speed up.  adjusting
+	  timestamps in this function is to get rid of the side effect of
+	  ENV["TZ"].  then, if ENV["TZ"] is not set, no need to adjust.
+	  this change makes File#stat about 60% faster.
 
 Thu Nov 13 11:56:12 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
