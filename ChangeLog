@@ -1,3 +1,10 @@
+Fri Nov 14 10:41:25 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: guard by #if/#endif with GC_ENABLE_INCREMENTAL_MARK
+	  to hide unused codes.
+
+	* gc.c: similar to GC_ENABLE_LAZY_SWEEP.
+
 Fri Nov 14 10:23:35 2014  Eric Wong  <e@80x24.org>
 
 	* vm_eval.c (rb_eval_cmd): use pre-defined idCall
