@@ -1481,7 +1481,7 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
 	PUSH_TAG();
 	rb_set_safe_level_force(level);
 	if ((state = EXEC_TAG()) == 0) {
-	    val = rb_funcall2(cmd, rb_intern("call"), RARRAY_LENINT(arg),
+	    val = rb_funcall2(cmd, idCall, RARRAY_LENINT(arg),
 			      RARRAY_CONST_PTR(arg));
 	}
 	POP_TAG();
