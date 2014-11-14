@@ -24,7 +24,7 @@ Fri Nov 14 16:19:08 2014  Koichi Sasada  <ko1@atdot.net>
 	  Please check <https://bugs.ruby-lang.org/issues/9924>
 	  for more information."
 
-	  Pleaes correct my English message :)
+	  Please correct my English message :)
 
 	* hash.c (rb_hash_set_default_proc): export (in internal).
 
