@@ -73,6 +73,7 @@ instance_ids = []
 global_ids = []
 const_ids = []
 class_ids = []
+attrset_ids = []
 names = {}
 predefined.split(/^/).each_with_index do |line, num|
   next if /^#/ =~ line
@@ -102,8 +103,7 @@ predefined.split(/^/).each_with_index do |line, num|
   when /\A\$(?:\d+|(?!\d)\w+)\z/; global_ids
   when /\A@@(?!\d)\w+\z/; class_ids
   when /\A@(?!\d)\w+\z/; instance_ids
-  when /\A((?!\d)\w+)=\z/
-    KeywordError.raise("use ID2ATTRSET(#{$1}) instead of ATTRSET #{name}", firstline+num)
+  when /\A((?!\d)\w+)=\z/; attrset_ids
   else preserved_ids
   end << token
   predefined_ids[token] = name
@@ -114,6 +114,7 @@ end
   "GLOBAL" => global_ids,
   "CONST" => const_ids,
   "CLASS" => class_ids,
+  "ATTRSET" => attrset_ids,
   :preserved => preserved_ids,
   :predefined => predefined_ids,
 }
