@@ -6477,6 +6477,7 @@ setup_gc_stat_symbols(void)
 
 	{
 	    VALUE table = gc_stat_compat_table = rb_hash_new();
+	    rb_obj_hide(table);
 	    rb_gc_register_mark_object(table);
 
 	    /* compatibility layer for Ruby 2.1 */
@@ -6515,7 +6516,7 @@ setup_gc_stat_symbols(void)
 static VALUE
 compat_key(VALUE key)
 {
-    VALUE new_key = rb_hash_aref(gc_stat_compat_table, key);
+    VALUE new_key = rb_hash_lookup(gc_stat_compat_table, key);
 
     if (!NIL_P(new_key)) {
 	static int warned = 0;
@@ -6534,11 +6535,14 @@ compat_key(VALUE key)
 static VALUE
 default_proc_for_compat_func(VALUE hash, VALUE dmy, int argc, VALUE *argv)
 {
-    VALUE key = argv[1];
-    VALUE new_key = Qnil;
+    VALUE key, new_key;
+
+    Check_Type(hash, T_HASH);
+    rb_check_arity(argc, 2, 2);
+    key = argv[1];
 
     if ((new_key = compat_key(key)) != Qnil) {
-	return rb_hash_aref(hash, new_key);
+	return rb_hash_lookup(hash, new_key);
     }
 
     return Qnil;
