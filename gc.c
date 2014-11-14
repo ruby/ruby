@@ -6513,12 +6513,11 @@ setup_gc_stat_symbols(void)
 }
 
 static VALUE
-default_proc_for_compat_func(VALUE hash, VALUE dmy, int argc, VALUE *argv)
+compat_key(VALUE key)
 {
-    VALUE key = argv[1];
-    VALUE new_key = Qnil;
+    VALUE new_key = rb_hash_aref(gc_stat_compat_table, key);
 
-    if ((new_key = rb_hash_aref(gc_stat_compat_table, key)) != Qnil) {
+    if (!NIL_P(new_key)) {
 	static int warned = 0;
 	if (warned == 0) {
 	    rb_warn("GC.stat keys were changed from Ruby 2.1. "
@@ -6527,6 +6526,18 @@ default_proc_for_compat_func(VALUE hash, VALUE dmy, int argc, VALUE *argv)
 		    key, new_key);
 	    warned = 1;
 	}
+    }
+
+    return new_key;
+}
+
+static VALUE
+default_proc_for_compat_func(VALUE hash, VALUE dmy, int argc, VALUE *argv)
+{
+    VALUE key = argv[1];
+    VALUE new_key = Qnil;
+
+    if ((new_key = compat_key(key)) != Qnil) {
 	return rb_hash_aref(hash, new_key);
     }
 
@@ -6566,6 +6577,7 @@ gc_stat_internal(VALUE hash_or_sym)
     else if (hash != Qnil) \
 	rb_hash_aset(hash, gc_stat_symbols[gc_stat_sym_##name], SIZET2NUM(attr));
 
+  again:
     SET(count, objspace->profile.count);
 
     /* implementation dependent counters */
@@ -6610,6 +6622,11 @@ gc_stat_internal(VALUE hash_or_sym)
 #undef SET
 
     if (!NIL_P(key)) { /* matched key should return above */
+	VALUE new_key;
+	if ((new_key = compat_key(key)) != Qnil) {
+	    key = new_key;
+	    goto again;
+	}
 	rb_raise(rb_eArgError, "unknown key: %"PRIsVALUE, rb_sym2str(key));
     }
 
