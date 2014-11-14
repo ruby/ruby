@@ -60,6 +60,10 @@ with all sufficient information, see the ChangeLog file.
   * Improvements
     * Introduce incremental marking for major GC. [Feature #10137]
 
+* IO
+  * Improvements
+    * IO#nonblock_read and IO#nonblock_write for pipes on Windows are supported.
+
 * Kernel
   * New methods:
     * Kernel#itself
