@@ -1,3 +1,8 @@
+Fri Nov 14 09:25:44 2014  Eric Wong  <e@80x24.org>
+
+	* vm_eval.c (rb_yield_splat): add missing GC guard
+	  [Bug #10509]
+
 Fri Nov 14 08:12:40 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* gc.c: fix build error caused by implicit conversion with clang.

@@ -989,6 +989,7 @@ rb_yield_splat(VALUE values)
         rb_raise(rb_eArgError, "not an array");
     }
     v = rb_yield_0(RARRAY_LENINT(tmp), RARRAY_CONST_PTR(tmp));
+    RB_GC_GUARD(tmp);
     return v;
 }
 
