@@ -73,7 +73,7 @@ Fri Nov 14 04:51:18 2014  Koichi Sasada  <ko1@atdot.net>
 
 	  Before this patch, gc_marks_step() marks (white -> grey) fixed
 	  number objects. However, this strategy does not fit practical
-	  cases, for example too slow to make progres.
+	  cases, for example too slow to make progress.
 
 	  This patch changes this strategy how many objects the
 	  gc_marks_step() should handle.
@@ -84,7 +84,7 @@ Fri Nov 14 04:51:18 2014  Koichi Sasada  <ko1@atdot.net>
 	  using last marked_slots value. We can solve this problem (how
 	  many objects should be process in gc_marks_step()) by L/C.
 
-	* gc.c (rb_objspace_t): add rb_objspace_t::rincgc::pooled_sltos and
+	* gc.c (rb_objspace_t): add rb_objspace_t::rincgc::pooled_slots and
 	  step_slots.
 
 Fri Nov 14 01:26:47 2014  Shugo Maeda  <shugo@ruby-lang.org>
@@ -134,7 +134,7 @@ Thu Nov 13 18:10:38 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Thu Nov 13 12:11:18 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* rb_w32_fstat{,i64}: speed up.  adjuting timestamps in this function
+	* rb_w32_fstat{,i64}: speed up.  adjusting timestamps in this function
 	  is to get rid of the side effect of ENV["TZ"].  then, if ENV["TZ"] is
 	  not set, no need to adjust.  this change makes File#stat about 60%
 	  faster.
