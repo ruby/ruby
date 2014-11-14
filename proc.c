@@ -559,7 +559,7 @@ bind_receiver(VALUE bindval)
 }
 
 static VALUE
-proc_new(VALUE klass, int is_lambda)
+proc_new(VALUE klass, int8_t is_lambda)
 {
     VALUE procval = Qnil;
     rb_thread_t *th = GET_THREAD();
