@@ -901,7 +901,7 @@ rb_hash_default_proc(VALUE hash)
  *     h["cat"]   #=> "catcat"
  */
 
-static VALUE
+VALUE
 rb_hash_set_default_proc(VALUE hash, VALUE proc)
 {
     VALUE b;

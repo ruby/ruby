@@ -1,3 +1,25 @@
+Fri Nov 14 16:19:08 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_stat_internal): add compatible layer.
+	  From Ruby 2.2, keys of GC.stat are changed [Feature #9924].
+	  To provide compatible layer, GC.stat add a default_proc
+	  (if default_proc of given Hash object is not set).
+
+	  At first use of this compatible layer of interpreter process,
+	  show a warning message like that:
+	  program: GC.stat[:total_allocated_object]
+	  warning message: "warning: GC.stat keys were changed from Ruby
+	  2.1. In this case,  you refer to obsolete `total_allocated_object'
+	  (new key is `total_allocated_objects').
+	  Please check <https://bugs.ruby-lang.org/issues/9924>
+	  for more information."
+
+	  Pleaes correct my English message :)
+
+	* hash.c (rb_hash_set_default_proc): export (in internal).
+
+	* internal.h: ditto.
+
 Fri Nov 14 10:41:25 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: guard by #if/#endif with GC_ENABLE_INCREMENTAL_MARK

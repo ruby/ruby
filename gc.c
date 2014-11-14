@@ -6332,46 +6332,84 @@ gc_latest_gc_info(int argc, VALUE *argv, VALUE self)
     return gc_info_decode(objspace->profile.latest_gc_info, arg);
 }
 
-size_t
-gc_stat_internal(VALUE hash_or_sym)
-{
-    static VALUE sym_count;
-    static VALUE sym_heap_allocated_pages, sym_heap_sorted_length, sym_heap_allocatable_pages;
-    static VALUE sym_heap_available_slots, sym_heap_live_slots, sym_heap_free_slots, sym_heap_final_slots;
-    static VALUE sym_heap_marked_slots, sym_heap_swept_slots;
-    static VALUE sym_heap_eden_pages, sym_heap_tomb_pages;
-    static VALUE sym_total_allocated_pages, sym_total_freed_pages;
-    static VALUE sym_total_allocated_objects, sym_total_freed_objects;
-    static VALUE sym_malloc_increase_bytes, sym_malloc_increase_bytes_limit;
+enum gc_stat_sym {
+    gc_stat_sym_count,
+    gc_stat_sym_heap_allocated_pages,
+    gc_stat_sym_heap_sorted_length,
+    gc_stat_sym_heap_allocatable_pages,
+    gc_stat_sym_heap_available_slots,
+    gc_stat_sym_heap_live_slots,
+    gc_stat_sym_heap_free_slots,
+    gc_stat_sym_heap_final_slots,
+    gc_stat_sym_heap_marked_slots,
+    gc_stat_sym_heap_swept_slots,
+    gc_stat_sym_heap_eden_pages,
+    gc_stat_sym_heap_tomb_pages,
+    gc_stat_sym_total_allocated_pages,
+    gc_stat_sym_total_freed_pages,
+    gc_stat_sym_total_allocated_objects,
+    gc_stat_sym_total_freed_objects,
+    gc_stat_sym_malloc_increase_bytes,
+    gc_stat_sym_malloc_increase_bytes_limit,
 #if USE_RGENGC
-    static VALUE sym_minor_gc_count, sym_major_gc_count;
-    static VALUE sym_remembered_wb_unprotected_objects, sym_remembered_wb_unprotected_objects_limit;
-    static VALUE sym_old_objects, sym_old_objects_limit;
+    gc_stat_sym_minor_gc_count,
+    gc_stat_sym_major_gc_count,
+    gc_stat_sym_remembered_wb_unprotected_objects,
+    gc_stat_sym_remembered_wb_unprotected_objects_limit,
+    gc_stat_sym_old_objects,
+    gc_stat_sym_old_objects_limit,
 #if RGENGC_ESTIMATE_OLDMALLOC
-    static VALUE sym_oldmalloc_increase_bytes, sym_oldmalloc_increase_bytes_limit;
+    gc_stat_sym_oldmalloc_increase_bytes,
+    gc_stat_sym_oldmalloc_increase_bytes_limit,
 #endif
 #if RGENGC_PROFILE
-    static VALUE sym_total_generated_normal_object_count, sym_total_generated_shady_object_count;
-    static VALUE sym_total_shade_operation_count, sym_total_promoted_count;
-    static VALUE sym_total_remembered_normal_object_count, sym_total_remembered_shady_object_count;
-#endif /* RGENGC_PROFILE */
-#endif /* USE_RGENGC */
+    gc_stat_sym_total_generated_normal_object_count,
+    gc_stat_sym_total_generated_shady_object_count,
+    gc_stat_sym_total_shade_operation_count,
+    gc_stat_sym_total_promoted_count,
+    gc_stat_sym_total_remembered_normal_object_count,
+    gc_stat_sym_total_remembered_shady_object_count,
+#endif
+#endif
+    gc_stat_sym_last
+};
 
-    rb_objspace_t *objspace = &rb_objspace;
-    VALUE hash = Qnil, key = Qnil;
+enum gc_stat_compat_sym {
+    gc_stat_compat_sym_gc_stat_heap_used,
+    gc_stat_compat_sym_heap_eden_page_length,
+    gc_stat_compat_sym_heap_tomb_page_length,
+    gc_stat_compat_sym_heap_increment,
+    gc_stat_compat_sym_heap_length,
+    gc_stat_compat_sym_heap_live_slot,
+    gc_stat_compat_sym_heap_free_slot,
+    gc_stat_compat_sym_heap_final_slot,
+    gc_stat_compat_sym_heap_swept_slot,
+#if USE_RGENGC
+    gc_stat_compat_sym_remembered_shady_object,
+    gc_stat_compat_sym_remembered_shady_object_limit,
+    gc_stat_compat_sym_old_object,
+    gc_stat_compat_sym_old_object_limit,
+#endif
+    gc_stat_compat_sym_total_allocated_object,
+    gc_stat_compat_sym_total_freed_object,
+    gc_stat_compat_sym_malloc_increase,
+    gc_stat_compat_sym_malloc_limit,
+#if RGENGC_ESTIMATE_OLDMALLOC
+    gc_stat_compat_sym_oldmalloc_increase,
+    gc_stat_compat_sym_oldmalloc_limit,
+#endif
+    gc_stat_compat_sym_last
+};
 
-    if (RB_TYPE_P(hash_or_sym, T_HASH)) {
-	hash = hash_or_sym;
-    }
-    else if (SYMBOL_P(hash_or_sym)) {
-	key = hash_or_sym;
-    }
-    else {
-	rb_raise(rb_eTypeError, "non-hash or symbol argument");
-    }
+static VALUE gc_stat_symbols[gc_stat_sym_last];
+static VALUE gc_stat_compat_symbols[gc_stat_compat_sym_last];
+static VALUE gc_stat_compat_table;
 
-    if (sym_count == 0) {
-#define S(s) sym_##s = ID2SYM(rb_intern_const(#s))
+static void
+setup_gc_stat_symbols(void)
+{
+    if (gc_stat_symbols[0] == 0) {
+#define S(s) gc_stat_symbols[gc_stat_sym_##s] = ID2SYM(rb_intern_const(#s))
 	S(count);
 	S(heap_allocated_pages);
 	S(heap_sorted_length);
@@ -6411,13 +6449,122 @@ gc_stat_internal(VALUE hash_or_sym)
 #endif /* RGENGC_PROFILE */
 #endif /* USE_RGENGC */
 #undef S
+#define S(s) gc_stat_compat_symbols[gc_stat_compat_sym_##s] = ID2SYM(rb_intern_const(#s))
+	S(gc_stat_heap_used);
+	S(heap_eden_page_length);
+	S(heap_tomb_page_length);
+	S(heap_increment);
+	S(heap_length);
+	S(heap_live_slot);
+	S(heap_free_slot);
+	S(heap_final_slot);
+	S(heap_swept_slot);
+#if USE_RGEGC
+	S(remembered_shady_object);
+	S(remembered_shady_object_limit);
+	S(old_object);
+	S(old_object_limit);
+#endif
+	S(total_allocated_object);
+	S(total_freed_object);
+	S(malloc_increase);
+	S(malloc_limit);
+#if RGENGC_ESTIMATE_OLDMALLOC
+	S(oldmalloc_increase);
+	S(oldmalloc_limit);
+#endif
+#undef S
+
+	{
+	    VALUE table = gc_stat_compat_table = rb_hash_new();
+	    rb_gc_register_mark_object(table);
+
+	    /* compatibility layer for Ruby 2.1 */
+#define OLD_SYM(s) gc_stat_compat_symbols[gc_stat_compat_sym_##s]
+#define NEW_SYM(s) gc_stat_symbols[gc_stat_sym_##s]
+	    rb_hash_aset(table, OLD_SYM(gc_stat_heap_used), NEW_SYM(heap_allocated_pages));
+	    rb_hash_aset(table, OLD_SYM(heap_eden_page_length), NEW_SYM(heap_eden_pages));
+	    rb_hash_aset(table, OLD_SYM(heap_tomb_page_length), NEW_SYM(heap_tomb_pages));
+	    rb_hash_aset(table, OLD_SYM(heap_increment), NEW_SYM(heap_allocatable_pages));
+	    rb_hash_aset(table, OLD_SYM(heap_length), NEW_SYM(heap_sorted_length));
+	    rb_hash_aset(table, OLD_SYM(heap_live_slot), NEW_SYM(heap_live_slots));
+	    rb_hash_aset(table, OLD_SYM(heap_free_slot), NEW_SYM(heap_free_slots));
+	    rb_hash_aset(table, OLD_SYM(heap_final_slot), NEW_SYM(heap_final_slots));
+	    rb_hash_aset(table, OLD_SYM(heap_swept_slot), NEW_SYM(heap_swept_slots));
+#if USE_RGEGC
+	    rb_hash_aset(table, OLD_SYM(remembered_shady_object), NEW_SYM(remembered_wb_unprotected_objects));
+	    rb_hash_aset(table, OLD_SYM(remembered_shady_object_limit), NEW_SYM(remembered_wb_unprotected_objects_limit));
+	    rb_hash_aset(table, OLD_SYM(old_object), NEW_SYM(old_objects));
+	    rb_hash_aset(table, OLD_SYM(old_object_limit), NEW_SYM(old_objects_limit));
+#endif
+	    rb_hash_aset(table, OLD_SYM(total_allocated_object), NEW_SYM(total_allocated_objects));
+	    rb_hash_aset(table, OLD_SYM(total_freed_object), NEW_SYM(total_freed_objects));
+	    rb_hash_aset(table, OLD_SYM(malloc_increase), NEW_SYM(malloc_increase_bytes));
+	    rb_hash_aset(table, OLD_SYM(malloc_limit), NEW_SYM(malloc_increase_bytes_limit));
+#if RGENGC_ESTIMATE_OLDMALLOC
+	    rb_hash_aset(table, OLD_SYM(oldmalloc_increase), NEW_SYM(oldmalloc_increase_bytes));
+	    rb_hash_aset(table, OLD_SYM(oldmalloc_limit), NEW_SYM(oldmalloc_increase_bytes_limit));
+#endif
+#undef OLD_SYM
+#undef NEW_SYM
+	    rb_obj_freeze(table);
+	}
+    }
+}
+
+static VALUE
+default_proc_for_compat_func(VALUE hash, VALUE dmy, int argc, VALUE *argv)
+{
+    VALUE key = argv[1];
+    VALUE new_key = Qnil;
+
+    if ((new_key = rb_hash_aref(gc_stat_compat_table, key)) != Qnil) {
+	static int warned = 0;
+	if (warned == 0) {
+	    rb_warn("GC.stat keys were changed from Ruby 2.1. "
+		    "In this case, you refer to obsolete `%"PRIsVALUE"' (new key is `%"PRIsVALUE"'). "
+		    "Please check <https://bugs.ruby-lang.org/issues/9924> for more information.",
+		    key, new_key);
+	    warned = 1;
+	}
+	return rb_hash_aref(hash, new_key);
+    }
+
+    return Qnil;
+}
+
+size_t
+gc_stat_internal(VALUE hash_or_sym)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    VALUE hash = Qnil, key = Qnil;
+
+    setup_gc_stat_symbols();
+
+    if (RB_TYPE_P(hash_or_sym, T_HASH)) {
+	hash = hash_or_sym;
+
+	if (NIL_P(RHASH_IFNONE(hash))) {
+	    static VALUE default_proc_for_compat = 0;
+	    if (default_proc_for_compat == 0) { /* TODO: it should be */
+		default_proc_for_compat = rb_proc_new(default_proc_for_compat_func, Qnil);
+		rb_gc_register_mark_object(default_proc_for_compat);
+	    }
+	    rb_hash_set_default_proc(hash, default_proc_for_compat);
+	}
+    }
+    else if (SYMBOL_P(hash_or_sym)) {
+	key = hash_or_sym;
+    }
+    else {
+	rb_raise(rb_eTypeError, "non-hash or symbol argument");
     }
 
 #define SET(name, attr) \
-    if (key == sym_##name) \
+    if (key == gc_stat_symbols[gc_stat_sym_##name]) \
 	return attr; \
     else if (hash != Qnil) \
-	rb_hash_aset(hash, sym_##name, SIZET2NUM(attr));
+	rb_hash_aset(hash, gc_stat_symbols[gc_stat_sym_##name], SIZET2NUM(attr));
 
     SET(count, objspace->profile.count);
 
