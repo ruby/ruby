@@ -114,7 +114,7 @@ EOF
 </member>
 EOF
 
-      def test_entity_expansion_limit
+      def test_general_entity_have_value
         doc = REXML::Document.new(XML_WITH_NESTED_ENTITY)
         assert_raise(RuntimeError) do
           doc.root.children.first.value
@@ -126,7 +126,9 @@ EOF
           doc.root.children.first.value
         end
         assert_equal(101, doc.entity_expansion_count)
+      end
 
+      def test_general_entity_empty_value
         doc = REXML::Document.new(XML_WITH_NESTED_EMPTY_ENTITY)
         assert_raise(RuntimeError) do
           doc.root.children.first.value
@@ -138,7 +140,9 @@ EOF
           doc.root.children.first.value
         end
         assert_equal(101, doc.entity_expansion_count)
+      end
 
+      def test_general_entity_with_default_entity
         REXML::Security.entity_expansion_limit = 4
         doc = REXML::Document.new(XML_WITH_4_ENTITY_EXPANSION)
         assert_equal("\na\na a\n<\n", doc.root.children.first.value)
@@ -149,7 +153,7 @@ EOF
         end
       end
 
-      def test_entity_expansion_limit_for_parameter_entity
+      def test_parameter_entity_have_value
         assert_raise(REXML::ParseException) do
           REXML::Document.new(XML_WITH_NESTED_PARAMETER_ENTITY)
         end
@@ -158,7 +162,9 @@ EOF
         assert_raise(REXML::ParseException) do
           REXML::Document.new(XML_WITH_NESTED_PARAMETER_ENTITY)
         end
+      end
 
+      def test_parameter_entity_empty_value
         assert_raise(REXML::ParseException) do
           REXML::Document.new(XML_WITH_NESTED_EMPTY_PARAMETER_ENTITY)
         end
