@@ -66,7 +66,7 @@ module Kernel
 
     begin
       RUBYGEMS_ACTIVATION_MONITOR.exit
-      return gem_original_require(spec.to_fullpath(path) || path)
+      return gem_original_require(path)
     end if spec
 
     # Attempt to find +path+ in any unresolved gems...

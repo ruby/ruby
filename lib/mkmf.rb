@@ -2050,11 +2050,8 @@ RULES
         suffixes << m[1] << m[2]
         implicit = [[m[1], m[2]], [m.post_match]]
         next
-    elsif RULE_SUBST and /\A(?!\s*\w+\s*=)[$\w][^#]*:/ =~ line
-        line.sub!(%r'(\s)*\#.*$', '')
-        comment = $& || ''
-        line.gsub!(%r"(\s)(?!\.)([^$(){}+=:\s\\,]+)(?=\s|\z)") {$1 + RULE_SUBST % $2}
-        line = line.chomp + comment + "\n"
+      elsif RULE_SUBST and /\A(?!\s*\w+\s*=)[$\w][^#]*:/ =~ line
+        line.gsub!(%r"(\s)(?!\.)([^$(){}+=:\s\/\\,]+)(?=\s|\z)") {$1 + RULE_SUBST % $2}
       end
       depout << line
     end
