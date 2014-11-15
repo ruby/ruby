@@ -311,7 +311,7 @@ EOX
       end
     end
 
-    class BomTest < self
+    class BomTest < Test::Unit::TestCase
       class HaveEncodingTest < self
         def test_utf_8
           xml = <<-EOX.force_encoding("ASCII-8BIT")
