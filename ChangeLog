@@ -1,3 +1,8 @@
+Sat Nov 15 23:10:45 2014  Tanaka Akira  <akr@fsij.org>
+
+	* common.mk: No need to declare dependencies which
+	  will be detected by inference rules.
+
 Sat Nov 15 20:34:23 2014  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h: Include ruby.h and ruby/encoding.h to be
