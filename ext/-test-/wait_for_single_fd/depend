@@ -1,10 +1,10 @@
-wait_for_single_fd.o: $(arch_hdrdir)/ruby/config.h # ext/-test-/wait_for_single_fd/wait_for_single_fd.o: .ext/include/x86_64-linux/ruby/config.h
-wait_for_single_fd.o: $(hdrdir)/ruby/defines.h # ext/-test-/wait_for_single_fd/wait_for_single_fd.o: include/ruby/defines.h
-wait_for_single_fd.o: $(hdrdir)/ruby/encoding.h # ext/-test-/wait_for_single_fd/wait_for_single_fd.o: include/ruby/encoding.h
-wait_for_single_fd.o: $(hdrdir)/ruby/intern.h # ext/-test-/wait_for_single_fd/wait_for_single_fd.o: include/ruby/intern.h
-wait_for_single_fd.o: $(hdrdir)/ruby/io.h # ext/-test-/wait_for_single_fd/wait_for_single_fd.o: include/ruby/io.h
-wait_for_single_fd.o: $(hdrdir)/ruby/missing.h # ext/-test-/wait_for_single_fd/wait_for_single_fd.o: include/ruby/missing.h
-wait_for_single_fd.o: $(hdrdir)/ruby/oniguruma.h # ext/-test-/wait_for_single_fd/wait_for_single_fd.o: include/ruby/oniguruma.h
-wait_for_single_fd.o: $(hdrdir)/ruby/ruby.h # ext/-test-/wait_for_single_fd/wait_for_single_fd.o: include/ruby/ruby.h
-wait_for_single_fd.o: $(hdrdir)/ruby/st.h # ext/-test-/wait_for_single_fd/wait_for_single_fd.o: include/ruby/st.h
-wait_for_single_fd.o: $(hdrdir)/ruby/subst.h # ext/-test-/wait_for_single_fd/wait_for_single_fd.o: include/ruby/subst.h
+wait_for_single_fd.o: $(arch_hdrdir)/ruby/config.h
+wait_for_single_fd.o: $(hdrdir)/ruby/defines.h
+wait_for_single_fd.o: $(hdrdir)/ruby/encoding.h
+wait_for_single_fd.o: $(hdrdir)/ruby/intern.h
+wait_for_single_fd.o: $(hdrdir)/ruby/io.h
+wait_for_single_fd.o: $(hdrdir)/ruby/missing.h
+wait_for_single_fd.o: $(hdrdir)/ruby/oniguruma.h
+wait_for_single_fd.o: $(hdrdir)/ruby/ruby.h
+wait_for_single_fd.o: $(hdrdir)/ruby/st.h
+wait_for_single_fd.o: $(hdrdir)/ruby/subst.h

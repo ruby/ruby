@@ -1,21 +1,21 @@
 rmd160.o: rmd160.c rmd160.h $(srcdir)/../defs.h $(HDRS) $(ruby_headers)
-rmd160init.o: $(arch_hdrdir)/ruby/config.h # ext/digest/rmd160/rmd160init.o: .ext/include/x86_64-linux/ruby/config.h
-rmd160init.o: $(hdrdir)/ruby/defines.h # ext/digest/rmd160/rmd160init.o: include/ruby/defines.h
-rmd160init.o: $(hdrdir)/ruby/intern.h # ext/digest/rmd160/rmd160init.o: include/ruby/intern.h
-rmd160init.o: $(hdrdir)/ruby/missing.h # ext/digest/rmd160/rmd160init.o: include/ruby/missing.h
-rmd160init.o: $(hdrdir)/ruby/ruby.h # ext/digest/rmd160/rmd160init.o: include/ruby/ruby.h
-rmd160init.o: $(hdrdir)/ruby/st.h # ext/digest/rmd160/rmd160init.o: include/ruby/st.h
-rmd160init.o: $(hdrdir)/ruby/subst.h # ext/digest/rmd160/rmd160init.o: include/ruby/subst.h
-rmd160init.o: $(top_srcdir)/ext/digest/digest.h # ext/digest/rmd160/rmd160init.o: ext/digest/digest.h
-rmd160init.o: $(top_srcdir)/include/ruby.h # ext/digest/rmd160/rmd160init.o: include/ruby.h
-rmd160init.o: rmd160ossl.h # ext/digest/rmd160/rmd160init.o: ext/digest/rmd160/rmd160ossl.h
-rmd160ossl.o: $(arch_hdrdir)/ruby/config.h # ext/digest/rmd160/rmd160ossl.o: .ext/include/x86_64-linux/ruby/config.h
-rmd160ossl.o: $(hdrdir)/ruby/defines.h # ext/digest/rmd160/rmd160ossl.o: include/ruby/defines.h
-rmd160ossl.o: $(hdrdir)/ruby/intern.h # ext/digest/rmd160/rmd160ossl.o: include/ruby/intern.h
-rmd160ossl.o: $(hdrdir)/ruby/missing.h # ext/digest/rmd160/rmd160ossl.o: include/ruby/missing.h
-rmd160ossl.o: $(hdrdir)/ruby/ruby.h # ext/digest/rmd160/rmd160ossl.o: include/ruby/ruby.h
-rmd160ossl.o: $(hdrdir)/ruby/st.h # ext/digest/rmd160/rmd160ossl.o: include/ruby/st.h
-rmd160ossl.o: $(hdrdir)/ruby/subst.h # ext/digest/rmd160/rmd160ossl.o: include/ruby/subst.h
-rmd160ossl.o: $(top_srcdir)/ext/digest/defs.h # ext/digest/rmd160/rmd160ossl.o: ext/digest/defs.h
-rmd160ossl.o: $(top_srcdir)/include/ruby.h # ext/digest/rmd160/rmd160ossl.o: include/ruby.h
-rmd160ossl.o: rmd160ossl.h # ext/digest/rmd160/rmd160ossl.o: ext/digest/rmd160/rmd160ossl.h
+rmd160init.o: $(arch_hdrdir)/ruby/config.h
+rmd160init.o: $(hdrdir)/ruby/defines.h
+rmd160init.o: $(hdrdir)/ruby/intern.h
+rmd160init.o: $(hdrdir)/ruby/missing.h
+rmd160init.o: $(hdrdir)/ruby/ruby.h
+rmd160init.o: $(hdrdir)/ruby/st.h
+rmd160init.o: $(hdrdir)/ruby/subst.h
+rmd160init.o: $(top_srcdir)/ext/digest/digest.h
+rmd160init.o: $(top_srcdir)/include/ruby.h
+rmd160init.o: rmd160ossl.h
+rmd160ossl.o: $(arch_hdrdir)/ruby/config.h
+rmd160ossl.o: $(hdrdir)/ruby/defines.h
+rmd160ossl.o: $(hdrdir)/ruby/intern.h
+rmd160ossl.o: $(hdrdir)/ruby/missing.h
+rmd160ossl.o: $(hdrdir)/ruby/ruby.h
+rmd160ossl.o: $(hdrdir)/ruby/st.h
+rmd160ossl.o: $(hdrdir)/ruby/subst.h
+rmd160ossl.o: $(top_srcdir)/ext/digest/defs.h
+rmd160ossl.o: $(top_srcdir)/include/ruby.h
+rmd160ossl.o: rmd160ossl.h

@@ -1,21 +1,21 @@
 sha2.o: sha2.c sha2.h $(srcdir)/../defs.h $(HDRS) $(ruby_headers)
-sha2init.o: $(arch_hdrdir)/ruby/config.h # ext/digest/sha2/sha2init.o: .ext/include/x86_64-linux/ruby/config.h
-sha2init.o: $(top_srcdir)/ext/digest/digest.h # ext/digest/sha2/sha2init.o: ext/digest/digest.h
-sha2init.o: sha2ossl.h # ext/digest/sha2/sha2init.o: ext/digest/sha2/sha2ossl.h
-sha2init.o: $(top_srcdir)/include/ruby.h # ext/digest/sha2/sha2init.o: include/ruby.h
-sha2init.o: $(hdrdir)/ruby/defines.h # ext/digest/sha2/sha2init.o: include/ruby/defines.h
-sha2init.o: $(hdrdir)/ruby/intern.h # ext/digest/sha2/sha2init.o: include/ruby/intern.h
-sha2init.o: $(hdrdir)/ruby/missing.h # ext/digest/sha2/sha2init.o: include/ruby/missing.h
-sha2init.o: $(hdrdir)/ruby/ruby.h # ext/digest/sha2/sha2init.o: include/ruby/ruby.h
-sha2init.o: $(hdrdir)/ruby/st.h # ext/digest/sha2/sha2init.o: include/ruby/st.h
-sha2init.o: $(hdrdir)/ruby/subst.h # ext/digest/sha2/sha2init.o: include/ruby/subst.h
-sha2ossl.o: $(arch_hdrdir)/ruby/config.h # ext/digest/sha2/sha2ossl.o: .ext/include/x86_64-linux/ruby/config.h
-sha2ossl.o: $(top_srcdir)/ext/digest/defs.h # ext/digest/sha2/sha2ossl.o: ext/digest/defs.h
-sha2ossl.o: sha2ossl.h # ext/digest/sha2/sha2ossl.o: ext/digest/sha2/sha2ossl.h
-sha2ossl.o: $(top_srcdir)/include/ruby.h # ext/digest/sha2/sha2ossl.o: include/ruby.h
-sha2ossl.o: $(hdrdir)/ruby/defines.h # ext/digest/sha2/sha2ossl.o: include/ruby/defines.h
-sha2ossl.o: $(hdrdir)/ruby/intern.h # ext/digest/sha2/sha2ossl.o: include/ruby/intern.h
-sha2ossl.o: $(hdrdir)/ruby/missing.h # ext/digest/sha2/sha2ossl.o: include/ruby/missing.h
-sha2ossl.o: $(hdrdir)/ruby/ruby.h # ext/digest/sha2/sha2ossl.o: include/ruby/ruby.h
-sha2ossl.o: $(hdrdir)/ruby/st.h # ext/digest/sha2/sha2ossl.o: include/ruby/st.h
-sha2ossl.o: $(hdrdir)/ruby/subst.h # ext/digest/sha2/sha2ossl.o: include/ruby/subst.h
+sha2init.o: $(arch_hdrdir)/ruby/config.h
+sha2init.o: $(top_srcdir)/ext/digest/digest.h
+sha2init.o: sha2ossl.h
+sha2init.o: $(top_srcdir)/include/ruby.h
+sha2init.o: $(hdrdir)/ruby/defines.h
+sha2init.o: $(hdrdir)/ruby/intern.h
+sha2init.o: $(hdrdir)/ruby/missing.h
+sha2init.o: $(hdrdir)/ruby/ruby.h
+sha2init.o: $(hdrdir)/ruby/st.h
+sha2init.o: $(hdrdir)/ruby/subst.h
+sha2ossl.o: $(arch_hdrdir)/ruby/config.h
+sha2ossl.o: $(top_srcdir)/ext/digest/defs.h
+sha2ossl.o: sha2ossl.h
+sha2ossl.o: $(top_srcdir)/include/ruby.h
+sha2ossl.o: $(hdrdir)/ruby/defines.h
+sha2ossl.o: $(hdrdir)/ruby/intern.h
+sha2ossl.o: $(hdrdir)/ruby/missing.h
+sha2ossl.o: $(hdrdir)/ruby/ruby.h
+sha2ossl.o: $(hdrdir)/ruby/st.h
+sha2ossl.o: $(hdrdir)/ruby/subst.h

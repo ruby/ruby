@@ -9,7 +9,7 @@ $(OBJS): $(HDRS) $(ruby_headers) \
   $(top_srcdir)/thread_pthread.h \
   $(top_srcdir)/internal.h \
   $(top_srcdir)/include/ruby/thread_native.h
-coverage.o: $(top_srcdir)/ccan/check_type/check_type.h # ext/coverage/coverage.o: ccan/check_type/check_type.h
-coverage.o: $(top_srcdir)/ccan/container_of/container_of.h # ext/coverage/coverage.o: ccan/container_of/container_of.h
-coverage.o: $(top_srcdir)/ccan/list/list.h # ext/coverage/coverage.o: ccan/list/list.h
-coverage.o: $(top_srcdir)/ccan/str/str.h # ext/coverage/coverage.o: ccan/str/str.h
+coverage.o: $(top_srcdir)/ccan/check_type/check_type.h
+coverage.o: $(top_srcdir)/ccan/container_of/container_of.h
+coverage.o: $(top_srcdir)/ccan/list/list.h
+coverage.o: $(top_srcdir)/ccan/str/str.h

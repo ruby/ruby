@@ -1,9 +1,9 @@
-bigdecimal.o: $(arch_hdrdir)/ruby/config.h # ext/bigdecimal/bigdecimal.o: .ext/include/x86_64-linux/ruby/config.h
-bigdecimal.o: bigdecimal.h # ext/bigdecimal/bigdecimal.o: ext/bigdecimal/bigdecimal.h
-bigdecimal.o: $(hdrdir)/ruby/defines.h # ext/bigdecimal/bigdecimal.o: include/ruby/defines.h
-bigdecimal.o: $(hdrdir)/ruby/intern.h # ext/bigdecimal/bigdecimal.o: include/ruby/intern.h
-bigdecimal.o: $(hdrdir)/ruby/missing.h # ext/bigdecimal/bigdecimal.o: include/ruby/missing.h
-bigdecimal.o: $(hdrdir)/ruby/ruby.h # ext/bigdecimal/bigdecimal.o: include/ruby/ruby.h
-bigdecimal.o: $(hdrdir)/ruby/st.h # ext/bigdecimal/bigdecimal.o: include/ruby/st.h
-bigdecimal.o: $(hdrdir)/ruby/subst.h # ext/bigdecimal/bigdecimal.o: include/ruby/subst.h
-bigdecimal.o: $(hdrdir)/ruby/util.h # ext/bigdecimal/bigdecimal.o: include/ruby/util.h
+bigdecimal.o: $(arch_hdrdir)/ruby/config.h
+bigdecimal.o: bigdecimal.h
+bigdecimal.o: $(hdrdir)/ruby/defines.h
+bigdecimal.o: $(hdrdir)/ruby/intern.h
+bigdecimal.o: $(hdrdir)/ruby/missing.h
+bigdecimal.o: $(hdrdir)/ruby/ruby.h
+bigdecimal.o: $(hdrdir)/ruby/st.h
+bigdecimal.o: $(hdrdir)/ruby/subst.h
+bigdecimal.o: $(hdrdir)/ruby/util.h

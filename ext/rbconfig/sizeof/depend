@@ -1,10 +1,10 @@
 sizes.c: $(top_srcdir)/tool/generic_erb.rb $(top_srcdir)/template/sizes.c.tmpl $(top_srcdir)/configure.in
 	$(Q) $(RUBY) $(top_srcdir)/tool/generic_erb.rb --output=$@ \
 		$(top_srcdir)/template/sizes.c.tmpl $(top_srcdir)/configure.in
-sizes.o: $(arch_hdrdir)/ruby/config.h # ext/rbconfig/sizeof/sizes.o: .ext/include/x86_64-linux/ruby/config.h
-sizes.o: $(hdrdir)/ruby/defines.h # ext/rbconfig/sizeof/sizes.o: include/ruby/defines.h
-sizes.o: $(hdrdir)/ruby/intern.h # ext/rbconfig/sizeof/sizes.o: include/ruby/intern.h
-sizes.o: $(hdrdir)/ruby/missing.h # ext/rbconfig/sizeof/sizes.o: include/ruby/missing.h
-sizes.o: $(hdrdir)/ruby/ruby.h # ext/rbconfig/sizeof/sizes.o: include/ruby/ruby.h
-sizes.o: $(hdrdir)/ruby/st.h # ext/rbconfig/sizeof/sizes.o: include/ruby/st.h
-sizes.o: $(hdrdir)/ruby/subst.h # ext/rbconfig/sizeof/sizes.o: include/ruby/subst.h
+sizes.o: $(arch_hdrdir)/ruby/config.h
+sizes.o: $(hdrdir)/ruby/defines.h
+sizes.o: $(hdrdir)/ruby/intern.h
+sizes.o: $(hdrdir)/ruby/missing.h
+sizes.o: $(hdrdir)/ruby/ruby.h
+sizes.o: $(hdrdir)/ruby/st.h
+sizes.o: $(hdrdir)/ruby/subst.h

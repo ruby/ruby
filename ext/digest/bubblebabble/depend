@@ -1,9 +1,9 @@
-bubblebabble.o: $(arch_hdrdir)/ruby/config.h # ext/digest/bubblebabble/bubblebabble.o: .ext/include/x86_64-linux/ruby/config.h
-bubblebabble.o: $(top_srcdir)/ext/digest/digest.h # ext/digest/bubblebabble/bubblebabble.o: ext/digest/digest.h
-bubblebabble.o: $(top_srcdir)/include/ruby.h # ext/digest/bubblebabble/bubblebabble.o: include/ruby.h
-bubblebabble.o: $(hdrdir)/ruby/defines.h # ext/digest/bubblebabble/bubblebabble.o: include/ruby/defines.h
-bubblebabble.o: $(hdrdir)/ruby/intern.h # ext/digest/bubblebabble/bubblebabble.o: include/ruby/intern.h
-bubblebabble.o: $(hdrdir)/ruby/missing.h # ext/digest/bubblebabble/bubblebabble.o: include/ruby/missing.h
-bubblebabble.o: $(hdrdir)/ruby/ruby.h # ext/digest/bubblebabble/bubblebabble.o: include/ruby/ruby.h
-bubblebabble.o: $(hdrdir)/ruby/st.h # ext/digest/bubblebabble/bubblebabble.o: include/ruby/st.h
-bubblebabble.o: $(hdrdir)/ruby/subst.h # ext/digest/bubblebabble/bubblebabble.o: include/ruby/subst.h
+bubblebabble.o: $(arch_hdrdir)/ruby/config.h
+bubblebabble.o: $(top_srcdir)/ext/digest/digest.h
+bubblebabble.o: $(top_srcdir)/include/ruby.h
+bubblebabble.o: $(hdrdir)/ruby/defines.h
+bubblebabble.o: $(hdrdir)/ruby/intern.h
+bubblebabble.o: $(hdrdir)/ruby/missing.h
+bubblebabble.o: $(hdrdir)/ruby/ruby.h
+bubblebabble.o: $(hdrdir)/ruby/st.h
+bubblebabble.o: $(hdrdir)/ruby/subst.h

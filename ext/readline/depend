@@ -1,12 +1,12 @@
-readline.o: $(top_srcdir)/internal.h # ext/readline/readline.o: internal.h
-readline.o: $(arch_hdrdir)/ruby/config.h # ext/readline/readline.o: .ext/include/x86_64-linux/ruby/config.h
-readline.o: $(hdrdir)/ruby/defines.h # ext/readline/readline.o: include/ruby/defines.h
-readline.o: $(hdrdir)/ruby/encoding.h # ext/readline/readline.o: include/ruby/encoding.h
-readline.o: $(hdrdir)/ruby/intern.h # ext/readline/readline.o: include/ruby/intern.h
-readline.o: $(hdrdir)/ruby/io.h # ext/readline/readline.o: include/ruby/io.h
-readline.o: $(hdrdir)/ruby/missing.h # ext/readline/readline.o: include/ruby/missing.h
-readline.o: $(hdrdir)/ruby/oniguruma.h # ext/readline/readline.o: include/ruby/oniguruma.h
-readline.o: $(hdrdir)/ruby/ruby.h # ext/readline/readline.o: include/ruby/ruby.h
-readline.o: $(hdrdir)/ruby/st.h # ext/readline/readline.o: include/ruby/st.h
-readline.o: $(hdrdir)/ruby/subst.h # ext/readline/readline.o: include/ruby/subst.h
-readline.o: $(hdrdir)/ruby/thread.h # ext/readline/readline.o: include/ruby/thread.h
+readline.o: $(top_srcdir)/internal.h
+readline.o: $(arch_hdrdir)/ruby/config.h
+readline.o: $(hdrdir)/ruby/defines.h
+readline.o: $(hdrdir)/ruby/encoding.h
+readline.o: $(hdrdir)/ruby/intern.h
+readline.o: $(hdrdir)/ruby/io.h
+readline.o: $(hdrdir)/ruby/missing.h
+readline.o: $(hdrdir)/ruby/oniguruma.h
+readline.o: $(hdrdir)/ruby/ruby.h
+readline.o: $(hdrdir)/ruby/st.h
+readline.o: $(hdrdir)/ruby/subst.h
+readline.o: $(hdrdir)/ruby/thread.h

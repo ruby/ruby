@@ -1,14 +1,14 @@
-nkf.o: $(arch_hdrdir)/ruby/config.h # ext/nkf/nkf.o: .ext/include/x86_64-linux/ruby/config.h
-nkf.o: nkf-utf8/config.h # ext/nkf/nkf.o: ext/nkf/nkf-utf8/config.h
-nkf.o: nkf-utf8/nkf.c # ext/nkf/nkf.o: ext/nkf/nkf-utf8/nkf.c
-nkf.o: nkf-utf8/nkf.h # ext/nkf/nkf.o: ext/nkf/nkf-utf8/nkf.h
-nkf.o: nkf-utf8/utf8tbl.c # ext/nkf/nkf.o: ext/nkf/nkf-utf8/utf8tbl.c
-nkf.o: nkf-utf8/utf8tbl.h # ext/nkf/nkf.o: ext/nkf/nkf-utf8/utf8tbl.h
-nkf.o: $(hdrdir)/ruby/defines.h # ext/nkf/nkf.o: include/ruby/defines.h
-nkf.o: $(hdrdir)/ruby/encoding.h # ext/nkf/nkf.o: include/ruby/encoding.h
-nkf.o: $(hdrdir)/ruby/intern.h # ext/nkf/nkf.o: include/ruby/intern.h
-nkf.o: $(hdrdir)/ruby/missing.h # ext/nkf/nkf.o: include/ruby/missing.h
-nkf.o: $(hdrdir)/ruby/oniguruma.h # ext/nkf/nkf.o: include/ruby/oniguruma.h
-nkf.o: $(hdrdir)/ruby/ruby.h # ext/nkf/nkf.o: include/ruby/ruby.h
-nkf.o: $(hdrdir)/ruby/st.h # ext/nkf/nkf.o: include/ruby/st.h
-nkf.o: $(hdrdir)/ruby/subst.h # ext/nkf/nkf.o: include/ruby/subst.h
+nkf.o: $(arch_hdrdir)/ruby/config.h
+nkf.o: nkf-utf8/config.h
+nkf.o: nkf-utf8/nkf.c
+nkf.o: nkf-utf8/nkf.h
+nkf.o: nkf-utf8/utf8tbl.c
+nkf.o: nkf-utf8/utf8tbl.h
+nkf.o: $(hdrdir)/ruby/defines.h
+nkf.o: $(hdrdir)/ruby/encoding.h
+nkf.o: $(hdrdir)/ruby/intern.h
+nkf.o: $(hdrdir)/ruby/missing.h
+nkf.o: $(hdrdir)/ruby/oniguruma.h
+nkf.o: $(hdrdir)/ruby/ruby.h
+nkf.o: $(hdrdir)/ruby/st.h
+nkf.o: $(hdrdir)/ruby/subst.h

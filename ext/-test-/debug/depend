@@ -1,24 +1,24 @@
-init.o: $(arch_hdrdir)/ruby/config.h # ext/-test-/debug/init.o: .ext/include/x86_64-linux/ruby/config.h
-init.o: $(top_srcdir)/include/ruby.h # ext/-test-/debug/init.o: include/ruby.h
-init.o: $(hdrdir)/ruby/defines.h # ext/-test-/debug/init.o: include/ruby/defines.h
-init.o: $(hdrdir)/ruby/intern.h # ext/-test-/debug/init.o: include/ruby/intern.h
-init.o: $(hdrdir)/ruby/missing.h # ext/-test-/debug/init.o: include/ruby/missing.h
-init.o: $(hdrdir)/ruby/ruby.h # ext/-test-/debug/init.o: include/ruby/ruby.h
-init.o: $(hdrdir)/ruby/st.h # ext/-test-/debug/init.o: include/ruby/st.h
-init.o: $(hdrdir)/ruby/subst.h # ext/-test-/debug/init.o: include/ruby/subst.h
-inspector.o: $(arch_hdrdir)/ruby/config.h # ext/-test-/debug/inspector.o: .ext/include/x86_64-linux/ruby/config.h
-inspector.o: $(hdrdir)/ruby/debug.h # ext/-test-/debug/inspector.o: include/ruby/debug.h
-inspector.o: $(hdrdir)/ruby/defines.h # ext/-test-/debug/inspector.o: include/ruby/defines.h
-inspector.o: $(hdrdir)/ruby/intern.h # ext/-test-/debug/inspector.o: include/ruby/intern.h
-inspector.o: $(hdrdir)/ruby/missing.h # ext/-test-/debug/inspector.o: include/ruby/missing.h
-inspector.o: $(hdrdir)/ruby/ruby.h # ext/-test-/debug/inspector.o: include/ruby/ruby.h
-inspector.o: $(hdrdir)/ruby/st.h # ext/-test-/debug/inspector.o: include/ruby/st.h
-inspector.o: $(hdrdir)/ruby/subst.h # ext/-test-/debug/inspector.o: include/ruby/subst.h
-profile_frames.o: $(arch_hdrdir)/ruby/config.h # ext/-test-/debug/profile_frames.o: .ext/include/x86_64-linux/ruby/config.h
-profile_frames.o: $(hdrdir)/ruby/debug.h # ext/-test-/debug/profile_frames.o: include/ruby/debug.h
-profile_frames.o: $(hdrdir)/ruby/defines.h # ext/-test-/debug/profile_frames.o: include/ruby/defines.h
-profile_frames.o: $(hdrdir)/ruby/intern.h # ext/-test-/debug/profile_frames.o: include/ruby/intern.h
-profile_frames.o: $(hdrdir)/ruby/missing.h # ext/-test-/debug/profile_frames.o: include/ruby/missing.h
-profile_frames.o: $(hdrdir)/ruby/ruby.h # ext/-test-/debug/profile_frames.o: include/ruby/ruby.h
-profile_frames.o: $(hdrdir)/ruby/st.h # ext/-test-/debug/profile_frames.o: include/ruby/st.h
-profile_frames.o: $(hdrdir)/ruby/subst.h # ext/-test-/debug/profile_frames.o: include/ruby/subst.h
+init.o: $(arch_hdrdir)/ruby/config.h
+init.o: $(top_srcdir)/include/ruby.h
+init.o: $(hdrdir)/ruby/defines.h
+init.o: $(hdrdir)/ruby/intern.h
+init.o: $(hdrdir)/ruby/missing.h
+init.o: $(hdrdir)/ruby/ruby.h
+init.o: $(hdrdir)/ruby/st.h
+init.o: $(hdrdir)/ruby/subst.h
+inspector.o: $(arch_hdrdir)/ruby/config.h
+inspector.o: $(hdrdir)/ruby/debug.h
+inspector.o: $(hdrdir)/ruby/defines.h
+inspector.o: $(hdrdir)/ruby/intern.h
+inspector.o: $(hdrdir)/ruby/missing.h
+inspector.o: $(hdrdir)/ruby/ruby.h
+inspector.o: $(hdrdir)/ruby/st.h
+inspector.o: $(hdrdir)/ruby/subst.h
+profile_frames.o: $(arch_hdrdir)/ruby/config.h
+profile_frames.o: $(hdrdir)/ruby/debug.h
+profile_frames.o: $(hdrdir)/ruby/defines.h
+profile_frames.o: $(hdrdir)/ruby/intern.h
+profile_frames.o: $(hdrdir)/ruby/missing.h
+profile_frames.o: $(hdrdir)/ruby/ruby.h
+profile_frames.o: $(hdrdir)/ruby/st.h
+profile_frames.o: $(hdrdir)/ruby/subst.h
