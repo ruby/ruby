@@ -1,3 +1,9 @@
+Sat Nov 15 20:16:59 2014  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_document.rb
+	  (REXMLTests::TestDocument::EntityExpansionLimitTest): Use
+	  setup and teardown instead of ensure in test.
+
 Sat Nov 15 20:11:34 2014  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_document.rb (REXMLTests::TestDocument): Group

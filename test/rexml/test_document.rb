@@ -33,6 +33,14 @@ EOF
     end
 
     class EntityExpansionLimitTest < Test::Unit::TestCase
+      def setup
+        @default_entity_expansion_limit = REXML::Security.entity_expansion_limit
+      end
+
+      def teardown
+        REXML::Security.entity_expansion_limit = @default_entity_expansion_limit
+      end
+
       XML_WITH_NESTED_ENTITY = <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE member [
@@ -139,8 +147,6 @@ EOF
         assert_raise(RuntimeError) do
           doc.root.children.first.value
         end
-      ensure
-        REXML::Security.entity_expansion_limit = 10000
       end
 
       def test_entity_expansion_limit_for_parameter_entity
@@ -161,8 +167,6 @@ EOF
         assert_raise(REXML::ParseException) do
           REXML::Document.new(XML_WITH_NESTED_EMPTY_PARAMETER_ENTITY)
         end
-      ensure
-        REXML::Security.entity_expansion_limit = 10000
       end
     end
 
