@@ -1798,6 +1798,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *    * Interrupt
  *  * StandardError -- default for +rescue+
  *    * ArgumentError
+ *      * UncaughtThrowError
  *    * EncodingError
  *    * FiberError
  *    * IOError

@@ -24,6 +24,8 @@ static VALUE vm_exec(rb_thread_t *th);
 static void vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref, rb_block_t *base_block);
 static int vm_collect_local_variables_in_heap(rb_thread_t *th, const VALUE *dfp, const struct local_var_list *vars);
 
+static VALUE rb_eUncaughtThrow;
+
 /* vm_backtrace.c */
 VALUE rb_vm_backtrace_str_ary(rb_thread_t *th, int lev, int n);
 
@@ -1726,11 +1728,75 @@ rb_mod_module_exec(int argc, const VALUE *argv, VALUE mod)
 }
 
 /*
+ *  Document-class: UncaughtThrowError
+ *
+ *  Raised when +throw+ is called with a _tag_ which does not have
+ *  corresponding +catch+ block.
+ *
+ *     throw "foo", "bar"
+ *
+ *  <em>raises the exception:</em>
+ *
+ *     UncaughtThrowError: uncaught throw "foo"
+ */
+
+static VALUE
+uncaught_throw_init(int argc, const VALUE *argv, VALUE exc)
+{
+    rb_check_arity(argc, 2, UNLIMITED_ARGUMENTS);
+    rb_call_super(argc - 2, argv + 2);
+    rb_iv_set(exc, "tag", argv[0]);
+    rb_iv_set(exc, "value", argv[1]);
+    return exc;
+}
+
+/*
+ * call-seq:
+ *   uncaught_throw.tag   -> obj
+ *
+ * Return the tag object which was called for.
+ */
+
+static VALUE
+uncaught_throw_tag(VALUE exc)
+{
+    return rb_iv_get(exc, "tag");
+}
+
+/*
+ * call-seq:
+ *   uncaught_throw.value   -> obj
+ *
+ * Return the return value which was called for.
+ */
+
+static VALUE
+uncaught_throw_value(VALUE exc)
+{
+    return rb_iv_get(exc, "value");
+}
+
+/*
+ * call-seq:
+ *   uncaught_throw.to_s   ->  string
+ *
+ * Returns formatted message with the inspected tag.
+ */
+
+static VALUE
+uncaught_throw_to_s(VALUE exc)
+{
+    VALUE mesg = rb_attr_get(exc, rb_intern("mesg"));
+    VALUE tag = uncaught_throw_tag(exc);
+    return rb_str_format(1, &tag, mesg);
+}
+
+/*
  *  call-seq:
  *     throw(tag [, obj])
  *
  *  Transfers control to the end of the active +catch+ block
- *  waiting for _tag_. Raises +ArgumentError+ if there
+ *  waiting for _tag_. Raises +UncaughtThrowError+ if there
  *  is no +catch+ block for the _tag_. The optional second
  *  parameter supplies a return value for the +catch+ block,
  *  which otherwise defaults to +nil+. For examples, see
@@ -1761,8 +1827,11 @@ rb_throw_obj(VALUE tag, VALUE value)
 	tt = tt->prev;
     }
     if (!tt) {
-	VALUE desc = rb_inspect(tag);
-	rb_raise(rb_eArgError, "uncaught throw %"PRIsVALUE, desc);
+	VALUE desc[3];
+	desc[0] = tag;
+	desc[1] = value;
+	desc[2] = rb_str_new_cstr("uncaught throw %p");
+	rb_exc_raise(rb_class_new_instance(numberof(desc), desc, rb_eUncaughtThrow));
     }
     th->errinfo = NEW_THROW_OBJECT(tag, 0, TAG_THROW);
 
@@ -2058,4 +2127,10 @@ Init_vm_eval(void)
     rb_define_method(rb_cModule, "class_exec", rb_mod_module_exec, -1);
     rb_define_method(rb_cModule, "module_eval", rb_mod_module_eval, -1);
     rb_define_method(rb_cModule, "class_eval", rb_mod_module_eval, -1);
+
+    rb_eUncaughtThrow = rb_define_class("UncaughtThrowError", rb_eArgError);
+    rb_define_method(rb_eUncaughtThrow, "initialize", uncaught_throw_init, -1);
+    rb_define_method(rb_eUncaughtThrow, "tag", uncaught_throw_tag, 0);
+    rb_define_method(rb_eUncaughtThrow, "value", uncaught_throw_value, 0);
+    rb_define_method(rb_eUncaughtThrow, "to_s", uncaught_throw_to_s, 0);
 }

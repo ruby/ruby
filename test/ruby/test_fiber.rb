@@ -117,7 +117,7 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_throw
-    assert_raise(ArgumentError){
+    assert_raise(UncaughtThrowError){
       Fiber.new do
         throw :a
       end.resume

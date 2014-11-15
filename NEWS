@@ -67,6 +67,9 @@ with all sufficient information, see the ChangeLog file.
 * Kernel
   * New methods:
     * Kernel#itself
+  * Improvements
+    * Kernel#throw raises UncaughtThrowError, subclass of ArgumentError when
+      there is no corresponding catch block, instead of ArgumentError.
 
 * Process
   * Extended method:

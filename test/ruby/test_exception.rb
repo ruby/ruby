@@ -147,7 +147,7 @@ class TestException < Test::Unit::TestCase
   end
 
   def test_catch_throw_noarg
-    assert_nothing_raised(ArgumentError) {
+    assert_nothing_raised(UncaughtThrowError) {
       result = catch {|obj|
         throw obj, :ok
         assert(false, "should not reach here")
@@ -157,13 +157,18 @@ class TestException < Test::Unit::TestCase
   end
 
   def test_uncaught_throw
-    assert_raise_with_message(ArgumentError, /uncaught throw/) {
+    tag = nil
+    e = assert_raise_with_message(UncaughtThrowError, /uncaught throw/) {
       catch("foo") {|obj|
-        throw obj.dup, :ok
+        tag = obj.dup
+        throw tag, :ok
         assert(false, "should not reach here")
       }
       assert(false, "should not reach here")
     }
+    assert_not_nil(tag)
+    assert_same(tag, e.tag)
+    assert_equal(:ok, e.value)
   end
 
   def test_catch_throw_in_require
