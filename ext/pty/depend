@@ -1,6 +1,12 @@
-pty.o: pty.c $(HDRS) $(ruby_headers) \
-  $(hdrdir)/ruby/io.h \
-  $(hdrdir)/ruby/encoding.h \
-  $(hdrdir)/ruby/oniguruma.h \
-  $(hdrdir)/ruby/util.h \
-  $(top_srcdir)/internal.h
+pty.o: $(top_srcdir)/internal.h # ext/pty/pty.o: internal.h
+pty.o: $(arch_hdrdir)/ruby/config.h # ext/pty/pty.o: .ext/include/x86_64-linux/ruby/config.h
+pty.o: $(hdrdir)/ruby/defines.h # ext/pty/pty.o: include/ruby/defines.h
+pty.o: $(hdrdir)/ruby/encoding.h # ext/pty/pty.o: include/ruby/encoding.h
+pty.o: $(hdrdir)/ruby/intern.h # ext/pty/pty.o: include/ruby/intern.h
+pty.o: $(hdrdir)/ruby/io.h # ext/pty/pty.o: include/ruby/io.h
+pty.o: $(hdrdir)/ruby/missing.h # ext/pty/pty.o: include/ruby/missing.h
+pty.o: $(hdrdir)/ruby/oniguruma.h # ext/pty/pty.o: include/ruby/oniguruma.h
+pty.o: $(hdrdir)/ruby/ruby.h # ext/pty/pty.o: include/ruby/ruby.h
+pty.o: $(hdrdir)/ruby/st.h # ext/pty/pty.o: include/ruby/st.h
+pty.o: $(hdrdir)/ruby/subst.h # ext/pty/pty.o: include/ruby/subst.h
+pty.o: $(hdrdir)/ruby/util.h # ext/pty/pty.o: include/ruby/util.h

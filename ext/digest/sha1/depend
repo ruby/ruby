@@ -1,3 +1,22 @@
 sha1.o: sha1.c sha1.h $(srcdir)/../defs.h
-sha1init.o: sha1init.c sha1.h $(srcdir)/../digest.h sha1.h $(srcdir)/../defs.h $(HDRS) $(ruby_headers)
-sha1ossl.o: sha1ossl.h  $(srcdir)/../defs.h $(HDRS) $(ruby_headers)
+
+sha1init.o: $(arch_hdrdir)/ruby/config.h # ext/digest/sha1/sha1init.o: .ext/include/x86_64-linux/ruby/config.h
+sha1init.o: $(top_srcdir)/ext/digest/digest.h # ext/digest/sha1/sha1init.o: ext/digest/digest.h
+sha1init.o: sha1ossl.h # ext/digest/sha1/sha1init.o: ext/digest/sha1/sha1ossl.h
+sha1init.o: $(top_srcdir)/include/ruby.h # ext/digest/sha1/sha1init.o: include/ruby.h
+sha1init.o: $(hdrdir)/ruby/defines.h # ext/digest/sha1/sha1init.o: include/ruby/defines.h
+sha1init.o: $(hdrdir)/ruby/intern.h # ext/digest/sha1/sha1init.o: include/ruby/intern.h
+sha1init.o: $(hdrdir)/ruby/missing.h # ext/digest/sha1/sha1init.o: include/ruby/missing.h
+sha1init.o: $(hdrdir)/ruby/ruby.h # ext/digest/sha1/sha1init.o: include/ruby/ruby.h
+sha1init.o: $(hdrdir)/ruby/st.h # ext/digest/sha1/sha1init.o: include/ruby/st.h
+sha1init.o: $(hdrdir)/ruby/subst.h # ext/digest/sha1/sha1init.o: include/ruby/subst.h
+sha1ossl.o: $(arch_hdrdir)/ruby/config.h # ext/digest/sha1/sha1ossl.o: .ext/include/x86_64-linux/ruby/config.h
+sha1ossl.o: $(top_srcdir)/ext/digest/defs.h # ext/digest/sha1/sha1ossl.o: ext/digest/defs.h
+sha1ossl.o: sha1ossl.h # ext/digest/sha1/sha1ossl.o: ext/digest/sha1/sha1ossl.h
+sha1ossl.o: $(top_srcdir)/include/ruby.h # ext/digest/sha1/sha1ossl.o: include/ruby.h
+sha1ossl.o: $(hdrdir)/ruby/defines.h # ext/digest/sha1/sha1ossl.o: include/ruby/defines.h
+sha1ossl.o: $(hdrdir)/ruby/intern.h # ext/digest/sha1/sha1ossl.o: include/ruby/intern.h
+sha1ossl.o: $(hdrdir)/ruby/missing.h # ext/digest/sha1/sha1ossl.o: include/ruby/missing.h
+sha1ossl.o: $(hdrdir)/ruby/ruby.h # ext/digest/sha1/sha1ossl.o: include/ruby/ruby.h
+sha1ossl.o: $(hdrdir)/ruby/st.h # ext/digest/sha1/sha1ossl.o: include/ruby/st.h
+sha1ossl.o: $(hdrdir)/ruby/subst.h # ext/digest/sha1/sha1ossl.o: include/ruby/subst.h

@@ -1,2 +1,6 @@
 $(OBJS): $(ruby_headers)
 generator.o: generator.c generator.h $(srcdir)/../fbuffer/fbuffer.h
+generator.o: $(hdrdir)/ruby/encoding.h # ext/json/generator/generator.o: include/ruby/encoding.h
+generator.o: $(hdrdir)/ruby/oniguruma.h # ext/json/generator/generator.o: include/ruby/oniguruma.h
+generator.o: $(hdrdir)/ruby/re.h # ext/json/generator/generator.o: include/ruby/re.h
+generator.o: $(hdrdir)/ruby/regex.h # ext/json/generator/generator.o: include/ruby/regex.h

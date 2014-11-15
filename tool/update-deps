@@ -11,25 +11,53 @@
 #      Ex.  ./configure debugflags='-save-temps=obj -g' && make all golf
 #   2. Run tool/update-deps to show dependency problems.
 #      Ex.  ruby tool/update-deps
+#   3. Use --fix to fix makefiles.
+#      Ex.  ruby tool/update-deps --fix
+#
+# Other usages:
+#   *  Fix makefiles using previously detected dependency problems
+#      Ex.  ruby tool/update-deps --actual-fix [file]
+#      "ruby tool/update-deps --fix" is same as "ruby tool/update-deps | ruby tool/update-deps --actual-fix".
 
+require 'optparse'
+require 'stringio'
 require 'pathname'
 require 'pp'
 
 ENV['LC_ALL'] = 'C'
+
+$opt_fix = false
+$opt_a = false
+$opt_actual_fix = false
+
+def optionparser
+  op = OptionParser.new
+  op.banner = 'Usage: ruby tool/update-deps'
+  op.def_option('-a', 'show valid dependencies') { $opt_a = true }
+  op.def_option('--fix') { $opt_fix = true }
+  op.def_option('--actual-fix') { $opt_actual_fix = true }
+  op
+end
 
 def read_make_deps(cwd)
   dependencies = {}
   make_p = `make -p all miniruby ruby golf 2> /dev/null`
   dirstack = [cwd]
   curdir = nil
-  make_p.scan(%r{Entering directory ['`](.*)'|^\# (GNU Make) |^CURDIR := (.*)|^([/0-9a-zA-Z._-]+):(.*)|^# (Finished Make data base on) |Leaving directory ['`](.*)'}) {
+  make_p.scan(%r{Entering\ directory\ ['`](.*)'|
+                 ^\#\ (GNU\ Make)\ |
+                 ^CURDIR\ :=\ (.*)|
+                 ^([/0-9a-zA-Z._-]+):(.*)\n((?:\#.*\n)*)|
+                 ^\#\ (Finished\ Make\ data\ base\ on)\ |
+                 Leaving\ directory\ ['`](.*)'}x) {
     directory_enter = $1
     data_base_start = $2
     data_base_curdir = $3
     rule_target = $4
     rule_sources = $5
-    data_base_end = $6
-    directory_leave = $7
+    rule_desc = $6
+    data_base_end = $7
+    directory_leave = $8
     #p $~
     if directory_enter
       enter_dir = Pathname(directory_enter)
@@ -39,15 +67,17 @@ def read_make_deps(cwd)
       curdir = nil
     elsif data_base_curdir
       curdir = Pathname(data_base_curdir)
-    elsif rule_target && rule_sources
+    elsif rule_target && rule_sources && rule_desc &&
+          /Modification time never checked/ !~ rule_desc # This pattern match eliminates rules which VPATH is not expanded.
       target = rule_target
       deps = rule_sources
       deps = deps.scan(%r{[/0-9a-zA-Z._-]+})
       next if /\.o\z/ !~ target.to_s
       next if /\A\./ =~ target.to_s # skip rules such as ".c.o"
       #p [curdir, target, deps]
-      dependencies[(curdir||dirstack.last) + target] ||= []
-      dependencies[(curdir||dirstack.last) + target] |= deps.map {|dep| (curdir||dirstack.last) + dep }
+      dir = curdir || dirstack.last
+      dependencies[dir + target] ||= []
+      dependencies[dir + target] |= deps.map {|dep| dir + dep }
     elsif data_base_end
       curdir = nil
     elsif directory_leave
@@ -109,7 +139,10 @@ def read_actual_deps(cwd)
   deps = {}
   Pathname.glob('**/*.o').sort.each {|fn_o|
     fn_i = fn_o.sub_ext('.i')
-    next if !fn_i.exist?
+    if !fn_i.exist?
+      warn "not found: #{fn_i}"
+      next
+    end
     path_o = cwd + fn_o
     path_i = cwd + fn_i
     deps[path_o] = read_single_actual_deps(path_i, cwd)
@@ -143,35 +176,184 @@ def concentrate(dependencies, cwd)
   deps
 end
 
-def compare_deps(make_deps, actual_deps)
-  targets = actual_deps.keys.sort_by {|t|
+def sort_paths(paths)
+  paths.sort_by {|t|
     ary = t.to_s.split(%r{/})
     ary.map.with_index {|e, i| i == ary.length-1 ? [0, e] : [1, e] } # regular file first, directories last.
   }
+end
+
+def in_makefile(target, source)
+  target = target.to_s
+  source = source.to_s
+  case target
+  when %r{\A[^/]*\z}
+    target2 = "#{target.sub(/\.o\z/, '.$(OBJEXT)')}"
+    case source
+    when 'newline.c', 'miniprelude.c', 'prelude.c' then source2 = source
+    when 'thread_pthread.c' then source2 = '{$(VPATH)}thread_$(THREAD_MODEL).c'
+    when 'thread_pthread.h' then source2 = '{$(VPATH)}thread_$(THREAD_MODEL).h'
+    when 'include/ruby.h' then source2 = '$(hdrdir)/ruby.h'
+    when 'include/ruby/ruby.h' then source2 = '$(hdrdir)/ruby/ruby.h'
+    when 'revision.h' then source2 = '$(srcdir)/revision.h'
+    when 'version.h' then source2 = '$(srcdir)/version.h'
+    when 'include/ruby/version.h' then source2 = '$(srcdir)/include/ruby/version.h'
+    when %r{\A[^/]*\z} then source2 = "{$(VPATH)}#{File.basename source}"
+    when %r{\A\.ext/include/[^/]+/ruby/} then source2 = "{$(VPATH)}#{$'}"
+    when %r{\Ainclude/ruby/} then source2 = "{$(VPATH)}#{$'}"
+    when %r{\Aenc/} then source2 = "{$(VPATH)}#{$'}"
+    when %r{\Amissing/} then source2 = "{$(VPATH)}#{$'}"
+    when %r{\Accan/} then source2 = "$(CCAN_DIR)/#{$'}"
+    when %r{\Adefs/} then source2 = "{$(VPATH)}#{source}"
+    else source2 = "$(top_srcdir)/#{source}"
+    end
+    ["common.mk", target2, source2]
+  when %r{\Aenc/}
+    target2 = "#{target.sub(/\.o\z/, '.$(OBJEXT)')}"
+    case source
+    when 'include/ruby.h' then source2 = '$(hdrdir)/ruby.h'
+    when 'include/ruby/ruby.h' then source2 = '$(hdrdir)/ruby/ruby.h'
+    when %r{\A\.ext/include/[^/]+/ruby/} then source2 = $'
+    when %r{\Ainclude/ruby/} then source2 = $'
+    when %r{\Aenc/} then source2 = source
+    else source2 = "$(top_srcdir)/#{source}"
+    end
+    ["enc/depend", target2, source2]
+  when %r{\Aext/}
+    unless File.exist?("#{File.dirname(target)}/extconf.rb")
+      warn "not found: #{File.dirname(target)}/extconf.rb"
+    end
+    target2 = File.basename(target)
+    case source
+    when 'include/ruby.h' then source2 = '$(top_srcdir)/include/ruby.h'
+    when %r{\Ainclude/} then source2 = "$(hdrdir)/#{$'}"
+    when %r{\A\.ext/include/[^/]+/ruby/} then source2 = "$(arch_hdrdir)/ruby/#{$'}"
+    when %r{\A#{Regexp.escape File.dirname(target)}/extconf\.h\z} then source2 = "$(RUBY_EXTCONF_H)"
+    when %r{\A#{Regexp.escape File.dirname(target)}/} then source2 = $'
+    when 'id.h' then source2 = '{$(VPATH)}id.h'
+    when 'parse.h' then source2 = '{$(VPATH)}parse.h'
+    when 'lex.c' then source2 = '{$(VPATH)}lex.c'
+    when 'probes.h' then source2 = '{$(VPATH)}probes.h'
+    else source2 = "$(top_srcdir)/#{source}"
+    end
+    ["#{File.dirname(target)}/depend", target2, source2]
+  else
+    raise "unexpected target: #{target}"
+  end
+end
+
+def compare_deps(make_deps, actual_deps, out=$stdout)
+  targets = sort_paths(actual_deps.keys)
   targets.each {|target|
     actual_sources = actual_deps[target]
     if !make_deps.has_key?(target)
       warn "no makefile dependency for #{target}"
     else
       make_sources = make_deps[target]
-      lacks = actual_sources - make_sources
-      puts "#{target} lacks: #{lacks.join(" ")}" if !lacks.empty?
-      unused = make_sources - actual_sources
-      puts "#{target} unuse: #{unused.join(" ")}" if !unused.empty?
+      sort_paths(actual_sources | make_sources).each {|source|
+        makefile, target2, source2 = in_makefile(target, source)
+        lines = begin
+          File.readlines(makefile)
+        rescue Errno::ENOENT
+          []
+        end
+        depline = "#{target2}: #{source2} \# #{target}: #{source}\n"
+        if !make_sources.include?(source)
+          out.puts "add #{makefile} : #{depline}"
+        elsif !actual_sources.include?(source)
+          if lines.include? depline
+            out.puts "delL #{makefile} : #{depline}" # delL stands for del line
+          else
+            out.puts "delP #{makefile} : #{depline}" # delP stands for del prerequisite
+          end
+        else
+          if $opt_a
+            if lines.include? depline
+              out.puts "okL #{makefile} : #{depline}" # okL stands for ok line
+            else
+              out.puts "okP #{makefile} : #{depline}" # okP stands for ok prerequisite
+            end
+          end
+        end
+      }
     end
   }
 end
 
-def main
+def main_show(out=$stdout)
   cwd = Pathname.pwd
   make_deps = read_make_deps(cwd)
   #pp make_deps
   make_deps = concentrate(make_deps, cwd)
   #pp make_deps
   actual_deps = read_actual_deps(cwd)
+  #pp actual_deps
   actual_deps = concentrate(actual_deps, cwd)
   #pp actual_deps
-  compare_deps(make_deps, actual_deps)
+  compare_deps(make_deps, actual_deps, out)
 end
 
-main
+def extract_deplines(problems)
+  adds = {}
+  dels = {}
+  problems.each_line {|line|
+    case line
+    when /\Aadd (\S+) : (\S+: \S+ \# \S+: \S+\n)\z/
+      (adds[$1] ||= []) << $2
+    when /\AdelL (\S+) : (\S+: \S+ \# \S+: \S+\n)\z/
+      (dels[$1] ||= []) << $2
+    when /\AdelP (\S+) : (\S+: \S+ \# \S+: \S+\n)\z/
+      (dels[$1] ||= []) << $2
+    when /\AokL (\S+) : (\S+: \S+ \# \S+: \S+\n)\z/
+    when /\AokP (\S+) : (\S+: \S+ \# \S+: \S+\n)\z/
+      (adds[$1] ||= []) << $2
+    end
+  }
+  return adds, dels
+end
+
+def main_actual_fix(problems)
+  adds, dels = extract_deplines(problems)
+  (adds.keys | dels.keys).sort.each {|makefile|
+    lines = begin
+      File.readlines(makefile)
+    rescue Errno::ENOENT
+      []
+    end
+    if dels[makefile]
+      lines -= dels[makefile]
+    end
+    if adds[makefile]
+      lines.concat(adds[makefile] - lines)
+    end
+    if lines.empty?
+      if File.exist? makefile
+        File.open(makefile, 'w') {|f| }
+      end
+    else
+      tmp_makefile = "#{makefile}.new#{$$}"
+      File.open(tmp_makefile, 'w') {|f| f.puts lines }
+      File.rename tmp_makefile, makefile
+    end
+  }
+end
+
+def main_fix
+  problems = StringIO.new
+  main_show(problems)
+  main_actual_fix(problems.read)
+end
+
+def run
+  op = optionparser
+  op.parse!(ARGV)
+  if $opt_actual_fix
+    main_actual_fix(ARGF.read)
+  elsif $opt_fix
+    main_fix
+  else
+    main_show
+  end
+end
+
+run

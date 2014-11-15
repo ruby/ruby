@@ -1,1 +1,9 @@
-digest.o: digest.c digest.h $(HDRS) $(ruby_headers)
+digest.o: $(arch_hdrdir)/ruby/config.h # ext/digest/digest.o: .ext/include/x86_64-linux/ruby/config.h
+digest.o: digest.h # ext/digest/digest.o: ext/digest/digest.h
+digest.o: $(top_srcdir)/include/ruby.h # ext/digest/digest.o: include/ruby.h
+digest.o: $(hdrdir)/ruby/defines.h # ext/digest/digest.o: include/ruby/defines.h
+digest.o: $(hdrdir)/ruby/intern.h # ext/digest/digest.o: include/ruby/intern.h
+digest.o: $(hdrdir)/ruby/missing.h # ext/digest/digest.o: include/ruby/missing.h
+digest.o: $(hdrdir)/ruby/ruby.h # ext/digest/digest.o: include/ruby/ruby.h
+digest.o: $(hdrdir)/ruby/st.h # ext/digest/digest.o: include/ruby/st.h
+digest.o: $(hdrdir)/ruby/subst.h # ext/digest/digest.o: include/ruby/subst.h

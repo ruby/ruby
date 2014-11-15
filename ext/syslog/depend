@@ -1,2 +1,8 @@
-syslog.o: syslog.c $(HDRS) $(ruby_headers) \
-  $(hdrdir)/util.h
+syslog.o: $(arch_hdrdir)/ruby/config.h # ext/syslog/syslog.o: .ext/include/x86_64-linux/ruby/config.h
+syslog.o: $(hdrdir)/ruby/defines.h # ext/syslog/syslog.o: include/ruby/defines.h
+syslog.o: $(hdrdir)/ruby/intern.h # ext/syslog/syslog.o: include/ruby/intern.h
+syslog.o: $(hdrdir)/ruby/missing.h # ext/syslog/syslog.o: include/ruby/missing.h
+syslog.o: $(hdrdir)/ruby/ruby.h # ext/syslog/syslog.o: include/ruby/ruby.h
+syslog.o: $(hdrdir)/ruby/st.h # ext/syslog/syslog.o: include/ruby/st.h
+syslog.o: $(hdrdir)/ruby/subst.h # ext/syslog/syslog.o: include/ruby/subst.h
+syslog.o: $(hdrdir)/ruby/util.h # ext/syslog/syslog.o: include/ruby/util.h

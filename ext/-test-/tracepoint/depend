@@ -1,1 +1,16 @@
-tracepoint.o: $(HDRS) $(ruby_headers) $(hdrdir)/ruby/debug.h
+gc_hook.o: $(arch_hdrdir)/ruby/config.h # ext/-test-/tracepoint/gc_hook.o: .ext/include/x86_64-linux/ruby/config.h
+gc_hook.o: $(hdrdir)/ruby/debug.h # ext/-test-/tracepoint/gc_hook.o: include/ruby/debug.h
+gc_hook.o: $(hdrdir)/ruby/defines.h # ext/-test-/tracepoint/gc_hook.o: include/ruby/defines.h
+gc_hook.o: $(hdrdir)/ruby/intern.h # ext/-test-/tracepoint/gc_hook.o: include/ruby/intern.h
+gc_hook.o: $(hdrdir)/ruby/missing.h # ext/-test-/tracepoint/gc_hook.o: include/ruby/missing.h
+gc_hook.o: $(hdrdir)/ruby/ruby.h # ext/-test-/tracepoint/gc_hook.o: include/ruby/ruby.h
+gc_hook.o: $(hdrdir)/ruby/st.h # ext/-test-/tracepoint/gc_hook.o: include/ruby/st.h
+gc_hook.o: $(hdrdir)/ruby/subst.h # ext/-test-/tracepoint/gc_hook.o: include/ruby/subst.h
+tracepoint.o: $(arch_hdrdir)/ruby/config.h # ext/-test-/tracepoint/tracepoint.o: .ext/include/x86_64-linux/ruby/config.h
+tracepoint.o: $(hdrdir)/ruby/debug.h # ext/-test-/tracepoint/tracepoint.o: include/ruby/debug.h
+tracepoint.o: $(hdrdir)/ruby/defines.h # ext/-test-/tracepoint/tracepoint.o: include/ruby/defines.h
+tracepoint.o: $(hdrdir)/ruby/intern.h # ext/-test-/tracepoint/tracepoint.o: include/ruby/intern.h
+tracepoint.o: $(hdrdir)/ruby/missing.h # ext/-test-/tracepoint/tracepoint.o: include/ruby/missing.h
+tracepoint.o: $(hdrdir)/ruby/ruby.h # ext/-test-/tracepoint/tracepoint.o: include/ruby/ruby.h
+tracepoint.o: $(hdrdir)/ruby/st.h # ext/-test-/tracepoint/tracepoint.o: include/ruby/st.h
+tracepoint.o: $(hdrdir)/ruby/subst.h # ext/-test-/tracepoint/tracepoint.o: include/ruby/subst.h

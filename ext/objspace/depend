@@ -1,14 +1,52 @@
-objspace.o: $(HDRS) $(ruby_headers) \
-            $(hdrdir)/ruby/io.h \
-	    $(hdrdir)/ruby/encoding.h \
-	    $(hdrdir)/ruby/oniguruma.h \
-	    $(hdrdir)/ruby/regex.h \
-            $(top_srcdir)/regenc.h \
-            $(top_srcdir)/node.h $(top_srcdir)/gc.h \
-	    $(hdrdir)/ruby/re.h $(top_srcdir)/node.h $(top_srcdir)/gc.h \
-	    $(top_srcdir)/regint.h $(top_srcdir)/internal.h
-gc_hook.o: $(HDRS) $(ruby_headers) $(hdrdir)/ruby/debug.h
-object_tracing.o: $(HDRS) $(ruby_headers) $(hdrdir)/ruby/debug.h
-objspace_dump.o: $(HDRS) $(ruby_headers) $(hdrdir)/ruby/debug.h \
-	    $(hdrdir)/ruby/encoding.h $(hdrdir)/ruby/io.h \
-	    $(top_srcdir)/node.h $(top_srcdir)/vm_core.h $(top_srcdir)/gc.h
+object_tracing.o: $(top_srcdir)/internal.h # ext/objspace/object_tracing.o: internal.h
+objspace_dump.o: $(topdir)/id.h # ext/objspace/objspace_dump.o: id.h
+objspace_dump.o: $(top_srcdir)/internal.h # ext/objspace/objspace_dump.o: internal.h
+objspace_dump.o: $(top_srcdir)/method.h # ext/objspace/objspace_dump.o: method.h
+objspace_dump.o: $(top_srcdir)/ruby_atomic.h # ext/objspace/objspace_dump.o: ruby_atomic.h
+objspace_dump.o: $(top_srcdir)/thread_pthread.h # ext/objspace/objspace_dump.o: thread_pthread.h
+objspace_dump.o: $(top_srcdir)/vm_debug.h # ext/objspace/objspace_dump.o: vm_debug.h
+objspace_dump.o: $(top_srcdir)/vm_opts.h # ext/objspace/objspace_dump.o: vm_opts.h
+objspace_dump.o: $(top_srcdir)/ccan/check_type/check_type.h # ext/objspace/objspace_dump.o: ccan/check_type/check_type.h
+objspace_dump.o: $(top_srcdir)/ccan/container_of/container_of.h # ext/objspace/objspace_dump.o: ccan/container_of/container_of.h
+objspace_dump.o: $(top_srcdir)/ccan/list/list.h # ext/objspace/objspace_dump.o: ccan/list/list.h
+objspace_dump.o: $(top_srcdir)/ccan/str/str.h # ext/objspace/objspace_dump.o: ccan/str/str.h
+objspace_dump.o: $(hdrdir)/ruby/oniguruma.h # ext/objspace/objspace_dump.o: include/ruby/oniguruma.h
+objspace_dump.o: $(hdrdir)/ruby/thread_native.h # ext/objspace/objspace_dump.o: include/ruby/thread_native.h
+object_tracing.o: $(arch_hdrdir)/ruby/config.h # ext/objspace/object_tracing.o: .ext/include/x86_64-linux/ruby/config.h
+object_tracing.o: objspace.h # ext/objspace/object_tracing.o: ext/objspace/objspace.h
+object_tracing.o: $(hdrdir)/ruby/debug.h # ext/objspace/object_tracing.o: include/ruby/debug.h
+object_tracing.o: $(hdrdir)/ruby/defines.h # ext/objspace/object_tracing.o: include/ruby/defines.h
+object_tracing.o: $(hdrdir)/ruby/intern.h # ext/objspace/object_tracing.o: include/ruby/intern.h
+object_tracing.o: $(hdrdir)/ruby/missing.h # ext/objspace/object_tracing.o: include/ruby/missing.h
+object_tracing.o: $(hdrdir)/ruby/ruby.h # ext/objspace/object_tracing.o: include/ruby/ruby.h
+object_tracing.o: $(hdrdir)/ruby/st.h # ext/objspace/object_tracing.o: include/ruby/st.h
+object_tracing.o: $(hdrdir)/ruby/subst.h # ext/objspace/object_tracing.o: include/ruby/subst.h
+objspace.o: $(top_srcdir)/gc.h # ext/objspace/objspace.o: gc.h
+objspace.o: $(top_srcdir)/internal.h # ext/objspace/objspace.o: internal.h
+objspace.o: $(top_srcdir)/node.h # ext/objspace/objspace.o: node.h
+objspace.o: $(arch_hdrdir)/ruby/config.h # ext/objspace/objspace.o: .ext/include/x86_64-linux/ruby/config.h
+objspace.o: $(hdrdir)/ruby/defines.h # ext/objspace/objspace.o: include/ruby/defines.h
+objspace.o: $(hdrdir)/ruby/encoding.h # ext/objspace/objspace.o: include/ruby/encoding.h
+objspace.o: $(hdrdir)/ruby/intern.h # ext/objspace/objspace.o: include/ruby/intern.h
+objspace.o: $(hdrdir)/ruby/io.h # ext/objspace/objspace.o: include/ruby/io.h
+objspace.o: $(hdrdir)/ruby/missing.h # ext/objspace/objspace.o: include/ruby/missing.h
+objspace.o: $(hdrdir)/ruby/oniguruma.h # ext/objspace/objspace.o: include/ruby/oniguruma.h
+objspace.o: $(hdrdir)/ruby/re.h # ext/objspace/objspace.o: include/ruby/re.h
+objspace.o: $(hdrdir)/ruby/regex.h # ext/objspace/objspace.o: include/ruby/regex.h
+objspace.o: $(hdrdir)/ruby/ruby.h # ext/objspace/objspace.o: include/ruby/ruby.h
+objspace.o: $(hdrdir)/ruby/st.h # ext/objspace/objspace.o: include/ruby/st.h
+objspace.o: $(hdrdir)/ruby/subst.h # ext/objspace/objspace.o: include/ruby/subst.h
+objspace_dump.o: $(top_srcdir)/gc.h # ext/objspace/objspace_dump.o: gc.h
+objspace_dump.o: $(top_srcdir)/node.h # ext/objspace/objspace_dump.o: node.h
+objspace_dump.o: $(top_srcdir)/vm_core.h # ext/objspace/objspace_dump.o: vm_core.h
+objspace_dump.o: $(arch_hdrdir)/ruby/config.h # ext/objspace/objspace_dump.o: .ext/include/x86_64-linux/ruby/config.h
+objspace_dump.o: objspace.h # ext/objspace/objspace_dump.o: ext/objspace/objspace.h
+objspace_dump.o: $(hdrdir)/ruby/debug.h # ext/objspace/objspace_dump.o: include/ruby/debug.h
+objspace_dump.o: $(hdrdir)/ruby/defines.h # ext/objspace/objspace_dump.o: include/ruby/defines.h
+objspace_dump.o: $(hdrdir)/ruby/encoding.h # ext/objspace/objspace_dump.o: include/ruby/encoding.h
+objspace_dump.o: $(hdrdir)/ruby/intern.h # ext/objspace/objspace_dump.o: include/ruby/intern.h
+objspace_dump.o: $(hdrdir)/ruby/io.h # ext/objspace/objspace_dump.o: include/ruby/io.h
+objspace_dump.o: $(hdrdir)/ruby/missing.h # ext/objspace/objspace_dump.o: include/ruby/missing.h
+objspace_dump.o: $(hdrdir)/ruby/ruby.h # ext/objspace/objspace_dump.o: include/ruby/ruby.h
+objspace_dump.o: $(hdrdir)/ruby/st.h # ext/objspace/objspace_dump.o: include/ruby/st.h
+objspace_dump.o: $(hdrdir)/ruby/subst.h # ext/objspace/objspace_dump.o: include/ruby/subst.h

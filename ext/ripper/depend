@@ -7,19 +7,7 @@ BISON = bison
 
 src: ripper.c eventids1.c eventids2table.c
 
-ripper.o: ripper.c id.c lex.c eventids1.c eventids2.c eventids2table.c \
-	$(HDRS) $(ruby_headers) \
-	$(hdrdir)/ruby/encoding.h \
-	$(hdrdir)/ruby/oniguruma.h \
-	$(hdrdir)/ruby/regex.h \
-	$(hdrdir)/ruby/util.h \
-	$(top_srcdir)/node.h \
-	$(top_srcdir)/internal.h \
-	{$(VPATH)}parse.h \
-	{$(VPATH)}id.h \
-	$(top_srcdir)/regenc.h \
-	$(top_srcdir)/vm_opts.h \
-	$(topdir)/probes.h
+ripper.o: ripper.c
 
 .y.c:
 	$(ECHO) compiling compiler $<
@@ -54,3 +42,28 @@ preproc: ripper.E
 ripper.E: ripper.c
 	$(ECHO) preprocessing ripper.c
 	$(Q) $(CC) -E $(CPPFLAGS) ripper.c | $(RUBY) $(srcdir)/tools/strip.rb > $@
+
+ripper.o: {$(VPATH)}id.h # ext/ripper/ripper.o: id.h
+ripper.o: $(top_srcdir)/internal.h # ext/ripper/ripper.o: internal.h
+ripper.o: {$(VPATH)}lex.c # ext/ripper/ripper.o: lex.c
+ripper.o: $(top_srcdir)/node.h # ext/ripper/ripper.o: node.h
+ripper.o: {$(VPATH)}parse.h # ext/ripper/ripper.o: parse.h
+ripper.o: {$(VPATH)}probes.h # ext/ripper/ripper.o: probes.h
+ripper.o: $(top_srcdir)/regenc.h # ext/ripper/ripper.o: regenc.h
+ripper.o: $(top_srcdir)/symbol.h # ext/ripper/ripper.o: symbol.h
+ripper.o: $(top_srcdir)/vm_opts.h # ext/ripper/ripper.o: vm_opts.h
+ripper.o: $(arch_hdrdir)/ruby/config.h # ext/ripper/ripper.o: .ext/include/x86_64-linux/ruby/config.h
+ripper.o: eventids1.c # ext/ripper/ripper.o: ext/ripper/eventids1.c
+ripper.o: eventids2.c # ext/ripper/ripper.o: ext/ripper/eventids2.c
+ripper.o: eventids2table.c # ext/ripper/ripper.o: ext/ripper/eventids2table.c
+ripper.o: ripper.y # ext/ripper/ripper.o: ext/ripper/ripper.y
+ripper.o: $(hdrdir)/ruby/defines.h # ext/ripper/ripper.o: include/ruby/defines.h
+ripper.o: $(hdrdir)/ruby/encoding.h # ext/ripper/ripper.o: include/ruby/encoding.h
+ripper.o: $(hdrdir)/ruby/intern.h # ext/ripper/ripper.o: include/ruby/intern.h
+ripper.o: $(hdrdir)/ruby/missing.h # ext/ripper/ripper.o: include/ruby/missing.h
+ripper.o: $(hdrdir)/ruby/oniguruma.h # ext/ripper/ripper.o: include/ruby/oniguruma.h
+ripper.o: $(hdrdir)/ruby/regex.h # ext/ripper/ripper.o: include/ruby/regex.h
+ripper.o: $(hdrdir)/ruby/ruby.h # ext/ripper/ripper.o: include/ruby/ruby.h
+ripper.o: $(hdrdir)/ruby/st.h # ext/ripper/ripper.o: include/ruby/st.h
+ripper.o: $(hdrdir)/ruby/subst.h # ext/ripper/ripper.o: include/ruby/subst.h
+ripper.o: $(hdrdir)/ruby/util.h # ext/ripper/ripper.o: include/ruby/util.h

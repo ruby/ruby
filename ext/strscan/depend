@@ -1,7 +1,13 @@
-strscan.o: strscan.c $(HDRS) $(ruby_headers) \
-           $(hdrdir)/re.h \
-           $(hdrdir)/regex.h \
-	   $(hdrdir)/encoding.h \
-	   $(hdrdir)/oniguruma.h \
-	   $(top_srcdir)/regint.h \
-	   $(top_srcdir)/regenc.h
+strscan.o: $(top_srcdir)/regenc.h # ext/strscan/strscan.o: regenc.h
+strscan.o: $(top_srcdir)/regint.h # ext/strscan/strscan.o: regint.h
+strscan.o: $(arch_hdrdir)/ruby/config.h # ext/strscan/strscan.o: .ext/include/x86_64-linux/ruby/config.h
+strscan.o: $(hdrdir)/ruby/defines.h # ext/strscan/strscan.o: include/ruby/defines.h
+strscan.o: $(hdrdir)/ruby/encoding.h # ext/strscan/strscan.o: include/ruby/encoding.h
+strscan.o: $(hdrdir)/ruby/intern.h # ext/strscan/strscan.o: include/ruby/intern.h
+strscan.o: $(hdrdir)/ruby/missing.h # ext/strscan/strscan.o: include/ruby/missing.h
+strscan.o: $(hdrdir)/ruby/oniguruma.h # ext/strscan/strscan.o: include/ruby/oniguruma.h
+strscan.o: $(hdrdir)/ruby/re.h # ext/strscan/strscan.o: include/ruby/re.h
+strscan.o: $(hdrdir)/ruby/regex.h # ext/strscan/strscan.o: include/ruby/regex.h
+strscan.o: $(hdrdir)/ruby/ruby.h # ext/strscan/strscan.o: include/ruby/ruby.h
+strscan.o: $(hdrdir)/ruby/st.h # ext/strscan/strscan.o: include/ruby/st.h
+strscan.o: $(hdrdir)/ruby/subst.h # ext/strscan/strscan.o: include/ruby/subst.h

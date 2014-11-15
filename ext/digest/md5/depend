@@ -1,3 +1,12 @@
 md5.o: md5.c md5.h $(srcdir)/../defs.h
-md5init.o: md5init.c md5.h $(srcdir)/../digest.h $(srcdir)/../defs.h $(HDRS) $(ruby_headers)
-md5ossl.o: md5ossl.h
+md5init.o: $(arch_hdrdir)/ruby/config.h # ext/digest/md5/md5init.o: .ext/include/x86_64-linux/ruby/config.h
+md5init.o: $(top_srcdir)/ext/digest/digest.h # ext/digest/md5/md5init.o: ext/digest/digest.h
+md5init.o: md5ossl.h # ext/digest/md5/md5init.o: ext/digest/md5/md5ossl.h
+md5init.o: $(top_srcdir)/include/ruby.h # ext/digest/md5/md5init.o: include/ruby.h
+md5init.o: $(hdrdir)/ruby/defines.h # ext/digest/md5/md5init.o: include/ruby/defines.h
+md5init.o: $(hdrdir)/ruby/intern.h # ext/digest/md5/md5init.o: include/ruby/intern.h
+md5init.o: $(hdrdir)/ruby/missing.h # ext/digest/md5/md5init.o: include/ruby/missing.h
+md5init.o: $(hdrdir)/ruby/ruby.h # ext/digest/md5/md5init.o: include/ruby/ruby.h
+md5init.o: $(hdrdir)/ruby/st.h # ext/digest/md5/md5init.o: include/ruby/st.h
+md5init.o: $(hdrdir)/ruby/subst.h # ext/digest/md5/md5init.o: include/ruby/subst.h
+md5ossl.o: md5ossl.h # ext/digest/md5/md5ossl.o: ext/digest/md5/md5ossl.h

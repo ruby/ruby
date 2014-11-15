@@ -1,2 +1,5 @@
 $(OBJS): $(ruby_headers)
 parser.o: parser.c parser.h $(srcdir)/../fbuffer/fbuffer.h
+parser.o: parser.rl # ext/json/parser/parser.o: ext/json/parser/parser.rl
+parser.o: $(hdrdir)/ruby/encoding.h # ext/json/parser/parser.o: include/ruby/encoding.h
+parser.o: $(hdrdir)/ruby/oniguruma.h # ext/json/parser/parser.o: include/ruby/oniguruma.h
