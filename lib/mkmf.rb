@@ -2051,7 +2051,10 @@ RULES
         implicit = [[m[1], m[2]], [m.post_match]]
         next
       elsif RULE_SUBST and /\A(?!\s*\w+\s*=)[$\w][^#]*:/ =~ line
-        line.gsub!(%r"(\s)(?!\.)([^$(){}+=:\s\/\\,]+)(?=\s|\z)") {$1 + RULE_SUBST % $2}
+        line.sub!(/\s*\#.*$/, '')
+        comment = $&
+        line.gsub!(%r"(\s)(?!\.)([^$(){}+=:\s\\,]+)(?=\s|\z)") {$1 + RULE_SUBST % $2}
+        line = line.chomp + comment + "\n" if comment
       end
       depout << line
     end
