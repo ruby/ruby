@@ -1,3 +1,7 @@
+Sun Nov 16 00:45:23 2014  Tanaka Akira  <akr@fsij.org>
+
+	* common.mk: Specify dependencies for generated C sources.
+
 Sun Nov 16 00:08:04 2014  Tanaka Akira  <akr@fsij.org>
 
 	* common.mk: parse.o depends on parse.y before parse.h.

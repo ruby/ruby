@@ -673,6 +673,12 @@ ia64.$(OBJEXT): {$(VPATH)}ia64.s
 
 ###
 
+# dependencies for generated C sources.
+parse.$(OBJEXT): {$(VPATH)}parse.c
+miniprelude.$(OBJEXT): {$(VPATH)}miniprelude.c
+prelude.$(OBJEXT): {$(VPATH)}prelude.c
+
+# dependencies for optional sources.
 compile.$(OBJEXT): {$(VPATH)}opt_sc.inc {$(VPATH)}optunifs.inc
 
 win32/win32.$(OBJEXT): {$(VPATH)}win32/win32.c {$(VPATH)}dln.h {$(VPATH)}dln_find.c \
