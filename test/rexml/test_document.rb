@@ -32,6 +32,7 @@ EOF
       assert_equal("Hello world!", doc.root.children.first.value)
     end
 
+    class EntityExpansionLimitTest < Test::Unit::TestCase
     XML_WITH_NESTED_ENTITY = <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE member [
@@ -162,6 +163,7 @@ EOF
       end
     ensure
       REXML::Security.entity_expansion_limit = 10000
+    end
     end
 
     def test_tag_in_cdata_with_not_ascii_only_but_ascii8bit_encoding_source

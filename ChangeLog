@@ -1,3 +1,8 @@
+Sat Nov 15 20:11:34 2014  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_document.rb (REXMLTests::TestDocument): Group
+	  entity expansion limit related tests.
+
 Sat Nov 15 20:09:00 2014  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_document.rb (REXMLTests::TestDocument::BomTest):
