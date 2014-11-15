@@ -1,3 +1,9 @@
+Sat Nov 15 20:46:44 2014  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_document.rb
+	  (REXMLTests::TestDocument::EntityExpansionLimitTest):
+	  Group tests by general entity and parameter entity.
+
 Sat Nov 15 20:43:31 2014  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_document.rb

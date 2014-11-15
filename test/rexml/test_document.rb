@@ -41,7 +41,8 @@ EOF
         REXML::Security.entity_expansion_limit = @default_entity_expansion_limit
       end
 
-      def test_general_entity_have_value
+      class GeneralEntityTest < self
+      def test_have_value
         xml = <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE member [
@@ -71,7 +72,7 @@ EOF
         assert_equal(101, doc.entity_expansion_count)
       end
 
-      def test_general_entity_empty_value
+      def test_empty_value
         xml = <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE member [
@@ -101,7 +102,7 @@ EOF
         assert_equal(101, doc.entity_expansion_count)
       end
 
-      def test_general_entity_with_default_entity
+      def test_with_default_entity
         xml = <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE member [
@@ -124,8 +125,10 @@ EOF
           doc.root.children.first.value
         end
       end
+      end
 
-      def test_parameter_entity_have_value
+      class ParameterEntityTest < self
+      def test_have_value
         xml = <<EOF
 <!DOCTYPE root [
   <!ENTITY % a "BOOM.BOOM.BOOM.BOOM.BOOM.BOOM.BOOM.BOOM.BOOM.">
@@ -150,7 +153,7 @@ EOF
         end
       end
 
-      def test_parameter_entity_empty_value
+      def test_empty_value
         xml = <<EOF
 <!DOCTYPE root [
   <!ENTITY % a "">
@@ -174,6 +177,7 @@ EOF
           REXML::Document.new(xml)
         end
       end
+    end
     end
 
     def test_tag_in_cdata_with_not_ascii_only_but_ascii8bit_encoding_source
