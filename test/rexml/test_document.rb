@@ -33,7 +33,7 @@ EOF
     end
 
     class EntityExpansionLimitTest < Test::Unit::TestCase
-    XML_WITH_NESTED_ENTITY = <<EOF
+      XML_WITH_NESTED_ENTITY = <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE member [
   <!ENTITY a "&b;&b;&b;&b;&b;&b;&b;&b;&b;&b;">
@@ -49,7 +49,7 @@ EOF
 </member>
 EOF
 
-    XML_WITH_NESTED_EMPTY_ENTITY = <<EOF
+      XML_WITH_NESTED_EMPTY_ENTITY = <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE member [
   <!ENTITY a "&b;&b;&b;&b;&b;&b;&b;&b;&b;&b;">
@@ -65,7 +65,7 @@ EOF
 </member>
 EOF
 
-    XML_WITH_NESTED_PARAMETER_ENTITY = <<EOF
+      XML_WITH_NESTED_PARAMETER_ENTITY = <<EOF
 <!DOCTYPE root [
   <!ENTITY % a "BOOM.BOOM.BOOM.BOOM.BOOM.BOOM.BOOM.BOOM.BOOM.">
   <!ENTITY % b "%a;%a;%a;%a;%a;%a;%a;%a;%a;%a;%a;%a;%a;%a;%a;">
@@ -79,7 +79,7 @@ EOF
 <cd></cd>
 EOF
 
-    XML_WITH_NESTED_EMPTY_PARAMETER_ENTITY = <<EOF
+      XML_WITH_NESTED_EMPTY_PARAMETER_ENTITY = <<EOF
 <!DOCTYPE root [
   <!ENTITY % a "">
   <!ENTITY % b "%a;%a;%a;%a;%a;%a;%a;%a;%a;%a;%a;%a;%a;%a;%a;">
@@ -93,7 +93,7 @@ EOF
 <cd></cd>
 EOF
 
-    XML_WITH_4_ENTITY_EXPANSION = <<EOF
+      XML_WITH_4_ENTITY_EXPANSION = <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE member [
   <!ENTITY a "a">
@@ -106,64 +106,64 @@ EOF
 </member>
 EOF
 
-    def test_entity_expansion_limit
-      doc = REXML::Document.new(XML_WITH_NESTED_ENTITY)
-      assert_raise(RuntimeError) do
-        doc.root.children.first.value
-      end
-      REXML::Security.entity_expansion_limit = 100
-      assert_equal(100, REXML::Security.entity_expansion_limit)
-      doc = REXML::Document.new(XML_WITH_NESTED_ENTITY)
-      assert_raise(RuntimeError) do
-        doc.root.children.first.value
-      end
-      assert_equal(101, doc.entity_expansion_count)
+      def test_entity_expansion_limit
+        doc = REXML::Document.new(XML_WITH_NESTED_ENTITY)
+        assert_raise(RuntimeError) do
+          doc.root.children.first.value
+        end
+        REXML::Security.entity_expansion_limit = 100
+        assert_equal(100, REXML::Security.entity_expansion_limit)
+        doc = REXML::Document.new(XML_WITH_NESTED_ENTITY)
+        assert_raise(RuntimeError) do
+          doc.root.children.first.value
+        end
+        assert_equal(101, doc.entity_expansion_count)
 
-      doc = REXML::Document.new(XML_WITH_NESTED_EMPTY_ENTITY)
-      assert_raise(RuntimeError) do
-        doc.root.children.first.value
-      end
-      REXML::Security.entity_expansion_limit = 100
-      assert_equal(100, REXML::Security.entity_expansion_limit)
-      doc = REXML::Document.new(XML_WITH_NESTED_EMPTY_ENTITY)
-      assert_raise(RuntimeError) do
-        doc.root.children.first.value
-      end
-      assert_equal(101, doc.entity_expansion_count)
+        doc = REXML::Document.new(XML_WITH_NESTED_EMPTY_ENTITY)
+        assert_raise(RuntimeError) do
+          doc.root.children.first.value
+        end
+        REXML::Security.entity_expansion_limit = 100
+        assert_equal(100, REXML::Security.entity_expansion_limit)
+        doc = REXML::Document.new(XML_WITH_NESTED_EMPTY_ENTITY)
+        assert_raise(RuntimeError) do
+          doc.root.children.first.value
+        end
+        assert_equal(101, doc.entity_expansion_count)
 
-      REXML::Security.entity_expansion_limit = 4
-      doc = REXML::Document.new(XML_WITH_4_ENTITY_EXPANSION)
-      assert_equal("\na\na a\n<\n", doc.root.children.first.value)
-      REXML::Security.entity_expansion_limit = 3
-      doc = REXML::Document.new(XML_WITH_4_ENTITY_EXPANSION)
-      assert_raise(RuntimeError) do
-        doc.root.children.first.value
-      end
-    ensure
-      REXML::Security.entity_expansion_limit = 10000
-    end
-
-    def test_entity_expansion_limit_for_parameter_entity
-      assert_raise(REXML::ParseException) do
-        REXML::Document.new(XML_WITH_NESTED_PARAMETER_ENTITY)
-      end
-      REXML::Security.entity_expansion_limit = 100
-      assert_equal(100, REXML::Security.entity_expansion_limit)
-      assert_raise(REXML::ParseException) do
-        REXML::Document.new(XML_WITH_NESTED_PARAMETER_ENTITY)
+        REXML::Security.entity_expansion_limit = 4
+        doc = REXML::Document.new(XML_WITH_4_ENTITY_EXPANSION)
+        assert_equal("\na\na a\n<\n", doc.root.children.first.value)
+        REXML::Security.entity_expansion_limit = 3
+        doc = REXML::Document.new(XML_WITH_4_ENTITY_EXPANSION)
+        assert_raise(RuntimeError) do
+          doc.root.children.first.value
+        end
+      ensure
+        REXML::Security.entity_expansion_limit = 10000
       end
 
-      assert_raise(REXML::ParseException) do
-        REXML::Document.new(XML_WITH_NESTED_EMPTY_PARAMETER_ENTITY)
+      def test_entity_expansion_limit_for_parameter_entity
+        assert_raise(REXML::ParseException) do
+          REXML::Document.new(XML_WITH_NESTED_PARAMETER_ENTITY)
+        end
+        REXML::Security.entity_expansion_limit = 100
+        assert_equal(100, REXML::Security.entity_expansion_limit)
+        assert_raise(REXML::ParseException) do
+          REXML::Document.new(XML_WITH_NESTED_PARAMETER_ENTITY)
+        end
+
+        assert_raise(REXML::ParseException) do
+          REXML::Document.new(XML_WITH_NESTED_EMPTY_PARAMETER_ENTITY)
+        end
+        REXML::Security.entity_expansion_limit = 100
+        assert_equal(100, REXML::Security.entity_expansion_limit)
+        assert_raise(REXML::ParseException) do
+          REXML::Document.new(XML_WITH_NESTED_EMPTY_PARAMETER_ENTITY)
+        end
+      ensure
+        REXML::Security.entity_expansion_limit = 10000
       end
-      REXML::Security.entity_expansion_limit = 100
-      assert_equal(100, REXML::Security.entity_expansion_limit)
-      assert_raise(REXML::ParseException) do
-        REXML::Document.new(XML_WITH_NESTED_EMPTY_PARAMETER_ENTITY)
-      end
-    ensure
-      REXML::Security.entity_expansion_limit = 10000
-    end
     end
 
     def test_tag_in_cdata_with_not_ascii_only_but_ascii8bit_encoding_source
