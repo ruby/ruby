@@ -12,9 +12,8 @@
 
 ************************************************/
 
-#include "ruby/ruby.h"
-#include "node.h"
 #include "internal.h"
+#include "node.h"
 
 /*
  * Document-class: Enumerator

@@ -15,8 +15,6 @@
 #include <windows.h>
 #include <sys/cygwin.h>
 #endif
-#include "ruby/ruby.h"
-#include "ruby/encoding.h"
 #include "internal.h"
 #include "eval_intern.h"
 #include "dln.h"

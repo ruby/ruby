@@ -11,13 +11,11 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
+#include "internal.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
-#include "ruby/encoding.h"
 #include "node.h"
 #include "constant.h"
-#include "internal.h"
 #include "id.h"
 
 st_table *rb_global_tbl;

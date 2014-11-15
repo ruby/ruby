@@ -11,17 +11,15 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
+#include "internal.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
-#include "ruby/encoding.h"
 #include <stdio.h>
 #include <errno.h>
 #include <ctype.h>
 #include <math.h>
 #include <float.h>
 #include "constant.h"
-#include "internal.h"
 #include "id.h"
 #include "probes.h"
 

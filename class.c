@@ -23,12 +23,11 @@
  * \{
  */
 
-#include "ruby/ruby.h"
+#include "internal.h"
 #include "ruby/st.h"
 #include "method.h"
 #include "constant.h"
 #include "vm_core.h"
-#include "internal.h"
 #include <ctype.h>
 
 int rb_vm_add_root_module(ID id, VALUE module);

@@ -11,10 +11,8 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
-#include "ruby/re.h"
-#include "ruby/encoding.h"
 #include "internal.h"
+#include "ruby/re.h"
 #include "id.h"
 #include <math.h>
 #include <stdarg.h>

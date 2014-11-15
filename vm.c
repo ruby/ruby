@@ -8,11 +8,9 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
+#include "internal.h"
 #include "ruby/vm.h"
 #include "ruby/st.h"
-#include "ruby/encoding.h"
-#include "internal.h"
 
 #include "gc.h"
 #include "vm_core.h"

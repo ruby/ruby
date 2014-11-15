@@ -9,8 +9,6 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
-#include "ruby/encoding.h"
 #include "internal.h"
 #ifdef __CYGWIN__
 #include <windows.h>

@@ -13,10 +13,9 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
+#include "internal.h"
 #include "ruby/debug.h"
 #include "objspace.h"
-#include "internal.h"
 
 struct traceobj_arg {
     int running;

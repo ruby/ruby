@@ -1,3 +1,8 @@
+Sat Nov 15 20:34:23 2014  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h: Include ruby.h and ruby/encoding.h to be
+	  includable without prior inclusion.
+
 Sat Nov 15 20:46:44 2014  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_document.rb

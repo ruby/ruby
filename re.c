@@ -9,11 +9,9 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
-#include "ruby/re.h"
-#include "ruby/encoding.h"
-#include "ruby/util.h"
 #include "internal.h"
+#include "ruby/re.h"
+#include "ruby/util.h"
 #include "regint.h"
 #include <ctype.h>
 

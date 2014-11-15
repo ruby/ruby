@@ -33,10 +33,9 @@
 #include <editline/readline.h>
 #endif
 
-#include "ruby/ruby.h"
+#include "internal.h"
 #include "ruby/io.h"
 #include "ruby/thread.h"
-#include "internal.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

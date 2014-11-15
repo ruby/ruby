@@ -33,10 +33,9 @@
 #endif
 #include <ctype.h>
 
-#include "ruby/ruby.h"
+#include "internal.h"
 #include "ruby/io.h"
 #include "ruby/util.h"
-#include "internal.h"
 
 #include <signal.h>
 #ifdef HAVE_SYS_STROPTS_H

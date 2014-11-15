@@ -11,11 +11,9 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
+#include "internal.h"
 #include "ruby/util.h"
 #include "ruby/st.h"
-#include "ruby/encoding.h"
-#include "internal.h"
 #include "probes.h"
 #include "id.h"
 

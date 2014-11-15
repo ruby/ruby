@@ -9,12 +9,10 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
+#include "internal.h"
 #include <sys/types.h>
 #include <time.h>
 #include <errno.h>
-#include "ruby/encoding.h"
-#include "internal.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

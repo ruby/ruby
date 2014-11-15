@@ -12,15 +12,13 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
+#include "internal.h"
 #include "ruby/debug.h"
-#include "ruby/encoding.h"
 #include "ruby/io.h"
 #include "gc.h"
 #include "node.h"
 #include "vm_core.h"
 #include "objspace.h"
-#include "internal.h"
 
 static VALUE sym_output, sym_stdout, sym_string, sym_file;
 

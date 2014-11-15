@@ -9,11 +9,9 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
-#include "ruby/encoding.h"
+#include "internal.h"
 #include "ruby/debug.h"
 
-#include "internal.h"
 #include "vm_core.h"
 #include "eval_intern.h"
 #include "iseq.h"

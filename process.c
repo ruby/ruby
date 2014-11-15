@@ -11,11 +11,10 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
+#include "internal.h"
 #include "ruby/io.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
-#include "internal.h"
 #include "vm_core.h"
 
 #include <stdio.h>

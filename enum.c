@@ -9,11 +9,10 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
+#include "internal.h"
 #include "ruby/util.h"
 #include "node.h"
 #include "id.h"
-#include "internal.h"
 
 VALUE rb_f_send(int argc, VALUE *argv, VALUE recv);
 

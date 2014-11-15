@@ -59,7 +59,6 @@ The original copyright notice follows.
    email: matumoto@math.keio.ac.jp
 */
 
-#include "ruby/ruby.h"
 #include "internal.h"
 
 #include <limits.h>

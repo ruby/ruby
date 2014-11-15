@@ -9,7 +9,6 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
 #include "internal.h"
 
 #define CALL(n) {void Init_##n(void); Init_##n();}

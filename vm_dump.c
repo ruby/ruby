@@ -9,10 +9,9 @@
 **********************************************************************/
 
 
-#include "ruby/ruby.h"
+#include "internal.h"
 #include "addr2line.h"
 #include "vm_core.h"
-#include "internal.h"
 #include "iseq.h"
 
 /* see vm_insnhelper.h for the values */

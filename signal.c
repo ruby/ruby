@@ -11,14 +11,13 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
+#include "internal.h"
 #include "vm_core.h"
 #include <signal.h>
 #include <stdio.h>
 #include <errno.h>
 #include "ruby_atomic.h"
 #include "eval_intern.h"
-#include "internal.h"
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif

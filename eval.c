@@ -11,12 +11,11 @@
 
 **********************************************************************/
 
+#include "internal.h"
 #include "eval_intern.h"
 #include "iseq.h"
 #include "gc.h"
 #include "ruby/vm.h"
-#include "ruby/encoding.h"
-#include "internal.h"
 #include "vm_core.h"
 #include "probes_helper.h"
 

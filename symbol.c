@@ -9,10 +9,8 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
-#include "ruby/st.h"
-#include "ruby/encoding.h"
 #include "internal.h"
+#include "ruby/st.h"
 #include "node.h"
 #include "symbol.h"
 #include "gc.h"

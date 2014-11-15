@@ -11,7 +11,7 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
+#include "internal.h"
 #include "ruby/st.h"
 #include "ruby/re.h"
 #include "ruby/io.h"
@@ -20,7 +20,6 @@
 #include "ruby/debug.h"
 #include "eval_intern.h"
 #include "vm_core.h"
-#include "internal.h"
 #include "gc.h"
 #include "constant.h"
 #include "ruby_atomic.h"

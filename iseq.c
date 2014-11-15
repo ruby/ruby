@@ -9,9 +9,8 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
-#include "ruby/util.h"
 #include "internal.h"
+#include "ruby/util.h"
 #include "eval_intern.h"
 
 /* #define RUBY_MARK_FREE_DEBUG 1 */

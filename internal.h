@@ -12,6 +12,9 @@
 #ifndef RUBY_INTERNAL_H
 #define RUBY_INTERNAL_H 1
 
+#include "ruby.h"
+#include "ruby/encoding.h"
+
 #if defined(__cplusplus)
 extern "C" {
 #if 0
@@ -568,7 +571,6 @@ PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);
 void Init_ext(void);
 
 /* encoding.c */
-#ifdef RUBY_ENCODING_H
 enum ruby_preserved_encindex {
     ENCINDEX_ASCII,
     ENCINDEX_UTF_8,
@@ -589,7 +591,7 @@ enum ruby_preserved_encindex {
 
     ENCINDEX_BUILTIN_MAX
 };
-#endif
+
 #define rb_ascii8bit_encindex() ENCINDEX_ASCII
 #define rb_utf8_encindex()      ENCINDEX_UTF_8
 #define rb_usascii_encindex()   ENCINDEX_US_ASCII
