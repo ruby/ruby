@@ -6,6 +6,9 @@
 #   gcc 4.5 (for -save-temps=obj option)
 #   GNU make (for -p option)
 #
+# Warning: ccache (and similar tools) must be disabled for
+# -save-temps=obj to work properly.
+#
 # Usage:
 #   1. Compile ruby with -save-temps=obj option.
 #      Ex.  ./configure debugflags='-save-temps=obj -g' && make all golf
@@ -29,6 +32,7 @@ ENV['LC_ALL'] = 'C'
 $opt_fix = false
 $opt_a = false
 $opt_actual_fix = false
+$i_not_found = false
 
 def optionparser
   op = OptionParser.new
@@ -141,6 +145,7 @@ def read_actual_deps(cwd)
     fn_i = fn_o.sub_ext('.i')
     if !fn_i.exist?
       warn "not found: #{fn_i}"
+      $i_not_found = true
       next
     end
     path_o = cwd + fn_o
@@ -402,3 +407,6 @@ def run
 end
 
 run
+if $i_not_found
+  warn "missing *.i files, see help in #$0 and ensure ccache is disabled"
+end

@@ -1,3 +1,7 @@
+Sun Nov 16 18:22:18 2014  Eric Wong  <e@80x24.org>
+
+	* tool/update-deps: warning to disable ccache
+
 Sun Nov 16 13:11:35 2014  Tanaka Akira  <akr@fsij.org>
 
 	* common.mk (CCAN_LIST_INCLUDES): Unused variable removed.
