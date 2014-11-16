@@ -205,6 +205,13 @@ class TestProc < Test::Unit::TestCase
     assert_instance_of(Binding, b, '[ruby-core:25589]')
     bug10432 = '[ruby-core:65919] [Bug #10432]'
     assert_same(self, b.receiver, bug10432)
+    assert_not_send [b, :local_variable_defined?, :value]
+    assert_raise(NameError) {
+      b.local_variable_get(:value)
+    }
+    assert_equal 42, b.local_variable_set(:value, 42)
+    assert_send [b, :local_variable_defined?, :value]
+    assert_equal 42, b.local_variable_get(:value)
   end
 
   def test_block_given_method

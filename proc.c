@@ -2452,6 +2452,7 @@ proc_binding(VALUE self)
 	if (!IS_METHOD_PROC_NODE((NODE *)iseq)) {
 	    rb_raise(rb_eArgError, "Can't create Binding from C level Proc");
 	}
+	iseq = rb_method_get_iseq(RNODE(iseq)->u2.value);
     }
 
     bindval = rb_binding_alloc(rb_cBinding);
