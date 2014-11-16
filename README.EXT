@@ -442,6 +442,11 @@ you may rely on:
 
   VALUE rb_call_super(int argc, const VALUE *argv)
 
+To achieve the receiver of the current scope (if no other way is
+available), you can use:
+
+  VALUE rb_current_receiver(void)
+
 === Constant Definition
 
 We have 2 functions to define constants:

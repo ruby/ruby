@@ -15,6 +15,7 @@ class TestProc::TestBMethod
 
   class Bound < Base
     define_method(:foo, Bug::Proc.make_call_super(42))
+    define_method(:receiver, Bug::Proc.make_call_receiver(nil))
   end
 
   def test_super_in_bmethod
@@ -27,5 +28,10 @@ class TestProc::TestBMethod
     result = nil
     obj.foo(2) {|*a| result = a}
     assert_equal([2, 42], result)
+  end
+
+  def test_receiver_in_bmethod
+    obj = Bound.new
+    assert_same(obj, obj.receiver)
   end
 end

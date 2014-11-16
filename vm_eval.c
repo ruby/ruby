@@ -290,6 +290,16 @@ rb_call_super(int argc, const VALUE *argv)
     return vm_call_super(GET_THREAD(), argc, argv);
 }
 
+VALUE
+rb_current_receiver(void)
+{
+    rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *cfp;
+    if (!th || !(cfp = th->cfp))
+	rb_raise(rb_eRuntimeError, "no self, no life");
+    return cfp->self;
+}
+
 static inline void
 stack_check(void)
 {
