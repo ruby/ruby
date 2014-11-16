@@ -2927,27 +2927,25 @@ End
     data = "a" * 100
     th = nil
     with_pipe do |r,w|
+      r.nonblock = true
+      th = Thread.new {r.readpartial(100, buf)}
+
+      Thread.pass until th.stop?
+
+      assert_equal 100, buf.bytesize
+
       begin
-        r.nonblock = true
-        th = Thread.new {r.readpartial(100, buf)}
+        buf.replace("")
+      rescue RuntimeError => e
+        assert_match(/can't modify string; temporarily locked/, e.message)
+        Thread.pass
+      end until buf.empty?
 
-        Thread.pass until th.stop?
-
-        assert_equal 100, buf.bytesize
-
-        begin
-          buf.replace("")
-        rescue RuntimeError => e
-          assert_match(/can't modify string; temporarily locked/, e.message)
-          Thread.pass
-        end until buf.empty?
-
-        assert_empty(buf, bug6099)
-        assert_predicate(th, :alive?)
-        w.write(data)
-        Thread.pass while th.alive?
-        th.join
-      end
+      assert_empty(buf, bug6099)
+      assert_predicate(th, :alive?)
+      w.write(data)
+      Thread.pass while th.alive?
+      th.join
     end
     assert_equal(data, buf, bug6099)
   end

@@ -1,3 +1,8 @@
+Sun Nov 16 11:07:25 2014  Eric Wong  <e@80x24.org>
+
+	* test/ruby/test_io.rb (test_readpartial_locktmp):
+	  remove unnecessary begin/end
+
 Sun Nov 16 00:45:23 2014  Tanaka Akira  <akr@fsij.org>
 
 	* common.mk: Specify dependencies for generated C sources.
