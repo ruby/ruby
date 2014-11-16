@@ -6145,7 +6145,7 @@ rb_str_tr_s(VALUE str, VALUE src, VALUE repl)
  *  intersection of these sets defines the characters to count in +str+.  Any
  *  +other_str+ that starts with a caret <code>^</code> is negated.  The
  *  sequence <code>c1-c2</code> means all characters between c1 and c2.  The
- *  backslash character <code>\</code> can be used to escape <code>^</code> or
+ *  backslash character <code>\\</code> can be used to escape <code>^</code> or
  *  <code>-</code> and is otherwise ignored unless it appears at the end of a
  *  sequence or the end of a +other_str+.
  *
