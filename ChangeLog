@@ -1,3 +1,10 @@
+Sun Nov 16 13:11:35 2014  Tanaka Akira  <akr@fsij.org>
+
+	* common.mk (CCAN_LIST_INCLUDES): Unused variable removed.
+	  (ENCODING_H_INCLUDES): Ditto.
+	  (PROBES_H_INCLUDES): Ditto.
+	  (VM_CORE_H_INCLUDES): Ditto.
+
 Sun Nov 16 11:07:25 2014  Eric Wong  <e@80x24.org>
 
 	* test/ruby/test_io.rb (test_readpartial_locktmp):
