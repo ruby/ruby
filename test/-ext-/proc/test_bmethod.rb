@@ -14,7 +14,7 @@ class TestProc::TestBMethod
   end
 
   class Bound < Base
-    define_method(:foo, Bug::Proc.make_caller(42))
+    define_method(:foo, Bug::Proc.make_call_super(42))
   end
 
   def test_super_in_bmethod

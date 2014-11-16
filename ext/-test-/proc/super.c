@@ -15,14 +15,13 @@ bug_proc_call_super(RB_BLOCK_CALL_FUNC_ARGLIST(yieldarg, procarg))
 }
 
 static VALUE
-bug_proc_make_caller(VALUE self, VALUE procarg)
+bug_proc_make_call_super(VALUE self, VALUE procarg)
 {
     return rb_proc_new(bug_proc_call_super, procarg);
 }
 
 void
-Init_call_super(VALUE klass)
+Init_super(VALUE klass)
 {
-    rb_define_method(klass, "call_super", bug_proc_call_super, 1);
-    rb_define_singleton_method(klass, "make_caller", bug_proc_make_caller, 1);
+    rb_define_singleton_method(klass, "make_call_super", bug_proc_make_call_super, 1);
 }
