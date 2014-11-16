@@ -40,8 +40,7 @@ module Timeout
         bt = caller
         begin
           throw(self, bt)
-        rescue ArgumentError => e
-          raise unless e.message.start_with?("uncaught throw")
+        rescue UncaughtThrowError
           raise Error, message, backtrace
         end
       end
