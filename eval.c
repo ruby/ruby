@@ -688,7 +688,6 @@ static VALUE
 make_exception(int argc, const VALUE *argv, int isstr)
 {
     VALUE mesg, exc;
-    ID exception;
     int n;
 
     mesg = Qnil;
@@ -715,8 +714,7 @@ make_exception(int argc, const VALUE *argv, int isstr)
 	n = 1;
       exception_call:
 	if (sysstack_error_p(exc)) return exc;
-	CONST_ID(exception, "exception");
-	mesg = rb_check_funcall(exc, exception, n, argv+1);
+	mesg = rb_check_funcall(exc, idException, n, argv+1);
 	if (mesg == Qundef) {
 	    rb_raise(rb_eTypeError, "exception class/object expected");
 	}

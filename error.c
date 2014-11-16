@@ -871,9 +871,7 @@ exc_cause(VALUE exc)
 static VALUE
 try_convert_to_exception(VALUE obj)
 {
-    ID id_exception;
-    CONST_ID(id_exception, "exception");
-    return rb_check_funcall(obj, id_exception, 0, 0);
+    return rb_check_funcall(obj, idException, 0, 0);
 }
 
 /*
@@ -889,10 +887,9 @@ static VALUE
 exc_equal(VALUE exc, VALUE obj)
 {
     VALUE mesg, backtrace;
-    ID id_mesg;
+    const ID id_mesg = idMesg;
 
     if (exc == obj) return Qtrue;
-    CONST_ID(id_mesg, "mesg");
 
     if (rb_obj_class(exc) != rb_obj_class(obj)) {
 	int status = 0;

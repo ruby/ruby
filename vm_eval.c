@@ -25,6 +25,7 @@ static void vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref,
 static int vm_collect_local_variables_in_heap(rb_thread_t *th, const VALUE *dfp, const struct local_var_list *vars);
 
 static VALUE rb_eUncaughtThrow;
+#define id_mesg idMesg
 
 /* vm_backtrace.c */
 VALUE rb_vm_backtrace_str_ary(rb_thread_t *th, int lev, int n);
@@ -1295,9 +1296,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *const cref_arg, 
 	    VALUE errinfo = th->errinfo;
 	    if (file == Qundef) {
 		VALUE mesg, errat, bt2;
-		ID id_mesg;
 
-		CONST_ID(id_mesg, "mesg");
 		errat = rb_get_backtrace(errinfo);
 		mesg = rb_attr_get(errinfo, id_mesg);
 		if (!NIL_P(errat) && RB_TYPE_P(errat, T_ARRAY) &&
@@ -1786,7 +1785,7 @@ uncaught_throw_value(VALUE exc)
 static VALUE
 uncaught_throw_to_s(VALUE exc)
 {
-    VALUE mesg = rb_attr_get(exc, rb_intern("mesg"));
+    VALUE mesg = rb_attr_get(exc, id_mesg);
     VALUE tag = uncaught_throw_tag(exc);
     return rb_str_format(1, &tag, mesg);
 }

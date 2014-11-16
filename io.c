@@ -174,7 +174,8 @@ VALUE rb_default_rs;
 
 static VALUE argf;
 
-static ID id_write, id_read, id_getc, id_flush, id_readpartial, id_set_encoding, id_exception;
+#define id_exception idException
+static ID id_write, id_read, id_getc, id_flush, id_readpartial, id_set_encoding;
 static VALUE sym_mode, sym_perm, sym_extenc, sym_intenc, sym_encoding, sym_open_args;
 static VALUE sym_textmode, sym_binmode, sym_autoclose;
 static VALUE sym_SET, sym_CUR, sym_END;
@@ -12463,5 +12464,4 @@ Init_IO(void)
 #ifdef SEEK_HOLE
     sym_HOLE = ID2SYM(rb_intern("HOLE"));
 #endif
-    id_exception = rb_intern("exception");
 }

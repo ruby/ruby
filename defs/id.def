@@ -39,6 +39,8 @@ firstline, predefined = __LINE__+1, %[\
   bt
   bt_locations
   call
+  mesg
+  exception
 
   _                                                     UScore
   "/*NULL*/"                                            NULL
