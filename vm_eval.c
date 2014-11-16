@@ -25,6 +25,7 @@ static void vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref,
 static int vm_collect_local_variables_in_heap(rb_thread_t *th, const VALUE *dfp, const struct local_var_list *vars);
 
 static VALUE rb_eUncaughtThrow;
+static ID id_tag, id_value;
 #define id_mesg idMesg
 
 /* vm_backtrace.c */
@@ -1744,8 +1745,8 @@ uncaught_throw_init(int argc, const VALUE *argv, VALUE exc)
 {
     rb_check_arity(argc, 2, UNLIMITED_ARGUMENTS);
     rb_call_super(argc - 2, argv + 2);
-    rb_iv_set(exc, "tag", argv[0]);
-    rb_iv_set(exc, "value", argv[1]);
+    rb_ivar_set(exc, id_tag, argv[0]);
+    rb_ivar_set(exc, id_value, argv[1]);
     return exc;
 }
 
@@ -1759,7 +1760,7 @@ uncaught_throw_init(int argc, const VALUE *argv, VALUE exc)
 static VALUE
 uncaught_throw_tag(VALUE exc)
 {
-    return rb_iv_get(exc, "tag");
+    return rb_ivar_get(exc, id_tag);
 }
 
 /*
@@ -1772,7 +1773,7 @@ uncaught_throw_tag(VALUE exc)
 static VALUE
 uncaught_throw_value(VALUE exc)
 {
-    return rb_iv_get(exc, "value");
+    return rb_ivar_get(exc, id_value);
 }
 
 /*
@@ -2132,4 +2133,7 @@ Init_vm_eval(void)
     rb_define_method(rb_eUncaughtThrow, "tag", uncaught_throw_tag, 0);
     rb_define_method(rb_eUncaughtThrow, "value", uncaught_throw_value, 0);
     rb_define_method(rb_eUncaughtThrow, "to_s", uncaught_throw_to_s, 0);
+
+    id_tag = rb_intern_const("tag");
+    id_value = rb_intern_const("value");
 }
