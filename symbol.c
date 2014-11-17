@@ -889,6 +889,48 @@ rb_is_junk_id(ID id)
     return is_junk_id(id);
 }
 
+int
+rb_is_const_sym(VALUE sym)
+{
+    return is_const_sym(sym);
+}
+
+int
+rb_is_class_sym(VALUE sym)
+{
+    return is_class_sym(sym);
+}
+
+int
+rb_is_global_sym(VALUE sym)
+{
+    return is_global_sym(sym);
+}
+
+int
+rb_is_instance_sym(VALUE sym)
+{
+    return is_instance_sym(sym);
+}
+
+int
+rb_is_attrset_sym(VALUE sym)
+{
+    return is_attrset_sym(sym);
+}
+
+int
+rb_is_local_sym(VALUE sym)
+{
+    return is_local_sym(sym);
+}
+
+int
+rb_is_junk_sym(VALUE sym)
+{
+    return is_junk_sym(sym);
+}
+
 /**
  * Returns ID for the given name if it is interned already, or 0.
  *

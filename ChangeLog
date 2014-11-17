@@ -1,3 +1,8 @@
+Tue Nov 18 03:20:19 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* symbol.h (is_{local,global,instance,attrset,const,class,junk}_sym):
+	  fix ID type names.
+
 Mon Nov 17 20:17:59 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole_event.c: use typed data.

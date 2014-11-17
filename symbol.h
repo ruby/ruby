@@ -65,13 +65,13 @@ sym_type(VALUE sym)
     return (int)(id&ID_SCOPE_MASK);
 }
 
-#define is_local_sym(sym) (sym_type(sym)==SYM_LOCAL)
-#define is_global_sym(sym) (sym_type(sym)==SYM_GLOBAL)
-#define is_instance_sym(sym) (sym_type(sym)==SYM_INSTANCE)
-#define is_attrset_sym(sym) (sym_type(sym)==SYM_ATTRSET)
-#define is_const_sym(sym) (sym_type(sym)==SYM_CONST)
-#define is_class_sym(sym) (sym_type(sym)==SYM_CLASS)
-#define is_junk_sym(sym) (sym_type(sym)==SYM_JUNK)
+#define is_local_sym(sym) (sym_type(sym)==ID_LOCAL)
+#define is_global_sym(sym) (sym_type(sym)==ID_GLOBAL)
+#define is_instance_sym(sym) (sym_type(sym)==ID_INSTANCE)
+#define is_attrset_sym(sym) (sym_type(sym)==ID_ATTRSET)
+#define is_const_sym(sym) (sym_type(sym)==ID_CONST)
+#define is_class_sym(sym) (sym_type(sym)==ID_CLASS)
+#define is_junk_sym(sym) (sym_type(sym)==ID_JUNK)
 
 RUBY_FUNC_EXPORTED const unsigned int ruby_global_name_punct_bits[(0x7e - 0x20 + 31) / 32];
 
