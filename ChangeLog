@@ -1,3 +1,8 @@
+Mon Nov 17 12:54:56 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/rubygems/*, test/rubygems/*: Update to RubyGems 2.4.4
+	  master (2f6e42e).
+
 Mon Nov 17 06:13:06 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (proc_binding): use the original iseq on a binding from

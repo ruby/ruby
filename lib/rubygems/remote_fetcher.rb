@@ -326,7 +326,7 @@ class Gem::RemoteFetcher
 
   def correct_for_windows_path(path)
     if path[0].chr == '/' && path[1].chr =~ /[a-z]/i && path[2].chr == ':'
-      path = path[1..-1]
+      path[1..-1]
     else
       path
     end
@@ -350,6 +350,10 @@ class Gem::RemoteFetcher
 
   def https?(uri)
     uri.scheme.downcase == 'https'
+  end
+
+  def close_all
+    @pools.each_value {|pool| pool.close_all}
   end
 
   protected

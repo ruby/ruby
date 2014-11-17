@@ -28,6 +28,10 @@ class Gem::Request::ConnectionPools # :nodoc:
     end
   end
 
+  def close_all
+    @pools.each_value {|pool| pool.close_all}
+  end
+
   private
 
   ##
@@ -69,7 +73,7 @@ class Gem::Request::ConnectionPools # :nodoc:
         Gem::UriFormatter.new(proxy_uri.password).unescape,
       ]
     elsif no_proxy? uri.host, no_proxy then
-      net_http_args += [nil, nil]
+      net_http_args + [nil, nil]
     else
       net_http_args
     end

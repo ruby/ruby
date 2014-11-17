@@ -281,7 +281,7 @@ class Gem::Dependency
       }
     end
 
-    matches = matches.sort_by { |s| s.sort_obj } # HACK: shouldn't be needed
+    matches.sort_by { |s| s.sort_obj } # HACK: shouldn't be needed
   end
 
   ##

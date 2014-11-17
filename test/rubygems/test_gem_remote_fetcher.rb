@@ -77,30 +77,6 @@ gems:
 
   DIR = File.expand_path(File.dirname(__FILE__))
 
-  module RemoteFetcherCleanup
-    refine Gem::RemoteFetcher do
-      def close_all
-        @pools.each_value {|pool| pool.close_all}
-      end
-    end
-    refine Gem::Request::ConnectionPools do
-      def close_all
-        @pools.each_value {|pool| pool.close_all}
-      end
-    end
-    refine Gem::Request::HTTPPool do
-      def close_all
-        until @queue.empty?
-          if connection = @queue.pop(true) and connection.started?
-            connection.finish
-          end
-        end
-        @queue.push(nil)
-      end
-    end
-  end
-  using RemoteFetcherCleanup
-
   def setup
     @proxies = %w[http_proxy HTTP_PROXY http_proxy_user HTTP_PROXY_USER http_proxy_pass HTTP_PROXY_PASS no_proxy NO_PROXY]
     @old_proxies = @proxies.map {|k| ENV[k] }

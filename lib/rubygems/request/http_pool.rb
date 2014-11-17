@@ -23,6 +23,15 @@ class Gem::Request::HTTPPool # :nodoc:
     @queue.push connection
   end
 
+  def close_all
+    until @queue.empty?
+      if connection = @queue.pop(true) and connection.started?
+        connection.finish
+      end
+    end
+    @queue.push(nil)
+  end
+
   private
 
   def make_connection

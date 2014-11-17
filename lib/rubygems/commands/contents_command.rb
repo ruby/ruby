@@ -146,7 +146,6 @@ prefix or only the files that are requireable.
 
   def path_description spec_dirs # :nodoc:
     if spec_dirs.empty? then
-      spec_dirs = Gem::Specification.dirs
       "default gem paths"
     else
       "specified path"

@@ -318,7 +318,6 @@ class Gem::StreamUI
   elsif Gem.win_platform?
     def _gets_noecho
       require "Win32API"
-      char = nil
       password = ''
 
       while char = Win32API.new("crtdll", "_getch", [ ], "L").Call do

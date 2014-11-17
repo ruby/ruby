@@ -153,10 +153,10 @@ class Gem::Package::Old < Gem::Package
 
     begin
       @spec = Gem::Specification.from_yaml yaml
-    rescue yaml_error => e
+    rescue yaml_error
       raise Gem::Exception, "Failed to parse gem specification out of gem file"
     end
-  rescue ArgumentError => e
+  rescue ArgumentError
     raise Gem::Exception, "Failed to parse gem specification out of gem file"
   end
 
