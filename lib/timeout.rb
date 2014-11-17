@@ -31,17 +31,16 @@ module Timeout
     def self.catch(*args)
       exc = new(*args)
       exc.instance_variable_set(:@thread, Thread.current)
-      exc.freeze
       ::Kernel.catch(exc) {yield exc}
     end
 
     def exception(*)
+      # TODO: use Fiber.current to see if self can be thrown
       if self.thread == Thread.current
         bt = caller
         begin
           throw(self, bt)
         rescue UncaughtThrowError
-          raise Error, message, backtrace
         end
       end
       self
