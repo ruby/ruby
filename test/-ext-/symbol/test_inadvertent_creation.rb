@@ -36,6 +36,13 @@ module Test_Symbol
       cl = Class.new
       name = noninterned_name("A")
 
+      assert_not_interned_error(cl, :const_get, name, Feature5072)
+    end
+
+    def test_module_const_defined?
+      cl = Class.new
+      name = noninterned_name("A")
+
       assert_not_interned_false(cl, :const_defined?, name, Feature5072)
     end
 
