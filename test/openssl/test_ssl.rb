@@ -564,6 +564,16 @@ if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1_1
     }
   end
 
+  def test_allow_tls_v1_for_client
+    start_server_version(:TLSv1) { |server, port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.set_params(ssl_version: :TLSv1)
+      # It appears that explicitly calling 'ssl_version=' is required
+      # ctx.ssl_version = :TLSv1
+      assert_nothing_raised(*HANDSHAKE_ERRORS) { server_connect(port, ctx) { |ssl| } }
+    }
+  end
+
   def test_forbid_tls_v1_from_server
     start_server_version(:TLSv1) { |server, port|
       ctx = OpenSSL::SSL::SSLContext.new
