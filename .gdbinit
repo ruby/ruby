@@ -212,7 +212,7 @@ define rp
   if ($flags & RUBY_T_MASK) == RUBY_T_SYMBOL
     printf "%sT_SYMBOL%s: ", $color_type, $color_end
     print (struct RSymbol *)($arg0)
-    set $id_type = ((struct RSymbol *)($arg0))->type
+    set $id_type = ((struct RSymbol *)($arg0))->id & RUBY_ID_SCOPE_MASK
     if $id_type == RUBY_ID_LOCAL
       printf "l"
     else
