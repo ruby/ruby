@@ -1930,8 +1930,8 @@ check_setter_id(VALUE name, int (*valid_id_p)(ID), int (*valid_name_p)(VALUE),
     else {
 	VALUE str = rb_check_string_type(name);
 	if (NIL_P(str)) {
-	    rb_raise(rb_eTypeError, "%+"PRIsVALUE" is not a symbol or string",
-		     str);
+	    rb_raise(rb_eTypeError, "% "PRIsVALUE" is not a symbol or string",
+		     name);
 	}
 	if (!valid_name_p(str)) {
 	    rb_name_error_str(str, message, QUOTE(str));

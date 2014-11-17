@@ -1,3 +1,8 @@
+Tue Nov 18 03:23:06 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (check_setter_id): show the original argument instead
+	  of nil on TypeError.
+
 Tue Nov 18 03:20:19 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* symbol.h (is_{local,global,instance,attrset,const,class,junk}_sym):
