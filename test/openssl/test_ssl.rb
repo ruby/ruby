@@ -565,11 +565,14 @@ if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1_1
   end
 
   def test_allow_tls_v1_for_client
-    start_server_version(:TLSv1) { |server, port|
+    # server does not support SSLv2 / SSLv3
+    ctx_proc = Proc.new { |ctx| ctx.options = OpenSSL::SSL::OP_ALL | OpenSSL::SSL::OP_NO_SSLv3 | OpenSSL::SSL::OP_NO_SSLv2 }
+    start_server_version(:TLSv1, ctx_proc) { |server, port|
       ctx = OpenSSL::SSL::SSLContext.new
-      ctx.set_params(ssl_version: :TLSv1)
-      # It appears that explicitly calling 'ssl_version=' is required
+      # It appears that explicitly calling 'ssl_version=' directly
+      # is required rather than allowing `set_params` to call it via `__send__`
       # ctx.ssl_version = :TLSv1
+      ctx.set_params(ssl_version: :TLSv1) # soils the ssl_version
       assert_nothing_raised(*HANDSHAKE_ERRORS) { server_connect(port, ctx) { |ssl| } }
     }
   end
