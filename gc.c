@@ -6008,19 +6008,21 @@ gc_record(rb_objspace_t *objspace, int direction, const char *event)
 	gc_current_status_fill(objspace, current_gc_status);
 #if 1
 	/* [last mutator time] [gc time] [event] */
-	fprintf(stderr, "%"PRItick"\t%"PRItick"\t%s\t[%s->%s]\n",
+	fprintf(stderr, "%"PRItick"\t%"PRItick"\t%s\t[%s->%s|%c]\n",
 		enter_tick - last_exit_tick,
 		exit_tick - enter_tick,
 		event,
-		last_gc_status, current_gc_status);
+		last_gc_status, current_gc_status,
+		(objspace->profile.latest_gc_info & GPR_FLAG_MAJOR_MASK) ? '+' : '-');
 	last_exit_tick = exit_tick;
 #else
 	/* [enter_tick] [gc time] [event] */
-	fprintf(stderr, "%"PRItick"\t%"PRItick"\t%s\t[%s->%s]\n",
+	fprintf(stderr, "%"PRItick"\t%"PRItick"\t%s\t[%s->%s|%c]\n",
 		enter_tick,
 		exit_tick - enter_tick,
 		event,
-		last_gc_status, current_gc_status);
+		last_gc_status, current_gc_status,
+		(objspace->profile.latest_gc_info & GPR_FLAG_MAJOR_MASK) ? '+' : '-');
 #endif
     }
 }
