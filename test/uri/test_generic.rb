@@ -758,12 +758,16 @@ class URI::TestGeneric < Test::Unit::TestCase
   end
 
   def test_build
-    URI::Generic.build(['http', nil, 'example.com', 80, nil, '/foo', nil, nil, nil])
+    u = URI::Generic.build(['http', nil, 'example.com', 80, nil, '/foo', nil, nil, nil])
+    assert_equal('http://example.com:80/foo', u.to_s)
   end
 
   def test_build2
-    URI::Generic.build2(path: "/foo bar/baz")
-    URI::Generic.build2(['http', nil, 'example.com', 80, nil, '/foo bar' , nil, nil, nil])
+    u = URI::Generic.build2(path: "/foo bar/baz")
+    assert_equal('/foo%20bar/baz', u.to_s)
+
+    u = URI::Generic.build2(['http', nil, 'example.com', 80, nil, '/foo bar' , nil, nil, nil])
+    assert_equal('http://example.com:80/foo%20bar', u.to_s)
   end
 
   # 192.0.2.0/24 is TEST-NET.  [RFC3330]
