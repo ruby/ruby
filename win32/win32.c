@@ -6547,7 +6547,7 @@ rb_w32_write(int fd, const void *buf, size_t size)
 
 	    if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &written,
 				     TRUE)) {
-		errno = map_errno(err);
+		errno = map_errno(GetLastError());
 		CloseHandle(ol.hEvent);
 		cancel_io((HANDLE)_osfhnd(fd));
 		MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));

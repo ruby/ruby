@@ -1,3 +1,9 @@
+Wed Nov 19 07:45:11 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_write): should set the error of
+	  GetOverlappedResult()'s, not WriteFile()'s (it's always
+	  ERROR_IO_PENDING, of course).
+
 Tue Nov 18 14:16:47 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_record): add information for debug print.
