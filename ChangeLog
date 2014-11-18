@@ -1,3 +1,11 @@
+Tue Nov 18 23:45:52 2014  Tanaka Akira  <akr@fsij.org>
+
+	* debug.c (SET_WHEN): Don't declare debug variables here.
+	  ruby_initial_gc_stress_ptr is changed int* to VALUE* at r41406.
+
+	* internal.h (ruby_initial_gc_stress_ptr): Declared.
+	  (ruby_enable_coredump): Ditto.
+
 Tue Nov 18 18:06:43 2014  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/io.h (FMODE_WSPLIT): Removed.  The write() system call

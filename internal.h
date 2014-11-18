@@ -645,6 +645,7 @@ NORETURN(void rb_syserr_fail_path_in(const char *func_name, int err, VALUE path)
 #endif
 
 /* gc.c */
+extern VALUE *ruby_initial_gc_stress_ptr;
 void Init_heap(void);
 void *ruby_mimmalloc(size_t size);
 void ruby_mimfree(void *ptr);
@@ -911,6 +912,7 @@ long rb_reg_search0(VALUE, VALUE, long, int, int);
 void rb_backref_set_string(VALUE string, long pos, long len);
 
 /* signal.c */
+extern int ruby_enable_coredump;
 int rb_get_next_signal(void);
 int rb_sigaltstack_size(void);
 
