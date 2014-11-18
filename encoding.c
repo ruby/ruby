@@ -571,9 +571,6 @@ rb_encdb_set_unicode(int index)
     ((rb_raw_encoding *)rb_enc_from_index(index))->flags |= ONIGENC_FLAG_UNICODE;
 }
 
-extern rb_encoding OnigEncodingUTF_8;
-extern rb_encoding OnigEncodingUS_ASCII;
-
 void
 rb_enc_init(void)
 {
@@ -1333,8 +1330,6 @@ struct default_encoding {
 };
 
 static struct default_encoding default_external = {0};
-
-extern int Init_enc_set_filesystem_encoding(void);
 
 static int
 enc_set_default_encoding(struct default_encoding *def, VALUE encoding, const char *name)

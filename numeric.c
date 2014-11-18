@@ -670,7 +670,6 @@ rb_float_new_in_heap(double d)
 static VALUE
 flo_to_s(VALUE flt)
 {
-    char *ruby_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve);
     enum {decimal_mant = DBL_MANT_DIG-DBL_DIG};
     enum {float_dig = DBL_DIG+1};
     char buf[float_dig + (decimal_mant + CHAR_BIT - 1) / CHAR_BIT + 10];
@@ -2776,7 +2775,6 @@ fix_uminus(VALUE num)
 VALUE
 rb_fix2str(VALUE x, int base)
 {
-    extern const char ruby_digitmap[];
     char buf[SIZEOF_VALUE*CHAR_BIT + 2], *b = buf + sizeof buf;
     long val = FIX2LONG(x);
     int neg = 0;

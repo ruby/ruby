@@ -1,3 +1,7 @@
+Tue Nov 18 23:23:45 2014  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h: Gather declarations in non-header files.
+
 Tue Nov 18 23:45:52 2014  Tanaka Akira  <akr@fsij.org>
 
 	* debug.c (SET_WHEN): Don't declare debug variables here.

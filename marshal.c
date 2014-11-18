@@ -359,7 +359,6 @@ load_mantissa(double d, const char *buf, long len)
 static void
 w_float(double d, struct dump_arg *arg)
 {
-    char *ruby_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve);
     char buf[FLOAT_DIG + (DECIMAL_MANT + 7) / 8 + 10];
 
     if (isinf(d)) {

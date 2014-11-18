@@ -135,8 +135,6 @@ VALUE rb_cSymbol;
 #define SHARABLE_SUBSTRING_P(beg, len, end) 1
 #endif
 
-rb_encoding *rb_enc_get_from_index(int index);
-
 static rb_encoding *
 get_actual_encoding(const int encidx, VALUE str)
 {
@@ -720,7 +718,6 @@ rb_tainted_str_new_cstr(const char *ptr)
 VALUE
 rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags, VALUE ecopts)
 {
-    extern VALUE rb_cEncodingConverter;
     rb_econv_t *ec;
     rb_econv_result_t ret;
     long len, olen;

@@ -152,9 +152,6 @@ VALUE rb_eEOFError;
 VALUE rb_eIOError;
 VALUE rb_mWaitReadable;
 VALUE rb_mWaitWritable;
-extern VALUE rb_eEAGAIN;
-extern VALUE rb_eEWOULDBLOCK;
-extern VALUE rb_eEINPROGRESS;
 
 static VALUE rb_eEAGAINWaitReadable;
 static VALUE rb_eEAGAINWaitWritable;
@@ -4360,8 +4357,6 @@ rb_io_fptr_finalize(rb_io_t *fptr)
     free(fptr);
     return 1;
 }
-
-size_t rb_econv_memsize(rb_econv_t *);
 
 RUBY_FUNC_EXPORTED size_t
 rb_io_memsize(const rb_io_t *fptr)

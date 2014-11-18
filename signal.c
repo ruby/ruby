@@ -840,8 +840,6 @@ ruby_abort(void)
 
 }
 
-extern int ruby_disable_gc;
-
 #ifdef SIGSEGV
 static RETSIGTYPE
 sigsegv(int sig SIGINFO_ARG)

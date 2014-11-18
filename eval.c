@@ -509,7 +509,6 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 	    if (NIL_P(rb_attr_get(mesg, idBt))) {
 		at = rb_vm_backtrace_object();
 		if (mesg == sysstack_error) {
-		    VALUE ruby_vm_sysstack_error_copy(void);
 		    mesg = ruby_vm_sysstack_error_copy();
 		}
 		rb_ivar_set(mesg, idBt, at);
@@ -1263,8 +1262,6 @@ add_activated_refinement(VALUE activated_refinements,
     }
     rb_hash_aset(activated_refinements, klass, iclass);
 }
-
-VALUE rb_yield_refine_block(VALUE refinement, VALUE refinements);
 
 /*
  *  call-seq:

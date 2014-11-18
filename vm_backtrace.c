@@ -19,8 +19,6 @@
 static VALUE rb_cBacktrace;
 static VALUE rb_cBacktraceLocation;
 
-extern VALUE ruby_engine_name;
-
 static VALUE
 id2str(ID id)
 {

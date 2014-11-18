@@ -30,9 +30,6 @@
 #include "vm_core.h"
 #include <ctype.h>
 
-int rb_vm_add_root_module(ID id, VALUE module);
-
-
 #define id_attached id__attached__
 
 void
@@ -939,7 +936,6 @@ move_refined_method(st_data_t key, st_data_t value, st_data_t data)
 void
 rb_prepend_module(VALUE klass, VALUE module)
 {
-    void rb_vm_check_redefinition_by_prepend(VALUE klass);
     VALUE origin;
     int changed = 0;
 

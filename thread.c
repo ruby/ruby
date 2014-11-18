@@ -4662,8 +4662,6 @@ rb_thread_shield_destroy(VALUE self)
 /* variables for recursive traversals */
 static ID recursive_key;
 
-extern const struct st_hash_type st_hashtype_num;
-
 static VALUE
 ident_hash_new(void)
 {

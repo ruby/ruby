@@ -2803,10 +2803,6 @@ rb_obj_id(VALUE obj)
     return nonspecial_obj_id(obj);
 }
 
-size_t rb_str_memsize(VALUE);
-size_t rb_ary_memsize(VALUE);
-size_t rb_io_memsize(const rb_io_t *);
-size_t rb_generic_ivar_memsize(VALUE);
 #include "regint.h"
 
 static size_t

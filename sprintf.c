@@ -23,8 +23,6 @@
 
 #define BIT_DIGITS(N)   (((N)*146)/485 + 1)  /* log2(10) =~ 146/485 */
 
-extern const char ruby_digitmap[];
-
 static void fmt_setup(char*,size_t,int,int,int,int);
 
 static char

@@ -162,7 +162,6 @@ rb_obj_equal(VALUE obj1, VALUE obj2)
 VALUE
 rb_obj_hash(VALUE obj)
 {
-    long rb_objid_hash(st_index_t index);
     VALUE oid = rb_obj_id(obj);
 #if SIZEOF_LONG == SIZEOF_VOIDP
     st_index_t index = NUM2LONG(oid);
@@ -278,8 +277,6 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
 	RBASIC(dest)->flags &= ~ROBJECT_EMBED;
     }
 }
-
-void rb_copy_wb_protected_attribute(VALUE dest, VALUE obj);
 
 static void
 init_copy(VALUE dest, VALUE obj)

@@ -1633,8 +1633,6 @@ isimagunit(int c)
 	    c == 'j' || c == 'J');
 }
 
-VALUE rb_cstr_to_rat(const char *, int);
-
 static VALUE
 str2num(char *s)
 {
