@@ -184,7 +184,7 @@ module URI
       if arg_check
         self.scheme = scheme
         self.userinfo = userinfo
-        self.host = host
+        self.hostname = host
         self.port = port
         self.path = path
         self.query = query
