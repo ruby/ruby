@@ -4068,7 +4068,13 @@ symbol_list	: /* none */
 		    {
 		    /*%%%*/
 			$2 = evstr2dstr($2);
-			nd_set_type($2, NODE_DSYM);
+			if (nd_type($2) == NODE_DSTR) {
+			    nd_set_type($2, NODE_DSYM);
+			}
+			else {
+			    nd_set_type($2, NODE_LIT);
+			    $2->nd_lit = rb_str_intern($2->nd_lit);
+			}
 			$$ = list_append($1, $2);
 		    /*%
 			$$ = dispatch2(symbols_add, $1, $2);
