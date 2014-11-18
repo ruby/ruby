@@ -350,6 +350,8 @@ def main_actual_fix(problems)
       next
     end
 
+    lines.sort!
+
     if pre_post_part
       new_content = [
         pre_post_part.first,

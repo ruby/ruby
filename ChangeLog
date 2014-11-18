@@ -1,3 +1,7 @@
+Wed Nov 19 00:26:15 2014  Tanaka Akira  <akr@fsij.org>
+
+	* tool/update-deps: Sort dependencies.
+
 Wed Nov 19 00:24:18 2014  Tanaka Akira  <akr@fsij.org>
 
 	* enc/encdb.c: Include internal.h.
