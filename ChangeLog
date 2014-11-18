@@ -1,3 +1,15 @@
+Tue Nov 18 18:06:43 2014  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/io.h (FMODE_WSPLIT): Removed.  The write() system call
+	  is not required to split.  It was useful to avoid whole process
+	  blocking in Ruby 1.8 but not useful since write() is invoked without
+	  GVL.
+	  (FMODE_WSPLIT_INITIALIZED): Ditto.
+
+	* io.c (wsplit_p): Removed.
+	  (io_writable_length): Removed.
+	  (rb_fcntl): Don't update the removed flags.
+
 Tue Nov 18 03:23:06 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (check_setter_id): show the original argument instead

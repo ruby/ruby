@@ -109,8 +109,6 @@ typedef struct rb_io_t {
 #define FMODE_APPEND                0x00000040
 #define FMODE_CREATE                0x00000080
 /* #define FMODE_NOREVLOOKUP        0x00000100 */
-#define FMODE_WSPLIT                0x00000200
-#define FMODE_WSPLIT_INITIALIZED    0x00000400
 #define FMODE_TRUNC                 0x00000800
 #define FMODE_TEXTMODE              0x00001000
 /* #define FMODE_PREP               0x00010000 */

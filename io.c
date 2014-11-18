@@ -909,29 +909,6 @@ io_alloc(VALUE klass)
 #   define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
 #endif
 
-static int
-wsplit_p(rb_io_t *fptr)
-{
-#if defined(HAVE_FCNTL) && defined(F_GETFL) && defined(O_NONBLOCK)
-    int r;
-#endif
-
-    if (!(fptr->mode & FMODE_WSPLIT_INITIALIZED)) {
-        struct stat buf;
-        if (fstat(fptr->fd, &buf) == 0 &&
-            !S_ISREG(buf.st_mode)
-#if defined(HAVE_FCNTL) && defined(F_GETFL) && defined(O_NONBLOCK)
-            && (r = fcntl(fptr->fd, F_GETFL)) != -1 &&
-            !(r & O_NONBLOCK)
-#endif
-            ) {
-            fptr->mode |= FMODE_WSPLIT;
-        }
-        fptr->mode |= FMODE_WSPLIT_INITIALIZED;
-    }
-    return fptr->mode & FMODE_WSPLIT;
-}
-
 struct io_internal_read_struct {
     int fd;
     void *buf;
@@ -1029,22 +1006,11 @@ rb_writev_internal(int fd, const struct iovec *iov, int iovcnt)
 }
 #endif
 
-static long
-io_writable_length(rb_io_t *fptr, long l)
-{
-    if (PIPE_BUF < l &&
-        !rb_thread_alone() &&
-        wsplit_p(fptr)) {
-        l = PIPE_BUF;
-    }
-    return l;
-}
-
 static VALUE
 io_flush_buffer_sync(void *arg)
 {
     rb_io_t *fptr = arg;
-    long l = io_writable_length(fptr, fptr->wbuf.len);
+    long l = fptr->wbuf.len;
     ssize_t r = write(fptr->fd, fptr->wbuf.ptr+fptr->wbuf.off, (size_t)l);
 
     if (fptr->wbuf.len <= r) {
@@ -1291,8 +1257,7 @@ io_binwrite_string(VALUE arg)
 	}
     }
     else {
-	long l = io_writable_length(fptr, p->length);
-	r = rb_write_internal(fptr->fd, p->ptr, l);
+	r = rb_write_internal(fptr->fd, p->ptr, p->length);
     }
 
     return r;
@@ -1326,8 +1291,7 @@ io_binwrite_string(VALUE arg)
     if (fptr->stdio_file != stderr && !rb_thread_fd_writable(fptr->fd))
 	rb_io_check_closed(fptr);
 
-    l = io_writable_length(p->fptr, p->length);
-    return rb_write_internal(p->fptr->fd, p->ptr, l);
+    return rb_write_internal(p->fptr->fd, p->ptr, p->length);
 }
 #endif
 
@@ -9250,16 +9214,6 @@ rb_fcntl(VALUE io, VALUE req, VALUE arg)
 	if (RSTRING_PTR(arg)[RSTRING_LEN(arg)-1] != 17)
 	    rb_raise(rb_eArgError, "return value overflowed string");
 	RSTRING_PTR(arg)[RSTRING_LEN(arg)-1] = '\0';
-    }
-
-    if (cmd == F_SETFL) {
-	if (narg & O_NONBLOCK) {
-	    fptr->mode |= FMODE_WSPLIT_INITIALIZED;
-	    fptr->mode &= ~FMODE_WSPLIT;
-	}
-	else {
-	    fptr->mode &= ~(FMODE_WSPLIT_INITIALIZED|FMODE_WSPLIT);
-	}
     }
 
     return INT2NUM(retval);
