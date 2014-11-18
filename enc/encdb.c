@@ -9,6 +9,8 @@
 
 **********************************************************************/
 
+#include "internal.h"
+
 #define ENC_REPLICATE(name, orig) rb_encdb_replicate((name), (orig))
 #define ENC_ALIAS(name, orig) rb_encdb_alias((name), (orig))
 #define ENC_DUMMY(name) rb_encdb_dummy(name)
