@@ -656,4 +656,21 @@ end.join
   def test_anonymous_message
     assert_in_out_err([], "raise Class.new(RuntimeError), 'foo'", [], /foo\n/)
   end
+
+  def test_name_error_info
+    obj = BasicObject.new
+    e = assert_raise(NameError) {
+      obj.instance_eval("Object")
+    }
+    assert_equal(:Object, e.name)
+    e = assert_raise(NameError) {
+      obj.instance_eval {foo}
+    }
+    assert_equal(:foo, e.name)
+    e = assert_raise(NoMethodError) {
+      obj.foo(1, 2)
+    }
+    assert_equal(:foo, e.name)
+    assert_equal([1, 2], e.args)
+  end
 end
