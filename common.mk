@@ -115,8 +115,8 @@ ALLOBJS       = $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT)
 GOLFOBJS      = goruby.$(OBJEXT) golf_prelude.$(OBJEXT)
 
 DEFAULT_PRELUDES = $(GEM_PRELUDE)
-PRELUDE_SCRIPTS = $(srcdir)/prelude.rb $(srcdir)/enc/prelude.rb $(DEFAULT_PRELUDES)
-GEM_PRELUDE   = $(srcdir)/gem_prelude.rb
+PRELUDE_SCRIPTS = prelude.rb enc/prelude.rb $(DEFAULT_PRELUDES)
+GEM_PRELUDE   = gem_prelude.rb
 PRELUDES      = {$(srcdir)}prelude.c {$(srcdir)}miniprelude.c
 GOLFPRELUDES  = {$(srcdir)}golf_prelude.c
 
