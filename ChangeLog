@@ -1,3 +1,7 @@
+Thu Nov 20 00:54:57 2014  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (ruby_init_setproctitle): Declare here.
+
 Thu Nov 20 00:26:37 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_here_document): append byte sequence directly to

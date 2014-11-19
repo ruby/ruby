@@ -1930,10 +1930,7 @@ ruby_process_options(int argc, char **argv)
     iseq = process_options(argc, argv, cmdline_options_init(&opt));
 
 #ifndef HAVE_SETPROCTITLE
-    {
-	extern void ruby_init_setproctitle(int argc, char *argv[]);
-	ruby_init_setproctitle(argc, argv);
-    }
+    ruby_init_setproctitle(argc, argv);
 #endif
 
     return (void*)(struct RData*)iseq;
