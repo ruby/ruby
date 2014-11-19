@@ -1,3 +1,9 @@
+Thu Nov 20 00:26:37 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_here_document): append byte sequence directly to
+	  the delayed content instead of creating an intermediate string
+	  object.
+
 Wed Nov 19 21:11:01 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk (ext/json/parser/parser.c): don't touch parse.c,

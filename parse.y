@@ -6588,10 +6588,20 @@ parser_here_document(struct parser_params *parser, NODE *here)
 	    ripper_dispatch_scan_event(parser, tSTRING_CONTENT);
 	}
 	else {
-	    if (str ||
-		((len = lex_p - parser->tokp) > 0 &&
-		 (str = STR_NEW3(parser->tokp, len, enc, func), 1))) {
+	    if (str) {
 		rb_str_append(parser->delayed, str);
+	    }
+	    else if ((len = lex_p - parser->tokp) > 0) {
+		if (!(func & STR_FUNC_REGEXP) && rb_enc_asciicompat(enc)) {
+		    int cr = ENC_CODERANGE_UNKNOWN;
+		    rb_str_coderange_scan_restartable(parser->tokp, lex_p, enc, &cr);
+		    if (cr != ENC_CODERANGE_7BIT &&
+			current_enc == rb_usascii_encoding() &&
+			enc != rb_utf8_encoding()) {
+			enc = rb_ascii8bit_encoding();
+		    }
+		}
+		rb_enc_str_buf_cat(parser->delayed, parser->tokp, len, enc);
 	    }
 	    ripper_dispatch_delayed_token(parser, tSTRING_CONTENT);
 	}
