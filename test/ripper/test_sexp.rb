@@ -14,5 +14,8 @@ class TestRipper::Sexp < Test::Unit::TestCase
     assert_nil Ripper.sexp("*")
     assert_nil Ripper.sexp("end")
     assert_nil Ripper.sexp("end 1")
+    assert_nil Ripper.sexp("/*")
+    assert_nil Ripper.sexp("/*/")
+    assert_nil Ripper.sexp("/+/")
   end
 end if ripper_test

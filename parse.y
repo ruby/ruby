@@ -503,6 +503,8 @@ static VALUE new_attr_op_assign_gen(struct parser_params *parser, VALUE lhs, VAL
 
 #define new_op_assign(lhs, op, rhs) new_op_assign_gen(parser, (lhs), (op), (rhs))
 
+RUBY_FUNC_EXPORTED VALUE rb_parser_reg_compile(struct parser_params* parser, VALUE str, int options, VALUE *errmsg);
+
 static ID formal_argument_gen(struct parser_params*, ID);
 #define formal_argument(id) formal_argument_gen(parser, (id))
 static ID shadowing_lvar_gen(struct parser_params*,ID);
@@ -3991,6 +3993,19 @@ regexp		: tREGEXP_BEG regexp_contents tREGEXP_END
 			}
 			$$ = node;
 		    /*%
+			VALUE re = $2, opt = $3, src = 0, err;
+			int options = 0;
+			if (ripper_is_node_yylval(re)) {
+			    $2 = RNODE(re)->nd_rval;
+			    src = RNODE(re)->nd_cval;
+			}
+			if (ripper_is_node_yylval(opt)) {
+			    $3 = RNODE(opt)->nd_rval;
+			    options = (int)RNODE(opt)->nd_state;
+			}
+			if (src && NIL_P(rb_parser_reg_compile(parser, src, options, &err))) {
+			    compile_error(PARSER_ARG "%"PRIsVALUE, err);
+			}
 			$$ = dispatch2(regexp_literal, $2, $3);
 		    %*/
 		    }
@@ -4215,7 +4230,7 @@ regexp_contents: /* none */
 		    /*%%%*/
 			$$ = 0;
 		    /*%
-			$$ = dispatch0(regexp_new);
+			$$ = ripper_new_yylval(0, dispatch0(regexp_new), 0);
 		    %*/
 		    }
 		| regexp_contents string_content
@@ -4242,7 +4257,20 @@ regexp_contents: /* none */
 			    $$ = list_append(head, tail);
 			}
 		    /*%
-			$$ = dispatch2(regexp_add, $1, $2);
+		        VALUE s1 = 0, s2 = 0, n1 = $1, n2 = $2;
+			if (ripper_is_node_yylval(n1)) {
+			    s1 = RNODE(n2)->nd_cval;
+			    n1 = RNODE(n1)->nd_rval;
+			}
+			if (ripper_is_node_yylval(n2)) {
+			    s2 = RNODE(n2)->nd_cval;
+			    n2 = RNODE(n2)->nd_rval;
+			}
+			$$ = dispatch2(regexp_add, n1, n2);
+			if (s1 || s2) {
+			    VALUE s = !s1 ? s2 : !s2 ? s1 : rb_str_plus(s1, s2);
+			    $$ = ripper_new_yylval(0, $$, s);
+			}
 		    %*/
 		    }
 		;
@@ -4256,11 +4284,10 @@ string_content	: tSTRING_CONTENT
 		    }
 		  string_dvar
 		    {
-		    /*%%%*/
 			lex_strterm = $<node>2;
+		    /*%%%*/
 			$$ = NEW_EVSTR($3);
 		    /*%
-			lex_strterm = $<node>2;
 			$$ = dispatch1(string_dvar, $3);
 		    %*/
 		    }
@@ -5158,8 +5185,8 @@ ripper_yylval_id(ID x)
 {
     return ripper_new_yylval(x, ID2SYM(x), 0);
 }
-# define set_yylval_str(x) (void)(x)
-# define set_yylval_num(x) (void)(x)
+# define set_yylval_str(x) (yylval.val = (x))
+# define set_yylval_num(x) (yylval.val = ripper_new_yylval((x), 0, 0))
 # define set_yylval_id(x)  (void)(x)
 # define set_yylval_name(x) (void)(yylval.val = ripper_yylval_id(x))
 # define set_yylval_literal(x) (void)(x)
@@ -6273,6 +6300,7 @@ parser_tokadd_string(struct parser_params *parser,
 static void
 ripper_flush_string_content(struct parser_params *parser, rb_encoding *enc)
 {
+    VALUE content = yylval.val;
     if (!NIL_P(parser->delayed)) {
 	ptrdiff_t len = lex_p - parser->tokp;
 	if (len > 0) {
@@ -6281,6 +6309,10 @@ ripper_flush_string_content(struct parser_params *parser, rb_encoding *enc)
 	ripper_dispatch_delayed_token(parser, tSTRING_CONTENT);
 	parser->tokp = lex_p;
     }
+    if (!ripper_is_node_yylval(content))
+	content = ripper_new_yylval(0, 0, content);
+    yylval.val = content;
+    ripper_dispatch_scan_event(parser, tSTRING_CONTENT);
 }
 
 #define flush_string_content(enc) ripper_flush_string_content(parser, (enc))
@@ -6367,6 +6399,9 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
 	}
 	if (!(func & STR_FUNC_REGEXP)) return tSTRING_END;
         set_yylval_num(regx_options());
+#ifdef RIPPER
+	ripper_dispatch_scan_event(parser, tREGEXP_END);
+#endif
 	return tREGEXP_END;
     }
     if (space) {
@@ -10224,14 +10259,20 @@ reg_named_capture_assign_gen(struct parser_params* parser, VALUE regexp, NODE *m
 }
 
 static VALUE
+parser_reg_compile(struct parser_params* parser, VALUE str, int options)
+{
+    reg_fragment_setenc(str, options);
+    return rb_reg_compile(str, options & RE_OPTION_MASK, ruby_sourcefile, ruby_sourceline);
+}
+
+static VALUE
 reg_compile_gen(struct parser_params* parser, VALUE str, int options)
 {
     VALUE re;
     VALUE err;
 
-    reg_fragment_setenc(str, options);
     err = rb_errinfo();
-    re = rb_reg_compile(str, options & RE_OPTION_MASK, ruby_sourcefile, ruby_sourceline);
+    re = parser_reg_compile(parser, str, options);
     if (NIL_P(re)) {
 	VALUE m = rb_attr_get(rb_errinfo(), idMesg);
 	rb_set_errinfo(err);
@@ -10242,6 +10283,18 @@ reg_compile_gen(struct parser_params* parser, VALUE str, int options)
 	    compile_error(PARSER_ARG "%"PRIsVALUE, m);
 	}
 	return Qnil;
+    }
+    return re;
+}
+
+VALUE
+rb_parser_reg_compile(struct parser_params* parser, VALUE str, int options, VALUE *errmsg)
+{
+    VALUE err = rb_errinfo();
+    VALUE re = parser_reg_compile(parser, str, options);
+    if (NIL_P(re)) {
+	*errmsg = rb_attr_get(rb_errinfo(), idMesg);
+	rb_set_errinfo(err);
     }
     return re;
 }
