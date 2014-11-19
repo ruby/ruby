@@ -1691,6 +1691,11 @@ end
 # * #each2(v)
 # * #collect2(v)
 #
+# Properties of vectors:
+# * #angle_with(v)
+# * Vector.independent?(*vs)
+# * #independent?(*vs)
+#
 # Vector arithmetic:
 # * #*(x) "is matrix or number"
 # * #+(v)
@@ -1699,7 +1704,6 @@ end
 # * #-@
 #
 # Vector functions:
-# * #angle_with(v)
 # * #inner_product(v), dot(v)
 # * #cross_product(v), cross(v)
 # * #collect
@@ -1830,6 +1834,41 @@ class Vector
     Array.new(size) do |i|
       yield @elements[i], v[i]
     end
+  end
+
+  #--
+  # PROPERTIES -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  #++
+
+  #
+  # Returns +true+ iff all of vectors are linearly independent.
+  #
+  #   Vector.independent?(Vector[1,0], Vector[0,1])
+  #     => true
+  #
+  #   Vector.independent?(Vector[1,2], Vector[2,4])
+  #     => false
+  #
+  def Vector.independent?(*vs)
+    vs.each do |v|
+      raise TypeError, "expected Vector, got #{v.class}" unless v.is_a?(Vector)
+      Vector.Raise ErrDimensionMismatch unless v.size == vs.first.size
+    end
+    return false if vs.count > vs.first.size
+    Matrix[*vs].rank.eql?(vs.count)
+  end
+
+  #
+  # Returns +true+ iff all of vectors are linearly independent.
+  #
+  #   Vector[1,0].independent?(Vector[0,1])
+  #     => true
+  #
+  #   Vector[1,2].independent?(Vector[2,4])
+  #     => false
+  #
+  def independent?(*vs)
+    self.class.independent?(self, *vs)
   end
 
   #--

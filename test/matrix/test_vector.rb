@@ -89,6 +89,25 @@ class TestVector < Test::Unit::TestCase
     assert_equal(Vector[2.0,4.0,6.0], a)
   end
 
+  def test_independent?
+    assert(Vector.independent?(@v1, @w1))
+    assert(
+      Vector.independent?(
+        Vector.basis(size: 3, index: 0),
+        Vector.basis(size: 3, index: 1),
+        Vector.basis(size: 3, index: 2),
+      )
+    )
+
+    refute(Vector.independent?(@v1, Vector[2,4,6]))
+    refute(Vector.independent?(Vector[2,4], Vector[1,3], Vector[5,6]))
+
+    assert_raise(Vector::TypeError) { Vector.independent?(@v1, 3) }
+    assert_raise(Vector::ErrDimensionMismatch) { Vector.independent?(@v1, Vector[2,4]) }
+
+    assert(@v1.independent?(Vector[1,2,4], Vector[1,3,4]))
+  end
+
   def test_mul
     assert_equal(Vector[2,4,6], @v1 * 2)
     assert_equal(Matrix[[1, 4, 9], [2, 8, 18], [3, 12, 27]], @v1 * Matrix[[1,4,9]])

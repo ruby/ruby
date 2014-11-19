@@ -1,3 +1,8 @@
+Thu Nov 20 02:44:27 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Vector#independent? and associated class method
+	  patch by gogo tanaka [#10451]
+
 Thu Nov 20 02:32:34 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: Add Vector#angle_with
