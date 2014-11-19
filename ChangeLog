@@ -1,3 +1,9 @@
+Wed Nov 19 17:59:25 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk (ext/ripper/ripper.c): pass build directory as VPATH.
+
+	* ext/ripper/depend (.y.c): use VPATH for y.tab.c.
+
 Wed Nov 19 10:07:57 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* template/prelude.c.tmpl (Prelude#translate): strip VPATH prefix
