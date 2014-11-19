@@ -41,7 +41,7 @@ class Prelude
     idx = @preludes[filename]
     return idx if idx
     lines = []
-    result = [@preludes.size, filename, lines, sub]
+    result = [@preludes.size, @vpath.strip(filename), lines, sub]
     @vpath.foreach(filename) do |line|
       @preludes[filename] ||= result
       line.sub!(/(?:^|\s+)\#(?:$|\s.*)/, '')

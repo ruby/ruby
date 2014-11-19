@@ -79,4 +79,9 @@ class VPath
     end
     @list
   end
+
+  def strip(path)
+    prefix = list.map {|dir| Regexp.quote(dir)}
+    path.sub(/\A#{prefix.join('|')}(?:\/|\z)/, '')
+  end
 end
