@@ -466,6 +466,20 @@ static NODE *reg_named_capture_assign_gen(struct parser_params* parser, VALUE re
 #define get_id(id) (id)
 #define get_value(val) (val)
 #else
+#define NODE_RIPPER NODE_CDECL
+
+static inline VALUE
+ripper_new_yylval(ID a, VALUE b, VALUE c)
+{
+    return (VALUE)NEW_CDECL(a, b, c);
+}
+
+static inline int
+ripper_is_node_yylval(VALUE n)
+{
+    return RB_TYPE_P(n, T_NODE) && nd_type(RNODE(n)) == NODE_RIPPER;
+}
+
 #define value_expr(node) ((void)(node))
 #define remove_begin(node) (node)
 #define rb_dvar_defined(id) 0
@@ -5142,7 +5156,7 @@ static int parser_here_document(struct parser_params*,NODE*);
 static inline VALUE
 ripper_yylval_id(ID x)
 {
-    return (VALUE)NEW_LASGN(x, ID2SYM(x));
+    return ripper_new_yylval(x, ID2SYM(x), 0);
 }
 # define set_yylval_str(x) (void)(x)
 # define set_yylval_num(x) (void)(x)
@@ -10659,7 +10673,7 @@ ripper_validate_object(VALUE self, VALUE x)
       case T_RATIONAL:
         return x;
       case T_NODE:
-	if (nd_type(x) != NODE_LASGN) {
+	if (nd_type(x) != NODE_RIPPER) {
 	    rb_raise(rb_eArgError, "NODE given: %p", x);
 	}
 	return ((NODE *)x)->nd_rval;
@@ -10831,7 +10845,7 @@ ripper_get_id(VALUE v)
     NODE *nd;
     if (!RB_TYPE_P(v, T_NODE)) return 0;
     nd = (NODE *)v;
-    if (nd_type(nd) != NODE_LASGN) return 0;
+    if (nd_type(nd) != NODE_RIPPER) return 0;
     return nd->nd_vid;
 }
 
@@ -10842,7 +10856,7 @@ ripper_get_value(VALUE v)
     if (v == Qundef) return Qnil;
     if (!RB_TYPE_P(v, T_NODE)) return v;
     nd = (NODE *)v;
-    if (nd_type(nd) != NODE_LASGN) return Qnil;
+    if (nd_type(nd) != NODE_RIPPER) return Qnil;
     return nd->nd_rval;
 }
 

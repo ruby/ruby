@@ -1,3 +1,8 @@
+Thu Nov 20 02:09:34 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (ripper_new_yylval): abstract function to create ripper
+	  wrapper, and make it able to hold another object.
+
 Thu Nov 20 01:00:59 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (reg_named_capture_assign_gen): use predefined ID
