@@ -9,6 +9,10 @@ class Downloader
 
   class RubyGems < self
     def self.download(name, *rest)
+      if File.exist?(name)
+        $stdout.puts "#{name} already exists"
+        return
+      end
       super("https://rubygems.org/downloads/#{name}", name, *rest)
     end
   end

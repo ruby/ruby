@@ -1,3 +1,9 @@
+Wed Nov 19 18:12:17 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/downloader.rb (RubyGems.download): Don't download gem if the
+	  version is already downloaded. A gem file is versioned and
+	  it must be identical if the version is the same.
+
 Wed Nov 19 17:59:25 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk (ext/ripper/ripper.c): pass build directory as VPATH.
