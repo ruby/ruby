@@ -1,3 +1,8 @@
+Thu Nov 20 01:00:59 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (reg_named_capture_assign_gen): use predefined ID
+	  instead of rb_intern.
+
 Thu Nov 20 00:54:57 2014  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (ruby_init_setproctitle): Declare here.

@@ -10219,11 +10219,10 @@ reg_compile_gen(struct parser_params* parser, VALUE str, int options)
     err = rb_errinfo();
     re = rb_reg_compile(str, options & RE_OPTION_MASK, ruby_sourcefile, ruby_sourceline);
     if (NIL_P(re)) {
-	ID mesg = rb_intern("mesg");
-	VALUE m = rb_attr_get(rb_errinfo(), mesg);
+	VALUE m = rb_attr_get(rb_errinfo(), idMesg);
 	rb_set_errinfo(err);
 	if (!NIL_P(err)) {
-	    rb_str_append(rb_str_cat(rb_attr_get(err, mesg), "\n", 1), m);
+	    rb_str_append(rb_str_cat(rb_attr_get(err, idMesg), "\n", 1), m);
 	}
 	else {
 	    compile_error(PARSER_ARG "%"PRIsVALUE, m);
