@@ -12,7 +12,7 @@ ripper.o: ripper.c
 .y.c:
 	$(ECHO) compiling compiler $<
 	$(Q) $(BISON) -t -v -oy.tab.c $<
-	$(Q) sed -f $(top_srcdir)/tool/ytab.sed -e "/^#/s!y\.tab\.c!$@!" $(VPATH)/y.tab.c > $@
+	$(Q) sed -f $(top_srcdir)/tool/ytab.sed -e "/^#/s!y\.tab\.c!$@!" y.tab.c > $@
 	@$(RM) y.tab.c
 
 all: check
