@@ -9,10 +9,6 @@ class Downloader
 
   class RubyGems < self
     def self.download(name, *rest)
-      if File.exist?(name)
-        $stdout.puts "#{name} already exists"
-        return
-      end
       super("https://rubygems.org/downloads/#{name}", name, *rest)
     end
   end
@@ -58,7 +54,13 @@ class Downloader
   #            'UnicodeData.txt', 'enc/unicode/data'
   def self.download(url, name, dir = nil, ims = true)
     file = dir ? File.join(dir, File.basename(name)) : name
-    return true if ims.nil? and File.exist?(file)
+    if ims.nil? and File.exist?(file)
+      if $VERBOSE
+        $stdout.puts "#{name} already exists"
+        $stdout.flush
+      end
+      return true
+    end
     url = URI(url)
     if $VERBOSE
       $stdout.print "downloading #{name} ... "

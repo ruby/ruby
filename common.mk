@@ -893,7 +893,7 @@ update-gems: PHONY
 	    -I../tool -rdownloader -answ \
 	    -e 'gem, ver = *$$F' \
 	    -e 'gem = "#{gem}-#{ver}.gem"' \
-	    -e 'Downloader::RubyGems.download(gem)' \
+	    -e 'Downloader::RubyGems.download(gem, nil, nil)' \
 	    bundled_gems
 
 UPDATE_LIBRARIES = no
