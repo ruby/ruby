@@ -1,3 +1,8 @@
+Thu Nov 20 08:54:56 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (struct parser_params): reduce size by reordering
+	  members and an unused member.
+
 Thu Nov 20 02:44:27 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: Vector#independent? and associated class method

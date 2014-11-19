@@ -236,11 +236,10 @@ struct parser_params {
     int parser_compile_for_eval;
     int parser_in_kwarg;
     int parser_in_defined;
-    char *parser_tokenbuf;
     int parser_tokidx;
     int parser_toksiz;
     int parser_tokline;
-    int is_ripper; /* bool, seems unused */
+    char *parser_tokenbuf;
     VALUE parser_lex_input;
     VALUE parser_lex_lastline;
     VALUE parser_lex_nextline;
@@ -253,32 +252,36 @@ struct parser_params {
     long parser_lex_gets_ptr;
     VALUE (*parser_lex_gets)(struct parser_params*,VALUE);
     struct local_vars *parser_lvtbl;
-    int parser_ruby__end__seen;
     int line_count;
-    int has_shebang;
     int parser_ruby_sourceline;	/* current line no. */
     char *parser_ruby_sourcefile; /* current source file */
     VALUE parser_ruby_sourcefile_string;
     rb_encoding *enc;
 
-    int parser_yydebug;
+    ID cur_arg;
 
     int last_cr_line;
 
-    ID cur_arg;
+    unsigned int parser_ruby__end__seen: 1;
+    unsigned int parser_yydebug: 1;
+    unsigned int has_shebang: 1;
 
 #ifndef RIPPER
     /* Ruby core only */
+    unsigned int parser_token_info_enabled: 1;
+    int nerr;
+
     NODE *parser_eval_tree_begin;
     NODE *parser_eval_tree;
     VALUE debug_lines;
     VALUE coverage;
-    int nerr;
 
-    int parser_token_info_enabled;
     token_info *parser_token_info;
 #else
     /* Ripper only */
+    unsigned int toplevel_p: 1;
+    unsigned int error_p: 1;
+
     const char *tokp;
     VALUE delayed;
     int delayed_line;
@@ -287,8 +290,6 @@ struct parser_params {
     VALUE value;
     VALUE result;
     VALUE parsing_thread;
-    int toplevel_p;
-    int error_p;
 #endif
 };
 
@@ -6837,26 +6838,30 @@ magic_comment_encoding(struct parser_params *parser, const char *name, const cha
     parser_set_encode(parser, val);
 }
 
-static void
-parser_set_token_info(struct parser_params *parser, const char *name, const char *val)
+static int
+parser_get_bool(struct parser_params *parser, const char *name, const char *val)
 {
-    int *p = &parser->parser_token_info_enabled;
-
     switch (*val) {
       case 't': case 'T':
 	if (strcasecmp(val, "true") == 0) {
-	    *p = TRUE;
-	    return;
+	    return TRUE;
 	}
 	break;
       case 'f': case 'F':
 	if (strcasecmp(val, "false") == 0) {
-	    *p = FALSE;
-	    return;
+	    return FALSE;
 	}
 	break;
     }
     rb_compile_warning(ruby_sourcefile, ruby_sourceline, "invalid value for %s: %s", name, val);
+    return -1;
+}
+
+static void
+parser_set_token_info(struct parser_params *parser, const char *name, const char *val)
+{
+    int b = parser_get_bool(parser, name, val);
+    if (b >= 0) parser->parser_token_info_enabled = b;
 }
 
 struct magic_comment {
@@ -10423,11 +10428,9 @@ parser_initialize(struct parser_params *parser)
     parser->parser_ruby_sourcefile_string = Qnil;
     parser->cur_arg = 0;
 #ifndef RIPPER
-    parser->is_ripper = 0;
     parser->parser_eval_tree_begin = 0;
     parser->parser_eval_tree = 0;
 #else
-    parser->is_ripper = 1;
     parser->delayed = Qnil;
 
     parser->result = Qnil;
