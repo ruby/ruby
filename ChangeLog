@@ -1,3 +1,8 @@
+Wed Nov 19 21:11:01 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk (ext/json/parser/parser.c): don't touch parse.c,
+	  ruby repo is a downstream.
+
 Wed Nov 19 20:38:11 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk (ext/ripper/ripper.c): use $(PWD) to get
