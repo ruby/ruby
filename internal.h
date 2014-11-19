@@ -1088,7 +1088,7 @@ const char *rb_objspace_data_type_name(VALUE obj);
 /* Temporary.  This API will be removed (renamed). */
 VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd);
 
-/* bignum.c */
+/* bignum.c (export) */
 VALUE rb_big_mul_normal(VALUE x, VALUE y);
 VALUE rb_big_mul_balance(VALUE x, VALUE y);
 VALUE rb_big_mul_karatsuba(VALUE x, VALUE y);
@@ -1107,21 +1107,21 @@ VALUE rb_big2str_gmp(VALUE x, int base);
 VALUE rb_str2big_gmp(VALUE arg, int base, int badcheck);
 #endif
 
-/* error.c */
+/* error.c (export) */
 int rb_bug_reporter_add(void (*func)(FILE *, void *), void *data);
 
-/* file.c */
+/* file.c (export) */
 #ifdef __APPLE__
 VALUE rb_str_normalize_ospath(const char *ptr, long len);
 #endif
 
-/* io.c */
+/* io.c (export) */
 void rb_maygvl_fd_fix_cloexec(int fd);
 
-/* numeric.c */
+/* numeric.c (export) */
 VALUE rb_int_positive_pow(long x, unsigned long y);
 
-/* process.c */
+/* process.c (export) */
 int rb_exec_async_signal_safe(const struct rb_execarg *e, char *errmsg, size_t errmsg_buflen);
 rb_pid_t rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fds, char *errmsg, size_t errmsg_buflen);
 VALUE rb_execarg_new(int argc, const VALUE *argv, int accept_shell);
@@ -1133,22 +1133,22 @@ int rb_execarg_run_options(const struct rb_execarg *e, struct rb_execarg *s, cha
 VALUE rb_execarg_extract_options(VALUE execarg_obj, VALUE opthash);
 void rb_execarg_setenv(VALUE execarg_obj, VALUE env);
 
-/* rational.c */
+/* rational.c (export) */
 VALUE rb_gcd_normal(VALUE self, VALUE other);
 #if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
 VALUE rb_gcd_gmp(VALUE x, VALUE y);
 #endif
 
-/* string.c */
+/* string.c (export) */
 #ifdef RUBY_ENCODING_H
 /* internal use */
 VALUE rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encoding *enc);
 #endif
 
-/* util.c */
+/* util.c (export) */
 extern const signed char ruby_digit36_to_number_table[];
 
-/* variable.c */
+/* variable.c (export) */
 void rb_gc_mark_global_tbl(void);
 void rb_mark_generic_ivar(VALUE);
 void rb_mark_generic_ivar_tbl(void);
@@ -1156,7 +1156,7 @@ void rb_mark_generic_ivar_tbl(void);
 int rb_st_insert_id_and_value(VALUE obj, st_table *tbl, ID key, VALUE value);
 st_table *rb_st_copy(VALUE obj, struct st_table *orig_tbl);
 
-/* gc.c */
+/* gc.c (export) */
 size_t rb_obj_memsize_of(VALUE);
 #define RB_OBJ_GC_FLAGS_MAX 5
 size_t rb_obj_gc_flags(VALUE, ID[], size_t);
