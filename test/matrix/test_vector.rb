@@ -102,7 +102,7 @@ class TestVector < Test::Unit::TestCase
     refute(Vector.independent?(@v1, Vector[2,4,6]))
     refute(Vector.independent?(Vector[2,4], Vector[1,3], Vector[5,6]))
 
-    assert_raise(Vector::TypeError) { Vector.independent?(@v1, 3) }
+    assert_raise(TypeError) { Vector.independent?(@v1, 3) }
     assert_raise(Vector::ErrDimensionMismatch) { Vector.independent?(@v1, Vector[2,4]) }
 
     assert(@v1.independent?(Vector[1,2,4], Vector[1,3,4]))
