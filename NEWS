@@ -172,6 +172,7 @@ with all sufficient information, see the ChangeLog file.
     * Unary - and + added for Vector and Matrix.
     * Vector#cross_product generalized to arbitrary dimensions.
     * Vector#dot and #cross are aliases for #inner_product and #cross_product.
+    * Vector#angle_with returns the angle with its argument
 
 * Pathname
   * Pathname#/ is aliased to Pathname#+.

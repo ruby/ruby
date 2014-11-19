@@ -1,3 +1,8 @@
+Thu Nov 20 02:32:34 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Add Vector#angle_with
+	  Patch by Egunov Dmitriy [#10442]
+
 Thu Nov 20 02:10:31 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (ripper_flush_string_content, parser_parse_string):

@@ -1699,6 +1699,7 @@ end
 # * #-@
 #
 # Vector functions:
+# * #angle_with(v)
 # * #inner_product(v), dot(v)
 # * #cross_product(v), cross(v)
 # * #collect
@@ -2036,6 +2037,20 @@ class Vector
     n = magnitude
     raise ZeroVectorError, "Zero vectors can not be normalized" if n == 0
     self / n
+  end
+
+  #
+  # Returns an angle with another vector. Result is within the [0...Math::PI].
+  #   Vector[1,0].angle_with(Vector[0,1])
+  #   # => Math::PI / 2
+  #
+  def angle_with(v)
+    raise TypeError, "Expected a Vector, got a #{v.class}" unless v.is_a?(Vector)
+    Vector.Raise ErrDimensionMismatch if size != v.size
+    prod = magnitude * v.magnitude
+    raise ZeroVectorError, "Can't get angle of zero vector" if prod == 0
+
+    Math.acos( inner_product(v) / prod )
   end
 
   #--

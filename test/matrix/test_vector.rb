@@ -182,4 +182,15 @@ class TestVector < Test::Unit::TestCase
     assert_raise(ArgumentError) { Vector[1, 2].cross_product(Vector[2, -1]) }
     assert_raise(Vector::ErrOperationNotDefined) { Vector[1].cross_product }
   end
+
+  def test_angle_with
+    assert_in_epsilon(Math::PI, Vector[1, 0].angle_with(Vector[-1, 0]))
+    assert_in_epsilon(Math::PI/2, Vector[1, 0].angle_with(Vector[0, -1]))
+    assert_in_epsilon(Math::PI/4, Vector[2, 2].angle_with(Vector[0, 1]))
+    assert_in_delta(0.0, Vector[1, 1].angle_with(Vector[1, 1]), 0.00001)
+
+    assert_raise(Vector::ZeroVectorError) { Vector[1, 1].angle_with(Vector[0, 0]) }
+    assert_raise(Vector::ZeroVectorError) { Vector[0, 0].angle_with(Vector[1, 1]) }
+    assert_raise(Matrix::ErrDimensionMismatch) { Vector[1, 2, 3].angle_with(Vector[0, 1]) }
+  end
 end
