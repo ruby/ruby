@@ -11,7 +11,7 @@ Thu Nov 20 02:32:34 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 Thu Nov 20 02:10:31 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (ripper_flush_string_content, parser_parse_string):
-	  preserve parsed string content.
+	  preserve parsed string content.  [ruby-dev:48714] [Bug #10437]
 
 	* parse.y (ripper_new_yylval): abstract function to create ripper
 	  wrapper, and make it able to hold another object.
