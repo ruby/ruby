@@ -1,3 +1,9 @@
+Fri Nov 21 00:36:09 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/x509.rb
+	  (OpenSSL::X509::Name::RFC2253DN::StringChar): get rid of a false
+	  positive assertion in ripper's test.
+
 Fri Nov 21 00:29:51 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/net/imap.rb (Net::IMAP::ResponseParser::BEG_REGEXP): no need to

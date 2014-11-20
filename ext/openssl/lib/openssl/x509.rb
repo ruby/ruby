@@ -70,7 +70,7 @@ module OpenSSL
         HexPair = /#{HexChar}#{HexChar}/
         HexString = /#{HexPair}+/
         Pair = /\\(?:[#{Special}]|\\|"|#{HexPair})/
-        StringChar = /[^#{Special}\\"]/
+        StringChar = /[^\\"#{Special}]/
         QuoteChar = /[^\\"]/
         AttributeType = /[a-zA-Z][0-9a-zA-Z]*|[0-9]+(?:\.[0-9]+)*/
         AttributeValue = /
