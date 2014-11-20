@@ -1,3 +1,7 @@
+Thu Nov 20 23:17:11 2014  Tanaka Akira  <akr@fsij.org>
+
+	* tool/update-deps: Insert all dependencies found by compiler.
+
 Thu Nov 20 15:51:01 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/depend (nkf.o): add nkf.c as dependency.
