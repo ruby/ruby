@@ -412,7 +412,7 @@ def main_actual_fix(problems)
         tmp_makefile = "#{makefile}.new.#{$$}"
         File.write(tmp_makefile, new_content)
         File.rename tmp_makefile, makefile
-        (add_lines - lines).each {|line| puts "  added #{line}" }
+        (add_lines - dep_lines).each {|line| puts "  added #{line}" }
       else
         puts "not modified: #{makefile}"
       end
