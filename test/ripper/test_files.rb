@@ -15,7 +15,7 @@ class TestRipper::Generic < Test::Unit::TestCase
       for script in Dir["#{dir}/{lib,sample,ext,test}/**/*.rb"].sort
         next if TEST_RATIO < rand
         assert_nothing_raised("ripper failed to parse: #{script.inspect}") {
-          Parser.new(File.read(script)).parse
+          Parser.new(File.read(script), script).parse
         }
       end
     eom
