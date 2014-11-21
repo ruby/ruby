@@ -1,3 +1,10 @@
+Fri Nov 21 19:32:57 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk (ext/ripper/ripper.c): revert about srcdir and top_srcdir.
+
+	* common.mk (ext/ripper/ripper.c): use $(PWD) for Unix,
+	  $(MAKEDIR) for Windows.
+
 Fri Nov 21 18:12:37 2014  Tanaka Akira  <akr@fsij.org>
 
 	* tool/update-deps: Refactored.

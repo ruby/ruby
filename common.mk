@@ -808,8 +808,8 @@ $(REVISION_H): $(srcdir)/version.h $(srcdir)/ChangeLog $(srcdir)/tool/file2lastr
 $(srcdir)/ext/ripper/ripper.c: parse.y id.h
 	$(ECHO) generating $@
 	$(Q) $(CHDIR) $(@D) && $(exec) $(MAKE) -f depend $(MFLAGS) \
-		Q=$(Q) ECHO=$(ECHO) RM="$(RM)" VPATH=../.. \
-		top_srcdir=../../$(srcdir) srcdir=../../$(srcdir)/ext/ripper \
+		Q=$(Q) ECHO=$(ECHO) RM="$(RM)" VPATH="$(PWD)$(MAKEDIR)" \
+		top_srcdir=../.. srcdir=. \
 		RUBY="$(BASERUBY)" PATH_SEPARATOR="$(PATH_SEPARATOR)"
 
 $(srcdir)/ext/rbconfig/sizeof/sizes.c: $(srcdir)/ext/rbconfig/sizeof/depend \
