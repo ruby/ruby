@@ -35,7 +35,7 @@ Fri Nov 21 00:36:09 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 Fri Nov 21 00:29:51 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/net/imap.rb (Net::IMAP::ResponseParser::BEG_REGEXP): no need to
-	  use embbed string.
+	  use embed string.
 
 Fri Nov 21 00:19:17 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
