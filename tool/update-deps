@@ -196,6 +196,32 @@ def sort_paths(paths)
   }
 end
 
+# These files are not in the svn repository.
+# They are built in the build directory if the source is obtained via svn.
+# However they are exist in tarball and exist in the source directory if the source is obtained as tarball.
+FILES_NEED_VPATH = %w[
+  encdb.h
+  id.c
+  id.h
+  lex.c
+  miniprelude.c
+  newline.c
+  parse.c
+  parse.h
+  prelude.c
+  probes.h
+  transdb.h
+  verconf.h
+]
+
+# Multiple files with one filename.
+FILES_CONFUSING = %w[
+  include/ruby.h
+  include/ruby/ruby.h
+  version.h
+  include/ruby/version.h
+]
+
 def in_makefile(target, source)
   target = target.to_s
   source = source.to_s
@@ -203,14 +229,11 @@ def in_makefile(target, source)
   when %r{\A[^/]*\z}
     target2 = "#{target.sub(/\.o\z/, '.$(OBJEXT)')}"
     case source
-    when 'newline.c', 'miniprelude.c', 'prelude.c' then source2 = source
+    when *FILES_NEED_VPATH then source2 = "{$(VPATH)}#{source}"
+    when *FILES_CONFUSING then source2 = "$(top_srcdir)/#{source}"
+    when 'revision.h' then source2 = '$(srcdir)/revision.h' # This file is always generated in $(srcdir).
     when 'thread_pthread.c' then source2 = '{$(VPATH)}thread_$(THREAD_MODEL).c'
     when 'thread_pthread.h' then source2 = '{$(VPATH)}thread_$(THREAD_MODEL).h'
-    when 'include/ruby.h' then source2 = '$(hdrdir)/ruby.h'
-    when 'include/ruby/ruby.h' then source2 = '$(hdrdir)/ruby/ruby.h'
-    when 'revision.h' then source2 = '$(srcdir)/revision.h'
-    when 'version.h' then source2 = '$(srcdir)/version.h'
-    when 'include/ruby/version.h' then source2 = '$(srcdir)/include/ruby/version.h'
     when %r{\A[^/]*\z} then source2 = "{$(VPATH)}#{File.basename source}"
     when %r{\A\.ext/include/[^/]+/ruby/} then source2 = "{$(VPATH)}#{$'}"
     when %r{\Ainclude/ruby/} then source2 = "{$(VPATH)}#{$'}"
@@ -224,8 +247,8 @@ def in_makefile(target, source)
   when %r{\Aenc/}
     target2 = "#{target.sub(/\.o\z/, '.$(OBJEXT)')}"
     case source
-    when 'include/ruby.h' then source2 = '$(hdrdir)/ruby.h'
-    when 'include/ruby/ruby.h' then source2 = '$(hdrdir)/ruby/ruby.h'
+    when *FILES_NEED_VPATH then source2 = source
+    when *FILES_CONFUSING then source2 = "$(top_srcdir)/#{source}"
     when %r{\A\.ext/include/[^/]+/ruby/} then source2 = $'
     when %r{\Ainclude/ruby/} then source2 = $'
     when %r{\Aenc/} then source2 = source
@@ -238,15 +261,12 @@ def in_makefile(target, source)
     end
     target2 = File.basename(target)
     case source
-    when 'include/ruby.h' then source2 = '$(top_srcdir)/include/ruby.h'
-    when %r{\Ainclude/} then source2 = "$(hdrdir)/#{$'}"
+    when *FILES_NEED_VPATH then source2 = "{$(VPATH)}#{source}"
+    when *FILES_CONFUSING then source2 = "$(top_srcdir)/#{source}"
     when %r{\A\.ext/include/[^/]+/ruby/} then source2 = "$(arch_hdrdir)/ruby/#{$'}"
+    when %r{\Ainclude/} then source2 = "$(hdrdir)/#{$'}"
     when %r{\A#{Regexp.escape File.dirname(target)}/extconf\.h\z} then source2 = "$(RUBY_EXTCONF_H)"
     when %r{\A#{Regexp.escape File.dirname(target)}/} then source2 = $'
-    when 'id.h' then source2 = '$(topdir)/id.h'
-    when 'parse.h' then source2 = '$(topdir)/parse.h'
-    when 'lex.c' then source2 = '$(topdir)/lex.c'
-    when 'probes.h' then source2 = '$(topdir)/probes.h'
     else source2 = "$(top_srcdir)/#{source}"
     end
     ["#{File.dirname(target)}/depend", target2, source2]
