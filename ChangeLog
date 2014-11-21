@@ -1,3 +1,8 @@
+Fri Nov 21 09:10:23 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (ext/ripper/ripper.c): fix dependencies for the case
+	  to make ripper.y and id.h under the build directory.
+
 Fri Nov 21 08:42:21 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk (ext/ripper/ripper.c): id.h in VPATH may exist in the build
