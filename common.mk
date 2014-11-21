@@ -808,7 +808,7 @@ $(REVISION_H): $(srcdir)/version.h $(srcdir)/ChangeLog $(srcdir)/tool/file2lastr
 $(srcdir)/ext/ripper/ripper.c: parse.y id.h
 	$(ECHO) generating $@
 	$(Q) $(CHDIR) $(@D) && $(exec) $(MAKE) -f depend $(MFLAGS) \
-		Q=$(Q) ECHO=$(ECHO) RM="$(RM)" VPATH="$(PWD)$(MAKEDIR)" \
+		Q=$(Q) ECHO=$(ECHO) RM="$(RM)" VPATH="$(PWD)" \
 		top_srcdir=../.. srcdir=. \
 		RUBY="$(BASERUBY)" PATH_SEPARATOR="$(PATH_SEPARATOR)"
 

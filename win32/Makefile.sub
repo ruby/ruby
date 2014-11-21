@@ -8,6 +8,7 @@ NULL = nul
 CHDIR = cd
 PATH_SEPARATOR = ;
 TZ =				# skip timezone tests
+PWD = $(MAKEDIR)
 
 !ifndef MFLAGS
 MFLAGS=-l
