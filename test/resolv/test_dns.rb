@@ -23,6 +23,20 @@ class TestResolvDNS < Test::Unit::TestCase
     end
   end
 
+  # [ruby-core:65836]
+  def test_resolve_with_2_ndots
+    conf = Resolv::DNS::Config.new :nameserver => ['127.0.0.1'], :ndots => 2
+    assert conf.single?
+
+    candidates = []
+    conf.resolv('example.com') { |candidate, *args|
+      candidates << candidate
+      raise Resolv::DNS::Config::NXDomain
+    }
+    n = Resolv::DNS::Name.create 'example.com.'
+    assert_equal n, candidates.last
+  end
+
   def test_query_ipv4_address
     begin
       OpenSSL

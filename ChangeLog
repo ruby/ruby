@@ -1,3 +1,10 @@
+Fri Nov 21 11:58:58 2014  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* lib/resolv.rb: fall back if canonicalization fails.
+	  Thanks Vit Ondruch for the patch!  [ruby-core:65836]
+
+	* test/resolv/test_dns.rb: test for patch
+
 Sat Nov 22 01:11:53 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_mod_const_get, rb_mod_const_defined): ditto.

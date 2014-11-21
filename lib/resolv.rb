@@ -1066,6 +1066,10 @@ class Resolv
             candidates = []
           end
           candidates.concat(@search.map {|domain| Name.new(name.to_a + domain)})
+          fname = Name.create("#{name}.")
+          if !candidates.include?(fname)
+            candidates << fname
+          end
         end
         return candidates
       end
