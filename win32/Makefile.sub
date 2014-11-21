@@ -364,6 +364,7 @@ ENCSTATIC = static
 !endif
 
 arch_hdrdir = $(EXTOUT)/include/$(arch)
+top_srcdir = $(srcdir)
 hdrdir = $(srcdir)/include
 VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/enc;$(srcdir)/missing;$(win_srcdir)
 

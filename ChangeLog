@@ -1,3 +1,8 @@
+Fri Nov 21 14:25:40 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (top_srcdir): added because lacking this macro
+	  causes build error at r48526.
+
 Fri Nov 21 12:00:58 2014  Tanaka Akira  <akr@fsij.org>
 
 	* tool/update-deps (in_makefile): Use FILES_NEED_VPATH and
