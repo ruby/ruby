@@ -1,3 +1,11 @@
+Sat Nov 22 01:11:53 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_mod_const_get, rb_mod_const_defined): ditto.
+
+	* variable.c (rb_const_missing, rb_mod_const_missing): call
+	  const_missing without new ID to get rid of inadvertent ID
+	  creation.
+
 Fri Nov 21 19:32:57 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk (ext/ripper/ripper.c): revert about srcdir and top_srcdir.

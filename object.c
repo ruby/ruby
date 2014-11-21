@@ -1912,17 +1912,17 @@ rb_class_get_superclass(VALUE klass)
 }
 
 #define id_for_setter(name, type, message) \
-    check_setter_id(name, rb_is_##type##_id, rb_is_##type##_name, message)
+    check_setter_id(name, rb_is_##type##_sym, rb_is_##type##_name, message)
 static ID
-check_setter_id(VALUE name, int (*valid_id_p)(ID), int (*valid_name_p)(VALUE),
+check_setter_id(VALUE name, int (*valid_sym_p)(VALUE), int (*valid_name_p)(VALUE),
 		const char *message)
 {
     ID id;
     if (SYMBOL_P(name)) {
-	id = SYM2ID(name);
-	if (!valid_id_p(id)) {
-	    rb_name_error(id, message, QUOTE_ID(id));
+	if (!valid_sym_p(name)) {
+	    rb_name_error_str(name, message, QUOTE(rb_sym2str(name)));
 	}
+	id = SYM2ID(name);
     }
     else {
 	VALUE str = rb_check_string_type(name);
@@ -1933,7 +1933,7 @@ check_setter_id(VALUE name, int (*valid_id_p)(ID), int (*valid_name_p)(VALUE),
 	if (!valid_name_p(str)) {
 	    rb_name_error_str(str, message, QUOTE(str));
 	}
-	id = rb_to_id(str);
+	id = rb_intern_str(str);
     }
     return id;
 }
@@ -1948,6 +1948,12 @@ static int
 rb_is_attr_name(VALUE name)
 {
     return rb_is_local_name(name) || rb_is_const_name(name);
+}
+
+static int
+rb_is_attr_sym(VALUE sym)
+{
+    return rb_is_local_sym(sym) || rb_is_const_sym(sym);
 }
 
 static const char invalid_attribute_name[] = "invalid attribute name `%"PRIsVALUE"'";
@@ -2099,17 +2105,14 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
     const char *pbeg, *p, *path, *pend;
     ID id;
 
-    if (argc == 1) {
-	name = argv[0];
-	recur = Qtrue;
-    }
-    else {
-	rb_scan_args(argc, argv, "11", &name, &recur);
-    }
+    rb_check_arity(argc, 1, 2);
+    name = argv[0];
+    recur = (argc == 1) ? Qtrue : argv[1];
 
     if (SYMBOL_P(name)) {
-	id = SYM2ID(name);
-	if (!rb_is_const_id(id)) goto wrong_id;
+	if (!rb_is_const_sym(name)) goto wrong_name;
+	id = rb_check_id(&name);
+	if (!id) return rb_const_missing(mod, name);
 	return RTEST(recur) ? rb_const_get(mod, id) : rb_const_get_at(mod, id);
     }
 
@@ -2125,8 +2128,7 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 
     if (p >= pend || !*p) {
       wrong_name:
-	rb_raise(rb_eNameError, "wrong constant name %"PRIsVALUE,
-		 QUOTE(name));
+	rb_name_error_str(name, "wrong constant name % "PRIsVALUE, name);
     }
 
     if (p + 2 < pend && p[0] == ':' && p[1] == ':') {
@@ -2165,16 +2167,17 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 				  QUOTE(part));
 	    }
 	    else if (!rb_method_basic_definition_p(CLASS_OF(mod), id_const_missing)) {
-		id = rb_intern_str(part);
+		part = rb_str_intern(part);
+		mod = rb_const_missing(mod, part);
+		continue;
 	    }
 	    else {
-		rb_name_error_str(part, "uninitialized constant %"PRIsVALUE"%"PRIsVALUE,
+		rb_name_error_str(part, "uninitialized constant %"PRIsVALUE"% "PRIsVALUE,
 				  rb_str_subseq(name, 0, beglen),
-				  QUOTE(part));
+				  part);
 	    }
 	}
 	if (!rb_is_const_id(id)) {
-	  wrong_id:
 	    rb_name_error(id, "wrong constant name %"PRIsVALUE,
 			  QUOTE_ID(id));
 	}
@@ -2260,17 +2263,14 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
     const char *pbeg, *p, *path, *pend;
     ID id;
 
-    if (argc == 1) {
-	name = argv[0];
-	recur = Qtrue;
-    }
-    else {
-	rb_scan_args(argc, argv, "11", &name, &recur);
-    }
+    rb_check_arity(argc, 1, 2);
+    name = argv[0];
+    recur = (argc == 1) ? Qtrue : argv[1];
 
     if (SYMBOL_P(name)) {
-	id = SYM2ID(name);
-	if (!rb_is_const_id(id)) goto wrong_id;
+	if (!rb_is_const_sym(name)) goto wrong_name;
+	id = rb_check_id(&name);
+	if (!id) return Qfalse;
 	return RTEST(recur) ? rb_const_defined(mod, id) : rb_const_defined_at(mod, id);
     }
 
@@ -2286,8 +2286,7 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
 
     if (p >= pend || !*p) {
       wrong_name:
-	rb_raise(rb_eNameError, "wrong constant name %"PRIsVALUE,
-		 QUOTE(name));
+	rb_name_error_str(name, "wrong constant name % "PRIsVALUE, name);
     }
 
     if (p + 2 < pend && p[0] == ':' && p[1] == ':') {
@@ -2325,7 +2324,6 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
 	    }
 	}
 	if (!rb_is_const_id(id)) {
-	  wrong_id:
 	    rb_name_error(id, "wrong constant name %"PRIsVALUE,
 			  QUOTE_ID(id));
 	}

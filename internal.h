@@ -1157,6 +1157,7 @@ extern const signed char ruby_digit36_to_number_table[];
 void rb_gc_mark_global_tbl(void);
 void rb_mark_generic_ivar(VALUE);
 void rb_mark_generic_ivar_tbl(void);
+VALUE rb_const_missing(VALUE klass, VALUE name);
 
 int rb_st_insert_id_and_value(VALUE obj, st_table *tbl, ID key, VALUE value);
 st_table *rb_st_copy(VALUE obj, struct st_table *orig_tbl);
