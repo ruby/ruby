@@ -842,6 +842,14 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_match(/rescue\(,var_field\(e\),\[2\]\)/, parsed)
   end
 
+  def test_rescue_class
+    thru_rescue = false
+    parsed = parse('begin; 1; rescue RuntimeError => e; 2; end', :on_rescue) {thru_rescue = true}
+    assert_equal true, thru_rescue
+    assert_match(/1.*rescue/, parsed)
+    assert_match(/rescue\(\[ref\(RuntimeError\)\],var_field\(e\),\[2\]\)/, parsed)
+  end
+
   def test_rescue_mod
     thru_rescue_mod = false
     parsed = parse('1 rescue 2', :on_rescue_mod) {thru_rescue_mod = true}
