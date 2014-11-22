@@ -270,6 +270,7 @@ def package(rev, destdir)
                RUBY=#{ENV["RUBY"]}
                HAVE_BASERUBY=yes
                BASERUBY=#{ENV["BASERUBY"]}
+               PWD=#{Dir.pwd}
                prereq]
       IO.popen(cmd, "w") do |f|
         f.puts mk
