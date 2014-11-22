@@ -680,7 +680,7 @@ newline.$(OBJEXT): $(NEWLINE_C)
 
 verconf.h: $(srcdir)/template/verconf.h.tmpl $(srcdir)/tool/generic_erb.rb $(RBCONFIG)
 	$(ECHO) creating $@
-	$(Q) $(MINIRUBY) "$(srcdir)/tool/generic_erb.rb" $(srcdir)/template/verconf.h.tmpl > $@
+	$(Q) $(MINIRUBY) "$(srcdir)/tool/generic_erb.rb" -c -o $@ $(srcdir)/template/verconf.h.tmpl
 
 DTRACE_DEPENDENT_OBJS = array.$(OBJEXT) \
 		eval.$(OBJEXT) \
