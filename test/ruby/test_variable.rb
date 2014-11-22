@@ -28,7 +28,9 @@ class TestVariable < Test::Unit::TestCase
     @@rule = "Cronus"			# modifies @@rule in Gods
     include Olympians
     def ruler4
-      @@rule
+      EnvUtil.suppress_warning {
+        @@rule
+      }
     end
   end
 
@@ -64,6 +66,7 @@ class TestVariable < Test::Unit::TestCase
   def test_local_variables
     lvar = 1
     assert_instance_of(Symbol, local_variables[0], "[ruby-dev:34008]")
+    lvar
   end
 
   def test_local_variables2
@@ -71,6 +74,7 @@ class TestVariable < Test::Unit::TestCase
     proc do |y|
       assert_equal([:x, :y], local_variables.sort)
     end.call
+    x
   end
 
   def test_local_variables3
@@ -80,6 +84,7 @@ class TestVariable < Test::Unit::TestCase
         assert_equal([:x, :y, :z], local_variables.sort)
       end
     end.call
+    x
   end
 
   def test_shadowing_local_variables
@@ -99,10 +104,18 @@ class TestVariable < Test::Unit::TestCase
   end
 
   def test_global_variable_poped
-    assert_nothing_raised { eval("$foo; 1") }
+    assert_nothing_raised {
+      EnvUtil.suppress_warning {
+        eval("$foo; 1")
+      }
+    }
   end
 
   def test_constant_poped
-    assert_nothing_raised { eval("TestVariable::Gods; 1") }
+    assert_nothing_raised {
+      EnvUtil.suppress_warning {
+        eval("TestVariable::Gods; 1")
+      }
+    }
   end
 end
