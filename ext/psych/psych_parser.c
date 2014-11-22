@@ -250,8 +250,8 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
     int done = 0;
     int tainted = 0;
     int state = 0;
-    int parser_encoding = YAML_ANY_ENCODING;
 #ifdef HAVE_RUBY_ENCODING_H
+    int parser_encoding = YAML_ANY_ENCODING;
     int encoding = rb_utf8_encindex();
     rb_encoding * internal_enc = rb_default_internal_encoding();
 #endif
