@@ -1,3 +1,8 @@
+Sun Nov 23 07:46:54 2014  Andy Maloney  <asmaloney@gmail.com>
+
+	* io.c (rb_io_sysread): Remove redundan assignment of 'n'.
+	  [Fix GH-767]
+
 Sat Nov 22 09:48:33 2014  Tanaka Akira  <akr@fsij.org>
 
 	* tool/make-snapshot: Specify PWD macro for make.

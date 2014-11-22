@@ -4724,8 +4724,6 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
 	rb_raise(rb_eIOError, "sysread for buffered IO");
     }
 
-    n = fptr->fd;
-
     /*
      * FIXME: removing rb_thread_wait_fd() here changes sysread semantics
      * on non-blocking IOs.  However, it's still currently possible
