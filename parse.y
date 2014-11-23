@@ -7596,7 +7596,7 @@ parse_gvar(struct parser_params *parser, const enum lex_state_e last_state)
 	    return '$';
 	}
       gvar:
-	set_yylval_name(intern_cstr(tok(), tokidx, current_enc));
+	set_yylval_name(TOK_INTERN());
 	return tGVAR;
 
       case '&':		/* $&: last match */
