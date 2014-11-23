@@ -52,13 +52,14 @@ class TestISeq < Test::Unit::TestCase
   end if defined?(RubyVM::InstructionSequence.load)
 
   def test_disasm_encoding
-    src = "\u{3042} = 1; \u{3042}"
-    enc, Encoding.default_internal = Encoding.default_internal, src.encoding
-    assert_equal(src.encoding, RubyVM::InstructionSequence.compile(src).disasm.encoding)
+    src = "\u{3042} = 1; \u{3042}; \u{3043}"
+    asm = RubyVM::InstructionSequence.compile(src).disasm
+    assert_equal(src.encoding, asm.encoding)
+    assert_predicate(asm, :valid_encoding?)
     src.encode!(Encoding::Shift_JIS)
-    assert_equal(true, RubyVM::InstructionSequence.compile(src).disasm.ascii_only?)
-  ensure
-    Encoding.default_internal = enc
+    asm = RubyVM::InstructionSequence.compile(src).disasm
+    assert_equal(src.encoding, asm.encoding)
+    assert_predicate(asm, :valid_encoding?)
   end
 
   LINE_BEFORE_METHOD = __LINE__

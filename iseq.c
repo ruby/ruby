@@ -1230,7 +1230,7 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 	    VALUE ary = rb_ary_new();
 
 	    if (ci->mid) {
-		rb_ary_push(ary, rb_sprintf("mid:%s", rb_id2name(ci->mid)));
+		rb_ary_push(ary, rb_sprintf("mid:%"PRIsVALUE, rb_id2str(ci->mid)));
 	    }
 
 	    rb_ary_push(ary, rb_sprintf("argc:%d", ci->orig_argc));

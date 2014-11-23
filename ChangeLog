@@ -1,3 +1,8 @@
+Mon Nov 24 02:03:30 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (rb_insn_operand_intern): preserve encoding of method
+	  name in CALL_INFO at disassembling.
+
 Mon Nov 24 02:02:59 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (must_respond_to): preserve encodings of variable name and
