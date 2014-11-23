@@ -2268,6 +2268,14 @@ End
     assert_raise(TypeError) { $> = Object.new }
 
     assert_in_out_err([], "$> = $stderr\nputs 'foo'", [], %w(foo))
+
+    assert_separately(%w[-Eutf-8], <<-"end;") #    do
+      alias $\u{6a19 6e96 51fa 529b} $stdout
+      x = eval("class X\u{307b 3052}; self; end".encode("euc-jp"))
+      assert_raise_with_message(TypeError, /\\$\u{6a19 6e96 51fa 529b} must.*, X\u{307b 3052} given/) do
+        $\u{6a19 6e96 51fa 529b} = x.new
+      end
+    end;
   end
 
   def test_initialize

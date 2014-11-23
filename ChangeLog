@@ -1,3 +1,8 @@
+Mon Nov 24 02:02:59 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (must_respond_to): preserve encodings of variable name and
+	  class name in warning message.
+
 Sun Nov 23 10:46:23 2014  Eric Wong  <e@80x24.org>
 
 	* internal.h (struct rb_execarg): 160 => 144 bytes on x86-64
