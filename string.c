@@ -7998,7 +7998,7 @@ void
 rb_str_setter(VALUE val, ID id, VALUE *var)
 {
     if (!NIL_P(val) && !RB_TYPE_P(val, T_STRING)) {
-	rb_raise(rb_eTypeError, "value of %s must be String", rb_id2name(id));
+	rb_raise(rb_eTypeError, "value of %"PRIsVALUE" must be String", rb_id2str(id));
     }
     *var = val;
 }

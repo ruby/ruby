@@ -1,3 +1,8 @@
+Mon Nov 24 02:03:40 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_setter): preserve encoding of global variable
+	  name in error message.
+
 Mon Nov 24 02:03:30 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* iseq.c (rb_insn_operand_intern): preserve encoding of method
