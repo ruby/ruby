@@ -1,3 +1,9 @@
+Sun Nov 23 10:46:23 2014  Eric Wong  <e@80x24.org>
+
+	* internal.h (struct rb_execarg): 160 => 144 bytes on x86-64
+	* ruby.c (struct load_file_arg): 48 => 40 bytes on x86-64
+	* vm_args.c (struct args_info): ditto
+
 Sun Nov 23 07:46:54 2014  Andy Maloney  <asmaloney@gmail.com>
 
 	* io.c (rb_io_sysread): Remove redundant assignment of 'n'.

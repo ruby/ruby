@@ -884,7 +884,6 @@ VALUE rb_block_clear_env_self(VALUE proc);
 #define RB_MAX_GROUPS (65536)
 
 struct rb_execarg {
-    int use_shell;
     union {
         struct {
             VALUE shell_script;
@@ -900,6 +899,7 @@ struct rb_execarg {
     VALUE envp_str;
     VALUE envp_buf;
     VALUE dup2_tmpbuf;
+    unsigned use_shell : 1;
     unsigned pgroup_given : 1;
     unsigned umask_given : 1;
     unsigned unsetenv_others_given : 1;
@@ -916,11 +916,11 @@ struct rb_execarg {
     mode_t umask_mask;
     rb_uid_t uid;
     rb_gid_t gid;
+    int close_others_maxhint;
     VALUE fd_dup2;
     VALUE fd_close;
     VALUE fd_open;
     VALUE fd_dup2_child;
-    int close_others_maxhint;
     VALUE env_modification; /* Qfalse or [[k1,v1], ...] */
     VALUE chdir_dir;
 };

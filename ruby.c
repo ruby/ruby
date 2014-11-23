@@ -1510,9 +1510,9 @@ struct load_file_arg {
     VALUE parser;
     VALUE fname;
     int script;
+    int xflag;
     struct cmdline_options *opt;
     VALUE f;
-    int xflag;
 };
 
 static VALUE

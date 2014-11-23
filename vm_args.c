@@ -11,12 +11,12 @@
 struct args_info {
     /* basic args info */
     rb_call_info_t *ci;
-    int argc;
     VALUE *argv;
+    int argc;
 
     /* additional args info */
-    VALUE *kw_argv;
     int rest_index;
+    VALUE *kw_argv;
     VALUE rest;
 };
 
