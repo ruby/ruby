@@ -1,3 +1,8 @@
+Mon Nov 24 12:44:35 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (check_exec_redirect_fd, check_exec_redirect),
+	  (rb_execarg_addopt): get rid of inadvertent ID pindown.
+
 Mon Nov 24 02:03:40 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_setter): preserve encoding of global variable

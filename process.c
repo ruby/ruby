@@ -1489,7 +1489,7 @@ check_exec_redirect_fd(VALUE v, int iskey)
         fd = FIX2INT(v);
     }
     else if (SYMBOL_P(v)) {
-        ID id = SYM2ID(v);
+        ID id = rb_check_id(&v);
         if (id == id_in)
             fd = 0;
         else if (id == id_out)
@@ -1553,7 +1553,7 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
 
     switch (TYPE(val)) {
       case T_SYMBOL:
-        id = SYM2ID(val);
+        if (!(id = rb_check_id(&val))) goto wrong_symbol;
         if (id == id_close) {
             param = Qnil;
             eargp->fd_close = check_exec_redirect1(eargp->fd_close, key, param);
@@ -1571,8 +1571,9 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
             eargp->fd_dup2 = check_exec_redirect1(eargp->fd_dup2, key, param);
         }
         else {
-            rb_raise(rb_eArgError, "wrong exec redirect symbol: %s",
-                                   rb_id2name(id));
+	  wrong_symbol:
+            rb_raise(rb_eArgError, "wrong exec redirect symbol: %"PRIsVALUE,
+                                   val);
         }
         break;
 
@@ -1588,7 +1589,7 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
       case T_ARRAY:
         path = rb_ary_entry(val, 0);
         if (RARRAY_LEN(val) == 2 && SYMBOL_P(path) &&
-            SYM2ID(path) == id_child) {
+            path == ID2SYM(id_child)) {
             param = check_exec_redirect_fd(rb_ary_entry(val, 1), 0);
             eargp->fd_dup2_child = check_exec_redirect1(eargp->fd_dup2_child, key, param);
         }
@@ -1663,7 +1664,7 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
 
     switch (TYPE(key)) {
       case T_SYMBOL:
-        id = SYM2ID(key);
+        if (!(id = rb_check_id(&key))) return ST_STOP;
 #ifdef HAVE_SETPGID
         if (id == id_pgroup) {
             rb_pid_t pgroup;

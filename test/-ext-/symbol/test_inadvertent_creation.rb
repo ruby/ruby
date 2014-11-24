@@ -320,5 +320,37 @@ module Test_Symbol
       end
       end;
     end
+
+    def test_execopt_key
+      name = noninterned_name.intern
+      assert_raise(ArgumentError) {
+        system(".", name => nil)
+      }
+      assert_not_pinneddown(name)
+    end
+
+    def test_execopt_redirect_value
+      name = noninterned_name.intern
+      assert_raise(ArgumentError) {
+        system(".", [] => name)
+      }
+      assert_not_pinneddown(name)
+    end
+
+    def test_execopt_redirect_path
+      name = noninterned_name.intern
+      assert_raise(TypeError) {
+        system(".", [] => [name, 0])
+      }
+      assert_not_pinneddown(name)
+    end
+
+    def test_execopt_redirect_symbol
+      name = noninterned_name.intern
+      assert_raise(ArgumentError) {
+        system(".", in: name)
+      }
+      assert_not_pinneddown(name)
+    end
   end
 end
