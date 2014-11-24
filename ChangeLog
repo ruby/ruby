@@ -1,3 +1,7 @@
+Mon Nov 24 23:03:21 2014  Kouhei Sutou  <kou@cozmixng.org>
+
+	* gems/bundled_gems: Update to 3.0.7.
+
 Mon Nov 24 12:44:35 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (check_exec_redirect_fd, check_exec_redirect),
