@@ -255,6 +255,31 @@ typedef unsigned long unsigned_clock_t;
 typedef unsigned LONG_LONG unsigned_clock_t;
 #endif
 
+static ID id_in, id_out, id_err, id_pid, id_uid, id_gid;
+static ID id_close, id_child, id_status;
+#ifdef HAVE_SETPGID
+static ID id_pgroup;
+#endif
+#ifdef _WIN32
+static ID id_new_pgroup;
+#endif
+static ID id_unsetenv_others, id_chdir, id_umask, id_close_others, id_ENV;
+static ID id_nanosecond, id_microsecond, id_millisecond, id_second;
+static ID id_float_microsecond, id_float_millisecond, id_float_second;
+static ID id_GETTIMEOFDAY_BASED_CLOCK_REALTIME, id_TIME_BASED_CLOCK_REALTIME;
+#ifdef HAVE_TIMES
+static ID id_TIMES_BASED_CLOCK_MONOTONIC;
+static ID id_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID;
+#endif
+#ifdef RUSAGE_SELF
+static ID id_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID;
+#endif
+static ID id_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID;
+#ifdef __APPLE__
+static ID id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC;
+#endif
+static ID id_hertz;
+
 /*
  *  call-seq:
  *     Process.pid   -> fixnum
@@ -340,8 +365,8 @@ rb_last_status_set(int status, rb_pid_t pid)
 {
     rb_thread_t *th = GET_THREAD();
     th->last_status = rb_obj_alloc(rb_cProcessStatus);
-    rb_iv_set(th->last_status, "status", INT2FIX(status));
-    rb_iv_set(th->last_status, "pid", PIDT2NUM(pid));
+    rb_ivar_set(th->last_status, id_status, INT2FIX(status));
+    rb_ivar_set(th->last_status, id_pid, PIDT2NUM(pid));
 }
 
 void
@@ -366,7 +391,7 @@ rb_last_status_clear(void)
 static VALUE
 pst_to_i(VALUE st)
 {
-    return rb_iv_get(st, "status");
+    return rb_ivar_get(st, id_status);
 }
 
 #define PST2INT(st) NUM2INT(pst_to_i(st))
@@ -385,7 +410,7 @@ pst_to_i(VALUE st)
 static VALUE
 pst_pid(VALUE st)
 {
-    return rb_attr_get(st, rb_intern("pid"));
+    return rb_attr_get(st, id_pid);
 }
 
 static void
@@ -1011,18 +1036,10 @@ proc_waitall(void)
 
 static VALUE rb_cWaiter;
 
-static inline ID
-id_pid(void)
-{
-    ID pid;
-    CONST_ID(pid, "pid");
-    return pid;
-}
-
 static VALUE
 detach_process_pid(VALUE thread)
 {
-    return rb_thread_local_aref(thread, id_pid());
+    return rb_thread_local_aref(thread, id_pid);
 }
 
 static VALUE
@@ -1041,7 +1058,7 @@ VALUE
 rb_detach_process(rb_pid_t pid)
 {
     VALUE watcher = rb_thread_create(detach_process_watcher, (void*)(VALUE)pid);
-    rb_thread_local_aset(watcher, id_pid(), PIDT2NUM(pid));
+    rb_thread_local_aset(watcher, id_pid, PIDT2NUM(pid));
     RBASIC_SET_CLASS(watcher, rb_cWaiter);
     return watcher;
 }
@@ -1473,11 +1490,11 @@ check_exec_redirect_fd(VALUE v, int iskey)
     }
     else if (SYMBOL_P(v)) {
         ID id = SYM2ID(v);
-        if (id == rb_intern("in"))
+        if (id == id_in)
             fd = 0;
-        else if (id == rb_intern("out"))
+        else if (id == id_out)
             fd = 1;
-        else if (id == rb_intern("err"))
+        else if (id == id_err)
             fd = 2;
         else
             goto wrong;
@@ -1537,19 +1554,19 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
     switch (TYPE(val)) {
       case T_SYMBOL:
         id = SYM2ID(val);
-        if (id == rb_intern("close")) {
+        if (id == id_close) {
             param = Qnil;
             eargp->fd_close = check_exec_redirect1(eargp->fd_close, key, param);
         }
-        else if (id == rb_intern("in")) {
+        else if (id == id_in) {
             param = INT2FIX(0);
             eargp->fd_dup2 = check_exec_redirect1(eargp->fd_dup2, key, param);
         }
-        else if (id == rb_intern("out")) {
+        else if (id == id_out) {
             param = INT2FIX(1);
             eargp->fd_dup2 = check_exec_redirect1(eargp->fd_dup2, key, param);
         }
-        else if (id == rb_intern("err")) {
+        else if (id == id_err) {
             param = INT2FIX(2);
             eargp->fd_dup2 = check_exec_redirect1(eargp->fd_dup2, key, param);
         }
@@ -1571,7 +1588,7 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
       case T_ARRAY:
         path = rb_ary_entry(val, 0);
         if (RARRAY_LEN(val) == 2 && SYMBOL_P(path) &&
-            SYM2ID(path) == rb_intern("child")) {
+            SYM2ID(path) == id_child) {
             param = check_exec_redirect_fd(rb_ary_entry(val, 1), 0);
             eargp->fd_dup2_child = check_exec_redirect1(eargp->fd_dup2_child, key, param);
         }
@@ -1648,7 +1665,7 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
       case T_SYMBOL:
         id = SYM2ID(key);
 #ifdef HAVE_SETPGID
-        if (id == rb_intern("pgroup")) {
+        if (id == id_pgroup) {
             rb_pid_t pgroup;
             if (eargp->pgroup_given) {
                 rb_raise(rb_eArgError, "pgroup option specified twice");
@@ -1669,7 +1686,7 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
         else
 #endif
 #ifdef _WIN32
-        if (id == rb_intern("new_pgroup")) {
+        if (id == id_new_pgroup) {
             if (eargp->new_pgroup_given) {
                 rb_raise(rb_eArgError, "new_pgroup option specified twice");
             }
@@ -1707,14 +1724,14 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
         }
         else
 #endif
-        if (id == rb_intern("unsetenv_others")) {
+        if (id == id_unsetenv_others) {
             if (eargp->unsetenv_others_given) {
                 rb_raise(rb_eArgError, "unsetenv_others option specified twice");
             }
             eargp->unsetenv_others_given = 1;
             eargp->unsetenv_others_do = RTEST(val) ? 1 : 0;
         }
-        else if (id == rb_intern("chdir")) {
+        else if (id == id_chdir) {
             if (eargp->chdir_given) {
                 rb_raise(rb_eArgError, "chdir option specified twice");
             }
@@ -1722,7 +1739,7 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
             eargp->chdir_given = 1;
             eargp->chdir_dir = hide_obj(EXPORT_DUP(val));
         }
-        else if (id == rb_intern("umask")) {
+        else if (id == id_umask) {
 	    mode_t cmask = NUM2MODET(val);
             if (eargp->umask_given) {
                 rb_raise(rb_eArgError, "umask option specified twice");
@@ -1730,26 +1747,26 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
             eargp->umask_given = 1;
             eargp->umask_mask = cmask;
         }
-        else if (id == rb_intern("close_others")) {
+        else if (id == id_close_others) {
             if (eargp->close_others_given) {
                 rb_raise(rb_eArgError, "close_others option specified twice");
             }
             eargp->close_others_given = 1;
             eargp->close_others_do = RTEST(val) ? 1 : 0;
         }
-        else if (id == rb_intern("in")) {
+        else if (id == id_in) {
             key = INT2FIX(0);
             goto redirect;
         }
-        else if (id == rb_intern("out")) {
+        else if (id == id_out) {
             key = INT2FIX(1);
             goto redirect;
         }
-        else if (id == rb_intern("err")) {
+        else if (id == id_err) {
             key = INT2FIX(2);
             goto redirect;
         }
-	else if (id == rb_intern("uid")) {
+	else if (id == id_uid) {
 #ifdef HAVE_SETUID
 	    if (eargp->uid_given) {
 		rb_raise(rb_eArgError, "uid option specified twice");
@@ -1764,7 +1781,7 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
 		     "uid option is unimplemented on this machine");
 #endif
 	}
-	else if (id == rb_intern("gid")) {
+	else if (id == id_gid) {
 #ifdef HAVE_SETGID
 	    if (eargp->gid_given) {
 		rb_raise(rb_eArgError, "gid option specified twice");
@@ -2306,7 +2323,7 @@ rb_execarg_fixup(VALUE execarg_obj)
             envtbl = rb_hash_new();
         }
         else {
-            envtbl = rb_const_get(rb_cObject, rb_intern("ENV"));
+            envtbl = rb_const_get(rb_cObject, id_ENV);
             envtbl = rb_convert_type(envtbl, T_HASH, "Hash", "to_hash");
         }
         hide_obj(envtbl);
@@ -2897,7 +2914,7 @@ save_env(struct rb_execarg *sargp)
     if (!sargp)
         return;
     if (sargp->env_modification == Qfalse) {
-        VALUE env = rb_const_get(rb_cObject, rb_intern("ENV"));
+        VALUE env = rb_const_get(rb_cObject, id_ENV);
         if (RTEST(env)) {
             VALUE ary = hide_obj(rb_ary_new());
             rb_block_call(env, idEach, 0, 0, save_env_i,
@@ -7020,30 +7037,30 @@ make_clock_result(struct timetick *ttp,
         timetick_int_t *denominators, int num_denominators,
         VALUE unit)
 {
-    if (unit == ID2SYM(rb_intern("nanosecond"))) {
+    if (unit == ID2SYM(id_nanosecond)) {
         numerators[num_numerators++] = 1000000000;
         return timetick2integer(ttp, numerators, num_numerators, denominators, num_denominators);
     }
-    else if (unit == ID2SYM(rb_intern("microsecond"))) {
+    else if (unit == ID2SYM(id_microsecond)) {
         numerators[num_numerators++] = 1000000;
         return timetick2integer(ttp, numerators, num_numerators, denominators, num_denominators);
     }
-    else if (unit == ID2SYM(rb_intern("millisecond"))) {
+    else if (unit == ID2SYM(id_millisecond)) {
         numerators[num_numerators++] = 1000;
         return timetick2integer(ttp, numerators, num_numerators, denominators, num_denominators);
     }
-    else if (unit == ID2SYM(rb_intern("second"))) {
+    else if (unit == ID2SYM(id_second)) {
         return timetick2integer(ttp, numerators, num_numerators, denominators, num_denominators);
     }
-    else if (unit == ID2SYM(rb_intern("float_microsecond"))) {
+    else if (unit == ID2SYM(id_float_microsecond)) {
         numerators[num_numerators++] = 1000000;
         return timetick2dblnum(ttp, numerators, num_numerators, denominators, num_denominators);
     }
-    else if (unit == ID2SYM(rb_intern("float_millisecond"))) {
+    else if (unit == ID2SYM(id_float_millisecond)) {
         numerators[num_numerators++] = 1000;
         return timetick2dblnum(ttp, numerators, num_numerators, denominators, num_denominators);
     }
-    else if (NIL_P(unit) || unit == ID2SYM(rb_intern("float_second"))) {
+    else if (NIL_P(unit) || unit == ID2SYM(id_float_second)) {
         return timetick2dblnum(ttp, numerators, num_numerators, denominators, num_denominators);
     }
     else
@@ -7209,7 +7226,7 @@ rb_clock_gettime(int argc, VALUE *argv)
          * GETTIMEOFDAY_BASED_CLOCK_REALTIME is used for
          * CLOCK_REALTIME if clock_gettime is not available.
          */
-#define RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME ID2SYM(rb_intern("GETTIMEOFDAY_BASED_CLOCK_REALTIME"))
+#define RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME ID2SYM(id_GETTIMEOFDAY_BASED_CLOCK_REALTIME)
         if (clk_id == RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME) {
             struct timeval tv;
             ret = gettimeofday(&tv, 0);
@@ -7221,7 +7238,7 @@ rb_clock_gettime(int argc, VALUE *argv)
             goto success;
         }
 
-#define RUBY_TIME_BASED_CLOCK_REALTIME ID2SYM(rb_intern("TIME_BASED_CLOCK_REALTIME"))
+#define RUBY_TIME_BASED_CLOCK_REALTIME ID2SYM(id_TIME_BASED_CLOCK_REALTIME)
         if (clk_id == RUBY_TIME_BASED_CLOCK_REALTIME) {
             time_t t;
             t = time(NULL);
@@ -7235,7 +7252,7 @@ rb_clock_gettime(int argc, VALUE *argv)
 
 #ifdef HAVE_TIMES
 #define RUBY_TIMES_BASED_CLOCK_MONOTONIC \
-        ID2SYM(rb_intern("TIMES_BASED_CLOCK_MONOTONIC"))
+        ID2SYM(id_TIMES_BASED_CLOCK_MONOTONIC)
         if (clk_id == RUBY_TIMES_BASED_CLOCK_MONOTONIC) {
             struct tms buf;
             clock_t c;
@@ -7253,7 +7270,7 @@ rb_clock_gettime(int argc, VALUE *argv)
 
 #ifdef RUSAGE_SELF
 #define RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID \
-        ID2SYM(rb_intern("GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID"))
+        ID2SYM(id_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID)
         if (clk_id == RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID) {
             struct rusage usage;
             int32_t usec;
@@ -7274,7 +7291,7 @@ rb_clock_gettime(int argc, VALUE *argv)
 
 #ifdef HAVE_TIMES
 #define RUBY_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID \
-        ID2SYM(rb_intern("TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID"))
+        ID2SYM(id_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID)
         if (clk_id == RUBY_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID) {
             struct tms buf;
             unsigned_clock_t utime, stime;
@@ -7294,7 +7311,7 @@ rb_clock_gettime(int argc, VALUE *argv)
 #endif
 
 #define RUBY_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID \
-        ID2SYM(rb_intern("CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID"))
+        ID2SYM(id_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID)
         if (clk_id == RUBY_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID) {
             clock_t c;
             unsigned_clock_t uc;
@@ -7310,7 +7327,7 @@ rb_clock_gettime(int argc, VALUE *argv)
         }
 
 #ifdef __APPLE__
-#define RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC ID2SYM(rb_intern("MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC"))
+#define RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC ID2SYM(id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC)
         if (clk_id == RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC) {
 	    mach_timebase_info_data_t *info = get_mach_timebase_info();
             uint64_t t = mach_absolute_time();
@@ -7481,7 +7498,7 @@ rb_clock_getres(int argc, VALUE *argv)
     rb_sys_fail(0);
 
   success:
-    if (unit == ID2SYM(rb_intern("hertz"))) {
+    if (unit == ID2SYM(id_hertz)) {
         return timetick2dblnum_reciprocal(&tt, numerators, num_numerators, denominators, num_denominators);
     }
     else {
@@ -7881,4 +7898,46 @@ Init_process(void)
     rb_define_module_function(rb_mProcID_Syscall, "setresuid", p_sys_setresuid, 3);
     rb_define_module_function(rb_mProcID_Syscall, "setresgid", p_sys_setresgid, 3);
     rb_define_module_function(rb_mProcID_Syscall, "issetugid", p_sys_issetugid, 0);
+
+    id_in = rb_intern("in");
+    id_out = rb_intern("out");
+    id_err = rb_intern("err");
+    id_pid = rb_intern("pid");
+    id_uid = rb_intern("uid");
+    id_gid = rb_intern("gid");
+    id_close = rb_intern("close");
+    id_child = rb_intern("child");
+    id_status = rb_intern("status");
+#ifdef HAVE_SETPGID
+    id_pgroup = rb_intern("pgroup");
+#endif
+#ifdef _WIN32
+    id_new_pgroup = rb_intern("new_pgroup");
+#endif
+    id_unsetenv_others = rb_intern("unsetenv_others");
+    id_chdir = rb_intern("chdir");
+    id_umask = rb_intern("umask");
+    id_close_others = rb_intern("close_others");
+    id_ENV = rb_intern("ENV");
+    id_nanosecond = rb_intern("nanosecond");
+    id_microsecond = rb_intern("microsecond");
+    id_millisecond = rb_intern("millisecond");
+    id_second = rb_intern("second");
+    id_float_microsecond = rb_intern("float_microsecond");
+    id_float_millisecond = rb_intern("float_millisecond");
+    id_float_second = rb_intern("float_second");
+    id_GETTIMEOFDAY_BASED_CLOCK_REALTIME = rb_intern("GETTIMEOFDAY_BASED_CLOCK_REALTIME");
+    id_TIME_BASED_CLOCK_REALTIME = rb_intern("TIME_BASED_CLOCK_REALTIME");
+#ifdef HAVE_TIMES
+    id_TIMES_BASED_CLOCK_MONOTONIC = rb_intern("TIMES_BASED_CLOCK_MONOTONIC");
+    id_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID = rb_intern("TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID");
+#endif
+#ifdef RUSAGE_SELF
+    id_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID = rb_intern("GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID");
+#endif
+    id_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID = rb_intern("CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID");
+#ifdef __APPLE__
+    id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC = rb_intern("MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC");
+#endif
+    id_hertz = rb_intern("hertz");
 }
