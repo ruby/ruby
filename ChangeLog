@@ -1,3 +1,8 @@
+Tue Nov 25 10:32:23 2014  Eric Wong  <e@80x24.org>
+
+	* compile.c (iseq_build_callinfo_from_hash): hoist out
+	  (iseq_build_from_ary_body): shorten callinfo case
+
 Mon Nov 24 23:03:21 2014  Kouhei Sutou  <kou@cozmixng.org>
 
 	* gems/bundled_gems: Update to 3.0.7.

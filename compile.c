@@ -5766,6 +5766,31 @@ iseq_build_load_iseq(rb_iseq_t *iseq, VALUE op)
     return iseqval;
 }
 
+static VALUE
+iseq_build_callinfo_from_hash(rb_iseq_t *iseq, VALUE op)
+{
+    ID mid = 0;
+    int orig_argc = 0;
+    VALUE block = 0;
+    unsigned int flag = 0;
+    rb_call_info_kw_arg_t *kw_arg = 0;
+
+    if (!NIL_P(op)) {
+	VALUE vmid = rb_hash_aref(op, ID2SYM(rb_intern("mid")));
+	VALUE vflag = rb_hash_aref(op, ID2SYM(rb_intern("flag")));
+	VALUE vorig_argc = rb_hash_aref(op, ID2SYM(rb_intern("orig_argc")));
+	VALUE vblock = rb_hash_aref(op, ID2SYM(rb_intern("blockptr")));
+
+	if (!NIL_P(vmid)) mid = SYM2ID(vmid);
+	if (!NIL_P(vflag)) flag = NUM2UINT(vflag);
+	if (!NIL_P(vorig_argc)) orig_argc = FIX2INT(vorig_argc);
+	if (!NIL_P(vblock)) block = iseq_build_load_iseq(iseq, vblock);
+    }
+
+    /* TODO: support keywords */
+
+    return (VALUE)new_callinfo(iseq, mid, orig_argc, block, flag, kw_arg);
+}
 static int
 iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 		VALUE body, struct st_table *labels_table)
@@ -5854,25 +5879,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 			}
 			break;
 		      case TS_CALLINFO:
-			{
-			    ID mid = 0;
-			    int orig_argc = 0;
-			    VALUE block = 0;
-			    unsigned int flag = 0;
-
-			    if (!NIL_P(op)) {
-				VALUE vmid = rb_hash_aref(op, ID2SYM(rb_intern("mid")));
-				VALUE vflag = rb_hash_aref(op, ID2SYM(rb_intern("flag")));
-				VALUE vorig_argc = rb_hash_aref(op, ID2SYM(rb_intern("orig_argc")));
-				VALUE vblock = rb_hash_aref(op, ID2SYM(rb_intern("blockptr")));
-
-				if (!NIL_P(vmid)) mid = SYM2ID(vmid);
-				if (!NIL_P(vflag)) flag = NUM2UINT(vflag);
-				if (!NIL_P(vorig_argc)) orig_argc = FIX2INT(vorig_argc);
-				if (!NIL_P(vblock)) block = iseq_build_load_iseq(iseq, vblock);
-			    }
-			    argv[j] = (VALUE)new_callinfo(iseq, mid, orig_argc, block, flag, NULL /* TODO: support keywords */);
-			}
+			argv[j] = iseq_build_callinfo_from_hash(iseq, op);
 			break;
 		      case TS_ID:
 			argv[j] = rb_convert_type(op, T_SYMBOL,
