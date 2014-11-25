@@ -62,7 +62,11 @@ class VCS
     if modified
       /\A(\d+)-(\d+)-(\d+)\D(\d+):(\d+):(\d+(?:\.\d+)?)\s*(?:Z|([-+]\d\d)(\d\d))\z/ =~ modified or
         raise "unknown time format - #{modified}"
-      modified = Time.mktime(*($~[1..6] + [$7 ? "#{$7}:#{$8}" : "+00:00"]))
+      begin
+        modified = Time.new(*$~[1..6].map(&:to_i), ($7 ? "#{$7}:#{$8}" : "+00:00"))
+      rescue ArgumentError
+        modified = Time.utc(*$~[1..6]) + $7.to_i * 3600 + $8.to_i * 60
+      end
     end
     return last, changed, modified, *rest
   end
