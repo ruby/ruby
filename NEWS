@@ -180,6 +180,11 @@ with all sufficient information, see the ChangeLog file.
   * New methods:
     * Pathname#birthtime
 
+* Rake
+  * Updated to Rake 10.4.0.  For full release notes see:
+
+    http://docs.seattlerb.org/rake/History_rdoc.html#label-10.4.0
+
 * RubyGems
   * Updated to RubyGems 2.4.2.  For full release notes see:
 

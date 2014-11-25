@@ -20,6 +20,9 @@ module Rake
     include TaskManager
     include TraceOutput
 
+    # The command-line arguments rake is using (defaults to ARGV)
+    attr_reader :argv # :nodoc:
+
     # The name of the application (typically 'rake')
     attr_reader :name
 
@@ -45,6 +48,7 @@ module Rake
     # Initialize a Rake::Application object.
     def initialize
       super
+      @argv = ARGV.dup
       @name = 'rake'
       @rakefiles = DEFAULT_RAKEFILES.dup
       @rakefile = nil
@@ -73,6 +77,8 @@ module Rake
     # call +top_level+ to run your top level tasks.
     def run
       standard_exception_handling do
+        @argv = argv
+
         init
         load_rakefile
         top_level
@@ -633,7 +639,7 @@ module Rake
 
         standard_rake_options.each { |args| opts.on(*args) }
         opts.environment('RAKEOPT')
-      end.parse!
+      end.parse! @argv
     end
 
     # Similar to the regular Ruby +require+ command, but will check
@@ -729,7 +735,7 @@ module Rake
     # Environmental assignments are processed at this time as well.
     def collect_command_line_tasks # :nodoc:
       @top_level_tasks = []
-      ARGV.each do |arg|
+      @argv.each do |arg|
         if arg =~ /^(\w+)=(.*)$/m
           ENV[$1] = $2
         else

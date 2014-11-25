@@ -59,6 +59,11 @@ class TestRakeDefinitions < Rake::TestCase
     assert_raises(RuntimeError) { Task[:x].invoke }
   end
 
+  def test_falsey_dependencies
+    task :x => nil
+    assert_equal [], Task[:x].prerequisites
+  end
+
   def test_implicit_file_dependencies
     runs = []
     create_existing_file

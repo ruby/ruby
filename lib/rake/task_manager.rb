@@ -111,7 +111,7 @@ module Rake
       if args.empty?
         task_name = key
         arg_names = []
-        deps = value
+        deps = value || []
       else
         task_name = args.shift
         arg_names = key

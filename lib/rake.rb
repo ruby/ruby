@@ -21,7 +21,7 @@
 #++
 
 module Rake
-  VERSION = '10.3.2'
+  VERSION = '10.4.0'
 end
 
 require 'rake/version'
@@ -63,6 +63,7 @@ require 'rake/file_utils_ext'
 require 'rake/file_list'
 require 'rake/default_loader'
 require 'rake/early_time'
+require 'rake/late_time'
 require 'rake/name_space'
 require 'rake/task_manager'
 require 'rake/application'

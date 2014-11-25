@@ -143,10 +143,7 @@ module Rake
         end
       end
 
-      directory package_dir
-
-      file package_dir_path => @package_files do
-        mkdir_p package_dir rescue nil
+      directory package_dir_path => @package_files do
         @package_files.each do |fn|
           f = File.join(package_dir_path, fn)
           fdir = File.dirname(f)

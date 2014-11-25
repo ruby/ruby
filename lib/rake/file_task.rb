@@ -21,7 +21,7 @@ module Rake
       if File.exist?(name)
         File.mtime(name.to_s)
       else
-        Rake::EARLY
+        Rake::LATE
       end
     end
 

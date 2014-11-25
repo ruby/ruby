@@ -1412,6 +1412,8 @@ module MiniTest
       include MiniTest::Assertions
     end # class TestCase
   end # class Unit
+
+  Test = Unit::TestCase
 end # module MiniTest
 
 Minitest = MiniTest # :nodoc: because ugh... I typo this all the time

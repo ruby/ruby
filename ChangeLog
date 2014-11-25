@@ -1,3 +1,12 @@
+Tue Nov 25 15:59:46 2014  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rake:  Update to rake 10.4.0
+	* test/rake:  ditto.
+	* NEWS:  ditto.
+
+	* test/lib/minitest/unit.rb:  Add compatibility shim for minitest 5.
+	  This only provides minitest 5 unit test naming compatibility.
+
 Tue Nov 25 15:26:33 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/vcs.rb (get_revisions): use Time.new instead of Time.mktime

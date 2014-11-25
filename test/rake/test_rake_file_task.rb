@@ -24,6 +24,7 @@ class TestRakeFileTask < Rake::TestCase
     File.delete(ftask.name) rescue nil
 
     assert ftask.needed?, "file should be needed"
+    assert_equal Rake::LATE, ftask.timestamp
 
     open(ftask.name, "w") { |f| f.puts "HI" }
 
@@ -84,19 +85,14 @@ class TestRakeFileTask < Rake::TestCase
   end
 
   def test_existing_file_depends_on_non_existing_file
-    @ran = false
-
     create_file(OLDFILE)
     delete_file(NEWFILE)
-    file NEWFILE do
-      @ran = true
-    end
-
-    file OLDFILE => NEWFILE
+    file NEWFILE            do |t| @runs << t.name end
+    file OLDFILE => NEWFILE do |t| @runs << t.name end
 
     Task[OLDFILE].invoke
 
-    assert @ran
+    assert_equal [NEWFILE, OLDFILE], @runs
   end
 
   def test_needed_eh_build_all

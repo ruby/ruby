@@ -460,7 +460,7 @@ end
     TEST_TASK
     open 'a_test.rb', 'w' do |io|
       io << "require 'minitest/autorun'\n"
-      io << "class ExitTaskTest < MiniTest::Unit::TestCase\n"
+      io << "class ExitTaskTest < Minitest::Test\n"
       io << "  def test_exit\n"
       io << "    assert false, 'this should fail'\n"
       io << "  end\n"
