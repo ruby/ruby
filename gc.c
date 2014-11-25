@@ -2717,7 +2717,7 @@ id2ref(VALUE obj, VALUE objid)
 
     if ((ptr % sizeof(RVALUE)) == (4 << 2)) {
         ID symid = ptr / sizeof(RVALUE);
-        if (rb_id2name(symid) == 0)
+        if (rb_id2str(symid) == 0)
 	    rb_raise(rb_eRangeError, "%p is not symbol id value", p0);
 	return ID2SYM(symid);
     }

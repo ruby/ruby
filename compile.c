@@ -444,7 +444,8 @@ validate_label(st_data_t name, st_data_t label, st_data_t arg)
 	do {
 	    int ret;
 	    COMPILE_ERROR((ruby_sourcefile, lobj->position,
-			   "%s: undefined label", rb_id2name((ID)name)));
+			   "%"PRIsVALUE": undefined label",
+			   rb_id2str((ID)name)));
 	    if (ret) break;
 	} while (0);
     }
@@ -3960,7 +3961,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	ID id = node->nd_vid;
 	int idx = iseq->local_iseq->local_size - get_local_var_idx(iseq, id);
 
-	debugs("lvar: %s idx: %d\n", rb_id2name(id), idx);
+	debugs("lvar: %"PRIsVALUE" idx: %d\n", rb_id2str(id), idx);
 	COMPILE(ret, "rvalue", node->nd_value);
 
 	if (!poped) {
@@ -3974,7 +3975,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_DASGN_CURR:{
 	int idx, lv, ls;
 	COMPILE(ret, "dvalue", node->nd_value);
-	debugp_param("dassn id", rb_str_new2(rb_id2name(node->nd_vid) ? rb_id2name(node->nd_vid) : "*"));
+	debugi("dassn id", rb_id2str(node->nd_vid) ? node->nd_vid : '*');
 
 	if (!poped) {
 	    ADD_INSN(ret, line, dup);
@@ -3983,7 +3984,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	idx = get_dyna_var_idx(iseq, node->nd_vid, &lv, &ls);
 
 	if (idx < 0) {
-	    rb_bug("NODE_DASGN(_CURR): unknown id (%s)", rb_id2name(node->nd_vid));
+	    rb_bug("NODE_DASGN(_CURR): unknown id (%"PRIsVALUE")", rb_id2str(node->nd_vid));
 	}
 
 	ADD_INSN2(ret, line, setlocal, INT2FIX(ls - idx), INT2FIX(lv));
@@ -4758,7 +4759,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    ID id = node->nd_vid;
 	    int idx = iseq->local_iseq->local_size - get_local_var_idx(iseq, id);
 
-	    debugs("id: %s idx: %d\n", rb_id2name(id), idx);
+	    debugs("id: %"PRIsVALUE" idx: %d\n", rb_id2str(id), idx);
 	    ADD_INSN2(ret, line, getlocal, INT2FIX(idx), INT2FIX(get_lvar_level(iseq)));
 	}
 	break;
@@ -4769,7 +4770,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	if (!poped) {
 	    idx = get_dyna_var_idx(iseq, node->nd_vid, &lv, &ls);
 	    if (idx < 0) {
-		rb_bug("unknown dvar (%s)", rb_id2name(node->nd_vid));
+		rb_bug("unknown dvar (%"PRIsVALUE")", rb_id2str(node->nd_vid));
 	    }
 	    ADD_INSN2(ret, line, getlocal, INT2FIX(ls - idx), INT2FIX(lv));
 	}
@@ -5076,7 +5077,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	VALUE iseqval =
 	    NEW_CHILD_ISEQVAL(
 		node->nd_body,
-		rb_sprintf("<class:%s>", rb_id2name(node->nd_cpath->nd_mid)),
+		rb_sprintf("<class:%"PRIsVALUE">", rb_id2str(node->nd_cpath->nd_mid)),
 		ISEQ_TYPE_CLASS, line);
 	VALUE noscope = compile_cpath(ret, iseq, node->nd_cpath);
 	int flags = VM_DEFINECLASS_TYPE_CLASS;
@@ -5094,7 +5095,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_MODULE:{
 	VALUE iseqval = NEW_CHILD_ISEQVAL(
 	    node->nd_body,
-	    rb_sprintf("<module:%s>", rb_id2name(node->nd_cpath->nd_mid)),
+	    rb_sprintf("<module:%"PRIsVALUE">", rb_id2str(node->nd_cpath->nd_mid)),
 	    ISEQ_TYPE_CLASS, line);
 
 	VALUE noscope = compile_cpath(ret, iseq, node->nd_cpath);
@@ -5558,7 +5559,7 @@ insn_data_to_s_detail(INSN *iobj)
 		{
 		    struct rb_global_entry *entry = (struct rb_global_entry *)
 		      (OPERAND_AT(iobj, j) & (~1));
-		    rb_str_cat2(str, rb_id2name(entry->id));
+		    rb_str_append(str, rb_id2str(entry->id));
 		    break;
 		}
 	      case TS_IC:	/* inline cache */
@@ -5567,7 +5568,10 @@ insn_data_to_s_detail(INSN *iobj)
 	      case TS_CALLINFO: /* call info */
 		{
 		    rb_call_info_t *ci = (rb_call_info_t *)OPERAND_AT(iobj, j);
-		    rb_str_catf(str, "<callinfo:%s, %d>", ci->mid ? rb_id2name(ci->mid) : "", ci->orig_argc);
+		    rb_str_cat2(str, "<callinfo:");
+		    if (ci->mid)
+			rb_str_catf(str, "%"PRIsVALUE, rb_id2str(ci->mid));
+		    rb_str_catf(str, ", %d>", ci->orig_argc);
 		    break;
 		}
 	      case TS_CDHASH:	/* case/when condition cache */

@@ -1952,8 +1952,8 @@ void
 rb_notimplement(void)
 {
     rb_raise(rb_eNotImpError,
-	     "%s() function is unimplemented on this machine",
-	     rb_id2name(rb_frame_this_func()));
+	     "%"PRIsVALUE"() function is unimplemented on this machine",
+	     rb_id2str(rb_frame_this_func()));
 }
 
 void

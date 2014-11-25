@@ -115,7 +115,7 @@ ID
 ruby_debug_print_id(int level, int debug_level, const char *header, ID id)
 {
     if (level < debug_level) {
-	fprintf(stderr, "DBG> %s: %s\n", header, rb_id2name(id));
+	fprintf(stderr, "DBG> %s: %"PRIsVALUE"\n", header, rb_id2str(id));
 	fflush(stderr);
     }
     return id;

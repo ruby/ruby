@@ -22,20 +22,20 @@ warn_printf(const char *fmt, ...)
 static void
 error_pos(void)
 {
-    const char *sourcefile = rb_sourcefile();
+    VALUE sourcefile = rb_sourcefilename();
     int sourceline = rb_sourceline();
 
     if (sourcefile) {
 	ID caller_name;
 	if (sourceline == 0) {
-	    warn_printf("%s", sourcefile);
+	    warn_printf("%"PRIsVALUE, sourcefile);
 	}
 	else if ((caller_name = rb_frame_callee()) != 0) {
-	    warn_printf("%s:%d:in `%s'", sourcefile, sourceline,
-			rb_id2name(caller_name));
+	    warn_printf("%"PRIsVALUE":%d:in `%"PRIsVALUE"'", sourcefile, sourceline,
+			rb_id2str(caller_name));
 	}
 	else {
-	    warn_printf("%s:%d", sourcefile, sourceline);
+	    warn_printf("%"PRIsVALUE":%d", sourcefile, sourceline);
 	}
     }
 }

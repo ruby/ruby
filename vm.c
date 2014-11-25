@@ -1729,15 +1729,14 @@ rb_thread_current_status(const rb_thread_t *th)
 	if (cfp->pc != 0) {
 	    rb_iseq_t *iseq = cfp->iseq;
 	    int line_no = rb_vm_get_sourceline(cfp);
-	    char *file = RSTRING_PTR(iseq->location.path);
-	    str = rb_sprintf("%s:%d:in `%s'",
-			     file, line_no, RSTRING_PTR(iseq->location.label));
+	    str = rb_sprintf("%"PRIsVALUE":%d:in `%"PRIsVALUE"'",
+			     iseq->location.path, line_no, iseq->location.label);
 	}
     }
     else if (cfp->me->def->original_id) {
-	str = rb_sprintf("`%s#%s' (cfunc)",
-			 rb_class2name(cfp->me->klass),
-			 rb_id2name(cfp->me->def->original_id));
+	str = rb_sprintf("`%"PRIsVALUE"#%"PRIsVALUE"' (cfunc)",
+			 rb_class_path(cfp->me->klass),
+			 rb_id2str(cfp->me->def->original_id));
     }
 
     return str;

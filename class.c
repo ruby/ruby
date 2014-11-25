@@ -699,16 +699,16 @@ rb_define_class_id_under(VALUE outer, ID id, VALUE super)
     if (rb_const_defined_at(outer, id)) {
 	klass = rb_const_get_at(outer, id);
 	if (!RB_TYPE_P(klass, T_CLASS)) {
-	    rb_raise(rb_eTypeError, "%s is not a class", rb_id2name(id));
+	    rb_raise(rb_eTypeError, "%"PRIsVALUE" is not a class", rb_id2str(id));
 	}
 	if (rb_class_real(RCLASS_SUPER(klass)) != super) {
-	    rb_name_error(id, "%s is already defined", rb_id2name(id));
+	    rb_name_error(id, "%"PRIsVALUE" is already defined", rb_id2str(id));
 	}
 	return klass;
     }
     if (!super) {
-	rb_warn("no super class for `%s::%s', Object assumed",
-		rb_class2name(outer), rb_id2name(id));
+	rb_warn("no super class for `%"PRIsVALUE"::%"PRIsVALUE"', Object assumed",
+		rb_class_path(outer), rb_id2str(id));
     }
     klass = rb_define_class_id(id, super);
     rb_set_class_path_string(klass, outer, rb_id2str(id));
