@@ -1,3 +1,10 @@
+Wed Nov 26 00:20:48 2014  Tanaka Akira  <akr@fsij.org>
+
+	* template/prelude.c.tmpl: Don't expand RbConfig::Config[...].
+	  It is not used now.
+
+	* common.mk: prelude.c and golf_prelude.c doesn't depend on rbconfig.
+
 Tue Nov 25 17:07:06 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* NEWS: add an "Implementation changes" section.

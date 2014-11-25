@@ -774,7 +774,7 @@ $(MINIPRELUDE_C): $(COMPILE_PRELUDE) {$(srcdir)}prelude.rb
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb -I$(srcdir) -o $@ \
 		$(srcdir)/template/prelude.c.tmpl prelude.rb
 
-$(PRELUDE_C): $(COMPILE_PRELUDE) $(RBCONFIG) \
+$(PRELUDE_C): $(COMPILE_PRELUDE) \
 	   {$(srcdir)}lib/rubygems/defaults.rb \
 	   {$(srcdir)}lib/rubygems/core_ext/kernel_gem.rb \
 	   $(PRELUDE_SCRIPTS) $(PREP) $(LIB_SRCS)
@@ -782,7 +782,7 @@ $(PRELUDE_C): $(COMPILE_PRELUDE) $(RBCONFIG) \
 	$(Q) $(MINIRUBY) $(srcdir)/tool/generic_erb.rb -I$(srcdir) -c -o $@ \
 		$(srcdir)/template/prelude.c.tmpl $(PRELUDE_SCRIPTS)
 
-{$(VPATH)}golf_prelude.c: $(COMPILE_PRELUDE) $(RBCONFIG) {$(srcdir)}golf_prelude.rb $(PREP)
+{$(VPATH)}golf_prelude.c: $(COMPILE_PRELUDE) {$(srcdir)}golf_prelude.rb $(PREP)
 	$(ECHO) generating $@
 	$(Q) $(MINIRUBY) $(srcdir)/tool/generic_erb.rb -I$(srcdir) -c -o $@ \
 		$(srcdir)/template/prelude.c.tmpl golf_prelude.rb

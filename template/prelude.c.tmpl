@@ -28,9 +28,7 @@ class Prelude
 
   def initialize(init_name, preludes, vpath)
     @init_name = init_name
-    @mkconf = nil
     @have_sublib = false
-    @need_ruby_prefix = false
     @vpath = vpath
     @preludes = {}
     @mains = preludes.map {|filename| translate(filename)[0]}
@@ -45,20 +43,6 @@ class Prelude
     @vpath.foreach(filename) do |line|
       @preludes[filename] ||= result
       line.sub!(/(?:^|\s+)\#(?:$|\s.*)/, '')
-      line.gsub!(/RbConfig::CONFIG\["(\w+)"\]/) {
-        key = $1
-        unless @mkconf
-          require './rbconfig'
-          @mkconf = RbConfig::MAKEFILE_CONFIG.merge('prefix'=>'#{TMP_RUBY_PREFIX}')
-        end
-        if RbConfig::MAKEFILE_CONFIG.has_key? key
-          val = RbConfig.expand("$(#{key})", @mkconf)
-          @need_ruby_prefix ||= /\A\#\{TMP_RUBY_PREFIX\}/ =~ val
-          c_esc(val)
-        else
-          "nil"
-        end
-      }
       line.sub!(/require\s*\(?\s*(["'])(.*?)\1\)?/) do
         orig, path = $&, $2
         path = translate(path, true) rescue nil
@@ -98,7 +82,7 @@ static const char prelude_code<%=i%>[] =
 
 #define PRELUDE_COUNT <%=@have_sublib ? preludes.size : 0%>
 
-% if @have_sublib or @need_ruby_prefix
+% if @have_sublib
 struct prelude_env {
     volatile VALUE prefix_path;
 #if PRELUDE_COUNT > 0
@@ -153,7 +137,7 @@ prelude_require(VALUE self, VALUE nth)
 void
 Init_<%=@init_name%>(void)
 {
-% if @have_sublib or @need_ruby_prefix
+% if @have_sublib
     struct prelude_env memo;
     ID name = rb_intern("TMP_RUBY_PREFIX");
     VALUE prelude = Data_Wrap_Struct(rb_cData, 0, 0, &memo);
@@ -173,7 +157,7 @@ Init_<%=@init_name%>(void)
       rb_usascii_str_new(prelude_name<%=i%>, sizeof(prelude_name<%=i%>) - 1),
       INT2FIX(1));
 % end
-% if @have_sublib or @need_ruby_prefix
+% if @have_sublib
     rb_gc_force_recycle(prelude);
 % end
 
