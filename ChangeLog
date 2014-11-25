@@ -1,3 +1,9 @@
+Wed Nov 26 00:41:44 2014  Tanaka Akira  <akr@fsij.org>
+
+	* common.mk (prereq): Don't depends on prelude.c and golf_prelude.c.
+	  Since they depend on $(PREP) which is miniruby, they are rebuilt
+	  after miniruby is built, even if tarball contains them.
+
 Wed Nov 26 00:20:48 2014  Tanaka Akira  <akr@fsij.org>
 
 	* template/prelude.c.tmpl: Don't expand RbConfig::Config[...].

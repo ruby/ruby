@@ -792,7 +792,7 @@ probes.dmyh: {$(srcdir)}probes.d $(srcdir)/tool/gen_dummy_probes.rb
 
 probes.h: {$(VPATH)}probes.$(DTRACE_EXT)
 
-prereq: incs srcs preludes PHONY
+prereq: incs srcs {$(VPATH)}miniprelude.c PHONY
 
 preludes: {$(VPATH)}prelude.c
 preludes: {$(VPATH)}miniprelude.c
