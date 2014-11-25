@@ -322,7 +322,7 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 	    old_def->type != VM_METHOD_TYPE_ZSUPER) {
 	    rb_iseq_t *iseq = 0;
 
-	    rb_warning("method redefined; discarding old %s", rb_id2name(mid));
+	    rb_warning("method redefined; discarding old %"PRIsVALUE, rb_id2str(mid));
 	    switch (old_def->type) {
 	      case VM_METHOD_TYPE_ISEQ:
 		iseq = old_def->body.iseq;
@@ -336,8 +336,8 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 	    if (iseq && !NIL_P(iseq->location.path)) {
 		int line = iseq->line_info_table ? FIX2INT(rb_iseq_first_lineno(iseq->self)) : 0;
 		rb_compile_warning(RSTRING_PTR(iseq->location.path), line,
-				   "previous definition of %s was here",
-				   rb_id2name(old_def->original_id));
+				   "previous definition of %"PRIsVALUE" was here",
+				   rb_id2str(old_def->original_id));
 	    }
 	}
 
@@ -762,8 +762,8 @@ remove_method(VALUE klass, ID mid)
     if (!st_lookup(RCLASS_M_TBL(klass), mid, &data) ||
 	!(me = (rb_method_entry_t *)data) ||
 	(!me->def || me->def->type == VM_METHOD_TYPE_UNDEF)) {
-	rb_name_error(mid, "method `%s' not defined in %s",
-		      rb_id2name(mid), rb_class2name(klass));
+	rb_name_error(mid, "method `%"PRIsVALUE"' not defined in %"PRIsVALUE,
+		      rb_id2str(mid), rb_class_path(klass));
     }
     key = (st_data_t)mid;
     st_delete(RCLASS_M_TBL(klass), &key, &data);
