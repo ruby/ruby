@@ -1779,7 +1779,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		}
 	    }
 	    else if ((noex_safe = NOEX_SAFE(ci->me->flag)) > th->safe_level && (noex_safe > 2)) {
-		rb_raise(rb_eSecurityError, "calling insecure method: %s", rb_id2name(ci->mid));
+		rb_raise(rb_eSecurityError, "calling insecure method: %"PRIsVALUE, rb_id2str(ci->mid));
 	    }
 	    else {
 		goto normal_method_dispatch;

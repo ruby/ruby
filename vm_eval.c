@@ -583,8 +583,8 @@ rb_method_call_status(rb_thread_t *th, const rb_method_entry_t *me, call_type sc
 	    }
 
 	    if (NOEX_SAFE(noex) > th->safe_level) {
-		rb_raise(rb_eSecurityError, "calling insecure method: %s",
-			 rb_id2name(me->called_id));
+		rb_raise(rb_eSecurityError, "calling insecure method: %"PRIsVALUE,
+			 rb_id2str(me->called_id));
 	    }
 	}
     }
