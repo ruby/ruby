@@ -75,8 +75,6 @@ with all sufficient information, see the ChangeLog file.
   * Extended method:
     * Process execution methods such as Process.spawn opens the file in write
       mode for redirect from [:out, :err].
-  * Process creation methods, such as spawn(), uses vfork() system call.
-    vfork() is faster than fork() when the parent process uses huge memory.
 
 * String
   * New methods:
@@ -334,3 +332,7 @@ with all sufficient information, see the ChangeLog file.
     * Fast keyword arguments passing [Feature #10440]
     * Allow to receive huge splatted array by a rest argument
       [Feature #10440]
+
+* Process
+    * Process creation methods, such as spawn(), uses vfork() system call.
+      vfork() is faster than fork() when the parent process uses huge memory.
