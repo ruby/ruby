@@ -390,6 +390,12 @@ class TestFile < Test::Unit::TestCase
     (0..1).each do |level|
       assert_nothing_raised(SecurityError, bug5374) {in_safe[level]}
     end
+    def (s = Object.new).to_path; "".taint; end
+    m = "\u{691c 67fb}"
+    (c = Class.new(File)).singleton_class.class_eval {alias_method m, :stat}
+    assert_raise_with_message(SecurityError, /#{m}/) {
+      proc {$SAFE = 3; c.__send__(m, s)}.call
+    }
   end
 
   if /(bcc|ms|cyg)win|mingw|emx/ =~ RUBY_PLATFORM

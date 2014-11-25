@@ -110,8 +110,8 @@ rb_insecure_operation(void)
 {
     ID caller_name = rb_frame_callee();
     if (caller_name) {
-	rb_raise(rb_eSecurityError, "Insecure operation - %s",
-		 rb_id2name(caller_name));
+	rb_raise(rb_eSecurityError, "Insecure operation - %"PRIsVALUE,
+		 rb_id2str(caller_name));
     }
     else {
 	rb_raise(rb_eSecurityError, "Insecure operation: -r");
