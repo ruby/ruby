@@ -489,8 +489,6 @@ inspect_i(st_data_t k, st_data_t v, st_data_t a)
     ID id = (ID)k;
     VALUE value = (VALUE)v;
     VALUE str = (VALUE)a;
-    VALUE str2;
-    const char *ivname;
 
     /* need not to show internal data */
     if (CLASS_OF(value) == 0) return ST_CONTINUE;
@@ -502,12 +500,8 @@ inspect_i(st_data_t k, st_data_t v, st_data_t a)
     else {
 	rb_str_cat2(str, ", ");
     }
-    ivname = rb_id2name(id);
-    rb_str_cat2(str, ivname);
-    rb_str_cat2(str, "=");
-    str2 = rb_inspect(value);
-    rb_str_append(str, str2);
-    OBJ_INFECT(str, str2);
+    rb_str_catf(str, "%"PRIsVALUE"=%+"PRIsVALUE,
+		rb_id2str(id), value);
 
     return ST_CONTINUE;
 }

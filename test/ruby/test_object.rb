@@ -758,10 +758,12 @@ class TestObject < Test::Unit::TestCase
         def initialize
           @\u{3044} = 42
         end
-        new.inspect
+        new
       end
     EOS
-    assert_match(/\bInspect\u{3042}:.* @\u{3044}=42\b/, x)
+    assert_match(/\bInspect\u{3042}:.* @\u{3044}=42\b/, x.inspect)
+    x.instance_variable_set("@\u{3046}".encode(Encoding::EUC_JP), 6)
+    assert_match(/@\u{3046}=6\b/, x.inspect)
   end
 
   def test_singleton_class
