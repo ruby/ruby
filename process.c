@@ -7519,7 +7519,7 @@ VALUE rb_mProcID_Syscall;
  */
 
 void
-Init_process(void)
+InitVM_process(void)
 {
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
@@ -7899,7 +7899,11 @@ Init_process(void)
     rb_define_module_function(rb_mProcID_Syscall, "setresuid", p_sys_setresuid, 3);
     rb_define_module_function(rb_mProcID_Syscall, "setresgid", p_sys_setresgid, 3);
     rb_define_module_function(rb_mProcID_Syscall, "issetugid", p_sys_issetugid, 0);
+}
 
+void
+Init_process(void)
+{
     id_in = rb_intern("in");
     id_out = rb_intern("out");
     id_err = rb_intern("err");
@@ -7941,4 +7945,6 @@ Init_process(void)
     id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC = rb_intern("MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC");
 #endif
     id_hertz = rb_intern("hertz");
+
+    InitVM(process);
 }

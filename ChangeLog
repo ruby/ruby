@@ -1,3 +1,8 @@
+Tue Nov 25 12:14:43 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (Init_process): initialize static IDs before constant
+	  definitions.  [ruby-core:66445]
+
 Tue Nov 25 10:32:23 2014  Eric Wong  <e@80x24.org>
 
 	* compile.c (iseq_build_callinfo_from_hash): hoist out
