@@ -1,3 +1,8 @@
+Wed Nov 26 06:06:23 2014  Tanaka Akira  <akr@fsij.org>
+
+	* common.mk: encdb.h and transdb.h depends on $(PREP).
+	  So prebuild files for them in tarball are useless.
+
 Wed Nov 26 02:08:44 2014  Tanaka Akira  <akr@fsij.org>
 
 	* tool/make-snapshot: Don't generate enc/trans/newline.c in tarball.
