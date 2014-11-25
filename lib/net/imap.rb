@@ -1256,9 +1256,7 @@ module Net
       when nil
       when String
       when Integer
-        if data < 0 || data >= 4294967296
-          raise DataFormatError, num.to_s
-        end
+        NumValidator.ensure_number(data)
       when Array
         data.each do |i|
           validate_data(i)
@@ -1572,7 +1570,7 @@ module Net
         case data
         when "*"
         when Integer
-          ensure_nz_number(data)
+          NumValidator.ensure_nz_number(data)
         when Range
         when Array
           data.each do |i|
@@ -1586,11 +1584,42 @@ module Net
           raise DataFormatError, data.inspect
         end
       end
+    end
 
-      def ensure_nz_number(num)
-        if num < -1 || num == 0 || num >= 4294967296
-          msg = "nz_number must be non-zero unsigned 32-bit integer: " +
-                num.inspect
+    # Common validators of number and nz_number types
+    module NumValidator # :nodoc
+      class << self
+        # Check is passed argument valid 'number' in RFC 3501 terminology
+        def valid_number?(num)
+          # [RFC 3501]
+          # number          = 1*DIGIT
+          #                    ; Unsigned 32-bit integer
+          #                    ; (0 <= n < 4,294,967,296)
+          num >= 0 && num < 4294967296
+        end
+
+        # Check is passed argument valid 'nz_number' in RFC 3501 terminology
+        def valid_nz_number?(num)
+          # [RFC 3501]
+          # nz-number       = digit-nz *DIGIT
+          #                    ; Non-zero unsigned 32-bit integer
+          #                    ; (0 < n < 4,294,967,296)
+          num != 0 && valid_number?(num)
+        end
+
+        # Ensure argument is 'number' or raise DataFormatError
+        def ensure_number(num)
+          return if valid_number?(num)
+
+          msg = "number must be unsigned 32-bit integer: #{num}"
+          raise DataFormatError, msg
+        end
+
+        # Ensure argument is 'nz_number' or raise DataFormatError
+        def ensure_nz_number(num)
+          return if valid_nz_number?(num)
+
+          msg = "nz_number must be non-zero unsigned 32-bit integer: #{num}"
           raise DataFormatError, msg
         end
       end
