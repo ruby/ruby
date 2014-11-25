@@ -1,3 +1,8 @@
+Tue Nov 25 16:09:28 2014  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/http.rb:  Do not attempt SSL session resumption when the
+	  session is expired.  [Bug #10533]
+
 Tue Nov 25 15:59:46 2014  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rake:  Update to rake 10.4.0
