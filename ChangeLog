@@ -1,3 +1,7 @@
+Wed Nov 26 02:08:44 2014  Tanaka Akira  <akr@fsij.org>
+
+	* tool/make-snapshot: Don't generate enc/trans/newline.c in tarball.
+
 Wed Nov 26 00:41:44 2014  Tanaka Akira  <akr@fsij.org>
 
 	* common.mk (prereq): Don't depends on prelude.c and golf_prelude.c.

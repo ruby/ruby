@@ -50,6 +50,7 @@ ENV["RM"] ||= "rm -f"
 ENV["MINIRUBY"] ||= "ruby"
 ENV["PROGRAM"] ||= "ruby"
 ENV["AUTOCONF"] ||= "autoconf"
+ENV["BUILTIN_TRANSOBJS"] ||= "newline.o"
 
 class String
   # for older ruby
