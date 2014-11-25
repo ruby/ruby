@@ -321,3 +321,16 @@ with all sufficient information, see the ChangeLog file.
 * jemalloc is optionally supported via `./configure --with-jemalloc`
   jemalloc may be suitable when system malloc is slow or prone
   to fragmentation.  [Feature #9113]
+
+=== Implementation changes
+
+* GC
+    * Most symbols which are returned by String#to_sym and
+      String#intern are GC-able [Feature #9634]
+    * Introduce incremental marking for major GC. [Feature #10137]
+
+* VM
+    * Use frozen string literals for Hash#[] and Hash#[]=
+    * Fast keyword arguments passing [Feature #10440]
+    * Allow to receive huge splatted array by a rest argument
+      [Feature #10440]

@@ -1,3 +1,7 @@
+Tue Nov 25 17:07:06 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* NEWS: add an "Implementation changes" section.
+
 Tue Nov 25 16:09:28 2014  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/http.rb:  Do not attempt SSL session resumption when the
