@@ -806,8 +806,8 @@ rb_mod_remove_method(int argc, VALUE *argv, VALUE mod)
 	VALUE v = argv[i];
 	ID id = rb_check_id(&v);
 	if (!id) {
-	    rb_name_error_str(v, "method `%s' not defined in %s",
-			      RSTRING_PTR(v), rb_class2name(mod));
+	    rb_name_error_str(v, "method `%"PRIsVALUE"' not defined in %"PRIsVALUE,
+			      v, rb_obj_class(mod));
 	}
 	remove_method(mod, id);
     }

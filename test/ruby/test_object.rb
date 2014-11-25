@@ -365,6 +365,19 @@ class TestObject < Test::Unit::TestCase
         end
       INPUT
     end
+
+    m = "\u{30e1 30bd 30c3 30c9}"
+    c = Class.new
+    assert_raise_with_message(NameError, /#{m}/) do
+      c.class_eval {remove_method m}
+    end
+    c = Class.new {
+      define_method(m) {}
+      remove_method(m)
+    }
+    assert_raise_with_message(NameError, /#{m}/) do
+      c.class_eval {remove_method m}
+    end
   end
 
   def test_method_missing
