@@ -893,8 +893,10 @@ update-gems: PHONY
 	$(Q) $(RUNRUBY) -C "$(srcdir)/gems" \
 	    -I../tool -rdownloader -answ \
 	    -e 'gem, ver = *$$F' \
+	    -e 'old = Dir.glob("#{gem}-*.gem")' \
 	    -e 'gem = "#{gem}-#{ver}.gem"' \
-	    -e 'Downloader::RubyGems.download(gem, nil, nil)' \
+	    -e 'Downloader::RubyGems.download(gem, nil, nil) and' \
+	    -e 'File.unlink(*(old-[gem]))' \
 	    bundled_gems
 
 UPDATE_LIBRARIES = no
