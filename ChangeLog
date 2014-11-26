@@ -1,3 +1,7 @@
+Thu Nov 27 07:11:00 2014  Eric Wong  <e@80x24.org>
+
+	* compile.c (iseq_calc_param_size): hoist out of iseq_set_arguments
+
 Wed Nov 26 22:28:12 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (rb_get_kwargs, rb_extract_keywords): export

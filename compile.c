@@ -1120,6 +1120,43 @@ get_dyna_var_idx(rb_iseq_t *iseq, ID id, int *level, int *ls)
     return idx;
 }
 
+static void
+iseq_calc_param_size(rb_iseq_t *iseq)
+{
+    if (iseq->param.flags.has_opt ||
+	iseq->param.flags.has_post ||
+	iseq->param.flags.has_rest ||
+	iseq->param.flags.has_block ||
+	iseq->param.flags.has_kw ||
+	iseq->param.flags.has_kwrest) {
+
+	if (iseq->param.flags.has_block) {
+	    iseq->param.size = iseq->param.block_start + 1;
+	}
+	else if (iseq->param.flags.has_kwrest) {
+	    iseq->param.size = iseq->param.keyword->rest_start + 1;
+	}
+	else if (iseq->param.flags.has_kw) {
+	    iseq->param.size = iseq->param.keyword->bits_start + 1;
+	}
+	else if (iseq->param.flags.has_post) {
+	    iseq->param.size = iseq->param.post_start + iseq->param.post_num;
+	}
+	else if (iseq->param.flags.has_rest) {
+	    iseq->param.size = iseq->param.rest_start + 1;
+	}
+	else if (iseq->param.flags.has_opt) {
+	    iseq->param.size = iseq->param.lead_num + iseq->param.opt_num;
+	}
+	else {
+	    rb_bug("unreachable");
+	}
+    }
+    else {
+	iseq->param.size = iseq->param.lead_num;
+    }
+}
+
 static int
 iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 {
@@ -1267,38 +1304,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	    iseq->param.flags.has_block = TRUE;
 	}
 
-	if (iseq->param.flags.has_opt ||
-	    iseq->param.flags.has_post ||
-	    iseq->param.flags.has_rest ||
-	    iseq->param.flags.has_block ||
-	    iseq->param.flags.has_kw ||
-	    iseq->param.flags.has_kwrest) {
-
-	    if (iseq->param.flags.has_block) {
-		iseq->param.size = iseq->param.block_start + 1;
-	    }
-	    else if (iseq->param.flags.has_kwrest) {
-		iseq->param.size = iseq->param.keyword->rest_start + 1;
-	    }
-	    else if (iseq->param.flags.has_kw) {
-		iseq->param.size = iseq->param.keyword->bits_start + 1;
-	    }
-	    else if (iseq->param.flags.has_post) {
-		iseq->param.size = iseq->param.post_start + iseq->param.post_num;
-	    }
-	    else if (iseq->param.flags.has_rest) {
-		iseq->param.size = iseq->param.rest_start + 1;
-	    }
-	    else if (iseq->param.flags.has_opt) {
-		iseq->param.size = iseq->param.lead_num + iseq->param.opt_num;
-	    }
-	    else {
-		rb_bug("unreachable");
-	    }
-	}
-	else {
-	    iseq->param.size = iseq->param.lead_num;
-	}
+	iseq_calc_param_size(iseq);
 
 	if (iseq->type == ISEQ_TYPE_BLOCK) {
 	    if (iseq->param.flags.has_opt    == FALSE &&
