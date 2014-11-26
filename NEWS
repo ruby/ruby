@@ -314,6 +314,9 @@ with all sufficient information, see the ChangeLog file.
 
 * rb_hash_delete() now does not call the block given to the current method.
 
+* rb_extract_keywords() and rb_get_kwargs() exported.  See README.EXT
+  for details.
+
 === Build system updates
 
 * jemalloc is optionally supported via `./configure --with-jemalloc`

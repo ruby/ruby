@@ -1475,6 +1475,8 @@ VALUE rb_funcall_with_block(VALUE, ID, int, const VALUE*, VALUE);
 int rb_scan_args(int, const VALUE*, const char*, ...);
 VALUE rb_call_super(int, const VALUE*);
 VALUE rb_current_receiver(void);
+int rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, VALUE *);
+VALUE rb_extract_keywords(VALUE *orighash);
 
 /* rb_scan_args() format allows ':' for optional hash */
 #define HAVE_RB_SCAN_ARGS_OPTIONAL_HASH 1

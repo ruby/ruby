@@ -1307,6 +1307,25 @@ rb_scan_args(int argc, VALUE *argv, const char *fmt, ...) ::
   返り値は与えられた引数の数です．オプションハッシュおよびイ
   テレータブロックは数えません．
 
+int rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, VALUE *values)
+
+  キーワードで指定された値をtableにしたがって取り出します．
+  tableの最初のrequired個のIDは必須キーワードを表し，続く
+  optional (optionalが負の場合は-optional-1) 個のIDは省略可能
+  キーワードです．必須キーワードがkeyword_hash中にない場合，
+  "missing keyword"ArgumentErrorが発生します．省略可能キーワー
+  ドがない場合は，values中の対応する要素は変更されません．
+  keyword_hashに使用されない要素がある場合は，optionalが負なら
+  新しいHashとして省略可能引数の次に保存されますが，そうでなけ
+  れば"unknown keyword"ArgumentErrorが発生します．
+
+VALUE rb_extract_keywords(VALUE *original_hash)
+
+  original_hashで参照されるHashオブジェクトから，Symbolである
+  キーとその値を新しいHashに取り出します．original_hashの指す
+  先には，元のHashがSymbol以外のキーを含んでいた場合はそれらが
+  コピーされた別の新しいHash，そうでなければ0が保存されます．
+
 == Rubyメソッド呼び出し
 
 VALUE rb_funcall(VALUE recv, ID mid, int narg, ...) ::

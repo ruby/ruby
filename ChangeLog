@@ -1,3 +1,8 @@
+Wed Nov 26 22:28:12 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_get_kwargs, rb_extract_keywords): export
+	  keyword argument functions.
+
 Wed Nov 26 21:18:40 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/inlinetest.rb: removed unused test helper.

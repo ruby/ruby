@@ -1305,6 +1305,26 @@ rb_scan_args(int argc, VALUE *argv, const char *fmt, ...) ::
   The number of given arguments, excluding an option hash or iterator
   block, is returned.
 
+int rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, VALUE *values)
+
+  Retrieves argument VALUEs bound to keywords, which directed by +table+
+  into +values+.  First +required+ number of IDs referred by +table+ are
+  mandatory, and succeeding +optional+ (- +optional+ - 1 if 
+  +optional+ is negative) number of IDs are optional.  If a
+  mandatory key is not contained in +keyword_hash+, raises "missing
+  keyword" +ArgumentError+.  If an optional key is not present in
+  +keyword_hash+, the corresponding element in +values+ is not changed.
+  If +optional+ is negative, rest of +keyword_hash+ are stored in the
+  next to optional +values+ as a new Hash, otherwise raises "unknown
+  keyword" +ArgumentError+.
+
+VALUE rb_extract_keywords(VALUE *original_hash)
+
+  Extrancts pairs whose key is a symbol into a new hash from a hash
+  object referred by +original_hash+.  If the original hash contains
+  non-symbol keys, then they are copied to another hash and the new hash
+  is stored through +original_hash+, else 0 is stored.
+
 == Invoking Ruby method
 
 VALUE rb_funcall(VALUE recv, ID mid, int narg, ...) ::
