@@ -445,7 +445,7 @@ class Matrix
 
   #
   # Yields all elements of the matrix, starting with those of the first row,
-  # or returns an Enumerator is no block given.
+  # or returns an Enumerator if no block given.
   # Elements can be restricted by passing an argument:
   # * :all (default): yields all elements
   # * :diagonal: yields only elements on the diagonal
@@ -1889,14 +1889,14 @@ class Vector
   end
 
   #
-  # Return a copy of the vector.
+  # Returns a copy of the vector.
   #
   def clone
     self.class.elements(@elements)
   end
 
   #
-  # Return a hash-code for the vector.
+  # Returns a hash-code for the vector.
   #
   def hash
     @elements.hash
