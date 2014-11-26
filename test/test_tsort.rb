@@ -57,6 +57,9 @@ class TSortTest < Test::Unit::TestCase # :nodoc:
     r = []
     TSort.tsort_each(each_node, each_child) {|n| r << n }
     assert_equal([4, 2, 3, 1], r)
+
+    r = TSort.tsort_each(each_node, each_child).map {|n| n.to_s }
+    assert_equal(['4', '2', '3', '1'], r)
   end
 
   def test_s_strongly_connected_components
@@ -85,6 +88,11 @@ class TSortTest < Test::Unit::TestCase # :nodoc:
       r << scc
     }
     assert_equal([[4], [2, 3], [1]], r)
+
+    r = TSort.each_strongly_connected_component(each_node, each_child).map {|scc|
+      scc.map(&:to_s)
+    }
+    assert_equal([['4'], ['2', '3'], ['1']], r)
   end
 
   def test_s_each_strongly_connected_component_from
@@ -95,6 +103,11 @@ class TSortTest < Test::Unit::TestCase # :nodoc:
       r << scc
     }
     assert_equal([[4], [2, 3], [1]], r)
+
+    r = TSort.each_strongly_connected_component_from(1, each_child).map {|scc|
+      scc.map(&:to_s)
+    }
+    assert_equal([['4'], ['2', '3'], ['1']], r)
   end
 end
 

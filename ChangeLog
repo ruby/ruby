@@ -1,3 +1,8 @@
+Wed Nov 26 19:44:13 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/tsort.rb: Returns an enumerator if no block is given.
+	  [ruby-core:66270] [Feature #10508] Proposed by Andrey Savchenko.
+
 Wed Nov 26 17:25:45 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (f_label, f_kw, formal_argument_gen): ignore invalid
