@@ -1,3 +1,7 @@
+Wed Nov 26 11:01:35 2014  Eric Wong  <e@80x24.org>
+
+	* iseq.c (iseq_s_compile_file): close IO when done
+
 Wed Nov 26 06:06:23 2014  Tanaka Akira  <akr@fsij.org>
 
 	* common.mk: encdb.h and transdb.h depends on $(PREP).

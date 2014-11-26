@@ -722,6 +722,9 @@ iseq_s_compile_file(int argc, VALUE *argv, VALUE self)
 
     parser = rb_parser_new();
     node = rb_parser_compile_file(parser, fname, f, NUM2INT(line));
+
+    rb_io_close(f);
+
     make_compile_option(&option, opt);
     return rb_iseq_new_with_opt(node, rb_str_new2("<main>"), file,
 				rb_realpath_internal(Qnil, file, 1), line, Qfalse,
