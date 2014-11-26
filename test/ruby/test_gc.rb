@@ -123,10 +123,12 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_latest_gc_info
+    assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom'
     GC.start
     count = GC.stat(:heap_free_slots) + GC.stat(:heap_allocatable_pages) * GC::INTERNAL_CONSTANTS[:HEAP_OBJ_LIMIT]
     count.times{ "a" + "b" }
     assert_equal :newobj, GC.latest_gc_info[:gc_by]
+    eom
 
     GC.start
     assert_equal :force, GC.latest_gc_info[:major_by] if use_rgengc?
