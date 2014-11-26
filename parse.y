@@ -411,6 +411,7 @@ static NODE *new_args_gen(struct parser_params*,NODE*,NODE*,ID,NODE*,NODE*);
 #define new_args(f,o,r,p,t) new_args_gen(parser, (f),(o),(r),(p),(t))
 static NODE *new_args_tail_gen(struct parser_params*,NODE*,ID,ID);
 #define new_args_tail(k,kr,b) new_args_tail_gen(parser, (k),(kr),(b))
+#define new_kw_arg(k) ((k) ? NEW_KW_ARG(0, (k)) : 0)
 
 static VALUE negate_lit(VALUE);
 static NODE *ret_args_gen(struct parser_params*,NODE*);
@@ -4715,9 +4716,9 @@ f_arg		: f_arg_item
 f_label 	: tLABEL
 		    {
 			ID id = get_id($1);
-			arg_var(formal_argument(id));
+			$$ = formal_argument(id);
+			arg_var($$);
 			current_arg = id;
-			$$ = $1;
 		    }
 		;
 
@@ -4726,7 +4727,7 @@ f_kw		: f_label arg_value
 			current_arg = 0;
 			$$ = assignable($1, $2);
 		    /*%%%*/
-			$$ = NEW_KW_ARG(0, $$);
+			$$ = new_kw_arg($$);
 		    /*%
 			$$ = rb_assoc_new($$, $2);
 		    %*/
@@ -4736,7 +4737,7 @@ f_kw		: f_label arg_value
 			current_arg = 0;
 			$$ = assignable($1, (NODE *)-1);
 		    /*%%%*/
-			$$ = NEW_KW_ARG(0, $$);
+			$$ = new_kw_arg($$);
 		    /*%
 			$$ = rb_assoc_new($$, 0);
 		    %*/
@@ -4747,7 +4748,7 @@ f_block_kw	: f_label primary_value
 		    {
 			$$ = assignable($1, $2);
 		    /*%%%*/
-			$$ = NEW_KW_ARG(0, $$);
+			$$ = new_kw_arg($$);
 		    /*%
 			$$ = rb_assoc_new($$, $2);
 		    %*/
@@ -4756,7 +4757,7 @@ f_block_kw	: f_label primary_value
 		    {
 			$$ = assignable($1, (NODE *)-1);
 		    /*%%%*/
-			$$ = NEW_KW_ARG(0, $$);
+			$$ = new_kw_arg($$);
 		    /*%
 			$$ = rb_assoc_new($$, 0);
 		    %*/
@@ -6746,10 +6747,29 @@ arg_ambiguous_gen(struct parser_params *parser, char c)
 static ID
 formal_argument_gen(struct parser_params *parser, ID lhs)
 {
+    switch (id_type(lhs)) {
+      case ID_LOCAL:
+	break;
 #ifndef RIPPER
-    if (!is_local_id(lhs))
-	yyerror("formal argument must be local variable");
+      case ID_CONST:
+	yyerror("formal argument cannot be a constant");
+	return 0;
+      case ID_INSTANCE:
+	yyerror("formal argument cannot be an instance variable");
+	return 0;
+      case ID_GLOBAL:
+	yyerror("formal argument cannot be a global variable");
+	return 0;
+      case ID_CLASS:
+	yyerror("formal argument cannot be a class variable");
+	return 0;
+#else
+      default:
+	lhs = dispatch1(param_error, lhs);
+	ripper_error();
+	return 0;
 #endif
+    }
     shadowing_lvar(lhs);
     return lhs;
 }

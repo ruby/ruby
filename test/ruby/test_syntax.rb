@@ -530,6 +530,12 @@ eom
     assert_syntax_error(code, /def n "\u{2208}"; end/, bug10114)
   end
 
+  def test_bad_kwarg
+    bug10545 = '[ruby-dev:48742] [Bug #10545]'
+    src = 'def foo(A: a) end'
+    assert_syntax_error(src, /formal argument/, bug10545)
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
