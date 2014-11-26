@@ -915,7 +915,7 @@ module Net   #:nodoc:
             HTTPResponse.read_new(@socket).value
           end
           if @ssl_session and
-             Time.now < @ssl_session.time + @ssl_session.timeout
+             Process.clock_gettime(Process::CLOCK_REALTIME) < @ssl_session.time.to_f + @ssl_session.timeout
             s.session = @ssl_session if @ssl_session
           end
           # Server Name Indication (SNI) RFC 3546
