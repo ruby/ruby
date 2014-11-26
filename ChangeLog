@@ -1,3 +1,7 @@
+Wed Nov 26 21:18:40 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/inlinetest.rb: removed unused test helper.
+
 Wed Nov 26 20:47:28 2014  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* ext/continuation/continuation.c (Init_continuation): obsolete callcc.
