@@ -1309,7 +1309,7 @@ int rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optiona
 
   Retrieves argument VALUEs bound to keywords, which directed by +table+
   into +values+.  First +required+ number of IDs referred by +table+ are
-  mandatory, and succeeding +optional+ (- +optional+ - 1 if 
+  mandatory, and succeeding +optional+ (- +optional+ - 1 if
   +optional+ is negative) number of IDs are optional.  If a
   mandatory key is not contained in +keyword_hash+, raises "missing
   keyword" +ArgumentError+.  If an optional key is not present in
