@@ -1,3 +1,8 @@
+Wed Nov 26 20:47:28 2014  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* ext/continuation/continuation.c (Init_continuation): obsolete callcc.
+	  first step of [Feature #10548].
+
 Wed Nov 26 19:57:54 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_gc.rb (test_latest_gc_info): do test separately
