@@ -6,7 +6,7 @@ Wed Nov 26 19:57:54 2014  Koichi Sasada  <ko1@atdot.net>
 Wed Nov 26 19:54:31 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (constat_reset): do nothing on non-standard
-	  console emurators.  [ruby-core:66471] [Bug #10546]
+	  console emulators.  [ruby-core:66471] [Bug #10546]
 
 Wed Nov 26 19:44:13 2014  Tanaka Akira  <akr@fsij.org>
 
