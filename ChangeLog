@@ -1,3 +1,9 @@
+Wed Nov 26 15:32:06 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_set_sequence): use "nop" insn instead of
+	  "jump to next insn".
+	  https://bugs.ruby-lang.org/issues/8543#change-50085
+
 Wed Nov 26 11:01:35 2014  Eric Wong  <e@80x24.org>
 
 	* iseq.c (iseq_s_compile_file): close IO when done

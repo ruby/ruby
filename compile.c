@@ -1642,8 +1642,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			    line_info_table[k].position = pos;
 			    k++;
 			}
-			generated_iseq[pos++] = BIN(jump);
-			generated_iseq[pos++] = 0;
+			generated_iseq[pos++] = BIN(nop);
+			generated_iseq[pos++] = BIN(nop);
 		    }
 		    else {
 			rb_bug("iseq_set_sequence: adjust bug");
