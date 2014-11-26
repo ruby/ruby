@@ -1828,9 +1828,9 @@ rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE pass_
     }
     PUSH_TAG();
     if (OBJ_TAINTED(method)) {
-	const int safe_level_to_run = 4 /*SAFE_LEVEL_MAX*/;
+	const int safe_level_to_run = RUBY_SAFE_LEVEL_MAX;
 	safe = rb_safe_level();
-	if (rb_safe_level() < safe_level_to_run) {
+	if (safe < safe_level_to_run) {
 	    rb_set_safe_level_force(safe_level_to_run);
 	}
     }
