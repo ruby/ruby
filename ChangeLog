@@ -1,3 +1,7 @@
+Fri Nov 28 05:10:23 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (--with-setup): add option to select ext/Setup file.
+
 Fri Nov 28 05:02:29 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dmyenc.c (Init_enc): separate from dmyext.c for statically

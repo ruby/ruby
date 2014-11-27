@@ -3247,7 +3247,14 @@ AS_CASE([",$EXTSTATIC,"], [,static,|*,enc,*], [
 AC_SUBST(ENCOBJS)
 AC_SUBST(EXTOBJS)
 
-if test -f "$srcdir/ext/Setup.$target_os"; then
+AC_ARG_WITH(setup,
+	    AS_HELP_STRING([--with-setup=SETUP], [use extension libraries setup]),
+	    [setup=$withval])
+if test -n "$setup"; then
+    if ! test -f "ext/$setup" -o -f "$srcdir/ext/$setup"; then
+	AC_MSG_ERROR(Setup file $setup not found under ext or $srcdir/ext)
+    fi
+elif test -f "$srcdir/ext/Setup.$target_os"; then
     setup="Setup.$target_os"
 else
     setup=
