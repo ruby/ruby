@@ -2781,56 +2781,56 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
 
     tm0 = *tptr;
     if (tm0.tm_mon < 0) {
-      tm0.tm_mon = 0;
-      tm0.tm_mday = 1;
-      tm0.tm_hour = 0;
-      tm0.tm_min = 0;
-      tm0.tm_sec = 0;
+	tm0.tm_mon = 0;
+	tm0.tm_mday = 1;
+	tm0.tm_hour = 0;
+	tm0.tm_min = 0;
+	tm0.tm_sec = 0;
     }
     else if (11 < tm0.tm_mon) {
-      tm0.tm_mon = 11;
-      tm0.tm_mday = 31;
-      tm0.tm_hour = 23;
-      tm0.tm_min = 59;
-      tm0.tm_sec = 60;
+	tm0.tm_mon = 11;
+	tm0.tm_mday = 31;
+	tm0.tm_hour = 23;
+	tm0.tm_min = 59;
+	tm0.tm_sec = 60;
     }
     else if (tm0.tm_mday < 1) {
-      tm0.tm_mday = 1;
-      tm0.tm_hour = 0;
-      tm0.tm_min = 0;
-      tm0.tm_sec = 0;
+	tm0.tm_mday = 1;
+	tm0.tm_hour = 0;
+	tm0.tm_min = 0;
+	tm0.tm_sec = 0;
     }
     else if ((d = (leap_year_p(1900 + tm0.tm_year) ?
                    leap_year_days_in_month :
 		   common_year_days_in_month)[tm0.tm_mon]) < tm0.tm_mday) {
-      tm0.tm_mday = d;
-      tm0.tm_hour = 23;
-      tm0.tm_min = 59;
-      tm0.tm_sec = 60;
+	tm0.tm_mday = d;
+	tm0.tm_hour = 23;
+	tm0.tm_min = 59;
+	tm0.tm_sec = 60;
     }
     else if (tm0.tm_hour < 0) {
-      tm0.tm_hour = 0;
-      tm0.tm_min = 0;
-      tm0.tm_sec = 0;
+	tm0.tm_hour = 0;
+	tm0.tm_min = 0;
+	tm0.tm_sec = 0;
     }
     else if (23 < tm0.tm_hour) {
-      tm0.tm_hour = 23;
-      tm0.tm_min = 59;
-      tm0.tm_sec = 60;
+	tm0.tm_hour = 23;
+	tm0.tm_min = 59;
+	tm0.tm_sec = 60;
     }
     else if (tm0.tm_min < 0) {
-      tm0.tm_min = 0;
-      tm0.tm_sec = 0;
+	tm0.tm_min = 0;
+	tm0.tm_sec = 0;
     }
     else if (59 < tm0.tm_min) {
-      tm0.tm_min = 59;
-      tm0.tm_sec = 60;
+	tm0.tm_min = 59;
+	tm0.tm_sec = 60;
     }
     else if (tm0.tm_sec < 0) {
-      tm0.tm_sec = 0;
+	tm0.tm_sec = 0;
     }
     else if (60 < tm0.tm_sec) {
-      tm0.tm_sec = 60;
+	tm0.tm_sec = 60;
     }
 
     DEBUG_REPORT_GUESSRANGE;
