@@ -1,6 +1,6 @@
 Thu Nov 27 21:58:30 2014  Tanaka Akira  <akr@fsij.org>
 
-	* common.mk (miniprelude.c): It is not depend on prelude.rb now.
+	* common.mk (miniprelude.c): It does not depend on prelude.rb now.
 
 Thu Nov 27 21:49:49 2014  Tanaka Akira  <akr@fsij.org>
 
