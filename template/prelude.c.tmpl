@@ -65,6 +65,7 @@ Prelude.new(output && output[/\w+(?=_prelude.c\b)/] || 'prelude', ARGV, vpath).i
 
  sources: <%= @preludes.map {|n,*| prelude_base(n)}.join(', ') %>
 */
+%unless @preludes.empty?
 #include "ruby/ruby.h"
 #include "internal.h"
 #include "vm_core.h"
@@ -80,9 +81,9 @@ static const char prelude_code<%=i%>[] =
 ;
 % }
 
-#define PRELUDE_COUNT <%=@have_sublib ? preludes.size : 0%>
-
 % if @have_sublib
+#define PRELUDE_COUNT <%=preludes.size%>
+
 struct prelude_env {
     volatile VALUE prefix_path;
 #if PRELUDE_COUNT > 0
@@ -134,9 +135,11 @@ prelude_require(VALUE self, VALUE nth)
 }
 
 % end
+%end
 void
 Init_<%=@init_name%>(void)
 {
+%unless @preludes.empty?
 % if @have_sublib
     struct prelude_env memo;
     ID name = rb_intern("TMP_RUBY_PREFIX");
@@ -166,5 +169,6 @@ Init_<%=@init_name%>(void)
     puts(prelude_code<%=i%>);
 % }
 #endif
+%end
 }
 <%end -%>

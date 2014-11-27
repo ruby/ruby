@@ -1,3 +1,7 @@
+Thu Nov 27 17:10:19 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/prelude.c.tmpl: no code if no prelude code is given.
+
 Thu Nov 27 13:11:00 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (objspace_malloc_increase): enable lazy sweep on GC by malloc()
