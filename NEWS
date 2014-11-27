@@ -334,6 +334,7 @@ with all sufficient information, see the ChangeLog file.
     * Most symbols which are returned by String#to_sym and
       String#intern are GC-able [Feature #9634]
     * Introduce incremental marking for major GC. [Feature #10137]
+    * Enable lazy sweep on GC caused by malloc().
 
 * VM
     * Use frozen string literals for Hash#[] and Hash#[]=

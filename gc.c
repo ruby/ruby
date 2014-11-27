@@ -7218,7 +7218,7 @@ objspace_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, si
 		gc_rest(objspace); /* gc_rest can reduce malloc_increase */
 		goto retry;
 	    }
-	    garbage_collect_with_gvl(objspace, FALSE, TRUE, TRUE, GPR_FLAG_MALLOC);
+	    garbage_collect_with_gvl(objspace, FALSE, FALSE, FALSE, GPR_FLAG_MALLOC);
 	}
     }
 

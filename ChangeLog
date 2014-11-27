@@ -1,3 +1,11 @@
+Thu Nov 27 13:11:00 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (objspace_malloc_increase): enable lazy sweep on GC by malloc()
+	  (malloc_increase) to make GC incrementally.
+
+	  This change can increase memory consumption. Report us if you find
+	  any problem.
+
 Thu Nov 27 12:46:38 2014  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (time_s_mkutc): [DOC] Time.utc's 10 arguments form
