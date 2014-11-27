@@ -1211,6 +1211,7 @@ dmydln.$(OBJEXT): {$(VPATH)}intern.h
 dmydln.$(OBJEXT): {$(VPATH)}missing.h
 dmydln.$(OBJEXT): {$(VPATH)}st.h
 dmydln.$(OBJEXT): {$(VPATH)}subst.h
+dmyenc.$(OBJEXT): {$(VPATH)}dmyenc.c
 dmyext.$(OBJEXT): {$(VPATH)}dmyext.c
 encoding.$(OBJEXT): $(top_srcdir)/include/ruby.h
 encoding.$(OBJEXT): $(top_srcdir)/include/ruby/ruby.h
