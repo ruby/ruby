@@ -28,26 +28,131 @@ require 'pathname'
 require 'open3'
 require 'pp'
 
-# These files are not in the svn repository.
-# Thier locaiton vary in out-of-place build.
-# They are built in the build directory if the source is obtained via svn.
-# However they are exist in tarball and exist in the source directory if the source is obtained as tarball.
-FILES_NEED_VPATH = %w[
+# When out-of-place bulid, files may be built in source directory or
+# build directory.
+# Some files are always built in the source directory.
+# Some files are always built in the build directory.
+# Some files are built in the source directory for tarball but build directory for repository (svn).
+
+=begin
+How to build test directories.
+
+VER=2.2.0
+REV=48577
+tar xf ruby-$VER-r$REV.tar.xz
+cp -a ruby-$VER-r$REV tarball_source_dir_original
+mv ruby-$VER-r$REV tarball_source_dir_after_build
+svn co -q -r$REV http://svn.ruby-lang.org/repos/ruby/trunk ruby
+(cd ruby; autoconf)
+cp -a ruby repo_source_dir_original
+mv ruby repo_source_dir_after_build
+mkdir tarball_build_dir repo_build_dir tarball_install_dir repo_install_dir
+(cd tarball_build_dir; ../tarball_source_dir_after_build/configure --prefix=$(cd ../tarball_install_dir; pwd) && make all golf install) > tarball.log 2>&1
+(cd repo_build_dir; ../repo_source_dir_after_build/configure --prefix=$(cd ../repo_install_dir; pwd) && make all golf install) > repo.log 2>&1
+ruby -rpp -rfind -e '
+ds = %w[
+  repo_source_dir_original
+  repo_source_dir_after_build
+  repo_build_dir
+  tarball_source_dir_original
+  tarball_source_dir_after_build
+  tarball_build_dir
+]
+files = {}
+ds.each {|d|
+  files[d] = {}
+  Dir.chdir(d) { Find.find(".") {|f| files[d][f] = true if %r{\.(c|h|inc|dmyh)\z} =~ f } }
+}
+result = {}
+files_union = files.values.map {|h| h.keys }.flatten.uniq.sort
+files_union.each {|f|
+  k = files.map {|d,h| h[f] ? d : nil }.compact.sort
+  next if k == %w[repo_source_dir_after_build repo_source_dir_original tarball_source_dir_after_build tarball_source_dir_original]
+  next if k == %w[repo_build_dir tarball_build_dir] && File.basename(f) == "extconf.h"
+  result[k] ||= []
+  result[k] << f
+}
+result.each {|k,v|
+  k.each {|d|
+    puts d
+  }
+  v.each {|f|
+    puts "  " + f.sub(%r{\A\./}, "")
+  }
+  puts
+}
+' | tee compare.log
+=end
+
+# Files built in the source directory.
+# They can be referenced as $(top_srcdir)/filename.
+# % ruby -e 'def g(d) Dir.chdir(d) { Dir["**/*.{c,h,inc,dmyh}"] } end; puts((g("repo_source_dir_after_build") - g("repo_source_dir_original")).sort)'
+FILES_IN_SOURCE_DIRECTORY = %w[
+  revision.h
+]
+
+# Files built in the build directory (except extconf.h).
+# They can be referenced as $(topdir)/filename.
+# % ruby -e 'def g(d) Dir.chdir(d) { Dir["**/*.{c,h,inc,dmyh}"] } end; puts(g("tarball_build_dir").reject {|f| %r{/extconf.h\z} =~ f }.sort)'
+FILES_IN_BUILD_DIRECTORY = %w[
   encdb.h
-  id.c
-  id.h
-  lex.c
-  miniprelude.c
-  newline.c
-  parse.c
-  parse.h
-  prelude.c
+  ext/etc/constdefs.h
+  ext/socket/constdefs.c
+  ext/socket/constdefs.h
   probes.h
   transdb.h
   verconf.h
 ]
 
-# Multiple files with one filename.
+# They are built in the build directory if the source is obtained from the repository.
+# However they are pre-built for tarball and they exist in the source directory extracted from the tarball.
+# % ruby -e 'def g(d) Dir.chdir(d) { Dir["**/*.{c,h,inc,dmyh}"] } end; puts((g("repo_build_dir") & g("tarball_source_dir_original")).sort)'
+FILES_NEED_VPATH = %w[
+  ext/rbconfig/sizeof/sizes.c
+  ext/ripper/eventids1.c
+  ext/ripper/eventids2table.c
+  ext/ripper/ripper.c
+  golf_prelude.c
+  id.c
+  id.h
+  insns.inc
+  insns_info.inc
+  known_errors.inc
+  lex.c
+  miniprelude.c
+  newline.c
+  node_name.inc
+  opt_sc.inc
+  optinsn.inc
+  optunifs.inc
+  parse.c
+  parse.h
+  prelude.c
+  probes.dmyh
+  vm.inc
+  vmtc.inc
+
+  enc/trans/big5.c
+  enc/trans/chinese.c
+  enc/trans/emoji.c
+  enc/trans/emoji_iso2022_kddi.c
+  enc/trans/emoji_sjis_docomo.c
+  enc/trans/emoji_sjis_kddi.c
+  enc/trans/emoji_sjis_softbank.c
+  enc/trans/escape.c
+  enc/trans/gb18030.c
+  enc/trans/gbk.c
+  enc/trans/iso2022.c
+  enc/trans/japanese.c
+  enc/trans/japanese_euc.c
+  enc/trans/japanese_sjis.c
+  enc/trans/korean.c
+  enc/trans/single_byte.c
+  enc/trans/utf8_mac.c
+  enc/trans/utf_16_32.c
+]
+
+# Multiple files with same filename.
 # It is not good idea to refer them using VPATH.
 FILES_SAME_NAME = %w[
   include/ruby.h
@@ -56,6 +161,8 @@ FILES_SAME_NAME = %w[
   include/ruby/version.h
 ]
 
+# Other source files exist in the source directory.
+
 def in_makefile(target, source)
   target = target.to_s
   source = source.to_s
@@ -63,9 +170,10 @@ def in_makefile(target, source)
   when %r{\A[^/]*\z}
     target2 = "#{target.sub(/\.o\z/, '.$(OBJEXT)')}"
     case source
+    when *FILES_IN_SOURCE_DIRECTORY then source2 = "$(top_srcdir)/#{source}"
+    when *FILES_IN_BUILD_DIRECTORY then source2 = "{$(VPATH)}#{source}" # VPATH is not used now but it may changed in future.
     when *FILES_NEED_VPATH then source2 = "{$(VPATH)}#{source}"
     when *FILES_SAME_NAME then source2 = "$(top_srcdir)/#{source}"
-    when 'revision.h' then source2 = '$(srcdir)/revision.h' # This file is always generated in $(srcdir).
     when 'thread_pthread.c' then source2 = '{$(VPATH)}thread_$(THREAD_MODEL).c'
     when 'thread_pthread.h' then source2 = '{$(VPATH)}thread_$(THREAD_MODEL).h'
     when %r{\A[^/]*\z} then source2 = "{$(VPATH)}#{File.basename source}"
@@ -81,6 +189,8 @@ def in_makefile(target, source)
   when %r{\Aenc/}
     target2 = "#{target.sub(/\.o\z/, '.$(OBJEXT)')}"
     case source
+    when *FILES_IN_SOURCE_DIRECTORY then source2 = "$(top_srcdir)/#{source}"
+    when *FILES_IN_BUILD_DIRECTORY then source2 = source
     when *FILES_NEED_VPATH then source2 = source
     when *FILES_SAME_NAME then source2 = "$(top_srcdir)/#{source}"
     when %r{\A\.ext/include/[^/]+/ruby/} then source2 = $'
@@ -94,8 +204,11 @@ def in_makefile(target, source)
       warn "warning: not found: #{File.dirname(target)}/extconf.rb"
     end
     target2 = File.basename(target)
+    relpath = Pathname(source).relative_path_from(Pathname(target).dirname).to_s
     case source
-    when *FILES_NEED_VPATH then source2 = "{$(VPATH)}#{source}"
+    when *FILES_IN_SOURCE_DIRECTORY then source2 = "$(top_srcdir)/#{source}"
+    when *FILES_IN_BUILD_DIRECTORY then source2 = relpath
+    when *FILES_NEED_VPATH then source2 = "{$(VPATH)}#{File.basename source}"
     when *FILES_SAME_NAME then source2 = "$(top_srcdir)/#{source}"
     when %r{\A\.ext/include/[^/]+/ruby/} then source2 = "$(arch_hdrdir)/ruby/#{$'}"
     when %r{\Ainclude/} then source2 = "$(hdrdir)/#{$'}"
