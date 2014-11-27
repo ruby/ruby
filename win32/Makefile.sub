@@ -362,6 +362,9 @@ EXTOBJS = ext/extinit.$(OBJEXT)
 ! if !defined(ENCSTATIC)
 ENCSTATIC = static
 ! endif
+!else
+ENCOBJS = dmyenc.$(OBJEXT)
+EXTOBJS = dmyext.$(OBJEXT)
 !endif
 
 arch_hdrdir = $(EXTOUT)/include/$(arch)

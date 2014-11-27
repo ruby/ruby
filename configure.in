@@ -3240,6 +3240,9 @@ AS_CASE([",$EXTSTATIC,"], [,static,|*,enc,*], [
   EXTOBJS='ext/extinit.$(OBJEXT)'
   AC_DEFINE_UNQUOTED(EXTSTATIC, 1)
   AC_SUBST(ENCSTATIC, static)
+], [
+  ENCOBJS='dmyenc.$(OBJEXT)'
+  EXTOBJS='dmyext.$(OBJEXT)'
 ])
 AC_SUBST(ENCOBJS)
 AC_SUBST(EXTOBJS)

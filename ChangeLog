@@ -1,3 +1,8 @@
+Fri Nov 28 05:02:29 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dmyenc.c (Init_enc): separate from dmyext.c for statically
+	  linked extension excluding encoding libraries.
+
 Thu Nov 27 21:58:30 2014  Tanaka Akira  <akr@fsij.org>
 
 	* common.mk (miniprelude.c): It does not depend on prelude.rb now.
