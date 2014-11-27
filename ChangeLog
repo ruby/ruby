@@ -1,3 +1,8 @@
+Thu Nov 27 17:31:58 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (prelude.c): no longer depends on miniruby, since not
+	  depending on rbconfig.rb.
+
 Thu Nov 27 17:12:14 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (miniprelude.c): miniruby needs no preludes.
