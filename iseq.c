@@ -1889,6 +1889,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 	rb_ary_push(body, ary);
 	pos += RARRAY_LENINT(ary); /* reject too huge data */
     }
+    RB_GC_GUARD(nbody);
 
     st_free_table(labels_table);
 
