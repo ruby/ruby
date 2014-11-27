@@ -329,8 +329,10 @@ rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
 	    trace_arg->self != rb_mRubyVMFrozenCore /* skip special methods. TODO: remove it. */) {
 	    const VALUE errinfo = th->errinfo;
 	    const int outer_state = th->state;
-	    const VALUE old_recursive = rb_threadptr_reset_recursive_data(th);
+	    const VALUE old_recursive = th->local_storage_recursive_hash;
 	    int state = 0;
+
+	    th->local_storage_recursive_hash = Qnil;
 	    th->state = 0;
 	    th->errinfo = Qnil;
 
@@ -350,7 +352,7 @@ rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
 	  terminate:
 	    th->trace_arg = 0;
 	    th->vm->trace_running--;
-	    rb_threadptr_restore_recursive_data(th, old_recursive);
+	    th->local_storage_recursive_hash = old_recursive;
 
 	    if (state) {
 		if (pop_p) {

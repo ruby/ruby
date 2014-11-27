@@ -1,3 +1,22 @@
+Thu Nov 27 10:51:59 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: add rb_thread_t::local_storage_recursive_hash
+	  to speed up Thread#[:__recursive_key__] access.
+	  [Bug #10511]
+
+	* thread.c (threadptr_local_aref): add fast path for
+	  :__recursive_data__.
+
+	* thread.c (threadptr_recursive_hash, threadptr_recursive_hash_set):
+	  add special accessor for recursive hash.
+
+	* cont.c: store/restore local_storage_recursive_hash.
+
+	* vm.c: init and mark local_storage_recursive_hash.
+
+	* vm_trace.c (rb_threadptr_exec_event_hooks_orig): clear and restore
+	  local_storage_recursive_hash directly.
+
 Thu Nov 27 07:11:00 2014  Eric Wong  <e@80x24.org>
 
 	* compile.c (iseq_calc_param_size): hoist out of iseq_set_arguments

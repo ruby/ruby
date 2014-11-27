@@ -2753,15 +2753,25 @@ rb_thread_inspect(VALUE thread)
     return rb_thread_inspect_msg(thread, 1, 1, 1);
 }
 
+/* variables for recursive traversals */
+static ID recursive_key;
+
 static VALUE
 threadptr_local_aref(rb_thread_t *th, ID id)
 {
-    st_data_t val;
-
-    if (th->local_storage && st_lookup(th->local_storage, id, &val)) {
-	return (VALUE)val;
+    if (id == recursive_key) {
+	return th->local_storage_recursive_hash;
     }
-    return Qnil;
+    else {
+	st_data_t val;
+
+	if (th->local_storage && st_lookup(th->local_storage, id, &val)) {
+	    return (VALUE)val;
+	}
+	else {
+	    return Qnil;
+	}
+    }
 }
 
 VALUE
@@ -2843,16 +2853,22 @@ rb_thread_aref(VALUE thread, VALUE key)
 static VALUE
 threadptr_local_aset(rb_thread_t *th, ID id, VALUE val)
 {
-    if (NIL_P(val)) {
+    if (id == recursive_key) {
+	th->local_storage_recursive_hash = val;
+	return val;
+    }
+    else if (NIL_P(val)) {
 	if (!th->local_storage) return Qnil;
 	st_delete_wrap(th->local_storage, id);
 	return Qnil;
     }
-    if (!th->local_storage) {
-	th->local_storage = st_init_numtable();
+    else {
+	if (!th->local_storage) {
+	    th->local_storage = st_init_numtable();
+	}
+	st_insert(th->local_storage, id, val);
+	return val;
     }
-    st_insert(th->local_storage, id, val);
-    return val;
 }
 
 VALUE
@@ -4659,15 +4675,24 @@ rb_thread_shield_destroy(VALUE self)
     return rb_thread_shield_waiting(self) > 0 ? Qtrue : Qfalse;
 }
 
-/* variables for recursive traversals */
-static ID recursive_key;
-
 static VALUE
 ident_hash_new(void)
 {
     VALUE hash = rb_hash_new();
     rb_hash_tbl_raw(hash)->type = &st_hashtype_num;
     return hash;
+}
+
+static VALUE
+threadptr_recursive_hash(rb_thread_t *th)
+{
+    return th->local_storage_recursive_hash;
+}
+
+static void
+threadptr_recursive_hash_set(rb_thread_t *th, VALUE hash)
+{
+    th->local_storage_recursive_hash = hash;
 }
 
 /*
@@ -4679,12 +4704,13 @@ ident_hash_new(void)
 static VALUE
 recursive_list_access(void)
 {
-    volatile VALUE hash = rb_thread_local_aref(rb_thread_current(), recursive_key);
+    rb_thread_t *th = GET_THREAD();
+    VALUE hash = threadptr_recursive_hash(th);
     VALUE sym = ID2SYM(rb_frame_this_func());
     VALUE list;
     if (NIL_P(hash) || !RB_TYPE_P(hash, T_HASH)) {
 	hash = ident_hash_new();
-	rb_thread_local_aset(rb_thread_current(), recursive_key, hash);
+	threadptr_recursive_hash_set(th, hash);
 	list = Qnil;
     }
     else {
@@ -4695,20 +4721,6 @@ recursive_list_access(void)
 	rb_hash_aset(hash, sym, list);
     }
     return list;
-}
-
-VALUE
-rb_threadptr_reset_recursive_data(rb_thread_t *th)
-{
-    VALUE old = threadptr_local_aref(th, recursive_key);
-    threadptr_local_aset(th, recursive_key, Qnil);
-    return old;
-}
-
-void
-rb_threadptr_restore_recursive_data(rb_thread_t *th, VALUE old)
-{
-    threadptr_local_aset(th, recursive_key, old);
 }
 
 /*
