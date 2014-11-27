@@ -1320,7 +1320,7 @@ int rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optiona
 
 VALUE rb_extract_keywords(VALUE *original_hash)
 
-  Extrancts pairs whose key is a symbol into a new hash from a hash
+  Extracts pairs whose key is a symbol into a new hash from a hash
   object referred by +original_hash+.  If the original hash contains
   non-symbol keys, then they are copied to another hash and the new hash
   is stored through +original_hash+, else 0 is stored.
