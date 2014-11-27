@@ -3268,15 +3268,22 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	return COMPILE_OK;
     }
 
-    iseq->compile_data->last_line = line = (int)nd_line(node);
+    line = (int)nd_line(node);
+
+    if (iseq->compile_data->last_line == line) {
+	/* ignore */
+    }
+    else {
+	if (node->flags & NODE_FL_NEWLINE) {
+	    iseq->compile_data->last_line = line;
+	    ADD_TRACE(ret, line, RUBY_EVENT_LINE);
+	    saved_last_element = ret->last;
+	}
+    }
+
     debug_node_start(node);
 
     type = nd_type(node);
-
-    if (node->flags & NODE_FL_NEWLINE) {
-	ADD_TRACE(ret, line, RUBY_EVENT_LINE);
-	saved_last_element = ret->last;
-    }
 
     switch (type) {
       case NODE_BLOCK:{

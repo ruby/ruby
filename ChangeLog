@@ -1,3 +1,10 @@
+Thu Nov 27 19:59:49 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_compile_each): remove duplicated line event.
+	  [Bug #10449]
+
+	* test/ruby/test_settracefunc.rb: add and fix tests.
+
 Thu Nov 27 19:04:50 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_args.c: fix backtrace location for keyword related exceptions.
