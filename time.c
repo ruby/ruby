@@ -3085,7 +3085,7 @@ time_utc_or_local(int argc, VALUE *argv, int utc_p, VALUE klass)
  *    Time.utc(year, month, day, hour, min) -> time
  *    Time.utc(year, month, day, hour, min, sec_with_frac) -> time
  *    Time.utc(year, month, day, hour, min, sec, usec_with_frac) -> time
- *    Time.utc(sec, min, hour, day, month, year, wday, yday, isdst, tz) -> time
+ *    Time.utc(sec, min, hour, day, month, year, dummy, dummy, dummy, dummy) -> time
  *    Time.gm(year) -> time
  *    Time.gm(year, month) -> time
  *    Time.gm(year, month, day) -> time
@@ -3093,7 +3093,7 @@ time_utc_or_local(int argc, VALUE *argv, int utc_p, VALUE klass)
  *    Time.gm(year, month, day, hour, min) -> time
  *    Time.gm(year, month, day, hour, min, sec_with_frac) -> time
  *    Time.gm(year, month, day, hour, min, sec, usec_with_frac) -> time
- *    Time.gm(sec, min, hour, day, month, year, wday, yday, isdst, tz) -> time
+ *    Time.gm(sec, min, hour, day, month, year, dummy, dummy, dummy, dummy) -> time
  *
  *  Creates a Time object based on given values, interpreted as UTC (GMT). The
  *  year must be specified. Other values default to the minimum value
@@ -3123,7 +3123,7 @@ time_s_mkutc(int argc, VALUE *argv, VALUE klass)
  *   Time.local(year, month, day, hour, min) -> time
  *   Time.local(year, month, day, hour, min, sec_with_frac) -> time
  *   Time.local(year, month, day, hour, min, sec, usec_with_frac) -> time
- *   Time.local(sec, min, hour, day, month, year, wday, yday, isdst, tz) -> time
+ *   Time.local(sec, min, hour, day, month, year, dummy, dummy, isdst, dummy) -> time
  *   Time.mktime(year) -> time
  *   Time.mktime(year, month) -> time
  *   Time.mktime(year, month, day) -> time
@@ -3131,7 +3131,7 @@ time_s_mkutc(int argc, VALUE *argv, VALUE klass)
  *   Time.mktime(year, month, day, hour, min) -> time
  *   Time.mktime(year, month, day, hour, min, sec_with_frac) -> time
  *   Time.mktime(year, month, day, hour, min, sec, usec_with_frac) -> time
- *   Time.mktime(sec, min, hour, day, month, year, wday, yday, isdst, tz) -> time
+ *   Time.mktime(sec, min, hour, day, month, year, dummy, dummy, isdst, dummy) -> time
  *
  *  Same as Time::gm, but interprets the values in the
  *  local time zone.

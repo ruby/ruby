@@ -1,3 +1,11 @@
+Thu Nov 27 12:46:38 2014  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (time_s_mkutc): [DOC] Time.utc's 10 arguments form
+	  doesn't examine wday, yday, isdst and tz.
+	  (time_s_mktime): [DOC] Time.mktime's 10 arguments form
+	  doesn't examine wday, yday and tz.
+	  Suggested by naruse.
+
 Thu Nov 27 11:45:33 2014  Eric Wong  <e@80x24.org>
 
 	* iseq.c (iseq_data_to_ary): add missing GC guard
