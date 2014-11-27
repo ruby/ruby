@@ -772,7 +772,7 @@ known_errors.inc: $(srcdir)/template/known_errors.inc.tmpl $(srcdir)/defs/known_
 $(MINIPRELUDE_C): $(COMPILE_PRELUDE) {$(srcdir)}prelude.rb
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb -I$(srcdir) -o $@ \
-		$(srcdir)/template/prelude.c.tmpl prelude.rb
+		$(srcdir)/template/prelude.c.tmpl
 
 $(PRELUDE_C): $(COMPILE_PRELUDE) \
 	   {$(srcdir)}lib/rubygems/defaults.rb \
