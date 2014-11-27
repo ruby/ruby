@@ -895,12 +895,9 @@ rb_enc_compatible(VALUE str1, VALUE str2)
 
     if (!isstr1) {
 	VALUE tmp = str1;
-	int idx0 = idx1;
+	int idx0 = isstr1;
 	str1 = str2;
 	str2 = tmp;
-	idx1 = idx2;
-	idx2 = idx0;
-	idx0 = isstr1;
 	isstr1 = isstr2;
 	isstr2 = idx0;
     }
