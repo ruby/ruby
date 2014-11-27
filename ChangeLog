@@ -1,3 +1,27 @@
+Thu Nov 27 19:04:50 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_args.c: fix backtrace location for keyword related exceptions.
+
+	  For example, the following program
+	    def foo(k1: 1); end # line 1
+            foo(k2: 2)          # line 2
+	  causes "unknown keyword: k2 (ArgumentError)".
+
+	  Before this patch, the backtrace location is only line 2.
+	  However, error should be located at line 1 (over line 2 in
+	  stack trace). This patch fix this problem.
+
+	* class.c (rb_keyword_error_new): separate exception creation logic
+	  from rb_keyword_error(), to use in vm_args.c.
+
+	* vm_insnhelper.c (rb_arg_error_new): rename to rb_arity_error_new().
+
+	* vm_args.c (argument_arity_error): rename to argument_arity_error().
+
+	* vm_args.c (arugment_kw_error): added to fix backtrace.
+
+	* test/ruby/test_keyword.rb: add tests.
+
 Thu Nov 27 17:31:58 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (prelude.c): no longer depends on miniruby, since not

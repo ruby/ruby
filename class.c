@@ -1857,11 +1857,12 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
     return argc;
 }
 
-NORETURN(void rb_keyword_error(const char *error, VALUE keys));
-void
-rb_keyword_error(const char *error, VALUE keys)
+VALUE
+rb_keyword_error_new(const char *error, VALUE keys)
 {
     const char *msg = "";
+    VALUE error_message;
+
     if (RARRAY_LEN(keys) == 1) {
 	keys = RARRAY_AREF(keys, 0);
     }
@@ -1869,7 +1870,17 @@ rb_keyword_error(const char *error, VALUE keys)
 	keys = rb_ary_join(keys, rb_usascii_str_new2(", "));
 	msg = "s";
     }
-    rb_raise(rb_eArgError, "%s keyword%s: %"PRIsVALUE, error, msg, keys);
+
+    error_message = rb_sprintf("%s keyword%s: %"PRIsVALUE, error, msg, keys);
+
+    return rb_exc_new_str(rb_eArgError, error_message);
+}
+
+NORETURN(static void rb_keyword_error(const char *error, VALUE keys));
+static void
+rb_keyword_error(const char *error, VALUE keys)
+{
+    rb_exc_raise(rb_keyword_error_new(error, keys));
 }
 
 NORETURN(static void unknown_keyword_error(VALUE hash, const ID *table, int keywords));

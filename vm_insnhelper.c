@@ -115,7 +115,7 @@ vm_pop_frame(rb_thread_t *th)
 
 /* method dispatch */
 static inline VALUE
-rb_arg_error_new(int argc, int min, int max)
+rb_arity_error_new(int argc, int min, int max)
 {
     VALUE err_mess = 0;
     if (min == max) {
@@ -133,7 +133,7 @@ rb_arg_error_new(int argc, int min, int max)
 void
 rb_error_arity(int argc, int min, int max)
 {
-    rb_exc_raise(rb_arg_error_new(argc, min, max));
+    rb_exc_raise(rb_arity_error_new(argc, min, max));
 }
 
 /* svar */
@@ -1064,7 +1064,7 @@ vm_callee_setup_block_arg(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t *
 		ci->argc = vm_callee_setup_block_arg_arg0_splat(cfp, iseq, argv, arg0);
 	    }
 	    else {
-		argument_error(iseq, ci->argc, iseq->param.lead_num, iseq->param.lead_num);
+		argument_arity_error(th, iseq, ci->argc, iseq->param.lead_num, iseq->param.lead_num);
 	    }
 	}
 
@@ -1084,7 +1084,7 @@ vm_callee_setup_arg(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t *iseq, 
 	CALLER_SETUP_ARG(cfp, ci); /* splat arg */
 
 	if (ci->argc != iseq->param.lead_num) {
-	    argument_error(iseq, ci->argc, iseq->param.lead_num, iseq->param.lead_num);
+	    argument_arity_error(th, iseq, ci->argc, iseq->param.lead_num, iseq->param.lead_num);
 	}
 
 	ci->aux.opt_pc = 0;
