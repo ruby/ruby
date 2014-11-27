@@ -2241,9 +2241,9 @@ variable.$(OBJEXT): {$(VPATH)}st.h
 variable.$(OBJEXT): {$(VPATH)}subst.h
 variable.$(OBJEXT): {$(VPATH)}util.h
 variable.$(OBJEXT): {$(VPATH)}variable.c
-version.$(OBJEXT): $(srcdir)/revision.h
 version.$(OBJEXT): $(top_srcdir)/include/ruby/ruby.h
 version.$(OBJEXT): $(top_srcdir)/include/ruby/version.h
+version.$(OBJEXT): $(top_srcdir)/revision.h
 version.$(OBJEXT): $(top_srcdir)/version.h
 version.$(OBJEXT): {$(VPATH)}config.h
 version.$(OBJEXT): {$(VPATH)}defines.h
