@@ -120,8 +120,9 @@ open(ARGV[0], 'wb') {|f|
   f.puts mkin, dep
 }
 if MODULE_TYPE == :static
-  erb = ERB.new(File.read(File.join($srcdir, "encinit.c.erb")), nil, '%-')
-  erb.filename = "enc/encinit.c.cerb"
+  filename = "encinit.c.erb"
+  erb = ERB.new(File.read(File.join($srcdir, filename)), nil, '%-')
+  erb.filename = "enc/#{filename}"
   tmp = erb.result(binding)
   begin
     Dir.mkdir 'enc'
