@@ -132,6 +132,9 @@ with all sufficient information, see the ChangeLog file.
 
 === Stdlib updates (outstanding ones only)
 
+* Continuation
+  * callcc is obsolete. use Fiber instead.
+
 * Digest
 
   * Digest() should now be thread-safe.  If you have a problem with
