@@ -38,7 +38,7 @@ Thu Nov 27 19:04:50 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_args.c (argument_arity_error): rename to argument_arity_error().
 
-	* vm_args.c (arugment_kw_error): added to fix backtrace.
+	* vm_args.c (argument_kw_error): added to fix backtrace.
 
 	* test/ruby/test_keyword.rb: add tests.
 

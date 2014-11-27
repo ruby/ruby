@@ -10,7 +10,7 @@
 
 NORETURN(static void raise_argument_error(rb_thread_t *th, const rb_iseq_t *iseq, const VALUE exc));
 NORETURN(static void argument_arity_error(rb_thread_t *th, const rb_iseq_t *iseq, const int miss_argc, const int min_argc, const int max_argc));
-NORETURN(static void arugment_kw_error(rb_thread_t *th, const rb_iseq_t *iseq, const char *error, const VALUE keys));
+NORETURN(static void argument_kw_error(rb_thread_t *th, const rb_iseq_t *iseq, const char *error, const VALUE keys));
 VALUE rb_keyword_error_new(const char *error, VALUE keys); /* class.c */
 
 struct args_info {
@@ -404,7 +404,7 @@ args_setup_kw_parameters(VALUE* const passed_values, const int passed_keyword_le
 	}
     }
 
-    if (missing) arugment_kw_error(GET_THREAD(), iseq, "missing", missing);
+    if (missing) argument_kw_error(GET_THREAD(), iseq, "missing", missing);
 
     for (di=0; i<key_num; i++, di++) {
 	if (args_setup_kw_parameters_lookup(acceptable_keywords[i], &locals[i], passed_keywords, passed_values, passed_keyword_len)) {
@@ -445,7 +445,7 @@ args_setup_kw_parameters(VALUE* const passed_values, const int passed_keyword_le
     else {
 	if (found != passed_keyword_len) {
 	    VALUE keys = make_unused_kw_hash(passed_keywords, passed_keyword_len, passed_values, TRUE);
-	    arugment_kw_error(GET_THREAD(), iseq, "unknown", keys);
+	    argument_kw_error(GET_THREAD(), iseq, "unknown", keys);
 	}
     }
 
@@ -691,7 +691,7 @@ argument_arity_error(rb_thread_t *th, const rb_iseq_t *iseq, const int miss_argc
 }
 
 static void
-arugment_kw_error(rb_thread_t *th, const rb_iseq_t *iseq, const char *error, const VALUE keys)
+argument_kw_error(rb_thread_t *th, const rb_iseq_t *iseq, const char *error, const VALUE keys)
 {
     raise_argument_error(th, iseq, rb_keyword_error_new(error, keys));
 }
