@@ -53,11 +53,14 @@ class TestConst < Test::Unit::TestCase
     c.const_set(name, 1)
     prev_line = __LINE__ - 1
     EnvUtil.with_default_internal(Encoding::UTF_8) do
-      assert_output(nil, <<-WARNING) {c.const_set(name, 2)}
+      assert_warning(<<-WARNING) {c.const_set(name, 2)}
 #{__FILE__}:#{__LINE__-1}: warning: already initialized constant #{c}::#{name}
 #{__FILE__}:#{prev_line}: warning: previous definition of #{name} was here
 WARNING
     end
+  end
+
+  def test_redefinition_memory_leak
     code = <<-PRE
 olderr = $stderr.dup
 $stderr.reopen(File::NULL, "wb")
