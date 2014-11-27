@@ -188,6 +188,11 @@ with all sufficient information, see the ChangeLog file.
 
     http://docs.seattlerb.org/rubygems/History_txt.html#label-2.4.2+%2F+2014-10-01
 
+* TSort
+  * TSort.tsort_each, TSort.each_strongly_connected_component and
+    TSort.each_strongly_connected_component_from returns an enumerator if
+    no block given.
+
 * XMLRPC
   * Added new parser class named LibXMLStreamParser.
 
