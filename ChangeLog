@@ -41,7 +41,7 @@ Tue Oct 28 22:30:21 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: remove apple-gcc4.2 from CC candidates.
 
-火 10 28 22:19:44 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+Tue Oct 28 22:19:44 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* version.h (RUBY_VERSION): bump RUBY_VERSION to 2.1.5.
 
