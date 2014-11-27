@@ -1,3 +1,8 @@
+Thu Nov 27 21:49:49 2014  Tanaka Akira  <akr@fsij.org>
+
+	* tool/update-deps: List up files built always in the source directory
+	  and source files built always in the build directory.
+
 Thu Nov 27 21:24:55 2014  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* NEWS: add obsolete callcc.
