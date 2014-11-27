@@ -769,7 +769,7 @@ known_errors.inc: $(srcdir)/template/known_errors.inc.tmpl $(srcdir)/defs/known_
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb -c -o $@ $(srcdir)/template/known_errors.inc.tmpl $(srcdir)/defs/known_errors.def
 
-$(MINIPRELUDE_C): $(COMPILE_PRELUDE) {$(srcdir)}prelude.rb
+$(MINIPRELUDE_C): $(COMPILE_PRELUDE)
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb -I$(srcdir) -o $@ \
 		$(srcdir)/template/prelude.c.tmpl
