@@ -466,6 +466,8 @@ eom
           next unless a > 0 and b > 0
           assert_operator(a.fdiv(b), :<, limit, message(message) {"#{n}: #{b} => #{a}"})
         end
+      rescue LoadError
+        skip
       end
 
       def assert_is_minus_zero(f)
