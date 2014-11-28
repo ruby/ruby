@@ -4551,7 +4551,6 @@ rb_file_flock(VALUE obj, VALUE operation)
     }
     return INT2FIX(0);
 }
-#undef flock
 
 static void
 test_check(int n, int argc, VALUE *argv)
