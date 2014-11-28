@@ -673,4 +673,16 @@ end.join
     assert_equal(:foo, e.name)
     assert_equal([1, 2], e.args)
   end
+
+  def test_output_string_encoding
+    # "\x82\xa0" in cp932 is "\u3042" (Japanese hiragana 'a')
+    # change $stderr to force calling rb_io_write() instead of fwrite()
+    assert_in_out_err(["-Eutf-8:cp932"], '$stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
+      assert_equal 1, outs.size
+      assert_equal 0, errs.size
+      err = outs.first.force_encoding('utf-8')
+      assert err.valid_encoding?, 'must be valid encoding'
+      assert_match /\u3042/, err
+    end
+  end
 end
