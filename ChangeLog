@@ -1,3 +1,8 @@
+Fri Nov 28 16:36:34 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (symbol_list): fix the node type of literal symbol list
+	  with no interpolation.  [ruby-core:66343]
+
 Fri Nov 28 16:28:07 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/etc/etc.c (etc_getlogin): set login name encoding properly.
