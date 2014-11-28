@@ -101,7 +101,7 @@ def calc_each data
   data.shift # remove min
 
   data.inject(0.0){|res, e|
-    res += e
+    res + e
   } / data.size
 end
 
@@ -133,7 +133,7 @@ def stat
   }
   # pp total
   total[0].each_with_index{|e, idx|
-    bm = e[0]
+    #bm = e[0]
     # print "#{bm}\t"
     total.each{|st|
       print st[idx][1], "\t"
