@@ -472,6 +472,16 @@ rb_w32_system_tmpdir(WCHAR *path, UINT len)
     return p - path + numberof(temp) - 1;
 }
 
+static UINT filecp(void);
+static WCHAR *mbstr_to_wstr(UINT, const char *, int, long *);
+static char *wstr_to_mbstr(UINT, const WCHAR *, int, long *);
+#define acp_to_wstr(str, plen) mbstr_to_wstr(CP_ACP, str, -1, plen)
+#define wstr_to_acp(str, plen) wstr_to_mbstr(CP_ACP, str, -1, plen)
+#define filecp_to_wstr(str, plen) mbstr_to_wstr(filecp(), str, -1, plen)
+#define wstr_to_filecp(str, plen) wstr_to_mbstr(filecp(), str, -1, plen)
+#define utf8_to_wstr(str, plen) mbstr_to_wstr(CP_UTF8, str, -1, plen)
+#define wstr_to_utf8(str, plen) wstr_to_mbstr(CP_UTF8, str, -1, plen)
+
 /* License: Ruby's */
 static void
 init_env(void)
@@ -518,11 +528,15 @@ init_env(void)
 	if (!GetEnvironmentVariableW(L"USERNAME", env, numberof(env)) &&
 	    !GetUserNameW(env, (len = numberof(env), &len))) {
 	    NTLoginName = "<Unknown>";
-	    return;
 	}
-	set_env_val(L"USER");
+	else {
+	    set_env_val(L"USER");
+	    NTLoginName = wstr_to_mbstr(CP_UTF8, env, -1, NULL);
+	}
     }
-    NTLoginName = strdup(rb_w32_getenv("USER"));
+    else {
+	NTLoginName = wstr_to_mbstr(CP_UTF8, env, -1, NULL);
+    }
 
     if (!GetEnvironmentVariableW(TMPDIR, env, numberof(env)) &&
 	!GetEnvironmentVariableW(L"TMP", env, numberof(env)) &&
@@ -1164,16 +1178,6 @@ is_batch(const char *cmd)
     if (strcasecmp(cmd, "cmd") == 0) return 1;
     return 0;
 }
-
-static UINT filecp(void);
-static WCHAR *mbstr_to_wstr(UINT, const char *, int, long *);
-static char *wstr_to_mbstr(UINT, const WCHAR *, int, long *);
-#define acp_to_wstr(str, plen) mbstr_to_wstr(CP_ACP, str, -1, plen)
-#define wstr_to_acp(str, plen) wstr_to_mbstr(CP_ACP, str, -1, plen)
-#define filecp_to_wstr(str, plen) mbstr_to_wstr(filecp(), str, -1, plen)
-#define wstr_to_filecp(str, plen) wstr_to_mbstr(filecp(), str, -1, plen)
-#define utf8_to_wstr(str, plen) mbstr_to_wstr(CP_UTF8, str, -1, plen)
-#define wstr_to_utf8(str, plen) wstr_to_mbstr(CP_UTF8, str, -1, plen)
 
 /* License: Artistic or GPL */
 rb_pid_t

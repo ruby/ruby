@@ -1,3 +1,8 @@
+Fri Nov 28 16:28:07 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/etc/etc.c (etc_getlogin): set login name encoding properly.
+	  [ruby-core:66163] [Bug #10493]
+
 Fri Nov 28 16:18:44 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (method_proc): the receiver of binding from method should
