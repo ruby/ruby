@@ -162,14 +162,14 @@ error_print(void)
 		tail++;		/* skip newline */
 	    }
 	    warn_print(": ");
-	    warn_print2(einfo, len);
+	    warn_print_str(tail ? rb_str_subseq(e, 0, len) : e);
 	    if (epath) {
 		warn_print(" (");
 		warn_print_str(epath);
 		warn_print(")\n");
 	    }
 	    if (tail) {
-		warn_print2(tail, elen - len - 1);
+		warn_print_str(rb_str_substr(e, tail - einfo, elen - len - 1));
 	    }
 	    if (tail ? einfo[elen-1] != '\n' : !epath) warn_print2("\n", 1);
 	}

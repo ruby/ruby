@@ -7260,6 +7260,11 @@ rb_write_error_str(VALUE mesg)
     /* a stopgap measure for the time being */
     if (rb_stderr == orig_stderr || RFILE(orig_stderr)->fptr->fd < 0) {
 	size_t len = (size_t)RSTRING_LEN(mesg);
+#ifdef _WIN32
+	if (isatty(fileno(stderr))) {
+	    if (rb_w32_write_console(mesg, fileno(stderr)) > 0) return;
+	}
+#endif
 	if (fwrite(RSTRING_PTR(mesg), sizeof(char), len, stderr) < len) {
 	    RB_GC_GUARD(mesg);
 	    return;

@@ -1,3 +1,10 @@
+Sat Nov 29 06:09:44 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* eval_error.c (error_print): respect the encoding of the message.
+
+	* io.c (rb_write_error_str): use rb_w32_write_console() on Windows
+	  if stderr is a tty.
+
 Fri Nov 28 05:10:23 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (--with-setup): add option to select ext/Setup file.
