@@ -1,3 +1,13 @@
+Fri Nov 28 16:05:09 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (copy_stream_body): should write in binary mode.  based on a
+	  patch by godfat (Lin Jen-Shin) at [ruby-core:56556].
+	  [ruby-core:56518] [Bug #8767]
+
+Fri Nov 28 16:05:09 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (copy_stream_body): move common open flags.
+
 Fri Nov 28 16:01:44 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/rubygems/ssl_certs/AddTrustExternalCARoot{-2048,}.pem: add newer
