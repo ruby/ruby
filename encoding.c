@@ -1547,9 +1547,6 @@ set_default_internal(VALUE klass, VALUE encoding)
  * Encoding.find("locale") can be used.
  *
  */
-VALUE
-rb_locale_charmap(VALUE klass);
-
 static void
 set_encoding_const(const char *name, rb_encoding *enc)
 {
