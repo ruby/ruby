@@ -1,3 +1,8 @@
+Fri Nov 28 16:12:22 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb (Net::HTTP.proxy_uri): use initializer instead
+	  of parser to handle IPv6 address. [Bug #9129]
+
 Fri Nov 28 16:05:09 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (copy_stream_body): should write in binary mode.  based on a
