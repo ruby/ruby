@@ -1,3 +1,8 @@
+Fri Nov 28 16:43:20 2014  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/http.rb:  Do not attempt SSL session resumption when the
+	  session is expired.  [Bug #10533]
+
 Fri Nov 28 16:36:34 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (symbol_list): fix the node type of literal symbol list
