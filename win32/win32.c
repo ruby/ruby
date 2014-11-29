@@ -2033,9 +2033,10 @@ move_to_next_entry(DIR *dirp)
 //
 /* License: Ruby's */
 static BOOL
-win32_direct_conv(const WCHAR *file, struct direct *entry, rb_encoding *dummy)
+win32_direct_conv(const WCHAR *file, struct direct *entry, const void *enc)
 {
-    if (!(entry->d_name = wstr_to_filecp(file, &entry->d_namlen)))
+    UINT cp = *((UINT *)enc);
+    if (!(entry->d_name = wstr_to_mbstr(cp, file, -1, &entry->d_namlen)))
 	return FALSE;
     return TRUE;
 }
@@ -2088,7 +2089,7 @@ rb_w32_conv_from_wstr(const WCHAR *wstr, long *lenp, rb_encoding *enc)
 
 /* License: Ruby's */
 static BOOL
-ruby_direct_conv(const WCHAR *file, struct direct *entry, rb_encoding *enc)
+ruby_direct_conv(const WCHAR *file, struct direct *entry, const void *enc)
 {
     if (!(entry->d_name = rb_w32_conv_from_wstr(file, &entry->d_namlen, enc)))
 	return FALSE;
@@ -2097,7 +2098,7 @@ ruby_direct_conv(const WCHAR *file, struct direct *entry, rb_encoding *enc)
 
 /* License: Artistic or GPL */
 static struct direct *
-readdir_internal(DIR *dirp, BOOL (*conv)(const WCHAR *, struct direct *, rb_encoding *), rb_encoding *enc)
+readdir_internal(DIR *dirp, BOOL (*conv)(const WCHAR *, struct direct *, const void *), const void *enc)
 {
     static int dummy = 0;
 
@@ -2138,8 +2139,14 @@ readdir_internal(DIR *dirp, BOOL (*conv)(const WCHAR *, struct direct *, rb_enco
 struct direct  *
 rb_w32_readdir(DIR *dirp, rb_encoding *enc)
 {
-    if (!enc || enc == rb_ascii8bit_encoding())
-	return readdir_internal(dirp, win32_direct_conv, NULL);
+    if (!enc || enc == rb_ascii8bit_encoding()) {
+	const UINT cp = filecp();
+	return readdir_internal(dirp, win32_direct_conv, &cp);
+    }
+    else if (enc == rb_utf8_encoding()) {
+	const UINT cp = CP_UTF8;
+	return readdir_internal(dirp, win32_direct_conv, &cp);
+    }
     else
 	return readdir_internal(dirp, ruby_direct_conv, enc);
 }

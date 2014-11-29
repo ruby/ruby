@@ -1,3 +1,8 @@
+Sat Nov 29 10:49:23 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (win32_direct_conv, rb_w32_readdir): convert UTF-8
+	  and filesystem code page by using Win32 API directly.
+
 Sat Nov 29 09:37:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (syserr_initialize): simplify message building and get
