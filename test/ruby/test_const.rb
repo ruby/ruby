@@ -67,6 +67,6 @@ $stderr.reopen(File::NULL, "wb")
 350000.times { FOO = :BAR }
 $stderr.reopen(olderr)
 PRE
-    assert_no_memory_leak([], '', code, 'redefined constant')
+    assert_no_memory_leak([], '', code, 'redefined constant', timeout: 30)
   end
 end
