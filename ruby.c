@@ -311,6 +311,7 @@ ruby_incpush_expand(const char *path)
     ruby_push_include(path, expand_include_path);
 }
 
+#undef UTF8_PATH
 #if defined _WIN32 || defined __CYGWIN__
 static HMODULE libruby;
 
@@ -327,6 +328,12 @@ rb_libruby_handle(void)
 {
     return libruby;
 }
+
+# define UTF8_PATH 1
+#endif
+
+#ifndef UTF8_PATH
+# define UTF8_PATH 0
 #endif
 
 void ruby_init_loadpath_safe(int safe_level);
@@ -1794,6 +1801,19 @@ set_arg0(VALUE val, ID id)
     rb_progname = rb_str_new_frozen(proc_setproctitle(rb_mProcess, val));
 }
 
+static inline VALUE
+external_str_new_cstr(const char *p)
+{
+#if UTF8_PATH
+    VALUE str = rb_utf8_str_new_cstr(p);
+    return rb_str_conv_enc_opts(str, NULL, rb_default_external_encoding(),
+				ECONV_UNDEF_REPLACE|ECONV_INVALID_REPLACE,
+				Qnil);
+#else
+    return rb_external_str_new_cstr(p);
+#endif
+}
+
 /*! Sets the current script name to this value.
  *
  * This is similar to <code>$0 = name</code> in Ruby level but also affects
@@ -1910,7 +1930,7 @@ ruby_set_argv(int argc, char **argv)
 #endif
     rb_ary_clear(av);
     for (i = 0; i < argc; i++) {
-	VALUE arg = rb_external_str_new_cstr(argv[i]);
+	VALUE arg = external_str_new_cstr(argv[i]);
 
 	OBJ_FREEZE(arg);
 	rb_ary_push(av, arg);

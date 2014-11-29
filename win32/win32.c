@@ -108,6 +108,7 @@ int rb_w32_wait_events(HANDLE *events, int num, DWORD timeout);
 static int rb_w32_open_osfhandle(intptr_t osfhandle, int flags);
 static int wstati64(const WCHAR *path, struct stati64 *st);
 VALUE rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc);
+int ruby_brace_glob_with_enc(const char *str, int flags, ruby_glob_func *func, VALUE arg, rb_encoding *enc);
 
 #define RUBY_CRITICAL(expr) do { expr; } while (0)
 
@@ -743,7 +744,7 @@ socklist_delete(SOCKET *sockp, int *flagp)
     return ret;
 }
 
-static int w32_cmdvector(const WCHAR *, char ***, UINT);
+static int w32_cmdvector(const WCHAR *, char ***, UINT, rb_encoding *);
 //
 // Initialization stuff
 //
@@ -767,7 +768,7 @@ rb_w32_sysinit(int *argc, char ***argv)
     //
     // subvert cmd.exe's feeble attempt at command line parsing
     //
-    *argc = w32_cmdvector(GetCommandLineW(), argv, CP_ACP);
+    *argc = w32_cmdvector(GetCommandLineW(), argv, CP_UTF8, rb_utf8_encoding());
 
     //
     // Now set up the correct time stuff
@@ -1486,7 +1487,7 @@ insert(const char *path, VALUE vinfo, void *enc)
 
 /* License: Artistic or GPL */
 static NtCmdLineElement **
-cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail, UINT cp)
+cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail, UINT cp, rb_encoding *enc)
 {
     char buffer[MAXPATHLEN], *buf = buffer;
     NtCmdLineElement **last = tail;
@@ -1498,7 +1499,7 @@ cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail, UINT cp)
     strlcpy(buf, patt->str, patt->len + 1);
     buf[patt->len] = '\0';
     translate_char(buf, '\\', '/', cp);
-    status = ruby_brace_glob(buf, 0, insert, (VALUE)&tail);
+    status = ruby_brace_glob_with_enc(buf, 0, insert, (VALUE)&tail, enc);
     if (buf != buffer)
 	free(buf);
 
@@ -1574,7 +1575,7 @@ skipspace(WCHAR *ptr)
 
 /* License: Artistic or GPL */
 static int
-w32_cmdvector(const WCHAR *cmd, char ***vec, UINT cp)
+w32_cmdvector(const WCHAR *cmd, char ***vec, UINT cp, rb_encoding *enc)
 {
     int globbing, len;
     int elements, strsz, done;
@@ -1742,7 +1743,7 @@ w32_cmdvector(const WCHAR *cmd, char ***vec, UINT cp)
 	curr->str = rb_w32_wstr_to_mbstr(cp, base, len, &curr->len);
 	curr->flags |= NTMALLOC;
 
-	if (globbing && (tail = cmdglob(curr, cmdtail, cp))) {
+	if (globbing && (tail = cmdglob(curr, cmdtail, cp, enc))) {
 	    cmdtail = tail;
 	}
 	else {
