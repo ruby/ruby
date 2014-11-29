@@ -329,6 +329,16 @@ rb_libruby_handle(void)
     return libruby;
 }
 
+static inline void
+translit_char_bin(char *p, int from, int to)
+{
+    while (*p) {
+	if ((unsigned char)*p == from)
+	    *p = to;
+	p++;
+    }
+}
+
 # define UTF8_PATH 1
 #endif
 
@@ -1338,7 +1348,10 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 
     opt->script_name = rb_str_new_cstr(opt->script);
     opt->script = RSTRING_PTR(opt->script_name);
-#if defined DOSISH || defined __CYGWIN__
+
+#if _WIN32
+    translit_char_bin(RSTRING_PTR(opt->script_name), '\\', '/');
+#elif defined DOSISH
     translit_char(RSTRING_PTR(opt->script_name), '\\', '/');
 #endif
 
