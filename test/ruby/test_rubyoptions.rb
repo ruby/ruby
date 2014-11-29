@@ -698,10 +698,11 @@ class TestRubyOptions < Test::Unit::TestCase
     def test_command_line_glob_nonascii
       bug10555 = '[ruby-dev:48752] [Bug #10555]'
       name = "\u{3042}.txt"
+      expected = name.encode("locale") rescue "?.txt"
       with_tmpchdir do |dir|
         open(name, "w") {}
-        assert_in_out_err(["-Eutf-8", "-e", "puts ARGV", "?.txt"], "", [name], [],
-                          bug10555, encoding: "utf-8")
+        assert_in_out_err(["-e", "puts ARGV", "?.txt"], "", [expected], [],
+                          bug10555, encoding: "locale")
       end
     end
   end
