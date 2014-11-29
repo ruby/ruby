@@ -1,4 +1,8 @@
-Sun Nov 30 00:02:22 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Nov 30 00:02:52 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options, ruby_script): transcode script name and
+	  program name to locale encoding as well as argv.
+	  [ruby-dev:48752] [Bug #10555]
 
 	* ruby.c (translit_char_bin): should not use code page dependent
 	  CharNext on UTF-8 string.  [ruby-dev:48752] [Bug #10555]

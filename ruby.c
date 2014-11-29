@@ -346,6 +346,16 @@ translit_char_bin(char *p, int from, int to)
 # define UTF8_PATH 0
 #endif
 
+#if UTF8_PATH
+static VALUE
+str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to)
+{
+    return rb_str_conv_enc_opts(str, from, to,
+				ECONV_UNDEF_REPLACE|ECONV_INVALID_REPLACE,
+				Qnil);
+}
+#endif
+
 void ruby_init_loadpath_safe(int safe_level);
 
 void
@@ -1404,6 +1414,10 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	rb_define_module("Gem");
     }
     ruby_init_prelude();
+#if UTF8_PATH
+    opt->script_name = str_conv_enc(opt->script_name, rb_utf8_encoding(), lenc);
+    opt->script = RSTRING_PTR(opt->script_name);
+#endif
     ruby_set_argv(argc, argv);
     process_sflag(&opt->sflag);
 
@@ -1819,9 +1833,7 @@ external_str_new_cstr(const char *p)
 {
 #if UTF8_PATH
     VALUE str = rb_utf8_str_new_cstr(p);
-    return rb_str_conv_enc_opts(str, NULL, rb_default_external_encoding(),
-				ECONV_UNDEF_REPLACE|ECONV_INVALID_REPLACE,
-				Qnil);
+    return str_conv_enc(str, NULL, rb_default_external_encoding());
 #else
     return rb_external_str_new_cstr(p);
 #endif
@@ -1836,7 +1848,7 @@ void
 ruby_script(const char *name)
 {
     if (name) {
-	rb_orig_progname = rb_progname = rb_external_str_new(name, strlen(name));
+	rb_orig_progname = rb_progname = external_str_new_cstr(name);
 	rb_vm_set_progname(rb_progname);
     }
 }
