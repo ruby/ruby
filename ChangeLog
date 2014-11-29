@@ -1,3 +1,8 @@
+Sat Nov 29 09:37:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (syserr_initialize): simplify message building and get
+	  rid of potential invalid byte sequence.
+
 Sat Nov 29 06:09:44 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* eval_error.c (error_print): respect the encoding of the message.

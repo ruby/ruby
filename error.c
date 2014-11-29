@@ -1341,7 +1341,7 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
     char *strerror();
 #endif
     const char *err;
-    VALUE mesg, error, func;
+    VALUE mesg, error, func, errmsg;
     VALUE klass = rb_obj_class(self);
 
     if (klass == rb_eSystemCallError) {
@@ -1365,25 +1365,17 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
     }
     if (!NIL_P(error)) err = strerror(NUM2INT(error));
     else err = "unknown error";
-    if (!NIL_P(mesg)) {
-	rb_encoding *le = rb_locale_encoding();
-	VALUE str = StringValue(mesg);
-	rb_encoding *me = rb_enc_get(mesg);
 
-	if (NIL_P(func))
-	    mesg = rb_sprintf("%s - %"PRIsVALUE, err, mesg);
-	else
-	    mesg = rb_sprintf("%s @ %"PRIsVALUE" - %"PRIsVALUE, err, func, mesg);
-	if (le != me && rb_enc_asciicompat(me)) {
-	    le = me;
-	}/* else assume err is non ASCII string. */
-	OBJ_INFECT(mesg, str);
-	rb_enc_associate(mesg, le);
+    errmsg = rb_enc_str_new_cstr(err, rb_locale_encoding());
+    if (!NIL_P(mesg)) {
+	VALUE str = StringValue(mesg);
+
+	if (!NIL_P(func)) rb_str_catf(errmsg, " @ %"PRIsVALUE, func);
+	rb_str_catf(errmsg, " - %"PRIsVALUE, str);
+	OBJ_INFECT(errmsg, mesg);
     }
-    else {
-	mesg = rb_str_new2(err);
-	rb_enc_associate(mesg, rb_locale_encoding());
-    }
+    mesg = errmsg;
+
     rb_call_super(1, &mesg);
     rb_iv_set(self, "errno", error);
     return self;
