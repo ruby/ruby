@@ -1,5 +1,5 @@
 require 'test/unit'
-require 'continuation'
+EnvUtil.suppress_warning {require 'continuation'}
 require 'fiber'
 
 class TestContinuation < Test::Unit::TestCase

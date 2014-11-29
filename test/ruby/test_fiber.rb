@@ -1,6 +1,6 @@
 require 'test/unit'
 require 'fiber'
-require 'continuation'
+EnvUtil.suppress_warning {require 'continuation'}
 require 'tmpdir'
 
 class TestFiber < Test::Unit::TestCase

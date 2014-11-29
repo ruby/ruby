@@ -1,6 +1,6 @@
 # -*- coding: us-ascii -*-
 require 'test/unit'
-require 'continuation'
+EnvUtil.suppress_warning {require 'continuation'}
 
 class TestHash < Test::Unit::TestCase
 
