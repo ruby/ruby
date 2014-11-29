@@ -1,3 +1,10 @@
+Sat Nov 29 16:14:50 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_typeddata_is_kind_of, rb_check_typeddata): ditto.
+
+	* error.c (rb_typeddata_inherited_p): deprecate. still keep for
+	  potential binary compatibility.
+
 Sat Nov 29 10:49:23 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (win32_direct_conv, rb_w32_readdir): convert UTF-8

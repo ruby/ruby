@@ -973,7 +973,7 @@ struct rb_data_type_struct {
 	void *reserved[2]; /* For future extension.
 			      This array *must* be filled with ZERO. */
     } function;
-    const rb_data_type_t *parent;
+    void *const reserved;
     void *data;        /* This area can be used for any purpose
                           by a programmer who define the type. */
     VALUE flags;       /* FL_WB_PROTECTED */
@@ -981,7 +981,6 @@ struct rb_data_type_struct {
 
 #define HAVE_TYPE_RB_DATA_TYPE_T 1
 #define HAVE_RB_DATA_TYPE_T_FUNCTION 1
-#define HAVE_RB_DATA_TYPE_T_PARENT 1
 
 struct RTypedData {
     struct RBasic basic;
@@ -1010,7 +1009,6 @@ typedef void (*RUBY_DATA_FUNC)(void*);
 #endif
 VALUE rb_data_object_alloc(VALUE,void*,RUBY_DATA_FUNC,RUBY_DATA_FUNC);
 VALUE rb_data_typed_object_alloc(VALUE klass, void *datap, const rb_data_type_t *);
-int rb_typeddata_inherited_p(const rb_data_type_t *child, const rb_data_type_t *parent);
 int rb_typeddata_is_kind_of(VALUE, const rb_data_type_t *);
 void *rb_check_typeddata(VALUE, const rb_data_type_t *);
 #define Check_TypedStruct(v,t) rb_check_typeddata((VALUE)(v),(t))
