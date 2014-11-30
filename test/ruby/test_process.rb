@@ -1959,7 +1959,13 @@ EOS
           _, status = Process.wait2(runner.pid)
         rescue IO::WaitReadable => e
           Process.kill(:INT, runner.pid)
-          raise Marshal.load(er.read.unpack("m")[0])
+          exc = Marshal.load(er.read.unpack("m")[0])
+          if exc.kind_of? Interrupt
+            # Don't raise Interrupt.  It aborts test-all.
+            flunk "timeout"
+          else
+            raise exc
+          end
         end
         assert_predicate(status, :success?)
       ensure
