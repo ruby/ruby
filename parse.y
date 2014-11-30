@@ -4261,7 +4261,7 @@ regexp_contents: /* none */
 		    /*%
 		        VALUE s1 = 0, s2 = 0, n1 = $1, n2 = $2;
 			if (ripper_is_node_yylval(n1)) {
-			    s1 = RNODE(n2)->nd_cval;
+			    s1 = RNODE(n1)->nd_cval;
 			    n1 = RNODE(n1)->nd_rval;
 			}
 			if (ripper_is_node_yylval(n2)) {

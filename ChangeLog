@@ -1,3 +1,8 @@
+Sun Nov 30 20:05:55 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (regexp_contents): fix a typo.  pointed out by wanabe.
+	  [ruby-dev:48741] [Bug #10543]
+
 Sun Nov 30 18:55:32 2014  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_process.rb (test_deadlock_by_signal_at_forking):
