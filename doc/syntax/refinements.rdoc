@@ -9,11 +9,6 @@ Refinements are designed to reduce the impact of monkey patching on other
 users of the monkey-patched class.  Refinements provide a way to extend a
 class locally.
 
-Refinements are an experimental feature in Ruby 2.0.  At the time of writing,
-refinements are expected to exist in future versions of Ruby but the
-specification of refinements may change.  You will receive a warning the first
-time you define or activate a refinement.
-
 Here is a basic refinement:
 
   class C

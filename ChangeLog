@@ -1,3 +1,8 @@
+Mon Dec  1 10:42:31 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* doc/syntax/refinements.rdoc: refinements are no longer experimental.
+	  patch by @gaurish [fix GH-755][ci skip]
+
 Sun Nov 30 20:05:55 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (regexp_contents): fix a typo.  pointed out by wanabe.
