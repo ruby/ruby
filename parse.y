@@ -7009,7 +7009,6 @@ parser_magic_comment(struct parser_params *parser, const char *str, long len)
 		if (p->length) {
 		    n = (*p->length)(parser, vbeg, n);
 		}
-		if (p->func != magic_comment_encoding) break;
 		str_copy(val, vbeg, n);
 		(*p->func)(parser, s, RSTRING_PTR(val));
 		break;
