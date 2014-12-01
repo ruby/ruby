@@ -10,7 +10,7 @@ Mon Dec  1 10:49:53 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 Mon Dec  1 10:42:31 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* doc/syntax/refinements.rdoc: refinements are no longer experimental.
-	  patch by @gaurish [fix GH-755][ci skip]
+	  patch by @gaurish [fix GH-775][ci skip]
 
 Sun Nov 30 20:05:55 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
