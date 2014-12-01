@@ -1,3 +1,8 @@
+Tue Dec  2 07:20:21 2014  Eric Wong  <e@80x24.org>
+
+	* iseq.c (iseq_data_to_ary): keep hidden variables
+	  Thanks to wanabe [ruby-core:66566]
+
 Tue Dec  2 06:46:57 2014  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: bumping version
