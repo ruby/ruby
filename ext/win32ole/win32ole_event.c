@@ -485,7 +485,7 @@ find_iid(VALUE ole, char *pitf, IID *piid, ITypeInfo **ppTypeInfo)
     ITypeInfo *pImplTypeInfo;
     TYPEATTR *pImplTypeAttr;
 
-    struct oledata *pole;
+    struct oledata *pole = NULL;
     unsigned int index;
     unsigned int count;
     int type;
@@ -495,7 +495,7 @@ find_iid(VALUE ole, char *pitf, IID *piid, ITypeInfo **ppTypeInfo)
     BOOL is_found = FALSE;
     LCID    lcid = cWIN32OLE_lcid;
 
-    OLEData_Get_Struct(ole, pole);
+    pole = oledata_get_struct(ole);
 
     pDispatch = pole->pDispatch;
 
@@ -709,9 +709,9 @@ find_default_source(VALUE ole, IID *piid, ITypeInfo **ppTypeInfo)
     TYPEATTR *pTypeAttr;
     TYPEATTR *pTypeAttr2 = NULL;
 
-    struct oledata *pole;
+    struct oledata *pole = NULL;
 
-    OLEData_Get_Struct(ole, pole);
+    pole = oledata_get_struct(ole);
     pDispatch = pole->pDispatch;
     hr = pDispatch->lpVtbl->QueryInterface(pDispatch,
                                            &IID_IProvideClassInfo2,
@@ -896,7 +896,7 @@ ev_advise(int argc, VALUE *argv, VALUE self)
 {
 
     VALUE ole, itf;
-    struct oledata *pole;
+    struct oledata *pole = NULL;
     char *pitf;
     HRESULT hr;
     IID iid;
@@ -930,7 +930,7 @@ ev_advise(int argc, VALUE *argv, VALUE self)
         ole_raise(hr, rb_eRuntimeError, "interface not found");
     }
 
-    OLEData_Get_Struct(ole, pole);
+    pole = oledata_get_struct(ole);
     pDispatch = pole->pDispatch;
     hr = pDispatch->lpVtbl->QueryInterface(pDispatch,
                                            &IID_IConnectionPointContainer,
