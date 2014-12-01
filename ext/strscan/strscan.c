@@ -251,8 +251,9 @@ strscan_init_copy(VALUE vself, VALUE vorig)
 	self->str = orig->str;
 	self->prev = orig->prev;
 	self->curr = orig->curr;
-	onig_region_copy(&self->regs, &orig->regs);
-	if (!self->regs.allocated) rb_memerror();
+	if (rb_reg_region_copy(&self->regs, &orig->regs))
+	    rb_memerror();
+	RB_GC_GUARD(vorig);
     }
 
     return vself;

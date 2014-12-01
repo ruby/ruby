@@ -58,6 +58,7 @@ long rb_reg_adjust_startpos(VALUE, VALUE, long, int);
 void rb_match_busy(VALUE);
 VALUE rb_reg_quote(VALUE);
 regex_t *rb_reg_prepare_re(VALUE re, VALUE str);
+int rb_reg_region_copy(struct re_registers *, const struct re_registers *);
 
 RUBY_SYMBOL_EXPORT_END
 

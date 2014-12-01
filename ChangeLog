@@ -1,3 +1,8 @@
+Tue Dec  2 06:30:55 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (rb_reg_region_copy): new function to try with GC if copy
+	  failed and return the error.
+
 Tue Dec  2 04:43:08 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (CHECK_REGION_COPIED): onig_region_copy() can fail when

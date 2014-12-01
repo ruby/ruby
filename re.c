@@ -20,8 +20,6 @@ VALUE rb_eRegexpError;
 typedef char onig_errmsg_buffer[ONIG_MAX_ERROR_MESSAGE_LEN];
 #define errcpy(err, msg) strlcpy((err), (msg), ONIG_MAX_ERROR_MESSAGE_LEN)
 
-#define CHECK_REGION_COPIED(regs) \
-    do {if (!(regs)->allocated) rb_memerror();} while (0)
 #define BEG(no) (regs->beg[(no)])
 #define END(no) (regs->end[(no)])
 
@@ -877,6 +875,17 @@ match_alloc(VALUE klass)
     return (VALUE)match;
 }
 
+int
+rb_reg_region_copy(struct re_registers *to, const struct re_registers *from)
+{
+    onig_region_copy(to, (OnigRegion *)from);
+    if (to->allocated) return 0;
+    rb_gc();
+    onig_region_copy(to, (OnigRegion *)from);
+    if (to->allocated) return 0;
+    return ONIGERR_MEMORY;
+}
+
 typedef struct {
     long byte_pos;
     long char_pos;
@@ -984,8 +993,8 @@ match_init_copy(VALUE obj, VALUE orig)
     RMATCH(obj)->regexp = RMATCH(orig)->regexp;
 
     rm = RMATCH(obj)->rmatch;
-    onig_region_copy(&rm->regs, RMATCH_REGS(orig));
-    CHECK_REGION_COPIED(&rm->regs);
+    if (rb_reg_region_copy(&rm->regs, RMATCH_REGS(orig)))
+	rb_memerror();
 
     if (!RMATCH(orig)->rmatch->char_offset_updated) {
         rm->char_offset_updated = 0;
@@ -998,6 +1007,7 @@ match_init_copy(VALUE obj, VALUE orig)
         MEMCPY(rm->char_offset, RMATCH(orig)->rmatch->char_offset,
                struct rmatch_offset, rm->regs.num_regs);
         rm->char_offset_updated = 1;
+	RB_GC_GUARD(orig);
     }
 
     return obj;
@@ -1472,10 +1482,11 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
     }
 
     if (NIL_P(match)) {
+	int err;
 	match = match_alloc(rb_cMatch);
-	onig_region_copy(RMATCH_REGS(match), regs);
+	err = rb_reg_region_copy(RMATCH_REGS(match), regs);
 	onig_region_free(regs, 0);
-	CHECK_REGION_COPIED(RMATCH_REGS(match));
+	if (err) rb_memerror();
     }
     else {
 	if (rb_safe_level() >= 3)
