@@ -794,7 +794,7 @@ rb_proc_call_with_block(VALUE self, int argc, const VALUE *argv, VALUE pass_proc
  *  Keywords arguments will considered as a single additional argument,
  *  that argument being mandatory if any keyword argument is mandatory.
  *  A <code>proc</code> with no argument declarations
- *  is the same a block declaring <code>||</code> as its arguments.
+ *  is the same as a block declaring <code>||</code> as its arguments.
  *
  *     proc {}.arity                  #=>  0
  *     proc { || }.arity              #=>  0
