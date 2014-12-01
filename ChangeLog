@@ -1,3 +1,8 @@
+Mon Dec  1 17:20:42 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (verconf.h): so depends on verconf.mk, which
+	  is rebuilt by setup.mak.
+
 Mon Dec  1 11:05:46 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* proc.c: fix grammar by @BenMorganIO [fix GH-764][ci skip]
