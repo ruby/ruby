@@ -1,3 +1,16 @@
+Tue Dec  2 02:30:25 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/generic.rb (URI::Generic.build):
+	  use hostname= to detect and wrap IPv6 hosts.
+	  Build is accepting URI components and users may not expect
+	  that a host component needs to be wrapped with square brackets
+	  since it's not providing a URI.
+	  Note: initialize with arg_check => true does not wrap IPv6 hosts.
+	  by Joe Rafaniello <jrafanie@redhat.com>
+	  https://github.com/ruby/ruby/pull/765 fix GH-765
+
+	* test/uri/test_generic.rb: Add more tests
+
 Mon Dec  1 20:01:12 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: use typed data for WIN32OLE.
