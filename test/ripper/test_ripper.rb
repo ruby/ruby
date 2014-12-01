@@ -21,6 +21,9 @@ class TestRipper::Ripper < Test::Unit::TestCase
     ripper = Ripper.new('# coding: iso-8859-15')
     ripper.parse
     assert_equal Encoding::ISO_8859_15, ripper.encoding
+    ripper = Ripper.new('# -*- coding: iso-8859-15 -*-')
+    ripper.parse
+    assert_equal Encoding::ISO_8859_15, ripper.encoding
   end
 
   def test_end_seen_eh

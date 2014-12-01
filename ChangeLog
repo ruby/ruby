@@ -1,3 +1,8 @@
+Tue Dec  2 02:53:00 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (magic_comment_encoding): enable in ripper, since the
+	  encoding is necessary to parse non-default encoding scripts.
+
 Tue Dec  2 02:30:25 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/generic.rb (URI::Generic.build):

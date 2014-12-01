@@ -6845,7 +6845,6 @@ comment_at_top(struct parser_params *parser)
     return 1;
 }
 
-#ifndef RIPPER
 typedef long (*rb_magic_comment_length_t)(struct parser_params *parser, const char *name, long len);
 typedef void (*rb_magic_comment_setter_t)(struct parser_params *parser, const char *name, const char *val);
 
@@ -6858,6 +6857,7 @@ magic_comment_encoding(struct parser_params *parser, const char *name, const cha
     parser_set_encode(parser, val);
 }
 
+#ifndef RIPPER
 static int
 parser_get_bool(struct parser_params *parser, const char *name, const char *val)
 {
@@ -6883,6 +6883,7 @@ parser_set_token_info(struct parser_params *parser, const char *name, const char
     int b = parser_get_bool(parser, name, val);
     if (b >= 0) parser->parser_token_info_enabled = b;
 }
+#endif
 
 struct magic_comment {
     const char *name;
@@ -6893,9 +6894,10 @@ struct magic_comment {
 static const struct magic_comment magic_comments[] = {
     {"coding", magic_comment_encoding, parser_encode_length},
     {"encoding", magic_comment_encoding, parser_encode_length},
+#ifndef RIPPER
     {"warn_indent", parser_set_token_info},
-};
 #endif
+};
 
 static const char *
 magic_comment_marker(const char *str, long len)
@@ -6948,9 +6950,7 @@ parser_magic_comment(struct parser_params *parser, const char *str, long len)
 
     /* %r"([^\\s\'\":;]+)\\s*:\\s*(\"(?:\\\\.|[^\"])*\"|[^\"\\s;]+)[\\s;]*" */
     while (len > 0) {
-#ifndef RIPPER
 	const struct magic_comment *p = magic_comments;
-#endif
 	char *s;
 	int i;
 	long n = 0;
@@ -7003,19 +7003,19 @@ parser_magic_comment(struct parser_params *parser, const char *str, long len)
 	for (i = 0; i < n; ++i) {
 	    if (s[i] == '-') s[i] = '_';
 	}
-#ifndef RIPPER
 	do {
 	    if (STRNCASECMP(p->name, s, n) == 0) {
 		n = vend - vbeg;
 		if (p->length) {
 		    n = (*p->length)(parser, vbeg, n);
 		}
+		if (p->func != magic_comment_encoding) break;
 		str_copy(val, vbeg, n);
 		(*p->func)(parser, s, RSTRING_PTR(val));
 		break;
 	    }
 	} while (++p < magic_comments + numberof(magic_comments));
-#else
+#ifdef RIPPER
 	str_copy(val, vbeg, vend - vbeg);
 	dispatch2(magic_comment, name, val);
 #endif
