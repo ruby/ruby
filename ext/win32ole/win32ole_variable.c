@@ -25,7 +25,7 @@ static VALUE folevariable_inspect(VALUE self);
 static const rb_data_type_t olevariable_datatype = {
     "win32ole_variable",
     {NULL, olevariable_free, olevariable_size,},
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static void

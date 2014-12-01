@@ -43,7 +43,7 @@ static size_t ossl_cipher_memsize(const void *ptr);
 static const rb_data_type_t ossl_cipher_type = {
     "OpenSSL/Cipher",
     {0, ossl_cipher_free, ossl_cipher_memsize,},
-    NULL, NULL,
+    0, 0,
     RUBY_TYPED_FREE_IMMEDIATELY,
 };
 

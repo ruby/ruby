@@ -540,7 +540,7 @@ get_digest_base_metadata(VALUE klass)
 static const rb_data_type_t digest_type = {
     "digest",
     {0, RUBY_TYPED_DEFAULT_FREE, 0,},
-    NULL, NULL,
+    0, 0,
     (RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED),
 };
 

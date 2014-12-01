@@ -383,7 +383,7 @@ env_memsize(const void *ptr)
 static const rb_data_type_t env_data_type = {
     "VM/env",
     {env_mark, RUBY_TYPED_DEFAULT_FREE, env_memsize,},
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static VALUE check_env_value(VALUE envval);
@@ -1879,7 +1879,7 @@ vm_memsize(const void *ptr)
 static const rb_data_type_t vm_data_type = {
     "VM",
     {NULL, NULL, vm_memsize,},
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 
@@ -2146,7 +2146,7 @@ const rb_data_type_t ruby_threadptr_data_type = {
 	thread_free,
 	thread_memsize,
     },
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 VALUE

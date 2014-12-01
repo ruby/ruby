@@ -1116,7 +1116,7 @@ static const rb_data_type_t name_err_mesg_data_type = {
 	name_err_mesg_free,
 	name_err_mesg_memsize,
     },
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 /* :nodoc: */

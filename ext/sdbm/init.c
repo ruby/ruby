@@ -112,7 +112,7 @@ memsize_dbm(const void *ptr)
 static const rb_data_type_t sdbm_type = {
     "sdbm",
     {0, free_sdbm, memsize_dbm,},
-    NULL, NULL,
+    0, 0,
     RUBY_TYPED_FREE_IMMEDIATELY,
 };
 

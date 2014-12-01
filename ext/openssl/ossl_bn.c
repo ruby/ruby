@@ -45,7 +45,7 @@ ossl_bn_size(const void *ptr)
 static const rb_data_type_t ossl_bn_type = {
     "OpenSSL/BN",
     {0, ossl_bn_free, ossl_bn_size,},
-    NULL, NULL,
+    0, 0,
     RUBY_TYPED_FREE_IMMEDIATELY,
 };
 

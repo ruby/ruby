@@ -110,7 +110,7 @@ static long  evs_length(void);
 static const rb_data_type_t oleevent_datatype = {
     "win32ole_event",
     {NULL, oleevent_free, oleevent_size,},
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 STDMETHODIMP EVENTSINK_Invoke(

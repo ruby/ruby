@@ -50,7 +50,7 @@ static VALUE foletype_inspect(VALUE self);
 static const rb_data_type_t oletype_datatype = {
     "win32ole_type",
     {NULL, oletype_free, oletype_size,},
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 /*

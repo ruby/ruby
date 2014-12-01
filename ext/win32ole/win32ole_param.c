@@ -31,7 +31,7 @@ static VALUE foleparam_inspect(VALUE self);
 static const rb_data_type_t oleparam_datatype = {
     "win32ole_param",
     {NULL, oleparam_free, oleparam_size,},
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static void

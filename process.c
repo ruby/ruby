@@ -1376,7 +1376,7 @@ memsize_exec_arg(const void *ptr)
 static const rb_data_type_t exec_arg_data_type = {
     "exec_arg",
     {mark_exec_arg, RUBY_TYPED_DEFAULT_FREE, memsize_exec_arg},
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 #ifdef _WIN32

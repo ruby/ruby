@@ -23,7 +23,7 @@ static VALUE folerecord_inspect(VALUE self);
 static const rb_data_type_t olerecord_datatype = {
     "win32ole_record",
     {NULL, olerecord_free, olerecord_size,},
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static HRESULT

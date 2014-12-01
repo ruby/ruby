@@ -16,7 +16,7 @@ numhash_memsize(const void *ptr)
 static const rb_data_type_t numhash_type = {
     "numhash",
     {0, numhash_free, numhash_memsize,},
-    NULL, NULL,
+    0, 0,
     RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED,
 };
 

@@ -7602,7 +7602,7 @@ static const rb_data_type_t weakmap_type = {
 	wmap_free,
 	wmap_memsize,
     },
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static VALUE

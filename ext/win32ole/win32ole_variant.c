@@ -26,7 +26,7 @@ static VALUE folevariant_set_value(VALUE self, VALUE val);
 static const rb_data_type_t olevariant_datatype = {
     "win32ole_variant",
     {NULL, olevariant_free, olevariant_size,},
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static void

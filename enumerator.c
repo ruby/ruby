@@ -167,7 +167,7 @@ static const rb_data_type_t enumerator_data_type = {
 	enumerator_free,
 	enumerator_memsize,
     },
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static struct enumerator *
@@ -1078,7 +1078,7 @@ static const rb_data_type_t yielder_data_type = {
 	yielder_free,
 	yielder_memsize,
     },
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static struct yielder *
@@ -1185,7 +1185,7 @@ static const rb_data_type_t generator_data_type = {
 	generator_free,
 	generator_memsize,
     },
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static struct generator *

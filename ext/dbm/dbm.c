@@ -81,7 +81,7 @@ memsize_dbm(const void *ptr)
 static const rb_data_type_t dbm_type = {
     "dbm",
     {0, free_dbm, memsize_dbm,},
-    NULL, NULL,
+    0, 0,
     RUBY_TYPED_FREE_IMMEDIATELY,
 };
 

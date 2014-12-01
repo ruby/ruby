@@ -41,7 +41,7 @@ static size_t memsize(const void *ptr)
 static const rb_data_type_t psych_emitter_type = {
     "Psych/emitter",
     {0, dealloc, 0,},
-    NULL, NULL,
+    0, 0,
     RUBY_TYPED_FREE_IMMEDIATELY,
 };
 

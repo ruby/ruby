@@ -1563,7 +1563,7 @@ autoload_memsize(const void *ptr)
 static const rb_data_type_t autoload_data_type = {
     "autoload",
     {autoload_mark, autoload_free, autoload_memsize,},
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 #define check_autoload_table(av) \
@@ -1607,7 +1607,7 @@ autoload_i_memsize(const void *ptr)
 static const rb_data_type_t autoload_data_i_type = {
     "autoload_i",
     {autoload_i_mark, RUBY_TYPED_DEFAULT_FREE, autoload_i_memsize,},
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 #define check_autoload_data(av) \

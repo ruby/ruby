@@ -45,7 +45,7 @@ static VALUE folemethod_inspect(VALUE self);
 static const rb_data_type_t olemethod_datatype = {
     "win32ole_method",
     {NULL, olemethod_free, olemethod_size,},
-    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static void

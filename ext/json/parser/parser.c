@@ -2126,7 +2126,7 @@ static size_t JSON_memsize(const void *ptr)
 static const rb_data_type_t JSON_Parser_type = {
     "JSON/Parser",
     {JSON_mark, JSON_free, JSON_memsize,},
-    NULL, NULL,
+    0, 0,
     RUBY_TYPED_FREE_IMMEDIATELY,
 };
 
