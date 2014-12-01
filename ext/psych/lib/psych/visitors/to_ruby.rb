@@ -271,6 +271,21 @@ module Psych
           end
           map
 
+        when /^!ruby\/marshalable:(.*)$/
+          name = $1
+          klass = resolve_class(name)
+          obj = register(o, klass.allocate)
+
+          if obj.respond_to?(:init_with)
+            init_with(obj, revive_hash({}, o), o)
+          elsif obj.respond_to?(:marshal_load)
+            marshal_data = o.children.map(&method(:accept))
+            obj.marshal_load(marshal_data)
+            obj
+          else
+            raise ArgumentError, "Cannot deserialize #{name}"
+          end
+
         else
           revive_hash(register(o, {}), o)
         end

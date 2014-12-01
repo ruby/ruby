@@ -27,6 +27,8 @@ module Psych
 
         def key? target
           @obj_to_node.key? target.object_id
+        rescue NoMethodError
+          false
         end
 
         def id_for target
@@ -409,6 +411,18 @@ module Psych
         else
           @emitter.scalar ":#{o}", nil, nil, true, false, Nodes::Scalar::ANY
         end
+      end
+
+      def visit_BasicObject o
+        tag = Psych.dump_tags[o.class]
+        tag ||= "!ruby/marshalable:#{o.class.name}"
+
+        map = @emitter.start_mapping(nil, tag, false, Nodes::Mapping::BLOCK)
+        register(o, map)
+
+        o.marshal_dump.each(&method(:accept))
+
+        @emitter.end_mapping
       end
 
       private

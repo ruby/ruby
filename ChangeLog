@@ -1,3 +1,13 @@
+Tue Dec  2 06:34:08 2014  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: support objects that are
+	  marshalable, but inherit from basic object.
+	  Thanks Sean Griffin <sean@thoughtbot.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: ditto
+
+	* test/psych/test_marshalable.rb: test for fix
+
 Tue Dec  2 06:32:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (ripper_flush_string_content): preserve the dispatched
