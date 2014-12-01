@@ -1,3 +1,8 @@
+Tue Dec  2 04:43:08 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (CHECK_REGION_COPIED): onig_region_copy() can fail when
+	  memory exhausted but returns nothing, so check by if allocated.
+
 Tue Dec  2 02:53:00 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (magic_comment_encoding): enable in ripper, since the

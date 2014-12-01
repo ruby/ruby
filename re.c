@@ -20,6 +20,8 @@ VALUE rb_eRegexpError;
 typedef char onig_errmsg_buffer[ONIG_MAX_ERROR_MESSAGE_LEN];
 #define errcpy(err, msg) strlcpy((err), (msg), ONIG_MAX_ERROR_MESSAGE_LEN)
 
+#define CHECK_REGION_COPIED(regs) \
+    do {if (!(regs)->allocated) rb_memerror();} while (0)
 #define BEG(no) (regs->beg[(no)])
 #define END(no) (regs->end[(no)])
 
@@ -983,6 +985,7 @@ match_init_copy(VALUE obj, VALUE orig)
 
     rm = RMATCH(obj)->rmatch;
     onig_region_copy(&rm->regs, RMATCH_REGS(orig));
+    CHECK_REGION_COPIED(&rm->regs);
 
     if (!RMATCH(orig)->rmatch->char_offset_updated) {
         rm->char_offset_updated = 0;
@@ -1472,6 +1475,7 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
 	match = match_alloc(rb_cMatch);
 	onig_region_copy(RMATCH_REGS(match), regs);
 	onig_region_free(regs, 0);
+	CHECK_REGION_COPIED(RMATCH_REGS(match));
     }
     else {
 	if (rb_safe_level() >= 3)

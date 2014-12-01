@@ -252,6 +252,7 @@ strscan_init_copy(VALUE vself, VALUE vorig)
 	self->prev = orig->prev;
 	self->curr = orig->curr;
 	onig_region_copy(&self->regs, &orig->regs);
+	if (self->regs.allocated) rb_memerror();
     }
 
     return vself;
