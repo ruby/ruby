@@ -4259,7 +4259,7 @@ regexp_contents: /* none */
 			    $$ = list_append(head, tail);
 			}
 		    /*%
-		        VALUE s1 = 0, s2 = 0, n1 = $1, n2 = $2;
+		        VALUE s1 = 1, s2 = 0, n1 = $1, n2 = $2;
 			if (ripper_is_node_yylval(n1)) {
 			    s1 = RNODE(n1)->nd_cval;
 			    n1 = RNODE(n1)->nd_rval;
@@ -4269,9 +4269,8 @@ regexp_contents: /* none */
 			    n2 = RNODE(n2)->nd_rval;
 			}
 			$$ = dispatch2(regexp_add, n1, n2);
-			if (s1 || s2) {
-			    VALUE s = !s1 ? s2 : !s2 ? s1 : rb_str_plus(s1, s2);
-			    $$ = ripper_new_yylval(0, $$, s);
+			if (!s1 && s2) {
+			    $$ = ripper_new_yylval(0, $$, s2);
 			}
 		    %*/
 		    }

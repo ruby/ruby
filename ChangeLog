@@ -1,3 +1,9 @@
+Tue Dec  2 06:31:31 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (regexp_contents): check in ripper only if the whole
+	  content is a single regexp without interpolation.
+	  [ruby-dev:48714] [Bug #10437]
+
 Tue Dec  2 06:30:55 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (rb_reg_region_copy): new function to try with GC if copy
