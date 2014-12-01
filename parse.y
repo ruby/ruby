@@ -6302,6 +6302,8 @@ static void
 ripper_flush_string_content(struct parser_params *parser, rb_encoding *enc)
 {
     VALUE content = yylval.val;
+    if (!ripper_is_node_yylval(content))
+	content = ripper_new_yylval(0, 0, content);
     if (!NIL_P(parser->delayed)) {
 	ptrdiff_t len = lex_p - parser->tokp;
 	if (len > 0) {
@@ -6309,11 +6311,12 @@ ripper_flush_string_content(struct parser_params *parser, rb_encoding *enc)
 	}
 	ripper_dispatch_delayed_token(parser, tSTRING_CONTENT);
 	parser->tokp = lex_p;
+	RNODE(content)->nd_rval = yylval.val;
     }
-    if (!ripper_is_node_yylval(content))
-	content = ripper_new_yylval(0, 0, content);
-    yylval.val = content;
     ripper_dispatch_scan_event(parser, tSTRING_CONTENT);
+    if (yylval.val != content)
+	RNODE(content)->nd_rval = yylval.val;
+    yylval.val = content;
 }
 
 #define flush_string_content(enc) ripper_flush_string_content(parser, (enc))

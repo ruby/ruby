@@ -1,4 +1,7 @@
-Tue Dec  2 06:31:31 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Dec  2 06:32:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (ripper_flush_string_content): preserve the dispatched
+	  results at tSTRING_CONTENT.  [ruby-dev:48714] [Bug #10437]
 
 	* parse.y (regexp_contents): check in ripper only if the whole
 	  content is a single regexp without interpolation.
