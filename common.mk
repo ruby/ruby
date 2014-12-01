@@ -725,6 +725,8 @@ EXT_SRCS = $(srcdir)/ext/ripper/ripper.c \
 
 srcs-ext: $(EXT_SRCS)
 
+srcs-extra: $(srcdir)/ext/json/parser/parser.c
+
 LIB_SRCS = $(srcdir)/lib/unicode_normalize/tables.rb
 
 srcs-lib: $(LIB_SRCS)
@@ -810,6 +812,11 @@ $(srcdir)/ext/ripper/ripper.c: parse.y id.h
 		Q=$(Q) ECHO=$(ECHO) RM="$(RM)" VPATH="$(PWD)" \
 		top_srcdir=../.. srcdir=. \
 		RUBY="$(BASERUBY)" PATH_SEPARATOR="$(PATH_SEPARATOR)"
+
+$(srcdir)/ext/json/parser/parser.c: $(srcdir)/ext/json/parser/parser.rl
+	$(ECHO) generating $@
+	$(Q) $(CHDIR) $(@D) && $(exec) $(MAKE) -f prereq.mk $(MFLAGS) \
+		Q=$(Q) ECHO=$(ECHO) top_srcdir=../../.. srcdir=. VPATH=../../.. BASERUBY="$(BASERUBY)"
 
 $(srcdir)/ext/rbconfig/sizeof/sizes.c: $(srcdir)/ext/rbconfig/sizeof/depend \
 		$(srcdir)/tool/generic_erb.rb $(srcdir)/template/sizes.c.tmpl $(srcdir)/configure.in
