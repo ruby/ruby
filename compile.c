@@ -1240,14 +1240,21 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 		    ++rkw;
 		}
 		else {
-		    if (nd_type(val_node) == NODE_LIT) {
+		    switch (nd_type(val_node)) {
+		      case NODE_LIT:
 			dv = val_node->nd_lit;
 			iseq_add_mark_object(iseq, dv);
-		    }
-		    else if (nd_type(val_node) == NODE_NIL) {
+			break;
+		      case NODE_NIL:
 			dv = Qnil;
-		    }
-		    else {
+			break;
+		      case NODE_TRUE:
+			dv = Qtrue;
+			break;
+		      case NODE_FALSE:
+			dv = Qfalse;
+			break;
+		      default:
 			COMPILE_POPED(optargs, "kwarg", node); /* nd_type(node) == NODE_KW_ARG */
 			dv = complex_mark;
 		    }
@@ -5358,7 +5365,10 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		/* required argument. do nothing */
 		rb_bug("unreachable");
 	    }
-	    else if (nd_type(default_value) == NODE_LIT) {
+	    else if (nd_type(default_value) == NODE_LIT ||
+		     nd_type(default_value) == NODE_NIL ||
+		     nd_type(default_value) == NODE_TRUE ||
+		     nd_type(default_value) == NODE_FALSE) {
 		rb_bug("unreachable");
 	    }
 	    else {
