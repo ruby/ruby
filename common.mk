@@ -29,6 +29,7 @@ LIBRUBY_EXTS  = ./.libruby-with-ext.time
 REVISION_H    = ./.revision.time
 PLATFORM_D    = ./$(PLATFORM_DIR)/.time
 RDOCOUT       = $(EXTOUT)/rdoc
+HTMLOUT       = $(EXTOUT)/html
 CAPIOUT       = doc/capi
 
 INITOBJS      = dmyext.$(OBJEXT) dmyenc.$(OBJEXT)
@@ -424,6 +425,10 @@ rdoc: PHONY main
 	@echo Generating RDoc documentation
 	$(Q) $(XRUBY) "$(srcdir)/bin/rdoc" --root "$(srcdir)" --page-dir "$(srcdir)/doc" --encoding=UTF-8 --no-force-update --all --ri --op "$(RDOCOUT)" --debug $(RDOCFLAGS) "$(srcdir)"
 
+html: PHONY main
+	@echo Generating RDoc HTML files
+	$(Q) $(XRUBY) "$(srcdir)/bin/rdoc" --root "$(srcdir)" --page-dir "$(srcdir)/doc" --encoding=UTF-8 --no-force-update --all --op "$(HTMLOUT)" --debug $(RDOCFLAGS) "$(srcdir)"
+
 rdoc-coverage: PHONY main
 	@echo Generating RDoc coverage report
 	$(Q) $(XRUBY) "$(srcdir)/bin/rdoc" --root "$(srcdir)" --encoding=UTF-8 --all --quiet -C $(RDOCFLAGS) "$(srcdir)"
@@ -469,11 +474,12 @@ clean-ext:: PHONY
 clean-golf: PHONY
 	$(Q)$(RM) $(GORUBY)$(EXEEXT) $(GOLFOBJS)
 clean-rdoc: PHONY
+clean-html: PHONY
 clean-capi: PHONY
 clean-platform: PHONY
 clean-extout: PHONY
 	-$(Q)$(RMDIR) $(EXTOUT)/$(arch) $(EXTOUT) 2> $(NULL) || exit 0
-clean-docs: clean-rdoc clean-capi
+clean-docs: clean-rdoc clean-html clean-capi
 
 distclean: distclean-ext distclean-local distclean-enc distclean-golf distclean-extout distclean-platform
 distclean-local:: clean-local
@@ -483,6 +489,7 @@ distclean-local:: clean-local
 distclean-ext:: PHONY
 distclean-golf: clean-golf
 distclean-rdoc: PHONY
+distclean-html: PHONY
 distclean-capi: PHONY
 distclean-extout: clean-extout
 distclean-platform: clean-platform
@@ -508,6 +515,10 @@ clean-enc distclean-enc realclean-enc: PHONY
 clean-rdoc distclean-rdoc realclean-rdoc:
 	@echo $(@:-rdoc=ing) rdoc
 	$(Q)$(RMALL) $(RDOCOUT)
+
+clean-html distclean-html realclean-html:
+	@echo $(@:-html=ing) HTML
+	$(Q)$(RMALL) $(HTMLOUT)
 
 clean-capi distclean-capi realclean-capi:
 	@echo $(@:-capi=ing) capi
@@ -601,7 +612,7 @@ $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc
 .PHONY: PHONY all fake prereq incs srcs preludes help
 .PHONY: test install install-nodoc install-doc dist
 .PHONY: loadpath golf capi rdoc install-prereq clear-installed-list
-.PHONY: clean clean-ext clean-local clean-enc clean-golf clean-rdoc clean-extout
+.PHONY: clean clean-ext clean-local clean-enc clean-golf clean-rdoc clean-html clean-extout
 .PHONY: distclean distclean-ext distclean-local distclean-enc distclean-golf distclean-extout
 .PHONY: realclean realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
 .PHONY: check test test-all btest btest-ruby test-sample test-knownbug
