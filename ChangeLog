@@ -1,3 +1,8 @@
+Tue Dec  2 15:30:30 2014  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* array.c (rb_ary_plus): in documentation, added note about
+	  inefficiency of repeated += operations.
+
 Tue Dec  2 07:20:21 2014  Eric Wong  <e@80x24.org>
 
 	* iseq.c (iseq_data_to_ary): keep hidden variables
