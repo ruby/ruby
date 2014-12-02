@@ -169,9 +169,19 @@ static VALUE fole_activex_initialize(VALUE self);
 static void init_enc2cp(void);
 static void free_enc2cp(void);
 
+static void com_hash_free(void *ptr);
+static void com_hash_mark(void *ptr);
+static size_t com_hash_size(const void *ptr);
+
 static const rb_data_type_t ole_datatype = {
     "win32ole",
     {NULL, ole_free, ole_size,},
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
+static const rb_data_type_t com_hash_datatype = {
+    "com_hash",
+    {com_hash_mark, com_hash_free, com_hash_size,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
@@ -393,7 +403,6 @@ val2dispatch(VALUE val)
     struct st_table *tbl = DATA_PTR(com_hash);
     Win32OLEIDispatch* pdisp;
     st_data_t data;
-
     if (st_lookup(tbl, val, &data)) {
         pdisp = (Win32OLEIDispatch *)(data & ~FIXNUM_FLAG);
         pdisp->refcount++;
@@ -3866,6 +3875,27 @@ free_enc2cp(void)
     st_free_table(enc2cp_table);
 }
 
+static void
+com_hash_free(void *ptr)
+{
+    st_table *tbl = ptr;
+    st_free_table(tbl);
+}
+
+static void
+com_hash_mark(void *ptr)
+{
+    st_table *tbl = ptr;
+    rb_mark_hash(tbl);
+}
+
+static size_t
+com_hash_size(const void *ptr)
+{
+    const st_table *tbl = ptr;
+    return tbl ? st_memsize(tbl) : 0;
+}
+
 void
 Init_win32ole(void)
 {
@@ -3887,7 +3917,7 @@ Init_win32ole(void)
     message_filter.RetryRejectedCall = mf_RetryRejectedCall;
     message_filter.MessagePending = mf_MessagePending;
 
-    com_hash = Data_Wrap_Struct(rb_cData, rb_mark_hash, st_free_table, st_init_numtable());
+    com_hash = TypedData_Wrap_Struct(rb_cData, &com_hash_datatype, st_init_numtable());
     rb_gc_register_mark_object(com_hash);
 
     cWIN32OLE = rb_define_class("WIN32OLE", rb_cObject);
