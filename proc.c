@@ -693,6 +693,7 @@ rb_block_clear_env_self(VALUE proc)
  *     a_proc = Proc.new { |scalar, *values| values.collect { |value| value*scalar } }
  *     a_proc.call(9, 1, 2, 3)   #=> [9, 18, 27]
  *     a_proc[9, 1, 2, 3]        #=> [9, 18, 27]
+ *     a_proc.(9, 1, 2, 3)       #=> [9, 18, 27]
  *
  *  For procs created using <code>lambda</code> or <code>->()</code> an error
  *  is generated if the wrong number of parameters are passed to a Proc with
