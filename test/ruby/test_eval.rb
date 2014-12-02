@@ -190,6 +190,15 @@ class TestEval < Test::Unit::TestCase
     end
   end
 
+  def test_instance_eval_block_self
+    # instance_eval(&block)'s self must not be sticky (jruby/jruby#2060)
+    pr = proc { self }
+    assert_equal self, pr.call
+    o = Object.new
+    assert_equal o, o.instance_eval(&pr)
+    assert_equal self, pr.call
+  end
+
   def test_instance_eval_cvar
     [Object.new, [], 7, :sym, true, false, nil].each do |obj|
       assert_equal(13, obj.instance_eval("@@cvar"))
