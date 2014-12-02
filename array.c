@@ -3530,11 +3530,10 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
  *  is the same as
  *     x = x + y
  *  This means that it produces a new array. As a consequence,
- *  repeated use of += on arrays can be quite inefficient.
+ *  repeated use of <code>+=</code> on arrays can be quite inefficient.
  *
  *  See also Array#concat.
  */
-
 
 VALUE
 rb_ary_plus(VALUE x, VALUE y)
