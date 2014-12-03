@@ -20,7 +20,11 @@
 #endif
 
 #undef RUBY_UNTYPED_DATA_WARNING
+#ifdef HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P
+#define RUBY_UNTYPED_DATA_WARNING 1
+#else
 #define RUBY_UNTYPED_DATA_WARNING 0
+#endif
 
 #ifdef HAVE_RB_THREAD_CHECK_TRAP_PENDING
 static int rb_thread_critical; /* dummy */

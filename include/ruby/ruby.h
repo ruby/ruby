@@ -1173,6 +1173,15 @@ rb_data_object_alloc_warning(VALUE klass, void *ptr, RUBY_DATA_FUNC mark, RUBY_D
     return rb_data_object_alloc(klass, ptr, mark, free);
 }
 
+#if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
+#define rb_data_object_alloc_warning(klass, ptr, mark, free) \
+    __extension__( \
+	__builtin_choose_expr( \
+	    __builtin_constant_p(klass) && !(klass), \
+	    rb_data_object_alloc(klass, ptr, mark, free), \
+	    rb_data_object_alloc_warning(klass, ptr, mark, free)))
+#endif
+
 static inline void *
 rb_data_object_get(VALUE obj)
 {
