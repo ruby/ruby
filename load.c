@@ -1077,7 +1077,6 @@ register_init_ext(st_data_t *key, st_data_t *value, st_data_t init, int existing
     else {
 	*value = (st_data_t)NEW_MEMO(init, 0, 0);
 	*key = (st_data_t)ruby_strdup(name);
-	(*(void (*)(void))init)();
     }
     return ST_CONTINUE;
 }
@@ -1093,7 +1092,6 @@ ruby_init_ext(const char *name, void (*init)(void))
 	GET_VM()->loading_table = loading_tbl = st_init_strtable();
     }
     st_update(loading_tbl, (st_data_t)name, register_init_ext, (st_data_t)init);
-    rb_provide(name);
 }
 
 /*

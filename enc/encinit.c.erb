@@ -8,19 +8,30 @@
     ruby_init_ext(name, func);	\
 }
 
+#define init_enc(name) init(Init_##name, "enc/"#name".so")
+#define init_trans(name) init(Init_trans_##name, "enc/trans/"#name".so")
+#define provide(func, name) { \
+    extern void Init_##func(void); \
+    Init_##func(); \
+    rb_provide(name".so"); \
+}
+
 void ruby_init_ext(const char *name, void (*init)(void));
+void rb_provide(const char *feature);
 
 void
 Init_enc(void)
 {
+    provide(encdb, "encdb");
 % ENCS.each do |enc|
-    init(Init_<%= enc %>, "enc/<%= enc %>.so");
+%   next if enc == 'encdb'
+    init_enc(<%= enc %>);
 % end
 
-    init(Init_transdb, "enc/trans/transdb.so");
+    provide(transdb, "trans/transdb");
 % TRANS.each do |trans|
 %   next if trans == 'trans/transdb'
-    init(Init_trans_<%= File.basename trans %>, "enc/<%= trans %>.so");
+    init_trans(<%= File.basename trans %>);
 % end
 }
 <%# vim: set ft=eruby sw=2 : -%>

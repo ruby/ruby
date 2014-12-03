@@ -1,3 +1,8 @@
+Wed Dec  3 16:47:35 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/encinit.c.erb (Init_enc): initialize encdb and transdb
+	  directly.
+
 Wed Dec  3 14:51:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (ruby_require_internal): separate from rb_require_safe,
