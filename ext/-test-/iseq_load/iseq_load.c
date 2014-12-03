@@ -15,7 +15,7 @@ iseq_load(int argc, VALUE *argv, VALUE self)
 void
 Init_iseq_load(void)
 {
-    VALUE rb_cISeq = rb_eval_string("RubyVM::InstructionSequence");
+    VALUE rb_cISeq = rb_path2class("RubyVM::InstructionSequence");
 
     rb_define_singleton_method(rb_cISeq, "iseq_load", iseq_load, -1);
 }
