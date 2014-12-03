@@ -6810,7 +6810,7 @@ rb_str_enumerate_chars(VALUE str, int wantarray)
 	if (wantarray)
 	    ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
 	else
-	    RETURN_SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
+	    return SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
     }
 
     switch (ENC_CODERANGE(str)) {

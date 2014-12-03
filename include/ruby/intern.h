@@ -234,10 +234,12 @@ VALUE rb_enumeratorize_with_size(VALUE, VALUE, int, const VALUE *, rb_enumerator
 #define rb_enumeratorize_with_size(obj, id, argc, argv, size_fn) \
     rb_enumeratorize_with_size(obj, id, argc, argv, (rb_enumerator_size_func *)(size_fn))
 #endif
+#define SIZED_ENUMERATOR(obj, argc, argv, size_fn) \
+    rb_enumeratorize_with_size((obj), ID2SYM(rb_frame_this_func()), \
+			       (argc), (argv), (size_fn))
 #define RETURN_SIZED_ENUMERATOR(obj, argc, argv, size_fn) do {		\
 	if (!rb_block_given_p())					\
-	    return rb_enumeratorize_with_size((obj), ID2SYM(rb_frame_this_func()),\
-				    (argc), (argv), (size_fn));		\
+	    return SIZED_ENUMERATOR(obj, argc, argv, size_fn);		\
     } while (0)
 #define RETURN_ENUMERATOR(obj, argc, argv) RETURN_SIZED_ENUMERATOR(obj, argc, argv, 0)
 /* error.c */
