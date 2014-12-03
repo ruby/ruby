@@ -79,12 +79,14 @@ iseq_free(void *ptr)
 	    RUBY_FREE_UNLESS_NULL(iseq->line_info_table);
 	    RUBY_FREE_UNLESS_NULL(iseq->local_table);
 	    RUBY_FREE_UNLESS_NULL(iseq->is_entries);
-	    for (i=0; i<iseq->callinfo_size; i++) {
-		/* TODO: revisit callinfo data structure */
-		rb_call_info_kw_arg_t *kw_arg = iseq->callinfo_entries[i].kw_arg;
-		RUBY_FREE_UNLESS_NULL(kw_arg);
+	    if (iseq->callinfo_entries) {
+		for (i=0; i<iseq->callinfo_size; i++) {
+		    /* TODO: revisit callinfo data structure */
+		    rb_call_info_kw_arg_t *kw_arg = iseq->callinfo_entries[i].kw_arg;
+		    RUBY_FREE_UNLESS_NULL(kw_arg);
+		}
+		RUBY_FREE_UNLESS_NULL(iseq->callinfo_entries);
 	    }
-	    RUBY_FREE_UNLESS_NULL(iseq->callinfo_entries);
 	    RUBY_FREE_UNLESS_NULL(iseq->catch_table);
 	    RUBY_FREE_UNLESS_NULL(iseq->param.opt_table);
 	    if (iseq->param.keyword != NULL) {

@@ -364,6 +364,10 @@ WARN
     }
   end
 
+  def test_invalid_next
+    assert_syntax_error("def m; next; end", /Invalid next/)
+  end
+
   def test_lambda_with_space
     feature6390 = '[ruby-dev:45605]'
     assert_valid_syntax("-> (x, y) {}", __FILE__, feature6390)
