@@ -4,7 +4,7 @@ int ruby_require_internal(const char *, int);
 void
 Init_enc(void)
 {
-    if (require("enc/encdb.so") == 0) {
+    if (require("enc/encdb.so") == 1) {
 	require("enc/trans/transdb.so");
     }
 }

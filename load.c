@@ -940,10 +940,17 @@ load_ext(VALUE path)
     return (VALUE)dln_load(RSTRING_PTR(path));
 }
 
+/*
+ * returns
+ *  0: if already loaded (false)
+ *  1: successfully loaded (true)
+ * <0: not found (LoadError)
+ * >1: exception
+ */
 static int
 rb_require_internal(VALUE fname, int safe)
 {
-    volatile int result = -2;
+    volatile int result = -1;
     rb_thread_t *th = GET_THREAD();
     volatile VALUE errinfo = th->errinfo;
     int state;
@@ -985,11 +992,11 @@ rb_require_internal(VALUE fname, int safe)
 	}
 	if (found) {
 	    if (!path || !(ftptr = load_lock(RSTRING_PTR(path)))) {
-		result = -1;
+		result = 0;
 	    }
 	    else if (!*ftptr) {
 		rb_provide_feature(path);
-		result = 0;
+		result = 1;
 	    }
 	    else {
 		switch (found) {
@@ -1004,7 +1011,7 @@ rb_require_internal(VALUE fname, int safe)
 		    break;
 		}
 		rb_provide_feature(path);
-		result = 0;
+		result = 1;
 	    }
 	}
     }
@@ -1013,6 +1020,7 @@ rb_require_internal(VALUE fname, int safe)
 
     rb_set_safe_level_force(saved.safe);
     if (state) {
+	/* never TAG_RETURN */
 	return state;
     }
 
@@ -1040,14 +1048,14 @@ rb_require_safe(VALUE fname, int safe)
 {
     int result = rb_require_internal(fname, safe);
 
-    if (result > 0) {
+    if (result > 1) {
 	JUMP_TAG(result);
     }
-    if (result < -1) {
+    if (result < 0) {
 	load_failed(fname);
     }
 
-    return result ? Qfalse : Qtrue;
+    return result ? Qtrue : Qfalse;
 }
 
 VALUE
