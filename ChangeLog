@@ -1,3 +1,22 @@
+Thu Dec  4 07:06:02 2014  Eric Wong  <e@80x24.org>
+
+	* compile.c (rb_iseq_build_from_exception): entry->sp is unsigned
+	  (iseq_build_callinfo_from_hash): account for kw_arg
+	  (iseq_build_from_ary_body): update for r35459
+	  (CHECK_STRING, CHECK_INTEGER): remove unused checks
+	  (int_param): new function for checking new `params' hash
+	  (iseq_build_kw): new function for loading rb_iseq_param_keyword
+	  (rb_iseq_build_from_ary): account for `misc' entry and general
+	   structure changes
+	  [Feature #8543]
+	* iseq.c (CHECK_HASH): new macro (for `misc' and `param' entries)
+	  (iseq_load): account for `misc' and `params' hashes
+	  (iseq_data_to_ary): add final opt to arg_opt_labels,
+	   fix kw support, account for unsigned entry->sp
+	* ext/-test-/iseq_load/iseq_load.c: new ext for test
+	* ext/-test-/iseq_load/extconf.rb: ditto
+	* test/-ext-/iseq_load/test_iseq_load.rb: new test
+
 Thu Dec  4 06:56:57 2014  Eric Wong  <e@80x24.org>
 
 	* iseq.c (iseq_free): avoid segfault on incomplete iseq

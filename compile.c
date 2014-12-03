@@ -5732,7 +5732,7 @@ iseq_build_from_ary_exception(rb_iseq_t *iseq, struct st_table *labels_table,
 	VALUE v, type, eiseqval;
 	const VALUE *ptr;
 	LABEL *lstart, *lend, *lcont;
-	int sp;
+	unsigned int sp;
 
 	v = rb_convert_type(RARRAY_AREF(exception, i), T_ARRAY,
 					 "Array", "to_ary");
@@ -5751,7 +5751,7 @@ iseq_build_from_ary_exception(rb_iseq_t *iseq, struct st_table *labels_table,
 	lstart = register_label(iseq, labels_table, ptr[2]);
 	lend   = register_label(iseq, labels_table, ptr[3]);
 	lcont  = register_label(iseq, labels_table, ptr[4]);
-	sp     = NUM2INT(ptr[5]);
+	sp     = NUM2UINT(ptr[5]);
 
 	(void)sp;
 
@@ -5807,14 +5807,25 @@ iseq_build_callinfo_from_hash(rb_iseq_t *iseq, VALUE op)
 	VALUE vflag = rb_hash_aref(op, ID2SYM(rb_intern("flag")));
 	VALUE vorig_argc = rb_hash_aref(op, ID2SYM(rb_intern("orig_argc")));
 	VALUE vblock = rb_hash_aref(op, ID2SYM(rb_intern("blockptr")));
+	VALUE vkw_arg = rb_hash_aref(op, ID2SYM(rb_intern("kw_arg")));
 
 	if (!NIL_P(vmid)) mid = SYM2ID(vmid);
 	if (!NIL_P(vflag)) flag = NUM2UINT(vflag);
 	if (!NIL_P(vorig_argc)) orig_argc = FIX2INT(vorig_argc);
 	if (!NIL_P(vblock)) block = iseq_build_load_iseq(iseq, vblock);
-    }
 
-    /* TODO: support keywords */
+	if (!NIL_P(vkw_arg)) {
+	    int i;
+	    int len = RARRAY_LENINT(vkw_arg);
+	    size_t n = sizeof(rb_call_info_kw_arg_t) + sizeof(ID) * (len - 1);
+
+	    kw_arg = xmalloc(n);
+	    kw_arg->keyword_len = len;
+	    for (i = 0; i < len; i++) {
+		kw_arg->keywords[i] = SYM2ID(RARRAY_AREF(vkw_arg, i));
+	    }
+	}
+    }
 
     return (VALUE)new_callinfo(iseq, mid, orig_argc, block, flag, kw_arg);
 }
@@ -5915,16 +5926,21 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 		      case TS_CDHASH:
 			{
 			    int i;
+			    VALUE map = rb_hash_new();
+
+			    rb_hash_tbl_raw(map)->type = &cdhash_type;
 			    op = rb_convert_type(op, T_ARRAY, "Array", "to_ary");
 			    op = rb_ary_dup(op);
 			    for (i=0; i<RARRAY_LEN(op); i+=2) {
-				VALUE sym = rb_ary_entry(op, i+1);
+				VALUE key = RARRAY_AREF(op, i);
+				VALUE sym = RARRAY_AREF(op, i+1);
 				LABEL *label =
 				  register_label(iseq, labels_table, sym);
-				rb_ary_store(op, i+1, (VALUE)label | 1);
+				rb_hash_aset(map, key, (VALUE)label | 1);
 			    }
-			    argv[j] = op;
-			    iseq_add_mark_object_compile_time(iseq, op);
+			    RB_GC_GUARD(op);
+			    argv[j] = map;
+			    iseq_add_mark_object_compile_time(iseq, map);
 			}
 			break;
 		      default:
@@ -5947,68 +5963,180 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 }
 
 #define CHECK_ARRAY(v)   rb_convert_type((v), T_ARRAY, "Array", "to_ary")
-#define CHECK_STRING(v)  rb_convert_type((v), T_STRING, "String", "to_str")
 #define CHECK_SYMBOL(v)  rb_convert_type((v), T_SYMBOL, "Symbol", "to_sym")
-static inline VALUE CHECK_INTEGER(VALUE v) {(void)NUM2LONG(v); return v;}
+
+static int
+int_param(int *dst, VALUE param, VALUE sym)
+{
+    VALUE val = rb_hash_aref(param, sym);
+    switch (TYPE(val)) {
+      case T_NIL:
+	return FALSE;
+      case T_FIXNUM:
+	*dst = FIX2INT(val);
+	return TRUE;
+      default:
+	rb_raise(rb_eTypeError, "invalid %+"PRIsVALUE" Fixnum: %+"PRIsVALUE,
+		 sym, val);
+    }
+    return FALSE;
+}
+
+static void
+iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
+{
+    int i, j;
+    int len = RARRAY_LENINT(keywords);
+    int default_len;
+    VALUE key, sym, default_val;
+
+    iseq->param.flags.has_kw = TRUE;
+
+    iseq->param.keyword = ZALLOC(struct rb_iseq_param_keyword);
+    iseq->param.keyword->num = len;
+#define SYM(s) ID2SYM(rb_intern(#s))
+    (void)int_param(&iseq->param.keyword->bits_start, params, SYM(kwbits));
+    i = iseq->param.keyword->bits_start - iseq->param.keyword->num;
+    iseq->param.keyword->table = &iseq->local_table[i];
+#undef SYM
+
+    /* required args */
+    for (i = 0; i < len; i++) {
+	VALUE val = RARRAY_AREF(keywords, i);
+
+	if (!SYMBOL_P(val)) {
+	    goto default_values;
+	}
+	iseq->param.keyword->table[i] = SYM2ID(val);
+	iseq->param.keyword->required_num++;
+    }
+
+default_values: /* note: we intentionally preserve `i' from previous loop */
+    default_len = len - i;
+    if (default_len == 0) {
+	return;
+    }
+
+    iseq->param.keyword->default_values = ALLOC_N(VALUE, default_len);
+
+    for (j = 0; i < len; i++, j++) {
+	key = RARRAY_AREF(keywords, i);
+	CHECK_ARRAY(key);
+
+	switch (RARRAY_LEN(key)) {
+	  case 1:
+	    sym = RARRAY_AREF(key, 0);
+	    default_val = Qundef;
+	    break;
+	  case 2:
+	    sym = RARRAY_AREF(key, 0);
+	    default_val = RARRAY_AREF(key, 1);
+	    break;
+	  default:
+	    rb_raise(rb_eTypeError,
+		     "keyword default has unsupported len %+"PRIsVALUE,
+		     key);
+	}
+	iseq->param.keyword->table[i] = SYM2ID(sym);
+	iseq->param.keyword->default_values[j] = default_val;
+    }
+}
 
 VALUE
-rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
+rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
 			 VALUE exception, VALUE body)
 {
-    int i;
+#define SYM(s) ID2SYM(rb_intern(#s))
+    int i, len;
     ID *tbl;
     struct st_table *labels_table = st_init_numtable();
+    VALUE arg_opt_labels = rb_hash_aref(params, SYM(opt));
+    VALUE keywords = rb_hash_aref(params, SYM(keyword));
+    VALUE sym_arg_rest = ID2SYM(rb_intern("#arg_rest"));
     DECL_ANCHOR(anchor);
     INIT_ANCHOR(anchor);
 
-    iseq->local_table_size = RARRAY_LENINT(locals);
+    len = RARRAY_LENINT(locals);
+    iseq->local_table_size = len;
     iseq->local_table = tbl = (ID *)ALLOC_N(ID, iseq->local_table_size);
     iseq->local_size = iseq->local_table_size + 1;
 
-    for (i=0; i<RARRAY_LEN(locals); i++) {
+    for (i = 0; i < len; i++) {
 	VALUE lv = RARRAY_AREF(locals, i);
-	tbl[i] = FIXNUM_P(lv) ? (ID)FIX2LONG(lv) : SYM2ID(CHECK_SYMBOL(lv));
-    }
 
-    /* args */
-    if (FIXNUM_P(args)) {
-	iseq->param.size = iseq->param.lead_num = FIX2INT(args);
-	iseq->param.flags.has_lead = TRUE;
-    }
-    else {
-	int i = 0;
-	VALUE argc = CHECK_INTEGER(rb_ary_entry(args, i++));
-	VALUE arg_opt_labels = CHECK_ARRAY(rb_ary_entry(args, i++));
-	VALUE arg_post_num = CHECK_INTEGER(rb_ary_entry(args, i++));
-	VALUE arg_post_start = CHECK_INTEGER(rb_ary_entry(args, i++));
-	VALUE arg_rest = CHECK_INTEGER(rb_ary_entry(args, i++));
-	VALUE arg_block = CHECK_INTEGER(rb_ary_entry(args, i++));
-
-	iseq->param.lead_num = FIX2INT(argc);
-	iseq->param.rest_start = FIX2INT(arg_rest);
-	iseq->param.post_num = FIX2INT(arg_post_num);
-	iseq->param.post_start = FIX2INT(arg_post_start);
-	iseq->param.block_start = FIX2INT(arg_block);
-	iseq->param.opt_num = RARRAY_LENINT(arg_opt_labels) - 1;
-	iseq->param.opt_table = (VALUE *)ALLOC_N(VALUE, iseq->param.opt_num + 1);
-
-	if (iseq->param.flags.has_block) {
-	    iseq->param.size = iseq->param.block_start + 1;
-	}
-	else if (iseq->param.flags.has_post) {
-	    iseq->param.size = iseq->param.post_start + iseq->param.post_num;
-	}
-	else if (iseq->param.flags.has_rest) {
-	    iseq->param.size = iseq->param.rest_start + 1;
+	if (sym_arg_rest == lv) {
+	    tbl[i] = 0;
 	}
 	else {
-	    iseq->param.size = iseq->param.lead_num + iseq->param.opt_num;
-	}
-
-	for (i=0; i<RARRAY_LEN(arg_opt_labels); i++) {
-	    iseq->param.opt_table[i] = (VALUE)register_label(iseq, labels_table, rb_ary_entry(arg_opt_labels, i));
+	    tbl[i] = FIXNUM_P(lv) ? (ID)FIX2LONG(lv) : SYM2ID(CHECK_SYMBOL(lv));
 	}
     }
+
+#define MISC_PARAM(D,F) do { \
+    if (!int_param(D, misc, SYM(F))) { \
+	rb_raise(rb_eTypeError, "misc field missing: %s", #F); \
+    } } while (0)
+    MISC_PARAM(&iseq->local_size, local_size);
+    /* iseq->stack_size and iseq->param.size are calculated */
+#undef MISC_PARAM
+
+#define INT_PARAM(F) int_param(&iseq->param.F, params, SYM(F))
+    if (INT_PARAM(lead_num)) {
+	iseq->param.flags.has_lead = TRUE;
+    }
+    if (INT_PARAM(post_num)) iseq->param.flags.has_post = TRUE;
+    if (INT_PARAM(post_start)) iseq->param.flags.has_post = TRUE;
+    if (INT_PARAM(rest_start)) iseq->param.flags.has_rest = TRUE;
+    if (INT_PARAM(block_start)) iseq->param.flags.has_block = TRUE;
+#undef INT_PARAM
+
+    switch (TYPE(arg_opt_labels)) {
+      case T_ARRAY:
+	len = RARRAY_LENINT(arg_opt_labels);
+	iseq->param.flags.has_opt = !!(len - 1 >= 0);
+
+	if (iseq->param.flags.has_opt) {
+	    iseq->param.opt_num = len - 1;
+	    iseq->param.opt_table = (VALUE *)ALLOC_N(VALUE, len);
+
+	    for (i = 0; i < len; i++) {
+		VALUE ent = RARRAY_AREF(arg_opt_labels, i);
+		LABEL *label = register_label(iseq, labels_table, ent);
+
+		iseq->param.opt_table[i] = (VALUE)label;
+	    }
+	}
+      case T_NIL:
+	break;
+      default:
+	rb_raise(rb_eTypeError, ":opt param is not an array: %+"PRIsVALUE,
+		 arg_opt_labels);
+    }
+
+    switch (TYPE(keywords)) {
+      case T_ARRAY:
+	iseq_build_kw(iseq, params, keywords);
+      case T_NIL:
+	break;
+      default:
+	rb_raise(rb_eTypeError, ":keywords param is not an array: %+"PRIsVALUE,
+		 keywords);
+    }
+
+    if (Qtrue == rb_hash_aref(params, SYM(ambiguous_param0))) {
+	iseq->param.flags.ambiguous_param0 = TRUE;
+    }
+
+    if (int_param(&i, params, SYM(kwrest))) {
+        if (!iseq->param.keyword) {
+          iseq->param.keyword = ZALLOC(struct rb_iseq_param_keyword);
+        }
+        iseq->param.keyword->rest_start = i;
+        iseq->param.flags.has_kwrest = TRUE;
+
+    }
+#undef SYM
+    iseq_calc_param_size(iseq);
 
     /* exception */
     iseq_build_from_ary_exception(iseq, labels_table, exception);

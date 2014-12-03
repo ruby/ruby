@@ -468,6 +468,7 @@ rb_iseq_new_with_bopt(NODE *node, VALUE name, VALUE path, VALUE absolute_path, V
 }
 
 #define CHECK_ARRAY(v)   rb_convert_type((v), T_ARRAY, "Array", "to_ary")
+#define CHECK_HASH(v)    rb_convert_type((v), T_HASH, "Hash", "to_hash")
 #define CHECK_STRING(v)  rb_convert_type((v), T_STRING, "String", "to_str")
 #define CHECK_SYMBOL(v)  rb_convert_type((v), T_SYMBOL, "Symbol", "to_sym")
 static inline VALUE CHECK_INTEGER(VALUE v) {(void)NUM2LONG(v); return v;}
@@ -506,7 +507,7 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
 
     VALUE magic, version1, version2, format_type, misc;
     VALUE name, path, absolute_path, first_lineno;
-    VALUE type, body, locals, args, exception;
+    VALUE type, body, locals, params, exception;
 
     st_data_t iseq_type;
     rb_iseq_t *iseq;
@@ -524,8 +525,8 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
     version1    = CHECK_INTEGER(rb_ary_entry(data, i++));
     version2    = CHECK_INTEGER(rb_ary_entry(data, i++));
     format_type = CHECK_INTEGER(rb_ary_entry(data, i++));
-    misc        = rb_ary_entry(data, i++); /* TODO */
-    ((void)magic, (void)version1, (void)version2, (void)format_type, (void)misc);
+    misc        = CHECK_HASH(rb_ary_entry(data, i++));
+    ((void)magic, (void)version1, (void)version2, (void)format_type);
 
     name        = CHECK_STRING(rb_ary_entry(data, i++));
     path        = CHECK_STRING(rb_ary_entry(data, i++));
@@ -535,12 +536,7 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
 
     type        = CHECK_SYMBOL(rb_ary_entry(data, i++));
     locals      = CHECK_ARRAY(rb_ary_entry(data, i++));
-
-    args        = rb_ary_entry(data, i++);
-    if (FIXNUM_P(args) || (args = CHECK_ARRAY(args))) {
-	/* */
-    }
-
+    params      = CHECK_HASH(rb_ary_entry(data, i++));
     exception   = CHECK_ARRAY(rb_ary_entry(data, i++));
     body        = CHECK_ARRAY(rb_ary_entry(data, i++));
 
@@ -558,10 +554,11 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
     }
 
     make_compile_option(&option, opt);
+
     prepare_iseq_build(iseq, name, path, absolute_path, first_lineno,
 		       parent, (enum iseq_type)iseq_type, 0, &option);
 
-    rb_iseq_build_from_ary(iseq, locals, args, exception, body);
+    rb_iseq_build_from_ary(iseq, misc, locals, params, exception, body);
 
     cleanup_iseq_build(iseq);
     return iseqval;
@@ -1733,16 +1730,21 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 
     /* params */
     {
-	VALUE arg_opt_labels = rb_ary_new();
 	int j;
 
-	for (j=0; j < iseq->param.opt_num; j++) {
-	    rb_ary_push(arg_opt_labels, register_label(labels_table, iseq->param.opt_table[j]));
-	}
+	if (iseq->param.flags.has_opt) {
+          int len = iseq->param.opt_num + 1;
+          VALUE arg_opt_labels = rb_ary_new2(len);
+
+          for (j = 0; j < len; j++) {
+              VALUE l = register_label(labels_table, iseq->param.opt_table[j]);
+              rb_ary_push(arg_opt_labels, l);
+          }
+          rb_hash_aset(params, ID2SYM(rb_intern("opt")), arg_opt_labels);
+        }
 
 	/* commit */
 	if (iseq->param.flags.has_lead) rb_hash_aset(params, ID2SYM(rb_intern("lead_num")), INT2FIX(iseq->param.lead_num));
-	if (iseq->param.flags.has_opt) rb_hash_aset(params, ID2SYM(rb_intern("opt")),  arg_opt_labels);
 	if (iseq->param.flags.has_post) rb_hash_aset(params, ID2SYM(rb_intern("post_num")), INT2FIX(iseq->param.post_num));
 	if (iseq->param.flags.has_post) rb_hash_aset(params, ID2SYM(rb_intern("post_start")), INT2FIX(iseq->param.post_start));
 	if (iseq->param.flags.has_rest) rb_hash_aset(params, ID2SYM(rb_intern("rest_start")), INT2FIX(iseq->param.rest_start));
@@ -1760,6 +1762,9 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 		}
 		rb_ary_push(keywords, key);
 	    }
+
+	    rb_hash_aset(params, ID2SYM(rb_intern("kwbits")),
+	                 INT2FIX(iseq->param.keyword->bits_start));
 	    rb_hash_aset(params, ID2SYM(rb_intern("keyword")), keywords);
 	}
 	if (iseq->param.flags.has_kwrest) rb_hash_aset(params, ID2SYM(rb_intern("kwrest")), INT2FIX(iseq->param.keyword->rest_start));
@@ -1818,10 +1823,25 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 		{
 		    rb_call_info_t *ci = (rb_call_info_t *)*seq;
 		    VALUE e = rb_hash_new();
+		    int orig_argc = ci->orig_argc;
+
 		    rb_hash_aset(e, ID2SYM(rb_intern("mid")), ci->mid ? ID2SYM(ci->mid) : Qnil);
-		    rb_hash_aset(e, ID2SYM(rb_intern("flag")), ULONG2NUM(ci->flag));
-		    rb_hash_aset(e, ID2SYM(rb_intern("orig_argc")), INT2FIX(ci->orig_argc));
+		    rb_hash_aset(e, ID2SYM(rb_intern("flag")), UINT2NUM(ci->flag));
 		    rb_hash_aset(e, ID2SYM(rb_intern("blockptr")), ci->blockiseq ? iseq_data_to_ary(ci->blockiseq) : Qnil);
+
+		    if (ci->kw_arg) {
+			int i;
+			VALUE kw = rb_ary_new2((long)ci->kw_arg->keyword_len);
+
+			orig_argc -= ci->kw_arg->keyword_len;
+			for (i = 0; i < ci->kw_arg->keyword_len; i++) {
+			    rb_ary_push(kw, ID2SYM(ci->kw_arg->keywords[i]));
+			}
+			rb_hash_aset(e, ID2SYM(rb_intern("kw_arg")), kw);
+		    }
+
+		    rb_hash_aset(e, ID2SYM(rb_intern("orig_argc")),
+				INT2FIX(orig_argc));
 		    rb_ary_push(ary, e);
 	        }
 		break;
@@ -1871,7 +1891,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 	rb_ary_push(ary, register_label(labels_table, entry->start));
 	rb_ary_push(ary, register_label(labels_table, entry->end));
 	rb_ary_push(ary, register_label(labels_table, entry->cont));
-	rb_ary_push(ary, INT2FIX(entry->sp));
+	rb_ary_push(ary, UINT2NUM(entry->sp));
 	rb_ary_push(exception, ary);
     }
 
