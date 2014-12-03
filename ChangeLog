@@ -1,3 +1,8 @@
+Wed Dec  3 14:34:07 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (setup_fake_str): fake string does not share another
+	  string, but just should not free.
+
 Wed Dec  3 11:14:14 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (w32_spawn): `v2` is used not only for `shell` but also

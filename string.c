@@ -250,7 +250,7 @@ rb_fstring(VALUE str)
 static VALUE
 setup_fake_str(struct RString *fake_str, const char *name, long len, int encidx)
 {
-    fake_str->basic.flags = T_STRING|RSTRING_NOEMBED|ELTS_SHARED;
+    fake_str->basic.flags = T_STRING|RSTRING_NOEMBED|STR_NOFREE;
     /* SHARED to be allocated by the callback */
 
     ENCODING_SET_INLINED((VALUE)fake_str, encidx);
