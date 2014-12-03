@@ -5,6 +5,12 @@ Wed Dec  3 17:13:24 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed Dec  3 16:47:35 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
+	* load.c (register_init_ext, ruby_init_ext): defer running the
+	  registered initialization function until required, not to enable
+	  extensions which have global effects just by loading, e.g.,
+	  mathn/complex and mathn/rational.  fix `make test` with
+	  --with-static-linked-ext.
+
 	* enc/encinit.c.erb (Init_enc): initialize encdb and transdb
 	  directly.
 
