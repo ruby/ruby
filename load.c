@@ -1040,7 +1040,10 @@ ruby_require_internal(const char *fname, unsigned int len)
 {
     struct RString fake;
     VALUE str = rb_setup_fake_str(&fake, fname, len, 0);
-    return rb_require_internal(str, 0);
+    int result = rb_require_internal(str, 0);
+    if (result > 1) result = -1;
+    rb_set_errinfo(Qnil);
+    return result;
 }
 
 VALUE
