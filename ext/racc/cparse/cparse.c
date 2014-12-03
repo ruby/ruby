@@ -200,6 +200,7 @@ static VALUE assert_hash _((VALUE h));
 static VALUE initialize_params _((VALUE vparams, VALUE parser, VALUE arg,
                                  VALUE lexer, VALUE lexmid));
 static void cparse_params_mark _((void *ptr));
+static size_t cparse_params_memsize _((const void *ptr));
 
 static void parse_main _((struct cparse_params *v,
                          VALUE tok, VALUE val, int resume));
@@ -218,33 +219,47 @@ static VALUE reduce0 _((VALUE block_args, VALUE data, VALUE self));
 #endif
 
 #undef RUBY_UNTYPED_DATA_WARNING
-#define RUBY_UNTYPED_DATA_WARNING 0
+#define RUBY_UNTYPED_DATA_WARNING 1
+
+static const rb_data_type_t cparse_params_type = {
+    "racc/cparse",
+    {
+	cparse_params_mark,
+	RUBY_TYPED_DEFAULT_FREE,
+	cparse_params_memsize,
+    },
+#ifdef RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0,
+    RUBY_TYPED_FREE_IMMEDIATELY,
+#endif
+};
 
 static VALUE
 racc_cparse(VALUE parser, VALUE arg, VALUE sysdebug)
 {
-    volatile VALUE vparams;
+    VALUE vparams;
     struct cparse_params *v;
 
-    vparams = Data_Make_Struct(CparseParams, struct cparse_params,
-                               cparse_params_mark, -1, v);
+    vparams = TypedData_Make_Struct(CparseParams, struct cparse_params,
+				    &cparse_params_type, v);
     D_puts("starting cparse");
     v->sys_debug = RTEST(sysdebug);
     vparams = initialize_params(vparams, parser, arg, Qnil, Qnil);
     v->lex_is_iterator = FALSE;
     parse_main(v, Qnil, Qnil, 0);
 
+    RB_GC_GUARD(vparams);
     return v->retval;
 }
 
 static VALUE
 racc_yyparse(VALUE parser, VALUE lexer, VALUE lexmid, VALUE arg, VALUE sysdebug)
 {
-    volatile VALUE vparams;
+    VALUE vparams;
     struct cparse_params *v;
 
-    vparams = Data_Make_Struct(CparseParams, struct cparse_params,
-                               cparse_params_mark, -1, v);
+    vparams = TypedData_Make_Struct(CparseParams, struct cparse_params,
+				    &cparse_params_type, v);
     v->sys_debug = RTEST(sysdebug);
     D_puts("start C yyparse");
     vparams = initialize_params(vparams, parser, arg, lexer, lexmid);
@@ -257,6 +272,7 @@ racc_yyparse(VALUE parser, VALUE lexer, VALUE lexmid, VALUE arg, VALUE sysdebug)
                  rb_id2name(v->lexmid));
     }
 
+    RB_GC_GUARD(vparams);
     return v->retval;
 }
 
@@ -270,9 +286,8 @@ call_lexer(struct cparse_params *v)
 static VALUE
 lexer_iter(VALUE data)
 {
-    struct cparse_params *v;
+    struct cparse_params *v = rb_check_typeddata(data, &cparse_params_type);
 
-    Data_Get_Struct(data, struct cparse_params, v);
     rb_funcall(v->lexer, v->lexmid, 0);
     return Qnil;
 }
@@ -287,10 +302,9 @@ call_lexer(struct cparse_params *v)
 static VALUE
 lexer_i(RB_BLOCK_CALL_FUNC_ARGLIST(block_args, data))
 {
-    struct cparse_params *v;
+    struct cparse_params *v = rb_check_typeddata(data, &cparse_params_type);
     VALUE tok, val;
 
-    Data_Get_Struct(data, struct cparse_params, v);
     if (v->fin)
         rb_raise(rb_eArgError, "extra token after EndOfToken");
     extract_user_token(v, block_args, &tok, &val);
@@ -323,9 +337,8 @@ assert_integer(VALUE n)
 static VALUE
 initialize_params(VALUE vparams, VALUE parser, VALUE arg, VALUE lexer, VALUE lexmid)
 {
-    struct cparse_params *v;
+    struct cparse_params *v = rb_check_typeddata(vparams, &cparse_params_type);
 
-    Data_Get_Struct(vparams, struct cparse_params, v);
     v->value_v = vparams;
     v->parser = parser;
     v->lexer = lexer;
@@ -406,6 +419,12 @@ cparse_params_mark(void *ptr)
     rb_gc_mark(v->tstack);
     rb_gc_mark(v->t);
     rb_gc_mark(v->retval);
+}
+
+static size_t
+cparse_params_memsize(const void *ptr)
+{
+    return sizeof(struct cparse_params);
 }
 
 static void
@@ -687,7 +706,7 @@ reduce(struct cparse_params *v, long act)
 static VALUE
 reduce0(VALUE val, VALUE data, VALUE self)
 {
-    struct cparse_params *v;
+    struct cparse_params *v = rb_check_typeddata(data, &cparse_params_type);
     VALUE reduce_to, reduce_len, method_id;
     long len;
     ID mid;
@@ -695,7 +714,6 @@ reduce0(VALUE val, VALUE data, VALUE self)
     long i, k1, k2;
     VALUE goto_state;
 
-    Data_Get_Struct(data, struct cparse_params, v);
     reduce_len = rb_ary_entry(v->reduce_table, v->ruleno);
     reduce_to  = rb_ary_entry(v->reduce_table, v->ruleno+1);
     method_id  = rb_ary_entry(v->reduce_table, v->ruleno+2);
@@ -797,6 +815,8 @@ reduce0(VALUE val, VALUE data, VALUE self)
 void
 Init_cparse(void)
 {
+#undef rb_intern
+#define rb_intern(str) rb_intern_const(str)
     VALUE Racc, Parser;
     ID id_racc = rb_intern("Racc");
 

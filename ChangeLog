@@ -1,3 +1,7 @@
+Wed Dec  3 09:48:57 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/racc/cparse/cparse.c (cparse_params_type): use typed data.
+
 Tue Dec  2 21:33:56 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: use typed data for com_hash.
