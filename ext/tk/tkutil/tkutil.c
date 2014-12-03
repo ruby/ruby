@@ -24,7 +24,7 @@ static int rb_thread_critical; /* dummy */
 #endif
 
 #undef RUBY_UNTYPED_DATA_WARNING
-#define RUBY_UNTYPED_DATA_WARNING 0
+#define RUBY_UNTYPED_DATA_WARNING 1
 
 #if !defined(RHASH_TBL)
 #define RHASH_TBL(h) (RHASH(h)->tbl)
@@ -1171,6 +1171,23 @@ subst_free(ptr)
     }
 }
 
+static size_t
+subst_memsize(ptr)
+    const struct cbsubst_info *ptr;
+{
+    return sizeof(*ptr);
+}
+
+static const rb_data_type_t cbsubst_info_type = {
+    "TkUtil/CallbackSubst/Info",
+    {
+	subst_mark,
+	subst_free,
+	subst_memsize,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 static VALUE
 allocate_cbsubst_info(struct cbsubst_info **inf_ptr)
 {
@@ -1197,7 +1214,7 @@ allocate_cbsubst_info(struct cbsubst_info **inf_ptr)
 
   if (inf_ptr != (struct cbsubst_info **)NULL) *inf_ptr = inf;
 
-  return Data_Wrap_Struct(cSUBST_INFO, subst_mark, subst_free, inf);
+  return TypedData_Wrap_Struct(cSUBST_INFO, &cbsubst_info_type, inf);
 }
 
 static void
@@ -1205,6 +1222,13 @@ cbsubst_init(void)
 {
   rb_const_set(cCB_SUBST, ID_SUBST_INFO,
 	       allocate_cbsubst_info((struct cbsubst_info **)NULL));
+}
+
+static struct cbsubst_info *
+cbsubst_get_ptr(klass)
+    VALUE klass;
+{
+    return rb_check_typeddata(rb_const_get(klass, ID_SUBST_INFO), &cbsubst_info_type);
 }
 
 static VALUE
@@ -1216,8 +1240,7 @@ cbsubst_initialize(argc, argv, self)
     struct cbsubst_info *inf;
     int idx, iv_idx;
 
-    Data_Get_Struct(rb_const_get(rb_obj_class(self), ID_SUBST_INFO),
-                    struct cbsubst_info, inf);
+    inf = cbsubst_get_ptr(rb_obj_class(self));
 
    idx = 0;
     for(iv_idx = 0; iv_idx < CBSUBST_TBL_MAX; iv_idx++) {
@@ -1288,8 +1311,7 @@ cbsubst_def_attr_aliases(self, tbl)
         rb_raise(rb_eArgError, "expected a Hash");
     }
 
-    Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO),
-                    struct cbsubst_info, inf);
+    inf = cbsubst_get_ptr(self);
 
     rb_hash_foreach(tbl, each_attr_def, self);
 
@@ -1311,8 +1333,7 @@ cbsubst_sym_to_subst(self, sym)
 
     if (!RB_TYPE_P(sym, T_SYMBOL)) return sym;
 
-    Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO),
-                    struct cbsubst_info, inf);
+    inf = cbsubst_get_ptr(self);
 
     if (!NIL_P(ret = rb_hash_aref(inf->aliases, sym))) {
 	str = rb_sym2str(ret);
@@ -1364,8 +1385,7 @@ cbsubst_get_subst_arg(argc, argv, self)
     ID id;
     volatile VALUE arg_sym, ret;
 
-    Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO),
-                    struct cbsubst_info, inf);
+    inf = cbsubst_get_ptr(self);
 
     ptr = buf = ALLOC_N(char, inf->full_subst_length + 1);
 
@@ -1439,8 +1459,7 @@ cbsubst_get_subst_key(self, str)
     list = rb_funcall(cTclTkLib, ID_split_tklist, 1, str);
     len = RARRAY_LEN(list);
 
-    Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO),
-                    struct cbsubst_info, inf);
+    inf = cbsubst_get_ptr(self);
 
     ptr = buf = ALLOC_N(char, inf->full_subst_length + len + 1);
 
@@ -1488,8 +1507,7 @@ cbsubst_get_all_subst_keys(self)
     long len;
     volatile VALUE ret;
 
-    Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO),
-                    struct cbsubst_info, inf);
+    inf = cbsubst_get_ptr(self);
 
     ptr = buf = ALLOC_N(char, inf->full_subst_length + 1);
     keys_ptr = keys_buf = ALLOC_N(char, CBSUBST_TBL_MAX + 1);
@@ -1661,8 +1679,7 @@ cbsubst_scan_args(self, arg_key, val_ary)
 
     old_gc = rb_gc_disable();
 
-    Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO),
-                    struct cbsubst_info, inf);
+    inf = cbsubst_get_ptr(self);
 
     for(idx = 0; idx < vallen; idx++) {
       if (idx >= keylen) {
