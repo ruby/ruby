@@ -940,10 +940,10 @@ load_ext(VALUE path)
     return (VALUE)dln_load(RSTRING_PTR(path));
 }
 
-VALUE
-rb_require_safe(VALUE fname, int safe)
+static int
+rb_require_internal(VALUE fname, int safe)
 {
-    volatile VALUE result = Qnil;
+    volatile int result = -2;
     rb_thread_t *th = GET_THREAD();
     volatile VALUE errinfo = th->errinfo;
     int state;
@@ -985,11 +985,11 @@ rb_require_safe(VALUE fname, int safe)
 	}
 	if (found) {
 	    if (!path || !(ftptr = load_lock(RSTRING_PTR(path)))) {
-		result = Qfalse;
+		result = -1;
 	    }
 	    else if (!*ftptr) {
 		rb_provide_feature(path);
-		result = Qtrue;
+		result = 0;
 	    }
 	    else {
 		switch (found) {
@@ -1004,7 +1004,7 @@ rb_require_safe(VALUE fname, int safe)
 		    break;
 		}
 		rb_provide_feature(path);
-		result = Qtrue;
+		result = 0;
 	    }
 	}
     }
@@ -1013,11 +1013,7 @@ rb_require_safe(VALUE fname, int safe)
 
     rb_set_safe_level_force(saved.safe);
     if (state) {
-	JUMP_TAG(state);
-    }
-
-    if (NIL_P(result)) {
-	load_failed(fname);
+	return state;
     }
 
     th->errinfo = errinfo;
@@ -1029,6 +1025,29 @@ rb_require_safe(VALUE fname, int safe)
     }
 
     return result;
+}
+
+int
+ruby_require_internal(const char *fname, unsigned int len)
+{
+    struct RString fake;
+    VALUE str = rb_setup_fake_str(&fake, fname, len, 0);
+    return rb_require_internal(str, 0);
+}
+
+VALUE
+rb_require_safe(VALUE fname, int safe)
+{
+    int result = rb_require_internal(fname, safe);
+
+    if (result > 0) {
+	JUMP_TAG(result);
+    }
+    if (result < -1) {
+	load_failed(fname);
+    }
+
+    return result ? Qfalse : Qtrue;
 }
 
 VALUE

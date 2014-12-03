@@ -1,3 +1,10 @@
+Wed Dec  3 14:51:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (ruby_require_internal): separate from rb_require_safe,
+	  not to raise exceptions.
+
+	* ruby.c (process_options): remove unnatural encoding search.
+
 Wed Dec  3 14:34:07 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (setup_fake_str): fake string does not share another

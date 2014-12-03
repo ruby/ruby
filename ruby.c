@@ -1368,7 +1368,6 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     ruby_gc_set_params(opt->safe_level);
     ruby_init_loadpath_safe(opt->safe_level);
     Init_enc();
-    rb_enc_find_index("encdb");
     lenc = rb_locale_encoding();
     rb_enc_associate(rb_progname, lenc);
     rb_obj_freeze(rb_progname);
