@@ -1321,9 +1321,9 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
     }
 
     if (!e && shell && !(wshell = mbstr_to_wstr(cp, shell, -1, NULL))) e = E2BIG;
-    if (v2) ALLOCV_END(v2);
     if (cmd_sep) *cmd_sep = sep;
     if (!e && cmd && !(wcmd = mbstr_to_wstr(cp, cmd, -1, NULL))) e = E2BIG;
+    if (v2) ALLOCV_END(v2);
     if (v) ALLOCV_END(v);
 
     if (!e) {

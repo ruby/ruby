@@ -1,3 +1,9 @@
+Wed Dec  3 11:14:14 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (w32_spawn): `v2` is used not only for `shell` but also
+	  `cmd`, so must not free before using `cmd`.
+	  [ruby-core:66648] [Bug #10563]
+
 Wed Dec  3 09:48:57 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/racc/cparse/cparse.c (cparse_params_type): use typed data.
