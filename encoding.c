@@ -629,13 +629,6 @@ rb_enc_registered(const char *name)
     return -1;
 }
 
-static VALUE
-require_enc(VALUE enclib)
-{
-    int safe = rb_safe_level();
-    return rb_require_safe(enclib, safe > 3 ? 3 : safe);
-}
-
 static int
 load_encoding(const char *name)
 {
@@ -643,8 +636,8 @@ load_encoding(const char *name)
     VALUE verbose = ruby_verbose;
     VALUE debug = ruby_debug;
     VALUE errinfo;
-    VALUE loaded;
     char *s = RSTRING_PTR(enclib) + 4, *e = RSTRING_END(enclib) - 3;
+    int loaded;
     int idx;
 
     while (s < e) {
@@ -657,11 +650,11 @@ load_encoding(const char *name)
     ruby_verbose = Qfalse;
     ruby_debug = Qfalse;
     errinfo = rb_errinfo();
-    loaded = rb_protect(require_enc, enclib, 0);
+    loaded = rb_require_internal(enclib, rb_safe_level());
     ruby_verbose = verbose;
     ruby_debug = debug;
     rb_set_errinfo(errinfo);
-    if (NIL_P(loaded)) return -1;
+    if (loaded < 0 || 1 < loaded) return -1;
     if ((idx = rb_enc_registered(name)) < 0) return -1;
     if (enc_autoload_p(enc_table.list[idx].enc)) return -1;
     return idx;

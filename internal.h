@@ -733,6 +733,7 @@ VALUE rb_iseq_method_name(VALUE self);
 /* load.c */
 VALUE rb_get_load_path(void);
 VALUE rb_get_expanded_load_path(void);
+int rb_require_internal(VALUE fname, int safe);
 NORETURN(void rb_load_fail(VALUE, const char*));
 
 /* loadpath.c */

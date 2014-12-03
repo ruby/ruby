@@ -947,7 +947,7 @@ load_ext(VALUE path)
  * <0: not found (LoadError)
  * >1: exception
  */
-static int
+int
 rb_require_internal(VALUE fname, int safe)
 {
     volatile int result = -1;
