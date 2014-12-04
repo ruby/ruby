@@ -697,6 +697,7 @@ if $configure_only and $command_output
     submakeopts = []
     if enable_config("shared", $enable_shared)
       submakeopts << 'DLDOBJS="$(EXTOBJS) $(ENCOBJS)"'
+      submakeopts << 'EXTOBJS='
       submakeopts << 'EXTSOLIBS="$(EXTLIBS)"'
       submakeopts << 'LIBRUBY_SO_UPDATE=$(LIBRUBY_EXTS)'
     else
