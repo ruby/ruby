@@ -642,7 +642,7 @@ inspect_timeval_as_interval(int level, int optname, VALUE data, VALUE ret)
  * it is not distinguishable by the size.
  */
 
-#ifndef HAVE_INET_NTOP
+#if !defined HAVE_INET_NTOP && ! defined _WIN32
 static const char *
 inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
 {
@@ -658,7 +658,7 @@ inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
 #endif
     return numaddr;
 }
-#elif defined __MINGW64__
+#elif defined _WIN32
 # define inet_ntop(f,a,n,l)      rb_w32_inet_ntop(f,a,n,l)
 #endif
 
