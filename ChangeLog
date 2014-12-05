@@ -1,3 +1,9 @@
+Fri Dec  5 17:09:09 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/option.c (inet_ntop): link aliased inet_ntop in
+	  libruby on mswin not rb_w32_inet_ntop which fails to link for
+	  unknown reason.
+
 Fri Dec  5 11:09:54 2014  Eric Wong  <e@80x24.org>
 
 	* iseq.c (prepare_iseq_build): remove unused block_opt param

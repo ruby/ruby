@@ -658,8 +658,10 @@ inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
 #endif
     return numaddr;
 }
-#elif defined _WIN32
+#elif defined __MINGW32__
 # define inet_ntop(f,a,n,l)      rb_w32_inet_ntop(f,a,n,l)
+#elif defined _MSC_VER && RUBY_MSVCRT_VERSION < 90
+const char *WSAAPI inet_ntop(int, const void *, char *, size_t);
 #endif
 
 /* Although the buffer size needed depends on the prefixes, "%u" may generate "4294967295".  */
