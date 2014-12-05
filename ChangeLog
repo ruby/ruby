@@ -1,3 +1,8 @@
+Sat Dec  6 04:33:52 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/pp.rb (File::Stat#pritty_print): some platforms (such as Windows)
+	  does not have major/minor parts of device.
+
 Fri Dec  5 22:43:04 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* ext/psych/lib/psych.rb: bump version to 2.0.8

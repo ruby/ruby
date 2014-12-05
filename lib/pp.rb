@@ -469,8 +469,10 @@ class File < IO # :nodoc:
         q.comma_breakable
         q.group {
           q.text sprintf("rdev=0x%x", self.rdev)
-          q.breakable
-          q.text sprintf('(%d, %d)', self.rdev_major, self.rdev_minor)
+          if self.rdev_major && self.rdev_minor
+            q.breakable
+            q.text sprintf('(%d, %d)', self.rdev_major, self.rdev_minor)
+          end
         }
         q.comma_breakable
         q.text "size="; q.pp self.size; q.comma_breakable
