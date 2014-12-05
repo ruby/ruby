@@ -12293,7 +12293,7 @@ Init_IO(void)
 
 #if 0
     /* Hack to get rdoc to regard ARGF as a class: */
-    rb_cARGF = rb_define_class("ARGF", rb_cObject);
+    rb_cARGF = rb_define_class("ARGF.class", rb_cObject);
 #endif
 
     rb_cARGF = rb_class_new(rb_cObject);
