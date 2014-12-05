@@ -22,7 +22,7 @@ Fri Dec  5 09:46:05 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Fri Dec  5 02:27:47 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: as all extension objects including initializations
-	  of ext and enc shouild be linked to libruby if enable-shared,
+	  of ext and enc should be linked to libruby if enable-shared,
 	  EXTOBJS should not be linked to main programs.
 	  [ruby-core:66675] [Bug #10566]
 
