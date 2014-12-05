@@ -1,3 +1,9 @@
+Fri Dec  5 09:46:05 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): fix lex_state after tLABEL_END, should
+	  be EXPR_LABELARG to be followed by "paren with arg".
+	  [ruby-core:66705] [Feature #4935]
+
 Fri Dec  5 02:27:47 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: as all extension objects including initializations

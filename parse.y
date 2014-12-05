@@ -7842,7 +7842,7 @@ parser_yylex(struct parser_params *parser)
 	    if (token == tSTRING_END || token == tREGEXP_END || token == tLABEL_END) {
 		rb_gc_force_recycle((VALUE)lex_strterm);
 		lex_strterm = 0;
-		lex_state = EXPR_END;
+		lex_state = token == tLABEL_END ? EXPR_LABELARG : EXPR_END;
 	    }
 	}
 	return token;
