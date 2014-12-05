@@ -718,6 +718,16 @@ class TestRubyOptions < Test::Unit::TestCase
     end
   end
 
+  if /mswin|mingw/ =~ RUBY_PLATFORM
+    Ougai = %W[\u{68ee}O\u{5916}.txt \u{68ee 9d0e 5916}.txt \u{68ee 9dd7 5916}.txt]
+    def test_command_line_glob_noncodepage
+      with_tmpchdir do |dir|
+        Ougai.each {|f| open(f, "w") {}}
+        assert_in_out_err(["-Eutf-8", "-e", "puts ARGV", "*"], "", Ougai, encoding: "utf-8")
+      end
+    end
+  end
+
   def test_script_is_directory
     feature2408 = '[ruby-core:26925]'
     assert_in_out_err(%w[.], "", [], /Is a directory -- \./, feature2408)
