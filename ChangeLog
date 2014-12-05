@@ -1,3 +1,12 @@
+Fri Dec  5 11:09:54 2014  Eric Wong  <e@80x24.org>
+
+	* iseq.c (prepare_iseq_build): remove unused block_opt param
+	  (rb_iseq_new_with_bopt_and_opt): remove
+	  (rb_iseq_new_with_opt): inline removed function
+	  (rb_iseq_new_with_bopt): remove
+	  (iseq_load): adjust prepare_iseq_build call
+	  [Feature #10565]
+
 Fri Dec  5 09:46:05 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): fix lex_state after tLABEL_END, should

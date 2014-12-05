@@ -267,7 +267,7 @@ rb_iseq_add_mark_object(rb_iseq_t *iseq, VALUE obj)
 static VALUE
 prepare_iseq_build(rb_iseq_t *iseq,
 		   VALUE name, VALUE path, VALUE absolute_path, VALUE first_lineno,
-		   VALUE parent, enum iseq_type type, VALUE block_opt,
+		   VALUE parent, enum iseq_type type,
 		   const rb_compile_option_t *option)
 {
     iseq->type = type;
@@ -431,40 +431,24 @@ rb_iseq_new_main(NODE *node, VALUE path, VALUE absolute_path)
 				parent, ISEQ_TYPE_MAIN, &COMPILE_OPTION_DEFAULT);
 }
 
-static VALUE
-rb_iseq_new_with_bopt_and_opt(NODE *node, VALUE name, VALUE path, VALUE absolute_path, VALUE first_lineno,
-				VALUE parent, enum iseq_type type, VALUE bopt,
-				const rb_compile_option_t *option)
+VALUE
+rb_iseq_new_with_opt(NODE *node, VALUE name, VALUE path, VALUE absolute_path,
+		     VALUE first_lineno, VALUE parent, enum iseq_type type,
+		     const rb_compile_option_t *option)
 {
+    /* TODO: argument check */
     rb_iseq_t *iseq;
     VALUE self = iseq_alloc(rb_cISeq);
 
     GetISeqPtr(self, iseq);
     iseq->self = self;
 
-    prepare_iseq_build(iseq, name, path, absolute_path, first_lineno, parent, type, bopt, option);
+    prepare_iseq_build(iseq, name, path, absolute_path, first_lineno, parent,
+		       type, option);
+
     rb_iseq_compile_node(self, node);
     cleanup_iseq_build(iseq);
     return self;
-}
-
-VALUE
-rb_iseq_new_with_opt(NODE *node, VALUE name, VALUE path, VALUE absolute_path, VALUE first_lineno,
-		     VALUE parent, enum iseq_type type,
-		     const rb_compile_option_t *option)
-{
-    /* TODO: argument check */
-    return rb_iseq_new_with_bopt_and_opt(node, name, path, absolute_path, first_lineno, parent, type,
-					   Qfalse, option);
-}
-
-VALUE
-rb_iseq_new_with_bopt(NODE *node, VALUE name, VALUE path, VALUE absolute_path, VALUE first_lineno,
-		       VALUE parent, enum iseq_type type, VALUE bopt)
-{
-    /* TODO: argument check */
-    return rb_iseq_new_with_bopt_and_opt(node, name, path, absolute_path, first_lineno, parent, type,
-					   bopt, &COMPILE_OPTION_DEFAULT);
 }
 
 #define CHECK_ARRAY(v)   rb_convert_type((v), T_ARRAY, "Array", "to_ary")
@@ -556,7 +540,7 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
     make_compile_option(&option, opt);
 
     prepare_iseq_build(iseq, name, path, absolute_path, first_lineno,
-		       parent, (enum iseq_type)iseq_type, 0, &option);
+		       parent, (enum iseq_type)iseq_type, &option);
 
     rb_iseq_build_from_ary(iseq, misc, locals, params, exception, body);
 
