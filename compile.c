@@ -6072,13 +6072,10 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
 	}
     }
 
-#define MISC_PARAM(D,F) do { \
-    if (!int_param(D, misc, SYM(F))) { \
-	rb_raise(rb_eTypeError, "misc field missing: %s", #F); \
-    } } while (0)
-    MISC_PARAM(&iseq->local_size, local_size);
-    /* iseq->stack_size and iseq->param.size are calculated */
-#undef MISC_PARAM
+    /*
+     * we currently ignore misc params,
+     * local_size, stack_size and param.size are all calculated
+     */
 
 #define INT_PARAM(F) int_param(&iseq->param.F, params, SYM(F))
     if (INT_PARAM(lead_num)) {

@@ -1,3 +1,7 @@
+Sat Dec  6 06:48:03 2014  Eric Wong  <e@80x24.org>
+
+	* compile.c (rb_iseq_build_from_ary): remove misc handling
+
 Sat Dec  6 06:14:23 2014  Vit Ondruch  <vondruch@redhat.com>
 
 	* configure.in (RUBY_LIB_VERSION): Fix --with-ruby-version
