@@ -2,12 +2,12 @@
 
 Gem::Specification.new do |s|
   s.name = "psych"
-  s.version = "2.0.7"
+  s.version = "2.0.8"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib"]
   s.authors = ["Aaron Patterson"]
-  s.date = "2014-12-01"
+  s.date = "2014-12-05"
   s.description = "Psych is a YAML parser and emitter.  Psych leverages libyaml[http://pyyaml.org/wiki/LibYAML]\nfor its YAML parsing and emitting capabilities.  In addition to wrapping\nlibyaml, Psych also knows how to serialize and de-serialize most Ruby objects\nto and from the YAML format."
   s.email = ["aaron@tenderlovemaking.com"]
   s.extensions = ["ext/psych/extconf.rb"]

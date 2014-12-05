@@ -42,7 +42,9 @@ static const rb_data_type_t psych_emitter_type = {
     "Psych/emitter",
     {0, dealloc, 0,},
     0, 0,
+#ifdef RUBY_TYPED_FREE_IMMEDIATELY
     RUBY_TYPED_FREE_IMMEDIATELY,
+#endif
 };
 
 static VALUE allocate(VALUE klass)

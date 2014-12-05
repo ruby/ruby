@@ -1,3 +1,10 @@
+Fri Dec  5 22:43:04 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* ext/psych/lib/psych.rb: bump version to 2.0.8
+	* ext/psych/psych.gemspec: ditto.
+	* ext/psych/psych_emitter.c: ditto.
+	* ext/psych/psych_parser.c: ditto.
+
 Fri Dec  5 17:09:09 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/option.c (inet_ntop): link aliased inet_ntop in
