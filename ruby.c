@@ -1322,11 +1322,6 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	ruby_show_copyright();
     }
 
-    if (opt->safe_level >= 4) {
-	OBJ_TAINT(rb_argv);
-	OBJ_TAINT(GET_VM()->load_path);
-    }
-
     if (!opt->e_script) {
 	if (argc == 0) {	/* no more args */
 	    if (opt->verbose)
@@ -1484,11 +1479,6 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 
     process_sflag(&opt->sflag);
     opt->xflag = 0;
-
-    if (opt->safe_level >= 4) {
-	FL_UNSET(rb_argv, FL_TAINT);
-	FL_UNSET(GET_VM()->load_path, FL_TAINT);
-    }
 
     if (opt->dump & DUMP_BIT(syntax)) {
 	printf("Syntax OK\n");
