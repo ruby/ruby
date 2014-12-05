@@ -4000,7 +4000,7 @@ if test ${RUBY_LIB_VERSION_STYLE+set}; then
 elif test -z "${ruby_version}"; then
     AC_MSG_ERROR([No ruby version, No place for bundled libraries])
 else
-    RUBY_LIB_VERSION="\"${ruby_version}\""
+    RUBY_LIB_VERSION="${ruby_version}"
 fi
 AC_SUBST(RUBY_LIB_VERSION_STYLE)
 AC_SUBST(RUBY_LIB_VERSION)

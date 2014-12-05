@@ -8,7 +8,7 @@
 % elsif !C["RUBY_LIB_VERSION"]
 #define RUBY_LIB_VERSION_STYLE		3	/* full */
 % else
-#define RUBY_LIB_VERSION		${RUBY_LIB_VERSION}
+#define RUBY_LIB_VERSION		"${RUBY_LIB_VERSION}"
 % end
 #define RUBY_EXEC_PREFIX		"<%='${RUBY_EXEC_PREFIX}' if C['RUBY_EXEC_PREFIX']%>"
 #define RUBY_LIB_PREFIX 		"${rubylibprefix}"
