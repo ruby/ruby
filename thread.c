@@ -3412,8 +3412,8 @@ rb_fd_set(int fd, rb_fdset_t *set)
 #endif
 
 static int
-do_select(int n, rb_fdset_t *read, rb_fdset_t *write, rb_fdset_t *except,
-	  struct timeval *timeout)
+do_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds,
+	  rb_fdset_t *exceptfds, struct timeval *timeout)
 {
     int UNINITIALIZED_VAR(result);
     int lerrno;
@@ -3431,18 +3431,19 @@ do_select(int n, rb_fdset_t *read, rb_fdset_t *write, rb_fdset_t *except,
 	timeout = &wait_rest;
     }
 
-    if (read)
-	rb_fd_init_copy(&orig_read, read);
-    if (write)
-	rb_fd_init_copy(&orig_write, write);
-    if (except)
-	rb_fd_init_copy(&orig_except, except);
+    if (readfds)
+	rb_fd_init_copy(&orig_read, readfds);
+    if (writefds)
+	rb_fd_init_copy(&orig_write, writefds);
+    if (exceptfds)
+	rb_fd_init_copy(&orig_except, exceptfds);
 
   retry:
     lerrno = 0;
 
     BLOCKING_REGION({
-	    result = native_fd_select(n, read, write, except, timeout, th);
+	    result = native_fd_select(n, readfds, writefds, exceptfds,
+				      timeout, th);
 	    if (result < 0) lerrno = errno;
 	}, ubf_select, th, FALSE);
 
@@ -3456,12 +3457,12 @@ do_select(int n, rb_fdset_t *read, rb_fdset_t *write, rb_fdset_t *except,
 #ifdef ERESTART
 	  case ERESTART:
 #endif
-	    if (read)
-		rb_fd_dup(read, &orig_read);
-	    if (write)
-		rb_fd_dup(write, &orig_write);
-	    if (except)
-		rb_fd_dup(except, &orig_except);
+	    if (readfds)
+		rb_fd_dup(readfds, &orig_read);
+	    if (writefds)
+		rb_fd_dup(writefds, &orig_write);
+	    if (exceptfds)
+		rb_fd_dup(exceptfds, &orig_except);
 
 	    if (timeout) {
 		double d = limit - timeofday();
@@ -3478,11 +3479,11 @@ do_select(int n, rb_fdset_t *read, rb_fdset_t *write, rb_fdset_t *except,
 	}
     }
 
-    if (read)
+    if (readfds)
 	rb_fd_term(&orig_read);
-    if (write)
+    if (writefds)
 	rb_fd_term(&orig_write);
-    if (except)
+    if (exceptfds)
 	rb_fd_term(&orig_except);
 
     return result;

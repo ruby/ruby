@@ -1,3 +1,7 @@
+Sat Dec  6 10:09:44 2014  Eric Wong  <e@80x24.org>
+
+	* thread.c (do_select): rename parameters to avoid shadowing
+
 Sat Dec  6 09:22:45 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/rake:  Update to rake 10.4.2
