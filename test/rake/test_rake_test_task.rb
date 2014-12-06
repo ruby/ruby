@@ -97,17 +97,22 @@ class TestRakeTestTask < Rake::TestCase
   end
 
   def test_run_code_rake_default_gem
+    skip 'this ruby does not have default gems' unless
+      Gem::Specification.method_defined? :default_specifications_dir
+
     default_spec = Gem::Specification.new 'rake', 0
     default_spec.loaded_from = File.join Gem::Specification.default_specifications_dir, 'rake-0.gemspec'
-    rake, Gem.loaded_specs['rake'] = Gem.loaded_specs['rake'], default_spec
+    begin
+      rake, Gem.loaded_specs['rake'] = Gem.loaded_specs['rake'], default_spec
 
-    test_task = Rake::TestTask.new do |t|
-      t.loader = :rake
+      test_task = Rake::TestTask.new do |t|
+        t.loader = :rake
+      end
+
+      assert_match(/\A(-I".*?" *)* ".*?"\Z/, test_task.run_code)
+    ensure
+      Gem.loaded_specs['rake'] = rake
     end
-
-    assert_match(/\A(-I".*?" *)* ".*?"\Z/, test_task.run_code)
-  ensure
-    Gem.loaded_specs['rake'] = rake
   end
 
   def test_run_code_testrb_ruby_1_8_2

@@ -457,8 +457,8 @@ class TestRakeApplicationOptions < Rake::TestCase
       throw :system_exit, :exit
     end
     @app.instance_eval do
-      handle_options
-      collect_command_line_tasks
+      args = handle_options
+      collect_command_line_tasks(args)
     end
     @tasks = @app.top_level_tasks
     @app.options

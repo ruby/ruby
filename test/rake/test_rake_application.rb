@@ -10,9 +10,9 @@ class TestRakeApplication < Rake::TestCase
   end
 
   def setup_command_line(*options)
-    @app.argv.clear
+    ARGV.clear
     options.each do |option|
-      @app.argv << option
+      ARGV << option
     end
   end
 
@@ -268,7 +268,7 @@ class TestRakeApplication < Rake::TestCase
   end
 
   def test_load_rakefile_not_found
-    @app.argv.clear
+    ARGV.clear
     Dir.chdir @tempdir
     ENV['RAKE_SYSTEM'] = 'not_exist'
 
@@ -370,7 +370,7 @@ class TestRakeApplication < Rake::TestCase
     # HACK no assertions
   end
 
-  def test_handle_options_should_strip_options_from_argv
+  def test_handle_options_should_not_strip_options_from_argv
     assert !@app.options.trace
 
     valid_option = '--trace'
@@ -378,7 +378,7 @@ class TestRakeApplication < Rake::TestCase
 
     @app.handle_options
 
-    assert !@app.argv.include?(valid_option)
+    assert ARGV.include?(valid_option)
     assert @app.options.trace
   end
 
@@ -406,14 +406,14 @@ class TestRakeApplication < Rake::TestCase
     setup_command_line("--trace", "sometask")
 
     @app.handle_options
-    assert @app.argv.include?("sometask")
+    assert ARGV.include?("sometask")
     assert @app.options.trace
   end
 
   def test_good_run
     ran = false
 
-    @app.argv << '--rakelib=""'
+    ARGV << '--rakelib=""'
 
     @app.options.silent = true
 
@@ -468,7 +468,7 @@ class TestRakeApplication < Rake::TestCase
     }
     assert_match(/see full trace/i, err)
   ensure
-    @app.argv.clear
+    ARGV.clear
   end
 
   def test_bad_run_with_trace
@@ -479,7 +479,7 @@ class TestRakeApplication < Rake::TestCase
     }
     refute_match(/see full trace/i, err)
   ensure
-    @app.argv.clear
+    ARGV.clear
   end
 
   def test_bad_run_with_backtrace
@@ -492,7 +492,7 @@ class TestRakeApplication < Rake::TestCase
     }
     refute_match(/see full trace/, err)
   ensure
-    @app.argv.clear
+    ARGV.clear
   end
 
   CustomError = Class.new(RuntimeError)
@@ -549,7 +549,7 @@ class TestRakeApplication < Rake::TestCase
     end
     assert_match(/Secondary Error/, err)
   ensure
-    @app.argv.clear
+    ARGV.clear
   end
 
   def test_run_with_bad_options
@@ -559,7 +559,7 @@ class TestRakeApplication < Rake::TestCase
       capture_io { @app.run }
     }
   ensure
-    @app.argv.clear
+    ARGV.clear
   end
 
   def test_standard_exception_handling_invalid_option

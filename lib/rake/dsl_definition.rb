@@ -159,6 +159,8 @@ module Rake
     end
 
     # Describes the next rake task.  Duplicate descriptions are discarded.
+    # Descriptions are shown with <code>rake -T</code> (up to the first
+    # sentence) and <code>rake -D</code> (the entire description).
     #
     # Example:
     #   desc "Run the Unit Tests"
