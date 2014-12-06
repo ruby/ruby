@@ -417,6 +417,56 @@ class IMAPTest < Test::Unit::TestCase
     assert_equal(993, Net::IMAP.default_imaps_port)
   end
 
+  def test_send_invalid_number
+    server = create_tcp_server
+    port = server.addr[1]
+    @threads << Thread.start do
+      sock = server.accept
+      begin
+        sock.print("* OK test server\r\n")
+        sock.gets
+        sock.print("RUBY0001 OK TEST completed\r\n")
+        sock.gets
+        sock.print("RUBY0002 OK TEST completed\r\n")
+        sock.gets
+        sock.print("RUBY0003 OK TEST completed\r\n")
+        sock.gets
+        sock.print("RUBY0004 OK TEST completed\r\n")
+        sock.gets
+        sock.print("* BYE terminating connection\r\n")
+        sock.print("RUBY0005 OK LOGOUT completed\r\n")
+      ensure
+        sock.close
+        server.close
+      end
+    end
+    begin
+      imap = Net::IMAP.new(SERVER_ADDR, :port => port)
+      assert_raise(Net::IMAP::DataFormatError) do
+        imap.send(:send_command, "TEST", -1)
+      end
+      imap.send(:send_command, "TEST", 0)
+      imap.send(:send_command, "TEST", 4294967295)
+      assert_raise(Net::IMAP::DataFormatError) do
+        imap.send(:send_command, "TEST", 4294967296)
+      end
+      assert_raise(Net::IMAP::DataFormatError) do
+        imap.send(:send_command, "TEST", Net::IMAP::MessageSet.new(-1))
+      end
+      assert_raise(Net::IMAP::DataFormatError) do
+        imap.send(:send_command, "TEST", Net::IMAP::MessageSet.new(0))
+      end
+      imap.send(:send_command, "TEST", Net::IMAP::MessageSet.new(1))
+      imap.send(:send_command, "TEST", Net::IMAP::MessageSet.new(4294967295))
+      assert_raise(Net::IMAP::DataFormatError) do
+        imap.send(:send_command, "TEST", Net::IMAP::MessageSet.new(4294967296))
+      end
+      imap.logout
+    ensure
+      imap.disconnect
+    end
+  end
+
   private
 
   def imaps_test

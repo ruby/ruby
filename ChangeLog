@@ -1,3 +1,10 @@
+Sat Dec  6 10:05:08 2014  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb: Fix undefined variable usage & refactor/DRY
+	  code.  Patch by @aledovsky. [Fixes GH-770]
+
+	* test/net/test_imap.rb: related test.
+
 Sat Dec  6 10:09:44 2014  Eric Wong  <e@80x24.org>
 
 	* thread.c (do_select): rename parameters to avoid shadowing
