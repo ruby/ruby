@@ -709,8 +709,6 @@ class Gem::Specification < Gem::BasicSpecification
       specs = {}
       Gem.loaded_specs.each_value{|s| specs[s] = true}
       @@all.each{|s| s.activated = true if specs[s]}
-
-      _resort!(@@all)
     end
     @@all
   end
@@ -1476,6 +1474,16 @@ class Gem::Specification < Gem::BasicSpecification
 
   def build_info_file
     File.join build_info_dir, "#{full_name}.info"
+  end
+
+  ##
+  # Used to detect if the gem is bundled in older version of Ruby, but not
+  # detectable as default gem (see BasicSpecification#default_gem?).
+
+  def bundled_gem_in_old_ruby?
+    !default_gem? &&
+      RUBY_VERSION < "2.0.0" &&
+      summary == "This #{name} is bundled with Ruby"
   end
 
   ##

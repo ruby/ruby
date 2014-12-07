@@ -189,6 +189,20 @@ class TestGemResolverInstallerSet < Gem::TestCase
     assert_equal specs["a-2-#{Gem::Platform.local}"].full_name, spec.full_name
   end
 
+  def test_prefetch
+    set = Gem::Resolver::InstallerSet.new :remote
+    def (set.remote_set).prefetch(_)
+      raise "called"
+    end
+    assert_raises(RuntimeError){ set.prefetch(nil) }
+
+    set = Gem::Resolver::InstallerSet.new :local
+    def (set.remote_set).prefetch(_)
+      raise "called"
+    end
+    assert_equal nil, set.prefetch(nil)
+  end
+
   def test_prerelease_equals
     set = Gem::Resolver::InstallerSet.new :remote
 

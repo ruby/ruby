@@ -109,6 +109,11 @@ extensions will be restored.
         next
       end
 
+      if spec.bundled_gem_in_old_ruby?
+        say "Skipped #{spec.full_name}, it is bundled with old Ruby"
+        next
+      end
+
       unless spec.extensions.empty? or options[:extensions] then
         say "Skipped #{spec.full_name}, it needs to compile an extension"
         next
@@ -120,8 +125,17 @@ extensions will be restored.
         require 'rubygems/remote_fetcher'
 
         say "Cached gem for #{spec.full_name} not found, attempting to fetch..."
+
         dep = Gem::Dependency.new spec.name, spec.version
-        Gem::RemoteFetcher.fetcher.download_to_cache dep
+        found, _ = Gem::SpecFetcher.fetcher.spec_for_dependency dep
+
+        if found.empty?
+          say "Skipped #{spec.full_name}, it was not found from cache and remote sources"
+          next
+        end
+
+        spec_candidate, source = found.first
+        Gem::RemoteFetcher.fetcher.download spec_candidate, source.uri.to_s, spec.base_dir
       end
 
       env_shebang =

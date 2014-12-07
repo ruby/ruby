@@ -290,7 +290,9 @@ class Gem::Package::TarWriter
   # Splits +name+ into a name and prefix that can fit in the TarHeader
 
   def split_name(name) # :nodoc:
-    raise Gem::Package::TooLongFileName if name.bytesize > 256
+    if name.bytesize > 256
+      raise Gem::Package::TooLongFileName.new("File \"#{name}\" has a too long path (should be 256 or less)") 
+    end
 
     if name.bytesize <= 100 then
       prefix = ""
@@ -308,8 +310,12 @@ class Gem::Package::TarWriter
       prefix = (parts + [nxt]).join "/"
       name = newname
 
-      if name.bytesize > 100 or prefix.bytesize > 155 then
-        raise Gem::Package::TooLongFileName
+      if name.bytesize > 100
+        raise Gem::Package::TooLongFileName.new("File \"#{prefix}/#{name}\" has a too long name (should be 100 or less)") 
+      end
+    
+      if prefix.bytesize > 155 then
+        raise Gem::Package::TooLongFileName.new("File \"#{prefix}/#{name}\" has a too long base path (should be 155 or less)") 
       end
     end
 

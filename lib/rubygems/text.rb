@@ -27,9 +27,9 @@ module Gem::Text
   end
 
   def min3 a, b, c # :nodoc:
-    if a < b && a < c
+    if a < b && a < c then
       a
-    elsif b < a && b < c
+    elsif b < c then
       b
     else
       c

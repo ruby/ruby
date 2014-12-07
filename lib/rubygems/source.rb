@@ -26,8 +26,12 @@ class Gem::Source
   # Creates a new Source which will use the index located at +uri+.
 
   def initialize(uri)
-    unless uri.kind_of? URI
-      uri = URI.parse(uri.to_s)
+    begin
+      unless uri.kind_of? URI
+        uri = URI.parse(uri.to_s)
+      end
+    rescue URI::InvalidURIError
+      raise if Gem::Source == self.class
     end
 
     @uri = uri

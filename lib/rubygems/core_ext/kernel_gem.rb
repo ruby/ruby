@@ -55,7 +55,14 @@ module Kernel
       gem_name = gem_name.name
     end
 
-    spec = Gem::Dependency.new(gem_name, *requirements).to_spec
+    dep = Gem::Dependency.new(gem_name, *requirements)
+
+    loaded = Gem.loaded_specs[gem_name]
+
+    return false if loaded && dep.matches_spec?(loaded)
+
+    spec = dep.to_spec
+
     Gem::LOADED_SPECS_MUTEX.synchronize {
       spec.activate
     } if spec

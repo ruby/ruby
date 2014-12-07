@@ -124,7 +124,7 @@ that is a dependency of an existing gem.  You can use the
   end
 
   def uninstall_all
-    _, specs = Gem::Specification.partition { |spec| spec.default_gem? }
+    specs = Gem::Specification.reject { |spec| spec.default_gem? }
 
     specs.each do |spec|
       options[:version] = spec.version

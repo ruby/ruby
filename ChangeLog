@@ -1,3 +1,8 @@
+Sun Dec  7 09:52:30 2014  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems 2.4.5.
+	* test/rubygems:  ditto.
+
 Sat Dec  6 10:05:08 2014  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb: Fix undefined variable usage & refactor/DRY

@@ -1353,7 +1353,7 @@ dependencies: []
     end
 
     expected = "Ignoring ext-1 because its extensions are not built.  " +
-               "Try: gem pristine ext-1\n"
+               "Try: gem pristine ext --version 1\n"
 
     assert_equal expected, err
   end
@@ -1861,6 +1861,43 @@ dependencies: []
     ]
 
     assert_equal expected, @ext.full_require_paths
+  end
+
+  def test_to_fullpath
+    ext_spec
+
+    @ext.require_paths = 'lib'
+
+    dir = File.join(@gemhome, 'gems', @ext.original_name, 'lib')
+    expected_rb = File.join(dir, 'code.rb')
+    FileUtils.mkdir_p dir
+    FileUtils.touch expected_rb
+
+    dir = @ext.extension_dir
+    ext = RbConfig::CONFIG["DLEXT"]
+    expected_so = File.join(dir, "ext.#{ext}")
+    FileUtils.mkdir_p dir
+    FileUtils.touch expected_so
+
+    assert_nil @ext.to_fullpath("code")
+    assert_nil @ext.to_fullpath("code.rb")
+    assert_nil @ext.to_fullpath("code.#{ext}")
+
+    assert_nil @ext.to_fullpath("ext")
+    assert_nil @ext.to_fullpath("ext.rb")
+    assert_nil @ext.to_fullpath("ext.#{ext}")
+
+    @ext.activate
+
+    assert_equal expected_rb, @ext.to_fullpath("code")
+    assert_equal expected_rb, @ext.to_fullpath("code.rb")
+    assert_nil @ext.to_fullpath("code.#{ext}")
+
+    assert_equal expected_so, @ext.to_fullpath("ext")
+    assert_nil @ext.to_fullpath("ext.rb")
+    assert_equal expected_so, @ext.to_fullpath("ext.#{ext}")
+
+    assert_nil @ext.to_fullpath("notexist")
   end
 
   def test_require_already_activated
@@ -3008,6 +3045,18 @@ end
     end
     Gem::Specification.reset
     assert_equal ["default-2.0.0.0"], Gem::Specification.map(&:full_name)
+  end
+
+  def test_detect_bundled_gem_in_old_ruby
+    util_set_RUBY_VERSION '1.9.3', 551
+
+    spec = new_spec 'bigdecimal', '1.1.0' do |s|
+      s.summary = "This bigdecimal is bundled with Ruby"
+    end
+
+    assert spec.bundled_gem_in_old_ruby?
+  ensure
+    util_restore_RUBY_VERSION
   end
 
   def util_setup_deps

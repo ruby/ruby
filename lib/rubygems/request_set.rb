@@ -403,10 +403,7 @@ class Gem::RequestSet
               "Unresolved dependency found during sorting - #{dep} (requested by #{node.spec.full_name})"
       end
 
-      begin
-        yield match
-      rescue TSort::Cyclic
-      end
+      yield match
     end
   end
 

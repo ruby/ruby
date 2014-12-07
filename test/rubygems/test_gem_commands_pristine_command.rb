@@ -287,6 +287,57 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert_empty out, out.inspect
   end
 
+  def test_execute_missing_cache_gem_when_multi_repo
+    specs = spec_fetcher do |fetcher|
+      fetcher.gem 'a', 1
+      fetcher.gem 'b', 1
+    end
+
+    FileUtils.rm_rf File.join(@gemhome, 'gems', 'a-1')
+    FileUtils.rm_rf File.join(@gemhome, 'gems', 'b-1')
+
+    install_gem specs["a-1"]
+    FileUtils.rm File.join(@gemhome, 'cache', 'a-1.gem')
+
+    Gem.clear_paths
+    gemhome2 = File.join(@tempdir, 'gemhome2')
+    Gem.paths = { "GEM_PATH" => [gemhome2, @gemhome], "GEM_HOME" => gemhome2 }
+
+    install_gem specs["b-1"]
+    FileUtils.rm File.join(gemhome2, 'cache', 'b-1.gem')
+
+    @cmd.options[:args] = %w[a b]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+
+    [
+      "Restoring gems to pristine condition...",
+      "Cached gem for a-1 not found, attempting to fetch...",
+      "Restored a-1",
+      "Cached gem for b-1 not found, attempting to fetch...",
+      "Restored b-1",
+    ].each do |line|
+      assert_equal line, out.shift
+    end
+
+    assert_empty out, out.inspect
+    assert_empty @ui.error
+
+    assert_path_exists File.join(@gemhome, "cache", 'a-1.gem')
+    refute_path_exists File.join(gemhome2, "cache", 'a-2.gem')
+    assert_path_exists File.join(@gemhome, "gems", 'a-1')
+    refute_path_exists File.join(gemhome2, "gems", 'a-1')
+
+    assert_path_exists File.join(gemhome2, "cache", 'b-1.gem')
+    refute_path_exists File.join(@gemhome, "cache", 'b-2.gem')
+    assert_path_exists File.join(gemhome2, "gems", 'b-1')
+    refute_path_exists File.join(@gemhome, "gems", 'b-1')
+  end
+
   def test_execute_no_gem
     @cmd.options[:args] = %w[]
 
@@ -329,6 +380,24 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     refute File.exist? gem_lib
   end
 
+  def test_execute_unknown_gem_at_remote_source
+    util_spec 'a'
+
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_equal([
+      "Restoring gems to pristine condition...",
+      "Cached gem for a-2 not found, attempting to fetch...",
+      "Skipped a-2, it was not found from cache and remote sources"
+    ], @ui.output.split("\n"))
+
+    assert_empty @ui.error
+  end
+
   def test_execute_default_gem
     default_gem_spec = new_default_spec("default", "2.0.0.0",
                                         nil, "default/gem.rb")
@@ -346,6 +415,29 @@ class TestGemCommandsPristineCommand < Gem::TestCase
                  ],
                  @ui.output.split("\n"))
     assert_empty(@ui.error)
+  end
+
+  def test_execute_bundled_gem_on_old_rubies
+    util_set_RUBY_VERSION '1.9.3', 551
+
+    util_spec 'bigdecimal', '1.1.0' do |s|
+      s.summary = "This bigdecimal is bundled with Ruby"
+    end
+
+    @cmd.options[:args] = %w[bigdecimal]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_equal([
+      "Restoring gems to pristine condition...",
+      "Skipped bigdecimal-1.1.0, it is bundled with old Ruby"
+    ], @ui.output.split("\n"))
+
+    assert_empty @ui.error
+  ensure
+    util_restore_RUBY_VERSION
   end
 
   def test_handle_options

@@ -72,7 +72,7 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
     @to_fetch += needed
   end
 
-  def prefetch_now
+  def prefetch_now # :nodoc:
     needed, @to_fetch = @to_fetch, []
 
     uri = @dep_uri + "?gems=#{needed.sort.join ','}"

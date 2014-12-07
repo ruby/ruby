@@ -19,7 +19,7 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
     @set = set
     @name = api_data[:name]
     @version = Gem::Version.new api_data[:number]
-    @platform = api_data[:platform]
+    @platform = Gem::Platform.new api_data[:platform]
     @dependencies = api_data[:dependencies].map do |name, ver|
       Gem::Dependency.new name, ver.split(/\s*,\s*/)
     end

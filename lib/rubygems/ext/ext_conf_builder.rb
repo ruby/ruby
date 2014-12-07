@@ -49,7 +49,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
             FileUtils.mkdir_p lib_dir
             entries = Dir.entries(tmp_dest) - %w[. ..]
             entries = entries.map { |entry| File.join tmp_dest, entry }
-            FileUtils.cp_r entries, lib_dir
+            FileUtils.cp_r entries, lib_dir, :remove_destination => true
           end
 
           FileEntry.new(tmp_dest).traverse do |ent|

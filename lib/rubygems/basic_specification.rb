@@ -58,23 +58,28 @@ class Gem::BasicSpecification
   # Return true if this spec can require +file+.
 
   def contains_requirable_file? file
-    if instance_variable_defined?(:@ignored) or
-       instance_variable_defined?('@ignored') then
-      return false
-    elsif missing_extensions? then
-      @ignored = true
+    @contains_requirable_file ||= {}
+    @contains_requirable_file[file] ||=
+    begin
+      if instance_variable_defined?(:@ignored) or
+         instance_variable_defined?('@ignored') then
+        return false
+      elsif missing_extensions? then
+        @ignored = true
 
-      warn "Ignoring #{full_name} because its extensions are not built.  " +
-           "Try: gem pristine #{full_name}"
-      return false
-    end
+        warn "Ignoring #{full_name} because its extensions are not built.  " +
+             "Try: gem pristine #{name} --version #{version}"
+        return false
+      end
 
-    suffixes = Gem.suffixes
+      suffixes = Gem.suffixes
 
-    full_require_paths.any? do |dir|
-      base = "#{dir}/#{file}"
-      suffixes.any? { |suf| File.file? "#{base}#{suf}" }
-    end
+      full_require_paths.any? do |dir|
+        base = "#{dir}/#{file}"
+        suffixes.any? { |suf| File.file? "#{base}#{suf}" }
+      end
+    end ? :yes : :no
+    @contains_requirable_file[file] == :yes
   end
 
   def default_gem?
@@ -134,13 +139,38 @@ class Gem::BasicSpecification
   # activated.
 
   def full_require_paths
-    full_paths = raw_require_paths.map do |path|
-      File.join full_gem_path, path
+    @full_require_paths ||=
+    begin
+      full_paths = raw_require_paths.map do |path|
+        File.join full_gem_path, path
+      end
+
+      full_paths.unshift extension_dir unless @extensions.nil? || @extensions.empty?
+
+      full_paths
     end
+  end
 
-    full_paths.unshift extension_dir unless @extensions.nil? || @extensions.empty?
+  ##
+  # Full path of the target library file.
+  # If the file is not in this gem, return nil.
 
-    full_paths
+  def to_fullpath path
+    if activated? then
+      @paths_map ||= {}
+      @paths_map[path] ||=
+      begin
+        fullpath = nil
+        suffixes = Gem.suffixes
+        full_require_paths.find do |dir|
+          suffixes.find do |suf|
+            File.file?(fullpath = "#{dir}/#{path}#{suf}")
+          end
+        end ? fullpath : nil
+      end
+    else
+      nil
+    end
   end
 
   ##

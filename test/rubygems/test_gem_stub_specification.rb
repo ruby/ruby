@@ -55,7 +55,7 @@ class TestStubSpecification < Gem::TestCase
       end
 
       expected = "Ignoring stub_e-2 because its extensions are not built.  " +
-                 "Try: gem pristine stub_e-2\n"
+                 "Try: gem pristine stub_e --version 2\n"
 
       assert_equal expected, err
     end
@@ -120,6 +120,14 @@ class TestStubSpecification < Gem::TestCase
                  'sanity check'
 
     assert_same real_foo, @foo.to_spec
+  end
+
+  def test_to_spec_with_other_specs_loaded_does_not_warn
+    real_foo = util_spec @foo.name, @foo.version
+    real_foo.activate
+    bar = Gem::StubSpecification.new BAR
+    refute_predicate Gem.loaded_specs, :empty?
+    assert bar.to_spec
   end
 
   def test_to_spec_activated

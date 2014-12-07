@@ -7,7 +7,7 @@ class TestGemResolverAPISpecification < Gem::TestCase
     data = {
       :name     => 'rails',
       :number   => '3.0.3',
-      :platform => 'ruby',
+      :platform => Gem::Platform.local.to_s,
       :dependencies => [
         ['bundler',  '~> 1.0'],
         ['railties', '= 3.0.3'],
@@ -18,7 +18,7 @@ class TestGemResolverAPISpecification < Gem::TestCase
 
     assert_equal 'rails',                   spec.name
     assert_equal Gem::Version.new('3.0.3'), spec.version
-    assert_equal Gem::Platform::RUBY,       spec.platform
+    assert_equal Gem::Platform.local,       spec.platform
 
     expected = [
       Gem::Dependency.new('bundler',  '~> 1.0'),

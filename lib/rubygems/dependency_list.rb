@@ -219,11 +219,7 @@ class Gem::DependencyList
     dependencies.each do |dep|
       specs.each do |spec|
         if spec.satisfies_requirement? dep then
-          begin
-            yield spec
-          rescue TSort::Cyclic
-            # do nothing
-          end
+          yield spec
           break
         end
       end

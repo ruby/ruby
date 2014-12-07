@@ -112,6 +112,20 @@ class TestGem < Gem::TestCase
     end
   end
 
+  def test_self_bin_path_active
+    a1 = util_spec 'a', '1' do |s|
+      s.executables = ['exec']
+    end
+
+    util_spec 'a', '2' do |s|
+      s.executables = ['exec']
+    end
+
+    a1.activate
+
+    assert_match 'a-1/bin/exec', Gem.bin_path('a', 'exec', '>= 0')
+  end
+
   def test_self_bin_path_no_exec_name
     e = assert_raises ArgumentError do
       Gem.bin_path 'a'
@@ -895,7 +909,7 @@ class TestGem < Gem::TestCase
     end
 
     expected = "Ignoring ext-1 because its extensions are not built.  " +
-               "Try: gem pristine ext-1\n"
+               "Try: gem pristine ext --version 1\n"
 
     assert_equal expected, err
   end
@@ -1549,37 +1563,6 @@ You may need to `gem install -g` to install missing gems
 
     @exec_path = File.join spec.full_gem_path, spec.bindir, 'exec'
     @abin_path = File.join spec.full_gem_path, spec.bindir, 'abin'
-  end
-
-  def util_set_RUBY_VERSION(version, patchlevel = nil, revision = nil)
-    if Gem.instance_variables.include? :@ruby_version or
-       Gem.instance_variables.include? '@ruby_version' then
-      Gem.send :remove_instance_variable, :@ruby_version
-    end
-
-    @RUBY_VERSION    = RUBY_VERSION
-    @RUBY_PATCHLEVEL = RUBY_PATCHLEVEL if defined?(RUBY_PATCHLEVEL)
-    @RUBY_REVISION   = RUBY_REVISION   if defined?(RUBY_REVISION)
-
-    Object.send :remove_const, :RUBY_VERSION
-    Object.send :remove_const, :RUBY_PATCHLEVEL if defined?(RUBY_PATCHLEVEL)
-    Object.send :remove_const, :RUBY_REVISION   if defined?(RUBY_REVISION)
-
-    Object.const_set :RUBY_VERSION,    version
-    Object.const_set :RUBY_PATCHLEVEL, patchlevel if patchlevel
-    Object.const_set :RUBY_REVISION,   revision   if revision
-  end
-
-  def util_restore_RUBY_VERSION
-    Object.send :remove_const, :RUBY_VERSION
-    Object.send :remove_const, :RUBY_PATCHLEVEL if defined?(RUBY_PATCHLEVEL)
-    Object.send :remove_const, :RUBY_REVISION   if defined?(RUBY_REVISION)
-
-    Object.const_set :RUBY_VERSION,    @RUBY_VERSION
-    Object.const_set :RUBY_PATCHLEVEL, @RUBY_PATCHLEVEL if
-      defined?(@RUBY_PATCHLEVEL)
-    Object.const_set :RUBY_REVISION,   @RUBY_REVISION   if
-      defined?(@RUBY_REVISION)
   end
 
   def util_remove_interrupt_command
