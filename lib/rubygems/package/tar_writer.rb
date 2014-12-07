@@ -291,7 +291,7 @@ class Gem::Package::TarWriter
 
   def split_name(name) # :nodoc:
     if name.bytesize > 256
-      raise Gem::Package::TooLongFileName.new("File \"#{name}\" has a too long path (should be 256 or less)") 
+      raise Gem::Package::TooLongFileName.new("File \"#{name}\" has a too long path (should be 256 or less)")
     end
 
     if name.bytesize <= 100 then
@@ -311,11 +311,11 @@ class Gem::Package::TarWriter
       name = newname
 
       if name.bytesize > 100
-        raise Gem::Package::TooLongFileName.new("File \"#{prefix}/#{name}\" has a too long name (should be 100 or less)") 
+        raise Gem::Package::TooLongFileName.new("File \"#{prefix}/#{name}\" has a too long name (should be 100 or less)")
       end
-    
+
       if prefix.bytesize > 155 then
-        raise Gem::Package::TooLongFileName.new("File \"#{prefix}/#{name}\" has a too long base path (should be 155 or less)") 
+        raise Gem::Package::TooLongFileName.new("File \"#{prefix}/#{name}\" has a too long base path (should be 155 or less)")
       end
     end
 
