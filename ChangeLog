@@ -43,7 +43,7 @@ Sat Dec  6 06:14:23 2014  Vit Ondruch  <vondruch@redhat.com>
 
 Sat Dec  6 04:33:52 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* lib/pp.rb (File::Stat#pritty_print): some platforms (such as Windows)
+	* lib/pp.rb (File::Stat#pretty_print): some platforms (such as Windows)
 	  does not have major/minor parts of device.
 
 Fri Dec  5 22:43:04 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
