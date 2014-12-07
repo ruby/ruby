@@ -1,3 +1,8 @@
+Sun Dec  7 19:36:12 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* ext/socket/basicsocket.c, ext/socket/sockssocket.c:
+	  remove code for $SAFE=4.
+
 Sun Dec  7 10:20:55 2014  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc:  Update to RDoc 4.2.0.
