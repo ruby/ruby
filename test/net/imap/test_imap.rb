@@ -492,7 +492,7 @@ class IMAPTest < Test::Unit::TestCase
         ensure
           sock.close
         end
-      rescue Errno::EPIPE
+      rescue Errno::EPIPE, Errno::ECONNRESET, Errno::ECONNABORTED
       end
     end
     begin
