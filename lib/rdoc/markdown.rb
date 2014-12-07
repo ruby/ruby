@@ -2822,6 +2822,172 @@ class RDoc::Markdown
     return _tmp
   end
 
+  # HtmlOpenAnchor = "<" Spnl ("a" | "A") Spnl HtmlAttribute* ">"
+  def _HtmlOpenAnchor
+
+    _save = self.pos
+    while true # sequence
+      _tmp = match_string("<")
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = apply(:_Spnl)
+      unless _tmp
+        self.pos = _save
+        break
+      end
+
+      _save1 = self.pos
+      while true # choice
+        _tmp = match_string("a")
+        break if _tmp
+        self.pos = _save1
+        _tmp = match_string("A")
+        break if _tmp
+        self.pos = _save1
+        break
+      end # end choice
+
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = apply(:_Spnl)
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      while true
+        _tmp = apply(:_HtmlAttribute)
+        break unless _tmp
+      end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = match_string(">")
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_HtmlOpenAnchor unless _tmp
+    return _tmp
+  end
+
+  # HtmlCloseAnchor = "<" Spnl "/" ("a" | "A") Spnl ">"
+  def _HtmlCloseAnchor
+
+    _save = self.pos
+    while true # sequence
+      _tmp = match_string("<")
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = apply(:_Spnl)
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = match_string("/")
+      unless _tmp
+        self.pos = _save
+        break
+      end
+
+      _save1 = self.pos
+      while true # choice
+        _tmp = match_string("a")
+        break if _tmp
+        self.pos = _save1
+        _tmp = match_string("A")
+        break if _tmp
+        self.pos = _save1
+        break
+      end # end choice
+
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = apply(:_Spnl)
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = match_string(">")
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_HtmlCloseAnchor unless _tmp
+    return _tmp
+  end
+
+  # HtmlAnchor = HtmlOpenAnchor (HtmlAnchor | !HtmlCloseAnchor .)* HtmlCloseAnchor
+  def _HtmlAnchor
+
+    _save = self.pos
+    while true # sequence
+      _tmp = apply(:_HtmlOpenAnchor)
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      while true
+
+        _save2 = self.pos
+        while true # choice
+          _tmp = apply(:_HtmlAnchor)
+          break if _tmp
+          self.pos = _save2
+
+          _save3 = self.pos
+          while true # sequence
+            _save4 = self.pos
+            _tmp = apply(:_HtmlCloseAnchor)
+            _tmp = _tmp ? nil : true
+            self.pos = _save4
+            unless _tmp
+              self.pos = _save3
+              break
+            end
+            _tmp = get_byte
+            unless _tmp
+              self.pos = _save3
+            end
+            break
+          end # end sequence
+
+          break if _tmp
+          self.pos = _save2
+          break
+        end # end choice
+
+        break unless _tmp
+      end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = apply(:_HtmlCloseAnchor)
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_HtmlAnchor unless _tmp
+    return _tmp
+  end
+
   # HtmlBlockOpenAddress = "<" Spnl ("address" | "ADDRESS") Spnl HtmlAttribute* ">"
   def _HtmlBlockOpenAddress
 
@@ -8289,11 +8455,14 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # HtmlBlockInTags = (HtmlBlockAddress | HtmlBlockBlockquote | HtmlBlockCenter | HtmlBlockDir | HtmlBlockDiv | HtmlBlockDl | HtmlBlockFieldset | HtmlBlockForm | HtmlBlockH1 | HtmlBlockH2 | HtmlBlockH3 | HtmlBlockH4 | HtmlBlockH5 | HtmlBlockH6 | HtmlBlockMenu | HtmlBlockNoframes | HtmlBlockNoscript | HtmlBlockOl | HtmlBlockP | HtmlBlockPre | HtmlBlockTable | HtmlBlockUl | HtmlBlockDd | HtmlBlockDt | HtmlBlockFrameset | HtmlBlockLi | HtmlBlockTbody | HtmlBlockTd | HtmlBlockTfoot | HtmlBlockTh | HtmlBlockThead | HtmlBlockTr | HtmlBlockScript)
+  # HtmlBlockInTags = (HtmlAnchor | HtmlBlockAddress | HtmlBlockBlockquote | HtmlBlockCenter | HtmlBlockDir | HtmlBlockDiv | HtmlBlockDl | HtmlBlockFieldset | HtmlBlockForm | HtmlBlockH1 | HtmlBlockH2 | HtmlBlockH3 | HtmlBlockH4 | HtmlBlockH5 | HtmlBlockH6 | HtmlBlockMenu | HtmlBlockNoframes | HtmlBlockNoscript | HtmlBlockOl | HtmlBlockP | HtmlBlockPre | HtmlBlockTable | HtmlBlockUl | HtmlBlockDd | HtmlBlockDt | HtmlBlockFrameset | HtmlBlockLi | HtmlBlockTbody | HtmlBlockTd | HtmlBlockTfoot | HtmlBlockTh | HtmlBlockThead | HtmlBlockTr | HtmlBlockScript)
   def _HtmlBlockInTags
 
     _save = self.pos
     while true # choice
+      _tmp = apply(:_HtmlAnchor)
+      break if _tmp
+      self.pos = _save
       _tmp = apply(:_HtmlBlockAddress)
       break if _tmp
       self.pos = _save
@@ -15120,7 +15289,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      @result = begin;
+      @result = begin; 
                ref = [:inline, @note_order.length]
                @footnotes[ref] = paragraph a
 
@@ -15748,6 +15917,9 @@ class RDoc::Markdown
   Rules[:_Enumerator] = rule_info("Enumerator", "@NonindentSpace [0-9]+ \".\" @Spacechar+")
   Rules[:_OrderedList] = rule_info("OrderedList", "&Enumerator (ListTight | ListLoose):a { RDoc::Markup::List.new(:NUMBER, *a) }")
   Rules[:_ListBlockLine] = rule_info("ListBlockLine", "!@BlankLine !(Indent? (Bullet | Enumerator)) !HorizontalRule OptionallyIndentedLine")
+  Rules[:_HtmlOpenAnchor] = rule_info("HtmlOpenAnchor", "\"<\" Spnl (\"a\" | \"A\") Spnl HtmlAttribute* \">\"")
+  Rules[:_HtmlCloseAnchor] = rule_info("HtmlCloseAnchor", "\"<\" Spnl \"/\" (\"a\" | \"A\") Spnl \">\"")
+  Rules[:_HtmlAnchor] = rule_info("HtmlAnchor", "HtmlOpenAnchor (HtmlAnchor | !HtmlCloseAnchor .)* HtmlCloseAnchor")
   Rules[:_HtmlBlockOpenAddress] = rule_info("HtmlBlockOpenAddress", "\"<\" Spnl (\"address\" | \"ADDRESS\") Spnl HtmlAttribute* \">\"")
   Rules[:_HtmlBlockCloseAddress] = rule_info("HtmlBlockCloseAddress", "\"<\" Spnl \"/\" (\"address\" | \"ADDRESS\") Spnl \">\"")
   Rules[:_HtmlBlockAddress] = rule_info("HtmlBlockAddress", "HtmlBlockOpenAddress (HtmlBlockAddress | !HtmlBlockCloseAddress .)* HtmlBlockCloseAddress")
@@ -15847,7 +16019,7 @@ class RDoc::Markdown
   Rules[:_HtmlBlockOpenScript] = rule_info("HtmlBlockOpenScript", "\"<\" Spnl (\"script\" | \"SCRIPT\") Spnl HtmlAttribute* \">\"")
   Rules[:_HtmlBlockCloseScript] = rule_info("HtmlBlockCloseScript", "\"<\" Spnl \"/\" (\"script\" | \"SCRIPT\") Spnl \">\"")
   Rules[:_HtmlBlockScript] = rule_info("HtmlBlockScript", "HtmlBlockOpenScript (!HtmlBlockCloseScript .)* HtmlBlockCloseScript")
-  Rules[:_HtmlBlockInTags] = rule_info("HtmlBlockInTags", "(HtmlBlockAddress | HtmlBlockBlockquote | HtmlBlockCenter | HtmlBlockDir | HtmlBlockDiv | HtmlBlockDl | HtmlBlockFieldset | HtmlBlockForm | HtmlBlockH1 | HtmlBlockH2 | HtmlBlockH3 | HtmlBlockH4 | HtmlBlockH5 | HtmlBlockH6 | HtmlBlockMenu | HtmlBlockNoframes | HtmlBlockNoscript | HtmlBlockOl | HtmlBlockP | HtmlBlockPre | HtmlBlockTable | HtmlBlockUl | HtmlBlockDd | HtmlBlockDt | HtmlBlockFrameset | HtmlBlockLi | HtmlBlockTbody | HtmlBlockTd | HtmlBlockTfoot | HtmlBlockTh | HtmlBlockThead | HtmlBlockTr | HtmlBlockScript)")
+  Rules[:_HtmlBlockInTags] = rule_info("HtmlBlockInTags", "(HtmlAnchor | HtmlBlockAddress | HtmlBlockBlockquote | HtmlBlockCenter | HtmlBlockDir | HtmlBlockDiv | HtmlBlockDl | HtmlBlockFieldset | HtmlBlockForm | HtmlBlockH1 | HtmlBlockH2 | HtmlBlockH3 | HtmlBlockH4 | HtmlBlockH5 | HtmlBlockH6 | HtmlBlockMenu | HtmlBlockNoframes | HtmlBlockNoscript | HtmlBlockOl | HtmlBlockP | HtmlBlockPre | HtmlBlockTable | HtmlBlockUl | HtmlBlockDd | HtmlBlockDt | HtmlBlockFrameset | HtmlBlockLi | HtmlBlockTbody | HtmlBlockTd | HtmlBlockTfoot | HtmlBlockTh | HtmlBlockThead | HtmlBlockTr | HtmlBlockScript)")
   Rules[:_HtmlBlock] = rule_info("HtmlBlock", "< (HtmlBlockInTags | HtmlComment | HtmlBlockSelfClosing | HtmlUnclosed) > @BlankLine+ { if html? then                 RDoc::Markup::Raw.new text               end }")
   Rules[:_HtmlUnclosed] = rule_info("HtmlUnclosed", "\"<\" Spnl HtmlUnclosedType Spnl HtmlAttribute* Spnl \">\"")
   Rules[:_HtmlUnclosedType] = rule_info("HtmlUnclosedType", "(\"HR\" | \"hr\")")

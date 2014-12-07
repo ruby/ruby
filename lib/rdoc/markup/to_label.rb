@@ -31,7 +31,7 @@ class RDoc::Markup::ToLabel < RDoc::Markup::Formatter
   def convert text
     label = convert_flow @am.flow text
 
-    CGI.escape label
+    CGI.escape(label).gsub('%', '-').sub(/^-/, '')
   end
 
   ##

@@ -4,6 +4,8 @@
 
 class RDoc::Stats
 
+  include RDoc::Text
+
   ##
   # Output level for the coverage report
 
@@ -437,6 +439,8 @@ class RDoc::Stats
     @formatter ||= RDoc::Markup::ToTtOnly.new
 
     params = method.param_list
+
+    params = params.map { |param| param.gsub(/^\*\*?/, '') }
 
     return 0, [] if params.empty?
 

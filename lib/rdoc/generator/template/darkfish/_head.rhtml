@@ -9,8 +9,8 @@
 <script src="<%= asset_rel_prefix %>/js/jquery.js"></script>
 <script src="<%= asset_rel_prefix %>/js/darkfish.js"></script>
 
-<link href="<%= asset_rel_prefix %>/fonts.css" rel="stylesheet">
-<link href="<%= asset_rel_prefix %>/rdoc.css" rel="stylesheet">
+<link href="<%= asset_rel_prefix %>/css/fonts.css" rel="stylesheet">
+<link href="<%= asset_rel_prefix %>/css/rdoc.css" rel="stylesheet">
 <% if @options.template_stylesheets.flatten.any? then %>
 <%   @options.template_stylesheets.flatten.each do |stylesheet| %>
 <link href="<%= asset_rel_prefix %>/<%= File.basename stylesheet %>" rel="stylesheet">

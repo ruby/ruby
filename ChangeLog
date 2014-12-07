@@ -1,3 +1,8 @@
+Sun Dec  7 10:20:55 2014  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc:  Update to RDoc 4.2.0.
+	* test/rdoc:  ditto.
+
 Sun Dec  7 09:52:30 2014  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems 2.4.5.

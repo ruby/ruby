@@ -10,6 +10,10 @@ class RDoc::SingleClass < RDoc::ClassModule
     superclass ? super + [superclass] : super
   end
 
+  def aref_prefix # :nodoc:
+    'sclass'
+  end
+
   ##
   # The definition of this singleton class, <tt>class << MyClassName</tt>
 

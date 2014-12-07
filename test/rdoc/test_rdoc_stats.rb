@@ -663,5 +663,60 @@ m(a, b) { |c, d| ... }
     RDoc::Markup::ToRdoc.new
   end
 
+  def test_undoc_params
+    method = RDoc::AnyMethod.new [], 'm'
+    method.params = '(a)'
+    method.comment = comment 'comment'
+
+    total, undoc = @s.undoc_params method
+
+    assert_equal 1,     total
+    assert_equal %w[a], undoc
+  end
+
+  def test_undoc_params_block
+    method = RDoc::AnyMethod.new [], 'm'
+    method.params = '(&a)'
+    method.comment = comment '+a+'
+
+    total, undoc = @s.undoc_params method
+
+    assert_equal 1, total
+    assert_empty    undoc
+  end
+
+  def test_undoc_params_documented
+    method = RDoc::AnyMethod.new [], 'm'
+    method.params = '(a)'
+    method.comment = comment '+a+'
+
+    total, undoc = @s.undoc_params method
+
+    assert_equal 1, total
+    assert_empty    undoc
+  end
+
+  def test_undoc_params_keywords
+    method = RDoc::AnyMethod.new [], 'm'
+    method.params = '(**a)'
+    method.comment = comment '+a+'
+
+    total, undoc = @s.undoc_params method
+
+    assert_equal 1, total
+    assert_empty    undoc
+  end
+
+  def test_undoc_params_splat
+    method = RDoc::AnyMethod.new [], 'm'
+    method.params = '(*a)'
+    method.comment = comment '+a+'
+
+    total, undoc = @s.undoc_params method
+
+    assert_equal 1, total
+    assert_empty    undoc
+  end
+
 end
 

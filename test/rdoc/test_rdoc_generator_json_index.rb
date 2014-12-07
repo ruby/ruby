@@ -136,6 +136,61 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
     assert_equal expected, index
   end
 
+  def test_generate_gzipped
+    require 'zlib'
+    @g.generate
+    @g.generate_gzipped
+
+    assert_file 'js/searcher.js'
+    assert_file 'js/searcher.js.gz'
+    assert_file 'js/navigation.js'
+    assert_file 'js/navigation.js.gz'
+    assert_file 'js/search_index.js'
+    assert_file 'js/search_index.js.gz'
+
+    gzip = File.open 'js/search_index.js.gz'
+    json = Zlib::GzipReader.new(gzip).read
+
+    json =~ /\Avar search_data = /
+
+    assignment = $&
+    index = $'
+
+    refute_empty assignment
+
+    index = JSON.parse index
+
+    info = [
+      @klass.search_record[2..-1],
+      @nest_klass.search_record[2..-1],
+      @meth.search_record[2..-1],
+      @nest_meth.search_record[2..-1],
+      @page.search_record[2..-1],
+    ]
+
+    expected = {
+      'index' => {
+        'searchIndex' => [
+          'c',
+          'd',
+          'meth()',
+          'meth()',
+          'page',
+        ],
+        'longSearchIndex' => [
+          'c',
+          'c::d',
+          'c#meth()',
+          'c::d#meth()',
+          '',
+        ],
+        'info' => info,
+      },
+    }
+
+    assert_equal expected, index
+  end
+
   def test_generate_utf_8
     skip "Encoding not implemented" unless Object.const_defined? :Encoding
 
