@@ -15289,7 +15289,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      @result = begin; 
+      @result = begin;
                ref = [:inline, @note_order.length]
                @footnotes[ref] = paragraph a
 
