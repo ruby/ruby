@@ -150,12 +150,13 @@ rb_struct_set(VALUE obj, VALUE val)
     VALUE members, slot, fsym;
     long i, len;
     ID fid = rb_frame_this_func();
+    ID this_func = fid;
 
     members = rb_struct_members(obj);
     len = RARRAY_LEN(members);
     rb_struct_modify(obj);
     fid = rb_id_attrget(fid);
-    if (!fid) not_a_member(rb_frame_this_func());
+    if (!fid) not_a_member(this_func);
     fsym = ID2SYM(fid);
     for (i=0; i<len; i++) {
 	slot = RARRAY_AREF(members, i);
