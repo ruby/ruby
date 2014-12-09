@@ -7161,15 +7161,18 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
  *  from the end of <i>str</i> (if present). If <code>$/</code> has not been
  *  changed from the default Ruby record separator, then <code>chomp</code> also
  *  removes carriage return characters (that is it will remove <code>\n</code>,
- *  <code>\r</code>, and <code>\r\n</code>).
+ *  <code>\r</code>, and <code>\r\n</code>). If <code>$/</code> is an empty string,
+ *  it will remove all trailing newlines from the string.
  *
- *     "hello".chomp            #=> "hello"
- *     "hello\n".chomp          #=> "hello"
- *     "hello\r\n".chomp        #=> "hello"
- *     "hello\n\r".chomp        #=> "hello\n"
- *     "hello\r".chomp          #=> "hello"
- *     "hello \n there".chomp   #=> "hello \n there"
- *     "hello".chomp("llo")     #=> "he"
+ *     "hello".chomp                #=> "hello"
+ *     "hello\n".chomp              #=> "hello"
+ *     "hello\r\n".chomp            #=> "hello"
+ *     "hello\n\r".chomp            #=> "hello\n"
+ *     "hello\r".chomp              #=> "hello"
+ *     "hello \n there".chomp       #=> "hello \n there"
+ *     "hello".chomp("llo")         #=> "he"
+ *     "hello\r\n\r\n".chomp('')    #=> "hello"
+ *     "hello\r\n\r\r\n".chomp('')  #=> "hello\r\n\r"
  */
 
 static VALUE

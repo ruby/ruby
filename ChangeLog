@@ -1,3 +1,8 @@
+Tue Dec  9 20:24:41 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* string.c: [DOC] Add missing documentation around String#chomp.
+	  Patchby @stderr [ci skip][fix GH-780]
+
 Tue Dec  9 18:20:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c: [DOC] Revise documentation by Marcus Stollsteimer at
