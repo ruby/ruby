@@ -186,6 +186,15 @@ module TestStruct
     assert_raise(ArgumentError) { o.select(1) }
   end
 
+  def test_big_struct
+    klass1 = @Struct.new(*('a'..'z').map(&:to_sym))
+    o = klass1.new
+    assert_nil o.z
+    assert_equal(:foo, o.z = :foo)
+    assert_equal(:foo, o.z)
+    assert_equal(:foo, o[25])
+  end
+
   def test_equal
     klass1 = @Struct.new(:a)
     klass2 = @Struct.new(:a, :b)

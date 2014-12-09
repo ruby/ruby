@@ -1,3 +1,18 @@
+Wed Dec 10 00:42:13 2014  Eric Wong  <e@80x24.org>
+
+	* iseq.c (rb_method_for_self_aref, rb_method_for_self_aset):
+	  new methods to generate bytecode for struct.c
+	  [Feature #10575]
+	* struct.c (rb_struct_ref, rb_struct_set): remove
+	  (define_aref_method, define_aset_method): new functions
+	  (setup_struct): use new functions
+	* test/ruby/test_struct.rb: add test for struct >10 members
+	* benchmark/bm_vm2_struct_big_aref_hi.rb: new benchmark
+	* benchmark/bm_vm2_struct_big_aref_lo.rb: ditto
+	* benchmark/bm_vm2_struct_big_aset.rb: ditto
+	* benchmark/bm_vm2_struct_small_aref.rb: ditto
+	* benchmark/bm_vm2_struct_small_aset.rb: ditto
+
 Tue Dec  9 20:24:41 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* string.c: [DOC] Add missing documentation around String#chomp.
