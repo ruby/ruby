@@ -1,3 +1,18 @@
+Tue Dec  9 18:20:02 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c: [DOC] Revise documentation by Marcus Stollsteimer at
+	  [ruby-core:66368].  [Bug #10526]
+
+	  * #inspect: be more specific about generated string, remove
+	    obsolete example.
+	  * #nil?: use code examples instead of different call-seq's.
+	  * #tap: clarify what is yielded.
+	  * Integer(): be more specific about to_int and to_i, remove
+	    reference to Ruby 1.8.
+	  * Array(): fix error.
+	  * Class: fix variable name style and indentation in example.
+	  * improve consistency, fix typos and formatting.
+
 Tue Dec  9 12:48:32 2014  Josef Simanek  <josef.simanek@gmail.com>
 
 	* vm_eval.c (rb_eval_string_wrap): [DOC] Fix `rb_eval_string_wrap`
