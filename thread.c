@@ -4696,6 +4696,8 @@ threadptr_recursive_hash_set(rb_thread_t *th, VALUE hash)
     th->local_storage_recursive_hash = hash;
 }
 
+ID rb_frame_last_func(void);
+
 /*
  * Returns the current "recursive list" used to detect recursion.
  * This list is a hash table, unique for the current thread and for
@@ -4707,7 +4709,8 @@ recursive_list_access(void)
 {
     rb_thread_t *th = GET_THREAD();
     VALUE hash = threadptr_recursive_hash(th);
-    VALUE sym = ID2SYM(rb_frame_this_func());
+    ID mid = rb_frame_last_func();
+    VALUE sym = mid ? ID2SYM(mid) : ID2SYM(idNULL);
     VALUE list;
     if (NIL_P(hash) || !RB_TYPE_P(hash, T_HASH)) {
 	hash = ident_hash_new();

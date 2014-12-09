@@ -1,3 +1,13 @@
+Tue Dec  9 10:16:24 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_frame_last_func): return the most recent frame method
+	  name.
+
+	* thread.c (recursive_list_access): use the last method name,
+	  instead of the current method name which can be unset in some
+	  cases, not to use a symbol by the invalid ID.
+	  [ruby-core:66742] [Bug #10579]
+
 Sun Dec  7 19:36:12 2014  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* ext/socket/basicsocket.c, ext/socket/sockssocket.c:
