@@ -91,10 +91,14 @@ class TestOpenURISSL
   end
 
   def test_validation_failure
-    log_tester = lambda {|server_log|
-      assert_equal(1, server_log.length)
-      assert_match(/ERROR OpenSSL::SSL::SSLError:/, server_log[0])
-    }
+    unless /mswin|mingw/ =~ RUBY_PLATFORM
+      # on Windows, Errno::ECONNRESET will be raised, and it'll be eaten by
+      # WEBrick
+      log_tester = lambda {|server_log|
+        assert_equal(1, server_log.length)
+        assert_match(/ERROR OpenSSL::SSL::SSLError:/, server_log[0])
+      }
+    end
     with_https(log_tester) {|srv, dr, url, server_thread, server_log|
       setup_validation(srv, dr)
       assert_raise(OpenSSL::SSL::SSLError) { open("#{url}/data") {} }

@@ -1,3 +1,13 @@
+Wed Dec 10 02:48:46 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/net/http/test_https.rb
+	  (TestNetHTTPS#test_certificate_verify_failure): on Windows,
+	  Errno::ECONNRESET will be raised when the verify is failure at the
+	  client side, and it'll be eaten by WEBrick.
+
+	* test/open-uri/test_ssl.rb (TestOpenURISSL#test_validation_failure):
+	  ditto.
+
 Wed Dec 10 00:42:13 2014  Eric Wong  <e@80x24.org>
 
 	* iseq.c (rb_method_for_self_aref, rb_method_for_self_aset):
