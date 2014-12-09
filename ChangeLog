@@ -1,3 +1,9 @@
+Tue Dec  9 12:48:32 2014  Josef Simanek  <josef.simanek@gmail.com>
+
+	* vm_eval.c (rb_eval_string_wrap): [DOC] Fix `rb_eval_string_wrap`
+	  documentation.  It is referencing `require` instead of `load`.
+	  The former does not have the optional argument.  [Fix GH-779]
+
 Tue Dec  9 10:16:24 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_frame_last_func): return the most recent frame method
