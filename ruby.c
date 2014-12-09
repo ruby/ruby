@@ -459,7 +459,9 @@ ruby_init_loadpath_safe(int safe_level)
 	    p = p2;
 	}
 #endif
+#if !VARIABLE_LIBPATH
 	*p = 0;
+#endif
     }
 #if !VARIABLE_LIBPATH
     else {
