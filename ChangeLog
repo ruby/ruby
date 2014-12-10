@@ -1,3 +1,9 @@
+Wed Dec 10 13:39:27 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* struct.c (define_aref_method, define_aset_method): use iseq
+	  VALUE instead of rb_iseq_t to prevent from GC, as RB_GC_GUARD
+	  makes sense only for local variables.  [Feature #10575]
+
 Wed Dec 10 09:38:40 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (exec_recursive): use the same last method name as

@@ -13,8 +13,8 @@
 #include "vm_core.h"
 #include "method.h"
 
-rb_iseq_t *rb_method_for_self_aref(VALUE name, VALUE arg);
-rb_iseq_t *rb_method_for_self_aset(VALUE name, VALUE arg);
+VALUE rb_method_for_self_aref(VALUE name, VALUE arg);
+VALUE rb_method_for_self_aset(VALUE name, VALUE arg);
 
 VALUE rb_cStruct;
 static ID id_members;
@@ -175,19 +175,21 @@ new_struct(VALUE name, VALUE super)
 static void
 define_aref_method(VALUE nstr, VALUE name, VALUE off)
 {
-    rb_iseq_t *iseq = rb_method_for_self_aref(name, off);
+    VALUE iseqval = rb_method_for_self_aref(name, off);
+    rb_iseq_t *iseq = DATA_PTR(iseqval);
 
     rb_add_method(nstr, SYM2ID(name), VM_METHOD_TYPE_ISEQ, iseq, NOEX_PUBLIC);
-    RB_GC_GUARD(iseq->self);
+    RB_GC_GUARD(iseqval);
 }
 
 static void
 define_aset_method(VALUE nstr, VALUE name, VALUE off)
 {
-    rb_iseq_t *iseq = rb_method_for_self_aset(name, off);
+    VALUE iseqval = rb_method_for_self_aset(name, off);
+    rb_iseq_t *iseq = DATA_PTR(iseqval);
 
     rb_add_method(nstr, SYM2ID(name), VM_METHOD_TYPE_ISEQ, iseq, NOEX_PUBLIC);
-    RB_GC_GUARD(iseq->self);
+    RB_GC_GUARD(iseqval);
 }
 
 static VALUE

@@ -548,7 +548,7 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
     return iseqval;
 }
 
-rb_iseq_t *
+VALUE
 rb_method_for_self_aref(VALUE name, VALUE arg)
 {
     VALUE iseqval = iseq_alloc(rb_cISeq);
@@ -591,10 +591,10 @@ rb_method_for_self_aref(VALUE name, VALUE arg)
     rb_iseq_build_from_ary(iseq, misc, locals, params, exception, body);
     cleanup_iseq_build(iseq);
 
-    return iseq;
+    return iseqval;
 }
 
-rb_iseq_t *
+VALUE
 rb_method_for_self_aset(VALUE name, VALUE arg)
 {
     VALUE iseqval = iseq_alloc(rb_cISeq);
@@ -646,7 +646,7 @@ rb_method_for_self_aset(VALUE name, VALUE arg)
     rb_iseq_build_from_ary(iseq, misc, locals, params, exception, body);
     cleanup_iseq_build(iseq);
 
-    return iseq;
+    return iseqval;
 }
 
 /*
