@@ -7188,7 +7188,7 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
 	len = chompped_length(str, rs);
 	if (len < olen) {
 	    STR_SET_LEN(str, len);
-	    RSTRING_PTR(str)[len] = '\0';
+	    TERM_FILL(&RSTRING_PTR(str)[len], TERM_LEN(str));
 	    if (ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
 		ENC_CODERANGE_CLEAR(str);
 	    }
