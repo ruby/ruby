@@ -52,6 +52,10 @@ class Test_StringCStr < Test::Unit::TestCase
     assert_wchars_term_char("a\n") {|s| s.chop!}
   end
 
+  def test_wchar_chomp!
+    assert_wchars_term_char("a\n") {|s| s.chomp!}
+  end
+
   def assert_wchars_term_char(str)
     result = {}
     WCHARS.map do |enc|

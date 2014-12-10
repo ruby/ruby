@@ -7024,7 +7024,7 @@ rb_str_chop_bang(VALUE str)
 	long len;
 	len = chopped_length(str);
 	STR_SET_LEN(str, len);
-	RSTRING_PTR(str)[len] = '\0';
+	TERM_FILL(&RSTRING_PTR(str)[len], TERM_LEN(str));
 	if (ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
 	    ENC_CODERANGE_CLEAR(str);
 	}
