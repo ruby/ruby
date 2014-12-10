@@ -41,14 +41,21 @@ class Test_StringCStr < Test::Unit::TestCase
   end
 
   def test_wchar_lstrip!
-    str = Bug::String.new(" a".encode(Encoding::UTF_16BE))
-    str.lstrip!
-    assert_nil(str.cstr_term_char)
+    assert_wchars_term_char(" a") {|s| s.lstrip!}
   end
 
   def test_wchar_rstrip!
-    str = Bug::String.new("a ".encode(Encoding::UTF_16BE))
-    str.rstrip!
-    assert_nil(str.cstr_term_char)
+    assert_wchars_term_char("a ") {|s| s.rstrip!}
+  end
+
+  def assert_wchars_term_char(str)
+    result = {}
+    WCHARS.map do |enc|
+      s = Bug::String.new(str.encode(enc))
+      yield s
+      c = s.cstr_term_char
+      result[enc] = c if c
+    end
+    assert_empty(result)
   end
 end
