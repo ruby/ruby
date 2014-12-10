@@ -1,3 +1,8 @@
+Thu Dec 11 05:37:52 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/prime.rb: Remove useless loop and block capture.
+	  See [#10354]
+
 Thu Dec 11 04:27:24 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: introduce new field

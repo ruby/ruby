@@ -272,18 +272,18 @@ class Prime
     end
 
     # Iterates the given block for each prime number.
-    def each(&block)
-      return self.dup unless block
+    def each
+      return self.dup unless block_given?
       if @ubound
         last_value = nil
         loop do
           prime = succ
           break last_value if prime > @ubound
-          last_value = block.call(prime)
+          last_value = yield prime
         end
       else
         loop do
-          block.call(succ)
+          yield succ
         end
       end
     end
@@ -350,19 +350,17 @@ class Prime
     end
 
     def succ
-      loop do
-        if (@step)
-          @prime += @step
-          @step = 6 - @step
-        else
-          case @prime
-          when 1; @prime = 2
-          when 2; @prime = 3
-          when 3; @prime = 5; @step = 2
-          end
+      if (@step)
+        @prime += @step
+        @step = 6 - @step
+      else
+        case @prime
+        when 1; @prime = 2
+        when 2; @prime = 3
+        when 3; @prime = 5; @step = 2
         end
-        return @prime
       end
+      return @prime
     end
     alias next succ
     def rewind
@@ -479,7 +477,7 @@ class Prime
     #
     # Iterates the given block over all prime numbers. Note that enumeration
     # starts from the current position of internal pointer, not rewound.
-    def each(&block)
+    def each
       return @generator.dup unless block_given?
       loop do
         yield succ
