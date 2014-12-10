@@ -2063,6 +2063,7 @@ rb_thread_mark(void *ptr)
 
 	rb_mark_tbl(th->local_storage);
 	RUBY_MARK_UNLESS_NULL(th->local_storage_recursive_hash);
+	RUBY_MARK_UNLESS_NULL(th->local_storage_recursive_hash_for_trace);
 
 	if (GET_THREAD() != th && th->machine.stack_start && th->machine.stack_end) {
 	    rb_gc_mark_machine_stack(th);
@@ -2197,6 +2198,7 @@ th_init(rb_thread_t *th, VALUE self)
     th->waiting_fd = -1;
     th->root_svar = Qnil;
     th->local_storage_recursive_hash = Qnil;
+    th->local_storage_recursive_hash_for_trace = Qnil;
 #ifdef NON_SCALAR_THREAD_ID
     th->thread_id_string[0] = '\0';
 #endif

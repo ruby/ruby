@@ -460,6 +460,7 @@ cont_init(rb_context_t *cont, rb_thread_t *th)
     cont->saved_thread.fiber = th->fiber;
     cont->saved_thread.local_storage = 0;
     cont->saved_thread.local_storage_recursive_hash = Qnil;
+    cont->saved_thread.local_storage_recursive_hash_for_trace = Qnil;
 }
 
 static rb_context_t *
@@ -565,6 +566,7 @@ cont_restore_thread(rb_context_t *cont)
 	th->stack_size = sth->stack_size;
 	th->local_storage = sth->local_storage;
 	th->local_storage_recursive_hash = sth->local_storage_recursive_hash;
+	th->local_storage_recursive_hash_for_trace = sth->local_storage_recursive_hash_for_trace;
 	th->fiber = (rb_fiber_t*)cont;
     }
 
@@ -1211,6 +1213,7 @@ fiber_init(VALUE fibval, VALUE proc)
     th->tag = 0;
     th->local_storage = st_init_numtable();
     th->local_storage_recursive_hash = Qnil;
+    th->local_storage_recursive_hash_for_trace = Qnil;
 
     th->first_proc = proc;
 

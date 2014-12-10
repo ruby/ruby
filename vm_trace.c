@@ -332,7 +332,7 @@ rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
 	    const VALUE old_recursive = th->local_storage_recursive_hash;
 	    int state = 0;
 
-	    th->local_storage_recursive_hash = Qnil;
+	    th->local_storage_recursive_hash = th->local_storage_recursive_hash_for_trace;
 	    th->state = 0;
 	    th->errinfo = Qnil;
 
@@ -352,6 +352,8 @@ rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
 	  terminate:
 	    th->trace_arg = 0;
 	    th->vm->trace_running--;
+
+	    th->local_storage_recursive_hash_for_trace = th->local_storage_recursive_hash;
 	    th->local_storage_recursive_hash = old_recursive;
 
 	    if (state) {

@@ -1,3 +1,17 @@
+Thu Dec 11 04:27:24 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: introduce new field
+	  rb_thread_t::local_storage_recursive_hash_for_trace to store
+	  recursive hash to avoid creating new recursive (nested) hashes
+	  for each trace events.
+	  [Bug #10511]
+
+	* vm_trace.c (rb_threadptr_exec_event_hooks_orig): use it.
+
+	* cont.c: catch up this fix.
+
+	* vm.c (rb_thread_mark): ditto.
+
 Wed Dec 10 13:39:27 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* struct.c (define_aref_method, define_aset_method): use iseq
