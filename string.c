@@ -3709,7 +3709,7 @@ rb_str_splice_0(VALUE str, long beg, long len, VALUE val)
     RSTRING_GETMEM(str, sptr, slen);
     if (len < vlen) {
 	/* expand string */
-	RESIZE_CAPA(str, slen + vlen - len + TERM_LEN(str));
+	RESIZE_CAPA(str, slen + vlen - len);
 	sptr = RSTRING_PTR(str);
     }
 
@@ -3726,7 +3726,7 @@ rb_str_splice_0(VALUE str, long beg, long len, VALUE val)
     }
     slen += vlen - len;
     STR_SET_LEN(str, slen);
-    sptr[slen] = '\0';
+    TERM_FILL(&sptr[slen], TERM_LEN(str));
     OBJ_INFECT(str, val);
 }
 
