@@ -1455,7 +1455,7 @@ rb_str_plus(VALUE str1, VALUE str2)
     ptr3 = RSTRING_PTR(str3);
     memcpy(ptr3, ptr1, len1);
     memcpy(ptr3+len1, ptr2, len2);
-    ptr3[len1+len2] = '\0';
+    TERM_FILL(&ptr3[len1+len2], rb_enc_mbminlen(enc));
 
     if (OBJ_TAINTED(str1) || OBJ_TAINTED(str2))
 	OBJ_TAINT(str3);
