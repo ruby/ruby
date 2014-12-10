@@ -33,10 +33,10 @@ class Test_StringCStr < Test::Unit::TestCase
     len = str.size * n
     WCHARS.each do |enc|
       s = Bug::String.new(str.encode(enc))*n
-      assert_nothing_raised(ArgumentError) {s.cstr_term}
+      assert_nothing_raised(ArgumentError, enc.name) {s.cstr_term}
       s.set_len(s.bytesize / 2)
-      assert_equal(len / 2, s.size)
-      assert_equal(0, s.cstr_term)
+      assert_equal(len / 2, s.size, enc.name)
+      assert_equal(0, s.cstr_term, enc.name)
     end
   end
 
