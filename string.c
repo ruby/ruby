@@ -5971,7 +5971,7 @@ rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
 	    s += clen;
 	}
     }
-    *t = '\0';
+    TERM_FILL(t, TERM_LEN(str));
     STR_SET_LEN(str, t - RSTRING_PTR(str));
     ENC_CODERANGE_SET(str, cr);
 

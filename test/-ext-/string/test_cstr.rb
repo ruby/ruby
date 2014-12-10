@@ -64,6 +64,10 @@ class Test_StringCStr < Test::Unit::TestCase
     assert_wchars_term_char("foobar") {|s| s.sub!(/#{"foo".encode(s.encoding)}/, "")}
   end
 
+  def test_wchar_delete!
+    assert_wchars_term_char("foobar") {|s| s.delete!("ao".encode(s.encoding))}
+  end
+
   def assert_wchars_term_char(str)
     result = {}
     WCHARS.map do |enc|
