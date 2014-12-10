@@ -4158,7 +4158,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	memcpy(p + beg0, rp, rlen);
 	len += rlen - plen;
 	STR_SET_LEN(str, len);
-	RSTRING_PTR(str)[len] = '\0';
+	TERM_FILL(&RSTRING_PTR(str)[len], TERM_LEN(str));
 	ENC_CODERANGE_SET(str, cr);
 	if (tainted) OBJ_TAINT(str);
 
