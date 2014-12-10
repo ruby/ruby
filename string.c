@@ -1444,19 +1444,25 @@ rb_str_plus(VALUE str1, VALUE str2)
 {
     VALUE str3;
     rb_encoding *enc;
+    char *ptr1, *ptr2, *ptr3;
+    long len1, len2;
 
     StringValue(str2);
     enc = rb_enc_check(str1, str2);
-    str3 = rb_str_new(0, RSTRING_LEN(str1)+RSTRING_LEN(str2));
-    memcpy(RSTRING_PTR(str3), RSTRING_PTR(str1), RSTRING_LEN(str1));
-    memcpy(RSTRING_PTR(str3) + RSTRING_LEN(str1),
-	   RSTRING_PTR(str2), RSTRING_LEN(str2));
-    RSTRING_PTR(str3)[RSTRING_LEN(str3)] = '\0';
+    RSTRING_GETMEM(str1, ptr1, len1);
+    RSTRING_GETMEM(str2, ptr2, len2);
+    str3 = rb_str_new(0, len1+len2);
+    ptr3 = RSTRING_PTR(str3);
+    memcpy(ptr3, ptr1, len1);
+    memcpy(ptr3+len1, ptr2, len2);
+    ptr3[len1+len2] = '\0';
 
     if (OBJ_TAINTED(str1) || OBJ_TAINTED(str2))
 	OBJ_TAINT(str3);
     ENCODING_CODERANGE_SET(str3, rb_enc_to_index(enc),
 			   ENC_CODERANGE_AND(ENC_CODERANGE(str1), ENC_CODERANGE(str2)));
+    RB_GC_GUARD(str1);
+    RB_GC_GUARD(str2);
     return str3;
 }
 
@@ -3686,33 +3692,37 @@ rb_str_drop_bytes(VALUE str, long len)
 static void
 rb_str_splice_0(VALUE str, long beg, long len, VALUE val)
 {
-    if (beg == 0 && RSTRING_LEN(val) == 0) {
+    char *sptr;
+    long slen, vlen = RSTRING_LEN(val);
+
+    if (beg == 0 && vlen == 0) {
 	rb_str_drop_bytes(str, len);
 	OBJ_INFECT(str, val);
 	return;
     }
 
     rb_str_modify(str);
-    if (len < RSTRING_LEN(val)) {
+    RSTRING_GETMEM(str, sptr, slen);
+    if (len < vlen) {
 	/* expand string */
-	RESIZE_CAPA(str, RSTRING_LEN(str) + RSTRING_LEN(val) - len + TERM_LEN(str));
+	RESIZE_CAPA(str, slen + vlen - len + TERM_LEN(str));
+	sptr = RSTRING_PTR(str);
     }
 
-    if (RSTRING_LEN(val) != len) {
-	memmove(RSTRING_PTR(str) + beg + RSTRING_LEN(val),
-		RSTRING_PTR(str) + beg + len,
-		RSTRING_LEN(str) - (beg + len));
+    if (vlen != len) {
+	memmove(sptr + beg + vlen,
+		sptr + beg + len,
+		slen - (beg + len));
     }
-    if (RSTRING_LEN(val) < beg && len < 0) {
-	MEMZERO(RSTRING_PTR(str) + RSTRING_LEN(str), char, -len);
+    if (vlen < beg && len < 0) {
+	MEMZERO(sptr + slen, char, -len);
     }
-    if (RSTRING_LEN(val) > 0) {
-	memmove(RSTRING_PTR(str)+beg, RSTRING_PTR(val), RSTRING_LEN(val));
+    if (vlen > 0) {
+	memmove(sptr + beg, RSTRING_PTR(val), vlen);
     }
-    STR_SET_LEN(str, RSTRING_LEN(str) + RSTRING_LEN(val) - len);
-    if (RSTRING_PTR(str)) {
-	RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
-    }
+    slen += vlen - len;
+    STR_SET_LEN(str, slen);
+    sptr[slen] = '\0';
     OBJ_INFECT(str, val);
 }
 
