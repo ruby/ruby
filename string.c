@@ -1483,6 +1483,7 @@ rb_str_times(VALUE str, VALUE times)
     VALUE str2;
     long n, len;
     char *ptr2;
+    int termlen;
 
     len = NUM2LONG(times);
     if (len < 0) {
@@ -1492,7 +1493,9 @@ rb_str_times(VALUE str, VALUE times)
 	rb_raise(rb_eArgError, "argument too big");
     }
 
-    str2 = rb_str_new_with_class(str, 0, len *= RSTRING_LEN(str));
+    len *= RSTRING_LEN(str);
+    termlen = TERM_LEN(str);
+    str2 = rb_str_new_with_class(str, 0, (len + termlen - 1));
     ptr2 = RSTRING_PTR(str2);
     if (len) {
         n = RSTRING_LEN(str);
@@ -1503,7 +1506,8 @@ rb_str_times(VALUE str, VALUE times)
         }
         memcpy(ptr2 + n, ptr2, len-n);
     }
-    ptr2[RSTRING_LEN(str2)] = '\0';
+    STR_SET_LEN(str2, len);
+    TERM_FILL(&ptr2[len], termlen);
     OBJ_INFECT(str2, str);
     rb_enc_cr_str_copy_for_substr(str2, str);
 
