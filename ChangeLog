@@ -1,3 +1,20 @@
+Thu Dec 11 19:06:01 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* class.c (class_alloc): Strat from age == 2.
+	  Class and Module objects can be living long life.
+
+	* iseq.c: Same for ISeq objects.
+
+	* gc.c (RVALUE_AGE_RESET): added.
+
+	* gc.c (newobj_of): allow to generate (age != 0) objects.
+
+	* gc.c (rb_copy_wb_protected_attribute): reset age for wb unprotected
+	  objects.
+
+	* include/ruby/ruby.h: add RUBY_TYPED_PROMOTED1 as an unrecommended
+	  flag.
+
 Thu Dec 11 05:37:52 2014  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/prime.rb: Remove useless loop and block capture.

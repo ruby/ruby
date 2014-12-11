@@ -1152,13 +1152,17 @@ RVALUE_DEMOTE(rb_objspace_t *objspace, VALUE obj)
 }
 
 static inline void
+RVALUE_AGE_RESET_RAW(VALUE obj)
+{
+    RBASIC(obj)->flags = RVALUE_FLAGS_AGE_SET(RBASIC(obj)->flags, 0);
+}
+
+static inline void
 RVALUE_AGE_RESET(VALUE obj)
 {
     check_rvalue_consistency(obj);
     if (RGENGC_CHECK_MODE) assert(!RVALUE_OLD_P(obj));
-
-    RBASIC(obj)->flags = RVALUE_FLAGS_AGE_SET(RBASIC(obj)->flags, 0);
-
+    RVALUE_AGE_RESET_RAW(obj);
     check_rvalue_consistency(obj);
 }
 
@@ -1653,7 +1657,13 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
     assert(RVALUE_MARKING(obj) == FALSE);
     assert(RVALUE_OLD_P(obj) == FALSE);
     assert(RVALUE_WB_UNPROTECTED(obj) == FALSE);
-    if (RVALUE_AGE(obj) > 0) rb_bug("newobj: %s of age (%d) > 0.", obj_info(obj), RVALUE_AGE(obj));
+
+    if (flags & FL_PROMOTED1) {
+	if (RVALUE_AGE(obj) != 2) rb_bug("newobj: %s of age (%d) != 2.", obj_info(obj), RVALUE_AGE(obj));
+    }
+    else {
+	if (RVALUE_AGE(obj) > 0) rb_bug("newobj: %s of age (%d) > 0.", obj_info(obj), RVALUE_AGE(obj));
+    }
     if (rgengc_remembered(objspace, (VALUE)obj)) rb_bug("newobj: %s is remembered.", obj_info(obj));
 #endif
 
@@ -5556,7 +5566,10 @@ rb_copy_wb_protected_attribute(VALUE dest, VALUE obj)
 #if USE_RGENGC
     if (RVALUE_WB_UNPROTECTED(obj)) {
 	MARK_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(dest), dest);
+	RVALUE_AGE_RESET_RAW(dest);
     }
+
+    check_rvalue_consistency(dest);
 #endif
 }
 

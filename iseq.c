@@ -182,7 +182,7 @@ static const rb_data_type_t iseq_data_type = {
 	iseq_memsize,
     },              /* functions */
     0, 0,
-    RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_PROMOTED1 /* start from age == 2 */ | RUBY_TYPED_WB_PROTECTED
 };
 
 static VALUE
