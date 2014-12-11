@@ -6076,7 +6076,7 @@ rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
 	}
     }
 
-    *t = '\0';
+    TERM_FILL(t, TERM_LEN(str));
     if (t - RSTRING_PTR(str) != RSTRING_LEN(str)) {
 	STR_SET_LEN(str, t - RSTRING_PTR(str));
 	modify = 1;
