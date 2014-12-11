@@ -3580,9 +3580,8 @@ rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), voi
         char *errmsg, size_t errmsg_buflen)
 {
     rb_pid_t pid;
-    int err, state = 0;
+    int err;
     int ep[2];
-    VALUE exc = Qnil;
     int error_occurred;
 
     if (status) *status = 0;
@@ -3593,14 +3592,12 @@ rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), voi
         return pid;
     close(ep[1]);
     error_occurred = recv_child_error(ep[0], &err, errmsg, errmsg_buflen);
-    if (state || error_occurred) {
+    if (error_occurred) {
         if (status) {
             rb_protect(proc_syswait, (VALUE)pid, status);
-            if (state) *status = state;
         }
         else {
             rb_syswait(pid);
-            if (state) rb_exc_raise(exc);
         }
         errno = err;
         return -1;
