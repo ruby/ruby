@@ -1,6 +1,6 @@
 Thu Dec 11 19:06:01 2014  Koichi Sasada  <ko1@atdot.net>
 
-	* class.c (class_alloc): Strat from age == 2.
+	* class.c (class_alloc): Start from age == 2.
 	  Class and Module objects can be living long life.
 
 	* iseq.c: Same for ISeq objects.
