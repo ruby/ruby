@@ -1,3 +1,8 @@
+Fri Dec 12 08:16:01 2014  Matt Hoyle  <matt@deployable.co>
+
+	* io.c (io_read) Fix spelling in docco for read.  [Fix GH-781]
+	  try > tries
+
 Thu Dec 11 19:06:01 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* class.c (class_alloc): Start from age == 2.
