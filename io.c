@@ -2805,7 +2805,7 @@ rb_io_write_nonblock(int argc, VALUE *argv, VALUE io)
  *  <i>length</i> must be a non-negative integer or <code>nil</code>.
  *
  *  If <i>length</i> is a positive integer,
- *  it try to read <i>length</i> bytes without any conversion (binary mode).
+ *  it tries to read <i>length</i> bytes without any conversion (binary mode).
  *  It returns <code>nil</code> or a string whose length is 1 to <i>length</i> bytes.
  *  <code>nil</code> means it met EOF at beginning.
  *  The 1 to <i>length</i>-1 bytes string means it met EOF after reading the result.
