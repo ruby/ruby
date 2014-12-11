@@ -461,7 +461,7 @@ class TestProcess < Test::Unit::TestCase
   SORT = [RUBY, '-e', "puts ARGF.readlines.sort"]
   CAT = [RUBY, '-e', "IO.copy_stream STDIN, STDOUT"]
 
-  def test_execopts_redirect
+  def test_execopts_redirect_fd
     with_tmpchdir {|d|
       Process.wait Process.spawn(*ECHO["a"], STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644])
       assert_equal("a", File.read("out").chomp)
@@ -533,76 +533,82 @@ class TestProcess < Test::Unit::TestCase
       assert_equal("bb\naa\n", File.read("out"))
       system(*SORT, STDIN=>["out"], STDOUT=>"out2")
       assert_equal("aa\nbb\n", File.read("out2"))
+    }
+  end
 
-      with_pipe {|r1, w1|
-        with_pipe {|r2, w2|
-          opts = {STDIN=>r1, STDOUT=>w2}
-          opts.merge(w1=>:close, r2=>:close) unless windows?
-          pid = spawn(*SORT, opts)
-          r1.close
-          w2.close
-          w1.puts "c"
-          w1.puts "a"
-          w1.puts "b"
-          w1.close
-          assert_equal("a\nb\nc\n", r2.read)
-          r2.close
-          Process.wait(pid)
+  def test_execopts_redirect_pipe
+    with_pipe {|r1, w1|
+      with_pipe {|r2, w2|
+        opts = {STDIN=>r1, STDOUT=>w2}
+        opts.merge(w1=>:close, r2=>:close) unless windows?
+        pid = spawn(*SORT, opts)
+        r1.close
+        w2.close
+        w1.puts "c"
+        w1.puts "a"
+        w1.puts "b"
+        w1.close
+        assert_equal("a\nb\nc\n", r2.read)
+        r2.close
+        Process.wait(pid)
+      }
+    }
+
+    unless windows?
+      # passing non-stdio fds is not supported on Windows
+      with_pipes(5) {|pipes|
+        ios = pipes.flatten
+        h = {}
+        ios.length.times {|i| h[ios[i]] = ios[(i-1)%ios.length] }
+        h2 = h.invert
+        _rios = pipes.map {|r, w| r }
+        wios  = pipes.map {|r, w| w }
+        child_wfds = wios.map {|w| h2[w].fileno }
+        pid = spawn(RUBY, "-e",
+                    "[#{child_wfds.join(',')}].each {|fd| IO.new(fd, 'w').puts fd }", h)
+        pipes.each {|r, w|
+          assert_equal("#{h2[w].fileno}\n", r.gets)
         }
+        Process.wait pid;
       }
 
-      unless windows?
-        # passing non-stdio fds is not supported on Windows
-        with_pipes(5) {|pipes|
-          ios = pipes.flatten
-          h = {}
-          ios.length.times {|i| h[ios[i]] = ios[(i-1)%ios.length] }
-          h2 = h.invert
-          _rios = pipes.map {|r, w| r }
-          wios  = pipes.map {|r, w| w }
-          child_wfds = wios.map {|w| h2[w].fileno }
-          pid = spawn(RUBY, "-e",
-                  "[#{child_wfds.join(',')}].each {|fd| IO.new(fd, 'w').puts fd }", h)
-          pipes.each {|r, w|
-            assert_equal("#{h2[w].fileno}\n", r.gets)
-          }
-          Process.wait pid;
+      with_pipes(5) {|pipes|
+        ios = pipes.flatten
+        h = {}
+        ios.length.times {|i| h[ios[i]] = ios[(i+1)%ios.length] }
+        h2 = h.invert
+        _rios = pipes.map {|r, w| r }
+        wios  = pipes.map {|r, w| w }
+        child_wfds = wios.map {|w| h2[w].fileno }
+        pid = spawn(RUBY, "-e",
+                    "[#{child_wfds.join(',')}].each {|fd| IO.new(fd, 'w').puts fd }", h)
+        pipes.each {|r, w|
+          assert_equal("#{h2[w].fileno}\n", r.gets)
         }
+        Process.wait pid
+      }
 
-        with_pipes(5) {|pipes|
-          ios = pipes.flatten
-          h = {}
-          ios.length.times {|i| h[ios[i]] = ios[(i+1)%ios.length] }
-          h2 = h.invert
-          _rios = pipes.map {|r, w| r }
-          wios  = pipes.map {|r, w| w }
-          child_wfds = wios.map {|w| h2[w].fileno }
-          pid = spawn(RUBY, "-e",
-                  "[#{child_wfds.join(',')}].each {|fd| IO.new(fd, 'w').puts fd }", h)
-          pipes.each {|r, w|
-            assert_equal("#{h2[w].fileno}\n", r.gets)
-          }
+      closed_fd = nil
+      with_pipes(5) {|pipes|
+        io = pipes.last.last
+        closed_fd = io.fileno
+      }
+      assert_raise(Errno::EBADF) { Process.wait spawn(*TRUECOMMAND, closed_fd=>closed_fd) }
+
+      with_pipe {|r, w|
+        if w.respond_to?(:"close_on_exec=")
+          w.close_on_exec = true
+          pid = spawn(RUBY, "-e", "IO.new(#{w.fileno}, 'w').print 'a'", w=>w)
+          w.close
+          assert_equal("a", r.read)
           Process.wait pid
-        }
+        end
+      }
+    end
+  end
 
-        closed_fd = nil
-        with_pipes(5) {|pipes|
-          io = pipes.last.last
-          closed_fd = io.fileno
-        }
-        assert_raise(Errno::EBADF) { Process.wait spawn(*TRUECOMMAND, closed_fd=>closed_fd) }
-
-        with_pipe {|r, w|
-          if w.respond_to?(:"close_on_exec=")
-            w.close_on_exec = true
-            pid = spawn(RUBY, "-e", "IO.new(#{w.fileno}, 'w').print 'a'", w=>w)
-            w.close
-            assert_equal("a", r.read)
-            Process.wait pid
-          end
-        }
-      end
-
+  def test_execopts_redirect_symbol
+    with_tmpchdir {|d|
       system(*ECHO["funya"], :out=>"out")
       assert_equal("funya\n", File.read("out"))
       system(RUBY, '-e', 'STDOUT.reopen(STDERR); puts "henya"', :err=>"out")
