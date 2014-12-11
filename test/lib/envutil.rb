@@ -68,8 +68,14 @@ module EnvUtil
         stderr = th_stderr.value if capture_stderr && capture_stderr != :merge_to_stdout
       else
         signal = /mswin|mingw/ =~ RUBY_PLATFORM ? :KILL : :TERM
+        case pgroup = opt[:pgroup]
+        when 0, true
+          pgroup = -pid
+        when nil, false
+          pgroup = pid
+        end
         begin
-          Process.kill signal, pid
+          Process.kill signal, pgroup
           Timeout.timeout((reprieve unless signal == :KILL)) do
             Process.wait(pid)
           end
