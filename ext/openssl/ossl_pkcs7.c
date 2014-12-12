@@ -14,10 +14,10 @@
     if (!(pkcs7)) { \
 	ossl_raise(rb_eRuntimeError, "PKCS7 wasn't initialized."); \
     } \
-    (obj) = Data_Wrap_Struct((klass), 0, PKCS7_free, (pkcs7)); \
+    (obj) = TypedData_Wrap_Struct((klass), &ossl_pkcs7_type, (pkcs7)); \
 } while (0)
 #define GetPKCS7(obj, pkcs7) do { \
-    Data_Get_Struct((obj), PKCS7, (pkcs7)); \
+    TypedData_Get_Struct((obj), PKCS7, &ossl_pkcs7_type, (pkcs7)); \
     if (!(pkcs7)) { \
 	ossl_raise(rb_eRuntimeError, "PKCS7 wasn't initialized."); \
     } \
@@ -75,6 +75,20 @@ VALUE cPKCS7;
 VALUE cPKCS7Signer;
 VALUE cPKCS7Recipient;
 VALUE ePKCS7Error;
+
+static void
+ossl_pkcs7_free(void *ptr)
+{
+    PKCS7_free(ptr);
+}
+
+static const rb_data_type_t ossl_pkcs7_type = {
+    "OpenSSL/PKCS7",
+    {
+	0, ossl_pkcs7_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 /*
  * Public
