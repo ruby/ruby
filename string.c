@@ -3271,6 +3271,8 @@ enc_succ_alnum_char(char *p, long len, rb_encoding *enc, char *carry)
 }
 
 
+static VALUE str_succ(VALUE str);
+
 /*
  *  call-seq:
  *     str.succ   -> new_str
@@ -3299,8 +3301,17 @@ enc_succ_alnum_char(char *p, long len, rb_encoding *enc, char *carry)
 VALUE
 rb_str_succ(VALUE orig)
 {
-    rb_encoding *enc;
     VALUE str;
+    str = rb_str_new_with_class(orig, RSTRING_PTR(orig), RSTRING_LEN(orig));
+    rb_enc_cr_str_copy_for_substr(str, orig);
+    OBJ_INFECT(str, orig);
+    return str_succ(str);
+}
+
+static VALUE
+str_succ(VALUE str)
+{
+    rb_encoding *enc;
     char *sbeg, *s, *e, *last_alnum = 0;
     int c = -1;
     long l, slen;
@@ -3308,13 +3319,10 @@ rb_str_succ(VALUE orig)
     long carry_pos = 0, carry_len = 1;
     enum neighbor_char neighbor = NEIGHBOR_FOUND;
 
-    str = rb_str_new_with_class(orig, RSTRING_PTR(orig), RSTRING_LEN(orig));
-    rb_enc_cr_str_copy_for_substr(str, orig);
-    OBJ_INFECT(str, orig);
     slen = RSTRING_LEN(str);
     if (slen == 0) return str;
 
-    enc = STR_ENC_GET(orig);
+    enc = STR_ENC_GET(str);
     sbeg = RSTRING_PTR(str);
     s = e = sbeg + slen;
 
@@ -3400,8 +3408,8 @@ rb_str_succ(VALUE orig)
 static VALUE
 rb_str_succ_bang(VALUE str)
 {
-    rb_str_shared_replace(str, rb_str_succ(str));
-
+    rb_str_modify(str);
+    str_succ(str);
     return str;
 }
 
