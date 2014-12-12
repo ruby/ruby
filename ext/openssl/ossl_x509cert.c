@@ -14,10 +14,10 @@
     if (!(x509)) { \
 	ossl_raise(rb_eRuntimeError, "CERT wasn't initialized!"); \
     } \
-    (obj) = Data_Wrap_Struct((klass), 0, X509_free, (x509)); \
+    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509_type, (x509)); \
 } while (0)
 #define GetX509(obj, x509) do { \
-    Data_Get_Struct((obj), X509, (x509)); \
+    TypedData_Get_Struct((obj), X509, &ossl_x509_type, (x509)); \
     if (!(x509)) { \
 	ossl_raise(rb_eRuntimeError, "CERT wasn't initialized!"); \
     } \
@@ -32,6 +32,20 @@
  */
 VALUE cX509Cert;
 VALUE eX509CertError;
+
+static void
+ossl_x509_free(void *ptr)
+{
+    X509_free(ptr);
+}
+
+static const rb_data_type_t ossl_x509_type = {
+    "OpenSSL/X509",
+    {
+	0, ossl_x509_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 /*
  * Public
