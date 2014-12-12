@@ -54,10 +54,10 @@
 
 #define WrapOCSPCertId(klass, obj, cid) do { \
     if(!(cid)) ossl_raise(rb_eRuntimeError, "Cert ID wasn't initialized!"); \
-    (obj) = Data_Wrap_Struct((klass), 0, OCSP_CERTID_free, (cid)); \
+    (obj) = TypedData_Wrap_Struct((klass), &ossl_ocsp_certid_type, (cid)); \
 } while (0)
 #define GetOCSPCertId(obj, cid) do { \
-    Data_Get_Struct((obj), OCSP_CERTID, (cid)); \
+    TypedData_Get_Struct((obj), OCSP_CERTID, &ossl_ocsp_certid_type, (cid)); \
     if(!(cid)) ossl_raise(rb_eRuntimeError, "Cert ID wasn't initialized!"); \
 } while (0)
 #define SafeGetOCSPCertId(obj, cid) do { \
@@ -110,6 +110,20 @@ static const rb_data_type_t ossl_ocsp_basicresp_type = {
     "OpenSSL/OCSP/BASICRESP",
     {
 	0, ossl_ocsp_basicresp_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
+static void
+ossl_ocsp_certid_free(void *ptr)
+{
+    OCSP_CERTID_free(ptr);
+}
+
+static const rb_data_type_t ossl_ocsp_certid_type = {
+    "OpenSSL/OCSP/CERTID",
+    {
+	0, ossl_ocsp_certid_free,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
 };
