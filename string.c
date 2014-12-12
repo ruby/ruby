@@ -3382,7 +3382,7 @@ rb_str_succ(VALUE orig)
     memmove(s, carry, carry_len);
     slen += carry_len;
     STR_SET_LEN(str, slen);
-    sbeg[slen] = '\0';
+    TERM_FILL(&sbeg[slen], rb_enc_mbminlen(enc));
     rb_enc_str_coderange(str);
     return str;
 }
