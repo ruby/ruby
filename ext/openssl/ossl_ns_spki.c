@@ -14,10 +14,10 @@
     if (!(spki)) { \
 	ossl_raise(rb_eRuntimeError, "SPKI wasn't initialized!"); \
     } \
-    (obj) = Data_Wrap_Struct((klass), 0, NETSCAPE_SPKI_free, (spki)); \
+    (obj) = TypedData_Wrap_Struct((klass), &ossl_netscape_spki_type, (spki)); \
 } while (0)
 #define GetSPKI(obj, spki) do { \
-    Data_Get_Struct((obj), NETSCAPE_SPKI, (spki)); \
+    TypedData_Get_Struct((obj), NETSCAPE_SPKI, &ossl_netscape_spki_type, (spki)); \
     if (!(spki)) { \
 	ossl_raise(rb_eRuntimeError, "SPKI wasn't initialized!"); \
     } \
@@ -37,6 +37,21 @@ VALUE eSPKIError;
 /*
  * Private functions
  */
+
+static void
+ossl_netscape_spki_free(void *spki)
+{
+    NETSCAPE_SPKI_free(spki);
+}
+
+static const rb_data_type_t ossl_netscape_spki_type = {
+    "OpenSSL/NETSCAPE_SPKI",
+    {
+	0, ossl_netscape_spki_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 static VALUE
 ossl_spki_alloc(VALUE klass)
 {
