@@ -25,7 +25,7 @@
 #endif
 
 #define GetSSLCTX(obj, ctx) do { \
-	Data_Get_Struct((obj), SSL_CTX, (ctx)); \
+	TypedData_Get_Struct((obj), SSL_CTX, &ossl_sslctx_type, (ctx));	\
 } while (0)
 
 VALUE mSSL;
@@ -154,12 +154,21 @@ int ossl_ssl_ex_client_cert_cb_idx;
 int ossl_ssl_ex_tmp_dh_callback_idx;
 
 static void
-ossl_sslctx_free(SSL_CTX *ctx)
+ossl_sslctx_free(void *ptr)
 {
+    SSL_CTX *ctx = ptr;
     if(ctx && SSL_CTX_get_ex_data(ctx, ossl_ssl_ex_store_p)== (void*)1)
 	ctx->cert_store = NULL;
     SSL_CTX_free(ctx);
 }
+
+static const rb_data_type_t ossl_sslctx_type = {
+    "OpenSSL/SSL/CTX",
+    {
+	0, ossl_sslctx_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 static VALUE
 ossl_sslctx_s_alloc(VALUE klass)
@@ -176,7 +185,7 @@ ossl_sslctx_s_alloc(VALUE klass)
         ossl_raise(eSSLError, "SSL_CTX_new");
     }
     SSL_CTX_set_mode(ctx, mode);
-    return Data_Wrap_Struct(klass, 0, ossl_sslctx_free, ctx);
+    return TypedData_Wrap_Struct(klass, &ossl_sslctx_type, ctx);
 }
 
 /*
