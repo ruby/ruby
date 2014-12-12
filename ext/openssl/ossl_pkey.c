@@ -69,9 +69,23 @@ ossl_generate_cb_stop(void *ptr)
 }
 #endif
 
+static void
+ossl_evp_pkey_free(void *ptr)
+{
+    EVP_PKEY_free(ptr);
+}
+
 /*
  * Public
  */
+const rb_data_type_t ossl_evp_pkey_type = {
+    "OpenSSL/EVP_PKEY",
+    {
+	0, ossl_evp_pkey_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 VALUE
 ossl_pkey_new(EVP_PKEY *pkey)
 {
