@@ -14,10 +14,10 @@
     if (!(crl)) { \
 	ossl_raise(rb_eRuntimeError, "CRL wasn't initialized!"); \
     } \
-    (obj) = Data_Wrap_Struct((klass), 0, X509_CRL_free, (crl)); \
+    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509crl_type, (crl)); \
 } while (0)
 #define GetX509CRL(obj, crl) do { \
-    Data_Get_Struct((obj), X509_CRL, (crl)); \
+    TypedData_Get_Struct((obj), X509_CRL, &ossl_x509crl_type, (crl)); \
     if (!(crl)) { \
 	ossl_raise(rb_eRuntimeError, "CRL wasn't initialized!"); \
     } \
@@ -32,6 +32,20 @@
  */
 VALUE cX509CRL;
 VALUE eX509CRLError;
+
+static void
+ossl_x509crl_free(void *ptr)
+{
+    X509_CRL_free(ptr);
+}
+
+static const rb_data_type_t ossl_x509crl_type = {
+    "OpenSSL/X509/CRL",
+    {
+	0, ossl_x509crl_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 /*
  * PUBLIC
