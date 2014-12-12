@@ -1,3 +1,8 @@
+Sat Dec 13 04:59:20 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bin/erb (ERB::Main#run): get rid of shadowing outer local
+	  variables.  [ruby-core:65772] [Feature #10395]
+
 Fri Dec 12 21:56:44 2014  Kouhei Sutou  <kou@cozmixng.org>
 
 	* gems/bundled_gems: Upgrade to test-unit 3.0.8. assert_throw and

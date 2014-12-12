@@ -141,7 +141,7 @@ EOU
         bind = TOPLEVEL_BINDING.taint
         if variables
           enc = erb.encoding
-          variables.each do |var, val|
+          for var, val in variables do
             val = val.encode(enc) if val
             bind.local_variable_set(var, val)
           end
