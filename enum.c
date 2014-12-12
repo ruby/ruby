@@ -3313,7 +3313,7 @@ slicewhen_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *    enum.slice_when { |elt_before, elt_after| bool }.each { |ary| ... }
  *
  *  Other methods of the Enumerator class and Enumerable module,
- *  such as +map+, etc., are also usable.
+ *  such as +to_a+, +map+, etc., are also usable.
  *
  *  For example, one-by-one increasing subsequence can be chunked as follows:
  *
@@ -3324,6 +3324,12 @@ slicewhen_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *    p c #=> [[1, 2], [4], "9-12", [15, 16], "19-21"]
  *    d = c.join(",")
  *    p d #=> "1,2,4,9-12,15,16,19-21"
+ *
+ *  Near elements (threshold: 6) in sorted array can be chunked as follwos:
+ *
+ *    a = [3, 11, 14, 25, 28, 29, 29, 41, 55, 57]
+ *    p a.slice_when {|i, j| 6 < j - i }.to_a
+ *    #=> [[3], [11, 14], [25, 28, 29, 29], [41], [55, 57]]
  *
  *  Increasing (non-decreasing) subsequence can be chunked as follows:
  *
