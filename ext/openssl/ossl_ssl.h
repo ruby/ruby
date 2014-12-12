@@ -11,6 +11,10 @@
 #if !defined(_OSSL_SSL_H_)
 #define _OSSL_SSL_H_
 
+#define GetSSL(obj, ssl) do { \
+	Data_Get_Struct((obj), SSL, (ssl)); \
+} while (0)
+
 #define GetSSLSession(obj, sess) do { \
 	Data_Get_Struct((obj), SSL_SESSION, (sess)); \
 	if (!(sess)) { \

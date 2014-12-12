@@ -43,7 +43,7 @@ static VALUE ossl_ssl_session_initialize(VALUE self, VALUE arg1)
 	if (rb_obj_is_instance_of(arg1, cSSLSocket)) {
 		SSL *ssl;
 
-		Data_Get_Struct(arg1, SSL, ssl);
+		GetSSL(arg1, ssl);
 
 		if (!ssl || (ctx = SSL_get1_session(ssl)) == NULL)
 			ossl_raise(eSSLSession, "no session available");
