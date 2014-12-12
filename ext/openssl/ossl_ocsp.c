@@ -15,10 +15,10 @@
 
 #define WrapOCSPReq(klass, obj, req) do { \
     if(!(req)) ossl_raise(rb_eRuntimeError, "Request wasn't initialized!"); \
-    (obj) = Data_Wrap_Struct((klass), 0, OCSP_REQUEST_free, (req)); \
+    (obj) = TypedData_Wrap_Struct((klass), &ossl_ocsp_request_type, (req)); \
 } while (0)
 #define GetOCSPReq(obj, req) do { \
-    Data_Get_Struct((obj), OCSP_REQUEST, (req)); \
+    TypedData_Get_Struct((obj), OCSP_REQUEST, &ossl_ocsp_request_type, (req)); \
     if(!(req)) ossl_raise(rb_eRuntimeError, "Request wasn't initialized!"); \
 } while (0)
 #define SafeGetOCSPReq(obj, req) do { \
@@ -71,6 +71,20 @@ VALUE cOCSPReq;
 VALUE cOCSPRes;
 VALUE cOCSPBasicRes;
 VALUE cOCSPCertId;
+
+static void
+ossl_ocsp_request_free(void *ptr)
+{
+    OCSP_REQUEST_free(ptr);
+}
+
+static const rb_data_type_t ossl_ocsp_request_type = {
+    "OpenSSL/OCSP/REQUEST",
+    {
+	0, ossl_ocsp_request_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 /*
  * Public
