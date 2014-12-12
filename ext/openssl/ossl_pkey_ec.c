@@ -21,6 +21,7 @@ typedef struct {
 #define EXPORT_DER 1
 
 static const rb_data_type_t ossl_ec_group_type;
+static const rb_data_type_t ossl_ec_point_type;
 
 #define GetPKeyEC(obj, pkey) do { \
     GetPKey((obj), (pkey)); \
@@ -72,7 +73,7 @@ static const rb_data_type_t ossl_ec_group_type;
 
 #define Get_EC_POINT(obj, p) do { \
     ossl_ec_point *ec_point; \
-    Data_Get_Struct((obj), ossl_ec_point, ec_point); \
+    TypedData_Get_Struct((obj), ossl_ec_point, &ossl_ec_point_type, ec_point); \
     if (ec_point == NULL) \
         ossl_raise(eEC_POINT, "missing ossl_ec_point structure"); \
     (p) = ec_point->point; \
@@ -370,7 +371,7 @@ static VALUE ossl_ec_point_dup(const EC_POINT *point, VALUE group_v)
     ossl_ec_point *new_point;
 
     obj = rb_obj_alloc(cEC_POINT);
-    Data_Get_Struct(obj, ossl_ec_point, new_point);
+    TypedData_Get_Struct(obj, ossl_ec_point, &ossl_ec_point_type, new_point);
 
     SafeRequire_EC_GROUP(group_v, group);
 
@@ -1229,19 +1230,28 @@ static VALUE ossl_ec_group_to_text(VALUE self)
 }
 
 
-static void ossl_ec_point_free(ossl_ec_point *ec_point)
+static void ossl_ec_point_free(void *ptr)
 {
+    ossl_ec_point *ec_point = ptr;
     if (!ec_point->dont_free && ec_point->point)
         EC_POINT_clear_free(ec_point->point);
     ruby_xfree(ec_point);
 }
+
+static const rb_data_type_t ossl_ec_point_type = {
+    "OpenSSL/ec_point",
+    {
+	0, ossl_ec_point_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 static VALUE ossl_ec_point_alloc(VALUE klass)
 {
     ossl_ec_point *ec_point;
     VALUE obj;
 
-    obj = Data_Make_Struct(klass, ossl_ec_point, 0, ossl_ec_point_free, ec_point);
+    obj = TypedData_Make_Struct(klass, ossl_ec_point, &ossl_ec_point_type, ec_point);
 
     return obj;
 }
@@ -1262,7 +1272,7 @@ static VALUE ossl_ec_point_initialize(int argc, VALUE *argv, VALUE self)
     VALUE group_v = Qnil;
     const EC_GROUP *group = NULL;
 
-    Data_Get_Struct(self, ossl_ec_point, ec_point);
+    TypedData_Get_Struct(self, ossl_ec_point, &ossl_ec_point_type, ec_point);
     if (ec_point->point)
         ossl_raise(eEC_POINT, "EC_POINT already initialized");
 
