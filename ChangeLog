@@ -1,3 +1,11 @@
+Fri Dec 12 21:56:44 2014  Kouhei Sutou  <kou@cozmixng.org>
+
+	* gems/bundled_gems: Upgrade to test-unit 3.0.8. assert_throw and
+	  assert_nothing_thrown in test-unit 3.0.7 were broken by
+	  UncaughtThrowError change introduced in Ruby 2.2.0
+	  preview2. These assertions in test-unit 3.0.8 work well with
+	  UncaughtThrowError in Ruby 2.2.0 preview2.
+
 Fri Dec 12 19:48:55 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bin/erb (ARGV.switch, ERB::Main#run): allow variables to be set
