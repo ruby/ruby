@@ -14,10 +14,10 @@
     if (!(ext)) { \
 	ossl_raise(rb_eRuntimeError, "EXT wasn't initialized!"); \
     } \
-    (obj) = Data_Wrap_Struct((klass), 0, X509_EXTENSION_free, (ext)); \
+    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509ext_type, (ext)); \
 } while (0)
 #define GetX509Ext(obj, ext) do { \
-    Data_Get_Struct((obj), X509_EXTENSION, (ext)); \
+    TypedData_Get_Struct((obj), X509_EXTENSION, &ossl_x509ext_type, (ext)); \
     if (!(ext)) { \
 	ossl_raise(rb_eRuntimeError, "EXT wasn't initialized!"); \
     } \
@@ -45,6 +45,20 @@
 VALUE cX509Ext;
 VALUE cX509ExtFactory;
 VALUE eX509ExtError;
+
+static void
+ossl_x509ext_free(void *ptr)
+{
+    X509_EXTENSION_free(ptr);
+}
+
+static const rb_data_type_t ossl_x509ext_type = {
+    "OpenSSL/X509/EXTENSION",
+    {
+	0, ossl_x509ext_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 /*
  * Public
