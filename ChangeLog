@@ -1,3 +1,9 @@
+Fri Dec 12 10:49:18 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_crypt): check arguments more strictly.
+	  * crypt() is not for wide char strings
+	  * salt bytes should not be NUL
+
 Fri Dec 12 08:16:01 2014  Matt Hoyle  <matt@deployable.co>
 
 	* io.c (io_read) Fix spelling in docco for read.  [Fix GH-781]

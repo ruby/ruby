@@ -179,6 +179,15 @@ mustnot_broken(VALUE str)
     }
 }
 
+static void
+mustnot_wchar(VALUE str)
+{
+    rb_encoding *enc = STR_ENC_GET(str);
+    if (rb_enc_mbminlen(enc) > 1) {
+	rb_raise(rb_eArgError, "wide char encoding: %s", rb_enc_name(enc));
+    }
+}
+
 static int fstring_cmp(VALUE a, VALUE b);
 
 /* in case we restart MVM development, this needs to be per-VM */
@@ -7629,12 +7638,17 @@ rb_str_crypt(VALUE str, VALUE salt)
 #endif
 
     StringValue(salt);
-    if (RSTRING_LEN(salt) < 2)
+    mustnot_wchar(str);
+    mustnot_wchar(salt);
+    if (RSTRING_LEN(salt) < 2) {
+      short_salt:
 	rb_raise(rb_eArgError, "salt too short (need >=2 bytes)");
+    }
 
     s = RSTRING_PTR(str);
     if (!s) s = "";
     saltp = RSTRING_PTR(salt);
+    if (!saltp[0] || !saltp[1]) goto short_salt;
 #ifdef BROKEN_CRYPT
     if (!ISASCII((unsigned char)saltp[0]) || !ISASCII((unsigned char)saltp[1])) {
 	salt_8bit_clean[0] = saltp[0] & 0x7f;
