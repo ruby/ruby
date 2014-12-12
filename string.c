@@ -7820,7 +7820,7 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
            p += rlen2;
 	}
     }
-    *p = '\0';
+    TERM_FILL(p, rb_enc_mbminlen(enc));
     STR_SET_LEN(res, p-RSTRING_PTR(res));
     OBJ_INFECT(res, str);
     if (!NIL_P(pad)) OBJ_INFECT(res, pad);
