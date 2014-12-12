@@ -1,3 +1,9 @@
+Fri Dec 12 13:09:13 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_latest_gc_info): return :state field to show current
+	  GC state (none/marking/sweeping).
+	  [Feature #10590]
+
 Fri Dec 12 10:49:18 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_crypt): check arguments more strictly.

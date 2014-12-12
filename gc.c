@@ -6231,23 +6231,28 @@ gc_count(VALUE self)
 }
 
 static VALUE
-gc_info_decode(int flags, VALUE hash_or_key)
+gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const int orig_flags)
 {
-    static VALUE sym_major_by = Qnil, sym_gc_by, sym_immediate_sweep, sym_have_finalizer;
+    static VALUE sym_major_by = Qnil, sym_gc_by, sym_immediate_sweep, sym_have_finalizer, sym_state;
     static VALUE sym_nofree, sym_oldgen, sym_shady, sym_force, sym_stress;
 #if RGENGC_ESTIMATE_OLDMALLOC
     static VALUE sym_oldmalloc;
 #endif
     static VALUE sym_newobj, sym_malloc, sym_method, sym_capi;
+    static VALUE sym_none, sym_marking, sym_sweeping;
     VALUE hash = Qnil, key = Qnil;
     VALUE major_by;
+    VALUE flags = orig_flags ? orig_flags : objspace->profile.latest_gc_info;
 
-    if (SYMBOL_P(hash_or_key))
+    if (SYMBOL_P(hash_or_key)) {
 	key = hash_or_key;
-    else if (RB_TYPE_P(hash_or_key, T_HASH))
+    }
+    else if (RB_TYPE_P(hash_or_key, T_HASH)) {
 	hash = hash_or_key;
-    else
+    }
+    else {
 	rb_raise(rb_eTypeError, "non-hash or symbol given");
+    }
 
     if (sym_major_by == Qnil) {
 #define S(s) sym_##s = ID2SYM(rb_intern_const(#s))
@@ -6255,6 +6260,8 @@ gc_info_decode(int flags, VALUE hash_or_key)
 	S(gc_by);
 	S(immediate_sweep);
 	S(have_finalizer);
+	S(state);
+
 	S(stress);
 	S(nofree);
 	S(oldgen);
@@ -6267,6 +6274,10 @@ gc_info_decode(int flags, VALUE hash_or_key)
 	S(malloc);
 	S(method);
 	S(capi);
+
+	S(none);
+	S(marking);
+	S(sweeping);
 #undef S
     }
 
@@ -6298,6 +6309,11 @@ gc_info_decode(int flags, VALUE hash_or_key)
 
     SET(have_finalizer, (flags & GPR_FLAG_HAVE_FINALIZE) ? Qtrue : Qfalse);
     SET(immediate_sweep, (flags & GPR_FLAG_IMMEDIATE_SWEEP) ? Qtrue : Qfalse);
+
+    if (orig_flags == 0) {
+	SET(state, objspace->flags.stat == gc_stat_none ? sym_none :
+	           objspace->flags.stat == gc_stat_marking ? sym_marking : sym_sweeping);
+    }
 #undef SET
 
     if (!NIL_P(key)) {/* matched key should return above */
@@ -6311,7 +6327,7 @@ VALUE
 rb_gc_latest_gc_info(VALUE key)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    return gc_info_decode(objspace->profile.latest_gc_info, key);
+    return gc_info_decode(objspace, key, 0);
 }
 
 /*
@@ -6339,7 +6355,7 @@ gc_latest_gc_info(int argc, VALUE *argv, VALUE self)
 	arg = rb_hash_new();
     }
 
-    return gc_info_decode(objspace->profile.latest_gc_info, arg);
+    return gc_info_decode(objspace, arg, 0);
 }
 
 enum gc_stat_sym {
@@ -8261,7 +8277,7 @@ gc_profile_record_get(void)
 	gc_profile_record *record = &objspace->profile.records[i];
 
 	prof = rb_hash_new();
-	rb_hash_aset(prof, ID2SYM(rb_intern("GC_FLAGS")), gc_info_decode(record->flags, rb_hash_new()));
+	rb_hash_aset(prof, ID2SYM(rb_intern("GC_FLAGS")), gc_info_decode(0, rb_hash_new(), record->flags));
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_TIME")), DBL2NUM(record->gc_time));
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_INVOKE_TIME")), DBL2NUM(record->gc_invoke_time));
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_USE_SIZE")), SIZET2NUM(record->heap_use_size));
