@@ -30,10 +30,10 @@
     if (!((ctx) = OPENSSL_malloc(sizeof(X509V3_CTX)))) \
         ossl_raise(rb_eRuntimeError, "CTX wasn't allocated!"); \
     X509V3_set_ctx((ctx), NULL, NULL, NULL, NULL, 0); \
-    (obj) = Data_Wrap_Struct((klass), 0, ossl_x509extfactory_free, (ctx)); \
+    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509extfactory_type, (ctx)); \
 } while (0)
 #define GetX509ExtFactory(obj, ctx) do { \
-    Data_Get_Struct((obj), X509V3_CTX, (ctx)); \
+    TypedData_Get_Struct((obj), X509V3_CTX, &ossl_x509extfactory_type, (ctx)); \
     if (!(ctx)) { \
 	ossl_raise(rb_eRuntimeError, "CTX wasn't initialized!"); \
     } \
@@ -112,10 +112,18 @@ DupX509ExtPtr(VALUE obj)
  * Ext factory
  */
 static void
-ossl_x509extfactory_free(X509V3_CTX *ctx)
+ossl_x509extfactory_free(void *ctx)
 {
     OPENSSL_free(ctx);
 }
+
+static const rb_data_type_t ossl_x509extfactory_type = {
+    "OpenSSL/X509/EXTENSION/Factory",
+    {
+	0, ossl_x509extfactory_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 static VALUE
 ossl_x509extfactory_alloc(VALUE klass)
