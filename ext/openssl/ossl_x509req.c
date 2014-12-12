@@ -14,10 +14,10 @@
     if (!(req)) { \
 	ossl_raise(rb_eRuntimeError, "Req wasn't initialized!"); \
     } \
-    (obj) = Data_Wrap_Struct((klass), 0, X509_REQ_free, (req)); \
+    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509req_type, (req)); \
 } while (0)
 #define GetX509Req(obj, req) do { \
-    Data_Get_Struct((obj), X509_REQ, (req)); \
+    TypedData_Get_Struct((obj), X509_REQ, &ossl_x509req_type, (req)); \
     if (!(req)) { \
 	ossl_raise(rb_eRuntimeError, "Req wasn't initialized!"); \
     } \
@@ -32,6 +32,20 @@
  */
 VALUE cX509Req;
 VALUE eX509ReqError;
+
+static void
+ossl_x509req_free(void *ptr)
+{
+    X509_REQ_free(ptr);
+}
+
+static const rb_data_type_t ossl_x509req_type = {
+    "OpenSSL/X509/REQ",
+    {
+	0, ossl_x509req_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 /*
  * Public functions
