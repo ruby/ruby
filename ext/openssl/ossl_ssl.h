@@ -12,7 +12,7 @@
 #define _OSSL_SSL_H_
 
 #define GetSSL(obj, ssl) do { \
-	Data_Get_Struct((obj), SSL, (ssl)); \
+	TypedData_Get_Struct((obj), SSL, &ossl_ssl_type, (ssl)); \
 } while (0)
 
 #define GetSSLSession(obj, sess) do { \
@@ -27,6 +27,7 @@
 	GetSSLSession((obj), (sess)); \
 } while (0)
 
+extern const rb_data_type_t ossl_ssl_type;
 extern const rb_data_type_t ossl_ssl_session_type;
 extern VALUE mSSL;
 extern VALUE eSSLError;

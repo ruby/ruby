@@ -1133,15 +1133,23 @@ ossl_ssl_shutdown(SSL *ssl)
 }
 
 static void
-ossl_ssl_free(SSL *ssl)
+ossl_ssl_free(void *ssl)
 {
     SSL_free(ssl);
 }
 
+const rb_data_type_t ossl_ssl_type = {
+    "OpenSSL/SSL",
+    {
+	0, ossl_ssl_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 static VALUE
 ossl_ssl_s_alloc(VALUE klass)
 {
-    return Data_Wrap_Struct(klass, 0, ossl_ssl_free, NULL);
+    return TypedData_Wrap_Struct(klass, &ossl_ssl_type, NULL);
 }
 
 /*
