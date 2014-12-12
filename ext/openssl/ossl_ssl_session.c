@@ -4,25 +4,26 @@
 
 #include "ossl.h"
 
-#define GetSSLSession(obj, sess) do { \
-	Data_Get_Struct((obj), SSL_SESSION, (sess)); \
-	if (!(sess)) { \
-		ossl_raise(rb_eRuntimeError, "SSL Session wasn't initialized."); \
-	} \
-} while (0)
-
-#define SafeGetSSLSession(obj, sess) do { \
-	OSSL_Check_Kind((obj), cSSLSession); \
-	GetSSLSession((obj), (sess)); \
-} while (0)
-
-
 VALUE cSSLSession;
 static VALUE eSSLSession;
 
+static void
+ossl_ssl_session_free(void *ptr)
+{
+    SSL_SESSION_free(ptr);
+}
+
+const rb_data_type_t ossl_ssl_session_type = {
+    "OpenSSL/SSL/Session",
+    {
+	0, ossl_ssl_session_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 static VALUE ossl_ssl_session_alloc(VALUE klass)
 {
-	return Data_Wrap_Struct(klass, 0, SSL_SESSION_free, NULL);
+	return TypedData_Wrap_Struct(klass, &ossl_ssl_session_type, NULL);
 }
 
 /*
