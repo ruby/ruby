@@ -41,10 +41,10 @@
 
 #define WrapOCSPBasicRes(klass, obj, res) do { \
     if(!(res)) ossl_raise(rb_eRuntimeError, "Response wasn't initialized!"); \
-    (obj) = Data_Wrap_Struct((klass), 0, OCSP_BASICRESP_free, (res)); \
+    (obj) = TypedData_Wrap_Struct((klass), &ossl_ocsp_basicresp_type, (res)); \
 } while (0)
 #define GetOCSPBasicRes(obj, res) do { \
-    Data_Get_Struct((obj), OCSP_BASICRESP, (res)); \
+    TypedData_Get_Struct((obj), OCSP_BASICRESP, &ossl_ocsp_basicresp_type, (res)); \
     if(!(res)) ossl_raise(rb_eRuntimeError, "Response wasn't initialized!"); \
 } while (0)
 #define SafeGetOCSPBasicRes(obj, res) do { \
@@ -96,6 +96,20 @@ static const rb_data_type_t ossl_ocsp_response_type = {
     "OpenSSL/OCSP/RESPONSE",
     {
 	0, ossl_ocsp_response_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
+static void
+ossl_ocsp_basicresp_free(void *ptr)
+{
+    OCSP_BASICRESP_free(ptr);
+}
+
+static const rb_data_type_t ossl_ocsp_basicresp_type = {
+    "OpenSSL/OCSP/BASICRESP",
+    {
+	0, ossl_ocsp_basicresp_free,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
 };
