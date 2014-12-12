@@ -799,6 +799,7 @@ class ERB
     set_eoutvar(compiler, eoutvar)
     @src, @enc = *compiler.compile(str)
     @filename = nil
+    @lineno = 0
   end
 
   ##
@@ -814,6 +815,15 @@ class ERB
   # The optional _filename_ argument passed to Kernel#eval when the ERB code
   # is run
   attr_accessor :filename
+
+  # The optional _lineno_ argument passed to Kernel#eval when the ERB code
+  # is run
+  attr_accessor :lineno
+
+  def location=((filename, lineno))
+    @filename = filename
+    @lineno = lineno if lineno
+  end
 
   #
   # Can be used to set _eoutvar_ as described in ERB::new.  It's probably
@@ -844,10 +854,10 @@ class ERB
     if @safe_level
       proc {
         $SAFE = @safe_level
-        eval(@src, b, (@filename || '(erb)'), 0)
+        eval(@src, b, (@filename || '(erb)'), @lineno)
       }.call
     else
-      eval(@src, b, (@filename || '(erb)'), 0)
+      eval(@src, b, (@filename || '(erb)'), @lineno)
     end
   end
 
