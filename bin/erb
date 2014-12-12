@@ -25,6 +25,8 @@ class ERB
           @maybe_arg = nil
         end
         "-#{$1}"
+      when /\A(\w+)=/
+        arg
       else
         self.unshift arg
         nil
@@ -55,6 +57,7 @@ class ERB
     def run(factory=ERB)
       trim_mode = 0
       disable_percent = false
+      variables = {}
       begin
         while switch = ARGV.switch
           case switch
@@ -92,14 +95,17 @@ class ERB
             disable_percent = true
           when '--help'
             raise "print this help"
-          else
+          when /\A-/
             raise "unknown switch #{switch.dump}"
+          else
+            var, val = *switch.split('=', 2)
+            (variables ||= {})[var] = val
           end
         end
       rescue                               # usage
         STDERR.puts $!.to_s
         STDERR.puts File.basename($0) +
-          " [switches] [inputfile]"
+          " [switches] [var=value...] [inputfile]"
         STDERR.puts <<EOU
   -x               print ruby script
   -n               print ruby script with line number
@@ -111,6 +117,7 @@ class ERB
   -U               set default encoding to UTF-8.
   -T trim_mode     specify trim_mode (0..2, -)
   -P               ignore lines which start with "%"
+  var=value        set variable
 EOU
         exit 1
       end
@@ -131,7 +138,15 @@ EOU
           puts erb.src
         end
       else
-        erb.run(TOPLEVEL_BINDING.taint)
+        bind = TOPLEVEL_BINDING.taint
+        if variables
+          enc = erb.encoding
+          variables.each do |var, val|
+            val = val.encode(enc) if val
+            bind.local_variable_set(var, val)
+          end
+        end
+        erb.run(bind)
       end
     end
     module_function :run

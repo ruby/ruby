@@ -1,3 +1,8 @@
+Fri Dec 12 19:48:55 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bin/erb (ARGV.switch, ERB::Main#run): allow variables to be set
+	  from the command line.  [ruby-core:65772] [Feature #10395]
+
 Fri Dec 12 19:31:44 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/erb.rb (ERB#lineno): accessor for line number to eval.
