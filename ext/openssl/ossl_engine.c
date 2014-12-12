@@ -16,10 +16,10 @@
     if (!(engine)) { \
 	ossl_raise(rb_eRuntimeError, "ENGINE wasn't initialized."); \
     } \
-    (obj) = Data_Wrap_Struct((klass), 0, ENGINE_free, (engine)); \
+    (obj) = TypedData_Wrap_Struct((klass), &ossl_engine_type, (engine)); \
 } while(0)
 #define GetEngine(obj, engine) do { \
-    Data_Get_Struct((obj), ENGINE, (engine)); \
+    TypedData_Get_Struct((obj), ENGINE, &ossl_engine_type, (engine)); \
     if (!(engine)) { \
         ossl_raise(rb_eRuntimeError, "ENGINE wasn't initialized."); \
     } \
@@ -56,6 +56,20 @@ do{\
     return Qtrue;\
   }\
 }while(0)
+
+static void
+ossl_engine_free(void *engine)
+{
+    ENGINE_free(engine);
+}
+
+static const rb_data_type_t ossl_engine_type = {
+    "OpenSSL/Engine",
+    {
+	0, ossl_engine_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 /* Document-method: OpenSSL::Engine.load
  *
