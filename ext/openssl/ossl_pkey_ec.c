@@ -20,6 +20,7 @@ typedef struct {
 #define EXPORT_PEM 0
 #define EXPORT_DER 1
 
+static const rb_data_type_t ossl_ec_group_type;
 
 #define GetPKeyEC(obj, pkey) do { \
     GetPKey((obj), (pkey)); \
@@ -30,7 +31,7 @@ typedef struct {
 
 #define SafeGet_ec_group(obj, group) do { \
     OSSL_Check_Kind((obj), cEC_GROUP); \
-    Data_Get_Struct((obj), ossl_ec_group, (group)); \
+    TypedData_Get_Struct((obj), ossl_ec_group, &ossl_ec_group_type, (group)); \
 } while(0)
 
 #define Get_EC_KEY(obj, key) do { \
@@ -52,7 +53,7 @@ typedef struct {
 
 #define Get_EC_GROUP(obj, g) do { \
     ossl_ec_group *ec_group; \
-    Data_Get_Struct((obj), ossl_ec_group, ec_group); \
+    TypedData_Get_Struct((obj), ossl_ec_group, &ossl_ec_group_type, ec_group); \
     if (ec_group == NULL) \
         ossl_raise(eEC_GROUP, "missing ossl_ec_group structure"); \
     (g) = ec_group->group; \
@@ -707,19 +708,28 @@ static VALUE ossl_ec_key_dsa_verify_asn1(VALUE self, VALUE data, VALUE sig)
     UNREACHABLE;
 }
 
-static void ossl_ec_group_free(ossl_ec_group *ec_group)
+static void ossl_ec_group_free(void *ptr)
 {
+    ossl_ec_group *ec_group = ptr;
     if (!ec_group->dont_free && ec_group->group)
         EC_GROUP_clear_free(ec_group->group);
     ruby_xfree(ec_group);
 }
+
+static const rb_data_type_t ossl_ec_group_type = {
+    "OpenSSL/ec_group",
+    {
+	0, ossl_ec_group_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 static VALUE ossl_ec_group_alloc(VALUE klass)
 {
     ossl_ec_group *ec_group;
     VALUE obj;
 
-    obj = Data_Make_Struct(klass, ossl_ec_group, 0, ossl_ec_group_free, ec_group);
+    obj = TypedData_Make_Struct(klass, ossl_ec_group, &ossl_ec_group_type, ec_group);
 
     return obj;
 }
@@ -746,7 +756,7 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
     ossl_ec_group *ec_group;
     EC_GROUP *group = NULL;
 
-    Data_Get_Struct(self, ossl_ec_group, ec_group);
+    TypedData_Get_Struct(self, ossl_ec_group, &ossl_ec_group_type, ec_group);
     if (ec_group->group != NULL)
         ossl_raise(rb_eRuntimeError, "EC_GROUP is already initialized");
 
