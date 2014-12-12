@@ -13,9 +13,9 @@
 #include "ossl.h"
 
 #define MakeHMAC(obj, klass, ctx) \
-    (obj) = Data_Make_Struct((klass), HMAC_CTX, 0, ossl_hmac_free, (ctx))
+    (obj) = TypedData_Make_Struct((klass), HMAC_CTX, &ossl_hmac_type, (ctx))
 #define GetHMAC(obj, ctx) do { \
-    Data_Get_Struct((obj), HMAC_CTX, (ctx)); \
+    TypedData_Get_Struct((obj), HMAC_CTX, &ossl_hmac_type, (ctx)); \
     if (!(ctx)) { \
 	ossl_raise(rb_eRuntimeError, "HMAC wasn't initialized"); \
     } \
@@ -39,11 +39,19 @@ VALUE eHMACError;
  * Private
  */
 static void
-ossl_hmac_free(HMAC_CTX *ctx)
+ossl_hmac_free(void *ctx)
 {
     HMAC_CTX_cleanup(ctx);
     ruby_xfree(ctx);
 }
+
+static const rb_data_type_t ossl_hmac_type = {
+    "OpenSSL/HMAC",
+    {
+	0, ossl_hmac_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 static VALUE
 ossl_hmac_alloc(VALUE klass)
