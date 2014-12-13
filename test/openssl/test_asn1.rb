@@ -605,5 +605,5 @@ rEzBQ0F9dUyqQ9gyRg8KHhDfv9HzT1d/rnUZMkoombwYBRIUChGCYV0GnJcan2Zm
     assert_equal(:UNIVERSAL, asn1.tag_class)
   end
 
-end if defined?(OpenSSL)
+end if defined?(OpenSSL::TestUtils)
 

@@ -1,6 +1,6 @@
 require_relative "utils"
 
-if defined?(OpenSSL)
+if defined?(OpenSSL::TestUtils)
 
   class OpenSSL::TestPartialRecordRead < OpenSSL::SSLTestCase
     def test_partial_tls_record_read_nonblock

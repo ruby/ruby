@@ -94,4 +94,4 @@ class OpenSSL::TestPKCS5 < Test::Unit::TestCase
     assert_equal(value1, value2)
   end if OpenSSL::PKCS5.respond_to?(:pbkdf2_hmac)
 
-end if defined?(OpenSSL)
+end if defined?(OpenSSL::TestUtils)

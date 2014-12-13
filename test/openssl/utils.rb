@@ -327,4 +327,5 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
     end
   end
 
-end if defined?(OpenSSL)
+end if defined?(OpenSSL::OPENSSL_LIBRARY_VERSION) and
+  /\AOpenSSL +0\./ !~ OpenSSL::OPENSSL_LIBRARY_VERSION

@@ -1,6 +1,6 @@
 require_relative 'utils'
 
-if defined?(OpenSSL)
+if defined?(OpenSSL::TestUtils)
 
 class OpenSSL::TestNSSPI < Test::Unit::TestCase
   def setup

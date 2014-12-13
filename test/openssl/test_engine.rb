@@ -71,5 +71,5 @@ class OpenSSL::TestEngine < Test::Unit::TestCase
     cipher.update(data) + cipher.final
   end
 
-end if defined?(OpenSSL)
+end if defined?(OpenSSL::TestUtils)
 

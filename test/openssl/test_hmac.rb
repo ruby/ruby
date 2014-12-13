@@ -38,4 +38,4 @@ class OpenSSL::TestHMAC < Test::Unit::TestCase
     result = hmac.update(data).hexdigest
     assert_equal "a13984b929a07912e4e21c5720876a8e150d6f67f854437206e7f86547248396", result
   end
-end if defined?(OpenSSL)
+end if defined?(OpenSSL::TestUtils)

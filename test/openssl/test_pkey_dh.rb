@@ -1,6 +1,6 @@
 require_relative 'utils'
 
-if defined?(OpenSSL)
+if defined?(OpenSSL::TestUtils)
 
 class OpenSSL::TestPKeyDH < Test::Unit::TestCase
 

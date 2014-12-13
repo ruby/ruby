@@ -84,4 +84,4 @@ class OpenSSL::TestBuffering < Test::Unit::TestCase
     assert_equal([97, 98, 99], res)
   end
 
-end if defined?(OpenSSL)
+end if defined?(OpenSSL::TestUtils)
