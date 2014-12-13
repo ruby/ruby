@@ -1,3 +1,7 @@
+Sat Dec 13 18:33:25 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/openssl/test_pkey_ec.rb: ignored tests with old OpenSSL.
+
 Sat Dec 13 18:01:57 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* signal.c (check_stack_overflow): check sp also on i386/x86_64
