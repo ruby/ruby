@@ -43,20 +43,20 @@ class VCS
   # +path+ was modified.
   def get_revisions(path)
     path = relative_to(path)
-    last, changed, modified, *rest = Dir.chdir(@srcdir) {
+    last, changed, modified, *rest = (
       begin
         if NullDevice
           save_stderr = STDERR.dup
           STDERR.reopen NullDevice, 'w'
         end
-        self.class.get_revisions(path)
+        self.class.get_revisions(path, @srcdir)
       ensure
         if save_stderr
           STDERR.reopen save_stderr
           save_stderr.close
         end
       end
-    }
+    )
     last or raise VCS::NotFoundError, "last revision not found"
     changed or raise VCS::NotFoundError, "changed revision not found"
     if modified
@@ -94,7 +94,10 @@ class VCS
   class SVN < self
     register(".svn")
 
-    def self.get_revisions(path)
+    def self.get_revisions(path, srcdir = nil)
+      if srcdir and %r'\A(?:[^/]+:|/)' !~ path
+        path = File.join(srcdir, path)
+      end
       info_xml = `svn info --xml "#{path}"`
       _, last, _, changed, _ = info_xml.split(/revision="(\d+)"/)
       modified = info_xml[/<date>([^<>]*)/, 1]
@@ -105,8 +108,8 @@ class VCS
   class GIT < self
     register(".git")
 
-    def self.get_revisions(path)
-      logcmd = %Q[git log -n1 --date=iso --grep="^ *git-svn-id: .*@[0-9][0-9]* "]
+    def self.get_revisions(path, srcdir = nil)
+      logcmd = %Q[git -C "#{srcdir || '.'}" log -n1 --date=iso --grep="^ *git-svn-id: .*@[0-9][0-9]* "]
       idpat = /git-svn-id: .*?@(\d+) \S+\Z/
       last = `#{logcmd}`[idpat, 1]
       if path
