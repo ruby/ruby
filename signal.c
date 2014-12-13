@@ -24,6 +24,9 @@
 #ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
 #endif
+#ifdef HAVE_UCONTEXT_H
+#include <ucontext.h>
+#endif
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 # include <valgrind/memcheck.h>
