@@ -742,15 +742,14 @@ NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
 static void
 check_stack_overflow(const uintptr_t addr, const ucontext_t *ctx)
 {
+    const DEFINE_MCONTEXT_PTR(mctx, ctx);
 # if defined __linux__
-    const mcontext_t *mctx = &ctx->uc_mcontext;
 #   if defined REG_RSP
     const greg_t sp = mctx->gregs[REG_RSP];
 #   else
     const greg_t sp = mctx->gregs[REG_ESP];
 #   endif
 # elif defined __APPLE__
-    const mcontext_t mctx = ctx->uc_mcontext;
 #   if defined(__LP64__)
     const uintptr_t sp = mctx->__ss.__rsp;
 #   else
