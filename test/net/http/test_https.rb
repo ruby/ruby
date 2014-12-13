@@ -191,4 +191,4 @@ class TestNetHTTPS < Test::Unit::TestCase
       assert th.join(10), bug4246
     }
   end
-end if defined?(OpenSSL)
+end if defined?(OpenSSL::TestUtils)
