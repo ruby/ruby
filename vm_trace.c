@@ -1554,12 +1554,13 @@ void
 rb_postponed_job_flush(rb_vm_t *vm)
 {
     rb_thread_t *th = GET_THREAD();
-    unsigned long saved_postponed_job_interrupt_mask = th->interrupt_mask & POSTPONED_JOB_INTERRUPT_MASK;
+    const unsigned long block_mask = POSTPONED_JOB_INTERRUPT_MASK|TRAP_INTERRUPT_MASK;
+    unsigned long saved_mask = th->interrupt_mask & block_mask;
     VALUE saved_errno = th->errinfo;
 
     th->errinfo = Qnil;
     /* mask POSTPONED_JOB dispatch */
-    th->interrupt_mask |= POSTPONED_JOB_INTERRUPT_MASK;
+    th->interrupt_mask |= block_mask;
     {
 	TH_PUSH_TAG(th);
 	EXEC_TAG();
@@ -1575,6 +1576,6 @@ rb_postponed_job_flush(rb_vm_t *vm)
 	TH_POP_TAG();
     }
     /* restore POSTPONED_JOB mask */
-    th->interrupt_mask &= ~(saved_postponed_job_interrupt_mask ^ POSTPONED_JOB_INTERRUPT_MASK);
+    th->interrupt_mask &= ~(saved_mask ^ block_mask);
     th->errinfo = saved_errno;
 }

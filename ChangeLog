@@ -1,3 +1,9 @@
+Sat Dec 13 20:41:55 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_trace.c (rb_postponed_job_flush): mask signal trap interrupt
+	  too to defer handling after finalizers finished.
+	  [ruby-core:66825] [Bug #10595]
+
 Sat Dec 13 18:33:25 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/openssl/test_pkey_ec.rb: ignored tests with old OpenSSL.
