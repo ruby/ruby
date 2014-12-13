@@ -14,10 +14,10 @@
     if (!(st)) { \
 	ossl_raise(rb_eRuntimeError, "STORE wasn't initialized!"); \
     } \
-    (obj) = Data_Wrap_Struct((klass), 0, X509_STORE_free, (st)); \
+    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509store_type, (st)); \
 } while (0)
 #define GetX509Store(obj, st) do { \
-    Data_Get_Struct((obj), X509_STORE, (st)); \
+    TypedData_Get_Struct((obj), X509_STORE, &ossl_x509store_type, (st)); \
     if (!(st)) { \
 	ossl_raise(rb_eRuntimeError, "STORE wasn't initialized!"); \
     } \
@@ -50,6 +50,20 @@
 VALUE cX509Store;
 VALUE cX509StoreContext;
 VALUE eX509StoreError;
+
+static void
+ossl_x509store_free(void *ptr)
+{
+    X509_STORE_free(ptr);
+}
+
+static const rb_data_type_t ossl_x509store_type = {
+    "OpenSSL/X509/STORE",
+    {
+	0, ossl_x509store_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 /*
  * Public functions
