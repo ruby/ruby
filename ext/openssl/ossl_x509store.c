@@ -31,10 +31,10 @@
     if (!(ctx)) { \
 	ossl_raise(rb_eRuntimeError, "STORE_CTX wasn't initialized!"); \
     } \
-    (obj) = Data_Wrap_Struct((klass), 0, ossl_x509stctx_free, (ctx)); \
+    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509stctx_type, (ctx)); \
 } while (0)
 #define GetX509StCtx(obj, ctx) do { \
-    Data_Get_Struct((obj), X509_STORE_CTX, (ctx)); \
+    TypedData_Get_Struct((obj), X509_STORE_CTX, &ossl_x509stctx_type, (ctx)); \
     if (!(ctx)) { \
 	ossl_raise(rb_eRuntimeError, "STORE_CTX is out of scope!"); \
     } \
@@ -356,7 +356,17 @@ ossl_x509store_verify(int argc, VALUE *argv, VALUE self)
 /*
  * Public Functions
  */
-static void ossl_x509stctx_free(X509_STORE_CTX*);
+static void ossl_x509stctx_free(void*);
+
+
+static const rb_data_type_t ossl_x509stctx_type = {
+    "OpenSSL/X509/STORE_CTX",
+    {
+	0, ossl_x509stctx_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 
 VALUE
 ossl_x509stctx_new(X509_STORE_CTX *ctx)
@@ -381,8 +391,9 @@ ossl_x509stctx_clear_ptr(VALUE obj)
  * Private functions
  */
 static void
-ossl_x509stctx_free(X509_STORE_CTX *ctx)
+ossl_x509stctx_free(void *ptr)
 {
+    X509_STORE_CTX *ctx = ptr;
     if(ctx->untrusted)
 	sk_X509_pop_free(ctx->untrusted, X509_free);
     if(ctx->cert)
