@@ -289,7 +289,6 @@ EOS
   end
 
   def test_allow_empty_reason_code
-    $stderr.puts "#{Time.now} - #{__method__} - "
     io = dummy_io(<<EOS)
 HTTP/1.1 200
 Content-Length: 5
