@@ -170,8 +170,9 @@ class TestOpenURISSL
     }
   end
 
-end if defined?(OpenSSL)
+end if defined?(OpenSSL::TestUtils)
 
+if defined?(OpenSSL::TestUtils)
 # mkdir demoCA demoCA/private demoCA/newcerts
 # touch demoCA/index.txt
 # echo 00 > demoCA/serial
@@ -385,3 +386,5 @@ TIvZKDovHJ3UV163xaECQEVQR2ZW6SHZQA6vP/IFd6vnCECXiCpRs36GsLIDLm02
 P0ZCl31aopNsBcKLiy2v1X116XDwLSHjuc9NmsSX4nk=
 -----END RSA PRIVATE KEY-----
 End
+
+end
