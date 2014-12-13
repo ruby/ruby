@@ -258,6 +258,52 @@ EOS
     end
   end
 
+  def test_allow_trailing_space_after_status
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 
+Content-Length: 5
+Connection: close
+
+hello
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+    assert_equal('1.1', res.http_version)
+    assert_equal('200', res.code)
+    assert_equal('', res.message)
+  end
+
+  def test_normal_status_line
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Content-Length: 5
+Connection: close
+
+hello
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+    assert_equal('1.1', res.http_version)
+    assert_equal('200', res.code)
+    assert_equal('OK', res.message)
+  end
+
+  def test_allow_empty_reason_code
+    $stderr.puts "#{Time.now} - #{__method__} - "
+    io = dummy_io(<<EOS)
+HTTP/1.1 200
+Content-Length: 5
+Connection: close
+
+hello
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+    assert_equal('1.1', res.http_version)
+    assert_equal('200', res.code)
+    assert_equal('', res.message)
+  end
+
 private
 
   def dummy_io(str)
