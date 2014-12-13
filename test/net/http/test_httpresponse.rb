@@ -301,7 +301,7 @@ EOS
     res = Net::HTTPResponse.read_new(io)
     assert_equal('1.1', res.http_version)
     assert_equal('200', res.code)
-    assert_equal('', res.message)
+    assert_equal(nil, res.message)
   end
 
 private
