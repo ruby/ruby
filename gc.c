@@ -2370,6 +2370,20 @@ define_final0(VALUE obj, VALUE block)
 
     if (st_lookup(finalizer_table, obj, &data)) {
 	table = (VALUE)data;
+
+	/* avoid duplicate block, table is usually small */
+	{
+	    const VALUE *ptr = RARRAY_CONST_PTR(table);
+	    long len = RARRAY_LEN(table);
+	    long i;
+
+	    for (i = 0; i < len; i++, ptr++) {
+		if (rb_funcall(*ptr, idEq, 1, block)) {
+		    return *ptr;
+		}
+	    }
+	}
+
 	rb_ary_push(table, block);
     }
     else {

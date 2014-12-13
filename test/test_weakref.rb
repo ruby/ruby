@@ -60,4 +60,12 @@ class TestWeakRef < Test::Unit::TestCase
       end
     }, bug7304
   end
+
+  def test_repeated_object_leak
+    bug10537 = '[ruby-core:66428]'
+    assert_no_memory_leak(%w(-rweakref), '', <<-'end;', bug10537)
+      a = Object.new
+      150_000.times { WeakRef.new(a) }
+    end;
+  end
 end

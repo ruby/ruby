@@ -1,3 +1,9 @@
+Sat Dec 13 09:58:41 2014  Eric Wong  <e@80x24.org>
+
+	* gc.c (define_final0): avoid duplicate blocks
+	  [Bug #10537]
+	* test/test_weakref.rb (test_repeated_object_leak): new test
+
 Sat Dec 13 04:59:20 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bin/erb (ERB::Main#run): get rid of shadowing outer local
