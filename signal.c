@@ -732,10 +732,12 @@ rb_get_next_signal(void)
 
 #if defined(USE_SIGALTSTACK) || defined(_WIN32)
 NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
-# if !(defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__))
+# if !(defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__ || defined __amd64__))
 # elif defined __linux__
 #   define USE_UCONTEXT_REG 1
 # elif defined __APPLE__
+#   define USE_UCONTEXT_REG 1
+# elif defined __FreeBSD__
 #   define USE_UCONTEXT_REG 1
 # endif
 # ifdef USE_UCONTEXT_REG
@@ -754,6 +756,12 @@ check_stack_overflow(const uintptr_t addr, const ucontext_t *ctx)
     const uintptr_t sp = mctx->__ss.__rsp;
 #   else
     const uintptr_t sp = mctx->__ss.__esp;
+#   endif
+# elif defined __FreeBSD__
+#   if defined(__amd64__)
+    const __register_t sp = mctx->mc_rsp;
+#   else
+    const __register_t sp = mctx->mc_esp;
 #   endif
 # endif
     enum {pagesize = 4096};

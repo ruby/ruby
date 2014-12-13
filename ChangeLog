@@ -1,3 +1,8 @@
+Sat Dec 13 18:01:57 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (check_stack_overflow): check sp also on i386/x86_64
+	  FreeBSD.
+
 Sat Dec 13 09:58:41 2014  Eric Wong  <e@80x24.org>
 
 	* gc.c (define_final0): avoid duplicate blocks
