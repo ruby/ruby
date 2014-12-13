@@ -244,6 +244,20 @@ EOS
     refute_same  uri, response.uri
   end
 
+  def test_ensure_zero_space_does_not_regress
+    io = dummy_io(<<EOS)
+HTTP/1.1 200OK
+Content-Length: 5
+Connection: close
+
+hello
+EOS
+
+    assert_raises Net::HTTPBadResponse do
+      Net::HTTPResponse.read_new(io)
+    end
+  end
+
 private
 
   def dummy_io(str)
