@@ -342,10 +342,12 @@ class TestGc < Test::Unit::TestCase
     error = nil
     status = nil
     EnvUtil.invoke_ruby(["-e", src], "", false, true) do |_, _, stderr, pid|
-      sleep 0.1
-      Process.kill("INT", pid)
+      10.times {
+        sleep 0.1
+        Process.kill("INT", pid) rescue break
+      }
       th = Thread.start do
-        sleep 1
+        sleep 5
         Process.kill("KILL", pid) rescue nil
       end
       error = stderr.read
