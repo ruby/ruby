@@ -390,6 +390,10 @@ if defined? GDBM
       assert_equal(@gdbm, ret)
     end
 
+    def test_each_key_without_block
+      assert_kind_of Enumerator, @gdbm.each_key
+    end
+
     def test_keys
       assert_equal([], @gdbm.keys)
 
