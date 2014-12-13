@@ -327,4 +327,24 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
     end
   end
 
+  module OpenSSL::OCSPTestSetup
+    def setup
+      ca_subj = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=TestCA")
+      ca_key = OpenSSL::TestUtils::TEST_KEY_RSA1024
+      ca_serial = 0xabcabcabcabc
+
+      subj = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=TestCert")
+      @key = OpenSSL::TestUtils::TEST_KEY_RSA1024
+      serial = 0xabcabcabcabd
+
+      now = Time.at(Time.now.to_i) # suppress usec
+      dgst = OpenSSL::Digest::SHA1.new
+
+      @ca_cert = OpenSSL::TestUtils.issue_cert(
+        ca_subj, ca_key, ca_serial, now, now+3600, [], nil, nil, dgst)
+      @cert = OpenSSL::TestUtils.issue_cert(
+        subj, @key, serial, now, now+3600, [], @ca_cert, nil, dgst)
+    end
+  end
+
 end if defined?(OpenSSL)
