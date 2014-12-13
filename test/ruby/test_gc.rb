@@ -334,29 +334,21 @@ class TestGc < Test::Unit::TestCase
   def test_interrupt_in_finalizer
     bug10595 = '[ruby-core:66825] [Bug #10595]'
     src = <<-'end;'
+      pid = $$
+      Thread.start do
+        10.times {
+          sleep 0.1
+          Process.kill("INT", pid) rescue break
+        }
+        sleep 5
+        Process.kill("KILL", pid) rescue nil
+      end
       f = proc {1000.times {}}
       loop do
         ObjectSpace.define_finalizer(Object.new, f)
       end
     end;
-    error = nil
-    status = nil
-    EnvUtil.invoke_ruby(["-e", src], "", false, true) do |_, _, stderr, pid|
-      10.times {
-        sleep 0.1
-        Process.kill("INT", pid) rescue break
-      }
-      th = Thread.start do
-        sleep 5
-        Process.kill("KILL", pid) rescue nil
-      end
-      error = stderr.read
-      _, status = Process.wait2(pid)
-      th.kill
-    end
-    assert_predicate status, :signaled?
-    assert_equal "INT", Signal.signame(status.termsig), bug10595
-    assert_match /Interrupt/, error, bug10595
+    assert_in_out_err(["-e", src], "", [], /Interrupt/, bug10595)
   end
 
   def test_verify_internal_consistency
