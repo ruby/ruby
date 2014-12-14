@@ -1,3 +1,9 @@
+Sun Dec 14 20:11:42 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (primary): restore current_arg so that circular
+	  reference after a method definition is also warned.
+	  [ruby-core:61299] [Bug #9593]
+
 Sat Dec 13 20:41:55 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_trace.c (rb_postponed_job_flush): mask signal trap interrupt

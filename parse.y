@@ -3027,12 +3027,15 @@ primary		: literal
 		    %*/
 			local_pop();
 			in_def--;
+			current_arg = $<id>3;
 		    }
 		| k_def singleton dot_or_colon {lex_state = EXPR_FNAME;} fname
 		    {
 			in_single++;
 			lex_state = EXPR_ENDFN; /* force for args */
 			local_push(0);
+			$<id>$ = current_arg;
+			current_arg = 0;
 		    }
 		  f_arglist
 		  bodystmt
@@ -3048,6 +3051,7 @@ primary		: literal
 		    %*/
 			local_pop();
 			in_single--;
+			current_arg = $<id>6;
 		    }
 		| keyword_break
 		    {

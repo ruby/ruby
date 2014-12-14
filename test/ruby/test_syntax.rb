@@ -203,6 +203,16 @@ class TestSyntax < Test::Unit::TestCase
     end
 
     o = Object.new
+    assert_warn(/circular argument reference - var/) do
+      o.instance_eval("def foo(var = (def bar;end; var)) var end")
+    end
+
+    o = Object.new
+    assert_warn(/circular argument reference - var/) do
+      o.instance_eval("def foo(var = (def self.bar;end; var)) var end")
+    end
+
+    o = Object.new
     assert_warn("") do
       o.instance_eval("def foo(var = bar {|var| var}) var end")
     end
