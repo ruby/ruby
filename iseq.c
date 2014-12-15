@@ -567,14 +567,15 @@ rb_method_for_self_aref(VALUE name, VALUE arg)
 		       ISEQ_TYPE_METHOD, &COMPILE_OPTION_DEFAULT);
 
     misc = params = rb_hash_new(); /* empty */
-    locals = exception = rb_ary_new(); /* empty */
-    body = rb_ary_new();
+    locals = exception = rb_ary_tmp_new(0); /* empty */
+    body = rb_ary_tmp_new(5);
 
 #define S(s) ID2SYM(rb_intern(#s))
+#define ADD(a) rb_ary_push(body, rb_obj_hide(a))
     /* def name; self[arg]; end */
-    rb_ary_push(body, lineno);
-    rb_ary_push(body, rb_ary_new3(1, S(putself)));
-    rb_ary_push(body, rb_ary_new3(2, S(putobject), arg));
+    ADD(lineno);
+    ADD(rb_ary_new3(1, S(putself)));
+    ADD(rb_ary_new3(2, S(putobject), arg));
 
     /* {:mid=>:[], :flag=>264, :blockptr=>nil, :orig_argc=>1} */
     send_arg = rb_hash_new();
@@ -584,12 +585,15 @@ rb_method_for_self_aref(VALUE name, VALUE arg)
     rb_hash_aset(send_arg, S(orig_argc), INT2FIX(1));
 
     /* we do not want opt_aref for struct */
-    rb_ary_push(body, rb_ary_new3(2, S(opt_send_without_block), send_arg));
-    rb_ary_push(body, rb_ary_new3(1, S(leave)));
+    ADD(rb_ary_new3(2, S(opt_send_without_block), send_arg));
+    ADD(rb_ary_new3(1, S(leave)));
 #undef S
+#undef ADD
 
     rb_iseq_build_from_ary(iseq, misc, locals, params, exception, body);
     cleanup_iseq_build(iseq);
+
+    rb_ary_clear(body);
 
     return iseqval;
 }
@@ -614,20 +618,21 @@ rb_method_for_self_aset(VALUE name, VALUE arg)
 
     /* def name=(val); self[arg] = val; end */
 #define S(s) ID2SYM(rb_intern(#s))
+#define ADD(a) rb_ary_push(body, rb_obj_hide(a))
     misc = rb_hash_new(); /* empty */
-    locals = rb_ary_new3(1, S(val));
+    locals = rb_obj_hide(rb_ary_new3(1, S(val)));
     params = rb_hash_new();
-    exception = rb_ary_new(); /* empty */
-    body = rb_ary_new();
+    exception = rb_ary_tmp_new(0); /* empty */
+    body = rb_ary_tmp_new(9);
 
     rb_hash_aset(params, S(lead_num), INT2FIX(1));
 
-    rb_ary_push(body, lineno);
-    rb_ary_push(body, rb_ary_new3(1, S(putnil)));
-    rb_ary_push(body, rb_ary_new3(1, S(putself)));
-    rb_ary_push(body, rb_ary_new3(2, S(putobject), arg));
-    rb_ary_push(body, rb_ary_new3(3, S(getlocal), INT2FIX(2), INT2FIX(0)));
-    rb_ary_push(body, rb_ary_new3(2, S(setn), INT2FIX(3)));
+    ADD(lineno);
+    ADD(rb_ary_new3(1, S(putnil)));
+    ADD(rb_ary_new3(1, S(putself)));
+    ADD(rb_ary_new3(2, S(putobject), arg));
+    ADD(rb_ary_new3(3, S(getlocal), INT2FIX(2), INT2FIX(0)));
+    ADD(rb_ary_new3(2, S(setn), INT2FIX(3)));
 
     /* {:mid=>:[]=, :flag=>264, :blockptr=>nil, :orig_argc=>2} */
     send_arg = rb_hash_new();
@@ -637,14 +642,17 @@ rb_method_for_self_aset(VALUE name, VALUE arg)
     rb_hash_aset(send_arg, S(orig_argc), INT2FIX(2));
 
     /* we do not want opt_aset for struct */
-    rb_ary_push(body, rb_ary_new3(2, S(opt_send_without_block), send_arg));
+    ADD(rb_ary_new3(2, S(opt_send_without_block), send_arg));
 
-    rb_ary_push(body, rb_ary_new3(1, S(pop)));
-    rb_ary_push(body, rb_ary_new3(1, S(leave)));
+    ADD(rb_ary_new3(1, S(pop)));
+    ADD(rb_ary_new3(1, S(leave)));
 #undef S
+#undef ADD
 
     rb_iseq_build_from_ary(iseq, misc, locals, params, exception, body);
     cleanup_iseq_build(iseq);
+
+    rb_ary_clear(body);
 
     return iseqval;
 }
