@@ -548,13 +548,28 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
     return iseqval;
 }
 
+static VALUE
+caller_location(VALUE *path)
+{
+    rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
+    if (cfp) {
+	int line = rb_vm_get_sourceline(cfp);
+	*path = cfp->iseq->location.path;
+	return INT2FIX(line);
+    }
+    else {
+	*path = rb_str_new2("<compiled>");
+	return INT2FIX(1);
+    }
+}
+
 VALUE
 rb_method_for_self_aref(VALUE name, VALUE arg)
 {
     VALUE iseqval = iseq_alloc(rb_cISeq);
     rb_iseq_t *iseq;
-    VALUE path = rb_str_new2("<compiled>");
-    VALUE lineno = INT2FIX(1);
+    VALUE path, lineno = caller_location(&path);
     VALUE parent = 0;
     VALUE misc, locals, params, exception, body, send_arg;
     int flag = VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE;
@@ -603,8 +618,7 @@ rb_method_for_self_aset(VALUE name, VALUE arg)
 {
     VALUE iseqval = iseq_alloc(rb_cISeq);
     rb_iseq_t *iseq;
-    VALUE path = rb_str_new2("<compiled>");
-    VALUE lineno = INT2FIX(1);
+    VALUE path, lineno = caller_location(&path);
     VALUE parent = 0;
     VALUE misc, locals, params, exception, body, send_arg;
     int flag = VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE;
