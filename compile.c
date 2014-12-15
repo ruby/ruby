@@ -1599,6 +1599,9 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			    generated_iseq[pos + 1 + j] = (VALUE)entry;
 			}
 			break;
+		      case TS_FUNCPTR:
+			generated_iseq[pos + 1 + j] = operands[j];
+			break;
 		      default:
 			rb_compile_error(RSTRING_PTR(iseq->location.path), iobj->line_no,
 					 "unknown operand type: %c", type);
@@ -5600,6 +5603,9 @@ insn_data_to_s_detail(INSN *iobj)
 	      case TS_CDHASH:	/* case/when condition cache */
 		rb_str_cat2(str, "<ch>");
 		break;
+	      case TS_FUNCPTR:
+		rb_str_catf(str, "<%p>", (rb_insn_func_t)OPERAND_AT(iobj, j));
+		break;
 	      default:{
 		rb_raise(rb_eSyntaxError, "unknown operand type: %c", type);
 	      }
@@ -5942,6 +5948,9 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 			    argv[j] = map;
 			    iseq_add_mark_object_compile_time(iseq, map);
 			}
+			break;
+		      case TS_FUNCPTR:
+			argv[j] = op;
 			break;
 		      default:
 			rb_raise(rb_eSyntaxError, "unknown operand: %c", insn_op_type((VALUE)insn_id, j));
