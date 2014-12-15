@@ -7,10 +7,12 @@ require 'fileutils'
 require 'tmpdir'
 STDOUT.sync = true
 
-$exported = nil if $exported == ""
-$archname = nil if $archname == ""
+$exported = nil if ($exported ||= nil) == ""
+$archname = nil if ($archname ||= nil) == ""
 $keep_temp ||= nil
 $patch_file ||= nil
+$packages ||= nil
+$digests ||= nil
 $tooldir = File.expand_path("..", __FILE__)
 
 def usage
@@ -101,7 +103,7 @@ end
   end
 end
 
-if $help or $_help
+if defined?($help) or defined?($_help)
   puts usage
   exit
 end
