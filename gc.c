@@ -2941,7 +2941,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
 	       BUILTIN_TYPE(obj), (void*)obj);
     }
 
-    return size;
+    return size + sizeof(RVALUE);
 }
 
 size_t

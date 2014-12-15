@@ -1,3 +1,16 @@
+Mon Dec 15 17:51:28 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/objspace.c: ObjectSpace.memsize_of(obj) returns
+	  with sizeof(RVALUE). [Bug #8984]
+
+	* gc.c (obj_memsize_of): ditto.
+
+	* NEWS: add a NEWS entry.
+
+	* test/objspace/test_objspace.rb: catch up this fix.
+
+	* test/ruby/test_file_exhaustive.rb: ditto.
+
 Mon Dec 15 16:19:23 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_enc_str_coderange): dummy wchar, non-endianness
