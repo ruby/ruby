@@ -134,6 +134,54 @@ class VCS
       modified = info_xml[/<date>([^<>]*)/, 1]
       [last, changed, modified]
     end
+
+    def url
+      unless defined?(@url)
+        url = IO.pread(%W"svn info --xml #{@srcdir}")[/<url>(.*)<\/url>/, 1]
+        @url = URI.parse(url+"/") if url
+      end
+      @url
+    end
+
+    def branch(name)
+      url + "branches/#{name}"
+    end
+
+    def tag(name)
+      url + "tags/#{name}"
+    end
+
+    def trunk
+      url + "trunk"
+    end
+
+    def branch_list(pat)
+      IO.popen(%W"svn ls #{branch('')}") do |f|
+        f.each do |line|
+          line.chomp!('/')
+          yield(line) if File.fnmatch?(pat, line)
+        end
+      end
+    end
+
+    def grep(pat, tag, *files, &block)
+      cmd = %W"svn cat"
+      files.map! {|n| File.join(tag, n)} if tag
+      set = block.binding.eval("proc {|match| $~ = match}")
+      IO.popen([cmd, *files]) do |f|
+        f.grep(pat) do |s|
+          set[$~]
+          yield s
+        end
+      end
+    end
+
+    def export(revision, url, dir)
+      IO.popen(%W"svn export -r #{revision} #{url} #{dir}") do |pipe|
+        pipe.each {|line| /^A/ =~ line or yield line}
+      end
+      $?.success?
+    end
   end
 
   class GIT < self
@@ -153,6 +201,46 @@ class VCS
       end
       modified = log[/^Date:\s+(.*)/, 1]
       [last, changed, modified]
+    end
+
+    def branch(name)
+      name
+    end
+
+    alias tag branch
+
+    def trunk
+      branch("trunk")
+    end
+
+    def stable
+      cmd = %W"git for-each-ref --format=\%(refname:short) refs/heads/ruby_[0-9]*"
+      cmd[1, 0] = ["-C", @srcdir] if @srcdir
+      branch(IO.pread(cmd)[/.*^(ruby_\d+_\d+)$/m, 1])
+    end
+
+    def branch_list(pat, &block)
+      cmd = %W"git for-each-ref --format=\%(refname:short) refs/heads/#{pat}"
+      cmd[1, 0] = ["-C", @srcdir] if @srcdir
+      IO.popen(cmd, &block)
+    end
+
+    def grep(pat, tag, *files, &block)
+      cmd = %W[git grep -h --perl-regexp #{tag} --]
+      cmd[1, 0] = ["-C", @srcdir] if @srcdir
+      set = block.binding.eval("proc {|match| $~ = match}")
+      IO.popen([cmd, *files]) do |f|
+        f.grep(pat) do |s|
+          set[$~]
+          yield s
+        end
+      end
+    end
+
+    def export(revision, url, dir)
+      ret = system("git", "clone", "-s", (@srcdir || '.'), "-b", url, dir)
+      FileUtils.rm_rf("#{dir}/.git") if ret
+      ret
     end
   end
 end
