@@ -260,6 +260,14 @@ class TestM17N < Test::Unit::TestCase
     end
   end
 
+  def test_utf_without_bom_asciionly
+    bug10598 = '[ruby-core:66835] [Bug #10598]'
+    encs = [Encoding::UTF_16, Encoding::UTF_32].find_all {|enc|
+      "abcd".force_encoding(enc).ascii_only?
+    }
+    assert_empty(encs, bug10598)
+  end
+
   def test_object_utf16_32_inspect
     EnvUtil.suppress_warning do
       begin

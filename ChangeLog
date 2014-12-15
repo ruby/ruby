@@ -1,3 +1,9 @@
+Mon Dec 15 16:19:23 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_enc_str_coderange): dummy wchar, non-endianness
+	  encoding string cannot be ascii only.
+	  [ruby-core:66835] [Bug #10598]
+
 Sun Dec 14 20:11:42 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (primary): restore current_arg so that circular
