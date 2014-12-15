@@ -180,9 +180,16 @@ def package(vcs, rev, destdir, tmp = nil)
   else
     v = "ruby"
     puts "Exporting #{rev}@#{revision}"
-    unless vcs.export(revision, url, tmp ? File.join(tmp, v) : v) {|line| print line}
+    exported = tmp ? File.join(tmp, v) : v
+    unless vcs.export(revision, url, exported) {|line| print line}
       warn("Export failed")
       return
+    end
+    if $srcdir
+      Dir.glob($srcdir + "/{tool/config.{guess,sub},gems/*.gem}") do |file|
+        puts "copying #{file}"
+        FileUtils.cp(file, exported + file[$srcdir.size..-1], preserve: true)
+      end
     end
   end
 
