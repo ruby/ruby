@@ -137,7 +137,7 @@ class VCS
 
     def url
       unless defined?(@url)
-        url = IO.pread(%W"svn info --xml #{@srcdir}")[/<url>(.*)<\/url>/, 1]
+        url = IO.pread(%W"svn info --xml #{@srcdir}")[/<root>(.*)<\/root>/, 1]
         @url = URI.parse(url+"/") if url
       end
       @url
