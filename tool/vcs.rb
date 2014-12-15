@@ -9,6 +9,35 @@ unless File.respond_to? :realpath
   end
 end
 
+def IO.pread(*args)
+  STDERR.puts(*args.inspect) if $DEBUG
+  popen(*args) {|f|f.read}
+end
+
+if RUBY_VERSION < "1.9"
+  class IO
+    @orig_popen = method(:popen)
+
+    if defined?(fork)
+      def self.popen(command, *rest, &block)
+        if !(Array === command)
+          @orig_popen.call(command, *rest, &block)
+        elsif block
+          @orig_popen.call("-", *rest) {|f| f ? yield(f) : exec(*command)}
+        else
+          @orig_popen.call("-", *rest) or exec(*command)
+        end
+      end
+    else
+      require 'shellwords'
+      def self.popen(command, *rest, &block)
+        command = command.shelljoin if Array === command
+        @orig_popen.call(command, *rest, &block)
+      end
+    end
+  end
+end
+
 class VCS
   class NotFoundError < RuntimeError; end
 
@@ -98,7 +127,7 @@ class VCS
       if srcdir and %r'\A(?:[^/]+:|/)' !~ path
         path = File.join(srcdir, path)
       end
-      info_xml = `svn info --xml "#{path}"`
+      info_xml = IO.pread(%W"svn info --xml #{path}")
       _, last, _, changed, _ = info_xml.split(/revision="(\d+)"/)
       modified = info_xml[/<date>([^<>]*)/, 1]
       [last, changed, modified]
@@ -109,11 +138,13 @@ class VCS
     register(".git")
 
     def self.get_revisions(path, srcdir = nil)
-      logcmd = %Q[git -C "#{srcdir || '.'}" log -n1 --date=iso --grep="^ *git-svn-id: .*@[0-9][0-9]* "]
+      logcmd = %W[git log -n1 --date=iso]
+      logcmd[1, 0] = ["-C", srcdir] if srcdir
+      logcmd << "--grep=^ *git-svn-id: .*@[0-9][0-9]*"
       idpat = /git-svn-id: .*?@(\d+) \S+\Z/
-      last = `#{logcmd}`[idpat, 1]
+      last = IO.pread(logcmd)[idpat, 1]
       if path
-        log = `#{logcmd} "#{path}"`
+        log = IO.pread(logcmd + [path])
         changed = log[idpat, 1]
       else
         changed = last
