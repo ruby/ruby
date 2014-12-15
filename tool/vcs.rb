@@ -71,7 +71,9 @@ class VCS
   # return a pair of strings, the last revision and the last revision in which
   # +path+ was modified.
   def get_revisions(path)
-    path = relative_to(path)
+    if String === path or path.respond_to?(:to_path)
+      path = relative_to(path)
+    end
     last, changed, modified, *rest = (
       begin
         if NullDevice
@@ -103,7 +105,7 @@ class VCS
   def relative_to(path)
     if path
       srcdir = File.realpath(@srcdir)
-      path = File.realpath(path)
+      path = File.realdirpath(path)
       list1 = srcdir.split(%r{/})
       list2 = path.split(%r{/})
       while !list1.empty? && !list2.empty? && list1.first == list2.first
@@ -124,7 +126,7 @@ class VCS
     register(".svn")
 
     def self.get_revisions(path, srcdir = nil)
-      if srcdir and %r'\A(?:[^/]+:|/)' !~ path
+      if srcdir and (String === path or path.respond_to?(:to_path))
         path = File.join(srcdir, path)
       end
       info_xml = IO.pread(%W"svn info --xml #{path}")
