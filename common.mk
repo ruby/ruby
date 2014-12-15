@@ -895,7 +895,7 @@ gdb-ruby: $(PROGRAM) run.gdb PHONY
 	$(Q) $(RUNRUBY_COMMAND) $(RUNRUBY_DEBUGGER) -- $(TESTRUN_SCRIPT)
 
 dist:
-	$(BASERUBY) $(srcdir)/tool/make-snapshot tmp $(RELNAME)
+	$(BASERUBY) $(srcdir)/tool/make-snapshot -srcdir=$(srcdir) tmp $(RELNAME)
 
 up::
 	-$(Q)$(MAKE) $(MFLAGS) REVISION_FORCE=PHONY "$(REVISION_H)"
