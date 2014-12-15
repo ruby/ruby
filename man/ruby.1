@@ -482,6 +482,95 @@ as below.
 % gem help
 .Ed
 .Pp
+.Sh GC ENVIRONMENT
+The Ruby garbage collector (GC) tracks objects in fixed-sized slots,
+but each object may have auxillary memory allocations handled by the
+malloc family of C standard library calls (
+.Xr malloc 3 ,
+.Xr calloc 3 ,
+and
+.Xr realloc 3 ) .
+In this documentatation, the "heap" refers to the Ruby object heap
+of fixed-sized slots, while "malloc" refers to auxillary
+allocations commonly referred to as the "process heap".
+Thus there are at least two possible ways to trigger GC:
+.Bl -hang -offset indent
+.It Sy 1
+Reaching the object limit.
+.It Sy 2
+Reaching the malloc limit.
+.Pp
+.El
+In Ruby 2.1, the generational GC was introduced and the limits are divided
+into young and old generations, providing two additional ways to trigger
+a GC:
+.Bl -hang -offset indent
+.It Sy 3
+Reaching the old object limit.
+.It Sy 4
+Reaching the old malloc limit.
+.El
+.Pp
+There are currently 4 possible areas where the GC may be tuned by
+the the following 11 environment variables:
+.Bl -hang -compact -width "RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR"
+.It Ev RUBY_GC_HEAP_INIT_SLOTS
+Initial allocation slots.  Introduced in Ruby 2.1, default: 10000.
+.Pp
+.It Ev RUBY_GC_HEAP_FREE_SLOTS
+Prepare at least this amount of slots after GC.
+Allocate this number slots if there are not enough slots.
+Introduced in Ruby 2.1, default: 4096
+.Pp
+.It Ev RUBY_GC_HEAP_GROWTH_FACTOR
+Increase allocation rate of heap slots by this factor.
+Introduced in Ruby 2.1, default: 1.8, minimum: 1.0 (no growth)
+.Pp
+.It Ev RUBY_GC_HEAP_GROWTH_MAX_SLOTS
+Allocation rate is limited to this number of slots,
+preventing excessive allocation due to RUBY_GC_HEAP_GROWTH_FACTOR.
+Introduced in Ruby 2.1, default: 0 (no limit)
+.Pp
+.It Ev RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR
+Perform a full GC when the number of old objects is more than R * N,
+where R is this factor and N is the number of old objects after the
+last full GC.
+Introduced in Ruby 2.1.1, default: 2.0
+.Pp
+.It Ev RUBY_GC_MALLOC_LIMIT
+The initial limit of young generation allocation from the malloc-family.
+GC will start when this limit is reached.
+Default: 16MB
+.Pp
+.It Ev RUBY_GC_MALLOC_LIMIT_MAX
+The maximum limit of young generation allocation from malloc before GC starts.
+Prevents excessive malloc growth due to RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR.
+Introduced in Ruby 2.1, default: 32MB.
+.Pp
+.It Ev RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR
+Increases the limit of young generation malloc calls, reducing
+GC frequency but increasing malloc growth until RUBY_GC_MALLOC_LIMIT_MAX
+is reached.
+Introduced in Ruby 2.1, default: 1.4, minimum: 1.0 (no growth)
+.Pp
+.It Ev RUBY_GC_OLDMALLOC_LIMIT
+The initial limit of old generation allocation from malloc,
+a full GC will start when this limit is reached.
+Introduced in Ruby 2.1, default: 16MB
+.Pp
+.It Ev RUBY_GC_OLDMALLOC_LIMIT_MAX
+The maximum limit of old generation allocation from malloc before a
+full GC starts.
+Prevents excessive malloc growth due to RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR.
+Introduced in Ruby 2.1, default: 128MB
+.Pp
+.It Ev RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR
+Increases the limit of old generation malloc allocation, reducing full
+GC frequency but increasing malloc growth until RUBY_GC_OLDMALLOC_LIMIT_MAX
+is reached.
+Introduced in Ruby 2.1, default: 1.2, minimum: 1.0 (no growth)
+.Pp
+.El
 .Sh STACK SIZE ENVIRONMENT
 Stack size environment variables are implementation-dependent and
 subject to change with different versions of Ruby.  The VM stack is used
@@ -510,6 +599,7 @@ default: 65536 or 131072
 Machine stack size used at fiber creation.
 default: 262144 or 524288
 .Pp
+.El
 .Sh SEE ALSO
 .Bl -hang -compact -width "http://www.ruby-lang.org/123"
 .It https://www.ruby-lang.org/

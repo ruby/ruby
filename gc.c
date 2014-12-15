@@ -101,11 +101,11 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 }
 #endif
 
-#ifndef GC_HEAP_FREE_SLOTS
-#define GC_HEAP_FREE_SLOTS  4096
-#endif
 #ifndef GC_HEAP_INIT_SLOTS
 #define GC_HEAP_INIT_SLOTS 10000
+#endif
+#ifndef GC_HEAP_FREE_SLOTS
+#define GC_HEAP_FREE_SLOTS  4096
 #endif
 #ifndef GC_HEAP_GROWTH_FACTOR
 #define GC_HEAP_GROWTH_FACTOR 1.8
@@ -6970,7 +6970,7 @@ gc_set_initial_pages(void)
  *   - Allocate slots by this factor.
  *   - (next slots number) = (current slots number) * (this factor)
  * * RUBY_GC_HEAP_GROWTH_MAX_SLOTS (new from 2.1)
- *   - Allocation rate is limited to this factor.
+ *   - Allocation rate is limited to this number of slots.
  * * RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR (new from 2.1.1)
  *   - Do full GC when the number of old objects is more than R * N
  *     where R is this factor and

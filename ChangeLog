@@ -1,3 +1,11 @@
+Tue Dec 16 07:37:18 2014  Eric Wong  <e@80x24.org>
+
+	* gc.c (GC_HEAP_FREE_SLOTS): move definition to match use order
+	  (RUBY_GC_HEAP_GROWTH_SLOTS): s/factor/number of slots/
+
+	* man/ruby.1: add section for GC environment variables
+	  [Feature #10197]
+
 Tue Dec 16 05:41:46 2014  Eric Wong  <e@80x24.org>
 
 	* tool/vcs.rb: fix Ruby 1.8 compatibility
