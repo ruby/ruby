@@ -1987,7 +1987,14 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 		}
 		break;
 	      case TS_FUNCPTR:
-		rb_ary_push(ary, Qnil);
+		{
+#if SIZEOF_VALUE <= SIZEOF_LONG
+		    VALUE val = LONG2NUM((SIGNED_VALUE)*seq);
+#else
+		    VALUE val = LL2NUM((SIGNED_VALUE)*seq);
+#endif
+		    rb_ary_push(ary, val);
+		}
 		break;
 	      default:
 		rb_bug("unknown operand: %c", insn_op_type(insn, j));
