@@ -29,7 +29,7 @@ class Win32API
       args[i], = [x == 0 ? nil : x].pack("p").unpack(POINTER_TYPE) if import[i] == "S"
       args[i], = [x].pack("I").unpack("i") if import[i] == "I"
     end
-    ret, = @func.call(args)
+    ret, = @func.call(*args)
     return ret || 0
   end
 
