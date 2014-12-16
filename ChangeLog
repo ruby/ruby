@@ -1,3 +1,8 @@
+Tue Dec 16 12:01:29 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_process.rb (test_deadlock_by_signal_at_forking):
+	  extend timeout seconds to 60 for RGENGC_CHECK_MODE > 0 environment.
+
 Tue Dec 16 08:53:12 2014  Eric Wong  <e@80x24.org>
 
 	* tool/vcs.rb: fix Ruby 1.8 compatibility harder

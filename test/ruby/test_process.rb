@@ -1924,7 +1924,7 @@ EOS
   end
 
   def test_deadlock_by_signal_at_forking
-    assert_separately([], <<-INPUT)
+    assert_separately([], <<-INPUT, timeout: 60)
       require 'io/wait'
       begin
         GC.start # reduce garbage
