@@ -5964,8 +5964,14 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 			}
 			break;
 		      case TS_FUNCPTR:
-			if (!RTEST(op)) rb_raise(rb_eArgError, "cannot load funcptr");
-			argv[j] = op;
+			{
+#if SIZEOF_VALUE <= SIZEOF_LONG
+			    long funcptr = NUM2LONG(op);
+#else
+			    LONG_LONG funcptr = NUM2LL(op);
+#endif
+			    argv[j] = (VALUE)funcptr;
+			}
 			break;
 		      default:
 			rb_raise(rb_eSyntaxError, "unknown operand: %c", insn_op_type((VALUE)insn_id, j));
