@@ -587,6 +587,10 @@ class TestRubyOptions < Test::Unit::TestCase
                         nil,
                         opts)
     end
+    if signo = status.termsig
+      sleep 0.1
+      EnvUtil.diagnostic_reports(Signal.signame(signo), EnvUtil.rubybin, status.pid, Time.now)
+    end
     assert_not_predicate(status, :success?, "segv but success #{bug7402}")
   end
 
