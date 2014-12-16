@@ -46,7 +46,7 @@ install: "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq build-dep ru
 # like  test-all, test-rubyspec.   This is  because  they take  too much  time,
 # enough for Travis to shut down the VM as being stalled.
 before_script:
-  - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then find ~/Library/Logs/DiagnosticReports -type f -name ruby_\*.crash -delete; fi"
+  - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then find ~/Library/Logs/DiagnosticReports -type f -name ruby_\\*.crash -delete; fi"
   - "uname -a"
   - "uname -r"
   - "rm -fr .ext autom4te.cache"
