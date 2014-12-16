@@ -13,6 +13,10 @@
 #include "ruby/util.h"
 #include "eval_intern.h"
 
+#ifdef HAVE_DLADDR
+# include <dlfcn.h>
+#endif
+
 /* #define RUBY_MARK_FREE_DEBUG 1 */
 #include "gc.h"
 #include "vm_core.h"
@@ -1375,7 +1379,16 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 	break;
 
       case TS_FUNCPTR:
-	ret = rb_str_new2("<funcptr>");
+	{
+#ifdef HAVE_DLADDR
+	    Dl_info info;
+	    if (dladdr((void *)op, &info) && info.dli_sname) {
+		ret = rb_str_new_cstr(info.dli_sname);
+		break;
+	    }
+#endif
+	    ret = rb_str_new2("<funcptr>");
+	}
 	break;
 
       default:

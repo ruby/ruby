@@ -18,6 +18,10 @@
 #include "insns.inc"
 #include "insns_info.inc"
 
+#ifdef HAVE_DLADDR
+# include <dlfcn.h>
+#endif
+
 #define FIXNUM_INC(n, i) ((n)+(INT2FIX(i)&~FIXNUM_FLAG))
 #define FIXNUM_OR(n, i) ((n)|INT2FIX(i))
 
@@ -5604,7 +5608,17 @@ insn_data_to_s_detail(INSN *iobj)
 		rb_str_cat2(str, "<ch>");
 		break;
 	      case TS_FUNCPTR:
-		rb_str_catf(str, "<%p>", (rb_insn_func_t)OPERAND_AT(iobj, j));
+		{
+		    rb_insn_func_t func = (rb_insn_func_t)OPERAND_AT(iobj, j);
+#ifdef HAVE_DLADDR
+		    Dl_info info;
+		    if (dladdr(func, &info) && info.dli_sname) {
+			rb_str_cat2(str, info.dli_sname);
+			break;
+		    }
+#endif
+		    rb_str_catf(str, "<%p>", func);
+		}
 		break;
 	      default:{
 		rb_raise(rb_eSyntaxError, "unknown operand type: %c", type);
