@@ -595,7 +595,12 @@ rb_method_for_self_aref(VALUE name, VALUE arg, rb_insn_func_t func)
     ADD(lineno);
     ADD(rb_ary_new3(2, S(putobject), arg));
 
-    send_arg = rb_ary_new3(2, S(opt_call_c_function), (VALUE)func);
+#if SIZEOF_VALUE <= SIZEOF_LONG
+    send_arg = LONG2NUM((SIGNED_VALUE)func);
+#else
+    send_arg = LL2NUM((SIGNED_VALUE)func);
+#endif
+    send_arg = rb_ary_new3(2, S(opt_call_c_function), send_arg);
     ADD(send_arg);
     ADD(rb_ary_new3(1, S(leave)));
 #undef S
@@ -641,7 +646,12 @@ rb_method_for_self_aset(VALUE name, VALUE arg, rb_insn_func_t func)
     ADD(rb_ary_new3(3, S(getlocal), INT2FIX(2), INT2FIX(0)));
     ADD(rb_ary_new3(2, S(putobject), arg));
 
-    send_arg = rb_ary_new3(2, S(opt_call_c_function), (VALUE)func);
+#if SIZEOF_VALUE <= SIZEOF_LONG
+    send_arg = LONG2NUM((SIGNED_VALUE)func);
+#else
+    send_arg = LL2NUM((SIGNED_VALUE)func);
+#endif
+    send_arg = rb_ary_new3(2, S(opt_call_c_function), send_arg);
     ADD(send_arg);
 
     ADD(rb_ary_new3(1, S(pop)));
