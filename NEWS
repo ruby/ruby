@@ -107,9 +107,10 @@ with all sufficient information, see the ChangeLog file.
 
 * IO
   * incompatible changes:
-    * When flushing file IO, you cannot assume that the metadata of the file
-      is updated immediately.  On some platforms (especially Windows), it is
-      delayed until the filesystem load is decreased.
+    * When flushing file IO with IO#flush, you cannot assume that the metadata
+      of the file is updated immediately.  On some platforms (especially
+      Windows), it is delayed until the filesystem load is decreased.
+      Use IO#fsync if you want to guarantee updaiting metadata.
 
 * Math
   * incompatible changes:
