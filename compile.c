@@ -5950,6 +5950,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 			}
 			break;
 		      case TS_FUNCPTR:
+			if (!RTEST(op)) rb_raise(rb_eArgError, "cannot load funcptr");
 			argv[j] = op;
 			break;
 		      default:

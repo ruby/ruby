@@ -1973,6 +1973,9 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 		    rb_ary_push(ary, val);
 		}
 		break;
+	      case TS_FUNCPTR:
+		rb_ary_push(ary, Qnil);
+		break;
 	      default:
 		rb_bug("unknown operand: %c", insn_op_type(insn, j));
 	    }
