@@ -571,7 +571,6 @@ caller_location(VALUE *path)
 VALUE
 rb_method_for_self_aref(VALUE name, VALUE arg, rb_insn_func_t func)
 {
-    rb_control_frame_t *FUNC_FASTCALL(rb_vm_struct_aref_c)(rb_thread_t *, rb_control_frame_t *);
     VALUE iseqval = iseq_alloc(rb_cISeq);
     rb_iseq_t *iseq;
     VALUE path, lineno = caller_location(&path);
