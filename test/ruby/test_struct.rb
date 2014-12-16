@@ -195,6 +195,39 @@ module TestStruct
     assert_equal(:foo, o[25])
   end
 
+  def test_overridden_aset
+    bug10601 = '[ruby-core:66846] [Bug #10601]: should not be affected by []= method'
+
+    struct = Class.new(Struct.new(*(:a..:z), :result)) do
+      def []=(*args)
+        raise args.inspect
+      end
+    end
+
+    obj = struct.new
+    assert_nothing_raised(RuntimeError, bug10601) do
+      obj.result = 42
+    end
+    assert_equal(42, obj.result, bug10601)
+  end
+
+  def test_overridden_aref
+    bug10601 = '[ruby-core:66846] [Bug #10601]: should not be affected by [] method'
+
+    struct = Class.new(Struct.new(*(:a..:z), :result)) do
+      def [](*args)
+        raise args.inspect
+      end
+    end
+
+    obj = struct.new
+    obj.result = 42
+    result = assert_nothing_raised(RuntimeError, bug10601) do
+      break obj.result
+    end
+    assert_equal(42, result, bug10601)
+  end
+
   def test_equal
     klass1 = @Struct.new(:a)
     klass2 = @Struct.new(:a, :b)

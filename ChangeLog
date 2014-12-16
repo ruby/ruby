@@ -1,3 +1,14 @@
+Tue Dec 16 15:18:23 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (rb_method_for_self_aref, rb_method_for_self_aset): call
+	  accessor functions directly, not to be affected by [] and []=
+	  methods.  [ruby-core:66846] [Bug #10601]
+
+	* struct.c (define_aref_method, define_aset_method): ditto.
+
+	* vm_insnhelper.c (rb_vm_opt_struct_aref, rb_vm_opt_struct_aset):
+	  direct accessors of Struct.
+
 Tue Dec 16 12:01:29 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_process.rb (test_deadlock_by_signal_at_forking):

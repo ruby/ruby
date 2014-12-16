@@ -569,14 +569,14 @@ caller_location(VALUE *path)
 }
 
 VALUE
-rb_method_for_self_aref(VALUE name, VALUE arg)
+rb_method_for_self_aref(VALUE name, VALUE arg, rb_insn_func_t func)
 {
+    rb_control_frame_t *FUNC_FASTCALL(rb_vm_struct_aref_c)(rb_thread_t *, rb_control_frame_t *);
     VALUE iseqval = iseq_alloc(rb_cISeq);
     rb_iseq_t *iseq;
     VALUE path, lineno = caller_location(&path);
     VALUE parent = 0;
     VALUE misc, locals, params, exception, body, send_arg;
-    int flag = VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE;
 
     GetISeqPtr(iseqval, iseq);
     iseq->self = iseqval;
@@ -593,18 +593,15 @@ rb_method_for_self_aref(VALUE name, VALUE arg)
 #define ADD(a) rb_ary_push(body, rb_obj_hide(a))
     /* def name; self[arg]; end */
     ADD(lineno);
-    ADD(rb_ary_new3(1, S(putself)));
     ADD(rb_ary_new3(2, S(putobject), arg));
 
-    /* {:mid=>:[], :flag=>264, :blockptr=>nil, :orig_argc=>1} */
-    send_arg = rb_hash_new();
-    rb_hash_aset(send_arg, S(mid), ID2SYM(idAREF));
-    rb_hash_aset(send_arg, S(flag), INT2FIX(flag));
-    rb_hash_aset(send_arg, S(blockptr), Qnil);
-    rb_hash_aset(send_arg, S(orig_argc), INT2FIX(1));
-
-    /* we do not want opt_aref for struct */
-    ADD(rb_ary_new3(2, S(opt_send_without_block), send_arg));
+#if SIZEOF_VALUE <= SIZEOF_LONG
+    send_arg = LONG2NUM((SIGNED_VALUE)func);
+#else
+    send_arg = LL2NUM((SIGNED_VALUE)func);
+#endif
+    send_arg = rb_ary_new3(2, S(opt_call_c_function), send_arg);
+    ADD(send_arg);
     ADD(rb_ary_new3(1, S(leave)));
 #undef S
 #undef ADD
@@ -613,19 +610,19 @@ rb_method_for_self_aref(VALUE name, VALUE arg)
     cleanup_iseq_build(iseq);
 
     rb_ary_clear(body);
+    rb_ary_clear(send_arg);
 
     return iseqval;
 }
 
 VALUE
-rb_method_for_self_aset(VALUE name, VALUE arg)
+rb_method_for_self_aset(VALUE name, VALUE arg, rb_insn_func_t func)
 {
     VALUE iseqval = iseq_alloc(rb_cISeq);
     rb_iseq_t *iseq;
     VALUE path, lineno = caller_location(&path);
     VALUE parent = 0;
     VALUE misc, locals, params, exception, body, send_arg;
-    int flag = VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE;
 
     GetISeqPtr(iseqval, iseq);
     iseq->self = iseqval;
@@ -641,26 +638,21 @@ rb_method_for_self_aset(VALUE name, VALUE arg)
     locals = rb_obj_hide(rb_ary_new3(1, S(val)));
     params = rb_hash_new();
     exception = rb_ary_tmp_new(0); /* empty */
-    body = rb_ary_tmp_new(9);
+    body = rb_ary_tmp_new(6);
 
     rb_hash_aset(params, S(lead_num), INT2FIX(1));
 
     ADD(lineno);
-    ADD(rb_ary_new3(1, S(putnil)));
-    ADD(rb_ary_new3(1, S(putself)));
-    ADD(rb_ary_new3(2, S(putobject), arg));
     ADD(rb_ary_new3(3, S(getlocal), INT2FIX(2), INT2FIX(0)));
-    ADD(rb_ary_new3(2, S(setn), INT2FIX(3)));
+    ADD(rb_ary_new3(2, S(putobject), arg));
 
-    /* {:mid=>:[]=, :flag=>264, :blockptr=>nil, :orig_argc=>2} */
-    send_arg = rb_hash_new();
-    rb_hash_aset(send_arg, S(mid), ID2SYM(idASET));
-    rb_hash_aset(send_arg, S(flag), INT2FIX(flag));
-    rb_hash_aset(send_arg, S(blockptr), Qnil);
-    rb_hash_aset(send_arg, S(orig_argc), INT2FIX(2));
-
-    /* we do not want opt_aset for struct */
-    ADD(rb_ary_new3(2, S(opt_send_without_block), send_arg));
+#if SIZEOF_VALUE <= SIZEOF_LONG
+    send_arg = LONG2NUM((SIGNED_VALUE)func);
+#else
+    send_arg = LL2NUM((SIGNED_VALUE)func);
+#endif
+    send_arg = rb_ary_new3(2, S(opt_call_c_function), send_arg);
+    ADD(send_arg);
 
     ADD(rb_ary_new3(1, S(pop)));
     ADD(rb_ary_new3(1, S(leave)));
@@ -671,6 +663,7 @@ rb_method_for_self_aset(VALUE name, VALUE arg)
     cleanup_iseq_build(iseq);
 
     rb_ary_clear(body);
+    rb_ary_clear(send_arg);
 
     return iseqval;
 }
