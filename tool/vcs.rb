@@ -94,8 +94,10 @@ class VCS
       /\A(\d+)-(\d+)-(\d+)\D(\d+):(\d+):(\d+(?:\.\d+)?)\s*(?:Z|([-+]\d\d)(\d\d))\z/ =~ modified or
         raise "unknown time format - #{modified}"
       match = $~[1..6].map { |x| x.to_i }
+      off = $7 ? "#{$7}:#{$8}" : "+00:00"
+      match << off
       begin
-        modified = Time.new(*match, ($7 ? "#{$7}:#{$8}" : "+00:00"))
+        modified = Time.new(*match)
       rescue ArgumentError
         modified = Time.utc(*$~[1..6]) + $7.to_i * 3600 + $8.to_i * 60
       end

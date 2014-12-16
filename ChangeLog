@@ -1,3 +1,7 @@
+Tue Dec 16 08:53:12 2014  Eric Wong  <e@80x24.org>
+
+	* tool/vcs.rb: fix Ruby 1.8 compatibility harder
+
 Tue Dec 16 07:37:18 2014  Eric Wong  <e@80x24.org>
 
 	* gc.c (GC_HEAP_FREE_SLOTS): move definition to match use order
