@@ -6234,3 +6234,89 @@ rb_parse_in_main(void)
 {
     return GET_THREAD()->parse_in_eval < 0;
 }
+
+static int
+caller_location(VALUE *path, VALUE *absolute_path)
+{
+    const rb_thread_t *const th = GET_THREAD();
+    const rb_control_frame_t *const cfp =
+	rb_vm_get_ruby_level_next_cfp(th, th->cfp);
+
+    if (cfp) {
+	int line = rb_vm_get_sourceline(cfp);
+	*path = cfp->iseq->location.path;
+	*absolute_path = cfp->iseq->location.absolute_path;
+	return line;
+    }
+    else {
+	*path = rb_str_new2("<compiled>");
+	*absolute_path = *path;
+	return 1;
+    }
+}
+
+typedef struct {
+    VALUE arg;
+    rb_insn_func_t func;
+    int line;
+} accessor_args;
+
+static VALUE
+method_for_self(VALUE name, VALUE arg, rb_insn_func_t func,
+		VALUE (*build)(rb_iseq_t *, LINK_ANCHOR *, VALUE))
+{
+    VALUE path, absolute_path;
+    accessor_args acc;
+
+    acc.arg = arg;
+    acc.func = func;
+    acc.line = caller_location(&path, &absolute_path);
+    return rb_iseq_new_with_opt(NEW_IFUNC(build, (VALUE)&acc),
+				rb_sym2str(name), path, absolute_path,
+				INT2FIX(acc.line), 0, ISEQ_TYPE_METHOD, 0);
+}
+
+static VALUE
+for_self_aref(rb_iseq_t *iseq, LINK_ANCHOR *ret, VALUE a)
+{
+    const accessor_args *const args = (void *)a;
+    const int line = args->line;
+
+    iseq_set_local_table(iseq, 0);
+    iseq->param.lead_num = 0;
+    iseq->param.size = 0;
+
+    ADD_INSN1(ret, line, putobject, args->arg);
+    ADD_INSN1(ret, line, opt_call_c_function, (VALUE)args->func);
+    return Qnil;
+}
+
+static VALUE
+for_self_aset(rb_iseq_t *iseq, LINK_ANCHOR *ret, VALUE a)
+{
+    const accessor_args *const args = (void *)a;
+    const int line = args->line;
+    static const ID vars[] = {1, idUScore};
+
+    iseq_set_local_table(iseq, vars);
+    iseq->param.lead_num = 1;
+    iseq->param.size = 1;
+
+    ADD_INSN2(ret, line, getlocal, INT2FIX(numberof(vars)-0), INT2FIX(0));
+    ADD_INSN1(ret, line, putobject, args->arg);
+    ADD_INSN1(ret, line, opt_call_c_function, (VALUE)args->func);
+    ADD_INSN(ret, line, pop);
+    return Qnil;
+}
+
+VALUE
+rb_method_for_self_aref(VALUE name, VALUE arg, rb_insn_func_t func)
+{
+    return method_for_self(name, arg, func, for_self_aref);
+}
+
+VALUE
+rb_method_for_self_aset(VALUE name, VALUE arg, rb_insn_func_t func)
+{
+    return method_for_self(name, arg, func, for_self_aset);
+}

@@ -1,3 +1,8 @@
+Wed Dec 17 12:20:56 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (rb_method_for_self_aref, rb_method_for_self_aset):
+	  move from iseq.c to build from node instead of arrays.
+
 Wed Dec 17 10:50:09 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/gdbm/test_gdbm.rb: Added test for each_key called without a block.
