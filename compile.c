@@ -344,7 +344,7 @@ static int iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *anchor);
 static int iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *anchor);
 static int iseq_insns_unification(rb_iseq_t *iseq, LINK_ANCHOR *anchor);
 
-static int iseq_set_local_table(rb_iseq_t *iseq, ID *tbl);
+static int iseq_set_local_table(rb_iseq_t *iseq, const ID *tbl);
 static int iseq_set_exception_local_table(rb_iseq_t *iseq);
 static int iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *anchor, NODE * node);
 
@@ -1336,7 +1336,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 }
 
 static int
-iseq_set_local_table(rb_iseq_t *iseq, ID *tbl)
+iseq_set_local_table(rb_iseq_t *iseq, const ID *tbl)
 {
     int size;
 
