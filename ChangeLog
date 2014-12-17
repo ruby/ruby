@@ -1,3 +1,12 @@
+Wed Dec 17 09:48:57 2014  Eric Wong  <e@80x24.org>
+
+	* compile.c (iseq_compile_each): only emit opt_str_freeze,
+	  opt_aref_with, and opt_aset_with insn when no block is given
+	  [Bug #10557] [ruby-core:66595]
+	* test/ruby/test_optimization.rb (test_block_given_aset_aref):
+	  new test for bug thanks to Bartosz Kopinski.
+	  (test_string_freeze): additional assertion for object_id
+
 Wed Dec 17 01:06:47 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/win32/lib/Win32API.rb (Win32API#call): need to splat.  hmm, when

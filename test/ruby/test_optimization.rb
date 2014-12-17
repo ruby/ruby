@@ -118,6 +118,7 @@ class TestRubyOptimization < Test::Unit::TestCase
 
   def test_string_freeze
     assert_equal "foo", "foo".freeze
+    assert_equal "foo".freeze.object_id, "foo".freeze.object_id
     assert_redefine_method('String', 'freeze', 'assert_nil "foo".freeze')
   end
 
@@ -252,5 +253,40 @@ class TestRubyOptimization < Test::Unit::TestCase
   end
     EOF
     assert_equal(123, delay { 123 }.call, bug6901)
+  end
+
+  class Bug10557
+    def [](_)
+      block_given?
+    end
+
+    def []=(_, _)
+      block_given?
+    end
+  end
+
+  def test_block_given_aset_aref
+    bug10557 = '[ruby-core:66595]'
+    assert_equal(true, Bug10557.new.[](nil){}, bug10557)
+    assert_equal(true, Bug10557.new.[](0){}, bug10557)
+    assert_equal(true, Bug10557.new.[](false){}, bug10557)
+    assert_equal(true, Bug10557.new.[](''){}, bug10557)
+    assert_equal(true, Bug10557.new.[]=(nil, 1){}, bug10557)
+    assert_equal(true, Bug10557.new.[]=(0, 1){}, bug10557)
+    assert_equal(true, Bug10557.new.[]=(false, 1){}, bug10557)
+    assert_equal(true, Bug10557.new.[]=('', 1){}, bug10557)
+  end
+
+  def test_string_freeze_block
+    assert_separately([], <<-"end;")#    do
+      class String
+        undef freeze
+        def freeze
+          block_given?
+        end
+      end
+      assert_equal(true, "block".freeze {})
+      assert_equal(false, "block".freeze)
+    end;
   end
 end
