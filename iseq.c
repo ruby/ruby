@@ -553,17 +553,20 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
 }
 
 static VALUE
-caller_location(VALUE *path)
+caller_location(VALUE *path, VALUE *absolute_path)
 {
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
+
     if (cfp) {
 	int line = rb_vm_get_sourceline(cfp);
 	*path = cfp->iseq->location.path;
+	*absolute_path = cfp->iseq->location.absolute_path;
 	return INT2FIX(line);
     }
     else {
 	*path = rb_str_new2("<compiled>");
+	*absolute_path = *path;
 	return INT2FIX(1);
     }
 }
@@ -573,7 +576,8 @@ rb_method_for_self_aref(VALUE name, VALUE arg, rb_insn_func_t func)
 {
     VALUE iseqval = iseq_alloc(rb_cISeq);
     rb_iseq_t *iseq;
-    VALUE path, lineno = caller_location(&path);
+    VALUE path, absolute_path;
+    VALUE lineno = caller_location(&path, &absolute_path);
     VALUE parent = 0;
     VALUE misc, locals, params, exception, body, send_arg;
 
@@ -581,7 +585,8 @@ rb_method_for_self_aref(VALUE name, VALUE arg, rb_insn_func_t func)
     iseq->self = iseqval;
     iseq->local_iseq = iseq;
 
-    prepare_iseq_build(iseq, rb_sym2str(name), path, path, lineno, parent,
+    prepare_iseq_build(iseq, rb_sym2str(name), path, absolute_path,
+		       lineno, parent,
 		       ISEQ_TYPE_METHOD, &COMPILE_OPTION_DEFAULT);
 
     misc = params = rb_hash_new(); /* empty */
@@ -619,7 +624,8 @@ rb_method_for_self_aset(VALUE name, VALUE arg, rb_insn_func_t func)
 {
     VALUE iseqval = iseq_alloc(rb_cISeq);
     rb_iseq_t *iseq;
-    VALUE path, lineno = caller_location(&path);
+    VALUE path, absolute_path;
+    VALUE lineno = caller_location(&path, &absolute_path);
     VALUE parent = 0;
     VALUE misc, locals, params, exception, body, send_arg;
 
@@ -627,7 +633,8 @@ rb_method_for_self_aset(VALUE name, VALUE arg, rb_insn_func_t func)
     iseq->self = iseqval;
     iseq->local_iseq = iseq;
 
-    prepare_iseq_build(iseq, rb_sym2str(name), path, path, lineno, parent,
+    prepare_iseq_build(iseq, rb_sym2str(name), path, absolute_path,
+		       lineno, parent,
 		       ISEQ_TYPE_METHOD, &COMPILE_OPTION_DEFAULT);
 
     /* def name=(val); self[arg] = val; end */
