@@ -447,6 +447,7 @@ rb_iseq_new_with_opt(NODE *node, VALUE name, VALUE path, VALUE absolute_path,
     GetISeqPtr(self, iseq);
     iseq->self = self;
 
+    if (!option) option = &COMPILE_OPTION_DEFAULT;
     prepare_iseq_build(iseq, name, path, absolute_path, first_lineno, parent,
 		       type, option);
 
