@@ -3,17 +3,7 @@
  * console IO module
  */
 #include "ruby.h"
-#ifdef HAVE_RUBY_IO_H
 #include "ruby/io.h"
-#else
-#include "rubyio.h"
-/* assumes rb_io_t doesn't have pathv */
-#include "util.h"		/* for ruby_strdup() */
-#endif
-
-#ifndef HAVE_RB_IO_T
-typedef OpenFile rb_io_t;
-#endif
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -23,10 +13,6 @@ typedef OpenFile rb_io_t;
 #endif
 #ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
-#endif
-
-#ifndef RB_TYPE_P
-#define RB_TYPE_P(obj, type) (TYPE(obj) == type)
 #endif
 
 #if defined HAVE_TERMIOS_H
@@ -91,10 +77,6 @@ getattr(int fd, conmode *t)
 #define SET_LAST_ERROR (0)
 #endif
 
-#ifndef InitVM
-#define InitVM(ext) {void InitVM_##ext(void);InitVM_##ext();}
-#endif
-
 static ID id_getc, id_console;
 
 typedef struct {
@@ -107,23 +89,7 @@ rawmode_opt(int argc, VALUE *argv, rawmode_arg_t *opts)
 {
     rawmode_arg_t *optp = NULL;
     VALUE vopts;
-#ifdef HAVE_RB_SCAN_ARGS_OPTIONAL_HASH
     rb_scan_args(argc, argv, "0:", &vopts);
-#else
-    vopts = Qnil;
-    if (argc > 0) {
-	vopts = argv[--argc];
-	if (!NIL_P(vopts)) {
-# ifdef HAVE_RB_CHECK_HASH_TYPE
-	    vopts = rb_check_hash_type(vopts);
-	    if (NIL_P(vopts)) ++argc;
-# else
-	    Check_Type(vopts, T_HASH);
-# endif
-	}
-    }
-    rb_scan_args(argc, argv, "0");
-#endif
     if (!NIL_P(vopts)) {
 	VALUE vmin = rb_hash_aref(vopts, ID2SYM(rb_intern("min")));
 	VALUE vtime = rb_hash_aref(vopts, ID2SYM(rb_intern("time")));
@@ -232,15 +198,8 @@ set_ttymode(int fd, conmode *t, void (*setter)(conmode *, void *), void *arg)
     return setattr(fd, &r);
 }
 
-#ifdef GetReadFile
-#define GetReadFD(fptr) fileno(GetReadFile(fptr))
-#else
 #define GetReadFD(fptr) ((fptr)->fd)
-#endif
 
-#ifdef GetWriteFile
-#define GetWriteFD(fptr) fileno(GetWriteFile(fptr))
-#else
 static inline int
 get_write_fd(const rb_io_t *fptr)
 {
@@ -251,7 +210,6 @@ get_write_fd(const rb_io_t *fptr)
     return ofptr->fd;
 }
 #define GetWriteFD(fptr) get_write_fd(fptr)
-#endif
 
 #define FD_PER_IO 2
 
@@ -729,20 +687,11 @@ console_dev(VALUE klass)
 	args[0] = INT2NUM(fd);
 	con = rb_class_new_instance(2, args, klass);
 	GetOpenFile(con, fptr);
-#ifdef HAVE_RUBY_IO_H
 	fptr->pathv = rb_obj_freeze(rb_str_new2(CONSOLE_DEVICE));
-#else
-	fptr->path = ruby_strdup(CONSOLE_DEVICE);
-#endif
 #ifdef CONSOLE_DEVICE_FOR_WRITING
 	GetOpenFile(out, ofptr);
-# ifdef HAVE_RB_IO_GET_WRITE_IO
 	ofptr->pathv = fptr->pathv;
 	fptr->tied_io_for_writing = out;
-# else
-	fptr->f2 = ofptr->f;
-	ofptr->f = 0;
-# endif
 	ofptr->mode |= FMODE_SYNC;
 #endif
 	fptr->mode |= FMODE_SYNC;
