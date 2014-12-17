@@ -4406,8 +4406,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	 */
 	if (node->nd_recv && nd_type(node->nd_recv) == NODE_STR &&
 	    node->nd_mid == idFreeze && node->nd_args == NULL &&
-	    iseq->compile_data->current_block == Qfalse)
-	{
+	    iseq->compile_data->current_block == Qfalse &&
+	    iseq->compile_data->option->specialized_instruction) {
 	    VALUE str = rb_fstring(node->nd_recv->nd_lit);
 	    iseq_add_mark_object(iseq, str);
 	    ADD_INSN1(ret, line, opt_str_freeze, str);
@@ -4422,8 +4422,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	if (node->nd_mid == idAREF && !private_recv_p(node) && node->nd_args &&
 	    nd_type(node->nd_args) == NODE_ARRAY && node->nd_args->nd_alen == 1 &&
 	    nd_type(node->nd_args->nd_head) == NODE_STR &&
-	    iseq->compile_data->current_block == Qfalse)
-	{
+	    iseq->compile_data->current_block == Qfalse &&
+	    iseq->compile_data->option->specialized_instruction) {
 	    VALUE str = rb_fstring(node->nd_args->nd_head->nd_lit);
 	    node->nd_args->nd_head->nd_lit = str;
 	    COMPILE(ret, "recv", node->nd_recv);
@@ -5419,7 +5419,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	if (node->nd_mid == idASET && !private_recv_p(node) && node->nd_args &&
 	    nd_type(node->nd_args) == NODE_ARRAY && node->nd_args->nd_alen == 2 &&
 	    nd_type(node->nd_args->nd_head) == NODE_STR &&
-	    iseq->compile_data->current_block == Qfalse)
+	    iseq->compile_data->current_block == Qfalse &&
+	    iseq->compile_data->option->specialized_instruction)
 	{
 	    VALUE str = rb_fstring(node->nd_args->nd_head->nd_lit);
 	    node->nd_args->nd_head->nd_lit = str;

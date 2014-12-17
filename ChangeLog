@@ -1,3 +1,10 @@
+Wed Dec 17 10:18:42 2014  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_compile_each): check
+	  iseq->compile_data->option->specialized_instruction for opt_* insn.
+
+	* test/ruby/test_iseq.rb: check no specialized_instructions option.
+
 Wed Dec 17 09:48:57 2014  Eric Wong  <e@80x24.org>
 
 	* compile.c (iseq_compile_each): only emit opt_str_freeze,
