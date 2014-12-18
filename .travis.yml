@@ -46,7 +46,7 @@ install: "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq build-dep ru
 # like  test-all, test-rubyspec.   This is  because  they take  too much  time,
 # enough for Travis to shut down the VM as being stalled.
 before_script:
-  - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then find ~/Library/Logs/DiagnosticReports -type f -name ruby_\\*.crash -delete; fi"
+  - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then rm -f ~/Library/Logs/DiagnosticReports/ruby_*.crash; fi"
   - "uname -a"
   - "uname -r"
   - "rm -fr .ext autom4te.cache"
@@ -62,9 +62,11 @@ before_script:
   - "make -s $JOBS exts"
   - "make update-rubyspec"
 script:
-  - "make test || { [ $TRAVIS_OS_NAME = osx ] && cat ~/Library/Logs/DiagnosticReports/ruby_*.crash && false; }"
-  - "make test-all TESTS='-q -j2' || { [ $TRAVIS_OS_NAME = osx ] && cat ~/Library/Logs/DiagnosticReports/ruby_*.crash && false; }"
-  - "make test-rubyspec || { [ $TRAVIS_OS_NAME = osx ] && cat ~/Library/Logs/DiagnosticReports/ruby_*.crash && false; }"
+  - "make test"
+  - "make test-all TESTS='-q -j2'"
+  - "make test-rubyspec"
+after_failure:
+  - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then find ~/Library/Logs/DiagnosticReports -type f -name ruby_\\*.crash -ls -execdir cat {} \\; -delete; fi"
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:
