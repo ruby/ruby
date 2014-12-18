@@ -2812,8 +2812,8 @@ AC_ARG_WITH(dln-a-out,
 
 AC_CACHE_CHECK(whether ELF binaries are produced, rb_cv_binary_elf,
 [AC_TRY_LINK([],[], [
-AS_CASE(["`head -1 conftest$EXEEXT | cat -e`"],
-['^?ELF'*], [rb_cv_binary_elf=yes], [rb_cv_binary_elf=no])],
+AS_CASE(["`head -1 conftest$EXEEXT | tr -dc '\177ELF' | tr '\177' .`"],
+[.ELF*], [rb_cv_binary_elf=yes], [rb_cv_binary_elf=no])],
 rb_cv_binary_elf=no)])
 
 if test "$rb_cv_binary_elf" = yes; then

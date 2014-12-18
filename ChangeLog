@@ -1,3 +1,9 @@
+Thu Dec 18 17:45:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rb_cv_binary_elf): get rid of -e option of cat
+	  which is not available on BusyBox, use tr instead.
+	  [ruby-core:64824] [Bug #10210]
+
 Thu Dec 18 14:25:17 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* signal.c (ruby_signal): since SIGKILL is not supported by MSVCRT,
