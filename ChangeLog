@@ -1,7 +1,7 @@
 Thu Dec 18 14:25:17 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* signal.c (ruby_signal): since SIGKILL is not supported by MSVCRT,
-	  should be treated before calling signal(2).
+	  should be treated before calling signal(3).
 	  [Bug #10615]
 
 Wed Dec 17 12:20:56 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
