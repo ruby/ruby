@@ -125,7 +125,7 @@ class TestISeq < Test::Unit::TestCase
     assert_same a, b
   end
 
-  def test_diable_opt
+  def test_disable_opt
     src = "a['foo'] = a['bar']; 'a'.freeze"
     _,_,_,_,_,_,_,_,_,_,_,_,_,body= RubyVM::InstructionSequence.compile(src, __FILE__, __FILE__, __LINE__, false).to_a
     body.each{|insn|
