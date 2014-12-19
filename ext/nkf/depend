@@ -10,9 +10,9 @@ nkf.o: $(hdrdir)/ruby/encoding.h
 nkf.o: $(hdrdir)/ruby/intern.h
 nkf.o: $(hdrdir)/ruby/missing.h
 nkf.o: $(hdrdir)/ruby/oniguruma.h
+nkf.o: $(hdrdir)/ruby/ruby.h
 nkf.o: $(hdrdir)/ruby/st.h
 nkf.o: $(hdrdir)/ruby/subst.h
-nkf.o: $(top_srcdir)/include/ruby/ruby.h
 nkf.o: nkf-utf8/config.h
 nkf.o: nkf-utf8/nkf.c
 nkf.o: nkf-utf8/nkf.h

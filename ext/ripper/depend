@@ -53,11 +53,11 @@ ripper.o: $(hdrdir)/ruby/io.h
 ripper.o: $(hdrdir)/ruby/missing.h
 ripper.o: $(hdrdir)/ruby/oniguruma.h
 ripper.o: $(hdrdir)/ruby/regex.h
+ripper.o: $(hdrdir)/ruby/ruby.h
 ripper.o: $(hdrdir)/ruby/st.h
 ripper.o: $(hdrdir)/ruby/subst.h
 ripper.o: $(hdrdir)/ruby/util.h
 ripper.o: $(top_srcdir)/include/ruby.h
-ripper.o: $(top_srcdir)/include/ruby/ruby.h
 ripper.o: $(top_srcdir)/internal.h
 ripper.o: $(top_srcdir)/node.h
 ripper.o: $(top_srcdir)/regenc.h
