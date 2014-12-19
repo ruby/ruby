@@ -1,3 +1,10 @@
+Sat Dec 20 04:58:00 2014  Kenta Murata  <mrkn@cookpad.com>
+
+	* ext/bigdecimal/depend: Fix dependencies to make bigdecimal
+	  installable by rubygems.
+
+	* ext/bigdecimal/bigdecimal.gemspec: version 1.2.6.
+
 Thu Dec 18 17:45:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (rb_cv_binary_elf): get rid of -e option of cat
