@@ -440,13 +440,25 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_expand_path
     assert_equal(@file, File.expand_path(File.basename(@file), File.dirname(@file)))
-    if /cygwin|mingw|mswin|bccwin/ =~ RUBY_PLATFORM
+    case RUBY_PLATFORM
+    when /cygwin|mingw|mswin|bccwin/
       assert_equal(@file, File.expand_path(@file + " "))
       assert_equal(@file, File.expand_path(@file + "."))
       assert_equal(@file, File.expand_path(@file + "::$DATA"))
       assert_match(/\Ac:\//i, File.expand_path('c:'), '[ruby-core:31591]')
       assert_match(/\Ac:\//i, File.expand_path('c:foo', 'd:/bar'))
       assert_match(%r'\Ac:/bar/foo\z'i, File.expand_path('c:foo', 'c:/bar'))
+    when /darwin/
+      ["\u{feff}", *"\u{2000}"..."\u{2100}"].each do |c|
+        file = @file + c
+        begin
+          open(file) {}
+        rescue
+          assert_equal(file, File.expand_path(file), c.dump)
+        else
+          assert_equal(@file, File.expand_path(file), c.dump)
+        end
+      end
     end
     if DRIVE
       assert_match(%r"\Az:/foo\z"i, File.expand_path('/foo', "z:/bar"))
