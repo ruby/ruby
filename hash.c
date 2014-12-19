@@ -1944,10 +1944,17 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
 	if (!rb_respond_to(hash2, idTo_hash)) {
 	    return Qfalse;
 	}
-	if (eql)
-	    return rb_eql(hash2, hash1);
-	else
+	if (eql) {
+	    if (rb_eql(hash2, hash1)) {
+		return Qtrue;
+	    }
+	    else {
+		return Qfalse;
+	    }
+	}
+	else {
 	    return rb_equal(hash2, hash1);
+	}
     }
     if (RHASH_SIZE(hash1) != RHASH_SIZE(hash2))
 	return Qfalse;

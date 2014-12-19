@@ -1,3 +1,8 @@
+Fri Dec 19 15:36:02 2014  Simon Genier  <simon.genier@shopify.com>
+
+	* hash.c (hash_equal): prefer true than the result of implicit
+	  conversion from int returned by rb_eql() to VALUE.  [Fix GH-789]
+
 Thu Dec 18 17:45:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (rb_cv_binary_elf): get rid of -e option of cat
