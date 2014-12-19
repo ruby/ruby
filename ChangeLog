@@ -1,3 +1,8 @@
+Sat Dec 20 05:21:00 2014  Eric Wong  <e@80x24.org>
+
+	* test/test_weakref.rb (test_repeated_object_leak): increase timeout
+	  [Bug #10618]
+
 Fri Dec 19 22:33:13 2014  Tanaka Akira  <akr@fsij.org>
 
 	* tool/update-deps: Use $(hdrdir) if possible.
