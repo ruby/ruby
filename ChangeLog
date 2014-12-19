@@ -1,3 +1,7 @@
+Fri Dec 19 22:33:13 2014  Tanaka Akira  <akr@fsij.org>
+
+	* tool/update-deps: Use $(hdrdir) if possible.
+
 Fri Dec 19 22:10:00 2014  Kenta Murata  <mrkn@cookpad.com>
 
 	* ext/bigdecimal/depend: Fix dependencies to make bigdecimal
