@@ -927,9 +927,9 @@ class TestHash < Test::Unit::TestCase
     o.instance_variable_set(:@cls, @cls)
     def o.to_hash; @cls[]; end
     def o.eql?(x); true; end
-    assert_send([@cls[], :eql?, o])
+    assert_equal(true, @cls[].eql?(o))
     def o.eql?(x); false; end
-    assert_not_send([@cls[], :eql?, o])
+    assert_equal(false, @cls[].eql?(o))
   end
 
   def test_hash2
