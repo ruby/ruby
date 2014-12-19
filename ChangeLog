@@ -1,3 +1,9 @@
+Fri Dec 19 20:00:19 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (PRIsVALUE): put a space after string
+	  literals not to be confused with C++11 string literal suffix.
+	  https://github.com/ruby/ruby/commit/a9f3eb7#commitcomment-9040169
+
 Fri Dec 19 15:36:02 2014  Simon Genier  <simon.genier@shopify.com>
 
 	* hash.c (hash_equal): prefer true than the result of implicit
