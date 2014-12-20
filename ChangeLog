@@ -1,3 +1,8 @@
+Sat Dec 20 11:22:58 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/fiddle/depend, ext/fiddle/extconf.rb: try to build bundled
+	  libffi if existing.
+
 Sat Dec 20 05:21:00 2014  Eric Wong  <e@80x24.org>
 
 	* test/test_weakref.rb (test_repeated_object_leak): increase timeout

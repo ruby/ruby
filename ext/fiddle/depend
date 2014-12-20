@@ -1,4 +1,26 @@
+PWD =
+LOCAL_LIBS = $(LIBFFI_A)
+
+CONFIGURE_LIBFFI = \
+	cd $(LIBFFI_DIR) && \
+	$(LIBFFI_CONFIGURE) --disable-shared \
+		--host=$(LIBFFI_ARCH) --enable-builddir=$(arch) \
+		CC="$(CC)" CFLAGS="$(LIBFFI_CFLAGS)"
+
 $(OBJS): $(HDRS) $(ruby_headers) \
   $(hdrdir)/ruby/io.h \
   $(hdrdir)/ruby/encoding.h \
   $(hdrdir)/ruby/oniguruma.h
+
+$(STATIC_LIB) $(RUBYARCHDIR)/$(DLLIB) $(DLLIB): $(LIBFFI_A)
+
+$(OBJS): $(FFI_H)
+
+hdr: $(FFI_H)
+configure-libffi $(FFI_H):
+	$(Q) $(MAKEDIRS) $(LIBFFI_DIR)
+	$(Q) $(CONFIGURE_LIBFFI)
+
+lib: $(LIBFFI_A)
+$(LIBFFI_A):
+	$(Q) $(SUBMAKE_LIBFFI)

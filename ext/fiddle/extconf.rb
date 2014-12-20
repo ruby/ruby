@@ -2,25 +2,44 @@ require 'mkmf'
 
 # :stopdoc:
 
-dir_config 'libffi'
+if ! enable_config('bundled-libffi', false)
+  dir_config 'libffi'
 
-pkg_config("libffi")
-if ver = pkg_config("libffi", "modversion")
+  pkg_config("libffi")
+  ver = pkg_config("libffi", "modversion")
+
+  if have_header('ffi.h')
+    true
+  elsif have_header('ffi/ffi.h')
+    $defs.push(format('-DUSE_HEADER_HACKS'))
+    true
+  end and (have_library('ffi') || have_library('libffi'))
+end or
+begin
+  ver = Dir.glob("#{$srcdir}/libffi-*/")
+        .map {|n| File.basename(n)}
+        .max_by {|n| n.scan(/\d+/).map(&:to_i)}
+  bundled = ver
+  if $srcdir == "."
+    builddir = "#{ver}/#{RUBY_PLATFORM}"
+    libffi_srcdir = "."
+  else
+    builddir = bundled
+    libffi_srcdir = relative_from("#{$srcdir}/#{bundled}", "..")
+  end
+  libffi_include = "#{builddir}/include"
+  libffi_lib = "#{builddir}/.libs"
+  libffi_a = "#{libffi_lib}/libffi.#{$LIBEXT}"
+  libffi_cflags = RbConfig.expand("$(CFLAGS)", CONFIG.merge("warnflags"=>""))
+  $LIBPATH.unshift libffi_lib
+  $INCFLAGS << " -I" << libffi_include
+  ver = ver[/libffi-(.*)/, 1]
+end
+
+if ver
   ver = ver.gsub(/-rc\d+/, '') # If ver contains rc version, just ignored.
   ver = (ver.split('.') + [0,0])[0,3]
   $defs.push(%{-DRUBY_LIBFFI_MODVERSION=#{ '%d%03d%03d' % ver }})
-end
-
-unless have_header('ffi.h')
-  if have_header('ffi/ffi.h')
-    $defs.push(format('-DUSE_HEADER_HACKS'))
-  else
-    raise "ffi.h is missing. Please install libffi."
-  end
-end
-
-unless have_library('ffi') || have_library('libffi')
-  raise "libffi is missing. Please install libffi."
 end
 
 have_header 'sys/mman.h'
@@ -55,6 +74,28 @@ types.each do |type, signed|
   end
 end
 
-create_makefile 'fiddle'
+create_makefile 'fiddle' do |conf|
+  if $gnumake
+    submake = "$(MAKE) -C $(LIBFFI_DIR)\n"
+  else
+    submake = "cd $(LIBFFI_DIR) && \\\n\t\t" << "#{config_string("exec")} $(MAKE)".strip
+  end
+ conf << <<-MK.gsub(/^ +/, '')
+   PWD =
+   LIBFFI_CONFIGURE = $(LIBFFI_SRCDIR)/configure#{/'-C'/ =~ CONFIG['configure_args'] ? ' -C' : ''}
+   LIBFFI_ARCH = #{RbConfig::CONFIG['arch'].sub(/\Ax64-(?=mingw|mswin)/, 'x86_64-')}
+   LIBFFI_SRCDIR = #{libffi_srcdir}
+   LIBFFI_DIR = #{bundled}
+   LIBFFI_A = #{libffi_a}
+   LIBFFI_CFLAGS = #{libffi_cflags}
+   FFI_H = #{bundled && '$(LIBFFI_DIR)/include/ffi.h'}
+   SUBMAKE_LIBFFI = #{submake}
+ MK
+end
+
+if bundled
+  xsystem([$make, 'configure-libffi', *sysquote($mflags)]) or
+    raise "failed to configure libffi. Please install libffi."
+end
 
 # :startdoc:
