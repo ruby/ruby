@@ -1,3 +1,8 @@
+Sat Dec 20 17:49:03 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/tmpdir.rb (Dir.mktmpdir): Accept nil again, as Ruby 2.1.
+	  [ruby-core:66943] [Bug #10616] Fixed by Alex Slynko.
+
 Sat Dec 20 11:22:58 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/fiddle/depend, ext/fiddle/extconf.rb: try to build bundled
