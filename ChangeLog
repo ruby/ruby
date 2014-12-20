@@ -1,3 +1,12 @@
+Sun Dec 21 08:35:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (jemalloc): fix option argument, should use
+	  `$withval` but not `yes` always.  [ruby-core:66994] [Bug #10625]
+
+	* configure.in (jemalloc): defer adding the liner option to get
+	  rid of linking contest against jemalloc, so that it works
+	  without runtime dynamic load path.
+
 Sat Dec 20 17:49:03 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/tmpdir.rb (Dir.mktmpdir): Accept nil again, as Ruby 2.1.

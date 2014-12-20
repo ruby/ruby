@@ -1204,7 +1204,7 @@ AS_IF([test "x$with_gmp" != xno],
 
 AC_ARG_WITH([jemalloc],
   [AS_HELP_STRING([--with-jemalloc],[use jemalloc allocator])],
-  [with_jemalloc=yes], [with_jemalloc=no])
+  [with_jemalloc=$withval], [with_jemalloc=no])
 AS_IF([test "x$with_jemalloc" = xyes],[
   AC_CHECK_LIB([jemalloc], [malloc_conf], [], [with_jemalloc=no])
   AC_CHECK_HEADER(jemalloc/jemalloc.h, [
@@ -1225,7 +1225,6 @@ AS_IF([test "x$with_jemalloc" = xyes],[
   AS_IF([test "x$rb_cv_jemalloc_demangle" = xyes], [
     AC_DEFINE(JEMALLOC_MANGLE)
     with_jemalloc=yes
-    LIBS="-ljemalloc $LIBS"
   ])
   AS_IF([test "x$with_jemalloc" = xyes],
     [
@@ -3768,6 +3767,9 @@ AS_CASE(["$target_os"],
 
 AS_CASE(["$with_gmp: $SOLIBS "], [no:* | *' -lgmp '*|*' $(LIBS) '*], [],
 	[SOLIBS="-lgmp $SOLIBS"])
+
+AS_CASE(["$with_jemalloc: $LIBS "], [no:* | *' -ljemalloc '*], [],
+	[LIBS="-ljemalloc $LIBS"])
 
 MINIOBJS="$MINIDLNOBJ"
 
