@@ -24,3 +24,5 @@ configure-libffi $(FFI_H):
 lib: $(LIBFFI_A)
 $(LIBFFI_A):
 	$(Q) $(SUBMAKE_LIBFFI)
+
+configure: configure-libffi

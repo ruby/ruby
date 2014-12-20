@@ -80,9 +80,11 @@ create_makefile 'fiddle' do |conf|
   else
     submake = "cd $(LIBFFI_DIR) && \\\n\t\t" << "#{config_string("exec")} $(MAKE)".strip
   end
- conf << <<-MK.gsub(/^ +/, '')
+  sep = "/"
+  seprpl = config_string('BUILD_FILE_SEPARATOR') {|s| sep = s; ":/=#{s}" if s != "/"} || ""
+  conf << <<-MK.gsub(/^ +/, '')
    PWD =
-   LIBFFI_CONFIGURE = $(LIBFFI_SRCDIR)/configure#{/'-C'/ =~ CONFIG['configure_args'] ? ' -C' : ''}
+   LIBFFI_CONFIGURE = $(LIBFFI_SRCDIR#{seprpl})#{sep}configure#{/'-C'/ =~ CONFIG['configure_args'] ? ' -C' : ''}
    LIBFFI_ARCH = #{RbConfig::CONFIG['arch'].sub(/\Ax64-(?=mingw|mswin)/, 'x86_64-')}
    LIBFFI_SRCDIR = #{libffi_srcdir}
    LIBFFI_DIR = #{bundled}
@@ -90,12 +92,16 @@ create_makefile 'fiddle' do |conf|
    LIBFFI_CFLAGS = #{libffi_cflags}
    FFI_H = #{bundled && '$(LIBFFI_DIR)/include/ffi.h'}
    SUBMAKE_LIBFFI = #{submake}
- MK
+  MK
 end
 
 if bundled
-  xsystem([$make, 'configure-libffi', *sysquote($mflags)]) or
-    raise "failed to configure libffi. Please install libffi."
+  args = [$make, *sysquote($mflags)]
+  Logging::open do
+    Logging.message("%p\n", args)
+    system(*args) or
+      raise "failed to configure libffi. Please install libffi."
+  end
 end
 
 # :startdoc:
