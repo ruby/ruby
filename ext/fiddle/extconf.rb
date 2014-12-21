@@ -33,8 +33,6 @@ begin
     libffi.lib = "#{libffi.builddir}/.libs"
     libffi.a = "#{libffi.lib}/libffi.#{$LIBEXT}"
     libffi.cflags = RbConfig.expand("$(CFLAGS)", CONFIG.merge("warnflags"=>""))
-    $LIBPATH.unshift libffi.lib
-    $INCFLAGS << " -I" << libffi.include
     ver = ver[/libffi-(.*)/, 1]
   end
 end
@@ -79,6 +77,11 @@ types.each do |type, signed|
   end
 end
 
+if libffi
+  $LIBPATH.unshift libffi.lib
+  $INCFLAGS << " -I" << libffi.include
+  $LOCAL_LIBS.prepend("#{libffi.a} ").strip!
+end
 create_makefile 'fiddle' do |conf|
   next conf unless libffi
   if $gnumake
@@ -102,6 +105,8 @@ create_makefile 'fiddle' do |conf|
 end
 
 if libffi
+  $LIBPATH.pop
+  $LOCAL_LIBS.prepend("ext/fiddle/")
   args = [$make, *sysquote($mflags)]
   Logging::open do
     Logging.message("%p\n", args)
