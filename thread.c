@@ -2080,11 +2080,12 @@ ruby_thread_stack_overflow(rb_thread_t *th)
 {
     th->raised_flag = 0;
 #ifdef USE_SIGALTSTACK
-    rb_exc_raise(sysstack_error);
-#else
+    if (!rb_during_gc()) {
+	rb_exc_raise(sysstack_error);
+    }
+#endif
     th->errinfo = sysstack_error;
     TH_JUMP_TAG(th, TAG_RAISE);
-#endif
 }
 
 int
