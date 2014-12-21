@@ -21,8 +21,38 @@ def ado_installed?
   installed
 end
 
+def swbemsink_avairable?
+  available = false
+  if defined?(WIN32OLE)
+    wmi = nil
+    begin
+      wmi = WIN32OLE.new('WbemScripting.SWbemSink')
+      available = true
+    rescue
+    end
+  end
+  available
+end
+
 if defined?(WIN32OLE_EVENT)
   class TestWIN32OLE_EVENT < Test::Unit::TestCase
+    def test_s_new_exception
+      assert_raise(TypeError) {
+        WIN32OLE_EVENT.new("A")
+      }
+    end
+  end
+
+  class TestWIN32OLE_EVENT_SWbemSink < Test::Unit::TestCase
+    unless swbemsink_avairable?
+      def test_dummy_for_skip_message
+        skip "'WbemScripting.SWbemSink' is not available"
+      end
+    else
+    end
+  end
+
+  class TestWIN32OLE_EVENT_ADO < Test::Unit::TestCase
     unless ado_installed?
       def test_dummy_for_skip_message
         skip "ActiveX Data Object Library not found"
@@ -48,12 +78,6 @@ if defined?(WIN32OLE_EVENT)
         @event = ""
         @event2 = ""
         @event3 = ""
-      end
-
-      def test_s_new
-        assert_raise(TypeError) {
-          WIN32OLE_EVENT.new("A")
-        }
       end
 
       def test_s_new_without_itf
