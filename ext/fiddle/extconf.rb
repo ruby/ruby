@@ -19,30 +19,30 @@ begin
   ver = Dir.glob("#{$srcdir}/libffi-*/")
         .map {|n| File.basename(n)}
         .max_by {|n| n.scan(/\d+/).map(&:to_i)}
-  if ver
-    libffi = Struct.new(:dir, :srcdir, :builddir, :include, :lib, :a, :cflags).new
-    libffi.dir = ver
-    if $srcdir == "."
-      libffi.builddir = "#{ver}/#{RUBY_PLATFORM}"
-      libffi.srcdir = "."
-    else
-      libffi.builddir = libffi.dir
-      libffi.srcdir = relative_from("#{$srcdir}/#{ver}", "..")
-    end
-    libffi.include = "#{libffi.builddir}/include"
-    libffi.lib = "#{libffi.builddir}/.libs"
-    libffi.a = "#{libffi.lib}/libffi.#{$LIBEXT}"
-    libffi.cflags = RbConfig.expand("$(CFLAGS)", CONFIG.merge("warnflags"=>""))
-    ver = ver[/libffi-(.*)/, 1]
+  unless ver
+    raise "missing libffi. Please install libffi."
   end
+
+  libffi = Struct.new(:dir, :srcdir, :builddir, :include, :lib, :a, :cflags).new
+  libffi.dir = ver
+  if $srcdir == "."
+    libffi.builddir = "#{ver}/#{RUBY_PLATFORM}"
+    libffi.srcdir = "."
+  else
+    libffi.builddir = libffi.dir
+    libffi.srcdir = relative_from("#{$srcdir}/#{ver}", "..")
+  end
+  libffi.include = "#{libffi.builddir}/include"
+  libffi.lib = "#{libffi.builddir}/.libs"
+  libffi.a = "#{libffi.lib}/libffi.#{$LIBEXT}"
+  libffi.cflags = RbConfig.expand("$(CFLAGS)", CONFIG.merge("warnflags"=>""))
+  ver = ver[/libffi-(.*)/, 1]
 end
 
 if ver
   ver = ver.gsub(/-rc\d+/, '') # If ver contains rc version, just ignored.
   ver = (ver.split('.') + [0,0])[0,3]
   $defs.push(%{-DRUBY_LIBFFI_MODVERSION=#{ '%d%03d%03d' % ver }})
-else
-  raise "missing libffi. Please install libffi."
 end
 
 have_header 'sys/mman.h'
