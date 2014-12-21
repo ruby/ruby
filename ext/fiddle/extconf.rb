@@ -19,27 +19,32 @@ begin
   ver = Dir.glob("#{$srcdir}/libffi-*/")
         .map {|n| File.basename(n)}
         .max_by {|n| n.scan(/\d+/).map(&:to_i)}
-  bundled = ver
-  if $srcdir == "."
-    builddir = "#{ver}/#{RUBY_PLATFORM}"
-    libffi_srcdir = "."
-  else
-    builddir = bundled
-    libffi_srcdir = relative_from("#{$srcdir}/#{bundled}", "..")
+  if ver
+    libffi = Struct.new(:dir, :srcdir, :builddir, :include, :lib, :a, :cflags).new
+    libffi.dir = ver
+    if $srcdir == "."
+      libffi.builddir = "#{ver}/#{RUBY_PLATFORM}"
+      libffi.srcdir = "."
+    else
+      libffi.builddir = libffi.dir
+      libffi.srcdir = relative_from("#{$srcdir}/#{ver}", "..")
+    end
+    libffi.include = "#{libffi.builddir}/include"
+    libffi.lib = "#{libffi.builddir}/.libs"
+    libffi.a = "#{libffi.lib}/libffi.#{$LIBEXT}"
+    libffi.cflags = RbConfig.expand("$(CFLAGS)", CONFIG.merge("warnflags"=>""))
+    $LIBPATH.unshift libffi.lib
+    $INCFLAGS << " -I" << libffi.include
+    ver = ver[/libffi-(.*)/, 1]
   end
-  libffi_include = "#{builddir}/include"
-  libffi_lib = "#{builddir}/.libs"
-  libffi_a = "#{libffi_lib}/libffi.#{$LIBEXT}"
-  libffi_cflags = RbConfig.expand("$(CFLAGS)", CONFIG.merge("warnflags"=>""))
-  $LIBPATH.unshift libffi_lib
-  $INCFLAGS << " -I" << libffi_include
-  ver = ver[/libffi-(.*)/, 1]
 end
 
 if ver
   ver = ver.gsub(/-rc\d+/, '') # If ver contains rc version, just ignored.
   ver = (ver.split('.') + [0,0])[0,3]
   $defs.push(%{-DRUBY_LIBFFI_MODVERSION=#{ '%d%03d%03d' % ver }})
+else
+  raise "missing libffi. Please install libffi."
 end
 
 have_header 'sys/mman.h'
@@ -75,6 +80,7 @@ types.each do |type, signed|
 end
 
 create_makefile 'fiddle' do |conf|
+  next conf unless libffi
   if $gnumake
     submake = "$(MAKE) -C $(LIBFFI_DIR)\n"
   else
@@ -86,16 +92,16 @@ create_makefile 'fiddle' do |conf|
    PWD =
    LIBFFI_CONFIGURE = $(LIBFFI_SRCDIR#{seprpl})#{sep}configure#{/'-C'/ =~ CONFIG['configure_args'] ? ' -C' : ''}
    LIBFFI_ARCH = #{RbConfig::CONFIG['arch'].sub(/\Ax64-(?=mingw|mswin)/, 'x86_64-')}
-   LIBFFI_SRCDIR = #{libffi_srcdir}
-   LIBFFI_DIR = #{bundled}
-   LIBFFI_A = #{libffi_a}
-   LIBFFI_CFLAGS = #{libffi_cflags}
-   FFI_H = #{bundled && '$(LIBFFI_DIR)/include/ffi.h'}
+   LIBFFI_SRCDIR = #{libffi.srcdir}
+   LIBFFI_DIR = #{libffi.dir}
+   LIBFFI_A = #{libffi.a}
+   LIBFFI_CFLAGS = #{libffi.cflags}
+   FFI_H = $(LIBFFI_DIR)/include/ffi.h
    SUBMAKE_LIBFFI = #{submake}
   MK
 end
 
-if bundled
+if libffi
   args = [$make, *sysquote($mflags)]
   Logging::open do
     Logging.message("%p\n", args)

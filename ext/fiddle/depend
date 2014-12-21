@@ -1,5 +1,4 @@
 PWD =
-LOCAL_LIBS = $(LIBFFI_A)
 
 CONFIGURE_LIBFFI = \
 	cd $(LIBFFI_DIR) && \
@@ -21,8 +20,8 @@ configure-libffi $(FFI_H):
 	$(Q) $(MAKEDIRS) $(LIBFFI_DIR)
 	$(Q) $(CONFIGURE_LIBFFI)
 
-lib: $(LIBFFI_A)
-$(LIBFFI_A):
+build-libffi: $(LIBFFI_A)
+build-libffi $(LIBFFI_A):
 	$(Q) $(SUBMAKE_LIBFFI)
 
 configure: configure-libffi
