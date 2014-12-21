@@ -314,7 +314,7 @@ fiddle_handle_sym(void *handle, const char *name)
 {
 #if defined(HAVE_DLERROR)
     const char *err;
-# define CHECK_DLERROR if( err = dlerror() ){ func = 0; }
+# define CHECK_DLERROR if ((err = dlerror()) != 0) { func = 0; }
 #else
 # define CHECK_DLERROR
 #endif
