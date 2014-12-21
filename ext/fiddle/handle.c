@@ -170,6 +170,7 @@ rb_fiddle_handle_initialize(int argc, VALUE argv[], VALUE self)
 # ifdef _WIN32_WCE
 	ptr = dlopen("coredll.dll", cflag);
 # else
+	(void)cflag;
 	ptr = w32_coredll();
 # endif
     }
