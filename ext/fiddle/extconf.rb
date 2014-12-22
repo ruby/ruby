@@ -8,9 +8,9 @@ if ! enable_config('bundled-libffi', false)
   pkg_config("libffi")
   ver = pkg_config("libffi", "modversion")
 
-  if have_header('ffi.h')
+  if have_header(ffi_header = 'ffi.h')
     true
-  elsif have_header('ffi/ffi.h')
+  elsif have_header(ffi_header = 'ffi/ffi.h')
     $defs.push(format('-DUSE_HEADER_HACKS'))
     true
   end and (have_library('ffi') || have_library('libffi'))
@@ -23,7 +23,8 @@ begin
     raise "missing libffi. Please install libffi."
   end
 
-  libffi = Struct.new(:dir, :srcdir, :builddir, :include, :lib, :a, :cflags).new
+  ffi_header = 'ffi.h'
+  libffi = Struct.new(*%I[dir srcdir builddir include lib a cflags opt arch]).new
   libffi.dir = ver
   if $srcdir == "."
     libffi.builddir = "#{ver}/#{RUBY_PLATFORM}"
@@ -37,6 +38,23 @@ begin
   libffi.a = "#{libffi.lib}/libffi.#{$LIBEXT}"
   libffi.cflags = RbConfig.expand("$(CFLAGS)", CONFIG.merge("warnflags"=>""))
   ver = ver[/libffi-(.*)/, 1]
+
+  FileUtils.mkdir_p(libffi.dir)
+  libffi.opt = CONFIG['configure_args'][/'(-C)'/, 1]
+  libffi.arch = RbConfig::CONFIG['host']
+  args = %W[
+    #{libffi.srcdir}/configure #{libffi.opt}
+    --disable-shared
+    --host=#{libffi.arch} --enable-builddir=#{RUBY_PLATFORM}
+      CC=#{RbConfig::CONFIG['CC']} CFLAGS=#{libffi.cflags}
+  ]
+
+  Logging::open do
+    Logging.message("%p in %s\n", args, libffi.dir)
+    system(*args, chdir: libffi.dir) or
+      raise "failed to configure libffi. Please install libffi."
+  end
+  $INCFLAGS << " -I" << libffi.include
 end
 
 if ver
@@ -61,7 +79,7 @@ elsif have_header "windows.h"
   end
 end
 
-have_const('FFI_STDCALL', 'ffi.h') || have_const('FFI_STDCALL', 'ffi/ffi.h')
+have_const('FFI_STDCALL', ffi_header)
 
 config = File.read(RbConfig.expand(File.join($arch_hdrdir, "ruby/config.h")))
 types = {"SIZE_T"=>"SSIZE_T", "PTRDIFF_T"=>nil, "INTPTR_T"=>nil}
@@ -79,7 +97,6 @@ end
 
 if libffi
   $LIBPATH.unshift libffi.lib
-  $INCFLAGS << " -I" << libffi.include
   $LOCAL_LIBS.prepend("#{libffi.a} ").strip!
 end
 create_makefile 'fiddle' do |conf|
@@ -91,10 +108,10 @@ create_makefile 'fiddle' do |conf|
   end
   sep = "/"
   seprpl = config_string('BUILD_FILE_SEPARATOR') {|s| sep = s; ":/=#{s}" if s != "/"} || ""
-  conf << <<-MK.gsub(/^ +/, '')
+  conf << <<-MK.gsub(/^ +| +$/, '')
    PWD =
-   LIBFFI_CONFIGURE = $(LIBFFI_SRCDIR#{seprpl})#{sep}configure#{/'-C'/ =~ CONFIG['configure_args'] ? ' -C' : ''}
-   LIBFFI_ARCH = #{RbConfig::CONFIG['arch'].sub(/\Ax64-(?=mingw|mswin)/, 'x86_64-')}
+   LIBFFI_CONFIGURE = $(LIBFFI_SRCDIR#{seprpl})#{sep}configure #{libffi.opt}
+   LIBFFI_ARCH = #{libffi.arch}
    LIBFFI_SRCDIR = #{libffi.srcdir}
    LIBFFI_DIR = #{libffi.dir}
    LIBFFI_A = #{libffi.a}
@@ -107,12 +124,6 @@ end
 if libffi
   $LIBPATH.pop
   $LOCAL_LIBS.prepend("ext/fiddle/")
-  args = [$make, *sysquote($mflags)]
-  Logging::open do
-    Logging.message("%p\n", args)
-    system(*args) or
-      raise "failed to configure libffi. Please install libffi."
-  end
 end
 
 # :startdoc:
