@@ -63,7 +63,7 @@ if defined?(WIN32OLE_EVENT)
       end
 
       def message_loop
-        2.times do 
+        2.times do
           WIN32OLE_EVENT.message_loop
           sleep 1
         end
