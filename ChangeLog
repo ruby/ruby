@@ -1,3 +1,8 @@
+Mon Dec 22 21:30:16 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_win32ole_event.rb: some tests are
+	  executed on standard Windows OS without ADO.
+
 Mon Dec 22 14:08:31 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* signal.c (received_signal): fix condition to define.
