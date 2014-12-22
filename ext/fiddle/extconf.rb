@@ -24,7 +24,7 @@ begin
   end
 
   ffi_header = 'ffi.h'
-  libffi = Struct.new(*%I[dir srcdir builddir include lib a cflags opt arch]).new
+  libffi = Struct.new(*%I[dir srcdir builddir include lib a cflags ldflags opt arch]).new
   libffi.dir = ver
   if $srcdir == "."
     libffi.builddir = "#{ver}/#{RUBY_PLATFORM}"
@@ -41,12 +41,14 @@ begin
 
   FileUtils.mkdir_p(libffi.dir)
   libffi.opt = CONFIG['configure_args'][/'(-C)'/, 1]
+  libffi.ldflags = RbConfig.expand("$(LDFLAGS) #{libpathflag([relative_from($topdir, "..")])} #{$LIBRUBYARG}")
   libffi.arch = RbConfig::CONFIG['host']
   args = %W[
     #{libffi.srcdir}/configure #{libffi.opt}
     --disable-shared
     --host=#{libffi.arch} --enable-builddir=#{RUBY_PLATFORM}
       CC=#{RbConfig::CONFIG['CC']} CFLAGS=#{libffi.cflags}
+      LD=#{RbConfig::CONFIG['LD']} LDFLAGS=#{libffi.ldflags}
   ]
 
   Logging::open do
@@ -116,6 +118,7 @@ create_makefile 'fiddle' do |conf|
    LIBFFI_DIR = #{libffi.dir}
    LIBFFI_A = #{libffi.a}
    LIBFFI_CFLAGS = #{libffi.cflags}
+   LIBFFI_LDFLAGS = #{libffi.ldflags}
    FFI_H = $(LIBFFI_DIR)/include/ffi.h
    SUBMAKE_LIBFFI = #{submake}
   MK

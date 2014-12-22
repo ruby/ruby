@@ -4,7 +4,8 @@ CONFIGURE_LIBFFI = \
 	cd $(LIBFFI_DIR) && \
 	$(LIBFFI_CONFIGURE) --disable-shared \
 		--host=$(LIBFFI_ARCH) --enable-builddir=$(arch) \
-		CC="$(CC)" CFLAGS="$(LIBFFI_CFLAGS)"
+		CC="$(CC)" CFLAGS="$(LIBFFI_CFLAGS)" \
+		LD="$(LD)" LDFLAGS="$(LIBFFI_LDFLAGS)"
 
 $(OBJS): $(HDRS) $(ruby_headers) \
   $(hdrdir)/ruby/io.h \
