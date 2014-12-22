@@ -743,10 +743,15 @@ rb_get_next_signal(void)
     return sig;
 }
 
+#if defined SIGSEGV || defined SIGBUS || defined SIGILL || defined SIGFPE
+static const char *received_signal;
+# define clear_received_signal() (void)(received_signal = 0)
+#else
+# define clear_received_signal() ((void)0)
+#endif
 
 #if defined(USE_SIGALTSTACK) || defined(_WIN32)
 NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
-static const char *received_signal;
 # if !(defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__ || defined __amd64__))
 # elif defined __linux__
 #   define USE_UCONTEXT_REG 1
@@ -793,7 +798,7 @@ check_stack_overflow(const uintptr_t addr, const ucontext_t *ctx)
 	     * place. */
 	    th->tag = th->tag->prev;
 	}
-	received_signal = 0;
+	clear_received_signal();
 	ruby_thread_stack_overflow(th);
     }
 }
@@ -804,7 +809,7 @@ check_stack_overflow(const void *addr)
     int ruby_stack_overflowed_p(const rb_thread_t *, const void *);
     rb_thread_t *th = ruby_current_thread;
     if (ruby_stack_overflowed_p(th, addr)) {
-	received_signal = 0;
+	clear_received_signal();
 	ruby_thread_stack_overflow(th);
     }
 }

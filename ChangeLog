@@ -1,3 +1,8 @@
+Mon Dec 22 14:08:31 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (received_signal): fix condition to define.
+	  [ruby-core:67032] [Bug #10629]
+
 Sun Dec 21 10:51:51 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_win32ole_event.rb: test_s_new_exception is
