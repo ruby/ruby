@@ -1,3 +1,9 @@
+Tue Dec 23 11:42:14 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl/ossl_cipher.c (ossl_cipher_update_long): update huge
+	  data gradually not to exceed INT_MAX.  workaround of OpenSSL API
+	  limitation.  [ruby-core:67043] [Bug #10633]
+
 Mon Dec 22 21:30:16 2014  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_win32ole_event.rb: some tests are
