@@ -1,3 +1,8 @@
+Wed Dec 24 03:12:28 2014  Eric Wong  <e@80x24.org>
+
+	* test/test_weakref.rb (test_repeated_object_leak): increase timeout
+	  [Bug #10618]
+
 Wed Dec 24 02:22:11 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/tmpdir.rb (Dir.mktmpdir): Accept nil again, as Ruby 2.1.
