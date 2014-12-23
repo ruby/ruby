@@ -81,8 +81,8 @@ class Dir
   #    FileUtils.remove_entry dir
   #  end
   #
-  def Dir.mktmpdir(prefix_suffix="d", *rest)
-    path = Tmpname.create(prefix_suffix, *rest) {|n| mkdir(n, 0700)}
+  def Dir.mktmpdir(prefix_suffix=nil, *rest)
+    path = Tmpname.create(prefix_suffix || "d", *rest) {|n| mkdir(n, 0700)}
     if block_given?
       begin
         yield path

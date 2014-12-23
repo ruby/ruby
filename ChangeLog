@@ -1,3 +1,8 @@
+Wed Dec 24 02:22:11 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/tmpdir.rb (Dir.mktmpdir): Accept nil again, as Ruby 2.1.
+	  [ruby-core:66943] [Bug #10616] Fixed by Alex Slynko.
+
 Sat Dec 20 04:58:00 2014  Kenta Murata  <mrkn@cookpad.com>
 
 	* ext/bigdecimal/depend: Fix dependencies to make bigdecimal
