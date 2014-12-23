@@ -1,3 +1,8 @@
+Tue Dec 23 22:04:38 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/generic.rb (URI::Generic#query=): don't escape [\]^
+	  on both rfc2396 and rfc3986. [Bug #10619]
+
 Tue Dec 23 16:03:35 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/win32/lib/win32/registry.rb (Win32::Registry::Error#initialize):
