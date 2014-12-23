@@ -1057,6 +1057,12 @@ class TestRegexp < Test::Unit::TestCase
     RUBY
   end
 
+  def test_to_proc
+    assert_equal(%w{bar baz}, %w{foo bar baz}.select(&/\Ab/))
+    assert_equal(%w{foo}, %w{foo bar baz}.reject(&/\Ab/))
+    assert_equal("bar", %w{foo bar baz}.find(&/\Ab/))
+  end
+
   # This assertion is for porting x2() tests in testpy.py of Onigmo.
   def assert_match_at(re, str, positions, msg = nil)
     re = Regexp.new(re) unless re.is_a?(Regexp)

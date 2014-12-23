@@ -801,6 +801,19 @@ rb_reg_named_captures(VALUE re)
     return hash;
 }
 
+static VALUE
+rb_reg_to_proc(VALUE re)
+{
+    const ID id = 1;
+    VALUE proc = rb_attr_get(re, id);
+    if (NIL_P(proc)) {
+	proc = rb_obj_method(re, ID2SYM(rb_intern("=~")));
+	proc = rb_funcall(proc, rb_intern("to_proc"), 0, 0);
+	rb_ivar_set(re, id, proc);
+    }
+    return proc;
+}
+
 static int
 onig_new_with_source(regex_t** reg, const UChar* pattern, const UChar* pattern_end,
 	  OnigOptionType option, OnigEncoding enc, const OnigSyntaxType* syntax,
@@ -3660,6 +3673,7 @@ Init_Regexp(void)
     rb_define_method(rb_cRegexp, "fixed_encoding?", rb_reg_fixed_encoding_p, 0);
     rb_define_method(rb_cRegexp, "names", rb_reg_names, 0);
     rb_define_method(rb_cRegexp, "named_captures", rb_reg_named_captures, 0);
+    rb_define_method(rb_cRegexp, "to_proc", rb_reg_to_proc, 0);
 
     /* see Regexp.options and Regexp.new */
     rb_define_const(rb_cRegexp, "IGNORECASE", INT2FIX(ONIG_OPTION_IGNORECASE));
