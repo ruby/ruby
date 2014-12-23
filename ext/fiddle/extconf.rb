@@ -5,8 +5,8 @@ require 'mkmf'
 if ! enable_config('bundled-libffi', false)
   dir_config 'libffi'
 
-  pkg_config("libffi")
-  ver = pkg_config("libffi", "modversion")
+  pkg_config("libffi") and
+    ver = pkg_config("libffi", "modversion")
 
   if have_header(ffi_header = 'ffi.h')
     true
