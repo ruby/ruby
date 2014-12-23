@@ -714,9 +714,9 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal('b123', uri.fragment = 'b123')
     assert_equal('http://foo:bar@zab:8080/?a=1#b123', uri.to_s)
     assert_equal('a[]=1', uri.query = 'a[]=1')
-    assert_equal('http://foo:bar@zab:8080/?a%5B%5D=1#b123', uri.to_s)
+    assert_equal('http://foo:bar@zab:8080/?a[]=1#b123', uri.to_s)
     uri = URI.parse('http://foo:bar@zab:8080/?a[]=1#b123')
-    assert_equal('http://foo:bar@zab:8080/?a%5B%5D=1#b123', uri.to_s)
+    assert_equal('http://foo:bar@zab:8080/?a[]=1#b123', uri.to_s)
 
     uri = URI.parse('http://example.com')
     assert_raise(URI::InvalidURIError) { uri.password = 'bar' }

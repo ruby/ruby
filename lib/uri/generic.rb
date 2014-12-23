@@ -851,7 +851,7 @@ module URI
       v.encode!(Encoding::UTF_8) rescue nil
       v.delete!("\t\r\n")
       v.force_encoding(Encoding::ASCII_8BIT)
-      v.gsub!(/(?!%\h\h|[!$-&(-;=?-Z_a-~])./n.freeze){'%%%02X'.freeze % $&.ord}
+      v.gsub!(/(?!%\h\h|[!$-&(-;=?-_a-~])./n.freeze){'%%%02X'.freeze % $&.ord}
       v.force_encoding(Encoding::US_ASCII)
       @query = v
     end
