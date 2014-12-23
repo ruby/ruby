@@ -276,20 +276,24 @@ eom
     #end
     sio.puts i["description"]
     sio.puts
-    sio.puts "= changesets"
-    @changesets = []
-    i["changesets"].each do |x|
-      @changesets << x["revision"]
-      sio.puts "== #{x["revision"]} #{x["committed_on"]} #{x["user"]["name"] rescue nil}"
-      sio.puts x["comments"]
-    end
-    sio.puts "= journals"
-    i["journals"].each do |x|
-      sio.puts "== #{x["user"]["name"]} (#{x["created_on"]})"
-      x["details"].each do |y|
-        sio.puts JSON(y)
+    if i["changesets"]
+      sio.puts "= changesets"
+      @changesets = []
+      i["changesets"].each do |x|
+        @changesets << x["revision"]
+        sio.puts "== #{x["revision"]} #{x["committed_on"]} #{x["user"]["name"] rescue nil}"
+        sio.puts x["comments"]
       end
-      sio.puts x["notes"]
+    end
+    if i["journals"] && !i["journals"].empty?
+      sio.puts "= journals"
+      i["journals"].each do |x|
+        sio.puts "== #{x["user"]["name"]} (#{x["created_on"]})"
+        x["details"].each do |y|
+          sio.puts JSON(y)
+        end
+        sio.puts x["notes"]
+      end
     end
     more(sio)
 
