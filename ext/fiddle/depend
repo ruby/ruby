@@ -25,4 +25,21 @@ build-libffi: $(LIBFFI_A)
 build-libffi $(LIBFFI_A):
 	$(Q) $(SUBMAKE_LIBFFI)
 
+clean-libffi:
+	$(Q) $(SUBMAKE_LIBFFI) clean
+
+distclean-libffi:
+	$(Q) $(SUBMAKE_LIBFFI) distclean
+	$(Q) $(RM) $(LIBFFI_DIR)/local.exp
+	$(Q) $(RUBY) -rfileutils -e 'FileUtils.rmdir(Dir.glob(ARGV[0]+"/**/"), :parents=>true)' $(LIBFFI_DIR)
+
+realclean-libffi:
+	$(Q) $(RMDIRS) $(LIBFFI_DIR)
+
+clean-none distclean-none realclean-none:
+
+clean: clean-$(LIBFFI_CLEAN)
+distclean: distclean-$(LIBFFI_CLEAN)
+realclean: realclean-$(LIBFFI_CLEAN)
+
 configure: configure-libffi

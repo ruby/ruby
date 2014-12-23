@@ -127,8 +127,9 @@ if libffi
   $LOCAL_LIBS.prepend("#{libffi.a} ").strip!
 end
 create_makefile 'fiddle' do |conf|
-  next conf unless libffi
-  if $mswin
+  if !libffi
+    next conf << "LIBFFI_CLEAN = none\n"
+  elsif $mswin
     submake = "make -C $(LIBFFI_DIR)\n"
   elsif $gnumake
     submake = "$(MAKE) -C $(LIBFFI_DIR)\n"
@@ -148,6 +149,7 @@ create_makefile 'fiddle' do |conf|
    LIBFFI_LDFLAGS = #{libffi.ldflags}
    FFI_H = $(LIBFFI_DIR)/include/ffi.h
    SUBMAKE_LIBFFI = #{submake}
+   LIBFFI_CLEAN = libffi
   MK
 end
 
