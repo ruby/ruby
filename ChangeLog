@@ -1,3 +1,11 @@
+Wed Dec 24 02:44:06 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http/response.rb (Net::HTTPResponse): require one or more
+	  spaces [Bug #10591].
+	  by leriksen <leif.eriksen.au@gmail.com>
+	  https://github.com/ruby/ruby/pull/782 fix GH-782
+	  NOTE: graph.facebook.com returns without SP Reason-Phrase.
+
 Wed Dec 24 02:12:22 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/make-snapshot (package): VCS#branch_list expects glob a
