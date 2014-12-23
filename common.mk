@@ -903,7 +903,7 @@ up::
 up::
 	-$(Q)$(MAKE) $(MFLAGS) after-update
 
-after-update:: update-unicode update-gems common-srcs extract-extlibs
+after-update:: update-unicode update-gems extract-extlibs
 
 update-config_files: PHONY
 	$(Q) $(BASERUBY) -C "$(srcdir)/tool" \

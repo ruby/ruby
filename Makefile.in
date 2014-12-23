@@ -438,7 +438,7 @@ enc/encinit.$(OBJEXT): enc/encinit.c $(SETUP)
 up::
 	@$(CHDIR) "$(srcdir)" && LC_TIME=C exec $(VCSUP)
 
-after-update:: update-config_files
+after-update:: update-config_files common-srcs
 
 update-mspec:
 	@$(CHDIR) $(srcdir); \
