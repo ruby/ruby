@@ -1,0 +1,132 @@
+diff -ru libffi-3.2.1/src/x86/ffi.c libffi-3.2.1/src/x86/ffi.c
+--- libffi-3.2.1/src/x86/ffi.c	2014-11-08 21:47:24.000000000 +0900
++++ libffi-3.2.1/src/x86/ffi.c	2014-12-22 16:00:42.000000000 +0900
+@@ -99,11 +99,13 @@
+        i != 0;
+        i--, p_arg += dir, p_argv += dir)
+     {
++      size_t z;
++
+       /* Align if necessary */
+       if ((sizeof(void*) - 1) & (size_t) argp)
+         argp = (char *) ALIGN(argp, sizeof(void*));
+ 
+-      size_t z = (*p_arg)->size;
++      z = (*p_arg)->size;
+ 
+ #ifdef X86_WIN64
+       if (z > FFI_SIZEOF_ARG
+@@ -599,11 +601,13 @@
+        i != 0;
+        i--, p_arg += dir, p_argv += dir)
+     {
++      size_t z;
++
+       /* Align if necessary */
+       if ((sizeof(void*) - 1) & (size_t) argp)
+         argp = (char *) ALIGN(argp, sizeof(void*));
+ 
+-      size_t z = (*p_arg)->size;
++      z = (*p_arg)->size;
+ 
+ #ifdef X86_WIN64
+       if (z > FFI_SIZEOF_ARG
+@@ -642,7 +646,7 @@
+ #endif
+     }
+ 
+-  return (size_t)argp - (size_t)stack;
++  return (int)((size_t)argp - (size_t)stack);
+ }
+ 
+ #define FFI_INIT_TRAMPOLINE_WIN64(TRAMP,FUN,CTX,MASK) \
+diff -ru libffi-3.2.1/src/x86/ffitarget.h libffi-3.2.1/src/x86/ffitarget.h
+--- libffi-3.2.1/src/x86/ffitarget.h	2014-11-08 21:47:24.000000000 +0900
++++ libffi-3.2.1/src/x86/ffitarget.h	2014-12-22 15:45:54.000000000 +0900
+@@ -50,7 +50,9 @@
+ #endif
+ 
+ #define FFI_TARGET_SPECIFIC_STACK_SPACE_ALLOCATION
++#ifndef _MSC_VER
+ #define FFI_TARGET_HAS_COMPLEX_TYPE
++#endif
+ 
+ /* ---- Generic type definitions ----------------------------------------- */
+ 
+diff -ru libffi-3.2.1/src/x86/win64.S libffi-3.2.1/src/x86/win64.S
+--- libffi-3.2.1/src/x86/win64.S	2014-11-08 21:47:24.000000000 +0900
++++ libffi-3.2.1/src/x86/win64.S	2014-12-22 16:14:40.000000000 +0900
+@@ -127,7 +127,7 @@
+ 
+ 	mov	rcx, QWORD PTR RVALUE[rbp]
+ 	mov	DWORD PTR [rcx], eax
+-	jmp	ret_void$
++	jmp	SHORT ret_void$
+ 
+ ret_struct2b$:
+  	cmp	DWORD PTR CIF_FLAGS[rbp], FFI_TYPE_SMALL_STRUCT_2B
+@@ -135,7 +135,7 @@
+ 
+ 	mov	rcx, QWORD PTR RVALUE[rbp]
+ 	mov	WORD PTR [rcx], ax
+-	jmp	ret_void$
++	jmp	SHORT ret_void$
+ 
+ ret_struct1b$:
+  	cmp	DWORD PTR CIF_FLAGS[rbp], FFI_TYPE_SMALL_STRUCT_1B
+@@ -143,7 +143,7 @@
+ 
+ 	mov	rcx, QWORD PTR RVALUE[rbp]
+ 	mov	BYTE PTR [rcx], al
+-	jmp	ret_void$
++	jmp	SHORT ret_void$
+ 
+ ret_uint8$:
+  	cmp	DWORD PTR CIF_FLAGS[rbp], FFI_TYPE_UINT8
+@@ -152,7 +152,7 @@
+ 	mov	rcx, QWORD PTR RVALUE[rbp]
+ 	movzx   rax, al
+ 	mov	QWORD PTR [rcx], rax
+-	jmp	ret_void$
++	jmp	SHORT ret_void$
+ 
+ ret_sint8$:
+  	cmp	DWORD PTR CIF_FLAGS[rbp], FFI_TYPE_SINT8
+@@ -161,7 +161,7 @@
+ 	mov	rcx, QWORD PTR RVALUE[rbp]
+ 	movsx   rax, al
+ 	mov	QWORD PTR [rcx], rax
+-	jmp	ret_void$
++	jmp	SHORT ret_void$
+ 
+ ret_uint16$:
+  	cmp	DWORD PTR CIF_FLAGS[rbp], FFI_TYPE_UINT16
+@@ -188,7 +188,13 @@
+ 	mov	rcx, QWORD PTR RVALUE[rbp]
+ 	mov     eax, eax
+ 	mov	QWORD PTR [rcx], rax
+-	jmp	SHORT ret_void$
++
++ret_void$:
++	xor	rax, rax
++
++	lea	rsp, QWORD PTR [rbp+16]
++	pop	rbp
++	ret	0
+ 
+ ret_sint32$:
+  	cmp	DWORD PTR CIF_FLAGS[rbp], FFI_TYPE_SINT32
+@@ -247,13 +253,6 @@
+ 	cdqe
+ 	mov	QWORD PTR [rcx], rax
+  	jmp	SHORT ret_void$
+-
+-ret_void$:
+-	xor	rax, rax
+-
+-	lea	rsp, QWORD PTR [rbp+16]
+-	pop	rbp
+-	ret	0
+ ffi_call_win64 ENDP
+ _TEXT	ENDS
+ END

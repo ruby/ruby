@@ -120,6 +120,9 @@ y.tab.c
 # /ext/etc/
 /ext/etc/constdefs.h
 
+# /ext/fiddle/
+/ext/fiddle/libffi-*
+
 # /ext/rbconfig/
 /ext/rbconfig/sizeof/sizes.c
 

@@ -1,0 +1,2 @@
+ftp://sourceware.org/pub/libffi/libffi-3.2.1.tar.gz md5:83b89587607e3eb65c70d361f13bab43
+	win32/libffi-3.2.1-mswin.patch -p0
