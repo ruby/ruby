@@ -1,3 +1,7 @@
+Wed Dec 24 05:40:52 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/downloader.rb: support ruby 1.8.
+
 Wed Dec 24 02:44:06 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http/response.rb (Net::HTTPResponse): require one or more
