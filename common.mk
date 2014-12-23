@@ -900,6 +900,9 @@ dist:
 up::
 	-$(Q)$(MAKE) $(MFLAGS) REVISION_FORCE=PHONY "$(REVISION_H)"
 
+up::
+	-$(Q)$(MAKE) $(MFLAGS) after-update
+
 after-update:: update-unicode update-gems common-srcs extract-extlibs
 
 update-config_files: PHONY
