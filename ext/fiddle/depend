@@ -34,7 +34,7 @@ distclean-libffi:
 	$(Q) $(RUBY) -rfileutils -e 'FileUtils.rmdir(Dir.glob(ARGV[0]+"/**/"), :parents=>true)' $(LIBFFI_DIR)
 
 realclean-libffi:
-	$(Q) $(RMDIRS) $(LIBFFI_DIR)
+	$(Q) $(RMALL) $(LIBFFI_DIR)
 
 clean-none distclean-none realclean-none:
 
