@@ -1,3 +1,16 @@
+Wed Dec 24 02:12:22 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/make-snapshot (package): VCS#branch_list expects glob a
+	  pattern string but not a regexp.  based on the patch by Vit
+	  Ondruch.  in [ruby-core:67064].  [Bug #10636]
+
+	* tool/vcs.rb (VCS::SVN#branch_list): strip newlines.
+
+	* tool/vcs.rb (VCS::GIT.get_revisions): retrieve modified time
+	  from toplevel log too.
+
+	* tool/vcs.rb (VCS::GIT#branch_list): yield for each lines.
+
 Wed Dec 24 00:23:13 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* tool/extlibs.rb (do_extract): the pipe should be binmode.

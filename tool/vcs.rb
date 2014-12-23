@@ -161,6 +161,7 @@ class VCS
     def branch_list(pat)
       IO.popen(%W"svn ls #{branch('')}") do |f|
         f.each do |line|
+          line.chomp!
           line.chomp!('/')
           yield(line) if File.fnmatch?(pat, line)
         end
@@ -195,7 +196,8 @@ class VCS
       logcmd[1, 0] = ["-C", srcdir] if srcdir
       logcmd << "--grep=^ *git-svn-id: .*@[0-9][0-9]*"
       idpat = /git-svn-id: .*?@(\d+) \S+\Z/
-      last = IO.pread(logcmd)[idpat, 1]
+      log = IO.pread(logcmd)
+      last = log[idpat, 1]
       if path
         log = IO.pread(logcmd + [path])
         changed = log[idpat, 1]
@@ -222,10 +224,15 @@ class VCS
       branch(IO.pread(cmd)[/.*^(ruby_\d+_\d+)$/m, 1])
     end
 
-    def branch_list(pat, &block)
+    def branch_list(pat)
       cmd = %W"git for-each-ref --format=\%(refname:short) refs/heads/#{pat}"
       cmd[1, 0] = ["-C", @srcdir] if @srcdir
-      IO.popen(cmd, &block)
+      IO.popen(cmd) {|f|
+        f.each {|line|
+          line.chomp!
+          yield line
+        }
+      }
     end
 
     def grep(pat, tag, *files, &block)

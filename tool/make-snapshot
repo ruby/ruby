@@ -139,7 +139,7 @@ def package(vcs, rev, destdir, tmp = nil)
   when /\Atags\//
     url = vcs.tag($')
   when /\Astable\z/
-    vcs.branch_list(/ruby_[0-9]*/) {|n| url = /\Aruby_\d+_\d+\z/ =~ n}
+    vcs.branch_list("ruby_[0-9]*") {|n| url = n[/\Aruby_\d+_\d+\z/]}
     url &&= vcs.branch(url)
   when /\A(.*)\.(.*)\.(.*)-(preview|rc)(\d+)/
     prerelease = true
