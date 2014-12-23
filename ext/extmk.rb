@@ -293,7 +293,7 @@ def extmake(target)
       unless $mswin
         $extflags = split_libs($extflags, $DLDFLAGS, $LDFLAGS).uniq.join(" ")
       end
-      $extlibs = merge_libs($extlibs, split_libs($libs), split_libs($LOCAL_LIBS))
+      $extlibs = merge_libs($extlibs, split_libs($libs, $LOCAL_LIBS).map {|lib| lib.sub(/\A\.\//, "ext/#{target}/")})
       $extpath |= $LIBPATH
     end
   ensure

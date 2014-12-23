@@ -123,8 +123,7 @@ types.each do |type, signed|
 end
 
 if libffi
-  $LIBPATH.unshift libffi.lib
-  $LOCAL_LIBS.prepend("#{libffi.a} ").strip!
+  $LOCAL_LIBS.prepend("./#{libffi.a} ").strip!
 end
 create_makefile 'fiddle' do |conf|
   if !libffi
@@ -155,7 +154,6 @@ end
 
 if libffi
   $LIBPATH.pop
-  $LOCAL_LIBS.prepend("ext/fiddle/")
 end
 
 # :startdoc:
