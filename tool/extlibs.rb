@@ -52,7 +52,7 @@ def do_extract(cache, dir)
   else
     inp = cache
   end
-  inp ||= f
+  inp ||= f.binmode
   ext = File.extname(cache)
   case ext
   when '.tar', /\A\.t[gbx]z\z/
