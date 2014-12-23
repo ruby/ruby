@@ -41,13 +41,13 @@ def do_extract(cache, dir)
   ext = File.extname(cache)
   case ext
   when '.gz', '.tgz'
-    f = IO.popen(["gzip", "-c", cache])
+    f = IO.popen(["gzip", "-dc", cache])
     cache = cache.chomp('.gz')
   when '.bz2', '.tbz'
-    f = IO.popen(["bzip2", "-c", cache])
+    f = IO.popen(["bzip2", "-dc", cache])
     cache = cache.chomp('.bz2')
   when '.xz', '.txz'
-    f = IO.popen(["xz", "-c", cache])
+    f = IO.popen(["xz", "-dc", cache])
     cache = cache.chomp('.xz')
   else
     inp = cache
