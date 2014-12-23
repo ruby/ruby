@@ -1,3 +1,10 @@
+Wed Dec 24 00:04:45 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/open-uri.rb (OpenURI.open_http): accept multiple certs path in
+	  ssl_ca_certs.
+
+	* tool/downloader.rb: use certs of rubygems for downloading gems.
+
 Tue Dec 23 22:39:11 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/fiddle/extlibs: libffi-3.2.1 and patch for mswin.
