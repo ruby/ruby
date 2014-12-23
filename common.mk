@@ -900,7 +900,7 @@ dist:
 up::
 	-$(Q)$(MAKE) $(MFLAGS) REVISION_FORCE=PHONY "$(REVISION_H)"
 
-after-update:: update-unicode update-gems common-srcs
+after-update:: update-unicode update-gems common-srcs extract-extlibs
 
 update-config_files: PHONY
 	$(Q) $(BASERUBY) -C "$(srcdir)/tool" \
@@ -957,6 +957,17 @@ $(srcdir)/$(HAVE_BASERUBY:yes=lib/unicode_normalize/tables.rb): \
 		-I $(srcdir) \
 		$(srcdir)/template/unicode_norm_gen.tmpl \
 		enc/unicode/data/$(UNICODE_VERSION) lib/unicode_normalize
+
+download-extlibs:
+	$(Q) $(BASERUBY) -C $(srcdir) -w tool/extlibs.rb --download ext
+
+extract-extlibs:
+	$(Q) $(BASERUBY) -C $(srcdir) -w tool/extlibs.rb --all ext
+
+clean-extlibs:
+	$(Q) $(RMALL) $(srcdir)/.downloaded-cache
+
+CLEAN_CACHE = clean-extlibs
 
 info: info-program info-libruby_a info-libruby_so info-arch
 info-program: PHONY
