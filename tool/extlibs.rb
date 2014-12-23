@@ -38,7 +38,30 @@ def do_extract(cache, dir)
     $stdout.puts "extracting #{cache} into #{dir}"
     $stdout.flush
   end
-  Process.wait(Process.spawn("tar", "xpf", "-", in: cache, chdir: dir))
+  ext = File.extname(cache)
+  case ext
+  when '.gz', '.tgz'
+    f = IO.popen(["gzip", "-c", cache])
+    cache = cache.chomp('.gz')
+  when '.bz2', '.tbz'
+    f = IO.popen(["bzip2", "-c", cache])
+    cache = cache.chomp('.bz2')
+  when '.xz', '.txz'
+    f = IO.popen(["xz", "-c", cache])
+    cache = cache.chomp('.xz')
+  else
+    inp = cache
+  end
+  inp ||= f
+  ext = File.extname(cache)
+  case ext
+  when '.tar', /\A\.t[gbx]z\z/
+    pid = Process.spawn("tar", "xpf", "-", in: inp, chdir: dir)
+  when '.zip'
+    pid = Process.spawn("unzip", inp, "-d", dir)
+  end
+  f.close if f
+  Process.wait(pid)
   $?.success? or raise "failed to extract #{cache}"
 end
 
