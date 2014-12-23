@@ -23,6 +23,7 @@ begin
     raise "missing libffi. Please install libffi."
   end
 
+  srcdir = "#{$srcdir}/#{ver}"
   ffi_header = 'ffi.h'
   libffi = Struct.new(*%I[dir srcdir builddir include lib a cflags ldflags opt arch]).new
   libffi.dir = ver
@@ -31,30 +32,54 @@ begin
     libffi.srcdir = "."
   else
     libffi.builddir = libffi.dir
-    libffi.srcdir = relative_from("#{$srcdir}/#{ver}", "..")
+    libffi.srcdir = relative_from(srcdir, "..")
   end
   libffi.include = "#{libffi.builddir}/include"
   libffi.lib = "#{libffi.builddir}/.libs"
   libffi.a = "#{libffi.lib}/libffi.#{$LIBEXT}"
-  libffi.cflags = RbConfig.expand("$(CFLAGS)", CONFIG.merge("warnflags"=>""))
+  nowarn = CONFIG.merge("warnflags"=>"")
+  libffi.cflags = RbConfig.expand("$(CFLAGS)", nowarn)
   ver = ver[/libffi-(.*)/, 1]
 
   FileUtils.mkdir_p(libffi.dir)
   libffi.opt = CONFIG['configure_args'][/'(-C)'/, 1]
   libffi.ldflags = RbConfig.expand("$(LDFLAGS) #{libpathflag([relative_from($topdir, "..")])} #{$LIBRUBYARG}")
   libffi.arch = RbConfig::CONFIG['host']
+  if $mswin
+    $defs << "-DFFI_BUILDING"
+    libffi.opt = '-C'
+    cc = "#{libffi.srcdir}/msvcc.sh"
+    libffi.arch = libffi.arch.sub(/mswin\d+(_\d+)?\z/, 'mingw32')
+    cc << (libffi.arch.sub!(/^x64/, 'x86_64') ? " -m64" : " -m32")
+    libffi.ldflags = ''
+    cxx = cc
+    ld = "link"
+    cpp = "cl -nologo -EP"
+  else
+    cc = RbConfig::CONFIG['CC']
+    ld = RbConfig::CONFIG['LD']
+  end
   args = %W[
-    #{libffi.srcdir}/configure #{libffi.opt}
-    --disable-shared
-    --host=#{libffi.arch} --enable-builddir=#{RUBY_PLATFORM}
-      CC=#{RbConfig::CONFIG['CC']} CFLAGS=#{libffi.cflags}
-      LD=#{RbConfig::CONFIG['LD']} LDFLAGS=#{libffi.ldflags}
+    sh #{libffi.srcdir}/configure
+    --disable-shared --host=#{libffi.arch}
+    --enable-builddir=#{RUBY_PLATFORM}
+  ]
+  args << libffi.opt if libffi.opt
+  args.concat %W[
+      CC=#{cc} CFLAGS=#{libffi.cflags}
+      CXX=#{cxx} CXXFLAGS=#{RbConfig.expand("$(CXXFLAGS)", nowarn)}
+      LD=#{ld} LDFLAGS=#{libffi.ldflags}
+      CPP=#{cpp}
   ]
 
+  FileUtils.rm_f("#{libffi.include}/ffitarget.h")
   Logging::open do
     Logging.message("%p in %s\n", args, libffi.dir)
     system(*args, chdir: libffi.dir) or
       raise "failed to configure libffi. Please install libffi."
+  end
+  unless File.file?("#{libffi.include}/ffitarget.h")
+    FileUtils.cp("#{srcdir}/src/x86/ffitarget.h", libffi.include, preserve: true)
   end
   $INCFLAGS << " -I" << libffi.include
 end
@@ -103,7 +128,9 @@ if libffi
 end
 create_makefile 'fiddle' do |conf|
   next conf unless libffi
-  if $gnumake
+  if $mswin
+    submake = "make -C $(LIBFFI_DIR)\n"
+  elsif $gnumake
     submake = "$(MAKE) -C $(LIBFFI_DIR)\n"
   else
     submake = "cd $(LIBFFI_DIR) && \\\n\t\t" << "#{config_string("exec")} $(MAKE)".strip
