@@ -175,11 +175,19 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       def initialize(code)
         @code = code
         msg = WCHAR_NUL * 1024
-        len = FormatMessageW.call(0x1200, 0, code, 0, msg, 1024, 0)
-        msg = msg.byteslice(0, len * WCHAR_SIZE)
-        msg.delete!(WCHAR_CR)
-        msg.chomp!
-        super msg.encode(LOCALE)
+        lang = 0
+        begin
+          len = FormatMessageW.call(0x1200, 0, code, lang, msg, 1024, 0)
+          msg = msg.byteslice(0, len * WCHAR_SIZE)
+          msg.delete!(WCHAR_CR)
+          msg.chomp!
+          msg.encode!(LOCALE)
+        rescue EncodingError
+          raise unless lang == 0
+          lang = 0x0409         # en_US
+          retry
+        end
+        super msg
       end
       attr_reader :code
     end

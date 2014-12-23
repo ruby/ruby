@@ -1,3 +1,9 @@
+Tue Dec 23 16:03:35 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32/lib/win32/registry.rb (Win32::Registry::Error#initialize):
+	  try en_US message if the default message cannot be encoded to
+	  locale.  [ruby-core:65295] [Bug #10300]
+
 Tue Dec 23 11:42:14 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/ossl_cipher.c (ossl_cipher_update_long): update huge
