@@ -65,11 +65,11 @@ begin
     --enable-builddir=#{RUBY_PLATFORM}
   ]
   args << libffi.opt if libffi.opt
+  args << "CPP=#{cpp}" if cpp
   args.concat %W[
       CC=#{cc} CFLAGS=#{libffi.cflags}
       CXX=#{cxx} CXXFLAGS=#{RbConfig.expand("$(CXXFLAGS)", nowarn)}
       LD=#{ld} LDFLAGS=#{libffi.ldflags}
-      CPP=#{cpp}
   ]
 
   FileUtils.rm_f("#{libffi.include}/ffitarget.h")
