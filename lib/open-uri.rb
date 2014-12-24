@@ -295,8 +295,7 @@ module OpenURI
       http.verify_mode = options[:ssl_verify_mode] || OpenSSL::SSL::VERIFY_PEER
       store = OpenSSL::X509::Store.new
       if options[:ssl_ca_cert]
-        certs = options[:ssl_ca_cert].is_a?(Array) ? options[:ssl_ca_cert] : [options[:ssl_ca_cert]]
-        certs.each do |cert|
+        Array(options[:ssl_ca_cert]).each do |cert|
           if File.directory? cert
             store.add_path cert
           else
