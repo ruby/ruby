@@ -1,3 +1,9 @@
+Wed Dec 24 20:38:16 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (glob_make_pattern): restrict searching case-insensitive
+	  name from the filesystem to only last part, for the performance.
+	  [ruby-core:63591] [ruby-core:63591]
+
 Wed Dec 24 18:21:27 2014  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: remove unused rb_objspace_t::rgengc::old_objects_at_gc_start.

@@ -1241,7 +1241,8 @@ glob_make_pattern(const char *p, const char *e, int flags, rb_encoding *enc)
 	else {
 	    const char *m = find_dirsep(p, e, flags, enc);
 	    const enum glob_pattern_type magic = has_magic(p, m, flags, enc);
-	    const enum glob_pattern_type non_magic = (HAVE_HFS || FNM_SYSCASE) ? PLAIN : ALPHA;
+	    const enum glob_pattern_type non_magic =
+		((HAVE_HFS || FNM_SYSCASE) && (m == e || (m+1 == e && *m == '/'))) ? PLAIN : ALPHA;
 	    char *buf;
 
 	    if (!(FNM_SYSCASE || magic > non_magic) && !recursive && *m) {
