@@ -78,6 +78,9 @@ begin
     system(*args, chdir: libffi.dir) or
       raise "failed to configure libffi. Please install libffi."
   end
+  if $mswin && File.file?("#{libffi.include}/ffitarget.h")
+    FileUtils.rm_f("#{libffi.include}/ffitarget.h")
+  end
   unless File.file?("#{libffi.include}/ffitarget.h")
     FileUtils.cp("#{srcdir}/src/x86/ffitarget.h", libffi.include, preserve: true)
   end
