@@ -47,25 +47,27 @@ begin
   libffi.arch = RbConfig::CONFIG['host']
   if $mswin
     $defs << "-DFFI_BUILDING"
-    libffi.opt = '-C'
-    cc = "#{libffi.srcdir}/msvcc.sh"
-    libffi.arch = libffi.arch.sub(/mswin\d+(_\d+)?\z/, 'mingw32')
-    cc << (libffi.arch.sub!(/^x64/, 'x86_64') ? " -m64" : " -m32")
-    libffi.ldflags = ''
-    cxx = cc
-    ld = "link"
-    cpp = "cl -nologo -EP"
+    libffi_config = "#{relative_from($srcdir, '..')}/win32/libffi-config.rb"
+    config = CONFIG.merge("top_srcdir" => $top_srcdir)
+    args = $ruby.gsub(/:\/=\\/, '')
+    args.gsub!(/\)\\/, ')/')
+    args = args.shellsplit
+    args.map! {|s| RbConfig.expand(s, config)}
+    args << '-C' << libffi.dir << libffi_config
+    opts = {}
   else
-    cc = RbConfig::CONFIG['CC']
-    ld = RbConfig::CONFIG['LD']
+    args = %W[sh #{libffi.srcdir}/configure ]
+    opts = {chdir: libffi.dir}
   end
-  args = %W[
-    sh #{libffi.srcdir}/configure
+  cc = RbConfig::CONFIG['CC']
+  cxx = RbConfig::CONFIG['CXX']
+  ld = RbConfig::CONFIG['LD']
+  args.concat %W[
+    --srcdir=#{libffi.srcdir}
     --disable-shared --host=#{libffi.arch}
     --enable-builddir=#{RUBY_PLATFORM}
   ]
   args << libffi.opt if libffi.opt
-  args << "CPP=#{cpp}" if cpp
   args.concat %W[
       CC=#{cc} CFLAGS=#{libffi.cflags}
       CXX=#{cxx} CXXFLAGS=#{RbConfig.expand("$(CXXFLAGS)", nowarn)}
@@ -74,8 +76,8 @@ begin
 
   FileUtils.rm_f("#{libffi.include}/ffitarget.h")
   Logging::open do
-    Logging.message("%p in %s\n", args, libffi.dir)
-    system(*args, chdir: libffi.dir) or
+    Logging.message("%p in %p\n", args, opts)
+    system(*args, **opts) or
       raise "failed to configure libffi. Please install libffi."
   end
   if $mswin && File.file?("#{libffi.include}/ffitarget.h")
@@ -131,18 +133,21 @@ end
 create_makefile 'fiddle' do |conf|
   if !libffi
     next conf << "LIBFFI_CLEAN = none\n"
-  elsif $mswin
-    submake = "make -C $(LIBFFI_DIR)\n"
-  elsif $gnumake
+  elsif $gnumake && !$nmake
     submake = "$(MAKE) -C $(LIBFFI_DIR)\n"
   else
     submake = "cd $(LIBFFI_DIR) && \\\n\t\t" << "#{config_string("exec")} $(MAKE)".strip
+  end
+  if $nmake
+    cmd = "$(RUBY) -C $(LIBFFI_DIR) #{libffi_config} --srcdir=$(LIBFFI_SRCDIR)"
+  else
+    cmd = "cd $(LIBFFI_DIR) && #$exec $(LIBFFI_SRCDIR)/configure #{libffi.opt}"
   end
   sep = "/"
   seprpl = config_string('BUILD_FILE_SEPARATOR') {|s| sep = s; ":/=#{s}" if s != "/"} || ""
   conf << <<-MK.gsub(/^ +| +$/, '')
    PWD =
-   LIBFFI_CONFIGURE = $(LIBFFI_SRCDIR#{seprpl})#{sep}configure #{libffi.opt}
+   LIBFFI_CONFIGURE = #{cmd}
    LIBFFI_ARCH = #{libffi.arch}
    LIBFFI_SRCDIR = #{libffi.srcdir}
    LIBFFI_DIR = #{libffi.dir}
