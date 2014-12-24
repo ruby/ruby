@@ -898,10 +898,10 @@ dist:
 	$(BASERUBY) $(srcdir)/tool/make-snapshot -srcdir=$(srcdir) tmp $(RELNAME)
 
 up::
-	-$(Q)$(MAKE) $(MFLAGS) REVISION_FORCE=PHONY "$(REVISION_H)"
+	-$(Q)$(MAKE) $(MFLAGS) Q=$(Q) REVISION_FORCE=PHONY "$(REVISION_H)"
 
 up::
-	-$(Q)$(MAKE) $(MFLAGS) after-update
+	-$(Q)$(MAKE) $(MFLAGS) Q=$(Q) after-update
 
 after-update:: update-unicode update-gems extract-extlibs
 
