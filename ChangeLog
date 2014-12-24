@@ -1,3 +1,8 @@
+Wed Dec 24 12:16:19 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.h (rb_data_type_t): revert r48647 and revise parent member.
+	  [ruby-core:66969] [Bug #10621]
+
 Wed Dec 24 05:40:52 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/downloader.rb: use config.guess in gcc repo.
@@ -693,13 +698,6 @@ Sat Nov 29 16:53:14 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  wide char command line to UTF-8 argv, and glob in UTF-8 so that
 	  metacharacters would match multibyte characters.
 	  [ruby-dev:48752] [Bug #10555]
-
-Sat Nov 29 16:14:50 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* error.c (rb_typeddata_is_kind_of, rb_check_typeddata): ditto.
-
-	* error.c (rb_typeddata_inherited_p): deprecate. still keep for
-	  potential binary compatibility.
 
 Sat Nov 29 10:49:23 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
