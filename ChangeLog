@@ -1,3 +1,17 @@
+Thu Dec 25 08:42:11 2014  Eric Wong  <e@80x24.org>
+
+	* lib/uri/generic.rb (split_userinfo): fstring for 1-byte split
+	  (set_port): reduce bytecode size
+	  (check_path): reduce garbage via opt_str_freeze
+	  (query=): ditto
+	  (fragment=): ditto
+	  [misc #10628]
+	* lib/uri/rfc3986_parser.rb (regexp): cache as attr
+	  (initialize): setup and freeze regexp attr once
+	  (split): reduce bytecode size, use opt_str_freeze
+	  (parse): minor bytecode and garbage reduction
+	  (default_regexp): rename for initialize
+
 Wed Dec 24 20:38:16 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (glob_make_pattern): restrict searching case-insensitive
