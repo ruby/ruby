@@ -160,10 +160,11 @@ class TestResolvDNS < Test::Unit::TestCase
     # A rase condition here.
     # Another program may use the port.
     # But no way to prevent it.
-    Resolv::DNS.open(:nameserver_port => [[host, port]]) {|dns|
-      dns.timeouts = 0.1
-      assert_equal([], dns.getresources("test-no-server.example.org", Resolv::DNS::Resource::IN::A))
-    }
+    timeout(5) do
+      Resolv::DNS.open(:nameserver_port => [[host, port]]) {|dns|
+        assert_equal([], dns.getresources("test-no-server.example.org", Resolv::DNS::Resource::IN::A))
+      }
+    end
   end
 
   def test_invalid_byte_comment
