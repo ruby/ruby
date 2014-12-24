@@ -1439,6 +1439,7 @@ glob_helper(
 	char *plainname = 0;
 # endif
 	IF_HAVE_HFS(int hfs_p);
+	IF_HAVE_HFS(int alpha_matched = 0);
 # ifdef DOSISH
 	if (cur + 1 == end && (*cur)->type <= ALPHA) {
 	    plainname = join_path(path, pathlen, dirsep, (*cur)->str, strlen((*cur)->str));
@@ -1540,8 +1541,10 @@ glob_helper(
 # endif
 		  case PLAIN:
 		  case MAGICAL:
-		    if (fnmatch(p->str, enc, name, flags) == 0)
+		    if (fnmatch(p->str, enc, name, flags) == 0) {
+			IF_HAVE_HFS(alpha_matched |= (p->type == ALPHA));
 			*new_end++ = p->next;
+		    }
 		  default:
 		    break;
 		}
@@ -1552,6 +1555,7 @@ glob_helper(
 	    GLOB_FREE(buf);
 	    GLOB_FREE(new_beg);
 	    if (status) break;
+	    IF_HAVE_HFS(if (alpha_matched) break);
 	}
 
 	closedir(dirp);
