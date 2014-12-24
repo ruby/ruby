@@ -8,8 +8,9 @@ class Downloader
   end
 
   class RubyGems < self
-    def self.download(name, *rest)
-      super("https://rubygems.org/downloads/#{name}", name, *rest, :ssl_ca_cert => Dir.glob(File.expand_path("../lib/rubygems/ssl_certs/*.pem", File.dirname(__FILE__))))
+    def self.download(url, name, dir = nil, ims = true, options = {})
+      options[:ssl_ca_cert] = Dir.glob(File.expand_path("../lib/rubygems/ssl_certs/*.pem", File.dirname(__FILE__)))
+      super("https://rubygems.org/downloads/#{name}", name, dir, ims. options)
     end
   end
 
