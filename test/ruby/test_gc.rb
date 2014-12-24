@@ -341,6 +341,7 @@ class TestGc < Test::Unit::TestCase
           Process.kill("INT", pid) rescue break
         }
         sleep 5
+        Process.kill("SEGV", pid) rescue nil
         Process.kill("KILL", pid) rescue nil
       end
       f = proc {1000.times {}}
@@ -348,7 +349,10 @@ class TestGc < Test::Unit::TestCase
         ObjectSpace.define_finalizer(Object.new, f)
       end
     end;
-    assert_in_out_err(["-e", src], "", [], /Interrupt/, bug10595)
+    status = assert_in_out_err(["-e", src], "", [], /Interrupt/, bug10595)
+    unless /mswin|mingw/ =~ RUBY_PLATFORM
+      assert_equal("INT", Signal.signame(status.termsig))
+    end
   end
 
   def test_verify_internal_consistency
