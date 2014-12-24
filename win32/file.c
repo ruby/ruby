@@ -63,13 +63,13 @@ home_dir(void)
       http://msdn.microsoft.com/en-us/library/windows/desktop/ms683188(v=vs.85).aspx
     */
 
-    if (len = GetEnvironmentVariableW(L"HOME", NULL, 0)) {
+    if ((len = GetEnvironmentVariableW(L"HOME", NULL, 0)) != 0) {
 	buffer_len = len;
 	home_env = 1;
     }
-    else if (len = GetEnvironmentVariableW(L"HOMEDRIVE", NULL, 0)) {
+    else if ((len = GetEnvironmentVariableW(L"HOMEDRIVE", NULL, 0)) != 0) {
 	buffer_len = len;
-	if (len = GetEnvironmentVariableW(L"HOMEPATH", NULL, 0)) {
+	if ((len = GetEnvironmentVariableW(L"HOMEPATH", NULL, 0)) != 0) {
 	    buffer_len += len;
 	    home_env = 2;
 	}
@@ -77,7 +77,7 @@ home_dir(void)
 	    buffer_len = 0;
 	}
     }
-    else if (len = GetEnvironmentVariableW(L"USERPROFILE", NULL, 0)) {
+    else if ((len = GetEnvironmentVariableW(L"USERPROFILE", NULL, 0)) != 0) {
 	buffer_len = len;
 	home_env = 3;
     }
@@ -160,7 +160,7 @@ code_page_i(st_data_t name, st_data_t idx, st_data_t arg)
 	    USHORT *table = cp->table;
 	    if (count <= idx) {
 		unsigned int i = count;
-		cp->count = count = ((idx + 4) & ~31 | 28);
+		cp->count = count = (((idx + 4) & ~31) | 28);
 		cp->table = table = realloc(table, count * sizeof(*table));
 		while (i < count) table[i++] = INVALID_CODE_PAGE;
 	    }

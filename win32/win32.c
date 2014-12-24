@@ -930,7 +930,7 @@ is_command_com(const char *interp)
 {
     int i = strlen(interp) - 11;
 
-    if ((i == 0 || i > 0 && isdirsep(interp[i-1])) &&
+    if ((i == 0 || (i > 0 && isdirsep(interp[i-1]))) &&
 	strcasecmp(interp+i, "command.com") == 0) {
 	return 1;
     }
@@ -998,7 +998,7 @@ join_argv(char *cmd, char *const *argv, BOOL escape, UINT cp, int backslash)
     char *q, *const *t;
     int len, n, bs, quote;
 
-    for (t = argv, q = cmd, len = 0; p = *t; t++) {
+    for (t = argv, q = cmd, len = 0; (p = *t) != 0; t++) {
 	quote = 0;
 	s = p;
 	if (!*p || strpbrk(p, " \t\"'")) {
@@ -1767,7 +1767,7 @@ w32_cmdvector(const WCHAR *cmd, char ***vec, UINT cp, rb_encoding *enc)
     buffer = (char *)malloc(len);
     if (!buffer) {
       do_nothing:
-	while (curr = cmdhead) {
+	while ((curr = cmdhead) != 0) {
 	    cmdhead = curr->next;
 	    if (curr->flags & NTMALLOC) free(curr->str);
 	    free(curr);
@@ -1793,7 +1793,7 @@ w32_cmdvector(const WCHAR *cmd, char ***vec, UINT cp, rb_encoding *enc)
 
     cptr = buffer + (elements+1) * sizeof(char *);
 
-    while (curr = cmdhead) {
+    while ((curr = cmdhead) != 0) {
 	strlcpy(cptr, curr->str, curr->len + 1);
 	*vptr++ = cptr;
 	cptr += curr->len + 1;
@@ -4477,7 +4477,7 @@ kill(int pid, int sig)
     int ret = 0;
     DWORD err;
 
-    if (pid < 0 || pid == 0 && sig != SIGINT) {
+    if (pid < 0 || (pid == 0 && sig != SIGINT)) {
 	errno = EINVAL;
 	return -1;
     }
@@ -5970,9 +5970,9 @@ constat_reset(HANDLE h)
 #define BACKGROUND_MASK (BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED | BACKGROUND_INTENSITY)
 
 #define constat_attr_color_reverse(attr) \
-    (attr) & ~(FOREGROUND_MASK | BACKGROUND_MASK) | \
+    ((attr) & ~(FOREGROUND_MASK | BACKGROUND_MASK)) | \
 	   (((attr) & FOREGROUND_MASK) << 4) | \
-	   (((attr) & BACKGROUND_MASK) >> 4);
+	   (((attr) & BACKGROUND_MASK) >> 4)
 
 /* License: Ruby's */
 static WORD
@@ -6011,27 +6011,27 @@ constat_attr(int count, const int *seq, WORD attr, WORD default_attr, int *rever
 	    break;
 	  case 17:
 	  case 31:
-	    attr = attr & ~(FOREGROUND_BLUE | FOREGROUND_GREEN) | FOREGROUND_RED;
+	    attr = (attr & ~(FOREGROUND_BLUE | FOREGROUND_GREEN)) | FOREGROUND_RED;
 	    break;
 	  case 18:
 	  case 32:
-	    attr = attr & ~(FOREGROUND_BLUE | FOREGROUND_RED) | FOREGROUND_GREEN;
+	    attr = (attr & ~(FOREGROUND_BLUE | FOREGROUND_RED)) | FOREGROUND_GREEN;
 	    break;
 	  case 19:
 	  case 33:
-	    attr = attr & ~FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED;
+	    attr = (attr & ~FOREGROUND_BLUE) | FOREGROUND_GREEN | FOREGROUND_RED;
 	    break;
 	  case 20:
 	  case 34:
-	    attr = attr & ~(FOREGROUND_GREEN | FOREGROUND_RED) | FOREGROUND_BLUE;
+	    attr = (attr & ~(FOREGROUND_GREEN | FOREGROUND_RED)) | FOREGROUND_BLUE;
 	    break;
 	  case 21:
 	  case 35:
-	    attr = attr & ~FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_RED;
+	    attr = (attr & ~FOREGROUND_GREEN) | FOREGROUND_BLUE | FOREGROUND_RED;
 	    break;
 	  case 22:
 	  case 36:
-	    attr = attr & ~FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_GREEN;
+	    attr = (attr & ~FOREGROUND_RED) | FOREGROUND_BLUE | FOREGROUND_GREEN;
 	    break;
 	  case 23:
 	  case 37:
@@ -6042,22 +6042,22 @@ constat_attr(int count, const int *seq, WORD attr, WORD default_attr, int *rever
 	    attr &= ~(BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED);
 	    break;
 	  case 41:
-	    attr = attr & ~(BACKGROUND_BLUE | BACKGROUND_GREEN) | BACKGROUND_RED;
+	    attr = (attr & ~(BACKGROUND_BLUE | BACKGROUND_GREEN)) | BACKGROUND_RED;
 	    break;
 	  case 42:
-	    attr = attr & ~(BACKGROUND_BLUE | BACKGROUND_RED) | BACKGROUND_GREEN;
+	    attr = (attr & ~(BACKGROUND_BLUE | BACKGROUND_RED)) | BACKGROUND_GREEN;
 	    break;
 	  case 43:
-	    attr = attr & ~BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED;
+	    attr = (attr & ~BACKGROUND_BLUE) | BACKGROUND_GREEN | BACKGROUND_RED;
 	    break;
 	  case 44:
-	    attr = attr & ~(BACKGROUND_GREEN | BACKGROUND_RED) | BACKGROUND_BLUE;
+	    attr = (attr & ~(BACKGROUND_GREEN | BACKGROUND_RED)) | BACKGROUND_BLUE;
 	    break;
 	  case 45:
-	    attr = attr & ~BACKGROUND_GREEN | BACKGROUND_BLUE | BACKGROUND_RED;
+	    attr = (attr & ~BACKGROUND_GREEN) | BACKGROUND_BLUE | BACKGROUND_RED;
 	    break;
 	  case 46:
-	    attr = attr & ~BACKGROUND_RED | BACKGROUND_BLUE | BACKGROUND_GREEN;
+	    attr = (attr & ~BACKGROUND_RED) | BACKGROUND_BLUE | BACKGROUND_GREEN;
 	    break;
 	  case 47:
 	    attr |= BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED;
