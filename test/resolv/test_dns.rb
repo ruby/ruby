@@ -161,6 +161,7 @@ class TestResolvDNS < Test::Unit::TestCase
     # Another program may use the port.
     # But no way to prevent it.
     Resolv::DNS.open(:nameserver_port => [[host, port]]) {|dns|
+      dns.timeouts = 0.1
       assert_equal([], dns.getresources("test-no-server.example.org", Resolv::DNS::Resource::IN::A))
     }
   end
