@@ -107,7 +107,7 @@ class Downloader
     end
     true
   rescue => e
-    raise e.class, "failed to download #{name}\n#{e.message}: #{url}", e.backtrace
+    raise "failed to download #{name}\n#{e.message}: #{url}"
   end
 end
 

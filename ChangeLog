@@ -1,3 +1,9 @@
+Wed Dec 24 13:00:24 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/downloader.rb (Downloader.download): fix the exception to
+	  re-raise.  initialize methods of subclasses of Exception may
+	  have different parameters.  [ruby-core:67086] [Bug #10639]
+
 Wed Dec 24 12:16:19 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.h (rb_data_type_t): revert r48647 and revise parent member.
