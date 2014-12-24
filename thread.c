@@ -4806,13 +4806,13 @@ recursive_pop(VALUE list, VALUE obj, VALUE paired_obj)
 	    return 0;
 	}
 	if (RB_TYPE_P(pair_list, T_HASH)) {
-	    rb_hash_delete(pair_list, paired_obj);
+	    rb_hash_delete_entry(pair_list, paired_obj);
 	    if (!RHASH_EMPTY_P(pair_list)) {
 		return 1; /* keep hash until is empty */
 	    }
 	}
     }
-    rb_hash_delete(list, obj);
+    rb_hash_delete_entry(list, obj);
     return 1;
 }
 
