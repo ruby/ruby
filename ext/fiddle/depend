@@ -15,8 +15,18 @@ $(STATIC_LIB) $(RUBYARCHDIR)/$(DLLIB) $(DLLIB): $(LIBFFI_A)
 
 $(OBJS): $(FFI_H)
 
+.PHONY: .FORCE hdr
+
+.FORCE:
+
 hdr: $(FFI_H)
-configure-libffi $(FFI_H):
+
+configure-libffi build-libffi: .FORCE
+configure-libffi \
+$(LIBFFI_DIR)/include/ffi.h \
+$(LIBFFI_DIR)/include/ffitarget.h \
+$(LIBFFI_DIR)/fficonfig.h \
+$(LIBFFI_DIR)/Makefile:
 	$(Q) $(MAKEDIRS) $(LIBFFI_DIR)
 	$(Q) $(CONFIGURE_LIBFFI)
 
@@ -35,10 +45,11 @@ distclean-libffi:
 realclean-libffi:
 	$(Q) $(RMALL) $(LIBFFI_DIR)
 
-clean-none distclean-none realclean-none:
+.PHONY clean-libffi distclean-libffi realclean-libffi: .FORCE
+.PHONY clean-none distclean-none realclean-none: .FORCE
 
 clean: clean-$(LIBFFI_CLEAN)
 distclean: distclean-$(LIBFFI_CLEAN)
 realclean: realclean-$(LIBFFI_CLEAN)
 
-configure: configure-libffi
+.PHONY configure: configure-libffi
