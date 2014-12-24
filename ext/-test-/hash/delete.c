@@ -1,5 +1,7 @@
 #include "ruby.h"
 
+extern VALUE rb_hash_delete_entry(VALUE hash, VALUE key);
+
 static VALUE
 hash_delete(VALUE hash, VALUE key)
 {
