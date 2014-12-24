@@ -148,8 +148,9 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
     assert_file 'js/search_index.js'
     assert_file 'js/search_index.js.gz'
 
-    gzip = File.open 'js/search_index.js.gz'
-    json = Zlib::GzipReader.new(gzip).read
+    json = File.open('js/search_index.js.gz') {|gzip|
+      Zlib::GzipReader.new(gzip).read
+    }
 
     json =~ /\Avar search_data = /
 
