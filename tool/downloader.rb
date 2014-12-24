@@ -3,7 +3,7 @@ require 'open-uri'
 class Downloader
   class GNU < self
     def self.download(name, *rest)
-      super("http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=#{name};hb=HEAD", name, *rest)
+      super("http://gcc.gnu.org/git/?p=gcc.git;a=blob_plain;f=#{name};hb=HEAD", name, *rest)
     end
   end
 
