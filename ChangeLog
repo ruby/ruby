@@ -1,3 +1,7 @@
+Wed Dec 24 13:25:22 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/redmine-backporter.rb: require view_changesets permission.
+
 Wed Dec 24 13:00:24 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/downloader.rb (Downloader.download): fix the exception to

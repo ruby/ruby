@@ -261,6 +261,9 @@ while true
     uri = URI(uri+".json?include=children,attachments,relations,changesets,journals")
     res = JSON(uri.read(openuri_options))
     i = res["issue"]
+    unless i["changesets"]
+      abort "You don't have view_changesets permission"
+    end
     id = "##{i["id"]}".color(*PRIORITIES[i["priority"]["name"]])
     sio = StringIO.new
     sio.puts <<eom
@@ -276,14 +279,12 @@ eom
     #end
     sio.puts i["description"]
     sio.puts
-    if i["changesets"]
-      sio.puts "= changesets"
-      @changesets = []
-      i["changesets"].each do |x|
-        @changesets << x["revision"]
-        sio.puts "== #{x["revision"]} #{x["committed_on"]} #{x["user"]["name"] rescue nil}"
-        sio.puts x["comments"]
-      end
+    sio.puts "= changesets"
+    @changesets = []
+    i["changesets"].each do |x|
+      @changesets << x["revision"]
+      sio.puts "== #{x["revision"]} #{x["committed_on"]} #{x["user"]["name"] rescue nil}"
+      sio.puts x["comments"]
     end
     if i["journals"] && !i["journals"].empty?
       sio.puts "= journals"
