@@ -1102,8 +1102,7 @@ main()
 		ac_cv_func_malloc_usable_size=no
 		{ test "$target_cpu" = x64 && ac_cv_func___builtin_setjmp=no; }
 		AC_CHECK_TYPE([NET_LUID], [], [],
-			      [@%:@include <windows.h>
-			      @%:@include <ifdef.h>
+			      [@%:@include <winsock2.h>
 			      @%:@include <iphlpapi.h>])
 		if test x"$ac_cv_type_NET_LUID" = xyes; then
 		    AC_DEFINE(HAVE_TYPE_NET_LUID, 1)

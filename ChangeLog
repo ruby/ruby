@@ -1,3 +1,8 @@
+Thu Dec 25 17:27:06 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (NET_LUID): include winsock2.h instead of windows.h.
+	  patch by Jon Forums in [ruby-core:67125].  [Bug #10640]
+
 Thu Dec 25 16:14:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/console/console.c (console_dev): send the given arguments
