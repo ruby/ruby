@@ -1,6 +1,6 @@
 diff -ru libffi-3.2.1/src/x86/ffi.c libffi-3.2.1/src/x86/ffi.c
 --- libffi-3.2.1/src/x86/ffi.c	2014-11-08 21:47:24.000000000 +0900
-+++ libffi-3.2.1/src/x86/ffi.c	2014-12-22 16:00:42.000000000 +0900
++++ libffi-3.2.1/src/x86/ffi.c	2014-12-25 18:46:14.806761900 +0900
 @@ -99,11 +99,13 @@
         i != 0;
         i--, p_arg += dir, p_argv += dir)
@@ -16,7 +16,37 @@ diff -ru libffi-3.2.1/src/x86/ffi.c libffi-3.2.1/src/x86/ffi.c
  
  #ifdef X86_WIN64
        if (z > FFI_SIZEOF_ARG
-@@ -599,11 +601,13 @@
+@@ -202,6 +204,7 @@
+      on top of stack, so that those can be moved to registers by call-handler.  */
+   if (stack_args_count > 0)
+     {
++      int i;
+       if (dir < 0 && stack_args_count > 1)
+         {
+           /* Reverse order if iterating arguments backwards */
+@@ -210,7 +213,6 @@
+           *(ffi_arg*) p_stack_data[stack_args_count - 1] = tmp;
+         }
+       
+-      int i;
+       for (i = 0; i < stack_args_count; i++)
+         {
+           if (p_stack_data[i] != argp2)
+@@ -569,11 +571,12 @@
+        i < cif->nargs && passed_regs < max_stack_count;
+        i++, p_arg++)
+     {
++      size_t sz;
+       if ((*p_arg)->type == FFI_TYPE_FLOAT
+          || (*p_arg)->type == FFI_TYPE_STRUCT)
+         continue;
+ 
+-      size_t sz = (*p_arg)->size;
++      sz = (*p_arg)->size;
+       if(sz == 0 || sz > FFI_SIZEOF_ARG)
+         continue;
+ 
+@@ -599,11 +602,13 @@
         i != 0;
         i--, p_arg += dir, p_argv += dir)
      {
@@ -31,7 +61,7 @@ diff -ru libffi-3.2.1/src/x86/ffi.c libffi-3.2.1/src/x86/ffi.c
  
  #ifdef X86_WIN64
        if (z > FFI_SIZEOF_ARG
-@@ -642,7 +646,7 @@
+@@ -642,7 +647,7 @@
  #endif
      }
  
@@ -40,6 +70,20 @@ diff -ru libffi-3.2.1/src/x86/ffi.c libffi-3.2.1/src/x86/ffi.c
  }
  
  #define FFI_INIT_TRAMPOLINE_WIN64(TRAMP,FUN,CTX,MASK) \
+@@ -855,11 +860,12 @@
+   
+   for (i = 0; i < cif->nargs && passed_regs <= max_regs; i++)
+     {
++      size_t sz;
+       if (cif->arg_types[i]->type == FFI_TYPE_FLOAT
+          || cif->arg_types[i]->type == FFI_TYPE_STRUCT)
+         continue;
+ 
+-      size_t sz = cif->arg_types[i]->size;
++      sz = cif->arg_types[i]->size;
+       if (sz == 0 || sz > FFI_SIZEOF_ARG)
+         continue;
+ 
 diff -ru libffi-3.2.1/src/x86/ffitarget.h libffi-3.2.1/src/x86/ffitarget.h
 --- libffi-3.2.1/src/x86/ffitarget.h	2014-11-08 21:47:24.000000000 +0900
 +++ libffi-3.2.1/src/x86/ffitarget.h	2014-12-22 15:45:54.000000000 +0900

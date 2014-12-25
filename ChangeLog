@@ -1,3 +1,7 @@
+Thu Dec 25 19:01:13 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/fiddle/win32/libffi-3.2.1-mswin.patch: support mswin32.
+
 Thu Dec 25 17:30:40 2014  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* gc.c (wmap_final_func): fix memory size shortage when realloc wmap.
