@@ -1,3 +1,12 @@
+Thu Dec 25 16:14:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/console.c (console_dev): send the given arguments
+	  to the opened console.  as a special case, do nothing if :close
+	  is given.
+
+	* test/lib/leakchecker.rb (LeakChecker#check_fd_leak): close if
+	  console.
+
 Thu Dec 25 16:01:19 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_expand_path_internal): drop characters ignored
