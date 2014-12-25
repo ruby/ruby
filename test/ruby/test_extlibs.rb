@@ -32,8 +32,8 @@ class TestExtLibs < Test::Unit::TestCase
   check_existance "io/nonblock"
   check_existance "io/wait"
   check_existance "json"
-  check_existance "mathn/complex"
-  check_existance "mathn/rational"
+  #check_existance "mathn/complex" # break the world
+  #check_existance "mathn/rational" # break the world
   check_existance "nkf"
   check_existance "objspace"
   check_existance "openssl", "this may be false positive, but should assert because rubygems requires this"
