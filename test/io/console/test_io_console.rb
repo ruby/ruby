@@ -254,7 +254,7 @@ class TestIO_Console < Test::Unit::TestCase
   rescue RuntimeError
     skip $!
   else
-    result = r.readlines(&:chomp)
+    result = r.readlines.map(&:chomp)
     Process.wait(pid)
     if block_given?
       yield result
