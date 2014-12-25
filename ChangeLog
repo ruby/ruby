@@ -1,3 +1,8 @@
+Thu Dec 25 17:31:51 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (NET_LUID): include winsock2.h instead of windows.h.
+	  patch by Jon Forums in [ruby-core:67125].  [Bug #10640]
+
 Thu Dec 25 16:01:19 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_expand_path_internal): drop characters ignored
