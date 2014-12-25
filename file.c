@@ -315,6 +315,38 @@ rb_str_normalize_ospath(const char *ptr, long len)
 
     return str;
 }
+
+static int
+ignored_char_p(const char *p, const char *e, rb_encoding *enc)
+{
+    unsigned char c;
+    if (p+3 > e) return 0;
+    switch ((unsigned char)*p) {
+      case 0xe2:
+	switch ((unsigned char)p[1]) {
+	  case 0x80:
+	    c = (unsigned char)p[2];
+	    /* c >= 0x200c && c <= 0x200f */
+	    if (c >= 0x8c && c <= 0x8f) return 3;
+	    /* c >= 0x202a && c <= 0x202e */
+	    if (c >= 0xaa && c <= 0xae) return 3;
+	    return 0;
+	  case 0x81:
+	    c = (unsigned char)p[2];
+	    /* c >= 0x206a && c <= 0x206f */
+	    if (c >= 0xaa && c <= 0xaf) return 3;
+	    return 0;
+	}
+	break;
+      case 0xef:
+	/* c == 0xfeff */
+	if ((unsigned char)p[1] == 0xbb &&
+	    (unsigned char)p[2] == 0xbf)
+	    return 3;
+	break;
+    }
+    return 0;
+}
 #endif
 
 static long
@@ -3103,6 +3135,27 @@ ntfs_tail(const char *path, const char *end, rb_encoding *enc)
     buflen = RSTRING_LEN(result),\
     pend = p + buflen)
 
+#ifdef __APPLE__
+# define SKIPPATHSEP(p) ((*(p)) ? 1 : 0)
+#else
+# define SKIPPATHSEP(p) 1
+#endif
+
+#define BUFCOPY(srcptr, srclen) do { \
+    const int skip = SKIPPATHSEP(p); \
+    rb_str_set_len(result, p-buf+skip); \
+    BUFCHECK(bdiff + ((srclen)+skip) >= buflen); \
+    p += skip; \
+    memcpy(p, (srcptr), (srclen)); \
+    p += (srclen); \
+} while (0)
+
+#define WITH_ROOTDIFF(stmt) do { \
+    long rootdiff = root - buf; \
+    stmt; \
+    root = buf + rootdiff; \
+} while (0)
+
 static VALUE
 copy_home_path(VALUE result, const char *dir)
 {
@@ -3374,17 +3427,25 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	  case '\\':
 #endif
 	    if (s > b) {
-		long rootdiff = root - buf;
-		rb_str_set_len(result, p-buf+1);
-		BUFCHECK(bdiff + (s-b+1) >= buflen);
-		root = buf + rootdiff;
-		memcpy(++p, b, s-b);
-		p += s-b;
+		WITH_ROOTDIFF(BUFCOPY(b, s-b));
 		*p = '/';
 	    }
 	    b = ++s;
 	    break;
 	  default:
+#ifdef __APPLE__
+	    {
+		int n = ignored_char_p(s, fend, enc);
+		if (n) {
+		    if (s > b) {
+			WITH_ROOTDIFF(BUFCOPY(b, s-b));
+			*p = '\0';
+		    }
+		    b = s += n;
+		    break;
+		}
+	    }
+#endif
 	    Inc(s, fend, enc);
 	    break;
 	}
@@ -3406,10 +3467,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	    }
 	}
 #endif
-	rb_str_set_len(result, p-buf+1);
-	BUFCHECK(bdiff + (s-b) >= buflen);
-	memcpy(++p, b, s-b);
-	p += s-b;
+	BUFCOPY(b, s-b);
 	rb_str_set_len(result, p-buf);
     }
     if (p == skiproot(buf, p + !!*p, enc) - 1) p++;

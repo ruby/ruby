@@ -743,6 +743,12 @@ rb_get_next_signal(void)
     return sig;
 }
 
+#if defined SIGSEGV || defined SIGBUS || defined SIGILL || defined SIGFPE
+static const char *received_signal;
+# define clear_received_signal() (void)(received_signal = 0)
+#else
+# define clear_received_signal() ((void)0)
+#endif
 
 #if defined(USE_SIGALTSTACK) || defined(_WIN32)
 NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
@@ -792,6 +798,7 @@ check_stack_overflow(const uintptr_t addr, const ucontext_t *ctx)
 	     * place. */
 	    th->tag = th->tag->prev;
 	}
+	clear_received_signal();
 	ruby_thread_stack_overflow(th);
     }
 }
@@ -802,6 +809,7 @@ check_stack_overflow(const void *addr)
     int ruby_stack_overflowed_p(const rb_thread_t *, const void *);
     rb_thread_t *th = ruby_current_thread;
     if (ruby_stack_overflowed_p(th, addr)) {
+	clear_received_signal();
 	ruby_thread_stack_overflow(th);
     }
 }
@@ -886,8 +894,7 @@ sigill(int sig SIGINFO_ARG)
 static void
 check_reserved_signal_(const char *name, size_t name_len)
 {
-    static const char *received;
-    const char *prev = ATOMIC_PTR_EXCHANGE(received, name);
+    const char *prev = ATOMIC_PTR_EXCHANGE(received_signal, name);
 
     if (prev) {
 	ssize_t RB_UNUSED_VAR(err);

@@ -2456,8 +2456,8 @@ class Gem::Specification < Gem::BasicSpecification
     extend Gem::UserInteraction
     normalize
 
-    nil_attributes = self.class.non_nil_attributes.find_all do |name|
-      instance_variable_get("@#{name}").nil?
+    nil_attributes = self.class.non_nil_attributes.find_all do |attrname|
+      instance_variable_get("@#{attrname}").nil?
     end
 
     unless nil_attributes.empty? then

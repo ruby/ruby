@@ -1119,6 +1119,9 @@ int rb_bug_reporter_add(void (*func)(FILE *, void *), void *data);
 VALUE rb_str_normalize_ospath(const char *ptr, long len);
 #endif
 
+/* hash.c (export) */
+VALUE rb_hash_delete_entry(VALUE hash, VALUE key);
+
 /* io.c (export) */
 void rb_maygvl_fd_fix_cloexec(int fd);
 

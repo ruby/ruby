@@ -237,16 +237,8 @@ class TestDir < Test::Unit::TestCase
       return unless File.exist?("filewithcases")
       assert_equal(%w"FileWithCases", Dir.glob("filewithcases"), feature5994)
     end
-    Dir.chdir(File.join(@root, "c")) do
-      open("FileWithCases", "w") {}
-      mode = File.stat(".").mode
-      begin
-        File.chmod(mode & ~0444, ".")
-        return if mode == File.stat(".").mode
-        assert_equal(%w"filewithcases", Dir.glob("filewithcases"), feature5994)
-      ensure
-        File.chmod(mode, ".")
-      end
+    Dir.chdir(@root) do
+      assert_equal(%w"a/FileWithCases", Dir.glob("A/filewithcases"), feature5994)
     end
   end
 

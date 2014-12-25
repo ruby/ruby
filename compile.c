@@ -6309,12 +6309,18 @@ for_self_aset(rb_iseq_t *iseq, LINK_ANCHOR *ret, VALUE a)
     return Qnil;
 }
 
+/*
+ * func (index) -> (value)
+ */
 VALUE
 rb_method_for_self_aref(VALUE name, VALUE arg, rb_insn_func_t func)
 {
     return method_for_self(name, arg, func, for_self_aref);
 }
 
+/*
+ * func (index, value) -> (index, value)
+ */
 VALUE
 rb_method_for_self_aset(VALUE name, VALUE arg, rb_insn_func_t func)
 {

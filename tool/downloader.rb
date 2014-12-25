@@ -3,13 +3,14 @@ require 'open-uri'
 class Downloader
   class GNU < self
     def self.download(name, *rest)
-      super("http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=#{name};hb=HEAD", name, *rest)
+      super("http://gcc.gnu.org/git/?p=gcc.git;a=blob_plain;f=#{name};hb=HEAD", name, *rest)
     end
   end
 
   class RubyGems < self
-    def self.download(name, *rest)
-      super("https://rubygems.org/downloads/#{name}", name, *rest)
+    def self.download(name, dir = nil, ims = true, options = {})
+      options[:ssl_ca_cert] = Dir.glob(File.expand_path("../lib/rubygems/ssl_certs/*.pem", File.dirname(__FILE__)))
+      super("https://rubygems.org/downloads/#{name}", name, dir, ims, options)
     end
   end
 
@@ -52,7 +53,7 @@ class Downloader
   # Example usage:
   #   download 'http://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt',
   #            'UnicodeData.txt', 'enc/unicode/data'
-  def self.download(url, name, dir = nil, ims = true)
+  def self.download(url, name, dir = nil, ims = true, options = {})
     file = dir ? File.join(dir, File.basename(name)) : name
     if ims.nil? and File.exist?(file)
       if $VERBOSE
@@ -67,7 +68,7 @@ class Downloader
       $stdout.flush
     end
     begin
-      data = url.read(http_options(file, ims.nil? ? true : ims))
+      data = url.read(options.merge(http_options(file, ims.nil? ? true : ims)))
     rescue OpenURI::HTTPError => http_error
       if http_error.message =~ /^304 / # 304 Not Modified
         if $VERBOSE
@@ -106,7 +107,7 @@ class Downloader
     end
     true
   rescue => e
-    raise e.class, "failed to download #{name}\n#{e.message}: #{url}", e.backtrace
+    raise "failed to download #{name}\n#{e.message}: #{url}"
   end
 end
 

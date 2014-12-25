@@ -4,6 +4,11 @@ module URI
     # this regexp is modified not to host is not empty string
     RFC3986_URI = /\A(?<URI>(?<scheme>[A-Za-z][+\-.0-9A-Za-z]*):(?<hier-part>\/\/(?<authority>(?:(?<userinfo>(?:%\h\h|[!$&-.0-;=A-Z_a-z~])*)@)?(?<host>(?<IP-literal>\[(?:(?<IPv6address>(?:\h{1,4}:){6}(?<ls32>\h{1,4}:\h{1,4}|(?<IPv4address>(?<dec-octet>[1-9]\d|1\d{2}|2[0-4]\d|25[0-5]|\d)\.\g<dec-octet>\.\g<dec-octet>\.\g<dec-octet>))|::(?:\h{1,4}:){5}\g<ls32>|\h{1,4}?::(?:\h{1,4}:){4}\g<ls32>|(?:(?:\h{1,4}:)?\h{1,4})?::(?:\h{1,4}:){3}\g<ls32>|(?:(?:\h{1,4}:){,2}\h{1,4})?::(?:\h{1,4}:){2}\g<ls32>|(?:(?:\h{1,4}:){,3}\h{1,4})?::\h{1,4}:\g<ls32>|(?:(?:\h{1,4}:){,4}\h{1,4})?::\g<ls32>|(?:(?:\h{1,4}:){,5}\h{1,4})?::\h{1,4}|(?:(?:\h{1,4}:){,6}\h{1,4})?::)|(?<IPvFuture>v\h+\.[!$&-.0-;=A-Z_a-z~]+))\])|\g<IPv4address>|(?<reg-name>(?:%\h\h|[!$&-.0-9;=A-Z_a-z~])+))?(?::(?<port>\d*))?)(?<path-abempty>(?:\/(?<segment>(?:%\h\h|[!$&-.0-;=@-Z_a-z~])*))*)|(?<path-absolute>\/(?:(?<segment-nz>(?:%\h\h|[!$&-.0-;=@-Z_a-z~])+)(?:\/\g<segment>)*)?)|(?<path-rootless>\g<segment-nz>(?:\/\g<segment>)*)|(?<path-empty>))(?:\?(?<query>[^#]*))?(?:\#(?<fragment>(?:%\h\h|[!$&-.0-;=@-Z_a-z~\/?])*))?)\z/
     RFC3986_relative_ref = /\A(?<relative-ref>(?<relative-part>\/\/(?<authority>(?:(?<userinfo>(?:%\h\h|[!$&-.0-;=A-Z_a-z~])*)@)?(?<host>(?<IP-literal>\[(?<IPv6address>(?:\h{1,4}:){6}(?<ls32>\h{1,4}:\h{1,4}|(?<IPv4address>(?<dec-octet>[1-9]\d|1\d{2}|2[0-4]\d|25[0-5]|\d)\.\g<dec-octet>\.\g<dec-octet>\.\g<dec-octet>))|::(?:\h{1,4}:){5}\g<ls32>|\h{1,4}?::(?:\h{1,4}:){4}\g<ls32>|(?:(?:\h{1,4}:){,1}\h{1,4})?::(?:\h{1,4}:){3}\g<ls32>|(?:(?:\h{1,4}:){,2}\h{1,4})?::(?:\h{1,4}:){2}\g<ls32>|(?:(?:\h{1,4}:){,3}\h{1,4})?::\h{1,4}:\g<ls32>|(?:(?:\h{1,4}:){,4}\h{1,4})?::\g<ls32>|(?:(?:\h{1,4}:){,5}\h{1,4})?::\h{1,4}|(?:(?:\h{1,4}:){,6}\h{1,4})?::)|(?<IPvFuture>v\h+\.[!$&-.0-;=A-Z_a-z~]+)\])|\g<IPv4address>|(?<reg-name>(?:%\h\h|[!$&-.0-9;=A-Z_a-z~])+))?(?::(?<port>\d*))?)(?<path-abempty>(?:\/(?<segment>(?:%\h\h|[!$&-.0-;=@-Z_a-z~])*))*)|(?<path-absolute>\/(?:(?<segment-nz>(?:%\h\h|[!$&-.0-;=@-Z_a-z~])+)(?:\/\g<segment>)*)?)|(?<path-noscheme>(?<segment-nz-nc>(?:%\h\h|[!$&-.0-9;=@-Z_a-z~])+)(?:\/\g<segment>)*)|(?<path-empty>))(?:\?(?<query>[^#]*))?(?:\#(?<fragment>(?:%\h\h|[!$&-.0-;=@-Z_a-z~\/?])*))?)\z/
+    attr_reader :regexp
+
+    def initialize
+      @regexp = default_regexp.each_value(&:freeze).freeze
+    end
 
     def split(uri) #:nodoc:
       begin
@@ -11,42 +16,52 @@ module URI
       rescue NoMethodError
         raise InvalidURIError, "bad URI(is not URI?): #{uri}"
       end
-      unless uri.ascii_only?
+      uri.ascii_only? or
         raise InvalidURIError, "URI must be ascii only #{uri.dump}"
-      end
       if m = RFC3986_URI.match(uri)
-        ary = []
-        ary << m["scheme"]
-        if m["path-rootless"] # opaque
-          ary << nil # userinfo
-          ary << nil # host
-          ary << nil # port
-          ary << nil # registry
-          ary << nil # path
-          ary << m["path-rootless"]
-          ary[-1] << '?' << m["query"] if m["query"]
-          ary << nil # query
-          ary << m["fragment"]
+        query = m["query".freeze]
+        scheme = m["scheme".freeze]
+        opaque = m["path-rootless".freeze]
+        if opaque
+          opaque << "?#{query}" if query
+          [ scheme,
+            nil, # userinfo
+            nil, # host
+            nil, # port
+            nil, # registry
+            nil, # path
+            opaque,
+            nil, # query
+            m["fragment".freeze]
+          ]
         else # normal
-          ary << m["userinfo"]
-          ary << m["host"]
-          ary << m["port"]
-          ary << nil # registry
-          ary << (m["path-abempty"] || m["path-absolute"] || m["path-empty"])
-          ary << nil # opaque
-          ary << m["query"]
-          ary << m["fragment"]
+          [ scheme,
+            m["userinfo".freeze],
+            m["host".freeze],
+            m["port".freeze],
+            nil, # registry
+            (m["path-abempty".freeze] ||
+             m["path-absolute".freeze] ||
+             m["path-empty".freeze]),
+            nil, # opaque
+            query,
+            m["fragment".freeze]
+          ]
         end
       elsif m = RFC3986_relative_ref.match(uri)
-        ary = [nil]
-        ary << m["userinfo"]
-        ary << m["host"]
-        ary << m["port"]
-        ary << nil # registry
-        ary << (m["path-abempty"] || m["path-absolute"] || m["path-noscheme"] || m["path-empty"])
-        ary << nil # opaque
-        ary << m["query"]
-        ary << m["fragment"]
+        [ nil, # scheme
+          m["userinfo".freeze],
+          m["host".freeze],
+          m["port".freeze],
+          nil, # registry,
+          (m["path-abempty".freeze] ||
+           m["path-absolute".freeze] ||
+           m["path-noscheme".freeze] ||
+           m["path-empty".freeze]),
+          nil, # opaque
+          m["query".freeze],
+          m["fragment".freeze]
+        ]
       else
         raise InvalidURIError, "bad URI(is not URI?): #{uri}"
       end
@@ -55,11 +70,11 @@ module URI
     def parse(uri) # :nodoc:
       scheme, userinfo, host, port,
         registry, path, opaque, query, fragment = self.split(uri)
-
-      if scheme && URI.scheme_list.include?(scheme.upcase)
-        URI.scheme_list[scheme.upcase].new(scheme, userinfo, host, port,
-                                           registry, path, opaque, query,
-                                           fragment, self)
+      scheme_list = URI.scheme_list
+      if scheme && scheme_list.include?(uc = scheme.upcase)
+        scheme_list[uc].new(scheme, userinfo, host, port,
+                            registry, path, opaque, query,
+                            fragment, self)
       else
         Generic.new(scheme, userinfo, host, port,
                     registry, path, opaque, query,
@@ -78,7 +93,9 @@ module URI
       @@to_s.bind(self).call
     end
 
-    def regexp
+    private
+
+    def default_regexp # :nodoc:
       {
         SCHEME: /\A[A-Za-z][A-Za-z0-9+\-.]*\z/,
         USERINFO: /\A(?:%\h\h|[!$&-.0-;=A-Z_a-z~])*\z/,
@@ -91,8 +108,6 @@ module URI
         PORT: /\A[\x09\x0a\x0c\x0d ]*\d*[\x09\x0a\x0c\x0d ]*\z/,
       }
     end
-
-    private
 
     def convert_to_uri(uri)
       if uri.is_a?(URI::Generic)

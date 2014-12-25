@@ -574,7 +574,6 @@ typedef struct rb_objspace {
 	size_t remembered_wb_unprotected_objects_limit;
 	size_t old_objects;
 	size_t old_objects_limit;
-	size_t old_objects_at_gc_start;
 
 #if RGENGC_ESTIMATE_OLDMALLOC
 	size_t oldmalloc_increase;
@@ -4915,8 +4914,6 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
     gc_stat_transition(objspace, gc_stat_marking);
 
 #if USE_RGENGC
-    objspace->rgengc.old_objects_at_gc_start = objspace->rgengc.old_objects;
-
     if (full_mark) {
 #if GC_ENABLE_INCREMENTAL_MARK
 	objspace->rincgc.step_slots = (objspace->marked_slots * 2) / ((objspace->rincgc.pooled_slots / HEAP_OBJ_LIMIT) + 1);

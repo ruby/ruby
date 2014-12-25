@@ -139,7 +139,7 @@ def package(vcs, rev, destdir, tmp = nil)
   when /\Atags\//
     url = vcs.tag($')
   when /\Astable\z/
-    vcs.branch_list(/ruby_[0-9]*/) {|n| url = /\Aruby_\d+_\d+\z/ =~ n}
+    vcs.branch_list("ruby_[0-9]*") {|n| url = n[/\Aruby_\d+_\d+\z/]}
     url &&= vcs.branch(url)
   when /\A(.*)\.(.*)\.(.*)-(preview|rc)(\d+)/
     prerelease = true
@@ -186,9 +186,15 @@ def package(vcs, rev, destdir, tmp = nil)
       return
     end
     if $srcdir
-      Dir.glob($srcdir + "/{tool/config.{guess,sub},gems/*.gem}") do |file|
+      Dir.glob($srcdir + "/{tool/config.{guess,sub},gems/*.gem,.downloaded-cache/*}") do |file|
         puts "copying #{file}"
-        FileUtils.cp(file, exported + file[$srcdir.size..-1], preserve: true)
+        dest = exported + file[$srcdir.size..-1]
+        FileUtils.mkpath(File.dirname(dest))
+        begin
+          FileUtils.ln(file, dest, force: true)
+        rescue SystemCallError
+          FileUtils.cp(file, dest, preserve: true)
+        end
       end
     end
   end
@@ -280,6 +286,7 @@ def package(vcs, rev, destdir, tmp = nil)
                srcdir=. CHDIR=cd NULLCMD=:
                PATH_SEPARATOR=#{File::PATH_SEPARATOR}
                IFCHANGE=tool/ifchange MAKEDIRS=mkdir\ -p
+               RMALL=rm\ -fr
                MINIRUBY=#{miniruby}
                RUNRUBY=#{miniruby}
                RUBY=#{ENV["RUBY"]}
@@ -289,7 +296,7 @@ def package(vcs, rev, destdir, tmp = nil)
                prereq]
       IO.popen(cmd, "w") do |f|
         f.puts mk
-        f.puts "after-update::", "prereq: after-update"
+        f.puts "after-update::", "clean-cache $(CLEAN_CACHE): after-update", "prereq: clean-cache $(CLEAN_CACHE)"
       end
       clean.push("rbconfig.rb", ".rbconfig.time", "enc.mk")
       print "prerequisites"

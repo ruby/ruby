@@ -969,22 +969,48 @@ rb_hash_index(VALUE hash, VALUE value)
     return rb_hash_key(hash, value);
 }
 
+/*
+ * delete a specified entry a given key.
+ * if there is the corresponding entry, return a value of the entry.
+ * if there is no corresponding entry, return Qundef.
+ */
 VALUE
-rb_hash_delete(VALUE hash, VALUE key)
+rb_hash_delete_entry(VALUE hash, VALUE key)
 {
     st_data_t ktmp = (st_data_t)key, val;
 
-    if (!RHASH(hash)->ntbl)
-        return Qundef;
-    if (RHASH_ITER_LEV(hash) > 0) {
-	if (st_delete_safe(RHASH(hash)->ntbl, &ktmp, &val, (st_data_t)Qundef)) {
-	    FL_SET(hash, HASH_DELETED);
-	    return (VALUE)val;
-	}
+    if (!RHASH(hash)->ntbl) {
+	return Qundef;
     }
-    else if (st_delete(RHASH(hash)->ntbl, &ktmp, &val))
+    else if (RHASH_ITER_LEV(hash) > 0 &&
+	     (st_delete_safe(RHASH(hash)->ntbl, &ktmp, &val, (st_data_t)Qundef))) {
+	FL_SET(hash, HASH_DELETED);
 	return (VALUE)val;
-    return Qundef;
+    }
+    else if (st_delete(RHASH(hash)->ntbl, &ktmp, &val)) {
+	return (VALUE)val;
+    }
+    else {
+	return Qundef;
+    }
+}
+
+/*
+ * delete a specified entry by a given key.
+ * if there is the corresponding entry, return a value of the entry.
+ * if there is no corresponding entry, return Qnil.
+ */
+VALUE
+rb_hash_delete(VALUE hash, VALUE key)
+{
+    VALUE deleted_value = rb_hash_delete_entry(hash, key);
+
+    if (deleted_value != Qundef) { /* likely pass */
+	return deleted_value;
+    }
+    else {
+	return Qnil;
+    }
 }
 
 /*
@@ -1011,12 +1037,19 @@ rb_hash_delete_m(VALUE hash, VALUE key)
     VALUE val;
 
     rb_hash_modify_check(hash);
-    val = rb_hash_delete(hash, key);
-    if (val != Qundef) return val;
-    if (rb_block_given_p()) {
-	return rb_yield(key);
+    val = rb_hash_delete_entry(hash, key);
+
+    if (val != Qundef) {
+	return val;
     }
-    return Qnil;
+    else {
+	if (rb_block_given_p()) {
+	    return rb_yield(key);
+	}
+	else {
+	    return Qnil;
+	}
+    }
 }
 
 struct shift_var {
@@ -1063,7 +1096,7 @@ rb_hash_shift(VALUE hash)
 	else {
 	    rb_hash_foreach(hash, shift_i_safe, (VALUE)&var);
 	    if (var.key != Qundef) {
-		rb_hash_delete(hash, var.key);
+		rb_hash_delete_entry(hash, var.key);
 		return rb_assoc_new(var.key, var.val);
 	    }
 	}
@@ -1944,10 +1977,17 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
 	if (!rb_respond_to(hash2, idTo_hash)) {
 	    return Qfalse;
 	}
-	if (eql)
-	    return rb_eql(hash2, hash1);
-	else
+	if (eql) {
+	    if (rb_eql(hash2, hash1)) {
+		return Qtrue;
+	    }
+	    else {
+		return Qfalse;
+	    }
+	}
+	else {
 	    return rb_equal(hash2, hash1);
+	}
     }
     if (RHASH_SIZE(hash1) != RHASH_SIZE(hash2))
 	return Qfalse;

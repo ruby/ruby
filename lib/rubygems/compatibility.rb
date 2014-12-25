@@ -20,8 +20,7 @@ if Gem::GEM_PRELUDE_SUCKAGE and defined?(Gem::QuickLoader) then
 
   $LOADED_FEATURES.delete Gem::QuickLoader.path_to_full_rubygems_library
 
-  if $LOADED_FEATURES.any? do |path| path.end_with? '/rubygems.rb' end then
-    # TODO path does not exist here
+  if path = $LOADED_FEATURES.find {|n| n.end_with? '/rubygems.rb'} then
     raise LoadError, "another rubygems is already loaded from #{path}"
   end
 

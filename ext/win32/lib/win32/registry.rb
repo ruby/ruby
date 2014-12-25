@@ -174,12 +174,20 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       FormatMessageW = Kernel32.extern "int FormatMessageW(int, void *, int, int, void *, int, void *)", :stdcall
       def initialize(code)
         @code = code
-        msg = WCHAR_NUL * 1024
-        len = FormatMessageW.call(0x1200, 0, code, 0, msg, 1024, 0)
-        msg = msg.byteslice(0, len * WCHAR_SIZE)
-        msg.delete!(WCHAR_CR)
-        msg.chomp!
-        super msg.encode(LOCALE)
+        buff = WCHAR_NUL * 1024
+        lang = 0
+        begin
+          len = FormatMessageW.call(0x1200, 0, code, lang, buff, 1024, 0)
+          msg = buff.byteslice(0, len * WCHAR_SIZE)
+          msg.delete!(WCHAR_CR)
+          msg.chomp!
+          msg.encode!(LOCALE)
+        rescue EncodingError
+          raise unless lang == 0
+          lang = 0x0409         # en_US
+          retry
+        end
+        super msg
       end
       attr_reader :code
     end

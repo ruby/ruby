@@ -113,6 +113,7 @@ struct local_vars {
     struct vtable *args;
     struct vtable *vars;
     struct vtable *used;
+    struct vtable *past;
     struct local_vars *prev;
     stack_type cmdargs;
 };
@@ -8827,6 +8828,17 @@ match_op_gen(struct parser_params *parser, NODE *node1, NODE *node2)
     return NEW_CALL(node1, tMATCH, NEW_LIST(node2));
 }
 
+static int
+past_dvar_p(struct parser_params *parser, ID id)
+{
+    struct vtable *past = lvtbl->past;
+    while (past) {
+	if (vtable_included(past, id)) return 1;
+	past = past->prev;
+    }
+    return 0;
+}
+
 static NODE*
 gettable_gen(struct parser_params *parser, ID id)
 {
@@ -8859,6 +8871,9 @@ gettable_gen(struct parser_params *parser, ID id)
 		rb_warnV("circular argument reference - %"PRIsVALUE, rb_id2str(id));
 	    }
 	    return NEW_LVAR(id);
+	}
+	if (!in_defined && RTEST(ruby_verbose) && past_dvar_p(parser, id)) {
+	    rb_warningV("possible reference to past scope - %"PRIsVALUE, rb_id2str(id));
 	}
 	/* method call without arguments */
 	return NEW_VCALL(id);
@@ -9978,6 +9993,7 @@ local_push_gen(struct parser_params *parser, int inherit_dvars)
     local->used = !(inherit_dvars &&
 		    (ifndef_ripper(compile_for_eval || e_option_supplied(parser))+0)) &&
 	RTEST(ruby_verbose) ? vtable_alloc(0) : 0;
+    local->past = 0;
     local->cmdargs = cmdarg_stack;
     cmdarg_stack = 0;
     lvtbl = local;
@@ -9990,6 +10006,11 @@ local_pop_gen(struct parser_params *parser)
     if (lvtbl->used) {
 	warn_unused_var(parser, lvtbl);
 	vtable_free(lvtbl->used);
+    }
+    while (lvtbl->past) {
+	struct vtable *past = lvtbl->past;
+	lvtbl->past = past->prev;
+	vtable_free(past);
     }
     vtable_free(lvtbl->args);
     vtable_free(lvtbl->vars);
@@ -10090,10 +10111,12 @@ dyna_pop_1(struct parser_params *parser)
     }
     tmp = lvtbl->args;
     lvtbl->args = lvtbl->args->prev;
-    vtable_free(tmp);
+    tmp->prev = lvtbl->past;
+    lvtbl->past = tmp;
     tmp = lvtbl->vars;
     lvtbl->vars = lvtbl->vars->prev;
-    vtable_free(tmp);
+    tmp->prev = lvtbl->past;
+    lvtbl->past = tmp;
 }
 
 static void

@@ -154,11 +154,19 @@ FILES_NEED_VPATH = %w[
 
 # Multiple files with same filename.
 # It is not good idea to refer them using VPATH.
-FILES_SAME_NAME = %w[
-  include/ruby.h
+# Files in FILES_SAME_NAME_INC is referenced using $(hdrdir).
+# Files in FILES_SAME_NAME_TOP is referenced using $(top_srcdir).
+# include/ruby.h is referenced using $(top_srcdir) because mkmf.rb replaces
+# $(hdrdir)/ruby.h to $(hdrdir)/ruby/ruby.h
+
+FILES_SAME_NAME_INC = %w[
   include/ruby/ruby.h
-  version.h
   include/ruby/version.h
+]
+
+FILES_SAME_NAME_TOP = %w[
+  include/ruby.h
+  version.h
 ]
 
 # Other source files exist in the source directory.
@@ -173,7 +181,8 @@ def in_makefile(target, source)
     when *FILES_IN_SOURCE_DIRECTORY then source2 = "$(top_srcdir)/#{source}"
     when *FILES_IN_BUILD_DIRECTORY then source2 = "{$(VPATH)}#{source}" # VPATH is not used now but it may changed in future.
     when *FILES_NEED_VPATH then source2 = "{$(VPATH)}#{source}"
-    when *FILES_SAME_NAME then source2 = "$(top_srcdir)/#{source}"
+    when *FILES_SAME_NAME_INC then source2 = "$(hdrdir)/#{source.sub(%r{\Ainclude/},'')}"
+    when *FILES_SAME_NAME_TOP then source2 = "$(top_srcdir)/#{source}"
     when 'thread_pthread.c' then source2 = '{$(VPATH)}thread_$(THREAD_MODEL).c'
     when 'thread_pthread.h' then source2 = '{$(VPATH)}thread_$(THREAD_MODEL).h'
     when %r{\A[^/]*\z} then source2 = "{$(VPATH)}#{File.basename source}"
@@ -192,7 +201,8 @@ def in_makefile(target, source)
     when *FILES_IN_SOURCE_DIRECTORY then source2 = "$(top_srcdir)/#{source}"
     when *FILES_IN_BUILD_DIRECTORY then source2 = source
     when *FILES_NEED_VPATH then source2 = source
-    when *FILES_SAME_NAME then source2 = "$(top_srcdir)/#{source}"
+    when *FILES_SAME_NAME_INC then source2 = "$(hdrdir)/#{source.sub(%r{\Ainclude/},'')}"
+    when *FILES_SAME_NAME_TOP then source2 = "$(top_srcdir)/#{source}"
     when %r{\A\.ext/include/[^/]+/ruby/} then source2 = $'
     when %r{\Ainclude/ruby/} then source2 = $'
     when %r{\Aenc/} then source2 = source
@@ -209,7 +219,8 @@ def in_makefile(target, source)
     when *FILES_IN_SOURCE_DIRECTORY then source2 = "$(top_srcdir)/#{source}"
     when *FILES_IN_BUILD_DIRECTORY then source2 = relpath
     when *FILES_NEED_VPATH then source2 = "{$(VPATH)}#{File.basename source}"
-    when *FILES_SAME_NAME then source2 = "$(top_srcdir)/#{source}"
+    when *FILES_SAME_NAME_INC then source2 = "$(hdrdir)/#{source.sub(%r{\Ainclude/},'')}"
+    when *FILES_SAME_NAME_TOP then source2 = "$(top_srcdir)/#{source}"
     when %r{\A\.ext/include/[^/]+/ruby/} then source2 = "$(arch_hdrdir)/ruby/#{$'}"
     when %r{\Ainclude/} then source2 = "$(hdrdir)/#{$'}"
     when %r{\A#{Regexp.escape File.dirname(target)}/extconf\.h\z} then source2 = "$(RUBY_EXTCONF_H)"

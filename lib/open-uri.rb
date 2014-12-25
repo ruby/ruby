@@ -295,10 +295,12 @@ module OpenURI
       http.verify_mode = options[:ssl_verify_mode] || OpenSSL::SSL::VERIFY_PEER
       store = OpenSSL::X509::Store.new
       if options[:ssl_ca_cert]
-        if File.directory? options[:ssl_ca_cert]
-          store.add_path options[:ssl_ca_cert]
-        else
-          store.add_file options[:ssl_ca_cert]
+        Array(options[:ssl_ca_cert]).each do |cert|
+          if File.directory? cert
+            store.add_path cert
+          else
+            store.add_file cert
+          end
         end
       else
         store.set_default_paths
@@ -680,7 +682,7 @@ module OpenURI
     #
     # [:ssl_ca_cert]
     #  Synopsis:
-    #    :ssl_ca_cert=>filename
+    #    :ssl_ca_cert=>filename or an Array of filenames
     #
     #  :ssl_ca_cert is used to specify CA certificate for SSL.
     #  If it is given, default certificates are not used.
