@@ -249,12 +249,13 @@ class TestIO_Console < Test::Unit::TestCase
     s.close if s
   end
 
-  def run_pty(src)
+  def run_pty(src, n = 1)
     r, w, pid = PTY.spawn(EnvUtil.rubybin, "-rio/console", "-e", src)
   rescue RuntimeError
     skip $!
   else
-    result = r.readlines.map(&:chomp)
+    result = []
+    n.times {result << r.gets.chomp}
     Process.wait(pid)
     if block_given?
       yield result
