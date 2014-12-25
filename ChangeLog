@@ -1,3 +1,12 @@
+Thu Dec 25 17:42:01 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/console.c (console_dev): send the given arguments
+	  to the opened console.  as a special case, do nothing if :close
+	  is given.
+
+	* test/lib/leakchecker.rb (LeakChecker#check_fd_leak): close if
+	  console.
+
 Thu Dec 25 17:37:47 2014  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* gc.c (wmap_final_func): fix memory size shortage when realloc wmap.

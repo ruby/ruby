@@ -222,14 +222,22 @@ class TestIO_Console < Test::Unit::TestCase
       IO.console.close
       assert_kind_of(IO, IO.console)
       assert_nothing_raised(IOError) {IO.console.fileno}
+
+      IO.console(:close)
+      assert(IO.console(:tty?))
+    ensure
+      IO.console(:close)
     end
 
     def test_sync
       assert(IO.console.sync, "console should be unbuffered")
+    ensure
+      IO.console(:close)
     end
   else
     def test_close
       assert_equal(["true"], run_pty("IO.console.close; p IO.console.fileno >= 0"))
+      assert_equal(["true"], run_pty("IO.console(:close); p IO.console(:tty?)"))
     end
 
     def test_sync
