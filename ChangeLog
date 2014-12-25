@@ -1,3 +1,9 @@
+Thu Dec 25 17:30:40 2014  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* gc.c (wmap_final_func): fix memory size shortage when realloc wmap.
+	  Fix SEGV during finilize of WeakRef on Solaris (though the SEGV
+	  could occur on all OS/platforms). [ruby-dev:48779] [Bug #10646]
+
 Thu Dec 25 17:27:06 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (NET_LUID): include winsock2.h instead of windows.h.
