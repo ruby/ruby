@@ -256,7 +256,11 @@ class TestIO_Console < Test::Unit::TestCase
   else
     result = r.readlines(&:chomp)
     Process.wait(pid)
-    yield result
+    if block_given?
+      yield result
+    else
+      result
+    end
   ensure
     r.close if r
     w.close if w
