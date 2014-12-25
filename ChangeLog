@@ -1,3 +1,8 @@
+Thu Dec 25 16:01:19 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_expand_path_internal): drop characters ignored
+	  by filesystem on Mac OS X.
+
 Thu Dec 25 15:36:15 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (replace_real_basename): get the real name and replace the
