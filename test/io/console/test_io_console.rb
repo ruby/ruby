@@ -218,21 +218,22 @@ class TestIO_Console < Test::Unit::TestCase
   end
 
   if IO.console
+    def test_close
+      IO.console.close
+      assert_kind_of(IO, IO.console)
+      assert_nothing_raised(IOError) {IO.console.fileno}
+    end
+
     def test_sync
       assert(IO.console.sync, "console should be unbuffered")
     end
   else
+    def test_close
+      assert_equal(["true"], run_pty("IO.console.close; p IO.console.fileno >= 0"))
+    end
+
     def test_sync
-      r, w, pid = PTY.spawn(EnvUtil.rubybin, "-rio/console", "-e", "p IO.console.class")
-    rescue RuntimeError
-      skip $!
-    else
-      con = r.gets.chomp
-      Process.wait(pid)
-      assert_match("File", con)
-    ensure
-      r.close if r
-      w.close if w
+      assert_equal(["true"], run_pty("p IO.console.sync"))
     end
   end
 
@@ -246,6 +247,19 @@ class TestIO_Console < Test::Unit::TestCase
   ensure
     m.close if m
     s.close if s
+  end
+
+  def run_pty(src)
+    r, w, pid = PTY.spawn(EnvUtil.rubybin, "-rio/console", "-e", src)
+  rescue RuntimeError
+    skip $!
+  else
+    result = r.readlines(&:chomp)
+    Process.wait(pid)
+    yield result
+  ensure
+    r.close if r
+    w.close if w
   end
 end if defined?(PTY) and defined?(IO::console)
 
