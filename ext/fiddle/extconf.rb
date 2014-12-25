@@ -36,7 +36,7 @@ begin
   end
   libffi.include = "#{libffi.builddir}/include"
   libffi.lib = "#{libffi.builddir}/.libs"
-  libffi.a = "#{libffi.lib}/libffi.#{$LIBEXT}"
+  libffi.a = "#{libffi.lib}/libffi_convenience.#{$LIBEXT}"
   nowarn = CONFIG.merge("warnflags"=>"")
   libffi.cflags = RbConfig.expand("$(CFLAGS)", nowarn)
   ver = ver[/libffi-(.*)/, 1]
@@ -64,9 +64,10 @@ begin
   ld = RbConfig::CONFIG['LD']
   args.concat %W[
     --srcdir=#{libffi.srcdir}
-    --disable-shared --host=#{libffi.arch}
+    --host=#{libffi.arch}
     --enable-builddir=#{RUBY_PLATFORM}
   ]
+  args << ($enable_shared && !$static ? '--enable-shared' : '--enable-static')
   args << libffi.opt if libffi.opt
   args.concat %W[
       CC=#{cc} CFLAGS=#{libffi.cflags}
