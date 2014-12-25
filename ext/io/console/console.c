@@ -77,7 +77,7 @@ getattr(int fd, conmode *t)
 #define SET_LAST_ERROR (0)
 #endif
 
-static ID id_getc, id_console;
+static ID id_getc, id_console, id_close;
 
 typedef struct {
     int vmin;
@@ -629,27 +629,49 @@ console_ioflush(VALUE io)
 /*
  * call-seq:
  *   IO.console      -> #<File:/dev/tty>
+ *   IO.console(sym, *args)
  *
  * Returns an File instance opened console.
+ *
+ * If +sym+ is given, it will be sent to the opened console with
+ * +args+ and the result will be returned instead of the console IO
+ * itself.
  *
  * You must require 'io/console' to use this method.
  */
 static VALUE
-console_dev(VALUE klass)
+console_dev(int argc, VALUE *argv, VALUE klass)
 {
     VALUE con = 0;
     rb_io_t *fptr;
+    VALUE sym = 0;
 
+    rb_check_arity(argc, 0, 1);
+    if (argc) {
+	Check_Type(sym = argv[0], T_SYMBOL);
+	--argc;
+	++argv;
+    }
     if (klass == rb_cIO) klass = rb_cFile;
     if (rb_const_defined(klass, id_console)) {
 	con = rb_const_get(klass, id_console);
-	if (RB_TYPE_P(con, T_FILE)) {
-	    if ((fptr = RFILE(con)->fptr) && GetReadFD(fptr) != -1)
-		return con;
+	if (!RB_TYPE_P(con, T_FILE) ||
+	    (!(fptr = RFILE(con)->fptr) || GetReadFD(fptr) == -1)) {
+	    rb_const_remove(klass, id_console);
+	    con = 0;
 	}
-	rb_const_remove(klass, id_console);
     }
-    {
+    if (sym) {
+	if (sym == ID2SYM(id_close) && !argc) {
+	    if (con) {
+		rb_io_close(con);
+		rb_const_remove(klass, id_console);
+		con = 0;
+	    }
+	    return Qnil;
+	}
+    }
+    if (!con) {
 	VALUE args[2];
 #if defined HAVE_TERMIOS_H || defined HAVE_TERMIO_H || defined HAVE_SGTTY_H
 # define CONSOLE_DEVICE "/dev/tty"
@@ -697,6 +719,10 @@ console_dev(VALUE klass)
 	fptr->mode |= FMODE_SYNC;
 	rb_const_set(klass, id_console, con);
     }
+    if (sym) {
+	/* TODO: avoid inadvertent pindown */
+	return rb_funcall(con, SYM2ID(sym), argc, argv);
+    }
     return con;
 }
 
@@ -720,6 +746,7 @@ Init_console(void)
 {
     id_getc = rb_intern("getc");
     id_console = rb_intern("console");
+    id_close = rb_intern("close");
     InitVM(console);
 }
 
@@ -739,7 +766,7 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "iflush", console_iflush, 0);
     rb_define_method(rb_cIO, "oflush", console_oflush, 0);
     rb_define_method(rb_cIO, "ioflush", console_ioflush, 0);
-    rb_define_singleton_method(rb_cIO, "console", console_dev, 0);
+    rb_define_singleton_method(rb_cIO, "console", console_dev, -1);
     {
 	VALUE mReadable = rb_define_module_under(rb_cIO, "generic_readable");
 	rb_define_method(mReadable, "getch", io_getch, -1);
