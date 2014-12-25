@@ -1,3 +1,8 @@
+Thu Dec 25 12:47:44 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (gettable_gen): warn possible reference to a local
+	  variable defined in a past scope.
+
 Thu Dec 25 10:09:14 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/console/console.c (console_dev): id_console is not a

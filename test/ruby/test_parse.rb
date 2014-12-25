@@ -873,4 +873,8 @@ x = __ENCODING__
     a = "\u{3042}"
     assert_warning(/#{a}/) {eval("#{a} = 1; /(?<#{a}>)/ =~ ''")}
   end
+
+  def test_past_scope_variable
+    assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}
+  end
 end
