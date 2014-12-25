@@ -53,7 +53,9 @@ class TestResolvDNS < Test::Unit::TestCase
           }
         }
         server_thread = Thread.new {
-          msg, (_, client_port, _, client_address) = u.recvfrom(4096)
+          timeout(5) do
+            msg, (_, client_port, _, client_address) = u.recvfrom(4096)
+          end
           id, word2, qdcount, ancount, nscount, arcount = msg.unpack("nnnnnn")
           qr =     (word2 & 0x8000) >> 15
           opcode = (word2 & 0x7800) >> 11
