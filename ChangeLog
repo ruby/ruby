@@ -1,3 +1,8 @@
+Thu Dec 25 13:59:17 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (NET_LUID): include also ifdef.h as a workaround of
+	  a bug in mingw-w64 header.  [ruby-core:67103] [Bug #10640]
+
 Thu Dec 25 12:47:44 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (gettable_gen): warn possible reference to a local
