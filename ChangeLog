@@ -1,3 +1,12 @@
+Thu Dec 25 15:36:15 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (replace_real_basename): get the real name and replace the
+	  base name with it by getattrlist(2) if available.
+	  suggested by Matthew Draper at [ruby-core:67116].  [Bug #10015]
+
+	* dir.c (glob_helper): get the real name of the whole path, not
+	  only the last name.
+
 Thu Dec 25 13:59:17 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (NET_LUID): include also ifdef.h as a workaround of

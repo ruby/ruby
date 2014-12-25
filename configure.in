@@ -1188,6 +1188,7 @@ AC_CHECK_HEADERS( \
   malloc_np.h \
   malloc/malloc.h \
   setjmpex.h \
+  sys/attr.h \
   sys/id.h
 )
 
@@ -2038,6 +2039,7 @@ AC_CHECK_FUNCS(fmod)
 AC_CHECK_FUNCS(fsync)
 AC_CHECK_FUNCS(ftruncate)
 AC_CHECK_FUNCS(ftruncate64)		# used for Win32 platform
+AC_CHECK_FUNCS(getattrlist)
 AC_CHECK_FUNCS(getcwd)
 AC_CHECK_FUNCS(getgidx)
 AC_CHECK_FUNCS(getgrnam)
