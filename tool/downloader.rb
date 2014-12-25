@@ -1,4 +1,33 @@
 require 'open-uri'
+begin
+  require 'net/https'
+  $rubygems_schema = 'https'
+
+  # open-uri of ruby 2.2.0 accept an array of PEMs as ssl_ca_cert, but old
+  # versions are not.  so, patching OpenSSL::X509::Store#add_file instead.
+  class OpenSSL::X509::Store
+    alias orig_add_file add_file
+    def add_file(pems)
+      Array(pems).each do |pem|
+        if File.directory?(pem)
+          add_path pem
+        else
+          orig_add_file pem
+        end
+      end
+    end
+  end
+  # since open-uri internally checks ssl_ca_cert by File.directory?, to allow
+  # accept an array.
+  class <<File
+    alias orig_directory? directory?
+    def File.directory? files
+      files.is_a?(Array) ? false : orig_directory?(files)
+    end
+  end
+rescue LoadError
+  $rubygems_schema = 'http'
+end
 
 class Downloader
   class GNU < self
@@ -10,7 +39,10 @@ class Downloader
   class RubyGems < self
     def self.download(name, dir = nil, ims = true, options = {})
       options[:ssl_ca_cert] = Dir.glob(File.expand_path("../lib/rubygems/ssl_certs/*.pem", File.dirname(__FILE__)))
-      super("https://rubygems.org/downloads/#{name}", name, dir, ims, options)
+      if $rubygems_schema != 'https'
+        warn "*** using http instead of https ***"
+      end
+      super("#{$rubygems_schema}://rubygems.org/downloads/#{name}", name, dir, ims, options)
     end
   end
 
