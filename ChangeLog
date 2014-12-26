@@ -1,3 +1,8 @@
+Fri Dec 26 15:32:16 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/tcltklib.c (ip_invoke_core): remove probably duplicate
+	  dead code.
+
 Fri Dec 26 15:28:27 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/tk/tcltklib.c (ip_ruby_cmd_receiver_const_get): simply use

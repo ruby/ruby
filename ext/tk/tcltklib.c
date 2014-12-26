@@ -8558,9 +8558,6 @@ ip_invoke_core(interp, argc, argv)
 #endif
 #endif
 
-    /* get the data struct */
-    ptr = get_ip(interp);
-
     /* get the command name string */
 #if TCL_MAJOR_VERSION >= 8
     cmd = Tcl_GetStringFromObj(objv[0], &len);
