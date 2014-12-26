@@ -1408,8 +1408,9 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       int len;
       fprintf(stderr, "%4"PRIdPTR"> \"", (*p == OP_FINISH) ? (ptrdiff_t )-1 : s - str);
       bp = buf;
+      q = s;
       if (*p != OP_FINISH) {    /* s may not be a valid pointer if OP_FINISH. */
-	for (i = 0, q = s; i < 7 && q < end; i++) {
+	for (i = 0; i < 7 && q < end; i++) {
 	  len = enclen(encode, q, end);
 	  while (len-- > 0) *bp++ = *q++;
 	}

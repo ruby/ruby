@@ -579,11 +579,13 @@ load_conv_function51932(void)
 	pIMultiLanguage = p;
     }
 }
+#define need_conv_function51932() (load_conv_function51932(), 1)
 #else
 #define load_conv_function51932() failed_load_conv51932()
+#define need_conv_function51932() (failed_load_conv51932(), 0)
 #endif
 
-#define conv_51932(cp) ((cp) == 51932 && (load_conv_function51932(), 1))
+#define conv_51932(cp) ((cp) == 51932 && need_conv_function51932())
 
 static void
 set_ole_codepage(UINT cp)
@@ -711,8 +713,8 @@ ole_wc2mb_alloc(LPWSTR pw, char *(alloc)(UINT size, void *arg), void *arg)
             ole_raise(hr, eWIN32OLERuntimeError, "fail to convert Unicode to CP%d", cWIN32OLE_cp);
 	}
 	pm[size] = '\0';
+	return pm;
 #endif
-        return pm;
     }
     size = WideCharToMultiByte(cWIN32OLE_cp, 0, pw, -1, NULL, 0, NULL, NULL);
     if (size) {
@@ -893,8 +895,8 @@ ole_vstr2wc(VALUE vstr)
 	if (FAILED(hr)) {
             ole_raise(hr, eWIN32OLERuntimeError, "fail to convert CP%d to Unicode", cp);
 	}
-#endif
 	return pw;
+#endif
     }
     size = MultiByteToWideChar(cp, 0, RSTRING_PTR(vstr), RSTRING_LEN(vstr), NULL, 0);
     pw = SysAllocStringLen(NULL, size);
@@ -923,8 +925,8 @@ ole_mb2wc(char *pm, int len)
 	if (FAILED(hr)) {
             ole_raise(hr, eWIN32OLERuntimeError, "fail to convert CP%d to Unicode", cWIN32OLE_cp);
 	}
-#endif
 	return pw;
+#endif
     }
     size = MultiByteToWideChar(cWIN32OLE_cp, 0, pm, len, NULL, 0);
     pw = SysAllocStringLen(NULL, size - 1);

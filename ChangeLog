@@ -1,4 +1,13 @@
-Fri Dec 26 14:51:34 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Dec 26 15:09:08 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_spawn_process): get rid of usage of uninitialized
+	  variable.
+	  reported by Denis Denisov <denji0k AT gmail.com>.
+
+	* regexec.c (match_at): ditto.
+
+	* ext/win32ole/win32ole.c (ole_wc2mb_alloc, ole_vstr2wc, ole_mb2wc):
+	  ditto.
 
 	* dir.c (ruby_glob0): no need to check never-NULL pointer.
 	  reported by Denis Denisov <denji0k AT gmail.com>.

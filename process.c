@@ -3910,6 +3910,7 @@ rb_spawn_process(struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
     }
     status = system(StringValuePtr(prog));
     rb_last_status_set((status & 0xff) << 8, 0);
+    pid = 1;			/* dummy */
 # endif
 
     rb_execarg_run_options(&sarg, NULL, errmsg, errmsg_buflen);
