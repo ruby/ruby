@@ -26,16 +26,16 @@ static UTF32 unescape_unicode(const unsigned char *p)
     UTF32 result = 0;
     b = digit_values[p[0]];
     if (b < 0) return UNI_REPLACEMENT_CHAR;
-    result = (result << 4) | b;
+    result = (result << 4) | (unsigned char)b;
     b = digit_values[p[1]];
-    result = (result << 4) | b;
     if (b < 0) return UNI_REPLACEMENT_CHAR;
+    result = (result << 4) | (unsigned char)b;
     b = digit_values[p[2]];
-    result = (result << 4) | b;
     if (b < 0) return UNI_REPLACEMENT_CHAR;
+    result = (result << 4) | (unsigned char)b;
     b = digit_values[p[3]];
-    result = (result << 4) | b;
     if (b < 0) return UNI_REPLACEMENT_CHAR;
+    result = (result << 4) | (unsigned char)b;
     return result;
 }
 
@@ -883,7 +883,7 @@ static VALUE cParser_quirks_mode_p(VALUE self)
 }
 
 
-void Init_parser()
+void Init_parser(void)
 {
     rb_require("json/common");
     mJSON = rb_define_module("JSON");
