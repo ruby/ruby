@@ -3489,58 +3489,11 @@ ip_ruby_cmd_core(arg)
     return ret;
 }
 
-#define SUPPORT_NESTED_CONST_AS_IP_RUBY_CMD_RECEIVER 1
-
 static VALUE
 ip_ruby_cmd_receiver_const_get(name)
      char *name;
 {
-  volatile VALUE klass = rb_cObject;
-#if 0
-  char *head, *tail;
-#endif
-  int state;
-
-#if SUPPORT_NESTED_CONST_AS_IP_RUBY_CMD_RECEIVER
-  klass = rb_eval_string_protect(name, &state);
-  if (state) {
-    return Qnil;
-  } else {
-    return klass;
-  }
-#else
-  return rb_const_get(klass, rb_intern(name));
-#endif
-
-  /* TODO!!!!!! */
-  /* support nest of classes/modules */
-
-  /* return rb_eval_string(name); */
-  /* return rb_eval_string_protect(name, &state); */
-
-#if 0 /* doesn't work!! (fail to autoload?) */
-  /* duplicate */
-  head = name = strdup(name);
-
-  /* has '::' at head ? */
-  if (*head == ':')  head += 2;
-  tail = head;
-
-  /* search */
-  while(*tail) {
-    if (*tail == ':') {
-      *tail = '\0';
-      klass = rb_const_get(klass, rb_intern(head));
-      tail += 2;
-      head = tail;
-    } else {
-      tail++;
-    }
-  }
-
-  free(name);
-  return rb_const_get(klass, rb_intern(head));
-#endif
+    return rb_path2class(name);
 }
 
 static VALUE
@@ -3548,18 +3501,12 @@ ip_ruby_cmd_receiver_get(str)
      char *str;
 {
   volatile VALUE receiver;
-#if !SUPPORT_NESTED_CONST_AS_IP_RUBY_CMD_RECEIVER
   int state;
-#endif
 
   if (str[0] == ':' || ('A' <= str[0] && str[0] <= 'Z')) {
     /* class | module | constant */
-#if SUPPORT_NESTED_CONST_AS_IP_RUBY_CMD_RECEIVER
-    receiver = ip_ruby_cmd_receiver_const_get(str);
-#else
     receiver = rb_protect(ip_ruby_cmd_receiver_const_get, (VALUE)str, &state);
     if (state) return Qnil;
-#endif
   } else if (str[0] == '$') {
     /* global variable */
     receiver = rb_gv_get(str);

@@ -1,3 +1,8 @@
+Fri Dec 26 15:28:27 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/tcltklib.c (ip_ruby_cmd_receiver_const_get): simply use
+	  rb_path2class() to get a class/module from its name.
+
 Fri Dec 26 15:20:54 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_long): append at once by w_nbyte() instead of
