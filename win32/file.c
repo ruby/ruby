@@ -626,7 +626,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     if (whome)
 	xfree(whome);
 
-    if (wfullpath && wfullpath != wfullpath_buffer)
+    if (wfullpath != wfullpath_buffer)
 	xfree(wfullpath);
 
     if (fullpath)

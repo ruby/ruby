@@ -1,4 +1,9 @@
-Fri Dec 26 14:48:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Dec 26 14:51:34 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (ruby_glob0): no need to check never-NULL pointer.
+	  reported by Denis Denisov <denji0k AT gmail.com>.
+
+	* win32/file.c (rb_file_expand_path_internal): ditto.
 
 	* win32/file.c (code_page_i): handle realloc failure.
 	  reported by Denis Denisov <denji0k AT gmail.com>.

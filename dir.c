@@ -1690,7 +1690,7 @@ ruby_glob0(const char *path, int flags, ruby_glob_func *func, VALUE arg, rb_enco
     root = rb_enc_path_skip_prefix(root, root + strlen(root), enc);
 #endif
 
-    if (root && *root == '/') root++;
+    if (*root == '/') root++;
 
     n = root - start;
     buf = GLOB_ALLOC_N(char, n + 1);
