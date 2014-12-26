@@ -160,8 +160,11 @@ code_page_i(st_data_t name, st_data_t idx, st_data_t arg)
 	    USHORT *table = cp->table;
 	    if (count <= idx) {
 		unsigned int i = count;
-		cp->count = count = (((idx + 4) & ~31) | 28);
-		cp->table = table = realloc(table, count * sizeof(*table));
+		count = (((idx + 4) & ~31) | 28);
+		table = realloc(table, count * sizeof(*table));
+		if (!table) return ST_CONTINUE;
+		cp->count = count;
+		cp->table = table;
 		while (i < count) table[i++] = INVALID_CODE_PAGE;
 	    }
 	    table[idx] = (USHORT)code_page;

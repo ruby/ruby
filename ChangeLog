@@ -1,4 +1,9 @@
-Fri Dec 26 14:33:01 2014  Nobuyoshi Nakada  <nobu@ruby.local>
+Fri Dec 26 14:48:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/file.c (code_page_i): handle realloc failure.
+	  reported by Denis Denisov <denji0k AT gmail.com>.
+
+	* win32/stub.c (stub_sysinit): ditto.
 
 	* fix printf format conversion specifiers.
 	  reported by Denis Denisov <denji0k AT gmail.com>.

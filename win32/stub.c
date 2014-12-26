@@ -21,7 +21,12 @@ stub_sysinit(int *argc, char ***argv)
     for (i = 1; i < ac; ++i) {
 	lenall += strlen(av[i]) + 1;
     }
-    *argv = av = realloc(av, lenall + (lenexe + 1) * 2 + sizeof(char *) * (i + 2));
+    av = realloc(av, lenall + (lenexe + 1) * 2 + sizeof(char *) * (i + 2));
+    if (!av) {
+	perror("realloc command line");
+	exit(-1);
+    }
+    *argv = av;
     *argc = ++ac;
     p = (char *)(av + i + 2);
     memmove(p + (lenexe + 1) * 2, (char *)(av + ac) + len0, lenall);
