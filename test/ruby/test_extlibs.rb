@@ -1,10 +1,14 @@
+require "envutil"
+
 class TestExtLibs < Test::Unit::TestCase
   def self.check_existence(ext, add_msg = nil)
     add_msg = ".  #{add_msg}" if add_msg
-    define_method("test_existence_of_#{ext.gsub(%r'/', '_')}") do
-      assert_nothing_raised("extension library `#{ext}' is not found#{add_msg}") do
-        require ext
-      end
+    define_method("test_existence_of_#{ext}") do
+      assert_separately([], <<-"end;", ignore_stderr: true) # do
+        assert_nothing_raised("extension library `#{ext}' is not found#{add_msg}") do
+          require "#{ext}"
+        end
+      end;
     end
   end
 
@@ -32,8 +36,8 @@ class TestExtLibs < Test::Unit::TestCase
   check_existence "io/nonblock"
   check_existence "io/wait"
   check_existence "json"
-  #check_existence "mathn/complex" # break the world
-  #check_existence "mathn/rational" # break the world
+  check_existence "mathn/complex"
+  check_existence "mathn/rational"
   check_existence "nkf"
   check_existence "objspace"
   check_existence "openssl", "this may be false positive, but should assert because rubygems requires this"
