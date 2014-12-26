@@ -277,7 +277,7 @@ static void
 w_long(long x, struct dump_arg *arg)
 {
     char buf[sizeof(long)+1];
-    int i, len = 0;
+    int i;
 
 #if SIZEOF_LONG > 4
     if (!(RSHIFT(x, 31) == 0 || RSHIFT(x, 31) == -1)) {
@@ -310,10 +310,7 @@ w_long(long x, struct dump_arg *arg)
 	    break;
 	}
     }
-    len = i;
-    for (i=0;i<=len;i++) {
-	w_byte(buf[i], arg);
-    }
+    w_nbyte(buf, i+1, arg);
 }
 
 #ifdef DBL_MANT_DIG

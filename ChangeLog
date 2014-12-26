@@ -1,3 +1,8 @@
+Fri Dec 26 15:20:54 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_long): append at once by w_nbyte() instead of
+	  appending byte by byte.
+
 Fri Dec 26 15:13:13 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/json/parser/parser.rl (unescape_unicode): check if valid
