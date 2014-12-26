@@ -4842,11 +4842,11 @@ out_side:
 space_error:
 #ifdef BIGDECIMAL_DEBUG
     if (gfDebug) {
-	printf("   word_a=%lu\n", word_a);
-	printf("   word_b=%lu\n", word_b);
-	printf("   word_c=%lu\n", word_c);
-	printf("   word_r=%lu\n", word_r);
-	printf("   ind_r =%lu\n", ind_r);
+	printf("   word_a=%"PRIuSIZE"\n", word_a);
+	printf("   word_b=%"PRIuSIZE"\n", word_b);
+	printf("   word_c=%"PRIuSIZE"\n", word_c);
+	printf("   word_r=%"PRIuSIZE"\n", word_r);
+	printf("   ind_r =%"PRIuSIZE"\n", ind_r);
     }
 #endif /* BIGDECIMAL_DEBUG */
     rb_bug("ERROR(VpDivd): space for remainder too small.");

@@ -507,7 +507,7 @@ getpage(register DBM *db, register long int hash)
 	while (dbit < db->maxbno && getdbit(db, dbit))
 		dbit = 2 * dbit + ((hash & ((long) 1 << hbit++)) ? 2 : 1);
 
-	debug(("dbit: %d...", dbit));
+	debug(("dbit: %ld...", dbit));
 
 	db->curbit = dbit;
 	db->hmask = masks[hbit];
@@ -532,7 +532,7 @@ getpage(register DBM *db, register long int hash)
 		}
 		db->pagbno = pagb;
 
-		debug(("pag read: %d\n", pagb));
+		debug(("pag read: %ld\n", pagb));
 	}
 	return 1;
 }
@@ -552,7 +552,7 @@ getdbit(register DBM *db, register long int dbit)
 			return 0;
 		db->dirbno = dirb;
 
-		debug(("dir read: %d\n", dirb));
+		debug(("dir read: %ld\n", dirb));
 	}
 
 	return db->dirbuf[c % DBLKSIZ] & (1 << (dbit % BYTESIZ));
@@ -573,7 +573,7 @@ setdbit(register DBM *db, register long int dbit)
 			return 0;
 		db->dirbno = dirb;
 
-		debug(("dir read: %d\n", dirb));
+		debug(("dir read: %ld\n", dirb));
 	}
 
 	db->dirbuf[c % DBLKSIZ] |= (1 << (dbit % BYTESIZ));

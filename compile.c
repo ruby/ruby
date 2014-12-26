@@ -5652,7 +5652,7 @@ dump_disasm_list(struct iseq_link_element *link)
 	    {
 		iobj = (INSN *)link;
 		str = insn_data_to_s_detail(iobj);
-		printf("%04d %-65s(%4d)\n", pos, StringValueCStr(str), iobj->line_no);
+		printf("%04d %-65s(%4u)\n", pos, StringValueCStr(str), iobj->line_no);
 		pos += insn_data_length(iobj);
 		break;
 	    }

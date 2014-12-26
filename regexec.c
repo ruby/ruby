@@ -1292,7 +1292,7 @@ onig_print_statistics(FILE* f)
   int i;
   fprintf(f, "   count      prev        time\n");
   for (i = 0; OnigOpInfo[i].opcode >= 0; i++) {
-    fprintf(f, "%8d: %8d: %10ld: %s\n",
+    fprintf(f, "%8d: %8d: %10lu: %s\n",
 	    OpCounter[i], OpPrevCounter[i], OpTime[i], OnigOpInfo[i].name);
   }
   fprintf(f, "\nmax stack depth: %d\n", MaxStackDepth);
@@ -4290,7 +4290,7 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
 
 #ifdef ONIG_DEBUG
   if (r != ONIG_MISMATCH)
-    fprintf(stderr, "onig_search: error %"PRIdPTR"\n", r);
+    fprintf(stderr, "onig_search: error %"PRIdPTRDIFF"\n", r);
 #endif
   return r;
 
@@ -4300,7 +4300,7 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
   ONIG_STATE_DEC_THREAD(reg);
 #ifdef ONIG_DEBUG
   if (r != ONIG_MISMATCH)
-    fprintf(stderr, "onig_search: error %"PRIdPTR"\n", r);
+    fprintf(stderr, "onig_search: error %"PRIdPTRDIFF"\n", r);
 #endif
   return r;
 
