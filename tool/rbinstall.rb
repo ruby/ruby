@@ -709,20 +709,28 @@ install?(:ext, :comm, :gem) do
 end
 
 install?(:ext, :comm, :gem) do
-  require 'pathname'
-  gem_dir = Gem.default_dir
-  directories = Gem.ensure_gem_subdirectories(gem_dir, :mode => $dir_mode)
-  prepare "bundle gems", gem_dir, directories
-  Dir.glob(srcdir+'/gems/*.gem').each do |gem|
-    Gem.install gem, Gem::Requirement.default, :install_dir => with_destdir(Gem.dir), :domain => :local, :ignore_dependencies => true
-    gemname = Pathname(gem).basename
-    puts "#{" "*30}#{gemname}"
+  begin
+    require "zlib"
+  rescue LoadErroe
   end
-  # fix directory permissions
-  # TODO: Gem.install should accept :dir_mode option or something
-  File.chmod($dir_mode, *Dir.glob(with_destdir(Gem.dir)+"/**/"))
-  # fix .gemspec permissions
-  File.chmod($data_mode, *Dir.glob(with_destdir(Gem.dir)+"/specifications/*.gemspec"))
+  if defined?(Zlib)
+    require 'pathname'
+    gem_dir = Gem.default_dir
+    directories = Gem.ensure_gem_subdirectories(gem_dir, :mode => $dir_mode)
+    prepare "bundle gems", gem_dir, directories
+    Dir.glob(srcdir+'/gems/*.gem').each do |gem|
+      Gem.install gem, Gem::Requirement.default, :install_dir => with_destdir(Gem.dir), :domain => :local, :ignore_dependencies => true
+      gemname = Pathname(gem).basename
+      puts "#{" "*30}#{gemname}"
+    end
+    # fix directory permissions
+    # TODO: Gem.install should accept :dir_mode option or something
+    File.chmod($dir_mode, *Dir.glob(with_destdir(Gem.dir)+"/**/"))
+    # fix .gemspec permissions
+    File.chmod($data_mode, *Dir.glob(with_destdir(Gem.dir)+"/specifications/*.gemspec"))
+  else
+    puts "skip installing bundle gems because of lacking zlib"
+  end
 end
 
 parse_args()
