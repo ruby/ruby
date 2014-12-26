@@ -5490,7 +5490,7 @@ typedef struct nkf_iconv_t {
     size_t input_buffer_size;
     char *output_buffer;
     size_t output_buffer_size;
-}
+};
 
 static nkf_iconv_t
 nkf_iconv_new(char *tocode, char *fromcode)

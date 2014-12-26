@@ -1,4 +1,7 @@
-Fri Dec 26 15:09:08 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Dec 26 15:09:27 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c (nkf_iconv_t): fix a missing semicolon.
+	  reported by Denis Denisov <denji0k AT gmail.com>.
 
 	* process.c (rb_spawn_process): get rid of usage of uninitialized
 	  variable.
