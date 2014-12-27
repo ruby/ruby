@@ -1,3 +1,8 @@
+Sat Dec 27 16:54:05 2014  Tanaka Akira  <akr@fsij.org>
+
+	* process.c: Unused code removed.
+	  It seems waitpid() is universaly available on POSIX platforms.
+
 Sat Dec 27 15:08:27 2014  Eric Wong  <e@80x24.org>
 
 	* vm_core.h (rb_vm_living_threads_insert): preserve order

@@ -738,54 +738,24 @@ pst_wcoredump(VALUE st)
 #endif
 }
 
-#if !defined(HAVE_WAITPID) && !defined(HAVE_WAIT4)
-#define NO_WAITPID
-static st_table *pid_tbl;
-
-struct wait_data {
-    rb_pid_t pid;
-    int status;
-};
-
-static int
-wait_each(rb_pid_t pid, int status, struct wait_data *data)
-{
-    if (data->status != -1) return ST_STOP;
-
-    data->pid = pid;
-    data->status = status;
-    return ST_DELETE;
-}
-
-static int
-waitall_each(rb_pid_t pid, int status, VALUE ary)
-{
-    rb_last_status_set(status, pid);
-    rb_ary_push(ary, rb_assoc_new(PIDT2NUM(pid), rb_last_status_get()));
-    return ST_DELETE;
-}
-#else
 struct waitpid_arg {
     rb_pid_t pid;
     int flags;
     int *st;
 };
-#endif
 
 static void *
 rb_waitpid_blocking(void *data)
 {
     rb_pid_t result;
-#ifndef NO_WAITPID
     struct waitpid_arg *arg = data;
-#endif
 
-#if defined NO_WAITPID
-    result = wait(data);
-#elif defined HAVE_WAITPID
+#if defined HAVE_WAITPID
     result = waitpid(arg->pid, arg->st, arg->flags);
-#else  /* HAVE_WAIT4 */
+#elif defined HAVE_WAIT4
     result = wait4(arg->pid, arg->st, arg->flags, NULL);
+#else
+#  error waitpid or wait4 is required.
 #endif
 
     return (void *)(VALUE)result;
@@ -795,7 +765,6 @@ rb_pid_t
 rb_waitpid(rb_pid_t pid, int *st, int flags)
 {
     rb_pid_t result;
-#ifndef NO_WAITPID
     struct waitpid_arg arg;
 
   retry:
@@ -811,48 +780,6 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
         }
 	return (rb_pid_t)-1;
     }
-#else  /* NO_WAITPID */
-    if (pid_tbl) {
-	st_data_t status, piddata = (st_data_t)pid;
-	if (pid == (rb_pid_t)-1) {
-	    struct wait_data data;
-	    data.pid = (rb_pid_t)-1;
-	    data.status = -1;
-	    st_foreach(pid_tbl, wait_each, (st_data_t)&data);
-	    if (data.status != -1) {
-		rb_last_status_set(data.status, data.pid);
-		return data.pid;
-	    }
-	}
-	else if (st_delete(pid_tbl, &piddata, &status)) {
-	    rb_last_status_set(*st = (int)status, pid);
-	    return pid;
-	}
-    }
-
-    if (flags) {
-	rb_raise(rb_eArgError, "can't do waitpid with flags");
-    }
-
-    for (;;) {
-	result = (rb_pid_t)(VALUE)rb_thread_blocking_region(rb_waitpid_blocking,
-							    st, RUBY_UBF_PROCESS, 0);
-	if (result < 0) {
-	    if (errno == EINTR) {
-		rb_thread_schedule();
-		continue;
-	    }
-	    return (rb_pid_t)-1;
-	}
-	if (result == pid || pid == (rb_pid_t)-1) {
-	    break;
-	}
-	if (!pid_tbl)
-	    pid_tbl = st_init_numtable();
-	st_insert(pid_tbl, pid, (st_data_t)st);
-	if (!rb_thread_alone()) rb_thread_schedule();
-    }
-#endif
     if (result > 0) {
 	rb_last_status_set(*st, result);
     }
@@ -1001,34 +928,15 @@ proc_waitall(void)
 
     rb_secure(2);
     result = rb_ary_new();
-#ifdef NO_WAITPID
-    if (pid_tbl) {
-	st_foreach(pid_tbl, waitall_each, result);
-    }
-#else
     rb_last_status_clear();
-#endif
 
     for (pid = -1;;) {
-#ifdef NO_WAITPID
-	pid = wait(&status);
-#else
 	pid = rb_waitpid(-1, &status, 0);
-#endif
 	if (pid == -1) {
 	    if (errno == ECHILD)
 		break;
-#ifdef NO_WAITPID
-	    if (errno == EINTR) {
-		rb_thread_schedule();
-		continue;
-	    }
-#endif
 	    rb_sys_fail(0);
 	}
-#ifdef NO_WAITPID
-	rb_last_status_set(status, pid);
-#endif
 	rb_ary_push(result, rb_assoc_new(PIDT2NUM(pid), rb_last_status_get()));
     }
     return result;
