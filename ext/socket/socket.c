@@ -319,14 +319,14 @@ rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass)
  * * +remote_sockaddr+ - the +struct+ sockaddr contained in a string or Addrinfo object
  *
  * === Example:
- * 	# Pull down Google's web page
- * 	require 'socket'
- * 	include Socket::Constants
- * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
- * 	sockaddr = Socket.pack_sockaddr_in( 80, 'www.google.com' )
- * 	socket.connect( sockaddr )
- * 	socket.write( "GET / HTTP/1.0\r\n\r\n" )
- * 	results = socket.read
+ *   # Pull down Google's web page
+ *   require 'socket'
+ *   include Socket::Constants
+ *   socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
+ *   sockaddr = Socket.pack_sockaddr_in( 80, 'www.google.com' )
+ *   socket.connect( sockaddr )
+ *   socket.write( "GET / HTTP/1.0\r\n\r\n" )
+ *   results = socket.read
  *
  * === Unix-based Exceptions
  * On unix-based systems the following system exceptions may be raised if
@@ -450,22 +450,22 @@ sock_connect(VALUE sock, VALUE addr)
  * * +remote_sockaddr+ - the +struct+ sockaddr contained in a string or Addrinfo object
  *
  * === Example:
- * 	# Pull down Google's web page
- * 	require 'socket'
- * 	include Socket::Constants
- * 	socket = Socket.new(AF_INET, SOCK_STREAM, 0)
- * 	sockaddr = Socket.sockaddr_in(80, 'www.google.com')
- * 	begin # emulate blocking connect
- * 	  socket.connect_nonblock(sockaddr)
- * 	rescue IO::WaitWritable
- * 	  IO.select(nil, [socket]) # wait 3-way handshake completion
- * 	  begin
- * 	    socket.connect_nonblock(sockaddr) # check connection failure
- * 	  rescue Errno::EISCONN
- * 	  end
- * 	end
- * 	socket.write("GET / HTTP/1.0\r\n\r\n")
- * 	results = socket.read
+ *   # Pull down Google's web page
+ *   require 'socket'
+ *   include Socket::Constants
+ *   socket = Socket.new(AF_INET, SOCK_STREAM, 0)
+ *   sockaddr = Socket.sockaddr_in(80, 'www.google.com')
+ *   begin # emulate blocking connect
+ *     socket.connect_nonblock(sockaddr)
+ *   rescue IO::WaitWritable
+ *     IO.select(nil, [socket]) # wait 3-way handshake completion
+ *     begin
+ *       socket.connect_nonblock(sockaddr) # check connection failure
+ *     rescue Errno::EISCONN
+ *     end
+ *   end
+ *   socket.write("GET / HTTP/1.0\r\n\r\n")
+ *   results = socket.read
  *
  * Refer to Socket#connect for the exceptions that may be thrown if the call
  * to _connect_nonblock_ fails.
@@ -511,18 +511,18 @@ sock_connect_nonblock(VALUE sock, VALUE addr)
  * * +local_sockaddr+ - the +struct+ sockaddr contained in a string or an Addrinfo object
  *
  * === Example
- * 	require 'socket'
+ *   require 'socket'
  *
- * 	# use Addrinfo
- * 	socket = Socket.new(:INET, :STREAM, 0)
- * 	socket.bind(Addrinfo.tcp("127.0.0.1", 2222))
- * 	p socket.local_address #=> #<Addrinfo: 127.0.0.1:2222 TCP>
+ *   # use Addrinfo
+ *   socket = Socket.new(:INET, :STREAM, 0)
+ *   socket.bind(Addrinfo.tcp("127.0.0.1", 2222))
+ *   p socket.local_address #=> #<Addrinfo: 127.0.0.1:2222 TCP>
  *
- * 	# use struct sockaddr
- * 	include Socket::Constants
- * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
- * 	sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
- * 	socket.bind( sockaddr )
+ *   # use struct sockaddr
+ *   include Socket::Constants
+ *   socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
+ *   sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
+ *   socket.bind( sockaddr )
  *
  * === Unix-based Exceptions
  * On unix-based based systems the following system exceptions may be raised if
@@ -613,18 +613,18 @@ sock_bind(VALUE sock, VALUE addr)
  * * +backlog+ - the maximum length of the queue for pending connections.
  *
  * === Example 1
- * 	require 'socket'
- * 	include Socket::Constants
- * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
- * 	sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
- * 	socket.bind( sockaddr )
- * 	socket.listen( 5 )
+ *   require 'socket'
+ *   include Socket::Constants
+ *   socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
+ *   sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
+ *   socket.bind( sockaddr )
+ *   socket.listen( 5 )
  *
  * === Example 2 (listening on an arbitrary port, unix-based systems only):
- * 	require 'socket'
- * 	include Socket::Constants
- * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
- * 	socket.listen( 1 )
+ *   require 'socket'
+ *   include Socket::Constants
+ *   socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
+ *   socket.listen( 1 )
  *
  * === Unix-based Exceptions
  * On unix based systems the above will work because a new +sockaddr+ struct
@@ -700,27 +700,27 @@ rsock_sock_listen(VALUE sock, VALUE log)
  * * +flags+ - zero or more of the +MSG_+ options
  *
  * === Example
- * 	# In one file, start this first
- * 	require 'socket'
- * 	include Socket::Constants
- * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
- * 	sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
- * 	socket.bind( sockaddr )
- * 	socket.listen( 5 )
- * 	client, client_addrinfo = socket.accept
- * 	data = client.recvfrom( 20 )[0].chomp
- * 	puts "I only received 20 bytes '#{data}'"
- * 	sleep 1
- * 	socket.close
+ *   # In one file, start this first
+ *   require 'socket'
+ *   include Socket::Constants
+ *   socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
+ *   sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
+ *   socket.bind( sockaddr )
+ *   socket.listen( 5 )
+ *   client, client_addrinfo = socket.accept
+ *   data = client.recvfrom( 20 )[0].chomp
+ *   puts "I only received 20 bytes '#{data}'"
+ *   sleep 1
+ *   socket.close
  *
- * 	# In another file, start this second
- * 	require 'socket'
- * 	include Socket::Constants
- * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
- * 	sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
- * 	socket.connect( sockaddr )
- * 	socket.puts "Watch this get cut short!"
- * 	socket.close
+ *   # In another file, start this second
+ *   require 'socket'
+ *   include Socket::Constants
+ *   socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
+ *   sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
+ *   socket.connect( sockaddr )
+ *   socket.puts "Watch this get cut short!"
+ *   socket.close
  *
  * === Unix-based Exceptions
  * On unix-based based systems the following system exceptions may be raised if the
@@ -817,33 +817,33 @@ sock_recvfrom(int argc, VALUE *argv, VALUE sock)
  * * +flags+ - zero or more of the +MSG_+ options
  *
  * === Example
- * 	# In one file, start this first
- * 	require 'socket'
- * 	include Socket::Constants
- * 	socket = Socket.new(AF_INET, SOCK_STREAM, 0)
- * 	sockaddr = Socket.sockaddr_in(2200, 'localhost')
- * 	socket.bind(sockaddr)
- * 	socket.listen(5)
- * 	client, client_addrinfo = socket.accept
- * 	begin # emulate blocking recvfrom
- * 	  pair = client.recvfrom_nonblock(20)
- * 	rescue IO::WaitReadable
- * 	  IO.select([client])
- * 	  retry
- * 	end
- * 	data = pair[0].chomp
- * 	puts "I only received 20 bytes '#{data}'"
- * 	sleep 1
- * 	socket.close
+ *   # In one file, start this first
+ *   require 'socket'
+ *   include Socket::Constants
+ *   socket = Socket.new(AF_INET, SOCK_STREAM, 0)
+ *   sockaddr = Socket.sockaddr_in(2200, 'localhost')
+ *   socket.bind(sockaddr)
+ *   socket.listen(5)
+ *   client, client_addrinfo = socket.accept
+ *   begin # emulate blocking recvfrom
+ *     pair = client.recvfrom_nonblock(20)
+ *   rescue IO::WaitReadable
+ *     IO.select([client])
+ *     retry
+ *   end
+ *   data = pair[0].chomp
+ *   puts "I only received 20 bytes '#{data}'"
+ *   sleep 1
+ *   socket.close
  *
- * 	# In another file, start this second
- * 	require 'socket'
- * 	include Socket::Constants
- * 	socket = Socket.new(AF_INET, SOCK_STREAM, 0)
- * 	sockaddr = Socket.sockaddr_in(2200, 'localhost')
- * 	socket.connect(sockaddr)
- * 	socket.puts "Watch this get cut short!"
- * 	socket.close
+ *   # In another file, start this second
+ *   require 'socket'
+ *   include Socket::Constants
+ *   socket = Socket.new(AF_INET, SOCK_STREAM, 0)
+ *   sockaddr = Socket.sockaddr_in(2200, 'localhost')
+ *   socket.connect(sockaddr)
+ *   socket.puts "Watch this get cut short!"
+ *   socket.close
  *
  * Refer to Socket#recvfrom for the exceptions that may be thrown if the call
  * to _recvfrom_nonblock_ fails.
@@ -903,32 +903,32 @@ sock_accept(VALUE sock)
  * and an Addrinfo, _client_addrinfo_.
  *
  * === Example
- * 	# In one script, start this first
- * 	require 'socket'
- * 	include Socket::Constants
- * 	socket = Socket.new(AF_INET, SOCK_STREAM, 0)
- * 	sockaddr = Socket.sockaddr_in(2200, 'localhost')
- * 	socket.bind(sockaddr)
- * 	socket.listen(5)
- * 	begin # emulate blocking accept
- * 	  client_socket, client_addrinfo = socket.accept_nonblock
- * 	rescue IO::WaitReadable, Errno::EINTR
- * 	  IO.select([socket])
- * 	  retry
- * 	end
- * 	puts "The client said, '#{client_socket.readline.chomp}'"
- * 	client_socket.puts "Hello from script one!"
- * 	socket.close
+ *   # In one script, start this first
+ *   require 'socket'
+ *   include Socket::Constants
+ *   socket = Socket.new(AF_INET, SOCK_STREAM, 0)
+ *   sockaddr = Socket.sockaddr_in(2200, 'localhost')
+ *   socket.bind(sockaddr)
+ *   socket.listen(5)
+ *   begin # emulate blocking accept
+ *     client_socket, client_addrinfo = socket.accept_nonblock
+ *   rescue IO::WaitReadable, Errno::EINTR
+ *     IO.select([socket])
+ *     retry
+ *   end
+ *   puts "The client said, '#{client_socket.readline.chomp}'"
+ *   client_socket.puts "Hello from script one!"
+ *   socket.close
  *
- * 	# In another script, start this second
- * 	require 'socket'
- * 	include Socket::Constants
- * 	socket = Socket.new(AF_INET, SOCK_STREAM, 0)
- * 	sockaddr = Socket.sockaddr_in(2200, 'localhost')
- * 	socket.connect(sockaddr)
- * 	socket.puts "Hello from script 2."
- * 	puts "The server said, '#{socket.readline.chomp}'"
- * 	socket.close
+ *   # In another script, start this second
+ *   require 'socket'
+ *   include Socket::Constants
+ *   socket = Socket.new(AF_INET, SOCK_STREAM, 0)
+ *   sockaddr = Socket.sockaddr_in(2200, 'localhost')
+ *   socket.connect(sockaddr)
+ *   socket.puts "Hello from script 2."
+ *   puts "The server said, '#{socket.readline.chomp}'"
+ *   socket.close
  *
  * Refer to Socket#accept for the exceptions that may be thrown if the call
  * to _accept_nonblock_ fails.
@@ -965,28 +965,28 @@ sock_accept_nonblock(VALUE sock)
  * and an Addrinfo, _client_addrinfo_.
  *
  * === Example
- * 	# In one script, start this first
- * 	require 'socket'
- * 	include Socket::Constants
- * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
- * 	sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
- * 	socket.bind( sockaddr )
- * 	socket.listen( 5 )
- * 	client_fd, client_addrinfo = socket.sysaccept
- * 	client_socket = Socket.for_fd( client_fd )
- * 	puts "The client said, '#{client_socket.readline.chomp}'"
- * 	client_socket.puts "Hello from script one!"
- * 	socket.close
+ *   # In one script, start this first
+ *   require 'socket'
+ *   include Socket::Constants
+ *   socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
+ *   sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
+ *   socket.bind( sockaddr )
+ *   socket.listen( 5 )
+ *   client_fd, client_addrinfo = socket.sysaccept
+ *   client_socket = Socket.for_fd( client_fd )
+ *   puts "The client said, '#{client_socket.readline.chomp}'"
+ *   client_socket.puts "Hello from script one!"
+ *   socket.close
  *
- * 	# In another script, start this second
- * 	require 'socket'
- * 	include Socket::Constants
- * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
- * 	sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
- * 	socket.connect( sockaddr )
- * 	socket.puts "Hello from script 2."
- * 	puts "The server said, '#{socket.readline.chomp}'"
- * 	socket.close
+ *   # In another script, start this second
+ *   require 'socket'
+ *   include Socket::Constants
+ *   socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
+ *   sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
+ *   socket.connect( sockaddr )
+ *   socket.puts "Hello from script 2."
+ *   puts "The server said, '#{socket.readline.chomp}'"
+ *   socket.close
  *
  * Refer to Socket#accept for the exceptions that may be thrown if the call
  * to _sysaccept_ fails.
