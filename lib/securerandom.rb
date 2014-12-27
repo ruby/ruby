@@ -39,6 +39,13 @@ end
 #
 #   p SecureRandom.random_bytes(10) #=> "\016\t{\370g\310pbr\301"
 #   p SecureRandom.random_bytes(10) #=> "\323U\030TO\234\357\020\a\337"
+#
+# Generate UUIDs:
+#
+#   p SecureRandom.uuid #=> "2d931510-d99f-494a-8c67-87feb05e1594"
+#   p SecureRandom.uuid #=> "bad85eb9-0713-4da7-8d36-07a8e4b00eab"
+#
+
 module SecureRandom
   if /mswin|mingw/ =~ RUBY_PLATFORM
     require "fiddle/import"
