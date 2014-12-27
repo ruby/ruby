@@ -1,3 +1,8 @@
+Sat Dec 27 10:11:21 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* ext/tk/lib/tkextlib/tcllib/plotchart.rb: fix to invoke correct function
+	  of tcllib. Patch by @zalt50 [fix GH-787]
+
 Sat Dec 27 10:03:41 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* tool/make-snapshot: show sha1 digest when making packages.

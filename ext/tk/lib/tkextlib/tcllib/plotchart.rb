@@ -142,7 +142,7 @@ module Tk::Tcllib::Plotchart
   end
 
   def self.pixel_to_coords(w, x, y)
-    list(tk_call_without_enc('::Plotchart::coordsToPixel', w.path, x, y))
+    list(tk_call_without_enc('::Plotchart::pixelToCoords', w.path, x, y))
   end
 
   def self.determine_scale(*args) # (xmin, xmax, inverted=false)
@@ -311,7 +311,7 @@ module Tk::Tcllib::Plotchart
     end
 
     def pixel_to_coords(x, y)
-      list(tk_call_without_enc('::Plotchart::coordsToPixel', @path, x, y))
+      list(tk_call_without_enc('::Plotchart::pixelToCoords', @path, x, y))
     end
 
     def determine_scale(xmax, ymax)
