@@ -1,3 +1,8 @@
+Sat Dec 27 15:08:27 2014  Eric Wong  <e@80x24.org>
+
+	* vm_core.h (rb_vm_living_threads_insert): preserve order
+	  [Bug #10660] [ruby-core:67154] [ruby-core:67159]
+
 Sat Dec 27 13:08:20 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* ext/socket/socket.c: improved document for YARD doc.
