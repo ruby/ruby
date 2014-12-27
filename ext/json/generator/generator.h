@@ -149,4 +149,14 @@ static VALUE cState_depth_set(VALUE self, VALUE depth);
 static FBuffer *cState_prepare_buffer(VALUE self);
 static const rb_data_type_t JSON_Generator_State_type;
 
+#ifndef ZALLOC
+#define ZALLOC(type) ((type *)ruby_zalloc(sizeof(type)))
+static inline void *ruby_zalloc(size_t n)
+{
+    void *p = ruby_xmalloc(n);
+    memset(p, 0, n);
+    return p;
+}
+#endif
+
 #endif

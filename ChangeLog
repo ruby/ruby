@@ -1,3 +1,14 @@
+Sat Dec 27 20:12:55 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/json/generator/generator.c (JSON_Generator_State_type): add
+	  #ifdef for backward compatibility.
+
+	* ext/json/parser/parser.rl (JSON_Parser_type): ditto.
+
+	* ext/json/generator/generator.h (ZALLOC): add fallback definition.
+
+	* ext/json/parser/parser.h (ZALLOC): ditto.
+
 Sat Dec 27 16:54:05 2014  Tanaka Akira  <akr@fsij.org>
 
 	* process.c: Unused code removed.

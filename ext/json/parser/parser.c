@@ -2094,8 +2094,7 @@ static VALUE cParser_parse(VALUE self)
 
 static JSON_Parser *JSON_allocate(void)
 {
-    JSON_Parser *json = ALLOC(JSON_Parser);
-    MEMZERO(json, JSON_Parser, 1);
+    JSON_Parser *json = ZALLOC(JSON_Parser);
     json->fbuffer = fbuffer_alloc(0);
     return json;
 }
@@ -2126,8 +2125,10 @@ static size_t JSON_memsize(const void *ptr)
 static const rb_data_type_t JSON_Parser_type = {
     "JSON/Parser",
     {JSON_mark, JSON_free, JSON_memsize,},
+#ifdef RUBY_TYPED_FREE_IMMEDIATELY
     0, 0,
     RUBY_TYPED_FREE_IMMEDIATELY,
+#endif
 };
 
 static VALUE cJSON_parser_s_allocate(VALUE klass)

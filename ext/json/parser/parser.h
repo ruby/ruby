@@ -75,4 +75,14 @@ static VALUE cJSON_parser_s_allocate(VALUE klass);
 static VALUE cParser_source(VALUE self);
 static const rb_data_type_t JSON_Parser_type;
 
+#ifndef ZALLOC
+#define ZALLOC(type) ((type *)ruby_zalloc(sizeof(type)))
+static inline void *ruby_zalloc(size_t n)
+{
+    void *p = ruby_xmalloc(n);
+    memset(p, 0, n);
+    return p;
+}
+#endif
+
 #endif
