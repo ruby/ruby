@@ -1,3 +1,8 @@
+Sat Dec 27 13:08:20 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* ext/socket/socket.c: improved document for YARD doc.
+	  [fix GH-795][ci skip] Patch by @tlewin
+
 Sat Dec 27 10:11:21 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* ext/tk/lib/tkextlib/tcllib/plotchart.rb: fix to invoke correct function
