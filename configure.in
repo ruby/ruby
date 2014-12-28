@@ -3241,7 +3241,12 @@ AC_ARG_WITH(ext,
                            [pass to --with-ext option of extmk.rb]))
 AC_ARG_WITH(out-ext,
             AC_HELP_STRING([--with-out-ext=EXTS],
-                           [pass to --without-ext option of extmk.rb]))
+                           [pass to --without-ext option of extmk.rb]),
+	    [], [
+	    AS_CASE($target_os,
+		[mswin*|mingw*],
+		[as_fn_append ac_configure_args ' --with-out-ext=pty,readline,syslog'],
+		[as_fn_append ac_configure_args ' --with-out-ext=*win32*'])])
 EXTSTATIC=
 AC_SUBST(EXTSTATIC)dnl
 AC_ARG_WITH(static-linked-ext,
