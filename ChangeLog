@@ -1,3 +1,10 @@
+Sun Dec 28 18:19:28 2014  Eric Wong  <e@80x24.org>
+
+	* test/-ext-/iseq_load/test_iseq_load.rb
+	  (test_next_in_block_in_block): test using ISeq#eval
+	  (test_break_ensure): ditto
+	  [ruby-core:66988]
+
 Sun Dec 28 16:25:12 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cygwin/GNUmakefile.in (EXTOBJS): override to add resource files

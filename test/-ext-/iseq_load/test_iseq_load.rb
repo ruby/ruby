@@ -52,16 +52,21 @@ class TestIseqLoad < Test::Unit::TestCase
   end
 
   def test_next_in_block_in_block
-    skip "failing due to stack_max mismatch"
-    assert_iseq_roundtrip <<-'end;'
-      3.times { 3.times { next } }
+    @next_broke = false
+    src = <<-'end;'
+      3.times { 3.times { next; @next_broke = true } }
     end;
+    a = ISeq.compile(src).to_a
+    iseq = ISeq.iseq_load(a)
+    iseq.eval
+    assert_equal false, @next_broke
+    skip "failing due to stack_max mismatch"
+    assert_iseq_roundtrip(src)
   end
 
   def test_break_ensure
-    skip "failing due to exception entry sp mismatch"
-    assert_iseq_roundtrip <<-'end;'
-      def m
+    src = <<-'end;'
+      def test_break_ensure_def_method
         bad = true
         while true
           begin
@@ -70,8 +75,15 @@ class TestIseqLoad < Test::Unit::TestCase
             bad = false
           end
         end
+        bad
       end
     end;
+    a = ISeq.compile(src).to_a
+    iseq = ISeq.iseq_load(a)
+    iseq.eval
+    assert_equal false, test_break_ensure_def_method
+    skip "failing due to exception entry sp mismatch"
+    assert_iseq_roundtrip(src)
   end
 
   # FIXME: still failing
