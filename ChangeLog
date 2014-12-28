@@ -1,3 +1,11 @@
+Sun Dec 28 13:54:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (f_kwrest, new_args_tail_gen): unnamed rest keyword and
+	  keywords bits arguments should be unique.  since internal IDs
+	  depend on the local variable index in the current scope, new ID
+	  should be made before popping those vtables.
+	  [ruby-core:67157] [Bug #10659]
+
 Sat Dec 27 20:12:55 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/json/generator/generator.c (JSON_Generator_State_type): add
