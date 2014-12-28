@@ -1,3 +1,8 @@
+Sun Dec 28 16:25:12 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cygwin/GNUmakefile.in (EXTOBJS): override to add resource files
+	  always.  [ruby-core:67153] [Bug #10657]
+
 Sun Dec 28 13:54:26 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (f_kwrest, new_args_tail_gen): unnamed rest keyword and
