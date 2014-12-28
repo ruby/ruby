@@ -78,8 +78,13 @@ typedef struct JSON_Generator_StateStruct {
     long buffer_initial_length;
 } JSON_Generator_State;
 
+#ifdef HAVE_TYPE_RB_DATA_TYPE_T
 #define GET_STATE_TO(self, state) \
     TypedData_Get_Struct(self, JSON_Generator_State, &JSON_Generator_State_type, state)
+#else
+#define GET_STATE_TO(self, state) \
+    Data_Get_Struct(self, JSON_Generator_State, state)
+#endif
 
 #define GET_STATE(self)                       \
     JSON_Generator_State *state;              \
@@ -147,7 +152,9 @@ static VALUE cState_ascii_only_p(VALUE self);
 static VALUE cState_depth(VALUE self);
 static VALUE cState_depth_set(VALUE self, VALUE depth);
 static FBuffer *cState_prepare_buffer(VALUE self);
+#ifdef HAVE_TYPE_RB_DATA_TYPE_T
 static const rb_data_type_t JSON_Generator_State_type;
+#endif
 
 #ifndef ZALLOC
 #define ZALLOC(type) ((type *)ruby_zalloc(sizeof(type)))

@@ -49,9 +49,15 @@ typedef struct JSON_ParserStruct {
 #define GET_PARSER                          \
     GET_PARSER_INIT;                        \
     if (!json->Vsource) rb_raise(rb_eTypeError, "uninitialized instance")
+#ifdef HAVE_TYPE_RB_DATA_TYPE_T
 #define GET_PARSER_INIT                     \
     JSON_Parser *json;                      \
     TypedData_Get_Struct(self, JSON_Parser, &JSON_Parser_type, json)
+#else
+#define GET_PARSER_INIT                     \
+    JSON_Parser *json;                      \
+    Data_Get_Struct(self, JSON_Parser, json)
+#endif
 
 #define MinusInfinity "-Infinity"
 #define EVIL 0x666
@@ -73,7 +79,9 @@ static void JSON_mark(void *json);
 static void JSON_free(void *json);
 static VALUE cJSON_parser_s_allocate(VALUE klass);
 static VALUE cParser_source(VALUE self);
+#ifdef HAVE_TYPE_RB_DATA_TYPE_T
 static const rb_data_type_t JSON_Parser_type;
+#endif
 
 #ifndef ZALLOC
 #define ZALLOC(type) ((type *)ruby_zalloc(sizeof(type)))
