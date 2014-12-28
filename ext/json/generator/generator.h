@@ -92,7 +92,7 @@ typedef struct JSON_Generator_StateStruct {
                                                                                                 \
     rb_scan_args(argc, argv, "01", &Vstate);                                                    \
     Vstate = cState_from_state_s(cState, Vstate);                                               \
-    TypedData_Get_Struct(Vstate, JSON_Generator_State, &JSON_Generator_State_type, state);	\
+    GET_STATE_TO(Vstate, state);								\
     buffer = cState_prepare_buffer(Vstate);                                                     \
     generate_json_##type(buffer, Vstate, state, self);                                          \
     return fbuffer_to_s(buffer)
