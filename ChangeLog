@@ -1,3 +1,9 @@
+Sun Dec 28 23:49:37 2014  Michal Papis  <mpapis@gmail.com>
+
+	* rbinstall.rb: fix target location for installing bundled gems.
+	  install to the prepared directory instead of default Gem.dir,
+	  not to be affected GEM_HOME environment variable.  [Fix GH-798]
+
 Sun Dec 28 18:19:28 2014  Eric Wong  <e@80x24.org>
 
 	* test/-ext-/iseq_load/test_iseq_load.rb
