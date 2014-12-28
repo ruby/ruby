@@ -289,9 +289,9 @@ class TestIO_Console < Test::Unit::TestCase
     require 'tempfile'
     NOCTTY = noctty
     def test_noctty
-      t = Tempfile.new("console")
+      t = Tempfile.new("noctty_out")
       t.close
-      t2 = Tempfile.new("console")
+      t2 = Tempfile.new("noctty_run")
       t2.close
       cmd = [*NOCTTY[1..-1],
         '-e', 'open(ARGV[0], "w") {|f|',
