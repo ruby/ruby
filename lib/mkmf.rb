@@ -2190,10 +2190,10 @@ RULES
       if File.exist?(File.join(srcdir, target + '.def'))
         deffile = "$(srcdir)/$(TARGET).def"
         unless EXPORT_PREFIX.empty?
-          makedef = %{-pe "$_.sub!(/^(?=\\w)/,'#{EXPORT_PREFIX}') unless 1../^EXPORTS$/i"}
+          makedef = %{$(RUBY) -pe "$$_.sub!(/^(?=\\w)/,'#{EXPORT_PREFIX}') unless 1../^EXPORTS$/i" #{deffile}}
         end
       else
-        makedef = %{-e "puts 'EXPORTS', '$(TARGET_ENTRY)'"}
+        makedef = %{(echo EXPORTS && echo $(TARGET_ENTRY))}
       end
       if makedef
         $cleanfiles << '$(DEFFILE)'
@@ -2411,7 +2411,7 @@ site-install-rb: install-rb
     if makedef
       mfile.print "$(DEFFILE): #{origdef}\n"
       mfile.print "\t$(ECHO) generating $(@#{rsep})\n"
-      mfile.print "\t$(Q) $(RUBY) #{makedef} #{origdef} > $@\n\n"
+      mfile.print "\t$(Q) #{makedef} > $@\n\n"
     end
 
     depend = File.join(srcdir, "depend")
