@@ -517,6 +517,12 @@ EOT
     assert_equal too_deep, output.string
   end
 
+  def test_dump_should_modify_defaults
+    max_nesting = JSON.dump_default_options[:max_nesting]
+    JSON.dump([], StringIO.new, 10)
+    assert_equal max_nesting, JSON.dump_default_options[:max_nesting]
+  end
+
   def test_big_integers
     json1 = JSON([orig = (1 << 31) - 1])
     assert_equal orig, JSON[json1][0]

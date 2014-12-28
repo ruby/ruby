@@ -23,7 +23,7 @@
 
 #define option_given_p(opts, key) RTEST(rb_funcall(opts, i_key_p, 1, key))
 
-/* unicode defintions */
+/* unicode definitions */
 
 #define UNI_STRICT_CONVERSION 1
 

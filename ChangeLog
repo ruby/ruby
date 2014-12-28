@@ -1,3 +1,8 @@
+Mon Dec 29 07:27:23 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* ext/json, test/json: merge JSON HEAD(17fe8e7)
+	  https://github.com/flori/json/compare/v1.8.1...17fe8e7
+
 Sun Dec 28 23:49:37 2014  Michal Papis  <mpapis@gmail.com>
 
 	* rbinstall.rb: fix target location for installing bundled gems.
