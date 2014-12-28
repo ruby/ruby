@@ -978,7 +978,7 @@ rb_detach_process(rb_pid_t pid)
  *
  *  Some operating systems retain the status of terminated child
  *  processes until the parent collects that status (normally using
- *  some variant of <code>wait()</code>. If the parent never collects
+ *  some variant of <code>wait()</code>). If the parent never collects
  *  this status, the child stays around as a <em>zombie</em> process.
  *  <code>Process::detach</code> prevents this by setting up a
  *  separate Ruby thread whose sole job is to reap the status of the
