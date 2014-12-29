@@ -233,6 +233,14 @@ You can create a hash using symbol keys with the following syntax:
 
 This same syntax is used for keyword arguments for a method.
 
+Like Symbol literals, you can qoute symbol keys.
+
+  { "a 1": 1, "b #{1 + 1}": 2 }
+
+is equal to
+
+  { :"a 1" => 1, :"b 2" => 2 }
+
 See Hash for the methods you may use with a hash.
 
 == Ranges
