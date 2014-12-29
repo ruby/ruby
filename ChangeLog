@@ -1,3 +1,9 @@
+Mon Dec 29 14:27:33 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* doc/syntax/literals.rdoc (Symbols): now Symbols created by
+	  interpolation can be garbage collected.  patch by Yihang Ho in
+	  [ruby-core:67194].  [Bug #10671]
+
 Mon Dec 29 11:18:17 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_variable_get): fix dynamic symbol keys.
