@@ -1,3 +1,8 @@
+Tue Dec 30 08:57:39 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/unicode_normalize.rb: typo fix. [ci skip]
+	  [ruby-dev:48794][misc #10675]
+
 Mon Dec 29 19:38:01 2014  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
         * version.h (RUBY_VERSION): 2.3.0 development has started.
