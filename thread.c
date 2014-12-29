@@ -2936,11 +2936,9 @@ static VALUE
 rb_thread_variable_get(VALUE thread, VALUE key)
 {
     VALUE locals;
-    ID id = rb_check_id(&key);
 
-    if (!id) return Qnil;
     locals = rb_ivar_get(thread, id_locals);
-    return rb_hash_aref(locals, ID2SYM(id));
+    return rb_hash_aref(locals, rb_to_symbol(key));
 }
 
 /*

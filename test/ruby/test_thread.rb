@@ -432,6 +432,16 @@ class TestThread < Test::Unit::TestCase
     end
   end
 
+  def test_thread_local_dynamic_symbol
+    bug10667 = '[ruby-core:67185] [Bug #10667]'
+    t = Thread.new {}.join
+    key_str = "foo#{rand}"
+    key_sym = key_str.to_sym
+    t.thread_variable_set(key_str, "bar")
+    assert_equal("bar", t.thread_variable_get(key_str), "#{bug10667}: string key")
+    assert_equal("bar", t.thread_variable_get(key_sym), "#{bug10667}: symbol key")
+  end
+
   def test_select_wait
     assert_nil(IO.select(nil, nil, nil, 0.001))
     t = Thread.new do

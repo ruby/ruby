@@ -1,3 +1,10 @@
+Mon Dec 29 11:18:17 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_variable_get): fix dynamic symbol keys.
+	  rb_check_id() returns non-zero only for static symbols, whereas
+	  thread local variable keys can be dynamic symbols.
+	  [ruby-core:67185] [Bug #10667]
+
 Mon Dec 29 10:37:27 2014  Thiago Lewin  <thiago_lewin@yahoo.com.br>
 
 	* io.c (rb_f_select): [DOC] workaround for YARD doc.  [Fix GH-799]
