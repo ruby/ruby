@@ -1579,4 +1579,13 @@ class TestM17N < Test::Unit::TestCase
     assert_same(str, str.scrub!)
     assert_equal("\uFFFD\uFFFD\uFFFD", str)
   end
+
+  def test_escaped_metachar
+    bug10670 = '[ruby-core:67193] [Bug #10670]'
+
+    escape_plain = /\A[\x5B]*\z/.freeze
+
+    assert_match(escape_plain, 0x5b.chr(::Encoding::UTF_8), bug10670)
+    assert_match(escape_plain, 0x5b.chr, bug10670)
+  end
 end
