@@ -4,7 +4,7 @@ Mon Dec 29 19:38:01 2014  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Mon Dec 29 18:58:46 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* re.c (unescape_nonascii): append excape sequence as-is not
+	* re.c (unescape_nonascii): append escape sequence as-is not
 	  unescaped character, to get rid of unexpected meta-character.
 	  [ruby-core:67193] [Bug #10670]
 
