@@ -1034,7 +1034,7 @@ fdbm_reject(VALUE obj)
  * == Example
  *
  *  require 'dbm'
- *  db = DBM.open('rfcs', 666, DBM::WRCREAT)
+ *  db = DBM.open('rfcs', 0666, DBM::WRCREAT)
  *  db['822'] = 'Standard for the Format of ARPA Internet Text Messages'
  *  db['1123'] = 'Requirements for Internet Hosts - Application and Support'
  *  db['3068'] = 'An Anycast Prefix for 6to4 Relay Routers'
