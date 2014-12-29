@@ -1,3 +1,8 @@
+Mon Dec 29 10:37:06 2014  Thiago Lewin  <thiago_lewin@yahoo.com.br>
+
+	* process.c (proc_detach): [DOC] fix missing closing parenthesis.
+	  [Fix GH-799]
+
 Mon Dec 29 07:27:23 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* ext/json, test/json: merge JSON HEAD(17fe8e7)
