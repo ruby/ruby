@@ -1,4 +1,6 @@
-Mon Dec 29 10:37:06 2014  Thiago Lewin  <thiago_lewin@yahoo.com.br>
+Mon Dec 29 10:37:27 2014  Thiago Lewin  <thiago_lewin@yahoo.com.br>
+
+	* io.c (rb_f_select): [DOC] workaround for YARD doc.  [Fix GH-799]
 
 	* process.c (proc_detach): [DOC] fix missing closing parenthesis.
 	  [Fix GH-799]

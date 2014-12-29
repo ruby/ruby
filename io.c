@@ -8671,10 +8671,7 @@ rb_io_advise(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     IO.select(read_array
- *               [, write_array
- *               [, error_array
- *               [, timeout]]]) -> array  or  nil
+ *     IO.select(read_array [, write_array [, error_array [, timeout]]]) -> array  or  nil
  *
  *  Calls select(2) system call.
  *  It monitors given arrays of <code>IO</code> objects, waits one or more
