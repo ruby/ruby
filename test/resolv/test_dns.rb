@@ -177,4 +177,10 @@ class TestResolvDNS < Test::Unit::TestCase
       end
     end
   end
+
+  def test_case_insensitive_name
+    name1 = Resolv::DNS::Name.create("example.org")
+    name2 = Resolv::DNS::Name.create("ex.ampl.eo.rg")
+    assert_not_equal(name1, name2, "different dots")
+  end
 end

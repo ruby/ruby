@@ -1,3 +1,8 @@
+Tue Dec 30 16:03:45 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/resolv.rb (Resolv::DNS::Name): names with different dots
+	  should be different.
+
 Tue Dec 30 13:16:56 2014  Martin Duerst  <bernhard+git@lsmod.de>
 
 	* lib/uri/common.rb: Initialize HTML5ASCIIINCOMPAT to empty Array
