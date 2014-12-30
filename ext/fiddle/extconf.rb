@@ -78,8 +78,14 @@ begin
   FileUtils.rm_f("#{libffi.include}/ffitarget.h")
   Logging::open do
     Logging.message("%p in %p\n", args, opts)
-    system(*args, **opts) or
+    unless system(*args, **opts)
+      begin
+        IO.copy_stream(libffi.dir + "/config.log", Logging.instance_variable_get(:@logfile))
+      rescue SystemCallError => e
+        Logfile.message("%s\n", e.message)
+      end
       raise "failed to configure libffi. Please install libffi."
+    end
   end
   if $mswin && File.file?("#{libffi.include}/ffitarget.h")
     FileUtils.rm_f("#{libffi.include}/ffitarget.h")
