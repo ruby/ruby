@@ -1,3 +1,7 @@
+Tue Dec 30 23:46:26 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* lib/rubygems/*: upgrade to RubyGems 2.2.3. [Backport #10515]
+
 Thu Nov 13 22:32:34 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* lib/rexml/document.rb: add REXML::Document#document.
