@@ -177,4 +177,11 @@ class TestResolvDNS < Test::Unit::TestCase
       end
     end
   end
+
+  def test_case_insensitive_name
+    bug10550 = '[ruby-core:66498] [Bug #10550]'
+    lower = Resolv::DNS::Name.create("ruby-lang.org")
+    upper = Resolv::DNS::Name.create("Ruby-Lang.org")
+    assert(lower == upper, bug10550)
+  end
 end

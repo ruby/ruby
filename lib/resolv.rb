@@ -1236,7 +1236,8 @@ class Resolv
 
       def ==(other) # :nodoc:
         return false unless Name === other
-        return @labels.join == other.to_a.join && @absolute == other.absolute?
+        return @labels.join.casecmp(other.to_a.join).zero? &&
+          @absolute == other.absolute?
       end
 
       alias eql? == # :nodoc:
