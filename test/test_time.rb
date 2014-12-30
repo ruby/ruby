@@ -97,23 +97,23 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
   def subtest_xmlschema_alias(method)
     t = Time.utc(1985, 4, 12, 23, 20, 50, 520000)
     s = "1985-04-12T23:20:50.52Z"
-    assert_equal(t, Time.iso8601(s))
-    assert_equal(s, t.iso8601(2))
+    assert_equal(t, Time.__send__(method, s))
+    assert_equal(s, t.__send__(method, 2))
 
     t = Time.utc(1996, 12, 20, 0, 39, 57)
     s = "1996-12-19T16:39:57-08:00"
-    assert_equal(t, Time.iso8601(s))
+    assert_equal(t, Time.__send__(method, s))
     # There is no way to generate time string with arbitrary timezone.
     s = "1996-12-20T00:39:57Z"
-    assert_equal(t, Time.iso8601(s))
+    assert_equal(t, Time.__send__(method, s))
     assert_equal(s, t.iso8601)
 
     t = Time.utc(1990, 12, 31, 23, 59, 60)
     s = "1990-12-31T23:59:60Z"
-    assert_equal(t, Time.iso8601(s))
+    assert_equal(t, Time.__send__(method, s))
     # leap second is representable only if timezone file has it.
     s = "1990-12-31T15:59:60-08:00"
-    assert_equal(t, Time.iso8601(s))
+    assert_equal(t, Time.__send__(method, s))
 
     begin
       Time.at(-1)
@@ -122,7 +122,7 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     else
       t = Time.utc(1937, 1, 1, 11, 40, 27, 870000)
       s = "1937-01-01T12:00:27.87+00:20"
-      assert_equal(t, Time.iso8601(s))
+      assert_equal(t, Time.__send__(method, s))
     end
   end
 
