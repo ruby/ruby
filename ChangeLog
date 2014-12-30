@@ -1,3 +1,8 @@
+Wed Dec 31 00:00:09 2014  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb (Net::HTTP.proxy_uri): use initializer instead
+	  of parser to handle IPv6 address. [Bug #9129]
+
 Tue Dec 30 23:46:26 2014  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* lib/rubygems/*: upgrade to RubyGems 2.2.3. [Backport #10515]
