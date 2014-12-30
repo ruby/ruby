@@ -190,6 +190,12 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal(@m1, Matrix[o, [4,5,6]])
   end
 
+  def test_round
+    a = Matrix[[1.0111, 2.32320, 3.04343], [4.81, 5.0, 6.997]]
+    b = Matrix[[1.01, 2.32, 3.04], [4.81, 5.0, 7.0]]
+    assert_equal(a.round(2), b)
+  end
+
   def test_rows
     assert_equal(@m1, Matrix.rows([[1, 2, 3], [4, 5, 6]]))
   end
