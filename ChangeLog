@@ -83,7 +83,7 @@ Sat Dec 27 20:12:55 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sat Dec 27 16:54:05 2014  Tanaka Akira  <akr@fsij.org>
 
 	* process.c: Unused code removed.
-	  It seems waitpid() is universaly available on POSIX platforms.
+	  It seems waitpid() is universally available on POSIX platforms.
 
 Sat Dec 27 15:08:27 2014  Eric Wong  <e@80x24.org>
 
