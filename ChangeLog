@@ -1,3 +1,9 @@
+Tue Dec 30 13:16:56 2014  Martin Duerst  <bernhard+git@lsmod.de>
+
+	* lib/uri/common.rb: Initialize HTML5ASCIIINCOMPAT to empty Array
+	  to avoid error during bootstrap when encodings are not yet defined.
+	  [Bug #10678]
+
 Tue Dec 30 09:29:26 2014  Bernhard M. Wiedemann  <bernhard+git@lsmod.de>
 
 	* ext/dbm/dbm.c (Init_dbm): [DOC] as UNIX permissions are octal
