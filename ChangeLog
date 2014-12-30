@@ -1,3 +1,8 @@
+Tue Dec 30 09:29:26 2014  Bernhard M. Wiedemann  <bernhard+git@lsmod.de>
+
+	* ext/dbm/dbm.c (Init_dbm): [DOC] as UNIX permissions are octal
+	  numbers, needs to be prefixed by 0.  [Fix GH-800]
+
 Tue Dec 30 08:57:39 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/unicode_normalize.rb: typo fix. [ci skip]
