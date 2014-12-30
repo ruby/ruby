@@ -10,7 +10,7 @@ Tue Dec 30 08:57:39 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 Mon Dec 29 19:38:01 2014  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-        * version.h (RUBY_VERSION): 2.3.0 development has started.
+	* version.h (RUBY_VERSION): 2.3.0 development has started.
 
 Mon Dec 29 18:58:46 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
