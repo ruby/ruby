@@ -1,3 +1,9 @@
+Wed Dec 31 16:48:44 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (gettable_gen): disable warnings of possible reference
+	  to a local variable defined in a past scope.
+	  [ruby-core:67162] [Bug #10661]
+
 Wed Dec 31 13:43:48 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (Resolv::DNS::Name#==): Compare an array of Label:Str
