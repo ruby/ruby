@@ -1172,7 +1172,7 @@ class Resolv
           @string = string
           # case insensivity of DNS labels doesn't apply non-ASCII characters. [RFC 4343]
           # This assumes @string is given in ASCII compatible encoding.
-          @downcase = string.dup.force_encoding('ASCII-8BIT').downcase
+          @downcase = string.b.downcase
         end
         attr_reader :string, :downcase
 
