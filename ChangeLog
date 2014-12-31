@@ -1,3 +1,8 @@
+Wed Dec 31 13:43:48 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb (Resolv::DNS::Name#==): Compare an array of Label:Str
+	  objects.  Label#Str#== is case-insensitive.
+
 Tue Dec 30 16:16:12 2014  Ben Miller  <bmiller@rackspace.com>
 
 	* lib/resolv.rb (Resolv::DNS::Name#==): DNS is case-insensitive, so the
