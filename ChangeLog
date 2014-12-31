@@ -1,3 +1,11 @@
+Wed Dec 31 15:26:46 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (f_kwrest, new_args_tail_gen): unnamed rest keyword and
+	  keywords bits arguments should be unique.  since internal IDs
+	  depend on the local variable index in the current scope, new ID
+	  should be made before popping those vtables.
+	  [ruby-core:67157] [Bug #10659]
+
 Wed Dec 31 14:11:58 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* ext/tk/lib/tkextlib/tcllib/plotchart.rb: fix to invoke correct function

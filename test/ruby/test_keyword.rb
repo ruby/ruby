@@ -539,4 +539,24 @@ class TestKeywordArguments < Test::Unit::TestCase
       o.foo {raise "unreachable"}
     }
   end
+
+  def test_super_with_anon_restkeywords
+    bug10659 = '[ruby-core:67157] [Bug #10659]'
+
+    foo = Class.new do
+      def foo(**h)
+        h
+      end
+    end
+
+    class << (obj = foo.new)
+      def foo(bar: "bar", **)
+        super
+      end
+    end
+
+    assert_nothing_raised(TypeError, bug10659) {
+      assert_equal({:bar => "bar"}, obj.foo, bug10659)
+    }
+  end
 end

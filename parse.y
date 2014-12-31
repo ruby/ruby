@@ -4829,6 +4829,7 @@ f_kwrest	: kwrest_mark tIDENTIFIER
 		| kwrest_mark
 		    {
 			$$ = internal_id();
+			arg_var($$);
 		    }
 		;
 
@@ -9768,6 +9769,8 @@ new_args_tail_gen(struct parser_params *parser, NODE *k, ID kr, ID b)
 	    kwn = kwn->nd_next;
 	}
 
+	kw_bits = internal_id();
+	if (kr && is_junk_id(kr)) vtable_pop(lvtbl->args, 1);
 	vtable_pop(lvtbl->args, vtable_size(required_kw_vars) + vtable_size(kw_vars) + (b != 0));
 
 	for (i=0; i<vtable_size(required_kw_vars); i++) arg_var(required_kw_vars->tbl[i]);
@@ -9775,7 +9778,6 @@ new_args_tail_gen(struct parser_params *parser, NODE *k, ID kr, ID b)
 	vtable_free(required_kw_vars);
 	vtable_free(kw_vars);
 
-	kw_bits = internal_id();
 	arg_var(kw_bits);
 	if (kr) arg_var(kr);
 	if (b) arg_var(b);
