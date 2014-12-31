@@ -1,3 +1,9 @@
+Wed Dec 31 17:48:43 2014  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb (Resolv::DNS::Label::Str#initialize): Set encoding
+	  ASCII-8BIT before downcase.  case insensivity of DNS labels doesn't
+	  apply non-ASCII characters.  [RFC 4343]
+
 Wed Dec 31 16:48:44 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (gettable_gen): disable warnings of possible reference

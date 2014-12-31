@@ -1170,7 +1170,9 @@ class Resolv
       class Str # :nodoc:
         def initialize(string)
           @string = string
-          @downcase = string.downcase
+          # case insensivity of DNS labels doesn't apply non-ASCII characters. [RFC 4343]
+          # This assumes @string is given in ASCII compatible encoding.
+          @downcase = string.dup.force_encoding('ASCII-8BIT').downcase
         end
         attr_reader :string, :downcase
 
