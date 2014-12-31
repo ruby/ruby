@@ -1,3 +1,8 @@
+Wed Dec 31 14:11:58 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* ext/tk/lib/tkextlib/tcllib/plotchart.rb: fix to invoke correct function
+	  of tcllib. Patch by @zalt50 [fix GH-787]
+
 Wed Dec 31 13:26:22 2014  Eric Wong  <e@80x24.org>
 
 	* vm_core.h (rb_vm_living_threads_insert): preserve order
