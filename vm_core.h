@@ -975,7 +975,7 @@ rb_vm_living_threads_init(rb_vm_t *vm)
 static inline void
 rb_vm_living_threads_insert(rb_vm_t *vm, rb_thread_t *th)
 {
-    list_add(&vm->living_threads, &th->vmlt_node);
+    list_add_tail(&vm->living_threads, &th->vmlt_node);
     vm->living_thread_num++;
 }
 
