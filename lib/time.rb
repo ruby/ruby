@@ -37,7 +37,7 @@ require 'date'
 # #parse takes a string representation of a Time and attempts to parse it
 # using a heuristic.
 #
-#   Date.parse("2010-10-31") #=> 2010-10-31 00:00:00 -0500
+#   Time.parse("2010-10-31") #=> 2010-10-31 00:00:00 -0500
 #
 # Any missing pieces of the date are inferred based on the current date.
 #
