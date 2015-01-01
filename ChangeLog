@@ -1,3 +1,8 @@
+Thu Jan  1 21:41:49 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* doc/regexp.rdoc: fix regexp docs for whitespace character.
+	  [ruby-dev:48765] [Bug #10624]
+
 Thu Jan  1 17:50:52 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_rubyoptions.rb: try locale encoding name.

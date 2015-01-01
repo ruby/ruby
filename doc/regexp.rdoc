@@ -128,8 +128,8 @@ The following metacharacters also behave like character classes:
 * <tt>/\D/</tt> - A non-digit character (<tt>[^0-9]</tt>)
 * <tt>/\h/</tt> - A hexdigit character (<tt>[0-9a-fA-F]</tt>)
 * <tt>/\H/</tt> - A non-hexdigit character (<tt>[^0-9a-fA-F]</tt>)
-* <tt>/\s/</tt> - A whitespace character: <tt>/[ \t\r\n\f]/</tt>
-* <tt>/\S/</tt> - A non-whitespace character: <tt>/[^ \t\r\n\f]/</tt>
+* <tt>/\s/</tt> - A whitespace character: <tt>/[ \t\r\n\f\v]/</tt>
+* <tt>/\S/</tt> - A non-whitespace character: <tt>/[^ \t\r\n\f\v]/</tt>
 
 POSIX <i>bracket expressions</i> are also similar to character classes.
 They provide a portable alternative to the above, with the added benefit
