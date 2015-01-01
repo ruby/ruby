@@ -1,3 +1,8 @@
+Thu Jan  1 17:50:52 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_rubyoptions.rb: try locale encoding name.
+	  [ruby-core:67109] [Bug #10643]
+
 Thu Jan  1 11:07:12 2015  Eric Wong  <e@80x24.org>
 
 	* symbol.c (rb_gc_free_dsymbol): delete from global fstr hash
