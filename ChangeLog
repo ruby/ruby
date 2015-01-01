@@ -1,3 +1,9 @@
+Thu Jan  1 09:14:21 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_args.c (keyword_hash_p): fix non-symbol keys hash.
+	  rb_extract_keywords() returns 0 not Qnil when no symbol keys is
+	  included.
+
 Wed Dec 31 17:48:43 2014  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (Resolv::DNS::Label::Str#initialize): Set encoding
