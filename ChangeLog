@@ -1,3 +1,11 @@
+Fri Jan  2 18:41:20 2015  Tanaka Akira  <akr@fsij.org>
+
+	* eval.c (ruby_init): Print ruby_setup() error only in debug mode.
+	  Unsupressable error message is not a good idea.
+	  Note that the message is printed sometimes with following
+	  code (highly timing dependent, though):
+	  pid = spawn("ruby -e ''"); Process.kill(:TERM, pid)
+
 Fri Jan  2 16:18:44 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/ruby/test_module.rb: Refactor invalid testcase.

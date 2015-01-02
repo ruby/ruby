@@ -73,7 +73,8 @@ ruby_init(void)
 {
     int state = ruby_setup();
     if (state) {
-	error_print();
+        if (RTEST(ruby_debug))
+            error_print();
 	exit(EXIT_FAILURE);
     }
 }
