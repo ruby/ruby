@@ -63,7 +63,7 @@ module WEBrick
     # Creates TCP server sockets bound to +address+:+port+ and returns them.
     #
     # It will create IPV4 and IPV6 sockets on all interfaces.
-    def create_listeners(address, port, logger=nil)
+    def create_listeners(address, port)
       unless port
         raise ArgumentError, "must specify port"
       end

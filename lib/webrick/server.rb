@@ -130,7 +130,7 @@ module WEBrick
     # WEBrick::Utils::create_listeners for details.
 
     def listen(address, port)
-      @listeners += Utils::create_listeners(address, port, @logger)
+      @listeners += Utils::create_listeners(address, port)
       setup_shutdown_pipe
     end
 

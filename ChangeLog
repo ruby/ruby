@@ -1,3 +1,11 @@
+Fri Jan  2 15:53:00 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/webrick/utils.rb: removed unused argument variable.
+	  [fix GH-356] Patch by @vipulnsward
+	* lib/webrick/server.rb: ditto.
+	* lib/webrick/ssl.rb: ditto.
+	* test/webrick/test_utils.rb: added test for WEBrick::Utils#create_listeners.
+
 Fri Jan  2 15:35:53 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/securerandom.rb: improve syntax and grammar of documentation.
