@@ -1519,12 +1519,6 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_scrub
-    str = "\u3042\u3044"
-    assert_not_same(str, str.scrub)
-    str.force_encoding(Encoding::ISO_2022_JP) # dummy encoding
-    assert_not_same(str, str.scrub)
-    assert_nothing_raised(ArgumentError) {str.scrub(nil)}
-
     assert_equal("\uFFFD\uFFFD\uFFFD", u("\x80\x80\x80").scrub)
     assert_equal("\uFFFDA", u("\xF4\x80\x80A").scrub)
 
@@ -1546,7 +1540,19 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(ArgumentError) {u("a\x81").scrub {|c| c}}
   end
 
-  def test_scrub_with_invalid_types
+  def test_scrub_returns_new_instance
+    str = "\u3042\u3044"
+    assert_not_same(str, str.scrub)
+    str.force_encoding(Encoding::ISO_2022_JP) # dummy encoding
+    assert_not_same(str, str.scrub)
+  end
+
+  def test_scrubbing_with_nil_doesnt_raise
+    str = "\u3042\u3044"
+    assert_nothing_raised(ArgumentError) {str.scrub(nil)}
+  end
+
+  def test_scrub_with_invalid_argument
     assert_raise(TypeError){ u("\xE3\x81\x82\xE3\x81").scrub(1) }
     assert_raise(TypeError){ u("\xE3\x81\x82\xE3\x81").scrub{1} }
   end
