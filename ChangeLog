@@ -1,3 +1,9 @@
+Fri Jan  2 15:10:01 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/openssl/test_ssl_session.rb (OpenSSL#test_ctx_client_session_cb):
+	  fix test failure with OpenSSL disabled SSLv3 protocol.
+	  [ruby-core:63772] [Bug #10046]
+
 Fri Jan  2 09:08:31 2015  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (Resolv::DNS::Label::Str#==): Check class equality.
