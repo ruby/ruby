@@ -1,3 +1,8 @@
+Fri Jan  2 15:35:53 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/securerandom.rb: improve syntax and grammar of documentation.
+	  [fix GH-796][ci skip] Patch by @Erol
+
 Fri Jan  2 15:10:01 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/openssl/test_ssl_session.rb (OpenSSL#test_ctx_client_session_cb):

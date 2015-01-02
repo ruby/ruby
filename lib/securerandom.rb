@@ -6,14 +6,14 @@ end
 
 # == Secure random number generator interface.
 #
-# This library is an interface for secure random number generator which is
-# suitable for generating session key in HTTP cookies, etc.
+# This library is an interface to secure random number generators which are
+# suitable for generating session keys in HTTP cookies, etc.
 #
 # You can use this library in your application by requiring it:
 #
 #   require 'securerandom'
 #
-# It supports following secure random number generators.
+# It supports the following secure random number generators:
 #
 # * openssl
 # * /dev/urandom
@@ -21,7 +21,7 @@ end
 #
 # === Examples
 #
-# Hexadecimal string.
+# Generate random hexadecimal strings:
 #
 #   require 'securerandom'
 #
@@ -29,16 +29,23 @@ end
 #   p SecureRandom.hex(10) #=> "92b15d6c8dc4beb5f559"
 #   p SecureRandom.hex(13) #=> "39b290146bea6ce975c37cfc23"
 #
-# Base64 string.
+# Generate random base64 strings:
 #
 #   p SecureRandom.base64(10) #=> "EcmTPZwWRAozdA=="
 #   p SecureRandom.base64(10) #=> "KO1nIU+p9DKxGg=="
 #   p SecureRandom.base64(12) #=> "7kJSM/MzBJI+75j8"
 #
-# Binary string.
+# Generate random binary strings:
 #
 #   p SecureRandom.random_bytes(10) #=> "\016\t{\370g\310pbr\301"
 #   p SecureRandom.random_bytes(10) #=> "\323U\030TO\234\357\020\a\337"
+#
+# Generate UUIDs:
+#
+#   p SecureRandom.uuid #=> "2d931510-d99f-494a-8c67-87feb05e1594"
+#   p SecureRandom.uuid #=> "bad85eb9-0713-4da7-8d36-07a8e4b00eab"
+#
+
 module SecureRandom
   if /mswin|mingw/ =~ RUBY_PLATFORM
     require "fiddle/import"
@@ -103,8 +110,8 @@ module SecureRandom
   #   p SecureRandom.random_bytes #=> "\xD8\\\xE0\xF4\r\xB2\xFC*WM\xFF\x83\x18\xF45\xB6"
   #   p SecureRandom.random_bytes #=> "m\xDC\xFC/\a\x00Uf\xB2\xB2P\xBD\xFF6S\x97"
   #
-  # If secure random number generator is not available,
-  # NotImplementedError is raised.
+  # If a secure random number generator is not available,
+  # +NotImplementedError+ is raised.
   def self.random_bytes(n=nil)
     n = n ? n.to_int : 16
     gen_random(n)
@@ -157,18 +164,18 @@ module SecureRandom
   # SecureRandom.hex generates a random hexadecimal string.
   #
   # The argument _n_ specifies the length, in bytes, of the random number to be generated.
-  # The length of the resulting hexadecimal string is twice _n_.
+  # The length of the resulting hexadecimal string is twice of _n_.
   #
   # If _n_ is not specified or is nil, 16 is assumed.
-  # It may be larger in future.
+  # It may be larger in the future.
   #
   # The result may contain 0-9 and a-f.
   #
   #   p SecureRandom.hex #=> "eb693ec8252cd630102fd0d0fb7c3485"
   #   p SecureRandom.hex #=> "91dc3bfb4de5b11d029d376634589b61"
   #
-  # If secure random number generator is not available,
-  # NotImplementedError is raised.
+  # If a secure random number generator is not available,
+  # +NotImplementedError+ is raised.
   def self.hex(n=nil)
     random_bytes(n).unpack("H*")[0]
   end
@@ -179,15 +186,15 @@ module SecureRandom
   # to be generated. The length of the result string is about 4/3 of _n_.
   #
   # If _n_ is not specified or is nil, 16 is assumed.
-  # It may be larger in future.
+  # It may be larger in the future.
   #
   # The result may contain A-Z, a-z, 0-9, "+", "/" and "=".
   #
   #   p SecureRandom.base64 #=> "/2BuBuLf3+WfSKyQbRcc/A=="
   #   p SecureRandom.base64 #=> "6BbW0pxO0YENxn38HMUbcQ=="
   #
-  # If secure random number generator is not available,
-  # NotImplementedError is raised.
+  # If a secure random number generator is not available,
+  # +NotImplementedError+ is raised.
   #
   # See RFC 3548 for the definition of base64.
   def self.base64(n=nil)
@@ -200,7 +207,7 @@ module SecureRandom
   # to be generated. The length of the result string is about 4/3 of _n_.
   #
   # If _n_ is not specified or is nil, 16 is assumed.
-  # It may be larger in future.
+  # It may be larger in the future.
   #
   # The boolean argument _padding_ specifies the padding.
   # If it is false or nil, padding is not generated.
@@ -216,8 +223,8 @@ module SecureRandom
   #   p SecureRandom.urlsafe_base64(nil, true) #=> "i0XQ-7gglIsHGV2_BNPrdQ=="
   #   p SecureRandom.urlsafe_base64(nil, true) #=> "-M8rLhr7JEpJlqFGUMmOxg=="
   #
-  # If secure random number generator is not available,
-  # NotImplementedError is raised.
+  # If a secure random number generator is not available,
+  # +NotImplementedError+ is raised.
   #
   # See RFC 3548 for the definition of URL-safe base64.
   def self.urlsafe_base64(n=nil, padding=false)
@@ -231,15 +238,15 @@ module SecureRandom
   # SecureRandom.random_number generates a random number.
   #
   # If a positive integer is given as _n_,
-  # SecureRandom.random_number returns an integer:
-  # 0 <= SecureRandom.random_number(n) < n.
+  # +SecureRandom.random_number+ returns an integer, such that:
+  # +0 <= SecureRandom.random_number(n) < n+.
   #
   #   p SecureRandom.random_number(100) #=> 15
   #   p SecureRandom.random_number(100) #=> 88
   #
   # If 0 is given or an argument is not given,
-  # SecureRandom.random_number returns a float:
-  # 0.0 <= SecureRandom.random_number() < 1.0.
+  # +SecureRandom.random_number+ returns a float, such that:
+  # +0.0 <= SecureRandom.random_number() < 1.0+.
   #
   #   p SecureRandom.random_number #=> 0.596506046187744
   #   p SecureRandom.random_number #=> 0.350621695741409
@@ -273,14 +280,14 @@ module SecureRandom
     end
   end
 
-  # SecureRandom.uuid generates a v4 random UUID (Universally Unique IDentifier).
+  # SecureRandom.uuid generates a random v4 UUID (Universally Unique IDentifier).
   #
   #   p SecureRandom.uuid #=> "2d931510-d99f-494a-8c67-87feb05e1594"
   #   p SecureRandom.uuid #=> "bad85eb9-0713-4da7-8d36-07a8e4b00eab"
   #   p SecureRandom.uuid #=> "62936e70-1815-439b-bf89-8492855a7e6b"
   #
   # The version 4 UUID is purely random (except the version).
-  # It doesn't contain meaningful information such as MAC address, time, etc.
+  # It doesn't contain meaningful information such as MAC addresses, timestamps, etc.
   #
   # See RFC 4122 for details of UUID.
   #
