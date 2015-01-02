@@ -1926,8 +1926,8 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NoMethodError, bug8284) {Object.define_method}
   end
 
-  def test_include_module_with_constants_invalidates_method_cache
-    assert_in_out_err([], <<-RUBY, %w(123 456), [])
+  def test_include_module_with_constants_does_not_invalidate_method_cache
+    assert_in_out_err([], <<-RUBY, %w(123 456 true), [])
       A = 123
 
       class Foo
@@ -1941,8 +1941,13 @@ class TestModule < Test::Unit::TestCase
       end
 
       puts Foo.a
+      starting = RubyVM.stat[:global_method_state]
+
       Foo.send(:include, M)
+
+      ending = RubyVM.stat[:global_method_state]
       puts Foo.a
+      puts starting == ending
     RUBY
   end
 

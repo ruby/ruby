@@ -1,3 +1,8 @@
+Fri Jan  2 16:18:44 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/ruby/test_module.rb: Refactor invalid testcase.
+	  [fix GH-472][ruby-core:59035][Bug #9240]
+
 Fri Jan  2 15:53:00 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/webrick/utils.rb: removed unused argument variable.
