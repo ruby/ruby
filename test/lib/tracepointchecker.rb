@@ -109,10 +109,10 @@ module TracePointChecker
       raise "trace #{trace} should not be deactivated" unless trace.enabled?
     }
   end
-end if defined?(TracePoint)
+end if defined?(TracePoint.stat)
 
 class ::Test::Unit::TestCase
   include TracePointChecker::ZombieTraceHunter
-end if defined?(TracePoint)
+end if defined?(TracePointChecker)
 
 # TracePointChecker.start verbose: false
