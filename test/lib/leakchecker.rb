@@ -31,8 +31,8 @@ class LeakChecker
   def check_fd_leak(test_name)
     leaked = false
     live1 = @fd_info
-    if IO.respond_to?(:console)
-      IO.console(:close)
+    if IO.respond_to?(:console) and (m = IO.method(:console)).arity.nonzero?
+      m[:close]
     end
     live2 = find_fds
     fd_closed = live1 - live2
