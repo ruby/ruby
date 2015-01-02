@@ -1552,16 +1552,27 @@ class TestM17N < Test::Unit::TestCase
 
     assert_equal(u("\x81"), u("a\x81").scrub {|c| break c})
     assert_raise(ArgumentError) {u("a\x81").scrub {|c| c}}
+  end
 
+  def test_scrub_with_utf16be
     assert_equal("\uFFFD\u3042".encode("UTF-16BE"),
                  "\xD8\x00\x30\x42".force_encoding(Encoding::UTF_16BE).
                  scrub)
+  end
+
+  def test_scrub_with_utf16le
     assert_equal("\uFFFD\u3042".encode("UTF-16LE"),
                  "\x00\xD8\x42\x30".force_encoding(Encoding::UTF_16LE).
                  scrub)
+  end
+
+  def test_scrub_with_utf32be
     assert_equal("\uFFFD".encode("UTF-32BE"),
                  "\xff".force_encoding(Encoding::UTF_32BE).
                  scrub)
+  end
+
+  def test_strub_with_utf32le
     assert_equal("\uFFFD".encode("UTF-32LE"),
                  "\xff".force_encoding(Encoding::UTF_32LE).
                  scrub)
