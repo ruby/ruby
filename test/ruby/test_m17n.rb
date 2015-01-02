@@ -1518,13 +1518,20 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(true, s.b.ascii_only?)
   end
 
-  def test_scrub
+  def test_scrub_valid_string
+    str = "foo"
+    assert_equal(str, str.scrub)
+    assert_not_same(str, str.scrub)
     str = "\u3042\u3044"
+    assert_equal(str, str.scrub)
     assert_not_same(str, str.scrub)
     str.force_encoding(Encoding::ISO_2022_JP) # dummy encoding
+    assert_equal(str, str.scrub)
     assert_not_same(str, str.scrub)
     assert_nothing_raised(ArgumentError) {str.scrub(nil)}
+  end
 
+  def test_scrub_replace_default
     assert_equal("\uFFFD\uFFFD\uFFFD", u("\x80\x80\x80").scrub)
     assert_equal("\uFFFDA", u("\xF4\x80\x80A").scrub)
 
@@ -1537,13 +1544,18 @@ class TestM17N < Test::Unit::TestCase
                  u("\x61\xF1\x80\x80\xE1\x80\xC2\x62\x80\x63\x80\xBF\x64").scrub)
     assert_equal("abcdefghijklmnopqrstuvwxyz\u0061\uFFFD\uFFFD\uFFFD\u0062\uFFFD\u0063\uFFFD\uFFFD\u0064",
                  u("abcdefghijklmnopqrstuvwxyz\x61\xF1\x80\x80\xE1\x80\xC2\x62\x80\x63\x80\xBF\x64").scrub)
+  end
 
+  def test_scrub_replace_argument
+    assert_equal("foo", u("foo").scrub("\u3013"))
     assert_equal("\u3042\u3013", u("\xE3\x81\x82\xE3\x81").scrub("\u3013"))
     assert_raise(Encoding::CompatibilityError){ u("\xE3\x81\x82\xE3\x81").scrub(e("\xA4\xA2")) }
     assert_raise(TypeError){ u("\xE3\x81\x82\xE3\x81").scrub(1) }
     assert_raise(ArgumentError){ u("\xE3\x81\x82\xE3\x81\x82\xE3\x81").scrub(u("\x81")) }
     assert_equal(e("\xA4\xA2\xA2\xAE"), e("\xA4\xA2\xA4").scrub(e("\xA2\xAE")))
+  end
 
+  def test_scrub_replace_block
     assert_equal("\u3042<e381>", u("\xE3\x81\x82\xE3\x81").scrub{|x|'<'+x.unpack('H*')[0]+'>'})
     assert_raise(Encoding::CompatibilityError){ u("\xE3\x81\x82\xE3\x81").scrub{e("\xA4\xA2")} }
     assert_raise(TypeError){ u("\xE3\x81\x82\xE3\x81").scrub{1} }
@@ -1552,7 +1564,9 @@ class TestM17N < Test::Unit::TestCase
 
     assert_equal(u("\x81"), u("a\x81").scrub {|c| break c})
     assert_raise(ArgumentError) {u("a\x81").scrub {|c| c}}
+  end
 
+  def test_scrub_widechar
     assert_equal("\uFFFD\u3042".encode("UTF-16BE"),
                  "\xD8\x00\x30\x42".force_encoding(Encoding::UTF_16BE).
                  scrub)
