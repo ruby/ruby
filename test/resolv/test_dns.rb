@@ -190,4 +190,11 @@ class TestResolvDNS < Test::Unit::TestCase
     upper = Resolv::DNS::Name.create("Ruby-Lang.org")
     assert_equal(lower, upper, bug10550)
   end
+
+  def test_ipv6_name
+    addr = Resolv::IPv6.new("\0"*16)
+    labels = addr.to_name.to_a
+    expected = (['0'] * 32 + ['ip6', 'arpa']).map {|label| Resolv::DNS::Label::Str.new(label) }
+    assert_equal(expected, labels)
+  end
 end
