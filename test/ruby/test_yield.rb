@@ -340,11 +340,12 @@ class TestRubyYieldGen < Test::Unit::TestCase
     t = t.subst('vars') { " [#{vars.join(",")}]" }
     emu_values = emu(t, vars, islambda)
     s = t.to_s
+    o = Object.new
     #print "#{s}\t\t"
     #STDOUT.flush
     eval_values = disable_stderr {
       begin
-        eval(s, nil, 'generated_code_in_check_nofork')
+        o.instance_eval(s, 'generated_code_in_check_nofork')
       rescue ArgumentError
         ArgumentError
       end
@@ -354,23 +355,33 @@ class TestRubyYieldGen < Test::Unit::TestCase
     assert_equal(emu_values, eval_values, s)
   end
 
+  def assert_all_sentences(syntax, *args)
+    fails = []
+    syntax = Sentence.expand_syntax(syntax)
+    Sentence.each(syntax, *args) {|t|
+      begin
+        yield t
+      rescue MiniTest::Assertion => e
+        fails << e.message
+      end
+    }
+    assert(fails.empty?, proc {fails.join("\n--------\n")})
+  end
+
   def test_yield
-    syntax = Sentence.expand_syntax(Syntax)
-    Sentence.each(syntax, :test_proc, 4) {|t|
+    assert_all_sentences(Syntax, :test_proc, 4) {|t|
       check_nofork(t)
     }
   end
 
   def test_yield_lambda
-    syntax = Sentence.expand_syntax(Syntax)
-    Sentence.each(syntax, :test_lambda, 4) {|t|
+    assert_all_sentences(Syntax, :test_lambda, 4) {|t|
       check_nofork(t, true)
     }
   end
 
   def test_yield_enum
-    syntax = Sentence.expand_syntax(Syntax)
-    Sentence.each(syntax, :test_enum, 4) {|t|
+    assert_all_sentences(Syntax, :test_enum, 4) {|t|
       code = t.to_s
       r1, r2 = disable_stderr {
         eval(code, nil, 'generated_code_in_test_yield_enum')
