@@ -169,7 +169,7 @@ module Fiddle
       when /\*/, /\[[\s\d]*\]/
         return TYPE_VOIDP
       else
-        ty = ty.split(' ')[0]
+        ty = ty.split(' ', 2)[0]
         if( tymap[ty] )
           return parse_ctype(tymap[ty], tymap)
         else
