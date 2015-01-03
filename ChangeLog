@@ -1,3 +1,7 @@
+Sat Jan  3 23:56:28 2015  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* hash.c: fix docs for Hash#invert. [ruby-core:66917] [Bug #10612]
+
 Sat Jan  3 19:52:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_str_new_literal): define on all

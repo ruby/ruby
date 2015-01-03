@@ -2093,6 +2093,8 @@ rb_hash_invert_i(VALUE key, VALUE value, VALUE hash)
  *
  *  Returns a new hash created by using <i>hsh</i>'s values as keys, and
  *  the keys as values.
+ *  If a key with the same value already exists in the <i>hsh</i>, then
+ *  the last one defined will be used, the earlier value(s) will be discarded.
  *
  *     h = { "n" => 100, "m" => 100, "y" => 300, "d" => 200, "a" => 0 }
  *     h.invert   #=> {0=>"a", 100=>"m", 200=>"d", 300=>"y"}
