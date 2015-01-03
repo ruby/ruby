@@ -202,7 +202,13 @@ module Test_Symbol
       Thread.current.thread_variable_set(:test, nil)
       name = noninterned_name
       assert_nil(Thread.current.thread_variable_get(name))
-      assert_not_interned(name)
+      assert_not_pinneddown(name)
+    end
+
+    def test_thread_variable_set
+      name = noninterned_name
+      Thread.current.thread_variable_set(name, 42)
+      assert_not_pinneddown(name)
     end
 
     def test_thread_variable?

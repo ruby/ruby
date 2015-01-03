@@ -1,3 +1,10 @@
+Sat Jan  3 21:17:58 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_variable_get): fix dynamic symbol keys.
+	  rb_check_id() returns non-zero only for static symbols, whereas
+	  thread local variable keys can be dynamic symbols.
+	  [ruby-core:67185] [Bug #10667]
+
 Thu Jan  1 08:29:55 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cygwin/GNUmakefile.in (EXTOBJS): override to add resource files
