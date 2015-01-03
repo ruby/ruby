@@ -1904,6 +1904,8 @@ class TestArray < Test::Unit::TestCase
     a[3] = 3
     a.shift(2)
     assert_equal([2, 3], a)
+
+    assert_equal([1,1,1], ([1] * 100).shift(3))
   end
 
   def test_unshift_error
@@ -2356,6 +2358,11 @@ class TestArray < Test::Unit::TestCase
     b.replace(a)
     assert_equal((1..10).to_a, a.shift(10))
     assert_equal((11..100).to_a, a)
+
+    a = (1..30).to_a
+    assert_equal((1..3).to_a, a.shift(3))
+    # occupied
+    assert_equal((4..6).to_a, a.shift(3))
   end
 
   def test_replace_shared_ary

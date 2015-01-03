@@ -1,3 +1,10 @@
+Sat Jan  3 11:27:46 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* array.c: Improve performance of Array#shift. use shared instead of
+	  MEMMOVE if with arguments. Patch by @ksss [fix GH-537]
+	* test/ruby/test_array.rb: ditto.
+	* benchmark/bm_array_shift.rb: Added benchmark of GH-537 issue.
+
 Sat Jan  3 10:38:52 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/net/http.rb: More descriptive error message when net/http fails
