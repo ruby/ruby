@@ -1,3 +1,10 @@
+Sat Jan  3 09:54:32 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* ext/fiddle/lib/fiddle/cparser.rb: Support for Fiddle::CParser
+	  to handle rich signatures including parameter names and function
+	  pointer types. Patch by @theryan [fix GH-590]
+	* test/fiddle/test_cparser.rb: ditto.
+
 Sat Jan  3 09:01:43 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* NEWS: added compatibility entry of r49101.
