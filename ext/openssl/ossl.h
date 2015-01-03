@@ -64,7 +64,9 @@ extern "C" {
 #include <openssl/rand.h>
 #include <openssl/conf.h>
 #include <openssl/conf_api.h>
-#include <openssl/crypto.h>
+#if !defined(_WIN32)
+#  include <openssl/crypto.h>
+#endif
 #undef X509_NAME
 #undef PKCS7_SIGNER_INFO
 #if defined(HAVE_OPENSSL_ENGINE_H) && defined(HAVE_EVP_CIPHER_CTX_ENGINE)
