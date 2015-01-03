@@ -1,3 +1,8 @@
+Sat Jan  3 19:52:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_str_new_literal): define on all
+	  platforms, not only gcc.
+
 Sat Jan  3 18:53:28 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/fiddle/lib/fiddle/cparser.rb (parse_ctype): limit split word

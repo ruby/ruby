@@ -832,10 +832,6 @@ VALUE rb_str_scrub(VALUE, VALUE);
 	rb_utf8_str_new_static((str), (long)strlen(str)) : \
 	rb_utf8_str_new_cstr(str);		\
 })
-#define rb_str_new_literal(str) rb_str_new_static((str), sizeof(str)-1)
-#define rb_usascii_str_new_literal(str) rb_usascii_str_new_static((str), sizeof(str)-1)
-#define rb_utf8_str_new_literal(str) rb_utf8_str_new_static((str), sizeof(str)-1)
-#define rb_enc_str_new_literal(str, enc) rb_enc_str_new_static((str), sizeof(str)-1, (enc))
 #define rb_external_str_new_cstr(str) __extension__ ( \
 {						\
     (__builtin_constant_p(str)) ?		\
@@ -878,6 +874,11 @@ VALUE rb_str_scrub(VALUE, VALUE);
 #define rb_str_buf_cat rb_str_cat
 #define rb_str_buf_cat2 rb_str_cat_cstr
 #define rb_str_cat2 rb_str_cat_cstr
+#define rb_str_new_literal(str) rb_str_new_static((str), sizeof(str)-1)
+#define rb_usascii_str_new_literal(str) rb_usascii_str_new_static((str), sizeof(str)-1)
+#define rb_utf8_str_new_literal(str) rb_utf8_str_new_static((str), sizeof(str)-1)
+#define rb_enc_str_new_literal(str, enc) rb_enc_str_new_static((str), sizeof(str)-1, (enc))
+
 /* struct.c */
 VALUE rb_struct_new(VALUE, ...);
 VALUE rb_struct_define(const char*, ...);
