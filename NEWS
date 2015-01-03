@@ -21,6 +21,9 @@ with all sufficient information, see the ChangeLog file.
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
+* lib/webrick/utils.rb
+ * removed unused argument. https://github.com/ruby/ruby/pull/356
+
 === Built-in global variables compatibility issues
 
 === C API updates
