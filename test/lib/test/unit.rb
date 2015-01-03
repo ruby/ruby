@@ -93,7 +93,7 @@ module Test
           self.verbose = options[:verbose]
         end
 
-        opts.on '-n', '--name PATTERN', "Filter test names on pattern." do |a|
+        opts.on '-n', '--name PATTERN', "Filter test method names on pattern: /REGEXP/ or STRING" do |a|
           options[:filter] = a
         end
 
@@ -171,7 +171,7 @@ module Test
         parser.on '-b', '--basedir=DIR', 'Base directory of test suites.' do |dir|
           options[:base_directory] = dir
         end
-        parser.on '-x', '--exclude PATTERN', 'Exclude test files on pattern.' do |pattern|
+        parser.on '-x', '--exclude REGEXP', 'Exclude test files on pattern.' do |pattern|
           (options[:reject] ||= []) << pattern
         end
       end
