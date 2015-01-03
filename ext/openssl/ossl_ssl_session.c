@@ -79,7 +79,7 @@ int SSL_SESSION_cmp(const SSL_SESSION *a,const SSL_SESSION *b)
     if (a->ssl_version != b->ssl_version ||
 	a->session_id_length != b->session_id_length)
 	return 1;
-    return memcmp(a->session_id,b-> session_id, a->session_id_length);
+    return CRYPTO_memcmp(a->session_id, b->session_id, a->session_id_length);
 }
 #endif
 

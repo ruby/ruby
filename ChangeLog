@@ -1,3 +1,9 @@
+Sat Jan  3 10:14:51 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* ext/openssl/ossl.h: Make `SSL_SESSION_cmp` use `CRYPTO_memcmp`
+	  [fix GH-591] Patch by @PiPeep
+	* ext/openssl/ossl_ssl_session.c: ditto.
+
 Sat Jan  3 09:54:32 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* ext/fiddle/lib/fiddle/cparser.rb: Support for Fiddle::CParser
