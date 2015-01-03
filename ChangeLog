@@ -1,3 +1,7 @@
+Sun Jan  4 00:43:41 2015  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* README.ja.md: add guidance of mailing list and bugs.r-l.o.
+
 Sat Jan  3 23:56:28 2015  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* hash.c: fix docs for Hash#invert. [ruby-core:66917] [Bug #10612]

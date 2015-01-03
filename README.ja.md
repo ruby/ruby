@@ -156,8 +156,19 @@ UNIXであれば `configure` がほとんどの差異を吸収してくれるは
 
 `COPYING.ja` ファイルを参照してください。
 
+## フィードバック
+
+Rubyに関する質問は Ruby-Talk（英語）や Ruby-List（日本語） (https://www.ruby-lang.org/ja/community/mailing-lists) や、
+stackoverflow (http://ja.stackoverflow.com/) などのWebサイトに投稿してください．
+
+バグ報告は http://bugs.ruby-lang.org で受け付けています．
+
+
 ## 著者
 
-コメント，バグレポートその他は mailto:matz@ruby-lang.org まで．
+Rubyのオリジナル版は、1995年にまつもとゆきひろ氏によって設計・開発されました．
+
+<mailto:matz@ruby-lang.org>
+
 ---
 created at: Thu Aug  3 11:57:36 JST 1995
