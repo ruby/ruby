@@ -188,6 +188,15 @@ class TestNetHTTP < Test::Unit::TestCase
     end
   end
 
+  def test_failure_message_includes_failed_domain_and_port
+    begin
+      Net::HTTP.get(URI.parse("http://doesnotexist.bogus"))
+      fail "should have raised"
+    rescue => e
+      assert_includes e.message, "doesnotexist.bogus:80"
+    end
+  end
+
 end
 
 module TestNetHTTP_version_1_1_methods
