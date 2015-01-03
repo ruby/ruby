@@ -15,12 +15,6 @@ Sat Jan  3 18:19:50 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 	* test/fiddle/test_cparser.rb: added type_alias test for parse_ctype
 	  and parse_struct_signature.
 
-Sat Jan  3 16:02:20 2015  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
-
-	* lib/net/http.rb (Net::HTTP.proxy_user): retrieve proxy user from http_proxy.
-	* lib/net/http.rb (Net::HTTP.proxy_pass): retrieve proxy password from http_proxy.
-	  Patch by Rafael dos Santos Silva. [fix GH-763]
-
 Sat Jan  3 11:50:16 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* ext/openssl/ossl.h: avoid to build failure of Windows environment.

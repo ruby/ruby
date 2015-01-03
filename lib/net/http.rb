@@ -1059,20 +1059,12 @@ module Net   #:nodoc:
 
     # The proxy username, if one is configured
     def proxy_user
-      if @proxy_from_env then
-        proxy_uri && proxy_uri.user
-      else
-        @proxy_user
-      end
+      @proxy_user
     end
 
     # The proxy password, if one is configured
     def proxy_pass
-      if @proxy_from_env then
-        proxy_uri && proxy_uri.password
-      else
-        @proxy_pass
-      end
+      @proxy_pass
     end
 
     alias proxyaddr proxy_address   #:nodoc: obsolete
