@@ -122,7 +122,7 @@ class Tempfile < DelegateClass(File)
   #
   # If Tempfile.new cannot find a unique filename within a limited
   # number of tries, then it will raise an exception.
-  def initialize(basename, tmpdir=nil, mode: 0, **options)
+  def initialize(basename="", tmpdir=nil, mode: 0, **options)
     if block_given?
       warn "Tempfile.new doesn't call the given block."
     end
