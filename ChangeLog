@@ -1,3 +1,8 @@
+Sun Jan  4 14:02:37 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/lib/test/unit/parallel.rb (run): expand the file name to be
+	  loaded, so that relative paths work in parallel mode.
+
 Sun Jan  4 13:36:56 2015  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* test/test_tempfile.rb: use assert_file for more descriptive message.

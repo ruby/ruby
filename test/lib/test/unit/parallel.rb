@@ -112,7 +112,7 @@ module Test
               suites = MiniTest::Unit::TestCase.test_suites
 
               begin
-                require $1
+                require File.realpath($1)
               rescue LoadError
                 _report "after", Marshal.dump([$1, ProxyError.new($!)])
                 _report "ready"
