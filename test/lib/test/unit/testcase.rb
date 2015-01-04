@@ -22,6 +22,7 @@ module Test
       end
 
       def self.method_added(name)
+        super
         return unless name.to_s.start_with?("test_")
         @test_methods ||= {}
         if @test_methods[name]
