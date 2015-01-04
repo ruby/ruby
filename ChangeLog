@@ -1,3 +1,8 @@
+Sun Jan  4 22:32:09 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/lib/test/unit.rb (Test::Unit): split the large class into
+	  each modules.
+
 Sun Jan  4 21:32:52 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (f_label): return tLABEL value as it is.

@@ -61,23 +61,28 @@ module Test
         orig_args -= args
         args = @init_hook.call(args, options) if @init_hook
         non_options(args, options)
+        @run_options = orig_args
         @help = orig_args.map { |s| s =~ /[\s|&<>$()]/ ? s.inspect : s }.join " "
         @options = options
+      end
+    end
+
+    module Parallel # :nodoc: all
+      def process_args(args = [])
+        return @options if @options
+        options = super
         if @options[:parallel]
           @files = args
-          @args = orig_args
         end
         options
       end
+    end
 
+    module Options # :nodoc: all
       private
       def setup_options(opts, options)
         opts.separator 'minitest options:'
         opts.version = MiniTest::Unit::VERSION
-
-        options[:retry] = true
-        options[:job_status] = nil
-        options[:hide_skip] = true
 
         opts.on '-h', '--help', 'Display this help.' do
           puts opts
@@ -96,11 +101,45 @@ module Test
         opts.on '-n', '--name PATTERN', "Filter test method names on pattern: /REGEXP/ or STRING" do |a|
           options[:filter] = a
         end
+      end
+
+      def non_options(files, options)
+        true
+      end
+    end
+
+    module Skipping # :nodoc: all
+    end
+
+    module Colorize # :nodoc: all
+    end
+
+    module StatusLine # :nodoc: all
+      prepend Colorize
+
+      private
+      def setup_options(opts, options)
+        super
+
+        opts.separator "status line options:"
+
+        options[:job_status] = nil
 
         opts.on '--jobs-status [TYPE]', [:normal, :replace],
                 "Show status of jobs every file; Disabled when --jobs isn't specified." do |type|
           options[:job_status] = type || :normal
         end
+      end
+    end
+
+    module Parallel # :nodoc: all
+      private
+      def setup_options(opts, options)
+        super
+
+        opts.separator "parallel test options:"
+
+        options[:retry] = true
 
         opts.on '-j N', '--jobs N', "Allow run tests with N jobs at once" do |a|
           if /^t/ =~ a
@@ -127,6 +166,17 @@ module Test
         opts.on '--ruby VAL', "Path to ruby; It'll have used at -j option" do |a|
           options[:ruby] = a.split(/ /).reject(&:empty?)
         end
+      end
+    end
+
+    module Skipping # :nodoc: all
+      private
+      def setup_options(opts, options)
+        super
+
+        opts.separator "skipping options:"
+
+        options[:hide_skip] = true
 
         opts.on '-q', '--hide-skip', 'Hide skipped tests' do
           options[:hide_skip] = true
@@ -135,6 +185,13 @@ module Test
         opts.on '--show-skip', 'Show skipped tests' do
           options[:hide_skip] = false
         end
+      end
+    end
+
+    module Colorize # :nodoc: all
+      private
+      def setup_options(opts, options)
+        super
 
         opts.on '--color[=WHEN]',
                 [:always, :never, :auto],
@@ -148,7 +205,9 @@ module Test
           @tty = c != :no
         end
       end
+    end
 
+    module LoadPathOption # :nodoc: all
       def non_options(files, options)
         begin
           require "rbconfig"
@@ -159,7 +218,7 @@ module Test
           options[:ruby] ||= [RbConfig.ruby]
         end
 
-        true
+        super
       end
     end
 
@@ -168,6 +227,7 @@ module Test
 
       def setup_options(parser, options)
         super
+        parser.separator "globbing options:"
         parser.on '-b', '--basedir=DIR', 'Base directory of test suites.' do |dir|
           options[:base_directory] = dir
         end
@@ -179,7 +239,7 @@ module Test
       def non_options(files, options)
         paths = [options.delete(:base_directory), nil].uniq
         if reject = options.delete(:reject)
-          reject_pat = Regexp.union(reject.map {|r| /#{r}/ })
+          reject_pat = Regexp.union(reject.map {|r| %r"#{r}"})
         end
         files.map! {|f|
           f = f.tr(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
@@ -212,6 +272,7 @@ module Test
     module LoadPathOption # :nodoc: all
       def setup_options(parser, options)
         super
+        parser.separator "load path options:"
         parser.on '-Idirectory', 'Add library load path' do |dirs|
           dirs.split(':').each { |d| $LOAD_PATH.unshift d }
         end
@@ -221,6 +282,7 @@ module Test
     module GCStressOption # :nodoc: all
       def setup_options(parser, options)
         super
+        parser.separator "GC options:"
         parser.on '--[no-]gc-stress', 'Set GC.stress as true' do |flag|
           options[:gc_stress] = flag
         end
@@ -269,11 +331,16 @@ module Test
 
     class Runner < MiniTest::Unit # :nodoc: all
       include Test::Unit::Options
+      include Test::Unit::StatusLine
+      include Test::Unit::Parallel
+      include Test::Unit::Skipping
       include Test::Unit::GlobOption
       include Test::Unit::LoadPathOption
       include Test::Unit::GCStressOption
       include Test::Unit::RunCount
+    end
 
+    module Parallel # :nodoc: all
       class Worker
         def self.launch(ruby,args=[])
           io = IO.popen([*ruby,
@@ -371,7 +438,9 @@ module Test
         end
 
       end
+    end
 
+    class Runner < MiniTest::Unit # :nodoc: all
       class << self; undef autorun; end
 
       @@stop_auto_run = false
@@ -383,7 +452,9 @@ module Test
         } unless @@installed_at_exit
         @@installed_at_exit = true
       end
+    end
 
+    module Parallel # :nodoc: all
       def after_worker_down(worker, e=nil, c=false)
         return unless @options[:parallel]
         return if @interrupt
@@ -397,7 +468,9 @@ module Test
         STDERR.flush
         exit c
       end
+    end
 
+    module StatusLine # :nodoc: all
       def terminal_width
         unless @terminal_width ||= nil
           begin
@@ -460,7 +533,9 @@ module Test
         return unless @options[:job_status] == :replace && @status_line_size.nonzero?
         del_status_line
       end
+    end
 
+    module Parallel # :nodoc: all
       def after_worker_quit(worker)
         return unless @options[:parallel]
         return if @interrupt
@@ -471,7 +546,7 @@ module Test
 
       def launch_worker
         begin
-          worker = Worker.launch(@options[:ruby],@args)
+          worker = Worker.launch(@options[:ruby], @run_options)
         rescue => e
           abort "ERROR: Failed to launch job process - #{e.class}: #{e.message}"
         end
@@ -687,14 +762,26 @@ module Test
             end
           }
         end
+        result
+      end
+    end
+
+    module Skipping # :nodoc: all
+      private
+      def _run_suites(suites, type)
+        result = super
         report.reject!{|r| r.start_with? "Skipped:" } if @options[:hide_skip]
         report.sort_by!{|r| r.start_with?("Skipped:") ? 0 : \
                            (r.start_with?("Failure:") ? 1 : 2) }
         result
       end
+    end
 
+    class Runner < MiniTest::Unit # :nodoc: all
       alias mini_run_suite _run_suite
+    end
 
+    module StatusLine # :nodoc: all
       def output
         (@output ||= nil) || super
       end
@@ -770,7 +857,9 @@ module Test
         end
         report.clear
       end
+    end
 
+    class Runner < MiniTest::Unit # :nodoc: all
       # Overriding of MiniTest::Unit#puke
       def puke klass, meth, e
         # TODO:
@@ -784,18 +873,24 @@ module Test
         end
         rep
       end
+    end
 
+    module StatusLine # :nodoc: all
       def initialize
         super
         @tty = $stdout.tty?
       end
+    end
 
+    module Parallel # :nodoc: all
       def status(*args)
         result = super
         raise @interrupt if @interrupt
         result
       end
+    end
 
+    module StatusLine # :nodoc: all
       def run(*args)
         result = super
         puts "\nruby -v: #{RUBY_DESCRIPTION}"
