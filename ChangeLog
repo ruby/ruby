@@ -1,3 +1,8 @@
+Sun Jan  4 13:05:09 2015  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* string.c: improve docs for String#<=>. [ruby-core:65399][Feature #10322]
+	  Patch by gogo tanaka.
+
 Sun Jan  4 12:42:24 2015  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* array.c: improve docs for Array#reject. [ruby-core:65324][misc #10307]
