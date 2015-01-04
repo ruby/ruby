@@ -1,4 +1,7 @@
-Sun Jan  4 22:32:09 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jan  4 22:32:42 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/lib/test/unit.rb (Test::Unit): reorder modules and merge
+	  each modules.
 
 	* test/lib/test/unit.rb (Test::Unit): split the large class into
 	  each modules.
