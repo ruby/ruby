@@ -24,6 +24,9 @@ with all sufficient information, see the ChangeLog file.
 * lib/webrick/utils.rb
  * removed unused argument. https://github.com/ruby/ruby/pull/356
 
+* lib/drb/drb.rb
+ * removed unused argument. https://github.com/ruby/ruby/pull/515
+
 === Built-in global variables compatibility issues
 
 === C API updates

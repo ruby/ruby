@@ -1,3 +1,8 @@
+Sun Jan  4 09:21:04 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/drb/drb.rb: removed unused argument. Patch by @vipulnsward
+	  [fix GH-515]
+
 Sun Jan  4 09:18:31 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/tempfile.rb: provide default basename parameter.

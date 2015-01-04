@@ -745,7 +745,7 @@ module DRb
         end
       end
       if first && (config[:auto_load] != false)
-        auto_load(uri, config)
+        auto_load(uri)
         return open(uri, config, false)
       end
       raise DRbBadURI, 'can\'t parse uri:' + uri
@@ -769,7 +769,7 @@ module DRb
         end
       end
       if first && (config[:auto_load] != false)
-        auto_load(uri, config)
+        auto_load(uri)
         return open_server(uri, config, false)
       end
       raise DRbBadURI, 'can\'t parse uri:' + uri
@@ -792,14 +792,14 @@ module DRb
         end
       end
       if first && (config[:auto_load] != false)
-        auto_load(uri, config)
+        auto_load(uri)
         return uri_option(uri, config, false)
       end
       raise DRbBadURI, 'can\'t parse uri:' + uri
     end
     module_function :uri_option
 
-    def auto_load(uri, config)  # :nodoc:
+    def auto_load(uri)  # :nodoc:
       if uri =~ /^drb([a-z0-9]+):/
         require("drb/#{$1}") rescue nil
       end
