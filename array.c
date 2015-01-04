@@ -3150,7 +3150,7 @@ rb_ary_reject_bang(VALUE ary)
  *     ary.reject                   -> Enumerator
  *
  *  Returns a new array containing the items in +self+ for which the given
- *  block is not +true+.
+ *  block is not +true+. The ordering of non-rejected elements is maintained.
  *
  *  See also Array#delete_if
  *
