@@ -835,6 +835,59 @@ module Test
       end
     end
 
+    module ExcludesOption # :nodoc: all
+      class ExcludedMethods < Struct.new(:excludes)
+        def exclude(name, reason)
+          excludes[name] = reason
+        end
+
+        def exclude_from(klass)
+          excludes = self.excludes
+          klass.class_eval do
+            public_instance_methods(false).each do |method|
+              if excludes[method]
+                remove_method(method)
+              end
+            end
+            public_instance_methods(true).each do |method|
+              if excludes[method]
+                undef_method(method)
+              end
+            end
+          end
+        end
+
+        def self.load(dir, name)
+          return unless dir and name
+          path = File.join(dir, name.gsub(/::/, '/') + ".rb")
+          begin
+            src = File.read(path)
+          rescue Errno::ENOENT
+            nil
+          else
+            instance = new({})
+            instance.instance_eval(src)
+            instance
+          end
+        end
+      end
+
+      def setup_options(parser, options)
+        super
+        options[:excludes] = ENV["EXCLUDES"]
+        parser.on '-X', '--excludes-dir DIRECTORY', "Directory name of exclude files" do |d|
+          options[:excludes] = d
+        end
+      end
+
+      def _run_suite(suite, type)
+        if ex = ExcludedMethods.load(@options[:excludes], suite.name)
+          ex.exclude_from(suite)
+        end
+        super
+      end
+    end
+
     class Runner < MiniTest::Unit # :nodoc: all
       include Test::Unit::Options
       include Test::Unit::StatusLine
@@ -843,6 +896,7 @@ module Test
       include Test::Unit::GlobOption
       include Test::Unit::LoadPathOption
       include Test::Unit::GCStressOption
+      include Test::Unit::ExcludesOption
       include Test::Unit::RunCount
 
       class << self; undef autorun; end

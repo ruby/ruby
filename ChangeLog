@@ -1,3 +1,9 @@
+Sun Jan  4 22:33:33 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/lib/test/unit.rb (ExcludesOption): add "excludes" support
+	  to test suite, for alternative implementations and platforms.
+	  [Feature #10682]
+
 Sun Jan  4 22:32:42 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/lib/test/unit.rb (Test::Unit): reorder modules and merge
