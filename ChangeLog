@@ -1,3 +1,8 @@
+Sun Jan  4 13:36:56 2015  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* test/test_tempfile.rb: use assert_file for more descriptive message.
+	  following r49131.
+
 Sun Jan  4 13:05:09 2015  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* string.c: improve docs for String#<=>. [ruby-core:65399][Feature #10322]

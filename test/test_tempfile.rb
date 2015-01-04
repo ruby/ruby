@@ -73,7 +73,7 @@ class TestTempfile < Test::Unit::TestCase
     path = t.path
 
     t.close
-    assert File.exist?(path)
+    assert_file.exist?(path)
 
     t.unlink
     assert !File.exist?(path)
@@ -133,7 +133,7 @@ class TestTempfile < Test::Unit::TestCase
     File.open(path, "w").close
     begin
       t.close(true)
-      assert File.exist?(path)
+      assert_file.exist?(path)
     ensure
       File.unlink(path) rescue nil
     end
@@ -155,7 +155,7 @@ class TestTempfile < Test::Unit::TestCase
     File.open(path, "w").close
     begin
       t.close!
-      assert File.exist?(path)
+      assert_file.exist?(path)
     ensure
       File.unlink(path) rescue nil
     end
@@ -169,7 +169,7 @@ puts path
 file.close!
 File.open(path, "w").close
     EOS
-      assert File.exist?(filename)
+      assert_file.exist?(filename)
       File.unlink(filename)
       assert_nil error
     end
@@ -183,7 +183,7 @@ File.open(path, "w").close
     EOS
       if !filename.empty?
         # POSIX unlink semantics supported, continue with test
-        assert File.exist?(filename)
+        assert_file.exist?(filename)
         File.unlink(filename)
       end
       assert_nil error
