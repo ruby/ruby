@@ -7281,6 +7281,8 @@ lstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc)
  *  change was made. See also <code>String#rstrip!</code> and
  *  <code>String#strip!</code>.
  *
+ *  Refer to <code>strip</code> for the definition of whitespace.
+ *
  *     "  hello  ".lstrip   #=> "hello  "
  *     "hello".lstrip!      #=> nil
  */
@@ -7316,6 +7318,8 @@ rb_str_lstrip_bang(VALUE str)
  *
  *  Returns a copy of <i>str</i> with leading whitespace removed. See also
  *  <code>String#rstrip</code> and <code>String#strip</code>.
+ *
+ *  Refer to <code>strip</code> for the definition of whitespace.
  *
  *     "  hello  ".lstrip   #=> "hello  "
  *     "hello".lstrip       #=> "hello"
@@ -7366,6 +7370,8 @@ rstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc)
  *  no change was made. See also <code>String#lstrip!</code> and
  *  <code>String#strip!</code>.
  *
+ *  Refer to <code>strip</code> for the definition of whitespace.
+ *
  *     "  hello  ".rstrip   #=> "  hello"
  *     "hello".rstrip!      #=> nil
  */
@@ -7401,6 +7407,8 @@ rb_str_rstrip_bang(VALUE str)
  *  Returns a copy of <i>str</i> with trailing whitespace removed. See also
  *  <code>String#lstrip</code> and <code>String#strip</code>.
  *
+ *  Refer to <code>strip</code> for the definition of whitespace.
+ *
  *     "  hello  ".rstrip   #=> "  hello"
  *     "hello".rstrip       #=> "hello"
  */
@@ -7427,6 +7435,8 @@ rb_str_rstrip(VALUE str)
  *
  *  Removes leading and trailing whitespace from <i>str</i>. Returns
  *  <code>nil</code> if <i>str</i> was not altered.
+ *
+ *  Refer to <code>strip</code> for the definition of whitespace.
  */
 
 static VALUE
@@ -7464,8 +7474,12 @@ rb_str_strip_bang(VALUE str)
  *
  *  Returns a copy of <i>str</i> with leading and trailing whitespace removed.
  *
+ *  Whitespace is defined as any of the following characters:
+ *  null, horizontal tab, line feed, vertical tab, form feed, carriage return, space.
+ *
  *     "    hello    ".strip   #=> "hello"
  *     "\tgoodbye\r\n".strip   #=> "goodbye"
+ *     "\x00\t\n\v\f\r ".strip #=> ""
  */
 
 static VALUE
