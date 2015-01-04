@@ -59,7 +59,7 @@ class TestTempfile < Test::Unit::TestCase
 
   def test_default_basename
     t = tempfile
-    assert File.exist?(t.path)
+    assert_file.exist?(t.path)
   end
 
   def test_basename_with_suffix
