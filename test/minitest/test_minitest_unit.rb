@@ -1648,28 +1648,6 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
     assert_equal expected, sample_test_case.test_methods
   end
 
-  def test_i_suck_and_my_tests_are_order_dependent_bang_sets_test_order_alpha
-    @assertion_count = 0
-
-    shitty_test_case = Class.new MiniTest::Unit::TestCase
-
-    shitty_test_case.i_suck_and_my_tests_are_order_dependent!
-
-    assert_equal :alpha, shitty_test_case.test_order
-  end
-
-  def test_i_suck_and_my_tests_are_order_dependent_bang_does_not_warn
-    @assertion_count = 0
-
-    shitty_test_case = Class.new MiniTest::Unit::TestCase
-
-    def shitty_test_case.test_order ; :lol end
-
-    assert_silent do
-      shitty_test_case.i_suck_and_my_tests_are_order_dependent!
-    end
-  end
-
   def util_assert_triggered expected, klass = MiniTest::Assertion
     e = assert_raises klass do
       yield

@@ -1329,18 +1329,6 @@ module MiniTest
       reset
 
       ##
-      # Call this at the top of your tests when you absolutely
-      # positively need to have ordered tests. In doing so, you're
-      # admitting that you suck and your tests are weak.
-
-      def self.i_suck_and_my_tests_are_order_dependent!
-        class << self
-          undef_method :test_order if method_defined? :test_order
-          define_method :test_order do :alpha end
-        end
-      end
-
-      ##
       # Make diffs for this TestCase use #pretty_inspect so that diff
       # in assert_equal can be more details. NOTE: this is much slower
       # than the regular inspect but much more usable for complex
