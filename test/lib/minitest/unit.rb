@@ -73,12 +73,6 @@ module MiniTest
   # printed if the assertion fails.
 
   module Assertions
-    UNDEFINED = Object.new # :nodoc:
-
-    def UNDEFINED.inspect # :nodoc:
-      "UNDEFINED" # again with the rdoc bugs... :(
-    end
-
     ##
     # Returns the diff command to use in #diff. Tries to intelligently
     # figure out what diff to use.
@@ -311,8 +305,8 @@ module MiniTest
     #
     #   assert_operator 5, :<=, 4
 
-    def assert_operator o1, op, o2 = UNDEFINED, msg = nil
-      return assert_predicate o1, op, msg if UNDEFINED == o2
+    def assert_operator o1, op, o2 = (predicate = true; nil), msg = nil
+      return assert_predicate o1, op, msg if predicate
       msg = message(msg) { "Expected #{mu_pp(o1)} to be #{op} #{mu_pp(o2)}" }
       assert o1.__send__(op, o2), msg
     end
@@ -676,8 +670,8 @@ module MiniTest
     #   refute_operator 1, :>, 2 #=> pass
     #   refute_operator 1, :<, 2 #=> fail
 
-    def refute_operator o1, op, o2 = UNDEFINED, msg = nil
-      return refute_predicate o1, op, msg if UNDEFINED == o2
+    def refute_operator o1, op, o2 = (predicate = true; nil), msg = nil
+      return refute_predicate o1, op, msg if predicate
       msg = message(msg) { "Expected #{mu_pp(o1)} to not be #{op} #{mu_pp(o2)}"}
       refute o1.__send__(op, o2), msg
     end
