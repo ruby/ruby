@@ -255,9 +255,8 @@ class OpenStruct
   alias :to_s :inspect
 
   attr_reader :table # :nodoc:
+  protected :table
   alias table! table
-  undef table
-  protected :table!
 
   #
   # Compares this object and +other+ for equality.  An OpenStruct is equal to
