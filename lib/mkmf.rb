@@ -2286,13 +2286,14 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
     if target
       f = "$(DLLIB)"
       dest = "#{dir}/#{f}"
+      stamp = timestamp_file(dir, target_prefix)
       if $extout
         mfile.puts dest
         mfile.print "clean-so::\n"
-        mfile.print "\t-$(Q)$(RM) #{fseprepl[dest]}\n"
+        mfile.print "\t-$(Q)$(RM) #{fseprepl[dest]} #{fseprepl[stamp]}\n"
         mfile.print "\t-$(Q)$(RMDIRS) #{fseprepl[dir]}#{$ignore_error}\n"
       else
-        mfile.print "#{f} #{timestamp_file(dir, target_prefix)}\n"
+        mfile.print "#{f} #{stamp}\n"
         mfile.print "\t$(INSTALL_PROG) #{fseprepl[f]} #{dir}\n"
         if defined?($installed_list)
           mfile.print "\t@echo #{dir}/#{File.basename(f)}>>$(INSTALLED_LIST)\n"
@@ -2339,6 +2340,8 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
         unless dirs.empty?
           mfile.print("clean-rb#{sfx}::\n")
           for dir in dirs.sort_by {|d| -d.count('/')}
+            stamp = timestamp_file(dir, target_prefix)
+            mfile.print("\t-$(Q)$(RM) #{fseprepl[stamp]}\n")
             mfile.print("\t-$(Q)$(RMDIRS) #{fseprepl[dir]}#{$ignore_error}\n")
           end
         end
