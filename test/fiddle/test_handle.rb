@@ -29,7 +29,6 @@ module Fiddle
     end
 
     def test_static_sym
-      skip "Fiddle::Handle.sym is not supported" if /mswin|mingw/ =~ RUBY_PLATFORM
       begin
         # Linux / Darwin / FreeBSD
         refute_nil Fiddle::Handle.sym('dlopen')
@@ -40,7 +39,7 @@ module Fiddle
         refute_nil Fiddle::Handle.sym('Init_objspace')
         assert_equal Fiddle::Handle.sym('Init_objspace'), Fiddle::Handle['Init_objspace']
       end
-    end
+    end unless /mswin|mingw/ =~ RUBY_PLATFORM
 
     def test_sym_closed_handle
       handle = Fiddle::Handle.new(LIBC_SO)
@@ -172,7 +171,6 @@ module Fiddle
     end unless /mswin|mingw/ =~ RUBY_PLATFORM
 
     def test_DEFAULT
-      skip "Handle::DEFAULT is not supported" if /mswin|mingw/ =~ RUBY_PLATFORM
       handle = Handle::DEFAULT
       refute_nil handle['malloc']
     end unless /mswin|mingw/ =~ RUBY_PLATFORM
