@@ -1,3 +1,7 @@
+Tue Jan  6 03:10:54 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* test/fiddle/test_handle.rb: fix syntax.
+
 Tue Jan  6 00:16:10 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/fiddle/test_handle.rb (test_NEXT): use -test-/dln/empty

@@ -36,6 +36,8 @@ module Fiddle
         return
       rescue
       end
+
+      begin
         # NetBSD
         require '-test-/dln/empty'
         refute_nil Fiddle::Handle.sym('Init_empty')
@@ -157,6 +159,7 @@ module Fiddle
         return
       rescue
       end
+
       begin
         # BSD
         #
