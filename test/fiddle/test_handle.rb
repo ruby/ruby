@@ -33,11 +33,15 @@ module Fiddle
         # Linux / Darwin / FreeBSD
         refute_nil Fiddle::Handle.sym('dlopen')
         assert_equal Fiddle::Handle.sym('dlopen'), Fiddle::Handle['dlopen']
+        return
       rescue
+      end
         # NetBSD
         require 'objspace'
         refute_nil Fiddle::Handle.sym('Init_objspace')
         assert_equal Fiddle::Handle.sym('Init_objspace'), Fiddle::Handle['Init_objspace']
+        return
+      rescue
       end
     end unless /mswin|mingw/ =~ RUBY_PLATFORM
 
@@ -150,7 +154,10 @@ module Fiddle
         # --- Ubuntu Linux 8.04 dlsym(3)
         handle = Handle::NEXT
         refute_nil handle['malloc']
+        return
       rescue
+      end
+      begin
         # BSD
         #
         # If dlsym() is called with the special handle RTLD_NEXT, then the search
@@ -167,6 +174,8 @@ module Fiddle
         require 'objspace'
         handle = Handle::NEXT
         refute_nil handle['Init_objspace']
+        return
+      rescue
       end
     end unless /mswin|mingw/ =~ RUBY_PLATFORM
 
