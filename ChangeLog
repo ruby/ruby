@@ -1,3 +1,8 @@
+Tue Jan  6 00:04:38 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/ruby/test_io.rb: added timeout for AIX environment.
+	  [ruby-core:62983][Bug #9917]
+
 Mon Jan  5 23:58:50 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* test/ruby/test_string.rb(test_LSHIFT_neary_long_max):
