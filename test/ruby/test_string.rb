@@ -292,6 +292,41 @@ class TestString < Test::Unit::TestCase
     assert_equal(false, S("foo").tsafe_eql?(S("foO")))
     assert_equal(true, S("f\x00oo").tsafe_eql?(S("f\x00oo")))
     assert_equal(false, S("f\x00oo").tsafe_eql?(S("f\x00oO")))
+
+    feature10098 = '[Feature #10098]'
+    m = 256
+    s0 = S("fooo")*m
+    s1 = S("fooo")*m
+    s2 = S("Fooo")*m
+    assert_send([s0, :tsafe_eql?, s1])
+    assert_not_send([s0, :tsafe_eql?, s2])
+
+    n = 1000
+    t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    n.times {}
+    ts = Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0
+    begin
+      s0 << s0
+      s1 << s1
+      s2 << s2
+      assert_equal(s0, s1)
+      assert_not_equal(s0, s2)
+      assert_send([s0, :tsafe_eql?, s1])
+      assert_not_send([s0, :tsafe_eql?, s2])
+      t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      n.times {s0 == s1}
+      t1 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      n.times {s0 == s2}
+      t2 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      e = (t1 - t0 - ts) / (t2 - t1 - ts)
+    end while e < 10
+
+    t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    n.times {s0.tsafe_eql?(s1)}
+    t1 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    n.times {s0.tsafe_eql?(s2)}
+    t2 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    assert_in_epsilon(t2 - t1 - ts, t1 - t0 - ts, e/10, "#{feature10098}: should run in the same timing")
   end
 
   def test_capitalize
