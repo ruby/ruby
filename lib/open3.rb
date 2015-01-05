@@ -190,6 +190,7 @@ module Open3
   module_function :popen2e
 
   def popen_run(cmd, opts, child_io, parent_io) # :nodoc:
+    opts = opts.merge(cmd.pop) if cmd.last.kind_of? Hash
     pid = spawn(*cmd, opts)
     wait_thr = Process.detach(pid)
     child_io.each {|io| io.close }
