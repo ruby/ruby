@@ -2227,7 +2227,7 @@ class TestString < Test::Unit::TestCase
 
   def test_LSHIFT_neary_long_max
     return unless @cls == String
-    assert_ruby_status([], <<-'end;', '[ruby-core:61886] [Bug #9709]', timeout: 20)
+    assert_ruby_status([], <<-'end;', '[ruby-core:61886] [Bug #9709]', timeout: 60)
       begin
         a = "a" * 0x4000_0000
         a << "a" * 0x1_0000

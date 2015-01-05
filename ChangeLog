@@ -1,3 +1,8 @@
+Mon Jan  5 23:58:50 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* test/ruby/test_string.rb(test_LSHIFT_neary_long_max):
+	  increase timeout for Arch Linux CI environment.
+
 Wed Dec 31 00:00:09 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTP.proxy_uri): use initializer instead
