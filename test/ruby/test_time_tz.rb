@@ -155,6 +155,14 @@ class TestTimeTZ < Test::Unit::TestCase
     }
   end
 
+  def test_europe_berlin
+    with_tz(tz="Europe/Berlin") {
+      assert_time_constructor(tz, "2011-10-30 02:00:00 +0100", :local, [2011,10,30,2,0,0], "[ruby-core:67345] [Bug #10698]")
+      assert_time_constructor(tz, "2011-10-30 02:00:00 +0100", :local, [0,0,2,30,10,2011,nil,nil,false,nil])
+      assert_time_constructor(tz, "2011-10-30 02:00:00 +0200", :local, [0,0,2,30,10,2011,nil,nil,true,nil])
+    }
+  end
+
   def test_europe_lisbon
     with_tz("Europe/Lisbon") {
       assert_equal("LMT", Time.new(-0x1_0000_0000_0000_0000).zone)

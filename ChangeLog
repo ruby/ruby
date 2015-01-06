@@ -1,3 +1,10 @@
+Tue Jan  6 21:41:04 2015  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (timelocalw): Set tm_isdst field -1 if vtm->isdst is
+	  VTM_ISDST_INITVAL.  This bug is introduced at packing struct
+	  vtm (r45155).
+	  [ruby-core:67345] [Bug #10698] Reported by Boris Ruf.
+
 Tue Jan  6 03:10:54 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* test/fiddle/test_handle.rb: fix syntax.
