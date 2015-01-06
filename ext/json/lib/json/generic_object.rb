@@ -47,14 +47,6 @@ module JSON
       table
     end
 
-    def [](name)
-      table[name.to_sym]
-    end
-
-    def []=(name, value)
-      __send__ "#{name}=", value
-    end
-
     def |(other)
       self.class[other.to_hash.merge(to_hash)]
     end
