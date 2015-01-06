@@ -267,7 +267,7 @@ while true
     id = "##{i["id"]}".color(*PRIORITIES[i["priority"]["name"]])
     sio = StringIO.new
     sio.puts <<eom
-#{i["subject"]}
+#{i["subject"].color(bold: true, underscore: true)}
 #{i["project"]["name"]} [#{i["tracker"]["name"]} #{id}] #{i["status"]["name"]} (#{i["created_on"]})
 author:   #{i["author"]["name"]}
 assigned: #{i["assigned_to"].to_h["name"]}
@@ -279,17 +279,17 @@ eom
     #end
     sio.puts i["description"]
     sio.puts
-    sio.puts "= changesets"
+    sio.puts "= changesets".color(bold: true, underscore: true)
     @changesets = []
     i["changesets"].each do |x|
       @changesets << x["revision"]
-      sio.puts "== #{x["revision"]} #{x["committed_on"]} #{x["user"]["name"] rescue nil}"
+      sio.puts "== #{x["revision"]} #{x["committed_on"]} #{x["user"]["name"] rescue nil}".color(bold: true, underscore: true)
       sio.puts x["comments"]
     end
     if i["journals"] && !i["journals"].empty?
-      sio.puts "= journals"
+      sio.puts "= journals".color(bold: true, underscore: true)
       i["journals"].each do |x|
-        sio.puts "== #{x["user"]["name"]} (#{x["created_on"]})"
+        sio.puts "== #{x["user"]["name"]} (#{x["created_on"]})".color(bold: true, underscore: true)
         x["details"].each do |y|
           sio.puts JSON(y)
         end
