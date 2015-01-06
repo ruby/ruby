@@ -652,6 +652,15 @@ class TestMethod < Test::Unit::TestCase
       EOC
   end
 
+  def test_unbound_method_proc_coerce
+    # '&' coercion of an UnboundMethod raises TypeError
+    assert_raise(TypeError) do
+      Class.new do
+        define_method('foo', &Object.instance_method(:to_s))
+      end
+    end
+  end
+
   def test___dir__
     assert_instance_of String, __dir__
     assert_equal(File.dirname(File.realpath(__FILE__)), __dir__)

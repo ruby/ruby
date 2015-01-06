@@ -2011,6 +2011,25 @@ class TestModule < Test::Unit::TestCase
     RUBY
   end
 
+  def test_define_method_with_unbound_method
+    # Passing an UnboundMethod to define_method succeeds if it is from an ancestor
+    assert_nothing_raised do
+      cls = Class.new(String) do
+        define_method('foo', String.instance_method(:to_s))
+      end
+
+      obj = cls.new('bar')
+      assert_equal('bar', obj.foo)
+    end
+
+    # Passing an UnboundMethod to define_method fails if it is not from an ancestor
+    assert_raise(TypeError) do
+      Class.new do
+        define_method('foo', String.instance_method(:to_s))
+      end
+    end
+  end
+
   private
 
   def assert_top_method_is_private(method)
