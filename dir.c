@@ -81,7 +81,6 @@ char *strchr(char*,char);
 # define USE_NAME_ON_FS 1
 # define RUP32(size) ((size)+3/4)
 # define SIZEUP32(type) RUP32(sizeof(type))
-# define NEXT(var) var = (void *)((ptr += SIZEUP32(var)) - SIZEUP32(var))
 #else
 # define USE_NAME_ON_FS 0
 #endif
@@ -91,6 +90,7 @@ char *strchr(char*,char);
 #else
 # define NORMALIZE_UTF8PATH 0
 #endif
+
 #if NORMALIZE_UTF8PATH
 #include <sys/param.h>
 #include <sys/mount.h>
@@ -1354,7 +1354,7 @@ join_path(const char *path, long len, int dirsep, const char *name, size_t namle
 static char *
 replace_real_basename(char *path, long base, int norm_p)
 {
-    u_int32_t attrbuf[(sizeof(attrreference_t) + MAXPATHLEN * 3 + sizeof(u_int32_t) - 1) / sizeof(u_int32_t) + 1];
+    u_int32_t attrbuf[SIZEUP32(attrreference_t) + RUP32(MAXPATHLEN * 3) + 1];
     struct attrlist al = {ATTR_BIT_MAP_COUNT, 0, ATTR_CMN_NAME};
     const attrreference_t *ar = (void *)(attrbuf+1);
     const char *name;
