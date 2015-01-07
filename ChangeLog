@@ -1,3 +1,12 @@
+Wed Jan  7 18:52:50 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (need_normalization): not only HFS+, CIFS (SMB) is also
+	  decomposed.  [Bug #10704]
+
+	* dir.c (NORMALIZE_UTF8PATH): Unicode decomposition seems to
+	  perform in an upper layer than file systems on OSX, as all path
+	  names are always decomposed regardless of file system types.
+
 Tue Jan  6 21:41:04 2015  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (timelocalw): Set tm_isdst field -1 if vtm->isdst is
