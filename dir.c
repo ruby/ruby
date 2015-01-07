@@ -445,6 +445,7 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
     rb_encoding  *fsenc;
     VALUE dirname, opt, orig;
     static ID keyword_ids[1];
+    const char *path;
 
     if (!keyword_ids[0]) {
 	keyword_ids[0] = rb_intern("encoding");
@@ -472,13 +473,15 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
     dp->dir = NULL;
     dp->path = Qnil;
     dp->enc = fsenc;
-    dp->dir = opendir(RSTRING_PTR(dirname));
+    path = RSTRING_PTR(dirname);
+    dp->dir = opendir(path);
     if (dp->dir == NULL) {
 	if (errno == EMFILE || errno == ENFILE) {
 	    rb_gc();
-	    dp->dir = opendir(RSTRING_PTR(dirname));
+	    dp->dir = opendir(path);
 	}
 	if (dp->dir == NULL) {
+	    RB_GC_GUARD(dirname);
 	    rb_sys_fail_path(orig);
 	}
     }
