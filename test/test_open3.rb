@@ -80,6 +80,14 @@ class TestOpen3 < Test::Unit::TestCase
     end
   end
 
+  def test_numeric_file_descriptors
+    with_pipe { |r, w|
+      Open3.popen3(RUBY, '-e', 'IO.open(3).puts "foo"', 3 => w) {|i,o,e,t|
+        assert_equal("foo\n", r.gets, "[GH-808] [ruby-core:67347] [Bug #10699]")
+      }
+    }
+  end
+
   def with_pipe
     r, w = IO.pipe
     yield r, w

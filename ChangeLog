@@ -1,3 +1,9 @@
+Thu Jan  8 00:13:52 2015  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open3.rb: Open3 properly passes non-keyword hash args to spawn.
+	  Fixed by Josh Cheek.  [Fix GH-808]
+	  Related to [ruby-core:67347] [Bug #10699]
+
 Wed Jan  7 19:19:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (dir_initialize): workaround of opendir failure at symlink
