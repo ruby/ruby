@@ -1,3 +1,8 @@
+Thu Jan  8 17:05:00 2015  Seiei Higa  <hanachin@gmail.com>
+
+	* vm_method.c (rb_method_entry): if no super class, no original
+	  method entry.  [ruby-core:67389] [Bug #10707]
+
 Thu Jan  8 16:31:43 2015  Seiei Higa  <hanachin@gmail.com>
 
 	* vm_method.c (rb_export_method): bail out if the original method
