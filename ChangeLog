@@ -1,6 +1,8 @@
 Thu Jan  8 16:31:43 2015  Seiei Higa  <hanachin@gmail.com>
 
-
+	* vm_method.c (rb_export_method): bail out if the original method
+	  is undefined when the method is refined.
+	  [ruby-core:67387] [Bug #10706]
 
 Thu Jan  8 12:53:44 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
