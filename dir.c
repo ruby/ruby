@@ -1351,6 +1351,24 @@ join_path(const char *path, long len, int dirsep, const char *name, size_t namle
 }
 
 #ifdef HAVE_GETATTRLIST
+static int
+is_case_sensitive(DIR *dirp)
+{
+    u_int32_t attrbuf[SIZEUP32(vol_capabilities_attr_t) + 1];
+    struct attrlist al = {ATTR_BIT_MAP_COUNT, 0, 0, ATTR_VOL_INFO|ATTR_VOL_CAPABILITIES};
+    const vol_capabilities_attr_t *cap = (void *)(attrbuf+1);
+    const int idx = VOL_CAPABILITIES_FORMAT;
+    const uint32_t mask = VOL_CAP_FMT_CASE_SENSITIVE;
+    struct statfs sf;
+
+    if (fstatfs(dirfd(dirp), &sf)) return -1;
+    if (getattrlist(sf.f_mntonname, &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW))
+	return -1;
+    if (!(cap->valid[idx] & mask))
+	return -1;
+    return (cap->capabilities[idx] & mask) != 0;
+}
+
 static char *
 replace_real_basename(char *path, long base, int norm_p)
 {
@@ -1542,7 +1560,10 @@ glob_helper(
 	    closedir(dirp);
 	    goto literally;
 	}
-	flags |= FNM_CASEFOLD;
+# endif
+# ifdef HAVE_GETATTRLIST
+	if (is_case_sensitive(dirp) == 0)
+	    flags |= FNM_CASEFOLD;
 # endif
 	while ((dp = READDIR(dirp, enc)) != NULL) {
 	    char *buf;
