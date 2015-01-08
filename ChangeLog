@@ -1,3 +1,7 @@
+Thu Jan  8 16:31:43 2015  Seiei Higa  <hanachin@gmail.com>
+
+
+
 Thu Jan  8 12:53:44 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (glob_helper): match in case-folding only if the directory

@@ -825,7 +825,9 @@ rb_export_method(VALUE klass, ID name, rb_method_flag_t noex)
 	me = search_method(rb_cObject, name, &defined_class);
     }
 
-    if (UNDEFINED_METHOD_ENTRY_P(me)) {
+    if (UNDEFINED_METHOD_ENTRY_P(me) ||
+	(me->def->type == VM_METHOD_TYPE_REFINED &&
+	 UNDEFINED_METHOD_ENTRY_P(me->def->body.orig_me))) {
 	rb_print_undef(klass, name, 0);
     }
 
