@@ -135,10 +135,4 @@ class TC_OpenStruct < Test::Unit::TestCase
     e = assert_raise(ArgumentError) { os.send :foo=, true, true }
     assert_match(/#{__callee__}/, e.backtrace[0])
   end
-
-  def test_modifiable
-    os = OpenStruct.new(modifiable: true)
-    assert_equal true, os.modifiable
-    assert_nothing_raised { os.foo = true }
-  end
 end
