@@ -1,3 +1,10 @@
+Fri Jan  9 07:23:32 2015  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: correctly quote non-ascii
+	  letters. Thanks @jirutka for the patch.
+
+	* test/psych/test_string.rb: test for change
+
 Fri Jan  9 07:13:55 2015  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/to_ruby.rb: call `allocate` on hash

@@ -317,7 +317,7 @@ module Psych
           tag   = 'tag:yaml.org,2002:str'
           plain = false
           quote = false
-        elsif o =~ /^\W[^"]*$/
+        elsif o =~ /^[^[:word:]][^"]*$/
           style = Nodes::Scalar::DOUBLE_QUOTED
         else
           unless String === @ss.tokenize(o)

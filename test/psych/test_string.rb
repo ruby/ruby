@@ -1,3 +1,4 @@
+# encoding: UTF-8
 require_relative 'helper'
 
 module Psych
@@ -21,6 +22,11 @@ module Psych
 
     def test_no_doublequotes_with_special_characters
       assert_equal 2, Psych.dump(%Q{<%= ENV["PATH"] %>}).count('"')
+    end
+
+    def test_no_quotes_when_start_with_non_ascii_character
+      yaml = Psych.dump 'Český non-ASCII'.encode(Encoding::UTF_8)
+      assert_match(/---\s*[^"'!]+$/, yaml)
     end
 
     def test_doublequotes_when_there_is_a_single
