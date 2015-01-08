@@ -1,3 +1,12 @@
+Fri Jan  9 06:58:43 2015  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: revive hashes with ivars
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: dump hashes with ivars.
+	  Fixes github.com/psych/issues/43
+
+	* test/psych/test_hash.rb: test for change
+
 Thu Jan  8 17:05:00 2015  Seiei Higa  <hanachin@gmail.com>
 
 	* vm_method.c (rb_method_entry): if no super class, no original

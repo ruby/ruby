@@ -261,6 +261,20 @@ module Psych
           end
           set
 
+        when /^!ruby\/hash-with-ivars(?::(.*))?$/
+          hash = $1 ? resolve_class($1).new : {}
+          o.children.each_slice(2) do |key, value|
+            case key.value
+            when 'elements'
+              revive_hash hash, value
+            when 'ivars'
+              value.children.each_slice(2) do |k,v|
+                hash.instance_variable_set accept(k), accept(v)
+              end
+            end
+          end
+          hash
+
         when /^!map:(.*)$/, /^!ruby\/hash:(.*)$/
           revive_hash register(o, resolve_class($1).new), o
 

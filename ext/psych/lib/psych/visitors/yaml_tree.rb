@@ -367,17 +367,46 @@ module Psych
       end
 
       def visit_Hash o
-        tag      = o.class == ::Hash ? nil : "!ruby/hash:#{o.class}"
-        implicit = !tag
+        ivars    = o.instance_variables
 
-        register(o, @emitter.start_mapping(nil, tag, implicit, Psych::Nodes::Mapping::BLOCK))
+        if ivars.any?
+          tag = "!ruby/hash-with-ivars"
+          tag << ":#{o.class}" unless o.class == ::Hash
 
-        o.each do |k,v|
-          accept k
-          accept v
+          register(o, @emitter.start_mapping(nil, tag, false, Psych::Nodes::Mapping::BLOCK))
+
+          @emitter.scalar 'elements', nil, nil, true, false, Nodes::Scalar::ANY
+
+          @emitter.start_mapping nil, nil, true, Nodes::Mapping::BLOCK
+          o.each do |k,v|
+            accept k
+            accept v
+          end
+          @emitter.end_mapping
+
+          @emitter.scalar 'ivars', nil, nil, true, false, Nodes::Scalar::ANY
+
+          @emitter.start_mapping nil, nil, true, Nodes::Mapping::BLOCK
+          o.instance_variables.each do |ivar|
+            accept ivar
+            accept o.instance_variable_get ivar
+          end
+          @emitter.end_mapping
+
+          @emitter.end_mapping
+        else
+          tag      = o.class == ::Hash ? nil : "!ruby/hash:#{o.class}"
+          implicit = !tag
+
+          register(o, @emitter.start_mapping(nil, tag, implicit, Psych::Nodes::Mapping::BLOCK))
+
+          o.each do |k,v|
+            accept k
+            accept v
+          end
+
+          @emitter.end_mapping
         end
-
-        @emitter.end_mapping
       end
 
       def visit_Psych_Set o

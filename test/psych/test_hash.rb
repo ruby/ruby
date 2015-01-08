@@ -10,6 +10,22 @@ module Psych
       @hash = { :a => 'b' }
     end
 
+    def test_hash_with_ivars
+      @hash.instance_variable_set :@foo, 'bar'
+      dup = Psych.load Psych.dump @hash
+      assert_equal 'bar', dup.instance_variable_get(:@foo)
+    end
+
+    def test_hash_subclass_with_ivars
+      x = X.new
+      x[:a] = 'b'
+      x.instance_variable_set :@foo, 'bar'
+      dup = Psych.load Psych.dump x
+      assert_cycle x
+      assert_equal 'bar', dup.instance_variable_get(:@foo)
+      assert_equal X, dup.class
+    end
+
     def test_load_with_class_syck_compatibility
       hash = Psych.load "--- !ruby/object:Hash\n:user_id: 7\n:username: Lucas\n"
       assert_equal({ user_id: 7, username: 'Lucas'}, hash)
