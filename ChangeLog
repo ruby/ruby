@@ -1,3 +1,8 @@
+Thu Jan  8 11:39:18 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* .travis.yml: Remove redundant configuration option.
+	  [fix GH-809] Patch by @gxworld
+
 Thu Jan  8 07:17:14 2015  Eric Wong  <e@80x24.org>
 
 	* lib/resolv.rb: consider ENETUNREACH as ResolvTimeout
