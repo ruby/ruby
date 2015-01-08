@@ -1,3 +1,10 @@
+Fri Jan  9 07:13:55 2015  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: call `allocate` on hash
+	subclasses.  Fixes github.com/tenderlove/psych/issues/196
+
+	* test/psych/test_hash.rb: test for change
+
 Fri Jan  9 06:58:43 2015  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/to_ruby.rb: revive hashes with ivars

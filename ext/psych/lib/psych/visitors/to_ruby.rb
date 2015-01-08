@@ -262,7 +262,7 @@ module Psych
           set
 
         when /^!ruby\/hash-with-ivars(?::(.*))?$/
-          hash = $1 ? resolve_class($1).new : {}
+          hash = $1 ? resolve_class($1).allocate : {}
           o.children.each_slice(2) do |key, value|
             case key.value
             when 'elements'
@@ -276,7 +276,7 @@ module Psych
           hash
 
         when /^!map:(.*)$/, /^!ruby\/hash:(.*)$/
-          revive_hash register(o, resolve_class($1).new), o
+          revive_hash register(o, resolve_class($1).allocate), o
 
         when '!omap', 'tag:yaml.org,2002:omap'
           map = register(o, class_loader.psych_omap.new)
