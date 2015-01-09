@@ -2405,7 +2405,7 @@ aref_args	: none
 		| args ',' assocs trailer
 		    {
 		    /*%%%*/
-			$$ = arg_append($1, new_hash($3));
+			$$ = $3 ? arg_append($1, new_hash($3)) : $1;
 		    /*%
 			$$ = arg_add_assocs($1, $3);
 		    %*/
@@ -2413,7 +2413,7 @@ aref_args	: none
 		| assocs trailer
 		    {
 		    /*%%%*/
-			$$ = NEW_LIST(new_hash($1));
+			$$ = $1 ? NEW_LIST(new_hash($1)) : 0;
 		    /*%
 			$$ = arg_add_assocs(arg_new(), $1);
 		    %*/
@@ -2443,7 +2443,7 @@ opt_call_args	: none
 		| args ',' assocs ','
 		    {
 		    /*%%%*/
-			$$ = arg_append($1, new_hash($3));
+			$$ = $3 ? arg_append($1, new_hash($3)) : $1;
 		    /*%
 			$$ = arg_add_assocs($1, $3);
 		    %*/
@@ -2451,7 +2451,7 @@ opt_call_args	: none
 		| assocs ','
 		    {
 		    /*%%%*/
-			$$ = NEW_LIST(new_hash($1));
+			$$ = $1 ? NEW_LIST(new_hash($1)) : 0;
 		    /*%
 			$$ = arg_add_assocs(arg_new(), $1);
 		    %*/
@@ -2478,7 +2478,7 @@ call_args	: command
 		| assocs opt_block_arg
 		    {
 		    /*%%%*/
-			$$ = NEW_LIST(new_hash($1));
+			$$ = NEW_LIST($1 ? new_hash($1) : 0);
 			$$ = arg_blk_pass($$, $2);
 		    /*%
 			$$ = arg_add_assocs(arg_new(), $1);
@@ -2488,7 +2488,7 @@ call_args	: command
 		| args ',' assocs opt_block_arg
 		    {
 		    /*%%%*/
-			$$ = arg_append($1, new_hash($3));
+			$$ = $3 ? arg_append($1, new_hash($3)) : $1;
 			$$ = arg_blk_pass($$, $4);
 		    /*%
 			$$ = arg_add_optblock(arg_add_assocs($1, $3), $4);
@@ -5039,13 +5039,19 @@ assocs		: assoc
 		    /*%%%*/
 			NODE *assocs = $1;
 			NODE *tail = $3;
-			if (assocs->nd_head &&
-			    !tail->nd_head && nd_type(tail->nd_next) == NODE_ARRAY &&
-			    nd_type(tail->nd_next->nd_head) == NODE_HASH) {
-			    /* DSTAR */
-			    tail = tail->nd_next->nd_head->nd_head;
+			if (!assocs) {
+			    assocs = tail;
 			}
-			$$ = list_concat(assocs, tail);
+			else if (tail) {
+			    if (assocs->nd_head &&
+				!tail->nd_head && nd_type(tail->nd_next) == NODE_ARRAY &&
+				nd_type(tail->nd_next->nd_head) == NODE_HASH) {
+				/* DSTAR */
+				tail = tail->nd_next->nd_head->nd_head;
+			    }
+			    assocs = list_concat(assocs, tail);
+			}
+			$$ = assocs;
 		    /*%
 			$$ = rb_ary_push($1, $3);
 		    %*/
@@ -5083,7 +5089,11 @@ assoc		: arg_value tASSOC arg_value
 		| tDSTAR arg_value
 		    {
 		    /*%%%*/
-			$$ = list_append(NEW_LIST(0), $2);
+			if (nd_type($2) == NODE_HASH &&
+			    !($2->nd_head && $2->nd_head->nd_alen))
+			    $$ = 0;
+			else
+			    $$ = list_append(NEW_LIST(0), $2);
 		    /*%
 			$$ = dispatch1(assoc_splat, $2);
 		    %*/
