@@ -1,3 +1,9 @@
+Fri Jan  9 10:57:09 2015  Vit Ondruch  <vondruch@redhat.com>
+
+	* configure.in (RUBY_SETJMP_TYPE): Remove superfluous semicolon
+	  which causes a syntax error with autoconf 2.63.
+	  [ruby-core:67429] [Bug #10716]
+
 Fri Jan  9 07:23:32 2015  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb: correctly quote non-ascii
