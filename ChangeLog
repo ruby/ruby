@@ -3,7 +3,7 @@ Fri Jan  9 11:13:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* parse.y (assocs, assoc): eliminate splatting empty literal
 	  hashes.  [ruby-core:67446] [Bug #10719]
 
-	* compile.c (compile_array_): supprt splatted hash in hash type.
+	* compile.c (compile_array_): support splatted hash in hash type.
 
 Fri Jan  9 10:57:09 2015  Vit Ondruch  <vondruch@redhat.com>
 
