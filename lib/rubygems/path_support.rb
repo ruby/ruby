@@ -43,13 +43,6 @@ class Gem::PathSupport
   private
 
   ##
-  # Set the Gem home directory (as reported by Gem.dir).
-
-  def home=(home)
-    @home = home.to_s
-  end
-
-  ##
   # Set the Gem search path (as reported by Gem.path).
 
   def path=(gpaths)

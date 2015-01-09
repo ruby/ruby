@@ -231,7 +231,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
     Gem.clear_paths
     gemhome2 = File.join @tempdir, 'gemhome2'
-    Gem.paths = { "GEM_PATH" => [gemhome2, @gemhome], "GEM_HOME" => gemhome2 }
+    Gem.use_paths gemhome2, [gemhome2, @gemhome]
 
     b = util_spec 'b'
     install_gem b
@@ -301,7 +301,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
     Gem.clear_paths
     gemhome2 = File.join(@tempdir, 'gemhome2')
-    Gem.paths = { "GEM_PATH" => [gemhome2, @gemhome], "GEM_HOME" => gemhome2 }
+    Gem.use_paths gemhome2, [gemhome2, @gemhome]
 
     install_gem specs["b-1"]
     FileUtils.rm File.join(gemhome2, 'cache', 'b-1.gem')

@@ -1145,7 +1145,7 @@ class TestGem < Gem::TestCase
     ]
 
     tests.each do |_name, _paths, expected|
-      Gem.paths = { 'GEM_HOME' => _paths.first, 'GEM_PATH' => _paths }
+      Gem.use_paths _paths.first, _paths
       Gem::Specification.reset
       Gem.searcher = nil
 
@@ -1192,10 +1192,7 @@ class TestGem < Gem::TestCase
     install_gem m, :install_dir => Gem.dir
     install_gem m, :install_dir => Gem.user_dir
 
-    Gem.paths = {
-      'GEM_HOME' => Gem.dir,
-      'GEM_PATH' => [ Gem.dir, Gem.user_dir]
-    }
+    Gem.use_paths Gem.dir, [ Gem.dir, Gem.user_dir]
 
     assert_equal \
       File.join(Gem.dir, "gems", "m-1"),

@@ -298,7 +298,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert_equal %w[lib/code.rb], reader.contents
   end
 
-  def test_build_signed_encryped_key
+  def test_build_signed_encrypted_key
     skip 'openssl is missing' unless defined?(OpenSSL::SSL)
 
     spec = Gem::Specification.new 'build', '1'

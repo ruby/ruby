@@ -61,8 +61,7 @@ class Gem::BasicSpecification
     @contains_requirable_file ||= {}
     @contains_requirable_file[file] ||=
     begin
-      if instance_variable_defined?(:@ignored) or
-         instance_variable_defined?('@ignored') then
+      if instance_variable_defined?(:@ignored) then
         return false
       elsif missing_extensions? then
         @ignored = true

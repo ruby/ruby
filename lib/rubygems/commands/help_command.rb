@@ -176,7 +176,7 @@ dependencies file.:
 Ruby Version and Engine Dependency
 ==================================
 
-You can specifiy the version, engine and engine version of ruby to use with
+You can specify the version, engine and engine version of ruby to use with
 your gem dependencies file.  If you are not running the specified version
 RubyGems will raise an exception.
 
@@ -223,7 +223,7 @@ The #group method can also be used to place gems in groups:
 The #group method allows multiple groups.
 
 The #gemspec development dependencies are placed in the :development group by
-default.  This may be overriden with the :development_group option:
+default.  This may be overridden with the :development_group option:
 
   gemspec development_group: :other
 

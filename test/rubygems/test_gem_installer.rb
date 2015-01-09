@@ -319,7 +319,7 @@ gem 'other', version
 
     options = {
       :bin_dir => bin_dir,
-      :install_dir => "/non/existant"
+      :install_dir => "/non/existent"
     }
 
     inst = Gem::Installer.new '', options

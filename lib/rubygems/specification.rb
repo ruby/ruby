@@ -1932,7 +1932,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Singular accessor for #licenses
 
   def license
-    val = licenses and val.first
+    licenses.first
   end
 
   ##
