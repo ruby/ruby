@@ -1,3 +1,9 @@
+Sat Jan 10 12:32:44 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* eval_error.c (error_print): pos and len parameters of rb_str_substr()
+	  are counted by characters, not bytes.  use rb_str_subseq() instead.
+	  [Bug #10727] [ruby-core:67473]
+
 Sat Jan 10 10:58:55 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* complex.c: removed commented-out code.
