@@ -17,6 +17,11 @@ with all sufficient information, see the ChangeLog file.
 
 === Core classes compatibility issues (excluding feature bug fixes)
 
+* Array
+  * Array#select!, Array#keep_if, Array#reject!, and Array#delete_if
+    no longer changes the receiver array instantly every time the
+    block is called.
+
 === Stdlib updates (outstanding ones only)
 
 === Stdlib compatibility issues (excluding feature bug fixes)
