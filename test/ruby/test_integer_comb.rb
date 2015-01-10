@@ -300,7 +300,7 @@ class TestIntegerComb < Test::Unit::TestCase
           assert_equal(a, c >> b, "(#{a} << #{b}) >> #{b}")
           assert_equal(a * 2**b, c, "#{a} << #{b}")
         end
-        0.upto(c.size*8+10) {|nth|
+        0.upto(c.bit_length+10) {|nth|
           assert_equal(a[nth-b], c[nth], "(#{a} << #{b})[#{nth}]")
         }
       }
@@ -317,7 +317,7 @@ class TestIntegerComb < Test::Unit::TestCase
           assert_equal(a, c << b, "(#{a} >> #{b}) << #{b}")
           assert_equal(a * 2**(-b), c, "#{a} >> #{b}")
         end
-        0.upto(c.size*8+10) {|nth|
+        0.upto(c.bit_length+10) {|nth|
           assert_equal(a[nth+b], c[nth], "(#{a} >> #{b})[#{nth}]")
         }
       }
