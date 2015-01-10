@@ -1,3 +1,7 @@
+Sat Jan 10 10:58:55 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* complex.c: removed commented-out code.
+
 Sat Jan 10 10:57:19 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* rational.c: removed commented-out code.

@@ -2112,10 +2112,6 @@ Init_Complex(void)
     rb_undef_method(rb_cComplex, "truncate");
     rb_undef_method(rb_cComplex, "i");
 
-#if 0 /* NUBY */
-    rb_undef_method(rb_cComplex, "//");
-#endif
-
     rb_define_method(rb_cComplex, "real", nucomp_real, 0);
     rb_define_method(rb_cComplex, "imaginary", nucomp_imag, 0);
     rb_define_method(rb_cComplex, "imag", nucomp_imag, 0);
