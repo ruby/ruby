@@ -2553,10 +2553,6 @@ Init_Rational(void)
     rb_define_method(rb_cRational, "==", nurat_eqeq_p, 1);
     rb_define_method(rb_cRational, "coerce", nurat_coerce, 1);
 
-#if 0 /* NUBY */
-    rb_define_method(rb_cRational, "//", nurat_idiv, 1);
-#endif
-
 #if 0
     rb_define_method(rb_cRational, "quot", nurat_quot, 1);
     rb_define_method(rb_cRational, "quotrem", nurat_quotrem, 1);
