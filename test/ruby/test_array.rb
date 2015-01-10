@@ -2019,6 +2019,16 @@ class TestArray < Test::Unit::TestCase
     a = @cls[ 1, 2, 3, 4, 5 ]
     assert_equal(a, a.select! { |i| i > 3 })
     assert_equal(@cls[4, 5], a)
+
+    bug10722 = '[ruby-dev:48805] [Bug #10722]'
+    a = @cls[ 5, 6, 7, 8, 9, 10 ]
+    r = a.select! {|i|
+      break i if i > 8
+      # assert_equal(a[0], i, "should be selected values only") if i == 7
+      i >= 7
+    }
+    assert_equal(9, r)
+    assert_equal(@cls[7, 8, 9, 10], a, bug10722)
   end
 
   def test_delete2
