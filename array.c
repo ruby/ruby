@@ -2615,15 +2615,15 @@ rb_ary_bsearch(VALUE ary)
 	else if (rb_obj_is_kind_of(v, rb_cNumeric)) {
 	    const VALUE zero = INT2FIX(0);
 	    switch (rb_cmpint(rb_funcallv(v, id_cmp, 1, &zero), v, INT2FIX(0))) {
-		case 0: return val;
-		case 1: smaller = 1; break;
-		case -1: smaller = 0;
+	      case 0: return val;
+	      case 1: smaller = 1; break;
+	      case -1: smaller = 0;
 	    }
 	}
 	else {
-	    rb_raise(rb_eTypeError, "wrong argument type %s"
-		" (must be numeric, true, false or nil)",
-		rb_obj_classname(v));
+	    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE
+		     " (must be numeric, true, false or nil)",
+		     rb_obj_class(v));
 	}
 	if (smaller) {
 	    high = mid;

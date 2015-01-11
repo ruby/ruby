@@ -2458,6 +2458,10 @@ class TestArray < Test::Unit::TestCase
     assert_raise(TypeError) do
       [1, 2, 42, 100, 666].bsearch{ "not ok" }
     end
+    c = eval("class C\u{309a 26a1 26c4 1f300};self;end")
+    assert_raise_with_message(TypeError, /C\u{309a 26a1 26c4 1f300}/) do
+      [0,1].bsearch {c.new}
+    end
     assert_equal [1, 2, 42, 100, 666].bsearch{}, [1, 2, 42, 100, 666].bsearch{false}
   end
 
