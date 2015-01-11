@@ -494,21 +494,23 @@ end unless $extstatic
 
 ext_prefix = "#{$top_srcdir}/ext"
 exts = $static_ext.sort_by {|t, i| i}.collect {|t, i| t}
-withes, withouts = %w[--with --without].collect {|w|
+default_exclude_exts =
+  if $mswin or $mingw
+    %w'pty readline syslog'
+  else
+    %w'*win32*'
+  end
+withes, withouts = [["--with", nil], ["--without", default_exclude_exts]].collect {|w, d|
   if !(w = %w[-extensions -ext].collect {|o|arg_config(w+o)}).any?
-    nil
+    d ? proc {|c1| d.any?(&c1)} : proc {false}
   elsif (w = w.grep(String)).empty?
     proc {true}
   else
-    proc {|c1| w.collect {|o| o.split(/,/)}.flatten.any?(&c1)}
+    w = w.collect {|o| o.split(/,/)}.flatten
+    w.collect! {|o| o == '+' ? d : o}.flatten! if d
+    proc {|c1| w.any?(&c1)}
   end
 }
-if withes
-  withouts ||= proc {true}
-else
-  withes = proc {false}
-  withouts ||= withes
-end
 cond = proc {|ext, *|
   cond1 = proc {|n| File.fnmatch(n, ext)}
   withes.call(cond1) or !withouts.call(cond1)
