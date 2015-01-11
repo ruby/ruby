@@ -503,6 +503,14 @@ pty_close_pty(VALUE assoc)
  * +slave_file+::   the slave of the pty, as a File.  The path to the
  *		    terminal device is available via +slave_file.path+
  *
+ * IO#raw! is usable to disable newline conversions:
+ *
+ *   require 'io/console'
+ *   PTY.open {|m, s|
+ *     s.raw!
+ *     ...
+ *   }
+ *
  */
 static VALUE
 pty_open(VALUE klass)

@@ -68,6 +68,14 @@ class TestIO_Console < Test::Unit::TestCase
     }
   end
 
+  def test_raw!
+    helper {|m, s|
+      s.raw!
+      s.print "foo\n"
+      assert_equal("foo\n", m.gets)
+    }
+  end
+
   def test_cooked
     helper {|m, s|
       assert_send([s, :echo?])
