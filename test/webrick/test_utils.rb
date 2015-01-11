@@ -59,10 +59,26 @@ class TestWEBrickUtils < Test::Unit::TestCase
   end
 
   def test_create_listeners
-    listeners = WEBrick::Utils.create_listeners("127.0.0.1", "9999")
-    srv = listeners.first
-    assert_equal true, srv.is_a?(TCPServer)
-    assert_equal ["AF_INET", 9999, "127.0.0.1", "127.0.0.1"], srv.addr
+    addr = listener_address(0)
+    port = addr.slice!(1)
+    assert_kind_of(Integer, port, "dynamically chosen port number")
+    assert_equal(["AF_INET", "127.0.0.1", "127.0.0.1"], addr)
+
+    assert_equal(["AF_INET", port, "127.0.0.1", "127.0.0.1"],
+                 listener_address(port),
+                 "specific port number")
+
+    assert_equal(["AF_INET", port, "127.0.0.1", "127.0.0.1"],
+                 listener_address(port.to_s),
+                 "specific port number string")
   end
 
+  def listener_address(port)
+    listeners = WEBrick::Utils.create_listeners("127.0.0.1", port)
+    srv = listeners.first
+    assert_kind_of TCPServer, srv
+    srv.addr
+  ensure
+    listeners.each(&:close) if listeners
+  end
 end
