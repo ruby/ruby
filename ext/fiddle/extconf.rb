@@ -46,6 +46,9 @@ begin
   libffi.ldflags = RbConfig.expand("$(LDFLAGS) #{libpathflag([relative_from($topdir, "..")])} #{$LIBRUBYARG}")
   libffi.arch = RbConfig::CONFIG['host']
   if $mswin
+    unless find_executable(as = /x64/ =~ libffi.arch ? "ml64" : "ml")
+      raise "missing #{as} command."
+    end
     $defs << "-DFFI_BUILDING"
     libffi_config = "#{relative_from($srcdir, '..')}/win32/libffi-config.rb"
     config = CONFIG.merge("top_srcdir" => $top_srcdir)
