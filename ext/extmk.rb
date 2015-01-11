@@ -496,7 +496,7 @@ ext_prefix = "#{$top_srcdir}/ext"
 exts = $static_ext.sort_by {|t, i| i}.collect {|t, i| t}
 default_exclude_exts =
   if $mswin or $mingw
-    %w'pty readline syslog'
+    %w'pty syslog'
   else
     %w'*win32*'
   end
