@@ -2538,6 +2538,67 @@ rb_ary_sort(VALUE ary)
 
 /*
  *  call-seq:
+ *     ary.bsearch_index {|x| block }  -> int or nil
+ *
+ *  By using binary search, finds an index of a value from this array which
+ *  meets the given condition in O(log n) where n is the size of the array.
+ *
+ *  It supports two modes, depending on the nature of the block and they are
+ *  exactly the same as in the case of #bsearch method with the only difference
+ *  being that this method returns the index of the element instead of the
+ *  element itself. For more details consult the documentation for #bsearch.
+ */
+
+static VALUE
+rb_ary_bsearch_index(VALUE ary)
+{
+    long low = 0, high = RARRAY_LEN(ary), mid;
+    int smaller = 0, satisfied = 0;
+    VALUE v, val;
+
+    RETURN_ENUMERATOR(ary, 0, 0);
+    while (low < high) {
+        mid = low + ((high - low) / 2);
+        val = rb_ary_entry(ary, mid);
+        v = rb_yield(val);
+        if (FIXNUM_P(v)) {
+            if (v == INT2FIX(0)) return LONG2FIX(mid);
+            smaller = (SIGNED_VALUE)v < 0; /* Fixnum preserves its sign-bit */
+        }
+        else if (v == Qtrue) {
+            satisfied = 1;
+            smaller = 1;
+        }
+        else if (v == Qfalse || v == Qnil) {
+            smaller = 0;
+        }
+        else if (rb_obj_is_kind_of(v, rb_cNumeric)) {
+            const VALUE zero = INT2FIX(0);
+            switch (rb_cmpint(rb_funcallv(v, id_cmp, 1, &zero), v, zero)) {
+              case 0: return LONG2FIX(mid);
+              case 1: smaller = 1; break;
+              case -1: smaller = 0;
+            }
+        }
+        else {
+            rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE
+                 " (must be numeric, true, false or nil)",
+                 rb_obj_class(v));
+        }
+        if (smaller) {
+            high = mid;
+        }
+        else {
+            low = mid + 1;
+        }
+    }
+    if (!satisfied) return Qnil;
+    return LONG2FIX(low);
+}
+
+
+/*
+ *  call-seq:
  *     ary.bsearch {|x| block }  -> elem
  *
  *  By using binary search, finds a value from this array which meets
@@ -2592,47 +2653,10 @@ rb_ary_sort(VALUE ary)
 static VALUE
 rb_ary_bsearch(VALUE ary)
 {
-    long low = 0, high = RARRAY_LEN(ary), mid;
-    int smaller = 0;
-    VALUE v, val, satisfied = Qnil;
+    VALUE index_result = rb_ary_bsearch_index(ary);
 
-    RETURN_ENUMERATOR(ary, 0, 0);
-    while (low < high) {
-	mid = low + ((high - low) / 2);
-	val = rb_ary_entry(ary, mid);
-	v = rb_yield(val);
-	if (FIXNUM_P(v)) {
-	    if (v == INT2FIX(0)) return val;
-	    smaller = (SIGNED_VALUE)v < 0; /* Fixnum preserves its sign-bit */
-	}
-	else if (v == Qtrue) {
-	    satisfied = val;
-	    smaller = 1;
-	}
-	else if (v == Qfalse || v == Qnil) {
-	    smaller = 0;
-	}
-	else if (rb_obj_is_kind_of(v, rb_cNumeric)) {
-	    const VALUE zero = INT2FIX(0);
-	    switch (rb_cmpint(rb_funcallv(v, id_cmp, 1, &zero), v, zero)) {
-	      case 0: return val;
-	      case 1: smaller = 1; break;
-	      case -1: smaller = 0;
-	    }
-	}
-	else {
-	    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE
-		     " (must be numeric, true, false or nil)",
-		     rb_obj_class(v));
-	}
-	if (smaller) {
-	    high = mid;
-	}
-	else {
-	    low = mid + 1;
-	}
-    }
-    return satisfied;
+    if (FIXNUM_P(index_result)) return rb_ary_entry(ary, FIX2LONG(index_result));
+    return index_result;
 }
 
 
@@ -5843,6 +5867,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "drop", rb_ary_drop, 1);
     rb_define_method(rb_cArray, "drop_while", rb_ary_drop_while, 0);
     rb_define_method(rb_cArray, "bsearch", rb_ary_bsearch, 0);
+    rb_define_method(rb_cArray, "bsearch_index", rb_ary_bsearch_index, 0);
     rb_define_method(rb_cArray, "any?", rb_ary_any_p, 0);
 
     id_cmp = rb_intern("<=>");
