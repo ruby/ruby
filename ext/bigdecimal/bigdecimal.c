@@ -362,9 +362,9 @@ BigDecimal_hash(VALUE self)
  * Method used to provide marshalling support.
  *
  *      inf = BigDecimal.new('Infinity')
- *      => #<BigDecimal:1e16fa8,'Infinity',9(9)>
+ *        #=> #<BigDecimal:1e16fa8,'Infinity',9(9)>
  *      BigDecimal._load(inf._dump)
- *      => #<BigDecimal:1df8dc8,'Infinity',9(9)>
+ *        #=> #<BigDecimal:1df8dc8,'Infinity',9(9)>
  *
  * See the Marshal module.
  */
@@ -613,7 +613,7 @@ VpCopy(Real *pv, Real const* const x)
     return pv;
 }
 
-/* Returns True if the value is Not a Number */
+/* Returns True if the value is Not a Number. */
 static VALUE
 BigDecimal_IsNaN(VALUE self)
 {
@@ -634,7 +634,7 @@ BigDecimal_IsInfinite(VALUE self)
     return Qnil;
 }
 
-/* Returns True if the value is finite (not NaN or infinite) */
+/* Returns True if the value is finite (not NaN or infinite). */
 static VALUE
 BigDecimal_IsFinite(VALUE self)
 {
@@ -798,8 +798,8 @@ BigDecimal_to_r(VALUE self)
  * be coerced into a BigDecimal value.
  *
  * e.g.
- * a = BigDecimal.new("1.0")
- * b = a / 2.0  -> 0.5
+ *   a = BigDecimal.new("1.0")
+ *   b = a / 2.0 #=> 0.5
  *
  * Note that coercing a String to a BigDecimal is not supported by default;
  * it requires a special compile-time option when building Ruby.
@@ -857,8 +857,8 @@ BigDecimal_uplus(VALUE self)
   *   c = a + b
   *
   * digits:: If specified and less than the number of significant digits of the
-  * result, the result is rounded to that number of digits, according to
-  * BigDecimal.mode.
+  *          result, the result is rounded to that number of digits, according
+  *          to BigDecimal.mode.
   */
 static VALUE
 BigDecimal_add(VALUE self, VALUE r)
@@ -902,7 +902,7 @@ BigDecimal_add(VALUE self, VALUE r)
 }
 
  /* call-seq:
-  * value - digits   -> bigdecimal
+  * a - b   -> bigdecimal
   *
   * Subtract the specified value.
   *
@@ -1086,7 +1086,7 @@ BigDecimal_comp(VALUE self, VALUE r)
  *
  * Values may be coerced to perform the comparison:
  *
- * BigDecimal.new('1.0') == 1.0  -> true
+ *   BigDecimal.new('1.0') == 1.0  -> true
  */
 static VALUE
 BigDecimal_eq(VALUE self, VALUE r)
@@ -1178,8 +1178,8 @@ BigDecimal_neg(VALUE self)
   *   c = a * b
   *
   * digits:: If specified and less than the number of significant digits of the
-  * result, the result is rounded to that number of digits, according to
-  * BigDecimal.mode.
+  *          result, the result is rounded to that number of digits, according
+  *          to BigDecimal.mode.
   */
 static VALUE
 BigDecimal_mult(VALUE self, VALUE r)
@@ -1252,8 +1252,8 @@ BigDecimal_divide(Real **c, Real **res, Real **div, VALUE self, VALUE r)
   *   c = a.div(b,n)
   *
   * digits:: If specified and less than the number of significant digits of the
-  * result, the result is rounded to that number of digits, according to
-  * BigDecimal.mode.
+  *          result, the result is rounded to that number of digits, according
+  *          to BigDecimal.mode.
   *
   * If digits is 0, the result is the same as the / operator. If not, the
   * result is an integer BigDecimal, by analogy with Float#div.
@@ -1432,7 +1432,10 @@ BigDecimal_divremain(VALUE self, VALUE r, Real **dv, Real **rv)
     return Qnil;
 }
 
-/* Returns the remainder from dividing by the value.
+/* call-seq:
+ * remainder(value)
+ *
+ * Returns the remainder from dividing by the value.
  *
  * x.remainder(y) means x-y*(x/y).truncate
  */
@@ -1446,21 +1449,24 @@ BigDecimal_remainder(VALUE self, VALUE r) /* remainder */
     return ToValue(rv);
 }
 
-/* Divides by the specified value, and returns the quotient and modulus
+/* call-seq:
+ * divmod(value)
+ *
+ * Divides by the specified value, and returns the quotient and modulus
  * as BigDecimal numbers. The quotient is rounded towards negative infinity.
  *
  * For example:
  *
- * require 'bigdecimal'
+ *   require 'bigdecimal'
  *
- * a = BigDecimal.new("42")
- * b = BigDecimal.new("9")
+ *   a = BigDecimal.new("42")
+ *   b = BigDecimal.new("9")
  *
- * q,m = a.divmod(b)
+ *   q, m = a.divmod(b)
  *
- * c = q * b + m
+ *   c = q * b + m
  *
- * a == c  -> true
+ *   a == c  #=> true
  *
  * The quotient q is (a/b).floor, and the modulus is the amount that must be
  * added to q * b to get a.
@@ -1547,7 +1553,7 @@ BigDecimal_add2(VALUE self, VALUE b, VALUE n)
     }
 }
 
-/*
+/* call-seq:
  * sub(value, digits)  -> bigdecimal
  *
  * Subtract the specified value.
@@ -1556,8 +1562,8 @@ BigDecimal_add2(VALUE self, VALUE b, VALUE n)
  *   c = a.sub(b,n)
  *
  * digits:: If specified and less than the number of significant digits of the
- * result, the result is rounded to that number of digits, according to
- * BigDecimal.mode.
+ *          result, the result is rounded to that number of digits, according
+ *          to BigDecimal.mode.
  *
  */
 static VALUE
@@ -1595,11 +1601,10 @@ BigDecimal_mult2(VALUE self, VALUE b, VALUE n)
     }
 }
 
-/* Returns the absolute value.
+/* Returns the absolute value, as a BigDecimal.
  *
- * BigDecimal('5').abs -> 5
- *
- * BigDecimal('-3').abs -> 3
+ *   BigDecimal('5').abs #=> 5
+ *   BigDecimal('-3').abs #=> 3
  */
 static VALUE
 BigDecimal_abs(VALUE self)
@@ -1640,7 +1645,7 @@ BigDecimal_sqrt(VALUE self, VALUE nFig)
     return ToValue(c);
 }
 
-/* Return the integer part of the number.
+/* Return the integer part of the number, as a BigDecimal.
  */
 static VALUE
 BigDecimal_fix(VALUE self)
@@ -1659,10 +1664,12 @@ BigDecimal_fix(VALUE self)
 /* call-seq:
  * round(n, mode)
  *
- * Round to the nearest 1 (by default), returning the result as a BigDecimal.
+ * Round to the nearest integer (by default), returning the result as a
+ * BigDecimal.
  *
  *	BigDecimal('3.14159').round #=> 3
  *	BigDecimal('8.7').round #=> 9
+ *	BigDecimal('-9.9').round #=> -10
  *
  * If n is specified and positive, the fractional part of the result has no
  * more than that many digits.
@@ -1720,10 +1727,12 @@ BigDecimal_round(int argc, VALUE *argv, VALUE self)
 /* call-seq:
  * truncate(n)
  *
- * Truncate to the nearest 1, returning the result as a BigDecimal.
+ * Truncate to the nearest integer (by default), returning the result as a
+ * BigDecimal.
  *
  *	BigDecimal('3.14159').truncate #=> 3
  *	BigDecimal('8.7').truncate #=> 8
+ *	BigDecimal('-9.9').truncate #=> -9
  *
  * If n is specified and positive, the fractional part of the result has no
  * more than that many digits.
@@ -1762,7 +1771,7 @@ BigDecimal_truncate(int argc, VALUE *argv, VALUE self)
     return ToValue(c);
 }
 
-/* Return the fractional part of the number.
+/* Return the fractional part of the number, as a BigDecimal.
  */
 static VALUE
 BigDecimal_frac(VALUE self)
@@ -1894,14 +1903,14 @@ BigDecimal_ceil(int argc, VALUE *argv, VALUE self)
  *
  * Examples:
  *
- *	BigDecimal.new('-123.45678901234567890').to_s('5F')
- *	    #=> '-123.45678 90123 45678 9'
+ *   BigDecimal.new('-123.45678901234567890').to_s('5F')
+ *     #=> '-123.45678 90123 45678 9'
  *
- *	BigDecimal.new('123.45678901234567890').to_s('+8F')
- *	    #=> '+123.45678901 23456789'
+ *   BigDecimal.new('123.45678901234567890').to_s('+8F')
+ *     #=> '+123.45678901 23456789'
  *
- *	BigDecimal.new('123.45678901234567890').to_s(' F')
- *	    #=> ' 123.4567890123456789'
+ *   BigDecimal.new('123.45678901234567890').to_s(' F')
+ *     #=> ' 123.4567890123456789'
  */
 static VALUE
 BigDecimal_to_s(int argc, VALUE *argv, VALUE self)
@@ -2041,8 +2050,8 @@ BigDecimal_exponent(VALUE self)
 /* Returns debugging information about the value as a string of comma-separated
  * values in angle brackets with a leading #:
  *
- * BigDecimal.new("1234.5678").inspect ->
- * "#<BigDecimal:b7ea1130,'0.12345678E4',8(12)>"
+ *   BigDecimal.new("1234.5678").inspect
+ *     #=> "#<BigDecimal:b7ea1130,'0.12345678E4',8(12)>"
  *
  * The first part is the address, the second is the value as a string, and
  * the final part ss(mm) is the current number of significant digits and the
@@ -2196,7 +2205,7 @@ rmpd_power_by_big_decimal(Real const* x, Real const* exp, ssize_t const n)
  *
  * Note that n must be an Integer.
  *
- * Also available as the operator **
+ * Also available as the operator **.
  */
 static VALUE
 BigDecimal_power(int argc, VALUE*argv, VALUE self)
@@ -2428,9 +2437,11 @@ BigDecimal_power(int argc, VALUE*argv, VALUE self)
 }
 
 /* call-seq:
- *   big_decimal ** exp  -> big_decimal
+ *   a ** n  -> bigdecimal
  *
- * It is a synonym of BigDecimal#power(exp).
+ * Returns the value raised to the power of n.
+ *
+ * See BigDecimal#power.
  */
 static VALUE
 BigDecimal_power_op(VALUE self, VALUE exp)
