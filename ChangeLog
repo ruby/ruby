@@ -1,3 +1,7 @@
+Mon Jan 12 23:21:57 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* gems/bundled_gems: update test-unit to 3.0.9.
+
 Mon Jan 12 18:35:44 2015  Eric Wong  <e@80x24.org>
 
 	* numeric.c (bit_coerce): use original value for error message
