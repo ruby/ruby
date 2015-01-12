@@ -2593,8 +2593,8 @@ static VALUE
 rb_ary_bsearch(VALUE ary)
 {
     long low = 0, high = RARRAY_LEN(ary), mid;
-    int smaller = 0, satisfied = 0;
-    VALUE v, val;
+    int smaller = 0;
+    VALUE v, val, satisfied = Qnil;
 
     RETURN_ENUMERATOR(ary, 0, 0);
     while (low < high) {
@@ -2602,11 +2602,11 @@ rb_ary_bsearch(VALUE ary)
 	val = rb_ary_entry(ary, mid);
 	v = rb_yield(val);
 	if (FIXNUM_P(v)) {
-	    if (FIX2INT(v) == 0) return val;
-	    smaller = FIX2INT(v) < 0;
+	    if (v == INT2FIX(0)) return val;
+	    smaller = (SIGNED_VALUE)v < 0; /* Fixnum preserves its sign-bit */
 	}
 	else if (v == Qtrue) {
-	    satisfied = 1;
+	    satisfied = val;
 	    smaller = 1;
 	}
 	else if (v == Qfalse || v == Qnil) {
@@ -2614,7 +2614,7 @@ rb_ary_bsearch(VALUE ary)
 	}
 	else if (rb_obj_is_kind_of(v, rb_cNumeric)) {
 	    const VALUE zero = INT2FIX(0);
-	    switch (rb_cmpint(rb_funcallv(v, id_cmp, 1, &zero), v, INT2FIX(0))) {
+	    switch (rb_cmpint(rb_funcallv(v, id_cmp, 1, &zero), v, zero)) {
 	      case 0: return val;
 	      case 1: smaller = 1; break;
 	      case -1: smaller = 0;
@@ -2632,9 +2632,7 @@ rb_ary_bsearch(VALUE ary)
 	    low = mid + 1;
 	}
     }
-    if (low == RARRAY_LEN(ary)) return Qnil;
-    if (!satisfied) return Qnil;
-    return rb_ary_entry(ary, low);
+    return satisfied;
 }
 
 
