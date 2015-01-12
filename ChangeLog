@@ -1,3 +1,9 @@
+Mon Jan 12 18:01:24 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/text.rb (expand_tabs): get rid of infinite loop with
+	  CR.  should check if substitution occurred too.
+	  [ruby-dev:48813] [Bug #10732]
+
 Mon Jan 12 16:45:46 2015  Seiei Higa  <hanachin@gmail.com>
 
 	* vm_method.c (rb_alias): raise a NameError when creating alias to
