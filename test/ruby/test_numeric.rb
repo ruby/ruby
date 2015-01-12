@@ -34,7 +34,7 @@ class TestNumeric < Test::Unit::TestCase
     end
 
     bug10711 = '[ruby-core:67405] [Bug #10711]'
-    exp = "Float can't be coerced into Fixnum"
+    exp = "1.2 can't be coerced into Fixnum"
     assert_raise_with_message(TypeError, exp, bug10711) { 1 & 1.2 }
   end
 
