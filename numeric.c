@@ -3426,10 +3426,11 @@ static int
 bit_coerce(VALUE *x, VALUE *y)
 {
     if (!FIXNUM_P(*y) && !RB_TYPE_P(*y, T_BIGNUM)) {
+	VALUE orig = *x;
 	do_coerce(x, y, TRUE);
 	if (!FIXNUM_P(*x) && !RB_TYPE_P(*x, T_BIGNUM)
 	    && !FIXNUM_P(*y) && !RB_TYPE_P(*y, T_BIGNUM)) {
-	    coerce_failed(*x, *y);
+	    coerce_failed(orig, *y);
 	}
     }
     return TRUE;

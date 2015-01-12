@@ -1,3 +1,9 @@
+Mon Jan 12 18:35:44 2015  Eric Wong  <e@80x24.org>
+
+	* numeric.c (bit_coerce): use original value for error message
+	  [ruby-core:67405] [Bug #10711]
+	* test/ruby/test_numeric.rb (test_coerce): check error message
+
 Mon Jan 12 18:01:24 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/text.rb (expand_tabs): get rid of infinite loop with
