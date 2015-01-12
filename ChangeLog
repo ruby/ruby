@@ -1,3 +1,8 @@
+Mon Jan 12 13:33:52 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* array.c (rb_ary_each): documented return value.
+	  [misc #10469][ruby-core:66063]
+
 Sun Jan 11 15:11:38 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/webrick/test_utils.rb (test_create_listeners): use

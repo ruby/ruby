@@ -1787,9 +1787,9 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
  *     ary.each                   -> Enumerator
  *
  *  Calls the given block once for each element in +self+, passing that element
- *  as a parameter.
+ *  as a parameter.  Returns the array itself.
  *
- *  An Enumerator is returned if no block is given.
+ *  If no block is given, an Enumerator is returned.
  *
  *     a = [ "a", "b", "c" ]
  *     a.each {|x| print x, " -- " }
