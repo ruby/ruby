@@ -108,6 +108,9 @@ struct unlinked_method_entry_list_entry {
 };
 
 #define UNDEFINED_METHOD_ENTRY_P(me) (!(me) || !(me)->def || (me)->def->type == VM_METHOD_TYPE_UNDEF)
+#define UNDEFINED_REFINED_METHOD_P(def) \
+    ((def)->type == VM_METHOD_TYPE_REFINED && \
+     UNDEFINED_METHOD_ENTRY_P((def)->body.orig_me))
 
 void rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_flag_t noex);
 rb_method_entry_t *rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *option, rb_method_flag_t noex);
