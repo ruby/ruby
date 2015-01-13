@@ -486,6 +486,7 @@ distclean-local:: clean-local
 	$(Q)$(RM) $(MKFILES) yasmdata.rb *.inc $(arch)-fake.rb
 	$(Q)$(RM) config.cache config.status config.status.lineno
 	$(Q)$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
+	$(Q)$(RMALL) $(srcdir)/autom4te.cache
 distclean-ext:: PHONY
 distclean-golf: clean-golf
 distclean-rdoc: PHONY
@@ -497,7 +498,9 @@ distclean-platform: clean-platform
 realclean:: realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
 realclean-local:: distclean-local
 	$(Q)$(RM) parse.c parse.h lex.c newline.c $(PRELUDES) revision.h
+	$(Q)$(RM) id.c id.h probes.dmyh
 	$(Q)$(CHDIR) $(srcdir) && $(exec) $(RM) parse.c parse.h lex.c newline.c $(PRELUDES) revision.h
+	$(Q)$(CHDIR) $(srcdir) && $(exec) $(RM) id.c id.h probes.dmyh
 	$(Q)$(CHDIR) $(srcdir) && $(exec) $(RM) configure tool/config.guess tool/config.sub gems/*.gem
 realclean-ext:: PHONY
 realclean-golf: distclean-golf
