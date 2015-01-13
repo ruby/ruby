@@ -86,11 +86,11 @@ class TestSocket_BasicSocket < Test::Unit::TestCase
     end
   end
 
-  def socks(port)
-    sserv = TCPServer.new(12345)
+  def socks
+    sserv = TCPServer.new(0)
     ssock = nil
     t = Thread.new { ssock = sserv.accept }
-    csock = TCPSocket.new('localhost', 12345)
+    csock = TCPSocket.new('localhost', sserv.addr[1])
     t.join
     yield sserv, ssock, csock
   ensure
@@ -100,7 +100,7 @@ class TestSocket_BasicSocket < Test::Unit::TestCase
   end
 
   def test_close_read
-    socks(12345) do |sserv, ssock, csock|
+    socks do |sserv, ssock, csock|
 
       # close_read makes subsequent reads raise IOError
       csock.close_read
@@ -116,7 +116,7 @@ class TestSocket_BasicSocket < Test::Unit::TestCase
   end
 
   def test_close_write
-    socks(12345) do |sserv, ssock, csock|
+    socks do |sserv, ssock, csock|
 
       # close_write makes subsequent writes raise IOError
       csock.close_write
