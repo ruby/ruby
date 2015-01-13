@@ -89,7 +89,7 @@ class TestSocket_BasicSocket < Test::Unit::TestCase
     end
   end
 
-  def socks(port) 
+  def socks(port)
     sserv = TCPServer.new(12345)
     ssock = nil
     t = Thread.new { ssock = sserv.accept }
@@ -131,7 +131,7 @@ class TestSocket_BasicSocket < Test::Unit::TestCase
       # close_write raises if socket is not open
       assert_nothing_raised { csock.close }
       assert_raise(IOError) { csock.close_write }
-    end 
+    end
   end
 
 end if defined?(BasicSocket)
