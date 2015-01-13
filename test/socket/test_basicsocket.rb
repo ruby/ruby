@@ -5,9 +5,6 @@ rescue LoadError
 end
 
 class TestSocket_BasicSocket < Test::Unit::TestCase
-  # JRuby, due to JDK, can't represent server and client Socket in one class
-  SERVER_SOCKET = RUBY_ENGINE == 'jruby' ? ServerSocket : Socket
-
   def inet_stream
     sock = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
     yield sock
