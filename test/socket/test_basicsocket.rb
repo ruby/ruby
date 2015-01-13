@@ -5,6 +5,9 @@ rescue LoadError
 end
 
 class TestSocket_BasicSocket < Test::Unit::TestCase
+  # JRuby, due to JDK, can't represent server and client Socket in one class
+  SERVER_SOCKET = RUBY_ENGINE == 'jruby' ? ServerSocket : Socket
+
   def inet_stream
     sock = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
     yield sock
@@ -85,4 +88,50 @@ class TestSocket_BasicSocket < Test::Unit::TestCase
       }
     end
   end
+
+  def socks(port) 
+    sserv = TCPServer.new(12345)
+    ssock = nil
+    t = Thread.new { ssock = sserv.accept }
+    csock = TCPSocket.new('localhost', 12345)
+    t.join
+    yield sserv, ssock, csock
+  ensure
+    ssock.close rescue nil
+    csock.close rescue nil
+    sserv.close rescue nil
+  end
+
+  def test_close_read
+    socks(12345) do |sserv, ssock, csock|
+
+      # close_read makes subsequent reads raise IOError
+      csock.close_read
+      assert_raise(IOError) { csock.read(5) }
+
+      # close_read ignores any error from shutting down half of still-open socket
+      assert_nothing_raised { csock.close_read }
+
+      # close_read raises if socket is not open
+      assert_nothing_raised { csock.close }
+      assert_raise(IOError) { csock.close_read }
+    end
+  end
+
+  def test_close_write
+    socks(12345) do |sserv, ssock, csock|
+
+      # close_write makes subsequent writes raise IOError
+      csock.close_write
+      assert_raise(IOError) { csock.write(5) }
+
+      # close_write ignores any error from shutting down half of still-open socket
+      assert_nothing_raised { csock.close_write }
+
+      # close_write raises if socket is not open
+      assert_nothing_raised { csock.close }
+      assert_raise(IOError) { csock.close_write }
+    end 
+  end
+
 end if defined?(BasicSocket)
