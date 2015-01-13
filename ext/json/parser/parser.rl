@@ -611,7 +611,7 @@ static VALUE convert_encoding(VALUE source)
  *   the default.
  * * *create_additions*: If set to false, the Parser doesn't create
  *   additions even if a matching class and create_id was found. This option
- *   defaults to true.
+ *   defaults to false.
  * * *object_class*: Defaults to Hash
  * * *array_class*: Defaults to Array
  */

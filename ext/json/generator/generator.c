@@ -901,6 +901,7 @@ static FBuffer *cState_prepare_buffer(VALUE self)
     } else {
         state->object_delim2 = fbuffer_alloc(16);
     }
+    if (state->space_before) fbuffer_append(state->object_delim2, state->space_before, state->space_before_len);
     fbuffer_append_char(state->object_delim2, ':');
     if (state->space) fbuffer_append(state->object_delim2, state->space, state->space_len);
 

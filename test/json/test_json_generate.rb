@@ -73,6 +73,19 @@ EOT
     assert_equal '666', pretty_generate(666, :quirks_mode => true)
   end
 
+  def test_generate_custom
+    state = State.new(:space_before => " ", :space => "   ", :indent => "<i>", :object_nl => "\n", :array_nl => "<a_nl>")
+    json = generate({1=>{2=>3,4=>[5,6]}}, state)
+    assert_equal(<<'EOT'.chomp, json)
+{
+<i>"1" :   {
+<i><i>"2" :   3,
+<i><i>"4" :   [<a_nl><i><i><i>5,<a_nl><i><i><i>6<a_nl><i><i>]
+<i>}
+}
+EOT
+  end
+
   def test_fast_generate
     json = fast_generate(@hash)
     assert_equal(JSON.parse(@json2), JSON.parse(json))
@@ -215,16 +228,18 @@ EOT
   end
 
   def test_gc
-    assert_in_out_err(%w[-rjson --disable-gems], <<-EOS, [], [])
-      bignum_too_long_to_embed_as_string = 1234567890123456789012345
-      expect = bignum_too_long_to_embed_as_string.to_s
-      GC.stress = true
+    if respond_to?(:assert_in_out_err)
+      assert_in_out_err(%w[-rjson --disable-gems], <<-EOS, [], [])
+        bignum_too_long_to_embed_as_string = 1234567890123456789012345
+        expect = bignum_too_long_to_embed_as_string.to_s
+        GC.stress = true
 
-      10.times do |i|
-        tmp = bignum_too_long_to_embed_as_string.to_json
-        raise "'\#{expect}' is expected, but '\#{tmp}'" unless tmp == expect
-      end
-    EOS
+        10.times do |i|
+          tmp = bignum_too_long_to_embed_as_string.to_json
+          raise "'\#{expect}' is expected, but '\#{tmp}'" unless tmp == expect
+        end
+      EOS
+    end
   end if GC.respond_to?(:stress=)
 
   def test_configure_using_configure_and_merge
