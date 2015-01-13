@@ -608,9 +608,9 @@ range_bsearch(VALUE range)
 	    smaller = cmp < 0; \
 	} \
 	else { \
-	    rb_raise(rb_eTypeError, "wrong argument type %s" \
-		" (must be numeric, true, false or nil)", \
-		rb_obj_classname(v)); \
+	    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE \
+		     " (must be numeric, true, false or nil)", \
+		     rb_obj_class(v)); \
 	} \
     } while (0)
 

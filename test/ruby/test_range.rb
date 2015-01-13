@@ -378,6 +378,10 @@ class TestRange < Test::Unit::TestCase
     assert_raise(TypeError) do
       (1..42).bsearch{ "not ok" }
     end
+    c = eval("class C\u{309a 26a1 26c4 1f300};self;end")
+    assert_raise_with_message(TypeError, /C\u{309a 26a1 26c4 1f300}/) do
+      (1..42).bsearch {c.new}
+    end
     assert_equal (1..42).bsearch{}, (1..42).bsearch{false}
   end
 
