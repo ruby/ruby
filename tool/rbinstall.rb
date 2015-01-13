@@ -158,11 +158,11 @@ def install(src, dest, options = {})
   super(src, d, options)
   srcs = Array(src)
   if strip
-    d = srcs.map {|src| File.join(d, File.basename(src))} if $made_dirs[dest]
+    d = srcs.map {|s| File.join(d, File.basename(s))} if $made_dirs[dest]
     strip_file(d)
   end
   if $installed_list
-    dest = srcs.map {|src| File.join(dest, File.basename(src))} if $made_dirs[dest]
+    dest = srcs.map {|s| File.join(dest, File.basename(s))} if $made_dirs[dest]
     $installed_list.puts dest
   end
 end
@@ -324,8 +324,6 @@ enable_shared = CONFIG["ENABLE_SHARED"] == 'yes'
 dll = CONFIG["LIBRUBY_SO", enable_shared]
 lib = CONFIG["LIBRUBY", true]
 arc = CONFIG["LIBRUBY_A", true]
-major = CONFIG["MAJOR", true]
-minor = CONFIG["MINOR", true]
 load_relative = configure_args.include?("--enable-load-relative")
 
 install?(:local, :arch, :bin, :'bin-arch') do
@@ -689,7 +687,6 @@ install?(:ext, :comm, :gem) do
 
   gems.sort.each do |name, specgen|
     gemspec   = specgen.gemspec
-    base_dir  = specgen.src.sub(/\A#{Regexp.escape(srcdir)}\//, "")
     full_name = "#{gemspec.name}-#{gemspec.version}"
 
     puts "#{" "*30}#{gemspec.name} #{gemspec.version}"
