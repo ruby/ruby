@@ -587,8 +587,9 @@ range_bsearch(VALUE range)
      * (-1...0.0).bsearch to yield -0.0.
      */
 
-#define BSEARCH_CHECK(val) \
+#define BSEARCH_CHECK(expr) \
     do { \
+	VALUE val = (expr); \
 	VALUE v = rb_yield(val); \
 	if (FIXNUM_P(v)) { \
 	    if (FIX2INT(v) == 0) return val; \
