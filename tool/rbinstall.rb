@@ -730,9 +730,9 @@ install?(:ext, :comm, :gem) do
     end
     # fix directory permissions
     # TODO: Gem.install should accept :dir_mode option or something
-    File.chmod($dir_mode, *Dir.glob(with_destdir(Gem.dir)+"/**/"))
+    File.chmod($dir_mode, *Dir.glob(with_destdir(gem_dir)+"/**/"))
     # fix .gemspec permissions
-    File.chmod($data_mode, *Dir.glob(with_destdir(Gem.dir)+"/specifications/*.gemspec"))
+    File.chmod($data_mode, *Dir.glob(with_destdir(gem_dir)+"/specifications/*.gemspec"))
   else
     puts "skip installing bundle gems because of lacking zlib"
   end
