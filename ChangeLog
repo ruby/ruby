@@ -1,3 +1,10 @@
+Wed Jan 14 18:06:06 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* lib/uri/mailto.rb: raising URI::InvalidComponentError instead
+	  of failing with undefined method `split' for nil:NilClass for
+	  mailto: URIs without opaque part. [Bug #10738]
+	* test/uri/testuri.rb: Test for above
+
 Wed Jan 14 16:45:24 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/downloader.rb (RubyGems.download): verify downloaded gem
