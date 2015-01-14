@@ -1,3 +1,10 @@
+Wed Jan 14 15:43:48 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/readline/readline.c (readline_s_refresh_line): initialize
+	  before rl_refresh_line(), as some function make the internal
+	  state non-clean but rl_refresh_line() does not re-initialize it.
+	  [ruby-core:43957] [Bug #6232]
+
 Tue Jan 13 21:59:24 2015  Michal Papis  <mpapis@gmail.com>
 
 	* tool/rbinstall.rb (gem): fix changing permissions of installed
