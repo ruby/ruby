@@ -329,6 +329,33 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
     return Qnil;
 }
 
+static int
+ossl_cipher_update_long(EVP_CIPHER_CTX *ctx, unsigned char *out, long *out_len_ptr,
+			const unsigned char *in, long in_len)
+{
+    int out_part_len;
+    long out_len = 0;
+#define UPDATE_LENGTH_LIMIT INT_MAX
+
+#if SIZEOF_LONG > UPDATE_LENGTH_LIMIT
+    if (in_len > UPDATE_LENGTH_LIMIT) {
+	const int in_part_len = (UPDATE_LENGTH_LIMIT / 2 + 1) & ~1;
+	do {
+	    if (!EVP_CipherUpdate(ctx, out ? (out + out_len) : 0,
+				  &out_part_len, in, in_part_len))
+		return 0;
+	    out_len += out_part_len;
+	    in += in_part_len;
+	} while ((in_len -= in_part_len) > UPDATE_LENGTH_LIMIT);
+    }
+#endif
+    if (!EVP_CipherUpdate(ctx, out ? (out + out_len) : 0,
+			  &out_part_len, in, (int)in_len))
+	return 0;
+    if (out_len_ptr) *out_len_ptr = out_len += out_part_len;
+    return 1;
+}
+
 /*
  *  call-seq:
  *     cipher.update(data [, buffer]) -> string or buffer
@@ -347,17 +374,21 @@ ossl_cipher_update(int argc, VALUE *argv, VALUE self)
 {
     EVP_CIPHER_CTX *ctx;
     unsigned char *in;
-    int in_len, out_len;
+    long in_len, out_len;
     VALUE data, str;
 
     rb_scan_args(argc, argv, "11", &data, &str);
 
     StringValue(data);
     in = (unsigned char *)RSTRING_PTR(data);
-    if ((in_len = RSTRING_LENINT(data)) == 0)
+    if ((in_len = RSTRING_LEN(data)) == 0)
         ossl_raise(rb_eArgError, "data must not be empty");
     GetCipher(self, ctx);
     out_len = in_len+EVP_CIPHER_CTX_block_size(ctx);
+    if (out_len <= 0) {
+	ossl_raise(rb_eRangeError,
+		   "data too big to make output buffer: %ld bytes", in_len);
+    }
 
     if (NIL_P(str)) {
         str = rb_str_new(0, out_len);
@@ -366,7 +397,7 @@ ossl_cipher_update(int argc, VALUE *argv, VALUE self)
         rb_str_resize(str, out_len);
     }
 
-    if (!EVP_CipherUpdate(ctx, (unsigned char *)RSTRING_PTR(str), &out_len, in, in_len))
+    if (!ossl_cipher_update_long(ctx, (unsigned char *)RSTRING_PTR(str), &out_len, in, in_len))
 	ossl_raise(eCipherError, NULL);
     assert(out_len < RSTRING_LEN(str));
     rb_str_set_len(str, out_len);
@@ -506,17 +537,16 @@ ossl_cipher_set_auth_data(VALUE self, VALUE data)
 {
     EVP_CIPHER_CTX *ctx;
     unsigned char *in;
-    int in_len;
-    int out_len;
+    long in_len, out_len;
 
     StringValue(data);
 
     in = (unsigned char *) RSTRING_PTR(data);
-    in_len = RSTRING_LENINT(data);
+    in_len = RSTRING_LEN(data);
 
     GetCipher(self, ctx);
 
-    if (!EVP_CipherUpdate(ctx, NULL, &out_len, in, in_len))
+    if (!ossl_cipher_update_long(ctx, NULL, &out_len, in, in_len))
         ossl_raise(eCipherError, "couldn't set additional authenticated data");
 
     return data;
