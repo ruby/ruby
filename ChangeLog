@@ -1,3 +1,10 @@
+Wed Jan 14 15:54:18 2015  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* lib/resolv.rb: fall back if canonicalization fails.
+	  Thanks Vit Ondruch for the patch!  [ruby-core:65836]
+
+	* test/resolv/test_dns.rb: test for patch
+
 Fri Nov 28 16:43:20 2014  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/http.rb:  Do not attempt SSL session resumption when the

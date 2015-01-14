@@ -1399,6 +1399,8 @@ insert(const char *path, VALUE vinfo, void *enc)
     return 0;
 }
 
+/* License: RubArtistic or GPL */
+
 /* License: Artistic or GPL */
 static NtCmdLineElement **
 cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail)
