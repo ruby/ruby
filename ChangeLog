@@ -1,3 +1,11 @@
+Wed Jan 14 16:30:51 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http/response.rb (Net::HTTPResponse): require one or more
+	  spaces [Bug #10591].
+	  by leriksen <leif.eriksen.au@gmail.com>
+	  https://github.com/ruby/ruby/pull/782 fix GH-782
+	  NOTE: graph.facebook.com returns without SP Reason-Phrase.
+
 Wed Jan 14 16:23:49 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/ossl_cipher.c (ossl_cipher_update_long): update huge
