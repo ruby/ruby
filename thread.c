@@ -4675,10 +4675,9 @@ static ID recursive_key;
  */
 
 static VALUE
-recursive_list_access(void)
+recursive_list_access(VALUE sym)
 {
     volatile VALUE hash = rb_thread_local_aref(rb_thread_current(), recursive_key);
-    VALUE sym = ID2SYM(rb_frame_this_func());
     VALUE list;
     if (NIL_P(hash) || !RB_TYPE_P(hash, T_HASH)) {
 	hash = rb_hash_new();
@@ -4769,25 +4768,23 @@ recursive_push(VALUE list, VALUE obj, VALUE paired_obj)
  * Assumes the recursion list is valid.
  */
 
-static void
+static int
 recursive_pop(VALUE list, VALUE obj, VALUE paired_obj)
 {
     if (paired_obj) {
 	VALUE pair_list = rb_hash_lookup2(list, obj, Qundef);
 	if (pair_list == Qundef) {
-	    VALUE symname = rb_inspect(ID2SYM(rb_frame_this_func()));
-	    VALUE thrname = rb_inspect(rb_thread_current());
-	    rb_raise(rb_eTypeError, "invalid inspect_tbl pair_list for %s in %s",
-		     StringValuePtr(symname), StringValuePtr(thrname));
+	    return 0;
 	}
 	if (RB_TYPE_P(pair_list, T_HASH)) {
 	    rb_hash_delete(pair_list, paired_obj);
 	    if (!RHASH_EMPTY_P(pair_list)) {
-		return; /* keep hash until is empty */
+		return 1; /* keep hash until is empty */
 	    }
 	}
     }
     rb_hash_delete(list, obj);
+    return 1;
 }
 
 struct exec_recursive_params {
@@ -4832,9 +4829,11 @@ static VALUE
 exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE arg, int outer)
 {
     VALUE result = Qundef;
+    const ID mid = rb_frame_last_func();
+    const VALUE sym = mid ? ID2SYM(mid) : ID2SYM(idNULL);
     struct exec_recursive_params p;
     int outermost;
-    p.list = recursive_list_access();
+    p.list = recursive_list_access(sym);
     p.objid = rb_obj_id(obj);
     p.obj = obj;
     p.pairid = pairid;
@@ -4853,7 +4852,11 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 	if (outermost) {
 	    recursive_push(p.list, ID2SYM(recursive_key), 0);
 	    result = rb_catch_obj(p.list, exec_recursive_i, (VALUE)&p);
-	    recursive_pop(p.list, ID2SYM(recursive_key), 0);
+	    if (!recursive_pop(p.list, ID2SYM(recursive_key), 0)) {
+		rb_raise(rb_eTypeError, "invalid inspect_tbl pair_list "
+			 "for %+"PRIsVALUE" in %+"PRIsVALUE,
+			 sym, rb_thread_current());
+	    }
 	    if (result == p.list) {
 		result = (*func)(obj, arg, TRUE);
 	    }
