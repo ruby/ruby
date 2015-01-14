@@ -1,3 +1,8 @@
+Wed Jan 14 16:45:24 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/downloader.rb (RubyGems.download): verify downloaded gem
+	  packages.  LowSecurity to allow untrusted certificates now.
+
 Wed Jan 14 15:43:48 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/readline/readline.c (readline_s_refresh_line): initialize

@@ -38,11 +38,29 @@ class Downloader
 
   class RubyGems < self
     def self.download(name, dir = nil, ims = true, options = {})
+      require 'rubygems'
+      require 'rubygems/package'
       options[:ssl_ca_cert] = Dir.glob(File.expand_path("../lib/rubygems/ssl_certs/*.pem", File.dirname(__FILE__)))
       if $rubygems_schema != 'https'
         warn "*** using http instead of https ***"
       end
-      super("#{$rubygems_schema}://rubygems.org/downloads/#{name}", name, dir, ims, options)
+      file = under(dir, name)
+      super("#{$rubygems_schema}://rubygems.org/downloads/#{name}", file, nil, ims, options) or
+        return false
+      pkg = Gem::Package.new(file)
+      pkg.security_policy = Gem::Security::LowSecurity
+      begin
+        pkg.verify
+      rescue Gem::Security::Exception => e
+        $stderr.puts e.message
+        File.unlink(file)
+        false
+      else
+        true
+      end
+    end
+
+    def self.verify(pkg)
     end
   end
 
@@ -86,7 +104,7 @@ class Downloader
   #   download 'http://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt',
   #            'UnicodeData.txt', 'enc/unicode/data'
   def self.download(url, name, dir = nil, ims = true, options = {})
-    file = dir ? File.join(dir, File.basename(name)) : name
+    file = under(dir, name)
     if ims.nil? and File.exist?(file)
       if $VERBOSE
         $stdout.puts "#{name} already exists"
@@ -140,6 +158,10 @@ class Downloader
     true
   rescue => e
     raise "failed to download #{name}\n#{e.message}: #{url}"
+  end
+
+  def self.under(dir, name)
+    dir ? File.join(dir, File.basename(name)) : name
   end
 end
 
