@@ -38,7 +38,7 @@ Tue Jan 13 21:57:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Tue Jan 13 21:08:22 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* ext/json, test/json: merge JSON HEAD(259dee6)
-	  separate imprementation of Typed_Data macro.
+	  separate implementation of Typed_Data macro.
 	  https://github.com/flori/json/compare/v1.8.1...v1.8.2
 
 Tue Jan 13 14:16:35 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
