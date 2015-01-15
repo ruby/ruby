@@ -1,3 +1,9 @@
+Thu Jan 15 21:34:57 2015  Seiei Higa  <hanachin@gmail.com>
+
+	* proc.c (rb_obj_singleton_method): Kernel#singleton_method should
+	  not use refinements, as well as Kernel#method.
+	  [ruby-core:67603] [Bug #10744]
+
 Thu Jan 15 10:45:04 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_select_bang, ary_reject_bang): linear

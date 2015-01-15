@@ -1217,6 +1217,24 @@ class TestRefinement < Test::Unit::TestCase
     end;
   end
 
+  def test_singleton_method_should_not_use_refinements
+    assert_separately([], <<-"end;")
+    bug10744 = '[ruby-core:67603] [Bug #10744]'
+
+    class C
+    end
+
+    module RefinementBug
+      refine C.singleton_class do
+        def foo
+        end
+      end
+    end
+
+    assert_raise(NameError, bug10744) { C.singleton_method(:foo) }
+    end;
+  end
+
   private
 
   def eval_using(mod, s)
