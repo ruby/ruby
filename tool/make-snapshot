@@ -277,6 +277,8 @@ def package(vcs, rev, destdir, tmp = nil)
         f.puts "s,@RM@,|#_!!_#|rm -f,g"
         f.puts "s,@CP@,|#_!!_#|cp,g"
         f.puts "s,@rubyarchdir@,|#_!!_#|,g"
+        f.puts "s,@rubylibprefix@,|#_!!_#|,g"
+        f.puts "s,@ruby_version@,|#_!!_#|,g"
       }
       FileUtils.mkpath(hdrdir = "#{extout}/include/ruby")
       File.open("#{hdrdir}/config.h", "w") {}
