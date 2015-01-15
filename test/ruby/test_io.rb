@@ -3169,7 +3169,7 @@ End
 
   def test_close_uninitialized
     io = IO.allocate
-    assert_raise(IOError) { io.close } 
+    assert_raise(IOError) { io.close }
   end
 
 end
