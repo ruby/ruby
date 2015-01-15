@@ -1,3 +1,8 @@
+Thu Jan 15 10:45:04 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_select_bang, ary_reject_bang): linear
+	  performance.  [ruby-core:67418] [Feature #10714]
+
 Wed Jan 14 18:06:06 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* lib/uri/mailto.rb: raising URI::InvalidComponentError instead

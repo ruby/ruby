@@ -2822,6 +2822,48 @@ rb_ary_select(VALUE ary)
     return result;
 }
 
+struct select_bang_arg {
+    VALUE ary;
+    long len[2];
+};
+
+static VALUE
+select_bang_i(VALUE a)
+{
+    volatile struct select_bang_arg *arg = (void *)a;
+    VALUE ary = arg->ary;
+    long i1, i2;
+
+    for (i1 = i2 = 0; i1 < RARRAY_LEN(ary); arg->len[0] = ++i1) {
+	VALUE v = RARRAY_AREF(ary, i1);
+	if (!RTEST(rb_yield(v))) continue;
+	if (i1 != i2) {
+	    rb_ary_store(ary, i2, v);
+	}
+	arg->len[1] = ++i2;
+    }
+    return (i1 == i2) ? Qnil : ary;
+}
+
+static VALUE
+select_bang_ensure(VALUE a)
+{
+    volatile struct select_bang_arg *arg = (void *)a;
+    VALUE ary = arg->ary;
+    long len = RARRAY_LEN(ary);
+    long i1 = arg->len[0], i2 = arg->len[1];
+
+    if (i2 < i1) {
+	if (i1 < len) {
+	    RARRAY_PTR_USE(ary, ptr, {
+		    MEMMOVE(ptr + i2, ptr + i1, VALUE, len - i1);
+		});
+	}
+	ARY_SET_LEN(ary, len - i1 + i2);
+    }
+    return ary;
+}
+
 /*
  *  call-seq:
  *     ary.select!  {|item| block } -> ary or nil
@@ -2829,6 +2871,8 @@ rb_ary_select(VALUE ary)
  *
  *  Invokes the given block passing in successive elements from +self+,
  *  deleting elements for which the block returns a +false+ value.
+ *
+ *  The array may not be changed instantly every time the block is called.
  *
  *  If changes were made, it will return +self+, otherwise it returns +nil+.
  *
@@ -2841,22 +2885,14 @@ rb_ary_select(VALUE ary)
 static VALUE
 rb_ary_select_bang(VALUE ary)
 {
-    long i;
-    VALUE result = Qnil;
+    struct select_bang_arg args;
 
     RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
     rb_ary_modify(ary);
-    for (i = 0; i < RARRAY_LEN(ary); ) {
-	VALUE v = RARRAY_AREF(ary, i);
-	if (!RTEST(rb_yield(v))) {
-	    rb_ary_delete_at(ary, i);
-	    result = ary;
-	}
-	else {
-	    i++;
-	}
-    }
-    return result;
+
+    args.ary = ary;
+    args.len[0] = args.len[1] = 0;
+    return rb_ensure(select_bang_i, (VALUE)&args, select_bang_ensure, (VALUE)&args);
 }
 
 /*
@@ -3099,23 +3135,32 @@ ary_reject(VALUE orig, VALUE result)
 }
 
 static VALUE
+reject_bang_i(VALUE a)
+{
+    volatile struct select_bang_arg *arg = (void *)a;
+    VALUE ary = arg->ary;
+    long i1, i2;
+
+    for (i1 = i2 = 0; i1 < RARRAY_LEN(ary); arg->len[0] = ++i1) {
+	VALUE v = RARRAY_AREF(ary, i1);
+	if (RTEST(rb_yield(v))) continue;
+	if (i1 != i2) {
+	    rb_ary_store(ary, i2, v);
+	}
+	arg->len[1] = ++i2;
+    }
+    return (i1 == i2) ? Qnil : ary;
+}
+
+static VALUE
 ary_reject_bang(VALUE ary)
 {
-    long i;
-    VALUE result = Qnil;
+    struct select_bang_arg args;
 
     rb_ary_modify_check(ary);
-    for (i = 0; i < RARRAY_LEN(ary); ) {
-	VALUE v = RARRAY_AREF(ary, i);
-	if (RTEST(rb_yield(v))) {
-	    rb_ary_delete_at(ary, i);
-	    result = ary;
-	}
-	else {
-	    i++;
-	}
-    }
-    return result;
+    args.ary = ary;
+    args.len[0] = args.len[1] = 0;
+    return rb_ensure(reject_bang_i, (VALUE)&args, select_bang_ensure, (VALUE)&args);
 }
 
 /*
@@ -3126,8 +3171,7 @@ ary_reject_bang(VALUE ary)
  *  Equivalent to Array#delete_if, deleting elements from +self+ for which the
  *  block evaluates to +true+, but returns +nil+ if no changes were made.
  *
- *  The array is changed instantly every time the block is called, not after
- *  the iteration is over.
+ *  The array may not be changed instantly every time the block is called.
  *
  *  See also Enumerable#reject and Array#delete_if.
  *
