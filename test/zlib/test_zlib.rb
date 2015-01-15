@@ -929,7 +929,7 @@ if defined? Zlib
         f = open(t.path)
         f.binmode
         assert_equal("foo", Zlib::GzipReader.wrap(f) {|gz| gz.read })
-        assert_raise(IOError) { f.close }
+        assert(f.closed?)
       }
     end
 

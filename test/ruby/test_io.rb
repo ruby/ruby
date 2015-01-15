@@ -3159,4 +3159,17 @@ End
       end
     end
   end
+
+  def test_close_twice
+    open(__FILE__) {|f|
+      assert_equal(nil, f.close)
+      assert_equal(nil, f.close)
+    }
+  end
+
+  def test_close_uninitialized
+    io = IO.allocate
+    assert_raise(IOError) { io.close } 
+  end
+
 end

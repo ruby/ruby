@@ -9,7 +9,7 @@ class TestSocket_BasicSocket < Test::Unit::TestCase
     sock = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
     yield sock
   ensure
-    assert_raise(IOError) {sock.close}
+    assert(sock.closed?)
   end
 
   def test_getsockopt

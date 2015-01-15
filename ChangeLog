@@ -1,3 +1,8 @@
+Thu Jan 15 23:55:15 2015  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_close_m): Don't raise when the IO object is closed.
+	  [ruby-core:67444] [Feature #10718]
+
 Thu Jan 15 21:34:57 2015  Seiei Higa  <hanachin@gmail.com>
 
 	* proc.c (rb_obj_singleton_method): Kernel#singleton_method should

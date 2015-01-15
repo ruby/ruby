@@ -4415,11 +4415,18 @@ rb_io_close(VALUE io)
  *
  *  If <em>ios</em> is opened by <code>IO.popen</code>,
  *  <code>close</code> sets <code>$?</code>.
+ *
+ *  Calling this method on closed IO object is just ignored since Ruby 2.3.
  */
 
 static VALUE
 rb_io_close_m(VALUE io)
 {
+    rb_io_t *fptr = RFILE(io)->fptr;
+    rb_io_check_initialized(fptr);
+    if (fptr->fd < 0) {
+        return Qnil;
+    }
     rb_io_check_closed(RFILE(io)->fptr);
     rb_io_close(io);
     return Qnil;
