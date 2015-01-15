@@ -22,6 +22,9 @@ with all sufficient information, see the ChangeLog file.
     no longer changes the receiver array instantly every time the
     block is called.
 
+* IO
+  * IO#close doesn't raise when the IO object is closed.
+
 === Stdlib updates (outstanding ones only)
 
 === Stdlib compatibility issues (excluding feature bug fixes)
