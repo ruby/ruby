@@ -1548,7 +1548,7 @@ timelocalw(struct vtm *vtm)
     tm.tm_hour = vtm->hour;
     tm.tm_min = vtm->min;
     tm.tm_sec = vtm->sec;
-    tm.tm_isdst = vtm->isdst;
+    tm.tm_isdst = vtm->isdst == VTM_ISDST_INITVAL ? -1 : vtm->isdst;
 
     if (find_time_t(&tm, 0, &t))
         goto no_localtime;
