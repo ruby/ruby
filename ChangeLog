@@ -1,3 +1,8 @@
+Fri Jan 16 17:34:57 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (f_label): return tLABEL value as it is.
+	  [ruby-core:67315] [Bug #10693]
+
 Fri Jan 16 16:49:04 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/net/http.rb (Net::HTTP#send_request): there is no response body

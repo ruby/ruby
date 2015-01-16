@@ -751,15 +751,31 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def test_params
+    arg = nil
     thru_params = false
-    parse('a {||}', :on_params) {thru_params = true}
+    parse('a {||}', :on_params) {|_, *v| thru_params = true; arg = v}
     assert_equal true, thru_params
+    assert_equal [nil, nil, nil, nil, nil, nil, nil], arg
     thru_params = false
-    parse('a {|x|}', :on_params) {thru_params = true}
+    parse('a {|x|}', :on_params) {|_, *v| thru_params = true; arg = v}
     assert_equal true, thru_params
+    assert_equal [["x"], nil, nil, nil, nil, nil, nil], arg
     thru_params = false
-    parse('a {|*x|}', :on_params) {thru_params = true}
+    parse('a {|*x|}', :on_params) {|_, *v| thru_params = true; arg = v}
     assert_equal true, thru_params
+    assert_equal [nil, nil, "*x", nil, nil, nil, nil], arg
+    thru_params = false
+    parse('a {|x: 1|}', :on_params) {|_, *v| thru_params = true; arg = v}
+    assert_equal true, thru_params
+    assert_equal [nil, nil, nil, nil, [["x:", "1"]], nil, nil], arg
+    thru_params = false
+    parse('a {|x:|}', :on_params) {|_, *v| thru_params = true; arg = v}
+    assert_equal true, thru_params
+    assert_equal [nil, nil, nil, nil, [["x:", false]], nil, nil], arg
+    thru_params = false
+    parse('a {|**x|}', :on_params) {|_, *v| thru_params = true; arg = v}
+    assert_equal true, thru_params
+    assert_equal [nil, nil, nil, nil, nil, "x", nil], arg
   end
 
   def test_paren

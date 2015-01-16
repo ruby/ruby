@@ -4720,9 +4720,9 @@ f_arg		: f_arg_item
 f_label 	: tLABEL
 		    {
 			ID id = get_id($1);
-			$$ = formal_argument(id);
-			arg_var($$);
+			arg_var(formal_argument(id));
 			current_arg = id;
+			$$ = $1;
 		    }
 		;
 
