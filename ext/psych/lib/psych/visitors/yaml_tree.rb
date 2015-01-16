@@ -62,13 +62,14 @@ module Psych
 
       def initialize emitter, ss, options
         super()
-        @started  = false
-        @finished = false
-        @emitter  = emitter
-        @st       = Registrar.new
-        @ss       = ss
-        @options  = options
-        @coders   = []
+        @started    = false
+        @finished   = false
+        @emitter    = emitter
+        @st         = Registrar.new
+        @ss         = ss
+        @options    = options
+        @line_width = options[:line_width]
+        @coders     = []
 
         @dispatch_cache = Hash.new do |h,klass|
           method = "visit_#{(klass.name || '').split('::').join('_')}"
@@ -301,28 +302,27 @@ module Psych
         quote = true
         style = Nodes::Scalar::PLAIN
         tag   = nil
-        str   = o
 
         if binary?(o)
-          str   = [o].pack('m').chomp
+          o     = [o].pack('m').chomp
           tag   = '!binary' # FIXME: change to below when syck is removed
           #tag   = 'tag:yaml.org,2002:binary'
           style = Nodes::Scalar::LITERAL
           plain = false
           quote = false
-        elsif o =~ /\n/
+        elsif o =~ /\n[^\Z]/  # match \n except blank line at the end of string
           style = Nodes::Scalar::LITERAL
         elsif o == '<<'
           style = Nodes::Scalar::SINGLE_QUOTED
           tag   = 'tag:yaml.org,2002:str'
           plain = false
           quote = false
+        elsif @line_width && o.length > @line_width
+          style = Nodes::Scalar::FOLDED
         elsif o =~ /^[^[:word:]][^"]*$/
           style = Nodes::Scalar::DOUBLE_QUOTED
-        else
-          unless String === @ss.tokenize(o)
-            style = Nodes::Scalar::SINGLE_QUOTED
-          end
+        elsif not String === @ss.tokenize(o)
+          style = Nodes::Scalar::SINGLE_QUOTED
         end
 
         ivars = find_ivars o
@@ -333,14 +333,14 @@ module Psych
             plain = false
             quote = false
           end
-          @emitter.scalar str, nil, tag, plain, quote, style
+          @emitter.scalar o, nil, tag, plain, quote, style
         else
           maptag = '!ruby/string'
           maptag << ":#{o.class}" unless o.class == ::String
 
           register o, @emitter.start_mapping(nil, maptag, false, Nodes::Mapping::BLOCK)
           @emitter.scalar 'str', nil, nil, true, false, Nodes::Scalar::ANY
-          @emitter.scalar str, nil, tag, plain, quote, style
+          @emitter.scalar o, nil, tag, plain, quote, style
 
           dump_ivars o
 
