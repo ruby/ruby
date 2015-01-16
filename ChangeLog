@@ -1,3 +1,9 @@
+Fri Jan 16 15:41:21 2015  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: bump version
+
+	* ext/psych/psych.gemspec: ditto
+
 Fri Jan 16 15:37:49 2015  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb: only dump hash
