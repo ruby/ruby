@@ -275,6 +275,12 @@ def with_destdir(dir)
   $destdir + dir
 end
 
+def without_destdir(dir)
+  return dir if !$destdir or $destdir.empty? or !dir.start_with?($destdir)
+  dir = dir.sub(/\A\w:/, '') if File::PATH_SEPARATOR == ';'
+  dir[$destdir.size..-1]
+end
+
 def prepare(mesg, basedir, subdirs=nil)
   return unless basedir
   case
@@ -649,6 +655,27 @@ end
       end
     end
   end
+
+  class UnpackedInstaller < Gem::Installer
+    module DirPackage
+      def extract_files(destination_dir, pattern = "*")
+        path = File.dirname(@gem.path)
+        return if path == destination_dir
+        install_recursive(path, without_destdir(destination_dir),
+                          :glob => pattern,
+                          :no_install => "*.gemspec",
+                          :mode => $data_mode)
+      end
+    end
+
+    def initialize(spec, *options)
+      super(spec.loaded_from, *options)
+      @package.extend(DirPackage).spec = spec
+    end
+
+    def write_cache_file
+    end
+  end
 end
 # :startdoc:
 
@@ -711,10 +738,25 @@ install?(:ext, :comm, :gem) do
   directories = Gem.ensure_gem_subdirectories(gem_dir, :mode => $dir_mode)
   prepare "bundle gems", gem_dir, directories
   install_dir = with_destdir(gem_dir)
+  installed_gems = {}
   begin
     require "zlib"
   rescue LoadError
+    $" << "zlib.rb"
   end
+  Gem::Specification.each_spec([srcdir+'/gems/*']) do |spec|
+    ins = RbInstall::UnpackedInstaller.new(spec,
+                                           :install_dir => install_dir,
+                                           :ignore_dependencies => true)
+    puts "#{" "*30}#{spec.name} #{spec.version}"
+    ins.install
+    installed_gems[spec.full_name] = true
+  end
+  installed_gems, gems = Dir.glob(srcdir+'/gems/*.gem').partition {|gem| installed_gems.key?(File.basename(gem, '.gem'))}
+  unless installed_gems.empty?
+    install installed_gems, gem_dir+"/cache"
+  end
+  next if gems.empty?
   if defined?(Zlib)
     options = {
       :install_dir => install_dir,
@@ -724,7 +766,7 @@ install?(:ext, :comm, :gem) do
       :data_mode => $data_mode,
       :prog_mode => $prog_mode,
     }
-    Dir.glob(srcdir+'/gems/*.gem').each do |gem|
+    gems.each do |gem|
       Gem.install(gem, Gem::Requirement.default, options)
       gemname = File.basename(gem)
       puts "#{" "*30}#{gemname}"
