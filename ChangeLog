@@ -1,3 +1,13 @@
+Fri Jan 16 11:44:44 2015  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* eval_intern.h, vm.c, vm_eval.c, vm_insnhelper.c:
+	  change throw mechanism (not save target ep, but save target cfp).
+	  It fixes `unexpected break' bug that occurs when
+	  TracePoint#binding is called.
+	  [ruby-dev:48797] [Bug #10689]
+
+	* test/ruby/test_settracefunc.rb: add a test.
+
 Thu Jan 15 23:55:15 2015  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_close_m): Don't raise when the IO object is closed.

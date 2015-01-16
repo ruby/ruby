@@ -28,6 +28,26 @@ VM_EP_LEP(VALUE *ep)
     return ep;
 }
 
+static inline rb_control_frame_t *
+rb_vm_search_cf_from_ep(const rb_thread_t * const th, rb_control_frame_t *cfp, const VALUE * const ep)
+{
+    if (!ep) {
+	return NULL;
+    }
+    else {
+	const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(th); /* end of control frame pointer */
+
+	while (cfp < eocfp) {
+	    if (cfp->ep == ep) {
+		return cfp;
+	    }
+	    cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+	}
+
+	rb_bug("rb_vm_search_cf_from_ep: no corresponding cfp");
+    }
+}
+
 VALUE *
 rb_vm_ep_local_ep(VALUE *ep)
 {
@@ -550,7 +570,6 @@ rb_vm_env_local_variables(VALUE envval)
     return local_var_list_finish(&vars);
 }
 
-static void vm_rewrite_ep_in_errinfo(rb_thread_t *th);
 static VALUE vm_make_proc_from_block(rb_thread_t *th, rb_block_t *block);
 static VALUE vm_make_env_object(rb_thread_t * th, rb_control_frame_t *cfp, VALUE *blockprocptr);
 
@@ -577,39 +596,12 @@ vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp, VALUE *blockprocptr
     }
 
     envval = vm_make_env_each(th, cfp, cfp->ep, lep);
-    vm_rewrite_ep_in_errinfo(th);
 
     if (PROCDEBUG) {
 	check_env_value(envval);
     }
 
     return envval;
-}
-
-static void
-vm_rewrite_ep_in_errinfo(rb_thread_t *th)
-{
-    rb_control_frame_t *cfp = th->cfp;
-    while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp)) {
-	/* rewrite ep in errinfo to point to heap */
-	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq) &&
-	    (cfp->iseq->type == ISEQ_TYPE_RESCUE ||
-	     cfp->iseq->type == ISEQ_TYPE_ENSURE)) {
-	    VALUE errinfo = cfp->ep[-2]; /* #$! */
-	    if (RB_TYPE_P(errinfo, T_NODE)) {
-		VALUE *escape_ep = GET_THROWOBJ_CATCH_POINT(errinfo);
-		if (! ENV_IN_HEAP_P(th, escape_ep)) {
-		    VALUE epval = *escape_ep;
-		    if (!SPECIAL_CONST_P(epval) && RBASIC(epval)->klass == rb_cEnv) {
-			rb_env_t *epenv;
-			GetEnvPtr(epval, epenv);
-			SET_THROWOBJ_CATCH_POINT(errinfo, (VALUE)(epenv->env + epenv->local_size));
-		    }
-		}
-	    }
-	}
-	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-    }
 }
 
 void
@@ -1152,9 +1144,10 @@ vm_iter_break(rb_thread_t *th, VALUE val)
 {
     rb_control_frame_t *cfp = th->cfp;
     VALUE *ep = VM_CF_PREV_EP(cfp);
+    rb_control_frame_t *target_cfp = rb_vm_search_cf_from_ep(th, cfp, ep);
 
     th->state = TAG_BREAK;
-    th->errinfo = (VALUE)NEW_THROW_OBJECT(val, (VALUE)ep, TAG_BREAK);
+    th->errinfo = (VALUE)NEW_THROW_OBJECT(val, (VALUE)target_cfp, TAG_BREAK);
     TH_JUMP_TAG(th, TAG_BREAK);
 }
 
@@ -1419,7 +1412,7 @@ vm_exec(rb_thread_t *th)
 	VALUE catch_iseqval;
 	rb_control_frame_t *cfp;
 	VALUE type;
-	VALUE *escape_ep;
+	rb_control_frame_t *escape_cfp;
 
 	err = th->errinfo;
 
@@ -1438,14 +1431,14 @@ vm_exec(rb_thread_t *th)
 	cfp = th->cfp;
 	epc = cfp->pc - cfp->iseq->iseq_encoded;
 
-	escape_ep = NULL;
+	escape_cfp = NULL;
 	if (state == TAG_BREAK || state == TAG_RETURN) {
-	    escape_ep = GET_THROWOBJ_CATCH_POINT(err);
+	    escape_cfp = GET_THROWOBJ_CATCH_POINT(err);
 
-	    if (cfp->ep == escape_ep) {
+	    if (cfp == escape_cfp) {
 		if (state == TAG_RETURN) {
 		    if (!VM_FRAME_TYPE_FINISH_P(cfp)) {
-			SET_THROWOBJ_CATCH_POINT(err, (VALUE)(cfp + 1)->ep);
+			SET_THROWOBJ_CATCH_POINT(err, (VALUE)(cfp + 1));
 			SET_THROWOBJ_STATE(err, state = TAG_BREAK);
 		    }
 		    else {
@@ -1519,9 +1512,9 @@ vm_exec(rb_thread_t *th)
 			break;
 		    }
 		    else if (entry->type == CATCH_TYPE_RETRY) {
-			VALUE *escape_ep;
-			escape_ep = GET_THROWOBJ_CATCH_POINT(err);
-			if (cfp->ep == escape_ep) {
+			rb_control_frame_t *escape_cfp;
+			escape_cfp = GET_THROWOBJ_CATCH_POINT(err);
+			if (cfp == escape_cfp) {
 			    cfp->pc = cfp->iseq->iseq_encoded + entry->cont;
 			    th->errinfo = Qnil;
 			    goto vm_loop_start;
@@ -1530,7 +1523,7 @@ vm_exec(rb_thread_t *th)
 		}
 	    }
 	}
-	else if (state == TAG_BREAK && ((VALUE)escape_ep & ~0x03) == 0) {
+	else if (state == TAG_BREAK && !escape_cfp) {
 	    type = CATCH_TYPE_BREAK;
 
 	  search_restart_point:
