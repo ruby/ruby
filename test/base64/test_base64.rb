@@ -101,17 +101,12 @@ class TestBase64 < Test::Unit::TestCase
   def test_urlsafe_decode64
     assert_equal("", Base64.urlsafe_decode64(""))
     assert_equal("\0", Base64.urlsafe_decode64("AA=="))
-    assert_equal("\0", Base64.urlsafe_decode64("AA"))
     assert_equal("\0\0", Base64.urlsafe_decode64("AAA="))
-    assert_equal("\0\0", Base64.urlsafe_decode64("AAA"))
     assert_equal("\0\0\0", Base64.urlsafe_decode64("AAAA"))
     assert_equal("\377", Base64.urlsafe_decode64("_w=="))
-    assert_equal("\377", Base64.urlsafe_decode64("_w"))
     assert_equal("\377\377", Base64.urlsafe_decode64("__8="))
-    assert_equal("\377\377", Base64.urlsafe_decode64("__8"))
     assert_equal("\377\377\377", Base64.urlsafe_decode64("____"))
     assert_equal("\xff\xef", Base64.urlsafe_decode64("_+8="))
-    assert_equal("\xff\xef", Base64.urlsafe_decode64("_+8"))
 
     assert_raise(ArgumentError) { Base64.urlsafe_decode64("^") }
     assert_raise(ArgumentError) { Base64.urlsafe_decode64("A^") }
@@ -121,5 +116,18 @@ class TestBase64 < Test::Unit::TestCase
     assert_raise(ArgumentError) { Base64.urlsafe_decode64("AAA^") }
     assert_raise(ArgumentError) { Base64.urlsafe_decode64("AB==") }
     assert_raise(ArgumentError) { Base64.urlsafe_decode64("AAB=") }
+  end
+
+  def test_urlsafe_decode64_unpadded
+    assert_equal("", Base64.urlsafe_decode64(""))
+    assert_equal("\0", Base64.urlsafe_decode64("AA"))
+    assert_equal("\0\0", Base64.urlsafe_decode64("AAA"))
+    assert_equal("\0\0\0", Base64.urlsafe_decode64("AAAA"))
+    assert_equal("\377", Base64.urlsafe_decode64("_w"))
+    assert_equal("\377\377", Base64.urlsafe_decode64("__8"))
+    assert_equal("\377\377\377", Base64.urlsafe_decode64("____"))
+    assert_equal("\xff\xef", Base64.urlsafe_decode64("_+8"))
+
+    assert_raise(ArgumentError) { Base64.urlsafe_decode64("AA=") }
   end
 end
