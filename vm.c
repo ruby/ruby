@@ -63,7 +63,7 @@ VM_CF_LEP(rb_control_frame_t *cfp)
 static inline VALUE *
 VM_CF_PREV_EP(rb_control_frame_t * cfp)
 {
-    return VM_EP_PREV_EP((cfp)->ep);
+    return VM_EP_PREV_EP(cfp->ep);
 }
 
 static inline rb_block_t *
