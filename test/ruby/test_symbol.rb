@@ -230,4 +230,12 @@ class TestSymbol < Test::Unit::TestCase
     end
     assert_nothing_raised(NoMethodError, bug10259) {obj.send("unagi=".intern, 1)}
   end
+
+  def test_symbol_fstr_leak
+    bug10686 = '[ruby-core:67268] [Bug #10686]'
+    x = 0
+    assert_no_memory_leak([], '', <<-"end;", bug10686)
+      200_000.times { |i| i.to_s.to_sym }
+    end;
+  end
 end

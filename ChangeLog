@@ -1,3 +1,9 @@
+Fri Jan 16 14:56:08 2015  Eric Wong  <e@80x24.org>
+
+	* symbol.c (rb_gc_free_dsymbol): delete from global fstr hash
+	* test/ruby/test_symbol.rb (test_symbol_fstr_leak): test for bug
+	  [ruby-core:67268] [Bug #10686]
+
 Fri Jan 16 14:20:52 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_args.c (keyword_hash_p): fix non-symbol keys hash.

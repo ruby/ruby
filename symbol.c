@@ -664,6 +664,7 @@ rb_gc_free_dsymbol(VALUE sym)
     if (str) {
 	RSYMBOL(sym)->fstr = 0;
 	unregister_sym(str, sym);
+	rb_hash_delete_entry(global_symbols.dsymbol_fstr_hash, str);
     }
 }
 
