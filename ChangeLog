@@ -1,3 +1,9 @@
+Fri Jan 16 14:20:52 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_args.c (keyword_hash_p): fix non-symbol keys hash.
+	  rb_extract_keywords() returns 0 not Qnil when no symbol keys is
+	  included.
+
 Fri Jan 16 11:06:17 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/unicode_normalize.rb: typo fix. [ci skip]

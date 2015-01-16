@@ -559,4 +559,11 @@ class TestKeywordArguments < Test::Unit::TestCase
       assert_equal({:bar => "bar"}, obj.foo, bug10659)
     }
   end
+
+  def m(a) yield a end
+
+  def test_nonsymbol_key
+    result = m(["a" => 10]) { |a = nil, **b| [a, b] }
+    assert_equal([{"a" => 10}, {}], result)
+  end
 end
