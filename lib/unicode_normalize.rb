@@ -39,7 +39,7 @@ class String
   end
 
   # :call-seq:
-  #    str.unicode_normalize(form=:nfc)
+  #    str.unicode_normalize!(form=:nfc)
   #
   # Destructive version of String#unicode_normalize, doing Unicode
   # normalization in place.
