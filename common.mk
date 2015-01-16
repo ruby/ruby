@@ -924,6 +924,14 @@ update-gems: PHONY
 	    -e 'File.unlink(*(old-[gem]))' \
 	    bundled_gems
 
+extract-gems: PHONY
+	$(ECHO) Extracting bundled gem files...
+	$(Q) $(RUNRUBY) -C "$(srcdir)/gems" \
+	    -I../tool -rgem-unpack -answ \
+	    -e 'gem, ver = *$$F' \
+	    -e 'Gem.unpack("#{gem}-#{ver}.gem")' \
+	    bundled_gems
+
 UPDATE_LIBRARIES = no
 
 ### set the following environment variable or uncomment the line if
@@ -972,6 +980,9 @@ extract-extlibs:
 
 clean-extlibs:
 	$(Q) $(RMALL) $(srcdir)/.downloaded-cache
+
+clean-gems:
+	$(Q) $(RM) gems/*.gem
 
 CLEAN_CACHE = clean-extlibs
 
