@@ -55,26 +55,26 @@ rb_vm_ep_local_ep(VALUE *ep)
 }
 
 static inline VALUE *
-VM_CF_LEP(rb_control_frame_t *cfp)
+VM_CF_LEP(const rb_control_frame_t * const cfp)
 {
     return VM_EP_LEP(cfp->ep);
 }
 
 static inline VALUE *
-VM_CF_PREV_EP(rb_control_frame_t * cfp)
+VM_CF_PREV_EP(const rb_control_frame_t * const cfp)
 {
     return VM_EP_PREV_EP(cfp->ep);
 }
 
 static inline rb_block_t *
-VM_CF_BLOCK_PTR(rb_control_frame_t *cfp)
+VM_CF_BLOCK_PTR(const rb_control_frame_t * const cfp)
 {
     VALUE *ep = VM_CF_LEP(cfp);
     return VM_EP_BLOCK_PTR(ep);
 }
 
 rb_block_t *
-rb_vm_control_frame_block_ptr(rb_control_frame_t *cfp)
+rb_vm_control_frame_block_ptr(const rb_control_frame_t *cfp)
 {
     return VM_CF_BLOCK_PTR(cfp);
 }
