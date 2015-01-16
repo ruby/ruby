@@ -1,3 +1,9 @@
+Fri Jan 16 11:04:35 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (unescape_nonascii): append excape sequence as-is not
+	  unescaped character, to get rid of unexpected meta-character.
+	  [ruby-core:67193] [Bug #10670]
+
 Sat Jan  3 21:17:58 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_variable_get): fix dynamic symbol keys.

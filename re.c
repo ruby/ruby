@@ -2298,9 +2298,10 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
               case 'M': /* \M-X, \M-\C-X, \M-\cX */
                 p = p-2;
 		if (enc == rb_usascii_encoding()) {
+		    const char *pbeg = p;
 		    c = read_escaped_byte(&p, end, err);
 		    if (c == (char)-1) return -1;
-		    rb_str_buf_cat(buf, &c, 1);
+		    rb_str_buf_cat(buf, pbeg, p-pbeg);
 		}
 		else {
 		    if (unescape_escaped_nonascii(&p, end, enc, buf, encp, err) != 0)
