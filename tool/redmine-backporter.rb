@@ -298,7 +298,18 @@ eom
     end
     more(sio)
 
+  when /\Arel +(\d+)\z/
+    # this feature requires custom redmine which allows add_related_issue API
+    rev = $1.to_i
+    uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/revisions/#{rev}/issues.json")
+    Net::HTTP.start(uri.host, uri.port, http_options) do |http|
+      res = http.post(uri.path, "issue_id=#@issue",
+                     'X-Redmine-API-Key' => REDMINE_API_KEY)
+      puts res.body
+    end
+
   when 's'
+    # this feature implies backport command which wraps tool/merger.rb
     unless @issue
       puts "ticket not selected"
       next
