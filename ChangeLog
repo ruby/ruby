@@ -1,3 +1,8 @@
+Fri Jan 16 21:17:34 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/ruby/test_io.rb: added timeout for AIX environment.
+	  [ruby-core:62983][Bug #9917]
+
 Fri Jan 16 18:25:57 2015  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (Resolv::DNS::Name#==): Compare an array of Label:Str
