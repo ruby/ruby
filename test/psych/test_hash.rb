@@ -38,12 +38,6 @@ module Psych
       assert_cycle t1
     end
 
-    def test_hash_with_ivars
-      @hash.instance_variable_set :@foo, 'bar'
-      dup = Psych.load Psych.dump @hash
-      assert_equal 'bar', dup.instance_variable_get(:@foo)
-    end
-
     def test_hash_subclass_with_ivars
       x = X.new
       x[:a] = 'b'

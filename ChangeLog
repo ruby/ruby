@@ -1,3 +1,10 @@
+Fri Jan 16 15:37:49 2015  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: only dump hash
+	  subclasses. Thanks Joe Eli McIlvain <joe.eli.mac@gmail.com>
+
+	* test/psych/test_hash.rb: test for change
+
 Fri Jan 16 15:35:21 2015  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: bump version
