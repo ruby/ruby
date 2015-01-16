@@ -1,3 +1,13 @@
+Fri Jan 16 16:49:04 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/net/http.rb (Net::HTTP#send_request): there is no response body
+	  with HEAD request. Patch by @rodrigosaito [fix GH-520]
+
+Fri Jan 16 16:49:04 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/net/http/test_http.rb (_test_send_request__HEAD): Added
+	  failing test for send_request with HEAD method.
+
 Fri Jan 16 14:56:08 2015  Eric Wong  <e@80x24.org>
 
 	* symbol.c (rb_gc_free_dsymbol): delete from global fstr hash

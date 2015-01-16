@@ -1350,7 +1350,8 @@ module Net   #:nodoc:
     #    puts response.body
     #
     def send_request(name, path, data = nil, header = nil)
-      r = HTTPGenericRequest.new(name,(data ? true : false),true,path,header)
+      has_response_body = name != 'HEAD'
+      r = HTTPGenericRequest.new(name,(data ? true : false),has_response_body,path,header)
       request r, data
     end
 
