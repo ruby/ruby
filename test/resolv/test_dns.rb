@@ -177,4 +177,17 @@ class TestResolvDNS < Test::Unit::TestCase
       end
     end
   end
+
+  def test_dots_diffences
+    name1 = Resolv::DNS::Name.create("example.org")
+    name2 = Resolv::DNS::Name.create("ex.ampl.eo.rg")
+    assert_not_equal(name1, name2, "different dots")
+  end
+
+  def test_case_insensitive_name
+    bug10550 = '[ruby-core:66498] [Bug #10550]'
+    lower = Resolv::DNS::Name.create("ruby-lang.org")
+    upper = Resolv::DNS::Name.create("Ruby-Lang.org")
+    assert_equal(lower, upper, bug10550)
+  end
 end
