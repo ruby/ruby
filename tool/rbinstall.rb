@@ -584,7 +584,8 @@ module RbInstall
         when "ext"
           prefix = "#{$extout}/#{CONFIG['arch']}/"
           base = "#{prefix}#{relative_base}"
-          Dir.glob("#{base}{.so,/**/*.so}").collect do |built_library|
+          dlext = CONFIG['DLEXT']
+          Dir.glob("#{base}{.#{dlext},/**/*.#{dlext}}").collect do |built_library|
             remove_prefix(prefix, built_library)
           end
         when "lib"
