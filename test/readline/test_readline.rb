@@ -448,6 +448,18 @@ class TestReadline < Test::Unit::TestCase
     Readline::HISTORY.clear
   end if !/EditLine/n.match(Readline::VERSION)
 
+  def test_refresh_line
+    bug6232 = '[ruby-core:43957] [Bug #6232] refresh_line after set_screen_size'
+    with_temp_stdio do |stdin, stdout|
+      replace_stdio(stdin.path, stdout.path) do
+        assert_ruby_status(%w[-rreadline -], <<-'end;', bug6232)
+          Readline.set_screen_size(40, 80)
+          Readline.refresh_line
+        end;
+      end
+    end
+  end if Readline.respond_to?(:refresh_line)
+
   private
 
   def replace_stdio(stdin_path, stdout_path)
