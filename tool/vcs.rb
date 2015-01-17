@@ -208,8 +208,10 @@ class VCS
       [last, changed, modified]
     end
 
+    Branch = Struct.new(:to_str)
+
     def branch(name)
-      name
+      Branch.new(name)
     end
 
     alias tag branch
