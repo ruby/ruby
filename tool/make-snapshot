@@ -245,6 +245,8 @@ def package(vcs, rev, destdir, tmp = nil)
     File.open(clean.add("cross.rb"), "w") do |f|
       f.puts "Object.__send__(:remove_const, :CROSS_COMPILING) if defined?(CROSS_COMPILING)"
       f.puts "CROSS_COMPILING=true"
+      f.puts "Object.__send__(:remove_const, :RUBY_PLATFORM)"
+      f.puts "RUBY_PLATFORM='none'"
     end
     unless File.exist?("configure")
       print "creating configure..."
