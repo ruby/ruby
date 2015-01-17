@@ -1,3 +1,9 @@
+Sat Jan 17 16:16:14 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (glob_helper): match in case-folding only if the directory
+	  resides on a case-insensitve file system, on OSX.
+	  [ruby-core:67364] [Bug #10700]
+
 Sat Jan 17 02:04:01 2015  Eric Wong  <e@80x24.org>
 
 	* lib/resolv.rb: consider ENETUNREACH as ResolvTimeout
