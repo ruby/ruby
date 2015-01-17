@@ -79,26 +79,38 @@ char *strchr(char*,char);
 
 #ifdef HAVE_GETATTRLIST
 # define USE_NAME_ON_FS 1
+# define RUP32(size) ((size)+3/4)
+# define SIZEUP32(type) RUP32(sizeof(type))
+# define NEXT(var) var = (void *)((ptr += SIZEUP32(var)) - SIZEUP32(var))
 #else
 # define USE_NAME_ON_FS 0
 #endif
 
 #ifdef __APPLE__
-# define HAVE_HFS 1
+# define NORMALIZE_UTF8PATH 1
 #else
-# define HAVE_HFS 0
+# define NORMALIZE_UTF8PATH 0
 #endif
-#if HAVE_HFS
+#if NORMALIZE_UTF8PATH
 #include <sys/param.h>
 #include <sys/mount.h>
+#include <sys/vnode.h>
 
 static inline int
-is_hfs(DIR *dirp)
+need_normalization(DIR *dirp)
 {
-    struct statfs buf;
-    if (fstatfs(dirfd(dirp), &buf) == 0) {
-	return buf.f_type == 17; /* HFS on darwin */
+# ifdef HAVE_GETATTRLIST
+    u_int32_t attrbuf[SIZEUP32(fsobj_tag_t)];
+    struct attrlist al = {ATTR_BIT_MAP_COUNT, 0, ATTR_CMN_OBJTAG,};
+    if (!fgetattrlist(dirfd(dirp), &al, attrbuf, sizeof(attrbuf), 0)) {
+	const fsobj_tag_t *tag = (void *)(attrbuf+1);
+	switch (*tag) {
+	  case VT_HFS:
+	  case VT_CIFS:
+	    return TRUE;
+	}
     }
+# endif
     return FALSE;
 }
 
@@ -113,9 +125,9 @@ has_nonascii(const char *ptr, size_t len)
     return 0;
 }
 
-# define IF_HAVE_HFS(something) something
+# define IF_NORMALIZE_UTF8PATH(something) something
 #else
-# define IF_HAVE_HFS(something) /* nothing */
+# define IF_NORMALIZE_UTF8PATH(something) /* nothing */
 #endif
 
 #define FNM_NOESCAPE	0x01
@@ -658,18 +670,18 @@ dir_each(VALUE dir)
 {
     struct dir_data *dirp;
     struct dirent *dp;
-    IF_HAVE_HFS(int hfs_p);
+    IF_NORMALIZE_UTF8PATH(int norm_p);
 
     RETURN_ENUMERATOR(dir, 0, 0);
     GetDIR(dir, dirp);
     rewinddir(dirp->dir);
-    IF_HAVE_HFS(hfs_p = is_hfs(dirp->dir));
+    IF_NORMALIZE_UTF8PATH(norm_p = need_normalization(dirp->dir));
     while ((dp = READDIR(dirp->dir, dirp->enc)) != NULL) {
 	const char *name = dp->d_name;
 	size_t namlen = NAMLEN(dp);
 	VALUE path;
-#if HAVE_HFS
-	if (hfs_p && has_nonascii(name, namlen) &&
+#if NORMALIZE_UTF8PATH
+	if (norm_p && has_nonascii(name, namlen) &&
 	    !NIL_P(path = rb_str_normalize_ospath(name, namlen))) {
 	    path = rb_external_str_with_enc(path, dirp->enc);
 	}
@@ -1346,7 +1358,7 @@ is_case_sensitive(DIR *dirp)
 }
 
 static char *
-replace_real_basename(char *path, long base, int hfs_p)
+replace_real_basename(char *path, long base, int norm_p)
 {
     u_int32_t attrbuf[(sizeof(attrreference_t) + MAXPATHLEN * 3 + sizeof(u_int32_t) - 1) / sizeof(u_int32_t) + 1];
     struct attrlist al = {ATTR_BIT_MAP_COUNT, 0, ATTR_CMN_NAME};
@@ -1354,7 +1366,7 @@ replace_real_basename(char *path, long base, int hfs_p)
     const char *name;
     long len;
     char *tmp;
-    IF_HAVE_HFS(VALUE utf8str = Qnil);
+    IF_NORMALIZE_UTF8PATH(VALUE utf8str = Qnil);
 
     if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW))
 	return path;
@@ -1364,8 +1376,8 @@ replace_real_basename(char *path, long base, int hfs_p)
     if (name + len > (char *)attrbuf + sizeof(attrbuf))
 	return path;
 
-# if HAVE_HFS
-    if (hfs_p && has_nonascii(name, len)) {
+# if NORMALIZE_UTF8PATH
+    if (norm_p && has_nonascii(name, len)) {
 	if (!NIL_P(utf8str = rb_str_normalize_ospath(name, len))) {
 	    RSTRING_GETMEM(utf8str, name, len);
 	}
@@ -1378,7 +1390,7 @@ replace_real_basename(char *path, long base, int hfs_p)
 	memcpy(path + base, name, len);
 	path[base + len] = '\0';
     }
-    IF_HAVE_HFS(if (!NIL_P(utf8str)) rb_str_resize(utf8str, 0));
+    IF_NORMALIZE_UTF8PATH(if (!NIL_P(utf8str)) rb_str_resize(utf8str, 0));
     return path;
 }
 #endif
@@ -1509,7 +1521,7 @@ glob_helper(
 # ifdef DOSISH
 	char *plainname = 0;
 # endif
-	IF_HAVE_HFS(int hfs_p);
+	IF_NORMALIZE_UTF8PATH(int norm_p);
 # ifdef DOSISH
 	if (cur + 1 == end && (*cur)->type <= ALPHA) {
 	    plainname = join_path(path, pathlen, dirsep, (*cur)->str, strlen((*cur)->str));
@@ -1521,7 +1533,7 @@ glob_helper(
 # endif
 	dirp = do_opendir(*path ? path : ".", flags, enc);
 	if (dirp == NULL) {
-# if FNM_SYSCASE || HAVE_HFS
+# if FNM_SYSCASE || NORMALIZE_UTF8PATH
 	    if ((magical < 2) && !recursive && (errno == EACCES)) {
 		/* no read permission, fallback */
 		goto literally;
@@ -1529,10 +1541,10 @@ glob_helper(
 # endif
 	    return 0;
 	}
-	IF_HAVE_HFS(hfs_p = is_hfs(dirp));
+	IF_NORMALIZE_UTF8PATH(norm_p = need_normalization(dirp));
 
-# if HAVE_HFS
-	if (!(hfs_p || magical || recursive)) {
+# if NORMALIZE_UTF8PATH
+	if (!(norm_p || magical || recursive)) {
 	    closedir(dirp);
 	    goto literally;
 	}
@@ -1547,7 +1559,7 @@ glob_helper(
 	    const char *name;
 	    size_t namlen;
 	    int dotfile = 0;
-	    IF_HAVE_HFS(VALUE utf8str = Qnil);
+	    IF_NORMALIZE_UTF8PATH(VALUE utf8str = Qnil);
 
 	    if (recursive && dp->d_name[0] == '.') {
 		++dotfile;
@@ -1564,15 +1576,15 @@ glob_helper(
 
 	    name = dp->d_name;
 	    namlen = NAMLEN(dp);
-# if HAVE_HFS
-	    if (hfs_p && has_nonascii(name, namlen)) {
+# if NORMALIZE_UTF8PATH
+	    if (norm_p && has_nonascii(name, namlen)) {
 		if (!NIL_P(utf8str = rb_str_normalize_ospath(name, namlen))) {
 		    RSTRING_GETMEM(utf8str, name, namlen);
 		}
 	    }
 # endif
 	    buf = join_path(path, pathlen, dirsep, name, namlen);
-	    IF_HAVE_HFS(if (!NIL_P(utf8str)) rb_str_resize(utf8str, 0));
+	    IF_NORMALIZE_UTF8PATH(if (!NIL_P(utf8str)) rb_str_resize(utf8str, 0));
 	    if (!buf) {
 		status = -1;
 		break;
@@ -1633,7 +1645,7 @@ glob_helper(
     else if (plain) {
 	struct glob_pattern **copy_beg, **copy_end, **cur2;
 
-# if FNM_SYSCASE || HAVE_HFS
+# if FNM_SYSCASE || NORMALIZE_UTF8PATH
       literally:
 # endif
 	copy_beg = copy_end = GLOB_ALLOC_N(struct glob_pattern *, end - beg);
@@ -1679,7 +1691,7 @@ glob_helper(
 #ifdef HAVE_GETATTRLIST
 		if ((*cur)->type == ALPHA) {
 		    long base = pathlen + (dirsep != 0);
-		    buf = replace_real_basename(buf, base, IF_HAVE_HFS(1)+0);
+		    buf = replace_real_basename(buf, base, IF_NORMALIZE_UTF8PATH(1)+0);
 		}
 #endif
 		status = glob_helper(buf, 1, UNKNOWN, UNKNOWN, new_beg,

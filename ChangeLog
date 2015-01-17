@@ -1,3 +1,12 @@
+Sat Jan 17 22:25:50 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (need_normalization): not only HFS+, CIFS (SMB) is also
+	  decomposed.  [Bug #10704]
+
+	* dir.c (NORMALIZE_UTF8PATH): Unicode decomposition seems to
+	  perform in an upper layer than file systems on OSX, as all path
+	  names are always decomposed regardless of file system types.
+
 Sat Jan 17 17:56:45 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (assocs, assoc): eliminate splatting empty literal
