@@ -2223,6 +2223,8 @@ transcode.$(OBJEXT): {$(VPATH)}transcode.c
 transcode.$(OBJEXT): {$(VPATH)}transcode_data.h
 unicode.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 unicode.$(OBJEXT): {$(VPATH)}config.h
+unicode.$(OBJEXT): {$(VPATH)}enc/unicode/casefold.h
+unicode.$(OBJEXT): {$(VPATH)}enc/unicode/name2ctype.h
 unicode.$(OBJEXT): {$(VPATH)}defines.h
 unicode.$(OBJEXT): {$(VPATH)}intern.h
 unicode.$(OBJEXT): {$(VPATH)}missing.h
@@ -2232,8 +2234,6 @@ unicode.$(OBJEXT): {$(VPATH)}regint.h
 unicode.$(OBJEXT): {$(VPATH)}st.h
 unicode.$(OBJEXT): {$(VPATH)}subst.h
 unicode.$(OBJEXT): {$(VPATH)}unicode.c
-unicode.$(OBJEXT): {$(VPATH)}unicode/casefold.h
-unicode.$(OBJEXT): {$(VPATH)}unicode/name2ctype.h
 us_ascii.$(OBJEXT): {$(VPATH)}config.h
 us_ascii.$(OBJEXT): {$(VPATH)}defines.h
 us_ascii.$(OBJEXT): {$(VPATH)}missing.h
