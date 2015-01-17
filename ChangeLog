@@ -1,3 +1,9 @@
+Sun Jan 18 00:53:38 2015  Seiei Higa  <hanachin@gmail.com>
+
+	* vm_method.c (rb_alias): raise a NameError when creating alias to
+	  a refined method if the original method of the refined method is
+	  not defined.  [ruby-core:67523] [Bug #10731]
+
 Sat Jan 17 22:25:50 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (need_normalization): not only HFS+, CIFS (SMB) is also

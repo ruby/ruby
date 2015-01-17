@@ -1273,7 +1273,9 @@ rb_alias(VALUE klass, ID name, ID def)
   again:
     orig_me = search_method(klass, def, &defined_class);
 
-    if (UNDEFINED_METHOD_ENTRY_P(orig_me)) {
+    if (UNDEFINED_METHOD_ENTRY_P(orig_me) ||
+	(orig_me->def->type == VM_METHOD_TYPE_REFINED &&
+	 UNDEFINED_METHOD_ENTRY_P(orig_me->def->body.orig_me))) {
 	if ((!RB_TYPE_P(klass, T_MODULE)) ||
 	    (orig_me = search_method(rb_cObject, def, 0),
 	     UNDEFINED_METHOD_ENTRY_P(orig_me))) {
