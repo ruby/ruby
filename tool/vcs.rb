@@ -135,7 +135,7 @@ class VCS
       info_xml = IO.pread(%W"svn info --xml #{path}")
       _, last, _, changed, _ = info_xml.split(/revision="(\d+)"/)
       modified = info_xml[/<date>([^<>]*)/, 1]
-      branch = info_xml[%r'<relative-url>\^/(?:branches/|tags/)?([^<>]*)', 1]
+      branch = info_xml[%r'<relative-url>\^/(?:branches/|tags/)?([^<>]+)', 1]
       [last, changed, modified, branch]
     end
 
@@ -209,7 +209,7 @@ class VCS
       cmd = %W[git]
       cmd.push("-C", srcdir) if srcdir
       cmd.push("symbolic-ref", "HEAD")
-      branch = IO.pread(cmd)[%r'\A(?:refs/heads/)?(.*)', 1]
+      branch = IO.pread(cmd)[%r'\A(?:refs/heads/)?(.+)', 1]
       [last, changed, modified, branch]
     end
 
