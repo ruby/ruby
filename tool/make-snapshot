@@ -5,6 +5,7 @@ require 'digest/md5'
 require 'digest/sha1'
 require 'digest/sha2'
 require 'fileutils'
+require 'shellwords'
 require 'tmpdir'
 require File.expand_path("../vcs", __FILE__)
 STDOUT.sync = true
@@ -91,7 +92,7 @@ $digests ||= DIGESTS
 $patch_file &&= File.expand_path($patch_file)
 path = ENV["PATH"].split(File::PATH_SEPARATOR)
 %w[YACC BASERUBY RUBY MV MINIRUBY].each do |var|
-  cmd = ENV[var]
+  cmd, = ENV[var].shellsplit
   unless path.any? {|dir|
       file = File.expand_path(cmd, dir)
       File.file?(file) and File.executable?(file)
