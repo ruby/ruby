@@ -59,7 +59,12 @@ when :changed, nil
   puts changed
 when :revision_h
   puts "#define RUBY_REVISION #{changed || 0}"
-  puts "#define RUBY_BRANCH_NAME #{branch.dump}" if branch
+  if branch
+    e = '..'
+    limit = 16
+    name = branch.sub(/\A(.{0,#{limit-e.size}}).{#{e.size+1},}/o) {$1+e}
+    puts "#define RUBY_BRANCH_NAME #{name.dump}"
+  end
 when :doxygen
   puts "r#{changed}/r#{last}"
 when :modified
