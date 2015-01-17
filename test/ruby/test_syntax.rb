@@ -136,6 +136,13 @@ class TestSyntax < Test::Unit::TestCase
     assert_equal([1, 2], a, bug10315)
   end
 
+  def test_keyword_empty_splat
+    assert_separately([], <<-'end;')
+      bug10719 = '[ruby-core:67446] [Bug #10719]'
+      assert_valid_syntax("foo(a: 1, **{})", bug10719)
+    end;
+  end
+
   def test_keyword_self_reference
     bug9593 = '[ruby-core:61299] [Bug #9593]'
     o = Object.new

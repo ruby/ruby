@@ -2467,11 +2467,14 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE* node_root,
 		    rb_bug("compile_array: This node is not NODE_ARRAY, but %s", ruby_node_name(nd_type(node)));
 		}
 
-		if (type == COMPILE_ARRAY_TYPE_HASH && !node->nd_head) {
-		    opt_p = 0;
+		if (type != COMPILE_ARRAY_TYPE_ARRAY && !node->nd_head) {
 		    kw = node->nd_next;
-		    node = kw->nd_next;
-		    kw = kw->nd_head;
+		    node = 0;
+		    if (kw) {
+			opt_p = 0;
+			node = kw->nd_next;
+			kw = kw->nd_head;
+		    }
 		    break;
 		}
 		if (opt_p && nd_type(node->nd_head) != NODE_LIT) {

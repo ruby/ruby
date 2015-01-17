@@ -1,3 +1,10 @@
+Sat Jan 17 17:56:45 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (assocs, assoc): eliminate splatting empty literal
+	  hashes.  [ruby-core:67446] [Bug #10719]
+
+	* compile.c (compile_array_): supprt splatted hash in hash type.
+
 Sat Jan 17 16:49:49 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/readline/readline.c (readline_s_refresh_line): initialize
