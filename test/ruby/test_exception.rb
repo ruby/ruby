@@ -686,4 +686,16 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       assert_match /\u3042/, err
     end
   end
+
+  def test_multibyte_and_newline
+    bug10727 = '[ruby-core:67473] [Bug #10727]'
+    assert_in_out_err([], <<-'end;', [], /\u{306b 307b 3093 3054} \(E\)\n\u{6539 884c}/, bug10727, encoding: "UTF-8")
+      class E < StandardError
+        def initialize
+          super("\u{306b 307b 3093 3054}\n\u{6539 884c}")
+        end
+      end
+      raise E
+    end;
+  end
 end

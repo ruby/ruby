@@ -169,7 +169,7 @@ error_print(void)
 		warn_print(")\n");
 	    }
 	    if (tail) {
-		warn_print_str(rb_str_substr(e, tail - einfo, elen - len - 1));
+		warn_print_str(rb_str_subseq(e, tail - einfo, elen - len - 1));
 	    }
 	    if (tail ? einfo[elen-1] != '\n' : !epath) warn_print2("\n", 1);
 	}
