@@ -2,7 +2,8 @@ require 'mkmf'
 
 # :stopdoc:
 
-if ! enable_config('bundled-libffi', false)
+bundle = enable_config('bundled-libffi')
+if ! bundle
   dir_config 'libffi'
 
   pkg_config("libffi") and
@@ -16,7 +17,8 @@ if ! enable_config('bundled-libffi', false)
   end and (have_library('ffi') || have_library('libffi'))
 end or
 begin
-  ver = Dir.glob("#{$srcdir}/libffi-*/")
+  ver = bundle != false &&
+        Dir.glob("#{$srcdir}/libffi-*/")
         .map {|n| File.basename(n)}
         .max_by {|n| n.scan(/\d+/).map(&:to_i)}
   unless ver
