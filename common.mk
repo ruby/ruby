@@ -497,9 +497,9 @@ distclean-platform: clean-platform
 
 realclean:: realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
 realclean-local:: distclean-local
-	$(Q)$(RM) parse.c parse.h lex.c newline.c $(PRELUDES) revision.h
+	$(Q)$(RM) parse.c parse.h lex.c enc/trans/newline.c $(PRELUDES) revision.h
 	$(Q)$(RM) id.c id.h probes.dmyh
-	$(Q)$(CHDIR) $(srcdir) && $(exec) $(RM) parse.c parse.h lex.c newline.c $(PRELUDES) revision.h
+	$(Q)$(CHDIR) $(srcdir) && $(exec) $(RM) parse.c parse.h lex.c enc/trans/newline.c $(PRELUDES) revision.h
 	$(Q)$(CHDIR) $(srcdir) && $(exec) $(RM) id.c id.h probes.dmyh
 	$(Q)$(CHDIR) $(srcdir) && $(exec) $(RM) configure tool/config.guess tool/config.sub gems/*.gem
 realclean-ext:: PHONY
@@ -690,8 +690,9 @@ win32/win32.$(OBJEXT): {$(VPATH)}win32/win32.c {$(VPATH)}dln.h {$(VPATH)}dln_fin
 win32/file.$(OBJEXT): {$(VPATH)}win32/file.c $(RUBY_H_INCLUDES) $(PLATFORM_D)
 
 $(NEWLINE_C): $(srcdir)/enc/trans/newline.trans $(srcdir)/tool/transcode-tblgen.rb
+	$(Q) $(MAKEDIRS) $(@D)
 	$(Q) $(BASERUBY) "$(srcdir)/tool/transcode-tblgen.rb" -vo $@ $(srcdir)/enc/trans/newline.trans
-newline.$(OBJEXT): $(NEWLINE_C)
+enc/trans/newline.$(OBJEXT): $(NEWLINE_C)
 
 verconf.h: $(srcdir)/template/verconf.h.tmpl $(srcdir)/tool/generic_erb.rb
 	$(ECHO) creating $@
@@ -731,7 +732,7 @@ INSNS2VMOPT = --srcdir="$(srcdir)"
 
 {$(VPATH)}vm.inc: $(srcdir)/template/vm.inc.tmpl
 
-common-srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c {$(VPATH)}newline.c {$(VPATH)}id.c \
+common-srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c {$(VPATH)}enc/trans/newline.c {$(VPATH)}id.c \
 	     srcs-lib srcs-ext
 
 srcs: common-srcs srcs-enc
@@ -1064,12 +1065,6 @@ array.$(OBJEXT): {$(VPATH)}st.h
 array.$(OBJEXT): {$(VPATH)}subst.h
 array.$(OBJEXT): {$(VPATH)}util.h
 array.$(OBJEXT): {$(VPATH)}vm_opts.h
-ascii.$(OBJEXT): {$(VPATH)}ascii.c
-ascii.$(OBJEXT): {$(VPATH)}config.h
-ascii.$(OBJEXT): {$(VPATH)}defines.h
-ascii.$(OBJEXT): {$(VPATH)}missing.h
-ascii.$(OBJEXT): {$(VPATH)}oniguruma.h
-ascii.$(OBJEXT): {$(VPATH)}regenc.h
 bignum.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 bignum.$(OBJEXT): $(top_srcdir)/include/ruby.h
 bignum.$(OBJEXT): {$(VPATH)}bignum.c
@@ -1261,6 +1256,46 @@ dmydln.$(OBJEXT): {$(VPATH)}st.h
 dmydln.$(OBJEXT): {$(VPATH)}subst.h
 dmyenc.$(OBJEXT): {$(VPATH)}dmyenc.c
 dmyext.$(OBJEXT): {$(VPATH)}dmyext.c
+enc/ascii.$(OBJEXT): {$(VPATH)}config.h
+enc/ascii.$(OBJEXT): {$(VPATH)}defines.h
+enc/ascii.$(OBJEXT): {$(VPATH)}enc/ascii.c
+enc/ascii.$(OBJEXT): {$(VPATH)}missing.h
+enc/ascii.$(OBJEXT): {$(VPATH)}oniguruma.h
+enc/ascii.$(OBJEXT): {$(VPATH)}regenc.h
+enc/trans/newline.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/trans/newline.$(OBJEXT): {$(VPATH)}config.h
+enc/trans/newline.$(OBJEXT): {$(VPATH)}defines.h
+enc/trans/newline.$(OBJEXT): {$(VPATH)}enc/trans/newline.c
+enc/trans/newline.$(OBJEXT): {$(VPATH)}intern.h
+enc/trans/newline.$(OBJEXT): {$(VPATH)}missing.h
+enc/trans/newline.$(OBJEXT): {$(VPATH)}st.h
+enc/trans/newline.$(OBJEXT): {$(VPATH)}subst.h
+enc/trans/newline.$(OBJEXT): {$(VPATH)}transcode_data.h
+enc/unicode.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/unicode.$(OBJEXT): {$(VPATH)}config.h
+enc/unicode.$(OBJEXT): {$(VPATH)}defines.h
+enc/unicode.$(OBJEXT): {$(VPATH)}enc/unicode.c
+enc/unicode.$(OBJEXT): {$(VPATH)}enc/unicode/casefold.h
+enc/unicode.$(OBJEXT): {$(VPATH)}enc/unicode/name2ctype.h
+enc/unicode.$(OBJEXT): {$(VPATH)}intern.h
+enc/unicode.$(OBJEXT): {$(VPATH)}missing.h
+enc/unicode.$(OBJEXT): {$(VPATH)}oniguruma.h
+enc/unicode.$(OBJEXT): {$(VPATH)}regenc.h
+enc/unicode.$(OBJEXT): {$(VPATH)}regint.h
+enc/unicode.$(OBJEXT): {$(VPATH)}st.h
+enc/unicode.$(OBJEXT): {$(VPATH)}subst.h
+enc/us_ascii.$(OBJEXT): {$(VPATH)}config.h
+enc/us_ascii.$(OBJEXT): {$(VPATH)}defines.h
+enc/us_ascii.$(OBJEXT): {$(VPATH)}enc/us_ascii.c
+enc/us_ascii.$(OBJEXT): {$(VPATH)}missing.h
+enc/us_ascii.$(OBJEXT): {$(VPATH)}oniguruma.h
+enc/us_ascii.$(OBJEXT): {$(VPATH)}regenc.h
+enc/utf_8.$(OBJEXT): {$(VPATH)}config.h
+enc/utf_8.$(OBJEXT): {$(VPATH)}defines.h
+enc/utf_8.$(OBJEXT): {$(VPATH)}enc/utf_8.c
+enc/utf_8.$(OBJEXT): {$(VPATH)}missing.h
+enc/utf_8.$(OBJEXT): {$(VPATH)}oniguruma.h
+enc/utf_8.$(OBJEXT): {$(VPATH)}regenc.h
 encoding.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 encoding.$(OBJEXT): $(top_srcdir)/include/ruby.h
 encoding.$(OBJEXT): {$(VPATH)}config.h
@@ -1641,15 +1676,6 @@ miniinit.$(OBJEXT): {$(VPATH)}oniguruma.h
 miniinit.$(OBJEXT): {$(VPATH)}st.h
 miniinit.$(OBJEXT): {$(VPATH)}subst.h
 miniprelude.$(OBJEXT): {$(VPATH)}miniprelude.c
-newline.$(OBJEXT): $(hdrdir)/ruby/ruby.h
-newline.$(OBJEXT): {$(VPATH)}config.h
-newline.$(OBJEXT): {$(VPATH)}defines.h
-newline.$(OBJEXT): {$(VPATH)}intern.h
-newline.$(OBJEXT): {$(VPATH)}missing.h
-newline.$(OBJEXT): {$(VPATH)}newline.c
-newline.$(OBJEXT): {$(VPATH)}st.h
-newline.$(OBJEXT): {$(VPATH)}subst.h
-newline.$(OBJEXT): {$(VPATH)}transcode_data.h
 node.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 node.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 node.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -2221,31 +2247,6 @@ transcode.$(OBJEXT): {$(VPATH)}st.h
 transcode.$(OBJEXT): {$(VPATH)}subst.h
 transcode.$(OBJEXT): {$(VPATH)}transcode.c
 transcode.$(OBJEXT): {$(VPATH)}transcode_data.h
-unicode.$(OBJEXT): $(hdrdir)/ruby/ruby.h
-unicode.$(OBJEXT): {$(VPATH)}config.h
-unicode.$(OBJEXT): {$(VPATH)}enc/unicode/casefold.h
-unicode.$(OBJEXT): {$(VPATH)}enc/unicode/name2ctype.h
-unicode.$(OBJEXT): {$(VPATH)}defines.h
-unicode.$(OBJEXT): {$(VPATH)}intern.h
-unicode.$(OBJEXT): {$(VPATH)}missing.h
-unicode.$(OBJEXT): {$(VPATH)}oniguruma.h
-unicode.$(OBJEXT): {$(VPATH)}regenc.h
-unicode.$(OBJEXT): {$(VPATH)}regint.h
-unicode.$(OBJEXT): {$(VPATH)}st.h
-unicode.$(OBJEXT): {$(VPATH)}subst.h
-unicode.$(OBJEXT): {$(VPATH)}unicode.c
-us_ascii.$(OBJEXT): {$(VPATH)}config.h
-us_ascii.$(OBJEXT): {$(VPATH)}defines.h
-us_ascii.$(OBJEXT): {$(VPATH)}missing.h
-us_ascii.$(OBJEXT): {$(VPATH)}oniguruma.h
-us_ascii.$(OBJEXT): {$(VPATH)}regenc.h
-us_ascii.$(OBJEXT): {$(VPATH)}us_ascii.c
-utf_8.$(OBJEXT): {$(VPATH)}config.h
-utf_8.$(OBJEXT): {$(VPATH)}defines.h
-utf_8.$(OBJEXT): {$(VPATH)}missing.h
-utf_8.$(OBJEXT): {$(VPATH)}oniguruma.h
-utf_8.$(OBJEXT): {$(VPATH)}regenc.h
-utf_8.$(OBJEXT): {$(VPATH)}utf_8.c
 util.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 util.$(OBJEXT): $(top_srcdir)/include/ruby.h
 util.$(OBJEXT): {$(VPATH)}config.h

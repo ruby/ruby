@@ -4191,7 +4191,7 @@ BUILTIN_ENCS=["`sed -n -e '/^BUILTIN_ENCS[ 	]*=/{' \
 	-e s/// -e :l -e '/\\\\$/N' -e 's/\\\\\\n/ /' -e 't l' -e p \
 	-e '}' "${srcdir}/enc/Makefile.in"`"]
 BUILTIN_ENCOBJS=
-for e in $BUILTIN_ENCS; do BUILTIN_ENCOBJS="$BUILTIN_ENCOBJS `basename $e .c`"'.$(OBJEXT)'; done
+for e in $BUILTIN_ENCS; do BUILTIN_ENCOBJS="$BUILTIN_ENCOBJS "`echo $e | sed 's/\.c$/.$(OBJEXT)/'`; done
 AC_SUBST(BUILTIN_ENCOBJS)
 
 BUILTIN_TRANSES=["`sed -n -e '/^BUILTIN_TRANSES[ 	]*=/{' \
@@ -4200,8 +4200,8 @@ BUILTIN_TRANSES=["`sed -n -e '/^BUILTIN_TRANSES[ 	]*=/{' \
 BUILTIN_TRANSSRCS=
 BUILTIN_TRANSOBJS=
 for e in $BUILTIN_TRANSES; do
-  BUILTIN_TRANSSRCS="$BUILTIN_TRANSSRCS `basename $e .trans`"'.c';
-  BUILTIN_TRANSOBJS="$BUILTIN_TRANSOBJS `basename $e .trans`"'.$(OBJEXT)';
+  BUILTIN_TRANSSRCS="$BUILTIN_TRANSSRCS "`echo $e | sed 's/\.trans$/.c/'`
+  BUILTIN_TRANSOBJS="$BUILTIN_TRANSOBJS "`echo $e | sed 's/\.trans$/.$(OBJEXT)/'`
 done
 AC_SUBST(BUILTIN_TRANSSRCS)
 AC_SUBST(BUILTIN_TRANSOBJS)
