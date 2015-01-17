@@ -19,6 +19,11 @@ require 'optparse'
 require 'optparse/shellwords'
 require 'ostruct'
 require 'rubygems'
+begin
+  require "zlib"
+rescue LoadError
+  $" << "zlib.rb"
+end
 
 STDOUT.sync = true
 File.umask(0)
@@ -739,11 +744,6 @@ install?(:ext, :comm, :gem) do
   prepare "bundle gems", gem_dir, directories
   install_dir = with_destdir(gem_dir)
   installed_gems = {}
-  begin
-    require "zlib"
-  rescue LoadError
-    $" << "zlib.rb"
-  end
   Gem::Specification.each_spec([srcdir+'/gems/*']) do |spec|
     ins = RbInstall::UnpackedInstaller.new(spec,
                                            :install_dir => install_dir,
