@@ -301,6 +301,7 @@ def package(vcs, rev, destdir, tmp = nil)
       IO.popen(cmd, "w") do |f|
         f.puts mk
         f.puts "after-update::", "clean-cache $(CLEAN_CACHE): after-update", "prereq: clean-cache $(CLEAN_CACHE)"
+        f.puts "extract-gems:", "after-update:: extract-gems"
       end
       clean.push("rbconfig.rb", ".rbconfig.time", "enc.mk")
       print "prerequisites"
