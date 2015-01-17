@@ -62,7 +62,7 @@ when :revision_h
   if branch
     e = '..'
     limit = 16
-    name = branch.sub(/\A(.{0,#{limit-e.size}}).{#{e.size+1},}/o) {$1+e}
+    name = branch.sub(/\A(.{#{limit-e.size}}).{#{e.size+1},}/o) {$1+e}
     puts "#define RUBY_BRANCH_NAME #{name.dump}"
   end
 when :doxygen
