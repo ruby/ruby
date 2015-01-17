@@ -310,7 +310,7 @@ module Psych
           style = Nodes::Scalar::LITERAL
           plain = false
           quote = false
-        elsif o =~ /\n[^\Z]/  # match \n except blank line at the end of string
+        elsif o =~ /\n(?!\Z)/  # match \n except blank line at the end of string
           style = Nodes::Scalar::LITERAL
         elsif o == '<<'
           style = Nodes::Scalar::SINGLE_QUOTED

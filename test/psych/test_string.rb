@@ -66,18 +66,26 @@ module Psych
     end
 
     def test_literal_when_inner_and_final_line_break
-      str = "Lorem ipsum\ndolor\n"
-      yaml = Psych.dump str, line_width: 12
-      assert_match /---\s*|\n(.*\n){2}\Z/, yaml
-      assert_equal str, Psych.load(yaml)
+      [
+        "Lorem ipsum\ndolor\n",
+        "Lorem ipsum\nZolor\n",
+      ].each do |str|
+        yaml = Psych.dump str, line_width: 12
+        assert_match /---\s*\|\n(.*\n){2}\Z/, yaml
+        assert_equal str, Psych.load(yaml)
+      end
     end
 
     # http://yaml.org/spec/1.2/2009-07-21/spec.html#id2593651
     def test_literal_strip_when_inner_line_break_and_no_final_line_break
-      str = "Lorem ipsum\ndolor"
-      yaml = Psych.dump str, line_width: 12
-      assert_match /---\s*|-\n(.*\n){2}\Z/, yaml
-      assert_equal str, Psych.load(yaml)
+      [
+        "Lorem ipsum\ndolor",
+        "Lorem ipsum\nZolor",
+      ].each do |str|
+        yaml = Psych.dump str, line_width: 12
+        assert_match /---\s*\|-\n(.*\n){2}\Z/, yaml
+        assert_equal str, Psych.load(yaml)
+      end
     end
 
     def test_cycle_x

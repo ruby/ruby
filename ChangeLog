@@ -1,3 +1,10 @@
+Sat Jan 17 23:59:15 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb (visit_String):
+	  anchors like `\Z` are not valid inside character class.  use
+	  negative-lookahead instead.
+	  Fixes: https://github.com/tenderlove/psych/issues/221
+
 Sat Jan 17 23:42:27 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: get rid of pattern substitution, which is not
