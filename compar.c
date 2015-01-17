@@ -20,7 +20,7 @@ rb_cmperr(VALUE x, VALUE y)
 {
     VALUE classname;
 
-    if (SPECIAL_CONST_P(y)) {
+    if (SPECIAL_CONST_P(y) || BUILTIN_TYPE(y) == T_FLOAT) {
 	classname = rb_inspect(y);
     }
     else {
