@@ -1,3 +1,9 @@
+Sat Jan 17 16:35:59 2015  Seiei Higa  <hanachin@gmail.com>
+
+	* vm_method.c (rb_export_method): bail out if the original method
+	  is undefined when the method is refined.
+	  [ruby-core:67387] [Bug #10706]
+
 Sat Jan 17 16:16:14 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (glob_helper): match in case-folding only if the directory

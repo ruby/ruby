@@ -1165,6 +1165,20 @@ class TestRefinement < Test::Unit::TestCase
     end;
   end
 
+  def test_change_refined_new_method_visibility
+    assert_separately([], <<-"end;")
+    bug10706 = '[ruby-core:67387] [Bug #10706]'
+    module RefinementBug
+      refine Object do
+        def foo
+        end
+      end
+    end
+
+    assert_raise(NameError, bug10706) {private(:foo)}
+    end;
+  end
+
   private
 
   def eval_using(mod, s)
