@@ -1,7 +1,6 @@
 #define RUBY_VERSION "2.3.0"
 #define RUBY_RELEASE_DATE "2015-01-17"
 #define RUBY_PATCHLEVEL -1
-#define RUBY_BRANCH_NAME "trunk"
 
 #define RUBY_RELEASE_YEAR 2015
 #define RUBY_RELEASE_MONTH 1
@@ -31,7 +30,10 @@
 #endif
 
 #if RUBY_REVISION
-# ifdef RUBY_BRANCH_NAME
+# if RUBY_PATCHLEVEL == -1
+#  ifndef RUBY_BRANCH_NAME
+#   define RUBY_BRANCH_NAME "trunk"
+#  endif
 #  define RUBY_REVISION_STR " "RUBY_BRANCH_NAME" "STRINGIZE(RUBY_REVISION)
 # else
 #  define RUBY_REVISION_STR " revision "STRINGIZE(RUBY_REVISION)
