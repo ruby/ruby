@@ -3018,7 +3018,7 @@ if test "$with_dln_a_out" != yes; then
 	  "-undefined dynamic_lookup" \
 	  "-multiply_defined suppress" \
 	  ; do
-	  test "x${linker_flag}" = x || flag="${linker_flag}${flag// /,}"
+	  test "x${linker_flag}" = x || flag="${linker_flag}`echo ${flag} | tr ' ' ,`"
 	  RUBY_TRY_LDFLAGS([$flag], [], [flag=])
 	  if test "x$flag" != x; then
 	    RUBY_APPEND_OPTIONS(DLDFLAGS, [$flag])

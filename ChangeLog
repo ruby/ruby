@@ -1,3 +1,9 @@
+Sat Jan 17 23:42:27 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: get rid of pattern substitution, which is not
+	  supported by ash, and ash on NetBSD parses whole source first
+	  and fails to start.  [ruby-dev:48823] [Bug #10750]
+
 Fri Jan 16 18:42:58 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/redmine-backporter.rb: support adding related revisions
