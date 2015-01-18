@@ -1,4 +1,5 @@
 # vcs
+require 'fileutils'
 
 ENV.delete('PWD')
 
@@ -132,19 +133,31 @@ class VCS
       if srcdir and (String === path or path.respond_to?(:to_path))
         path = File.join(srcdir, path)
       end
-      info_xml = IO.pread(%W"svn info --xml #{path}")
+      if srcdir
+        info_xml = IO.pread(%W"svn info --xml #{srcdir}")
+        info_xml = nil unless info_xml[/<url>(.*)<\/url>/, 1] == path.to_s
+      end
+      info_xml ||= IO.pread(%W"svn info --xml #{path}")
       _, last, _, changed, _ = info_xml.split(/revision="(\d+)"/)
       modified = info_xml[/<date>([^<>]*)/, 1]
       branch = info_xml[%r'<relative-url>\^/(?:branches/|tags/)?([^<>]+)', 1]
       [last, changed, modified, branch]
     end
 
+    def get_info
+      @info ||= IO.pread(%W"svn info --xml #{@srcdir}")
+    end
+
     def url
-      unless defined?(@url)
-        url = IO.pread(%W"svn info --xml #{@srcdir}")[/<root>(.*)<\/root>/, 1]
+      unless @url
+        url = get_info[/<root>(.*)<\/root>/, 1]
         @url = URI.parse(url+"/") if url
       end
       @url
+    end
+
+    def wcroot
+      @wcroot ||= get_info[/<wcroot-abspath>(.*)<\/wcroot-abspath>/, 1]
     end
 
     def branch(name)
@@ -182,6 +195,29 @@ class VCS
     end
 
     def export(revision, url, dir)
+      if @srcdir
+        srcdir = File.realpath(@srcdir)
+        rootdir = wcroot+"/"
+        if srcdir.start_with?(rootdir)
+          subdir = srcdir[rootdir.size..-1]
+          subdir = nil if subdir.empty?
+          FileUtils.mkdir_p(svndir = dir+"/.svn")
+          FileUtils.ln_s(Dir.glob(rootdir+"/.svn/*"), svndir)
+          system("svn", "-q", "revert", "-R", subdir || ".", :chdir => dir) or return false
+          FileUtils.rm_rf(svndir)
+          if subdir
+            tmpdir = Dir.mktmpdir("tmp-co.", "#{dir}/#{subdir}")
+            File.rename(tmpdir, tmpdir = "#{dir}/#{File.basename(tmpdir)}")
+            FileUtils.mv(Dir.glob("#{dir}/#{subdir}/{.[^.]*,..?*,*}"), tmpdir)
+            begin
+              Dir.rmdir("#{dir}/#{subdir}")
+            end until (subdir = File.dirname(subdir)) == '.'
+            FileUtils.mv(Dir.glob("#{tmpdir}/#{subdir}/{.[^.]*,..?*,*}"), dir)
+            Dir.rmdir(tmpdir)
+          end
+          return true
+        end
+      end
       IO.popen(%W"svn export -r #{revision} #{url} #{dir}") do |pipe|
         pipe.each {|line| /^A/ =~ line or yield line}
       end
