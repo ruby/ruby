@@ -1,3 +1,9 @@
+Sun Jan 18 15:57:32 2015  Seiei Higa  <hanachin@gmail.com>
+
+	* vm_method.c (check_definition): Module#public_method_defined?,
+	  Module#private_method_defined?, Module#protected_method_defined?
+	  should not use refinements. [ruby-core:67656] [Bug #10753]
+
 Sun Jan 18 15:50:39 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_dump.c (rb_vm_bugreport): check by configured result instead

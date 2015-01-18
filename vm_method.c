@@ -1061,7 +1061,7 @@ check_definition(VALUE mod, VALUE mid, rb_method_flag_t noex)
     const rb_method_entry_t *me;
     ID id = rb_check_id(&mid);
     if (!id) return Qfalse;
-    me = rb_method_entry(mod, id, 0);
+    me = rb_method_entry_without_refinements(mod, id, 0);
     if (me) {
 	if (VISI_CHECK(me->flag, noex))
 	    return Qtrue;
