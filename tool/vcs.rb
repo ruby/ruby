@@ -157,7 +157,14 @@ class VCS
     end
 
     def wcroot
-      @wcroot ||= get_info[/<wcroot-abspath>(.*)<\/wcroot-abspath>/, 1]
+      unless @wcroot
+        info = get_info
+        @wcroot = info[/<wcroot-abspath>(.*)<\/wcroot-abspath>/, 1]
+        unless @wcroot
+          STDERR.puts info.gsub(/^/, 'SVNINFO: ')
+        end
+      end
+      @wcroot
     end
 
     def branch(name)
