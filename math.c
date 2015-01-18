@@ -37,7 +37,9 @@ VALUE rb_eMathDomainError;
  *  call-seq:
  *     Math.atan2(y, x)  -> Float
  *
- *  Returns a angle in radians between the positive x-axis of cartesian plane
+ *  Computes the arc tangent given +y+ and +x+.
+ *  Returns a Float in the range -PI..PI. Return value is a angle
+ *  in radians between the positive x-axis of cartesian plane
  *  and the point given by the coordinates (+x+, +y+) on it.
  *
  *  Domain: (-INFINITY, INFINITY)
