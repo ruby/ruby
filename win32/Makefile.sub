@@ -370,7 +370,7 @@ EXTOBJS = dmyext.$(OBJEXT)
 arch_hdrdir = $(EXTOUT)/include/$(arch)
 top_srcdir = $(srcdir)
 hdrdir = $(srcdir)/include
-VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/enc;$(srcdir)/missing;$(win_srcdir)
+VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/missing;$(win_srcdir)
 
 !if exist($(srcdir)/.svn)
 VCS = svn
@@ -398,10 +398,10 @@ ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
 stub: $(STUBPROGRAM)
 
-!if !exist(newline.c) && exist($(srcdir)/newline.c)
-NEWLINE_C = $(srcdir)/newline.c
+!if !exist(enc/trans/newline.c) && exist($(srcdir)/enc/trans/newline.c)
+NEWLINE_C = $(srcdir)/enc/trans/newline.c
 !else
-NEWLINE_C = newline.c
+NEWLINE_C = enc/trans/newline.c
 !endif
 !if !exist(miniprelude.c) && exist($(srcdir)/miniprelude.c)
 MINIPRELUDE_C = $(srcdir)/miniprelude.c
@@ -1072,6 +1072,9 @@ $(ruby_pc): $(RBCONFIG)
 	@$(MINIRUBY) -r./rbconfig $(srcdir)/tool/expand-config.rb \
 	$(srcdir)/template/ruby.pc.in > $@
 
+{$(srcdir)/enc/trans}.c.obj:
+	$(ECHO) compiling $(<:\=/)
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
 {$(srcdir)/enc}.c.obj:
 	$(ECHO) compiling $(<:\=/)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)

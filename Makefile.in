@@ -51,7 +51,7 @@ DOCTARGETS = @RDOCTARGET@ @CAPITARGET@
 
 EXTOUT = @EXTOUT@
 arch_hdrdir = $(EXTOUT)/include/$(arch)
-VPATH = $(arch_hdrdir)/ruby:$(hdrdir)/ruby:$(srcdir):$(srcdir)/enc:$(srcdir)/missing
+VPATH = $(arch_hdrdir)/ruby:$(hdrdir)/ruby:$(srcdir):$(srcdir)/missing
 
 empty =
 CC_VERSION = @CC_VERSION@
@@ -171,7 +171,7 @@ SYMBOL_PREFIX = @SYMBOL_PREFIX@
 
 INSTALLED_LIST= .installed.list
 
-NEWLINE_C     = newline.c
+NEWLINE_C     = enc/trans/newline.c
 MINIPRELUDE_C = miniprelude.c
 PRELUDE_C     = prelude.c
 RBCONFIG      = .rbconfig.time

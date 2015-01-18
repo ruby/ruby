@@ -22,10 +22,10 @@ DLEXT = @DLEXT@
 OBJEXT = @OBJEXT@
 LIBEXT = @LIBEXT@
 
-BUILTIN_ENCS	= ascii.c us_ascii.c\
-		  unicode.c utf_8.c
+BUILTIN_ENCS	= enc/ascii.c enc/us_ascii.c\
+		  enc/unicode.c enc/utf_8.c
 
-BUILTIN_TRANSES	= newline.trans
+BUILTIN_TRANSES	= enc/trans/newline.trans
 
 RUBY_SO_NAME = @RUBY_SO_NAME@
 LIBRUBY = @LIBRUBY@

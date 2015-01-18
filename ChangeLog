@@ -1,3 +1,13 @@
+Sun Jan 18 12:56:49 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (VPATH, NEWLINE_C), common.mk (common-srcs): make
+	  and use newline.c under enc/trans directory, not toplevel.  no
+	  longer search enc directory implicitly.
+
+	* configure.in, enc/Makefile.in (BUILTIN_ENCS, BUILTIN_TRANSES):
+	  prefix respective directory names to builtin encodings and
+	  transcoder source names.
+
 Sun Jan 18 11:49:46 2015  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_invoke): avoid SEGV when VT_RECORD
