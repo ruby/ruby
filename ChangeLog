@@ -1,7 +1,7 @@
 Sun Jan 18 11:49:46 2015  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_invoke): avoid SEGV when VT_RECORD
-	  variable is passed by reference. [ruby-dev:48803] [Bug #10697] 
+	  variable is passed by reference. [ruby-dev:48803] [Bug #10697]
 
 Sat Jan 17 23:59:15 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
