@@ -195,9 +195,9 @@ class VCS
     end
 
     def export(revision, url, dir)
-      if @srcdir
+      if @srcdir and (rootdir = wcroot)
         srcdir = File.realpath(@srcdir)
-        rootdir = wcroot+"/"
+        rootdir << "/"
         if srcdir.start_with?(rootdir)
           subdir = srcdir[rootdir.size..-1]
           subdir = nil if subdir.empty?
