@@ -132,7 +132,7 @@ enc/encdb.$(OBJEXT): encdb.h
 enc/trans/transdb.$(OBJEXT): transdb.h
 
 clean:
-% %w[$(ENCSOS) $(LIBENC) $(ENCOBJS) $(ENCCLEANOBJS) $(ENCCLEANLIBS) $(TRANSSOS) $(LIBTRANS) $(TRANSOBJS) $(TRANSCLEANOBJS) $(TRANSCLEANLIBS)].each do |clean|
+% %w[$(ENCSOS) $(LIBENC) $(ENCOBJS) $(ENCCLEANOBJS) $(ENCCLEANLIBS) $(TRANSSOS) $(LIBTRANS) $(TRANSOBJS) $(TRANSCLEANOBJS) $(TRANSCLEANLIBS) enc/trans/.time].each do |clean|
 	$(Q)$(RM) <%=pathrep[clean]%>
 % end
 % @ignore_error = $nmake ? '' : ' 2> /dev/null || true'

@@ -28,6 +28,7 @@ EXTCONF       = extconf.rb
 LIBRUBY_EXTS  = ./.libruby-with-ext.time
 REVISION_H    = ./.revision.time
 PLATFORM_D    = ./$(PLATFORM_DIR)/.time
+ENC_TRANS_D   = enc/trans/.time
 RDOCOUT       = $(EXTOUT)/rdoc
 HTMLOUT       = $(EXTOUT)/html
 CAPIOUT       = doc/capi
@@ -515,6 +516,12 @@ clean-ext distclean-ext realclean-ext::
 
 clean-enc distclean-enc realclean-enc: PHONY
 
+clean-enc: clean-enc.d
+
+clean-enc.d: PHONY
+	$(Q)$(RM) $(ENC_TRANS_D)
+	-$(Q) $(RMDIR) enc/trans enc 2> $(NULL) || exit 0
+
 clean-rdoc distclean-rdoc realclean-rdoc:
 	@echo $(@:-rdoc=ing) rdoc
 	$(Q)$(RMALL) $(RDOCOUT)
@@ -639,6 +646,12 @@ PHONY:
 
 $(PLATFORM_D):
 	$(Q) $(MAKEDIRS) $(PLATFORM_DIR)
+	@exit > $@
+
+PHONY $(BUILTIN_ENCOBJS) $(BUILTIN_TRANSOBJS): $(ENC_TRANS_D)
+
+$(ENC_TRANS_D):
+	$(Q) $(MAKEDIRS) enc/trans
 	@exit > $@
 
 ###
