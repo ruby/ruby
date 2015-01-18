@@ -161,7 +161,13 @@ class VCS
         info = get_info
         @wcroot = info[/<wcroot-abspath>(.*)<\/wcroot-abspath>/, 1]
         unless @wcroot
-          STDERR.puts info.gsub(/^/, 'SVNINFO: ')
+          parent = File.realpath(@srcdir)
+          begin
+            parent = File.dirname(wkdir = parent)
+            if File.directory?(wkdir + "/.svn")
+              break @wcroot = wkdir
+            end
+          end until parent == wkdir
         end
       end
       @wcroot
