@@ -892,7 +892,7 @@ rb_stat_ctime(VALUE self)
  *     stat.birthtime  ->  aTime
  *
  *  Returns the birth time for <i>stat</i>.
- *  If the platform doesn't have birthtime, returns <i>ctime</i>.
+ *  If the platform doesn't have birthtime, raises NotImplementedError.
  *
  *     File.write("testfile", "foo")
  *     sleep 10
