@@ -542,7 +542,7 @@ VALUE rb_integer_float_cmp(VALUE x, VALUE y);
 VALUE rb_integer_float_eq(VALUE x, VALUE y);
 
 /* class.c */
-void rb_class_foreach_subclass(VALUE klass, void(*f)(VALUE));
+void rb_class_foreach_subclass(VALUE klass, void (*f)(VALUE, VALUE), VALUE);
 void rb_class_detach_subclasses(VALUE);
 void rb_class_detach_module_subclasses(VALUE);
 void rb_class_remove_from_module_subclasses(VALUE);

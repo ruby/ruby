@@ -61,10 +61,10 @@ static struct {
 /* int ruby_running = 0; */
 
 static void
-rb_class_clear_method_cache(VALUE klass)
+rb_class_clear_method_cache(VALUE klass, VALUE arg)
 {
     RCLASS_SERIAL(klass) = rb_next_class_serial();
-    rb_class_foreach_subclass(klass, rb_class_clear_method_cache);
+    rb_class_foreach_subclass(klass, rb_class_clear_method_cache, arg);
 }
 
 void
@@ -95,7 +95,7 @@ rb_clear_method_cache_by_class(VALUE klass)
 	    INC_GLOBAL_METHOD_STATE();
 	}
 	else {
-	    rb_class_clear_method_cache(klass);
+	    rb_class_clear_method_cache(klass, Qnil);
 	}
     }
 }

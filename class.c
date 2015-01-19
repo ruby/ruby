@@ -110,7 +110,7 @@ rb_class_remove_from_module_subclasses(VALUE klass)
 }
 
 void
-rb_class_foreach_subclass(VALUE klass, void(*f)(VALUE))
+rb_class_foreach_subclass(VALUE klass, void (*f)(VALUE, VALUE), VALUE arg)
 {
     rb_subclass_entry_t *cur = RCLASS_EXT(klass)->subclasses;
 
@@ -119,20 +119,32 @@ rb_class_foreach_subclass(VALUE klass, void(*f)(VALUE))
     while (cur) {
 	VALUE curklass = cur->klass;
 	cur = cur->next;
-	f(curklass);
+	f(curklass, arg);
     }
+}
+
+static void
+class_detach_subclasses(VALUE klass, VALUE arg)
+{
+    rb_class_remove_from_super_subclasses(klass);
 }
 
 void
 rb_class_detach_subclasses(VALUE klass)
 {
-    rb_class_foreach_subclass(klass, rb_class_remove_from_super_subclasses);
+    rb_class_foreach_subclass(klass, class_detach_subclasses, Qnil);
+}
+
+static void
+class_detach_module_subclasses(VALUE klass, VALUE arg)
+{
+    rb_class_remove_from_module_subclasses(klass);
 }
 
 void
 rb_class_detach_module_subclasses(VALUE klass)
 {
-    rb_class_foreach_subclass(klass, rb_class_remove_from_module_subclasses);
+    rb_class_foreach_subclass(klass, class_detach_module_subclasses, Qnil);
 }
 
 /**
