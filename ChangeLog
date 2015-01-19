@@ -1,3 +1,9 @@
+Mon Jan 19 12:03:59 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_dump.c (rb_vm_bugreport): check by configured result instead
+	  of system name for old FreeBSD.  based on a patch by Steve Wills
+	  at [ruby-core:67655].  [Bug #10752]
+
 Mon Jan 19 12:00:51 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: get rid of pattern substitution, which is not
