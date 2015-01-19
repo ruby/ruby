@@ -1,3 +1,9 @@
+Mon Jan 19 11:44:52 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/text.rb (expand_tabs): get rid of infinite loop with
+	  CR.  should check if substitution occurred too.
+	  [ruby-dev:48813] [Bug #10732]
+
 Sun Jan 18 00:59:41 2015  Eric Wong  <e@80x24.org>
 
 	* numeric.c (bit_coerce): use original value for error message
