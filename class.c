@@ -817,7 +817,7 @@ rb_include_class_new(VALUE module, VALUE super)
     return (VALUE)klass;
 }
 
-static int include_modules_at(const VALUE klass, VALUE c, VALUE module);
+static int include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super);
 
 void
 rb_include_module(VALUE klass, VALUE module)
@@ -832,7 +832,7 @@ rb_include_module(VALUE klass, VALUE module)
 
     OBJ_INFECT(klass, module);
 
-    changed = include_modules_at(klass, RCLASS_ORIGIN(klass), module);
+    changed = include_modules_at(klass, RCLASS_ORIGIN(klass), module, TRUE);
     if (changed < 0)
 	rb_raise(rb_eArgError, "cyclic include detected");
 }
@@ -845,7 +845,7 @@ add_refined_method_entry_i(st_data_t key, st_data_t value, st_data_t data)
 }
 
 static int
-include_modules_at(const VALUE klass, VALUE c, VALUE module)
+include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
 {
     VALUE p, iclass;
     int method_changed = 0, constant_changed = 0;
@@ -860,28 +860,27 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module)
 	    return -1;
 	/* ignore if the module included already in superclasses */
 	for (p = RCLASS_SUPER(klass); p; p = RCLASS_SUPER(p)) {
-	    switch (BUILTIN_TYPE(p)) {
-	      case T_ICLASS:
+	    int type = BUILTIN_TYPE(p);
+	    if (type == T_ICLASS) {
 		if (RCLASS_M_TBL_WRAPPER(p) == RCLASS_M_TBL_WRAPPER(module)) {
 		    if (!superclass_seen) {
 			c = p;  /* move insertion point */
 		    }
 		    goto skip;
 		}
-		break;
-	      case T_CLASS:
+	    }
+	    else if (type == T_CLASS) {
+		if (!search_super) break;
 		superclass_seen = TRUE;
-		break;
 	    }
 	}
 	iclass = rb_include_class_new(module, RCLASS_SUPER(c));
 	c = RCLASS_SET_SUPER(c, iclass);
 
-	if (BUILTIN_TYPE(module) == T_ICLASS) {
-	    rb_module_add_to_subclasses_list(RBASIC(module)->klass, iclass);
-	}
-	else {
-	    rb_module_add_to_subclasses_list(module, iclass);
+	{
+	    VALUE m = module;
+	    if (BUILTIN_TYPE(m) == T_ICLASS) m = RBASIC(m)->klass;
+	    rb_module_add_to_subclasses_list(m, iclass);
 	}
 
 	if (FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
@@ -957,7 +956,7 @@ rb_prepend_module(VALUE klass, VALUE module)
 	st_foreach(RCLASS_M_TBL(origin), move_refined_method,
 		   (st_data_t) RCLASS_M_TBL(klass));
     }
-    changed = include_modules_at(klass, klass, module);
+    changed = include_modules_at(klass, klass, module, FALSE);
     if (changed < 0)
 	rb_raise(rb_eArgError, "cyclic prepend detected");
     if (changed) {

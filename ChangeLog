@@ -1,3 +1,8 @@
+Mon Jan 19 22:08:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (include_modules_at): allow prepend each modules upto
+	  once for each classes.  [EXPERIMENTAL]
+
 Sun Jan 18 18:32:20 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* math.c (math_atan2): revive documentation before r49220.

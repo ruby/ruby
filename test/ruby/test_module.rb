@@ -1725,6 +1725,17 @@ class TestModule < Test::Unit::TestCase
     assert_equal('hello!', foo.new.hello, bug9236)
   end
 
+  def test_multiple_prepend
+    m = labeled_module("M")
+    c1 = labeled_class("C1") {
+      prepend m
+    }
+    c2 = labeled_class("C2", c1) {
+      prepend m
+    }
+    assert_equal([m, c2, m, c1], c2.ancestors[0, 4])
+  end
+
   def test_class_variables
     m = Module.new
     m.class_variable_set(:@@foo, 1)
