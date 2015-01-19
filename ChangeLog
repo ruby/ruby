@@ -1,3 +1,9 @@
+Mon Jan 19 12:00:51 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: get rid of pattern substitution, which is not
+	  supported by ash, and ash on NetBSD parses whole source first
+	  and fails to start.  [ruby-dev:48823] [Bug #10750]
+
 Mon Jan 19 11:57:14 2015  Vit Ondruch  <vondruch@redhat.com>
 
 	* configure.in (RUBY_SETJMP_TYPE): Remove superfluous semicolon
