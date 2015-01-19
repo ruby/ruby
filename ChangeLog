@@ -1,3 +1,9 @@
+Mon Jan 19 11:57:14 2015  Vit Ondruch  <vondruch@redhat.com>
+
+	* configure.in (RUBY_SETJMP_TYPE): Remove superfluous semicolon
+	  which causes a syntax error with autoconf 2.63.
+	  [ruby-core:67429] [Bug #10716]
+
 Mon Jan 19 11:44:52 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/text.rb (expand_tabs): get rid of infinite loop with
