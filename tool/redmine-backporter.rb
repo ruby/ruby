@@ -267,8 +267,8 @@ while true
     break
   end
   case l
-  when 'ls'
-    uri = URI(REDMINE_BASE+'/projects/ruby-trunk/issues.json?'+URI.encode_www_form(@query))
+  when /\Als(?: +(\d+))?\z/
+    uri = URI(REDMINE_BASE+'/projects/ruby-trunk/issues.json?'+URI.encode_www_form(@query.dup.merge('page' => ($1 ? $1.to_i : 1)))
     # puts uri
     res = JSON(uri.read(openuri_options))
     @issues = issues = res["issues"]
@@ -442,7 +442,7 @@ eom
   when nil, 'quit', 'exit'
     exit
   when 'help'
-    puts 'ls                     '.color(bold: true) + ' show all required tickets'
+    puts 'ls [PAGE]              '.color(bold: true) + ' show all required tickets'
     puts 'show TICKET            '.color(bold: true) + ' show the detail of the TICKET, and select it'
     puts 'TICKET                 '.color(bold: true) + ' show the backport option of the TICKET for merger.rb'
     puts 'rel REVISION           '.color(bold: true) + ' add the selected ticket as related to the REVISION'
