@@ -2661,6 +2661,10 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
             param = rb_ary_entry(paramS, i-cNamedArgs);
             if (rb_obj_is_kind_of(param, cWIN32OLE_VARIANT)) {
                 ole_variant2variant(param, &op.dp.rgvarg[n]);
+            } else if (rb_obj_is_kind_of(param, cWIN32OLE_RECORD)) {
+                ole_val2variant(param, &realargs[n]);
+                op.dp.rgvarg[n] = realargs[n];
+                V_VT(&op.dp.rgvarg[n]) = VT_RECORD | VT_BYREF;
             } else {
                 ole_val2variant(param, &realargs[n]);
                 V_VT(&op.dp.rgvarg[n]) = VT_VARIANT | VT_BYREF;
