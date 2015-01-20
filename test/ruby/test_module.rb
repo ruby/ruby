@@ -1725,15 +1725,25 @@ class TestModule < Test::Unit::TestCase
     assert_equal('hello!', foo.new.hello, bug9236)
   end
 
-  def test_multiple_prepend
+  def test_prepend_each_classes
     m = labeled_module("M")
-    c1 = labeled_class("C1") {
-      prepend m
-    }
-    c2 = labeled_class("C2", c1) {
-      prepend m
-    }
-    assert_equal([m, c2, m, c1], c2.ancestors[0, 4])
+    c1 = labeled_class("C1") {prepend m}
+    c2 = labeled_class("C2", c1) {prepend m}
+    assert_equal([m, c2, m, c1], c2.ancestors[0, 4], "should be able to prepend each classes")
+  end
+
+  def test_prepend_no_duplication
+    m = labeled_module("M")
+    c = labeled_class("C") {prepend m; prepend m}
+    assert_equal([m, c], c.ancestors[0, 2], "should never duplicate")
+  end
+
+  def test_prepend_in_superclass
+    m = labeled_module("M")
+    c1 = labeled_class("C1")
+    c2 = labeled_class("C2", c1) {prepend m}
+    c1.class_eval {prepend m}
+    assert_equal([m, c2, m, c1], c2.ancestors[0, 4], "should accesisble prepended module in superclass")
   end
 
   def test_class_variables
