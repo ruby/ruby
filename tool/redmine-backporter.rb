@@ -199,10 +199,14 @@ def readline(prompt = '')
   console = IO.console
   console.binmode
   ly, lx = console.winsize
-  cls = "\r" + (" " * lx) + "\r" + prompt
+  if /mswin|mingw/ =~ RUBY_PLATFORM or /^(?:vt\d\d\d|xterm)/i =~ ENV["TERM"]
+    cls = "\r\e[2K"
+  else
+    cls = "\r" << (" " * lx)
+  end
+  cls << "\r" << prompt
   console.print prompt
   console.flush
-  return gets.chomp if /mswin|mingw/ =~ RUBY_PLATFORM
   line = ''
   while 1
     case c = console.getch
