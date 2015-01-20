@@ -11,6 +11,7 @@ require 'pp'
 begin
   require 'readline'
 rescue LoadError
+  module Readline; end
 else
   include Readline
 end
@@ -278,7 +279,7 @@ while true
   end
   case l
   when /\Als(?: +(\d+))?\z/
-    uri = URI(REDMINE_BASE+'/projects/ruby-trunk/issues.json?'+URI.encode_www_form(@query.dup.merge('page' => ($1 ? $1.to_i : 1)))
+    uri = URI(REDMINE_BASE+'/projects/ruby-trunk/issues.json?'+URI.encode_www_form(@query.dup.merge('page' => ($1 ? $1.to_i : 1))))
     # puts uri
     res = JSON(uri.read(openuri_options))
     @issues = issues = res["issues"]
