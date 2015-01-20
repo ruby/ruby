@@ -12,8 +12,6 @@ begin
   require 'readline'
 rescue LoadError
   module Readline; end
-else
-  include Readline
 end
 
 VERSION = '0.0.1'
