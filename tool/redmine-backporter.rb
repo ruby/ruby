@@ -197,6 +197,7 @@ end
 
 def readline(prompt = '')
   console = IO.console
+  console.binmode
   ly, lx = console.winsize
   cls = "\r" + (" " * lx) + "\r" + prompt
   console.print prompt
