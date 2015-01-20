@@ -1,3 +1,13 @@
+Wed Jan 21 04:36:27 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (NET_LUID): include winsock2.h instead of windows.h.
+	  patch by Jon Forums in [ruby-core:67125].  [Bug #10640]
+
+Wed Jan 21 04:36:27 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (NET_LUID): include also ifdef.h as a workaround of
+	  a bug in mingw-w64 header.  [ruby-core:67103] [Bug #10640]
+
 Wed Jan  7 22:34:52 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/config_files.rb: use config.guess in gcc repo.
