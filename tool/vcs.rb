@@ -61,6 +61,10 @@ class VCS
     raise VCS::NotFoundError, "does not seem to be under a vcs: #{path}"
   end
 
+  def self.local_path?(path)
+    String === path or path.respond_to?(:to_path)
+  end
+
   def initialize(path)
     @srcdir = path
     super()
@@ -72,7 +76,7 @@ class VCS
   # return a pair of strings, the last revision and the last revision in which
   # +path+ was modified.
   def get_revisions(path)
-    if String === path or path.respond_to?(:to_path)
+    if self.class.local_path?(path)
       path = relative_to(path)
     end
     last, changed, modified, *rest = (
@@ -130,7 +134,7 @@ class VCS
     register(".svn")
 
     def self.get_revisions(path, srcdir = nil)
-      if srcdir and (String === path or path.respond_to?(:to_path))
+      if srcdir and local_path?(path)
         path = File.join(srcdir, path)
       end
       if srcdir
@@ -142,6 +146,15 @@ class VCS
       modified = info_xml[/<date>([^<>]*)/, 1]
       branch = info_xml[%r'<relative-url>\^/(?:branches/|tags/)?([^<>]+)', 1]
       [last, changed, modified, branch]
+    end
+
+    def self.search_root(path)
+      return unless local_path?(path)
+      parent = File.realpath(path)
+      begin
+        parent = File.dirname(wkdir = parent)
+        return wkdir if File.directory?(wkdir + "/.svn")
+      end until parent == wkdir
     end
 
     def get_info
@@ -160,18 +173,7 @@ class VCS
       unless @wcroot
         info = get_info
         @wcroot = info[/<wcroot-abspath>(.*)<\/wcroot-abspath>/, 1]
-        unless @wcroot
-          begin
-            parent = File.realpath(@srcdir)
-            begin
-              parent = File.dirname(wkdir = parent)
-              if File.directory?(wkdir + "/.svn")
-                break @wcroot = wkdir
-              end
-            end until parent == wkdir
-          rescue TypeError
-          end
-        end
+        @wcroot ||= self.class.search_root(@srcdir)
       end
       @wcroot
     end
