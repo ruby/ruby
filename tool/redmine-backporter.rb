@@ -195,6 +195,33 @@ def more(sio)
   end
 end
 
+def mygets
+  console = IO.console
+  ly, lx = console.winsize
+  cls = "\r" + (" " * lx) + "\r> "
+  line = ''
+  while 1
+    case c = console.getch
+    when "\r"
+      puts
+      line << c
+      return line
+    when "\x07", "\b" # DEL/BS
+      print "\b"
+      line.chop!
+    when "\x15" # C-u
+      print cls
+      line.clear
+    when "\x04" # C-d
+      return nil if line.empty?
+      line << c
+    else
+      print c
+      line << c
+    end
+  end
+end
+
 def mergeinfo
   `svn propget svn:mergeinfo #{RUBY_REPO_PATH}`
 end
@@ -234,7 +261,7 @@ puts "Backporter #{VERSION}".color(bold: true) + " for #{TARGET_VERSION}"
 while true
   print '> '
   begin
-    l = gets
+    l = mygets
   rescue Interrupt
     break
   end

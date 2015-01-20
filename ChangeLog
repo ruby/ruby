@@ -1,3 +1,8 @@
+Tue Jan 20 11:23:47 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/redmine-backporter.rb (mygets): to support Backspace
+	  implement gets by itself.
+
 Tue Jan 20 02:54:11 2015  Zachary Scott  <e@zzak.io>
 
         * file.c: NotImplementedError is raised if birthtime is unavailable.
