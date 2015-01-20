@@ -195,16 +195,17 @@ def more(sio)
   end
 end
 
-def mygets
+def readline(prompt = '')
   console = IO.console
   ly, lx = console.winsize
-  cls = "\r" + (" " * lx) + "\r> "
+  cls = "\r" + (" " * lx) + "\r" + prompt
+  console.print prompt
+  console.flush
   line = ''
   while 1
     case c = console.getch
     when "\r", "\n"
       puts
-      line << c
       return line
     when "\C-?", "\b" # DEL/BS
       print "\b \b" if line.chop!
@@ -258,13 +259,11 @@ puts "Backporter #{VERSION}".color(bold: true) + " for #{TARGET_VERSION}"
 @issue = nil
 @changesets = nil
 while true
-  print '> '
   begin
-    l = mygets
+    l = readline '> '
   rescue Interrupt
     break
   end
-  l.strip! if l
   case l
   when 'ls'
     uri = URI(REDMINE_BASE+'/projects/ruby-trunk/issues.json?'+URI.encode_www_form(@query))
