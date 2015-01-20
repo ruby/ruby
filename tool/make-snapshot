@@ -183,7 +183,7 @@ def package(vcs, rev, destdir, tmp = nil)
     v = "ruby"
     puts "Exporting #{rev}@#{revision}"
     exported = tmp ? File.join(tmp, v) : v
-    unless vcs.export(revision, url, exported) {|line| print line}
+    unless vcs.export(revision, url, exported, true) {|line| print line}
       warn("Export failed")
       return
     end
@@ -209,7 +209,6 @@ def package(vcs, rev, destdir, tmp = nil)
     v = v[0]
   end
   open("#{v}/revision.h", "wb") {|f| f.puts "#define RUBY_REVISION #{revision}"}
-  open("#{v}/.revision.time", "wb") {}
   version ||= (versionhdr = IO.read("#{v}/version.h"))[RUBY_VERSION_PATTERN, 1]
   version or return
   if patchlevel
@@ -310,6 +309,7 @@ def package(vcs, rev, destdir, tmp = nil)
     else
       system(*%W"#{YACC} -o parse.c parse.y")
     end
+    vcs.after_export(".") if exported
     FileUtils.rm_rf(clean)
     unless $?.success?
       puts " failed"

@@ -128,6 +128,9 @@ class VCS
     else
       '.'
     end
+
+    def after_export(dir)
+    end
   end
 
   class SVN < self
@@ -212,7 +215,7 @@ class VCS
       end
     end
 
-    def export(revision, url, dir)
+    def export(revision, url, dir, keep_temp = false)
       if @srcdir and (rootdir = wcroot)
         srcdir = File.realpath(@srcdir)
         rootdir << "/"
@@ -222,7 +225,7 @@ class VCS
           FileUtils.mkdir_p(svndir = dir+"/.svn")
           FileUtils.ln_s(Dir.glob(rootdir+"/.svn/*"), svndir)
           system("svn", "-q", "revert", "-R", subdir || ".", :chdir => dir) or return false
-          FileUtils.rm_rf(svndir)
+          FileUtils.rm_rf(svndir) unless keep_temp
           if subdir
             tmpdir = Dir.mktmpdir("tmp-co.", "#{dir}/#{subdir}")
             File.rename(tmpdir, tmpdir = "#{dir}/#{File.basename(tmpdir)}")
@@ -240,6 +243,10 @@ class VCS
         pipe.each {|line| /^A/ =~ line or yield line}
       end
       $?.success?
+    end
+
+    def after_export(dir)
+      FileUtils.rm_rf(dir+"/.svn")
     end
   end
 
@@ -308,10 +315,14 @@ class VCS
       end
     end
 
-    def export(revision, url, dir)
+    def export(revision, url, dir, keep_temp = false)
       ret = system("git", "clone", "-s", (@srcdir || '.'), "-b", url, dir)
-      FileUtils.rm_rf("#{dir}/.git") if ret
+      FileUtils.rm_rf("#{dir}/.git") if ret and !keep_temp
       ret
+    end
+
+    def after_export(dir)
+      FileUtils.rm_rf("#{dir}/.git")
     end
   end
 end
