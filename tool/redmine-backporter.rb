@@ -8,6 +8,12 @@ require 'stringio'
 require 'strscan'
 require 'optparse'
 require 'pp'
+begin
+  require 'readline'
+rescue LoadError
+else
+  include Readline
+end
 
 VERSION = '0.0.1'
 
@@ -195,7 +201,7 @@ def more(sio)
   end
 end
 
-def readline(prompt = '')
+def Readline.readline(prompt = '')
   console = IO.console
   console.binmode
   ly, lx = console.winsize
@@ -226,7 +232,7 @@ def readline(prompt = '')
       line << c
     end
   end
-end
+end unless defined?(Readline.readline)
 
 def mergeinfo
   `svn propget svn:mergeinfo #{RUBY_REPO_PATH}`
@@ -266,7 +272,7 @@ puts "Backporter #{VERSION}".color(bold: true) + " for #{TARGET_VERSION}"
 @changesets = nil
 while true
   begin
-    l = readline '> '
+    l = Readline.readline '> '
   rescue Interrupt
     break
   end
