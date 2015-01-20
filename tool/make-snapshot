@@ -311,6 +311,16 @@ def package(vcs, rev, destdir, tmp = nil)
     end
     vcs.after_export(".") if exported
     FileUtils.rm_rf(clean)
+    FileUtils.rm_rf(".downloaded-cache")
+    if File.exist?("gems/bundled_gems")
+      gems = Dir.glob("gems/*.gem")
+      gems -= File.readlines("gems/bundled_gems").map {|line|
+        'gems/'+line.split(' ').join('-')+'.gem'
+      }
+      FileUtils.rm_f(gems)
+    else
+      FileUtils.rm_rf("gems")
+    end
     unless $?.success?
       puts " failed"
       return
