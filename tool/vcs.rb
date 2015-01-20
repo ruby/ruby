@@ -161,13 +161,16 @@ class VCS
         info = get_info
         @wcroot = info[/<wcroot-abspath>(.*)<\/wcroot-abspath>/, 1]
         unless @wcroot
-          parent = File.realpath(@srcdir)
           begin
-            parent = File.dirname(wkdir = parent)
-            if File.directory?(wkdir + "/.svn")
-              break @wcroot = wkdir
-            end
-          end until parent == wkdir
+            parent = File.realpath(@srcdir)
+            begin
+              parent = File.dirname(wkdir = parent)
+              if File.directory?(wkdir + "/.svn")
+                break @wcroot = wkdir
+              end
+            end until parent == wkdir
+          rescue TypeError
+          end
         end
       end
       @wcroot
