@@ -14,10 +14,10 @@ Tue Jan 20 11:23:47 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Tue Jan 20 02:54:11 2015  Zachary Scott  <e@zzak.io>
 
-        * file.c: NotImplementedError is raised if birthtime is unavailable.
-          Patch by @y-yagi san and [Fixes GH-817] [ci skip] [DOC]
+	* file.c: NotImplementedError is raised if birthtime is unavailable.
+	  Patch by @y-yagi san and [Fixes GH-817] [ci skip] [DOC]
 
-        * ext/pathname/pathname.c: ditto.
+	* ext/pathname/pathname.c: ditto.
 
 Mon Jan 19 22:08:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
