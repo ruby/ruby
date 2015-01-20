@@ -202,17 +202,16 @@ def mygets
   line = ''
   while 1
     case c = console.getch
-    when "\r"
+    when "\r", "\n"
       puts
       line << c
       return line
-    when "\x07", "\b" # DEL/BS
-      print "\b"
-      line.chop!
-    when "\x15" # C-u
+    when "\C-?", "\b" # DEL/BS
+      print "\b \b" if line.chop!
+    when "\C-u"
       print cls
       line.clear
-    when "\x04" # C-d
+    when "\C-d"
       return nil if line.empty?
       line << c
     else
