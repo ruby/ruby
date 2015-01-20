@@ -201,6 +201,7 @@ def readline(prompt = '')
   cls = "\r" + (" " * lx) + "\r" + prompt
   console.print prompt
   console.flush
+  return gets.chomp if /mswin|mingw/ =~ RUBY_PLATFORM
   line = ''
   while 1
     case c = console.getch

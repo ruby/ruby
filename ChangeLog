@@ -1,3 +1,8 @@
+Tue Jan 20 12:28:37 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* tool/redmine-backporter.rb (readline): fallback to normal gets on
+	  Windows because IO.console.getch is not always do as expected.
+
 Tue Jan 20 11:31:07 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* tool/redmine-backporter.rb: update usage.
