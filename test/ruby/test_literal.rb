@@ -434,4 +434,14 @@ class TestRubyLiteral < Test::Unit::TestCase
     }
   end
 
+  def test_symbol_list
+    assert_equal([:foo, :bar], %i[foo bar])
+    assert_equal([:"\"foo"], %i["foo])
+
+    x = 10
+    assert_equal([:foo, :b10], %I[foo b#{x}])
+    assert_equal([:"\"foo10"], %I["foo#{x}])
+
+    assert_ruby_status(["--disable-gems", "--dump=parsetree"], "%I[foo bar]")
+  end
 end

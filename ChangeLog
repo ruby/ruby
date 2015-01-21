@@ -1,3 +1,8 @@
+Thu Jan 22 00:54:00 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (symbol_list): fix the node type of literal symbol list
+	  with no interpolation.  [ruby-core:66343]
+
 Thu Jan 22 00:49:52 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c: [DOC] Revise documentation by Marcus Stollsteimer at
