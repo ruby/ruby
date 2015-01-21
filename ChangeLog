@@ -1,3 +1,8 @@
+Wed Jan 21 09:09:19 2015  Tanaka Akira  <akr@fsij.org>
+
+	* NEWS: References to tickets added.
+	  [ruby-core:67701] [Bug #10760] Suggested by Zachary Scott.
+
 Tue Jan 20 22:59:54 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* tool/vcs.rb: fix the exception given remote-url of svn.
