@@ -892,6 +892,7 @@ rb_stat_ctime(VALUE self)
  *     stat.birthtime  ->  aTime
  *
  *  Returns the birth time for <i>stat</i>.
+ *
  *  If the platform doesn't have birthtime, raises NotImplementedError.
  *
  *     File.write("testfile", "foo")
@@ -2193,9 +2194,9 @@ rb_file_ctime(VALUE obj)
  *
  *  _file_name_ can be an IO object.
  *
- *  Note that on Windows (NTFS), returns creation time (birth time).
- *
  *     File.birthtime("testfile")   #=> Wed Apr 09 08:53:13 CDT 2003
+ *
+ *  If the platform doesn't have birthtime, raises NotImplementedError.
  *
  */
 
@@ -2221,9 +2222,9 @@ rb_file_s_birthtime(VALUE klass, VALUE fname)
  *
  *  Returns the birth time for <i>file</i>.
  *
- *  Note that on Windows (NTFS), returns creation time (birth time).
- *
  *     File.new("testfile").birthtime   #=> Wed Apr 09 08:53:14 CDT 2003
+ *
+ *  If the platform doesn't have birthtime, raises NotImplementedError.
  *
  */
 

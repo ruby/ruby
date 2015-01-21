@@ -1,3 +1,8 @@
+Wed Jan 21 09:40:52 2015  Zachary Scott  <e@zzak.io>
+
+        * file.c: Document other cases of missing birthtime on OS with patch
+          provided by @sho-h similar to GH-817. [ci skip] [DOC]
+
 Wed Jan 21 09:09:19 2015  Tanaka Akira  <akr@fsij.org>
 
 	* NEWS: References to tickets added.
