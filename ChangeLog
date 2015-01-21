@@ -1,3 +1,8 @@
+Thu Jan 22 00:25:15 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_f_load): path name needs to be transcoded to OS path
+	  encoding.  [ruby-list:49994]
+
 Wed Jan 21 04:36:27 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (NET_LUID): include winsock2.h instead of windows.h.
