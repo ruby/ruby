@@ -405,7 +405,7 @@ clean-ext distclean-ext realclean-ext::
 	@cd ext 2>/dev/null || exit 0; set dummy `echo "${EXTS}" | tr , ' '`; shift; \
 	test "$$#" = 0 && set .; \
 	set dummy `\
-	    find "$$@" -name Makefile -print | sed 's:^\./::;s:/Makefile$$:~:' | sort | sed 's:~$$::'; \
+	    find "$$@" -name Makefile -print | sed 's:^\./::;s:/Makefile$$::' | sort; \
 	`; shift; \
 	cd ..; \
 	for dir do \
