@@ -978,6 +978,19 @@ prev_frame_func(void)
     return frame_func_id(prev_cfp);
 }
 
+ID
+rb_frame_last_func(void)
+{
+    rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = th->cfp;
+    ID mid;
+
+    while (!(mid = frame_func_id(cfp)) &&
+	   (cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp),
+	    !RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp)));
+    return mid;
+}
+
 /*
  *  call-seq:
  *     append_features(mod)   -> mod
