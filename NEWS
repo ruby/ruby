@@ -20,7 +20,7 @@ with all sufficient information, see the ChangeLog file.
 * Array
   * Array#select!, Array#keep_if, Array#reject!, and Array#delete_if
     no longer changes the receiver array instantly every time the
-    block is called.  [Bug #10714]
+    block is called.  [Feature #10714]
 
 * IO
   * IO#close doesn't raise when the IO object is closed.  [Feature #10718]
