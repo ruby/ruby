@@ -1,3 +1,29 @@
+Thu Jan 22 00:49:52 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c: [DOC] Revise documentation by Marcus Stollsteimer at
+	  [ruby-core:66368].  [Bug #10526]
+
+	  * #inspect: be more specific about generated string, remove
+	    obsolete example.
+	  * #nil?: use code examples instead of different call-seq's.
+	  * #tap: clarify what is yielded.
+	  * Integer(): be more specific about to_int and to_i, remove
+	    reference to Ruby 1.8.
+	  * Array(): fix error.
+	  * Class: fix variable name style and indentation in example.
+	  * improve consistency, fix typos and formatting.
+
+Thu Jan 22 00:49:52 2015  Benoit Daloze  <eregontp@gmail.com>
+
+	* object.c (Module#const_defined?): [DOC] Revise the documentation.
+	  Patch by Xavier Noria.
+	  [Fixes GH-754] https://github.com/ruby/ruby/pull/754
+
+Thu Jan 22 00:49:52 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* object.c: fix document of Kernel.Stirng by @suzukaze
+	  [fix GH-743][ci skip]
+
 Thu Jan 22 00:25:15 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (rb_f_load): path name needs to be transcoded to OS path

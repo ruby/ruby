@@ -433,6 +433,8 @@ f_complex_new2(VALUE klass, VALUE x, VALUE y)
  *
  *    Complex(1, 2)    #=> (1+2i)
  *    Complex('1+2i')  #=> (1+2i)
+ *    Complex(nil)     #=> TypeError
+ *    Complex(1, nil)  #=> TypeError
  *
  * Syntax of string form:
  *
