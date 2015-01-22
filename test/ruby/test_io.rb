@@ -2742,7 +2742,7 @@ End
       }
 
       IO.select(tempfiles)
-  }, bug8080
+    }, bug8080, timeout: 30
   end
 
   def test_read_32bit_boundary
