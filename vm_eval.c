@@ -1100,10 +1100,9 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
     else {
 	VALUE err = th->errinfo;
 	if (state == TAG_BREAK) {
-	    VALUE *escape_ep = GET_THROWOBJ_CATCH_POINT(err);
-	    VALUE *cep = cfp->ep;
+	    rb_control_frame_t *escape_cfp = GET_THROWOBJ_CATCH_POINT(err);
 
-	    if (cep == escape_ep) {
+	    if (cfp == escape_cfp) {
 		state = 0;
 		th->state = 0;
 		th->errinfo = Qnil;
@@ -1116,10 +1115,9 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
 	    }
 	}
 	else if (state == TAG_RETRY) {
-	    VALUE *escape_ep = GET_THROWOBJ_CATCH_POINT(err);
-	    VALUE *cep = cfp->ep;
+	    rb_control_frame_t *escape_cfp = GET_THROWOBJ_CATCH_POINT(err);
 
-	    if (cep == escape_ep) {
+	    if (cfp == escape_cfp) {
 		rb_vm_rewind_cfp(th, cfp);
 
 		state = 0;

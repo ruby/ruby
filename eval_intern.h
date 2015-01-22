@@ -207,7 +207,7 @@ enum ruby_tag_type {
   (RNODE((obj))->u3.value = (val))
 
 #define GET_THROWOBJ_VAL(obj)         ((VALUE)RNODE((obj))->u1.value)
-#define GET_THROWOBJ_CATCH_POINT(obj) ((VALUE*)RNODE((obj))->u2.value)
+#define GET_THROWOBJ_CATCH_POINT(obj) ((rb_control_frame_t*)RNODE((obj))->u2.value)
 #define GET_THROWOBJ_STATE(obj)       ((int)RNODE((obj))->u3.value)
 
 #define SCOPE_TEST(f)  (rb_vm_cref()->nd_visi & (f))

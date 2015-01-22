@@ -1,3 +1,13 @@
+Thu Jan 22 11:45:32 2015  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* eval_intern.h, vm.c, vm_eval.c, vm_insnhelper.c:
+	  change throw mechanism (not save target ep, but save target cfp).
+	  It fixes `unexpected break' bug that occurs when
+	  TracePoint#binding is called.
+	  [ruby-dev:48797] [Bug #10689]
+
+	* test/ruby/test_settracefunc.rb: add a test.
+
 Tue Jan 20 14:05:08 2015  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_invoke): avoid SEGV when VT_RECORD

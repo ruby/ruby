@@ -977,6 +977,27 @@ class TestSetTraceFunc < Test::Unit::TestCase
     end
   end
 
+  def test_trace_point_binding_after_break
+    bug10689 = '[ruby-dev:48797]'
+    assert_in_out_err([], <<-INPUT, [], [], bug10689)
+      class Bug
+        include Enumerable
+
+        def each
+          [0].each do
+            yield
+          end
+        end
+      end
+
+      TracePoint.trace(:c_return) do |tp|
+        tp.binding
+      end
+
+      Bug.new.all? { false }
+    INPUT
+  end
+
   def test_tracepoint_b_return_with_next
     n = 0
     TracePoint.new(:b_return){

@@ -573,174 +573,175 @@ vm_setinstancevariable(VALUE obj, ID id, VALUE val, IC ic)
 }
 
 static VALUE
+vm_throw_continue(rb_thread_t *th, VALUE throwobj)
+{
+    /* continue throw */
+    VALUE err = throwobj;
+
+    if (FIXNUM_P(err)) {
+	th->state = FIX2INT(err);
+    }
+    else if (SYMBOL_P(err)) {
+	th->state = TAG_THROW;
+    }
+    else if (BUILTIN_TYPE(err) == T_NODE) {
+	th->state = GET_THROWOBJ_STATE(err);
+    }
+    else {
+	th->state = TAG_RAISE;
+	/*th->state = FIX2INT(rb_ivar_get(err, idThrowState));*/
+    }
+    return err;
+}
+
+static VALUE
+vm_throw_start(rb_thread_t * const th, rb_control_frame_t * const reg_cfp, int state, const int flag, const rb_num_t level, const VALUE throwobj)
+{
+    rb_control_frame_t *escape_cfp = NULL;
+    const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(th); /* end of control frame pointer */
+
+    if (flag != 0) {
+	/* do nothing */
+    }
+    else if (state == TAG_BREAK) {
+	int is_orphan = 1;
+	VALUE *ep = GET_EP();
+	rb_iseq_t *base_iseq = GET_ISEQ();
+	escape_cfp = reg_cfp;
+
+      search_parent:
+	if (base_iseq->type != ISEQ_TYPE_BLOCK) {
+	    if (escape_cfp->iseq->type == ISEQ_TYPE_CLASS) {
+		escape_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(escape_cfp);
+		ep = escape_cfp->ep;
+		base_iseq = escape_cfp->iseq;
+		goto search_parent;
+	    }
+	    else {
+		ep = VM_EP_PREV_EP(ep);
+		base_iseq = base_iseq->parent_iseq;
+		escape_cfp = rb_vm_search_cf_from_ep(th, escape_cfp, ep);
+		assert(escape_cfp->iseq == base_iseq);
+	    }
+	}
+
+	if (VM_FRAME_TYPE(escape_cfp) == VM_FRAME_MAGIC_LAMBDA) {
+	    /* lambda{... break ...} */
+	    is_orphan = 0;
+	    state = TAG_RETURN;
+	}
+	else {
+	    ep = VM_EP_PREV_EP(ep);
+
+	    while (escape_cfp < eocfp) {
+		if (escape_cfp->ep == ep) {
+		    const VALUE epc = escape_cfp->pc - escape_cfp->iseq->iseq_encoded;
+		    const rb_iseq_t * const iseq = escape_cfp->iseq;
+		    const struct iseq_catch_table * const ct = iseq->catch_table;
+		    const int ct_size = ct->size;
+		    int i;
+
+		    for (i=0; i<ct_size; i++) {
+			const struct iseq_catch_table_entry * const entry = &ct->entries[i];;
+
+			if (entry->type == CATCH_TYPE_BREAK && entry->start < epc && entry->end >= epc) {
+			    if (entry->cont == epc) { /* found! */
+				is_orphan = 0;
+			    }
+			    break;
+			}
+		    }
+		    break;
+		}
+
+		escape_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(escape_cfp);
+	    }
+	}
+
+	if (is_orphan) {
+	    rb_vm_localjump_error("break from proc-closure", throwobj, TAG_BREAK);
+	}
+    }
+    else if (state == TAG_RETRY) {
+	rb_num_t i;
+	VALUE *ep = VM_EP_PREV_EP(GET_EP());
+
+	for (i = 0; i < level; i++) {
+	    ep = VM_EP_PREV_EP(ep);
+	}
+
+	escape_cfp = rb_vm_search_cf_from_ep(th, reg_cfp, ep);
+    }
+    else if (state == TAG_RETURN) {
+	VALUE *current_ep = GET_EP();
+	VALUE *target_lep = VM_EP_LEP(current_ep);
+	int in_class_frame = 0;
+	escape_cfp = reg_cfp;
+
+	while (escape_cfp < eocfp) {
+	    VALUE *lep = VM_CF_LEP(escape_cfp);
+
+	    if (!target_lep) {
+		target_lep = lep;
+	    }
+
+	    if (lep == target_lep && escape_cfp->iseq->type == ISEQ_TYPE_CLASS) {
+		in_class_frame = 1;
+		target_lep = 0;
+	    }
+
+	    if (lep == target_lep) {
+		if (VM_FRAME_TYPE(escape_cfp) == VM_FRAME_MAGIC_LAMBDA) {
+		    if (in_class_frame) {
+			/* lambda {class A; ... return ...; end} */
+			goto valid_return;
+		    }
+		    else {
+			VALUE *tep = current_ep;
+
+			while (target_lep != tep) {
+			    if (escape_cfp->ep == tep) {
+				/* in lambda */
+				goto valid_return;
+			    }
+			    tep = VM_EP_PREV_EP(tep);
+			}
+		    }
+		}
+	    }
+
+	    if (escape_cfp->ep == target_lep && escape_cfp->iseq->type == ISEQ_TYPE_METHOD) {
+		goto valid_return;
+	    }
+
+	    escape_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(escape_cfp);
+	}
+	rb_vm_localjump_error("unexpected return", throwobj, TAG_RETURN);
+
+      valid_return:;
+	/* do nothing */
+    }
+    else {
+	rb_bug("isns(throw): unsupport throw type");
+    }
+
+    th->state = state;
+    return (VALUE)NEW_THROW_OBJECT(throwobj, (VALUE)escape_cfp, state);
+}
+
+static VALUE
 vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 	 rb_num_t throw_state, VALUE throwobj)
 {
-    int state = (int)(throw_state & 0xff);
-    int flag = (int)(throw_state & 0x8000);
-    rb_num_t level = throw_state >> 16;
+    const int state = (int)(throw_state & 0xff);
+    const int flag = (int)(throw_state & 0x8000);
+    const rb_num_t level = throw_state >> 16;
 
     if (state != 0) {
-	VALUE *pt = 0;
-	if (flag != 0) {
-	    pt = (void *) 1;
-	}
-	else {
-	    if (state == TAG_BREAK) {
-		rb_control_frame_t *cfp = GET_CFP();
-		VALUE *ep = GET_EP();
-		int is_orphan = 1;
-		rb_iseq_t *base_iseq = GET_ISEQ();
-
-	      search_parent:
-		if (cfp->iseq->type != ISEQ_TYPE_BLOCK) {
-		    if (cfp->iseq->type == ISEQ_TYPE_CLASS) {
-			cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-			ep = cfp->ep;
-			goto search_parent;
-		    }
-		    ep = VM_EP_PREV_EP(ep);
-		    base_iseq = base_iseq->parent_iseq;
-
-		    while ((VALUE *) cfp < th->stack + th->stack_size) {
-			if (cfp->ep == ep) {
-			    goto search_parent;
-			}
-			cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-		    }
-		    rb_bug("VM (throw): can't find break base.");
-		}
-
-		if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_LAMBDA) {
-		    /* lambda{... break ...} */
-		    is_orphan = 0;
-		    pt = cfp->ep;
-		    state = TAG_RETURN;
-		}
-		else {
-		    ep = VM_EP_PREV_EP(ep);
-
-		    while ((VALUE *)cfp < th->stack + th->stack_size) {
-			if (cfp->ep == ep) {
-			    VALUE epc = cfp->pc - cfp->iseq->iseq_encoded;
-			    rb_iseq_t *iseq = cfp->iseq;
-			    struct iseq_catch_table *ct = iseq->catch_table;
-			    struct iseq_catch_table_entry *entry;
-			    int i;
-
-			    for (i=0; i<ct->size; i++) {
-				entry = &ct->entries[i];
-
-				if (entry->type == CATCH_TYPE_BREAK &&
-				    entry->start < epc && entry->end >= epc) {
-				    if (entry->cont == epc) {
-					goto found;
-				    }
-				    else {
-					break;
-				    }
-				}
-			    }
-			    break;
-
-			  found:
-			    pt = ep;
-			    is_orphan = 0;
-			    break;
-			}
-			cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-		    }
-		}
-
-		if (is_orphan) {
-		    rb_vm_localjump_error("break from proc-closure", throwobj, TAG_BREAK);
-		}
-	    }
-	    else if (state == TAG_RETRY) {
-		rb_num_t i;
-		pt = VM_EP_PREV_EP(GET_EP());
-		for (i = 0; i < level; i++) {
-		    pt = GC_GUARDED_PTR_REF((VALUE *) * pt);
-		}
-	    }
-	    else if (state == TAG_RETURN) {
-		rb_control_frame_t *cfp = GET_CFP();
-		VALUE *ep = GET_EP();
-		VALUE *target_lep = VM_CF_LEP(cfp);
-		int in_class_frame = 0;
-
-		/* check orphan and get dfp */
-		while ((VALUE *) cfp < th->stack + th->stack_size) {
-		    VALUE *lep = VM_CF_LEP(cfp);
-
-		    if (!target_lep) {
-			target_lep = lep;
-		    }
-
-		    if (lep == target_lep && cfp->iseq->type == ISEQ_TYPE_CLASS) {
-			in_class_frame = 1;
-			target_lep = 0;
-		    }
-
-		    if (lep == target_lep) {
-			if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_LAMBDA) {
-			    VALUE *tep = ep;
-
-			    if (in_class_frame) {
-				/* lambda {class A; ... return ...; end} */
-				ep = cfp->ep;
-				goto valid_return;
-			    }
-
-			    while (target_lep != tep) {
-				if (cfp->ep == tep) {
-				    /* in lambda */
-				    ep = cfp->ep;
-				    goto valid_return;
-				}
-				tep = VM_EP_PREV_EP(tep);
-			    }
-			}
-		    }
-
-		    if (cfp->ep == target_lep && cfp->iseq->type == ISEQ_TYPE_METHOD) {
-			ep = target_lep;
-			goto valid_return;
-		    }
-
-		    cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-		}
-
-		rb_vm_localjump_error("unexpected return", throwobj, TAG_RETURN);
-
-	      valid_return:
-		pt = ep;
-	    }
-	    else {
-		rb_bug("isns(throw): unsupport throw type");
-	    }
-	}
-	th->state = state;
-	return (VALUE)NEW_THROW_OBJECT(throwobj, (VALUE) pt, state);
+	return vm_throw_start(th, reg_cfp, state, flag, level, throwobj);
     }
     else {
-	/* continue throw */
-	VALUE err = throwobj;
-
-	if (FIXNUM_P(err)) {
-	    th->state = FIX2INT(err);
-	}
-	else if (SYMBOL_P(err)) {
-	    th->state = TAG_THROW;
-	}
-	else if (BUILTIN_TYPE(err) == T_NODE) {
-	    th->state = GET_THROWOBJ_STATE(err);
-	}
-	else {
-	    th->state = TAG_RAISE;
-	    /*th->state = FIX2INT(rb_ivar_get(err, idThrowState));*/
-	}
-	return err;
+	return vm_throw_continue(th, throwobj);
     }
 }
 
