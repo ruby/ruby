@@ -199,9 +199,6 @@ You may also create symbols by interpolation:
   :"my_symbol1"
   :"my_symbol#{1 + 1}"
 
-Note that symbols are never garbage collected so be careful when referencing
-symbols using interpolation.
-
 Like strings, a single-quote may be used to disable interpolation:
 
   :'my_symbol#{1 + 1}' #=> :"my_symbol\#{1 + 1}"

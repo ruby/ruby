@@ -1,3 +1,9 @@
+Thu Jan 22 11:47:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* doc/syntax/literals.rdoc (Symbols): now Symbols created by
+	  interpolation can be garbage collected.  patch by Yihang Ho in
+	  [ruby-core:67194].  [Bug #10671]
+
 Thu Jan 22 11:45:32 2015  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* eval_intern.h, vm.c, vm_eval.c, vm_insnhelper.c:
