@@ -1,3 +1,8 @@
+Thu Jan 22 18:15:41 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* ext/zlib/zlib.c: fix document of method signatures.
+	  [Bug #10668][ruby-core:67186][ci skip]
+
 Thu Jan 22 18:10:35 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/ruby/test_io.rb: added timeout for AIX environment.
