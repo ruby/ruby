@@ -123,6 +123,10 @@ require 'monitor'
 #      logger = Logger.new('foo.log', 'weekly')
 #      logger = Logger.new('foo.log', 'monthly')
 #
+# 6. Create a logger which ages the logfile with a specific filename format.
+#
+#      logger = Logger.new('foo.log', 'daily', 1024000, '%Y-%m-%d')
+#
 # === How to log a message
 #
 # Notice the different methods (+fatal+, +error+, +info+) being used to log
@@ -303,12 +307,15 @@ class Logger
   #   +weekly+ or +monthly+).
   # +shift_size+::
   #   Maximum logfile size (only applies when +shift_age+ is a number).
+  # +shift_log_period_format+::
+  #   Format of the filename extension for log rolling (Uses +%Y+ for year,
+  #   +%m+ for month and +%d+ for day).
   #
   # === Description
   #
   # Create an instance.
   #
-  def initialize(logdev, shift_age = 0, shift_size = 1048576)
+  def initialize(logdev, shift_age = 0, shift_size = 1048576, shift_log_period_format = '%Y%m%d')
     @progname = nil
     @level = DEBUG
     @default_formatter = Formatter.new
@@ -316,7 +323,7 @@ class Logger
     @logdev = nil
     if logdev
       @logdev = LogDevice.new(logdev, :shift_age => shift_age,
-        :shift_size => shift_size)
+        :shift_size => shift_size, :shift_log_period_format => shift_log_period_format)
     end
   end
 
@@ -576,7 +583,7 @@ private
     end
 
     def initialize(log = nil, opt = {})
-      @dev = @filename = @shift_age = @shift_size = nil
+      @dev = @filename = @shift_age = @shift_size = @shift_log_period_format = nil
       @mutex = LogDeviceMutex.new
       if log.respond_to?(:write) and log.respond_to?(:close)
         @dev = log
@@ -586,6 +593,7 @@ private
         @filename = log
         @shift_age = opt[:shift_age] || 7
         @shift_size = opt[:shift_size] || 1048576
+        @shift_log_period_format = opt[:shift_log_period_format] || '%Y%m%d'
         @next_rotate_time = next_rotate_time(Time.now, @shift_age) unless @shift_age.is_a?(Integer)
       end
     end
@@ -716,7 +724,7 @@ private
     end
 
     def shift_log_period(period_end)
-      postfix = period_end.strftime("%Y%m%d") # YYYYMMDD
+      postfix = period_end.strftime(@shift_log_period_format || "%Y%m%d") # YYYYMMDD
       age_file = "#{@filename}.#{postfix}"
       if FileTest.exist?(age_file)
         # try to avoid filename crash caused by Timestamp change.

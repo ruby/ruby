@@ -220,6 +220,42 @@ class TestLogDevice < Test::Unit::TestCase
     end
   end
 
+  def test_shifting_log_period_format
+    # shift_age other than 'daily', 'weekly', and 'monthly' means 'everytime'
+    format = "%Y-%m-%d"
+    yyyymmdd = Time.now.strftime(format)
+    filename1 = @filename + ".#{yyyymmdd}"
+    filename2 = @filename + ".#{yyyymmdd}.1"
+    filename3 = @filename + ".#{yyyymmdd}.2"
+    begin
+      logger = Logger.new(@filename, 'now', 1048576, format)
+      assert(File.exist?(@filename))
+      assert(!File.exist?(filename1))
+      assert(!File.exist?(filename2))
+      assert(!File.exist?(filename3))
+      logger.info("0" * 15)
+      assert(File.exist?(@filename))
+      assert(File.exist?(filename1))
+      assert(!File.exist?(filename2))
+      assert(!File.exist?(filename3))
+      logger.warn("0" * 15)
+      assert(File.exist?(@filename))
+      assert(File.exist?(filename1))
+      assert(File.exist?(filename2))
+      assert(!File.exist?(filename3))
+      logger.error("0" * 15)
+      assert(File.exist?(@filename))
+      assert(File.exist?(filename1))
+      assert(File.exist?(filename2))
+      assert(File.exist?(filename3))
+    ensure
+      logger.close if logger
+      [filename1, filename2, filename3].each do |filename|
+        File.unlink(filename) if File.exist?(filename)
+      end
+    end
+  end
+
   def test_shifting_size_in_multiprocess
     tmpfile = Tempfile.new([File.basename(__FILE__, '.*'), '_1.log'])
     logfile = tmpfile.path
