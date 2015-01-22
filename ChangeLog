@@ -1,3 +1,11 @@
+Thu Jan 22 18:03:19 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* tool/redmine-backporter.rb (find_svn_log): use double quotes instead
+	  of single quotes because cmd.exe doesn't handle them.
+
+	* tool/redmine-backporter.rb (done): the 2nd element of matched data
+	  is the offset of the end of matched string, not length.
+
 Thu Jan 22 16:45:24 2015  Eric Wong  <e@80x24.org>
 
 	* st.c (st_numhash): mix float value for flonum

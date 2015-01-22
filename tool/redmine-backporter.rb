@@ -238,7 +238,7 @@ def mergeinfo
 end
 
 def find_svn_log(pattern)
-  `svn log --xml --stop-on-copy --search='#{pattern}' #{RUBY_REPO_PATH}`
+  `svn log --xml --stop-on-copy --search="#{pattern}" #{RUBY_REPO_PATH}`
 end
 
 def show_last_journal(http, uri)
@@ -389,7 +389,7 @@ eom
       if h and val = h["value"]
         case val[/(?:\A|, )#{Regexp.quote TARGET_VERSION}: ([^,]+)/, 1]
         when 'REQUIRED', 'UNKNOWN', 'DONTNEED', 'WONTFIX'
-          val[*$~.offset(1)] = 'DONE'
+          val[$~.offset(1)[0]...$~.offset(1)[1]] = 'DONE'
         when 'DONE' # , /\A\d+\z/
           puts 'already backport is done'
           next # already done
