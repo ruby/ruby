@@ -1,3 +1,11 @@
+Thu Jan 22 16:45:24 2015  Eric Wong  <e@80x24.org>
+
+	* st.c (st_numhash): mix float value for flonum
+	* hash.c (rb_any_hash): ditto
+	* benchmark/bm_hash_aref_flo.rb: new benchmark
+	* benchmark/bm_hash_ident_flo.rb: ditto
+	  [Bug #10761]
+
 Wed Jan 21 22:33:51 2015  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/ruby-electric.el: Import version 2.2.1 from
