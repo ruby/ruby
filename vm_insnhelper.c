@@ -620,6 +620,7 @@ vm_throw_start(rb_thread_t * const th, rb_control_frame_t * const reg_cfp, int s
 		base_iseq = base_iseq->parent_iseq;
 		escape_cfp = rb_vm_search_cf_from_ep(th, escape_cfp, ep);
 		assert(escape_cfp->iseq == base_iseq);
+		goto search_parent;
 	    }
 	}
 
