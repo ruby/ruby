@@ -128,9 +128,9 @@ class VCS
     else
       '.'
     end
+  end
 
-    def after_export(dir)
-    end
+  def after_export(dir)
   end
 
   class SVN < self
