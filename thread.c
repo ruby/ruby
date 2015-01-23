@@ -4676,14 +4676,6 @@ rb_thread_shield_destroy(VALUE self)
 }
 
 static VALUE
-ident_hash_new(void)
-{
-    VALUE hash = rb_hash_new();
-    rb_hash_tbl_raw(hash)->type = &st_hashtype_num;
-    return hash;
-}
-
-static VALUE
 threadptr_recursive_hash(rb_thread_t *th)
 {
     return th->local_storage_recursive_hash;
@@ -4710,7 +4702,7 @@ recursive_list_access(VALUE sym)
     VALUE hash = threadptr_recursive_hash(th);
     VALUE list;
     if (NIL_P(hash) || !RB_TYPE_P(hash, T_HASH)) {
-	hash = ident_hash_new();
+	hash = rb_ident_hash_new();
 	threadptr_recursive_hash_set(th, hash);
 	list = Qnil;
     }
@@ -4718,7 +4710,7 @@ recursive_list_access(VALUE sym)
 	list = rb_hash_aref(hash, sym);
     }
     if (NIL_P(list) || !RB_TYPE_P(list, T_HASH)) {
-	list = ident_hash_new();
+	list = rb_ident_hash_new();
 	rb_hash_aset(hash, sym, list);
     }
     return list;

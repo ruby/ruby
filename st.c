@@ -1750,26 +1750,6 @@ st_numcmp(st_data_t x, st_data_t y)
 st_index_t
 st_numhash(st_data_t n)
 {
-    /*
-     * This hash function is lightly-tuned for Ruby.  Further tuning
-     * should be possible.  Notes:
-     *
-     * - (n >> 3) alone is great for heap objects and OK for fixnum,
-     *   however symbols perform poorly.
-     * - (n >> (RUBY_SPECIAL_SHIFT+3)) was added to make symbols hash well,
-     *   n.b.: +3 to remove ID scope, +1 worked well initially, too
-     * - (n << 3) was finally added to avoid losing bits for fixnums
-     * - avoid expensive modulo instructions, it is currently only
-     *   shifts and bitmask operations.
-     * - flonum (on 64-bit) is pathologically bad, mix the actual
-     *   float value in, but do not use the float value as-is since
-     *   many integers get interpreted as 2.0 or -2.0 [Bug #10761]
-     */
-#ifdef USE_FLONUM /* RUBY */
-    if (FLONUM_P(n)) {
-	n ^= (st_data_t)rb_float_value(n);
-    }
-#endif
-
-    return (st_index_t)((n>>(RUBY_SPECIAL_SHIFT+3)|(n<<3)) ^ (n>>3));
+    enum {s1 = 11, s2 = 3};
+    return (st_index_t)((n>>s1|(n<<s2)) ^ (n>>s2));
 }

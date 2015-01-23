@@ -177,7 +177,39 @@ static const struct st_hash_type objhash = {
     rb_any_hash,
 };
 
-#define identhash st_hashtype_num
+#define rb_ident_cmp st_numcmp
+
+static st_index_t
+rb_ident_hash(st_data_t n)
+{
+    /*
+     * This hash function is lightly-tuned for Ruby.  Further tuning
+     * should be possible.  Notes:
+     *
+     * - (n >> 3) alone is great for heap objects and OK for fixnum,
+     *   however symbols perform poorly.
+     * - (n >> (RUBY_SPECIAL_SHIFT+3)) was added to make symbols hash well,
+     *   n.b.: +3 to remove ID scope, +1 worked well initially, too
+     * - (n << 3) was finally added to avoid losing bits for fixnums
+     * - avoid expensive modulo instructions, it is currently only
+     *   shifts and bitmask operations.
+     * - flonum (on 64-bit) is pathologically bad, mix the actual
+     *   float value in, but do not use the float value as-is since
+     *   many integers get interpreted as 2.0 or -2.0 [Bug #10761]
+     */
+#ifdef USE_FLONUM /* RUBY */
+    if (FLONUM_P(n)) {
+	n ^= (st_data_t)rb_float_value(n);
+    }
+#endif
+
+    return (st_index_t)((n>>(RUBY_SPECIAL_SHIFT+3)|(n<<3)) ^ (n>>3));
+}
+
+static const struct st_hash_type identhash = {
+    rb_ident_cmp,
+    rb_ident_hash,
+};
 
 typedef int st_foreach_func(st_data_t, st_data_t, st_data_t);
 
@@ -2507,6 +2539,14 @@ rb_hash_compare_by_id_p(VALUE hash)
 	return Qtrue;
     }
     return Qfalse;
+}
+
+VALUE
+rb_ident_hash_new(void)
+{
+    VALUE hash = rb_hash_new();
+    RHASH(hash)->ntbl = st_init_table(&identhash);
+    return hash;
 }
 
 static int
