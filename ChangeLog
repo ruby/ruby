@@ -1,3 +1,7 @@
+Fri Jan 23 17:12:33 2015  Eric Wong  <e@80x24.org>
+
+	* benchmark/bm_marshal_dump_flo.rb: new benchmark for [Bug #10761]
+
 Thu Jan 22 18:03:19 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* tool/redmine-backporter.rb (find_svn_log): use double quotes instead
