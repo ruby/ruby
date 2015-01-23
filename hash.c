@@ -2549,6 +2549,18 @@ rb_ident_hash_new(void)
     return hash;
 }
 
+st_table *
+rb_init_identtable(void)
+{
+    return st_init_table(&identhash);
+}
+
+st_table *
+rb_init_identtable_with_size(st_index_t size)
+{
+    return st_init_table_with_size(&identhash, size);
+}
+
 static int
 any_p_i(VALUE key, VALUE value, VALUE arg)
 {

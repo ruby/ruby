@@ -1,3 +1,11 @@
+Fri Jan 23 20:00:59 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_object, marshal_dump): use indetity tables for
+	  arbitrary VALUE keys, because of performance of FLONUM.
+	  [Bug #10761]
+
+	* marshal.c (obj_alloc_by_klass, marshal_load): ditto.
+
 Fri Jan 23 17:12:33 2015  Eric Wong  <e@80x24.org>
 
 	* benchmark/bm_marshal_dump_flo.rb: new benchmark for [Bug #10761]
