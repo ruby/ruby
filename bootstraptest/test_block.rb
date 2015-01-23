@@ -597,3 +597,17 @@ assert_equal 'true', %q{
   C1.new.foo{}
 }
 
+assert_equal 'ok', %q{
+  1.times do
+    begin
+      raise
+    rescue
+      begin
+        raise
+      rescue
+        break
+      end
+    end
+  end
+  'ok'
+}

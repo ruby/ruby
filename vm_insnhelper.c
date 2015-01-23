@@ -609,13 +609,11 @@ vm_throw_start(rb_thread_t * const th, rb_control_frame_t * const reg_cfp, int s
 	rb_iseq_t *base_iseq = GET_ISEQ();
 	escape_cfp = reg_cfp;
 
-      search_parent:
-	if (base_iseq->type != ISEQ_TYPE_BLOCK) {
+	while (base_iseq->type != ISEQ_TYPE_BLOCK) {
 	    if (escape_cfp->iseq->type == ISEQ_TYPE_CLASS) {
 		escape_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(escape_cfp);
 		ep = escape_cfp->ep;
 		base_iseq = escape_cfp->iseq;
-		goto search_parent;
 	    }
 	    else {
 		ep = VM_EP_PREV_EP(ep);

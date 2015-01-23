@@ -1,3 +1,9 @@
+Fri Jan 23 23:57:05 2015  Misumi Rize  <r@ayase-e.li>
+
+	* vm_insnhelper.c (vm_throw_start): search the target to break
+	  from a block with nested rescue, from the nested blocks.
+	  [ruby-core:67765] [Bug #10775] [Fix GH-820]
+
 Fri Jan 23 20:00:59 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_object, marshal_dump): use indetity tables for
