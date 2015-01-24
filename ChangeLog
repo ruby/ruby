@@ -1,3 +1,8 @@
+Sat Jan 24 19:56:25 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln_find.c (dln_find_1): search regular files only.  based on
+	  the patch by Alex Coomans in [ruby-core:67766].  [Bug #10776]
+
 Fri Jan 23 23:57:05 2015  Misumi Rize  <r@ayase-e.li>
 
 	* vm_insnhelper.c (vm_throw_start): search the target to break
