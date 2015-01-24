@@ -72,7 +72,7 @@ all: $(WORKDIR) $(STATICLIB)
 	$(CPP) $(CFLAGS) $(INCLUDES) $(<:\=/) >$(@:\=/)
 
 {$(BUILDDIR)/x86}.asm{$(BUILDDIR)/x86}.$(OBJEXT):
-	$(AS) -c $(ASFLAGS) -Fo $(@:\=/) $(<:\=/)
+	cd $(@D) && $(AS) -c $(ASFLAGS) -Fo $(@F) $(<F)
 
 $(BUILDDIR)/x86/$(OSSRC).asm: $(SRCDIR)/x86/$(OSSRC).S
 

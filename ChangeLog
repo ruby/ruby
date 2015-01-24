@@ -1,3 +1,9 @@
+Sun Jan 25 00:42:24 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/fiddle/win32/libffi.mk.tmpl: assemble without directory prefix.
+	  workaround of a bug of VC12 ml, by unak at [ruby-core:67792].
+	  [ruby-core:67789] [Bug #10780]
+
 Sat Jan 24 19:56:25 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln_find.c (dln_find_1): search regular files only.  based on
