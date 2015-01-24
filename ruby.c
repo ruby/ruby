@@ -364,7 +364,7 @@ ruby_init_loadpath(void)
     ruby_init_loadpath_safe(0);
 }
 
-#if defined(HAVE_DLADDR)
+#if defined(LOAD_RELATIVE) && defined(HAVE_DLADDR)
 static VALUE
 dladdr_path(const void* addr)
 {
