@@ -278,7 +278,7 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 	}
 #endif /* _WIN32 or __EMX__ */
 
-	if (stat(fbuf, &st) == 0 && !S_ISDIR(st.st_mode)) {
+	if (stat(fbuf, &st) == 0 && S_ISREG(st.st_mode)) {
 	    if (exe_flag == 0) return fbuf;
 	    /* looking for executable */
 	    if (eaccess(fbuf, X_OK) == 0) return fbuf;
