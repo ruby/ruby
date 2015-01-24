@@ -364,6 +364,32 @@ ruby_init_loadpath(void)
     ruby_init_loadpath_safe(0);
 }
 
+#if defined(HAVE_DLADDR)
+static VALUE
+dladdr_path(const void* addr)
+{
+    Dl_info dli;
+    VALUE fname, path;
+
+    if (!dladdr(addr, &dli)) {
+	return rb_str_new(0, 0);
+    }
+#ifdef __linux__
+    else if (dli.dli_fname == origarg.argv[0]) {
+	VALUE rb_readlink(VALUE);
+	fname = rb_str_new_cstr("/proc/self/exe");
+	path = rb_readlink(fname);
+    }
+#endif
+    else {
+	fname = rb_str_new_cstr(dli.dli_fname);
+	path = rb_realpath_internal(Qnil, fname, 1);
+    }
+    rb_str_resize(fname, 0);
+    return path;
+}
+#endif
+
 void
 ruby_init_loadpath_safe(int safe_level)
 {
@@ -392,17 +418,7 @@ ruby_init_loadpath_safe(int safe_level)
 #elif defined(__EMX__)
     _execname(libpath, sizeof(libpath) - 1);
 #elif defined(HAVE_DLADDR)
-    Dl_info dli;
-    if (dladdr((void *)(VALUE)expand_include_path, &dli)) {
-	char fbuf[MAXPATHLEN];
-	char *f = dln_find_file_r(dli.dli_fname, getenv(PATH_ENV), fbuf, sizeof(fbuf));
-	VALUE fname = rb_str_new_cstr(f ? f : dli.dli_fname);
-	rb_str_freeze(fname);
-	sopath = rb_realpath_internal(Qnil, fname, 1);
-    }
-    else {
-	sopath = rb_str_new(0, 0);
-    }
+    sopath = dladdr_path((void *)(VALUE)expand_include_path);
     libpath = RSTRING_PTR(sopath);
 #endif
 

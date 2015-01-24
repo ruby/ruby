@@ -2745,7 +2745,7 @@ rb_file_s_symlink(VALUE klass, VALUE from, VALUE to)
 #endif
 
 #ifdef HAVE_READLINK
-static VALUE rb_readlink(VALUE path);
+VALUE rb_readlink(VALUE path);
 
 /*
  *  call-seq:
@@ -2764,7 +2764,7 @@ rb_file_s_readlink(VALUE klass, VALUE path)
     return rb_readlink(path);
 }
 
-static VALUE
+VALUE
 rb_readlink(VALUE path)
 {
     int size = 100;
