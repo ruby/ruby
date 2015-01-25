@@ -1,3 +1,8 @@
+Sun Jan 25 12:04:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (flatten): no need to call to_ary method on elements
+	  beyond the given level.  [ruby-core:67637] [Bug #10748]
+
 Sun Jan 25 00:42:24 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/fiddle/win32/libffi.mk.tmpl: assemble without directory prefix.

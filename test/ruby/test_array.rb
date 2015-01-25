@@ -790,6 +790,19 @@ class TestArray < Test::Unit::TestCase
     assert_not_same(a8, a9)
   end
 
+  def test_flatten_splat
+    bug10748 = '[ruby-core:67637] [Bug #10748]'
+    o = Object.new
+    o.singleton_class.class_eval do
+      define_method(:to_ary) do
+        raise bug10748
+      end
+    end
+    a = @cls[@cls[o]]
+    assert_raise_with_message(RuntimeError, bug10748) {a.flatten}
+    assert_nothing_raised(RuntimeError, bug10748) {a.flatten(1)}
+  end
+
   def test_flatten!
     a1 = @cls[ 1, 2, 3]
     a2 = @cls[ 5, 6 ]
@@ -812,6 +825,19 @@ class TestArray < Test::Unit::TestCase
 
   def test_flatten_level0!
     assert_nil(@cls[].flatten!(0), '[ruby-core:23382]')
+  end
+
+  def test_flatten_splat!
+    bug10748 = '[ruby-core:67637] [Bug #10748]'
+    o = Object.new
+    o.singleton_class.class_eval do
+      define_method(:to_ary) do
+        raise bug10748
+      end
+    end
+    a = @cls[@cls[o]]
+    assert_raise_with_message(RuntimeError, bug10748) {a.flatten!}
+    assert_nothing_raised(RuntimeError, bug10748) {a.flatten!(1)}
   end
 
   def test_flatten_with_callcc

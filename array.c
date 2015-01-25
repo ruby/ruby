@@ -4387,11 +4387,15 @@ flatten(VALUE ary, int level, int *modified)
     while (1) {
 	while (i < RARRAY_LEN(ary)) {
 	    elt = RARRAY_AREF(ary, i++);
+	    if (level >= 0 && RARRAY_LEN(stack) / 2 >= level) {
+		rb_ary_push(result, elt);
+		continue;
+	    }
 	    tmp = rb_check_array_type(elt);
 	    if (RBASIC(result)->klass) {
 		rb_raise(rb_eRuntimeError, "flatten reentered");
 	    }
-	    if (NIL_P(tmp) || (level >= 0 && RARRAY_LEN(stack) / 2 >= level)) {
+	    if (NIL_P(tmp)) {
 		rb_ary_push(result, elt);
 	    }
 	    else {
