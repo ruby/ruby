@@ -1593,6 +1593,7 @@ str_make_independent_expand(VALUE str, long expand)
 	ptr = RSTRING(str)->as.heap.ptr;
 	STR_SET_EMBED(str);
 	memcpy(RSTRING(str)->as.ary, ptr, len);
+	RSTRING(str)->as.ary[len] = '\0'; /* Ensure string is terminated */
 	STR_SET_EMBED_LEN(str, len);
 	return;
     }
