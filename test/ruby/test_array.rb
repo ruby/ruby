@@ -770,14 +770,20 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[], @cls[].flatten)
     assert_equal(@cls[],
                  @cls[@cls[@cls[@cls[],@cls[]],@cls[@cls[]],@cls[]],@cls[@cls[@cls[]]]].flatten)
+  end
 
+  def test_flatten_wrong_argument
     assert_raise(TypeError, "[ruby-dev:31197]") { [[]].flatten("") }
+  end
 
+  def test_flatten_taint
     a6 = @cls[[1, 2], 3]
     a6.taint
     a7 = a6.flatten
     assert_equal(true, a7.tainted?)
+  end
 
+  def test_flatten_level0
     a8 = @cls[[1, 2], 3]
     a9 = a8.flatten(0)
     assert_equal(a8, a9)
@@ -796,11 +802,15 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[1, 2, 3, 4, 5, 6], a5.flatten!)
     assert_nil(a5.flatten!(0), '[ruby-core:23382]')
     assert_equal(@cls[1, 2, 3, 4, 5, 6], a5)
+  end
 
+  def test_flatten_empty!
     assert_nil(@cls[].flatten!)
     assert_equal(@cls[],
                  @cls[@cls[@cls[@cls[],@cls[]],@cls[@cls[]],@cls[]],@cls[@cls[@cls[]]]].flatten!)
+  end
 
+  def test_flatten_level0!
     assert_nil(@cls[].flatten!(0), '[ruby-core:23382]')
   end
 
