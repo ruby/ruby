@@ -22,7 +22,7 @@ Fri Jan 23 23:57:05 2015  Misumi Rize  <r@ayase-e.li>
 
 Fri Jan 23 20:00:59 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* marshal.c (w_object, marshal_dump): use indetity tables for
+	* marshal.c (w_object, marshal_dump): use identity tables for
 	  arbitrary VALUE keys, because of performance of FLONUM.
 	  [Bug #10761]
 
