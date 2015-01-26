@@ -1217,6 +1217,81 @@ class TestRefinement < Test::Unit::TestCase
     end;
   end
 
+  def test_refined_method_defined
+    assert_separately([], <<-"end;")
+    bug10753 = '[ruby-core:67656] [Bug #10753]'
+
+    c = Class.new do
+      def refined_public; end
+      def refined_protected; end
+      def refined_private; end
+
+      public :refined_public
+      protected :refined_protected
+      private :refined_private
+    end
+
+    m = Module.new do
+      refine(c) do
+        def refined_public; end
+        def refined_protected; end
+        def refined_private; end
+
+        public :refined_public
+        protected :refined_protected
+        private :refined_private
+      end
+    end
+
+    using m
+
+    assert_equal(true, c.public_method_defined?(:refined_public), bug10753)
+    assert_equal(false, c.public_method_defined?(:refined_protected), bug10753)
+    assert_equal(false, c.public_method_defined?(:refined_private), bug10753)
+
+    assert_equal(false, c.protected_method_defined?(:refined_public), bug10753)
+    assert_equal(true, c.protected_method_defined?(:refined_protected), bug10753)
+    assert_equal(false, c.protected_method_defined?(:refined_private), bug10753)
+
+    assert_equal(false, c.private_method_defined?(:refined_public), bug10753)
+    assert_equal(false, c.private_method_defined?(:refined_protected), bug10753)
+    assert_equal(true, c.private_method_defined?(:refined_private), bug10753)
+    end;
+  end
+
+  def test_undefined_refined_method_defined
+    assert_separately([], <<-"end;")
+    bug10753 = '[ruby-core:67656] [Bug #10753]'
+
+    c = Class.new
+
+    m = Module.new do
+      refine(c) do
+        def undefined_refined_public; end
+        def undefined_refined_protected; end
+        def undefined_refined_private; end
+        public :undefined_refined_public
+        protected :undefined_refined_protected
+        private :undefined_refined_private
+      end
+    end
+
+    using m
+
+    assert_equal(false, c.public_method_defined?(:undefined_refined_public), bug10753)
+    assert_equal(false, c.public_method_defined?(:undefined_refined_protected), bug10753)
+    assert_equal(false, c.public_method_defined?(:undefined_refined_private), bug10753)
+
+    assert_equal(false, c.protected_method_defined?(:undefined_refined_public), bug10753)
+    assert_equal(false, c.protected_method_defined?(:undefined_refined_protected), bug10753)
+    assert_equal(false, c.protected_method_defined?(:undefined_refined_private), bug10753)
+
+    assert_equal(false, c.private_method_defined?(:undefined_refined_public), bug10753)
+    assert_equal(false, c.private_method_defined?(:undefined_refined_protected), bug10753)
+    assert_equal(false, c.private_method_defined?(:undefined_refined_private), bug10753)
+    end;
+  end
+
   private
 
   def eval_using(mod, s)
