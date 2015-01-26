@@ -791,6 +791,9 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
     else
 	extra_warning=
     fi
+    if test $gcc_major -eq 5; then
+	extra_warning="$extra_warning -Wno-maybe-uninitialized"
+    fi
     for wflag in -Wno-unused-parameter -Wno-parentheses -Wno-long-long \
 		 -Wno-missing-field-initializers \
 		 -Wunused-variable \
