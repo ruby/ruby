@@ -40,9 +40,17 @@ bug_str_cstr_term_char(VALUE str)
     return c ? rb_enc_uint_chr((unsigned int)c, enc) : Qnil;
 }
 
+static VALUE
+bug_str_s_cstr_term_char(VALUE self, VALUE str)
+{
+    Check_Type(str, T_STRING);
+    return bug_str_cstr_term_char(str);
+}
+
 void
 Init_cstr(VALUE klass)
 {
     rb_define_method(klass, "cstr_term", bug_str_cstr_term, 0);
     rb_define_method(klass, "cstr_term_char", bug_str_cstr_term_char, 0);
+    rb_define_singleton_method(klass, "cstr_term_char", bug_str_s_cstr_term_char, 1);
 }
