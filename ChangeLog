@@ -1,3 +1,7 @@
+Mon Jan 26 22:09:35 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* .gitignore: ignored temporary file with git.
+
 Mon Jan 26 18:06:03 2015  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/ruby-electric.el: Import version 2.2.2 from

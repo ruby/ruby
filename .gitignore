@@ -109,6 +109,7 @@ y.tab.c
 
 # /enc/trans/
 /enc/trans/*.c
+/enc/trans/.time
 
 # /ext/
 /ext/extinit.c
