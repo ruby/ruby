@@ -1,3 +1,8 @@
+Mon Jan 26 11:37:49 2015  Dave Stevens  <dave@crowdlab.com>
+
+	* string.c (str_make_independent_expand): terminate String when
+	  moved from heap to embedded.  [Fix GH-821].
+
 Sun Jan 25 12:04:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (flatten): no need to call to_ary method on elements

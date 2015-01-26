@@ -86,6 +86,15 @@ class Test_StringCStr < Test::Unit::TestCase
     }
   end
 
+  def test_embedded_from_heap
+    gh821 = "[GH-821]"
+    embedded_string = "abcdefghi"
+    string = embedded_string.gsub("efg", "123")
+    {}[string] = 1
+    non_terminated = "#{string}#{nil}"
+    assert_nil(Bug::String.cstr_term_char(non_terminated), gh821)
+  end
+
   def assert_wchars_term_char(str)
     result = {}
     WCHARS.map do |enc|
