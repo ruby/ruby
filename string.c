@@ -1589,11 +1589,11 @@ str_make_independent_expand(VALUE str, long expand)
 
     if (len > capa) len = capa;
 
-    if (capa <= RSTRING_EMBED_LEN_MAX && !STR_EMBED_P(str)) {
+    if (capa + termlen - 1 <= RSTRING_EMBED_LEN_MAX && !STR_EMBED_P(str)) {
 	ptr = RSTRING(str)->as.heap.ptr;
 	STR_SET_EMBED(str);
 	memcpy(RSTRING(str)->as.ary, ptr, len);
-	RSTRING(str)->as.ary[len] = '\0'; /* Ensure string is terminated */
+	TERM_FILL(RSTRING(str)->as.ary + len, termlen);
 	STR_SET_EMBED_LEN(str, len);
 	return;
     }

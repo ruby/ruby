@@ -93,6 +93,17 @@ class Test_StringCStr < Test::Unit::TestCase
     {}[string] = 1
     non_terminated = "#{string}#{nil}"
     assert_nil(Bug::String.cstr_term_char(non_terminated), gh821)
+
+    result = {}
+    WCHARS.map do |enc|
+      embedded_string = "ab".encode(enc)
+      string = embedded_string.gsub("b".encode(enc), "1".encode(enc))
+      {}[string] = 1
+      non_terminated = "#{string}#{nil}"
+      c = Bug::String.cstr_term_char(non_terminated)
+      result[enc] = c if c
+    end
+    assert_empty(result, gh821)
   end
 
   def assert_wchars_term_char(str)
