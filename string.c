@@ -98,6 +98,9 @@ VALUE rb_cSymbol;
 
 #define RESIZE_CAPA(str,capacity) do {\
     const int termlen = TERM_LEN(str);\
+    RESIZE_CAPA_TERM(str,capacity,termlen);\
+} while (0)
+#define RESIZE_CAPA_TERM(str,capacity,termlen) do {\
     if (STR_EMBED_P(str)) {\
 	if ((capacity) > RSTRING_EMBED_LEN_MAX) {\
 	    char *const tmp = ALLOC_N(char, (capacity)+termlen);\
@@ -2169,6 +2172,7 @@ str_buf_cat(VALUE str, const char *ptr, long len)
 {
     long capa, total, olen, off = -1;
     char *sptr;
+    const int termlen = TERM_LEN(str);
 
     RSTRING_GETMEM(str, sptr, olen);
     if (ptr >= sptr && ptr <= sptr + olen) {
@@ -2198,7 +2202,7 @@ str_buf_cat(VALUE str, const char *ptr, long len)
 	    }
 	    capa = 2 * capa;
 	}
-	RESIZE_CAPA(str, capa);
+	RESIZE_CAPA_TERM(str, capa, termlen);
 	sptr = RSTRING_PTR(str);
     }
     if (off != -1) {
@@ -2206,7 +2210,7 @@ str_buf_cat(VALUE str, const char *ptr, long len)
     }
     memcpy(sptr + olen, ptr, len);
     STR_SET_LEN(str, total);
-    RSTRING_PTR(str)[total] = '\0'; /* sentinel */
+    TERM_FILL(sptr + total, termlen); /* sentinel */
 
     return str;
 }
