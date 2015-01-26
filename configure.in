@@ -643,7 +643,9 @@ _PROBES
     int main(void){ CONFTEST_FIRE(); return 0; }
 _CONF
     $CC $CFLAGS $CPPFLAGS -c -o conftest.o conftest.c &&
-    $DTRACE -G -s conftest_provider.d conftest.o 2>/dev/null
+    cp -p conftest.o conftest.oo &&
+    $DTRACE -G -s conftest_provider.d conftest.o 2>/dev/null &&
+    ! cmp -b conftest.o conftest.oo
   }; then
     rb_cv_prog_dtrace_g=yes
   else
