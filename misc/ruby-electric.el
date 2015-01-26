@@ -10,7 +10,7 @@
 ;; URL: https://github.com/knu/ruby-electric.el
 ;; Keywords: languages ruby
 ;; License: The same license terms as Ruby
-;; Version: 2.2.1
+;; Version: 2.2.2
 
 ;;; Commentary:
 ;;
@@ -161,11 +161,6 @@ cons, ACTION can be set to one of the following values:
                          "$"))))
   :group 'ruby-electric)
 
-(defcustom ruby-electric-simple-keywords-re nil
-  "Obsolete and ignored.  Customize `ruby-electric-keywords-alist'
-instead."
-  :type 'regexp :group 'ruby-electric)
-
 (defvar ruby-electric-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map " " 'ruby-electric-space/return)
@@ -274,7 +269,7 @@ enabled."
                   (ruby-indent-line)
                   (save-excursion
                     (newline)
-                    (ruby-insert-end)))
+                    (ruby-electric-end)))
                  ((eq action 'reindent)
                   (ruby-indent-line)))
            (ruby-electric-space/return-fallback)))
@@ -541,6 +536,18 @@ enabled."
          (and (char-equal (preceding-char) ?{)
               (delete-char 1))))
   (delete-char (- arg)))
+
+(put 'ruby-electric-delete-backward-char 'delete-selection 'supersede)
+
+(defun ruby-electric-end ()
+  (interactive)
+  (if (eq (char-syntax (preceding-char)) ?w)
+      (insert " "))
+  (insert "end")
+  (save-excursion
+    (if (eq (char-syntax (following-char)) ?w)
+        (insert " "))
+    (ruby-indent-line t)))
 
 (provide 'ruby-electric)
 
