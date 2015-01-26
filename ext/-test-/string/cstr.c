@@ -28,7 +28,15 @@ bug_str_cstr_term_char(VALUE str)
     rb_encoding *enc = rb_enc_get(str);
 
     RSTRING_GETMEM(str, s, len);
-    c = rb_enc_codepoint(&s[len], &s[len+rb_enc_mbminlen(enc)], enc);
+    s += len;
+    len = rb_enc_mbminlen(enc);
+    c = rb_enc_precise_mbclen(s, s + len, enc);
+    if (!MBCLEN_CHARFOUND_P(c)) {
+	c = (unsigned char)*s;
+    }
+    else {
+	c = rb_enc_mbc_to_codepoint(s, s + len, enc);
+    }
     return c ? rb_enc_uint_chr((unsigned int)c, enc) : Qnil;
 }
 
