@@ -261,7 +261,9 @@ class VCS
       log = IO.pread(logcmd)
       last = log[idpat, 1]
       if path
-        log = IO.pread(logcmd + [path])
+        cmd = logcmd
+        cmd += [path] unless path == '.'
+        log = IO.pread(cmd)
         changed = log[idpat, 1]
       else
         changed = last
