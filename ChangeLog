@@ -1,3 +1,7 @@
+Tue Jan 27 16:04:19 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* tool/redmine-backporter.rb: added `!` command.
+
 Tue Jan 27 15:58:23 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* tool/redmine-backporter.rb: added history feature for platforms which

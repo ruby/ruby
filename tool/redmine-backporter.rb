@@ -486,6 +486,8 @@ eom
     Net::HTTP.start(uri.host, uri.port, http_options) do |http|
       show_last_journal(http, uri)
     end
+  when /\A!\s*(.*)\s*\z/
+    system($1)
   when ''
   when nil, 'quit', 'exit'
     exit
@@ -497,6 +499,7 @@ eom
     puts 'done [TICKET] [-- NOTE]'.color(bold: true) + ' set Backport field of the TICKET to DONE'
     puts 'close [TICKET]         '.color(bold: true) + ' close the TICKET'
     puts 'last [TICKET]          '.color(bold: true) + ' show the last journal of the TICKET'
+    puts '! COMMAND              '.color(bold: true) + ' execute COMMAND'
   else
     puts "error #{l.inspect}"
   end
