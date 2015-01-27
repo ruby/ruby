@@ -200,35 +200,74 @@ def more(sio)
   end
 end
 
-def Readline.readline(prompt = '')
-  console = IO.console
-  console.binmode
-  ly, lx = console.winsize
-  if /mswin|mingw/ =~ RUBY_PLATFORM or /^(?:vt\d\d\d|xterm)/i =~ ENV["TERM"]
-    cls = "\r\e[2K"
-  else
-    cls = "\r" << (" " * lx)
-  end
-  cls << "\r" << prompt
-  console.print prompt
-  console.flush
-  line = ''
-  while 1
-    case c = console.getch
-    when "\r", "\n"
-      puts
-      return line
-    when "\C-?", "\b" # DEL/BS
-      print "\b \b" if line.chop!
-    when "\C-u"
-      print cls
-      line.clear
-    when "\C-d"
-      return nil if line.empty?
-      line << c
+class << Readline
+  def readline(prompt = '')
+    console = IO.console
+    console.binmode
+    ly, lx = console.winsize
+    if /mswin|mingw/ =~ RUBY_PLATFORM or /^(?:vt\d\d\d|xterm)/i =~ ENV["TERM"]
+      cls = "\r\e[2K"
     else
-      print c
-      line << c
+      cls = "\r" << (" " * lx)
+    end
+    cls << "\r" << prompt
+    console.print prompt
+    console.flush
+    line = ''
+    while 1
+      case c = console.getch
+      when "\r", "\n"
+        puts
+        HISTORY << line
+        return line
+      when "\C-?", "\b" # DEL/BS
+        print "\b \b" if line.chop!
+      when "\C-u"
+        print cls
+        line.clear
+      when "\C-d"
+        return nil if line.empty?
+        line << c
+      when "\C-p"
+        HISTORY.pos -= 1
+        line = HISTORY.current
+        print cls
+        print line
+      when "\C-n"
+        HISTORY.pos += 1
+        line = HISTORY.current
+        print cls
+        print line
+      else
+        print c
+        line << c
+      end
+    end
+  end
+
+  HISTORY = []
+  def HISTORY.<<(val)
+    HISTORY.push(val)
+    @pos = self.size
+    self
+  end
+  def HISTORY.pos
+    @pos ||= 0
+  end
+  def HISTORY.pos=(val)
+    @pos = val
+    if @pos < 0
+      @pos = -1
+    elsif @pos >= self.size
+      @pos = self.size
+    end
+  end
+  def HISTORY.current
+    @pos ||= 0
+    if @pos < 0 || @pos >= self.size
+      ''
+    else
+      self[@pos]
     end
   end
 end unless defined?(Readline.readline)
