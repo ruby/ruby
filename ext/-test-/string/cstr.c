@@ -36,8 +36,9 @@ bug_str_cstr_term_char(VALUE str)
     }
     else {
 	c = rb_enc_mbc_to_codepoint(s, s + len, enc);
+	if (!c) return Qnil;
     }
-    return c ? rb_enc_uint_chr((unsigned int)c, enc) : Qnil;
+    return rb_enc_uint_chr((unsigned int)c, enc);
 }
 
 static VALUE
