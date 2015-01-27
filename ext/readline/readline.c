@@ -288,6 +288,34 @@ readline_get(VALUE prompt)
     return (VALUE)readline((char *)prompt);
 }
 
+static void
+prepare_readline(void)
+{
+    static int initialized = 0;
+    if (!initialized) {
+	rl_initialize();
+	initialized = 1;
+    }
+
+    if (readline_instream) {
+        rb_io_t *ifp;
+        rb_io_check_initialized(ifp = RFILE(rb_io_taint_check(readline_instream))->fptr);
+        if (ifp->fd < 0) {
+            clear_rl_instream();
+            rb_raise(rb_eIOError, "closed readline input");
+        }
+    }
+
+    if (readline_outstream) {
+        rb_io_t *ofp;
+        rb_io_check_initialized(ofp = RFILE(rb_io_taint_check(readline_outstream))->fptr);
+        if (ofp->fd < 0) {
+            clear_rl_outstream();
+            rb_raise(rb_eIOError, "closed readline output");
+        }
+    }
+}
+
 /*
  * call-seq:
  *   Readline.readline(prompt = "", add_hist = false) -> string or nil
@@ -392,14 +420,7 @@ readline_readline(int argc, VALUE *argv, VALUE self)
 	prompt = RSTRING_PTR(tmp);
     }
 
-    if (!isatty(fileno(rl_instream)) && errno == EBADF) rb_raise(rb_eIOError, "closed stdin");
-    if (rl_outstream) {
-	struct stat stbuf;
-	int fd = fileno(rl_outstream);
-	if (fd < 0 || fstat(fd, &stbuf) != 0) {
-	    rb_raise(rb_eIOError, "closed stdout");
-	}
-    }
+    prepare_readline();
 
 #ifdef _WIN32
     rl_prep_terminal(1);
@@ -1455,6 +1476,7 @@ static VALUE
 readline_s_refresh_line(VALUE self)
 {
     rb_secure(4);
+    prepare_readline();
     rl_refresh_line(0, 0);
     return Qnil;
 }

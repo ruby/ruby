@@ -1,3 +1,10 @@
+Tue Jan 27 16:49:07 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/readline/readline.c (readline_s_refresh_line): initialize
+	  before rl_refresh_line(), as some function make the internal
+	  state non-clean but rl_refresh_line() does not re-initialize it.
+	  [ruby-core:43957] [Bug #6232]
+
 Tue Jan 27 16:41:33 2015  Seiei Higa  <hanachin@gmail.com>
 
 	* vm_method.c (rb_export_method): bail out if the original method
