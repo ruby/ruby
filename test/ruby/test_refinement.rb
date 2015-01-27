@@ -1016,6 +1016,31 @@ class TestRefinement < Test::Unit::TestCase
     end;
   end
 
+  def test_alias_refined_method
+    assert_separately(['-W0'], <<-"end;")
+    bug10731 = '[ruby-core:67523] [Bug #10731]'
+
+    class C
+    end
+
+    module RefinementBug
+      refine C do
+        def foo
+        end
+
+        def bar
+        end
+      end
+    end
+
+    assert_raise(NameError, bug10731) do
+      class C
+        alias foo bar
+      end
+    end
+    end;
+  end
+
   private
 
   def eval_using(mod, s)
