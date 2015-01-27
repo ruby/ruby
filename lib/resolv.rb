@@ -662,7 +662,12 @@ class Resolv
       def request(sender, tout)
         start = Time.now
         timelimit = start + tout
-        sender.send
+        begin
+          sender.send
+        rescue Errno::EHOSTUNREACH, # multi-homed IPv6 may generate this
+               Erron::ENETUNREACH
+          raise ResolvTimeout
+        end
         while true
           before_select = Time.now
           timeout = timelimit - before_select
