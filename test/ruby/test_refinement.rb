@@ -1003,7 +1003,8 @@ class TestRefinement < Test::Unit::TestCase
   end
 
   def test_change_refined_new_method_visibility
-    assert_separately(['-W0'], <<-"end;")
+    assert_separately([''], <<-"end;")
+    $VERBOSE = nil
     bug10706 = '[ruby-core:67387] [Bug #10706]'
     module RefinementBug
       refine Object do
@@ -1017,7 +1018,8 @@ class TestRefinement < Test::Unit::TestCase
   end
 
   def test_alias_refined_method
-    assert_separately(['-W0'], <<-"end;")
+  assert_separately([''], <<-"end;")
+    $VERBOSE = nil
     bug10731 = '[ruby-core:67523] [Bug #10731]'
 
     class C
