@@ -130,6 +130,18 @@ LIBRUBYARG_SHARED = @LIBRUBYARG_SHARED@
 LIBRUBY_RELATIVE = @LIBRUBY_RELATIVE@
 LIBRUBY_A_OBJS = @LIBRUBY_A_OBJS@
 
+
+DTRACE_DEPENDENT_OBJS = array.$(OBJEXT) \
+			eval.$(OBJEXT) \
+			gc.$(OBJEXT) \
+			hash.$(OBJEXT) \
+			load.$(OBJEXT) \
+			object.$(OBJEXT) \
+			parse.$(OBJEXT) \
+			string.$(OBJEXT) \
+			symbol.$(OBJEXT) \
+			vm.$(OBJEXT)
+
 THREAD_MODEL  = @THREAD_MODEL@
 
 PREP          = @PREP@
@@ -160,7 +172,7 @@ VCS           = @VCS@
 VCSUP         = @VCSUP@
 DTRACE        = @DTRACE@
 DTRACE_EXT    = @DTRACE_EXT@
-DTRACE_OBJ   = @DTRACE_OBJ@
+DTRACE_OBJ    = @DTRACE_OBJ@
 DTRACE_GLOMMED_OBJ = @DTRACE_GLOMMED_OBJ@
 
 OBJEXT        = @OBJEXT@
@@ -386,7 +398,7 @@ probes.@OBJEXT@: $(srcdir)/probes.d
 
 # DTrace static library hacks described here:
 # http://mail.opensolaris.org/pipermail/dtrace-discuss/2005-August/000207.html
-ruby-glommed.$(OBJEXT):
+ruby-glommed.$(OBJEXT): $(OBJS) $(DTRACE_OBJ)
 	@$(ECHO) generating a glommed object with DTrace probes for static library
 	$(Q) $(LD) -r -o $@ $(OBJS) $(DTRACE_OBJ)
 

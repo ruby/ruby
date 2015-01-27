@@ -712,20 +712,6 @@ verconf.h: $(srcdir)/template/verconf.h.tmpl $(srcdir)/tool/generic_erb.rb
 	$(ECHO) creating $@
 	$(Q) $(MINIRUBY) "$(srcdir)/tool/generic_erb.rb" -o $@ $(srcdir)/template/verconf.h.tmpl
 
-DTRACE_DEPENDENT_OBJS = array.$(OBJEXT) \
-		eval.$(OBJEXT) \
-		gc.$(OBJEXT) \
-		hash.$(OBJEXT) \
-		load.$(OBJEXT) \
-		object.$(OBJEXT) \
-		parse.$(OBJEXT) \
-		string.$(OBJEXT) \
-		symbol.$(OBJEXT) \
-		vm.$(OBJEXT)
-
-probes.$(OBJEXT): $(DTRACE_DEPENDENT_OBJS)
-ruby-glommed.$(OBJEXT): $(OBJS) $(DTRACE_OBJ)
-
 $(OBJS):  {$(VPATH)}config.h {$(VPATH)}missing.h
 
 INSNS2VMOPT = --srcdir="$(srcdir)"
