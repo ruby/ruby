@@ -263,6 +263,7 @@ module Psych
 
         when /^!ruby\/hash-with-ivars(?::(.*))?$/
           hash = $1 ? resolve_class($1).allocate : {}
+          register o, hash
           o.children.each_slice(2) do |key, value|
             case key.value
             when 'elements'

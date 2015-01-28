@@ -1,3 +1,11 @@
+Thu Jan 29 02:34:27 2015  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: fix parsing hashes with
+	  instance variables when it is referenced multiple times.
+	* ext/psych/lib/psych.rb: bump version
+	* ext/psych/psych.gemspec: bump version
+	* test/psych/test_hash.rb: test for fix
+
 Thu Jan 29 02:06:09 2015  Eric Wong  <e@80x24.org>
 
 	* thread.c (struct join_arg): restructure and make smaller

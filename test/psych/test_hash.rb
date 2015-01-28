@@ -23,6 +23,13 @@ module Psych
       @hash = { :a => 'b' }
     end
 
+    def test_referenced_hash_with_ivar
+      a = [1,2,3,4,5]
+      t1 = [HashWithCustomInit.new(a)]
+      t1 << t1.first
+      assert_cycle t1
+    end
+
     def test_custom_initialized
       a = [1,2,3,4,5]
       t1 = HashWithCustomInit.new(a)
