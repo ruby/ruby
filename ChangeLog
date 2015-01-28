@@ -1,3 +1,13 @@
+Thu Jan 29 02:06:09 2015  Eric Wong  <e@80x24.org>
+
+	* thread.c (struct join_arg): restructure and make smaller
+	  (thread_join_sleep): avoid timeofday() call if forever
+	  (thread_join): pass join_arg.delay directly
+	  (rb_thread_inspect_msg): remove, inline into rb_thread_inspect
+	  (rb_thread_inspect): reduce branching and string creation
+	* thread_pthread.c (native_set_thread_name): create string directly
+	  to avoid reparsing. [Misc #10723]
+
 Wed Jan 28 21:32:24 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* thread.c: Improve documentation for Thread#value

@@ -796,8 +796,7 @@ rb_thread_create(VALUE (*fn)(ANYARGS), void *arg)
 
 struct join_arg {
     rb_thread_t *target, *waiting;
-    double limit;
-    int forever;
+    double delay;
 };
 
 static VALUE
@@ -826,14 +825,15 @@ thread_join_sleep(VALUE arg)
 {
     struct join_arg *p = (struct join_arg *)arg;
     rb_thread_t *target_th = p->target, *th = p->waiting;
-    double now, limit = p->limit;
+    const int forever = p->delay == DELAY_INFTY;
+    const double limit = forever ? 0 : timeofday() + p->delay;
 
     while (target_th->status != THREAD_KILLED) {
-	if (p->forever) {
+	if (forever) {
 	    sleep_forever(th, 1, 0);
 	}
 	else {
-	    now = timeofday();
+	    double now = timeofday();
 	    if (now > limit) {
 		thread_debug("thread_join: timeout (thid: %"PRI_THREAD_ID")\n",
 			     thread_id_str(target_th));
@@ -862,8 +862,7 @@ thread_join(rb_thread_t *target_th, double delay)
 
     arg.target = target_th;
     arg.waiting = th;
-    arg.limit = timeofday() + delay;
-    arg.forever = delay == DELAY_INFTY;
+    arg.delay = delay;
 
     thread_debug("thread_join (thid: %"PRI_THREAD_ID")\n", thread_id_str(target_th));
 
@@ -2711,40 +2710,6 @@ rb_thread_safe_level(VALUE thread)
     return INT2NUM(th->safe_level);
 }
 
-static VALUE
-rb_thread_inspect_msg(VALUE thread, int show_enclosure, int show_location, int show_status)
-{
-    VALUE cname = rb_class_path(rb_obj_class(thread));
-    rb_thread_t *th;
-    const char *status;
-    VALUE str;
-
-    GetThreadPtr(thread, th);
-    status = thread_status_name(th);
-    if (show_enclosure)
-        str = rb_sprintf("#<%"PRIsVALUE":%p", cname, (void *)thread);
-    else
-        str = rb_str_new(NULL, 0);
-    if (show_location && !th->first_func && th->first_proc) {
-	long i;
-	VALUE v, loc = rb_proc_location(th->first_proc);
-	if (!NIL_P(loc)) {
-	    char sep = '@';
-	    for (i = 0; i < RARRAY_LEN(loc) && !NIL_P(v = RARRAY_AREF(loc, i)); ++i) {
-		rb_str_catf(str, "%c%"PRIsVALUE, sep, v);
-		sep = ':';
-	    }
-	}
-    }
-    if (show_status || show_enclosure)
-        rb_str_catf(str, " %s%s",
-                show_status ? status : "",
-                show_enclosure ? ">" : "");
-    OBJ_INFECT(str, thread);
-
-    return str;
-}
-
 /*
  * call-seq:
  *   thr.inspect   -> string
@@ -2755,7 +2720,26 @@ rb_thread_inspect_msg(VALUE thread, int show_enclosure, int show_location, int s
 static VALUE
 rb_thread_inspect(VALUE thread)
 {
-    return rb_thread_inspect_msg(thread, 1, 1, 1);
+    VALUE cname = rb_class_path(rb_obj_class(thread));
+    rb_thread_t *th;
+    const char *status;
+    VALUE str;
+
+    GetThreadPtr(thread, th);
+    status = thread_status_name(th);
+    str = rb_sprintf("#<%"PRIsVALUE":%p", cname, (void *)thread);
+    if (!th->first_func && th->first_proc) {
+	VALUE loc = rb_proc_location(th->first_proc);
+	if (!NIL_P(loc)) {
+	    const VALUE *ptr = RARRAY_CONST_PTR(loc);
+	    rb_str_catf(str, "@%"PRIsVALUE":%"PRIsVALUE, ptr[0], ptr[1]);
+	    rb_gc_force_recycle(loc);
+	}
+    }
+    rb_str_catf(str, " %s>", status);
+    OBJ_INFECT(str, thread);
+
+    return str;
 }
 
 /* variables for recursive traversals */
