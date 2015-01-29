@@ -9678,7 +9678,7 @@ logop_gen(struct parser_params *parser, enum node_type type, NODE *left, NODE *r
 {
     value_expr(left);
     if (!left) {
-	if (type == NODE_AND) return 0;
+	if (!in_defined && type == NODE_AND) return 0;
 	/* make NODE_OR not to be "void value expression" */
     }
     else if ((enum node_type)nd_type(left) == type) {
@@ -9689,7 +9689,7 @@ logop_gen(struct parser_params *parser, enum node_type type, NODE *left, NODE *r
 	node->nd_2nd = NEW_NODE(type, second, right, 0);
 	return left;
     }
-    else {
+    else if (!in_defined) {
 	switch (nd_type(left)) {
 	  case NODE_NIL:
 	  case NODE_FALSE:
