@@ -1,3 +1,15 @@
+Thu Jan 29 23:30:00 2015  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (rb_rational_num): add fallback function
+	  for rubies lower than 2.2.0.
+
+	* ext/bigdecimal/bigdecimal.c (rb_rational_den): ditto.
+
+	* ext/bigdecimal/extconf.rb: check the existences of struct RRational,
+	  rb_rational_num, and rb_rational_den.
+
+	* ext/bigdecimal/bigdecimal.bundle: bump version.
+
 Thu Jan 29 20:28:25 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* tool/make-snapshot: removed md5 digest with package infomation
