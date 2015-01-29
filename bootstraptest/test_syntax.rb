@@ -376,6 +376,8 @@ assert_equal %q{1}, %q{1 or 2 or 3 or 4}
 assert_equal %q{1}, %q{1 or false or 3 or 4}
 assert_equal %q{2}, %q{nil or 2 or 3 or 4}
 assert_equal %q{2}, %q{false or 2 or 3 or 4}
+assert_equal %q{1}, %q{if true && ""; then 1; end}
+assert_equal %q{1}, %q{if nil || true; then 1; end}
 assert_equal %q{false}, %q{nil or false or nil or false}
 assert_equal %q{elseng}, %q{
   case

@@ -9694,7 +9694,6 @@ logop_gen(struct parser_params *parser, enum node_type type, NODE *left, NODE *r
 	  case NODE_NIL:
 	  case NODE_FALSE:
 	    if (type == NODE_AND) return left;
-	    left = 0;
 	    break;
 	  case NODE_TRUE:
 	  case NODE_LIT:
