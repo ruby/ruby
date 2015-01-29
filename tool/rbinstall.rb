@@ -424,7 +424,7 @@ EOS
     pathsep = File::PATH_SEPARATOR
     PROLOG_SCRIPT << <<EOS
 prefix="${bindir%/bin}"
-export #{libpathenv}="$prefix/lib${#{libpathenv}#{pathsep}+#{pathsep}$#{libpathenv}}"
+export #{libpathenv}="$prefix/lib${#{libpathenv}:+#{pathsep}$#{libpathenv}}"
 EOS
   end
   PROLOG_SCRIPT << %Q[exec "$bindir/#{ruby_install_name}" -x "$0" "$@"\n]
