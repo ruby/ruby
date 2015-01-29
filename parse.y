@@ -374,6 +374,8 @@ static NODE* node_newnode(struct parser_params *, enum node_type, VALUE, VALUE, 
 
 static NODE *cond_gen(struct parser_params*,NODE*);
 #define cond(node) cond_gen(parser, (node))
+static NODE *new_if_gen(struct parser_params*,NODE*,NODE*,NODE*);
+#define new_if(cc,left,right) new_if_gen(parser, (cc), (left), (right))
 static NODE *logop_gen(struct parser_params*,enum node_type,NODE*,NODE*);
 #define logop(type,node1,node2) logop_gen(parser, (type), (node1), (node2))
 
@@ -1144,7 +1146,7 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		| stmt modifier_if expr_value
 		    {
 		    /*%%%*/
-			$$ = NEW_IF(cond($3), remove_begin($1), 0);
+			$$ = new_if($3, remove_begin($1), 0);
 			fixpos($$, $3);
 		    /*%
 			$$ = dispatch2(if_mod, $3, $1);
@@ -2373,7 +2375,7 @@ arg		: lhs '=' arg
 		    {
 		    /*%%%*/
 			value_expr($1);
-			$$ = NEW_IF(cond($1), $4, $8);
+			$$ = new_if($1, $4, $8);
 			fixpos($$, $1);
 		    /*%
 			$$ = dispatch3(ifop, $1, $4, $8);
@@ -2825,7 +2827,7 @@ primary		: literal
 		  k_end
 		    {
 		    /*%%%*/
-			$$ = NEW_IF(cond($2), $4, $5);
+			$$ = new_if($2, $4, $5);
 			fixpos($$, $2);
 		    /*%
 			$$ = dispatch3(if, $2, $4, escape_Qundef($5));
@@ -3206,7 +3208,7 @@ if_tail		: opt_else
 		  if_tail
 		    {
 		    /*%%%*/
-			$$ = NEW_IF(cond($2), $4, $5);
+			$$ = new_if($2, $4, $5);
 			fixpos($$, $2);
 		    /*%
 			$$ = dispatch3(elsif, $2, $4, escape_Qundef($5));
@@ -9655,16 +9657,52 @@ cond_gen(struct parser_params *parser, NODE *node)
 }
 
 static NODE*
+new_if_gen(struct parser_params *parser, NODE *cc, NODE *left, NODE *right)
+{
+    if (!cc) return right;
+    cc = cond0(parser, cc);
+    switch (nd_type(cc)) {
+      case NODE_NIL:
+      case NODE_FALSE:
+	return right;
+      case NODE_TRUE:
+      case NODE_LIT:
+      case NODE_STR:
+	return left;
+    }
+    return NEW_IF(cc, left, right);
+}
+
+static NODE*
 logop_gen(struct parser_params *parser, enum node_type type, NODE *left, NODE *right)
 {
     value_expr(left);
-    if (left && (enum node_type)nd_type(left) == type) {
+    if (!left) {
+	if (type == NODE_AND) return 0;
+	/* make NODE_OR not to be "void value expression" */
+    }
+    else if ((enum node_type)nd_type(left) == type) {
 	NODE *node = left, *second;
 	while ((second = node->nd_2nd) != 0 && (enum node_type)nd_type(second) == type) {
 	    node = second;
 	}
 	node->nd_2nd = NEW_NODE(type, second, right, 0);
 	return left;
+    }
+    else {
+	switch (nd_type(left)) {
+	  case NODE_NIL:
+	  case NODE_FALSE:
+	    if (type == NODE_AND) return left;
+	    left = 0;
+	    break;
+	  case NODE_TRUE:
+	  case NODE_LIT:
+	  case NODE_STR:
+	    if (type != NODE_AND) return left;
+	    nd_set_type(left, NODE_TRUE);
+	    break;
+	}
     }
     return NEW_NODE(type, left, right, 0);
 }
