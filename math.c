@@ -24,11 +24,7 @@
 VALUE rb_mMath;
 VALUE rb_eMathDomainError;
 
-#define Need_Float(x) do {if (!RB_TYPE_P(x, T_FLOAT)) {(x) = rb_to_float(x);}} while(0)
-#define Need_Float2(x,y) do {\
-    Need_Float(x);\
-    Need_Float(y);\
-} while (0)
+#define Get_Double(x) FIXNUM_P(x) ? (double)FIX2LONG(x) : NUM2DBL(x)
 
 #define domain_error(msg) \
     rb_raise(rb_eMathDomainError, "Numerical argument is out of domain - " #msg)
@@ -70,9 +66,8 @@ math_atan2(VALUE obj, VALUE y, VALUE x)
 # define M_PI 3.14159265358979323846
 #endif
     double dx, dy;
-    Need_Float2(y, x);
-    dx = RFLOAT_VALUE(x);
-    dy = RFLOAT_VALUE(y);
+    dx = Get_Double(x);
+    dy = Get_Double(y);
     if (dx == 0.0 && dy == 0.0) {
 	if (!signbit(dx))
 	    return DBL2NUM(dy);
@@ -115,8 +110,7 @@ math_atan2(VALUE obj, VALUE y, VALUE x)
 static VALUE
 math_cos(VALUE obj, VALUE x)
 {
-    Need_Float(x);
-    return DBL2NUM(cos(RFLOAT_VALUE(x)));
+    return DBL2NUM(cos(Get_Double(x)));
 }
 
 /*
@@ -137,8 +131,7 @@ math_cos(VALUE obj, VALUE x)
 static VALUE
 math_sin(VALUE obj, VALUE x)
 {
-    Need_Float(x);
-    return DBL2NUM(sin(RFLOAT_VALUE(x)));
+    return DBL2NUM(sin(Get_Double(x)));
 }
 
 
@@ -159,8 +152,7 @@ math_sin(VALUE obj, VALUE x)
 static VALUE
 math_tan(VALUE obj, VALUE x)
 {
-    Need_Float(x);
-    return DBL2NUM(tan(RFLOAT_VALUE(x)));
+    return DBL2NUM(tan(Get_Double(x)));
 }
 
 /*
@@ -182,8 +174,7 @@ math_acos(VALUE obj, VALUE x)
 {
     double d0, d;
 
-    Need_Float(x);
-    d0 = RFLOAT_VALUE(x);
+    d0 = Get_Double(x);
     /* check for domain error */
     if (d0 < -1.0 || 1.0 < d0) domain_error("acos");
     d = acos(d0);
@@ -208,8 +199,7 @@ math_asin(VALUE obj, VALUE x)
 {
     double d0, d;
 
-    Need_Float(x);
-    d0 = RFLOAT_VALUE(x);
+    d0 = Get_Double(x);
     /* check for domain error */
     if (d0 < -1.0 || 1.0 < d0) domain_error("asin");
     d = asin(d0);
@@ -232,8 +222,7 @@ math_asin(VALUE obj, VALUE x)
 static VALUE
 math_atan(VALUE obj, VALUE x)
 {
-    Need_Float(x);
-    return DBL2NUM(atan(RFLOAT_VALUE(x)));
+    return DBL2NUM(atan(Get_Double(x)));
 }
 
 #ifndef HAVE_COSH
@@ -261,8 +250,7 @@ cosh(double x)
 static VALUE
 math_cosh(VALUE obj, VALUE x)
 {
-    Need_Float(x);
-    return DBL2NUM(cosh(RFLOAT_VALUE(x)));
+    return DBL2NUM(cosh(Get_Double(x)));
 }
 
 #ifndef HAVE_SINH
@@ -290,8 +278,7 @@ sinh(double x)
 static VALUE
 math_sinh(VALUE obj, VALUE x)
 {
-    Need_Float(x);
-    return DBL2NUM(sinh(RFLOAT_VALUE(x)));
+    return DBL2NUM(sinh(Get_Double(x)));
 }
 
 #ifndef HAVE_TANH
@@ -319,8 +306,7 @@ tanh(double x)
 static VALUE
 math_tanh(VALUE obj, VALUE x)
 {
-    Need_Float(x);
-    return DBL2NUM(tanh(RFLOAT_VALUE(x)));
+    return DBL2NUM(tanh(Get_Double(x)));
 }
 
 /*
@@ -342,8 +328,7 @@ math_acosh(VALUE obj, VALUE x)
 {
     double d0, d;
 
-    Need_Float(x);
-    d0 = RFLOAT_VALUE(x);
+    d0 = Get_Double(x);
     /* check for domain error */
     if (d0 < 1.0) domain_error("acosh");
     d = acosh(d0);
@@ -367,8 +352,7 @@ math_acosh(VALUE obj, VALUE x)
 static VALUE
 math_asinh(VALUE obj, VALUE x)
 {
-    Need_Float(x);
-    return DBL2NUM(asinh(RFLOAT_VALUE(x)));
+    return DBL2NUM(asinh(Get_Double(x)));
 }
 
 /*
@@ -390,8 +374,7 @@ math_atanh(VALUE obj, VALUE x)
 {
     double d0, d;
 
-    Need_Float(x);
-    d0 = RFLOAT_VALUE(x);
+    d0 = Get_Double(x);
     /* check for domain error */
     if (d0 <  -1.0 || +1.0 <  d0) domain_error("atanh");
     /* check for pole error */
@@ -420,8 +403,7 @@ math_atanh(VALUE obj, VALUE x)
 static VALUE
 math_exp(VALUE obj, VALUE x)
 {
-    Need_Float(x);
-    return DBL2NUM(exp(RFLOAT_VALUE(x)));
+    return DBL2NUM(exp(Get_Double(x)));
 }
 
 #if defined __CYGWIN__
@@ -485,8 +467,7 @@ math_log1(VALUE x)
 	numbits = 0;
     }
 
-    Need_Float(x);
-    d0 = RFLOAT_VALUE(x);
+    d0 = Get_Double(x);
     /* check for domain error */
     if (d0 < 0.0) domain_error("log");
     /* check for pole error */
@@ -541,8 +522,7 @@ math_log2(VALUE obj, VALUE x)
 	numbits = 0;
     }
 
-    Need_Float(x);
-    d0 = RFLOAT_VALUE(x);
+    d0 = Get_Double(x);
     /* check for domain error */
     if (d0 < 0.0) domain_error("log2");
     /* check for pole error */
@@ -583,8 +563,7 @@ math_log10(VALUE obj, VALUE x)
 	numbits = 0;
     }
 
-    Need_Float(x);
-    d0 = RFLOAT_VALUE(x);
+    d0 = Get_Double(x);
     /* check for domain error */
     if (d0 < 0.0) domain_error("log10");
     /* check for pole error */
@@ -626,8 +605,7 @@ math_sqrt(VALUE obj, VALUE x)
 {
     double d0, d;
 
-    Need_Float(x);
-    d0 = RFLOAT_VALUE(x);
+    d0 = Get_Double(x);
     /* check for domain error */
     if (d0 < 0.0) domain_error("sqrt");
     if (d0 == 0.0) return DBL2NUM(0.0);
@@ -673,8 +651,7 @@ math_sqrt(VALUE obj, VALUE x)
 static VALUE
 math_cbrt(VALUE obj, VALUE x)
 {
-    Need_Float(x);
-    return DBL2NUM(cbrt(RFLOAT_VALUE(x)));
+    return DBL2NUM(cbrt(Get_Double(x)));
 }
 
 /*
@@ -694,9 +671,7 @@ math_frexp(VALUE obj, VALUE x)
     double d;
     int exp;
 
-    Need_Float(x);
-
-    d = frexp(RFLOAT_VALUE(x), &exp);
+    d = frexp(Get_Double(x), &exp);
     return rb_assoc_new(DBL2NUM(d), INT2NUM(exp));
 }
 
@@ -713,8 +688,7 @@ math_frexp(VALUE obj, VALUE x)
 static VALUE
 math_ldexp(VALUE obj, VALUE x, VALUE n)
 {
-    Need_Float(x);
-    return DBL2NUM(ldexp(RFLOAT_VALUE(x), NUM2INT(n)));
+    return DBL2NUM(ldexp(Get_Double(x), NUM2INT(n)));
 }
 
 /*
@@ -730,8 +704,7 @@ math_ldexp(VALUE obj, VALUE x, VALUE n)
 static VALUE
 math_hypot(VALUE obj, VALUE x, VALUE y)
 {
-    Need_Float2(x, y);
-    return DBL2NUM(hypot(RFLOAT_VALUE(x), RFLOAT_VALUE(y)));
+    return DBL2NUM(hypot(Get_Double(x), Get_Double(y)));
 }
 
 /*
@@ -751,8 +724,7 @@ math_hypot(VALUE obj, VALUE x, VALUE y)
 static VALUE
 math_erf(VALUE obj, VALUE x)
 {
-    Need_Float(x);
-    return DBL2NUM(erf(RFLOAT_VALUE(x)));
+    return DBL2NUM(erf(Get_Double(x)));
 }
 
 /*
@@ -772,8 +744,7 @@ math_erf(VALUE obj, VALUE x)
 static VALUE
 math_erfc(VALUE obj, VALUE x)
 {
-    Need_Float(x);
-    return DBL2NUM(erfc(RFLOAT_VALUE(x)));
+    return DBL2NUM(erfc(Get_Double(x)));
 }
 
 /*
@@ -849,8 +820,7 @@ math_gamma(VALUE obj, VALUE x)
     };
     double d0, d;
     double intpart, fracpart;
-    Need_Float(x);
-    d0 = RFLOAT_VALUE(x);
+    d0 = Get_Double(x);
     /* check for domain error */
     if (isinf(d0) && signbit(d0)) domain_error("gamma");
     fracpart = modf(d0, &intpart);
@@ -885,8 +855,7 @@ math_lgamma(VALUE obj, VALUE x)
     double d0, d;
     int sign=1;
     VALUE v;
-    Need_Float(x);
-    d0 = RFLOAT_VALUE(x);
+    d0 = Get_Double(x);
     /* check for domain error */
     if (isinf(d0)) {
 	if (signbit(d0)) domain_error("lgamma");
