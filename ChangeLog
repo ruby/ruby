@@ -1,3 +1,7 @@
+Thu Jan 29 20:28:25 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* tool/make-snapshot: removed md5 digest with package infomation
+
 Thu Jan 29 10:41:52 2015  gogotanaka  <mail@tanakakazuki.com>
 
 	* math.c (Get_Double): direct casting from Fixnum to double.

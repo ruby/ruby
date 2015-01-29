@@ -1,7 +1,6 @@
 #!/usr/bin/ruby -s
 # -*- coding: us-ascii -*-
 require 'uri'
-require 'digest/md5'
 require 'digest/sha1'
 require 'digest/sha2'
 require 'fileutils'
@@ -36,7 +35,7 @@ each versions may be followed by optional @revision.
 USAGE
 end
 
-DIGESTS = %w[MD5 SHA1 SHA256 SHA512]
+DIGESTS = %w[SHA1 SHA256 SHA512]
 PACKAGES = {
   "bzip" => %w".tar.bz2 bzip2 -c",
   "gzip" => %w".tar.gz  gzip -c",
