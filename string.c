@@ -4877,7 +4877,9 @@ rb_str_to_f(VALUE str)
  *     str.to_s     -> str
  *     str.to_str   -> str
  *
- *  Returns the receiver.
+ *  Returns +self+.
+ *
+ *  If called on a subclass of String, converts the receiver to a String object.
  */
 
 static VALUE
