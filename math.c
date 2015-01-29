@@ -21,10 +21,18 @@
 
 #define RB_BIGNUM_TYPE_P(x) RB_TYPE_P((x), T_BIGNUM)
 
+static ID id_to_f;
+
 VALUE rb_mMath;
 VALUE rb_eMathDomainError;
 
-#define Get_Double(x) FIXNUM_P(x) ? (double)FIX2LONG(x) : NUM2DBL(x)
+#define fix_to_f_optimizable() rb_method_basic_definition_p(rb_cFixnum, id_to_f)
+#define Get_Float(x) \
+    ((RB_TYPE_P((x), T_FLOAT) ? (void)0 : ((x) = rb_to_float(x))), RFLOAT_VALUE(x))
+#define Get_Double(x) \
+    (FIXNUM_P(x) && fix_to_f_optimizable() ? \
+     (double)FIX2LONG(x) : \
+     Get_Float(x))
 
 #define domain_error(msg) \
     rb_raise(rb_eMathDomainError, "Numerical argument is out of domain - " #msg)
@@ -929,7 +937,7 @@ exp1(sqrt)
 
 
 void
-Init_Math(void)
+InitVM_Math(void)
 {
     rb_mMath = rb_define_module("Math");
     rb_eMathDomainError = rb_define_class_under(rb_mMath, "DomainError", rb_eStandardError);
@@ -982,4 +990,11 @@ Init_Math(void)
 
     rb_define_module_function(rb_mMath, "gamma", math_gamma, 1);
     rb_define_module_function(rb_mMath, "lgamma", math_lgamma, 1);
+}
+
+void
+Init_Math(void)
+{
+    id_to_f = rb_intern_const("to_f");
+    InitVM(Math);
 }
