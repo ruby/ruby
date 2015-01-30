@@ -1,3 +1,9 @@
+Fri Jan 30 15:47:49 2015  Eric Wong  <e@80x24.org>
+
+	* numeric.c (bit_coerce): use original value for error message
+	  [ruby-core:67405] [Bug #10711]
+	* test/ruby/test_numeric.rb (test_coerce): check error message
+
 Tue Jan 27 17:05:43 2015  Seiei Higa  <hanachin@gmail.com>
 
 	* vm_method.c (rb_alias): raise a NameError when creating alias to
