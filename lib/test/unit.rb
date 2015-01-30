@@ -388,7 +388,7 @@ module Test
           begin
             require 'io/console'
             width = $stdout.winsize[1]
-          rescue LoadError, NoMethodError, Errno::ENOTTY, Errno::EBADF
+          rescue LoadError, NoMethodError, Errno::ENOTTY, Errno::EBADF, Errno::EINVAL
             width = ENV["COLUMNS"].to_i.nonzero? || 80
           end
           width -= 1 if /mswin|mingw/ =~ RUBY_PLATFORM
