@@ -1,3 +1,9 @@
+Fri Jan 30 16:11:47 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/text.rb (expand_tabs): get rid of infinite loop with
+	  CR.  should check if substitution occurred too.
+	  [ruby-dev:48813] [Bug #10732]
+
 Fri Jan 30 16:00:35 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (install_dirs): revert DESTDIR prefix by r39841, since
