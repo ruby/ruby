@@ -1,3 +1,29 @@
+Fri Jan 30 16:49:15 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c: [DOC] Revise documentation by Marcus Stollsteimer at
+	  [ruby-core:66368].  [Bug #10526]
+
+	  * #inspect: be more specific about generated string, remove
+	    obsolete example.
+	  * #nil?: use code examples instead of different call-seq's.
+	  * #tap: clarify what is yielded.
+	  * Integer(): be more specific about to_int and to_i, remove
+	    reference to Ruby 1.8.
+	  * Array(): fix error.
+	  * Class: fix variable name style and indentation in example.
+	  * improve consistency, fix typos and formatting.
+
+Fri Jan 30 16:49:15 2015  Benoit Daloze  <eregontp@gmail.com>
+
+	* object.c (Module#const_defined?): [DOC] Revise the documentation.
+	  Patch by Xavier Noria.
+	  [Fixes GH-754] https://github.com/ruby/ruby/pull/754
+
+Fri Jan 30 16:49:15 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* object.c: fix document of Kernel.Stirng by @suzukaze
+	  [fix GH-743][ci skip]
+
 Fri Jan 30 16:26:57 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* pack.c (str_associate, str_associated): keep associated objects

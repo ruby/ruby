@@ -2081,15 +2081,40 @@ rb_mod_const_set(VALUE mod, VALUE name, VALUE value)
  *  call-seq:
  *     mod.const_defined?(sym, inherit=true)   -> true or false
  *
- *  Checks for a constant with the given name in <i>mod</i>
- *  If +inherit+ is set, the lookup will also search
- *  the ancestors (and +Object+ if <i>mod</i> is a +Module+.)
+ *  Says whether _mod_ or its ancestors have a constant with the given name:
  *
- *  Returns whether or not a definition is found:
+ *    Float.const_defined?(:EPSILON)      #=> true, found in Float itself
+ *    Float.const_defined?("String")      #=> true, found in Object (ancestor)
+ *    BasicObject.const_defined?(:Hash)   #=> false
  *
- *     Math.const_defined? "PI"   #=> true
- *     IO.const_defined? :SYNC   #=> true
- *     IO.const_defined? :SYNC, false   #=> false
+ *  If _mod_ is a +Module+, additionally +Object+ and its ancestors are checked:
+ *
+ *    Math.const_defined?(:String)   #=> true, found in Object
+ *
+ *  In each of the checked classes or modules, if the constant is not present
+ *  but there is an autoload for it, +true+ is returned directly without
+ *  autoloading:
+ *
+ *    module Admin
+ *      autoload :User, 'admin/user'
+ *    end
+ *    Admin.const_defined?(:User)   #=> true
+ *
+ *  If the constant is not found the callback +const_missing+ is *not* called
+ *  and the method returns +false+.
+ *
+ *  If +inherit+ is false, the lookup only checks the constants in the receiver:
+ *
+ *    IO.const_defined?(:SYNC)          #=> true, found in File::Constants (ancestor)
+ *    IO.const_defined?(:SYNC, false)   #=> false, not found in IO itself
+ *
+ *  In this case, the same logic for autoloading applies.
+ *
+ *  If the argument is not a valid constant name +NameError+ is raised with the
+ *  message "wrong constant name _name_":
+ *
+ *    Hash.const_defined? 'foobar'   #=> NameError: wrong constant name foobar
+ *
  */
 
 static VALUE
@@ -2529,13 +2554,15 @@ rb_Integer(VALUE val)
  *  In any case, strings should be strictly conformed to numeric
  *  representation. This behavior is different from that of
  *  <code>String#to_i</code>.  Non string values will be converted using
- *  <code>to_int</code>, and <code>to_i</code>.
+ *  <code>to_int</code>, and <code>to_i</code>. Passing <code>nil</code>
+ *  raises a TypeError.
  *
  *     Integer(123.999)    #=> 123
  *     Integer("0x1a")     #=> 26
  *     Integer(Time.new)   #=> 1204973019
  *     Integer("0930", 10) #=> 930
  *     Integer("111", 2)   #=> 7
+ *     Integer(nil)        #=> TypeError
  */
 
 static VALUE
@@ -2774,8 +2801,9 @@ rb_String(VALUE val)
  *  call-seq:
  *     String(arg)   -> string
  *
- *  Converts <i>arg</i> to a <code>String</code> by calling its
- *  <code>to_s</code> method.
+ *  Returns <i>arg</i> as an <code>String</code>.
+ *
+ *  First tries to call its <code>to_str</code> method, then its <code>to_s</code> method.
  *
  *     String(self)        #=> "main"
  *     String(self.class)  #=> "Object"
