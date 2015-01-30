@@ -1,3 +1,8 @@
+Fri Jan 30 16:26:57 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* pack.c (str_associate, str_associated): keep associated objects
+	  in an instance variables, instead of in the internal structure.
+
 Fri Jan 30 16:11:47 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/text.rb (expand_tabs): get rid of infinite loop with
