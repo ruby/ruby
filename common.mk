@@ -101,6 +101,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		vm_trace.$(OBJEXT) \
 		thread.$(OBJEXT) \
 		cont.$(OBJEXT) \
+		$(DTRACE_OBJ) \
 		$(BUILTIN_ENCOBJS) \
 		$(BUILTIN_TRANSOBJS) \
 		$(MISSING)
@@ -192,7 +193,7 @@ prog: program wprogram
 
 $(PREP): $(MKFILES)
 
-miniruby$(EXEEXT): config.status $(ALLOBJS) $(ARCHFILE) $(DTRACE_OBJ)
+miniruby$(EXEEXT): config.status $(ALLOBJS) $(ARCHFILE)
 
 objs: $(ALLOBJS)
 
@@ -218,7 +219,7 @@ mini: PHONY miniruby$(EXEEXT)
 
 $(PROGRAM) $(WPROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
 
-$(LIBRUBY_A):	$(OBJS) $(MAINOBJ) $(DTRACE_OBJ) $(DTRACE_GLOMMED_OBJ) $(INITOBJS) $(ARCHFILE)
+$(LIBRUBY_A):	$(LIBRUBY_A_OBJS) $(MAINOBJ) $(INITOBJS) $(ARCHFILE)
 
 $(LIBRUBY_SO):	$(OBJS) $(DLDOBJS) $(LIBRUBY_A) $(PREP) $(LIBRUBY_SO_UPDATE) $(BUILTIN_ENCOBJS)
 

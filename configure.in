@@ -644,10 +644,10 @@ _PROBES
 _CONF
     $CC $CFLAGS $CPPFLAGS -c -o conftest.o conftest.c &&
     cp -p conftest.o conftest.oo &&
-    $DTRACE -G -s conftest_provider.d conftest.o 2>/dev/null &&
-    ! cmp -b conftest.o conftest.oo
+    $DTRACE -G -s conftest_provider.d conftest.o 2>/dev/null
   }; then
     rb_cv_prog_dtrace_g=yes
+    cmp -b conftest.o conftest.oo || rb_cv_prog_dtrace_g=rebuild
   else
     rb_cv_prog_dtrace_g=no
   fi
@@ -3608,8 +3608,10 @@ if test "${enable_dtrace}" = "yes"; then
             AC_MSG_ERROR([--enable-dtrace, however, USDT is not available])
         fi
         RUBY_DTRACE_POSTPROCESS()
-        if test "$rb_cv_prog_dtrace_g" = 'yes'; then
+        if test "$rb_cv_prog_dtrace_g" != 'no'; then
             DTRACE_OBJ='probes.$(OBJEXT)'
+        fi
+        if test "$rb_cv_prog_dtrace_g" = 'rebuild'; then
             DTRACE_GLOMMED_OBJ='ruby-glommed.$(OBJEXT)'
             LIBRUBY_A_OBJS='$(DTRACE_GLOMMED_OBJ)'
         fi
