@@ -1,3 +1,8 @@
+Fri Jan 30 17:28:29 2015  gogotanaka  <mail@tanakakazuki.com>
+
+	* math.c (num2dbl_with_to_f): make faster when Bignum passed by
+	  direct conversion using rb_big2dbl().  [Feature #10800]
+
 Thu Jan 29 23:30:00 2015  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (rb_rational_num): add fallback function
