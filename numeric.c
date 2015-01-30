@@ -235,9 +235,14 @@ NORETURN(static void coerce_failed(VALUE x, VALUE y));
 static void
 coerce_failed(VALUE x, VALUE y)
 {
+    if (SPECIAL_CONST_P(y) || BUILTIN_TYPE(y) == T_FLOAT) {
+	y = rb_inspect(y);
+    }
+    else {
+	y = rb_obj_class(y);
+    }
     rb_raise(rb_eTypeError, "%"PRIsVALUE" can't be coerced into %"PRIsVALUE,
-	     (rb_special_const_p(y)? rb_inspect(y) : rb_obj_class(y)),
-	     rb_obj_class(x));
+	     y, rb_obj_class(x));
 }
 
 static VALUE
