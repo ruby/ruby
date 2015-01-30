@@ -1,3 +1,8 @@
+Fri Jan 30 16:00:35 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (install_dirs): revert DESTDIR prefix by r39841, since
+	  it is fixed by r41648.  [ruby-core:55760] [Bug #8115]
+
 Fri Jan 30 15:47:49 2015  Eric Wong  <e@80x24.org>
 
 	* numeric.c (bit_coerce): use original value for error message
