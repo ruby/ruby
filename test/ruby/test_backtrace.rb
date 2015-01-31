@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'thread'
+require 'tempfile'
 
 class TestBacktrace < Test::Unit::TestCase
   def test_exception
@@ -161,6 +162,18 @@ class TestBacktrace < Test::Unit::TestCase
       assert_equal(str, loc.to_s)
       assert_equal(str.inspect, loc.inspect)
     }
+  end
+
+  def test_caller_locations_path
+    loc, = caller_locations(0, 1)
+    assert_equal(__FILE__, loc.path)
+    assert_equal(__FILE__, loc.absolute_path)
+    Tempfile.create(%w"caller_locations .rb") do |f|
+      f.puts "caller_locations(0, 1)[0].tap {|loc| puts loc.path, loc.absolute_path}"
+      f.close
+      path = f.path
+      assert_in_out_err(["-C", *File.split(path)], "", [File.basename(f.path), File.realpath(f.path)])
+    end
   end
 
   def th_rec q, n=10
