@@ -490,7 +490,7 @@ install?(:local, :comm, :bin, :'bin-comm') do
       when "exe"
         stub + shebang + body
       when "bat"
-        [<<-"EOH".gsub(/^\s+/, ''), shebang, body, "__END__\n:endofruby\n"].join.gsub(/$/, "\r")
+        [<<-"EOH".gsub(/^\s+/, ''), shebang, body, "__END__\n:endofruby\n"].join.gsub(/(?=\n)/, "\r")
           @echo off
           @if not "%~d0" == "~d0" goto WinNT
           #{ruby_bin} -x "#{cmd}" %1 %2 %3 %4 %5 %6 %7 %8 %9
