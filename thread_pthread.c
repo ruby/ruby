@@ -555,6 +555,15 @@ hpux_attr_getstackaddr(const pthread_attr_t *attr, void **addr)
 # define get_main_stack(addr, size) get_stack(addr, size)
 #endif
 
+static struct {
+    rb_nativethread_id_t id;
+    size_t stack_maxsize;
+    VALUE *stack_start;
+#ifdef __ia64
+    VALUE *register_stack_start;
+#endif
+} native_main_thread;
+
 #ifdef STACKADDR_AVAILABLE
 /*
  * Get the initial address and size of current thread's stack
@@ -576,8 +585,14 @@ get_stack(void **addr, size_t *size)
     CHECK_ERR(pthread_attr_getstackaddr(&attr, addr));
     CHECK_ERR(pthread_attr_getstacksize(&attr, size));
 # endif
-    CHECK_ERR(pthread_attr_getguardsize(&attr, &guard));
-    *size -= guard;
+    if (native_main_thread.id == pthread_self()) {
+	struct rlimit rl;
+	CHECK_ERR(getrlimit(RLIMIT_STACK, &rl));
+	*size = (rl.rlim_cur == RLIM_INFINITY) ? SIZE_MAX : rl.rlim_cur;
+    } else {
+	CHECK_ERR(pthread_attr_getguardsize(&attr, &guard));
+	*size -= guard;
+    }
     pthread_attr_destroy(&attr);
 #elif defined HAVE_PTHREAD_ATTR_GET_NP /* FreeBSD, DragonFly BSD, NetBSD */
     pthread_attr_t attr;
@@ -623,15 +638,6 @@ get_stack(void **addr, size_t *size)
 }
 #endif
 
-static struct {
-    rb_nativethread_id_t id;
-    size_t stack_maxsize;
-    VALUE *stack_start;
-#ifdef __ia64
-    VALUE *register_stack_start;
-#endif
-} native_main_thread;
-
 #ifdef STACK_END_ADDRESS
 extern void *STACK_END_ADDRESS;
 #endif
@@ -652,6 +658,31 @@ space_size(size_t stack_size)
 	return space_size;
     }
 }
+
+#ifdef __linux__
+static __attribute__((noinline)) void
+reserve_stack(int dir, volatile char *limit, size_t size)
+{
+    volatile char buf[0x100];
+    if (size == SIZE_MAX) return;
+    size -= sizeof(buf);   /* margin */
+    if (STACK_GROW_DIRECTION > 0 || dir > 0) {
+	limit += size;
+	if (limit > buf + sizeof(buf)) {
+	    size = limit - (buf + sizeof(buf));
+	    limit = alloca(size);
+	    limit[size-1] = 0;
+	}
+    }
+    else {
+	limit -= size;
+	if (buf > limit) {
+	    limit = alloca(buf - limit);
+	    limit[0] = 0;
+	}
+    }
+}
+#endif
 
 #undef ruby_init_stack
 /* Set stack bottom of Ruby implementation.
@@ -674,6 +705,9 @@ ruby_init_stack(volatile VALUE *addr
 	if (get_main_stack(&stackaddr, &size) == 0) {
 	    native_main_thread.stack_maxsize = size;
 	    native_main_thread.stack_start = stackaddr;
+# if defined(__linux__)
+	    reserve_stack(STACK_UPPER((VALUE *)(void *)&addr, +1, -1), stackaddr, size);
+# endif
 	    return;
 	}
     }
