@@ -418,7 +418,7 @@ end
 if load_relative
   PROLOG_SCRIPT = <<EOS
 #!/bin/sh\n# -*- ruby -*-
-bindir=`#{CONFIG["CHDIR"]} "${0%/*}" 2>/dev/null; pwd`
+bindir="${0%/*}"
 EOS
   if CONFIG["LIBRUBY_RELATIVE"] != 'yes' and libpathenv = CONFIG["LIBPATHENV"]
     pathsep = File::PATH_SEPARATOR
