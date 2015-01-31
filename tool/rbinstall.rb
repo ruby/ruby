@@ -335,7 +335,8 @@ enable_shared = CONFIG["ENABLE_SHARED"] == 'yes'
 dll = CONFIG["LIBRUBY_SO", enable_shared]
 lib = CONFIG["LIBRUBY", true]
 arc = CONFIG["LIBRUBY_A", true]
-load_relative = configure_args.include?("--enable-load-relative")
+config_h = File.read(CONFIG["EXTOUT"]+"/include/"+CONFIG["arch"]+"/ruby/config.h")
+load_relative = config_h[/^\s*#\s*define\s+LOAD_RELATIVE\s+(\d+)/, 1].to_i.nonzero?
 
 install?(:local, :arch, :bin, :'bin-arch') do
   prepare "binary commands", bindir
@@ -466,20 +467,21 @@ install?(:local, :comm, :bin, :'bin-comm') do
   else
     trans = proc {|base| base}
   end
+  prebatch = ':""||{ ""=> %q<-*- ruby -*-'"\n"
+  postbatch = PROLOG_SCRIPT ? "};{\n#{PROLOG_SCRIPT.sub(/\A(?:#.*\n)*/, '')}" : ''
+  postbatch << ">,\n}\n"
+  postbatch.gsub!(/(?=\n)/, ' #')
   install_recursive(File.join(srcdir, "bin"), bindir, :maxdepth => 1) do |src, cmd|
     cmd = cmd.sub(/[^\/]*\z/m) {|n| RbConfig.expand(trans[n])}
 
-    shebang = ''
-    body = ''
-    open(src, "rb") do |f|
-      shebang = f.gets
-      body = f.read
+    shebang, body = open(src, "rb") do |f|
+      next f.gets, f.read
     end
     shebang or raise "empty file - #{src}"
-    if PROLOG_SCRIPT
+    if PROLOG_SCRIPT and !$cmdtype
       shebang.sub!(/\A(\#!.*?ruby\b)?/) {PROLOG_SCRIPT + ($1 || "#!ruby\n")}
     else
-      shebang.sub!(/\A\#!.*?ruby\b/) {"#!" + ruby_shebang}
+      shebang.sub!(/\A(\#!.*?ruby\b)?/) {"#!" + ruby_shebang + ($1 ? "" : "\n")}
     end
     shebang.sub!(/\r$/, '')
     body.gsub!(/\r$/, '')
@@ -490,7 +492,7 @@ install?(:local, :comm, :bin, :'bin-comm') do
       when "exe"
         stub + shebang + body
       when "bat"
-        [<<-"EOH".gsub(/^\s+/, ''), shebang, body, "__END__\n:endofruby\n"].join.gsub(/(?=\n)/, "\r")
+        (prebatch + <<-"EOH".gsub(/^\s+/, '') << postbatch << shebang << body << "__END__\n:endofruby\n").gsub(/(?=\n)/, "\r")
           @echo off
           @if not "%~d0" == "~d0" goto WinNT
           #{ruby_bin} -x "#{cmd}" %1 %2 %3 %4 %5 %6 %7 %8 %9
@@ -500,7 +502,7 @@ install?(:local, :comm, :bin, :'bin-comm') do
           @goto endofruby
         EOH
       when "cmd"
-        <<"/EOH" << shebang << body
+        prebatch + <<"/EOH" << postbatch << shebang << body
 @"%~dp0#{ruby_install_name}" -x "%~f0" %*
 @exit /b %ERRORLEVEL%
 /EOH
