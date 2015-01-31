@@ -48,7 +48,7 @@ class Downloader
       super("#{$rubygems_schema}://rubygems.org/downloads/#{name}", file, nil, ims, options) or
         return false
       policy = Gem::Security::LowSecurity
-      (policy = policy.dup).ui = Gem::SilentUI.new
+      (policy = policy.dup).ui = Gem::SilentUI.new if policy.respond_to?(:'ui=')
       pkg = Gem::Package.new(file)
       pkg.security_policy = policy
       begin
