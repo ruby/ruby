@@ -1,3 +1,10 @@
+Sat Jan 31 12:06:23 2015  Scott Francis  <scott.francis@shopify.com>
+
+	* thread_pthread.c (reserve_stack): fix intermittent SIGBUS on
+	  Linux, by reserving the stack virtual address space at process
+	  start up so that it will not clash with the heap space.
+	  [Fix GH-822]
+
 Fri Jan 30 17:28:29 2015  gogotanaka  <mail@tanakakazuki.com>
 
 	* math.c (num2dbl_with_to_f): make faster when Bignum passed by
