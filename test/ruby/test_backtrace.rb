@@ -185,6 +185,16 @@ class TestBacktrace < Test::Unit::TestCase
     end
   end
 
+  def test_caller_locations_lineno
+    loc, = caller_locations(0, 1)
+    assert_equal(__LINE__-1, loc.lineno)
+    Tempfile.create(%w"caller_locations .rb") do |f|
+      f.puts "caller_locations(0, 1)[0].tap {|loc| puts loc.lineno}"
+      f.close
+      assert_in_out_err(["-C", *File.split(f.path)], "", ["1"])
+    end
+  end
+
   def th_rec q, n=10
     if n > 1
       th_rec q, n-1
