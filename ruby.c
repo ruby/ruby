@@ -2018,52 +2018,6 @@ fill_standard_fds(void)
     }
 }
 
-#if defined(__linux__) && defined(__x86_64__)
-#include <sys/resource.h>
-static void
-reserve_stack(void) {
-    char buf[1024];
-    char *p;
-    unsigned long long base = 0;
-    FILE *f;
-    struct rlimit rl;
-
-    if (getrlimit(RLIMIT_STACK, &rl) || rl.rlim_cur == RLIM_INFINITY) {
-	return;
-    }
-    f = fopen("/proc/self/maps", "r");
-    if (!f) {
-	return;
-    }
-
-    while (fgets(buf, 1024, f)) {
-	if (strstr(buf, "[stack]")) {
-	    *(strchr(buf, ' ')) = '\0';
-	    p = strchr(buf, '-') + 1;
-	    base = strtoull(p, NULL, 16);
-	    break;
-	}
-    }
-    fclose(f);
-    if (!base) {
-	return;
-    }
-
-    __asm__("movq %%rsp,%%rax;\
-             sub %%rsp,%0;\
-             sub %0,%1;\
-             sub %1,%%rsp;\
-             movq $0,(%%rsp);\
-             movq %%rax,%%rsp;"
-             :
-             :"r" (base), "r" (rl.rlim_cur)
-             :"%rax");
-}
-#else
-static void
-reserve_stack(void) { }
-#endif
-
 /*! Initializes the process for ruby(1).
  *
  * This function assumes this process is ruby(1) and it has just started.
@@ -2083,5 +2037,4 @@ ruby_sysinit(int *argc, char ***argv)
     dln_argv0 = origarg.argv[0];
 #endif
     fill_standard_fds();
-    reserve_stack();
 }
