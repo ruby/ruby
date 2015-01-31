@@ -167,12 +167,21 @@ class TestBacktrace < Test::Unit::TestCase
   def test_caller_locations_path
     loc, = caller_locations(0, 1)
     assert_equal(__FILE__, loc.path)
+    Tempfile.create(%w"caller_locations .rb") do |f|
+      f.puts "caller_locations(0, 1)[0].tap {|loc| puts loc.path}"
+      f.close
+      dir, base = File.split(f.path)
+      assert_in_out_err(["-C", dir, base], "", [base])
+    end
+  end
+
+  def test_caller_locations_absolute_path
+    loc, = caller_locations(0, 1)
     assert_equal(__FILE__, loc.absolute_path)
     Tempfile.create(%w"caller_locations .rb") do |f|
-      f.puts "caller_locations(0, 1)[0].tap {|loc| puts loc.path, loc.absolute_path}"
+      f.puts "caller_locations(0, 1)[0].tap {|loc| puts loc.absolute_path}"
       f.close
-      path = f.path
-      assert_in_out_err(["-C", *File.split(path)], "", [File.basename(f.path), File.realpath(f.path)])
+      assert_in_out_err(["-C", *File.split(f.path)], "", [File.realpath(f.path)])
     end
   end
 
