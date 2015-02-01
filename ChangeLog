@@ -1,3 +1,9 @@
+Sun Feb  1 13:46:52 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb (bin-comm): drop batch file installation.
+	  Windows 95 support has not been supported already.
+	  [Feature #10806]
+
 Sat Jan 31 12:06:23 2015  Scott Francis  <scott.francis@shopify.com>
 
 	* thread_pthread.c (reserve_stack): fix intermittent SIGBUS on
