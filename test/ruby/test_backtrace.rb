@@ -195,6 +195,28 @@ class TestBacktrace < Test::Unit::TestCase
     end
   end
 
+  def test_caller_locations_base_label
+    assert_equal("#{__method__}", caller_locations(0, 1)[0].base_label)
+    loc, = tap {|loc| break caller_locations(0, 1)}
+    assert_equal("#{__method__}", loc.base_label)
+    begin
+      raise
+    rescue
+      assert_equal("#{__method__}", caller_locations(0, 1)[0].base_label)
+    end
+  end
+
+  def test_caller_locations_label
+    assert_equal("#{__method__}", caller_locations(0, 1)[0].label)
+    loc, = tap {|loc| break caller_locations(0, 1)}
+    assert_equal("block in #{__method__}", loc.label)
+    begin
+      raise
+    rescue
+      assert_equal("rescue in #{__method__}", caller_locations(0, 1)[0].label)
+    end
+  end
+
   def th_rec q, n=10
     if n > 1
       th_rec q, n-1
