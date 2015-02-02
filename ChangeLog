@@ -1,3 +1,9 @@
+Mon Feb  2 22:47:35 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (method_proc): the receiver of binding from method should
+	  be same as the receiver of the method.
+	  [ruby-core:65917] [Bug #10432]
+
 Mon Feb  2 22:43:42 2015  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/resolv.rb: fall back if canonicalization fails.
