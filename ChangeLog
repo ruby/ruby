@@ -1,3 +1,10 @@
+Mon Feb  2 22:43:42 2015  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* lib/resolv.rb: fall back if canonicalization fails.
+	  Thanks Vit Ondruch for the patch!  [ruby-core:65836]
+
+	* test/resolv/test_dns.rb: test for patch
+
 Mon Feb  2 22:38:53 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (rb_cv_binary_elf): get rid of -e option of cat
