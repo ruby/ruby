@@ -1,3 +1,9 @@
+Mon Feb  2 22:38:53 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rb_cv_binary_elf): get rid of -e option of cat
+	  which is not available on BusyBox, use tr instead.
+	  [ruby-core:64824] [Bug #10210]
+
 Thu Jan 22 20:40:36 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/ossl_cipher.c (ossl_cipher_update_long): update huge
