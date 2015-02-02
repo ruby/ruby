@@ -1,3 +1,13 @@
+Tue Feb  3 05:52:00 2015  Aman Gupta <ruby@tmm1.net>
+
+	* gc.c (rb_objspace_free): cause rb_bug if lazy sweep is in progress
+	  during rb_objspace_free. Adds extra protection for r46340.
+	  Patch by Vicent Marti. [Bug #10768] [ruby-core:67734]
+	* gc.c (rb_objspace_call_finalizer): Ensure GC is completed after
+	  finalizers have run. We already call gc_rest() before invoking
+	  finalizers, but finalizer can allocate new objects and start new GC
+	  cycle, so we call gc_rest() again after finalizers are complete.
+
 Mon Feb  2 10:51:34 2015  Ari Pollak  <ajp@aripollak.com>
 
 	* doc/security.rdoc (Symbols): update about Symbol GC.  Symbols
