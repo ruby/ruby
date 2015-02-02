@@ -1,3 +1,10 @@
+Mon Feb  2 10:51:34 2015  Ari Pollak  <ajp@aripollak.com>
+
+	* doc/security.rdoc (Symbols): update about Symbol GC.  Symbols
+	  explicitly converted from Strings now can be collected, but
+	  reflection/metaprogramming still can cause memory flooding.
+	  [Fix GH-725]
+
 Sun Feb  1 13:46:52 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/rbinstall.rb (bin-comm): drop batch file installation.

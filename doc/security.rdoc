@@ -66,20 +66,16 @@ method, variable and constant names. The reason for this is that symbols are
 simply integers with names attached to them, so they are faster to look up in
 hashtables.
 
-Once a symbol is created, the memory used by it is never freed. If you convert
-user input to symbols with +to_sym+ or +intern+, it is possible for an attacker
-to mount a denial of service attack against your application by flooding it
-with unique strings. Because each string is kept in memory until the Ruby
-process exits, this will cause memory consumption to grow and grow until Ruby
-runs out of memory and crashes.
-
 Be careful with passing user input to methods such as +send+,
-+instance_variable_get+ or +_set+, +const_get+ or +_set+, etc. as these methods
-will convert string parameters to symbols internally and pose the same DoS
-potential as direct conversion through +to_sym+/+intern+.
++instance_variable_get+ or +_set+, +const_get+ or +_set+, etc.
+as these methods will convert string parameters to immortal symbols internally.
+This means that the memory used by the symbols are never freed.  This could
+allow a user to mount a denial of service attack against your application by
+flooding it with unique strings, which will cause memory to grow indefinitely
+until the Ruby process is killed or causes the system to slow to a halt.
 
-The workaround to this is simple - don't convert user input to symbols. You
-should attempt to leave user input in string form instead.
+The workaround to this is simple - don't call reflection/metaprogramming
+methods with user input.
 
 == Regular expressions
 
