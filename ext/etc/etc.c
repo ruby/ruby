@@ -67,8 +67,15 @@ etc_getlogin(VALUE obj)
     login = getenv("USER");
 #endif
 
-    if (login)
-	return rb_tainted_str_new2(login);
+    if (login) {
+#ifdef _WIN32
+	rb_encoding *extenc = rb_utf8_encoding();
+#else
+	rb_encoding *extenc = rb_locale_encoding();
+#endif
+	return rb_external_str_new_with_enc(login, strlen(login), extenc);
+    }
+
     return Qnil;
 }
 

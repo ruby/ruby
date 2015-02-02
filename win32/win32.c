@@ -543,11 +543,15 @@ init_env(void)
 	if (!GetEnvironmentVariableW(L"USERNAME", env, numberof(env)) &&
 	    !GetUserNameW(env, (len = numberof(env), &len))) {
 	    NTLoginName = "<Unknown>";
-	    return;
 	}
-	set_env_val(L"USER");
+	else {
+	    set_env_val(L"USER");
+	    NTLoginName = rb_w32_wstr_to_mbstr(CP_UTF8, env, -1, NULL);
+	}
     }
-    NTLoginName = strdup(rb_w32_getenv("USER"));
+    else {
+	NTLoginName = rb_w32_wstr_to_mbstr(CP_UTF8, env, -1, NULL);
+    }
 
     if (!GetEnvironmentVariableW(TMPDIR, env, numberof(env)) &&
 	!GetEnvironmentVariableW(L"TMP", env, numberof(env)) &&
