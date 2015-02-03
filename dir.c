@@ -1081,7 +1081,7 @@ dir_s_rmdir(VALUE obj, VALUE dir)
 static VALUE
 sys_warning_1(VALUE mesg)
 {
-    rb_sys_warning("%s:%s", strerror(errno), (const char *)mesg);
+    rb_sys_warning("%s", (const char *)mesg);
     return Qnil;
 }
 
