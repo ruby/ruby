@@ -382,7 +382,7 @@ enc/jis/props.h: enc/jis/props.kwd
 	@$(ECHO) copying dummy $(DEST_FILE)
 	$(Q) $(CP) $(OS_SRC_FILE) $(OS_DEST_FILE)
 
-probes.@OBJEXT@: $(srcdir)/probes.d
+probes.@OBJEXT@: $(srcdir)/probes.d $(DTRACE_DEPENDENT_OBJS)
 	@$(ECHO) processing probes in object files
 	$(Q) stamp="$*.stamp"; \
 	  if test -f "$$stamp" -o -f "$@"; then \
@@ -398,9 +398,9 @@ probes.@OBJEXT@: $(srcdir)/probes.d
 
 # DTrace static library hacks described here:
 # http://mail.opensolaris.org/pipermail/dtrace-discuss/2005-August/000207.html
-ruby-glommed.$(OBJEXT): $(OBJS) $(DTRACE_OBJ)
+ruby-glommed.$(OBJEXT):
 	@$(ECHO) generating a glommed object with DTrace probes for static library
-	$(Q) $(LD) -r -o $@ $(OBJS) $(DTRACE_OBJ)
+	$(Q) $(LD) -r -o $@ $(OBJS)
 
 clean-local::
 	$(Q)$(RM) ext/extinit.c ext/extinit.$(OBJEXT) ext/ripper/y.output \

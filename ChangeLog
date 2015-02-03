@@ -1,3 +1,17 @@
+Tue Feb  3 19:27:16 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* common.mk (ruby-glommed.o): dependency on $(OBJ) should be written
+	  in common.mk (in which OBJ is defined) because of Makefile include
+	  and parse order. This partly reverts r49419.
+	  [ruby-dev:48849] [Bug #10808]
+
+	* Makefile.in (ruby-glommed.o): ditto.
+
+	* Makefile.in (ruby-glommed.o): remove excess $(DTRACE_OBJ) because
+	  it is included in $(OBJS) since r49451.
+
+	* Makefile.in (probes.o): should depend on $(DTRACE_DEPENDENT_OBJS)
+
 Tue Feb  3 17:15:45 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (try_cppflags, try_cflags, try_ldflags): get rid of

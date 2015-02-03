@@ -713,6 +713,8 @@ verconf.h: $(srcdir)/template/verconf.h.tmpl $(srcdir)/tool/generic_erb.rb
 	$(ECHO) creating $@
 	$(Q) $(MINIRUBY) "$(srcdir)/tool/generic_erb.rb" -o $@ $(srcdir)/template/verconf.h.tmpl
 
+ruby-glommed.$(OBJEXT): $(OBJS)
+
 $(OBJS):  {$(VPATH)}config.h {$(VPATH)}missing.h
 
 INSNS2VMOPT = --srcdir="$(srcdir)"
