@@ -1,3 +1,9 @@
+Tue Feb  3 17:15:45 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (try_cppflags, try_cflags, try_ldflags): get rid of
+	  interference by modifying global variables in have_devel? method.
+	  [ruby-core:67962] [Bug #10821]
+
 Tue Feb  3 15:23:58 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_method.c (remove_method): When remove refined

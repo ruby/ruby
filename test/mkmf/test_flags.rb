@@ -31,5 +31,26 @@ class TestMkmf
       $warnflags = warnflags
       $extmk = val
     end
+
+    def test_try_ldflag_invalid_opt
+      assert_separately([], <<-'end;') #do
+        assert(!try_ldflags("----------"))
+        assert(have_devel?, TestMkmf::MKMFLOG)
+      end;
+    end
+
+    def test_try_cflag_invalid_opt
+      assert_separately([], <<-'end;') #do
+        assert(!try_cflags("----------"))
+        assert(have_devel?, TestMkmf::MKMFLOG)
+      end;
+    end
+
+    def test_try_cppflag_invalid_opt
+      assert_separately([], <<-'end;') #do
+        assert(!try_cppflags("----------"))
+        assert(have_devel?, TestMkmf::MKMFLOG)
+      end;
+    end
   end
 end
