@@ -3,11 +3,11 @@ Tue Feb  3 15:23:58 2015  Shugo Maeda  <shugo@ruby-lang.org>
 	* vm_method.c (remove_method): When remove refined
 	  method, raise a NameError if the method is not
 	  defined in refined class.
-	
+
 	  But if the method is defined in refined class,
 	  it should keep refined method and remove original
 	  method.
-	  
+
 	  Patch by Seiei Higa. [ruby-core:67722] [Bug #10765]
 
 Tue Feb  3 14:04:47 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
