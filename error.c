@@ -2096,7 +2096,7 @@ rb_sys_warning(const char *fmt, ...)
 
     if (!RTEST(ruby_verbose)) return;
 
-    snprintf(buf+strlen(buf), BUFSIZ-strlen(buf), ": %s", strerror(errno_save));
+    snprintf(buf, BUFSIZ, "%s: %s", fmt, strerror(errno_save));
 
     va_start(args, fmt);
     warn_print(buf, args);
