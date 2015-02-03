@@ -1,3 +1,9 @@
+Tue Feb  3 12:26:35 2015  Katsuhiko Nishimra  <ktns.87@gmail.com>
+
+	* lib/mkmf.rb (configuration): set the default cxxflags, which is
+	  referred from the default CXXFLAGS, for extension libraries.
+	  [Fix GH-823]
+
 Tue Feb  3 05:52:00 2015  Aman Gupta <ruby@tmm1.net>
 
 	* gc.c (rb_objspace_free): cause rb_bug if lazy sweep is in progress
