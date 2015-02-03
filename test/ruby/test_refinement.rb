@@ -1310,6 +1310,58 @@ class TestRefinement < Test::Unit::TestCase
     end;
   end
 
+  def test_remove_refined_method
+    assert_separately([], <<-"end;")
+    bug10765 = '[ruby-core:67722] [Bug #10765]'
+
+    class C
+      def foo
+        "C#foo"
+      end
+    end
+
+    module RefinementBug
+      refine C do
+        def foo
+          "RefinementBug#foo"
+        end
+      end
+    end
+
+    using RefinementBug
+
+    class C
+      remove_method :foo
+    end
+
+    assert_equal("RefinementBug#foo", C.new.foo, bug10765)
+    end;
+  end
+
+  def test_remove_undefined_refined_method
+    assert_separately([], <<-"end;")
+    bug10765 = '[ruby-core:67722] [Bug #10765]'
+
+    class C
+    end
+
+    module RefinementBug
+      refine C do
+        def foo
+        end
+      end
+    end
+
+    using RefinementBug
+
+    assert_raise(NameError, bug10765) {
+      class C
+        remove_method :foo
+      end
+    }
+    end;
+  end
+
   private
 
   def eval_using(mod, s)
