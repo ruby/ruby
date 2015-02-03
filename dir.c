@@ -1134,7 +1134,7 @@ do_opendir(const char *path, int flags, rb_encoding *enc)
 {
     DIR *dirp;
 #ifdef _WIN32
-    volatile VALUE tmp;
+    VALUE tmp = 0;
     if (enc != rb_usascii_encoding() &&
 	enc != rb_ascii8bit_encoding() &&
 	enc != rb_utf8_encoding()) {
@@ -1146,6 +1146,9 @@ do_opendir(const char *path, int flags, rb_encoding *enc)
     dirp = opendir(path);
     if (dirp == NULL && !to_be_ignored(errno))
 	sys_warning(path);
+#ifdef _WIN32
+    if (tmp) rb_str_resize(tmp, 0); /* GC guard */
+#endif
 
     return dirp;
 }
