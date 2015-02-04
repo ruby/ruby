@@ -3596,6 +3596,7 @@ if test "${enable_dtrace}" = "auto"; then
 fi
 
 LIBRUBY_A_OBJS='$(OBJS)'
+DTRACE_REBUILD=
 if test "${enable_dtrace}" = "yes"; then
     if test -z "$DTRACE"; then
         AC_MSG_ERROR([dtrace(1) is missing])
@@ -3612,7 +3613,7 @@ if test "${enable_dtrace}" = "yes"; then
             DTRACE_OBJ='probes.$(OBJEXT)'
         fi
         if test "$rb_cv_prog_dtrace_g" = 'rebuild'; then
-            DTRACE_GLOMMED_OBJ='ruby-glommed.$(OBJEXT)'
+            DTRACE_REBUILD=yes
             LIBRUBY_A_OBJS='$(DTRACE_GLOMMED_OBJ)'
         fi
         AS_CASE("${target_os}", [freebsd*], [
@@ -3626,7 +3627,7 @@ else
 fi
 AC_SUBST(DTRACE_EXT)
 AC_SUBST(DTRACE_OBJ)
-AC_SUBST(DTRACE_GLOMMED_OBJ)
+AC_SUBST(DTRACE_REBUILD)
 AC_SUBST(LIBRUBY_A_OBJS)
 
 RUBY_SETJMP_TYPE

@@ -8,7 +8,8 @@ dll: $(LIBRUBY_SO)
 V = 0
 Q1 = $(V:1=)
 Q = $(Q1:0=@)
-ECHO = $(ECHO1:0=@echo)
+ECHO0 = $(ECHO1:0=echo)
+ECHO = @$(ECHO0)
 
 UNICODE_VERSION = 7.0.0
 
