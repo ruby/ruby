@@ -247,12 +247,16 @@ location_path(rb_backtrace_location_t *loc)
 }
 
 /*
- * Returns the file name of this frame.
+ * Returns the file path of this frame.
  *
- * For example, using +caller_locations.rb+ from Thread::Backtrace::Location
+ * For example, say you have the following script located in
+ * +/home/example/caller_locations.rb+:
  *
- *	loc = c(0..1).first
- *	loc.path #=> caller_locations.rb
+ *      def example
+ *        caller_locations[0]
+ *      end
+ *
+ *      example.path # => "/home/example/caller_locations.rb"
  */
 static VALUE
 location_path_m(VALUE self)
@@ -280,9 +284,7 @@ location_absolute_path(rb_backtrace_location_t *loc)
 }
 
 /*
- * Returns the full file path of this frame.
- *
- * Same as #path, but includes the absolute path.
+ * Returns the full file path of this frame. This is the same as #path.
  */
 static VALUE
 location_absolute_path_m(VALUE self)
