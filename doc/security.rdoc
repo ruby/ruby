@@ -75,7 +75,8 @@ They are created when modifying code:
 * defining a method (e.g. with +define_method+),
 * setting an instance variable (e.g. with +instance_variable_set+),
 * creating a variable or constant (e.g. with +const_set+)
-Also, C extensions that have not been updated and are still calling `ID2SYM`
+Because of a bug, +send+ and +__send__+ also create immortal symbols.
+Finally, C extensions that have not been updated and are still calling `ID2SYM`
 will create immortal symbols.
 
 Don't create immortal symbols from user inputs. Otherwise, this would
@@ -84,7 +85,7 @@ flooding it with unique strings, which will cause memory to grow indefinitely
 until the Ruby process is killed or causes the system to slow to a halt.
 
 While it might not be a good idea to call these with user inputs, methods that
-used to be vulnerable such as +to_sym+, +send+, +respond_to?+,
+used to be vulnerable such as +to_sym+, +respond_to?+,
 +method+, +instance_variable_get+, +const_get+, etc. are no longer a threat.
 
 == Regular expressions
