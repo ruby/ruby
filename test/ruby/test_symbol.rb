@@ -265,7 +265,7 @@ class TestSymbol < Test::Unit::TestCase
     assert_no_immortal_symbol_created do
       10.times { |i| x.send "send should not leak #{i} - str mm" }
     end
-  end
+  end if false
 
   def test_symbol_send_leak_symbol_custom_method_missing
     x = Object.new
@@ -273,7 +273,7 @@ class TestSymbol < Test::Unit::TestCase
     assert_no_immortal_symbol_created do
       10.times { |i| x.send "send should not leak #{i} - sym mm".to_sym }
     end
-  end
+  end if false
 
   def test_symbol_send_leak_string_no_optimization
     assert_no_immortal_symbol_created do
