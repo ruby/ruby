@@ -1,3 +1,8 @@
+Wed Feb  4 16:32:40 2015  Matt Hoyle  <matt@deployable.co>
+
+	* ext/bigdecimal/bigdecimal.c (VpSetPTR): fix a typo, 'expoennt'
+	  to 'exponent'.  [ruby-core:67980] [Bug #10823] [Fix GH-825]
+
 Wed Feb  4 15:55:38 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/sdbm/_sdbm.c: include ruby/ruby.h for PRIdPTRDIFF when a
