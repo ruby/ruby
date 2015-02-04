@@ -1,3 +1,9 @@
+Wed Feb  4 15:55:38 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/sdbm/_sdbm.c: include ruby/ruby.h for PRIdPTRDIFF when a
+	  macro `DEBUG` is defined.  based on the patch by Owen Rodley in
+	  [ruby-core:67987]. [Bug #10825]
+
 Wed Feb  4 11:12:43 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (probes.stamp): rebuild dtrace dependent objects

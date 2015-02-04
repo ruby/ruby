@@ -7,8 +7,7 @@
  * core routines
  */
 
-#include "ruby/config.h"
-#include "ruby/defines.h"
+#include "ruby/ruby.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
