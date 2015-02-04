@@ -802,7 +802,7 @@ delpair(char *pag, datum key)
 		}
 #else
 #ifdef MEMMOVE
-		memmove(dst, src, m);
+		memmove(dst-m, src-m, m);
 #else
 		while (m--)
 			*--dst = *--src;
