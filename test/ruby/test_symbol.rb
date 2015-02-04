@@ -274,4 +274,33 @@ class TestSymbol < Test::Unit::TestCase
       10.times { |i| x.send "send should not leak #{i} - sym mm".to_sym }
     end
   end
+
+  def test_symbol_send_leak_string_no_optimization
+    assert_no_immortal_symbol_created do
+      10.times { 42.method(:send).call "send should not leak #{i} - str slow" rescue nil }
+    end
+  end
+
+  def test_symbol_send_leak_symbol_no_optimization
+    assert_no_immortal_symbol_created do
+      10.times { 42.method(:send).call "send should not leak #{i} - sym slow".to_sym rescue nil }
+    end
+  end
+
+  def test_symbol_send_leak_string_custom_method_missing_no_optimization
+    x = Object.new
+    def x.method_missing(*); end
+    assert_no_immortal_symbol_created do
+      10.times { |i| x.method(:send).call "send should not leak #{i} - str mm slow" }
+    end
+  end
+
+  def test_symbol_send_leak_symbol_custom_method_missing_no_optimization
+    x = Object.new
+    def x.method_missing(*); end
+    assert_no_immortal_symbol_created do
+      10.times { |i| x.method(:send).call "send should not leak #{i} - sym mm slow".to_sym }
+    end
+  end
+
 end

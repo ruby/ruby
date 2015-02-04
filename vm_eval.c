@@ -884,16 +884,18 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
 	rb_raise(rb_eArgError, "no method name given");
     }
 
-    vid = *argv++; argc--;
+    vid = *argv;
 
     id = rb_check_id(&vid);
     if (!id) {
 	if (rb_method_basic_definition_p(CLASS_OF(recv), idMethodMissing)) {
 	    VALUE exc = make_no_method_exception(rb_eNoMethodError, NULL,
-						 recv, ++argc, --argv);
+						 recv, argc, argv);
 	    rb_exc_raise(exc);
 	}
-	id = rb_to_id(vid);
+	id = idMethodMissing;
+    } else {
+	argv++; argc--;
     }
     PASS_PASSED_BLOCK_TH(th);
     return rb_call0(recv, id, argc, argv, scope, self);
