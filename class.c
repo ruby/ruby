@@ -1125,25 +1125,32 @@ ins_methods_pub_i(st_data_t name, st_data_t type, st_data_t ary)
     return ins_methods_push((ID)name, (long)type, (VALUE)ary, NOEX_PUBLIC);
 }
 
+struct method_entry_arg {
+    st_table *list;
+    int recur;
+};
+
 static int
 method_entry_i(st_data_t key, st_data_t value, st_data_t data)
 {
     const rb_method_entry_t *me = (const rb_method_entry_t *)value;
-    st_table *list = (st_table *)data;
+    struct method_entry_arg *arg = (struct method_entry_arg *)data;
     long type;
 
     if (me && me->def->type == VM_METHOD_TYPE_REFINED) {
+	VALUE klass = me->klass;
 	me = rb_resolve_refined_method(Qnil, me, NULL);
 	if (!me) return ST_CONTINUE;
+	if (!arg->recur && me->klass != klass) return ST_CONTINUE;
     }
-    if (!st_lookup(list, key, 0)) {
+    if (!st_lookup(arg->list, key, 0)) {
 	if (UNDEFINED_METHOD_ENTRY_P(me)) {
 	    type = -1; /* none */
 	}
 	else {
 	    type = VISI(me->flag);
 	}
-	st_add_direct(list, key, type);
+	st_add_direct(arg->list, key, type);
     }
     return ST_CONTINUE;
 }
@@ -1153,7 +1160,7 @@ class_instance_method_list(int argc, const VALUE *argv, VALUE mod, int obj, int 
 {
     VALUE ary;
     int recur, prepended = 0;
-    st_table *list;
+    struct method_entry_arg me_arg;
 
     if (argc == 0) {
 	recur = TRUE;
@@ -1169,16 +1176,17 @@ class_instance_method_list(int argc, const VALUE *argv, VALUE mod, int obj, int 
 	prepended = 1;
     }
 
-    list = st_init_numtable();
+    me_arg.list = st_init_numtable();
+    me_arg.recur = recur;
     for (; mod; mod = RCLASS_SUPER(mod)) {
-	if (RCLASS_M_TBL(mod)) st_foreach(RCLASS_M_TBL(mod), method_entry_i, (st_data_t)list);
+	if (RCLASS_M_TBL(mod)) st_foreach(RCLASS_M_TBL(mod), method_entry_i, (st_data_t)&me_arg);
 	if (BUILTIN_TYPE(mod) == T_ICLASS && !prepended) continue;
 	if (obj && FL_TEST(mod, FL_SINGLETON)) continue;
 	if (!recur) break;
     }
     ary = rb_ary_new();
-    st_foreach(list, func, ary);
-    st_free_table(list);
+    st_foreach(me_arg.list, func, ary);
+    st_free_table(me_arg.list);
 
     return ary;
 }
@@ -1391,7 +1399,8 @@ VALUE
 rb_obj_singleton_methods(int argc, const VALUE *argv, VALUE obj)
 {
     VALUE recur, ary, klass, origin;
-    st_table *list, *mtbl;
+    struct method_entry_arg me_arg;
+    st_table *mtbl;
 
     if (argc == 0) {
 	recur = Qtrue;
@@ -1401,22 +1410,23 @@ rb_obj_singleton_methods(int argc, const VALUE *argv, VALUE obj)
     }
     klass = CLASS_OF(obj);
     origin = RCLASS_ORIGIN(klass);
-    list = st_init_numtable();
+    me_arg.list = st_init_numtable();
+    me_arg.recur = recur;
     if (klass && FL_TEST(klass, FL_SINGLETON)) {
 	if ((mtbl = RCLASS_M_TBL(origin)) != 0)
-	    st_foreach(mtbl, method_entry_i, (st_data_t)list);
+	    st_foreach(mtbl, method_entry_i, (st_data_t)&me_arg);
 	klass = RCLASS_SUPER(klass);
     }
     if (RTEST(recur)) {
 	while (klass && (FL_TEST(klass, FL_SINGLETON) || RB_TYPE_P(klass, T_ICLASS))) {
 	    if (klass != origin && (mtbl = RCLASS_M_TBL(klass)) != 0)
-		st_foreach(mtbl, method_entry_i, (st_data_t)list);
+		st_foreach(mtbl, method_entry_i, (st_data_t)&me_arg);
 	    klass = RCLASS_SUPER(klass);
 	}
     }
     ary = rb_ary_new();
-    st_foreach(list, ins_methods_i, ary);
-    st_free_table(list);
+    st_foreach(me_arg.list, ins_methods_i, ary);
+    st_free_table(me_arg.list);
 
     return ary;
 }

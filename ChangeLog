@@ -1,3 +1,9 @@
+Wed Feb  4 15:34:25 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* class.c (method_entry_i, class_instance_method_list,
+	  rb_obj_singleton_methods): should not include methods of
+	  superclasses if recur is false. [ruby-dev:48854] [Bug #10826]
+
 Wed Feb  4 16:32:40 2015  Matt Hoyle  <matt@deployable.co>
 
 	* ext/bigdecimal/bigdecimal.c (VpSetPTR): fix a typo, 'expoennt'

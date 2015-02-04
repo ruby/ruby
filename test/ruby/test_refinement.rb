@@ -1362,6 +1362,31 @@ class TestRefinement < Test::Unit::TestCase
     end;
   end
 
+  module NotIncludeSuperclassMethod
+    class X
+      def foo
+      end
+    end
+
+    class Y < X
+    end
+
+    module Bar
+      refine Y do
+        def foo
+        end
+      end
+    end
+  end
+
+  def test_instance_methods_not_include_superclass_method
+    bug10826 = '[ruby-dev:48854] [Bug #10826]'
+    assert_not_include(NotIncludeSuperclassMethod::Y.instance_methods(false),
+                       :foo, bug10826)
+    assert_include(NotIncludeSuperclassMethod::Y.instance_methods(true),
+                   :foo, bug10826)
+  end
+
   private
 
   def eval_using(mod, s)
