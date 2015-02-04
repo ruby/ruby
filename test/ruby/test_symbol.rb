@@ -258,4 +258,20 @@ class TestSymbol < Test::Unit::TestCase
       10.times { 42.send "send should not leak #{i} - sym".to_sym rescue nil }
     end
   end
+
+  def test_symbol_send_leak_string_custom_method_missing
+    x = Object.new
+    def x.method_missing(*); end
+    assert_no_immortal_symbol_created do
+      10.times { |i| x.send "send should not leak #{i} - str mm" }
+    end
+  end
+
+  def test_symbol_send_leak_symbol_custom_method_missing
+    x = Object.new
+    def x.method_missing(*); end
+    assert_no_immortal_symbol_created do
+      10.times { |i| x.send "send should not leak #{i} - sym mm".to_sym }
+    end
+  end
 end

@@ -1531,16 +1531,17 @@ vm_call_opt_send(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *c
 	    VALUE exc = make_no_method_exception(rb_eNoMethodError, NULL, ci->recv, rb_long2int(ci->argc), &TOPN(i));
 	    rb_exc_raise(exc);
 	}
-	ci->mid = rb_to_id(sym);
-    }
-
-    /* shift arguments */
-    if (i > 0) {
-	MEMMOVE(&TOPN(i), &TOPN(i-1), VALUE, i);
+	ci->mid = idMethodMissing;
+	th->method_missing_reason = ci->aux.missing_reason = NOEX_VCALL;
+    } else {
+	/* shift arguments */
+	if (i > 0) {
+	    MEMMOVE(&TOPN(i), &TOPN(i-1), VALUE, i);
+	}
+	ci->argc -= 1;
+	DEC_SP(1);
     }
     ci->me = rb_method_entry_without_refinements(CLASS_OF(ci->recv), ci->mid, &ci->defined_class);
-    ci->argc -= 1;
-    DEC_SP(1);
 
     ci->flag = VM_CALL_FCALL | VM_CALL_OPT_SEND;
 
