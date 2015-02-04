@@ -3831,10 +3831,10 @@ VpInit(BDIGIT BaseVal)
 
 #ifdef BIGDECIMAL_DEBUG
     if (gfDebug) {
-	printf("VpInit: BaseVal   = %lu\n", BaseVal);
-	printf("  BASE   = %lu\n", BASE);
-	printf("  HALF_BASE = %lu\n", HALF_BASE);
-	printf("  BASE1  = %lu\n", BASE1);
+	printf("VpInit: BaseVal   = %"PRIuBDIGIT"\n", BaseVal);
+	printf("  BASE   = %"PRIuBDIGIT"\n", BASE);
+	printf("  HALF_BASE = %"PRIuBDIGIT"\n", HALF_BASE);
+	printf("  BASE1  = %"PRIuBDIGIT"\n", BASE1);
 	printf("  BASE_FIG  = %u\n", BASE_FIG);
 	printf("  DBLE_FIG  = %d\n", DBLE_FIG);
     }
@@ -6261,7 +6261,7 @@ Exit:
     if (gfDebug) {
 	VPrint(stdout, "VpPower y=%\n", y);
 	VPrint(stdout, "VpPower x=%\n", x);
-	printf("  n=%d\n", n);
+	printf("  n=%"PRIdVALUE"\n", n);
     }
 #endif /* BIGDECIMAL_DEBUG */
     VpFree(w2);
@@ -6296,10 +6296,10 @@ VpVarCheck(Real * v)
     for (i = 0; i < v->Prec; ++i) {
 	if (v->frac[i] >= BASE) {
 	    printf("ERROR(VpVarCheck): Illegal fraction\n");
-	    printf("       Frac[%"PRIuSIZE"]=%lu\n", i, v->frac[i]);
+	    printf("       Frac[%"PRIuSIZE"]=%"PRIuBDIGIT"\n", i, v->frac[i]);
 	    printf("       Prec.   =%"PRIuSIZE"\n", v->Prec);
 	    printf("       Exp. =%"PRIdVALUE"\n", v->exponent);
-	    printf("       BASE =%lu\n", BASE);
+	    printf("       BASE =%"PRIuBDIGIT"\n", BASE);
 	    return 3;
 	}
     }
