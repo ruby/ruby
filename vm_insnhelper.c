@@ -1526,10 +1526,7 @@ vm_call_opt_send(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *c
 
     sym = TOPN(i);
 
-    if (SYMBOL_P(sym)) {
-	ci->mid = SYM2ID(sym);
-    }
-    else if (!(ci->mid = rb_check_id(&sym))) {
+    if (!(ci->mid = rb_check_id(&sym))) {
 	if (rb_method_basic_definition_p(CLASS_OF(ci->recv), idMethodMissing)) {
 	    VALUE exc = make_no_method_exception(rb_eNoMethodError, NULL, ci->recv, rb_long2int(ci->argc), &TOPN(i));
 	    rb_exc_raise(exc);

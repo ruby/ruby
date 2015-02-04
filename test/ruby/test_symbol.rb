@@ -238,4 +238,24 @@ class TestSymbol < Test::Unit::TestCase
       200_000.times { |i| i.to_s.to_sym }
     end;
   end
+
+  def assert_no_immortal_symbol_created
+    delta = -Symbol.all_symbols.size
+    yield
+    GC.start
+    delta += Symbol.all_symbols.size
+    assert_equal 0, delta, "#{delta} immortal symbols were created"
+  end
+
+  def test_symbol_send_leak_string
+    assert_no_immortal_symbol_created do
+      10.times { 42.send "send should not leak #{i} - str" rescue nil }
+    end
+  end
+
+  def test_symbol_send_leak_symbol
+    assert_no_immortal_symbol_created do
+      10.times { 42.send "send should not leak #{i} - sym".to_sym rescue nil }
+    end
+  end
 end
