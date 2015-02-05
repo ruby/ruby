@@ -751,7 +751,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
                 VALUE real_obj = obj;
                 obj = compat->dumper(real_obj);
                 if (!arg->compat_tbl) {
-                    arg->compat_tbl = st_init_numtable();
+                    arg->compat_tbl = rb_init_identtable();
                 }
                 st_insert(arg->compat_tbl, (st_data_t)obj, (st_data_t)real_obj);
 		if (obj != real_obj && !ivtbl) hasiv = 0;
@@ -1000,7 +1000,7 @@ marshal_dump(int argc, VALUE *argv)
     wrapper = TypedData_Make_Struct(rb_cData, struct dump_arg, &dump_arg_data, arg);
     arg->dest = 0;
     arg->symbols = st_init_numtable();
-    arg->data    = st_init_numtable();
+    arg->data    = rb_init_identtable();
     arg->infection = 0;
     arg->compat_tbl = 0;
     arg->encodings = 0;
@@ -1510,7 +1510,7 @@ obj_alloc_by_klass(VALUE klass, struct load_arg *arg, VALUE *oldclass)
 	if (oldclass) *oldclass = compat->oldclass;
 
         if (!arg->compat_tbl) {
-            arg->compat_tbl = st_init_numtable();
+            arg->compat_tbl = rb_init_identtable();
         }
         st_insert(arg->compat_tbl, (st_data_t)obj, (st_data_t)real_obj);
         return obj;
@@ -2019,7 +2019,7 @@ marshal_load(int argc, VALUE *argv)
     arg->src = port;
     arg->offset = 0;
     arg->symbols = st_init_numtable();
-    arg->data    = st_init_numtable();
+    arg->data    = rb_init_identtable();
     arg->compat_tbl = 0;
     arg->proc = 0;
     arg->readable = 0;

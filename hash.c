@@ -137,7 +137,13 @@ rb_any_hash(VALUE a)
 
     if (SPECIAL_CONST_P(a)) {
 	if (a == Qundef) return 0;
-	if (STATIC_SYM_P(a)) a >>= (RUBY_SPECIAL_SHIFT + ID_SCOPE_SHIFT);
+	if (STATIC_SYM_P(a)) {
+	    a >>= (RUBY_SPECIAL_SHIFT + ID_SCOPE_SHIFT);
+	}
+	else if (FLONUM_P(a)) {
+	    /* prevent pathological behavior: [Bug #10761] */
+	    a = (st_index_t)rb_float_value(a);
+	}
 	hnum = rb_objid_hash((st_index_t)a);
     }
     else if (BUILTIN_TYPE(a) == T_STRING) {
@@ -2499,6 +2505,18 @@ rb_hash_compare_by_id_p(VALUE hash)
 	return Qtrue;
     }
     return Qfalse;
+}
+
+st_table *
+rb_init_identtable(void)
+{
+    return st_init_table(&identhash);
+}
+
+st_table *
+rb_init_identtable_with_size(st_index_t size)
+{
+    return st_init_table_with_size(&identhash, size);
 }
 
 static int

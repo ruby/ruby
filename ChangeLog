@@ -1,3 +1,23 @@
+Fri Feb  6 01:03:38 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_object, marshal_dump): use indetity tables for
+	  arbitrary VALUE keys, because of performance of FLONUM.
+	  [Bug #10761]
+
+	* marshal.c (obj_alloc_by_klass, marshal_load): ditto.
+
+Fri Feb  6 01:03:38 2015  Eric Wong  <e@80x24.org>
+
+	* benchmark/bm_marshal_dump_flo.rb: new benchmark for [Bug #10761]
+
+Fri Feb  6 01:03:38 2015  Eric Wong  <e@80x24.org>
+
+	* st.c (st_numhash): mix float value for flonum
+	* hash.c (rb_any_hash): ditto
+	* benchmark/bm_hash_aref_flo.rb: new benchmark
+	* benchmark/bm_hash_ident_flo.rb: ditto
+	  [Bug #10761]
+
 Thu Feb  5 16:30:09 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (gettable_gen): disable warnings of possible reference

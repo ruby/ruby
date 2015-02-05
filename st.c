@@ -1761,6 +1761,15 @@ st_numhash(st_data_t n)
      * - (n << 3) was finally added to avoid losing bits for fixnums
      * - avoid expensive modulo instructions, it is currently only
      *   shifts and bitmask operations.
+     * - flonum (on 64-bit) is pathologically bad, mix the actual
+     *   float value in, but do not use the float value as-is since
+     *   many integers get interpreted as 2.0 or -2.0 [Bug #10761]
      */
+#ifdef USE_FLONUM /* RUBY */
+    if (FLONUM_P(n)) {
+	n ^= (st_data_t)rb_float_value(n);
+    }
+#endif
+
     return (st_index_t)((n>>(RUBY_SPECIAL_SHIFT+3)|(n<<3)) ^ (n>>3));
 }
