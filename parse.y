@@ -31,6 +31,10 @@
 #include <ctype.h>
 #include "probes.h"
 
+#ifndef WARN_PAST_SCOPE
+# define WARN_PAST_SCOPE 0
+#endif
+
 #define YYMALLOC(size)		rb_parser_malloc(parser, (size))
 #define YYREALLOC(ptr, size)	rb_parser_realloc(parser, (ptr), (size))
 #define YYCALLOC(nelem, size)	rb_parser_calloc(parser, (nelem), (size))
@@ -113,7 +117,9 @@ struct local_vars {
     struct vtable *args;
     struct vtable *vars;
     struct vtable *used;
+# if WARN_PAST_SCOPE
     struct vtable *past;
+# endif
     struct local_vars *prev;
     stack_type cmdargs;
 };
@@ -270,6 +276,9 @@ struct parser_params {
 #ifndef RIPPER
     /* Ruby core only */
     unsigned int parser_token_info_enabled: 1;
+# if WARN_PAST_SCOPE
+    unsigned int parser_past_scope_enabled: 1;
+# endif
     int nerr;
 
     NODE *parser_eval_tree_begin;
@@ -6901,6 +6910,15 @@ parser_set_token_info(struct parser_params *parser, const char *name, const char
     int b = parser_get_bool(parser, name, val);
     if (b >= 0) parser->parser_token_info_enabled = b;
 }
+
+# if WARN_PAST_SCOPE
+static void
+parser_set_past_scope(struct parser_params *parser, const char *name, const char *val)
+{
+    int b = parser_get_bool(parser, name, val);
+    if (b >= 0) parser->parser_past_scope_enabled = b;
+}
+# endif
 #endif
 
 struct magic_comment {
@@ -6914,6 +6932,9 @@ static const struct magic_comment magic_comments[] = {
     {"encoding", magic_comment_encoding, parser_encode_length},
 #ifndef RIPPER
     {"warn_indent", parser_set_token_info},
+# if WARN_PAST_SCOPE
+    {"warn_past_scope", parser_set_past_scope},
+# endif
 #endif
 };
 
@@ -8839,6 +8860,7 @@ match_op_gen(struct parser_params *parser, NODE *node1, NODE *node2)
     return NEW_CALL(node1, tMATCH, NEW_LIST(node2));
 }
 
+# if WARN_PAST_SCOPE
 static int
 past_dvar_p(struct parser_params *parser, ID id)
 {
@@ -8849,6 +8871,7 @@ past_dvar_p(struct parser_params *parser, ID id)
     }
     return 0;
 }
+# endif
 
 static NODE*
 gettable_gen(struct parser_params *parser, ID id)
@@ -8883,9 +8906,11 @@ gettable_gen(struct parser_params *parser, ID id)
 	    }
 	    return NEW_LVAR(id);
 	}
+# if WARN_PAST_SCOPE
 	if (!in_defined && RTEST(ruby_verbose) && past_dvar_p(parser, id)) {
 	    rb_warningV("possible reference to past scope - %"PRIsVALUE, rb_id2str(id));
 	}
+# endif
 	/* method call without arguments */
 	return NEW_VCALL(id);
       case ID_GLOBAL:
@@ -10005,7 +10030,9 @@ local_push_gen(struct parser_params *parser, int inherit_dvars)
     local->used = !(inherit_dvars &&
 		    (ifndef_ripper(compile_for_eval || e_option_supplied(parser))+0)) &&
 	RTEST(ruby_verbose) ? vtable_alloc(0) : 0;
+# if WARN_PAST_SCOPE
     local->past = 0;
+# endif
     local->cmdargs = cmdarg_stack;
     cmdarg_stack = 0;
     lvtbl = local;
@@ -10019,11 +10046,13 @@ local_pop_gen(struct parser_params *parser)
 	warn_unused_var(parser, lvtbl);
 	vtable_free(lvtbl->used);
     }
+# if WARN_PAST_SCOPE
     while (lvtbl->past) {
 	struct vtable *past = lvtbl->past;
 	lvtbl->past = past->prev;
 	vtable_free(past);
     }
+# endif
     vtable_free(lvtbl->args);
     vtable_free(lvtbl->vars);
     cmdarg_stack = lvtbl->cmdargs;
@@ -10112,6 +10141,21 @@ dyna_push_gen(struct parser_params *parser)
 }
 
 static void
+dyna_pop_vtable(struct parser_params *parser, struct vtable **vtblp)
+{
+    struct vtable *tmp = *vtblp;
+    *vtblp = tmp->prev;
+# if WARN_PAST_SCOPE
+    if (parser->parser_past_scope_enabled) {
+	tmp->prev = lvtbl->past;
+	lvtbl->past = tmp;
+	return;
+    }
+# endif
+    vtable_free(tmp);
+}
+
+static void
 dyna_pop_1(struct parser_params *parser)
 {
     struct vtable *tmp;
@@ -10121,14 +10165,8 @@ dyna_pop_1(struct parser_params *parser)
 	lvtbl->used = lvtbl->used->prev;
 	vtable_free(tmp);
     }
-    tmp = lvtbl->args;
-    lvtbl->args = lvtbl->args->prev;
-    tmp->prev = lvtbl->past;
-    lvtbl->past = tmp;
-    tmp = lvtbl->vars;
-    lvtbl->vars = lvtbl->vars->prev;
-    tmp->prev = lvtbl->past;
-    lvtbl->past = tmp;
+    dyna_pop_vtable(parser, &lvtbl->args);
+    dyna_pop_vtable(parser, &lvtbl->vars);
 }
 
 static void

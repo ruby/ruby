@@ -1,3 +1,9 @@
+Thu Feb  5 16:30:09 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (gettable_gen): disable warnings of possible reference
+	  to a local variable defined in a past scope.
+	  [ruby-core:67162] [Bug #10661]
+
 Mon Jan 26 15:35:16 2015  Seiei Higa  <hanachin@gmail.com>
 
 	* vm_method.c (check_definition): Module#public_method_defined?,
