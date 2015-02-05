@@ -320,7 +320,7 @@ class TestGc < Test::Unit::TestCase
 
   def test_exception_in_finalizer
     bug9168 = '[ruby-core:58652] [Bug #9168]'
-    assert_normal_exit(<<-'end;', bug9168)
+    assert_normal_exit(<<-'end;', bug9168, encoding: Encoding::ASCII_8BIT)
       raise_proc = proc {raise}
       10000.times do
         ObjectSpace.define_finalizer(Object.new, raise_proc)
