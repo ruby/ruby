@@ -75,7 +75,7 @@ They are created when modifying code:
 * defining a method (e.g. with +define_method+),
 * setting an instance variable (e.g. with +instance_variable_set+),
 * creating a variable or constant (e.g. with +const_set+)
-C extensions that have not been updated and are still calling `ID2SYM`
+C extensions that have not been updated and are still calling `SYM2ID`
 will create immortal symbols.
 Bugs in 2.2.0: +send+ and +__send__+ also created immortal symbols,
 and calling methods with keyword arguments could also create some.
