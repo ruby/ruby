@@ -383,7 +383,7 @@ module Test_Symbol
       assert_no_immortal_symbol_created("send should not leak - str mm") do |name|
         assert_nothing_raised(NoMethodError) {x.send(name)}
       end
-    end if false
+    end
 
     def test_send_leak_symbol_custom_method_missing
       x = Object.new
@@ -391,7 +391,7 @@ module Test_Symbol
       assert_no_immortal_symbol_created("send should not leak - sym mm") do |name|
         assert_nothing_raised(NoMethodError) {x.send(name.to_sym)}
       end
-    end if false
+    end
 
     def test_send_leak_string_no_optimization
       assert_no_immortal_symbol_created("send should not leak - str slow") do |name|

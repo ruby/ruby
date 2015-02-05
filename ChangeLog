@@ -1,3 +1,11 @@
+Thu Feb  5 12:31:05 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (ci_missing_reason): return the reason of method
+	  missing in call info.
+
+	* vm_insnhelper.c (vm_call_opt_send): re-apply r49500 with the
+	  proper missing reason.  [Bug #10828]
+
 Thu Feb  5 10:31:46 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* class.c (rb_obj_singleton_methods): should use RTEST() to convert
