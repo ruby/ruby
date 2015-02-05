@@ -1028,8 +1028,8 @@ class Gem::Specification < Gem::BasicSpecification
     file = file.dup.untaint
     return unless File.file?(file)
 
-    spec = LOAD_CACHE[file]
-    return spec if spec
+    _spec = LOAD_CACHE[file]
+    return _spec if _spec
 
     code = if defined? Encoding
              File.read file, :mode => 'r:UTF-8:-'
@@ -1040,15 +1040,15 @@ class Gem::Specification < Gem::BasicSpecification
     code.untaint
 
     begin
-      spec = eval code, binding, file
+      _spec = eval code, binding, file
 
-      if Gem::Specification === spec
-        spec.loaded_from = File.expand_path file.to_s
-        LOAD_CACHE[file] = spec
-        return spec
+      if Gem::Specification === _spec
+        _spec.loaded_from = File.expand_path file.to_s
+        LOAD_CACHE[file] = _spec
+        return _spec
       end
 
-      warn "[#{file}] isn't a Gem::Specification (#{spec.class} instead)."
+      warn "[#{file}] isn't a Gem::Specification (#{_spec.class} instead)."
     rescue SignalException, SystemExit
       raise
     rescue SyntaxError, Exception => e
@@ -1350,7 +1350,7 @@ class Gem::Specification < Gem::BasicSpecification
                    end
 
     unless dependency.respond_to?(:name) &&
-           dependency.respond_to?(:version_requirements)
+           dependency.respond_to?(:requirement)
       dependency = Gem::Dependency.new(dependency.to_s, requirements, type)
     end
 

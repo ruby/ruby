@@ -1,3 +1,9 @@
+Thu Feb  5 22:42:34 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/rubygems:  Update to RubyGems HEAD(5c3b6f3).
+	  Fixed #1156, #1142, #1115, #1142, #1139 on rubygems/rubygems
+	* test/rubygems:  ditto.
+
 Thu Feb  5 13:41:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (send_internal), vm_insnhelper.c (vm_call_opt_send):

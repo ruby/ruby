@@ -396,10 +396,6 @@ class Gem::StreamUI
   # Return a progress reporter object chosen from the current verbosity.
 
   def progress_reporter(*args)
-    if self.kind_of?(Gem::SilentUI)
-      return SilentProgressReporter.new(@outs, *args)
-    end
-
     case Gem.configuration.verbose
     when nil, false
       SilentProgressReporter.new(@outs, *args)
@@ -533,10 +529,6 @@ class Gem::StreamUI
   # Return a download reporter object chosen from the current verbosity
 
   def download_reporter(*args)
-    if self.kind_of?(Gem::SilentUI)
-      return SilentDownloadReporter.new(@outs, *args)
-    end
-
     case Gem.configuration.verbose
     when nil, false
       SilentDownloadReporter.new(@outs, *args)

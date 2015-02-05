@@ -50,6 +50,25 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
       Gem.instance_variables.include? :@ruby_version
   end
 
+  def test_gempspec_with_multiple_runtime_deps
+    gda = Class.new(@GDA) do
+      # implement find_gemspec so we don't need one on the FS
+      def find_gemspec name, path
+        Gem::Specification.new do |s|
+          s.name = 'foo'
+          s.version = '1.0'
+          s.add_runtime_dependency 'bar', '>= 1.6.0', '< 1.6.4'
+        end
+      end
+    end
+    instance = gda.new @set, __FILE__
+    instance.gemspec
+    assert_equal %w{ foo bar }.sort, @set.dependencies.map(&:name).sort
+    bar = @set.dependencies.find { |d| d.name == 'bar' }
+    assert_equal [[">=", Gem::Version.create('1.6.0')],
+                  ["<", Gem::Version.create('1.6.4')]], bar.requirement.requirements
+  end
+
   def test_gemspec_without_group
     @gda.send :add_dependencies, [:development], [dep('a', '= 1')]
 

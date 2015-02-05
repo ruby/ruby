@@ -15,18 +15,24 @@ class TestGemCommandsOpenCommand < Gem::TestCase
     end
     write_file File.join(*%W[gems #{spec.full_name} lib #{name}.rb])
     write_file File.join(*%W[gems #{spec.full_name} Rakefile])
+    spec
   end
 
   def test_execute
     @cmd.options[:args] = %w[foo]
     @cmd.options[:editor] = "#{Gem.ruby} -e0 --"
 
-    gem 'foo'
+    spec = gem 'foo'
+    mock = MiniTest::Mock.new
+    mock.expect(:call, true, [spec.full_gem_path])
 
-    use_ui @ui do
-      @cmd.execute
+    Dir.stub(:chdir, mock) do
+      use_ui @ui do
+        @cmd.execute
+      end
     end
 
+    assert mock.verify
     assert_equal "", @ui.error
   end
 

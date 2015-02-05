@@ -1080,6 +1080,12 @@ dependencies: []
     assert_equal %w[true gem_name], gem.dependencies.map { |dep| dep.name }
   end
 
+  def test_add_dependency_from_existing_dependency
+    dep  = Gem::Dependency.new("existing_dep", Gem::Requirement.new('> 1'), :runtime)
+    spec = Gem::Specification.new { |s| s.add_dependency dep }
+    assert_equal dep, spec.dependencies.first
+  end
+
   def test_add_dependency_with_type_explicit
     gem = util_spec "awesome", "1.0" do |awesome|
       awesome.add_development_dependency "monkey"
@@ -1856,8 +1862,8 @@ dependencies: []
     @ext.require_paths = 'lib'
 
     expected = [
-      @ext.extension_dir,
       File.join(@gemhome, 'gems', @ext.original_name, 'lib'),
+      @ext.extension_dir,
     ]
 
     assert_equal expected, @ext.full_require_paths

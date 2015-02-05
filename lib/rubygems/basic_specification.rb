@@ -144,7 +144,7 @@ class Gem::BasicSpecification
         File.join full_gem_path, path
       end
 
-      full_paths.unshift extension_dir unless @extensions.nil? || @extensions.empty?
+      full_paths << extension_dir unless @extensions.nil? || @extensions.empty?
 
       full_paths
     end

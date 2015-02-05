@@ -171,7 +171,7 @@ class Gem::Requirement
   end
 
   def hash # :nodoc:
-    requirements.hash
+    requirements.sort.hash
   end
 
   def marshal_dump # :nodoc:
