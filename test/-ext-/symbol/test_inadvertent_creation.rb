@@ -358,5 +358,67 @@ module Test_Symbol
       }
       assert_not_pinneddown(name)
     end
+
+    def assert_no_immortal_symbol_created(name)
+      name = noninterned_name(name)
+      yield(name)
+      assert_not_pinneddown(name)
+    end
+
+    def test_send_leak_string
+      assert_no_immortal_symbol_created("send should not leak - str") do |name|
+        assert_raise(NoMethodError) {42.send(name)}
+      end
+    end
+
+    def test_send_leak_symbol
+      assert_no_immortal_symbol_created("send should not leak - sym") do |name|
+        assert_raise(NoMethodError) {42.send(name.to_sym)}
+      end
+    end
+
+    def test_send_leak_string_custom_method_missing
+      x = Object.new
+      def x.method_missing(*); end
+      assert_no_immortal_symbol_created("send should not leak - str mm") do |name|
+        assert_nothing_raised(NoMethodError) {x.send(name)}
+      end
+    end if false
+
+    def test_send_leak_symbol_custom_method_missing
+      x = Object.new
+      def x.method_missing(*); end
+      assert_no_immortal_symbol_created("send should not leak - sym mm") do |name|
+        assert_nothing_raised(NoMethodError) {x.send(name.to_sym)}
+      end
+    end if false
+
+    def test_send_leak_string_no_optimization
+      assert_no_immortal_symbol_created("send should not leak - str slow") do |name|
+        assert_raise(NoMethodError) {42.method(:send).call(name)}
+      end
+    end
+
+    def test_send_leak_symbol_no_optimization
+      assert_no_immortal_symbol_created("send should not leak - sym slow") do |name|
+        assert_raise(NoMethodError) {42.method(:send).call(name.to_sym)}
+      end
+    end
+
+    def test_send_leak_string_custom_method_missing_no_optimization
+      x = Object.new
+      def x.method_missing(*); end
+      assert_no_immortal_symbol_created("send should not leak - str mm slow") do |name|
+        assert_nothing_raised(NoMethodError) {x.method(:send).call(name)}
+      end
+    end
+
+    def test_send_leak_symbol_custom_method_missing_no_optimization
+      x = Object.new
+      def x.method_missing(*); end
+      assert_no_immortal_symbol_created("send should not leak - sym mm slow") do |name|
+        assert_nothing_raised(NoMethodError) {x.method(:send).call(name.to_sym)}
+      end
+    end
   end
 end
