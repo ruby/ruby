@@ -1,3 +1,8 @@
+Thu Feb  5 10:31:46 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* class.c (rb_obj_singleton_methods): should use RTEST() to convert
+	  VALUE to int.
+
 Thu Feb  5 03:59:33 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* vm_insnhelper.c: Fix symbol leak with +send+ [Bug #10828]

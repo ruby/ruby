@@ -1411,7 +1411,7 @@ rb_obj_singleton_methods(int argc, const VALUE *argv, VALUE obj)
     klass = CLASS_OF(obj);
     origin = RCLASS_ORIGIN(klass);
     me_arg.list = st_init_numtable();
-    me_arg.recur = recur;
+    me_arg.recur = RTEST(recur);
     if (klass && FL_TEST(klass, FL_SINGLETON)) {
 	if ((mtbl = RCLASS_M_TBL(origin)) != 0)
 	    st_foreach(mtbl, method_entry_i, (st_data_t)&me_arg);
