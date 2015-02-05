@@ -1,4 +1,8 @@
-Thu Feb  5 12:31:05 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Feb  5 13:41:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (send_internal), vm_insnhelper.c (vm_call_opt_send):
+	  convert String method name into a Symbol, as method_missing
+	  method expects its first argument to be a Symbol.  [Bug #10828]
 
 	* vm_insnhelper.c (ci_missing_reason): return the reason of method
 	  missing in call info.

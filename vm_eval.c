@@ -865,12 +865,22 @@ rb_funcall_with_block(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE pas
     return rb_call(recv, mid, argc, argv, CALL_PUBLIC);
 }
 
+static VALUE *
+current_vm_stack_arg(rb_thread_t *th, const VALUE *argv)
+{
+    rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
+    if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, prev_cfp)) return NULL;
+    if (prev_cfp->sp + 1 != argv) return NULL;
+    return prev_cfp->sp + 1;
+}
+
 static VALUE
 send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
 {
     ID id;
     VALUE vid;
     VALUE self;
+    VALUE ret, vargv = 0;
     rb_thread_t *th = GET_THREAD();
 
     if (scope == CALL_PUBLIC) {
@@ -893,12 +903,31 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
 						 recv, argc, argv);
 	    rb_exc_raise(exc);
 	}
+	if (!SYMBOL_P(*argv)) {
+	    VALUE *tmp_argv = current_vm_stack_arg(th, argv);
+	    vid = rb_str_intern(vid);
+	    if (tmp_argv) {
+		tmp_argv[0] = vid;
+	    }
+	    else if (argc > 1) {
+		tmp_argv = ALLOCV_N(VALUE, vargv, argc);
+		tmp_argv[0] = vid;
+		MEMCPY(tmp_argv+1, argv+1, VALUE, argc-1);
+		argv = tmp_argv;
+	    }
+	    else {
+		argv = &vid;
+	    }
+	}
 	id = idMethodMissing;
-    } else {
+    }
+    else {
 	argv++; argc--;
     }
     PASS_PASSED_BLOCK_TH(th);
-    return rb_call0(recv, id, argc, argv, scope, self);
+    ret = rb_call0(recv, id, argc, argv, scope, self);
+    ALLOCV_END(vargv);
+    return ret;
 }
 
 /*

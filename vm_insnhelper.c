@@ -1544,6 +1544,7 @@ vm_call_opt_send(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *c
 	    VALUE exc = make_no_method_exception(rb_eNoMethodError, NULL, ci->recv, rb_long2int(ci->argc), &TOPN(i));
 	    rb_exc_raise(exc);
 	}
+	TOPN(i) = rb_str_intern(sym);
 	ci->mid = idMethodMissing;
 	th->method_missing_reason = ci->aux.missing_reason = ci_missing_reason(ci);
     }
