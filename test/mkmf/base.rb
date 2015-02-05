@@ -11,6 +11,9 @@ $INCFLAGS << " -I."
 $extout_prefix = "$(extout)$(target_prefix)/"
 
 class TestMkmf < Test::Unit::TestCase
+end
+
+module TestMkmf::Base
   MKMFLOG = proc {File.read("mkmf.log") rescue ""}
 
   class Capture
@@ -49,9 +52,7 @@ class TestMkmf < Test::Unit::TestCase
       @buffer << s if @out
     end
   end
-end
 
-module TestMkmf::Base
   attr_reader :stdout
 
   def mkmflog(msg)
@@ -86,7 +87,7 @@ module TestMkmf::Base
     @tmpdir = Dir.mktmpdir
     @curdir = Dir.pwd
     @mkmfobj = Object.new
-    @stdout = TestMkmf::Capture.new
+    @stdout = Capture.new
     Dir.chdir(@tmpdir)
     @quiet, Logging.quiet = Logging.quiet, true
     init_mkmf
