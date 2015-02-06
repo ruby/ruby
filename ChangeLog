@@ -1,3 +1,9 @@
+Fri Feb  6 10:31:50 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (rb_call_info_kw_arg_struct): make keywords a symbols
+	  list to get rid of inadvertent creation by variable keyword
+	  arguments.  [ruby-core:68031] [Bug #10831]
+
 Thu Feb  5 22:42:34 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/rubygems:  Update to RubyGems HEAD(5c3b6f3).
