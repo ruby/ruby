@@ -21,6 +21,7 @@ module Psych
         end
 
         def register target, node
+          return unless target.respond_to? :object_id
           @targets << target
           @obj_to_node[target.object_id] = node
         end
@@ -566,10 +567,10 @@ module Psych
 
         c = Psych::Coder.new(tag)
         o.encode_with(c)
-        emit_coder c
+        emit_coder c, o
       end
 
-      def emit_coder c
+      def emit_coder c, o
         case c.type
         when :scalar
           @emitter.scalar c.scalar, nil, c.tag, c.tag.nil?, false, Nodes::Scalar::ANY
@@ -580,7 +581,7 @@ module Psych
           end
           @emitter.end_sequence
         when :map
-          @emitter.start_mapping nil, c.tag, c.implicit, c.style
+          register o, @emitter.start_mapping(nil, c.tag, c.implicit, c.style)
           c.map.each do |k,v|
             accept k
             accept v

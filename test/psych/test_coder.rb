@@ -95,6 +95,28 @@ module Psych
       end
     end
 
+    class Referential
+      attr_reader :a
+
+      def initialize
+        @a = self
+      end
+
+      def encode_with(c)
+        c['a'] = @a
+      end
+
+      def init_with(c)
+        @a = c['a']
+      end
+    end
+
+    def test_self_referential
+      x = Referential.new
+      copy = Psych.load Psych.dump x
+      assert_equal copy, copy.a
+    end
+
     def test_represent_with_object
       thing = Psych.load(Psych.dump(RepresentWithObject.new))
       assert_equal 20, thing

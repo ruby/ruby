@@ -1,3 +1,10 @@
+Fri Feb  6 17:47:05 2015  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: register nodes when
+	  dumping objects with custom coders. [ruby-core:66215] [Bug #10496]
+
+	* test/psych/test_coder.rb: test for fix
+
 Fri Feb  6 16:58:31 2015  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/to_ruby.rb: fix support for regular
