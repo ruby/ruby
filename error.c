@@ -198,10 +198,10 @@ rb_compile_warning(const char *file, int line, const char *fmt, ...)
     va_end(args);
 }
 
-static void
-warn_print(const char *fmt, va_list args)
+static VALUE
+warning_string(rb_encoding *enc, const char *fmt, va_list args)
 {
-    VALUE str = rb_str_new(0, 0);
+    VALUE str = rb_enc_str_new(0, 0, enc);
     VALUE file = rb_sourcefilename();
 
     if (!NIL_P(file)) {
@@ -214,32 +214,36 @@ warn_print(const char *fmt, va_list args)
     rb_str_cat2(str, "warning: ");
     rb_str_vcatf(str, fmt, args);
     rb_str_cat2(str, "\n");
-    rb_write_error_str(str);
+    return str;
 }
 
 void
 rb_warn(const char *fmt, ...)
 {
+    VALUE mesg;
     va_list args;
 
     if (NIL_P(ruby_verbose)) return;
 
     va_start(args, fmt);
-    warn_print(fmt, args);
+    mesg = warning_string(0, fmt, args);
     va_end(args);
+    rb_write_error_str(mesg);
 }
 
 /* rb_warning() reports only in verbose mode */
 void
 rb_warning(const char *fmt, ...)
 {
+    VALUE mesg;
     va_list args;
 
     if (!RTEST(ruby_verbose)) return;
 
     va_start(args, fmt);
-    warn_print(fmt, args);
+    mesg = warning_string(0, fmt, args);
     va_end(args);
+    rb_write_error_str(mesg);
 }
 
 /*
@@ -2088,7 +2092,7 @@ rb_mod_syserr_fail_str(VALUE mod, int e, VALUE mesg)
 void
 rb_sys_warning(const char *fmt, ...)
 {
-    char buf[BUFSIZ];
+    VALUE mesg;
     va_list args;
     int errno_save;
 
@@ -2096,11 +2100,12 @@ rb_sys_warning(const char *fmt, ...)
 
     if (!RTEST(ruby_verbose)) return;
 
-    snprintf(buf, BUFSIZ, "%s: %s", fmt, strerror(errno_save));
-
     va_start(args, fmt);
-    warn_print(buf, args);
+    mesg = warning_string(0, fmt, args);
     va_end(args);
+    rb_str_set_len(mesg, RSTRING_LEN(mesg)-1);
+    rb_str_catf(mesg, ": %s\n", strerror(errno_save));
+    rb_write_error_str(mesg);
     errno = errno_save;
 }
 
