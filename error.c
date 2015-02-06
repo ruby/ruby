@@ -231,6 +231,22 @@ rb_warn(const char *fmt, ...)
     rb_write_error_str(mesg);
 }
 
+#if 0
+void
+rb_enc_warn(rb_encoding *enc, const char *fmt, ...)
+{
+    VALUE mesg;
+    va_list args;
+
+    if (NIL_P(ruby_verbose)) return;
+
+    va_start(args, fmt);
+    mesg = warning_string(enc, fmt, args);
+    va_end(args);
+    rb_write_error_str(mesg);
+}
+#endif
+
 /* rb_warning() reports only in verbose mode */
 void
 rb_warning(const char *fmt, ...)
@@ -245,6 +261,22 @@ rb_warning(const char *fmt, ...)
     va_end(args);
     rb_write_error_str(mesg);
 }
+
+#if 0
+void
+rb_enc_warning(rb_encoding *enc, const char *fmt, ...)
+{
+    VALUE mesg;
+    va_list args;
+
+    if (!RTEST(ruby_verbose)) return;
+
+    va_start(args, fmt);
+    mesg = warning_string(enc, fmt, args);
+    va_end(args);
+    rb_write_error_str(mesg);
+}
+#endif
 
 /*
  * call-seq:
@@ -2102,6 +2134,26 @@ rb_sys_warning(const char *fmt, ...)
 
     va_start(args, fmt);
     mesg = warning_string(0, fmt, args);
+    va_end(args);
+    rb_str_set_len(mesg, RSTRING_LEN(mesg)-1);
+    rb_str_catf(mesg, ": %s\n", strerror(errno_save));
+    rb_write_error_str(mesg);
+    errno = errno_save;
+}
+
+void
+rb_sys_enc_warning(rb_encoding *enc, const char *fmt, ...)
+{
+    VALUE mesg;
+    va_list args;
+    int errno_save;
+
+    errno_save = errno;
+
+    if (!RTEST(ruby_verbose)) return;
+
+    va_start(args, fmt);
+    mesg = warning_string(enc, fmt, args);
     va_end(args);
     rb_str_set_len(mesg, RSTRING_LEN(mesg)-1);
     rb_str_catf(mesg, ": %s\n", strerror(errno_save));
