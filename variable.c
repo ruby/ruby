@@ -163,8 +163,9 @@ classname(VALUE klass, int *permanent)
 	if (!st_lookup(RCLASS_IV_TBL(klass), (st_data_t)classpath, &n)) {
 	    ID cid = 0;
 	    if (st_lookup(RCLASS_IV_TBL(klass), (st_data_t)classid, &n)) {
-		cid = SYM2ID(n);
-		path = find_class_path(klass, cid);
+		VALUE cname = (VALUE)n;
+		cid = rb_check_id(&cname);
+		if (cid) path = find_class_path(klass, cid);
 	    }
 	    if (NIL_P(path)) {
 		path = find_class_path(klass, (ID)0);
