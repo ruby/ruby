@@ -959,10 +959,14 @@ thread_join_m(int argc, VALUE *argv, VALUE self)
  *  call-seq:
  *     thr.value   -> obj
  *
- *  Waits for +thr+ to complete, using #join, and returns its value.
+ *  Waits for +thr+ to complete, using #join, and returns its value or raises
+ *  the exception which terminated the thread.
  *
  *     a = Thread.new { 2 + 2 }
  *     a.value   #=> 4
+ *
+ *     b = Thread.new { raise 'something went wrong' }
+ *     b.value   #=> RuntimeError: something went wrong
  */
 
 static VALUE
