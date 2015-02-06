@@ -1078,16 +1078,45 @@ dir_s_rmdir(VALUE obj, VALUE dir)
     return INT2FIX(0);
 }
 
+struct warning_args {
+#ifdef RUBY_FUNCTION_NAME_STRING
+    const char *func;
+#endif
+    const char *mesg;
+    rb_encoding *enc;
+};
+
+#ifndef RUBY_FUNCTION_NAME_STRING
+#define sys_enc_warning_in(func, mesg, enc) sys_enc_warning(mesg, enc)
+#endif
+
 static VALUE
 sys_warning_1(VALUE mesg)
 {
-    rb_sys_warning("%s", (const char *)mesg);
+    const struct warning_args *arg = (struct warning_args *)mesg;
+#ifdef RUBY_FUNCTION_NAME_STRING
+    rb_sys_enc_warning(arg->enc, "%s: %s", arg->func, arg->mesg);
+#else
+    rb_sys_enc_warning(arg->enc, "%s", arg->mesg);
+#endif
     return Qnil;
 }
 
+static void
+sys_enc_warning_in(const char *func, const char *mesg, rb_encoding *enc)
+{
+    struct warning_args arg;
+#ifdef RUBY_FUNCTION_NAME_STRING
+    arg.func = func;
+#endif
+    arg.mesg = mesg;
+    arg.enc = enc;
+    rb_protect(sys_warning_1, (VALUE)&arg, 0);
+}
+
 #define GLOB_VERBOSE	(1U << (sizeof(int) * CHAR_BIT - 1))
-#define sys_warning(val) \
-    (void)((flags & GLOB_VERBOSE) && rb_protect(sys_warning_1, (VALUE)(val), 0))
+#define sys_warning(val, enc) \
+    ((flags & GLOB_VERBOSE) ? sys_enc_warning_in(RUBY_FUNCTION_NAME_STRING, (val), (enc)) :(void)0)
 
 #define GLOB_ALLOC(type) ((type *)malloc(sizeof(type)))
 #define GLOB_ALLOC_N(type, n) ((type *)malloc(sizeof(type) * (n)))
@@ -1109,23 +1138,22 @@ sys_warning_1(VALUE mesg)
 
 /* System call with warning */
 static int
-do_stat(const char *path, struct stat *pst, int flags)
-
+do_stat(const char *path, struct stat *pst, int flags, rb_encoding *enc)
 {
     int ret = STAT(path, pst);
     if (ret < 0 && !to_be_ignored(errno))
-	sys_warning(path);
+	sys_warning(path, enc);
 
     return ret;
 }
 
 #if defined HAVE_LSTAT || defined lstat
 static int
-do_lstat(const char *path, struct stat *pst, int flags)
+do_lstat(const char *path, struct stat *pst, int flags, rb_encoding *enc)
 {
     int ret = lstat(path, pst);
     if (ret < 0 && !to_be_ignored(errno))
-	sys_warning(path);
+	sys_warning(path, enc);
 
     return ret;
 }
@@ -1149,7 +1177,7 @@ do_opendir(const char *path, int flags, rb_encoding *enc)
 #endif
     dirp = opendir(path);
     if (dirp == NULL && !to_be_ignored(errno))
-	sys_warning(path);
+	sys_warning(path, enc);
 #ifdef _WIN32
     if (tmp) rb_str_resize(tmp, 0); /* GC guard */
 #endif
@@ -1557,7 +1585,7 @@ glob_helper(
     pathlen = strlen(path);
     if (*path) {
 	if (match_all && exist == UNKNOWN) {
-	    if (do_lstat(path, &st, flags) == 0) {
+	    if (do_lstat(path, &st, flags, enc) == 0) {
 		exist = YES;
 		isdir = S_ISDIR(st.st_mode) ? YES : S_ISLNK(st.st_mode) ? UNKNOWN : NO;
 	    }
@@ -1567,7 +1595,7 @@ glob_helper(
 	    }
 	}
 	if (match_dir && isdir == UNKNOWN) {
-	    if (do_stat(path, &st, flags) == 0) {
+	    if (do_stat(path, &st, flags, enc) == 0) {
 		exist = YES;
 		isdir = S_ISDIR(st.st_mode) ? YES : NO;
 	    }
@@ -1669,7 +1697,7 @@ glob_helper(
 	    if (recursive && dotfile < ((flags & FNM_DOTMATCH) ? 2 : 1)) {
 		/* RECURSIVE never match dot files unless FNM_DOTMATCH is set */
 #ifndef _WIN32
-		if (do_lstat(buf, &st, flags) == 0)
+		if (do_lstat(buf, &st, flags, enc) == 0)
 		    new_isdir = S_ISDIR(st.st_mode) ? YES : S_ISLNK(st.st_mode) ? UNKNOWN : NO;
 		else
 		    new_isdir = NO;
