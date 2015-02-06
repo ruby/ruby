@@ -350,7 +350,7 @@ rb_call0(VALUE recv, ID mid, int argc, const VALUE *argv,
 
 struct rescue_funcall_args {
     VALUE recv;
-    VALUE sym;
+    ID mid;
     int argc;
     const VALUE *argv;
 };
@@ -361,7 +361,7 @@ check_funcall_exec(struct rescue_funcall_args *args)
     VALUE new_args = rb_ary_new4(args->argc, args->argv);
     VALUE ret;
 
-    rb_ary_unshift(new_args, args->sym);
+    rb_ary_unshift(new_args, ID2SYM(args->mid));
     ret = rb_funcall2(args->recv, idMethodMissing,
 		       args->argc+1, RARRAY_CONST_PTR(new_args));
     RB_GC_GUARD(new_args);
@@ -371,7 +371,7 @@ check_funcall_exec(struct rescue_funcall_args *args)
 static VALUE
 check_funcall_failed(struct rescue_funcall_args *args, VALUE e)
 {
-    if (rb_respond_to(args->recv, SYM2ID(args->sym))) {
+    if (rb_respond_to(args->recv, args->mid)) {
 	rb_exc_raise(e);
     }
     return Qundef;
@@ -421,7 +421,7 @@ check_funcall_missing(rb_thread_t *th, VALUE klass, VALUE recv, ID mid, int argc
 
 	th->method_missing_reason = 0;
 	args.recv = recv;
-	args.sym = ID2SYM(mid);
+	args.mid = mid;
 	args.argc = argc;
 	args.argv = argv;
 	return rb_rescue2(check_funcall_exec, (VALUE)&args,
