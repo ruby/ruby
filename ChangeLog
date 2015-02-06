@@ -1,3 +1,9 @@
+Fri Feb  6 12:02:05 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/fiddle/win32/libffi.mk.tmpl: assemble without directory prefix.
+	  workaround of a bug of VC12 ml, by unak at [ruby-core:67792].
+	  [ruby-core:67789] [Bug #10780]
+
 Fri Feb  6 01:03:38 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_object, marshal_dump): use indetity tables for
