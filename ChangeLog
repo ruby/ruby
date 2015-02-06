@@ -1,3 +1,10 @@
+Fri Feb  6 16:58:31 2015  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: fix support for regular
+	  expressions with newlines. tenderlove/psych#222
+
+	* test/psych/test_yaml.rb: test for change.
+
 Fri Feb  6 10:31:50 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_core.h (rb_call_info_kw_arg_struct): make keywords a symbols

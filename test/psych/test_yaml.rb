@@ -27,6 +27,10 @@ class Psych_Unit_Tests < Psych::TestCase
       assert_match "2010-10-10 00:00:00.000000000 Z", yaml
     end
 
+    def test_multiline_regexp
+        assert_cycle(Regexp.new("foo\nbar"))
+    end
+
     # [ruby-core:34969]
     def test_regexp_with_n
         assert_cycle(Regexp.new('',0,'n'))
