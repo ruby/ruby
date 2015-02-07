@@ -1562,7 +1562,7 @@ glob_helper(
 	    plain = 1;
 	    break;
 	  case ALPHA:
-#if defined HAVE_GETATTRLIST || defined _WIN32
+#if USE_NAME_ON_FS == 1
 	    plain = 1;
 #else
 	    magical = 1;
@@ -1792,7 +1792,7 @@ glob_helper(
 		    status = -1;
 		    break;
 		}
-#if defined HAVE_GETATTRLIST || defined _WIN32
+#if USE_NAME_ON_FS == 1
 		if ((*cur)->type == ALPHA) {
 		    long base = pathlen + (dirsep != 0);
 		    buf = replace_real_basename(buf, base, enc, IF_NORMALIZE_UTF8PATH(1)+0);
