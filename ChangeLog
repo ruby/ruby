@@ -1,3 +1,9 @@
+Sat Feb  7 13:30:11 2015  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_win32ole_record.rb
+	  (test_ole_instance_variable_get): correct VT_RECORD type and
+	  instance variables.
+
 Fri Feb  6 17:47:05 2015  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb: register nodes when

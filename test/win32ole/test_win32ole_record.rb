@@ -11,6 +11,7 @@ PROGID_RBCOMTEST='RbComTest.ComSrvTest'
 
 =begin
 RbComTest.ComSrvTest is following VB.NET COM server(RbComTest solution).
+(You must check COM interoperability.)
 
 Imports System.Runtime.InteropServices
 Public Class ComSrvTest
@@ -189,9 +190,9 @@ if defined?(WIN32OLE_RECORD)
       end
 
       def test_ole_instance_variable_get
-        obj = WIN32OLE_RECORD.new('ComObject', @obj)
-        assert_equal(nil, obj.ole_instance_variable_get(:object_id))
-        assert_equal(nil, obj.ole_instance_variable_get('object_id'))
+        obj = WIN32OLE_RECORD.new('Book', @obj)
+        assert_equal(nil, obj.ole_instance_variable_get(:title))
+        assert_equal(nil, obj.ole_instance_variable_get('title'))
       end
 
       def test_ole_instance_variable_set
