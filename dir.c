@@ -1226,7 +1226,7 @@ has_magic(const char *p, const char *pend, int flags, rb_encoding *enc)
 #ifdef _WIN32
 	    else if (!rb_isascii(c)) {
 		unsigned int code = rb_enc_mbc_to_codepoint(p, pend, enc);
-		if (ONIGENC_IS_CODE_ALPHA(enc, c)) {
+		if (ONIGENC_IS_CODE_ALPHA(enc, code)) {
 		    /* Full width alphabets */
 		    hasalpha = 1;
 		}
