@@ -352,6 +352,16 @@ class TestDir_M17N < Test::Unit::TestCase
     end
   end
 
+  def test_glob_escape_multibyte
+    name = "\x81\\".force_encoding(Encoding::Shift_JIS)
+    with_tmpdir do
+      open(name, "w") {} rescue next
+      match, = Dir.glob("#{name}*")
+      next unless match and match.encoding == Encoding::Shift_JIS
+      assert_equal([name], Dir.glob("\\#{name}*"))
+    end
+  end
+
   def test_entries_compose
     bug7267 = '[ruby-core:48745] [Bug #7267]'
 

@@ -1205,9 +1205,9 @@ has_magic(const char *p, const char *pend, int flags, rb_encoding *enc)
 	    return MAGICAL;
 
 	  case '\\':
-	    if (escape && !(c = *p++))
-		return PLAIN;
-	    continue;
+	    if (escape && p++ >= pend)
+		continue;
+	    break;
 
 #ifdef _WIN32
 	  case '~':
