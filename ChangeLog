@@ -1,3 +1,8 @@
+Sat Feb  7 22:13:08 2015  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_win32ole_record.rb: remove test using .NET
+	  Framework 3.5 because it is not included in Windows 8/8.1.
+
 Sat Feb  7 19:25:25 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (has_magic): always get long path name on Windows even if
