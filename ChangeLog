@@ -1,3 +1,11 @@
+Sat Feb  7 19:25:25 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (has_magic): always get long path name on Windows even if
+	  no tilde is there.  [ruby-core:68011] [Bug #10819]
+
+	* dir.c (replace_real_basename): FindFirstFile ignore redirection
+	  character, check if exists before call it.  cf. [Bug #8597]
+
 Sat Feb  7 13:30:11 2015  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_win32ole_record.rb

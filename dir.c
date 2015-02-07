@@ -71,6 +71,9 @@ char *strchr(char*,char);
 #define rmdir(p) rb_w32_urmdir(p)
 #undef opendir
 #define opendir(p) rb_w32_uopendir(p)
+#define IS_WIN32 1
+#else
+#define IS_WIN32 0
 #endif
 
 #ifdef HAVE_SYS_ATTR_H
@@ -1210,28 +1213,17 @@ has_magic(const char *p, const char *pend, int flags, rb_encoding *enc)
 	    break;
 
 #ifdef _WIN32
-	  case '~':
-	    /* possibly legacy 8.3 short name */
-	    if (p < pend && (c = *p, ISDIGIT(c))) {
-		while (++p < pend && (c = *p, ISDIGIT(c)));
-		if (p == pend || c == '.') hasalpha = 1;
-	    }
-	    continue;
-#endif
+	  case '.':
+	    break;
 
+	  case '~':
+	    hasalpha = 1;
+	    break;
+#endif
 	  default:
-	    if (ISALPHA(c)) {
+	    if (IS_WIN32 || ISALPHA(c)) {
 		hasalpha = 1;
 	    }
-#ifdef _WIN32
-	    else if (!rb_isascii(c)) {
-		unsigned int code = rb_enc_mbc_to_codepoint(p, pend, enc);
-		if (ONIGENC_IS_CODE_ALPHA(enc, code)) {
-		    /* Full width alphabets */
-		    hasalpha = 1;
-		}
-	    }
-#endif
 	    break;
 	}
 
@@ -1469,8 +1461,9 @@ replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p)
     char *plainname = path;
     volatile VALUE tmp = 0;
     WIN32_FIND_DATAW fd;
+    WIN32_FILE_ATTRIBUTE_DATA fa;
     WCHAR *wplain;
-    HANDLE h;
+    HANDLE h = INVALID_HANDLE_VALUE;
     long wlen;
     if (enc &&
 	enc != rb_usascii_encoding() &&
@@ -1483,7 +1476,8 @@ replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p)
     wplain = rb_w32_mbstr_to_wstr(CP_UTF8, plainname, -1, &wlen);
     if (tmp) rb_str_resize(tmp, 0);
     if (!wplain) return path;
-    h = FindFirstFileW(wplain, &fd);
+    if (GetFileAttributesExW(wplain, GetFileExInfoStandard, &fa))
+	h = FindFirstFileW(wplain, &fd);
     free(wplain);
     if (h == INVALID_HANDLE_VALUE) return path;
     FindClose(h);
