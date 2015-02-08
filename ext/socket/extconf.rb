@@ -565,29 +565,15 @@ EOS
   case enable_config("wide-getaddrinfo")
   when true
     getaddr_info_ok = :wide
-  when nil
+  when nil, false
+    getaddr_info_ok = (:wide if getaddr_info_ok.nil?)
     if have_func("getnameinfo", headers) and have_func("getaddrinfo", headers)
-      getaddr_info_ok = :os
-      if !CROSS_COMPILING &&
-         !checking_for("system getaddrinfo working") {
+      if CROSS_COMPILING ||
+         checking_for("system getaddrinfo working") {
            try_run(cpp_include(headers) + GETADDRINFO_GETNAMEINFO_TEST)
          }
-        getaddr_info_ok = :wide
+        getaddr_info_ok = :os
       end
-    else
-      getaddr_info_ok = :wide
-    end
-  when false
-    if have_func("getnameinfo", headers) and have_func("getaddrinfo", headers)
-      getaddr_info_ok = :os
-      if !CROSS_COMPILING &&
-         !checking_for("system getaddrinfo working") {
-           try_run(cpp_include(headers) + GETADDRINFO_GETNAMEINFO_TEST)
-         }
-        getaddr_info_ok = nil
-      end
-    else
-      getaddr_info_ok = nil
     end
   else
     raise "unexpected enable_config() value"
