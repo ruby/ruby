@@ -1209,8 +1209,10 @@ static void heap_page_free(rb_objspace_t *objspace, struct heap_page *page);
 void
 rb_objspace_free(rb_objspace_t *objspace)
 {
+#if 0
     if (is_lazy_sweeping(heap_eden))
 	rb_bug("lazy sweeping underway when freeing object space");
+#endif
 
     if (objspace->profile.records) {
 	free(objspace->profile.records);
