@@ -142,6 +142,14 @@ class HTTPHeaderTest < Test::Unit::TestCase
     end
   end
 
+  def test_each_capitalized_with_symbol
+    @c[:my_header] = ['a', 'b']
+    @c.each_capitalized do |k,v|
+      assert_equal "My_header", k
+      assert_equal 'a, b', v
+    end
+  end
+
   def test_key?
     @c['My-Header'] = 'test'
     assert_equal true, @c.key?('My-Header')

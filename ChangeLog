@@ -1,3 +1,9 @@
+Sun Feb  8 20:09:37 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/net/http/header.rb: pass header names as symbols.
+	  Patch by @DamirSvrtan [fix GH-805]
+	* test/net/http/test_httpheader.rb: added test.
+
 Sun Feb  8 13:04:25 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/getaddrinfo.c (get_addr): reject too long hostname to
