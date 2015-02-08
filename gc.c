@@ -2624,11 +2624,13 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     finalizer_table = 0;
     ATOMIC_SET(finalizing, 0);
 
+#if 0
     /*
      * finish any lazy sweeps that may have been started
      * when finalizing the objects in the heap
      */
     gc_rest(objspace);
+#endif
 }
 
 static inline int
