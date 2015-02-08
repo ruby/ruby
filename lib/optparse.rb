@@ -243,6 +243,8 @@
 #   require 'pp'
 #
 #   class OptparseExample
+#     Version = '1.0.0'
+#
 #     CODES = %w[iso-2022-jp shift_jis euc-jp utf8 binary]
 #     CODE_ALIASES = { "jis" => "iso-2022-jp", "sjis" => "shift_jis" }
 #
@@ -298,7 +300,7 @@
 #         end
 #         # Another typical switch to print the version.
 #         parser.on_tail("--version", "Show version") do
-#           puts ::Version.join('.')
+#           puts Version
 #           exit
 #         end
 #       end
