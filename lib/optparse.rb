@@ -298,7 +298,7 @@
 #         end
 #         # Another typical switch to print the version.
 #         parser.on_tail("--version", "Show version") do
-#           puts ::Version.join('.')
+#           puts OptionParser::Version.join('.')
 #           exit
 #         end
 #       end
