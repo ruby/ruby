@@ -618,7 +618,7 @@ module Net
       end
       begin
         f.binmode if localfile
-        retrbinary("RETR " + remotefile.to_s, blocksize, rest_offset) do |data|
+        retrbinary("RETR #{remotefile}", blocksize, rest_offset) do |data|
           f.write(data) if localfile
           yield(data) if block_given?
           result.concat(data) if result
@@ -758,7 +758,7 @@ module Net
     def list(*args, &block) # :yield: line
       cmd = "LIST"
       args.each do |arg|
-        cmd = cmd + " " + arg.to_s
+        cmd = "#{cmd} #{arg}"
       end
       if block
         retrlines(cmd, &block)
