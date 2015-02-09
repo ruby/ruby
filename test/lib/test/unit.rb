@@ -843,14 +843,17 @@ module Test
 
         def exclude_from(klass)
           excludes = self.excludes
+          pattern = excludes.keys.grep(Regexp).tap {|k|
+            break (Regexp.new(k.join('|')) unless k.empty?)
+          }
           klass.class_eval do
             public_instance_methods(false).each do |method|
-              if excludes[method]
+              if excludes[method] or (pattern and pattern =~ method)
                 remove_method(method)
               end
             end
             public_instance_methods(true).each do |method|
-              if excludes[method]
+              if excludes[method] or (pattern and pattern =~ method)
                 undef_method(method)
               end
             end
