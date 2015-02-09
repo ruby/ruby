@@ -816,6 +816,15 @@ class FTPTest < Test::Unit::TestCase
         ftp.rename(file, file2)
         ftp.delete(file)
 
+        # TODO: These commented tests below expose the error but don't test anything:
+        #   TypeError: no implicit conversion of Pathname into String
+        # ftp.nlst(dir)
+        # ftp.putbinaryfile(Pathname.new("/etc/hosts"), file2)
+        # ftp.puttextfile(Pathname.new("/etc/hosts"), file2)
+        # ftp.gettextfile(Pathname.new("/etc/hosts"), file2)
+        # ftp.getbinaryfile(Pathname.new("/etc/hosts"), file2)
+        # ftp.list(dir, dir, dir)
+
         assert_match(/\AUSER /, commands.shift)
         assert_match(/\APASS /, commands.shift)
         assert_match(/\ATYPE /, commands.shift)
