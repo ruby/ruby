@@ -283,7 +283,10 @@ def package(vcs, rev, destdir, tmp = nil)
       }
       FileUtils.mkpath(hdrdir = "#{extout}/include/ruby")
       File.open("#{hdrdir}/config.h", "w") {}
-      miniruby = ENV['MINIRUBY'] + " -I. -rcross"
+      FileUtils.mkpath(defaults = "#{extout}/rubygems/defaults")
+      File.open("#{defaults}/operating_system.rb", "w") {}
+      File.open("#{defaults}/ruby.rb", "w") {}
+      miniruby = ENV['MINIRUBY'] + " -I. -I#{extout} -rcross"
       mk = IO.read("Makefile.in").gsub(/^@.*\n/, '').gsub(/@([A-Za-z_]\w*)@/) {ENV[$1]}
       mk << commonmk.gsub(/(?<!#)\{[^{}]*\}/, "")
       cmd = %W[make -f -
