@@ -40,6 +40,6 @@ Init_md5(void)
 
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0
-    rb_ivar_set(cDigest_MD5, rb_intern("metadata"),
-		Data_Wrap_Struct(0, 0, 0, (void *)&md5));
+    rb_iv_set(cDigest_MD5, "metadata",
+	      Data_Wrap_Struct(0, 0, 0, (void *)&md5));
 }

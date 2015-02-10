@@ -41,7 +41,7 @@ Init_sha2(void)
 
     rb_require("digest");
 
-    id_metadata = rb_intern("metadata");
+    id_metadata = rb_intern_const("metadata");
 
     mDigest = rb_path2class("Digest");
     cDigest_Base = rb_path2class("Digest::Base");

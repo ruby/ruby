@@ -40,6 +40,6 @@ Init_sha1(void)
 
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0
-    rb_ivar_set(cDigest_SHA1, rb_intern("metadata"),
-		Data_Wrap_Struct(0, 0, 0, (void *)&sha1));
+    rb_iv_set(cDigest_SHA1, "metadata",
+	      Data_Wrap_Struct(0, 0, 0, (void *)&sha1));
 }
