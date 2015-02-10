@@ -132,6 +132,8 @@ File.foreach "config.status" do |line|
       if universal
         val.sub!(/universal/, %q[#{arch && universal[/(?:\A|\s)#{Regexp.quote(arch)}=(\S+)/, 1] || '\&'}])
       end
+    when /^includedir$/
+      val = '"$(SDKROOT)"'+val if /darwin/ =~ arch
     end
     v = "  CONFIG[\"#{name}\"] #{eq} #{val}\n"
     if fast[name]
@@ -232,6 +234,9 @@ end
 
 print(*v_fast)
 print(*v_others)
+print <<EOS if /darwin/ =~ arch
+  CONFIG["SDKROOT"] = ENV["SDKROOT"] || "" # don't run xcrun everytime, usually useless.
+EOS
 print <<EOS
   CONFIG["archdir"] = "$(rubyarchdir)"
   CONFIG["topdir"] = File.dirname(__FILE__)
