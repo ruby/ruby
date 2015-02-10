@@ -26,20 +26,17 @@ def word_installed?
 end
 
 if defined?(WIN32OLE)
-  dotest = word_installed?
-  if !dotest
-    STDERR.puts("\n#{__FILE__} skipped(Microsoft Word not found.)")
-  end
-  if dotest
-    class TestWIN32OLE_WITH_WORD < Test::Unit::TestCase
+  class TestWIN32OLE_WITH_WORD < Test::Unit::TestCase
+    unless word_installed?
+      def test_dummy_for_skip_message
+        skip "Microsoft Word is not installed"
+      end
+    else
       def setup
         begin
           @obj = WIN32OLE.new('Word.Application')
         rescue WIN32OLERuntimeError
           @obj = nil
-          if !$skipped
-              $skipped = true
-          end
         end
       end
 
@@ -48,7 +45,6 @@ if defined?(WIN32OLE)
           @obj.visible = true
           @obj.wordbasic.disableAutoMacros(true)
           assert(true)
-        else
         end
       end
 
