@@ -1018,7 +1018,7 @@ AS_CASE(["$target_os"],
 		])
 		AS_CASE(["$rb_cv_isystem_usr_include: $CPPFLAGS $LDFLAGS "],
 			[no:* | *" -I/usr/local/include "* | *" -L/usr/local/lib "*], [],
-			[CPPFLAGS="$CPPFLAGS -isystem /usr/include"])
+			[CPPFLAGS="$CPPFLAGS -iquote /usr/include -iquote /usr/local/include"])
 		ac_cv_type_getgroups=gid_t # getgroups() on Rosetta fills garbage
 		ac_cv_lib_crypt_crypt=no
 		ac_cv_func_fdatasync=no # Mac OS X wrongly reports it has fdatasync()
