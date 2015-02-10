@@ -618,7 +618,7 @@ module Net
       end
       begin
         f.binmode if localfile
-        retrbinary("RETR " + remotefile.to_s, blocksize, rest_offset) do |data|
+        retrbinary("RETR #{remotefile}", blocksize, rest_offset) do |data|
           f.write(data) if localfile
           yield(data) if block_given?
           result.concat(data) if result
@@ -644,7 +644,7 @@ module Net
         result = ""
       end
       begin
-        retrlines("RETR " + remotefile) do |line, newline|
+        retrlines("RETR #{remotefile}") do |line, newline|
           l = newline ? line + "\n" : line
           f.print(l) if localfile
           yield(line, newline) if block_given?
@@ -689,9 +689,9 @@ module Net
       begin
         f.binmode
         if rest_offset
-          storbinary("APPE " + remotefile, f, blocksize, rest_offset, &block)
+          storbinary("APPE #{remotefile}", f, blocksize, rest_offset, &block)
         else
-          storbinary("STOR " + remotefile, f, blocksize, rest_offset, &block)
+          storbinary("STOR #{remotefile}", f, blocksize, rest_offset, &block)
         end
       ensure
         f.close
@@ -706,7 +706,7 @@ module Net
     def puttextfile(localfile, remotefile = File.basename(localfile), &block) # :yield: line
       f = open(localfile)
       begin
-        storlines("STOR " + remotefile, f, &block)
+        storlines("STOR #{remotefile}", f, &block)
       ensure
         f.close
       end
@@ -742,7 +742,7 @@ module Net
     def nlst(dir = nil)
       cmd = "NLST"
       if dir
-        cmd = cmd + " " + dir
+        cmd = "#{cmd} #{dir}"
       end
       files = []
       retrlines(cmd) do |line|
@@ -758,7 +758,7 @@ module Net
     def list(*args, &block) # :yield: line
       cmd = "LIST"
       args.each do |arg|
-        cmd = cmd + " " + arg.to_s
+        cmd = "#{cmd} #{arg}"
       end
       if block
         retrlines(cmd, &block)
@@ -777,18 +777,18 @@ module Net
     # Renames a file on the server.
     #
     def rename(fromname, toname)
-      resp = sendcmd("RNFR " + fromname)
+      resp = sendcmd("RNFR #{fromname}")
       if resp[0] != ?3
         raise FTPReplyError, resp
       end
-      voidcmd("RNTO " + toname)
+      voidcmd("RNTO #{toname}")
     end
 
     #
     # Deletes a file on the server.
     #
     def delete(filename)
-      resp = sendcmd("DELE " + filename)
+      resp = sendcmd("DELE #{filename}")
       if resp[0, 3] == "250"
         return
       elsif resp[0] == ?5
@@ -812,7 +812,7 @@ module Net
           end
         end
       end
-      cmd = "CWD " + dirname
+      cmd = "CWD #{dirname}"
       voidcmd(cmd)
     end
 
@@ -821,7 +821,7 @@ module Net
     #
     def size(filename)
       with_binary(true) do
-        resp = sendcmd("SIZE " + filename)
+        resp = sendcmd("SIZE #{filename}")
         if resp[0, 3] != "213"
           raise FTPReplyError, resp
         end
@@ -845,7 +845,7 @@ module Net
     # Creates a remote directory.
     #
     def mkdir(dirname)
-      resp = sendcmd("MKD " + dirname)
+      resp = sendcmd("MKD #{dirname}")
       return parse257(resp)
     end
 
@@ -853,7 +853,7 @@ module Net
     # Removes a remote directory.
     #
     def rmdir(dirname)
-      voidcmd("RMD " + dirname)
+      voidcmd("RMD #{dirname}")
     end
 
     #
@@ -907,7 +907,7 @@ module Net
     # Use +mtime+ if you want a parsed Time instance.
     #
     def mdtm(filename)
-      resp = sendcmd("MDTM " + filename)
+      resp = sendcmd("MDTM #{filename}")
       if resp[0, 3] == "213"
         return resp[3 .. -1].strip
       end
