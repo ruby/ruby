@@ -1387,6 +1387,19 @@ class TestRefinement < Test::Unit::TestCase
                    :foo, bug10826)
   end
 
+  def test_undef_original_method
+    assert_in_out_err([], <<-INPUT, ["NoMethodError"], [])
+      module NoPlus
+        refine String do
+          undef +
+        end
+      end
+
+      using NoPlus
+      "a" + "b" rescue p($!.class)
+    INPUT
+  end
+
   private
 
   def eval_using(mod, s)

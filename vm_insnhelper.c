@@ -1752,6 +1752,10 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 			goto start_method_dispatch;
 		    }
 		}
+		else {
+		    ci->me = 0;
+		    goto start_method_dispatch;
+		}
 
 	      no_refinement_dispatch:
 		if (ci->me->def->body.orig_me) {

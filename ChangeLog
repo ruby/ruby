@@ -1,3 +1,9 @@
+Tue Feb 10 11:38:28 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_call_method): stop method search when a method
+	  is not found in a refinement, to support undef in refinements.
+	  [ruby-core:66741] [Bug #10578]
+
 Tue Feb 10 11:19:11 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (chdir, delete, gettextfile, mdtm, mkdir, nlst,
