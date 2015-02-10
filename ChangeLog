@@ -27,7 +27,7 @@ Sun Feb  8 13:04:25 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  get rid of GHOST vulnerability on very old platforms.
 
 	* ext/socket/raddrinfo.c (make_hostent_internal): ditto, paranoic
-	  check for the canonnical name.
+	  check for the canonical name.
 
 Sun Feb  8 12:48:38 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
