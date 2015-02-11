@@ -1,3 +1,8 @@
+Wed Feb 11 11:08:48 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/digest/digest_conf.rb (digest_conf): extract common
+	  configurations.
+
 Wed Feb 11 11:01:33 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/json/generator/generator.c (generate_json): get rid of

@@ -3,22 +3,14 @@
 # $Id$
 
 require "mkmf"
+require File.expand_path("../../digest_conf", __FILE__)
 
 $defs << "-DHAVE_CONFIG_H"
 $INCFLAGS << " -I$(srcdir)/.."
 
 $objs = [ "md5init.#{$OBJEXT}" ]
 
-if !with_config("bundled-md5") &&
-    (dir_config("openssl")
-     pkg_config("openssl")
-     require File.expand_path('../../../openssl/deprecation', __FILE__)
-     have_library("crypto")) &&
-    OpenSSL.check_func("MD5_Transform", "openssl/md5.h")
-  $objs << "md5ossl.#{$OBJEXT}"
-else
-  $objs << "md5.#{$OBJEXT}"
-end
+digest_conf("md5")
 
 have_header("sys/cdefs.h")
 

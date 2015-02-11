@@ -2,7 +2,7 @@
 /* $Id$ */
 
 #include "digest.h"
-#if defined(HAVE_OPENSSL_MD5_H)
+#if defined(MD5_USE__OPENSSL)
 #include "md5ossl.h"
 #else
 #include "md5.h"

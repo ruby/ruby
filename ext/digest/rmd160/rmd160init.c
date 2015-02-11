@@ -2,7 +2,7 @@
 /* $Id$ */
 
 #include "digest.h"
-#if defined(HAVE_OPENSSL_RIPEMD_H)
+#if defined(RMD160_USE_OPENSSL)
 #include "rmd160ossl.h"
 #else
 #include "rmd160.h"
