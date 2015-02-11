@@ -10,7 +10,6 @@ def digest_conf(name, hdr = name, funcs = nil)
       if funcs.all? {|func| OpenSSL.check_func("#{func}_Transform", hdr)} &&
          funcs.all? {|func| have_type("#{func}_CTX", hdr)}
         $defs << "-D#{name.upcase}_USE_OPENSSL"
-        $objs << "#{name}ossl.#{$OBJEXT}"
         return :ossl
       end
     end
