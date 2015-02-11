@@ -1,3 +1,10 @@
+Thu Feb 12 04:33:02 2015  Benoit Daloze  <eregontp@gmail.com>
+
+	* compar.c (cmp_equal): no more error hiding for Comparable#==.
+	  It now behaves as other Comparable methods. See #7688.
+
+	* test/ruby/test_comparable.rb: update related test.
+
 Thu Feb 12 03:28:05 2015  Eric Wong  <e@80x24.org>
 
 	* lib/set.rb (initialize): internal hash defaults to false
