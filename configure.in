@@ -1007,18 +1007,13 @@ AS_CASE(["$target_os"],
 		    AC_DEFINE(BROKEN_SETREUID, 1)
 		    AC_DEFINE(BROKEN_SETREGID, 1)
 		fi
-		AC_CACHE_CHECK([if $CC includes /usr/local/include by default], [rb_cv_isystem_usr_include], [
-		    AS_CASE([" $CC "], [*' -isystem /usr/local/include '*], [rb_cv_isystem_usr_include=unknown], [
-			rb_cv_isystem_usr_include=no
-			if $CC -E -v -xc - < /dev/null 2>&1 | grep -A1 '^@%:@include <' | grep -q /usr/local/include; then
-			    $CC -print-search-dirs | grep -q '^libraries:.*:/usr/local/lib/*' ||
-				rb_cv_isystem_usr_include=yes
-			fi
-		    ])
-		])
-		AS_CASE(["$rb_cv_isystem_usr_include: $CPPFLAGS $LDFLAGS "],
-			[no:* | *" -I/usr/local/include "* | *" -L/usr/local/lib "*], [],
-			[CPPFLAGS="$CPPFLAGS -iquote /usr/include -iquote /usr/local/include"])
+		incs=`$CC -v -E -xc - < /dev/null 2>&1 | sed -n '1,/^@%:@include </d;s/^ *//;s|/include$|/lib|p'`
+		for d in `$CC -print-search-dirs | sed -e '/^libraries: */!d;s///' | tr : '\012' | fgrep -v /../ | sed -n 's|^\(/.*/lib\)/$|\1|p'`; do
+		    incs=`echo "$incs" | fgrep -v "$d"`
+		done
+		for d in $incs; do
+		    test -d "$d" && LDFLAGS="${LDFLAGS:+$LDFLAGS }-L$d"
+		done
 		ac_cv_type_getgroups=gid_t # getgroups() on Rosetta fills garbage
 		ac_cv_lib_crypt_crypt=no
 		ac_cv_func_fdatasync=no # Mac OS X wrongly reports it has fdatasync()
