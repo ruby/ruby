@@ -1,4 +1,8 @@
-Wed Feb 11 11:09:21 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Feb 11 11:09:52 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/digest/digest_conf.rb (digest_conf): check for CommonDigest.
+
+	* ext/digest/*/*cc.h: for Apple CommonCrypto/CommonDigest.h.
 
 	* ext/digest/digest.h (DEFINE_FINISH_FUNC_FROM_FINAL): macro for
 	  finish functions, by inverting arguments order.

@@ -4,6 +4,8 @@
 #include "digest.h"
 #if defined(MD5_USE__OPENSSL)
 #include "md5ossl.h"
+#elif defined(MD5_USE_COMMONDIGEST)
+#include "md5cc.h"
 #else
 #include "md5.h"
 #endif

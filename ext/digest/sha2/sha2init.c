@@ -4,6 +4,8 @@
 #include "digest.h"
 #if defined(SHA2_USE_OPENSSL)
 #include "sha2ossl.h"
+#elif defined(SHA2_USE_COMMONDIGEST)
+#include "sha2cc.h"
 #else
 #include "sha2.h"
 #endif

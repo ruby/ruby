@@ -1,5 +1,14 @@
 def digest_conf(name, hdr = name, funcs = nil)
   unless with_config("bundled-#{name}")
+    cc = with_config("common-digest")
+    if cc == true or /\b#{name}\b/ =~ cc
+      if File.exist?("#$srcdir/#{name}cc.h") and
+        have_header("CommonCrypto/CommonDigest.h")
+        $defs << "-D#{name.upcase}_USE_COMMONDIGEST"
+        return :commondigest
+      end
+    end
+
     dir_config("openssl")
     pkg_config("openssl")
     require File.expand_path('../../openssl/deprecation', __FILE__)
