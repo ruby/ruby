@@ -880,7 +880,7 @@ static void generate_json(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *s
     } else {
         tmp = rb_funcall(obj, i_to_s, 0);
         Check_Type(tmp, T_STRING);
-        generate_json(buffer, Vstate, state, tmp);
+        generate_json_string(buffer, Vstate, state, tmp);
     }
 }
 

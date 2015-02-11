@@ -1,3 +1,9 @@
+Wed Feb 11 11:01:33 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/json/generator/generator.c (generate_json): get rid of
+	  unnecessary recursive calls which can cause infinite recursion.
+	  T_STRING may not have rb_cString.
+
 Wed Feb 11 07:53:35 2015  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_word.rb: use skip method to skip test.

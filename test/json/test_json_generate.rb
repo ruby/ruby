@@ -334,4 +334,14 @@ EOT
       assert_equal true, JSON.generate(["\xea"])
     end
   end
+
+  def test_string_subclass
+    s = Class.new(String) do
+      def to_s; self; end
+      undef to_json
+    end
+    assert_nothing_raised(SystemStackError) do
+      assert_equal '[""]', JSON.generate([s.new])
+    end
+  end
 end
