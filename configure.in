@@ -1007,7 +1007,7 @@ AS_CASE(["$target_os"],
 		    AC_DEFINE(BROKEN_SETREUID, 1)
 		    AC_DEFINE(BROKEN_SETREGID, 1)
 		fi
-		incs=`$CC -v -E -xc - < /dev/null 2>&1 | sed -n '1,/^@%:@include </d;s/^ *//;s|/include$|/lib|p'`
+		incs=`$CC -v -E -xc - < /dev/null 2>&1 | sed ['1,/^@%:@include </d;s/^ *//;s|[^./][^/]*/\.\./||g;/\/include$/!d;s||/lib|;/\/usr\/lib/d']`
 		for d in `$CC -print-search-dirs | sed -e '/^libraries: */!d;s///' | tr : '\012' | fgrep -v /../ | sed -n 's|^\(/.*/lib\)/$|\1|p'`; do
 		    incs=`echo "$incs" | fgrep -v "$d"`
 		done
