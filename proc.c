@@ -683,20 +683,23 @@ rb_block_clear_env_self(VALUE proc)
  *  <i>params</i> using something close to method calling semantics.
  *  Generates a warning if multiple values are passed to a proc that
  *  expects just one (previously this silently converted the parameters
- *  to an array).  Note that prc.() invokes prc.call() with the parameters
- *  given.  It's a syntax sugar to hide "call".
+ *  to an array).  Note that <code>prc.()</code> invokes
+ *  <code>prc.call()</code> with the parameters given.  It's a syntax sugar to
+ *  hide "call".
+ *
+ *  Returns the value of the last expression evaluated in the block. See
+ *  also Proc#yield.
+ *
+ *     a_proc = Proc.new { |scalar, *values| values.collect { |value| value*scalar } }
+ *     a_proc.call(9, 1, 2, 3)   #=> [9, 18, 27]
+ *     a_proc[9, 1, 2, 3]        #=> [9, 18, 27]
+ *     a_proc.(9, 1, 2, 3)       #=> [9, 18, 27]
  *
  *  For procs created using <code>lambda</code> or <code>->()</code> an error
  *  is generated if the wrong number of parameters are passed to a Proc with
  *  multiple parameters.  For procs created using <code>Proc.new</code> or
  *  <code>Kernel.proc</code>, extra parameters are silently discarded.
  *
- *  Returns the value of the last expression evaluated in the block. See
- *  also <code>Proc#yield</code>.
- *
- *     a_proc = Proc.new {|a, *b| b.collect {|i| i*a }}
- *     a_proc.call(9, 1, 2, 3)   #=> [9, 18, 27]
- *     a_proc[9, 1, 2, 3]        #=> [9, 18, 27]
  *     a_proc = lambda {|a,b| a}
  *     a_proc.call(1,2,3)
  *

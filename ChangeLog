@@ -1,3 +1,8 @@
+Thu Feb 12 10:46:14 2015  Eric Hodel  <drbrain@segment7.net>
+
+	* proc.c (proc_call):  Improve Proc#call documentation.  Patch by
+	  Hsing-Hui Hsu.  [fix GH-761]
+
 Thu Feb 12 04:33:02 2015  Benoit Daloze  <eregontp@gmail.com>
 
 	* compar.c (cmp_equal): no more error hiding for Comparable#==.
