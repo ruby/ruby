@@ -1,3 +1,10 @@
+Thu Feb 12 18:34:01 2015  multisnow  <infinity.blick.winkel@gmail.com>
+
+	* ext/openssl/extconf.rb: check RAND_edg to support libressl.
+
+	* ext/openssl/ossl_rand.c (ossl_rand_egd): define only if RAND_edg
+	  is available.  [Fix GH-829]
+
 Thu Feb 12 10:46:14 2015  Eric Hodel  <drbrain@segment7.net>
 
 	* proc.c (proc_call):  Improve Proc#call documentation.  Patch by
