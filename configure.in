@@ -432,8 +432,8 @@ else
     rb_cv_target_archs=${target_archs}
 fi
 if test "x${ARCH_FLAG}" != x; then
-    CFLAGS="$CFLAGS ${ARCH_FLAG}"
-    LDFLAGS="${LDFLAGS+$LDFLAGS }${ARCH_FLAG}"
+    CFLAGS="${CFLAGS:+$CFLAGS }${ARCH_FLAG}"
+    LDFLAGS="${LDFLAGS:+$LDFLAGS }${ARCH_FLAG}"
 fi
 # RUBY_UNIVERSAL_ARCH end
 ])
@@ -1012,7 +1012,7 @@ AS_CASE(["$target_os"],
 		    incs=`echo "$incs" | fgrep -v "$d"`
 		done
 		for d in $incs; do
-		    test -d "$d" && LDFLAGS="${LDFLAGS:+$LDFLAGS }-L$d"
+		    test -d "$d" && RUBY_APPEND_OPTIONS(LDFLAGS, "-L$d")
 		done
 		ac_cv_type_getgroups=gid_t # getgroups() on Rosetta fills garbage
 		ac_cv_lib_crypt_crypt=no
@@ -3076,11 +3076,13 @@ if test "x$OPT_DIR" != x; then
         for dir in $OPT_DIR; do
             echo x ${LIBPATHFLAG} ${RPATHFLAG} |
             sed "s/^x *//;s${IFS}"'%1\\$-s'"${IFS}${dir}/lib${IFS}g;s${IFS}%s${IFS}${dir}/lib${IFS}g"
-        done | tr '\012' ' '`
-    test x"${LDFLAGS}" = x || LDFLAGS="$LDFLAGS "
-    LDFLAGS="$LDFLAGS$val"
-    test x"${DLDFLAGS}" = x || DLDFLAGS="$DLDFLAGS "
-    DLDFLAGS="$DLDFLAGS$val"
+        done | tr '\012' ' ' | sed 's/ *$//'`
+    if test x"$val" != x; then
+	test x"${LDFLAGS}" = x || LDFLAGS="$LDFLAGS "
+	LDFLAGS="$LDFLAGS$val"
+	test x"${DLDFLAGS}" = x || DLDFLAGS="$DLDFLAGS "
+	DLDFLAGS="$DLDFLAGS$val"
+    fi
     LDFLAGS_OPTDIR="$val"
 fi
 
