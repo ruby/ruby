@@ -296,7 +296,7 @@ arguments they will not be gathered by <code>*</code>:
 
 Prints:
 
-  {:arguments=>[1, 2], :keywords=>{"3"=>4, :five=>6}}
+  {:arguments=>[1, 2, {"3"=>4}], :keywords=>{:five=>6}}
 
 Unlike the splat operator described above the <code>**</code> operator has no
 commonly recognized name.
