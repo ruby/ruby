@@ -653,6 +653,42 @@ space_size(size_t stack_size)
     }
 }
 
+#ifdef __linux__
+static __attribute__((noinline)) void
+reserve_stack(volatile char *limit, size_t size)
+{
+# ifdef C_ALLOCA
+#   error needs alloca()
+# endif
+    struct rlimit rl;
+    volatile char buf[0x100];
+    STACK_GROW_DIR_DETECTION;
+
+    if (!getrlimit(RLIMIT_STACK, &rl) && rl.rlim_cur == RLIM_INFINITY)
+	return;
+
+    size -= sizeof(buf); /* margin */
+    if (IS_STACK_DIR_UPPER()) {
+	const volatile char *end = buf + sizeof(buf);
+	limit += size;
+	if (limit > end) {
+	    size = limit - end;
+	    limit = alloca(size);
+	    limit[size-1] = 0;
+	}
+    }
+    else {
+	limit -= size;
+	if (buf > limit) {
+	    limit = alloca(buf - limit);
+	    limit[0] = 0;
+	}
+    }
+}
+#else
+# define reserve_stack(limit, size) ((void)(limit), (void)(size))
+#endif
+
 #undef ruby_init_stack
 /* Set stack bottom of Ruby implementation.
  *
@@ -674,6 +710,7 @@ ruby_init_stack(volatile VALUE *addr
 	if (get_main_stack(&stackaddr, &size) == 0) {
 	    native_main_thread.stack_maxsize = size;
 	    native_main_thread.stack_start = stackaddr;
+	    reserve_stack(stackaddr, size);
 	    return;
 	}
     }
