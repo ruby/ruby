@@ -1,3 +1,9 @@
+Fri Feb 13 13:59:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (try_cppflags, try_cflags, try_ldflags): get rid of
+	  interference by modifying global variables in have_devel? method.
+	  [ruby-core:67962] [Bug #10821]
+
 Fri Feb 13 03:13:05 2015  Scott Francis  <scott.francis@shopify.com>
 
 	* thread_pthread.c (reserve_stack): fix intermittent SIGBUS on
