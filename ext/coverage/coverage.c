@@ -36,7 +36,7 @@ static int
 coverage_clear_result_i(st_data_t key, st_data_t val, st_data_t h)
 {
     VALUE coverage = (VALUE)val;
-    rb_ary_clear((VALUE)val);
+    rb_ary_clear(coverage);
     return ST_CONTINUE;
 }
 
