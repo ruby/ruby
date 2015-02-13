@@ -510,6 +510,12 @@ static int exponent(char *, int, int);
 
 #endif /* FLOATING_POINT */
 
+#ifndef lower_hexdigits
+# define lower_hexdigits "0123456789abcdef"
+#endif
+#ifndef upper_hexdigits
+# define upper_hexdigits "0123456789ABCDEF"
+#endif
 
 /*
  * Flags used during conversion.
@@ -993,7 +999,7 @@ fp_begin:		_double = va_arg(ap, double);
 #endif /* _HAVE_SANE_QUAD_ */
 #endif
 			base = 16;
-			xdigs = "0123456789abcdef";
+			xdigs = lower_hexdigits;
 			ch = 'x';
 			goto nosign;
 		case 's':
@@ -1031,10 +1037,10 @@ fp_begin:		_double = va_arg(ap, double);
 			base = 10;
 			goto nosign;
 		case 'X':
-			xdigs = "0123456789ABCDEF";
+			xdigs = upper_hexdigits;
 			goto hex;
 		case 'x':
-			xdigs = "0123456789abcdef";
+			xdigs = lower_hexdigits;
 hex:
 #ifdef _HAVE_SANE_QUAD_
 			if (flags & QUADINT)
@@ -1251,7 +1257,7 @@ cvt(double value, int ndigits, int flags, char *sign, int *decpt, int ch, int *l
 	}
 	if (ch == 'a' || ch =='A') {
 	    digits = BSD__hdtoa(value,
-		    ch == 'a' ? "0123456789abcdef" : "0123456789ABCDEF",
+		    ch == 'a' ? lower_hexdigits : upper_hexdigits,
 		    ndigits, decpt, &dsgn, &rve);
 	}
 	else {

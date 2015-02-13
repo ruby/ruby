@@ -1252,6 +1252,8 @@ fmt_setup(char *buf, size_t size, int c, int flags, int width, int prec)
 #ifdef RUBY_PRI_VALUE_MARK
 # define PRI_EXTRA_MARK RUBY_PRI_VALUE_MARK
 #endif
+#define lower_hexdigits (ruby_hexdigits+0)
+#define upper_hexdigits (ruby_hexdigits+16)
 #include "vsnprintf.c"
 
 typedef struct {

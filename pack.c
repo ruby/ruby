@@ -1204,7 +1204,7 @@ infected_str_new(const char *ptr, long len, VALUE str)
 static VALUE
 pack_unpack(VALUE str, VALUE fmt)
 {
-    static const char hexdigits[] = "0123456789abcdef";
+#define hexdigits ruby_hexdigits
     char *s, *send;
     char *p, *pend;
     VALUE ary;
