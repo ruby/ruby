@@ -38,6 +38,12 @@ with all sufficient information, see the ChangeLog file.
 * lib/drb/drb.rb
  * removed unused argument. https://github.com/ruby/ruby/pull/515
 
+* lib/base64.rb
+ * Base64.urlsafe_encode64: added a "padding" option to suppress
+   the padding character ("=").
+ * Base64.urlsafe_decode64: now it accepts not only correctly-padded
+   input but also unpadded input.
+
 === Built-in global variables compatibility issues
 
 === C API updates

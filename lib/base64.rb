@@ -77,15 +77,26 @@ module Base64
   # This method complies with ``Base 64 Encoding with URL and Filename Safe
   # Alphabet'' in RFC 4648.
   # The alphabet uses '-' instead of '+' and '_' instead of '/'.
-  def urlsafe_encode64(bin)
-    strict_encode64(bin).tr("+/", "-_")
+  # The result may contain trailing '=' unless "padding" is false.
+  def urlsafe_encode64(bin, padding=true)
+    str = strict_encode64(bin).tr("+/", "-_")
+    str = str.delete("=") unless padding
+    str
   end
 
   # Returns the Base64-decoded version of +str+.
   # This method complies with ``Base 64 Encoding with URL and Filename Safe
   # Alphabet'' in RFC 4648.
   # The alphabet uses '-' instead of '+' and '_' instead of '/'.
+  #
+  # Trailing '=' characters are optional.
+  # This method accepts both correctly-padded and unpadded input,
+  # but rejects incorrectly-padded input.
   def urlsafe_decode64(str)
-    strict_decode64(str.tr("-_", "+/"))
+    str = str.tr("-_", "+/")
+    if !str.end_with?("=") && str.length % 4 != 0
+      str = str.ljust((str.length + 3) & ~3, "=")
+    end
+    strict_decode64(str)
   end
 end
