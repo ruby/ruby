@@ -1,3 +1,8 @@
+Fri Feb 13 14:19:06 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* ext/json: merge upstream from flori/json
+	  change usage of TypedData. [Feature #10739][ruby-core:67564]
+
 Thu Feb 12 18:34:01 2015  multisnow  <infinity.blick.winkel@gmail.com>
 
 	* ext/openssl/extconf.rb: check RAND_edg to support libressl.

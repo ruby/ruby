@@ -845,7 +845,7 @@ static size_t JSON_memsize(const void *ptr)
     return sizeof(*json) + FBUFFER_CAPA(json->fbuffer);
 }
 
-#ifdef HAVE_TYPE_RB_DATA_TYPE_T
+#ifdef NEW_TYPEDDATA_WRAPPER
 static const rb_data_type_t JSON_Parser_type = {
     "JSON/Parser",
     {JSON_mark, JSON_free, JSON_memsize,},
@@ -859,11 +859,7 @@ static const rb_data_type_t JSON_Parser_type = {
 static VALUE cJSON_parser_s_allocate(VALUE klass)
 {
     JSON_Parser *json = JSON_allocate();
-#ifdef HAVE_TYPE_RB_DATA_TYPE_T
     return TypedData_Wrap_Struct(klass, &JSON_Parser_type, json);
-#else
-    return Data_Wrap_Struct(klass, JSON_mark, JSON_free, json);
-#endif
 }
 
 /*

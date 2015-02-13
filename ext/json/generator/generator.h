@@ -78,13 +78,8 @@ typedef struct JSON_Generator_StateStruct {
     long buffer_initial_length;
 } JSON_Generator_State;
 
-#ifdef HAVE_TYPE_RB_DATA_TYPE_T
 #define GET_STATE_TO(self, state) \
     TypedData_Get_Struct(self, JSON_Generator_State, &JSON_Generator_State_type, state)
-#else
-#define GET_STATE_TO(self, state) \
-    Data_Get_Struct(self, JSON_Generator_State, state)
-#endif
 
 #define GET_STATE(self)                       \
     JSON_Generator_State *state;              \
@@ -97,7 +92,7 @@ typedef struct JSON_Generator_StateStruct {
                                                                                                 \
     rb_scan_args(argc, argv, "01", &Vstate);                                                    \
     Vstate = cState_from_state_s(cState, Vstate);                                               \
-    GET_STATE_TO(Vstate, state);								\
+    TypedData_Get_Struct(Vstate, JSON_Generator_State, &JSON_Generator_State_type, state);	\
     buffer = cState_prepare_buffer(Vstate);                                                     \
     generate_json_##type(buffer, Vstate, state, self);                                          \
     return fbuffer_to_s(buffer)
@@ -152,10 +147,6 @@ static VALUE cState_ascii_only_p(VALUE self);
 static VALUE cState_depth(VALUE self);
 static VALUE cState_depth_set(VALUE self, VALUE depth);
 static FBuffer *cState_prepare_buffer(VALUE self);
-#ifdef HAVE_TYPE_RB_DATA_TYPE_T
-static const rb_data_type_t JSON_Generator_State_type;
-#endif
-
 #ifndef ZALLOC
 #define ZALLOC(type) ((type *)ruby_zalloc(sizeof(type)))
 static inline void *ruby_zalloc(size_t n)
@@ -164,6 +155,13 @@ static inline void *ruby_zalloc(size_t n)
     memset(p, 0, n);
     return p;
 }
+#endif
+#ifdef TypedData_Wrap_Struct
+static const rb_data_type_t JSON_Generator_State_type;
+#define NEW_TYPEDDATA_WRAPPER 1
+#else
+#define TypedData_Wrap_Struct(klass, ignore, json) Data_Wrap_Struct(klass, NULL, State_free, json)
+#define TypedData_Get_Struct(self, JSON_Generator_State, ignore, json) Data_Get_Struct(self, JSON_Generator_State, json)
 #endif
 
 #endif
