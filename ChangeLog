@@ -1,3 +1,9 @@
+Sat Feb 14 08:53:50 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* class.c (method_entry_i, class_instance_method_list,
+	  rb_obj_singleton_methods): should not include methods of
+	  superclasses if recur is false. [ruby-dev:48854] [Bug #10826]
+
 Fri Feb 13 13:59:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (try_cppflags, try_cflags, try_ldflags): get rid of
