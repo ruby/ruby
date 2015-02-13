@@ -1,3 +1,10 @@
+Fri Feb 13 21:52:05 2015  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* string.c (str_discard): does not free for STR_NOFREE string.
+	  [Bug #10853][ruby-core:68110]
+
+	* bootstraptest/test_string.rb: test for above.
+
 Fri Feb 13 21:16:00 2015  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/base64.rb: make urlsafe mode user-friendly.

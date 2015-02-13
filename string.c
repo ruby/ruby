@@ -1662,7 +1662,7 @@ static inline void
 str_discard(VALUE str)
 {
     str_modifiable(str);
-    if (!STR_SHARED_P(str) && !STR_EMBED_P(str)) {
+    if (!STR_EMBED_P(str) && !FL_TEST(str, STR_SHARED|STR_NOFREE)) {
 	ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
 	RSTRING(str)->as.heap.ptr = 0;
 	RSTRING(str)->as.heap.len = 0;
