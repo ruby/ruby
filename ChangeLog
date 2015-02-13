@@ -1,3 +1,11 @@
+Sat Feb 14 00:49:37 2015  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/coverage/coverage.c: Add Coverage.peek_result.  Allows you to
+	  capture coverage information without stopping the coverage tool.
+	  [ruby-core:67940] [Feature #10816]
+
+	* test/coverage/test_coverage.rb: test for change.
+
 Fri Feb 13 21:52:05 2015  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* string.c (str_discard): does not free for STR_NOFREE string.
