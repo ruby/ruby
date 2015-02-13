@@ -1,3 +1,16 @@
+Fri Feb 13 21:16:00 2015  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/base64.rb: make urlsafe mode user-friendly.
+
+	* lib/base64.rb (Base64.urlsafe_encode64): a new option "padding" to
+	  suppress the padding character ("=").
+
+	* lib/base64.rb (Base64.urlsafe_decode64): now it accepts not only
+	  correctly-padded input but also unpadded input.
+	  [Feature #10740][ruby-core:67570]
+
+	* test/base64/test_base64.rb: Test for above
+
 Fri Feb 13 14:19:06 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* ext/json: merge upstream from flori/json
