@@ -91,7 +91,9 @@ module SecureRandom
       ret
     end
   end
+end
 
+module Random::Formatter
   # SecureRandom.hex generates a random hexadecimal string.
   #
   # The argument _n_ specifies the length, in bytes, of the random number to be generated.
@@ -107,7 +109,7 @@ module SecureRandom
   #
   # If a secure random number generator is not available,
   # +NotImplementedError+ is raised.
-  def self.hex(n=nil)
+  def hex(n=nil)
     random_bytes(n).unpack("H*")[0]
   end
 
@@ -128,7 +130,7 @@ module SecureRandom
   # +NotImplementedError+ is raised.
   #
   # See RFC 3548 for the definition of base64.
-  def self.base64(n=nil)
+  def base64(n=nil)
     [random_bytes(n)].pack("m*").delete("\n")
   end
 
@@ -158,7 +160,7 @@ module SecureRandom
   # +NotImplementedError+ is raised.
   #
   # See RFC 3548 for the definition of URL-safe base64.
-  def self.urlsafe_base64(n=nil, padding=false)
+  def urlsafe_base64(n=nil, padding=false)
     s = [random_bytes(n)].pack("m*")
     s.delete!("\n")
     s.tr!("+/", "-_")
@@ -182,7 +184,7 @@ module SecureRandom
   #   p SecureRandom.random_number #=> 0.596506046187744
   #   p SecureRandom.random_number #=> 0.350621695741409
   #
-  def self.random_number(n=0)
+  def random_number(n=0)
     if 0 < n
       if defined? OpenSSL::BN
         OpenSSL::BN.rand_range(n).to_i
@@ -195,7 +197,7 @@ module SecureRandom
         mask |= mask >> 2
         mask |= mask >> 4
         begin
-          rnd = SecureRandom.random_bytes(bin.length)
+          rnd = random_bytes(bin.length)
           rnd[0] = (rnd[0].ord & mask).chr
         end until rnd < bin
         rnd.unpack("H*")[0].hex
@@ -205,7 +207,7 @@ module SecureRandom
       if defined? OpenSSL::BN
         i64 = OpenSSL::BN.rand(64, -1).to_i
       else
-        i64 = SecureRandom.random_bytes(8).unpack("Q")[0]
+        i64 = random_bytes(8).unpack("Q")[0]
       end
       Math.ldexp(i64 >> (64-Float::MANT_DIG), -Float::MANT_DIG)
     end
@@ -222,10 +224,12 @@ module SecureRandom
   #
   # See RFC 4122 for details of UUID.
   #
-  def self.uuid
-    ary = self.random_bytes(16).unpack("NnnnnN")
+  def uuid
+    ary = random_bytes(16).unpack("NnnnnN")
     ary[2] = (ary[2] & 0x0fff) | 0x4000
     ary[3] = (ary[3] & 0x3fff) | 0x8000
     "%08x-%04x-%04x-%04x-%04x%08x" % ary
   end
 end
+
+SecureRandom.extend(Random::Formatter)
