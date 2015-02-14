@@ -196,16 +196,26 @@ genrand_int32(struct MT *mt)
 }
 
 /* generates a random number on [0,1) with 53-bit resolution*/
+static double int_pair_to_real_exclusive(uint32_t a, uint32_t b);
 static double
 genrand_real(struct MT *mt)
 {
     /* mt must be initialized */
-    unsigned int a = genrand_int32(mt)>>5, b = genrand_int32(mt)>>6;
+    unsigned int a = genrand_int32(mt), b = genrand_int32(mt);
+    return int_pair_to_real_exclusive(a, b);
+}
+
+static double
+int_pair_to_real_exclusive(uint32_t a, uint32_t b)
+{
+    a >>= 5;
+    b >>= 6;
     return(a*67108864.0+b)*(1.0/9007199254740992.0);
 }
 
 /* generates a random number on [0,1] with 53-bit resolution*/
 static double int_pair_to_real_inclusive(uint32_t a, uint32_t b);
+#if 0
 static double
 genrand_real2(struct MT *mt)
 {
@@ -213,6 +223,7 @@ genrand_real2(struct MT *mt)
     uint32_t a = genrand_int32(mt), b = genrand_int32(mt);
     return int_pair_to_real_inclusive(a, b);
 }
+#endif
 
 /* These real versions are due to Isaku Wada, 2002/01/09 added */
 
@@ -839,10 +850,9 @@ rb_genrand_ulong_limited(unsigned long limit)
     return limited_rand(default_mt(), limit);
 }
 
-unsigned int
-rb_random_int32(VALUE obj)
+static unsigned int
+random_int32(VALUE obj, rb_random_t *rnd)
 {
-    rb_random_t *rnd = try_get_rnd(obj);
     if (!rnd) {
 #if SIZEOF_LONG * CHAR_BIT > 32
 	VALUE lim = ULONG2NUM(0x100000000UL);
@@ -854,6 +864,25 @@ rb_random_int32(VALUE obj)
 	return (unsigned int)NUM2ULONG(rb_funcall2(obj, id_rand, 1, &lim));
     }
     return genrand_int32(&rnd->mt);
+}
+
+unsigned int
+rb_random_int32(VALUE obj)
+{
+    return random_int32(obj, try_get_rnd(obj));
+}
+
+static double
+random_real(VALUE obj, rb_random_t *rnd, int excl)
+{
+    uint32_t a = random_int32(obj, rnd);
+    uint32_t b = random_int32(obj, rnd);
+    if (excl) {
+	return int_pair_to_real_exclusive(a, b);
+    }
+    else {
+	return int_pair_to_real_inclusive(a, b);
+    }
 }
 
 double
@@ -887,10 +916,9 @@ ulong_to_num_plus_1(unsigned long n)
 #endif
 }
 
-unsigned long
-rb_random_ulong_limited(VALUE obj, unsigned long limit)
+static unsigned long
+random_ulong_limited(VALUE obj, rb_random_t *rnd, unsigned long limit)
 {
-    rb_random_t *rnd = try_get_rnd(obj);
     if (!rnd) {
 	extern int rb_num_negative_p(VALUE);
 	VALUE lim = ulong_to_num_plus_1(limit);
@@ -907,6 +935,32 @@ rb_random_ulong_limited(VALUE obj, unsigned long limit)
     return limited_rand(&rnd->mt, limit);
 }
 
+static VALUE
+random_ulong_limited_big(VALUE obj, rb_random_t *rnd, VALUE vmax)
+{
+    if (!rnd) {
+	extern int rb_num_negative_p(VALUE);
+	VALUE lim = rb_big_plus(vmax, INT2FIX(1));
+	VALUE v = rb_to_int(rb_funcall2(obj, id_rand, 1, &lim));
+	if (rb_num_negative_p(v)) {
+	    rb_raise(rb_eRangeError, "random number too small %"PRIsVALUE, v);
+	}
+	if (FIX2LONG(rb_big_cmp(vmax, v)) < 0) {
+	    rb_raise(rb_eRangeError, "random number too big %"PRIsVALUE, v);
+	}
+	return v;
+    }
+    return limited_big_rand(&rnd->mt, vmax);
+}
+
+unsigned long
+rb_random_ulong_limited(VALUE obj, unsigned long limit)
+{
+    return random_ulong_limited(obj, try_get_rnd(obj), limit);
+}
+
+static VALUE genrand_bytes(rb_random_t *rnd, long n);
+
 /*
  * call-seq: prng.bytes(size) -> a_string
  *
@@ -918,21 +972,16 @@ rb_random_ulong_limited(VALUE obj, unsigned long limit)
 static VALUE
 random_bytes(VALUE obj, VALUE len)
 {
-    return rb_random_bytes(obj, NUM2LONG(rb_to_int(len)));
+    return genrand_bytes(get_rnd(obj), NUM2LONG(rb_to_int(len)));
 }
 
-VALUE
-rb_random_bytes(VALUE obj, long n)
+static VALUE
+genrand_bytes(rb_random_t *rnd, long n)
 {
-    rb_random_t *rnd = try_get_rnd(obj);
     VALUE bytes;
     char *ptr;
     unsigned int r, i;
 
-    if (!rnd) {
-	VALUE len = LONG2NUM(n);
-	return rb_funcall2(obj, id_bytes, 1, &len);
-    }
     bytes = rb_str_new(0, n);
     ptr = RSTRING_PTR(bytes);
     for (; n >= SIZEOF_INT32; n -= SIZEOF_INT32) {
@@ -953,6 +1002,17 @@ rb_random_bytes(VALUE obj, long n)
     return bytes;
 }
 
+VALUE
+rb_random_bytes(VALUE obj, long n)
+{
+    rb_random_t *rnd = try_get_rnd(obj);
+    if (!rnd) {
+	VALUE len = LONG2NUM(n);
+	return rb_funcall2(obj, id_bytes, 1, &len);
+    }
+    return genrand_bytes(rnd, n);
+}
+
 static VALUE
 range_values(VALUE vmax, VALUE *begp, VALUE *endp, int *exclp)
 {
@@ -967,20 +1027,19 @@ range_values(VALUE vmax, VALUE *begp, VALUE *endp, int *exclp)
 }
 
 static VALUE
-rand_int(struct MT *mt, VALUE vmax, int restrictive)
+rand_int(VALUE obj, rb_random_t *rnd, VALUE vmax, int restrictive)
 {
     /* mt must be initialized */
-    long max;
     unsigned long r;
 
     if (FIXNUM_P(vmax)) {
-	max = FIX2LONG(vmax);
+	long max = FIX2LONG(vmax);
 	if (!max) return Qnil;
 	if (max < 0) {
 	    if (restrictive) return Qnil;
 	    max = -max;
 	}
-	r = limited_rand(mt, (unsigned long)max - 1);
+	r = random_ulong_limited(obj, rnd, (unsigned long)max - 1);
 	return ULONG2NUM(r);
     }
     else {
@@ -992,15 +1051,23 @@ rand_int(struct MT *mt, VALUE vmax, int restrictive)
 	}
 	vmax = rb_big_minus(vmax, INT2FIX(1));
 	if (FIXNUM_P(vmax)) {
-	    max = FIX2LONG(vmax);
+	    long max = FIX2LONG(vmax);
 	    if (max == -1) return Qnil;
-	    r = limited_rand(mt, max);
+	    r = random_ulong_limited(obj, rnd, max);
 	    return LONG2NUM(r);
 	}
-	ret = limited_big_rand(mt, vmax);
+	ret = random_ulong_limited_big(obj, rnd, vmax);
 	RB_GC_GUARD(vmax);
 	return ret;
     }
+}
+
+NORETURN(static void domain_error(void));
+static void
+domain_error(void)
+{
+    VALUE error = INT2FIX(EDOM);
+    rb_exc_raise(rb_class_new_instance(1, &error, rb_eSystemCallError));
 }
 
 static inline double
@@ -1008,14 +1075,13 @@ float_value(VALUE v)
 {
     double x = RFLOAT_VALUE(v);
     if (isinf(x) || isnan(x)) {
-	VALUE error = INT2FIX(EDOM);
-	rb_exc_raise(rb_class_new_instance(1, &error, rb_eSystemCallError));
+	domain_error();
     }
     return x;
 }
 
 static inline VALUE
-rand_range(struct MT* mt, VALUE range)
+rand_range(VALUE obj, rb_random_t* rnd, VALUE range)
 {
     VALUE beg = Qundef, end = Qundef, vmax, v;
     int excl = 0;
@@ -1029,7 +1095,7 @@ rand_range(struct MT* mt, VALUE range)
 	if (FIXNUM_P(vmax)) {
 	  fixnum:
 	    if ((max = FIX2LONG(vmax) - excl) >= 0) {
-		unsigned long r = limited_rand(mt, (unsigned long)max);
+		unsigned long r = random_ulong_limited(obj, rnd, (unsigned long)max);
 		v = ULONG2NUM(r);
 	    }
 	}
@@ -1039,7 +1105,7 @@ rand_range(struct MT* mt, VALUE range)
 		excl = 0;
 		goto fixnum;
 	    }
-	    v = limited_big_rand(mt, vmax);
+	    v = random_ulong_limited_big(obj, rnd, vmax);
 	}
     }
     else if (v = rb_check_to_float(vmax), !NIL_P(v)) {
@@ -1052,17 +1118,12 @@ rand_range(struct MT* mt, VALUE range)
 	    mid = max + min;
 	    max -= min;
 	}
-	else {
-	    float_value(v);
+	else if (isnan(max)) {
+	    domain_error();
 	}
 	v = Qnil;
 	if (max > 0.0) {
-	    if (excl) {
-		r = genrand_real(mt);
-	    }
-	    else {
-		r = genrand_real2(mt);
-	    }
+	    r = random_real(obj, rnd, excl);
 	    if (scale > 1) {
 		return rb_float_new(+(+(+(r - 0.5) * max) * scale) + mid);
 	    }
@@ -1095,7 +1156,7 @@ rand_range(struct MT* mt, VALUE range)
     return v;
 }
 
-static VALUE rand_random(int argc, VALUE *argv, rb_random_t *rnd);
+static VALUE rand_random(int argc, VALUE *argv, VALUE obj, rb_random_t *rnd);
 
 /*
  * call-seq:
@@ -1129,16 +1190,17 @@ static VALUE rand_random(int argc, VALUE *argv, rb_random_t *rnd);
 static VALUE
 random_rand(int argc, VALUE *argv, VALUE obj)
 {
-    return rand_random(argc, argv, get_rnd(obj));
+    return rand_random(argc, argv, obj, get_rnd(obj));
 }
 
 static VALUE
-rand_random(int argc, VALUE *argv, rb_random_t *rnd)
+rand_random(int argc, VALUE *argv, VALUE obj, rb_random_t *rnd)
 {
     VALUE vmax, v;
+    double max = 0.0;
 
     if (argc == 0) {
-	return rb_float_new(genrand_real(&rnd->mt));
+	goto float_rand;
     }
     else {
 	rb_check_arity(argc, 0, 1);
@@ -1148,16 +1210,26 @@ rand_random(int argc, VALUE *argv, rb_random_t *rnd)
 	v = Qnil;
     }
     else if (!RB_TYPE_P(vmax, T_FLOAT) && (v = rb_check_to_integer(vmax, "to_int"), !NIL_P(v))) {
-	v = rand_int(&rnd->mt, v, 1);
+	v = rand_int(obj, rnd, v, 1);
     }
     else if (v = rb_check_to_float(vmax), !NIL_P(v)) {
-	double max = float_value(v);
-	if (max > 0.0)
-	    v = rb_float_new(max * genrand_real(&rnd->mt));
-	else
+	max = float_value(v);
+	if (max < 0.0) {
 	    v = Qnil;
+	}
+	else {
+	    uint32_t a, b;
+	    double r;
+
+	  float_rand:
+	    a = random_int32(obj, rnd);
+	    b = random_int32(obj, rnd);
+	    r = int_pair_to_real_exclusive(a, b);
+	    if (max > 0.0) r *= max;;
+	    v = rb_float_new(r);
+	}
     }
-    else if ((v = rand_range(&rnd->mt, vmax)) != Qfalse) {
+    else if ((v = rand_range(obj, rnd, vmax)) != Qfalse) {
 	/* nothing to do */
     }
     else {
@@ -1169,6 +1241,13 @@ rand_random(int argc, VALUE *argv, rb_random_t *rnd)
     }
 
     return v;
+}
+
+static VALUE
+rand_random_number(int argc, VALUE *argv, VALUE obj)
+{
+    if (argc == 1 && argv[0] == INT2FIX(0)) --argc;
+    return rand_random(argc, argv, obj, try_get_rnd(obj));
 }
 
 /*
@@ -1244,18 +1323,18 @@ static VALUE
 rb_f_rand(int argc, VALUE *argv, VALUE obj)
 {
     VALUE v, vmax, r;
-    struct MT *mt = default_mt();
+    rb_random_t *rnd = rand_start(&default_rand);
 
     if (argc == 0) goto zero_arg;
     rb_scan_args(argc, argv, "01", &vmax);
     if (NIL_P(vmax)) goto zero_arg;
-    if ((v = rand_range(mt, vmax)) != Qfalse) {
+    if ((v = rand_range(Qnil, rnd, vmax)) != Qfalse) {
 	return v;
     }
     vmax = rb_to_int(vmax);
-    if (vmax == INT2FIX(0) || NIL_P(r = rand_int(mt, vmax, 0))) {
+    if (vmax == INT2FIX(0) || NIL_P(r = rand_int(Qnil, rnd, vmax, 0))) {
       zero_arg:
-	return DBL2NUM(genrand_real(mt));
+	return DBL2NUM(genrand_real(&rnd->mt));
     }
     return r;
 }
@@ -1271,7 +1350,7 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
 static VALUE
 random_s_rand(int argc, VALUE *argv, VALUE obj)
 {
-    return rand_random(argc, argv, rand_start(&default_rand));
+    return rand_random(argc, argv, Qnil, rand_start(&default_rand));
 }
 
 #define SIP_HASH_STREAMING 0
@@ -1430,6 +1509,12 @@ InitVM_Random(void)
     rb_define_singleton_method(rb_cRandom, "raw_seed", random_raw_seed, 1);
     rb_define_private_method(CLASS_OF(rb_cRandom), "state", random_s_state, 0);
     rb_define_private_method(CLASS_OF(rb_cRandom), "left", random_s_left, 0);
+
+    {
+	VALUE m = rb_define_module_under(rb_cRandom, "Formatter");
+	rb_include_module(rb_cRandom, m);
+	rb_define_method(m, "random_number", rand_random_number, -1);
+    }
 }
 
 #undef rb_intern

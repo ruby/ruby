@@ -47,26 +47,6 @@ end
 #
 
 module SecureRandom
-
-  # SecureRandom.random_bytes generates a random binary string.
-  #
-  # The argument _n_ specifies the length of the result string.
-  #
-  # If _n_ is not specified or is nil, 16 is assumed.
-  # It may be larger in future.
-  #
-  # The result may contain any byte: "\x00" - "\xff".
-  #
-  #   p SecureRandom.random_bytes #=> "\xD8\\\xE0\xF4\r\xB2\xFC*WM\xFF\x83\x18\xF45\xB6"
-  #   p SecureRandom.random_bytes #=> "m\xDC\xFC/\a\x00Uf\xB2\xB2P\xBD\xFF6S\x97"
-  #
-  # If a secure random number generator is not available,
-  # +NotImplementedError+ is raised.
-  def self.random_bytes(n=nil)
-    n = n ? n.to_int : 16
-    gen_random(n)
-  end
-
   if defined? OpenSSL::Random
     def self.gen_random(n)
       @pid = 0 unless defined?(@pid)
@@ -94,6 +74,26 @@ module SecureRandom
 end
 
 module Random::Formatter
+
+  # SecureRandom.random_bytes generates a random binary string.
+  #
+  # The argument _n_ specifies the length of the result string.
+  #
+  # If _n_ is not specified or is nil, 16 is assumed.
+  # It may be larger in future.
+  #
+  # The result may contain any byte: "\x00" - "\xff".
+  #
+  #   p SecureRandom.random_bytes #=> "\xD8\\\xE0\xF4\r\xB2\xFC*WM\xFF\x83\x18\xF45\xB6"
+  #   p SecureRandom.random_bytes #=> "m\xDC\xFC/\a\x00Uf\xB2\xB2P\xBD\xFF6S\x97"
+  #
+  # If a secure random number generator is not available,
+  # +NotImplementedError+ is raised.
+  def random_bytes(n=nil)
+    n = n ? n.to_int : 16
+    gen_random(n)
+  end
+
   # SecureRandom.hex generates a random hexadecimal string.
   #
   # The argument _n_ specifies the length, in bytes, of the random number to be generated.
@@ -168,6 +168,7 @@ module Random::Formatter
     s
   end
 
+=begin
   # SecureRandom.random_number generates a random number.
   #
   # If a positive integer is given as _n_,
@@ -212,6 +213,7 @@ module Random::Formatter
       Math.ldexp(i64 >> (64-Float::MANT_DIG), -Float::MANT_DIG)
     end
   end
+=end
 
   # SecureRandom.uuid generates a random v4 UUID (Universally Unique IDentifier).
   #
@@ -229,6 +231,11 @@ module Random::Formatter
     ary[2] = (ary[2] & 0x0fff) | 0x4000
     ary[3] = (ary[3] & 0x3fff) | 0x8000
     "%08x-%04x-%04x-%04x-%04x%08x" % ary
+  end
+
+  private
+  def gen_random(n)
+    self.bytes(n)
   end
 end
 

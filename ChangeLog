@@ -1,3 +1,11 @@
+Sat Feb 14 12:20:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (rand_random_number): add a method to return a random
+	  number like SecureRandom to Random::Formatter.
+
+	* lib/securerandom.rb (random_bytes): move to Random::Formatter,
+	  the base method of the module.
+
 Sat Feb 14 12:01:32 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (random_raw_seed): extract platform dependent random
