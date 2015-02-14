@@ -1,3 +1,10 @@
+Sat Feb 14 12:01:32 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (random_raw_seed): extract platform dependent random
+	  seed initialization function as a new method Random.raw_seed.
+
+	* lib/securerandom.rb (SecureRandom): use Random.raw_seed.
+
 Sat Feb 14 00:49:37 2015  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/coverage/coverage.c: Add Coverage.peek_result.  Allows you to

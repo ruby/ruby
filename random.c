@@ -84,6 +84,7 @@ The original copyright notice follows.
 #  undef __WINCRYPT_H__
 # endif
 #include <wincrypt.h>
+#include "ruby_atomic.h"
 #endif
 
 typedef int int_must_be_32bit_at_least[sizeof(int) * CHAR_BIT < 32 ? -1 : 1];
@@ -433,43 +434,75 @@ random_init(int argc, VALUE *argv, VALUE obj)
 # define USE_DEV_URANDOM 0
 #endif
 
+#if defined(_WIN32)
+static void
+release_crypt(void *p)
+{
+    HCRYPTPROV prov = (HCRYPTPROV)ATOMIC_PTR_EXCHANGE(*(HCRYPTPROV *)p, INVALID_HANDLE_VALUE);
+    if (prov && prov != (HCRYPTPROV)INVALID_HANDLE_VALUE) {
+	CryptReleaseContext(prov, 0);
+    }
+}
+#endif
+
+static int
+fill_random_bytes(void *seed, size_t size)
+{
+#if USE_DEV_URANDOM
+    int fd = rb_cloexec_open("/dev/urandom",
+# ifdef O_NONBLOCK
+			     O_NONBLOCK|
+# endif
+# ifdef O_NOCTTY
+			     O_NOCTTY|
+# endif
+			     O_RDONLY, 0);
+    struct stat statbuf;
+    ssize_t ret = 0;
+
+    if (fd < 0) return -1;
+    rb_update_max_fd(fd);
+    if (fstat(fd, &statbuf) == 0 && S_ISCHR(statbuf.st_mode)) {
+	ret = read(fd, seed, size);
+    }
+    close(fd);
+    if (ret < 0 || (size_t)ret < size) return -1;
+#elif defined(_WIN32)
+    static HCRYPTPROV perm_prov;
+    HCRYPTPROV prov = perm_prov, old_prov;
+    if (!prov) {
+	if (!CryptAcquireContext(&prov, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
+	    prov = (HCRYPTPROV)INVALID_HANDLE_VALUE;
+	}
+	old_prov = (HCRYPTPROV)ATOMIC_PTR_CAS(perm_prov, 0, prov);
+	if (prov == (HCRYPTPROV)INVALID_HANDLE_VALUE) {
+	    if (old_prov) prov = old_prov;
+	}
+	else {
+	    if (!old_prov) {
+		rb_gc_register_mark_object(Data_Wrap_Struct(0, 0, release_crypt, &prov));
+	    }
+	    else {
+		CryptReleaseContext(prov, 0);
+		prov = old_prov;
+	    }
+	}
+    }
+    if (prov == (HCRYPTPROV)INVALID_HANDLE_VALUE) return -1;
+    CryptGenRandom(prov, size, seed);
+#endif
+    return 0;
+}
+
 static void
 fill_random_seed(uint32_t seed[DEFAULT_SEED_CNT])
 {
     static int n = 0;
     struct timeval tv;
-#if USE_DEV_URANDOM
-    int fd;
-    struct stat statbuf;
-#elif defined(_WIN32)
-    HCRYPTPROV prov;
-#endif
 
     memset(seed, 0, DEFAULT_SEED_LEN);
 
-#if USE_DEV_URANDOM
-    if ((fd = rb_cloexec_open("/dev/urandom", O_RDONLY
-#ifdef O_NONBLOCK
-            |O_NONBLOCK
-#endif
-#ifdef O_NOCTTY
-            |O_NOCTTY
-#endif
-            , 0)) >= 0) {
-        rb_update_max_fd(fd);
-        if (fstat(fd, &statbuf) == 0 && S_ISCHR(statbuf.st_mode)) {
-	    if (read(fd, seed, DEFAULT_SEED_LEN) < DEFAULT_SEED_LEN) {
-		/* abandon */;
-	    }
-        }
-        close(fd);
-    }
-#elif defined(_WIN32)
-    if (CryptAcquireContext(&prov, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
-	CryptGenRandom(prov, DEFAULT_SEED_LEN, (void *)seed);
-	CryptReleaseContext(prov, 0);
-    }
-#endif
+    fill_random_bytes(seed, sizeof(*seed));
 
     gettimeofday(&tv, 0);
     seed[0] ^= tv.tv_usec;
@@ -522,6 +555,22 @@ random_seed(void)
     uint32_t buf[DEFAULT_SEED_CNT];
     fill_random_seed(buf);
     return make_seed_value(buf);
+}
+
+/*
+ * call-seq: Random.raw_seed(size) -> string
+ *
+ * Returns a raw seed string, using platform providing features.
+ *
+ *   Random.raw_seed(8)  #=> "\x78\x41\xBA\xAF\x7D\xEA\xD8\xEA"
+ */
+static VALUE
+random_raw_seed(VALUE self, VALUE size)
+{
+    long n = NUM2ULONG(size);
+    VALUE buf = rb_str_new(0, n);
+    if (fill_random_bytes(RSTRING_PTR(buf), n)) return Qnil;
+    return buf;
 }
 
 /*
@@ -1380,6 +1429,7 @@ InitVM_Random(void)
     rb_define_singleton_method(rb_cRandom, "srand", rb_f_srand, -1);
     rb_define_singleton_method(rb_cRandom, "rand", random_s_rand, -1);
     rb_define_singleton_method(rb_cRandom, "new_seed", random_seed, 0);
+    rb_define_singleton_method(rb_cRandom, "raw_seed", random_raw_seed, 1);
     rb_define_private_method(CLASS_OF(rb_cRandom), "state", random_s_state, 0);
     rb_define_private_method(CLASS_OF(rb_cRandom), "left", random_s_left, 0);
 }
