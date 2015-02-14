@@ -1077,6 +1077,19 @@ invalid_argument(VALUE arg0)
     rb_raise(rb_eArgError, "invalid argument - %"PRIsVALUE, arg0);
 }
 
+static VALUE
+check_random_number(VALUE v, const VALUE *argv)
+{
+    switch (v) {
+      case Qfalse:
+	(void)NUM2LONG(argv[0]);
+	break;
+      case Qnil:
+	invalid_argument(argv[0]);
+    }
+    return v;
+}
+
 static inline double
 float_value(VALUE v)
 {
@@ -1198,7 +1211,7 @@ static VALUE
 random_rand(int argc, VALUE *argv, VALUE obj)
 {
     VALUE v = rand_random(argc, argv, obj, get_rnd(obj));
-    if (NIL_P(v)) invalid_argument(argv[0]);
+    check_random_number(v, argv);
     return v;
 }
 
@@ -1242,8 +1255,7 @@ rand_random(int argc, VALUE *argv, VALUE obj, rb_random_t *rnd)
 	/* nothing to do */
     }
     else {
-	v = Qnil;
-	(void)NUM2LONG(vmax);
+	return Qfalse;
     }
     return v;
 }
@@ -1254,6 +1266,7 @@ rand_random_number(int argc, VALUE *argv, VALUE obj)
     rb_random_t *rnd = try_get_rnd(obj);
     VALUE v = rand_random(argc, argv, obj, rnd);
     if (NIL_P(v)) v = rand_random(0, 0, obj, rnd);
+    else if (!v) invalid_argument(argv[0]);
     return v;
 }
 
@@ -1358,7 +1371,7 @@ static VALUE
 random_s_rand(int argc, VALUE *argv, VALUE obj)
 {
     VALUE v = rand_random(argc, argv, Qnil, rand_start(&default_rand));
-    if (NIL_P(v)) invalid_argument(argv[0]);
+    check_random_number(v, argv);
     return v;
 }
 
