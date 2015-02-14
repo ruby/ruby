@@ -1070,6 +1070,13 @@ domain_error(void)
     rb_exc_raise(rb_class_new_instance(1, &error, rb_eSystemCallError));
 }
 
+NORETURN(static void invalid_argument(VALUE));
+static void
+invalid_argument(VALUE arg0)
+{
+    rb_raise(rb_eArgError, "invalid argument - %"PRIsVALUE, arg0);
+}
+
 static inline double
 float_value(VALUE v)
 {
@@ -1190,7 +1197,9 @@ static VALUE rand_random(int argc, VALUE *argv, VALUE obj, rb_random_t *rnd);
 static VALUE
 random_rand(int argc, VALUE *argv, VALUE obj)
 {
-    return rand_random(argc, argv, obj, get_rnd(obj));
+    VALUE v = rand_random(argc, argv, obj, get_rnd(obj));
+    if (NIL_P(v)) invalid_argument(argv[0]);
+    return v;
 }
 
 static VALUE
@@ -1236,18 +1245,16 @@ rand_random(int argc, VALUE *argv, VALUE obj, rb_random_t *rnd)
 	v = Qnil;
 	(void)NUM2LONG(vmax);
     }
-    if (NIL_P(v)) {
-	rb_raise(rb_eArgError, "invalid argument - %"PRIsVALUE, argv[0]);
-    }
-
     return v;
 }
 
 static VALUE
 rand_random_number(int argc, VALUE *argv, VALUE obj)
 {
-    if (argc == 1 && argv[0] == INT2FIX(0)) --argc;
-    return rand_random(argc, argv, obj, try_get_rnd(obj));
+    rb_random_t *rnd = try_get_rnd(obj);
+    VALUE v = rand_random(argc, argv, obj, rnd);
+    if (NIL_P(v)) v = rand_random(0, 0, obj, rnd);
+    return v;
 }
 
 /*
@@ -1350,7 +1357,9 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
 static VALUE
 random_s_rand(int argc, VALUE *argv, VALUE obj)
 {
-    return rand_random(argc, argv, Qnil, rand_start(&default_rand));
+    VALUE v = rand_random(argc, argv, Qnil, rand_start(&default_rand));
+    if (NIL_P(v)) invalid_argument(argv[0]);
+    return v;
 }
 
 #define SIP_HASH_STREAMING 0
