@@ -1165,9 +1165,7 @@ rand_random(int argc, VALUE *argv, rb_random_t *rnd)
 	(void)NUM2LONG(vmax);
     }
     if (NIL_P(v)) {
-	VALUE mesg = rb_str_new_cstr("invalid argument - ");
-	rb_str_append(mesg, rb_obj_as_string(argv[0]));
-	rb_exc_raise(rb_exc_new3(rb_eArgError, mesg));
+	rb_raise(rb_eArgError, "invalid argument - %"PRIsVALUE, argv[0]);
     }
 
     return v;
