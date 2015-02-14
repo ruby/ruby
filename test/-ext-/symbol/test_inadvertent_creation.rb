@@ -358,5 +358,73 @@ module Test_Symbol
       }
       assert_not_pinneddown(name)
     end
+
+    def assert_no_immortal_symbol_created(name)
+      name = noninterned_name(name)
+      yield(name)
+      assert_not_pinneddown(name)
+    end
+
+    def assert_no_immortal_symbol_in_method_missing(name)
+      assert_no_immortal_symbol_created("send should not leak - #{name}") do |name|
+        assert_raise(NoMethodError) {yield(name)}
+      end
+    end
+
+    def test_send_leak_string
+      assert_no_immortal_symbol_in_method_missing("str") do |name|
+        42.send(name)
+      end
+    end
+
+    def test_send_leak_symbol
+      assert_no_immortal_symbol_in_method_missing("sym") do |name|
+        42.send(name.to_sym)
+      end
+    end
+
+    def test_send_leak_string_custom_method_missing
+      x = Object.new
+      def x.method_missing(*); super; end
+      assert_no_immortal_symbol_in_method_missing("str mm") do |name|
+        x.send(name)
+      end
+    end
+
+    def test_send_leak_symbol_custom_method_missing
+      x = Object.new
+      def x.method_missing(*); super; end
+      assert_no_immortal_symbol_in_method_missing("sym mm") do |name|
+        x.send(name.to_sym)
+      end
+    end
+
+    def test_send_leak_string_no_optimization
+      assert_no_immortal_symbol_in_method_missing("str slow") do |name|
+        42.method(:send).call(name)
+      end
+    end
+
+    def test_send_leak_symbol_no_optimization
+      assert_no_immortal_symbol_in_method_missing("sym slow") do |name|
+        42.method(:send).call(name.to_sym)
+      end
+    end
+
+    def test_send_leak_string_custom_method_missing_no_optimization
+      x = Object.new
+      def x.method_missing(*); super; end
+      assert_no_immortal_symbol_in_method_missing("str mm slow") do |name|
+        x.method(:send).call(name)
+      end
+    end
+
+    def test_send_leak_symbol_custom_method_missing_no_optimization
+      x = Object.new
+      def x.method_missing(*); super; end
+      assert_no_immortal_symbol_in_method_missing("sym mm slow") do |name|
+        x.method(:send).call(name.to_sym)
+      end
+    end
   end
 end

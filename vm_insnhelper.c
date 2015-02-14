@@ -1499,6 +1499,19 @@ vm_call_bmethod(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
     return vm_call_bmethod_body(th, ci, argv);
 }
 
+static int
+ci_missing_reason(const rb_call_info_t *ci)
+{
+    int stat = 0;
+    if (ci->flag & VM_CALL_VCALL) {
+	stat |= NOEX_VCALL;
+    }
+    if (ci->flag & VM_CALL_SUPER) {
+	stat |= NOEX_SUPER;
+    }
+    return stat;
+}
+
 static
 #ifdef _MSC_VER
 __forceinline
@@ -1528,24 +1541,24 @@ vm_call_opt_send(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *c
 
     sym = TOPN(i);
 
-    if (SYMBOL_P(sym)) {
-	ci->mid = SYM2ID(sym);
-    }
-    else if (!(ci->mid = rb_check_id(&sym))) {
+    if (!(ci->mid = rb_check_id(&sym))) {
 	if (rb_method_basic_definition_p(CLASS_OF(ci->recv), idMethodMissing)) {
 	    VALUE exc = make_no_method_exception(rb_eNoMethodError, NULL, ci->recv, rb_long2int(ci->argc), &TOPN(i));
 	    rb_exc_raise(exc);
 	}
-	ci->mid = rb_to_id(sym);
+	TOPN(i) = rb_str_intern(sym);
+	ci->mid = idMethodMissing;
+	th->method_missing_reason = ci->aux.missing_reason = ci_missing_reason(ci);
     }
-
-    /* shift arguments */
-    if (i > 0) {
-	MEMMOVE(&TOPN(i), &TOPN(i-1), VALUE, i);
+    else {
+	/* shift arguments */
+	if (i > 0) {
+	    MEMMOVE(&TOPN(i), &TOPN(i-1), VALUE, i);
+	}
+	ci->argc -= 1;
+	DEC_SP(1);
     }
     ci->me = rb_method_entry_without_refinements(CLASS_OF(ci->recv), ci->mid, &ci->defined_class);
-    ci->argc -= 1;
-    DEC_SP(1);
 
     ci->flag = VM_CALL_FCALL | VM_CALL_OPT_SEND;
 
@@ -1790,13 +1803,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
     }
     else {
 	/* method missing */
-	int stat = 0;
-	if (ci->flag & VM_CALL_VCALL) {
-	    stat |= NOEX_VCALL;
-	}
-	if (ci->flag & VM_CALL_SUPER) {
-	    stat |= NOEX_SUPER;
-	}
+	const int stat = ci_missing_reason(ci);
 	if (ci->mid == idMethodMissing) {
 	    rb_control_frame_t *reg_cfp = cfp;
 	    VALUE *argv = STACK_ADDR_FROM_TOP(ci->argc);
