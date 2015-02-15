@@ -1,3 +1,8 @@
+Sun Feb 15 10:41:23 2015  Sho Hashimoto  <sho-h@ruby-lang.org>
+
+	* doc/standard_library.rdoc: [DOC] delete removed libraries.
+	  [misc #10843] [ci skip]
+
 Sat Feb 14 12:20:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (rand_random_number): add a method to return a random

@@ -13,7 +13,6 @@ Base64:: Support for encoding and decoding binary data using a Base64 representa
 Benchmark:: Provides methods to measure and report the time used to execute code
 CGI:: Support for the Common Gateway Interface protocol
 CMath:: Provides Trigonometric and Transcendental functions for complex numbers
-complex.rb:: Deprecated library replaced by C implementation in core
 ConditionVariable:: Augments the Mutex class, provided by thread.rb
 CSV:: Provides an interface to read and write CSV files and data
 DEBUGGER__:: Debugging functionality for Ruby
@@ -26,14 +25,12 @@ FileUtils:: Several file utility methods for copying, moving, removing, etc
 Find:: This module supports top-down traversal of a set of file paths
 Forwardable:: Provides delegation of specified methods to a designated object
 GetoptLong:: Parse command line options similar to the GNU C getopt_long()
-GServer:: HTTP server with logging, thread pooling and multi-server management
 IPAddr:: Provides methods to manipulate IPv4 and IPv6 IP addresses
 IRB:: Interactive Ruby command-line tool for REPL (Read Eval Print Loop)
 Logger:: Provides a simple logging utility for outputing messages
 mathn.rb:: Deprecated library that extends math operations
 MakeMakefile:: Module used to generate a Makefile for C extensions
 Matrix:: Represents a mathematical matrix.
-MiniTest:: A test suite with TDD, BDD, mocking and benchmarking
 Monitor:: Provides an object or module to use safely by more than one thread
 Mutex_m:: Mixin to extend objects to be handled like a Mutex
 Net::FTP:: Support for the File Transfer Protocol
@@ -56,7 +53,6 @@ PStore:: Implements a file based persistence mechanism based on a Hash
 Queue:: Synchronized communication between threads, provided by thread.rb
 Racc:: A LALR(1) parser generator written in Ruby.
 Rake:: Ruby build program with capabilities similar to make
-rational.rb:: Deprecated library replaced by C implementation in core
 RbConfig:: Information of your configure and build of Ruby
 RDoc:: Produces HTML and command-line documentation for Ruby
 resolv-replace.rb:: Replace Socket DNS with Resolv
@@ -73,7 +69,6 @@ Shellwords:: Manipulates strings with word parsing rules of UNIX Bourne shell
 Singleton:: Implementation of the Singleton pattern for Ruby
 Synchronizer:: A module that provides a two-phase lock with a counter
 Tempfile:: A utility class for managing temporary files
-Test::Unit:: A compatibility layer for MiniTest
 Thread:: Provides support classes for threaded programs
 ThreadsWait:: Watches for termination of multiple threads
 Time:: Extends the Time class with methods for parsing and conversion
