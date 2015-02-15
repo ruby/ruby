@@ -14,8 +14,8 @@ class MSpecScript
   set :prefix, File.expand_path('rubyspec', File.dirname(__FILE__))
   set :flags, %W[
     -I#{File.expand_path srcdir}/lib
+    -I#{File.expand_path srcdir}
     -I#{File.expand_path srcdir}/#{config['EXTOUT']}/common
-    -I#{File.expand_path srcdir}/-
     #{File.expand_path srcdir}/tool/runruby.rb --archdir=#{Dir.pwd} --extout=#{config['EXTOUT']}
   ]
 end
