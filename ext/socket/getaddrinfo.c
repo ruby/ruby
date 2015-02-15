@@ -593,6 +593,7 @@ get_addr(const char *hostname, int af, struct addrinfo **res, struct addrinfo *p
 	} else
 		hp = getipnodebyname(hostname, af, AI_ADDRCONFIG, &h_error);
 #else
+	if (strlen(hostname) >= NI_MAXHOST) ERR(EAI_NODATA);
 	hp = gethostbyname((char*)hostname);
 	h_error = h_errno;
 #endif
