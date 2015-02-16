@@ -646,7 +646,7 @@ console_dev(int argc, VALUE *argv, VALUE klass)
     rb_io_t *fptr;
     VALUE sym = 0;
 
-    rb_check_arity(argc, 0, 1);
+    rb_check_arity(argc, 0, UNLIMITED_ARGUMENTS);
     if (argc) {
 	Check_Type(sym = argv[0], T_SYMBOL);
 	--argc;
@@ -721,7 +721,7 @@ console_dev(int argc, VALUE *argv, VALUE klass)
     }
     if (sym) {
 	/* TODO: avoid inadvertent pindown */
-	return rb_funcall(con, SYM2ID(sym), argc, argv);
+	return rb_funcallv(con, SYM2ID(sym), argc, argv);
     }
     return con;
 }
