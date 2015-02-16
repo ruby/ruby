@@ -645,12 +645,15 @@ VALUE rb_eSystemCallError;
 VALUE rb_mErrno;
 static VALUE rb_eNOERROR;
 
+static ID id_new, id_bt, id_bt_locations, id_cause, id_message, id_backtrace;
+static ID id_status, id_name, id_args, id_Errno, id_errno, id_i_path;
+
 #undef rb_exc_new_cstr
 
 VALUE
 rb_exc_new(VALUE etype, const char *ptr, long len)
 {
-    return rb_funcall(etype, rb_intern("new"), 1, rb_str_new(ptr, len));
+    return rb_funcall(etype, id_new, 1, rb_str_new(ptr, len));
 }
 
 VALUE
@@ -663,7 +666,7 @@ VALUE
 rb_exc_new_str(VALUE etype, VALUE str)
 {
     StringValue(str);
-    return rb_funcall(etype, rb_intern("new"), 1, str);
+    return rb_funcall(etype, id_new, 1, str);
 }
 
 /*
@@ -723,7 +726,7 @@ exc_exception(int argc, VALUE *argv, VALUE self)
 static VALUE
 exc_to_s(VALUE exc)
 {
-    VALUE mesg = rb_attr_get(exc, rb_intern("mesg"));
+    VALUE mesg = rb_attr_get(exc, idMesg);
 
     if (NIL_P(mesg)) return rb_class_name(CLASS_OF(exc));
     return rb_String(mesg);
@@ -742,7 +745,7 @@ exc_to_s(VALUE exc)
 static VALUE
 exc_message(VALUE exc)
 {
-    return rb_funcall(exc, rb_intern("to_s"), 0, 0);
+    return rb_funcall(exc, idTo_s, 0, 0);
 }
 
 /*
@@ -805,11 +808,9 @@ exc_inspect(VALUE exc)
 static VALUE
 exc_backtrace(VALUE exc)
 {
-    ID bt;
     VALUE obj;
 
-    CONST_ID(bt, "bt");
-    obj = rb_attr_get(exc, bt);
+    obj = rb_attr_get(exc, id_bt);
 
     if (rb_backtrace_p(obj)) {
 	obj = rb_backtrace_to_str_ary(obj);
@@ -832,11 +833,9 @@ exc_backtrace(VALUE exc)
 static VALUE
 exc_backtrace_locations(VALUE exc)
 {
-    ID bt_locations;
     VALUE obj;
 
-    CONST_ID(bt_locations, "bt_locations");
-    obj = rb_attr_get(exc, bt_locations);
+    obj = rb_attr_get(exc, id_bt_locations);
     if (!NIL_P(obj)) {
 	obj = rb_backtrace_to_location_ary(obj);
     }
@@ -899,8 +898,6 @@ rb_exc_set_backtrace(VALUE exc, VALUE bt)
 VALUE
 exc_cause(VALUE exc)
 {
-    ID id_cause;
-    CONST_ID(id_cause, "cause");
     return rb_attr_get(exc, id_cause);
 }
 
@@ -929,9 +926,6 @@ exc_equal(VALUE exc, VALUE obj)
 
     if (rb_obj_class(exc) != rb_obj_class(obj)) {
 	int status = 0;
-	ID id_message, id_backtrace;
-	CONST_ID(id_message, "message");
-	CONST_ID(id_backtrace, "backtrace");
 
 	obj = rb_protect(try_convert_to_exception, obj, &status);
 	if (status || obj == Qundef) {
@@ -1021,7 +1015,7 @@ exit_initialize(int argc, VALUE *argv, VALUE exc)
 static VALUE
 exit_status(VALUE exc)
 {
-    return rb_attr_get(exc, rb_intern("status"));
+    return rb_attr_get(exc, id_status);
 }
 
 
@@ -1035,7 +1029,7 @@ exit_status(VALUE exc)
 static VALUE
 exit_success_p(VALUE exc)
 {
-    VALUE status_val = rb_attr_get(exc, rb_intern("status"));
+    VALUE status_val = rb_attr_get(exc, id_status);
     int status;
 
     if (NIL_P(status_val))
@@ -1107,7 +1101,7 @@ name_err_initialize(int argc, VALUE *argv, VALUE self)
 static VALUE
 name_err_name(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("name"));
+    return rb_attr_get(self, id_name);
 }
 
 /*
@@ -1267,7 +1261,7 @@ name_err_mesg_load(VALUE klass, VALUE str)
 static VALUE
 nometh_err_args(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("args"));
+    return rb_attr_get(self, id_args);
 }
 
 void
@@ -1397,7 +1391,7 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
     }
     else {
 	rb_scan_args(argc, argv, "02", &mesg, &func);
-	error = rb_const_get(klass, rb_intern("Errno"));
+	error = rb_const_get(klass, id_Errno);
     }
     if (!NIL_P(error)) err = strerror(NUM2INT(error));
     else err = "unknown error";
@@ -1427,7 +1421,7 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
 static VALUE
 syserr_errno(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("errno"));
+    return rb_attr_get(self, id_errno);
 }
 
 /*
@@ -1442,20 +1436,17 @@ static VALUE
 syserr_eqq(VALUE self, VALUE exc)
 {
     VALUE num, e;
-    ID en;
-
-    CONST_ID(en, "errno");
 
     if (!rb_obj_is_kind_of(exc, rb_eSystemCallError)) {
-	if (!rb_respond_to(exc, en)) return Qfalse;
+	if (!rb_respond_to(exc, id_errno)) return Qfalse;
     }
     else if (self == rb_eSystemCallError) return Qtrue;
 
-    num = rb_attr_get(exc, rb_intern("errno"));
+    num = rb_attr_get(exc, id_errno);
     if (NIL_P(num)) {
-	num = rb_funcall(exc, en, 0, 0);
+	num = rb_funcall(exc, id_errno, 0, 0);
     }
-    e = rb_const_get(self, rb_intern("Errno"));
+    e = rb_const_get(self, id_Errno);
     if (FIXNUM_P(num) ? num == e : rb_equal(num, e))
 	return Qtrue;
     return Qfalse;
@@ -1915,6 +1906,19 @@ Init_Exception(void)
     rb_mErrno = rb_define_module("Errno");
 
     rb_define_global_function("warn", rb_warn_m, -1);
+
+    id_new = rb_intern_const("new");
+    id_bt = rb_intern_const("bt");
+    id_bt_locations = rb_intern_const("bt_locations");
+    id_cause = rb_intern_const("cause");
+    id_message = rb_intern_const("message");
+    id_backtrace = rb_intern_const("backtrace");
+    id_status = rb_intern_const("status");
+    id_name = rb_intern_const("name");
+    id_args = rb_intern_const("args");
+    id_Errno = rb_intern_const("Errno");
+    id_errno = rb_intern_const("errno");
+    id_i_path = rb_intern_const("@path");
 }
 
 void
@@ -1948,7 +1952,7 @@ static void
 raise_loaderror(VALUE path, VALUE mesg)
 {
     VALUE err = rb_exc_new3(rb_eLoadError, mesg);
-    rb_ivar_set(err, rb_intern("@path"), path);
+    rb_ivar_set(err, id_i_path, path);
     rb_exc_raise(err);
 }
 
