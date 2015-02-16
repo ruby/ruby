@@ -667,7 +667,7 @@ setn
 
 /**
   @c stack
-  @e empt current stack
+  @e empty current stack
   @j current stack を空にする。
  */
 DEFINE_INSN
