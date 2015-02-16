@@ -219,7 +219,7 @@ enum_find(int argc, VALUE *argv, VALUE obj)
 	return memo->u1.value;
     }
     if (!NIL_P(if_none)) {
-	return rb_funcall(if_none, id_call, 0, 0);
+	return rb_funcallv(if_none, id_call, 0, 0);
     }
     return Qnil;
 }
@@ -2335,7 +2335,7 @@ zip_ary(RB_BLOCK_CALL_FUNC_ARGLIST(val, memoval))
 static VALUE
 call_next(VALUE *v)
 {
-    return v[0] = rb_funcall(v[1], id_next, 0, 0);
+    return v[0] = rb_funcallv(v[1], id_next, 0, 0);
 }
 
 static VALUE

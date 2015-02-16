@@ -199,7 +199,7 @@ GetPrivPKeyPtr(VALUE obj)
 {
     EVP_PKEY *pkey;
 
-    if (rb_funcall(obj, id_private_q, 0, NULL) != Qtrue) {
+    if (rb_funcallv(obj, id_private_q, 0, NULL) != Qtrue) {
 	ossl_raise(rb_eArgError, "Private key is needed.");
     }
     SafeGetPKey(obj, pkey);
@@ -223,7 +223,7 @@ DupPrivPKeyPtr(VALUE obj)
 {
     EVP_PKEY *pkey;
 
-    if (rb_funcall(obj, id_private_q, 0, NULL) != Qtrue) {
+    if (rb_funcallv(obj, id_private_q, 0, NULL) != Qtrue) {
 	ossl_raise(rb_eArgError, "Private key is needed.");
     }
     SafeGetPKey(obj, pkey);
@@ -290,7 +290,7 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
     unsigned int buf_len;
     VALUE str;
 
-    if (rb_funcall(self, id_private_q, 0, NULL) != Qtrue) {
+    if (rb_funcallv(self, id_private_q, 0, NULL) != Qtrue) {
 	ossl_raise(rb_eArgError, "Private key is needed.");
     }
     GetPKey(self, pkey);

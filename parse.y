@@ -9750,7 +9750,7 @@ negate_lit(VALUE lit)
       case T_BIGNUM:
       case T_RATIONAL:
       case T_COMPLEX:
-	lit = rb_funcall(lit,tUMINUS,0,0);
+	lit = rb_funcallv(lit, tUMINUS, 0, 0);
 	break;
       case T_FLOAT:
 #if USE_FLONUM

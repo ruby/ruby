@@ -172,7 +172,7 @@ tk_install_cmd_core(cmd)
     volatile VALUE id_num;
 
     id_num = ULONG2NUM(CALLBACK_ID_NUM++);
-    id_num = rb_funcall(id_num, ID_to_s, 0, 0);
+    id_num = rb_funcallv(id_num, ID_to_s, 0, 0);
     id_num = rb_str_append(rb_str_new2(cmd_id_prefix), id_num);
     rb_hash_aset(CALLBACK_TABLE, id_num, cmd);
     return rb_str_append(rb_str_new2(cmd_id_head), id_num);
@@ -269,7 +269,7 @@ to_strkey(key, value, hash)
     VALUE value;
     VALUE hash;
 {
-    rb_hash_aset(hash, rb_funcall(key, ID_to_s, 0, 0), value);
+    rb_hash_aset(hash, rb_funcallv(key, ID_to_s, 0, 0), value);
     return ST_CHECK;
 }
 
@@ -306,10 +306,10 @@ ary2list(ary, enc_flag, self)
     volatile VALUE dst;
     volatile VALUE sys_enc, dst_enc, str_enc;
 
-    sys_enc = rb_funcall(cTclTkLib, ID_encoding, 0, 0);
+    sys_enc = rb_funcallv(cTclTkLib, ID_encoding, 0, 0);
     if (NIL_P(sys_enc)) {
-      sys_enc = rb_funcall(cTclTkLib, ID_encoding_system, 0, 0);
-      sys_enc = rb_funcall(sys_enc, ID_to_s, 0, 0);
+      sys_enc = rb_funcallv(cTclTkLib, ID_encoding_system, 0, 0);
+      sys_enc = rb_funcallv(sys_enc, ID_to_s, 0, 0);
     }
 
     if (NIL_P(enc_flag)) {
@@ -319,7 +319,7 @@ ary2list(ary, enc_flag, self)
         dst_enc = enc_flag;
         req_chk_flag = 0;
     } else {
-        dst_enc = rb_funcall(enc_flag, ID_to_s, 0, 0);
+        dst_enc = rb_funcallv(enc_flag, ID_to_s, 0, 0);
         req_chk_flag = 0;
     }
 
@@ -345,7 +345,7 @@ ary2list(ary, enc_flag, self)
             if (req_chk_flag) {
                 str_enc = rb_ivar_get(str_val, ID_at_enc);
                 if (!NIL_P(str_enc)) {
-                    str_enc = rb_funcall(str_enc, ID_to_s, 0, 0);
+                    str_enc = rb_funcallv(str_enc, ID_to_s, 0, 0);
                 } else {
                     str_enc = sys_enc;
                 }
@@ -392,7 +392,7 @@ ary2list(ary, enc_flag, self)
                 if (req_chk_flag) {
                     str_enc = rb_ivar_get(str_val, ID_at_enc);
                     if (!NIL_P(str_enc)) {
-                        str_enc = rb_funcall(str_enc, ID_to_s, 0, 0);
+                        str_enc = rb_funcallv(str_enc, ID_to_s, 0, 0);
                     } else {
                         str_enc = sys_enc;
                     }
@@ -412,7 +412,7 @@ ary2list(ary, enc_flag, self)
                 if (req_chk_flag) {
                     str_enc = rb_ivar_get(str_val, ID_at_enc);
                     if (!NIL_P(str_enc)) {
-                        str_enc = rb_funcall(str_enc, ID_to_s, 0, 0);
+                        str_enc = rb_funcallv(str_enc, ID_to_s, 0, 0);
                     } else {
                         str_enc = sys_enc;
                     }
@@ -460,10 +460,10 @@ ary2list2(ary, enc_flag, self)
     volatile VALUE dst;
     volatile VALUE sys_enc, dst_enc, str_enc;
 
-    sys_enc = rb_funcall(cTclTkLib, ID_encoding, 0, 0);
+    sys_enc = rb_funcallv(cTclTkLib, ID_encoding, 0, 0);
     if (NIL_P(sys_enc)) {
-      sys_enc = rb_funcall(cTclTkLib, ID_encoding_system, 0, 0);
-      sys_enc = rb_funcall(sys_enc, ID_to_s, 0, 0);
+      sys_enc = rb_funcallv(cTclTkLib, ID_encoding_system, 0, 0);
+      sys_enc = rb_funcallv(sys_enc, ID_to_s, 0, 0);
     }
 
     if (NIL_P(enc_flag)) {
@@ -473,7 +473,7 @@ ary2list2(ary, enc_flag, self)
         dst_enc = enc_flag;
         req_chk_flag = 0;
     } else {
-        dst_enc = rb_funcall(enc_flag, ID_to_s, 0, 0);
+        dst_enc = rb_funcallv(enc_flag, ID_to_s, 0, 0);
         req_chk_flag = 0;
     }
 
@@ -507,7 +507,7 @@ ary2list2(ary, enc_flag, self)
             if (req_chk_flag) {
                 str_enc = rb_ivar_get(str_val, ID_at_enc);
                 if (!NIL_P(str_enc)) {
-                    str_enc = rb_funcall(str_enc, ID_to_s, 0, 0);
+                    str_enc = rb_funcallv(str_enc, ID_to_s, 0, 0);
                 } else {
                     str_enc = sys_enc;
                 }
@@ -546,7 +546,7 @@ static VALUE
 key2keyname(key)
     VALUE key;
 {
-    return rb_str_append(rb_str_new2("-"), rb_funcall(key, ID_to_s, 0, 0));
+    return rb_str_append(rb_str_new2("-"), rb_funcallv(key, ID_to_s, 0, 0));
 }
 
 static VALUE
@@ -817,7 +817,7 @@ get_eval_string_core(obj, enc_flag, self)
     case T_FLOAT:
     case T_FIXNUM:
     case T_BIGNUM:
-        return rb_funcall(obj, ID_to_s, 0, 0);
+        return rb_funcallv(obj, ID_to_s, 0, 0);
 
     case T_STRING:
         if (RTEST(enc_flag)) {
@@ -866,12 +866,12 @@ get_eval_string_core(obj, enc_flag, self)
         return rb_str_new2("");
 
     case T_REGEXP:
-        return rb_funcall(obj, ID_source, 0, 0);
+        return rb_funcallv(obj, ID_source, 0, 0);
 
     default:
         if (rb_obj_is_kind_of(obj, cTkObject)) {
-            /* return rb_str_new3(rb_funcall(obj, ID_path, 0, 0)); */
-            return get_eval_string_core(rb_funcall(obj, ID_path, 0, 0),
+            /* return rb_str_new3(rb_funcallv(obj, ID_path, 0, 0)); */
+            return get_eval_string_core(rb_funcallv(obj, ID_path, 0, 0),
                                         enc_flag, self);
         }
 
@@ -888,15 +888,15 @@ get_eval_string_core(obj, enc_flag, self)
         if (obj == TK_None)  return Qnil;
 
         if (rb_obj_respond_to(obj, ID_to_eval, Qtrue)) {
-            /* return rb_funcall(obj, ID_to_eval, 0, 0); */
-            return get_eval_string_core(rb_funcall(obj, ID_to_eval, 0, 0),
+            /* return rb_funcallv(obj, ID_to_eval, 0, 0); */
+            return get_eval_string_core(rb_funcallv(obj, ID_to_eval, 0, 0),
                                         enc_flag, self);
         } else if (rb_obj_respond_to(obj, ID_path, Qtrue)) {
-            /* return rb_funcall(obj, ID_path, 0, 0); */
-            return get_eval_string_core(rb_funcall(obj, ID_path, 0, 0),
+            /* return rb_funcallv(obj, ID_path, 0, 0); */
+            return get_eval_string_core(rb_funcallv(obj, ID_path, 0, 0),
                                         enc_flag, self);
         } else if (rb_obj_respond_to(obj, ID_to_s, Qtrue)) {
-            return rb_funcall(obj, ID_to_s, 0, 0);
+            return rb_funcallv(obj, ID_to_s, 0, 0);
         }
     }
 

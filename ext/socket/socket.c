@@ -150,7 +150,7 @@ sock_initialize(int argc, VALUE *argv, VALUE sock)
 static VALUE
 io_call_close(VALUE io)
 {
-    return rb_funcall(io, rb_intern("close"), 0, 0);
+    return rb_funcallv(io, rb_intern("close"), 0, 0);
 }
 
 static VALUE

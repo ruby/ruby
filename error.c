@@ -745,7 +745,7 @@ exc_to_s(VALUE exc)
 static VALUE
 exc_message(VALUE exc)
 {
-    return rb_funcall(exc, idTo_s, 0, 0);
+    return rb_funcallv(exc, idTo_s, 0, 0);
 }
 
 /*
@@ -1444,7 +1444,7 @@ syserr_eqq(VALUE self, VALUE exc)
 
     num = rb_attr_get(exc, id_errno);
     if (NIL_P(num)) {
-	num = rb_funcall(exc, id_errno, 0, 0);
+	num = rb_funcallv(exc, id_errno, 0, 0);
     }
     e = rb_const_get(self, id_Errno);
     if (FIXNUM_P(num) ? num == e : rb_equal(num, e))

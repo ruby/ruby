@@ -3534,7 +3534,7 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
 	    while (rb_funcall(b, op, 1, e)) {
 		args[1] = b;
 		rb_yield(rb_str_format(numberof(args), args, fmt));
-		b = rb_funcall(b, succ, 0, 0);
+		b = rb_funcallv(b, succ, 0, 0);
 	    }
 	}
 	return beg;
@@ -3544,12 +3544,12 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
     n = rb_str_cmp(beg, end);
     if (n > 0 || (excl && n == 0)) return beg;
 
-    after_end = rb_funcall(end, succ, 0, 0);
+    after_end = rb_funcallv(end, succ, 0, 0);
     current = rb_str_dup(beg);
     while (!rb_str_equal(current, after_end)) {
 	VALUE next = Qnil;
 	if (excl || !rb_str_equal(current, end))
-	    next = rb_funcall(current, succ, 0, 0);
+	    next = rb_funcallv(current, succ, 0, 0);
 	rb_yield(current);
 	if (NIL_P(next)) break;
 	current = next;

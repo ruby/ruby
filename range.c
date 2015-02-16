@@ -273,7 +273,7 @@ range_each_func(VALUE range, rb_block_call_func *func, VALUE arg)
     if (EXCL(range)) {
 	while (r_lt(v, e)) {
 	    (*func) (v, arg, 0, 0, 0);
-	    v = rb_funcall(v, id_succ, 0, 0);
+	    v = rb_funcallv(v, id_succ, 0, 0);
 	}
     }
     else {
@@ -281,7 +281,7 @@ range_each_func(VALUE range, rb_block_call_func *func, VALUE arg)
 	    (*func) (v, arg, 0, 0, 0);
 	    if (c == (int)INT2FIX(0))
 		break;
-	    v = rb_funcall(v, id_succ, 0, 0);
+	    v = rb_funcallv(v, id_succ, 0, 0);
 	}
     }
 }

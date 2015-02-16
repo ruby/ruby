@@ -575,7 +575,7 @@ dir_inspect(VALUE dir)
 	rb_str_cat2(str, ">");
 	return str;
     }
-    return rb_funcall(dir, rb_intern("to_s"), 0, 0);
+    return rb_funcallv(dir, rb_intern("to_s"), 0, 0);
 }
 
 #ifdef HAVE_DIRFD

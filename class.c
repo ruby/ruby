@@ -1915,7 +1915,7 @@ unknown_keyword_error(VALUE hash, const ID *table, int keywords)
 	st_data_t key = ID2SYM(table[i]);
 	st_delete(tbl, &key, NULL);
     }
-    keys = rb_funcall(hash, rb_intern("keys"), 0, 0);
+    keys = rb_funcallv(hash, rb_intern("keys"), 0, 0);
     if (!RB_TYPE_P(keys, T_ARRAY)) rb_raise(rb_eArgError, "unknown keyword");
     rb_keyword_error("unknown", keys);
 }

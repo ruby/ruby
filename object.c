@@ -471,7 +471,7 @@ rb_any_to_s(VALUE obj)
 VALUE
 rb_inspect(VALUE obj)
 {
-    VALUE str = rb_obj_as_string(rb_funcall(obj, id_inspect, 0, 0));
+    VALUE str = rb_obj_as_string(rb_funcallv(obj, id_inspect, 0, 0));
     rb_encoding *ext = rb_default_external_encoding();
     if (!rb_enc_asciicompat(ext)) {
 	if (!rb_enc_str_asciionly_p(str))

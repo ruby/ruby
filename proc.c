@@ -2306,13 +2306,13 @@ method_inspect(VALUE method)
 static VALUE
 mproc(VALUE method)
 {
-    return rb_funcall2(rb_mRubyVMFrozenCore, idProc, 0, 0);
+    return rb_funcallv(rb_mRubyVMFrozenCore, idProc, 0, 0);
 }
 
 static VALUE
 mlambda(VALUE method)
 {
-    return rb_funcall(rb_mRubyVMFrozenCore, idLambda, 0, 0);
+    return rb_funcallv(rb_mRubyVMFrozenCore, idLambda, 0, 0);
 }
 
 static VALUE

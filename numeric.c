@@ -614,7 +614,7 @@ num_zero_p(VALUE num)
 static VALUE
 num_nonzero_p(VALUE num)
 {
-    if (RTEST(rb_funcall(num, rb_intern("zero?"), 0, 0))) {
+    if (RTEST(rb_funcallv(num, rb_intern("zero?"), 0, 0))) {
 	return Qnil;
     }
     return num;
@@ -634,7 +634,7 @@ num_nonzero_p(VALUE num)
 static VALUE
 num_to_int(VALUE num)
 {
-    return rb_funcall(num, id_to_i, 0, 0);
+    return rb_funcallv(num, id_to_i, 0, 0);
 }
 
 
