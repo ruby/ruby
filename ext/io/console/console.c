@@ -79,6 +79,25 @@ getattr(int fd, conmode *t)
 
 static ID id_getc, id_console, id_close;
 
+#ifndef HAVE_RB_F_SEND
+static ID id___send__;
+
+static VALUE
+rb_f_send(int argc, VALUE *argv, VALUE recv)
+{
+    VALUE sym = argv[0];
+    ID vid = rb_check_id(&sym);
+    if (vid) {
+	--argc;
+	++argv;
+    }
+    else {
+	vid = id___send__;
+    }
+    return rb_funcallv(recv, vid, argc, argv);
+}
+#endif
+
 typedef struct {
     int vmin;
     int vtime;
@@ -649,8 +668,6 @@ console_dev(int argc, VALUE *argv, VALUE klass)
     rb_check_arity(argc, 0, UNLIMITED_ARGUMENTS);
     if (argc) {
 	Check_Type(sym = argv[0], T_SYMBOL);
-	--argc;
-	++argv;
     }
     if (klass == rb_cIO) klass = rb_cFile;
     if (rb_const_defined(klass, id_console)) {
@@ -662,7 +679,7 @@ console_dev(int argc, VALUE *argv, VALUE klass)
 	}
     }
     if (sym) {
-	if (sym == ID2SYM(id_close) && !argc) {
+	if (sym == ID2SYM(id_close) && argc == 1) {
 	    if (con) {
 		rb_io_close(con);
 		rb_const_remove(klass, id_console);
@@ -720,8 +737,7 @@ console_dev(int argc, VALUE *argv, VALUE klass)
 	rb_const_set(klass, id_console, con);
     }
     if (sym) {
-	/* TODO: avoid inadvertent pindown */
-	return rb_funcallv(con, SYM2ID(sym), argc, argv);
+	return rb_f_send(argc, argv, con);
     }
     return con;
 }
@@ -744,9 +760,13 @@ io_getch(int argc, VALUE *argv, VALUE io)
 void
 Init_console(void)
 {
+#undef rb_intern
     id_getc = rb_intern("getc");
     id_console = rb_intern("console");
     id_close = rb_intern("close");
+#ifndef HAVE_RB_F_SEND
+    id___send__ = rb_intern("__send__");
+#endif
     InitVM(console);
 }
 
