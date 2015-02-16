@@ -208,6 +208,11 @@ class Set
   end
 
   # Returns true if the set contains the given object.
+  #
+  # Note that <code>include?</code> and <code>member?</code> do not test member
+  # equality using <code>==</code> as do other Enumerables.
+  #
+  # See also Enumerable#include?
   def include?(o)
     @hash[o]
   end

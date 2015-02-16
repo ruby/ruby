@@ -1920,6 +1920,10 @@ rb_hash_values(VALUE hash)
  *     h.has_key?("a")   #=> true
  *     h.has_key?("z")   #=> false
  *
+ *  Note that <code>include?</code> and <code>member?</code> do not test member
+ *  equality using <code>==</code> as do other Enumerables.
+ *
+ *  See also Enumerable#include?
  */
 
 VALUE
