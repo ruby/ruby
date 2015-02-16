@@ -2183,8 +2183,16 @@ RUBY_CHECK_BUILTIN_FUNC(__builtin_bswap64, [__builtin_bswap64(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_clz, [__builtin_clz(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_clzl, [__builtin_clzl(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_clzll, [__builtin_clzll(0)])
-RUBY_CHECK_BUILTIN_FUNC(__builtin_choose_expr, [__builtin_choose_expr(0, 0, 0)])
-RUBY_CHECK_BUILTIN_FUNC(__builtin_choose_expr_constant_p, [__builtin_choose_expr(__builtin_constant_p(foo), 0, 0)])
+RUBY_CHECK_BUILTIN_FUNC(__builtin_choose_expr, [
+    [int x[__extension__(__builtin_choose_expr(1, 1, -1))]];
+    [int y[__extension__(__builtin_choose_expr(0, -1, 1))]];
+    ])
+if test x$rb_cv_builtin___builtin_choose_expr = xyes; then
+    RUBY_CHECK_BUILTIN_FUNC(__builtin_choose_expr_constant_p, [
+    [int x[__extension__(__builtin_choose_expr(__builtin_constant_p(1), 1, -1))]];
+    [int y[__extension__(__builtin_choose_expr(__builtin_constant_p(foo), -1, 1))]];
+    ])
+fi
 RUBY_CHECK_BUILTIN_FUNC(__builtin_types_compatible_p, [__builtin_types_compatible_p(int, int)])
 
 if test "$ac_cv_func_qsort_r" != no; then
