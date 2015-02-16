@@ -77,7 +77,7 @@ getattr(int fd, conmode *t)
 #define SET_LAST_ERROR (0)
 #endif
 
-static ID id_getc, id_console, id_close;
+static ID id_getc, id_console, id_close, id_min, id_time;
 
 #ifndef HAVE_RB_F_SEND
 static ID id___send__;
@@ -110,8 +110,8 @@ rawmode_opt(int argc, VALUE *argv, rawmode_arg_t *opts)
     VALUE vopts;
     rb_scan_args(argc, argv, "0:", &vopts);
     if (!NIL_P(vopts)) {
-	VALUE vmin = rb_hash_aref(vopts, ID2SYM(rb_intern("min")));
-	VALUE vtime = rb_hash_aref(vopts, ID2SYM(rb_intern("time")));
+	VALUE vmin = rb_hash_aref(vopts, ID2SYM(id_min));
+	VALUE vtime = rb_hash_aref(vopts, ID2SYM(id_time));
 	/* default values by `stty raw` */
 	opts->vmin = 1;
 	opts->vtime = 0;
@@ -751,7 +751,7 @@ console_dev(int argc, VALUE *argv, VALUE klass)
 static VALUE
 io_getch(int argc, VALUE *argv, VALUE io)
 {
-    return rb_funcall2(io, rb_intern("getc"), argc, argv);
+    return rb_funcall2(io, id_getc, argc, argv);
 }
 
 /*
@@ -764,6 +764,8 @@ Init_console(void)
     id_getc = rb_intern("getc");
     id_console = rb_intern("console");
     id_close = rb_intern("close");
+    id_min = rb_intern("min");
+    id_time = rb_intern("time");
 #ifndef HAVE_RB_F_SEND
     id___send__ = rb_intern("__send__");
 #endif
