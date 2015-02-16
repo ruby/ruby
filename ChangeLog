@@ -1,3 +1,10 @@
+Mon Feb 16 20:58:49 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (compile_massign): optimization for special case,
+	  assignments by aset or attrset.
+	  http://kokizzu.blogspot.jp/2015/02/c-java-hhvm-ruby-nodejsrhinojscspidermo.html
+	  http://www.atdot.net/~ko1/diary/201502.html#d16
+
 Sun Feb 15 10:41:23 2015  Sho Hashimoto  <sho-h@ruby-lang.org>
 
 	* doc/standard_library.rdoc: [DOC] delete removed libraries.

@@ -2782,6 +2782,7 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node, int poped)
 
     if (!poped || splatn || !compile_massign_opt(iseq, ret, rhsn, lhsn)) {
 	int llen = 0;
+	int expand = 1;
 	DECL_ANCHOR(lhsseq);
 
 	INIT_ANCHOR(lhsseq);
@@ -2797,9 +2798,30 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node, int poped)
 	if (!poped) {
 	    ADD_INSN(ret, nd_line(node), dup);
 	}
-
-	ADD_INSN2(ret, nd_line(node), expandarray,
-		  INT2FIX(llen), INT2FIX(lhs_splat));
+	else if (!lhs_splat) {
+	    INSN *last = (INSN*)ret->last;
+	    if (last->link.type == ISEQ_ELEMENT_INSN &&
+		last->insn_id == BIN(newarray) &&
+		last->operand_size == 1 &&
+		OPERAND_AT(last, 0) == INT2FIX(llen)) {
+		/* special case: assign to aset or attrset */
+		if (llen == 2) {
+		    POP_ELEMENT(ret);
+		    ADD_INSN(ret, nd_line(node), swap);
+		    expand = 0;
+		}
+#if 0
+		else if (llen > 2) {
+		    last->insn_id = BIN(reverse);
+		    expand = 0;
+		}
+#endif
+	    }
+	}
+	if (expand) {
+	    ADD_INSN2(ret, nd_line(node), expandarray,
+		      INT2FIX(llen), INT2FIX(lhs_splat));
+	}
 	ADD_SEQ(ret, lhsseq);
 
 	if (lhs_splat) {
