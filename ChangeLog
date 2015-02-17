@@ -1,3 +1,10 @@
+Tue Feb 17 11:50:06 2015  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* string.c (str_discard): does not free for STR_NOFREE string.
+	  [Bug #10853][ruby-core:68110]
+
+	* bootstraptest/test_string.rb: test for above.
+
 Sun Feb 15 13:15:46 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/getaddrinfo.c (get_addr): reject too long hostname to
