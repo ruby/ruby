@@ -1,3 +1,9 @@
+Tue Feb 17 10:47:20 2015  Iain Beeston  <iain.beeston@gmail.com>
+
+	* hash.c: Added docs to explain that #include? and #member? do not
+	  check member equality
+	* lib/set.rb: ditto
+
 Mon Feb 16 20:58:49 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (compile_massign): optimization for special case,
