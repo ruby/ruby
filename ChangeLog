@@ -1,3 +1,9 @@
+Tue Feb 17 15:39:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32/lib/win32/registry.rb (Win32::Registry::API): use wide
+	  versions of RegDeleteValue and RegDeleteKey.
+	  [ruby-core:67958] [Bug #10820]
+
 Tue Feb 17 11:50:06 2015  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* string.c (str_discard): does not free for STR_NOFREE string.
