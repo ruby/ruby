@@ -648,7 +648,8 @@ sigbus(int sig SIGINFO_ARG)
  * and it's delivered as SIGBUS instaed of SIGSEGV to userland. It's crazy
  * wrong IMHO. but anyway we have to care it. Sigh.
  */
-#if defined __APPLE__
+    /* Seems Linux also delivers SIGBUS. */
+#if defined __APPLE__ || defined __linux__
     CHECK_STACK_OVERFLOW();
 #endif
     rb_bug("Bus Error");
