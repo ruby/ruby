@@ -5,7 +5,13 @@ require 'date'
 require 'psych'
 
 module Psych
-  class TestCase < MiniTest::Unit::TestCase
+  superclass = if defined?(Minitest::Test)
+                 Minitest::Test
+               else
+                 MiniTest::Unit::TestCase
+               end
+
+  class TestCase < superclass
     def self.suppress_warning
       verbose, $VERBOSE = $VERBOSE, nil
       yield

@@ -1106,13 +1106,6 @@ yaml_parser_save_simple_key(yaml_parser_t *parser)
             && parser->indent == (ptrdiff_t)parser->mark.column);
 
     /*
-     * A simple key is required only when it is the first token in the current
-     * line.  Therefore it is always allowed.  But we add a check anyway.
-     */
-
-    assert(parser->simple_key_allowed || !required);    /* Impossible. */
-
-    /*
      * If the current position may start a simple key, save it.
      */
 

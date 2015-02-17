@@ -1,3 +1,11 @@
+Wed Feb 18 03:13:52 2015  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: bump psych version.
+	* ext/psych/psych.gemspec: ditto
+	* ext/psych/yaml/scanner.c: add latest libyaml change.
+	* test/psych/helper.rb: support newer minitest
+	* test/psych/test_to_yaml_properties.rb: ditto
+
 Tue Feb 17 11:47:17 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/resolv.rb (Resolv::DNS::Resource#==, #hash): elements
