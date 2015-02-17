@@ -1,3 +1,11 @@
+Tue Feb 17 17:37:14 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/getaddrinfo.c (get_addr): reject too long hostname to
+	  get rid of GHOST vulnerability on very old platforms.
+
+	* ext/socket/raddrinfo.c (make_hostent_internal): ditto, paranoic
+	  check for the canonical name.
+
 Fri Jan 30 16:49:15 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c: [DOC] Revise documentation by Marcus Stollsteimer at
