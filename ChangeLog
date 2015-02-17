@@ -1,3 +1,9 @@
+Wed Feb 18 00:18:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/text.rb (expand_tabs): get rid of infinite loop with
+	  CR.  should check if substitution occurred too.
+	  [ruby-dev:48813] [Bug #10732]
+
 Tue Feb 17 22:59:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/resolv.rb (Resolv::DNS::Resource#==, #hash): elements
