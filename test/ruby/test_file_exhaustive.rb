@@ -795,6 +795,12 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal("#{Dir.pwd}/a/b/c", File.expand_path(obj))
   end
 
+  def test_expand_path_with_drive_letter
+    bug10858 = '[ruby-core:68130] [Bug #10858]'
+    assert_match(%r'/bar/foo\z'i, File.expand_path('z:foo', 'bar'), bug10858)
+    assert_equal('z:/bar/foo', File.expand_path('z:foo', '/bar'), bug10858)
+  end if DRIVE
+
   def test_basename
     assert_equal(File.basename(@file).sub(/\.test$/, ""), File.basename(@file, ".test"))
     assert_equal("", s = File.basename(""))

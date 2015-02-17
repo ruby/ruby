@@ -1,3 +1,9 @@
+Tue Feb 17 10:53:29 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/file.c (rb_file_expand_path_internal): do not make invalid
+	  (or ADS) path if the path has a drive letter, the result also
+	  should have be under it.  [ruby-core:68130] [Bug #10858]
+
 Tue Feb 17 10:47:20 2015  Iain Beeston  <iain.beeston@gmail.com>
 
 	* hash.c: Added docs to explain that #include? and #member? do not

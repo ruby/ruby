@@ -401,6 +401,8 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	else {
 	    /* determine if we ignore dir or not later */
 	    path_drive = wpath_pos[0];
+	    wpath_pos += 2;
+	    wpath_len -= 2;
 	}
     }
     else if (abs_mode == 0 && wpath_len >= 2 && wpath_pos[0] == L'~') {
@@ -495,12 +497,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
     /* determine if we ignore dir or not */
     if (!ignore_dir && path_drive && dir_drive) {
-	if (towupper(path_drive) == towupper(dir_drive)) {
-	    /* exclude path drive letter to use dir */
-	    wpath_pos += 2;
-	    wpath_len -= 2;
-	}
-	else {
+	if (towupper(path_drive) != towupper(dir_drive)) {
 	    /* ignore dir since path drive is different from dir drive */
 	    ignore_dir = 1;
 	    wdir_len = 0;
@@ -533,6 +530,10 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     if (whome_len && wcsrchr(L"\\/:", buffer_pos[-1]) == NULL) {
 	buffer_pos[0] = L'\\';
 	buffer_pos++;
+    }
+    else if (!dir_drive && path_drive) {
+	*buffer_pos++ = path_drive;
+	*buffer_pos++ = L':';
     }
 
     if (wdir_len) {
