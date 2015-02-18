@@ -1,3 +1,10 @@
+Thu Feb 19 01:58:10 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/file.c (rb_file_expand_path_internal): neither the drive
+	  of base directory nor the current drive are involved in the
+	  result if different than the drive of path.
+	  [ruby-core:68130] [Bug #10858]
+
 Wed Feb 18 10:48:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (wrename): return EXDEV if moving a directory to

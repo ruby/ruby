@@ -447,6 +447,7 @@ class TestFileExhaustive < Test::Unit::TestCase
       assert_equal(@file, File.expand_path(@file + "::$DATA"))
       assert_match(/\Ac:\//i, File.expand_path('c:'), '[ruby-core:31591]')
       assert_match(/\Ac:\//i, File.expand_path('c:foo', 'd:/bar'))
+      assert_match(/\Ae:\//i, File.expand_path('e:foo', 'd:/bar'))
       assert_match(%r'\Ac:/bar/foo\z'i, File.expand_path('c:foo', 'c:/bar'))
     when /darwin/
       ["\u{feff}", *"\u{2000}"..."\u{2100}"].each do |c|

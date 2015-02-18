@@ -501,6 +501,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	    /* ignore dir since path drive is different from dir drive */
 	    ignore_dir = 1;
 	    wdir_len = 0;
+	    dir_drive = 0;
 	}
     }
 
