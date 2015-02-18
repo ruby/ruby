@@ -1,3 +1,9 @@
+Wed Feb 18 10:48:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (wrename): return EXDEV if moving a directory to
+	  another drive, since MoveFileExW does not set proper error code.
+	  [ruby-core:68162] [Bug #10865]
+
 Wed Feb 18 03:13:52 2015  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: bump psych version.

@@ -4701,6 +4701,31 @@ rb_w32_getenv(const char *name)
     return w32_getenv(name, CP_ACP);
 }
 
+/* License: Ruby's */
+static int
+different_device_p(const WCHAR *oldpath, const WCHAR *newpath)
+{
+    WCHAR oldfullpath[_MAX_PATH], newfullpath[_MAX_PATH];
+    DWORD oldlen, newlen;
+
+    newlen = GetFullPathNameW(newpath, numberof(newfullpath), newfullpath, NULL);
+    if (newlen <= 1) return 0;
+    oldlen = GetFullPathNameW(oldpath, numberof(oldfullpath), oldfullpath, NULL);
+    if (oldlen <= 1) return 0;
+    if (newfullpath[1] == L':') {
+	if (oldfullpath[1] != L':') return 1;
+	return newfullpath[0] != oldfullpath[0];
+    }
+    if (newfullpath[0] != L'\\' || newfullpath[1] != L'\\') return 0;
+    if (oldfullpath[0] != L'\\' || oldfullpath[1] != L'\\') return 0;
+    if (!(newpath = wcschr(newfullpath+2, L'\\'))) return 0;
+    if (!(newpath = wcschr(newpath+1, L'\\'))) return 0;
+    if (!(oldpath = wcschr(oldfullpath+2, L'\\'))) return 0;
+    if (!(oldpath = wcschr(oldpath+1, L'\\'))) return 0;
+    if (newpath - newfullpath != oldpath - oldfullpath) return 1;
+    return wcsncmp(newfullpath, oldfullpath, oldpath - oldfullpath) != 0;
+}
+
 /* License: Artistic or GPL */
 static int
 wrename(const WCHAR *oldpath, const WCHAR *newpath)
@@ -4724,8 +4749,14 @@ wrename(const WCHAR *oldpath, const WCHAR *newpath)
 	if (!MoveFileExW(oldpath, newpath, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED))
 	    res = -1;
 
-	if (res)
-	    errno = map_errno(GetLastError());
+	if (res) {
+	    DWORD e = GetLastError();
+	    if ((e == ERROR_ACCESS_DENIED) && (oldatts & FILE_ATTRIBUTE_DIRECTORY) &&
+		different_device_p(oldpath, newpath))
+		errno = EXDEV;
+	    else
+		errno = map_errno(e);
+	}
 	else
 	    SetFileAttributesW(newpath, oldatts);
     });
