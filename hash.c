@@ -3034,6 +3034,7 @@ ruby_unsetenv(const char *name)
  *
  * Sets the environment variable +name+ to +value+.  If the value given is
  * +nil+ the environment variable is deleted.
+ * +name+ must be a string.
  *
  */
 static VALUE

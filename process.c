@@ -3950,6 +3950,8 @@ rb_f_system(int argc, VALUE *argv)
  *    env: hash
  *      name => val : set the environment variable
  *      name => nil : unset the environment variable
+ *
+ *      the keys must be strings.
  *    command...:
  *      commandline                 : command line string which is passed to the standard shell
  *      cmdname, arg1, ...          : command name and one or more arguments (This form does not use the shell. See below for caveats.)
