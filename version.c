@@ -78,6 +78,9 @@ void
 ruby_show_version(void)
 {
     PRINT(description);
+#ifdef RUBY_LAST_COMMIT_TITLE
+    fputs("last_commit=" RUBY_LAST_COMMIT_TITLE, stdout);
+#endif
 #ifdef HAVE_MALLOC_CONF
     if (malloc_conf) printf("malloc_conf=%s\n", malloc_conf);
 #endif

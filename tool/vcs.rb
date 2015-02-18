@@ -260,6 +260,7 @@ class VCS
       logcmd << "--grep=^ *git-svn-id: .*@[0-9][0-9]*"
       idpat = /git-svn-id: .*?@(\d+) \S+\Z/
       log = IO.pread(logcmd)
+      commit = log[/\Acommit (\w+)/, 1]
       last = log[idpat, 1]
       if path
         cmd = logcmd
@@ -271,7 +272,9 @@ class VCS
       end
       modified = log[/^Date:\s+(.*)/, 1]
       branch = IO.pread(gitcmd + %W[symbolic-ref HEAD])[%r'\A(?:refs/heads/)?(.+)', 1]
-      [last, changed, modified, branch]
+      title = IO.pread(gitcmd + ["log", "--format=%s", "-n1", "#{commit}..HEAD"])
+      title = nil if title.empty?
+      [last, changed, modified, branch, title]
     end
 
     Branch = Struct.new(:to_str)
