@@ -1,3 +1,9 @@
+Wed Feb 18 16:02:30 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/resolv.rb (Resolv::DNS::Resource#==, #hash): elements
+	  returned by Kernel#instance_variables are Symbols now.
+	  [ruby-core:68128] [Bug #10857]
+
 Tue Feb 17 17:37:14 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/getaddrinfo.c (get_addr): reject too long hostname to
