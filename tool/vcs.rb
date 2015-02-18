@@ -254,8 +254,9 @@ class VCS
     register(".git")
 
     def self.get_revisions(path, srcdir = nil)
-      logcmd = %W[git log -n1 --date=iso]
-      logcmd[1, 0] = ["-C", srcdir] if srcdir
+      gitcmd = %W[git]
+      gitcmd.push("-C", srcdir) if srcdir
+      logcmd = gitcmd + %W[log -n1 --date=iso]
       logcmd << "--grep=^ *git-svn-id: .*@[0-9][0-9]*"
       idpat = /git-svn-id: .*?@(\d+) \S+\Z/
       log = IO.pread(logcmd)
@@ -269,10 +270,7 @@ class VCS
         changed = last
       end
       modified = log[/^Date:\s+(.*)/, 1]
-      cmd = %W[git]
-      cmd.push("-C", srcdir) if srcdir
-      cmd.push("symbolic-ref", "HEAD")
-      branch = IO.pread(cmd)[%r'\A(?:refs/heads/)?(.+)', 1]
+      branch = IO.pread(gitcmd + %W[symbolic-ref HEAD])[%r'\A(?:refs/heads/)?(.+)', 1]
       [last, changed, modified, branch]
     end
 
