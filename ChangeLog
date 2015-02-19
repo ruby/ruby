@@ -1,3 +1,9 @@
+Thu Feb 19 16:07:03 2015  Seiei Higa  <hanachin@gmail.com>
+
+	* proc.c (rb_obj_singleton_method): Kernel#singleton_method should
+	  not use refinements, as well as Kernel#method.
+	  [ruby-core:67603] [Bug #10744]
+
 Thu Feb 19 15:32:26 2015  Dave Stevens  <dave@crowdlab.com>
 
 	* string.c (str_make_independent_expand): terminate String when
