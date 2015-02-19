@@ -837,8 +837,7 @@ rb_export_method(VALUE klass, ID name, rb_method_flag_t noex)
     }
 
     if (UNDEFINED_METHOD_ENTRY_P(me) ||
-	(me->def->type == VM_METHOD_TYPE_REFINED &&
-	 UNDEFINED_METHOD_ENTRY_P(me->def->body.orig_me))) {
+	UNDEFINED_REFINED_METHOD_P(me->def)) {
 	rb_print_undef(klass, name, 0);
     }
 
@@ -937,8 +936,7 @@ rb_undef(VALUE klass, ID id)
     me = search_method(klass, id, 0);
 
     if (UNDEFINED_METHOD_ENTRY_P(me) ||
-	(me->def->type == VM_METHOD_TYPE_REFINED &&
-	 UNDEFINED_METHOD_ENTRY_P(me->def->body.orig_me))) {
+	UNDEFINED_REFINED_METHOD_P(me->def)) {
 	const char *s0 = " class";
 	VALUE c = klass;
 
@@ -1285,8 +1283,7 @@ rb_alias(VALUE klass, ID name, ID def)
     orig_me = search_method(klass, def, &defined_class);
 
     if (UNDEFINED_METHOD_ENTRY_P(orig_me) ||
-	(orig_me->def->type == VM_METHOD_TYPE_REFINED &&
-	 UNDEFINED_METHOD_ENTRY_P(orig_me->def->body.orig_me))) {
+	UNDEFINED_REFINED_METHOD_P(orig_me->def)) {
 	if ((!RB_TYPE_P(klass, T_MODULE)) ||
 	    (orig_me = search_method(rb_cObject, def, 0),
 	     UNDEFINED_METHOD_ENTRY_P(orig_me))) {
