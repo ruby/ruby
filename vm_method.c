@@ -766,16 +766,22 @@ remove_method(VALUE klass, ID mid)
 
     if (!st_lookup(RCLASS_M_TBL(klass), mid, &data) ||
 	!(me = (rb_method_entry_t *)data) ||
-	(!me->def || me->def->type == VM_METHOD_TYPE_UNDEF)) {
+	(!me->def || me->def->type == VM_METHOD_TYPE_UNDEF) ||
+        UNDEFINED_REFINED_METHOD_P(me->def)) {
 	rb_name_error(mid, "method `%"PRIsVALUE"' not defined in %"PRIsVALUE,
 		      rb_id2str(mid), rb_class_path(klass));
     }
+
     key = (st_data_t)mid;
     st_delete(RCLASS_M_TBL(klass), &key, &data);
 
     rb_vm_check_redefinition_opt_method(me, klass);
     rb_clear_method_cache_by_class(klass);
     rb_unlink_method_entry(me);
+
+    if (me->def->type == VM_METHOD_TYPE_REFINED) {
+	rb_add_refined_method_entry(klass, mid);
+    }
 
     CALL_METHOD_HOOK(self, removed, mid);
 }
