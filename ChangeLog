@@ -1,3 +1,8 @@
+Thu Feb 19 15:32:26 2015  Dave Stevens  <dave@crowdlab.com>
+
+	* string.c (str_make_independent_expand): terminate String when
+	  moved from heap to embedded.  [Fix GH-821].
+
 Thu Feb 19 13:35:21 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/sdbm/_sdbm.c: include ruby/ruby.h for PRIdPTRDIFF when a

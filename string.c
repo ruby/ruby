@@ -98,6 +98,9 @@ VALUE rb_cSymbol;
 
 #define RESIZE_CAPA(str,capacity) do {\
     const int termlen = TERM_LEN(str);\
+    RESIZE_CAPA_TERM(str,capacity,termlen);\
+} while (0)
+#define RESIZE_CAPA_TERM(str,capacity,termlen) do {\
     if (STR_EMBED_P(str)) {\
 	if ((capacity) > RSTRING_EMBED_LEN_MAX) {\
 	    char *const tmp = ALLOC_N(char, (capacity)+termlen);\
@@ -1589,10 +1592,11 @@ str_make_independent_expand(VALUE str, long expand)
 
     if (len > capa) len = capa;
 
-    if (capa <= RSTRING_EMBED_LEN_MAX && !STR_EMBED_P(str)) {
+    if (capa + termlen - 1 <= RSTRING_EMBED_LEN_MAX && !STR_EMBED_P(str)) {
 	ptr = RSTRING(str)->as.heap.ptr;
 	STR_SET_EMBED(str);
 	memcpy(RSTRING(str)->as.ary, ptr, len);
+	TERM_FILL(RSTRING(str)->as.ary + len, termlen);
 	STR_SET_EMBED_LEN(str, len);
 	return;
     }
@@ -2166,23 +2170,30 @@ rb_str_resize(VALUE str, long len)
 static VALUE
 str_buf_cat(VALUE str, const char *ptr, long len)
 {
-    long capa, total, off = -1;
+    long capa, total, olen, off = -1;
+    char *sptr;
+    const int termlen = TERM_LEN(str);
 
-    if (ptr >= RSTRING_PTR(str) && ptr <= RSTRING_END(str)) {
-        off = ptr - RSTRING_PTR(str);
+    RSTRING_GETMEM(str, sptr, olen);
+    if (ptr >= sptr && ptr <= sptr + olen) {
+        off = ptr - sptr;
     }
     rb_str_modify(str);
     if (len == 0) return 0;
     if (STR_EMBED_P(str)) {
 	capa = RSTRING_EMBED_LEN_MAX;
+	sptr = RSTRING(str)->as.ary;
+	olen = RSTRING_EMBED_LEN(str);
     }
     else {
 	capa = RSTRING(str)->as.heap.aux.capa;
+	sptr = RSTRING(str)->as.heap.ptr;
+	olen = RSTRING(str)->as.heap.len;
     }
-    if (RSTRING_LEN(str) >= LONG_MAX - len) {
+    if (olen >= LONG_MAX - len) {
 	rb_raise(rb_eArgError, "string sizes too big");
     }
-    total = RSTRING_LEN(str)+len;
+    total = olen + len;
     if (capa <= total) {
 	while (total > capa) {
 	    if (capa > LONG_MAX / 2) {
@@ -2191,14 +2202,15 @@ str_buf_cat(VALUE str, const char *ptr, long len)
 	    }
 	    capa = 2 * capa;
 	}
-	RESIZE_CAPA(str, capa);
+	RESIZE_CAPA_TERM(str, capa, termlen);
+	sptr = RSTRING_PTR(str);
     }
     if (off != -1) {
-        ptr = RSTRING_PTR(str) + off;
+        ptr = sptr + off;
     }
-    memcpy(RSTRING_PTR(str) + RSTRING_LEN(str), ptr, len);
+    memcpy(sptr + olen, ptr, len);
     STR_SET_LEN(str, total);
-    RSTRING_PTR(str)[total] = '\0'; /* sentinel */
+    TERM_FILL(sptr + total, termlen); /* sentinel */
 
     return str;
 }
