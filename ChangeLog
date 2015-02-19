@@ -1,3 +1,9 @@
+Thu Feb 19 13:35:21 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/sdbm/_sdbm.c: include ruby/ruby.h for PRIdPTRDIFF when a
+	  macro `DEBUG` is defined.  based on the patch by Owen Rodley in
+	  [ruby-core:67987]. [Bug #10825]
+
 Tue Feb 17 18:57:13 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/resolv.rb (Resolv::DNS::Resource#==, #hash): elements
