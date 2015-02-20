@@ -1,7 +1,7 @@
 Fri Feb 20 17:19:23 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (different_device_p): compare by volume serial
-	  numbers, not by path names.
+	  numbers, not by path names.  [ruby-core:68162] [Bug #10865]
 
 Thu Feb 19 01:58:10 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
