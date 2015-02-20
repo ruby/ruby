@@ -480,6 +480,15 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
 	    rb_gc();
 	    dp->dir = opendir(path);
 	}
+#ifdef HAVE_GETATTRLIST
+	else if (errno == EIO) {
+	    u_int32_t attrbuf[1];
+	    struct attrlist al = {ATTR_BIT_MAP_COUNT, 0};
+	    if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW) == 0) {
+		dp->dir = opendir(path);
+	    }
+	}
+#endif
 	if (dp->dir == NULL) {
 	    RB_GC_GUARD(dirname);
 	    rb_sys_fail_path(orig);

@@ -1,3 +1,8 @@
+Fri Feb 20 14:32:14 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (dir_initialize): workaround of opendir failure at symlink
+	  directories on Windows via CIFS.
+
 Thu Feb 19 17:05:47 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* class.c (rb_obj_singleton_methods): should use RTEST() to convert
