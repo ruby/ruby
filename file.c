@@ -1053,6 +1053,25 @@ w32_io_info(VALUE *file, BY_HANDLE_FILE_INFORMATION *st)
     if (ret) CloseHandle(ret);
     return INVALID_HANDLE_VALUE;
 }
+
+static VALUE
+close_handle(VALUE h)
+{
+    CloseHandle((HANDLE)h);
+    return Qfalse;
+}
+
+struct w32_io_info_args {
+    VALUE *fname;
+    BY_HANDLE_FILE_INFORMATION *st;
+};
+
+static VALUE
+call_w32_io_info(VALUE arg)
+{
+    struct w32_io_info_args *p = (void *)arg;
+    return (VALUE)w32_io_info(p->fname, p->st);
+}
 #endif
 
 /*
@@ -1916,8 +1935,15 @@ rb_file_identical_p(VALUE obj, VALUE fname1, VALUE fname2)
 # ifdef _WIN32
     f1 = w32_io_info(&fname1, &st1);
     if (f1 == INVALID_HANDLE_VALUE) return Qfalse;
-    f2 = w32_io_info(&fname2, &st2);
-    if (f1) CloseHandle(f1);
+    if (f1) {
+	struct w32_io_info_args arg;
+	arg.fname = &fname2;
+	arg.st = &st2;
+	f2 = (HANDLE)rb_ensure(call_w32_io_info, (VALUE)&arg, close_handle, (VALUE)f1);
+    }
+    else {
+	f2 = w32_io_info(&fname2, &st2);
+    }
     if (f2 == INVALID_HANDLE_VALUE) return Qfalse;
     if (f2) CloseHandle(f2);
 

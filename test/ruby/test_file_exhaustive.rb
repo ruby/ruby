@@ -311,6 +311,8 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_raise(IOError) {
       File.identical?(@file, io)
     }
+    File.unlink(@file)
+    assert_file.not_exist?(@file)
   end
 
   def test_s_size
