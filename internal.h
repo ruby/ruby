@@ -704,6 +704,7 @@ struct st_table *rb_hash_tbl_raw(VALUE hash);
 VALUE rb_hash_has_key(VALUE hash, VALUE key);
 VALUE rb_hash_set_default_proc(VALUE hash, VALUE proc);
 long rb_objid_hash(st_index_t index);
+VALUE rb_ident_hash_new(void);
 st_table *rb_init_identtable(void);
 st_table *rb_init_identtable_with_size(st_index_t size);
 
@@ -956,9 +957,6 @@ void rb_backref_set_string(VALUE string, long pos, long len);
 extern int ruby_enable_coredump;
 int rb_get_next_signal(void);
 int rb_sigaltstack_size(void);
-
-/* st.c */
-extern const struct st_hash_type st_hashtype_num;
 
 /* strftime.c */
 #ifdef RUBY_ENCODING_H
