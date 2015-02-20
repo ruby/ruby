@@ -4702,28 +4702,28 @@ rb_w32_getenv(const char *name)
 }
 
 /* License: Ruby's */
+static DWORD
+get_volume_serial_number(const WCHAR *path)
+{
+    const DWORD share_mode = FILE_SHARE_READ | FILE_SHARE_WRITE;
+    const DWORD creation = OPEN_EXISTING;
+    const DWORD flags = FILE_FLAG_BACKUP_SEMANTICS;
+    BY_HANDLE_FILE_INFORMATION st = {0};
+    HANDLE h = CreateFileW(path, 0, share_mode, NULL, creation, flags, NULL);
+    BOOL ret;
+
+    if (h == INVALID_HANDLE_VALUE) return 0;
+    ret = GetFileInformationByHandle(h, &st);
+    CloseHandle(h);
+    if (!ret) return 0;
+    return st.dwVolumeSerialNumber;
+}
+
+/* License: Ruby's */
 static int
 different_device_p(const WCHAR *oldpath, const WCHAR *newpath)
 {
-    WCHAR oldfullpath[_MAX_PATH], newfullpath[_MAX_PATH];
-    DWORD oldlen, newlen;
-
-    newlen = GetFullPathNameW(newpath, numberof(newfullpath), newfullpath, NULL);
-    if (newlen <= 1) return 0;
-    oldlen = GetFullPathNameW(oldpath, numberof(oldfullpath), oldfullpath, NULL);
-    if (oldlen <= 1) return 0;
-    if (newfullpath[1] == L':') {
-	if (oldfullpath[1] != L':') return 1;
-	return newfullpath[0] != oldfullpath[0];
-    }
-    if (newfullpath[0] != L'\\' || newfullpath[1] != L'\\') return 0;
-    if (oldfullpath[0] != L'\\' || oldfullpath[1] != L'\\') return 0;
-    if (!(newpath = wcschr(newfullpath+2, L'\\'))) return 0;
-    if (!(newpath = wcschr(newpath+1, L'\\'))) return 0;
-    if (!(oldpath = wcschr(oldfullpath+2, L'\\'))) return 0;
-    if (!(oldpath = wcschr(oldpath+1, L'\\'))) return 0;
-    if (newpath - newfullpath != oldpath - oldfullpath) return 1;
-    return wcsncmp(newfullpath, oldfullpath, oldpath - oldfullpath) != 0;
+    return get_volume_serial_number(oldpath) != get_volume_serial_number(newpath);
 }
 
 /* License: Artistic or GPL */
