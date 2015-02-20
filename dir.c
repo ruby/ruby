@@ -71,6 +71,9 @@ char *strchr(char*,char);
 #define rmdir(p) rb_w32_urmdir(p)
 #undef opendir
 #define opendir(p) rb_w32_uopendir(p)
+#define IS_WIN32 1
+#else
+#define IS_WIN32 0
 #endif
 
 #ifdef HAVE_SYS_ATTR_H
@@ -81,6 +84,10 @@ char *strchr(char*,char);
 # define USE_NAME_ON_FS 1
 # define RUP32(size) ((size)+3/4)
 # define SIZEUP32(type) RUP32(sizeof(type))
+#elif defined _WIN32
+# define USE_NAME_ON_FS 1
+#elif defined DOSISH
+# define USE_NAME_ON_FS 2	/* by fnmatch */
 #else
 # define USE_NAME_ON_FS 0
 #endif
@@ -1177,10 +1184,19 @@ has_magic(const char *p, const char *pend, int flags, rb_encoding *enc)
 		return PLAIN;
 	    continue;
 
+#ifdef _WIN32
+	  case '.':
+	    break;
+
+	  case '~':
+	    hasalpha = 1;
+	    break;
+#endif
 	  default:
-	    if (ISALPHA(c)) {
+	    if (IS_WIN32 || ISALPHA(c)) {
 		hasalpha = 1;
 	    }
+	    break;
 	}
 
 	p = Next(p-1, pend, enc);
@@ -1373,7 +1389,7 @@ is_case_sensitive(DIR *dirp)
 }
 
 static char *
-replace_real_basename(char *path, long base, int norm_p)
+replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p)
 {
     u_int32_t attrbuf[SIZEUP32(attrreference_t) + RUP32(MAXPATHLEN * 3) + 1];
     struct attrlist al = {ATTR_BIT_MAP_COUNT, 0, ATTR_CMN_NAME};
@@ -1408,6 +1424,45 @@ replace_real_basename(char *path, long base, int norm_p)
     IF_NORMALIZE_UTF8PATH(if (!NIL_P(utf8str)) rb_str_resize(utf8str, 0));
     return path;
 }
+#elif defined _WIN32
+VALUE rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc);
+
+static char *
+replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p)
+{
+    char *plainname = path;
+    volatile VALUE tmp = 0;
+    WIN32_FIND_DATAW fd;
+    WIN32_FILE_ATTRIBUTE_DATA fa;
+    WCHAR *wplain;
+    HANDLE h = INVALID_HANDLE_VALUE;
+    long wlen;
+    if (enc &&
+	enc != rb_usascii_encoding() &&
+	enc != rb_ascii8bit_encoding() &&
+	enc != rb_utf8_encoding()) {
+	tmp = rb_enc_str_new_cstr(plainname, enc);
+	tmp = rb_str_encode_ospath(tmp);
+	plainname = RSTRING_PTR(tmp);
+    }
+    wplain = rb_w32_mbstr_to_wstr(CP_UTF8, plainname, -1, &wlen);
+    if (tmp) rb_str_resize(tmp, 0);
+    if (!wplain) return path;
+    if (GetFileAttributesExW(wplain, GetFileExInfoStandard, &fa))
+	h = FindFirstFileW(wplain, &fd);
+    free(wplain);
+    if (h == INVALID_HANDLE_VALUE) return path;
+    FindClose(h);
+    tmp = rb_w32_conv_from_wchar(fd.cFileName, enc);
+    wlen = RSTRING_LEN(tmp);
+    path = GLOB_REALLOC(path, base + wlen + 1);
+    memcpy(path + base, RSTRING_PTR(tmp), wlen);
+    path[base + wlen] = 0;
+    rb_str_resize(tmp, 0);
+    return path;
+}
+#elif USE_NAME_ON_FS == 1
+# error not implemented
 #endif
 
 enum answer {UNKNOWN = -1, NO, YES};
@@ -1473,7 +1528,7 @@ glob_helper(
 	    plain = 1;
 	    break;
 	  case ALPHA:
-#ifdef HAVE_GETATTRLIST
+#if USE_NAME_ON_FS == 1
 	    plain = 1;
 #else
 	    magical = 1;
@@ -1533,11 +1588,11 @@ glob_helper(
     if (magical || recursive) {
 	struct dirent *dp;
 	DIR *dirp;
-# ifdef DOSISH
+# if USE_NAME_ON_FS == 2
 	char *plainname = 0;
 # endif
 	IF_NORMALIZE_UTF8PATH(int norm_p);
-# ifdef DOSISH
+# if USE_NAME_ON_FS == 2
 	if (cur + 1 == end && (*cur)->type <= ALPHA) {
 	    plainname = join_path(path, pathlen, dirsep, (*cur)->str, strlen((*cur)->str));
 	    if (!plainname) return -1;
@@ -1633,7 +1688,7 @@ glob_helper(
 		}
 		switch (p->type) {
 		  case ALPHA:
-# ifdef DOSISH
+# if USE_NAME_ON_FS == 2
 		    if (plainname) {
 			*new_end++ = p->next;
 			break;
@@ -1703,10 +1758,10 @@ glob_helper(
 		    status = -1;
 		    break;
 		}
-#ifdef HAVE_GETATTRLIST
+#if USE_NAME_ON_FS == 1
 		if ((*cur)->type == ALPHA) {
 		    long base = pathlen + (dirsep != 0);
-		    buf = replace_real_basename(buf, base, IF_NORMALIZE_UTF8PATH(1)+0);
+		    buf = replace_real_basename(buf, base, enc, IF_NORMALIZE_UTF8PATH(1)+0);
 		}
 #endif
 		status = glob_helper(buf, 1, UNKNOWN, UNKNOWN, new_beg,

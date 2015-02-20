@@ -248,6 +248,18 @@ class TestDir < Test::Unit::TestCase
     assert_equal(roots.map {|n| "/..#{n}"}, Dir.glob("/../*"), bug9648)
   end
 
+  if /mswin|mingw/ =~ RUBY_PLATFORM
+    def test_glob_legacy_short_name
+      bug10819 = '[ruby-core:67954] [Bug #10819]'
+      skip unless /\A\w:/ =~ ENV["ProgramFiles"]
+      short = "#$&/PROGRA~1"
+      skip unless File.directory?(short)
+      entries = Dir.glob("#{short}/Common*")
+      assert_not_empty(entries, bug10819)
+      assert_equal(Dir.glob("#{File.expand_path(short)}/Common*"), entries, bug10819)
+    end
+  end
+
   def test_home
     env_home = ENV["HOME"]
     env_logdir = ENV["LOGDIR"]
