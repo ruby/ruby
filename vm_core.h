@@ -137,7 +137,7 @@ struct rb_control_frame_struct;
 
 typedef struct rb_call_info_kw_arg_struct {
     int keyword_len;
-    ID keywords[1];
+    VALUE keywords[1];
 } rb_call_info_kw_arg_t;
 
 /* rb_call_info_t contains calling information including inline cache */

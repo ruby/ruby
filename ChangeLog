@@ -1,3 +1,9 @@
+Fri Feb 20 17:47:20 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (rb_call_info_kw_arg_struct): make keywords a symbols
+	  list to get rid of inadvertent creation by variable keyword
+	  arguments.  [ruby-core:68031] [Bug #10831]
+
 Fri Feb 20 15:08:17 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (has_magic): always get long path name on Windows even if

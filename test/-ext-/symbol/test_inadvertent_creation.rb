@@ -426,5 +426,26 @@ module Test_Symbol
         x.method(:send).call(name.to_sym)
       end
     end
+
+    def test_kwarg_symbol_leak_no_rest
+      foo = -> (arg: 42) {}
+      assert_no_immortal_symbol_created("kwarg no rest") do |name|
+        assert_raise(ArgumentError) { foo.call(name.to_sym => 42) }
+      end
+    end
+
+    def test_kwarg_symbol_leak_with_rest
+      foo = -> (arg: 2, **options) {}
+      assert_no_immortal_symbol_created("kwarg with rest") do |name|
+        foo.call(name.to_sym => 42)
+      end
+    end
+
+    def test_kwarg_symbol_leak_just_rest
+      foo = -> (**options) {}
+      assert_no_immortal_symbol_created("kwarg just rest") do |name|
+        foo.call(name.to_sym => 42)
+      end
+    end
   end
 end

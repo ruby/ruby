@@ -238,7 +238,7 @@ args_pop_keyword_hash(struct args_info *args, VALUE *kw_hash_ptr, rb_thread_t *t
 static int
 args_kw_argv_to_hash(struct args_info *args)
 {
-    const ID * const passed_keywords = args->ci->kw_arg->keywords;
+    const VALUE *const passed_keywords = args->ci->kw_arg->keywords;
     const int kw_len = args->ci->kw_arg->keyword_len;
     VALUE h = rb_hash_new();
     const int kw_start = args->argc - kw_len;
@@ -247,7 +247,7 @@ args_kw_argv_to_hash(struct args_info *args)
 
     args->argc = kw_start + 1;
     for (i=0; i<kw_len; i++) {
-	rb_hash_aset(h, ID2SYM(passed_keywords[i]), kw_argv[i]);
+	rb_hash_aset(h, passed_keywords[i], kw_argv[i]);
     }
 
     args->argv[args->argc - 1] = h;
@@ -260,11 +260,11 @@ args_stored_kw_argv_to_hash(struct args_info *args)
 {
     VALUE h = rb_hash_new();
     int i;
-    const ID * const passed_keywords = args->ci->kw_arg->keywords;
+    const VALUE *const passed_keywords = args->ci->kw_arg->keywords;
     const int passed_keyword_len = args->ci->kw_arg->keyword_len;
 
     for (i=0; i<passed_keyword_len; i++) {
-	rb_hash_aset(h, ID2SYM(passed_keywords[i]), args->kw_argv[i]);
+	rb_hash_aset(h, passed_keywords[i], args->kw_argv[i]);
     }
     args->kw_argv = NULL;
 
@@ -348,7 +348,7 @@ args_setup_rest_parameter(struct args_info *args, VALUE *locals)
 }
 
 static VALUE
-make_unused_kw_hash(const ID *passed_keywords, int passed_keyword_len, const VALUE *kw_argv, const int key_only)
+make_unused_kw_hash(const VALUE *passed_keywords, int passed_keyword_len, const VALUE *kw_argv, const int key_only)
 {
     int i;
     VALUE obj = key_only ? rb_ary_tmp_new(1) : rb_hash_new();
@@ -356,10 +356,10 @@ make_unused_kw_hash(const ID *passed_keywords, int passed_keyword_len, const VAL
     for (i=0; i<passed_keyword_len; i++) {
 	if (kw_argv[i] != Qundef) {
 	    if (key_only) {
-		rb_ary_push(obj, ID2SYM(passed_keywords[i]));
+		rb_ary_push(obj, passed_keywords[i]);
 	    }
 	    else {
-		rb_hash_aset(obj, ID2SYM(passed_keywords[i]), kw_argv[i]);
+		rb_hash_aset(obj, passed_keywords[i], kw_argv[i]);
 	    }
 	}
     }
@@ -367,12 +367,13 @@ make_unused_kw_hash(const ID *passed_keywords, int passed_keyword_len, const VAL
 }
 
 static inline int
-args_setup_kw_parameters_lookup(const ID key, VALUE *ptr, const ID * const passed_keywords, VALUE *passed_values, const int passed_keyword_len)
+args_setup_kw_parameters_lookup(const ID key, VALUE *ptr, const VALUE *const passed_keywords, VALUE *passed_values, const int passed_keyword_len)
 {
     int i;
+    const VALUE keyname = ID2SYM(key);
 
     for (i=0; i<passed_keyword_len; i++) {
-	if (key == passed_keywords[i]) {
+	if (keyname == passed_keywords[i]) {
 	    *ptr = passed_values[i];
 	    passed_values[i] = Qundef;
 	    return TRUE;
@@ -383,7 +384,7 @@ args_setup_kw_parameters_lookup(const ID key, VALUE *ptr, const ID * const passe
 }
 
 static void
-args_setup_kw_parameters(VALUE* const passed_values, const int passed_keyword_len, const ID * const passed_keywords,
+args_setup_kw_parameters(VALUE* const passed_values, const int passed_keyword_len, const VALUE *const passed_keywords,
 			 const rb_iseq_t * const iseq, VALUE * const locals)
 {
     const ID *acceptable_keywords = iseq->param.keyword->table;
@@ -495,7 +496,7 @@ fill_keys_values(st_data_t key, st_data_t val, st_data_t ptr)
 {
     struct fill_values_arg *arg = (struct fill_values_arg *)ptr;
     int i = arg->argc++;
-    arg->keys[i] = SYM2ID((VALUE)key);
+    arg->keys[i] = (VALUE)key;
     arg->vals[i] = (VALUE)val;
     return ST_CONTINUE;
 }
@@ -722,14 +723,14 @@ vm_caller_setup_arg_splat(rb_control_frame_t *cfp, rb_call_info_t *ci)
 static inline void
 vm_caller_setup_arg_kw(rb_control_frame_t *cfp, rb_call_info_t *ci)
 {
-    const ID * const passed_keywords = ci->kw_arg->keywords;
+    const VALUE *const passed_keywords = ci->kw_arg->keywords;
     const int kw_len = ci->kw_arg->keyword_len;
     const VALUE h = rb_hash_new();
     VALUE *sp = cfp->sp;
     int i;
 
     for (i=0; i<kw_len; i++) {
-	rb_hash_aset(h, ID2SYM(passed_keywords[i]), (sp - kw_len)[i]);
+	rb_hash_aset(h, passed_keywords[i], (sp - kw_len)[i]);
     }
     (sp-kw_len)[0] = h;
 
