@@ -46,7 +46,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def make_tmp_filename(prefix)
-    @hardlinkfile = @dir + "/" + prefix + File.basename(__FILE__) + ".#{$$}.test"
+    "#{@dir}/#{prefix}#{File.basename(__FILE__)}.#{$$}.test"
   end
 
   def test_path
