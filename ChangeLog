@@ -1,3 +1,14 @@
+Sat Feb 21 13:48:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (different_device_p): compare by volume serial
+	  numbers, not by path names.  [ruby-core:68162] [Bug #10865]
+
+Sat Feb 21 13:48:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (wrename): return EXDEV if moving a directory to
+	  another drive, since MoveFileExW does not set proper error code.
+	  [ruby-core:68162] [Bug #10865]
+
 Sat Feb 21 12:46:51 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/file.c (rb_file_expand_path_internal): neither the drive

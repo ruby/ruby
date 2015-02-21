@@ -4701,6 +4701,31 @@ rb_w32_getenv(const char *name)
     return w32_getenv(name, CP_ACP);
 }
 
+/* License: Ruby's */
+static DWORD
+get_volume_serial_number(const WCHAR *path)
+{
+    const DWORD share_mode = FILE_SHARE_READ | FILE_SHARE_WRITE;
+    const DWORD creation = OPEN_EXISTING;
+    const DWORD flags = FILE_FLAG_BACKUP_SEMANTICS;
+    BY_HANDLE_FILE_INFORMATION st = {0};
+    HANDLE h = CreateFileW(path, 0, share_mode, NULL, creation, flags, NULL);
+    BOOL ret;
+
+    if (h == INVALID_HANDLE_VALUE) return 0;
+    ret = GetFileInformationByHandle(h, &st);
+    CloseHandle(h);
+    if (!ret) return 0;
+    return st.dwVolumeSerialNumber;
+}
+
+/* License: Ruby's */
+static int
+different_device_p(const WCHAR *oldpath, const WCHAR *newpath)
+{
+    return get_volume_serial_number(oldpath) != get_volume_serial_number(newpath);
+}
+
 /* License: Artistic or GPL */
 static int
 wrename(const WCHAR *oldpath, const WCHAR *newpath)
@@ -4724,8 +4749,14 @@ wrename(const WCHAR *oldpath, const WCHAR *newpath)
 	if (!MoveFileExW(oldpath, newpath, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED))
 	    res = -1;
 
-	if (res)
-	    errno = map_errno(GetLastError());
+	if (res) {
+	    DWORD e = GetLastError();
+	    if ((e == ERROR_ACCESS_DENIED) && (oldatts & FILE_ATTRIBUTE_DIRECTORY) &&
+		different_device_p(oldpath, newpath))
+		errno = EXDEV;
+	    else
+		errno = map_errno(e);
+	}
 	else
 	    SetFileAttributesW(newpath, oldatts);
     });
