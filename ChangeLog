@@ -1,3 +1,16 @@
+Sat Feb 21 12:46:51 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/file.c (rb_file_expand_path_internal): neither the drive
+	  of base directory nor the current drive are involved in the
+	  result if different than the drive of path.
+	  [ruby-core:68130] [Bug #10858]
+
+Sat Feb 21 12:46:51 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/file.c (rb_file_expand_path_internal): do not make invalid
+	  (or ADS) path if the path has a drive letter, the result also
+	  should have be under it.  [ruby-core:68130] [Bug #10858]
+
 Sat Feb 21 12:45:54 2015  Matt Hoyle  <matt@deployable.co>
 
 	* ext/bigdecimal/bigdecimal.c (VpSetPTR): fix a typo, 'expoennt'
