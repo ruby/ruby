@@ -1,3 +1,8 @@
+Sat Feb 21 16:18:42 2015  Stefan Schuler  <mail@stefanschuessler.de>
+
+	* compar.c (Init_Comparable): [DOC] Replace camelcase variable name.
+	  [Fix GH-833]
+
 Fri Feb 20 17:27:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_identical_p): fix handle leak, ensure to close

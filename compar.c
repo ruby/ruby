@@ -188,8 +188,8 @@ cmp_between(VALUE x, VALUE min, VALUE max)
  *     class SizeMatters
  *       include Comparable
  *       attr :str
- *       def <=>(anOther)
- *         str.size <=> anOther.str.size
+ *       def <=>(other)
+ *         str.size <=> other.str.size
  *       end
  *       def initialize(str)
  *         @str = str
