@@ -1,3 +1,8 @@
+Sun Feb 22 02:16:40 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_identical_p): fix handle leak, ensure to close
+	  the handle of the first argument.
+
 Sat Feb 21 13:48:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (different_device_p): compare by volume serial

@@ -46,7 +46,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def make_tmp_filename(prefix)
-    @hardlinkfile = @dir + "/" + prefix + File.basename(__FILE__) + ".#{$$}.test"
+    "#{@dir}/#{prefix}#{File.basename(__FILE__)}.#{$$}.test"
   end
 
   def test_path
@@ -291,11 +291,28 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_file.not_sticky?(@file)
   end
 
-  def test_identical_p
+  def test_path_identical_p
     assert_file.identical?(@file, @file)
     assert_file.not_identical?(@file, @zerofile)
     assert_file.not_identical?(@file, @nofile)
     assert_file.not_identical?(@nofile, @file)
+  end
+
+  def test_io_identical_p
+    open(@file) {|f|
+      assert_file.identical?(f, f)
+      assert_file.identical?(@file, f)
+      assert_file.identical?(f, @file)
+    }
+  end
+
+  def test_closed_io_identical_p
+    io = open(@file) {|f| f}
+    assert_raise(IOError) {
+      File.identical?(@file, io)
+    }
+    File.unlink(@file)
+    assert_file.not_exist?(@file)
   end
 
   def test_s_size
