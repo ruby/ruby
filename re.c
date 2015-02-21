@@ -1787,7 +1787,7 @@ name_to_backref_error(VALUE name)
 static VALUE
 match_aref(int argc, VALUE *argv, VALUE match)
 {
-    VALUE idx, rest;
+    VALUE idx, rest, re;
 
     match_check(match);
     rb_scan_args(argc, argv, "11", &idx, &rest);
@@ -1808,7 +1808,8 @@ match_aref(int argc, VALUE *argv, VALUE match)
 		/* fall through */
 	      case T_STRING:
 		p = StringValuePtr(idx);
-		if (!rb_enc_compatible(RREGEXP(RMATCH(match)->regexp)->src, idx) ||
+		re = RMATCH(match)->regexp;
+		if (NIL_P(re) || !rb_enc_compatible(RREGEXP(re)->src, idx) ||
 		    (num = name_to_backref_number(RMATCH_REGS(match), RMATCH(match)->regexp,
 						  p, p + RSTRING_LEN(idx))) < 1) {
 		    name_to_backref_error(idx);
