@@ -1424,7 +1424,7 @@ ossl_asn1obj_get_ln(VALUE self)
     return ret;
 }
 
-/* Document-method: OpenSSL::ASN1::ObjectId.oid
+/* Document-method: OpenSSL::ASN1::ObjectId#oid
  *
  * The object identifier as a +String+, e.g. "1.2.3.4.5"
  */
