@@ -53,6 +53,13 @@ static const rb_data_type_t ossl_bn_type = {
  * Classes
  */
 VALUE cBN;
+
+/* Document-class: OpenSSL::BNError
+ *
+ * BNError < OpenSSLError
+ *
+ * Generic Error for all of OpenSSL::BN (big num)
+ */
 VALUE eBNError;
 
 /*
@@ -121,13 +128,15 @@ ossl_bn_alloc(VALUE klass)
     return obj;
 }
 
-/*
- * call-seq:
- *    BN.new => aBN
- *    BN.new(bn) => aBN
- *    BN.new(integer) => aBN
- *    BN.new(string) => aBN
- *    BN.new(string, 0 | 2 | 10 | 16) => aBN
+/* Document-method: OpenSSL::BN.new
+ *
+ *    OpenSSL::BN.new => aBN
+ *    OpenSSL::BN.new(bn) => aBN
+ *    OpenSSL::BN.new(integer) => aBN
+ *    OpenSSL::BN.new(string) => aBN
+ *    OpenSSL::BN.new(string, 0 | 2 | 10 | 16) => aBN
+ *
+ * Construct a new OpenSSL BigNum object.
  */
 static VALUE
 ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
@@ -322,7 +331,7 @@ ossl_bn_coerce(VALUE self, VALUE other)
 #define BIGNUM_BOOL1(func)				\
     /*							\
      * call-seq:					\
-     *   bn.##func -> true | false			\
+     *   bn.##func => true | false			\
      *							\
      */							\
     static VALUE					\
@@ -342,7 +351,7 @@ BIGNUM_BOOL1(is_odd)
 #define BIGNUM_1c(func)					\
     /*							\
      * call-seq:					\
-     *   bn.##func -> aBN				\
+     *   bn.##func => aBN				\
      *							\
      */							\
     static VALUE					\
@@ -366,7 +375,7 @@ BIGNUM_1c(sqr)
 #define BIGNUM_2(func)					\
     /*							\
      * call-seq:					\
-     *   bn.##func(bn2) -> aBN				\
+     *   bn.##func(bn2) => aBN				\
      *							\
      */							\
     static VALUE					\
@@ -391,7 +400,7 @@ BIGNUM_2(sub)
 #define BIGNUM_2c(func)						\
     /*								\
      * call-seq:						\
-     *   bn.##func(bn2) -> aBN					\
+     *   bn.##func(bn2) => aBN					\
      *								\
      */								\
     static VALUE						\
@@ -420,6 +429,8 @@ BIGNUM_2c(mod_inverse)
 /*
  * call-seq:
  *    bn1 / bn2 => [result, remainder]
+ *
+ * Division of OpenSSL::BN instances
  */
 static VALUE
 ossl_bn_div(VALUE self, VALUE other)
@@ -495,9 +506,13 @@ BIGNUM_BIT(set_bit)
 BIGNUM_BIT(clear_bit)
 BIGNUM_BIT(mask_bits)
 
-/*
- * call-seq:
+/* Document-method: OpenSSL::BN#bit_set?
+ *
+ * Returns boolean of whether +bit+ is set.
+ * Bitwise operations for openssl BIGNUMs.
+ *
  *    bn.bit_set?(bit) => true | false
+ *
  */
 static VALUE
 ossl_bn_is_bit_set(VALUE self, VALUE bit)
@@ -661,7 +676,7 @@ ossl_bn_s_generate_prime(int argc, VALUE *argv, VALUE klass)
 #define BIGNUM_NUM(func)			\
     /*							\
      * call-seq:					\
-     *   bn.##func -> integer				\
+     *   bn.##func => integer				\
      *							\
      */							\
     static VALUE 				\
@@ -695,7 +710,7 @@ ossl_bn_copy(VALUE self, VALUE other)
 #define BIGNUM_CMP(func)				\
     /*							\
      * call-seq:					\
-     *   bn.##func(bn2) -> integer			\
+     *   bn.##func(bn2) => integer			\
      *							\
      */							\
     static VALUE					\
@@ -708,6 +723,13 @@ ossl_bn_copy(VALUE self, VALUE other)
 BIGNUM_CMP(cmp)
 BIGNUM_CMP(ucmp)
 
+/*
+ *  call-seq:
+ *     big.eql?(obj) => true or false
+ *
+ *  Returns <code>true</code> only if <i>obj</i> is a
+ *  <code>Bignum</code> with the same value as <i>big</i>. Contrast this
+ */
 static VALUE
 ossl_bn_eql(VALUE self, VALUE other)
 {
