@@ -647,6 +647,7 @@ static VALUE rb_eNOERROR;
 
 static ID id_new, id_bt, id_bt_locations, id_cause, id_message, id_backtrace;
 static ID id_status, id_name, id_args, id_Errno, id_errno, id_i_path;
+#define id_mesg idMesg
 
 #undef rb_exc_new_cstr
 
@@ -683,8 +684,8 @@ exc_initialize(int argc, VALUE *argv, VALUE exc)
     VALUE arg;
 
     rb_scan_args(argc, argv, "01", &arg);
-    rb_iv_set(exc, "mesg", arg);
-    rb_iv_set(exc, "bt", Qnil);
+    rb_ivar_set(exc, id_mesg, arg);
+    rb_ivar_set(exc, id_bt, Qnil);
 
     return exc;
 }
@@ -814,7 +815,7 @@ exc_backtrace(VALUE exc)
 
     if (rb_backtrace_p(obj)) {
 	obj = rb_backtrace_to_str_ary(obj);
-	/* rb_iv_set(exc, "bt", obj); */
+	/* rb_ivar_set(exc, id_bt, obj); */
     }
 
     return obj;
@@ -877,7 +878,7 @@ rb_check_backtrace(VALUE bt)
 static VALUE
 exc_set_backtrace(VALUE exc, VALUE bt)
 {
-    return rb_iv_set(exc, "bt", rb_check_backtrace(bt));
+    return rb_ivar_set(exc, id_bt, rb_check_backtrace(bt));
 }
 
 VALUE
@@ -920,7 +921,6 @@ static VALUE
 exc_equal(VALUE exc, VALUE obj)
 {
     VALUE mesg, backtrace;
-    const ID id_mesg = idMesg;
 
     if (exc == obj) return Qtrue;
 
@@ -1000,7 +1000,7 @@ exit_initialize(int argc, VALUE *argv, VALUE exc)
 	status = INT2FIX(EXIT_SUCCESS);
     }
     rb_call_super(argc, argv);
-    rb_iv_set(exc, "status", status);
+    rb_ivar_set(exc, id_status, status);
     return exc;
 }
 
@@ -1087,7 +1087,7 @@ name_err_initialize(int argc, VALUE *argv, VALUE self)
 
     name = (argc > 1) ? argv[--argc] : Qnil;
     rb_call_super(argc, argv);
-    rb_iv_set(self, "name", name);
+    rb_ivar_set(self, id_name, name);
     return self;
 }
 
@@ -1119,7 +1119,7 @@ nometh_err_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE args = (argc > 2) ? argv[--argc] : Qnil;
     name_err_initialize(argc, argv, self);
-    rb_iv_set(self, "args", args);
+    rb_ivar_set(self, id_args, args);
     return self;
 }
 
@@ -1407,7 +1407,7 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
     mesg = errmsg;
 
     rb_call_super(1, &mesg);
-    rb_iv_set(self, "errno", error);
+    rb_ivar_set(self, id_errno, error);
     return self;
 }
 
