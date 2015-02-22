@@ -1,3 +1,7 @@
+Sun Feb 22 18:33:42 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* common.mk: use ruby organization for rubyspec.
+
 Sun Feb 22 15:56:06 2015  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* vm_insnhelper.c (rb_vm_rewrite_cref_stack): copy nd_refinements
