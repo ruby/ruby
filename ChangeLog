@@ -1,3 +1,8 @@
+Sun Feb 22 21:20:37 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (match_aref): RMatch::regexp is Qnil after matching by a
+	  string since r45451.  [ruby-core:68209] [Bug #10877]
+
 Sun Feb 22 17:11:25 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (probes.stamp): rebuild dtrace dependent objects

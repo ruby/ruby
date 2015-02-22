@@ -545,6 +545,19 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("foo", $&)
   end
 
+  def test_match_without_regexp
+    bug10877 = '[ruby-core:68209] [Bug #10877]'
+    "abc".sub("a", "")
+    assert_raise_with_message(IndexError, /foo/, bug10877) {$~["foo"]}
+    key = "\u{3042}"
+    [Encoding::UTF_8, Encoding::Shift_JIS, Encoding::EUC_JP].each do |enc|
+      idx = key.encode(enc)
+      EnvUtil.with_default_external(enc) do
+        assert_raise_with_message(IndexError, /#{idx}/, bug10877) {$~[idx]}
+      end
+    end
+  end
+
   def test_last_match
     /(...)(...)(...)(...)?/.match("foobarbaz")
     assert_equal("foobarbaz", Regexp.last_match(0))
