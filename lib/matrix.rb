@@ -1907,7 +1907,7 @@ class Vector
   #++
 
   #
-  # Multiplies the vector by +x+, where +x+ is a number or another vector.
+  # Multiplies the vector by +x+, where +x+ is a number or a matrix.
   #
   def *(x)
     case x
