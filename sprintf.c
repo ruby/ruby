@@ -1256,6 +1256,39 @@ fmt_setup(char *buf, size_t size, int c, int flags, int width, int prec)
 #define upper_hexdigits (ruby_hexdigits+16)
 #include "vsnprintf.c"
 
+int
+ruby_vsnprintf(char *str, size_t n, const char *fmt, va_list ap)
+{
+    int ret;
+    rb_printf_buffer f;
+
+    if ((int)n < 1)
+	return (EOF);
+    f._flags = __SWR | __SSTR;
+    f._bf._base = f._p = (unsigned char *)str;
+    f._bf._size = f._w = n - 1;
+    f.vwrite = BSD__sfvwrite;
+    f.vextra = 0;
+    ret = (int)BSD_vfprintf(&f, fmt, ap);
+    *f._p = 0;
+    return ret;
+}
+
+int
+ruby_snprintf(char *str, size_t n, char const *fmt, ...)
+{
+    int ret;
+    va_list ap;
+
+    if ((int)n < 1)
+	return (EOF);
+
+    va_start(ap, fmt);
+    ret = ruby_vsnprintf(str, n, fmt, ap);
+    va_end(ap);
+    return ret;
+}
+
 typedef struct {
     rb_printf_buffer base;
     volatile VALUE value;
