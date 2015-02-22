@@ -31,10 +31,10 @@ Sun Feb 22 10:43:37 2015  Koichi Sasada  <ko1@atdot.net>
 
 Sun Feb 22 04:07:05 2015  Zachary Scott  <e@zzak.io>
 
-        * ext/openssl/ossl_asn1.c: [DOC] RDoc formatting fixes for
-          ASN1::ObjectId with patch from @vbatts [Fixes GH-834]
+	* ext/openssl/ossl_asn1.c: [DOC] RDoc formatting fixes for
+	  ASN1::ObjectId with patch from @vbatts [Fixes GH-834]
 
-        * ext/openssl/ossl_bn.c: ditto.
+	* ext/openssl/ossl_bn.c: ditto.
 
 Sat Feb 21 19:51:49 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
