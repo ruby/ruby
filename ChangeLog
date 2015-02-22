@@ -1,3 +1,24 @@
+Sun Feb 22 10:43:37 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_objspace_call_finalizer): control GC execution during
+	  force firnalizations at the end of interpreter process.
+	  [Bug #10768]
+
+	  1) Prohibit incremental GC while running Ruby-level finalizers
+	     to avoid any danger.
+	  2) Prohibit GC while invoking T_DATA/T_FILE data structure
+	     because these operations break object relations consistency.
+
+	  This patch can introduce another memory consuming issue because
+	  Ruby-level finalizers can run after (2), GC is disabled.
+	  However, basically object consistency was broken at (2) as I
+	  described above. So that running Ruby-level finalizers contains
+	  danger originally. Because of this point, I need to suggest to
+	  remove these 3 lines (invoking remaining finalizers). And add a
+	  rule to add that finalizers should not add new finalizers, or
+	  say there is no guarantee to invoke finalizers that added by
+	  another finalizer.
+
 Sun Feb 22 04:07:05 2015  Zachary Scott  <e@zzak.io>
 
         * ext/openssl/ossl_asn1.c: [DOC] RDoc formatting fixes for
