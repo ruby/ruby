@@ -1400,6 +1400,34 @@ class TestRefinement < Test::Unit::TestCase
     INPUT
   end
 
+  def test_call_refined_method_in_duplicate_module
+    bug10885 = '[ruby-dev:48878]'
+    assert_in_out_err([], <<-INPUT, [], [], bug10885)
+      module M
+        refine Object do
+          def raise
+            # do nothing
+          end
+        end
+
+        class << self
+          using M
+          def m0
+            raise
+          end
+        end
+
+        using M
+        def M.m1
+          raise
+        end
+      end
+
+      M.dup.m0
+      M.dup.m1
+    INPUT
+  end
+
   private
 
   def eval_using(mod, s)
