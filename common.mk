@@ -8,7 +8,8 @@ dll: $(LIBRUBY_SO)
 V = 0
 Q1 = $(V:1=)
 Q = $(Q1:0=@)
-ECHO = $(ECHO1:0=@echo)
+ECHO0 = $(ECHO1:0=echo)
+ECHO = @$(ECHO0)
 
 UNICODE_VERSION = 7.0.0
 
@@ -100,6 +101,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		vm_trace.$(OBJEXT) \
 		thread.$(OBJEXT) \
 		cont.$(OBJEXT) \
+		$(DTRACE_OBJ) \
 		$(BUILTIN_ENCOBJS) \
 		$(BUILTIN_TRANSOBJS) \
 		$(MISSING)
@@ -191,7 +193,7 @@ prog: program wprogram
 
 $(PREP): $(MKFILES)
 
-miniruby$(EXEEXT): config.status $(ALLOBJS) $(ARCHFILE) $(DTRACE_OBJ)
+miniruby$(EXEEXT): config.status $(ALLOBJS) $(ARCHFILE)
 
 objs: $(ALLOBJS)
 
@@ -217,7 +219,7 @@ mini: PHONY miniruby$(EXEEXT)
 
 $(PROGRAM) $(WPROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
 
-$(LIBRUBY_A):	$(OBJS) $(MAINOBJ) $(DTRACE_OBJ) $(DTRACE_GLOMMED_OBJ) $(INITOBJS) $(ARCHFILE)
+$(LIBRUBY_A):	$(LIBRUBY_A_OBJS) $(MAINOBJ) $(INITOBJS) $(ARCHFILE)
 
 $(LIBRUBY_SO):	$(OBJS) $(DLDOBJS) $(LIBRUBY_A) $(PREP) $(LIBRUBY_SO_UPDATE) $(BUILTIN_ENCOBJS)
 
@@ -694,19 +696,7 @@ verconf.h: $(srcdir)/template/verconf.h.tmpl $(srcdir)/tool/generic_erb.rb
 	$(ECHO) creating $@
 	$(Q) $(MINIRUBY) "$(srcdir)/tool/generic_erb.rb" -o $@ $(srcdir)/template/verconf.h.tmpl
 
-DTRACE_DEPENDENT_OBJS = array.$(OBJEXT) \
-		eval.$(OBJEXT) \
-		gc.$(OBJEXT) \
-		hash.$(OBJEXT) \
-		load.$(OBJEXT) \
-		object.$(OBJEXT) \
-		parse.$(OBJEXT) \
-		string.$(OBJEXT) \
-		symbol.$(OBJEXT) \
-		vm.$(OBJEXT)
-
-probes.$(OBJEXT): $(DTRACE_DEPENDENT_OBJS)
-ruby-glommed.$(OBJEXT): $(OBJS) $(DTRACE_OBJ)
+ruby-glommed.$(OBJEXT): $(OBJS)
 
 $(OBJS):  {$(VPATH)}config.h {$(VPATH)}missing.h
 

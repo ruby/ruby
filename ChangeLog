@@ -1,3 +1,22 @@
+Sun Feb 22 17:11:25 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (probes.stamp): rebuild dtrace dependent objects
+	  only when `dtrace -G` modifies its input files.
+
+Sun Feb 22 17:11:25 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* common.mk (ruby-glommed.o): dependency on $(OBJ) should be written
+	  in common.mk (in which OBJ is defined) because of Makefile include
+	  and parse order. This partly reverts r49419.
+	  [ruby-dev:48849] [Bug #10808]
+
+	* Makefile.in (ruby-glommed.o): ditto.
+
+	* Makefile.in (ruby-glommed.o): remove excess $(DTRACE_OBJ) because
+	  it is included in $(OBJS) since r49451.
+
+	* Makefile.in (probes.o): should depend on $(DTRACE_DEPENDENT_OBJS)
+
 Sun Feb 22 02:16:40 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_identical_p): fix handle leak, ensure to close
