@@ -4055,7 +4055,7 @@ get_pat_quoted(VALUE pat, int check)
 	pat = val;
     }
     if (check && is_broken_string(pat)) {
-	rb_raise(rb_eTypeError, "%"PRIsVALUE, rb_reg_new_str(pat, 0));
+	rb_exc_raise(rb_reg_check_preprocess(pat));
     }
     return pat;
 }
