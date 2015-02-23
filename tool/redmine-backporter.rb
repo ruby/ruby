@@ -300,6 +300,15 @@ def backport_command_string
   " backport --ticket=#{@issue} #{@changesets.join(',')}"
 end
 
+def status_char(obj)
+  case obj["name"]
+  when "Closed"
+    "C".color(bold: true)
+  else
+    obj["name"][0]
+  end
+end
+
 console = IO.console
 row, col = console.winsize
 @query['limit'] = row - 2
@@ -326,7 +335,7 @@ while true
     puts "#{from}-#{to} / #{total}"
     issues.each_with_index do |x, i|
       id = "##{x["id"]}".color(*PRIORITIES[x["priority"]["name"]])
-      puts "#{'%2d' % i} #{id} #{x["priority"]["name"][0]} #{x["status"]["name"][0]} #{x["subject"][0,80]}"
+      puts "#{'%2d' % i} #{id} #{x["priority"]["name"][0]} #{status_char(x["status"])} #{x["subject"][0,80]}"
     end
   when /\A(?:show +)?(\d+)\z/
     id = $1.to_i
