@@ -256,7 +256,7 @@ typedef unsigned LONG_LONG unsigned_clock_t;
 #endif
 
 static ID id_in, id_out, id_err, id_pid, id_uid, id_gid;
-static ID id_close, id_child, id_status;
+static ID id_close, id_child;
 #ifdef HAVE_SETPGID
 static ID id_pgroup;
 #endif
@@ -279,6 +279,8 @@ static ID id_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID;
 static ID id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC;
 #endif
 static ID id_hertz;
+extern ID ruby_static_id_status;
+#define id_status ruby_static_id_status
 
 /*
  *  call-seq:
@@ -7820,7 +7822,6 @@ Init_process(void)
     id_gid = rb_intern("gid");
     id_close = rb_intern("close");
     id_child = rb_intern("child");
-    id_status = rb_intern("status");
 #ifdef HAVE_SETPGID
     id_pgroup = rb_intern("pgroup");
 #endif

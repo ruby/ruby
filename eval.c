@@ -24,6 +24,10 @@ NORETURN(void rb_raise_jump(VALUE, VALUE));
 VALUE rb_eLocalJumpError;
 VALUE rb_eSysStackError;
 
+ID ruby_static_id_signo, ruby_static_id_status;
+#define id_signo ruby_static_id_signo
+#define id_status ruby_static_id_status
+
 #define exception_error GET_VM()->special_exceptions[ruby_error_reenter]
 
 #include "eval_error.c"
@@ -218,7 +222,7 @@ ruby_cleanup(volatile int ex)
 	    break;
 	}
 	else if (rb_obj_is_kind_of(err, rb_eSignal)) {
-	    VALUE sig = rb_iv_get(err, "signo");
+	    VALUE sig = rb_ivar_get(err, id_signo);
 	    state = NUM2INT(sig);
 	    break;
 	}
@@ -1711,4 +1715,7 @@ Init_eval(void)
     rb_define_global_function("untrace_var", rb_f_untrace_var, -1);	/* in variable.c */
 
     rb_vm_register_special_exception(ruby_error_reenter, rb_eFatal, "exception reentered");
+
+    id_signo = rb_intern_const("signo");
+    id_status = rb_intern_const("status");
 }

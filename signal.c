@@ -45,6 +45,9 @@
 # include "nacl/signal.h"
 #endif
 
+extern ID ruby_static_id_signo;
+#define id_signo ruby_static_id_signo
+
 #ifdef NEED_RUBY_ATOMIC_OPS
 rb_atomic_t
 ruby_atomic_exchange(rb_atomic_t *ptr, rb_atomic_t val)
@@ -326,7 +329,7 @@ esignal_init(int argc, VALUE *argv, VALUE self)
 	sig = rb_sprintf("SIG%s", signm);
     }
     rb_call_super(1, &sig);
-    rb_iv_set(self, "signo", INT2NUM(signo));
+    rb_ivar_set(self, id_signo, INT2NUM(signo));
 
     return self;
 }
@@ -341,7 +344,7 @@ esignal_init(int argc, VALUE *argv, VALUE self)
 static VALUE
 esignal_signo(VALUE self)
 {
-    return rb_iv_get(self, "signo");
+    return rb_ivar_get(self, id_signo);
 }
 
 /* :nodoc: */
