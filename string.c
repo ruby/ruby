@@ -6387,10 +6387,11 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
     }
     else {
       fs_set:
-	spat = get_pat_quoted(spat, 1);
+	spat = get_pat_quoted(spat, 0);
 	if (BUILTIN_TYPE(spat) == T_STRING) {
 	    rb_encoding *enc2 = STR_ENC_GET(spat);
 
+	    mustnot_broken(spat);
 	    split_type = string;
 	    if (RSTRING_LEN(spat) == 0) {
 		/* Special case - split into chars */
@@ -6485,7 +6486,6 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	long slen = RSTRING_LEN(spat);
 
 	mustnot_broken(str);
-	mustnot_broken(spat);
 	enc = rb_enc_check(str, spat);
 	while (ptr < eptr &&
 	       (end = rb_memsearch(sptr, slen, ptr, eptr - ptr, enc)) >= 0) {
