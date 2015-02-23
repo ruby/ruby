@@ -667,6 +667,8 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, r
     return opt_pc;
 }
 
+VALUE rb_exc_set_backtrace(VALUE exc, VALUE bt);
+
 static void
 raise_argument_error(rb_thread_t *th, const rb_iseq_t *iseq, const VALUE exc)
 {
@@ -683,7 +685,7 @@ raise_argument_error(rb_thread_t *th, const rb_iseq_t *iseq, const VALUE exc)
     }
 
     rb_ivar_set(exc, idBt_locations, at);
-    rb_funcall(exc, rb_intern("set_backtrace"), 1, at);
+    rb_exc_set_backtrace(exc, at);
     rb_exc_raise(exc);
 }
 
