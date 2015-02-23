@@ -1,3 +1,11 @@
+Mon Feb 23 23:19:42 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/vcs.rb (IO.popen): support :chdir option.
+
+	* tool/vcs.rb (VCS::GIT.get_revisions): use :chdir option instead
+	  of -C option which is not supported by older git.
+	  [ruby-dev:48880] [Bug #10890]
+
 Mon Feb 23 15:26:39 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_split_m): raise ArgumentError at broken string

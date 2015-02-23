@@ -21,19 +21,39 @@ if RUBY_VERSION < "1.9"
 
     if defined?(fork)
       def self.popen(command, *rest, &block)
-        if !(Array === command)
-          @orig_popen.call(command, *rest, &block)
-        elsif block
-          @orig_popen.call("-", *rest) {|f| f ? yield(f) : exec(*command)}
+        if Hash === (opts = rest[-1])
+          dir = opts.delete(:chdir)
+          rest pop if opts.empty?
+        end
+        if block
+          @orig_popen.call("-", *rest) do |f|
+            if f
+              yield(f)
+            else
+              Dir.chdir(dir) if dir
+              exec(*command)
+            end
+          end
         else
-          @orig_popen.call("-", *rest) or exec(*command)
+          f = @orig_popen.call("-", *rest)
+          unless f
+            Dir.chdir(dir) if dir
+            exec(*command)
+          end
+          f
         end
       end
     else
       require 'shellwords'
       def self.popen(command, *rest, &block)
+        if Hash === (opts = rest[-1])
+          dir = opts.delete(:chdir)
+          rest pop if opts.empty?
+        end
         command = command.shelljoin if Array === command
-        @orig_popen.call(command, *rest, &block)
+        Dir.chdir(dir || ".") do
+          @orig_popen.call(command, *rest, &block)
+        end
       end
     end
   end
@@ -255,24 +275,23 @@ class VCS
 
     def self.get_revisions(path, srcdir = nil)
       gitcmd = %W[git]
-      gitcmd.push("-C", srcdir) if srcdir
       logcmd = gitcmd + %W[log -n1 --date=iso]
       logcmd << "--grep=^ *git-svn-id: .*@[0-9][0-9]*"
       idpat = /git-svn-id: .*?@(\d+) \S+\Z/
-      log = IO.pread(logcmd)
+      log = IO.pread(logcmd, :chdir => srcdir)
       commit = log[/\Acommit (\w+)/, 1]
       last = log[idpat, 1]
       if path
         cmd = logcmd
         cmd += [path] unless path == '.'
-        log = IO.pread(cmd)
+        log = IO.pread(cmd, :chdir => srcdir)
         changed = log[idpat, 1]
       else
         changed = last
       end
       modified = log[/^Date:\s+(.*)/, 1]
-      branch = IO.pread(gitcmd + %W[symbolic-ref HEAD])[%r'\A(?:refs/heads/)?(.+)', 1]
-      title = IO.pread(gitcmd + ["log", "--format=%s", "-n1", "#{commit}..HEAD"])
+      branch = IO.pread(gitcmd + %W[symbolic-ref HEAD], :chdir => srcdir)[%r'\A(?:refs/heads/)?(.+)', 1]
+      title = IO.pread(gitcmd + %W[log --format=%s -n1 #{commit}..HEAD], :chdir => srcdir)
       title = nil if title.empty?
       [last, changed, modified, branch, title]
     end
@@ -291,14 +310,12 @@ class VCS
 
     def stable
       cmd = %W"git for-each-ref --format=\%(refname:short) refs/heads/ruby_[0-9]*"
-      cmd[1, 0] = ["-C", @srcdir] if @srcdir
-      branch(IO.pread(cmd)[/.*^(ruby_\d+_\d+)$/m, 1])
+      branch(IO.pread(cmd, :chdir => srcdir)[/.*^(ruby_\d+_\d+)$/m, 1])
     end
 
     def branch_list(pat)
       cmd = %W"git for-each-ref --format=\%(refname:short) refs/heads/#{pat}"
-      cmd[1, 0] = ["-C", @srcdir] if @srcdir
-      IO.popen(cmd) {|f|
+      IO.popen(cmd, :chdir => srcdir) {|f|
         f.each {|line|
           line.chomp!
           yield line
@@ -308,9 +325,8 @@ class VCS
 
     def grep(pat, tag, *files, &block)
       cmd = %W[git grep -h --perl-regexp #{tag} --]
-      cmd[1, 0] = ["-C", @srcdir] if @srcdir
       set = block.binding.eval("proc {|match| $~ = match}")
-      IO.popen([cmd, *files]) do |f|
+      IO.popen([cmd, *files], :chdir => srcdir) do |f|
         f.grep(pat) do |s|
           set[$~]
           yield s
