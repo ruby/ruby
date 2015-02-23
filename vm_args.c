@@ -682,7 +682,7 @@ raise_argument_error(rb_thread_t *th, const rb_iseq_t *iseq, const VALUE exc)
 	at = rb_vm_backtrace_object();
     }
 
-    rb_iv_set(exc, "bt_locations", at);
+    rb_ivar_set(exc, idBt_locations, at);
     rb_funcall(exc, rb_intern("set_backtrace"), 1, at);
     rb_exc_raise(exc);
 }

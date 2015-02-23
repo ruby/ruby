@@ -645,8 +645,10 @@ VALUE rb_eSystemCallError;
 VALUE rb_mErrno;
 static VALUE rb_eNOERROR;
 
-static ID id_new, id_bt, id_bt_locations, id_cause, id_message, id_backtrace;
+static ID id_new, id_cause, id_message, id_backtrace;
 static ID id_status, id_name, id_args, id_Errno, id_errno, id_i_path;
+#define id_bt idBt
+#define id_bt_locations idBt_locations
 #define id_mesg idMesg
 
 #undef rb_exc_new_cstr
@@ -1908,8 +1910,6 @@ Init_Exception(void)
     rb_define_global_function("warn", rb_warn_m, -1);
 
     id_new = rb_intern_const("new");
-    id_bt = rb_intern_const("bt");
-    id_bt_locations = rb_intern_const("bt_locations");
     id_cause = rb_intern_const("cause");
     id_message = rb_intern_const("message");
     id_backtrace = rb_intern_const("backtrace");
