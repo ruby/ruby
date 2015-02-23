@@ -7,6 +7,8 @@ module RbConfig
 end
 
 class Exports
+  PrivateNames = /(?:Init_|ruby_static_id_|.*_threadptr_|DllMain\b)/
+
   @@subclass = []
   def self.inherited(klass)
     @@subclass << [/#{klass.name.sub(/.*::/, '').downcase}/i, klass]
@@ -116,7 +118,7 @@ class Exports::Mswin < Exports
           is_data = !$1
           if noprefix or /^[@_]/ =~ l
             next if /(?!^)@.*@/ =~ l || /@[[:xdigit:]]{8,32}$/ =~ l ||
-              /^_?(?:Init_|.*_threadptr_|DllMain\b)/ =~ l
+                    /^_?#{PrivateNames}/o =~ l
             l.sub!(/^[@_]/, '') if /@\d+$/ !~ l
           elsif !l.sub!(/^(\S+) \([^@?\`\']*\)$/, '\1')
             next
@@ -150,7 +152,7 @@ class Exports::Cygwin < Exports
   def each_export(objs)
     symprefix = RbConfig::CONFIG["SYMBOL_PREFIX"]
     symprefix.strip! if symprefix
-    re = /\s(?:(T)|[[:upper:]])\s#{symprefix}((?!Init_|.*_threadptr_|DllMain\b).*)$/
+    re = /\s(?:(T)|[[:upper:]])\s#{symprefix}((?!#{PrivateNames}).*)$/
     objdump(objs) do |l|
       next if /@.*@/ =~ l
       yield $2, !$1 if re =~ l

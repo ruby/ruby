@@ -239,7 +239,8 @@ $(LIBRUBY_SO):
 		@-$(PRE_LIBRUBY_UPDATE)
 		$(ECHO) linking shared-library $@
 		$(Q) $(LDSHARED) $(DLDFLAGS) $(OBJS) $(DLDOBJS) $(SOLIBS) $(EXTSOLIBS) $(OUTFLAG)$@
-		-$(Q) $(OBJCOPY) -w -L '$(SYMBOL_PREFIX)Init_*' -L '$(SYMBOL_PREFIX)*_threadptr_*' $@
+		-$(Q) $(OBJCOPY) -w -L '$(SYMBOL_PREFIX)Init_*' -L '$(SYMBOL_PREFIX)ruby_static_id_*' \
+			-L '$(SYMBOL_PREFIX)*_threadptr_*' $@
 		$(Q) $(POSTLINK)
 		@-$(MINIRUBY) -e 'ARGV.each{|link| File.delete link rescue nil; \
 						  File.symlink "$(LIBRUBY_SO)", link}' \
