@@ -1345,14 +1345,18 @@ class TestString < Test::Unit::TestCase
     assert_equal([], "".split(//, 1))
 
     assert_equal("[2, 3]", [1,2,3].slice!(1,10000).inspect, "moved from btest/knownbug")
+  end
 
+  def test_split_encoding
     bug6206 = '[ruby-dev:45441]'
     Encoding.list.each do |enc|
       next unless enc.ascii_compatible?
       s = S("a:".force_encoding(enc))
       assert_equal([enc]*2, s.split(":", 2).map(&:encoding), bug6206)
     end
+  end
 
+  def test_split_wchar
     bug8642 = '[ruby-core:56036] [Bug #8642]'
     [
      Encoding::UTF_16BE, Encoding::UTF_16LE,
@@ -1363,6 +1367,20 @@ class TestString < Test::Unit::TestCase
                    s.split(",".encode(enc)),
                    "#{bug8642} in #{enc.name}")
     end
+  end
+
+  def test_split_invalid_sequence
+    bug10886 = '[ruby-core:68229] [Bug #10886]'
+    broken = S("\xa1".force_encoding("utf-8"))
+    assert_raise(ArgumentError, bug10886) {
+      S("a,b").split(broken)
+    }
+  end
+
+  def test_split_invalid_argument
+    assert_raise(TypeError) {
+      S("a,b").split(BasicObject.new)
+    }
   end
 
   def test_squeeze
