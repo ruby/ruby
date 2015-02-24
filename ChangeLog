@@ -1,3 +1,10 @@
+Tue Feb 25 02:15:17 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
+
+	* test/ruby/test_math.rb: Use assert_infinity instead of assert_equal(1.0/0, ...).
+
+	* test/ruby/test_math.rb: Add tests for overriding Integer#to_f.
+	  [ruby-core:67919] [Misc #10809]
+
 Tue Feb 24 22:58:48 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* complex.c (nucomp_mul): calculate as rotation in complex plane

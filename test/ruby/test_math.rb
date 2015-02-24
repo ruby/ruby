@@ -143,7 +143,7 @@ class TestMath < Test::Unit::TestCase
     check(1, Math.log(10, 10))
     check(2, Math.log(100, 10))
     check(Math.log(2.0 ** 64), Math.log(1 << 64))
-    assert_equal(1.0/0, Math.log(1.0/0))
+    assert_nothing_raised { assert_infinity(Math.log(1.0/0)) }
     assert_nothing_raised { assert_infinity(-Math.log(+0.0)) }
     assert_nothing_raised { assert_infinity(-Math.log(-0.0)) }
     assert_raise(Math::DomainError) { Math.log(-1.0) }
@@ -157,7 +157,7 @@ class TestMath < Test::Unit::TestCase
     check(1, Math.log2(2))
     check(2, Math.log2(4))
     check(Math.log2(2.0 ** 64), Math.log2(1 << 64))
-    assert_equal(1.0/0, Math.log2(1.0/0))
+    assert_nothing_raised { assert_infinity(Math.log2(1.0/0)) }
     assert_nothing_raised { assert_infinity(-Math.log2(+0.0)) }
     assert_nothing_raised { assert_infinity(-Math.log2(-0.0)) }
     assert_raise(Math::DomainError) { Math.log2(-1.0) }
@@ -168,7 +168,7 @@ class TestMath < Test::Unit::TestCase
     check(1, Math.log10(10))
     check(2, Math.log10(100))
     check(Math.log10(2.0 ** 64), Math.log10(1 << 64))
-    assert_equal(1.0/0, Math.log10(1.0/0))
+    assert_nothing_raised { assert_infinity(Math.log10(1.0/0)) }
     assert_nothing_raised { assert_infinity(-Math.log10(+0.0)) }
     assert_nothing_raised { assert_infinity(-Math.log10(-0.0)) }
     assert_raise(Math::DomainError) { Math.log10(-1.0) }
@@ -178,7 +178,7 @@ class TestMath < Test::Unit::TestCase
     check(0, Math.sqrt(0))
     check(1, Math.sqrt(1))
     check(2, Math.sqrt(4))
-    assert_equal(1.0/0, Math.sqrt(1.0/0))
+    assert_nothing_raised { assert_infinity(Math.sqrt(1.0/0)) }
     assert_equal("0.0", Math.sqrt(-0.0).to_s) # insure it is +0.0, not -0.0
     assert_raise(Math::DomainError) { Math.sqrt(-1.0) }
   end
@@ -289,5 +289,34 @@ class TestMath < Test::Unit::TestCase
     assert_equal(s, 1)
 
     assert_raise(Math::DomainError) { Math.lgamma(-Float::INFINITY) }
+  end
+
+  def test_override_fixnum_to_f
+    Fixnum.class_eval do
+      alias _to_f to_f
+      def to_f
+        (self + 1)._to_f
+      end
+    end
+
+    check(Math.cos((0 + 1)._to_f), Math.cos(0))
+    check(Math.exp((0 + 1)._to_f), Math.exp(0))
+    check(Math.log((0 + 1)._to_f), Math.log(0))
+
+    Fixnum.class_eval { alias to_f _to_f }
+  end
+
+  def test_override_bignum_to_f
+    Bignum.class_eval do
+      alias _to_f to_f
+      def to_f
+        (self << 1)._to_f
+      end
+    end
+
+    check(Math.cos((1 << 62 << 1)._to_f),  Math.cos(1 << 62))
+    check(Math.log((1 << 62 << 1)._to_f),  Math.log(1 << 62))
+
+    Bignum.class_eval { alias to_f _to_f }
   end
 end
