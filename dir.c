@@ -1401,9 +1401,12 @@ join_path(const char *path, long len, int dirsep, const char *name, size_t namle
 static int
 is_case_sensitive(DIR *dirp)
 {
-    u_int32_t attrbuf[SIZEUP32(vol_capabilities_attr_t) + 1];
+    struct {
+	u_int32_t length;
+	vol_capabilities_attr_t cap[1];
+    } __attribute__((aligned(4), packed)) attrbuf[1];
     struct attrlist al = {ATTR_BIT_MAP_COUNT, 0, 0, ATTR_VOL_INFO|ATTR_VOL_CAPABILITIES};
-    const vol_capabilities_attr_t *cap = (void *)(attrbuf+1);
+    const vol_capabilities_attr_t *const cap = attrbuf[0].cap;
     const int idx = VOL_CAPABILITIES_FORMAT;
     const uint32_t mask = VOL_CAP_FMT_CASE_SENSITIVE;
     struct statfs sf;
@@ -1419,9 +1422,13 @@ is_case_sensitive(DIR *dirp)
 static char *
 replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p)
 {
-    u_int32_t attrbuf[SIZEUP32(attrreference_t) + RUP32(MAXPATHLEN * 3) + 1];
+    struct {
+	u_int32_t length;
+	attrreference_t ref[1];
+	char path[MAXPATHLEN * 3];
+    } __attribute__((aligned(4), packed)) attrbuf[1];
     struct attrlist al = {ATTR_BIT_MAP_COUNT, 0, ATTR_CMN_NAME};
-    const attrreference_t *ar = (void *)(attrbuf+1);
+    const attrreference_t *const ar = attrbuf[0].ref;
     const char *name;
     long len;
     char *tmp;
