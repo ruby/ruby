@@ -267,6 +267,7 @@ class TestTimeTZ < Test::Unit::TestCase
           assert_equal(format_gmtoff(gmtoff), t.strftime("%z"))
           assert_equal(format_gmtoff(gmtoff, true), t.strftime("%:z"))
           assert_equal(format_gmtoff2(gmtoff), t.strftime("%::z"))
+          assert_equal(Encoding::US_ASCII, t.zone.encoding)
         }
       }
     }

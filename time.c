@@ -4198,6 +4198,9 @@ time_zone_name(const char *zone)
     if (!rb_enc_str_asciionly_p(name)) {
 	name = rb_external_str_with_enc(name, rb_locale_encoding());
     }
+    else {
+	rb_enc_associate(name, rb_usascii_encoding());
+    }
     return name;
 }
 
