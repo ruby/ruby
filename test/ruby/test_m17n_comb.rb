@@ -659,7 +659,9 @@ class TestM17NComb < Test::Unit::TestCase
     combination(STRINGS, STRINGS) {|s1, s2|
       if !s1.ascii_only? && !s2.ascii_only? && !Encoding.compatible?(s1,s2)
         if s1.bytesize > s2.bytesize
-          assert_raise(Encoding::CompatibilityError) { s1.chomp(s2) }
+          assert_raise(Encoding::CompatibilityError, "#{encdump(s1)}.chomp(#{encdump(s2)})") do
+            s1.chomp(s2)
+          end
         end
         next
       end
@@ -670,6 +672,17 @@ class TestM17NComb < Test::Unit::TestCase
       t2.chomp!(s2)
       assert_equal(t, t2)
     }
+  end
+
+  def test_str_smart_chomp
+    bug10893 = '[ruby-core:68258] [Bug #10893]'
+    encodings = Encoding.list.select {|enc| !enc.dummy?}
+    combination(encodings, encodings) do |e1, e2|
+      expected = "abc".encode(e1)
+      combination(["abc\n", "abc\r\n"], ["", "\n"]) do |str, rs|
+        assert_equal(expected, str.encode(e1).chomp(rs.encode(e2)), bug10893)
+      end
+    end
   end
 
   def test_str_chop

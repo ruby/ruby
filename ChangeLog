@@ -1,3 +1,9 @@
+Tue Feb 24 09:47:07 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (chompped_length): enable smart chomp for all non-dummy
+	  encoding strings, not only default_rs.
+	  [ruby-core:68258] [Bug #10893]
+
 Mon Feb 23 23:19:42 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/vcs.rb (IO.popen): support :chdir option.

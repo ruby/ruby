@@ -7112,9 +7112,9 @@ chompped_length(VALUE str, VALUE rs)
 
     if (len == 0) return 0;
     e = p + len;
-    enc = rb_enc_get(str);
     if (rs == rb_default_rs) {
       smart_chomp:
+	enc = rb_enc_get(str);
 	if (rb_enc_mbminlen(enc) > 1) {
 	    pp = rb_enc_left_char_head(p, e-rb_enc_mbminlen(enc), e, enc);
 	    if (rb_enc_is_newline(pp, e, enc)) {
@@ -7143,6 +7143,7 @@ chompped_length(VALUE str, VALUE rs)
 	return e - p;
     }
 
+    enc = rb_enc_get(str);
     RSTRING_GETMEM(rs, rsptr, rslen);
     if (rslen == 0) {
 	if (rb_enc_mbminlen(enc) > 1) {
@@ -7170,10 +7171,7 @@ chompped_length(VALUE str, VALUE rs)
     }
     if (rslen > len) return len;
 
-    enc = rb_enc_check(str, rs);
-    if (is_broken_string(rs)) {
-	return len;
-    }
+    enc = rb_enc_get(rs);
     newline = rsptr[rslen-1];
     if (rslen == rb_enc_mbminlen(enc)) {
 	if (rslen == 1) {
@@ -7186,6 +7184,10 @@ chompped_length(VALUE str, VALUE rs)
 	}
     }
 
+    enc = rb_enc_check(str, rs);
+    if (is_broken_string(rs)) {
+	return len;
+    }
     pp = e - rslen;
     if (p[len-1] == newline &&
 	(rslen <= 1 ||
