@@ -145,6 +145,7 @@ PRE_LIBRUBY_UPDATE = $(MINIRUBY) -e 'ARGV[1] or File.unlink(ARGV[0]) rescue nil'
 TESTSDIR      = $(srcdir)/test
 TEST_EXCLUDES = --excludes=$(TESTSDIR)/excludes
 TESTWORKDIR   = testwork
+TESTOPTS      = $(RUBY_TESTOPTS)
 
 TESTRUN_SCRIPT = $(srcdir)/test.rb
 
