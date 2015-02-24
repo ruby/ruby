@@ -865,7 +865,8 @@ FindFreeChildSlot(void)
    -e 'END{$cmds.sort.each{|n,f|puts "    \"\\#{f.to_s(8)}\" #{n.dump} + 1,"}}'
    98cmd ntcmd
  */
-static const char *const szInternalCmds[] = {
+#define InternalCmdsMax 8
+static const char szInternalCmds[][InternalCmdsMax+2] = {
     "\2" "assoc",
     "\3" "break",
     "\3" "call",
@@ -921,7 +922,7 @@ static const char *const szInternalCmds[] = {
 static int
 internal_match(const void *key, const void *elem)
 {
-    return strcmp(key, (*(const char *const *)elem) + 1);
+    return strncmp(key, ((const char *)elem) + 1, InternalCmdsMax);
 }
 
 /* License: Ruby's */
@@ -972,13 +973,13 @@ is_internal_cmd(const char *cmd, int nt)
 static int
 internal_cmd_match(const char *cmdname, int nt)
 {
-    char **nm;
+    char *nm;
 
     nm = bsearch(cmdname, szInternalCmds,
 		 sizeof(szInternalCmds) / sizeof(*szInternalCmds),
 		 sizeof(*szInternalCmds),
 		 internal_match);
-    if (!nm || !(nm[0][0] & (nt ? 2 : 1)))
+    if (!nm || !(nm[0] & (nt ? 2 : 1)))
 	return 0;
     return 1;
 }
