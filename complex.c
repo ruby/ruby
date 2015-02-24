@@ -674,11 +674,12 @@ f_addsub(VALUE self, VALUE other,
  *    Complex(9, 8)  + 4               #=> (13+8i)
  *    Complex(20, 9) + 9.8             #=> (29.8+9i)
  */
-static VALUE
-nucomp_add(VALUE self, VALUE other)
+VALUE
+rb_nucomp_add(VALUE self, VALUE other)
 {
     return f_addsub(self, other, f_add, '+');
 }
+#define nucomp_add rb_nucomp_add
 
 /*
  * call-seq:
@@ -710,8 +711,8 @@ nucomp_sub(VALUE self, VALUE other)
  *    Complex(9, 8)  * 4               #=> (36+32i)
  *    Complex(20, 9) * 9.8             #=> (196.0+88.2i)
  */
-static VALUE
-nucomp_mul(VALUE self, VALUE other)
+VALUE
+rb_nucomp_mul(VALUE self, VALUE other)
 {
     if (k_complex_p(other)) {
 	VALUE real, imag;
@@ -766,6 +767,7 @@ nucomp_mul(VALUE self, VALUE other)
     }
     return rb_num_coerce_bin(self, other, '*');
 }
+#define nucomp_mul rb_nucomp_mul
 
 inline static VALUE
 f_divide(VALUE self, VALUE other,

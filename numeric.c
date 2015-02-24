@@ -2864,6 +2864,10 @@ fix_plus(VALUE x, VALUE y)
     else if (RB_TYPE_P(y, T_FLOAT)) {
 	return DBL2NUM((double)FIX2LONG(x) + RFLOAT_VALUE(y));
     }
+    else if (RB_TYPE_P(y, T_COMPLEX)) {
+	VALUE rb_nucomp_add(VALUE, VALUE);
+	return rb_nucomp_add(y, x);
+    }
     else {
 	return rb_num_coerce_bin(x, y, '+');
     }
@@ -2952,6 +2956,10 @@ fix_mul(VALUE x, VALUE y)
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
 	return DBL2NUM((double)FIX2LONG(x) * RFLOAT_VALUE(y));
+    }
+    else if (RB_TYPE_P(y, T_COMPLEX)) {
+	VALUE rb_nucomp_mul(VALUE, VALUE);
+	return rb_nucomp_mul(y, x);
     }
     else {
 	return rb_num_coerce_bin(x, y, '*');
