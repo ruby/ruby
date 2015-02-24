@@ -19,6 +19,7 @@ module Mswin
   def ln_safe(src, dest, *opt)
     cmd = ["mklink", dest.tr("/", "\\"), src.tr("/", "\\")]
     cmd[1, 0] = opt
+    return if system("cmd", "/c", *cmd)
     # TODO: use RUNAS or something
     puts cmd.join(" ")
   end
@@ -64,12 +65,14 @@ def relative_path_from(path, base)
 end
 
 def ln_relative(src, dest)
+  return if File.identical?(src, dest)
   parent = File.dirname(dest)
   File.directory?(parent) or mkdir_p(parent)
   ln_safe(relative_path_from(src, parent), dest)
 end
 
 def ln_dir_relative(src, dest)
+  return if File.identical?(src, dest)
   parent = File.dirname(dest)
   File.directory?(parent) or mkdir_p(parent)
   ln_dir_safe(relative_path_from(src, parent), dest)
