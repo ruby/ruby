@@ -264,6 +264,27 @@ rb_vm_get_cref(const rb_iseq_t *iseq, const VALUE *ep)
     return cref;
 }
 
+void
+rb_vm_rewrite_cref_stack(NODE *node, VALUE old_klass, VALUE new_klass, NODE **new_cref_ptr)
+{
+    NODE *new_node;
+    while (node) {
+	if (node->nd_clss == old_klass) {
+	    new_node = NEW_CREF(new_klass);
+	    COPY_CREF_OMOD(new_node, node);
+	    RB_OBJ_WRITE(new_node, &new_node->nd_next, node->nd_next);
+	    *new_cref_ptr = new_node;
+	    return;
+	}
+	new_node = NEW_CREF(node->nd_clss);
+	COPY_CREF_OMOD(new_node, node);
+	node = node->nd_next;
+	*new_cref_ptr = new_node;
+	new_cref_ptr = &new_node->nd_next;
+    }
+    *new_cref_ptr = NULL;
+}
+
 static NODE *
 vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr)
 {

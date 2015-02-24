@@ -1,3 +1,13 @@
+Tue Feb 24 10:30:59 2015  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm_insnhelper.c (rb_vm_rewrite_cref_stack): copy nd_refinements
+	  of original crefs. It fixes segmentation fault when calling
+	  refined method in duplicate module. [ruby-dev:48878] [Bug #10885]
+
+	* vm_core.h, class.c: change accordingly.
+
+	* test/ruby/test_refinement.rb: add a test for above.
+
 Sun Feb 22 21:20:37 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (match_aref): RMatch::regexp is Qnil after matching by a
