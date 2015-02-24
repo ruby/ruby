@@ -1,3 +1,8 @@
+Tue Feb 24 21:45:39 2015  Kazuki Tanaka  <mail@tanakakazuki.com>
+
+	* test/ruby/test_math.rb(test_cbrt): Add an assertion for Math.cbrt(1.0/0)
+	  and move #test_cbrt to more proper place.
+
 Tue Feb 24 19:09:25 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (lep_svar_place, lep_svar_get): do not create

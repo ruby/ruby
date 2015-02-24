@@ -183,6 +183,14 @@ class TestMath < Test::Unit::TestCase
     assert_raise(Math::DomainError) { Math.sqrt(-1.0) }
   end
 
+  def test_cbrt
+    check(1, Math.cbrt(1))
+    check(-2, Math.cbrt(-8))
+    check(3, Math.cbrt(27))
+    check(-0.1, Math.cbrt(-0.001))
+    assert_nothing_raised { assert_infinity(Math.cbrt(1.0/0)) }
+  end
+
   def test_frexp
     check(0.0, Math.frexp(0.0).first)
     assert_equal(0, Math.frexp(0).last)
@@ -281,12 +289,5 @@ class TestMath < Test::Unit::TestCase
     assert_equal(s, 1)
 
     assert_raise(Math::DomainError) { Math.lgamma(-Float::INFINITY) }
-  end
-
-  def test_cbrt
-    check(1, Math.cbrt(1))
-    check(-2, Math.cbrt(-8))
-    check(3, Math.cbrt(27))
-    check(-0.1, Math.cbrt(-0.001))
   end
 end
