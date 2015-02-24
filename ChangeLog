@@ -1,3 +1,13 @@
+Tue Feb 24 11:49:48 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (time_zone_name): should be US-ASCII only if all 7-bits,
+	  otherwise locale encoding.  [ruby-core:68230] [Bug #10887]
+
+Tue Feb 24 11:49:43 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (time_zone_name): should be US-ASCII only if all 7-bits,
+	  otherwise locale encoding.  [ruby-core:68230] [Bug #10887]
+
 Tue Feb 24 09:47:07 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (chompped_length): enable smart chomp for all non-dummy

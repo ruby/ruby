@@ -4194,9 +4194,12 @@ time_isdst(VALUE time)
 static VALUE
 time_zone_name(const char *zone)
 {
-    VALUE name = rb_usascii_str_new_cstr(zone); /* zone may be ASCII-8BIT on Windows */
+    VALUE name = rb_str_new_cstr(zone);
     if (!rb_enc_str_asciionly_p(name)) {
 	name = rb_external_str_with_enc(name, rb_locale_encoding());
+    }
+    else {
+	rb_enc_associate(name, rb_usascii_encoding());
     }
     return name;
 }
