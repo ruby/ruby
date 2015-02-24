@@ -1209,6 +1209,9 @@ static void heap_page_free(rb_objspace_t *objspace, struct heap_page *page);
 void
 rb_objspace_free(rb_objspace_t *objspace)
 {
+    if (is_lazy_sweeping(heap_eden))
+	rb_bug("lazy sweeping underway when freeing object space");
+
     if (objspace->profile.records) {
 	free(objspace->profile.records);
 	objspace->profile.records = 0;
@@ -2563,6 +2566,10 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     finalize_deferred(objspace);
     assert(heap_pages_deferred_final == 0);
 
+    gc_rest(objspace);
+    /* prohibit incremental GC */
+    objspace->flags.dont_incremental = 1;
+
     /* force to run finalizer */
     while (finalizer_table->num_entries) {
 	struct force_finalize_list *list = 0;
@@ -2577,10 +2584,13 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 	}
     }
 
-    /* finalizers are part of garbage collection */
+    /* prohibit GC because force T_DATA finalizers can break an object graph consistency */
+    dont_gc = 1;
+
+    /* running data/file finalizers are part of garbage collection */
     gc_enter(objspace, "rb_objspace_call_finalizer");
 
-    /* run data object's finalizers */
+    /* run data/file object's finalizers */
     for (i = 0; i < heap_allocated_pages; i++) {
 	p = heap_pages_sorted[i]->start; pend = p + heap_pages_sorted[i]->total_slots;
 	while (p < pend) {

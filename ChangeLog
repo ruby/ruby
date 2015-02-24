@@ -1,3 +1,34 @@
+Tue Feb 24 14:00:46 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_objspace_call_finalizer): control GC execution during
+	  force firnalizations at the end of interpreter process.
+	  [Bug #10768]
+
+	  1) Prohibit incremental GC while running Ruby-level finalizers
+	     to avoid any danger.
+	  2) Prohibit GC while invoking T_DATA/T_FILE data structure
+	     because these operations break object relations consistency.
+
+	  This patch can introduce another memory consuming issue because
+	  Ruby-level finalizers can run after (2), GC is disabled.
+	  However, basically object consistency was broken at (2) as I
+	  described above. So that running Ruby-level finalizers contains
+	  danger originally. Because of this point, I need to suggest to
+	  remove these 3 lines (invoking remaining finalizers). And add a
+	  rule to add that finalizers should not add new finalizers, or
+	  say there is no guarantee to invoke finalizers that added by
+	  another finalizer.
+
+Tue Feb 24 14:00:46 2015  Aman Gupta <ruby@tmm1.net>
+
+	* gc.c (rb_objspace_free): cause rb_bug if lazy sweep is in progress
+	  during rb_objspace_free. Adds extra protection for r46340.
+	  Patch by Vicent Marti. [Bug #10768] [ruby-core:67734]
+	* gc.c (rb_objspace_call_finalizer): Ensure GC is completed after
+	  finalizers have run. We already call gc_rest() before invoking
+	  finalizers, but finalizer can allocate new objects and start new GC
+	  cycle, so we call gc_rest() again after finalizers are complete.
+
 Tue Feb 24 10:30:59 2015  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* vm_insnhelper.c (rb_vm_rewrite_cref_stack): copy nd_refinements
