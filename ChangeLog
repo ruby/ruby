@@ -1,3 +1,9 @@
+Tue Feb 24 16:37:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (chompped_length): enable smart chomp for all non-dummy
+	  encoding strings, not only default_rs.
+	  [ruby-core:68258] [Bug #10893]
+
 Tue Feb 24 16:31:53 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_split_m): raise ArgumentError at broken string
