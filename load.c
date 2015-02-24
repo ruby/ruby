@@ -600,7 +600,7 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
     }
 
     mild_compile_error = th->mild_compile_error;
-    PUSH_TAG();
+    TH_PUSH_TAG(th);
     state = EXEC_TAG();
     if (state == 0) {
 	NODE *node;
@@ -613,7 +613,7 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
 	th->mild_compile_error--;
 	rb_iseq_eval(iseq);
     }
-    POP_TAG();
+    TH_POP_TAG();
 
 #if !defined __GNUC__
     th = th0;
@@ -965,7 +965,7 @@ rb_require_internal(VALUE fname, int safe)
 				  rb_sourceline());
     }
 
-    PUSH_TAG();
+    TH_PUSH_TAG(th);
     saved.safe = rb_safe_level();
     if ((state = EXEC_TAG()) == 0) {
 	VALUE path;
@@ -1015,7 +1015,7 @@ rb_require_internal(VALUE fname, int safe)
 	    }
 	}
     }
-    POP_TAG();
+    TH_POP_TAG();
     load_unlock(ftptr, !state);
 
     rb_set_safe_level_force(saved.safe);

@@ -167,27 +167,27 @@ ruby_cleanup(volatile int ex)
 
     rb_threadptr_interrupt(th);
     rb_threadptr_check_signal(th);
-    PUSH_TAG();
+    TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
 	SAVE_ROOT_JMPBUF(th, { RUBY_VM_CHECK_INTS(th); });
     }
-    POP_TAG();
+    TH_POP_TAG();
 
     errs[1] = th->errinfo;
     th->safe_level = 0;
     ruby_init_stack(&errs[STACK_UPPER(errs, 0, 1)]);
 
-    PUSH_TAG();
+    TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
 	SAVE_ROOT_JMPBUF(th, ruby_finalize_0());
     }
-    POP_TAG();
+    TH_POP_TAG();
 
     /* protect from Thread#raise */
     th->status = THREAD_KILLED;
 
     errs[0] = th->errinfo;
-    PUSH_TAG();
+    TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
 	SAVE_ROOT_JMPBUF(th, rb_thread_terminate_all());
     }
@@ -235,7 +235,7 @@ ruby_cleanup(volatile int ex)
 
     /* unlock again if finalizer took mutexes. */
     rb_threadptr_unlock_all_locking_mutexes(GET_THREAD());
-    POP_TAG();
+    TH_POP_TAG();
     rb_thread_stop_timer_thread(1);
     ruby_vm_destruct(GET_VM());
     if (state) ruby_default_signal(state);
@@ -252,14 +252,14 @@ ruby_exec_internal(void *n)
 
     if (!n) return 0;
 
-    PUSH_TAG();
+    TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
 	SAVE_ROOT_JMPBUF(th, {
 	    th->base_block = 0;
 	    rb_iseq_eval_main(iseq);
 	});
     }
-    POP_TAG();
+    TH_POP_TAG();
     return state;
 }
 
@@ -539,7 +539,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 	int status;
 
 	mesg = e;
-	PUSH_TAG();
+	TH_PUSH_TAG(th);
 	if ((status = EXEC_TAG()) == 0) {
 	    th->errinfo = Qnil;
 	    e = rb_obj_as_string(mesg);
@@ -557,7 +557,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 			    rb_obj_class(mesg), e);
 	    }
 	}
-	POP_TAG();
+	TH_POP_TAG();
 	if (status == TAG_FATAL && th->errinfo == exception_error) {
 	    th->errinfo = mesg;
 	}
@@ -907,11 +907,11 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
     ensure_list.entry.data2 = data2;
     ensure_list.next = th->ensure_list;
     th->ensure_list = &ensure_list;
-    PUSH_TAG();
+    TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
 	result = (*b_proc) (data1);
     }
-    POP_TAG();
+    TH_POP_TAG();
     errinfo = th->errinfo;
     th->ensure_list=ensure_list.next;
     (*ensure_list.entry.e_proc)(ensure_list.entry.data2);
