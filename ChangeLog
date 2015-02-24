@@ -1,3 +1,9 @@
+Tue Feb 24 19:09:25 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (lep_svar_place, lep_svar_get): do not create
+	  additional T_NODE object (svars holder) when only getting
+	  svars.
+
 Tue Feb 24 11:49:48 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (time_zone_name): should be US-ASCII only if all 7-bits,

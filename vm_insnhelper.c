@@ -139,7 +139,7 @@ rb_error_arity(int argc, int min, int max)
 
 /* svar */
 
-static inline NODE *
+static inline NODE **
 lep_svar_place(rb_thread_t *th, VALUE *lep)
 {
     VALUE *svar;
@@ -150,16 +150,17 @@ lep_svar_place(rb_thread_t *th, VALUE *lep)
     else {
 	svar = &th->root_svar;
     }
-    if (NIL_P(*svar)) {
-	*svar = (VALUE)NEW_IF(Qnil, Qnil, Qnil);
-    }
-    return (NODE *)*svar;
+
+    return (NODE **)svar;
 }
 
 static VALUE
 lep_svar_get(rb_thread_t *th, VALUE *lep, rb_num_t key)
 {
-    NODE *svar = lep_svar_place(th, lep);
+    NODE **svar_place = lep_svar_place(th, lep);
+    NODE *svar = *svar_place;
+
+    if (NIL_P((VALUE)svar)) return Qnil;
 
     switch (key) {
       case 0:
@@ -182,7 +183,12 @@ lep_svar_get(rb_thread_t *th, VALUE *lep, rb_num_t key)
 static void
 lep_svar_set(rb_thread_t *th, VALUE *lep, rb_num_t key, VALUE val)
 {
-    NODE *svar = lep_svar_place(th, lep);
+    NODE **svar_place = lep_svar_place(th, lep);
+    NODE *svar = *svar_place;
+
+    if (NIL_P((VALUE)svar)) {
+	svar = *svar_place = NEW_IF(Qnil, Qnil, Qnil);
+    }
 
     switch (key) {
       case 0:
