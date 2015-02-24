@@ -1,3 +1,8 @@
+Tue Feb 24 22:58:48 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* complex.c (nucomp_mul): calculate as rotation in complex plane
+	  if matrix calculation resulted in NaN.
+
 Tue Feb 24 21:45:39 2015  Kazuki Tanaka  <mail@tanakakazuki.com>
 
 	* test/ruby/test_math.rb(test_cbrt): Add an assertion for Math.cbrt(1.0/0)

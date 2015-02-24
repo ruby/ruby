@@ -17,6 +17,9 @@
 
 VALUE rb_cComplex;
 
+static VALUE nucomp_abs(VALUE self);
+static VALUE nucomp_arg(VALUE self);
+
 static ID id_abs, id_arg, id_convert,
     id_denominator, id_eqeq_p, id_expt, id_fdiv,
     id_negate, id_numerator, id_quo,
@@ -719,6 +722,38 @@ nucomp_mul(VALUE self, VALUE other)
 		     f_mul(adat->imag, bdat->imag));
 	imag = f_add(f_mul(adat->real, bdat->imag),
 		     f_mul(adat->imag, bdat->real));
+
+	if ((RB_FLOAT_TYPE_P(real) && isnan(RFLOAT_VALUE(real))) ||
+	    (RB_FLOAT_TYPE_P(imag) && isnan(RFLOAT_VALUE(imag)))) {
+	    VALUE abs = f_mul(nucomp_abs(self), nucomp_abs(other));
+	    VALUE arg = f_add(nucomp_arg(self), nucomp_arg(other));
+	    if (f_zero_p(arg)) {
+		real = abs;
+		imag = INT2FIX(0);
+	    }
+	    else if (RB_FLOAT_TYPE_P(arg)) {
+		double a = RFLOAT_VALUE(arg);
+		if (a == M_PI) {
+		    real = f_negate(abs);
+		    imag = INT2FIX(0);
+		}
+		else if (a == M_PI/2) {
+		    imag = abs;
+		    real = INT2FIX(0);
+		}
+		else if (a == M_PI*3/2) {
+		    imag = f_negate(abs);
+		    real = INT2FIX(0);
+		}
+		else {
+		    goto polar;
+		}
+	    }
+	    else {
+	      polar:
+		return f_complex_polar(CLASS_OF(self), abs, arg);
+	    }
+	}
 
 	return f_complex_new2(CLASS_OF(self), real, imag);
     }

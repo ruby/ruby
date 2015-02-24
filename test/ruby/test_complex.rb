@@ -289,6 +289,13 @@ class Complex_Test < Test::Unit::TestCase
 
     assert_equal(Complex(Rational(2,1),Rational(4)), c * Rational(2))
     assert_equal(Complex(Rational(2,3),Rational(4,3)), c * Rational(2,3))
+
+    c = Complex(Float::INFINITY, 0)
+    assert_equal(Complex(Float::INFINITY, 0), c * Complex(1, 0))
+    assert_equal(Complex(0, Float::INFINITY), c * Complex(0, 1))
+    c = Complex(0, Float::INFINITY)
+    assert_equal(Complex(0, Float::INFINITY), c * Complex(1, 0))
+    assert_equal(Complex(-Float::INFINITY, 0), c * Complex(0, 1))
   end
 
   def test_div
