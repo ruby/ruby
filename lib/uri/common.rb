@@ -245,7 +245,7 @@ module URI
   #   require 'uri'
   #
   #   p URI.join("http://example.com/","main.rbx")
-  #   # => #<URI::HTTP:0x2022ac02 URL:http://localhost/main.rbx>
+  #   # => #<URI::HTTP:0x2022ac02 URL:http://example.com/main.rbx>
   #
   #   p URI.join('http://example.com', 'foo')
   #   # => #<URI::HTTP:0x01ab80a0 URL:http://example.com/foo>
