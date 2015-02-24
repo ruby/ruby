@@ -950,9 +950,9 @@ class Complex_Test < Test::Unit::TestCase
       assert_in_delta(0.804, c.real, 0.001)
       assert_in_delta(1.107, c.imag, 0.001)
 
-      c = CMath.log(Complex(1, 2), Math::E)
-      assert_in_delta(0.804, c.real, 0.001)
-      assert_in_delta(1.107, c.imag, 0.001)
+      c = CMath.log(Complex(1, 2), Math::E**2)
+      assert_in_delta(0.402, c.real, 0.001)
+      assert_in_delta(0.5535, c.imag, 0.001)
 
       c = CMath.log(-1)
       assert_in_delta(0.0, c.real, 0.001)

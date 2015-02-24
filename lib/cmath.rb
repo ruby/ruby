@@ -66,20 +66,12 @@ module CMath
   # it will be the base of logarithm.
   #
   #   log(Complex(0,0)) #=> -Infinity+0.0i
-  def log(*args)
+  def log(z, b=::Math::E)
     begin
-      z, b = args
-      unless b.nil? || b.kind_of?(Numeric)
-        raise TypeError,  "Numeric Number required"
-      end
-      if z.real? and z >= 0 and (b.nil? or b >= 0)
-        log!(*args)
+      if z.real? && z >= 0 && b >= 0
+        log!(z, b)
       else
-        a = Complex(log!(z.abs), z.arg)
-        if b
-          a /= log(b)
-        end
-        a
+        Complex(log!(z.abs), z.arg) / log(b)
       end
     rescue NoMethodError
       handle_no_method_error
@@ -397,4 +389,3 @@ module CMath
   module_function :handle_no_method_error
 
 end
-

@@ -1,3 +1,8 @@
+Tue Feb 25 08:49:12 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
+
+	* lib/cmath.rb (log): raise ArgumentError when more than 2 arguments
+	  are passed. [ruby-core:66143] [Bug #10487]
+
 Tue Feb 25 02:15:17 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
 
 	* test/ruby/test_math.rb: Use assert_infinity instead of assert_equal(1.0/0, ...).
