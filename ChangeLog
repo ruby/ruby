@@ -1,3 +1,21 @@
+Wed Feb 25 14:53:27 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* class.c (method_entry_i, class_instance_method_list,
+	  rb_obj_singleton_methods): should not include methods of
+	  superclasses if recur is false. [ruby-dev:48854] [Bug #10826]
+
+Wed Feb 25 14:53:27 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_method.c (remove_method): When remove refined
+	  method, raise a NameError if the method is not
+	  defined in refined class.
+	
+	  But if the method is defined in refined class,
+	  it should keep refined method and remove original
+	  method.
+	  
+	  Patch by Seiei Higa. [ruby-core:67722] [Bug #10765]
+
 Wed Feb 25 14:41:01 2015  Seiei Higa  <hanachin@gmail.com>
 
 	* vm_method.c (check_definition): Module#public_method_defined?,
