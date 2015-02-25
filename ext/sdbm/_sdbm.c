@@ -7,8 +7,7 @@
  * core routines
  */
 
-#include "ruby/config.h"
-#include "ruby/defines.h"
+#include "ruby/ruby.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -803,7 +802,7 @@ delpair(char *pag, datum key)
 		}
 #else
 #ifdef MEMMOVE
-		memmove(dst, src, m);
+		memmove(dst-m, src-m, m);
 #else
 		while (m--)
 			*--dst = *--src;
