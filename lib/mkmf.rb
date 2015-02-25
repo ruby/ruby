@@ -588,9 +588,7 @@ MSG
   end
 
   def try_cppflags(flags)
-    with_cppflags(flags) do
-      try_header("int main() {return 0;}")
-    end
+    try_header(MAIN_DOES_NOTHING, flags)
   end
 
   def with_cflags(flags)
@@ -602,9 +600,7 @@ MSG
   end
 
   def try_cflags(flags)
-    with_cflags(flags) do
-      try_compile("int main() {return 0;}")
-    end
+    try_compile(MAIN_DOES_NOTHING, flags)
   end
 
   def with_ldflags(flags)
@@ -616,9 +612,7 @@ MSG
   end
 
   def try_ldflags(flags)
-    with_ldflags(flags) do
-      try_link("int main() {return 0;}")
-    end
+    try_link(MAIN_DOES_NOTHING, flags)
   end
 
   def try_static_assert(expr, headers = nil, opt = "", &b)
