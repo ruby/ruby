@@ -756,20 +756,18 @@ rb_nucomp_mul(VALUE self, VALUE other)
 {
     if (k_complex_p(other)) {
 	VALUE real, imag;
+	VALUE areal, aimag, breal, bimag;
 
 	get_dat2(self, other);
 
-	real = f_sub(f_mul(adat->real, bdat->real),
-		     f_mul(adat->imag, bdat->imag));
-	imag = f_add(f_mul(adat->real, bdat->imag),
-		     f_mul(adat->imag, bdat->real));
-
-	if ((RB_FLOAT_TYPE_P(real) && isnan(RFLOAT_VALUE(real))) ||
-	    (RB_FLOAT_TYPE_P(imag) && isnan(RFLOAT_VALUE(imag)))) {
-	    VALUE abs = f_mul(nucomp_abs(self), nucomp_abs(other));
-	    VALUE arg = f_add(nucomp_arg(self), nucomp_arg(other));
-	    return f_complex_polar(CLASS_OF(self), abs, arg);
-	}
+	if (f_zero_p(areal = adat->real)) areal = ZERO;
+	if (f_zero_p(aimag = adat->imag)) aimag = ZERO;
+	if (f_zero_p(breal = bdat->real)) breal = ZERO;
+	if (f_zero_p(bimag = bdat->imag)) bimag = ZERO;
+	real = (areal == ZERO || breal == ZERO) ? ZERO : f_mul(areal, breal);
+	if (aimag != ZERO && bimag != ZERO) real = f_sub(real, f_mul(aimag, bimag));
+	imag = (areal == ZERO || bimag == ZERO) ? ZERO : f_mul(areal, bimag);
+	if (aimag != ZERO && breal != ZERO) imag = f_add(imag, f_mul(aimag, breal));
 
 	return f_complex_new2(CLASS_OF(self), real, imag);
     }
