@@ -1,3 +1,9 @@
+Wed Feb 25 18:12:11 2015  Eric Wong  <e@80x24.org>
+
+	* signal.c (sighandler): preserve errno
+	  Patch by Steven Stewart-Gallus <sstewartgallus00@mylangara.bc.ca>
+	  [ruby-core:68172] [Bug #10866]
+
 Wed Feb 25 15:59:35 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (push_pattern, push_glob): make globbed file names same

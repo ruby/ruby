@@ -691,11 +691,15 @@ signal_enque(int sig)
 static RETSIGTYPE
 sighandler(int sig)
 {
+    int old_errnum = errno;
+
     signal_enque(sig);
     rb_thread_wakeup_timer_thread();
 #if !defined(BSD_SIGNAL) && !defined(POSIX_SIGNAL)
     ruby_signal(sig, sighandler);
 #endif
+
+    errno = old_errnum;
 }
 
 int
