@@ -1,3 +1,7 @@
+Wed Feb 25 15:27:16 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/merger.rb: support 2.1+ versioning scheme.
+
 Tue Feb 25 08:49:12 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
 
 	* lib/cmath.rb (log): raise ArgumentError when more than 2 arguments

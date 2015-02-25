@@ -29,7 +29,7 @@ print %[
 # changes made to this file will be lost the next time ruby is built.
 
 module RbConfig
-  RUBY_VERSION == "#{version}" or
+  RUBY_VERSION.start_with?("#{version}"[/^[0-9]+[.][0-9]+[.]/]) or
     raise "ruby lib version (#{version}) doesn't match executable version (\#{RUBY_VERSION})"
 
 ]
