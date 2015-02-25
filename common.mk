@@ -597,8 +597,8 @@ $(RBCONFIG): $(srcdir)/tool/mkconfig.rb config.status $(srcdir)/version.h $(PREP
 
 test-rubyspec-precheck:
 
-test-rubyspec: test-rubyspec-precheck
-	$(RUNRUBY) $(srcdir)/spec/mspec/bin/mspec run -B $(srcdir)/spec/default.mspec $(MSPECOPT)
+test-rubyspec: test-rubyspec-precheck $(arch)-fake.rb
+	$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec run -B $(srcdir)/spec/default.mspec $(MSPECOPT)
 
 RUNNABLE = $(LIBRUBY_RELATIVE:no=un)-runnable
 runnable: $(RUNNABLE) prog $(srcdir)/tool/mkrunnable.rb PHONY

@@ -1,5 +1,6 @@
 baseruby="@BASERUBY@"
 ruby="${RUBY-$baseruby}"
+baseruby=
 "eval" "{" \
 "`expr \"$ruby\" : echo > /dev/null || echo exec`" \
 "$ruby" '-r"`expr \"$0\" : / > /dev/null || pwd`/${0#/}" "$@";' \
@@ -26,3 +27,4 @@ end
 $:.unshift(File.expand_path(builddir))
 fake = File.join(top_srcdir, "tool/fake.rb")
 eval(File.read(fake), nil, fake)
+ENV["RUBYOPT"] = ["-r#{__FILE__}", ENV["RUBYOPT"]].compact.join(" ")

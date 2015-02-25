@@ -20,8 +20,10 @@ prehook = proc do |extmk|
     mkconfig = RbConfig::MAKEFILE_CONFIG
     mkconfig["top_srcdir"] = $top_srcdir = top_srcdir
     mkconfig["rubyhdrdir"] = "$(top_srcdir)/include"
+    mkconfig["rubyarchhdrdir"] = "$(builddir)/$(EXTOUT)/include/$(arch)"
     mkconfig["builddir"] = config["builddir"] = builddir
     config["rubyhdrdir"] = File.join(mkconfig["top_srcdir"], "include")
+    config["rubyarchhdrdir"] = File.join(builddir, config["EXTOUT"], "include", config["arch"])
     mkconfig["libdir"] = config["libdir"] = mkconfig["topdir"]
     trace_var(:$ruby, posthook)
   end
