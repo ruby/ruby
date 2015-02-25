@@ -19,6 +19,10 @@
 #define ONE INT2FIX(1)
 #define TWO INT2FIX(2)
 #define RFLOAT_0 DBL2NUM(0)
+#if defined(HAVE_SIGNBIT) && defined(__GNUC__) && defined(__sun) && \
+    !defined(signbit)
+extern int signbit(double);
+#endif
 
 VALUE rb_cComplex;
 
@@ -739,6 +743,19 @@ nucomp_sub(VALUE self, VALUE other)
     return f_addsub(self, other, f_sub, '-');
 }
 
+static VALUE
+safe_mul(VALUE a, VALUE b, int az, int bz)
+{
+    double v;
+    if (!az && bz && RB_FLOAT_TYPE_P(a) && !isnan(v = RFLOAT_VALUE(a))) {
+	a = signbit(v) ? DBL2NUM(-1.0) : DBL2NUM(1.0);
+    }
+    if (!bz && az && RB_FLOAT_TYPE_P(b) && !isnan(v = RFLOAT_VALUE(b))) {
+	b = signbit(v) ? DBL2NUM(-1.0) : DBL2NUM(1.0);
+    }
+    return f_mul(a, b);
+}
+
 /*
  * call-seq:
  *    cmp * numeric  ->  complex
@@ -757,17 +774,18 @@ rb_nucomp_mul(VALUE self, VALUE other)
     if (k_complex_p(other)) {
 	VALUE real, imag;
 	VALUE areal, aimag, breal, bimag;
+	int arzero, aizero, brzero, bizero;
 
 	get_dat2(self, other);
 
-	if (f_zero_p(areal = adat->real)) areal = ZERO;
-	if (f_zero_p(aimag = adat->imag)) aimag = ZERO;
-	if (f_zero_p(breal = bdat->real)) breal = ZERO;
-	if (f_zero_p(bimag = bdat->imag)) bimag = ZERO;
-	real = (areal == ZERO || breal == ZERO) ? ZERO : f_mul(areal, breal);
-	if (aimag != ZERO && bimag != ZERO) real = f_sub(real, f_mul(aimag, bimag));
-	imag = (areal == ZERO || bimag == ZERO) ? ZERO : f_mul(areal, bimag);
-	if (aimag != ZERO && breal != ZERO) imag = f_add(imag, f_mul(aimag, breal));
+	arzero = !!f_zero_p(areal = adat->real);
+	aizero = !!f_zero_p(aimag = adat->imag);
+	brzero = !!f_zero_p(breal = bdat->real);
+	bizero = !!f_zero_p(bimag = bdat->imag);
+	real = f_sub(safe_mul(areal, breal, arzero, brzero),
+		     safe_mul(aimag, bimag, aizero, bizero));
+	imag = f_add(safe_mul(areal, bimag, arzero, bizero),
+		     safe_mul(aimag, breal, aizero, brzero));
 
 	return f_complex_new2(CLASS_OF(self), real, imag);
     }
@@ -1238,10 +1256,6 @@ nucomp_eql_p(VALUE self, VALUE other)
 inline static VALUE
 f_signbit(VALUE x)
 {
-#if defined(HAVE_SIGNBIT) && defined(__GNUC__) && defined(__sun) && \
-    !defined(signbit)
-    extern int signbit(double);
-#endif
     if (RB_TYPE_P(x, T_FLOAT)) {
 	double f = RFLOAT_VALUE(x);
 	return f_boolcast(!isnan(f) && signbit(f));
