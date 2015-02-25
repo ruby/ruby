@@ -15,7 +15,7 @@ class Win32API
 
     @func = Fiddle::Function.new(
       handle[func],
-      import.chars.map { |win_type| TYPEMAP[win_type.tr("VPpNnLlIi", "0SSI")] },
+      @proto.chars.map { |win_type| TYPEMAP[win_type.tr("VPpNnLlIi", "0SSI")] },
       TYPEMAP[export.tr("VPpNnLlIi", "0SSI")],
       Fiddle::Importer.const_get(:CALL_TYPE_TO_ABI)[calltype]
     )

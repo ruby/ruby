@@ -1,3 +1,9 @@
+Wed Feb 25 22:04:04 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/win32/Win32API.rb (initialize): accept both a string and an array
+	  for the arguments of the imported function.
+	  reported by Aaron Stone [ruby-core:68208] [Bug #10876] [Fixes GH-835]
+
 Wed Feb 25 18:12:11 2015  Eric Wong  <e@80x24.org>
 
 	* signal.c (sighandler): preserve errno
