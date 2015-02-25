@@ -362,6 +362,15 @@ class TestDir_M17N < Test::Unit::TestCase
     end
   end
 
+  def test_glob_encoding
+    with_tmpdir do
+      %W"file_one.ext file_two.ext".each {|f| open(f, "w") {}}
+      a = "file_one*".force_encoding Encoding::IBM437
+      b = "file_two*".force_encoding Encoding::EUC_JP
+      assert_equal([a, b].map(&:encoding), Dir[a, b].map(&:encoding))
+    end
+  end
+
   def test_entries_compose
     bug7267 = '[ruby-core:48745] [Bug #7267]'
 

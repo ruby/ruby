@@ -1895,7 +1895,15 @@ rb_glob(const char *path, void (*func)(const char *, VALUE, void *), VALUE arg)
 static void
 push_pattern(const char *path, VALUE ary, void *enc)
 {
-    rb_ary_push(ary, rb_external_str_new_with_enc(path, strlen(path), enc));
+#ifdef __APPLE__
+    VALUE name = rb_utf8_str_new_cstr(path);
+    rb_encoding *eenc = rb_default_internal_encoding();
+    OBJ_TAINT(name);
+    name = rb_str_conv_enc(name, NULL, eenc ? eenc : enc);
+#else
+    VALUE name = rb_external_str_new_with_enc(path, strlen(path), enc);
+#endif
+    rb_ary_push(ary, name);
 }
 
 static int
@@ -2000,19 +2008,19 @@ static int
 push_glob(VALUE ary, VALUE str, int flags)
 {
     struct glob_args args;
-#ifdef __APPLE__
-    rb_encoding *enc = rb_utf8_encoding();
-
-    str = rb_str_encode_ospath(str);
-#else
     rb_encoding *enc = rb_enc_get(str);
 
+#ifdef __APPLE__
+    str = rb_str_encode_ospath(str);
+#endif
     if (enc == rb_usascii_encoding()) enc = rb_filesystem_encoding();
     if (enc == rb_usascii_encoding()) enc = rb_ascii8bit_encoding();
-#endif
     args.func = push_pattern;
     args.value = ary;
     args.enc = enc;
+#ifdef __APPLE__
+    enc = rb_utf8_encoding();
+#endif
 
     RB_GC_GUARD(str);
     return ruby_brace_glob0(RSTRING_PTR(str), flags | GLOB_VERBOSE,
