@@ -625,6 +625,28 @@ swap
 
 /**
   @c stack
+  @e reverse stack top N order.
+  @j スタックトップの n 個の値を逆転する。
+ */
+DEFINE_INSN
+reverse
+(rb_num_t n)
+(...)
+(...) // inc += 0;
+{
+    rb_num_t i;
+    VALUE *sp = STACK_ADDR_FROM_TOP(n);
+
+    for (i=0; i<n/2; i++) {
+	VALUE v0 = sp[i];
+	VALUE v1 = TOPN(i);
+	sp[i] = v1;
+	TOPN(i) = v0;
+    }
+}
+
+/**
+  @c stack
   @e for stack caching.
   @j スタックキャッシングの状態を調整するために必要な命令。
  */

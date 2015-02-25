@@ -2822,7 +2822,6 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node, int poped)
 		    ADD_INSN(ret, nd_line(node), swap);
 		    expand = 0;
 		}
-#if 0
 		else if (llen > 2 && llen != rlen) {
 		    POP_ELEMENT(ret);
 		    adjust_stack(iseq, ret, nd_line(node), rlen, llen);
@@ -2833,7 +2832,6 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node, int poped)
 		    last->insn_id = BIN(reverse);
 		    expand = 0;
 		}
-#endif
 	    }
 	}
 	if (expand) {
