@@ -1,6 +1,6 @@
 # -*- ruby -*-
 load "./rbconfig.rb"
-load File.dirname(__FILE__) + '/rubyspec/ruby.mspec'
+load File.dirname(__FILE__) + '/rubyspec/default.mspec'
 class MSpecScript
   builddir = Dir.pwd
   srcdir = ENV['SRCDIR']
