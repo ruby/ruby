@@ -1,3 +1,13 @@
+Wed Feb 25 15:07:01 2015  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm_insnhelper.c (rb_vm_rewrite_cref_stack): copy nd_refinements
+	  of original crefs. It fixes segmentation fault when calling
+	  refined method in duplicate module. [ruby-dev:48878] [Bug #10885]
+
+	* vm_core.h, class.c: change accordingly.
+
+	* test/ruby/test_refinement.rb: add a test for above.
+
 Wed Feb 25 14:53:27 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* class.c (method_entry_i, class_instance_method_list,
