@@ -47,7 +47,7 @@ abs_archdir = File.expand_path(archdir)
 $:.unshift(abs_archdir)
 
 config = File.read(conffile = File.join(abs_archdir, 'rbconfig.rb'))
-config.sub!(/^(\s*)RUBY_VERSION\s*==.*(\sor\s*)$/, '\1true\2')
+config.sub!(/^(\s*)RUBY_VERSION\s.*(\sor\s*)$/, '\1true\2')
 config = Module.new {module_eval(config, conffile)}::RbConfig::CONFIG
 
 ruby = File.join(archdir, config["RUBY_INSTALL_NAME"]+config['EXEEXT'])
