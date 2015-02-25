@@ -18,6 +18,7 @@
 #define ZERO INT2FIX(0)
 #define ONE INT2FIX(1)
 #define TWO INT2FIX(2)
+#define RFLOAT_0 DBL2NUM(0)
 
 VALUE rb_cComplex;
 
@@ -342,6 +343,8 @@ nucomp_canonicalization(int f)
 {
     canonicalization = f;
 }
+#else
+#define canonicalization 0
 #endif
 
 inline static void
@@ -555,11 +558,44 @@ m_sqrt(VALUE x)
 }
 #endif
 
-inline static VALUE
+static VALUE
 f_complex_polar(VALUE klass, VALUE x, VALUE y)
 {
     assert(!k_complex_p(x));
     assert(!k_complex_p(y));
+    if (f_zero_p(x) || f_zero_p(y)) {
+	if (canonicalization) return x;
+	return nucomp_s_new_internal(klass, x, RFLOAT_0);
+    }
+    if (RB_FLOAT_TYPE_P(y)) {
+	const double arg = RFLOAT_VALUE(y);
+	if (arg == M_PI) {
+	    x = f_negate(x);
+	    if (canonicalization) return x;
+	    y = RFLOAT_0;
+	}
+	else if (arg == M_PI_2) {
+	    y = x;
+	    x = RFLOAT_0;
+	}
+	else if (arg == M_PI_2+M_PI) {
+	    y = f_negate(x);
+	    x = RFLOAT_0;
+	}
+	else if (RB_FLOAT_TYPE_P(x)) {
+	    const double abs = RFLOAT_VALUE(x);
+	    const double real = abs * cos(arg), imag = abs * sin(arg);
+	    x = DBL2NUM(real);
+	    if (canonicalization && imag == 0.0) return x;
+	    y = DBL2NUM(imag);
+	}
+	else {
+	    x = f_mul(x, DBL2NUM(cos(arg)));
+	    y = f_mul(y, DBL2NUM(sin(arg)));
+	    if (canonicalization && f_zero_p(y)) return x;
+	}
+	return nucomp_s_new_internal(klass, x, y);
+    }
     return nucomp_s_canonicalize_internal(klass,
 					  f_mul(x, m_cos(y)),
 					  f_mul(x, m_sin(y)));
@@ -584,8 +620,8 @@ nucomp_s_polar(int argc, VALUE *argv, VALUE klass)
     switch (rb_scan_args(argc, argv, "11", &abs, &arg)) {
       case 1:
 	nucomp_real_check(abs);
-	arg = ZERO;
-	break;
+	if (canonicalization) return abs;
+	return nucomp_s_new_internal(klass, abs, ZERO);
       default:
 	nucomp_real_check(abs);
 	nucomp_real_check(arg);
@@ -732,32 +768,7 @@ rb_nucomp_mul(VALUE self, VALUE other)
 	    (RB_FLOAT_TYPE_P(imag) && isnan(RFLOAT_VALUE(imag)))) {
 	    VALUE abs = f_mul(nucomp_abs(self), nucomp_abs(other));
 	    VALUE arg = f_add(nucomp_arg(self), nucomp_arg(other));
-	    if (f_zero_p(arg)) {
-		real = abs;
-		imag = INT2FIX(0);
-	    }
-	    else if (RB_FLOAT_TYPE_P(arg)) {
-		double a = RFLOAT_VALUE(arg);
-		if (a == M_PI) {
-		    real = f_negate(abs);
-		    imag = INT2FIX(0);
-		}
-		else if (a == M_PI/2) {
-		    imag = abs;
-		    real = INT2FIX(0);
-		}
-		else if (a == M_PI*3/2) {
-		    imag = f_negate(abs);
-		    real = INT2FIX(0);
-		}
-		else {
-		    goto polar;
-		}
-	    }
-	    else {
-	      polar:
-		return f_complex_polar(CLASS_OF(self), abs, arg);
-	    }
+	    return f_complex_polar(CLASS_OF(self), abs, arg);
 	}
 
 	return f_complex_new2(CLASS_OF(self), real, imag);
