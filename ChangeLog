@@ -1,3 +1,9 @@
+Wed Feb 25 14:41:01 2015  Seiei Higa  <hanachin@gmail.com>
+
+	* vm_method.c (check_definition): Module#public_method_defined?,
+	  Module#private_method_defined?, Module#protected_method_defined?
+	  should not use refinements. [ruby-core:67656] [Bug #10753]
+
 Wed Feb 25 14:29:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/sdbm/_sdbm.c: include ruby/ruby.h for PRIdPTRDIFF when a
