@@ -1,3 +1,10 @@
+Wed Feb 25 17:30:10 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* class.c (clone_method): fixed missing assignment introduced by
+	  previous commit.
+
+	* vm_insnhelper.c (rb_vm_rewrite_cref_stack): ditto.
+
 Wed Feb 25 15:07:01 2015  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* vm_insnhelper.c (rb_vm_rewrite_cref_stack): copy nd_refinements

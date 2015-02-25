@@ -303,6 +303,7 @@ rb_vm_rewrite_cref_stack(NODE *node, VALUE old_klass, VALUE new_klass, NODE **ne
 	if (node->nd_clss == old_klass) {
 	    new_node = NEW_CREF(new_klass);
 	    COPY_CREF_OMOD(new_node, node);
+	    new_node->nd_next = node->nd_next;
 	    *new_cref_ptr = new_node;
 	    return;
 	}

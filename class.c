@@ -131,6 +131,7 @@ clone_method(VALUE klass, ID mid, const rb_method_entry_t *me)
 	newiseqval = rb_iseq_clone(me->def->body.iseq->self, klass);
 	GetISeqPtr(newiseqval, iseq);
 	rb_vm_rewrite_cref_stack(me->def->body.iseq->cref_stack, me->klass, klass, &new_cref);
+	iseq->cref_stack = new_cref;
 	rb_add_method(klass, mid, VM_METHOD_TYPE_ISEQ, iseq, me->flag);
 	RB_GC_GUARD(newiseqval);
     }
