@@ -2772,6 +2772,17 @@ compile_massign_opt(rb_iseq_t *iseq, LINK_ANCHOR *ret,
     return 1;
 }
 
+static void
+adjust_stack(rb_iseq_t *iseq, LINK_ANCHOR *ret, int line, int rlen, int llen)
+{
+    if (rlen < llen) {
+	do {ADD_INSN(ret, line, putnil);} while (++rlen < llen);
+    }
+    else if (rlen > llen) {
+	do {ADD_INSN(ret, line, pop);} while (--rlen > llen);
+    }
+}
+
 static int
 compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node, int poped)
 {
@@ -2802,15 +2813,22 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node, int poped)
 	    INSN *last = (INSN*)ret->last;
 	    if (last->link.type == ISEQ_ELEMENT_INSN &&
 		last->insn_id == BIN(newarray) &&
-		last->operand_size == 1 &&
-		OPERAND_AT(last, 0) == INT2FIX(llen)) {
+		last->operand_size == 1) {
+		int rlen = FIX2INT(OPERAND_AT(last, 0));
 		/* special case: assign to aset or attrset */
 		if (llen == 2) {
 		    POP_ELEMENT(ret);
+		    adjust_stack(iseq, ret, nd_line(node), rlen, llen);
 		    ADD_INSN(ret, nd_line(node), swap);
 		    expand = 0;
 		}
 #if 0
+		else if (llen > 2 && llen != rlen) {
+		    POP_ELEMENT(ret);
+		    adjust_stack(iseq, ret, nd_line(node), rlen, llen);
+		    ADD_INSN1(ret, nd_line(node), reverse, INT2FIX(llen));
+		    expand = 0;
+		}
 		else if (llen > 2) {
 		    last->insn_id = BIN(reverse);
 		    expand = 0;
