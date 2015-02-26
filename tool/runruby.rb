@@ -84,7 +84,7 @@ if File.file?(libruby_so)
     e ||= "LD_PRELOAD" if /linux/ =~ RUBY_PLATFORM
   end
   if e
-    env[e] = [libruby_so, ENV[e]].compact.join(' ')
+    env[e] = [libruby_so, ENV[e]].compact.join(File::PATH_SEPARATOR)
   end
 end
 
