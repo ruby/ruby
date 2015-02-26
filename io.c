@@ -9089,7 +9089,8 @@ setup_narg(ioctl_req_t cmd, VALUE *argp, int io_p)
 	    narg = NUM2LONG(arg);
 	}
 	else {
-	    long len;
+	    char *ptr;
+	    long len, slen;
 
 	    *argp = arg = tmp;
 	    if (io_p)
@@ -9098,13 +9099,16 @@ setup_narg(ioctl_req_t cmd, VALUE *argp, int io_p)
 		len = fcntl_narg_len((int)cmd);
 	    rb_str_modify(arg);
 
+	    slen = RSTRING_LEN(arg);
 	    /* expand for data + sentinel. */
-	    if (RSTRING_LEN(arg) < len+1) {
+	    if (slen < len+1) {
 		rb_str_resize(arg, len+1);
+		slen = len+1;
 	    }
 	    /* a little sanity check here */
-	    RSTRING_PTR(arg)[RSTRING_LEN(arg) - 1] = 17;
-	    narg = (long)(SIGNED_VALUE)RSTRING_PTR(arg);
+	    ptr = RSTRING_PTR(arg);
+	    ptr[slen - 1] = 17;
+	    narg = (long)(SIGNED_VALUE)ptr;
 	}
     }
 
@@ -9127,9 +9131,12 @@ rb_ioctl(VALUE io, VALUE req, VALUE arg)
     retval = do_ioctl(fptr->fd, cmd, narg);
     if (retval < 0) rb_sys_fail_path(fptr->pathv);
     if (RB_TYPE_P(arg, T_STRING)) {
-	if (RSTRING_PTR(arg)[RSTRING_LEN(arg)-1] != 17)
+	char *ptr;
+	long slen;
+	RSTRING_GETMEM(arg, ptr, slen);
+	if (ptr[slen-1] != 17)
 	    rb_raise(rb_eArgError, "return value overflowed string");
-	RSTRING_PTR(arg)[RSTRING_LEN(arg)-1] = '\0';
+	ptr[slen-1] = '\0';
     }
 
     return INT2NUM(retval);
@@ -9213,9 +9220,12 @@ rb_fcntl(VALUE io, VALUE req, VALUE arg)
     retval = do_fcntl(fptr->fd, cmd, narg);
     if (retval < 0) rb_sys_fail_path(fptr->pathv);
     if (RB_TYPE_P(arg, T_STRING)) {
-	if (RSTRING_PTR(arg)[RSTRING_LEN(arg)-1] != 17)
+	char *ptr;
+	long slen;
+	RSTRING_GETMEM(arg, ptr, slen);
+	if (ptr[slen-1] != 17)
 	    rb_raise(rb_eArgError, "return value overflowed string");
-	RSTRING_PTR(arg)[RSTRING_LEN(arg)-1] = '\0';
+	ptr[slen-1] = '\0';
     }
 
     return INT2NUM(retval);
@@ -11084,8 +11094,9 @@ argf_read(int argc, VALUE *argv, VALUE argf)
 	}
     }
     else if (argc >= 1) {
-	if (RSTRING_LEN(str) < len) {
-	    len -= RSTRING_LEN(str);
+	long slen = RSTRING_LEN(str);
+	if (slen < len) {
+	    len -= slen;
 	    argv[0] = INT2NUM(len);
 	    goto retry;
 	}
