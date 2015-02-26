@@ -1285,7 +1285,6 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_read_nonblock_error
-    return if !have_nonblock?
     with_pipe {|r, w|
       begin
         r.read_nonblock 4096
@@ -1301,10 +1300,9 @@ class TestIO < Test::Unit::TestCase
         assert_kind_of(IO::WaitReadable, $!)
       end
     }
-  end
+  end if have_nonblock?
 
   def test_read_nonblock_no_exceptions
-    return if !have_nonblock?
     with_pipe {|r, w|
       assert_equal :wait_readable, r.read_nonblock(4096, exception: false)
       w.puts "HI!"
@@ -1312,10 +1310,9 @@ class TestIO < Test::Unit::TestCase
       w.close
       assert_equal nil, r.read_nonblock(4096, exception: false)
     }
-  end
+  end if have_nonblock?
 
   def test_read_nonblock_with_buffer_no_exceptions
-    return if !have_nonblock?
     with_pipe {|r, w|
       assert_equal :wait_readable, r.read_nonblock(4096, "", exception: false)
       w.puts "HI!"
@@ -1326,10 +1323,9 @@ class TestIO < Test::Unit::TestCase
       w.close
       assert_equal nil, r.read_nonblock(4096, "", exception: false)
     }
-  end
+  end if have_nonblock?
 
   def test_write_nonblock_error
-    return if !have_nonblock?
     with_pipe {|r, w|
       begin
         loop {
@@ -1339,10 +1335,9 @@ class TestIO < Test::Unit::TestCase
         assert_kind_of(IO::WaitWritable, $!)
       end
     }
-  end
+  end if have_nonblock?
 
   def test_write_nonblock_no_exceptions
-    return if !have_nonblock?
     with_pipe {|r, w|
       loop {
         ret = w.write_nonblock("a"*100000, exception: false)
@@ -1352,7 +1347,7 @@ class TestIO < Test::Unit::TestCase
         end
       }
     }
-  end
+  end if have_nonblock?
 
   def test_gets
     pipe(proc do |w|
@@ -2354,8 +2349,6 @@ End
 
   def test_nofollow
     # O_NOFOLLOW is not standard.
-    return if /freebsd|linux/ !~ RUBY_PLATFORM
-    return unless defined? File::NOFOLLOW
     mkcdtmpdir {
       open("file", "w") {|f| f << "content" }
       begin
@@ -2370,7 +2363,7 @@ End
         File.foreach("slnk", :open_args=>[File::RDONLY|File::NOFOLLOW]) {}
       }
     }
-  end
+  end if /freebsd|linux/ =~ RUBY_PLATFORM and defined? File::NOFOLLOW
 
   def test_tainted
     make_tempfile {|t|
@@ -2562,9 +2555,6 @@ End
   end
 
   def test_fcntl_lock_linux
-    return if /x86_64-linux/ !~ RUBY_PLATFORM # A binary form of struct flock depend on platform
-    return if [nil].pack("p").bytesize != 8 # Return if x32 platform.
-
     pad=0
     Tempfile.create(self.class.name) do |f|
       r, w = IO.pipe
@@ -2593,11 +2583,10 @@ End
       Process.kill :TERM, pid
       Process.waitpid2(pid)
     end
-  end
+  end if /x86_64-linux/ =~ RUBY_PLATFORM and # A binary form of struct flock depend on platform
+    [nil].pack("p").bytesize == 8 # unless x32 platform.
 
   def test_fcntl_lock_freebsd
-    return if /freebsd/ !~ RUBY_PLATFORM # A binary form of struct flock depend on platform
-
     start = 12
     len = 34
     sysid = 0
@@ -2628,7 +2617,7 @@ End
       Process.kill :TERM, pid
       Process.waitpid2(pid)
     end
-  end
+  end if /freebsd/ =~ RUBY_PLATFORM # A binary form of struct flock depend on platform
 
   def test_fcntl_dupfd
     Tempfile.create(self.class.name) do |f|
@@ -2812,11 +2801,8 @@ End
   end
 
   def test_ioctl_linux
-    return if /linux/ !~ RUBY_PLATFORM
     # Alpha, mips, sparc and ppc have an another ioctl request number scheme.
     # So, hardcoded 0x80045200 may fail.
-    return if /^i.?86|^x86_64/ !~ RUBY_PLATFORM
-
     assert_nothing_raised do
       File.open('/dev/urandom'){|f1|
         entropy_count = ""
@@ -2833,13 +2819,10 @@ End
       }
     end
     assert_equal(File.size(__FILE__), buf.unpack('i!')[0])
-  end
+  end if /^(?:i.?86|x86_64)-linux/ =~ RUBY_PLATFORM
 
   def test_ioctl_linux2
-    return if /linux/ !~ RUBY_PLATFORM
-    return if /^i.?86|^x86_64/ !~ RUBY_PLATFORM
-
-    return unless system('tty', '-s') # stdin is not a terminal
+    return unless STDIN.tty? # stdin is not a terminal
     File.open('/dev/tty') { |f|
       tiocgwinsz=0x5413
       winsize=""
@@ -2847,7 +2830,7 @@ End
         f.ioctl(tiocgwinsz, winsize)
       }
     }
-  end
+  end if /^(?:i.?86|x86_64)-linux/ =~ RUBY_PLATFORM
 
   def test_setpos
     mkcdtmpdir {
@@ -2960,13 +2943,12 @@ End
 
   def test_advise_pipe
     # we don't know if other platforms have a real posix_fadvise()
-    return if /linux/ !~ RUBY_PLATFORM
     with_pipe do |r,w|
       # Linux 2.6.15 and earlier returned EINVAL instead of ESPIPE
       assert_raise(Errno::ESPIPE, Errno::EINVAL) { r.advise(:willneed) }
       assert_raise(Errno::ESPIPE, Errno::EINVAL) { w.advise(:willneed) }
     end
-  end
+  end if /linux/ =~ RUBY_PLATFORM
 
   def assert_buffer_not_raise_shared_string_error
     bug6764 = '[ruby-core:46586]'
