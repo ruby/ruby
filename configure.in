@@ -617,8 +617,10 @@ AC_DEFUN([RUBY_DTRACE_AVAILABLE],
 [
     echo "provider conftest{ probe fire(); };" > conftest_provider.d
     if $DTRACE -h -o conftest_provider.h -s conftest_provider.d >/dev/null 2>/dev/null; then
-      # DTrace is available on the system
-      rb_cv_dtrace_available=yes
+      AC_TRY_COMPILE([@%:@include "conftest_provider.h"], [CONFTEST_FIRE();], [
+	# DTrace is available on the system
+	rb_cv_dtrace_available=yes
+      ], [rb_cv_dtrace_available=no])
     else
       # DTrace is not available while dtrace command exists
       # for example FreeBSD 8 or FreeBSD 9 without DTrace build option
@@ -631,6 +633,7 @@ AC_DEFUN([RUBY_DTRACE_AVAILABLE],
 AC_DEFUN([RUBY_DTRACE_POSTPROCESS],
 [AC_CACHE_CHECK(whether $DTRACE needs post processing, rb_cv_prog_dtrace_g,
 [
+  rb_cv_prog_dtrace_g=no
   if {
     cat >conftest_provider.d <<_PROBES &&
     provider conftest {
@@ -638,18 +641,20 @@ AC_DEFUN([RUBY_DTRACE_POSTPROCESS],
     };
 _PROBES
     $DTRACE -h -o conftest_provider.h -s conftest_provider.d >/dev/null 2>/dev/null &&
-    cat >conftest.c <<_CONF &&
-    @%:@include "conftest_provider.h"
-    int main(void){ CONFTEST_FIRE(); return 0; }
-_CONF
-    $CC $CFLAGS $CPPFLAGS -c -o conftest.o conftest.c &&
-    cp -p conftest.o conftest.oo &&
-    $DTRACE -G -s conftest_provider.d conftest.o 2>/dev/null
+    :
   }; then
-    rb_cv_prog_dtrace_g=yes
-    cmp -b conftest.o conftest.oo || rb_cv_prog_dtrace_g=rebuild
-  else
-    rb_cv_prog_dtrace_g=no
+    AC_TRY_COMPILE([@%:@include "conftest_provider.h"], [CONFTEST_FIRE();], [
+	if {
+	    cp -p conftest.${ac_objext} conftest.${ac_objext}.save &&
+	    $DTRACE -G -s conftest_provider.d conftest.${ac_objext} 2>/dev/null &&
+	    :
+	}; then
+	    if cmp -b conftest.o conftest.${ac_objext}.save; then
+		rb_cv_prog_dtrace_g=yes
+	    else
+		rb_cv_prog_dtrace_g=rebuild
+	    fi
+	fi])
   fi
   rm -f conftest.[co] conftest_provider.[dho]
 ])
