@@ -1,14 +1,16 @@
 #include <ruby.h>
 
 enum {
-    CONDVAR_WAITERS = 0
+    CONDVAR_WAITERS,
+    END_CONDVAR
 };
 
 enum {
-    QUEUE_QUE       = 0,
-    QUEUE_WAITERS   = 1,
-    SZQUEUE_WAITERS = 2,
-    SZQUEUE_MAX     = 3
+    QUEUE_QUE,
+    QUEUE_WAITERS,
+    SZQUEUE_WAITERS,
+    SZQUEUE_MAX,
+    END_QUEUE
 };
 
 #define GET_CONDVAR_WAITERS(cv) get_array((cv), CONDVAR_WAITERS)
