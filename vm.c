@@ -943,25 +943,25 @@ vm_svar_set(VALUE key, VALUE val)
 VALUE
 rb_backref_get(void)
 {
-    return vm_svar_get(1);
+    return vm_svar_get(VM_SVAR_BACKREF);
 }
 
 void
 rb_backref_set(VALUE val)
 {
-    vm_svar_set(1, val);
+    vm_svar_set(VM_SVAR_BACKREF, val);
 }
 
 VALUE
 rb_lastline_get(void)
 {
-    return vm_svar_get(0);
+    return vm_svar_get(VM_SVAR_LASTLINE);
 }
 
 void
 rb_lastline_set(VALUE val)
 {
-    vm_svar_set(0, val);
+    vm_svar_set(VM_SVAR_LASTLINE, val);
 }
 
 /* misc */

@@ -1,3 +1,12 @@
+Fri Feb 27 17:06:44 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: define vm_svar_index.
+
+	* vm_insnhelper.c, vm.c, compile.c: use vm_svar_index names.
+
+	* iseq.h: remove DEFAULT_SPECIAL_VAR_COUNT.
+	  use VM_SVAR_FLIPFLOP_START instead.
+
 Fri Feb 27 13:57:48 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (setup_narg): wipe away expanded part of buffer to get rid

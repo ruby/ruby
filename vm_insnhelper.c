@@ -140,11 +140,11 @@ rb_error_arity(int argc, int min, int max)
 /* svar */
 
 static inline NODE **
-lep_svar_place(rb_thread_t *th, VALUE *lep)
+lep_svar_place(rb_thread_t *th, const VALUE *lep)
 {
-    VALUE *svar;
+    const VALUE *svar;
 
-    if (lep && th->root_lep != lep) {
+    if (lep && (th == NULL || th->root_lep != lep)) {
 	svar = &lep[-1];
     }
     else {
@@ -155,17 +155,17 @@ lep_svar_place(rb_thread_t *th, VALUE *lep)
 }
 
 static VALUE
-lep_svar_get(rb_thread_t *th, VALUE *lep, rb_num_t key)
+lep_svar_get(rb_thread_t *th, const VALUE *lep, rb_num_t key)
 {
-    NODE **svar_place = lep_svar_place(th, lep);
-    NODE *svar = *svar_place;
+    NODE ** const svar_place = lep_svar_place(th, lep);
+    const NODE * const svar = *svar_place;
 
     if (NIL_P((VALUE)svar)) return Qnil;
 
     switch (key) {
-      case 0:
+      case VM_SVAR_LASTLINE:
 	return svar->u1.value;
-      case 1:
+      case VM_SVAR_BACKREF:
 	return svar->u2.value;
       default: {
 	const VALUE ary = svar->u3.value;
@@ -174,7 +174,7 @@ lep_svar_get(rb_thread_t *th, VALUE *lep, rb_num_t key)
 	    return Qnil;
 	}
 	else {
-	    return rb_ary_entry(ary, key - DEFAULT_SPECIAL_VAR_COUNT);
+	    return rb_ary_entry(ary, key - VM_SVAR_EXTRA_START);
 	}
       }
     }
@@ -183,7 +183,7 @@ lep_svar_get(rb_thread_t *th, VALUE *lep, rb_num_t key)
 static void
 lep_svar_set(rb_thread_t *th, VALUE *lep, rb_num_t key, VALUE val)
 {
-    NODE **svar_place = lep_svar_place(th, lep);
+    NODE **svar_place = (NODE **)lep_svar_place(th, lep);
     NODE *svar = *svar_place;
 
     if (NIL_P((VALUE)svar)) {
@@ -191,10 +191,10 @@ lep_svar_set(rb_thread_t *th, VALUE *lep, rb_num_t key, VALUE val)
     }
 
     switch (key) {
-      case 0:
+      case VM_SVAR_LASTLINE:
 	svar->u1.value = val;
 	return;
-      case 1:
+      case VM_SVAR_BACKREF:
 	svar->u2.value = val;
 	return;
       default: {
@@ -203,7 +203,7 @@ lep_svar_set(rb_thread_t *th, VALUE *lep, rb_num_t key, VALUE val)
 	if (NIL_P(ary)) {
 	    svar->u3.value = ary = rb_ary_new();
 	}
-	rb_ary_store(ary, key - DEFAULT_SPECIAL_VAR_COUNT, val);
+	rb_ary_store(ary, key - VM_SVAR_EXTRA_START, val);
       }
     }
 }
@@ -217,7 +217,7 @@ vm_getspecial(rb_thread_t *th, VALUE *lep, rb_num_t key, rb_num_t type)
 	val = lep_svar_get(th, lep, key);
     }
     else {
-	VALUE backref = lep_svar_get(th, lep, 1);
+	VALUE backref = lep_svar_get(th, lep, VM_SVAR_BACKREF);
 
 	if (type & 0x01) {
 	    switch (type >> 1) {

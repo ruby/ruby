@@ -151,8 +151,6 @@ enum defined_type {
 
 VALUE rb_iseq_defined_string(enum defined_type type);
 
-#define DEFAULT_SPECIAL_VAR_COUNT 2
-
 RUBY_SYMBOL_EXPORT_END
 
 #endif /* RUBY_COMPILE_H */

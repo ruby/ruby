@@ -838,6 +838,14 @@ enum vm_special_object_type {
     VM_SPECIAL_OBJECT_CONST_BASE
 };
 
+enum vm_svar_index {
+    VM_SVAR_LASTLINE = 0,      /* $_ */
+    VM_SVAR_BACKREF = 1,       /* $~ */
+
+    VM_SVAR_EXTRA_START = 2,
+    VM_SVAR_FLIPFLOP_START = 2 /* flipflop */
+};
+
 #define VM_FRAME_MAGIC_METHOD 0x11
 #define VM_FRAME_MAGIC_BLOCK  0x21
 #define VM_FRAME_MAGIC_CLASS  0x31
