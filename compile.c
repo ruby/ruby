@@ -156,6 +156,7 @@ r_value(VALUE value)
 #endif
 
 #if CPDEBUG > 1 || CPDEBUG < 0
+#define printf ruby_debug_printf
 #define debugs if (compile_debug_print_indent(1)) ruby_debug_printf
 #define debug_compile(msg, v) ((void)(compile_debug_print_indent(1) && fputs((msg), stderr)), (v))
 #else
@@ -1045,7 +1046,6 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
     if (compile_debug > 1) {
 	VALUE str = rb_iseq_disasm(iseq->self);
 	printf("%s\n", StringValueCStr(str));
-	fflush(stdout);
     }
     debugs("[compile step: finish]\n");
 
