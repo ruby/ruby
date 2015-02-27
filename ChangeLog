@@ -1,3 +1,9 @@
+Fri Feb 27 13:57:48 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (setup_narg): wipe away expanded part of buffer to get rid
+	  of revealing uncleaned data.  reported by Dongkwan Kim <dkay AT
+	  kaist.ac.kr>.
+
 Wed Feb 25 22:25:07 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* spec/default.mspec: use default configuration file name.

@@ -9103,6 +9103,7 @@ setup_narg(ioctl_req_t cmd, VALUE *argp, int io_p)
 	    /* expand for data + sentinel. */
 	    if (slen < len+1) {
 		rb_str_resize(arg, len+1);
+		MEMZERO(RSTRING_PTR(arg)+slen, char, len-slen);
 		slen = len+1;
 	    }
 	    /* a little sanity check here */
