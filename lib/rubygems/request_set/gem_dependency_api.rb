@@ -367,11 +367,11 @@ class Gem::RequestSet::GemDependencyAPI
 
     @dependencies[name] =
       if requirements.empty? and not source_set then
-        nil
+        Gem::Requirement.default
       elsif source_set then
-        '!'
+        Gem::Requirement.source_set
       else
-        requirements
+        Gem::Requirement.create requirements
       end
 
     return unless gem_platforms options
@@ -601,7 +601,7 @@ Gem dependencies file #{@path} requires #{name} more than once.
     add_dependencies groups, [self_dep]
     add_dependencies groups, spec.runtime_dependencies
 
-    @dependencies[spec.name] = '!'
+    @dependencies[spec.name] = Gem::Requirement.source_set
 
     spec.dependencies.each do |dep|
       @dependencies[dep.name] = dep.requirement

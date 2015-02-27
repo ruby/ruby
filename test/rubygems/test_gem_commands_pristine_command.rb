@@ -225,6 +225,28 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert_empty out, out.inspect
   end
 
+  def test_skip
+    a = util_spec 'a'
+    b = util_spec 'b'
+
+    install_gem a
+    install_gem b
+
+    @cmd.options[:args] = %w[a b]
+    @cmd.options[:skip] = 'a'
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+
+    assert_equal "Restoring gems to pristine condition...", out.shift
+    assert_equal "Skipped #{a.full_name}, it was given through options", out.shift
+    assert_equal "Restored #{b.full_name}", out.shift
+    assert_empty out, out.inspect
+  end
+
   def test_execute_many_multi_repo
     a = util_spec 'a'
     install_gem a

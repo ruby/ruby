@@ -217,12 +217,14 @@ class Gem::Version
   # Pre-release (alpha) parts, e.g, 5.3.1.b.2 => 5.4, are ignored.
 
   def bump
-    segments = self.segments.dup
-    segments.pop while segments.any? { |s| String === s }
-    segments.pop if segments.size > 1
+    @bump ||= begin
+                segments = self.segments.dup
+                segments.pop while segments.any? { |s| String === s }
+                segments.pop if segments.size > 1
 
-    segments[-1] = segments[-1].succ
-    self.class.new segments.join(".")
+                segments[-1] = segments[-1].succ
+                self.class.new segments.join(".")
+              end
   end
 
   ##
@@ -291,11 +293,13 @@ class Gem::Version
   # Non-prerelease versions return themselves.
 
   def release
-    return self unless prerelease?
-
-    segments = self.segments.dup
-    segments.pop while segments.any? { |s| String === s }
-    self.class.new segments.join('.')
+    @release ||= if prerelease?
+                   segments = self.segments.dup
+                   segments.pop while segments.any? { |s| String === s }
+                   self.class.new segments.join('.')
+                 else
+                   self
+                 end
   end
 
   def segments # :nodoc:

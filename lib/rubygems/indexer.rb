@@ -93,23 +93,6 @@ class Gem::Indexer
   end
 
   ##
-  # Abbreviate the spec for downloading.  Abbreviated specs are only used for
-  # searching, downloading and related activities and do not need deployment
-  # specific information (e.g. list of files).  So we abbreviate the spec,
-  # making it much smaller for quicker downloads.
-  #--
-  # TODO move to Gem::Specification
-
-  def abbreviate(spec)
-    spec.files = []
-    spec.test_files = []
-    spec.rdoc_options = []
-    spec.extra_rdoc_files = []
-    spec.cert_chain = []
-    spec
-  end
-
-  ##
   # Build various indicies
 
   def build_indicies
@@ -221,18 +204,8 @@ class Gem::Indexer
         spec = Gem::Package.new(gemfile).spec
         spec.loaded_from = gemfile
 
-        # HACK: fuck this shit - borks all tests that use pl1
-        # if File.basename(gemfile, ".gem") != spec.original_name then
-        #   exp = spec.full_name
-        #   exp << " (#{spec.original_name})" if
-        #     spec.original_name != spec.full_name
-        #   msg = "Skipping misnamed gem: #{gemfile} should be named #{exp}"
-        #   alert_warning msg
-        #   next
-        # end
-
-        abbreviate spec
-        sanitize spec
+        spec.abbreviate
+        spec.sanitize
 
         spec
       rescue SignalException
@@ -377,38 +350,6 @@ class Gem::Indexer
 
     unless data == Gem.inflate(compressed_data) then
       raise "Compressed file #{compressed_path} does not match uncompressed file #{path}"
-    end
-  end
-
-  ##
-  # Sanitize the descriptive fields in the spec.  Sometimes non-ASCII
-  # characters will garble the site index.  Non-ASCII characters will
-  # be replaced by their XML entity equivalent.
-
-  def sanitize(spec)
-    spec.summary              = sanitize_string(spec.summary)
-    spec.description          = sanitize_string(spec.description)
-    spec.post_install_message = sanitize_string(spec.post_install_message)
-    spec.authors              = spec.authors.collect { |a| sanitize_string(a) }
-
-    spec
-  end
-
-  ##
-  # Sanitize a single string.
-
-  def sanitize_string(string)
-    return string unless string
-
-    # HACK the #to_s is in here because RSpec has an Array of Arrays of
-    # Strings for authors.  Need a way to disallow bad values on gemspec
-    # generation.  (Probably won't happen.)
-    string = string.to_s
-
-    begin
-      Builder::XChar.encode string
-    rescue NameError, NoMethodError
-      string.to_xs
     end
   end
 

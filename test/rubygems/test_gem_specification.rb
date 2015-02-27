@@ -2413,8 +2413,6 @@ duplicate dependency on b (>= 1.2.3), (~> 1.2) use:
         @a1.validate
       end
 
-      assert_match "#{w}:  no description specified\n", @ui.error, "error"
-
       @ui = Gem::MockGemUi.new
       @a1.summary = "this is my summary"
       @a1.description = @a1.summary

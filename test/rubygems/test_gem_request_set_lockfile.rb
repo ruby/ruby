@@ -21,7 +21,10 @@ class TestGemRequestSetLockfile < Gem::TestCase
 
     @gem_deps_file = 'gem.deps.rb'
 
-    @lockfile = Gem::RequestSet::Lockfile.new @set, @gem_deps_file
+  end
+
+  def lockfile
+    Gem::RequestSet::Lockfile.build @set, @gem_deps_file
   end
 
   def write_lockfile lockfile
@@ -44,7 +47,7 @@ class TestGemRequestSetLockfile < Gem::TestCase
 
     out = []
 
-    @lockfile.add_DEPENDENCIES out
+    lockfile.add_DEPENDENCIES out
 
     expected = [
       'DEPENDENCIES',
@@ -62,7 +65,7 @@ class TestGemRequestSetLockfile < Gem::TestCase
       end
     end
 
-    dependencies = { 'a' => '~> 2.0' }
+    dependencies = { 'a' => Gem::Requirement.new('~> 2.0') }
 
     @set.gem 'a'
     @set.resolve
@@ -100,7 +103,7 @@ class TestGemRequestSetLockfile < Gem::TestCase
 
     out = []
 
-    @lockfile.add_GEM out, @lockfile.spec_groups
+    lockfile.add_GEM out, lockfile.spec_groups
 
     expected = [
       'GEM',
@@ -131,7 +134,7 @@ class TestGemRequestSetLockfile < Gem::TestCase
 
     out = []
 
-    @lockfile.add_PLATFORMS out
+    lockfile.add_PLATFORMS out
 
     expected = [
       'PLATFORMS',
@@ -144,11 +147,11 @@ class TestGemRequestSetLockfile < Gem::TestCase
   end
 
   def test_relative_path_from
-    path = @lockfile.relative_path_from '/foo', '/foo/bar'
+    path = lockfile.relative_path_from '/foo', '/foo/bar'
 
     assert_equal File.expand_path('/foo'), path
 
-    path = @lockfile.relative_path_from '/foo', '/foo'
+    path = lockfile.relative_path_from '/foo', '/foo'
 
     assert_equal '.', path
   end
@@ -173,7 +176,7 @@ DEPENDENCIES
   a
     LOCKFILE
 
-    assert_equal expected, @lockfile.to_s
+    assert_equal expected, lockfile.to_s
   end
 
   def test_to_s_gem_dependency
@@ -204,7 +207,7 @@ DEPENDENCIES
   c
     LOCKFILE
 
-    assert_equal expected, @lockfile.to_s
+    assert_equal expected, lockfile.to_s
   end
 
   def test_to_s_gem_dependency_non_default
@@ -232,7 +235,7 @@ DEPENDENCIES
   b
     LOCKFILE
 
-    assert_equal expected, @lockfile.to_s
+    assert_equal expected, lockfile.to_s
   end
 
   def test_to_s_gem_dependency_requirement
@@ -259,7 +262,7 @@ DEPENDENCIES
   b
     LOCKFILE
 
-    assert_equal expected, @lockfile.to_s
+    assert_equal expected, lockfile.to_s
   end
 
   def test_to_s_gem_path
@@ -282,7 +285,7 @@ DEPENDENCIES
   a!
     LOCKFILE
 
-    assert_equal expected, @lockfile.to_s
+    assert_equal expected, lockfile.to_s
   end
 
   def test_to_s_gem_path_absolute
@@ -305,7 +308,7 @@ DEPENDENCIES
   a!
     LOCKFILE
 
-    assert_equal expected, @lockfile.to_s
+    assert_equal expected, lockfile.to_s
   end
 
   def test_to_s_gem_platform
@@ -330,7 +333,7 @@ DEPENDENCIES
   a
     LOCKFILE
 
-    assert_equal expected, @lockfile.to_s
+    assert_equal expected, lockfile.to_s
   end
 
   def test_to_s_gem_source
@@ -368,7 +371,7 @@ DEPENDENCIES
   b
     LOCKFILE
 
-    assert_equal expected, @lockfile.to_s
+    assert_equal expected, lockfile.to_s
   end
 
   def test_to_s_git
@@ -435,11 +438,11 @@ DEPENDENCIES
   c!
     LOCKFILE
 
-    assert_equal expected, @lockfile.to_s
+    assert_equal expected, lockfile.to_s
   end
 
   def test_write
-    @lockfile.write
+    lockfile.write
 
     gem_deps_lock_file = "#{@gem_deps_file}.lock"
 
@@ -458,7 +461,7 @@ DEPENDENCIES
     end
 
     assert_raises Gem::UnsatisfiableDependencyError do
-      @lockfile.write
+      lockfile.write
     end
 
     assert_path_exists gem_deps_lock_file

@@ -23,6 +23,8 @@ class Gem::Requirement
     "~>" =>  lambda { |v, r| v >= r && v.release < r.bump }
   }
 
+  SOURCE_SET_REQUIREMENT = Struct.new(:for_lockfile).new "!" # :nodoc:
+
   quoted  = OPS.keys.map { |k| Regexp.quote k }.join "|"
   PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{Gem::Version::VERSION_PATTERN})\\s*" # :nodoc:
 
@@ -54,6 +56,8 @@ class Gem::Requirement
       input
     when Gem::Version, Array then
       new input
+    when '!' then
+      source_set
     else
       if input.respond_to? :to_str then
         new [input.to_str]
@@ -68,6 +72,13 @@ class Gem::Requirement
 
   def self.default
     new '>= 0'
+  end
+
+  ###
+  # A source set requirement, used for Gemfiles and lockfiles
+
+  def self.source_set # :nodoc:
+    SOURCE_SET_REQUIREMENT
   end
 
   ##

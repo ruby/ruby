@@ -37,15 +37,40 @@ class Gem::RequestSet::Lockfile
   end
 
   ##
+  # Creates a new Lockfile for the given +request_set+ and +gem_deps_file+
+  # location.
+
+  def self.build request_set, gem_deps_file, dependencies = nil
+    request_set.resolve
+    dependencies ||= requests_to_deps request_set.sorted_requests
+    new request_set, gem_deps_file, dependencies
+  end
+
+  def self.requests_to_deps requests # :nodoc:
+    deps = {}
+
+    requests.each do |request|
+      spec        = request.spec
+      name        = request.name
+      requirement = request.request.dependency.requirement
+
+      deps[name] = if [Gem::Resolver::VendorSpecification,
+                       Gem::Resolver::GitSpecification].include? spec.class then
+                     Gem::Requirement.source_set
+                   else
+                     requirement
+                   end
+    end
+
+    deps
+  end
+
+  ##
   # The platforms for this Lockfile
 
   attr_reader :platforms
 
-  ##
-  # Creates a new Lockfile for the given +request_set+ and +gem_deps_file+
-  # location.
-
-  def initialize request_set, gem_deps_file, dependencies = nil
+  def initialize request_set, gem_deps_file, dependencies
     @set           = request_set
     @dependencies  = dependencies
     @gem_deps_file = File.expand_path(gem_deps_file)
@@ -59,41 +84,9 @@ class Gem::RequestSet::Lockfile
   def add_DEPENDENCIES out # :nodoc:
     out << "DEPENDENCIES"
 
-    dependencies =
-      if @dependencies then
-        @dependencies.sort_by { |name,| name }.map do |name, requirement|
-          requirement_string =
-            if '!' == requirement then
-              requirement
-            else
-              Gem::Requirement.new(requirement).for_lockfile
-            end
-
-          [name, requirement_string]
-        end
-      else
-        requests.sort_by { |r| r.name }.map do |request|
-          spec        = request.spec
-          name        = request.name
-          requirement = request.request.dependency.requirement
-
-          requirement_string =
-            if [Gem::Resolver::VendorSpecification,
-                Gem::Resolver::GitSpecification].include? spec.class then
-              "!"
-            else
-              requirement.for_lockfile
-            end
-
-          [name, requirement_string]
-        end
-      end
-
-    dependencies = dependencies.map do |name, requirement_string|
-      "  #{name}#{requirement_string}"
-    end
-
-    out.concat dependencies
+    out.concat @dependencies.sort_by { |name,| name }.map { |name, requirement|
+      "  #{name}#{requirement.for_lockfile}"
+    }
 
     out << nil
   end
@@ -207,8 +200,6 @@ class Gem::RequestSet::Lockfile
   # The contents of the lock file.
 
   def to_s
-    @set.resolve
-
     out = []
 
     groups = spec_groups

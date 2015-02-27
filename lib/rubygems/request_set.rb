@@ -223,7 +223,7 @@ class Gem::RequestSet
 
       if options.fetch :lock, true then
         lockfile =
-          Gem::RequestSet::Lockfile.new self, gemdeps, gem_deps_api.dependencies
+          Gem::RequestSet::Lockfile.build self, gemdeps, gem_deps_api.dependencies
         lockfile.write
       end
 
@@ -275,7 +275,7 @@ class Gem::RequestSet
 
     @git_set.root_dir = @install_dir
 
-    lock_file = "#{File.expand_path(path)}.lock"
+    lock_file = "#{File.expand_path(path)}.lock".untaint
     begin
       tokenizer = Gem::RequestSet::Lockfile::Tokenizer.from_file lock_file
       parser = tokenizer.make_parser self, []

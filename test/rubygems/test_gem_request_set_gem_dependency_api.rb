@@ -88,7 +88,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
     assert_equal %w[a], @gda.requires['a']
 
-    expected = { 'a' => nil }
+    expected = { 'a' => Gem::Requirement.default }
 
     assert_equal expected, @gda.dependencies
   end
@@ -112,7 +112,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
     assert_equal %w[git/a master], @git_set.repositories['a']
 
-    expected = { 'a' => '!' }
+    expected = { 'a' => Gem::Requirement.create('!') }
 
     assert_equal expected, @gda.dependencies
   end
@@ -125,7 +125,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     assert_equal %w[https://example@bitbucket.org/example/repository.git master],
                  @git_set.repositories['a']
 
-    expected = { 'a' => '!' }
+    expected = { 'a' => Gem::Requirement.create('!') }
 
     assert_equal expected, @gda.dependencies
   end
@@ -138,7 +138,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     assert_equal %w[https://example@bitbucket.org/example/example.git master],
                  @git_set.repositories['a']
 
-    expected = { 'a' => '!' }
+    expected = { 'a' => Gem::Requirement.create('!') }
 
     assert_equal expected, @gda.dependencies
   end
@@ -193,7 +193,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     assert_equal %w[git://github.com/example/repository.git master],
                  @git_set.repositories['a']
 
-    expected = { 'a' => '!' }
+    expected = { 'a' => Gem::Requirement.create('!') }
 
     assert_equal expected, @gda.dependencies
   end
@@ -206,7 +206,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     assert_equal %w[git://github.com/example/example.git master],
                  @git_set.repositories['a']
 
-    expected = { 'a' => '!' }
+    expected = { 'a' => Gem::Requirement.create('!') }
 
     assert_equal expected, @gda.dependencies
   end
@@ -224,7 +224,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
     assert_empty @set.dependencies
 
-    expected = { 'a' => nil }
+    expected = { 'a' => Gem::Requirement.default }
 
     assert_equal expected, @gda.dependencies
   end
@@ -246,7 +246,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
     assert_equal "#{name}-#{version}", loaded.full_name
 
-    expected = { name => '!' }
+    expected = { name => Gem::Requirement.create('!') }
 
     assert_equal expected, @gda.dependencies
   end
@@ -405,7 +405,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
     assert_equal [dep('a', '~> 1.0')], @set.dependencies
 
-    expected = { 'a' => ['~> 1.0'] }
+    expected = { 'a' => Gem::Requirement.create(['~> 1.0']) }
 
     assert_equal expected, @gda.dependencies
   end
@@ -415,7 +415,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
     assert_equal [dep('b', '~> 1.0', '>= 1.0.2')], @set.dependencies
 
-    expected = { 'b' => ['~> 1.0', '>= 1.0.2'] }
+    expected = { 'b' => Gem::Requirement.create(['~> 1.0', '>= 1.0.2']) }
 
     assert_equal expected, @gda.dependencies
   end
@@ -485,7 +485,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     assert_equal %w[a], @gda.requires['a']
 
     expected = {
-      'a' => '!',
+      'a' => Gem::Requirement.create('!'),
       'b' => req('= 2'),
       'c' => req('= 3'),
     }

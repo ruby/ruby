@@ -366,8 +366,9 @@ EOM
 
         FileUtils.mkdir_p mkdir, mkdir_options
 
-        open destination, 'wb', entry.header.mode do |out|
+        open destination, 'wb' do |out|
           out.write entry.read
+          FileUtils.chmod entry.header.mode, destination
         end if entry.file?
 
         verbose destination

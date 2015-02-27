@@ -1,3 +1,9 @@
+Fri Feb 27 22:00:05 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/rubygems: Update to RubyGems 2.4.6 and HEAD(800f2e6).
+	  Fixed #1159, #1171, #1173 on rubygems/rubygems
+	* test/rubygems: ditto.
+
 Fri Feb 27 20:55:42 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/rake: Update to rake (9237e74), typo fix and remove needless

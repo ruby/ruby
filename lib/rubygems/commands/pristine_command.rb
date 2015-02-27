@@ -21,6 +21,11 @@ class Gem::Commands::PristineCommand < Gem::Command
       options[:all] = value
     end
 
+    add_option('--skip=gem_name',
+               'used on --all, skip if name == gem_name') do |value, options|
+      options[:skip] = value
+    end
+
     add_option('--[no-]extensions',
                'Restore gems with extensions',
                'in addition to regular gems') do |value, options|
@@ -106,6 +111,11 @@ extensions will be restored.
     specs.each do |spec|
       if spec.default_gem?
         say "Skipped #{spec.full_name}, it is a default gem"
+        next
+      end
+
+      if spec.name == options[:skip]
+        say "Skipped #{spec.full_name}, it was given through options"
         next
       end
 
