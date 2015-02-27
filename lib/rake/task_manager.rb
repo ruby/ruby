@@ -291,9 +291,6 @@ module Rake
       result.flatten
     end
 
-
-    private
-
     # Return the current description, clearing it in the process.
     def get_description(task)
       desc = @last_description

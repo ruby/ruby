@@ -57,13 +57,13 @@ class TestLinkedList < Rake::TestCase
     refute_equal short, list
   end
 
-  def test_converstion_to_string
+  def test_conversion_to_string
     list = LinkedList.make(:one, :two, :three)
     assert_equal "LL(one, two, three)", list.to_s
     assert_equal "LL()", LinkedList.make().to_s
   end
 
-  def test_converstion_with_inspect
+  def test_conversion_with_inspect
     list = LinkedList.make(:one, :two, :three)
     assert_equal "LL(:one, :two, :three)", list.inspect
     assert_equal "LL()", LinkedList.make().inspect

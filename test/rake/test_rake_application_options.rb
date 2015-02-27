@@ -198,7 +198,7 @@ class TestRakeApplicationOptions < Rake::TestCase
   def test_quiet
     Rake::FileUtilsExt.verbose_flag = true
     flags('--quiet', '-q') do |opts|
-      assert ! Rake::FileUtilsExt.verbose_flag, "verbose flag shoud be false"
+      assert ! Rake::FileUtilsExt.verbose_flag, "verbose flag should be false"
       assert ! opts.silent, "should not be silent"
     end
   end

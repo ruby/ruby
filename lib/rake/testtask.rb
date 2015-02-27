@@ -62,7 +62,7 @@ module Rake
     #
     attr_accessor :loader
 
-    # Array of commandline options to pass to ruby when running test loader.
+    # Array of command line options to pass to ruby when running test loader.
     attr_accessor :ruby_opts
 
     # Description of the test task. (default is 'Run tests')

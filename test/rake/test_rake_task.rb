@@ -195,14 +195,14 @@ class TestRakeTask < Rake::TestCase
     assert_equal ["b", "c"], Task[:a].prerequisites
   end
 
-  def test_prerequiste_tasks_returns_tasks_not_strings
+  def test_prerequisite_tasks_returns_tasks_not_strings
     a = task :a => ["b", "c"]
     b = task :b
     c = task :c
     assert_equal [b, c], a.prerequisite_tasks
   end
 
-  def test_prerequiste_tasks_fails_if_prerequisites_are_undefined
+  def test_prerequisite_tasks_fails_if_prerequisites_are_undefined
     a = task :a => ["b", "c"]
     task :b
     assert_raises(RuntimeError) do
@@ -210,7 +210,7 @@ class TestRakeTask < Rake::TestCase
     end
   end
 
-  def test_prerequiste_tasks_honors_namespaces
+  def test_prerequisite_tasks_honors_namespaces
     a = b = nil
     namespace "X" do
       a = task :a => ["b", "c"]

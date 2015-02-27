@@ -152,11 +152,11 @@ class TestRakePathMap < Rake::TestCase
       "Your file extension is '.rb'",
       "dir/abc.rb".pathmap("Your file extension is '%x'"))
     assert_equal(
-      "bin/org/onstepback/proj/A.class",
-      "src/org/onstepback/proj/A.java".pathmap("%{src,bin}d/%n.class"))
+      "bin/org/onestepback/proj/A.class",
+      "src/org/onestepback/proj/A.java".pathmap("%{src,bin}d/%n.class"))
     assert_equal(
-      "src_work/bin/org/onstepback/proj/A.class",
-      "src_work/src/org/onstepback/proj/A.java".
+      "src_work/bin/org/onestepback/proj/A.class",
+      "src_work/src/org/onestepback/proj/A.java".
         pathmap('%{\bsrc\b,bin}X.class'))
     assert_equal(
       ".depends.bak",

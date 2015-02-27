@@ -7,7 +7,7 @@ module Rake
   # DSL is a module that provides #task, #desc, #namespace, etc.  Use this
   # when you'd like to use rake outside the top level scope.
   #
-  # For a Rakefile you run from the comamnd line this module is automatically
+  # For a Rakefile you run from the command line this module is automatically
   # included.
 
   module DSL
