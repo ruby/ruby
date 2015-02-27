@@ -1,3 +1,8 @@
+Sat Feb 28 08:24:30 2015  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* ext/pty/pty.c: AIX supports autopush.
+	  Patch by Perry Smith [ruby-core:58539] [Bug #9144]
+
 Fri Feb 27 22:00:05 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/rubygems: Update to RubyGems 2.4.6 and HEAD(800f2e6).
