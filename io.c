@@ -10462,11 +10462,11 @@ copy_stream_fallback_body(VALUE arg)
             ssize_t ss;
             rb_str_resize(buf, buflen);
             ss = maygvl_copy_stream_read(1, stp, RSTRING_PTR(buf), l, off);
+            rb_str_resize(buf, ss > 0 ? ss : 0);
             if (ss == -1)
                 return Qnil;
             if (ss == 0)
                 rb_eof_error();
-            rb_str_resize(buf, ss);
             if (off != (off_t)-1)
                 off += ss;
         }
