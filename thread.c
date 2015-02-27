@@ -4356,7 +4356,6 @@ rb_mutex_lock(VALUE self)
  *    mutex.owned?  -> true or false
  *
  * Returns +true+ if this lock is currently held by current thread.
- * <em>This API is experimental, and subject to change.</em>
  */
 VALUE
 rb_mutex_owned_p(VALUE self)
