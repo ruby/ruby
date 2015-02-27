@@ -416,7 +416,7 @@ APPEND_ELEM(ISEQ_ARG_DECLARE LINK_ANCHOR *anchor, LINK_ELEMENT *before, LINK_ELE
 }
 #if CPDEBUG < 0
 #define ADD_ELEM(anchor, elem) ADD_ELEM(iseq, (anchor), (elem))
-#define APPEND_ELEM(anchor, before, elem) ADD_ELEM(iseq, (anchor), (before), (elem))
+#define APPEND_ELEM(anchor, before, elem) APPEND_ELEM(iseq, (anchor), (before), (elem))
 #endif
 
 static int
