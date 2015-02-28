@@ -483,6 +483,18 @@ EOS
     assert_equal Enumerator::Lazy, [].lazy.slice_when{}.class, bug7507
   end
 
+  def test_each_cons_limit
+    n = 1 << 120
+    assert_equal([1, 2], (1..n).lazy.each_cons(2).first)
+    assert_equal([[1, 2], [2, 3]], (1..n).lazy.each_cons(2).first(2))
+  end
+
+  def test_each_slice_limit
+    n = 1 << 120
+    assert_equal([1, 2], (1..n).lazy.each_slice(2).first)
+    assert_equal([[1, 2], [3, 4]], (1..n).lazy.each_slice(2).first(2))
+  end
+
   def test_no_warnings
     le = (1..3).lazy
     assert_warning("") {le.zip([4,5,6]).force}

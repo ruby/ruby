@@ -319,17 +319,17 @@ limit_by_enum_size(VALUE obj, long n)
 {
     unsigned long limit;
     VALUE size = rb_check_funcall(obj, id_size, 0, 0);
-    if (size == Qundef) return n;
-    limit = NUM2ULONG(size);
-    return ((unsigned long)n > limit) ? limit : n;
+    if (!FIXNUM_P(size)) return n;
+    limit = FIX2ULONG(size);
+    return ((unsigned long)n > limit) ? (long)limit : n;
 }
 
 static int
 enum_size_over_p(VALUE obj, long n)
 {
     VALUE size = rb_check_funcall(obj, id_size, 0, 0);
-    if (size == Qundef) return 0;
-    return ((unsigned long)n > NUM2ULONG(size));
+    if (!FIXNUM_P(size)) return 0;
+    return ((unsigned long)n > FIX2ULONG(size));
 }
 
 /*
