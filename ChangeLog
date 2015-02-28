@@ -1,3 +1,9 @@
+Sun Mar  1 02:30:23 2015  Seiei Higa  <hanachin@gmail.com>
+
+	* vm_method.c (rb_alias): raise a NameError when creating alias to
+	  a refined method if the original method of the refined method is
+	  not defined.  [ruby-core:67523] [Bug #10731]
+
 Sun Mar  1 01:17:24 2015  Seiei Higa  <hanachin@gmail.com>
 
 	* vm_method.c (rb_export_method): bail out if the original method
