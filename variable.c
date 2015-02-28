@@ -228,21 +228,19 @@ rb_tmp_class_path(VALUE klass, int *permanent, path_cache_func cache_path)
 	return (VALUE)n;
     }
     else {
-	const char *s = "Class";
-
 	if (RB_TYPE_P(klass, T_MODULE)) {
 	    if (rb_obj_class(klass) == rb_cModule) {
-		s = "Module";
+		path = rb_sprintf("#<Module:%p>", (void*)klass);
 	    }
 	    else {
 		int perm;
-		VALUE path;
-
 		path = rb_tmp_class_path(RBASIC(klass)->klass, &perm, cache_path);
-		s = RSTRING_PTR(path);
+		path = rb_sprintf("#<%"PRIsVALUE":%p>", path, (void*)klass);
 	    }
 	}
-	path = rb_sprintf("#<%s:%p>", s, (void*)klass);
+	else {
+	    path = rb_sprintf("#<Class:%p>", (void*)klass);
+	}
 	OBJ_FREEZE(path);
 
 	cache_path(klass, tmp_classpath, path);

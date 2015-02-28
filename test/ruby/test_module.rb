@@ -1087,6 +1087,8 @@ class TestModule < Test::Unit::TestCase
     assert_equal("C\u{df}", c.name, '[ruby-core:24600]')
     c = eval("class C\u{df}; self; end")
     assert_equal("TestModule::C\u{df}", c.name, '[ruby-core:24600]')
+    c = Module.new.module_eval("class X\u{df} < Module; self; end")
+    assert_match(/::X\u{df}:/, c.new.to_s)
   end
 
   def test_method_added

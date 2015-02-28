@@ -1,3 +1,8 @@
+Sat Feb 28 15:02:02 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_tmp_class_path): preserve name encoding of an
+	  anonymous instance of module/class subclass.
+
 Sat Feb 28 08:24:30 2015  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* ext/pty/pty.c: AIX supports autopush.
