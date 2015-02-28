@@ -574,6 +574,7 @@ module TestNetHTTP_version_1_2_methods
   def test_send_request
     start {|http|
       _test_send_request__GET http
+      _test_send_request__HEAD http
       _test_send_request__POST http
     }
   end
@@ -586,6 +587,16 @@ module TestNetHTTP_version_1_2_methods
     end
     assert_kind_of String, res.body
     assert_equal $test_net_http_data, res.body
+  end
+
+  def _test_send_request__HEAD(http)
+    res = http.send_request('HEAD', '/')
+    assert_kind_of Net::HTTPResponse, res
+    unless self.is_a?(TestNetHTTP_v1_2_chunked)
+      assert_not_nil res['content-length']
+      assert_equal $test_net_http_data.size, res['content-length'].to_i
+    end
+    assert_nil res.body
   end
 
   def _test_send_request__POST(http)
