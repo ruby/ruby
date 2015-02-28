@@ -314,6 +314,24 @@ enum_size(VALUE self, VALUE args, VALUE eobj)
     return (r == Qundef) ? Qnil : r;
 }
 
+static long
+limit_by_enum_size(VALUE obj, long n)
+{
+    unsigned long limit;
+    VALUE size = rb_check_funcall(obj, id_size, 0, 0);
+    if (size == Qundef) return n;
+    limit = NUM2ULONG(size);
+    return ((unsigned long)n > limit) ? limit : n;
+}
+
+static int
+enum_size_over_p(VALUE obj, long n)
+{
+    VALUE size = rb_check_funcall(obj, id_size, 0, 0);
+    if (size == Qundef) return 0;
+    return ((unsigned long)n > NUM2ULONG(size));
+}
+
 /*
  *  call-seq:
  *     enum.find_all { |obj| block } -> array
@@ -2187,6 +2205,7 @@ enum_each_slice(VALUE obj, VALUE n)
 
     if (size <= 0) rb_raise(rb_eArgError, "invalid slice size");
     RETURN_SIZED_ENUMERATOR(obj, 1, &n, enum_each_slice_size);
+    size = limit_by_enum_size(obj, size);
     ary = rb_ary_new2(size);
     arity = rb_block_arity();
     memo = NEW_MEMO(ary, dont_recycle_block_arg(arity), size);
@@ -2264,6 +2283,7 @@ enum_each_cons(VALUE obj, VALUE n)
     if (size <= 0) rb_raise(rb_eArgError, "invalid size");
     RETURN_SIZED_ENUMERATOR(obj, 1, &n, enum_each_cons_size);
     arity = rb_block_arity();
+    if (enum_size_over_p(obj, size)) return Qnil;
     memo = NEW_MEMO(rb_ary_new2(size), dont_recycle_block_arg(arity), size);
     rb_block_call(obj, id_each, 0, 0, each_cons_i, (VALUE)memo);
 

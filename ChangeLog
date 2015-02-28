@@ -1,3 +1,9 @@
+Sat Feb 28 17:18:39 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c (enum_each_slice, enum_each_cons): limit elements size by
+	  the enumerator size.  suggested by Hans Mackowiak <hanmac AT
+	  gmx.de> at [ruby-core:68335]
+
 Sat Feb 28 15:44:20 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_dump.c (rb_vm_bugreport): get rid of making new strings
