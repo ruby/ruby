@@ -1,3 +1,9 @@
+Sun Mar  1 01:17:24 2015  Seiei Higa  <hanachin@gmail.com>
+
+	* vm_method.c (rb_export_method): bail out if the original method
+	  is undefined when the method is refined.
+	  [ruby-core:67387] [Bug #10706]
+
 Sun Mar  1 01:14:59 2015  Eric Wong  <e@80x24.org>
 
 	* lib/resolv.rb: consider ENETUNREACH as ResolvTimeout
