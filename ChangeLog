@@ -1,4 +1,7 @@
-Sat Feb 28 15:42:27 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Feb 28 15:44:20 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_dump.c (rb_vm_bugreport): get rid of making new strings
+	  inside signal context.
 
 	* variable.c (rb_tmp_class_path): defer making temporary class
 	  path string.
