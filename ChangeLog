@@ -1,3 +1,11 @@
+Sat Feb 28 15:42:27 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_tmp_class_path): defer making temporary class
+	  path string.
+
+	* variable.c (rb_search_class_path): search class path or return
+	  Qnil or Qfalse if unnamed, not creating a temporary path.
+
 Sat Feb 28 15:02:02 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_tmp_class_path): preserve name encoding of an

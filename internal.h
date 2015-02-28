@@ -1029,6 +1029,7 @@ extern rb_encoding OnigEncodingUTF_8;
 
 /* variable.c */
 size_t rb_generic_ivar_memsize(VALUE);
+VALUE rb_search_class_path(VALUE);
 
 /* version.c */
 extern VALUE ruby_engine_name;
