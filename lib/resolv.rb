@@ -671,8 +671,8 @@ class Resolv
         timelimit = start + tout
         begin
           sender.send
-        rescue Errno::EHOSTUNREACH
-          # multi-homed IPv6 may generate this
+        rescue Errno::EHOSTUNREACH, # multi-homed IPv6 may generate this
+               Errno::ENETUNREACH
           raise ResolvTimeout
         end
         while true

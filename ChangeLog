@@ -1,3 +1,8 @@
+Sun Mar  1 01:14:59 2015  Eric Wong  <e@80x24.org>
+
+	* lib/resolv.rb: consider ENETUNREACH as ResolvTimeout
+	  [ruby-core:67411] [Bug #10712]
+
 Sun Mar  1 01:01:21 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/net/http.rb (Net::HTTP#send_request): there is no response body
