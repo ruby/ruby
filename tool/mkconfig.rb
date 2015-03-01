@@ -74,7 +74,9 @@ File.foreach "config.status" do |line|
   if name
     case name
     when /^(?:ac_.*|configure_input|(?:top_)?srcdir|\w+OBJS)$/; next
-    when /^(?:X|(?:MINI|RUN|BASE)RUBY$)/; next
+    when /^(?:X|(?:MINI|RUN|(?:HAVE_)?BASE|BTEST)RUBY(?:_COMMAND)?$)/; next
+    when /^INSTALLDOC|TARGET$/; next
+    when /^DTRACE/; next
     when /^(?:MAJOR|MINOR|TEENY)$/; vars[name] = val; next
     when /^LIBRUBY_D?LD/; next
     when /^RUBY_INSTALL_NAME$/; next vars[name] = (install_name = val).dup if $install_name
