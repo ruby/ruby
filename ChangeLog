@@ -1,3 +1,8 @@
+Sun Mar  1 09:06:11 2015  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb (strptime): Support %s.%N.
+	  [ruby-core:68301] [Bug #10904] Patch by Sadayuki Furuhashi.
+
 Sat Feb 28 17:18:39 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c (enum_each_slice, enum_each_cons): limit elements size by
