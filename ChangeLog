@@ -1,3 +1,8 @@
+Sun Mar  1 20:21:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_REPLACE_TYPE): restore convertible type from
+	  cached variable, so that configured results will be stable.
+
 Sun Mar  1 18:10:34 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (rb_cv_broken_memmem): check before adding the
