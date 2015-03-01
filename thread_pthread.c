@@ -1266,7 +1266,7 @@ static int check_signal_thread_list(void) { return 0; }
 static struct {
     int normal[2];
     int low[2];
-    int owner_process;
+    rb_pid_t owner_process;
 } timer_thread_pipe = {
     {-1, -1},
     {-1, -1}, /* low priority */
