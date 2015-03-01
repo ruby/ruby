@@ -33,6 +33,7 @@ module EnvUtil
   def invoke_ruby(args, stdin_data = "", capture_stdout = false, capture_stderr = false,
                   encoding: nil, timeout: 10, reprieve: 1,
                   stdout_filter: nil, stderr_filter: nil,
+                  signal: (/mswin|mingw/ =~ RUBY_PLATFORM ? :KILL : :TERM),
                   rubybin: EnvUtil.rubybin,
                   **opt)
     in_c, in_p = IO.pipe
@@ -67,7 +68,6 @@ module EnvUtil
         stdout = th_stdout.value if capture_stdout
         stderr = th_stderr.value if capture_stderr && capture_stderr != :merge_to_stdout
       else
-        signal = /mswin|mingw/ =~ RUBY_PLATFORM ? :KILL : :TERM
         case pgroup = opt[:pgroup]
         when 0, true
           pgroup = -pid
