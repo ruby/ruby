@@ -1,3 +1,11 @@
+Mon Mar  2 06:01:41 2015  Eric Wong  <e@80x24.org>
+
+	* ext/io/wait/wait.c (io_nread): wrap return value with INT2FIX
+	  Thanks to Yura Sokolov <funny.falcon@gmail.com>
+	  [ruby-core:68369] [Bug#10923]
+	* test/io/wait/test_io_wait.rb (test_nread_buffered):
+	  fix broken test
+
 Sun Mar  1 20:21:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_REPLACE_TYPE): restore convertible type from
