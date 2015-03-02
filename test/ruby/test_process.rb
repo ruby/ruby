@@ -1924,68 +1924,18 @@ EOS
   end
 
   def test_deadlock_by_signal_at_forking
-    assert_separately([], <<-INPUT, timeout: 60)
-      require 'io/wait'
-      begin
-        GC.start # reduce garbage
-        buf = ''
-        ruby = EnvUtil.rubybin
-        er, ew = IO.pipe
-        unless runner = IO.popen("-".freeze)
-          er.close
-          status = true
-          GC.disable # avoid triggering CoW after forks
-          begin
-            $stderr.reopen($stdout)
-            trap(:QUIT) {}
-            parent = $$
-            100.times do |i|
-              pid = fork {Process.kill(:QUIT, parent)}
-              IO.popen(ruby, 'r+'.freeze){}
-              Process.wait(pid)
-              $stdout.puts
-              $stdout.flush
-            end
-          ensure
-            if $!
-              ew.puts([Marshal.dump($!)].pack("m0"))
-              status = false
-            end
-            ew.close
-            exit!(status)
-          end
-        end
-        ew.close
-        begin
-          loop do
-            runner.wait_readable(5)
-            runner.read_nonblock(100, buf)
-          end
-        rescue EOFError => e
-          _, status = Process.wait2(runner.pid)
-        rescue IO::WaitReadable => e
-          Process.kill(:INT, runner.pid)
-          exc = Marshal.load(er.read.unpack("m")[0])
-          if exc.kind_of? Interrupt
-            # Don't raise Interrupt.  It aborts test-all.
-            flunk "timeout"
-          else
-            raise exc
-          end
-        end
-        assert_predicate(status, :success?)
-      ensure
-        er.close unless er.closed?
-        ew.close unless ew.closed?
-        if runner
-          begin
-            Process.kill(:TERM, runner.pid)
-            sleep 1
-            Process.kill(:KILL, runner.pid)
-          rescue Errno::ESRCH
-          end
-          runner.close
-        end
+    assert_separately(["-", EnvUtil.rubybin], <<-INPUT, timeout: 60)
+      ruby = ARGV.shift
+      GC.start # reduce garbage
+      GC.disable # avoid triggering CoW after forks
+      trap(:QUIT) {}
+      parent = $$
+      100.times do |i|
+        pid = fork {Process.kill(:QUIT, parent)}
+        IO.popen(ruby, 'r+'){}
+        Process.wait(pid)
+        $stdout.puts
+        $stdout.flush
       end
     INPUT
   end if defined?(fork)
