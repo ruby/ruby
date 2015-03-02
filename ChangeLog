@@ -1,3 +1,10 @@
+Tue Mar  3 00:59:39 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* configure.in: set PRELOADENV in Solaris to avoid "wrong ELF class"
+	  error. [Bug #10926] [ruby-dev:48888]
+	* configure.in: set LIBPATHENV for 32-bit compile in Solaris
+	  in addition to 64-bit.
+
 Mon Mar  2 15:36:10 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: do not check _setjmp unless _longjmp is available,

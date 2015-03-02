@@ -2963,6 +2963,10 @@ if test "$with_dln_a_out" != yes; then
 			fi
 			if test "$ac_cv_sizeof_voidp" = 8; then
 			    : ${LIBPATHENV=LD_LIBRARY_PATH_64}
+			    : ${PRELOADENV=LD_PRELOAD_64}
+			else
+			    : ${LIBPATHENV=LD_LIBRARY_PATH_32}
+			    : ${PRELOADENV=LD_PRELOAD_32}
 			fi
 			rb_cv_dlopen=yes],
 	[sunos*], [	: ${LDSHARED='$(LD) -assert nodefinitions'}
