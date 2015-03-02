@@ -1,3 +1,8 @@
+Mon Mar  2 15:36:10 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: do not check _setjmp unless _longjmp is available,
+	  so that configure results will not be changed by cache.
+
 Mon Mar  2 14:44:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_REPLACE_TYPE): restore unsigned type from
