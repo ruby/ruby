@@ -711,7 +711,7 @@ class FTPTest < Test::Unit::TestCase
       sock.print("230 Login successful.\r\n")
       commands.push(sock.gets)
       sock.print("200 Switching to Binary mode.\r\n")
-      commands.push(sock.recv(1024))
+      commands.push(sock.gets)
       sock.print("225 No transfer to ABOR.\r\n")
     }
     begin
@@ -724,7 +724,7 @@ class FTPTest < Test::Unit::TestCase
         assert_match(/\APASS /, commands.shift)
         assert_equal("TYPE I\r\n", commands.shift)
         ftp.abort
-        assert_equal("ABOR\r", commands.shift)
+        assert_equal("ABOR\r\n", commands.shift)
         assert_equal(nil, commands.shift)
       ensure
         ftp.close if ftp
@@ -744,7 +744,7 @@ class FTPTest < Test::Unit::TestCase
       sock.print("230 Login successful.\r\n")
       commands.push(sock.gets)
       sock.print("200 Switching to Binary mode.\r\n")
-      commands.push(sock.recv(1024))
+      commands.push(sock.gets)
       sock.print("211 End of status\r\n")
     }
     begin
@@ -757,7 +757,7 @@ class FTPTest < Test::Unit::TestCase
         assert_match(/\APASS /, commands.shift)
         assert_equal("TYPE I\r\n", commands.shift)
         ftp.status
-        assert_equal("STAT\r", commands.shift)
+        assert_equal("STAT\r\n", commands.shift)
         assert_equal(nil, commands.shift)
       ensure
         ftp.close if ftp
@@ -856,6 +856,7 @@ class FTPTest < Test::Unit::TestCase
       end
       sock = server.accept
       begin
+        sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_OOBINLINE, 1)
         yield(sock)
         sock.shutdown(Socket::SHUT_WR)
         sock.read unless sock.eof?

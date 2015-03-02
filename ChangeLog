@@ -1,3 +1,11 @@
+Mon Mar  2 12:05:04 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* test/net/ftp/test_ftp.rb (create_ftp_server): set SO_OOBINLINE
+	  for receiving OOB data which is sended with MSG_OOB flag in
+	  portable way. [Bug #10915] [ruby-dev:48885]
+	* test/net/ftp/test_ftp.rb (test_abort, test_status): use gets
+	  for receiving OOB data in portable way.
+
 Mon Mar  2 11:43:07 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_REPLACE_TYPE): restore unsigned type from
