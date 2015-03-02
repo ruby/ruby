@@ -30,10 +30,13 @@ module EnvUtil
 
   LANG_ENVS = %w"LANG LC_ALL LC_CTYPE"
 
+  DEFAULT_SIGNALS = Signal.list
+  DEFAULT_SIGNALS.delete("TERM") if /mswin|mingw/ =~ RUBY_PLATFORM
+
   def invoke_ruby(args, stdin_data = "", capture_stdout = false, capture_stderr = false,
                   encoding: nil, timeout: 10, reprieve: 1,
                   stdout_filter: nil, stderr_filter: nil,
-                  signal: (/mswin|mingw/ =~ RUBY_PLATFORM ? :KILL : :TERM),
+                  signal: :TERM,
                   rubybin: EnvUtil.rubybin,
                   **opt)
     in_c, in_p = IO.pipe
@@ -68,25 +71,34 @@ module EnvUtil
         stdout = th_stdout.value if capture_stdout
         stderr = th_stderr.value if capture_stderr && capture_stderr != :merge_to_stdout
       else
+        signals = Array(signal).select do |sig|
+          DEFAULT_SIGNALS[sig.to_s] or
+            DEFAULT_SIGNALS[Signal.signame(sig)]
+        end
+        signals |= [:KILL]
         case pgroup = opt[:pgroup]
         when 0, true
           pgroup = -pid
         when nil, false
           pgroup = pid
         end
-        begin
-          Process.kill signal, pgroup
-          Timeout.timeout((reprieve unless signal == :KILL)) do
-            Process.wait(pid)
+        while signal = signals.shift
+          begin
+            Process.kill signal, pgroup
+          rescue Errno::Invalid
+            next
+          rescue Errno::ESRCH
+            break
           end
-        rescue Errno::ESRCH
-          break
-        rescue Timeout::Error
-          raise if signal == :KILL
-          signal = :KILL
-        else
-          break
-        end while true
+          if signals.empty? or !reprieve
+            Process.wait(pid)
+          else
+            begin
+              Timeout.timeout(reprieve) {Process.wait(pid)}
+            rescue Timeout::Error
+            end
+          end
+        end
         bt = caller_locations
         raise Timeout::Error, "execution of #{bt.shift.label} expired", bt.map(&:to_s)
       end
