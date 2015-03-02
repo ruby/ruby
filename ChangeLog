@@ -1,3 +1,7 @@
+Tue Mar  3 07:52:20 2015  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/ruby/test_symbol.rb: avoid a false positive in AIX.
+
 Tue Mar  3 00:59:39 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* configure.in: set PRELOADENV in Solaris to avoid "wrong ELF class"
