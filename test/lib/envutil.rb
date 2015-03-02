@@ -82,7 +82,7 @@ module EnvUtil
         while signal = signals.shift
           begin
             Process.kill signal, pgroup
-          rescue Errno::Invalid
+          rescue Errno::INVAL
             next
           rescue Errno::ESRCH
             break
