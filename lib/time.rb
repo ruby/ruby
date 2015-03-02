@@ -365,9 +365,9 @@ class Time
     end
 
     #
-    # Parses +date+ using Date._strptime and converts it to a Time object.
+    # Parses +time+ using Date._strptime and converts it to a Time object.
     #
-    # If a block is given, the year described in +date+ is converted by the
+    # If a block is given, the year described in +time+ is converted by the
     # block.  For example:
     #
     #   Time.strptime(...) {|y| y < 100 ? (y >= 69 ? y + 1900 : y + 2000) : y}
@@ -421,19 +421,20 @@ class Time
     # %z :: Time zone as  hour offset from UTC (e.g. +0900)
     # %Z :: Time zone name
     # %% :: Literal "%" character
-
-    def strptime(date='-4712-01-01', format='%F', now=self.now)
-      d = Date._strptime(date, format)
-      raise ArgumentError, "invalid strptime format - `#{format}'" unless d
-      if seconds = d[:seconds]
+    #
+    def strptime(time='-4712-01-01', format='%F', now=self.now)
+      date = Date.strptime(time, format) # will raise an ArgumentError if the time is invalid
+      hash = Date._strptime(time, format)
+      raise ArgumentError, "invalid strptime format - `#{format}'" unless hash
+      if seconds = hash[:seconds]
         t = Time.at(seconds)
-        if zone = d[:zone]
+        if zone = hash[:zone]
           force_zone!(t, zone)
         end
       else
-        year = d[:year]
+        year = date.year
         year = yield(year) if year && block_given?
-        t = make_time(date, year, d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
+        t = make_time(date, year, date.mon, date.mday, hash[:hour], hash[:min], hash[:sec], hash[:sec_fraction], hash[:zone], now)
       end
       t
     end
