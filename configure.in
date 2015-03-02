@@ -1479,7 +1479,7 @@ AC_DEFUN([RUBY_REPLACE_TYPE], [dnl
 	    [*LL], [n="long long"],
 	    [*LONG], [n="long"],
 	    [n="int"])
-    AS_CASE("${rb_cv_[$1]_convertible}", [U*], [u=+1], [u=-1])
+    AS_CASE("${rb_cv_[$1]_convertible}", [U*], [u=+1 n="unsigned $n"], [u=-1])
     AC_DEFINE_UNQUOTED(rb_[$1], $n)
     AC_DEFINE_UNQUOTED([SIGNEDNESS_OF_]AS_TR_CPP($1), $u)
     AC_DEFINE_UNQUOTED([$3]2NUM[(v)], [${rb_cv_[$1]_convertible}2NUM(v)])

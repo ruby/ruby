@@ -1,3 +1,8 @@
+Mon Mar  2 11:43:07 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_REPLACE_TYPE): restore unsigned type from
+	  cached variable.
+
 Mon Mar  2 06:01:41 2015  Eric Wong  <e@80x24.org>
 
 	* ext/io/wait/wait.c (io_nread): wrap return value with INT2FIX
