@@ -257,6 +257,7 @@ static VALUE
 sig_signame(VALUE recv, VALUE signo)
 {
     const char *signame = signo2signm(NUM2INT(signo));
+    if (!signame) return Qnil;
     return rb_str_new_cstr(signame);
 }
 
