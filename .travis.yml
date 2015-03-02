@@ -57,7 +57,7 @@ before_script:
   - "cp -pr config.status .ext/include config_1st"
   - "make reconfig"
   - "cp -pr config.status .ext/include config_2nd"
-  - "diff -ru config_1st config_2nd || true"
+  - "diff -ru config_1st config_2nd"
   - "make -s $JOBS encs"
   - "make -s $JOBS exts"
   - "make update-rubyspec"
