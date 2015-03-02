@@ -432,6 +432,7 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal(Time.utc(2005, 8, 28, 06, 54, 20), Time.strptime("28/Aug/2005:06:54:20 +0000", "%d/%b/%Y:%T %z"))
     assert_equal(Time.at(1).localtime, Time.strptime("1", "%s"))
     assert_equal(false, Time.strptime('0', '%s').utc?)
+    assert_equal(Date.strptime.to_time, Time.strptime)
   end
 
   def test_strptime_empty

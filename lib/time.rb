@@ -422,7 +422,7 @@ class Time
     # %Z :: Time zone name
     # %% :: Literal "%" character
 
-    def strptime(date, format, now=self.now)
+    def strptime(date='-4712-01-01', format='%F', now=self.now)
       d = Date._strptime(date, format)
       raise ArgumentError, "invalid strptime format - `#{format}'" unless d
       if seconds = d[:seconds]
