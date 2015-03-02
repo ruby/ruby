@@ -303,9 +303,9 @@ class Time
     private :make_time
 
     #
-    # Parses +date+ using Date._parse and converts it to a Time object.
+    # Parses +time+ using Date._parse and converts it to a Time object.
     #
-    # If a block is given, the year described in +date+ is converted by the
+    # If a block is given, the year described in +time+ is converted by the
     # block.  For example:
     #
     #     Time.parse(...) {|y| 0 <= y && y < 100 ? (y >= 69 ? y + 1900 : y + 2000) : y}
@@ -344,24 +344,24 @@ class Time
     # it is ignored and the given time is regarded as a local time.
     #
     # ArgumentError is raised if Date._parse cannot extract information from
-    # +date+ or if the Time class cannot represent specified date.
+    # +time+ or if the Time class cannot represent specified time.
     #
     # This method can be used as a fail-safe for other parsing methods as:
     #
-    #   Time.rfc2822(date) rescue Time.parse(date)
-    #   Time.httpdate(date) rescue Time.parse(date)
-    #   Time.xmlschema(date) rescue Time.parse(date)
+    #   Time.rfc2822(time) rescue Time.parse(time)
+    #   Time.httpdate(time) rescue Time.parse(time)
+    #   Time.xmlschema(time) rescue Time.parse(time)
     #
     # A failure of Time.parse should be checked, though.
     #
     # You must require 'time' to use this method.
     #
-    def parse(date, now=self.now)
+    def parse(time, now=self.now)
       comp = !block_given?
-      d = Date._parse(date, comp)
-      year = d[:year]
+      hash = Date._parse(time, comp)
+      year = hash[:year]
       year = yield(year) if year && !comp
-      make_time(date, year, d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
+      make_time(time, year, hash[:mon], hash[:mday], hash[:hour], hash[:min], hash[:sec], hash[:sec_fraction], hash[:zone], now)
     end
 
     #
