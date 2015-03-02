@@ -62,7 +62,7 @@ io_nread(VALUE io)
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
     len = rb_io_read_pending(fptr);
-    if (len > 0) return len;
+    if (len > 0) return INT2FIX(len);
     if (!FIONREAD_POSSIBLE_P(fptr->fd)) return INT2FIX(0);
     if (ioctl(fptr->fd, FIONREAD, &n)) return INT2FIX(0);
     if (n > 0) return ioctl_arg2num(n);

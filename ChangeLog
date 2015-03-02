@@ -1,3 +1,11 @@
+Tue Mar  3 02:42:27 2015  Eric Wong  <e@80x24.org>
+
+	* ext/io/wait/wait.c (io_nread): wrap return value with INT2FIX
+	  Thanks to Yura Sokolov <funny.falcon@gmail.com>
+	  [ruby-core:68369] [Bug#10923]
+	* test/io/wait/test_io_wait.rb (test_nread_buffered):
+	  fix broken test
+
 Sun Mar  1 02:30:23 2015  Seiei Higa  <hanachin@gmail.com>
 
 	* vm_method.c (rb_alias): raise a NameError when creating alias to
