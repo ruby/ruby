@@ -1,3 +1,8 @@
+Tue Mar  3 16:57:39 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* tool/redmine-backporter.rb: use 'b' instead of 's' for showing
+	  Backport options for merger.rb.
+
 Tue Mar  3 16:55:23 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* tool/redmine-backporter.rb: show selected ticket number at prompt.

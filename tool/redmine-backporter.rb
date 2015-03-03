@@ -392,7 +392,7 @@ eom
       puts res.body
     end
 
-  when 's'
+  when 'b'
     # this feature implies backport command which wraps tool/merger.rb
     unless @issue
       puts "ticket not selected"
@@ -502,8 +502,8 @@ eom
     exit
   when 'help'
     puts 'ls [PAGE]              '.color(bold: true) + ' show all required tickets'
-    puts 'show TICKET            '.color(bold: true) + ' show the detail of the TICKET, and select it'
-    puts 'TICKET                 '.color(bold: true) + ' show the backport option of the TICKET for merger.rb'
+    puts '[show] TICKET          '.color(bold: true) + ' show the detail of the TICKET, and select it'
+    puts 'b                      '.color(bold: true) + ' show the backport option of selected ticket for merger.rb'
     puts 'rel REVISION           '.color(bold: true) + ' add the selected ticket as related to the REVISION'
     puts 'done [TICKET] [-- NOTE]'.color(bold: true) + ' set Backport field of the TICKET to DONE'
     puts 'close [TICKET]         '.color(bold: true) + ' close the TICKET'
