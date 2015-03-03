@@ -239,8 +239,10 @@ class << Readline
         print cls
         print line
       else
-        print c
-        line << c
+        if c >= " "
+          print c
+          line << c
+        end
       end
     end
   end

@@ -1,3 +1,8 @@
+Tue Mar  3 23:41:42 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* tool/redmine-backporter.rb (Readline.readline): drop untreated control
+	  characters.
+
 Tue Mar  3 22:25:24 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/lib/envutil.rb (EnvUtil.invoke_ruby): need to rescue because
