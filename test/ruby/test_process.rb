@@ -1248,26 +1248,12 @@ class TestProcess < Test::Unit::TestCase
     return unless Signal.list.include?("QUIT")
 
     with_tmpchdir do
-      write_file("foo", "puts;STDOUT.flush;sleep 30")
-      pid = nil
-      IO.pipe do |r, w|
-        pid = spawn(RUBY, "foo", out: w)
-        w.close
-        th = Thread.new { r.read(1); Process.kill(:SIGQUIT, pid) }
-        Process.wait(pid)
-        th.join
-      end
-      t = Time.now
-      s = $?
+      s = assert_in_out_err([], "Process.kill(:SIGQUIT, $$);sleep 30", //, //)
       assert_equal([false, true, false, nil],
                    [s.exited?, s.signaled?, s.stopped?, s.success?],
                    "[s.exited?, s.signaled?, s.stopped?, s.success?]")
-      assert_send(
-        [["#<Process::Status: pid #{ s.pid } SIGQUIT (signal #{ s.termsig })>",
-          "#<Process::Status: pid #{ s.pid } SIGQUIT (signal #{ s.termsig }) (core dumped)>"],
-         :include?,
-         s.inspect])
-      EnvUtil.diagnostic_reports("QUIT", RUBY, pid, t)
+      assert_equal("#<Process::Status: pid #{ s.pid } SIGQUIT (signal #{ s.termsig })>",
+                   s.inspect.sub(/ \(core dumped\)(?=>\z)/, ''))
     end
   end
 
