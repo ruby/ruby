@@ -32,13 +32,20 @@ basic_to_f_p(VALUE klass)
     return rb_method_basic_definition_p(klass, id_to_f);
 }
 
+#define fix2dbl_without_to_f(x) (double)FIX2LONG(x)
+#define big2dbl_without_to_f(x) rb_big2dbl(x)
+#define int2dbl_without_to_f(x) (FIXNUM_P(x) ? fix2dbl_without_to_f(x) : big2dbl_without_to_f(x))
+#define rat2dbl_without_to_f(x) \
+    (int2dbl_without_to_f(rb_rational_num(x)) / \
+     int2dbl_without_to_f(rb_rational_den(x)))
+
 static inline double
 num2dbl_with_to_f(VALUE num)
 {
     if (SPECIAL_CONST_P(num)) {
 	if (FIXNUM_P(num)) {
 	    if (basic_to_f_p(rb_cFixnum))
-		return (double)FIX2LONG(num);
+		return fix2dbl_without_to_f(num);
 	}
 	else if (FLONUM_P(num)) {
 	    return RFLOAT_VALUE(num);
@@ -50,7 +57,11 @@ num2dbl_with_to_f(VALUE num)
 	    return RFLOAT_VALUE(num);
 	  case T_BIGNUM:
 	    if (basic_to_f_p(rb_cBignum))
-		return rb_big2dbl(num);
+		return big2dbl_without_to_f(num);
+	    break;
+	  case T_RATIONAL:
+	    if (basic_to_f_p(rb_cRational))
+		return rat2dbl_without_to_f(num);
 	    break;
 	}
     }

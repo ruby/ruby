@@ -1,3 +1,8 @@
+Tue Mar  3 14:47:30 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
+
+	* math.c (num2dbl_with_to_f): direct casting from Rational to double.
+	  [Feature #10909]
+
 Tue Mar  3 07:52:20 2015  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* test/ruby/test_symbol.rb: avoid a false positive in AIX.
