@@ -5,7 +5,6 @@ exec "${RUBY-ruby}" "-x" "$0" "$@" && [ ] if false
 # This needs ruby 1.9 and subversion.
 # run this in a repository to commit.
 
-require 'date'
 require 'tempfile'
 
 $repos = 'svn+ssh://svn@ci.ruby-lang.org/ruby/'
@@ -24,6 +23,9 @@ def help
 
 \e[1mrevision increment\e[0m
   ruby #$0 revisionup
+
+\e[1mteeny increment\e[0m
+  ruby #$0 teenyup
 
 \e[1mtagging major release\e[0m
   ruby #$0 tag 2.2.0
@@ -67,21 +69,24 @@ def interactive str, editfile = nil
   end
 end
 
-def version_up
-  d = DateTime.now
-  d = d.new_offset(Rational(9,24)) # we need server locale (i.e. japanese) time
+def version_up(inc=nil)
+  d = Time.now
+  d = d.localtime(9*60*60) # server is Japan Standard Time +09:00
   system(*%w'svn revert version.h')
-  v, p = version
+  v, pl = version
+
+  if inc == :teeny
+    v[2].succ!
+  else # patchlevel
+    if pl != "-1"
+      pl.succ!
+    end
+  end
 
   teeny = v[2]
   case v
   when %w/1 9 2/
     teeny = 1
-  end
-
-  p = p.to_i
-  if p != -1
-    p += 1
   end
 
   str = open 'version.h', 'rb' do |f| f.read end
@@ -92,7 +97,7 @@ def version_up
    %W[RUBY_VERSION_TEENY #{teeny}],
    %W[RUBY_RELEASE_DATE "#{d.strftime '%Y-%m-%d'}"],
    %W[RUBY_RELEASE_CODE  #{d.strftime '%Y%m%d'}],
-   %W[RUBY_PATCHLEVEL    #{p}],
+   %W[RUBY_PATCHLEVEL    #{pl}],
    %W[RUBY_RELEASE_YEAR  #{d.year}],
    %W[RUBY_RELEASE_MONTH #{d.month}],
    %W[RUBY_RELEASE_DAY   #{d.day}],
@@ -151,6 +156,9 @@ def default_merge_branch
 end
 
 case ARGV[0]
+when "teenyup"
+  version_up(:teeny)
+  system 'svn diff version.h'
 when "up", /\A(ver|version|rev|revision|lv|level|patch\s*level)\s*up/
   version_up
   system 'svn diff version.h'
