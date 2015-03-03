@@ -61,6 +61,7 @@ before_script:
   - "make -s $JOBS encs"
   - "make -s $JOBS exts"
   - "make update-rubyspec"
+  - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then echo 'exclude :test_deadlock_by_signal_at_forking, \"under investigation\"' >> test/excludes/TestProcess.rb; fi"
 script:
   - "make test"
   - "make test-all TESTS='-q -j2'"
