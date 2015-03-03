@@ -37,7 +37,8 @@ before_install:
   - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq update; fi"
   - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq install $CC; fi" # upgrade if any
   - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then JOBS='-j'; fi"
-  - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then brew install autoconf openssl; fi"
+  - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then brew install autoconf gdbm openssl; fi"
+  - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then GDBM_FLAG=\"--with-gdbm-dir=`brew --prefix gdbm`\"; fi"
   - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then OPENSSL_FLAG=\"--with-openssl-dir=`brew --prefix openssl`\"; fi"
   - "if [[ $TRAVIS_OS_NAME = 'osx' && $CC = 'gcc' ]]; then CC='gcc-4.9'; fi"
 install: "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq build-dep ruby1.9.1 2>/dev/null; fi"
@@ -64,7 +65,7 @@ before_script:
   - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then echo 'exclude :test_deadlock_by_signal_at_forking, \"under investigation\"' >> test/excludes/TestProcess.rb; fi"
 script:
   - "make test"
-  - "make test-all TESTS='-q -j2'"
+  - "make test-all TESTOPTS='-q -j2'"
   - "make test-rubyspec"
 after_failure:
   - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then find ~/Library/Logs/DiagnosticReports -type f -name ruby_\\*.crash -ls -execdir cat {} \\; -delete; fi"
