@@ -68,6 +68,7 @@ script:
   - "make test"
   - "make test-all TESTOPTS='-q -j2'"
   - "make test-rubyspec"
+  - "if [[ $TRAVIS_OS_NAME = 'osx' ]] && cd ~/Library/Logs/DiagnosticReports; then set ruby_\\*.crash; ! [ -f $1 ]; else :; fi"
 after_failure:
   - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then find ~/Library/Logs/DiagnosticReports -type f -name ruby_\\*.crash -ls -execdir cat {} \\; -delete; fi"
 
