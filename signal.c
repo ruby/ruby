@@ -546,7 +546,7 @@ int
 rb_sigaltstack_size(void)
 {
     /* XXX: BSD_vfprintf() uses >1500KiB stack and x86-64 need >5KiB stack. */
-    int size = 16*1024;
+    int size = SIZEOF_VOIDP*4*1024;
 
 #ifdef MINSIGSTKSZ
     if (size < MINSIGSTKSZ)
