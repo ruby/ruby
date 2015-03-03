@@ -7,6 +7,7 @@ require 'io/console'
 require 'stringio'
 require 'strscan'
 require 'optparse'
+require 'abbrev'
 require 'pp'
 begin
   require 'readline'
@@ -316,17 +317,10 @@ row, col = console.winsize
 @query['limit'] = row - 2
 puts "Backporter #{VERSION}".color(bold: true) + " for #{TARGET_VERSION}"
 
-@issues = nil
-@issue = nil
-@changesets = nil
-while true
-  begin
-    l = Readline.readline "#{'#' + @issue.to_s if @issue}> "
-  rescue Interrupt
-    break
-  end
-  case l
-  when /\Als(?: +(\d+))?\z/
+class CommandSyntaxError < RuntimeError; end
+commands = {
+  "ls" => proc{|args|
+    raise CommandSyntaxError unless /\A(\d+)?\z/ =~ args
     uri = URI(REDMINE_BASE+'/projects/ruby-trunk/issues.json?'+URI.encode_www_form(@query.dup.merge('page' => ($1 ? $1.to_i : 1))))
     # puts uri
     res = JSON(uri.read(openuri_options))
@@ -339,7 +333,10 @@ while true
       id = "##{x["id"]}".color(*PRIORITIES[x["priority"]["name"]])
       puts "#{'%2d' % i} #{id} #{x["priority"]["name"][0]} #{status_char(x["status"])} #{x["subject"][0,80]}"
     end
-  when /\A(?:show +)?(\d+)\z/
+  },
+
+  "show" => proc{|args|
+    raise CommandSyntaxError unless /\A(\d+)\z/ =~ args
     id = $1.to_i
     id = @issues[id]["id"] if @issues && id < @issues.size
     @issue = id
@@ -383,9 +380,15 @@ eom
       end
     end
     more(sio)
+  },
 
-  when /\Arel +(\d+)\z/
+  "rel" => proc{|args|
     # this feature requires custom redmine which allows add_related_issue API
+    raise CommandSyntaxError unless /\A(\d+)\z/ =~ args
+    unless @issue
+      puts "ticket not selected"
+      next
+    end
     rev = $1.to_i
     uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/revisions/#{rev}/issues.json")
     Net::HTTP.start(uri.host, uri.port, http_options) do |http|
@@ -393,16 +396,20 @@ eom
                      'X-Redmine-API-Key' => REDMINE_API_KEY)
       puts res.body
     end
+  },
 
-  when 'b'
+  "backport" => proc{|args|
     # this feature implies backport command which wraps tool/merger.rb
+    raise CommandSyntexError unless args.empty?
     unless @issue
       puts "ticket not selected"
       next
     end
     puts backport_command_string
+  },
 
-  when /\Adone(?: +(\d+))?(?: -- +(.*))?\z/
+  "done" => proc{|args|
+    raise CommandSyntaxError unless /\A(\d+)?(?: -- +(.*))?\z/ =~ args
     notes = $2
     notes.strip! if notes
     if $1
@@ -461,7 +468,10 @@ eom
 
       show_last_journal(http, uri)
     end
-  when /\Aclose(?: +(\d+))?\z/
+  },
+
+  "close" => proc{|args|
+    raise CommandSyntaxError unless /\A(\d+)?\z/ =~ args
     if $1
       i = $1.to_i
       i = @issues[i]["id"] if @issues && i < @issues.size
@@ -482,7 +492,10 @@ eom
 
       show_last_journal(http, uri)
     end
-  when /\last(?: +(\d+))?\z/
+  },
+
+  "last" => proc{|args|
+    raise CommandSyntaxError unless /\A(\d+)?\z/ =~ args
     if $1
       i = $1.to_i
       i = @issues[i]["id"] if @issues && i < @issues.size
@@ -497,21 +510,58 @@ eom
     Net::HTTP.start(uri.host, uri.port, http_options) do |http|
       show_last_journal(http, uri)
     end
-  when /\A!\s*(.*)\s*\z/
-    system($1)
-  when ''
-  when nil, 'quit', 'exit'
+  },
+
+  "!" => proc{|args|
+    system(args.strip)
+  },
+
+  "quit" => proc{|args|
+    raise CommandSyntaxError unless args.empty?
     exit
-  when 'help'
+  },
+  "exit" => "quit",
+
+  "help" => proc{|args|
     puts 'ls [PAGE]              '.color(bold: true) + ' show all required tickets'
     puts '[show] TICKET          '.color(bold: true) + ' show the detail of the TICKET, and select it'
-    puts 'b                      '.color(bold: true) + ' show the backport option of selected ticket for merger.rb'
+    puts 'backport               '.color(bold: true) + ' show the option of selected ticket for merger.rb'
     puts 'rel REVISION           '.color(bold: true) + ' add the selected ticket as related to the REVISION'
     puts 'done [TICKET] [-- NOTE]'.color(bold: true) + ' set Backport field of the TICKET to DONE'
     puts 'close [TICKET]         '.color(bold: true) + ' close the TICKET'
     puts 'last [TICKET]          '.color(bold: true) + ' show the last journal of the TICKET'
     puts '! COMMAND              '.color(bold: true) + ' execute COMMAND'
-  else
+  }
+}
+list = Abbrev.abbrev(commands.keys)
+
+@issues = nil
+@issue = nil
+@changesets = nil
+while true
+  begin
+    l = Readline.readline "#{('#' + @issue.to_s).color(bold: true) if @issue}> "
+  rescue Interrupt
+    break
+  end
+  break unless l
+  cmd, args = l.strip.split(/\s+/, 2)
+  next unless cmd
+  if (!args || args.empty?) && /\A\d+\z/ =~ cmd
+    args = cmd
+    cmd = "show"
+  end
+  if commands[cmd].is_a? String
+    cmd = list[cmd]
+  end
+  cmd = list[cmd]
+  begin
+    if cmd
+      commands[cmd].call(args.to_s)
+    else
+      raise CommandSyntaxError
+    end
+  rescue CommandSyntaxError
     puts "error #{l.inspect}"
   end
 end
