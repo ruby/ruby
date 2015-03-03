@@ -571,26 +571,14 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_segv_loaded_features
-    opts = SEGVTest::ExecOptions.dup
-
     bug7402 = '[ruby-core:49573]'
 
-    status = Dir.mktmpdir("segv_test") do |tmpdir|
-      assert_in_out_err(['-e', 'class Bogus; def to_str; exit true; end; end',
-                         '-e', '$".clear',
-                         '-e', '$".unshift Bogus.new',
-                         '-e', '(p $"; abort) unless $".size == 1',
-                         '-e', 'Process.kill :SEGV, $$',
-                         '-C', tmpdir,
-                        ],
-                        "", [], //,
-                        nil,
-                        opts)
-    end
-    if signo = status.termsig
-      sleep 0.1
-      EnvUtil.diagnostic_reports(Signal.signame(signo), EnvUtil.rubybin, status.pid, Time.now)
-    end
+    status = assert_segv(['-e', 'END {Process.kill :SEGV, $$}',
+                          '-e', 'class Bogus; def to_str; exit true; end; end',
+                          '-e', '$".clear',
+                          '-e', '$".unshift Bogus.new',
+                          '-e', '(p $"; abort) unless $".size == 1',
+                         ])
     assert_not_predicate(status, :success?, "segv but success #{bug7402}")
   end
 
