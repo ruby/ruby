@@ -319,7 +319,7 @@ puts "Backporter #{VERSION}".color(bold: true) + " for #{TARGET_VERSION}"
 @changesets = nil
 while true
   begin
-    l = Readline.readline '> '
+    l = Readline.readline "#{'#' + @issue.to_s if @issue}> "
   rescue Interrupt
     break
   end
