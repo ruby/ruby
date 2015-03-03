@@ -552,18 +552,9 @@ class TestRubyOptions < Test::Unit::TestCase
   def assert_segv(args, message=nil)
     test_stdin = ""
     opt = SEGVTest::ExecOptions.dup
+    list = SEGVTest::ExpectedStderrList
 
-    _, stderr, status = EnvUtil.invoke_ruby(args, test_stdin, false, true, **opt)
-    stderr.force_encoding("ASCII-8BIT")
-
-    if signo = status.termsig
-      sleep 0.1
-      EnvUtil.diagnostic_reports(Signal.signame(signo), EnvUtil.rubybin, status.pid, Time.now)
-    end
-
-    assert_pattern_list(SEGVTest::ExpectedStderrList, stderr, message)
-
-    status
+    assert_in_out_err(args, test_stdin, //, list, encoding: "ASCII-8BIT", **opt)
   end
 
   def test_segv_test
