@@ -1,3 +1,12 @@
+Wed Mar  4 00:44:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_io_blocking_region): assigned variables
+	  inside EXEC_TAG() should be volatile.
+
+	* thread.c (rb_thread_s_handle_interrupt): ditto.
+
+	* thread.c (exec_recursive): ditto.
+
 Wed Mar  4 00:29:18 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* tool/redmine-backporter.rb: now can specify shorten form of commands.

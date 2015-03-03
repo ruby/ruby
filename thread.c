@@ -1386,9 +1386,9 @@ rb_thread_call_without_gvl(void *(*func)(void *data), void *data1,
 VALUE
 rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
 {
-    VALUE val = Qundef; /* shouldn't be used */
+    volatile VALUE val = Qundef; /* shouldn't be used */
     rb_thread_t *th = GET_THREAD();
-    int saved_errno = 0;
+    volatile int saved_errno = 0;
     int state;
 
     th->waiting_fd = fd;
@@ -1787,7 +1787,7 @@ rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
 {
     VALUE mask;
     rb_thread_t *th = GET_THREAD();
-    VALUE r = Qnil;
+    volatile VALUE r = Qnil;
     int state;
 
     if (!rb_block_given_p()) {
@@ -4859,10 +4859,11 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 	    }
 	}
 	else {
+	    volatile VALUE ret = Qundef;
 	    recursive_push(p.list, p.objid, p.pairid);
 	    PUSH_TAG();
 	    if ((state = EXEC_TAG()) == 0) {
-		result = (*func)(obj, arg, FALSE);
+		ret = (*func)(obj, arg, FALSE);
 	    }
 	    POP_TAG();
 	    if (!recursive_pop(p.list, p.objid, p.pairid)) {
@@ -4872,6 +4873,7 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 			 sym, rb_thread_current());
 	    }
 	    if (state) JUMP_TAG(state);
+	    result = ret;
 	}
     }
     *(volatile struct exec_recursive_params *)&p;
