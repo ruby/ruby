@@ -2,8 +2,12 @@ require "envutil"
 
 class TestExtLibs < Test::Unit::TestCase
   @extdir = $".grep(/\/rbconfig\.rb\z/) {break "#$`/ext"}
+  configure_args = RbConfig::CONFIG['configure_args']
+  ignore = configure_args[/--without-ext=([^'"]*)/, 1]
+  @ignore = (ignore.split(/,/) if ignore)
 
   def self.check_existence(ext, add_msg = nil)
+    return if @ignore and @ignore.any? {|pat| File.fnmatch?(pat, ext)}
     add_msg = ".  #{add_msg}" if add_msg
     log = "#{@extdir}/#{ext}/mkmf.log"
     define_method("test_existence_of_#{ext}") do
