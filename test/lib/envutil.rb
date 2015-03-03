@@ -344,8 +344,10 @@ module Test
             begin
               if exp.is_a?(Regexp)
                 assert_match(exp, act, message)
-              else
+              elsif exp.all? {|e| String === e}
                 assert_equal(exp, act.lines.map {|l| l.chomp }, message)
+              else
+                assert_pattern_list(exp, act, message)
               end
             rescue MiniTest::Assertion => e
               errs << e.message
