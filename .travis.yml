@@ -34,12 +34,13 @@ os:
 # version string  for Debian/Ubuntu, and  no dependencies have been  changed so
 # far since the 1.9.1 release.
 before_install:
+  - "CONFIG_FLAG="
   - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq update; fi"
   - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq install $CC; fi" # upgrade if any
   - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then JOBS='-j'; fi"
   - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then brew install autoconf gdbm openssl; fi"
-  - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then GDBM_FLAG=\"--with-gdbm-dir=`brew --prefix gdbm`\"; fi"
-  - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then OPENSSL_FLAG=\"--with-openssl-dir=`brew --prefix openssl`\"; fi"
+  - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then CONFIG_FLAG=\"$CONFIG_FLAG --with-gdbm-dir=`brew --prefix gdbm`\"; fi"
+  - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then CONFIG_FLAG=\"$CONFIG_FLAG --with-openssl-dir=`brew --prefix openssl`\"; fi"
   - "if [[ $TRAVIS_OS_NAME = 'osx' && $CC = 'gcc' ]]; then CC='gcc-4.9'; fi"
 install: "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq build-dep ruby1.9.1 2>/dev/null; fi"
 
@@ -54,7 +55,7 @@ before_script:
   - "make -f common.mk BASERUBY=ruby MAKEDIRS='mkdir -p' srcdir=. update-config_files"
   - "autoconf"
   - "mkdir config_1st config_2nd"
-  - "./configure -C --disable-install-doc --with-gcc=$CC $OPENSSL_FLAG"
+  - "./configure -C --disable-install-doc --with-gcc=$CC $CONFIG_FLAG"
   - "cp -pr config.status .ext/include config_1st"
   - "make reconfig"
   - "cp -pr config.status .ext/include config_2nd"
