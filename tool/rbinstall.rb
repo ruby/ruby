@@ -26,7 +26,7 @@ rescue LoadError
 end
 
 STDOUT.sync = true
-File.umask(0)
+File.umask(0222)
 
 def parse_args(argv = ARGV)
   $mantype = 'doc'
@@ -658,10 +658,12 @@ end
       def extract_files(destination_dir, pattern = "*")
         path = File.dirname(@gem.path)
         return if path == destination_dir
+        File.chmod(0700, destination_dir)
         install_recursive(path, without_destdir(destination_dir),
                           :glob => pattern,
                           :no_install => "*.gemspec",
                           :mode => $data_mode)
+        File.chmod($dir_mode, destination_dir)
       end
     end
 
