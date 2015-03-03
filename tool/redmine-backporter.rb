@@ -31,8 +31,8 @@ opts.parse!(ARGV)
 
 http_options = {use_ssl: true}
 http_options[:verify_mode] = OpenSSL::SSL::VERIFY_NONE unless ssl_verify
-openuri_options = {}
-openuri_options[:ssl_verify_mode] = OpenSSL::SSL::VERIFY_NONE unless ssl_verify
+$openuri_options = {}
+$openuri_options[:ssl_verify_mode] = OpenSSL::SSL::VERIFY_NONE unless ssl_verify
 
 TARGET_VERSION = target_version || ENV['TARGET_VERSION'] || (raise 'need to specify TARGET_VERSION')
 RUBY_REPO_PATH = repo_path || ENV['RUBY_REPO_PATH']
@@ -300,6 +300,18 @@ def show_last_journal(http, uri)
 end
 
 def backport_command_string
+  unless @changesets.respond_to?(:validated)
+    @changesets = @changesets.select do |c|
+      begin
+        uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/revisions/#{c}")
+        uri.read($openuri_options)
+        true
+      rescue
+        false
+      end
+    end
+    @changesets.define_singleton_method(:validated){true}
+  end
   " backport --ticket=#{@issue} #{@changesets.join(',')}"
 end
 
@@ -323,7 +335,7 @@ commands = {
     raise CommandSyntaxError unless /\A(\d+)?\z/ =~ args
     uri = URI(REDMINE_BASE+'/projects/ruby-trunk/issues.json?'+URI.encode_www_form(@query.dup.merge('page' => ($1 ? $1.to_i : 1))))
     # puts uri
-    res = JSON(uri.read(openuri_options))
+    res = JSON(uri.read($openuri_options))
     @issues = issues = res["issues"]
     from = res["offset"] + 1
     total = res["total_count"]
@@ -342,7 +354,7 @@ commands = {
     @issue = id
     uri = "#{REDMINE_BASE}/issues/#{id}"
     uri = URI(uri+".json?include=children,attachments,relations,changesets,journals")
-    res = JSON(uri.read(openuri_options))
+    res = JSON(uri.read($openuri_options))
     i = res["issue"]
     unless i["changesets"]
       abort "You don't have view_changesets permission"
@@ -369,6 +381,7 @@ eom
       sio.puts "== #{x["revision"]} #{x["committed_on"]} #{x["user"]["name"] rescue nil}".color(bold: true, underscore: true)
       sio.puts x["comments"]
     end
+    @changesets = @changesets.sort.uniq
     if i["journals"] && !i["journals"].empty?
       sio.puts "= journals".color(bold: true, underscore: true)
       i["journals"].each do |x|

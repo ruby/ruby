@@ -1,3 +1,8 @@
+Wed Mar  4 02:13:06 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* tool/redmine-backporter.rb (backport_command_string): pick up only
+	  when the revision exists in trunk.
+
 Wed Mar  4 00:44:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_io_blocking_region): assigned variables
