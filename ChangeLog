@@ -1,3 +1,8 @@
+Tue Mar  3 22:25:24 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/lib/envutil.rb (EnvUtil.invoke_ruby): need to rescue because
+	  Signal.signame may raise exception.
+
 Tue Mar  3 16:57:39 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* tool/redmine-backporter.rb: use 'b' instead of 's' for showing

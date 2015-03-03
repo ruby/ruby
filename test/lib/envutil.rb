@@ -70,7 +70,7 @@ module EnvUtil
       unless (!th_stdout || th_stdout.join(timeout)) && (!th_stderr || th_stderr.join(timeout))
         signals = Array(signal).select do |sig|
           DEFAULT_SIGNALS[sig.to_s] or
-            DEFAULT_SIGNALS[Signal.signame(sig)]
+            DEFAULT_SIGNALS[Signal.signame(sig)] rescue false
         end
         signals |= [:KILL]
         case pgroup = opt[:pgroup]
