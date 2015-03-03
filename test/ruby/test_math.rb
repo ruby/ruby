@@ -42,6 +42,12 @@ class TestMath < Test::Unit::TestCase
     check(0.0,  Math.cos(2 * Math::PI / 4))
     check(-1.0, Math.cos(4 * Math::PI / 4))
     check(0.0,  Math.cos(6 * Math::PI / 4))
+    check(0.5403023058681398,  Math.cos(1))
+    check(-0.7112665029764864, Math.cos(1 << 62))
+    check(0.9289154176164999,  Math.cos((2 ** 62)/(3 ** 40).to_r))
+    check(0.9820680774815206,  Math.cos((2 ** 61)/(3 ** 40).to_r))
+    check(0.4194382061248139,  Math.cos((2 ** 62)/(3 ** 39).to_r))
+    check(0.8424482791616391,  Math.cos((2 ** 61)/(3 ** 39).to_r))
   end
 
   def test_sin
@@ -318,5 +324,20 @@ class TestMath < Test::Unit::TestCase
     check(Math.log((1 << 62 << 1)._to_f),  Math.log(1 << 62))
 
     Bignum.class_eval { alias to_f _to_f }
+  end
+
+  def test_override_rational_to_f
+    Rational.class_eval do
+      alias _to_f to_f
+      def to_f
+        (self + 1)._to_f
+      end
+    end
+
+    check(Math.cos((0r + 1)._to_f), Math.cos(0r))
+    check(Math.exp((0r + 1)._to_f), Math.exp(0r))
+    check(Math.log((0r + 1)._to_f), Math.log(0r))
+
+    Rational.class_eval { alias to_f _to_f }
   end
 end
