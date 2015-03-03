@@ -83,18 +83,12 @@ def version_up(inc=nil)
     end
   end
 
-  teeny = v[2]
-  case v
-  when %w/1 9 2/
-    teeny = 1
-  end
-
   str = open 'version.h', 'rb' do |f| f.read end
   [%W[RUBY_VERSION      "#{v.join '.'}"],
    %W[RUBY_VERSION_CODE  #{v.join ''}],
    %W[RUBY_VERSION_MAJOR #{v[0]}],
    %W[RUBY_VERSION_MINOR #{v[1]}],
-   %W[RUBY_VERSION_TEENY #{teeny}],
+   %W[RUBY_VERSION_TEENY #{v[2]}],
    %W[RUBY_RELEASE_DATE "#{d.strftime '%Y-%m-%d'}"],
    %W[RUBY_RELEASE_CODE  #{d.strftime '%Y%m%d'}],
    %W[RUBY_PATCHLEVEL    #{pl}],
