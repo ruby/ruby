@@ -1,3 +1,10 @@
+Thu Mar  5 08:31:02 2015  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* random.c (random_raw_seed): Avoid calling fill_random_bytes()
+	  if the requested size is 0. AIX returns -1 for 0-byte read from
+	  /dev/urandom, while other UNIX returns 0. With this change,
+	  Random.raw_seed(0) consistently retuns "" in any UNIX.
+
 Wed Mar  4 12:43:32 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
 
 	* test/ruby/test_math.rb (assert_float_and_int): Refactor test cases
