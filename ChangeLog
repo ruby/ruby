@@ -1,3 +1,8 @@
+Wed Mar  4 10:16:57 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* enum.c: Fix typo in slice_after's exception message.
+	  [fix GH-842][ci skip] Patch by @jsyeo
+
 Wed Mar  4 10:15:37 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* doc/syntax/methods.rdoc: add some missing spaces and

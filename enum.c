@@ -3234,7 +3234,7 @@ enum_slice_after(int argc, VALUE *argv, VALUE enumerable)
 
     if (rb_block_given_p()) {
         if (0 < argc)
-            rb_raise(rb_eArgError, "both pattan and block are given");
+            rb_raise(rb_eArgError, "both pattern and block are given");
         pred = rb_block_proc();
     }
     else {
