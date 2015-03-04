@@ -1,3 +1,9 @@
+Wed Mar  4 10:15:37 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* doc/syntax/methods.rdoc: add some missing spaces and
+	  fix a grammatical error in method docs.
+	  [fix GH-843][ci skip] Patch by @nikolas
+
 Wed Mar  4 02:13:06 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* tool/redmine-backporter.rb (backport_command_string): pick up only
