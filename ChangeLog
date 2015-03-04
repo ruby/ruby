@@ -1,3 +1,10 @@
+Wed Mar  4 11:52:30 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* symbol.c (Init_sym): make dsym_fstrs a hash compared by identity
+	  as the keys are unique fstrings, to get rid of running hash and
+	  compare methods and causing new object allocation during garbage
+	  collection phase.  [ruby-dev:48891] [Bug #10933]
+
 Wed Mar  4 10:16:57 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* enum.c: Fix typo in slice_after's exception message.

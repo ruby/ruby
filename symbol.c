@@ -122,7 +122,7 @@ static const struct st_hash_type symhash = {
 void
 Init_sym(void)
 {
-    VALUE dsym_fstrs = rb_hash_new();
+    VALUE dsym_fstrs = rb_ident_hash_new();
     global_symbols.dsymbol_fstr_hash = dsym_fstrs;
     rb_gc_register_mark_object(dsym_fstrs);
     rb_obj_hide(dsym_fstrs);
