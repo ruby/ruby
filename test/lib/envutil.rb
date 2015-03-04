@@ -209,7 +209,7 @@ module EnvUtil
     DIAGNOSTIC_REPORTS_PATH = File.expand_path("~/Library/Logs/DiagnosticReports")
     DIAGNOSTIC_REPORTS_TIMEFORMAT = '%Y-%m-%d-%H%M%S'
     def self.diagnostic_reports(signame, cmd, pid, now)
-      return unless %w[ABRT QUIT SEGV ILL].include?(signame)
+      return unless %w[ABRT QUIT SEGV ILL TRAP].include?(signame)
       cmd = File.basename(cmd)
       path = DIAGNOSTIC_REPORTS_PATH
       timeformat = DIAGNOSTIC_REPORTS_TIMEFORMAT
