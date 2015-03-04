@@ -17,6 +17,12 @@ class TestMath < Test::Unit::TestCase
   end
   alias check assert_float
 
+  def assert_float_and_int(exp_ary, act_ary)
+    flo_exp, int_exp, flo_act, int_act = *exp_ary, *act_ary
+    assert_float(flo_exp, flo_act)
+    assert_equal(int_exp, int_act)
+  end
+
   def test_atan2
     check(+0.0, Math.atan2(+0.0, +0.0))
     check(-0.0, Math.atan2(-0.0, +0.0))
@@ -198,16 +204,11 @@ class TestMath < Test::Unit::TestCase
   end
 
   def test_frexp
-    check(0.0, Math.frexp(0.0).first)
-    assert_equal(0, Math.frexp(0).last)
-    check(0.5, Math.frexp(0.5).first)
-    assert_equal(0, Math.frexp(0.5).last)
-    check(0.5, Math.frexp(1.0).first)
-    assert_equal(1, Math.frexp(1.0).last)
-    check(0.5, Math.frexp(2.0).first)
-    assert_equal(2, Math.frexp(2.0).last)
-    check(0.75, Math.frexp(3.0).first)
-    assert_equal(2, Math.frexp(3.0).last)
+    assert_float_and_int([0.0,  0], Math.frexp(0.0))
+    assert_float_and_int([0.5,  0], Math.frexp(0.5))
+    assert_float_and_int([0.5,  1], Math.frexp(1.0))
+    assert_float_and_int([0.5,  2], Math.frexp(2.0))
+    assert_float_and_int([0.75, 2], Math.frexp(3.0))
   end
 
   def test_ldexp
@@ -257,42 +258,16 @@ class TestMath < Test::Unit::TestCase
 
   def test_lgamma
     sqrt_pi = Math.sqrt(Math::PI)
-
-    g, s = Math.lgamma(-1.5)
-    check(Math.log(4 * sqrt_pi / 3), g)
-    assert_equal(s, 1)
-
-    g, s = Math.lgamma(-0.5)
-    check(Math.log(2 * sqrt_pi), g)
-    assert_equal(s, -1)
-
-    g, s = Math.lgamma(0.5)
-    check(Math.log(sqrt_pi), g)
-    assert_equal(s, 1)
-
-    assert_equal([0, 1], Math.lgamma(1))
-
-    g, s = Math.lgamma(1.5)
-    check(Math.log(sqrt_pi / 2), g)
-    assert_equal(s, 1)
-
-    assert_equal([0, 1], Math.lgamma(2))
-
-    g, s = Math.lgamma(2.5)
-    check(Math.log(3 * sqrt_pi / 4), g)
-    assert_equal(s, 1)
-
-    g, s = Math.lgamma(3)
-    check(Math.log(2), g)
-    assert_equal(s, 1)
-
-    g, s = Math.lgamma(3.5)
-    check(Math.log(15 * sqrt_pi / 8), g)
-    assert_equal(s, 1)
-
-    g, s = Math.lgamma(4)
-    check(Math.log(6), g)
-    assert_equal(s, 1)
+    assert_float_and_int([Math.log(4 * sqrt_pi / 3),  1], Math.lgamma(-1.5))
+    assert_float_and_int([Math.log(2 * sqrt_pi),     -1], Math.lgamma(-0.5))
+    assert_float_and_int([Math.log(sqrt_pi),          1], Math.lgamma(0.5))
+    assert_float_and_int([0,                          1], Math.lgamma(1))
+    assert_float_and_int([Math.log(sqrt_pi / 2),      1], Math.lgamma(1.5))
+    assert_float_and_int([0,                          1], Math.lgamma(2))
+    assert_float_and_int([Math.log(3 * sqrt_pi / 4),  1], Math.lgamma(2.5))
+    assert_float_and_int([Math.log(2),                1], Math.lgamma(3))
+    assert_float_and_int([Math.log(15 * sqrt_pi / 8), 1], Math.lgamma(3.5))
+    assert_float_and_int([Math.log(6),                1], Math.lgamma(4))
 
     assert_raise(Math::DomainError) { Math.lgamma(-Float::INFINITY) }
   end

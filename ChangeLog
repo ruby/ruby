@@ -1,3 +1,8 @@
+Wed Mar  4 12:43:32 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
+
+	* test/ruby/test_math.rb (assert_float_and_int): Refactor test cases
+	  by introducing assert_float_and_int. [misc #10810]
+
 Wed Mar  4 11:52:30 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* symbol.c (Init_sym): make dsym_fstrs a hash compared by identity
