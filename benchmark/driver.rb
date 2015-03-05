@@ -121,9 +121,22 @@ class BenchmarkDriver
   def show_results
     case @opt[:format]
     when :tsv
+      strformat = "\t%1$s"
+      numformat = "\t%1$*2$.3f"
+      minwidth = 0
+      name_width = 0
     when :markdown
       markdown = true
+      strformat = "|%1$-*2$s"
+      numformat = "|%1$*2$.3f"
+    when :plain
+      strformat = " %1$-*2$s"
+      numformat = " %1$*2$.3f"
     end
+
+    name_width ||= @name_width
+    minwidth ||= 7
+    width = @execs.map{|(_, v)| [v.size, minwidth].max}
 
     output
 
@@ -151,28 +164,26 @@ class BenchmarkDriver
       output "minimum results in each #{@repeat} measurements."
     end
 
-    tabs = @name_width / 8
-    sep = markdown ? "\t|" : "\t"
     output "Execution time (sec)"
     output if markdown
-    output ["name", @execs.map{|(_, v)| v}].join(sep)
-    output "-"*(8*tabs+8)+"|------:"*@execs.size if markdown
-    @results.each{|v, result|
+    output ["name".ljust(name_width), @execs.map.with_index{|(_, v), i| sprintf(strformat, v, width[i])}].join("").rstrip
+    output ["-"*name_width, width.map{|n|":".rjust(n, "-")}].join("|") if markdown
+    @results.each_with_index{|(v, result), i|
       rets = []
       s = adjusted_results(v, result){|r|
-        rets << sprintf("%.3f", r)
+        rets << sprintf(numformat, r, width[i])
       }
       v += s if s
-      output [v, rets].join(sep)
+      output [v.ljust(name_width), rets].join("")
     }
 
     if @execs.size > 1
       output
       output "Speedup ratio: compare with the result of `#{@execs[0][1]}' (greater is better)"
       output if markdown
-      output ["name", @execs[1..-1].map{|(_, v)| v}].join(sep)
-      output "-"*(8*tabs+8)+"|------:"*(@execs.size-1) if markdown
-      @results.each{|v, result|
+      output ["name".ljust(name_width), @execs[1..-1].map.with_index{|(_, v), i| sprintf(strformat, v, width[i])}].join("").rstrip
+      output ["-"*name_width, width[1..-1].map{|n|":".rjust(n, "-")}].join("|") if markdown
+      @results.each_with_index{|(v, result), i|
         rets = []
         first_value = nil
         s = adjusted_results(v, result){|r|
@@ -180,14 +191,14 @@ class BenchmarkDriver
             if r == 0
               rets << "Error"
             else
-              rets << sprintf("%.3f", first_value/r)
+              rets << sprintf(numformat, first_value/r, width[i])
             end
           else
             first_value = r
           end
         }
         v += s if s
-        output [v, rets].join(sep)
+        output [v.ljust(name_width), rets].join("")
       }
     end
 
@@ -297,6 +308,7 @@ if __FILE__ == $0
   formats = {
     :tsv => ".tsv",
     :markdown => ".md",
+    :plain => ".txt",
   }
 
   parser = OptionParser.new{|o|
