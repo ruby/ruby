@@ -1,3 +1,8 @@
+Fri Mar  6 02:50:12 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* dir.c (replace_real_basename): need to check the return value of
+	  GLOB_REALLOC().
+
 Fri Mar  6 02:26:03 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* dir.c (replace_real_basename): shouldn't create Ruby object before
