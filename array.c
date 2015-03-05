@@ -4181,6 +4181,8 @@ push_value(st_data_t key, st_data_t val, st_data_t ary)
  *
  *  It compares values using their #hash and #eql? methods for efficiency.
  *
+ *  +self+ is traversed in order, and the first occurrence is kept.
+ *
  *  Returns +nil+ if no changes are made (that is, no duplicates are found).
  *
  *     a = [ "a", "a", "b", "b", "c" ]
@@ -4235,6 +4237,8 @@ rb_ary_uniq_bang(VALUE ary)
  *  If a block is given, it will use the return value of the block for comparison.
  *
  *  It compares values using their #hash and #eql? methods for efficiency.
+ *
+ *  +self+ is traversed in order, and the first occurrence is kept.
  *
  *     a = [ "a", "a", "b", "b", "c" ]
  *     a.uniq   # => ["a", "b", "c"]
