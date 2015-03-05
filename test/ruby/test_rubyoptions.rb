@@ -706,6 +706,14 @@ class TestRubyOptions < Test::Unit::TestCase
                           bug10555, encoding: "locale")
       end
     end
+
+    def test_command_line_glob_with_dir
+      bug10941 = '[ruby-core:68430] [Bug #10941]'
+      with_tmpchdir do |dir|
+        Dir.mkdir('test')
+        assert_in_out_err(["-e", "", "test/*"], "", [], [], bug10941)
+      end
+    end
   end
 
   if /mswin|mingw/ =~ RUBY_PLATFORM
