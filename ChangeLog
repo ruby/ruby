@@ -25,7 +25,7 @@ Thu Mar  5 08:31:02 2015  Rei Odaira  <Rei.Odaira@gmail.com>
 	* random.c (random_raw_seed): Avoid calling fill_random_bytes()
 	  if the requested size is 0. AIX returns -1 for 0-byte read from
 	  /dev/urandom, while other UNIX returns 0. With this change,
-	  Random.raw_seed(0) consistently retuns "" in any UNIX.
+	  Random.raw_seed(0) consistently returns "" in any UNIX.
 
 Wed Mar  4 12:43:32 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
 
@@ -123,7 +123,7 @@ Mon Mar  2 13:04:27 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Mon Mar  2 12:05:04 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* test/net/ftp/test_ftp.rb (create_ftp_server): set SO_OOBINLINE
-	  for receiving OOB data which is sended with MSG_OOB flag in
+	  for receiving OOB data which is sent with MSG_OOB flag in
 	  portable way. [Bug #10915] [ruby-dev:48885]
 	* test/net/ftp/test_ftp.rb (test_abort, test_status): use gets
 	  for receiving OOB data in portable way.
