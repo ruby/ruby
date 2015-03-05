@@ -81,6 +81,7 @@ class BenchmarkDriver
     @loop_wl1 = @loop_wl2 = nil
     @ruby_arg = opt[:ruby_arg] || nil
     @opt = opt
+    @name_width = 4             # "name".size
 
     # [[name, [[r-1-1, r-1-2, ...], [r-2-1, r-2-2, ...]]], ...]
     @results = []
@@ -118,6 +119,12 @@ class BenchmarkDriver
   end
 
   def show_results
+    case @opt[:format]
+    when :tsv
+    when :markdown
+      markdown = true
+    end
+
     output
 
     if @verbose
@@ -144,20 +151,27 @@ class BenchmarkDriver
       output "minimum results in each #{@repeat} measurements."
     end
 
+    tabs = @name_width / 8
+    sep = markdown ? "\t|" : "\t"
     output "Execution time (sec)"
-    output "name\t#{@execs.map{|(_, v)| v}.join("\t")}"
+    output if markdown
+    output ["name", @execs.map{|(_, v)| v}].join(sep)
+    output "-"*(8*tabs+8)+"|------:"*@execs.size if markdown
     @results.each{|v, result|
       rets = []
       s = adjusted_results(v, result){|r|
         rets << sprintf("%.3f", r)
       }
-      output "#{v}#{s}\t#{rets.join("\t")}"
+      v += s if s
+      output [v, rets].join(sep)
     }
 
     if @execs.size > 1
       output
       output "Speedup ratio: compare with the result of `#{@execs[0][1]}' (greater is better)"
-      output "name\t#{@execs[1..-1].map{|(_, v)| v}.join("\t")}"
+      output if markdown
+      output ["name", @execs[1..-1].map{|(_, v)| v}].join(sep)
+      output "-"*(8*tabs+8)+"|------:"*(@execs.size-1) if markdown
       @results.each{|v, result|
         rets = []
         first_value = nil
@@ -172,7 +186,8 @@ class BenchmarkDriver
             first_value = r
           end
         }
-        output "#{v}#{s}\t#{rets.join("\t")}"
+        v += s if s
+        output [v, rets].join(sep)
       }
     end
 
@@ -232,6 +247,7 @@ class BenchmarkDriver
       output
     end
 
+    @name_width = name.size if name.size > @name_width
     result = [name]
     result << @execs.map{|(e, v)|
       (0...@repeat).map{
@@ -275,7 +291,8 @@ if __FILE__ == $0
     :dir => File.dirname(__FILE__),
     :repeat => 1,
     :output => "bmlog-#{Time.now.strftime('%Y%m%d-%H%M%S')}.#{$$}",
-    :raw_output => nil
+    :raw_output => nil,
+    :format => :tsv,
   }
 
   parser = OptionParser.new{|o|
@@ -305,6 +322,9 @@ if __FILE__ == $0
     }
     o.on('--rawdata-output [FILE]', 'output rawdata'){|r|
       opt[:rawdata_output] = r
+    }
+    o.on('-f', '--format={tsv,markdown}', 'output format', [:tsv, :markdown]){|r|
+      opt[:format] = r
     }
     o.on('-v', '--verbose'){|v|
       opt[:verbose] = v
