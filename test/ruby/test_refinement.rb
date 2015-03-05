@@ -1,12 +1,5 @@
 require 'test/unit'
 
-# to supress warnings for future calls of Module#refine
-EnvUtil.suppress_warning do
-  Module.new {
-    refine(Object) {}
-  }
-end
-
 class TestRefinement < Test::Unit::TestCase
   class Foo
     def x
