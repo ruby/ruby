@@ -1,6 +1,10 @@
 require 'test/unit'
 
 class TestRefinement < Test::Unit::TestCase
+  module Sandbox
+    BINDING = binding
+  end
+
   class Foo
     def x
       return "Foo#x"
@@ -65,7 +69,7 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
 
-  eval <<-EOF, TOPLEVEL_BINDING
+  eval <<-EOF, Sandbox::BINDING
     using TestRefinement::FooExt
 
     class TestRefinement::FooExtClient
@@ -95,7 +99,7 @@ class TestRefinement < Test::Unit::TestCase
     end
   EOF
 
-  eval <<-EOF, TOPLEVEL_BINDING
+  eval <<-EOF, Sandbox::BINDING
     using TestRefinement::FooExt
     using TestRefinement::FooExt2
 
@@ -411,7 +415,7 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_main_using_is_private
     assert_raise(NoMethodError) do
-      eval("self.using Module.new", TOPLEVEL_BINDING)
+      eval("self.using Module.new", Sandbox::BINDING)
     end
   end
 
@@ -426,7 +430,7 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_module_using_class
     assert_raise(TypeError) do
-      eval("using TestRefinement::UsingClass", TOPLEVEL_BINDING)
+      eval("using TestRefinement::UsingClass", Sandbox::BINDING)
     end
   end
 
@@ -587,7 +591,7 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_using_in_module
     assert_raise(RuntimeError) do
-      eval(<<-EOF, TOPLEVEL_BINDING)
+      eval(<<-EOF, Sandbox::BINDING)
         $main = self
         module M
         end
@@ -600,14 +604,16 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_using_in_method
     assert_raise(RuntimeError) do
-      eval(<<-EOF, TOPLEVEL_BINDING)
+      eval(<<-EOF, Sandbox::BINDING)
         $main = self
         module M
         end
-        def call_using_in_method
-          $main.send(:using, M)
+        class C
+          def call_using_in_method
+            $main.send(:using, M)
+          end
         end
-        call_using_in_method
+        C.new.call_using_in_method
       EOF
     end
   end
@@ -648,7 +654,7 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
 
-  eval <<-EOF, TOPLEVEL_BINDING
+  eval <<-EOF, Sandbox::BINDING
     using TestRefinement::IncludeIntoRefinement::M
 
     module TestRefinement::IncludeIntoRefinement::User
@@ -711,7 +717,7 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
 
-  eval <<-EOF, TOPLEVEL_BINDING
+  eval <<-EOF, Sandbox::BINDING
     using TestRefinement::PrependIntoRefinement::M
 
     module TestRefinement::PrependIntoRefinement::User
@@ -857,7 +863,7 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_module_using_invalid_self
     assert_raise(RuntimeError) do
-      eval <<-EOF, TOPLEVEL_BINDING
+      eval <<-EOF, Sandbox::BINDING
         module TestRefinement::TestModuleUsingInvalidSelf
           Module.new.send(:using, TestRefinement::FooExt)
         end
@@ -936,7 +942,7 @@ class TestRefinement < Test::Unit::TestCase
   end
 
   def test_eval_with_binding_scoping
-    assert_in_out_err([], <<-INPUT, ["HELLO WORLD", "dlrow olleh", "HELLO WORLD"], [])
+    assert_in_out_err([], <<-INPUT, ["HELLO WORLD", "dlrow olleh", "dlrow olleh"], [])
       module M
         refine String do
           def upcase
@@ -946,8 +952,9 @@ class TestRefinement < Test::Unit::TestCase
       end
 
       puts "hello world".upcase
-      puts eval(%{using M; "hello world".upcase}, TOPLEVEL_BINDING)
-      puts eval(%{"hello world".upcase}, TOPLEVEL_BINDING)
+      b = binding
+      puts eval(%{using M; "hello world".upcase}, b)
+      puts eval(%{"hello world".upcase}, b)
     INPUT
   end
 
@@ -1424,6 +1431,6 @@ class TestRefinement < Test::Unit::TestCase
   private
 
   def eval_using(mod, s)
-    eval("using #{mod}; #{s}", TOPLEVEL_BINDING)
+    eval("using #{mod}; #{s}", Sandbox::BINDING)
   end
 end

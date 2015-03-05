@@ -1304,10 +1304,15 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *const cref_arg, 
 	th->parse_in_eval--;
 
 	if (!cref && base_block->iseq) {
-	    orig_cref = rb_vm_get_cref(base_block->iseq, base_block->ep);
-	    cref = NEW_CREF(Qnil);
-	    crefval = (VALUE) cref;
-	    COPY_CREF(cref, orig_cref);
+	    if (NIL_P(scope)) {
+		orig_cref = rb_vm_get_cref(base_block->iseq, base_block->ep);
+		cref = NEW_CREF(Qnil);
+		crefval = (VALUE) cref;
+		COPY_CREF(cref, orig_cref);
+	    }
+	    else {
+		cref = rb_vm_get_cref(base_block->iseq, base_block->ep);
+	    }
 	}
 	vm_set_eval_stack(th, iseqval, cref, base_block);
 	th->cfp->klass = CLASS_OF(base_block->self);
