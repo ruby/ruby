@@ -15,6 +15,9 @@ Fri Mar  6 07:00:44 2015  Koichi Sasada  <ko1@atdot.net>
 	  However, created two T_ICLASS objects have same or shorter lifetime
 	  than M1 (T_MODULE) object. So that we only need to mark mtbl from M1,
 	  not from T_ICLASS objects. This patch tries marking only from M1.
+	  In other words, original module (M1) has responsibility to mark mtbl.
+	  Because of no duplicate marking, we don't need method_table_wrapper
+	  any more.
 
 	  Note that one `Module#prepend` call creates two T_ICLASS objects.
 	  One for refering to a prepending Module object, same as
