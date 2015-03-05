@@ -168,10 +168,10 @@ class BenchmarkDriver
     output if markdown
     output ["name".ljust(name_width), @execs.map.with_index{|(_, v), i| sprintf(strformat, v, width[i])}].join("").rstrip
     output ["-"*name_width, width.map{|n|":".rjust(n, "-")}].join("|") if markdown
-    @results.each_with_index{|(v, result), i|
+    @results.each{|v, result|
       rets = []
       s = adjusted_results(v, result){|r|
-        rets << sprintf(numformat, r, width[i])
+        rets << sprintf(numformat, r, width[rets.size])
       }
       v += s if s
       output [v.ljust(name_width), rets].join("")
@@ -183,7 +183,7 @@ class BenchmarkDriver
       output if markdown
       output ["name".ljust(name_width), @execs[1..-1].map.with_index{|(_, v), i| sprintf(strformat, v, width[i])}].join("").rstrip
       output ["-"*name_width, width[1..-1].map{|n|":".rjust(n, "-")}].join("|") if markdown
-      @results.each_with_index{|(v, result), i|
+      @results.each{|v, result|
         rets = []
         first_value = nil
         s = adjusted_results(v, result){|r|
@@ -191,7 +191,7 @@ class BenchmarkDriver
             if r == 0
               rets << "Error"
             else
-              rets << sprintf(numformat, first_value/r, width[i])
+              rets << sprintf(numformat, first_value/r, width[rets.size+1])
             end
           else
             first_value = r
