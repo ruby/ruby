@@ -711,7 +711,7 @@ end
 install?(:ext, :comm, :gem) do
   begin
     require "zlib"
-  rescue LoadErroe
+  rescue LoadError
   end
   if defined?(Zlib)
     require 'pathname'
