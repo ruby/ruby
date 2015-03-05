@@ -81,7 +81,6 @@ class BenchmarkDriver
     @loop_wl1 = @loop_wl2 = nil
     @ruby_arg = opt[:ruby_arg] || nil
     @opt = opt
-    @name_width = 4             # "name".size
 
     # [[name, [[r-1-1, r-1-2, ...], [r-2-1, r-2-2, ...]]], ...]
     @results = []
@@ -134,7 +133,7 @@ class BenchmarkDriver
       numformat = " %1$*2$.3f"
     end
 
-    name_width ||= @name_width
+    name_width ||= @results.map {|v,*| v.size}.max
     minwidth ||= 7
     width = @execs.map{|(_, v)| [v.size, minwidth].max}
 
@@ -258,7 +257,6 @@ class BenchmarkDriver
       output
     end
 
-    @name_width = name.size if name.size > @name_width
     result = [name]
     result << @execs.map{|(e, v)|
       (0...@repeat).map{
