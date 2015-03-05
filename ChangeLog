@@ -17,7 +17,7 @@ Thu Mar  5 11:50:54 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 Thu Mar  5 11:16:55 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
-	* test/ruby/test_refinement.rb: There is no need anymore to supress
+	* test/ruby/test_refinement.rb: There is no need anymore to suppress
 	  warnings.
 
 Thu Mar  5 08:31:02 2015  Rei Odaira  <Rei.Odaira@gmail.com>
