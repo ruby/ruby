@@ -1,3 +1,9 @@
+Fri Mar  6 02:26:03 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* dir.c (replace_real_basename): shouldn't create Ruby object before
+	  the object system is loaded.
+	  [ruby-core:68430] [Bug #10941]
+
 Wed Mar  5 16:58:43 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
 
 	* hash.c: [DOC] #delete method actually returns nil, if the key

@@ -1488,12 +1488,22 @@ replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p)
     free(wplain);
     if (h == INVALID_HANDLE_VALUE) return path;
     FindClose(h);
-    tmp = rb_w32_conv_from_wchar(fd.cFileName, enc);
-    wlen = RSTRING_LEN(tmp);
-    path = GLOB_REALLOC(path, base + wlen + 1);
-    memcpy(path + base, RSTRING_PTR(tmp), wlen);
+    if (tmp) {
+	tmp = rb_w32_conv_from_wchar(fd.cFileName, enc);
+	wlen = RSTRING_LEN(tmp);
+	path = GLOB_REALLOC(path, base + wlen + 1);
+	memcpy(path + base, RSTRING_PTR(tmp), wlen);
+	rb_str_resize(tmp, 0);
+    }
+    else {
+	char *utf8filename;
+	wlen = WideCharToMultiByte(CP_UTF8, 0, fd.cFileName, -1, NULL, 0, NULL, NULL);
+	utf8filename = GLOB_REALLOC(0, wlen);
+	WideCharToMultiByte(CP_UTF8, 0, fd.cFileName, -1, utf8filename, wlen, NULL, NULL);
+	memcpy(path + base, utf8filename, wlen);
+	GLOB_FREE(utf8filename);
+    }
     path[base + wlen] = 0;
-    rb_str_resize(tmp, 0);
     return path;
 }
 #elif USE_NAME_ON_FS == 1
