@@ -166,7 +166,7 @@ class_alloc(VALUE flags, VALUE klass)
     obj->ptr = ALLOC(rb_classext_t);
     RCLASS_IV_TBL(obj) = 0;
     RCLASS_CONST_TBL(obj) = 0;
-    RCLASS_M_TBL_WRAPPER(obj) = 0;
+    RCLASS_M_TBL(obj) = 0;
     RCLASS_SET_SUPER((VALUE)obj, 0);
     RCLASS_ORIGIN(obj) = (VALUE)obj;
     RCLASS_IV_INDEX_TBL(obj) = 0;
@@ -325,10 +325,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
 	rb_free_const_table(RCLASS_CONST_TBL(clone));
 	RCLASS_CONST_TBL(clone) = 0;
     }
-    if (RCLASS_M_TBL_WRAPPER(clone)) {
-	rb_free_m_tbl_wrapper(RCLASS_M_TBL_WRAPPER(clone));
-	RCLASS_M_TBL_WRAPPER(clone) = 0;
-    }
+    RCLASS_M_TBL(clone) = 0;
     if (RCLASS_IV_TBL(orig)) {
 	st_data_t id;
 
@@ -794,8 +791,8 @@ rb_include_class_new(VALUE module, VALUE super)
     RCLASS_IV_TBL(klass) = RCLASS_IV_TBL(module);
     RCLASS_CONST_TBL(klass) = RCLASS_CONST_TBL(module);
 
-    RCLASS_M_TBL_WRAPPER(OBJ_WB_UNPROTECT(klass)) =
-	RCLASS_M_TBL_WRAPPER(OBJ_WB_UNPROTECT(RCLASS_ORIGIN(module)));
+    RCLASS_M_TBL(OBJ_WB_UNPROTECT(klass)) =
+      RCLASS_M_TBL(OBJ_WB_UNPROTECT(RCLASS_ORIGIN(module))); /* TODO: unprotected? */
 
     RCLASS_SET_SUPER(klass, super);
     if (RB_TYPE_P(module, T_ICLASS)) {
@@ -855,7 +852,7 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
 	for (p = RCLASS_SUPER(klass); p; p = RCLASS_SUPER(p)) {
 	    int type = BUILTIN_TYPE(p);
 	    if (type == T_ICLASS) {
-		if (RCLASS_M_TBL_WRAPPER(p) == RCLASS_M_TBL_WRAPPER(module)) {
+		if (RCLASS_M_TBL(p) == RCLASS_M_TBL(module)) {
 		    if (!superclass_seen) {
 			c = p;  /* move insertion point */
 		    }
@@ -944,7 +941,7 @@ rb_prepend_module(VALUE klass, VALUE module)
 	RCLASS_SET_SUPER(origin, RCLASS_SUPER(klass));
 	RCLASS_SET_SUPER(klass, origin);
 	RCLASS_ORIGIN(klass) = origin;
-	RCLASS_M_TBL_WRAPPER(origin) = RCLASS_M_TBL_WRAPPER(klass);
+	RCLASS_M_TBL(origin) = RCLASS_M_TBL(klass);
 	RCLASS_M_TBL_INIT(klass);
 	st_foreach(RCLASS_M_TBL(origin), move_refined_method,
 		   (st_data_t) RCLASS_M_TBL(klass));

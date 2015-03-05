@@ -316,11 +316,6 @@ struct rb_classext_struct {
     rb_alloc_func_t allocator;
 };
 
-struct method_table_wrapper {
-    st_table *tbl;
-    size_t serial;
-};
-
 #ifndef BDIGIT
 # if SIZEOF_INT*2 <= SIZEOF_LONG_LONG
 #  define BDIGIT unsigned int
@@ -480,8 +475,7 @@ void rb_class_remove_from_super_subclasses(VALUE);
 #define RCLASS_EXT(c) (RCLASS(c)->ptr)
 #define RCLASS_IV_TBL(c) (RCLASS_EXT(c)->iv_tbl)
 #define RCLASS_CONST_TBL(c) (RCLASS_EXT(c)->const_tbl)
-#define RCLASS_M_TBL_WRAPPER(c) (RCLASS(c)->m_tbl_wrapper)
-#define RCLASS_M_TBL(c) (RCLASS_M_TBL_WRAPPER(c) ? RCLASS_M_TBL_WRAPPER(c)->tbl : 0)
+#define RCLASS_M_TBL(c) (RCLASS(c)->m_tbl)
 #define RCLASS_IV_INDEX_TBL(c) (RCLASS_EXT(c)->iv_index_tbl)
 #define RCLASS_ORIGIN(c) (RCLASS_EXT(c)->origin)
 #define RCLASS_REFINED_CLASS(c) (RCLASS_EXT(c)->refined_class)
@@ -490,11 +484,7 @@ void rb_class_remove_from_super_subclasses(VALUE);
 static inline void
 RCLASS_M_TBL_INIT(VALUE c)
 {
-    struct method_table_wrapper *wrapper;
-    wrapper = ALLOC(struct method_table_wrapper);
-    wrapper->tbl = st_init_numtable();
-    wrapper->serial = 0;
-    RCLASS_M_TBL_WRAPPER(c) = wrapper;
+    RCLASS_M_TBL(c) = st_init_numtable();
 }
 
 #undef RCLASS_SUPER

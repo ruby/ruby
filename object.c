@@ -651,7 +651,7 @@ static VALUE
 class_search_ancestor(VALUE cl, VALUE c)
 {
     while (cl) {
-	if (cl == c || RCLASS_M_TBL_WRAPPER(cl) == RCLASS_M_TBL_WRAPPER(c))
+	if (cl == c || RCLASS_M_TBL(cl) == RCLASS_M_TBL(c))
 	    return cl;
 	cl = RCLASS_SUPER(cl);
     }

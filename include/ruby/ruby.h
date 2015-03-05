@@ -816,7 +816,7 @@ struct RClass {
     struct RBasic basic;
     VALUE super;
     rb_classext_t *ptr;
-    struct method_table_wrapper *m_tbl_wrapper;
+    struct st_table *m_tbl;
 };
 #define RCLASS_SUPER(c) rb_class_get_superclass(c)
 #define RMODULE_IV_TBL(m) RCLASS_IV_TBL(m)

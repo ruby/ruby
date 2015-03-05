@@ -1,3 +1,42 @@
+Fri Mar  6 07:00:44 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* internal.h: remove struct method_table_wrapper.
+	  struct method_table_wrapper was introduced to avoid duplicate marking
+	  for method tables.
+
+	  For example, `module M1; def foo; end; end` make one method table
+	  (mtbl) contains a method `foo`. M1 (T_MODULE) points mtbl.
+	  Classes C1 and C2 includes M1, then two T_ICLASS objects are created
+	  and they points mtbl too. In this case, three objects (one T_MODULE
+	  and two T_ICLASS objects) points same mtbl. On marking phase, these
+	  three objects mark same mtbl. To avoid such duplication, struct
+	  method_table_wrapper was introduced.
+
+	  However, created two T_ICLASS objects have same or shorter lifetime
+	  than M1 (T_MODULE) object. So that we only need to mark mtbl from M1,
+	  not from T_ICLASS objects. This patch tries marking only from M1.
+
+	  Note that one `Module#prepend` call creates two T_ICLASS objects.
+	  One for refering to a prepending Module object, same as
+	  `Module#include`. We don't nedd to care this T_ICLASS.
+	  One for moving original mtbl from a prepending class. We need to
+	  mark such mtbl from this T_ICLASS object. To mark the mtbl,
+	  we need to use `RCLASS_ORIGIN(klass)` on marking from a prepended
+	  class `klass`.
+
+	* class.c: ditto.
+
+	* eval.c (rb_using_refinement): ditto.
+
+	* gc.c: ditto.
+
+	* include/ruby/ruby.h: define m_tbl directly. The definition of
+	  struct RClass should be moved to (srcdir)/internal.h.
+
+	* method.h: remove decl of rb_free_m_tbl_wrapper().
+
+	* object.c: use RCLASS_M_TBL() directly.
+
 Fri Mar  6 02:50:12 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* dir.c (replace_real_basename): need to check the return value of
