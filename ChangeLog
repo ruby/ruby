@@ -1,3 +1,8 @@
+Wed Mar  5 16:58:43 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
+
+	* hash.c: [DOC] #delete method actually returns nil, if the key
+	  is not found. [fix GH-844][ci skip] Patch by @ivdma
+
 Wed Mar  5 12:22:23 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
 
 	* math.c: refactoring: remove unnecessary variable d0 to unify code

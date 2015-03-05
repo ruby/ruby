@@ -1057,8 +1057,8 @@ rb_hash_delete(VALUE hash, VALUE key)
  *     hsh.delete(key) {| key | block }  -> value
  *
  *  Deletes the key-value pair and returns the value from <i>hsh</i> whose
- *  key is equal to <i>key</i>. If the key is not found, returns the
- *  <em>default value</em>. If the optional code block is given and the
+ *  key is equal to <i>key</i>. If the key is not found, it returns
+ *  <em>nil</em>. If the optional code block is given and the
  *  key is not found, pass in the key and return the result of
  *  <i>block</i>.
  *
