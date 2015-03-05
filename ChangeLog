@@ -1,3 +1,8 @@
+Fri Mar  6 08:45:26 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Add Vector#round. Patch by Jordan Stephens.
+	  [Fixes GH-802]
+
 Fri Mar  6 07:33:03 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (obj_info): show node name too.
