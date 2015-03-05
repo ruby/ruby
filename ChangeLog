@@ -1,3 +1,7 @@
+Fri Mar  6 07:33:03 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (obj_info): show node name too.
+
 Fri Mar  6 07:00:44 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* internal.h: remove struct method_table_wrapper.

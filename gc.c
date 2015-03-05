@@ -8650,6 +8650,10 @@ obj_info(VALUE obj)
 
 #ifdef HAVE_VA_ARGS_MACRO
     switch (BUILTIN_TYPE(obj)) {
+      case T_NODE:
+	snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s (%s)", buff,
+		 ruby_node_name(nd_type(obj)));
+	break;
       case T_ARRAY:
 	snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s [%s%s] len: %d", buff,
 		 C(ARY_EMBED_P(obj),  "E"),
