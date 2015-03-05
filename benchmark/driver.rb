@@ -290,9 +290,13 @@ if __FILE__ == $0
     :execs => [],
     :dir => File.dirname(__FILE__),
     :repeat => 1,
-    :output => "bmlog-#{Time.now.strftime('%Y%m%d-%H%M%S')}.#{$$}",
+    :output => nil,
     :raw_output => nil,
     :format => :tsv,
+  }
+  formats = {
+    :tsv => ".tsv",
+    :markdown => ".md",
   }
 
   parser = OptionParser.new{|o|
@@ -323,7 +327,7 @@ if __FILE__ == $0
     o.on('--rawdata-output [FILE]', 'output rawdata'){|r|
       opt[:rawdata_output] = r
     }
-    o.on('-f', '--format={tsv,markdown}', 'output format', [:tsv, :markdown]){|r|
+    o.on('-f', "--format=FORMAT", "output format (#{formats.keys.join(",")})", formats.keys){|r|
       opt[:format] = r
     }
     o.on('-v', '--verbose'){|v|
@@ -336,6 +340,7 @@ if __FILE__ == $0
   }
 
   parser.parse!(ARGV)
+  opt[:output] ||= "bmlog-#{Time.now.strftime('%Y%m%d-%H%M%S')}.#{$$}#{formats[opt[:format]]}"
   BenchmarkDriver.benchmark(opt)
 end
 
