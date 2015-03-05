@@ -1442,6 +1442,9 @@ rescue LoadError, Gem::LoadError
 end
 
 require 'rubygems/test_utilities'
-ENV['GEM_HOME'] = Dir.mktmpdir "home"
-ENV['GEM_PATH'] = Dir.mktmpdir "path"
+tmpdirs = []
+tmpdirs << (ENV['GEM_HOME'] = Dir.mktmpdir("home"))
+tmpdirs << (ENV['GEM_PATH'] = Dir.mktmpdir("path"))
+pid = $$
+END {tmpdirs.each {|dir| Dir.rmdir(dir)} if $$ == pid}
 Gem.clear_paths
