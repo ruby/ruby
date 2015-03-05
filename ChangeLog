@@ -1,3 +1,8 @@
+Wed Mar  5 12:22:23 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
+
+	* math.c: refactoring: remove unnecessary variable d0 to unify code
+	  appearance.
+
 Thu Mar  5 11:50:54 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_eval.c (eval_string_with_cref): A binding should keep
@@ -254,7 +259,7 @@ Tue Feb 24 22:58:48 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* complex.c (nucomp_mul): calculate as rotation in complex plane
 	  if matrix calculation resulted in NaN.
 
-Tue Feb 24 21:45:39 2015  Kazuki Tanaka  <mail@tanakakazuki.com>
+Tue Feb 24 21:45:39 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
 
 	* test/ruby/test_math.rb(test_cbrt): Add an assertion for Math.cbrt(1.0/0)
 	  and move #test_cbrt to more proper place.
@@ -715,7 +720,7 @@ Sat Jan 31 12:06:23 2015  Scott Francis  <scott.francis@shopify.com>
 	  start up so that it will not clash with the heap space.
 	  [Fix GH-822]
 
-Fri Jan 30 17:28:29 2015  gogotanaka  <mail@tanakakazuki.com>
+Fri Jan 30 17:28:29 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
 
 	* math.c (num2dbl_with_to_f): make faster when Bignum passed by
 	  direct conversion using rb_big2dbl().  [Feature #10800]
@@ -736,7 +741,7 @@ Thu Jan 29 20:28:25 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* tool/make-snapshot: removed md5 digest with package information
 
-Thu Jan 29 10:41:52 2015  gogotanaka  <mail@tanakakazuki.com>
+Thu Jan 29 10:41:52 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
 
 	* math.c (Get_Double): direct casting from Fixnum to double.
 	  [Feature #10785]

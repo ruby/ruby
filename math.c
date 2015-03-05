@@ -216,13 +216,12 @@ math_tan(VALUE obj, VALUE x)
 static VALUE
 math_acos(VALUE obj, VALUE x)
 {
-    double d0, d;
+    double d;
 
-    d0 = Get_Double(x);
+    d = Get_Double(x);
     /* check for domain error */
-    if (d0 < -1.0 || 1.0 < d0) domain_error("acos");
-    d = acos(d0);
-    return DBL2NUM(d);
+    if (d < -1.0 || 1.0 < d) domain_error("acos");
+    return DBL2NUM(acos(d));
 }
 
 /*
@@ -241,13 +240,12 @@ math_acos(VALUE obj, VALUE x)
 static VALUE
 math_asin(VALUE obj, VALUE x)
 {
-    double d0, d;
+    double d;
 
-    d0 = Get_Double(x);
+    d = Get_Double(x);
     /* check for domain error */
-    if (d0 < -1.0 || 1.0 < d0) domain_error("asin");
-    d = asin(d0);
-    return DBL2NUM(d);
+    if (d < -1.0 || 1.0 < d) domain_error("asin");
+    return DBL2NUM(asin(d));
 }
 
 /*
@@ -370,13 +368,12 @@ math_tanh(VALUE obj, VALUE x)
 static VALUE
 math_acosh(VALUE obj, VALUE x)
 {
-    double d0, d;
+    double d;
 
-    d0 = Get_Double(x);
+    d = Get_Double(x);
     /* check for domain error */
-    if (d0 < 1.0) domain_error("acosh");
-    d = acosh(d0);
-    return DBL2NUM(d);
+    if (d < 1.0) domain_error("acosh");
+    return DBL2NUM(acosh(d));
 }
 
 /*
@@ -416,16 +413,15 @@ math_asinh(VALUE obj, VALUE x)
 static VALUE
 math_atanh(VALUE obj, VALUE x)
 {
-    double d0, d;
+    double d;
 
-    d0 = Get_Double(x);
+    d = Get_Double(x);
     /* check for domain error */
-    if (d0 <  -1.0 || +1.0 <  d0) domain_error("atanh");
+    if (d <  -1.0 || +1.0 <  d) domain_error("atanh");
     /* check for pole error */
-    if (d0 == -1.0) return DBL2NUM(-INFINITY);
-    if (d0 == +1.0) return DBL2NUM(+INFINITY);
-    d = atanh(d0);
-    return DBL2NUM(d);
+    if (d == -1.0) return DBL2NUM(-INFINITY);
+    if (d == +1.0) return DBL2NUM(+INFINITY);
+    return DBL2NUM(atanh(d));
 }
 
 /*
@@ -647,14 +643,13 @@ math_log10(VALUE obj, VALUE x)
 static VALUE
 math_sqrt(VALUE obj, VALUE x)
 {
-    double d0, d;
+    double d;
 
-    d0 = Get_Double(x);
+    d = Get_Double(x);
     /* check for domain error */
-    if (d0 < 0.0) domain_error("sqrt");
-    if (d0 == 0.0) return DBL2NUM(0.0);
-    d = sqrt(d0);
-    return DBL2NUM(d);
+    if (d < 0.0) domain_error("sqrt");
+    if (d == 0.0) return DBL2NUM(0.0);
+    return DBL2NUM(sqrt(d));
 }
 
 /*
@@ -862,12 +857,12 @@ math_gamma(VALUE obj, VALUE x)
          * impossible to represent exactly in IEEE 754 double which have
          * 53bit mantissa. */
     };
-    double d0, d;
+    double d;
     double intpart, fracpart;
-    d0 = Get_Double(x);
+    d = Get_Double(x);
     /* check for domain error */
-    if (isinf(d0) && signbit(d0)) domain_error("gamma");
-    fracpart = modf(d0, &intpart);
+    if (isinf(d) && signbit(d)) domain_error("gamma");
+    fracpart = modf(d, &intpart);
     if (fracpart == 0.0) {
 	if (intpart < 0) domain_error("gamma");
 	if (0 < intpart &&
@@ -875,8 +870,7 @@ math_gamma(VALUE obj, VALUE x)
 	    return DBL2NUM(fact_table[(int)intpart - 1]);
 	}
     }
-    d = tgamma(d0);
-    return DBL2NUM(d);
+    return DBL2NUM(tgamma(d));
 }
 
 /*
@@ -896,17 +890,16 @@ math_gamma(VALUE obj, VALUE x)
 static VALUE
 math_lgamma(VALUE obj, VALUE x)
 {
-    double d0, d;
+    double d;
     int sign=1;
     VALUE v;
-    d0 = Get_Double(x);
+    d = Get_Double(x);
     /* check for domain error */
-    if (isinf(d0)) {
-	if (signbit(d0)) domain_error("lgamma");
+    if (isinf(d)) {
+	if (signbit(d)) domain_error("lgamma");
 	return rb_assoc_new(DBL2NUM(INFINITY), INT2FIX(1));
     }
-    d = lgamma_r(d0, &sign);
-    v = DBL2NUM(d);
+    v = DBL2NUM(lgamma_r(d, &sign));
     return rb_assoc_new(v, INT2FIX(sign));
 }
 
