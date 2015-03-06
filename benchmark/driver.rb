@@ -77,7 +77,6 @@ class BenchmarkDriver
     @exclude = opt[:exclude] || nil
     @verbose = opt[:quiet] ? false : (opt[:verbose] || false)
     @output = opt[:output] ? open(opt[:output], 'w') : nil
-    @rawdata_output = opt[:rawdata_output] ? open(opt[:rawdata_output], 'w') : nil
     @loop_wl1 = @loop_wl2 = nil
     @ruby_arg = opt[:ruby_arg] || nil
     @opt = opt
@@ -148,12 +147,27 @@ class BenchmarkDriver
       message "Elapsed time: #{Time.now - @start_time} (sec)"
     end
 
-    if @rawdata_output
+    if rawdata_output = @opt[:rawdata_output]
       h = {}
       h[:cpuinfo] = File.read('/proc/cpuinfo') if File.exist?('/proc/cpuinfo')
       h[:executables] = @execs
       h[:results] = @results
-      @rawdata_output.puts h.inspect
+      if (type = File.extname(rawdata_output)).empty?
+        type = rawdata_output
+        rawdata_output = @output.path.sub(/\.[^.\/]+\z/, '') << '.' << rawdata_output
+      end
+      case type
+      when 'yaml'
+        require 'yaml'
+        h = YAML.dump(h)
+      when 'json'
+        require 'json'
+        h = JSON.pretty_generate(h)
+      else
+        require 'pp'
+        h = h.pretty_inspect
+      end
+      open(rawdata_output, 'w') {|f| f.puts h}
     end
 
     output '-----------------------------------------------------------'
