@@ -53,8 +53,8 @@ Fri Mar  6 07:00:44 2015  Koichi Sasada  <ko1@atdot.net>
 	  any more.
 
 	  Note that one `Module#prepend` call creates two T_ICLASS objects.
-	  One for refering to a prepending Module object, same as
-	  `Module#include`. We don't nedd to care this T_ICLASS.
+	  One for referring to a prepending Module object, same as
+	  `Module#include`. We don't need to care this T_ICLASS.
 	  One for moving original mtbl from a prepending class. We need to
 	  mark such mtbl from this T_ICLASS object. To mark the mtbl,
 	  we need to use `RCLASS_ORIGIN(klass)` on marking from a prepended
