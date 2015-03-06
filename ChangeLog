@@ -1,3 +1,7 @@
+Fri Mar  6 22:50:36 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* class.c (rb_prepend_module): need a WB for klass -> origin.
+
 Fri Mar  6 20:18:38 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* fix namespace issue on singleton class expressions. [Bug #10943]
