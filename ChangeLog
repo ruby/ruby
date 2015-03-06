@@ -1,8 +1,18 @@
+Fri Mar  6 18:19:13 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* test/webrick/test_filehandler.rb: on vboxsf (on VirtualBox
+	  on Windows 7), file name and permissions are strange (can access
+	  by short file name and so on).
+
+	  Simply skip on such tests on such FS. To detect strange FS, this
+	  patch use a part of code `File.executable?(__FILE__)`.
+	  Please correct them if there are better ways.
+
 Fri Mar  6 17:31:29 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_beginendblock.rb: do not change directory.
 
-	  Run system command in the directory mounted by vboxfs on Windows 7
+	  Run system command in the directory mounted by vboxsf on Windows 7
 	  and get warning like that "warning: Insecure world writable dir...".
 
 Fri Mar  6 10:31:00 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
