@@ -119,7 +119,8 @@ vm_call0_cfunc_with_frame(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv
 	rb_control_frame_t *reg_cfp = th->cfp;
 
 	vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC, recv, defined_class,
-		      VM_ENVVAL_BLOCK_PTR(blockptr), 0, reg_cfp->sp, 1, me, 0);
+		      VM_ENVVAL_BLOCK_PTR(blockptr), NULL /* cref */,
+		      0, reg_cfp->sp, 1, me, 0);
 
 	if (len >= 0) rb_check_arity(argc, len, len);
 
@@ -1306,13 +1307,13 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *const cref_arg, 
 
 	if (!cref && base_block->iseq) {
 	    if (NIL_P(scope)) {
-		orig_cref = rb_vm_get_cref(base_block->iseq, base_block->ep);
+		orig_cref = rb_vm_get_cref(base_block->ep);
 		cref = NEW_CREF(Qnil);
 		crefval = (VALUE) cref;
 		COPY_CREF(cref, orig_cref);
 	    }
 	    else {
-		cref = rb_vm_get_cref(base_block->iseq, base_block->ep);
+		cref = rb_vm_get_cref(base_block->ep);
 	    }
 	}
 	vm_set_eval_stack(th, iseqval, cref, base_block);

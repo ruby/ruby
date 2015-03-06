@@ -3786,11 +3786,14 @@ mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
     const rb_method_definition_t *def = me->def;
 
     gc_mark(objspace, me->klass);
+
   again:
     if (!def) return;
+
     switch (def->type) {
       case VM_METHOD_TYPE_ISEQ:
-	gc_mark(objspace, def->body.iseq->self);
+	gc_mark(objspace, def->body.iseq_body.iseq->self);
+	gc_mark(objspace, (VALUE)def->body.iseq_body.cref);
 	break;
       case VM_METHOD_TYPE_BMETHOD:
 	gc_mark(objspace, def->body.proc);

@@ -117,6 +117,7 @@ typedef struct rb_compile_option_struct rb_compile_option_t;
 
 struct iseq_inline_cache_entry {
     rb_serial_t ic_serial;
+    NODE *ic_cref;
     union {
 	size_t index;
 	VALUE value;
@@ -322,17 +323,6 @@ struct rb_iseq_struct {
 
     VALUE self;
     const VALUE orig;			/* non-NULL if its data have origin */
-
-    /* block inlining */
-    /*
-     * NODE *node;
-     * void *special_block_builder;
-     * void *cached_special_block_builder;
-     * VALUE cached_special_block;
-     */
-
-    /* klass/module nest information stack (cref) */
-    NODE * const cref_stack;
     const VALUE klass;
 
     /* misc */
@@ -416,7 +406,6 @@ typedef struct rb_vm_struct {
 
     /* object management */
     VALUE mark_object_ary;
-
     const VALUE special_exceptions[ruby_special_error_count];
 
     /* load */

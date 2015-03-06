@@ -79,6 +79,39 @@ rb_vm_control_frame_block_ptr(const rb_control_frame_t *cfp)
     return VM_CF_BLOCK_PTR(cfp);
 }
 
+static NODE *
+vm_cref_new(VALUE klass, long visi, NODE *prev_cref)
+{
+    NODE *cref = NEW_CREF(klass);
+    cref->nd_refinements = Qnil;
+    cref->nd_visi = visi;
+    cref->nd_next = prev_cref;
+    return cref;
+}
+
+static NODE *
+vm_cref_new_toplevel(rb_thread_t *th)
+{
+    NODE *cref = vm_cref_new(rb_cObject, NOEX_PRIVATE /* toplevel visibility is private */, NULL);
+
+    if (th->top_wrapper) {
+	cref = vm_cref_new(th->top_wrapper, NOEX_PRIVATE, cref);
+    }
+
+    return cref;
+}
+
+static void
+vm_cref_dump(const char *mesg, const NODE *cref)
+{
+    fprintf(stderr, "vm_cref_dump: %s (%p)\n", mesg, cref);
+
+    while (cref) {
+	fprintf(stderr, "= cref| klass: %s\n", RSTRING_PTR(rb_class_path(cref->nd_clss)));
+	cref = cref->nd_next;
+    }
+}
+
 #if VM_COLLECT_USAGE_DETAILS
 static void vm_collect_usage_operand(int insn, int n, VALUE op);
 static void vm_collect_usage_insn(int insn);
@@ -200,7 +233,7 @@ vm_stat(int argc, VALUE *argv, VALUE self)
 /* control stack frame */
 
 static void
-vm_set_top_stack(rb_thread_t * th, VALUE iseqval)
+vm_set_top_stack(rb_thread_t *th, VALUE iseqval)
 {
     rb_iseq_t *iseq;
     GetISeqPtr(iseqval, iseq);
@@ -211,7 +244,9 @@ vm_set_top_stack(rb_thread_t * th, VALUE iseqval)
 
     /* for return */
     vm_push_frame(th, iseq, VM_FRAME_MAGIC_TOP | VM_FRAME_FLAG_FINISH,
-		  th->top_self, rb_cObject, VM_ENVVAL_BLOCK_PTR(0),
+		  th->top_self, rb_cObject,
+		  VM_ENVVAL_BLOCK_PTR(0),
+		  vm_cref_new_toplevel(th),
 		  iseq->iseq_encoded, th->cfp->sp, iseq->local_size, 0, iseq->stack_max);
 }
 
@@ -223,12 +258,10 @@ vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref, rb_block_t 
 
     vm_push_frame(th, iseq, VM_FRAME_MAGIC_EVAL | VM_FRAME_FLAG_FINISH,
 		  base_block->self, base_block->klass,
-		  VM_ENVVAL_PREV_EP_PTR(base_block->ep), iseq->iseq_encoded,
+		  VM_ENVVAL_PREV_EP_PTR(base_block->ep),
+		  cref,
+		  iseq->iseq_encoded,
 		  th->cfp->sp, iseq->local_size, 0, iseq->stack_max);
-
-    if (cref) {
-	th->cfp->ep[-1] = (VALUE)cref;
-    }
 }
 
 static void
@@ -790,6 +823,7 @@ invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
 	    vm_push_frame(th, iseq, type | VM_FRAME_FLAG_FINISH | VM_FRAME_FLAG_BMETHOD,
 			  self, defined_class,
 			  VM_ENVVAL_PREV_EP_PTR(block->ep),
+			  cref,
 			  iseq->iseq_encoded + opt_pc,
 			  cfp->sp + arg_size, iseq->local_size - arg_size,
 			  me, iseq->stack_max);
@@ -801,13 +835,10 @@ invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
 	    vm_push_frame(th, iseq, type | VM_FRAME_FLAG_FINISH,
 			  self, defined_class,
 			  VM_ENVVAL_PREV_EP_PTR(block->ep),
+			  cref,
 			  iseq->iseq_encoded + opt_pc,
 			  cfp->sp + arg_size, iseq->local_size - arg_size,
 			  0, iseq->stack_max);
-	}
-
-	if (cref) {
-	    th->cfp->ep[-1] = (VALUE)cref;
 	}
 
 	ret = vm_exec(th);
@@ -1017,7 +1048,8 @@ rb_vm_cref(void)
     if (cfp == 0) {
 	return NULL;
     }
-    return rb_vm_get_cref(cfp->iseq, cfp->ep);
+
+    return rb_vm_get_cref(cfp->ep);
 }
 
 const NODE *
@@ -1027,7 +1059,7 @@ rb_vm_cref_in_context(VALUE self, VALUE cbase)
     const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
     const NODE *cref;
     if (cfp->self != self) return NULL;
-    cref = rb_vm_get_cref(cfp->iseq, cfp->ep);
+    cref = rb_vm_get_cref(cfp->ep);
     if (cref->nd_clss != cbase) return NULL;
     return cref;
 }
@@ -1053,7 +1085,7 @@ rb_vm_cbase(void)
     if (cfp == 0) {
 	rb_raise(rb_eRuntimeError, "Can't call on top of Fiber or Thread");
     }
-    return vm_get_cbase(cfp->iseq, cfp->ep);
+    return vm_get_cbase(cfp->ep);
 }
 
 /* jump */
@@ -1594,6 +1626,7 @@ vm_exec(rb_thread_t *th)
 	    vm_push_frame(th, catch_iseq, VM_FRAME_MAGIC_RESCUE,
 			  cfp->self, cfp->klass,
 			  VM_ENVVAL_PREV_EP_PTR(cfp->ep),
+			  NULL,
 			  catch_iseq->iseq_encoded,
 			  cfp->sp + 1 /* push value */,
 			  catch_iseq->local_size - 1,
@@ -1745,7 +1778,8 @@ rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg,
     VALUE val;
 
     vm_push_frame(th, DATA_PTR(iseqval), VM_FRAME_MAGIC_TOP | VM_FRAME_FLAG_FINISH,
-		  recv, CLASS_OF(recv), VM_ENVVAL_BLOCK_PTR(blockptr), 0, reg_cfp->sp, 1, 0, 0);
+		  recv, CLASS_OF(recv), VM_ENVVAL_BLOCK_PTR(blockptr), vm_cref_new_toplevel(th),
+		  0, reg_cfp->sp, 1, 0, 0);
 
     val = (*func)(arg);
 
@@ -2183,7 +2217,9 @@ th_init(rb_thread_t *th, VALUE self)
     th->cfp = (void *)(th->stack + th->stack_size);
 
     vm_push_frame(th, 0 /* dummy iseq */, VM_FRAME_MAGIC_TOP | VM_FRAME_FLAG_FINISH,
-		  Qnil /* dummy self */, Qnil /* dummy klass */, VM_ENVVAL_BLOCK_PTR(0), 0 /* dummy pc */, th->stack, 1, 0, 0);
+		  Qnil /* dummy self */, Qnil /* dummy klass */, VM_ENVVAL_BLOCK_PTR(0),
+		  NULL /* dummy cref */,
+		  0 /* dummy pc */, th->stack, 1, 0, 0);
 
     th->status = THREAD_RUNNABLE;
     th->errinfo = Qnil;
@@ -2250,15 +2286,13 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
     }
 
     /* dup */
-    COPY_CREF(miseq->cref_stack, cref);
-    miseq->cref_stack->nd_visi = NOEX_PUBLIC;
     RB_OBJ_WRITE(miseq->self, &miseq->klass, klass);
     miseq->defined_method_id = id;
-    rb_add_method(klass, id, VM_METHOD_TYPE_ISEQ, miseq, noex);
+    rb_add_method_iseq(klass, id, miseq, cref, noex);
 
     if (!is_singleton && noex == NOEX_MODFUNC) {
 	klass = rb_singleton_class(klass);
-	rb_add_method(klass, id, VM_METHOD_TYPE_ISEQ, miseq, NOEX_PUBLIC);
+	rb_add_method_iseq(klass, id, miseq, cref, NOEX_PUBLIC);
     }
 }
 
@@ -2744,6 +2778,8 @@ Init_VM(void)
 	th->cfp->pc = iseq->iseq_encoded;
 	th->cfp->self = th->top_self;
 	th->cfp->klass = Qnil;
+
+	th->cfp->ep[-1] = (VALUE)vm_cref_new(rb_cObject, NOEX_PRIVATE, NULL);
 
 	/*
 	 * The Binding of the top level scope

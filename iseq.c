@@ -121,7 +121,6 @@ iseq_mark(void *ptr)
 	RUBY_MARK_UNLESS_NULL(iseq->location.path);
 	RUBY_MARK_UNLESS_NULL(iseq->location.absolute_path);
 
-	RUBY_MARK_UNLESS_NULL((VALUE)iseq->cref_stack);
 	RUBY_MARK_UNLESS_NULL(iseq->klass);
 	RUBY_MARK_UNLESS_NULL(iseq->coverage);
 	RUBY_MARK_UNLESS_NULL(iseq->orig);
@@ -213,38 +212,21 @@ iseq_location_setup(rb_iseq_t *iseq, VALUE path, VALUE absolute_path, VALUE name
     return loc;
 }
 
-#define ISEQ_SET_CREF(iseq, cref) RB_OBJ_WRITE((iseq)->self, &(iseq)->cref_stack, (cref))
-
 static void
 set_relation(rb_iseq_t *iseq, const VALUE parent)
 {
     const VALUE type = iseq->type;
-    rb_thread_t *th = GET_THREAD();
     rb_iseq_t *piseq;
 
     /* set class nest stack */
     if (type == ISEQ_TYPE_TOP) {
-	/* toplevel is private */
-	RB_OBJ_WRITE(iseq->self, &iseq->cref_stack, NEW_CREF(rb_cObject));
-	iseq->cref_stack->nd_refinements = Qnil;
-	iseq->cref_stack->nd_visi = NOEX_PRIVATE;
-	if (th->top_wrapper) {
-	    NODE *cref = NEW_CREF(th->top_wrapper);
-	    cref->nd_refinements = Qnil;
-	    cref->nd_visi = NOEX_PRIVATE;
-	    RB_OBJ_WRITE(cref, &cref->nd_next, iseq->cref_stack);
-	    ISEQ_SET_CREF(iseq, cref);
-	}
 	iseq->local_iseq = iseq;
     }
     else if (type == ISEQ_TYPE_METHOD || type == ISEQ_TYPE_CLASS) {
-	ISEQ_SET_CREF(iseq, NEW_CREF(0)); /* place holder */
-	iseq->cref_stack->nd_refinements = Qnil;
 	iseq->local_iseq = iseq;
     }
     else if (RTEST(parent)) {
 	GetISeqPtr(parent, piseq);
-	ISEQ_SET_CREF(iseq, piseq->cref_stack);
 	iseq->local_iseq = piseq->local_iseq;
     }
 
@@ -1973,13 +1955,8 @@ rb_iseq_clone(VALUE iseqval, VALUE newcbase)
     if (iseq0->local_iseq == iseq0) {
 	iseq1->local_iseq = iseq1;
     }
+
     if (newcbase) {
-	ISEQ_SET_CREF(iseq1, NEW_CREF(newcbase));
-	RB_OBJ_WRITE(iseq1->cref_stack, &iseq1->cref_stack->nd_refinements, iseq0->cref_stack->nd_refinements);
-	iseq1->cref_stack->nd_visi = iseq0->cref_stack->nd_visi;
-	if (iseq0->cref_stack->nd_next) {
-	    RB_OBJ_WRITE(iseq1->cref_stack, &iseq1->cref_stack->nd_next, iseq0->cref_stack->nd_next);
-	}
 	RB_OBJ_WRITE(iseq1->self, &iseq1->klass, newcbase);
     }
 

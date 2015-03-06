@@ -1208,7 +1208,6 @@ mnew_internal(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
 	def->type = VM_METHOD_TYPE_MISSING;
 	def->original_id = id;
 	def->alias_count = 0;
-
     }
     data->ume = ALLOC(struct unlinked_method_entry_list_entry);
     data->me->def->alias_count++;
@@ -2025,7 +2024,7 @@ rb_method_entry_min_max_arity(const rb_method_entry_t *me, int *max)
       case VM_METHOD_TYPE_BMETHOD:
 	return rb_proc_min_max_arity(def->body.proc, max);
       case VM_METHOD_TYPE_ISEQ: {
-	rb_iseq_t *iseq = def->body.iseq;
+	rb_iseq_t *iseq = def->body.iseq_body.iseq;
 	return rb_iseq_min_max_arity(iseq, max);
       }
       case VM_METHOD_TYPE_UNDEF:
@@ -2162,11 +2161,23 @@ method_get_iseq(rb_method_definition_t *def)
       case VM_METHOD_TYPE_BMETHOD:
 	return get_proc_iseq(def->body.proc, 0);
       case VM_METHOD_TYPE_ISEQ:
-	return def->body.iseq;
+	return def->body.iseq_body.iseq;
       default:
-	return 0;
+	return NULL;
     }
 }
+
+static NODE *
+method_get_cref(rb_method_definition_t *def)
+{
+    switch (def->type) {
+      case VM_METHOD_TYPE_ISEQ:
+	return def->body.iseq_body.cref;
+      default:
+	return NULL;
+    }
+}
+
 
 rb_iseq_t *
 rb_method_get_iseq(VALUE method)
@@ -2376,6 +2387,7 @@ method_proc(VALUE method)
     env->block.self = meth->recv;
     env->block.klass = meth->defined_class;
     env->block.iseq = method_get_iseq(meth->me->def);
+    env->block.ep[-1] = (VALUE)method_get_cref(meth->me->def);
     return procval;
 }
 

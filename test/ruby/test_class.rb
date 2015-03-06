@@ -399,4 +399,124 @@ class TestClass < Test::Unit::TestCase
       def c.f; end
     }
   end
+
+  def test_singleton_class_should_has_own_namespace
+    # CONST in singleton class
+    objs = []
+    $i = 0
+
+    2.times{
+      objs << obj = Object.new
+      class << obj
+        CONST = ($i += 1)
+        def foo
+          CONST
+        end
+      end
+    }
+    assert_equal(1, objs[0].foo, '[Bug #10943]')
+    assert_equal(2, objs[1].foo, '[Bug #10943]')
+
+    # CONST in block in singleton class
+    objs = []
+    $i = 0
+
+    2.times{
+      objs << obj = Object.new
+      class << obj
+        1.times{
+          CONST = ($i += 1)
+        }
+        def foo
+          [nil].map{
+            CONST
+          }
+        end
+      end
+    }
+    assert_equal([1], objs[0].foo, '[Bug #10943]')
+    assert_equal([2], objs[1].foo, '[Bug #10943]')
+
+    # class def in singleton class
+    objs = []
+    $xs = []
+    $i = 0
+
+    2.times{
+      objs << obj = Object.new
+      class << obj
+        CONST = ($i += 1)
+        class X
+          $xs << self
+          CONST = ($i += 1)
+          def foo
+            CONST
+          end
+        end
+
+        def x
+          X
+        end
+      end
+    }
+    assert_not_equal($xs[0], $xs[1], '[Bug #10943]')
+    assert_not_equal(objs[0].x, objs[1].x, '[Bug #10943]')
+    assert_equal(2, $xs[0]::CONST, '[Bug #10943]')
+    assert_equal(2, $xs[0].new.foo, '[Bug #10943]')
+    assert_equal(4, $xs[1]::CONST, '[Bug #10943]')
+    assert_equal(4, $xs[1].new.foo, '[Bug #10943]')
+
+    # class def in block in singleton class
+    objs = []
+    $xs = []
+    $i = 0
+
+    2.times{
+      objs << obj = Object.new
+      class << obj
+        1.times{
+          CONST = ($i += 1)
+        }
+        1.times{
+          class X
+            $xs << self
+            CONST = ($i += 1)
+            def foo
+              CONST
+            end
+          end
+
+          def x
+            X
+          end
+        }
+      end
+    }
+    assert_not_equal($xs[0], $xs[1], '[Bug #10943]')
+    assert_not_equal(objs[0].x, objs[1].x, '[Bug #10943]')
+    assert_equal(2, $xs[0]::CONST, '[Bug #10943]')
+    assert_equal(2, $xs[0].new.foo, '[Bug #10943]')
+    assert_equal(4, $xs[1]::CONST, '[Bug #10943]')
+    assert_equal(4, $xs[1].new.foo, '[Bug #10943]')
+
+    # method def in singleton class
+    ms = []
+    ps = $test_singleton_class_shared_cref_ps = []
+    2.times{
+      ms << Module.new do
+        class << self
+          $test_singleton_class_shared_cref_ps << Proc.new{
+            def xyzzy
+              self
+            end
+          }
+        end
+      end
+    }
+
+    ps.each{|p| p.call} # define xyzzy methods for each singleton classes
+    ms.each{|m|
+      assert_equal(m, m.xyzzy, "Bug #10871")
+    }
+  end
 end

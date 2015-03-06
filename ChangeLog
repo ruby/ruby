@@ -1,3 +1,49 @@
+Fri Mar  6 20:18:38 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* fix namespace issue on singleton class expressions. [Bug #10943]
+
+	* vm_core.h, method.h: remove rb_iseq_t::cref_stack. CREF is stored
+	  to rb_method_definition_t::body.iseq_body.cref.
+
+	* vm_insnhelper.c: modify SVAR usage.
+	  When calling ISEQ type method, push CREF information onto method
+	  frame, SVAR located place. Before this fix, SVAR is simply nil.
+	  After this patch, CREF (or NULL == Qfalse for not iseq methods)
+	  is stored at the method invocation.
+
+	  When SVAR is requierd, then put NODE_IF onto SVAR location,
+	  and NDOE_IF::nd_reserved points CREF itself.
+
+	* vm.c (vm_cref_new, vm_cref_dump, vm_cref_new_toplevel): added.
+
+	* vm_insnhelper.c (vm_push_frame): accept CREF.
+
+	* method.h, vm_method.c (rb_add_method_iseq): added. This function
+	  accepts iseq and CREF.
+
+	* class.c (clone_method): use rb_add_method_iseq().
+
+	* gc.c (mark_method_entry): mark method_entry::body.iseq_body.cref.
+
+	* iseq.c: remove CREF related codes.
+
+	* insns.def (getinlinecache/setinlinecache): CREF should be cache key
+	  because a different CREF has a different namespace.
+
+	* node.c (rb_gc_mark_node): mark NODE_IF::nd_reserved for SVAR.
+
+	* proc.c: catch up changes.
+
+	* struct.c: ditto.
+
+	* insns.def: ditto.
+
+	* vm_args.c (raise_argument_error): ditto.
+
+	* vm_eval.c: ditto.
+
+	* test/ruby/test_class.rb: add a test.
+
 Fri Mar  6 18:19:13 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* test/webrick/test_filehandler.rb: on vboxsf (on VirtualBox
