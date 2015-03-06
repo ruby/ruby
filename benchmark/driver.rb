@@ -29,6 +29,25 @@ class BenchmarkDriver
     end
   end
 
+  def self.load(input, type, opt)
+    attrs = [:executables, :results]
+    case type
+    when 'yaml'
+      require 'yaml'
+      h = YAML.load(input)
+    when 'json'
+      require 'json'
+      h = JSON.load(input)
+    else
+      h = eval(input.read)
+    end
+    obj = allocate
+    obj.instance_variable_set("@execs", h[:executables] || h["executables"])
+    obj.instance_variable_set("@results", h[:results] || h["results"])
+    obj.instance_variable_set("@opt", opt)
+    obj
+  end
+
   def output *args
     puts(*args)
     @output and @output.puts(*args)
@@ -351,6 +370,9 @@ if __FILE__ == $0
     o.on('--rawdata-output [FILE]', 'output rawdata'){|r|
       opt[:rawdata_output] = r
     }
+    o.on('--load-rawdata=FILE', 'input rawdata'){|r|
+      opt[:rawdata_input] = r
+    }
     o.on('-f', "--format=FORMAT", "output format (#{formats.keys.join(",")})", formats.keys){|r|
       opt[:format] = r
     }
@@ -365,6 +387,14 @@ if __FILE__ == $0
 
   parser.parse!(ARGV)
   opt[:output] ||= "bmlog-#{Time.now.strftime('%Y%m%d-%H%M%S')}.#{$$}#{formats[opt[:format]]}"
-  BenchmarkDriver.benchmark(opt)
+
+  if input = opt[:rawdata_input]
+    b = open(input) {|f|
+      BenchmarkDriver.load(f, File.extname(input)[1..-1], opt)
+    }
+    b.show_results
+  else
+    BenchmarkDriver.benchmark(opt)
+  end
 end
 
