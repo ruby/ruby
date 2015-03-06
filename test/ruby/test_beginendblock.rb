@@ -57,16 +57,16 @@ class TestBeginEndBlock < Test::Unit::TestCase
 errout = ARGV.shift
 STDERR.reopen(File.open(errout, "w"))
 STDERR.sync = true
-Dir.chdir(#{q(DIR)})
-system("#{ruby}", "endblockwarn_rb")
+system("#{ruby}", File.join(#{q(DIR)}, "endblockwarn_rb"))
 EOF
         launcher.close
         launcherpath = launcher.path
         errout.close
         erroutpath = errout.path
         system(ruby, launcherpath, erroutpath)
+        path = File.join(DIR, 'endblockwarn_rb')
         expected = <<EOW
-endblockwarn_rb:2: warning: END in method; use at_exit
+#{path}:2: warning: END in method; use at_exit
 (eval):2: warning: END in method; use at_exit
 EOW
         assert_equal(expected, File.read(erroutpath))
