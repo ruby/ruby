@@ -1748,6 +1748,17 @@ class TestModule < Test::Unit::TestCase
     assert_equal([m, c2, m, c1], c2.ancestors[0, 4], "should accesisble prepended module in superclass")
   end
 
+  def test_prepend_call_super
+    assert_separately([], <<-'end;') #do
+      bug10847 = '[ruby-core:68093] [Bug #10847]'
+      module M; end
+      Float.prepend M
+      assert_nothing_raised(SystemStackError, bug10847) do
+        0.3.numerator
+      end
+    end;
+  end
+
   def test_class_variables
     m = Module.new
     m.class_variable_set(:@@foo, 1)

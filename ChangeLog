@@ -1,3 +1,10 @@
+Fri Mar  6 10:31:00 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (vm_call_super): search next super class from the
+	  original class, to get rid of infinite recursion with
+	  prepending.  a patch by Seiei Higa <hanachin AT gmail.com> at
+	  [ruby-core:68434].  [ruby-core:68093] [Bug #10847]
+
 Fri Mar  6 08:45:26 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: Add Vector#round. Patch by Jordan Stephens.
