@@ -40,6 +40,8 @@ def help
 end
 end
 
+# Prints the version of Ruby found in version.h
+
 def version
   v = p = nil
   open 'version.h', 'rb' do |f|
