@@ -1,3 +1,8 @@
+Sat Mar  7 09:18:42 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* tool/merger.rb: Added documentation to version method.
+	  [fix GH-847][ci skip] Patch by @magikid
+
 Fri Mar  6 22:50:36 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* class.c (rb_prepend_module): need a WB for klass -> origin.
