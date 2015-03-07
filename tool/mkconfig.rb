@@ -3,6 +3,8 @@
 # avoid warnings with -d.
 $install_name ||= nil
 $so_name ||= nil
+arch = $arch or raise "missing -arch"
+version = $version or raise "missing -version"
 
 srcdir = File.expand_path('../..', __FILE__)
 $:.replace [srcdir+"/lib"] unless defined?(CROSS_COMPILING)
@@ -16,7 +18,6 @@ unless File.directory?(dir = File.dirname(rbconfig_rb))
   FileUtils.makedirs(dir, :verbose => true)
 end
 
-version = RUBY_VERSION
 config = ""
 def config.write(arg)
   concat(arg.to_s)
@@ -24,17 +25,7 @@ end
 $stdout = config
 
 fast = {'prefix'=>TRUE, 'ruby_install_name'=>TRUE, 'INSTALL'=>TRUE, 'EXEEXT'=>TRUE}
-print %[
-# This file was created by #{mkconfig} when ruby was built.  Any
-# changes made to this file will be lost the next time ruby is built.
 
-module RbConfig
-  RUBY_VERSION.start_with?("#{version}"[/^[0-9]+[.][0-9]+[.]/]) or
-    raise "ruby lib version (#{version}) doesn't match executable version (\#{RUBY_VERSION})"
-
-]
-
-arch = RUBY_PLATFORM
 win32 = /mswin/ =~ arch
 universal = /universal.*darwin/ =~ arch
 v_fast = []
@@ -175,6 +166,15 @@ end
 prefix = vars.expand(vars["prefix"] ||= "")
 rubyarchdir = vars.expand(vars["rubyarchdir"] ||= "")
 relative_archdir = rubyarchdir.rindex(prefix, 0) ? rubyarchdir[prefix.size..-1] : rubyarchdir
+puts %[\
+# This file was created by #{mkconfig} when ruby was built.  Any
+# changes made to this file will be lost the next time ruby is built.
+
+module RbConfig
+  RUBY_VERSION.start_with?("#{version}"[/^[0-9]+[.][0-9]+[.]/]) or
+    raise "ruby lib version (#{version}) doesn't match executable version (\#{RUBY_VERSION})"
+
+]
 print "  TOPDIR = File.dirname(__FILE__).chomp!(#{relative_archdir.dump})\n"
 print "  DESTDIR = ", (drive ? "TOPDIR && TOPDIR[/\\A[a-z]:/i] || " : ""), "'' unless defined? DESTDIR\n"
 print <<'ARCH' if universal
