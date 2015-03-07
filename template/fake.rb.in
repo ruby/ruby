@@ -11,12 +11,15 @@ class Object
   CROSS_COMPILING = RUBY_PLATFORM
   remove_const :RUBY_PLATFORM
   remove_const :RUBY_VERSION
+  remove_const :RUBY_PATCHLEVEL
   remove_const :RUBY_RELEASE_DATE
   remove_const :RUBY_DESCRIPTION if defined?(RUBY_DESCRIPTION)
   RUBY_PLATFORM = "@arch@"
   RUBY_VERSION = "@RUBY_PROGRAM_VERSION@"
+  RUBY_PATCHLEVEL = @PATCHLEVEL@
   RUBY_RELEASE_DATE = "@RUBY_RELEASE_DATE@"
-  RUBY_DESCRIPTION = "ruby #{RUBY_VERSION} (#{RUBY_RELEASE_DATE}) [#{RUBY_PLATFORM}]"
+  patchlevel_str = RUBY_PATCHLEVEL == -1 ? "dev" : "p#{RUBY_PATCHLEVEL}"
+  RUBY_DESCRIPTION = "ruby #{RUBY_VERSION}#{patchlevel_str} (#{RUBY_RELEASE_DATE}) [#{RUBY_PLATFORM}]"
 end
 builddir = File.dirname(__FILE__)
 top_srcdir = File.join(builddir, "@srcdir@")
