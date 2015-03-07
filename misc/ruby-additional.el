@@ -121,6 +121,11 @@ Emacs to Ruby."
 	 ))
      ))
 
+;; monkey-patching ruby-mode.el in Emacs 24, as r49872.
+(when (and (boundp 'ruby-syntax-before-regexp-re)
+	   (not (string-match ruby-syntax-before-regexp-re "foo {|" 1)))
+  (replace-regexp-in-string "\\[\\[" "\\&{|" ruby-syntax-before-regexp-re))
+
 (provide 'ruby-additional)
 
 ;;; ruby-additional.el ends here
