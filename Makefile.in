@@ -246,9 +246,6 @@ $(LIBRUBY_SO):
 		@-$(MINIRUBY) -e 'ARGV.each{|link| File.delete link rescue nil; \
 						  File.symlink "$(LIBRUBY_SO)", link}' \
 				$(LIBRUBY_ALIASES) || true
-$(arch)-fake.rb: config.status $(srcdir)/template/fake.rb.in
-		@./config.status --file=$@:$(srcdir)/template/fake.rb.in
-		@chmod +x $@
 
 ruby_pc = @ruby_pc@
 $(ruby_pc):
