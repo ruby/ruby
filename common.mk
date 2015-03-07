@@ -149,8 +149,6 @@ TESTOPTS      = $(RUBY_TESTOPTS)
 
 TESTRUN_SCRIPT = $(srcdir)/test.rb
 
-BOOTSTRAPRUBY = $(BASERUBY)
-
 COMPILE_PRELUDE = $(srcdir)/tool/generic_erb.rb $(srcdir)/template/prelude.c.tmpl
 
 all: showflags main docs

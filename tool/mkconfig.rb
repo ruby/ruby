@@ -74,7 +74,7 @@ File.foreach "config.status" do |line|
   if name
     case name
     when /^(?:ac_.*|configure_input|(?:top_)?srcdir|\w+OBJS)$/; next
-    when /^(?:X|(?:MINI|RUN|(?:HAVE_)?BASE|BTEST)RUBY(?:_COMMAND)?$)/; next
+    when /^(?:X|(?:MINI|RUN|(?:HAVE_)?BASE|BOOTSTRAP|BTEST)RUBY(?:_COMMAND)?$)/; next
     when /^INSTALLDOC|TARGET$/; next
     when /^DTRACE/; next
     when /^(?:MAJOR|MINOR|TEENY)$/; vars[name] = val; next
