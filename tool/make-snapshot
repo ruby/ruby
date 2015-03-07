@@ -279,7 +279,7 @@ def package(vcs, rev, destdir, tmp = nil)
         f.puts "s,@CP@,|#_!!_#|cp,g"
         f.puts "s,@rubyarchdir@,|#_!!_#|,g"
         f.puts "s,@rubylibprefix@,|#_!!_#|,g"
-        f.puts "s,@ruby_version@,|#_!!_#|,g"
+        f.puts "s,@ruby_version@,|#_!!_#|#{version},g"
       }
       FileUtils.mkpath(hdrdir = "#{extout}/include/ruby")
       File.open("#{hdrdir}/config.h", "w") {}
@@ -287,6 +287,7 @@ def package(vcs, rev, destdir, tmp = nil)
       File.open("#{defaults}/operating_system.rb", "w") {}
       File.open("#{defaults}/ruby.rb", "w") {}
       miniruby = ENV['MINIRUBY'] + " -I. -I#{extout} -rcross"
+      baseruby = ENV["BASERUBY"]
       mk = IO.read("Makefile.in").gsub(/^@.*\n/, '').gsub(/@([A-Za-z_]\w*)@/) {ENV[$1]}
       mk << commonmk.gsub(/(?<!#)\{[^{}]*\}/, "")
       cmd = %W[make -f -
@@ -298,7 +299,8 @@ def package(vcs, rev, destdir, tmp = nil)
                RUNRUBY=#{miniruby}
                RUBY=#{ENV["RUBY"]}
                HAVE_BASERUBY=yes
-               BASERUBY=#{ENV["BASERUBY"]}
+               BASERUBY=#{baseruby}
+               BOOTSTRAPRUBY=#{baseruby}
                PWD=#{Dir.pwd}
                prereq]
       IO.popen(cmd, "w") do |f|
@@ -312,7 +314,7 @@ def package(vcs, rev, destdir, tmp = nil)
       system(*%W"#{YACC} -o parse.c parse.y")
     end
     vcs.after_export(".") if exported
-    FileUtils.rm_rf(clean)
+    FileUtils.rm_rf(clean) unless $keep_temp
     FileUtils.rm_rf(".downloaded-cache")
     if File.exist?("gems/bundled_gems")
       gems = Dir.glob("gems/*.gem")
