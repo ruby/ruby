@@ -1075,8 +1075,9 @@ end
 <<KEEP
 
 $(ruby_pc): $(RBCONFIG)
-	@$(MINIRUBY) -r./rbconfig $(srcdir)/tool/expand-config.rb \
-	$(srcdir)/template/ruby.pc.in > $@
+	@$(BOOTSTRAPRUBY) $(srcdir)/tool/expand-config.rb \
+		-output=$@ -mode=$(INSTALL_DATA_MODE) -config=rbconfig.rb \
+		$(srcdir)/template/ruby.pc.in
 
 {$(srcdir)/enc/trans}.c.obj:
 	$(ECHO) compiling $(<:\=/)
