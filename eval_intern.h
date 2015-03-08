@@ -210,9 +210,9 @@ enum ruby_tag_type {
 #define GET_THROWOBJ_CATCH_POINT(obj) ((rb_control_frame_t*)RNODE((obj))->u2.value)
 #define GET_THROWOBJ_STATE(obj)       ((int)RNODE((obj))->u3.value)
 
-#define SCOPE_TEST(f)  (rb_vm_cref()->nd_visi & (f))
-#define SCOPE_CHECK(f) (rb_vm_cref()->nd_visi == (f))
-#define SCOPE_SET(f)   (rb_vm_cref()->nd_visi = (f))
+#define SCOPE_TEST(f)  (CREF_VISI(rb_vm_cref()) & (f))
+#define SCOPE_CHECK(f) (CREF_VISI(rb_vm_cref()) == (f))
+#define SCOPE_SET(f)   (CREF_VISI_SET(rb_vm_cref(), (f)))
 
 void rb_thread_cleanup(void);
 void rb_thread_wait_other_threads(void);

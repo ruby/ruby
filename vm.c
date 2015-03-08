@@ -83,9 +83,9 @@ static NODE *
 vm_cref_new(VALUE klass, long visi, NODE *prev_cref)
 {
     NODE *cref = NEW_CREF(klass);
-    cref->nd_refinements = Qnil;
-    cref->nd_visi = visi;
-    cref->nd_next = prev_cref;
+    CREF_REFINEMENTS(cref) = Qnil;
+    CREF_VISI_SET(cref, visi);
+    CREF_NEXT(cref) = prev_cref;
     return cref;
 }
 
@@ -107,8 +107,8 @@ vm_cref_dump(const char *mesg, const NODE *cref)
     fprintf(stderr, "vm_cref_dump: %s (%p)\n", mesg, cref);
 
     while (cref) {
-	fprintf(stderr, "= cref| klass: %s\n", RSTRING_PTR(rb_class_path(cref->nd_clss)));
-	cref = cref->nd_next;
+	fprintf(stderr, "= cref| klass: %s\n", RSTRING_PTR(rb_class_path(CREF_CLASS(cref))));
+	cref = CREF_NEXT(cref);
     }
 }
 
@@ -1060,7 +1060,7 @@ rb_vm_cref_in_context(VALUE self, VALUE cbase)
     const NODE *cref;
     if (cfp->self != self) return NULL;
     cref = rb_vm_get_cref(cfp->ep);
-    if (cref->nd_clss != cbase) return NULL;
+    if (CREF_CLASS(cref) != cbase) return NULL;
     return cref;
 }
 
@@ -1069,9 +1069,9 @@ void
 debug_cref(NODE *cref)
 {
     while (cref) {
-	dp(cref->nd_clss);
-	printf("%ld\n", cref->nd_visi);
-	cref = cref->nd_next;
+	dp(CREF_CLASS(cref));
+	printf("%ld\n", CREF_VISI(cref));
+	cref = CREF_NEXT(cref);
     }
 }
 #endif
@@ -2266,8 +2266,8 @@ static void
 vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
 		 rb_num_t is_singleton, NODE *cref)
 {
-    VALUE klass = cref->nd_clss;
-    int noex = (int)cref->nd_visi;
+    VALUE klass = CREF_CLASS(cref);
+    int noex = CREF_VISI(cref);
     rb_iseq_t *miseq;
     GetISeqPtr(iseqval, miseq);
 

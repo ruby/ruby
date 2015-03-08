@@ -146,21 +146,21 @@ enum vm_regan_acttype {
 /**********************************************************/
 
 #define COPY_CREF_OMOD(c1, c2) do {  \
-  RB_OBJ_WRITE((c1), &(c1)->nd_refinements, (c2)->nd_refinements); \
-  if (!NIL_P((c2)->nd_refinements)) { \
-      (c1)->flags |= NODE_FL_CREF_OMOD_SHARED; \
-      (c2)->flags |= NODE_FL_CREF_OMOD_SHARED; \
+  RB_OBJ_WRITE((c1), &CREF_REFINEMENTS(c1), CREF_REFINEMENTS(c2)); \
+  if (!CREF_REFINEMENTS(c2)) { \
+      CREF_OMOD_SHARED_SET(c1); \
+      CREF_OMOD_SHARED_SET(c2); \
   } \
 } while (0)
 
 #define COPY_CREF(c1, c2) do {  \
   NODE *__tmp_c2 = (c2); \
   COPY_CREF_OMOD(c1, __tmp_c2); \
-  RB_OBJ_WRITE((c1), &(c1)->nd_clss, __tmp_c2->nd_clss); \
-  (c1)->nd_visi = __tmp_c2->nd_visi;\
-  RB_OBJ_WRITE((c1), &(c1)->nd_next, __tmp_c2->nd_next); \
-  if (__tmp_c2->flags & NODE_FL_CREF_PUSHED_BY_EVAL) { \
-      (c1)->flags |= NODE_FL_CREF_PUSHED_BY_EVAL; \
+  RB_OBJ_WRITE((c1), &CREF_CLASS(c1), CREF_CLASS(__tmp_c2)); \
+  CREF_VISI_SET((c1), CREF_VISI(__tmp_c2));\
+  RB_OBJ_WRITE((c1), &CREF_NEXT(c1), CREF_NEXT(__tmp_c2)); \
+  if (CREF_PUSHED_BY_EVAL(__tmp_c2)) { \
+      CREF_PUSHED_BY_EVAL_SET(c1); \
   } \
 } while (0)
 

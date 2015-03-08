@@ -1,3 +1,19 @@
+Mon Mar  9 04:47:58 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* internal.h: define CREF accessor macros.
+	  * CREF_CLASS(cref)
+	  * CREF_NEXT(cref)
+	  * CREF_VISI(cref)
+	  * CREF_VISI_SET(cref, v)
+	  * CREF_REFINEMENTS(cref)
+	  * CREF_PUSHED_BY_EVAL(cref)
+	  * CREF_PUSHED_BY_EVAL_SET(cref)
+	  * CREF_OMOD_SHARED(cref)
+	  * CREF_OMOD_SHARED_SET(cref)
+	  * CREF_OMOD_SHARED_UNSET(cref)
+
+	  This is process to change CREF data type from NODE.
+
 Sun Mar  8 22:50:57 2015  Tanaka Akira  <akr@fsij.org>
 
 	* ext/zlib/zlib.c (rb_gzfile_close): Don't raise on double

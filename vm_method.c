@@ -479,7 +479,7 @@ rb_add_method0(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method
 
 	  private_cref = vm_cref_new_toplevel(GET_THREAD()); /* TODO: CREF should be shared with other methods */
 	  if (cref) COPY_CREF(private_cref, cref);
-	  private_cref->nd_visi = NOEX_PUBLIC;
+	  CREF_VISI_SET(private_cref, NOEX_PUBLIC);
 	  RB_OBJ_WRITE(klass, &def->body.iseq_body.cref, private_cref);
 	  break;
       }
@@ -744,7 +744,7 @@ rb_method_entry_with_refinements(VALUE klass, ID id,
 
     if (me && me->def->type == VM_METHOD_TYPE_REFINED) {
 	NODE *cref = rb_vm_cref();
-	VALUE refinements = cref ? cref->nd_refinements : Qnil;
+	VALUE refinements = cref ? CREF_REFINEMENTS(cref) : Qnil;
 
 	me = rb_resolve_refined_method(refinements, me, &defined_class);
     }

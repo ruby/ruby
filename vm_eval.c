@@ -1567,7 +1567,7 @@ yield_under(VALUE under, VALUE self, VALUE values)
 	VM_CF_LEP(th->cfp)[0] = VM_ENVVAL_BLOCK_PTR(&block);
     }
     cref = vm_cref_push(th, under, NOEX_PUBLIC, blockptr);
-    cref->flags |= NODE_FL_CREF_PUSHED_BY_EVAL;
+    CREF_PUSHED_BY_EVAL_SET(cref);
 
     if (values == Qundef) {
 	return vm_yield_with_cref(th, 1, &self, cref);
@@ -1590,8 +1590,8 @@ rb_yield_refine_block(VALUE refinement, VALUE refinements)
 	VM_CF_LEP(th->cfp)[0] = VM_ENVVAL_BLOCK_PTR(&block);
     }
     cref = vm_cref_push(th, refinement, NOEX_PUBLIC, blockptr);
-    cref->flags |= NODE_FL_CREF_PUSHED_BY_EVAL;
-    RB_OBJ_WRITE(cref, &cref->nd_refinements, refinements);
+    CREF_PUSHED_BY_EVAL_SET(cref);
+    RB_OBJ_WRITE(cref, &CREF_REFINEMENTS(cref), refinements);
 
     return vm_yield_with_cref(th, 0, NULL, cref);
 }
@@ -1603,7 +1603,7 @@ eval_under(VALUE under, VALUE self, VALUE src, VALUE file, int line)
     NODE *cref = vm_cref_push(GET_THREAD(), under, NOEX_PUBLIC, NULL);
 
     if (SPECIAL_CONST_P(self) && !NIL_P(under)) {
-	cref->flags |= NODE_FL_CREF_PUSHED_BY_EVAL;
+	CREF_PUSHED_BY_EVAL_SET(cref);
     }
     SafeStringValue(src);
 

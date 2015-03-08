@@ -1642,7 +1642,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
     const NODE *cref = rb_vm_cref_in_context(mod, mod);
 
     if (cref) {
-	noex = (int)cref->nd_visi;
+	noex = CREF_VISI(cref);
     }
 
     if (argc == 1) {

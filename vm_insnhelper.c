@@ -299,18 +299,18 @@ rb_vm_rewrite_cref_stack(NODE *node, VALUE old_klass, VALUE new_klass, NODE **ne
     NODE *new_node;
 
     while (node) {
-	if (node->nd_clss == old_klass) {
+	if (CREF_CLASS(node) == old_klass) {
 	    new_node = NEW_CREF(new_klass);
 	    COPY_CREF_OMOD(new_node, node);
-	    RB_OBJ_WRITE(new_node, &new_node->nd_next, node->nd_next);
+	    RB_OBJ_WRITE(new_node, &CREF_NEXT(new_node), CREF_NEXT(node));
 	    *new_cref_ptr = new_node;
 	    return;
 	}
-	new_node = NEW_CREF(node->nd_clss);
+	new_node = NEW_CREF(CREF_CLASS(node));
 	COPY_CREF_OMOD(new_node, node);
-	node = node->nd_next;
+	node = CREF_NEXT(node);
 	*new_cref_ptr = new_node;
-	new_cref_ptr = &new_node->nd_next;
+	new_cref_ptr = &CREF_NEXT(new_node);
     }
     *new_cref_ptr = NULL;
 }
@@ -333,10 +333,10 @@ vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr)
     }
     cref = vm_cref_new(klass, noex, prev_cref);
 
-    /* TODO: why cref->nd_next is 1? */
-    if (cref->nd_next && cref->nd_next != (void *) 1 &&
-	!NIL_P(cref->nd_next->nd_refinements)) {
-	COPY_CREF_OMOD(cref, cref->nd_next);
+    /* TODO: why CREF_NEXT(cref) is 1? */
+    if (CREF_NEXT(cref) && CREF_NEXT(cref) != (void *) 1 &&
+	!NIL_P(CREF_REFINEMENTS(CREF_NEXT(cref)))) {
+	COPY_CREF_OMOD(cref, CREF_NEXT(cref));
     }
 
     return cref;
@@ -349,10 +349,10 @@ vm_get_cbase(const VALUE *ep)
     VALUE klass = Qundef;
 
     while (cref) {
-	if ((klass = cref->nd_clss) != 0) {
+	if ((klass = CREF_CLASS(cref)) != 0) {
 	    break;
 	}
-	cref = cref->nd_next;
+	cref = CREF_NEXT(cref);
     }
 
     return klass;
@@ -365,11 +365,11 @@ vm_get_const_base(const VALUE *ep)
     VALUE klass = Qundef;
 
     while (cref) {
-	if (!(cref->flags & NODE_FL_CREF_PUSHED_BY_EVAL) &&
-	    (klass = cref->nd_clss) != 0) {
+	if (!CREF_PUSHED_BY_EVAL(cref) &&
+	    (klass = CREF_CLASS(cref)) != 0) {
 	    break;
 	}
-	cref = cref->nd_next;
+	cref = CREF_NEXT(cref);
     }
 
     return klass;
@@ -411,18 +411,18 @@ vm_get_ev_const(rb_thread_t *th, VALUE orig_klass, ID id, int is_defined)
 	const NODE *cref;
 	VALUE klass = orig_klass;
 
-	while (root_cref && root_cref->flags & NODE_FL_CREF_PUSHED_BY_EVAL) {
-	    root_cref = root_cref->nd_next;
+	while (root_cref && CREF_PUSHED_BY_EVAL(root_cref)) {
+	    root_cref = CREF_NEXT(root_cref);
 	}
 	cref = root_cref;
-	while (cref && cref->nd_next) {
-	    if (cref->flags & NODE_FL_CREF_PUSHED_BY_EVAL) {
+	while (cref && CREF_NEXT(cref)) {
+	    if (CREF_PUSHED_BY_EVAL(cref)) {
 		klass = Qnil;
 	    }
 	    else {
-		klass = cref->nd_clss;
+		klass = CREF_CLASS(cref);
 	    }
-	    cref = cref->nd_next;
+	    cref = CREF_NEXT(cref);
 
 	    if (!NIL_P(klass)) {
 		VALUE av, am = 0;
@@ -451,8 +451,8 @@ vm_get_ev_const(rb_thread_t *th, VALUE orig_klass, ID id, int is_defined)
 	}
 
 	/* search self */
-	if (root_cref && !NIL_P(root_cref->nd_clss)) {
-	    klass = vm_get_iclass(th->cfp, root_cref->nd_clss);
+	if (root_cref && !NIL_P(CREF_CLASS(root_cref))) {
+	    klass = vm_get_iclass(th->cfp, CREF_CLASS(root_cref));
 	}
 	else {
 	    klass = CLASS_OF(th->cfp->self);
@@ -485,16 +485,16 @@ vm_get_cvar_base(NODE *cref, rb_control_frame_t *cfp)
 	rb_bug("vm_get_cvar_base: no cref");
     }
 
-    while (cref->nd_next &&
-	   (NIL_P(cref->nd_clss) || FL_TEST(cref->nd_clss, FL_SINGLETON) ||
-	    (cref->flags & NODE_FL_CREF_PUSHED_BY_EVAL))) {
-	cref = cref->nd_next;
+    while (CREF_NEXT(cref) &&
+	   (NIL_P(CREF_CLASS(cref)) || FL_TEST(CREF_CLASS(cref), FL_SINGLETON) ||
+	    CREF_PUSHED_BY_EVAL(cref))) {
+	cref = CREF_NEXT(cref);
     }
-    if (!cref->nd_next) {
+    if (!CREF_NEXT(cref)) {
 	rb_warn("class variable access from toplevel");
     }
 
-    klass = vm_get_iclass(cfp, cref->nd_clss);
+    klass = vm_get_iclass(cfp, CREF_CLASS(cref));
 
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class variables available");
@@ -1785,7 +1785,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		break;
 	      case VM_METHOD_TYPE_REFINED:{
 		NODE *cref = rb_vm_get_cref(cfp->ep);
-		VALUE refinements = cref ? cref->nd_refinements : Qnil;
+		VALUE refinements = cref ? CREF_REFINEMENTS(cref) : Qnil;
 		VALUE refinement, defined_class;
 		rb_method_entry_t *me;
 

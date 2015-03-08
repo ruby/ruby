@@ -272,9 +272,9 @@ typedef struct RNode {
  *          15: NODE_FL_CREF_PUSHED_BY_EVAL
  *          16: NODE_FL_CREF_OMOD_SHARED
  */
-#define NODE_FL_NEWLINE             (((VALUE)1)<<7)
-#define NODE_FL_CREF_PUSHED_BY_EVAL (((VALUE)1)<<15)
-#define NODE_FL_CREF_OMOD_SHARED    (((VALUE)1)<<16)
+#define NODE_FL_NEWLINE              (((VALUE)1)<<7)
+#define NODE_FL_CREF_PUSHED_BY_EVAL_ (((VALUE)1)<<15)
+#define NODE_FL_CREF_OMOD_SHARED_    (((VALUE)1)<<16)
 
 #define NODE_TYPESHIFT 8
 #define NODE_TYPEMASK  (((VALUE)0x7f)<<NODE_TYPESHIFT)
@@ -289,7 +289,7 @@ typedef struct RNode {
 #define nd_set_line(n,l) \
     RNODE(n)->flags=((RNODE(n)->flags&~((VALUE)(-1)<<NODE_LSHIFT))|((VALUE)((l)&NODE_LMASK)<<NODE_LSHIFT))
 
-#define nd_refinements  nd_reserved
+#define nd_refinements_  nd_reserved
 
 #define nd_head  u1.node
 #define nd_alen  u2.argc
@@ -347,7 +347,7 @@ typedef struct RNode {
 #define nd_super u3.node
 
 #define nd_modl  u1.id
-#define nd_clss  u1.value
+#define nd_clss_  u1.value
 
 #define nd_beg   u1.node
 #define nd_end   u2.node
@@ -359,7 +359,7 @@ typedef struct RNode {
 #define nd_tag   u1.id
 #define nd_tval  u2.value
 
-#define nd_visi  u2.argc
+#define nd_visi_  u2.argc
 
 #define NEW_NODE(t,a0,a1,a2) rb_node_newnode((t),(VALUE)(a0),(VALUE)(a1),(VALUE)(a2))
 

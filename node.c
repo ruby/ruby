@@ -947,7 +947,7 @@ rb_gc_mark_node(NODE *obj)
 {
     switch (nd_type(obj)) {
       case NODE_IF:		/* 1,2,3 */
-	rb_gc_mark(obj->nd_refinements); /* use as SVAR */
+	rb_gc_mark(CREF_REFINEMENTS(obj)); /* use as SVAR */
       case NODE_FOR:
       case NODE_ITER:
       case NODE_WHEN:
@@ -1070,9 +1070,9 @@ rb_gc_mark_node(NODE *obj)
 	break;
 
       case NODE_CREF:
-	rb_gc_mark(obj->nd_refinements);
-	rb_gc_mark(RNODE(obj)->nd_clss);
-	return (VALUE)RNODE(obj)->nd_next;
+	rb_gc_mark(CREF_REFINEMENTS(obj));
+	rb_gc_mark(CREF_CLASS(obj));
+	return (VALUE)CREF_NEXT(obj);;
 
       default:		/* unlisted NODE */
 	rb_gc_mark_maybe(RNODE(obj)->u1.value);

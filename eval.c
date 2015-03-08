@@ -343,13 +343,13 @@ rb_mod_nesting(void)
     VALUE ary = rb_ary_new();
     const NODE *cref = rb_vm_cref();
 
-    while (cref && cref->nd_next) {
-	VALUE klass = cref->nd_clss;
-	if (!(cref->flags & NODE_FL_CREF_PUSHED_BY_EVAL) &&
+    while (cref && CREF_NEXT(cref)) {
+	VALUE klass = CREF_CLASS(cref);
+	if (!CREF_PUSHED_BY_EVAL(cref) &&
 	    !NIL_P(klass)) {
 	    rb_ary_push(ary, klass);
 	}
-	cref = cref->nd_next;
+	cref = CREF_NEXT(cref);
     }
     return ary;
 }
@@ -389,15 +389,15 @@ rb_mod_s_constants(int argc, VALUE *argv, VALUE mod)
     }
 
     while (cref) {
-	klass = cref->nd_clss;
-	if (!(cref->flags & NODE_FL_CREF_PUSHED_BY_EVAL) &&
+	klass = CREF_CLASS(cref);
+	if (!CREF_PUSHED_BY_EVAL(cref) &&
 	    !NIL_P(klass)) {
-	    data = rb_mod_const_at(cref->nd_clss, data);
+	    data = rb_mod_const_at(CREF_CLASS(cref), data);
 	    if (!cbase) {
 		cbase = klass;
 	    }
 	}
-	cref = cref->nd_next;
+	cref = CREF_NEXT(cref);
     }
 
     if (cbase) {
@@ -1160,15 +1160,15 @@ rb_using_refinement(NODE *cref, VALUE klass, VALUE module)
 
     Check_Type(klass, T_CLASS);
     Check_Type(module, T_MODULE);
-    if (NIL_P(cref->nd_refinements)) {
-	RB_OBJ_WRITE(cref, &cref->nd_refinements, hidden_identity_hash_new());
+    if (NIL_P(CREF_REFINEMENTS(cref))) {
+	RB_OBJ_WRITE(cref, &CREF_REFINEMENTS(cref), hidden_identity_hash_new());
     }
     else {
-	if (cref->flags & NODE_FL_CREF_OMOD_SHARED) {
-	    RB_OBJ_WRITE(cref, &cref->nd_refinements, rb_hash_dup(cref->nd_refinements));
-	    cref->flags &= ~NODE_FL_CREF_OMOD_SHARED;
+	if (CREF_OMOD_SHARED(cref)) {
+	    RB_OBJ_WRITE(cref, &CREF_REFINEMENTS(cref), rb_hash_dup(CREF_REFINEMENTS(cref)));
+	    CREF_OMOD_SHARED_UNSET(cref);
 	}
-	if (!NIL_P(c = rb_hash_lookup(cref->nd_refinements, klass))) {
+	if (!NIL_P(c = rb_hash_lookup(CREF_REFINEMENTS(cref), klass))) {
 	    superclass = c;
 	    while (c && RB_TYPE_P(c, T_ICLASS)) {
 		if (RBASIC(c)->klass == module) {
@@ -1193,7 +1193,7 @@ rb_using_refinement(NODE *cref, VALUE klass, VALUE module)
 	RCLASS_REFINED_CLASS(c) = klass;
 	module = RCLASS_SUPER(module);
     }
-    rb_hash_aset(cref->nd_refinements, klass, iclass);
+    rb_hash_aset(CREF_REFINEMENTS(cref), klass, iclass);
 }
 
 static int
@@ -1488,7 +1488,7 @@ top_using(VALUE self, VALUE module)
     NODE *cref = rb_vm_cref();
     rb_control_frame_t *prev_cfp = previous_frame(GET_THREAD());
 
-    if (cref->nd_next || (prev_cfp && prev_cfp->me)) {
+    if (CREF_NEXT(cref) || (prev_cfp && prev_cfp->me)) {
 	rb_raise(rb_eRuntimeError,
 		 "main.using is permitted only at toplevel");
     }

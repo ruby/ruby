@@ -505,6 +505,18 @@ RCLASS_SET_SUPER(VALUE klass, VALUE super)
     return super;
 }
 
+/* CREF */
+#define CREF_CLASS(cref)       ((cref)->nd_clss_)
+#define CREF_NEXT(cref)        ((cref)->nd_next)
+#define CREF_VISI(cref)        ((cref)->nd_visi_)
+#define CREF_VISI_SET(cref, v) ((cref)->nd_visi_ = (v))
+#define CREF_REFINEMENTS(cref) ((cref)->nd_refinements_)
+#define CREF_PUSHED_BY_EVAL(cref)     ((cref)->flags & NODE_FL_CREF_PUSHED_BY_EVAL_)
+#define CREF_PUSHED_BY_EVAL_SET(cref) ((cref)->flags |= NODE_FL_CREF_PUSHED_BY_EVAL_)
+#define CREF_OMOD_SHARED(cref)        ((cref)->flags & NODE_FL_CREF_OMOD_SHARED_)
+#define CREF_OMOD_SHARED_SET(cref)    ((cref)->flags |= NODE_FL_CREF_OMOD_SHARED_)
+#define CREF_OMOD_SHARED_UNSET(cref)  ((cref)->flags &= ~NODE_FL_CREF_OMOD_SHARED_)
+
 struct vtm; /* defined by timev.h */
 
 /* array.c */
