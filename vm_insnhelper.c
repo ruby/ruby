@@ -196,21 +196,21 @@ lep_svar_set(rb_thread_t *th, VALUE *lep, rb_num_t key, VALUE val)
     else if (nd_type(svar) == NODE_CREF) {
 	const rb_cref_t *cref = (rb_cref_t *)svar;
 	svar = *svar_place = NEW_IF(Qnil, Qnil, Qnil);
-	svar->nd_reserved = (VALUE)cref;
+	RB_OBJ_WRITE(svar, &svar->nd_reserved, (VALUE)cref);
     }
 
     switch (key) {
       case VM_SVAR_LASTLINE:
-	svar->u1.value = val;
+	RB_OBJ_WRITE(svar, &svar->u1.value, val);
 	return;
       case VM_SVAR_BACKREF:
-	svar->u2.value = val;
+	RB_OBJ_WRITE(svar, &svar->u2.value, val);
 	return;
       default: {
 	VALUE ary = svar->u3.value;
 
 	if (NIL_P(ary)) {
-	    svar->u3.value = ary = rb_ary_new();
+	    RB_OBJ_WRITE(svar, &svar->u3.value, ary = rb_ary_new());
 	}
 	rb_ary_store(ary, key - VM_SVAR_EXTRA_START, val);
       }
