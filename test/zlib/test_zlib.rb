@@ -962,6 +962,19 @@ if defined? Zlib
         assert_equal(content, read_size)
       }
     end
+
+    def test_double_close
+      Tempfile.create("test_zlib_gzip_reader_close") {|t|
+        t.binmode
+        content = "foo"
+        Zlib::GzipWriter.wrap(t) {|gz| gz.print(content) }
+        r = Zlib::GzipReader.open(t.path)
+        assert_equal(content, r.read)
+        assert_nothing_raised { r.close }
+        assert_nothing_raised { r.close }
+      }
+    end
+
   end
 
   class TestZlibGzipWriter < Test::Unit::TestCase
@@ -1020,6 +1033,15 @@ if defined? Zlib
         t.binmode
         Zlib::GzipWriter.wrap(t) {|gz| gz.print("foo") }
         assert_equal("foo", Zlib::GzipReader.open(t.path) {|gz| gz.read })
+      }
+    end
+
+    def test_double_close
+      Tempfile.create("test_zlib_gzip_reader_close") {|t|
+        t.binmode
+        w = Zlib::GzipWriter.wrap(t)
+        assert_nothing_raised { w.close }
+        assert_nothing_raised { w.close }
       }
     end
   end

@@ -3297,9 +3297,13 @@ rb_gzfile_set_comment(VALUE obj, VALUE str)
 static VALUE
 rb_gzfile_close(VALUE obj)
 {
-    struct gzfile *gz = get_gzfile(obj);
+    struct gzfile *gz;
     VALUE io;
 
+    TypedData_Get_Struct(obj, struct gzfile, &gzfile_data_type, gz);
+    if (!ZSTREAM_IS_READY(&gz->z)) {
+        return Qnil;
+    }
     io = gz->io;
     gzfile_close(gz, 1);
     return io;

@@ -1,3 +1,8 @@
+Sun Mar  8 22:50:57 2015  Tanaka Akira  <akr@fsij.org>
+
+	* ext/zlib/zlib.c (rb_gzfile_close): Don't raise on double
+	  close for consistent to IO#close.
+
 Sun Mar  8 16:57:35 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (glob_helper): match patterns against legacy short names
