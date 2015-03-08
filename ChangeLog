@@ -1,3 +1,7 @@
+Mon Mar  9 06:00:37 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.h (COPY_CREF_OMOD): fix translation miss.
+
 Mon Mar  9 04:47:58 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* internal.h: define CREF accessor macros.

@@ -147,7 +147,7 @@ enum vm_regan_acttype {
 
 #define COPY_CREF_OMOD(c1, c2) do {  \
   RB_OBJ_WRITE((c1), &CREF_REFINEMENTS(c1), CREF_REFINEMENTS(c2)); \
-  if (!CREF_REFINEMENTS(c2)) { \
+  if (!NIL_P(CREF_REFINEMENTS(c2))) { \
       CREF_OMOD_SHARED_SET(c1); \
       CREF_OMOD_SHARED_SET(c2); \
   } \
