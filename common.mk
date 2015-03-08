@@ -39,7 +39,7 @@ NORMALMAINOBJ = main.$(OBJEXT)
 MAINOBJ       = $(NORMALMAINOBJ)
 DLDOBJS	      = $(INITOBJS)
 EXTSOLIBS     =
-MINIOBJS      = $(ARCHMINIOBJS) miniinit.$(OBJEXT) miniprelude.$(OBJEXT)
+MINIOBJS      = $(ARCHMINIOBJS) miniinit.$(OBJEXT) dmyext.$(OBJEXT) miniprelude.$(OBJEXT)
 ENC_MK        = enc.mk
 
 COMMONOBJS    = array.$(OBJEXT) \

@@ -216,7 +216,7 @@ all:
 miniruby$(EXEEXT):
 		@-if test -f $@; then $(MV) -f $@ $@.old; $(RM) $@.old; fi
 		$(ECHO) linking $@
-		$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(INITOBJS) $(MAINLIBS) $(LIBS) $(OUTFLAG)$@
+		$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(MAINLIBS) $(LIBS) $(OUTFLAG)$@
 
 $(PROGRAM):
 		@$(RM) $@

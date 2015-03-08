@@ -941,7 +941,7 @@ miniruby: miniruby$(EXEEXT)
 miniruby$(EXEEXT):
 		@echo $(LIBS)
 		$(ECHO) linking $(@:\=/)
-		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(INITOBJS) $(LIBS) -Fe$@ -link $(LDFLAGS)
+		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(LIBS) -Fe$@ -link $(LDFLAGS)
 		@$(RM) miniruby.lib miniruby.exp
 		$(Q) miniruby.exe -v
 		$(Q) $(LDSHARED_1)
