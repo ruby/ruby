@@ -1638,11 +1638,11 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 {
     ID id;
     VALUE body;
-    int noex = NOEX_PUBLIC;
+    rb_method_flag_t noex = NOEX_PUBLIC;
     const rb_cref_t *cref = rb_vm_cref_in_context(mod, mod);
 
     if (cref) {
-	noex = CREF_VISI(cref);
+	noex = (rb_method_flag_t)CREF_VISI(cref);
     }
 
     if (argc == 1) {

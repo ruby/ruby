@@ -2267,7 +2267,7 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
 		 rb_num_t is_singleton, rb_cref_t *cref)
 {
     VALUE klass = CREF_CLASS(cref);
-    int noex = CREF_VISI(cref);
+    rb_method_flag_t noex = (rb_method_flag_t)CREF_VISI(cref);
     rb_iseq_t *miseq;
     GetISeqPtr(iseqval, miseq);
 
