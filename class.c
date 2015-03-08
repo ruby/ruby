@@ -246,7 +246,7 @@ clone_method(VALUE klass, ID mid, const rb_method_entry_t *me)
     VALUE newiseqval;
     if (me->def && me->def->type == VM_METHOD_TYPE_ISEQ) {
 	rb_iseq_t *iseq;
-	NODE *new_cref;
+	rb_cref_t *new_cref;
 	newiseqval = rb_iseq_clone(me->def->body.iseq_body.iseq->self, klass);
 	GetISeqPtr(newiseqval, iseq);
 	rb_vm_rewrite_cref_stack(me->def->body.iseq_body.cref, me->klass, klass, &new_cref);

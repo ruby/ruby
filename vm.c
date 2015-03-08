@@ -79,20 +79,20 @@ rb_vm_control_frame_block_ptr(const rb_control_frame_t *cfp)
     return VM_CF_BLOCK_PTR(cfp);
 }
 
-static NODE *
-vm_cref_new(VALUE klass, long visi, NODE *prev_cref)
+static rb_cref_t *
+vm_cref_new(VALUE klass, long visi, const rb_cref_t *prev_cref)
 {
-    NODE *cref = NEW_CREF(klass);
-    CREF_REFINEMENTS(cref) = Qnil;
+    rb_cref_t *cref = (rb_cref_t *)NEW_CREF(klass);
+    CREF_REFINEMENTS_SET(cref, Qnil);
     CREF_VISI_SET(cref, visi);
-    CREF_NEXT(cref) = prev_cref;
+    CREF_NEXT_SET(cref, prev_cref);
     return cref;
 }
 
-static NODE *
+static rb_cref_t *
 vm_cref_new_toplevel(rb_thread_t *th)
 {
-    NODE *cref = vm_cref_new(rb_cObject, NOEX_PRIVATE /* toplevel visibility is private */, NULL);
+    rb_cref_t *cref = vm_cref_new(rb_cObject, NOEX_PRIVATE /* toplevel visibility is private */, NULL);
 
     if (th->top_wrapper) {
 	cref = vm_cref_new(th->top_wrapper, NOEX_PRIVATE, cref);
@@ -102,7 +102,7 @@ vm_cref_new_toplevel(rb_thread_t *th)
 }
 
 static void
-vm_cref_dump(const char *mesg, const NODE *cref)
+vm_cref_dump(const char *mesg, const rb_cref_t *cref)
 {
     fprintf(stderr, "vm_cref_dump: %s (%p)\n", mesg, cref);
 
@@ -251,7 +251,7 @@ vm_set_top_stack(rb_thread_t *th, VALUE iseqval)
 }
 
 static void
-vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref, rb_block_t *base_block)
+vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const rb_cref_t *cref, rb_block_t *base_block)
 {
     rb_iseq_t *iseq;
     GetISeqPtr(iseqval, iseq);
@@ -795,7 +795,7 @@ rb_binding_add_dynavars(rb_binding_t *bind, int dyncount, const ID *dynvars)
 static inline VALUE
 invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
 		    VALUE self, int argc, const VALUE *argv,
-		    const rb_block_t *blockptr, const NODE *cref,
+		    const rb_block_t *blockptr, const rb_cref_t *cref,
 		    VALUE defined_class, int splattable)
 {
     if (SPECIAL_CONST_P(block->iseq)) {
@@ -870,7 +870,7 @@ check_block(rb_thread_t *th)
 }
 
 static inline VALUE
-vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const NODE *cref)
+vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const rb_cref_t *cref)
 {
     const rb_block_t *blockptr = check_block(th);
     return invoke_block_from_c(th, blockptr, blockptr->self, argc, argv, 0, cref,
@@ -1039,7 +1039,7 @@ rb_sourceline(void)
     }
 }
 
-NODE *
+rb_cref_t *
 rb_vm_cref(void)
 {
     rb_thread_t *th = GET_THREAD();
@@ -1052,12 +1052,12 @@ rb_vm_cref(void)
     return rb_vm_get_cref(cfp->ep);
 }
 
-const NODE *
+const rb_cref_t *
 rb_vm_cref_in_context(VALUE self, VALUE cbase)
 {
     rb_thread_t *th = GET_THREAD();
     const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
-    const NODE *cref;
+    const rb_cref_t *cref;
     if (cfp->self != self) return NULL;
     cref = rb_vm_get_cref(cfp->ep);
     if (CREF_CLASS(cref) != cbase) return NULL;
@@ -1066,7 +1066,7 @@ rb_vm_cref_in_context(VALUE self, VALUE cbase)
 
 #if 0
 void
-debug_cref(NODE *cref)
+debug_cref(rb_cref_t *cref)
 {
     while (cref) {
 	dp(CREF_CLASS(cref));
@@ -2264,7 +2264,7 @@ rb_thread_alloc(VALUE klass)
 
 static void
 vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
-		 rb_num_t is_singleton, NODE *cref)
+		 rb_num_t is_singleton, rb_cref_t *cref)
 {
     VALUE klass = CREF_CLASS(cref);
     int noex = CREF_VISI(cref);

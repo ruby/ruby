@@ -245,7 +245,7 @@ NORETURN(void rb_raise_method_missing(rb_thread_t *th, int argc, const VALUE *ar
 				      VALUE obj, int call_status));
 
 VALUE rb_vm_make_jump_tag_but_local_jump(int state, VALUE val);
-NODE *rb_vm_cref(void);
+rb_cref_t *rb_vm_cref(void);
 VALUE rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg, const rb_block_t *blockptr, VALUE filename);
 void rb_vm_set_progname(VALUE filename);
 void rb_thread_terminate_all(void);

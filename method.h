@@ -84,7 +84,7 @@ typedef struct rb_method_definition_struct {
     union {
 	struct {
 	    rb_iseq_t *const iseq;            /* should be mark */
-	    NODE *cref;
+	    rb_cref_t *cref;
 	} iseq_body;
 	rb_method_cfunc_t cfunc;
 	rb_method_attr_t attr;
@@ -118,7 +118,7 @@ struct unlinked_method_entry_list_entry {
      UNDEFINED_METHOD_ENTRY_P((def)->body.orig_me))
 
 void rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_flag_t noex);
-void rb_add_method_iseq(VALUE klass, ID mid, rb_iseq_t *iseq, NODE *cref, rb_method_flag_t noex);
+void rb_add_method_iseq(VALUE klass, ID mid, rb_iseq_t *iseq, rb_cref_t *cref, rb_method_flag_t noex);
 rb_method_entry_t *rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *option, rb_method_flag_t noex);
 rb_method_entry_t *rb_method_entry(VALUE klass, ID id, VALUE *define_class_ptr);
 rb_method_entry_t *rb_method_entry_at(VALUE obj, ID id);

@@ -159,8 +159,7 @@ getclassvariable
 ()
 (VALUE val)
 {
-    NODE *cref = rb_vm_get_cref(GET_EP());
-    val = rb_cvar_get(vm_get_cvar_base(cref, GET_CFP()), id);
+    val = rb_cvar_get(vm_get_cvar_base(rb_vm_get_cref(GET_EP()), GET_CFP()), id);
 }
 
 /**
@@ -174,8 +173,7 @@ setclassvariable
 (VALUE val)
 ()
 {
-    NODE *cref = rb_vm_get_cref(GET_EP());
-    rb_cvar_set(vm_get_cvar_base(cref, GET_CFP()), id, val);
+    rb_cvar_set(vm_get_cvar_base(rb_vm_get_cref(GET_EP()), GET_CFP()), id, val);
 }
 
 /**
@@ -738,7 +736,7 @@ defined
 	}
 	break;
       case DEFINED_CVAR: {
-	NODE *cref = rb_vm_get_cref(GET_EP());
+	const rb_cref_t *cref = rb_vm_get_cref(GET_EP());
 	klass = vm_get_cvar_base(cref, GET_CFP());
 	if (rb_cvar_defined(klass, SYM2ID(obj))) {
 	    expr_type = DEFINED_CVAR;

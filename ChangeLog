@@ -1,3 +1,10 @@
+Mon Mar  9 06:19:06 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* internal.h: define rb_cref_t and change to use it.
+
+	  rb_cref_t is data type of CREF. Now, the body is still NODE.
+	  It is easy to understand what is CREF and what is pure NODE.
+
 Mon Mar  9 06:00:37 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.h (COPY_CREF_OMOD): fix translation miss.

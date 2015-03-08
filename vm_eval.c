@@ -16,12 +16,11 @@ struct local_var_list {
 };
 
 static inline VALUE method_missing(VALUE obj, ID id, int argc, const VALUE *argv, int call_status);
-static inline VALUE vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const NODE *cref);
+static inline VALUE vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const rb_cref_t *cref);
 static inline VALUE vm_yield(rb_thread_t *th, int argc, const VALUE *argv);
 static inline VALUE vm_yield_with_block(rb_thread_t *th, int argc, const VALUE *argv, const rb_block_t *blockargptr);
-static NODE *vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr);
 static VALUE vm_exec(rb_thread_t *th);
-static void vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref, rb_block_t *base_block);
+static void vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const rb_cref_t *cref, rb_block_t *base_block);
 static int vm_collect_local_variables_in_heap(rb_thread_t *th, const VALUE *dfp, const struct local_var_list *vars);
 
 static VALUE rb_eUncaughtThrow;
@@ -1229,7 +1228,7 @@ rb_each(VALUE obj)
 }
 
 static VALUE
-eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *const cref_arg, volatile VALUE file, volatile int line)
+eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_arg, volatile VALUE file, volatile int line)
 {
     int state;
     VALUE result = Qundef;
@@ -1239,7 +1238,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *const cref_arg, 
     rb_block_t block, *base_block;
     volatile int parse_in_eval;
     volatile int mild_compile_error;
-    NODE *orig_cref;
+    rb_cref_t *orig_cref;
     VALUE crefval;
 
     if (file == 0) {
@@ -1251,7 +1250,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *const cref_arg, 
     mild_compile_error = th->mild_compile_error;
     TH_PUSH_TAG(th);
     if ((state = TH_EXEC_TAG()) == 0) {
-	NODE *cref = cref_arg;
+	rb_cref_t *cref = cref_arg;
 	rb_binding_t *bind = 0;
 	rb_iseq_t *iseq;
 	volatile VALUE iseqval;
@@ -1308,7 +1307,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *const cref_arg, 
 	if (!cref && base_block->iseq) {
 	    if (NIL_P(scope)) {
 		orig_cref = rb_vm_get_cref(base_block->ep);
-		cref = NEW_CREF(Qnil);
+		cref = (rb_cref_t *)NEW_CREF(Qnil);
 		crefval = (VALUE) cref;
 		COPY_CREF(cref, orig_cref);
 	    }
@@ -1559,7 +1558,7 @@ yield_under(VALUE under, VALUE self, VALUE values)
 {
     rb_thread_t *th = GET_THREAD();
     rb_block_t block, *blockptr;
-    NODE *cref;
+    rb_cref_t *cref;
 
     if ((blockptr = VM_CF_BLOCK_PTR(th->cfp)) != 0) {
 	block = *blockptr;
@@ -1582,7 +1581,7 @@ rb_yield_refine_block(VALUE refinement, VALUE refinements)
 {
     rb_thread_t *th = GET_THREAD();
     rb_block_t block, *blockptr;
-    NODE *cref;
+    rb_cref_t *cref;
 
     if ((blockptr = VM_CF_BLOCK_PTR(th->cfp)) != 0) {
 	block = *blockptr;
@@ -1591,7 +1590,7 @@ rb_yield_refine_block(VALUE refinement, VALUE refinements)
     }
     cref = vm_cref_push(th, refinement, NOEX_PUBLIC, blockptr);
     CREF_PUSHED_BY_EVAL_SET(cref);
-    RB_OBJ_WRITE(cref, &CREF_REFINEMENTS(cref), refinements);
+    CREF_REFINEMENTS_SET(cref, refinements);
 
     return vm_yield_with_cref(th, 0, NULL, cref);
 }
@@ -1600,7 +1599,7 @@ rb_yield_refine_block(VALUE refinement, VALUE refinements)
 static VALUE
 eval_under(VALUE under, VALUE self, VALUE src, VALUE file, int line)
 {
-    NODE *cref = vm_cref_push(GET_THREAD(), under, NOEX_PUBLIC, NULL);
+    rb_cref_t *cref = vm_cref_push(GET_THREAD(), under, NOEX_PUBLIC, NULL);
 
     if (SPECIAL_CONST_P(self) && !NIL_P(under)) {
 	CREF_PUSHED_BY_EVAL_SET(cref);

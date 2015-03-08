@@ -117,7 +117,7 @@ typedef struct rb_compile_option_struct rb_compile_option_t;
 
 struct iseq_inline_cache_entry {
     rb_serial_t ic_serial;
-    NODE *ic_cref;
+    rb_cref_t *ic_cref;
     union {
 	size_t index;
 	VALUE value;
@@ -1000,7 +1000,7 @@ void rb_gc_mark_machine_stack(rb_thread_t *th);
 
 int rb_autoloading_value(VALUE mod, ID id, VALUE* value);
 
-void rb_vm_rewrite_cref_stack(NODE *node, VALUE old_klass, VALUE new_klass, NODE **new_cref_ptr);
+void rb_vm_rewrite_cref_stack(rb_cref_t *node, VALUE old_klass, VALUE new_klass, rb_cref_t **new_cref_ptr);
 
 #define sysstack_error GET_VM()->special_exceptions[ruby_error_sysstack]
 

@@ -341,7 +341,7 @@ static VALUE
 rb_mod_nesting(void)
 {
     VALUE ary = rb_ary_new();
-    const NODE *cref = rb_vm_cref();
+    const rb_cref_t *cref = rb_vm_cref();
 
     while (cref && CREF_NEXT(cref)) {
 	VALUE klass = CREF_CLASS(cref);
@@ -379,7 +379,7 @@ rb_mod_nesting(void)
 static VALUE
 rb_mod_s_constants(int argc, VALUE *argv, VALUE mod)
 {
-    const NODE *cref = rb_vm_cref();
+    const rb_cref_t *cref = rb_vm_cref();
     VALUE klass;
     VALUE cbase = 0;
     void *data = 0;
@@ -1154,18 +1154,18 @@ hidden_identity_hash_new(void)
 }
 
 void
-rb_using_refinement(NODE *cref, VALUE klass, VALUE module)
+rb_using_refinement(rb_cref_t *cref, VALUE klass, VALUE module)
 {
     VALUE iclass, c, superclass = klass;
 
     Check_Type(klass, T_CLASS);
     Check_Type(module, T_MODULE);
     if (NIL_P(CREF_REFINEMENTS(cref))) {
-	RB_OBJ_WRITE(cref, &CREF_REFINEMENTS(cref), hidden_identity_hash_new());
+	CREF_REFINEMENTS_SET(cref, hidden_identity_hash_new());
     }
     else {
 	if (CREF_OMOD_SHARED(cref)) {
-	    RB_OBJ_WRITE(cref, &CREF_REFINEMENTS(cref), rb_hash_dup(CREF_REFINEMENTS(cref)));
+	    CREF_REFINEMENTS_SET(cref, rb_hash_dup(CREF_REFINEMENTS(cref)));
 	    CREF_OMOD_SHARED_UNSET(cref);
 	}
 	if (!NIL_P(c = rb_hash_lookup(CREF_REFINEMENTS(cref), klass))) {
@@ -1199,14 +1199,14 @@ rb_using_refinement(NODE *cref, VALUE klass, VALUE module)
 static int
 using_refinement(VALUE klass, VALUE module, VALUE arg)
 {
-    NODE *cref = (NODE *) arg;
+    rb_cref_t *cref = (rb_cref_t *) arg;
 
     rb_using_refinement(cref, klass, module);
     return ST_CONTINUE;
 }
 
 static void
-using_module_recursive(NODE *cref, VALUE klass)
+using_module_recursive(const rb_cref_t *cref, VALUE klass)
 {
     ID id_refinements;
     VALUE super, module, refinements;
@@ -1236,7 +1236,7 @@ using_module_recursive(NODE *cref, VALUE klass)
 }
 
 void
-rb_using_module(NODE *cref, VALUE module)
+rb_using_module(const rb_cref_t *cref, VALUE module)
 {
     Check_Type(module, T_MODULE);
     using_module_recursive(cref, module);
@@ -1348,7 +1348,7 @@ rb_mod_refine(VALUE module, VALUE klass)
 static VALUE
 mod_using(VALUE self, VALUE module)
 {
-    NODE *cref = rb_vm_cref();
+    const rb_cref_t *cref = rb_vm_cref();
     rb_control_frame_t *prev_cfp = previous_frame(GET_THREAD());
 
     if (prev_frame_func()) {
@@ -1485,7 +1485,7 @@ top_include(int argc, VALUE *argv, VALUE self)
 static VALUE
 top_using(VALUE self, VALUE module)
 {
-    NODE *cref = rb_vm_cref();
+    const rb_cref_t *cref = rb_vm_cref();
     rb_control_frame_t *prev_cfp = previous_frame(GET_THREAD());
 
     if (CREF_NEXT(cref) || (prev_cfp && prev_cfp->me)) {

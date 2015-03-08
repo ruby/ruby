@@ -273,8 +273,6 @@ typedef struct RNode {
  *          16: NODE_FL_CREF_OMOD_SHARED
  */
 #define NODE_FL_NEWLINE              (((VALUE)1)<<7)
-#define NODE_FL_CREF_PUSHED_BY_EVAL_ (((VALUE)1)<<15)
-#define NODE_FL_CREF_OMOD_SHARED_    (((VALUE)1)<<16)
 
 #define NODE_TYPESHIFT 8
 #define NODE_TYPEMASK  (((VALUE)0x7f)<<NODE_TYPESHIFT)

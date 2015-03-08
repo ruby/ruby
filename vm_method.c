@@ -447,7 +447,7 @@ setup_method_cfunc_struct(rb_method_cfunc_t *cfunc, VALUE (*func)(), int argc)
 }
 
 rb_method_entry_t *
-rb_add_method0(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_flag_t noex, NODE *cref)
+rb_add_method0(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_flag_t noex, rb_cref_t *cref)
 {
     rb_thread_t *th;
     rb_control_frame_t *cfp;
@@ -471,7 +471,7 @@ rb_add_method0(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method
     switch (type) {
       case VM_METHOD_TYPE_ISEQ: {
 	  rb_iseq_t *iseq = (rb_iseq_t *)opts;
-	  NODE *private_cref;
+	  rb_cref_t *private_cref;
 
 	  *(rb_iseq_t **)&def->body.iseq_body.iseq = iseq;
 	  RB_OBJ_WRITTEN(klass, Qundef, iseq->self); /* should be set iseq before newobj */
@@ -531,7 +531,7 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 }
 
 void
-rb_add_method_iseq(VALUE klass, ID mid, rb_iseq_t *iseq, NODE *cref, rb_method_flag_t noex)
+rb_add_method_iseq(VALUE klass, ID mid, rb_iseq_t *iseq, rb_cref_t *cref, rb_method_flag_t noex)
 {
     rb_add_method0(klass, mid, VM_METHOD_TYPE_ISEQ, iseq, noex, cref);
 }
@@ -743,7 +743,7 @@ rb_method_entry_with_refinements(VALUE klass, ID id,
     rb_method_entry_t *me = rb_method_entry(klass, id, &defined_class);
 
     if (me && me->def->type == VM_METHOD_TYPE_REFINED) {
-	NODE *cref = rb_vm_cref();
+	const rb_cref_t *cref = rb_vm_cref();
 	VALUE refinements = cref ? CREF_REFINEMENTS(cref) : Qnil;
 
 	me = rb_resolve_refined_method(refinements, me, &defined_class);

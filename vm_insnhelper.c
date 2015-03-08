@@ -46,7 +46,7 @@ vm_push_frame(rb_thread_t *th,
 	      VALUE self,
 	      VALUE klass,
 	      VALUE specval,
-	      const NODE *cref,
+	      const rb_cref_t *cref,
 	      const VALUE *pc,
 	      VALUE *sp,
 	      int local_size,
@@ -194,7 +194,7 @@ lep_svar_set(rb_thread_t *th, VALUE *lep, rb_num_t key, VALUE val)
 	svar->nd_reserved = Qfalse;
     }
     else if (nd_type(svar) == NODE_CREF) {
-	NODE *cref = svar;
+	const rb_cref_t *cref = (rb_cref_t *)svar;
 	svar = *svar_place = NEW_IF(Qnil, Qnil, Qnil);
 	svar->nd_reserved = (VALUE)cref;
     }
@@ -253,7 +253,7 @@ vm_getspecial(rb_thread_t *th, VALUE *lep, rb_num_t key, rb_num_t type)
     return val;
 }
 
-static NODE *
+static rb_cref_t *
 ep_cref(const VALUE *ep)
 {
     const VALUE svar = ep[-1];
@@ -262,29 +262,29 @@ ep_cref(const VALUE *ep)
 	return NULL;
     }
     else if (nd_type(svar) == NODE_CREF) {
-	return (NODE *)svar;
+	return (rb_cref_t *)svar;
     }
     else {
-	return (NODE *)((NODE *)svar)->nd_reserved;
+	return (rb_cref_t *)((NODE *)svar)->nd_reserved;
     }
 }
 
-static NODE *
+static rb_cref_t *
 vm_get_cref0(const VALUE *ep)
 {
     while (!VM_EP_LEP_P(ep)) {
 	if (ep[-1]) {
-	    return (NODE *)ep[-1];
+	    return (rb_cref_t *)ep[-1];
 	}
 	ep = VM_EP_PREV_EP(ep);
     }
     return ep_cref(ep);
 }
 
-NODE *
+rb_cref_t *
 rb_vm_get_cref(const VALUE *ep)
 {
-    NODE *cref = vm_get_cref0(ep);
+    rb_cref_t *cref = vm_get_cref0(ep);
 
     if (cref == 0) {
 	rb_bug("rb_vm_get_cref: unreachable");
@@ -294,32 +294,32 @@ rb_vm_get_cref(const VALUE *ep)
 }
 
 void
-rb_vm_rewrite_cref_stack(NODE *node, VALUE old_klass, VALUE new_klass, NODE **new_cref_ptr)
+rb_vm_rewrite_cref_stack(rb_cref_t *node, VALUE old_klass, VALUE new_klass, rb_cref_t **new_cref_ptr)
 {
-    NODE *new_node;
+    rb_cref_t *new_node;
 
     while (node) {
 	if (CREF_CLASS(node) == old_klass) {
-	    new_node = NEW_CREF(new_klass);
+	    new_node = (rb_cref_t *)NEW_CREF(new_klass);
 	    COPY_CREF_OMOD(new_node, node);
-	    RB_OBJ_WRITE(new_node, &CREF_NEXT(new_node), CREF_NEXT(node));
+	    CREF_NEXT_SET(new_node, CREF_NEXT(node));
 	    *new_cref_ptr = new_node;
 	    return;
 	}
-	new_node = NEW_CREF(CREF_CLASS(node));
+	new_node = (rb_cref_t *)NEW_CREF(CREF_CLASS(node));
 	COPY_CREF_OMOD(new_node, node);
 	node = CREF_NEXT(node);
 	*new_cref_ptr = new_node;
-	new_cref_ptr = &CREF_NEXT(new_node);
+	new_cref_ptr = &new_node->next;
     }
     *new_cref_ptr = NULL;
 }
 
-static NODE *
+static rb_cref_t *
 vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr)
 {
-    NODE *prev_cref = NULL;
-    NODE *cref = NULL;
+    const rb_cref_t *prev_cref = NULL;
+    rb_cref_t *cref = NULL;
 
     if (blockptr) {
 	prev_cref = vm_get_cref0(blockptr->ep);
@@ -345,7 +345,7 @@ vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr)
 static inline VALUE
 vm_get_cbase(const VALUE *ep)
 {
-    NODE *cref = rb_vm_get_cref(ep);
+    const rb_cref_t *cref = rb_vm_get_cref(ep);
     VALUE klass = Qundef;
 
     while (cref) {
@@ -361,7 +361,7 @@ vm_get_cbase(const VALUE *ep)
 static inline VALUE
 vm_get_const_base(const VALUE *ep)
 {
-    NODE *cref = rb_vm_get_cref(ep);
+    const rb_cref_t *cref = rb_vm_get_cref(ep);
     VALUE klass = Qundef;
 
     while (cref) {
@@ -407,8 +407,8 @@ vm_get_ev_const(rb_thread_t *th, VALUE orig_klass, ID id, int is_defined)
 
     if (orig_klass == Qnil) {
 	/* in current lexical scope */
-	const NODE *root_cref = rb_vm_get_cref(th->cfp->ep);
-	const NODE *cref;
+	const rb_cref_t *root_cref = rb_vm_get_cref(th->cfp->ep);
+	const rb_cref_t *cref;
 	VALUE klass = orig_klass;
 
 	while (root_cref && CREF_PUSHED_BY_EVAL(root_cref)) {
@@ -477,7 +477,7 @@ vm_get_ev_const(rb_thread_t *th, VALUE orig_klass, ID id, int is_defined)
 }
 
 static inline VALUE
-vm_get_cvar_base(NODE *cref, rb_control_frame_t *cfp)
+vm_get_cvar_base(const rb_cref_t *cref, rb_control_frame_t *cfp)
 {
     VALUE klass;
 
@@ -1784,7 +1784,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 	      case VM_METHOD_TYPE_UNDEF:
 		break;
 	      case VM_METHOD_TYPE_REFINED:{
-		NODE *cref = rb_vm_get_cref(cfp->ep);
+		const rb_cref_t *cref = rb_vm_get_cref(cfp->ep);
 		VALUE refinements = cref ? CREF_REFINEMENTS(cref) : Qnil;
 		VALUE refinement, defined_class;
 		rb_method_entry_t *me;
