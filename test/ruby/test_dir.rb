@@ -256,7 +256,11 @@ class TestDir < Test::Unit::TestCase
       skip unless File.directory?(short)
       entries = Dir.glob("#{short}/Common*")
       assert_not_empty(entries, bug10819)
-      assert_equal(Dir.glob("#{File.expand_path(short)}/Common*"), entries, bug10819)
+      long = File.expand_path(short)
+      assert_equal(Dir.glob("#{long}/Common*"), entries, bug10819)
+      wild = short.sub(/1\z/, '*')
+      assert_include(Dir.glob(wild), long, bug10819)
+      assert_empty(entries - Dir.glob("#{wild}/Common*"), bug10819)
     end
   end
 

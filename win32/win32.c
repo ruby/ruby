@@ -1870,6 +1870,7 @@ opendir_internal(WCHAR *wpath, const char *filename)
     HANDLE fh;
     DIR *p;
     long len;
+    long altlen;
     long idx;
     WCHAR *tmpW;
     char *tmp;
@@ -1908,12 +1909,13 @@ opendir_internal(WCHAR *wpath, const char *filename)
     //
     do {
 	len = lstrlenW(fd.cFileName) + 1;
+	altlen = lstrlenW(fd.cAlternateFileName) + 1;
 
 	//
 	// bump the string table size by enough for the
 	// new name and it's null terminator
 	//
-	tmpW = realloc(p->start, (idx + len) * sizeof(WCHAR));
+	tmpW = realloc(p->start, (idx + len + altlen) * sizeof(WCHAR));
 	if (!tmpW) {
 	  error:
 	    rb_w32_closedir(p);
@@ -1924,6 +1926,7 @@ opendir_internal(WCHAR *wpath, const char *filename)
 
 	p->start = tmpW;
 	memcpy(&p->start[idx], fd.cFileName, len * sizeof(WCHAR));
+	memcpy(&p->start[idx + len], fd.cAlternateFileName, altlen * sizeof(WCHAR));
 
 	if (p->nfiles % DIRENT_PER_CHAR == 0) {
 	    tmp = realloc(p->bits, p->nfiles / DIRENT_PER_CHAR + 1);
@@ -1938,7 +1941,7 @@ opendir_internal(WCHAR *wpath, const char *filename)
 	    SetBit(p->bits, BitOfIsRep(p->nfiles));
 
 	p->nfiles++;
-	idx += len;
+	idx += len + altlen;
     } while (FindNextFileW(fh, &fd));
     FindClose(fh);
     p->size = idx;
@@ -2023,6 +2026,7 @@ move_to_next_entry(DIR *dirp)
     if (dirp->curr) {
 	dirp->loc++;
 	dirp->curr += lstrlenW(dirp->curr) + 1;
+	dirp->curr += lstrlenW(dirp->curr) + 1;
 	if (dirp->curr >= (dirp->start + dirp->size)) {
 	    dirp->curr = NULL;
 	}
@@ -2035,11 +2039,16 @@ move_to_next_entry(DIR *dirp)
 //
 /* License: Ruby's */
 static BOOL
-win32_direct_conv(const WCHAR *file, struct direct *entry, const void *enc)
+win32_direct_conv(const WCHAR *file, const WCHAR *alt, struct direct *entry, const void *enc)
 {
     UINT cp = *((UINT *)enc);
     if (!(entry->d_name = wstr_to_mbstr(cp, file, -1, &entry->d_namlen)))
 	return FALSE;
+    if (alt && *alt) {
+	long altlen = 0;
+	entry->d_altname = wstr_to_mbstr(cp, alt, -1, &altlen);
+	entry->d_altlen = altlen;
+    }
     return TRUE;
 }
 
@@ -2091,16 +2100,21 @@ rb_w32_conv_from_wstr(const WCHAR *wstr, long *lenp, rb_encoding *enc)
 
 /* License: Ruby's */
 static BOOL
-ruby_direct_conv(const WCHAR *file, struct direct *entry, const void *enc)
+ruby_direct_conv(const WCHAR *file, const WCHAR *alt, struct direct *entry, const void *enc)
 {
     if (!(entry->d_name = rb_w32_conv_from_wstr(file, &entry->d_namlen, enc)))
 	return FALSE;
+    if (alt && *alt) {
+	long altlen = 0;
+	entry->d_altname = rb_w32_conv_from_wstr(alt, &altlen, enc);
+	entry->d_altlen = altlen;
+    }
     return TRUE;
 }
 
 /* License: Artistic or GPL */
 static struct direct *
-readdir_internal(DIR *dirp, BOOL (*conv)(const WCHAR *, struct direct *, const void *), const void *enc)
+readdir_internal(DIR *dirp, BOOL (*conv)(const WCHAR *, const WCHAR *, struct direct *, const void *), const void *enc)
 {
     static int dummy = 0;
 
@@ -2111,7 +2125,11 @@ readdir_internal(DIR *dirp, BOOL (*conv)(const WCHAR *, struct direct *, const v
 	//
 	if (dirp->dirstr.d_name)
 	    free(dirp->dirstr.d_name);
-	conv(dirp->curr, &dirp->dirstr, enc);
+	if (dirp->dirstr.d_altname)
+	    free(dirp->dirstr.d_altname);
+	dirp->dirstr.d_altname = 0;
+	dirp->dirstr.d_altlen = 0;
+	conv(dirp->curr, dirp->curr + lstrlenW(dirp->curr) + 1, &dirp->dirstr, enc);
 
 	//
 	// Fake inode
@@ -2202,6 +2220,8 @@ rb_w32_closedir(DIR *dirp)
     if (dirp) {
 	if (dirp->dirstr.d_name)
 	    free(dirp->dirstr.d_name);
+	if (dirp->dirstr.d_altname)
+	    free(dirp->dirstr.d_altname);
 	if (dirp->start)
 	    free(dirp->start);
 	if (dirp->bits)

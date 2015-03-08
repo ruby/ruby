@@ -1554,6 +1554,18 @@ glob_func_caller(VALUE val)
     return Qnil;
 }
 
+static inline int
+dirent_match(const char *pat, rb_encoding *enc, const char *name, const struct dirent *dp, int flags)
+{
+    if (fnmatch(pat, enc, name, flags) == 0) return 1;
+#ifdef _WIN32
+    if (dp->d_altname) {
+	if (fnmatch(pat, enc, dp->d_altname, flags) == 0) return 1;
+    }
+#endif
+    return 0;
+}
+
 static int
 glob_helper(
     const char *path,
@@ -1753,7 +1765,7 @@ glob_helper(
 # endif
 		  case PLAIN:
 		  case MAGICAL:
-		    if (fnmatch(p->str, enc, name, flags) == 0)
+		    if (dirent_match(p->str, enc, name, dp, flags))
 			*new_end++ = p->next;
 		  default:
 		    break;

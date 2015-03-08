@@ -13,6 +13,8 @@ struct direct
     long d_namlen;
     ino_t d_ino;
     char *d_name;
+    char *d_altname; /* short name */
+    short d_altlen;
     char d_isdir; /* directory */
     char d_isrep; /* reparse point */
 };

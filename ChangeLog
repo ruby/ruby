@@ -1,3 +1,12 @@
+Sun Mar  8 16:57:35 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (glob_helper): match patterns against legacy short names
+	  too, not only ordinary names.  [ruby-core:67954] [Bug #10819]
+
+	* win32/dir.h (struct direct): add short name members.
+
+	* win32/win32.c (opendir_internal, readdir_internal): ditto.
+
 Sat Mar  7 09:36:05 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* array.c: document that first element is kept when using
