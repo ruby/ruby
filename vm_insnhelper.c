@@ -141,7 +141,7 @@ rb_error_arity(int argc, int min, int max)
 
 /* svar */
 
-static inline NODE **
+static inline struct SVAR **
 lep_svar_place(rb_thread_t *th, const VALUE *lep)
 {
     const VALUE *svar;
@@ -153,25 +153,25 @@ lep_svar_place(rb_thread_t *th, const VALUE *lep)
 	svar = &th->root_svar;
     }
 
-    return (NODE **)svar;
+    return (struct SVAR **)svar;
 }
 
 static VALUE
 lep_svar_get(rb_thread_t *th, const VALUE *lep, rb_num_t key)
 {
-    NODE ** const svar_place = lep_svar_place(th, lep);
-    const NODE * const svar = *svar_place;
+    struct SVAR ** const svar_place = lep_svar_place(th, lep);
+    const struct SVAR *const svar = *svar_place;
 
     if (NIL_P((VALUE)svar)) return Qnil;
     if (nd_type(svar) == NODE_CREF) return Qnil;
 
     switch (key) {
       case VM_SVAR_LASTLINE:
-	return svar->u1.value;
+	return svar->lastline;
       case VM_SVAR_BACKREF:
-	return svar->u2.value;
+	return svar->backref;
       default: {
-	const VALUE ary = svar->u3.value;
+	const VALUE ary = svar->others;
 
 	if (NIL_P(ary)) {
 	    return Qnil;
@@ -186,31 +186,31 @@ lep_svar_get(rb_thread_t *th, const VALUE *lep, rb_num_t key)
 static void
 lep_svar_set(rb_thread_t *th, VALUE *lep, rb_num_t key, VALUE val)
 {
-    NODE **svar_place = (NODE **)lep_svar_place(th, lep);
-    NODE *svar = *svar_place;
+    struct SVAR **svar_place = lep_svar_place(th, lep);
+    struct SVAR *svar = *svar_place;
 
     if (NIL_P((VALUE)svar)) {
-	svar = *svar_place = NEW_IF(Qnil, Qnil, Qnil);
-	svar->nd_reserved = Qfalse;
+	svar = *svar_place = (struct SVAR *)NEW_IF(Qnil, Qnil, Qnil);
+	svar->cref = NULL;
     }
     else if (nd_type(svar) == NODE_CREF) {
 	const rb_cref_t *cref = (rb_cref_t *)svar;
-	svar = *svar_place = NEW_IF(Qnil, Qnil, Qnil);
-	RB_OBJ_WRITE(svar, &svar->nd_reserved, (VALUE)cref);
+	svar = *svar_place = (struct SVAR *)NEW_IF(Qnil, Qnil, Qnil);
+	RB_OBJ_WRITE(svar, &svar->cref, (VALUE)cref);
     }
 
     switch (key) {
       case VM_SVAR_LASTLINE:
-	RB_OBJ_WRITE(svar, &svar->u1.value, val);
+	RB_OBJ_WRITE(svar, &svar->lastline, val);
 	return;
       case VM_SVAR_BACKREF:
-	RB_OBJ_WRITE(svar, &svar->u2.value, val);
+	RB_OBJ_WRITE(svar, &svar->backref, val);
 	return;
       default: {
-	VALUE ary = svar->u3.value;
+	VALUE ary = svar->others;
 
 	if (NIL_P(ary)) {
-	    RB_OBJ_WRITE(svar, &svar->u3.value, ary = rb_ary_new());
+	    RB_OBJ_WRITE(svar, &svar->others, ary = rb_ary_new());
 	}
 	rb_ary_store(ary, key - VM_SVAR_EXTRA_START, val);
       }
@@ -265,7 +265,7 @@ ep_cref(const VALUE *ep)
 	return (rb_cref_t *)svar;
     }
     else {
-	return (rb_cref_t *)((NODE *)svar)->nd_reserved;
+	return (rb_cref_t *)((struct SVAR *)svar)->cref;
     }
 }
 

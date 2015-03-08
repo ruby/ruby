@@ -1,3 +1,10 @@
+Mon Mar 09 06:44:48 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.h: define struct SVAR for SVAR.
+	  This data type is also same layout of NODE (NODE_IF).
+
+	* vm_insnhelper.c: catch up this change.
+
 Mon Mar  9 06:43:21 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (lep_svar_set): add WBs.
