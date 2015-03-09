@@ -1,8 +1,6 @@
-errout = ARGV.shift
-
 BEGIN {
   puts "b1"
-  local_begin1 = "local_begin1"
+  # local_begin1 = "local_begin1"
   $global_begin1 = "global_begin1"
   ConstBegin1 = "ConstBegin1"
 }
