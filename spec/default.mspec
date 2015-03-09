@@ -1,4 +1,4 @@
-load File.dirname(__FILE__) + '/rubyspec/ruby.1.9.mspec'
+load File.dirname(__FILE__) + '/rubyspec/default.mspec'
 class MSpecScript
   builddir = Dir.pwd
   srcdir = ENV['SRCDIR']
