@@ -747,10 +747,10 @@ static VALUE
 safe_mul(VALUE a, VALUE b, int az, int bz)
 {
     double v;
-    if (!az && bz && RB_FLOAT_TYPE_P(a) && !isnan(v = RFLOAT_VALUE(a))) {
+    if (!az && bz && RB_FLOAT_TYPE_P(a) && (v = RFLOAT_VALUE(a), !isnan(v))) {
 	a = signbit(v) ? DBL2NUM(-1.0) : DBL2NUM(1.0);
     }
-    if (!bz && az && RB_FLOAT_TYPE_P(b) && !isnan(v = RFLOAT_VALUE(b))) {
+    if (!bz && az && RB_FLOAT_TYPE_P(b) && (v = RFLOAT_VALUE(b), !isnan(v))) {
 	b = signbit(v) ? DBL2NUM(-1.0) : DBL2NUM(1.0);
     }
     return f_mul(a, b);
