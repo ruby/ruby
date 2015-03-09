@@ -4427,7 +4427,6 @@ rb_io_close_m(VALUE io)
     if (fptr->fd < 0) {
         return Qnil;
     }
-    rb_io_check_closed(RFILE(io)->fptr);
     rb_io_close(io);
     return Qnil;
 }
