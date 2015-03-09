@@ -1,3 +1,8 @@
+Tue Mar 10 02:37:55 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* string.c: [DOC] Add missing documentation around String#chomp.
+	  Patch by @stderr [ci skip][fix GH-780]
+
 Mon Mar  9 22:30:50 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* spec/default.mspec: use default configuration file name.
