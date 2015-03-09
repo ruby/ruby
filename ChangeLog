@@ -1,3 +1,16 @@
+Mon Mar  9 21:52:41 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/generic.rb (URI::Generic.build):
+	  use hostname= to detect and wrap IPv6 hosts.
+	  Build is accepting URI components and users may not expect
+	  that a host component needs to be wrapped with square brackets
+	  since it's not providing a URI.
+	  Note: initialize with arg_check => true does not wrap IPv6 hosts.
+	  by Joe Rafaniello <jrafanie@redhat.com>
+	  https://github.com/ruby/ruby/pull/765 fix GH-765
+
+	* test/uri/test_generic.rb: Add more tests
+
 Tue Mar  3 02:42:27 2015  Eric Wong  <e@80x24.org>
 
 	* ext/io/wait/wait.c (io_nread): wrap return value with INT2FIX
