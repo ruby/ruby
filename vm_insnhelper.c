@@ -254,7 +254,7 @@ vm_getspecial(rb_thread_t *th, VALUE *lep, rb_num_t key, rb_num_t type)
 }
 
 static rb_cref_t *
-ep_cref(const VALUE *ep)
+lep_cref(const VALUE *ep)
 {
     const VALUE svar = ep[-1];
 
@@ -278,7 +278,7 @@ vm_get_cref0(const VALUE *ep)
 	}
 	ep = VM_EP_PREV_EP(ep);
     }
-    return ep_cref(ep);
+    return lep_cref(ep);
 }
 
 rb_cref_t *

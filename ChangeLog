@@ -1,3 +1,8 @@
+Mon Mar  9 21:42:10 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (ep_cref): rename to lep_cref() because it should be
+	  local ep.
+
 Mon Mar  9 16:34:36 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_close): don't raise on dobule
