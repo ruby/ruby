@@ -346,9 +346,6 @@ static VALUE
 strio_close(VALUE self)
 {
     StringIO(self);
-    if (CLOSED(self)) {
-	rb_raise(rb_eIOError, "closed stream");
-    }
     RBASIC(self)->flags &= ~STRIO_READWRITE;
     return Qnil;
 }

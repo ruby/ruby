@@ -193,12 +193,12 @@ class TestStringIO < Test::Unit::TestCase
   def test_close
     f = StringIO.new("")
     f.close
-    assert_raise(IOError) { f.close }
+    assert_nil(f.close)
 
     f = StringIO.new("")
     f.close_read
     f.close_write
-    assert_raise(IOError) { f.close }
+    assert_nil(f.close)
   ensure
     f.close unless f.closed?
   end
