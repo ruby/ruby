@@ -884,11 +884,16 @@ thread_join(rb_thread_t *target_th, double delay)
 	VALUE err = target_th->errinfo;
 
 	if (FIXNUM_P(err)) {
-	    /* */
+	    switch (err) {
+	      case INT2FIX(TAG_FATAL):
+		/* OK. killed. */
+		break;
+	      default:
+		rb_bug("thread_join: Fixnum (%d) should not reach here.", FIX2INT(err));
+	    }
 	}
 	else if (RB_TYPE_P(target_th->errinfo, T_NODE)) {
-	    rb_exc_raise(rb_vm_make_jump_tag_but_local_jump(
-		GET_THROWOBJ_STATE(err), GET_THROWOBJ_VAL(err)));
+	    rb_bug("thread_join: NODE should not reach here.");
 	}
 	else {
 	    /* normal exception */

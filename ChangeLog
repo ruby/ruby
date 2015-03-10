@@ -1,3 +1,8 @@
+Tue Mar 10 17:27:27 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (thread_join): Fixnum (except TAG_FATAL) and
+	  NODE should not be reached here.
+
 Mon Mar  9 21:42:10 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (ep_cref): rename to lep_cref() because it should be
