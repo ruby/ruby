@@ -49,11 +49,6 @@ class TestMath < Test::Unit::TestCase
     check(-1.0, Math.cos(4 * Math::PI / 4))
     check(0.0,  Math.cos(6 * Math::PI / 4))
     check(0.5403023058681398,  Math.cos(1))
-    check(-0.7112665029764864, Math.cos(1 << 62))
-    check(0.9289154176164999,  Math.cos((2 ** 62)/(3 ** 40).to_r))
-    check(0.9820680774815206,  Math.cos((2 ** 61)/(3 ** 40).to_r))
-    check(0.4194382061248139,  Math.cos((2 ** 62)/(3 ** 39).to_r))
-    check(0.8424482791616391,  Math.cos((2 ** 61)/(3 ** 39).to_r))
   end
 
   def test_sin
@@ -272,6 +267,10 @@ class TestMath < Test::Unit::TestCase
     assert_raise(Math::DomainError) { Math.lgamma(-Float::INFINITY) }
   end
 
+  def test_fixnum_to_f
+    check(12.0, Math.sqrt(144))
+  end
+
   def test_override_fixnum_to_f
     Fixnum.class_eval do
       alias _to_f to_f
@@ -287,6 +286,10 @@ class TestMath < Test::Unit::TestCase
     Fixnum.class_eval { alias to_f _to_f }
   end
 
+  def test_bignum_to_f
+    check((1 << 65).to_f, Math.sqrt(1 << 130))
+  end
+
   def test_override_bignum_to_f
     Bignum.class_eval do
       alias _to_f to_f
@@ -299,6 +302,10 @@ class TestMath < Test::Unit::TestCase
     check(Math.log((1 << 62 << 1)._to_f),  Math.log(1 << 62))
 
     Bignum.class_eval { alias to_f _to_f }
+  end
+
+  def test_rational_to_f
+    check((2 ** 31).fdiv(3 ** 20), Math.sqrt((2 ** 62)/(3 ** 40).to_r))
   end
 
   def test_override_rational_to_f
