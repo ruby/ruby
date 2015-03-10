@@ -1,3 +1,8 @@
+Wed Mar 11 00:57:00 2015  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/rubygems/test_gem_security_trust_dir.rb: The return value of
+	  File::Stat#mode is OS dependent. In AIX, 0200000 is set.
+
 Tue Mar 10 20:03:41 2015  Tanaka Akira  <akr@fsij.org>
 
 	* lib/webrick/server.rb: Invoke setup_shutdown_pipe in start method

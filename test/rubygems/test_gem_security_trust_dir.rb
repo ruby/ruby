@@ -70,6 +70,7 @@ class TestGemSecurityTrustDir < Gem::TestCase
     assert_path_exists @dest_dir
 
     mask = 040700 & (~File.umask)
+    mask |= 0200000 if /aix/ =~ RUBY_PLATFORM
 
     assert_equal mask, File.stat(@dest_dir).mode unless win_platform?
   end
@@ -90,6 +91,7 @@ class TestGemSecurityTrustDir < Gem::TestCase
     @trust_dir.verify
 
     mask = 040700 & (~File.umask)
+    mask |= 0200000 if /aix/ =~ RUBY_PLATFORM
 
     assert_equal mask, File.stat(@dest_dir).mode unless win_platform?
   end
