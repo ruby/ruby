@@ -1995,7 +1995,7 @@ rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, int *stateptr)
 	/* call with argc=1, argv = [tag], block = Qnil to insure compatibility */
 	val = (*func)(tag, data, 1, (const VALUE *)&tag, Qnil);
     }
-    else if (state == TAG_THROW && RNODE(th->errinfo)->u1.value == tag) {
+    else if (state == TAG_THROW && THROW_DATA_VAL((struct THROW_DATA *)th->errinfo) == tag) {
 	rb_vm_rewind_cfp(th, saved_cfp);
 	val = th->tag->retval;
 	th->errinfo = Qnil;
