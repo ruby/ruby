@@ -627,10 +627,9 @@ vm_setinstancevariable(VALUE obj, ID id, VALUE val, IC ic)
 }
 
 static VALUE
-vm_throw_continue(rb_thread_t *th, VALUE throwobj)
+vm_throw_continue(rb_thread_t *th, VALUE err)
 {
     /* continue throw */
-    VALUE err = throwobj;
 
     if (FIXNUM_P(err)) {
 	th->state = FIX2INT(err);
@@ -638,8 +637,8 @@ vm_throw_continue(rb_thread_t *th, VALUE throwobj)
     else if (SYMBOL_P(err)) {
 	th->state = TAG_THROW;
     }
-    else if (BUILTIN_TYPE(err) == T_NODE) {
-	th->state = GET_THROWOBJ_STATE(err);
+    else if (THROW_DATA_P(err)) {
+	th->state = THROW_DATA_STATE((struct THROW_DATA *)err);
     }
     else {
 	th->state = TAG_RAISE;
@@ -778,7 +777,7 @@ vm_throw_start(rb_thread_t * const th, rb_control_frame_t * const reg_cfp, int s
     }
 
     th->state = state;
-    return (VALUE)NEW_THROW_OBJECT(throwobj, (VALUE)escape_cfp, state);
+    return (VALUE)NEW_THROW_DATA(throwobj, escape_cfp, state);
 }
 
 static VALUE

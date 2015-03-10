@@ -215,7 +215,7 @@ ruby_cleanup(volatile int ex)
 	if (!RTEST(err)) continue;
 
 	/* th->errinfo contains a NODE while break'ing */
-	if (RB_TYPE_P(err, T_NODE)) continue;
+	if (THROW_DATA_P(err)) continue;
 
 	if (rb_obj_is_kind_of(err, rb_eSystemExit)) {
 	    ex = sysexit_status(err);
@@ -1508,7 +1508,7 @@ errinfo_place(rb_thread_t *th)
 		return &cfp->ep[-2];
 	    }
 	    else if (cfp->iseq->type == ISEQ_TYPE_ENSURE &&
-		     !RB_TYPE_P(cfp->ep[-2], T_NODE) &&
+		     !THROW_DATA_P(cfp->ep[-2]) &&
 		     !FIXNUM_P(cfp->ep[-2])) {
 		return &cfp->ep[-2];
 	    }

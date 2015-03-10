@@ -1,3 +1,19 @@
+Wed Mar 11 03:21:37 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.h: define struct THROW_DATA to represent
+	  throwing data. Also define accessor functions.
+
+	* eval_intern.h: move related changes into vm_insnhelper.h.
+	  Now these MACROs (functions) are only used in vm*.c.
+
+	  There is only THROW_DATA_P(err) to check this data type or not.
+
+	* vm.c: catch up these changes.
+
+	* vm_eval.c: ditto.
+
+	* vm_insnhelper.c: ditto.
+
 Wed Mar 11 00:57:00 2015  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* test/rubygems/test_gem_security_trust_dir.rb: The return value of

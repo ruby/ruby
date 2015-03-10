@@ -1179,7 +1179,7 @@ vm_iter_break(rb_thread_t *th, VALUE val)
     rb_control_frame_t *target_cfp = rb_vm_search_cf_from_ep(th, cfp, ep);
 
     th->state = TAG_BREAK;
-    th->errinfo = (VALUE)NEW_THROW_OBJECT(val, (VALUE)target_cfp, TAG_BREAK);
+    th->errinfo = (VALUE)NEW_THROW_DATA(val, target_cfp, TAG_BREAK);
     TH_JUMP_TAG(th, TAG_BREAK);
 }
 
@@ -1422,8 +1422,9 @@ static VALUE
 vm_exec(rb_thread_t *th)
 {
     int state;
-    VALUE result, err;
+    VALUE result;
     VALUE initial = 0;
+    struct THROW_DATA *err;
 
     TH_PUSH_TAG(th);
     _tag.retval = Qnil;
@@ -1431,7 +1432,7 @@ vm_exec(rb_thread_t *th)
       vm_loop_start:
 	result = vm_exec_core(th, initial);
 	if ((state = th->state) != 0) {
-	    err = result;
+	    err = (struct THROW_DATA *)result;
 	    th->state = 0;
 	    goto exception_handler;
 	}
@@ -1444,9 +1445,9 @@ vm_exec(rb_thread_t *th)
 	VALUE catch_iseqval;
 	rb_control_frame_t *cfp;
 	VALUE type;
-	rb_control_frame_t *escape_cfp;
+	const rb_control_frame_t *escape_cfp;
 
-	err = th->errinfo;
+	err = (struct THROW_DATA *)th->errinfo;
 
       exception_handler:
 	cont_pc = cont_sp = catch_iseqval = 0;
@@ -1465,13 +1466,13 @@ vm_exec(rb_thread_t *th)
 
 	escape_cfp = NULL;
 	if (state == TAG_BREAK || state == TAG_RETURN) {
-	    escape_cfp = GET_THROWOBJ_CATCH_POINT(err);
+	    escape_cfp = THROW_DATA_CATCH_FRAME(err);
 
 	    if (cfp == escape_cfp) {
 		if (state == TAG_RETURN) {
 		    if (!VM_FRAME_TYPE_FINISH_P(cfp)) {
-			SET_THROWOBJ_CATCH_POINT(err, (VALUE)(cfp + 1));
-			SET_THROWOBJ_STATE(err, state = TAG_BREAK);
+			THROW_DATA_CATCH_FRAME_SET(err, cfp + 1);
+			THROW_DATA_STATE_SET(err, state = TAG_BREAK);
 		    }
 		    else {
 			ct = cfp->iseq->catch_table;
@@ -1487,7 +1488,7 @@ vm_exec(rb_thread_t *th)
 			    }
 			}
 			if (!catch_iseqval) {
-			    result = GET_THROWOBJ_VAL(err);
+			    result = THROW_DATA_VAL(err);
 			    th->errinfo = Qnil;
 
 			    switch (VM_FRAME_TYPE(cfp)) {
@@ -1505,9 +1506,9 @@ vm_exec(rb_thread_t *th)
 		else {
 		    /* TAG_BREAK */
 #if OPT_STACK_CACHING
-		    initial = (GET_THROWOBJ_VAL(err));
+		    initial = THROW_DATA_VAL(err);
 #else
-		    *th->cfp->sp++ = (GET_THROWOBJ_VAL(err));
+		    *th->cfp->sp++ = THROW_DATA_VAL(err);
 #endif
 		    th->errinfo = Qnil;
 		    goto vm_loop_start;
@@ -1544,8 +1545,8 @@ vm_exec(rb_thread_t *th)
 			break;
 		    }
 		    else if (entry->type == CATCH_TYPE_RETRY) {
-			rb_control_frame_t *escape_cfp;
-			escape_cfp = GET_THROWOBJ_CATCH_POINT(err);
+			const rb_control_frame_t *escape_cfp;
+			escape_cfp = THROW_DATA_CATCH_FRAME(err);
 			if (cfp == escape_cfp) {
 			    cfp->pc = cfp->iseq->iseq_encoded + entry->cont;
 			    th->errinfo = Qnil;
@@ -1576,9 +1577,9 @@ vm_exec(rb_thread_t *th)
 
 			if (state != TAG_REDO) {
 #if OPT_STACK_CACHING
-			    initial = (GET_THROWOBJ_VAL(err));
+			    initial = THROW_DATA_VAL(err);
 #else
-			    *th->cfp->sp++ = (GET_THROWOBJ_VAL(err));
+			    *th->cfp->sp++ = THROW_DATA_VAL(err);
 #endif
 			}
 			th->errinfo = Qnil;
@@ -1622,7 +1623,7 @@ vm_exec(rb_thread_t *th)
 	    cfp->pc = cfp->iseq->iseq_encoded + cont_pc;
 
 	    /* push block frame */
-	    cfp->sp[0] = err;
+	    cfp->sp[0] = (VALUE)err;
 	    vm_push_frame(th, catch_iseq, VM_FRAME_MAGIC_RESCUE,
 			  cfp->self, cfp->klass,
 			  VM_ENVVAL_PREV_EP_PTR(cfp->ep),
@@ -1662,7 +1663,7 @@ vm_exec(rb_thread_t *th)
 
 	    if (VM_FRAME_TYPE_FINISH_P(th->cfp)) {
 		vm_pop_frame(th);
-		th->errinfo = err;
+		th->errinfo = (VALUE)err;
 		TH_TMPPOP_TAG();
 		JUMP_TAG(state);
 	    }

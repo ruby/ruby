@@ -199,16 +199,7 @@ enum ruby_tag_type {
 #define TAG_FATAL	RUBY_TAG_FATAL
 #define TAG_MASK	RUBY_TAG_MASK
 
-#define NEW_THROW_OBJECT(val, pt, st) \
-  ((VALUE)rb_node_newnode(NODE_LIT, (VALUE)(val), (VALUE)(pt), (VALUE)(st)))
-#define SET_THROWOBJ_CATCH_POINT(obj, val) \
-  (RNODE((obj))->u2.value = (val))
-#define SET_THROWOBJ_STATE(obj, val) \
-  (RNODE((obj))->u3.value = (val))
-
-#define GET_THROWOBJ_VAL(obj)         ((VALUE)RNODE((obj))->u1.value)
-#define GET_THROWOBJ_CATCH_POINT(obj) ((rb_control_frame_t*)RNODE((obj))->u2.value)
-#define GET_THROWOBJ_STATE(obj)       ((int)RNODE((obj))->u3.value)
+#define THROW_DATA_P(err) (BUILTIN_TYPE(err) == T_NODE)
 
 #define SCOPE_TEST(f)  (CREF_VISI(rb_vm_cref()) & (f))
 #define SCOPE_CHECK(f) (CREF_VISI(rb_vm_cref()) == (f))

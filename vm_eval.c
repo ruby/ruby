@@ -1130,15 +1130,15 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
 	retval = (*it_proc) (data1);
     }
     else {
-	VALUE err = th->errinfo;
+	const struct THROW_DATA *err = (struct THROW_DATA *)th->errinfo;
 	if (state == TAG_BREAK) {
-	    rb_control_frame_t *escape_cfp = GET_THROWOBJ_CATCH_POINT(err);
+	    const rb_control_frame_t *escape_cfp = THROW_DATA_CATCH_FRAME(err);
 
 	    if (cfp == escape_cfp) {
 		state = 0;
 		th->state = 0;
 		th->errinfo = Qnil;
-		retval = GET_THROWOBJ_VAL(err);
+		retval = THROW_DATA_VAL(err);
 
 		rb_vm_rewind_cfp(th, cfp);
 	    }
@@ -1147,7 +1147,7 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
 	    }
 	}
 	else if (state == TAG_RETRY) {
-	    rb_control_frame_t *escape_cfp = GET_THROWOBJ_CATCH_POINT(err);
+	    const rb_control_frame_t *escape_cfp = THROW_DATA_CATCH_FRAME(err);
 
 	    if (cfp == escape_cfp) {
 		rb_vm_rewind_cfp(th, cfp);
@@ -1878,8 +1878,8 @@ rb_throw_obj(VALUE tag, VALUE value)
 	desc[2] = rb_str_new_cstr("uncaught throw %p");
 	rb_exc_raise(rb_class_new_instance(numberof(desc), desc, rb_eUncaughtThrow));
     }
-    th->errinfo = NEW_THROW_OBJECT(tag, 0, TAG_THROW);
 
+    th->errinfo = (VALUE)NEW_THROW_DATA(tag, NULL, TAG_THROW);
     JUMP_TAG(TAG_THROW);
 }
 

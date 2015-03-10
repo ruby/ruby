@@ -239,4 +239,48 @@ struct SVAR {
     VALUE others;
 };
 
+struct THROW_DATA {
+    VALUE flags;
+    VALUE reserved;
+    VALUE throw_obj;
+    const rb_control_frame_t *catch_frame;
+    VALUE throw_state;
+};
+
+static inline struct THROW_DATA *
+NEW_THROW_DATA(VALUE val, rb_control_frame_t *cf, VALUE st)
+{
+    return (struct THROW_DATA *)rb_node_newnode(NODE_LIT, val, (VALUE)cf, st);
+}
+
+static inline void
+THROW_DATA_CATCH_FRAME_SET(struct THROW_DATA *obj, const rb_control_frame_t *cfp)
+{
+    obj->catch_frame = cfp;
+}
+
+static inline void
+THROW_DATA_STATE_SET(struct THROW_DATA *obj, VALUE st)
+{
+    obj->throw_state = st;
+}
+
+static inline VALUE
+THROW_DATA_VAL(const struct THROW_DATA *obj)
+{
+    return obj->throw_obj;
+}
+
+static inline const rb_control_frame_t *
+THROW_DATA_CATCH_FRAME(const struct THROW_DATA *obj)
+{
+    return obj->catch_frame;
+}
+
+static VALUE
+THROW_DATA_STATE(const struct THROW_DATA *obj)
+{
+    return obj->throw_state;
+}
+
 #endif /* RUBY_INSNHELPER_H */
