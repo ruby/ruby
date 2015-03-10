@@ -892,8 +892,8 @@ thread_join(rb_thread_t *target_th, double delay)
 		rb_bug("thread_join: Fixnum (%d) should not reach here.", FIX2INT(err));
 	    }
 	}
-	else if (RB_TYPE_P(target_th->errinfo, T_NODE)) {
-	    rb_bug("thread_join: NODE should not reach here.");
+	else if (THROW_DATA_P(target_th->errinfo)) {
+	    rb_bug("thread_join: THROW_DATA should not reach here.");
 	}
 	else {
 	    /* normal exception */

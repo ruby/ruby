@@ -1,3 +1,10 @@
+Wed Mar 11 03:52:12 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* eval_intern.h (THROW_DATA_P): use RB_TYPE_P() instead of
+	  BUILTIN_TYPE(). 
+
+	* thread.c (thread_join): use THROW_DATA_P().
+
 Wed Mar 11 03:48:01 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c: use RUBY_VM_IFUNC_P() to recognize IFUNC or not.
@@ -8,7 +15,8 @@ Wed Mar 11 03:48:01 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c: ditto.
 
-	* vm_core.h: use RB_TYPE_P() instead of BUILTIN_TYPE().
+	* vm_core.h (RUBY_VM_IFUNC_P): use RB_TYPE_P() instead of
+	  BUILTIN_TYPE().
 
 Wed Mar 11 03:21:37 2015  Koichi Sasada  <ko1@atdot.net>
 

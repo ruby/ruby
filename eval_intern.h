@@ -199,7 +199,7 @@ enum ruby_tag_type {
 #define TAG_FATAL	RUBY_TAG_FATAL
 #define TAG_MASK	RUBY_TAG_MASK
 
-#define THROW_DATA_P(err) (BUILTIN_TYPE(err) == T_NODE)
+#define THROW_DATA_P(err) RB_TYPE_P((err), T_NODE)
 
 #define SCOPE_TEST(f)  (CREF_VISI(rb_vm_cref()) & (f))
 #define SCOPE_CHECK(f) (CREF_VISI(rb_vm_cref()) == (f))
