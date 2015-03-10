@@ -786,6 +786,16 @@ math_erfc(VALUE obj, VALUE x)
     return DBL2NUM(erfc(Get_Double(x)));
 }
 
+#ifdef __MINGW32__
+static inline double
+mingw_tgamma(const double d)
+{
+    const double g = tgamma(d);
+    return (isnan(g) && !signbit(d)) ? INFINITY : g;
+}
+#define tgamma(d) mingw_tgamma(d)
+#endif
+
 /*
  * call-seq:
  *    Math.gamma(x)  -> Float
