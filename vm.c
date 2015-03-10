@@ -413,7 +413,7 @@ env_mark(void * const ptr)
     RUBY_MARK_UNLESS_NULL(env->block.proc);
 
     if (env->block.iseq) {
-	if (BUILTIN_TYPE(env->block.iseq) == T_NODE) {
+	if (RUBY_VM_IFUNC_P(env->block.iseq)) {
 	    RUBY_MARK_UNLESS_NULL((VALUE)env->block.iseq);
 	}
 	else {
@@ -801,7 +801,7 @@ invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
     if (SPECIAL_CONST_P(block->iseq)) {
 	return Qnil;
     }
-    else if (BUILTIN_TYPE(block->iseq) != T_NODE) {
+    else if (!RUBY_VM_IFUNC_P(block->iseq)) {
 	VALUE ret;
 	const rb_iseq_t *iseq = block->iseq;
 	const rb_control_frame_t *cfp;

@@ -910,7 +910,7 @@ rb_block_t *rb_vm_control_frame_block_ptr(const rb_control_frame_t *cfp);
 #define RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp) \
   (!RUBY_VM_VALID_CONTROL_FRAME_P((cfp), RUBY_VM_END_CONTROL_FRAME(th)))
 
-#define RUBY_VM_IFUNC_P(ptr)        (BUILTIN_TYPE(ptr) == T_NODE)
+#define RUBY_VM_IFUNC_P(ptr)        RB_TYPE_P((VALUE)(ptr), T_NODE)
 #define RUBY_VM_NORMAL_ISEQ_P(ptr) \
   ((ptr) && !RUBY_VM_IFUNC_P(ptr))
 

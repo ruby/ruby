@@ -2110,7 +2110,7 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci
     }
     iseq = block->iseq;
 
-    if (BUILTIN_TYPE(iseq) != T_NODE) {
+    if (!RUBY_VM_IFUNC_P(iseq)) {
 	int opt_pc;
 	const int arg_size = iseq->param.size;
 	int is_lambda = block_proc_is_lambda(block->proc);

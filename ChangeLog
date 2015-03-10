@@ -1,3 +1,15 @@
+Wed Mar 11 03:48:01 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c: use RUBY_VM_IFUNC_P() to recognize IFUNC or not.
+
+	* vm.c: ditto.
+
+	* vm_dump.c: ditto.
+
+	* vm_insnhelper.c: ditto.
+
+	* vm_core.h: use RB_TYPE_P() instead of BUILTIN_TYPE().
+
 Wed Mar 11 03:21:37 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.h: define struct THROW_DATA to represent

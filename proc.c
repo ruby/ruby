@@ -722,7 +722,7 @@ proc_call(int argc, VALUE *argv, VALUE procval)
     GetProcPtr(procval, proc);
 
     iseq = proc->block.iseq;
-    if (BUILTIN_TYPE(iseq) == T_NODE || iseq->param.flags.has_block) {
+    if (RUBY_VM_IFUNC_P(iseq) || iseq->param.flags.has_block) {
 	if (rb_block_given_p()) {
 	    rb_proc_t *passed_proc;
 	    RB_GC_GUARD(passed_procval) = rb_block_proc();
@@ -846,7 +846,7 @@ rb_block_min_max_arity(rb_block_t *block, int *max)
 {
     rb_iseq_t *iseq = block->iseq;
     if (iseq) {
-	if (BUILTIN_TYPE(iseq) != T_NODE) {
+	if (!RUBY_VM_IFUNC_P(iseq)) {
 	    return rb_iseq_min_max_arity(iseq, max);
 	}
 	else {
@@ -1685,7 +1685,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	rb_proc_t *proc;
 	body = proc_dup(body);
 	GetProcPtr(body, proc);
-	if (BUILTIN_TYPE(proc->block.iseq) != T_NODE) {
+	if (!RUBY_VM_IFUNC_P(proc->block.iseq)) {
 	    proc->block.iseq->defined_method_id = id;
 	    RB_OBJ_WRITE(proc->block.iseq->self, &proc->block.iseq->klass, mod);
 	    proc->is_lambda = TRUE;
@@ -2464,7 +2464,7 @@ proc_binding(VALUE self)
 
     GetProcPtr(self, proc);
     iseq = proc->block.iseq;
-    if (RB_TYPE_P((VALUE)iseq, T_NODE)) {
+    if (RUBY_VM_IFUNC_P(iseq)) {
 	if (!IS_METHOD_PROC_NODE((NODE *)iseq)) {
 	    rb_raise(rb_eArgError, "Can't create Binding from C level Proc");
 	}
