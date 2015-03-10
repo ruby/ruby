@@ -1,3 +1,9 @@
+Wed Mar 11 06:26:21 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.h (THROW_DATA_STATE): return int, not VALUE.
+
+	* vm_insnhelper.h (THROW_DATA_STATE_SET): accept int value.
+
 Wed Mar 11 05:06:46 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_eval.c (rb_catch_protect): use THROW_DATA_VAL().

@@ -260,9 +260,9 @@ THROW_DATA_CATCH_FRAME_SET(struct THROW_DATA *obj, const rb_control_frame_t *cfp
 }
 
 static inline void
-THROW_DATA_STATE_SET(struct THROW_DATA *obj, VALUE st)
+THROW_DATA_STATE_SET(struct THROW_DATA *obj, int st)
 {
-    obj->throw_state = st;
+    obj->throw_state = (VALUE)st;
 }
 
 static inline VALUE
@@ -277,10 +277,10 @@ THROW_DATA_CATCH_FRAME(const struct THROW_DATA *obj)
     return obj->catch_frame;
 }
 
-static VALUE
+static int
 THROW_DATA_STATE(const struct THROW_DATA *obj)
 {
-    return obj->throw_state;
+    return (int)obj->throw_state;
 }
 
 struct IFUNC {
