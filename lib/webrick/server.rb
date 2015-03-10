@@ -131,7 +131,6 @@ module WEBrick
 
     def listen(address, port)
       @listeners += Utils::create_listeners(address, port)
-      setup_shutdown_pipe
     end
 
     ##
@@ -158,6 +157,8 @@ module WEBrick
     def start(&block)
       raise ServerError, "already started." if @status != :Stop
       server_type = @config[:ServerType] || SimpleServer
+
+      setup_shutdown_pipe
 
       server_type.start{
         @logger.info \
@@ -330,6 +331,7 @@ module WEBrick
 
     def cleanup_shutdown_pipe(shutdown_pipe)
       @shutdown_pipe = nil
+      return if !shutdown_pipe
       shutdown_pipe.each {|io|
         if !io.closed?
           begin

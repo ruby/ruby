@@ -97,7 +97,7 @@ class TestWEBrickServer < Test::Unit::TestCase
     end
   end
 
-  def test_restart
+  def test_restart_after_shutdown
     address = '127.0.0.1'
     port = 0
     log = []
@@ -127,5 +127,31 @@ class TestWEBrickServer < Test::Unit::TestCase
     client_thread = Thread.new { client_proc.call("b") }
     assert_join_threads([client_thread, server_thread])
     assert_equal([], log)
+  end
+
+  def test_restart_after_stop
+    log = Object.new
+    class << log
+      include Test::Unit::Assertions
+      def <<(msg)
+        flunk "unexpected log: #{msg.inspect}"
+      end
+    end
+    warn_flunk = WEBrick::Log.new(log, WEBrick::BasicLog::WARN)
+    server = WEBrick::HTTPServer.new(
+      :BindAddress => '0.0.0.0',
+      :Port => 0,
+      :Logger => warn_flunk)
+    2.times {
+      server_thread = Thread.start {
+        server.start
+      }
+      client_thread = Thread.start {
+        sleep 0.1 until server.status == :Running || !server_thread.status
+        server.stop
+        sleep 0.1 until server.status == :Stop || !server_thread.status
+      }
+      assert_join_threads([client_thread, server_thread])
+    }
   end
 end
