@@ -2040,7 +2040,7 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block,
 		    int argc, const VALUE *argv,
 		    const rb_block_t *blockargptr)
 {
-    NODE *ifunc = (NODE *) block->iseq;
+    struct IFUNC *ifunc = (struct IFUNC *)block->iseq;
     VALUE val, arg, blockarg;
     int lambda = block_proc_is_lambda(block->proc);
 
@@ -2071,7 +2071,7 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block,
 		  VM_ENVVAL_PREV_EP_PTR(block->ep), NULL /* cref */,
 		  0, th->cfp->sp, 1, th->passed_bmethod_me, 0);
 
-    val = (*ifunc->nd_cfnc) (arg, ifunc->nd_tval, argc, argv, blockarg);
+    val = (*ifunc->func) (arg, ifunc->data, argc, argv, blockarg);
 
     th->cfp++;
     return val;

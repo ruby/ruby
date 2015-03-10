@@ -283,4 +283,12 @@ THROW_DATA_STATE(const struct THROW_DATA *obj)
     return obj->throw_state;
 }
 
+struct IFUNC {
+    VALUE flags;
+    VALUE reserved;
+    VALUE (*func)(ANYARGS);
+    void *data;
+    ID id;
+};
+
 #endif /* RUBY_INSNHELPER_H */

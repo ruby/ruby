@@ -1,3 +1,11 @@
+Wed Mar 11 04:56:04 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.h: define struct IFUNC.
+
+	* vm_eval.c (rb_iterate): use it.
+
+	* vm_insnhelper.c (vm_yield_with_cfunc): ditto.
+
 Wed Mar 11 03:52:12 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_intern.h (THROW_DATA_P): use RB_TYPE_P() instead of
