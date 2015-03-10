@@ -3345,7 +3345,7 @@ slicewhen_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *    d = c.join(",")
  *    p d #=> "1,2,4,9-12,15,16,19-21"
  *
- *  Near elements (threshold: 6) in sorted array can be chunked as follwos:
+ *  Near elements (threshold: 6) in sorted array can be chunked as follows:
  *
  *    a = [3, 11, 14, 25, 28, 29, 29, 41, 55, 57]
  *    p a.slice_when {|i, j| 6 < j - i }.to_a
