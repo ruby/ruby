@@ -1,3 +1,7 @@
+Thu Mar 12 08:14:48 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: RGENGC_CHECK_MODE should be 0.
+
 Thu Mar 12 07:44:17 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* internal.h: use T_IMEMO to represent `struct MEMO' value.
