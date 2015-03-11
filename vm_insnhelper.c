@@ -642,7 +642,7 @@ vm_throw_continue(rb_thread_t *th, VALUE err)
 	th->state = TAG_THROW;
     }
     else if (THROW_DATA_P(err)) {
-	th->state = THROW_DATA_STATE((struct THROW_DATA *)err);
+	th->state = THROW_DATA_STATE((struct vm_throw_data *)err);
     }
     else {
 	th->state = TAG_RAISE;
@@ -781,7 +781,7 @@ vm_throw_start(rb_thread_t * const th, rb_control_frame_t * const reg_cfp, int s
     }
 
     th->state = state;
-    return (VALUE)NEW_THROW_DATA(throwobj, escape_cfp, state);
+    return (VALUE)THROW_DATA_NEW(throwobj, escape_cfp, state);
 }
 
 static VALUE

@@ -383,6 +383,7 @@ typedef struct RVALUE {
 	union {
 	    rb_cref_t cref;
 	    struct vm_svar svar;
+	    struct vm_throw_data throw_data;
 	} imemo;
 	struct {
 	    struct RBasic basic;
@@ -4162,6 +4163,9 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	    gc_mark(objspace, RANY(obj)->as.imemo.svar.lastline);
 	    gc_mark(objspace, RANY(obj)->as.imemo.svar.backref);
 	    gc_mark(objspace, RANY(obj)->as.imemo.svar.others);
+	    return;
+	  case imemo_throw_data:
+	    gc_mark(objspace, RANY(obj)->as.imemo.throw_data.throw_obj);
 	    return;
 	  default:
 	    rb_bug("T_IMEMO: unreachable");

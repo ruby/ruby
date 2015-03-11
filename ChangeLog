@@ -1,3 +1,25 @@
+Wed Mar 11 21:45:36 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.h: use T_IMEMO to create THROW_DATA.
+
+	  Add THROW_DATA_NEW().
+
+	* internal.h: move defnition of `struct THROW_DATA'
+	  from vm_insnhelper.h to internal.h.
+
+	  Rename `THROW_DATA' to `vm_throw_data'.
+
+	* eval_intern.h (THROW_DATA_P): move to internal.h.
+	  THROW_DATA is no longer T_NODE, so check T_IMEMO.
+
+	* gc.c (gc_mark_children): mark THROW_DATA.
+
+	* vm.c: catch up these changes.
+
+	* vm_eval.c: ditto.
+
+	* vm_insnhelper.c: ditto.
+
 Wed Mar 11 21:21:56 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c: use T_IMEMO to create SVAR.

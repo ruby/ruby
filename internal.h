@@ -533,6 +533,7 @@ enum imemo_type {
     imemo_none,
     imemo_cref,
     imemo_svar,
+    imemo_throw_data,
     imemo_mask = 0x07
 };
 
@@ -644,6 +645,18 @@ struct vm_svar {
     const VALUE backref;
     const VALUE others;
 };
+
+/* THROW_DATA */
+
+struct vm_throw_data {
+    VALUE flags;
+    VALUE reserved;
+    const VALUE throw_obj;
+    const struct rb_control_frame_struct *catch_frame;
+    VALUE throw_state;
+};
+
+#define THROW_DATA_P(err) RB_TYPE_P((err), T_IMEMO)
 
 /* MEMO */
 

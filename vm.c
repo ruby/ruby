@@ -1176,7 +1176,7 @@ vm_iter_break(rb_thread_t *th, VALUE val)
     rb_control_frame_t *target_cfp = rb_vm_search_cf_from_ep(th, cfp, ep);
 
     th->state = TAG_BREAK;
-    th->errinfo = (VALUE)NEW_THROW_DATA(val, target_cfp, TAG_BREAK);
+    th->errinfo = (VALUE)THROW_DATA_NEW(val, target_cfp, TAG_BREAK);
     TH_JUMP_TAG(th, TAG_BREAK);
 }
 
@@ -1421,7 +1421,7 @@ vm_exec(rb_thread_t *th)
     int state;
     VALUE result;
     VALUE initial = 0;
-    struct THROW_DATA *err;
+    struct vm_throw_data *err;
 
     TH_PUSH_TAG(th);
     _tag.retval = Qnil;
@@ -1429,7 +1429,7 @@ vm_exec(rb_thread_t *th)
       vm_loop_start:
 	result = vm_exec_core(th, initial);
 	if ((state = th->state) != 0) {
-	    err = (struct THROW_DATA *)result;
+	    err = (struct vm_throw_data *)result;
 	    th->state = 0;
 	    goto exception_handler;
 	}
@@ -1444,7 +1444,7 @@ vm_exec(rb_thread_t *th)
 	VALUE type;
 	const rb_control_frame_t *escape_cfp;
 
-	err = (struct THROW_DATA *)th->errinfo;
+	err = (struct vm_throw_data *)th->errinfo;
 
       exception_handler:
 	cont_pc = cont_sp = catch_iseqval = 0;

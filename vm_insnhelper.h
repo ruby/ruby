@@ -229,46 +229,38 @@ enum vm_regan_acttype {
 static VALUE make_no_method_exception(VALUE exc, const char *format,
 				      VALUE obj, int argc, const VALUE *argv);
 
-struct THROW_DATA {
-    VALUE flags;
-    VALUE reserved;
-    VALUE throw_obj;
-    const rb_control_frame_t *catch_frame;
-    VALUE throw_state;
-};
-
-static inline struct THROW_DATA *
-NEW_THROW_DATA(VALUE val, rb_control_frame_t *cf, VALUE st)
+static inline struct vm_throw_data *
+THROW_DATA_NEW(VALUE val, rb_control_frame_t *cf, VALUE st)
 {
-    return (struct THROW_DATA *)rb_node_newnode(NODE_LIT, val, (VALUE)cf, st);
+    return (struct vm_throw_data *)rb_imemo_new(imemo_throw_data, val, (VALUE)cf, st, 0);
 }
 
 static inline void
-THROW_DATA_CATCH_FRAME_SET(struct THROW_DATA *obj, const rb_control_frame_t *cfp)
+THROW_DATA_CATCH_FRAME_SET(struct vm_throw_data *obj, const rb_control_frame_t *cfp)
 {
     obj->catch_frame = cfp;
 }
 
 static inline void
-THROW_DATA_STATE_SET(struct THROW_DATA *obj, int st)
+THROW_DATA_STATE_SET(struct vm_throw_data *obj, int st)
 {
     obj->throw_state = (VALUE)st;
 }
 
 static inline VALUE
-THROW_DATA_VAL(const struct THROW_DATA *obj)
+THROW_DATA_VAL(const struct vm_throw_data *obj)
 {
     return obj->throw_obj;
 }
 
 static inline const rb_control_frame_t *
-THROW_DATA_CATCH_FRAME(const struct THROW_DATA *obj)
+THROW_DATA_CATCH_FRAME(const struct vm_throw_data *obj)
 {
     return obj->catch_frame;
 }
 
 static int
-THROW_DATA_STATE(const struct THROW_DATA *obj)
+THROW_DATA_STATE(const struct vm_throw_data *obj)
 {
     return (int)obj->throw_state;
 }

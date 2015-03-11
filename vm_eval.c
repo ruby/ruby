@@ -1132,7 +1132,7 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
 	retval = (*it_proc) (data1);
     }
     else {
-	const struct THROW_DATA *err = (struct THROW_DATA *)th->errinfo;
+	const struct vm_throw_data *err = (struct vm_throw_data *)th->errinfo;
 	if (state == TAG_BREAK) {
 	    const rb_control_frame_t *escape_cfp = THROW_DATA_CATCH_FRAME(err);
 
@@ -1881,7 +1881,7 @@ rb_throw_obj(VALUE tag, VALUE value)
 	rb_exc_raise(rb_class_new_instance(numberof(desc), desc, rb_eUncaughtThrow));
     }
 
-    th->errinfo = (VALUE)NEW_THROW_DATA(tag, NULL, TAG_THROW);
+    th->errinfo = (VALUE)THROW_DATA_NEW(tag, NULL, TAG_THROW);
     JUMP_TAG(TAG_THROW);
 }
 
@@ -1996,7 +1996,7 @@ rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, int *stateptr)
 	/* call with argc=1, argv = [tag], block = Qnil to insure compatibility */
 	val = (*func)(tag, data, 1, (const VALUE *)&tag, Qnil);
     }
-    else if (state == TAG_THROW && THROW_DATA_VAL((struct THROW_DATA *)th->errinfo) == tag) {
+    else if (state == TAG_THROW && THROW_DATA_VAL((struct vm_throw_data *)th->errinfo) == tag) {
 	rb_vm_rewind_cfp(th, saved_cfp);
 	val = th->tag->retval;
 	th->errinfo = Qnil;
