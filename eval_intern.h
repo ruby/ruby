@@ -203,6 +203,89 @@ enum ruby_tag_type {
 #define SCOPE_CHECK(f) (CREF_VISI(rb_vm_cref()) == (f))
 #define SCOPE_SET(f)   (CREF_VISI_SET(rb_vm_cref(), (f)))
 
+/* CREF operators */
+
+#define NODE_FL_CREF_PUSHED_BY_EVAL_ (((VALUE)1)<<15)
+#define NODE_FL_CREF_OMOD_SHARED_    (((VALUE)1)<<16)
+
+static inline VALUE
+CREF_CLASS(const rb_cref_t *cref)
+{
+    return cref->klass;
+}
+
+static inline void
+CREF_CLASS_SET(rb_cref_t *cref, VALUE klass)
+{
+    RB_OBJ_WRITE(cref, &cref->klass, klass);
+}
+
+static inline rb_cref_t *
+CREF_NEXT(const rb_cref_t *cref)
+{
+    return cref->next;
+}
+
+static inline void
+CREF_NEXT_SET(rb_cref_t *cref, const rb_cref_t *next_cref)
+{
+    RB_OBJ_WRITE(cref, &cref->next, next_cref);
+}
+
+static inline long
+CREF_VISI(const rb_cref_t *cref)
+{
+    return (long)cref->visi;
+}
+
+static inline void
+CREF_VISI_SET(rb_cref_t *cref, long v)
+{
+    cref->visi = v;
+}
+
+static inline VALUE
+CREF_REFINEMENTS(const rb_cref_t *cref)
+{
+    return cref->refinements;
+}
+
+static inline void
+CREF_REFINEMENTS_SET(rb_cref_t *cref, VALUE refs)
+{
+    RB_OBJ_WRITE(cref, &cref->refinements, refs);
+}
+
+static inline int
+CREF_PUSHED_BY_EVAL(const rb_cref_t *cref)
+{
+    return cref->flags & NODE_FL_CREF_PUSHED_BY_EVAL_;
+}
+
+static inline void
+CREF_PUSHED_BY_EVAL_SET(rb_cref_t *cref)
+{
+    cref->flags |= NODE_FL_CREF_PUSHED_BY_EVAL_;
+}
+
+static inline int
+CREF_OMOD_SHARED(const rb_cref_t *cref)
+{
+    return cref->flags & NODE_FL_CREF_OMOD_SHARED_;
+}
+
+static inline void
+CREF_OMOD_SHARED_SET(rb_cref_t *cref)
+{
+    cref->flags |= NODE_FL_CREF_OMOD_SHARED_;
+}
+
+static inline void
+CREF_OMOD_SHARED_UNSET(rb_cref_t *cref)
+{
+    cref->flags &= ~NODE_FL_CREF_OMOD_SHARED_;
+}
+
 void rb_thread_cleanup(void);
 void rb_thread_wait_other_threads(void);
 
