@@ -1,3 +1,32 @@
+Wed Mar 11 19:35:46 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h: introduce new type T_IMEMO.
+	  T_IMEMO is Internal Memo type, internal use only.
+	  T_IMEMO has same purpose of NODE_MEMO.
+
+	  To insert T_IMEMO, type numbers are modified a little.
+
+	* internal.h: define struct RIMemo. Each RIMemo objects
+	  has imemo_type. We can observe it by the imemo_type() function.
+
+	* gc.c (rb_imemo_new): added.
+
+	* node.h: remove NODE_CREF and NEW_CREF().
+
+	* node.c (rb_gc_mark_node): ditto.
+
+	* vm.c (vm_cref_new): use rb_imem_new().
+
+	* vm_eval.c: ditto.
+
+	* vm_eval.c (eval_string_with_cref): 
+
+	* vm_eval.c (rb_type_str): 
+
+	* vm_insnhelper.c: use RIMemo objects for CREF.
+
+	* ext/objspace/objspace.c: support T_IMEMO.
+
 Wed Mar 11 17:03:20 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: fix memory leak by prepend method.

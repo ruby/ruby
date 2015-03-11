@@ -380,6 +380,9 @@ typedef struct RVALUE {
 	struct RMatch  match;
 	struct RRational rational;
 	struct RComplex complex;
+	union {
+	    rb_cref_t cref;
+	} imemo;
 	struct {
 	    struct RBasic basic;
 	    VALUE v1;
@@ -1717,10 +1720,17 @@ rb_newobj_of(VALUE klass, VALUE flags)
 NODE*
 rb_node_newnode(enum node_type type, VALUE a0, VALUE a1, VALUE a2)
 {
-    VALUE flags = (RGENGC_WB_PROTECTED_NODE_CREF && type == NODE_CREF ? FL_WB_PROTECTED : 0);
+    VALUE flags = 0;
     NODE *n = (NODE *)newobj_of(0, T_NODE | flags, a0, a1, a2);
     nd_set_type(n, type);
     return n;
+}
+
+VALUE
+rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0)
+{
+    VALUE flags = T_IMEMO | (type << FL_USHIFT) | FL_WB_PROTECTED;
+    return newobj_of(v0, flags, v1, v2, v3);
 }
 
 VALUE
@@ -1971,6 +1981,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
       case T_RATIONAL:
       case T_COMPLEX:
+      case T_IMEMO:
 	break;
       case T_ICLASS:
 	/* Basically , T_ICLASS shares table with the module */
@@ -2181,6 +2192,7 @@ internal_object_p(VALUE obj)
     if (p->as.basic.flags) {
 	switch (BUILTIN_TYPE(p)) {
 	  case T_NONE:
+	  case T_IMEMO:
 	  case T_ICLASS:
 	  case T_NODE:
 	  case T_ZOMBIE:
@@ -2917,6 +2929,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
 	break;
       case T_RATIONAL:
       case T_COMPLEX:
+      case T_IMEMO:
 	break;
 
       case T_FLOAT:
@@ -3060,6 +3073,7 @@ count_objects(int argc, VALUE *argv, VALUE os)
 	    COUNT_TYPE(T_FALSE);
 	    COUNT_TYPE(T_SYMBOL);
 	    COUNT_TYPE(T_FIXNUM);
+	    COUNT_TYPE(T_IMEMO);
 	    COUNT_TYPE(T_UNDEF);
 	    COUNT_TYPE(T_NODE);
 	    COUNT_TYPE(T_ICLASS);
@@ -4134,6 +4148,17 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	obj = rb_gc_mark_node(&any->as.node);
 	if (obj) gc_mark(objspace, obj);
 	return;			/* no need to mark class. */
+
+      case T_IMEMO:
+	switch (imemo_type(obj)) {
+	  case imemo_cref:
+	    gc_mark(objspace, RANY(obj)->as.imemo.cref.klass);
+	    gc_mark(objspace, (VALUE)RANY(obj)->as.imemo.cref.next);
+	    gc_mark(objspace, RANY(obj)->as.imemo.cref.refinements);
+	    return;
+	  default:
+	    rb_bug("unreachable");
+	}
     }
 
     gc_mark(objspace, any->as.basic.klass);
@@ -8609,6 +8634,7 @@ type_name(int type, VALUE obj)
 	    TYPE_NAME(T_SYMBOL);
 	    TYPE_NAME(T_FIXNUM);
 	    TYPE_NAME(T_UNDEF);
+	    TYPE_NAME(T_IMEMO);
 	    TYPE_NAME(T_NODE);
 	    TYPE_NAME(T_ICLASS);
 	    TYPE_NAME(T_ZOMBIE);

@@ -56,6 +56,7 @@ total_i(void *vstart, void *vend, size_t stride, void *ptr)
 	if (RBASIC(v)->flags) {
 	    switch (BUILTIN_TYPE(v)) {
 	      case T_NONE:
+	      case T_IMEMO:
 	      case T_ICLASS:
 	      case T_NODE:
 	      case T_ZOMBIE:
@@ -166,6 +167,7 @@ type2sym(enum ruby_value_type i)
 	CASE_TYPE(T_SYMBOL);
 	CASE_TYPE(T_FIXNUM);
 	CASE_TYPE(T_UNDEF);
+	CASE_TYPE(T_IMEMO);
 	CASE_TYPE(T_NODE);
 	CASE_TYPE(T_ICLASS);
 	CASE_TYPE(T_ZOMBIE);
@@ -390,7 +392,6 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_SCLASS);
 		COUNT_NODE(NODE_COLON2);
 		COUNT_NODE(NODE_COLON3);
-		COUNT_NODE(NODE_CREF);
 		COUNT_NODE(NODE_DOT2);
 		COUNT_NODE(NODE_DOT3);
 		COUNT_NODE(NODE_FLIP2);

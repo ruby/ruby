@@ -163,7 +163,7 @@ lep_svar_get(rb_thread_t *th, const VALUE *lep, rb_num_t key)
     const struct SVAR *const svar = *svar_place;
 
     if (NIL_P((VALUE)svar)) return Qnil;
-    if (nd_type(svar) == NODE_CREF) return Qnil;
+    if (RB_TYPE_P((VALUE)svar, T_IMEMO) && imemo_type((VALUE)svar) == imemo_cref) return Qnil;
 
     switch (key) {
       case VM_SVAR_LASTLINE:
@@ -193,7 +193,7 @@ lep_svar_set(rb_thread_t *th, VALUE *lep, rb_num_t key, VALUE val)
 	svar = *svar_place = (struct SVAR *)NEW_IF(Qnil, Qnil, Qnil);
 	svar->cref = NULL;
     }
-    else if (nd_type(svar) == NODE_CREF) {
+    else if (RB_TYPE_P((VALUE)svar, T_IMEMO) && imemo_type((VALUE)svar) == imemo_cref) {
 	const rb_cref_t *cref = (rb_cref_t *)svar;
 	svar = *svar_place = (struct SVAR *)NEW_IF(Qnil, Qnil, Qnil);
 	RB_OBJ_WRITE(svar, &svar->cref, (VALUE)cref);
@@ -261,7 +261,7 @@ lep_cref(const VALUE *ep)
     if (!svar) {
 	return NULL;
     }
-    else if (nd_type(svar) == NODE_CREF) {
+    else if (RB_TYPE_P((VALUE)svar, T_IMEMO) && imemo_type(svar) == imemo_cref) {
 	return (rb_cref_t *)svar;
     }
     else {
@@ -300,13 +300,13 @@ rb_vm_rewrite_cref_stack(rb_cref_t *node, VALUE old_klass, VALUE new_klass, rb_c
 
     while (node) {
 	if (CREF_CLASS(node) == old_klass) {
-	    new_node = (rb_cref_t *)NEW_CREF(new_klass);
+	    new_node = vm_cref_new(new_klass, 0, NULL);
 	    COPY_CREF_OMOD(new_node, node);
 	    CREF_NEXT_SET(new_node, CREF_NEXT(node));
 	    *new_cref_ptr = new_node;
 	    return;
 	}
-	new_node = (rb_cref_t *)NEW_CREF(CREF_CLASS(node));
+	new_node = vm_cref_new(CREF_CLASS(node), 0, NULL);
 	COPY_CREF_OMOD(new_node, node);
 	node = CREF_NEXT(node);
 	*new_cref_ptr = new_node;

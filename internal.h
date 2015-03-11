@@ -513,15 +513,44 @@ RCLASS_SET_SUPER(VALUE klass, VALUE super)
     RB_OBJ_WRITE(klass, &RCLASS(klass)->super, super);
     return super;
 }
+/* IMEMO: Internal memo object */
+
+/* FL_USER0, FL_USER1, FL_USER2: type */
+#define FL_IMEMO_MARK_V0 FL_USER6
+#define FL_IMEMO_MARK_V1 FL_USER3
+#define FL_IMEMO_MARK_V2 FL_USER4
+#define FL_IMEMO_MARK_V3 FL_USER5
+
+struct RIMemo {
+    VALUE flags;
+    VALUE v0;
+    VALUE v1;
+    VALUE v2;
+    VALUE v3;
+};
+
+enum imemo_type {
+    imemo_none,
+    imemo_cref,
+    imemo_mask = 0x07
+};
+
+static inline enum imemo_type
+imemo_type(VALUE imemo)
+{
+    return (RBASIC(imemo)->flags >> FL_USHIFT) & imemo_mask;
+}
+
+VALUE rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0);
 
 /* CREF */
 
 typedef struct rb_cref_struct {
     VALUE flags;
-    VALUE refinements;
-    VALUE klass;
+    const VALUE refinements;
+    const VALUE klass;
     VALUE visi;
-    struct rb_cref_struct *next;
+    struct rb_cref_struct * const next;
 } rb_cref_t;
 
 #define NODE_FL_CREF_PUSHED_BY_EVAL_ (((VALUE)1)<<15)

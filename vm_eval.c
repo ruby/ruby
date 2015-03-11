@@ -498,6 +498,7 @@ rb_type_str(enum ruby_value_type type)
       type_case(T_FALSE)
       type_case(T_SYMBOL)
       type_case(T_FIXNUM)
+      type_case(T_IMEMO)
       type_case(T_UNDEF)
       type_case(T_NODE)
       type_case(T_ICLASS)
@@ -1308,7 +1309,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 	if (!cref && base_block->iseq) {
 	    if (NIL_P(scope)) {
 		orig_cref = rb_vm_get_cref(base_block->ep);
-		cref = (rb_cref_t *)NEW_CREF(Qnil);
+		cref = vm_cref_new(Qnil, 0, NULL);
 		crefval = (VALUE) cref;
 		COPY_CREF(cref, orig_cref);
 	    }

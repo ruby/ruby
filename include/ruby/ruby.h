@@ -448,11 +448,12 @@ enum ruby_value_type {
     RUBY_T_FALSE  = 0x13,
     RUBY_T_SYMBOL = 0x14,
     RUBY_T_FIXNUM = 0x15,
+    RUBY_T_UNDEF  = 0x16,
 
-    RUBY_T_UNDEF  = 0x1b,
-    RUBY_T_NODE   = 0x1c,
-    RUBY_T_ICLASS = 0x1d,
-    RUBY_T_ZOMBIE = 0x1e,
+    RUBY_T_IMEMO  = 0x1a,
+    RUBY_T_NODE   = 0x1b,
+    RUBY_T_ICLASS = 0x1c,
+    RUBY_T_ZOMBIE = 0x1d,
 
     RUBY_T_MASK   = 0x1f
 };
@@ -479,6 +480,7 @@ enum ruby_value_type {
 #define T_SYMBOL RUBY_T_SYMBOL
 #define T_RATIONAL RUBY_T_RATIONAL
 #define T_COMPLEX RUBY_T_COMPLEX
+#define T_IMEMO  RUBY_T_IMEMO
 #define T_UNDEF  RUBY_T_UNDEF
 #define T_NODE   RUBY_T_NODE
 #define T_ZOMBIE RUBY_T_ZOMBIE

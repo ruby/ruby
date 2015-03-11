@@ -82,10 +82,7 @@ rb_vm_control_frame_block_ptr(const rb_control_frame_t *cfp)
 static rb_cref_t *
 vm_cref_new(VALUE klass, long visi, const rb_cref_t *prev_cref)
 {
-    rb_cref_t *cref = (rb_cref_t *)NEW_CREF(klass);
-    CREF_REFINEMENTS_SET(cref, Qnil);
-    CREF_VISI_SET(cref, visi);
-    CREF_NEXT_SET(cref, prev_cref);
+    rb_cref_t *cref = (rb_cref_t *)rb_imemo_new(imemo_cref, klass, visi, (VALUE)prev_cref, Qnil);
     return cref;
 }
 
