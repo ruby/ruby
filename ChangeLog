@@ -1,3 +1,9 @@
+Wed Mar 11 22:36:34 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c (frame_called_id): it should use vm_ifunc type.
+
+	* eval.c (frame_func_id): ditto.
+
 Wed Mar 11 22:27:05 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* node.h: remove NODE_IFUNC, NEW_IFUNC.

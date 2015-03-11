@@ -946,8 +946,8 @@ frame_func_id(rb_control_frame_t *cfp)
     }
     while (iseq) {
 	if (RUBY_VM_IFUNC_P(iseq)) {
-	    NODE *ifunc = (NODE *)iseq;
-	    if (ifunc->nd_aid) return ifunc->nd_aid;
+	    const struct vm_ifunc *ifunc = (struct vm_ifunc *)iseq;
+	    if (ifunc->id) return ifunc->id;
 	    return idIFUNC;
 	}
 	me_local = method_entry_of_iseq(cfp, iseq);
@@ -976,8 +976,8 @@ frame_called_id(rb_control_frame_t *cfp)
     }
     while (iseq) {
 	if (RUBY_VM_IFUNC_P(iseq)) {
-	    NODE *ifunc = (NODE *)iseq;
-	    if (ifunc->nd_aid) return ifunc->nd_aid;
+	    const struct vm_ifunc *ifunc = (struct vm_ifunc *)iseq;
+	    if (ifunc->id) return ifunc->id;
 	    return idIFUNC;
 	}
 	me_local = method_entry_of_iseq(cfp, iseq);
