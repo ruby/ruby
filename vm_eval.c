@@ -1105,7 +1105,7 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
 {
     int state;
     volatile VALUE retval = Qnil;
-    struct IFUNC *ifunc = (struct IFUNC *)NEW_IFUNC(bl_proc, data2);
+    struct vm_ifunc *ifunc = IFUNC_NEW(bl_proc, data2);
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *volatile cfp = th->cfp;
 

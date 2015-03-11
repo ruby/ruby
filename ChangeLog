@@ -1,3 +1,26 @@
+Wed Mar 11 22:27:05 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* node.h: remove NODE_IFUNC, NEW_IFUNC.
+
+	* internal.h: use T_IMEMO for IFUNC.
+
+	  rename `struct IFUNC' to `struct vm_ifunc' and move the definition
+	  from vm_insnhelper.h. Add imemo_ifunc.
+
+	* gc.c (gc_mark_children): mark imemo_ifunc type T_IMEMO object.
+
+	* compile.c: catch up these changes.
+
+	* proc.c: ditto.
+
+	* vm_core.h (RUBY_VM_IFUNC_P): ditto.
+
+	* vm_eval.c (rb_iterate): ditto.
+
+	* vm_insnhelper.c: ditto.
+
+	* ext/objspace/objspace.c: ditto.
+
 Wed Mar 11 21:53:43 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* internal.h, eval_intern.h: move CREF accessors.

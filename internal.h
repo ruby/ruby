@@ -534,6 +534,7 @@ enum imemo_type {
     imemo_cref,
     imemo_svar,
     imemo_throw_data,
+    imemo_ifunc,
     imemo_mask = 0x07
 };
 
@@ -576,6 +577,18 @@ struct vm_throw_data {
 };
 
 #define THROW_DATA_P(err) RB_TYPE_P((err), T_IMEMO)
+
+/* IFUNC */
+
+struct vm_ifunc {
+    VALUE flags;
+    VALUE reserved;
+    VALUE (*func)(ANYARGS);
+    const void *data;
+    ID id;
+};
+
+#define IFUNC_NEW(a, b) ((struct vm_ifunc *)rb_imemo_new(imemo_ifunc, (VALUE)(a), (VALUE)(b), 0, 0))
 
 /* MEMO */
 

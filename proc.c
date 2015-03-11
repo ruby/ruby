@@ -37,7 +37,7 @@ static int method_min_max_arity(VALUE, int *max);
 
 /* Proc */
 
-#define IS_METHOD_PROC_NODE(node) (nd_type(node) == NODE_IFUNC && (node)->nd_cfnc == bmcall)
+#define IS_METHOD_PROC_ISEQ(iseq) (RB_TYPE_P((VALUE)(iseq), T_IMEMO) && ((struct vm_ifunc *)(iseq))->func == bmcall)
 
 static void
 proc_mark(void *ptr)
@@ -850,10 +850,10 @@ rb_block_min_max_arity(rb_block_t *block, int *max)
 	    return rb_iseq_min_max_arity(iseq, max);
 	}
 	else {
-	    NODE *node = (NODE *)iseq;
-	    if (IS_METHOD_PROC_NODE(node)) {
+	    if (IS_METHOD_PROC_ISEQ(iseq)) {
+		const struct vm_ifunc *ifunc = (struct vm_ifunc *)iseq;
 		/* e.g. method(:foo).to_proc.arity */
-		return method_min_max_arity(node->nd_tval, max);
+		return method_min_max_arity((VALUE)ifunc->data, max);
 	    }
 	}
     }
@@ -919,11 +919,11 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
     iseq = proc->block.iseq;
     if (is_proc) *is_proc = !proc->is_lambda;
     if (!RUBY_VM_NORMAL_ISEQ_P(iseq)) {
-	NODE *node = (NODE *)iseq;
+	const struct vm_ifunc *ifunc = (struct vm_ifunc *)iseq;
 	iseq = 0;
-	if (IS_METHOD_PROC_NODE(node)) {
+	if (IS_METHOD_PROC_ISEQ(ifunc)) {
 	    /* method(:foo).to_proc */
-	    iseq = rb_method_get_iseq(node->nd_tval);
+	    iseq = rb_method_get_iseq((VALUE)ifunc->data);
 	    if (is_proc) *is_proc = 0;
 	}
     }
@@ -2465,10 +2465,10 @@ proc_binding(VALUE self)
     GetProcPtr(self, proc);
     iseq = proc->block.iseq;
     if (RUBY_VM_IFUNC_P(iseq)) {
-	if (!IS_METHOD_PROC_NODE((NODE *)iseq)) {
+	if (!IS_METHOD_PROC_ISEQ(iseq)) {
 	    rb_raise(rb_eArgError, "Can't create Binding from C level Proc");
 	}
-	iseq = rb_method_get_iseq(RNODE(iseq)->u2.value);
+	iseq = rb_method_get_iseq((VALUE)((struct vm_ifunc *)iseq)->data);
     }
 
     bindval = rb_binding_alloc(rb_cBinding);

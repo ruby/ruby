@@ -384,6 +384,7 @@ typedef struct RVALUE {
 	    rb_cref_t cref;
 	    struct vm_svar svar;
 	    struct vm_throw_data throw_data;
+	    struct vm_ifunc ifunc;
 	} imemo;
 	struct {
 	    struct RBasic basic;
@@ -4166,6 +4167,9 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	    return;
 	  case imemo_throw_data:
 	    gc_mark(objspace, RANY(obj)->as.imemo.throw_data.throw_obj);
+	    return;
+	  case imemo_ifunc:
+	    gc_mark_maybe(objspace, (VALUE)RANY(obj)->as.imemo.ifunc.data);
 	    return;
 	  default:
 	    rb_bug("T_IMEMO: unreachable");

@@ -265,12 +265,4 @@ THROW_DATA_STATE(const struct vm_throw_data *obj)
     return (int)obj->throw_state;
 }
 
-struct IFUNC {
-    VALUE flags;
-    VALUE reserved;
-    VALUE (*func)(ANYARGS);
-    void *data;
-    ID id;
-};
-
 #endif /* RUBY_INSNHELPER_H */

@@ -220,8 +220,6 @@ enum node_type {
 #define NODE_BMETHOD     NODE_BMETHOD
     NODE_MEMO,
 #define NODE_MEMO        NODE_MEMO
-    NODE_IFUNC,
-#define NODE_IFUNC       NODE_IFUNC
     NODE_DSYM,
 #define NODE_DSYM        NODE_DSYM
     NODE_ATTRASGN,
@@ -361,7 +359,6 @@ typedef struct RNode {
 
 #define NEW_DEFN(i,a,d,p) NEW_NODE(NODE_DEFN,0,i,NEW_SCOPE(a,d))
 #define NEW_DEFS(r,i,a,d) NEW_NODE(NODE_DEFS,r,i,NEW_SCOPE(a,d))
-#define NEW_IFUNC(f,c) NEW_NODE(NODE_IFUNC,f,c,0)
 #define NEW_SCOPE(a,b) NEW_NODE(NODE_SCOPE,local_tbl(),b,a)
 #define NEW_BLOCK(a) NEW_NODE(NODE_BLOCK,a,0,0)
 #define NEW_IF(c,t,e) NEW_NODE(NODE_IF,c,t,e)

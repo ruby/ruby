@@ -2044,7 +2044,7 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block,
 		    int argc, const VALUE *argv,
 		    const rb_block_t *blockargptr)
 {
-    struct IFUNC *ifunc = (struct IFUNC *)block->iseq;
+    const struct vm_ifunc *ifunc = (struct vm_ifunc *)block->iseq;
     VALUE val, arg, blockarg;
     int lambda = block_proc_is_lambda(block->proc);
 
