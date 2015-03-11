@@ -19,10 +19,6 @@ Wed Mar 11 19:35:46 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_eval.c: ditto.
 
-	* vm_eval.c (eval_string_with_cref):
-
-	* vm_eval.c (rb_type_str):
-
 	* vm_insnhelper.c: use RIMemo objects for CREF.
 
 	* ext/objspace/objspace.c: support T_IMEMO.
