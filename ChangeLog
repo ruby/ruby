@@ -1,3 +1,11 @@
+Wed Mar 11 13:28:49 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: check also procstat_getvmmap, which is not
+	  available on FreeBSD 9.  [ruby-core:68468] [Bug #10954]
+
+	* vm_dump.c (procstat_vm): use kinfo_getvmmap instead if
+	  procstat_getvmmap is not available.
+
 Wed Mar 11 09:15:21 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* internal.h: define struct MEMO.

@@ -3143,6 +3143,9 @@ fi
 AS_CASE(["$target_os"],
 [freebsd*], [
     AC_CHECK_LIB([procstat], [procstat_open_sysctl])
+    if test "x$ac_cv_lib_procstat_procstat_open_sysctl" = xyes; then
+	AC_CHECK_FUNCS(procstat_getvmmap)
+    fi
     ])
 AS_CASE(["$target_cpu-$target_os"],
 [*-darwin*], [
