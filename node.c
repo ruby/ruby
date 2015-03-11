@@ -947,7 +947,6 @@ rb_gc_mark_node(NODE *obj)
 {
     switch (nd_type(obj)) {
       case NODE_IF:		/* 1,2,3 */
-	rb_gc_mark(CREF_REFINEMENTS((rb_cref_t *)obj)); /* use as SVAR */
       case NODE_FOR:
       case NODE_ITER:
       case NODE_WHEN:

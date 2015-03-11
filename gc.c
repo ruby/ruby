@@ -382,6 +382,7 @@ typedef struct RVALUE {
 	struct RComplex complex;
 	union {
 	    rb_cref_t cref;
+	    struct vm_svar svar;
 	} imemo;
 	struct {
 	    struct RBasic basic;
@@ -4156,8 +4157,14 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	    gc_mark(objspace, (VALUE)RANY(obj)->as.imemo.cref.next);
 	    gc_mark(objspace, RANY(obj)->as.imemo.cref.refinements);
 	    return;
+	  case imemo_svar:
+	    gc_mark(objspace, (VALUE)RANY(obj)->as.imemo.svar.cref);
+	    gc_mark(objspace, RANY(obj)->as.imemo.svar.lastline);
+	    gc_mark(objspace, RANY(obj)->as.imemo.svar.backref);
+	    gc_mark(objspace, RANY(obj)->as.imemo.svar.others);
+	    return;
 	  default:
-	    rb_bug("unreachable");
+	    rb_bug("T_IMEMO: unreachable");
 	}
     }
 

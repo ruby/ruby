@@ -229,16 +229,6 @@ enum vm_regan_acttype {
 static VALUE make_no_method_exception(VALUE exc, const char *format,
 				      VALUE obj, int argc, const VALUE *argv);
 
-/* SVAR */
-
-struct SVAR {
-    VALUE flags;
-    const rb_cref_t *cref;
-    VALUE lastline;
-    VALUE backref;
-    VALUE others;
-};
-
 struct THROW_DATA {
     VALUE flags;
     VALUE reserved;

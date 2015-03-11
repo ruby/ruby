@@ -1,3 +1,16 @@
+Wed Mar 11 21:21:56 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c: use T_IMEMO to create SVAR.
+
+	* internal.h, vm_insnhelper.h: move definition `struct SVAR'
+	  from vm_insnhelper.h to internal.h. And rename it to strcut vm_svar.
+
+	  new imemo_type imemo_svar is added.
+
+	* gc.c (gc_mark_children): mark imemo_svar.
+
+	* node.c (rb_gc_mark_node): remove useless marking.
+
 Wed Mar 11 19:35:46 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h: introduce new type T_IMEMO.

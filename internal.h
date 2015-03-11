@@ -532,6 +532,7 @@ struct RIMemo {
 enum imemo_type {
     imemo_none,
     imemo_cref,
+    imemo_svar,
     imemo_mask = 0x07
 };
 
@@ -633,6 +634,16 @@ CREF_OMOD_SHARED_UNSET(rb_cref_t *cref)
 {
     cref->flags &= ~NODE_FL_CREF_OMOD_SHARED_;
 }
+
+/* SVAR */
+
+struct vm_svar {
+    VALUE flags;
+    const rb_cref_t * const cref;
+    const VALUE lastline;
+    const VALUE backref;
+    const VALUE others;
+};
 
 /* MEMO */
 

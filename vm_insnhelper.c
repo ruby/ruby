@@ -141,7 +141,7 @@ rb_error_arity(int argc, int min, int max)
 
 /* svar */
 
-static inline struct SVAR **
+static inline struct vm_svar **
 lep_svar_place(rb_thread_t *th, const VALUE *lep)
 {
     const VALUE *svar;
@@ -153,14 +153,14 @@ lep_svar_place(rb_thread_t *th, const VALUE *lep)
 	svar = &th->root_svar;
     }
 
-    return (struct SVAR **)svar;
+    return (struct vm_svar **)svar;
 }
 
 static VALUE
 lep_svar_get(rb_thread_t *th, const VALUE *lep, rb_num_t key)
 {
-    struct SVAR ** const svar_place = lep_svar_place(th, lep);
-    const struct SVAR *const svar = *svar_place;
+    struct vm_svar ** const svar_place = lep_svar_place(th, lep);
+    const struct vm_svar *const svar = *svar_place;
 
     if (NIL_P((VALUE)svar)) return Qnil;
     if (RB_TYPE_P((VALUE)svar, T_IMEMO) && imemo_type((VALUE)svar) == imemo_cref) return Qnil;
@@ -183,20 +183,24 @@ lep_svar_get(rb_thread_t *th, const VALUE *lep, rb_num_t key)
     }
 }
 
+static struct vm_svar *
+svar_new(const rb_cref_t *cref)
+{
+    return (struct vm_svar *)rb_imemo_new(imemo_svar, Qnil, Qnil, Qnil, (VALUE)cref);
+}
+
 static void
 lep_svar_set(rb_thread_t *th, VALUE *lep, rb_num_t key, VALUE val)
 {
-    struct SVAR **svar_place = lep_svar_place(th, lep);
-    struct SVAR *svar = *svar_place;
+    struct vm_svar **svar_place = lep_svar_place(th, lep);
+    struct vm_svar *svar = *svar_place;
 
     if (NIL_P((VALUE)svar)) {
-	svar = *svar_place = (struct SVAR *)NEW_IF(Qnil, Qnil, Qnil);
-	svar->cref = NULL;
+	svar = *svar_place = svar_new(NULL);
     }
     else if (RB_TYPE_P((VALUE)svar, T_IMEMO) && imemo_type((VALUE)svar) == imemo_cref) {
 	const rb_cref_t *cref = (rb_cref_t *)svar;
-	svar = *svar_place = (struct SVAR *)NEW_IF(Qnil, Qnil, Qnil);
-	RB_OBJ_WRITE(svar, &svar->cref, (VALUE)cref);
+	svar = *svar_place = svar_new(cref);
     }
 
     switch (key) {
@@ -265,7 +269,7 @@ lep_cref(const VALUE *ep)
 	return (rb_cref_t *)svar;
     }
     else {
-	return (rb_cref_t *)((struct SVAR *)svar)->cref;
+	return (rb_cref_t *)((struct vm_svar *)svar)->cref;
     }
 }
 
@@ -310,7 +314,7 @@ rb_vm_rewrite_cref_stack(rb_cref_t *node, VALUE old_klass, VALUE new_klass, rb_c
 	COPY_CREF_OMOD(new_node, node);
 	node = CREF_NEXT(node);
 	*new_cref_ptr = new_node;
-	new_cref_ptr = &new_node->next;
+	new_cref_ptr = (rb_cref_t **)&new_node->next;
     }
     *new_cref_ptr = NULL;
 }
