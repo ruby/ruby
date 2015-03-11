@@ -7,7 +7,6 @@
 #include "dln.h"
 #include "eval_intern.h"
 #include "probes.h"
-#include "node.h"
 
 VALUE ruby_dln_librefs;
 

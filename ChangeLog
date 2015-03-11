@@ -1,3 +1,11 @@
+Thu Mar 12 08:20:14 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* load.c: removed unused header file "node.h".
+
+	* method.h: ditto.
+
+	* symbol.c: ditto.
+
 Thu Mar 12 08:14:48 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: RGENGC_CHECK_MODE should be 0.

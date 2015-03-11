@@ -12,7 +12,6 @@
 #define METHOD_H
 
 #include "internal.h"
-#include "node.h"
 
 #ifndef END_OF_ENUMERATION
 # if defined(__GNUC__) &&! defined(__STRICT_ANSI__)

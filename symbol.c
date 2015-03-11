@@ -11,7 +11,6 @@
 
 #include "internal.h"
 #include "ruby/st.h"
-#include "node.h"
 #include "symbol.h"
 #include "gc.h"
 #include "probes.h"
