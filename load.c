@@ -729,8 +729,8 @@ load_lock(const char *ftptr)
 	return (char *)ftptr;
     }
     else if (RB_TYPE_P((VALUE)data, T_NODE) && nd_type((VALUE)data) == NODE_MEMO) {
-	NODE *memo = RNODE(data);
-	void (*init)(void) = (void (*)(void))memo->nd_cfnc;
+	struct MEMO *memo = MEMO_CAST(data);
+	void (*init)(void) = (void (*)(void))memo->u3.func;
 	data = (st_data_t)rb_thread_shield_new();
 	st_insert(loading_tbl, (st_data_t)ftptr, data);
 	(*init)();
@@ -1078,7 +1078,7 @@ register_init_ext(st_data_t *key, st_data_t *value, st_data_t init, int existing
 	rb_warn("%s is already registered", name);
     }
     else {
-	*value = (st_data_t)NEW_MEMO(init, 0, 0);
+	*value = (st_data_t)NEW_MEMO(0, 0, init);
 	*key = (st_data_t)ruby_strdup(name);
     }
     return ST_CONTINUE;

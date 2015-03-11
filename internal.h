@@ -596,6 +596,23 @@ CREF_OMOD_SHARED_UNSET(rb_cref_t *cref)
     cref->flags &= ~NODE_FL_CREF_OMOD_SHARED_;
 }
 
+/* MEMO */
+
+struct MEMO {
+    VALUE flags;
+    VALUE reserved;
+    VALUE v1;
+    VALUE v2;
+    union {
+	long cnt;
+	long state;
+	VALUE value;
+	VALUE (*func)(ANYARGS);
+    } u3;
+};
+
+#define MEMO_CAST(m) ((struct MEMO *)m)
+
 struct vtm; /* defined by timev.h */
 
 /* array.c */

@@ -494,9 +494,9 @@ enumerator_each(int argc, VALUE *argv, VALUE obj)
 static VALUE
 enumerator_with_index_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
 {
-    NODE *memo = (NODE *)m;
-    VALUE idx = memo->u1.value;
-    memo->u1.value = rb_int_succ(idx);
+    struct MEMO *memo = (struct MEMO *)m;
+    VALUE idx = memo->v1;
+    memo->v1 = rb_int_succ(idx);
 
     if (argc <= 1)
 	return rb_yield_values(2, val, idx);

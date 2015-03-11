@@ -1,3 +1,15 @@
+Wed Mar 11 09:15:21 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* internal.h: define struct MEMO.
+
+	* enum.c: use MEMO.
+
+	* enumerator.c: ditto.
+
+	* load.c: ditto.
+
+	* node.h: return (struct MEMO *) pointer.
+
 Wed Mar 11 06:26:21 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.h (THROW_DATA_STATE): return int, not VALUE.
