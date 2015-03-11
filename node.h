@@ -218,8 +218,6 @@ enum node_type {
 #define NODE_ALLOCA      NODE_ALLOCA
     NODE_BMETHOD,
 #define NODE_BMETHOD     NODE_BMETHOD
-    NODE_MEMO,
-#define NODE_MEMO        NODE_MEMO
     NODE_DSYM,
 #define NODE_DSYM        NODE_DSYM
     NODE_ATTRASGN,
@@ -455,12 +453,6 @@ typedef struct RNode {
 #define NEW_BMETHOD(b) NEW_NODE(NODE_BMETHOD,0,0,b)
 #define NEW_ATTRASGN(r,m,a) NEW_NODE(NODE_ATTRASGN,r,m,a)
 #define NEW_PRELUDE(p,b) NEW_NODE(NODE_PRELUDE,p,b,0)
-#define NEW_MEMO(a,b,c) ((struct MEMO *)NEW_NODE(NODE_MEMO,a,b,c))
-
-#define roomof(x, y) ((sizeof(x) + sizeof(y) - 1) / sizeof(y))
-#define MEMO_FOR(type, value) ((type *)RARRAY_PTR(value))
-#define NEW_MEMO_FOR(type, value) \
-  ((value) = rb_ary_tmp_new_fill(roomof(type, VALUE)), MEMO_FOR(type, value))
 
 RUBY_SYMBOL_EXPORT_BEGIN
 

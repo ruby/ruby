@@ -1,3 +1,32 @@
+Thu Mar 12 07:44:17 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* internal.h: use T_IMEMO to represent `struct MEMO' value.
+	  memo->v1 and memo->v2 is WB protected values.
+	  So use MEMO_V1/V2_SET() macros to set these values.
+	  memo->u3 is ambiguous (sometimes a VALUE, sometimes an integer
+	  value), so use gc_mark_maybe() in gc.c to mark it.
+
+	  Rename NEW_MEMO() to MEMO_NEW().
+
+	  Move MEMO_FOR and NEW_MEMO_FOF macros from node.h.
+
+	  Export a rb_imemo_new() function for ext/ripper.
+
+	* node.h: remove NODE_MEMO.
+
+	* enum.c: catch up these change.
+
+	* enumerator.c: ditto.
+
+	* load.c: ditto.
+
+	* ext/objspace/objspace.c (count_nodes): ditto.
+
+	* gc.c (gc_mark_children): mark imemo_memo type.
+
+	* parse.y (new_args_gen): use T_IMEMO.
+	  (I'm not sure it is working correctly...)
+
 Wed Mar 11 22:36:34 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c (frame_called_id): it should use vm_ifunc type.

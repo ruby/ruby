@@ -217,7 +217,7 @@ static ruby_gc_params_t gc_params = {
  * 5: show all references
  */
 #ifndef RGENGC_CHECK_MODE
-#define RGENGC_CHECK_MODE  0
+#define RGENGC_CHECK_MODE  2
 #endif
 
 /* RGENGC_PROFILE
@@ -385,6 +385,7 @@ typedef struct RVALUE {
 	    struct vm_svar svar;
 	    struct vm_throw_data throw_data;
 	    struct vm_ifunc ifunc;
+	    struct MEMO memo;
 	} imemo;
 	struct {
 	    struct RBasic basic;
@@ -4170,6 +4171,11 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	    return;
 	  case imemo_ifunc:
 	    gc_mark_maybe(objspace, (VALUE)RANY(obj)->as.imemo.ifunc.data);
+	    return;
+	  case imemo_memo:
+	    gc_mark(objspace, RANY(obj)->as.imemo.memo.v1);
+	    gc_mark(objspace, RANY(obj)->as.imemo.memo.v2);
+	    gc_mark_maybe(objspace, RANY(obj)->as.imemo.memo.u3.value);
 	    return;
 	  default:
 	    rb_bug("T_IMEMO: unreachable");

@@ -530,11 +530,12 @@ struct RIMemo {
 };
 
 enum imemo_type {
-    imemo_none,
-    imemo_cref,
-    imemo_svar,
-    imemo_throw_data,
-    imemo_ifunc,
+    imemo_none = 0,
+    imemo_cref = 1,
+    imemo_svar = 2,
+    imemo_throw_data = 3,
+    imemo_ifunc = 4,
+    imemo_memo = 5,
     imemo_mask = 0x07
 };
 
@@ -543,8 +544,6 @@ imemo_type(VALUE imemo)
 {
     return (RBASIC(imemo)->flags >> FL_USHIFT) & imemo_mask;
 }
-
-VALUE rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0);
 
 /* CREF */
 
@@ -595,17 +594,26 @@ struct vm_ifunc {
 struct MEMO {
     VALUE flags;
     VALUE reserved;
-    VALUE v1;
-    VALUE v2;
+    const VALUE v1;
+    const VALUE v2;
     union {
 	long cnt;
 	long state;
-	VALUE value;
+	const VALUE value;
 	VALUE (*func)(ANYARGS);
     } u3;
 };
 
+#define MEMO_V1_SET(m, v) RB_OBJ_WRITE((memo), &(memo)->v1, (v))
+#define MEMO_V2_SET(m, v) RB_OBJ_WRITE((memo), &(memo)->v2, (v))
+
 #define MEMO_CAST(m) ((struct MEMO *)m)
+#define MEMO_NEW(a, b, c) ((struct MEMO *)rb_imemo_new(imemo_memo, (VALUE)(a), (VALUE)(b), (VALUE)(c), 0))
+
+#define type_roomof(x, y) ((sizeof(x) + sizeof(y) - 1) / sizeof(y))
+#define MEMO_FOR(type, value) ((type *)RARRAY_PTR(value))
+#define NEW_MEMO_FOR(type, value) \
+  ((value) = rb_ary_tmp_new_fill(type_roomof(type, VALUE)), MEMO_FOR(type, value))
 
 struct vtm; /* defined by timev.h */
 
@@ -1266,6 +1274,8 @@ size_t rb_obj_memsize_of(VALUE);
 #define RB_OBJ_GC_FLAGS_MAX 5
 size_t rb_obj_gc_flags(VALUE, ID[], size_t);
 void rb_gc_mark_values(long n, const VALUE *values);
+
+VALUE rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0);
 
 RUBY_SYMBOL_EXPORT_END
 
