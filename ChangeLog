@@ -221,7 +221,7 @@ Mon Mar  9 21:42:10 2015  Koichi Sasada  <ko1@atdot.net>
 
 Mon Mar  9 16:34:36 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* ext/stringio/stringio.c (strio_close): don't raise on dobule
+	* ext/stringio/stringio.c (strio_close): don't raise on double
 	  close for consistent to IO#close.
 
 Mon Mar 09 06:44:48 2015  Koichi Sasada  <ko1@atdot.net>
@@ -309,7 +309,7 @@ Fri Mar  6 20:18:38 2015  Koichi Sasada  <ko1@atdot.net>
 	  After this patch, CREF (or NULL == Qfalse for not iseq methods)
 	  is stored at the method invocation.
 
-	  When SVAR is requierd, then put NODE_IF onto SVAR location,
+	  When SVAR is required, then put NODE_IF onto SVAR location,
 	  and NDOE_IF::nd_reserved points CREF itself.
 
 	* vm.c (vm_cref_new, vm_cref_dump, vm_cref_new_toplevel): added.
