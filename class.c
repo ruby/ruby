@@ -163,21 +163,22 @@ static VALUE
 class_alloc(VALUE flags, VALUE klass)
 {
     NEWOBJ_OF(obj, struct RClass, klass, (flags & T_MASK) | FL_PROMOTED1 /* start from age == 2 */ | (RGENGC_WB_PROTECTED_CLASS ? FL_WB_PROTECTED : 0));
-    obj->ptr = ALLOC(rb_classext_t);
-    RCLASS_IV_TBL(obj) = 0;
-    RCLASS_CONST_TBL(obj) = 0;
-    RCLASS_M_TBL(obj) = 0;
-    RCLASS_SET_SUPER((VALUE)obj, 0);
-    RCLASS_ORIGIN(obj) = (VALUE)obj;
-    RCLASS_IV_INDEX_TBL(obj) = 0;
-
-    RCLASS_EXT(obj)->subclasses = NULL;
-    RCLASS_EXT(obj)->parent_subclasses = NULL;
-    RCLASS_EXT(obj)->module_subclasses = NULL;
+    obj->ptr = ZALLOC(rb_classext_t);
+    /* ZALLOC
+      RCLASS_IV_TBL(obj) = 0;
+      RCLASS_CONST_TBL(obj) = 0;
+      RCLASS_M_TBL(obj) = 0;
+      RCLASS_IV_INDEX_TBL(obj) = 0;
+      RCLASS_SET_SUPER((VALUE)obj, 0);
+      RCLASS_EXT(obj)->subclasses = NULL;
+      RCLASS_EXT(obj)->parent_subclasses = NULL;
+      RCLASS_EXT(obj)->module_subclasses = NULL;
+     */
+    RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
     RCLASS_SERIAL(obj) = rb_next_class_serial();
-
     RCLASS_REFINED_CLASS(obj) = Qnil;
     RCLASS_EXT(obj)->allocator = 0;
+
     return (VALUE)obj;
 }
 
@@ -939,7 +940,7 @@ rb_prepend_module(VALUE klass, VALUE module)
 	OBJ_WB_UNPROTECT(origin); /* TODO: conservative shading. Need more survey. */
 	RCLASS_SET_SUPER(origin, RCLASS_SUPER(klass));
 	RCLASS_SET_SUPER(klass, origin);
-	RB_OBJ_WRITE(klass, &RCLASS_ORIGIN(klass), origin);
+	RCLASS_SET_ORIGIN(klass, origin);
 	RCLASS_M_TBL(origin) = RCLASS_M_TBL(klass);
 	RCLASS_M_TBL_INIT(klass);
 	st_foreach(RCLASS_M_TBL(origin), move_refined_method,

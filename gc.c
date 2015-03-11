@@ -1882,7 +1882,6 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_MODULE:
       case T_CLASS:
 	rb_free_m_tbl(RCLASS_M_TBL(obj));
-
 	if (RCLASS_IV_TBL(obj)) {
 	    st_free_table(RCLASS_IV_TBL(obj));
 	}
@@ -1974,7 +1973,10 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_COMPLEX:
 	break;
       case T_ICLASS:
-	/* iClass shares table with the module */
+	/* Basically , T_ICLASS shares table with the module */
+	if (FL_TEST(obj, RICLASS_IS_ORIGIN)) {
+	    rb_free_m_tbl(RCLASS_M_TBL(obj));
+	}
 	if (RCLASS_EXT(obj)->subclasses) {
 	    rb_class_detach_subclasses(obj);
 	    RCLASS_EXT(obj)->subclasses = NULL;
@@ -2874,6 +2876,13 @@ obj_memsize_of(VALUE obj, int use_all_types)
 	    size += sizeof(rb_classext_t);
 	}
 	break;
+      case T_ICLASS:
+	if (FL_TEST(obj, RICLASS_IS_ORIGIN)) {
+	    if (RCLASS_M_TBL(obj)) {
+		size += st_memsize(RCLASS_M_TBL(obj));
+	    }
+	}
+	break;
       case T_STRING:
 	size += rb_str_memsize(obj);
 	break;
@@ -2908,9 +2917,6 @@ obj_memsize_of(VALUE obj, int use_all_types)
 	break;
       case T_RATIONAL:
       case T_COMPLEX:
-	break;
-      case T_ICLASS:
-	/* iClass shares table with the module */
 	break;
 
       case T_FLOAT:
@@ -4135,12 +4141,18 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
       case T_MODULE:
-	if (!RCLASS_EXT(obj)) break;
-	mark_m_tbl(objspace, RCLASS_M_TBL(RCLASS_ORIGIN(obj)));
-      case T_ICLASS:
+	mark_m_tbl(objspace, RCLASS_M_TBL(obj));
 	if (!RCLASS_EXT(obj)) break;
 	mark_tbl(objspace, RCLASS_IV_TBL(obj));
 	mark_const_tbl(objspace, RCLASS_CONST_TBL(obj));
+	gc_mark(objspace, RCLASS_SUPER((VALUE)obj));
+	break;
+
+      case T_ICLASS:
+	if (FL_TEST(obj, RICLASS_IS_ORIGIN)) {
+	    mark_m_tbl(objspace, RCLASS_M_TBL(obj));
+	}
+	if (!RCLASS_EXT(obj)) break;
 	gc_mark(objspace, RCLASS_SUPER((VALUE)obj));
 	break;
 

@@ -1,3 +1,34 @@
+Wed Mar 11 17:03:20 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: fix memory leak by prepend method.
+
+	  It is easy to reproduce with such script:
+
+	    module M; def bar; end; end
+	    loop{
+	      Class.new do
+	        def foo; end
+	        prepend M
+	      end
+	    }
+
+	* gc.c (obj_free): free T_ICLASS::m_tbl if it is created by prepend.
+	  To recognize it, check RICLASS_IS_ORIGIN flag.
+
+	* gc.c (gc_mark_children): T_ICLASS objects only need to mark
+	  T_ICLASS::m_tbl if RICLASS_IS_ORIGIN is set.
+
+	* gc.c (obj_memsize_of): count T_ICLASS if RICLASS_IS_ORIGIN is set.
+
+	* internal.h (RCLASS_SET_ORIGIN): add to set RCLASS_SET_ORIGIN.
+
+	  TODO: The word `origin' seems not good name. We need to invent
+	  another good name.
+
+	* class.c: use RCLASS_SET_ORIGIN().
+
+	* class.c (class_alloc): zero clear rb_classext_t.
+
 Wed Mar 11 13:28:49 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: check also procstat_getvmmap, which is not
