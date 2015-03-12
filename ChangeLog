@@ -1,3 +1,12 @@
+Thu Mar 12 10:53:06 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* internal.h, node.h: move a definition of `struct rb_global_entry'
+	  and related functions from node.h to internal.h.
+
+	* variable.c: remove unused include pragma.
+
+	* common.mk: remove unused dependency.
+
 Thu Mar 12 10:32:39 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk: remove unused dependency.

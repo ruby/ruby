@@ -14,7 +14,6 @@
 #include "internal.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
-#include "node.h"
 #include "constant.h"
 #include "id.h"
 

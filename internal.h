@@ -615,6 +615,18 @@ struct MEMO {
 #define NEW_MEMO_FOR(type, value) \
   ((value) = rb_ary_tmp_new_fill(type_roomof(type, VALUE)), MEMO_FOR(type, value))
 
+/* global variable */
+
+struct rb_global_entry {
+    struct rb_global_variable *var;
+    ID id;
+};
+
+struct rb_global_entry *rb_global_entry(ID);
+VALUE rb_gvar_get(struct rb_global_entry *);
+VALUE rb_gvar_set(struct rb_global_entry *, VALUE);
+VALUE rb_gvar_defined(struct rb_global_entry *);
+
 struct vtm; /* defined by timev.h */
 
 /* array.c */

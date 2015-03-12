@@ -481,15 +481,6 @@ void rb_gc_free_node(VALUE obj);
 size_t rb_node_memsize(VALUE obj);
 VALUE rb_gc_mark_node(NODE *obj);
 
-struct rb_global_entry {
-    struct rb_global_variable *var;
-    ID id;
-};
-
-struct rb_global_entry *rb_global_entry(ID);
-VALUE rb_gvar_get(struct rb_global_entry *);
-VALUE rb_gvar_set(struct rb_global_entry *, VALUE);
-VALUE rb_gvar_defined(struct rb_global_entry *);
 const struct kwtable *rb_reserved_word(const char *, unsigned int);
 
 struct rb_args_info {
