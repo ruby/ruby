@@ -13,6 +13,8 @@ class TestSocketNonblock < Test::Unit::TestCase
     serv.bind(Socket.sockaddr_in(0, "127.0.0.1"))
     serv.listen(5)
     assert_raise(IO::WaitReadable) { serv.accept_nonblock }
+    assert_equal :wait_readable, serv.accept_nonblock(exception: false)
+    assert_raise(IO::WaitReadable) { serv.accept_nonblock(exception: true) }
     c = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
     c.connect(serv.getsockname)
     begin

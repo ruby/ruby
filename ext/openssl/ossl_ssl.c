@@ -1271,7 +1271,8 @@ read_would_block(int nonblock)
 }
 
 static VALUE
-ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, int nonblock)
+ossl_start_ssl(VALUE self, int (*func)(), const char *funcname,
+		int nonblock, int no_exception)
 {
     SSL *ssl;
     rb_io_t *fptr;
@@ -1295,10 +1296,12 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, int nonblock)
 
 	switch((ret2 = ssl_get_error(ssl, ret))){
 	case SSL_ERROR_WANT_WRITE:
+            if (no_exception) { return ID2SYM(rb_intern("wait_writable")); }
             write_would_block(nonblock);
             rb_io_wait_writable(FPTR_TO_FD(fptr));
             continue;
 	case SSL_ERROR_WANT_READ:
+            if (no_exception) { return ID2SYM(rb_intern("wait_readable")); }
             read_would_block(nonblock);
             rb_io_wait_readable(FPTR_TO_FD(fptr));
             continue;
@@ -1324,7 +1327,7 @@ static VALUE
 ossl_ssl_connect(VALUE self)
 {
     ossl_ssl_setup(self);
-    return ossl_start_ssl(self, SSL_connect, "SSL_connect", 0);
+    return ossl_start_ssl(self, SSL_connect, "SSL_connect", 0, 0);
 }
 
 /*
@@ -1349,7 +1352,7 @@ static VALUE
 ossl_ssl_connect_nonblock(VALUE self)
 {
     ossl_ssl_setup(self);
-    return ossl_start_ssl(self, SSL_connect, "SSL_connect", 1);
+    return ossl_start_ssl(self, SSL_connect, "SSL_connect", 1, 0);
 }
 
 /*
@@ -1363,12 +1366,12 @@ static VALUE
 ossl_ssl_accept(VALUE self)
 {
     ossl_ssl_setup(self);
-    return ossl_start_ssl(self, SSL_accept, "SSL_accept", 0);
+    return ossl_start_ssl(self, SSL_accept, "SSL_accept", 0, 0);
 }
 
 /*
  * call-seq:
- *    ssl.accept_nonblock => self
+ *    ssl.accept_nonblock([options]) => self
  *
  * Initiates the SSL/TLS handshake as a server in non-blocking manner.
  *
@@ -1383,12 +1386,24 @@ ossl_ssl_accept(VALUE self)
  *     retry
  *   end
  *
+ * By specifying `exception: false`, the options hash allows you to indicate
+ * that accept_nonblock should not raise an IO::WaitReadable or
+ * IO::WaitWritable exception, but return the symbol :wait_readable or
+ * :wait_writable instead.
  */
 static VALUE
-ossl_ssl_accept_nonblock(VALUE self)
+ossl_ssl_accept_nonblock(int argc, VALUE *argv, VALUE self)
 {
+    int no_exception = 0;
+    VALUE opts = Qnil;
+
+    rb_scan_args(argc, argv, "0:", &opts);
+
+    if (!NIL_P(opts) && Qfalse == rb_hash_aref(opts, sym_exception))
+	no_exception = 1;
+
     ossl_ssl_setup(self);
-    return ossl_start_ssl(self, SSL_accept, "SSL_accept", 1);
+    return ossl_start_ssl(self, SSL_accept, "SSL_accept", 1, no_exception);
 }
 
 static VALUE
@@ -2220,7 +2235,7 @@ Init_ossl_ssl(void)
     rb_define_method(cSSLSocket, "connect",    ossl_ssl_connect, 0);
     rb_define_method(cSSLSocket, "connect_nonblock",    ossl_ssl_connect_nonblock, 0);
     rb_define_method(cSSLSocket, "accept",     ossl_ssl_accept, 0);
-    rb_define_method(cSSLSocket, "accept_nonblock",     ossl_ssl_accept_nonblock, 0);
+    rb_define_method(cSSLSocket, "accept_nonblock", ossl_ssl_accept_nonblock, -1);
     rb_define_method(cSSLSocket, "sysread",    ossl_ssl_read, -1);
     rb_define_private_method(cSSLSocket, "sysread_nonblock",    ossl_ssl_read_nonblock, -1);
     rb_define_method(cSSLSocket, "syswrite",   ossl_ssl_write, 1);

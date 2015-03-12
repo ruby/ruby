@@ -30,6 +30,14 @@ with all sufficient information, see the ChangeLog file.
 
 === Stdlib updates (outstanding ones only)
 
+* Socket
+  * Socket#accept_nonblock supports `exception :false` to return symbols
+    Ditto for TCPServer#accept_nonblock, UNIXServer#accept_nonblock
+
+* OpenSSL
+  * OpenSSL::SSL::SSLSocket#accept_nonblock supports `exception: false`
+    to return symbols
+
 === Stdlib compatibility issues (excluding feature bug fixes)
 
 * lib/webrick/utils.rb

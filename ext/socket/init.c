@@ -29,6 +29,7 @@ VALUE rb_cSOCKSSocket;
 #endif
 
 int rsock_do_not_reverse_lookup = 1;
+static VALUE sym_exception, sym_wait_readable;
 
 void
 rsock_raise_socket_error(const char *reason, int error)
@@ -505,11 +506,18 @@ cloexec_accept(int socket, struct sockaddr *address, socklen_t *address_len)
     return ret;
 }
 
-
 VALUE
-rsock_s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, socklen_t *len)
+rsock_s_accept_nonblock(int argc, VALUE *argv, VALUE klass, rb_io_t *fptr,
+			struct sockaddr *sockaddr, socklen_t *len)
 {
     int fd2;
+    int ex = 1;
+    VALUE opts = Qnil;
+
+    rb_scan_args(argc, argv, "0:", &opts);
+
+    if (!NIL_P(opts) && Qfalse == rb_hash_aref(opts, sym_exception))
+	ex = 0;
 
     rb_secure(3);
     rb_io_set_nonblock(fptr);
@@ -524,6 +532,8 @@ rsock_s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, s
 #if defined EPROTO
 	  case EPROTO:
 #endif
+            if (!ex)
+		return sym_wait_readable;
             rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "accept(2) would block");
 	}
         rb_sys_fail("accept(2)");
@@ -612,4 +622,8 @@ rsock_init_socket_init(void)
     rsock_init_addrinfo();
     rsock_init_sockifaddr();
     rsock_init_socket_constants();
+
+#undef rb_intern
+    sym_exception = ID2SYM(rb_intern("exception"));
+    sym_wait_readable = ID2SYM(rb_intern("wait_readable"));
 }

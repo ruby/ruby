@@ -1,3 +1,29 @@
+Thu Mar 12 05:54:27 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/init.c (rsock_s_accept_nonblock):
+	  support exception: false
+	  [ruby-core:66385] [Feature #10532]
+	* ext/socket/init.c (rsock_init_socket_init): define new symbols
+	* ext/socket/rubysocket.h: adjust prototype
+	* ext/socket/socket.c (sock_accept_nonblock): support exception: false
+	* ext/openssl/ossl_ssl.c (ossl_ssl_accept_nonblock): ditto
+	* ext/socket/socket.c (Init_socket): adjust accept_nonblock definition
+	* ext/openssl/ossl_ssl.c (Init_ossl_ssl): ditto
+	* ext/socket/tcpserver.c (rsock_init_tcpserver): ditto
+	* ext/socket/unixserver.c (rsock_init_unixserver): ditto
+	* ext/socket/tcpserver.c (tcp_accept_nonblock): adjust
+	  rsock_s_accept_nonblock call
+	* ext/socket/unixserver.c (unix_accept_nonblock): ditto
+	* ext/openssl/ossl_ssl.c (ossl_start_ssl): support no_exception
+	* ext/openssl/ossl_ssl.c (ossl_ssl_connect): adjust ossl_start_ssl call
+	* ext/openssl/ossl_ssl.c (ossl_ssl_connect_nonblock): ditto
+	* ext/openssl/ossl_ssl.c (ossl_ssl_accept): ditto
+	* test/socket/test_nonblock.rb (test_accept_nonblock): test for
+	  "exception :false"
+	* test/socket/test_tcp.rb (test_accept_nonblock): new test
+	* test/socket/test_unix.rb (test_accept_nonblock): ditto
+	* test/openssl/test_pair.rb (test_accept_nonblock_no_exception): ditto
+
 Thu Mar 12 10:53:06 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* internal.h, node.h: move a definition of `struct rb_global_entry'

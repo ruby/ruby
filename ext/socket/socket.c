@@ -894,7 +894,7 @@ sock_accept(VALUE sock)
 
 /*
  * call-seq:
- *   socket.accept_nonblock => [client_socket, client_addrinfo]
+ *   socket.accept_nonblock([options]) => [client_socket, client_addrinfo]
  *
  * Accepts an incoming connection using accept(2) after
  * O_NONBLOCK is set for the underlying file descriptor.
@@ -940,19 +940,27 @@ sock_accept(VALUE sock)
  * it is extended by IO::WaitReadable.
  * So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
  *
+ * By specifying `exception: false`, the options hash allows you to indicate
+ * that accept_nonblock should not raise an IO::WaitReadable exception, but
+ * return the symbol :wait_readable instead.
+ *
  * === See
  * * Socket#accept
  */
 static VALUE
-sock_accept_nonblock(VALUE sock)
+sock_accept_nonblock(int argc, VALUE *argv, VALUE sock)
 {
     rb_io_t *fptr;
     VALUE sock2;
     union_sockaddr buf;
+    struct sockaddr *addr = &buf.addr;
     socklen_t len = (socklen_t)sizeof buf;
 
     GetOpenFile(sock, fptr);
-    sock2 = rsock_s_accept_nonblock(rb_cSocket, fptr, &buf.addr, &len);
+    sock2 = rsock_s_accept_nonblock(argc, argv, rb_cSocket, fptr, addr, &len);
+
+    if (SYMBOL_P(sock2)) /* :wait_readable */
+	return sock2;
     return rb_assoc_new(sock2, rsock_io_socket_addrinfo(sock2, &buf.addr, len));
 }
 
@@ -2154,7 +2162,7 @@ Init_socket(void)
     rb_define_method(rb_cSocket, "bind", sock_bind, 1);
     rb_define_method(rb_cSocket, "listen", rsock_sock_listen, 1);
     rb_define_method(rb_cSocket, "accept", sock_accept, 0);
-    rb_define_method(rb_cSocket, "accept_nonblock", sock_accept_nonblock, 0);
+    rb_define_method(rb_cSocket, "accept_nonblock", sock_accept_nonblock, -1);
     rb_define_method(rb_cSocket, "sysaccept", sock_sysaccept, 0);
 
     rb_define_method(rb_cSocket, "recvfrom", sock_recvfrom, -1);

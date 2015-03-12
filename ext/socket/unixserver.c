@@ -59,7 +59,7 @@ unix_accept(VALUE sock)
 
 /*
  * call-seq:
- *   unixserver.accept_nonblock => unixsocket
+ *   unixserver.accept_nonblock([options]) => unixsocket
  *
  * Accepts an incoming connection using accept(2) after
  * O_NONBLOCK is set for the underlying file descriptor.
@@ -86,12 +86,16 @@ unix_accept(VALUE sock)
  * it is extended by IO::WaitReadable.
  * So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
  *
+ * By specifying `exception: false`, the options hash allows you to indicate
+ * that accept_nonblock should not raise an IO::WaitReadable exception, but
+ * return the symbol :wait_readable instead.
+ *
  * === See
  * * UNIXServer#accept
  * * Socket#accept
  */
 static VALUE
-unix_accept_nonblock(VALUE sock)
+unix_accept_nonblock(int argc, VALUE *argv, VALUE sock)
 {
     rb_io_t *fptr;
     struct sockaddr_un from;
@@ -99,7 +103,7 @@ unix_accept_nonblock(VALUE sock)
 
     GetOpenFile(sock, fptr);
     fromlen = (socklen_t)sizeof(from);
-    return rsock_s_accept_nonblock(rb_cUNIXSocket, fptr,
+    return rsock_s_accept_nonblock(argc, argv, rb_cUNIXSocket, fptr,
 			           (struct sockaddr *)&from, &fromlen);
 }
 
@@ -148,7 +152,7 @@ rsock_init_unixserver(void)
     rb_cUNIXServer = rb_define_class("UNIXServer", rb_cUNIXSocket);
     rb_define_method(rb_cUNIXServer, "initialize", unix_svr_init, 1);
     rb_define_method(rb_cUNIXServer, "accept", unix_accept, 0);
-    rb_define_method(rb_cUNIXServer, "accept_nonblock", unix_accept_nonblock, 0);
+    rb_define_method(rb_cUNIXServer, "accept_nonblock", unix_accept_nonblock, -1);
     rb_define_method(rb_cUNIXServer, "sysaccept", unix_sysaccept, 0);
     rb_define_method(rb_cUNIXServer, "listen", rsock_sock_listen, 1); /* in socket.c */
 #endif
