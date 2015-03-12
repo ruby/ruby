@@ -1,3 +1,7 @@
+Fri Mar 13 07:01:38 2015  Eric Wong  <e@80x24.org>
+
+	* ext/openssl/ossl_ssl.c: predefine wait_*able symbols
+
 Thu Mar 12 22:59:53 2015  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/leakchecker.rb: Check environment variables.

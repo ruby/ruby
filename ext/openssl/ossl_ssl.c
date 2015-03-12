@@ -107,7 +107,7 @@ static const char *ossl_ssl_attrs[] = {
 
 ID ID_callback_state;
 
-static VALUE sym_exception;
+static VALUE sym_exception, sym_wait_readable, sym_wait_writable;
 
 /*
  * SSLContext class
@@ -1296,12 +1296,12 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname,
 
 	switch((ret2 = ssl_get_error(ssl, ret))){
 	case SSL_ERROR_WANT_WRITE:
-            if (no_exception) { return ID2SYM(rb_intern("wait_writable")); }
+            if (no_exception) { return sym_wait_writable; }
             write_would_block(nonblock);
             rb_io_wait_writable(FPTR_TO_FD(fptr));
             continue;
 	case SSL_ERROR_WANT_READ:
-            if (no_exception) { return ID2SYM(rb_intern("wait_readable")); }
+            if (no_exception) { return sym_wait_readable; }
             read_would_block(nonblock);
             rb_io_wait_readable(FPTR_TO_FD(fptr));
             continue;
@@ -1444,12 +1444,12 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 		if (no_exception) { return Qnil; }
 		rb_eof_error();
 	    case SSL_ERROR_WANT_WRITE:
-		if (no_exception) { return ID2SYM(rb_intern("wait_writable")); }
+		if (no_exception) { return sym_wait_writable; }
                 write_would_block(nonblock);
                 rb_io_wait_writable(FPTR_TO_FD(fptr));
                 continue;
 	    case SSL_ERROR_WANT_READ:
-		if (no_exception) { return ID2SYM(rb_intern("wait_readable")); }
+		if (no_exception) { return sym_wait_readable; }
                 read_would_block(nonblock);
                 rb_io_wait_readable(FPTR_TO_FD(fptr));
 		continue;
@@ -1532,12 +1532,12 @@ ossl_ssl_write_internal(VALUE self, VALUE str, int nonblock, int no_exception)
 	    case SSL_ERROR_NONE:
 		goto end;
 	    case SSL_ERROR_WANT_WRITE:
-		if (no_exception) { return ID2SYM(rb_intern("wait_writable")); }
+		if (no_exception) { return sym_wait_writable; }
                 write_would_block(nonblock);
                 rb_io_wait_writable(FPTR_TO_FD(fptr));
                 continue;
 	    case SSL_ERROR_WANT_READ:
-		if (no_exception) { return ID2SYM(rb_intern("wait_readable")); }
+		if (no_exception) { return sym_wait_readable; }
                 read_would_block(nonblock);
                 rb_io_wait_readable(FPTR_TO_FD(fptr));
                 continue;
@@ -2313,5 +2313,8 @@ Init_ossl_ssl(void)
     ossl_ssl_def_const(OP_NETSCAPE_CA_DN_BUG);
     ossl_ssl_def_const(OP_NETSCAPE_DEMO_CIPHER_CHANGE_BUG);
 
+#undef rb_intern
     sym_exception = ID2SYM(rb_intern("exception"));
+    sym_wait_readable = ID2SYM(rb_intern("wait_readable"));
+    sym_wait_writable = ID2SYM(rb_intern("wait_writable"));
 }
