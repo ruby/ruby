@@ -157,7 +157,7 @@ class Set
     end
   end
 
-  # Converts the set to an array.  The order of elements is uncertain.
+  # Converts the set to an array.  The order of elements is the elements are inserted.
   def to_a
     @hash.keys
   end
