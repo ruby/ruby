@@ -516,7 +516,7 @@ rsock_s_accept_nonblock(int argc, VALUE *argv, VALUE klass, rb_io_t *fptr,
 
     rb_scan_args(argc, argv, "0:", &opts);
 
-    if (!NIL_P(opts) && Qfalse == rb_hash_aref(opts, sym_exception))
+    if (!NIL_P(opts) && Qfalse == rb_hash_lookup2(opts, sym_exception, Qundef))
 	ex = 0;
 
     rb_secure(3);

@@ -1,3 +1,12 @@
+Fri Mar 13 07:02:20 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/init.c (rsock_s_accept_nonblock): use rb_hash_lookup2
+	* ext/openssl/ossl_ssl.c (get_no_exception): new function
+	  (ossl_ssl_accept_nonblock): use get_no_exception
+	  (ossl_ssl_read_internal): ditto
+	  (ossl_ssl_write_nonblock): ditto
+	  [ruby-core:68511]
+
 Fri Mar 13 07:01:38 2015  Eric Wong  <e@80x24.org>
 
 	* ext/openssl/ossl_ssl.c: predefine wait_*able symbols

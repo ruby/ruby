@@ -1369,6 +1369,14 @@ ossl_ssl_accept(VALUE self)
     return ossl_start_ssl(self, SSL_accept, "SSL_accept", 0, 0);
 }
 
+static int
+get_no_exception(VALUE opts)
+{
+    if (!NIL_P(opts) && Qfalse == rb_hash_lookup2(opts, sym_exception, Qundef))
+	return 1;
+    return 0;
+}
+
 /*
  * call-seq:
  *    ssl.accept_nonblock([options]) => self
@@ -1394,13 +1402,11 @@ ossl_ssl_accept(VALUE self)
 static VALUE
 ossl_ssl_accept_nonblock(int argc, VALUE *argv, VALUE self)
 {
-    int no_exception = 0;
+    int no_exception;
     VALUE opts = Qnil;
 
     rb_scan_args(argc, argv, "0:", &opts);
-
-    if (!NIL_P(opts) && Qfalse == rb_hash_aref(opts, sym_exception))
-	no_exception = 1;
+    no_exception = get_no_exception(opts);
 
     ossl_ssl_setup(self);
     return ossl_start_ssl(self, SSL_accept, "SSL_accept", 1, no_exception);
@@ -1411,15 +1417,13 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 {
     SSL *ssl;
     int ilen, nread = 0;
-    int no_exception = 0;
+    int no_exception;
     VALUE len, str;
     rb_io_t *fptr;
     VALUE opts = Qnil;
 
     rb_scan_args(argc, argv, "11:", &len, &str, &opts);
-
-    if (!NIL_P(opts) && Qfalse == rb_hash_aref(opts, sym_exception))
-	no_exception = 1;
+    no_exception = get_no_exception(opts);
 
     ilen = NUM2INT(len);
     if(NIL_P(str)) str = rb_str_new(0, ilen);
@@ -1582,12 +1586,10 @@ ossl_ssl_write_nonblock(int argc, VALUE *argv, VALUE self)
 {
     VALUE str;
     VALUE opts = Qnil;
-    int no_exception = 0;
+    int no_exception;
 
     rb_scan_args(argc, argv, "1:", &str, &opts);
-
-    if (!NIL_P(opts) && Qfalse == rb_hash_aref(opts, sym_exception))
-	no_exception = 1;
+    no_exception = get_no_exception(opts);
 
     return ossl_ssl_write_internal(self, str, 1, no_exception);
 }
