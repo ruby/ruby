@@ -221,6 +221,9 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     @orig_gem_home   = ENV['GEM_HOME']
     @orig_gem_path   = ENV['GEM_PATH']
     @orig_gem_vendor = ENV['GEM_VENDOR']
+    @orig_gem_spec_cache = ENV['GEM_SPEC_CACHE']
+    @orig_rubygems_gemdeps = ENV['RUBYGEMS_GEMDEPS']
+    @orig_rubygems_host = ENV['RUBYGEMS_HOST']
 
     ENV['GEM_VENDOR'] = nil
 
@@ -353,6 +356,9 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     ENV['GEM_HOME']   = @orig_gem_home
     ENV['GEM_PATH']   = @orig_gem_path
     ENV['GEM_VENDOR'] = @orig_gem_vendor
+    ENV['GEM_SPEC_CACHE'] = @orig_gem_spec_cache
+    ENV['RUBYGEMS_GEMDEPS'] = @orig_rubygems_gemdeps
+    ENV['RUBYGEMS_HOST'] = @orig_rubygems_host
 
     Gem.ruby = @orig_ruby if @orig_ruby
 

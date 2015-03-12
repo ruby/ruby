@@ -1,21 +1,25 @@
 require 'test/unit'
 require 'cgi'
 require 'stringio'
+require_relative 'update_env'
 
 
 class CGIUtilTest < Test::Unit::TestCase
   include CGI::Util
+  include UpdateEnv
 
   def setup
-    ENV['REQUEST_METHOD'] = 'GET'
+    @environ = {}
+    update_env(
+      'REQUEST_METHOD' => 'GET',
+      'SCRIPT_NAME' => nil,
+    )
     @str1="&<>\" \xE3\x82\x86\xE3\x82\x93\xE3\x82\x86\xE3\x82\x93"
     @str1.force_encoding("UTF-8") if defined?(::Encoding)
   end
 
   def teardown
-    %W[REQUEST_METHOD SCRIPT_NAME].each do |name|
-      ENV.delete(name)
-    end
+    ENV.update(@environ)
   end
 
 

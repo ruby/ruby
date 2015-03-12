@@ -7,6 +7,7 @@ class TestRakeApplicationOptions < Rake::TestCase
   def setup
     super
 
+    @testkey = ENV['TESTKEY']
     clear_argv
     Rake::FileUtilsExt.verbose_flag = false
     Rake::FileUtilsExt.nowrite_flag = false
@@ -14,6 +15,7 @@ class TestRakeApplicationOptions < Rake::TestCase
   end
 
   def teardown
+    ENV['TESTKEY'] = @testkey
     clear_argv
     Rake::FileUtilsExt.verbose_flag = false
     Rake::FileUtilsExt.nowrite_flag = false

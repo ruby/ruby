@@ -16,7 +16,7 @@ class TestGemRequest < Gem::TestCase
   end
 
   def setup
-    @proxies = %w[http_proxy HTTP_PROXY http_proxy_user HTTP_PROXY_USER http_proxy_pass HTTP_PROXY_PASS no_proxy NO_PROXY]
+    @proxies = %w[http_proxy https_proxy HTTP_PROXY http_proxy_user HTTP_PROXY_USER http_proxy_pass HTTP_PROXY_PASS no_proxy NO_PROXY]
     @old_proxies = @proxies.map {|k| ENV[k] }
     @proxies.each {|k| ENV[k] = nil }
 

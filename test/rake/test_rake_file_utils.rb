@@ -3,10 +3,15 @@ require 'fileutils'
 require 'stringio'
 
 class TestRakeFileUtils < Rake::TestCase
+  def setup
+    super
+    @rake_test_sh = ENV['RAKE_TEST_SH']
+  end
 
   def teardown
     FileUtils::LN_SUPPORTED[0] = true
     RakeFileUtils.verbose_flag = Rake::FileUtilsExt::DEFAULT
+    ENV['RAKE_TEST_SH'] = @rake_test_sh
 
     super
   end

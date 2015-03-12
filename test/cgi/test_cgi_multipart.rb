@@ -2,6 +2,7 @@ require 'test/unit'
 require 'cgi'
 require 'tempfile'
 require 'stringio'
+require_relative 'update_env'
 
 
 ##
@@ -104,16 +105,21 @@ end
 
 
 class CGIMultipartTest < Test::Unit::TestCase
+  include UpdateEnv
+
 
   def setup
-    ENV['REQUEST_METHOD'] = 'POST'
+    @environ = {}
+    update_env(
+      'REQUEST_METHOD' => 'POST',
+      'CONTENT_TYPE' => nil,
+      'CONTENT_LENGTH' => nil,
+    )
     @tempfiles = []
   end
 
   def teardown
-    %w[ REQUEST_METHOD CONTENT_TYPE CONTENT_LENGTH REQUEST_METHOD ].each do |name|
-      ENV.delete(name)
-    end
+    ENV.update(@environ)
     $stdin.close() if $stdin.is_a?(Tempfile)
     $stdin = STDIN
     @tempfiles.each {|t|
