@@ -917,9 +917,9 @@ rb_attr(VALUE klass, ID id, int read, int write, int ex)
     else {
 	if (SCOPE_TEST(NOEX_PRIVATE)) {
 	    noex = NOEX_PRIVATE;
-	    rb_warning((SCOPE_CHECK(NOEX_MODFUNC)) ?
-		       "attribute accessor as module_function" :
-		       "private attribute?");
+	    if (SCOPE_CHECK(NOEX_MODFUNC)) {
+		rb_warning("attribute accessor as module_function");
+	    }
 	}
 	else if (SCOPE_TEST(NOEX_PROTECTED)) {
 	    noex = NOEX_PROTECTED;
