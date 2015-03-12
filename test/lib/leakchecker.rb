@@ -3,13 +3,15 @@ class LeakChecker
     @fd_info = find_fds
     @tempfile_info = find_tempfiles
     @thread_info = find_threads
+    @env_info = find_env
   end
 
   def check(test_name)
     leaked1 = check_fd_leak(test_name)
     leaked2 = check_thread_leak(test_name)
     leaked3 = check_tempfile_leak(test_name)
-    GC.start if leaked1 || leaked2 || leaked3
+    leaked4 = check_env(test_name)
+    GC.start if leaked1 || leaked2 || leaked3 || leaked4
   end
 
   def find_fds
@@ -159,6 +161,35 @@ class LeakChecker
     end
     @thread_info = live2
     return leaked
+  end
+
+  def find_env
+    ENV.to_h
+  end
+
+  def check_env(test_name)
+    old_env = @env_info
+    new_env = ENV.to_h
+    return false if old_env == new_env
+    (old_env.keys | new_env.keys).sort.each {|k|
+      if old_env.has_key?(k)
+        if new_env.has_key?(k)
+          if old_env[k] != new_env[k]
+            puts "Environment variable changed: #{test_name} : #{k.inspect} changed : #{old_env[k].inspect} -> #{new_env[k].inspect}"
+          end
+        else
+          puts "Environment variable changed: #{test_name} : #{k.inspect} deleted"
+        end
+      else
+        if new_env.has_key?(k)
+          puts "Environment variable changed: #{test_name} : #{k.inspect} added"
+        else
+          flunk "unreachable"
+        end
+      end
+    }
+    @env_info = new_env
+    return true
   end
 
   def puts(*a)

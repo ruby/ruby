@@ -1,3 +1,7 @@
+Thu Mar 12 22:59:53 2015  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/leakchecker.rb: Check environment variables.
+
 Thu Mar 12 05:54:27 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/init.c (rsock_s_accept_nonblock):
