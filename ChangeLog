@@ -63,7 +63,7 @@ Thu Mar 12 07:44:17 2015  Koichi Sasada  <ko1@atdot.net>
 
 	  Rename NEW_MEMO() to MEMO_NEW().
 
-	  Move MEMO_FOR and NEW_MEMO_FOF macros from node.h.
+	  Move MEMO_FOR and NEW_MEMO_FOR macros from node.h.
 
 	  Export a rb_imemo_new() function for ext/ripper.
 
@@ -123,7 +123,7 @@ Wed Mar 11 21:45:36 2015  Koichi Sasada  <ko1@atdot.net>
 
 	  Add THROW_DATA_NEW().
 
-	* internal.h: move defnition of `struct THROW_DATA'
+	* internal.h: move definition of `struct THROW_DATA'
 	  from vm_insnhelper.h to internal.h.
 
 	  Rename `THROW_DATA' to `vm_throw_data'.
@@ -144,7 +144,7 @@ Wed Mar 11 21:21:56 2015  Koichi Sasada  <ko1@atdot.net>
 	* vm_insnhelper.c: use T_IMEMO to create SVAR.
 
 	* internal.h, vm_insnhelper.h: move definition `struct SVAR'
-	  from vm_insnhelper.h to internal.h. And rename it to strcut vm_svar.
+	  from vm_insnhelper.h to internal.h. And rename it to struct vm_svar.
 
 	  new imemo_type imemo_svar is added.
 
