@@ -12,7 +12,7 @@ ifneq ($(filter -O0 -Od,$(optflags)),)
 override XCFLAGS := $(filter-out -D_FORTIFY_SOURCE=%,$(XCFLAGS))
 endif
 
-ifeq ($(if $(filter all main exts enc trans libencs libenc libtrans, \
+ifeq ($(if $(filter all main exts enc trans libencs libenc libtrans \
 		    program wprogram miniruby$(EXEEXT) mini,\
 	     $(MAKECMDGOALS)),,$(MAKECMDGOALS)),)
 -include showflags
