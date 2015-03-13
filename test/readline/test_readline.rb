@@ -9,8 +9,10 @@ end
 
 class TestReadline < Test::Unit::TestCase
   INPUTRC = "INPUTRC"
+  SAVED_ENV = %w[COLUMNS LINES]
 
   def setup
+    @saved_env = ENV.values_at(*SAVED_ENV)
     @inputrc, ENV[INPUTRC] = ENV[INPUTRC], IO::NULL
   end
 
@@ -24,6 +26,7 @@ class TestReadline < Test::Unit::TestCase
     end
     Readline.input = nil
     Readline.output = nil
+    SAVED_ENV.each_with_index {|k, i| ENV[k] = @saved_env[i] }
   end
 
   if !/EditLine/n.match(Readline::VERSION)

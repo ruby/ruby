@@ -1,3 +1,8 @@
+Fri Mar 13 12:29:07 2015  Tanaka Akira  <akr@fsij.org>
+
+	* test/readline/test_readline.rb: Restore environment variables:
+	  COLUMNS LINES
+
 Fri Mar 13 11:37:46 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/fiddle/extconf.rb: needs --enable-shared when linked to
