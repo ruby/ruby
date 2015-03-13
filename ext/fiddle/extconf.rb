@@ -72,7 +72,7 @@ begin
     --host=#{libffi.arch}
     --enable-builddir=#{RUBY_PLATFORM}
   ]
-  args << ($enable_shared && !$static ? '--enable-shared' : '--enable-static')
+  args << ($enable_shared || !$static ? '--enable-shared' : '--enable-static')
   args << libffi.opt if libffi.opt
   args.concat %W[
       CC=#{cc} CFLAGS=#{libffi.cflags}
