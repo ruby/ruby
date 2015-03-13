@@ -651,6 +651,13 @@ rb_io_check_closed(rb_io_t *fptr)
     }
 }
 
+static rb_io_t *
+rb_io_get_fptr(VALUE io)
+{
+    rb_io_t *fptr = RFILE(io)->fptr;
+    rb_io_check_initialized(fptr);
+    return fptr;
+}
 
 VALUE
 rb_io_get_io(VALUE io)
@@ -668,8 +675,7 @@ VALUE
 rb_io_get_write_io(VALUE io)
 {
     VALUE write_io;
-    rb_io_check_initialized(RFILE(io)->fptr);
-    write_io = RFILE(io)->fptr->tied_io_for_writing;
+    write_io = rb_io_get_fptr(io)->tied_io_for_writing;
     if (write_io) {
         return write_io;
     }
@@ -680,15 +686,15 @@ VALUE
 rb_io_set_write_io(VALUE io, VALUE w)
 {
     VALUE write_io;
-    rb_io_check_initialized(RFILE(io)->fptr);
+    rb_io_t *fptr = rb_io_get_fptr(io);
     if (!RTEST(w)) {
 	w = 0;
     }
     else {
 	GetWriteIO(w);
     }
-    write_io = RFILE(io)->fptr->tied_io_for_writing;
-    RFILE(io)->fptr->tied_io_for_writing = w;
+    write_io = fptr->tied_io_for_writing;
+    fptr->tied_io_for_writing = w;
     return write_io ? write_io : Qnil;
 }
 
@@ -4422,8 +4428,7 @@ rb_io_close(VALUE io)
 static VALUE
 rb_io_close_m(VALUE io)
 {
-    rb_io_t *fptr = RFILE(io)->fptr;
-    rb_io_check_initialized(fptr);
+    rb_io_t *fptr = rb_io_get_fptr(io);
     if (fptr->fd < 0) {
         return Qnil;
     }
@@ -4495,8 +4500,7 @@ rb_io_closed(VALUE io)
         }
     }
 
-    fptr = RFILE(io)->fptr;
-    rb_io_check_initialized(fptr);
+    fptr = rb_io_get_fptr(io);
     return 0 <= fptr->fd ? Qfalse : Qtrue;
 }
 
