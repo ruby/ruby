@@ -207,7 +207,7 @@ class TestStringIO < Test::Unit::TestCase
     f = StringIO.new("")
     f.close_read
     assert_raise(IOError) { f.read }
-    assert_raise(IOError) { f.close_read }
+    assert_nothing_raised(IOError) {f.close_read}
     f.close
 
     f = StringIO.new("", "w")
@@ -221,7 +221,7 @@ class TestStringIO < Test::Unit::TestCase
     f = StringIO.new("")
     f.close_write
     assert_raise(IOError) { f.write("foo") }
-    assert_raise(IOError) { f.close_write }
+    assert_nothing_raised(IOError) {f.close_write}
     f.close
 
     f = StringIO.new("", "r")

@@ -360,8 +360,8 @@ strio_close(VALUE self)
 static VALUE
 strio_close_read(VALUE self)
 {
-    StringIO(self);
-    if (!READABLE(self)) {
+    struct StringIO *ptr = StringIO(self);
+    if (!(ptr->flags & FMODE_READABLE)) {
 	rb_raise(rb_eIOError, "closing non-duplex IO for reading");
     }
     RBASIC(self)->flags &= ~STRIO_READABLE;
@@ -378,8 +378,8 @@ strio_close_read(VALUE self)
 static VALUE
 strio_close_write(VALUE self)
 {
-    StringIO(self);
-    if (!WRITABLE(self)) {
+    struct StringIO *ptr = StringIO(self);
+    if (!(ptr->flags & FMODE_WRITABLE)) {
 	rb_raise(rb_eIOError, "closing non-duplex IO for writing");
     }
     RBASIC(self)->flags &= ~STRIO_WRITABLE;
