@@ -54,16 +54,16 @@ class TestObjSpace < Test::Unit::TestCase
 
   def test_count_objects_size
     res = ObjectSpace.count_objects_size
-    assert_equal(false, res.empty?)
-    assert_equal(true, res[:TOTAL] > 0)
+    assert_not_empty(res)
+    assert_operator(res[:TOTAL], :>, 0)
     arg = {}
     ObjectSpace.count_objects_size(arg)
-    assert_equal(false, arg.empty?)
+    assert_not_empty(arg)
   end
 
   def test_count_nodes
     res = ObjectSpace.count_nodes
-    assert_equal(false, res.empty?)
+    assert_not_empty(res)
     arg = {}
     ObjectSpace.count_nodes(arg)
     assert_not_empty(arg)
@@ -73,10 +73,10 @@ class TestObjSpace < Test::Unit::TestCase
 
   def test_count_tdata_objects
     res = ObjectSpace.count_tdata_objects
-    assert_equal(false, res.empty?)
+    assert_not_empty(res)
     arg = {}
     ObjectSpace.count_tdata_objects(arg)
-    assert_equal(false, arg.empty?)
+    assert_not_empty(arg)
   end
 
   def test_reachable_objects_from
