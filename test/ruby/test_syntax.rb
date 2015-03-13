@@ -557,6 +557,12 @@ eom
     assert_syntax_error(src, /formal argument/, bug10545)
   end
 
+  def test_null_range_cmdarg
+    bug10957 = '[ruby-core:68477] [Bug #10957]'
+    assert_ruby_status(['-c', '-e', 'p ()..0'], "", bug10957)
+    assert_ruby_status(['-c', '-e', 'p ()...0'], "", bug10957)
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
