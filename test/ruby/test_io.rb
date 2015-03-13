@@ -1364,6 +1364,9 @@ class TestIO < Test::Unit::TestCase
       f.close_read
       f.write "foobarbaz"
       assert_raise(IOError) { f.read }
+      assert_nothing_raised(IOError) {f.close_read}
+      assert_nothing_raised(IOError) {f.close}
+      assert_nothing_raised(IOError) {f.close_read}
     end
   end
 
@@ -1371,6 +1374,9 @@ class TestIO < Test::Unit::TestCase
     with_pipe do |r, w|
       r.close_read
       assert_raise(Errno::EPIPE) { w.write "foobarbaz" }
+      assert_nothing_raised(IOError) {r.close_read}
+      assert_nothing_raised(IOError) {r.close}
+      assert_nothing_raised(IOError) {r.close_read}
     end
   end
 
@@ -1398,6 +1404,9 @@ class TestIO < Test::Unit::TestCase
       f.write "foobarbaz"
       f.close_write
       assert_equal("foobarbaz", f.read)
+      assert_nothing_raised(IOError) {f.close_write}
+      assert_nothing_raised(IOError) {f.close}
+      assert_nothing_raised(IOError) {f.close_write}
     end
   end
 
