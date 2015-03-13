@@ -7695,6 +7695,9 @@ rb_str_crypt(VALUE str, VALUE salt)
     }
 
     s = RSTRING_PTR(str);
+    if (!s || memchr(s, '\0', RSTRING_LEN(str)))
+        rb_raise(rb_eArgError, "string contains null character");
+
     if (!s) s = "";
     saltp = RSTRING_PTR(salt);
     if (!saltp[0] || !saltp[1]) goto short_salt;
