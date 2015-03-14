@@ -2003,6 +2003,8 @@ member_i(RB_BLOCK_CALL_FUNC_ARGLIST(iter, args))
  *
  *     IO.constants.include? :SEEK_SET          #=> true
  *     IO.constants.include? :SEEK_NO_FURTHER   #=> false
+ *     IO.constants.member? :SEEK_SET          #=> true
+ *     IO.constants.member? :SEEK_NO_FURTHER   #=> false
  *
  */
 

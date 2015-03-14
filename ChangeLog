@@ -1,3 +1,8 @@
+Sat Mar 14 18:07:23 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
+
+	* enum.c: [DOC] Fixes Enumerable#member? documentation
+	  [fix GH-756][ci skip] Patch by @shamanime
+
 Sat Mar 14 12:23:53 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (glob_helper): use d_type to reduce lstat system calls.
