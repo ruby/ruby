@@ -836,12 +836,10 @@ mingw_tgamma(const double d)
  *
  */
 
-#define NFACT_TABLE 23
-
 static VALUE
 math_gamma(VALUE obj, VALUE x)
 {
-    static const double fact_table[NFACT_TABLE] = {
+    static const double fact_table[] = {
         /* fact(0) */ 1.0,
         /* fact(1) */ 1.0,
         /* fact(2) */ 2.0,
@@ -869,6 +867,7 @@ math_gamma(VALUE obj, VALUE x)
          * impossible to represent exactly in IEEE 754 double which have
          * 53bit mantissa. */
     };
+    enum {NFACT_TABLE = numberof(fact_table)};
     double d;
     d = Get_Double(x);
     /* check for domain error */
