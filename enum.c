@@ -1995,14 +1995,13 @@ member_i(RB_BLOCK_CALL_FUNC_ARGLIST(iter, args))
 
 /*
  *  call-seq:
- *     enum.include?(obj)     -> true or false
  *     enum.member?(obj)      -> true or false
  *
  *  Returns <code>true</code> if any member of <i>enum</i> equals
  *  <i>obj</i>. Equality is tested using <code>==</code>.
  *
- *     IO.constants.include? :SEEK_SET          #=> true
- *     IO.constants.include? :SEEK_NO_FURTHER   #=> false
+ *     IO.constants.member? :SEEK_SET          #=> true
+ *     IO.constants.member? :SEEK_NO_FURTHER   #=> false
  *
  */
 
