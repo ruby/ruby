@@ -1,3 +1,13 @@
+Sat Mar 14 12:23:53 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (glob_helper): use d_type to reduce lstat system calls.
+
+	* win32/dir.h (struct direct): add d_type instead of d_isdir and
+	  d_isrep.  SYMLINKD is unreliable, since the target can be
+	  replaced after a link was created.
+
+	* win32/win32.c (readdir_internal): set d_type.
+
 Sat Mar 14 02:14:50 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (primary): empty parentheses at cmdarg can be null.

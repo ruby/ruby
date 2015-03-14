@@ -2139,8 +2139,13 @@ readdir_internal(DIR *dirp, BOOL (*conv)(const WCHAR *, const WCHAR *, struct di
 	//
 	// Attributes
 	//
-	dirp->dirstr.d_isdir = GetBit(dirp->bits, BitOfIsDir(dirp->loc));
-	dirp->dirstr.d_isrep = GetBit(dirp->bits, BitOfIsRep(dirp->loc));
+	/* ignore FILE_ATTRIBUTE_DIRECTORY as unreliable for reparse points */
+	if (GetBit(dirp->bits, BitOfIsRep(dirp->loc)))
+	    dirp->dirstr.d_type = DT_LNK;
+	else if (GetBit(dirp->bits, BitOfIsDir(dirp->loc)))
+	    dirp->dirstr.d_type = DT_DIR;
+	else
+	    dirp->dirstr.d_type = DT_REG;
 
 	//
 	// Now set up for the next call to readdir

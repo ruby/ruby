@@ -1731,13 +1731,13 @@ glob_helper(
 	    name = buf + pathlen + (dirsep != 0);
 	    if (recursive && dotfile < ((flags & FNM_DOTMATCH) ? 2 : 1)) {
 		/* RECURSIVE never match dot files unless FNM_DOTMATCH is set */
-#ifndef _WIN32
+#ifndef DT_DIR
 		if (do_lstat(buf, &st, flags, enc) == 0)
 		    new_isdir = S_ISDIR(st.st_mode) ? YES : S_ISLNK(st.st_mode) ? UNKNOWN : NO;
 		else
 		    new_isdir = NO;
 #else
-		new_isdir = dp->d_isdir ? (!dp->d_isrep ? YES : UNKNOWN) : NO;
+		new_isdir = dp->d_type == DT_DIR ? YES : dp->d_type == DT_LNK ? UNKNOWN : NO;
 #endif
 	    }
 
