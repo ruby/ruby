@@ -875,7 +875,7 @@ math_gamma(VALUE obj, VALUE x)
     if (isinf(d) && signbit(d)) domain_error("gamma");
     if (d == floor(d)) {
 	if (d < 0.0) domain_error("gamma");
-	if (1.0 <= d && d <= NGAMMA_TABLE) {
+	if (1.0 <= d && d <= (double)NGAMMA_TABLE) {
 	    return DBL2NUM(fact_table[(int)d - 1]);
 	}
     }
