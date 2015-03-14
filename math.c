@@ -836,12 +836,12 @@ mingw_tgamma(const double d)
  *
  */
 
-#define NGAMMA_TABLE 23
+#define NFACT_TABLE 23
 
 static VALUE
 math_gamma(VALUE obj, VALUE x)
 {
-    static const double fact_table[] = {
+    static const double fact_table[NFACT_TABLE] = {
         /* fact(0) */ 1.0,
         /* fact(1) */ 1.0,
         /* fact(2) */ 2.0,
@@ -875,7 +875,7 @@ math_gamma(VALUE obj, VALUE x)
     if (isinf(d) && signbit(d)) domain_error("gamma");
     if (d == floor(d)) {
 	if (d < 0.0) domain_error("gamma");
-	if (1.0 <= d && d <= (double)NGAMMA_TABLE) {
+	if (1.0 <= d && d <= (double)NFACT_TABLE) {
 	    return DBL2NUM(fact_table[(int)d - 1]);
 	}
     }
