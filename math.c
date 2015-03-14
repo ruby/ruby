@@ -836,6 +836,8 @@ mingw_tgamma(const double d)
  *
  */
 
+#define NGAMMA_TABLE 23
+
 static VALUE
 math_gamma(VALUE obj, VALUE x)
 {
@@ -868,16 +870,13 @@ math_gamma(VALUE obj, VALUE x)
          * 53bit mantissa. */
     };
     double d;
-    double intpart, fracpart;
     d = Get_Double(x);
     /* check for domain error */
     if (isinf(d) && signbit(d)) domain_error("gamma");
-    fracpart = modf(d, &intpart);
-    if (fracpart == 0.0) {
-	if (intpart < 0) domain_error("gamma");
-	if (0 < intpart &&
-	    intpart - 1 < (double)numberof(fact_table)) {
-	    return DBL2NUM(fact_table[(int)intpart - 1]);
+    if (d == floor(d)) {
+	if (d < 0.0) domain_error("gamma");
+	if (1.0 <= d && d <= NGAMMA_TABLE) {
+	    return DBL2NUM(fact_table[(int)d - 1]);
 	}
     }
     return DBL2NUM(tgamma(d));

@@ -240,6 +240,8 @@ class TestMath < Test::Unit::TestCase
     check(2, Math.gamma(3))
     check(15 * sqrt_pi / 8, Math.gamma(3.5))
     check(6, Math.gamma(4))
+    check(1.1240007277776077e+21, Math.gamma(23))
+    check(2.5852016738885062e+22, Math.gamma(24))
 
     # no SEGV [ruby-core:25257]
     31.upto(65) do |i|

@@ -1,3 +1,7 @@
+Sat Mar 14 20:05:23 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
+
+	* math.c (math_gamma): optimization for passed small integer.
+
 Sat Mar 14 18:07:23 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
 
 	* enum.c: [DOC] Fixes Enumerable#member? documentation
