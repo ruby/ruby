@@ -658,9 +658,9 @@ math_sqrt(VALUE obj, VALUE x)
  *
  *  Returns the cube root of +x+.
  *
- *  Domain: [0, INFINITY)
+ *  Domain: (-INFINITY, INFINITY)
  *
- *  Codomain:[0, INFINITY)
+ *  Codomain: (-INFINITY, INFINITY)
  *
  *    -9.upto(9) {|x|
  *      p [x, Math.cbrt(x), Math.cbrt(x)**3]
