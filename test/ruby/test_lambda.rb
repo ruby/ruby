@@ -88,7 +88,7 @@ class TestLambdaParameters < Test::Unit::TestCase
       ["lambda", lambda {|a, b, c| [a, b, c]}],
     ] do
       |(vtype, val), (btype, block)|
-      define_method("test_yeild_relaxed(#{vtype},&#{btype})") do
+      define_method("test_yield_relaxed(#{vtype},&#{btype})") do
         result = assert_nothing_raised(ArgumentError, bug9605) {
           break yield_1(val, &block)
         }
